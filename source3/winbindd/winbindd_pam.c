@@ -463,7 +463,7 @@ static NTSTATUS get_pwd_properties(struct winbindd_domain *domain,
 static const char *generate_krb5_ccache(TALLOC_CTX *mem_ctx,
 					const char *type,
 					uid_t uid,
-					bool *internal_ccache)
+					const char **user_ccache_file)
 {
 	/* accept FILE and WRFILE as krb5_cc_type from the client and then
 	 * build the full ccname string based on the user's uid here -
@@ -471,56 +471,31 @@ static const char *generate_krb5_ccache(TALLOC_CTX *mem_ctx,
 
 	const char *gen_cc = NULL;
 
-	*internal_ccache = true;
-
-	if (uid == -1) {
-		goto memory_ccache;
+	if (uid != -1) {
+		if (strequal(type, "FILE")) {
+			gen_cc = talloc_asprintf(
+				mem_ctx, "FILE:/tmp/krb5cc_%d", uid);
+		}
+		if (strequal(type, "WRFILE")) {
+			gen_cc = talloc_asprintf(
+				mem_ctx, "WRFILE:/tmp/krb5cc_%d", uid);
+		}
 	}
 
-	if (strequal(type, "FILE")) {
-		gen_cc = talloc_asprintf(mem_ctx, "FILE:/tmp/krb5cc_%d", uid);
-	} else if (strequal(type, "WRFILE")) {
-		gen_cc = talloc_asprintf(mem_ctx, "WRFILE:/tmp/krb5cc_%d", uid);
-	} else {
-		DEBUG(10,("we don't allow to set a %s type ccache\n", type));
-		goto memory_ccache;
+	*user_ccache_file = gen_cc;
+
+	if (gen_cc == NULL) {
+		gen_cc = talloc_strdup(mem_ctx, "MEMORY:winbindd_pam_ccache");
 	}
-
-	*internal_ccache = false;
-	goto done;
-
-  memory_ccache:
-  	gen_cc = talloc_strdup(mem_ctx, "MEMORY:winbindd_pam_ccache");
-
-  done:
   	if (gen_cc == NULL) {
 		DEBUG(0,("out of memory\n"));
 		return NULL;
 	}
 
-	DEBUG(10,("using ccache: %s %s\n", gen_cc, *internal_ccache ? "(internal)":""));
+	DEBUG(10, ("using ccache: %s%s\n", gen_cc,
+		   (*user_ccache_file == NULL) ? " (internal)":""));
 
 	return gen_cc;
-}
-
-static void setup_return_cc_name(struct winbindd_cli_state *state, const char *cc)
-{
-	const char *type = state->request->data.auth.krb5_cc_type;
-
-	state->response->data.auth.krb5ccname[0] = '\0';
-
-	if (type[0] == '\0') {
-		return;
-	}
-
-	if (!strequal(type, "FILE") &&
-	    !strequal(type, "WRFILE")) {
-		DEBUG(10,("won't return krbccname for a %s type ccache\n",
-			type));
-		return;
-	}
-
-	fstrcpy(state->response->data.auth.krb5ccname, cc);
 }
 
 #endif
@@ -565,7 +540,7 @@ static NTSTATUS winbindd_raw_kerberos_login(struct winbindd_domain *domain,
 	uid_t uid = -1;
 	ADS_STRUCT *ads;
 	time_t time_offset = 0;
-	bool internal_ccache = true;
+	const char *user_ccache_file;
 	struct PAC_LOGON_INFO *logon_info = NULL;
 
 	*info3 = NULL;
@@ -581,7 +556,7 @@ static NTSTATUS winbindd_raw_kerberos_login(struct winbindd_domain *domain,
 	cc = generate_krb5_ccache(state->mem_ctx,
 				  state->request->data.auth.krb5_cc_type,
 				  state->request->data.auth.uid,
-				  &internal_ccache);
+				  &user_ccache_file);
 	if (cc == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -619,7 +594,7 @@ static NTSTATUS winbindd_raw_kerberos_login(struct winbindd_domain *domain,
 
 	/************************ ENTERING NON-ROOT **********************/
 
-	if (!internal_ccache) {
+	if (user_ccache_file != NULL) {
 		set_effective_uid(uid);
 		DEBUG(10,("winbindd_raw_kerberos_login: uid is %d\n", uid));
 	}
@@ -636,7 +611,7 @@ static NTSTATUS winbindd_raw_kerberos_login(struct winbindd_domain *domain,
 				     WINBINDD_PAM_AUTH_KRB5_RENEW_TIME,
 				     NULL,
 				     &logon_info);
-	if (!internal_ccache) {
+	if (user_ccache_file != NULL) {
 		gain_root_privilege();
 	}
 
@@ -654,9 +629,10 @@ static NTSTATUS winbindd_raw_kerberos_login(struct winbindd_domain *domain,
 	/* if we had a user's ccache then return that string for the pam
 	 * environment */
 
-	if (!internal_ccache) {
+	if (user_ccache_file != NULL) {
 
-		setup_return_cc_name(state, cc);
+		fstrcpy(state->response->data.auth.krb5ccname,
+			user_ccache_file);
 
 		result = add_ccache_to_list(principal_s,
 					    cc,
@@ -940,7 +916,7 @@ static NTSTATUS winbindd_dual_pam_auth_cached(struct winbindd_domain *domain,
 			char *realm = NULL;
 			const char *principal_s = NULL;
 			const char *service = NULL;
-			bool internal_ccache = false;
+			const char *user_ccache_file;
 
 			uid = get_uid_from_state(state);
 			if (uid == -1) {
@@ -951,7 +927,7 @@ static NTSTATUS winbindd_dual_pam_auth_cached(struct winbindd_domain *domain,
 			cc = generate_krb5_ccache(state->mem_ctx,
 						state->request->data.auth.krb5_cc_type,
 						state->request->data.auth.uid,
-						&internal_ccache);
+						&user_ccache_file);
 			if (cc == NULL) {
 				return NT_STATUS_NO_MEMORY;
 			}
@@ -969,9 +945,10 @@ static NTSTATUS winbindd_dual_pam_auth_cached(struct winbindd_domain *domain,
 				return NT_STATUS_NO_MEMORY;
 			}
 
-			if (!internal_ccache) {
+			if (user_ccache_file != NULL) {
 
-				setup_return_cc_name(state, cc);
+				fstrcpy(state->response->data.auth.krb5ccname,
+					user_ccache_file);
 
 				result = add_ccache_to_list(principal_s,
 							    cc,
