@@ -149,7 +149,6 @@ LIBNDR_GEN_SRC = '''../librpc/gen_ndr/ndr_wkssvc.c
                  ../librpc/gen_ndr/ndr_eventlog.c
                  ${LIBNDR_NETLOGON_SRC}
                  ../librpc/gen_ndr/ndr_dssetup.c
-                 ${LIBNDR_XATTR_SRC}
                  ../librpc/gen_ndr/ndr_epmapper.c
                  ../librpc/gen_ndr/ndr_ntsvcs.c
                  ${LIBNDR_SPOOLSS_SRC}'''
@@ -810,7 +809,8 @@ SMBD_SRC_BASE = '''${SMBD_SRC_SRV}
                 rpc_client/init_netlogon.c
                 rpc_client/init_samr.c
                 ${AUTH_SRC}
-                ${PRIVILEGES_BASIC_SRC}'''
+                ${PRIVILEGES_BASIC_SRC}
+                ${LIBNDR_XATTR_SRC}'''
 
 PRINTING_SRC = '''printing/pcap.c printing/print_svid.c printing/print_aix.c
                printing/print_cups.c printing/print_generic.c
