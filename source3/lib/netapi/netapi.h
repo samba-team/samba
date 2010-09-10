@@ -1284,6 +1284,22 @@ struct NETLOGON_INFO_4 {
 	const char * netlog4_trusted_domain_name;
 };
 
+#define DS_PDC_FLAG ( 0x00000001 )
+#define DS_GC_FLAG ( 0x00000004 )
+#define DS_LDAP_FLAG ( 0x00000008 )
+#define DS_DS_FLAG ( 0x00000010 )
+#define DS_KDC_FLAG ( 0x00000020 )
+#define DS_TIMESERV_FLAG ( 0x00000040 )
+#define DS_CLOSEST_FLAG ( 0x00000080 )
+#define DS_WRITABLE_FLAG ( 0x00000100 )
+#define DS_GOOD_TIMESERV_FLAG ( 0x00000200 )
+#define DS_NDNC_FLAG ( 0x00000400 )
+#define DS_SELECT_SECRET_DOMAIN_6_FLAG ( 0x00000800 )
+#define DS_FULL_SECRET_DOMAIN_6_FLAG ( 0x00001000 )
+#define DS_DNS_CONTROLLER_FLAG ( 0x20000000 )
+#define DS_DNS_DOMAIN_FLAG ( 0x40000000 )
+#define DS_DNS_FOREST_FLAG ( 0x80000000 )
+
 #endif /* _HEADER_libnetapi */
 
 #ifndef _HEADER_netlogon
