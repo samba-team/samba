@@ -1306,7 +1306,7 @@ static bool fork_domain_child(struct winbindd_child *child)
 	 * try to bring domain online after fork. */
 	if ( child->domain ) {
 		child->domain->startup = True;
-		child->domain->startup_time = time(NULL);
+		child->domain->startup_time = time_mono(NULL);
 		/* we can be in primary domain or in trusted domain
 		 * If we are in trusted domain, set the primary domain
 		 * in start-up mode */
@@ -1314,7 +1314,7 @@ static bool fork_domain_child(struct winbindd_child *child)
 			set_domain_online_request(child->domain);
 			if (!(child->domain->primary)) {
 				primary_domain->startup = True;
-				primary_domain->startup_time = time(NULL);
+				primary_domain->startup_time = time_mono(NULL);
 				set_domain_online_request(primary_domain);
 			}
 		}
@@ -1389,7 +1389,7 @@ static bool fork_domain_child(struct winbindd_child *child)
 		GetTimeOfDay(&now);
 
 		if (child->domain && child->domain->startup &&
-				(now.tv_sec > child->domain->startup_time + 30)) {
+				(time_mono(NULL) > child->domain->startup_time + 30)) {
 			/* No longer in "startup" mode. */
 			DEBUG(10,("fork_domain_child: domain %s no longer in 'startup' mode.\n",
 				child->domain->name ));
