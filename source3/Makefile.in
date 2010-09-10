@@ -401,7 +401,6 @@ LIBNDR_GEN_OBJ = librpc/gen_ndr/ndr_wkssvc.o \
 		 librpc/gen_ndr/ndr_eventlog.o \
 		 $(LIBNDR_NETLOGON_OBJ) \
 		 librpc/gen_ndr/ndr_dssetup.o \
-		 $(LIBNDR_XATTR_OBJ) \
 		 librpc/gen_ndr/ndr_epmapper.o \
 		 librpc/gen_ndr/ndr_ntsvcs.o \
 		 $(LIBNDR_SPOOLSS_OBJ)
@@ -898,7 +897,8 @@ SMBD_OBJ_BASE = $(PARAM_WITHOUT_REG_OBJ) $(SMBD_OBJ_SRV) $(LIBSMB_OBJ) \
 		$(REG_FULL_OBJ) $(POPT_LIB_OBJ) $(BUILDOPT_OBJ) \
 		$(SMBLDAP_OBJ) $(LIBNET_OBJ) \
 		$(LIBSMBCONF_OBJ) \
-		$(PRIVILEGES_BASIC_OBJ)
+		$(PRIVILEGES_BASIC_OBJ) \
+		$(LIBNDR_XATTR_OBJ)
 
 PRINTING_OBJ = printing/pcap.o printing/print_svid.o printing/print_aix.o \
                printing/print_cups.o printing/print_generic.o \
