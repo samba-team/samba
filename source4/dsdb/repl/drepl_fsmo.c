@@ -34,7 +34,8 @@
 
 static void drepl_role_callback(struct dreplsrv_service *service,
 				WERROR werr,
-				enum drsuapi_DsExtendedError ext_err)
+				enum drsuapi_DsExtendedError ext_err,
+				void *cb_data)
 {
 	if (!W_ERROR_IS_OK(werr)) {
 		DEBUG(0,(__location__ ": Failed role transfer - %s - extended_ret[0x%X]\n",
