@@ -146,12 +146,12 @@ static int expand_dn_in_message(struct ldb_module *module, struct ldb_message *m
 	dn2 = res->msgs[0]->dn;
 
 	v->data = (uint8_t *)ldb_dn_get_extended_linearized(msg->elements, dn2, edn_type);
-	v->length = strlen((char *)v->data);
-
 	if (v->data == NULL) {
 		talloc_free(tmp_ctx);
 		return ldb_operr(ldb);
 	}
+	v->length = strlen((char *)v->data);
+
 
 	talloc_free(tmp_ctx);
 
