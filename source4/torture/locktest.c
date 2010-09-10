@@ -233,7 +233,7 @@ static bool test_one(struct smbcli_state *cli[NSERVERS][NCONNECTIONS],
 			int fn=fnum[server][conn][f];
 
 			if (!(tree->session->transport->negotiate.capabilities & CAP_LARGE_FILES)) {
-				res=smbcli_lock(tree, fn, start, len, LOCK_TIMEOUT, rec->lock_op);
+				res=smbcli_lock(tree, fn, start, len, LOCK_TIMEOUT, (enum brl_type) rec->lock_op);
 			} else {
 				union smb_lock parms;
 				int ltype;
