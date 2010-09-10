@@ -1,0 +1,1 @@
+.*printer.*print_test_extended # fails on some hosts due to timing issues ?
