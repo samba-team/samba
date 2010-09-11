@@ -3564,9 +3564,10 @@ static NTSTATUS dcesrv_samr_GetGroupsForUser(struct dcesrv_call_state *dce_call,
 	count = samdb_search_domain(a_state->sam_ctx, mem_ctx,
 				    d_state->domain_dn, &res,
 				    attrs, d_state->domain_sid,
-				    "(&(member=%s)(grouptype=%d)(objectclass=group))",
+				    "(&(member=%s)(|(grouptype=%d)(grouptype=%d))(objectclass=group))",
 				    ldb_dn_get_linearized(a_state->account_dn),
-				    GTYPE_SECURITY_GLOBAL_GROUP);
+				    GTYPE_SECURITY_GLOBAL_GROUP,
+				    GTYPE_SECURITY_UNIVERSAL_GROUP);
 	if (count < 0)
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 
