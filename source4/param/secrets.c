@@ -28,13 +28,9 @@
 #include "tdb_wrap.h"
 #include "lib/ldb-samba/ldb_wrap.h"
 #include "lib/ldb/include/ldb.h"
-#include "../tdb/include/tdb.h"
 #include "../lib/util/util_tdb.h"
-#include "../lib/util/util_ldb.h"
 #include "librpc/gen_ndr/ndr_security.h"
 #include "dsdb/samdb/samdb.h"
-#include "dsdb/common/util.h"
-#include "dsdb/common/proto.h"
 
 /**
  * Use a TDB to store an incrementing random seed.
