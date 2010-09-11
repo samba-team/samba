@@ -170,6 +170,9 @@ static NTSTATUS check_parent_exists(TALLOC_CTX *ctx,
 	/* Update dirpath. */
 	TALLOC_FREE(*pp_dirpath);
 	*pp_dirpath = talloc_strdup(ctx, parent_fname.base_name);
+	if (!*pp_dirpath) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	DEBUG(5,("check_parent_exists: name "
 		"= %s, dirpath = %s, "
