@@ -840,7 +840,7 @@ static krb5_error_code ads_krb5_mk_req(krb5_context context,
 		goto cleanup_creds;
 	}
 
-#if defined(TKT_FLG_OK_AS_DELEGATE ) && defined(HAVE_KRB5_FWD_TGT_CREDS) && defined(HAVE_KRB5_AUTH_CON_SETUSERUSERKEY) && defined(KRB5_AUTH_CONTEXT_USE_SUBKEY)
+#if defined(TKT_FLG_OK_AS_DELEGATE ) && defined(HAVE_KRB5_FWD_TGT_CREDS) && defined(HAVE_KRB5_AUTH_CON_SETUSERUSERKEY) && defined(KRB5_AUTH_CONTEXT_USE_SUBKEY) && defined(HAVE_KRB5_AUTH_CON_SET_REQ_CKSUMTYPE)
 	if( credsp->ticket_flags & TKT_FLG_OK_AS_DELEGATE ) {
 		/* Fetch a forwarded TGT from the KDC so that we can hand off a 2nd ticket
 		 as part of the kerberos exchange. */
@@ -902,7 +902,6 @@ static krb5_error_code ads_krb5_mk_req(krb5_context context,
 			gss_flags |= GSS_C_DELEG_FLAG;
 		}
 	}
-#endif
 
 	/* Frees and reallocates in_data into a GSS checksum blob. */
 	retval = create_gss_checksum(&in_data, gss_flags);
@@ -910,7 +909,6 @@ static krb5_error_code ads_krb5_mk_req(krb5_context context,
 		goto cleanup_data;
 	}
 
-#if defined(HAVE_KRB5_AUTH_CON_SET_REQ_CKSUMTYPE)
 	/* We always want GSS-checksum types. */
 	retval = krb5_auth_con_set_req_cksumtype(context, *auth_context, GSSAPI_CHECKSUM );
 	if (retval) {
