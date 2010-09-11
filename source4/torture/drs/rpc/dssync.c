@@ -265,7 +265,7 @@ static bool test_LDAPBind(struct torture_context *tctx, struct DsSyncTest *ctx,
 	/* Despite us loading the schema from the AD server, we need
 	 * the samba handlers to get the extended DN syntax stuff */
 	ret = ldb_register_samba_handlers(ldb);
-	if (ret == -1) {
+	if (ret != LDB_SUCCESS) {
 		talloc_free(ldb);
 		return NULL;
 	}

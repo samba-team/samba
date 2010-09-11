@@ -1278,7 +1278,7 @@ int ldb_register_samba_handlers(struct ldb_context *ldb)
 		}
 
 		if (!s) {
-			return -1;
+			return LDB_ERR_OPERATIONS_ERROR;
 		}
 
 		ret = ldb_schema_attribute_add_with_syntax(ldb, samba_attributes[i].name, LDB_ATTR_FLAG_FIXED, s);

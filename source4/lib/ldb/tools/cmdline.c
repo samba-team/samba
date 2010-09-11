@@ -122,7 +122,7 @@ struct ldb_cmdline *ldb_cmdline_process(struct ldb_context *ldb,
 
 #if (_SAMBA_BUILD_ >= 4)
 	r = ldb_register_samba_handlers(ldb);
-	if (r != 0) {
+	if (r != LDB_SUCCESS) {
 		goto failed;
 	}
 

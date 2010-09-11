@@ -192,7 +192,7 @@ static int ldb_wrap_destructor(struct ldb_wrap *w)
 	 * precedence over the 'binary attribute' declaration in the
 	 * schema */
 	ret = ldb_register_samba_handlers(ldb);
-	if (ret == -1) {
+	if (ret != LDB_SUCCESS) {
 		talloc_free(ldb);
 		return NULL;
 	}

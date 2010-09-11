@@ -44,7 +44,7 @@ static bool torture_dsdb_dn_attrs(struct torture_context *torture)
 		       "Failed to init ldb");
 
 	torture_assert_int_equal(torture, 
-				 ldb_register_samba_handlers(ldb), 0, 
+				 ldb_register_samba_handlers(ldb), LDB_SUCCESS,
 				 "Failed to register Samba handlers");
 
 	ldb_set_utf8_fns(ldb, NULL, wrap_casefold);
@@ -127,7 +127,7 @@ static bool torture_dsdb_dn_valid(struct torture_context *torture)
 		       "Failed to init ldb");
 
 	torture_assert_int_equal(torture, 
-				 ldb_register_samba_handlers(ldb), 0, 
+				 ldb_register_samba_handlers(ldb), LDB_SUCCESS,
 				 "Failed to register Samba handlers");
 
 	ldb_set_utf8_fns(ldb, NULL, wrap_casefold);
@@ -249,7 +249,7 @@ static bool torture_dsdb_dn_invalid(struct torture_context *torture)
 		       "Failed to init ldb");
 
 	torture_assert_int_equal(torture, 
-				 ldb_register_samba_handlers(ldb), 0, 
+				 ldb_register_samba_handlers(ldb), LDB_SUCCESS,
 				 "Failed to register Samba handlers");
 
 	ldb_set_utf8_fns(ldb, NULL, wrap_casefold);
