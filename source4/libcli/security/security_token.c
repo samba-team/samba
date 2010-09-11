@@ -31,14 +31,10 @@ struct security_token *security_token_initialise(TALLOC_CTX *mem_ctx)
 {
 	struct security_token *st;
 
-	st = talloc(mem_ctx, struct security_token);
+	st = talloc_zero(mem_ctx, struct security_token);
 	if (!st) {
 		return NULL;
 	}
-
-	st->num_sids = 0;
-	st->sids = NULL;
-	st->privilege_mask = 0;
 
 	return st;
 }

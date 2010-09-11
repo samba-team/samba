@@ -157,8 +157,6 @@ NTSTATUS security_token_create(TALLOC_CTX *mem_ctx,
 	ptoken = security_token_initialise(mem_ctx);
 	NT_STATUS_HAVE_NO_MEMORY(ptoken);
 
-	ptoken->privilege_mask = 0;
-
 	ptoken->sids = talloc_array(ptoken, struct dom_sid, n_groupSIDs + 6 /* over-allocate */);
 	NT_STATUS_HAVE_NO_MEMORY(ptoken->sids);
 
