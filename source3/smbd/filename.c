@@ -99,6 +99,88 @@ static NTSTATUS check_for_dot_component(const struct smb_filename *smb_fname)
 }
 
 /****************************************************************************
+ Optimization for common case where the missing part
+ is in the last component and the client already
+ sent the correct case.
+ Returns NT_STATUS_OK to mean continue the tree walk
+ (possibly with modified start pointer).
+ Any other NT_STATUS_XXX error means terminate the path
+ lookup here.
+****************************************************************************/
+
+static NTSTATUS check_parent_exists(TALLOC_CTX *ctx,
+				connection_struct *conn,
+				bool posix_pathnames,
+				struct smb_filename *smb_fname,
+				char **pp_dirpath,
+				char **pp_start)
+{
+	struct smb_filename parent_fname;
+	const char *last_component = NULL;
+	NTSTATUS status;
+	int ret;
+
+	ZERO_STRUCT(parent_fname);
+	if (!parent_dirname(ctx, smb_fname->base_name,
+				&parent_fname.base_name,
+				&last_component)) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	/*
+	 * If there was no parent component in
+	 * smb_fname->base_name of the parent name
+	 * contained a wildcard then don't do this
+	 * optimization.
+	 */
+	if ((smb_fname->base_name == last_component) ||
+			ms_has_wild(parent_fname.base_name)) {
+		return NT_STATUS_OK;
+	}
+
+	if (posix_pathnames) {
+		ret = SMB_VFS_LSTAT(conn, &parent_fname);
+	} else {
+		ret = SMB_VFS_STAT(conn, &parent_fname);
+	}
+
+	/* If the parent stat failed, just continue
+	   with the normal tree walk. */
+
+	if (ret == -1) {
+		return NT_STATUS_OK;
+	}
+
+	status = check_for_dot_component(&parent_fname);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	/* Parent exists - set "start" to be the
+	 * last compnent to shorten the tree walk. */
+
+	/*
+	 * Safe to use CONST_DISCARD
+	 * here as last_component points
+	 * into our smb_fname->base_name.
+	 */
+	*pp_start = CONST_DISCARD(char *,last_component);
+
+	/* Update dirpath. */
+	TALLOC_FREE(*pp_dirpath);
+	*pp_dirpath = talloc_strdup(ctx, parent_fname.base_name);
+
+	DEBUG(5,("check_parent_exists: name "
+		"= %s, dirpath = %s, "
+		"start = %s\n",
+		smb_fname->base_name,
+		*pp_dirpath,
+		*pp_start));
+
+	return NT_STATUS_OK;
+}
+
+/****************************************************************************
 This routine is called to convert names from the dos namespace to unix
 namespace. It needs to handle any case conversions, mangling, format changes,
 streams etc.
@@ -352,6 +434,20 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 			goto done;
 		}
 
+		if (errno == ENOENT) {
+			/* Optimization when creating a new file - only
+			   the last component doesn't exist. */
+			status = check_parent_exists(ctx,
+						conn,
+						posix_pathnames,
+						smb_fname,
+						&dirpath,
+						&start);
+			if (!NT_STATUS_IS_OK(status)) {
+				goto fail;
+			}
+		}
+
 		/*
 		 * A special case - if we don't have any wildcards or mangling chars and are case
 		 * sensitive or the underlying filesystem is case insentive then searching
@@ -402,38 +498,6 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 						status = NT_STATUS_OBJECT_PATH_NOT_FOUND;
 						goto fail;
 					}
-				} else if (ret == 0) {
-					/*
-					 * stat() or lstat() of the parent dir
-					 * succeeded. So start the walk
-					 * at this point.
-					 */
-					status = check_for_dot_component(&parent_fname);
-					if (!NT_STATUS_IS_OK(status)) {
-						goto fail;
-					}
-
-		 			/*
-					 * If there was no parent component in
-					 * smb_fname->base_name then
-					 * don't do this optimization.
-					 */
-					if (smb_fname->base_name != last_component) {
-						/*
-						 * Safe to use CONST_DISCARD
-						 * here as last_component points
-						 * into our smb_fname->base_name.
-						 */
-						start = CONST_DISCARD(char *,
-							last_component);
-
-						DEBUG(5,("unix_convert optimize1: name "
-							"= %s, dirpath = %s, "
-							"start = %s\n",
-							smb_fname->base_name,
-							dirpath,
-							start));
-					}
 				}
 
 				/*
@@ -452,52 +516,14 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 		 * is in the last component and the client already
 		 * sent the correct case.
 		 */
-		struct smb_filename parent_fname;
-		const char *last_component = NULL;
-
-		ZERO_STRUCT(parent_fname);
-		if (!parent_dirname(ctx, smb_fname->base_name,
-					&parent_fname.base_name,
-					&last_component)) {
-			status = NT_STATUS_NO_MEMORY;
+		status = check_parent_exists(ctx,
+					conn,
+					posix_pathnames,
+					smb_fname,
+					&dirpath,
+					&start);
+		if (!NT_STATUS_IS_OK(status)) {
 			goto fail;
-		}
-		/*
-		 * If there was no parent component in
-		 * smb_fname->base_name then
-		 * don't do this optimization.
-		 */
-		if ((smb_fname->base_name != last_component) &&
-				!ms_has_wild(parent_fname.base_name)) {
-			/*
-			 * Wildcard isn't in the parent, i.e.
-			 * it must be in the last component.
-			 */
-			if (posix_pathnames) {
-				ret = SMB_VFS_LSTAT(conn, &parent_fname);
-			} else {
-				ret = SMB_VFS_STAT(conn, &parent_fname);
-			}
-			if (ret == 0) {
-				status = check_for_dot_component(&parent_fname);
-				if (!NT_STATUS_IS_OK(status)) {
-					goto fail;
-				}
-
-				/*
-				 * Safe to use CONST_DISCARD
-				 * here as last_component points
-				 * into our smb_fname->base_name.
-				 */
-				start = CONST_DISCARD(char *,last_component);
-
-				DEBUG(5,("unix_convert optimize2: name "
-					"= %s, dirpath = %s, "
-					"start = %s\n",
-					smb_fname->base_name,
-					dirpath,
-					start));
-			}
 		}
 	}
 
