@@ -59,14 +59,9 @@ static const struct {
 	{SEC_PRIV_ADD_USERS,       SEC_PRIV_ADD_USERS_BIT,	 "SeAddUsersPrivilege",		"Add users and groups to the domain"},
 	{SEC_PRIV_DISK_OPERATOR,   SEC_PRIV_DISK_OPERATOR_BIT,	 "SeDiskOperatorPrivilege",	"Manage disk shares"},
 
-	/* The list from here on was not displayed in the code from
-	 * source3/ with the comment that usrmgr will display these
-	 * next 2 twice if you include them.  The source4/ code has
-	 * always included them, but they do not appear in Windows
-	 * 2008 R2.
-
-	   Finally, the parameter 'short_list' determines if the short
-	   or full list (including many other privileges) is used */
+	/* The list from here on is not displayed in the code from
+	 * source3, and is after index NUM_SHORT_LIST_PRIVS for that
+	 * reason */ 
 
 	{SEC_PRIV_SECURITY,
 	 SEC_PRIV_SECURITY_BIT,
@@ -152,19 +147,26 @@ static const struct {
 	 SEC_PRIV_ENABLE_DELEGATION_BIT,
 	 "SeEnableDelegationPrivilege",
 	"Enable Delegation"},
+};
 
-	{SEC_PRIV_INTERACTIVE_LOGON,
-	 SEC_PRIV_INTERACTIVE_LOGON_BIT,
+/* These are rights, not privileges, and should not be confused.  The
+ * names are very similar, and they are quite similar in behaviour,
+ * but they are not to be enumerated as a system-wide list or have an
+ * LUID value */
+static const struct {
+	uint32_t right_mask;
+	const char *name;
+	const char *description;
+} rights[] = {
+	{LSA_POLICY_MODE_INTERACTIVE,
 	 "SeInteractiveLogonRight",
 	"Interactive logon"},
 
-	{SEC_PRIV_NETWORK_LOGON,
-	 SEC_PRIV_NETWORK_LOGON_BIT,
+	{LSA_POLICY_MODE_NETWORK,
 	 "SeNetworkLogonRight",
 	"Network logon"},
 
-	{SEC_PRIV_REMOTE_INTERACTIVE_LOGON,
-	 SEC_PRIV_REMOTE_INTERACTIVE_LOGON_BIT,
+	{LSA_POLICY_MODE_REMOTE_INTERACTIVE,
 	 "SeRemoteInteractiveLogonRight",
 	"Remote Interactive logon"}
 };
@@ -369,6 +371,20 @@ enum sec_privilege sec_privilege_id(const char *name)
 }
 
 /*
+  map a 'right' name to it's bitmap value. Return 0 if not found
+*/
+uint32_t sec_right_bit(const char *name)
+{
+	int i;
+	for (i=0;i<ARRAY_SIZE(rights);i++) {
+		if (strcasecmp(rights[i].name, name) == 0) {
+			return rights[i].right_mask;
+		}
+	}
+	return 0;
+}
+
+/*
   assist in walking the table of privileges - return the LUID (low 32 bits) by index
 */
 enum sec_privilege sec_privilege_from_index(int idx)
@@ -419,6 +435,14 @@ void security_token_set_privilege(struct security_token *token, enum sec_privile
 	token->privilege_mask |= sec_privilege_mask(privilege);
 }
 
+/*
+  set a bit in the rights mask
+*/
+void security_token_set_right_bit(struct security_token *token, uint32_t right_bit)
+{
+	token->rights_mask |= right_bit;
+}
+
 void security_token_debug_privileges(int dbg_lev, const struct security_token *token)
 {
 	DEBUGADD(dbg_lev, (" Privileges (0x%16llX):\n",
@@ -431,6 +455,19 @@ void security_token_debug_privileges(int dbg_lev, const struct security_token *t
 			if (token->privilege_mask & privs[idx].privilege_mask) {
 				DEBUGADD(dbg_lev, ("  Privilege[%3lu]: %s\n", (unsigned long)i++,
 						   privs[idx].name));
+			}
+		}
+	}
+	DEBUGADD(dbg_lev, (" Rights (0x%16lX):\n",
+			    (unsigned long) token->rights_mask));
+
+	if (token->rights_mask) {
+		int idx = 0;
+		int i = 0;
+		for (idx = 0; idx<ARRAY_SIZE(rights); idx++) {
+			if (token->rights_mask & rights[idx].right_mask) {
+				DEBUGADD(dbg_lev, ("  Right[%3lu]: %s\n", (unsigned long)i++,
+						   rights[idx].name));
 			}
 		}
 	}

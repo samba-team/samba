@@ -639,22 +639,6 @@ import "misc.idl", "security.idl";
 	/* Function:           0x16 */
 	[todo] NTSTATUS lsa_SetQuotasForAccount();
 
-	typedef [bitmap32bit] bitmap {
-		LSA_POLICY_MODE_INTERACTIVE             = 0x00000001,
-		LSA_POLICY_MODE_NETWORK                 = 0x00000002,
-		LSA_POLICY_MODE_BATCH                   = 0x00000004,
-		LSA_POLICY_MODE_SERVICE                 = 0x00000010,
-		LSA_POLICY_MODE_PROXY			= 0x00000020,
-		LSA_POLICY_MODE_DENY_INTERACTIVE        = 0x00000040,
-		LSA_POLICY_MODE_DENY_NETWORK            = 0x00000080,
-		LSA_POLICY_MODE_DENY_BATCH              = 0x00000100,
-		LSA_POLICY_MODE_DENY_SERVICE            = 0x00000200,
-		LSA_POLICY_MODE_REMOTE_INTERACTIVE      = 0x00000400,
-		LSA_POLICY_MODE_DENY_REMOTE_INTERACTIVE = 0x00000800,
-		LSA_POLICY_MODE_ALL			= 0x00000FF7,
-		LSA_POLICY_MODE_ALL_NT4			= 0x00000037
-	} lsa_SystemAccessModeFlags;
-
 	/* Function:    0x17 */
 	NTSTATUS lsa_GetSystemAccessAccount(
 		[in]      policy_handle *handle,

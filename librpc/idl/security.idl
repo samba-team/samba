@@ -32,6 +32,8 @@ cpp_quote("#define dom_sid0 dom_sid")
 interface security
 {
 
+	typedef bitmap lsa_SystemAccessModeFlags lsa_SystemAccessModeFlags;
+
 	typedef [public,gensize,noprint,nosize,nopull,nopush] struct {
 		uint8  sid_rev_num;             /**< SID revision number */
 		[range(0,15)] int8  num_auths;  /**< Number of sub-authorities */
@@ -390,11 +392,7 @@ interface security
 		/* Samba-specific privs */
 		SEC_PRIV_PRINT_OPERATOR            = 0x1001,
 		SEC_PRIV_ADD_USERS                 = 0x1002,
-		SEC_PRIV_DISK_OPERATOR             = 0x1003,
-		/* Windows privs not in the list above */
-		SEC_PRIV_INTERACTIVE_LOGON         = 0x2022,
-		SEC_PRIV_NETWORK_LOGON             = 0x2023,
-		SEC_PRIV_REMOTE_INTERACTIVE_LOGON  = 0x2024
+		SEC_PRIV_DISK_OPERATOR             = 0x1003
 	} sec_privilege;
 
 
@@ -403,10 +401,6 @@ interface security
 	 * as a bitmap (privilages.ldb uses the string forms).
 	 */
 	typedef [bitmap64bit] bitmap {
-		SEC_PRIV_NETWORK_LOGON_BIT		= 0x00000001,
-		SEC_PRIV_INTERACTIVE_LOGON_BIT		= 0x00000002,
-		SEC_PRIV_BATCH_LOGON_BIT			= 0x00000004,
-		SEC_PRIV_SERVICE_LOGON_BIT		= 0x00000008,
 		SEC_PRIV_MACHINE_ACCOUNT_BIT		= 0x00000010,
 
 		/* Samba-specific privs */
@@ -436,10 +430,24 @@ interface security
 		SEC_PRIV_ENABLE_DELEGATION_BIT            = 0x02000000,
 		SEC_PRIV_MANAGE_VOLUME_BIT                = 0x04000000,
 		SEC_PRIV_IMPERSONATE_BIT                  = 0x08000000,
-		SEC_PRIV_CREATE_GLOBAL_BIT                = 0x10000000,
-		/* Windows privs not in the list above */
-		SEC_PRIV_REMOTE_INTERACTIVE_LOGON_BIT     = 0x20000000
+		SEC_PRIV_CREATE_GLOBAL_BIT                = 0x10000000
 	} se_privilege;
+
+	typedef [bitmap32bit] bitmap {
+		LSA_POLICY_MODE_INTERACTIVE             = 0x00000001,
+		LSA_POLICY_MODE_NETWORK                 = 0x00000002,
+		LSA_POLICY_MODE_BATCH                   = 0x00000004,
+		LSA_POLICY_MODE_SERVICE                 = 0x00000010,
+		LSA_POLICY_MODE_PROXY			= 0x00000020,
+		LSA_POLICY_MODE_DENY_INTERACTIVE        = 0x00000040,
+		LSA_POLICY_MODE_DENY_NETWORK            = 0x00000080,
+		LSA_POLICY_MODE_DENY_BATCH              = 0x00000100,
+		LSA_POLICY_MODE_DENY_SERVICE            = 0x00000200,
+		LSA_POLICY_MODE_REMOTE_INTERACTIVE      = 0x00000400,
+		LSA_POLICY_MODE_DENY_REMOTE_INTERACTIVE = 0x00000800,
+		LSA_POLICY_MODE_ALL			= 0x00000FF7,
+		LSA_POLICY_MODE_ALL_NT4			= 0x00000037
+	} lsa_SystemAccessModeFlags;
 
 	typedef [public,bitmap8bit] bitmap {
 		SEC_ACE_FLAG_OBJECT_INHERIT		= 0x01,
@@ -564,7 +572,8 @@ interface security
 	typedef [public] struct {
 		uint32 num_sids;
 		[size_is(num_sids)] dom_sid sids[*];
-		udlong privilege_mask;
+		se_privilege privilege_mask;
+		lsa_SystemAccessModeFlags rights_mask;
 	} security_token;
 
 	/* bits that determine which parts of a security descriptor

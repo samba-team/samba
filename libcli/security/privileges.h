@@ -70,6 +70,11 @@ const char *sec_privilege_display_name(enum sec_privilege privilege, uint16_t *l
 enum sec_privilege sec_privilege_id(const char *name);
 
 /*
+  map a 'right' name to it's bitmap value. Return 0 if not found
+*/
+uint32_t sec_right_bit(const char *name);
+
+/*
   assist in walking the table of privileges - return the LUID (low 32 bits) by index
 */
 enum sec_privilege sec_privilege_from_index(int idx);
@@ -88,6 +93,10 @@ bool security_token_has_privilege(const struct security_token *token, enum sec_p
   set a bit in the privilege mask
 */
 void security_token_set_privilege(struct security_token *token, enum sec_privilege privilege);
+/*
+  set a bit in the rights mask
+*/
+void security_token_set_right_bit(struct security_token *token, uint32_t right_bit);
 
 void security_token_debug_privileges(int dbg_lev, const struct security_token *token);
 

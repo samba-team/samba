@@ -2410,7 +2410,7 @@ static NTSTATUS dcesrv_lsa_EnumPrivsAccount(struct dcesrv_call_state *dce_call,
 	struct dcesrv_handle *h;
 	struct lsa_account_state *astate;
 	int ret;
-	unsigned int i;
+	unsigned int i, j;
 	struct ldb_message **res;
 	const char * const attrs[] = { "privilege", NULL};
 	struct ldb_message_element *el;
@@ -2456,17 +2456,20 @@ static NTSTATUS dcesrv_lsa_EnumPrivsAccount(struct dcesrv_call_state *dce_call,
 		return NT_STATUS_NO_MEMORY;
 	}
 
+	j = 0;
 	for (i=0;i<el->num_values;i++) {
 		int id = sec_privilege_id((const char *)el->values[i].data);
 		if (id == SEC_PRIV_INVALID) {
-			return NT_STATUS_INTERNAL_DB_CORRUPTION;
+			/* Perhaps an account right, not a privilege */
+			continue;
 		}
-		privs->set[i].attribute = 0;
-		privs->set[i].luid.low = id;
-		privs->set[i].luid.high = 0;
+		privs->set[j].attribute = 0;
+		privs->set[j].luid.low = id;
+		privs->set[j].luid.high = 0;
+		j++;
 	}
 
-	privs->count = el->num_values;
+	privs->count = j;
 
 	return NT_STATUS_OK;
 }
@@ -2585,6 +2588,11 @@ static NTSTATUS dcesrv_lsa_AddRemoveAccountRights(struct dcesrv_call_state *dce_
 
 	for (i=0;i<rights->count;i++) {
 		if (sec_privilege_id(rights->names[i].string) == SEC_PRIV_INVALID) {
+			if (sec_right_bit(rights->names[i].string) == 0) {
+				talloc_free(msg);
+				return NT_STATUS_NO_SUCH_PRIVILEGE;
+			}
+
 			talloc_free(msg);
 			return NT_STATUS_NO_SUCH_PRIVILEGE;
 		}
@@ -2765,43 +2773,47 @@ static NTSTATUS dcesrv_lsa_SetQuotasForAccount(struct dcesrv_call_state *dce_cal
 static NTSTATUS dcesrv_lsa_GetSystemAccessAccount(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct lsa_GetSystemAccessAccount *r)
 {
-	uint32_t i;
-	NTSTATUS status;
-	struct lsa_EnumPrivsAccount enumPrivs;
-	struct lsa_PrivilegeSet *privs;
-
-	privs = talloc(mem_ctx, struct lsa_PrivilegeSet);
-	if (!privs) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	privs->count = 0;
-	privs->unknown = 0;
-	privs->set = NULL;
-
-	enumPrivs.in.handle = r->in.handle;
-	enumPrivs.out.privs = &privs;
-
-	status = dcesrv_lsa_EnumPrivsAccount(dce_call, mem_ctx, &enumPrivs);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}	
+	struct dcesrv_handle *h;
+	struct lsa_account_state *astate;
+	int ret;
+	unsigned int i;
+	struct ldb_message **res;
+	const char * const attrs[] = { "privilege", NULL};
+	struct ldb_message_element *el;
+	const char *sidstr;
 
 	*(r->out.access_mask) = 0x00000000;
 
-	for (i = 0; i < privs->count; i++) {
-		int priv = privs->set[i].luid.low;
+	DCESRV_PULL_HANDLE(h, r->in.handle, LSA_HANDLE_ACCOUNT);
 
-		switch (priv) {
-		case SEC_PRIV_INTERACTIVE_LOGON:
-			*(r->out.access_mask) |= LSA_POLICY_MODE_INTERACTIVE;
-			break;
-		case SEC_PRIV_NETWORK_LOGON:
-			*(r->out.access_mask) |= LSA_POLICY_MODE_NETWORK;
-			break;
-		case SEC_PRIV_REMOTE_INTERACTIVE_LOGON:
-			*(r->out.access_mask) |= LSA_POLICY_MODE_REMOTE_INTERACTIVE;
-			break;
+	astate = h->data;
+
+	sidstr = ldap_encode_ndr_dom_sid(mem_ctx, astate->account_sid);
+	if (sidstr == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	ret = gendb_search(astate->policy->pdb, mem_ctx, NULL, &res, attrs, 
+			   "objectSid=%s", sidstr);
+	if (ret < 0) {
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+	if (ret != 1) {
+		return NT_STATUS_OK;
+	}
+
+	el = ldb_msg_find_element(res[0], "privilege");
+	if (el == NULL || el->num_values == 0) {
+		return NT_STATUS_OK;
+	}
+
+	for (i=0;i<el->num_values;i++) {
+		uint32_t right_bit = sec_right_bit((const char *)el->values[i].data);
+		if (right_bit == 0) {
+			/* Perhaps an privilege, not a right */
+			continue;
 		}
+		*(r->out.access_mask) |= right_bit;
 	}
 
 	return NT_STATUS_OK;
@@ -3495,7 +3507,7 @@ static NTSTATUS dcesrv_lsa_EnumAccountsWithUserRight(struct dcesrv_call_state *d
 	} 
 
 	privname = r->in.name->string;
-	if (sec_privilege_id(privname) == SEC_PRIV_INVALID) {
+	if (sec_privilege_id(privname) == SEC_PRIV_INVALID && sec_right_bit(privname) == 0) {
 		return NT_STATUS_NO_SUCH_PRIVILEGE;
 	}
 
