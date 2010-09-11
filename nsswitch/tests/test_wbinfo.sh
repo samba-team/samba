@@ -163,6 +163,7 @@ if test x$own_domain = x$DOMAIN; then
 else
 	echo "Own domain reported as $own_domain instead of $DOMAIN"
 	echo "failure: wbinfo --own-domain against $TARGET check output"
+	failed=`expr $failed + 1`
 fi
 
 # this does not work
@@ -173,7 +174,7 @@ testit "wbinfo -D against $TARGET" $wbinfo -D $DOMAIN || failed=`expr $failed + 
 
 testit "wbinfo -i against $TARGET" $wbinfo -i "$DOMAIN/$USERNAME" || failed=`expr $failed + 1`
 
-testit "wbinfo --uid-info against $TARGET" $wbinfo --uid-info $admin_uid
+testit "wbinfo --uid-info against $TARGET" $wbinfo --uid-info $admin_uid || failed=`expr $failed + 1`
 
 # this does not work
 knownfail "wbinfo --group-info against $TARGET" $wbinfo --group-info "S-1-22-2-0"
