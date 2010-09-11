@@ -1896,25 +1896,26 @@ enum winbindd_result winbindd_dual_pam_chauthtok(struct winbindd_domain *contact
 
 done:
 
-	if (NT_STATUS_IS_OK(result) && (state->request->flags & WBFLAG_PAM_CACHED_LOGIN)) {
-		if (lp_winbind_offline_logon()) {
-			result = winbindd_update_creds_by_name(contact_domain,
-							       user, newpass);
-			/* Again, this happens when we login from gdm or xdm
-			 * and the password expires, *BUT* cached crendentials
-			 * doesn't exist. winbindd_update_creds_by_name()
-			 * returns NT_STATUS_NO_SUCH_USER.
-			 * This is not a failure.
-			 * --- BoYang
-			 * */
-			if (NT_STATUS_EQUAL(result, NT_STATUS_NO_SUCH_USER)) {
-				result = NT_STATUS_OK;
-			}
+	if (NT_STATUS_IS_OK(result)
+	    && (state->request->flags & WBFLAG_PAM_CACHED_LOGIN)
+	    && lp_winbind_offline_logon()) {
+		result = winbindd_update_creds_by_name(contact_domain, user,
+						       newpass);
+		/* Again, this happens when we login from gdm or xdm
+		 * and the password expires, *BUT* cached crendentials
+		 * doesn't exist. winbindd_update_creds_by_name()
+		 * returns NT_STATUS_NO_SUCH_USER.
+		 * This is not a failure.
+		 * --- BoYang
+		 * */
+		if (NT_STATUS_EQUAL(result, NT_STATUS_NO_SUCH_USER)) {
+			result = NT_STATUS_OK;
+		}
 
-			if (!NT_STATUS_IS_OK(result)) {
-				DEBUG(10,("Failed to store creds: %s\n", nt_errstr(result)));
-				goto process_result;
-			}
+		if (!NT_STATUS_IS_OK(result)) {
+			DEBUG(10, ("Failed to store creds: %s\n",
+				   nt_errstr(result)));
+			goto process_result;
 		}
 	}
 
