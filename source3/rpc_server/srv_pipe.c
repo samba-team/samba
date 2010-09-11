@@ -1201,6 +1201,13 @@ bool api_pipe_bind_auth3(struct pipes_struct *p, struct ncacn_packet *pkt)
 	 * as zero. JRA.
 	 */
 
+	if (auth_info.auth_type != p->auth.auth_type) {
+		DEBUG(0, ("Auth type mismatch! Client sent %d, "
+			  "but auth was started as type %d!\n",
+			  auth_info.auth_type, p->auth.auth_type));
+		goto err;
+	}
+
 	switch (auth_info.auth_type) {
 	case DCERPC_AUTH_TYPE_NTLMSSP:
 		ntlmssp_ctx = talloc_get_type_abort(p->auth.auth_ctx,
@@ -1343,6 +1350,14 @@ static bool api_pipe_alter_context(struct pipes_struct *p,
 				  "Altering Context not yet supported!\n"));
 			goto err_exit;
 		}
+
+		if (auth_info.auth_type != p->auth.auth_type) {
+			DEBUG(0, ("Auth type mismatch! Client sent %d, "
+				  "but auth was started as type %d!\n",
+				  auth_info.auth_type, p->auth.auth_type));
+			goto err_exit;
+		}
+
 
 		switch (auth_info.auth_type) {
 		case DCERPC_AUTH_TYPE_SPNEGO:
