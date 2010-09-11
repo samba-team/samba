@@ -312,7 +312,7 @@ static NTSTATUS dcesrv_lsa_EnumPrivs(struct dcesrv_call_state *dce_call, TALLOC_
 			return NT_STATUS_NO_MEMORY;
 		}
 		e = &r->out.privs->privs[r->out.privs->count];
-		e->luid.low = i;
+		e->luid.low = priv;
 		e->luid.high = 0;
 		e->name.string = privname;
 		r->out.privs->count++;
