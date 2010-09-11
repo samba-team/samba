@@ -23,16 +23,12 @@
 
 #if (_SAMBA_BUILD_ >= 4)
 #include "includes.h"
-#include <ldb.h>
 #include "lib/cmdline/popt_common.h"
-#include "lib/ldb-samba/ldif_handlers.h"
 #include "auth/gensec/gensec.h"
 #include "auth/auth.h"
-#include "ldb_wrap.h"
 #include "param/param.h"
-#include "librpc/gen_ndr/drsblobs.h"
-#include "dsdb/schema/schema.h"
-#include "dsdb/common/proto.h"
+#include "dsdb/samdb/samdb.h"
+#include "ldb_wrap.h"
 #else
 #include "ldb_includes.h"
 #include "ldb.h"
