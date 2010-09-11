@@ -90,7 +90,7 @@ void ldb_cmdline_help(const char *cmdname, FILE *f)
  */
 static bool add_control(TALLOC_CTX *mem_ctx, const char *control)
 {
-	int i;
+	unsigned int i;
 
 	/* count how many controls we already have */
 	for (i=0; options.controls && options.controls[i]; i++) ;
