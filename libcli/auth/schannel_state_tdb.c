@@ -25,9 +25,7 @@
 #include "system/filesys.h"
 #include <tdb.h>
 #include "../lib/util/util_tdb.h"
-#include "../libcli/auth/libcli_auth.h"
-#include "../libcli/auth/schannel_state.h"
-#include "../libcli/auth/schannel_proto.h"
+#include "../libcli/auth/schannel.h"
 #include "../librpc/gen_ndr/ndr_schannel.h"
 #if _SAMBA_BUILD_ == 4
 #include "tdb_wrap.h"
