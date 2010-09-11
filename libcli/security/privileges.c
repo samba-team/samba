@@ -357,7 +357,7 @@ const char *sec_privilege_display_name(enum sec_privilege privilege, uint16_t *l
 }
 
 /*
-  map a privilege name to a privilege id. Return -1 if not found
+  map a privilege name to a privilege id. Return SEC_PRIV_INVALID if not found
 */
 enum sec_privilege sec_privilege_id(const char *name)
 {
