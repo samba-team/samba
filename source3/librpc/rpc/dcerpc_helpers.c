@@ -652,50 +652,60 @@ static NTSTATUS add_spnego_auth_footer(struct spnego_context *spnego_ctx,
 					enum dcerpc_AuthLevel auth_level,
 					DATA_BLOB *rpc_out)
 {
-	enum spnego_mech auth_type;
-	struct gse_context *gse_ctx;
-	struct auth_ntlmssp_state *ntlmssp_ctx;
-	void *auth_ctx;
+	DATA_BLOB auth_blob;
+	DATA_BLOB rpc_data;
 	NTSTATUS status;
 
 	if (!spnego_ctx) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	status = spnego_get_negotiated_mech(spnego_ctx,
-					    &auth_type, &auth_ctx);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
+	rpc_data = data_blob_const(rpc_out->data
+					+ DCERPC_RESPONSE_LENGTH,
+				   rpc_out->length
+					- DCERPC_RESPONSE_LENGTH
+					- DCERPC_AUTH_TRAILER_LENGTH);
 
-	switch (auth_type) {
-	case SPNEGO_KRB5:
-		gse_ctx = talloc_get_type(auth_ctx, struct gse_context);
-		if (!gse_ctx) {
-			status = NT_STATUS_INTERNAL_ERROR;
-			break;
-		}
-		status = add_gssapi_auth_footer(gse_ctx,
-						auth_level, rpc_out);
+	switch (auth_level) {
+	case DCERPC_AUTH_LEVEL_PRIVACY:
+		/* Data portion is encrypted. */
+		status = spnego_seal(rpc_out->data, spnego_ctx,
+				     &rpc_data, rpc_out, &auth_blob);
 		break;
 
-	case SPNEGO_NTLMSSP:
-		ntlmssp_ctx = talloc_get_type(auth_ctx,
-						struct auth_ntlmssp_state);
-		if (!ntlmssp_ctx) {
-			status = NT_STATUS_INTERNAL_ERROR;
-			break;
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
 		}
-		status = add_ntlmssp_auth_footer(ntlmssp_ctx,
-						 auth_level, rpc_out);
+		break;
+
+	case DCERPC_AUTH_LEVEL_INTEGRITY:
+		/* Data is signed. */
+		status = spnego_sign(rpc_out->data, spnego_ctx,
+				     &rpc_data, rpc_out, &auth_blob);
+		break;
+
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
 		break;
 
 	default:
-		status = NT_STATUS_INTERNAL_ERROR;
-		break;
+		/* Can't happen. */
+		smb_panic("bad auth level");
+		/* Notreached. */
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	return status;
+	/* Finally attach the blob. */
+	if (!data_blob_append(NULL, rpc_out,
+				auth_blob.data, auth_blob.length)) {
+		DEBUG(0, ("Failed to add %u bytes auth blob.\n",
+			  (unsigned int)auth_blob.length));
+		return NT_STATUS_NO_MEMORY;
+	}
+	data_blob_free(&auth_blob);
+
+	return NT_STATUS_OK;
 }
 
 static NTSTATUS get_spnego_auth_footer(TALLOC_CTX *mem_ctx,
@@ -704,44 +714,17 @@ static NTSTATUS get_spnego_auth_footer(TALLOC_CTX *mem_ctx,
 					DATA_BLOB *data, DATA_BLOB *full_pkt,
 					DATA_BLOB *auth_token)
 {
-	enum spnego_mech auth_type;
-	struct auth_ntlmssp_state *ntlmssp_ctx;
-	struct gse_context *gse_ctx;
-	void *auth_ctx;
-	NTSTATUS status;
+	switch (auth_level) {
+	case DCERPC_AUTH_LEVEL_PRIVACY:
+		/* Data portion is encrypted. */
+		return spnego_unseal(mem_ctx, sp_ctx,
+				     data, full_pkt, auth_token);
 
-	status = spnego_get_negotiated_mech(sp_ctx, &auth_type, &auth_ctx);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
+	case DCERPC_AUTH_LEVEL_INTEGRITY:
+		/* Data is signed. */
+		return spnego_sigcheck(mem_ctx, sp_ctx,
+				       data, full_pkt, auth_token);
 
-	switch (auth_type) {
-	case SPNEGO_KRB5:
-		gse_ctx = talloc_get_type(auth_ctx,
-					  struct gse_context);
-		if (!gse_ctx) {
-			return NT_STATUS_INVALID_PARAMETER;
-		}
-
-		DEBUG(10, ("KRB5 auth\n"));
-
-		return get_gssapi_auth_footer(mem_ctx, gse_ctx,
-						auth_level,
-						data, full_pkt,
-						auth_token);
-	case SPNEGO_NTLMSSP:
-		ntlmssp_ctx = talloc_get_type(auth_ctx,
-					  struct auth_ntlmssp_state);
-		if (!ntlmssp_ctx) {
-			return NT_STATUS_INVALID_PARAMETER;
-		}
-
-		DEBUG(10, ("NTLMSSP auth\n"));
-
-		return get_ntlmssp_auth_footer(ntlmssp_ctx,
-						auth_level,
-						data, full_pkt,
-						auth_token);
 	default:
 		return NT_STATUS_INVALID_PARAMETER;
 	}
