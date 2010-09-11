@@ -43,7 +43,7 @@ struct auth_serversupplied_info {
 	 * and is  set from the Kerberos session key using
 	 * krb5_auth_con_getremotesubkey().
 	 *
-	 * Bootom line, it is not the same as the session keys in info3.
+	 * Bottom line, it is not the same as the session keys in info3.
 	 */
 
 	DATA_BLOB user_session_key;
