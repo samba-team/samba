@@ -36,6 +36,9 @@ struct dcerpc_server_info {
 	uint32_t version_build;
 };
 
+enum srvsvc_PlatformId;
+enum srvsvc_ShareType;
+
 #include "rpc_server/common/proto.h"
 
 #endif /* _DCERPC_SERVER_COMMON_H_ */
