@@ -259,7 +259,11 @@ static int samldb_check_primaryGroupID(struct samldb_ctx *ac)
 
 	rid = samdb_result_uint(ac->msg, "primaryGroupID", (uint32_t) -1);
 	if (rid == (uint32_t) -1) {
-		rid = DOMAIN_RID_USERS;
+		uint32_t uac = samdb_result_uint(ac->msg, "userAccountControl",
+						 0);
+
+		rid = ds_uf2prim_group_rid(uac);
+
 		ret = samdb_msg_add_uint(ldb, ac->msg, ac->msg,
 					 "primaryGroupID", rid);
 		if (ret != LDB_SUCCESS) {
