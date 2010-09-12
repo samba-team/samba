@@ -234,7 +234,6 @@ _PUBLIC_ struct tevent_req *auth_check_password_send(TALLOC_CTX *mem_ctx,
 	struct auth_check_password_state *state;
 	/* if all the modules say 'not for me' this is reasonable */
 	NTSTATUS nt_status;
-	struct auth_method_context *method;
 	uint8_t chal[8];
 	struct auth_usersupplied_info *user_info_tmp;
 	struct tevent_immediate *im;
@@ -252,7 +251,6 @@ _PUBLIC_ struct tevent_req *auth_check_password_send(TALLOC_CTX *mem_ctx,
 
 	state->auth_ctx		= auth_ctx;
 	state->user_info	= user_info;
-	state->method		= NULL;
 
 	if (!user_info->mapped_state) {
 		nt_status = map_user_info(req, lpcfg_workgroup(auth_ctx->lp_ctx),
@@ -296,35 +294,11 @@ _PUBLIC_ struct tevent_req *auth_check_password_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	for (method = auth_ctx->methods; method; method = method->next) {
-		NTSTATUS result;
-
-		/* check if the module wants to chek the password */
-		result = method->ops->want_check(method, req, user_info);
-		if (NT_STATUS_EQUAL(result, NT_STATUS_NOT_IMPLEMENTED)) {
-			DEBUG(11,("auth_check_password_send: "
-				  "%s had nothing to say\n",
-				  method->ops->name));
-			continue;
-		}
-
-		state->method = method;
-
-		if (tevent_req_nterror(req, result)) {
-			return tevent_req_post(req, ev);
-		}
-
-		tevent_schedule_immediate(im,
-					  auth_ctx->event_ctx,
-					  auth_check_password_async_trigger,
-					  req);
-
-		return req;
-	}
-
-	/* If all the modules say 'not for me', then this is reasonable */
-	tevent_req_nterror(req, NT_STATUS_NO_SUCH_USER);
-	return tevent_req_post(req, ev);
+	tevent_schedule_immediate(im,
+				  auth_ctx->event_ctx,
+				  auth_check_password_async_trigger,
+				  req);
+	return req;
 }
 
 static void auth_check_password_async_trigger(struct tevent_context *ev,
@@ -336,11 +310,45 @@ static void auth_check_password_async_trigger(struct tevent_context *ev,
 	struct auth_check_password_state *state =
 		tevent_req_data(req, struct auth_check_password_state);
 	NTSTATUS status;
+	struct auth_method_context *method;
 
-	status = state->method->ops->check_password(state->method,
-						    state,
-						    state->user_info,
-						    &state->server_info);
+	status = NT_STATUS_OK;
+
+	for (method=state->auth_ctx->methods; method; method = method->next) {
+
+		/* we fill in state->method here so debug messages in
+		   the callers know which method failed */
+		state->method = method;
+
+		/* check if the module wants to check the password */
+		status = method->ops->want_check(method, req, state->user_info);
+		if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_IMPLEMENTED)) {
+			DEBUG(11,("auth_check_password_send: "
+				  "%s had nothing to say\n",
+				  method->ops->name));
+			continue;
+		}
+
+		if (tevent_req_nterror(req, status)) {
+			return;
+		}
+
+		status = method->ops->check_password(method,
+						     state,
+						     state->user_info,
+						     &state->server_info);
+		if (!NT_STATUS_EQUAL(status, NT_STATUS_NOT_IMPLEMENTED)) {
+			/* the backend has handled the request */
+			break;
+		}
+	}
+
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_IMPLEMENTED)) {
+		/* don't expose the NT_STATUS_NOT_IMPLEMENTED
+		   internals */
+		status = NT_STATUS_NO_SUCH_USER;
+	}
+
 	if (tevent_req_nterror(req, status)) {
 		return;
 	}
