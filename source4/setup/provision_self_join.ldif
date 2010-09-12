@@ -14,7 +14,6 @@ isCriticalSystemObject: TRUE
 localPolicyFlags: 0
 operatingSystem: Samba
 operatingSystemVersion: ${SAMBA_VERSION_STRING}
-primaryGroupID: 516
 sAMAccountName: ${NETBIOSNAME}$
 # "servicePrincipalName"s for FRS and DFSR don't exit since we still miss DFRS support
 # "servicePrincipalName"s for DNS ("ldap/../ForestDnsZones",
