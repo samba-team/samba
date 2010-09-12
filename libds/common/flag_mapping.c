@@ -54,7 +54,8 @@ static const struct {
 
 uint32_t ds_acb2uf(uint32_t acb)
 {
-	uint32_t i, ret = 0;
+	unsigned int i;
+	uint32_t ret = 0;
 	for (i=0;i<ARRAY_SIZE(acct_flags_map);i++) {
 		if (acct_flags_map[i].acb & acb) {
 			ret |= acct_flags_map[i].uf;
@@ -68,7 +69,7 @@ translated the UserFlags (userAccountControl) to ACB_CTRL Flags
 */
 uint32_t ds_uf2acb(uint32_t uf)
 {
-	uint32_t i;
+	unsigned int i;
 	uint32_t ret = 0;
 	for (i=0;i<ARRAY_SIZE(acct_flags_map);i++) {
 		if (acct_flags_map[i].uf & uf) {
