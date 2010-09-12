@@ -4724,7 +4724,7 @@ static bool test_user_ops(struct dcerpc_pipe *p,
 		} else {
 			uint32_t expected_flags = (base_acct_flags | ACB_PWNOTREQ | ACB_DISABLED);
 			if ((info->info5.acct_flags) != expected_flags) {
-				torture_warning(tctx, "QuerUserInfo level 5 failed, it returned 0x%08x when we expected flags of 0x%08x\n",
+				torture_warning(tctx, "QueryUserInfo level 5 failed, it returned 0x%08x when we expected flags of 0x%08x\n",
 				       info->info5.acct_flags,
 				       expected_flags);
 				/* FIXME: GD */
@@ -4733,7 +4733,7 @@ static bool test_user_ops(struct dcerpc_pipe *p,
 				}
 			}
 			if (info->info5.rid != rid) {
-				torture_warning(tctx, "QuerUserInfo level 5 failed, it returned %u when we expected rid of %u\n",
+				torture_warning(tctx, "QueryUserInfo level 5 failed, it returned %u when we expected rid of %u\n",
 				       info->info5.rid, rid);
 
 			}
@@ -5356,7 +5356,7 @@ static bool test_CreateUser(struct dcerpc_pipe *p, struct torture_context *tctx,
 			ret = false;
 		} else {
 			if ((info->info16.acct_flags & acct_flags) != acct_flags) {
-				torture_warning(tctx, "QuerUserInfo level 16 failed, it returned 0x%08x when we expected flags of 0x%08x\n",
+				torture_warning(tctx, "QueryUserInfo level 16 failed, it returned 0x%08x when we expected flags of 0x%08x\n",
 				       info->info16.acct_flags,
 				       acct_flags);
 				ret = false;
@@ -5497,7 +5497,7 @@ static bool test_CreateUser2(struct dcerpc_pipe *p, struct torture_context *tctx
 					expected_flags |= ACB_PW_EXPIRED;
 				}
 				if ((info->info5.acct_flags) != expected_flags) {
-					torture_warning(tctx, "QuerUserInfo level 5 failed, it returned 0x%08x when we expected flags of 0x%08x\n",
+					torture_warning(tctx, "QueryUserInfo level 5 failed, it returned 0x%08x when we expected flags of 0x%08x\n",
 					       info->info5.acct_flags,
 					       expected_flags);
 					ret = false;
@@ -5505,21 +5505,21 @@ static bool test_CreateUser2(struct dcerpc_pipe *p, struct torture_context *tctx
 				switch (acct_flags) {
 				case ACB_SVRTRUST:
 					if (info->info5.primary_gid != DOMAIN_RID_DCS) {
-						torture_warning(tctx, "QuerUserInfo level 5: DC should have had Primary Group %d, got %d\n",
+						torture_warning(tctx, "QueryUserInfo level 5: DC should have had Primary Group %d, got %d\n",
 						       DOMAIN_RID_DCS, info->info5.primary_gid);
 						ret = false;
 					}
 					break;
 				case ACB_WSTRUST:
 					if (info->info5.primary_gid != DOMAIN_RID_DOMAIN_MEMBERS) {
-						torture_warning(tctx, "QuerUserInfo level 5: Domain Member should have had Primary Group %d, got %d\n",
+						torture_warning(tctx, "QueryUserInfo level 5: Domain Member should have had Primary Group %d, got %d\n",
 						       DOMAIN_RID_DOMAIN_MEMBERS, info->info5.primary_gid);
 						ret = false;
 					}
 					break;
 				case ACB_NORMAL:
 					if (info->info5.primary_gid != DOMAIN_RID_USERS) {
-						torture_warning(tctx, "QuerUserInfo level 5: Users should have had Primary Group %d, got %d\n",
+						torture_warning(tctx, "QueryUserInfo level 5: Users should have had Primary Group %d, got %d\n",
 						       DOMAIN_RID_USERS, info->info5.primary_gid);
 						ret = false;
 					}
