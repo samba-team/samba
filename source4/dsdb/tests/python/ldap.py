@@ -27,9 +27,12 @@ from ldb import ERR_UNDEFINED_ATTRIBUTE_TYPE
 from ldb import Message, MessageElement, Dn
 from ldb import FLAG_MOD_ADD, FLAG_MOD_REPLACE, FLAG_MOD_DELETE
 from samba import Ldb
-from samba.dsdb import (UF_NORMAL_ACCOUNT, UF_WORKSTATION_TRUST_ACCOUNT, 
+from samba.dsdb import (UF_NORMAL_ACCOUNT, UF_INTERDOMAIN_TRUST_ACCOUNT,
+    UF_WORKSTATION_TRUST_ACCOUNT, UF_SERVER_TRUST_ACCOUNT,
     UF_PASSWD_NOTREQD, UF_ACCOUNTDISABLE, ATYPE_NORMAL_ACCOUNT,
     ATYPE_WORKSTATION_TRUST, SYSTEM_FLAG_DOMAIN_DISALLOW_MOVE)
+from samba.dcerpc.security import (DOMAIN_RID_USERS, DOMAIN_RID_DOMAIN_MEMBERS,
+    DOMAIN_RID_DCS)
 
 from subunit.run import SubunitTestRunner
 import unittest
@@ -1250,6 +1253,48 @@ objectClass: container
         except LdbError, (num, _):
             self.assertEquals(num, ERR_OBJECT_CLASS_VIOLATION)
 
+        # Test default primary groups
+
+        ldb.add({
+            "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
+            "objectclass": ["user", "person"]})
+
+        res1 = ldb.search("cn=ldaptestuser,cn=users," + self.base_dn,
+                          scope=SCOPE_BASE, attrs=["primaryGroupID"])
+        self.assertTrue(len(res1) == 1)
+        self.assertEquals(res1[0]["primaryGroupID"][0], str(DOMAIN_RID_USERS))
+
+        self.delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+
+        ldb.add({
+            "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
+            "objectclass": ["user", "person"],
+            "userAccountControl": str(UF_NORMAL_ACCOUNT | UF_PASSWD_NOTREQD) })
+
+        res1 = ldb.search("cn=ldaptestuser,cn=users," + self.base_dn,
+                          scope=SCOPE_BASE, attrs=["primaryGroupID"])
+        self.assertTrue(len(res1) == 1)
+        self.assertEquals(res1[0]["primaryGroupID"][0], str(DOMAIN_RID_USERS))
+
+        self.delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+
+        # unfortunately the INTERDOMAIN_TRUST_ACCOUNT case cannot be tested
+        # since such accounts aren't directly creatable (ACCESS_DENIED)
+
+        ldb.add({
+            "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
+            "objectclass": ["computer"],
+            "userAccountControl": str(UF_SERVER_TRUST_ACCOUNT | UF_PASSWD_NOTREQD) })
+
+        res1 = ldb.search("cn=ldaptestuser,cn=users," + self.base_dn,
+                          scope=SCOPE_BASE, attrs=["primaryGroupID"])
+        self.assertTrue(len(res1) == 1)
+        self.assertEquals(res1[0]["primaryGroupID"][0], str(DOMAIN_RID_DCS))
+
+        self.delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+
+        # Recreate account for further tests
+
         ldb.add({
             "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
             "objectclass": ["user", "person"]})
@@ -1257,7 +1302,7 @@ objectClass: container
         # We should be able to reset our actual primary group
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
-        m["primaryGroupID"] = MessageElement("513", FLAG_MOD_REPLACE,
+        m["primaryGroupID"] = MessageElement(str(DOMAIN_RID_USERS), FLAG_MOD_REPLACE,
           "primaryGroupID")
         ldb.modify(m)
 
