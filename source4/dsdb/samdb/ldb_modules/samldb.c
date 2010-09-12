@@ -1313,13 +1313,16 @@ static int samldb_delete(struct ldb_module *module, struct ldb_request *req)
 	}
 
 	ac = samldb_ctx_init(module, req);
-	if (ac == NULL)
+	if (ac == NULL) {
 		return ldb_operr(ldb_module_get_ctx(module));
+	}
 
 	ret = samldb_prim_group_users_check(ac);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
+
+	talloc_free(ac);
 
 	return ldb_next_request(module, req);
 }
