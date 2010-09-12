@@ -115,8 +115,6 @@ NTSTATUS dsdb_add_user(struct ldb_context *ldb,
 		cn_name[cn_name_len - 1] = '\0';
 		container = "CN=Computers";
 		obj_class = "computer";
-		samdb_msg_add_int(ldb, tmp_ctx, msg,
-			"primaryGroupID", DOMAIN_RID_DOMAIN_MEMBERS);
 
 	} else if (acct_flags == ACB_SVRTRUST) {
 		if (cn_name[cn_name_len - 1] != '$') {
@@ -126,8 +124,7 @@ NTSTATUS dsdb_add_user(struct ldb_context *ldb,
 		cn_name[cn_name_len - 1] = '\0';
 		container = "OU=Domain Controllers";
 		obj_class = "computer";
-		samdb_msg_add_int(ldb, tmp_ctx, msg,
-			"primaryGroupID", DOMAIN_RID_DCS);
+
 	} else {
 		ldb_transaction_cancel(ldb);
 		talloc_free(tmp_ctx);
