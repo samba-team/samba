@@ -357,7 +357,7 @@ found:
 		return ldb_operr(ldb);
 	}
 
-	ret = ldb_msg_add_fmt(ac->msg, "samAccountName", "krbtgt_%u", krbtgt_number);
+	ret = ldb_msg_add_fmt(ac->msg, "sAMAccountName", "krbtgt_%u", krbtgt_number);
 	if (ret != LDB_SUCCESS) {
 		return ldb_operr(ldb);
 	}
