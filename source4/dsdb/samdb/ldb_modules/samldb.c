@@ -1073,11 +1073,9 @@ static int samldb_add(struct ldb_module *module, struct ldb_request *req)
 	}
 
 	/* build the new msg */
-	ac->msg = ldb_msg_copy(ac, ac->req->op.add.message);
-	if (!ac->msg) {
-		talloc_free(ac);
-		ldb_debug(ldb, LDB_DEBUG_FATAL,
-			  "samldb_add: ldb_msg_copy failed!\n");
+	req->op.add.message = ac->msg = ldb_msg_copy_shallow(req,
+							     req->op.add.message);
+	if (ac->msg == NULL) {
 		return ldb_operr(ldb);
 	}
 
@@ -1131,7 +1129,6 @@ static int samldb_modify(struct ldb_module *module, struct ldb_request *req)
 {
 	struct ldb_context *ldb;
 	struct samldb_ctx *ac;
-	struct ldb_message *msg;
 	struct ldb_message_element *el, *el2;
 	int ret;
 	uint32_t account_type;
@@ -1162,35 +1159,34 @@ static int samldb_modify(struct ldb_module *module, struct ldb_request *req)
 		return ldb_operr(ldb);
 	}
 
-	/* TODO: do not modify original request, create a new one */
+	/* build the new msg */
+	req->op.mod.message = ac->msg = ldb_msg_copy_shallow(req,
+							     req->op.mod.message);
+	if (ac->msg == NULL) {
+		return ldb_operr(ldb);
+	}
 
-	el = ldb_msg_find_element(req->op.mod.message, "groupType");
+	el = ldb_msg_find_element(ac->msg, "groupType");
 	if (el && (LDB_FLAG_MOD_TYPE(el->flags) == LDB_FLAG_MOD_REPLACE) && el->num_values == 1) {
 		uint32_t group_type;
 
-		req->op.mod.message = msg = ldb_msg_copy_shallow(req,
-			req->op.mod.message);
-
 		group_type = strtoul((const char *)el->values[0].data, NULL, 0);
 		account_type =  ds_gtype2atype(group_type);
-		ret = samdb_msg_add_uint(ldb, msg, msg,
+		ret = samdb_msg_add_uint(ldb, ac->msg, ac->msg,
 					 "sAMAccountType",
 					 account_type);
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
-		el2 = ldb_msg_find_element(msg, "sAMAccountType");
+		el2 = ldb_msg_find_element(ac->msg, "sAMAccountType");
 		el2->flags = LDB_FLAG_MOD_REPLACE;
 	}
 	if (el && (LDB_FLAG_MOD_TYPE(el->flags) == LDB_FLAG_MOD_DELETE)) {
 		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
 
-	el = ldb_msg_find_element(req->op.mod.message, "primaryGroupID");
+	el = ldb_msg_find_element(ac->msg, "primaryGroupID");
 	if (el && (LDB_FLAG_MOD_TYPE(el->flags) == LDB_FLAG_MOD_REPLACE) && el->num_values == 1) {
-		req->op.mod.message = ac->msg = ldb_msg_copy_shallow(req,
-			req->op.mod.message);
-
 		ret = samldb_prim_group_change(ac);
 		if (ret != LDB_SUCCESS) {
 			return ret;
@@ -1200,36 +1196,35 @@ static int samldb_modify(struct ldb_module *module, struct ldb_request *req)
 		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
 
-	el = ldb_msg_find_element(req->op.mod.message, "userAccountControl");
+	el = ldb_msg_find_element(ac->msg, "userAccountControl");
 	if (el && (LDB_FLAG_MOD_TYPE(el->flags) == LDB_FLAG_MOD_REPLACE) && el->num_values == 1) {
 		uint32_t user_account_control;
-
-		req->op.mod.message = msg = ldb_msg_copy_shallow(req,
-			req->op.mod.message);
 
 		user_account_control = strtoul((const char *)el->values[0].data,
 			NULL, 0);
 		account_type = ds_uf2atype(user_account_control);
-		ret = samdb_msg_add_uint(ldb, msg, msg,
+		ret = samdb_msg_add_uint(ldb, ac->msg, ac->msg,
 					 "sAMAccountType",
 					 account_type);
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
-		el2 = ldb_msg_find_element(msg, "sAMAccountType");
+		el2 = ldb_msg_find_element(ac->msg, "sAMAccountType");
 		el2->flags = LDB_FLAG_MOD_REPLACE;
 
 		if (user_account_control & (UF_SERVER_TRUST_ACCOUNT | UF_PARTIAL_SECRETS_ACCOUNT)) {
-			ret = samdb_msg_add_string(ldb, msg, msg,
-						   "isCriticalSystemObject", "TRUE");
+			ret = samdb_msg_add_string(ldb, ac->msg, ac->msg,
+						   "isCriticalSystemObject",
+						   "TRUE");
 			if (ret != LDB_SUCCESS) {
 				return ret;
 			}
-			el2 = ldb_msg_find_element(msg, "isCriticalSystemObject");
+			el2 = ldb_msg_find_element(ac->msg,
+						   "isCriticalSystemObject");
 			el2->flags = LDB_FLAG_MOD_REPLACE;
 
 			/* DCs have primaryGroupID of DOMAIN_RID_DCS */
-			if (!ldb_msg_find_element(msg, "primaryGroupID")) {
+			if (!ldb_msg_find_element(ac->msg, "primaryGroupID")) {
 				uint32_t rid;
 				if (user_account_control & UF_SERVER_TRUST_ACCOUNT) {
 					rid = DOMAIN_RID_DCS;
@@ -1237,12 +1232,13 @@ static int samldb_modify(struct ldb_module *module, struct ldb_request *req)
 					/* read-only DC */
 					rid = DOMAIN_RID_READONLY_DCS;
 				}
-				ret = samdb_msg_add_uint(ldb, msg, msg,
+				ret = samdb_msg_add_uint(ldb, ac->msg, ac->msg,
 							 "primaryGroupID", rid);
 				if (ret != LDB_SUCCESS) {
 					return ret;
 				}
-				el2 = ldb_msg_find_element(msg, "primaryGroupID");
+				el2 = ldb_msg_find_element(ac->msg,
+							   "primaryGroupID");
 				el2->flags = LDB_FLAG_MOD_REPLACE;
 			}
 		}
@@ -1251,16 +1247,15 @@ static int samldb_modify(struct ldb_module *module, struct ldb_request *req)
 		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
 
-	el = ldb_msg_find_element(req->op.mod.message, "member");
+	el = ldb_msg_find_element(ac->msg, "member");
 	if (el && el->flags & (LDB_FLAG_MOD_ADD|LDB_FLAG_MOD_REPLACE) && el->num_values == 1) {
-		req->op.mod.message = ac->msg = ldb_msg_copy_shallow(req,
-			req->op.mod.message);
-
 		ret = samldb_member_check(ac);
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
 	}
+
+	talloc_free(ac);
 
 	return ldb_next_request(module, req);
 }
