@@ -776,12 +776,19 @@ static void irpc_handler_request(struct messaging_context *msg_ctx,
 	/* make the call */
 	m->private_data= i->private_data;
 	m->defer_reply = false;
+	m->no_reply    = false;
 	m->msg_ctx     = msg_ctx;
 	m->irpc        = i;
 	m->data        = r;
 	m->ev          = msg_ctx->event.ev;
 
 	m->header.status = i->fn(m, r);
+
+	if (m->no_reply) {
+		/* the server function won't ever be replying to this request */
+		talloc_free(m);
+		return;
+	}
 
 	if (m->defer_reply) {
 		/* the server function has asked to defer the reply to later */

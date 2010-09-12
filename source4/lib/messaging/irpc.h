@@ -35,6 +35,7 @@ struct irpc_message {
 	struct irpc_header header;
 	struct ndr_pull *ndr;
 	bool defer_reply;
+	bool no_reply;
 	struct messaging_context *msg_ctx;
 	struct irpc_list *irpc;
 	void *data;
