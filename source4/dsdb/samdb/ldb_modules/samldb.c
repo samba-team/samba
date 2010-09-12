@@ -1259,8 +1259,6 @@ static int samldb_modify(struct ldb_module *module, struct ldb_request *req)
 		}
 	}
 
-	talloc_free(ac);
-
 	return ldb_next_request(module, req);
 }
 
