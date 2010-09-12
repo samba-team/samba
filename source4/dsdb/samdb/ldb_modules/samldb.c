@@ -250,6 +250,44 @@ static int samldb_check_sAMAccountType(struct samldb_ctx *ac)
 	return samldb_next_step(ac);
 }
 
+/* primaryGroupID handling */
+
+static int samldb_check_primaryGroupID(struct samldb_ctx *ac)
+{
+	struct ldb_context *ldb = ldb_module_get_ctx(ac->module);
+	struct ldb_dn *prim_group_dn;
+	uint32_t rid;
+	struct dom_sid *sid;
+	int ret;
+
+	rid = samdb_result_uint(ac->msg, "primaryGroupID", (uint32_t) -1);
+	if (rid == (uint32_t) -1) {
+		rid = DOMAIN_RID_USERS;
+		ret = samdb_msg_add_uint(ldb, ac->msg, ac->msg,
+					 "primaryGroupID", rid);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+	}
+
+	sid = dom_sid_add_rid(ac, samdb_domain_sid(ldb), rid);
+	if (sid == NULL) {
+		return ldb_operr(ldb);
+	}
+
+	prim_group_dn = samdb_search_dn(ldb, ac, NULL, "(objectSID=%s)",
+					dom_sid_string(ac, sid));
+	if (prim_group_dn == NULL) {
+		ldb_asprintf_errstring(ldb,
+				       "Failed to find primary group with RID %u!",
+				       rid);
+		return LDB_ERR_UNWILLING_TO_PERFORM;
+	}
+
+	return samldb_next_step(ac);
+}
+
+
 static bool samldb_msg_add_sid(struct ldb_message *msg,
 				const char *name,
 				const struct dom_sid *sid)
@@ -357,133 +395,6 @@ found:
 	ret = ldb_msg_add_fmt(ac->msg, "sAMAccountName", "krbtgt_%u", krbtgt_number);
 	if (ret != LDB_SUCCESS) {
 		return ldb_operr(ldb);
-	}
-
-	return samldb_next_step(ac);
-}
-
-/*
- * samldb_dn_from_sid (async)
- */
-
-static int samldb_dn_from_sid(struct samldb_ctx *ac);
-
-static int samldb_dn_from_sid_callback(struct ldb_request *req,
-	struct ldb_reply *ares)
-{
-	struct ldb_context *ldb;
-	struct samldb_ctx *ac;
-	int ret;
-
-	ac = talloc_get_type(req->context, struct samldb_ctx);
-	ldb = ldb_module_get_ctx(ac->module);
-
-	if (!ares) {
-		ret = LDB_ERR_OPERATIONS_ERROR;
-		goto done;
-	}
-	if (ares->error != LDB_SUCCESS) {
-		return ldb_module_done(ac->req, ares->controls,
-					ares->response, ares->error);
-	}
-
-	switch (ares->type) {
-	case LDB_REPLY_ENTRY:
-		/* save entry */
-		if (ac->res_dn != NULL) {
-			/* one too many! */
-			ldb_set_errstring(ldb,
-				"Invalid number of results while searching "
-				"for domain objects!");
-			ret = LDB_ERR_OPERATIONS_ERROR;
-			break;
-		}
-		ac->res_dn = ldb_dn_copy(ac, ares->message->dn);
-
-		talloc_free(ares);
-		ret = LDB_SUCCESS;
-		break;
-
-	case LDB_REPLY_REFERRAL:
-		/* ignore */
-		talloc_free(ares);
-		ret = LDB_SUCCESS;
-		break;
-
-	case LDB_REPLY_DONE:
-		talloc_free(ares);
-
-		/* found or not found, go on */
-		ret = samldb_next_step(ac);
-		break;
-	}
-
-done:
-	if (ret != LDB_SUCCESS) {
-		return ldb_module_done(ac->req, NULL, NULL, ret);
-	}
-
-	return LDB_SUCCESS;
-}
-
-/* Finds the DN "res_dn" of an object with a given SID "sid" */
-static int samldb_dn_from_sid(struct samldb_ctx *ac)
-{
-	struct ldb_context *ldb;
-	static const char * const attrs[] = { NULL };
-	struct ldb_request *req;
-	char *filter;
-	int ret;
-
-	ldb = ldb_module_get_ctx(ac->module);
-
-	if (ac->sid == NULL)
-		return ldb_operr(ldb);
-
-	filter = talloc_asprintf(ac, "(objectSid=%s)",
-		ldap_encode_ndr_dom_sid(ac, ac->sid));
-	if (filter == NULL)
-		return ldb_oom(ldb);
-
-	ret = ldb_build_search_req(&req, ldb, ac,
-				ldb_get_default_basedn(ldb),
-				LDB_SCOPE_SUBTREE,
-				filter, attrs,
-				NULL,
-				ac, samldb_dn_from_sid_callback,
-				ac->req);
-	if (ret != LDB_SUCCESS)
-		return ret;
-
-	return ldb_next_request(ac->module, req);
-}
-
-
-static int samldb_check_primaryGroupID_1(struct samldb_ctx *ac)
-{
-	struct ldb_context *ldb;
-	uint32_t rid;
-
-	ldb = ldb_module_get_ctx(ac->module);
-
-	rid = samdb_result_uint(ac->msg, "primaryGroupID", ~0);
-	ac->sid = dom_sid_add_rid(ac, samdb_domain_sid(ldb), rid);
-	if (ac->sid == NULL)
-		return ldb_operr(ldb);
-	ac->res_dn = NULL;
-
-	return samldb_next_step(ac);
-}
-
-static int samldb_check_primaryGroupID_2(struct samldb_ctx *ac)
-{
-	if (ac->res_dn == NULL) {
-		struct ldb_context *ldb;
-		ldb = ldb_module_get_ctx(ac->module);
-		ldb_asprintf_errstring(ldb,
-				       "Failed to find group sid %s!",
-				       dom_sid_string(ac->sid, ac->sid));
-		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
 
 	return samldb_next_step(ac);
@@ -791,11 +702,6 @@ static int samldb_fill_object(struct samldb_ctx *ac, const char *type)
 		ret = samdb_find_or_add_attribute(ldb, ac->msg,
 			"pwdLastSet", "0");
 		if (ret != LDB_SUCCESS) return ret;
-		if (!ldb_msg_find_element(ac->msg, "primaryGroupID")) {
-			ret = samdb_msg_add_uint(ldb, ac->msg, ac->msg,
-						 "primaryGroupID", DOMAIN_RID_USERS);
-			if (ret != LDB_SUCCESS) return ret;
-		}
 		ret = samdb_find_or_add_attribute(ldb, ac->msg,
 			"accountExpires", "9223372036854775807");
 		if (ret != LDB_SUCCESS) return ret;
@@ -954,11 +860,7 @@ static int samldb_fill_object(struct samldb_ctx *ac, const char *type)
 
 	/* check if we have a valid primary group ID */
 	if (strcmp(ac->type, "user") == 0) {
-		ret = samldb_add_step(ac, samldb_check_primaryGroupID_1);
-		if (ret != LDB_SUCCESS) return ret;
-		ret = samldb_add_step(ac, samldb_dn_from_sid);
-		if (ret != LDB_SUCCESS) return ret;
-		ret = samldb_add_step(ac, samldb_check_primaryGroupID_2);
+		ret = samldb_add_step(ac, samldb_check_primaryGroupID);
 		if (ret != LDB_SUCCESS) return ret;
 	}
 
