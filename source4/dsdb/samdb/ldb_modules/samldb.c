@@ -149,7 +149,10 @@ static int samldb_next_step(struct samldb_ctx *ac)
 	}
 }
 
-static int samldb_generate_samAccountName(struct ldb_context *ldb, struct ldb_message *msg)
+
+/* sAMAccountName handling */
+
+static int samldb_generate_sAMAccountName(struct ldb_context *ldb, struct ldb_message *msg)
 {
 	char *name;
 
@@ -162,92 +165,37 @@ static int samldb_generate_samAccountName(struct ldb_context *ldb, struct ldb_me
 	if (name == NULL) {
 		return ldb_oom(ldb);
 	}
-	return ldb_msg_add_steal_string(msg, "samAccountName", name);
+	return ldb_msg_add_steal_string(msg, "sAMAccountName", name);
 }
 
-/*
- * samldb_check_samAccountName (async)
- */
-
-static int samldb_check_samAccountName_callback(struct ldb_request *req,
-						struct ldb_reply *ares)
+static int samldb_check_sAMAccountName(struct samldb_ctx *ac)
 {
-	struct samldb_ctx *ac;
-	int ret;
-
-	ac = talloc_get_type(req->context, struct samldb_ctx);
-
-	if (ares->error != LDB_SUCCESS) {
-		return ldb_module_done(ac->req, ares->controls,
-                                       ares->response, ares->error);
-	}
-
-	switch (ares->type) {
-	case LDB_REPLY_ENTRY:
-		/* if we get an entry it means this samAccountName
-		 * already exists */
-		return ldb_module_done(ac->req, NULL, NULL,
-                                       LDB_ERR_ENTRY_ALREADY_EXISTS);
-
-	case LDB_REPLY_REFERRAL:
-		/* ignore */
-		talloc_free(ares);
-		ret = LDB_SUCCESS;
-		break;
-
-	case LDB_REPLY_DONE:
-		/* not found, go on */
-		talloc_free(ares);
-		ret = samldb_next_step(ac);
-		break;
-	}
-
-	if (ret != LDB_SUCCESS) {
-		return ldb_module_done(ac->req, NULL, NULL, ret);
-	}
-
-	return LDB_SUCCESS;
-}
-
-static int samldb_check_samAccountName(struct samldb_ctx *ac)
-{
-	struct ldb_context *ldb;
-	struct ldb_request *req;
+	struct ldb_context *ldb = ldb_module_get_ctx(ac->module);
 	const char *name;
-	char *filter;
         int ret;
 
-	ldb = ldb_module_get_ctx(ac->module);
-
-        if (ldb_msg_find_element(ac->msg, "samAccountName") == NULL) {
-                ret = samldb_generate_samAccountName(ldb, ac->msg);
+        if (ldb_msg_find_element(ac->msg, "sAMAccountName") == NULL) {
+                ret = samldb_generate_sAMAccountName(ldb, ac->msg);
                 if (ret != LDB_SUCCESS) {
                         return ret;
                 }
         }
 
-	name = ldb_msg_find_attr_as_string(ac->msg, "samAccountName", NULL);
+	name = ldb_msg_find_attr_as_string(ac->msg, "sAMAccountName", NULL);
 	if (name == NULL) {
 		return ldb_operr(ldb);
 	}
-	filter = talloc_asprintf(ac, "samAccountName=%s",
+
+	ret = samdb_search_count(ldb, NULL, "(sAMAccountName=%s)",
 				 ldb_binary_encode_string(ac, name));
-	if (filter == NULL) {
+	if ((ret < 0) || (ret > 1)) {
 		return ldb_operr(ldb);
 	}
-
-	ret = ldb_build_search_req(&req, ldb, ac,
-				   ldb_get_default_basedn(ldb),
-				   LDB_SCOPE_SUBTREE,
-				   filter, NULL,
-				   NULL,
-				   ac, samldb_check_samAccountName_callback,
-				   ac->req);
-	talloc_free(filter);
-	if (ret != LDB_SUCCESS) {
-		return ret;
+	if (ret == 1) {
+		return LDB_ERR_ENTRY_ALREADY_EXISTS;
 	}
-	return ldb_next_request(ac->module, req);
+
+	return samldb_next_step(ac);
 }
 
 
@@ -999,8 +947,8 @@ static int samldb_fill_object(struct samldb_ctx *ac, const char *type)
 		if (ret != LDB_SUCCESS) return ret;
 	}
 
-	/* check if we have a valid samAccountName */
-	ret = samldb_add_step(ac, samldb_check_samAccountName);
+	/* check if we have a valid sAMAccountName */
+	ret = samldb_add_step(ac, samldb_check_sAMAccountName);
 	if (ret != LDB_SUCCESS) return ret;
 
 	/* check account_type/group_type */
