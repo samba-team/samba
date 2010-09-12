@@ -198,8 +198,9 @@ static int samldb_check_sAMAccountName(struct samldb_ctx *ac)
 	return samldb_next_step(ac);
 }
 
+/* sAMAccountType handling */
 
-static int samldb_check_samAccountType(struct samldb_ctx *ac)
+static int samldb_check_sAMAccountType(struct samldb_ctx *ac)
 {
 	struct ldb_context *ldb;
 	unsigned int account_type;
@@ -232,9 +233,7 @@ static int samldb_check_samAccountType(struct samldb_ctx *ac)
 				return ret;
 			}
 		}
-	} else
-	if (strcmp("group", ac->type) == 0) {
-
+	} else if (strcmp("group", ac->type) == 0) {
 		group_type = samdb_result_uint(ac->msg, "groupType", 0);
 		if (group_type == 0) {
 			ldb_asprintf_errstring(ldb,
@@ -952,7 +951,7 @@ static int samldb_fill_object(struct samldb_ctx *ac, const char *type)
 	if (ret != LDB_SUCCESS) return ret;
 
 	/* check account_type/group_type */
-	ret = samldb_add_step(ac, samldb_check_samAccountType);
+	ret = samldb_add_step(ac, samldb_check_sAMAccountType);
 	if (ret != LDB_SUCCESS) return ret;
 
 	/* check if we have a valid primary group ID */
