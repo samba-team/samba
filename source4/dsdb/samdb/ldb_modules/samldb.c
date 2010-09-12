@@ -192,51 +192,6 @@ static int samldb_check_sAMAccountName(struct samldb_ctx *ac)
 	return samldb_next_step(ac);
 }
 
-/* primaryGroupID handling */
-
-static int samldb_check_primaryGroupID(struct samldb_ctx *ac)
-{
-	struct ldb_context *ldb = ldb_module_get_ctx(ac->module);
-	struct ldb_dn *prim_group_dn;
-	uint32_t rid;
-	struct dom_sid *sid;
-	int ret;
-
-	rid = samdb_result_uint(ac->msg, "primaryGroupID", (uint32_t) -1);
-	if (rid == (uint32_t) -1) {
-		uint32_t uac = samdb_result_uint(ac->msg, "userAccountControl",
-						 0);
-
-		rid = ds_uf2prim_group_rid(uac);
-
-		ret = samdb_msg_add_uint(ldb, ac->msg, ac->msg,
-					 "primaryGroupID", rid);
-		if (ret != LDB_SUCCESS) {
-			return ret;
-		}
-	} else if (!ldb_request_get_control(ac->req, LDB_CONTROL_RELAX_OID)) {
-		ldb_set_errstring(ldb,
-				  "The primary group isn't settable on add operations!");
-		return LDB_ERR_UNWILLING_TO_PERFORM;
-	}
-
-	sid = dom_sid_add_rid(ac, samdb_domain_sid(ldb), rid);
-	if (sid == NULL) {
-		return ldb_operr(ldb);
-	}
-
-	prim_group_dn = samdb_search_dn(ldb, ac, NULL, "(objectSid=%s)",
-					ldap_encode_ndr_dom_sid(ac, sid));
-	if (prim_group_dn == NULL) {
-		ldb_asprintf_errstring(ldb,
-				       "Failed to find primary group with RID %u!",
-				       rid);
-		return LDB_ERR_UNWILLING_TO_PERFORM;
-	}
-
-	return samldb_next_step(ac);
-}
-
 
 static bool samldb_msg_add_sid(struct ldb_message *msg,
 				const char *name,
@@ -963,9 +918,52 @@ static int samldb_objectclass_trigger(struct samldb_ctx *ac)
 	return LDB_SUCCESS;
 }
 
+/*
+ * "Primary group ID" trigger (MS-SAMR 3.1.1.8.2)
+ *
+ * Has to be invoked on "add" and "modify" operations on "user" and "computer"
+ * objects.
+ * ac->msg contains the "add"/"modify" message
+ */
+
+static int samldb_prim_group_set(struct samldb_ctx *ac)
+{
+	struct ldb_context *ldb = ldb_module_get_ctx(ac->module);
+	struct ldb_dn *prim_group_dn;
+	uint32_t rid;
+	struct dom_sid *sid;
+
+	rid = samdb_result_uint(ac->msg, "primaryGroupID", (uint32_t) -1);
+	if (rid == (uint32_t) -1) {
+		/* we aren't affected of any primary group set */
+		return LDB_SUCCESS;
+
+	} else if (!ldb_request_get_control(ac->req, LDB_CONTROL_RELAX_OID)) {
+		ldb_set_errstring(ldb,
+				  "The primary group isn't settable on add operations!");
+		return LDB_ERR_UNWILLING_TO_PERFORM;
+	}
+
+	sid = dom_sid_add_rid(ac, samdb_domain_sid(ldb), rid);
+	if (sid == NULL) {
+		return ldb_operr(ldb);
+	}
+
+	prim_group_dn = samdb_search_dn(ldb, ac, NULL, "(objectSid=%s)",
+					ldap_encode_ndr_dom_sid(ac, sid));
+	if (prim_group_dn == NULL) {
+		ldb_asprintf_errstring(ldb,
+				       "Failed to find primary group with RID %u!",
+				       rid);
+		return LDB_ERR_UNWILLING_TO_PERFORM;
+	}
+
+	return LDB_SUCCESS;
+}
+
 static int samldb_prim_group_change(struct samldb_ctx *ac)
 {
-	struct ldb_context *ldb;
+	struct ldb_context *ldb = ldb_module_get_ctx(ac->module);
 	const char * attrs[] = { "primaryGroupID", "memberOf", NULL };
 	struct ldb_result *res;
 	struct ldb_message_element *el;
@@ -974,8 +972,6 @@ static int samldb_prim_group_change(struct samldb_ctx *ac)
 	struct dom_sid *sid;
 	struct ldb_dn *prev_prim_group_dn, *new_prim_group_dn;
 	int ret;
-
-	ldb = ldb_module_get_ctx(ac->module);
 
 	/* Fetch informations from the existing object */
 
@@ -1071,6 +1067,18 @@ static int samldb_prim_group_change(struct samldb_ctx *ac)
 	return LDB_SUCCESS;
 }
 
+static int samldb_prim_group_trigger(struct samldb_ctx *ac)
+{
+	int ret;
+
+	if (ac->req->operation == LDB_ADD) {
+		ret = samldb_prim_group_set(ac);
+	} else {
+		ret = samldb_prim_group_change(ac);
+	}
+
+	return ret;
+}
 
 static int samldb_member_check(struct samldb_ctx *ac)
 {
@@ -1159,6 +1167,11 @@ static int samldb_add(struct ldb_module *module, struct ldb_request *req)
 	if (samdb_find_attribute(ldb, ac->msg,
 				 "objectclass", "user") != NULL) {
 		ac->type = "user";
+
+		ret = samldb_prim_group_trigger(ac);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
 
 		ret = samldb_objectclass_trigger(ac);
 		if (ret != LDB_SUCCESS) {
