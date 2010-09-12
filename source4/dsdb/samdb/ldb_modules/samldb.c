@@ -907,6 +907,182 @@ static int samldb_schema_info_update(struct samldb_ctx *ac)
 	return LDB_SUCCESS;
 }
 
+/*
+ * "Objectclass" trigger (MS-SAMR 3.1.1.8.1)
+ *
+ * Has to be invoked on "add" and "modify" operations on "user", "computer" and
+ * "group" objects.
+ * ac->msg contains the "add"/"modify" message
+ * ac->type contains the object type (main objectclass)
+ */
+static int samldb_objectclass_trigger(struct samldb_ctx *ac)
+{
+	struct ldb_context *ldb = ldb_module_get_ctx(ac->module);
+	struct loadparm_context *lp_ctx = talloc_get_type(ldb_get_opaque(ldb,
+					 "loadparm"), struct loadparm_context);
+	struct ldb_message_element *el, *el2;
+	enum sid_generator sid_generator;
+	struct dom_sid *sid;
+	int ret;
+
+	/* make sure that "sAMAccountType" is not specified */
+	el = ldb_msg_find_element(ac->msg, "sAMAccountType");
+	if (el != NULL) {
+		ldb_set_errstring(ldb,
+			"samldb: sAMAccountType must not be specified!");
+		return LDB_ERR_UNWILLING_TO_PERFORM;
+	}
+
+	/* Step 1: objectSid assignment */
+
+	/* Don't allow the objectSid to be changed. But beside the RELAX
+	 * control we have also to guarantee that it can always be set with
+	 * SYSTEM permissions. This is needed for the "samba3sam" backend. */
+	sid = samdb_result_dom_sid(ac, ac->msg, "objectSid");
+	if ((sid != NULL) && (!dsdb_module_am_system(ac->module)) &&
+	    (ldb_request_get_control(ac->req, LDB_CONTROL_RELAX_OID) == NULL)) {
+		ldb_asprintf_errstring(ldb, "No SID may be specified in user/group modifications for %s",
+				       ldb_dn_get_linearized(ac->msg->dn));
+		return LDB_ERR_UNWILLING_TO_PERFORM;
+	}
+
+	/* but generate a new SID when we do have an add operations */
+	if ((sid == NULL) && (ac->req->operation == LDB_ADD)) {
+		sid_generator = lpcfg_sid_generator(lp_ctx);
+		if (sid_generator == SID_GENERATOR_INTERNAL) {
+			ret = samldb_add_step(ac, samldb_allocate_sid);
+			if (ret != LDB_SUCCESS) return ret;
+		}
+	}
+
+	if (strcmp(ac->type, "user") == 0) {
+		/* Step 1.2: Default values */
+		ret = samdb_find_or_add_attribute(ldb, ac->msg,
+			"userAccountControl",
+			talloc_asprintf(ac->msg, "%u", UF_NORMAL_ACCOUNT));
+		if (ret != LDB_SUCCESS) return ret;
+		ret = samdb_find_or_add_attribute(ldb, ac->msg,
+			"badPwdCount", "0");
+		if (ret != LDB_SUCCESS) return ret;
+		ret = samdb_find_or_add_attribute(ldb, ac->msg,
+			"codePage", "0");
+		if (ret != LDB_SUCCESS) return ret;
+		ret = samdb_find_or_add_attribute(ldb, ac->msg,
+			"countryCode", "0");
+		if (ret != LDB_SUCCESS) return ret;
+		ret = samdb_find_or_add_attribute(ldb, ac->msg,
+			"badPasswordTime", "0");
+		if (ret != LDB_SUCCESS) return ret;
+		ret = samdb_find_or_add_attribute(ldb, ac->msg,
+			"lastLogoff", "0");
+		if (ret != LDB_SUCCESS) return ret;
+		ret = samdb_find_or_add_attribute(ldb, ac->msg,
+			"lastLogon", "0");
+		if (ret != LDB_SUCCESS) return ret;
+		ret = samdb_find_or_add_attribute(ldb, ac->msg,
+			"pwdLastSet", "0");
+		if (ret != LDB_SUCCESS) return ret;
+		ret = samdb_find_or_add_attribute(ldb, ac->msg,
+			"accountExpires", "9223372036854775807");
+		if (ret != LDB_SUCCESS) return ret;
+		ret = samdb_find_or_add_attribute(ldb, ac->msg,
+			"logonCount", "0");
+		if (ret != LDB_SUCCESS) return ret;
+
+		el = ldb_msg_find_element(ac->msg, "userAccountControl");
+		if (el != NULL) {
+			uint32_t user_account_control, account_type;
+
+			/* Step 1.3: "userAccountControl" -> "sAMAccountType" mapping */
+			user_account_control = strtoul((const char *)el->values[0].data,
+						       NULL, 0);
+			account_type = ds_uf2atype(user_account_control);
+			if (account_type == 0) {
+				ldb_set_errstring(ldb, "samldb: Unrecognized account type!");
+				return LDB_ERR_UNWILLING_TO_PERFORM;
+			}
+			ret = samdb_msg_add_uint(ldb, ac->msg, ac->msg,
+						 "sAMAccountType",
+						 account_type);
+			if (ret != LDB_SUCCESS) {
+				return ret;
+			}
+			el2 = ldb_msg_find_element(ac->msg, "sAMAccountType");
+			el2->flags = LDB_FLAG_MOD_REPLACE;
+
+			if (user_account_control &
+			    (UF_SERVER_TRUST_ACCOUNT | UF_PARTIAL_SECRETS_ACCOUNT)) {
+				ret = samdb_msg_set_string(ldb, ac->msg, ac->msg,
+							   "isCriticalSystemObject",
+							   "TRUE");
+				if (ret != LDB_SUCCESS) {
+					return ret;
+				}
+				el2 = ldb_msg_find_element(ac->msg,
+							   "isCriticalSystemObject");
+				el2->flags = LDB_FLAG_MOD_REPLACE;
+			}
+
+			/* Step 1.4: "userAccountControl" -> "primaryGroupID" mapping */
+			if (!ldb_msg_find_element(ac->msg, "primaryGroupID")) {
+				uint32_t rid = ds_uf2prim_group_rid(user_account_control);
+				ret = samdb_msg_add_uint(ldb, ac->msg, ac->msg,
+							 "primaryGroupID", rid);
+				if (ret != LDB_SUCCESS) {
+					return ret;
+				}
+				el2 = ldb_msg_find_element(ac->msg,
+							   "primaryGroupID");
+				el2->flags = LDB_FLAG_MOD_REPLACE;
+			}
+
+			/* Step 1.5: Add additional flags when needed */
+			if ((user_account_control & UF_NORMAL_ACCOUNT) &&
+			    (ldb_request_get_control(ac->req, LDB_CONTROL_RELAX_OID) == NULL)) {
+				user_account_control |= UF_ACCOUNTDISABLE;
+				user_account_control |= UF_PASSWD_NOTREQD;
+
+				ret = samdb_msg_set_uint(ldb, ac->msg, ac->msg,
+							 "userAccountControl",
+							 user_account_control);
+				if (ret != LDB_SUCCESS) {
+					return ret;
+				}
+			}
+		}
+
+	} else if (strcmp(ac->type, "group") == 0) {
+		/* Step 2.2: Default values */
+		ret = samdb_find_or_add_attribute(ldb, ac->msg,
+			"groupType",
+			talloc_asprintf(ac->msg, "%u", GTYPE_SECURITY_GLOBAL_GROUP));
+		if (ret != LDB_SUCCESS) return ret;
+
+		/* Step 2.3: "groupType" -> "sAMAccountType" */
+		el = ldb_msg_find_element(ac->msg, "groupType");
+		if (el != NULL) {
+			uint32_t group_type, account_type;
+
+			group_type = strtoul((const char *)el->values[0].data,
+					     NULL, 0);
+			account_type = ds_gtype2atype(group_type);
+			if (account_type == 0) {
+				ldb_set_errstring(ldb, "samldb: Unrecognized account type!");
+				return LDB_ERR_UNWILLING_TO_PERFORM;
+			}
+			ret = samdb_msg_add_uint(ldb, ac->msg, ac->msg,
+						 "sAMAccountType",
+						 account_type);
+			if (ret != LDB_SUCCESS) {
+				return ret;
+			}
+			el2 = ldb_msg_find_element(ac->msg, "sAMAccountType");
+			el2->flags = LDB_FLAG_MOD_REPLACE;
+		}
+	}
+
+	return LDB_SUCCESS;
+}
 
 static int samldb_prim_group_change(struct samldb_ctx *ac)
 {
