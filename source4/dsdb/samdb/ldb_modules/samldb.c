@@ -1329,6 +1329,8 @@ static int samldb_delete(struct ldb_module *module, struct ldb_request *req)
 	return ldb_next_request(module, req);
 }
 
+/* extended */
+
 static int samldb_extended_allocate_rid_pool(struct ldb_module *module, struct ldb_request *req)
 {
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
