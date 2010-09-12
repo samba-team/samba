@@ -190,7 +190,7 @@ all=all of the above"""),
                 self.seize_role("pdc", samdb, force)
                 self.seize_role("naming", samdb, force)
                 self.seize_role("infrastructure", samdb, force)
-                self.zeize_role("schema", samdb, force)
+                self.seize_role("schema", samdb, force)
             else:
                 self.seize_role(role, samdb, force)
         else:
