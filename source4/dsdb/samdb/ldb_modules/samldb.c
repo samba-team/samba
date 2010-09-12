@@ -59,14 +59,10 @@ struct samldb_ctx {
 	/* the resulting message */
 	struct ldb_message *msg;
 
-	/* holds the entry SID */
-	struct dom_sid *sid;
-
 	/* holds a generic dn */
 	struct ldb_dn *dn;
 
-	/* used in conjunction with "sid" in "samldb_dn_from_sid" and
-	 * "samldb_find_for_defaultObjectCategory" */
+	/* used in "samldb_find_for_defaultObjectCategory" */
 	struct ldb_dn *res_dn;
 
 	/* all the async steps necessary to complete the operation */
@@ -274,20 +270,21 @@ static bool samldb_msg_add_sid(struct ldb_message *msg,
 static int samldb_allocate_sid(struct samldb_ctx *ac)
 {
 	uint32_t rid;
-	int ret;
+	struct dom_sid *sid;
 	struct ldb_context *ldb = ldb_module_get_ctx(ac->module);
+	int ret;
 
 	ret = ridalloc_allocate_rid(ac->module, &rid);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
 
-	ac->sid = dom_sid_add_rid(ac, samdb_domain_sid(ldb), rid);
-	if (ac->sid == NULL) {
+	sid = dom_sid_add_rid(ac, samdb_domain_sid(ldb), rid);
+	if (sid == NULL) {
 		return ldb_module_oom(ac->module);
 	}
 
-	if ( ! samldb_msg_add_sid(ac->msg, "objectSid", ac->sid)) {
+	if ( ! samldb_msg_add_sid(ac->msg, "objectSid", sid)) {
 		return ldb_operr(ldb);
 	}
 
@@ -763,6 +760,7 @@ static int samldb_fill_object(struct samldb_ctx *ac, const char *type)
 	enum sid_generator sid_generator;
 	int ret;
 	struct ldb_control *rodc_control;
+	struct dom_sid *sid;
 
 	ldb = ldb_module_get_ctx(ac->module);
 
@@ -968,15 +966,15 @@ static int samldb_fill_object(struct samldb_ctx *ac, const char *type)
 		 struct loadparm_context);
 
 	/* don't allow objectSID to be specified without the RELAX control */
-	ac->sid = samdb_result_dom_sid(ac, ac->msg, "objectSid");
-	if (ac->sid && !ldb_request_get_control(ac->req, LDB_CONTROL_RELAX_OID) &&
+	sid = samdb_result_dom_sid(ac, ac->msg, "objectSid");
+	if (sid && !ldb_request_get_control(ac->req, LDB_CONTROL_RELAX_OID) &&
 	    !dsdb_module_am_system(ac->module)) {
 		ldb_asprintf_errstring(ldb, "No SID may be specified in user/group creation for %s",
 				       ldb_dn_get_linearized(ac->msg->dn));
 		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
 
-	if ( ! ac->sid) {
+	if (sid == NULL) {
 		sid_generator = lpcfg_sid_generator(lp_ctx);
 		if (sid_generator == SID_GENERATOR_INTERNAL) {
 			ret = samldb_add_step(ac, samldb_allocate_sid);
@@ -994,23 +992,22 @@ static int samldb_fill_object(struct samldb_ctx *ac, const char *type)
 static int samldb_fill_foreignSecurityPrincipal_object(struct samldb_ctx *ac)
 {
 	struct ldb_context *ldb;
+	struct dom_sid *sid;
 	int ret;
 
 	ldb = ldb_module_get_ctx(ac->module);
 
-	ac->sid = samdb_result_dom_sid(ac->msg, ac->msg, "objectSid");
-	if (ac->sid == NULL) {
-		ac->sid = dom_sid_parse_talloc(ac->msg,
-			   (const char *)ldb_dn_get_rdn_val(ac->msg->dn)->data);
-		if (!ac->sid) {
+	sid = samdb_result_dom_sid(ac->msg, ac->msg, "objectSid");
+	if (sid == NULL) {
+		sid = dom_sid_parse_talloc(ac->msg,
+					   (const char *)ldb_dn_get_rdn_val(ac->msg->dn)->data);
+		if (sid == NULL) {
 			ldb_set_errstring(ldb,
 					"No valid SID found in "
 					"ForeignSecurityPrincipal CN!");
-			talloc_free(ac);
 			return LDB_ERR_CONSTRAINT_VIOLATION;
 		}
-		if ( ! samldb_msg_add_sid(ac->msg, "objectSid", ac->sid)) {
-			talloc_free(ac);
+		if (! samldb_msg_add_sid(ac->msg, "objectSid", sid)) {
 			return ldb_operr(ldb);
 		}
 	}
