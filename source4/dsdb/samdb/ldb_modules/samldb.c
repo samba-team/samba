@@ -1052,47 +1052,6 @@ static int samldb_member_check(struct samldb_ctx *ac)
 }
 
 
-static int samldb_prim_group_users_check(struct samldb_ctx *ac)
-{
-	struct ldb_context *ldb;
-	struct dom_sid *sid;
-	uint32_t rid;
-	NTSTATUS status;
-	int count;
-
-	ldb = ldb_module_get_ctx(ac->module);
-
-	/* Finds out the SID/RID of the SAM object */
-	sid = samdb_search_dom_sid(ldb, ac, ac->req->op.del.dn, "objectSID",
-				   NULL);
-	if (sid == NULL) {
-		/* No SID - it might not be a SAM object - therefore ok */
-		return LDB_SUCCESS;
-	}
-	status = dom_sid_split_rid(ac, sid, NULL, &rid);
-	if (!NT_STATUS_IS_OK(status)) {
-		return ldb_operr(ldb);
-	}
-	if (rid == 0) {
-		/* Special object (security principal?) */
-		return LDB_SUCCESS;
-	}
-
-	/* Deny delete requests from groups which are primary ones */
-	count = samdb_search_count(ldb, NULL,
-				   "(&(primaryGroupID=%u)(objectClass=user))",
-				   rid);
-	if (count < 0) {
-		return ldb_operr(ldb);
-	}
-	if (count > 0) {
-		return LDB_ERR_ENTRY_ALREADY_EXISTS;
-	}
-
-	return LDB_SUCCESS;
-}
-
-
 /* add */
 static int samldb_add(struct ldb_module *module, struct ldb_request *req)
 {
@@ -1307,6 +1266,47 @@ static int samldb_modify(struct ldb_module *module, struct ldb_request *req)
 }
 
 /* delete */
+
+static int samldb_prim_group_users_check(struct samldb_ctx *ac)
+{
+	struct ldb_context *ldb;
+	struct dom_sid *sid;
+	uint32_t rid;
+	NTSTATUS status;
+	int count;
+
+	ldb = ldb_module_get_ctx(ac->module);
+
+	/* Finds out the SID/RID of the SAM object */
+	sid = samdb_search_dom_sid(ldb, ac, ac->req->op.del.dn, "objectSID",
+				   NULL);
+	if (sid == NULL) {
+		/* No SID - it might not be a SAM object - therefore ok */
+		return LDB_SUCCESS;
+	}
+	status = dom_sid_split_rid(ac, sid, NULL, &rid);
+	if (!NT_STATUS_IS_OK(status)) {
+		return ldb_operr(ldb);
+	}
+	if (rid == 0) {
+		/* Special object (security principal?) */
+		return LDB_SUCCESS;
+	}
+
+	/* Deny delete requests from groups which are primary ones */
+	count = samdb_search_count(ldb, NULL,
+				   "(&(primaryGroupID=%u)(objectClass=user))",
+				   rid);
+	if (count < 0) {
+		return ldb_operr(ldb);
+	}
+	if (count > 0) {
+		return LDB_ERR_ENTRY_ALREADY_EXISTS;
+	}
+
+	return LDB_SUCCESS;
+}
+
 static int samldb_delete(struct ldb_module *module, struct ldb_request *req)
 {
 	struct samldb_ctx *ac;
