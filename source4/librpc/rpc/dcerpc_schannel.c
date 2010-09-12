@@ -317,11 +317,12 @@ static void continue_schannel_key(struct composite_context *ctx)
 						      struct composite_context);
 	struct auth_schannel_state *s = talloc_get_type(c->private_data,
 							struct auth_schannel_state);
+	NTSTATUS status;
 
 	/* receive schannel key */
-	c->status = dcerpc_schannel_key_recv(ctx);
+	status = c->status = dcerpc_schannel_key_recv(ctx);
 	if (!composite_is_ok(c)) {
-		DEBUG(1, ("Failed to setup credentials: %s\n", nt_errstr(c->status)));
+		DEBUG(1, ("Failed to setup credentials: %s\n", nt_errstr(status)));
 		return;
 	}
 
