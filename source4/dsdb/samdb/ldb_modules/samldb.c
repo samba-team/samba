@@ -59,11 +59,8 @@ struct samldb_ctx {
 	/* the resulting message */
 	struct ldb_message *msg;
 
-	/* holds a generic dn */
-	struct ldb_dn *dn;
-
 	/* used in "samldb_find_for_defaultObjectCategory" */
-	struct ldb_dn *res_dn;
+	struct ldb_dn *dn, *res_dn;
 
 	/* all the async steps necessary to complete the operation */
 	struct samldb_step *steps;
@@ -400,106 +397,37 @@ found:
 	return samldb_next_step(ac);
 }
 
-
-/*
- * samldb_find_for_defaultObjectCategory (async)
- */
-
-static int samldb_find_for_defaultObjectCategory_callback(struct ldb_request *req,
-							  struct ldb_reply *ares)
-{
-	struct ldb_context *ldb;
-	struct samldb_ctx *ac;
-	int ret;
-
-	ac = talloc_get_type(req->context, struct samldb_ctx);
-	ldb = ldb_module_get_ctx(ac->module);
-
-	if (!ares) {
-		ret = LDB_ERR_OPERATIONS_ERROR;
-		goto done;
-	}
-	if (ares->error != LDB_SUCCESS) {
-		if (ares->error == LDB_ERR_NO_SUCH_OBJECT) {
-			if (ldb_request_get_control(ac->req,
-						    LDB_CONTROL_RELAX_OID) != NULL) {
-				/* Don't be pricky when the DN doesn't exist */
-				/* if we have the RELAX control specified */
-				ac->res_dn = req->op.search.base;
-				return samldb_next_step(ac);
-			} else {
-				ldb_set_errstring(ldb,
-					"samldb_find_defaultObjectCategory: "
-					"Invalid DN for 'defaultObjectCategory'!");
-				ares->error = LDB_ERR_CONSTRAINT_VIOLATION;
-			}
-		}
-
-		return ldb_module_done(ac->req, ares->controls,
-                                       ares->response, ares->error);
-	}
-
-	switch (ares->type) {
-	case LDB_REPLY_ENTRY:
-		ac->res_dn = talloc_steal(ac, ares->message->dn);
-
-		ret = LDB_SUCCESS;
-		break;
-
-	case LDB_REPLY_REFERRAL:
-		/* ignore */
-		talloc_free(ares);
-		ret = LDB_SUCCESS;
-		break;
-
-	case LDB_REPLY_DONE:
-		talloc_free(ares);
-
-		if (ac->res_dn != NULL) {
-			/* when found go on */
-			ret = samldb_next_step(ac);
-		} else {
-			ret = LDB_ERR_OPERATIONS_ERROR;
-		}
-		break;
-	}
-
-done:
-	if (ret != LDB_SUCCESS) {
-		return ldb_module_done(ac->req, NULL, NULL, ret);
-	}
-
-	return LDB_SUCCESS;
-}
-
 static int samldb_find_for_defaultObjectCategory(struct samldb_ctx *ac)
 {
-	struct ldb_context *ldb;
-	struct ldb_request *req;
-	static const char *no_attrs[] = { NULL };
+	struct ldb_context *ldb = ldb_module_get_ctx(ac->module);
+	struct ldb_result *res;
+	const char *no_attrs[] = { NULL };
         int ret;
-
-	ldb = ldb_module_get_ctx(ac->module);
 
 	ac->res_dn = NULL;
 
-	ret = ldb_build_search_req(&req, ldb, ac,
-				   ac->dn, LDB_SCOPE_BASE,
-				   "(objectClass=classSchema)", no_attrs,
-				   NULL, ac,
-				   samldb_find_for_defaultObjectCategory_callback,
-				   ac->req);
-	if (ret != LDB_SUCCESS) {
+	ret = dsdb_module_search(ac->module, ac, &res,
+				 ac->dn, LDB_SCOPE_BASE, no_attrs,
+				 DSDB_SEARCH_SHOW_DN_IN_STORAGE_FORMAT | DSDB_FLAG_NEXT_MODULE,
+				 "(objectClass=classSchema)");
+	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
+		/* Don't be pricky when the DN doesn't exist if we have the */
+		/* RELAX control specified */
+		if (ldb_request_get_control(ac->req,
+					    LDB_CONTROL_RELAX_OID) == NULL) {
+			ldb_set_errstring(ldb,
+					  "samldb_find_defaultObjectCategory: "
+					  "Invalid DN for 'defaultObjectCategory'!");
+			return LDB_ERR_CONSTRAINT_VIOLATION;
+		}
+	}
+	if ((ret != LDB_ERR_NO_SUCH_OBJECT) && (ret != LDB_SUCCESS)) {
 		return ret;
 	}
 
-	ret = dsdb_request_add_controls(req,
-					DSDB_SEARCH_SHOW_DN_IN_STORAGE_FORMAT);
-	if (ret != LDB_SUCCESS) {
-		return ret;
-	}
+	ac->res_dn = ac->dn;
 
-	return ldb_next_request(ac->module, req);
+	return samldb_next_step(ac);
 }
 
 /**
