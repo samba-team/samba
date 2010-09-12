@@ -571,8 +571,8 @@ static inline int _talloc_free_internal(void *ptr, const char *location)
 
 	if (unlikely(tc->refs)) {
 		int is_child;
-		/* check this is a reference from a child or grantchild
-		 * back to it's parent or grantparent
+		/* check if this is a reference from a child or
+		 * grandchild back to it's parent or grandparent
 		 *
 		 * in that case we need to remove the reference and
 		 * call another instance of talloc_free() on the current
