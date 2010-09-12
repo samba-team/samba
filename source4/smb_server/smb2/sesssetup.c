@@ -27,6 +27,7 @@
 #include "smb_server/smb_server.h"
 #include "smb_server/smb2/smb2_server.h"
 #include "smbd/service_stream.h"
+#include "lib/stream/packet.h"
 
 static void smb2srv_sesssetup_send(struct smb2srv_request *req, union smb_sesssetup *io)
 {
@@ -67,6 +68,8 @@ static void smb2srv_sesssetup_callback(struct tevent_req *subreq)
 	struct smbsrv_session *smb_sess = ctx->smb_sess;
 	struct auth_session_info *session_info = NULL;
 	NTSTATUS status;
+
+	packet_recv_enable(req->smb_conn->packet);
 
 	status = gensec_update_recv(subreq, req, &io->smb2.out.secblob);
 	TALLOC_FREE(subreq);
@@ -198,6 +201,12 @@ static void smb2srv_sesssetup_backend(struct smb2srv_request *req, union smb_ses
 		req->status = NT_STATUS_FOOBAR;
 		goto failed;
 	}
+
+	/* disable receipt of more packets on this socket until we've
+	   finished with the session setup. This avoids a problem with
+	   crashes if we get EOF on the socket while processing a session
+	   setup */
+	packet_recv_disable(req->smb_conn->packet);
 
 	return;
 nomem:

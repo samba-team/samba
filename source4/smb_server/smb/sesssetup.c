@@ -31,6 +31,7 @@
 #include "smbd/service_stream.h"
 #include "param/param.h"
 #include "../lib/tsocket/tsocket.h"
+#include "lib/stream/packet.h"
 
 struct sesssetup_context {
 	struct auth_context *auth_context;
@@ -371,6 +372,7 @@ static void sesssetup_spnego_send(struct tevent_req *subreq)
 	DATA_BLOB session_key;
 
 	status = gensec_update_recv(subreq, req, &sess->spnego.out.secblob);
+	packet_recv_enable(req->smb_conn->packet);
 	TALLOC_FREE(subreq);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 		goto done;
@@ -488,6 +490,11 @@ static void sesssetup_spnego(struct smbsrv_request *req, union smb_sesssetup *se
 	if (!subreq) {
 		goto nomem;
 	}
+	/* disable receipt of more packets on this socket until we've
+	   finished with the session setup. This avoids a problem with
+	   crashes if we get EOF on the socket while processing a session
+	   setup */
+	packet_recv_disable(req->smb_conn->packet);
 	tevent_req_set_callback(subreq, sesssetup_spnego_send, s);
 
 	return;
