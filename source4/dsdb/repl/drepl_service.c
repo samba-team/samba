@@ -351,6 +351,19 @@ static NTSTATUS drepl_take_FSMO_role(struct irpc_message *msg,
 	return NT_STATUS_OK;
 }
 
+/**
+ * Called when the auth code wants us to try and replicate
+ * a users secrets
+ */
+static NTSTATUS drepl_trigger_repl_secret(struct irpc_message *msg,
+					  struct drepl_trigger_repl_secret *r)
+{
+	/* we are not going to be sending a reply to this request */
+	msg->no_reply = true;
+	DEBUG(0,(__location__ ": got drepl_trigger_repl_secret with %s\n", r->in.user_dn));
+	return NT_STATUS_OK;
+}
+
 /*
   startup the dsdb replicator service task
 */
@@ -441,6 +454,7 @@ static void dreplsrv_task_init(struct task_server *task)
 	IRPC_REGISTER(task->msg_ctx, irpc, DREPLSRV_REFRESH, dreplsrv_refresh, service);
 	IRPC_REGISTER(task->msg_ctx, drsuapi, DRSUAPI_DSREPLICASYNC, drepl_replica_sync, service);
 	IRPC_REGISTER(task->msg_ctx, irpc, DREPL_TAKEFSMOROLE, drepl_take_FSMO_role, service);
+	IRPC_REGISTER(task->msg_ctx, irpc, DREPL_TRIGGER_REPL_SECRET, drepl_trigger_repl_secret, service);
 	messaging_register(task->msg_ctx, service, MSG_DREPL_ALLOCATE_RID, dreplsrv_allocate_rid);
 }
 

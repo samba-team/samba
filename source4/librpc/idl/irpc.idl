@@ -173,4 +173,11 @@ import "misc.idl", "security.idl", "nbt.idl";
 		[in] uint32 role
 		);
 
+	/*
+	 * message to tell the drepl server to initiate a REPL_SECRET
+	 * replication of a users secrets
+	 */
+	void drepl_trigger_repl_secret(
+		[in] astring user_dn
+		);
 }

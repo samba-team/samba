@@ -32,6 +32,8 @@
 #include "dsdb/samdb/samdb.h"
 #include "dsdb/common/util.h"
 #include "param/param.h"
+#include "librpc/gen_ndr/ndr_irpc_c.h"
+#include "lib/messaging/irpc.h"
 
 extern const char *user_attrs[];
 extern const char *domain_ref_attrs[];
@@ -135,6 +137,37 @@ static NTSTATUS authsam_password_ok(struct auth_context *auth_context,
 }
 
 
+/*
+  send a message to the drepl server telling it to initiate a
+  REPL_SECRET getncchanges extended op to fetch the users secrets
+ */
+static void auth_sam_trigger_repl_secret(TALLOC_CTX *mem_ctx, struct auth_context *auth_context,
+					 struct ldb_dn *user_dn)
+{
+	struct dcerpc_binding_handle *irpc_handle;
+	struct drepl_trigger_repl_secret r;
+	struct tevent_req *req;
+
+	irpc_handle = irpc_binding_handle_by_name(mem_ctx, auth_context->msg_ctx,
+						  "dreplsrv",
+						  &ndr_table_irpc);
+	if (irpc_handle == NULL) {
+		DEBUG(1,(__location__ ": Unable to get binding handle for dreplsrv\n"));
+		return;
+	}
+
+	r.in.user_dn = ldb_dn_get_linearized(user_dn);
+
+	req = dcerpc_drepl_trigger_repl_secret_r_send(mem_ctx,
+						      auth_context->event_ctx,
+						      irpc_handle,
+						      &r);
+
+	/* we aren't interested in a reply */
+	talloc_free(req);
+	talloc_free(irpc_handle);
+}
+
 
 static NTSTATUS authsam_authenticate(struct auth_context *auth_context, 
 				     TALLOC_CTX *mem_ctx, struct ldb_context *sam_ctx, 
@@ -164,6 +197,25 @@ static NTSTATUS authsam_authenticate(struct auth_context *auth_context,
 
 	nt_status = samdb_result_passwords(mem_ctx, auth_context->lp_ctx, msg, &lm_pwd, &nt_pwd);
 	NT_STATUS_NOT_OK_RETURN(nt_status);
+
+	if (lm_pwd == NULL && nt_pwd == NULL) {
+		bool am_rodc;
+		if (samdb_rodc(auth_context->sam_ctx, &am_rodc) == LDB_SUCCESS && am_rodc) {
+			/* we don't have passwords for this
+			 * account. We are an RODC, and this account
+			 * may be one for which we either are denied
+			 * REPL_SECRET replication or we haven't yet
+			 * done the replication. We return
+			 * NT_STATUS_NOT_IMPLEMENTED which tells the
+			 * auth code to try the next authentication
+			 * mechanism. We also send a message to our
+			 * drepl server to tell it to try and
+			 * replicate the secrets for this account.
+			 */
+			auth_sam_trigger_repl_secret(mem_ctx, auth_context, msg->dn);
+			return NT_STATUS_NOT_IMPLEMENTED;
+		}
+	}
 
 	nt_status = authsam_password_ok(auth_context, mem_ctx, 
 					acct_flags, lm_pwd, nt_pwd,
