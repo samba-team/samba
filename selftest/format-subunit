@@ -122,7 +122,7 @@ class PlainFormatter(subunithelper.TestsuiteEnabledTestResult):
 
         sys.stdout.write(out)
 
-    def startTest(self, testname):
+    def startTest(self, test):
         pass
 
     def end_test(self, testname, result, unexpected, reason=None):

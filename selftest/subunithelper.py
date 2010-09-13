@@ -47,7 +47,7 @@ def parse_results(msg_ops, statistics, fh):
         arg = parts[1]
         if command in ("test", "testing"):
             msg_ops.control_msg(l)
-            msg_ops.startTest(arg.rstrip())
+            msg_ops.startTest(subunit.RemotedTestCase(arg.rstrip()))
             open_tests.append(arg.rstrip())
         elif command == "time":
             msg_ops.control_msg(l)
@@ -171,9 +171,6 @@ def parse_results(msg_ops, statistics, fh):
 
 class SubunitOps(subunit.TestProtocolClient,TestsuiteEnabledTestResult):
 
-    def startTest(self, testname):
-        self._stream.write("test: %s\n" % testname)
-
     def end_test(self, name, result, reason=None):
         if reason:
             self._stream.write("%s: %s [\n%s\n]\n" % (result, name, reason))
@@ -253,14 +250,14 @@ class FilterOps(testtools.testresult.TestResult):
         else:
             self.output+=msg
 
-    def startTest(self, testname):
+    def startTest(self, test):
         if self.prefix is not None:
-            testname = self.prefix + testname
+            test = subunit.RemotedTestCase(self.prefix + test.id())
 
         if self.strip_ok_output:
            self.output = ""
 
-        self._ops.startTest(testname)
+        self._ops.startTest(test)
 
     def end_test(self, testname, result, unexpected, reason):
         if self.prefix is not None:
