@@ -172,27 +172,6 @@ def parse_results(msg_ops, statistics, fh):
 
 class SubunitOps(subunit.TestProtocolClient,TestsuiteEnabledTestResult):
 
-    def addError(self, test, details=None):
-        self.end_test(test.id(), "error", details)
-
-    def addSuccess(self, test, details=None):
-        self.end_test(test.id(), "success", details)
-
-    def addExpectedFail(self, test, details=None):
-        self.end_test(test.id(), "xfail", details)
-
-    def addFailure(self, test, details=None):
-        self.end_test(test.id(), "failure", details)
-
-    def addSkip(self, test, details=None):
-        self.end_test(test.id(), "skip", details)
-
-    def end_test(self, name, result, reason=None):
-        if reason:
-            self._stream.write("%s: %s [\n%s\n]\n" % (result, name, reason))
-        else:
-            self._stream.write("%s: %s\n" % (result, name))
-
     # The following are Samba extensions:
     def start_testsuite(self, name):
         self._stream.write("testsuite: %s\n" % name)
@@ -269,50 +248,44 @@ class FilterOps(testtools.testresult.TestResult):
 
     def addError(self, test, details=None):
         test = self._add_prefix(test)
-        self.end_test(test.id(), "error", True, details)
+        self.error_added+=1
+        self.total_error+=1
+        self._ops.addError(test, details)
+        self.output = None
 
     def addSkip(self, test, details=None):
         test = self._add_prefix(test)
-        self.end_test(test.id(), "skip", False, details)
+        self._ops.addSkip(test, details)
+        self.output = None
 
     def addExpectedFail(self, test, details=None):
         test = self._add_prefix(test)
-        self.end_test(test.id(), "xfail", False, details)
+        self._ops.addExpectedFail(test, details)
+        self.output = None
 
     def addFailure(self, test, details=None):
         test = self._add_prefix(test)
-        self.end_test(test.id(), "failure", True, details)
+        xfail_reason = find_in_list(self.expected_failures, test.id())
+        if xfail_reason is not None:
+            self.xfail_added+=1
+            self.total_xfail+=1
+            if details is not None:
+                details += xfail_reason
+            else:
+                details = xfail_reason
+            self._ops.addExpectedFail(test, details)
+        else:
+            self.fail_added+=1
+            self.total_fail+=1
+            self._ops.addFailure(test, details)
+            if self.output:
+                self._ops.output_msg(self.output)
+        self.output = None
 
     def addSuccess(self, test, details=None):
         test = self._add_prefix(test)
-        self.end_test(test.id(), "success", False, details)
-
-    def end_test(self, testname, result, unexpected, reason):
-        if result in ("fail", "failure") and not unexpected:
-            result = "xfail"
-            self.xfail_added+=1
-            self.total_xfail+=1
-        xfail_reason = find_in_list(self.expected_failures, testname)
-        if xfail_reason is not None and result in ("fail", "failure"):
-            result = "xfail"
-            self.xfail_added+=1
-            self.total_xfail+=1
-            reason += xfail_reason
-
-        if result in ("fail", "failure"):
-            self.fail_added+=1
-            self.total_fail+=1
-
-        if result == "error":
-            self.error_added+=1
-            self.total_error+=1
-
-        if self.strip_ok_output:
-            if result not in ("success", "xfail", "skip"):
-                print self.output
+        self._ops.addSuccess(test, details)
         self.output = None
-
-        self._ops.end_test(testname, result, reason)
 
     def skip_testsuite(self, name, reason=None):
         self._ops.skip_testsuite(name, reason)

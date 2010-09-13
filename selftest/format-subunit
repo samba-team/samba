@@ -125,6 +125,21 @@ class PlainFormatter(subunithelper.TestsuiteEnabledTestResult):
     def startTest(self, test):
         pass
 
+    def addSuccess(self, test, details=None):
+        self.end_test(test.id(), "success", False, details)
+
+    def addError(self, test, details=None):
+        self.end_test(test.id(), "error", True, details)
+
+    def addFailure(self, test, details=None):
+        self.end_test(test.id(), "failure", True, details)
+
+    def addSkip(self, test, details=None):
+        self.end_test(test.id(), "skip", False, details)
+
+    def addExpectedFail(self, test, details=None):
+        self.end_test(test.id(), "xfail", False, details)
+
     def end_test(self, testname, result, unexpected, reason=None):
         if not unexpected:
             self.test_output[self.name] = ""
