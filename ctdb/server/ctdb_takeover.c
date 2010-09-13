@@ -1215,7 +1215,7 @@ create_merged_ip_list(struct ctdb_context *ctdb)
  */
 int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap)
 {
-	int i, num_healthy, retries, num_ips;
+	int i, num_healthy, retries;
 	struct ctdb_public_ip ip;
 	struct ctdb_public_ipv4 ipv4;
 	uint32_t mask, *nodes;
