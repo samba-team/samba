@@ -20,8 +20,8 @@ __all__ = ['parse_results']
 import re
 import sys
 import subunit
+import subunit.iso8601
 import testtools
-import time
 
 VALID_RESULTS = ['success', 'successful', 'failure', 'fail', 'skip', 'knownfail', 'error', 'xfail', 'skip-testsuite', 'testsuite-failure', 'testsuite-xfail', 'testsuite-success', 'testsuite-error']
 
@@ -51,15 +51,12 @@ def parse_results(msg_ops, statistics, fh):
             open_tests.append(arg.rstrip())
         elif command == "time":
             msg_ops.control_msg(l)
-            grp = re.match(
-                '(\d+)-(\d+)-(\d+) (\d+):(\d+):([.0-9]+)\n', arg)
-            if grp is None:
-                grp = re.match(
-                    '(\d+)-(\d+)-(\d+) (\d+):(\d+):([.0-9]+)Z\n', arg)
-                if grp is None:
-                    print "Unable to parse time line: %s" % arg
-            if grp is not None:
-                msg_ops.report_time(time.mktime((int(grp.group(1)), int(grp.group(2)), int(grp.group(3)), int(grp.group(4)), int(grp.group(5)), int(float(grp.group(6))), 0, 0, 0)))
+            try:
+                dt = subunit.iso8601.parse_date(arg.rstrip("\n"))
+            except TypeError, e:
+                print "Unable to parse time line: %s" % arg.rstrip("\n")
+            else:
+                msg_ops.time(dt)
         elif command in VALID_RESULTS:
             msg_ops.control_msg(l)
             result = command
@@ -195,23 +192,6 @@ class SubunitOps(subunit.TestProtocolClient,TestsuiteEnabledTestResult):
     def xfail_test(self, name, reason=None):
         self.end_test(name, "xfail", reason)
 
-    def report_time(self, t):
-        (year, mon, mday, hour, min, sec, wday, yday, isdst) = time.localtime(t)
-        self._stream.write("time: %04d-%02d-%02d %02d:%02d:%02d\n" % (year, mon, mday, hour, min, sec))
-
-    def progress(self, offset, whence):
-        if whence == subunit.PROGRESS_CUR and offset > -1:
-            prefix = "+"
-        elif whence == subunit.PROGRESS_PUSH:
-            prefix = ""
-            offset = "push"
-        elif whence == subunit.PROGRESS_POP:
-            prefix = ""
-            offset = "pop"
-        else:
-            prefix = ""
-        self._stream.write("progress: %s%s\n" % (prefix, offset))
-
     # The following are Samba extensions:
     def start_testsuite(self, name):
         self._stream.write("testsuite: %s\n" % name)
@@ -261,8 +241,8 @@ class FilterOps(testtools.testresult.TestResult):
     def control_msg(self, msg):
         pass # We regenerate control messages, so ignore this
 
-    def report_time(self, time):
-        self._ops.report_time(time)
+    def time(self, time):
+        self._ops.time(time)
 
     def progress(self, delta, whence):
         self._ops.progress(delta, whence)

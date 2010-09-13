@@ -14,10 +14,10 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../lib/testtools"))
 
 import subunithelper
 import subunit
-import testtools
 
-def format_time(t):
-    minutes, seconds = divmod(t, 60)
+
+def format_time(delta):
+    minutes, seconds = divmod(delta.seconds, 60)
     hours, minutes = divmod(minutes, 60)
     ret = ""
     if hours:
@@ -57,10 +57,10 @@ class PlainFormatter(subunithelper.TestsuiteEnabledTestResult):
         elif whence == subunit.PROGRESS_CUR:
             raise NotImplementedError
 
-    def report_time(self, time):
+    def time(self, dt):
         if self.start_time is None:
-            self.start_time = time
-        self.last_time = time
+            self.start_time = dt
+        self.last_time = dt
 
     def start_testsuite(self, name):
         self.index += 1
