@@ -2379,6 +2379,7 @@ int main(int argc, char **argv, char **envp)
 					  string_arg);
 				goto done;
 			}
+			break;
 		case OPT_LOGOFF:
 		{
 			wbcErr wbc_status;
