@@ -36,12 +36,59 @@
 #include <syslog.h>
 #include <tdb.h>
 #include <ctdb.h>
+#include <ctdb_protocol.h>
 
 TDB_DATA key;
+
+
+void print_nodemap(struct ctdb_node_map *nodemap)
+{
+	int i;
+	char cip[128];
+
+	printf("number of nodes:%d\n", nodemap->num);
+	for (i=0;i<nodemap->num;i++) {
+		switch(nodemap->nodes[i].addr.sa.sa_family) {
+		case AF_INET:
+			inet_ntop(nodemap->nodes[i].addr.ip.sin_family, &nodemap->nodes[i].addr.ip.sin_addr, cip, sizeof(cip));
+		break;
+		case AF_INET6:
+			inet_ntop(nodemap->nodes[i].addr.ip6.sin6_family, &nodemap->nodes[i].addr.ip6.sin6_addr, cip, sizeof(cip));
+			break;
+		}
+
+		printf("Node:%d Address:%s Flags:%s%s%s%s%s%s\n",
+			nodemap->nodes[i].pnn,
+			cip,
+			nodemap->nodes[i].flags&NODE_FLAGS_DISCONNECTED?"DISCONNECTED ":"",
+			nodemap->nodes[i].flags&NODE_FLAGS_UNHEALTHY?"UNHEALTHY ":"",
+			nodemap->nodes[i].flags&NODE_FLAGS_PERMANENTLY_DISABLED?"ADMIN DISABLED ":"",
+			nodemap->nodes[i].flags&NODE_FLAGS_BANNED?"BANNED ":"",
+			nodemap->nodes[i].flags&NODE_FLAGS_DELETED?"DELETED ":"",
+			nodemap->nodes[i].flags&NODE_FLAGS_STOPPED?"STOPPED ":"");
+	}
+}
 
 void msg_h(struct ctdb_connection *ctdb, uint64_t srvid, TDB_DATA data, void *private_data)
 {
 	printf("Message received on port %d : %s\n", (int)srvid, data.dptr);
+}
+
+static void gnm_cb(struct ctdb_connection *ctdb,
+		   struct ctdb_request *req, void *private)
+{
+	bool status;
+	struct ctdb_node_map *nodemap;
+
+	status = ctdb_getnodemap_recv(ctdb, req, &nodemap);
+	ctdb_request_free(ctdb, req);
+	if (!status) {
+		printf("Error reading NODEMAP\n");
+		return;
+	}
+	printf("ASYNC response to getnodemap:\n");
+	print_nodemap(nodemap);
+	ctdb_free_nodemap(nodemap);
 }
 
 static void pnn_cb(struct ctdb_connection *ctdb,
@@ -56,7 +103,7 @@ static void pnn_cb(struct ctdb_connection *ctdb,
 		printf("Error reading PNN\n");
 		return;
 	}
-	printf("pnn:%d\n", pnn);
+	printf("ASYNC RESPONSE TO GETPNN:  pnn:%d\n", pnn);
 }
 
 static void rm_cb(struct ctdb_connection *ctdb,
@@ -134,6 +181,7 @@ int main(int argc, char *argv[])
 	struct ctdb_connection *ctdb_connection;
 	struct ctdb_request *handle;
 	struct ctdb_db *ctdb_db_context;
+	struct ctdb_node_map *nodemap;
 	struct pollfd pfd;
 	uint32_t recmaster;
 	TDB_DATA msg;
@@ -217,6 +265,29 @@ int main(int argc, char *argv[])
 	if (!rrl_cb_called) {
 		printf("READRECORDLOCK is async\n");
 	}
+
+	/*
+	 * Read the nodemap from a node (async)
+	 */
+	handle = ctdb_getnodemap_send(ctdb_connection, CTDB_CURRENT_NODE,
+				  gnm_cb, NULL);
+	if (handle == NULL) {
+		printf("Failed to send get_nodemap control\n");
+		exit(10);
+	}
+
+	/*
+	 * Read the nodemap from a node (sync)
+	 */
+	if (!ctdb_getnodemap(ctdb_connection, CTDB_CURRENT_NODE,
+			     &nodemap)) {
+		printf("Failed to receive response to getrecmaster\n");
+		exit(10);
+	}
+	printf("SYNC response to getnodemap:\n");
+	print_nodemap(nodemap);
+	ctdb_free_nodemap(nodemap);
+
 	for (;;) {
 
 	  pfd.events = ctdb_which_events(ctdb_connection);

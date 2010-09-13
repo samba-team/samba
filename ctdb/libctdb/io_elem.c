@@ -25,6 +25,7 @@
 #include <stdlib.h>
 #include "io_elem.h"
 #include <tdb.h>
+#include <netinet/in.h>
 #include <ctdb_protocol.h> // For CTDB_DS_ALIGNMENT and ctdb_req_header
 
 struct io_elem {

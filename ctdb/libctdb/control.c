@@ -16,6 +16,7 @@
    You should have received a copy of the GNU General Public License
    along with this program; if not, see <http://www.gnu.org/licenses/>.
 */
+#include <string.h>
 #include <ctdb.h>
 #include <ctdb_protocol.h>
 #include "libctdb_private.h"
@@ -23,6 +24,7 @@
 /* Remove type-safety macros. */
 #undef ctdb_getrecmaster_send
 #undef ctdb_getpnn_send
+#undef ctdb_getnodemap_send
 
 bool ctdb_getrecmaster_recv(struct ctdb_connection *ctdb,
 			   struct ctdb_request *req, uint32_t *recmaster)
@@ -75,4 +77,50 @@ struct ctdb_request *ctdb_getpnn_send(struct ctdb_connection *ctdb,
 {
 	return new_ctdb_control_request(ctdb, CTDB_CONTROL_GET_PNN, destnode,
 					NULL, 0, callback, private_data);
+}
+
+bool ctdb_getnodemap_recv(struct ctdb_connection *ctdb,
+		      struct ctdb_request *req, struct ctdb_node_map **nodemap)
+{
+	struct ctdb_reply_control *reply;
+
+	*nodemap = NULL;
+	reply = unpack_reply_control(ctdb, req, CTDB_CONTROL_GET_NODEMAP);
+	if (!reply) {
+		return false;
+	}
+	if (reply->status == -1) {
+		DEBUG(ctdb, LOG_ERR, "ctdb_getnodemap_recv: status -1");
+		return false;
+	}
+	if (reply->datalen == 0) {
+		DEBUG(ctdb, LOG_ERR, "ctdb_getnodemap_recv: returned data is 0 bytes");
+		return false;
+	}
+
+	*nodemap = malloc(reply->datalen);
+	if (*nodemap == NULL) {
+		DEBUG(ctdb, LOG_ERR, "ctdb_getnodemap_recv: failed to malloc buffer");
+		return false;
+	}
+	memcpy(*nodemap, reply->data, reply->datalen);
+
+	return true;
+}
+struct ctdb_request *ctdb_getnodemap_send(struct ctdb_connection *ctdb,
+					  uint32_t destnode,
+					  ctdb_callback_t callback,
+					  void *private_data)
+{
+	return new_ctdb_control_request(ctdb, CTDB_CONTROL_GET_NODEMAP,
+					destnode,
+					NULL, 0, callback, private_data);
+}
+
+void ctdb_free_nodemap(struct ctdb_node_map *nodemap)
+{
+	if (nodemap == NULL) {
+		return;
+	}
+	free(nodemap);
 }

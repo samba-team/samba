@@ -26,6 +26,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <tdb.h>
+#include <netinet/in.h>
 #include <ctdb_protocol.h>
 
 /**
@@ -411,6 +412,38 @@ bool ctdb_getpnn_recv(struct ctdb_connection *ctdb,
 
 
 /**
+ * ctdb_getnodemap_send - read the nodemap number from a node.
+ * @ctdb: the ctdb_connection from ctdb_connect.
+ * @destnode: the destination node (see below)
+ * @callback: the callback when ctdb replies to our message (typesafe)
+ * @cbdata: the argument to callback()
+ *
+ * There are several special values for destnode, detailed in
+ * ctdb_protocol.h, particularly CTDB_CURRENT_NODE which means the
+ * local ctdbd.
+ */
+struct ctdb_request *
+ctdb_getnodemap_send(struct ctdb_connection *ctdb,
+		 uint32_t destnode,
+		 ctdb_callback_t callback,
+		 void *cbdata);
+/**
+ * ctdb_getnodemap_recv - read an ctdb_getnodemap reply from ctdbd
+ * @ctdb: the ctdb_connection from ctdb_connect.
+ * @req: the completed request.
+ * @nodemap: a pointer to the returned nodemap structure
+ *
+ * This returns false if something went wrong.
+ * If the command failed, it guarantees to set nodemap to NULL.
+ * A non-NULL value for nodemap means the command was successful.
+ *
+ * A non-NULL value of the nodemap must be release released/freed
+ * by ctdb_free_nodemap().
+ */
+bool ctdb_getnodemap_recv(struct ctdb_connection *ctdb,
+		      struct ctdb_request *req, struct ctdb_node_map **nodemap);
+
+/**
  * ctdb_getrecmaster_send - read the recovery master of a node
  * @ctdb: the ctdb_connection from ctdb_connect.
  * @destnode: the destination node (see below)
@@ -424,7 +457,7 @@ bool ctdb_getpnn_recv(struct ctdb_connection *ctdb,
 struct ctdb_request *
 ctdb_getrecmaster_send(struct ctdb_connection *ctdb,
 			uint32_t destnode,
-			    ctdb_callback_t callback, void *cbdata);
+			ctdb_callback_t callback, void *cbdata);
 
 /**
  * ctdb_getrecmaster_recv - read an ctdb_getrecmaster reply from ctdbd
@@ -555,6 +588,31 @@ bool ctdb_getrecmaster(struct ctdb_connection *ctdb,
 		       uint32_t destnode,
 		       uint32_t *recmaster);
 
+
+/**
+ * ctdb_getnodemap - read the nodemap from a node (synchronous)
+ * @ctdb: the ctdb_connection from ctdb_connect.
+ * @destnode: the destination node (see below)
+ * @nodemap: a pointer to the nodemap to fill in
+ *
+ * There are several special values for destnode, detailed in
+ * ctdb_protocol.h, particularly CTDB_CURRENT_NODE which means the
+ * local ctdbd.
+ *
+ * Returns true and fills in *nodemap on success.
+ * A non-NULL nodemap must be freed by calling ctdb_free_nodemap.
+ */
+bool ctdb_getnodemap(struct ctdb_connection *ctdb,
+		     uint32_t destnode, struct ctdb_node_map **nodemap);
+
+/*
+ * This function is used to release/free the nodemap structure returned
+ * by ctdb_getnodemap() and ctdb_getnodemap_recv()
+ */
+void ctdb_free_nodemap(struct ctdb_node_map *nodemap);
+
+
+
 /* These ugly macro wrappers make the callbacks typesafe. */
 #include <ctdb_typesafe_cb.h>
 #define ctdb_sendcb(cb, cbdata)						\
@@ -606,4 +664,9 @@ bool ctdb_getrecmaster(struct ctdb_connection *ctdb,
 #define ctdb_getrecmaster_send(ctdb, destnode, cb, cbdata)		\
 	ctdb_getrecmaster_send((ctdb), (destnode),			\
 			       ctdb_sendcb((cb), (cbdata)), (cbdata))
+
+#define ctdb_getnodemap_send(ctdb, destnode, cb, cbdata)		\
+	ctdb_getnodemap_send((ctdb), (destnode),			\
+			 ctdb_sendcb((cb), (cbdata)), (cbdata))
+
 #endif

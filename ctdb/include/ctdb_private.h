@@ -205,14 +205,6 @@ struct ctdb_node {
 	const char *name; /* for debug messages */
 	void *private_data; /* private to transport */
 	uint32_t pnn;
-#define NODE_FLAGS_DISCONNECTED		0x00000001 /* node isn't connected */
-#define NODE_FLAGS_UNHEALTHY  		0x00000002 /* monitoring says node is unhealthy */
-#define NODE_FLAGS_PERMANENTLY_DISABLED	0x00000004 /* administrator has disabled node */
-#define NODE_FLAGS_BANNED		0x00000008 /* recovery daemon has banned the node */
-#define NODE_FLAGS_DELETED		0x00000010 /* this node has been deleted */
-#define NODE_FLAGS_STOPPED		0x00000020 /* this node has been stopped */
-#define NODE_FLAGS_DISABLED		(NODE_FLAGS_UNHEALTHY|NODE_FLAGS_PERMANENTLY_DISABLED)
-#define NODE_FLAGS_INACTIVE		(NODE_FLAGS_DELETED|NODE_FLAGS_DISCONNECTED|NODE_FLAGS_BANNED|NODE_FLAGS_STOPPED)
 	uint32_t flags;
 
 	/* used by the dead node monitoring */
@@ -878,20 +870,6 @@ struct ctdb_control_list_tunable {
 	uint8_t  data[1];
 };
 
-
-/* table that contains a list of all nodes a ctdb knows about and their 
-   status
- */
-struct ctdb_node_and_flags {
-	uint32_t pnn;
-	uint32_t flags;
-	ctdb_sock_addr addr;
-};
-
-struct ctdb_node_map {
-	uint32_t num;
-	struct ctdb_node_and_flags nodes[1];
-};
 
 struct ctdb_node_and_flagsv4 {
 	uint32_t pnn;
