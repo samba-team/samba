@@ -85,6 +85,11 @@ struct ctdb_call_info {
 #define CTDB_SRVID_RELEASE_IP 0xF300000000000000LL
 
 /*
+   a message handler ID meaning that an IP address has been taken
+ */
+#define CTDB_SRVID_TAKE_IP 0xF301000000000000LL
+
+/*
    a message ID to set the node flags in the recovery daemon
  */
 #define CTDB_SRVID_SET_NODE_FLAGS 0xF400000000000000LL

@@ -331,6 +331,7 @@ static void ctdb_do_takeip_callback(struct ctdb_context *ctdb, int status,
 	struct ctdb_do_takeip_state *state =
 		talloc_get_type(private_data, struct ctdb_do_takeip_state);
 	int32_t ret;
+	TDB_DATA data;
 
 	if (status != 0) {
 		if (status == -ETIME) {
@@ -350,6 +351,13 @@ static void ctdb_do_takeip_callback(struct ctdb_context *ctdb, int status,
 		talloc_free(state);
 		return;
 	}
+
+	data.dptr  = (uint8_t *)ctdb_addr_to_str(&state->vnn->public_address);
+	data.dsize = strlen((char *)data.dptr) + 1;
+	DEBUG(DEBUG_INFO,(__location__ " sending TAKE_IP for '%s'\n", data.dptr));
+
+	ctdb_daemon_send_message(ctdb, ctdb->pnn, CTDB_SRVID_TAKE_IP, data);
+
 
 	/* the control succeeded */
 	ctdb_request_control_reply(ctdb, state->c, NULL, 0, NULL);
