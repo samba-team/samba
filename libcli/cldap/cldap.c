@@ -320,7 +320,11 @@ NTSTATUS cldap_socket_init(TALLOC_CTX *mem_ctx,
 	c->event.ctx = ev;
 
 	if (!local_addr) {
-		ret = tsocket_address_inet_from_strings(c, "ip",
+		/* we use ipv4 here instead of ip, as otherwise we end
+		   up with a PF_INET6 socket, and sendto() for ipv4
+		   addresses will fail. That breaks cldap name
+		   resolution for winbind to IPv4 hosts. */
+		ret = tsocket_address_inet_from_strings(c, "ipv4",
 							NULL, 0,
 							&any);
 		if (ret != 0) {
