@@ -239,7 +239,9 @@ static void winbind_task_init(struct task_server *task)
 		primary_sid = secrets_get_domain_sid(service,
 						     service->task->event_ctx,
 						     service->task->lp_ctx,
-						     lpcfg_netbios_name(service->task->lp_ctx), &errstring);
+						     lpcfg_netbios_name(service->task->lp_ctx),
+						     &service->sec_channel_type,
+						     &errstring);
 		if (!primary_sid) {
 			char *message = talloc_asprintf(task, 
 							"Cannot start Winbind (standalone configuration): %s: "
@@ -253,7 +255,9 @@ static void winbind_task_init(struct task_server *task)
 		primary_sid = secrets_get_domain_sid(service,
 						     service->task->event_ctx,
 						     service->task->lp_ctx,
-						     lpcfg_workgroup(service->task->lp_ctx), &errstring);
+						     lpcfg_workgroup(service->task->lp_ctx),
+						     &service->sec_channel_type,
+						     &errstring);
 		if (!primary_sid) {
 			char *message = talloc_asprintf(task, "Cannot start Winbind (domain member): %s: "
 							"Have you joined the %s domain?", 
@@ -266,7 +270,9 @@ static void winbind_task_init(struct task_server *task)
 		primary_sid = secrets_get_domain_sid(service,
 						     service->task->event_ctx,
 						     service->task->lp_ctx,
-						     lpcfg_workgroup(service->task->lp_ctx), &errstring);
+						     lpcfg_workgroup(service->task->lp_ctx),
+						     &service->sec_channel_type,
+						     &errstring);
 		if (!primary_sid) {
 			char *message = talloc_asprintf(task, "Cannot start Winbind (domain controller): %s: "
 							"Have you provisioned the %s domain?", 

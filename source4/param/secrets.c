@@ -101,15 +101,17 @@ struct dom_sid *secrets_get_domain_sid(TALLOC_CTX *mem_ctx,
 				       struct tevent_context *ev_ctx,
 				       struct loadparm_context *lp_ctx,
 				       const char *domain,
+				       enum netr_SchannelType *sec_channel_type,
 				       char **errstring)
 {
 	struct ldb_context *ldb;
 	struct ldb_message *msg;
 	int ldb_ret;
-	const char *attrs[] = { "objectSid", NULL };
+	const char *attrs[] = { "objectSid", "secureChannelType", NULL };
 	struct dom_sid *result = NULL;
 	const struct ldb_val *v;
 	enum ndr_err_code ndr_err;
+
 	*errstring = NULL;
 
 	ldb = secrets_db_connect(mem_ctx, ev_ctx, lp_ctx);
@@ -135,6 +137,18 @@ struct dom_sid *secrets_get_domain_sid(TALLOC_CTX *mem_ctx,
 					     domain, (char *) ldb_get_opaque(ldb, "ldb_url"));
 		return NULL;
 	}
+
+	if (sec_channel_type) {
+		int v;
+		v = ldb_msg_find_attr_as_int(msg, "secureChannelType", -1);
+		if (v == -1) {
+			*errstring = talloc_asprintf(mem_ctx, "Failed to find secureChannelType for %s in %s",
+						     domain, (char *) ldb_get_opaque(ldb, "ldb_url"));
+			return NULL;
+		}
+		*sec_channel_type = v;
+	}
+
 	result = talloc(mem_ctx, struct dom_sid);
 	if (result == NULL) {
 		talloc_free(ldb);

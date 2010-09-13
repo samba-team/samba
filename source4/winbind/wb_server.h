@@ -29,6 +29,7 @@ struct wbsrv_service {
 	struct task_server *task;
 
 	const struct dom_sid *primary_sid;
+	enum netr_SchannelType sec_channel_type;
 	struct wbsrv_domain *domains;
 	struct idmap_context *idmap_ctx;
 	const char *priv_pipe_dir;
