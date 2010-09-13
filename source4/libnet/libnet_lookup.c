@@ -186,21 +186,21 @@ NTSTATUS libnet_LookupHost(struct libnet_context *ctx, TALLOC_CTX *mem_ctx,
 /**
  * Sends asynchronous LookupDCs request
  */
-struct composite_context* libnet_LookupDCs_send(struct libnet_context *ctx,
-						TALLOC_CTX *mem_ctx,
-						struct libnet_LookupDCs *io)
+struct tevent_req *libnet_LookupDCs_send(struct libnet_context *ctx,
+					 TALLOC_CTX *mem_ctx,
+					 struct libnet_LookupDCs *io)
 {
-	struct composite_context *c;
+	struct tevent_req *req;
 	struct messaging_context *msg_ctx = 
 		messaging_client_init(mem_ctx,
-							  lpcfg_messaging_path(mem_ctx, ctx->lp_ctx),
-							  ctx->event_ctx);
+				      lpcfg_messaging_path(mem_ctx, ctx->lp_ctx),
+				      ctx->event_ctx);
 
-	c = finddcs_send(mem_ctx, lpcfg_netbios_name(ctx->lp_ctx),
-					 lpcfg_nbt_port(ctx->lp_ctx), io->in.domain_name,
-					 io->in.name_type, NULL, ctx->resolve_ctx,
-					 ctx->event_ctx, msg_ctx);
-	return c;
+	req = finddcs_send(mem_ctx, lpcfg_netbios_name(ctx->lp_ctx),
+			   lpcfg_nbt_port(ctx->lp_ctx), io->in.domain_name,
+			   io->in.name_type, NULL, ctx->resolve_ctx,
+			   ctx->event_ctx, msg_ctx);
+	return req;
 }
 
 /**
@@ -212,12 +212,12 @@ struct composite_context* libnet_LookupDCs_send(struct libnet_context *ctx,
  * @return nt status code of execution
  */
 
-NTSTATUS libnet_LookupDCs_recv(struct composite_context *c, TALLOC_CTX *mem_ctx,
+NTSTATUS libnet_LookupDCs_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 			       struct libnet_LookupDCs *io)
 {
 	NTSTATUS status;
-	status = finddcs_recv(c, mem_ctx, &io->out.num_dcs, &io->out.dcs);
-	/* "c" already freed here */
+	status = finddcs_recv(req, mem_ctx, &io->out.num_dcs, &io->out.dcs);
+	/* "req" already freed here */
 	return status;
 }
 
@@ -228,8 +228,8 @@ NTSTATUS libnet_LookupDCs_recv(struct composite_context *c, TALLOC_CTX *mem_ctx,
 NTSTATUS libnet_LookupDCs(struct libnet_context *ctx, TALLOC_CTX *mem_ctx,
 			  struct libnet_LookupDCs *io)
 {
-	struct composite_context *c = libnet_LookupDCs_send(ctx, mem_ctx, io);
-	return libnet_LookupDCs_recv(c, mem_ctx, io);
+	struct tevent_req *req = libnet_LookupDCs_send(ctx, mem_ctx, io);
+	return libnet_LookupDCs_recv(req, mem_ctx, io);
 }
 
 

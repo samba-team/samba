@@ -29,9 +29,11 @@
 #include "libcli/libcli.h"
 #include "libcli/resolve/resolve.h"
 #include "libcli/finddcs.h"
+#include "lib/util/tevent_ntstatus.h"
 
 struct finddcs_state {
-	struct composite_context *ctx;
+	struct tevent_context *ev;
+	struct tevent_req *req;
 	struct messaging_context *msg_ctx;
 
 	const char *my_netbios_name;
@@ -61,37 +63,43 @@ static void fallback_node_status_replied(struct nbt_name_request *name_req);
  * the IP)
  */
 
-struct composite_context *finddcs_send(TALLOC_CTX *mem_ctx,
-				       const char *my_netbios_name,
-				       uint16_t nbt_port,
-				       const char *domain_name,
-				       int name_type,
-				       struct dom_sid *domain_sid,
-				       struct resolve_context *resolve_ctx,
-				       struct tevent_context *event_ctx,
-				       struct messaging_context *msg_ctx)
+struct tevent_req *finddcs_send(TALLOC_CTX *mem_ctx,
+				const char *my_netbios_name,
+				uint16_t nbt_port,
+				const char *domain_name,
+				int name_type,
+				struct dom_sid *domain_sid,
+				struct resolve_context *resolve_ctx,
+				struct tevent_context *event_ctx,
+				struct messaging_context *msg_ctx)
 {
-	struct composite_context *c, *creq;
 	struct finddcs_state *state;
 	struct nbt_name name;
+	struct tevent_req *req;
+	struct composite_context *creq;
 
-	c = composite_create(mem_ctx, event_ctx);
-	if (c == NULL) return NULL;
+	req = tevent_req_create(mem_ctx, &state, struct finddcs_state);
+	if (req == NULL) {
+		return NULL;
+	}
 
-	state = talloc(c, struct finddcs_state);
-	if (composite_nomem(state, c)) return c;
-	c->private_data = state;
-
-	state->ctx = c;
-
+	state->req = req;
+	state->ev = event_ctx;
 	state->nbt_port = nbt_port;
 	state->my_netbios_name = talloc_strdup(state, my_netbios_name);
+	if (tevent_req_nomem(state->my_netbios_name, req)) {
+		return tevent_req_post(req, event_ctx);
+	}
 	state->domain_name = talloc_strdup(state, domain_name);
-	if (composite_nomem(state->domain_name, c)) return c;
+	if (tevent_req_nomem(state->domain_name, req)) {
+		return tevent_req_post(req, event_ctx);
+	}
 
 	if (domain_sid) {
 		state->domain_sid = talloc_reference(state, domain_sid);
-		if (composite_nomem(state->domain_sid, c)) return c;
+		if (tevent_req_nomem(state->domain_sid, req)) {
+			return tevent_req_post(req, event_ctx);
+		}
 	} else {
 		state->domain_sid = NULL;
 	}
@@ -100,8 +108,13 @@ struct composite_context *finddcs_send(TALLOC_CTX *mem_ctx,
 
 	make_nbt_name(&name, state->domain_name, name_type);
 	creq = resolve_name_send(resolve_ctx, state, &name, event_ctx);
-	composite_continue(c, creq, finddcs_name_resolved, state);
-	return c;
+	if (tevent_req_nomem(creq, req)) {
+		return tevent_req_post(req, event_ctx);
+	}
+	creq->async.fn = finddcs_name_resolved;
+	creq->async.private_data = state;
+
+	return req;
 }
 
 /* Having got an name query answer, fire off a GetDC request, so we
@@ -120,16 +133,21 @@ static void finddcs_name_resolved(struct composite_context *ctx)
 	struct tevent_req *subreq;
 	struct dcerpc_binding_handle *irpc_handle;
 	const char *address;
+	NTSTATUS status;
 
-	state->ctx->status = resolve_name_recv(ctx, state, &address);
-	if (!composite_is_ok(state->ctx)) return;
+	status = resolve_name_recv(ctx, state, &address);
+	if (tevent_req_nterror(state->req, status)) {
+		return;
+	}
 
 	/* TODO: This should try and find all the DCs, and give the
 	 * caller them in the order they responded */
 
 	state->num_dcs = 1;
 	state->dcs = talloc_array(state, struct nbt_dc_name, state->num_dcs);
-	if (composite_nomem(state->dcs, state->ctx)) return;
+	if (tevent_req_nomem(state->dcs, state->req)) {
+		return;
+	}
 
 	state->dcs[0].address = talloc_steal(state->dcs, address);
 
@@ -153,16 +171,20 @@ static void finddcs_name_resolved(struct composite_context *ctx)
 	state->r.in.ip_address = state->dcs[0].address;
 	state->r.in.my_computername = state->my_netbios_name;
 	state->r.in.my_accountname = talloc_asprintf(state, "%s$", state->my_netbios_name);
-	if (composite_nomem(state->r.in.my_accountname, state->ctx)) return;
+	if (tevent_req_nomem(state->r.in.my_accountname, state->req)) {
+		return;
+	}
 	state->r.in.account_control = ACB_WSTRUST;
 	state->r.in.domain_sid = state->domain_sid;
 	if (state->r.in.domain_sid == NULL) {
 		state->r.in.domain_sid = talloc_zero(state, struct dom_sid);
 	}
 
-	subreq = dcerpc_nbtd_getdcname_r_send(state, state->ctx->event_ctx,
+	subreq = dcerpc_nbtd_getdcname_r_send(state, state->ev,
 					      irpc_handle, &state->r);
-	if (composite_nomem(subreq, state->ctx)) return;
+	if (tevent_req_nomem(subreq, state->req)) {
+		return;
+	}
 	tevent_req_set_callback(subreq, finddcs_getdc_replied, state);
 }
 
@@ -178,10 +200,11 @@ static void finddcs_getdc_replied(struct tevent_req *subreq)
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
 		fallback_node_status(state);
+		return;
 	}
 
 	state->dcs[0].name = talloc_steal(state->dcs, state->r.out.dcname);
-	composite_done(state->ctx);
+	tevent_req_done(state->req);
 }
 
 /* The GetDC request might not be available (such as occours when the
@@ -200,16 +223,18 @@ static void fallback_node_status(struct finddcs_state *state)
 	state->node_status.in.timeout = 1;
 	state->node_status.in.retries = 2;
 
-	nbtsock = nbt_name_socket_init(state, state->ctx->event_ctx);
-	if (composite_nomem(nbtsock, state->ctx)) return;
+	nbtsock = nbt_name_socket_init(state, state->ev);
+	if (tevent_req_nomem(nbtsock, state->req)) {
+		return;
+	}
 	
 	name_req = nbt_name_status_send(nbtsock, &state->node_status);
-	if (composite_nomem(name_req, state->ctx)) return;
+	if (tevent_req_nomem(name_req, state->req)) {
+		return;
+	}
 
-	composite_continue_nbt(state->ctx, 
-			       name_req, 
-			       fallback_node_status_replied,
-			       state);
+	name_req->async.fn = fallback_node_status_replied;
+	name_req->async.private_data = state;
 }
 
 /* We have a node status reply (or perhaps a timeout) */
@@ -217,8 +242,12 @@ static void fallback_node_status_replied(struct nbt_name_request *name_req)
 {
 	int i;
 	struct finddcs_state *state = talloc_get_type(name_req->async.private_data, struct finddcs_state);
-	state->ctx->status = nbt_name_status_recv(name_req, state, &state->node_status);
-	if (!composite_is_ok(state->ctx)) return;
+	NTSTATUS status;
+
+	status = nbt_name_status_recv(name_req, state, &state->node_status);
+	if (tevent_req_nterror(state->req, status)) {
+		return;
+	}
 
 	for (i=0; i < state->node_status.out.status.num_names; i++) {
 		int j;
@@ -232,24 +261,31 @@ static void fallback_node_status_replied(struct nbt_name_request *name_req)
 				}
 			}
 			state->dcs[0].name = name;
-			composite_done(state->ctx);
+			tevent_req_done(state->req);
 			return;
 		}
 	}
-	composite_error(state->ctx, NT_STATUS_NO_LOGON_SERVERS);
+	tevent_req_nterror(state->req, NT_STATUS_NO_LOGON_SERVERS);
 }
 
-NTSTATUS finddcs_recv(struct composite_context *c, TALLOC_CTX *mem_ctx,
+NTSTATUS finddcs_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 		      int *num_dcs, struct nbt_dc_name **dcs)
 {
-	NTSTATUS status = composite_wait(c);
+	struct finddcs_state *state = tevent_req_data(req, struct finddcs_state);
+	bool ok;
+	NTSTATUS status;
+
+	ok = tevent_req_poll(req, state->ev);
+	if (!ok) {
+		tevent_req_received(req);
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+	status = tevent_req_simple_recv_ntstatus(req);
 	if (NT_STATUS_IS_OK(status)) {
-		struct finddcs_state *state =
-			talloc_get_type(c->private_data, struct finddcs_state);
 		*num_dcs = state->num_dcs;
 		*dcs = talloc_steal(mem_ctx, state->dcs);
 	}
-	talloc_free(c);
+	tevent_req_received(req);
 	return status;
 }
 
@@ -263,12 +299,15 @@ NTSTATUS finddcs(TALLOC_CTX *mem_ctx,
 		 struct messaging_context *msg_ctx,
 		 int *num_dcs, struct nbt_dc_name **dcs)
 {
-	struct composite_context *c = finddcs_send(mem_ctx,
-						   my_netbios_name,
-						   nbt_port,
-						   domain_name, name_type,
-						   domain_sid, 
-						   resolve_ctx,
-						   event_ctx, msg_ctx);
-	return finddcs_recv(c, mem_ctx, num_dcs, dcs);
+	NTSTATUS status;
+	struct tevent_req *req = finddcs_send(mem_ctx,
+					      my_netbios_name,
+					      nbt_port,
+					      domain_name, name_type,
+					      domain_sid,
+					      resolve_ctx,
+					      event_ctx, msg_ctx);
+	status = finddcs_recv(req, mem_ctx, num_dcs, dcs);
+	talloc_free(req);
+	return status;
 }

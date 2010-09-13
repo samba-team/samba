@@ -34,14 +34,15 @@ struct get_dom_info_state {
 	struct wb_dom_info *info;
 };
 
-static void get_dom_info_recv_addrs(struct composite_context *ctx);
+static void get_dom_info_recv_addrs(struct tevent_req *req);
 
 struct composite_context *wb_get_dom_info_send(TALLOC_CTX *mem_ctx,
 					       struct wbsrv_service *service,
 					       const char *domain_name,
 					       const struct dom_sid *sid)
 {
-	struct composite_context *result, *ctx;
+	struct composite_context *result;
+	struct tevent_req *req;
 	struct get_dom_info_state *state;
 	struct dom_sid *dom_sid;
 	result = composite_create(mem_ctx, service->task->event_ctx);
@@ -64,16 +65,17 @@ struct composite_context *wb_get_dom_info_send(TALLOC_CTX *mem_ctx,
 	dom_sid = dom_sid_dup(mem_ctx, sid);
 	if (dom_sid == NULL) goto failed;
 
-	ctx = finddcs_send(mem_ctx, lpcfg_netbios_name(service->task->lp_ctx),
+	req = finddcs_send(mem_ctx, lpcfg_netbios_name(service->task->lp_ctx),
 			   lpcfg_nbt_port(service->task->lp_ctx),
 			   domain_name, NBT_NAME_LOGON, 
 			   dom_sid, 
 			   lpcfg_resolve_context(service->task->lp_ctx),
 			   service->task->event_ctx, 
 			   service->task->msg_ctx);
-	if (ctx == NULL) goto failed;
+	if (req == NULL) goto failed;
 
-	composite_continue(state->ctx, ctx, get_dom_info_recv_addrs, state);
+	tevent_req_set_callback(req, get_dom_info_recv_addrs, state);
+
 	return result;
 
  failed:
@@ -81,13 +83,11 @@ struct composite_context *wb_get_dom_info_send(TALLOC_CTX *mem_ctx,
 	return NULL;
 }
 
-static void get_dom_info_recv_addrs(struct composite_context *ctx)
+static void get_dom_info_recv_addrs(struct tevent_req *req)
 {
-	struct get_dom_info_state *state =
-		talloc_get_type(ctx->async.private_data,
-				struct get_dom_info_state);
+	struct get_dom_info_state *state = tevent_req_callback_data(req, struct get_dom_info_state);
 
-	state->ctx->status = finddcs_recv(ctx, state->info,
+	state->ctx->status = finddcs_recv(req, state->info,
 					  &state->info->num_dcs,
 					  &state->info->dcs);
 	if (!composite_is_ok(state->ctx)) return;
