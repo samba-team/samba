@@ -856,8 +856,7 @@ static void manage_squid_ntlmssp_request(struct ntlm_auth_state *state,
 	}
 
 	if (strncmp(buf, "YR", 2) == 0) {
-		if (state->ntlmssp_state)
-			TALLOC_FREE(state->ntlmssp_state);
+		TALLOC_FREE(state->ntlmssp_state);
 		state->svr_state = SERVER_INITIAL;
 	} else if (strncmp(buf, "KK", 2) == 0) {
 		/* No special preprocessing required */
@@ -1012,8 +1011,7 @@ static void manage_client_ntlmssp_request(struct ntlm_auth_state *state,
 	}
 
 	if (strncmp(buf, "YR", 2) == 0) {
-		if (state->ntlmssp_state)
-			TALLOC_FREE(state->ntlmssp_state);
+		TALLOC_FREE(state->ntlmssp_state);
 		state->cli_state = CLIENT_INITIAL;
 	} else if (strncmp(buf, "TT", 2) == 0) {
 		/* No special preprocessing required */
@@ -1104,14 +1102,12 @@ static void manage_client_ntlmssp_request(struct ntlm_auth_state *state,
 
 		DEBUG(10, ("NTLMSSP OK!\n"));
 		state->cli_state = CLIENT_FINISHED;
-		if (state->ntlmssp_state)
-			TALLOC_FREE(state->ntlmssp_state);
+		TALLOC_FREE(state->ntlmssp_state);
 	} else {
 		x_fprintf(x_stdout, "BH %s\n", nt_errstr(nt_status));
 		DEBUG(0, ("NTLMSSP BH: %s\n", nt_errstr(nt_status)));
 		state->cli_state = CLIENT_ERROR;
-		if (state->ntlmssp_state)
-			TALLOC_FREE(state->ntlmssp_state);
+		TALLOC_FREE(state->ntlmssp_state);
 	}
 
 	data_blob_free(&request);
@@ -1225,8 +1221,7 @@ static void manage_gss_spnego_request(struct ntlm_auth_state *state,
 	}
 
 	if (strncmp(buf, "YR", 2) == 0) {
-		if (ntlmssp_state)
-			TALLOC_FREE(ntlmssp_state);
+		TALLOC_FREE(ntlmssp_state);
 	} else if (strncmp(buf, "KK", 2) == 0) {
 		;
 	} else {
