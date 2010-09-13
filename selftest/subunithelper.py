@@ -33,7 +33,7 @@ class TestsuiteEnabledTestResult(testtools.testresult.TestResult):
 
 def parse_results(msg_ops, statistics, fh):
     expected_fail = 0
-    open_tests = []
+    open_tests = {}
 
     while fh:
         l = fh.readline()
@@ -47,8 +47,12 @@ def parse_results(msg_ops, statistics, fh):
         arg = parts[1]
         if command in ("test", "testing"):
             msg_ops.control_msg(l)
-            msg_ops.startTest(subunit.RemotedTestCase(arg.rstrip()))
-            open_tests.append(arg.rstrip())
+            name = arg.rstrip()
+            test = subunit.RemotedTestCase(name)
+            if name in open_tests:
+                msg_ops.addError(open_tests.pop(name), "Test already running")
+            msg_ops.startTest(test)
+            open_tests[name] = test
         elif command == "time":
             msg_ops.control_msg(l)
             try:
@@ -85,46 +89,47 @@ def parse_results(msg_ops, statistics, fh):
                 reason = None
             if result in ("success", "successful"):
                 try:
-                    open_tests.remove(testname)
-                except ValueError:
+                    test = open_tests.pop(testname)
+                except KeyError:
                     statistics['TESTS_ERROR']+=1
                     msg_ops.addError(subunit.RemotedTestCase(testname), "Test was never started")
                 else:
                     statistics['TESTS_EXPECTED_OK']+=1
-                    msg_ops.end_test(testname, "success", False, reason)
+                    msg_ops.addSuccess(test, reason)
             elif result in ("xfail", "knownfail"):
                 try:
-                    open_tests.remove(testname)
-                except ValueError:
+                    test = open_tests.pop(testname)
+                except KeyError:
                     statistics['TESTS_ERROR']+=1
                     msg_ops.addError(subunit.RemotedTestCase(testname), "Test was never started")
                 else:
                     statistics['TESTS_EXPECTED_FAIL']+=1
-                    msg_ops.end_test(testname, "xfail", False, reason)
+                    msg_ops.addExpectedFail(test, reason)
                     expected_fail+=1
             elif result in ("failure", "fail"):
                 try:
-                    open_tests.remove(testname)
-                except ValueError:
+                    test = open_tests.pop(testname)
+                except KeyError:
                     statistics['TESTS_ERROR']+=1
                     msg_ops.addError(subunit.RemotedTestCase(testname), "Test was never started")
                 else:
                     statistics['TESTS_UNEXPECTED_FAIL']+=1
-                    msg_ops.end_test(testname, "failure", True, reason)
+                    msg_ops.addFailure(test, reason)
             elif result == "skip":
                 statistics['TESTS_SKIP']+=1
                 # Allow tests to be skipped without prior announcement of test
-                last = open_tests.pop()
-                if last is not None and last != testname:
-                    open_tests.append(testname)
-                msg_ops.end_test(testname, "skip", False, reason)
+                try:
+                    test = open_tests.pop(testname)
+                except KeyError:
+                    test = subunit.RemotedTestCase(testname)
+                msg_ops.addSkip(test, reason)
             elif result == "error":
                 statistics['TESTS_ERROR']+=1
                 try:
-                    open_tests.remove(testname)
-                except ValueError:
-                    pass
-                msg_ops.addError(subunit.RemotedTestCase(testname), reason)
+                    test = open_tests.pop(testname)
+                except KeyError:
+                    test = subunit.RemotedTestCase(testname)
+                msg_ops.addError(test, reason)
             elif result == "skip-testsuite":
                 msg_ops.skip_testsuite(testname)
             elif result == "testsuite-success":
@@ -169,6 +174,18 @@ class SubunitOps(subunit.TestProtocolClient,TestsuiteEnabledTestResult):
 
     def addError(self, test, details=None):
         self.end_test(test.id(), "error", details)
+
+    def addSuccess(self, test, details=None):
+        self.end_test(test.id(), "success", details)
+
+    def addExpectedFail(self, test, details=None):
+        self.end_test(test.id(), "xfail", details)
+
+    def addFailure(self, test, details=None):
+        self.end_test(test.id(), "failure", details)
+
+    def addSkip(self, test, details=None):
+        self.end_test(test.id(), "skip", details)
 
     def end_test(self, name, result, reason=None):
         if reason:
@@ -250,21 +267,39 @@ class FilterOps(testtools.testresult.TestResult):
             self.output+=msg
 
     def startTest(self, test):
-        if self.prefix is not None:
-            test = subunit.RemotedTestCase(self.prefix + test.id())
-
+        test = self._add_prefix(test)
         if self.strip_ok_output:
            self.output = ""
 
         self._ops.startTest(test)
 
+    def _add_prefix(self, test):
+        if self.prefix is not None:
+            return subunit.RemotedTestCase(self.prefix + test.id())
+        else:
+            return test
+
     def addError(self, test, details=None):
-        self.end_test(test.id(), "error", details)
+        test = self._add_prefix(test)
+        self.end_test(test.id(), "error", True, details)
+
+    def addSkip(self, test, details=None):
+        test = self._add_prefix(test)
+        self.end_test(test.id(), "skip", False, details)
+
+    def addExpectedFail(self, test, details=None):
+        test = self._add_prefix(test)
+        self.end_test(test.id(), "xfail", False, details)
+
+    def addFailure(self, test, details=None):
+        test = self._add_prefix(test)
+        self.end_test(test.id(), "failure", True, details)
+
+    def addSuccess(self, test, details=None):
+        test = self._add_prefix(test)
+        self.end_test(test.id(), "success", False, details)
 
     def end_test(self, testname, result, unexpected, reason):
-        if self.prefix is not None:
-            testname = self.prefix + testname
-
         if result in ("fail", "failure") and not unexpected:
             result = "xfail"
             self.xfail_added+=1
