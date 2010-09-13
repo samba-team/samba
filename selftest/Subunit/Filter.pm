@@ -7,17 +7,6 @@ package Subunit::Filter;
 
 use strict;
 
-sub control_msg()
-{
-	# We regenerate control messages, so ignore this
-}
-
-sub output_msg($$)
-{
-	my ($self, $msg) = @_;
-	print $msg;
-}
-
 sub start_test($$)
 {
 	my ($self, $testname) = @_;

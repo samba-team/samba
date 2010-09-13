@@ -31,11 +31,9 @@ sub parse_results($$)
 
 	while(<$fh>) {
 		if (/^test: (.+)\n/) {
-			$msg_ops->control_msg($_);
 			$msg_ops->start_test($1);
 			push (@$open_tests, $1);
 		} elsif (/^(success|successful|failure|fail|skip|knownfail|error|xfail): (.*?)( \[)?([ \t]*)( multipart)?\n/) {
-			$msg_ops->control_msg($_);
 			my $result = $1;
 			my $testname = $2;
 			my $reason = undef;
@@ -44,7 +42,6 @@ sub parse_results($$)
 				# reason may be specified in next lines
 				my $terminated = 0;
 				while(<$fh>) {
-					$msg_ops->control_msg($_);
 					if ($_ eq "]\n") { $terminated = 1; last; } else { $reason .= $_; }
 				}
 
@@ -76,7 +73,7 @@ sub parse_results($$)
 				$msg_ops->end_test($testname, "error", $reason);
 			}
 		} else {
-			$msg_ops->output_msg($_);
+			print $_;
 		}
 	}
 
