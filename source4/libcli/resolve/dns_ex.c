@@ -167,7 +167,7 @@ static void run_child_dns_lookup(struct dns_ex_state *state, int fd)
 
 		if (do_srv) {
 			/* we are only interested in SRV records */
-			if (rr->type != rk_ns_c_in) {
+			if (rr->type != rk_ns_t_srv) {
 				continue;
 			}
 
@@ -207,7 +207,7 @@ static void run_child_dns_lookup(struct dns_ex_state *state, int fd)
 				continue;
 			}
 
-			/* we are only interested in SRV records */
+			/* we are only interested in A records */
 			if (rr->type != rk_ns_t_a) {
 				continue;
 			}
