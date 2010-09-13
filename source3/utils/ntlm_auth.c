@@ -762,7 +762,7 @@ static NTSTATUS do_ccache_ntlm_auth(DATA_BLOB initial_msg, DATA_BLOB challenge_m
 	 * child of the trusted domain. If we ask the primary domain for
 	 * ntlm_ccache_auth, it will fail. So, we have to ask the trusted
 	 * domain's child for ccache_ntlm_auth. that is to say, we have to 
-	 * set WBFALG_PAM_CONTACT_TRUSTDOM in request.flags.
+	 * set WBFLAG_PAM_CONTACT_TRUSTDOM in request.flags.
 	 */
 	ctrl = get_pam_winbind_config();
 
