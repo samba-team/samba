@@ -131,9 +131,12 @@ struct ctdb_call_info {
 */
 #define CTDB_SRVID_TAKEOVER_RUN_RESPONSE  0xFD00000000000000LL
 
-/* A port reserved for samba (top 32 bits)
+/* A range of ports reserved for samba (top 32 bits)
+ * All ports matching the 32 top bits are reserved for exclusive use by
+ * CIFS server
  */
 #define CTDB_SRVID_SAMBA_NOTIFY  0xFE00000000000000LL
+#define CTDB_SRVID_SAMBA_RANGE   0xFE00000000000000LL
 
 /* A range of ports reserved for a CTDB NFS server (top 32 bits)
  * All ports matching the 32 top bits are reserved for exclusive use by
