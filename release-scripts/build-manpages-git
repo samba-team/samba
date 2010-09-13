@@ -20,11 +20,6 @@ autoconf || _exit "Error running autoconf."
 
 ./configure || _exit "Error running configure."
 
-# enable offline build by creating catalog:
-cat $(pwd)/build/catalog.xml.in \
-	| sed -e "s|@BUILDDIR@|$(pwd)|g" \
-	> $(pwd)/build/catalog.xml
-
 export XML_CATALOG_FILES="file:///etc/xml/catalog file://$(pwd)/build/catalog.xml"
 
 make manpages3 || _exit "Error running make manpages3"
