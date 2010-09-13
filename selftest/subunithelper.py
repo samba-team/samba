@@ -159,8 +159,8 @@ def parse_results(msg_ops, statistics, fh):
             msg_ops.output_msg(l)
 
     while open_tests:
-        msg_ops.end_test(open_tests.pop(), "error", True,
-                   "was started but never finished!")
+        test = subunit.RemotedTestCase(open_tests.popitem()[1])
+        msg_ops.addError(test, "was started but never finished!")
         statistics['TESTS_ERROR']+=1
 
     if statistics['TESTS_ERROR'] > 0:
@@ -192,18 +192,6 @@ class SubunitOps(subunit.TestProtocolClient,TestsuiteEnabledTestResult):
             self._stream.write("%s: %s [\n%s\n]\n" % (result, name, reason))
         else:
             self._stream.write("%s: %s\n" % (result, name))
-
-    def skip_test(self, name, reason=None):
-        self.end_test(name, "skip", reason)
-
-    def fail_test(self, name, reason=None):
-        self.end_test(name, "fail", reason)
-
-    def success_test(self, name, reason=None):
-        self.end_test(name, "success", reason)
-
-    def xfail_test(self, name, reason=None):
-        self.end_test(name, "xfail", reason)
 
     # The following are Samba extensions:
     def start_testsuite(self, name):
