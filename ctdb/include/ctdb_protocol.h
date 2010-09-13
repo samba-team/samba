@@ -135,6 +135,18 @@ struct ctdb_call_info {
  */
 #define CTDB_SRVID_SAMBA_NOTIFY  0xFE00000000000000LL
 
+/* A range of ports reserved for a CTDB NFS server (top 32 bits)
+ * All ports matching the 32 top bits are reserved for exclusive use by
+ * NFS server
+ */
+#define CTDB_SRVID_NFSD_RANGE  0xFE01000000000000LL
+
+/* A range of ports reserved for a CTDB ISCSI server (top 32 bits)
+ * All ports matching the 32 top bits are reserved for exclusive use by
+ * ISCSI server
+ */
+#define CTDB_SRVID_ISCSID_RANGE  0xFE02000000000000LL
+
 /* used on the domain socket, send a pdu to the local daemon */
 #define CTDB_CURRENT_NODE     0xF0000001
 /* send a broadcast to all nodes in the cluster, active or not */
