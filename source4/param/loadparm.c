@@ -2352,7 +2352,9 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 	lpcfg_do_global_parameter(lp_ctx, "dcerpc endpoint servers", "epmapper srvsvc wkssvc rpcecho samr netlogon lsarpc spoolss drsuapi winreg dssetup unixinfo browser");
 	lpcfg_do_global_parameter(lp_ctx, "server services", "smb rpc nbt wrepl ldap cldap kdc drepl winbind ntp_signd kcc dnsupdate");
 	lpcfg_do_global_parameter(lp_ctx, "ntptr providor", "simple_ldb");
-	lpcfg_do_global_parameter(lp_ctx, "auth methods:domain controller", "anonymous sam_ignoredomain");
+	/* the winbind method for domain controllers is for both RODC
+	   auth forwarding and for trusted domains */
+	lpcfg_do_global_parameter(lp_ctx, "auth methods:domain controller", "anonymous sam_ignoredomain winbind");
 	lpcfg_do_global_parameter(lp_ctx, "auth methods:member server", "anonymous sam winbind");
 	lpcfg_do_global_parameter(lp_ctx, "auth methods:standalone", "anonymous sam_ignoredomain");
 	lpcfg_do_global_parameter(lp_ctx, "private dir", dyn_PRIVATE_DIR);
