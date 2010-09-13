@@ -1197,7 +1197,7 @@ static int replmd_update_rpmd(struct ldb_module *module,
 		if (*seq_num <= db_seq) {
 			DEBUG(0,(__location__ ": changereplmetada control provided but max(local_usn)"\
 					      " is less or equal to uSNChanged (max = %lld uSNChanged = %lld)\n",
-					      *seq_num, db_seq));
+				 (long long)*seq_num, (long long)db_seq));
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 

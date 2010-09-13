@@ -45,7 +45,7 @@ _PUBLIC_ char *reg_val_data_string(TALLOC_CTX *mem_ctx, uint32_t type,
 		case REG_QWORD:
 			SMB_ASSERT(data.length == sizeof(uint64_t));
 			ret = talloc_asprintf(mem_ctx, "0x%16.16llx",
-					      BVAL(data.data, 0));
+					      (unsigned long long)BVAL(data.data, 0));
 			break;
 		case REG_BINARY:
 			ret = data_blob_hex_string_upper(mem_ctx, &data);
