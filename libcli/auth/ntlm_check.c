@@ -4,17 +4,17 @@
    Copyright (C) Andrew Bartlett <abartlet@samba.org> 2001-2004
    Copyright (C) Gerald Carter                             2003
    Copyright (C) Luke Kenneth Casson Leighton         1996-2000
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -36,19 +36,19 @@ static bool smb_pwd_check_ntlmv1(TALLOC_CTX *mem_ctx,
 {
 	/* Finish the encryption of part_passwd. */
 	uint8_t p24[24];
-	
+
 	if (part_passwd == NULL) {
 		DEBUG(10,("No password set - DISALLOWING access\n"));
 		/* No password set - always false ! */
 		return false;
 	}
-	
+
 	if (sec_blob->length != 8) {
 		DEBUG(0, ("smb_pwd_check_ntlmv1: incorrect challenge size (%lu)\n", 
 			  (unsigned long)sec_blob->length));
 		return false;
 	}
-	
+
 	if (nt_response->length != 24) {
 		DEBUG(0, ("smb_pwd_check_ntlmv1: incorrect password length (%lu)\n", 
 			  (unsigned long)nt_response->length));
@@ -56,7 +56,7 @@ static bool smb_pwd_check_ntlmv1(TALLOC_CTX *mem_ctx,
 	}
 
 	SMBOWFencrypt(part_passwd, sec_blob->data, p24);
-	
+
 #if DEBUG_PASSWORD
 	DEBUG(100,("Part password (P16) was |\n"));
 	dump_data(100, part_passwd, 16);
@@ -106,7 +106,7 @@ static bool smb_pwd_check_ntlmv2(TALLOC_CTX *mem_ctx,
 			  (unsigned long)sec_blob->length));
 		return false;
 	}
-	
+
 	if (ntv2_response->length < 24) {
 		/* We MUST have more than 16 bytes, or the stuff below will go
 		   crazy.  No known implementation sends less than the 24 bytes
@@ -180,7 +180,7 @@ static bool smb_sess_key_ntlmv2(TALLOC_CTX *mem_ctx,
 			  (unsigned long)sec_blob->length));
 		return false;
 	}
-	
+
 	if (ntv2_response->length < 24) {
 		/* We MUST have more than 16 bytes, or the stuff below will go
 		   crazy.  No known implementation sends less than the 24 bytes
@@ -318,7 +318,7 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 		DEBUG(4,("ntlm_password_check: checking plaintext passwords for user %s\n",
 			 username));
 		mdfour(client_nt.hash, nt_response->data, nt_response->length);
-		
+
 		if (lm_response->length && 
 		    (convert_string_talloc(mem_ctx, CH_DOS, CH_UNIX, 
 					  lm_response->data, lm_response->length, 
@@ -343,7 +343,7 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 		DEBUG(2,("ntlm_password_check: invalid NT password length (%lu) for user %s\n", 
 			 (unsigned long)nt_response->length, username));		
 	}
-	
+
 	if (nt_response->length > 24 && stored_nt) {
 		/* We have the NT MD4 hash challenge available - see if we can
 		   use it 
@@ -361,7 +361,7 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 			}
 			return NT_STATUS_OK;
 		}
-		
+
 		DEBUG(4,("ntlm_password_check: Checking NTLMv2 password with uppercased version of domain [%s]\n", client_domain));
 		if (smb_pwd_check_ntlmv2(mem_ctx,
 					 nt_response, 
@@ -375,7 +375,7 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 			}
 			return NT_STATUS_OK;
 		}
-		
+
 		DEBUG(4,("ntlm_password_check: Checking NTLMv2 password without a domain\n"));
 		if (smb_pwd_check_ntlmv2(mem_ctx,
 					 nt_response, 
@@ -403,7 +403,7 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 						 user_sess_key)) {
 				/* The LM session key for this response is not very secure, 
 				   so use it only if we otherwise allow LM authentication */
-				
+
 				if (lanman_auth && stored_lanman) {
 					*lm_sess_key = data_blob_talloc(mem_ctx, stored_lanman->hash, MIN(8, user_sess_key->length));
 				}
@@ -419,19 +419,19 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 			/* no return, because we might pick up LMv2 in the LM field */
 		}
 	}
-	
+
 	if (lm_response->length == 0) {
 		DEBUG(3,("ntlm_password_check: NEITHER LanMan nor NT password supplied for user %s\n",
 			 username));
 		return NT_STATUS_WRONG_PASSWORD;
 	}
-	
+
 	if (lm_response->length < 24) {
 		DEBUG(2,("ntlm_password_check: invalid LanMan password length (%lu) for user %s\n", 
 			 (unsigned long)nt_response->length, username));		
 		return NT_STATUS_WRONG_PASSWORD;
 	}
-		
+
 	if (!lanman_auth) {
 		DEBUG(3,("ntlm_password_check: Lanman passwords NOT PERMITTED for user %s\n",
 			 username));
@@ -461,12 +461,12 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 			return NT_STATUS_OK;
 		}
 	}
-	
+
 	if (!stored_nt) {
 		DEBUG(4,("ntlm_password_check: LM password check failed for user, no NT password %s\n",username));
 		return NT_STATUS_WRONG_PASSWORD;
 	}
-	
+
 	/* This is for 'LMv2' authentication.  almost NTLMv2 but limited to 24 bytes.
 	   - related to Win9X, legacy NAS pass-though authentication
 	*/
@@ -499,7 +499,7 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 		}
 		return NT_STATUS_OK;
 	}
-	
+
 	DEBUG(4,("ntlm_password_check: Checking LMv2 password with upper-cased version of domain %s\n", client_domain));
 	if (smb_pwd_check_ntlmv2(mem_ctx,
 				 lm_response, 
@@ -529,7 +529,7 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 		}
 		return NT_STATUS_OK;
 	}
-	
+
 	DEBUG(4,("ntlm_password_check: Checking LMv2 password without a domain\n"));
 	if (smb_pwd_check_ntlmv2(mem_ctx,
 				 lm_response, 
