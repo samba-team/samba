@@ -19,23 +19,20 @@ use POSIX;
 
 require Exporter;
 @ISA = qw(Exporter);
-@EXPORT_OK = qw(parse_results);
+@EXPORT_OK = qw(filter_add_prefix);
 
 use strict;
 
-sub parse_results($$)
+sub filter_add_prefix($$)
 {
-	my ($msg_ops, $fh) = @_;
-	my $expected_fail = 0;
-	my $open_tests = [];
+	my ($prefix, $fh) = @_;
 
 	while(<$fh>) {
 		if (/^test: (.+)\n/) {
-			$msg_ops->start_test($1);
-			push (@$open_tests, $1);
+			Subunit::start_test($prefix.$1);
 		} elsif (/^(success|successful|failure|fail|skip|knownfail|error|xfail): (.*?)( \[)?([ \t]*)( multipart)?\n/) {
 			my $result = $1;
-			my $testname = $2;
+			my $testname = $prefix.$2;
 			my $reason = undef;
 			if ($3) {
 				$reason = "";
@@ -46,40 +43,15 @@ sub parse_results($$)
 				}
 
 				unless ($terminated) {
-					$msg_ops->end_test($testname, "error",
-						               "reason ($result) interrupted\n");
-					return 1;
+					print $reason;
+					$reason = "reason ($result) interrupted";
+					$result = "error";
 				}
 			}
-			if ($result eq "success" or $result eq "successful") {
-				pop(@$open_tests); #FIXME: Check that popped value == $testname 
-				$msg_ops->end_test($testname, "success", $reason);
-			} elsif ($result eq "xfail" or $result eq "knownfail") {
-				pop(@$open_tests); #FIXME: Check that popped value == $testname
-				$msg_ops->end_test($testname, "xfail", $reason);
-				$expected_fail++;
-			} elsif ($result eq "failure" or $result eq "fail") {
-				pop(@$open_tests); #FIXME: Check that popped value == $testname
-				$msg_ops->end_test($testname, "failure", $reason);
-			} elsif ($result eq "skip") {
-				# Allow tests to be skipped without prior announcement of test
-				my $last = pop(@$open_tests);
-				if (defined($last) and $last ne $testname) {
-					push (@$open_tests, $testname);
-				}
-				$msg_ops->end_test($testname, "skip", $reason);
-			} elsif ($result eq "error") {
-				pop(@$open_tests); #FIXME: Check that popped value == $testname
-				$msg_ops->end_test($testname, "error", $reason);
-			}
+			Subunit::end_test($testname, $result, $reason);
 		} else {
 			print $_;
 		}
-	}
-
-	while ($#$open_tests+1 > 0) {
-		$msg_ops->end_test(pop(@$open_tests), "error",
-				   "was started but never finished!\n");
 	}
 }
 
@@ -102,34 +74,6 @@ sub end_test($$;$)
 	} else {
 		print "$result: $name\n";
 	}
-}
-
-sub skip_test($;$)
-{
-	my $name = shift;
-	my $reason = shift;
-	end_test($name, "skip", $reason);
-}
-
-sub fail_test($;$)
-{
-	my $name = shift;
-	my $reason = shift;
-	end_test($name, "fail", $reason);
-}
-
-sub success_test($;$)
-{
-	my $name = shift;
-	my $reason = shift;
-	end_test($name, "success", $reason);
-}
-
-sub xfail_test($;$)
-{
-	my $name = shift;
-	my $reason = shift;
-	end_test($name, "xfail", $reason);
 }
 
 sub report_time($)

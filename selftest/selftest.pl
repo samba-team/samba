@@ -130,8 +130,7 @@ use Getopt::Long;
 use POSIX;
 use Cwd qw(abs_path);
 use lib "$RealBin";
-use Subunit qw(parse_results);
-use Subunit::Filter;
+use Subunit;
 use SocketWrapper;
 
 eval {
@@ -243,9 +242,7 @@ sub run_testsuite($$$$$)
 
 	open(RESULTS, "$cmd 2>&1|");
 
-	my $msg_ops = new Subunit::Filter("$name\.");
-
-	parse_results($msg_ops, *RESULTS);
+	Subunit::filter_add_prefix("$name\.", *RESULTS);
 
 	my $ret = 0;
 
