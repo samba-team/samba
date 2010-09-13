@@ -392,7 +392,7 @@ WERROR dsdb_read_prefixes_from_ldb(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
  */
 static bool dsdb_schema_unique_attribute(const char *attr)
 {
-	const char *attrs[] = { "objectGUID", "objectSID" , NULL };
+	const char *attrs[] = { "objectGUID", "objectSid" , NULL };
 	unsigned int i;
 	for (i=0;attrs[i];i++) {
 		if (strcasecmp(attr, attrs[i]) == 0) {

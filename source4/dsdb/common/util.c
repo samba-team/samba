@@ -2525,7 +2525,7 @@ int dsdb_find_sid_by_dn(struct ldb_context *ldb,
 {
 	int ret;
 	struct ldb_result *res;
-	const char *attrs[] = { "objectSID", NULL };
+	const char *attrs[] = { "objectSid", NULL };
 	TALLOC_CTX *tmp_ctx = talloc_new(ldb);
 	struct dom_sid *s;
 
@@ -2540,7 +2540,7 @@ int dsdb_find_sid_by_dn(struct ldb_context *ldb,
 		talloc_free(tmp_ctx);
 		return LDB_ERR_NO_SUCH_OBJECT;
 	}
-	s = samdb_result_dom_sid(tmp_ctx, res->msgs[0], "objectSID");
+	s = samdb_result_dom_sid(tmp_ctx, res->msgs[0], "objectSid");
 	if (s == NULL) {
 		talloc_free(tmp_ctx);
 		return LDB_ERR_NO_SUCH_OBJECT;
@@ -2570,7 +2570,7 @@ int dsdb_find_dn_by_sid(struct ldb_context *ldb,
 			  DSDB_SEARCH_SEARCH_ALL_PARTITIONS |
 			  DSDB_SEARCH_SHOW_EXTENDED_DN |
 			  DSDB_SEARCH_ONE_ONLY,
-			  "objectSID=%s", sid_str);
+			  "objectSid=%s", sid_str);
 	talloc_free(sid_str);
 	if (ret != LDB_SUCCESS) {
 		return ret;
@@ -3871,7 +3871,7 @@ int dsdb_validate_dsa_guid(struct ldb_context *ldb,
             - remove "NTDS Settings" component from DN
 	    - do a base search on that DN for serverReference with
 	      extended-dn enabled
-            - extract objectSID from resulting serverReference
+            - extract objectSid from resulting serverReference
               attribute
 	    - check this sid matches the sid argument
 	*/

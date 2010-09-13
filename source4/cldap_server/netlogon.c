@@ -146,7 +146,7 @@ NTSTATUS fill_netlogon_samlogon_response(struct ldb_context *sam_ctx,
 			ret = ldb_search(sam_ctx, mem_ctx, &dom_res,
 						 NULL, LDB_SCOPE_SUBTREE, 
 						 dom_attrs, 
-						 "(&(objectCategory=DomainDNS)(objectSID=%s))", 
+						 "(&(objectCategory=DomainDNS)(objectSid=%s))",
 						 ldb_binary_encode(mem_ctx, sid_val));
 		}
 		

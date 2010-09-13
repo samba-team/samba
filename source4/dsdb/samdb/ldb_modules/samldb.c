@@ -799,7 +799,7 @@ static int samldb_fill_object(struct samldb_ctx *ac, const char *type)
 	lp_ctx = talloc_get_type(ldb_get_opaque(ldb, "loadparm"),
 		 struct loadparm_context);
 
-	/* don't allow objectSID to be specified without the RELAX control */
+	/* don't allow objectSid to be specified without the RELAX control */
 	sid = samdb_result_dom_sid(ac, ac->msg, "objectSid");
 	if (sid && !ldb_request_get_control(ac->req, LDB_CONTROL_RELAX_OID) &&
 	    !dsdb_module_am_system(ac->module)) {
@@ -1282,7 +1282,7 @@ static int samldb_prim_group_users_check(struct samldb_ctx *ac)
 	ldb = ldb_module_get_ctx(ac->module);
 
 	/* Finds out the SID/RID of the SAM object */
-	sid = samdb_search_dom_sid(ldb, ac, ac->req->op.del.dn, "objectSID",
+	sid = samdb_search_dom_sid(ldb, ac, ac->req->op.del.dn, "objectSid",
 				   NULL);
 	if (sid == NULL) {
 		/* No SID - it might not be a SAM object - therefore ok */

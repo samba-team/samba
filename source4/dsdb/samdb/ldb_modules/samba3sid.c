@@ -19,7 +19,7 @@
 */
 
 /*
-  add objectSID to users and groups using samba3 nextRid method
+  add objectSid to users and groups using samba3 nextRid method
  */
 
 #include "includes.h"

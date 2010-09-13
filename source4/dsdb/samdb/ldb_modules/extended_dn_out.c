@@ -134,7 +134,7 @@ static int inject_extended_dn_out(struct ldb_reply *ares,
 	const DATA_BLOB *sid_blob;
 
 	guid_blob = ldb_msg_find_ldb_val(ares->message, "objectGUID");
-	sid_blob = ldb_msg_find_ldb_val(ares->message, "objectSID");
+	sid_blob = ldb_msg_find_ldb_val(ares->message, "objectSid");
 
 	if (!guid_blob) {
 		ldb_set_errstring(ldb, "Did not find objectGUID to inject into extended DN");
@@ -157,7 +157,7 @@ static int inject_extended_dn_out(struct ldb_reply *ares,
 	}
 
 	if (sid_blob && remove_sid) {
-		ldb_msg_remove_attr(ares->message, "objectSID");
+		ldb_msg_remove_attr(ares->message, "objectSid");
 	}
 
 	return LDB_SUCCESS;
@@ -207,9 +207,9 @@ static int handle_dereference_openldap(struct ldb_dn *dn,
 		ldb_dn_set_extended_component(dn, "GUID", &guid_blob);
 	}
 	
-	sid_blob = ldb_msg_find_ldb_val(&fake_msg, "objectSID");
+	sid_blob = ldb_msg_find_ldb_val(&fake_msg, "objectSid");
 	
-	/* Look for the objectSID */
+	/* Look for the objectSid */
 	if (sid_blob) {
 		ldb_dn_set_extended_component(dn, "SID", sid_blob);
 	}
@@ -261,7 +261,7 @@ static int handle_dereference_fds(struct ldb_dn *dn,
 		ldb_dn_set_extended_component(dn, "GUID", &guid_blob);
 	}
 	
-	/* Look for the objectSID */
+	/* Look for the objectSid */
 
 	sidBlob = ldb_msg_find_ldb_val(&fake_msg, "sambaSID");
 	if (sidBlob) {
@@ -610,7 +610,7 @@ static int extended_dn_out_search(struct ldb_module *module, struct ldb_request 
 			if (! is_attr_in_list(req->op.search.attrs, "objectGUID")) {
 				ac->remove_guid = true;
 			}
-			if (! is_attr_in_list(req->op.search.attrs, "objectSID")) {
+			if (! is_attr_in_list(req->op.search.attrs, "objectSid")) {
 				ac->remove_sid = true;
 			}
 			if (ac->remove_guid || ac->remove_sid) {
@@ -624,7 +624,7 @@ static int extended_dn_out_search(struct ldb_module *module, struct ldb_request 
 						return ldb_operr(ldb);
 				}
 				if (ac->remove_sid) {
-					if (!add_attrs(ac, &new_attrs, "objectSID"))
+					if (!add_attrs(ac, &new_attrs, "objectSid"))
 						return ldb_operr(ldb);
 				}
 				const_attrs = (const char * const *)new_attrs;
@@ -815,7 +815,7 @@ static int extended_dn_out_openldap_init(struct ldb_module *module)
 {
 	static const char *attrs[] = {
 		"entryUUID",
-		"objectSID",
+		"objectSid",
 		NULL
 	};
 
