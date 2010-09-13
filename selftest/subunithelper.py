@@ -79,8 +79,7 @@ def parse_results(msg_ops, statistics, fh):
 
                 if not terminated:
                     statistics['TESTS_ERROR']+=1
-                    msg_ops.end_test(testname, "error", True, 
-                                       "reason (%s) interrupted" % result)
+                    msg_ops.addError(subunit.RemotedTestCase(testname), "reason (%s) interrupted" % result)
                     return 1
             else:
                 reason = None
@@ -89,8 +88,7 @@ def parse_results(msg_ops, statistics, fh):
                     open_tests.remove(testname)
                 except ValueError:
                     statistics['TESTS_ERROR']+=1
-                    msg_ops.end_test(testname, "error", True, 
-                            "Test was never started")
+                    msg_ops.addError(subunit.RemotedTestCase(testname), "Test was never started")
                 else:
                     statistics['TESTS_EXPECTED_OK']+=1
                     msg_ops.end_test(testname, "success", False, reason)
@@ -99,8 +97,7 @@ def parse_results(msg_ops, statistics, fh):
                     open_tests.remove(testname)
                 except ValueError:
                     statistics['TESTS_ERROR']+=1
-                    msg_ops.end_test(testname, "error", True, 
-                            "Test was never started")
+                    msg_ops.addError(subunit.RemotedTestCase(testname), "Test was never started")
                 else:
                     statistics['TESTS_EXPECTED_FAIL']+=1
                     msg_ops.end_test(testname, "xfail", False, reason)
@@ -110,8 +107,7 @@ def parse_results(msg_ops, statistics, fh):
                     open_tests.remove(testname)
                 except ValueError:
                     statistics['TESTS_ERROR']+=1
-                    msg_ops.end_test(testname, "error", True, 
-                            "Test was never started")
+                    msg_ops.addError(subunit.RemotedTestCase(testname), "Test was never started")
                 else:
                     statistics['TESTS_UNEXPECTED_FAIL']+=1
                     msg_ops.end_test(testname, "failure", True, reason)
@@ -128,7 +124,7 @@ def parse_results(msg_ops, statistics, fh):
                     open_tests.remove(testname)
                 except ValueError:
                     pass
-                msg_ops.end_test(testname, "error", True, reason)
+                msg_ops.addError(subunit.RemotedTestCase(testname), reason)
             elif result == "skip-testsuite":
                 msg_ops.skip_testsuite(testname)
             elif result == "testsuite-success":
@@ -170,6 +166,9 @@ def parse_results(msg_ops, statistics, fh):
 
 
 class SubunitOps(subunit.TestProtocolClient,TestsuiteEnabledTestResult):
+
+    def addError(self, test, details=None):
+        self.end_test(test.id(), "error", details)
 
     def end_test(self, name, result, reason=None):
         if reason:
@@ -258,6 +257,9 @@ class FilterOps(testtools.testresult.TestResult):
            self.output = ""
 
         self._ops.startTest(test)
+
+    def addError(self, test, details=None):
+        self.end_test(test.id(), "error", details)
 
     def end_test(self, testname, result, unexpected, reason):
         if self.prefix is not None:
