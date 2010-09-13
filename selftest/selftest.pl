@@ -242,18 +242,10 @@ sub run_testsuite($$$$$)
 	Subunit::report_time(time());
 
 	open(RESULTS, "$cmd 2>&1|");
-	my $statistics = {
-		TESTS_UNEXPECTED_OK => 0,
-		TESTS_EXPECTED_OK => 0,
-		TESTS_UNEXPECTED_FAIL => 0,
-		TESTS_EXPECTED_FAIL => 0,
-		TESTS_ERROR => 0,
-		TESTS_SKIP => 0,
-	};
 
-	my $msg_ops = new Subunit::Filter("$name\.", []);
+	my $msg_ops = new Subunit::Filter("$name\.");
 
-	parse_results($msg_ops, $statistics, *RESULTS);
+	parse_results($msg_ops, *RESULTS);
 
 	my $ret = 0;
 

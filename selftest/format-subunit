@@ -45,6 +45,7 @@ class PlainFormatter(subunithelper.TestsuiteEnabledTestResult):
         self.name = None
         self._progress_level = 0
         self.totalsuites = totaltests
+        self.last_time = None
 
     def progress(self, offset, whence):
         if whence == subunit.PROGRESS_POP:
@@ -65,9 +66,6 @@ class PlainFormatter(subunithelper.TestsuiteEnabledTestResult):
     def start_testsuite(self, name):
         self.index += 1
         self.name = name
-        testsuite_start_time = self.last_time
-
-        duration = testsuite_start_time - self.start_time
 
         if not self.verbose:
             self.test_output[name] = ""
@@ -75,7 +73,8 @@ class PlainFormatter(subunithelper.TestsuiteEnabledTestResult):
         out = "[%d" % self.index
         if self.totalsuites is not None:
             out += "/%d" % self.totalsuites
-        out += " in " + format_time(duration)
+        if self.start_time is not None:
+            out += " in " + format_time(self.last_time - self.start_time)
         if self.suitesfailed:
             out += ", %d errors" % (len(self.suitesfailed),)
         out += "] %s" % name

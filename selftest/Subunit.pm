@@ -23,9 +23,9 @@ require Exporter;
 
 use strict;
 
-sub parse_results($$$)
+sub parse_results($$)
 {
-	my ($msg_ops, $statistics, $fh) = @_;
+	my ($msg_ops, $fh) = @_;
 	my $expected_fail = 0;
 	my $open_tests = [];
 
@@ -47,9 +47,8 @@ sub parse_results($$$)
 					$msg_ops->control_msg($_);
 					if ($_ eq "]\n") { $terminated = 1; last; } else { $reason .= $_; }
 				}
-				
+
 				unless ($terminated) {
-					$statistics->{TESTS_ERROR}++;
 					$msg_ops->end_test($testname, "error", 1,
 						               "reason ($result) interrupted\n");
 					return 1;
@@ -57,19 +56,15 @@ sub parse_results($$$)
 			}
 			if ($result eq "success" or $result eq "successful") {
 				pop(@$open_tests); #FIXME: Check that popped value == $testname 
-				$statistics->{TESTS_EXPECTED_OK}++;
 				$msg_ops->end_test($testname, "success", 0, $reason);
 			} elsif ($result eq "xfail" or $result eq "knownfail") {
 				pop(@$open_tests); #FIXME: Check that popped value == $testname
-				$statistics->{TESTS_EXPECTED_FAIL}++;
 				$msg_ops->end_test($testname, "xfail", 0, $reason);
 				$expected_fail++;
 			} elsif ($result eq "failure" or $result eq "fail") {
 				pop(@$open_tests); #FIXME: Check that popped value == $testname
-				$statistics->{TESTS_UNEXPECTED_FAIL}++;
 				$msg_ops->end_test($testname, "failure", 1, $reason);
 			} elsif ($result eq "skip") {
-				$statistics->{TESTS_SKIP}++;
 				# Allow tests to be skipped without prior announcement of test
 				my $last = pop(@$open_tests);
 				if (defined($last) and $last ne $testname) {
@@ -77,7 +72,6 @@ sub parse_results($$$)
 				}
 				$msg_ops->end_test($testname, "skip", 0, $reason);
 			} elsif ($result eq "error") {
-				$statistics->{TESTS_ERROR}++;
 				pop(@$open_tests); #FIXME: Check that popped value == $testname
 				$msg_ops->end_test($testname, "error", 1, $reason);
 			} elsif ($result eq "skip-testsuite") {
@@ -90,7 +84,7 @@ sub parse_results($$$)
 				$msg_ops->end_testsuite($testname, "xfail", $reason);
 			} elsif ($result eq "testsuite-error") {
 				$msg_ops->end_testsuite($testname, "error", $reason);
-			} 
+			}
 		} elsif (/^testsuite: (.*)\n/) {
 			$msg_ops->start_testsuite($1);
 		} else {
@@ -101,20 +95,7 @@ sub parse_results($$$)
 	while ($#$open_tests+1 > 0) {
 		$msg_ops->end_test(pop(@$open_tests), "error", 1,
 				   "was started but never finished!\n");
-		$statistics->{TESTS_ERROR}++;
 	}
-
-	# if the Filter module is in use, it will have the right counts
-	if (defined($msg_ops->{total_error})) {
-		$statistics->{TESTS_ERROR} = $msg_ops->{total_error};
-		$statistics->{TESTS_UNEXPECTED_FAIL} = $msg_ops->{total_fail};
-		$statistics->{TESTS_EXPECTED_FAIL} = $msg_ops->{total_xfail};
-	}
-
-	return 1 if $statistics->{TESTS_ERROR} > 0;
-	return 1 if $statistics->{TESTS_UNEXPECTED_FAIL} > 0;
-
-	return 0;
 }
 
 sub start_test($)
@@ -171,7 +152,11 @@ sub report_time($)
 	my ($time) = @_;
 	my ($sec, $min, $hour, $mday, $mon, $year, $wday, $yday, $isdst) = localtime($time);
 	$sec = ($time - int($time) + $sec);
-	printf "time: %04d-%02d-%02d %02d:%02d:%02f\n", $year+1900, $mon+1, $mday, $hour, $min, $sec;
+	my $msg = sprintf("%f", $sec);
+	if (substr($msg, 1, 1) eq ".") {
+		$msg = "0" . $msg;
+	}
+	printf "time: %04d-%02d-%02d %02d:%02d:%s\n", $year+1900, $mon+1, $mday, $hour, $min, $msg;
 }
 
 sub progress_pop()
