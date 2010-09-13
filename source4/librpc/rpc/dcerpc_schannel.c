@@ -243,6 +243,7 @@ struct composite_context *dcerpc_schannel_key_send(TALLOC_CTX *mem_ctx,
 	struct composite_context *c;
 	struct schannel_key_state *s;
 	struct composite_context *epm_map_req;
+	enum netr_SchannelType schannel_type = cli_credentials_get_secure_channel_type(credentials);
 	
 	/* composite context allocation and setup */
 	c = composite_create(mem_ctx, p->conn->event_ctx);
@@ -258,7 +259,9 @@ struct composite_context *dcerpc_schannel_key_send(TALLOC_CTX *mem_ctx,
 
 	/* allocate credentials */
 	/* type of authentication depends on schannel type */
-	if (s->pipe->conn->flags & DCERPC_SCHANNEL_128) {
+	if (schannel_type == SEC_CHAN_RODC) {
+		s->negotiate_flags = NETLOGON_NEG_AUTH2_RODC_FLAGS;
+	} else if (s->pipe->conn->flags & DCERPC_SCHANNEL_128) {
 		s->negotiate_flags = NETLOGON_NEG_AUTH2_ADS_FLAGS;
 	} else {
 		s->negotiate_flags = NETLOGON_NEG_AUTH2_FLAGS;
