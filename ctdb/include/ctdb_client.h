@@ -415,7 +415,11 @@ int ctdb_ctrl_modflags(struct ctdb_context *ctdb,
 		       uint32_t destnode,
 		       uint32_t set, uint32_t clear);
 
-enum ctdb_server_id_type { SERVER_TYPE_SAMBA=1 };
+enum ctdb_server_id_type {
+	SERVER_TYPE_SAMBA=1,
+	SERVER_TYPE_NFSD=2,
+	SERVER_TYPE_ISCSID=3
+};
 
 struct ctdb_server_id {
 	enum ctdb_server_id_type type;
