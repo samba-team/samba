@@ -29,33 +29,15 @@ sub start_test($$)
 	Subunit::start_test($testname);
 }
 
-sub end_test($$$$$)
+sub end_test($$$$)
 {
-	my ($self, $testname, $result, $unexpected, $reason) = @_;
+	my ($self, $testname, $result, $reason) = @_;
 
 	if (defined($self->{prefix})) {
 		$testname = $self->{prefix}.$testname;
 	}
 
 	Subunit::end_test($testname, $result, $reason);
-}
-
-sub skip_testsuite($;$)
-{
-	my ($self, $name, $reason) = @_;
-	Subunit::skip_testsuite($name, $reason);
-}
-
-sub start_testsuite($;$)
-{
-	my ($self, $name) = @_;
-	Subunit::start_testsuite($name);
-}
-
-sub end_testsuite($$;$)
-{
-	my ($self, $name, $result, $reason) = @_;
-	Subunit::end_testsuite($name, $result, $reason);
 }
 
 sub new {

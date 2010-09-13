@@ -34,7 +34,7 @@ sub parse_results($$)
 			$msg_ops->control_msg($_);
 			$msg_ops->start_test($1);
 			push (@$open_tests, $1);
-		} elsif (/^(success|successful|failure|fail|skip|knownfail|error|xfail|skip-testsuite|testsuite-failure|testsuite-xfail|testsuite-success|testsuite-error): (.*?)( \[)?([ \t]*)( multipart)?\n/) {
+		} elsif (/^(success|successful|failure|fail|skip|knownfail|error|xfail): (.*?)( \[)?([ \t]*)( multipart)?\n/) {
 			$msg_ops->control_msg($_);
 			my $result = $1;
 			my $testname = $2;
@@ -49,51 +49,39 @@ sub parse_results($$)
 				}
 
 				unless ($terminated) {
-					$msg_ops->end_test($testname, "error", 1,
+					$msg_ops->end_test($testname, "error",
 						               "reason ($result) interrupted\n");
 					return 1;
 				}
 			}
 			if ($result eq "success" or $result eq "successful") {
 				pop(@$open_tests); #FIXME: Check that popped value == $testname 
-				$msg_ops->end_test($testname, "success", 0, $reason);
+				$msg_ops->end_test($testname, "success", $reason);
 			} elsif ($result eq "xfail" or $result eq "knownfail") {
 				pop(@$open_tests); #FIXME: Check that popped value == $testname
-				$msg_ops->end_test($testname, "xfail", 0, $reason);
+				$msg_ops->end_test($testname, "xfail", $reason);
 				$expected_fail++;
 			} elsif ($result eq "failure" or $result eq "fail") {
 				pop(@$open_tests); #FIXME: Check that popped value == $testname
-				$msg_ops->end_test($testname, "failure", 1, $reason);
+				$msg_ops->end_test($testname, "failure", $reason);
 			} elsif ($result eq "skip") {
 				# Allow tests to be skipped without prior announcement of test
 				my $last = pop(@$open_tests);
 				if (defined($last) and $last ne $testname) {
 					push (@$open_tests, $testname);
 				}
-				$msg_ops->end_test($testname, "skip", 0, $reason);
+				$msg_ops->end_test($testname, "skip", $reason);
 			} elsif ($result eq "error") {
 				pop(@$open_tests); #FIXME: Check that popped value == $testname
-				$msg_ops->end_test($testname, "error", 1, $reason);
-			} elsif ($result eq "skip-testsuite") {
-				$msg_ops->skip_testsuite($testname);
-			} elsif ($result eq "testsuite-success") {
-				$msg_ops->end_testsuite($testname, "success", $reason);
-			} elsif ($result eq "testsuite-failure") {
-				$msg_ops->end_testsuite($testname, "failure", $reason);
-			} elsif ($result eq "testsuite-xfail") {
-				$msg_ops->end_testsuite($testname, "xfail", $reason);
-			} elsif ($result eq "testsuite-error") {
-				$msg_ops->end_testsuite($testname, "error", $reason);
+				$msg_ops->end_test($testname, "error", $reason);
 			}
-		} elsif (/^testsuite: (.*)\n/) {
-			$msg_ops->start_testsuite($1);
 		} else {
 			$msg_ops->output_msg($_);
 		}
 	}
 
 	while ($#$open_tests+1 > 0) {
-		$msg_ops->end_test(pop(@$open_tests), "error", 1,
+		$msg_ops->end_test(pop(@$open_tests), "error",
 				   "was started but never finished!\n");
 	}
 }
