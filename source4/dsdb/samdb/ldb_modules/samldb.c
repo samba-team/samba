@@ -276,8 +276,8 @@ static int samldb_check_primaryGroupID(struct samldb_ctx *ac)
 		return ldb_operr(ldb);
 	}
 
-	prim_group_dn = samdb_search_dn(ldb, ac, NULL, "(objectSID=%s)",
-					dom_sid_string(ac, sid));
+	prim_group_dn = samdb_search_dn(ldb, ac, NULL, "(objectSid=%s)",
+					ldap_encode_ndr_dom_sid(ac, sid));
 	if (prim_group_dn == NULL) {
 		ldb_asprintf_errstring(ldb,
 				       "Failed to find primary group with RID %u!",
@@ -929,8 +929,8 @@ static int samldb_prim_group_change(struct samldb_ctx *ac)
 		return ldb_operr(ldb);
 	}
 
-	prev_prim_group_dn = samdb_search_dn(ldb, ac, NULL, "(objectSID=%s)",
-					     dom_sid_string(ac, sid));
+	prev_prim_group_dn = samdb_search_dn(ldb, ac, NULL, "(objectSid=%s)",
+					     ldap_encode_ndr_dom_sid(ac, sid));
 	if (prev_prim_group_dn == NULL) {
 		return ldb_operr(ldb);
 	}
@@ -948,8 +948,8 @@ static int samldb_prim_group_change(struct samldb_ctx *ac)
 		return ldb_operr(ldb);
 	}
 
-	new_prim_group_dn = samdb_search_dn(ldb, ac, NULL, "(objectSID=%s)",
-					    dom_sid_string(ac, sid));
+	new_prim_group_dn = samdb_search_dn(ldb, ac, NULL, "(objectSid=%s)",
+					    ldap_encode_ndr_dom_sid(ac, sid));
 	if (new_prim_group_dn == NULL) {
 		/* Here we know if the specified new primary group candidate is
 		 * valid or not. */
@@ -1041,8 +1041,8 @@ static int samldb_member_check(struct samldb_ctx *ac)
 			return ldb_operr(ldb);
 		}
 
-		group_dn = samdb_search_dn(ldb, ac, NULL, "(objectSID=%s)",
-					   dom_sid_string(ac, sid));
+		group_dn = samdb_search_dn(ldb, ac, NULL, "(objectSid=%s)",
+					   ldap_encode_ndr_dom_sid(ac, sid));
 		if (group_dn == NULL) {
 			return ldb_operr(ldb);
 		}

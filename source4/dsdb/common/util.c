@@ -2560,7 +2560,7 @@ int dsdb_find_dn_by_sid(struct ldb_context *ldb,
 	int ret;
 	struct ldb_result *res;
 	const char *attrs[] = { NULL };
-	char *sid_str = dom_sid_string(mem_ctx, sid);
+	char *sid_str = ldap_encode_ndr_dom_sid(mem_ctx, sid);
 
 	if (!sid_str) {
 		return ldb_operr(ldb);

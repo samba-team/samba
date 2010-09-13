@@ -34,6 +34,7 @@
 #include "dsdb/samdb/samdb.h"
 #include "auth/auth.h"
 #include "libcli/security/security.h"
+#include "libcli/ldap/ldap_ndr.h"
 #include "lib/ldb/include/ldb.h"
 #include "lib/ldb/include/ldb_errors.h"
 #include "../lib/crypto/md5.h"
@@ -164,7 +165,7 @@ static NTSTATUS ntp_signd_process(struct ntp_signd_connection *ntp_signd_conn,
 				 LDB_SCOPE_SUBTREE,
 				 attrs,
 				 "(&(objectSid=%s)(objectClass=user))",
-				 dom_sid_string(mem_ctx, sid));
+				 ldap_encode_ndr_dom_sid(mem_ctx, sid));
 	if (ret != LDB_SUCCESS) {
 		DEBUG(2, ("Failed to search for SID %s in SAM for NTP signing: "
 			  "%s\n",
