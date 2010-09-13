@@ -147,7 +147,9 @@ struct tdb_header {
 	tdb_off_t rwlocks; /* obsolete - kept to detect old formats */
 	tdb_off_t recovery_start; /* offset of transaction recovery region */
 	tdb_off_t sequence_number; /* used when TDB_SEQNUM is set */
-	tdb_off_t reserved[29];
+	uint32_t magic1_hash; /* hash of TDB_MAGIC_FOOD. */
+	uint32_t magic2_hash; /* hash of TDB_MAGIC. */
+	tdb_off_t reserved[27];
 };
 
 struct tdb_lock_type {
@@ -268,3 +270,5 @@ int tdb_rec_free_read(struct tdb_context *tdb, tdb_off_t off,
 		      struct tdb_record *rec);
 bool tdb_write_all(int fd, const void *buf, size_t count);
 int tdb_transaction_recover(struct tdb_context *tdb);
+void tdb_header_hash(struct tdb_context *tdb,
+		     uint32_t *magic1_hash, uint32_t *magic2_hash);
