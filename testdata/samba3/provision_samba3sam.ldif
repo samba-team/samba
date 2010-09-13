@@ -65,12 +65,13 @@ rootDomainNamingContext: ${BASEDN}
 configurationNamingContext: CN=Configuration,${BASEDN}
 schemaNamingContext: CN=Schema,CN=Configuration,${BASEDN}
 supportedLDAPVersion: 3
+supportedLDAPVersion: 2
 dnsHostName: ${DNSNAME}
 ldapServiceName: ${DNSDOMAIN}:${NETBIOSNAME}$@${REALM}
 serverName: CN=${NETBIOSNAME},CN=Servers,CN=Default-First-Site,CN=Sites,CN=Configuration,${BASEDN}
 domainFunctionality: 0
 forestFunctionality: 0
-domainControllerFunctionality: 2
+domainControllerFunctionality: 4
 isSynchronized: TRUE
 vendorName: Samba Team (http://samba.org)
 vendorVersion: ${VERSION}
