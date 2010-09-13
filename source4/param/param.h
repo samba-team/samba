@@ -69,7 +69,13 @@ struct smbcli_options;
 struct smbcli_session_options;
 struct gensec_settings;
 
+#ifdef CONFIG_H_IS_FROM_SAMBA
 #include "param/param_proto.h"
+#endif
+
+const char **lpcfg_interfaces(struct loadparm_context *);
+const char *lpcfg_realm(struct loadparm_context *);
+const char *lpcfg_netbios_name(struct loadparm_context *);
 
 void reload_charcnv(struct loadparm_context *lp_ctx);
 
