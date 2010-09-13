@@ -28,7 +28,7 @@ def format_time(t):
     return ret
 
 
-class PlainFormatter(testtools.testresult.TestResult):
+class PlainFormatter(subunithelper.TestsuiteEnabledTestResult):
 
     def __init__(self, summaryfile, verbose, immediate, statistics,
             totaltests=None):
@@ -122,7 +122,7 @@ class PlainFormatter(testtools.testresult.TestResult):
 
         sys.stdout.write(out)
 
-    def start_test(self, testname):
+    def startTest(self, testname):
         pass
 
     def end_test(self, testname, result, unexpected, reason=None):

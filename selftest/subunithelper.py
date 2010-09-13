@@ -25,6 +25,12 @@ import time
 
 VALID_RESULTS = ['success', 'successful', 'failure', 'fail', 'skip', 'knownfail', 'error', 'xfail', 'skip-testsuite', 'testsuite-failure', 'testsuite-xfail', 'testsuite-success', 'testsuite-error']
 
+class TestsuiteEnabledTestResult(testtools.testresult.TestResult):
+
+    def start_testsuite(self, name):
+        raise NotImplementedError(self.start_testsuite)
+
+
 def parse_results(msg_ops, statistics, fh):
     expected_fail = 0
     open_tests = []
@@ -41,7 +47,7 @@ def parse_results(msg_ops, statistics, fh):
         arg = parts[1]
         if command in ("test", "testing"):
             msg_ops.control_msg(l)
-            msg_ops.start_test(arg.rstrip())
+            msg_ops.startTest(arg.rstrip())
             open_tests.append(arg.rstrip())
         elif command == "time":
             msg_ops.control_msg(l)
@@ -166,18 +172,16 @@ def parse_results(msg_ops, statistics, fh):
     return 0
 
 
-class SubunitOps(object):
+class SubunitOps(subunit.TestProtocolClient,TestsuiteEnabledTestResult):
 
-    def start_test(self, testname):
-        print "test: %s" % testname
+    def startTest(self, testname):
+        self._stream.write("test: %s\n" % testname)
 
     def end_test(self, name, result, reason=None):
         if reason:
-            print "%s: %s [" % (result, name)
-            print reason
-            print "]"
+            self._stream.write("%s: %s [\n%s\n]\n" % (result, name, reason))
         else:
-            print "%s: %s" % (result, name)
+            self._stream.write("%s: %s\n" % (result, name))
 
     def skip_test(self, name, reason=None):
         self.end_test(name, "skip", reason)
@@ -193,7 +197,7 @@ class SubunitOps(object):
 
     def report_time(self, t):
         (year, mon, mday, hour, min, sec, wday, yday, isdst) = time.localtime(t)
-        print "time: %04d-%02d-%02d %02d:%02d:%02d" % (year, mon, mday, hour, min, sec)
+        self._stream.write("time: %04d-%02d-%02d %02d:%02d:%02d\n" % (year, mon, mday, hour, min, sec))
 
     def progress(self, offset, whence):
         if whence == subunit.PROGRESS_CUR and offset > -1:
@@ -206,25 +210,23 @@ class SubunitOps(object):
             offset = "pop"
         else:
             prefix = ""
-        print "progress: %s%s" % (prefix, offset)
+        self._stream.write("progress: %s%s\n" % (prefix, offset))
 
     # The following are Samba extensions:
     def start_testsuite(self, name):
-        print "testsuite: %s" % name
+        self._stream.write("testsuite: %s\n" % name)
 
     def skip_testsuite(self, name, reason=None):
         if reason:
-            print "skip-testsuite: %s [\n%s\n]" % (name, reason)
+            self._stream.write("skip-testsuite: %s [\n%s\n]\n" % (name, reason))
         else:
-            print "skip-testsuite: %s" % name
+            self._stream.write("skip-testsuite: %s\n" % name)
 
     def end_testsuite(self, name, result, reason=None):
         if reason:
-            print "testsuite-%s: %s [" % (result, name)
-            print "%s" % reason
-            print "]"
+            self._stream.write("testsuite-%s: %s [\n%s\n]\n" % (result, name, reason))
         else:
-            print "testsuite-%s: %s" % (result, name)
+            self._stream.write("testsuite-%s: %s\n" % (result, name))
 
 
 def read_test_regexes(name):
@@ -271,14 +273,14 @@ class FilterOps(testtools.testresult.TestResult):
         else:
             self.output+=msg
 
-    def start_test(self, testname):
+    def startTest(self, testname):
         if self.prefix is not None:
             testname = self.prefix + testname
 
         if self.strip_ok_output:
            self.output = ""
 
-        self._ops.start_test(testname)
+        self._ops.startTest(testname)
 
     def end_test(self, testname, result, unexpected, reason):
         if self.prefix is not None:
@@ -345,8 +347,8 @@ class FilterOps(testtools.testresult.TestResult):
 
         self._ops.end_testsuite(name, result, reason)
 
-    def __init__(self, prefix, expected_failures, strip_ok_output):
-        self._ops = SubunitOps()
+    def __init__(self, out, prefix, expected_failures, strip_ok_output):
+        self._ops = out
         self.output = None
         self.prefix = prefix
         self.expected_failures = expected_failures

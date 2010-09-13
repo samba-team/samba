@@ -43,7 +43,8 @@ def handle_sigint(sig, stack):
 	sys.exit(0)
 signal.signal(signal.SIGINT, handle_sigint)
 
-msg_ops = subunithelper.FilterOps(opts.prefix, expected_failures, 
+out = subunithelper.SubunitOps(sys.stdout)
+msg_ops = subunithelper.FilterOps(out, opts.prefix, expected_failures,
 	opts.strip_passed_output)
 
 sys.exit(subunithelper.parse_results(msg_ops, statistics, sys.stdin))
