@@ -1169,7 +1169,7 @@ static void offer_gss_spnego_mechs(void) {
 
 	/* Server negTokenInit (mech offerings) */
 	spnego.type = SPNEGO_NEG_TOKEN_INIT;
-	spnego.negTokenInit.mechTypes = talloc_array(ctx, const char *, 2);
+	spnego.negTokenInit.mechTypes = talloc_array(ctx, const char *, 3);
 #ifdef HAVE_KRB5
 	spnego.negTokenInit.mechTypes[0] = talloc_strdup(ctx, OID_KERBEROS5_OLD);
 	spnego.negTokenInit.mechTypes[1] = talloc_strdup(ctx, OID_NTLMSSP);
