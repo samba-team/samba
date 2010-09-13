@@ -134,6 +134,13 @@ use Subunit qw(parse_results);
 use Subunit::Filter;
 use SocketWrapper;
 
+eval {
+require Time::HiRes;
+};
+unless ($@) {
+	use Time::HiRes qw(time);
+}
+
 my $opt_help = 0;
 my $opt_target = "samba4";
 my $opt_quick = 0;

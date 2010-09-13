@@ -71,7 +71,7 @@ struct torture_context *torture_context_child(struct torture_context *parent)
 	subtorture->results = talloc_reference(subtorture, parent->results);
 
 	return subtorture;
-}	
+}
 
 /**
  create a temporary directory.
@@ -342,7 +342,6 @@ static bool internal_torture_run_test(struct torture_context *context,
 		old_testname = context->active_testname;
 		context->active_testname = talloc_asprintf(context, "%s-%s", old_testname, test->name);
 	}
-
 
 	context->active_tcase = tcase;
 	context->active_test = test;
