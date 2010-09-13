@@ -23,6 +23,13 @@ require Exporter;
 
 use strict;
 
+eval {
+require Time::HiRes;
+};
+unless ($@) {
+	use Time::HiRes qw(time);
+}
+
 sub parse_results($$$)
 {
 	my ($msg_ops, $statistics, $fh) = @_;
