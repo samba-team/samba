@@ -20,6 +20,7 @@ __all__ = ['parse_results']
 import re
 import sys
 import subunit
+import testtools
 import time
 
 VALID_RESULTS = ['success', 'successful', 'failure', 'fail', 'skip', 'knownfail', 'error', 'xfail', 'skip-testsuite', 'testsuite-failure', 'testsuite-xfail', 'testsuite-success', 'testsuite-error']
@@ -253,7 +254,7 @@ def find_in_list(regexes, fullname):
     return None
 
 
-class FilterOps(object):
+class FilterOps(testtools.testresult.TestResult):
 
     def control_msg(self, msg):
         pass # We regenerate control messages, so ignore this
