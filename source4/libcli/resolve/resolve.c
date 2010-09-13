@@ -267,6 +267,40 @@ NTSTATUS resolve_name_recv(struct composite_context *c,
 }
 
 /*
+  receive multiple responses from resolve_name_send()
+ */
+NTSTATUS resolve_name_multiple_recv(struct composite_context *c,
+				    TALLOC_CTX *mem_ctx,
+				    const char ***reply_addrs)
+{
+	NTSTATUS status;
+	struct socket_address **addrs = NULL;
+	int i;
+
+	status = resolve_name_all_recv(c, mem_ctx, &addrs, NULL);
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	/* count the addresses */
+	for (i=0; addrs[i]; i++) ;
+
+	*reply_addrs = talloc_array(mem_ctx, const char *, i+1);
+	NT_STATUS_HAVE_NO_MEMORY(*reply_addrs);
+
+	for (i=0; addrs[i]; i++) {
+		struct tsocket_address *t_addr = socket_address_to_tsocket_address(addrs, addrs[i]);
+		NT_STATUS_HAVE_NO_MEMORY(t_addr);
+
+		(*reply_addrs)[i] = tsocket_address_inet_addr_string(t_addr, *reply_addrs);
+		NT_STATUS_HAVE_NO_MEMORY((*reply_addrs)[i]);
+	}
+	(*reply_addrs)[i] = NULL;
+
+	talloc_free(addrs);
+
+	return status;
+}
+
+/*
   general name resolution - sync call
  */
 NTSTATUS resolve_name_ex(struct resolve_context *ctx,
