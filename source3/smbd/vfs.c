@@ -930,7 +930,7 @@ NTSTATUS check_reduced_name(connection_struct *conn, const char *fname)
 				break;
 			}
 			default:
-				DEBUG(1,("check_reduced_name: couldn't get "
+				DEBUG(3,("check_reduced_name: couldn't get "
 					 "realpath for %s\n", fname));
 				return map_nt_error_from_unix(errno);
 		}
