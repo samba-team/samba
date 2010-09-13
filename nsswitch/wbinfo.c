@@ -2016,7 +2016,7 @@ int main(int argc, char **argv, char **envp)
 		{ "sid-aliases", 0, POPT_ARG_STRING, &string_arg, OPT_SIDALIASES, "Get sid aliases", "SID" },
 		{ "user-sids", 0, POPT_ARG_STRING, &string_arg, OPT_USERSIDS, "Get user group sids for user SID", "SID" },
 		{ "authenticate", 'a', POPT_ARG_STRING, &string_arg, 'a', "authenticate user", "user%password" },
-		{ "pam-logon", 0, POPT_ARG_STRING, string_arg, OPT_PAM_LOGON,
+		{ "pam-logon", 0, POPT_ARG_STRING, &string_arg, OPT_PAM_LOGON,
 		  "do a pam logon equivalent", "user%password" },
 		{ "logoff", 0, POPT_ARG_NONE, NULL, OPT_LOGOFF,
 		  "log off user", "uid" },
