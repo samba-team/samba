@@ -30,7 +30,8 @@
 #include "common.h"
 
 enum {
-	OPT_DBFLAG = 1,
+	OPT_SERVER = 1,
+	OPT_DBFLAG,
 	OPT_SC_QUERY,
 	OPT_SC_RESET,
 	OPT_SC_VERIFY,
@@ -105,7 +106,7 @@ int main(int argc, const char **argv)
 	int opt;
 	NET_API_STATUS status;
 	struct libnetapi_ctx *ctx = NULL;
-	const char *server_name = NULL;
+	char *opt_server = NULL;
 	char *opt_domain = NULL;
 	int opt_dbflag = 0;
 	uint32_t query_level = 0;
@@ -114,6 +115,7 @@ int main(int argc, const char **argv)
 	poptContext pc;
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
+		{"server", 0, POPT_ARG_STRING, &opt_server, OPT_SERVER, "Servername", "SERVER"},
 		{"dbflag", 0, POPT_ARG_INT,   &opt_dbflag, OPT_DBFLAG, "New Debug Flag", "HEXFLAGS"},
 		{"sc_query", 0, POPT_ARG_STRING,   &opt_domain, OPT_SC_QUERY, "Query secure channel for domain on server", "DOMAIN"},
 		{"sc_reset", 0, POPT_ARG_STRING,   &opt_domain, OPT_SC_RESET, "Reset secure channel for domain on server to dcname", "DOMAIN"},
@@ -130,29 +132,13 @@ int main(int argc, const char **argv)
 
 	pc = poptGetContext("nltest", argc, argv, long_options, 0);
 
-	poptSetOtherOptionHelp(pc, "server_name");
+	poptSetOtherOptionHelp(pc, "<options>");
 	while((opt = poptGetNextOpt(pc)) != -1) {
 	}
-
-	if (!poptPeekArg(pc)) {
-		poptPrintHelp(pc, stderr, 0);
-		goto done;
-	}
-	server_name = poptGetArg(pc);
 
 	if (argc == 1) {
 		poptPrintHelp(pc, stderr, 0);
 		goto done;
-	}
-
-	if (!server_name || poptGetArg(pc)) {
-		poptPrintHelp(pc, stderr, 0);
-		goto done;
-	}
-
-	if ((server_name[0] == '/' && server_name[1] == '/') ||
-	    (server_name[0] == '\\' && server_name[1] ==  '\\')) {
-		server_name += 2;
 	}
 
 	poptResetContext(pc);
@@ -160,9 +146,18 @@ int main(int argc, const char **argv)
 	while ((opt = poptGetNextOpt(pc)) != -1) {
 		switch (opt) {
 
+		case OPT_SERVER:
+
+			if ((opt_server[0] == '/' && opt_server[1] == '/') ||
+			    (opt_server[0] == '\\' && opt_server[1] ==  '\\')) {
+				opt_server += 2;
+			}
+
+			break;
+
 		case OPT_DBFLAG:
 			query_level = 1;
-			status = I_NetLogonControl2(server_name,
+			status = I_NetLogonControl2(opt_server,
 						    NETLOGON_CONTROL_SET_DBFLAG,
 						    query_level,
 						    (uint8_t *)opt_dbflag,
@@ -179,7 +174,7 @@ int main(int argc, const char **argv)
 			break;
 		case OPT_SC_QUERY:
 			query_level = 2;
-			status = I_NetLogonControl2(server_name,
+			status = I_NetLogonControl2(opt_server,
 						    NETLOGON_CONTROL_TC_QUERY,
 						    query_level,
 						    (uint8_t *)opt_domain,
@@ -196,7 +191,7 @@ int main(int argc, const char **argv)
 			break;
 		case OPT_SC_VERIFY:
 			query_level = 2;
-			status = I_NetLogonControl2(server_name,
+			status = I_NetLogonControl2(opt_server,
 						    NETLOGON_CONTROL_TC_VERIFY,
 						    query_level,
 						    (uint8_t *)opt_domain,
@@ -213,7 +208,7 @@ int main(int argc, const char **argv)
 			break;
 		case OPT_SC_RESET:
 			query_level = 2;
-			status = I_NetLogonControl2(server_name,
+			status = I_NetLogonControl2(opt_server,
 						    NETLOGON_CONTROL_REDISCOVER,
 						    query_level,
 						    (uint8_t *)opt_domain,
@@ -230,7 +225,7 @@ int main(int argc, const char **argv)
 			break;
 		case OPT_SC_CHANGE_PWD:
 			query_level = 1;
-			status = I_NetLogonControl2(server_name,
+			status = I_NetLogonControl2(opt_server,
 						    NETLOGON_CONTROL_CHANGE_PASSWORD,
 						    query_level,
 						    (uint8_t *)opt_domain,
