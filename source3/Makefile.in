@@ -540,7 +540,6 @@ LIBSMB_ERR_OBJ0 = $(NTERR_OBJ) $(DOSERR_OBJ) $(ERRORMAP_OBJ) $(DCE_RPC_ERR_OBJ)
 LIBSMB_ERR_OBJ1 = ../libcli/auth/smbdes.o ../libcli/auth/smbencrypt.o ../libcli/auth/msrpc_parse.o ../libcli/auth/session.o
 
 LIBSMB_ERR_OBJ = $(LIBSMB_ERR_OBJ0) $(LIBSMB_ERR_OBJ1) \
-		 $(REG_PARSE_PRS_OBJ) \
 		 $(SECRETS_OBJ)
 
 LIBSMB_OBJ0 = \
@@ -614,7 +613,8 @@ REG_INIT_BASIC_OBJ = registry/reg_init_basic.o
 REG_INIT_SMBCONF_OBJ = registry/reg_init_smbconf.o
 REG_INIT_FULL_OBJ = registry/reg_init_full.o
 
-REGFIO_OBJ = registry/regfio.o
+REGFIO_OBJ = registry/regfio.o \
+	     $(REG_PARSE_PRS_OBJ)
 
 REGOBJS_OBJ = registry/reg_objects.o
 
