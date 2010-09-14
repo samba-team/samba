@@ -3761,13 +3761,23 @@ static int control_attach(struct ctdb_context *ctdb, int argc, const char **argv
 {
 	const char *db_name;
 	struct ctdb_db_context *ctdb_db;
+	bool persistent = false;
 
 	if (argc < 1) {
 		usage();
 	}
 	db_name = argv[0];
+	if (argc > 2) {
+		usage();
+	}
+	if (argc == 2) {
+		if (strcmp(argv[1], "persistent") != 0) {
+			usage();
+		}
+		persistent = true;
+	}
 
-	ctdb_db = ctdb_attach(ctdb, db_name, false, 0);
+	ctdb_db = ctdb_attach(ctdb, db_name, persistent, 0);
 	if (ctdb_db == NULL) {
 		DEBUG(DEBUG_ERR,("Unable to attach to database '%s'\n", db_name));
 		return -1;
@@ -4756,7 +4766,7 @@ static const struct {
 	{ "getdebug",        control_getdebug,          true,	false,  "get debug level" },
 	{ "getlog",          control_getlog,            true,	false,  "get the log data from the in memory ringbuffer", "<level>" },
 	{ "clearlog",          control_clearlog,        true,	false,  "clear the log data from the in memory ringbuffer" },
-	{ "attach",          control_attach,            true,	false,  "attach to a database",                 "<dbname>" },
+	{ "attach",          control_attach,            true,	false,  "attach to a database",                 "<dbname> [persistent]" },
 	{ "dumpmemory",      control_dumpmemory,        true,	false,  "dump memory map to stdout" },
 	{ "rddumpmemory",    control_rddumpmemory,      true,	false,  "dump memory map from the recovery daemon to stdout" },
 	{ "getpid",          control_getpid,            true,	false,  "get ctdbd process ID" },
