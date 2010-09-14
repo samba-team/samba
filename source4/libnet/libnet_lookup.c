@@ -29,6 +29,7 @@
 #include "lib/messaging/messaging.h"
 #include "lib/messaging/irpc.h"
 #include "libcli/resolve/resolve.h"
+#include "libcli/libcli.h"
 #include "libcli/finddcs.h"
 #include "libcli/security/security.h"
 #include "librpc/gen_ndr/lsa.h"
@@ -191,15 +192,14 @@ struct tevent_req *libnet_LookupDCs_send(struct libnet_context *ctx,
 					 struct libnet_LookupDCs *io)
 {
 	struct tevent_req *req;
-	struct messaging_context *msg_ctx = 
-		messaging_client_init(mem_ctx,
-				      lpcfg_messaging_path(mem_ctx, ctx->lp_ctx),
-				      ctx->event_ctx);
+	struct finddcs finddcs_io;
 
-	req = finddcs_send(mem_ctx, lpcfg_netbios_name(ctx->lp_ctx),
-			   lpcfg_nbt_port(ctx->lp_ctx), io->in.domain_name,
-			   io->in.name_type, NULL, ctx->resolve_ctx,
-			   ctx->event_ctx, msg_ctx);
+	ZERO_STRUCT(finddcs_io);
+	finddcs_io.in.dns_domain_name = lpcfg_realm(ctx->lp_ctx);
+	finddcs_io.in.minimum_dc_flags = NBT_SERVER_LDAP | NBT_SERVER_DS | NBT_SERVER_WRITABLE;
+
+
+	req = finddcs_cldap_send(mem_ctx, &finddcs_io, ctx->resolve_ctx, ctx->event_ctx);
 	return req;
 }
 
@@ -216,8 +216,14 @@ NTSTATUS libnet_LookupDCs_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 			       struct libnet_LookupDCs *io)
 {
 	NTSTATUS status;
-	status = finddcs_recv(req, mem_ctx, &io->out.num_dcs, &io->out.dcs);
-	/* "req" already freed here */
+	struct finddcs finddcs_io;
+	status = finddcs_cldap_recv(req, mem_ctx, &finddcs_io);
+	talloc_free(req);
+	io->out.num_dcs = 1;
+	io->out.dcs = talloc(mem_ctx, struct nbt_dc_name);
+	NT_STATUS_HAVE_NO_MEMORY(io->out.dcs);
+	io->out.dcs[0].address = finddcs_io.out.address;
+	io->out.dcs[0].name = finddcs_io.out.netlogon.data.nt5_ex.pdc_dns_name;
 	return status;
 }
 
