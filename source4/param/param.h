@@ -76,6 +76,7 @@ struct gensec_settings;
 const char **lpcfg_interfaces(struct loadparm_context *);
 const char *lpcfg_realm(struct loadparm_context *);
 const char *lpcfg_netbios_name(struct loadparm_context *);
+const char *lpcfg_private_dir(struct loadparm_context *);
 
 void reload_charcnv(struct loadparm_context *lp_ctx);
 
