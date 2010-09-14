@@ -28,7 +28,7 @@
 #include "libcli/composite/composite.h"
 #include "libcli/libcli.h"
 #include "libcli/resolve/resolve.h"
-#include "libcli/finddcs.h"
+#include "libcli/finddc.h"
 #include "lib/util/tevent_ntstatus.h"
 
 struct finddcs_nbt_state {

@@ -26,7 +26,7 @@
 #include "lib/messaging/messaging.h"
 #include "libcli/libcli.h"
 #include "libcli/cldap/cldap.h"
-#include "libcli/finddcs.h"
+#include "libcli/finddc.h"
 #include "libcli/security/dom_sid.h"
 #include "lib/util/tevent_ntstatus.h"
 #include "libcli/composite/composite.h"

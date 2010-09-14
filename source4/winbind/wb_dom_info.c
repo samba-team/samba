@@ -26,7 +26,7 @@
 #include "libcli/security/security.h"
 #include "winbind/wb_server.h"
 #include "smbd/service_task.h"
-#include "libcli/finddcs.h"
+#include "libcli/finddc.h"
 #include "param/param.h"
 #include "libcli/libcli.h"
 

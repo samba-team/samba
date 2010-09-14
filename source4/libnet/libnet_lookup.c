@@ -30,7 +30,7 @@
 #include "lib/messaging/irpc.h"
 #include "libcli/resolve/resolve.h"
 #include "libcli/libcli.h"
-#include "libcli/finddcs.h"
+#include "libcli/finddc.h"
 #include "libcli/security/security.h"
 #include "librpc/gen_ndr/lsa.h"
 #include "librpc/gen_ndr/ndr_lsa_c.h"
