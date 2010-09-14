@@ -180,7 +180,6 @@ source4/kdc/pac-glue_proto.h
 source4/ldap_server/proto.h
 source4/lib/charset/charset_proto.h
 source4/libcli/composite/proto.h
-source4/libcli/finddcs.h
 source4/libcli/ldap/ldap_proto.h
 source4/libcli/libcli_proto.h
 libcli/nbt/nbtname.h
