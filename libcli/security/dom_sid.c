@@ -109,11 +109,11 @@ bool string_to_sid(struct dom_sid *sidout, const char *sidstr)
 	/* BIG NOTE: this function only does SIDS where the identauth is not >= 2^32 */
 	uint32_t conv;
 
+	ZERO_STRUCTP(sidout);
+
 	if ((sidstr[0] != 'S' && sidstr[0] != 's') || sidstr[1] != '-') {
 		goto format_error;
 	}
-
-	ZERO_STRUCTP(sidout);
 
 	/* Get the revision number. */
 	p = sidstr + 2;
@@ -137,11 +137,8 @@ bool string_to_sid(struct dom_sid *sidout, const char *sidstr)
 	conv = (uint32_t) strtoul(q, &q, 10);
 	if (!q) {
 		goto format_error;
-	} else if (*q == '\0') {
-		/* Just id_auth, no subauths */
-	} else if (*q != '-') {
-		goto format_error;
 	}
+
 	/* identauth in decimal should be <  2^32 */
 	/* NOTE - the conv value is in big-endian format. */
 	sidout->id_auth[0] = 0;
@@ -152,7 +149,8 @@ bool string_to_sid(struct dom_sid *sidout, const char *sidstr)
 	sidout->id_auth[5] = (conv & 0x000000ff);
 
 	sidout->num_auths = 0;
-	if (*q == '\0') {
+	if (*q != '-') {
+		/* Just id_auth, no subauths */
 		return true;
 	}
 
@@ -176,11 +174,8 @@ bool string_to_sid(struct dom_sid *sidout, const char *sidstr)
 		}
 
 		q = end;
-		if (*q == '\0') {
-			break;
-		}
 		if (*q != '-') {
-			goto format_error;
+			break;
 		}
 		q += 1;
 	}
