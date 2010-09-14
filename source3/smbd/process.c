@@ -932,7 +932,7 @@ void smbd_setup_sig_hup_handler(void)
 static NTSTATUS smbd_server_connection_loop_once(struct smbd_server_connection *conn)
 {
 	fd_set r_fds, w_fds;
-	int selrtn;
+	int selrtn = 0;
 	struct timeval to;
 	int maxfd = 0;
 
@@ -960,7 +960,7 @@ static NTSTATUS smbd_server_connection_loop_once(struct smbd_server_connection *
 	}
 
 	/* Process a signal and timed events now... */
-	if (run_events(smbd_event_context(), 0, NULL, NULL)) {
+	if (run_events(smbd_event_context(), &selrtn, NULL, NULL)) {
 		return NT_STATUS_RETRY;
 	}
 
@@ -977,26 +977,23 @@ static NTSTATUS smbd_server_connection_loop_once(struct smbd_server_connection *
 
 	/* Check if error */
 	if (selrtn == -1) {
-		/* something is wrong. Maybe the socket is dead? */
-		return map_nt_error_from_unix(errno);
+		if (errno == EINTR)
+			return NT_STATUS_RETRY;
+		else
+			/* Maybe the socket is dead? */
+			return map_nt_error_from_unix(errno);
 	}
 
-        if ((conn->smb1.echo_handler.trusted_fd != -1)
-	    && FD_ISSET(smbd_server_fd(), &r_fds)
-	    && FD_ISSET(conn->smb1.echo_handler.trusted_fd, &r_fds)) {
-		/*
-		 * Prefer to read pending requests from the echo handler. To
-		 * quote Jeremy (da70f8ab1): This is a hack of monstrous
-		 * proportions...
-		 */
-		FD_CLR(smbd_server_fd(), &r_fds);
-        }
+	/* Process events until all available fds have been handled.
+	 * This allows for fair round-robin handling of all available fds
+	 * on each select() wakeup, while still maintaining responsiveness
+	 * by re-checking for signal and timed events between the handling
+	 * of each ready fd. */
+	do {
+		run_events(smbd_event_context(), &selrtn, &r_fds, &w_fds);
+	} while (selrtn > 0);
 
-	if (run_events(smbd_event_context(), selrtn, &r_fds, &w_fds)) {
-		return NT_STATUS_RETRY;
-	}
-
-	/* Did we timeout ? */
+	/* Processed all fds or timed out */
 	if (selrtn == 0) {
 		return NT_STATUS_RETRY;
 	}
