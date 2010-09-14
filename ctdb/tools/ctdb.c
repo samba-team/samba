@@ -2993,6 +2993,7 @@ static int control_pfetch(struct ctdb_context *ctdb, int argc, const char **argv
 	struct ctdb_transaction_handle *h;
 	TDB_DATA key, data;
 	int fd, ret;
+	bool persistent;
 
 	if (argc < 2) {
 		talloc_free(tmp_ctx);
@@ -3002,13 +3003,19 @@ static int control_pfetch(struct ctdb_context *ctdb, int argc, const char **argv
 	db_name = argv[0];
 
 
-	if (db_exists(ctdb, db_name, NULL)) {
+	if (db_exists(ctdb, db_name, &persistent)) {
 		DEBUG(DEBUG_ERR,("Database '%s' does not exist\n", db_name));
 		talloc_free(tmp_ctx);
 		return -1;
 	}
 
-	ctdb_db = ctdb_attach(ctdb, db_name, true, 0);
+	if (!persistent) {
+		DEBUG(DEBUG_ERR,("Database '%s' is not persistent\n", db_name));
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+
+	ctdb_db = ctdb_attach(ctdb, db_name, persistent, 0);
 
 	if (ctdb_db == NULL) {
 		DEBUG(DEBUG_ERR,("Unable to attach to database '%s'\n", db_name));
