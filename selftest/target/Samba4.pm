@@ -53,10 +53,10 @@ sub slapd_start($$)
 	        system("$ENV{OPENLDAP_SLAPD} -d0 -F $env_vars->{SLAPD_CONF_D} -h $uri > $env_vars->{LDAPDIR}/logs 2>&1 &");
 	}
 	while (system("$ldbsearch -H $uri -s base -b \"\" supportedLDAPVersion > /dev/null") != 0) {
-	        $count++;
+		$count++;
 		if ($count > 40) {
-		    $self->slapd_stop($env_vars);
-		    return 0;
+			$self->slapd_stop($env_vars);
+			return 0;
 		}
 		sleep(1);
 	}
@@ -69,8 +69,10 @@ sub slapd_stop($$)
 	if ($self->{ldap} eq "fedora-ds") {
 		system("$envvars->{LDAPDIR}/slapd-$envvars->{LDAP_INSTANCE}/stop-slapd");
 	} elsif ($self->{ldap} eq "openldap") {
-		open(IN, "<$envvars->{OPENLDAP_PIDFILE}") or 
-			die("unable to open slapd pid file: $envvars->{OPENLDAP_PIDFILE}");
+		unless (open(IN, "<$envvars->{OPENLDAP_PIDFILE}")) {
+			warn("unable to open slapd pid file: $envvars->{OPENLDAP_PIDFILE}");
+			return 0;
+		}
 		kill 9, <IN>;
 		close(IN);
 	}
@@ -113,8 +115,10 @@ sub check_or_start($$$)
 
 		# Start slapd before samba, but with the fifo on stdin
 		if (defined($self->{ldap})) {
-		    $self->slapd_start($env_vars) or 
-			die("couldn't start slapd (main run)");
+		 	unless($self->slapd_start($env_vars)) {
+				warn("couldn't start slapd (main run)");
+				return undef;
+			}
 		}
 
 		my $optarg = "";
@@ -191,7 +195,7 @@ sub write_ldb_file($$$)
 	my $ldbadd = $self->bindir_path("ldbadd");
 	open(LDIF, "|$ldbadd -H $file >/dev/null");
 	print LDIF $ldif;
-	return close(LDIF);
+	return(close(LDIF));
 }
 
 sub add_wins_config($$)
@@ -447,13 +451,18 @@ sub provision_raw_prepare($$$$$$$$$$)
 	    $swiface, $password, $kdc_ipv4) = @_;
 	my $ctx;
 
-	-d $prefix or mkdir($prefix, 0777) or die("Unable to create $prefix");
+	unless(-d $prefix or mkdir($prefix, 0777)) {
+		warn("Unable to create $prefix");
+		return undef;
+	}
 	my $prefix_abs = abs_path($prefix);
 
 	die ("prefix=''") if $prefix_abs eq "";
 	die ("prefix='/'") if $prefix_abs eq "/";
 
-	(system("rm -rf $prefix_abs/*") == 0) or die("Unable to clean up");
+	unless (system("rm -rf $prefix_abs/*") == 0) {
+		warn("Unable to clean up");
+	}
 
 	$ctx->{prefix} = $prefix;
 	$ctx->{prefix_abs} = $prefix_abs;
@@ -549,8 +558,10 @@ sub provision_raw_step1($$)
 
 	mkdir($_, 0777) foreach (@{$ctx->{directories}});
 
-	open(CONFFILE, ">$ctx->{smb_conf}")
-		or die("can't open $ctx->{smb_conf}$?");
+	unless (open(CONFFILE, ">$ctx->{smb_conf}")) {
+		warn("can't open $ctx->{smb_conf}$?");
+		return undef;
+	}
 	print CONFFILE "
 [global]
 	netbios name = $ctx->{netbiosname}
@@ -590,7 +601,7 @@ sub provision_raw_step1($$)
 	if (defined($ctx->{sid_generator}) && $ctx->{sid_generator} ne "internal") {
 		print CONFFILE "
 	sid generator = $ctx->{sid_generator}";
-        }
+	}
 
 	print CONFFILE "
 
@@ -602,8 +613,10 @@ sub provision_raw_step1($$)
 
 	$self->mk_keyblobs($ctx->{tlsdir});
 
-	open(KRB5CONF, ">$ctx->{krb5_conf}")
-		or die("can't open $ctx->{krb5_conf}$?");
+	unless (open(KRB5CONF, ">$ctx->{krb5_conf}")) {
+		warn("can't open $ctx->{krb5_conf}$?");
+		return undef;
+	}
 	print KRB5CONF "
 #Generated krb5.conf for $ctx->{realm}
 
@@ -668,10 +681,14 @@ nogroup:x:65534:nobody
 	my $testparm = $self->bindir_path("../scripting/bin/testparm");
 	if (system("$testparm $configuration -v --suppress-prompt >/dev/null 2>&1") != 0) {
 		system("$testparm -v --suppress-prompt $configuration >&2");
-		die("Failed to create a valid smb.conf configuration $testparm!");
+		warn("Failed to create a valid smb.conf configuration $testparm!");
+		return undef;
 	}
 
-	(system("($testparm $configuration -v --suppress-prompt --parameter-name=\"netbios name\" --section-name=global 2> /dev/null | grep -i \"^$ctx->{netbiosname}\" ) >/dev/null 2>&1") == 0) or die("Failed to create a valid smb.conf configuration! $testparm $configuration -v --suppress-prompt --parameter-name=\"netbios name\" --section-name=global");
+	unless (system("($testparm $configuration -v --suppress-prompt --parameter-name=\"netbios name\" --section-name=global 2> /dev/null | grep -i \"^$ctx->{netbiosname}\" ) >/dev/null 2>&1") == 0) {
+		warn("Failed to create a valid smb.conf configuration! $testparm $configuration -v --suppress-prompt --parameter-name=\"netbios name\" --section-name=global");
+		return undef;
+	}
 
 	my $ret = {
 		KRB5_CONFIG => $ctx->{krb5_conf},
@@ -710,7 +727,10 @@ sub provision_raw_step2($$$)
 	my ($self, $ctx, $ret) = @_;
 
 	my $provision_cmd = join(" ", @{$ctx->{provision_options}});
-	(system($provision_cmd) == 0) or die("Unable to provision: \n$provision_cmd\n");
+	unless (system($provision_cmd) == 0) {
+		warn("Unable to provision: \n$provision_cmd\n");
+		return undef;
+	}
 
 	return $ret;
 }
@@ -803,13 +823,16 @@ sub provision($$$$$$$$$)
 	}
 
 	my $ret = $self->provision_raw_step1($ctx);
+	unless ($ret) {
+		return undef;
+	}
 
 	if (defined($self->{ldap})) {
-                $ret->{LDAP_URI} = $ctx->{ldap_uri};
+		$ret->{LDAP_URI} = $ctx->{ldap_uri};
 		push (@{$ctx->{provision_options}}, "--ldap-backend-type=" . $self->{ldap});
 		push (@{$ctx->{provision_options}}, "--ldap-backend-nosync");
 		if ($self->{ldap} eq "openldap") {
- 		        push (@{$ctx->{provision_options}}, "--slapd-path=" . $ENV{OPENLDAP_SLAPD});
+			push (@{$ctx->{provision_options}}, "--slapd-path=" . $ENV{OPENLDAP_SLAPD});
 			($ret->{SLAPD_CONF_D}, $ret->{OPENLDAP_PIDFILE}) = $self->mk_openldap($ctx) or die("Unable to create openldap directories");
 
                 } elsif ($self->{ldap} eq "fedora-ds") {
@@ -820,9 +843,7 @@ sub provision($$$$$$$$$)
 
 	}
 
-	$ret = $self->provision_raw_step2($ctx, $ret);
-
-	return $ret;
+	return $self->provision_raw_step2($ctx, $ret);
 }
 
 sub provision_member($$$)
@@ -841,8 +862,9 @@ sub provision_member($$$)
 				   "locMEMpass3",
 				   $dcvars->{SERVER_IP},
 				   "");
-
-	$ret or die("Unable to provision");
+	unless ($ret) {
+		return undef;
+	}
 
 	my $net = $self->bindir_path("net");
 	my $cmd = "";
@@ -851,7 +873,10 @@ sub provision_member($$$)
 	$cmd .= "$net join $ret->{CONFIGURATION} $dcvars->{DOMAIN} member";
 	$cmd .= " -U$dcvars->{DC_USERNAME}\%$dcvars->{DC_PASSWORD}";
 
-	system($cmd) == 0 or die("Join failed\n$cmd");
+	unless (system($cmd) == 0) {
+		warn("Join failed\n$cmd");
+		return undef;
+	}
 
 	$ret->{MEMBER_SERVER} = $ret->{SERVER};
 	$ret->{MEMBER_SERVER_IP} = $ret->{SERVER_IP};
@@ -892,7 +917,9 @@ sub provision_rpc_proxy($$$)
 				   $dcvars->{SERVER_IP},
 				   $extra_smbconf_options);
 
-	$ret or die("Unable to provision");
+	unless ($ret) {
+		return undef;
+	}
 
 	my $net = $self->bindir_path("net");
 	my $cmd = "";
@@ -901,7 +928,10 @@ sub provision_rpc_proxy($$$)
 	$cmd .= "$net join $ret->{CONFIGURATION} $dcvars->{DOMAIN} member";
 	$cmd .= " -U$dcvars->{DC_USERNAME}\%$dcvars->{DC_PASSWORD}";
 
-	system($cmd) == 0 or die("Join failed\n$cmd");
+	unless (system($cmd) == 0) {
+		warn("Join failed\n$cmd");
+		return undef;
+	}
 
 	$ret->{RPC_PROXY_SERVER} = $ret->{SERVER};
 	$ret->{RPC_PROXY_SERVER_IP} = $ret->{SERVER_IP};
@@ -943,8 +973,9 @@ sub provision_vampire_dc($$$)
 ";
 
 	my $ret = $self->provision_raw_step1($ctx);
-
-	$ret or die("Unable to prepare test env");
+	unless ($ret) {
+		return undef;
+	}
 
 	my $net = $self->bindir_path("net");
 	my $cmd = "";
@@ -953,7 +984,10 @@ sub provision_vampire_dc($$$)
 	$cmd .= "$net vampire $ret->{CONFIGURATION} $dcvars->{DOMAIN} --realm=$dcvars->{REALM}";
 	$cmd .= " -U$dcvars->{DC_USERNAME}\%$dcvars->{DC_PASSWORD}";
 
-	system($cmd) == 0 or die("Join failed\n$cmd");
+	unless (system($cmd) == 0) {
+		warn("Join failed\n$cmd");
+		return undef;
+	}
 
 	$ret->{VAMPIRE_DC_SERVER} = $ret->{SERVER};
 	$ret->{VAMPIRE_DC_SERVER_IP} = $ret->{SERVER_IP};
@@ -986,8 +1020,10 @@ sub provision_dc($$)
 				   "locDCpass1",
 				   "127.0.0.1", "");
 
-	$self->add_wins_config("$prefix/private") or 
-		die("Unable to add wins configuration");
+	unless($self->add_wins_config("$prefix/private")) {
+		warn("Unable to add wins configuration");
+		return undef;
+	}
 
 	$ret->{DC_SERVER} = $ret->{SERVER};
 	$ret->{DC_SERVER_IP} = $ret->{SERVER_IP};
@@ -1015,8 +1051,10 @@ sub provision_fl2000dc($$)
 				   "locDCpass5",
 				   "127.0.0.5", "");
 
-	$self->add_wins_config("$prefix/private") or 
-		die("Unable to add wins configuration");
+	unless($self->add_wins_config("$prefix/private")) {
+		warn("Unable to add wins configuration");
+		return undef;
+	}
 
 	return $ret;
 }
@@ -1037,8 +1075,10 @@ sub provision_fl2003dc($$)
 				   "locDCpass6",
 				   "127.0.0.6", "");
 
-	$self->add_wins_config("$prefix/private") or
-		die("Unable to add wins configuration");
+	unless($self->add_wins_config("$prefix/private")) {
+		warn("Unable to add wins configuration");
+		return undef;
+	}
 
 	return $ret;
 }
@@ -1059,8 +1099,10 @@ sub provision_fl2008r2dc($$)
 				   "locDCpass7",
 				   "127.0.0.7", "");
 
-	$self->add_wins_config("$prefix/private") or
-		die("Unable to add wins configuration");
+	unless ($self->add_wins_config("$prefix/private")) {
+		warn("Unable to add wins configuration");
+		return undef;
+	}
 
 	return $ret;
 }
@@ -1080,6 +1122,9 @@ sub provision_rodc($$$)
 					       "2008",
 					       8, $dcvars->{PASSWORD},
 					       $dcvars->{SERVER_IP});
+	unless ($ctx) {
+		return undef;
+	}
 
 	$ctx->{tmpdir} = "$ctx->{prefix_abs}/tmp";
 	push(@{$ctx->{directories}}, "$ctx->{tmpdir}");
@@ -1106,8 +1151,9 @@ sub provision_rodc($$$)
 ";
 
 	my $ret = $self->provision_raw_step1($ctx);
-
-	$ret or die("Unable to prepare test env");
+	unless ($ret) {
+		return undef;
+	}
 
 	my $net = $self->bindir_path("net");
 	my $cmd = "";
@@ -1117,7 +1163,10 @@ sub provision_rodc($$$)
 	$cmd .= " -U$dcvars->{DC_USERNAME}\%$dcvars->{DC_PASSWORD}";
 	$cmd .= " --server=$dcvars->{DC_SERVER}";
 
-	system($cmd) == 0 or die("RODC join failed\n$cmd");
+	unless (system($cmd) == 0) {
+		warn("RODC join failed\n$cmd");
+		return undef;
+	}
 
 	$ret->{RODC_DC_SERVER} = $ret->{SERVER};
 	$ret->{RODC_DC_SERVER_IP} = $ret->{SERVER_IP};
@@ -1141,8 +1190,7 @@ sub teardown_env($$)
 
 	close(DATA);
 
-	if (-f "$envvars->{PIDDIR}/samba.pid" ) {
-		open(IN, "<$envvars->{PIDDIR}/samba.pid") or die("unable to open server pid file");
+	if (open(IN, "<$envvars->{PIDDIR}/samba.pid")) {
 		$pid = <IN>;
 		close(IN);
 
@@ -1150,16 +1198,16 @@ sub teardown_env($$)
 		# this time to write out the covarge data
 		my $count = 0;
 		until (kill(0, $pid) == 0) {
-		    # if no process sucessfully signalled, then we are done
-		    sleep(1);
-		    $count++;
-		    last if $count > 20;
+			# if no process sucessfully signalled, then we are done
+			sleep(1);
+			$count++;
+			last if $count > 20;
 		}
-		
+
 		# If it is still around, kill it
 		if ($count > 20) {
-		    print "server process $pid took more than $count seconds to exit, killing\n";
-		    kill 9, $pid;
+			print "server process $pid took more than $count seconds to exit, killing\n";
+			kill 9, $pid;
 		}
 	}
 
@@ -1278,7 +1326,8 @@ sub setup_env($$$)
 		}
 		return $ret;
 	} else {
-		die("Samba4 can't provide environment '$envname'");
+		warn("Samba4 can't provide environment '$envname'");
+		return undef;
 	}
 }
 
@@ -1397,7 +1446,10 @@ sub setup_vampire_dc($$$)
 	$cmd .= " KRB5_CONFIG=\"$env->{KRB5_CONFIG}\"";
 	$cmd .= " $net drs kcc $env->{DC_SERVER}";
 	$cmd .= " -U$dc_vars->{DC_USERNAME}\%$dc_vars->{DC_PASSWORD}";
-	system($cmd) == 0 or die("Failed to exec kcc\n$cmd");
+	unless (system($cmd) == 0) {
+		warn("Failed to exec kcc\n$cmd");
+		return undef;
+	}
 
 	# as 'vampired' dc may add data in its local replica
 	# we need to synchronize data between DCs
@@ -1408,10 +1460,16 @@ sub setup_vampire_dc($$$)
 	$cmd .= " -U$dc_vars->{DC_USERNAME}\%$dc_vars->{DC_PASSWORD}";
 	# replicate Configuration NC
 	my $cmd_repl = "$cmd \"CN=Configuration,$base_dn\"";
-	system($cmd_repl) == 0 or die("Failed to replicate\n$cmd_repl");
+	unless(system($cmd_repl) == 0) {
+		warn("Failed to replicate\n$cmd_repl");
+		return undef;
+	}
 	# replicate Default NC
 	$cmd_repl = "$cmd \"$base_dn\"";
-	system($cmd_repl) == 0 or die("Failed to replicate\n$cmd_repl");
+	unless(system($cmd_repl) == 0) {
+		warn("Failed to replicate\n$cmd_repl");
+		return undef;
+	}
 
 	return $env;
 }
@@ -1421,6 +1479,10 @@ sub setup_rodc($$$)
 	my ($self, $path, $dc_vars) = @_;
 
 	my $env = $self->provision_rodc($path, $dc_vars);
+
+	unless ($env) {
+		return undef;
+	}
 
 	$self->check_or_start($env,
 		($ENV{SMBD_MAXTIME} or 7500));
