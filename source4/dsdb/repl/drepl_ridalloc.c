@@ -71,7 +71,7 @@ WERROR drepl_create_role_owner_source_dsa(struct dreplsrv_service *service,
 	}
 
 	sdsa->repsFrom1 = &sdsa->_repsFromBlob.ctr.ctr1;
-	ret = dsdb_find_guid_attr_by_dn(ldb, fsmo_role_dn, "objectGUID", &sdsa->repsFrom1->source_dsa_obj_guid);
+	ret = dsdb_find_guid_by_dn(ldb, fsmo_role_dn, &sdsa->repsFrom1->source_dsa_obj_guid);
 	if (ret != LDB_SUCCESS) {
 		DEBUG(0,(__location__ ": Failed to find objectGUID for %s\n",
 			 ldb_dn_get_linearized(fsmo_role_dn)));
