@@ -903,17 +903,15 @@ static void winbindd_listen_fde_handler(struct tevent_context *ev,
 	struct winbindd_listen_state *s = talloc_get_type_abort(private_data,
 					  struct winbindd_listen_state);
 
-	while (winbindd_num_clients() >
-	       WINBINDD_MAX_SIMULTANEOUS_CLIENTS - 1) {
+	while (winbindd_num_clients() > lp_winbind_max_clients() - 1) {
 		DEBUG(5,("winbindd: Exceeding %d client "
 			 "connections, removing idle "
-			 "connection.\n",
-			 WINBINDD_MAX_SIMULTANEOUS_CLIENTS));
+			 "connection.\n", lp_winbind_max_clients()));
 		if (!remove_idle_client()) {
 			DEBUG(0,("winbindd: Exceeding %d "
 				 "client connections, no idle "
 				 "connection found\n",
-				 WINBINDD_MAX_SIMULTANEOUS_CLIENTS));
+				 lp_winbind_max_clients()));
 			break;
 		}
 	}
