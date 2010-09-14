@@ -71,7 +71,7 @@ NTSTATUS fill_netlogon_samlogon_response(struct ldb_context *sam_ctx,
 	const char *pdc_ip;
 	struct ldb_dn *domain_dn = NULL;
 	struct interface *ifaces;
-	bool user_known;
+	bool user_known, am_rodc;
 	NTSTATUS status;
 
 	/* the domain parameter could have an optional trailing "." */
@@ -233,7 +233,7 @@ NTSTATUS fill_netlogon_samlogon_response(struct ldb_context *sam_ctx,
 		
 	server_type      = 
 		DS_SERVER_DS | DS_SERVER_TIMESERV |
-		DS_SERVER_CLOSEST | DS_SERVER_WRITABLE | 
+		DS_SERVER_CLOSEST |
 		DS_SERVER_GOOD_TIMESERV;
 
 #if 0
@@ -259,6 +259,10 @@ NTSTATUS fill_netlogon_samlogon_response(struct ldb_context *sam_ctx,
 
 	if (str_list_check(services, "kdc")) {
 		server_type |= DS_SERVER_KDC;
+	}
+
+	if (samdb_rodc(sam_ctx, &am_rodc) != LDB_SUCCESS && !am_rodc) {
+		server_type |= DS_SERVER_WRITABLE;
 	}
 
 #if 0
