@@ -70,7 +70,7 @@ struct composite_context *resolve_name_file_send(TALLOC_CTX *mem_ctx,
 	if (c == NULL) return NULL;
 
 	/* This isn't an NBT layer resolver */
-	if (flags & RESOLVE_NAME_FLAG_FORCE_NBT || name->type != NBT_NAME_SERVER) {
+	if (flags & RESOLVE_NAME_FLAG_FORCE_NBT) {
 		composite_error(c, NT_STATUS_OBJECT_NAME_NOT_FOUND);
 		return c;
 	}
