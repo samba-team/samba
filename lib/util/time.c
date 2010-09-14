@@ -91,8 +91,15 @@ _PUBLIC_ time_t time_mono(time_t *t)
 
 time_t convert_timespec_to_time_t(struct timespec ts)
 {
+	/* Ensure tv_nsec is less than 1sec. */
+	while (ts.tv_nsec > 1000000000) {
+		ts.tv_sec += 1;
+		ts.tv_nsec -= 1000000000;
+	}
+
 	/* 1 ns == 1,000,000,000 - one thousand millionths of a second.
 	   increment if it's greater than 500 millionth of a second. */
+
 	if (ts.tv_nsec > 500000000) {
 		return ts.tv_sec + 1;
 	}
