@@ -1,21 +1,21 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
 
    a composite API for finding a DC and its name
 
    Copyright (C) Volker Lendecke 2005
    Copyright (C) Andrew Bartlett <abartlet@samba.org> 2006
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -31,7 +31,7 @@
 #include "libcli/finddcs.h"
 #include "lib/util/tevent_ntstatus.h"
 
-struct finddcs_state {
+struct finddcs_nbt_state {
 	struct tevent_context *ev;
 	struct tevent_req *req;
 	struct messaging_context *msg_ctx;
@@ -48,12 +48,12 @@ struct finddcs_state {
 	uint16_t nbt_port;
 };
 
-static void finddcs_name_resolved(struct composite_context *ctx);
-static void finddcs_getdc_replied(struct tevent_req *subreq);
-static void fallback_node_status(struct finddcs_state *state);
+static void finddcs_nbt_name_resolved(struct composite_context *ctx);
+static void finddcs_nbt_getdc_replied(struct tevent_req *subreq);
+static void fallback_node_status(struct finddcs_nbt_state *state);
 static void fallback_node_status_replied(struct nbt_name_request *name_req);
 
-/* 
+/*
  * Setup and send off the a normal name resolution for the target name.
  *
  * The domain_sid parameter is optional, and is used in the subsequent getdc request.
@@ -63,7 +63,7 @@ static void fallback_node_status_replied(struct nbt_name_request *name_req);
  * the IP)
  */
 
-struct tevent_req *finddcs_send(TALLOC_CTX *mem_ctx,
+struct tevent_req *finddcs_nbt_send(TALLOC_CTX *mem_ctx,
 				const char *my_netbios_name,
 				uint16_t nbt_port,
 				const char *domain_name,
@@ -73,12 +73,12 @@ struct tevent_req *finddcs_send(TALLOC_CTX *mem_ctx,
 				struct tevent_context *event_ctx,
 				struct messaging_context *msg_ctx)
 {
-	struct finddcs_state *state;
+	struct finddcs_nbt_state *state;
 	struct nbt_name name;
 	struct tevent_req *req;
 	struct composite_context *creq;
 
-	req = tevent_req_create(mem_ctx, &state, struct finddcs_state);
+	req = tevent_req_create(mem_ctx, &state, struct finddcs_nbt_state);
 	if (req == NULL) {
 		return NULL;
 	}
@@ -111,7 +111,7 @@ struct tevent_req *finddcs_send(TALLOC_CTX *mem_ctx,
 	if (tevent_req_nomem(creq, req)) {
 		return tevent_req_post(req, event_ctx);
 	}
-	creq->async.fn = finddcs_name_resolved;
+	creq->async.fn = finddcs_nbt_name_resolved;
 	creq->async.private_data = state;
 
 	return req;
@@ -119,17 +119,17 @@ struct tevent_req *finddcs_send(TALLOC_CTX *mem_ctx,
 
 /* Having got an name query answer, fire off a GetDC request, so we
  * can find the target's all-important name.  (Kerberos and some
- * netlogon operations are quite picky about names) 
+ * netlogon operations are quite picky about names)
  *
  * The name is a courtesy, if we don't find it, don't completely fail.
  *
  * However, if the nbt server is down, fall back to a node status
  * request
  */
-static void finddcs_name_resolved(struct composite_context *ctx)
+static void finddcs_nbt_name_resolved(struct composite_context *ctx)
 {
-	struct finddcs_state *state =
-		talloc_get_type(ctx->async.private_data, struct finddcs_state);
+	struct finddcs_nbt_state *state =
+		talloc_get_type(ctx->async.private_data, struct finddcs_nbt_state);
 	struct tevent_req *subreq;
 	struct dcerpc_binding_handle *irpc_handle;
 	const char *address;
@@ -185,15 +185,15 @@ static void finddcs_name_resolved(struct composite_context *ctx)
 	if (tevent_req_nomem(subreq, state->req)) {
 		return;
 	}
-	tevent_req_set_callback(subreq, finddcs_getdc_replied, state);
+	tevent_req_set_callback(subreq, finddcs_nbt_getdc_replied, state);
 }
 
 /* Called when the GetDC request returns */
-static void finddcs_getdc_replied(struct tevent_req *subreq)
+static void finddcs_nbt_getdc_replied(struct tevent_req *subreq)
 {
-	struct finddcs_state *state =
+	struct finddcs_nbt_state *state =
 		tevent_req_callback_data(subreq,
-		struct finddcs_state);
+		struct finddcs_nbt_state);
 	NTSTATUS status;
 
 	status = dcerpc_nbtd_getdcname_r_recv(subreq, state);
@@ -210,7 +210,7 @@ static void finddcs_getdc_replied(struct tevent_req *subreq)
 /* The GetDC request might not be available (such as occours when the
  * NBT server is down).  Fallback to a node status.  It is the best
  * hope we have... */
-static void fallback_node_status(struct finddcs_state *state) 
+static void fallback_node_status(struct finddcs_nbt_state *state)
 {
 	struct nbt_name_socket *nbtsock;
 	struct nbt_name_request *name_req;
@@ -227,7 +227,7 @@ static void fallback_node_status(struct finddcs_state *state)
 	if (tevent_req_nomem(nbtsock, state->req)) {
 		return;
 	}
-	
+
 	name_req = nbt_name_status_send(nbtsock, &state->node_status);
 	if (tevent_req_nomem(name_req, state->req)) {
 		return;
@@ -238,10 +238,10 @@ static void fallback_node_status(struct finddcs_state *state)
 }
 
 /* We have a node status reply (or perhaps a timeout) */
-static void fallback_node_status_replied(struct nbt_name_request *name_req) 
+static void fallback_node_status_replied(struct nbt_name_request *name_req)
 {
 	int i;
-	struct finddcs_state *state = talloc_get_type(name_req->async.private_data, struct finddcs_state);
+	struct finddcs_nbt_state *state = talloc_get_type(name_req->async.private_data, struct finddcs_nbt_state);
 	NTSTATUS status;
 
 	status = nbt_name_status_recv(name_req, state, &state->node_status);
@@ -268,16 +268,16 @@ static void fallback_node_status_replied(struct nbt_name_request *name_req)
 	tevent_req_nterror(state->req, NT_STATUS_NO_LOGON_SERVERS);
 }
 
-NTSTATUS finddcs_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
+NTSTATUS finddcs_nbt_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 		      int *num_dcs, struct nbt_dc_name **dcs)
 {
-	struct finddcs_state *state = tevent_req_data(req, struct finddcs_state);
+	struct finddcs_nbt_state *state = tevent_req_data(req, struct finddcs_nbt_state);
 	bool ok;
 	NTSTATUS status;
 
 	ok = tevent_req_poll(req, state->ev);
 	if (!ok) {
-		tevent_req_received(req);
+		talloc_free(req);
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 	status = tevent_req_simple_recv_ntstatus(req);
@@ -285,29 +285,26 @@ NTSTATUS finddcs_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 		*num_dcs = state->num_dcs;
 		*dcs = talloc_steal(mem_ctx, state->dcs);
 	}
-	tevent_req_received(req);
+	talloc_free(req);
 	return status;
 }
 
-NTSTATUS finddcs(TALLOC_CTX *mem_ctx,
+NTSTATUS finddcs_nbt(TALLOC_CTX *mem_ctx,
 		 const char *my_netbios_name,
 		 uint16_t nbt_port,
-		 const char *domain_name, int name_type, 
+		 const char *domain_name, int name_type,
 		 struct dom_sid *domain_sid,
 		 struct resolve_context *resolve_ctx,
 		 struct tevent_context *event_ctx,
 		 struct messaging_context *msg_ctx,
 		 int *num_dcs, struct nbt_dc_name **dcs)
 {
-	NTSTATUS status;
-	struct tevent_req *req = finddcs_send(mem_ctx,
+	struct tevent_req *req = finddcs_nbt_send(mem_ctx,
 					      my_netbios_name,
 					      nbt_port,
 					      domain_name, name_type,
 					      domain_sid,
 					      resolve_ctx,
 					      event_ctx, msg_ctx);
-	status = finddcs_recv(req, mem_ctx, num_dcs, dcs);
-	talloc_free(req);
-	return status;
+	return finddcs_nbt_recv(req, mem_ctx, num_dcs, dcs);
 }
