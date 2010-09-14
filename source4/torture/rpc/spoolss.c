@@ -2681,21 +2681,31 @@ static bool test_Forms_args(struct torture_context *tctx,
 
 	if (winreg_handle && hive_handle && W_ERROR_IS_OK(expected_add_result)) {
 
+		struct spoolss_FormInfo1 i1;
+
 		torture_assert(tctx,
 			test_GetForm_winreg(tctx, winreg_handle, hive_handle, TOP_LEVEL_CONTROL_FORMS_KEY, form_name, &w_type, &w_size, &w_length, &w_data),
 			"failed to get form via winreg");
 
+		i1.size.width	= IVAL(w_data, 0);
+		i1.size.height	= IVAL(w_data, 4);
+		i1.area.left	= IVAL(w_data, 8);
+		i1.area.top	= IVAL(w_data, 12);
+		i1.area.right	= IVAL(w_data, 16);
+		i1.area.bottom	= IVAL(w_data, 20);
+		/* skip index here */
+		i1.flags	= IVAL(w_data, 28);
+
 		torture_assert_int_equal(tctx, w_type, REG_BINARY, "unexpected type");
 		torture_assert_int_equal(tctx, w_size, 0x20, "unexpected size");
 		torture_assert_int_equal(tctx, w_length, 0x20, "unexpected length");
-		torture_assert_mem_equal(tctx, &w_data[0], &add_info.info1->size.width, 4, "width mismatch");
-		torture_assert_mem_equal(tctx, &w_data[4], &add_info.info1->size.height, 4, "height mismatch");
-		torture_assert_mem_equal(tctx, &w_data[8], &add_info.info1->area.left, 4, "left mismatch");
-		torture_assert_mem_equal(tctx, &w_data[12], &add_info.info1->area.top, 4, "top mismatch");
-		torture_assert_mem_equal(tctx, &w_data[16], &add_info.info1->area.right, 4, "right mismatch");
-		torture_assert_mem_equal(tctx, &w_data[20], &add_info.info1->area.bottom, 4, "bottom mismatch");
-		/* skip index here */
-		torture_assert_mem_equal(tctx, &w_data[28], &add_info.info1->flags, 4, "flags mismatch");
+		torture_assert_int_equal(tctx, i1.size.width, add_info.info1->size.width, "width mismatch");
+		torture_assert_int_equal(tctx, i1.size.height, add_info.info1->size.height, "height mismatch");
+		torture_assert_int_equal(tctx, i1.area.left, add_info.info1->area.left, "left mismatch");
+		torture_assert_int_equal(tctx, i1.area.top, add_info.info1->area.top, "top mismatch");
+		torture_assert_int_equal(tctx, i1.area.right, add_info.info1->area.right, "right mismatch");
+		torture_assert_int_equal(tctx, i1.area.bottom, add_info.info1->area.bottom, "bottom mismatch");
+		torture_assert_int_equal(tctx, i1.flags, add_info.info1->flags, "flags mismatch");
 	}
 
 	if (!print_server && W_ERROR_IS_OK(expected_add_result)) {
@@ -2712,14 +2722,25 @@ static bool test_Forms_args(struct torture_context *tctx,
 		torture_assert_int_equal(tctx, info.info1.flags, add_info.info1->flags, "flags mismatch");
 
 		if (winreg_handle && hive_handle) {
-			torture_assert_mem_equal(tctx, &w_data[0], &info.info1.size.width, 4, "width mismatch");
-			torture_assert_mem_equal(tctx, &w_data[4], &info.info1.size.height, 4, "height mismatch");
-			torture_assert_mem_equal(tctx, &w_data[8], &info.info1.area.left, 4, "left mismatch");
-			torture_assert_mem_equal(tctx, &w_data[12], &info.info1.area.top, 4, "top mismatch");
-			torture_assert_mem_equal(tctx, &w_data[16], &info.info1.area.right, 4, "right mismatch");
-			torture_assert_mem_equal(tctx, &w_data[20], &info.info1.area.bottom, 4, "bottom mismatch");
+
+			struct spoolss_FormInfo1 i1;
+
+			i1.size.width	= IVAL(w_data, 0);
+			i1.size.height	= IVAL(w_data, 4);
+			i1.area.left	= IVAL(w_data, 8);
+			i1.area.top	= IVAL(w_data, 12);
+			i1.area.right	= IVAL(w_data, 16);
+			i1.area.bottom	= IVAL(w_data, 20);
 			/* skip index here */
-			torture_assert_mem_equal(tctx, &w_data[28], &info.info1.flags, 4, "flags mismatch");
+			i1.flags	= IVAL(w_data, 28);
+
+			torture_assert_int_equal(tctx, i1.size.width, info.info1.size.width, "width mismatch");
+			torture_assert_int_equal(tctx, i1.size.height, info.info1.size.height, "height mismatch");
+			torture_assert_int_equal(tctx, i1.area.left, info.info1.area.left, "left mismatch");
+			torture_assert_int_equal(tctx, i1.area.top, info.info1.area.top, "top mismatch");
+			torture_assert_int_equal(tctx, i1.area.right, info.info1.area.right, "right mismatch");
+			torture_assert_int_equal(tctx, i1.area.bottom, info.info1.area.bottom, "bottom mismatch");
+			torture_assert_int_equal(tctx, i1.flags, info.info1.flags, "flags mismatch");
 		}
 
 		add_info.info1->size.width = 1234;
