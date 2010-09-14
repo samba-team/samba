@@ -1166,6 +1166,8 @@ static const struct ldap_control_handler ldap_known_controls[] = {
 	{ "1.3.6.1.4.1.7165.4.3.7", NULL, NULL },
 /* DSDB_CONTROL_PASSWORD_CHANGE_STATUS_OID is internal only, and has no network representation */
 	{ "1.3.6.1.4.1.7165.4.3.8", NULL, NULL },
+/* DSDB_CONTROL_SEARCH_APPLY_ACCESS is internal only, and has no network representation */
+	{ "1.3.6.1.4.1.7165.4.3.15", NULL, NULL },
 /* DSDB_EXTENDED_REPLICATED_OBJECTS_OID is internal only, and has no network representation */
 	{ "1.3.6.1.4.1.7165.4.4.1", NULL, NULL },
 	{ DSDB_OPENLDAP_DEREFERENCE_CONTROL, decode_openldap_dereference, encode_openldap_dereference},

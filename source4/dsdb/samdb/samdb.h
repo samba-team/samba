@@ -192,4 +192,7 @@ struct dsdb_fsmo_extended_op {
 	struct GUID destination_dsa_guid;
 };
 
+/* applied access checks on LDAP reads */
+#define DSDB_CONTROL_SEARCH_APPLY_ACCESS "1.3.6.1.4.1.7165.4.3.15"
+
 #endif /* __SAMDB_H__ */
