@@ -156,7 +156,6 @@ my $ldap = undef;
 my $opt_analyse_cmd = undef;
 my $opt_resetup_env = undef;
 my $opt_bindir = undef;
-my $opt_no_lazy_setup = undef;
 my $opt_load_list = undef;
 my @testlists = ();
 
@@ -351,7 +350,6 @@ my $result = GetOptions (
 		'testenv' => \$opt_testenv,
 		'ldap:s' => \$ldap,
 		'analyse-cmd=s' => \$opt_analyse_cmd,
-		'no-lazy-setup' => \$opt_no_lazy_setup,
 		'resetup-environment' => \$opt_resetup_env,
 		'bindir:s' => \$opt_bindir,
 		'image=s' => \$opt_image,
@@ -613,8 +611,6 @@ my @todo = ();
 
 my $testsdir = "$srcdir/selftest";
 
-my %required_envs = ();
-
 sub should_run_test($)
 {
 	my $name = shift;
@@ -646,7 +642,6 @@ sub read_testlist($)
 			my $cmdline = <IN>;
 			$cmdline =~ s/\n//g;
 			if (should_run_test($name) == 1) {
-				$required_envs{$env} = 1;
 				push (@ret, [$name, $env, $cmdline, $supports_loadlist]);
 			}
 		} else {
@@ -907,15 +902,13 @@ sub teardown_env($)
 # This 'global' file needs to be empty when we start
 unlink("$prefix_abs/dns_host_file");
 
-if ($opt_no_lazy_setup) {
-	setup_env($_) foreach (keys %required_envs);
-}
-
 if ($opt_testenv) {
 	my $testenv_name = $ENV{SELFTEST_TESTENV};
 	$testenv_name = $testenv_default unless defined($testenv_name);
 
 	my $testenv_vars = setup_env($testenv_name);
+
+	die("Unable to setup environment $testenv_name") unless ($testenv_vars);
 
 	$ENV{PIDDIR} = $testenv_vars->{PIDDIR};
 
@@ -945,7 +938,8 @@ $envvarstr
 
 		my $envvars = setup_env($envname);
 		if (not defined($envvars)) {
-			Subunit::skip_testsuite($name, 
+			Subunit::start_testsuite($name);
+			Subunit::end_testsuite($name, "error",
 				"unable to set up environment $envname");
 			next;
 		}
@@ -960,8 +954,7 @@ $envvarstr
 			$cmd .= " --load-list=$listid_file";
 		}
 
-		run_testsuite($envname, $name, $cmd, $i, $suitestotal,
-				      );
+		run_testsuite($envname, $name, $cmd, $i, $suitestotal);
 
 		if (defined($opt_analyse_cmd)) {
 			system("$opt_analyse_cmd \"$name\"");
