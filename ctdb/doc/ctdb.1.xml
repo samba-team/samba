@@ -1027,7 +1027,7 @@ This is mainly useful for backing up persistent databases such as secrets.tdb an
       </para>
     </refsect2>
 
-    <refsect2><title>restoredb &lt;file&gt; [dbname]</title>
+    <refsect2><title>restoredb &lt;file&gt; [&lt;dbname&gt;]</title>
       <para>
         This command restores a persistent database that was previously backed up using backupdb.
 	By default the data will be restored back into the same database as
