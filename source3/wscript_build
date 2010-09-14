@@ -477,7 +477,7 @@ RPC_CLIENT_SCHANNEL_SRC = '''rpc_client/cli_pipe_schannel.c'''
 
 LOCKING_SRC = '''locking/locking.c locking/brlock.c locking/posix.c'''
 
-PRIVILEGES_BASIC_SRC = '''lib/privileges_basic.c'''
+PRIVILEGES_BASIC_SRC = '''../libcli/security/privileges.c'''
 
 PRIVILEGES_SRC = '''lib/privileges.c'''
 
