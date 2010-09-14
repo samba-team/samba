@@ -111,6 +111,10 @@ static struct composite_context* libnet_RpcConnectSrv_send(struct libnet_context
 		b->flags = r->in.dcerpc_flags;
 	}
 
+	if (DEBUGLEVEL >= 10) {
+		b->flags |= DCERPC_DEBUG_PRINT_BOTH;
+	}
+
 	if (r->level == LIBNET_RPC_CONNECT_SERVER_ADDRESS) {
 		b->target_hostname = talloc_strdup(b, r->in.name);
 		if (composite_nomem(b->target_hostname, c)) {
