@@ -1181,35 +1181,29 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 		switch (req8->extended_op) {
 		case DRSUAPI_EXOP_NONE:
 			break;
-
 		case DRSUAPI_EXOP_FSMO_RID_ALLOC:
 			werr = getncchanges_rid_alloc(b_state, mem_ctx, req8, &r->out.ctr->ctr6);
 			W_ERROR_NOT_OK_RETURN(werr);
 			search_dn = ldb_get_default_basedn(sam_ctx);
 			break;
-
 		case DRSUAPI_EXOP_REPL_SECRET:
 			werr = getncchanges_repl_secret(b_state, mem_ctx, req8, user_sid, &r->out.ctr->ctr6);
 			r->out.result = werr;
 			NDR_PRINT_FUNCTION_DEBUG(drsuapi_DsGetNCChanges, NDR_BOTH, r);
 			W_ERROR_NOT_OK_RETURN(werr);
 			break;
-
 		case DRSUAPI_EXOP_FSMO_REQ_ROLE:
 			werr = getncchanges_change_master(b_state, mem_ctx, req8, &r->out.ctr->ctr6);
 			W_ERROR_NOT_OK_RETURN(werr);
 			break;
-
 		case DRSUAPI_EXOP_FSMO_RID_REQ_ROLE:
 			werr = getncchanges_change_master(b_state, mem_ctx, req8, &r->out.ctr->ctr6);
 			W_ERROR_NOT_OK_RETURN(werr);
 			break;
-
 		case DRSUAPI_EXOP_FSMO_REQ_PDC:
 			werr = getncchanges_change_master(b_state, mem_ctx, req8, &r->out.ctr->ctr6);
 			W_ERROR_NOT_OK_RETURN(werr);
 			break;
-
 		case DRSUAPI_EXOP_FSMO_ABANDON_ROLE:
 		case DRSUAPI_EXOP_REPL_OBJ:
 			DEBUG(0,(__location__ ": Request for DsGetNCChanges unsupported extended op 0x%x\n",
