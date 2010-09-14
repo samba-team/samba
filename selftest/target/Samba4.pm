@@ -870,7 +870,7 @@ sub provision_member($$$)
 	my $cmd = "";
 	$cmd .= "SOCKET_WRAPPER_DEFAULT_IFACE=\"$ret->{SOCKET_WRAPPER_DEFAULT_IFACE}\" ";
 	$cmd .= "KRB5_CONFIG=\"$ret->{KRB5_CONFIG}\" ";
-	$cmd .= "$net join $ret->{CONFIGURATION} $dcvars->{DOMAIN} member";
+	$cmd .= "$net join $ret->{CONFIGURATION} $dcvars->{REALM} member";
 	$cmd .= " -U$dcvars->{DC_USERNAME}\%$dcvars->{DC_PASSWORD}";
 
 	unless (system($cmd) == 0) {
@@ -925,7 +925,7 @@ sub provision_rpc_proxy($$$)
 	my $cmd = "";
 	$cmd .= "SOCKET_WRAPPER_DEFAULT_IFACE=\"$ret->{SOCKET_WRAPPER_DEFAULT_IFACE}\" ";
 	$cmd .= "KRB5_CONFIG=\"$ret->{KRB5_CONFIG}\" ";
-	$cmd .= "$net join $ret->{CONFIGURATION} $dcvars->{DOMAIN} member";
+	$cmd .= "$net join $ret->{CONFIGURATION} $dcvars->{REALM} member";
 	$cmd .= " -U$dcvars->{DC_USERNAME}\%$dcvars->{DC_PASSWORD}";
 
 	unless (system($cmd) == 0) {
@@ -981,7 +981,7 @@ sub provision_vampire_dc($$$)
 	my $cmd = "";
 	$cmd .= "SOCKET_WRAPPER_DEFAULT_IFACE=\"$ret->{SOCKET_WRAPPER_DEFAULT_IFACE}\" ";
 	$cmd .= "KRB5_CONFIG=\"$ret->{KRB5_CONFIG}\" ";
-	$cmd .= "$net vampire $ret->{CONFIGURATION} $dcvars->{DOMAIN} --realm=$dcvars->{REALM}";
+	$cmd .= "$net vampire $ret->{CONFIGURATION} $dcvars->{REALM} --realm=$dcvars->{REALM}";
 	$cmd .= " -U$dcvars->{DC_USERNAME}\%$dcvars->{DC_PASSWORD}";
 
 	unless (system($cmd) == 0) {
@@ -1159,7 +1159,7 @@ sub provision_rodc($$$)
 	my $cmd = "";
 	$cmd .= "SOCKET_WRAPPER_DEFAULT_IFACE=\"$ret->{SOCKET_WRAPPER_DEFAULT_IFACE}\" ";
 	$cmd .= "KRB5_CONFIG=\"$ret->{KRB5_CONFIG}\" ";
-	$cmd .= "$net join $ret->{CONFIGURATION} $dcvars->{DOMAIN} RODC";
+	$cmd .= "$net join $ret->{CONFIGURATION} $dcvars->{REALM} RODC";
 	$cmd .= " -U$dcvars->{DC_USERNAME}\%$dcvars->{DC_PASSWORD}";
 	$cmd .= " --server=$dcvars->{DC_SERVER}";
 
