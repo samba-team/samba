@@ -421,7 +421,7 @@ static NTSTATUS gensec_spnego_parse_negTokenInit(struct gensec_security *gensec_
 
 	if (spnego_state->state_position == SPNEGO_SERVER_START) {
 		for (i=0; all_sec && all_sec[i].op; i++) {
-			/* optomisitic token */
+			/* optimistic token */
 			if (strcmp(all_sec[i].oid, mechType[0]) == 0) {
 				nt_status = gensec_subcontext_start(spnego_state,
 								    gensec_security,
@@ -459,7 +459,7 @@ static NTSTATUS gensec_spnego_parse_negTokenInit(struct gensec_security *gensec_
 		}
 	}
 	
-	/* Having tried any optomisitc token from the client (if we
+	/* Having tried any optimistic token from the client (if we
 	 * were the server), if we didn't get anywhere, walk our list
 	 * in our preference order */
 	
