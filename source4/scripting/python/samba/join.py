@@ -25,7 +25,7 @@ from samba import gensec, Ldb
 import ldb, samba, sys
 from samba.ndr import ndr_pack, ndr_unpack, ndr_print
 from samba.dcerpc import security
-from samba.dcerpc import drsuapi, misc, netlogon
+from samba.dcerpc import drsuapi, misc, netlogon, nbt
 from samba.credentials import Credentials, DONT_USE_KERBEROS
 from samba.provision import secretsdb_self_join, provision, FILL_DRS, find_setup_dir
 from samba.net import Net
@@ -42,9 +42,6 @@ class join_ctx:
 def join_rodc(server=None, creds=None, lp=None, site=None, netbios_name=None,
               targetdir=None, domain=None):
     """join as a RODC"""
-
-    if server is None:
-        raise Exception("You must supply a server for a RODC join")
 
     def del_noerror(samdb, dn):
         try:
@@ -68,6 +65,11 @@ def join_rodc(server=None, creds=None, lp=None, site=None, netbios_name=None,
             del_noerror(ctx.samdb, ctx.new_krbtgt_dn)
         except:
             pass
+
+    def find_dc(ctx, domain):
+        '''find a writeable DC for the given domain'''
+        return ctx.net.finddc(domain, nbt.NBT_SERVER_LDAP | nbt.NBT_SERVER_DS | nbt.NBT_SERVER_WRITABLE)
+
 
     def get_dsServiceName(samdb):
         res = samdb.search(base="", scope=ldb.SCOPE_BASE, attrs=["dsServiceName"])
@@ -285,14 +287,18 @@ def join_rodc(server=None, creds=None, lp=None, site=None, netbios_name=None,
     ctx.site = site
     ctx.netbios_name = netbios_name
     ctx.targetdir = targetdir
-    ctx.server = server
 
     ctx.creds.set_gensec_features(creds.get_gensec_features() | gensec.FEATURE_SEAL)
+    ctx.net = Net(creds=ctx.creds, lp=ctx.lp)
+
+    if server is not None:
+        ctx.server = server
+    else:
+        ctx.server = find_dc(ctx, domain)
 
     ctx.samdb = SamDB(url="ldap://%s" % ctx.server,
                       session_info=system_session(),
                       credentials=ctx.creds, lp=ctx.lp)
-    ctx.net = Net(creds=ctx.creds, lp=ctx.lp)
 
     ctx.myname = netbios_name
     ctx.samname = "%s$" % ctx.myname
