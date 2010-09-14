@@ -222,9 +222,10 @@ static void finddcs_cldap_netlogon_replied(struct tevent_req *subreq)
 	if (state->minimum_dc_flags !=
 	    (state->minimum_dc_flags & state->netlogon->out.netlogon.data.nt5_ex.server_type)) {
 		/* the server didn't match the minimum requirements */
-		DEBUG(4,(__location__ ": Skipping DC %s with server_type=0x%08x\n",
+		DEBUG(4,(__location__ ": Skipping DC %s with server_type=0x%08x - required 0x%08x\n",
 			 state->srv_addresses[state->srv_address_index],
-			 state->netlogon->out.netlogon.data.nt5_ex.server_type));
+			 state->netlogon->out.netlogon.data.nt5_ex.server_type,
+			 state->minimum_dc_flags));
 		state->srv_address_index++;
 		finddcs_cldap_next_server(state);
 		return;
