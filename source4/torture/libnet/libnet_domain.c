@@ -271,7 +271,8 @@ bool torture_domain_open_samr(struct torture_context *torture)
 
 	status = libnet_DomainOpen(ctx, mem_ctx, &io);
 	if (!NT_STATUS_IS_OK(status)) {
-		torture_comment(torture, "Composite domain open failed - %s\n", nt_errstr(status));
+		torture_comment(torture, "Composite domain open failed for domain '%s' - %s\n",
+				domain_name, nt_errstr(status));
 		ret = false;
 		goto done;
 	}

@@ -39,7 +39,8 @@ static bool test_domainopen(struct torture_context *tctx,
 
 	status = libnet_DomainOpen(net_ctx, mem_ctx, &io);
 	if (!NT_STATUS_IS_OK(status)) {
-		torture_comment(tctx, "Composite domain open failed - %s\n", nt_errstr(status));
+		torture_comment(tctx, "Composite domain open failed for domain '%s' - %s\n",
+				domname->string, nt_errstr(status));
 		return false;
 	}
 
