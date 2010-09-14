@@ -1374,7 +1374,7 @@ static bool fork_domain_child(struct winbindd_child *child)
 
 	while (1) {
 
-		int ret;
+		int ret = 0;
 		fd_set r_fds;
 		fd_set w_fds;
 		int maxfd;
@@ -1386,7 +1386,7 @@ static bool fork_domain_child(struct winbindd_child *child)
 		int iov_count;
 		NTSTATUS status;
 
-		if (run_events(winbind_event_context(), 0, NULL, NULL)) {
+		if (run_events(winbind_event_context(), &ret, NULL, NULL)) {
 			TALLOC_FREE(frame);
 			continue;
 		}
@@ -1424,7 +1424,7 @@ static bool fork_domain_child(struct winbindd_child *child)
 
 		ret = sys_select(maxfd + 1, &r_fds, &w_fds, NULL, tp);
 
-		if (run_events(winbind_event_context(), ret, &r_fds, &w_fds)) {
+		if (run_events(winbind_event_context(), &ret, &r_fds, &w_fds)) {
 			/* We got a signal - continue. */
 			TALLOC_FREE(frame);
 			continue;

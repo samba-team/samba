@@ -1840,7 +1840,7 @@ bool listen_for_packets(bool run_election)
 
 	fd_set r_fds;
 	fd_set w_fds;
-	int selrtn;
+	int selrtn = 0;
 	struct timeval timeout;
 #ifndef SYNC_DNS
 	int dns_fd;
@@ -1867,7 +1867,7 @@ bool listen_for_packets(bool run_election)
 #endif
 
 	/* Process a signal and timer events now... */
-	if (run_events(nmbd_event_context(), 0, NULL, NULL)) {
+	if (run_events(nmbd_event_context(), &selrtn, NULL, NULL)) {
 		return False;
 	}
 
@@ -1889,7 +1889,7 @@ bool listen_for_packets(bool run_election)
 
 	selrtn = sys_select(maxfd+1,&r_fds,&w_fds,NULL,&timeout);
 
-	if (run_events(nmbd_event_context(), selrtn, &r_fds, &w_fds)) {
+	if (run_events(nmbd_event_context(), &selrtn, &r_fds, &w_fds)) {
 		return False;
 	}
 

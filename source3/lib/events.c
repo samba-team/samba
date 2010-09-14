@@ -67,7 +67,7 @@ bool event_add_to_select_args(struct tevent_context *ev,
 }
 
 bool run_events(struct tevent_context *ev,
-		int selrtn, fd_set *read_fds, fd_set *write_fds)
+		int *selrtn, fd_set *read_fds, fd_set *write_fds)
 {
 	struct tevent_fd *fde;
 	struct timeval now;
@@ -112,7 +112,7 @@ bool run_events(struct tevent_context *ev,
 		return true;
 	}
 
-	if (selrtn == 0) {
+	if (*selrtn <= 0) {
 		/*
 		 * No fd ready
 		 */
@@ -122,8 +122,16 @@ bool run_events(struct tevent_context *ev,
 	for (fde = ev->fd_events; fde; fde = fde->next) {
 		uint16 flags = 0;
 
-		if (FD_ISSET(fde->fd, read_fds)) flags |= EVENT_FD_READ;
-		if (FD_ISSET(fde->fd, write_fds)) flags |= EVENT_FD_WRITE;
+		if (FD_ISSET(fde->fd, read_fds)) {
+			flags |= EVENT_FD_READ;
+			FD_CLR(fde->fd, read_fds);
+			(*selrtn)--;
+		}
+		if (FD_ISSET(fde->fd, write_fds)) {
+			flags |= EVENT_FD_WRITE;
+			FD_CLR(fde->fd, write_fds);
+			(*selrtn)--;
+		}
 
 		if (flags & fde->flags) {
 			fde->handler(ev, fde, flags, fde->private_data);
@@ -162,7 +170,7 @@ static int s3_event_loop_once(struct tevent_context *ev, const char *location)
 	struct timeval now, to;
 	fd_set r_fds, w_fds;
 	int maxfd = 0;
-	int ret;
+	int ret = 0;
 
 	FD_ZERO(&r_fds);
 	FD_ZERO(&w_fds);
@@ -170,7 +178,7 @@ static int s3_event_loop_once(struct tevent_context *ev, const char *location)
 	to.tv_sec = 9999;	/* Max timeout */
 	to.tv_usec = 0;
 
-	if (run_events(ev, 0, NULL, NULL)) {
+	if (run_events(ev, &ret, NULL, NULL)) {
 		return 0;
 	}
 
@@ -189,7 +197,7 @@ static int s3_event_loop_once(struct tevent_context *ev, const char *location)
 		return -1;
 	}
 
-	run_events(ev, ret, &r_fds, &w_fds);
+	run_events(ev, &ret, &r_fds, &w_fds);
 	return 0;
 }
 
