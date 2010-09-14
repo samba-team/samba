@@ -139,14 +139,14 @@ struct dom_sid *secrets_get_domain_sid(TALLOC_CTX *mem_ctx,
 	}
 
 	if (sec_channel_type) {
-		int v;
-		v = ldb_msg_find_attr_as_int(msg, "secureChannelType", -1);
-		if (v == -1) {
+		int t;
+		t = ldb_msg_find_attr_as_int(msg, "secureChannelType", -1);
+		if (t == -1) {
 			*errstring = talloc_asprintf(mem_ctx, "Failed to find secureChannelType for %s in %s",
 						     domain, (char *) ldb_get_opaque(ldb, "ldb_url"));
 			return NULL;
 		}
-		*sec_channel_type = v;
+		*sec_channel_type = t;
 	}
 
 	result = talloc(mem_ctx, struct dom_sid);
