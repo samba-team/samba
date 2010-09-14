@@ -29,8 +29,6 @@
 #ifdef WITH_PROFILE
 static int shm_id;
 static bool read_only;
-clockid_t __profile_clock;
-bool have_profiling_clock = False;
 #endif
 
 struct profile_header *profile_h;
@@ -59,19 +57,6 @@ void set_profile_level(int level, struct server_id src)
 			 (int)procid_to_pid(&src)));
 		break;
 	case 2:		/* turn on complete profiling */
-
-#if defined(HAVE_CLOCK_GETTIME)
-		if (!have_profiling_clock) {
-			do_profile_flag = True;
-			do_profile_times = False;
-			DEBUG(1,("INFO: Profiling counts turned ON from "
-				"pid %d\n", (int)procid_to_pid(&src)));
-			DEBUGADD(1,("INFO: Profiling times disabled "
-				"due to lack of a suitable clock\n"));
-			break;
-		}
-#endif
-
 		do_profile_flag = True;
 		do_profile_times = True;
 		DEBUG(1,("INFO: Full profiling turned ON from pid %d\n",
@@ -135,52 +120,11 @@ static void reqprofile_message(struct messaging_context *msg_ctx,
 /*******************************************************************
   open the profiling shared memory area
   ******************************************************************/
-
-/* Find a clock. Just because the definition for a particular clock ID is
- * present doesn't mean the system actually supports it.
- */
-static void init_clock_gettime(void)
-{
-	struct timespec ts;
-
-	have_profiling_clock = False;
-
-#ifdef HAVE_CLOCK_MONOTONIC
-	if (!have_profiling_clock &&
-	    clock_gettime(CLOCK_MONOTONIC, &ts) == 0) {
-		DEBUG(10, ("Using CLOCK_MONOTONIC for profile_clock\n"));
-		__profile_clock = CLOCK_MONOTONIC;
-		have_profiling_clock = True;
-	}
-#endif
-
-#ifdef HAVE_CLOCK_REALTIME
-	/* POSIX says that CLOCK_REALTIME should be defined everywhere
-	 * where we have clock_gettime...
-	 */
-	if (!have_profiling_clock &&
-	    clock_gettime(CLOCK_REALTIME, &ts) == 0) {
-		__profile_clock = CLOCK_REALTIME;
-		have_profiling_clock = True;
-
-		SMB_WARN(__profile_clock != CLOCK_REALTIME,
-			("forced to use a slow profiling clock"));
-	}
-
-#endif
-
-	SMB_WARN(have_profiling_clock == True,
-		("could not find a working clock for profiling"));
-	return;
-}
-
 bool profile_setup(struct messaging_context *msg_ctx, bool rdonly)
 {
 	struct shmid_ds shm_ds;
 
 	read_only = rdonly;
-
-	init_clock_gettime();
 
  again:
 	/* try to use an existing key */
