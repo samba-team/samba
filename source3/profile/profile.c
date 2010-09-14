@@ -145,24 +145,6 @@ static void init_clock_gettime(void)
 
 	have_profiling_clock = False;
 
-#ifdef HAVE_CLOCK_PROCESS_CPUTIME_ID
-	/* CLOCK_PROCESS_CPUTIME_ID is sufficiently fast that the
-	 * always profiling times is plausible. Unfortunately on Linux
-	 * it is only accurate if we can guarantee we will not be scheduled
-	 * scheduled onto a different CPU between samples. Until there is
-	 * some way to set processor affinity, we can only use this on
-	 * uniprocessors.
-	 */
-	if (!this_is_smp()) {
-	    if (clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &ts) == 0) {
-		    DEBUG(10, ("Using CLOCK_PROCESS_CPUTIME_ID "
-				"for profile_clock\n"));
-		    __profile_clock = CLOCK_PROCESS_CPUTIME_ID;
-		    have_profiling_clock = True;
-	    }
-	}
-#endif
-
 #ifdef HAVE_CLOCK_MONOTONIC
 	if (!have_profiling_clock &&
 	    clock_gettime(CLOCK_MONOTONIC, &ts) == 0) {
