@@ -70,7 +70,7 @@ struct composite_context *wb_get_dom_info_send(TALLOC_CTX *mem_ctx,
 	if (dom_sid == NULL) goto failed;
 
 	ZERO_STRUCT(finddcs_io);
-	finddcs_io.in.dns_domain_name  = dns_domain_name;
+	finddcs_io.in.domain_name      = dns_domain_name;
 	finddcs_io.in.domain_sid       = dom_sid;
 	finddcs_io.in.minimum_dc_flags = NBT_SERVER_LDAP | NBT_SERVER_DS;
 	if (service->sec_channel_type == SEC_CHAN_RODC) {

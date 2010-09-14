@@ -479,7 +479,7 @@ static PyObject *py_net_finddc(py_net_Object *self, PyObject *args)
 	mem_ctx = talloc_new(self->mem_ctx);
 
 	ZERO_STRUCT(io);
-	io.in.dns_domain_name = domain_name;
+	io.in.domain_name = domain_name;
 	io.in.minimum_dc_flags = server_type;
 
 	status = finddcs_cldap(mem_ctx, &io,

@@ -34,7 +34,7 @@
 struct finddcs_cldap_state {
 	struct tevent_context *ev;
 	struct tevent_req *req;
-	const char *dns_domain_name;
+	const char *domain_name;
 	struct dom_sid *domain_sid;
 	const char **srv_addresses;
 	uint32_t minimum_dc_flags;
@@ -45,6 +45,15 @@ struct finddcs_cldap_state {
 
 static void finddcs_cldap_srv_resolved(struct composite_context *ctx);
 static void finddcs_cldap_netlogon_replied(struct tevent_req *req);
+static bool finddcs_cldap_srv_lookup(struct finddcs_cldap_state *state,
+				     struct finddcs *io,
+				     struct resolve_context *resolve_ctx,
+				     struct tevent_context *event_ctx);
+static bool finddcs_cldap_nbt_lookup(struct finddcs_cldap_state *state,
+				     struct finddcs *io,
+				     struct resolve_context *resolve_ctx,
+				     struct tevent_context *event_ctx);
+static void finddcs_cldap_name_resolved(struct composite_context *ctx);
 
 
 /*
@@ -58,9 +67,6 @@ struct tevent_req *finddcs_cldap_send(TALLOC_CTX *mem_ctx,
 {
 	struct finddcs_cldap_state *state;
 	struct tevent_req *req;
-	const char *srv_name;
-	struct composite_context *creq;
-	struct nbt_name name;
 
 	req = tevent_req_create(mem_ctx, &state, struct finddcs_cldap_state);
 	if (req == NULL) {
@@ -70,8 +76,8 @@ struct tevent_req *finddcs_cldap_send(TALLOC_CTX *mem_ctx,
 	state->req = req;
 	state->ev = event_ctx;
 	state->minimum_dc_flags = io->in.minimum_dc_flags;
-	state->dns_domain_name = talloc_strdup(state, io->in.dns_domain_name);
-	if (tevent_req_nomem(state->dns_domain_name, req)) {
+	state->domain_name = talloc_strdup(state, io->in.domain_name);
+	if (tevent_req_nomem(state->domain_name, req)) {
 		return tevent_req_post(req, event_ctx);
 	}
 
@@ -84,12 +90,37 @@ struct tevent_req *finddcs_cldap_send(TALLOC_CTX *mem_ctx,
 		state->domain_sid = NULL;
 	}
 
-	/* step1: lookup _ldap._tcp.* */
+	if (strchr(state->domain_name, '.')) {
+		/* looks like a DNS name */
+		if (!finddcs_cldap_srv_lookup(state, io, resolve_ctx, event_ctx)) {
+			return tevent_req_post(req, event_ctx);
+		}
+	} else {
+		if (!finddcs_cldap_nbt_lookup(state, io, resolve_ctx, event_ctx)) {
+			return tevent_req_post(req, event_ctx);
+		}
+	}
+
+	return req;
+}
+
+/*
+  start a SRV DNS lookup
+ */
+static bool finddcs_cldap_srv_lookup(struct finddcs_cldap_state *state,
+				     struct finddcs *io,
+				     struct resolve_context *resolve_ctx,
+				     struct tevent_context *event_ctx)
+{
+	const char *srv_name;
+	struct composite_context *creq;
+	struct nbt_name name;
+
 	if (io->in.site_name) {
 		srv_name = talloc_asprintf(state, "_ldap._tcp.%s._sites.%s",
-					   io->in.site_name, io->in.dns_domain_name);
+					   io->in.site_name, io->in.domain_name);
 	} else {
-		srv_name = talloc_asprintf(state, "_ldap._tcp.%s", io->in.dns_domain_name);
+		srv_name = talloc_asprintf(state, "_ldap._tcp.%s", io->in.domain_name);
 	}
 
 	make_nbt_name(&name, srv_name, 0);
@@ -97,15 +128,35 @@ struct tevent_req *finddcs_cldap_send(TALLOC_CTX *mem_ctx,
 	creq = resolve_name_ex_send(resolve_ctx, state,
 				    RESOLVE_NAME_FLAG_FORCE_DNS | RESOLVE_NAME_FLAG_DNS_SRV,
 				    0, &name, event_ctx);
-	if (tevent_req_nomem(creq, req)) {
-		return tevent_req_post(req, event_ctx);
+	if (tevent_req_nomem(creq, state->req)) {
+		return false;
 	}
 	creq->async.fn = finddcs_cldap_srv_resolved;
 	creq->async.private_data = state;
 
-	return req;
+	return true;
 }
 
+/*
+  start a NBT name lookup for domain<1C>
+ */
+static bool finddcs_cldap_nbt_lookup(struct finddcs_cldap_state *state,
+				     struct finddcs *io,
+				     struct resolve_context *resolve_ctx,
+				     struct tevent_context *event_ctx)
+{
+	struct composite_context *creq;
+	struct nbt_name name;
+
+	make_nbt_name(&name, state->domain_name, NBT_NAME_LOGON);
+	creq = resolve_name_send(resolve_ctx, state, &name, event_ctx);
+	if (tevent_req_nomem(creq, state->req)) {
+		return false;
+	}
+	creq->async.fn = finddcs_cldap_name_resolved;
+	creq->async.private_data = state;
+	return true;
+}
 
 /*
   fire off a CLDAP query to the next server
@@ -127,7 +178,9 @@ static void finddcs_cldap_next_server(struct finddcs_cldap_state *state)
 	state->netlogon->in.dest_address = state->srv_addresses[state->srv_address_index];
 	/* we should get the port from the SRV response */
 	state->netlogon->in.dest_port = 389;
-	state->netlogon->in.realm = state->dns_domain_name;
+	if (strchr(state->domain_name, '.')) {
+		state->netlogon->in.realm = state->domain_name;
+	}
 	if (state->domain_sid) {
 		state->netlogon->in.domain_sid = dom_sid_string(state, state->domain_sid);
 		if (tevent_req_nomem(state->netlogon->in.domain_sid, state->req)) {
@@ -179,6 +232,38 @@ static void finddcs_cldap_netlogon_replied(struct tevent_req *subreq)
 
 	talloc_free(subreq);
 	tevent_req_done(state->req);
+}
+
+/*
+   handle NBT name lookup reply
+ */
+static void finddcs_cldap_name_resolved(struct composite_context *ctx)
+{
+	struct finddcs_cldap_state *state =
+		talloc_get_type(ctx->async.private_data, struct finddcs_cldap_state);
+	const char *address;
+	NTSTATUS status;
+
+	status = resolve_name_recv(ctx, state, &address);
+	if (tevent_req_nterror(state->req, status)) {
+		return;
+	}
+
+	state->srv_addresses = talloc_array(state, const char *, 2);
+	if (tevent_req_nomem(state->srv_addresses, state->req)) {
+		return;
+	}
+	state->srv_addresses[0] = address;
+	state->srv_addresses[1] = NULL;
+
+	state->srv_address_index = 0;
+
+	status = cldap_socket_init(state, state->ev, NULL, NULL, &state->cldap);
+	if (tevent_req_nterror(state->req, status)) {
+		return;
+	}
+
+	finddcs_cldap_next_server(state);
 }
 
 

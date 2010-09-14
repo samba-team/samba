@@ -57,9 +57,6 @@ class cmd_join(Command):
         if not role is None:
             role = role.upper()
 
-        if domain.find('.') == -1:
-            raise CommandError("Please use the full DNS domain name, not the short form for '%s'" % domain)
-
         if role is None:
             secure_channel_type = SEC_CHAN_WKSTA
         elif role == "BDC":

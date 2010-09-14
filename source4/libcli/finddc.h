@@ -23,7 +23,7 @@
 
 struct finddcs {
 	struct {
-		const char *dns_domain_name;
+		const char *domain_name;
 		const char *site_name; /* optional */
 		struct dom_sid *domain_sid; /* optional */
 		uint32_t minimum_dc_flags; /* DS_SERVER_* */
