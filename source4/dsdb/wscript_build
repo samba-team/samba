@@ -51,6 +51,9 @@ bld.SAMBA_MODULE('DNS_UPDATE_SRV',
 
 bld.SAMBA_PYTHON('python_dsdb',
                  source='pydsdb.c',
-                 deps='SAMDB pyldb_util',
+				 # the dependency on dcerpc here is because gensec
+				 # depends on dcerpc but the waf circular dependency finder
+				 # removes it so we end up with unresolved symbols.
+                 deps='SAMDB pyldb_util dcerpc',
                  realname='samba/dsdb.so'
                  )
