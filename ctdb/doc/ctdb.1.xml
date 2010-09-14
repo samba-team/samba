@@ -1198,7 +1198,7 @@ HEALTH: NO-HEALTHY-NODES - ERROR - Backup of corrupted TDB in '/var/ctdb/persist
       </para>
     </refsect2>
 
-    <refsect2><title>attach &lt;dbname&gt;</title>
+    <refsect2><title>attach &lt;dbname&gt; [persistent]</title>
       <para>
         This is a debugging command. This command will make the CTDB daemon create a new CTDB database and attach to it.
       </para>
