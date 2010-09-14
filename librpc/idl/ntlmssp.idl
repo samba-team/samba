@@ -105,10 +105,10 @@ interface ntlmssp
 		[charset(DOS),value("NTLMSSP")] uint8 Signature[8];
 		[value(NtLmNegotiate)] ntlmssp_MessageType MessageType;
 		NEGOTIATE NegotiateFlags;
-		[value(strlen(DomainName))] uint16 DomainNameLen;
+		[value(DomainName ? strlen(DomainName) : 0)] uint16 DomainNameLen;
 		[value(DomainNameLen)] uint16 DomainNameMaxLen;
 		[relative] [subcontext(0),subcontext_size(DomainNameLen)] [flag(ndr_ntlmssp_negotiated_string_flags(NTLMSSP_NEGOTIATE_OEM))] string *DomainName;
-		[value(strlen(Workstation))] uint16 WorkstationLen;
+		[value(Workstation ? strlen(Workstation) : 0)] uint16 WorkstationLen;
 		[value(WorkstationLen)] uint16 WorkstationMaxLen;
 		[relative] [subcontext(0),subcontext_size(WorkstationLen)] [flag(ndr_ntlmssp_negotiated_string_flags(NTLMSSP_NEGOTIATE_OEM))] string *Workstation;
 		[switch_is(NegotiateFlags & NTLMSSP_NEGOTIATE_VERSION)] ntlmssp_Version Version;
