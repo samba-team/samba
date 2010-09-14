@@ -458,7 +458,7 @@ static struct np_proxy_state *make_external_rpc_pipe_p(TALLOC_CTX *mem_ctx,
 
 	socket_dir = lp_parm_const_string(
 		GLOBAL_SECTION_SNUM, "external_rpc_pipe", "socket_dir",
-		get_dyn_NCALRPCDIR());
+		lp_ncalrpc_dir());
 	if (socket_dir == NULL) {
 		DEBUG(0, ("externan_rpc_pipe:socket_dir not set\n"));
 		goto fail;
@@ -544,8 +544,10 @@ NTSTATUS np_open(TALLOC_CTX *mem_ctx, const char *name,
 		 struct messaging_context *msg_ctx,
 		 struct fake_file_handle **phandle)
 {
+	const char *rpcsrv_type;
 	const char **proxy_list;
 	struct fake_file_handle *handle;
+	bool external = false;
 
 	proxy_list = lp_parm_string_list(-1, "np", "proxy", NULL);
 
@@ -554,7 +556,21 @@ NTSTATUS np_open(TALLOC_CTX *mem_ctx, const char *name,
 		return NT_STATUS_NO_MEMORY;
 	}
 
+	/* Check what is the server type for this pipe.
+	   Defaults to "embedded" */
+	rpcsrv_type = lp_parm_const_string(GLOBAL_SECTION_SNUM,
+					   "rpc_server", name,
+					   "embedded");
+	if (StrCaseCmp(rpcsrv_type, "embedded") != 0) {
+		external = true;
+	}
+
+	/* Still support the old method for defining external servers */
 	if ((proxy_list != NULL) && str_list_check_ci(proxy_list, name)) {
+		external = true;
+	}
+
+	if (external) {
 		struct np_proxy_state *p;
 
 		p = make_external_rpc_pipe_p(handle, name,
