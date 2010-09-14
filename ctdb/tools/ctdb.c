@@ -106,7 +106,7 @@ static void verify_node(struct ctdb_context *ctdb)
 /*
  check if a database exists
 */
-static int db_exists(struct ctdb_context *ctdb, const char *db_name)
+static int db_exists(struct ctdb_context *ctdb, const char *db_name, bool *persistent)
 {
 	int i, ret;
 	struct ctdb_dbid_map *dbmap=NULL;
@@ -122,6 +122,9 @@ static int db_exists(struct ctdb_context *ctdb, const char *db_name)
 
 		ctdb_ctrl_getdbname(ctdb, TIMELIMIT(), options.pnn, dbmap->dbs[i].dbid, ctdb, &name);
 		if (!strcmp(name, db_name)) {
+			if (persistent) {
+				*persistent = dbmap->dbs[i].persistent;
+			}
 			return 0;
 		}
 	}
@@ -2942,6 +2945,7 @@ static int control_catdb(struct ctdb_context *ctdb, int argc, const char **argv)
 	const char *db_name;
 	struct ctdb_db_context *ctdb_db;
 	int ret;
+	bool persistent;
 
 	if (argc < 1) {
 		usage();
@@ -2950,12 +2954,12 @@ static int control_catdb(struct ctdb_context *ctdb, int argc, const char **argv)
 	db_name = argv[0];
 
 
-	if (db_exists(ctdb, db_name)) {
+	if (db_exists(ctdb, db_name, &persistent)) {
 		DEBUG(DEBUG_ERR,("Database '%s' does not exist\n", db_name));
 		return -1;
 	}
 
-	ctdb_db = ctdb_attach(ctdb, db_name, false, 0);
+	ctdb_db = ctdb_attach(ctdb, db_name, persistent, 0);
 
 	if (ctdb_db == NULL) {
 		DEBUG(DEBUG_ERR,("Unable to attach to database '%s'\n", db_name));
@@ -2998,7 +3002,7 @@ static int control_pfetch(struct ctdb_context *ctdb, int argc, const char **argv
 	db_name = argv[0];
 
 
-	if (db_exists(ctdb, db_name)) {
+	if (db_exists(ctdb, db_name, NULL)) {
 		DEBUG(DEBUG_ERR,("Database '%s' does not exist\n", db_name));
 		talloc_free(tmp_ctx);
 		return -1;
