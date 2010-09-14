@@ -50,7 +50,7 @@ def parse_results(msg_ops, statistics, fh):
             name = arg.rstrip()
             test = subunit.RemotedTestCase(name)
             if name in open_tests:
-                msg_ops.addError(open_tests.pop(name), "Test already running")
+                msg_ops.addError(open_tests.pop(name), subunit.RemoteError(u"Test already running"))
             msg_ops.startTest(test)
             open_tests[name] = test
         elif command == "time":
@@ -81,40 +81,43 @@ def parse_results(msg_ops, statistics, fh):
                     else:
                         reason += l
 
+                remote_error = subunit.RemoteError(reason.decode("utf-8"))
+
                 if not terminated:
                     statistics['TESTS_ERROR']+=1
-                    msg_ops.addError(subunit.RemotedTestCase(testname), "reason (%s) interrupted" % result)
+                    msg_ops.addError(subunit.RemotedTestCase(testname), subunit.RemoteError(u"reason (%s) interrupted" % result))
                     return 1
             else:
                 reason = None
+                remote_error = subunit.RemoteError(u"No reason specified")
             if result in ("success", "successful"):
                 try:
                     test = open_tests.pop(testname)
                 except KeyError:
                     statistics['TESTS_ERROR']+=1
-                    msg_ops.addError(subunit.RemotedTestCase(testname), "Test was never started")
+                    msg_ops.addError(subunit.RemotedTestCase(testname), subunit.RemoteError(u"Test was never started"))
                 else:
                     statistics['TESTS_EXPECTED_OK']+=1
-                    msg_ops.addSuccess(test, reason)
+                    msg_ops.addSuccess(test)
             elif result in ("xfail", "knownfail"):
                 try:
                     test = open_tests.pop(testname)
                 except KeyError:
                     statistics['TESTS_ERROR']+=1
-                    msg_ops.addError(subunit.RemotedTestCase(testname), "Test was never started")
+                    msg_ops.addError(subunit.RemotedTestCase(testname), subunit.RemoteError(u"Test was never started"))
                 else:
                     statistics['TESTS_EXPECTED_FAIL']+=1
-                    msg_ops.addExpectedFail(test, reason)
+                    msg_ops.addExpectedFailure(test, remote_error)
                     expected_fail+=1
             elif result in ("failure", "fail"):
                 try:
                     test = open_tests.pop(testname)
                 except KeyError:
                     statistics['TESTS_ERROR']+=1
-                    msg_ops.addError(subunit.RemotedTestCase(testname), "Test was never started")
+                    msg_ops.addError(subunit.RemotedTestCase(testname), subunit.RemoteError(u"Test was never started"))
                 else:
                     statistics['TESTS_UNEXPECTED_FAIL']+=1
-                    msg_ops.addFailure(test, reason)
+                    msg_ops.addFailure(test, remote_error)
             elif result == "skip":
                 statistics['TESTS_SKIP']+=1
                 # Allow tests to be skipped without prior announcement of test
@@ -129,7 +132,7 @@ def parse_results(msg_ops, statistics, fh):
                     test = open_tests.pop(testname)
                 except KeyError:
                     test = subunit.RemotedTestCase(testname)
-                msg_ops.addError(test, reason)
+                msg_ops.addError(test, remote_error)
             elif result == "skip-testsuite":
                 msg_ops.skip_testsuite(testname)
             elif result == "testsuite-success":
@@ -160,13 +163,13 @@ def parse_results(msg_ops, statistics, fh):
 
     while open_tests:
         test = subunit.RemotedTestCase(open_tests.popitem()[1])
-        msg_ops.addError(test, "was started but never finished!")
+        msg_ops.addError(test, subunit.RemoteError(u"was started but never finished!"))
         statistics['TESTS_ERROR']+=1
 
     if statistics['TESTS_ERROR'] > 0:
         return 1
     if statistics['TESTS_UNEXPECTED_FAIL'] > 0:
-        return 1 
+        return 1
     return 0
 
 
@@ -258,9 +261,9 @@ class FilterOps(testtools.testresult.TestResult):
         self._ops.addSkip(test, details)
         self.output = None
 
-    def addExpectedFail(self, test, details=None):
+    def addExpectedFailure(self, test, details=None):
         test = self._add_prefix(test)
-        self._ops.addExpectedFail(test, details)
+        self._ops.addExpectedFailure(test, details)
         self.output = None
 
     def addFailure(self, test, details=None):
@@ -270,10 +273,10 @@ class FilterOps(testtools.testresult.TestResult):
             self.xfail_added+=1
             self.total_xfail+=1
             if details is not None:
-                details += xfail_reason
+                details = subunit.RemoteError(details[1].message + xfail_reason.decode("utf-8"))
             else:
-                details = xfail_reason
-            self._ops.addExpectedFail(test, details)
+                details = subunit.RemoteError(xfail_reason.decode("utf-8"))
+            self._ops.addExpectedFailure(test, details)
         else:
             self.fail_added+=1
             self.total_fail+=1

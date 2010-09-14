@@ -32,6 +32,7 @@ class PlainFormatter(subunithelper.TestsuiteEnabledTestResult):
 
     def __init__(self, summaryfile, verbose, immediate, statistics,
             totaltests=None):
+        super(PlainFormatter, self).__init__()
         self.verbose = verbose
         self.immediate = immediate
         self.statistics = statistics
@@ -124,8 +125,8 @@ class PlainFormatter(subunithelper.TestsuiteEnabledTestResult):
     def startTest(self, test):
         pass
 
-    def addSuccess(self, test, details=None):
-        self.end_test(test.id(), "success", False, details)
+    def addSuccess(self, test):
+        self.end_test(test.id(), "success", False)
 
     def addError(self, test, details=None):
         self.end_test(test.id(), "error", True, details)
@@ -150,9 +151,12 @@ class PlainFormatter(subunithelper.TestsuiteEnabledTestResult):
                     'success': '.'}.get(result, "?(%s)" % result))
             return
 
+        if not self.name in self.test_output:
+            self.test_output[self.name] = ""
+
         self.test_output[self.name] += "UNEXPECTED(%s): %s\n" % (result, testname)
         if reason is not None:
-            self.test_output[self.name] += "REASON: %s\n" % (reason.strip(),)
+            self.test_output[self.name] += "REASON: %s\n" % (reason[1].message.encode("utf-8").strip(),)
 
         if self.immediate and not self.verbose:
             print self.test_output[self.name]
