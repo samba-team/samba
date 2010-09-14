@@ -261,7 +261,7 @@ NTSTATUS fill_netlogon_samlogon_response(struct ldb_context *sam_ctx,
 		server_type |= DS_SERVER_KDC;
 	}
 
-	if (samdb_rodc(sam_ctx, &am_rodc) != LDB_SUCCESS && !am_rodc) {
+	if (samdb_rodc(sam_ctx, &am_rodc) == LDB_SUCCESS && !am_rodc) {
 		server_type |= DS_SERVER_WRITABLE;
 	}
 
