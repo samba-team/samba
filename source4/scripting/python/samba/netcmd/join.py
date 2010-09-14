@@ -28,7 +28,7 @@ from samba.join import join_rodc
 class cmd_join(Command):
     """Joins domain as either member or backup domain controller [server connection needed]"""
 
-    synopsis = "%prog join <domain> [BDC | MEMBER | RODC] [options]"
+    synopsis = "%prog join <dnsdomain> [BDC | MEMBER | RODC] [options]"
 
     takes_optiongroups = {
         "sambaopts": options.SambaOptions,
@@ -56,6 +56,9 @@ class cmd_join(Command):
 
         if not role is None:
             role = role.upper()
+
+        if domain.find('.') == -1:
+            raise CommandError("Please use the full DNS domain name, not the short form for '%s'" % domain)
 
         if role is None:
             secure_channel_type = SEC_CHAN_WKSTA
