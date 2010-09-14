@@ -128,16 +128,8 @@ struct composite_context *wb_init_domain_send(TALLOC_CTX *mem_ctx,
 	state->domain->info = talloc_reference(state->domain, dom_info);
 	if (state->domain->info == NULL) goto failed;
 
-	/* Caller should check, but to be safe: */
-	if (dom_info->num_dcs < 1) {
-		goto failed;
-	}
-	
-	/* For now, we just pick the first.  The next step will be to
-	 * walk the entire list.  Also need to fix finddcs() to return
-	 * the entire list */
-	state->domain->dc_name = dom_info->dcs[0].name;
-	state->domain->dc_address = dom_info->dcs[0].address;
+	state->domain->dc_name = dom_info->dc->name;
+	state->domain->dc_address = dom_info->dc->address;
 
 	state->domain->libnet_ctx = libnet_context_init(service->task->event_ctx, 
 							service->task->lp_ctx);

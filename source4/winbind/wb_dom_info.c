@@ -28,6 +28,7 @@
 #include "smbd/service_task.h"
 #include "libcli/finddcs.h"
 #include "param/param.h"
+#include "libcli/libcli.h"
 
 struct get_dom_info_state {
 	struct composite_context *ctx;
@@ -39,12 +40,15 @@ static void get_dom_info_recv_addrs(struct tevent_req *req);
 struct composite_context *wb_get_dom_info_send(TALLOC_CTX *mem_ctx,
 					       struct wbsrv_service *service,
 					       const char *domain_name,
+					       const char *dns_domain_name,
 					       const struct dom_sid *sid)
 {
 	struct composite_context *result;
 	struct tevent_req *req;
 	struct get_dom_info_state *state;
 	struct dom_sid *dom_sid;
+	struct finddcs finddcs_io;
+
 	result = composite_create(mem_ctx, service->task->event_ctx);
 	if (result == NULL) goto failed;
 
@@ -65,13 +69,17 @@ struct composite_context *wb_get_dom_info_send(TALLOC_CTX *mem_ctx,
 	dom_sid = dom_sid_dup(mem_ctx, sid);
 	if (dom_sid == NULL) goto failed;
 
-	req = finddcs_send(mem_ctx, lpcfg_netbios_name(service->task->lp_ctx),
-			   lpcfg_nbt_port(service->task->lp_ctx),
-			   domain_name, NBT_NAME_LOGON, 
-			   dom_sid, 
-			   lpcfg_resolve_context(service->task->lp_ctx),
-			   service->task->event_ctx, 
-			   service->task->msg_ctx);
+	ZERO_STRUCT(finddcs_io);
+	finddcs_io.in.dns_domain_name  = dns_domain_name;
+	finddcs_io.in.domain_sid       = dom_sid;
+	finddcs_io.in.minimum_dc_flags = NBT_SERVER_LDAP | NBT_SERVER_DS;
+	if (service->sec_channel_type == SEC_CHAN_RODC) {
+		finddcs_io.in.minimum_dc_flags |= NBT_SERVER_WRITABLE;
+	}
+
+	req = finddcs_cldap_send(mem_ctx, &finddcs_io,
+				 lpcfg_resolve_context(service->task->lp_ctx),
+				 service->task->event_ctx);
 	if (req == NULL) goto failed;
 
 	tevent_req_set_callback(req, get_dom_info_recv_addrs, state);
@@ -86,11 +94,24 @@ struct composite_context *wb_get_dom_info_send(TALLOC_CTX *mem_ctx,
 static void get_dom_info_recv_addrs(struct tevent_req *req)
 {
 	struct get_dom_info_state *state = tevent_req_callback_data(req, struct get_dom_info_state);
+	struct finddcs finddcs_io;
 
-	state->ctx->status = finddcs_recv(req, state->info,
-					  &state->info->num_dcs,
-					  &state->info->dcs);
+	state->info->dc = talloc(state, struct nbt_dc_name);
+
+	state->ctx->status = finddcs_cldap_recv(req, state->info, &finddcs_io);
 	if (!composite_is_ok(state->ctx)) return;
+
+	if (finddcs_io.out.netlogon.ntver != NETLOGON_NT_VERSION_5EX) {
+		/* the finddcs code should have mapped the response to
+		   the type we want */
+		DEBUG(0,(__location__ ": unexpected ntver 0x%08x in finddcs response\n",
+			 finddcs_io.out.netlogon.ntver));
+		state->ctx->status = NT_STATUS_UNEXPECTED_NETWORK_ERROR;
+		if (!composite_is_ok(state->ctx)) return;
+	}
+
+	state->info->dc->address = finddcs_io.out.address;
+	state->info->dc->name    = finddcs_io.out.netlogon.data.nt5_ex.pdc_dns_name;
 
 	composite_done(state->ctx);
 }
@@ -113,10 +134,11 @@ NTSTATUS wb_get_dom_info_recv(struct composite_context *ctx,
 NTSTATUS wb_get_dom_info(TALLOC_CTX *mem_ctx,
 			 struct wbsrv_service *service,
 			 const char *domain_name,
+			 const char *dns_domain_name,
 			 const struct dom_sid *sid,
 			 struct wb_dom_info **result)
 {
 	struct composite_context *ctx =
-		wb_get_dom_info_send(mem_ctx, service, domain_name, sid);
+		wb_get_dom_info_send(mem_ctx, service, domain_name, dns_domain_name, sid);
 	return wb_get_dom_info_recv(ctx, mem_ctx, result);
 }

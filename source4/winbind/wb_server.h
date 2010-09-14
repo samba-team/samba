@@ -48,9 +48,7 @@ struct wb_dom_info {
 	const char *name;
 	const char *dns_name;
 	const struct dom_sid *sid;
-
-	int num_dcs;
-	struct nbt_dc_name *dcs;
+	struct nbt_dc_name *dc;
 };
 
 struct wbsrv_domain {

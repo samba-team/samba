@@ -141,17 +141,16 @@ static void trusted_dom_info_recv_dsr(struct tevent_req *subreq)
 	}
 
 	/* Hey, that was easy! */
-	state->info->num_dcs = 1;
-	state->info->dcs = talloc(state->info, struct nbt_dc_name);
-	state->info->dcs[0].name = talloc_steal(state->info,
+	state->info->dc = talloc(state->info, struct nbt_dc_name);
+	state->info->dc->name = talloc_steal(state->info,
 					    (*state->d.out.info)->dc_unc);
-	if (*state->info->dcs[0].name == '\\') state->info->dcs[0].name++;
-	if (*state->info->dcs[0].name == '\\') state->info->dcs[0].name++;
+	if (*state->info->dc->name == '\\') state->info->dc->name++;
+	if (*state->info->dc->name == '\\') state->info->dc->name++;
 
-	state->info->dcs[0].address = talloc_steal(state->info,
+	state->info->dc->address = talloc_steal(state->info,
 					       (*state->d.out.info)->dc_address);
-	if (*state->info->dcs[0].address == '\\') state->info->dcs[0].address++;
-	if (*state->info->dcs[0].address == '\\') state->info->dcs[0].address++;
+	if (*state->info->dc->address == '\\') state->info->dc->address++;
+	if (*state->info->dc->address == '\\') state->info->dc->address++;
 
 	state->info->dns_name = talloc_steal(state->info,
 					     (*state->d.out.info)->domain_name);
@@ -191,14 +190,13 @@ static void trusted_dom_info_recv_dcname(struct tevent_req *subreq)
 	if (!composite_is_ok(state->ctx)) return;
 
 	/* Hey, that was easy! */
-	state->info->num_dcs = 1;
-	state->info->dcs = talloc(state->info, struct nbt_dc_name);
-	state->info->dcs[0].name = talloc_steal(state->info,
+	state->info->dc = talloc(state->info, struct nbt_dc_name);
+	state->info->dc->name = talloc_steal(state->info,
 					    *(state->g.out.dcname));
-	if (*state->info->dcs[0].name == '\\') state->info->dcs[0].name++;
-	if (*state->info->dcs[0].name == '\\') state->info->dcs[0].name++;
+	if (*state->info->dc->name == '\\') state->info->dc->name++;
+	if (*state->info->dc->name == '\\') state->info->dc->name++;
 	
-	make_nbt_name(&name, state->info->dcs[0].name, 0x20);
+	make_nbt_name(&name, state->info->dc->name, 0x20);
 	ctx = resolve_name_send(lpcfg_resolve_context(state->service->task->lp_ctx), state,
 				&name, state->service->task->event_ctx);
 
@@ -213,7 +211,7 @@ static void trusted_dom_info_recv_dcaddr(struct composite_context *ctx)
 				struct trusted_dom_info_state);
 
 	state->ctx->status = resolve_name_recv(ctx, state->info,
-					       &state->info->dcs[0].address);
+					       &state->info->dc->address);
 	if (!composite_is_ok(state->ctx)) return;
 
 	composite_done(state->ctx);
