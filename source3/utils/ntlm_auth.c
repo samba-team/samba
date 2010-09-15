@@ -785,7 +785,7 @@ static void manage_squid_ntlmssp_request(struct ntlm_auth_state *state,
 	NTSTATUS nt_status;
 
 	if (strlen(buf) < 2) {
-		DEBUG(1, ("NTLMSSP query [%s] invalid", buf));
+		DEBUG(1, ("NTLMSSP query [%s] invalid\n", buf));
 		x_fprintf(x_stdout, "BH NTLMSSP query invalid\n");
 		return;
 	}
@@ -854,7 +854,7 @@ static void manage_squid_ntlmssp_request(struct ntlm_auth_state *state,
 		data_blob_free(&request);
 		return;
 	} else {
-		DEBUG(1, ("NTLMSSP query [%s] invalid", buf));
+		DEBUG(1, ("NTLMSSP query [%s] invalid\n", buf));
 		x_fprintf(x_stdout, "BH NTLMSSP query invalid\n");
 		return;
 	}
@@ -921,7 +921,7 @@ static void manage_client_ntlmssp_request(struct ntlm_auth_state *state,
 	}
 
 	if (strlen(buf) < 2) {
-		DEBUG(1, ("NTLMSSP query [%s] invalid", buf));
+		DEBUG(1, ("NTLMSSP query [%s] invalid\n", buf));
 		x_fprintf(x_stdout, "BH NTLMSSP query invalid\n");
 		return;
 	}
@@ -1013,7 +1013,7 @@ static void manage_client_ntlmssp_request(struct ntlm_auth_state *state,
 		data_blob_free(&request);
 		return;
 	} else {
-		DEBUG(1, ("NTLMSSP query [%s] invalid", buf));
+		DEBUG(1, ("NTLMSSP query [%s] invalid\n", buf));
 		x_fprintf(x_stdout, "BH NTLMSSP query invalid\n");
 		return;
 	}
@@ -1187,7 +1187,7 @@ static void manage_gss_spnego_request(struct ntlm_auth_state *state,
 	char *reply_argument = NULL;
 
 	if (strlen(buf) < 2) {
-		DEBUG(1, ("SPENGO query [%s] invalid", buf));
+		DEBUG(1, ("SPENGO query [%s] invalid\n", buf));
 		x_fprintf(x_stdout, "BH SPENGO query invalid\n");
 		return;
 	}
@@ -1198,7 +1198,7 @@ static void manage_gss_spnego_request(struct ntlm_auth_state *state,
 	} else if (strncmp(buf, "KK", 2) == 0) {
 		;
 	} else {
-		DEBUG(1, ("SPENGO query [%s] invalid", buf));
+		DEBUG(1, ("SPENGO query [%s] invalid\n", buf));
 		x_fprintf(x_stdout, "BH SPENGO query invalid\n");
 		return;
 	}
@@ -1225,7 +1225,7 @@ static void manage_gss_spnego_request(struct ntlm_auth_state *state,
 	data_blob_free(&token);
 
 	if (len == -1) {
-		DEBUG(1, ("GSS-SPNEGO query [%s] invalid", buf));
+		DEBUG(1, ("GSS-SPNEGO query [%s] invalid\n", buf));
 		x_fprintf(x_stdout, "BH GSS-SPNEGO query invalid\n");
 		return;
 	}
@@ -1237,7 +1237,7 @@ static void manage_gss_spnego_request(struct ntlm_auth_state *state,
 
 		if ( (request.negTokenInit.mechTypes == NULL) ||
 		     (request.negTokenInit.mechTypes[0] == NULL) ) {
-			DEBUG(1, ("Client did not offer any mechanism"));
+			DEBUG(1, ("Client did not offer any mechanism\n"));
 			x_fprintf(x_stdout, "BH Client did not offer any "
 					    "mechanism\n");
 			return;
