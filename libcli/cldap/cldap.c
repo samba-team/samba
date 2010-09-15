@@ -167,7 +167,7 @@ static void cldap_recvfrom_stop(struct cldap_socket *c)
 	c->recv_subreq = NULL;
 }
 
-static void cldap_socket_recv_dgram(struct cldap_socket *c,
+static bool cldap_socket_recv_dgram(struct cldap_socket *c,
 				    struct cldap_incoming *in);
 
 static void cldap_recvfrom_done(struct tevent_req *subreq)
@@ -176,6 +176,7 @@ static void cldap_recvfrom_done(struct tevent_req *subreq)
 				 struct cldap_socket);
 	struct cldap_incoming *in = NULL;
 	ssize_t ret;
+	bool setup_done;
 
 	c->recv_subreq = NULL;
 
@@ -199,10 +200,10 @@ static void cldap_recvfrom_done(struct tevent_req *subreq)
 	}
 
 	/* this function should free or steal 'in' */
-	cldap_socket_recv_dgram(c, in);
+	setup_done = cldap_socket_recv_dgram(c, in);
 	in = NULL;
 
-	if (!cldap_recvfrom_setup(c)) {
+	if (!setup_done && !cldap_recvfrom_setup(c)) {
 		goto nomem;
 	}
 
@@ -218,7 +219,7 @@ nomem:
 /*
   handle recv events on a cldap socket
 */
-static void cldap_socket_recv_dgram(struct cldap_socket *c,
+static bool cldap_socket_recv_dgram(struct cldap_socket *c,
 				    struct cldap_incoming *in)
 {
 	DATA_BLOB blob;
@@ -262,7 +263,7 @@ static void cldap_socket_recv_dgram(struct cldap_socket *c,
 
 		/* this function should free or steal 'in' */
 		c->incoming.handler(c, c->incoming.private_data, in);
-		return;
+		return false;
 	}
 
 	search = talloc_get_type(p, struct cldap_search_state);
@@ -270,8 +271,15 @@ static void cldap_socket_recv_dgram(struct cldap_socket *c,
 	search->response.asn1 = asn1;
 	search->response.asn1->ofs = 0;
 
+	DLIST_REMOVE(c->searches.list, search);
+
+	if (!cldap_recvfrom_setup(c)) {
+		goto nomem;
+	}
+
 	tevent_req_done(search->req);
-	goto done;
+	talloc_free(in);
+	return true;
 
 nomem:
 	in->recv_errno = ENOMEM;
@@ -289,6 +297,7 @@ nterror:
 	tevent_req_nterror(c->searches.list->req, status);
 done:
 	talloc_free(in);
+	return false;
 }
 
 /*
