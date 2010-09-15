@@ -191,6 +191,9 @@ class SubunitOps(subunit.TestProtocolClient,TestsuiteEnabledTestResult):
         else:
             self._stream.write("testsuite-%s: %s\n" % (result, name))
 
+    def output_msg(self, msg):
+        self._stream.write(msg)
+
 
 def read_test_regexes(name):
     ret = {}
