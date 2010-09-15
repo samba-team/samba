@@ -260,6 +260,43 @@ static void dreplsrv_op_pull_source_connect_done(struct tevent_req *subreq)
 
 static void dreplsrv_op_pull_source_get_changes_done(struct tevent_req *subreq);
 
+/*
+  get a partial attribute set for a replication call
+ */
+static NTSTATUS dreplsrv_get_rodc_partial_attribute_set(struct dreplsrv_service *service,
+							TALLOC_CTX *mem_ctx,
+							struct drsuapi_DsPartialAttributeSet **_pas,
+							bool for_schema)
+{
+	struct drsuapi_DsPartialAttributeSet *pas;
+	struct dsdb_schema *schema;
+	int i;
+
+	pas = talloc_zero(mem_ctx, struct drsuapi_DsPartialAttributeSet);
+	NT_STATUS_HAVE_NO_MEMORY(pas);
+
+	schema = dsdb_get_schema(service->samdb, NULL);
+
+	pas->version = 1;
+	pas->attids = talloc_array(pas, enum drsuapi_DsAttributeId, schema->num_attributes);
+	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(pas->attids, pas);
+
+	for (i=0; i<schema->num_attributes; i++) {
+		struct dsdb_attribute *a;
+		a = schema->attributes_by_attributeID_id[i];
+                if (a->systemFlags & (DS_FLAG_ATTR_NOT_REPLICATED | DS_FLAG_ATTR_IS_CONSTRUCTED)) {
+			continue;
+		}
+		if (a->searchFlags & SEARCH_FLAG_RODC_ATTRIBUTE) {
+			continue;
+		}
+		pas->attids[pas->num_attids] = dsdb_attribute_get_attid(a, for_schema);
+		pas->num_attids++;
+	}
+	*_pas = pas;
+	return NT_STATUS_OK;
+}
+
 static void dreplsrv_op_pull_source_get_changes_trigger(struct tevent_req *req)
 {
 	struct dreplsrv_op_pull_source_state *state = tevent_req_data(req,
@@ -271,6 +308,8 @@ static void dreplsrv_op_pull_source_get_changes_trigger(struct tevent_req *req)
 	struct drsuapi_DsGetNCChanges *r;
 	struct drsuapi_DsReplicaCursorCtrEx *uptodateness_vector;
 	struct tevent_req *subreq;
+	struct drsuapi_DsPartialAttributeSet *pas = NULL;
+	NTSTATUS status;
 
 	if ((rf1->replica_flags & DRSUAPI_DRS_WRIT_REP) == 0 &&
 	    state->op->extended_op == DRSUAPI_EXOP_NONE) {
@@ -301,6 +340,19 @@ static void dreplsrv_op_pull_source_get_changes_trigger(struct tevent_req *req)
 		uptodateness_vector = &partition->uptodatevector_ex;
 	}
 
+	if (service->am_rodc) {
+		bool for_schema = false;
+		if (ldb_dn_compare_base(ldb_get_schema_basedn(service->samdb), partition->dn) == 0) {
+			for_schema = true;
+		}
+
+		status = dreplsrv_get_rodc_partial_attribute_set(service, r, &pas, for_schema);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0,(__location__ ": Failed to construct partial attribute set : %s\n", nt_errstr(status)));
+			return;
+		}
+	}
+
 	r->in.bind_handle	= &drsuapi->bind_handle;
 	if (drsuapi->remote_info28.supported_extensions & DRSUAPI_SUPPORTED_EXTENSION_GETCHGREQ_V8) {
 		r->in.level				= 8;
@@ -314,7 +366,7 @@ static void dreplsrv_op_pull_source_get_changes_trigger(struct tevent_req *req)
 		r->in.req->req8.max_ndr_size		= 1336811;
 		r->in.req->req8.extended_op		= state->op->extended_op;
 		r->in.req->req8.fsmo_info		= state->op->fsmo_info;
-		r->in.req->req8.partial_attribute_set	= NULL;
+		r->in.req->req8.partial_attribute_set	= pas;
 		r->in.req->req8.partial_attribute_set_ex= NULL;
 		r->in.req->req8.mapping_ctr.num_mappings= 0;
 		r->in.req->req8.mapping_ctr.mappings	= NULL;
@@ -566,8 +618,6 @@ static void dreplsrv_update_refs_trigger(struct tevent_req *req)
 	char *ntds_guid_str;
 	char *ntds_dns_name;
 	struct tevent_req *subreq;
-	bool am_rodc;
-	int ret;
 
 	r = talloc(state, struct drsuapi_DsReplicaUpdateRefs);
 	if (tevent_req_nomem(r, req)) {
@@ -592,8 +642,7 @@ static void dreplsrv_update_refs_trigger(struct tevent_req *req)
 	r->in.req.req1.dest_dsa_dns_name  = ntds_dns_name;
 	r->in.req.req1.dest_dsa_guid	  = service->ntds_guid;
 	r->in.req.req1.options	          = DRSUAPI_DRS_ADD_REF | DRSUAPI_DRS_DEL_REF;
-	ret = samdb_rodc(service->samdb, &am_rodc);
-	if (ret == LDB_SUCCESS && !am_rodc) {
+	if (!service->am_rodc) {
 		r->in.req.req1.options |= DRSUAPI_DRS_WRIT_REP;
 	}
 

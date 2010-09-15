@@ -169,6 +169,11 @@ WERROR dreplsrv_ridalloc_check_rid_pool(struct dreplsrv_service *service)
 	int ret;
 	uint64_t alloc_pool;
 
+	if (service->am_rodc) {
+		talloc_free(tmp_ctx);
+		return WERR_OK;
+	}
+
 	if (service->rid_alloc_in_progress) {
 		talloc_free(tmp_ctx);
 		return WERR_OK;

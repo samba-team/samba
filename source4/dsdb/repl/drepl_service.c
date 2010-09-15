@@ -76,6 +76,11 @@ static WERROR dreplsrv_connect_samdb(struct dreplsrv_service *service, struct lo
 	}
 	service->ntds_guid = *ntds_guid;
 
+	if (samdb_rodc(service->samdb, &service->am_rodc) != LDB_SUCCESS) {
+		DEBUG(0,(__location__ ": Failed to determine RODC status\n"));
+		return WERR_DS_UNAVAILABLE;
+	}
+
 	bind_info28				= &service->bind_info28;
 	bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_BASE;
 	bind_info28->supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_ASYNC_REPLICATION;
@@ -379,8 +384,6 @@ static void dreplsrv_task_init(struct task_server *task)
 	WERROR status;
 	struct dreplsrv_service *service;
 	uint32_t periodic_startup_interval;
-	bool am_rodc;
-	int ret;
 
 	switch (lpcfg_server_role(task->lp_ctx)) {
 	case ROLE_STANDALONE:
@@ -443,8 +446,7 @@ static void dreplsrv_task_init(struct task_server *task)
 	}
 
 	/* if we are a RODC then we do not send DSReplicaSync*/
-	ret = samdb_rodc(service->samdb, &am_rodc);
-	if (ret == LDB_SUCCESS && !am_rodc) {
+	if (!service->am_rodc) {
 		service->notify.interval = lpcfg_parm_int(task->lp_ctx, NULL, "dreplsrv",
 							   "notify_interval", 5); /* in seconds */
 		status = dreplsrv_notify_schedule(service, service->notify.interval);
