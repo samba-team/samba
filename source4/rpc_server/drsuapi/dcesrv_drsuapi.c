@@ -29,6 +29,7 @@
 #include "libcli/security/security.h"
 #include "auth/auth.h"
 #include "param/param.h"
+#include "lib/messaging/irpc.h"
 
 #define DRSUAPI_UNSUPPORTED(fname) do { \
 	DEBUG(1,(__location__ ": Unsupported DRS call %s\n", #fname)); \
@@ -273,7 +274,8 @@ static WERROR dcesrv_drsuapi_DsReplicaSync(struct dcesrv_call_state *dce_call, T
 
 	dcesrv_irpc_forward_rpc_call(dce_call, mem_ctx, r, NDR_DRSUAPI_DSREPLICASYNC,
 				     &ndr_table_drsuapi,
-				     "dreplsrv", "DsReplicaSync");
+				     "dreplsrv", "DsReplicaSync",
+				     IRPC_CALL_TIMEOUT);
 
 	return WERR_OK;
 }
@@ -751,7 +753,8 @@ static WERROR dcesrv_drsuapi_DsExecuteKCC(struct dcesrv_call_state *dce_call, TA
 	}
 
 	dcesrv_irpc_forward_rpc_call(dce_call, mem_ctx, r, NDR_DRSUAPI_DSEXECUTEKCC,
-								&ndr_table_drsuapi, "kccsrv", "DsExecuteKCC");
+				     &ndr_table_drsuapi, "kccsrv", "DsExecuteKCC",
+				     IRPC_CALL_TIMEOUT);
 	return WERR_OK;
 }
 
@@ -775,7 +778,8 @@ static WERROR dcesrv_drsuapi_DsReplicaGetInfo(struct dcesrv_call_state *dce_call
 	}
 
 	dcesrv_irpc_forward_rpc_call(dce_call, mem_ctx, r, NDR_DRSUAPI_DSREPLICAGETINFO,
-				     &ndr_table_drsuapi, "kccsrv", "DsReplicaGetInfo");
+				     &ndr_table_drsuapi, "kccsrv", "DsReplicaGetInfo",
+				     IRPC_CALL_TIMEOUT);
 
 	return WERR_OK;
 }

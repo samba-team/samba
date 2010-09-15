@@ -57,13 +57,14 @@ static void dcesrv_irpc_forward_callback(struct tevent_req *subreq)
 
 
 
-/*
-  forward a RPC call using IRPC to another task
+/**
+ * Forward a RPC call using IRPC to another task
  */
 void dcesrv_irpc_forward_rpc_call(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 				  void *r, uint32_t callid,
 				  const struct ndr_interface_table *ndr_table,
-				  const char *dest_task, const char *opname)
+				  const char *dest_task, const char *opname,
+				  uint32_t timeout)
 {
 	struct dcesrv_forward_state *st;
 	struct dcerpc_binding_handle *binding_handle;
@@ -95,6 +96,9 @@ void dcesrv_irpc_forward_rpc_call(struct dcesrv_call_state *dce_call, TALLOC_CTX
 		dce_call->fault_code = DCERPC_FAULT_CANT_PERFORM;
 		return;
 	}
+
+	/* reset timeout for the handle */
+	dcerpc_binding_handle_set_timeout(binding_handle, timeout);
 
 	/* forward the call */
 	subreq = dcerpc_binding_handle_call_send(st, dce_call->event_ctx,
