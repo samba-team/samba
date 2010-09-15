@@ -43,7 +43,9 @@ struct irpc_message {
 };
 
 /* don't allow calls to take too long */
-#define IRPC_CALL_TIMEOUT 10
+#define IRPC_CALL_TIMEOUT	10
+/* wait for the calls as long as it takes */
+#define IRPC_CALL_TIMEOUT_INF	0
 
 
 /* the server function type */
