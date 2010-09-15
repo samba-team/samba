@@ -266,16 +266,33 @@ static WERROR dcesrv_drsuapi_DsReplicaSync(struct dcesrv_call_state *dce_call, T
 					   struct drsuapi_DsReplicaSync *r)
 {
 	WERROR status;
+	uint32_t timeout;
 
 	status = drs_security_level_check(dce_call, "DsReplicaSync", SECURITY_DOMAIN_CONTROLLER, NULL);
 	if (!W_ERROR_IS_OK(status)) {
 		return status;
 	}
 
-	dcesrv_irpc_forward_rpc_call(dce_call, mem_ctx, r, NDR_DRSUAPI_DSREPLICASYNC,
+	if (r->in.level != 1) {
+		DEBUG(0,("DsReplicaSync called with unsupported level %d\n", r->in.level));
+		return WERR_DS_DRA_INVALID_PARAMETER;
+	}
+
+	if (r->in.req->req1.options & DRSUAPI_DRS_ASYNC_OP) {
+		timeout = IRPC_CALL_TIMEOUT;
+	} else {
+		/*
+		 * use Infinite time for timeout in case
+		 * the caller made a sync call
+		 */
+		timeout = IRPC_CALL_TIMEOUT_INF;
+	}
+
+	dcesrv_irpc_forward_rpc_call(dce_call, mem_ctx,
+				     r, NDR_DRSUAPI_DSREPLICASYNC,
 				     &ndr_table_drsuapi,
 				     "dreplsrv", "DsReplicaSync",
-				     IRPC_CALL_TIMEOUT);
+				     timeout);
 
 	return WERR_OK;
 }
