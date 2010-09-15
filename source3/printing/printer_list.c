@@ -218,7 +218,6 @@ done:
 bool printer_list_need_refresh(void)
 {
 	NTSTATUS status;
-	time_t now = time_mono(NULL);
 	time_t last_refresh;
 	int timediff;
 
@@ -226,7 +225,7 @@ bool printer_list_need_refresh(void)
 	if (!NT_STATUS_IS_OK(status)) {
 		return true;
 	}
-	timediff = now - last_refresh;
+	timediff = time_mono(NULL) - last_refresh;
 
 	if (timediff > 1 ) {
 		/* if refresh occurred more than 1s (TODO:use lp_printcap_cache_time) ago,
