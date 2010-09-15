@@ -1240,16 +1240,15 @@ objectClass: container
         self.delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
 
         # Try to Create a user with a valid primary group
-# TODO Some more investigation needed here
-#        try:
-#            ldb.add({
-#                "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
-#                "objectclass": ["user", "person"],
-#                "primaryGroupID": str(group_rid_1)})
-#            self.fail()
-#        except LdbError, (num, _):
-#            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
-#        self.delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+        try:
+            ldb.add({
+                "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
+                "objectclass": ["user", "person"],
+                "primaryGroupID": str(group_rid_1)})
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
+        self.delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
 
         # Test to see how we should behave when the user account doesn't
         # exist

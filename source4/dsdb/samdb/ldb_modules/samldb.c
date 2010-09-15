@@ -269,6 +269,10 @@ static int samldb_check_primaryGroupID(struct samldb_ctx *ac)
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
+	} else if (!ldb_request_get_control(ac->req, LDB_CONTROL_RELAX_OID)) {
+		ldb_set_errstring(ldb,
+				  "The primary group isn't settable on add operations!");
+		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
 
 	sid = dom_sid_add_rid(ac, samdb_domain_sid(ldb), rid);
