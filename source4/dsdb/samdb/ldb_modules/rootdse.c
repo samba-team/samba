@@ -191,6 +191,13 @@ static int rootdse_add_dynamic(struct ldb_module *module, struct ldb_message *ms
 	ldb_msg_remove_attr(msg, "cn");
 	ldb_msg_remove_attr(msg, "name");
 
+	if (do_attribute(attrs, "serverName")) {
+		if (ldb_msg_add_linearized_dn(msg, "serverName",
+			samdb_server_dn(ldb, msg)) != LDB_SUCCESS) {
+			goto failed;
+		}
+	}
+
 	if (do_attribute(attrs, "currentTime")) {
 		if (ldb_msg_add_steal_string(msg, "currentTime",
 					     ldb_timestring(msg, time(NULL))) != LDB_SUCCESS) {
