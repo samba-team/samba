@@ -303,7 +303,7 @@ LIBSMB_ERR_SRC0 = '''${NTERR_SRC} ${DOSERR_SRC} ${ERRORMAP_SRC} ${DCE_RPC_ERR_SR
 
 LIBSMB_ERR_SRC1 = '''../libcli/auth/smbdes.c ../libcli/auth/smbencrypt.c ../libcli/auth/msrpc_parse.c ../libcli/auth/session.c'''
 
-LIBSMB_ERR_SRC = '${LIBSMB_ERR_SRC0} ${LIBSMB_ERR_SRC1} ${REG_PARSE_PRS_SRC}'
+LIBSMB_ERR_SRC = '${LIBSMB_ERR_SRC0} ${LIBSMB_ERR_SRC1}'
 
 LIBSMB_SRC0 = '''
                ../libcli/auth/ntlm_check.c
@@ -373,7 +373,7 @@ REG_INIT_BASIC_SRC = '''registry/reg_init_basic.c'''
 REG_INIT_SMBCONF_SRC = '''registry/reg_init_smbconf.c'''
 REG_INIT_FULL_SRC = '''registry/reg_init_full.c'''
 
-REGFIO_SRC = '''registry/regfio.c'''
+REGFIO_SRC = '''registry/regfio.c ${REG_PARSE_PRS_SRC}'''
 
 REGSRCS_SRC = '''registry/reg_objects.c'''
 
