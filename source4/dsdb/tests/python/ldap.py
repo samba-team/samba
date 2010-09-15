@@ -1342,6 +1342,76 @@ objectClass: container
 
         self.delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
 
+        # Test default primary groups on modify operations
+
+        ldb.add({
+            "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
+            "objectclass": ["user", "person"]})
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+        m["userAccountControl"] = MessageElement(str(UF_NORMAL_ACCOUNT | UF_PASSWD_NOTREQD), FLAG_MOD_REPLACE,
+          "userAccountControl")
+        ldb.modify(m)
+
+        res1 = ldb.search("cn=ldaptestuser,cn=users," + self.base_dn,
+                          scope=SCOPE_BASE, attrs=["primaryGroupID"])
+        self.assertTrue(len(res1) == 1)
+        self.assertEquals(res1[0]["primaryGroupID"][0], str(DOMAIN_RID_USERS))
+
+        # unfortunately the INTERDOMAIN_TRUST_ACCOUNT case cannot be tested
+        # since such accounts aren't directly creatable (ACCESS_DENIED)
+
+        self.delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+
+        ldb.add({
+            "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
+            "objectclass": ["computer"]})
+
+        res1 = ldb.search("cn=ldaptestuser,cn=users," + self.base_dn,
+                          scope=SCOPE_BASE, attrs=["primaryGroupID"])
+        self.assertTrue(len(res1) == 1)
+        self.assertEquals(res1[0]["primaryGroupID"][0], str(DOMAIN_RID_USERS))
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+        m["userAccountControl"] = MessageElement(str(UF_WORKSTATION_TRUST_ACCOUNT | UF_PASSWD_NOTREQD), FLAG_MOD_REPLACE,
+          "userAccountControl")
+        ldb.modify(m)
+
+        res1 = ldb.search("cn=ldaptestuser,cn=users," + self.base_dn,
+                          scope=SCOPE_BASE, attrs=["primaryGroupID"])
+        self.assertTrue(len(res1) == 1)
+        self.assertEquals(res1[0]["primaryGroupID"][0], str(DOMAIN_RID_DOMAIN_MEMBERS))
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+        m["userAccountControl"] = MessageElement(str(UF_SERVER_TRUST_ACCOUNT | UF_PASSWD_NOTREQD), FLAG_MOD_REPLACE,
+          "userAccountControl")
+        ldb.modify(m)
+
+        res1 = ldb.search("cn=ldaptestuser,cn=users," + self.base_dn,
+                          scope=SCOPE_BASE, attrs=["primaryGroupID"])
+        self.assertTrue(len(res1) == 1)
+        self.assertEquals(res1[0]["primaryGroupID"][0], str(DOMAIN_RID_DCS))
+
+        # Read-only DC accounts are only creatable by
+        # UF_WORKSTATION_TRUST_ACCOUNT and work only on DCs >= 2008 (therefore
+        # we have a fallback in the assertion)
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+        m["userAccountControl"] = MessageElement(str(UF_PARTIAL_SECRETS_ACCOUNT | UF_WORKSTATION_TRUST_ACCOUNT | UF_PASSWD_NOTREQD), FLAG_MOD_REPLACE,
+          "userAccountControl")
+        ldb.modify(m)
+
+        res1 = ldb.search("cn=ldaptestuser,cn=users," + self.base_dn,
+                          scope=SCOPE_BASE, attrs=["primaryGroupID"])
+        self.assertTrue(len(res1) == 1)
+        self.assertTrue(res1[0]["primaryGroupID"][0] == str(DOMAIN_RID_READONLY_DCS) or
+                        res1[0]["primaryGroupID"][0] == str(DOMAIN_RID_DOMAIN_MEMBERS))
+
+        self.delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+
         # Recreate account for further tests
 
         ldb.add({
