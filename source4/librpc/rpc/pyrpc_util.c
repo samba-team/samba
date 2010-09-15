@@ -240,3 +240,34 @@ void PyErr_SetDCERPCStatus(struct dcerpc_pipe *p, NTSTATUS status)
 }
 
 
+/*
+  take a NDR structure that has a type in a python module and return
+  it as a python object
+
+  r is the NDR structure pointer (a C structure)
+
+  r_ctx is the context that is a parent of r. It will be referenced by
+  the resulting python object
+ */
+PyObject *py_return_ndr_struct(const char *module_name, const char *type_name,
+			       TALLOC_CTX *r_ctx, void *r)
+{
+	PyTypeObject *py_type;
+	PyObject *module;
+
+	if (r == NULL) {
+		Py_RETURN_NONE;
+	}
+
+	module = PyImport_ImportModule(module_name);
+	if (module == NULL) {
+		return NULL;
+	}
+
+	py_type = (PyTypeObject *)PyObject_GetAttrString(module, type_name);
+	if (py_type == NULL) {
+		return NULL;
+	}
+
+	return py_talloc_reference_ex(py_type, r_ctx, r);
+}
