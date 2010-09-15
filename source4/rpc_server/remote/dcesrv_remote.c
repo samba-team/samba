@@ -146,15 +146,6 @@ static NTSTATUS remote_op_bind(struct dcesrv_call_state *dce_call, const struct 
 	return NT_STATUS_OK;	
 }
 
-static void remote_op_unbind(struct dcesrv_connection_context *context, const struct dcesrv_interface *iface)
-{
-	struct dcesrv_remote_private *priv = (struct dcesrv_remote_private *)context->private_data;
-
-	talloc_free(priv->c_pipe);
-
-	return;	
-}
-
 static NTSTATUS remote_op_ndr_pull(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, struct ndr_pull *pull, void **r)
 {
 	enum ndr_err_code ndr_err;
@@ -190,7 +181,8 @@ static void remote_op_dispatch_done(struct rpc_request *rreq);
 
 static NTSTATUS remote_op_dispatch(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, void *r)
 {
-	struct dcesrv_remote_private *priv = dce_call->context->private_data;
+	struct dcesrv_remote_private *priv = talloc_get_type_abort(dce_call->context->private_data,
+								   struct dcesrv_remote_private);
 	uint16_t opnum = dce_call->pkt.u.request.opnum;
 	const struct ndr_interface_table *table = dce_call->context->iface->private_data;
 	const struct ndr_interface_call *call;
@@ -223,7 +215,8 @@ static void remote_op_dispatch_done(struct rpc_request *rreq)
 {
 	struct dcesrv_call_state *dce_call = talloc_get_type_abort(rreq->async.private_data,
 					     struct dcesrv_call_state);
-	struct dcesrv_remote_private *priv = dce_call->context->private_data;
+	struct dcesrv_remote_private *priv = talloc_get_type_abort(dce_call->context->private_data,
+								   struct dcesrv_remote_private);
 	uint16_t opnum = dce_call->pkt.u.request.opnum;
 	const struct ndr_interface_table *table = dce_call->context->iface->private_data;
 	const struct ndr_interface_call *call;
@@ -329,7 +322,6 @@ static bool remote_fill_interface(struct dcesrv_interface *iface, const struct n
 	iface->syntax_id = if_tabl->syntax_id;
 	
 	iface->bind = remote_op_bind;
-	iface->unbind = remote_op_unbind;
 
 	iface->ndr_pull = remote_op_ndr_pull;
 	iface->dispatch = remote_op_dispatch;
