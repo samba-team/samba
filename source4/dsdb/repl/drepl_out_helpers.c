@@ -310,6 +310,7 @@ static void dreplsrv_op_pull_source_get_changes_trigger(struct tevent_req *req)
 	struct tevent_req *subreq;
 	struct drsuapi_DsPartialAttributeSet *pas = NULL;
 	NTSTATUS status;
+	uint32_t replica_flags;
 
 	if ((rf1->replica_flags & DRSUAPI_DRS_WRIT_REP) == 0 &&
 	    state->op->extended_op == DRSUAPI_EXOP_NONE) {
@@ -340,6 +341,8 @@ static void dreplsrv_op_pull_source_get_changes_trigger(struct tevent_req *req)
 		uptodateness_vector = &partition->uptodatevector_ex;
 	}
 
+	replica_flags = rf1->replica_flags;
+
 	if (service->am_rodc) {
 		bool for_schema = false;
 		if (ldb_dn_compare_base(ldb_get_schema_basedn(service->samdb), partition->dn) == 0) {
@@ -351,6 +354,8 @@ static void dreplsrv_op_pull_source_get_changes_trigger(struct tevent_req *req)
 			DEBUG(0,(__location__ ": Failed to construct partial attribute set : %s\n", nt_errstr(status)));
 			return;
 		}
+
+		replica_flags &= ~DRSUAPI_DRS_WRIT_REP;
 	}
 
 	r->in.bind_handle	= &drsuapi->bind_handle;
@@ -361,7 +366,7 @@ static void dreplsrv_op_pull_source_get_changes_trigger(struct tevent_req *req)
 		r->in.req->req8.naming_context		= &partition->nc;
 		r->in.req->req8.highwatermark		= rf1->highwatermark;
 		r->in.req->req8.uptodateness_vector	= uptodateness_vector;
-		r->in.req->req8.replica_flags		= rf1->replica_flags;
+		r->in.req->req8.replica_flags		= replica_flags;
 		r->in.req->req8.max_object_count	= 133;
 		r->in.req->req8.max_ndr_size		= 1336811;
 		r->in.req->req8.extended_op		= state->op->extended_op;
@@ -377,7 +382,7 @@ static void dreplsrv_op_pull_source_get_changes_trigger(struct tevent_req *req)
 		r->in.req->req5.naming_context		= &partition->nc;
 		r->in.req->req5.highwatermark		= rf1->highwatermark;
 		r->in.req->req5.uptodateness_vector	= uptodateness_vector;
-		r->in.req->req5.replica_flags		= rf1->replica_flags;
+		r->in.req->req5.replica_flags		= replica_flags;
 		r->in.req->req5.max_object_count	= 133;
 		r->in.req->req5.max_ndr_size		= 1336770;
 		r->in.req->req5.extended_op		= state->op->extended_op;
