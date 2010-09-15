@@ -38,7 +38,7 @@ WERROR dreplsrv_schedule_partition_pull_source(struct dreplsrv_service *s,
 					       struct dreplsrv_partition_source_dsa *source,
 					       enum drsuapi_DsExtendedOperation extended_op,
 					       uint64_t fsmo_info,
-					       dreplsrv_fsmo_callback_t callback,
+					       dreplsrv_extended_callback_t callback,
 					       void *cb_data)
 {
 	struct dreplsrv_out_operation *op;

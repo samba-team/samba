@@ -113,7 +113,7 @@ static WERROR drepl_create_extended_source_dsa(struct dreplsrv_service *service,
 }
 
 struct extended_op_data {
-	dreplsrv_fsmo_callback_t callback;
+	dreplsrv_extended_callback_t callback;
 	void *callback_data;
 	struct dreplsrv_partition_source_dsa *sdsa;
 };
@@ -136,18 +136,18 @@ static void extended_op_callback(struct dreplsrv_service *service,
   schedule a getncchanges request to the role owner for an extended operation
  */
 WERROR drepl_request_extended_op(struct dreplsrv_service *service,
-				 struct ldb_dn *role_owner_dn,
-				 struct ldb_dn *fsmo_role_dn,
+				 struct ldb_dn *nc_dn,
+				 struct ldb_dn *source_dsa_dn,
 				 enum drsuapi_DsExtendedOperation extended_op,
 				 uint64_t fsmo_info,
-				 dreplsrv_fsmo_callback_t callback,
+				 dreplsrv_extended_callback_t callback,
 				 void *callback_data)
 {
 	WERROR werr;
 	struct extended_op_data *data;
 	struct dreplsrv_partition_source_dsa *sdsa;
 
-	werr = drepl_create_extended_source_dsa(service, role_owner_dn, fsmo_role_dn, &sdsa);
+	werr = drepl_create_extended_source_dsa(service, nc_dn, source_dsa_dn, &sdsa);
 	W_ERROR_NOT_OK_RETURN(werr);
 
 	data = talloc(service, struct extended_op_data);
@@ -164,5 +164,8 @@ WERROR drepl_request_extended_op(struct dreplsrv_service *service,
 		talloc_free(sdsa);
 		talloc_free(data);
 	}
+
+	dreplsrv_run_pending_ops(service);
+
 	return werr;
 }

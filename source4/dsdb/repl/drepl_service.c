@@ -170,7 +170,7 @@ static WERROR _drepl_schedule_replication(struct dreplsrv_service *service,
 					  TALLOC_CTX *mem_ctx)
 {
 	WERROR werr;
-	dreplsrv_fsmo_callback_t fn_callback = NULL;
+	dreplsrv_extended_callback_t fn_callback = NULL;
 
 	if (data) {
 		fn_callback = _drepl_replica_sync_done_cb;
@@ -358,11 +358,18 @@ static NTSTATUS drepl_take_FSMO_role(struct irpc_message *msg,
 static NTSTATUS drepl_trigger_repl_secret(struct irpc_message *msg,
 					  struct drepl_trigger_repl_secret *r)
 {
+	struct dreplsrv_service *service = talloc_get_type(msg->private_data,
+							   struct dreplsrv_service);
+
+
+	drepl_repl_secret(service, r->in.user_dn);
+
 	/* we are not going to be sending a reply to this request */
 	msg->no_reply = true;
-	DEBUG(0,(__location__ ": got drepl_trigger_repl_secret with %s\n", r->in.user_dn));
+
 	return NT_STATUS_OK;
 }
+
 
 /*
   startup the dsdb replicator service task

@@ -103,10 +103,10 @@ struct dreplsrv_partition {
 	bool incoming_only;
 };
 
-typedef void (*dreplsrv_fsmo_callback_t)(struct dreplsrv_service *,
-					 WERROR,
-					 enum drsuapi_DsExtendedError,
-					 void *cb_data);
+typedef void (*dreplsrv_extended_callback_t)(struct dreplsrv_service *,
+					     WERROR,
+					     enum drsuapi_DsExtendedError,
+					     void *cb_data);
 
 struct dreplsrv_out_operation {
 	struct dreplsrv_out_operation *prev, *next;
@@ -118,7 +118,7 @@ struct dreplsrv_out_operation {
 	enum drsuapi_DsExtendedOperation extended_op;
 	uint64_t fsmo_info;
 	enum drsuapi_DsExtendedError extended_ret;
-	dreplsrv_fsmo_callback_t callback;
+	dreplsrv_extended_callback_t callback;
 	void *cb_data;
 };
 
@@ -217,7 +217,6 @@ struct dreplsrv_service {
 	} ops;
 
 	bool rid_alloc_in_progress;
-	bool role_transfer_in_progress;
 
 	bool syncall_workaround;
 };
