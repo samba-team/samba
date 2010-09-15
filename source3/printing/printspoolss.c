@@ -328,7 +328,7 @@ void print_spool_terminate(struct connection_struct *conn,
 			  nt_errstr(status)));
 		return;
 	}
-	cli = &conn->spoolss_pipe;
+	cli = conn->spoolss_pipe;
 
 	status = rpccli_spoolss_SetJob(cli, print_file,
 					&print_file->handle,
