@@ -61,6 +61,7 @@ static WERROR drepl_request_new_rid_pool(struct dreplsrv_service *service,
 						fsmo_role_dn,
 						DRSUAPI_EXOP_FSMO_RID_ALLOC,
 						alloc_pool,
+						0,
 						drepl_new_rid_pool_callback, NULL);
 	if (W_ERROR_IS_OK(werr)) {
 		service->rid_alloc_in_progress = true;

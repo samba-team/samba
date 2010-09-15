@@ -151,7 +151,9 @@ WERROR dreplsrv_fsmo_role_check(struct dreplsrv_service *service,
 					 role_owner_dn,
 					 extended_op,
 					 fsmo_info,
-					 drepl_role_callback);
+					 0,
+					 drepl_role_callback,
+					 NULL);
 	if (W_ERROR_IS_OK(werr)) {
 		dreplsrv_run_pending_ops(service);
 	} else {

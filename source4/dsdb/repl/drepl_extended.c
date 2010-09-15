@@ -41,6 +41,7 @@
 static WERROR drepl_create_extended_source_dsa(struct dreplsrv_service *service,
 					       struct ldb_dn *nc_dn,
 					       struct ldb_dn *source_dsa_dn,
+					       uint64_t min_usn,
 					       struct dreplsrv_partition_source_dsa **_sdsa)
 {
 	struct dreplsrv_partition_source_dsa *sdsa;
@@ -99,6 +100,7 @@ static WERROR drepl_create_extended_source_dsa(struct dreplsrv_service *service,
 		return WERR_NOMEM;
 	}
 
+	sdsa->repsFrom1->highwatermark.highest_usn = min_usn;
 
 	werr = dreplsrv_out_connection_attach(service, sdsa->repsFrom1, &sdsa->conn);
 	if (!W_ERROR_IS_OK(werr)) {
@@ -140,6 +142,7 @@ WERROR drepl_request_extended_op(struct dreplsrv_service *service,
 				 struct ldb_dn *source_dsa_dn,
 				 enum drsuapi_DsExtendedOperation extended_op,
 				 uint64_t fsmo_info,
+				 uint64_t min_usn,
 				 dreplsrv_extended_callback_t callback,
 				 void *callback_data)
 {
@@ -147,7 +150,7 @@ WERROR drepl_request_extended_op(struct dreplsrv_service *service,
 	struct extended_op_data *data;
 	struct dreplsrv_partition_source_dsa *sdsa;
 
-	werr = drepl_create_extended_source_dsa(service, nc_dn, source_dsa_dn, &sdsa);
+	werr = drepl_create_extended_source_dsa(service, nc_dn, source_dsa_dn, min_usn, &sdsa);
 	W_ERROR_NOT_OK_RETURN(werr);
 
 	data = talloc(service, struct extended_op_data);

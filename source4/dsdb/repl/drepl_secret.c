@@ -126,6 +126,7 @@ void drepl_repl_secret(struct dreplsrv_service *service,
 					 source_dsa_dn,
 					 DRSUAPI_EXOP_REPL_SECRET,
 					 0,
+					 p->sources->repsFrom1->highwatermark.highest_usn,
 					 drepl_repl_secret_callback, state);
 	if (!W_ERROR_IS_OK(werr)) {
 		DEBUG(2,(__location__ ": Failed to setup secret replication for user_dn '%s'\n", user_dn));
