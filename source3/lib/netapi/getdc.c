@@ -146,6 +146,19 @@ WERROR DsGetDcName_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
+	status = rpccli_netr_DsRGetDCNameEx(pipe_cli,
+					    ctx,
+					    r->in.server_name,
+					    r->in.domain_name,
+					    r->in.domain_guid,
+					    r->in.site_name,
+					    r->in.flags,
+					    (struct netr_DsRGetDCNameInfo **)r->out.dc_info,
+					    &werr);
+	if (NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
+
 	status = rpccli_netr_DsRGetDCName(pipe_cli,
 					  ctx,
 					  r->in.server_name,
