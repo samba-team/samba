@@ -1237,12 +1237,12 @@ static int tdgram_bsd_dgram_socket(const struct tsocket_address *local,
 
 	fd = socket(sa_fam, SOCK_DGRAM, 0);
 	if (fd < 0) {
-		return fd;
+		return -1;
 	}
 
 	fd = tsocket_bsd_common_prepare_fd(fd, true);
 	if (fd < 0) {
-		return fd;
+		return -1;
 	}
 
 	dgram = tdgram_context_create(mem_ctx,
@@ -1270,7 +1270,7 @@ static int tdgram_bsd_dgram_socket(const struct tsocket_address *local,
 			int saved_errno = errno;
 			talloc_free(dgram);
 			errno = saved_errno;
-			return ret;
+			return -1;
 		}
 	}
 #endif
@@ -1284,7 +1284,7 @@ static int tdgram_bsd_dgram_socket(const struct tsocket_address *local,
 			int saved_errno = errno;
 			talloc_free(dgram);
 			errno = saved_errno;
-			return ret;
+			return -1;
 		}
 	}
 
@@ -1297,7 +1297,7 @@ static int tdgram_bsd_dgram_socket(const struct tsocket_address *local,
 			int saved_errno = errno;
 			talloc_free(dgram);
 			errno = saved_errno;
-			return ret;
+			return -1;
 		}
 	}
 
@@ -1307,7 +1307,7 @@ static int tdgram_bsd_dgram_socket(const struct tsocket_address *local,
 			int saved_errno = errno;
 			talloc_free(dgram);
 			errno = saved_errno;
-			return ret;
+			return -1;
 		}
 	}
 
@@ -1323,7 +1323,7 @@ static int tdgram_bsd_dgram_socket(const struct tsocket_address *local,
 			int saved_errno = errno;
 			talloc_free(dgram);
 			errno = saved_errno;
-			return ret;
+			return -1;
 		}
 	}
 
