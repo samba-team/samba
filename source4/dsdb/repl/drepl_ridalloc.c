@@ -36,7 +36,8 @@
  */
 
 WERROR drepl_create_role_owner_source_dsa(struct dreplsrv_service *service,
-					  struct ldb_dn *role_owner_dn, struct ldb_dn *fsmo_role_dn)
+					  struct ldb_dn *fsmo_role_dn,
+					  struct ldb_dn *role_owner_dn)
 {
 	struct dreplsrv_partition_source_dsa *sdsa;
 	struct ldb_context *ldb = service->samdb;
@@ -52,29 +53,29 @@ WERROR drepl_create_role_owner_source_dsa(struct dreplsrv_service *service,
 		return WERR_NOMEM;
 	}
 
-	sdsa->partition->dn = ldb_dn_copy(sdsa->partition, role_owner_dn);
+	sdsa->partition->dn = ldb_dn_copy(sdsa->partition, fsmo_role_dn);
 	if (!sdsa->partition->dn) {
 		talloc_free(sdsa);
 		return WERR_NOMEM;
 	}
-	sdsa->partition->nc.dn = ldb_dn_alloc_linearized(sdsa->partition, role_owner_dn);
+	sdsa->partition->nc.dn = ldb_dn_alloc_linearized(sdsa->partition, fsmo_role_dn);
 	if (!sdsa->partition->nc.dn) {
 		talloc_free(sdsa);
 		return WERR_NOMEM;
 	}
-	ret = dsdb_find_guid_by_dn(ldb, role_owner_dn, &sdsa->partition->nc.guid);
+	ret = dsdb_find_guid_by_dn(ldb, fsmo_role_dn, &sdsa->partition->nc.guid);
 	if (ret != LDB_SUCCESS) {
 		DEBUG(0,(__location__ ": Failed to find GUID for %s\n",
-			 ldb_dn_get_linearized(role_owner_dn)));
+			 ldb_dn_get_linearized(fsmo_role_dn)));
 		talloc_free(sdsa);
 		return WERR_DS_DRA_INTERNAL_ERROR;
 	}
 
 	sdsa->repsFrom1 = &sdsa->_repsFromBlob.ctr.ctr1;
-	ret = dsdb_find_guid_by_dn(ldb, fsmo_role_dn, &sdsa->repsFrom1->source_dsa_obj_guid);
+	ret = dsdb_find_guid_by_dn(ldb, role_owner_dn, &sdsa->repsFrom1->source_dsa_obj_guid);
 	if (ret != LDB_SUCCESS) {
 		DEBUG(0,(__location__ ": Failed to find objectGUID for %s\n",
-			 ldb_dn_get_linearized(fsmo_role_dn)));
+			 ldb_dn_get_linearized(role_owner_dn)));
 		talloc_free(sdsa);
 		return WERR_DS_DRA_INTERNAL_ERROR;
 	}
@@ -98,7 +99,7 @@ WERROR drepl_create_role_owner_source_dsa(struct dreplsrv_service *service,
 	werr = dreplsrv_out_connection_attach(service, sdsa->repsFrom1, &sdsa->conn);
 	if (!W_ERROR_IS_OK(werr)) {
 		DEBUG(0,(__location__ ": Failed to attach connection to %s\n",
-			 ldb_dn_get_linearized(role_owner_dn)));
+			 ldb_dn_get_linearized(fsmo_role_dn)));
 		talloc_free(sdsa);
 		return werr;
 	}
@@ -111,23 +112,20 @@ WERROR drepl_create_role_owner_source_dsa(struct dreplsrv_service *service,
   schedule a getncchanges request to the role owner for an extended operation
  */
 WERROR drepl_request_extended_op(struct dreplsrv_service *service,
-				 struct ldb_dn *role_owner_dn,
 				 struct ldb_dn *fsmo_role_dn,
+				 struct ldb_dn *role_owner_dn,
 				 enum drsuapi_DsExtendedOperation extended_op,
 				 uint64_t alloc_pool,
 				 dreplsrv_fsmo_callback_t callback)
 {
 	WERROR werr;
-
 	if (service->ncchanges_extended.role_owner_source_dsa == NULL) {
-		/* we need to establish a connection to the RID
-		   Manager */
-		werr = drepl_create_role_owner_source_dsa(service, role_owner_dn, fsmo_role_dn);
+		/* we need to establish a connection to the role owner */
+		werr = drepl_create_role_owner_source_dsa(service, fsmo_role_dn, role_owner_dn);
 		W_ERROR_NOT_OK_RETURN(werr);
 	}
 
 	service->ncchanges_extended.in_progress = true;
-
 	werr = dreplsrv_schedule_partition_pull_source(service, service->ncchanges_extended.role_owner_source_dsa,
 						       extended_op, alloc_pool,
 						       callback, NULL);
