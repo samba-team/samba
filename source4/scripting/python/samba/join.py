@@ -68,7 +68,8 @@ def join_rodc(server=None, creds=None, lp=None, site=None, netbios_name=None,
 
     def find_dc(ctx, domain):
         '''find a writeable DC for the given domain'''
-        return ctx.net.finddc(domain, nbt.NBT_SERVER_LDAP | nbt.NBT_SERVER_DS | nbt.NBT_SERVER_WRITABLE)
+        ctx.cldap_ret = ctx.net.finddc(domain, nbt.NBT_SERVER_LDAP | nbt.NBT_SERVER_DS | nbt.NBT_SERVER_WRITABLE)
+        return ctx.cldap_ret.pdc_dns_name;
 
 
     def get_dsServiceName(samdb):
@@ -308,6 +309,8 @@ def join_rodc(server=None, creds=None, lp=None, site=None, netbios_name=None,
     ctx.config_dn = str(ctx.samdb.get_config_basedn())
     ctx.domsid = ctx.samdb.get_domain_sid()
     ctx.domain_name = get_domain_name(ctx.samdb)
+
+    lp.set("realm", ctx.domain_name)
 
     ctx.dc_ntds_dn = get_dsServiceName(ctx.samdb)
     ctx.dc_dnsHostName = get_dnsHostName(ctx.samdb)
