@@ -1,20 +1,33 @@
                    =============================
                    Release Notes for Samba 3.5.5
-			   , 2010
+			 September 14, 2010
                    =============================
 
 
-This is the latest stable release of Samba 3.5.
+This is a security release in order to address CVE-2010-3069.
 
-Major enhancements in Samba 3.5.5 include:
 
-  o 
+o  CVE-2010-3069:
+   All current released versions of Samba are vulnerable to
+   a buffer overrun vulnerability. The sid_parse() function
+   (and related dom_sid_parse() function in the source4 code)
+   do not correctly check their input lengths when reading a
+   binary representation of a Windows SID (Security ID). This
+   allows a malicious client to send a sid that can overflow
+   the stack variable that is being used to store the SID in the
+   Samba smbd server.
 
 
 Changes since 3.5.4
--------------------
+--------------------
 
 
+o   Jeremy Allison <jra@samba.org>
+    * BUG 7669: Fix for CVE-2010-3069.
+
+
+o   Andrew Bartlett <abartlet@samba.org>
+    * BUG 7669: Fix for CVE-2010-3069.
 
 
 ######################################################################
