@@ -322,6 +322,7 @@ static bool remote_fill_interface(struct dcesrv_interface *iface, const struct n
 	iface->syntax_id = if_tabl->syntax_id;
 	
 	iface->bind = remote_op_bind;
+	iface->unbind = NULL;
 
 	iface->ndr_pull = remote_op_ndr_pull;
 	iface->dispatch = remote_op_dispatch;

@@ -554,7 +554,7 @@ static int dcesrv_connection_context_destructor(struct dcesrv_connection_context
 {
 	DLIST_REMOVE(c->conn->contexts, c);
 
-	if (c->iface) {
+	if (c->iface && c->iface->unbind) {
 		c->iface->unbind(c, c->iface);
 	}
 
