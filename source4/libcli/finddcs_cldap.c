@@ -214,6 +214,7 @@ static void finddcs_cldap_netlogon_replied(struct tevent_req *subreq)
 	state = tevent_req_callback_data(subreq, struct finddcs_cldap_state);
 
 	status = cldap_netlogon_recv(subreq, state->netlogon, state->netlogon);
+	talloc_free(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
 		state->srv_address_index++;
 		finddcs_cldap_next_server(state);
@@ -231,7 +232,6 @@ static void finddcs_cldap_netlogon_replied(struct tevent_req *subreq)
 		return;
 	}
 
-	talloc_free(subreq);
 	tevent_req_done(state->req);
 }
 
