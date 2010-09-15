@@ -10,7 +10,6 @@ supportedLDAPVersion: 3
 supportedLDAPVersion: 2
 dnsHostName: ${DNSNAME}
 ldapServiceName: ${DNSDOMAIN}:${NETBIOSNAME}$@${REALM}
-serverName: ${SERVERDN}
 isSynchronized: FALSE
 vendorName: Samba Team (http://samba.org)
 supportedCapabilities: 1.2.840.113556.1.4.800
