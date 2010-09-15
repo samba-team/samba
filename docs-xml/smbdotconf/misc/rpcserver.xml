@@ -29,7 +29,7 @@
 
 	<para>
 	Choosing the <emphasis>external</emphasis> option allows to run a
-	completely indipendent (3rd party) server capable of interfacing
+	completely independent (3rd party) server capable of interfacing
 	with samba via the MS-RPC intrerface over named pipes.
 	</para>
 
