@@ -352,26 +352,6 @@ static int rootdse_add_dynamic(struct ldb_module *module, struct ldb_message *ms
 		}
 	}
 
-	edn_control = ldb_request_get_control(req, LDB_CONTROL_EXTENDED_DN_OID);
-
-	/* if the client sent us the EXTENDED_DN control then we need
-	   to expand the DNs to have GUID and SID. W2K8 join relies on
-	   this */
-	if (edn_control) {
-		unsigned int i;
-		int ret;
-		for (i=0; dn_attrs[i]; i++) {
-			if (!do_attribute(attrs, dn_attrs[i])) continue;
-			ret = expand_dn_in_message(module, msg, dn_attrs[i],
-						   edn_control, req);
-			if (ret != LDB_SUCCESS) {
-				DEBUG(0,(__location__ ": Failed to expand DN in rootDSE for %s\n",
-					 dn_attrs[i]));
-				goto failed;
-			}
-		}
-	}
-
 	if (do_attribute(attrs, "isGlobalCatalogReady")) {
 		/* MS-ADTS 3.1.1.3.2.10
 		   Note, we should only return true here is we have
@@ -403,6 +383,26 @@ static int rootdse_add_dynamic(struct ldb_module *module, struct ldb_message *ms
 	}
 
 	/* TODO: lots more dynamic attributes should be added here */
+
+	edn_control = ldb_request_get_control(req, LDB_CONTROL_EXTENDED_DN_OID);
+
+	/* if the client sent us the EXTENDED_DN control then we need
+	   to expand the DNs to have GUID and SID. W2K8 join relies on
+	   this */
+	if (edn_control) {
+		unsigned int i;
+		int ret;
+		for (i=0; dn_attrs[i]; i++) {
+			if (!do_attribute(attrs, dn_attrs[i])) continue;
+			ret = expand_dn_in_message(module, msg, dn_attrs[i],
+						   edn_control, req);
+			if (ret != LDB_SUCCESS) {
+				DEBUG(0,(__location__ ": Failed to expand DN in rootDSE for %s\n",
+					 dn_attrs[i]));
+				goto failed;
+			}
+		}
+	}
 
 	return LDB_SUCCESS;
 
