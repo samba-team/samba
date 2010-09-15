@@ -2237,13 +2237,20 @@ static void call_nt_transact_ioctl(connection_struct *conn,
 		 */
 		struct dom_sid sid;
 		uid_t uid;
-		size_t sid_len = MIN(data_count-4,SID_MAX_SIZE);
+		size_t sid_len;
 
 		DEBUG(10,("FSCTL_FIND_FILES_BY_SID: called on FID[0x%04X]\n",fidnum));
 
 		if (!check_fsp_open(conn, req, fsp)) {
 			return;
 		}
+
+		if (data_count < 8) {
+			reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
+			return;
+		}
+
+		sid_len = MIN(data_count-4,SID_MAX_SIZE);
 
 		/* unknown 4 bytes: this is not the length of the sid :-(  */
 		/*unknown = IVAL(pdata,0);*/
