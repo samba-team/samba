@@ -29,10 +29,11 @@ from ldb import FLAG_MOD_ADD, FLAG_MOD_REPLACE, FLAG_MOD_DELETE
 from samba import Ldb
 from samba.dsdb import (UF_NORMAL_ACCOUNT, UF_INTERDOMAIN_TRUST_ACCOUNT,
     UF_WORKSTATION_TRUST_ACCOUNT, UF_SERVER_TRUST_ACCOUNT,
+    UF_PARTIAL_SECRETS_ACCOUNT,
     UF_PASSWD_NOTREQD, UF_ACCOUNTDISABLE, ATYPE_NORMAL_ACCOUNT,
     ATYPE_WORKSTATION_TRUST, SYSTEM_FLAG_DOMAIN_DISALLOW_MOVE)
 from samba.dcerpc.security import (DOMAIN_RID_USERS, DOMAIN_RID_DOMAIN_MEMBERS,
-    DOMAIN_RID_DCS)
+    DOMAIN_RID_DCS, DOMAIN_RID_READONLY_DCS)
 
 from subunit.run import SubunitTestRunner
 import unittest
@@ -1203,9 +1204,9 @@ objectClass: container
 
         self.delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
 
-    def test_groups(self):
-        """This tests the group behaviour (setting, changing) of a user account"""
-        print "Testing group behaviour\n"
+    def test_users_groups(self):
+        """This tests the SAM users and groups behaviour"""
+        print "Testing users and groups behaviour\n"
 
         ldb.add({
             "dn": "cn=ldaptestgroup,cn=users," + self.base_dn,
@@ -1273,7 +1274,7 @@ objectClass: container
         except LdbError, (num, _):
             self.assertEquals(num, ERR_OBJECT_CLASS_VIOLATION)
 
-        # Test default primary groups
+        # Test default primary groups on add operations
 
         ldb.add({
             "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
@@ -1304,12 +1305,40 @@ objectClass: container
         ldb.add({
             "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
             "objectclass": ["computer"],
+            "userAccountControl": str(UF_WORKSTATION_TRUST_ACCOUNT | UF_PASSWD_NOTREQD) })
+
+        res1 = ldb.search("cn=ldaptestuser,cn=users," + self.base_dn,
+                          scope=SCOPE_BASE, attrs=["primaryGroupID"])
+        self.assertTrue(len(res1) == 1)
+        self.assertEquals(res1[0]["primaryGroupID"][0], str(DOMAIN_RID_DOMAIN_MEMBERS))
+
+        self.delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+
+        ldb.add({
+            "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
+            "objectclass": ["computer"],
             "userAccountControl": str(UF_SERVER_TRUST_ACCOUNT | UF_PASSWD_NOTREQD) })
 
         res1 = ldb.search("cn=ldaptestuser,cn=users," + self.base_dn,
                           scope=SCOPE_BASE, attrs=["primaryGroupID"])
         self.assertTrue(len(res1) == 1)
         self.assertEquals(res1[0]["primaryGroupID"][0], str(DOMAIN_RID_DCS))
+
+        self.delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+
+        # Read-only DC accounts are only creatable by
+        # UF_WORKSTATION_TRUST_ACCOUNT and work only on DCs >= 2008 (therefore
+        # we have a fallback in the assertion)
+        ldb.add({
+            "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
+            "objectclass": ["computer"],
+            "userAccountControl": str(UF_PARTIAL_SECRETS_ACCOUNT | UF_WORKSTATION_TRUST_ACCOUNT | UF_PASSWD_NOTREQD) })
+
+        res1 = ldb.search("cn=ldaptestuser,cn=users," + self.base_dn,
+                          scope=SCOPE_BASE, attrs=["primaryGroupID"])
+        self.assertTrue(len(res1) == 1)
+        self.assertTrue(res1[0]["primaryGroupID"][0] == str(DOMAIN_RID_READONLY_DCS) or
+                        res1[0]["primaryGroupID"][0] == str(DOMAIN_RID_DOMAIN_MEMBERS))
 
         self.delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
 
