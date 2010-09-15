@@ -536,7 +536,7 @@ NTSTATUS rpcint_binding_handle(TALLOC_CTX *mem_ctx,
  */
 NTSTATUS rpc_pipe_open_internal(TALLOC_CTX *mem_ctx,
 				const struct ndr_syntax_id *abstract_syntax,
-				struct auth_serversupplied_info *serversupplied_info,
+				const struct auth_serversupplied_info *serversupplied_info,
 				struct client_address *client_id,
 				struct messaging_context *msg_ctx,
 				struct rpc_pipe_client **presult)
@@ -587,7 +587,7 @@ struct np_proxy_state *make_external_rpc_pipe_p(TALLOC_CTX *mem_ctx,
 				const char *pipe_name,
 				const struct tsocket_address *local_address,
 				const struct tsocket_address *remote_address,
-				struct auth_serversupplied_info *server_info)
+				const struct auth_serversupplied_info *server_info)
 {
 	struct np_proxy_state *result;
 	char *socket_np_dir;
@@ -707,7 +707,7 @@ struct np_proxy_state *make_external_rpc_pipe_p(TALLOC_CTX *mem_ctx,
 static NTSTATUS rpc_pipe_open_external(TALLOC_CTX *mem_ctx,
 				const char *pipe_name,
 				const struct ndr_syntax_id *abstract_syntax,
-				struct auth_serversupplied_info *server_info,
+				const struct auth_serversupplied_info *server_info,
 				struct rpc_pipe_client **_result)
 {
 	struct tsocket_address *local, *remote;
@@ -808,7 +808,7 @@ done:
 
 NTSTATUS rpc_pipe_open_interface(TALLOC_CTX *mem_ctx,
 				 const struct ndr_syntax_id *syntax,
-				 struct auth_serversupplied_info *server_info,
+				 const struct auth_serversupplied_info *server_info,
 				 struct client_address *client_id,
 				 struct messaging_context *msg_ctx,
 				 struct rpc_pipe_client **cli_pipe)

@@ -199,7 +199,7 @@ NTSTATUS serverinfo_to_SamInfo2(struct auth_serversupplied_info *server_info,
 				uint8_t *pipe_session_key,
 				size_t pipe_session_key_len,
 				struct netr_SamInfo2 *sam2);
-NTSTATUS serverinfo_to_SamInfo3(struct auth_serversupplied_info *server_info,
+NTSTATUS serverinfo_to_SamInfo3(const struct auth_serversupplied_info *server_info,
 				uint8_t *pipe_session_key,
 				size_t pipe_session_key_len,
 				struct netr_SamInfo3 *sam3);
@@ -4083,13 +4083,13 @@ NTSTATUS rpcint_binding_handle(TALLOC_CTX *mem_ctx,
 			       struct dcerpc_binding_handle **binding_handle);
 NTSTATUS rpc_pipe_open_internal(TALLOC_CTX *mem_ctx,
 				const struct ndr_syntax_id *abstract_syntax,
-				struct auth_serversupplied_info *serversupplied_info,
+				const struct auth_serversupplied_info *serversupplied_info,
 				struct client_address *client_id,
 				struct messaging_context *msg_ctx,
 				struct rpc_pipe_client **presult);
 NTSTATUS rpc_pipe_open_interface(TALLOC_CTX *mem_ctx,
 				 const struct ndr_syntax_id *syntax,
-				 struct auth_serversupplied_info *server_info,
+				 const struct auth_serversupplied_info *server_info,
 				 struct client_address *client_id,
 				 struct messaging_context *msg_ctx,
 				 struct rpc_pipe_client **cli_pipe);
