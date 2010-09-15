@@ -355,6 +355,7 @@ LIBMSRPC_SRC = '''
                librpc/rpc/dcerpc_spnego.c
                rpc_client/rpc_transport_np.c
                rpc_client/rpc_transport_sock.c
+               rpc_client/rpc_transport_tstream.c
                ../librpc/rpc/binding.c
                ../librpc/rpc/dcerpc_util.c
                librpc/rpc/dcerpc_helpers.c
@@ -463,11 +464,13 @@ RPC_EVENTLOG_SRC = '''rpc_server/srv_eventlog_nt.c
 NPA_TSTREAM_SRC = '''../libcli/named_pipe_auth/npa_tstream.c
                      ../librpc/gen_ndr/ndr_named_pipe_auth.c'''
 
-RPC_NCACN_NP_INTERNAL = '''rpc_server/srv_pipe_register.c rpc_server/rpc_ncacn_np_internal.c
-                        rpc_server/rpc_handles.c'''
+RPC_NCACN_NP = '''rpc_server/srv_pipe_register.c rpc_server/rpc_ncacn_np.c
+                  rpc_server/rpc_handles.c'''
+
+RPC_SERVICE = '''rpc_server/rpc_server.c'''
 
 RPC_PIPE_SRC = '''rpc_server/srv_pipe_hnd.c rpc_server/srv_pipe.c
-               ${RPC_NCACN_NP_INTERNAL}'''
+               ${RPC_NCACN_NP} ${RPC_SERVICE}'''
 
 RPC_RPCECHO_SRC = '''rpc_server/srv_echo_nt.c ../librpc/gen_ndr/srv_echo.c'''
 
@@ -721,7 +724,7 @@ WINBINDD_SRC = '''${WINBINDD_SRC1}
                   ${DCUTIL_SRC} ${IDMAP_SRC} ${NSS_INFO_SRC}
                   ${AFS_SRC} ${AFS_SETTOKEN_SRC}
                   ${LIBADS_SERVER_SRC}
-                  ${RPC_NCACN_NP_INTERNAL} ${RPC_SAMR_SRC} ${RPC_LSARPC_SRC}
+                  ${RPC_NCACN_NP} ${NPA_TSTREAM_SRC} ${RPC_SAMR_SRC} ${RPC_LSARPC_SRC}
                   ${TDB_VALIDATE_SRC}
                   ${LIBCLI_DSSETUP_SRC}
                   ${LIBCLI_LSA_SRC}
@@ -810,7 +813,7 @@ SMBD_SRC_BASE = '''${SMBD_SRC_SRV}
 PRINTING_SRC = '''printing/pcap.c printing/print_svid.c printing/print_aix.c
                printing/print_cups.c printing/print_generic.c
                printing/lpq_parse.c printing/load.c printing/print_standard.c
-               printing/print_iprint.c'''
+               printing/print_iprint.c printing/printer_list.c'''
 
 PRINTBASE_SRC = '''printing/notify.c printing/printing_db.c'''
 PRINTBACKEND_SRC = '''printing/printing.c
