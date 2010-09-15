@@ -2255,7 +2255,10 @@ static void call_nt_transact_ioctl(connection_struct *conn,
 		/* unknown 4 bytes: this is not the length of the sid :-(  */
 		/*unknown = IVAL(pdata,0);*/
 
-		sid_parse(pdata+4,sid_len,&sid);
+		if (!sid_parse(pdata+4,sid_len,&sid)) {
+			reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
+			return;
+		}
 		DEBUGADD(10, ("for SID: %s\n", sid_string_dbg(&sid)));
 
 		if (!sid_to_uid(&sid, &uid)) {
