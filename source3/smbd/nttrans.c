@@ -2571,7 +2571,10 @@ static void call_nt_transact_get_user_quota(connection_struct *conn,
 				break;
 			}
 
-			sid_parse(pdata+8,sid_len,&sid);
+			if (!sid_parse(pdata+8,sid_len,&sid)) {
+				reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
+				return;
+			}
 
 			if (vfs_get_ntquota(fsp, SMB_USER_QUOTA_TYPE, &sid, &qt)!=0) {
 				ZERO_STRUCT(qt);
@@ -2688,7 +2691,7 @@ static void call_nt_transact_set_user_quota(connection_struct *conn,
 
 	if (data_count < 40) {
 		DEBUG(0,("TRANSACT_SET_USER_QUOTA: requires %d >= %d bytes data\n",data_count,40));
-		reply_nterror(req, NT_STATUS_INVALID_LEVEL);
+		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
 		return;
 	}
 
@@ -2700,9 +2703,9 @@ static void call_nt_transact_set_user_quota(connection_struct *conn,
 	/* sid len */
 	sid_len = IVAL(pdata,4);
 
-	if (data_count < 40+sid_len) {
+	if (data_count < 40+sid_len || (40+sid_len < sid_len)) {
 		DEBUG(0,("TRANSACT_SET_USER_QUOTA: requires %d >= %lu bytes data\n",data_count,(unsigned long)40+sid_len));
-		reply_nterror(req, NT_STATUS_INVALID_LEVEL);
+		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
 		return;
 	}
 
@@ -2752,7 +2755,11 @@ static void call_nt_transact_set_user_quota(connection_struct *conn,
 	}
 #endif /* LARGE_SMB_OFF_T */
 
-	sid_parse(pdata+40,sid_len,&sid);
+	if (!sid_parse(pdata+40,sid_len,&sid)) {
+		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		return;
+	}
+
 	DEBUGADD(8,("SID: %s\n", sid_string_dbg(&sid)));
 
 	/* 44 unknown bytes left... */
