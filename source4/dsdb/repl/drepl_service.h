@@ -216,10 +216,8 @@ struct dreplsrv_service {
 		struct dreplsrv_notify_operation *n_current;
 	} ops;
 
-	struct {
-		bool in_progress;
-		struct dreplsrv_partition_source_dsa *role_owner_source_dsa;
-	} ncchanges_extended;
+	bool rid_alloc_in_progress;
+	bool role_transfer_in_progress;
 
 	bool syncall_workaround;
 };

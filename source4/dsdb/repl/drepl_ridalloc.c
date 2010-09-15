@@ -33,11 +33,14 @@
 
 /*
   create the role owner source dsa structure
- */
 
+  nc_dn: the DN of the subtree being replicated
+  source_dsa_dn: the DN of the server that we are replicating from
+ */
 WERROR drepl_create_role_owner_source_dsa(struct dreplsrv_service *service,
-					  struct ldb_dn *fsmo_role_dn,
-					  struct ldb_dn *role_owner_dn)
+					  struct ldb_dn *nc_dn,
+					  struct ldb_dn *source_dsa_dn,
+					  struct dreplsrv_partition_source_dsa **_sdsa)
 {
 	struct dreplsrv_partition_source_dsa *sdsa;
 	struct ldb_context *ldb = service->samdb;
@@ -53,29 +56,29 @@ WERROR drepl_create_role_owner_source_dsa(struct dreplsrv_service *service,
 		return WERR_NOMEM;
 	}
 
-	sdsa->partition->dn = ldb_dn_copy(sdsa->partition, fsmo_role_dn);
+	sdsa->partition->dn = ldb_dn_copy(sdsa->partition, nc_dn);
 	if (!sdsa->partition->dn) {
 		talloc_free(sdsa);
 		return WERR_NOMEM;
 	}
-	sdsa->partition->nc.dn = ldb_dn_alloc_linearized(sdsa->partition, fsmo_role_dn);
+	sdsa->partition->nc.dn = ldb_dn_alloc_linearized(sdsa->partition, nc_dn);
 	if (!sdsa->partition->nc.dn) {
 		talloc_free(sdsa);
 		return WERR_NOMEM;
 	}
-	ret = dsdb_find_guid_by_dn(ldb, fsmo_role_dn, &sdsa->partition->nc.guid);
+	ret = dsdb_find_guid_by_dn(ldb, nc_dn, &sdsa->partition->nc.guid);
 	if (ret != LDB_SUCCESS) {
 		DEBUG(0,(__location__ ": Failed to find GUID for %s\n",
-			 ldb_dn_get_linearized(fsmo_role_dn)));
+			 ldb_dn_get_linearized(nc_dn)));
 		talloc_free(sdsa);
 		return WERR_DS_DRA_INTERNAL_ERROR;
 	}
 
 	sdsa->repsFrom1 = &sdsa->_repsFromBlob.ctr.ctr1;
-	ret = dsdb_find_guid_by_dn(ldb, role_owner_dn, &sdsa->repsFrom1->source_dsa_obj_guid);
+	ret = dsdb_find_guid_by_dn(ldb, source_dsa_dn, &sdsa->repsFrom1->source_dsa_obj_guid);
 	if (ret != LDB_SUCCESS) {
 		DEBUG(0,(__location__ ": Failed to find objectGUID for %s\n",
-			 ldb_dn_get_linearized(role_owner_dn)));
+			 ldb_dn_get_linearized(source_dsa_dn)));
 		talloc_free(sdsa);
 		return WERR_DS_DRA_INTERNAL_ERROR;
 	}
@@ -99,13 +102,33 @@ WERROR drepl_create_role_owner_source_dsa(struct dreplsrv_service *service,
 	werr = dreplsrv_out_connection_attach(service, sdsa->repsFrom1, &sdsa->conn);
 	if (!W_ERROR_IS_OK(werr)) {
 		DEBUG(0,(__location__ ": Failed to attach connection to %s\n",
-			 ldb_dn_get_linearized(fsmo_role_dn)));
+			 ldb_dn_get_linearized(nc_dn)));
 		talloc_free(sdsa);
 		return werr;
 	}
 
-	service->ncchanges_extended.role_owner_source_dsa = sdsa;
+	*_sdsa = sdsa;
 	return WERR_OK;
+}
+
+struct extended_op_data {
+	dreplsrv_fsmo_callback_t callback;
+	void *callback_data;
+	struct dreplsrv_partition_source_dsa *sdsa;
+};
+
+/*
+  called when an extended op finishes
+ */
+static void extended_op_callback(struct dreplsrv_service *service,
+				 WERROR err,
+				 enum drsuapi_DsExtendedError exop_error,
+				 void *cb_data)
+{
+	struct extended_op_data *data = talloc_get_type_abort(cb_data, struct extended_op_data);
+	talloc_free(data->sdsa);
+	data->callback(service, err, exop_error, data->callback_data);
+	talloc_free(data);
 }
 
 /*
@@ -115,20 +138,31 @@ WERROR drepl_request_extended_op(struct dreplsrv_service *service,
 				 struct ldb_dn *fsmo_role_dn,
 				 struct ldb_dn *role_owner_dn,
 				 enum drsuapi_DsExtendedOperation extended_op,
-				 uint64_t alloc_pool,
-				 dreplsrv_fsmo_callback_t callback)
+				 uint64_t fsmo_info,
+				 dreplsrv_fsmo_callback_t callback,
+				 void *callback_data)
 {
 	WERROR werr;
-	if (service->ncchanges_extended.role_owner_source_dsa == NULL) {
-		/* we need to establish a connection to the role owner */
-		werr = drepl_create_role_owner_source_dsa(service, fsmo_role_dn, role_owner_dn);
-		W_ERROR_NOT_OK_RETURN(werr);
-	}
+	struct extended_op_data *data;
+	struct dreplsrv_partition_source_dsa *sdsa;
 
-	service->ncchanges_extended.in_progress = true;
-	werr = dreplsrv_schedule_partition_pull_source(service, service->ncchanges_extended.role_owner_source_dsa,
-						       extended_op, alloc_pool,
-						       callback, NULL);
+	werr = drepl_create_role_owner_source_dsa(service, role_owner_dn, fsmo_role_dn, &sdsa);
+	W_ERROR_NOT_OK_RETURN(werr);
+
+	data = talloc(service, struct extended_op_data);
+	W_ERROR_HAVE_NO_MEMORY(data);
+
+	data->callback = callback;
+	data->callback_data = callback_data;
+	data->sdsa = sdsa;
+
+	werr = dreplsrv_schedule_partition_pull_source(service, sdsa,
+						       extended_op, fsmo_info,
+						       extended_op_callback, data);
+	if (!W_ERROR_IS_OK(werr)) {
+		talloc_free(sdsa);
+		talloc_free(data);
+	}
 	return werr;
 }
 
@@ -147,11 +181,7 @@ static void drepl_new_rid_pool_callback(struct dreplsrv_service *service,
 		DEBUG(3,(__location__ ": RID Manager completed RID allocation OK\n"));
 	}
 
-	/* don't keep the connection open to the RID Manager */
-	talloc_free(service->ncchanges_extended.role_owner_source_dsa);
-	service->ncchanges_extended.role_owner_source_dsa = NULL;
-
-	service->ncchanges_extended.in_progress = false;
+	service->rid_alloc_in_progress = false;
 }
 
 /*
@@ -167,7 +197,10 @@ static WERROR drepl_request_new_rid_pool(struct dreplsrv_service *service,
 						fsmo_role_dn,
 						DRSUAPI_EXOP_FSMO_RID_ALLOC,
 						alloc_pool,
-						drepl_new_rid_pool_callback);
+						drepl_new_rid_pool_callback, NULL);
+	if (W_ERROR_IS_OK(werr)) {
+		service->rid_alloc_in_progress = true;
+	}
 	return werr;
 }
 
@@ -271,7 +304,7 @@ WERROR dreplsrv_ridalloc_check_rid_pool(struct dreplsrv_service *service)
 	int ret;
 	uint64_t alloc_pool;
 
-	if (service->ncchanges_extended.in_progress) {
+	if (service->rid_alloc_in_progress) {
 		talloc_free(tmp_ctx);
 		return WERR_OK;
 	}

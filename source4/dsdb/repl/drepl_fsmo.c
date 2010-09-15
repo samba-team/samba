@@ -43,9 +43,7 @@ static void drepl_role_callback(struct dreplsrv_service *service,
 	} else {
 		DEBUG(0,(__location__ ": Successful role transfer\n"));
 	}
-	talloc_free(service->ncchanges_extended.role_owner_source_dsa);
-	service->ncchanges_extended.role_owner_source_dsa = NULL;
-	service->ncchanges_extended.in_progress = false;
+	service->role_transfer_in_progress = false;
 }
 
 static bool fsmo_master_cmp(struct ldb_dn *ntds_dn, struct ldb_dn *role_owner_dn)
@@ -67,13 +65,14 @@ WERROR dreplsrv_fsmo_role_check(struct dreplsrv_service *service,
 	TALLOC_CTX *tmp_ctx = talloc_new(service);
 	struct ldb_context *ldb = service->samdb;
 	int ret;
-	uint64_t alloc_pool = 0;
+	uint64_t fsmo_info = 0;
 	enum drsuapi_DsExtendedOperation extended_op = DRSUAPI_EXOP_NONE;
 	WERROR werr;
 
-	if (service->ncchanges_extended.in_progress) {
+	if (service->role_transfer_in_progress) {
 		talloc_free(tmp_ctx);
-		return WERR_OK;
+		/* should we allow these in parallel? */
+		return WERR_DS_DRA_REPL_PENDING;
 	}
 
 	ntds_dn = samdb_ntds_settings_dn(ldb);
@@ -158,7 +157,7 @@ WERROR dreplsrv_fsmo_role_check(struct dreplsrv_service *service,
 					 fsmo_role_dn,
 					 role_owner_dn,
 					 extended_op,
-					 alloc_pool,
+					 fsmo_info,
 					 drepl_role_callback);
 	if (W_ERROR_IS_OK(werr)) {
 		dreplsrv_run_pending_ops(service);
