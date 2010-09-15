@@ -23,14 +23,14 @@
 
 	<para>
 	An alternative method is to fork a <emphasis>daemon</emphasis>
-	early on at smbd startup time. this is supported only for selected
+	early on at smbd startup time. This is supported only for selected
 	pipes.
 	</para>
 
 	<para>
 	Choosing the <emphasis>external</emphasis> option allows to run a
 	completely independent (3rd party) server capable of interfacing
-	with samba via the MS-RPC intrerface over named pipes.
+	with samba via the MS-RPC interface over named pipes.
 	</para>
 
 	<para>
