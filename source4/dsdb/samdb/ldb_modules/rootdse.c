@@ -193,7 +193,7 @@ static int rootdse_add_dynamic(struct ldb_module *module, struct ldb_message *ms
 
 	if (do_attribute(attrs, "currentTime")) {
 		if (ldb_msg_add_steal_string(msg, "currentTime",
-					     ldb_timestring(msg, time(NULL))) != 0) {
+					     ldb_timestring(msg, time(NULL))) != LDB_SUCCESS) {
 			goto failed;
 		}
 	}
@@ -206,7 +206,7 @@ static int rootdse_add_dynamic(struct ldb_module *module, struct ldb_message *ms
 				goto failed;
 			}
 			if (ldb_msg_add_steal_string(msg, "supportedControl",
-						     control) != 0) {
+						     control) != LDB_SUCCESS) {
 				goto failed;
  			}
  		}
@@ -217,7 +217,7 @@ static int rootdse_add_dynamic(struct ldb_module *module, struct ldb_message *ms
 		for (i = 0; i < priv->num_partitions; i++) {
 			struct ldb_dn *dn = priv->partitions[i];
 			if (ldb_msg_add_steal_string(msg, "namingContexts",
-						     ldb_dn_alloc_linearized(msg, dn)) != 0) {
+						     ldb_dn_alloc_linearized(msg, dn)) != LDB_SUCCESS) {
 				goto failed;
  			}
  		}
@@ -233,7 +233,7 @@ static int rootdse_add_dynamic(struct ldb_module *module, struct ldb_message *ms
 				goto failed;
 			}
 			if (ldb_msg_add_steal_string(msg, "supportedSASLMechanisms",
-						     sasl_name) != 0) {
+						     sasl_name) != LDB_SUCCESS) {
 				goto failed;
 			}
 		}
@@ -244,7 +244,7 @@ static int rootdse_add_dynamic(struct ldb_module *module, struct ldb_message *ms
 		int ret = ldb_sequence_number(ldb, LDB_SEQ_HIGHEST_SEQ, &seq_num);
 		if (ret == LDB_SUCCESS) {
 			if (ldb_msg_add_fmt(msg, "highestCommittedUSN",
-					    "%llu", (unsigned long long)seq_num) != 0) {
+					    "%llu", (unsigned long long)seq_num) != LDB_SUCCESS) {
 				goto failed;
 			}
 		}
@@ -259,7 +259,7 @@ static int rootdse_add_dynamic(struct ldb_module *module, struct ldb_message *ms
 		}
 
 		if (ldb_msg_add_fmt(msg, "dsSchemaAttrCount",
-				    "%u", n) != 0) {
+				    "%u", n) != LDB_SUCCESS) {
 			goto failed;
 		}
 	}
@@ -273,14 +273,14 @@ static int rootdse_add_dynamic(struct ldb_module *module, struct ldb_message *ms
 		}
 
 		if (ldb_msg_add_fmt(msg, "dsSchemaClassCount",
-				    "%u", n) != 0) {
+				    "%u", n) != LDB_SUCCESS) {
 			goto failed;
 		}
 	}
 
 	if (schema && do_attribute_explicit(attrs, "dsSchemaPrefixCount")) {
 		if (ldb_msg_add_fmt(msg, "dsSchemaPrefixCount",
-				    "%u", schema->prefixmap->length) != 0) {
+				    "%u", schema->prefixmap->length) != LDB_SUCCESS) {
 			goto failed;
 		}
 	}
@@ -293,7 +293,7 @@ static int rootdse_add_dynamic(struct ldb_module *module, struct ldb_message *ms
 		if (schema && schema->fsmo.we_are_master) {
 			dn_str = ldb_dn_get_linearized(ldb_get_schema_basedn(ldb));
 			if (dn_str && dn_str[0]) {
-				if (ldb_msg_add_fmt(msg, "validFSMOs", "%s", dn_str) != 0) {
+				if (ldb_msg_add_fmt(msg, "validFSMOs", "%s", dn_str) != LDB_SUCCESS) {
 					goto failed;
 				}
 			}
@@ -304,7 +304,7 @@ static int rootdse_add_dynamic(struct ldb_module *module, struct ldb_message *ms
 		if (naming_fsmo && naming_fsmo->we_are_master) {
 			dn_str = ldb_dn_get_linearized(samdb_partitions_dn(ldb, msg));
 			if (dn_str && dn_str[0]) {
-				if (ldb_msg_add_fmt(msg, "validFSMOs", "%s", dn_str) != 0) {
+				if (ldb_msg_add_fmt(msg, "validFSMOs", "%s", dn_str) != LDB_SUCCESS) {
 					goto failed;
 				}
 			}
@@ -315,7 +315,7 @@ static int rootdse_add_dynamic(struct ldb_module *module, struct ldb_message *ms
 		if (pdc_fsmo && pdc_fsmo->we_are_master) {
 			dn_str = ldb_dn_get_linearized(ldb_get_default_basedn(ldb));
 			if (dn_str && dn_str[0]) {
-				if (ldb_msg_add_fmt(msg, "validFSMOs", "%s", dn_str) != 0) {
+				if (ldb_msg_add_fmt(msg, "validFSMOs", "%s", dn_str) != LDB_SUCCESS) {
 					goto failed;
 				}
 			}
@@ -324,14 +324,14 @@ static int rootdse_add_dynamic(struct ldb_module *module, struct ldb_message *ms
 
 	if (do_attribute_explicit(attrs, "vendorVersion")) {
 		if (ldb_msg_add_fmt(msg, "vendorVersion",
-				    "%s", SAMBA_VERSION_STRING) != 0) {
+				    "%s", SAMBA_VERSION_STRING) != LDB_SUCCESS) {
 			goto failed;
 		}
 	}
 
 	if (priv && do_attribute(attrs, "domainFunctionality")) {
 		if (ldb_msg_add_fmt(msg, "domainFunctionality",
-				    "%d", dsdb_functional_level(ldb)) != 0) {
+				    "%d", dsdb_functional_level(ldb)) != LDB_SUCCESS) {
 			goto failed;
 		}
 	}
@@ -339,7 +339,7 @@ static int rootdse_add_dynamic(struct ldb_module *module, struct ldb_message *ms
 	if (priv && do_attribute(attrs, "forestFunctionality")
 	    && (val = talloc_get_type(ldb_get_opaque(ldb, "forestFunctionality"), int))) {
 		if (ldb_msg_add_fmt(msg, "forestFunctionality",
-				    "%d", *val) != 0) {
+				    "%d", *val) != LDB_SUCCESS) {
 			goto failed;
 		}
 	}
@@ -347,7 +347,7 @@ static int rootdse_add_dynamic(struct ldb_module *module, struct ldb_message *ms
 	if (priv && do_attribute(attrs, "domainControllerFunctionality")
 	    && (val = talloc_get_type(ldb_get_opaque(ldb, "domainControllerFunctionality"), int))) {
 		if (ldb_msg_add_fmt(msg, "domainControllerFunctionality",
-				    "%d", *val) != 0) {
+				    "%d", *val) != LDB_SUCCESS) {
 			goto failed;
 		}
 	}
@@ -380,7 +380,7 @@ static int rootdse_add_dynamic(struct ldb_module *module, struct ldb_message *ms
 		   can return true is the gc bit is set in the NTDSDSA
 		   options */
 		if (ldb_msg_add_fmt(msg, "isGlobalCatalogReady",
-				    "%s", samdb_is_gc(ldb)?"TRUE":"FALSE") != 0) {
+				    "%s", samdb_is_gc(ldb)?"TRUE":"FALSE") != LDB_SUCCESS) {
 			goto failed;
 		}
 	}
@@ -395,7 +395,7 @@ static int rootdse_add_dynamic(struct ldb_module *module, struct ldb_message *ms
 			for (i = 0; i < session_info->security_token->num_sids; i++) {
 				if (samdb_msg_add_dom_sid(ldb, msg, msg,
 							  "tokenGroups",
-							  &session_info->security_token->sids[i]) != 0) {
+							  &session_info->security_token->sids[i]) != LDB_SUCCESS) {
 					goto failed;
 				}
 			}
