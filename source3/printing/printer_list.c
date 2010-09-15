@@ -218,27 +218,28 @@ done:
 bool printer_list_need_refresh(void)
 {
 	NTSTATUS status;
-	time_t now = time(NULL);
+	time_t now = time_mono(NULL);
 	time_t last_refresh;
+	int timediff;
 
 	status = printer_list_get_last_refresh(&last_refresh);
 	if (!NT_STATUS_IS_OK(status)) {
 		return true;
 	}
+	timediff = now - last_refresh;
 
-	if (now > last_refresh) {
-		/* if refresh occurred last than 1 seconds ago,
-		 * then we probably don't need to refresh */
-		if ((now - last_refresh) < 1) {
-			return false;
-		}
-	} else {
-		/* last_refresh newer than now, wow, someone just updated the
-		 * cache under our nose, do not do again. */
-		return false;
+	if (timediff > 1 ) {
+		/* if refresh occurred more than 1s (TODO:use lp_printcap_cache_time) ago,
+		 * then we need to refresh */
+		return true;
+	} else if (timediff < 0) {
+		/* last_refresh newer than now. Seems we have no monotonic
+		 * clock and the clock was adjusted backwards.
+		 * we need to refresh which also resets last_refresh */
+		return true;
 	}
 
-	return true;
+	return false;
 }
 
 NTSTATUS printer_list_mark_reload(void)
@@ -246,7 +247,7 @@ NTSTATUS printer_list_mark_reload(void)
 	struct db_context *db;
 	TDB_DATA data;
 	uint32_t time_h, time_l;
-	time_t now = time(NULL);
+	time_t now = time_mono(NULL);
 	NTSTATUS status;
 	int len;
 

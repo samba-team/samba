@@ -82,7 +82,7 @@ void pcap_cache_destroy_specific(struct pcap_cache **pp_cache)
 bool pcap_cache_add(const char *name, const char *comment)
 {
 	NTSTATUS status;
-	time_t t = time(NULL);
+	time_t t = time_mono(NULL);
 
 	status = printer_list_set_printer(talloc_tos(), name, comment, t);
 	return NT_STATUS_IS_OK(status);
