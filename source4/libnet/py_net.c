@@ -470,7 +470,7 @@ static PyObject *py_net_finddc(py_net_Object *self, PyObject *args)
 	const char *domain_name;
 	unsigned server_type;
 	NTSTATUS status;
-	struct finddcs io;
+	struct finddcs *io;
 	TALLOC_CTX *mem_ctx;
 	PyObject *ret;
 
@@ -480,11 +480,11 @@ static PyObject *py_net_finddc(py_net_Object *self, PyObject *args)
 
 	mem_ctx = talloc_new(self->mem_ctx);
 
-	ZERO_STRUCT(io);
-	io.in.domain_name = domain_name;
-	io.in.minimum_dc_flags = server_type;
+	io = talloc_zero(mem_ctx, struct finddcs);
+	io->in.domain_name = domain_name;
+	io->in.minimum_dc_flags = server_type;
 
-	status = finddcs_cldap(mem_ctx, &io,
+	status = finddcs_cldap(io, io,
 			       lpcfg_resolve_context(self->libnet_ctx->lp_ctx), self->ev);
 	if (NT_STATUS_IS_ERR(status)) {
 		PyErr_SetString(PyExc_RuntimeError, nt_errstr(status));
@@ -492,9 +492,10 @@ static PyObject *py_net_finddc(py_net_Object *self, PyObject *args)
 		return NULL;
 	}
 
-	ret = PyString_FromString(io.out.netlogon.data.nt5_ex.pdc_dns_name);
-
+	ret = py_return_ndr_struct("samba.dcerpc.nbt", "NETLOGON_SAM_LOGON_RESPONSE_EX",
+				   io, &io->out.netlogon.data.nt5_ex);
 	talloc_free(mem_ctx);
+
 	return ret;
 }
 
