@@ -153,7 +153,9 @@ uint32_t ds_uf2prim_group_rid(uint32_t uf)
 {
 	uint32_t prim_group_rid = DOMAIN_RID_USERS;
 
-	if (uf & UF_SERVER_TRUST_ACCOUNT)           prim_group_rid = DOMAIN_RID_DCS;
+	if ((uf & UF_PARTIAL_SECRETS_ACCOUNT)
+	 && (uf & UF_WORKSTATION_TRUST_ACCOUNT))    prim_group_rid = DOMAIN_RID_READONLY_DCS;
+	else if (uf & UF_SERVER_TRUST_ACCOUNT)      prim_group_rid = DOMAIN_RID_DCS;
 	else if (uf & UF_WORKSTATION_TRUST_ACCOUNT) prim_group_rid = DOMAIN_RID_DOMAIN_MEMBERS;
 
 	return prim_group_rid;
