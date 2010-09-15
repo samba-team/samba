@@ -1407,7 +1407,7 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 		ureq.naming_context = ncRoot;
 		ureq.dest_dsa_dns_name = talloc_asprintf(mem_ctx, "%s._msdcs.%s",
 							 GUID_string(mem_ctx, &req8->destination_dsa_guid),
-							 lpcfg_realm(dce_call->conn->dce_ctx->lp_ctx));
+							 lpcfg_dnsdomain(dce_call->conn->dce_ctx->lp_ctx));
 		if (!ureq.dest_dsa_dns_name) {
 			return WERR_NOMEM;
 		}
