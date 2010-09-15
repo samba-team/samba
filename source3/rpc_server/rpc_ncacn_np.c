@@ -815,26 +815,27 @@ NTSTATUS rpc_pipe_open_interface(TALLOC_CTX *mem_ctx,
 				 struct messaging_context *msg_ctx,
 				 struct rpc_pipe_client **cli_pipe)
 {
-	TALLOC_CTX *tmpctx;
+	struct rpc_pipe_client *cli = NULL;
 	const char *server_type;
 	const char *pipe_name;
 	NTSTATUS status;
+	TALLOC_CTX *tmp_ctx;
 
-	if (rpccli_is_connected(*cli_pipe)) {
+	if (cli_pipe && rpccli_is_connected(*cli_pipe)) {
 		return NT_STATUS_OK;
 	} else {
 		TALLOC_FREE(*cli_pipe);
 	}
 
-	tmpctx = talloc_new(mem_ctx);
-	if (!tmpctx) {
+	tmp_ctx = talloc_stackframe();
+	if (tmp_ctx == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	pipe_name = get_pipe_name_from_syntax(tmpctx, syntax);
-	if (!pipe_name) {
-		TALLOC_FREE(tmpctx);
-		return NT_STATUS_INVALID_PARAMETER;
+	pipe_name = get_pipe_name_from_syntax(tmp_ctx, syntax);
+	if (pipe_name == NULL) {
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto done;
 	}
 
 	DEBUG(10, ("Connecting to %s pipe.\n", pipe_name));
@@ -843,10 +844,10 @@ NTSTATUS rpc_pipe_open_interface(TALLOC_CTX *mem_ctx,
 					   "rpc_server", pipe_name,
 					   "embedded");
 	if (StrCaseCmp(server_type, "embedded") == 0) {
-		status = rpc_pipe_open_internal(tmpctx,
+		status = rpc_pipe_open_internal(tmp_ctx,
 						syntax, server_info,
 						client_id, msg_ctx,
-						cli_pipe);
+						&cli);
 		if (!NT_STATUS_IS_OK(status)) {
 			goto done;
 		}
@@ -855,10 +856,10 @@ NTSTATUS rpc_pipe_open_interface(TALLOC_CTX *mem_ctx,
 		 * for now we need to use the special proxy setup to connect
 		 * to spoolssd. */
 
-		status = rpc_pipe_open_external(tmpctx,
+		status = rpc_pipe_open_external(tmp_ctx,
 						pipe_name, syntax,
 						server_info,
-						cli_pipe);
+						&cli);
 		if (!NT_STATUS_IS_OK(status)) {
 			goto done;
 		}
@@ -867,8 +868,8 @@ NTSTATUS rpc_pipe_open_interface(TALLOC_CTX *mem_ctx,
 	status = NT_STATUS_OK;
 done:
 	if (NT_STATUS_IS_OK(status)) {
-		talloc_steal(mem_ctx, *cli_pipe);
+		*cli_pipe = talloc_move(mem_ctx, &cli);
 	}
-	TALLOC_FREE(tmpctx);
+	TALLOC_FREE(tmp_ctx);
 	return status;
 }
