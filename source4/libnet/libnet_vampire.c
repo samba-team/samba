@@ -106,6 +106,9 @@ void *libnet_vampire_replicate_init(TALLOC_CTX *mem_ctx,
 	s->lp_ctx           = lp_ctx;
 	s->provision_schema = dsdb_get_schema(s->ldb, s);
 	s->schema           = s->provision_schema;
+	s->netbios_name     = lpcfg_netbios_name(lp_ctx);
+	s->domain_name      = lpcfg_workgroup(lp_ctx);
+	s->realm            = lpcfg_realm(lp_ctx);
 
 	return s;
 }

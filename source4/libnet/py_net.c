@@ -376,6 +376,8 @@ static PyObject *py_net_replicate_init(py_net_Object *self, PyObject *args, PyOb
 		return NULL;
 	}
 
+	s->forest.dns_name = lpcfg_dnsdomain(lp);
+
 	s->chunk.gensec_skey = &s->gensec_skey;
 	s->chunk.partition = &s->partition;
 	s->chunk.forest = &s->forest;
