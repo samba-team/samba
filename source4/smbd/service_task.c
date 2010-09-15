@@ -40,9 +40,10 @@ void task_server_terminate(struct task_server *task, const char *reason, bool fa
 
 		irpc_handle = irpc_binding_handle_by_name(task, task->msg_ctx,
 							  "samba", &ndr_table_irpc);
-
-		r.in.reason = reason;
-		dcerpc_samba_terminate_r(irpc_handle, task, &r);
+		if (irpc_handle != NULL) {
+			r.in.reason = reason;
+			dcerpc_samba_terminate_r(irpc_handle, task, &r);
+		}
 	}
 
 	model_ops->terminate(event_ctx, task->lp_ctx, reason);
