@@ -1139,9 +1139,12 @@ static struct tevent_req *irpc_bh_raw_call_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	ok = tevent_req_set_endtime(req, ev, timeval_current_ofs(hs->timeout, 0));
-	if (!ok) {
-		return tevent_req_post(req, ev);
+	if (hs->timeout != IRPC_CALL_TIMEOUT_INF) {
+		/* set timeout-callback in case caller wants that */
+		ok = tevent_req_set_endtime(req, ev, timeval_current_ofs(hs->timeout, 0));
+		if (!ok) {
+			return tevent_req_post(req, ev);
+		}
 	}
 
 	return req;
