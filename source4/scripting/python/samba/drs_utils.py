@@ -23,7 +23,7 @@ from samba.dcerpc import drsuapi, misc
 from samba.net import Net
 import samba, ldb
 
-class drs_Replicate():
+class drs_Replicate:
     '''DRS replication calls'''
 
     def __init__(self, binding_string, lp, creds, samdb):
