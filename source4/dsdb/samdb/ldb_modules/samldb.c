@@ -1231,24 +1231,19 @@ static int samldb_modify(struct ldb_module *module, struct ldb_request *req)
 			}
 			el2 = ldb_msg_find_element(msg, "isCriticalSystemObject");
 			el2->flags = LDB_FLAG_MOD_REPLACE;
+		}
 
-			/* DCs have primaryGroupID of DOMAIN_RID_DCS */
-			if (!ldb_msg_find_element(msg, "primaryGroupID")) {
-				uint32_t rid;
-				if (user_account_control & UF_SERVER_TRUST_ACCOUNT) {
-					rid = DOMAIN_RID_DCS;
-				} else {
-					/* read-only DC */
-					rid = DOMAIN_RID_READONLY_DCS;
-				}
-				ret = samdb_msg_add_uint(ldb, msg, msg,
-							 "primaryGroupID", rid);
-				if (ret != LDB_SUCCESS) {
-					return ret;
-				}
-				el2 = ldb_msg_find_element(msg, "primaryGroupID");
-				el2->flags = LDB_FLAG_MOD_REPLACE;
+		if (!ldb_msg_find_element(msg, "primaryGroupID")) {
+			uint32_t rid = ds_uf2prim_group_rid(user_account_control);
+
+			ret = samdb_msg_add_uint(ldb, msg, msg,
+						 "primaryGroupID", rid);
+			if (ret != LDB_SUCCESS) {
+				return ret;
 			}
+			el2 = ldb_msg_find_element(msg,
+						   "primaryGroupID");
+			el2->flags = LDB_FLAG_MOD_REPLACE;
 		}
 	}
 	if (el && (LDB_FLAG_MOD_TYPE(el->flags) == LDB_FLAG_MOD_DELETE)) {
