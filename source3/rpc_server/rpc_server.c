@@ -462,7 +462,7 @@ static void named_pipe_packet_process(struct tevent_req *subreq)
 	struct named_pipe_client *npc =
 		tevent_req_callback_data(subreq, struct named_pipe_client);
 	struct _output_data *out = &npc->p->out_data;
-	DATA_BLOB recv_buffer;
+	DATA_BLOB recv_buffer = data_blob_null;
 	NTSTATUS status;
 	ssize_t data_left;
 	ssize_t data_used;
@@ -546,7 +546,7 @@ static void named_pipe_packet_process(struct tevent_req *subreq)
 		DEBUG(10, ("PDU number: %d, PDU Length: %u\n",
 			   (unsigned int)npc->count,
 			   (unsigned int)npc->iov[npc->count].iov_len));
-		dump_data(11, npc->iov[npc->count].iov_base,
+		dump_data(11, (const uint8_t *)npc->iov[npc->count].iov_base,
 				npc->iov[npc->count].iov_len);
 		npc->count++;
 	}
