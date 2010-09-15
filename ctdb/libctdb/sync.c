@@ -138,6 +138,25 @@ bool ctdb_getnodemap(struct ctdb_connection *ctdb,
 	return ret;
 }
 
+bool ctdb_getpublicips(struct ctdb_connection *ctdb,
+		       uint32_t destnode, struct ctdb_all_public_ips **ips)
+{
+	struct ctdb_request *req;
+	bool done = false;
+	bool ret = false;
+
+	*ips = NULL;
+
+	req = synchronous(ctdb,
+			  ctdb_getpublicips_send(ctdb, destnode, set, &done),
+			  &done);
+	if (req != NULL) {
+		ret = ctdb_getpublicips_recv(ctdb, req, ips);
+		ctdb_request_free(ctdb, req);
+	}
+	return ret;
+}
+
 bool ctdb_set_message_handler(struct ctdb_connection *ctdb, uint64_t srvid,
 			      ctdb_message_fn_t handler, void *cbdata)
 {

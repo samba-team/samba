@@ -444,6 +444,43 @@ bool ctdb_getnodemap_recv(struct ctdb_connection *ctdb,
 		      struct ctdb_request *req, struct ctdb_node_map **nodemap);
 
 /**
+ * ctdb_getpublicips_send - read the public ip list from a node.
+ * @ctdb: the ctdb_connection from ctdb_connect.
+ * @destnode: the destination node (see below)
+ * @callback: the callback when ctdb replies to our message (typesafe)
+ * @cbdata: the argument to callback()
+ *
+ * This control returns the list of public ips known to the local node.
+ * Deamons only know about those ips that are listed in the local
+ * public addresses file, which means the returned list of ips may
+ * be only a subset of all ips across the entire cluster.
+ *
+ * There are several special values for destnode, detailed in
+ * ctdb_protocol.h, particularly CTDB_CURRENT_NODE which means the
+ * local ctdbd.
+ */
+struct ctdb_request *
+ctdb_getpublicips_send(struct ctdb_connection *ctdb,
+		 uint32_t destnode,
+		 ctdb_callback_t callback,
+		 void *cbdata);
+/**
+ * ctdb_getpublicips_recv - read the public ip list from a node
+ * @ctdb: the ctdb_connection from ctdb_connect.
+ * @req: the completed request.
+ * @ips: a pointer to the returned public ip list
+ *
+ * This returns false if something went wrong.
+ * If the command failed, it guarantees to set ips to NULL.
+ * A non-NULL value for nodemap means the command was successful.
+ *
+ * A non-NULL value of the nodemap must be release released/freed
+ * by ctdb_free_publicips().
+ */
+bool ctdb_getpublicips_recv(struct ctdb_connection *ctdb,
+		      struct ctdb_request *req, struct ctdb_all_public_ips **ips);
+
+/**
  * ctdb_getrecmaster_send - read the recovery master of a node
  * @ctdb: the ctdb_connection from ctdb_connect.
  * @destnode: the destination node (see below)
@@ -612,6 +649,37 @@ bool ctdb_getnodemap(struct ctdb_connection *ctdb,
 void ctdb_free_nodemap(struct ctdb_node_map *nodemap);
 
 
+/**
+ * ctdb_getpublicips - read the public ip list from a node.
+ * @ctdb: the ctdb_connection from ctdb_connect.
+ * @destnode: the destination node (see below)
+ * @ips: a pointer to the returned public ip list
+ *
+ * This control returns the list of public ips known to the local node.
+ * Deamons only know about those ips that are listed in the local
+ * public addresses file, which means the returned list of ips may
+ * be only a subset of all ips across the entire cluster.
+ *
+ * There are several special values for destnode, detailed in
+ * ctdb_protocol.h, particularly CTDB_CURRENT_NODE which means the
+ * local ctdbd.
+ *
+ * This returns false if something went wrong.
+ * If the command failed, it guarantees to set ips to NULL.
+ * A non-NULL value for nodemap means the command was successful.
+ *
+ * A non-NULL value of the nodemap must be release released/freed
+ * by ctdb_free_publicips().
+ */
+bool ctdb_getpublicips(struct ctdb_connection *ctdb,
+		     uint32_t destnode, struct ctdb_all_public_ips **ips);
+
+/*
+ * This function is used to release/free the public ip structure returned
+ * by ctdb_getpublicips() and ctdb_getpublicips_recv()
+ */
+void ctdb_free_publicips(struct ctdb_all_public_ips *ips);
+
 
 /* These ugly macro wrappers make the callbacks typesafe. */
 #include <ctdb_typesafe_cb.h>
@@ -667,6 +735,10 @@ void ctdb_free_nodemap(struct ctdb_node_map *nodemap);
 
 #define ctdb_getnodemap_send(ctdb, destnode, cb, cbdata)		\
 	ctdb_getnodemap_send((ctdb), (destnode),			\
+			 ctdb_sendcb((cb), (cbdata)), (cbdata))
+
+#define ctdb_getpublicips_send(ctdb, destnode, cb, cbdata)		\
+	ctdb_getpublicips_send((ctdb), (destnode),			\
 			 ctdb_sendcb((cb), (cbdata)), (cbdata))
 
 #endif

@@ -991,10 +991,6 @@ struct ctdb_public_ipv4 {
 	struct sockaddr_in sin;
 };
 
-struct ctdb_public_ip {
-	uint32_t pnn;
-	ctdb_sock_addr addr;
-};
 int ctdb_ctrl_takeover_ip(struct ctdb_context *ctdb, struct timeval timeout, 
 			  uint32_t destnode, struct ctdb_public_ip *ip);
 int ctdb_ctrl_release_ip(struct ctdb_context *ctdb, struct timeval timeout, 
@@ -1005,10 +1001,6 @@ struct ctdb_all_public_ipsv4 {
 	struct ctdb_public_ipv4 ips[1];
 };
 
-struct ctdb_all_public_ips {
-	uint32_t num;
-	struct ctdb_public_ip ips[1];
-};
 int32_t ctdb_control_get_public_ipsv4(struct ctdb_context *ctdb, struct ctdb_req_control *c, TDB_DATA *outdata);
 int32_t ctdb_control_get_public_ips(struct ctdb_context *ctdb, struct ctdb_req_control *c, TDB_DATA *outdata);
 int ctdb_ctrl_get_public_ips(struct ctdb_context *ctdb, 

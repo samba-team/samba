@@ -119,7 +119,7 @@ ctdb_set_message_handler_send(struct ctdb_connection *ctdb, uint64_t srvid,
 	info->handler_data = handler_data;
 
 	DEBUG(ctdb, LOG_DEBUG,
-	      "ctdb_set_message_handler_send: sending request %u for id %llu",
+	      "ctdb_set_message_handler_send: sending request %u for id %llx",
 	      req->hdr.hdr->reqid, srvid);
 	return req;
 }

@@ -155,6 +155,12 @@ struct ctdb_call_info {
  */
 #define CTDB_SRVID_ISCSID_RANGE  0xFE02000000000000LL
 
+/* A range of ports reserved for testing (top 32 bits)
+ * All ports matching the 32 top bits are reserved for exclusive use by
+ * test applications
+ */
+#define CTDB_SRVID_TEST_RANGE  0xFE03000000000000LL
+
 /* used on the domain socket, send a pdu to the local daemon */
 #define CTDB_CURRENT_NODE     0xF0000001
 /* send a broadcast to all nodes in the cluster, active or not */
@@ -517,5 +523,15 @@ struct ctdb_node_map {
 #define NODE_FLAGS_DISABLED		(NODE_FLAGS_UNHEALTHY|NODE_FLAGS_PERMANENTLY_DISABLED)
 #define NODE_FLAGS_INACTIVE		(NODE_FLAGS_DELETED|NODE_FLAGS_DISCONNECTED|NODE_FLAGS_BANNED|NODE_FLAGS_STOPPED)
 
+
+struct ctdb_public_ip {
+	uint32_t pnn;
+	ctdb_sock_addr addr;
+};
+
+struct ctdb_all_public_ips {
+	uint32_t num;
+	struct ctdb_public_ip ips[1];
+};
 
 #endif

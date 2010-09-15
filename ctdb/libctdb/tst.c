@@ -41,25 +41,33 @@
 TDB_DATA key;
 
 
+char *ctdb_addr_to_str(ctdb_sock_addr *addr)
+{
+	static char cip[128] = "";
+
+	switch (addr->sa.sa_family) {
+	case AF_INET:
+		inet_ntop(addr->ip.sin_family, &addr->ip.sin_addr, cip, sizeof(cip));
+		break;
+	case AF_INET6:
+		inet_ntop(addr->ip6.sin6_family, &addr->ip6.sin6_addr, cip, sizeof(cip));
+		break;
+	default:
+		printf("ERROR, unknown family %u\n", addr->sa.sa_family);
+	}
+
+	return cip;
+}
+
 void print_nodemap(struct ctdb_node_map *nodemap)
 {
 	int i;
-	char cip[128];
 
 	printf("number of nodes:%d\n", nodemap->num);
 	for (i=0;i<nodemap->num;i++) {
-		switch(nodemap->nodes[i].addr.sa.sa_family) {
-		case AF_INET:
-			inet_ntop(nodemap->nodes[i].addr.ip.sin_family, &nodemap->nodes[i].addr.ip.sin_addr, cip, sizeof(cip));
-		break;
-		case AF_INET6:
-			inet_ntop(nodemap->nodes[i].addr.ip6.sin6_family, &nodemap->nodes[i].addr.ip6.sin6_addr, cip, sizeof(cip));
-			break;
-		}
-
 		printf("Node:%d Address:%s Flags:%s%s%s%s%s%s\n",
 			nodemap->nodes[i].pnn,
-			cip,
+			ctdb_addr_to_str(&nodemap->nodes[i].addr),
 			nodemap->nodes[i].flags&NODE_FLAGS_DISCONNECTED?"DISCONNECTED ":"",
 			nodemap->nodes[i].flags&NODE_FLAGS_UNHEALTHY?"UNHEALTHY ":"",
 			nodemap->nodes[i].flags&NODE_FLAGS_PERMANENTLY_DISABLED?"ADMIN DISABLED ":"",
@@ -71,7 +79,17 @@ void print_nodemap(struct ctdb_node_map *nodemap)
 
 void msg_h(struct ctdb_connection *ctdb, uint64_t srvid, TDB_DATA data, void *private_data)
 {
-	printf("Message received on port %d : %s\n", (int)srvid, data.dptr);
+	printf("Message received on port %llx : %s\n", srvid, data.dptr);
+}
+
+void rip_h(struct ctdb_connection *ctdb, uint64_t srvid, TDB_DATA data, void *private_data)
+{
+	printf("RELEASE IP message for %s\n", data.dptr);
+}
+
+void tip_h(struct ctdb_connection *ctdb, uint64_t srvid, TDB_DATA data, void *private_data)
+{
+	printf("TAKE IP message for %s\n", data.dptr);
 }
 
 static void gnm_cb(struct ctdb_connection *ctdb,
@@ -89,6 +107,35 @@ static void gnm_cb(struct ctdb_connection *ctdb,
 	printf("ASYNC response to getnodemap:\n");
 	print_nodemap(nodemap);
 	ctdb_free_nodemap(nodemap);
+}
+
+void print_ips(struct ctdb_all_public_ips *ips)
+{
+	int i;
+	
+	printf("Num public ips:%d\n", ips->num);
+	for (i=0; i<ips->num;i++) {
+		printf("%s    hosted on node %d\n",
+			ctdb_addr_to_str(&ips->ips[i].addr),
+			ips->ips[i].pnn);
+	}
+}
+
+static void ips_cb(struct ctdb_connection *ctdb,
+		   struct ctdb_request *req, void *private)
+{
+	bool status;
+	struct ctdb_all_public_ips *ips;
+
+	status = ctdb_getpublicips_recv(ctdb, req, &ips);
+	ctdb_request_free(ctdb, req);
+	if (!status) {
+		printf("Error reading PUBLIC IPS\n");
+		return;
+	}
+	printf("ASYNC response to getpublicips:\n");
+	print_ips(ips);
+	ctdb_free_publicips(ips);
 }
 
 static void pnn_cb(struct ctdb_connection *ctdb,
@@ -186,6 +233,7 @@ int main(int argc, char *argv[])
 	uint32_t recmaster;
 	TDB_DATA msg;
 	bool rrl_cb_called = false;
+	uint64_t srvid;
 
 	ctdb_log_level = LOG_DEBUG;
 	ctdb_connection = ctdb_connect("/tmp/ctdb.socket",
@@ -195,23 +243,43 @@ int main(int argc, char *argv[])
 
 	pfd.fd = ctdb_get_fd(ctdb_connection);
 
-	handle = ctdb_set_message_handler_send(ctdb_connection, 55,
+	srvid = CTDB_SRVID_TEST_RANGE|55;
+	handle = ctdb_set_message_handler_send(ctdb_connection, srvid,
 					       msg_h, NULL,
-					       message_handler_cb, NULL);
+					       message_handler_cb, &srvid);
 	if (handle == NULL) {
 		printf("Failed to register message port\n");
 		exit(10);
 	}
 
-	/* Hack for testing: this makes sure registration goes out. */
+	/* Hack for testing: this makes sure registrations went out. */
 	while (!registered) {
 		ctdb_service(ctdb_connection, POLLIN|POLLOUT);
+	}
+
+	handle = ctdb_set_message_handler_send(ctdb_connection,
+					       CTDB_SRVID_RELEASE_IP,
+					       rip_h, NULL,
+					       message_handler_cb, NULL);
+	if (handle == NULL) {
+		printf("Failed to register message port for RELEASE IP\n");
+		exit(10);
+	}
+
+	handle = ctdb_set_message_handler_send(ctdb_connection,
+					       CTDB_SRVID_TAKE_IP,
+					       tip_h, NULL,
+					       message_handler_cb, NULL);
+	if (handle == NULL) {
+		printf("Failed to register message port for TAKE IP\n");
+		exit(10);
 	}
 
 	msg.dptr="HelloWorld";
 	msg.dsize = strlen(msg.dptr);
 
-	if (!ctdb_send_message(ctdb_connection, 0, 55, msg)) {
+	srvid = CTDB_SRVID_TEST_RANGE|55;
+	if (!ctdb_send_message(ctdb_connection, 0, srvid, msg)) {
 		printf("Failed to send message. Aborting\n");
 		exit(10);
 	}
@@ -273,6 +341,16 @@ int main(int argc, char *argv[])
 				  gnm_cb, NULL);
 	if (handle == NULL) {
 		printf("Failed to send get_nodemap control\n");
+		exit(10);
+	}
+
+	/*
+	 * Read the list of public ips from a node (async)
+	 */
+	handle = ctdb_getpublicips_send(ctdb_connection, CTDB_CURRENT_NODE,
+				  ips_cb, NULL);
+	if (handle == NULL) {
+		printf("Failed to send getpublicips control\n");
 		exit(10);
 	}
 

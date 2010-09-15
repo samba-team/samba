@@ -25,6 +25,7 @@
 #undef ctdb_getrecmaster_send
 #undef ctdb_getpnn_send
 #undef ctdb_getnodemap_send
+#undef ctdb_getpublicips_send
 
 bool ctdb_getrecmaster_recv(struct ctdb_connection *ctdb,
 			   struct ctdb_request *req, uint32_t *recmaster)
@@ -123,4 +124,51 @@ void ctdb_free_nodemap(struct ctdb_node_map *nodemap)
 		return;
 	}
 	free(nodemap);
+}
+
+bool ctdb_getpublicips_recv(struct ctdb_connection *ctdb,
+			    struct ctdb_request *req,
+			    struct ctdb_all_public_ips **ips)
+{
+	struct ctdb_reply_control *reply;
+
+	*ips = NULL;
+	reply = unpack_reply_control(ctdb, req, CTDB_CONTROL_GET_PUBLIC_IPS);
+	if (!reply) {
+		return false;
+	}
+	if (reply->status == -1) {
+		DEBUG(ctdb, LOG_ERR, "ctdb_getpublicips_recv: status -1");
+		return false;
+	}
+	if (reply->datalen == 0) {
+		DEBUG(ctdb, LOG_ERR, "ctdb_getpublicips_recv: returned data is 0 bytes");
+		return false;
+	}
+
+	*ips = malloc(reply->datalen);
+	if (*ips == NULL) {
+		DEBUG(ctdb, LOG_ERR, "ctdb_getpublicips_recv: failed to malloc buffer");
+		return false;
+	}
+	memcpy(*ips, reply->data, reply->datalen);
+
+	return true;
+}
+struct ctdb_request *ctdb_getpublicips_send(struct ctdb_connection *ctdb,
+					    uint32_t destnode,
+					    ctdb_callback_t callback,
+					    void *private_data)
+{
+	return new_ctdb_control_request(ctdb, CTDB_CONTROL_GET_PUBLIC_IPS,
+					destnode,
+					NULL, 0, callback, private_data);
+}
+
+void ctdb_free_publicips(struct ctdb_all_public_ips *ips)
+{
+	if (ips == NULL) {
+		return;
+	}
+	free(ips);
 }
