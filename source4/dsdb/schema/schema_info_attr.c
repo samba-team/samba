@@ -164,6 +164,47 @@ WERROR dsdb_blob_from_schema_info(const struct dsdb_schema_info *schema_info,
 	return WERR_OK;
 }
 
+/**
+ * Compares schemaInfo signatures in dsdb_schema and prefixMap.
+ * NOTE: At present function compares schemaInfo values
+ * as string without taking into account schemVersion field
+ *
+ * @return WERR_OK if schemaInfos are equal
+ * 	   WERR_DS_DRA_SCHEMA_MISMATCH if schemaInfos are different
+ */
+WERROR dsdb_schema_info_cmp(const struct dsdb_schema *schema,
+			    const struct drsuapi_DsReplicaOIDMapping_Ctr *ctr)
+{
+	bool bres;
+	DATA_BLOB blob;
+	char *schema_info_str;
+	struct drsuapi_DsReplicaOIDMapping *mapping;
+
+	/* we should have at least schemaInfo element */
+	if (ctr->num_mappings < 1) {
+		return WERR_INVALID_PARAMETER;
+	}
+
+	/* verify schemaInfo element is valid */
+	mapping = &ctr->mappings[ctr->num_mappings - 1];
+	if (mapping->id_prefix != 0) {
+		return WERR_INVALID_PARAMETER;
+	}
+
+	blob = data_blob_const(mapping->oid.binary_oid, mapping->oid.length);
+	if (!dsdb_schema_info_blob_is_valid(&blob)) {
+		return WERR_INVALID_PARAMETER;
+	}
+
+	schema_info_str = hex_encode_talloc(NULL, blob.data, blob.length);
+	W_ERROR_HAVE_NO_MEMORY(schema_info_str);
+
+	bres = strequal(schema->schema_info, schema_info_str);
+	talloc_free(schema_info_str);
+
+	return bres ? WERR_OK : WERR_DS_DRA_SCHEMA_MISMATCH;
+}
+
 
 /**
  * Reads schema_info structure from schemaInfo
