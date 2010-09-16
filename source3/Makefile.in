@@ -3382,6 +3382,9 @@ test:: all torture timelimit
 test-%:
 	$(MAKE) test TESTS=$*
 
+buildfarm-test:
+	$(MAKE) test RUN_FROM_BUILD_FARM=yes
+
 SELFTEST_TESTENV = dc
 
 testenv:
