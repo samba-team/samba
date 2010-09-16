@@ -476,13 +476,12 @@ static bool scannedonly_allow_access(vfs_handle_struct * handle,
 		flush_sendbuffer(handle);
 		while (retval != 0	/*&& errno == ENOENT */
 		       && i < recheck_tries) {
-			struct timespec req = { 0, recheck_time * 10000 };
 			DEBUG(SCANNEDONLY_DEBUG,
 			      ("scannedonly_allow_access, wait (try=%d "
 			       "(max %d), %d ms) for %s\n",
 			       i, recheck_tries,
 			       recheck_time, cache_smb_fname->base_name));
-			nanosleep(&req, NULL);
+			smb_msleep(recheck_time);
 			retval = SMB_VFS_NEXT_STAT(handle, cache_smb_fname);
 			i++;
 		}
