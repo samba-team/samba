@@ -32,8 +32,8 @@ struct ndr_pull_test_data {
 };
 
 static bool wrap_ndr_pull_test(struct torture_context *tctx,
-							   struct torture_tcase *tcase,
-							   struct torture_test *test)
+			       struct torture_tcase *tcase,
+			       struct torture_test *test)
 {
 	bool (*check_fn) (struct torture_context *ctx, void *data) = test->fn;
 	const struct ndr_pull_test_data *data = (const struct ndr_pull_test_data *)test->data;
@@ -144,8 +144,8 @@ static bool test_guid_from_string_null(struct torture_context *tctx)
 {
 	struct GUID guid;
 	torture_assert_ntstatus_equal(tctx, NT_STATUS_INVALID_PARAMETER,
-								  GUID_from_string(NULL, &guid),
-								  "NULL failed");
+				      GUID_from_string(NULL, &guid),
+				      "NULL failed");
 	return true;
 }
 
@@ -153,8 +153,8 @@ static bool test_guid_from_string_invalid(struct torture_context *tctx)
 {
 	struct GUID g1;
 	torture_assert_ntstatus_equal(tctx, NT_STATUS_INVALID_PARAMETER,
-								  GUID_from_string("bla", &g1),
-								  "parameter not invalid");
+				      GUID_from_string("bla", &g1),
+				      "parameter not invalid");
 	return true;
 }
 
@@ -162,8 +162,8 @@ static bool test_guid_from_string(struct torture_context *tctx)
 {
 	struct GUID g1, exp;
 	torture_assert_ntstatus_ok(tctx,
-							   GUID_from_string("00000001-0002-0003-0405-060708090a0b", &g1),
-							   "invalid return code");
+				   GUID_from_string("00000001-0002-0003-0405-060708090a0b", &g1),
+				   "invalid return code");
 	exp.time_low = 1;
 	exp.time_mid = 2;
 	exp.time_hi_and_version = 3;
@@ -177,8 +177,8 @@ static bool test_guid_from_string(struct torture_context *tctx)
 	exp.node[5] = 11;
 	torture_assert(tctx, GUID_equal(&g1, &exp), "UUID parsed incorrectly");
 	torture_assert_ntstatus_ok(tctx,
-							   GUID_from_string("{00000001-0002-0003-0405-060708090a0b}", &g1),
-							   "invalid return code");
+				   GUID_from_string("{00000001-0002-0003-0405-060708090a0b}", &g1),
+				   "invalid return code");
 	torture_assert(tctx, GUID_equal(&g1, &exp), "UUID parsed incorrectly");
 
 	return true;
@@ -198,8 +198,9 @@ static bool test_guid_string_valid(struct torture_context *tctx)
 	g.node[3] = 9;
 	g.node[4] = 10;
 	g.node[5] = 11;
-	torture_assert_str_equal(tctx, "00000001-0002-0003-0405-060708090a0b", GUID_string(tctx, &g),
-							 "parsing guid failed");
+	torture_assert_str_equal(tctx, "00000001-0002-0003-0405-060708090a0b",
+				 GUID_string(tctx, &g),
+				 "parsing guid failed");
 	return true;
 }
 
@@ -217,8 +218,9 @@ static bool test_guid_string2_valid(struct torture_context *tctx)
 	g.node[3] = 9;
 	g.node[4] = 10;
 	g.node[5] = 11;
-	torture_assert_str_equal(tctx, "{00000001-0002-0003-0405-060708090a0b}", GUID_string2(tctx, &g),
-							 "parsing guid failed");
+	torture_assert_str_equal(tctx, "{00000001-0002-0003-0405-060708090a0b}",
+				 GUID_string2(tctx, &g),
+				 "parsing guid failed");
 	return true;
 }
 
@@ -227,28 +229,28 @@ static bool test_compare_uuid(struct torture_context *tctx)
 	struct GUID g1, g2;
 	ZERO_STRUCT(g1); ZERO_STRUCT(g2);
 	torture_assert_int_equal(tctx, 0, GUID_compare(&g1, &g2),
-							 "GUIDs not equal");
+				 "GUIDs not equal");
 	g1.time_low = 1;
 	torture_assert_int_equal(tctx, 1, GUID_compare(&g1, &g2),
-							 "GUID diff invalid");
+				 "GUID diff invalid");
 
 	g1.time_low = 10;
 	torture_assert_int_equal(tctx, 1, GUID_compare(&g1, &g2),
-							 "GUID diff invalid");
+				 "GUID diff invalid");
 
 	g1.time_low = 0;
 	g1.clock_seq[1] = 20;
 	torture_assert_int_equal(tctx, 1, GUID_compare(&g1, &g2),
-							 "GUID diff invalid");
+				 "GUID diff invalid");
 
 	g1.time_low = ~0;
 	torture_assert_int_equal(tctx, 1, GUID_compare(&g1, &g2),
-							 "GUID diff invalid");
+				 "GUID diff invalid");
 
 	g1.time_low = 0;
 	g2.time_low = ~0;
 	torture_assert_int_equal(tctx, -1, GUID_compare(&g1, &g2),
-							 "GUID diff invalid");
+				 "GUID diff invalid");
 	return true;
 }
 
@@ -270,28 +272,28 @@ struct torture_suite *torture_local_ndr(TALLOC_CTX *mem_ctx)
 	torture_suite_add_suite(suite, ndr_nbt_suite(suite));
 
 	torture_suite_add_simple_test(suite, "string terminator",
-								   test_check_string_terminator);
+				      test_check_string_terminator);
 
 	torture_suite_add_simple_test(suite, "guid_from_string_null",
-								   test_guid_from_string_null);
+				      test_guid_from_string_null);
 
 	torture_suite_add_simple_test(suite, "guid_from_string",
-								   test_guid_from_string);
+				      test_guid_from_string);
 
 	torture_suite_add_simple_test(suite, "guid_from_string_invalid",
-								   test_guid_from_string_invalid);
+				      test_guid_from_string_invalid);
 
 	torture_suite_add_simple_test(suite, "guid_string_valid",
-								   test_guid_string_valid);
+				      test_guid_string_valid);
 
 	torture_suite_add_simple_test(suite, "guid_string2_valid",
-								   test_guid_string2_valid);
+				      test_guid_string2_valid);
 
 	torture_suite_add_simple_test(suite, "guid_from_string_valid",
-								   test_guid_from_string_valid);
+				      test_guid_from_string_valid);
 
 	torture_suite_add_simple_test(suite, "compare_uuid",
-								   test_compare_uuid);
+				      test_compare_uuid);
 
 	return suite;
 }
