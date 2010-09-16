@@ -1,19 +1,19 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    test suite for winreg ndr operations
 
    Copyright (C) Jelmer Vernooij 2007
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -45,28 +45,28 @@ static bool wrap_ndr_pull_test(struct torture_context *tctx,
 	torture_assert_ndr_success(tctx, data->pull_fn(ndr, data->ndr_flags, ds),
 				   "pulling");
 
-	torture_assert(tctx, ndr->offset == ndr->data_size, 
-				   talloc_asprintf(tctx, 
+	torture_assert(tctx, ndr->offset == ndr->data_size,
+				   talloc_asprintf(tctx,
 					   "%d unread bytes", ndr->data_size - ndr->offset));
 
-	if (check_fn != NULL) 
+	if (check_fn != NULL)
 		return check_fn(tctx, ds);
 	else
 		return true;
 }
 
 _PUBLIC_ struct torture_test *_torture_suite_add_ndr_pull_test(
-					struct torture_suite *suite, 
+					struct torture_suite *suite,
 					const char *name, ndr_pull_flags_fn_t pull_fn,
-					DATA_BLOB db, 
+					DATA_BLOB db,
 					size_t struct_size,
 					int ndr_flags,
 					bool (*check_fn) (struct torture_context *ctx, void *data))
 {
-	struct torture_test *test; 
+	struct torture_test *test;
 	struct torture_tcase *tcase;
 	struct ndr_pull_test_data *data;
-	
+
 	tcase = torture_suite_add_tcase(suite, name);
 
 	test = talloc(tcase, struct torture_test);
@@ -96,7 +96,7 @@ static bool test_check_string_terminator(struct torture_context *tctx)
 
 	/* Simple test */
 	blob = strhex_to_data_blob(tctx, "0000");
-	
+
 	ndr = ndr_pull_init_blob(&blob, mem_ctx);
 
 	torture_assert_ndr_success(tctx, ndr_check_string_terminator(ndr, 1, 2),
@@ -109,7 +109,7 @@ static bool test_check_string_terminator(struct torture_context *tctx)
 		torture_fail(tctx, "check_string_terminator checked beyond string boundaries");
 	}
 
-	torture_assert(tctx, ndr->offset == 0, 
+	torture_assert(tctx, ndr->offset == 0,
 		"check_string_terminator did not reset offset");
 
 	talloc_free(ndr);
@@ -143,8 +143,8 @@ static bool test_guid_from_string_valid(struct torture_context *tctx)
 static bool test_guid_from_string_null(struct torture_context *tctx)
 {
 	struct GUID guid;
-	torture_assert_ntstatus_equal(tctx, NT_STATUS_INVALID_PARAMETER, 
-								  GUID_from_string(NULL, &guid), 
+	torture_assert_ntstatus_equal(tctx, NT_STATUS_INVALID_PARAMETER,
+								  GUID_from_string(NULL, &guid),
 								  "NULL failed");
 	return true;
 }
@@ -152,11 +152,11 @@ static bool test_guid_from_string_null(struct torture_context *tctx)
 static bool test_guid_from_string_invalid(struct torture_context *tctx)
 {
 	struct GUID g1;
-	torture_assert_ntstatus_equal(tctx, NT_STATUS_INVALID_PARAMETER, 
+	torture_assert_ntstatus_equal(tctx, NT_STATUS_INVALID_PARAMETER,
 								  GUID_from_string("bla", &g1),
 								  "parameter not invalid");
 	return true;
-}	
+}
 
 static bool test_guid_from_string(struct torture_context *tctx)
 {
@@ -198,7 +198,7 @@ static bool test_guid_string_valid(struct torture_context *tctx)
 	g.node[3] = 9;
 	g.node[4] = 10;
 	g.node[5] = 11;
-	torture_assert_str_equal(tctx, "00000001-0002-0003-0405-060708090a0b", GUID_string(tctx, &g), 
+	torture_assert_str_equal(tctx, "00000001-0002-0003-0405-060708090a0b", GUID_string(tctx, &g),
 							 "parsing guid failed");
 	return true;
 }
@@ -217,7 +217,7 @@ static bool test_guid_string2_valid(struct torture_context *tctx)
 	g.node[3] = 9;
 	g.node[4] = 10;
 	g.node[5] = 11;
-	torture_assert_str_equal(tctx, "{00000001-0002-0003-0405-060708090a0b}", GUID_string2(tctx, &g), 
+	torture_assert_str_equal(tctx, "{00000001-0002-0003-0405-060708090a0b}", GUID_string2(tctx, &g),
 							 "parsing guid failed");
 	return true;
 }
@@ -226,10 +226,10 @@ static bool test_compare_uuid(struct torture_context *tctx)
 {
 	struct GUID g1, g2;
 	ZERO_STRUCT(g1); ZERO_STRUCT(g2);
-	torture_assert_int_equal(tctx, 0, GUID_compare(&g1, &g2), 
+	torture_assert_int_equal(tctx, 0, GUID_compare(&g1, &g2),
 							 "GUIDs not equal");
 	g1.time_low = 1;
-	torture_assert_int_equal(tctx, 1, GUID_compare(&g1, &g2), 
+	torture_assert_int_equal(tctx, 1, GUID_compare(&g1, &g2),
 							 "GUID diff invalid");
 
 	g1.time_low = 10;
@@ -269,28 +269,28 @@ struct torture_suite *torture_local_ndr(TALLOC_CTX *mem_ctx)
 	torture_suite_add_suite(suite, ndr_drsblobs_suite(suite));
 	torture_suite_add_suite(suite, ndr_nbt_suite(suite));
 
-	torture_suite_add_simple_test(suite, "string terminator", 
+	torture_suite_add_simple_test(suite, "string terminator",
 								   test_check_string_terminator);
 
-	torture_suite_add_simple_test(suite, "guid_from_string_null", 
+	torture_suite_add_simple_test(suite, "guid_from_string_null",
 								   test_guid_from_string_null);
 
-	torture_suite_add_simple_test(suite, "guid_from_string", 
+	torture_suite_add_simple_test(suite, "guid_from_string",
 								   test_guid_from_string);
 
-	torture_suite_add_simple_test(suite, "guid_from_string_invalid", 
+	torture_suite_add_simple_test(suite, "guid_from_string_invalid",
 								   test_guid_from_string_invalid);
 
-	torture_suite_add_simple_test(suite, "guid_string_valid", 
+	torture_suite_add_simple_test(suite, "guid_string_valid",
 								   test_guid_string_valid);
 
-	torture_suite_add_simple_test(suite, "guid_string2_valid", 
+	torture_suite_add_simple_test(suite, "guid_string2_valid",
 								   test_guid_string2_valid);
 
-	torture_suite_add_simple_test(suite, "guid_from_string_valid", 
+	torture_suite_add_simple_test(suite, "guid_from_string_valid",
 								   test_guid_from_string_valid);
 
-	torture_suite_add_simple_test(suite, "compare_uuid", 
+	torture_suite_add_simple_test(suite, "compare_uuid",
 								   test_compare_uuid);
 
 	return suite;
