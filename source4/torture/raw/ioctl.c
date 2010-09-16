@@ -112,7 +112,8 @@ static bool test_fsctl(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	nt.ntioctl.in.blob.data[1] = 15+1;
 	status = smb_raw_ioctl(cli->tree, mem_ctx, &nt);
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_INVALID_PARAMETER) &&
-	    !NT_STATUS_EQUAL(status, NT_STATUS_NOT_IMPLEMENTED)) {
+	    !NT_STATUS_EQUAL(status, NT_STATUS_NOT_IMPLEMENTED) &&
+	    !NT_STATUS_EQUAL(status, NT_STATUS_NOT_SUPPORTED)) {
 		printf("Got unexpected error code: %s\n",
 			nt_errstr(status));
 		ret = false;
