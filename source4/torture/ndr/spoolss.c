@@ -668,7 +668,7 @@ struct torture_suite *ndr_spoolss_suite(TALLOC_CTX *ctx)
 	torture_suite_add_ndr_pull_fn_test(suite, spoolss_GetPrinter, getprinter_resp_data, NDR_OUT, NULL );
 
 	torture_suite_add_ndr_pull_fn_test(suite, spoolss_GetPrinterData, getprinterdata_req_data, NDR_IN, NULL );
-	/*torture_suite_add_ndr_pull_fn_test(suite, spoolss_GetPrinterData, getprinterdata_resp_data, NDR_OUT, NULL );*/
+	torture_suite_add_ndr_pull_io_test(suite, spoolss_GetPrinterData, getprinterdata_req_data, getprinterdata_resp_data, NULL );
 
 	torture_suite_add_ndr_pull_fn_test(suite, spoolss_ReplyOpenPrinter, replyopenprinter_req_data, NDR_IN, NULL );
 	torture_suite_add_ndr_pull_fn_test(suite, spoolss_ReplyOpenPrinter, replyopenprinter_resp_data, NDR_OUT, NULL );
@@ -698,12 +698,12 @@ struct torture_suite *ndr_spoolss_suite(TALLOC_CTX *ctx)
 	torture_suite_add_ndr_pull_fn_test(suite, spoolss_FindClosePrinterNotify, FCPN_out_data, NDR_OUT, NULL );
 
 	torture_suite_add_ndr_pull_fn_test(suite, spoolss_GetPrinterDriverDirectory, getprinterdriverdir_in_data, NDR_IN, NULL );
-	/* torture_suite_add_ndr_pull_fn_test(suite, spoolss_GetPrinterDriverDirectory, getprinterdriverdir_out_data, NDR_OUT, NULL ); */
+	torture_suite_add_ndr_pull_io_test(suite, spoolss_GetPrinterDriverDirectory, getprinterdriverdir_in_data, getprinterdriverdir_out_data, NULL );
 
 	torture_suite_add_ndr_pull_fn_test(suite, spoolss_AddPrinterDriverEx, addprinterdriverex_in_data, NDR_IN, NULL );
 
 	torture_suite_add_ndr_pull_fn_test(suite, spoolss_GetPrinterDriver2, getprinterdriver2_in_data, NDR_IN, NULL);
-	/* torture_suite_add_ndr_pull_fn_test(suite, spoolss_GetPrinterDriver2, getprinterdriver2_out_data, NDR_OUT, NULL); */
+	torture_suite_add_ndr_pull_io_test(suite, spoolss_GetPrinterDriver2, getprinterdriver2_in_data, getprinterdriver2_out_data, NULL);
 
 	return suite;
 }

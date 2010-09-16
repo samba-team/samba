@@ -581,14 +581,10 @@ struct torture_suite *ndr_winreg_suite(TALLOC_CTX *ctx)
 	torture_suite_add_ndr_pull_fn_test(suite, winreg_QueryValue, queryvalue_out_data, NDR_OUT, queryvalue_out_check );
 
 	torture_suite_add_ndr_pull_fn_test(suite, winreg_QueryMultipleValues, querymultiplevalues_in_data, NDR_IN, querymultiplevalues_in_check );
-	/* we cannot do this as long we don't have the ability to bring in
-	 * r->in.num_values */
-/*	torture_suite_add_ndr_pull_fn_test(suite, winreg_QueryMultipleValues, querymultiplevalues_out_data, NDR_OUT, querymultiplevalues_out_check ); */
+	torture_suite_add_ndr_pull_io_test(suite, winreg_QueryMultipleValues, querymultiplevalues_in_data, querymultiplevalues_out_data, querymultiplevalues_out_check);
 
 	torture_suite_add_ndr_pull_fn_test(suite, winreg_QueryMultipleValues2, querymultiplevalues2_in_data, NDR_IN, querymultiplevalues2_in_check );
-	/* we cannot do this as long we don't have the ability to bring in
-	 * r->in.num_values */
-/*	torture_suite_add_ndr_pull_fn_test(suite, winreg_QueryMultipleValues2, querymultiplevalues2_out_data, NDR_OUT, querymultiplevalues2_out_check ); */
+	torture_suite_add_ndr_pull_io_test(suite, winreg_QueryMultipleValues2, querymultiplevalues2_in_data, querymultiplevalues2_out_data, querymultiplevalues2_out_check);
 
 	torture_suite_add_ndr_pull_fn_test(suite, winreg_FlushKey, flushkey_in_data, NDR_IN, flushkey_in_check );
 	torture_suite_add_ndr_pull_fn_test(suite, winreg_FlushKey, flushkey_out_data, NDR_OUT, flushkey_out_check );
