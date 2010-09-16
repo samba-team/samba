@@ -307,7 +307,7 @@ NODE_STATUS_STRUCT *node_status_query(int fd,
 	while (1) {
 		struct timespec tp2;
 		clock_gettime_mono(&tp2);
-		if (TspecDiff(&tp,&tp2) > retry_time) {
+		if (nsec_time_diff(&tp,&tp2)/1000000 > retry_time) {
 			if (!retries)
 				break;
 			if (!found && !send_packet(&p))
@@ -716,7 +716,7 @@ struct sockaddr_storage *name_query(int fd,
 		struct timespec tp2;
 
 		clock_gettime_mono(&tp2);
-		if (TspecDiff(&tp,&tp2) > retry_time) {
+		if (nsec_time_diff(&tp,&tp2)/1000000 > retry_time) {
 			if (!retries)
 				break;
 			if (!found && !send_packet(&p))
