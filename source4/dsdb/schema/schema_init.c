@@ -113,19 +113,16 @@ WERROR dsdb_load_oid_mappings_ldb(struct dsdb_schema *schema,
 	WERROR werr;
 	const char *schema_info;
 	struct dsdb_schema_prefixmap *pfm;
-	struct dsdb_schema_info *schi;
 	TALLOC_CTX *mem_ctx;
+
+	/* verify schemaInfo blob is valid one */
+	if (!dsdb_schema_info_blob_is_valid(schemaInfo)) {
+		DEBUG(0,(__location__": dsdb_schema_info_blob_is_valid() failed.\n"));
+	        return WERR_INVALID_PARAMETER;
+	}
 
 	mem_ctx = talloc_new(schema);
 	W_ERROR_HAVE_NO_MEMORY(mem_ctx);
-
-	/* parse schemaInfo blob to verify it is valid */
-	werr = dsdb_schema_info_from_blob(schemaInfo, mem_ctx, &schi);
-	if (!W_ERROR_IS_OK(werr)) {
-		DEBUG(0, (__location__ " dsdb_schema_info_from_blob failed: %s\n", win_errstr(werr)));
-		talloc_free(mem_ctx);
-		return werr;
-	}
 
 	/* fetch prefixMap */
 	werr = _dsdb_prefixmap_from_ldb_val(prefixMap,
