@@ -1041,7 +1041,6 @@ static krb5_error_code samba_kdc_fetch_krbtgt(krb5_context context,
 	krb5_error_code ret;
 	struct ldb_message *msg = NULL;
 	struct ldb_dn *realm_dn = ldb_get_default_basedn(kdc_db_ctx->samdb);
-	const char *realm;
 
 	krb5_principal alloc_principal = NULL;
 	if (principal->name.name_string.len != 2
@@ -1109,6 +1108,7 @@ static krb5_error_code samba_kdc_fetch_krbtgt(krb5_context context,
 
 	} else {
 		enum trust_direction direction = UNKNOWN;
+		const char *realm = NULL;
 
 		/* Either an inbound or outbound trust */
 
@@ -1116,12 +1116,16 @@ static krb5_error_code samba_kdc_fetch_krbtgt(krb5_context context,
 			/* look for inbound trust */
 			direction = INBOUND;
 			realm = principal->name.name_string.val[1];
-		}
-
-		if (strcasecmp(lpcfg_realm(lp_ctx), principal->name.name_string.val[1]) == 0) {
+		} else if (strcasecmp(lpcfg_realm(lp_ctx), principal->name.name_string.val[1]) == 0) {
 			/* look for outbound trust */
 			direction = OUTBOUND;
 			realm = principal->realm;
+		} else {
+			krb5_warnx(context, "samba_kdc_fetch: not our realm for trusts ('%s', '%s')",
+				   principal->realm, principal->name.name_string.val[1]);
+			krb5_set_error_message(context, HDB_ERR_NOENTRY, "samba_kdc_fetch: not our realm for trusts ('%s', '%s')",
+					       principal->realm, principal->name.name_string.val[1]);
+			return HDB_ERR_NOENTRY;
 		}
 
 		/* Trusted domains are under CN=system */
