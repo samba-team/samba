@@ -270,7 +270,7 @@ static NTSTATUS dreplsrv_get_rodc_partial_attribute_set(struct dreplsrv_service 
 {
 	struct drsuapi_DsPartialAttributeSet *pas;
 	struct dsdb_schema *schema;
-	int i;
+	uint32_t i;
 
 	pas = talloc_zero(mem_ctx, struct drsuapi_DsPartialAttributeSet);
 	NT_STATUS_HAVE_NO_MEMORY(pas);
