@@ -228,6 +228,10 @@ struct tdb_context *tdb_open_ex(const char *name, int hash_size, int tdb_flags,
 		goto fail;
 	}
 
+	if (getenv("TDB_NO_FSYNC")) {
+		tdb->flags |= TDB_NOSYNC;
+	}
+
 	/*
 	 * TDB_ALLOW_NESTING is the default behavior.
 	 * Note: this may change in future versions!
