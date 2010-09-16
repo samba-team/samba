@@ -1274,6 +1274,31 @@ static void manage_gss_spnego_request(struct ntlm_auth_state *state,
 	}
 
 	token = base64_decode_data_blob(buf + 3);
+
+	if ((token.length >= 7)
+	    && (strncmp((char *)token.data, "NTLMSSP", 7) == 0)) {
+		char *reply;
+
+		DEBUG(10, ("Could not parse GSS-SPNEGO, trying raw "
+			   "ntlmssp\n"));
+
+		manage_squid_ntlmssp_request_int(state, buf, length,
+						 talloc_tos(), &reply);
+		if (reply == NULL) {
+			x_fprintf(x_stdout, "BH Out of memory\n");
+			return;
+		}
+
+		if (strncmp(reply, "AF ", 3) == 0) {
+			x_fprintf(x_stdout, "AF * %s\n", reply+3);
+		} else {
+			x_fprintf(x_stdout, "%s *\n", reply);
+		}
+
+		TALLOC_FREE(reply);
+		return;
+	}
+
 	len = spnego_read_data(ctx, token, &request);
 	data_blob_free(&token);
 
