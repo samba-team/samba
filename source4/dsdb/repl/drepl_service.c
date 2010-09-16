@@ -377,6 +377,40 @@ static NTSTATUS drepl_trigger_repl_secret(struct irpc_message *msg,
 
 
 /*
+  DsReplicaAdd messages from the DRSUAPI server are forwarded here
+ */
+static NTSTATUS dreplsrv_replica_add(struct irpc_message *msg,
+				  struct drsuapi_DsReplicaAdd *r)
+{
+	struct dreplsrv_service *service = talloc_get_type(msg->private_data,
+							   struct dreplsrv_service);
+	return drepl_replica_add(service, r);
+}
+
+/*
+  DsReplicaDel messages from the DRSUAPI server are forwarded here
+ */
+static NTSTATUS dreplsrv_replica_del(struct irpc_message *msg,
+				  struct drsuapi_DsReplicaDel *r)
+{
+	struct dreplsrv_service *service = talloc_get_type(msg->private_data,
+							   struct dreplsrv_service);
+	return drepl_replica_del(service, r);
+}
+
+/*
+  DsReplicaMod messages from the DRSUAPI server are forwarded here
+ */
+static NTSTATUS dreplsrv_replica_mod(struct irpc_message *msg,
+				  struct drsuapi_DsReplicaMod *r)
+{
+	struct dreplsrv_service *service = talloc_get_type(msg->private_data,
+							   struct dreplsrv_service);
+	return drepl_replica_mod(service, r);
+}
+
+
+/*
   startup the dsdb replicator service task
 */
 static void dreplsrv_task_init(struct task_server *task)
@@ -462,6 +496,9 @@ static void dreplsrv_task_init(struct task_server *task)
 
 	IRPC_REGISTER(task->msg_ctx, irpc, DREPLSRV_REFRESH, dreplsrv_refresh, service);
 	IRPC_REGISTER(task->msg_ctx, drsuapi, DRSUAPI_DSREPLICASYNC, drepl_replica_sync, service);
+	IRPC_REGISTER(task->msg_ctx, drsuapi, DRSUAPI_DSREPLICAADD, dreplsrv_replica_add, service);
+	IRPC_REGISTER(task->msg_ctx, drsuapi, DRSUAPI_DSREPLICADEL, dreplsrv_replica_del, service);
+	IRPC_REGISTER(task->msg_ctx, drsuapi, DRSUAPI_DSREPLICAMOD, dreplsrv_replica_mod, service);
 	IRPC_REGISTER(task->msg_ctx, irpc, DREPL_TAKEFSMOROLE, drepl_take_FSMO_role, service);
 	IRPC_REGISTER(task->msg_ctx, irpc, DREPL_TRIGGER_REPL_SECRET, drepl_trigger_repl_secret, service);
 	messaging_register(task->msg_ctx, service, MSG_DREPL_ALLOCATE_RID, dreplsrv_allocate_rid);

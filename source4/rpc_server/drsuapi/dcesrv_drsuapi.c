@@ -304,7 +304,20 @@ static WERROR dcesrv_drsuapi_DsReplicaSync(struct dcesrv_call_state *dce_call, T
 static WERROR dcesrv_drsuapi_DsReplicaAdd(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 					  struct drsuapi_DsReplicaAdd *r)
 {
-	DRSUAPI_UNSUPPORTED(drsuapi_DsReplicaAdd);
+	WERROR status;
+
+	status = drs_security_level_check(dce_call, "DsReplicaAdd", SECURITY_DOMAIN_CONTROLLER, NULL);
+	if (!W_ERROR_IS_OK(status)) {
+		return status;
+	}
+
+	dcesrv_irpc_forward_rpc_call(dce_call, mem_ctx,
+				     r, NDR_DRSUAPI_DSREPLICAADD,
+				     &ndr_table_drsuapi,
+				     "dreplsrv", "DsReplicaAdd",
+				     IRPC_CALL_TIMEOUT);
+
+	return WERR_OK;
 }
 
 
@@ -314,7 +327,20 @@ static WERROR dcesrv_drsuapi_DsReplicaAdd(struct dcesrv_call_state *dce_call, TA
 static WERROR dcesrv_drsuapi_DsReplicaDel(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 					  struct drsuapi_DsReplicaDel *r)
 {
-	DRSUAPI_UNSUPPORTED(drsuapi_DsReplicaDel);
+	WERROR status;
+
+	status = drs_security_level_check(dce_call, "DsReplicaDel", SECURITY_DOMAIN_CONTROLLER, NULL);
+	if (!W_ERROR_IS_OK(status)) {
+		return status;
+	}
+
+	dcesrv_irpc_forward_rpc_call(dce_call, mem_ctx,
+				     r, NDR_DRSUAPI_DSREPLICADEL,
+				     &ndr_table_drsuapi,
+				     "dreplsrv", "DsReplicaDel",
+				     IRPC_CALL_TIMEOUT);
+
+	return WERR_OK;
 }
 
 
@@ -324,7 +350,20 @@ static WERROR dcesrv_drsuapi_DsReplicaDel(struct dcesrv_call_state *dce_call, TA
 static WERROR dcesrv_drsuapi_DsReplicaMod(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 					  struct drsuapi_DsReplicaMod *r)
 {
-	DRSUAPI_UNSUPPORTED(drsuapi_DsReplicaMod);
+	WERROR status;
+
+	status = drs_security_level_check(dce_call, "DsReplicaMod", SECURITY_DOMAIN_CONTROLLER, NULL);
+	if (!W_ERROR_IS_OK(status)) {
+		return status;
+	}
+
+	dcesrv_irpc_forward_rpc_call(dce_call, mem_ctx,
+				     r, NDR_DRSUAPI_DSREPLICAMOD,
+				     &ndr_table_drsuapi,
+				     "dreplsrv", "DsReplicaMod",
+				     IRPC_CALL_TIMEOUT);
+
+	return WERR_OK;
 }
 
 
