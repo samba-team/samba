@@ -114,6 +114,7 @@ static bool nbt_test_netlogon(struct torture_context *tctx)
 	/* setup a temporary mailslot listener for replies */
 	dgmslot = dgram_mailslot_temp(dgmsock, NBT_MAILSLOT_GETDC,
 				      netlogon_handler, NULL);
+	torture_assert(tctx, dgmslot != NULL, "Error temporary mailslot for GetDC");
 
 	ZERO_STRUCT(logon);
 	logon.command = LOGON_PRIMARY_QUERY;
@@ -206,7 +207,7 @@ static bool nbt_test_netlogon2(struct torture_context *tctx)
 	/* setup a temporary mailslot listener for replies */
 	dgmslot = dgram_mailslot_temp(dgmsock, NBT_MAILSLOT_GETDC,
 				      netlogon_handler, NULL);
-	
+	torture_assert(tctx, dgmslot != NULL, "Error temporary mailslot for GetDC");
 
 	ZERO_STRUCT(logon);
 	logon.command = LOGON_SAM_LOGON_REQUEST;
@@ -246,6 +247,7 @@ static bool nbt_test_netlogon2(struct torture_context *tctx)
 	/* setup (another) temporary mailslot listener for replies */
 	dgmslot = dgram_mailslot_temp(dgmsock, NBT_MAILSLOT_GETDC,
 				      netlogon_handler, NULL);
+	torture_assert(tctx, dgmslot != NULL, "Error temporary mailslot for GetDC");
 	
 	ZERO_STRUCT(logon);
 	logon.command = LOGON_SAM_LOGON_REQUEST;
@@ -295,6 +297,7 @@ static bool nbt_test_netlogon2(struct torture_context *tctx)
 	/* setup (another) temporary mailslot listener for replies */
 	dgmslot = dgram_mailslot_temp(dgmsock, NBT_MAILSLOT_GETDC,
 				      netlogon_handler, NULL);
+	torture_assert(tctx, dgmslot != NULL, "Error temporary mailslot for GetDC");
 	
 	ZERO_STRUCT(logon);
 	logon.command = LOGON_SAM_LOGON_REQUEST;
@@ -335,7 +338,6 @@ static bool nbt_test_netlogon2(struct torture_context *tctx)
 	/* setup (another) temporary mailslot listener for replies */
 	dgmslot = dgram_mailslot_temp(dgmsock, NBT_MAILSLOT_GETDC,
 				      netlogon_handler, NULL);
-	
 	torture_assert(tctx, dgmslot != NULL, "Error getting a Mailslot for GetDC reply");
 
 	ZERO_STRUCT(logon);
@@ -483,7 +485,7 @@ static bool nbt_test_ntlogon(struct torture_context *tctx)
 	/* setup a temporary mailslot listener for replies */
 	dgmslot = dgram_mailslot_temp(dgmsock, NBT_MAILSLOT_GETDC,
 				      netlogon_handler, NULL);
-	
+	torture_assert(tctx, dgmslot != NULL, "Error temporary mailslot for GetDC");
 
 	ZERO_STRUCT(logon);
 	logon.command = LOGON_SAM_LOGON_REQUEST;
@@ -528,7 +530,7 @@ static bool nbt_test_ntlogon(struct torture_context *tctx)
 	/* setup a temporary mailslot listener for replies */
 	dgmslot = dgram_mailslot_temp(dgmsock, NBT_MAILSLOT_GETDC,
 				      netlogon_handler, NULL);
-	
+	torture_assert(tctx, dgmslot != NULL, "Error temporary mailslot for GetDC");
 
 	ZERO_STRUCT(logon);
 	logon.command = LOGON_SAM_LOGON_REQUEST;
@@ -572,6 +574,7 @@ static bool nbt_test_ntlogon(struct torture_context *tctx)
 	/* setup (another) temporary mailslot listener for replies */
 	dgmslot = dgram_mailslot_temp(dgmsock, NBT_MAILSLOT_GETDC,
 				      netlogon_handler, NULL);
+	torture_assert(tctx, dgmslot != NULL, "Error temporary mailslot for GetDC");
 	
 	ZERO_STRUCT(logon);
 	logon.command = LOGON_PRIMARY_QUERY;
@@ -609,6 +612,7 @@ static bool nbt_test_ntlogon(struct torture_context *tctx)
 	/* setup (another) temporary mailslot listener for replies */
 	dgmslot = dgram_mailslot_temp(dgmsock, NBT_MAILSLOT_GETDC,
 				      netlogon_handler, NULL);
+	torture_assert(tctx, dgmslot != NULL, "Error temporary mailslot for GetDC");
 	
 	ZERO_STRUCT(logon);
 	logon.command = LOGON_PRIMARY_QUERY;
