@@ -34,6 +34,7 @@
 #include "../lib/crypto/arcfour.h"
 #include "libads/kerberos_proto.h"
 #include "nsswitch/winbind_client.h"
+#include "librpc/gen_ndr/krb5pac.h"
 
 #ifndef PAM_WINBIND_CONFIG_FILE
 #define PAM_WINBIND_CONFIG_FILE "/etc/security/pam_winbind.conf"
@@ -1458,6 +1459,9 @@ static void manage_gss_spnego_request(struct ntlm_auth_state *state,
 				*domain++ = '\0';
 				domain = SMB_STRDUP(domain);
 				user = SMB_STRDUP(principal);
+
+				netsamlogon_cache_store(
+					user, &logon_info->info3);
 
 				data_blob_free(&ap_rep);
 			}
