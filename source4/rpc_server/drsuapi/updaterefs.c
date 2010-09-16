@@ -25,6 +25,7 @@
 #include "rpc_server/drsuapi/dcesrv_drsuapi.h"
 #include "libcli/security/security.h"
 #include "auth/session.h"
+#include "librpc/gen_ndr/ndr_drsuapi.h"
 
 struct repsTo {
 	uint32_t count;
@@ -229,5 +230,11 @@ WERROR dcesrv_drsuapi_DsReplicaUpdateRefs(struct dcesrv_call_state *dce_call, TA
 		}
 	}
 
-	return drsuapi_UpdateRefs(b_state, mem_ctx, req);
+	werr = drsuapi_UpdateRefs(b_state, mem_ctx, req);
+
+#if 0
+	NDR_PRINT_FUNCTION_DEBUG(drsuapi_DsReplicaUpdateRefs, NDR_BOTH, r);
+#endif
+
+	return werr;
 }
