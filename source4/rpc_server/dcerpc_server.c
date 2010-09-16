@@ -944,6 +944,30 @@ static NTSTATUS dcesrv_alter(struct dcesrv_call_state *call)
 }
 
 /*
+  possibly save the call for inspection with ndrdump
+ */
+static void dcesrv_save_call(struct dcesrv_call_state *call, const char *why)
+{
+#ifdef DEVELOPER
+	char *fname;
+	char *dump_dir;
+	dump_dir = lpcfg_parm_string(call->conn->dce_ctx->lp_ctx, NULL, "dcesrv", "stubs directory");
+	if (!dump_dir) {
+		return;
+	}
+	fname = talloc_asprintf(call, "%s/RPC-%s-%u-%s.dat",
+				dump_dir,
+				call->context->iface->name,
+				call->pkt.u.request.opnum,
+				why);
+	if (file_save(fname, call->pkt.u.request.stub_and_verifier.data, call->pkt.u.request.stub_and_verifier.length)) {
+		DEBUG(0,("RPC SAVED %s\n", fname));
+	}
+	talloc_free(fname);
+#endif
+}
+
+/*
   handle a dcerpc request packet
 */
 static NTSTATUS dcesrv_request(struct dcesrv_call_state *call)
@@ -982,15 +1006,17 @@ static NTSTATUS dcesrv_request(struct dcesrv_call_state *call)
 			/* we got an unknown call */
 			DEBUG(3,(__location__ ": Unknown RPC call %u on %s\n",
 				 call->pkt.u.request.opnum, context->iface->name));
-			dump_data(3, pull->data, pull->data_size);
+			dcesrv_save_call(call, "unknown");
+		} else {
+			dcesrv_save_call(call, "pullfail");
 		}
 		return dcesrv_fault(call, call->fault_code);
 	}
 
 	if (pull->offset != pull->data_size) {
+		dcesrv_save_call(call, "extrabytes");
 		DEBUG(3,("Warning: %d extra bytes in incoming RPC request\n", 
 			 pull->data_size - pull->offset));
-		dump_data(10, pull->data+pull->offset, pull->data_size - pull->offset);
 	}
 
 	/* call the dispatch function */
