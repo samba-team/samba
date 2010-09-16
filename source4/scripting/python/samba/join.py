@@ -150,6 +150,7 @@ def join_rodc(server=None, creds=None, lp=None, site=None, netbios_name=None,
             "dnsHostName" : ctx.dnshostname}
         ctx.samdb.add(rec)
 
+        # FIXME: the partition (NC) assignment has to be made dynamic
         print "Adding %s" % ctx.ntds_dn
         rec = {
             "dn" : ctx.ntds_dn,
