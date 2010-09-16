@@ -31,6 +31,7 @@ from samba.provision import secretsdb_self_join, provision, FILL_DRS, find_setup
 from samba.net import Net
 import logging
 from samba.drs_utils import drs_Replicate
+from samba.dsdb import DS_DOMAIN_FUNCTION_2008_R2
 
 # this makes debugging easier
 samba.talloc_enable_null_tracking()
@@ -157,7 +158,7 @@ def join_rodc(server=None, creds=None, lp=None, site=None, netbios_name=None,
             "systemFlags" : str(samba.dsdb.SYSTEM_FLAG_DISALLOW_MOVE_ON_DELETE),
             "dMDLocation" : ctx.schema_dn,
             "options" : "37",
-            "msDS-Behavior-Version" : "4",
+            "msDS-Behavior-Version" : str(DS_DOMAIN_FUNCTION_2008_R2),
             "msDS-HasDomainNCs" : ctx.base_dn,
             "msDS-HasFullReplicaNCs" : [ ctx.base_dn, ctx.config_dn, ctx.schema_dn ]}
         ctx.samdb.add(rec, ["rodc_join:1:1"])
