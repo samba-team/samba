@@ -565,7 +565,8 @@ static NTSTATUS contact_winbind_change_pswd_auth_crap(const char *username,
     return nt_status;
 }
 
-static NTSTATUS winbind_pw_check(struct ntlmssp_state *ntlmssp_state, DATA_BLOB *user_session_key, DATA_BLOB *lm_session_key) 
+static NTSTATUS winbind_pw_check(struct ntlmssp_state *ntlmssp_state, TALLOC_CTX *mem_ctx,
+				 DATA_BLOB *user_session_key, DATA_BLOB *lm_session_key)
 {
 	static const char zeros[16] = { 0, };
 	NTSTATUS nt_status;
@@ -585,13 +586,13 @@ static NTSTATUS winbind_pw_check(struct ntlmssp_state *ntlmssp_state, DATA_BLOB 
 
 	if (NT_STATUS_IS_OK(nt_status)) {
 		if (memcmp(lm_key, zeros, 8) != 0) {
-			*lm_session_key = data_blob_talloc(ntlmssp_state, NULL, 16);
+			*lm_session_key = data_blob_talloc(mem_ctx, NULL, 16);
 			memcpy(lm_session_key->data, lm_key, 8);
 			memset(lm_session_key->data+8, '\0', 8);
 		}
 
 		if (memcmp(user_sess_key, zeros, 16) != 0) {
-			*user_session_key = data_blob_talloc(ntlmssp_state, user_sess_key, 16);
+			*user_session_key = data_blob_talloc(mem_ctx, user_sess_key, 16);
 		}
 		ntlmssp_state->callback_private = talloc_strdup(ntlmssp_state,
 								unix_name);
@@ -609,14 +610,15 @@ static NTSTATUS winbind_pw_check(struct ntlmssp_state *ntlmssp_state, DATA_BLOB 
 	return nt_status;
 }
 
-static NTSTATUS local_pw_check(struct ntlmssp_state *ntlmssp_state, DATA_BLOB *user_session_key, DATA_BLOB *lm_session_key) 
+static NTSTATUS local_pw_check(struct ntlmssp_state *ntlmssp_state, TALLOC_CTX *mem_ctx,
+			       DATA_BLOB *user_session_key, DATA_BLOB *lm_session_key)
 {
 	NTSTATUS nt_status;
 	struct samr_Password lm_pw, nt_pw;
 
 	nt_lm_owf_gen (opt_password, nt_pw.hash, lm_pw.hash);
 
-	nt_status = ntlm_password_check(ntlmssp_state,
+	nt_status = ntlm_password_check(mem_ctx,
 					true, true, 0,
 					&ntlmssp_state->chal,
 					&ntlmssp_state->lm_resp,

@@ -129,11 +129,13 @@ struct ntlmssp_state
 	 *
 	 * The callback must reads the feilds of this structure for the information it needs on the user
 	 * @param ntlmssp_state This structure
+	 * @param mem_ctx Talloc context for LM and NT session key to be returned on
 	 * @param nt_session_key If an NT session key is returned by the authentication process, return it here
 	 * @param lm_session_key If an LM session key is returned by the authentication process, return it here
 	 *
 	 */
-	NTSTATUS (*check_password)(struct ntlmssp_state *ntlmssp_state, DATA_BLOB *nt_session_key, DATA_BLOB *lm_session_key);
+	NTSTATUS (*check_password)(struct ntlmssp_state *ntlmssp_state, TALLOC_CTX *mem_ctx,
+				   DATA_BLOB *nt_session_key, DATA_BLOB *lm_session_key);
 
 	union ntlmssp_crypt_state *crypt;
 };

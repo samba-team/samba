@@ -405,6 +405,7 @@ static void reply_spnego_kerberos(struct smb_request *req,
 	}
 
 	data_blob_free(&server_info->user_session_key);
+	/* Set the kerberos-derived session key onto the server_info */
 	server_info->user_session_key = session_key;
 	talloc_steal(server_info, session_key.data);
 

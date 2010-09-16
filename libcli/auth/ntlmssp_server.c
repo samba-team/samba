@@ -478,7 +478,6 @@ static NTSTATUS ntlmssp_server_postauth(struct ntlmssp_state *ntlmssp_state,
 	if (ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_KEY_EXCH) {
 		if (!state->encrypted_session_key.data
 		    || state->encrypted_session_key.length != 16) {
-			data_blob_free(&state->encrypted_session_key);
 			DEBUG(1, ("Client-supplied KEY_EXCH session key was of invalid length (%u)!\n",
 				  (unsigned)state->encrypted_session_key.length));
 			return NT_STATUS_INVALID_PARAMETER;
@@ -486,6 +485,7 @@ static NTSTATUS ntlmssp_server_postauth(struct ntlmssp_state *ntlmssp_state,
 			DEBUG(5, ("server session key is invalid (len == %u), cannot do KEY_EXCH!\n",
 				  (unsigned int)session_key.length));
 			ntlmssp_state->session_key = session_key;
+			talloc_steal(ntlmssp_state, session_key.data);
 		} else {
 			dump_data_pw("KEY_EXCH session key (enc):\n",
 				     state->encrypted_session_key.data,
@@ -499,10 +499,10 @@ static NTSTATUS ntlmssp_server_postauth(struct ntlmssp_state *ntlmssp_state,
 			dump_data_pw("KEY_EXCH session key:\n",
 				     state->encrypted_session_key.data,
 				     state->encrypted_session_key.length);
-			talloc_free(session_key.data);
 		}
 	} else {
 		ntlmssp_state->session_key = session_key;
+		talloc_steal(ntlmssp_state, session_key.data);
 	}
 
 	if (ntlmssp_state->session_key.length) {
@@ -555,6 +555,7 @@ NTSTATUS ntlmssp_server_auth(struct ntlmssp_state *ntlmssp_state,
 
 	/* Finally, actually ask if the password is OK */
 	nt_status = ntlmssp_state->check_password(ntlmssp_state,
+						  state,
 						  &state->user_session_key,
 						  &state->lm_session_key);
 	if (!NT_STATUS_IS_OK(nt_status)) {
@@ -567,11 +568,6 @@ NTSTATUS ntlmssp_server_auth(struct ntlmssp_state *ntlmssp_state,
 	   can be done in a callback */
 
 	nt_status = ntlmssp_server_postauth(ntlmssp_state, state);
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		TALLOC_FREE(state);
-		return nt_status;
-	}
-
 	TALLOC_FREE(state);
-	return NT_STATUS_OK;
+	return nt_status;
 }

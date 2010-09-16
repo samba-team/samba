@@ -149,6 +149,7 @@ static NTSTATUS auth_ntlmssp_set_challenge(struct ntlmssp_state *ntlmssp_state, 
  */
 
 static NTSTATUS auth_ntlmssp_check_password(struct ntlmssp_state *ntlmssp_state,
+					    TALLOC_CTX *mem_ctx,
 					    DATA_BLOB *user_session_key, DATA_BLOB *lm_session_key)
 {
 	struct gensec_ntlmssp_context *gensec_ntlmssp =
@@ -188,11 +189,15 @@ static NTSTATUS auth_ntlmssp_check_password(struct ntlmssp_state *ntlmssp_state,
 		DEBUG(10, ("Got NT session key of length %u\n",
 			   (unsigned)gensec_ntlmssp->server_info->user_session_key.length));
 		*user_session_key = gensec_ntlmssp->server_info->user_session_key;
+		talloc_steal(mem_ctx, user_session_key->data);
+		gensec_ntlmssp->server_info->user_session_key = data_blob_null;
 	}
 	if (gensec_ntlmssp->server_info->lm_session_key.length) {
 		DEBUG(10, ("Got LM session key of length %u\n",
 			   (unsigned)gensec_ntlmssp->server_info->lm_session_key.length));
 		*lm_session_key = gensec_ntlmssp->server_info->lm_session_key;
+		talloc_steal(mem_ctx, lm_session_key->data);
+		gensec_ntlmssp->server_info->lm_session_key = data_blob_null;
 	}
 	return nt_status;
 }
