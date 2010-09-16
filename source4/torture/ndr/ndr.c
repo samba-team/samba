@@ -26,6 +26,7 @@
 
 struct ndr_pull_test_data {
 	DATA_BLOB data;
+	DATA_BLOB data_context;
 	size_t struct_size;
 	ndr_pull_flags_fn_t pull_fn;
 	int ndr_flags;
@@ -77,6 +78,88 @@ _PUBLIC_ struct torture_test *_torture_suite_add_ndr_pull_test(
 	data = talloc(test, struct ndr_pull_test_data);
 	data->data = db;
 	data->ndr_flags = ndr_flags;
+	data->struct_size = struct_size;
+	data->pull_fn = pull_fn;
+	test->data = data;
+	test->fn = check_fn;
+	test->dangerous = false;
+
+	DLIST_ADD_END(tcase->tests, test, struct torture_test *);
+
+	return test;
+}
+
+static bool wrap_ndr_inout_pull_test(struct torture_context *tctx,
+				     struct torture_tcase *tcase,
+				     struct torture_test *test)
+{
+	bool (*check_fn) (struct torture_context *ctx, void *data) = test->fn;
+	const struct ndr_pull_test_data *data = (const struct ndr_pull_test_data *)test->data;
+	void *ds = talloc_zero_size(tctx, data->struct_size);
+	struct ndr_pull *ndr;
+
+	/* handle NDR_IN context */
+
+	ndr = ndr_pull_init_blob(&(data->data_context), tctx);
+	torture_assert(tctx, ndr, "ndr init failed");
+
+	ndr->flags |= LIBNDR_FLAG_REF_ALLOC;
+
+	torture_assert_ndr_success(tctx,
+		data->pull_fn(ndr, NDR_IN, ds),
+		"ndr pull of context failed");
+
+	torture_assert(tctx, ndr->offset == ndr->data_size,
+		talloc_asprintf(tctx, "%d unread bytes", ndr->data_size - ndr->offset));
+
+	talloc_free(ndr);
+
+	/* handle NDR_OUT */
+
+	ndr = ndr_pull_init_blob(&(data->data), tctx);
+	torture_assert(tctx, ndr, "ndr init failed");
+
+	ndr->flags |= LIBNDR_FLAG_REF_ALLOC;
+
+	torture_assert_ndr_success(tctx,
+		data->pull_fn(ndr, NDR_OUT, ds),
+		"ndr pull failed");
+
+	torture_assert(tctx, ndr->offset == ndr->data_size,
+		talloc_asprintf(tctx, "%d unread bytes", ndr->data_size - ndr->offset));
+
+	talloc_free(ndr);
+
+	if (check_fn) {
+		return check_fn(tctx, ds);
+	} else {
+		return true;
+	}
+}
+
+_PUBLIC_ struct torture_test *_torture_suite_add_ndr_pull_inout_test(
+					struct torture_suite *suite,
+					const char *name, ndr_pull_flags_fn_t pull_fn,
+					DATA_BLOB db_in,
+					DATA_BLOB db_out,
+					size_t struct_size,
+					bool (*check_fn) (struct torture_context *ctx, void *data))
+{
+	struct torture_test *test;
+	struct torture_tcase *tcase;
+	struct ndr_pull_test_data *data;
+
+	tcase = torture_suite_add_tcase(suite, name);
+
+	test = talloc(tcase, struct torture_test);
+
+	test->name = talloc_strdup(test, name);
+	test->description = NULL;
+	test->run = wrap_ndr_inout_pull_test;
+	data = talloc(test, struct ndr_pull_test_data);
+	data->data = db_out;
+	data->data_context = db_in;
+	data->ndr_flags = 0;
 	data->struct_size = struct_size;
 	data->pull_fn = pull_fn;
 	test->data = data;
