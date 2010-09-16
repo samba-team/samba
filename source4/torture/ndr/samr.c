@@ -190,7 +190,7 @@ struct torture_suite *ndr_samr_suite(TALLOC_CTX *ctx)
 	torture_suite_add_ndr_pull_fn_test(suite, samr_OpenUser, samr_openuser_out_data, NDR_OUT, NULL);
 
 	torture_suite_add_ndr_pull_fn_test(suite, samr_QueryUserInfo, samr_queryuserinfo_in_data, NDR_IN, NULL);
-	/* torture_suite_add_ndr_pull_fn_test(suite, samr_QueryUserInfo, samr_queryuserinfo_out_data, NDR_OUT, NULL); */
+	torture_suite_add_ndr_pull_io_test(suite, samr_QueryUserInfo, samr_queryuserinfo_in_data, samr_queryuserinfo_out_data, NULL);
 
 	torture_suite_add_ndr_pull_fn_test(suite, samr_SetUserInfo, samr_setuserinfo_in_data, NDR_IN, NULL);
 	torture_suite_add_ndr_pull_fn_test(suite, samr_SetUserInfo, samr_setuserinfo_out_data, NDR_OUT, NULL);
