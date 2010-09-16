@@ -193,6 +193,16 @@ static PyObject *py_creds_set_kerberos_state(py_talloc_Object *self, PyObject *a
 	Py_RETURN_NONE;
 }
 
+static PyObject *py_creds_set_krb_forwardable(py_talloc_Object *self, PyObject *args)
+{
+	int state;
+	if (!PyArg_ParseTuple(args, "i", &state))
+		return NULL;
+
+	cli_credentials_set_krb_forwardable(PyCredentials_AsCliCredentials(self), state);
+	Py_RETURN_NONE;
+}
+
 static PyObject *py_creds_guess(py_talloc_Object *self, PyObject *args)
 {
 	PyObject *py_lp_ctx = Py_None;
@@ -364,6 +374,8 @@ static PyMethodDef py_creds_methods[] = {
 		NULL },
 	{ "set_kerberos_state", (PyCFunction)py_creds_set_kerberos_state, METH_VARARGS,
 		NULL },
+	{ "set_krb_forwardable", (PyCFunction)py_creds_set_krb_forwardable, METH_VARARGS,
+		NULL },
 	{ "guess", (PyCFunction)py_creds_guess, METH_VARARGS, NULL },
 	{ "set_machine_account", (PyCFunction)py_creds_set_machine_account, METH_VARARGS, NULL },
 	{ "get_named_ccache", (PyCFunction)py_creds_get_named_ccache, METH_VARARGS, NULL },
@@ -406,6 +418,10 @@ void initcredentials(void)
 	PyModule_AddObject(m, "AUTO_USE_KERBEROS", PyInt_FromLong(CRED_AUTO_USE_KERBEROS));
 	PyModule_AddObject(m, "DONT_USE_KERBEROS", PyInt_FromLong(CRED_DONT_USE_KERBEROS));
 	PyModule_AddObject(m, "MUST_USE_KERBEROS", PyInt_FromLong(CRED_MUST_USE_KERBEROS));
+
+	PyModule_AddObject(m, "AUTO_KRB_FORWARDABLE",  PyInt_FromLong(CRED_AUTO_KRB_FORWARDABLE));
+	PyModule_AddObject(m, "NO_KRB_FORWARDABLE",    PyInt_FromLong(CRED_NO_KRB_FORWARDABLE));
+	PyModule_AddObject(m, "FORCE_KRB_FORWARDABLE", PyInt_FromLong(CRED_FORCE_KRB_FORWARDABLE));
 
 	Py_INCREF(&PyCredentials);
 	PyModule_AddObject(m, "Credentials", (PyObject *)&PyCredentials);
