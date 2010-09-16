@@ -44,6 +44,12 @@ enum credentials_use_kerberos {
 	CRED_MUST_USE_KERBEROS      /* Sometimes administrators are parinoid, so always do kerberos */
 };
 
+enum credentials_krb_forwardable {
+	CRED_AUTO_KRB_FORWARDABLE = 0, /* Default, follow library defaults */
+	CRED_NO_KRB_FORWARDABLE,       /* not forwardable */
+	CRED_FORCE_KRB_FORWARDABLE     /* forwardable */
+};
+
 #define CLI_CRED_NTLM2       0x01
 #define CLI_CRED_NTLMv2_AUTH 0x02
 #define CLI_CRED_LANMAN_AUTH 0x04
@@ -122,6 +128,9 @@ struct cli_credentials {
 	/* Should we be trying to use kerberos? */
 	enum credentials_use_kerberos use_kerberos;
 
+	/* Should we get a forwardable ticket? */
+	enum credentials_krb_forwardable krb_forwardable;
+
 	/* gensec features which should be used for connections */
 	uint32_t gensec_features;
 
@@ -193,6 +202,8 @@ int cli_credentials_get_client_gss_creds(struct cli_credentials *cred,
 					 const char **error_string);
 void cli_credentials_set_kerberos_state(struct cli_credentials *creds, 
 					enum credentials_use_kerberos use_kerberos);
+void cli_credentials_set_krb_forwardable(struct cli_credentials *creds,
+					 enum credentials_krb_forwardable krb_forwardable);
 bool cli_credentials_set_domain(struct cli_credentials *cred, 
 				const char *val, 
 				enum credentials_obtained obtained);
@@ -280,6 +291,7 @@ const char *cli_credentials_get_salt_principal(struct cli_credentials *cred);
 const char *cli_credentials_get_impersonate_principal(struct cli_credentials *cred);
 const char *cli_credentials_get_target_service(struct cli_credentials *cred);
 enum credentials_use_kerberos cli_credentials_get_kerberos_state(struct cli_credentials *creds);
+enum credentials_krb_forwardable cli_credentials_get_krb_forwardable(struct cli_credentials *creds);
 NTSTATUS cli_credentials_set_secrets(struct cli_credentials *cred, 
 				     struct tevent_context *event_ctx,
 				     struct loadparm_context *lp_ctx,

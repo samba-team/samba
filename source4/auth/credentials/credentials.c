@@ -109,6 +109,7 @@ _PUBLIC_ struct cli_credentials *cli_credentials_init(TALLOC_CTX *mem_ctx)
 
 	cli_credentials_set_kerberos_state(cred, CRED_AUTO_USE_KERBEROS);
 	cli_credentials_set_gensec_features(cred, 0);
+	cli_credentials_set_krb_forwardable(cred, CRED_AUTO_KRB_FORWARDABLE);
 
 	return cred;
 }
@@ -133,9 +134,20 @@ _PUBLIC_ void cli_credentials_set_kerberos_state(struct cli_credentials *creds,
 	creds->use_kerberos = use_kerberos;
 }
 
+_PUBLIC_ void cli_credentials_set_krb_forwardable(struct cli_credentials *creds,
+						  enum credentials_krb_forwardable krb_forwardable)
+{
+	creds->krb_forwardable = krb_forwardable;
+}
+
 _PUBLIC_ enum credentials_use_kerberos cli_credentials_get_kerberos_state(struct cli_credentials *creds)
 {
 	return creds->use_kerberos;
+}
+
+_PUBLIC_ enum credentials_krb_forwardable cli_credentials_get_krb_forwardable(struct cli_credentials *creds)
+{
+	return creds->krb_forwardable;
 }
 
 _PUBLIC_ void cli_credentials_set_gensec_features(struct cli_credentials *creds, uint32_t gensec_features)
