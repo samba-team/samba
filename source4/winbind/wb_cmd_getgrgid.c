@@ -130,7 +130,7 @@ static void cmd_getgrgid_recv_group_info(struct composite_context *ctx)
 
 	DEBUG(5, ("cmd_getgrgid_recv_group_info called\n"));
 
-	gr = talloc(state, struct winbindd_gr);
+	gr = talloc_zero(state, struct winbindd_gr);
 	if (composite_nomem(gr, state->ctx)) return;
 
 	group_info = talloc(state, struct libnet_GroupInfo);

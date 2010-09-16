@@ -96,7 +96,7 @@ static void get_dom_info_recv_addrs(struct tevent_req *req)
 	struct get_dom_info_state *state = tevent_req_callback_data(req, struct get_dom_info_state);
 	struct finddcs finddcs_io;
 
-	state->info->dc = talloc(state, struct nbt_dc_name);
+	state->info->dc = talloc(state->info, struct nbt_dc_name);
 
 	state->ctx->status = finddcs_cldap_recv(req, state->info, &finddcs_io);
 	if (!composite_is_ok(state->ctx)) return;
