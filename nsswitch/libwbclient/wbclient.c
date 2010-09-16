@@ -148,6 +148,7 @@ const char *wbcErrorString(wbcErr error)
 }
 
 #define WBC_MAGIC (0x7a2b0e1e)
+#define WBC_MAGIC_FREE (0x875634fe)
 
 struct wbcMemPrefix {
 	uint32_t magic;
@@ -197,6 +198,10 @@ void wbcFreeMemory(void *p)
 	if (wbcMem->magic != WBC_MAGIC) {
 		return;
 	}
+
+	/* paranoid check to ensure we don't double free */
+	wbcMem->magic = WBC_MAGIC_FREE;
+
 	if (wbcMem->destructor != NULL) {
 		wbcMem->destructor(p);
 	}
