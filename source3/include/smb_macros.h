@@ -144,15 +144,6 @@
 #define ENCRYPTION_REQUIRED(conn) ((conn) ? ((conn)->encrypt_level == Required) : false)
 #define IS_CONN_ENCRYPTED(conn) ((conn) ? (conn)->encrypted_tid : false)
 
-/*******************************************************************
-find the difference in milliseconds between two struct timeval
-values
-********************************************************************/
-
-#define TvalDiff(tvalold,tvalnew) \
-  (((tvalnew)->tv_sec - (tvalold)->tv_sec)*1000 +  \
-	 ((int)(tvalnew)->tv_usec - (int)(tvalold)->tv_usec)/1000)
-
 /****************************************************************************
 true if two IPv4 addresses are equal
 ****************************************************************************/
