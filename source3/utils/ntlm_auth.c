@@ -1223,6 +1223,45 @@ static void offer_gss_spnego_mechs(void) {
 	return;
 }
 
+bool spnego_parse_krb5_wrap(TALLOC_CTX *ctx, DATA_BLOB blob, DATA_BLOB *ticket, uint8 tok_id[2])
+{
+	bool ret;
+	ASN1_DATA *data;
+	int data_remaining;
+
+	data = asn1_init(talloc_tos());
+	if (data == NULL) {
+		return false;
+	}
+
+	asn1_load(data, blob);
+	asn1_start_tag(data, ASN1_APPLICATION(0));
+	asn1_check_OID(data, OID_KERBEROS5);
+
+	data_remaining = asn1_tag_remaining(data);
+
+	if (data_remaining < 3) {
+		data->has_error = True;
+	} else {
+		asn1_read(data, tok_id, 2);
+		data_remaining -= 2;
+		*ticket = data_blob_talloc(ctx, NULL, data_remaining);
+		asn1_read(data, ticket->data, ticket->length);
+	}
+
+	asn1_end_tag(data);
+
+	ret = !data->has_error;
+
+	if (data->has_error) {
+		data_blob_free(ticket);
+	}
+
+	asn1_free(data);
+
+	return ret;
+}
+
 static void manage_gss_spnego_request(struct ntlm_auth_state *state,
 					char *buf, int length)
 {
@@ -1367,11 +1406,23 @@ static void manage_gss_spnego_request(struct ntlm_auth_state *state,
 			DATA_BLOB ap_rep;
 			DATA_BLOB session_key;
 			struct PAC_LOGON_INFO *logon_info = NULL;
+			DATA_BLOB ticket;
+			uint8_t tok_id[2];
 
 			if ( request.negTokenInit.mechToken.data == NULL ) {
 				DEBUG(1, ("Client did not provide Kerberos data\n"));
 				x_fprintf(x_stdout, "BH Client did not provide "
 						    "Kerberos data\n");
+				return;
+			}
+
+			dump_data(10, request.negTokenInit.mechToken.data,
+				  request.negTokenInit.mechToken.length);
+
+			if (!spnego_parse_krb5_wrap(ctx, request.negTokenInit.mechToken,
+						    &ticket, tok_id)) {
+				DEBUG(1, ("spnego_parse_krb5_wrap failed\n"));
+				x_fprintf(x_stdout, "BH spnego_parse_krb5_wrap failed\n");
 				return;
 			}
 
@@ -1381,7 +1432,7 @@ static void manage_gss_spnego_request(struct ntlm_auth_state *state,
 			response.negTokenTarg.responseToken = data_blob_talloc(ctx, NULL, 0);
 
 			status = ads_verify_ticket(mem_ctx, lp_realm(), 0,
-						   &request.negTokenInit.mechToken,
+						   &ticket,
 						   &principal, &logon_info, &ap_rep,
 						   &session_key, True);
 
