@@ -1119,7 +1119,7 @@ static int do_get(const char *rname, const char *lname_in, bool reget)
 		int this_time;
 
 		clock_gettime_mono(&tp_end);
-		this_time = TspecDiff(&tp_start,&tp_end);
+		this_time = nsec_time_diff(&tp_start,&tp_end)/1000000;
 		get_total_time_ms += this_time;
 		get_total_size += nread;
 
@@ -1768,7 +1768,7 @@ static int do_put(const char *rname, const char *lname, bool reput)
 		int this_time;
 
 		clock_gettime_mono(&tp_end);
-		this_time = TspecDiff(&tp_start,&tp_end);
+		this_time = nsec_time_diff(&tp_start,&tp_end)/1000000;
 		put_total_time_ms += this_time;
 		put_total_size += state.nread;
 
