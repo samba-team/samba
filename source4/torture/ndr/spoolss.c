@@ -552,6 +552,18 @@ static const uint8_t getprinterdriver2_in_data[] = {
 	0x03, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00
 };
 
+static bool getprinterdriver2_in_check(struct torture_context *tctx,
+				       struct spoolss_GetPrinterDriver2 *r)
+{
+	torture_assert_str_equal(tctx, r->in.architecture, "Windows x64", "architecture");
+	torture_assert_int_equal(tctx, r->in.level, 6, "level");
+	torture_assert_int_equal(tctx, r->in.offered, 1160, "offered");
+	torture_assert_int_equal(tctx, r->in.client_major_version, 3, "client_major_version");
+	torture_assert_int_equal(tctx, r->in.client_minor_version, 2, "client_minor_version");
+
+	return true;
+}
+
 static const uint8_t getprinterdriver2_out_data[] = {
 	0x00, 0x00, 0x02, 0x00, 0x88, 0x04, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00,
 	0x58, 0x04, 0x00, 0x00, 0x40, 0x04, 0x00, 0x00, 0xf4, 0x03, 0x00, 0x00,
@@ -654,6 +666,41 @@ static const uint8_t getprinterdriver2_out_data[] = {
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 };
 
+static bool getprinterdriver2_out_check(struct torture_context *tctx,
+					struct spoolss_GetPrinterDriver2 *r)
+{
+	torture_assert(tctx, r->out.info, "info");
+	torture_assert_int_equal(tctx, r->out.info->info6.version, SPOOLSS_DRIVER_VERSION_200X, "version");
+	torture_assert_str_equal(tctx, r->out.info->info6.driver_name, "Ricoh Aficio MP 5000 PS", "driver_name");
+	torture_assert_str_equal(tctx, r->out.info->info6.architecture, "Windows x64", "architecture");
+	torture_assert_str_equal(tctx, r->out.info->info6.driver_path, "\\\\RH-W2K8R2\\print$\\x64\\3\\PSCRIPT5.DLL", "driver_path");
+	torture_assert_str_equal(tctx, r->out.info->info6.data_file, "\\\\RH-W2K8R2\\print$\\x64\\3\\RI1403E3.PPD", "data_file");
+	torture_assert_str_equal(tctx, r->out.info->info6.config_file, "\\\\RH-W2K8R2\\print$\\x64\\3\\PS5UI.DLL", "config_file");
+	torture_assert_str_equal(tctx, r->out.info->info6.help_file, "\\\\RH-W2K8R2\\print$\\x64\\3\\PSCRIPT.HLP", "help_file");
+	torture_assert_str_equal(tctx, r->out.info->info6.help_file, "\\\\RH-W2K8R2\\print$\\x64\\3\\PSCRIPT.HLP", "help_file");
+	torture_assert_str_equal(tctx, r->out.info->info6.dependent_files[0], "\\\\RH-W2K8R2\\print$\\x64\\3\\PSCRIPT.NTF", "dependent_files[0]");
+	torture_assert_str_equal(tctx, r->out.info->info6.dependent_files[1], "\\\\RH-W2K8R2\\print$\\x64\\3\\PS_SCHM.GDL", "dependent_files[1]");
+	torture_assert_str_equal(tctx, r->out.info->info6.dependent_files[2], "\\\\RH-W2K8R2\\print$\\x64\\3\\RICOHPS7.INI", "dependent_files[2]");
+	torture_assert_str_equal(tctx, r->out.info->info6.dependent_files[3], "\\\\RH-W2K8R2\\print$\\x64\\3\\RIPSUI7.DLL", "dependent_files[3]");
+	torture_assert_str_equal(tctx, r->out.info->info6.dependent_files[4], "\\\\RH-W2K8R2\\print$\\x64\\3\\RIPSRES7.DLL", "dependent_files[4]");
+	torture_assert_str_equal(tctx, r->out.info->info6.dependent_files[5], "\\\\RH-W2K8R2\\print$\\x64\\3\\RICFG7.XML", "dependent_files[5]");
+	torture_assert(tctx, r->out.info->info6.monitor_name == NULL, "monitor_name");
+	torture_assert(tctx, r->out.info->info6.default_datatype == NULL, "default_datatype");
+	torture_assert(tctx, r->out.info->info6.previous_names == NULL, "previous_names");
+	/* driver_date              : Wed Jun 21 02:00:00 2006 CEST */
+	torture_assert_u64_equal(tctx, r->out.info->info6.driver_version, 0x000600011db04001, "driver_version");
+	torture_assert_str_equal(tctx, r->out.info->info6.manufacturer_name, "Ricoh", "manufacturer_name");
+	torture_assert_str_equal(tctx, r->out.info->info6.manufacturer_url, "http://go.microsoft.com/fwlink/?LinkID=47&prd=10798&sbp=Printers", "manufacturer_url");
+	torture_assert_str_equal(tctx, r->out.info->info6.hardware_id, "ricohricoh_aficio_mp5063", "hardware_id");
+	torture_assert_str_equal(tctx, r->out.info->info6.provider, "Ricoh", "provider");
+	torture_assert_int_equal(tctx, *r->out.needed, 1160, "needed");
+	torture_assert_int_equal(tctx, *r->out.server_major_version, 0, "server_major_version");
+	torture_assert_int_equal(tctx, *r->out.server_minor_version, 0, "server_minor_version");
+	torture_assert_werr_ok(tctx, r->out.result, "result");
+
+	return true;
+}
+
 struct torture_suite *ndr_spoolss_suite(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite = torture_suite_create(ctx, "spoolss");
@@ -702,8 +749,8 @@ struct torture_suite *ndr_spoolss_suite(TALLOC_CTX *ctx)
 
 	torture_suite_add_ndr_pull_fn_test(suite, spoolss_AddPrinterDriverEx, addprinterdriverex_in_data, NDR_IN, NULL );
 
-	torture_suite_add_ndr_pull_fn_test(suite, spoolss_GetPrinterDriver2, getprinterdriver2_in_data, NDR_IN, NULL);
-	torture_suite_add_ndr_pull_io_test(suite, spoolss_GetPrinterDriver2, getprinterdriver2_in_data, getprinterdriver2_out_data, NULL);
+	torture_suite_add_ndr_pull_fn_test(suite, spoolss_GetPrinterDriver2, getprinterdriver2_in_data, NDR_IN, getprinterdriver2_in_check);
+	torture_suite_add_ndr_pull_io_test(suite, spoolss_GetPrinterDriver2, getprinterdriver2_in_data, getprinterdriver2_out_data, getprinterdriver2_out_check);
 
 	return suite;
 }
