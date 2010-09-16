@@ -41,31 +41,23 @@
  krb5_error_code kerberos_kinit_keyblock_cc(krb5_context ctx, krb5_ccache cc, 
 					    krb5_principal principal, krb5_keyblock *keyblock,
 					    const char *target_service,
+					    krb5_get_init_creds_opt *krb_options,
 					    time_t *expire_time, time_t *kdc_time)
 {
 	krb5_error_code code = 0;
 	krb5_creds my_creds;
-	krb5_get_init_creds_opt *options;
-
-	if ((code = krb5_get_init_creds_opt_alloc(ctx, &options))) {
-		return code;
-	}
-
-	krb5_get_init_creds_opt_set_default_flags(ctx, NULL, NULL, options);
 
 	if ((code = krb5_get_init_creds_keyblock(ctx, &my_creds, principal, keyblock,
-						 0, target_service, options))) {
+						 0, target_service, krb_options))) {
 		return code;
 	}
 	
 	if ((code = krb5_cc_initialize(ctx, cc, principal))) {
-		krb5_get_init_creds_opt_free(ctx, options);
 		krb5_free_cred_contents(ctx, &my_creds);
 		return code;
 	}
 	
 	if ((code = krb5_cc_store_cred(ctx, cc, &my_creds))) {
-		krb5_get_init_creds_opt_free(ctx, options);
 		krb5_free_cred_contents(ctx, &my_creds);
 		return code;
 	}
@@ -78,7 +70,6 @@
 		*kdc_time = (time_t) my_creds.times.starttime;
 	}
 
-	krb5_get_init_creds_opt_free(ctx, options);
 	krb5_free_cred_contents(ctx, &my_creds);
 	
 	return 0;
@@ -96,19 +87,13 @@
  krb5_error_code kerberos_kinit_password_cc(krb5_context ctx, krb5_ccache cc, 
 					    krb5_principal principal, const char *password,
 					    krb5_principal impersonate_principal, const char *target_service,
+					    krb5_get_init_creds_opt *krb_options,
 					    time_t *expire_time, time_t *kdc_time)
 {
 	krb5_error_code code = 0;
 	krb5_creds my_creds;
 	krb5_creds *impersonate_creds;
-	krb5_get_init_creds_opt *init_options;
 	krb5_get_creds_opt options;
-
-	if ((code = krb5_get_init_creds_opt_alloc(ctx, &init_options))) {
-		return code;
-	}
-
-	krb5_get_init_creds_opt_set_default_flags(ctx, NULL, NULL, init_options);
 
 	/* If we are not impersonating, then get this ticket for the
 	 * target service, otherwise a krbtgt, and get the next ticket
@@ -117,19 +102,16 @@
 						 NULL, NULL,
 						 0,
 						 impersonate_principal ? NULL : target_service,
-						 init_options))) {
-		krb5_get_init_creds_opt_free(ctx, init_options);
+						 krb_options))) {
 		return code;
 	}
 
 	if ((code = krb5_cc_initialize(ctx, cc, principal))) {
-		krb5_get_init_creds_opt_free(ctx, init_options);
 		krb5_free_cred_contents(ctx, &my_creds);
 		return code;
 	}
 	
 	if ((code = krb5_cc_store_cred(ctx, cc, &my_creds))) {
-		krb5_get_init_creds_opt_free(ctx, init_options);
 		krb5_free_cred_contents(ctx, &my_creds);
 		return code;
 	}
@@ -142,7 +124,6 @@
 		*kdc_time = (time_t) my_creds.times.starttime;
 	}
 
-	krb5_get_init_creds_opt_free(ctx, init_options);
 	krb5_free_cred_contents(ctx, &my_creds);
 	
 	if (code == 0 && impersonate_principal) {

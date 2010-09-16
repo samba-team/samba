@@ -94,11 +94,13 @@ bool get_auth_data_from_tkt(TALLOC_CTX *mem_ctx, DATA_BLOB *auth_data, krb5_tick
 krb5_error_code kerberos_kinit_password_cc(krb5_context ctx, krb5_ccache cc,
 					   krb5_principal principal, const char *password,
 					   krb5_principal impersonate_principal, const char *target_service,
+					   krb5_get_init_creds_opt *krb_options,
 					   time_t *expire_time, time_t *kdc_time);
 krb5_error_code kerberos_kinit_keyblock_cc(krb5_context ctx, krb5_ccache cc,
-			       krb5_principal principal, krb5_keyblock *keyblock,
-			       const char *target_service,
-			       time_t *expire_time, time_t *kdc_time);
+					   krb5_principal principal, krb5_keyblock *keyblock,
+					   const char *target_service,
+					   krb5_get_init_creds_opt *krb_options,
+					   time_t *expire_time, time_t *kdc_time);
 krb5_principal kerberos_fetch_salt_princ_for_host_princ(krb5_context context,
 							krb5_principal host_princ,
 							int enctype);

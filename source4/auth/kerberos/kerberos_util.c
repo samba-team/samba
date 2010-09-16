@@ -200,6 +200,7 @@ static krb5_error_code salt_principal_from_credentials(TALLOC_CTX *parent_ctx,
 	krb5_principal impersonate_principal;
 	int tries;
 	TALLOC_CTX *mem_ctx = talloc_new(parent_ctx);
+	krb5_get_init_creds_opt *krb_options;
 
 	if (!mem_ctx) {
 		(*error_string) = strerror(ENOMEM);
@@ -222,12 +223,37 @@ static krb5_error_code salt_principal_from_credentials(TALLOC_CTX *parent_ctx,
 
 	password = cli_credentials_get_password(credentials);
 
+	/* setup the krb5 options we want */
+	if ((ret = krb5_get_init_creds_opt_alloc(smb_krb5_context->krb5_context, &krb_options))) {
+		(*error_string) = talloc_asprintf(credentials, "krb5_get_init_creds_opt_alloc failed (%s)\n",
+						  smb_get_krb5_error_message(smb_krb5_context->krb5_context,
+									     ret, mem_ctx));
+		talloc_free(mem_ctx);
+		return ret;
+	}
+
+	/* get the defaults */
+	krb5_get_init_creds_opt_set_default_flags(smb_krb5_context->krb5_context, NULL, NULL, krb_options);
+
+	/* set if we want a forwardable ticket */
+	switch (cli_credentials_get_krb_forwardable(credentials)) {
+	case CRED_AUTO_KRB_FORWARDABLE:
+		break;
+	case CRED_NO_KRB_FORWARDABLE:
+		krb5_get_init_creds_opt_set_forwardable(krb_options, FALSE);
+		break;
+	case CRED_FORCE_KRB_FORWARDABLE:
+		krb5_get_init_creds_opt_set_forwardable(krb_options, TRUE);
+		break;
+	}
+
 	tries = 2;
 	while (tries--) {
 		if (password) {
 			ret = kerberos_kinit_password_cc(smb_krb5_context->krb5_context, ccache, 
 							 princ, password,
 							 impersonate_principal, target_service,
+							 krb_options,
 							 NULL, &kdc_time);
 		} else if (impersonate_principal) {
 			(*error_string) = "INTERNAL error: Cannot impersonate principal with just a keyblock.  A password must be specified in the credentials";
@@ -241,6 +267,7 @@ static krb5_error_code salt_principal_from_credentials(TALLOC_CTX *parent_ctx,
 			if (!mach_pwd) {
 				talloc_free(mem_ctx);
 				(*error_string) = "kinit_to_ccache: No password available for kinit\n";
+				krb5_get_init_creds_opt_free(smb_krb5_context->krb5_context, krb_options);
 				return EINVAL;
 			}
 			ret = krb5_keyblock_init(smb_krb5_context->krb5_context,
@@ -251,7 +278,7 @@ static krb5_error_code salt_principal_from_credentials(TALLOC_CTX *parent_ctx,
 			if (ret == 0) {
 				ret = kerberos_kinit_keyblock_cc(smb_krb5_context->krb5_context, ccache, 
 								 princ, &keyblock,
-								 target_service,
+								 target_service, krb_options,
 								 NULL, &kdc_time);
 				krb5_free_keyblock_contents(smb_krb5_context->krb5_context, &keyblock);
 			}
@@ -266,6 +293,8 @@ static krb5_error_code salt_principal_from_credentials(TALLOC_CTX *parent_ctx,
 			break;
 		}
 	}
+
+	krb5_get_init_creds_opt_free(smb_krb5_context->krb5_context, krb_options);
 
 	if (ret == KRB5KRB_AP_ERR_SKEW || ret == KRB5_KDCREP_SKEW) {
 		(*error_string) = talloc_asprintf(credentials, "kinit for %s failed (%s)\n",
@@ -291,6 +320,7 @@ static krb5_error_code salt_principal_from_credentials(TALLOC_CTX *parent_ctx,
 				      ccache, obtained,
 				      error_string);
 	}
+
 	if (ret) {
 		(*error_string) = talloc_asprintf(credentials, "kinit for %s failed (%s)\n",
 						  cli_credentials_get_principal(credentials, mem_ctx),
