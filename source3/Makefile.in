@@ -3377,7 +3377,7 @@ test:: all torture timelimit
 		SOURCEDIR="$(srcdir)" \
 		RUN_FROM_BUILD_FARM="$(RUN_FROM_BUILD_FARM)" \
 		PERL="$(PERL)" PYTHON="$(PYTHON)" \
-		$(selftestdir)/s3-selftest.sh
+		$(srcdir)/selftest/s3-selftest.sh
 
 test-%:
 	$(MAKE) test TESTS=$*
