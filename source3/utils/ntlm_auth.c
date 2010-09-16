@@ -810,15 +810,17 @@ static NTSTATUS do_ccache_ntlm_auth(DATA_BLOB initial_msg, DATA_BLOB challenge_m
 	return NT_STATUS_MORE_PROCESSING_REQUIRED;
 }
 
-static void manage_squid_ntlmssp_request(struct ntlm_auth_state *state,
-						char *buf, int length)
+static void manage_squid_ntlmssp_request_int(struct ntlm_auth_state *state,
+					     char *buf, int length,
+					     TALLOC_CTX *mem_ctx,
+					     char **response)
 {
 	DATA_BLOB request, reply;
 	NTSTATUS nt_status;
 
 	if (strlen(buf) < 2) {
 		DEBUG(1, ("NTLMSSP query [%s] invalid\n", buf));
-		x_fprintf(x_stdout, "BH NTLMSSP query invalid\n");
+		*response = talloc_strdup(mem_ctx, "BH NTLMSSP query invalid");
 		return;
 	}
 
@@ -828,7 +830,7 @@ static void manage_squid_ntlmssp_request(struct ntlm_auth_state *state,
 			TALLOC_FREE(state->want_feature_list);
 			state->want_feature_list = talloc_strdup(state->mem_ctx,
 					buf+3);
-			x_fprintf(x_stdout, "OK\n");
+			*response = talloc_strdup(mem_ctx, "OK");
 			return;
 		}
 		request = base64_decode_data_blob(buf + 3);
@@ -845,12 +847,12 @@ static void manage_squid_ntlmssp_request(struct ntlm_auth_state *state,
 
 		if (opt_password == NULL) {
 			DEBUG(1, ("Out of memory\n"));
-			x_fprintf(x_stdout, "BH Out of memory\n");
+			*response = talloc_strdup(mem_ctx, "BH Out of memory");
 			data_blob_free(&request);
 			return;
 		}
 
-		x_fprintf(x_stdout, "OK\n");
+		*response = talloc_strdup(mem_ctx, "OK");
 		data_blob_free(&request);
 		return;
 	}
@@ -865,10 +867,11 @@ static void manage_squid_ntlmssp_request(struct ntlm_auth_state *state,
 		DEBUG(10, ("Requested negotiated NTLMSSP flags\n"));
 
 		if (state->svr_state == SERVER_FINISHED) {
-			x_fprintf(x_stdout, "GF 0x%08x\n", state->neg_flags);
+			*response = talloc_asprintf(mem_ctx, "GF 0x%08x",
+						 state->neg_flags);
 		}
 		else {
-			x_fprintf(x_stdout, "BH\n");
+			*response = talloc_strdup(mem_ctx, "BH\n");
 		}
 		data_blob_free(&request);
 		return;
@@ -877,17 +880,18 @@ static void manage_squid_ntlmssp_request(struct ntlm_auth_state *state,
 		if(state->have_session_key) {
 			char *key64 = base64_encode_data_blob(state->mem_ctx,
 					state->session_key);
-			x_fprintf(x_stdout, "GK %s\n", key64?key64:"<NULL>");
+			*response = talloc_asprintf(mem_ctx, "GK %s",
+						 key64 ? key64 : "<NULL>");
 			TALLOC_FREE(key64);
 		} else {
-			x_fprintf(x_stdout, "BH\n");
+			*response = talloc_strdup(mem_ctx, "BH");
 		}
 
 		data_blob_free(&request);
 		return;
 	} else {
 		DEBUG(1, ("NTLMSSP query [%s] invalid\n", buf));
-		x_fprintf(x_stdout, "BH NTLMSSP query invalid\n");
+		*response = talloc_strdup(mem_ctx, "BH NTLMSSP query invalid");
 		return;
 	}
 
@@ -895,7 +899,8 @@ static void manage_squid_ntlmssp_request(struct ntlm_auth_state *state,
 		nt_status = ntlm_auth_start_ntlmssp_server(
 				&state->ntlmssp_state);
 		if (!NT_STATUS_IS_OK(nt_status)) {
-			x_fprintf(x_stdout, "BH %s\n", nt_errstr(nt_status));
+			*response = talloc_asprintf(
+				mem_ctx, "BH %s", nt_errstr(nt_status));
 			return;
 		}
 		ntlmssp_want_feature_list(state->ntlmssp_state,
@@ -910,22 +915,25 @@ static void manage_squid_ntlmssp_request(struct ntlm_auth_state *state,
 	if (NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 		char *reply_base64 = base64_encode_data_blob(state->mem_ctx,
 				reply);
-		x_fprintf(x_stdout, "TT %s\n", reply_base64);
+		*response = talloc_asprintf(mem_ctx, "TT %s", reply_base64);
 		TALLOC_FREE(reply_base64);
 		data_blob_free(&reply);
 		state->svr_state = SERVER_CHALLENGE;
 		DEBUG(10, ("NTLMSSP challenge\n"));
 	} else if (NT_STATUS_EQUAL(nt_status, NT_STATUS_ACCESS_DENIED)) {
-		x_fprintf(x_stdout, "BH %s\n", nt_errstr(nt_status));
+		*response = talloc_asprintf(mem_ctx, "BH %s",
+					 nt_errstr(nt_status));
 		DEBUG(0, ("NTLMSSP BH: %s\n", nt_errstr(nt_status)));
 
 		TALLOC_FREE(state->ntlmssp_state);
 	} else if (!NT_STATUS_IS_OK(nt_status)) {
-		x_fprintf(x_stdout, "NA %s\n", nt_errstr(nt_status));
+		*response = talloc_asprintf(mem_ctx, "NA %s",
+					 nt_errstr(nt_status));
 		DEBUG(10, ("NTLMSSP %s\n", nt_errstr(nt_status)));
 	} else {
-		x_fprintf(x_stdout, "AF %s\n",
-				(char *)state->ntlmssp_state->callback_private);
+		*response = talloc_asprintf(
+			mem_ctx, "AF %s",
+			(char *)state->ntlmssp_state->callback_private);
 		DEBUG(10, ("NTLMSSP OK!\n"));
 
 		if(state->have_session_key)
@@ -939,6 +947,22 @@ static void manage_squid_ntlmssp_request(struct ntlm_auth_state *state,
 	}
 
 	data_blob_free(&request);
+}
+
+static void manage_squid_ntlmssp_request(struct ntlm_auth_state *state,
+					 char *buf, int length)
+{
+	char *response;
+
+	manage_squid_ntlmssp_request_int(state, buf, length,
+					 talloc_tos(), &response);
+
+	if (response == NULL) {
+		x_fprintf(x_stdout, "BH Out of memory\n");
+		return;
+	}
+	x_fprintf(x_stdout, "%s\n", response);
+	TALLOC_FREE(response);
 }
 
 static void manage_client_ntlmssp_request(struct ntlm_auth_state *state,
