@@ -394,7 +394,6 @@ static WERROR _dsdb_drsuapi_pfm_verify(const struct drsuapi_DsReplicaOIDMapping_
 
 	if (have_schema_info) {
 		DATA_BLOB blob;
-		struct dsdb_schema_info *schi = NULL;
 
 		if (ctr->num_mappings < 2) {
 			return WERR_INVALID_PARAMETER;
@@ -406,10 +405,9 @@ static WERROR _dsdb_drsuapi_pfm_verify(const struct drsuapi_DsReplicaOIDMapping_
 			return WERR_INVALID_PARAMETER;
 		}
 
-		/* parse schemaInfo blob to verify it is valid */
+		/* verify schemaInfo blob is valid one */
 		blob = data_blob_const(mapping->oid.binary_oid, mapping->oid.length);
-		if (!W_ERROR_IS_OK(dsdb_schema_info_from_blob(&blob, talloc_autofree_context(), &schi))) {
-			talloc_free(schi);
+		if (!dsdb_schema_info_blob_is_valid(&blob)) {
 			return WERR_INVALID_PARAMETER;
 		}
 
