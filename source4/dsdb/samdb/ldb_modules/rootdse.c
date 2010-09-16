@@ -329,14 +329,14 @@ static int rootdse_add_dynamic(struct ldb_module *module, struct ldb_message *ms
 		}
 	}
 
-	if (priv && do_attribute(attrs, "domainFunctionality")) {
+	if (do_attribute(attrs, "domainFunctionality")) {
 		if (ldb_msg_add_fmt(msg, "domainFunctionality",
 				    "%d", dsdb_functional_level(ldb)) != LDB_SUCCESS) {
 			goto failed;
 		}
 	}
 
-	if (priv && do_attribute(attrs, "forestFunctionality")
+	if (do_attribute(attrs, "forestFunctionality")
 	    && (val = talloc_get_type(ldb_get_opaque(ldb, "forestFunctionality"), int))) {
 		if (ldb_msg_add_fmt(msg, "forestFunctionality",
 				    "%d", *val) != LDB_SUCCESS) {
@@ -344,7 +344,7 @@ static int rootdse_add_dynamic(struct ldb_module *module, struct ldb_message *ms
 		}
 	}
 
-	if (priv && do_attribute(attrs, "domainControllerFunctionality")
+	if (do_attribute(attrs, "domainControllerFunctionality")
 	    && (val = talloc_get_type(ldb_get_opaque(ldb, "domainControllerFunctionality"), int))) {
 		if (ldb_msg_add_fmt(msg, "domainControllerFunctionality",
 				    "%d", *val) != LDB_SUCCESS) {
