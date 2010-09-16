@@ -655,7 +655,7 @@ _PUBLIC_ int set_blocking(int fd, bool set);
 /**
  Sleep for a specified number of milliseconds.
 **/
-_PUBLIC_ void msleep(unsigned int t);
+_PUBLIC_ void smb_msleep(unsigned int t);
 
 /**
  Get my own name, return in talloc'ed storage.

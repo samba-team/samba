@@ -803,7 +803,7 @@ static bool test_lease_multibreak(struct torture_context *tctx,
 	break_info.held_oplock_level = io.out.oplock_level;
 
 	/* Sleep, use a write to clear the recv queue. */
-	msleep(250);
+	smb_msleep(250);
 	ZERO_STRUCT(w);
 	w.in.file.handle = h3;
 	w.in.offset      = 0;

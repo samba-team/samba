@@ -2911,7 +2911,7 @@ static bool test_GetDomainInfo(struct torture_context *tctx,
 	torture_assert_ntstatus_ok(tctx, r.out.result, "LogonGetDomainInfo failed");
 	torture_assert(tctx, netlogon_creds_client_check(creds, &a.cred), "Credential chaining failed");
 
-	msleep(250);
+	smb_msleep(250);
 
 	if (sam_ctx) {
 		/* AD workstation infos entry check */
@@ -3000,7 +3000,7 @@ static bool test_GetDomainInfo(struct torture_context *tctx,
 
 	torture_assert(tctx, netlogon_creds_client_check(creds, &a.cred), "Credential chaining failed");
 
-	msleep(250);
+	smb_msleep(250);
 
 	if (sam_ctx) {
 		/* AD workstation infos entry check */
@@ -3076,7 +3076,7 @@ static bool test_GetDomainInfo(struct torture_context *tctx,
 	torture_assert_ntstatus_ok(tctx, r.out.result, "LogonGetDomainInfo failed");
 	torture_assert(tctx, netlogon_creds_client_check(creds, &a.cred), "Credential chaining failed");
 
-	msleep(250);
+	smb_msleep(250);
 
 	if (sam_ctx) {
 		/* AD workstation infos entry check */
@@ -3147,7 +3147,7 @@ static bool test_GetDomainInfo(struct torture_context *tctx,
 	torture_assert_ntstatus_ok(tctx, r.out.result, "LogonGetDomainInfo failed");
 	torture_assert(tctx, netlogon_creds_client_check(creds, &a.cred), "Credential chaining failed");
 
-	msleep(250);
+	smb_msleep(250);
 
 	/* Now the in/out DNS hostnames should be the same */
 	torture_assert_str_equal(tctx,
@@ -3181,7 +3181,7 @@ static bool test_GetDomainInfo(struct torture_context *tctx,
 	torture_assert_ntstatus_ok(tctx, r.out.result, "LogonGetDomainInfo failed");
 	torture_assert(tctx, netlogon_creds_client_check(creds, &a.cred), "Credential chaining failed");
 
-	msleep(250);
+	smb_msleep(250);
 
 	/* Checks "workstation flags" */
 	torture_assert(tctx,

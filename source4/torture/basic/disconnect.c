@@ -162,7 +162,7 @@ bool torture_disconnect(struct torture_context *torture)
 			 * new process comes in. Try to get rid of the random
 			 * failures in the build farm.
 			 */
-			msleep(200);
+			smb_msleep(200);
 		}
 	}
 

@@ -680,13 +680,13 @@ static bool run_deferopen(struct torture_context *tctx, struct smbcli_state *cli
 
 		torture_comment(tctx, "pid %u open %d\n", (unsigned)getpid(), i);
 
-		msleep(10 * msec);
+		smb_msleep(10 * msec);
 		i++;
 		if (NT_STATUS_IS_ERR(smbcli_close(cli->tree, fnum))) {
 			torture_comment(tctx,"Failed to close %s, error=%s\n", fname, smbcli_errstr(cli->tree));
 			return false;
 		}
-		msleep(2 * msec);
+		smb_msleep(2 * msec);
 	}
 
 	if (NT_STATUS_IS_ERR(smbcli_unlink(cli->tree, fname))) {

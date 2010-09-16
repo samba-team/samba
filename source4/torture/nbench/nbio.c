@@ -192,7 +192,7 @@ void nbio_target_rate(double rate)
 
 	tdelay = (children[nbio_id].bytes - last_bytes)/(1.0e6*rate) - timeval_elapsed(&last_time);
 	if (tdelay > 0) {
-		msleep(tdelay*1000);
+		smb_msleep(tdelay*1000);
 	} else {
 		children[nbio_id].max_latency = MAX(children[nbio_id].max_latency, -tdelay);
 	}
@@ -210,7 +210,7 @@ void nbio_time_delay(double targett)
 {
 	double elapsed = timeval_elapsed(&children[nbio_id].starttime);
 	if (targett > elapsed) {
-		msleep(1000*(targett - elapsed));
+		smb_msleep(1000*(targett - elapsed));
 	} else if (elapsed - targett > children[nbio_id].max_latency) {
 		children[nbio_id].max_latency = MAX(elapsed - targett, children[nbio_id].max_latency);
 	}

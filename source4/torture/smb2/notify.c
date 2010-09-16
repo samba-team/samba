@@ -308,7 +308,7 @@ static bool torture_smb2_notify_dir(struct torture_context *torture,
 	smb2_util_rmdir(tree2, fname);
 	smb2_util_mkdir(tree2, fname);
 	smb2_util_rmdir(tree2, fname);
-	msleep(200);
+	smb_msleep(200);
 	req = smb2_notify_send(tree1, &(notify.smb2));
 	status = smb2_notify_recv(req, torture, &(notify.smb2));
 	CHECK_STATUS(status, NT_STATUS_OK);
@@ -603,7 +603,7 @@ static bool torture_smb2_notify_recursive(struct torture_context *torture,
 
 	notify.smb2.in.completion_filter = 0;
 	notify.smb2.in.recursive = true;
-	msleep(200);
+	smb_msleep(200);
 	req1 = smb2_notify_send(tree1, &(notify.smb2));
 
 	status = smb2_util_rmdir(tree2, BASEDIR "\\subdir-name\\subname1-r");
@@ -898,7 +898,7 @@ static bool torture_smb2_notify_mask(struct torture_context *torture,
 		/* send the change notify request */ \
 		req = smb2_notify_send(tree1, &(notify.smb2)); \
 		op \
-		msleep(200); smb2_cancel(req); \
+		smb_msleep(200); smb2_cancel(req); \
 		status = smb2_notify_recv(req, torture, &(notify.smb2)); \
 		cleanup \
 		smb2_util_close(tree1, h1); \
@@ -1775,7 +1775,7 @@ static bool torture_smb2_notify_basedir(struct torture_context *torture,
 
 	/* set attribute on a file to assure we receive a notification */
 	smb2_util_setatr(tree2, BASEDIR "\\tname1", FILE_ATTRIBUTE_HIDDEN);
-	msleep(200);
+	smb_msleep(200);
 
 	/* check how many responses were given, expect only 1 for the file */
 	status = smb2_notify_recv(req1, torture, &(notify.smb2));
