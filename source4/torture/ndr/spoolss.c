@@ -458,8 +458,8 @@ struct torture_suite *ndr_spoolss_suite(TALLOC_CTX *ctx)
 	torture_suite_add_ndr_pull_fn_test(suite, spoolss_GetPrinter, getprinter_req_data, NDR_IN, NULL );
 	torture_suite_add_ndr_pull_fn_test(suite, spoolss_GetPrinter, getprinter_resp_data, NDR_OUT, NULL );
 
-	/*torture_suite_add_ndr_pull_fn_test(suite, spoolss_GetPrinterData, getprinterdata_req_data, NDR_IN, NULL );
-	torture_suite_add_ndr_pull_fn_test(suite, spoolss_GetPrinterData, getprinterdata_resp_data, NDR_OUT, NULL );*/
+	torture_suite_add_ndr_pull_fn_test(suite, spoolss_GetPrinterData, getprinterdata_req_data, NDR_IN, NULL );
+	/*torture_suite_add_ndr_pull_fn_test(suite, spoolss_GetPrinterData, getprinterdata_resp_data, NDR_OUT, NULL );*/
 
 	torture_suite_add_ndr_pull_fn_test(suite, spoolss_ReplyOpenPrinter, replyopenprinter_req_data, NDR_IN, NULL );
 	torture_suite_add_ndr_pull_fn_test(suite, spoolss_ReplyOpenPrinter, replyopenprinter_resp_data, NDR_OUT, NULL );
