@@ -2358,7 +2358,7 @@ cpp_quote("#define spoolss_security_descriptor security_descriptor")
 
 	/******************/
 	/* Function: 0x35 */
-	WERROR spoolss_GetPrinterDriver2(
+	[public] WERROR spoolss_GetPrinterDriver2(
 		[in,ref] policy_handle *handle,
 		[in,unique] [string,charset(UTF16)] uint16 *architecture,
 		[in] 	 uint32 level,
