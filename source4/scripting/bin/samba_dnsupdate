@@ -80,13 +80,14 @@ if len(IPs) == 0:
 ########################################################
 # get credentials if we haven't got them already
 def get_credentials(lp):
-    from samba.credentials import Credentials
+    from samba import credentials
     global ccachename, creds
     if creds is not None:
         return
-    creds = Credentials()
+    creds = credentials.Credentials()
     creds.guess(lp)
     creds.set_machine_account(lp)
+    creds.set_krb_forwardable(credentials.NO_KRB_FORWARDABLE)
     (tmp_fd, ccachename) = tempfile.mkstemp()
     creds.get_named_ccache(lp, ccachename)
 
