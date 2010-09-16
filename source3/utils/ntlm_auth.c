@@ -2319,7 +2319,9 @@ static void squid_stream(enum stdio_helper_mode stdio_mode, stdio_helper_functio
 	state->helper_mode = stdio_mode;
 
 	while(1) {
+		TALLOC_CTX *frame = talloc_stackframe();
 		manage_squid_request(state, fn);
+		TALLOC_FREE(frame);
 	}
 }
 
