@@ -58,7 +58,7 @@ struct composite_context *resolve_name_file_send(TALLOC_CTX *mem_ctx,
 	struct resolve_file_state *state;
 	struct sockaddr_storage *resolved_iplist;
 	int resolved_count, i;
-	char *dns_name;
+	const char *dns_name;
 
 	bool srv_lookup = (flags & RESOLVE_NAME_FLAG_DNS_SRV);
 
