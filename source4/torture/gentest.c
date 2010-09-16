@@ -1211,7 +1211,7 @@ static void check_pending(void)
 {
 	int i, j;
 
-	msleep(20);
+	smb_msleep(20);
 
 	for (j=0;j<NINSTANCES;j++) {
 		for (i=0;i<NSERVERS;i++) {

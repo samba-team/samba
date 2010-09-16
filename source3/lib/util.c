@@ -823,55 +823,6 @@ ssize_t write_data_at_offset(int fd, const char *buffer, size_t N, SMB_OFF_T pos
 #endif
 }
 
-/*******************************************************************
- Sleep for a specified number of milliseconds.
-********************************************************************/
-
-void smb_msleep(unsigned int t)
-{
-#if defined(HAVE_NANOSLEEP)
-	struct timespec tval;
-	int ret;
-
-	tval.tv_sec = t/1000;
-	tval.tv_nsec = 1000000*(t%1000);
-
-	do {
-		errno = 0;
-		ret = nanosleep(&tval, &tval);
-	} while (ret < 0 && errno == EINTR && (tval.tv_sec > 0 || tval.tv_nsec > 0));
-#else
-	unsigned int tdiff=0;
-	struct timeval tval,t1,t2;  
-	fd_set fds;
-
-	GetTimeOfDay(&t1);
-	t2 = t1;
-
-	while (tdiff < t) {
-		tval.tv_sec = (t-tdiff)/1000;
-		tval.tv_usec = 1000*((t-tdiff)%1000);
-
-		/* Never wait for more than 1 sec. */
-		if (tval.tv_sec > 1) {
-			tval.tv_sec = 1; 
-			tval.tv_usec = 0;
-		}
-
-		FD_ZERO(&fds);
-		errno = 0;
-		sys_select_intr(0,&fds,NULL,NULL,&tval);
-
-		GetTimeOfDay(&t2);
-		if (t2.tv_sec < t1.tv_sec) {
-			/* Someone adjusted time... */
-			t1 = t2;
-		}
-
-		tdiff = TvalDiff(&t1,&t2);
-	}
-#endif
-}
 
 NTSTATUS reinit_after_fork(struct messaging_context *msg_ctx,
 			   struct event_context *ev_ctx,

@@ -1435,7 +1435,7 @@ static bool test_CreateSecret(struct dcerpc_pipe *p,
 		r5.in.new_val->size = enc_key.length;
 
 
-		msleep(200);
+		smb_msleep(200);
 		torture_comment(tctx, "Testing SetSecret (existing value should move to old)\n");
 
 		torture_assert_ntstatus_ok(tctx, dcerpc_lsa_SetSecret_r(b, tctx, &r5),
