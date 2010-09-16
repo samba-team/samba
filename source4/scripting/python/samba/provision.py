@@ -1043,6 +1043,10 @@ def setup_samdb(path, setup_path, session_info, provision_backend, lp, names,
     # Load the schema from the one we computed earlier
     samdb.set_schema(schema)
 
+    # Set the NTDS settings DN manually - in order to have it already around
+    # before the provisioned tree exists and we connect
+    samdb.set_ntds_settings_dn("CN=NTDS Settings,%s" % names.serverdn)
+
     # And now we can connect to the DB - the schema won't be loaded from the DB
     samdb.connect(path)
 
@@ -1063,7 +1067,6 @@ def setup_samdb(path, setup_path, session_info, provision_backend, lp, names,
 
         samdb.set_domain_sid(str(domainsid))
         samdb.set_invocation_id(invocationid)
-        samdb.set_ntds_settings_dn("CN=NTDS Settings,%s" % names.serverdn)
 
         logger.info("Adding DomainDN: %s" % names.domaindn)
 
@@ -1121,10 +1124,16 @@ def setup_samdb(path, setup_path, session_info, provision_backend, lp, names,
     else:
         samdb.transaction_commit()
 
-    samdb = SamDB(session_info=admin_session_info,
+    samdb = SamDB(session_info=admin_session_info, auto_connect=False,
                 credentials=provision_backend.credentials, lp=lp,
                 global_schema=False, am_rodc=am_rodc)
+
+    # Set the NTDS settings DN manually - in order to have it already around
+    # before the provisioned tree exists and we connect
+    samdb.set_ntds_settings_dn("CN=NTDS Settings,%s" % names.serverdn)
+
     samdb.connect(path)
+
     samdb.transaction_start()
     try:
         samdb.invocation_id = invocationid
