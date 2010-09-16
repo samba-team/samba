@@ -950,7 +950,7 @@ static void dcesrv_save_call(struct dcesrv_call_state *call, const char *why)
 {
 #ifdef DEVELOPER
 	char *fname;
-	char *dump_dir;
+	const char *dump_dir;
 	dump_dir = lpcfg_parm_string(call->conn->dce_ctx->lp_ctx, NULL, "dcesrv", "stubs directory");
 	if (!dump_dir) {
 		return;
