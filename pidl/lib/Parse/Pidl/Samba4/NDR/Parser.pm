@@ -1466,6 +1466,7 @@ sub ParseStructPrint($$$$$)
 	$self->DeclareArrayVariables($_) foreach (@{$struct->{ELEMENTS}});
 
 	$self->pidl("ndr_print_struct($ndr, name, \"$name\");");
+	$self->pidl("if (r == NULL) { ndr_print_null($ndr); return; }");
 
 	$self->start_flags($struct, $ndr);
 
@@ -2039,6 +2040,7 @@ sub ParseFunctionPrint($$)
 	}
 
 	$self->pidl("ndr_print_struct($ndr, name, \"$fn->{NAME}\");");
+	$self->pidl("if (r == NULL) { ndr_print_null($ndr); return; }");
 	$self->pidl("$ndr->depth++;");
 
 	$self->pidl("if (flags & NDR_SET_VALUES) {");

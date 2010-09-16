@@ -854,6 +854,11 @@ _PUBLIC_ void ndr_print_struct(struct ndr_print *ndr, const char *name, const ch
 	ndr->print(ndr, "%s: struct %s", name, type);
 }
 
+_PUBLIC_ void ndr_print_null(struct ndr_print *ndr)
+{
+	ndr->print(ndr, "UNEXPECTED NULL POINTER");
+}
+
 _PUBLIC_ void ndr_print_enum(struct ndr_print *ndr, const char *name, const char *type, 
 		    const char *val, uint32_t value)
 {
@@ -1004,6 +1009,11 @@ _PUBLIC_ void ndr_print_array_uint8(struct ndr_print *ndr, const char *name,
 			   const uint8_t *data, uint32_t count)
 {
 	int i;
+
+	if (data == NULL) {
+		ndr->print(ndr, "%s: ARRAY(%d) : NULL", name, count);
+		return;
+	}
 
 	if (count <= 600 && (ndr->flags & LIBNDR_PRINT_ARRAY_HEX)) {
 		char s[1202];

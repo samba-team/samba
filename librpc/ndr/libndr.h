@@ -520,6 +520,7 @@ enum ndr_err_code ndr_push_unique_ptr(struct ndr_push *ndr, const void *p);
 enum ndr_err_code ndr_push_full_ptr(struct ndr_push *ndr, const void *p);
 enum ndr_err_code ndr_push_ref_ptr(struct ndr_push *ndr);
 void ndr_print_struct(struct ndr_print *ndr, const char *name, const char *type);
+void ndr_print_null(struct ndr_print *ndr);
 void ndr_print_enum(struct ndr_print *ndr, const char *name, const char *type, const char *val, uint32_t value);
 void ndr_print_bitmap_flag(struct ndr_print *ndr, size_t size, const char *flag_name, uint32_t flag, uint32_t value);
 void ndr_print_bitmap_flag(struct ndr_print *ndr, size_t size, const char *flag_name, uint32_t flag, uint32_t value);
