@@ -100,6 +100,11 @@ static void wbcGroupDestructor(void *ptr)
 	free(gr->gr_name);
 	free(gr->gr_passwd);
 
+	/* if the array was partly created this can be NULL */
+	if (gr->gr_mem == NULL) {
+		return;
+	}
+
 	for (i=0; gr->gr_mem[i] != NULL; i++) {
 		free(gr->gr_mem[i]);
 	}
