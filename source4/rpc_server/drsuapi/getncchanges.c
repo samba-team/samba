@@ -1189,7 +1189,6 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 		case DRSUAPI_EXOP_REPL_SECRET:
 			werr = getncchanges_repl_secret(b_state, mem_ctx, req8, user_sid, &r->out.ctr->ctr6);
 			r->out.result = werr;
-			NDR_PRINT_FUNCTION_DEBUG(drsuapi_DsGetNCChanges, NDR_BOTH, r);
 			W_ERROR_NOT_OK_RETURN(werr);
 			break;
 		case DRSUAPI_EXOP_FSMO_REQ_ROLE:
