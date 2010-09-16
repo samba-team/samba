@@ -32,6 +32,14 @@ _PUBLIC_ struct torture_test *_torture_suite_add_ndr_pull_test(
 					int ndr_flags,
 					bool (*check_fn) (struct torture_context *, void *data));
 
+_PUBLIC_ struct torture_test *_torture_suite_add_ndr_pull_inout_test(
+					struct torture_suite *suite,
+					const char *name, ndr_pull_flags_fn_t pull_fn,
+					DATA_BLOB db_in,
+					DATA_BLOB db_out,
+					size_t struct_size,
+					bool (*check_fn) (struct torture_context *ctx, void *data));
+
 #define torture_suite_add_ndr_pull_test(suite,name,data,check_fn) \
 		_torture_suite_add_ndr_pull_test(suite, #name, \
 			 (ndr_pull_flags_fn_t)ndr_pull_ ## name, data_blob_talloc(suite, data, sizeof(data)), \
@@ -41,6 +49,14 @@ _PUBLIC_ struct torture_test *_torture_suite_add_ndr_pull_test(
 		_torture_suite_add_ndr_pull_test(suite, #name "_" #flags, \
 			 (ndr_pull_flags_fn_t)ndr_pull_ ## name, data_blob_talloc(suite, data, sizeof(data)), \
 			 sizeof(struct name), flags, (bool (*) (struct torture_context *, void *)) check_fn);
+
+#define torture_suite_add_ndr_pull_io_test(suite,name,data_in,data_out,check_fn_out) \
+		_torture_suite_add_ndr_pull_inout_test(suite, #name "_INOUT", \
+			 (ndr_pull_flags_fn_t)ndr_pull_ ## name, \
+			 data_blob_talloc(suite, data_in, sizeof(data_in)), \
+			 data_blob_talloc(suite, data_out, sizeof(data_out)), \
+			 sizeof(struct name), \
+			 (bool (*) (struct torture_context *, void *)) check_fn_out);
 
 #define torture_assert_sid_equal(torture_ctx,got,expected,cmt)\
 	do { struct dom_sid *__got = (got), *__expected = (expected); \
