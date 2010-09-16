@@ -35,6 +35,7 @@
 #include "../libcli/ldap/ldap_ndr.h"
 #include "cldap_server/cldap_server.h"
 #include "lib/tsocket/tsocket.h"
+#include "librpc/gen_ndr/ndr_netlogon.h"
 
 struct netlogon_server_pipe_state {
 	struct netr_Credential client_challenge;
@@ -2255,6 +2256,25 @@ static NTSTATUS dcesrv_netr_GetForestTrustInformation(struct dcesrv_call_state *
 static NTSTATUS dcesrv_netr_ServerGetTrustInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct netr_ServerGetTrustInfo *r)
 {
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+}
+
+/*
+  netr_Unused47
+*/
+static NTSTATUS dcesrv_netr_Unused47(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+				     struct netr_Unused47 *r)
+{
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+}
+
+/*
+  netr_DsrUpdateReadOnlyServerDnsRecords
+*/
+static NTSTATUS dcesrv_netr_DsrUpdateReadOnlyServerDnsRecords(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+							      struct netr_DsrUpdateReadOnlyServerDnsRecords *r)
+{
+	NDR_PRINT_FUNCTION_DEBUG(netr_DsrUpdateReadOnlyServerDnsRecords, NDR_IN, r);
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 

@@ -1674,4 +1674,59 @@ interface netlogon
 		[out,ref] samr_Password *old_owf_password,
 		[out,ref] netr_TrustInfo **trust_info
 		);
+
+	/****************/
+	/* Function 0x2f */
+
+	NTSTATUS netr_Unused47(void);
+
+
+	/****************/
+	/* Function 0x30 */
+
+	typedef enum {
+		NlDnsLdapAtSite       = 22,
+		NlDnsGcAtSite         = 25,
+		NlDnsDsaCname         = 28,
+		NlDnsKdcAtSite        = 30,
+		NlDnsDcAtSite         = 32,
+		NlDnsRfc1510KdcAtSite = 34,
+		NlDnsGenericGcAtSite  = 36
+	} netr_DnsType;
+
+	typedef enum {
+		NlDnsInfoTypeNone    = 0,
+		NlDnsDomainName      = 1,
+		NlDnsDomainNameAlias = 2,
+		NlDnsForestName      = 3,
+		NlDnsForestNameAlias = 4,
+		NlDnsNdncDomainName  = 5,
+		NlDnsRecordName      = 6
+	} netr_DnsDomainInfoType;
+
+	typedef struct {
+		netr_DnsType type;
+		[string,charset(UTF16)] uint16 *dns_domain_info;
+		netr_DnsDomainInfoType dns_domain_info_type;
+		uint32 priority;
+		uint32 weight;
+		uint32 port;
+		boolean32 dns_register;
+		uint32 status;
+	} NL_DNS_NAME_INFO;
+
+	typedef struct {
+		uint32 count;
+		[size_is(count)] NL_DNS_NAME_INFO *names;
+	} NL_DNS_NAME_INFO_ARRAY;
+
+	NTSTATUS netr_DsrUpdateReadOnlyServerDnsRecords(
+		[in,unique] [string,charset(UTF16)] uint16 *server_name,
+		[in,ref] [string,charset(UTF16)] uint16 *computer_name,
+		[in, ref] netr_Authenticator *credential,
+		[out,ref]   netr_Authenticator *return_authenticator,
+		[in,unique] [string,charset(UTF16)] uint16 *site_name,
+		[in] uint32 dns_ttl,
+		[in,out,ref] NL_DNS_NAME_INFO_ARRAY *dns_names
+		);
 }

@@ -2014,3 +2014,22 @@ NTSTATUS _netr_ServerGetTrustInfo(struct pipes_struct *p,
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
+/****************************************************************
+****************************************************************/
+
+NTSTATUS _netr_Unused47(struct pipes_struct *p,
+			struct netr_Unused47 *r)
+{
+	p->rng_fault_state = true;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+NTSTATUS _netr_DsrUpdateReadOnlyServerDnsRecords(struct pipes_struct *p,
+						 struct netr_DsrUpdateReadOnlyServerDnsRecords *r)
+{
+	p->rng_fault_state = true;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
