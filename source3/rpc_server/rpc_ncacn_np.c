@@ -836,11 +836,16 @@ NTSTATUS rpc_pipe_open_interface(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	DEBUG(10, ("Connecting to %s pipe.\n", pipe_name));
+	while (pipe_name[0] == '\\') {
+		pipe_name++;
+	}
+
+	DEBUG(5, ("Connecting to %s pipe.\n", pipe_name));
 
 	server_type = lp_parm_const_string(GLOBAL_SECTION_SNUM,
 					   "rpc_server", pipe_name,
 					   "embedded");
+
 	if (StrCaseCmp(server_type, "embedded") == 0) {
 		status = rpc_pipe_open_internal(tmp_ctx,
 						syntax, server_info,
