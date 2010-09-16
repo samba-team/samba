@@ -70,6 +70,28 @@ WERROR dsdb_schema_info_blob_new(TALLOC_CTX *mem_ctx, DATA_BLOB *_schema_info_bl
 
 
 /**
+ * Verify the 'blob' is a valid schemaInfo blob
+ */
+bool dsdb_schema_info_blob_is_valid(const DATA_BLOB *blob)
+{
+	if (!blob || !blob->data) {
+		return false;
+	}
+
+	/* schemaInfo blob must be 21 bytes long */
+	if (blob->length != 21) {
+		return false;
+	}
+
+	/* schemaInfo blob should start with 0xFF */
+	if (blob->data[0] != 0xFF) {
+		return false;
+	}
+
+	return true;
+}
+
+/**
  * Parse schemaInfo structure from a data_blob
  * (DATA_BLOB or ldb_val).
  * Suitable for parsing blobs that comes from
@@ -83,16 +105,8 @@ WERROR dsdb_schema_info_from_blob(const DATA_BLOB *blob,
 	struct dsdb_schema_info *schema_info;
 	struct schemaInfoBlob schema_info_blob;
 
-	if (!blob || !blob->data) {
-		return WERR_INVALID_PARAMETER;
-	}
-
-	if (blob->length != 21) {
-		return WERR_INVALID_PARAMETER;
-	}
-
-	/* schemaInfo blob should start with 0xFF */
-	if (blob->data[0] != 0xFF) {
+	/* verify schemaInfo blob is valid */
+	if (!dsdb_schema_info_blob_is_valid(blob)) {
 		return WERR_INVALID_PARAMETER;
 	}
 
