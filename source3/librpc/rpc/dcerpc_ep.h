@@ -25,6 +25,10 @@ struct dcerpc_binding_vector {
     uint32_t count;
 };
 
+NTSTATUS dcerpc_binding_vector_create(TALLOC_CTX *mem_ctx,
+				      const struct ndr_interface_table *iface,
+				      struct dcerpc_binding_vector **pbvec);
+
 /**
  * @brief Adds server address information in the local endpoint map.
  *
@@ -60,5 +64,9 @@ NTSTATUS dcerpc_ep_register_noreplace(const struct ndr_interface_table *iface,
 				      const struct dcerpc_binding_vector *bind_vec,
 				      const struct GUID *object_guid,
 				      const char *annotation);
+
+NTSTATUS dcerpc_ep_unregister(const struct ndr_interface_table *iface,
+			      const struct dcerpc_binding_vector *bind_vec,
+			      const struct GUID *object_guid);
 
 #endif /* _DCERPC_EP_H_ */

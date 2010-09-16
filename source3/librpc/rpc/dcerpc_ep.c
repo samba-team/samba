@@ -24,18 +24,80 @@
 
 #define EPM_MAX_ANNOTATION_SIZE 64
 
+NTSTATUS dcerpc_binding_vector_create(TALLOC_CTX *mem_ctx,
+				      const struct ndr_interface_table *iface,
+				      struct dcerpc_binding_vector **pbvec)
+{
+	struct dcerpc_binding_vector *bvec;
+	uint32_t ep_count, i;
+	NTSTATUS status;
+	TALLOC_CTX *tmp_ctx;
+
+	tmp_ctx = talloc_stackframe();
+	if (tmp_ctx == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	ep_count = iface->endpoints->count;
+
+	bvec = talloc_zero(tmp_ctx, struct dcerpc_binding_vector);
+	if (bvec == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	bvec->bindings = talloc_array(bvec, struct dcerpc_binding, ep_count);
+	if (bvec->bindings == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	for (i = 0; i < ep_count; i++) {
+		struct dcerpc_binding *b;
+
+		b = talloc_zero(bvec->bindings, struct dcerpc_binding);
+		if (b == NULL) {
+			status = NT_STATUS_NO_MEMORY;
+			goto done;
+		}
+
+		status = dcerpc_parse_binding(b, iface->endpoints->names[i], &b);
+		if (!NT_STATUS_IS_OK(status)) {
+			status = NT_STATUS_UNSUCCESSFUL;
+			goto done;
+		}
+
+		b->object = iface->syntax_id;
+		if (b->transport == NCACN_NP) {
+			b->host = talloc_asprintf(b, "\\\\%s", global_myname());
+		}
+
+		bvec->bindings[i] = *b;
+	}
+	bvec->count = ep_count;
+
+	*pbvec = talloc_move(mem_ctx, &bvec);
+
+	status = NT_STATUS_OK;
+done:
+	talloc_free(tmp_ctx);
+
+	return status;
+}
+
 static NTSTATUS ep_register(const struct ndr_interface_table *iface,
 			    const struct dcerpc_binding_vector *bind_vec,
 			    const struct GUID *object_guid,
 			    const char *annotation,
-			    uint32_t replace)
+			    uint32_t replace,
+			    uint32_t unregister)
 {
 	struct dcerpc_binding_handle *h = NULL;
 	static struct client_address client_id;
 	struct epm_entry_t *entries;
 	uint32_t num_ents, i;
 	TALLOC_CTX *tmp_ctx;
-	NTSTATUS result = NT_STATUS_OK;
+	uint32_t result = EPMAPPER_STATUS_OK;
 	NTSTATUS status;
 
 	if (iface == NULL) {
@@ -111,12 +173,18 @@ static NTSTATUS ep_register(const struct ndr_interface_table *iface,
 		}
 
 		entries[i].tower = map_tower;
-		entries[i].annotation = talloc_strndup(entries, annotation,
-						       EPM_MAX_ANNOTATION_SIZE);
+		if (annotation == NULL) {
+			entries[i].annotation = talloc_strdup(entries, "");
+		} else {
+			entries[i].annotation = talloc_strndup(entries,
+							       annotation,
+							       EPM_MAX_ANNOTATION_SIZE);
+		}
 		if (entries[i].annotation == NULL) {
 			status = NT_STATUS_NO_MEMORY;
 			goto done;
 		}
+
 		if (object_guid != NULL) {
 			entries[i].object = *object_guid;
 		} else {
@@ -124,21 +192,29 @@ static NTSTATUS ep_register(const struct ndr_interface_table *iface,
 		}
 	}
 
-	status = dcerpc_epm_Insert(h,
-				   tmp_ctx,
-				   num_ents,
-				   entries,
-				   replace,
-				   &result);
+	if (unregister) {
+		status = dcerpc_epm_Delete(h,
+					   tmp_ctx,
+					   num_ents,
+					   entries,
+					   &result);
+	} else {
+		status = dcerpc_epm_Insert(h,
+					   tmp_ctx,
+					   num_ents,
+					   entries,
+					   replace,
+					   &result);
+	}
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("dcerpc_ep_register: Could not insert tower (%s)\n",
 			  nt_errstr(status)));
 		goto done;
 	}
-	if (!NT_STATUS_IS_OK(result)) {
-		DEBUG(0, ("dcerpc_ep_register: Could not insert tower (%s)\n",
-			  nt_errstr(result)));
-		status = result;
+	if (result != EPMAPPER_STATUS_OK) {
+		DEBUG(0, ("dcerpc_ep_register: Could not insert tower (0x%.8x)\n",
+			  result));
+		status = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
 
@@ -153,7 +229,7 @@ NTSTATUS dcerpc_ep_register(const struct ndr_interface_table *iface,
 			    const struct GUID *object_guid,
 			    const char *annotation)
 {
-	return ep_register(iface, bind_vec, object_guid, annotation, 1);
+	return ep_register(iface, bind_vec, object_guid, annotation, 1, 0);
 }
 
 NTSTATUS dcerpc_ep_register_noreplace(const struct ndr_interface_table *iface,
@@ -161,7 +237,14 @@ NTSTATUS dcerpc_ep_register_noreplace(const struct ndr_interface_table *iface,
 				      const struct GUID *object_guid,
 				      const char *annotation)
 {
-	return ep_register(iface, bind_vec, object_guid, annotation, 0);
+	return ep_register(iface, bind_vec, object_guid, annotation, 0, 0);
+}
+
+NTSTATUS dcerpc_ep_unregister(const struct ndr_interface_table *iface,
+			      const struct dcerpc_binding_vector *bind_vec,
+			      const struct GUID *object_guid)
+{
+	return ep_register(iface, bind_vec, object_guid, NULL, 0, 1);
 }
 
 /* vim: set ts=8 sw=8 noet cindent syntax=c.doxygen: */
