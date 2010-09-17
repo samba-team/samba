@@ -2127,13 +2127,16 @@ static void dump_guid(ADS_STRUCT *ads, const char *field, struct berval **values
 {
 	int i;
 	for (i=0; values[i]; i++) {
+		NTSTATUS status;
+		DATA_BLOB in = data_blob_const(values[i]->bv_val, values[i]->bv_len);
+		struct GUID guid;
 
-		UUID_FLAT guid;
-		struct GUID tmp;
-
-		memcpy(guid.info, values[i]->bv_val, sizeof(guid.info));
-		smb_uuid_unpack(guid, &tmp);
-		printf("%s: %s\n", field, GUID_string(talloc_tos(), &tmp));
+		status = GUID_from_ndr_blob(&in, &guid);
+		if (NT_STATUS_IS_OK(status)) {
+			printf("%s: %s\n", field, GUID_string(talloc_tos(), &guid));
+		} else {
+			printf("%s: INVALID GUID\n", field);
+		}
 	}
 }
 
@@ -2609,22 +2612,17 @@ int ads_count_replies(ADS_STRUCT *ads, void *res)
  **/
  bool ads_pull_guid(ADS_STRUCT *ads, LDAPMessage *msg, struct GUID *guid)
 {
-	char **values;
-	UUID_FLAT flat_guid;
+	DATA_BLOB blob;
+	NTSTATUS status;
 
-	values = ldap_get_values(ads->ldap.ld, msg, "objectGUID");
-	if (!values)
-		return False;
-
-	if (values[0]) {
-		memcpy(&flat_guid.info, values[0], sizeof(UUID_FLAT));
-		smb_uuid_unpack(flat_guid, guid);
-		ldap_value_free(values);
-		return True;
+	if (!smbldap_talloc_single_blob(talloc_tos(), ads->ldap.ld, msg, "objectGUID",
+					&blob)) {
+		return false;
 	}
-	ldap_value_free(values);
-	return False;
 
+	status = GUID_from_ndr_blob(&blob, guid);
+	talloc_free(blob.data);
+	return NT_STATUS_IS_OK(status);
 }
 
 

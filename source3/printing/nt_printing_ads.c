@@ -187,10 +187,13 @@ static WERROR nt_printer_publish_ads(struct messaging_context *msg_ctx,
 
 	/* retreive the guid and store it locally */
 	if (ADS_ERR_OK(ads_search_dn(ads, &res, prt_dn, attrs))) {
+		bool guid_ok;
 		ZERO_STRUCT(guid);
-		ads_pull_guid(ads, res, &guid);
+		guid_ok = ads_pull_guid(ads, res, &guid);
 		ads_msgfree(ads, res);
-		store_printer_guid(msg_ctx, printer, guid);
+		if (guid_ok) {
+			store_printer_guid(msg_ctx, printer, guid);
+		}
 	}
 	TALLOC_FREE(ctx);
 
