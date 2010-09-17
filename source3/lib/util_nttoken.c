@@ -58,6 +58,7 @@ struct security_token *dup_nt_token(TALLOC_CTX *mem_ctx, const struct security_t
 	}
 	
 	token->privilege_mask = ptoken->privilege_mask;
+	token->rights_mask = ptoken->rights_mask;
 
 	return token;
 }
@@ -106,6 +107,9 @@ NTSTATUS merge_nt_token(TALLOC_CTX *mem_ctx,
 
 	token->privilege_mask |= token_1->privilege_mask;
 	token->privilege_mask |= token_2->privilege_mask;
+
+	token->rights_mask |= token_1->rights_mask;
+	token->rights_mask |= token_2->rights_mask;
 
 	*token_out = token;
 
