@@ -297,6 +297,82 @@ static bool test_dsdb_blob_from_schema_info(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_dsdb_schema_info_cmp(struct torture_context *tctx,
+				      struct drsut_schemainfo_data *priv)
+{
+	DATA_BLOB blob;
+	struct drsuapi_DsReplicaOIDMapping_Ctr *ctr;
+
+	ctr = talloc_zero(priv, struct drsuapi_DsReplicaOIDMapping_Ctr);
+	torture_assert(tctx, ctr, "Not enough memory!");
+
+	/* not enough elements */
+	torture_assert_werr_equal(tctx,
+				  dsdb_schema_info_cmp(priv->schema, ctr),
+				  WERR_INVALID_PARAMETER,
+				  "dsdb_schema_info_cmp(): unexpected result");
+
+	/* an empty element for schemaInfo */
+	ctr->num_mappings = 1;
+	ctr->mappings = talloc_zero_array(ctr, struct drsuapi_DsReplicaOIDMapping, 1);
+	torture_assert(tctx, ctr->mappings, "Not enough memory!");
+	torture_assert_werr_equal(tctx,
+				  dsdb_schema_info_cmp(priv->schema, ctr),
+				  WERR_INVALID_PARAMETER,
+				  "dsdb_schema_info_cmp(): unexpected result");
+
+	/* test with invalid schemaInfo - length != 21 */
+	blob = strhex_to_data_blob(ctr, "FF00000001FD821C07C7455143A3DB51F75A630A7F00");
+	torture_assert(tctx, blob.data, "Not enough memory!");
+	ctr->mappings[0].oid.length     = blob.length;
+	ctr->mappings[0].oid.binary_oid = blob.data;
+	torture_assert_werr_equal(tctx,
+				  dsdb_schema_info_cmp(priv->schema, ctr),
+				  WERR_INVALID_PARAMETER,
+				  "dsdb_schema_info_cmp(): unexpected result");
+
+	/* test with invalid schemaInfo - marker != 0xFF */
+	blob = strhex_to_data_blob(ctr, "AA00000001FD821C07C7455143A3DB51F75A630A7F");
+	torture_assert(tctx, blob.data, "Not enough memory!");
+	ctr->mappings[0].oid.length     = blob.length;
+	ctr->mappings[0].oid.binary_oid = blob.data;
+	torture_assert_werr_equal(tctx,
+				  dsdb_schema_info_cmp(priv->schema, ctr),
+				  WERR_INVALID_PARAMETER,
+				  "dsdb_schema_info_cmp(): unexpected result");
+
+	/* test with valid schemaInfo, but not correct one */
+	blob = strhex_to_data_blob(ctr, "FF0000000000000000000000000000000000000000");
+	torture_assert(tctx, blob.data, "Not enough memory!");
+	ctr->mappings[0].oid.length     = blob.length;
+	ctr->mappings[0].oid.binary_oid = blob.data;
+	torture_assert_werr_equal(tctx,
+				  dsdb_schema_info_cmp(priv->schema, ctr),
+				  WERR_DS_DRA_SCHEMA_MISMATCH,
+				  "dsdb_schema_info_cmp(): unexpected result");
+
+	/* test with correct schemaInfo, but invalid ATTID */
+	blob = strhex_to_data_blob(ctr, priv->schema->schema_info);
+	torture_assert(tctx, blob.data, "Not enough memory!");
+	ctr->mappings[0].id_prefix	= 1;
+	ctr->mappings[0].oid.length     = blob.length;
+	ctr->mappings[0].oid.binary_oid = blob.data;
+	torture_assert_werr_equal(tctx,
+				  dsdb_schema_info_cmp(priv->schema, ctr),
+				  WERR_INVALID_PARAMETER,
+				  "dsdb_schema_info_cmp(): unexpected result");
+
+	/* test with valid schemaInfo */
+	blob = strhex_to_data_blob(ctr, priv->schema->schema_info);
+	ctr->mappings[0].id_prefix	= 0;
+	torture_assert_werr_ok(tctx,
+			       dsdb_schema_info_cmp(priv->schema, ctr),
+			       "dsdb_schema_info_cmp(): unexpected result");
+
+	talloc_free(ctr);
+	return true;
+}
+
 /*
  * Tests dsdb_module_schema_info_blob_read()
  *   and dsdb_module_schema_info_blob_write()
@@ -515,6 +591,9 @@ static bool torture_drs_unit_schemainfo_setup(struct torture_context *tctx,
 	/* create schema mockup object */
 	priv->schema = dsdb_new_schema(priv);
 
+	/* set schema_info in dsdb_schema for testing */
+	priv->schema->schema_info = talloc_strdup(priv->schema, SCHEMA_INFO_DEFAULT_STR);
+
 	/* pre-cache invocationId for samdb_ntds_invocation_id()
 	 * to work with our mock ldb */
 	ldb_err = ldb_set_opaque(priv->ldb, "cache.invocation_id",
@@ -575,6 +654,8 @@ struct torture_tcase * torture_drs_unit_schemainfo(struct torture_suite *suite)
 				      (pfn_run)test_dsdb_schema_info_from_blob);
 	torture_tcase_add_simple_test(tc, "dsdb_blob_from_schema_info",
 				      (pfn_run)test_dsdb_blob_from_schema_info);
+	torture_tcase_add_simple_test(tc, "dsdb_schema_info_cmp",
+				      (pfn_run)test_dsdb_schema_info_cmp);
 	torture_tcase_add_simple_test(tc, "dsdb_module_schema_info_blob read|write",
 				      (pfn_run)test_dsdb_module_schema_info_blob_rw);
 	torture_tcase_add_simple_test(tc, "dsdb_module_schema_info_update",
