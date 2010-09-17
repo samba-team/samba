@@ -518,12 +518,9 @@ class LDAPBundel(object):
 if __name__ == "__main__":
     parser = OptionParser("ldapcmp [options] domain|configuration|schema")
     sambaopts = options.SambaOptions(parser)
+    parser.add_option_group(sambaopts)
     credopts = options.CredentialsOptionsDouble(parser)
     parser.add_option_group(credopts)
-
-    lp = sambaopts.get_loadparm()
-    creds = credopts.get_credentials(lp)
-    creds2 = credopts.get_credentials2(lp)
 
     parser.add_option("", "--host", dest="host",
                               help="IP of the first LDAP server",)
@@ -536,6 +533,15 @@ if __name__ == "__main__":
     parser.add_option("-v", "--verbose", dest="verbose", action="store_true", default=False,
                               help="Print all DN pairs that have been compared",)
     (opts, args) = parser.parse_args()
+
+    lp = sambaopts.get_loadparm()
+    creds = credopts.get_credentials(lp)
+    creds2 = credopts.get_credentials2(lp)
+    if creds2.is_anonymous():
+        creds2 = creds
+
+    if creds.is_anonymous():
+        parser.error("You must supply at least one username/password pair")
 
     if not (len(args) == 1 and args[0].upper() in ["DOMAIN", "CONFIGURATION", "SCHEMA"]):
         parser.error("Incorrect arguments")
