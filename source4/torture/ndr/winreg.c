@@ -247,7 +247,7 @@ static bool querymultiplevalues_in_check(struct torture_context *tctx,
 	torture_assert_int_equal(tctx, r->in.values_in[0].ve_valuename->length, 18, "name len");
 	torture_assert_int_equal(tctx, r->in.values_in[0].ve_valuename->size, 18, "name size");
 	torture_assert_int_equal(tctx, r->in.values_in[0].ve_valuelen, 0, "length");
-	torture_assert(tctx, (r->in.values_in[0].ve_valueptr == NULL), "ve_valueptr");
+	torture_assert_int_equal(tctx, r->in.values_in[0].ve_valueptr, 0, "ve_valueptr");
 	torture_assert_int_equal(tctx, r->in.values_in[0].ve_type, 0, "type");
 	torture_assert_int_equal(tctx, *r->in.buffer_size, 32, "buffer size");
 
@@ -303,7 +303,7 @@ static bool querymultiplevalues2_in_check(struct torture_context *tctx,
 	torture_assert_int_equal(tctx, r->in.values_in[0].ve_valuename->length, 10, "name len");
 	torture_assert_int_equal(tctx, r->in.values_in[0].ve_valuename->size, 10, "name size");
 	torture_assert_int_equal(tctx, r->in.values_in[0].ve_valuelen, 0, "length");
-	torture_assert(tctx, (r->in.values_in[0].ve_valueptr == NULL), "ve_valueptr");
+	torture_assert_int_equal(tctx, r->in.values_in[0].ve_valueptr, 0,  "ve_valueptr");
 	torture_assert_int_equal(tctx, r->in.values_in[0].ve_type, 0, "type");
 	torture_assert_int_equal(tctx, *r->in.offered, 0, "buffer size");
 
