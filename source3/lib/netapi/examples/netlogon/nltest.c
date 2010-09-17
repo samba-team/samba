@@ -58,7 +58,8 @@ enum {
 	OPT_SITE,
 	OPT_ACCOUNT,
 	OPT_RET_DNS,
-	OPT_RET_NETBIOS
+	OPT_RET_NETBIOS,
+	OPT_DSREGDNS
 };
 
 /****************************************************************
@@ -207,6 +208,7 @@ int main(int argc, const char **argv)
 	char *opt_account = NULL;
 	int opt_ret_dns = 0;
 	int opt_ret_netbios = 0;
+	int opt_dsregdns = 0;
 	uint32_t query_level = 0;
 	uint8_t *buffer = NULL;
 	uint32_t flags = 0;
@@ -244,6 +246,7 @@ int main(int argc, const char **argv)
 		{"account", 0, POPT_ARG_STRING, &opt_account, OPT_ACCOUNT, "ACCOUNT"},
 		{"ret_dns", 0, POPT_ARG_NONE, &opt_ret_dns, OPT_RET_DNS, NULL},
 		{"ret_netbios", 0, POPT_ARG_NONE, &opt_ret_netbios, OPT_RET_NETBIOS, NULL},
+		{"dsregdns", 0, POPT_ARG_NONE, &opt_dsregdns, OPT_DSREGDNS, "Force registration of all DC-specific DNS records"},
 		POPT_COMMON_LIBNETAPI_EXAMPLES
 		POPT_TABLEEND
 	};
@@ -352,6 +355,23 @@ int main(int argc, const char **argv)
 						    NETLOGON_CONTROL_CHANGE_PASSWORD,
 						    query_level,
 						    (uint8_t *)opt_domain,
+						    &buffer);
+			if (status != 0) {
+				fprintf(stderr, "I_NetlogonControl failed: Status = %d 0x%x %s\n",
+					status, status,
+					libnetapi_get_error_string(ctx, status));
+				goto done;
+			}
+
+			print_netlogon_info_result(query_level, buffer);
+
+			break;
+		case OPT_DSREGDNS:
+			query_level = 1;
+			status = I_NetLogonControl2(opt_server,
+						    NETLOGON_CONTROL_FORCE_DNS_REG,
+						    query_level,
+						    NULL,
 						    &buffer);
 			if (status != 0) {
 				fprintf(stderr, "I_NetlogonControl failed: Status = %d 0x%x %s\n",
