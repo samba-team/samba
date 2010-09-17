@@ -443,31 +443,33 @@ void security_token_set_right_bit(struct security_token *token, uint32_t right_b
 	token->rights_mask |= right_bit;
 }
 
-void security_token_debug_privileges(int dbg_lev, const struct security_token *token)
+void security_token_debug_privileges(int dbg_class, int dbg_lev, const struct security_token *token)
 {
-	DEBUGADD(dbg_lev, (" Privileges (0x%16llX):\n",
-			    (unsigned long long) token->privilege_mask));
+	DEBUGADDC(dbg_class, dbg_lev, (" Privileges (0x%16llX):\n",
+				       (unsigned long long) token->privilege_mask));
 
 	if (token->privilege_mask) {
 		int idx = 0;
 		int i = 0;
 		for (idx = 0; idx<ARRAY_SIZE(privs); idx++) {
 			if (token->privilege_mask & privs[idx].privilege_mask) {
-				DEBUGADD(dbg_lev, ("  Privilege[%3lu]: %s\n", (unsigned long)i++,
-						   privs[idx].name));
+				DEBUGADDC(dbg_class, dbg_lev,
+					  ("  Privilege[%3lu]: %s\n", (unsigned long)i++,
+					   privs[idx].name));
 			}
 		}
 	}
-	DEBUGADD(dbg_lev, (" Rights (0x%16lX):\n",
-			    (unsigned long) token->rights_mask));
+	DEBUGADDC(dbg_class, dbg_lev, (" Rights (0x%16lX):\n",
+				       (unsigned long) token->rights_mask));
 
 	if (token->rights_mask) {
 		int idx = 0;
 		int i = 0;
 		for (idx = 0; idx<ARRAY_SIZE(rights); idx++) {
 			if (token->rights_mask & rights[idx].right_mask) {
-				DEBUGADD(dbg_lev, ("  Right[%3lu]: %s\n", (unsigned long)i++,
-						   rights[idx].name));
+				DEBUGADDC(dbg_class, dbg_lev,
+					  ("  Right[%3lu]: %s\n", (unsigned long)i++,
+					   rights[idx].name));
 			}
 		}
 	}

@@ -44,13 +44,13 @@ struct security_token *security_token_initialise(TALLOC_CTX *mem_ctx)
 /****************************************************************************
  prints a struct security_token to debug output.
 ****************************************************************************/
-void security_token_debug(int dbg_lev, const struct security_token *token)
+void security_token_debug(int dbg_class, int dbg_lev, const struct security_token *token)
 {
 	TALLOC_CTX *mem_ctx;
 	uint32_t i;
 
 	if (!token) {
-		DEBUG(dbg_lev, ("Security token: (NULL)\n"));
+		DEBUGC(dbg_class, dbg_lev, ("Security token: (NULL)\n"));
 		return;
 	}
 
@@ -59,14 +59,14 @@ void security_token_debug(int dbg_lev, const struct security_token *token)
 		return;
 	}
 
-	DEBUG(dbg_lev, ("Security token SIDs (%lu):\n",
+	DEBUGC(dbg_class, dbg_lev, ("Security token SIDs (%lu):\n",
 				       (unsigned long)token->num_sids));
 	for (i = 0; i < token->num_sids; i++) {
-		DEBUGADD(dbg_lev, ("  SID[%3lu]: %s\n", (unsigned long)i,
+		DEBUGADDC(dbg_class, dbg_lev, ("  SID[%3lu]: %s\n", (unsigned long)i,
 			   dom_sid_string(mem_ctx, &token->sids[i])));
 	}
 
-	security_token_debug_privileges(dbg_lev, token);
+	security_token_debug_privileges(dbg_class, dbg_lev, token);
 
 	talloc_free(mem_ctx);
 }

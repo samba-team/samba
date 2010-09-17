@@ -230,7 +230,7 @@ NTSTATUS security_token_create(TALLOC_CTX *mem_ctx,
 		return status;
 	}
 
-	security_token_debug(10, ptoken);
+	security_token_debug(0, 10, ptoken);
 
 	*token = ptoken;
 

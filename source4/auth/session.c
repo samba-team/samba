@@ -213,6 +213,6 @@ void auth_session_info_debug(int dbg_lev,
 		return;	
 	}
 
-	security_token_debug(dbg_lev, session_info->security_token);
+	security_token_debug(0, dbg_lev, session_info->security_token);
 }
 

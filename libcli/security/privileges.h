@@ -98,6 +98,6 @@ void security_token_set_privilege(struct security_token *token, enum sec_privile
 */
 void security_token_set_right_bit(struct security_token *token, uint32_t right_bit);
 
-void security_token_debug_privileges(int dbg_lev, const struct security_token *token);
+void security_token_debug_privileges(int dbg_class, int dbg_lev, const struct security_token *token);
 
 #endif /* PRIVILEGES_H */

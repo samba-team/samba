@@ -37,7 +37,7 @@ struct security_token *security_token_initialise(TALLOC_CTX *mem_ctx);
 /****************************************************************************
  prints a struct security_token to debug output.
 ****************************************************************************/
-void security_token_debug(int dbg_lev, const struct security_token *token);
+void security_token_debug(int dbg_class, int dbg_lev, const struct security_token *token);
 
 bool security_token_is_sid(const struct security_token *token, const struct dom_sid *sid);
 
