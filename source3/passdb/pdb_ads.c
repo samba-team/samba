@@ -23,6 +23,7 @@
 #include "../libds/common/flags.h"
 #include "secrets.h"
 #include "../librpc/gen_ndr/samr.h"
+#include "../libcli/ldap/ldap_ndr.h"
 
 struct pdb_ads_state {
 	struct sockaddr_un socket_address;
@@ -155,7 +156,7 @@ static struct pdb_ads_samu_private *pdb_ads_get_samu_private(
 			result, struct pdb_ads_samu_private);
 	}
 
-	sidstr = sid_binstring(talloc_tos(), pdb_get_user_sid(sam));
+	sidstr = ldap_encode_ndr_dom_sid(talloc_tos(), pdb_get_user_sid(sam));
 	if (sidstr == NULL) {
 		return NULL;
 	}
@@ -437,7 +438,7 @@ static NTSTATUS pdb_ads_getsampwsid(struct pdb_methods *m,
 		m->private_data, struct pdb_ads_state);
 	char *sidstr, *filter;
 
-	sidstr = sid_binstring(talloc_tos(), sid);
+	sidstr = ldap_encode_ndr_dom_sid(talloc_tos(), sid);
 	NT_STATUS_HAVE_NO_MEMORY(sidstr);
 
 	filter = talloc_asprintf(
@@ -829,7 +830,7 @@ static NTSTATUS pdb_ads_delete_dom_group(struct pdb_methods *m,
 
 	sid_compose(&sid, &state->domainsid, rid);
 
-	sidstr = sid_binstring(talloc_tos(), &sid);
+	sidstr = ldap_encode_ndr_dom_sid(talloc_tos(), &sid);
 	NT_STATUS_HAVE_NO_MEMORY(sidstr);
 
 	rc = pdb_ads_search_fmt(state, state->domaindn, TLDAP_SCOPE_SUB,
@@ -917,7 +918,7 @@ static NTSTATUS pdb_ads_enum_group_members(struct pdb_methods *m,
 	DATA_BLOB *blobs;
 	uint32_t *members;
 
-	sidstr = sid_binstring(talloc_tos(), group);
+	sidstr = ldap_encode_ndr_dom_sid(talloc_tos(), group);
 	NT_STATUS_HAVE_NO_MEMORY(sidstr);
 
 	rc = pdb_ads_search_fmt(state, state->domaindn, TLDAP_SCOPE_SUB,
@@ -1201,7 +1202,7 @@ static NTSTATUS pdb_ads_delete_alias(struct pdb_methods *m,
 		return NT_STATUS_LDAP(TLDAP_SERVER_DOWN);
 	}
 
-	sidstr = sid_binstring(talloc_tos(), sid);
+	sidstr = ldap_encode_ndr_dom_sid(talloc_tos(), sid);
 	if (sidstr == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -1260,7 +1261,7 @@ static NTSTATUS pdb_ads_set_aliasinfo(struct pdb_methods *m,
 		return NT_STATUS_LDAP(TLDAP_SERVER_DOWN);
 	}
 
-	sidstr = sid_binstring(talloc_tos(), sid);
+	sidstr = ldap_encode_ndr_dom_sid(talloc_tos(), sid);
 	NT_STATUS_HAVE_NO_MEMORY(sidstr);
 
 	rc = pdb_ads_search_fmt(state, state->domaindn, TLDAP_SCOPE_SUB,
@@ -1327,7 +1328,7 @@ static NTSTATUS pdb_ads_sid2dn(struct pdb_ads_state *state,
 	char *sidstr, *dn;
 	int rc;
 
-	sidstr = sid_binstring(talloc_tos(), sid);
+	sidstr = ldap_encode_ndr_dom_sid(talloc_tos(), sid);
 	NT_STATUS_HAVE_NO_MEMORY(sidstr);
 
 	rc = pdb_ads_search_fmt(state, state->domaindn, TLDAP_SCOPE_SUB,
@@ -1482,7 +1483,7 @@ static NTSTATUS pdb_ads_enum_aliasmem(struct pdb_methods *m,
 	DATA_BLOB *blobs;
 	struct dom_sid *members;
 
-	sidstr = sid_binstring(talloc_tos(), alias);
+	sidstr = ldap_encode_ndr_dom_sid(talloc_tos(), alias);
 	NT_STATUS_HAVE_NO_MEMORY(sidstr);
 
 	rc = pdb_ads_search_fmt(state, state->domaindn, TLDAP_SCOPE_SUB,
@@ -1651,7 +1652,7 @@ static NTSTATUS pdb_ads_lookup_rids(struct pdb_methods *m,
 
 		sid_compose(&sid, domain_sid, rids[i]);
 
-		sidstr = sid_binstring(talloc_tos(), &sid);
+		sidstr = ldap_encode_ndr_dom_sid(talloc_tos(), &sid);
 		NT_STATUS_HAVE_NO_MEMORY(sidstr);
 
 		rc = pdb_ads_search_fmt(state, state->domaindn,
@@ -1954,7 +1955,7 @@ static bool pdb_ads_sid_to_id(struct pdb_methods *m, const struct dom_sid *sid,
 
 	sid_peek_rid(sid, &rid);
 
-	sidstr = sid_binstring(talloc_tos(), sid);
+	sidstr = ldap_encode_ndr_dom_sid(talloc_tos(), sid);
 	if (sidstr == NULL) {
 		return false;
 	}

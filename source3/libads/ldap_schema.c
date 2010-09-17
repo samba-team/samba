@@ -21,6 +21,7 @@
 #include "includes.h"
 #include "ads.h"
 #include "libads/ldap_schema.h"
+#include "../libcli/ldap/ldap_ndr.h"
 
 #ifdef HAVE_LDAP
 
@@ -124,7 +125,7 @@ const char *ads_get_attrname_by_guid(ADS_STRUCT *ads,
 		goto done;
 	}
 
-	guid_bin = guid_binstring(mem_ctx, schema_guid);
+	guid_bin = ldap_encode_ndr_GUID(mem_ctx, schema_guid);
 	if (!guid_bin) {
 		goto done;
 	}

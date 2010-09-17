@@ -1295,7 +1295,6 @@ void sid_copy(struct dom_sid *dst, const struct dom_sid *src);
 bool sid_linearize(char *outbuf, size_t len, const struct dom_sid *sid);
 bool sid_parse(const char *inbuf, size_t len, struct dom_sid *sid);
 bool non_mappable_sid(struct dom_sid *sid);
-char *sid_binstring(TALLOC_CTX *mem_ctx, const struct dom_sid *sid);
 char *sid_binstring_hex(const struct dom_sid *sid);
 NTSTATUS add_sid_to_array(TALLOC_CTX *mem_ctx, const struct dom_sid *sid,
 			  struct dom_sid **sids, uint32_t *num);
@@ -1587,7 +1586,6 @@ int islower_ascii(int c);
 
 void smb_uuid_pack(const struct GUID uu, UUID_FLAT *ptr);
 void smb_uuid_unpack(const UUID_FLAT in, struct GUID *uu);
-char *guid_binstring(TALLOC_CTX *mem_ctx, const struct GUID *guid);
 
 /* The following definitions come from lib/version.c  */
 

@@ -27,6 +27,7 @@
 #include "../libds/common/flags.h"
 #include "ads.h"
 #include "secrets.h"
+#include "../libcli/ldap/ldap_ndr.h"
 
 #ifdef HAVE_ADS
 
@@ -542,7 +543,7 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 		return NT_STATUS_SERVER_DISABLED;
 	}
 
-	sidstr = sid_binstring(talloc_tos(), sid);
+	sidstr = ldap_encode_ndr_dom_sid(talloc_tos(), sid);
 
 	ret = asprintf(&ldap_exp, "(objectSid=%s)", sidstr);
 	TALLOC_FREE(sidstr);
@@ -1044,7 +1045,7 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 		goto done;
 	}
 
-	if ((sidbinstr = sid_binstring(talloc_tos(), group_sid)) == NULL) {
+	if ((sidbinstr = ldap_encode_ndr_dom_sid(talloc_tos(), group_sid)) == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto done;
 	}

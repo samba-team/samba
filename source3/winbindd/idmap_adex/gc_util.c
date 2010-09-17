@@ -23,6 +23,7 @@
 #include "idmap.h"
 #include "idmap_adex.h"
 #include "libads/cldap.h"
+#include "../libcli/ldap/ldap_ndr.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_IDMAP
@@ -719,7 +720,7 @@ done:
 
 	*name = NULL;
 
-	sid_string = sid_binstring(frame, sid);
+	sid_string = ldap_encode_ndr_dom_sid(frame, sid);
 	BAIL_ON_PTR_ERROR(sid_string, nt_status);
 
 	filter = talloc_asprintf(frame, "(objectSid=%s)", sid_string);

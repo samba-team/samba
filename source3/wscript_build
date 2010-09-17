@@ -321,10 +321,10 @@ LIBSMB_SRC0 = '''
 LIBSAMBA_SRC = '${LIBSMB_SRC0}'
 
 LIBCLI_LDAP_MESSAGE_SRC = '''../libcli/ldap/ldap_message.c'''
-LIBCLI_LDAP_NDR_SRC = '''../libcli/ldap/ldap_ndr.c'''
+LIBCLI_LDAP_NDR_SRC = '''../libcli/ldap/ldap_ndr.c lib/ldb_compat.c'''
 
 CLDAP_SRC = '''libads/cldap.c
-        ../libcli/cldap/cldap.c lib/ldb_compat.c
+        ../libcli/cldap/cldap.c
         ../lib/util/idtree.c
         ${LIBCLI_LDAP_MESSAGE_SRC} ${LIBCLI_LDAP_NDR_SRC}'''
 

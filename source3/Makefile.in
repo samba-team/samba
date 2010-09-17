@@ -557,14 +557,14 @@ LIBSAMBA_OBJ = $(LIBSMB_OBJ0) \
 	       $(LIBSMB_ERR_OBJ)
 
 LIBCLI_LDAP_MESSAGE_OBJ = ../libcli/ldap/ldap_message.o
-LIBCLI_LDAP_NDR_OBJ = ../libcli/ldap/ldap_ndr.o
+LIBCLI_LDAP_NDR_OBJ = ../libcli/ldap/ldap_ndr.o lib/ldb_compat.o
 
 LIBTSOCKET_OBJ = ../lib/tsocket/tsocket.o \
 		../lib/tsocket/tsocket_helpers.o \
 		../lib/tsocket/tsocket_bsd.o
 
 CLDAP_OBJ = libads/cldap.o \
-	../libcli/cldap/cldap.o lib/ldb_compat.o \
+	../libcli/cldap/cldap.o \
 	../lib/util/idtree.o \
 	$(LIBCLI_LDAP_MESSAGE_OBJ) $(LIBCLI_LDAP_NDR_OBJ) $(LIBTSOCKET_OBJ)
 
@@ -998,6 +998,7 @@ SMBPASSWD_OBJ = utils/smbpasswd.o $(PASSWD_UTIL_OBJ) $(PASSCHANGE_OBJ) \
 PDBEDIT_OBJ = utils/pdbedit.o $(PASSWD_UTIL_OBJ) $(PARAM_OBJ) $(PASSDB_OBJ) \
 		$(LIBSAMBA_OBJ) $(LIBTSOCKET_OBJ) \
 		$(LIB_NONSMBD_OBJ) $(GROUPDB_OBJ) \
+		$(LIBCLI_LDAP_NDR_OBJ) \
 		$(POPT_LIB_OBJ) $(SMBLDAP_OBJ) ../lib/util/asn1.o
 
 SMBGET_OBJ = utils/smbget.o $(POPT_LIB_OBJ) $(LIBSMBCLIENT_OBJ1)
@@ -1443,6 +1444,7 @@ NTLM_AUTH_OBJ = ${NTLM_AUTH_OBJ1} $(LIBSAMBA_OBJ) $(POPT_LIB_OBJ) \
 		$(PASSDB_OBJ) $(LIBTSOCKET_OBJ) $(GROUPDB_OBJ) \
 		$(SMBLDAP_OBJ) $(LIBNMB_OBJ) \
 		$(WBCOMMON_OBJ) \
+		$(LIBCLI_LDAP_NDR_OBJ) \
 		$(LIBNDR_GEN_OBJ0) $(LIBNDR_NETLOGON_OBJ) @BUILD_INIPARSER@
 
 
@@ -3013,9 +3015,9 @@ bin/ntlm_auth@EXEEXT@: $(BINARY_PREREQS) $(NTLM_AUTH_OBJ) $(PARAM_OBJ) \
 		$(POPT_LIBS) $(KRB5LIBS) $(LDAP_LIBS) $(NSCD_LIBS) \
 		$(LIBTALLOC_LIBS) $(LIBTDB_LIBS) $(LIBWBCLIENT_LIBS) @INIPARSERLIBS@
 
-bin/pam_smbpass.@SHLIBEXT@: $(BINARY_PREREQS) $(PAM_SMBPASS_OBJ) $(LIBTALLOC) $(LIBWBCLIENT) $(LIBTDB)
+bin/pam_smbpass.@SHLIBEXT@: $(BINARY_PREREQS) $(PAM_SMBPASS_OBJ) $(LIBCLI_LDAP_NDR_OBJ) $(LIBTALLOC) $(LIBWBCLIENT) $(LIBTDB)
 	@echo "Linking shared library $@"
-	@$(SHLD) $(LDSHFLAGS) -o $@ $(PAM_SMBPASS_OBJ) -lpam $(DYNEXP) \
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(PAM_SMBPASS_OBJ) $(LIBCLI_LDAP_NDR_OBJ) -lpam $(DYNEXP) \
 		$(LIBS) $(LDAP_LIBS) $(NSCD_LIBS) \
 		$(LIBTALLOC_LIBS) $(LIBTDB_LIBS) $(LIBWBCLIENT_LIBS)
 

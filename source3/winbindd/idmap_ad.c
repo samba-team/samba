@@ -34,6 +34,7 @@
 #include "secrets.h"
 #include "idmap.h"
 #include "../libcli/security/dom_sid.h"
+#include "../libcli/ldap/ldap_ndr.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_IDMAP
@@ -563,7 +564,7 @@ again:
 
 		ids[idx]->status = ID_UNKNOWN;
 
-		sidstr = sid_binstring(talloc_tos(), ids[idx]->sid);
+		sidstr = ldap_encode_ndr_dom_sid(talloc_tos(), ids[idx]->sid);
 		filter = talloc_asprintf_append_buffer(filter, "(objectSid=%s)", sidstr);
 			
 		TALLOC_FREE(sidstr);
@@ -885,7 +886,7 @@ static NTSTATUS nss_ad_get_info( struct nss_domain_entry *e,
 	attrs[2] = ctx->ad_schema->posix_gecos_attr;
 	attrs[3] = ctx->ad_schema->posix_gidnumber_attr;
 
-	sidstr = sid_binstring(mem_ctx, sid);
+	sidstr = ldap_encode_ndr_dom_sid(mem_ctx, sid);
 	filter = talloc_asprintf(mem_ctx, "(objectSid=%s)", sidstr);
 	TALLOC_FREE(sidstr);
 

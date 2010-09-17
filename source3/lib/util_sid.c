@@ -333,26 +333,6 @@ bool non_mappable_sid(struct dom_sid *sid)
  Caller must free.
 *****************************************************************/
 
-char *sid_binstring(TALLOC_CTX *mem_ctx, const struct dom_sid *sid)
-{
-	uint8_t *buf;
-	char *s;
-	int len = ndr_size_dom_sid(sid, 0);
-	buf = talloc_array(mem_ctx, uint8_t, len);
-	if (!buf) {
-		return NULL;
-	}
-	sid_linearize((char *)buf, len, sid);
-	s = binary_string_rfc2254(mem_ctx, buf, len);
-	TALLOC_FREE(buf);
-	return s;
-}
-
-/*****************************************************************
- Return the binary string representation of a struct dom_sid.
- Caller must free.
-*****************************************************************/
-
 char *sid_binstring_hex(const struct dom_sid *sid)
 {
 	char *buf, *s;
