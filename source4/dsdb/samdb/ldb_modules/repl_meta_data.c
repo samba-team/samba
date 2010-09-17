@@ -2442,7 +2442,7 @@ static int replmd_delete_remove_link(struct ldb_module *module,
 static int replmd_delete(struct ldb_module *module, struct ldb_request *req)
 {
 	int ret = LDB_ERR_OTHER;
-	bool retb;
+	bool retb, disallow_move_on_delete;
 	struct ldb_dn *old_dn, *new_dn;
 	const char *rdn_name;
 	const struct ldb_val *rdn_value, *new_rdn_value;
@@ -2554,16 +2554,31 @@ static int replmd_delete(struct ldb_module *module, struct ldb_request *req)
 	msg->dn = old_dn;
 
 	if (deletion_state == OBJECT_NOT_DELETED){
+		/* consider the SYSTEM_FLAG_DISALLOW_MOVE_ON_DELETE flag */
+		disallow_move_on_delete =
+			(ldb_msg_find_attr_as_int(old_msg, "systemFlags", 0)
+				& SYSTEM_FLAG_DISALLOW_MOVE_ON_DELETE);
+
 		/* work out where we will be renaming this object to */
-		ret = dsdb_get_deleted_objects_dn(ldb, tmp_ctx, old_dn, &new_dn);
-		if (ret != LDB_SUCCESS) {
-			/* this is probably an attempted delete on a partition
-			 * that doesn't allow delete operations, such as the
-			 * schema partition */
-			ldb_asprintf_errstring(ldb, "No Deleted Objects container for DN %s",
-						   ldb_dn_get_linearized(old_dn));
-			talloc_free(tmp_ctx);
-			return LDB_ERR_UNWILLING_TO_PERFORM;
+		if (!disallow_move_on_delete) {
+			ret = dsdb_get_deleted_objects_dn(ldb, tmp_ctx, old_dn,
+							  &new_dn);
+			if (ret != LDB_SUCCESS) {
+				/* this is probably an attempted delete on a partition
+				 * that doesn't allow delete operations, such as the
+				 * schema partition */
+				ldb_asprintf_errstring(ldb, "No Deleted Objects container for DN %s",
+							   ldb_dn_get_linearized(old_dn));
+				talloc_free(tmp_ctx);
+				return LDB_ERR_UNWILLING_TO_PERFORM;
+			}
+		} else {
+			new_dn = ldb_dn_get_parent(tmp_ctx, old_dn);
+			if (new_dn == NULL) {
+				ldb_module_oom(module);
+				talloc_free(tmp_ctx);
+				return LDB_ERR_OPERATIONS_ERROR;
+			}
 		}
 
 		/* get the objects GUID from the search we just did */
