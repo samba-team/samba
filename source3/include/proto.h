@@ -1582,10 +1582,6 @@ int tolower_ascii(int c);
 int isupper_ascii(int c);
 int islower_ascii(int c);
 
-/* The following definitions come from lib/util_uuid.c  */
-
-void smb_uuid_unpack(const UUID_FLAT in, struct GUID *uu);
-
 /* The following definitions come from lib/version.c  */
 
 const char *samba_version_string(void);
