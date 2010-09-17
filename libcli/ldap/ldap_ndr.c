@@ -65,7 +65,7 @@ char *ldap_encode_ndr_dom_sid(TALLOC_CTX *mem_ctx, const struct dom_sid *sid)
 /*
   encode a NDR GUID as a ldap filter element
 */
-char *ldap_encode_ndr_GUID(TALLOC_CTX *mem_ctx, struct GUID *guid)
+char *ldap_encode_ndr_GUID(TALLOC_CTX *mem_ctx, const struct GUID *guid)
 {
 	DATA_BLOB blob;
 	NTSTATUS status;
