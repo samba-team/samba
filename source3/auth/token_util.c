@@ -642,32 +642,6 @@ static NTSTATUS finalize_local_nt_token(struct security_token *result,
 }
 
 /****************************************************************************
- prints a struct security_token to debug output.
-****************************************************************************/
-
-void debug_nt_user_token(int dbg_class, int dbg_lev, struct security_token *token)
-{
-	size_t     i;
-
-	if (!token) {
-		DEBUGC(dbg_class, dbg_lev, ("NT user token: (NULL)\n"));
-		return;
-	}
-
-	DEBUGC(dbg_class, dbg_lev,
-	       ("NT user token of user %s\n",
-		sid_string_dbg(&token->sids[0]) ));
-	DEBUGADDC(dbg_class, dbg_lev,
-		  ("contains %lu SIDs\n", (unsigned long)token->num_sids));
-	for (i = 0; i < token->num_sids; i++)
-		DEBUGADDC(dbg_class, dbg_lev,
-			  ("SID[%3lu]: %s\n", (unsigned long)i,
-			   sid_string_dbg(&token->sids[i])));
-
-	DEBUGADDC(dbg_class, dbg_lev,("Privilege mask: 0x%llx\n", (unsigned long long)token->privilege_mask));
-}
-
-/****************************************************************************
  prints a UNIX 'token' to debug output.
 ****************************************************************************/
 

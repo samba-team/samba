@@ -671,7 +671,7 @@ ADS_STATUS ads_get_sid_token(ADS_STRUCT *ads,
 
 	*token = new_token;
 
-	debug_nt_user_token(DBGC_CLASS, 5, *token);
+	security_token_debug(DBGC_CLASS, 5, *token);
 
 	return ADS_ERROR_LDAP(LDAP_SUCCESS);
 }

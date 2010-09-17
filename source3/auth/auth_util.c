@@ -516,7 +516,7 @@ NTSTATUS create_local_token(struct auth_serversupplied_info *server_info)
 					&server_info->ptok->num_sids);
 	}
 
-	debug_nt_user_token(DBGC_AUTH, 10, server_info->ptok);
+	security_token_debug(DBGC_AUTH, 10, server_info->ptok);
 	debug_unix_user_token(DBGC_AUTH, 10,
 			      server_info->utok.uid,
 			      server_info->utok.gid,

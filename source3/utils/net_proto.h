@@ -36,7 +36,6 @@ struct security_token *create_local_nt_token(TALLOC_CTX *mem_ctx,
 					    bool is_guest,
 					    int num_groupsids,
 					    const struct dom_sid *groupsids);
-void debug_nt_user_token(int dbg_class, int dbg_lev, struct security_token *token);
 void debug_unix_user_token(int dbg_class, int dbg_lev, uid_t uid, gid_t gid,
 			   int n_groups, gid_t *groups);
 

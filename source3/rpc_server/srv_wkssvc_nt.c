@@ -359,7 +359,7 @@ WERROR _wkssvc_NetWkstaGetInfo(struct pipes_struct *p,
 				    "Users %s:\n",
 				    sid_string_dbg(
 					    &global_sid_Authenticated_Users)));
-			debug_nt_user_token(DBGC_CLASS, 3,
+			security_token_debug(DBGC_CLASS, 3,
 					    p->server_info->ptok);
 			return WERR_ACCESS_DENIED;
 		}
@@ -377,7 +377,7 @@ WERROR _wkssvc_NetWkstaGetInfo(struct pipes_struct *p,
 			DEBUGADD(3,(" - does not have sid for Administrators "
 				    "group %s, sids are:\n",
 				    sid_string_dbg(&global_sid_Builtin_Administrators)));
-			debug_nt_user_token(DBGC_CLASS, 3,
+			security_token_debug(DBGC_CLASS, 3,
 					    p->server_info->ptok);
 			return WERR_ACCESS_DENIED;
 		}
@@ -562,7 +562,7 @@ WERROR _wkssvc_NetWkstaEnumUsers(struct pipes_struct *p,
 		DEBUGADD(3,(" - does not have sid for Administrators group "
 			    "%s\n", sid_string_dbg(
 				    &global_sid_Builtin_Administrators)));
-		debug_nt_user_token(DBGC_CLASS, 3, p->server_info->ptok);
+		security_token_debug(DBGC_CLASS, 3, p->server_info->ptok);
 		return WERR_ACCESS_DENIED;
 	}
 

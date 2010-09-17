@@ -19,6 +19,7 @@
 
 #include "includes.h"
 #include "smbd/globals.h"
+#include "libcli/security/security_token.h"
 
 extern struct current_user current_user;
 
@@ -309,7 +310,7 @@ void set_sec_ctx(uid_t uid, gid_t gid, int ngroups, gid_t *groups, struct securi
 	DEBUG(3, ("setting sec ctx (%u, %u) - sec_ctx_stack_ndx = %d\n", 
 		(unsigned int)uid, (unsigned int)gid, sec_ctx_stack_ndx));
 
-	debug_nt_user_token(DBGC_CLASS, 5, token);
+	security_token_debug(DBGC_CLASS, 5, token);
 	debug_unix_user_token(DBGC_CLASS, 5, uid, gid, ngroups, groups);
 
 	/* Change uid, gid and supplementary group list. */

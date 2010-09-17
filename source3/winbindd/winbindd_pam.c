@@ -321,7 +321,7 @@ static NTSTATUS check_info3_in_group(struct netr_SamInfo3 *info3,
 		return status;
 	}
 
-	debug_nt_user_token(DBGC_CLASS, 10, token);
+	security_token_debug(DBGC_CLASS, 10, token);
 
 	for (i=0; i<num_require_membership_of_sid; i++) {
 		DEBUG(10, ("Checking SID %s\n", sid_string_dbg(
