@@ -1007,6 +1007,7 @@ RPCCLIENT_OBJ1 = rpcclient/rpcclient.o rpcclient/cmd_lsarpc.o \
 		 rpcclient/cmd_shutdown.o rpcclient/cmd_test.o \
 		 rpcclient/cmd_wkssvc.o rpcclient/cmd_ntsvcs.o \
 		 rpcclient/cmd_drsuapi.o rpcclient/cmd_eventlog.o \
+		 rpcclient/cmd_winreg.o \
 		 $(DISPLAY_SEC_OBJ)
 
 RPCCLIENT_OBJ = $(RPCCLIENT_OBJ1) \
@@ -1026,6 +1027,7 @@ RPCCLIENT_OBJ = $(RPCCLIENT_OBJ1) \
 	     $(LIBCLI_SRVSVC_OBJ) \
 	     $(LIBCLI_LSA_OBJ) \
 	     $(LIBCLI_SAMR_OBJ) \
+	     $(LIBCLI_WINREG_OBJ) \
 	     $(LIBCLI_NETLOGON_OBJ) \
 	     $(RPC_CLIENT_SCHANNEL_OBJ) \
 	     rpc_client/init_netlogon.o \
