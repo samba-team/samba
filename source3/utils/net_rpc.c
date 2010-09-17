@@ -4138,7 +4138,7 @@ static void free_user_token(struct security_token *token)
 
 static void add_sid_to_token(struct security_token *token, struct dom_sid *sid)
 {
-	if (is_sid_in_token(token, sid))
+	if (security_token_has_sid(token, sid))
 		return;
 
 	token->sids = SMB_REALLOC_ARRAY(token->sids, struct dom_sid, token->num_sids+1);

@@ -110,7 +110,7 @@ static uint32_t access_check_max_allowed(const struct security_descriptor *sd,
 	uint32_t denied = 0, granted = 0;
 	unsigned i;
 
-	if (is_sid_in_token(token, sd->owner_sid)) {
+	if (security_token_has_sid(token, sd->owner_sid)) {
 		granted |= SEC_STD_WRITE_DAC | SEC_STD_READ_CONTROL | SEC_STD_DELETE;
 	} else if (security_token_has_privilege(token, SEC_PRIV_RESTORE)) {
 		granted |= SEC_STD_DELETE;
@@ -127,7 +127,7 @@ static uint32_t access_check_max_allowed(const struct security_descriptor *sd,
 			continue;
 		}
 
-		if (!is_sid_in_token(token, &ace->trustee)) {
+		if (!security_token_has_sid(token, &ace->trustee)) {
 			continue;
 		}
 
@@ -198,7 +198,7 @@ NTSTATUS se_access_check(const struct security_descriptor *sd,
 
 	/* the owner always gets SEC_STD_WRITE_DAC, SEC_STD_READ_CONTROL and SEC_STD_DELETE */
 	if ((bits_remaining & (SEC_STD_WRITE_DAC|SEC_STD_READ_CONTROL|SEC_STD_DELETE)) &&
-	    is_sid_in_token(token, sd->owner_sid)) {
+	    security_token_has_sid(token, sd->owner_sid)) {
 		bits_remaining &= ~(SEC_STD_WRITE_DAC|SEC_STD_READ_CONTROL|SEC_STD_DELETE);
 	}
 	if ((bits_remaining & SEC_STD_DELETE) &&
@@ -218,7 +218,7 @@ NTSTATUS se_access_check(const struct security_descriptor *sd,
 			continue;
 		}
 
-		if (!is_sid_in_token(token, &ace->trustee)) {
+		if (!security_token_has_sid(token, &ace->trustee)) {
 			continue;
 		}
 

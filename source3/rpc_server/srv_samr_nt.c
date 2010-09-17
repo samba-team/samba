@@ -269,8 +269,8 @@ void map_max_allowed_access(const struct security_token *nt_token,
 
 	/* Full Access for 'BUILTIN\Administrators' and 'BUILTIN\Account Operators */
 
-	if (is_sid_in_token(nt_token, &global_sid_Builtin_Administrators) ||
-			is_sid_in_token(nt_token, &global_sid_Builtin_Account_Operators)) {
+	if (security_token_has_sid(nt_token, &global_sid_Builtin_Administrators) ||
+			security_token_has_sid(nt_token, &global_sid_Builtin_Account_Operators)) {
 		*pacc_requested |= GENERIC_ALL_ACCESS;
 		return;
 	}
@@ -280,7 +280,7 @@ void map_max_allowed_access(const struct security_token *nt_token,
 		struct dom_sid domadmin_sid;
 		sid_compose(&domadmin_sid, get_global_sam_sid(),
 			    DOMAIN_RID_ADMINS);
-		if (is_sid_in_token(nt_token, &domadmin_sid)) {
+		if (security_token_has_sid(nt_token, &domadmin_sid)) {
 			*pacc_requested |= GENERIC_ALL_ACCESS;
 			return;
 		}

@@ -1292,7 +1292,6 @@ void del_sid_from_array(const struct dom_sid *sid, struct dom_sid **sids, size_t
 bool add_rid_to_array_unique(TALLOC_CTX *mem_ctx,
 				    uint32 rid, uint32 **pp_rids, size_t *p_num);
 bool is_null_sid(const struct dom_sid *sid);
-bool is_sid_in_token(const struct security_token *token, const struct dom_sid *sid);
 NTSTATUS sid_array_from_info3(TALLOC_CTX *mem_ctx,
 			      const struct netr_SamInfo3 *info3,
 			      struct dom_sid **user_sids,
