@@ -1715,7 +1715,7 @@ interface netlogon
 		uint32 status;
 	} NL_DNS_NAME_INFO;
 
-	typedef struct {
+	typedef [public] struct {
 		uint32 count;
 		[size_is(count)] NL_DNS_NAME_INFO *names;
 	} NL_DNS_NAME_INFO_ARRAY;
