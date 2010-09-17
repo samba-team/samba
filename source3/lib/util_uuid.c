@@ -20,15 +20,6 @@
 
 #include "includes.h"
 
-void smb_uuid_pack(const struct GUID uu, UUID_FLAT *ptr)
-{
-	SIVAL(ptr->info, 0, uu.time_low);
-	SSVAL(ptr->info, 4, uu.time_mid);
-	SSVAL(ptr->info, 6, uu.time_hi_and_version);
-	memcpy(ptr->info+8, uu.clock_seq, 2);
-	memcpy(ptr->info+10, uu.node, 6);
-}
-
 void smb_uuid_unpack(const UUID_FLAT in, struct GUID *uu)
 {
 	uu->time_low = IVAL(in.info, 0);
