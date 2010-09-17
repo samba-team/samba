@@ -1,28 +1,30 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
 
    security descriptor utility functions
 
    Copyright (C) Andrew Tridgell 		2004
+   Copyright (C) Andrew Bartlett 		2010
    Copyright (C) Stefan Metzmacher 		2005
-      
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include "includes.h"
-#include "libcli/security/security.h"
-#include "auth/session.h"
+#include "libcli/security/security_token.h"
+#include "libcli/security/dom_sid.h"
+#include "libcli/security/privileges.h"
 
 /*
   return a blank security token
@@ -57,10 +59,10 @@ void security_token_debug(int dbg_lev, const struct security_token *token)
 		return;
 	}
 
-	DEBUG(dbg_lev, ("Security token SIDs (%lu):\n", 
+	DEBUG(dbg_lev, ("Security token SIDs (%lu):\n",
 				       (unsigned long)token->num_sids));
 	for (i = 0; i < token->num_sids; i++) {
-		DEBUGADD(dbg_lev, ("  SID[%3lu]: %s\n", (unsigned long)i, 
+		DEBUGADD(dbg_lev, ("  SID[%3lu]: %s\n", (unsigned long)i,
 			   dom_sid_string(mem_ctx, &token->sids[i])));
 	}
 
@@ -91,12 +93,12 @@ bool security_token_is_sid_string(const struct security_token *token, const char
 	return ret;
 }
 
-bool security_token_is_system(const struct security_token *token) 
+bool security_token_is_system(const struct security_token *token)
 {
 	return security_token_is_sid_string(token, SID_NT_SYSTEM);
 }
 
-bool security_token_is_anonymous(const struct security_token *token) 
+bool security_token_is_anonymous(const struct security_token *token)
 {
 	return security_token_is_sid_string(token, SID_NT_ANONYMOUS);
 }
@@ -138,44 +140,3 @@ bool security_token_has_enterprise_dcs(const struct security_token *token)
 {
 	return security_token_has_sid_string(token, SID_NT_ENTERPRISE_DCS);
 }
-
-enum security_user_level security_session_user_level(struct auth_session_info *session_info,
-						     const struct dom_sid *domain_sid)
-{
-	if (!session_info) {
-		return SECURITY_ANONYMOUS;
-	}
-	
-	if (security_token_is_system(session_info->security_token)) {
-		return SECURITY_SYSTEM;
-	}
-
-	if (security_token_is_anonymous(session_info->security_token)) {
-		return SECURITY_ANONYMOUS;
-	}
-
-	if (security_token_has_builtin_administrators(session_info->security_token)) {
-		return SECURITY_ADMINISTRATOR;
-	}
-
-	if (domain_sid) {
-		struct dom_sid *rodc_dcs;
-		rodc_dcs = dom_sid_add_rid(session_info, domain_sid, DOMAIN_RID_READONLY_DCS);
-		if (security_token_has_sid(session_info->security_token, rodc_dcs)) {
-			talloc_free(rodc_dcs);
-			return SECURITY_RO_DOMAIN_CONTROLLER;
-		}
-		talloc_free(rodc_dcs);
-	}
-
-	if (security_token_has_enterprise_dcs(session_info->security_token)) {
-		return SECURITY_DOMAIN_CONTROLLER;
-	}
-
-	if (security_token_has_nt_authenticated_users(session_info->security_token)) {
-		return SECURITY_USER;
-	}
-
-	return SECURITY_ANONYMOUS;
-}
-
