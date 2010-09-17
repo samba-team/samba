@@ -2979,6 +2979,40 @@ class BaseDnTests(unittest.TestCase):
         self.assertTrue(res[0]["configurationNamingContext"][0] in ncs)
         self.assertTrue(res[0]["schemaNamingContext"][0] in ncs)
 
+    def test_serverPath(self):
+        """Testing the server paths in rootDSE"""
+        res = self.ldb.search("", scope=SCOPE_BASE,
+                              attrs=["dsServiceName", "serverName"])
+        self.assertEquals(len(res), 1)
+
+        self.assertTrue("CN=Servers" in res[0]["dsServiceName"][0])
+        self.assertTrue("CN=Sites" in res[0]["dsServiceName"][0])
+        self.assertTrue("CN=NTDS Settings" in res[0]["dsServiceName"][0])
+        self.assertTrue("CN=Servers" in res[0]["serverName"][0])
+        self.assertTrue("CN=Sites" in res[0]["serverName"][0])
+        self.assertFalse("CN=NTDS Settings" in res[0]["serverName"][0])
+
+    def test_dnsHostname(self):
+        """Testing the DNS hostname in rootDSE"""
+        res = self.ldb.search("", scope=SCOPE_BASE,
+                              attrs=["dnsHostName", "serverName"])
+        self.assertEquals(len(res), 1)
+
+        res2 = self.ldb.search(res[0]["serverName"][0], scope=SCOPE_BASE,
+                               attrs=["dNSHostName"])
+        self.assertEquals(len(res2), 1)
+
+        self.assertEquals(res[0]["dnsHostName"][0], res2[0]["dNSHostName"][0])
+
+    def test_ldapServiceName(self):
+        """Testing the ldap service name in rootDSE"""
+        res = self.ldb.search("", scope=SCOPE_BASE,
+                              attrs=["ldapServiceName", "dNSHostName"])
+        self.assertEquals(len(res), 1)
+
+        (hostname, _, dns_domainname) = res[0]["dNSHostName"][0].partition(".")
+        self.assertTrue(":%s$@%s" % (hostname, dns_domainname.upper())
+                        in res[0]["ldapServiceName"][0])
 
 if not "://" in host:
     if os.path.isfile(host):
