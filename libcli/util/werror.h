@@ -48,6 +48,13 @@ typedef uint32_t WERROR;
 	}\
 } while (0)
 
+#define W_ERROR_HAVE_NO_MEMORY_AND_FREE(x, ctx) do { \
+	if (!(x)) {\
+		talloc_free(ctx); \
+		return WERR_NOMEM;\
+	}\
+} while (0)
+
 #define W_ERROR_IS_OK_RETURN(x) do { \
 	if (W_ERROR_IS_OK(x)) {\
 		return x;\
