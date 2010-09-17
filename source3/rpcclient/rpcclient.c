@@ -9,12 +9,12 @@
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -87,7 +87,7 @@ static char **completion_fn(const char *text, int start, int end)
 		if (!commands->cmd_set) {
 			break;
 		}
-		
+
 		for (i=0; commands->cmd_set[i].name; i++) {
 			if ((strncmp(text, commands->cmd_set[i].name, strlen(text)) == 0) &&
 				(( commands->cmd_set[i].returntype == RPC_RTYPE_NTSTATUS &&
@@ -106,7 +106,6 @@ static char **completion_fn(const char *text, int start, int end)
 			}
 		}
 		commands = commands->next;
-		
 	}
 
 	if (count == 2) {
@@ -121,10 +120,10 @@ static char *next_command (char **cmdstr)
 {
 	char *command;
 	char			*p;
-	
+
 	if (!cmdstr || !(*cmdstr))
 		return NULL;
-	
+
 	p = strchr_m(*cmdstr, ';');
 	if (p)
 		*p = '\0';
@@ -133,7 +132,7 @@ static char *next_command (char **cmdstr)
 		*cmdstr = p + 1;
 	else
 		*cmdstr = NULL;
-	
+
 	return command;
 }
 
@@ -161,7 +160,7 @@ static void fetch_machine_sid(struct cli_state *cli)
 		fprintf(stderr, "could not initialise lsa pipe. Error was %s\n", nt_errstr(result) );
 		goto error;
 	}
-	
+
 	result = rpccli_lsa_open_policy(lsapipe, mem_ctx, True, 
 				     SEC_FLAG_MAXIMUM_ALLOWED,
 				     &pol);
@@ -222,7 +221,7 @@ static NTSTATUS cmd_listcommands(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ct
 	for (tmp = cmd_list; tmp; tmp = tmp->next) 
 	{
 		tmp_set = tmp->cmd_set;
-		
+
 		if (!StrCaseCmp(argv[1], tmp_set->name))
 		{
 			printf("Available commands on the %s pipe:\n\n", tmp_set->name);
@@ -236,7 +235,7 @@ static NTSTATUS cmd_listcommands(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ct
 				if (i%3 == 0)
 					printf("\n");
 			}
-			
+
 			/* drop out of the loop */
 			break;
 		}
@@ -265,7 +264,7 @@ static NTSTATUS cmd_help(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 
         if (argc == 2) {
                 for (tmp = cmd_list; tmp; tmp = tmp->next) {
-                        
+
                         tmp_set = tmp->cmd_set;
 
                         while(tmp_set->name) {
@@ -475,7 +474,7 @@ static NTSTATUS cmd_timeout(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 		timeout = atoi(argv[1]);
 
 		for (tmp = cmd_list; tmp; tmp = tmp->next) {
-			
+
 			struct cmd_set *tmp_set;
 
 			for (tmp_set = tmp->cmd_set; tmp_set->name; tmp_set++) {
@@ -650,7 +649,7 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 {
 	NTSTATUS ntresult;
 	WERROR wresult;
-	
+
 	TALLOC_CTX *mem_ctx;
 
 	/* Create mem_ctx */
