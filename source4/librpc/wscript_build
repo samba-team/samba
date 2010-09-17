@@ -764,6 +764,18 @@ bld.SAMBA_PYTHON('python_irpc',
 	realname='samba/dcerpc/irpc.so'
 	)
 
+bld.SAMBA_PYTHON('python_winbind',
+	source='gen_ndr/py_winbind.c',
+	deps='RPC_NDR_WINBIND PYTALLOC pyrpc_util python_netlogon',
+	realname='samba/dcerpc/winbind.so'
+	)
+
+bld.SAMBA_PYTHON('python_idmap',
+	source='../../librpc/gen_ndr/py_idmap.c',
+	deps='NDR_IDMAP PYTALLOC pyrpc_util',
+	realname='samba/dcerpc/idmap.so'
+	)
+
 
 bld.SAMBA_PYTHON('python_drsuapi',
 	source='../../librpc/gen_ndr/py_drsuapi.c',
