@@ -36,17 +36,10 @@
 
 bool nt_token_check_sid ( const struct dom_sid *sid, const struct security_token *token )
 {
-	int i;
-
 	if ( !sid || !token )
 		return False;
 
-	for ( i=0; i<token->num_sids; i++ ) {
-		if ( dom_sid_equal( sid, &token->sids[i] ) )
-			return True;
-	}
-
-	return False;
+	return security_token_has_sid(token, sid);
 }
 
 bool nt_token_check_domain_rid( struct security_token *token, uint32 rid )
@@ -983,7 +976,7 @@ bool user_in_group_sid(const char *username, const struct dom_sid *group_sid)
 		return False;
 	}
 
-	result = nt_token_check_sid(group_sid, token);
+	result = security_token_has_sid(token, group_sid);
 
 	TALLOC_FREE(mem_ctx);
 	return result;
