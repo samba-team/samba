@@ -63,6 +63,10 @@ extern int DEBUGLEVEL;
  */
 #define DEBUGADD(level, body) _DEBUG(level, body, false)
 
+/* Compatiblity macros for the source3 calling convention */
+#define DEBUGC(class, level, body) _DEBUG(level, body, true)
+#define DEBUGADDC(class, level, body) _DEBUG(level, body, false)
+
 /**
  * Obtain indentation string for the debug log. 
  *
