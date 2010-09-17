@@ -28,6 +28,8 @@
 #include "param/pyparam.h"
 #include "auth/credentials/pycredentials.h"
 #include "lib/events/events.h"
+#include "lib/messaging/messaging.h"
+#include "lib/messaging/irpc.h"
 
 #ifndef Py_TYPE /* Py_TYPE is only available on Python > 2.6 */
 #define Py_TYPE(ob)             (((PyObject*)(ob))->ob_type)
@@ -65,7 +67,31 @@ bool py_check_dcerpc_type(PyObject *obj, const char *module, const char *typenam
 	return ret;
 }
 
-PyObject *py_dcerpc_interface_init_helper(PyTypeObject *type, PyObject *args, PyObject *kwargs, const struct ndr_interface_table *table)
+/*
+  connect to a IRPC pipe from python
+ */
+static NTSTATUS pyrpc_irpc_connect(TALLOC_CTX *mem_ctx, const char *irpc_server,
+				   const struct ndr_interface_table *table,
+				   struct tevent_context *event_ctx,
+				   struct loadparm_context *lp_ctx,
+				   struct dcerpc_binding_handle **binding_handle)
+{
+	struct messaging_context *msg;
+
+	msg = messaging_client_init(mem_ctx, lpcfg_messaging_path(mem_ctx, lp_ctx), event_ctx);
+	NT_STATUS_HAVE_NO_MEMORY(msg);
+
+	*binding_handle = irpc_binding_handle_by_name(mem_ctx, msg, irpc_server, table);
+	if (*binding_handle == NULL) {
+		talloc_free(msg);
+		return NT_STATUS_INVALID_PIPE_STATE;
+	}
+
+	return NT_STATUS_OK;
+}
+
+PyObject *py_dcerpc_interface_init_helper(PyTypeObject *type, PyObject *args, PyObject *kwargs,
+					  const struct ndr_interface_table *table)
 {
 	dcerpc_InterfaceObject *ret;
 	const char *binding_string;
@@ -103,18 +129,17 @@ PyObject *py_dcerpc_interface_init_helper(PyTypeObject *type, PyObject *args, Py
 		talloc_free(mem_ctx);
 		return NULL;
 	}
-	credentials = cli_credentials_from_py_object(py_credentials);
-	if (credentials == NULL) {
-		PyErr_SetString(PyExc_TypeError, "Expected credentials");
-		talloc_free(mem_ctx);
-		return NULL;
-	}
+
 	ret = PyObject_New(dcerpc_InterfaceObject, type);
 	ret->mem_ctx = mem_ctx;
 
 	event_ctx = s4_event_context_init(ret->mem_ctx);
 
-	if (py_basis != Py_None) {
+	if (strncmp(binding_string, "irpc:", 5) == 0) {
+		ret->pipe = NULL;
+		status = pyrpc_irpc_connect(ret->mem_ctx, binding_string+5, table,
+					    event_ctx, lp_ctx, &ret->binding_handle);
+	} else if (py_basis != Py_None) {
 		struct dcerpc_pipe *base_pipe;
 		PyObject *py_base;
 		PyTypeObject *ClientConnection_Type;
@@ -144,6 +169,12 @@ PyObject *py_dcerpc_interface_init_helper(PyTypeObject *type, PyObject *args, Py
 
 		ret->pipe = talloc_steal(ret->mem_ctx, ret->pipe);
 	} else {
+		credentials = cli_credentials_from_py_object(py_credentials);
+		if (credentials == NULL) {
+			PyErr_SetString(PyExc_TypeError, "Expected credentials");
+			talloc_free(mem_ctx);
+			return NULL;
+		}
 		status = dcerpc_pipe_connect(event_ctx, &ret->pipe, binding_string,
 		             table, credentials, event_ctx, lp_ctx);
 	}
@@ -153,8 +184,10 @@ PyObject *py_dcerpc_interface_init_helper(PyTypeObject *type, PyObject *args, Py
 		return NULL;
 	}
 
-	ret->pipe->conn->flags |= DCERPC_NDR_REF_ALLOC;
-	ret->binding_handle = ret->pipe->binding_handle;
+	if (ret->pipe) {
+		ret->pipe->conn->flags |= DCERPC_NDR_REF_ALLOC;
+		ret->binding_handle = ret->pipe->binding_handle;
+	}
 	return (PyObject *)ret;
 }
 
