@@ -1052,8 +1052,12 @@ static BOOL test_OnePrinter(struct torture_context *tctx,
 	ret &= test_EnumPrinterData(tctx, printername, handle);
 	ret &= test_EnumPrinterDataEx(tctx, printername, "PrinterDriverData", handle, NULL, NULL);
 	ret &= test_DeviceModes(tctx, printername, handle);
+#if 0
+	/* dont run these at the moment, behaviour is PrinterData API calls (not
+	 * dcerpc calls) is almost unpredictable - gd */
 	ret &= test_PrinterData(tctx, printername, handle);
 	ret &= test_PrinterDataW(tctx, printername, handle);
+#endif
 	ret &= test_ClosePrinter(tctx, handle);
 
 	return ret;
