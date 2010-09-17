@@ -1936,7 +1936,7 @@ interface libnetapi
 		[in] string server_name,
 		[in] uint32 function_code,
 		[in] uint32 query_level,
-		[in] uint8 *data,
+		[in,unique] uint8 *data,
 		[out,ref] uint8 **buffer
 	);
 }
