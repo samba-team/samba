@@ -206,7 +206,7 @@ _PUBLIC_ void smb_msleep(unsigned int t)
 			t1 = t2;
 		}
 
-		tdiff = usec_time_diff(&t1,&t2)/1000;
+		tdiff = usec_time_diff(&t2,&t1)/1000;
 	}
 #endif
 }
