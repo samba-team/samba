@@ -1497,7 +1497,7 @@ NTSTATUS cli_session_setup(struct cli_state *cli,
 
 struct cli_ulogoff_state {
 	struct cli_state *cli;
-	uint16_t vwv[2];
+	uint16_t vwv[3];
 };
 
 static void cli_ulogoff_done(struct tevent_req *subreq);
