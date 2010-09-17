@@ -376,10 +376,9 @@ static int rootdse_add_dynamic(struct ldb_module *module, struct ldb_message *ms
 		}
 	}
 
-	if (do_attribute(attrs, "forestFunctionality")
-	    && (val = talloc_get_type(ldb_get_opaque(ldb, "forestFunctionality"), int))) {
+	if (do_attribute(attrs, "forestFunctionality")) {
 		if (ldb_msg_add_fmt(msg, "forestFunctionality",
-				    "%d", *val) != LDB_SUCCESS) {
+				    "%d", dsdb_forest_functional_level(ldb)) != LDB_SUCCESS) {
 			goto failed;
 		}
 	}
