@@ -2357,6 +2357,55 @@ static bool test_netr_DsRGetDCNameEx2(struct torture_context *tctx,
 					info->dc_site_name);
 }
 
+/* This is a substitution for "samdb_server_site_name" which relies on the
+ * correct "lp_ctx" and therefore can't be used here. */
+static const char *server_site_name(struct torture_context *tctx,
+				    struct ldb_context *ldb)
+{
+	TALLOC_CTX *tmp_ctx;
+	struct ldb_dn *dn, *server_dn;
+	const struct ldb_val *site_name_val;
+	const char *server_dn_str, *site_name;
+
+	tmp_ctx = talloc_new(ldb);
+	if (tmp_ctx == NULL) {
+		goto failed;
+	}
+
+	dn = ldb_dn_new(tmp_ctx, ldb, "");
+	if (dn == NULL) {
+		goto failed;
+	}
+
+	server_dn_str = samdb_search_string(ldb, tmp_ctx, dn, "serverName",
+					    NULL);
+	if (server_dn_str == NULL) {
+		goto failed;
+	}
+
+	server_dn = ldb_dn_new(tmp_ctx, ldb, server_dn_str);
+	if (server_dn == NULL) {
+		goto failed;
+	}
+
+	/* CN=<Server name>, CN=Servers, CN=<Site name>, CN=Sites, ... */
+	site_name_val = ldb_dn_get_component_val(server_dn, 2);
+	if (site_name_val == NULL) {
+		goto failed;
+	}
+
+	site_name = (const char *) site_name_val->data;
+
+	talloc_steal(tctx, site_name);
+	talloc_free(tmp_ctx);
+
+	return site_name;
+
+failed:
+	talloc_free(tmp_ctx);
+	return NULL;
+}
+
 static bool test_netr_DsrGetDcSiteCoverageW(struct torture_context *tctx, 
 					    struct dcerpc_pipe *p)
 {
@@ -2392,7 +2441,7 @@ static bool test_netr_DsrGetDcSiteCoverageW(struct torture_context *tctx,
 		       "we should per default only get the default site");
 	if (sam_ctx != NULL) {
 		torture_assert_casestr_equal(tctx, ctr->sites[0].string,
-					     samdb_server_site_name(sam_ctx, tctx),
+					     server_site_name(tctx, sam_ctx),
 					     "didn't return default site");
 	}
 
@@ -2514,7 +2563,7 @@ static bool test_netr_DsRAddressToSitenamesW(struct torture_context *tctx,
 		for (i = 0; i < 3; i++) {
 			torture_assert_casestr_equal(tctx,
 						     ctr->sitename[i].string,
-						     samdb_server_site_name(sam_ctx, tctx),
+						     server_site_name(tctx, sam_ctx),
 						     "didn't return default site");
 		}
 		for (i = 3; i < 6; i++) {
@@ -2523,7 +2572,7 @@ static bool test_netr_DsRAddressToSitenamesW(struct torture_context *tctx,
 			if (torture_setting_bool(tctx, "samba4", false)) {
 				torture_assert_casestr_equal(tctx,
 							     ctr->sitename[i].string,
-							     samdb_server_site_name(sam_ctx, tctx),
+							     server_site_name(tctx, sam_ctx),
 							     "didn't return default site");
 			}
 		}
@@ -2691,7 +2740,7 @@ static bool test_netr_DsRAddressToSitenamesExW(struct torture_context *tctx,
 		for (i = 0; i < 3; i++) {
 			torture_assert_casestr_equal(tctx,
 						     ctr->sitename[i].string,
-						     samdb_server_site_name(sam_ctx, tctx),
+						     server_site_name(tctx, sam_ctx),
 						     "didn't return default site");
 			torture_assert(tctx, ctr->subnetname[i].string == NULL,
 				       "subnet should be null");
@@ -2702,7 +2751,7 @@ static bool test_netr_DsRAddressToSitenamesExW(struct torture_context *tctx,
 			if (torture_setting_bool(tctx, "samba4", false)) {
 				torture_assert_casestr_equal(tctx,
 							     ctr->sitename[i].string,
-							     samdb_server_site_name(sam_ctx, tctx),
+							     server_site_name(tctx, sam_ctx),
 							     "didn't return default site");
 			}
 			torture_assert(tctx, ctr->subnetname[i].string == NULL,
