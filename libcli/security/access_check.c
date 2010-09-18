@@ -5,6 +5,7 @@
    Copyright (C) Gerald Carter 2005
    Copyright (C) Volker Lendecke 2007
    Copyright (C) Jeremy Allison 2008
+   Copyright (C) Andrew Bartlett 2010
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -28,9 +29,9 @@
    objects.  Each type of object has its own mapping of generic to object
    specific access rights. */
 
-void se_map_generic(uint32 *access_mask, const struct generic_mapping *mapping)
+void se_map_generic(uint32_t *access_mask, const struct generic_mapping *mapping)
 {
-	uint32 old_mask = *access_mask;
+	uint32_t old_mask = *access_mask;
 
 	if (*access_mask & GENERIC_READ_ACCESS) {
 		*access_mask &= ~GENERIC_READ_ACCESS;
@@ -81,9 +82,9 @@ void security_acl_map_generic(struct security_acl *sa,
    objects.  Each type of object has its own mapping of standard to object
    specific access rights. */
 
-void se_map_standard(uint32 *access_mask, const struct standard_mapping *mapping)
+void se_map_standard(uint32_t *access_mask, const struct standard_mapping *mapping)
 {
-	uint32 old_mask = *access_mask;
+	uint32_t old_mask = *access_mask;
 
 	if (*access_mask & SEC_STD_READ_CONTROL) {
 		*access_mask &= ~SEC_STD_READ_CONTROL;
@@ -104,7 +105,7 @@ void se_map_standard(uint32 *access_mask, const struct standard_mapping *mapping
 /*
   perform a SEC_FLAG_MAXIMUM_ALLOWED access check
 */
-static uint32_t access_check_max_allowed(const struct security_descriptor *sd, 
+static uint32_t access_check_max_allowed(const struct security_descriptor *sd,
 					const struct security_token *token)
 {
 	uint32_t denied = 0, granted = 0;
@@ -152,7 +153,7 @@ static uint32_t access_check_max_allowed(const struct security_descriptor *sd,
   this function returns the denied bits in the uint32_t pointed
   to by the access_granted pointer.
 */
-NTSTATUS se_access_check(const struct security_descriptor *sd, 
+NTSTATUS se_access_check(const struct security_descriptor *sd,
 			  const struct security_token *token,
 			  uint32_t access_desired,
 			  uint32_t *access_granted)

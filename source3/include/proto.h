@@ -1237,14 +1237,6 @@ bool push_reg_multi_sz(TALLOC_CTX *mem_ctx, DATA_BLOB *blob, const char **a);
 bool pull_reg_sz(TALLOC_CTX *mem_ctx, const DATA_BLOB *blob, const char **s);
 bool pull_reg_multi_sz(TALLOC_CTX *mem_ctx, const DATA_BLOB *blob, const char ***a);
 
-/* The following definitions come from lib/util_seaccess.c  */
-
-void se_map_generic(uint32 *access_mask, const struct generic_mapping *mapping);
-void security_acl_map_generic(struct security_acl *sa, const struct generic_mapping *mapping);
-void se_map_standard(uint32 *access_mask, const struct standard_mapping *mapping);
-NTSTATUS se_access_check(const struct security_descriptor *sd, const struct security_token *token,
-		     uint32 acc_desired, uint32 *acc_granted);
-
 /* The following definitions come from lib/util_sec.c  */
 
 void sec_init(void);

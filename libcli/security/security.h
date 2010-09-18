@@ -40,6 +40,7 @@ struct object_tree {
 #include "libcli/security/security_token.h"
 #include "libcli/security/sddl.h"
 #include "libcli/security/privileges.h"
+#include "libcli/security/access_check.h"
 
 #if _SAMBA_BUILD_ >= 4
 #include "libcli/security/proto.h"
