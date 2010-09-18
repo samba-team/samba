@@ -31,7 +31,7 @@
 extern struct winbindd_methods cache_methods;
 
 /**
- * @file winbindd_util.c
+ * @file winbindd_util.cq
  *
  * Winbind daemon for NT domain authentication nss module.
  **/

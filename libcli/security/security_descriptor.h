@@ -68,4 +68,17 @@ struct security_acl *security_acl_concatenate(TALLOC_CTX *mem_ctx,
                                               const struct security_acl *acl1,
                                               const struct security_acl *acl2);
 
+uint32_t map_generic_rights_ds(uint32_t access_mask);
+
+struct security_descriptor *create_security_descriptor(TALLOC_CTX *mem_ctx,
+						       struct security_descriptor *parent_sd,
+						       struct security_descriptor *creator_sd,
+						       bool is_container,
+						       struct GUID *object_list,
+						       uint32_t inherit_flags,
+						       struct security_token *token,
+						       struct dom_sid *default_owner, /* valid only for DS, NULL for the other RSs */
+						       struct dom_sid *default_group, /* valid only for DS, NULL for the other RSs */
+						       uint32_t (*generic_map)(uint32_t access_mask));
+
 #endif /* __SECURITY_DESCRIPTOR_H__ */

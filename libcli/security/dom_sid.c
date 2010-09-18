@@ -28,8 +28,8 @@
  Compare the auth portion of two sids.
 *****************************************************************/
 
-static int dom_sid_compare_auth(const struct dom_sid *sid1,
-				const struct dom_sid *sid2)
+int dom_sid_compare_auth(const struct dom_sid *sid1,
+			 const struct dom_sid *sid2)
 {
 	int i;
 

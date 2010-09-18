@@ -470,14 +470,15 @@ LIB_OBJ = $(LIBSAMBAUTIL_OBJ) $(UTIL_OBJ) $(CRYPTO_OBJ) \
 	  lib/module.o lib/events.o @LIBTEVENT_OBJ0@ \
 	  lib/server_contexts.o \
 	  lib/ldap_escape.o @CHARSET_STATIC@ \
-	  lib/secdesc.o ../libcli/security/access_check.o ../libcli/security/secace.o \
+	  lib/secdesc.o ../libcli/security/access_check.o \
+	  ../libcli/security/secace.o ../libcli/security/object_tree.o \
 	  ../libcli/security/sddl.o \
 	  ../libcli/security/secacl.o @PTHREADPOOL_OBJ@ \
 	  lib/fncall.o \
 	  libads/krb5_errs.o lib/system_smbd.o lib/audit.o $(LIBNDR_OBJ) \
 	  lib/file_id.o lib/idmap_cache.o \
 	  ../libcli/security/dom_sid.o ../libcli/security/security_descriptor.o \
-	  ../libcli/security/security_token.o
+	  ../libcli/security/security_token.o ../libcli/security/util_sid.o
 
 LIB_DUMMY_OBJ = lib/dummysmbd.o lib/dummyroot.o
 LIB_NONSMBD_OBJ = $(LIB_OBJ) $(LIB_DUMMY_OBJ)

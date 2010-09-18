@@ -3,12 +3,6 @@
 bld.SAMBA_SUBSYSTEM('LIBSECURITY_SESSION',
 	source='session.c',
 	autoproto='session_proto.h',
-	public_deps='LIBSECURITY_COMMON'
-	)
-
-bld.SAMBA_SUBSYSTEM('LIBSECURITY',
-	source='access_check.c create_descriptor.c object_tree.c',
-	autoproto='proto.h',
-	public_deps='LIBNDR LIBSECURITY_COMMON'
+	public_deps='LIBSECURITY'
 	)
 

@@ -21,7 +21,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "libcli/security/security_token.h"
+#include "librpc/gen_ndr/security.h"
 
 /* Map generic access rights to object specific rights.  This technique is
    used to give meaning to assigning read, write, execute and all access to
@@ -51,3 +51,28 @@ NTSTATUS se_access_check(const struct security_descriptor *sd,
 			 const struct security_token *token,
 			 uint32_t access_desired,
 			 uint32_t *access_granted);
+
+/* modified access check for the purposes of DS security
+ * Lots of code duplication, it will ve united in just one
+ * function eventually */
+
+NTSTATUS sec_access_check_ds(const struct security_descriptor *sd,
+			     const struct security_token *token,
+			     uint32_t access_desired,
+			     uint32_t *access_granted,
+			     struct object_tree *tree,
+			     struct dom_sid *replace_sid);
+
+bool insert_in_object_tree(TALLOC_CTX *mem_ctx,
+			  const struct GUID *guid,
+			  uint32_t init_access,
+			  struct object_tree **root,
+			   struct object_tree **new_node);
+
+/* search by GUID */
+struct object_tree *get_object_tree_by_GUID(struct object_tree *root,
+					    const struct GUID *guid);
+
+/* Change the granted access per each ACE */
+void object_tree_modify_access(struct object_tree *root,
+			       uint32_t access);

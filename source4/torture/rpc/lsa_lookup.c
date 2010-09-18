@@ -119,23 +119,6 @@ static NTSTATUS lookup_sids(struct torture_context *tctx,
 	return r.out.result;
 }
 
-static const char *sid_type_lookup(enum lsa_SidType r)
-{
-	switch (r) {
-		case SID_NAME_USE_NONE: return "SID_NAME_USE_NONE"; break;
-		case SID_NAME_USER: return "SID_NAME_USER"; break;
-		case SID_NAME_DOM_GRP: return "SID_NAME_DOM_GRP"; break;
-		case SID_NAME_DOMAIN: return "SID_NAME_DOMAIN"; break;
-		case SID_NAME_ALIAS: return "SID_NAME_ALIAS"; break;
-		case SID_NAME_WKN_GRP: return "SID_NAME_WKN_GRP"; break;
-		case SID_NAME_DELETED: return "SID_NAME_DELETED"; break;
-		case SID_NAME_INVALID: return "SID_NAME_INVALID"; break;
-		case SID_NAME_UNKNOWN: return "SID_NAME_UNKNOWN"; break;
-		case SID_NAME_COMPUTER: return "SID_NAME_COMPUTER"; break;
-	}
-	return "Invalid sid type\n";
-}
-
 static bool test_lookupsids(struct torture_context *tctx,
 			    struct dcerpc_binding_handle *b,
 			    struct policy_handle *handle,

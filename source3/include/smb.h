@@ -193,32 +193,6 @@ struct lsa_name_info {
 	int dom_idx;
 };
 
-/* Some well-known SIDs */
-extern const struct dom_sid global_sid_World_Domain;
-extern const struct dom_sid global_sid_World;
-extern const struct dom_sid global_sid_Creator_Owner_Domain;
-extern const struct dom_sid global_sid_NT_Authority;
-extern const struct dom_sid global_sid_System;
-extern const struct dom_sid global_sid_NULL;
-extern const struct dom_sid global_sid_Authenticated_Users;
-extern const struct dom_sid global_sid_Network;
-extern const struct dom_sid global_sid_Creator_Owner;
-extern const struct dom_sid global_sid_Creator_Group;
-extern const struct dom_sid global_sid_Anonymous;
-extern const struct dom_sid global_sid_Builtin;
-extern const struct dom_sid global_sid_Builtin_Administrators;
-extern const struct dom_sid global_sid_Builtin_Users;
-extern const struct dom_sid global_sid_Builtin_Guests;
-extern const struct dom_sid global_sid_Builtin_Power_Users;
-extern const struct dom_sid global_sid_Builtin_Account_Operators;
-extern const struct dom_sid global_sid_Builtin_Server_Operators;
-extern const struct dom_sid global_sid_Builtin_Print_Operators;
-extern const struct dom_sid global_sid_Builtin_Backup_Operators;
-extern const struct dom_sid global_sid_Builtin_Replicator;
-extern const struct dom_sid global_sid_Builtin_PreWin2kAccess;
-extern const struct dom_sid global_sid_Unix_Users;
-extern const struct dom_sid global_sid_Unix_Groups;
-
 /*
  * The complete list of SIDS belonging to this user.
  * Created when a vuid is registered.
