@@ -157,7 +157,7 @@ NTSTATUS se_access_check(const struct security_descriptor *sd,
 			  uint32_t access_desired,
 			  uint32_t *access_granted)
 {
-	int i;
+	uint32_t i;
 	uint32_t bits_remaining;
 
 	*access_granted = access_desired;
