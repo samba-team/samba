@@ -2687,8 +2687,8 @@ static int password_hash_mod_do_mod(struct ph_context *ac)
 {
 	struct ldb_context *ldb = ldb_module_get_ctx(ac->module);
 	struct loadparm_context *lp_ctx =
-		lp_ctx = talloc_get_type(ldb_get_opaque(ldb, "loadparm"),
-					 struct loadparm_context);
+				talloc_get_type(ldb_get_opaque(ldb, "loadparm"),
+						struct loadparm_context);
 	struct ldb_request *mod_req;
 	struct ldb_message *msg;
 	const struct ldb_message *orig_msg, *searched_msg;
