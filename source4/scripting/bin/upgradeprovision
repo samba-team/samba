@@ -852,8 +852,16 @@ def update_present(ref_samdb, samdb, basedn, listPresent, usns, invocationid):
                 # We have updated by provision usn information so let's exploit
                 # replMetadataProperties
                 if att in forwardlinked:
+                    if current[0].get():
+                        curval = current[0][att]
+                    else:
+                        curval = ()
+                    if reference[0].get():
+                        refval = reference[0][att]
+                    else:
+                        refval = ()
                     handle_links(samdb, att, basedn, current[0]["dn"],
-                                    current[0][att], reference[0][att], delta)
+                                    curval, refval, delta)
 
                 if isFirst == 0 and len(delta.items())>1:
                     isFirst = 1
