@@ -2152,6 +2152,8 @@ then
 	AC_SUBST(TDBBACKUP)
 	TDBDUMP="bin/tdbdump\$(EXEEXT)"
 	AC_SUBST(TDBDUMP)
+	TDBRESTORE="bin/tdbrestore\$(EXEEXT)"
+	AC_SUBST(TDBRESTORE)
 	TDBTOOL="bin/tdbtool\$(EXEEXT)"
 	AC_SUBST(TDBTOOL)
 	TDBTORTURE="bin/tdbtorture\$(EXEEXT)"
