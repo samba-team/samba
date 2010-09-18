@@ -873,9 +873,6 @@ def setup_samdb_rootdse(samdb, setup_path, names):
     """
     setup_add_ldif(samdb, setup_path("provision_rootdse_add.ldif"), {
         "SCHEMADN": names.schemadn, 
-        "NETBIOSNAME": names.netbiosname,
-        "DNSDOMAIN": names.dnsdomain,
-        "REALM": names.realm,
         "DOMAINDN": names.domaindn,
         "ROOTDN": names.rootdn,
         "CONFIGDN": names.configdn,
