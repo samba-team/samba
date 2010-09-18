@@ -84,9 +84,11 @@ static const struct GUID *get_ace_object_type(struct security_ace *ace)
 }
 
 /*
-  the main entry point for access checking. 
+  The main entry point for access checking. If returning ACCESS_DENIED
+  this function returns the denied bits in the uint32_t pointed
+  to by the access_granted pointer.
 */
-NTSTATUS sec_access_check(const struct security_descriptor *sd, 
+NTSTATUS se_access_check(const struct security_descriptor *sd,
 			  const struct security_token *token,
 			  uint32_t access_desired,
 			  uint32_t *access_granted)
@@ -99,10 +101,17 @@ NTSTATUS sec_access_check(const struct security_descriptor *sd,
 
 	/* handle the maximum allowed flag */
 	if (access_desired & SEC_FLAG_MAXIMUM_ALLOWED) {
+		uint32_t orig_access_desired = access_desired;
+
 		access_desired |= access_check_max_allowed(sd, token);
 		access_desired &= ~SEC_FLAG_MAXIMUM_ALLOWED;
 		*access_granted = access_desired;
 		bits_remaining = access_desired & ~SEC_STD_DELETE;
+
+		DEBUG(10,("se_access_check: MAX desired = 0x%x, granted = 0x%x, remaining = 0x%x\n",
+			orig_access_desired,
+			*access_granted,
+			bits_remaining));
 	}
 
 	if (access_desired & SEC_FLAG_SYSTEM_SECURITY) {
@@ -123,6 +132,10 @@ NTSTATUS sec_access_check(const struct security_descriptor *sd,
 	if ((bits_remaining & (SEC_STD_WRITE_DAC|SEC_STD_READ_CONTROL|SEC_STD_DELETE)) &&
 	    security_token_has_sid(token, sd->owner_sid)) {
 		bits_remaining &= ~(SEC_STD_WRITE_DAC|SEC_STD_READ_CONTROL|SEC_STD_DELETE);
+	}
+	if ((bits_remaining & SEC_STD_DELETE) &&
+	    (security_token_has_privilege(token, SEC_PRIV_RESTORE))) {
+		bits_remaining &= ~SEC_STD_DELETE;
 	}
 	if ((bits_remaining & SEC_RIGHTS_PRIV_RESTORE) &&
 	    security_token_has_privilege(token, SEC_PRIV_RESTORE)) {
@@ -166,6 +179,7 @@ NTSTATUS sec_access_check(const struct security_descriptor *sd,
 
 done:
 	if (bits_remaining != 0) {
+		*access_granted = bits_remaining;
 		return NT_STATUS_ACCESS_DENIED;
 	}
 

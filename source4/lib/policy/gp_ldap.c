@@ -540,7 +540,7 @@ NTSTATUS gp_list_gpos(struct gp_context *gp_ctx, struct security_token *token, c
 
 			/* If the account does not have read access, this GPO does not apply
 			 * to this account */
-			status = sec_access_check(gpo->security_descriptor,
+			status = se_access_check(gpo->security_descriptor,
 					token,
 					(SEC_STD_READ_CONTROL | SEC_ADS_LIST | SEC_ADS_READ_PROP),
 					&access_granted);
