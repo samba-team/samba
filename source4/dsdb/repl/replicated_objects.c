@@ -197,7 +197,7 @@ WERROR dsdb_convert_object_ex(struct ldb_context *ldb,
 }
 
 WERROR dsdb_extended_replicated_objects_convert(struct ldb_context *ldb,
-						const char *partition_dn,
+						const char *partition_dn_str,
 						const struct drsuapi_DsReplicaOIDMapping_Ctr *mapping_ctr,
 						uint32_t object_count,
 						const struct drsuapi_DsReplicaObjectListItemEx *first_object,
@@ -210,6 +210,7 @@ WERROR dsdb_extended_replicated_objects_convert(struct ldb_context *ldb,
 						struct dsdb_extended_replicated_objects **objects)
 {
 	WERROR status;
+	struct ldb_dn *partition_dn;
 	const struct dsdb_schema *schema;
 	struct dsdb_extended_replicated_objects *out;
 	const struct drsuapi_DsReplicaObjectListItemEx *cur;
@@ -226,14 +227,24 @@ WERROR dsdb_extended_replicated_objects_convert(struct ldb_context *ldb,
 		return WERR_DS_SCHEMA_NOT_LOADED;
 	}
 
-	status = dsdb_schema_pfm_contains_drsuapi_pfm(schema->prefixmap, mapping_ctr);
-	if (!W_ERROR_IS_OK(status)) {
-		talloc_free(out);
-		return status;
+	partition_dn = ldb_dn_new(out, ldb, partition_dn_str);
+	W_ERROR_HAVE_NO_MEMORY_AND_FREE(partition_dn, out);
+
+	if (ldb_dn_compare(partition_dn, ldb_get_schema_basedn(ldb)) != 0) {
+		/*
+		 * check for schema changes in case
+		 * we are not replicating Schema NC
+		 */
+		status = dsdb_schema_info_cmp(schema, mapping_ctr);
+		if (!W_ERROR_IS_OK(status)) {
+			DEBUG(1,("Remote schema has changed while replicating %s\n",
+				 partition_dn_str));
+			talloc_free(out);
+			return status;
+		}
 	}
 
-	out->partition_dn	= ldb_dn_new(out, ldb, partition_dn);
-	W_ERROR_HAVE_NO_MEMORY(out->partition_dn);
+	out->partition_dn	= partition_dn;
 
 	out->source_dsa		= source_dsa;
 	out->uptodateness_vector= uptodateness_vector;
@@ -242,7 +253,7 @@ WERROR dsdb_extended_replicated_objects_convert(struct ldb_context *ldb,
 	out->objects		= talloc_array(out,
 					       struct dsdb_extended_replicated_object,
 					       out->num_objects);
-	W_ERROR_HAVE_NO_MEMORY(out->objects);
+	W_ERROR_HAVE_NO_MEMORY_AND_FREE(out->objects, out);
 
 	/* pass the linked attributes down to the repl_meta_data
 	   module */
