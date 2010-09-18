@@ -49,7 +49,7 @@ handle completion of commands for readline
 ****************************************************************************/
 static char **completion_fn(const char *text, int start, int end)
 {
-#define MAX_COMPLETIONS 100
+#define MAX_COMPLETIONS 1000
 	char **matches;
 	int i, count=0;
 	struct cmd_list *commands = cmd_list;
