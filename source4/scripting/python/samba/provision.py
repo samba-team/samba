@@ -876,7 +876,6 @@ def setup_samdb_rootdse(samdb, setup_path, names):
         "NETBIOSNAME": names.netbiosname,
         "DNSDOMAIN": names.dnsdomain,
         "REALM": names.realm,
-        "DNSNAME": "%s.%s" % (names.hostname, names.dnsdomain),
         "DOMAINDN": names.domaindn,
         "ROOTDN": names.rootdn,
         "CONFIGDN": names.configdn,

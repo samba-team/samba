@@ -8,7 +8,6 @@ configurationNamingContext: ${CONFIGDN}
 schemaNamingContext: ${SCHEMADN}
 supportedLDAPVersion: 3
 supportedLDAPVersion: 2
-dnsHostName: ${DNSNAME}
 ldapServiceName: ${DNSDOMAIN}:${NETBIOSNAME}$@${REALM}
 isSynchronized: FALSE
 vendorName: Samba Team (http://samba.org)
