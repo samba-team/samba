@@ -178,17 +178,13 @@ NTSTATUS se_access_check(const struct security_descriptor *sd,
 			bits_remaining));
 	}
 
-#if 0
-	/* We need to support SeSecurityPrivilege for this. */
-
 	if (access_desired & SEC_FLAG_SYSTEM_SECURITY) {
-		if (user_has_privileges(token, &sec_security)) {
+		if (security_token_has_privilege(token, SEC_PRIV_SECURITY)) {
 			bits_remaining &= ~SEC_FLAG_SYSTEM_SECURITY;
 		} else {
 			return NT_STATUS_PRIVILEGE_NOT_HELD;
 		}
 	}
-#endif
 
 	/* a NULL dacl allows access */
 	if ((sd->type & SEC_DESC_DACL_PRESENT) && sd->dacl == NULL) {
@@ -204,6 +200,14 @@ NTSTATUS se_access_check(const struct security_descriptor *sd,
 	if ((bits_remaining & SEC_STD_DELETE) &&
 	    (security_token_has_privilege(token, SEC_PRIV_RESTORE))) {
 		bits_remaining &= ~SEC_STD_DELETE;
+	}
+	if ((bits_remaining & SEC_RIGHTS_PRIV_RESTORE) &&
+	    security_token_has_privilege(token, SEC_PRIV_RESTORE)) {
+		bits_remaining &= ~(SEC_RIGHTS_PRIV_RESTORE);
+	}
+	if ((bits_remaining & SEC_RIGHTS_PRIV_BACKUP) &&
+	    security_token_has_privilege(token, SEC_PRIV_BACKUP)) {
+		bits_remaining &= ~(SEC_RIGHTS_PRIV_BACKUP);
 	}
 
 	if (sd->dacl == NULL) {
