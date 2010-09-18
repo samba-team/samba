@@ -206,6 +206,31 @@ static int rootdse_add_dynamic(struct ldb_module *module, struct ldb_message *ms
 		}
 	}
 
+	if (do_attribute(attrs, "ldapServiceName")) {
+		struct loadparm_context *lp_ctx
+			= talloc_get_type(ldb_get_opaque(ldb, "loadparm"),
+					  struct loadparm_context);
+		char *ldap_service_name, *hostname;
+
+		hostname = talloc_strdup(msg, lpcfg_netbios_name(lp_ctx));
+		if (hostname == NULL) {
+			goto failed;
+		}
+		strlower_m(hostname);
+
+		ldap_service_name = talloc_asprintf(msg, "%s:%s$@%s",
+						    samdb_forest_name(ldb, msg),
+						    hostname, lpcfg_realm(lp_ctx));
+		if (ldap_service_name == NULL) {
+			goto failed;
+		}
+
+		if (ldb_msg_add_string(msg, "ldapServiceName",
+				       ldap_service_name) != LDB_SUCCESS) {
+			goto failed;
+		}
+	}
+
 	if (do_attribute(attrs, "currentTime")) {
 		if (ldb_msg_add_steal_string(msg, "currentTime",
 					     ldb_timestring(msg, time(NULL))) != LDB_SUCCESS) {
