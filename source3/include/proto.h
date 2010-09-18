@@ -5632,5 +5632,6 @@ uint32_t ds_uf2acb(uint32_t uf);
 uint32_t ds_uf2atype(uint32_t uf);
 uint32_t ds_gtype2atype(uint32_t gtype);
 enum lsa_SidType ds_atype_map(uint32_t atype);
+uint32_t ds_uf2prim_group_rid(uint32_t uf);
 
 #endif /*  _PROTO_H_  */
