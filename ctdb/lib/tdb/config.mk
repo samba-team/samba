@@ -35,6 +35,15 @@ PRIVATE_DEPENDENCIES = \
 tdbtorture_OBJ_FILES = $(tdbsrcdir)/tools/tdbtorture.o
 
 ################################################
+# Start BINARY tdbrestore
+[BINARY::tdbrestore]
+INSTALLDIR = BINDIR
+PRIVATE_DEPENDENCIES = \
+		LIBTDB
+# End BINARY tdbrestore
+################################################
+
+################################################
 # Start BINARY tdbdump
 [BINARY::tdbdump]
 INSTALLDIR = BINDIR
