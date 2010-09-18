@@ -198,6 +198,14 @@ static int rootdse_add_dynamic(struct ldb_module *module, struct ldb_message *ms
 		}
 	}
 
+	if (do_attribute(attrs, "dnsHostName")) {
+		if (ldb_msg_add_string(msg, "dnsHostName",
+			samdb_search_string(ldb, msg, samdb_server_dn(ldb, msg),
+					    "dNSHostName", NULL)) != LDB_SUCCESS) {
+			goto failed;
+		}
+	}
+
 	if (do_attribute(attrs, "currentTime")) {
 		if (ldb_msg_add_steal_string(msg, "currentTime",
 					     ldb_timestring(msg, time(NULL))) != LDB_SUCCESS) {
