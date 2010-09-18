@@ -95,6 +95,7 @@ TALLOCTORT = @TALLOCTORT@
 TDBBACKUP = @TDBBACKUP@
 TDBTOOL = @TDBTOOL@
 TDBDUMP = @TDBDUMP@
+TDBRESTORE = @TDBRESTORE@
 TDBTORTURE = @TDBTORTURE@
 
 INSTALLCMD=@INSTALL@
@@ -216,6 +217,7 @@ BIN_PROGS1 = bin/smbclient@EXEEXT@ bin/net@EXEEXT@ bin/smbspool@EXEEXT@ \
 	bin/smbta-util@EXEEXT@
 BIN_PROGS2 = bin/smbcontrol@EXEEXT@ bin/smbtree@EXEEXT@ $(TDBBACKUP) \
 	bin/nmblookup@EXEEXT@ bin/pdbedit@EXEEXT@ $(TDBDUMP) \
+	$(TDBRESTORE) \
 	$(TDBTOOL)
 BIN_PROGS3 = bin/smbpasswd@EXEEXT@ bin/rpcclient@EXEEXT@ bin/smbcacls@EXEEXT@ \
 	bin/profiles@EXEEXT@ bin/ntlm_auth@EXEEXT@ bin/sharesec@EXEEXT@ \
@@ -1434,6 +1436,9 @@ TDBTOOL_OBJ = @tdbdir@/tools/tdbtool.o $(LIBREPLACE_OBJ) \
 	$(SOCKET_WRAPPER_OBJ)
 
 TDBDUMP_OBJ = @tdbdir@/tools/tdbdump.o $(LIBREPLACE_OBJ) \
+	$(SOCKET_WRAPPER_OBJ)
+
+TDBRESTORE_OBJ = @tdbdir@/tools/tdbrestore.o $(LIBREPLACE_OBJ) \
 	$(SOCKET_WRAPPER_OBJ)
 
 TDBTORTURE_OBJ = @tdbdir@/tools/tdbtorture.o $(LIBREPLACE_OBJ) \
@@ -3039,6 +3044,10 @@ bin/tdbtool@EXEEXT@: $(BINARY_PREREQS) $(TDBTOOL_OBJ) $(LIBTALLOC) $(LIBTDB)
 bin/tdbdump@EXEEXT@: $(BINARY_PREREQS) $(TDBDUMP_OBJ) $(LIBTDB)
 	@echo Linking $@
 	@$(CC) -o $@ $(LDFLAGS) $(TDBDUMP_OBJ) $(DYNEXP) $(LIBTDB_LIBS) $(LIBREPLACE_LIBS)
+
+bin/tdbrestore@EXEEXT@: $(BINARY_PREREQS) $(TDBRESTORE_OBJ) $(LIBTDB)
+	@echo Linking $@
+	@$(CC) -o $@ $(LDFLAGS) $(TDBRESTORE_OBJ) $(DYNEXP) $(LIBTDB_LIBS) $(LIBREPLACE_LIBS)
 
 bin/tdbtorture@EXEEXT@: $(BINARY_PREREQS) $(TDBTORTURE_OBJ) $(LIBTALLOC) $(LIBTDB)
 	@echo Linking $@

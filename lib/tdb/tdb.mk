@@ -1,7 +1,7 @@
 dirs::
 	@mkdir -p bin common tools
 
-PROGS = bin/tdbtool$(EXEEXT) bin/tdbdump$(EXEEXT) bin/tdbbackup$(EXEEXT)
+PROGS = bin/tdbtool$(EXEEXT) bin/tdbrestore$(EXEEXT) bin/tdbdump$(EXEEXT) bin/tdbbackup$(EXEEXT)
 PROGS_NOINSTALL = bin/tdbtest$(EXEEXT) bin/tdbtorture$(EXEEXT)
 ALL_PROGS = $(PROGS) $(PROGS_NOINSTALL)
 
@@ -22,6 +22,9 @@ bin/tdbtorture$(EXEEXT): tools/tdbtorture.o $(TDB_LIB)
 
 bin/tdbdump$(EXEEXT): tools/tdbdump.o $(TDB_LIB)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o bin/tdbdump tools/tdbdump.o -L. -ltdb $(TDB_DEPS)
+
+bin/tdbrestore$(EXEEXT): tools/tdbrestore.o $(TDB_LIB)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o bin/tdbrestore tools/tdbrestore.o -L. -ltdb $(TDB_DEPS)
 
 bin/tdbbackup$(EXEEXT): tools/tdbbackup.o $(TDB_LIB)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o bin/tdbbackup tools/tdbbackup.o -L. -ltdb $(TDB_DEPS)
@@ -53,7 +56,7 @@ tdb.$(SHLIBEXT): libtdb.$(SHLIBEXT) pytdb.o
 install:: installdirs installbin installheaders installlibs \
 		  $(PYTHON_INSTALL_TARGET) installdocs
 
-doc:: manpages/tdbbackup.8 manpages/tdbdump.8 manpages/tdbtool.8
+doc:: manpages/tdbbackup.8 manpages/tdbrestore.8 manpages/tdbdump.8 manpages/tdbtool.8
 
 .SUFFIXES: .8.xml .8
 

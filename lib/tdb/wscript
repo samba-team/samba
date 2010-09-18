@@ -75,6 +75,10 @@ def build(bld):
                          'tdb',
                          install=False)
 
+        bld.SAMBA_BINARY('tdbrestore',
+                         'tools/tdbrestore.c',
+                         'tdb', manpages='manpages/tdbrestore.8')
+
         bld.SAMBA_BINARY('tdbdump',
                          'tools/tdbdump.c',
                          'tdb', manpages='manpages/tdbdump.8')
