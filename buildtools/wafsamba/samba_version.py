@@ -78,6 +78,13 @@ also accepted as dictionary entries here
 
                 SAMBA_VERSION_STRING += ("-GIT-" + self.GIT_COMMIT_ABBREV)
 
+                clean = Utils.cmd_output('git diff HEAD | wc -l', silent=True)
+                if clean == "0\n":
+                    self.GIT_COMMIT_IS_CLEAN = True
+                else:
+                    self.GIT_COMMIT_IS_CLEAN = False
+                    SAMBA_VERSION_STRING += "+"
+
         self.OFFICIAL_STRING=SAMBA_VERSION_STRING
 
         if self.VENDOR_SUFFIX is not None:
@@ -121,6 +128,8 @@ also accepted as dictionary entries here
             string+="#define SAMBA_VERSION_GIT_COMMIT_FULLREV \"" + self.GIT_COMMIT_FULLREV + "\"\n"
             string+="#define SAMBA_VERSION_GIT_COMMIT_DATE \"" + self.GIT_COMMIT_DATE + "\"\n"
             string+="#define SAMBA_VERSION_GIT_COMMIT_TIME " + self.GIT_COMMIT_TIME + "\n"
+            if self.GIT_COMMIT_IS_CLEAN:
+                string+="#define SAMBA_VERSION_GIT_COMMIT_IS_CLEAN 1\n"
         except AttributeError:
             pass
 
