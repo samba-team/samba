@@ -167,7 +167,7 @@ static void finddcs_cldap_next_server(struct finddcs_cldap_state *state)
 
 	if (state->srv_addresses[state->srv_address_index] == NULL) {
 		tevent_req_nterror(state->req, NT_STATUS_OBJECT_NAME_NOT_FOUND);
-		DEBUG(2,("No matching CLDAP server found\n"));
+		DEBUG(2,("finddcs: No matching CLDAP server found\n"));
 		return;
 	}
 
@@ -248,9 +248,11 @@ static void finddcs_cldap_name_resolved(struct composite_context *ctx)
 
 	status = resolve_name_recv(ctx, state, &address);
 	if (tevent_req_nterror(state->req, status)) {
-		DEBUG(2,("No matching NBT <1c> server found\n"));
+		DEBUG(2,("finddcs: No matching NBT <1c> server found\n"));
 		return;
 	}
+
+	DEBUG(4,("finddcs: Found NBT <1c> server at %s\n", address));
 
 	state->srv_addresses = talloc_array(state, const char *, 2);
 	if (tevent_req_nomem(state->srv_addresses, state->req)) {
@@ -281,7 +283,7 @@ static void finddcs_cldap_srv_resolved(struct composite_context *ctx)
 
 	status = resolve_name_multiple_recv(ctx, state, &state->srv_addresses);
 	if (tevent_req_nterror(state->req, status)) {
-		DEBUG(2,("Failed to find SRV record for %s\n", state->srv_name));
+		DEBUG(2,("finddcs: Failed to find SRV record for %s\n", state->srv_name));
 		return;
 	}
 
