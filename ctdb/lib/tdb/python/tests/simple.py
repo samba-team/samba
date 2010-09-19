@@ -25,6 +25,14 @@ class CloseTdbTests(TestCase):
         self.tdb.close()
 
 
+class InternalTdbTests(TestCase):
+    def test_repr(self):
+        self.tdb = tdb.Tdb("whatever", tdb_flags=tdb.INTERNAL)
+
+        # repr used to crash on internal db
+        self.assertEquals(repr(self.tdb), "Tdb('<internal>')")
+
+
 class SimpleTdbTests(TestCase):
     def setUp(self):
         super(SimpleTdbTests, self).setUp()
