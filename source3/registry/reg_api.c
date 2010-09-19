@@ -53,12 +53,12 @@
  * 0x1a		winreg_GetVersion			reg_getversion
  * 0x1b		winreg_OpenHKCC
  * 0x1c		winreg_OpenHKDD
- * 0x1d		winreg_QueryMultipleValues
+ * 0x1d		winreg_QueryMultipleValues		reg_querymultiplevalues
  * 0x1e		winreg_InitiateSystemShutdownEx
  * 0x1f		winreg_SaveKeyEx
  * 0x20		winreg_OpenHKPT
  * 0x21		winreg_OpenHKPN
- * 0x22		winreg_QueryMultipleValues2
+ * 0x22		winreg_QueryMultipleValues2		reg_querymultiplevalues
  *
  */
 
