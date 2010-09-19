@@ -6691,8 +6691,10 @@ static bool test_QueryDomainInfo(struct dcerpc_pipe *p,
 				ret = false;
 			} else if (info->general.role == SAMR_ROLE_DOMAIN_PDC) {
 				if (dcerpc_server_name(p) && strcasecmp_m(dcerpc_server_name(p), info->general.primary.string) != 0) {
-					torture_warning(tctx, "QueryDomainInfo level %u returned different PDC name (%s) compared to server name (%s), despite claiming to be the PDC\n",
-					       levels[i], info->general.primary.string, dcerpc_server_name(p));
+					if (torture_setting_bool(tctx, "samba3", false)) {
+						torture_warning(tctx, "QueryDomainInfo level %u returned different PDC name (%s) compared to server name (%s), despite claiming to be the PDC\n",
+						       levels[i], info->general.primary.string, dcerpc_server_name(p));
+					}
 				}
 			}
 			break;
