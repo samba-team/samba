@@ -1177,7 +1177,7 @@ static int replmd_update_rpmd(struct ldb_module *module,
 
 		ret = dsdb_module_search_dn(module, msg, &res, msg->dn, attrs2,
 					    DSDB_FLAG_NEXT_MODULE |
-					    DSDB_SEARCH_SHOW_DELETED |
+					    DSDB_SEARCH_SHOW_RECYCLED |
 					    DSDB_SEARCH_SHOW_EXTENDED_DN |
 					    DSDB_SEARCH_SHOW_DN_IN_STORAGE_FORMAT |
 					    DSDB_SEARCH_REVEAL_INTERNALS);
@@ -1210,7 +1210,7 @@ static int replmd_update_rpmd(struct ldb_module *module,
 		 */
 		ret = dsdb_module_search_dn(module, msg, &res, msg->dn, attrs,
 					    DSDB_FLAG_NEXT_MODULE |
-					    DSDB_SEARCH_SHOW_DELETED |
+					    DSDB_SEARCH_SHOW_RECYCLED |
 					    DSDB_SEARCH_SHOW_EXTENDED_DN |
 					    DSDB_SEARCH_SHOW_DN_IN_STORAGE_FORMAT |
 					    DSDB_SEARCH_REVEAL_INTERNALS);
@@ -2053,7 +2053,7 @@ static int replmd_modify_handle_linked_attribs(struct ldb_module *module,
 
 	ret = dsdb_module_search_dn(module, msg, &res, msg->dn, NULL,
 	                            DSDB_FLAG_NEXT_MODULE |
-	                            DSDB_SEARCH_SHOW_DELETED |
+	                            DSDB_SEARCH_SHOW_RECYCLED |
 				    DSDB_SEARCH_REVEAL_INTERNALS |
 				    DSDB_SEARCH_SHOW_DN_IN_STORAGE_FORMAT);
 	if (ret != LDB_SUCCESS) {
@@ -2491,7 +2491,7 @@ static int replmd_delete(struct ldb_module *module, struct ldb_request *req)
 	   attributes need to be removed */
 	ret = dsdb_module_search_dn(module, tmp_ctx, &res, old_dn, NULL,
 	                            DSDB_FLAG_NEXT_MODULE |
-	                            DSDB_SEARCH_SHOW_DELETED |
+	                            DSDB_SEARCH_SHOW_RECYCLED |
 				    DSDB_SEARCH_REVEAL_INTERNALS |
 				    DSDB_SEARCH_SHOW_DN_IN_STORAGE_FORMAT);
 	if (ret != LDB_SUCCESS) {
@@ -2629,7 +2629,7 @@ static int replmd_delete(struct ldb_module *module, struct ldb_request *req)
 				    DSDB_FLAG_NEXT_MODULE |
 				    DSDB_SEARCH_SHOW_DN_IN_STORAGE_FORMAT |
 				    DSDB_SEARCH_REVEAL_INTERNALS|
-				    DSDB_SEARCH_SHOW_DELETED);
+				    DSDB_SEARCH_SHOW_RECYCLED);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
 		return ret;
@@ -3278,7 +3278,9 @@ static int replmd_replicated_apply_next(struct replmd_replicated_request *ar)
 				   replmd_replicated_apply_search_callback,
 				   ar->req);
 	LDB_REQ_SET_LOCATION(search_req);
-	ret = ldb_request_add_control(search_req, LDB_CONTROL_SHOW_DELETED_OID, true, NULL);
+
+	ret = ldb_request_add_control(search_req, LDB_CONTROL_SHOW_RECYCLED_OID,
+				      true, NULL);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
@@ -3878,7 +3880,7 @@ linked_attributes[0]:
 	ret = dsdb_module_search(module, tmp_ctx, &res, NULL, LDB_SCOPE_SUBTREE, attrs,
 	                         DSDB_FLAG_NEXT_MODULE |
 				 DSDB_SEARCH_SEARCH_ALL_PARTITIONS |
-				 DSDB_SEARCH_SHOW_DELETED |
+				 DSDB_SEARCH_SHOW_RECYCLED |
 				 DSDB_SEARCH_SHOW_DN_IN_STORAGE_FORMAT |
 				 DSDB_SEARCH_REVEAL_INTERNALS,
 				 "objectGUID=%s", GUID_string(tmp_ctx, &la->identifier->guid));

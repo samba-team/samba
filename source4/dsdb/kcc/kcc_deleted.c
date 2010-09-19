@@ -71,7 +71,7 @@ NTSTATUS kccsrv_check_deleted(struct kccsrv_service *s, TALLOC_CTX *mem_ctx)
 			continue;
 		}
 		ret = dsdb_search(s->samdb, do_dn, &res, do_dn, LDB_SCOPE_ONELEVEL, attrs,
-				  DSDB_SEARCH_SHOW_DELETED, NULL);
+				  DSDB_SEARCH_SHOW_RECYCLED, NULL);
 
 		if (ret != LDB_SUCCESS) {
 			DEBUG(1,(__location__ ": Failed to search for deleted objects in %s\n",

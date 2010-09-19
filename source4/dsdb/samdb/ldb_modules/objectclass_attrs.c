@@ -349,7 +349,7 @@ static int oc_op_callback(struct ldb_request *req, struct ldb_reply *ares)
 		return ldb_module_done(ac->req, NULL, NULL, ret);
 	}
 
-	ret = ldb_request_add_control(search_req, LDB_CONTROL_SHOW_DELETED_OID,
+	ret = ldb_request_add_control(search_req, LDB_CONTROL_SHOW_RECYCLED_OID,
 				      true, NULL);
 	if (ret != LDB_SUCCESS) {
 		return ldb_module_done(ac->req, NULL, NULL, ret);

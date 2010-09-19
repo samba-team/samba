@@ -887,7 +887,7 @@ static int acl_rename(struct ldb_module *module, struct ldb_request *req)
 	ret = dsdb_module_search_dn(module, req, &acl_res, req->op.rename.olddn,
 				    acl_attrs,
 				    DSDB_FLAG_NEXT_MODULE |
-				    DSDB_SEARCH_SHOW_DELETED);
+				    DSDB_SEARCH_SHOW_RECYCLED);
 	/* we sould be able to find the parent */
 	if (ret != LDB_SUCCESS) {
 		DEBUG(10,("acl: failed to find object %s\n",

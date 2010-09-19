@@ -622,7 +622,7 @@ static int linked_attributes_fix_links(struct ldb_module *module,
 		ret = dsdb_module_search_dn(module, tmp_ctx, &res, dsdb_dn->dn,
 					    attrs,
 					    DSDB_FLAG_NEXT_MODULE |
-					    DSDB_SEARCH_SHOW_DELETED |
+					    DSDB_SEARCH_SHOW_RECYCLED |
 					    DSDB_SEARCH_SHOW_DN_IN_STORAGE_FORMAT |
 					    DSDB_SEARCH_REVEAL_INTERNALS);
 		if (ret != LDB_SUCCESS) {
@@ -716,7 +716,7 @@ static int linked_attributes_rename(struct ldb_module *module, struct ldb_reques
 	ret = dsdb_module_search_dn(module, req, &res, req->op.rename.olddn,
 				    NULL,
 				    DSDB_FLAG_NEXT_MODULE |
-				    DSDB_SEARCH_SHOW_DELETED);
+				    DSDB_SEARCH_SHOW_RECYCLED);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}

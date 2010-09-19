@@ -2516,7 +2516,8 @@ int dsdb_find_guid_attr_by_dn(struct ldb_context *ldb,
 	attrs[0] = attribute;
 	attrs[1] = NULL;
 
-	ret = dsdb_search_dn(ldb, tmp_ctx, &res, dn, attrs, DSDB_SEARCH_SHOW_DELETED);
+	ret = dsdb_search_dn(ldb, tmp_ctx, &res, dn, attrs,
+			     DSDB_SEARCH_SHOW_RECYCLED);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
 		return ret;
@@ -2590,7 +2591,8 @@ int dsdb_find_sid_by_dn(struct ldb_context *ldb,
 
 	ZERO_STRUCTP(sid);
 
-	ret = dsdb_search_dn(ldb, tmp_ctx, &res, dn, attrs, DSDB_SEARCH_SHOW_DELETED);
+	ret = dsdb_search_dn(ldb, tmp_ctx, &res, dn, attrs,
+			     DSDB_SEARCH_SHOW_RECYCLED);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
 		return ret;
@@ -3272,7 +3274,8 @@ int dsdb_wellknown_dn(struct ldb_context *samdb, TALLOC_CTX *mem_ctx,
 		return ldb_operr(samdb);
 	}
 
-	ret = dsdb_search_dn(samdb, tmp_ctx, &res, dn, attrs, DSDB_SEARCH_SHOW_DELETED);
+	ret = dsdb_search_dn(samdb, tmp_ctx, &res, dn, attrs,
+			     DSDB_SEARCH_SHOW_RECYCLED);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
 		return ret;

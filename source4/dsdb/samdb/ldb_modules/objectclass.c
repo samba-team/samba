@@ -1154,10 +1154,11 @@ static int objectclass_rename(struct ldb_module *module, struct ldb_request *req
 		return ret;
 	}
 
-	/* we have to add the show deleted control, as otherwise DRS
+	/* we have to add the show recycled control, as otherwise DRS
 	   deletes will be refused as we will think the target parent
 	   does not exist */
-	ret = ldb_request_add_control(search_req, LDB_CONTROL_SHOW_DELETED_OID, false, NULL);
+	ret = ldb_request_add_control(search_req, LDB_CONTROL_SHOW_RECYCLED_OID,
+				      false, NULL);
 
 	if (ret != LDB_SUCCESS) {
 		return ret;

@@ -209,7 +209,7 @@ static int construct_parent_guid(struct ldb_module *module,
 	/* determine if the object is NC by instance type */
 	ret = dsdb_module_search_dn(module, msg, &res, msg->dn, attrs,
 	                            DSDB_FLAG_NEXT_MODULE |
-	                            DSDB_SEARCH_SHOW_DELETED);
+	                            DSDB_SEARCH_SHOW_RECYCLED);
 
 	instanceType = ldb_msg_find_attr_as_uint(res->msgs[0],
 						 "instanceType", 0);
@@ -228,7 +228,7 @@ static int construct_parent_guid(struct ldb_module *module,
 	}
 	ret = dsdb_module_search_dn(module, msg, &parent_res, parent_dn, attrs2,
 	                            DSDB_FLAG_NEXT_MODULE |
-	                            DSDB_SEARCH_SHOW_DELETED);
+	                            DSDB_SEARCH_SHOW_RECYCLED);
 	talloc_free(parent_dn);
 
 	/* not NC, so the object should have a parent*/
