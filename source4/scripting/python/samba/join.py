@@ -69,6 +69,8 @@ def join_rodc(server=None, creds=None, lp=None, site=None, netbios_name=None,
     def find_dc(ctx, domain):
         '''find a writeable DC for the given domain'''
         ctx.cldap_ret = ctx.net.finddc(domain, nbt.NBT_SERVER_LDAP | nbt.NBT_SERVER_DS | nbt.NBT_SERVER_WRITABLE)
+        if ctx.cldap_ret.client_site is not None and ctx.cldap_ret.client_site != "":
+            ctx.site = ctx.cldap_ret.client_site
         return ctx.cldap_ret.pdc_dns_name;
 
 
