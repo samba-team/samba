@@ -33,3 +33,4 @@
 #define DSDB_FLAG_AS_SYSTEM		      0x0080
 #define DSDB_TREE_DELETE		      0x0100
 #define DSDB_SEARCH_ONE_ONLY		      0x0200 /* give an error unless 1 record */
+#define DSDB_SEARCH_SHOW_RECYCLED	      0x0400
