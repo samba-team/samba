@@ -75,7 +75,7 @@ WERROR dreplsrv_fsmo_role_check(struct dreplsrv_service *service,
 
 	switch (role) {
 	case DREPL_NAMING_MASTER:
-		fsmo_role_dn = samdb_partitions_dn(ldb, tmp_ctx),
+		fsmo_role_dn = samdb_partitions_dn(ldb, tmp_ctx);
 		ret = samdb_reference_dn(ldb, tmp_ctx, fsmo_role_dn, "fSMORoleOwner", &role_owner_dn);
 		if (ret != LDB_SUCCESS) {
 			DEBUG(0,(__location__ ": Failed to find fSMORoleOwner in Naming Master object - %s",
@@ -83,6 +83,7 @@ WERROR dreplsrv_fsmo_role_check(struct dreplsrv_service *service,
 			talloc_free(tmp_ctx);
 			return WERR_DS_DRA_INTERNAL_ERROR;
 		}
+		extended_op = DRSUAPI_EXOP_FSMO_REQ_ROLE;
 		break;
 	case DREPL_INFRASTRUCTURE_MASTER:
 		fsmo_role_dn = samdb_infrastructure_dn(ldb, tmp_ctx);

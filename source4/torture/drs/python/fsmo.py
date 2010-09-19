@@ -148,6 +148,10 @@ class DrsFsmoTestCase(samba.tests.TestCase):
         self._role_transfer(role="rid", role_dn=self.rid_dn)
         pass
 
+    def test_NamingMasterTransfer(self):
+        self._role_transfer(role="naming", role_dn=self.naming_dn)
+        pass
+
 
 ########################################################################################
 def get_env_var(var_name):
