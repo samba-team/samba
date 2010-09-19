@@ -25,6 +25,7 @@ __all__ = [
 
 import doctest
 import operator
+from pprint import pformat
 
 
 class Matcher(object):
@@ -178,6 +179,14 @@ class _BinaryMismatch(Mismatch):
         self.other = other
 
     def describe(self):
+        left = repr(self.expected)
+        right = repr(self.other)
+        if len(left) + len(right) > 70:
+            return "%s:\nreference = %s\nactual = %s\n" % (
+                self._mismatch_string, pformat(self.expected),
+                pformat(self.other))
+        else:
+            return "%s %s %s" % (left, self._mismatch_string,right)
         return "%r %s %r" % (self.expected, self._mismatch_string, self.other)
 
 

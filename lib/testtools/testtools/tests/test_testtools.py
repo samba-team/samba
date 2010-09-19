@@ -461,6 +461,15 @@ class TestAssertions(TestCase):
              'a = %s' % pformat(a),
              'b = %s' % pformat(b),
              ''])
+        expected_error = '\n'.join([
+            'Match failed. Matchee: "%r"' % b,
+            'Matcher: Annotate(%r, Equals(%r))' % (message, a),
+            'Difference: !=:',
+            'reference = %s' % pformat(a),
+            'actual = %s' % pformat(b),
+            ': ' + message,
+            ''
+            ])
         self.assertFails(expected_error, self.assertEqual, a, b, message)
         self.assertFails(expected_error, self.assertEquals, a, b, message)
         self.assertFails(expected_error, self.failUnlessEqual, a, b, message)
@@ -468,11 +477,12 @@ class TestAssertions(TestCase):
     def test_assertEqual_formatting_no_message(self):
         a = "cat"
         b = "dog"
-        expected_error = '\n'.join(
-            ['not equal:',
-             'a = %s' % pformat(a),
-             'b = %s' % pformat(b),
-             ''])
+        expected_error = '\n'.join([
+            'Match failed. Matchee: "dog"',
+            'Matcher: Equals(\'cat\')',
+            'Difference: \'cat\' != \'dog\'',
+            ''
+            ])
         self.assertFails(expected_error, self.assertEqual, a, b)
         self.assertFails(expected_error, self.assertEquals, a, b)
         self.assertFails(expected_error, self.failUnlessEqual, a, b)
@@ -759,6 +769,18 @@ class TestCloneTestWithNewId(TestCase):
         self.assertEqual(newName, newTest.id())
         self.assertEqual(oldName, test.id(),
             "the original test instance should be unchanged.")
+
+    def test_cloned_testcase_does_not_share_details(self):
+        """A cloned TestCase does not share the details dict."""
+        class Test(TestCase):
+            def test_foo(self):
+                self.addDetail(
+                    'foo', content.Content('text/plain', lambda: 'foo'))
+        orig_test = Test('test_foo')
+        cloned_test = clone_test_with_new_id(orig_test, self.getUniqueString())
+        orig_test.run(unittest.TestResult())
+        self.assertEqual('foo', orig_test.getDetails()['foo'].iter_bytes())
+        self.assertEqual(None, cloned_test.getDetails().get('foo'))
 
 
 class TestDetailsProvided(TestWithDetails):

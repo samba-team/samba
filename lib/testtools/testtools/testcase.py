@@ -17,13 +17,16 @@ try:
 except ImportError:
     wraps = None
 import itertools
-from pprint import pformat
 import sys
 import types
 import unittest
 
 from testtools import content
 from testtools.compat import advance_iterator
+from testtools.matchers import (
+    Annotate,
+    Equals,
+    )
 from testtools.monkey import patch
 from testtools.runtest import RunTest
 from testtools.testresult import TestResult
@@ -81,7 +84,9 @@ class TestCase(unittest.TestCase):
         self._traceback_id_gen = itertools.count(0)
         self.__setup_called = False
         self.__teardown_called = False
-        self.__details = {}
+        # __details is lazy-initialized so that a constructed-but-not-run
+        # TestCase is safe to use with clone_test_with_new_id.
+        self.__details = None
         self.__RunTest = kwargs.get('runTest', RunTest)
         self.__exception_handlers = []
         self.exception_handlers = [
@@ -114,6 +119,8 @@ class TestCase(unittest.TestCase):
         :param content_object: The content object for this detail. See
             testtools.content for more detail.
         """
+        if self.__details is None:
+            self.__details = {}
         self.__details[name] = content_object
 
     def getDetails(self):
@@ -121,6 +128,8 @@ class TestCase(unittest.TestCase):
 
         For more details see pydoc testtools.TestResult.
         """
+        if self.__details is None:
+            self.__details = {}
         return self.__details
 
     def patch(self, obj, attribute, value):
@@ -230,18 +239,10 @@ class TestCase(unittest.TestCase):
         :param observed: The observed value.
         :param message: An optional message to include in the error.
         """
-        try:
-            return super(TestCase, self).assertEqual(expected, observed)
-        except self.failureException:
-            lines = []
-            if message:
-                lines.append(message)
-            lines.extend(
-                ["not equal:",
-                 "a = %s" % pformat(expected),
-                 "b = %s" % pformat(observed),
-                 ''])
-            self.fail('\n'.join(lines))
+        matcher = Equals(expected)
+        if message:
+            matcher = Annotate(message, matcher)
+        self.assertThat(observed, matcher)
 
     failUnlessEqual = assertEquals = assertEqual
 
