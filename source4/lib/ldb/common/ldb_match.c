@@ -433,7 +433,7 @@ int ldb_match_msg(struct ldb_context *ldb,
 int ldb_match_msg_objectclass(const struct ldb_message *msg,
 			      const char *objectclass)
 {
-	int i;
+	unsigned int i;
 	struct ldb_message_element *el = ldb_msg_find_element(msg, "objectClass");
 	if (!el) {
 		return 0;
