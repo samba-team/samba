@@ -186,7 +186,7 @@ static int rootdse_add_dynamic(struct ldb_module *module, struct ldb_message *ms
 
 	msg->dn = ldb_dn_new(msg, ldb, NULL);
 
-	/* don't return the distinduishedName, cn and name attributes */
+	/* don't return the distinguishedName, cn and name attributes */
 	ldb_msg_remove_attr(msg, "distinguishedName");
 	ldb_msg_remove_attr(msg, "cn");
 	ldb_msg_remove_attr(msg, "name");
