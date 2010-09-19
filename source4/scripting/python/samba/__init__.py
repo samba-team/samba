@@ -166,7 +166,7 @@ class Ldb(_Ldb):
         # Delete the 'visible' records, and the invisble 'deleted' records (if this DB supports it)
         for msg in self.search(basedn, ldb.SCOPE_SUBTREE,
                        "(&(|(objectclass=*)(distinguishedName=*))(!(distinguishedName=@BASEINFO)))",
-                       [], controls=["show_deleted:0"]):
+                       [], controls=["show_deleted:0", "show_recycled:0"]):
             try:
                 self.delete(msg.dn, ["relax:0"])
             except ldb.LdbError, (errno, _):
@@ -175,7 +175,7 @@ class Ldb(_Ldb):
                     raise
 
         res = self.search(basedn, ldb.SCOPE_SUBTREE,
-            "(&(|(objectclass=*)(distinguishedName=*))(!(distinguishedName=@BASEINFO)))", [], controls=["show_deleted:0"])
+            "(&(|(objectclass=*)(distinguishedName=*))(!(distinguishedName=@BASEINFO)))", [], controls=["show_deleted:0", "show_recycled:0"])
         assert len(res) == 0
 
         # delete the specials

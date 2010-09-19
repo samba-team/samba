@@ -633,15 +633,18 @@ def add_deletedobj_containers(ref_samdb, samdb, names):
         ref_delObjCnt = ref_samdb.search(expression="(cn=Deleted Objects)",
                                             base=part, scope=SCOPE_SUBTREE,
                                             attrs=["dn"],
-                                            controls=["show_deleted:0"])
+                                            controls=["show_deleted:0",
+                                                      "show_recycled:0"])
         delObjCnt = samdb.search(expression="(cn=Deleted Objects)",
                                     base=part, scope=SCOPE_SUBTREE,
                                     attrs=["dn"],
-                                    controls=["show_deleted:0"])
+                                    controls=["show_deleted:0",
+                                              "show_recycled:0"])
         if len(ref_delObjCnt) > len(delObjCnt):
             reference = ref_samdb.search(expression="cn=Deleted Objects",
                                             base=part, scope=SCOPE_SUBTREE,
-                                            controls=["show_deleted:0"])
+                                            controls=["show_deleted:0",
+                                                      "show_recycled:0"])
             empty = Message()
             delta = samdb.msg_diff(empty, reference[0])
 
