@@ -492,12 +492,43 @@ static int rootdse_callback(struct ldb_request *req, struct ldb_reply *ares)
 	return LDB_SUCCESS;
 }
 
+/*
+  mark our registered controls as non-critical in the request
+
+  This is needed as clients may mark controls as critical even if they
+  are not needed at all in a request. For example, the centrify client
+  sets the SD_FLAGS control as critical on ldap modify requests which
+  are setting the dNSHostName attribute on the machine account. That
+  request doesn't need SD_FLAGS at all, but centrify adds it on all
+  ldap requests.
+ */
+static void rootdse_mark_noncritical(struct ldb_module *module, struct ldb_control **controls)
+{
+	int i, j;
+	struct private_data *priv = talloc_get_type(ldb_module_get_private(module), struct private_data);
+
+	if (!controls) return;
+
+	for (i=0; controls[i]; i++) {
+		if (controls[i]->critical == 0) {
+			continue;
+		}
+		for (j=0; j<priv->num_controls; j++) {
+			if (strcasecmp(priv->controls[j], controls[i]->oid) == 0) {
+				controls[i]->critical = 0;
+			}
+		}
+	}
+}
+
 static int rootdse_search(struct ldb_module *module, struct ldb_request *req)
 {
 	struct ldb_context *ldb;
 	struct rootdse_context *ac;
 	struct ldb_request *down_req;
 	int ret;
+
+	rootdse_mark_noncritical(module, req->controls);
 
 	ldb = ldb_module_get_ctx(module);
 
@@ -963,6 +994,8 @@ static int rootdse_add(struct ldb_module *module, struct ldb_request *req)
 {
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 
+	rootdse_mark_noncritical(module, req->controls);
+
 	/*
 		If dn is not "" we should let it pass through
 	*/
@@ -1013,6 +1046,8 @@ static int rootdse_modify(struct ldb_module *module, struct ldb_request *req)
 {
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 
+	rootdse_mark_noncritical(module, req->controls);
+
 	/*
 		If dn is not "" we should let it pass through
 	*/
@@ -1053,6 +1088,8 @@ static int rootdse_modify(struct ldb_module *module, struct ldb_request *req)
 static int rootdse_delete(struct ldb_module *module, struct ldb_request *req)
 {
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
+
+	rootdse_mark_noncritical(module, req->controls);
 
 	/*
 		If dn is not "" we should let it pass through
