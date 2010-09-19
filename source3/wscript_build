@@ -956,7 +956,7 @@ for prefix in bld.env.MODULE_PREFIXES:
 bld.SAMBA_SUBSYSTEM('WBCOMMON',
                     source=WBCOMMON_SRC)
 
-bld.SAMBA_SUBSYSTEM('LIBWBCLIENT',
+bld.SAMBA_LIBRARY('libwbclient',
                     source='''../nsswitch/libwbclient/wbc_guid.c
                               ../nsswitch/libwbclient/wbc_idmap.c
                               ../nsswitch/libwbclient/wbclient.c
@@ -1063,14 +1063,14 @@ bld.SAMBA_SUBSYSTEM('SMBLDAP',
 bld.SAMBA_BINARY('smbd/smbd',
                  source=SMBD_SRC,
                  deps='''tdb DYNCONFIG tevent dl krb5 ldap gssapi gssapi_krb5
-                 NSS_WRAPPER LIBWBCLIENT crypt nsl cups cap resolv ZLIB PASSDB
+                 NSS_WRAPPER libwbclient crypt nsl cups cap resolv ZLIB PASSDB
                  PARAM_WITHOUT_REG LIBS LIBSMB POPT_SAMBA KRBCLIENT AVAHI''',
                  install_path='${SBINDIR}',
                  vars=locals())
 
 bld.SAMBA_BINARY('nmbd/nmbd',
                  source=NMBD_SRC,
-                 deps='''talloc tdb tevent ZLIB cap resolv LIBWBCLIENT dl
+                 deps='''talloc tdb tevent ZLIB cap resolv libwbclient dl
                  NSS_WRAPPER DYNCONFIG PASSDB PARAM ldap LIB_NONSMBD LIBSMB
                  POPT_SAMBA KRBCLIENT''',
                  install_path='${SBINDIR}',
@@ -1079,7 +1079,7 @@ bld.SAMBA_BINARY('nmbd/nmbd',
 bld.SAMBA_BINARY('winbindd/winbindd',
                  source=WINBINDD_SRC,
                  deps='''talloc tdb tevent cap dl DYNCONFIG ZLIB NSS_WRAPPER
-                 LIBWBCLIENT PASSDB ldap resolv PARAM LIB_NONSMBD LIBSMB
+                 libwbclient PASSDB ldap resolv PARAM LIB_NONSMBD LIBSMB
                  POPT_SAMBA KRBCLIENT''',
                  enabled=bld.env.build_winbind,
                  install_path='${SBINDIR}',
@@ -1087,7 +1087,7 @@ bld.SAMBA_BINARY('winbindd/winbindd',
 
 bld.SAMBA_BINARY('web/swat',
                  source=SWAT_SRC,
-                 deps='''talloc tevent cap DYNCONFIG LIBS LIBSMB LIBWBCLIENT PARAM
+                 deps='''talloc tevent cap DYNCONFIG LIBS LIBSMB libwbclient PARAM
                  LIB_NONSMBD resolv PASSDB POPT_SAMBA KRBCLIENT cups''',
                  enabled=bld.env.build_swat,
                  install_path='${SBINDIR}',
@@ -1096,18 +1096,18 @@ bld.SAMBA_BINARY('web/swat',
 bld.SAMBA_BINARY('smbclient',
                  source=CLIENT_SRC,
                  deps='''talloc tdb cap resolv POPT_SAMBA PASSDB LIBSMB LIB_NONSMBD
-                 PARAM_WITHOUT_REG LIBWBCLIENT DYNCONFIG PARAM KRBCLIENT''',
+                 PARAM_WITHOUT_REG libwbclient DYNCONFIG PARAM KRBCLIENT''',
                  vars=locals())
 
 bld.SAMBA_BINARY('rpcclient/rpcclient',
                  source=RPCCLIENT_SRC,
                  deps='''talloc tdb cap resolv POPT_SAMBA PASSDB LIBSMB LIB_NONSMBD
-                 PARAM_WITHOUT_REG LIBWBCLIENT DYNCONFIG PARAM KRBCLIENT''',
+                 PARAM_WITHOUT_REG libwbclient DYNCONFIG PARAM KRBCLIENT''',
                  vars=locals())
 
 bld.SAMBA_BINARY('wbinfo',
                  source=WBINFO_SRC,
-                 deps='''talloc LIBWBCLIENT DYNCONFIG tevent cap
+                 deps='''talloc libwbclient DYNCONFIG tevent cap
                  NSS_WRAPPER ASN1_UTIL LIBTSOCKET PASSDB ldap PARAM LIB_NONSMBD
                  LIBSAMBA POPT_SAMBA''',
                  vars=locals())
@@ -1115,14 +1115,14 @@ bld.SAMBA_BINARY('wbinfo',
 bld.SAMBA_BINARY('testparm',
                  source=TESTPARM_SRC,
                  deps='''talloc tevent DYNCONFIG ldap cap NSS_WRAPPER
-                 LIBWBCLIENT ASN1_UTIL LIBTSOCKET PASSDB PARAM LIB_NONSMBD
+                 libwbclient ASN1_UTIL LIBTSOCKET PASSDB PARAM LIB_NONSMBD
                  LIBSMB_ERR POPT_SAMBA''',
                  vars=locals())
 
 bld.SAMBA_BINARY('eventlogadm',
                  source=EVTLOGADM_SRC,
                  deps='''talloc tevent cap POPT_SAMBA DYNCONFIG LIBS PARAM
-                 LIB_NONSMBD LIBSMB_ERR PASSDB LIBWBCLIENT''',
+                 LIB_NONSMBD LIBSMB_ERR PASSDB libwbclient''',
                  vars=locals())
 
 swat_files=recursive_dirlist('../swat', '../swat', '*')
