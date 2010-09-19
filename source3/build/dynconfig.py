@@ -10,7 +10,8 @@ dir_options = {
     'with-lockdir'                        : [ '${PREFIX}/var/locks', 'where to put lock files' ],
     'with-codepagedir'                    : [ '${PREFIX}/lib/samba', 'where to put codepages' ],
     'with-privatedir'                     : [ '${PREFIX}/private', 'where to put smbpasswd' ],
-    'with-cachedir'                       : [ '${PREFIX}/var/locks', 'where to put temporary cache files' ]
+    'with-cachedir'                       : [ '${PREFIX}/var/locks', 'where to put temporary cache files' ],
+    'with-localedir'                      : [ '${PREFIX}/share/locale', 'Where to put po files' ]
     }
 
 # list of cflags to use for dynconfig.c
@@ -37,6 +38,7 @@ dyn_cflags = {
     'NTP_SIGND_SOCKET_DIR'           : '${NTP_SIGND_SOCKET_DIR}',
     'CODEPAGEDIR'                    : '${CODEPAGEDIR}',
     'CACHEDIR'                       : '${CACHEDIR}',
+    'LOCALEDIR'                      : '${LOCALEDIR}',
     'SMB_PASSWD_FILE'                : '${PRIVATEDIR}/smbpasswd',
     }
 

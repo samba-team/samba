@@ -66,6 +66,9 @@ LIBNDR_SCHANNEL_SRC = '''../librpc/gen_ndr/ndr_schannel.c
 LIBNDR_SPOOLSS_SRC = '''../librpc/gen_ndr/ndr_spoolss.c
                   ../librpc/ndr/ndr_spoolss_buf.c'''
 
+LIBNDR_PREG_SRC = '''librpc/gen_ndr/ndr_preg.c
+                     librpc/ndr/ndr_preg.c'''
+
 LIBNDR_XATTR_SRC = '''../librpc/gen_ndr/ndr_xattr.c
                   ../librpc/ndr/ndr_xattr.c'''
 
@@ -911,6 +914,66 @@ RPCCLIENT_SRC = '''${RPCCLIENT_SRC1}
                    rpc_client/init_netlogon.c
                    rpc_client/init_samr.c'''
 
+LIBNET_DSSYNC_SRC = '''libnet/libnet_dssync.c
+                       libnet/libnet_dssync_keytab.c
+                       ../libcli/drsuapi/repl_decrypt.c'''
+
+LIBNET_SAMSYNC_SRC = '''libnet/libnet_samsync.c
+                        libnet/libnet_samsync_ldif.c
+                        libnet/libnet_samsync_passdb.c
+                        libnet/libnet_samsync_display.c
+                        libnet/libnet_samsync_keytab.c
+                        ../libcli/samsync/decrypt.c'''
+
+PASSWD_UTIL_SRC = 'utils/passwd_util.c'
+
+NET_SRC1 = '''utils/net.c utils/net_ads.c utils/net_help.c
+              utils/net_rap.c utils/net_rpc.c utils/net_rpc_samsync.c
+              utils/net_rpc_join.c utils/net_time.c utils/net_lookup.c
+              utils/net_cache.c utils/net_groupmap.c utils/net_idmap.c
+              utils/net_status.c utils/net_rpc_printer.c utils/net_rpc_rights.c
+              utils/net_rpc_service.c utils/net_rpc_registry.c utils/net_usershare.c
+              utils/netlookup.c utils/net_sam.c utils/net_rpc_shell.c
+              utils/net_util.c utils/net_rpc_sh_acct.c utils/net_rpc_audit.c
+              ${PASSWD_UTIL_SRC} utils/net_dns.c utils/net_ads_gpo.c
+              utils/net_conf.c utils/net_join.c utils/net_user.c
+              utils/net_group.c utils/net_file.c utils/net_registry.c
+              auth/token_util.c utils/net_dom.c utils/net_share.c
+              utils/net_g_lock.c
+              utils/net_serverid.c
+              utils/net_eventlog.c
+              utils/net_printing.c
+              ${LIBNDR_NTPRINTING_SRC}
+              ${LIBNDR_PREG_SRC}
+              ${LIBCLI_SPOOLSS_SRC}
+              ${LIBCLI_WINREG_SRC}
+              ${LIBCLI_DRSUAPI_SRC}
+              ${LIBCLI_INITSHUTDOWN_SRC}
+              ${LIBCLI_DSSETUP_SRC}
+              ${LIBCLI_SVCCTL_SRC}
+              ${LIBCLI_WKSSVC_SRC}
+              ${LIBCLI_SRVSVC_SRC}
+              ${LIBCLI_LSA_SRC}
+              ${LIBCLI_SAMR_SRC}
+              ${LIBCLI_NETLOGON_SRC}
+              ${RPC_CLIENT_SCHANNEL_SRC}
+              rpc_client/init_netlogon.c
+              rpc_client/init_samr.c'''
+
+
+NET_SRC2 = 'utils/net_registry_util.c utils/net_help_common.c'
+
+NET_SRC = '''${NET_SRC1}
+             ${NET_SRC2}
+             ${LIBADDNS_SRC0}
+             ${LIBMSRPC_SRC} ${LIBMSRPC_GEN_SRC}
+             ${LIBADS_SRC} ${LIBADS_SERVER_SRC} ${LIBADS_PRINTER_SRC}
+             ${DCUTIL_SRC}
+             ${AFS_SRC} ${AFS_SETTOKEN_SRC} ${READLINE_SRC}
+             ${LIBGPO_SRC} ${DISPLAY_SEC_SRC}
+             ${LIBNET_SRC} ${LIBNET_DSSYNC_SRC} ${LIBNET_SAMSYNC_SRC}
+             ${LIB_EVENTLOG_SRC} ${REGFIO_SRC}'''
+
 LIBS='ICONV'
 
 bld.SAMBA_GENERATOR('build_options',
@@ -1128,6 +1191,13 @@ bld.SAMBA_BINARY('eventlogadm',
                  source=EVTLOGADM_SRC,
                  deps='''talloc tevent cap POPT_SAMBA DYNCONFIG LIBS PARAM
                  LIB_NONSMBD LIBSMB_ERR PASSDB libwbclient''',
+                 vars=locals())
+
+bld.SAMBA_BINARY('net',
+                 source=NET_SRC,
+                 deps='''talloc tdb libnetapi cap resolv POPT_SAMBA PASSDB LIBSMB LIB_NONSMBD
+                 PARAM_WITHOUT_REG libwbclient DYNCONFIG PARAM KRBCLIENT
+                 LOCALE_DIR''',
                  vars=locals())
 
 swat_files=recursive_dirlist('../swat', '../swat', '*')
