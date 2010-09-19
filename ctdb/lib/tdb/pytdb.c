@@ -77,14 +77,18 @@ static PyObject *PyString_FromTDB_DATA(TDB_DATA data)
 
 static PyObject *py_tdb_open(PyTypeObject *type, PyObject *args, PyObject *kwargs)
 {
-	char *name;
+	char *name = NULL;
 	int hash_size = 0, tdb_flags = TDB_DEFAULT, flags = O_RDWR, mode = 0600;
 	TDB_CONTEXT *ctx;
 	PyTdbObject *ret;
 	const char *kwnames[] = { "name", "hash_size", "tdb_flags", "flags", "mode", NULL };
 
-	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s|iiii", (char **)kwnames, &name, &hash_size, &tdb_flags, &flags, &mode))
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|siiii", (char **)kwnames, &name, &hash_size, &tdb_flags, &flags, &mode))
 		return NULL;
+
+	if (name == NULL) {
+		tdb_flags |= TDB_INTERNAL;
+	}
 
 	ctx = tdb_open(name, hash_size, tdb_flags, flags, mode);
 	if (ctx == NULL) {
@@ -448,9 +452,11 @@ static PyGetSetDef tdb_object_getsetters[] = {
 
 static PyObject *tdb_object_repr(PyTdbObject *self)
 {
-	return PyString_FromFormat("Tdb('%s')",
-		(tdb_get_flags(self->ctx) & TDB_INTERNAL) ? "<internal>"
-							  : tdb_name(self->ctx));
+	if (tdb_get_flags(self->ctx) & TDB_INTERNAL) {
+		return PyString_FromString("Tdb(<internal>)");
+	} else {
+		return PyString_FromFormat("Tdb('%s')", tdb_name(self->ctx));
+	}
 }
 
 static void tdb_object_dealloc(PyTdbObject *self)

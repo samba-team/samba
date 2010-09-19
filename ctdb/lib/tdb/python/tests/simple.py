@@ -16,6 +16,7 @@ class OpenTdbTests(TestCase):
         self.assertRaises(IOError, tdb.Tdb, "/some/nonexistant/file", 0, tdb.DEFAULT, os.O_RDWR)
 
 class CloseTdbTests(TestCase):
+
     def test_double_close(self):
         self.tdb = tdb.Tdb(tempfile.mkstemp()[1], 0, tdb.DEFAULT, os.O_CREAT|os.O_RDWR)
         self.assertNotEqual(None, self.tdb)
@@ -26,11 +27,12 @@ class CloseTdbTests(TestCase):
 
 
 class InternalTdbTests(TestCase):
+
     def test_repr(self):
-        self.tdb = tdb.Tdb("whatever", tdb_flags=tdb.INTERNAL)
+        self.tdb = tdb.Tdb()
 
         # repr used to crash on internal db
-        self.assertEquals(repr(self.tdb), "Tdb('<internal>')")
+        self.assertEquals(repr(self.tdb), "Tdb(<internal>)")
 
 
 class SimpleTdbTests(TestCase):
@@ -121,12 +123,6 @@ class SimpleTdbTests(TestCase):
         self.tdb.transaction_prepare_commit()
         self.tdb.transaction_commit()
         self.assertEquals("1", self.tdb["bloe"])
-
-    def test_iterator(self):
-        self.tdb["bloe"] = "2"
-        self.tdb["bla"] = "hoi"
-        i = iter(self.tdb)
-        self.assertEquals(set(["bloe", "bla"]), set([i.next(), i.next()]))
 
     def test_iterkeys(self):
         self.tdb["bloe"] = "2"
