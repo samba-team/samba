@@ -130,6 +130,13 @@ class SimpleTdbTests(TestCase):
         self.tdb.clear()
         self.assertEquals(0, len(list(self.tdb)))
 
+    def test_seqnum(self):
+        self.tdb.enable_seqnum()
+        seq1 = self.tdb.seqnum
+        self.tdb.increment_seqnum_nonblock()
+        seq2 = self.tdb.seqnum
+        self.assertEquals(seq2-seq1, 1)
+
     def test_len(self):
         self.assertEquals(0, len(list(self.tdb)))
         self.tdb["entry"] = "value"
