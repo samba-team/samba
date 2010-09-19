@@ -332,6 +332,18 @@ static PyObject *obj_clear(PyTdbObject *self)
 	Py_RETURN_NONE;
 }
 
+static PyObject *obj_enable_seqnum(PyTdbObject *self)
+{
+	tdb_enable_seqnum(self->ctx);
+	Py_RETURN_NONE;
+}
+
+static PyObject *obj_increment_seqnum_nonblock(PyTdbObject *self)
+{
+	tdb_increment_seqnum_nonblock(self->ctx);
+	Py_RETURN_NONE;
+}
+
 static PyMethodDef tdb_object_methods[] = {
 	{ "transaction_cancel", (PyCFunction)obj_transaction_cancel, METH_NOARGS, 
 		"S.transaction_cancel() -> None\n"
@@ -367,6 +379,10 @@ static PyMethodDef tdb_object_methods[] = {
 	{ "iterkeys", (PyCFunction)tdb_object_iter, METH_NOARGS, "S.iterkeys() -> iterator" },
 	{ "clear", (PyCFunction)obj_clear, METH_NOARGS, "S.clear() -> None\n"
 		"Wipe the entire database." },
+	{ "enable_seqnum", (PyCFunction)obj_enable_seqnum, METH_NOARGS,
+		"S.enable_seqnum() -> None" },
+	{ "increment_seqnum_nonblock", (PyCFunction)obj_increment_seqnum_nonblock, METH_NOARGS,
+		"S.increment_seqnum_nonblock() -> None" },
 	{ NULL }
 };
 
@@ -398,12 +414,19 @@ static PyObject *obj_get_filename(PyTdbObject *self, void *closure)
 	return PyString_FromString(tdb_name(self->ctx));
 }
 
+static PyObject *obj_get_seqnum(PyTdbObject *self, void *closure)
+{
+	return PyInt_FromLong(tdb_get_seqnum(self->ctx));
+}
+
+
 static PyGetSetDef tdb_object_getsetters[] = {
 	{ (char *)"hash_size", (getter)obj_get_hash_size, NULL, NULL },
 	{ (char *)"map_size", (getter)obj_get_map_size, NULL, NULL },
 	{ (char *)"flags", (getter)obj_get_flags, NULL, NULL },
 	{ (char *)"max_dead", NULL, (setter)obj_set_max_dead, NULL },
 	{ (char *)"filename", (getter)obj_get_filename, NULL, (char *)"The filename of this TDB file."},
+	{ (char *)"seqnum", (getter)obj_get_seqnum, NULL, NULL },
 	{ NULL }
 };
 
