@@ -330,12 +330,28 @@ extern const struct ndr_syntax_id ndr_transfer_syntax;
 extern const struct ndr_syntax_id ndr64_transfer_syntax;
 extern const struct ndr_syntax_id null_ndr_syntax_id;
 
+struct ndr_interface_call_pipe {
+	const char *name;
+	const char *chunk_struct_name;
+	size_t chunk_struct_size;
+	ndr_push_flags_fn_t ndr_push;
+	ndr_pull_flags_fn_t ndr_pull;
+	ndr_print_fn_t ndr_print;
+};
+
+struct ndr_interface_call_pipes {
+	uint32_t num_pipes;
+	const struct ndr_interface_call_pipe *pipes;
+};
+
 struct ndr_interface_call {
 	const char *name;
 	size_t struct_size;
 	ndr_push_flags_fn_t ndr_push;
 	ndr_pull_flags_fn_t ndr_pull;
 	ndr_print_function_t ndr_print;
+	struct ndr_interface_call_pipes in_pipes;
+	struct ndr_interface_call_pipes out_pipes;
 };
 
 struct ndr_interface_string_array {
