@@ -414,6 +414,11 @@ static PyObject *obj_get_map_size(PyTdbObject *self, void *closure)
 	return PyInt_FromLong(tdb_map_size(self->ctx));
 }
 
+static PyObject *obj_get_freelist_size(PyTdbObject *self, void *closure)
+{
+	return PyInt_FromLong(tdb_freelist_size(self->ctx));
+}
+
 static PyObject *obj_get_flags(PyTdbObject *self, void *closure)
 {
 	return PyInt_FromLong(tdb_get_flags(self->ctx));
@@ -433,6 +438,7 @@ static PyObject *obj_get_seqnum(PyTdbObject *self, void *closure)
 static PyGetSetDef tdb_object_getsetters[] = {
 	{ (char *)"hash_size", (getter)obj_get_hash_size, NULL, NULL },
 	{ (char *)"map_size", (getter)obj_get_map_size, NULL, NULL },
+	{ (char *)"freelist_size", (getter)obj_get_freelist_size, NULL, NULL },
 	{ (char *)"flags", (getter)obj_get_flags, NULL, NULL },
 	{ (char *)"max_dead", NULL, (setter)obj_set_max_dead, NULL },
 	{ (char *)"filename", (getter)obj_get_filename, NULL, (char *)"The filename of this TDB file."},
