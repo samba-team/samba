@@ -103,22 +103,6 @@ static int unlazy_op(struct ldb_module *module, struct ldb_request *req)
 	return ldb_next_request(module, new_req);
 }
 
-static int unlazy_init(struct ldb_module *module)
-{
-	int ret;
-	struct ldb_context *ldb;
-	ldb = ldb_module_get_ctx(module);
-
-	ret = ldb_mod_register_control(module, LDB_CONTROL_SHOW_DELETED_OID);
-	if (ret != LDB_SUCCESS) {
-		ldb_debug(ldb, LDB_DEBUG_ERROR,
-			"lazy_commit: Unable to register control with rootdse!\n");
-		return ldb_operr(ldb);
-	}
-
-	return ldb_next_init(module);
-}
-
 const struct ldb_module_ops ldb_lazy_commit_module_ops = {
 	.name		   = "lazy_commit",
 	.search            = unlazy_op,
@@ -128,5 +112,4 @@ const struct ldb_module_ops ldb_lazy_commit_module_ops = {
 	.rename            = unlazy_op,
 	.request      	   = unlazy_op,
 	.extended          = unlazy_op,
-	.init_context      = unlazy_init,
 };
