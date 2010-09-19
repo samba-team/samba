@@ -40,7 +40,7 @@ class SamDB(samba.Ldb):
 
     def __init__(self, url=None, lp=None, modules_dir=None, session_info=None,
                  credentials=None, flags=0, options=None, global_schema=True,
-                 auto_connect=True, am_rodc=False):
+                 auto_connect=True, am_rodc=None):
         self.lp = lp
         if not auto_connect:
             url = None
@@ -54,7 +54,8 @@ class SamDB(samba.Ldb):
         if global_schema:
             dsdb._dsdb_set_global_schema(self)
 
-        dsdb._dsdb_set_am_rodc(self, am_rodc)
+        if am_rodc is not None:
+            dsdb._dsdb_set_am_rodc(self, am_rodc)
 
     def connect(self, url=None, flags=0, options=None):
         if self.lp is not None:
