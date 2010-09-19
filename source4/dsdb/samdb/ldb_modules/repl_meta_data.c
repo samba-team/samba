@@ -2713,11 +2713,20 @@ static int replmd_delete(struct ldb_module *module, struct ldb_request *req)
 	}
 
 	if (deletion_state == OBJECT_NOT_DELETED) {
+		const struct dsdb_attribute *sa;
+
 		/* work out what the new rdn value is, for updating the
 		   rDN and name fields */
 		new_rdn_value = ldb_dn_get_rdn_val(new_dn);
 
-		ret = ldb_msg_add_value(msg, strlower_talloc(tmp_ctx, rdn_name), new_rdn_value, &el);
+		sa = dsdb_attribute_by_lDAPDisplayName(schema, rdn_name);
+		if (!sa) {
+			talloc_free(tmp_ctx);
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+
+		ret = ldb_msg_add_value(msg, sa->lDAPDisplayName, new_rdn_value,
+					&el);
 		if (ret != LDB_SUCCESS) {
 			talloc_free(tmp_ctx);
 			return ret;
