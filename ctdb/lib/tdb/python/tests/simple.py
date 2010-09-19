@@ -127,6 +127,10 @@ class SimpleTdbTests(TestCase):
         self.tdb["entry"] = "value"
         self.assertEquals(1, len(list(self.tdb)))
 
+    def test_add_flags(self):
+        self.tdb.add_flags(tdb.NOMMAP)
+        self.tdb.remove_flags(tdb.NOMMAP)
+
 
 if __name__ == '__main__':
     import unittest

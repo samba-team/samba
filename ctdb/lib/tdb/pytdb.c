@@ -259,6 +259,27 @@ static PyObject *obj_store(PyTdbObject *self, PyObject *args)
 	Py_RETURN_NONE;
 }
 
+static PyObject *obj_add_flags(PyTdbObject *self, PyObject *args)
+{
+	unsigned flags;
+
+	if (!PyArg_ParseTuple(args, "I", &flags))
+		return NULL;
+
+	tdb_add_flags(self->ctx, flags);
+	Py_RETURN_NONE;
+}
+
+static PyObject *obj_remove_flags(PyTdbObject *self, PyObject *args)
+{
+	unsigned flags;
+
+	if (!PyArg_ParseTuple(args, "I", &flags))
+		return NULL;
+
+	tdb_remove_flags(self->ctx, flags);
+	Py_RETURN_NONE;
+}
 
 typedef struct {
 	PyObject_HEAD
@@ -341,6 +362,8 @@ static PyMethodDef tdb_object_methods[] = {
 		"Check whether key exists in this database." },
 	{ "store", (PyCFunction)obj_store, METH_VARARGS, "S.store(key, data, flag=REPLACE) -> None"
 		"Store data." },
+	{ "add_flags", (PyCFunction)obj_add_flags, METH_VARARGS, "S.add_flags(flags) -> None" },
+	{ "remove_flags", (PyCFunction)obj_remove_flags, METH_VARARGS, "S.remove_flags(flags) -> None" },
 	{ "iterkeys", (PyCFunction)tdb_object_iter, METH_NOARGS, "S.iterkeys() -> iterator" },
 	{ "clear", (PyCFunction)obj_clear, METH_NOARGS, "S.clear() -> None\n"
 		"Wipe the entire database." },
