@@ -36,11 +36,13 @@ from samba import getopt as options
 from ldb import SCOPE_BASE
 from samba.auth import system_session
 from samba.samdb import SamDB
+from samba.dcerpc import netlogon, winbind
 
 samba.ensure_external_module("dns", "dnspython")
 import dns.resolver as resolver
 
 default_ttl = 900
+am_rodc = False
 
 parser = optparse.OptionParser("samba_dnsupdate")
 sambaopts = options.SambaOptions(parser)
@@ -75,7 +77,8 @@ if len(IPs) == 0:
     print "No IP interfaces - skipping DNS updates"
     sys.exit(0)
 
-
+if opts.verbose:
+    print "IPs: %s" % IPs
 
 ########################################################
 # get credentials if we haven't got them already
@@ -189,19 +192,22 @@ def check_dns_name(d):
 ###########################################
 # get the list of substitution vars
 def get_subst_vars():
-    global lp
+    global lp, am_rodc
     vars = {}
 
     samdb = SamDB(url=lp.get("sam database"), session_info=system_session(),
                   lp=lp)
 
     vars['DNSDOMAIN'] = lp.get('realm').lower()
+    vars['DNSFOREST'] = lp.get('realm').lower()
     vars['HOSTNAME']  = lp.get('netbios name').lower() + "." + vars['DNSDOMAIN']
     vars['NTDSGUID']  = samdb.get_ntds_GUID()
     vars['SITE']      = samdb.server_site_name()
     res = samdb.search(base=None, scope=SCOPE_BASE, attrs=["objectGUID"])
     guid = samdb.schema_format_value("objectGUID", res[0]['objectGUID'][0])
     vars['DOMAINGUID'] = guid
+    am_rodc = samdb.am_rodc()
+
     return vars
 
 
@@ -239,6 +245,64 @@ def call_nsupdate(d):
     os.putenv("KRB5CCNAME", ccachename)
     os.system("%s %s" % (nsupdate_cmd, tmpfile))
     os.unlink(tmpfile)
+
+
+
+def rodc_dns_update(d, t):
+    '''a single DNS update via the RODC netlogon call'''
+    global sub_vars
+
+    if opts.verbose:
+        print "Calling netlogon RODC update for %s" % d
+
+    w = winbind.winbind("irpc:winbind_server", lp)
+    dns_names = netlogon.NL_DNS_NAME_INFO_ARRAY()
+    dns_names.count = 1
+    name = netlogon.NL_DNS_NAME_INFO()
+    name.type = t
+    name.priority = 0
+    name.weight   = 0
+    if d.port is not None:
+        name.port = int(d.port)
+    name.dns_register = True
+    dns_names.names = [ name ]
+    site_name = sub_vars['SITE'].decode('utf-8')
+
+    try:
+        ret_names = w.DsrUpdateReadOnlyServerDnsRecords(site_name, default_ttl, dns_names)
+        if ret_names.names[0].status != 0:
+            print("Failed to set DNS entry: %s (status %u)" % (d, ret_names.names[0].status))
+    except:
+        print("Error setting DNS entry: %s" % d)
+
+
+def call_rodc_update(d):
+    '''RODCs need to use the netlogon API for nsupdate'''
+    global lp, sub_vars
+
+    # we expect failure for 3268 if we aren't a GC
+    if d.port is not None and int(d.port) == 3268:
+        return
+
+    # map the DNS request to a netlogon update type
+    map = {
+        netlogon.NlDnsLdapAtSite :     '_ldap._tcp.${SITE}._sites.${DNSDOMAIN}',
+        netlogon.NlDnsGcAtSite         : '_ldap._tcp.${SITE}._sites.gc._msdcs.${DNSDOMAIN}',
+        netlogon.NlDnsDsaCname         : '${NTDSGUID}._msdcs.${DNSFOREST}',
+        netlogon.NlDnsKdcAtSite        : '_kerberos._tcp.${SITE}._sites.dc._msdcs.${DNSDOMAIN}',
+        netlogon.NlDnsDcAtSite         : '_ldap._tcp.${SITE}._sites.dc._msdcs.${DNSDOMAIN}',
+        netlogon.NlDnsRfc1510KdcAtSite : '_kerberos._tcp.${SITE}._sites.${DNSDOMAIN}',
+        netlogon.NlDnsGenericGcAtSite  : '_gc._tcp.${SITE}._sites.${DNSFOREST}'
+        }
+
+    for t in map:
+        subname = samba.substitute_var(map[t], sub_vars)
+        if subname.lower() == d.name.lower():
+            # found a match - do the update
+            rodc_dns_update(d, t)
+            return
+    if opts.verbose:
+        print("Unable to map to netlogon DNS update: %s" % d)
 
 
 # get the list of DNS entries we should have
@@ -286,7 +350,10 @@ get_credentials(lp)
 
 # ask nsupdate to add entries as needed
 for d in update_list:
-    call_nsupdate(d)
+    if am_rodc:
+        call_rodc_update(d)
+    else:
+        call_nsupdate(d)
 
 # delete the ccache if we created it
 if ccachename is not None:
