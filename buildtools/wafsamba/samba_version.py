@@ -117,10 +117,10 @@ also accepted as dictionary entries here
             string+="#define SAMBA_VERSION_RC_RELEASE %u\n" % self.RC_RELEASE
 
         try:
-            string+="#define SAMBA_VERSION_GIT_COMMIT_ABBREV " + self.GIT_COMMIT_ABBREV + "\n"
+            string+="#define SAMBA_VERSION_GIT_COMMIT_ABBREV \"" + self.GIT_COMMIT_ABBREV + "\"\n"
+            string+="#define SAMBA_VERSION_GIT_COMMIT_FULLREV \"" + self.GIT_COMMIT_FULLREV + "\"\n"
+            string+="#define SAMBA_VERSION_GIT_COMMIT_DATE \"" + self.GIT_COMMIT_DATE + "\"\n"
             string+="#define SAMBA_VERSION_GIT_COMMIT_TIME " + self.GIT_COMMIT_TIME + "\n"
-            string+="#define SAMBA_VERSION_GIT_COMMIT_FULLREV " + self.GIT_COMMIT_TIME + "\n"
-            string+="#define SAMBA_VERSION_GIT_COMMIT_DATE " + self.GIT_COMMIT_DATA + "\n"
         except AttributeError:
             pass
 
