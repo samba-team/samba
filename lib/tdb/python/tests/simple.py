@@ -94,6 +94,9 @@ class SimpleTdbTests(TestCase):
     def test_map_size(self):
         self.tdb.map_size
 
+    def test_freelist_size(self):
+        self.tdb.freelist_size
+
     def test_name(self):
         self.tdb.filename
 
