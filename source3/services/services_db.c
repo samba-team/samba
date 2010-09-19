@@ -203,8 +203,10 @@ static bool read_init_file( const char *servicename, struct rcinit_file_informat
 	XFILE *f = NULL;
 	char *p = NULL;
 
-	if ( !(info = TALLOC_ZERO_P( NULL, struct rcinit_file_information ) ) )
+	info = TALLOC_ZERO_P( NULL, struct rcinit_file_information );
+	if (info == NULL) {
 		return False;
+	}
 
 	/* attempt the file open */
 
@@ -214,7 +216,8 @@ static bool read_init_file( const char *servicename, struct rcinit_file_informat
 		TALLOC_FREE(info);
 		return false;
 	}
-	if (!(f = x_fopen( filepath, O_RDONLY, 0 ))) {
+	f = x_fopen( filepath, O_RDONLY, 0 );
+	if (f == NULL) {
 		DEBUG(0,("read_init_file: failed to open [%s]\n", filepath));
 		TALLOC_FREE(info);
 		return false;
@@ -229,14 +232,16 @@ static bool read_init_file( const char *servicename, struct rcinit_file_informat
 
 		/* Look for a line like '^#.*Description:' */
 
-		if ( (p = strstr( str, "Description:" )) != NULL ) {
+		p = strstr( str, "Description:" );
+		if (p != NULL) {
 			char *desc;
 
 			p += strlen( "Description:" ) + 1;
 			if ( !p )
 				break;
 
-			if ( (desc = cleanup_string(p)) != NULL )
+			desc = cleanup_string(p);
+			if (desc != NULL)
 				info->description = talloc_strdup( info, desc );
 		}
 	}
