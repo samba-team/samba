@@ -114,13 +114,17 @@ static struct security_descriptor* construct_service_sd( TALLOC_CTX *ctx )
 
 	/* create the security descriptor */
 
-	if ( !(theacl = make_sec_acl(ctx, NT4_ACL_REVISION, i, ace)) )
+	theacl = make_sec_acl(ctx, NT4_ACL_REVISION, i, ace);
+	if (theacl == NULL) {
 		return NULL;
+	}
 
-	if ( !(sd = make_sec_desc(ctx, SECURITY_DESCRIPTOR_REVISION_1,
-				  SEC_DESC_SELF_RELATIVE, NULL, NULL, NULL,
-				  theacl, &sd_size)) )
+	sd = make_sec_desc(ctx, SECURITY_DESCRIPTOR_REVISION_1,
+			   SEC_DESC_SELF_RELATIVE, NULL, NULL, NULL,
+			   theacl, &sd_size);
+	if (sd == NULL) {
 		return NULL;
+	}
 
 	return sd;
 }
