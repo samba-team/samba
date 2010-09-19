@@ -36,6 +36,7 @@ struct finddcs_cldap_state {
 	struct tevent_req *req;
 	const char *domain_name;
 	struct dom_sid *domain_sid;
+	const char *srv_name;
 	const char **srv_addresses;
 	uint32_t minimum_dc_flags;
 	uint32_t srv_address_index;
@@ -112,18 +113,17 @@ static bool finddcs_cldap_srv_lookup(struct finddcs_cldap_state *state,
 				     struct resolve_context *resolve_ctx,
 				     struct tevent_context *event_ctx)
 {
-	const char *srv_name;
 	struct composite_context *creq;
 	struct nbt_name name;
 
 	if (io->in.site_name) {
-		srv_name = talloc_asprintf(state, "_ldap._tcp.%s._sites.%s",
+		state->srv_name = talloc_asprintf(state, "_ldap._tcp.%s._sites.%s",
 					   io->in.site_name, io->in.domain_name);
 	} else {
-		srv_name = talloc_asprintf(state, "_ldap._tcp.%s", io->in.domain_name);
+		state->srv_name = talloc_asprintf(state, "_ldap._tcp.%s", io->in.domain_name);
 	}
 
-	make_nbt_name(&name, srv_name, 0);
+	make_nbt_name(&name, state->srv_name, 0);
 
 	creq = resolve_name_ex_send(resolve_ctx, state,
 				    RESOLVE_NAME_FLAG_FORCE_DNS | RESOLVE_NAME_FLAG_DNS_SRV,
@@ -167,6 +167,7 @@ static void finddcs_cldap_next_server(struct finddcs_cldap_state *state)
 
 	if (state->srv_addresses[state->srv_address_index] == NULL) {
 		tevent_req_nterror(state->req, NT_STATUS_OBJECT_NAME_NOT_FOUND);
+		DEBUG(2,("No matching CLDAP server found\n"));
 		return;
 	}
 
@@ -247,6 +248,7 @@ static void finddcs_cldap_name_resolved(struct composite_context *ctx)
 
 	status = resolve_name_recv(ctx, state, &address);
 	if (tevent_req_nterror(state->req, status)) {
+		DEBUG(2,("No matching NBT <1c> server found\n"));
 		return;
 	}
 
@@ -279,6 +281,7 @@ static void finddcs_cldap_srv_resolved(struct composite_context *ctx)
 
 	status = resolve_name_multiple_recv(ctx, state, &state->srv_addresses);
 	if (tevent_req_nterror(state->req, status)) {
+		DEBUG(2,("Failed to find SRV record for %s\n", state->srv_name));
 		return;
 	}
 
