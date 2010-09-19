@@ -111,6 +111,14 @@ class SimpleTdbTests(TestCase):
         self.tdb.transaction_commit()
         self.assertEquals("1", self.tdb["bloe"])
 
+    def test_transaction_prepare_commit(self):
+        self.tdb["bloe"] = "2"
+        self.tdb.transaction_start()
+        self.tdb["bloe"] = "1"
+        self.tdb.transaction_prepare_commit()
+        self.tdb.transaction_commit()
+        self.assertEquals("1", self.tdb["bloe"])
+
     def test_iterator(self):
         self.tdb["bloe"] = "2"
         self.tdb["bla"] = "hoi"

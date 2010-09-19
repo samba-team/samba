@@ -112,6 +112,13 @@ static PyObject *obj_transaction_commit(PyTdbObject *self)
 	Py_RETURN_NONE;
 }
 
+static PyObject *obj_transaction_prepare_commit(PyTdbObject *self)
+{
+	int ret = tdb_transaction_prepare_commit(self->ctx);
+	PyErr_TDB_ERROR_IS_ERR_RAISE(ret, self->ctx);
+	Py_RETURN_NONE;
+}
+
 static PyObject *obj_transaction_start(PyTdbObject *self)
 {
 	int ret = tdb_transaction_start(self->ctx);
@@ -351,6 +358,9 @@ static PyMethodDef tdb_object_methods[] = {
 	{ "transaction_commit", (PyCFunction)obj_transaction_commit, METH_NOARGS,
 		"S.transaction_commit() -> None\n"
 		"Commit the currently active transaction." },
+	{ "transaction_prepare_commit", (PyCFunction)obj_transaction_prepare_commit, METH_NOARGS,
+		"S.transaction_prepare_commit() -> None\n"
+		"Prepare to commit the currently active transaction" },
 	{ "transaction_start", (PyCFunction)obj_transaction_start, METH_NOARGS,
 		"S.transaction_start() -> None\n"
 		"Start a new transaction." },
