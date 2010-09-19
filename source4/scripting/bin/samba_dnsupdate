@@ -256,11 +256,22 @@ def rodc_dns_update(d, t):
     if opts.verbose:
         print "Calling netlogon RODC update for %s" % d
 
+    typemap = {
+        netlogon.NlDnsLdapAtSite       : netlogon.NlDnsInfoTypeNone,
+        netlogon.NlDnsGcAtSite         : netlogon.NlDnsDomainNameAlias,
+        netlogon.NlDnsDsaCname         : netlogon.NlDnsDomainNameAlias,
+        netlogon.NlDnsKdcAtSite        : netlogon.NlDnsInfoTypeNone,
+        netlogon.NlDnsDcAtSite         : netlogon.NlDnsInfoTypeNone,
+        netlogon.NlDnsRfc1510KdcAtSite : netlogon.NlDnsInfoTypeNone,
+        netlogon.NlDnsGenericGcAtSite  : netlogon.NlDnsDomainNameAlias
+        }
+
     w = winbind.winbind("irpc:winbind_server", lp)
     dns_names = netlogon.NL_DNS_NAME_INFO_ARRAY()
     dns_names.count = 1
     name = netlogon.NL_DNS_NAME_INFO()
     name.type = t
+    name.dns_domain_info_type = typemap[t]
     name.priority = 0
     name.weight   = 0
     if d.port is not None:
@@ -273,8 +284,8 @@ def rodc_dns_update(d, t):
         ret_names = w.DsrUpdateReadOnlyServerDnsRecords(site_name, default_ttl, dns_names)
         if ret_names.names[0].status != 0:
             print("Failed to set DNS entry: %s (status %u)" % (d, ret_names.names[0].status))
-    except:
-        print("Error setting DNS entry: %s" % d)
+    except RuntimeError, reason:
+        print("Error setting DNS entry of type %u: %s: %s" % (t, d, reason))
 
 
 def call_rodc_update(d):
@@ -287,7 +298,7 @@ def call_rodc_update(d):
 
     # map the DNS request to a netlogon update type
     map = {
-        netlogon.NlDnsLdapAtSite :     '_ldap._tcp.${SITE}._sites.${DNSDOMAIN}',
+        netlogon.NlDnsLdapAtSite       : '_ldap._tcp.${SITE}._sites.${DNSDOMAIN}',
         netlogon.NlDnsGcAtSite         : '_ldap._tcp.${SITE}._sites.gc._msdcs.${DNSDOMAIN}',
         netlogon.NlDnsDsaCname         : '${NTDSGUID}._msdcs.${DNSFOREST}',
         netlogon.NlDnsKdcAtSite        : '_kerberos._tcp.${SITE}._sites.dc._msdcs.${DNSDOMAIN}',
