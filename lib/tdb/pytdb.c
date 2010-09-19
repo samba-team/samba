@@ -522,6 +522,12 @@ void inittdb(void)
 	PyModule_AddObject(m, "NOMMAP", PyInt_FromLong(TDB_NOMMAP));
 	PyModule_AddObject(m, "CONVERT", PyInt_FromLong(TDB_CONVERT));
 	PyModule_AddObject(m, "BIGENDIAN", PyInt_FromLong(TDB_BIGENDIAN));
+	PyModule_AddObject(m, "NOSYNC", PyInt_FromLong(TDB_NOSYNC));
+	PyModule_AddObject(m, "SEQNUM", PyInt_FromLong(TDB_SEQNUM));
+	PyModule_AddObject(m, "VOLATILE", PyInt_FromLong(TDB_VOLATILE));
+	PyModule_AddObject(m, "ALLOW_NESTING", PyInt_FromLong(TDB_ALLOW_NESTING));
+	PyModule_AddObject(m, "DISALLOW_NESTING", PyInt_FromLong(TDB_DISALLOW_NESTING));
+
 	PyModule_AddObject(m, "__docformat__", PyString_FromString("restructuredText"));
 
 	Py_INCREF(&PyTdb);
