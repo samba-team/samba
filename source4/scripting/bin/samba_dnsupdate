@@ -49,6 +49,7 @@ sambaopts = options.SambaOptions(parser)
 parser.add_option_group(sambaopts)
 parser.add_option_group(options.VersionOptions(parser))
 parser.add_option("--verbose", action="store_true")
+parser.add_option("--all-names", action="store_true")
 parser.add_option("--all-interfaces", action="store_true")
 parser.add_option("--use-file", type="string", help="Use a file, rather than real DNS calls")
 
@@ -337,7 +338,7 @@ for d in dns_list:
 
 # now check if the entries already exist on the DNS server
 for d in dns_list:
-    if not check_dns_name(d):
+    if opts.all_names or not check_dns_name(d):
         update_list.append(d)
 
 if len(update_list) == 0:
