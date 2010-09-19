@@ -1347,28 +1347,6 @@ failed:
 	return false;
 }
 
-/* Obtain the short name of the flexible single master operator
- * (FSMO), such as the PDC Emulator */
-const char *samdb_result_fsmo_name(struct ldb_context *ldb, TALLOC_CTX *mem_ctx, const struct ldb_message *msg, 
-			     const char *attr)
-{
-	/* Format is cn=NTDS Settings,cn=<NETBIOS name of FSMO>,.... */
-	struct ldb_dn *fsmo_dn = ldb_msg_find_attr_as_dn(ldb, mem_ctx, msg, attr);
-	const struct ldb_val *val = ldb_dn_get_component_val(fsmo_dn, 1);
-	const char *name = ldb_dn_get_component_name(fsmo_dn, 1);
-
-	if (!name || (ldb_attr_cmp(name, "cn") != 0)) {
-		/* Ensure this matches the format.  This gives us a
-		 * bit more confidence that a 'cn' value will be a
-		 * ascii string */
-		return NULL;
-	}
-	if (val) {
-		return (char *)val->data;
-	}
-	return NULL;
-}
-
 /*
   work out the ntds settings dn for the current open ldb
 */

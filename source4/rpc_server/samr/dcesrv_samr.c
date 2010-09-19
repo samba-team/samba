@@ -483,14 +483,9 @@ static NTSTATUS dcesrv_samr_info_DomGeneralInformation(struct samr_domain_state 
 						       struct ldb_message **dom_msgs,
 						       struct samr_DomGeneralInformation *info)
 {
-	/* This pulls the NetBIOS name from the 
-	   cn=NTDS Settings,cn=<NETBIOS name of PDC>,....
-	   string */
-	info->primary.string = samdb_result_fsmo_name(state->sam_ctx, mem_ctx, dom_msgs[0], "fSMORoleOwner");
-
-	if (!info->primary.string) {
-		info->primary.string = lpcfg_netbios_name(state->lp_ctx);
-	}
+	/* FIXME: this has a completely different meaning
+	 * MS-SAMR 2.2.4.1 - ReplicaSourceNodeName */
+	info->primary.string = talloc_strdup(mem_ctx, "");
 
 	info->force_logoff_time = ldb_msg_find_attr_as_uint64(dom_msgs[0], "forceLogoff", 
 							    0x8000000000000000LL);
@@ -584,15 +579,9 @@ static NTSTATUS dcesrv_samr_info_DomInfo6(struct samr_domain_state *state,
 				   struct ldb_message **dom_msgs,
 				   struct samr_DomInfo6 *info)
 {
-	/* This pulls the NetBIOS name from the 
-	   cn=NTDS Settings,cn=<NETBIOS name of PDC>,....
-	   string */
-	info->primary.string = samdb_result_fsmo_name(state->sam_ctx, mem_ctx, 
-						      dom_msgs[0], "fSMORoleOwner");
-
-	if (!info->primary.string) {
-		info->primary.string = lpcfg_netbios_name(state->lp_ctx);
-	}
+	/* FIXME: this has a completely different meaning
+	 * MS-SAMR 2.2.4.1 - ReplicaSourceNodeName */
+	info->primary.string = talloc_strdup(mem_ctx, "");
 
 	return NT_STATUS_OK;
 }
@@ -753,7 +742,6 @@ static NTSTATUS dcesrv_samr_QueryDomainInfo(struct dcesrv_call_state *dce_call, 
 		static const char * const attrs2[] = {"forceLogoff",
 						      "oEMInformation", 
 						      "modifiedCount", 
-						      "fSMORoleOwner",
 						      NULL};
 		attrs = attrs2;
 		break;
@@ -779,8 +767,7 @@ static NTSTATUS dcesrv_samr_QueryDomainInfo(struct dcesrv_call_state *dce_call, 
 	}
 	case 6:
 	{
-		static const char * const attrs2[] = {"fSMORoleOwner", 
-						      NULL};
+		static const char * const attrs2[] = { NULL };
 		attrs = attrs2;
 		break;
 	}
