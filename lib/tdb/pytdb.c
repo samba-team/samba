@@ -409,7 +409,9 @@ static PyGetSetDef tdb_object_getsetters[] = {
 
 static PyObject *tdb_object_repr(PyTdbObject *self)
 {
-	return PyString_FromFormat("Tdb('%s')", tdb_name(self->ctx));
+	return PyString_FromFormat("Tdb('%s')",
+		(tdb_get_flags(self->ctx) & TDB_INTERNAL) ? "<internal>"
+							  : tdb_name(self->ctx));
 }
 
 static void tdb_object_dealloc(PyTdbObject *self)
