@@ -64,6 +64,9 @@ class SamDB(samba.Ldb):
         super(SamDB, self).connect(url=url, flags=flags,
                 options=options)
 
+    def am_rodc(self):
+        return dsdb._am_rodc(self)
+
     def domain_dn(self):
         # find the DNs for the domain
         res = self.search(base="",

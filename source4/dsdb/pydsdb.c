@@ -534,6 +534,30 @@ static PyObject *py_dsdb_get_partitions_dn(PyObject *self, PyObject *args)
 }
 
 
+/*
+  call into samdb_rodc()
+ */
+static PyObject *py_dsdb_am_rodc(PyObject *self, PyObject *args)
+{
+	PyObject *py_ldb;
+	struct ldb_context *ldb;
+	int ret;
+	bool am_rodc;
+
+	if (!PyArg_ParseTuple(args, "O", &py_ldb))
+		return NULL;
+
+	PyErr_LDB_OR_RAISE(py_ldb, ldb);
+
+	ret = samdb_rodc(ldb, &am_rodc);
+	if (samdb_rodc(ldb, &am_rodc) != LDB_SUCCESS) {
+		PyErr_SetString(PyExc_RuntimeError, ldb_errstring(ldb));
+		return NULL;
+	}
+
+	return PyBool_FromLong(am_rodc);
+}
+
 
 static PyMethodDef py_dsdb_methods[] = {
 	{ "_samdb_server_site_name", (PyCFunction)py_samdb_server_site_name,
@@ -572,6 +596,9 @@ static PyMethodDef py_dsdb_methods[] = {
 		"get uSNHighest and uSNUrgent from the partition @REPLCHANGED"},
 	{ "_dsdb_set_am_rodc",
 		(PyCFunction)py_dsdb_set_am_rodc, METH_VARARGS,
+		NULL },
+	{ "_am_rodc",
+		(PyCFunction)py_dsdb_am_rodc, METH_VARARGS,
 		NULL },
 	{ "_dsdb_set_schema_from_ldif", (PyCFunction)py_dsdb_set_schema_from_ldif, METH_VARARGS,
 		NULL },
