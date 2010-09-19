@@ -85,7 +85,7 @@ static int extended_base_callback(struct ldb_request *req, struct ldb_reply *are
 	struct ldb_request *down_req;
 	struct ldb_message_element *el;
 	int ret;
-	size_t i;
+	unsigned int i;
 	size_t wkn_len = 0;
 	char *valstr = NULL;
 	const char *found = NULL;
