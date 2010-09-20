@@ -26,6 +26,9 @@
 #include "../librpc/gen_ndr/cli_winreg.h"
 #include "registry/reg_objects.h"
 #include "../librpc/gen_ndr/ndr_security.h"
+#include "registry/reg_format.h"
+#include <assert.h>
+
 
 /*******************************************************************
  connect to a registry hive root (open a registry policy)
@@ -360,6 +363,120 @@ static NTSTATUS registry_enumvalues(TALLOC_CTX *ctx,
 
 		values[i]->type	= type;
 		values[i]->data = data_blob_talloc(values[i], data, data_size);
+	}
+
+	*pnum_values = num_values;
+
+	if (pvalnames) {
+		*pvalnames = talloc_move(ctx, &names);
+	}
+	if (pvalues) {
+		*pvalues = talloc_move(ctx, &values);
+	}
+
+	status = NT_STATUS_OK;
+
+ error:
+	TALLOC_FREE(mem_ctx);
+	return status;
+}
+
+static NTSTATUS registry_enumvalues2(TALLOC_CTX *ctx,
+				     struct rpc_pipe_client *pipe_hnd,
+				     struct policy_handle *key_hnd,
+				     uint32 *pnum_values, char ***pvalnames,
+				     struct regval_blob ***pvalues)
+{
+	TALLOC_CTX *mem_ctx;
+	NTSTATUS status;
+	uint32 num_subkeys, max_subkeylen, max_classlen;
+	uint32 num_values, max_valnamelen, max_valbufsize;
+	uint32 i;
+	NTTIME last_changed_time;
+	uint32 secdescsize;
+	struct winreg_String classname;
+	struct regval_blob **values;
+	char **names;
+
+	if (!(mem_ctx = talloc_new(ctx))) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	ZERO_STRUCT(classname);
+	status = rpccli_winreg_QueryInfoKey(
+		pipe_hnd, mem_ctx, key_hnd, &classname, &num_subkeys,
+		&max_subkeylen, &max_classlen, &num_values, &max_valnamelen,
+		&max_valbufsize, &secdescsize, &last_changed_time, NULL );
+
+	if (!NT_STATUS_IS_OK(status)) {
+		goto error;
+	}
+
+	if (num_values == 0) {
+		*pnum_values = 0;
+		TALLOC_FREE(mem_ctx);
+		return NT_STATUS_OK;
+	}
+
+	if ((!(names = TALLOC_ARRAY(mem_ctx, char *, num_values))) ||
+	    (!(values = TALLOC_ARRAY(mem_ctx, struct regval_blob *,
+				     num_values)))) {
+		status = NT_STATUS_NO_MEMORY;
+		goto error;
+	}
+
+	for (i=0; i<num_values; i++) {
+		enum winreg_Type type = REG_NONE;
+		uint8 *data = NULL;
+		uint32 data_size;
+		uint32 value_length;
+
+		char n;
+		struct winreg_ValNameBuf name_buf;
+		WERROR err;
+
+		n = '\0';
+		name_buf.name = &n;
+		name_buf.size = max_valnamelen + 2;
+
+		data_size = max_valbufsize;
+		data = (uint8 *)TALLOC(mem_ctx, data_size);
+		value_length = 0;
+
+		status = rpccli_winreg_EnumValue(pipe_hnd, mem_ctx, key_hnd,
+						 i, &name_buf, &type,
+						 data, &data_size,
+						 &value_length, &err);
+
+		if ( W_ERROR_EQUAL(err, WERR_NO_MORE_ITEMS) ) {
+			status = NT_STATUS_OK;
+			break;
+		}
+
+		if (!(NT_STATUS_IS_OK(status))) {
+			goto error;
+		}
+
+		if (name_buf.name == NULL) {
+			status = NT_STATUS_INVALID_PARAMETER;
+			goto error;
+		}
+
+		if (!(names[i] = talloc_strdup(names, name_buf.name))) {
+			status = NT_STATUS_NO_MEMORY;
+			goto error;
+		}
+
+		assert(value_length<=data_size); //???
+
+		values[i] = regval_compose(values,
+					   name_buf.name,
+					   type,
+					   data, value_length);
+		if (!values[i]) {
+			status = NT_STATUS_NO_MEMORY;
+			goto error;
+		}
 	}
 
 	*pnum_values = num_values;
@@ -1274,7 +1391,150 @@ static int rpc_registry_getsd(struct net_context *c, int argc, const char **argv
 }
 
 /********************************************************************
-********************************************************************/
+ ********************************************************************/
+/**
+ * @defgroup net_rpc_registry net rpc registry
+ */
+
+/**
+ * @defgroup net_rpc_registry_export Export
+ * @ingroup net_rpc_registry
+ * @{
+ */
+
+static NTSTATUS registry_export(struct rpc_pipe_client* pipe_hnd,
+				TALLOC_CTX* ctx,
+				struct policy_handle* key_hnd,
+				struct reg_format* f,
+				const char* parentfullname,
+				const char* name)
+{
+	NTSTATUS status;
+	uint32 num_subkeys = 0;
+	uint32 num_values = 0;
+	char **names = NULL, **classes = NULL;
+	NTTIME **modtimes = NULL;
+	struct regval_blob **values = NULL;
+	uint32 i;
+
+	TALLOC_CTX* mem_ctx = talloc_new(ctx);
+
+
+	const char* fullname = name
+		? talloc_asprintf(mem_ctx, "%s\\%s", parentfullname, name)
+		: parentfullname;
+	reg_format_key(f, &fullname, 1, false);
+
+	status = registry_enumvalues2(mem_ctx, pipe_hnd, key_hnd, &num_values,
+				      &names, &values);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_fprintf(stderr, _("enumerating values failed: %s\n"),
+			  nt_errstr(status));
+		goto done;
+	}
+
+	for (i=0; i<num_values; i++) {
+		reg_format_regval_blob(f, names[i], values[i]);
+	}
+
+
+	status = registry_enumkeys(mem_ctx, pipe_hnd, key_hnd, &num_subkeys,
+				   &names, &classes, &modtimes);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_fprintf(stderr, _("enumerating keys failed: %s\n"),
+			  nt_errstr(status));
+		goto done;
+	}
+
+	for (i=0; i<num_subkeys; i++) {
+		struct policy_handle subkey_hnd;
+		struct winreg_String key;
+		ZERO_STRUCT(key);
+		/* key.name = talloc_strdup(mem_ctx, names[i]); ??? */
+		key.name = names[i];
+
+		status = rpccli_winreg_OpenKey(pipe_hnd, mem_ctx, key_hnd, key,
+					       0, REG_KEY_READ,
+					       &subkey_hnd, NULL);
+		if (NT_STATUS_IS_OK(status)) {
+			status = registry_export(pipe_hnd, mem_ctx, &subkey_hnd,
+						 f, fullname, names[i]);
+			if (!(NT_STATUS_IS_OK(status)))
+				d_fprintf(stderr,
+					  _("export key failed: %s %s\n"),
+					  names[i], nt_errstr(status));
+
+			rpccli_winreg_CloseKey(pipe_hnd, mem_ctx,
+					       &subkey_hnd, NULL);
+		} else {
+			d_fprintf(stderr,
+				  _("rpccli_winreg_OpenKey failed: %s %s\n"),
+				  names[i], nt_errstr(status));
+		}
+	}
+done:
+	talloc_free(mem_ctx);
+	return status;
+}
+
+static NTSTATUS rpc_registry_export_internal(struct net_context *c,
+					     const struct dom_sid *domain_sid,
+					     const char *domain_name,
+					     struct cli_state *cli,
+					     struct rpc_pipe_client *pipe_hnd,
+					     TALLOC_CTX *mem_ctx,
+					     int argc,
+					     const char **argv )
+{
+	struct policy_handle pol_hive, pol_key;
+	NTSTATUS status;
+	struct reg_format* f;
+
+	if (argc < 2 || argc > 3 || c->display_usage) {
+		d_printf("%s\n%s",
+			 _("Usage:"),
+			 _("net rpc registry export <path> <file> [opt]\n"));
+		d_printf("%s  net rpc registry export "
+			 "'HKLM\\Software\\Samba' samba.reg\n", _("Example:"));
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	status = registry_openkey(mem_ctx, pipe_hnd, argv[0], REG_KEY_READ,
+				  &pol_hive, &pol_key);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_fprintf(stderr, _("registry_openkey failed: %s\n"),
+			  nt_errstr(status));
+		return status;
+	}
+
+	f = reg_format_file(mem_ctx, argv[1], (argc > 2) ? argv[2] : NULL);
+	if (f == NULL) {
+		d_fprintf(stderr, _("open file failed: %s\n"), strerror(errno));
+		return map_nt_error_from_unix(errno);
+	}
+
+	status = registry_export(pipe_hnd, mem_ctx, &pol_key,
+				 f, argv[0], NULL );
+	if (!NT_STATUS_IS_OK(status))
+		return status;
+
+	rpccli_winreg_CloseKey(pipe_hnd, mem_ctx, &pol_key, NULL);
+	rpccli_winreg_CloseKey(pipe_hnd, mem_ctx, &pol_hive, NULL);
+
+	return status;
+}
+/********************************************************************
+ ********************************************************************/
+
+static int rpc_registry_export(struct net_context *c, int argc,
+			       const char **argv )
+{
+	return run_rpc_command(c, NULL, &ndr_table_winreg.syntax_id, 0,
+			       rpc_registry_export_internal, argc, argv );
+}
+
+/**@}*/
+
 
 int net_rpc_registry(struct net_context *c, int argc, const char **argv)
 {
@@ -1367,8 +1627,14 @@ int net_rpc_registry(struct net_context *c, int argc, const char **argv)
 			N_("net rpc registry getsd\n"
 			   "    Get security descriptior")
 		},
+		{
+			"export",
+			rpc_registry_export,
+			NET_TRANSPORT_RPC,
+			N_("net registry export\n"
+			   "    Export .reg file")
+		},
 		{NULL, NULL, 0, NULL, NULL}
 	};
-
 	return net_run_function(c, argc, argv, "net rpc registry", func);
 }
