@@ -623,39 +623,36 @@ done:
 const char *svcctl_lookup_dispname(TALLOC_CTX *ctx, const char *name, NT_USER_TOKEN *token )
 {
 	const char *display_name = NULL;
-	struct registry_key_handle *key = NULL;
-	struct regval_ctr *values = NULL;
-	struct regval_blob *val = NULL;
+	struct registry_key *key = NULL;
+	struct registry_value *value = NULL;
 	char *path = NULL;
 	WERROR wresult;
-	DATA_BLOB blob;
 	TALLOC_CTX *mem_ctx = talloc_stackframe();
 
 	path = talloc_asprintf(mem_ctx, "%s\\%s", KEY_SERVICES, name);
 	if (path == NULL) {
 		goto done;
 	}
-	wresult = regkey_open_internal(mem_ctx, &key, path, token,
-					REG_KEY_READ );
-	if ( !W_ERROR_IS_OK(wresult) ) {
-		DEBUG(0,("svcctl_lookup_dispname: key lookup failed! [%s] (%s)\n", 
-			path, win_errstr(wresult)));
-		goto fail;
-	}
 
-	wresult = regval_ctr_init(key, &values);
+	wresult = reg_open_path(mem_ctx, path, REG_KEY_READ, token, &key);
 	if (!W_ERROR_IS_OK(wresult)) {
-		DEBUG(0,("svcctl_lookup_dispname: talloc() failed!\n"));
+		DEBUG(0, ("svcctl_lookup_dispname: key lookup failed! [%s] (%s)\n",
+			  path, win_errstr(wresult)));
 		goto fail;
 	}
 
-	fetch_reg_values( key, values );
-
-	if ( !(val = regval_ctr_getvalue( values, "DisplayName" )) )
+	wresult = reg_queryvalue(mem_ctx, key, "DisplayName", &value);
+	if (!W_ERROR_IS_OK(wresult)) {
+		DEBUG(0, ("svcctl_lookup_dispname: error getting value "
+			  "'DisplayName': %s\n", win_errstr(wresult)));
 		goto fail;
+	}
 
-	blob = data_blob_const(regval_data_p(val), regval_size(val));
-	pull_reg_sz(ctx, &blob, &display_name);
+	if (value->type != REG_SZ) {
+		goto fail;
+	}
+
+	pull_reg_sz(ctx, &value->data, &display_name);
 
 	goto done;
 
