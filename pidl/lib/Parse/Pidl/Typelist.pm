@@ -291,6 +291,7 @@ sub mapType($$)
 	return "struct $n" if ($t->{TYPE} eq "STRUCT" or $t->{TYPE} eq "INTERFACE");
 	return "union $n" if ($t->{TYPE} eq "UNION");
 	return mapScalarType(bitmap_type_fn($t)) if ($t->{TYPE} eq "BITMAP");
+	return "struct $n" if ($t->{TYPE} eq "PIPE");
 	die("Unknown type $t->{TYPE}");
 }
 
@@ -329,11 +330,12 @@ sub LoadIdl($;$)
 			}) if (has_property($x, "object"));
 
 		foreach my $y (@{$x->{DATA}}) {
-			if ($y->{TYPE} eq "TYPEDEF" 
-		 		or $y->{TYPE} eq "UNION"
-		 		or $y->{TYPE} eq "STRUCT"
-		        or $y->{TYPE} eq "ENUM"
-		        or $y->{TYPE} eq "BITMAP") {
+			if ($y->{TYPE} eq "TYPEDEF"
+			    or $y->{TYPE} eq "UNION"
+			    or $y->{TYPE} eq "STRUCT"
+			    or $y->{TYPE} eq "ENUM"
+			    or $y->{TYPE} eq "BITMAP"
+			    or $y->{TYPE} eq "PIPE") {
 				$y->{BASEFILE} = $basename;
 				addType($y);
 			}
