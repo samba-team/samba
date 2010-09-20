@@ -616,6 +616,8 @@ REG_INIT_FULL_OBJ = registry/reg_init_full.o
 REGFIO_OBJ = registry/regfio.o \
 	     $(REG_PARSE_PRS_OBJ)
 
+REG_API_REGF_OBJ = registry/reg_api_regf.o
+
 REGOBJS_OBJ = registry/reg_objects.o
 
 REG_BACKENDS_BASE_OBJ = registry/reg_backend_db.o
@@ -634,7 +636,6 @@ REG_BACKENDS_EXTRA_OBJ = registry/reg_backend_printing.o \
 REG_BASE_OBJ = registry/reg_api.o \
 	       registry/reg_dispatcher.o \
 	       registry/reg_cachehook.o \
-	       $(REGFIO_OBJ) \
 	       $(REGOBJS_OBJ) \
 	       registry/reg_util_internal.o \
 	       lib/util_nttoken.o \
@@ -750,7 +751,8 @@ PROFILES_OBJ = utils/profiles.o \
 	       $(LIBSMB_ERR_OBJ) \
 	       $(PARAM_OBJ) \
                $(LIB_OBJ) $(LIB_DUMMY_OBJ) \
-               $(POPT_LIB_OBJ)
+               $(POPT_LIB_OBJ) \
+	       $(REGFIO_OBJ)
 
 OPLOCK_OBJ = smbd/oplock.o smbd/oplock_irix.o smbd/oplock_linux.o \
 	     smbd/oplock_onefs.o
@@ -897,6 +899,8 @@ SMBD_OBJ_BASE = $(PARAM_WITHOUT_REG_OBJ) $(SMBD_OBJ_SRV) $(LIBSMB_OBJ) \
 		$(SMBLDAP_OBJ) $(LIBNET_OBJ) \
 		$(LIBSMBCONF_OBJ) \
 		$(PRIVILEGES_BASIC_OBJ) \
+		$(REGFIO_OBJ) \
+		$(REG_API_REGF_OBJ) \
 		$(LIBNDR_XATTR_OBJ)
 
 PRINTING_OBJ = printing/pcap.o printing/print_svid.o printing/print_aix.o \
@@ -1156,6 +1160,7 @@ NET_OBJ = $(NET_OBJ1) \
 	  $(REG_SMBCONF_OBJ) \
 	  $(LIBNET_OBJ) $(LIBNET_DSSYNC_OBJ) $(LIBNET_SAMSYNC_OBJ) \
 	  $(LIBSMBCONF_OBJ) \
+	  $(REGFIO_OBJ) \
 	  $(PRIVILEGES_BASIC_OBJ) \
 	  $(LIB_EVENTLOG_OBJ) localedir.o
 
