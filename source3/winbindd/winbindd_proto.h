@@ -81,7 +81,6 @@ bool parse_sidlist(TALLOC_CTX *mem_ctx, const char *sidstr,
 
 /* The following definitions come from winbindd/winbindd_cache.c  */
 
-void winbindd_check_cache_size(time_t t);
 struct cache_entry *centry_start(struct winbindd_domain *domain, NTSTATUS status);
 NTSTATUS wcache_cached_creds_exist(struct winbindd_domain *domain, const struct dom_sid *sid);
 NTSTATUS wcache_get_creds(struct winbindd_domain *domain, 

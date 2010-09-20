@@ -105,35 +105,6 @@ void (*smb_panic_fn)(const char *const why) = smb_panic;
 
 static struct winbind_cache *wcache;
 
-void winbindd_check_cache_size(time_t t)
-{
-	static time_t last_check_time;
-	struct stat st;
-
-	if (last_check_time == (time_t)0)
-		last_check_time = t;
-
-	if (t - last_check_time < 60 && t - last_check_time > 0)
-		return;
-
-	if (wcache == NULL || wcache->tdb == NULL) {
-		DEBUG(0, ("Unable to check size of tdb cache - cache not open !\n"));
-		return;
-	}
-
-	if (fstat(tdb_fd(wcache->tdb), &st) == -1) {
-		DEBUG(0, ("Unable to check size of tdb cache %s!\n", strerror(errno) ));
-		return;
-	}
-
-	if (st.st_size > WINBINDD_MAX_CACHE_SIZE) {
-		DEBUG(10,("flushing cache due to size (%lu) > (%lu)\n",
-			(unsigned long)st.st_size,
-			(unsigned long)WINBINDD_MAX_CACHE_SIZE));
-		wcache_flush_cache();
-	}
-}
-
 /* get the winbind_cache structure */
 static struct winbind_cache *get_cache(struct winbindd_domain *domain)
 {
