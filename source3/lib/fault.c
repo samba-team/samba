@@ -319,14 +319,6 @@ void dump_core_setup(const char *progname)
 #endif
 #endif
 
-#if defined(HAVE_PRCTL) && defined(PR_SET_DUMPABLE)
-	/* On Linux we lose the ability to dump core when we change our user
-	 * ID. We know how to dump core safely, so let's make sure we have our
-	 * dumpable flag set.
-	 */
-	prctl(PR_SET_DUMPABLE, 1);
-#endif
-
 	/* FIXME: if we have a core-plus-pid facility, configurably set
 	 * this up here.
 	 */
@@ -381,6 +373,14 @@ void dump_core_setup(const char *progname)
 
 	umask(~(0700));
 	dbgflush();
+
+#if defined(HAVE_PRCTL) && defined(PR_SET_DUMPABLE)
+	/* On Linux we lose the ability to dump core when we change our user
+	 * ID. We know how to dump core safely, so let's make sure we have our
+	 * dumpable flag set.
+	 */
+	prctl(PR_SET_DUMPABLE, 1);
+#endif
 
 	/* Ensure we don't have a signal handler for abort. */
 #ifdef SIGABRT
