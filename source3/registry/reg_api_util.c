@@ -81,3 +81,101 @@ WERROR reg_open_path(TALLOC_CTX *mem_ctx, const char *orig_path,
 	return WERR_OK;
 }
 
+#if 0
+/* these two functions are unused. */
+
+/**
+ * Utility function to create a registry key without opening the hive
+ * before. Assumes the hive already exists.
+ */
+
+WERROR reg_create_path(TALLOC_CTX *mem_ctx, const char *orig_path,
+		       uint32 desired_access,
+		       const struct security_token *token,
+		       enum winreg_CreateAction *paction,
+		       struct registry_key **pkey)
+{
+	struct registry_key *hive;
+	char *path, *p;
+	WERROR err;
+
+	if (!(path = SMB_STRDUP(orig_path))) {
+		return WERR_NOMEM;
+	}
+
+	p = strchr(path, '\\');
+
+	if ((p == NULL) || (p[1] == '\0')) {
+		/*
+		 * No key behind the hive, just return the hive
+		 */
+
+		err = reg_openhive(mem_ctx, path, desired_access, token,
+				   &hive);
+		if (!W_ERROR_IS_OK(err)) {
+			SAFE_FREE(path);
+			return err;
+		}
+		SAFE_FREE(path);
+		*pkey = hive;
+		*paction = REG_OPENED_EXISTING_KEY;
+		return WERR_OK;
+	}
+
+	*p = '\0';
+
+	err = reg_openhive(mem_ctx, path,
+			   (strchr(p+1, '\\') != NULL) ?
+			   KEY_ENUMERATE_SUB_KEYS : KEY_CREATE_SUB_KEY,
+			   token, &hive);
+	if (!W_ERROR_IS_OK(err)) {
+		SAFE_FREE(path);
+		return err;
+	}
+
+	err = reg_createkey(mem_ctx, hive, p+1, desired_access, pkey, paction);
+	SAFE_FREE(path);
+	TALLOC_FREE(hive);
+	return err;
+}
+
+/*
+ * Utility function to create a registry key without opening the hive
+ * before. Will not delete a hive.
+ */
+
+WERROR reg_delete_path(const struct security_token *token,
+		       const char *orig_path)
+{
+	struct registry_key *hive;
+	char *path, *p;
+	WERROR err;
+
+	if (!(path = SMB_STRDUP(orig_path))) {
+		return WERR_NOMEM;
+	}
+
+	p = strchr(path, '\\');
+
+	if ((p == NULL) || (p[1] == '\0')) {
+		SAFE_FREE(path);
+		return WERR_INVALID_PARAM;
+	}
+
+	*p = '\0';
+
+	err = reg_openhive(NULL, path,
+			   (strchr(p+1, '\\') != NULL) ?
+			   KEY_ENUMERATE_SUB_KEYS : KEY_CREATE_SUB_KEY,
+			   token, &hive);
+	if (!W_ERROR_IS_OK(err)) {
+		SAFE_FREE(path);
+		return err;
+	}
+
+	err = reg_deletekey(hive, p+1);
+	SAFE_FREE(path);
+	TALLOC_FREE(hive);
+	return err;
+}
+#endif /* #if 0 */
