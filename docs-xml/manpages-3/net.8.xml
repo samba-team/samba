@@ -1638,6 +1638,8 @@ Manipulate Samba's registry.
 </member>
 <member>net registry setsd_sdd1  - Set security descriptor from sddl format
 string.</member>
+<member>net registry import      - Import a registration entries (.reg) file.
+</member>
 </simplelist>
 </para>
 
@@ -1735,6 +1737,14 @@ string.</member>
 
   <para>Set the security descriptor of the given <emphasis>key</emphasis> from a
   Security Descriptor Definition Language (SDDL) string <emphasis>sd</emphasis>.
+  </para>
+</refsect3>
+
+<refsect3>
+  <title>REGISTRY IMPORT <replaceable>file</replaceable><!--
+  --><replaceable>[opt]</replaceable></title>
+
+  <para>Import a registration entries (.reg) <emphasis>file</emphasis>.
   </para>
 </refsect3>
 
