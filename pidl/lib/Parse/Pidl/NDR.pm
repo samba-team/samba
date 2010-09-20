@@ -660,14 +660,10 @@ sub ParseFunction($$$)
 		$rettype = expandAlias($d->{RETURN_TYPE});
 	}
 	
-	my $async = 0;
-	if (has_property($d, "async")) { $async = 1; }
-	
 	return {
 			NAME => $d->{NAME},
 			TYPE => "FUNCTION",
 			OPNUM => $thisopnum,
-			ASYNC => $async,
 			RETURN_TYPE => $rettype,
 			PROPERTIES => $d->{PROPERTIES},
 			ELEMENTS => \@elements,
@@ -901,7 +897,6 @@ my %property_list = (
 	"noopnum"		=> ["FUNCTION"],
 	"in"			=> ["ELEMENT"],
 	"out"			=> ["ELEMENT"],
-	"async"			=> ["FUNCTION"],
 
 	# pointer
 	"ref"			=> ["ELEMENT"],

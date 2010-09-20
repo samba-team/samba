@@ -2336,7 +2336,6 @@ sub FunctionCallEntry($$)
 	$self->pidl("\t\t(ndr_push_flags_fn_t) ndr_push_$d->{NAME},");
 	$self->pidl("\t\t(ndr_pull_flags_fn_t) ndr_pull_$d->{NAME},");
 	$self->pidl("\t\t(ndr_print_function_t) ndr_print_$d->{NAME},");
-	$self->pidl("\t\t".($d->{ASYNC}?"true":"false").",");
 	$self->pidl("\t},");
 	return 1;
 }
@@ -2357,7 +2356,7 @@ sub FunctionTable($$)
 	foreach my $d (@{$interface->{INHERITED_FUNCTIONS}},@{$interface->{FUNCTIONS}}) {
 		$count += $self->FunctionCallEntry($d);
 	}
-	$self->pidl("\t{ NULL, 0, NULL, NULL, NULL, false }");
+	$self->pidl("\t{ NULL, 0, NULL, NULL, NULL }");
 	$self->pidl("};");
 	$self->pidl("");
 
