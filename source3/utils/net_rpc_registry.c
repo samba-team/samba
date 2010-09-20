@@ -27,6 +27,7 @@
 #include "registry/reg_objects.h"
 #include "../librpc/gen_ndr/ndr_security.h"
 #include "registry/reg_format.h"
+#include "registry/reg_import.h"
 #include <assert.h>
 
 
@@ -1534,6 +1535,293 @@ static int rpc_registry_export(struct net_context *c, int argc,
 
 /**@}*/
 
+/********************************************************************
+ ********************************************************************/
+
+/**
+ * @defgroup net_rpc_registry_import Import
+ * @ingroup net_rpc_registry
+ * @{
+ */
+
+struct import_ctx {
+	struct rpc_pipe_client *pipe_hnd;
+	TALLOC_CTX *mem_ctx;
+};
+
+static WERROR import_create_key(struct import_ctx* ctx,
+				struct policy_handle* parent, const char* name,
+				void** pkey, bool* existing)
+{
+	WERROR werr;
+	NTSTATUS status;
+	void* mem_ctx = talloc_new(ctx->mem_ctx);
+
+	struct policy_handle* key = NULL;
+	struct policy_handle  hive;
+	struct winreg_String  keyclass, keyname;
+	enum winreg_CreateAction action = REG_ACTION_NONE;
+
+	ZERO_STRUCT(keyname);
+	keyname.name = name;
+
+	if (parent == NULL) {
+		uint32 hive_idx = 0;
+		if (!reg_hive_key(mem_ctx, name, &hive_idx, &keyname.name)) {
+			werr = WERR_FOOBAR;
+			goto done;
+		}
+
+		status = rpccli_winreg_Connect(ctx->pipe_hnd, mem_ctx,
+					       hive_idx, SEC_FLAG_MAXIMUM_ALLOWED,
+					       &hive, &werr);
+		if (!NT_STATUS_IS_OK(status)) {
+			d_fprintf(stderr, _("rpccli_winreg_Connect returned %s\n"),
+				  nt_errstr(status));
+			goto done;
+		}
+
+		parent = &hive;
+	}
+
+	key = talloc_zero(mem_ctx, struct policy_handle);
+	if (key == NULL) {
+		werr = WERR_NOMEM;
+		goto done;
+	}
+
+	ZERO_STRUCT(keyclass);
+	keyclass.name = "";
+
+	status = rpccli_winreg_CreateKey(ctx->pipe_hnd, mem_ctx,
+					 parent, keyname,
+					 keyclass, 0, REG_KEY_READ, NULL,
+					 key, &action, &werr);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_fprintf(stderr, _("rpccli_winreg_CreateKey returned %s\n"),
+			  nt_errstr(status));
+		goto done;
+	}
+
+	switch (action) {
+	case REG_CREATED_NEW_KEY:
+		d_printf(_("createkey created %s\n"), name);
+		if (existing != NULL)
+			*existing = false;
+		break;
+
+	case REG_OPENED_EXISTING_KEY:
+		d_printf(_("createkey opened existing %s\n"), name);
+		if (existing != NULL)
+			*existing = true;
+		break;
+
+	case REG_ACTION_NONE:
+		d_printf(_("createkey did nothing -- huh?\n"));
+		werr = WERR_CREATE_FAILED;
+		break;
+	default:
+		assert(false);
+	}
+
+done:
+	if ( parent == &hive ) {
+		rpccli_winreg_CloseKey(ctx->pipe_hnd, mem_ctx,
+				       parent, NULL);
+	}
+
+	if (pkey!=NULL) {
+		*pkey = talloc_steal(ctx->mem_ctx, key);
+	}
+
+	talloc_free(mem_ctx);
+	return werr;
+}
+
+static WERROR import_delete_key(struct import_ctx* ctx,
+				struct policy_handle* parent, const char* name)
+{
+	WERROR werr;
+	NTSTATUS status;
+	void* mem_ctx = talloc_new(ctx->mem_ctx);
+	struct winreg_String  keyname;
+	struct policy_handle  hive;
+
+	keyname.name = name;
+
+	if (parent == NULL) {
+		uint32 hive_idx;
+		if (!reg_hive_key(mem_ctx, name, &hive_idx, &keyname.name)) {
+			werr = WERR_FOOBAR;
+			goto done;
+		}
+
+		status = rpccli_winreg_Connect(ctx->pipe_hnd, mem_ctx, hive_idx,
+					       SEC_FLAG_MAXIMUM_ALLOWED, &hive,
+					       &werr);
+		if (!NT_STATUS_IS_OK(status)) {
+			d_fprintf(stderr, _("rpccli_winreg_Connect returned %s\n"),
+				  nt_errstr(status));
+			goto done;
+		}
+
+		parent = &hive;
+	}
+
+	status = rpccli_winreg_DeleteKey(ctx->pipe_hnd, mem_ctx, parent,
+					 keyname, &werr);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_fprintf(stderr, _("rpccli_winreg_DeleteKey returned %s\n"),
+			  nt_errstr(status));
+		goto done;
+	}
+
+done:
+	if ( parent == &hive ) {
+		rpccli_winreg_CloseKey(ctx->pipe_hnd, mem_ctx, parent, NULL);
+	}
+
+	talloc_free(mem_ctx);
+	return werr;
+}
+
+static WERROR import_close_key(struct import_ctx* ctx,
+			       struct policy_handle* key)
+{
+	WERROR werr;
+	NTSTATUS status;
+	void* mem_ctx = talloc_new(ctx->mem_ctx);
+
+	status = rpccli_winreg_CloseKey(ctx->pipe_hnd, mem_ctx,	key, &werr);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_fprintf(stderr, _("rpccli_winreg_CloseKey returned %s\n"),
+			  nt_errstr(status));
+		goto done;
+	}
+
+	werr = (talloc_free(key) == 0) ? WERR_OK : WERR_GENERAL_FAILURE;
+done:
+	talloc_free(mem_ctx);
+	return werr;
+}
+
+static WERROR import_create_val(struct import_ctx* ctx,
+				struct policy_handle* parent, const char* name,
+				uint32_t type, const uint8_t* val, uint32_t len)
+{
+	WERROR werr;
+	NTSTATUS status;
+	void* mem_ctx = talloc_new(ctx->mem_ctx);
+	struct winreg_String valuename;
+
+	if (parent == NULL) {
+		return WERR_INVALID_PARAM;
+	}
+
+	ZERO_STRUCT(valuename);
+	valuename.name = name;
+
+	status = rpccli_winreg_SetValue(ctx->pipe_hnd, mem_ctx, parent,
+					valuename, type,
+					discard_const(val), len, &werr);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_fprintf(stderr, _("registry_setvalue failed: %s\n"),
+			  nt_errstr(status));
+		goto done;
+	}
+
+done:
+	talloc_free(mem_ctx);
+	return werr;
+}
+
+static WERROR import_delete_val(struct import_ctx* ctx,
+				struct policy_handle* parent, const char* name)
+{
+	WERROR werr;
+	NTSTATUS status;
+	void* mem_ctx = talloc_new(ctx->mem_ctx);
+	struct winreg_String valuename;
+
+	if (parent == NULL) {
+		return WERR_INVALID_PARAM;
+	}
+
+	ZERO_STRUCT(valuename);
+	valuename.name = name;
+
+	status = rpccli_winreg_DeleteValue(ctx->pipe_hnd, mem_ctx,
+					   parent, valuename, &werr);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		d_fprintf(stderr, _("registry_deletevalue failed: %s\n"),
+			  nt_errstr(status));
+		goto done;
+	}
+done:
+	talloc_free(mem_ctx);
+	return werr;
+}
+
+
+
+static NTSTATUS rpc_registry_import_internal(struct net_context *c,
+					     const struct dom_sid *domain_sid,
+					     const char *domain_name,
+					     struct cli_state *cli,
+					     struct rpc_pipe_client *pipe_hnd,
+					     TALLOC_CTX *mem_ctx,
+					     int argc,
+					     const char **argv )
+{
+	struct import_ctx import_ctx;
+
+	struct reg_import_callback import_callback = {
+		.openkey     = NULL,
+		.closekey    = (reg_import_callback_closekey_t)&import_close_key,
+		.createkey   = (reg_import_callback_createkey_t)&import_create_key,
+		.deletekey   = (reg_import_callback_deletekey_t)&import_delete_key,
+		.deleteval   = (reg_import_callback_deleteval_t)&import_delete_val,
+		.setval.blob = (reg_import_callback_setval_blob_t)&import_create_val,
+		.setval_type = BLOB,
+		.data = &import_ctx
+	};
+
+	int ret;
+	if (argc < 1 || argc > 2 || c->display_usage) {
+		d_printf("%s\n%s",
+			 _("Usage:"),
+			 _("net rpc registry import <file> [options]\n"));
+		d_printf("%s  net rpc registry export "
+			 "samba.reg enc=CP1252,flags=0\n", _("Example:"));
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+	ZERO_STRUCT(import_ctx);
+	import_ctx.pipe_hnd = pipe_hnd;
+	import_ctx.mem_ctx  = mem_ctx;
+	ret = reg_parse_file(argv[0],
+			     reg_import_adapter(import_ctx.mem_ctx,
+						import_callback
+				     ),
+			     (argc > 1) ? argv[1] : NULL
+		);
+
+	return ret==0 ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
+}
+
+/********************************************************************
+ ********************************************************************/
+
+static int rpc_registry_import(struct net_context *c, int argc,
+			       const char **argv )
+{
+	return run_rpc_command(c, NULL, &ndr_table_winreg.syntax_id, 0,
+			       rpc_registry_import_internal, argc, argv );
+}
+
+/**@}*/
+/********************************************************************
+ ********************************************************************/
 
 int net_rpc_registry(struct net_context *c, int argc, const char **argv)
 {
@@ -1625,6 +1913,14 @@ int net_rpc_registry(struct net_context *c, int argc, const char **argv)
 			N_("Get security descriptor"),
 			N_("net rpc registry getsd\n"
 			   "    Get security descriptior")
+		},
+		{
+			"import",
+			rpc_registry_import,
+			NET_TRANSPORT_RPC,
+			N_("Import .reg file"),
+			N_("net rpc registry import\n"
+			   "    Import .reg file")
 		},
 		{
 			"export",
