@@ -406,14 +406,12 @@ static WERROR dcesrv_drsuapi_DsGetNT4ChangeLog(struct dcesrv_call_state *dce_cal
 	DRSUAPI_UNSUPPORTED(drsuapi_DsGetNT4ChangeLog);
 }
 
-
 /* 
   drsuapi_DsCrackNames 
 */
 static WERROR dcesrv_drsuapi_DsCrackNames(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 			    struct drsuapi_DsCrackNames *r)
 {
-	WERROR status;
 	struct drsuapi_bind_state *b_state;
 	struct dcesrv_handle *h;
 
@@ -427,37 +425,36 @@ static WERROR dcesrv_drsuapi_DsCrackNames(struct dcesrv_call_state *dce_call, TA
 
 	switch (r->in.level) {
 		case 1: {
-			struct drsuapi_DsNameCtr1 *ctr1;
-			struct drsuapi_DsNameInfo1 *names;
-			uint32_t i, count;
-
-			ctr1 = talloc(mem_ctx, struct drsuapi_DsNameCtr1);
-			W_ERROR_HAVE_NO_MEMORY(ctr1);
-
-			count = r->in.req->req1.count;
-			names = talloc_array(mem_ctx, struct drsuapi_DsNameInfo1, count);
-			W_ERROR_HAVE_NO_MEMORY(names);
-
-			for (i=0; i < count; i++) {
-				status = DsCrackNameOneName(b_state->sam_ctx, mem_ctx,
-							    r->in.req->req1.format_flags,
-							    r->in.req->req1.format_offered,
-							    r->in.req->req1.format_desired,
-							    r->in.req->req1.names[i].str,
-							    &names[i]);
-				if (!W_ERROR_IS_OK(status)) {
-					return status;
-				}
+			switch(r->in.req->req1.format_offered){
+			case DRSUAPI_DS_NAME_FORMAT_UPN_AND_ALTSECID:
+			case DRSUAPI_DS_NAME_FORMAT_NT4_ACCOUNT_NAME_SANS_DOMAIN_EX:
+			case DRSUAPI_DS_NAME_FORMAT_LIST_GLOBAL_CATALOG_SERVERS:
+			case DRSUAPI_DS_NAME_FORMAT_UPN_FOR_LOGON:
+			case DRSUAPI_DS_NAME_FORMAT_LIST_SERVERS_WITH_DCS_IN_SITE:
+			case DRSUAPI_DS_NAME_FORMAT_STRING_SID_NAME:
+			case DRSUAPI_DS_NAME_FORMAT_ALT_SECURITY_IDENTITIES_NAME:
+			case DRSUAPI_DS_NAME_FORMAT_LIST_NCS:
+			case DRSUAPI_DS_NAME_FORMAT_LIST_DOMAINS:
+			case DRSUAPI_DS_NAME_FORMAT_MAP_SCHEMA_GUID:
+			case DRSUAPI_DS_NAME_FORMAT_NT4_ACCOUNT_NAME_SANS_DOMAIN:
+			case DRSUAPI_DS_NAME_FORMAT_LIST_INFO_FOR_SERVER:
+			case DRSUAPI_DS_NAME_FORMAT_LIST_SERVERS_FOR_DOMAIN_IN_SITE:
+			case DRSUAPI_DS_NAME_FORMAT_LIST_DOMAINS_IN_SITE:
+			case DRSUAPI_DS_NAME_FORMAT_LIST_SERVERS_IN_SITE:
+			case DRSUAPI_DS_NAME_FORMAT_LIST_SITES:
+				DEBUG(0, ("DsCrackNames: Unsupported operation requested: %X",
+					  r->in.req->req1.format_offered));
+				return WERR_OK;
+			case DRSUAPI_DS_NAME_FORMAT_LIST_ROLES:
+				return dcesrv_drsuapi_ListRoles(b_state->sam_ctx, mem_ctx,
+								&r->in.req->req1, &r->out.ctr->ctr1);
+			default:/* format_offered is in the enum drsuapi_DsNameFormat*/
+				return dcesrv_drsuapi_CrackNamesByNameFormat(b_state->sam_ctx, mem_ctx,
+									     &r->in.req->req1, &r->out.ctr->ctr1);
 			}
-
-			ctr1->count = count;
-			ctr1->array = names;
-			r->out.ctr->ctr1 = ctr1;
-
 			return WERR_OK;
 		}
 	}
-	
 	return WERR_UNKNOWN_LEVEL;
 }
 

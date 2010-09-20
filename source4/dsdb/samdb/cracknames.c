@@ -1309,3 +1309,76 @@ NTSTATUS crack_auto_name_to_nt4_name(TALLOC_CTX *mem_ctx,
 
 	return crack_name_to_nt4_name(mem_ctx, ev_ctx, lp_ctx, format_offered, name, nt4_domain, nt4_account);
 }
+
+
+WERROR dcesrv_drsuapi_ListRoles(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
+				const struct drsuapi_DsNameRequest1 *req1,
+				struct drsuapi_DsNameCtr1 **ctr1)
+{
+	struct drsuapi_DsNameInfo1 *names;
+	uint32_t i;
+	uint32_t count = 5;/*number of fsmo role owners we are going to return*/
+
+	*ctr1 = talloc(mem_ctx, struct drsuapi_DsNameCtr1);
+	W_ERROR_HAVE_NO_MEMORY(*ctr1);
+	names = talloc_array(mem_ctx, struct drsuapi_DsNameInfo1, count);
+	W_ERROR_HAVE_NO_MEMORY(names);
+
+	for (i = 0; i < count; i++) {
+		WERROR werr;
+		struct ldb_dn *role_owner_dn, *fsmo_role_dn, *server_dn;
+		werr = dsdb_get_fsmo_role_info(mem_ctx, sam_ctx, i,
+					       &fsmo_role_dn, &role_owner_dn);
+		if(!W_ERROR_IS_OK(werr)) {
+			return werr;
+		}
+		server_dn = ldb_dn_copy(mem_ctx, role_owner_dn);
+		ldb_dn_remove_child_components(server_dn, 1);
+		names[i].status = DRSUAPI_DS_NAME_STATUS_OK;
+		names[i].dns_domain_name = samdb_dn_to_dnshostname(sam_ctx, mem_ctx,
+								   server_dn);
+		if(!names[i].dns_domain_name) {
+			DEBUG(4, ("list_roles: Failed to find dNSHostName for server %s",
+				  ldb_dn_get_linearized(server_dn)));
+		}
+		names[i].result_name = talloc_strdup(mem_ctx, ldb_dn_get_linearized(role_owner_dn));
+	}
+
+	(*ctr1)->count = count;
+	(*ctr1)->array = names;
+
+	return WERR_OK;
+}
+
+WERROR dcesrv_drsuapi_CrackNamesByNameFormat(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
+					     const struct drsuapi_DsNameRequest1 *req1,
+					     struct drsuapi_DsNameCtr1 **ctr1)
+{
+	struct drsuapi_DsNameInfo1 *names;
+	uint32_t i, count;
+	WERROR status;
+
+	*ctr1 = talloc(mem_ctx, struct drsuapi_DsNameCtr1);
+	W_ERROR_HAVE_NO_MEMORY(*ctr1);
+
+	count = req1->count;
+	names = talloc_array(mem_ctx, struct drsuapi_DsNameInfo1, count);
+	W_ERROR_HAVE_NO_MEMORY(names);
+
+	for (i=0; i < count; i++) {
+		status = DsCrackNameOneName(sam_ctx, mem_ctx,
+					    req1->format_flags,
+					    req1->format_offered,
+					    req1->format_desired,
+					    req1->names[i].str,
+					    &names[i]);
+		if (!W_ERROR_IS_OK(status)) {
+			return status;
+		}
+	}
+
+	(*ctr1)->count = count;
+	(*ctr1)->array = names;
+
+	return WERR_OK;
+}

@@ -4054,3 +4054,24 @@ WERROR dsdb_get_fsmo_role_info(TALLOC_CTX *tmp_ctx,
 	}
 	return WERR_OK;
 }
+
+const char *samdb_dn_to_dnshostname(struct ldb_context *ldb,
+				    TALLOC_CTX *mem_ctx,
+				    struct ldb_dn *server_dn)
+{
+	int ldb_ret;
+	struct ldb_result *res = NULL;
+	const char * const attrs[] = { "dNSHostName", NULL};
+
+	ldb_ret = ldb_search(ldb, mem_ctx, &res,
+			     server_dn,
+			     LDB_SCOPE_BASE,
+			     attrs, NULL);
+	if (ldb_ret != LDB_SUCCESS) {
+		DEBUG(4, ("Failed to find dNSHostName for dn %s, ldb error: %s",
+			  ldb_dn_get_linearized(server_dn), ldb_errstring(ldb)));
+		return NULL;
+	}
+
+	return samdb_result_string(res->msgs[0], "dNSHostName", NULL);
+}
