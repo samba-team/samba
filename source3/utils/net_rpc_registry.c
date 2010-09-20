@@ -33,7 +33,7 @@
 
 static NTSTATUS rpccli_winreg_Connect(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 				      uint32_t reg_type, uint32_t access_mask,
-				      struct policy_handle *reg_hnd)
+				      struct policy_handle *reg_hnd, WERROR *werr)
 {
 	ZERO_STRUCTP(reg_hnd);
 
@@ -41,23 +41,23 @@ static NTSTATUS rpccli_winreg_Connect(struct rpc_pipe_client *cli, TALLOC_CTX *m
 	{
 	case HKEY_CLASSES_ROOT:
 		return rpccli_winreg_OpenHKCR( cli, mem_ctx, NULL,
-			access_mask, reg_hnd, NULL);
+			access_mask, reg_hnd, werr);
 
 	case HKEY_LOCAL_MACHINE:
 		return rpccli_winreg_OpenHKLM( cli, mem_ctx, NULL,
-			access_mask, reg_hnd, NULL);
+			access_mask, reg_hnd, werr);
 
 	case HKEY_USERS:
 		return rpccli_winreg_OpenHKU( cli, mem_ctx, NULL,
-			access_mask, reg_hnd, NULL);
+			access_mask, reg_hnd, werr);
 
 	case HKEY_CURRENT_USER:
 		return rpccli_winreg_OpenHKCU( cli, mem_ctx, NULL,
-			access_mask, reg_hnd, NULL);
+			access_mask, reg_hnd, werr);
 
 	case HKEY_PERFORMANCE_DATA:
 		return rpccli_winreg_OpenHKPD( cli, mem_ctx, NULL,
-			access_mask, reg_hnd, NULL);
+			access_mask, reg_hnd, werr);
 
 	default:
 		/* fall through to end of function */
@@ -136,7 +136,7 @@ static NTSTATUS registry_openkey(TALLOC_CTX *mem_ctx,
 	}
 
 	status = rpccli_winreg_Connect(pipe_hnd, mem_ctx, hive, access_mask,
-				       hive_hnd);
+				       hive_hnd, NULL);
 	if (!(NT_STATUS_IS_OK(status))) {
 		return status;
 	}
@@ -702,7 +702,7 @@ static NTSTATUS rpc_registry_createkey_internal(struct net_context *c,
 
 	status = rpccli_winreg_Connect(pipe_hnd, mem_ctx, hive,
 				       SEC_FLAG_MAXIMUM_ALLOWED,
-				       &hive_hnd);
+				       &hive_hnd, NULL);
 	if (!(NT_STATUS_IS_OK(status))) {
 		return status;
 	}
@@ -774,7 +774,7 @@ static NTSTATUS rpc_registry_deletekey_internal(struct net_context *c,
 
 	status = rpccli_winreg_Connect(pipe_hnd, mem_ctx, hive,
 				       SEC_FLAG_MAXIMUM_ALLOWED,
-				       &hive_hnd);
+				       &hive_hnd, NULL);
 	if (!(NT_STATUS_IS_OK(status))) {
 		return status;
 	}
