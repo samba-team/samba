@@ -333,7 +333,6 @@ struct ndr_interface_call {
 	ndr_push_flags_fn_t ndr_push;
 	ndr_pull_flags_fn_t ndr_pull;
 	ndr_print_function_t ndr_print;
-	bool async;
 };
 
 struct ndr_interface_string_array {
