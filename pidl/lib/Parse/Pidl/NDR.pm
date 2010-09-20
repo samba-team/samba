@@ -39,7 +39,7 @@ $VERSION = '0.01';
 
 use strict;
 use Parse::Pidl qw(warning fatal);
-use Parse::Pidl::Typelist qw(hasType getType expandAlias mapScalarType);
+use Parse::Pidl::Typelist qw(hasType getType typeIs expandAlias mapScalarType is_fixed_size_scalar);
 use Parse::Pidl::Util qw(has_property property_matches);
 
 # Alignment of the built-in scalar types
@@ -111,6 +111,51 @@ sub GetElementLevelTable($$$)
 		if ($#bracket_array >= 0) { $needptrs = 0; }
 
 		warning($e, "[out] argument `$e->{NAME}' not a pointer") if ($needptrs > $e->{POINTERS});
+	}
+
+	my $allow_pipe = ($e->{PARENT}->{TYPE} eq "FUNCTION");
+	my $is_pipe = typeIs($e->{TYPE}, "PIPE");
+
+	if ($is_pipe) {
+		if (not $allow_pipe) {
+			fatal($e, "argument `$e->{NAME}' is a pipe and not allowed on $e->{PARENT}->{TYPE}");
+		}
+
+		if ($e->{POINTERS} > 1) {
+			fatal($e, "$e->{POINTERS} are not allowed on pipe element $e->{NAME}");
+		}
+
+		if ($e->{POINTERS} < 0) {
+			fatal($e, "pipe element $e->{NAME} needs pointer");
+		}
+
+		if ($e->{POINTERS} == 1 and pointer_type($e) ne "ref") {
+			fatal($e, "pointer should be 'ref' on pipe element $e->{NAME}");
+		}
+
+		if (scalar(@size_is) > 0) {
+			fatal($e, "size_is() on pipe element");
+		}
+
+		if (scalar(@length_is) > 0) {
+			fatal($e, "length_is() on pipe element");
+		}
+
+		if (scalar(@bracket_array) > 0) {
+			fatal($e, "brackets on pipe element");
+		}
+
+		if (defined(has_property($e, "subcontext"))) {
+			fatal($e, "subcontext on pipe element");
+		}
+
+		if (has_property($e, "switch_is")) {
+			fatal($e, "switch_is on pipe element");
+		}
+
+		if (can_contain_deferred($e->{TYPE})) {
+			fatal($e, "$e->{TYPE} can_contain_deferred - not allowed on pipe element");
+		}
 	}
 
 	# Parse the [][][][] style array stuff
@@ -255,6 +300,19 @@ sub GetElementLevelTable($$$)
 
 			$is_deferred = 0;
 		} 
+	}
+
+	if ($is_pipe) {
+		push (@$order, {
+			TYPE => "PIPE",
+			IS_DEFERRED => 0,
+			CONTAINS_DEFERRED => 0,
+		});
+
+		my $i = 0;
+		foreach (@$order) { $_->{LEVEL_INDEX} = $i; $i+=1; }
+
+		return $order;
 	}
 
 	if (defined(has_property($e, "subcontext"))) {
@@ -427,6 +485,8 @@ sub align_type($)
 		# Struct/union without body: assume 4
 		return 4 unless (defined($dt->{ELEMENTS}));
 		return find_largest_alignment($dt);
+	} elsif (($dt->{TYPE} eq "PIPE")) {
+		return 5;
 	}
 
 	die("Unknown data type type $dt->{TYPE}");
@@ -598,6 +658,57 @@ sub ParseBitmap($$$)
 	};
 }
 
+sub ParsePipe($$$)
+{
+	my ($pipe, $pointer_default, $ms_union) = @_;
+
+	my $pname = $pipe->{NAME};
+	$pname = $pipe->{PARENT}->{NAME} unless defined $pname;
+
+	if (not defined($pipe->{PROPERTIES})
+	    and defined($pipe->{PARENT}->{PROPERTIES})) {
+		$pipe->{PROPERTIES} = $pipe->{PARENT}->{PROPERTIES};
+	}
+
+	if (ref($pipe->{DATA}) eq "HASH") {
+		if (not defined($pipe->{DATA}->{PROPERTIES})
+		    and defined($pipe->{PROPERTIES})) {
+			$pipe->{DATA}->{PROPERTIES} = $pipe->{PROPERTIES};
+		}
+	}
+
+	my $struct = ParseStruct($pipe->{DATA}, $pointer_default, $ms_union);
+	$struct->{ALIGN} = 5;
+	$struct->{NAME} = "$pname\_chunk";
+
+	# 'count' is element [0] and 'array' [1]
+	my $e = $struct->{ELEMENTS}[1];
+	# level [0] is of type "ARRAY"
+	my $l = $e->{LEVELS}[1];
+
+	# here we check that pipe elements have a fixed size type
+	while (defined($l)) {
+		my $cl = $l;
+		$l = GetNextLevel($e, $cl);
+		if ($cl->{TYPE} ne "DATA") {
+			fatal($pipe, el_name($pipe) . ": pipe contains non DATA level");
+		}
+
+		# for now we only support scalars
+		next if is_fixed_size_scalar($cl->{DATA_TYPE});
+
+		fatal($pipe, el_name($pipe) . ": pipe contains non fixed size type[$cl->{DATA_TYPE}]");
+	}
+
+	return {
+		TYPE => "PIPE",
+		NAME => $pipe->{NAME},
+		DATA => $struct,
+		PROPERTIES => $pipe->{PROPERTIES},
+		ORIGINAL => $pipe,
+	};
+}
+
 sub ParseType($$$)
 {
 	my ($d, $pointer_default, $ms_union) = @_;
@@ -608,6 +719,7 @@ sub ParseType($$$)
 		ENUM => \&ParseEnum,
 		BITMAP => \&ParseBitmap,
 		TYPEDEF => \&ParseTypedef,
+		PIPE => \&ParsePipe,
 	}->{$d->{TYPE}}->($d, $pointer_default, $ms_union);
 
 	return $data;
@@ -940,14 +1052,14 @@ my %property_list = (
 
 	"gensize"		=> ["TYPEDEF", "STRUCT", "UNION"],
 	"value"			=> ["ELEMENT"],
-	"flag"			=> ["ELEMENT", "TYPEDEF", "STRUCT", "UNION", "ENUM", "BITMAP"],
+	"flag"			=> ["ELEMENT", "TYPEDEF", "STRUCT", "UNION", "ENUM", "BITMAP", "PIPE"],
 
 	# generic
-	"public"		=> ["FUNCTION", "TYPEDEF", "STRUCT", "UNION", "ENUM", "BITMAP"],
-	"nopush"		=> ["FUNCTION", "TYPEDEF", "STRUCT", "UNION", "ENUM", "BITMAP"],
-	"nopull"		=> ["FUNCTION", "TYPEDEF", "STRUCT", "UNION", "ENUM", "BITMAP"],
+	"public"		=> ["FUNCTION", "TYPEDEF", "STRUCT", "UNION", "ENUM", "BITMAP", "PIPE"],
+	"nopush"		=> ["FUNCTION", "TYPEDEF", "STRUCT", "UNION", "ENUM", "BITMAP", "PIPE"],
+	"nopull"		=> ["FUNCTION", "TYPEDEF", "STRUCT", "UNION", "ENUM", "BITMAP", "PIPE"],
 	"nosize"		=> ["FUNCTION", "TYPEDEF", "STRUCT", "UNION", "ENUM", "BITMAP"],
-	"noprint"		=> ["FUNCTION", "TYPEDEF", "STRUCT", "UNION", "ENUM", "BITMAP", "ELEMENT"],
+	"noprint"		=> ["FUNCTION", "TYPEDEF", "STRUCT", "UNION", "ENUM", "BITMAP", "ELEMENT", "PIPE"],
 	"nopython"		=> ["FUNCTION", "TYPEDEF", "STRUCT", "UNION", "ENUM", "BITMAP"],
 	"todo"			=> ["FUNCTION"],
 
@@ -1176,11 +1288,16 @@ sub ValidUnion($)
 sub ValidPipe($)
 {
 	my ($pipe) = @_;
-	my $data = $pipe->{DATA};
+	my $struct = $pipe->{DATA};
 
 	ValidProperties($pipe, "PIPE");
 
-	fatal($pipe, $pipe->{NAME} . ": 'pipe' is not yet supported by pidl");
+	$struct->{PARENT} = $pipe;
+
+	$struct->{FILE} = $pipe->{FILE} unless defined($struct->{FILE});
+	$struct->{LINE} = $pipe->{LINE} unless defined($struct->{LINE});
+
+	ValidType($struct);
 }
 
 #####################################################################

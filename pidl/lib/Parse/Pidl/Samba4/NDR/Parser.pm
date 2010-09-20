@@ -15,7 +15,7 @@ use strict;
 use Parse::Pidl::Typelist qw(hasType getType mapTypeName typeHasBody);
 use Parse::Pidl::Util qw(has_property ParseExpr ParseExprExt print_uuid unmake_str);
 use Parse::Pidl::CUtil qw(get_pointer_to get_value_of get_array_element);
-use Parse::Pidl::NDR qw(GetPrevLevel GetNextLevel ContainsDeferred is_charset_array);
+use Parse::Pidl::NDR qw(GetPrevLevel GetNextLevel ContainsDeferred ContainsPipe is_charset_array);
 use Parse::Pidl::Samba4 qw(is_intree choose_header ArrayDynamicallyAllocated);
 use Parse::Pidl::Samba4::Header qw(GenerateFunctionInEnv GenerateFunctionOutEnv EnvSubstituteValue GenerateStructEnv);
 use Parse::Pidl qw(warning);
@@ -630,6 +630,8 @@ sub ParseElementPush($$$$$$)
 
 	my $var_name = $env->{$e->{NAME}};
 
+	return if ContainsPipe($e, $e->{LEVELS}[0]);
+
 	return unless $primitives or ($deferred and ContainsDeferred($e, $e->{LEVELS}[0]));
 
 	# Representation type is different from transmit_as
@@ -945,6 +947,7 @@ sub ParseMemCtxPullFlags($$$$)
 
 	if (($l->{TYPE} eq "POINTER") and ($l->{POINTER_TYPE} eq "ref")) {
 		my $nl = GetNextLevel($e, $l);
+		return undef if ($nl->{TYPE} eq "PIPE");
 		return undef if ($nl->{TYPE} eq "ARRAY");
 		return undef if (($nl->{TYPE} eq "DATA") and ($nl->{DATA_TYPE} eq "string"));
 
@@ -1148,6 +1151,8 @@ sub ParseElementPull($$$$$$)
 	my $var_name = $env->{$e->{NAME}};
 	my $represent_name;
 	my $transmit_name;
+
+	return if ContainsPipe($e, $e->{LEVELS}[0]);
 
 	return unless $primitives or ($deferred and ContainsDeferred($e, $e->{LEVELS}[0]));
 
@@ -2062,6 +2067,99 @@ $typefamily{TYPEDEF} = {
 	SIZE_FN_BODY => \&ParseTypedefNdrSize,
 };
 
+sub ParsePipePushChunk($$)
+{
+	my ($self, $t) = @_;
+
+	my $pipe = $t;
+	$pipe = $t->{DATA} if ($t->{TYPE} eq "TYPEDEF");
+	my $struct = $pipe->{DATA};
+
+	my $name = "$struct->{NAME}";
+	my $ndr = "ndr";
+	my $varname = "r";
+
+	my $args = $typefamily{$struct->{TYPE}}->{DECL}->($struct, "push", $name, $varname);
+
+	$self->fn_declare("push", $struct, "enum ndr_err_code ndr_push_$name(struct ndr_push *$ndr, int ndr_flags, $args)") or return;
+
+	return if has_property($t, "nopush");
+
+	$self->pidl("{");
+	$self->indent;
+
+	$self->ParseStructPush($struct, $ndr, $varname);
+	$self->pidl("");
+
+	$self->pidl("NDR_CHECK(ndr_push_pipe_chunk_trailer(ndr, ndr_flags, $varname->count));");
+	$self->pidl("");
+
+	$self->pidl("return NDR_ERR_SUCCESS;");
+	$self->deindent;
+	$self->pidl("}");
+	$self->pidl("");
+}
+
+sub ParsePipePullChunk($$)
+{
+	my ($self, $t) = @_;
+
+	my $pipe = $t;
+	$pipe = $t->{DATA} if ($t->{TYPE} eq "TYPEDEF");
+	my $struct = $pipe->{DATA};
+
+	my $name = "$struct->{NAME}";
+	my $ndr = "ndr";
+	my $varname = "r";
+
+	my $args = $typefamily{$struct->{TYPE}}->{DECL}->($struct, "pull", $name, $varname);
+
+	$self->fn_declare("pull", $struct, "enum ndr_err_code ndr_pull_$name(struct ndr_pull *$ndr, int ndr_flags, $args)") or return;
+
+	return if has_property($struct, "nopull");
+
+	$self->pidl("{");
+	$self->indent;
+
+	$self->ParseStructPull($struct, $ndr, $varname);
+	$self->pidl("");
+
+	$self->pidl("NDR_CHECK(ndr_check_pipe_chunk_trailer($ndr, ndr_flags, $varname->count));");
+	$self->pidl("");
+
+	$self->pidl("return NDR_ERR_SUCCESS;");
+	$self->deindent;
+	$self->pidl("}");
+	$self->pidl("");
+}
+
+sub ParsePipePrintChunk($$)
+{
+	my ($self, $t) = @_;
+
+	my $pipe = $t;
+	$pipe = $t->{DATA} if ($t->{TYPE} eq "TYPEDEF");
+	my $struct = $pipe->{DATA};
+
+	my $name = "$struct->{NAME}";
+	my $ndr = "ndr";
+	my $varname = "r";
+
+	my $args = $typefamily{$struct->{TYPE}}->{DECL}->($struct, "print", $name, $varname);
+
+	$self->pidl_hdr("void ndr_print_$name(struct ndr_print *ndr, const char *name, $args);");
+
+	return if (has_property($t, "noprint"));
+
+	$self->pidl("_PUBLIC_ void ndr_print_$name(struct ndr_print *$ndr, const char *name, $args)");
+	$self->pidl("{");
+	$self->indent;
+	$self->ParseTypePrint($struct, $ndr, $varname);
+	$self->deindent;
+	$self->pidl("}");
+	$self->pidl("");
+}
+
 #####################################################################
 # parse a function - print side
 sub ParseFunctionPrint($$)
@@ -2264,6 +2362,7 @@ sub ParseFunctionPull($$)
 		             $e->{LEVELS}[0]->{POINTER_TYPE} eq "ref");
 		next if (($e->{LEVELS}[1]->{TYPE} eq "DATA") and 
 				 ($e->{LEVELS}[1]->{DATA_TYPE} eq "string"));
+		next if ($e->{LEVELS}[1]->{TYPE} eq "PIPE");
 		next if (($e->{LEVELS}[1]->{TYPE} eq "ARRAY") 
 			and   $e->{LEVELS}[1]->{IS_ZERO_TERMINATED});
 
@@ -2278,6 +2377,12 @@ sub ParseFunctionPull($$)
 				$self->pidl("memcpy(r->out.$e->{NAME}, r->in.$e->{NAME}, ($size) * sizeof(*r->in.$e->{NAME}));");
 			} else {
 				$self->pidl("memset(r->out.$e->{NAME}, 0, ($size) * sizeof(*r->out.$e->{NAME}));");
+			}
+		} elsif ($e->{LEVELS}[1]->{TYPE} eq "ARRAY") {
+			if (grep(/in/, @{$e->{DIRECTION}})) {
+				$self->pidl("r->out.$e->{NAME} = r->in.$e->{NAME};");
+			} else {
+				$self->pidl("r->out.$e->{NAME} = NULL;");
 			}
 		} else {
 			$self->pidl("NDR_PULL_ALLOC($ndr, r->out.$e->{NAME});");
@@ -2337,16 +2442,102 @@ sub AuthServiceStruct($$$)
 	$self->pidl("");
 }
 
+sub ParseGeneratePipeArray($$$)
+{
+	my ($self, $fn, $direction) = @_;
+
+	$self->pidl("static const struct ndr_interface_call_pipe $fn->{NAME}\_$direction\_pipes[] = {");
+	$self->indent;
+
+	foreach my $e (@{$fn->{ELEMENTS}}) {
+		next unless ContainsPipe($e, $e->{LEVELS}[0]);
+		next unless (grep(/$direction/, @{$e->{DIRECTION}}));
+
+		my $cname = "$e->{TYPE}_chunk";
+
+		$self->pidl("{");
+		$self->indent;
+		$self->pidl("\"$direction.$e->{NAME}\",");
+		$self->pidl("\"$cname\",");
+		$self->pidl("sizeof(struct $cname),");
+		$self->pidl("(ndr_push_flags_fn_t) ndr_push_$cname,");
+		$self->pidl("(ndr_pull_flags_fn_t) ndr_pull_$cname,");
+		$self->pidl("(ndr_print_fn_t) ndr_print_$cname,");
+		$self->deindent;
+		$self->pidl("},");
+	}
+	$self->pidl("{ NULL, NULL, 0, NULL, NULL, NULL, NULL }");
+	$self->deindent;
+	$self->pidl("};");
+	$self->pidl("");
+}
+
+sub FunctionCallPipes($$)
+{
+	my ($self, $d) = @_;
+	return if not defined($d->{OPNUM});
+
+	my $in_pipes = 0;
+	my $out_pipes = 0;
+
+	foreach my $e (@{$d->{ELEMENTS}}) {
+		next unless ContainsPipe($e, $e->{LEVELS}[0]);
+
+		if (grep(/in/, @{$e->{DIRECTION}})) {
+			$in_pipes++;
+		}
+		if (grep(/out/, @{$e->{DIRECTION}})) {
+			$out_pipes++;
+		}
+	}
+
+	if ($in_pipes) {
+		$self->ParseGeneratePipeArray($d, "in");
+	}
+
+	if ($out_pipes) {
+		$self->ParseGeneratePipeArray($d, "out");
+	}
+}
+
 sub FunctionCallEntry($$)
 {
 	my ($self, $d) = @_;
 	return 0 if not defined($d->{OPNUM});
+
+	my $in_pipes = 0;
+	my $out_pipes = 0;
+
+	foreach my $e (@{$d->{ELEMENTS}}) {
+		next unless ContainsPipe($e, $e->{LEVELS}[0]);
+
+		if (grep(/in/, @{$e->{DIRECTION}})) {
+			$in_pipes++;
+		}
+		if (grep(/out/, @{$e->{DIRECTION}})) {
+			$out_pipes++;
+		}
+	}
+
+	my $in_pipes_ptr = "NULL";
+	my $out_pipes_ptr = "NULL";
+
+	if ($in_pipes) {
+		$in_pipes_ptr = "\&$d->{NAME}_in_pipes";
+	}
+
+	if ($out_pipes) {
+		$out_pipes_ptr = "\&$d->{NAME}_out_pipes";
+	}
+
 	$self->pidl("\t{");
 	$self->pidl("\t\t\"$d->{NAME}\",");
 	$self->pidl("\t\tsizeof(struct $d->{NAME}),");
 	$self->pidl("\t\t(ndr_push_flags_fn_t) ndr_push_$d->{NAME},");
 	$self->pidl("\t\t(ndr_pull_flags_fn_t) ndr_pull_$d->{NAME},");
 	$self->pidl("\t\t(ndr_print_function_t) ndr_print_$d->{NAME},");
+	$self->pidl("\t\t{ $in_pipes, $in_pipes_ptr },");
+	$self->pidl("\t\t{ $out_pipes, $out_pipes_ptr },");
 	$self->pidl("\t},");
 	return 1;
 }
@@ -2361,6 +2552,10 @@ sub FunctionTable($$)
 
 	return if ($#{$interface->{FUNCTIONS}}+1 == 0);
 	return unless defined ($interface->{PROPERTIES}->{uuid});
+
+	foreach my $d (@{$interface->{INHERITED_FUNCTIONS}},@{$interface->{FUNCTIONS}}) {
+		$self->FunctionCallPipes($d);
+	}
 
 	$self->pidl("static const struct ndr_interface_call $interface->{NAME}\_calls[] = {");
 
@@ -2615,6 +2810,20 @@ sub ParseInterface($$$)
 
 	# Typedefs
 	foreach my $d (@{$interface->{TYPES}}) {
+		if (Parse::Pidl::Typelist::typeIs($d, "PIPE")) {
+			($needed->{TypeFunctionName("ndr_push", $d)}) &&
+				$self->ParsePipePushChunk($d);
+			($needed->{TypeFunctionName("ndr_pull", $d)}) &&
+				$self->ParsePipePullChunk($d);
+			($needed->{TypeFunctionName("ndr_print", $d)}) &&
+				$self->ParsePipePrintChunk($d);
+
+			$needed->{TypeFunctionName("ndr_pull", $d)} = 0;
+			$needed->{TypeFunctionName("ndr_push", $d)} = 0;
+			$needed->{TypeFunctionName("ndr_print", $d)} = 0;
+			next;
+		}
+
 		next unless(typeHasBody($d));
 
 		($needed->{TypeFunctionName("ndr_push", $d)}) && $self->ParseTypePushFunction($d, "r");
@@ -2756,6 +2965,7 @@ sub NeededType($$$)
 	my ($t,$needed,$req) = @_;
 
 	NeededType($t->{DATA}, $needed, $req) if ($t->{TYPE} eq "TYPEDEF");
+	NeededType($t->{DATA}, $needed, $req) if ($t->{TYPE} eq "PIPE");
 
 	if ($t->{TYPE} eq "STRUCT" or $t->{TYPE} eq "UNION") {
 		return unless defined($t->{ELEMENTS});
@@ -2777,6 +2987,7 @@ sub NeededInterface($$)
 	my ($interface,$needed) = @_;
 	NeededFunction($_, $needed) foreach (@{$interface->{FUNCTIONS}});
 	foreach (reverse @{$interface->{TYPES}}) {
+
 		if (has_property($_, "public")) {
 			$needed->{TypeFunctionName("ndr_pull", $_)} = $needed->{TypeFunctionName("ndr_push", $_)} = 
 				$needed->{TypeFunctionName("ndr_print", $_)} = 1;

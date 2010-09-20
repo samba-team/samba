@@ -101,10 +101,11 @@ sub ParseFunction_r_Send($$$$)
 	$self->pidl("");
 
 	my $out_params = 0;
-	foreach (@{$fn->{ELEMENTS}}) {
-		if (grep(/out/, @{$_->{DIRECTION}})) {
-			$out_params++;
-		}
+	foreach my $e (@{$fn->{ELEMENTS}}) {
+		next unless grep(/out/, @{$e->{DIRECTION}});
+		next if ContainsPipe($e, $e->{LEVELS}[0]);
+		$out_params++;
+
 	}
 
 	my $submem;
@@ -490,6 +491,9 @@ sub ParseFunction_Send($$$$)
 		next unless grep(/out/, @{$e->{DIRECTION}});
 
 		$self->ParseCopyArgument($fn, $e, "state->orig.out.", "_");
+
+		next if ContainsPipe($e, $e->{LEVELS}[0]);
+
 		$out_params++;
 	}
 	$self->pidl("");
@@ -569,6 +573,7 @@ sub ParseFunction_Done($$$$)
 
 	$self->pidl("/* Copy out parameters */");
 	foreach my $e (@{$fn->{ELEMENTS}}) {
+		next if ContainsPipe($e, $e->{LEVELS}[0]);
 		next unless (grep(/out/, @{$e->{DIRECTION}}));
 
 		$self->ParseOutputArgument($fn, $e,
@@ -698,6 +703,7 @@ sub ParseFunction_Sync($$$$)
 
 	$self->pidl("/* Return variables */");
 	foreach my $e (@{$fn->{ELEMENTS}}) {
+		next if ContainsPipe($e, $e->{LEVELS}[0]);
 		next unless (grep(/out/, @{$e->{DIRECTION}}));
 
 		$self->ParseOutputArgument($fn, $e, "r.", "_", "sync");
