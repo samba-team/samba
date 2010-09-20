@@ -4420,6 +4420,9 @@ void svcctl_init_keys( void );
 struct security_descriptor *svcctl_get_secdesc( TALLOC_CTX *ctx, const char *name, NT_USER_TOKEN *token );
 bool svcctl_set_secdesc(const char *name, struct security_descriptor *sec_desc,
 			NT_USER_TOKEN *token );
+const char *svcctl_get_string_value(TALLOC_CTX *ctx, const char *key_name,
+				    const char *value_name,
+				    NT_USER_TOKEN *token);
 const char *svcctl_lookup_dispname(TALLOC_CTX *ctx, const char *name, NT_USER_TOKEN *token );
 const char *svcctl_lookup_description(TALLOC_CTX *ctx, const char *name, NT_USER_TOKEN *token );
 struct regval_ctr *svcctl_fetch_regvalues( const char *name, NT_USER_TOKEN *token );

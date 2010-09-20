@@ -617,9 +617,9 @@ done:
 	return ret;
 }
 
-static const char *svcctl_get_string_value(TALLOC_CTX *ctx, const char *key_name,
-					   const char *value_name,
-					   NT_USER_TOKEN *token)
+const char *svcctl_get_string_value(TALLOC_CTX *ctx, const char *key_name,
+				    const char *value_name,
+				    NT_USER_TOKEN *token)
 {
 	const char *result = NULL;
 	struct registry_key *key = NULL;
