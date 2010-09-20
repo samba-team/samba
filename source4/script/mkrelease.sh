@@ -6,36 +6,21 @@ if [ ! -d ".git" -o `dirname $0` != "./source4/script" ]; then
 	exit 1
 fi
 
-OUTDIR=`mktemp -d samba-XXXXX`
-(git archive --format=tar HEAD | (cd $OUTDIR/ && tar xf -))
+cd source4
+../buildtools/bin/waf dist
 
-#Prepare the tarball for a Samba4 release, with some generated files,
-#but without Samba3 stuff (to avoid confusion)
-( cd $OUTDIR/ || exit 1
- rm -rf README Manifest Read-Manifest-Now Roadmap source3 packaging docs-xml examples swat WHATSNEW.txt MAINTAINERS source4/autogen-autotools.sh || exit 1
- cd source4 || exit 1
- ./autogen.sh || exit 1
- ./configure || exit 1
- make dist  || exit 1
-) || exit 1
+TGZFILE="`echo *.tar.gz`"
+gunzip $TGZFILE
+TARFILE="`echo *.tar`"
+tar xf $TARFILE
+DIRN="`echo -n $TARFILE | sed -e 's/\.tar//'`"
+cd $DIRN/source4 && ./autogen.sh && cd ../..
+tar cf $TARFILE $DIRN
+rm -r "$DIRN"
 
-VERSION_FILE=$OUTDIR/source4/bin/default/source4/include/config.h
-if [ ! -f $VERSION_FILE ]; then
-    echo "Cannot find version.h at $VERSION_FILE"
-    exit 1;
-fi
-
-VERSION=`sed -n 's/^PACKAGE_VERSION //p' $VERSION_FILE`
-echo "Version: $VERSION"
-mv $OUTDIR samba-$VERSION || exit 1
-tar -cf samba-$VERSION.tar samba-$VERSION || (rm -rf samba-$VERSION; exit 1)
-rm -rf samba-$VERSION || exit 1
 echo "Now run: "
-echo "gpg --detach-sign --armor samba-$VERSION.tar"
-echo "gzip samba-$VERSION.tar" 
+echo "gpg --detach-sign --armor $TARFILE"
+echo "gzip $TARFILE"
 echo "And then upload "
-echo "samba-$VERSION.tar.gz samba-$VERSION.tar.asc" 
+echo "$TARFILE.gz $TARFILE.asc" 
 echo "to pub/samba/samba4/ on samba.org"
-
-
-
