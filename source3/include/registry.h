@@ -169,8 +169,6 @@ WERROR reg_getkeysecurity(TALLOC_CTX *mem_ctx, struct registry_key *key,
 WERROR reg_setkeysecurity(struct registry_key *key,
 			  struct security_descriptor *psecdesc);
 WERROR reg_getversion(uint32_t *version);
-WERROR reg_restorekey(struct registry_key *key, const char *fname);
-WERROR reg_savekey(struct registry_key *key, const char *fname);
 WERROR reg_deleteallvalues(struct registry_key *key);
 WERROR reg_open_path(TALLOC_CTX *mem_ctx, const char *orig_path,
 		     uint32 desired_access, const struct security_token *token,
@@ -188,6 +186,11 @@ WERROR reg_create_path(TALLOC_CTX *mem_ctx, const char *orig_path,
 		       struct registry_key **pkey);
 WERROR reg_delete_path(const struct security_token *token,
 		       const char *orig_path);
+
+/* The following definitions come from registry/reg_api_regf.c  */
+
+WERROR reg_restorekey(struct registry_key *key, const char *fname);
+WERROR reg_savekey(struct registry_key *key, const char *fname);
 
 /* The following definitions come from registry/reg_init_basic.c  */
 
