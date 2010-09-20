@@ -1175,74 +1175,9 @@ struct bitmap {
 #define PIPE_RAW_MODE 0x4
 #define PIPE_START_MESSAGE 0x8
 
-/* File Specific access rights */
-#define FILE_READ_DATA        0x00000001
-#define FILE_WRITE_DATA       0x00000002
-#define FILE_APPEND_DATA      0x00000004
-#define FILE_READ_EA          0x00000008 /* File and directory */
-#define FILE_WRITE_EA         0x00000010 /* File and directory */
-#define FILE_EXECUTE          0x00000020
-#define FILE_DELETE_CHILD     0x00000040
-#define FILE_READ_ATTRIBUTES  0x00000080
-#define FILE_WRITE_ATTRIBUTES 0x00000100
-
-#define FILE_ALL_ACCESS       0x000001FF
-
-/* Directory specific access rights */
-#define FILE_LIST_DIRECTORY   0x00000001
-#define FILE_ADD_FILE         0x00000002
-#define FILE_ADD_SUBDIRECTORY 0x00000004
-#define FILE_TRAVERSE         0x00000020
-#define FILE_DELETE_CHILD     0x00000040
-
 /* the desired access to use when opening a pipe */
 #define DESIRED_ACCESS_PIPE 0x2019f
  
-/* Generic access masks & rights. */
-#define DELETE_ACCESS        0x00010000 /* (1L<<16) */
-#define READ_CONTROL_ACCESS  0x00020000 /* (1L<<17) */
-#define WRITE_DAC_ACCESS     0x00040000 /* (1L<<18) */
-#define WRITE_OWNER_ACCESS   0x00080000 /* (1L<<19) */
-#define SYNCHRONIZE_ACCESS   0x00100000 /* (1L<<20) */
-
-#define SYSTEM_SECURITY_ACCESS 0x01000000 /* (1L<<24) */
-#define MAXIMUM_ALLOWED_ACCESS 0x02000000 /* (1L<<25) */
-#define GENERIC_ALL_ACCESS     0x10000000 /* (1<<28) */
-#define GENERIC_EXECUTE_ACCESS 0x20000000 /* (1<<29) */
-#define GENERIC_WRITE_ACCESS   0x40000000 /* (1<<30) */
-#define GENERIC_READ_ACCESS    ((unsigned)0x80000000) /* (((unsigned)1)<<31) */
-
-/* Mapping of generic access rights for files to specific rights. */
-
-/* This maps to 0x1F01FF */
-#define FILE_GENERIC_ALL (STANDARD_RIGHTS_REQUIRED_ACCESS|\
-			  SYNCHRONIZE_ACCESS|\
-			  FILE_ALL_ACCESS)
-
-/* This maps to 0x120089 */
-#define FILE_GENERIC_READ (STANDARD_RIGHTS_READ_ACCESS|\
-			   FILE_READ_DATA|\
-			   FILE_READ_ATTRIBUTES|\
-			   FILE_READ_EA|\
-			   SYNCHRONIZE_ACCESS)
-
-/* This maps to 0x120116 */
-#define FILE_GENERIC_WRITE (SEC_STD_READ_CONTROL|\
-			    FILE_WRITE_DATA|\
-			    FILE_WRITE_ATTRIBUTES|\
-			    FILE_WRITE_EA|\
-			    FILE_APPEND_DATA|\
-			    SYNCHRONIZE_ACCESS)
-
-#define FILE_GENERIC_EXECUTE (STANDARD_RIGHTS_EXECUTE_ACCESS|\
-			      FILE_READ_ATTRIBUTES|\
-			      FILE_EXECUTE|\
-			      SYNCHRONIZE_ACCESS)
-
-/* Share specific rights. */
-#define SHARE_ALL_ACCESS      FILE_GENERIC_ALL
-#define SHARE_READ_ONLY       (FILE_GENERIC_READ|FILE_EXECUTE)
-
 /* Mapping of access rights to UNIX perms. */
 #define UNIX_ACCESS_RWX		FILE_GENERIC_ALL
 #define UNIX_ACCESS_R 		FILE_GENERIC_READ
