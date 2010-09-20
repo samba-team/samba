@@ -23,6 +23,7 @@
 #include "rpc_server/dcerpc_server.h"
 #include "dsdb/samdb/samdb.h"
 #include "rpc_server/drsuapi/dcesrv_drsuapi.h"
+#include "libcli/security/session.h"
 #include "libcli/security/security.h"
 #include "auth/session.h"
 #include "librpc/gen_ndr/ndr_drsuapi.h"

@@ -25,17 +25,6 @@
 #define PRIMARY_USER_SID_INDEX 0
 #define PRIMARY_GROUP_SID_INDEX 1
 
-enum security_user_level {
-	SECURITY_ANONYMOUS            = 0,
-	SECURITY_USER                 = 10,
-	SECURITY_RO_DOMAIN_CONTROLLER = 20,
-	SECURITY_DOMAIN_CONTROLLER    = 30,
-	SECURITY_ADMINISTRATOR        = 40,
-	SECURITY_SYSTEM               = 50
-};
-
-struct auth_session_info;
-
 struct object_tree {
 	uint32_t remaining_access;
 	struct GUID guid;

@@ -25,7 +25,7 @@
 #include "lib/registry/registry.h"
 #include "librpc/gen_ndr/ndr_winreg.h"
 #include "librpc/gen_ndr/ndr_security.h"
-#include "libcli/security/security.h"
+#include "libcli/security/session.h"
 
 enum handle_types { HTYPE_REGVAL, HTYPE_REGKEY };
 

@@ -28,6 +28,7 @@
 #include "util.h"
 #include "libcli/security/security.h"
 #include "lib/ldb/include/ldb_private.h"
+#include "libcli/security/session.h"
 
 /*
   search for attrs on one DN, in the modules below

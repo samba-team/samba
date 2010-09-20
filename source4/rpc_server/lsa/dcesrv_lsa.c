@@ -30,6 +30,7 @@
 #include "../lib/crypto/crypto.h"
 #include "lib/util/tsort.h"
 #include "dsdb/common/util.h"
+#include "libcli/security/session.h"
 
 /*
   this type allows us to distinguish handle types

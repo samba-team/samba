@@ -23,6 +23,7 @@
 #include "rpc_server/dcerpc_server.h"
 #include "dsdb/samdb/samdb.h"
 #include "libcli/security/security.h"
+#include "libcli/security/session.h"
 #include "param/param.h"
 #include "auth/session.h"
 

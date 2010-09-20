@@ -3,7 +3,7 @@
 bld.SAMBA_SUBSYSTEM('DSDB_MODULE_HELPERS',
 	source='util.c acl_util.c',
 	autoproto='util_proto.h',
-	deps='ldb LIBNDR SAMDB_COMMON'
+	deps='ldb LIBNDR SAMDB_COMMON LIBSECURITY_SESSION'
 	)
 
 bld.SAMBA_SUBSYSTEM('DSDB_MODULE_HELPER_RIDALLOC',
@@ -50,7 +50,7 @@ bld.SAMBA_MODULE('ldb_repl_meta_data',
 	subsystem='ldb',
 	init_function='LDB_MODULE(repl_meta_data)',
 	internal_module=False,
-	deps='SAMDB talloc LIBEVENTS LIBNDR NDR_DRSUAPI NDR_DRSBLOBS LIBNDR DSDB_MODULE_HELPERS'
+	deps='SAMDB talloc LIBEVENTS LIBNDR NDR_DRSUAPI NDR_DRSBLOBS LIBNDR DSDB_MODULE_HELPERS LIBSECURITY_SESSION'
 	)
 
 
@@ -141,7 +141,7 @@ bld.SAMBA_MODULE('ldb_rootdse',
 	subsystem='ldb',
 	init_function='LDB_MODULE(rootdse)',
 	internal_module=False,
-	deps='talloc LIBEVENTS SAMDB MESSAGING'
+	deps='talloc LIBEVENTS SAMDB MESSAGING LIBSECURITY_SESSION'
 	)
 
 

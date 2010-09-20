@@ -27,6 +27,7 @@
 #include "dsdb/samdb/samdb.h"
 #include "rpc_server/drsuapi/dcesrv_drsuapi.h"
 #include "libcli/security/security.h"
+#include "libcli/security/session.h"
 #include "auth/auth.h"
 #include "param/param.h"
 #include "lib/messaging/irpc.h"

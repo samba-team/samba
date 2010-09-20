@@ -21,6 +21,7 @@
 
 #include "includes.h"
 #include "auth/session.h"
+#include "libcli/security/session.h"
 #include "libcli/security/security.h"
 
 enum security_user_level security_session_user_level(struct auth_session_info *session_info,

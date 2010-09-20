@@ -28,6 +28,7 @@
 #include "version.h"
 #include "dsdb/samdb/ldb_modules/util.h"
 #include "libcli/security/security.h"
+#include "libcli/security/session.h"
 #include "librpc/ndr/libndr.h"
 #include "auth/auth.h"
 #include "param/param.h"
