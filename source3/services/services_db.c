@@ -576,8 +576,6 @@ bool svcctl_set_secdesc(const char *name, struct security_descriptor *sec_desc,
 	bool ret = false;
 	TALLOC_CTX *mem_ctx = talloc_stackframe();
 
-	/* now add the security descriptor */
-
 	path = talloc_asprintf(mem_ctx, "%s\\%s\\%s", KEY_SERVICES, name,
 			       "Security");
 	if (path == NULL) {
@@ -591,8 +589,6 @@ bool svcctl_set_secdesc(const char *name, struct security_descriptor *sec_desc,
 			  path, win_errstr(wresult)));
 		goto done;
 	}
-
-	/* stream the printer security descriptor */
 
 	status = marshall_sec_desc(mem_ctx, sec_desc, &value.data.data,
 				   &value.data.length);
