@@ -1642,6 +1642,8 @@ string.</member>
 </member>
 <member>net registry export      - Export a registration entries (.reg) file.
 </member>
+<member>net registry convert     - Convert a registration entries (.reg) file.
+</member>
 </simplelist>
 </para>
 
@@ -1759,6 +1761,16 @@ string.</member>
   <emphasis>file</emphasis>.
   </para>
 </refsect3>
+
+<refsect3>
+  <title>REGISTRY CONVERT <replaceable>in</replaceable> <!--
+  --><replaceable>out</replaceable> <!--
+  --><replaceable>[[inopt] outopt]</replaceable></title>
+
+  <para>Convert a registration entries (.reg) file <emphasis>in</emphasis>.
+  </para>
+</refsect3>
+
 
 </refsect2>
 
