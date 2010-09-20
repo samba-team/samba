@@ -521,14 +521,17 @@ struct security_descriptor *svcctl_get_secdesc( TALLOC_CTX *ctx, const char *nam
 	char *path= NULL;
 	WERROR wresult;
 	NTSTATUS status;
+	TALLOC_CTX *mem_ctx = talloc_stackframe();
 
 	/* now add the security descriptor */
 
-	if (asprintf(&path, "%s\\%s\\%s", KEY_SERVICES, name, "Security") < 0) {
-		return NULL;
+	path = talloc_asprintf(mem_ctx, "%s\\%s\\%s", KEY_SERVICES, name,
+			       "Security");
+	if (path == NULL) {
+		goto done;
 	}
-	wresult = regkey_open_internal( NULL, &key, path, token,
-					REG_KEY_ALL );
+
+	wresult = regkey_open_internal(mem_ctx, &key, path, token, REG_KEY_ALL);
 	if ( !W_ERROR_IS_OK(wresult) ) {
 		DEBUG(0,("svcctl_get_secdesc: key lookup failed! [%s] (%s)\n",
 			path, win_errstr(wresult)));
@@ -565,8 +568,7 @@ fallback_to_default_sd:
 	ret_sd = construct_service_sd(ctx);
 
 done:
-	SAFE_FREE(path);
-	TALLOC_FREE(key);
+	talloc_free(mem_ctx);
 	return ret_sd;
 }
 
