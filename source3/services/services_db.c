@@ -677,40 +677,39 @@ const char *svcctl_lookup_description(TALLOC_CTX *ctx, const char *name, struct 
 	char *path = NULL;
 	WERROR wresult;
 	DATA_BLOB blob;
+	TALLOC_CTX *mem_ctx = talloc_stackframe();
 
-	/* now add the security descriptor */
-
-	if (asprintf(&path, "%s\\%s", KEY_SERVICES, name) < 0) {
+	path = talloc_asprintf(mem_ctx, "%s\\%s", KEY_SERVICES, name);
+	if (path == NULL) {
 		return NULL;
 	}
-	wresult = regkey_open_internal( NULL, &key, path, token,
+
+	wresult = regkey_open_internal(mem_ctx, &key, path, token,
 					REG_KEY_READ );
-	if ( !W_ERROR_IS_OK(wresult) ) {
-		DEBUG(0,("svcctl_lookup_description: key lookup failed! [%s] (%s)\n", 
-			path, win_errstr(wresult)));
-		SAFE_FREE(path);
-		return NULL;
+	if (!W_ERROR_IS_OK(wresult)) {
+		DEBUG(0, ("svcctl_lookup_description: key lookup failed! "
+			  "[%s] (%s)\n", path, win_errstr(wresult)));
+		goto done;
 	}
-	SAFE_FREE(path);
 
 	wresult = regval_ctr_init(key, &values);
 	if (!W_ERROR_IS_OK(wresult)) {
-		DEBUG(0,("svcctl_lookup_description: talloc() failed!\n"));
-		TALLOC_FREE( key );
-		return NULL;
+		DEBUG(0, ("svcctl_lookup_description: talloc() failed!\n"));
+		goto done;
 	}
 
 	fetch_reg_values( key, values );
 
 	if ( !(val = regval_ctr_getvalue( values, "Description" )) ) {
-		TALLOC_FREE( key );
-		return "Unix Service";
+		description = talloc_strdup(ctx, "Unix Service");
+		goto done;
 	}
 
 	blob = data_blob_const(regval_data_p(val), regval_size(val));
 	pull_reg_sz(ctx, &blob, &description);
 
-	TALLOC_FREE(key);
+done:
+	talloc_free(mem_ctx);
 
 	return description;
 }
