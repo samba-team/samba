@@ -176,13 +176,6 @@ WERROR reg_deletekey_recursive(TALLOC_CTX *ctx,
 WERROR reg_deletesubkeys_recursive(TALLOC_CTX *ctx,
 				   struct registry_key *parent,
 				   const char *path);
-WERROR reg_create_path(TALLOC_CTX *mem_ctx, const char *orig_path,
-		       uint32 desired_access,
-		       const struct security_token *token,
-		       enum winreg_CreateAction *paction,
-		       struct registry_key **pkey);
-WERROR reg_delete_path(const struct security_token *token,
-		       const char *orig_path);
 
 /* The following definitions come from registry/reg_api_regf.c  */
 
