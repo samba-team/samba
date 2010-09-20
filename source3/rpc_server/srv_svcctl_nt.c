@@ -644,27 +644,21 @@ static WERROR fill_svc_config( TALLOC_CTX *ctx, const char *name,
 			       struct QUERY_SERVICE_CONFIG *config,
 			       struct security_token *token )
 {
-	struct regval_ctr *values;
-	struct regval_blob *val;
-
-	/* retrieve the registry values for this service */
-
-	if ( !(values = svcctl_fetch_regvalues( name, token )) )
-		return WERR_REG_CORRUPT;
+	TALLOC_CTX *mem_ctx = talloc_stackframe();
+	const char *result = NULL;
 
 	/* now fill in the individual values */
 
-	if ( (val = regval_ctr_getvalue( values, "DisplayName" )) != NULL )
-		config->displayname = regval_sz(val);
-	else
-		config->displayname = name;
+	config->displayname = svcctl_lookup_dispname(mem_ctx, name, token);
 
-	if ( (val = regval_ctr_getvalue( values, "ObjectName" )) != NULL ) {
-		config->startname = regval_sz(val);
+	result = svcctl_get_string_value(mem_ctx, name, "ObjectName", token);
+	if (result != NULL) {
+		config->startname = result;
 	}
 
-	if ( (val = regval_ctr_getvalue( values, "ImagePath" )) != NULL ) {
-		config->executablepath = regval_sz(val);
+	result = svcctl_get_string_value(mem_ctx, name, "ImagePath", token);
+	if (result != NULL) {
+		config->executablepath = result;
 	}
 
 	/* a few hard coded values */
@@ -686,7 +680,7 @@ static WERROR fill_svc_config( TALLOC_CTX *ctx, const char *name,
 		config->start_type = SVCCTL_DEMAND_START;
 
 
-	TALLOC_FREE( values );
+	talloc_free(mem_ctx);
 
 	return WERR_OK;
 }
