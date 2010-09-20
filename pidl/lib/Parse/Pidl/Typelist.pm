@@ -130,6 +130,7 @@ sub typeIs($$)
 	my ($t,$tt) = @_;
 	
 	if (ref($t) eq "HASH") {
+		return 1 if ($t->{TYPE} eq "TYPEDEF" and $t->{DATA}->{TYPE} eq $tt);
 		return 1 if ($t->{TYPE} eq $tt);
 		return 0;
 	}
