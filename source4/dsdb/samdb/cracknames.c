@@ -39,12 +39,14 @@
 
 static WERROR DsCrackNameOneFilter(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 				   struct smb_krb5_context *smb_krb5_context,
-				   uint32_t format_flags, uint32_t format_offered, uint32_t format_desired,
+				   uint32_t format_flags, enum drsuapi_DsNameFormat format_offered,
+				   enum drsuapi_DsNameFormat format_desired,
 				   struct ldb_dn *name_dn, const char *name, 
 				   const char *domain_filter, const char *result_filter, 
 				   struct drsuapi_DsNameInfo1 *info1);
 static WERROR DsCrackNameOneSyntactical(TALLOC_CTX *mem_ctx,
-					uint32_t format_offered, uint32_t format_desired,
+					enum drsuapi_DsNameFormat format_offered,
+					enum drsuapi_DsNameFormat format_desired,
 					struct ldb_dn *name_dn, const char *name, 
 					struct drsuapi_DsNameInfo1 *info1);
 
@@ -177,7 +179,8 @@ static enum drsuapi_DsNameStatus LDB_lookup_spn_alias(krb5_context context, stru
 
 static WERROR DsCrackNameSPNAlias(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 				  struct smb_krb5_context *smb_krb5_context,
-				  uint32_t format_flags, uint32_t format_offered, uint32_t format_desired,
+				  uint32_t format_flags, enum drsuapi_DsNameFormat format_offered,
+				  enum drsuapi_DsNameFormat format_desired,
 				  const char *name, struct drsuapi_DsNameInfo1 *info1)
 {
 	WERROR wret;
@@ -262,7 +265,8 @@ static WERROR DsCrackNameSPNAlias(struct ldb_context *sam_ctx, TALLOC_CTX *mem_c
 
 static WERROR DsCrackNameUPN(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 			     struct smb_krb5_context *smb_krb5_context,
-			     uint32_t format_flags, uint32_t format_offered, uint32_t format_desired,
+			     uint32_t format_flags, enum drsuapi_DsNameFormat format_offered,
+			     enum drsuapi_DsNameFormat format_desired,
 			     const char *name, struct drsuapi_DsNameInfo1 *info1)
 {
 	int ldb_ret;
@@ -348,7 +352,8 @@ static WERROR DsCrackNameUPN(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 /* Crack a single 'name', from format_offered into format_desired, returning the result in info1 */
 
 WERROR DsCrackNameOneName(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
-			  uint32_t format_flags, uint32_t format_offered, uint32_t format_desired,
+			  uint32_t format_flags, enum drsuapi_DsNameFormat format_offered,
+			  enum drsuapi_DsNameFormat format_desired,
 			  const char *name, struct drsuapi_DsNameInfo1 *info1)
 {
 	krb5_error_code ret;
@@ -678,7 +683,8 @@ WERROR DsCrackNameOneName(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
  * database */
 
 static WERROR DsCrackNameOneSyntactical(TALLOC_CTX *mem_ctx,
-					uint32_t format_offered, uint32_t format_desired,
+					enum drsuapi_DsNameFormat format_offered,
+					enum drsuapi_DsNameFormat format_desired,
 					struct ldb_dn *name_dn, const char *name, 
 					struct drsuapi_DsNameInfo1 *info1)
 {
@@ -717,7 +723,8 @@ static WERROR DsCrackNameOneSyntactical(TALLOC_CTX *mem_ctx,
 
 static WERROR DsCrackNameOneFilter(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 				   struct smb_krb5_context *smb_krb5_context,
-				   uint32_t format_flags, uint32_t format_offered, uint32_t format_desired,
+				   uint32_t format_flags, enum drsuapi_DsNameFormat format_offered,
+				   enum drsuapi_DsNameFormat format_desired,
 				   struct ldb_dn *name_dn, const char *name, 
 				   const char *domain_filter, const char *result_filter, 
 				   struct drsuapi_DsNameInfo1 *info1)
@@ -872,6 +879,8 @@ static WERROR DsCrackNameOneFilter(struct ldb_context *sam_ctx, TALLOC_CTX *mem_
 			return DsCrackNameUPN(sam_ctx, mem_ctx, smb_krb5_context, 
 					      format_flags, format_offered, format_desired,
 					      name, info1);
+		default:
+			break;
 		}
 		info1->status = DRSUAPI_DS_NAME_STATUS_NOT_FOUND;
 		return WERR_OK;
@@ -893,6 +902,8 @@ static WERROR DsCrackNameOneFilter(struct ldb_context *sam_ctx, TALLOC_CTX *mem_
 					break;
 				case DRSUAPI_DS_NAME_FORMAT_CANONICAL_EX:
 					canonical_name = ldb_dn_canonical_ex_string(mem_ctx, result_res[i]->dn);
+					break;
+				default:
 					break;
 				}
 				if (strcasecmp_m(canonical_name, name) == 0) {
@@ -1208,7 +1219,7 @@ NTSTATUS crack_service_principal_name(struct ldb_context *sam_ctx,
 NTSTATUS crack_name_to_nt4_name(TALLOC_CTX *mem_ctx, 
 				struct tevent_context *ev_ctx, 
 				struct loadparm_context *lp_ctx,
-				uint32_t format_offered,
+				enum drsuapi_DsNameFormat format_offered,
 				const char *name, 
 				const char **nt4_domain, const char **nt4_account)
 {
@@ -1275,7 +1286,7 @@ NTSTATUS crack_auto_name_to_nt4_name(TALLOC_CTX *mem_ctx,
 				     const char **nt4_domain,
 				     const char **nt4_account)
 {
-	uint32_t format_offered = DRSUAPI_DS_NAME_FORMAT_UNKNOWN;
+	enum drsuapi_DsNameFormat format_offered = DRSUAPI_DS_NAME_FORMAT_UNKNOWN;
 
 	/* Handle anonymous bind */
 	if (!name || !*name) {
