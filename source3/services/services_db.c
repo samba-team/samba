@@ -574,7 +574,8 @@ done:
  Wrapper to make storing a Service sd easier
 ********************************************************************/
 
-bool svcctl_set_secdesc( TALLOC_CTX *ctx, const char *name, struct security_descriptor *sec_desc, NT_USER_TOKEN *token )
+bool svcctl_set_secdesc(const char *name, struct security_descriptor *sec_desc,
+			NT_USER_TOKEN *token )
 {
 	struct registry_key *key = NULL;
 	WERROR wresult;
