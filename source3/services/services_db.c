@@ -26,6 +26,7 @@
 #include "registry/reg_util_legacy.h"
 #include "registry/reg_dispatcher.h"
 #include "registry/reg_objects.h"
+#include "registry/reg_api_util.h"
 
 struct rcinit_file_information {
 	char *description;
@@ -575,11 +576,10 @@ done:
 
 bool svcctl_set_secdesc( TALLOC_CTX *ctx, const char *name, struct security_descriptor *sec_desc, struct security_token *token )
 {
-	struct registry_key_handle *key = NULL;
+	struct registry_key *key = NULL;
 	WERROR wresult;
 	char *path = NULL;
-	struct regval_ctr *values = NULL;
-	DATA_BLOB blob;
+	struct registry_value value;
 	NTSTATUS status;
 	bool ret = False;
 
@@ -588,8 +588,9 @@ bool svcctl_set_secdesc( TALLOC_CTX *ctx, const char *name, struct security_desc
 	if (asprintf(&path, "%s\\%s\\%s", KEY_SERVICES, name, "Security") < 0) {
 		return false;
 	}
-	wresult = regkey_open_internal( NULL, &key, path, token,
-					REG_KEY_ALL );
+
+	wresult = reg_open_path(NULL, path, REG_KEY_ALL, token, &key);
+
 	if ( !W_ERROR_IS_OK(wresult) ) {
 		DEBUG(0,("svcctl_get_secdesc: key lookup failed! [%s] (%s)\n",
 			path, win_errstr(wresult)));
@@ -598,24 +599,24 @@ bool svcctl_set_secdesc( TALLOC_CTX *ctx, const char *name, struct security_desc
 	}
 	SAFE_FREE(path);
 
-	wresult = regval_ctr_init(key, &values);
-	if (!W_ERROR_IS_OK(wresult)) {
-		DEBUG(0,("svcctl_set_secdesc: talloc() failed!\n"));
-		TALLOC_FREE( key );
-		return False;
-	}
-
 	/* stream the printer security descriptor */
 
-	status = marshall_sec_desc(ctx, sec_desc, &blob.data, &blob.length);
+	status = marshall_sec_desc(ctx, sec_desc, &value.data.data, &value.data.length);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("svcctl_set_secdesc: ndr_push_struct_blob() failed!\n"));
 		TALLOC_FREE( key );
 		return False;
 	}
 
-	regval_ctr_addvalue( values, "Security", REG_BINARY, blob.data, blob.length);
-	ret = store_reg_values( key, values );
+	value.type = REG_BINARY;
+
+	wresult = reg_setvalue(key, "Security", &value);
+	if (!W_ERROR_IS_OK(wresult)) {
+		DEBUG(0, ("svcctl_set_secdesc: reg_setvalue failed: %s\n",
+			  win_errstr(wresult)));
+		talloc_free(key);
+		return false;
+	}
 
 	/* cleanup */
 
