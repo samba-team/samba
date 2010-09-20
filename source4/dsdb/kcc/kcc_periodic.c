@@ -73,7 +73,8 @@ static bool check_MasterNC(struct kccsrv_partition *p, struct repsFromToBlob *r,
 		struct ldb_dn *dn;
 
 		struct GUID id2 = samdb_result_guid(msg, "invocationID");
-		if (!GUID_equal(&invocation_id, &id2)) {
+		if (GUID_all_zero(&id2) ||
+		    !GUID_equal(&invocation_id, &id2)) {
 			continue;
 		}
 
@@ -89,6 +90,9 @@ static bool check_MasterNC(struct kccsrv_partition *p, struct repsFromToBlob *r,
 			}
 			if (ldb_dn_compare(dn, p->dn) == 0) {
 				talloc_free(dn);
+				DEBUG(5,("%s hasMasterNCs match on %s in %s\n",
+					 r1->other_info->dns_name, ldb_dn_get_linearized(dn),
+					 ldb_dn_get_linearized(msg->dn)));
 				return true;
 			}
 			talloc_free(dn);
@@ -183,6 +187,7 @@ static NTSTATUS kccsrv_add_repsFrom(struct kccsrv_service *s, TALLOC_CTX *mem_ct
 				old_reps[old_count] = reps[i];
 				old_count++;
 				modified = true;
+				DEBUG(4,(__location__ ": Added repsFrom for %s\n", reps[i].ctr.ctr1.other_info->dns_name));
 			}
 		}
 
@@ -194,6 +199,7 @@ static NTSTATUS kccsrv_add_repsFrom(struct kccsrv_service *s, TALLOC_CTX *mem_ct
 				old_count--;
 				i--;
 				modified = true;
+				DEBUG(4,(__location__ ": Removed repsFrom for %s\n", reps[i].ctr.ctr1.other_info->dns_name));
 			}
 		}
 		
