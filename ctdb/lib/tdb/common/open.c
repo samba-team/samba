@@ -55,7 +55,7 @@ void tdb_header_hash(struct tdb_context *tdb,
 	hash_key.dsize = sizeof(TDB_MAGIC_FOOD);
 	*magic1_hash = tdb->hash_fn(&hash_key);
 
-	hash_key.dptr = CONVERT(tdb_magic);
+	hash_key.dptr = (unsigned char *)CONVERT(tdb_magic);
 	hash_key.dsize = sizeof(tdb_magic);
 	*magic2_hash = tdb->hash_fn(&hash_key);
 
