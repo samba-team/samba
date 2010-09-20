@@ -27,6 +27,9 @@
 #include "utils/net.h"
 #include "utils/net_registry_util.h"
 #include "include/g_lock.h"
+#include "registry/reg_backend_db.h"
+#include "registry/reg_import.h"
+#include <assert.h>
 
 /*
  *
@@ -741,6 +744,198 @@ done:
 	return ret;
 }
 
+/******************************************************************************/
+/**
+ * @defgroup net_registry net registry
+ */
+
+/**
+ * @defgroup net_registry_import Import
+ * @ingroup net_registry
+ * @{
+ */
+
+struct import_ctx {
+	TALLOC_CTX *mem_ctx;
+};
+
+
+static WERROR import_create_key(struct import_ctx* ctx,
+				struct registry_key* parent,
+				const char* name, void** pkey, bool* existing)
+{
+	WERROR werr;
+	void* mem_ctx = talloc_new(ctx->mem_ctx);
+
+	struct registry_key* key = NULL;
+	enum winreg_CreateAction action;
+
+	if (parent == NULL) {
+		char* subkeyname = NULL;
+		werr = open_hive(mem_ctx, name, REG_KEY_WRITE,
+			 &parent, &subkeyname);
+		if (!W_ERROR_IS_OK(werr)) {
+			d_fprintf(stderr, _("open_hive failed: %s\n"),
+				  win_errstr(werr));
+			goto done;
+		}
+		name = subkeyname;
+	}
+
+	action = REG_ACTION_NONE;
+	werr = reg_createkey(mem_ctx, parent, name, REG_KEY_WRITE,
+			     &key, &action);
+	if (!W_ERROR_IS_OK(werr)) {
+		d_fprintf(stderr, _("reg_createkey failed: %s\n"),
+			  win_errstr(werr));
+		goto done;
+	}
+
+	if (action == REG_ACTION_NONE) {
+		d_fprintf(stderr, _("createkey did nothing -- huh?\n"));
+		werr = WERR_CREATE_FAILED;
+		goto done;
+	}
+
+	if (existing != NULL) {
+		*existing = (action == REG_OPENED_EXISTING_KEY);
+	}
+
+	if (pkey!=NULL) {
+		*pkey = talloc_steal(ctx->mem_ctx, key);
+	}
+
+done:
+	talloc_free(mem_ctx);
+	return werr;
+}
+
+static WERROR import_close_key(struct import_ctx* ctx,
+			       struct registry_key* key)
+{
+	return WERR_OK;
+}
+
+static WERROR import_delete_key(struct import_ctx* ctx,
+				struct registry_key* parent, const char* name)
+{
+	WERROR werr;
+	void* mem_ctx = talloc_new(talloc_tos());
+
+	if (parent == NULL) {
+		char* subkeyname = NULL;
+		werr = open_hive(mem_ctx, name, REG_KEY_WRITE,
+			 &parent, &subkeyname);
+		if (!W_ERROR_IS_OK(werr)) {
+			d_fprintf(stderr, _("open_hive failed: %s\n"),
+				  win_errstr(werr));
+			goto done;
+		}
+		name = subkeyname;
+	}
+
+	werr = reg_deletekey_recursive(mem_ctx, parent, name);
+	if (!W_ERROR_IS_OK(werr)) {
+		d_fprintf(stderr, "reg_deletekey_recursive %s: %s\n", _("failed"),
+			  win_errstr(werr));
+		goto done;
+	}
+
+done:
+	talloc_free(mem_ctx);
+	return werr;
+}
+
+static WERROR import_create_val (struct import_ctx* ctx,
+				 struct registry_key* parent, const char* name,
+				 const struct registry_value* value)
+{
+	WERROR werr;
+
+	if (parent == NULL) {
+		return WERR_INVALID_PARAM;
+	}
+
+	werr = reg_setvalue(parent, name, value);
+	if (!W_ERROR_IS_OK(werr)) {
+		d_fprintf(stderr, _("reg_setvalue failed: %s\n"),
+			  win_errstr(werr));
+	}
+	return werr;
+}
+
+static WERROR import_delete_val (struct import_ctx* ctx, struct registry_key* parent, const char* name) {
+	WERROR werr;
+
+	if (parent == NULL) {
+		return WERR_INVALID_PARAM;
+	}
+
+	werr = reg_deletevalue(parent, name);
+	if (!W_ERROR_IS_OK(werr)) {
+		d_fprintf(stderr, _("reg_deletekey failed: %s\n"),
+			  win_errstr(werr));
+	}
+
+	return werr;
+}
+
+
+static int net_registry_import(struct net_context *c, int argc,
+			       const char **argv)
+{
+	struct import_ctx import_ctx;
+	struct reg_import_callback import_callback = {
+		.openkey     = NULL,
+		.closekey    = (reg_import_callback_closekey_t)&import_close_key,
+		.createkey   = (reg_import_callback_createkey_t)&import_create_key,
+		.deletekey   = (reg_import_callback_deletekey_t)&import_delete_key,
+		.deleteval   = (reg_import_callback_deleteval_t)&import_delete_val,
+		.setval.registry_value = (reg_import_callback_setval_registry_value_t)
+		&import_create_val,
+		.setval_type           = REGISTRY_VALUE,
+		.data        = &import_ctx
+	};
+
+	int ret;
+
+	if (argc < 1 || argc > 2 || c->display_usage) {
+		d_printf("%s\n%s",
+			 _("Usage:"),
+			 _("net registry import <reg> [options]\n"));
+		d_printf("%s\n%s",
+			 _("Example:"),
+			 _("net registry import file.reg enc=CP1252\n"));
+		return -1;
+	}
+
+	ZERO_STRUCT(import_ctx);
+	import_ctx.mem_ctx = talloc_stackframe();
+
+	regdb_open();
+	regdb_transaction_start();
+
+	ret = reg_parse_file(argv[0],
+			     reg_import_adapter(import_ctx.mem_ctx,
+						import_callback),
+			     (argc > 1) ? argv[1] : NULL
+		);
+	if (ret < 0) {
+		d_printf("reg_parse_file failed: transaction canceled\n");
+		regdb_transaction_cancel();
+	} else{
+		regdb_transaction_commit();
+	}
+
+	regdb_close();
+	talloc_free(import_ctx.mem_ctx);
+
+	return ret;
+}
+/**@}*/
+
+
+/******************************************************************************/
 int net_registry(struct net_context *c, int argc, const char **argv)
 {
 	int ret = -1;
@@ -833,6 +1028,14 @@ int net_registry(struct net_context *c, int argc, const char **argv)
 			N_("Set security descriptor from sddl format string"),
 			N_("net registry setsd_sddl\n"
 			   "    Set security descriptor from sddl format string")
+		},
+		{
+			"import",
+			net_registry_import,
+			NET_TRANSPORT_LOCAL,
+			N_("Import .reg file"),
+			N_("net registry import\n"
+			   "    Import .reg file")
 		},
 	{ NULL, NULL, 0, NULL, NULL }
 	};
