@@ -27,9 +27,9 @@ also accepted as dictionary entries here
             else:
                 setattr(self, a, b)
 
-        if self.IS_GIT_SNAPSHOT is "yes":
+        if self.IS_GIT_SNAPSHOT == "yes":
             self.IS_GIT_SNAPSHOT=True
-        elif self.IS_GIT_SNAPSHOT is "no":
+        elif self.IS_GIT_SNAPSHOT == "no":
             self.IS_GIT_SNAPSHOT=False
                 
  ##
