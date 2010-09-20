@@ -43,6 +43,7 @@
 #include "dsdb/common/util.h"
 #include "lib/socket/socket.h"
 #include "dsdb/samdb/ldb_modules/util.h"
+#include "librpc/gen_ndr/irpc.h"
 
 /*
   search the sam for the specified attributes in a specific domain, filter on
@@ -3981,4 +3982,75 @@ bool dsdb_attr_in_rodc_fas(const struct dsdb_attribute *sa)
 
 	/* other attributes are denied */
 	return false;
+}
+
+/* return fsmo role dn and role owner dn for a particular role*/
+WERROR dsdb_get_fsmo_role_info(TALLOC_CTX *tmp_ctx,
+			       struct ldb_context *ldb,
+			       uint32_t role,
+			       struct ldb_dn **fsmo_role_dn,
+			       struct ldb_dn **role_owner_dn)
+{
+	int ret;
+	switch (role) {
+	case DREPL_NAMING_MASTER:
+		*fsmo_role_dn = samdb_partitions_dn(ldb, tmp_ctx);
+		ret = samdb_reference_dn(ldb, tmp_ctx, *fsmo_role_dn, "fSMORoleOwner", role_owner_dn);
+		if (ret != LDB_SUCCESS) {
+			DEBUG(0,(__location__ ": Failed to find fSMORoleOwner in Naming Master object - %s",
+				 ldb_errstring(ldb)));
+			talloc_free(tmp_ctx);
+			return WERR_DS_DRA_INTERNAL_ERROR;
+		}
+		break;
+	case DREPL_INFRASTRUCTURE_MASTER:
+		*fsmo_role_dn = samdb_infrastructure_dn(ldb, tmp_ctx);
+		ret = samdb_reference_dn(ldb, tmp_ctx, *fsmo_role_dn, "fSMORoleOwner", role_owner_dn);
+		if (ret != LDB_SUCCESS) {
+			DEBUG(0,(__location__ ": Failed to find fSMORoleOwner in Schema Master object - %s",
+				 ldb_errstring(ldb)));
+			talloc_free(tmp_ctx);
+			return WERR_DS_DRA_INTERNAL_ERROR;
+		}
+		break;
+	case DREPL_RID_MASTER:
+		ret = samdb_rid_manager_dn(ldb, tmp_ctx, fsmo_role_dn);
+		if (ret != LDB_SUCCESS) {
+			DEBUG(0, (__location__ ": Failed to find RID Manager object - %s", ldb_errstring(ldb)));
+			talloc_free(tmp_ctx);
+			return WERR_DS_DRA_INTERNAL_ERROR;
+		}
+
+		ret = samdb_reference_dn(ldb, tmp_ctx, *fsmo_role_dn, "fSMORoleOwner", role_owner_dn);
+		if (ret != LDB_SUCCESS) {
+			DEBUG(0,(__location__ ": Failed to find fSMORoleOwner in RID Manager object - %s",
+				 ldb_errstring(ldb)));
+			talloc_free(tmp_ctx);
+			return WERR_DS_DRA_INTERNAL_ERROR;
+		}
+		break;
+	case DREPL_SCHEMA_MASTER:
+		*fsmo_role_dn = ldb_get_schema_basedn(ldb);
+		ret = samdb_reference_dn(ldb, tmp_ctx, *fsmo_role_dn, "fSMORoleOwner", role_owner_dn);
+		if (ret != LDB_SUCCESS) {
+			DEBUG(0,(__location__ ": Failed to find fSMORoleOwner in Schema Master object - %s",
+				 ldb_errstring(ldb)));
+			talloc_free(tmp_ctx);
+			return WERR_DS_DRA_INTERNAL_ERROR;
+		}
+		break;
+	case DREPL_PDC_MASTER:
+		*fsmo_role_dn = ldb_get_default_basedn(ldb);
+		ret = samdb_reference_dn(ldb, tmp_ctx, *fsmo_role_dn, "fSMORoleOwner", role_owner_dn);
+		if (ret != LDB_SUCCESS) {
+			DEBUG(0,(__location__ ": Failed to find fSMORoleOwner in Pd Master object - %s",
+				 ldb_errstring(ldb)));
+			talloc_free(tmp_ctx);
+			return WERR_DS_DRA_INTERNAL_ERROR;
+		}
+		break;
+	default:
+		return WERR_DS_DRA_INTERNAL_ERROR;
+	}
+	return WERR_OK;
 }

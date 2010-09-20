@@ -6,6 +6,7 @@
    Copyright (C) Nadezhda Ivanova 2010
    Copyright (C) Andrew Tridgell 2010
    Copyright (C) Andrew Bartlett 2010
+   Copyright (C) Anatoliy Atanasov 2010
 
    based on drepl_ridalloc.c
 
@@ -62,77 +63,31 @@ WERROR dreplsrv_fsmo_role_check(struct dreplsrv_service *service,
 {
 	struct ldb_dn *role_owner_dn, *fsmo_role_dn, *ntds_dn;
 	TALLOC_CTX *tmp_ctx = talloc_new(service);
-	struct ldb_context *ldb = service->samdb;
-	int ret;
 	uint64_t fsmo_info = 0;
 	enum drsuapi_DsExtendedOperation extended_op = DRSUAPI_EXOP_NONE;
 	WERROR werr;
 
-	ntds_dn = samdb_ntds_settings_dn(ldb);
+	ntds_dn = samdb_ntds_settings_dn(service->samdb);
 	if (!ntds_dn) {
 		return WERR_DS_DRA_INTERNAL_ERROR;
 	}
 
+	werr = dsdb_get_fsmo_role_info(tmp_ctx, service->samdb, role,
+				       &fsmo_role_dn, &role_owner_dn);
+	if (!W_ERROR_IS_OK(werr)) {
+		return werr;
+	}
+
 	switch (role) {
 	case DREPL_NAMING_MASTER:
-		fsmo_role_dn = samdb_partitions_dn(ldb, tmp_ctx);
-		ret = samdb_reference_dn(ldb, tmp_ctx, fsmo_role_dn, "fSMORoleOwner", &role_owner_dn);
-		if (ret != LDB_SUCCESS) {
-			DEBUG(0,(__location__ ": Failed to find fSMORoleOwner in Naming Master object - %s",
-				 ldb_errstring(ldb)));
-			talloc_free(tmp_ctx);
-			return WERR_DS_DRA_INTERNAL_ERROR;
-		}
-		extended_op = DRSUAPI_EXOP_FSMO_REQ_ROLE;
-		break;
 	case DREPL_INFRASTRUCTURE_MASTER:
-		fsmo_role_dn = samdb_infrastructure_dn(ldb, tmp_ctx);
-		ret = samdb_reference_dn(ldb, tmp_ctx, fsmo_role_dn, "fSMORoleOwner", &role_owner_dn);
-		if (ret != LDB_SUCCESS) {
-			DEBUG(0,(__location__ ": Failed to find fSMORoleOwner in Schema Master object - %s",
-				 ldb_errstring(ldb)));
-			talloc_free(tmp_ctx);
-			return WERR_DS_DRA_INTERNAL_ERROR;
-		}
+	case DREPL_SCHEMA_MASTER:
 		extended_op = DRSUAPI_EXOP_FSMO_REQ_ROLE;
 		break;
 	case DREPL_RID_MASTER:
-		ret = samdb_rid_manager_dn(ldb, tmp_ctx, &fsmo_role_dn);
-		if (ret != LDB_SUCCESS) {
-			DEBUG(0, (__location__ ": Failed to find RID Manager object - %s", ldb_errstring(ldb)));
-			talloc_free(tmp_ctx);
-			return WERR_DS_DRA_INTERNAL_ERROR;
-		}
-
-		ret = samdb_reference_dn(ldb, tmp_ctx, fsmo_role_dn, "fSMORoleOwner", &role_owner_dn);
-		if (ret != LDB_SUCCESS) {
-			DEBUG(0,(__location__ ": Failed to find fSMORoleOwner in RID Manager object - %s",
-				 ldb_errstring(ldb)));
-			talloc_free(tmp_ctx);
-			return WERR_DS_DRA_INTERNAL_ERROR;
-		}
 		extended_op = DRSUAPI_EXOP_FSMO_RID_REQ_ROLE;
 		break;
-	case DREPL_SCHEMA_MASTER:
-		fsmo_role_dn = ldb_get_schema_basedn(ldb);
-		ret = samdb_reference_dn(ldb, tmp_ctx, fsmo_role_dn, "fSMORoleOwner", &role_owner_dn);
-		if (ret != LDB_SUCCESS) {
-			DEBUG(0,(__location__ ": Failed to find fSMORoleOwner in Schema Master object - %s",
-				 ldb_errstring(ldb)));
-			talloc_free(tmp_ctx);
-			return WERR_DS_DRA_INTERNAL_ERROR;
-		}
-		extended_op = DRSUAPI_EXOP_FSMO_REQ_ROLE;
-		break;
 	case DREPL_PDC_MASTER:
-		fsmo_role_dn = ldb_get_default_basedn(ldb);
-		ret = samdb_reference_dn(ldb, tmp_ctx, fsmo_role_dn, "fSMORoleOwner", &role_owner_dn);
-		if (ret != LDB_SUCCESS) {
-			DEBUG(0,(__location__ ": Failed to find fSMORoleOwner in Pd Master object - %s",
-				 ldb_errstring(ldb)));
-			talloc_free(tmp_ctx);
-			return WERR_DS_DRA_INTERNAL_ERROR;
-		}
 		extended_op = DRSUAPI_EXOP_FSMO_REQ_PDC;
 		break;
 	default:
