@@ -1151,6 +1151,8 @@ NET_OBJ1 = utils/net.o utils/net_ads.o utils/net_help.o \
 	   $(RPC_CLIENT_SCHANNEL_OBJ) \
 	   rpc_client/init_netlogon.o \
 	   rpc_client/init_samr.o \
+	   registry/reg_parse.o registry/reg_format.o \
+	   registry/reg_parse_internal.o registry/reg_import.o \
 	   lib/cbuf.o lib/srprs.o
 
 # these are not processed by make proto
