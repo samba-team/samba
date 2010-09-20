@@ -394,8 +394,13 @@ static bool torture_drs_unit_pfm_oid_from_attid_check_attid(struct torture_conte
 	const char *oid;
 
 	/* Test with valid prefixMap attid */
-	werr = dsdb_schema_pfm_oid_from_attid(priv->pfm_full, 0x00000000, tctx, &oid);
-	torture_assert_werr_ok(tctx, werr, "Testing prefixMap type attid = 0x0000000");
+	werr = dsdb_schema_pfm_oid_from_attid(priv->pfm_full, 0x00010001, tctx, &oid);
+	torture_assert_werr_ok(tctx, werr, "Testing prefixMap type attid = 0x00010001");
+
+	/* Test with valid attid but invalid index */
+	werr = dsdb_schema_pfm_oid_from_attid(priv->pfm_full, 0x01110001, tctx, &oid);
+	torture_assert_werr_equal(tctx, werr, WERR_DS_NO_ATTRIBUTE_OR_VALUE,
+				  "Testing invalid-index attid = 0x01110001");
 
 	/* Test with attid in msDS-IntId range */
 	werr = dsdb_schema_pfm_oid_from_attid(priv->pfm_full, 0x80000000, tctx, &oid);
