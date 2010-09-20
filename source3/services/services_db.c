@@ -514,16 +514,13 @@ void svcctl_init_keys( void )
 
 struct security_descriptor *svcctl_get_secdesc( TALLOC_CTX *ctx, const char *name, NT_USER_TOKEN *token )
 {
-	struct registry_key_handle *key = NULL;
-	struct regval_ctr *values = NULL;
-	struct regval_blob *val = NULL;
+	struct registry_key *key = NULL;
+	struct registry_value *value;
 	struct security_descriptor *ret_sd = NULL;
 	char *path= NULL;
 	WERROR wresult;
 	NTSTATUS status;
 	TALLOC_CTX *mem_ctx = talloc_stackframe();
-
-	/* now add the security descriptor */
 
 	path = talloc_asprintf(mem_ctx, "%s\\%s\\%s", KEY_SERVICES, name,
 			       "Security");
@@ -531,32 +528,24 @@ struct security_descriptor *svcctl_get_secdesc( TALLOC_CTX *ctx, const char *nam
 		goto done;
 	}
 
-	wresult = regkey_open_internal(mem_ctx, &key, path, token, REG_KEY_ALL);
+	wresult = reg_open_path(mem_ctx, path, REG_KEY_ALL, token, &key);
 	if ( !W_ERROR_IS_OK(wresult) ) {
 		DEBUG(0,("svcctl_get_secdesc: key lookup failed! [%s] (%s)\n",
 			path, win_errstr(wresult)));
 		goto done;
 	}
 
-	wresult = regval_ctr_init(key, &values);
-	if (!W_ERROR_IS_OK(wresult)) {
-		DEBUG(0,("svcctl_get_secdesc: talloc() failed!\n"));
-		goto done;
-	}
-
-	if (fetch_reg_values( key, values ) == -1) {
-		DEBUG(0, ("Error getting registry values\n"));
-		goto done;
-	}
-
-	if ( !(val = regval_ctr_getvalue( values, "Security" )) ) {
+	wresult = reg_queryvalue(mem_ctx, key, "Security", &value);
+	if (W_ERROR_EQUAL(wresult, WERR_BADFILE)) {
 		goto fallback_to_default_sd;
+	} else if (!W_ERROR_IS_OK(wresult)) {
+		DEBUG(0, ("svcctl_get_secdesc: error getting value 'Security': "
+			  "%s\n", win_errstr(wresult)));
+		goto done;
 	}
 
-	/* stream the service security descriptor */
-
-	status = unmarshall_sec_desc(ctx, regval_data_p(val),
-				     regval_size(val), &ret_sd);
+	status = unmarshall_sec_desc(ctx, value->data.data,
+				     value->data.length, &ret_sd);
 
 	if (NT_STATUS_IS_OK(status)) {
 		goto done;
