@@ -70,74 +70,74 @@ LIBNDR_XATTR_SRC = '''../librpc/gen_ndr/ndr_xattr.c
                   ../librpc/ndr/ndr_xattr.c'''
 
 LIBCLI_SPOOLSS_SRC = '''
-                     librpc/gen_ndr/cli_spoolss.c
-                     librpc/gen_ndr/ndr_spoolss_c.c
+                     ../librpc/gen_ndr/cli_spoolss.c
+                     ../librpc/gen_ndr/ndr_spoolss_c.c
                      rpc_client/cli_spoolss.c
                      rpc_client/init_spoolss.c'''
 
 LIBCLI_EVENTLOG_SRC = '''
-                      librpc/gen_ndr/cli_eventlog.c
-                      librpc/gen_ndr/ndr_eventlog_c.c'''
+                      ../librpc/gen_ndr/cli_eventlog.c
+                      ../librpc/gen_ndr/ndr_eventlog_c.c'''
 
 LIBCLI_WINREG_SRC = '''
-                    librpc/gen_ndr/cli_winreg.c
-                    librpc/gen_ndr/ndr_winreg_c.c'''
+                    ../librpc/gen_ndr/cli_winreg.c
+                    ../librpc/gen_ndr/ndr_winreg_c.c'''
 
 LIBCLI_NTSVCS_SRC = '''
-                    librpc/gen_ndr/cli_ntsvcs.c
-                    librpc/gen_ndr/ndr_ntsvcs_c.c'''
+                    ../librpc/gen_ndr/cli_ntsvcs.c
+                    ../librpc/gen_ndr/ndr_ntsvcs_c.c'''
 
 LIBCLI_DRSUAPI_SRC = '''
-                     librpc/gen_ndr/cli_drsuapi.c
-                     librpc/gen_ndr/ndr_drsuapi_c.c'''
+                     ../librpc/gen_ndr/cli_drsuapi.c
+                     ../librpc/gen_ndr/ndr_drsuapi_c.c'''
 
 LIBCLI_DFS_SRC = '''
-                 librpc/gen_ndr/cli_dfs.c
-                 librpc/gen_ndr/ndr_dfs_c.c'''
+                 ../librpc/gen_ndr/cli_dfs.c
+                 ../librpc/gen_ndr/ndr_dfs_c.c'''
 
 LIBCLI_ECHO_SRC = '''
-                  librpc/gen_ndr/cli_echo.c
-                  librpc/gen_ndr/ndr_echo_c.c'''
+                  ../librpc/gen_ndr/cli_echo.c
+                  ../librpc/gen_ndr/ndr_echo_c.c'''
 
 LIBCLI_INITSHUTDOWN_SRC = '''
-                          librpc/gen_ndr/cli_initshutdown.c
-                          librpc/gen_ndr/ndr_initshutdown_c.c'''
+                          ../librpc/gen_ndr/cli_initshutdown.c
+                          ../librpc/gen_ndr/ndr_initshutdown_c.c'''
 
 LIBCLI_DSSETUP_SRC = '''
-                     librpc/gen_ndr/cli_dssetup.c
-                     librpc/gen_ndr/ndr_dssetup_c.c'''
+                     ../librpc/gen_ndr/cli_dssetup.c
+                     ../librpc/gen_ndr/ndr_dssetup_c.c'''
 
 LIBCLI_SVCCTL_SRC = '''
-                    librpc/gen_ndr/cli_svcctl.c
-                    librpc/gen_ndr/ndr_svcctl_c.c'''
+                    ../librpc/gen_ndr/cli_svcctl.c
+                    ../librpc/gen_ndr/ndr_svcctl_c.c'''
 
 LIBCLI_WKSSVC_SRC = '''
-                    librpc/gen_ndr/cli_wkssvc.c
-                    librpc/gen_ndr/ndr_wkssvc_c.c'''
+                    ../librpc/gen_ndr/cli_wkssvc.c
+                    ../librpc/gen_ndr/ndr_wkssvc_c.c'''
 
 LIBCLI_SRVSVC_SRC = '''
-                    librpc/gen_ndr/cli_srvsvc.c
-                    librpc/gen_ndr/ndr_srvsvc_c.c'''
+                    ../librpc/gen_ndr/cli_srvsvc.c
+                    ../librpc/gen_ndr/ndr_srvsvc_c.c'''
 
 LIBCLI_LSA_SRC = '''
-                 librpc/gen_ndr/cli_lsa.c
-                 librpc/gen_ndr/ndr_lsa_c.c
+                 ../librpc/gen_ndr/cli_lsa.c
+                 ../librpc/gen_ndr/ndr_lsa_c.c
                  rpc_client/cli_lsarpc.c
                  rpc_client/init_lsa.c'''
 
 LIBCLI_SAMR_SRC = '''
-                  librpc/gen_ndr/cli_samr.c
-                  librpc/gen_ndr/ndr_samr_c.c
+                  ../librpc/gen_ndr/cli_samr.c
+                  ../librpc/gen_ndr/ndr_samr_c.c
                   rpc_client/cli_samr.c'''
 
 LIBCLI_NETLOGON_SRC = '''
-                      librpc/gen_ndr/cli_netlogon.c
-                      librpc/gen_ndr/ndr_netlogon_c.c
+                      ../librpc/gen_ndr/cli_netlogon.c
+                      ../librpc/gen_ndr/ndr_netlogon_c.c
                       rpc_client/cli_netlogon.c'''
 
 LIBCLI_EPMAPPER_SRC = '''
-                      librpc/gen_ndr/cli_epmapper.c
-                      librpc/gen_ndr/ndr_epmapper_c.c'''
+                      ../librpc/gen_ndr/cli_epmapper.c
+                      ../librpc/gen_ndr/ndr_epmapper_c.c'''
 
 LIBNDR_GEN_SRC = '''../librpc/gen_ndr/ndr_wkssvc.c
                  ${LIBNDR_GEN_SRC0}
