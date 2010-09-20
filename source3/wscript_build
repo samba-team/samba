@@ -373,6 +373,8 @@ REG_INIT_FULL_SRC = '''registry/reg_init_full.c'''
 
 REGFIO_SRC = '''registry/regfio.c ${REG_PARSE_PRS_SRC}'''
 
+REG_API_REGF_SRC = '''registry/reg_api_regf.c'''
+
 REGSRCS_SRC = '''registry/reg_objects.c'''
 
 REG_BACKENDS_BASE_SRC = '''registry/reg_backend_db.c'''
@@ -391,7 +393,6 @@ REG_BACKENDS_EXTRA_SRC = '''registry/reg_backend_printing.c
 REG_BASE_SRC = '''registry/reg_api.c
                registry/reg_dispatcher.c
                registry/reg_cachehook.c
-               ${REGFIO_SRC}
                ${REGSRCS_SRC}
                registry/reg_util_internal.c
                lib/util_nttoken.c
@@ -803,6 +804,8 @@ SMBD_SRC_BASE = '''${SMBD_SRC_SRV}
                 rpc_client/init_samr.c
                 ${AUTH_SRC}
                 ${PRIVILEGES_BASIC_SRC}
+                ${REGFIO_SRC}
+                ${REG_API_REGF_SRC}
                 ${LIBNDR_XATTR_SRC}'''
 
 PRINTING_SRC = '''printing/pcap.c printing/print_svid.c printing/print_aix.c
