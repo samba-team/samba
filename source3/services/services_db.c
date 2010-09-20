@@ -595,8 +595,8 @@ bool svcctl_set_secdesc( TALLOC_CTX *ctx, const char *name, struct security_desc
 	wresult = reg_open_path(mem_ctx, path, REG_KEY_ALL, token, &key);
 
 	if ( !W_ERROR_IS_OK(wresult) ) {
-		DEBUG(0,("svcctl_get_secdesc: key lookup failed! [%s] (%s)\n",
-			path, win_errstr(wresult)));
+		DEBUG(0, ("svcctl_set_secdesc: key lookup failed! [%s] (%s)\n",
+			  path, win_errstr(wresult)));
 		goto done;
 	}
 
