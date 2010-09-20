@@ -31,10 +31,6 @@
 #include "lib/messaging/messaging.h"
 #include "lib/messaging/irpc.h"
 
-#ifndef Py_TYPE /* Py_TYPE is only available on Python > 2.6 */
-#define Py_TYPE(ob)             (((PyObject*)(ob))->ob_type)
-#endif
-
 bool py_check_dcerpc_type(PyObject *obj, const char *module, const char *typename)
 {
 	PyObject *mod;
