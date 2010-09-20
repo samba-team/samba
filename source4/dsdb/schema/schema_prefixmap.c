@@ -188,6 +188,7 @@ static WERROR _dsdb_pfm_make_binary_oid(const char *full_oid, TALLOC_CTX *mem_ct
 
 	/* encode oid in BER format */
 	if (!ber_write_OID_String(mem_ctx, _bin_oid, full_oid)) {
+		DEBUG(0,("ber_write_OID_String() failed for %s\n", full_oid));
 		return WERR_INTERNAL_ERROR;
 	}
 
@@ -341,6 +342,8 @@ WERROR dsdb_schema_pfm_oid_from_attid(struct dsdb_schema_prefixmap *pfm, uint32_
 	}
 
 	if (!pfm_entry) {
+		DEBUG(1,("Failed to find prefixMap entry for ATTID = 0x%08X (%d)\n",
+			 attid, attid));
 		return WERR_INTERNAL_ERROR;
 	}
 
@@ -363,6 +366,8 @@ WERROR dsdb_schema_pfm_oid_from_attid(struct dsdb_schema_prefixmap *pfm, uint32_
 	}
 
 	if (!ber_read_OID_String(mem_ctx, bin_oid, _oid)) {
+		DEBUG(0,("ber_read_OID_String() failed for %s\n",
+			 hex_encode_talloc(bin_oid.data, bin_oid.data, bin_oid.length)));
 		werr = WERR_INTERNAL_ERROR;
 	}
 
