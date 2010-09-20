@@ -617,51 +617,62 @@ done:
 	return ret;
 }
 
-/********************************************************************
-********************************************************************/
-
-const char *svcctl_lookup_dispname(TALLOC_CTX *ctx, const char *name, NT_USER_TOKEN *token )
+static const char *svcctl_get_string_value(TALLOC_CTX *ctx, const char *key_name,
+					   const char *value_name,
+					   NT_USER_TOKEN *token)
 {
-	const char *display_name = NULL;
+	const char *result = NULL;
 	struct registry_key *key = NULL;
 	struct registry_value *value = NULL;
 	char *path = NULL;
 	WERROR wresult;
 	TALLOC_CTX *mem_ctx = talloc_stackframe();
 
-	path = talloc_asprintf(mem_ctx, "%s\\%s", KEY_SERVICES, name);
+	path = talloc_asprintf(mem_ctx, "%s\\%s", KEY_SERVICES, key_name);
 	if (path == NULL) {
 		goto done;
 	}
 
 	wresult = reg_open_path(mem_ctx, path, REG_KEY_READ, token, &key);
 	if (!W_ERROR_IS_OK(wresult)) {
-		DEBUG(0, ("svcctl_lookup_dispname: key lookup failed! [%s] (%s)\n",
-			  path, win_errstr(wresult)));
-		goto fail;
+		DEBUG(0, ("svcctl_get_string_value: key lookup failed! "
+			  "[%s] (%s)\n", path, win_errstr(wresult)));
+		goto done;
 	}
 
-	wresult = reg_queryvalue(mem_ctx, key, "DisplayName", &value);
+	wresult = reg_queryvalue(mem_ctx, key, value_name, &value);
 	if (!W_ERROR_IS_OK(wresult)) {
-		DEBUG(0, ("svcctl_lookup_dispname: error getting value "
-			  "'DisplayName': %s\n", win_errstr(wresult)));
-		goto fail;
+		DEBUG(0, ("svcctl_get_string_value: error getting value "
+			  "'%s': %s\n", value_name, win_errstr(wresult)));
+		goto done;
 	}
 
 	if (value->type != REG_SZ) {
-		goto fail;
+		goto done;
 	}
 
-	pull_reg_sz(ctx, &value->data, &display_name);
+	pull_reg_sz(ctx, &value->data, &result);
 
 	goto done;
 
-fail:
-	/* default to returning the service name */
-	display_name = talloc_strdup(ctx, name);
-
 done:
 	talloc_free(mem_ctx);
+	return result;
+}
+
+/********************************************************************
+********************************************************************/
+
+const char *svcctl_lookup_dispname(TALLOC_CTX *ctx, const char *name, NT_USER_TOKEN *token )
+{
+	const char *display_name = NULL;
+
+	display_name = svcctl_get_string_value(ctx, name, "DisplayName", token);
+
+	if (display_name == NULL) {
+		display_name = talloc_strdup(ctx, name);
+	}
+
 	return display_name;
 }
 
@@ -671,47 +682,15 @@ done:
 const char *svcctl_lookup_description(TALLOC_CTX *ctx, const char *name, NT_USER_TOKEN *token )
 {
 	const char *description = NULL;
-	struct registry_key *key = NULL;
-	struct registry_value *value = NULL;
-	char *path = NULL;
-	WERROR wresult;
-	TALLOC_CTX *mem_ctx = talloc_stackframe();
 
-	path = talloc_asprintf(mem_ctx, "%s\\%s", KEY_SERVICES, name);
-	if (path == NULL) {
-		goto done;
+	description = svcctl_get_string_value(ctx, name, "Description", token);
+
+	if (description == NULL) {
+		description = talloc_strdup(ctx, "Unix Service");
 	}
 
-	wresult = reg_open_path(mem_ctx, path, REG_KEY_READ, token, &key);
-	if (!W_ERROR_IS_OK(wresult)) {
-		DEBUG(0, ("svcctl_lookup_description: key lookup failed! "
-			  "[%s] (%s)\n", path, win_errstr(wresult)));
-		goto done;
-	}
-
-	wresult = reg_queryvalue(mem_ctx, key, "Description", &value);
-	if (!W_ERROR_IS_OK(wresult)) {
-		DEBUG(0, ("svcctl_lookup_dispname: error getting value "
-			  "'Description': %s\n", win_errstr(wresult)));
-		goto fail;
-	}
-
-	if (value->type != REG_SZ) {
-		goto fail;
-	}
-
-	pull_reg_sz(ctx, &value->data, &description);
-
-	goto done;
-
-fail:
-	description = talloc_strdup(ctx, "Unix Service");
-
-done:
-	talloc_free(mem_ctx);
 	return description;
 }
-
 
 /********************************************************************
 ********************************************************************/
