@@ -167,7 +167,7 @@ def DIST_DIRS(dirs):
 
 @conf
 def DIST_BLACKLIST(blacklist):
-    '''set the directories to package, relative to top srcdir'''
+    '''set the files to exclude from packaging, relative to top srcdir'''
     global dist_blacklist
     if not dist_blacklist:
         dist_blacklist = blacklist
