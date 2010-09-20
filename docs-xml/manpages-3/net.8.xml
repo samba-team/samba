@@ -1640,6 +1640,8 @@ Manipulate Samba's registry.
 string.</member>
 <member>net registry import      - Import a registration entries (.reg) file.
 </member>
+<member>net registry export      - Export a registration entries (.reg) file.
+</member>
 </simplelist>
 </para>
 
@@ -1745,6 +1747,16 @@ string.</member>
   --><replaceable>[opt]</replaceable></title>
 
   <para>Import a registration entries (.reg) <emphasis>file</emphasis>.
+  </para>
+</refsect3>
+
+<refsect3>
+  <title>REGISTRY EXPORT <replaceable>key</replaceable><!--
+  --><replaceable>file</replaceable><!--
+  --><replaceable>[opt]</replaceable></title>
+
+  <para>Export a <emphasis>key</emphasis> to a registration entries (.reg)
+  <emphasis>file</emphasis>.
   </para>
 </refsect3>
 
