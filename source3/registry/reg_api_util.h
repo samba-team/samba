@@ -32,4 +32,15 @@ WERROR reg_open_path(TALLOC_CTX *mem_ctx, const char *orig_path,
 		     uint32 desired_access, const NT_USER_TOKEN *token,
 		     struct registry_key **pkey);
 
+#if 0
+/* currently unused */
+WERROR reg_create_path(TALLOC_CTX *mem_ctx, const char *orig_path,
+		       uint32 desired_access,
+		       const NT_USER_TOKEN *token,
+		       enum winreg_CreateAction *paction,
+		       struct registry_key **pkey);
+WERROR reg_delete_path(const NT_USER_TOKEN *token,
+		       const char *orig_path);
+#endif
+
 #endif /* _REG_API_UTIL_H */
