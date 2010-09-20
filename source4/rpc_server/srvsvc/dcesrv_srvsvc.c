@@ -33,7 +33,7 @@
 #define SRVSVC_CHECK_ADMIN_ACCESS do { \
 	struct security_token *t = dce_call->conn->auth_state.session_info->security_token; \
 	if (!security_token_has_builtin_administrators(t) && \
-	    !security_token_has_sid_string(t, SID_BUILTIN_SERVER_OPERATORS)) { \
+	    !security_token_has_sid(t, &global_sid_Builtin_Server_Operators)) { \
 	    	return WERR_ACCESS_DENIED; \
 	} \
 } while (0)

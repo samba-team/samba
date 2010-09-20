@@ -95,12 +95,12 @@ bool security_token_is_sid_string(const struct security_token *token, const char
 
 bool security_token_is_system(const struct security_token *token)
 {
-	return security_token_is_sid_string(token, SID_NT_SYSTEM);
+	return security_token_is_sid(token, &global_sid_System);
 }
 
 bool security_token_is_anonymous(const struct security_token *token)
 {
-	return security_token_is_sid_string(token, SID_NT_ANONYMOUS);
+	return security_token_is_sid(token, &global_sid_Anonymous);
 }
 
 bool security_token_has_sid(const struct security_token *token, const struct dom_sid *sid)
@@ -128,15 +128,15 @@ bool security_token_has_sid_string(const struct security_token *token, const cha
 
 bool security_token_has_builtin_administrators(const struct security_token *token)
 {
-	return security_token_has_sid_string(token, SID_BUILTIN_ADMINISTRATORS);
+	return security_token_has_sid(token, &global_sid_Builtin_Administrators);
 }
 
 bool security_token_has_nt_authenticated_users(const struct security_token *token)
 {
-	return security_token_has_sid_string(token, SID_NT_AUTHENTICATED_USERS);
+	return security_token_has_sid(token, &global_sid_Authenticated_Users);
 }
 
 bool security_token_has_enterprise_dcs(const struct security_token *token)
 {
-	return security_token_has_sid_string(token, SID_NT_ENTERPRISE_DCS);
+	return security_token_has_sid(token, &global_sid_Enterprise_DCs);
 }

@@ -30,6 +30,7 @@ extern const struct dom_sid global_sid_World_Domain;
 extern const struct dom_sid global_sid_World;
 extern const struct dom_sid global_sid_Creator_Owner_Domain;
 extern const struct dom_sid global_sid_NT_Authority;
+extern const struct dom_sid global_sid_Enterprise_DCs;
 extern const struct dom_sid global_sid_System;
 extern const struct dom_sid global_sid_NULL;
 extern const struct dom_sid global_sid_Authenticated_Users;
