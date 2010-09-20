@@ -629,26 +629,23 @@ const char *svcctl_lookup_dispname(TALLOC_CTX *ctx, const char *name, NT_USER_TO
 	char *path = NULL;
 	WERROR wresult;
 	DATA_BLOB blob;
+	TALLOC_CTX *mem_ctx = talloc_stackframe();
 
-	/* now add the security descriptor */
-
-	if (asprintf(&path, "%s\\%s", KEY_SERVICES, name) < 0) {
-		return NULL;
+	path = talloc_asprintf(mem_ctx, "%s\\%s", KEY_SERVICES, name);
+	if (path == NULL) {
+		goto done;
 	}
-	wresult = regkey_open_internal( NULL, &key, path, token,
+	wresult = regkey_open_internal(mem_ctx, &key, path, token,
 					REG_KEY_READ );
 	if ( !W_ERROR_IS_OK(wresult) ) {
 		DEBUG(0,("svcctl_lookup_dispname: key lookup failed! [%s] (%s)\n", 
 			path, win_errstr(wresult)));
-		SAFE_FREE(path);
 		goto fail;
 	}
-	SAFE_FREE(path);
 
 	wresult = regval_ctr_init(key, &values);
 	if (!W_ERROR_IS_OK(wresult)) {
 		DEBUG(0,("svcctl_lookup_dispname: talloc() failed!\n"));
-		TALLOC_FREE( key );
 		goto fail;
 	}
 
@@ -660,14 +657,15 @@ const char *svcctl_lookup_dispname(TALLOC_CTX *ctx, const char *name, NT_USER_TO
 	blob = data_blob_const(regval_data_p(val), regval_size(val));
 	pull_reg_sz(ctx, &blob, &display_name);
 
-	TALLOC_FREE( key );
-
-	return display_name;
+	goto done;
 
 fail:
 	/* default to returning the service name */
-	TALLOC_FREE( key );
-	return talloc_strdup(ctx, name);
+	display_name = talloc_strdup(ctx, name);
+
+done:
+	talloc_free(mem_ctx);
+	return display_name;
 }
 
 /********************************************************************
