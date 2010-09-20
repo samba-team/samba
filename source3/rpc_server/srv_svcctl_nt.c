@@ -956,8 +956,7 @@ WERROR _svcctl_SetServiceObjectSecurity(struct pipes_struct *p,
 
 	/* store the new SD */
 
-	if ( !svcctl_set_secdesc( p->mem_ctx, info->name, sec_desc,
-				  p->server_info->ptok) )
+	if (!svcctl_set_secdesc(info->name, sec_desc, p->server_info->ptok))
 		return WERR_ACCESS_DENIED;
 
 	return WERR_OK;
