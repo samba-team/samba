@@ -125,8 +125,9 @@ WERROR _PNP_GetDeviceRegProp(struct pipes_struct *p,
 			     struct PNP_GetDeviceRegProp *r)
 {
 	char *ptr;
-	struct regval_ctr *values;
-	struct regval_blob *val;
+	const char *result;
+	DATA_BLOB blob;
+	TALLOC_CTX *mem_ctx = NULL;
 
 	switch( r->in.property ) {
 	case DEV_REGPROP_DESC:
@@ -141,31 +142,34 @@ WERROR _PNP_GetDeviceRegProp(struct pipes_struct *p,
 			return WERR_GENERAL_FAILURE;
 		ptr++;
 
-		if ( !(values = svcctl_fetch_regvalues(
-			       ptr, p->server_info->ptok)))
-			return WERR_GENERAL_FAILURE;
+		mem_ctx = talloc_stackframe();
 
-		if ( !(val = regval_ctr_getvalue( values, "DisplayName" )) ) {
-			TALLOC_FREE( values );
+		result = svcctl_lookup_dispname(mem_ctx, ptr, p->server_info->ptok);
+		if (result == NULL) {
 			return WERR_GENERAL_FAILURE;
 		}
 
-		if (*r->in.buffer_size < regval_size(val)) {
-			*r->out.needed = regval_size(val);
+		if (!push_reg_sz(mem_ctx, &blob, result)) {
+			talloc_free(mem_ctx);
+			return WERR_GENERAL_FAILURE;
+		}
+
+		if (*r->in.buffer_size < blob.length) {
+			*r->out.needed = blob.length;
 			*r->out.buffer_size = 0;
-			TALLOC_FREE( values );
+			talloc_free(mem_ctx);
 			return WERR_CM_BUFFER_SMALL;
 		}
 
-		r->out.buffer = (uint8_t *)talloc_memdup(p->mem_ctx, regval_data_p(val), regval_size(val));
-		TALLOC_FREE(values);
+		r->out.buffer = (uint8_t *)talloc_memdup(p->mem_ctx, blob.data, blob.length);
+		talloc_free(mem_ctx);
 		if (!r->out.buffer) {
 			return WERR_NOMEM;
 		}
 
 		*r->out.reg_data_type = REG_SZ;	/* always 1...tested using a remove device manager connection */
-		*r->out.buffer_size = regval_size(val);
-		*r->out.needed = regval_size(val);
+		*r->out.buffer_size = blob.length;
+		*r->out.needed = blob.length;
 
 		break;
 
