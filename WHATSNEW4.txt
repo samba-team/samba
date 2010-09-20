@@ -1,4 +1,4 @@
-What's new in Samba 4 alpha12
+What's new in Samba 4 alpha13
 =============================
 
 Samba 4 is the ambitious next version of the Samba suite that is being
@@ -6,13 +6,16 @@ developed in parallel to the stable 3.x series. The main emphasis in
 this branch is support for the Active Directory logon protocols used
 by Windows 2000 and above.
 
-Samba4 alpha11 follows on from the alpha release series we have been
-publishing since September 2007
+Samba4 alpha13 follows on from the alpha release series we have been
+publishing since September 2007. Since this file has referred to alpha 12
+for a while before any release happened and since Debian packages
+have been published that presumed the existance of a alpha12 release
+we are skipping alpha12 and going straight to alpha13.
 
 WARNINGS
 ========
 
-Samba4 alpha12 is not a final Samba release.  That is more a reference
+Samba4 alpha13 is not a final Samba release.  That is more a reference
 to Samba4's lack of the features we expect you will need than a
 statement of code quality, but clearly it hasn't seen a broad
 deployment yet.  If you were to upgrade Samba3 (or indeed Windows) to
@@ -28,7 +31,7 @@ automated basis, we have found Samba4 to be very stable in it's
 behaviour.  We have to recommend against upgrading production servers
 from Samba 3 to Samba 4 at this stage, because there may be the features on
 which you may rely that are not present, or the mapping of
-your configuration and user database may not be complete. 
+your configuration and user database may not be complete.
 
 If you are upgrading, or looking to develop, test or deploy Samba4, you should
 backup all configuration and data.
@@ -71,7 +74,7 @@ AD implementation and therefore achieved also this time big steps forward.
 Our progress on DRS is being tracked in the Samba wiki:
 http://wiki.samba.org/index.php/Samba4_DRS_TODO_List
 
-Beside this the release includes:
+Beside this the release includes (among a lot of other things):
 
 * a new build system based on WAF
 Andrew Tridgell (tridge) invested much time to bring this up. He achieved a
@@ -162,7 +165,7 @@ real code patches - all is appreciated if it meets our quality criterias. Here
 you can find further references:
 
 Bugs can be filed at https://bugzilla.samba.org/ but please be aware
-that many features are simply not expected to work at this stage.  
+that many features are simply not expected to work at this stage.
 
 The Samba Wiki at http://wiki.samba.org should detail some of these
 development plans.
