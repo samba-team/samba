@@ -29,6 +29,7 @@
 #include "include/g_lock.h"
 #include "registry/reg_backend_db.h"
 #include "registry/reg_import.h"
+#include "registry/reg_format.h"
 #include <assert.h>
 
 /*
@@ -977,6 +978,110 @@ static int net_registry_import(struct net_context *c, int argc,
 }
 /**@}*/
 
+/******************************************************************************/
+
+/**
+ * @defgroup net_registry_export Export
+ * @ingroup net_registry
+ * @{
+ */
+
+static int registry_export(TALLOC_CTX *ctx, /*const*/ struct registry_key* key,
+			   struct reg_format* f)
+{
+	int ret=-1;
+	WERROR werr;
+	uint32_t count;
+
+	struct registry_value *valvalue = NULL;
+	char *valname = NULL;
+
+	struct registry_key* subkey = NULL;
+	char *subkey_name = NULL;
+	NTTIME modtime = 0;
+
+	reg_format_registry_key(f, key, false);
+
+	/* print values */
+	for (count = 0;
+	     werr = reg_enumvalue(ctx, key, count, &valname, &valvalue),
+		     W_ERROR_IS_OK(werr);
+	     count++)
+	{
+		reg_format_registry_value(f, valname, valvalue);
+	}
+	if (!W_ERROR_EQUAL(WERR_NO_MORE_ITEMS, werr)) {
+		d_fprintf(stderr, _("reg_enumvalue failed: %s\n"),
+			  win_errstr(werr));
+		goto done;
+	}
+
+	/* recurse on subkeys */
+	for (count = 0;
+	     werr = reg_enumkey(ctx, key, count, &subkey_name, &modtime),
+		     W_ERROR_IS_OK(werr);
+	     count++)
+	{
+		werr = reg_openkey(ctx, key, subkey_name, REG_KEY_READ,
+				   &subkey);
+		if (!W_ERROR_IS_OK(werr)) {
+			d_fprintf(stderr, _("reg_openkey failed: %s\n"),
+				  win_errstr(werr));
+			goto done;
+		}
+
+		registry_export(ctx, subkey, f);
+	}
+	if (!W_ERROR_EQUAL(WERR_NO_MORE_ITEMS, werr)) {
+		d_fprintf(stderr, _("reg_enumkey failed: %s\n"),
+			  win_errstr(werr));
+		goto done;
+	}
+	ret = 0;
+done:
+	return ret;
+}
+
+static int net_registry_export(struct net_context *c, int argc,
+			       const char **argv)
+{
+	int ret=-1;
+	WERROR werr;
+	struct registry_key *key = NULL;
+	TALLOC_CTX *ctx = talloc_stackframe();
+	struct reg_format* f=NULL;
+
+	if (argc < 2 || argc > 3 || c->display_usage) {
+		d_printf("%s\n%s",
+			 _("Usage:"),
+			 _("net registry export <path> <file> [opt]\n"));
+		d_printf("%s\n%s",
+			 _("Example:"),
+			 _("net registry export 'HKLM\\Software\\Samba' "
+			   "samba.reg regedit5\n"));
+		goto done;
+	}
+
+	werr = open_key(ctx, argv[0], REG_KEY_READ, &key);
+	if (!W_ERROR_IS_OK(werr)) {
+		d_fprintf(stderr, _("open_key failed: %s\n"), win_errstr(werr));
+		goto done;
+	}
+
+	f = reg_format_file(ctx, argv[1], (argc > 2) ? argv[2] : NULL);
+	if (f == NULL) {
+		d_fprintf(stderr, _("open file failed: %s\n"), strerror(errno));
+		goto done;
+	}
+
+	ret = registry_export(ctx, key, f);
+
+done:
+	TALLOC_FREE(ctx);
+	return ret;
+}
+/**@}*/
+
 
 /******************************************************************************/
 int net_registry(struct net_context *c, int argc, const char **argv)
@@ -1087,6 +1192,14 @@ int net_registry(struct net_context *c, int argc, const char **argv)
 			N_("Import .reg file"),
 			N_("net registry import\n"
 			   "    Import .reg file")
+		},
+		{
+			"export",
+			net_registry_export,
+			NET_TRANSPORT_LOCAL,
+			N_("Export .reg file"),
+			N_("net registry export\n"
+			   "    Export .reg file")
 		},
 	{ NULL, NULL, 0, NULL, NULL }
 	};
