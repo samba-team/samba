@@ -1246,20 +1246,6 @@ static int replmd_update_rpmd(struct ldb_module *module,
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 
-		/*we have elements that will be modified*/
-		if (msg->num_elements > 0) {
-			/*if we are RODC and this is a DRSR update then its ok*/
-			if (!ldb_request_get_control(req, DSDB_CONTROL_REPLICATED_UPDATE_OID)) {
-				ret = samdb_rodc(ldb, &rodc);
-				if (ret != LDB_SUCCESS) {
-					DEBUG(4, (__location__ ": unable to tell if we are an RODC\n"));
-				} else if (rodc) {
-					ldb_asprintf_errstring(ldb, "RODC modify is forbidden\n");
-					return LDB_ERR_REFERRAL;
-				}
-			}
-		}
-
 		for (i=0; i<msg->num_elements; i++) {
 			struct ldb_message_element *old_el;
 			old_el = ldb_msg_find_element(res->msgs[0], msg->elements[i].name);
@@ -1282,6 +1268,17 @@ static int replmd_update_rpmd(struct ldb_module *module,
 	if (*seq_num != 0) {
 		struct ldb_val *md_value;
 		struct ldb_message_element *el;
+
+		/*if we are RODC and this is a DRSR update then its ok*/
+		if (!ldb_request_get_control(req, DSDB_CONTROL_REPLICATED_UPDATE_OID)) {
+			ret = samdb_rodc(ldb, &rodc);
+			if (ret != LDB_SUCCESS) {
+				DEBUG(4, (__location__ ": unable to tell if we are an RODC\n"));
+			} else if (rodc) {
+				ldb_asprintf_errstring(ldb, "RODC modify is forbidden\n");
+				return LDB_ERR_REFERRAL;
+			}
+		}
 
 		md_value = talloc(msg, struct ldb_val);
 		if (md_value == NULL) {
