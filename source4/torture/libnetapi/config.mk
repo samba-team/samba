@@ -12,6 +12,7 @@ PRIVATE_DEPENDENCIES = \
 
 TORTURE_LIBNETAPI_OBJ_FILES = $(addprefix $(torturesrcdir)/libnetapi/, libnetapi.o \
 					libnetapi_user.o \
-					libnetapi_group.o)
+					libnetapi_group.o
+					libnetapi_server.o)
 
 $(eval $(call proto_header_template,$(torturesrcdir)/libnetapi/proto.h,$(TORTURE_LIBNETAPI_OBJ_FILES:.o=.c)))

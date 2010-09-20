@@ -68,6 +68,7 @@ NTSTATUS torture_libnetapi_init(void)
 
 	suite = torture_suite_create(talloc_autofree_context(), "NETAPI");
 
+	torture_suite_add_simple_test(suite, "SERVER", torture_libnetapi_server);
 	torture_suite_add_simple_test(suite, "GROUP", torture_libnetapi_group);
 	torture_suite_add_simple_test(suite, "USER", torture_libnetapi_user);
 	torture_suite_add_simple_test(suite, "INITIALIZE", torture_libnetapi_initialize);
