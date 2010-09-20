@@ -504,7 +504,7 @@ static int rootdse_callback(struct ldb_request *req, struct ldb_reply *ares)
  */
 static void rootdse_mark_noncritical(struct ldb_module *module, struct ldb_control **controls)
 {
-	int i, j;
+	unsigned int i, j;
 	struct private_data *priv = talloc_get_type(ldb_module_get_private(module), struct private_data);
 
 	if (!controls) return;
