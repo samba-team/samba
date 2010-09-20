@@ -408,7 +408,8 @@ REG_BASE_SRC = '''registry/reg_api.c
 REG_SMBCONF_SRC = '''${REG_BASE_SRC}
                   ${REG_BACKENDS_SMBCONF_SRC}
                   ${REG_INIT_SMBCONF_SRC}
-		  registry/reg_util_token.c'''
+                  registry/reg_util_token.c
+                  registry/reg_api_util.c'''
 
 REG_FULL_SRC = '''${REG_SMBCONF_SRC}
                ${REG_BACKENDS_EXTRA_SRC}
