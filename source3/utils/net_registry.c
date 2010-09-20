@@ -1039,8 +1039,61 @@ done:
 }
 /**@}*/
 
+/******************************************************************************/
+/**
+ * @defgroup net_registry_convert Convert
+ * @ingroup net_registry
+ * @{
+ */
+
+static int net_registry_convert(struct net_context *c, int argc,
+			       const char **argv)
+{
+	int ret;
+	void* mem_ctx;
+	const char* in_opt  = NULL;
+	const char* out_opt = NULL;
+
+	if (argc < 2 || argc > 4|| c->display_usage) {
+		d_printf("%s\n%s",
+			 _("Usage:"),
+			 _("net registry convert <in> <out> [in_opt] [out_opt]\n"
+			   "net registry convert <in> <out> [out_opt]\n"));
+		d_printf("%s\n%s",
+			 _("Example:"),
+			 _("net registry convert in.reg out.reg regedit4,enc=CP1252\n"));
+		return -1;
+	}
+
+	mem_ctx = talloc_stackframe();
+
+	switch (argc ) {
+	case 2:
+		break;
+	case 3:
+		out_opt = argv[2];
+		break;
+	case 4:
+		out_opt = argv[3];
+		in_opt  = argv[2];
+		break;
+	default:
+		assert(false);
+	}
+
+
+	ret = reg_parse_file(argv[0], (struct reg_parse_callback*)
+			     reg_format_file(mem_ctx, argv[1], out_opt),
+			     in_opt);
+
+	talloc_free(mem_ctx);
+
+	return ret;
+}
+/**@}*/
 
 /******************************************************************************/
+
 int net_registry(struct net_context *c, int argc, const char **argv)
 {
 	int ret = -1;
@@ -1149,6 +1202,14 @@ int net_registry(struct net_context *c, int argc, const char **argv)
 			N_("Export .reg file"),
 			N_("net registry export\n"
 			   "    Export .reg file")
+		},
+		{
+			"convert",
+			net_registry_convert,
+			NET_TRANSPORT_LOCAL,
+			N_("Convert .reg file"),
+			N_("net registry convert\n"
+			   "    Convert .reg file")
 		},
 	{ NULL, NULL, 0, NULL, NULL }
 	};
