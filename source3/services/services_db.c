@@ -581,31 +581,32 @@ bool svcctl_set_secdesc( TALLOC_CTX *ctx, const char *name, struct security_desc
 	char *path = NULL;
 	struct registry_value value;
 	NTSTATUS status;
-	bool ret = False;
+	bool ret = false;
+	TALLOC_CTX *mem_ctx = talloc_stackframe();
 
 	/* now add the security descriptor */
 
-	if (asprintf(&path, "%s\\%s\\%s", KEY_SERVICES, name, "Security") < 0) {
-		return false;
+	path = talloc_asprintf(mem_ctx, "%s\\%s\\%s", KEY_SERVICES, name,
+			       "Security");
+	if (path == NULL) {
+		goto done;
 	}
 
-	wresult = reg_open_path(NULL, path, REG_KEY_ALL, token, &key);
+	wresult = reg_open_path(mem_ctx, path, REG_KEY_ALL, token, &key);
 
 	if ( !W_ERROR_IS_OK(wresult) ) {
 		DEBUG(0,("svcctl_get_secdesc: key lookup failed! [%s] (%s)\n",
 			path, win_errstr(wresult)));
-		SAFE_FREE(path);
-		return False;
+		goto done;
 	}
-	SAFE_FREE(path);
 
 	/* stream the printer security descriptor */
 
-	status = marshall_sec_desc(ctx, sec_desc, &value.data.data, &value.data.length);
+	status = marshall_sec_desc(mem_ctx, sec_desc, &value.data.data,
+				   &value.data.length);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("svcctl_set_secdesc: ndr_push_struct_blob() failed!\n"));
-		TALLOC_FREE( key );
-		return False;
+		goto done;
 	}
 
 	value.type = REG_BINARY;
@@ -614,14 +615,13 @@ bool svcctl_set_secdesc( TALLOC_CTX *ctx, const char *name, struct security_desc
 	if (!W_ERROR_IS_OK(wresult)) {
 		DEBUG(0, ("svcctl_set_secdesc: reg_setvalue failed: %s\n",
 			  win_errstr(wresult)));
-		talloc_free(key);
-		return false;
+		goto done;
 	}
 
-	/* cleanup */
+	ret = true;
 
-	TALLOC_FREE( key);
-
+done:
+	talloc_free(mem_ctx);
 	return ret;
 }
 
