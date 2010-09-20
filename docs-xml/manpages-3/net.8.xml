@@ -1617,6 +1617,130 @@ Delete the list of includes from the provided section (global or share).
 </refsect2>
 
 <refsect2>
+<title>REGISTRY</title>
+<para>
+Manipulate Samba's registry.
+</para>
+
+<para>The registry commands are:
+<simplelist>
+<member>net registry enumerate   - Enumerate registry keys and values.</member>
+<member>net registry createkey   - Create a new registry key.</member>
+<member>net registry deletekey   - Delete a registry key.</member>
+<member>net registry getvalue    - Print a registry value.</member>
+<member>net registry getvalueraw - Print a registry value (raw format).</member>
+<member>net registry setvalue    - Set a new registry value.</member>
+<member>net registry increment   - Increment a DWORD registry value under a lock.
+</member>
+<member>net registry deletevalue - Delete a registry value.</member>
+<member>net registry getsd       - Get security descriptor.</member>
+<member>net registry getsd_sdd1  - Get security descriptor in sddl format.
+</member>
+<member>net registry setsd_sdd1  - Set security descriptor from sddl format
+string.</member>
+</simplelist>
+</para>
+
+<refsect3>
+  <title>REGISTRY ENUMERATE <replaceable>key</replaceable> </title>
+  <para>Enumerate subkeys and values of <emphasis>key</emphasis>
+  </para>
+</refsect3>
+
+<refsect3>
+  <title>REGISTRY CREATEKEY <replaceable>key</replaceable> </title>
+  <para>Create a new <emphasis>key</emphasis> if not yet existing.
+  </para>
+</refsect3>
+
+<refsect3>
+  <title>REGISTRY DELETEKEY <replaceable>key</replaceable> </title>
+  <para>Delete the given <emphasis>key</emphasis> and all of its
+  subkeys and values from the registry.
+  </para>
+</refsect3>
+
+<refsect3>
+  <title>REGISTRY GETVALUE <replaceable>key</replaceable> <!--
+  --><replaceable>name</replaceable></title>
+
+  <para>Output type and actual value of the value <emphasis>name</emphasis>
+  of the given <emphasis>key</emphasis>.
+  </para>
+</refsect3>
+
+<refsect3>
+  <title>REGISTRY GETVALUERAW <replaceable>key</replaceable> <!--
+  --><replaceable>name</replaceable></title>
+  <para>Output the actual value of the value <emphasis>name</emphasis>
+  of the given <emphasis>key</emphasis>.
+  </para>
+</refsect3>
+
+<refsect3>
+  <title>REGISTRY SETVALUE <replaceable>key</replaceable> <!--
+  --><replaceable>name</replaceable> <replaceable>type</replaceable> <!--
+  --><replaceable>value</replaceable> ...<!--
+  --></title>
+
+  <para>Set the value <emphasis>name</emphasis>
+  of an existing <emphasis>key</emphasis>.
+  <emphasis>type</emphasis> may be one of
+  <emphasis>sz</emphasis>, <emphasis>multi_sz</emphasis> or
+  <emphasis>dword</emphasis>.
+  In case of <emphasis>multi_sz</emphasis> <replaceable>value</replaceable> may
+  be given multiple times.
+  </para>
+</refsect3>
+
+<refsect3>
+  <title>REGISTRY INCREMENT <replaceable>key</replaceable> <!--
+  --><replaceable>name</replaceable> <replaceable>[inc]</replaceable><!--
+  --></title>
+
+  <para>Increment the DWORD value <emphasis>name</emphasis>
+  of <emphasis>key</emphasis> by <replaceable>inc</replaceable>
+  while holding a g_lock.
+  <emphasis>inc</emphasis> defaults to 1.
+  </para>
+</refsect3>
+
+<refsect3>
+  <title>REGISTRY DELETEVALUE <replaceable>key</replaceable> <!--
+  --><replaceable>name</replaceable></title>
+
+  <para>Delete the value <emphasis>name</emphasis>
+  of the given <emphasis>key</emphasis>.
+  </para>
+</refsect3>
+
+<refsect3>
+  <title>REGISTRY GETSD <replaceable>key</replaceable></title>
+
+  <para>Get the security descriptor of the given <emphasis>key</emphasis>.
+  </para>
+</refsect3>
+
+<refsect3>
+  <title>REGISTRY GETSD_SDDL <replaceable>key</replaceable></title>
+
+  <para>Get the security descriptor of the given <emphasis>key</emphasis> as a
+  Security Descriptor Definition Language (SDDL) string.
+  </para>
+</refsect3>
+
+<refsect3>
+  <title>REGISTRY SETSD_SDDL <replaceable>key</replaceable><!--
+  --><replaceable>sd</replaceable></title>
+
+  <para>Set the security descriptor of the given <emphasis>key</emphasis> from a
+  Security Descriptor Definition Language (SDDL) string <emphasis>sd</emphasis>.
+  </para>
+</refsect3>
+
+</refsect2>
+
+<refsect2>
 <title>EVENTLOG</title>
 
 <para>Starting with version 3.4.0 net can read, dump, import and export native
