@@ -44,11 +44,10 @@
 #include "librpc/gen_ndr/ndr_drsuapi.h"
 #include "librpc/gen_ndr/ndr_drsblobs.h"
 #include "param/param.h"
-#include "libcli/security/dom_sid.h"
+#include "libcli/security/security.h"
 #include "lib/util/dlinklist.h"
 #include "dsdb/samdb/ldb_modules/util.h"
 #include "lib/util/binsearch.h"
-#include "libcli/security/security.h"
 #include "libcli/security/session.h"
 #include "lib/util/tsort.h"
 

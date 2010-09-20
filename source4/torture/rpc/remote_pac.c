@@ -26,7 +26,7 @@
 #include "lib/cmdline/popt_common.h"
 #include "torture/rpc/torture_rpc.h"
 #include "libcli/auth/libcli_auth.h"
-#include "libcli/security/dom_sid.h"
+#include "libcli/security/security.h"
 #include "librpc/gen_ndr/ndr_netlogon_c.h"
 #include "param/param.h"
 

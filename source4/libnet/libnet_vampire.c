@@ -39,7 +39,7 @@
 #include "auth/credentials/credentials.h"
 #include "param/param.h"
 #include "param/provision.h"
-#include "libcli/security/dom_sid.h"
+#include "libcli/security/security.h"
 #include "dsdb/common/util.h"
 
 /* 

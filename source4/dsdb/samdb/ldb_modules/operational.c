@@ -74,7 +74,7 @@
 #include "dsdb/samdb/ldb_modules/util.h"
 
 #include "auth/auth.h"
-#include "libcli/security/dom_sid.h"
+#include "libcli/security/security.h"
 
 #ifndef ARRAY_SIZE
 #define ARRAY_SIZE(a) (sizeof(a)/sizeof(a[0]))

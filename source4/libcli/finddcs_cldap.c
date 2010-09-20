@@ -27,7 +27,7 @@
 #include "libcli/libcli.h"
 #include "libcli/cldap/cldap.h"
 #include "libcli/finddc.h"
-#include "libcli/security/dom_sid.h"
+#include "libcli/security/security.h"
 #include "lib/util/tevent_ntstatus.h"
 #include "libcli/composite/composite.h"
 

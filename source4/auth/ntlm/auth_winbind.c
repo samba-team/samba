@@ -29,7 +29,7 @@
 #include "lib/messaging/irpc.h"
 #include "param/param.h"
 #include "nsswitch/libwbclient/wbclient.h"
-#include "libcli/security/dom_sid.h"
+#include "libcli/security/security.h"
 
 static NTSTATUS get_info3_from_wbcAuthUserInfo(TALLOC_CTX *mem_ctx,
 					       struct wbcAuthUserInfo *info,

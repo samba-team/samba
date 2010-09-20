@@ -35,7 +35,7 @@
 #include "libcli/raw/smb.h"
 #include "auth/credentials/credentials.h"
 #include "auth/credentials/credentials_krb5.h"
-#include "libcli/security/dom_sid.h"
+#include "libcli/security/security.h"
 #include "libcli/named_pipe_auth/npa_tstream.h"
 
 struct named_pipe_socket {

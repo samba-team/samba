@@ -31,7 +31,7 @@
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "librpc/gen_ndr/ndr_drsuapi.h"
 #include "librpc/gen_ndr/ndr_drsblobs.h"
-#include "libcli/security/dom_sid.h"
+#include "libcli/security/security.h"
 #include "param/param.h"
 
 WERROR dreplsrv_load_partitions(struct dreplsrv_service *s)

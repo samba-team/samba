@@ -26,7 +26,7 @@
 #include "dsdb/samdb/samdb.h"
 #include "dsdb/common/util.h"
 #include "../libds/common/flags.h"
-#include "libcli/security/dom_sid.h"
+#include "libcli/security/security.h"
 
 /* Add a user, SAMR style, including the correct transaction
  * semantics.  Used by the SAMR server and by pdb_samba4 */

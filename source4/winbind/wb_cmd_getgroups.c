@@ -23,7 +23,7 @@
 #include "libcli/composite/composite.h"
 #include "winbind/wb_server.h"
 #include "smbd/service_task.h"
-#include "libcli/security/dom_sid.h"
+#include "libcli/security/security.h"
 
 struct cmd_getgroups_state {
 	struct composite_context *ctx;

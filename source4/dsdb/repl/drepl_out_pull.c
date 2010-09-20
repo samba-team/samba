@@ -32,7 +32,7 @@
 #include "librpc/gen_ndr/ndr_drsuapi.h"
 #include "librpc/gen_ndr/ndr_drsblobs.h"
 #include "libcli/composite/composite.h"
-#include "libcli/security/dom_sid.h"
+#include "libcli/security/security.h"
 
 WERROR dreplsrv_schedule_partition_pull_source(struct dreplsrv_service *s,
 					       struct dreplsrv_partition_source_dsa *source,
