@@ -3705,18 +3705,6 @@ if test x"$with_ads_support" != x"no"; then
     CPPFLAGS=$ac_save_CPPFLAGS
     LDFLAGS=$ac_save_LDFLAGS
   fi
-  AC_CHECK_HEADERS([krb5/locate_plugin.h], [], [],
-[[#ifdef HAVE_KRB5_H
- #include <krb5.h>
- #endif
-]])
-
-  if test x"$ac_cv_header_krb5_locate_plugin_h" = x"yes"; then
-	WINBIND_KRB5_LOCATOR="bin/winbind_krb5_locator.$SHLIBEXT"
-	if test x"$BLDSHARED" = x"true" ; then
-		EXTRA_ALL_TARGETS="$EXTRA_ALL_TARGETS $WINBIND_KRB5_LOCATOR"
-	fi
-  fi
 
   # check for new heimdal KRB5_DEPRECATED handling
 
@@ -6266,6 +6254,20 @@ if test x"$HAVE_WINBIND" = x"yes"; then
 		INSTALL_PAM_MODULES="installpammodules"
 		UNINSTALL_PAM_MODULES="uninstallpammodules"
 	fi
+
+	# we use winbind, check for krb5 locate_plugin support:
+	AC_CHECK_HEADERS([krb5/locate_plugin.h], [], [],
+		[[#ifdef HAVE_KRB5_H
+		 #include <krb5.h>
+		 #endif
+	]])
+	if test x"$ac_cv_header_krb5_locate_plugin_h" = x"yes"; then
+		WINBIND_KRB5_LOCATOR="bin/winbind_krb5_locator.$SHLIBEXT"
+		if test x"$BLDSHARED" = x"true" ; then
+			EXTRA_ALL_TARGETS="$EXTRA_ALL_TARGETS $WINBIND_KRB5_LOCATOR"
+		fi
+	fi
+	# end of krb5 locate_plugin check
 else
         AC_MSG_RESULT(no$winbind_no_reason)
 fi
