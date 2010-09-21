@@ -23,9 +23,6 @@
 #include "includes.h"
 #include "services/services.h"
 #include "registry.h"
-#include "registry/reg_util_legacy.h"
-#include "registry/reg_dispatcher.h"
-#include "registry/reg_objects.h"
 #include "registry/reg_api_util.h"
 
 struct rcinit_file_information {
