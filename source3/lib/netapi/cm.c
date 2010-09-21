@@ -26,18 +26,57 @@
 /********************************************************************
 ********************************************************************/
 
+struct client_ipc_connection {
+	struct client_ipc_connection *prev, *next;
+	struct cli_state *cli;
+	struct client_pipe_connection *pipe_connections;
+};
+
+struct client_pipe_connection {
+	struct client_pipe_connection *prev, *next;
+	struct rpc_pipe_client *pipe;
+};
+
+static struct client_ipc_connection *ipc_connections = NULL;
+
+/********************************************************************
+********************************************************************/
+
+static struct client_ipc_connection *ipc_cm_find(const char *server_name)
+{
+	struct client_ipc_connection *p;
+
+	for (p = ipc_connections; p; p = p->next) {
+		if (strequal(p->cli->desthost, server_name)) {
+			return p;
+		}
+	}
+
+	return NULL;
+}
+
+/********************************************************************
+********************************************************************/
+
 static WERROR libnetapi_open_ipc_connection(struct libnetapi_ctx *ctx,
 					    const char *server_name,
-					    struct cli_state **cli)
+					    struct client_ipc_connection **pp)
 {
 	struct user_auth_info *auth_info = NULL;
 	struct cli_state *cli_ipc = NULL;
+	struct client_ipc_connection *p;
 
-	if (!ctx || !cli || !server_name) {
+	if (!ctx || !pp || !server_name) {
 		return WERR_INVALID_PARAM;
 	}
 
-	auth_info = user_auth_info_init(NULL);
+	p = ipc_cm_find(server_name);
+	if (p) {
+		*pp = p;
+		return WERR_OK;
+	}
+
+	auth_info = user_auth_info_init(ctx);
 	if (!auth_info) {
 		return WERR_NOMEM;
 	}
@@ -79,7 +118,15 @@ static WERROR libnetapi_open_ipc_connection(struct libnetapi_ctx *ctx,
 		return WERR_CAN_NOT_COMPLETE;
 	}
 
-	*cli = cli_ipc;
+	p = TALLOC_ZERO_P(ctx, struct client_ipc_connection);
+	if (p == NULL) {
+		return WERR_NOMEM;
+	}
+
+	p->cli = cli_ipc;
+	DLIST_ADD(ipc_connections, p);
+
+	*pp = p;
 
 	return WERR_OK;
 }
@@ -87,22 +134,11 @@ static WERROR libnetapi_open_ipc_connection(struct libnetapi_ctx *ctx,
 /********************************************************************
 ********************************************************************/
 
-struct client_pipe_connection {
-	struct client_pipe_connection *prev, *next;
-	struct rpc_pipe_client *pipe;
-	struct cli_state *cli;
-};
-
-static struct client_pipe_connection *pipe_connections;
-
-/********************************************************************
-********************************************************************/
-
 WERROR libnetapi_shutdown_cm(struct libnetapi_ctx *ctx)
 {
-	struct client_pipe_connection *p;
+	struct client_ipc_connection *p;
 
-	for (p = pipe_connections; p; p = p->next) {
+	for (p = ipc_connections; p; p = p->next) {
 		cli_shutdown(p->cli);
 	}
 
@@ -112,19 +148,19 @@ WERROR libnetapi_shutdown_cm(struct libnetapi_ctx *ctx)
 /********************************************************************
 ********************************************************************/
 
-static NTSTATUS pipe_cm_find(struct cli_state *cli,
+static NTSTATUS pipe_cm_find(struct client_ipc_connection *ipc,
 			     const struct ndr_syntax_id *interface,
 			     struct rpc_pipe_client **presult)
 {
 	struct client_pipe_connection *p;
 
-	for (p = pipe_connections; p; p = p->next) {
+	for (p = ipc->pipe_connections; p; p = p->next) {
 
 		if (!rpc_pipe_np_smb_conn(p->pipe)) {
 			return NT_STATUS_PIPE_EMPTY;
 		}
 
-		if (strequal(cli->desthost, p->pipe->desthost)
+		if (strequal(ipc->cli->desthost, p->pipe->desthost)
 		    && ndr_syntax_id_equal(&p->pipe->abstract_syntax,
 					   interface)) {
 			*presult = p->pipe;
@@ -139,7 +175,7 @@ static NTSTATUS pipe_cm_find(struct cli_state *cli,
 ********************************************************************/
 
 static NTSTATUS pipe_cm_connect(TALLOC_CTX *mem_ctx,
-				struct cli_state *cli,
+				struct client_ipc_connection *ipc,
 				const struct ndr_syntax_id *interface,
 				struct rpc_pipe_client **presult)
 {
@@ -151,14 +187,13 @@ static NTSTATUS pipe_cm_connect(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = cli_rpc_pipe_open_noauth(cli, interface, &p->pipe);
+	status = cli_rpc_pipe_open_noauth(ipc->cli, interface, &p->pipe);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(p);
 		return status;
 	}
 
-	p->cli = cli;
-	DLIST_ADD(pipe_connections, p);
+	DLIST_ADD(ipc->pipe_connections, p);
 
 	*presult = p->pipe;
 	return NT_STATUS_OK;
@@ -168,15 +203,15 @@ static NTSTATUS pipe_cm_connect(TALLOC_CTX *mem_ctx,
 ********************************************************************/
 
 static NTSTATUS pipe_cm_open(TALLOC_CTX *ctx,
-			     struct cli_state *cli,
+			     struct client_ipc_connection *ipc,
 			     const struct ndr_syntax_id *interface,
 			     struct rpc_pipe_client **presult)
 {
-	if (NT_STATUS_IS_OK(pipe_cm_find(cli, interface, presult))) {
+	if (NT_STATUS_IS_OK(pipe_cm_find(ipc, interface, presult))) {
 		return NT_STATUS_OK;
 	}
 
-	return pipe_cm_connect(ctx, cli, interface, presult);
+	return pipe_cm_connect(ctx, ipc, interface, presult);
 }
 
 /********************************************************************
@@ -190,18 +225,18 @@ WERROR libnetapi_open_pipe(struct libnetapi_ctx *ctx,
 	struct rpc_pipe_client *result = NULL;
 	NTSTATUS status;
 	WERROR werr;
-	struct cli_state *cli = NULL;
+	struct client_ipc_connection *ipc = NULL;
 
 	if (!presult) {
 		return WERR_INVALID_PARAM;
 	}
 
-	werr = libnetapi_open_ipc_connection(ctx, server_name, &cli);
+	werr = libnetapi_open_ipc_connection(ctx, server_name, &ipc);
 	if (!W_ERROR_IS_OK(werr)) {
 		return werr;
 	}
 
-	status = pipe_cm_open(ctx, cli, interface, &result);
+	status = pipe_cm_open(ctx, ipc, interface, &result);
 	if (!NT_STATUS_IS_OK(status)) {
 		libnetapi_set_error_string(ctx, "failed to open PIPE %s: %s",
 			get_pipe_name_from_syntax(talloc_tos(), interface),
