@@ -24,6 +24,7 @@
  ***********************************************************/
 
 #include "registry/reg_parse_prs.h"
+#include "registry/reg_objects.h"
 
 #ifndef _REGFIO_H
 #define _REGFIO_H
