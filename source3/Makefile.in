@@ -655,8 +655,7 @@ REG_FULL_OBJ = $(REG_SMBCONF_OBJ) \
 	       $(REG_INIT_FULL_OBJ) \
 	       registry/reg_eventlog.o \
 	       registry/reg_perfcount.o \
-	       librpc/gen_ndr/ndr_perfcount.o \
-	       registry/reg_util_legacy.o
+	       librpc/gen_ndr/ndr_perfcount.o
 
 LIB_EVENTLOG_OBJ = lib/eventlog/eventlog.o
 
