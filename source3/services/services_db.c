@@ -569,24 +569,32 @@ bool svcctl_set_secdesc(const char *name, struct security_descriptor *sec_desc,
 			NT_USER_TOKEN *token )
 {
 	struct registry_key *key = NULL;
+	struct registry_key *key_security = NULL;
 	WERROR wresult;
 	char *path = NULL;
 	struct registry_value value;
 	NTSTATUS status;
 	bool ret = false;
 	TALLOC_CTX *mem_ctx = talloc_stackframe();
+	enum winreg_CreateAction action = REG_ACTION_NONE;
 
-	path = talloc_asprintf(mem_ctx, "%s\\%s\\%s", KEY_SERVICES, name,
-			       "Security");
+	path = talloc_asprintf(mem_ctx, "%s\\%s", KEY_SERVICES, name);
 	if (path == NULL) {
 		goto done;
 	}
 
 	wresult = reg_open_path(mem_ctx, path, REG_KEY_ALL, token, &key);
-
 	if ( !W_ERROR_IS_OK(wresult) ) {
 		DEBUG(0, ("svcctl_set_secdesc: key lookup failed! [%s] (%s)\n",
 			  path, win_errstr(wresult)));
+		goto done;
+	}
+
+	wresult = reg_createkey(mem_ctx, key, "Security", REG_KEY_ALL, &key_security, &action);
+	if (!W_ERROR_IS_OK(wresult)) {
+		DEBUG(0, ("svcctl_set_secdesc: reg_createkey failed: "
+			  "[%s\\Security] (%s)\n", key->key->name,
+			  win_errstr(wresult)));
 		goto done;
 	}
 
@@ -599,7 +607,7 @@ bool svcctl_set_secdesc(const char *name, struct security_descriptor *sec_desc,
 
 	value.type = REG_BINARY;
 
-	wresult = reg_setvalue(key, "Security", &value);
+	wresult = reg_setvalue(key_security, "Security", &value);
 	if (!W_ERROR_IS_OK(wresult)) {
 		DEBUG(0, ("svcctl_set_secdesc: reg_setvalue failed: %s\n",
 			  win_errstr(wresult)));
