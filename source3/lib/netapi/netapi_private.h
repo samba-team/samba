@@ -43,6 +43,7 @@ struct libnetapi_private_ctx {
 		struct policy_handle builtin_handle;
 	} samr;
 
+	struct client_ipc_connection *ipc_connections;
 };
 
 NET_API_STATUS libnetapi_get_password(struct libnetapi_ctx *ctx, char **password);
