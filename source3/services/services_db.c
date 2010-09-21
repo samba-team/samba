@@ -23,6 +23,7 @@
 #include "includes.h"
 #include "services/services.h"
 #include "registry.h"
+#include "registry/reg_api.h"
 #include "registry/reg_api_util.h"
 
 struct rcinit_file_information {

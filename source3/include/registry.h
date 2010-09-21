@@ -130,53 +130,6 @@ struct registry_key {
 #define REG_KEY_HKPT		2
 
 
-/* The following definitions come from registry/reg_api.c  */
-
-WERROR reg_openhive(TALLOC_CTX *mem_ctx, const char *hive,
-		    uint32 desired_access,
-		    const struct nt_user_token *token,
-		    struct registry_key **pkey);
-WERROR reg_openkey(TALLOC_CTX *mem_ctx, struct registry_key *parent,
-		   const char *name, uint32 desired_access,
-		   struct registry_key **pkey);
-WERROR reg_enumkey(TALLOC_CTX *mem_ctx, struct registry_key *key,
-		   uint32 idx, char **name, NTTIME *last_write_time);
-WERROR reg_enumvalue(TALLOC_CTX *mem_ctx, struct registry_key *key,
-		     uint32 idx, char **pname, struct registry_value **pval);
-WERROR reg_queryvalue(TALLOC_CTX *mem_ctx, struct registry_key *key,
-		      const char *name, struct registry_value **pval);
-WERROR reg_querymultiplevalues(TALLOC_CTX *mem_ctx,
-			       struct registry_key *key,
-			       uint32_t num_names,
-			       const char **names,
-			       uint32_t *pnum_vals,
-			       struct registry_value **pvals);
-WERROR reg_queryinfokey(struct registry_key *key, uint32_t *num_subkeys,
-			uint32_t *max_subkeylen, uint32_t *max_subkeysize,
-			uint32_t *num_values, uint32_t *max_valnamelen,
-			uint32_t *max_valbufsize, uint32_t *secdescsize,
-			NTTIME *last_changed_time);
-WERROR reg_createkey(TALLOC_CTX *ctx, struct registry_key *parent,
-		     const char *subkeypath, uint32 desired_access,
-		     struct registry_key **pkey,
-		     enum winreg_CreateAction *paction);
-WERROR reg_deletekey(struct registry_key *parent, const char *path);
-WERROR reg_setvalue(struct registry_key *key, const char *name,
-		    const struct registry_value *val);
-WERROR reg_deletevalue(struct registry_key *key, const char *name);
-WERROR reg_getkeysecurity(TALLOC_CTX *mem_ctx, struct registry_key *key,
-			  struct security_descriptor **psecdesc);
-WERROR reg_setkeysecurity(struct registry_key *key,
-			  struct security_descriptor *psecdesc);
-WERROR reg_getversion(uint32_t *version);
-WERROR reg_deleteallvalues(struct registry_key *key);
-WERROR reg_deletekey_recursive(TALLOC_CTX *ctx,
-			       struct registry_key *parent,
-			       const char *path);
-WERROR reg_deletesubkeys_recursive(TALLOC_CTX *ctx,
-				   struct registry_key *parent,
-				   const char *path);
-
 /* The following definitions come from registry/reg_api_regf.c  */
 
 WERROR reg_restorekey(struct registry_key *key, const char *fname);

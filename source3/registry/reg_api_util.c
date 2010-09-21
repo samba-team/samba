@@ -24,6 +24,7 @@
 
 #include "includes.h"
 #include "registry.h"
+#include "reg_api.h"
 #include "reg_api_util.h"
 
 /**
