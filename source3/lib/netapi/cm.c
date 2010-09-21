@@ -36,16 +36,15 @@ struct client_pipe_connection {
 	struct rpc_pipe_client *pipe;
 };
 
-static struct client_ipc_connection *ipc_connections = NULL;
-
 /********************************************************************
 ********************************************************************/
 
-static struct client_ipc_connection *ipc_cm_find(const char *server_name)
+static struct client_ipc_connection *ipc_cm_find(
+	struct libnetapi_private_ctx *priv_ctx, const char *server_name)
 {
 	struct client_ipc_connection *p;
 
-	for (p = ipc_connections; p; p = p->next) {
+	for (p = priv_ctx->ipc_connections; p; p = p->next) {
 		if (strequal(p->cli->desthost, server_name)) {
 			return p;
 		}
@@ -61,6 +60,8 @@ static WERROR libnetapi_open_ipc_connection(struct libnetapi_ctx *ctx,
 					    const char *server_name,
 					    struct client_ipc_connection **pp)
 {
+	struct libnetapi_private_ctx *priv_ctx =
+		(struct libnetapi_private_ctx *)ctx->private_data;
 	struct user_auth_info *auth_info = NULL;
 	struct cli_state *cli_ipc = NULL;
 	struct client_ipc_connection *p;
@@ -69,7 +70,7 @@ static WERROR libnetapi_open_ipc_connection(struct libnetapi_ctx *ctx,
 		return WERR_INVALID_PARAM;
 	}
 
-	p = ipc_cm_find(server_name);
+	p = ipc_cm_find(priv_ctx, server_name);
 	if (p) {
 		*pp = p;
 		return WERR_OK;
@@ -123,7 +124,7 @@ static WERROR libnetapi_open_ipc_connection(struct libnetapi_ctx *ctx,
 	}
 
 	p->cli = cli_ipc;
-	DLIST_ADD(ipc_connections, p);
+	DLIST_ADD(priv_ctx->ipc_connections, p);
 
 	*pp = p;
 
@@ -135,9 +136,11 @@ static WERROR libnetapi_open_ipc_connection(struct libnetapi_ctx *ctx,
 
 WERROR libnetapi_shutdown_cm(struct libnetapi_ctx *ctx)
 {
+	struct libnetapi_private_ctx *priv_ctx =
+		(struct libnetapi_private_ctx *)ctx->private_data;
 	struct client_ipc_connection *p;
 
-	for (p = ipc_connections; p; p = p->next) {
+	for (p = priv_ctx->ipc_connections; p; p = p->next) {
 		cli_shutdown(p->cli);
 	}
 
