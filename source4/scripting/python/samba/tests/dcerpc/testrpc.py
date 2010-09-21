@@ -13,7 +13,7 @@ from samba.dcerpc import drsuapi
 
 samba.talloc_enable_null_tracking()
 
-class RpcTests(samba.tests.TestCase):
+class RpcTests(object):
     '''test type behaviour of pidl generated python RPC code'''
 
     def check_blocks(self, object, num_expected):
@@ -21,7 +21,9 @@ class RpcTests(samba.tests.TestCase):
         nblocks = samba.talloc_total_blocks(object)
         if object is None:
             nblocks -= self.initial_blocks
-        #print nblocks, num_expected)
+        leaked_blocks = (nblocks - num_expected)
+        if leaked_blocks != 0:
+            print "Leaked %d blocks" % leaked_blocks
 
     def check_type(self, interface, typename, type):
         print "Checking type %s" % typename
@@ -43,28 +45,34 @@ class RpcTests(samba.tests.TestCase):
                     continue
                 else:
                     print "ERROR: Failed to instantiate %s.%s" % (typename, n)
-                    raise
+                    self.errcount += 1
+                    continue
             except:
                 print "ERROR: Failed to instantiate %s.%s" % (typename, n)
-                raise
+                self.errcount += 1
+                continue
 
             # now try setting the value back
             try:
                 print "Setting %s.%s" % (typename, n)
                 setattr(v, n, value)
-            except:
-                print "ERROR: Failed to set %s.%s" % (typename, n)
-                raise
+            except Exception, e:
+                if issubclass(e, AttributeError) and str(e).endswith("is read-only"):
+                    # readonly, ignore
+                    continue
+                else:
+                    print "ERROR: Failed to set %s.%s: %r: %s" % (typename, n, e.__class__, e)
+                    self.errcount += 1
+                    continue
 
             # and try a comparison
             try:
                 if value != getattr(v, n):
-                    print "ERROR: Comparison failed for %s.%s" % (typename, n)
-                    raise
-            except:
-                print "ERROR: compare exception for %s.%s" % (typename, n)
-                raise
-
+                    print "ERROR: Comparison failed for %s.%s != %r" % (typename, n, value)
+                    continue
+            except Exception, e:
+                print "ERROR: compare exception for %s.%s: %r: %s" % (typename, n, e.__class__, e)
+                continue
 
     def check_interface(self, interface, iname):
         errcount = self.errcount
@@ -76,7 +84,7 @@ class RpcTests(samba.tests.TestCase):
             if isinstance(value, str):
                 #print "%s=\"%s\"" % (n, value)
                 pass
-            elif isinstance(value, int):
+            elif isinstance(value, int) or isinstance(value, long):
                 #print "%s=%d" % (n, value)
                 pass
             elif isinstance(value, type):
@@ -87,12 +95,10 @@ class RpcTests(samba.tests.TestCase):
                 except:
                     print "ERROR: Failed to check_type %s.%s" % (iname, n)
                     self.errcount += 1
-                    pass
             else:
                 print "UNKNOWN: %s=%s" % (n, value)
         if self.errcount - errcount != 0:
             print "Found %d errors in %s" % (self.errcount - errcount, iname)
-
 
     def check_all_interfaces(self):
         for iname in dir(samba.dcerpc):
@@ -106,8 +112,16 @@ class RpcTests(samba.tests.TestCase):
             self.check_interface(iface, iname)
             self.check_blocks(None, initial_blocks)
 
-    def test_run(self):
+    def run(self):
         self.initial_blocks = samba.talloc_total_blocks(None)
         self.errcount = 0
         self.check_all_interfaces()
-        self.assertEquals(self.errcount, 0)
+        return self.errcount
+
+tests = RpcTests()
+errcount = tests.run()
+if errcount == 0:
+    sys.exit(0)
+else:
+    print "%d failures" % errcount
+    sys.exit(1)
