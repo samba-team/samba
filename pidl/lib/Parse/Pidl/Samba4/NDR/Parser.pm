@@ -865,7 +865,10 @@ sub ParseDataPull($$$$$$$)
 
 		$self->pidl("NDR_CHECK(".TypeFunctionName("ndr_pull", $l->{DATA_TYPE})."($ndr, $ndr_flags, $var_name));");
 
-		if (my $range = has_property($e, "range")) {
+		my $pl = GetPrevLevel($e, $l);
+
+		my $range = has_property($e, "range");
+		if ($range and $pl->{TYPE} ne "ARRAY") {
 			$var_name = get_value_of($var_name);
 			my $signed = Parse::Pidl::Typelist::is_signed($l->{DATA_TYPE});
 			my ($low, $high) = split(/,/, $range, 2);
@@ -1010,6 +1013,20 @@ sub ParseElementPullLevel
 		} elsif ($l->{TYPE} eq "ARRAY") {
 			my $length = $self->ParseArrayPullHeader($e, $l, $ndr, $var_name, $env);
 
+			if (my $range = has_property($e, "range")) {
+				my ($low, $high) = split(/,/, $range, 2);
+				if ($low < 0) {
+					warning(0, "$low is invalid for the range of an array size");
+				}
+				if ($low == 0) {
+					$self->pidl("if ($length > $high) {");
+				} else {
+					$self->pidl("if ($length < $low || $length > $high) {");
+				}
+				$self->pidl("\treturn ndr_pull_error($ndr, NDR_ERR_RANGE, \"value out of range\");");
+				$self->pidl("}");
+			}
+
 			my $nl = GetNextLevel($e, $l);
 
 			if (is_charset_array($e,$l)) {
@@ -1071,6 +1088,20 @@ sub ParseElementPullLevel
 
 		if ($l->{IS_VARYING}) {
 			$length = "ndr_get_array_length($ndr, " . get_pointer_to($var_name) .")";
+		}
+
+		if (my $range = has_property($e, "range")) {
+			my ($low, $high) = split(/,/, $range, 2);
+			if ($low < 0) {
+				warning(0, "$low is invalid for the range of an array size");
+			}
+			if ($low == 0) {
+				$self->pidl("if ($length > $high) {");
+			} else {
+				$self->pidl("if ($length < $low || $length > $high) {");
+			}
+			$self->pidl("\treturn ndr_pull_error($ndr, NDR_ERR_RANGE, \"value out of range\");");
+			$self->pidl("}");
 		}
 
 		$var_name = get_array_element($var_name, $counter);
