@@ -159,7 +159,7 @@ sub FromPythonToUnionFunction($$$$$)
 		if ($e->{CASE} eq "default") { $has_default = 1; }
 		$self->indent;
 		if ($e->{NAME}) {
-			$self->ConvertObjectFromPython({}, $mem_ctx, undef, $e, $name, "ret->$e->{NAME}", "talloc_free(ret); return NULL;");
+			$self->ConvertObjectFromPython({}, $mem_ctx, $e, $name, "ret->$e->{NAME}", "talloc_free(ret); return NULL;");
 		}
 		$self->pidl("break;");
 		$self->deindent;
@@ -210,7 +210,6 @@ sub PythonStruct($$$$$$)
 			$self->indent;
 			$self->pidl("$cname *object = ($cname *)py_talloc_get_ptr(py_obj);");
 			my $mem_ctx = "py_talloc_get_mem_ctx(py_obj)";
-			my $mem_ref = "py_talloc_get_ptr(py_obj)";
 			my $l = $e->{LEVELS}[0];
 			my $nl = GetNextLevel($e, $l);
 			if ($l->{TYPE} eq "POINTER" and 
@@ -218,7 +217,7 @@ sub PythonStruct($$$$$$)
 				not ($nl->{TYPE} eq "DATA" and Parse::Pidl::Typelist::scalar_is_reference($nl->{DATA_TYPE}))) {
 				$self->pidl("talloc_unlink(py_talloc_get_mem_ctx(py_obj), $varname);");
 			}
-			$self->ConvertObjectFromPython($env, $mem_ctx, $mem_ref, $e, "value", $varname, "return -1;");
+			$self->ConvertObjectFromPython($env, $mem_ctx, $e, "value", $varname, "return -1;");
 			$self->pidl("return 0;");
 			$self->deindent;
 			$self->pidl("}");
@@ -514,7 +513,7 @@ sub PythonFunctionPackIn($$$)
 				$self->pidl("r->in.$e->{NAME} = $val;");
 			}
 		} else {
-			$self->ConvertObjectFromPython($env, "r", undef, $e, "py_$e->{NAME}", "r->in.$e->{NAME}", $fail);
+			$self->ConvertObjectFromPython($env, "r", $e, "py_$e->{NAME}", "r->in.$e->{NAME}", $fail);
 		}
 	}
 	$self->pidl("return true;");
@@ -895,7 +894,7 @@ sub ConvertObjectFromPythonData($$$$$$;$)
 			return;
 		}
 		$self->pidl("PY_CHECK_TYPE($ctype_name, $cvar, $fail);");
-		$self->assign($target, "talloc_reference($mem_ctx, (".mapTypeName($ctype)." *)py_talloc_get_ptr($cvar))");
+		$self->assign($target, "talloc_reference($mem_ctx, (".mapTypeName($ctype)." *)py_talloc_get_mem_ctx($cvar))");
 		return;
 	}
 
@@ -945,14 +944,14 @@ sub ConvertObjectFromPythonData($$$$$$;$)
 
 }
 
-sub ConvertObjectFromPythonLevel($$$$$$$$$)
+sub ConvertObjectFromPythonLevel($$$$$$$$)
 {
-	my ($self, $env, $mem_ctx, $mem_ref, $py_var, $e, $l, $var_name, $fail) = @_;
+	my ($self, $env, $mem_ctx, $py_var, $e, $l, $var_name, $fail) = @_;
 	my $nl = GetNextLevel($e, $l);
 
 	if ($l->{TYPE} eq "POINTER") {
 		if ($nl->{TYPE} eq "DATA" and Parse::Pidl::Typelist::scalar_is_reference($nl->{DATA_TYPE})) {
-			$self->ConvertObjectFromPythonLevel($env, $mem_ctx, $mem_ref, $py_var, $e, $nl, $var_name, $fail);
+			$self->ConvertObjectFromPythonLevel($env, $mem_ctx, $py_var, $e, $nl, $var_name, $fail);
 			return;
 		}
 		if ($l->{POINTER_TYPE} ne "ref") {
@@ -970,7 +969,7 @@ sub ConvertObjectFromPythonLevel($$$$$$$$$)
 		} else {
 			$self->pidl("$var_name = NULL;");
 		}
-		$self->ConvertObjectFromPythonLevel($env, $mem_ctx, $mem_ref, $py_var, $e, $nl, get_value_of($var_name), $fail);
+		$self->ConvertObjectFromPythonLevel($env, $mem_ctx, $py_var, $e, $nl, get_value_of($var_name), $fail);
 		if ($l->{POINTER_TYPE} ne "ref") {
 			$self->deindent;
 			$self->pidl("}");
@@ -995,20 +994,16 @@ sub ConvertObjectFromPythonLevel($$$$$$$$$)
 				$self->pidl("$var_name = talloc_array_ptrtype($mem_ctx, $var_name, PyList_Size($py_var));");
 				$self->pidl("if (!$var_name) { $fail; }");
 				$self->pidl("talloc_set_name_const($var_name, \"ARRAY: $var_name\");");
-				if ($mem_ref) {
-					$self->pidl("if (!talloc_reference($mem_ref, $var_name)) { $fail }");
-				}
 			}
 			$self->pidl("for ($counter = 0; $counter < PyList_Size($py_var); $counter++) {");
 			$self->indent;
-			$self->ConvertObjectFromPythonLevel($env, $var_name, undef, "PyList_GetItem($py_var, $counter)", $e, GetNextLevel($e, $l), $var_name."[$counter]", $fail);
+			$self->ConvertObjectFromPythonLevel($env, $var_name, "PyList_GetItem($py_var, $counter)", $e, GetNextLevel($e, $l), $var_name."[$counter]", $fail);
 			$self->deindent;
 			$self->pidl("}");
 			$self->deindent;
 			$self->pidl("}");
 		}
 	} elsif ($l->{TYPE} eq "DATA") {
-
 		if (not Parse::Pidl::Typelist::is_scalar($l->{DATA_TYPE})) {
 			$var_name = get_pointer_to($var_name);
 		}
@@ -1026,17 +1021,17 @@ sub ConvertObjectFromPythonLevel($$$$$$$$$)
 		$self->deindent;
 		$self->pidl("}");
 	} elsif ($l->{TYPE} eq "SUBCONTEXT") {
-		$self->ConvertObjectFromPythonLevel($env, $mem_ctx, undef, $py_var, $e, GetNextLevel($e, $l), $var_name, $fail);
+		$self->ConvertObjectFromPythonLevel($env, $mem_ctx, $py_var, $e, GetNextLevel($e, $l), $var_name, $fail);
 	} else {
 		fatal($e->{ORIGINAL}, "unknown level type $l->{TYPE}");
 	}
 }
 
-sub ConvertObjectFromPython($$$$$$$$)
+sub ConvertObjectFromPython($$$$$$$)
 {
-	my ($self, $env, $mem_ctx, $mem_ref, $ctype, $cvar, $target, $fail) = @_;
+	my ($self, $env, $mem_ctx, $ctype, $cvar, $target, $fail) = @_;
 
-	$self->ConvertObjectFromPythonLevel($env, $mem_ctx, $mem_ref, $cvar, $ctype, $ctype->{LEVELS}[0], $target, $fail);
+	$self->ConvertObjectFromPythonLevel($env, $mem_ctx, $cvar, $ctype, $ctype->{LEVELS}[0], $target, $fail);
 }
 
 sub ConvertScalarToPython($$$)
