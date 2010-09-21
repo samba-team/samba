@@ -1198,7 +1198,7 @@ bld.RECURSE('../lib/replace')
 print "SBINDIR=%s" % bld.env.SBINDIR
 bld.RECURSE('build')
 
-bld.RECURSE('../librpc/idl')
+bld.RECURSE('../librpc')
 bld.RECURSE('librpc/idl')
 
 bld.SAMBA_MKVERSION('include/version.h')
@@ -1324,6 +1324,37 @@ bld.SAMBA_SUBSYSTEM('SMBLDAP',
                     source=SMBLDAP_SRC,
                     deps='ldap lber',
                     vars=locals())
+
+#FIXME
+bld.SAMBA_SUBSYSTEM('LIBNDR',
+                    source=LIBNDR_SRC,
+                    vars=locals())
+
+#FIXME
+bld.SAMBA_SUBSYSTEM('NDR_STANDARD',
+                    source=LIBNDR_SRC,
+                    vars=locals())
+
+bld.SAMBA_SUBSYSTEM('LZXPRESS',
+		    deps='replace',
+		    source='../lib/compression/lzxpress.c')
+
+#FIXME
+bld.SAMBA_SUBSYSTEM('NDR_SECURITY',
+                    source=LIBNDR_SRC,
+                    vars=locals())
+
+bld.SAMBA_SUBSYSTEM('LIBSAMBA-ERRORS',
+		    source='../libcli/util/doserr.c libsmb/nterr.c')
+
+bld.SAMBA_SUBSYSTEM('NDR_NBT_BUF',
+		    source='../libcli/nbt/nbtname.c',
+		    deps='talloc',
+		    autoproto='nbtname.h')
+
+bld.SAMBA_SUBSYSTEM('LIBCLI_NDR_NETLOGON',
+		    source='../libcli/ndr_netlogon.c',
+		    public_deps='LIBNDR NDR_SECURITY')
 
 ########################## BINARIES #################################
 
