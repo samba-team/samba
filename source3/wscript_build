@@ -416,8 +416,7 @@ REG_FULL_SRC = '''${REG_SMBCONF_SRC}
                ${REG_INIT_FULL_SRC}
                registry/reg_eventlog.c
                registry/reg_perfcount.c
-               librpc/gen_ndr/ndr_perfcount.c
-               registry/reg_util_legacy.c'''
+               librpc/gen_ndr/ndr_perfcount.c'''
 
 LIB_EVENTLOG_SRC = '''lib/eventlog/eventlog.c'''
 
