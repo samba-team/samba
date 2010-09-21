@@ -1038,13 +1038,33 @@ objectClass: container
                           attrs=["objectGUID"]);
         res3 = ldb.search(base=self.base_dn, scope=SCOPE_BASE,
                           attrs=["parentGUID"]);
+        res4 = ldb.search(base=self.configuration_dn, scope=SCOPE_BASE,
+                          attrs=["parentGUID"]);
+        res5 = ldb.search(base=self.schema_dn, scope=SCOPE_BASE,
+                          attrs=["parentGUID"]);
 
         """Check if the parentGUID is valid """
         self.assertEquals(res1[0]["parentGUID"], res2[0]["objectGUID"]);
 
-        """Check if it returns nothing when there is no parent object"""
+        """Check if it returns nothing when there is no parent object - default NC"""
         has_parentGUID = False
         for key in res3[0].keys():
+            if key == "parentGUID":
+                has_parentGUID = True
+                break
+        self.assertFalse(has_parentGUID);
+
+        """Check if it returns nothing when there is no parent object - configuration NC"""
+        has_parentGUID = False
+        for key in res4[0].keys():
+            if key == "parentGUID":
+                has_parentGUID = True
+                break
+        self.assertFalse(has_parentGUID);
+
+        """Check if it returns nothing when there is no parent object - schema NC"""
+        has_parentGUID = False
+        for key in res5[0].keys():
             if key == "parentGUID":
                 has_parentGUID = True
                 break

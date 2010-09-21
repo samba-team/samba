@@ -197,48 +197,62 @@ static int construct_token_groups(struct ldb_module *module,
 static int construct_parent_guid(struct ldb_module *module,
 				 struct ldb_message *msg, enum ldb_scope scope)
 {
-	struct ldb_result *res;
+	struct ldb_result *res, *parent_res;
 	const struct ldb_val *parent_guid;
-	const char *attrs[] = { "objectGUID", NULL };
+	const char *attrs[] = { "instanceType", NULL };
+	const char *attrs2[] = { "objectGUID", NULL };
+	uint32_t instanceType;
 	int ret;
+	struct ldb_dn *parent_dn;
 	struct ldb_val v;
 
-	/* TODO:  In the future, this needs to honour the partition boundaries */
-	struct ldb_dn *parent_dn = ldb_dn_get_parent(msg, msg->dn);
+	/* determine if the object is NC by instance type */
+	ret = dsdb_module_search_dn(module, msg, &res, msg->dn, attrs,
+	                            DSDB_FLAG_NEXT_MODULE |
+	                            DSDB_SEARCH_SHOW_DELETED);
+
+	instanceType = ldb_msg_find_attr_as_uint(res->msgs[0],
+						 "instanceType", 0);
+	talloc_free(res);
+	if (instanceType & INSTANCE_TYPE_IS_NC_HEAD) {
+		DEBUG(4,(__location__ ": Object %s is NC\n",
+			 ldb_dn_get_linearized(msg->dn)));
+		return LDB_SUCCESS;
+	}
+	parent_dn = ldb_dn_get_parent(msg, msg->dn);
 
 	if (parent_dn == NULL) {
 		DEBUG(4,(__location__ ": Failed to find parent for dn %s\n",
 					 ldb_dn_get_linearized(msg->dn)));
 		return LDB_SUCCESS;
 	}
-
-	ret = dsdb_module_search_dn(module, msg, &res, parent_dn, attrs,
+	ret = dsdb_module_search_dn(module, msg, &parent_res, parent_dn, attrs2,
 	                            DSDB_FLAG_NEXT_MODULE |
 	                            DSDB_SEARCH_SHOW_DELETED);
 	talloc_free(parent_dn);
 
-	/* if there is no parent for this object, then return */
+	/* not NC, so the object should have a parent*/
 	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
 		DEBUG(4,(__location__ ": Parent dn for %s does not exist \n",
 			 ldb_dn_get_linearized(msg->dn)));
-		return LDB_SUCCESS;
+		return ldb_operr(ldb_module_get_ctx(module));
 	} else if (ret != LDB_SUCCESS) {
 		return ret;
 	}
 
-	parent_guid = ldb_msg_find_ldb_val(res->msgs[0], "objectGUID");
+	parent_guid = ldb_msg_find_ldb_val(parent_res->msgs[0], "objectGUID");
 	if (!parent_guid) {
-		talloc_free(res);
+		talloc_free(parent_res);
 		return LDB_SUCCESS;
 	}
 
-	v = data_blob_dup_talloc(res, parent_guid);
+	v = data_blob_dup_talloc(parent_res, parent_guid);
 	if (!v.data) {
-		talloc_free(res);
+		talloc_free(parent_res);
 		return ldb_oom(ldb_module_get_ctx(module));
 	}
 	ret = ldb_msg_add_steal_value(msg, "parentGUID", &v);
-	talloc_free(res);
+	talloc_free(parent_res);
 	return ret;
 }
 
