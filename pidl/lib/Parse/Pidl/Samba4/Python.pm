@@ -531,22 +531,13 @@ sub PythonFunction($$$)
 	my $fnname = "py_$fn->{NAME}";
 	my $docstring = $self->DocString($fn, $fn->{NAME});
 
-	my ($insignature, $outsignature);
-	my ($infn, $outfn);
-
-	if (has_property($fn, "todo")) {
-		unless ($docstring) { $docstring = "NULL"; }
-		$infn = "NULL";
-		$outfn = "NULL";
+	my ($infn, $insignature) = $self->PythonFunctionPackIn($fn, $fnname);
+	my ($outfn, $outsignature) = $self->PythonFunctionUnpackOut($fn, $fnname);
+	my $signature = "S.$prettyname($insignature) -> $outsignature";
+	if ($docstring) {
+		$docstring = "\"$signature\\n\\n\"$docstring";
 	} else {
-		($infn, $insignature) = $self->PythonFunctionPackIn($fn, $fnname);
-		($outfn, $outsignature) = $self->PythonFunctionUnpackOut($fn, $fnname);
-		my $signature = "S.$prettyname($insignature) -> $outsignature";
-		if ($docstring) {
-			$docstring = "\"$signature\\n\\n\"$docstring";
-		} else {
-			$docstring = "\"$signature\"";
-		}
+		$docstring = "\"$signature\"";
 	}
 
 	return ($infn, $outfn, $docstring);
