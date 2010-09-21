@@ -161,7 +161,6 @@ sub ParseFunction_r_Done($$$$)
 
 sub ParseFunction_r_Recv($$$$)
 {
-	my ($if, $fn, $name) = @_;
 	my ($self, $if, $fn, $name) = @_;
 	my $uname = uc $name;
 
@@ -198,7 +197,6 @@ sub ParseFunction_r_Recv($$$$)
 
 sub ParseFunction_r_Sync($$$$)
 {
-	my ($if, $fn, $name) = @_;
 	my ($self, $if, $fn, $name) = @_;
 	my $uname = uc $name;
 
@@ -224,7 +222,6 @@ sub ParseFunction_r_Sync($$$$)
 
 sub ParseFunction_Compat_Sync($$$$)
 {
-	my ($if, $fn, $name) = @_;
 	my ($self, $if, $fn, $name) = @_;
 	my $uname = uc $name;
 
