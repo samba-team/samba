@@ -951,12 +951,10 @@ sub ParseMemCtxPullFlags($$$$)
 
 	if (($l->{TYPE} eq "POINTER") and ($l->{POINTER_TYPE} eq "ref")) {
 		my $nl = GetNextLevel($e, $l);
-		my $next_is_array = ($nl->{TYPE} eq "ARRAY");
-		my $next_is_string = (($nl->{TYPE} eq "DATA") and 
-					($nl->{DATA_TYPE} eq "string"));
-		if ($next_is_array or $next_is_string) {
-			return undef;
-		} elsif ($l->{LEVEL} eq "TOP") {
+		return undef if ($nl->{TYPE} eq "ARRAY");
+		return undef if (($nl->{TYPE} eq "DATA") and ($nl->{DATA_TYPE} eq "string"));
+
+		if ($l->{LEVEL} eq "TOP") {
 			$mem_flags = "LIBNDR_FLAG_REF_ALLOC";
 		}
 	}
