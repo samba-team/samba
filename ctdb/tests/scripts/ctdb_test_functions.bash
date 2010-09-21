@@ -93,6 +93,9 @@ ctdb_check_time_logs ()
 	echo "Check time sync (test client first):"
 	date
 	onnode -p all date
+	echo "Information from test client:"
+	hostname
+	top -b -n 1
     fi
 }
 
