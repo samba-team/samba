@@ -211,30 +211,6 @@ static WERROR dreplsrv_partition_add_source_dsa(struct dreplsrv_service *s,
 	return WERR_OK;
 }
 
-/*
-  convert from one udv format to the other
- */
-static WERROR udv_convert(TALLOC_CTX *mem_ctx,
-			  const struct replUpToDateVectorCtr2 *udv,
-			  struct drsuapi_DsReplicaCursorCtrEx *udv_ex)
-{
-	uint32_t i;
-
-	udv_ex->version = 2;
-	udv_ex->reserved1 = 0;
-	udv_ex->reserved2 = 0;
-	udv_ex->count = udv->count;
-	udv_ex->cursors = talloc_array(mem_ctx, struct drsuapi_DsReplicaCursor, udv->count);
-	W_ERROR_HAVE_NO_MEMORY(udv_ex->cursors);
-
-	for (i=0; i<udv->count; i++) {
-		udv_ex->cursors[i].source_dsa_invocation_id = udv->cursors[i].source_dsa_invocation_id;
-		udv_ex->cursors[i].highest_usn = udv->cursors[i].highest_usn;
-	}
-
-	return WERR_OK;
-}
-
 WERROR dreplsrv_partition_find_for_nc(struct dreplsrv_service *s,
 				      const struct GUID *nc_guid,
 				      const struct dom_sid *nc_sid,
@@ -352,9 +328,8 @@ static WERROR dreplsrv_refresh_partition(struct dreplsrv_service *s,
 	ZERO_STRUCT(p->uptodatevector_ex);
 
 	ret = dsdb_load_udv_v2(s->samdb, p->dn, p, &p->uptodatevector.cursors, &p->uptodatevector.count);
-	if (ret == LDB_SUCCESS) {
-		status = udv_convert(p, &p->uptodatevector, &p->uptodatevector_ex);
-		W_ERROR_NOT_OK_RETURN(status);
+	if (ret != LDB_SUCCESS) {
+		DEBUG(4,(__location__ ": no UDV available for %s\n", ldb_dn_get_linearized(p->dn)));
 	}
 
 	orf_el = ldb_msg_find_element(r->msgs[0], "repsFrom");

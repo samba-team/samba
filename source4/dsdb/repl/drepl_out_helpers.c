@@ -297,6 +297,31 @@ static NTSTATUS dreplsrv_get_rodc_partial_attribute_set(struct dreplsrv_service 
 	return NT_STATUS_OK;
 }
 
+/*
+  convert from one udv format to the other
+ */
+static WERROR udv_convert(TALLOC_CTX *mem_ctx,
+			  const struct replUpToDateVectorCtr2 *udv,
+			  struct drsuapi_DsReplicaCursorCtrEx *udv_ex)
+{
+	uint32_t i;
+
+	udv_ex->version = 2;
+	udv_ex->reserved1 = 0;
+	udv_ex->reserved2 = 0;
+	udv_ex->count = udv->count;
+	udv_ex->cursors = talloc_array(mem_ctx, struct drsuapi_DsReplicaCursor, udv->count);
+	W_ERROR_HAVE_NO_MEMORY(udv_ex->cursors);
+
+	for (i=0; i<udv->count; i++) {
+		udv_ex->cursors[i].source_dsa_invocation_id = udv->cursors[i].source_dsa_invocation_id;
+		udv_ex->cursors[i].highest_usn = udv->cursors[i].highest_usn;
+	}
+
+	return WERR_OK;
+}
+
+
 static void dreplsrv_op_pull_source_get_changes_trigger(struct tevent_req *req)
 {
 	struct dreplsrv_op_pull_source_state *state = tevent_req_data(req,
@@ -333,6 +358,16 @@ static void dreplsrv_op_pull_source_get_changes_trigger(struct tevent_req *req)
 	r->out.ctr = talloc(r, union drsuapi_DsGetNCChangesCtr);
 	if (tevent_req_nomem(r->out.ctr, req)) {
 		return;
+	}
+
+	if (partition->uptodatevector.count != 0 &&
+	    partition->uptodatevector_ex.count == 0) {
+		WERROR werr;
+		werr = udv_convert(partition, &partition->uptodatevector, &partition->uptodatevector_ex);
+		if (!W_ERROR_IS_OK(werr)) {
+			DEBUG(0,(__location__ ": Failed to convert UDV for %s : %s\n",
+				 ldb_dn_get_linearized(partition->dn), nt_errstr(status)));
+		}
 	}
 
 	if (partition->uptodatevector_ex.count == 0) {
