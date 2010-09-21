@@ -829,6 +829,40 @@ _PUBLIC_ enum ndr_err_code ndr_check_array_length(struct ndr_pull *ndr, void *p,
 	return NDR_ERR_SUCCESS;
 }
 
+_PUBLIC_ enum ndr_err_code ndr_push_pipe_chunk_trailer(struct ndr_push *ndr, int ndr_flags, uint32_t count)
+{
+	if (ndr->flags & LIBNDR_FLAG_NDR64) {
+		int64_t tmp = 0 - (int64_t)count;
+		uint64_t ncount = tmp;
+
+		NDR_CHECK(ndr_push_hyper(ndr, ndr_flags, ncount));
+	}
+
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_check_pipe_chunk_trailer(struct ndr_pull *ndr, int ndr_flags, uint32_t count)
+{
+	if (ndr->flags & LIBNDR_FLAG_NDR64) {
+		int64_t tmp = 0 - (int64_t)count;
+		uint64_t ncount1 = tmp;
+		uint64_t ncount2;
+
+		NDR_CHECK(ndr_pull_hyper(ndr, ndr_flags, &ncount2));
+		if (ncount1 == ncount2) {
+			return NDR_ERR_SUCCESS;
+		}
+
+		return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE,
+			"Bad pipe trailer[%lld should be %lld] size was %lu\"",
+			(unsigned long long)ncount2,
+			(unsigned long long)ncount1,
+			(unsigned long)count);
+	}
+
+	return NDR_ERR_SUCCESS;
+}
+
 /*
   store a switch value
  */
