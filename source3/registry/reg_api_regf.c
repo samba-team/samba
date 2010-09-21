@@ -20,6 +20,7 @@
 
 #include "includes.h"
 #include "registry.h"
+#include "reg_api_regf.h"
 #include "reg_cachehook.h"
 #include "regfio.h"
 #include "reg_util_internal.h"
