@@ -103,12 +103,12 @@ sub ParseFunction_r_Send($$$$)
 		$self->pidl("return tevent_req_post(req, ev);");
 		$self->deindent;
 		$self->pidl("}");
-		$self->pidl("");
 		$submem = "state->out_mem_ctx";
 	} else {
 		$self->pidl("state->out_mem_ctx = NULL;");
 		$submem = "state";
 	}
+	$self->pidl("");
 
 	$self->pidl("subreq = dcerpc_binding_handle_call_send(state, ev, h,");
 	$self->pidl("\t\tNULL, &ndr_table_$if->{NAME},");
