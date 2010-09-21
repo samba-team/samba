@@ -34,7 +34,7 @@ require Exporter;
 use vars qw($VERSION);
 $VERSION = '0.01';
 @ISA = qw(Exporter);
-@EXPORT = qw(GetPrevLevel GetNextLevel ContainsDeferred ContainsString);
+@EXPORT = qw(GetPrevLevel GetNextLevel ContainsDeferred ContainsPipe ContainsString);
 @EXPORT_OK = qw(GetElementLevelTable ParseElement ValidElement align_type mapToScalar ParseType can_contain_deferred is_charset_array);
 
 use strict;
@@ -848,6 +848,20 @@ sub ContainsDeferred($$)
 		return 1 if ($l->{CONTAINS_DEFERRED});
 	} 
 	
+	return 0;
+}
+
+sub ContainsPipe($$)
+{
+	my ($e,$l) = @_;
+
+	return 1 if ($l->{TYPE} eq "PIPE");
+
+	while ($l = GetNextLevel($e,$l))
+	{
+		return 1 if ($l->{TYPE} eq "PIPE");
+	}
+
 	return 0;
 }
 
