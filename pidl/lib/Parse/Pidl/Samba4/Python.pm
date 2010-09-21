@@ -832,7 +832,7 @@ sub assign($$$)
 	if ($dest =~ /^\&/ and $src eq "NULL") {
 		$self->pidl("memset($dest, 0, sizeof(" . get_value_of($dest) . "));");
 	} elsif ($dest =~ /^\&/) {
-		$self->pidl("memcpy($dest, $src, sizeof(" . get_value_of($dest) . "));");
+		$self->pidl("memmove($dest, $src, sizeof(" . get_value_of($dest) . "));");
 	} else {
 		$self->pidl("$dest = $src;");
 	}
@@ -894,7 +894,13 @@ sub ConvertObjectFromPythonData($$$$$$;$)
 			return;
 		}
 		$self->pidl("PY_CHECK_TYPE($ctype_name, $cvar, $fail);");
-		$self->assign($target, "talloc_reference($mem_ctx, (".mapTypeName($ctype)." *)py_talloc_get_mem_ctx($cvar))");
+		$self->pidl("if (talloc_reference($mem_ctx, py_talloc_get_mem_ctx($cvar)) == NULL) {");
+		$self->indent;
+		$self->pidl("PyErr_NoMemory();");
+		$self->pidl("$fail");
+		$self->deindent;
+		$self->pidl("}");
+		$self->assign($target, "(".mapTypeName($ctype)." *)py_talloc_get_ptr($cvar)");
 		return;
 	}
 
