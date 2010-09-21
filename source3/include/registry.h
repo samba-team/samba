@@ -130,10 +130,6 @@ struct registry_key {
 #define REG_KEY_HKPT		2
 
 
-/* The following definitions come from registry/reg_init_full.c  */
-
-WERROR registry_init_full(void);
-
 /* The following definitions come from registry/reg_init_smbconf.c  */
 
 WERROR registry_init_smbconf(const char *keyname);
