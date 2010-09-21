@@ -325,6 +325,7 @@ sub PythonStruct($$$$$$)
 	$self->pidl(".tp_dealloc = py_talloc_dealloc,");
 	$self->pidl(".tp_getset = $getsetters,");
 	$self->pidl(".tp_repr = py_talloc_default_repr,");
+	$self->pidl(".tp_compare = py_talloc_default_cmp,");
 	if ($docstring) {
 		$self->pidl(".tp_doc = $docstring,");
 	}
