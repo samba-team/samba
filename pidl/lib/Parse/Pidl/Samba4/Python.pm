@@ -1152,7 +1152,16 @@ sub ConvertObjectToPythonLevel($$$$$$)
 
 		if (is_charset_array($e, $l)) {
 			# FIXME: Use Unix charset setting rather than utf-8
-			$self->pidl("$py_var = PyUnicode_Decode_check_null($var_name, strlen($var_name), \"utf-8\", \"ignore\");");
+			$self->pidl("if ($var_name == NULL) {");
+			$self->indent;
+			$self->pidl("$py_var = Py_None;");
+			$self->pidl("Py_INCREF($py_var);");
+			$self->deindent;
+			$self->pidl("} else {");
+			$self->indent;
+			$self->pidl("$py_var = PyUnicode_Decode($var_name, strlen($var_name), \"utf-8\", \"ignore\");");
+			$self->deindent;
+			$self->pidl("}");
 		} else {
 			die("No SIZE_IS for array $var_name") unless (defined($l->{SIZE_IS}));
 			my $length = $l->{SIZE_IS};

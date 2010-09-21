@@ -119,12 +119,3 @@ PyObject *PyString_FromString_check_null(const char *ptr)
 	}
 	return PyString_FromString(ptr);
 }
-
-PyObject *PyUnicode_Decode_check_null(const void *ptr, size_t len,
-				      const char *charset, const char *options)
-{
-	if (ptr == NULL) {
-		Py_RETURN_NONE;
-	}
-	return PyUnicode_Decode(ptr, len, charset, options);
-}
