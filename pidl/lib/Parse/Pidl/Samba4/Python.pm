@@ -987,9 +987,21 @@ sub ConvertObjectFromPythonLevel($$$$$$$$)
 		}
 
 		if (is_charset_array($e, $l)) {
-			$self->pidl("PY_CHECK_TYPE(&PyUnicode_Type, $py_var, $fail);");
+			$self->pidl("if (PyUnicode_Check($py_var)) {");
+			$self->indent;
 			# FIXME: Use Unix charset setting rather than utf-8
 			$self->pidl($var_name . " = PyString_AsString(PyUnicode_AsEncodedString($py_var, \"utf-8\", \"ignore\"));");
+			$self->deindent;
+			$self->pidl("} else if (PyString_Check($py_var)) {");
+			$self->indent;
+			$self->pidl($var_name . " = PyString_AsString($py_var);");
+			$self->deindent;
+			$self->pidl("} else {");
+			$self->indent;
+			$self->pidl("PyErr_Format(PyExc_TypeError, \"Expected string or unicode object, got %s\", Py_TYPE($py_var)->tp_name);");
+			$self->pidl("$fail;");
+			$self->deindent;
+			$self->pidl("}");
 		} else {
 			my $counter = "$e->{NAME}_cntr_$l->{LEVEL_INDEX}";
 			$self->pidl("PY_CHECK_TYPE(&PyList_Type, $py_var, $fail);");
