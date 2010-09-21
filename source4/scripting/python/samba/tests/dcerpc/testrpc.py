@@ -57,7 +57,7 @@ class RpcTests(object):
                 print "Setting %s.%s" % (typename, n)
                 setattr(v, n, value)
             except Exception, e:
-                if issubclass(e, AttributeError) and str(e).endswith("is read-only"):
+                if isinstance(e, AttributeError) and str(e).endswith("is read-only"):
                     # readonly, ignore
                     continue
                 else:
@@ -68,7 +68,7 @@ class RpcTests(object):
             # and try a comparison
             try:
                 if value != getattr(v, n):
-                    print "ERROR: Comparison failed for %s.%s != %r" % (typename, n, value)
+                    print "ERROR: Comparison failed for %s.%s: %r != %r" % (typename, n, value, getattr(v, n))
                     continue
             except Exception, e:
                 print "ERROR: compare exception for %s.%s: %r: %s" % (typename, n, e.__class__, e)
@@ -92,9 +92,11 @@ class RpcTests(object):
                     initial_blocks = samba.talloc_total_blocks(None)
                     self.check_type(interface, n, value)
                     self.check_blocks(None, initial_blocks)
-                except:
-                    print "ERROR: Failed to check_type %s.%s" % (iname, n)
+                except Exception, e:
+                    print "ERROR: Failed to check_type %s.%s: %r: %s" % (iname, n, e.__class__, e)
                     self.errcount += 1
+            elif callable(value):
+                pass # Method
             else:
                 print "UNKNOWN: %s=%s" % (n, value)
         if self.errcount - errcount != 0:
