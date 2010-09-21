@@ -88,6 +88,8 @@ struct service_display_info common_unix_svcs[] = {
   { NULL, NULL, NULL, NULL }
 };
 
+static WERROR svcctl_set_secdesc_internal(struct registry_key *key,
+					  struct security_descriptor *sec_desc);
 
 /********************************************************************
 ********************************************************************/
@@ -565,18 +567,54 @@ done:
  Wrapper to make storing a Service sd easier
 ********************************************************************/
 
+static WERROR svcctl_set_secdesc_internal(struct registry_key *key,
+					  struct security_descriptor *sec_desc)
+{
+	struct registry_key *key_security = NULL;
+	WERROR wresult;
+	struct registry_value value;
+	NTSTATUS status;
+	enum winreg_CreateAction action = REG_ACTION_NONE;
+	TALLOC_CTX *mem_ctx = talloc_stackframe();
+
+	wresult = reg_createkey(mem_ctx, key, "Security", REG_KEY_ALL, &key_security, &action);
+	if (!W_ERROR_IS_OK(wresult)) {
+		DEBUG(0, ("svcctl_set_secdesc: reg_createkey failed: "
+			  "[%s\\Security] (%s)\n", key->key->name,
+			  win_errstr(wresult)));
+		goto done;
+	}
+
+	status = marshall_sec_desc(mem_ctx, sec_desc, &value.data.data,
+				   &value.data.length);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("svcctl_set_secdesc: marshall_sec_desc() failed: %s\n",
+			  nt_errstr(status)));
+		wresult = ntstatus_to_werror(status);
+		goto done;
+	}
+
+	value.type = REG_BINARY;
+
+	wresult = reg_setvalue(key_security, "Security", &value);
+	if (!W_ERROR_IS_OK(wresult)) {
+		DEBUG(0, ("svcctl_set_secdesc: reg_setvalue failed: %s\n",
+			  win_errstr(wresult)));
+	}
+
+done:
+	talloc_free(mem_ctx);
+	return wresult;
+}
+
 bool svcctl_set_secdesc(const char *name, struct security_descriptor *sec_desc,
 			struct security_token *token)
 {
 	struct registry_key *key = NULL;
-	struct registry_key *key_security = NULL;
 	WERROR wresult;
 	char *path = NULL;
-	struct registry_value value;
-	NTSTATUS status;
 	bool ret = false;
 	TALLOC_CTX *mem_ctx = talloc_stackframe();
-	enum winreg_CreateAction action = REG_ACTION_NONE;
 
 	path = talloc_asprintf(mem_ctx, "%s\\%s", KEY_SERVICES, name);
 	if (path == NULL) {
@@ -590,31 +628,9 @@ bool svcctl_set_secdesc(const char *name, struct security_descriptor *sec_desc,
 		goto done;
 	}
 
-	wresult = reg_createkey(mem_ctx, key, "Security", REG_KEY_ALL, &key_security, &action);
-	if (!W_ERROR_IS_OK(wresult)) {
-		DEBUG(0, ("svcctl_set_secdesc: reg_createkey failed: "
-			  "[%s\\Security] (%s)\n", key->key->name,
-			  win_errstr(wresult)));
-		goto done;
-	}
+	wresult = svcctl_set_secdesc_internal(key, sec_desc);
 
-	status = marshall_sec_desc(mem_ctx, sec_desc, &value.data.data,
-				   &value.data.length);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("svcctl_set_secdesc: ndr_push_struct_blob() failed!\n"));
-		goto done;
-	}
-
-	value.type = REG_BINARY;
-
-	wresult = reg_setvalue(key_security, "Security", &value);
-	if (!W_ERROR_IS_OK(wresult)) {
-		DEBUG(0, ("svcctl_set_secdesc: reg_setvalue failed: %s\n",
-			  win_errstr(wresult)));
-		goto done;
-	}
-
-	ret = true;
+	ret = W_ERROR_IS_OK(wresult);
 
 done:
 	talloc_free(mem_ctx);
