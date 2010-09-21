@@ -265,37 +265,105 @@ static bool read_init_file( const char *servicename, struct rcinit_file_informat
  Display name, Description, etc...
 ********************************************************************/
 
-static void fill_service_values(const char *name, struct regval_ctr *values)
+static WERROR svcctl_setvalue(struct registry_key *key,
+			      const char *name,
+			      struct registry_value *value)
+{
+	WERROR wresult;
+
+	wresult = reg_setvalue(key, name, value);
+	if (!W_ERROR_IS_OK(wresult)) {
+		DEBUG(0, ("reg_setvalue failed for %s in key %s: %s\n",
+			  name, key->key->name, win_errstr(wresult)));
+	}
+
+	return wresult;
+}
+
+static WERROR svcctl_setvalue_dword(struct registry_key *key,
+				    const char *name,
+				    uint32_t dword)
+{
+	struct registry_value value;
+
+	value.type = REG_DWORD;
+	value.data.length = sizeof(uint32_t);
+	value.data.data = (uint8_t *)&dword;
+
+	return svcctl_setvalue(key, name, &value);
+}
+
+static WERROR svcctl_setvalue_sz(struct registry_key *key,
+				 const char *name,
+				 const char *sz)
+{
+	struct registry_value value;
+	WERROR wresult;
+	TALLOC_CTX *mem_ctx = talloc_stackframe();
+
+	if (!push_reg_sz(mem_ctx, &value.data, sz)) {
+		DEBUG(0, ("push_reg_sz failed\n"));
+		wresult = WERR_NOMEM;
+		goto done;
+	}
+	value.type = REG_SZ;
+
+	wresult = svcctl_setvalue(key, name, &value);
+done:
+	talloc_free(mem_ctx);
+	return wresult;
+}
+
+static void fill_service_values(struct registry_key *key)
 {
 	char *dname, *ipath, *description;
-	uint32 dword;
 	int i;
+	WERROR wresult;
+	TALLOC_CTX *mem_ctx = talloc_stackframe();
+	char *name = NULL;
+
+	name = strrchr(key->key->name, '\\');
+	if (name == NULL) {
+		name = key->key->name;
+	} else {
+		name++;
+	}
 
 	/* These values are hardcoded in all QueryServiceConfig() replies.
 	   I'm just storing them here for cosmetic purposes */
 
-	dword = SVCCTL_AUTO_START;
-	regval_ctr_addvalue( values, "Start", REG_DWORD, (uint8 *)&dword, sizeof(uint32));
+	wresult = svcctl_setvalue_dword(key, "Start", SVCCTL_AUTO_START);
+	if (!W_ERROR_IS_OK(wresult)) {
+		goto done;
+	}
 
-	dword = SERVICE_TYPE_WIN32_OWN_PROCESS;
-	regval_ctr_addvalue( values, "Type", REG_DWORD, (uint8 *)&dword, sizeof(uint32));
+	wresult = svcctl_setvalue_dword(key, "Type", SERVICE_TYPE_WIN32_OWN_PROCESS);
+	if (!W_ERROR_IS_OK(wresult)) {
+		goto done;
+	}
 
-	dword = SVCCTL_SVC_ERROR_NORMAL;
-	regval_ctr_addvalue( values, "ErrorControl", REG_DWORD, (uint8 *)&dword, sizeof(uint32));
+	wresult = svcctl_setvalue_dword(key, "ErrorControl", SVCCTL_SVC_ERROR_NORMAL);
+	if (!W_ERROR_IS_OK(wresult)) {
+		goto done;
+	}
 
 	/* everything runs as LocalSystem */
 
-	regval_ctr_addvalue_sz(values, "ObjectName", "LocalSystem");
+	wresult = svcctl_setvalue_sz(key, "ObjectName", "LocalSystem");
+	if (!W_ERROR_IS_OK(wresult)) {
+		goto done;
+	}
 
 	/* special considerations for internal services and the DisplayName value */
 
 	for ( i=0; builtin_svcs[i].servicename; i++ ) {
 		if ( strequal( name, builtin_svcs[i].servicename ) ) {
-			ipath = talloc_asprintf(talloc_tos(), "%s/%s/%s",
-					get_dyn_MODULESDIR(), SVCCTL_SCRIPT_DIR,
-					builtin_svcs[i].daemon);
-			description = talloc_strdup(talloc_tos(), builtin_svcs[i].description);
-			dname = talloc_strdup(talloc_tos(), builtin_svcs[i].dispname);
+			ipath = talloc_asprintf(mem_ctx, "%s/%s/%s",
+						get_dyn_MODULESDIR(),
+						SVCCTL_SCRIPT_DIR,
+						builtin_svcs[i].daemon);
+			description = talloc_strdup(mem_ctx, builtin_svcs[i].description);
+			dname = talloc_strdup(mem_ctx, builtin_svcs[i].dispname);
 			break;
 		}
 	}
@@ -306,147 +374,83 @@ static void fill_service_values(const char *name, struct regval_ctr *values)
 		char *dispname = NULL;
 		struct rcinit_file_information *init_info = NULL;
 
-		ipath = talloc_asprintf(talloc_tos(), "%s/%s/%s",
+		ipath = talloc_asprintf(mem_ctx, "%s/%s/%s",
 					get_dyn_MODULESDIR(), SVCCTL_SCRIPT_DIR,
 					name);
 
 		/* lookup common unix display names */
 		dispname = get_common_service_dispname(name);
-		dname = talloc_strdup(talloc_tos(), dispname ? dispname : "");
+		dname = talloc_strdup(mem_ctx, dispname ? dispname : "");
 		SAFE_FREE(dispname);
 
 		/* get info from init file itself */
 		if ( read_init_file( name, &init_info ) ) {
-			description = talloc_strdup(talloc_tos(), init_info->description);
+			description = talloc_strdup(mem_ctx, init_info->description);
 			TALLOC_FREE( init_info );
 		}
 		else {
-			description = talloc_strdup(talloc_tos(), "External Unix Service");
+			description = talloc_strdup(mem_ctx, "External Unix Service");
 		}
 	}
 
 	/* add the new values */
 
-	regval_ctr_addvalue_sz(values, "DisplayName", dname);
-	regval_ctr_addvalue_sz(values, "ImagePath", ipath);
-	regval_ctr_addvalue_sz(values, "Description", description);
+	wresult = svcctl_setvalue_sz(key, "DisplayName", dname);
+	if (!W_ERROR_IS_OK(wresult)) {
+		goto done;
+	}
 
-	TALLOC_FREE(dname);
-	TALLOC_FREE(ipath);
-	TALLOC_FREE(description);
+	wresult = svcctl_setvalue_sz(key, "ImagePath", ipath);
+	if (!W_ERROR_IS_OK(wresult)) {
+		goto done;
+	}
 
+	wresult = svcctl_setvalue_sz(key, "Description", description);
+
+done:
+	talloc_free(mem_ctx);
 	return;
 }
 
 /********************************************************************
 ********************************************************************/
 
-static void add_new_svc_name(struct registry_key_handle *key_parent,
-			     struct regsubkey_ctr *subkeys,
-			     const char *name )
+static void add_new_svc_name(struct registry_key *key_parent,
+			     const char *name)
 {
-	struct registry_key_handle *key_service = NULL, *key_secdesc = NULL;
+	struct registry_key *key_service = NULL, *key_secdesc = NULL;
 	WERROR wresult;
-	char *path = NULL;
-	struct regval_ctr *values = NULL;
-	struct regsubkey_ctr *svc_subkeys = NULL;
 	struct security_descriptor *sd = NULL;
-	DATA_BLOB sd_blob;
-	NTSTATUS status;
+	TALLOC_CTX *mem_ctx = talloc_stackframe();
+	enum winreg_CreateAction action = REG_ACTION_NONE;
 
-	/* add to the list and create the subkey path */
+	wresult = reg_createkey(mem_ctx, key_parent, name, REG_KEY_ALL,
+				&key_service, &action);
 
-	regsubkey_ctr_addkey( subkeys, name );
-	store_reg_keys( key_parent, subkeys );
-
-	/* open the new service key */
-
-	if (asprintf(&path, "%s\\%s", KEY_SERVICES, name) < 0) {
-		return;
-	}
-	wresult = regkey_open_internal( NULL, &key_service, path,
-					get_root_nt_token(), REG_KEY_ALL );
-	if ( !W_ERROR_IS_OK(wresult) ) {
-		DEBUG(0,("add_new_svc_name: key lookup failed! [%s] (%s)\n",
-			path, win_errstr(wresult)));
-		SAFE_FREE(path);
-		return;
-	}
-	SAFE_FREE(path);
-
-	/* add the 'Security' key */
-
-	wresult = regsubkey_ctr_init(key_service, &svc_subkeys);
 	if (!W_ERROR_IS_OK(wresult)) {
-		DEBUG(0,("add_new_svc_name: talloc() failed!\n"));
-		TALLOC_FREE( key_service );
-		return;
+		DEBUG(0, ("add_new_svc_name: reg_createkey failed for %s\\%s: "
+			  "%s\n", key_parent->key->name, name,
+			  win_errstr(wresult)));
+		goto done;
 	}
-
-	fetch_reg_keys( key_service, svc_subkeys );
-	regsubkey_ctr_addkey( svc_subkeys, "Security" );
-	store_reg_keys( key_service, svc_subkeys );
 
 	/* now for the service values */
 
-	wresult = regval_ctr_init(key_service, &values);
-	if (!W_ERROR_IS_OK(wresult)) {
-		DEBUG(0,("add_new_svc_name: talloc() failed!\n"));
-		TALLOC_FREE( key_service );
-		return;
-	}
-
-	fill_service_values( name, values );
-	store_reg_values( key_service, values );
-
-	/* cleanup the service key*/
-
-	TALLOC_FREE( key_service );
+	fill_service_values(key_service);
 
 	/* now add the security descriptor */
 
-	if (asprintf(&path, "%s\\%s\\%s", KEY_SERVICES, name, "Security") < 0) {
-		return;
-	}
-	wresult = regkey_open_internal( NULL, &key_secdesc, path,
-					get_root_nt_token(), REG_KEY_ALL );
-	if ( !W_ERROR_IS_OK(wresult) ) {
-		DEBUG(0,("add_new_svc_name: key lookup failed! [%s] (%s)\n",
-			path, win_errstr(wresult)));
-		TALLOC_FREE( key_secdesc );
-		SAFE_FREE(path);
-		return;
-	}
-	SAFE_FREE(path);
-
-	wresult = regval_ctr_init(key_secdesc, &values);
-	if (!W_ERROR_IS_OK(wresult)) {
-		DEBUG(0,("add_new_svc_name: talloc() failed!\n"));
-		TALLOC_FREE( key_secdesc );
-		return;
+	sd = construct_service_sd(key_secdesc);
+	if (sd == NULL) {
+		DEBUG(0, ("add_new_svc_name: Failed to create default "
+			  "sec_desc!\n"));
+		goto done;
 	}
 
-	if ( !(sd = construct_service_sd(key_secdesc)) ) {
-		DEBUG(0,("add_new_svc_name: Failed to create default sec_desc!\n"));
-		TALLOC_FREE( key_secdesc );
-		return;
-	}
+	wresult = svcctl_set_secdesc_internal(key_service, sd);
 
-	status = marshall_sec_desc(key_secdesc, sd, &sd_blob.data,
-				   &sd_blob.length);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("marshall_sec_desc failed: %s\n",
-			  nt_errstr(status)));
-		TALLOC_FREE(key_secdesc);
-		return;
-	}
-
-	regval_ctr_addvalue(values, "Security", REG_BINARY,
-			    sd_blob.data, sd_blob.length);
-	store_reg_values( key_secdesc, values );
-
-	TALLOC_FREE( key_secdesc );
-
+done:
+	talloc_free(mem_ctx);
 	return;
 }
 
@@ -457,54 +461,46 @@ void svcctl_init_keys( void )
 {
 	const char **service_list = lp_svcctl_list();
 	int i;
-	struct regsubkey_ctr *subkeys = NULL;
-	struct registry_key_handle *key = NULL;
+	struct registry_key *key = NULL;
+	struct registry_key *subkey = NULL;
 	WERROR wresult;
+	TALLOC_CTX *mem_ctx = talloc_stackframe();
 
 	/* bad mojo here if the lookup failed.  Should not happen */
 
-	wresult = regkey_open_internal( NULL, &key, KEY_SERVICES,
-					get_root_nt_token(), REG_KEY_ALL );
+	wresult = reg_open_path(mem_ctx, KEY_SERVICES, REG_KEY_ALL, get_root_nt_token(), &key);
 
 	if ( !W_ERROR_IS_OK(wresult) ) {
 		DEBUG(0,("svcctl_init_keys: key lookup failed! (%s)\n",
 			win_errstr(wresult)));
-		return;
+		goto done;
 	}
-
-	/* lookup the available subkeys */
-
-	wresult = regsubkey_ctr_init(key, &subkeys);
-	if (!W_ERROR_IS_OK(wresult)) {
-		DEBUG(0,("svcctl_init_keys: talloc() failed!\n"));
-		TALLOC_FREE( key );
-		return;
-	}
-
-	fetch_reg_keys( key, subkeys );
 
 	/* the builtin services exist */
 
 	for ( i=0; builtin_svcs[i].servicename; i++ )
-		add_new_svc_name( key, subkeys, builtin_svcs[i].servicename );
+		add_new_svc_name(key, builtin_svcs[i].servicename);
 
 	for ( i=0; service_list && service_list[i]; i++ ) {
 
 		/* only add new services */
-		if ( regsubkey_ctr_key_exists( subkeys, service_list[i] ) )
+
+		wresult = reg_openkey(mem_ctx, key, service_list[i], REG_KEY_ALL, &subkey);
+		if (W_ERROR_IS_OK(wresult)) {
 			continue;
+		}
 
 		/* Add the new service key and initialize the appropriate values */
 
-		add_new_svc_name( key, subkeys, service_list[i] );
+		add_new_svc_name(key, service_list[i]);
 	}
-
-	TALLOC_FREE( key );
 
 	/* initialize the control hooks */
 
 	init_service_op_table();
 
+done:
+	talloc_free(mem_ctx);
 	return;
 }
 
