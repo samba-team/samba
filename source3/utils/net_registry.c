@@ -23,6 +23,7 @@
 #include "registry.h"
 #include "registry/reg_api.h"
 #include "registry/reg_util_token.h"
+#include "registry/reg_init_basic.h"
 #include "utils/net.h"
 #include "utils/net_registry_util.h"
 #include "include/g_lock.h"

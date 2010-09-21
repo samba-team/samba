@@ -24,6 +24,7 @@
 #include "registry/reg_api.h"
 #include "registry/reg_backend_db.h"
 #include "registry/reg_api_util.h"
+#include "registry/reg_init_basic.h"
 
 
 /****************************************************************

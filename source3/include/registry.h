@@ -130,11 +130,6 @@ struct registry_key {
 #define REG_KEY_HKPT		2
 
 
-/* The following definitions come from registry/reg_init_basic.c  */
-
-WERROR registry_init_common(void);
-WERROR registry_init_basic(void);
-
 /* The following definitions come from registry/reg_init_full.c  */
 
 WERROR registry_init_full(void);
