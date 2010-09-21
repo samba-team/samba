@@ -655,7 +655,7 @@ sub Interface($$$)
 		my @fns = ();
 
 		foreach my $d (@{$interface->{FUNCTIONS}}) {
-			next if not defined($d->{OPNUM});
+			next if has_property($d, "noopnum");
 			next if has_property($d, "nopython");
 			next if has_property($d, "todo");
 
