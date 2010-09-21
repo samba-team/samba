@@ -1080,10 +1080,6 @@ NTSTATUS winbindd_lookup_sids(TALLOC_CTX *mem_ctx,
 	/* And restore our original timeout. */
 	rpccli_set_timeout(cli, orig_timeout);
 
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
 	return status;
 }
 
