@@ -129,9 +129,4 @@ struct registry_key {
 #define REG_KEY_HKPD		1
 #define REG_KEY_HKPT		2
 
-
-/* The following definitions come from registry/reg_init_smbconf.c  */
-
-WERROR registry_init_smbconf(const char *keyname);
-
 #endif /* _REGISTRY_H */

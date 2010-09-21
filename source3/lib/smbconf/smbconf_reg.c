@@ -24,6 +24,7 @@
 #include "registry/reg_backend_db.h"
 #include "registry/reg_util_token.h"
 #include "registry/reg_api_util.h"
+#include "registry/reg_init_smbconf.h"
 #include "lib/smbconf/smbconf_init.h"
 #include "lib/smbconf/smbconf_reg.h"
 
