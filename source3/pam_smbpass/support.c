@@ -93,21 +93,19 @@ void _log_err( pam_handle_t *pamh, int err, const char *format, ... )
 void _log_err( pam_handle_t *pamh, int err, const char *format, ... )
 {
 	va_list args;
-	const char tag[] = "(pam_smbpass) ";
 	char *mod_format;
 
-	mod_format = SMB_MALLOC_ARRAY(char, sizeof(tag) + strlen(format));
-	/* try really, really hard to log something, since this may have
-	   been a message about a malloc() failure... */
-	if (mod_format == NULL) {
+	if (asprintf(&mod_format, "(pam_smbpass) %s", format) == -1) {
+		/*
+		 * try really, really hard to log something, since
+		 * this may have been a message about a malloc()
+		 * failure...
+		 */
 		va_start(args, format);
 		vsyslog(err | LOG_AUTH, format, args);
 		va_end(args);
 		return;
 	}
-
-	strncpy(mod_format, tag, strlen(tag)+1);
-	strlcat(mod_format, format, strlen(format)+1);
 
 	va_start(args, format);
 	vsyslog(err | LOG_AUTH, mod_format, args);
