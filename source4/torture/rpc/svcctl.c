@@ -22,6 +22,7 @@
 #include "includes.h"
 #include "librpc/gen_ndr/ndr_svcctl_c.h"
 #include "librpc/gen_ndr/ndr_svcctl.h"
+#include "librpc/gen_ndr/ndr_security.h"
 #include "torture/rpc/torture_rpc.h"
 #include "param/param.h"
 
@@ -280,6 +281,10 @@ static bool test_QueryServiceObjectSecurity(struct torture_context *tctx,
 	uint8_t *buffer;
 	uint32_t needed;
 
+	enum ndr_err_code ndr_err;
+	struct security_descriptor sd;
+	DATA_BLOB blob;
+
 	if (!test_OpenSCManager(b, tctx, &h))
 		return false;
 
@@ -314,6 +319,18 @@ static bool test_QueryServiceObjectSecurity(struct torture_context *tctx,
 	}
 
 	torture_assert_werr_ok(tctx, r.out.result, "QueryServiceObjectSecurity failed!");
+
+	blob = data_blob_const(buffer, needed);
+
+	ndr_err = ndr_pull_struct_blob(&blob, tctx, &sd,
+		(ndr_pull_flags_fn_t)ndr_pull_security_descriptor);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		return false;
+	}
+
+	if (DEBUGLEVEL >= 1) {
+		NDR_PRINT_DEBUG(security_descriptor, &sd);
+	}
 
 	if (!test_CloseServiceHandle(b, tctx, &s))
 		return false;
