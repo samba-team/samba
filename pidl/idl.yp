@@ -387,7 +387,31 @@ pipe:
 	{{
 		"TYPE" => "PIPE",
 		"PROPERTIES" => $_[1],
-		"DATA" => $_[3],
+		"NAME" => undef,
+		"DATA" => {
+			"TYPE" => "STRUCT",
+			"PROPERTIES" => $_[1],
+			"NAME" => undef,
+			"ELEMENTS" => [{
+				"NAME" => "count",
+				"PROPERTIES" => $_[1],
+				"POINTERS" => 0,
+				"ARRAY_LEN" => [],
+				"TYPE" => "uint3264",
+				"FILE" => $_[0]->YYData->{FILE},
+				"LINE" => $_[0]->YYData->{LINE},
+			},{
+				"NAME" => "array",
+				"PROPERTIES" => $_[1],
+				"POINTERS" => 0,
+				"ARRAY_LEN" => [ "count" ],
+				"TYPE" => $_[3],
+				"FILE" => $_[0]->YYData->{FILE},
+				"LINE" => $_[0]->YYData->{LINE},
+			}],
+			"FILE" => $_[0]->YYData->{FILE},
+			"LINE" => $_[0]->YYData->{LINE},
+		},
 		"FILE" => $_[0]->YYData->{FILE},
 		"LINE" => $_[0]->YYData->{LINE},
 	}}
