@@ -791,9 +791,6 @@ sub ParseElementPrint($$$$$)
 				$self->pidl("$ndr->depth++;");
 				$self->pidl("for ($counter=0;$counter<$length;$counter++) {");
 				$self->indent;
-				$self->pidl("char *idx_$l->{LEVEL_INDEX}=NULL;");
-				$self->pidl("if (asprintf(&idx_$l->{LEVEL_INDEX}, \"[\%d]\", $counter) != -1) {");
-				$self->indent;
 
 				$var_name = get_array_element($var_name, $counter);
 			}
@@ -816,9 +813,6 @@ sub ParseElementPrint($$$$$)
 		} elsif (($l->{TYPE} eq "ARRAY")
 			and not is_charset_array($e,$l)
 			and not has_fast_array($e,$l)) {
-			$self->pidl("free(idx_$l->{LEVEL_INDEX});");
-			$self->deindent;
-			$self->pidl("}");
 			$self->deindent;
 			$self->pidl("}");
 			$self->pidl("$ndr->depth--;");
