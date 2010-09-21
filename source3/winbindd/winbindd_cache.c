@@ -4550,6 +4550,8 @@ static void wcache_save_user_pwinfo(struct winbindd_domain *domain,
 	centry_free(centry);
 }
 
+#ifdef HAVE_ADS
+
 NTSTATUS nss_get_info_cached( struct winbindd_domain *domain, 
 			      const struct dom_sid *user_sid,
 			      TALLOC_CTX *ctx,
@@ -4609,6 +4611,7 @@ do_query:
 	return nt_status;	
 }
 
+#endif
 
 /* the cache backend methods are exposed via this structure */
 struct winbindd_methods cache_methods = {
