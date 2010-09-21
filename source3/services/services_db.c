@@ -134,24 +134,25 @@ static struct security_descriptor* construct_service_sd( TALLOC_CTX *ctx )
  Display name, Description, etc...
 ********************************************************************/
 
-static char *get_common_service_dispname( const char *servicename )
+static char *get_common_service_dispname(TALLOC_CTX *mem_ctx,
+					 const char *servicename)
 {
 	int i;
 
 	for ( i=0; common_unix_svcs[i].servicename; i++ ) {
 		if (strequal(servicename, common_unix_svcs[i].servicename)) {
 			char *dispname;
-			if (asprintf(&dispname,
-				"%s (%s)",
-				common_unix_svcs[i].dispname,
-				common_unix_svcs[i].servicename) < 0) {
+			dispname = talloc_asprintf(mem_ctx, "%s (%s)",
+					common_unix_svcs[i].dispname,
+					common_unix_svcs[i].servicename);
+			if (dispname == NULL) {
 				return NULL;
 			}
 			return dispname;
 		}
 	}
 
-	return SMB_STRDUP(servicename );
+	return talloc_strdup(mem_ctx, servicename);
 }
 
 /********************************************************************
@@ -376,9 +377,8 @@ static void fill_service_values(struct registry_key *key)
 					name);
 
 		/* lookup common unix display names */
-		dispname = get_common_service_dispname(name);
+		dispname = get_common_service_dispname(mem_ctx, name);
 		dname = talloc_strdup(mem_ctx, dispname ? dispname : "");
-		SAFE_FREE(dispname);
 
 		/* get info from init file itself */
 		if ( read_init_file( name, &init_info ) ) {
