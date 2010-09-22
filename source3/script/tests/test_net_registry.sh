@@ -144,7 +144,7 @@ test_deletekey()
 	fi
 
 	UNEXPECTED="Keyname = ${SUBKEY}"
-	printf "%s\n" "$OUTPUT" | 'grep ^Keyname' | grep ${SUBKEY}
+	printf "%s\n" "$OUTPUT" | grep '^Keyname' | grep ${SUBKEY}
 	if test "x$?" = "x0" ; then
 		echo "ERROR: found '$UNEXPECTED' after delete in output"
 		echo "output:"
