@@ -2312,7 +2312,6 @@ NTSTATUS _lsa_EnumAccountRights(struct pipes_struct *p,
 {
 	NTSTATUS status;
 	struct lsa_info *info = NULL;
-	struct dom_sid sid;
 	PRIVILEGE_SET *privileges;
 
 	/* find the connection policy handle. */
@@ -2341,7 +2340,7 @@ NTSTATUS _lsa_EnumAccountRights(struct pipes_struct *p,
 	}
 
 	DEBUG(10,("_lsa_EnumAccountRights: %s has %d privileges\n",
-		  sid_string_dbg(&sid), privileges->count));
+		  sid_string_dbg(r->in.sid), privileges->count));
 
 	status = init_lsa_right_set(p->mem_ctx, r->out.rights, privileges);
 
