@@ -36,7 +36,11 @@ WERROR NetJoinDomain_l(struct libnetapi_ctx *mem_ctx,
 		       struct NetJoinDomain *r)
 {
 	struct libnet_JoinCtx *j = NULL;
+	struct libnetapi_private_ctx *priv;
 	WERROR werr;
+
+	priv = talloc_get_type_abort(mem_ctx->private_data,
+		struct libnetapi_private_ctx);
 
 	if (!r->in.domain) {
 		return WERR_INVALID_PARAM;
@@ -55,7 +59,7 @@ WERROR NetJoinDomain_l(struct libnetapi_ctx *mem_ctx,
 		uint32_t flags = DS_DIRECTORY_SERVICE_REQUIRED |
 				 DS_WRITABLE_REQUIRED |
 				 DS_RETURN_DNS_NAME;
-		status = dsgetdcname(mem_ctx, NULL, r->in.domain,
+		status = dsgetdcname(mem_ctx, priv->msg_ctx, r->in.domain,
 				     NULL, NULL, flags, &info);
 		if (!NT_STATUS_IS_OK(status)) {
 			libnetapi_set_error_string(mem_ctx,
@@ -154,6 +158,10 @@ WERROR NetUnjoinDomain_l(struct libnetapi_ctx *mem_ctx,
 	struct dom_sid domain_sid;
 	const char *domain = NULL;
 	WERROR werr;
+	struct libnetapi_private_ctx *priv;
+
+	priv = talloc_get_type_abort(mem_ctx->private_data,
+		struct libnetapi_private_ctx);
 
 	if (!secrets_fetch_domain_sid(lp_workgroup(), &domain_sid)) {
 		return WERR_SETUP_NOT_JOINED;
@@ -178,7 +186,7 @@ WERROR NetUnjoinDomain_l(struct libnetapi_ctx *mem_ctx,
 		uint32_t flags = DS_DIRECTORY_SERVICE_REQUIRED |
 				 DS_WRITABLE_REQUIRED |
 				 DS_RETURN_DNS_NAME;
-		status = dsgetdcname(mem_ctx, NULL, domain,
+		status = dsgetdcname(mem_ctx, priv->msg_ctx, domain,
 				     NULL, NULL, flags, &info);
 		if (!NT_STATUS_IS_OK(status)) {
 			libnetapi_set_error_string(mem_ctx,
@@ -348,8 +356,12 @@ WERROR NetGetJoinableOUs_l(struct libnetapi_ctx *ctx,
 	const char *dc = NULL;
 	uint32_t flags = DS_DIRECTORY_SERVICE_REQUIRED |
 			 DS_RETURN_DNS_NAME;
+	struct libnetapi_private_ctx *priv;
 
-	status = dsgetdcname(ctx, NULL, r->in.domain,
+	priv = talloc_get_type_abort(ctx->private_data,
+		struct libnetapi_private_ctx);
+
+	status = dsgetdcname(ctx, priv->msg_ctx, r->in.domain,
 			     NULL, NULL, flags, &info);
 	if (!NT_STATUS_IS_OK(status)) {
 		libnetapi_set_error_string(ctx, "%s",

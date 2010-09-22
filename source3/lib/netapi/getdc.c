@@ -112,9 +112,13 @@ WERROR DsGetDcName_l(struct libnetapi_ctx *ctx,
 		     struct DsGetDcName *r)
 {
 	NTSTATUS status;
+	struct libnetapi_private_ctx *priv;
+
+	priv = talloc_get_type_abort(ctx->private_data,
+		struct libnetapi_private_ctx);
 
 	status = dsgetdcname(ctx,
-			     NULL,
+			     priv->msg_ctx,
 			     r->in.domain_name,
 			     r->in.domain_guid,
 			     r->in.site_name,

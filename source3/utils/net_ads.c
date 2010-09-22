@@ -986,6 +986,7 @@ static int net_ads_leave(struct net_context *c, int argc, const char **argv)
 	r->in.unjoin_flags	= WKSSVC_JOIN_FLAGS_JOIN_TYPE |
 				  WKSSVC_JOIN_FLAGS_ACCOUNT_DELETE;
 	r->in.delete_machine_account = true;
+	r->in.msg_ctx		= c->msg_ctx;
 
 	werr = libnet_Unjoin(ctx, r);
 	if (!W_ERROR_IS_OK(werr)) {
@@ -1357,6 +1358,7 @@ int net_ads_join(struct net_context *c, int argc, const char **argv)
 	r->in.join_flags	= WKSSVC_JOIN_FLAGS_JOIN_TYPE |
 				  WKSSVC_JOIN_FLAGS_ACCOUNT_CREATE |
 				  WKSSVC_JOIN_FLAGS_DOMAIN_JOIN_IF_JOINED;
+	r->in.msg_ctx		= c->msg_ctx;
 
 	werr = libnet_Join(ctx, r);
 	if (!W_ERROR_IS_OK(werr)) {

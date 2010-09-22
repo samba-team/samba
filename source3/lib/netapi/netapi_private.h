@@ -44,6 +44,8 @@ struct libnetapi_private_ctx {
 	} samr;
 
 	struct client_ipc_connection *ipc_connections;
+
+	struct messaging_context *msg_ctx;
 };
 
 NET_API_STATUS libnetapi_get_password(struct libnetapi_ctx *ctx, char **password);

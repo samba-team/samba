@@ -929,6 +929,12 @@ static struct functable net_func[] = {
 		c->opt_password = getenv("PASSWD");
 	}
 
+	c->msg_ctx = messaging_init(c, procid_self(),
+				    event_context_init(c));
+	if (c->msg_ctx == NULL) {
+		exit(1);
+	}
+
 	rc = net_run_function(c, argc_new-1, argv_new+1, "net", net_func);
 
 	DEBUG(2,("return code = %d\n", rc));

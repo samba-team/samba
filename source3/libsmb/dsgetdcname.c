@@ -900,30 +900,6 @@ static NTSTATUS process_dc_dns(TALLOC_CTX *mem_ctx,
 /****************************************************************
 ****************************************************************/
 
-static struct event_context *ev_context(void)
-{
-	static struct event_context *ctx;
-
-	if (!ctx && !(ctx = event_context_init(NULL))) {
-		smb_panic("Could not init event context");
-	}
-	return ctx;
-}
-
-/****************************************************************
-****************************************************************/
-
-static struct messaging_context *msg_context(TALLOC_CTX *mem_ctx)
-{
-	static struct messaging_context *ctx;
-
-	if (!ctx && !(ctx = messaging_init(mem_ctx, procid_self(),
-					   ev_context()))) {
-		smb_panic("Could not init messaging context");
-	}
-	return ctx;
-}
-
 /****************************************************************
 ****************************************************************/
 
@@ -948,8 +924,8 @@ static NTSTATUS process_dc_netbios(TALLOC_CTX *mem_ctx,
 			      NETLOGON_NT_VERSION_5 |
 			      NETLOGON_NT_VERSION_5EX_WITH_IP;
 
-	if (!msg_ctx) {
-		msg_ctx = msg_context(mem_ctx);
+	if (msg_ctx == NULL) {
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	if (flags & DS_PDC_REQUIRED) {
