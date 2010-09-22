@@ -513,6 +513,7 @@ char *rep_get_current_dir_name(void);
 #endif
 
 #if !defined(HAVE_STRERROR_R) || !defined(STRERROR_R_PROTO_COMPATIBLE)
+#undef strerror_r
 #define strerror_r rep_strerror_r
 int rep_strerror_r(int errnum, char *buf, size_t buflen);
 #endif
