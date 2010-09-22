@@ -716,8 +716,8 @@ foreach my $testsuite (@available) {
 				$individual_tests->{$name} = [];
 				$match = $r;
 				$restricted_used->{$r} = 1;
-			} elsif (substr($r, $name, length($name)+1) eq "$name.") {
-				push(@{$individual_tests->{$name}}, $1);
+			} elsif (substr($r, 0, length($name)+1) eq "$name.") {
+				push(@{$individual_tests->{$name}}, substr($r, length($name)+1));
 				$match = $r;
 				$restricted_used->{$r} = 1;
 			}
@@ -948,8 +948,8 @@ $envvarstr
 		# test runner for this test suite supports it.
 		if ($$_[3] and $individual_tests and $individual_tests->{$name}) {
 			my ($fh, $listid_file) = tempfile(UNLINK => 0);
-			foreach (@{$individual_tests->{$name}}) {
-				print $fh "$_\n";
+			foreach my $test (@{$individual_tests->{$name}}) {
+				print $fh "$test\n";
 			}
 			$cmd .= " --load-list=$listid_file";
 		}
