@@ -102,10 +102,9 @@ planperltestsuite() {
 planpythontestsuite() {
 	name=$1
 	env=$2
-	shift 2
-	other_args="$*"
-	cmdline="$SUBUNITRUN $other_args"
-	plantestsuite "$name" "$env" $cmdline
+	module="$3"
+	shift 3
+	plantestsuite_idlist "$name" "$env" python -m subunit.run $module
 }
 
 plansmbtorturetestsuite() {

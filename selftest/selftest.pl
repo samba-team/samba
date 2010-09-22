@@ -633,7 +633,7 @@ sub read_testlist($)
 	open(IN, $filename) or die("Unable to open $filename: $!");
 
 	while (<IN>) {
-		if (/-- TEST(-LOADLIST|IDLIST)? --\n/) {
+		if (/-- TEST(-LOADLIST|-IDLIST|) --\n/) {
 			my $supports_loadlist = (defined($1) and $1 eq "-LOADLIST");
 			my $supports_idlist = (defined($1) and $1 eq "-IDLIST");
 			my $name = <IN>;
@@ -955,7 +955,8 @@ $envvarstr
 				}
 				$cmd .= " --load-list=$listid_file";
 			} elsif ($$_[4]) {
-				$cmd .= join(' ', @{$individual_tests->{$name}});
+				$cmd =~ s/\s+[^\s]+\s*$//;
+				$cmd .= " " . join(' ', @{$individual_tests->{$name}});
 			}
 		}
 
