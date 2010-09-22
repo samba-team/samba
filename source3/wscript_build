@@ -1056,6 +1056,21 @@ bld.SAMBA_LIBRARY('libnetapi',
 			      lib/netapi/netlogon.c''',
                     public_deps='''talloc tdb''')
 
+bld.SAMBA_LIBRARY('libsmbclient',
+                    source='''libsmb/libsmb_cache.c
+			      libsmb/libsmb_compat.c
+			      libsmb/libsmb_context.c
+			      libsmb/libsmb_dir.c
+			      libsmb/libsmb_file.c
+			      libsmb/libsmb_misc.c
+			      libsmb/libsmb_path.c
+			      libsmb/libsmb_printjob.c
+			      libsmb/libsmb_server.c
+			      libsmb/libsmb_stat.c
+			      libsmb/libsmb_xattr.c
+			      libsmb/libsmb_setget.c''',
+		    public_deps='''talloc tdb''')
+
 bld.SAMBA_SUBSYSTEM('ASN1_UTIL',
                     source='../lib/util/asn1.c',
                     deps='talloc',
