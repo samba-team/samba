@@ -67,9 +67,9 @@ plantestsuite_idlist() {
 	cmdline="$*"
 	echo "-- TEST-IDLIST --"
 	if [ "$env" = "none" ]; then
-		fullname="samba4.$name"
+		fullname="$name"
 	else
-		fullname="samba4.$name ($env)"
+		fullname="$name ($env)"
 	fi
 	echo $fullname
 	echo $env
@@ -103,11 +103,10 @@ planperltestsuite() {
 }
 
 planpythontestsuite() {
-	name=$1
-	env=$2
-	module="$3"
-	shift 3
-	plantestsuite_idlist "$name" "$env" PYTHONPATH=$PYTHONPATH:$samba4srcdir/../lib/subunit/python:$samba4srcdir/../lib/testtools $PYTHON -m subunit.run $module
+	env=$1
+	module=$2
+	shift 2
+	plantestsuite_idlist "$module" "$env" PYTHONPATH=$PYTHONPATH:$samba4srcdir/../lib/subunit/python:$samba4srcdir/../lib/testtools $PYTHON -m subunit.run $module
 }
 
 plansmbtorturetestsuite() {
@@ -499,29 +498,29 @@ fi
 SUBUNITRUN="$VALGRIND $PYTHON $samba4srcdir/scripting/bin/subunitrun"
 plantestsuite "ldb.python" none PYTHONPATH="$PYTHONPATH:$samba4srcdir/lib/ldb/tests/python/" $PYTHON $samba4srcdir/lib/ldb/tests/python/api.py
 plantestsuite "credentials.python" none PYTHONPATH="$PYTHONPATH:$samba4srcdir/auth/credentials/tests" $SUBUNITRUN bindings
-planpythontestsuite "gensec.python" none samba.tests.gensec
-planpythontestsuite "registry.python" none samba.tests.registry
+planpythontestsuite none samba.tests.gensec
+planpythontestsuite none samba.tests.registry
 plantestsuite "tdb.python" none PYTHONPATH="$PYTHONPATH:../lib/tdb/python/tests" $SUBUNITRUN simple
-planpythontestsuite "auth.python" none samba.tests.auth
-planpythontestsuite "security.python" none samba.tests.security
-planpythontestsuite "misc.python" none samba.tests.dcerpc.misc
-planpythontestsuite "param.python" none samba.tests.param
-planpythontestsuite "upgrade.python" none samba.tests.upgrade
-planpythontestsuite "samba.python" none samba.tests
-planpythontestsuite "provision.python" none samba.tests.provision
-planpythontestsuite "samba3.python" none samba.tests.samba3
-planpythontestsuite "samr.python" dc:local samba.tests.dcerpc.sam
-planpythontestsuite "dsdb.python" dc:local samba.tests.dsdb
-planpythontestsuite "netcmd.python" none samba.tests.netcmd
-planpythontestsuite "dcerpc.bare.python" dc:local samba.tests.dcerpc.bare
-planpythontestsuite "unixinfo.python" dc:local samba.tests.dcerpc.unix
-planpythontestsuite "rpc_talloc.python" none samba.tests.dcerpc.rpc_talloc
-planpythontestsuite "samdb.python" none samba.tests.samdb
-planpythontestsuite "shares.python" none samba.tests.shares
-planpythontestsuite "messaging.python" none samba.tests.messaging
+planpythontestsuite none samba.tests.auth
+planpythontestsuite none samba.tests.security
+planpythontestsuite none samba.tests.dcerpc.misc
+planpythontestsuite none samba.tests.param
+planpythontestsuite none samba.tests.upgrade
+planpythontestsuite none samba.tests
+planpythontestsuite none samba.tests.provision
+planpythontestsuite none samba.tests.samba3
+planpythontestsuite dc:local samba.tests.dcerpc.sam
+planpythontestsuite dc:local samba.tests.dsdb
+planpythontestsuite none samba.tests.netcmd
+planpythontestsuite dc:local samba.tests.dcerpc.bare
+planpythontestsuite dc:local samba.tests.dcerpc.unix
+planpythontestsuite none samba.tests.dcerpc.rpc_talloc
+planpythontestsuite none samba.tests.samdb
+planpythontestsuite none samba.tests.shares
+planpythontestsuite none samba.tests.messaging
 plantestsuite "samba3sam.python" none PYTHONPATH="$PYTHONPATH:$samba4srcdir/dsdb/samdb/ldb_modules/tests" $SUBUNITRUN samba3sam
-planpythontestsuite "subunit.python" none subunit
-planpythontestsuite "rpcecho.python" dc:local samba.tests.dcerpc.rpcecho
+planpythontestsuite none subunit
+planpythontestsuite dc:local samba.tests.dcerpc.rpcecho
 plantestsuite "winreg.python" dc:local $SUBUNITRUN -U\$USERNAME%\$PASSWORD samba.tests.dcerpc.registry
 plantestsuite "ldap.python" dc PYTHONPATH="$PYTHONPATH:../lib/subunit/python:../lib/testtools" $PYTHON $samba4srcdir/dsdb/tests/python/ldap.py \$SERVER -U\$USERNAME%\$PASSWORD -W \$DOMAIN
 plantestsuite "schemaInfo.python" dc PYTHONPATH="$PYTHONPATH:$samba4srcdir/dsdb/tests/python/" $SUBUNITRUN dsdb_schema_info -U"\$DOMAIN/\$DC_USERNAME"%"\$DC_PASSWORD"
@@ -533,10 +532,10 @@ for env in "dc" "fl2000dc" "fl2003dc" "fl2008r2dc"; do
     plantestsuite "ldap.acl.python" $env PYTHONPATH="$PYTHONPATH:../lib/subunit/python:../lib/testtools" $PYTHON $samba4srcdir/dsdb/tests/python/acl.py \$SERVER -U\$USERNAME%\$PASSWORD -W \$DOMAIN
     plantestsuite "ldap.passwords.python" $env PYTHONPATH="$PYTHONPATH:../lib/subunit/python:../lib/testtools" $PYTHON $samba4srcdir/dsdb/tests/python/passwords.py \$SERVER -U\$USERNAME%\$PASSWORD -W \$DOMAIN
 done
-planpythontestsuite "upgradeprovisiondc.python" dc:local samba.tests.upgradeprovisionneeddc
-planpythontestsuite "upgradeprovisionnodc.python" none samba.tests.upgradeprovision
-planpythontestsuite "xattr.python" none samba.tests.xattr
-planpythontestsuite "ntacls.python" none samba.tests.ntacls
+planpythontestsuite dc:local samba.tests.upgradeprovisionneeddc
+planpythontestsuite none samba.tests.upgradeprovision
+planpythontestsuite none samba.tests.xattr
+planpythontestsuite none samba.tests.ntacls
 plantestsuite "deletetest.python" dc PYTHONPATH="$PYTHONPATH:../lib/subunit/python:../lib/testtools" $PYTHON $samba4srcdir/dsdb/tests/python/deletetest.py \$SERVER -U\$USERNAME%\$PASSWORD -W \$DOMAIN
 plantestsuite "policy.python" none PYTHONPATH="$PYTHONPATH:lib/policy/tests/python" $SUBUNITRUN bindings
 plantestsuite "blackbox.samba3dump" none $PYTHON $samba4srcdir/scripting/bin/samba3dump $samba4srcdir/../testdata/samba3
