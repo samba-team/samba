@@ -104,7 +104,7 @@ planpythontestsuite() {
 	env=$2
 	module="$3"
 	shift 3
-	plantestsuite_idlist "$name" "$env" python -m subunit.run $module
+	plantestsuite_idlist "$name" "$env" PYTHONPATH=$samba4srcdir/../lib/subunit/python:$samba4srcdir/../lib/testtools $PYTHON -m subunit.run $module
 }
 
 plansmbtorturetestsuite() {

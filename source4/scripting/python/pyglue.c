@@ -110,8 +110,6 @@ static PyObject *py_set_debug_level(PyObject *self, PyObject *args)
 	Py_RETURN_NONE;
 }
 
-
-
 /*
   return the list of interface IPs we have configured
   takes an loadparm context, returns a list of IPs in string form

@@ -52,6 +52,7 @@ class Ldb(_Ldb):
     not necessarily the Sam database. For Sam-specific helper
     functions see samdb.py.
     """
+
     def __init__(self, url=None, lp=None, modules_dir=None, session_info=None,
                  credentials=None, flags=0, options=None):
         """Opens a Samba Ldb file.
