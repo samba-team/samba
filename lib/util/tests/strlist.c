@@ -473,12 +473,18 @@ struct torture_suite *torture_local_util_strlist(TALLOC_CTX *mem_ctx)
 	int i;
 
 	for (i = 0; i < ARRAY_SIZE(test_lists_shell_strings); i++) {
-		torture_suite_add_simple_tcase_const(suite, "lists_shell",
+		char *name;
+		name = talloc_asprintf(suite, "lists_shell(%s)",
+							   test_lists_shell_strings[i].list_as_string);
+		torture_suite_add_simple_tcase_const(suite, name,
 			test_lists_shell,  &test_lists_shell_strings[i]);
 	}
 
 	for (i = 0; i < ARRAY_SIZE(test_lists_strings); i++) {
-		torture_suite_add_simple_tcase_const(suite, "list_make",
+		char *name;
+		name = talloc_asprintf(suite, "list_make(%s)",
+							   test_lists_strings[i].list_as_string);
+		torture_suite_add_simple_tcase_const(suite, name,
 			test_list_make, &test_lists_strings[i]);
 	}
 
