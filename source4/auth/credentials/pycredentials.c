@@ -214,11 +214,13 @@ static PyObject *py_creds_guess(py_talloc_Object *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "|O", &py_lp_ctx))
 		return NULL;
 
-	lp_ctx = lpcfg_from_py_object(NULL, py_lp_ctx); /* FIXME: leaky */
+	lp_ctx = lpcfg_from_py_object(NULL, py_lp_ctx);
 	if (lp_ctx == NULL)
 		return NULL;
 
 	cli_credentials_guess(creds, lp_ctx);
+
+	talloc_free(lp_ctx);
 
 	Py_RETURN_NONE;
 }
@@ -235,11 +237,13 @@ static PyObject *py_creds_set_machine_account(py_talloc_Object *self, PyObject *
 	if (!PyArg_ParseTuple(args, "|O", &py_lp_ctx))
 		return NULL;
 
-	lp_ctx = lpcfg_from_py_object(NULL, py_lp_ctx); /* FIXME: leaky */
+	lp_ctx = lpcfg_from_py_object(NULL, py_lp_ctx);
 	if (lp_ctx == NULL)
 		return NULL;
 
 	status = cli_credentials_set_machine_account(creds, lp_ctx);
+	talloc_free(lp_ctx);
+
 	PyErr_NTSTATUS_IS_ERR_RAISE(status);
 
 	Py_RETURN_NONE;
@@ -288,6 +292,7 @@ static PyObject *py_creds_get_named_ccache(py_talloc_Object *self, PyObject *arg
 
 	ret = cli_credentials_get_named_ccache(creds, event_ctx, lp_ctx,
 					       ccache_name, &ccc, &error_string);
+	talloc_free(lp_ctx);
 	if (ret == 0) {
 		talloc_steal(ccc, event_ctx);
 		return PyCredentialCacheContainer_from_ccache_container(ccc);

@@ -38,9 +38,8 @@ class CredentialsTests(samba.tests.TestCase):
     def test_start_mech_by_unknown_name(self):
         self.assertRaises(RuntimeError, self.gensec.start_mech_by_name, "foo")
 
+    def test_start_mech_by_name(self):
+        self.gensec.start_mech_by_name("spnego")
+
     def test_info_uninitialized(self):
         self.assertRaises(RuntimeError, self.gensec.session_info)
-
-    def test_info(self):
-        self.gensec.start_mech_by_name("spnego")
-        self.assertEquals(None, self.gensec.session_info())

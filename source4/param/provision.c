@@ -85,7 +85,7 @@ NTSTATUS provision_bare(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx,
 			struct provision_result *result)
 {
 	const char *configfile;
-	PyObject *provision_mod, *provision_dict, *provision_fn, *py_result, *parameters;
+	PyObject *provision_mod, *provision_dict, *provision_fn, *py_result, *parameters, *py_lp_ctx;
 	
 	DEBUG(0,("Provision for Become-DC test using python\n"));
 
@@ -193,7 +193,12 @@ NTSTATUS provision_bare(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx,
 	result->domaindn = talloc_strdup(mem_ctx, PyString_AsString(PyObject_GetAttrString(py_result, "domaindn")));
 
 	/* FIXME paths */
-	result->lp_ctx = lpcfg_from_py_object(result, PyObject_GetAttrString(py_result, "lp"));
+	py_lp_ctx = PyObject_GetAttrString(py_result, "lp");
+	if (py_lp_ctx == NULL) {
+		DEBUG(0, ("Missing 'lp' attribute"));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+	result->lp_ctx = lpcfg_from_py_object(result, py_lp_ctx);
 	result->samdb = PyLdb_AsLdbContext(PyObject_GetAttrString(py_result, "samdb"));
 
 	return NT_STATUS_OK;

@@ -46,11 +46,13 @@ static PyObject *py_system_session(PyObject *module, PyObject *args)
 	if (!PyArg_ParseTuple(args, "|O", &py_lp_ctx))
 		return NULL;
 
-	lp_ctx = lpcfg_from_py_object(NULL, py_lp_ctx); /* FIXME: Leaks memory */
+	lp_ctx = lpcfg_from_py_object(NULL, py_lp_ctx);
 	if (lp_ctx == NULL)
 		return NULL;
 
 	session = system_session(lp_ctx);
+
+	talloc_free(lp_ctx);
 
 	return PyAuthSession_FromSession(session);
 }
@@ -66,12 +68,14 @@ static PyObject *py_admin_session(PyObject *module, PyObject *args)
 	if (!PyArg_ParseTuple(args, "OO", &py_lp_ctx, &py_sid))
 		return NULL;
 
-	lp_ctx = lpcfg_from_py_object(NULL, py_lp_ctx); /* FIXME: leaky */
+	lp_ctx = lpcfg_from_py_object(NULL, py_lp_ctx);
 	if (lp_ctx == NULL)
 		return NULL;
 
 	domain_sid = dom_sid_parse_talloc(NULL, PyString_AsString(py_sid));
 	session = admin_session(NULL, lp_ctx, domain_sid);
+
+	talloc_free(lp_ctx);
 
 	return PyAuthSession_FromSession(session);
 }

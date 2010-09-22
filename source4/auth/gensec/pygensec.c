@@ -166,6 +166,23 @@ static PyObject *py_gensec_start_mech_by_name(PyObject *self, PyObject *args)
     Py_RETURN_NONE;
 }
 
+static PyObject *py_gensec_start_mech_by_authtype(PyObject *self, PyObject *args)
+{
+	int authtype, level;
+    struct gensec_security *security = (struct gensec_security *)py_talloc_get_ptr(self);
+	NTSTATUS status;
+	if (!PyArg_ParseTuple(args, "ii", &authtype, &level))
+		return NULL;
+
+	status = gensec_start_mech_by_authtype(security, authtype, level);
+	if (!NT_STATUS_IS_OK(status)) {
+		PyErr_SetNTSTATUS(status);
+		return NULL;
+	}
+
+	Py_RETURN_NONE;
+}
+
 static PyMethodDef py_gensec_security_methods[] = {
 	{ "start_client", (PyCFunction)py_gensec_start_client, METH_VARARGS|METH_KEYWORDS|METH_CLASS, 
 		"S.start_client(settings) -> gensec" },
@@ -175,6 +192,7 @@ static PyMethodDef py_gensec_security_methods[] = {
 		"S.session_info() -> info" },
     { "start_mech_by_name", (PyCFunction)py_gensec_start_mech_by_name, METH_VARARGS, 
         "S.start_mech_by_name(name)" },
+	{ "start_mech_by_authtype", (PyCFunction)py_gensec_start_mech_by_authtype, METH_VARARGS, "S.start_mech_by_authtype(authtype, level)" },
 	{ "get_name_by_authtype", (PyCFunction)py_get_name_by_authtype, METH_VARARGS,
 		"S.get_name_by_authtype(authtype) -> name\nLookup an auth type." },
 	{ NULL }
