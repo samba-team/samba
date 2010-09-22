@@ -388,7 +388,7 @@ planperltestsuite "selftest.samba4.pl" none $samba4srcdir/../selftest/test_samba
 # the API. These mainly test that the various command-line options of commands 
 # work correctly.
 
-plantestsuite "blackbox.ndrdump" none $samba4srcdir/librpc/tests/test_ndrdump.sh
+planpythontestsuite none samba.tests.blackbox.ndrdump
 plantestsuite "blackbox.net" dc:local $samba4srcdir/utils/tests/test_net.sh "\$SERVER" "\$USERNAME" "\$PASSWORD" "\$DOMAIN"
 plantestsuite "blackbox.pkinit" dc:local $bbdir/test_pkinit.sh "\$SERVER" "\$USERNAME" "\$PASSWORD" "\$REALM" "\$DOMAIN" "$PREFIX" aes256-cts-hmac-sha1-96 $CONFIGURATION 
 plantestsuite "blackbox.kinit" dc:local $bbdir/test_kinit.sh "\$SERVER" "\$USERNAME" "\$PASSWORD" "\$REALM" "\$DOMAIN" "$PREFIX" aes256-cts-hmac-sha1-96 $CONFIGURATION

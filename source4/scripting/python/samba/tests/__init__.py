@@ -23,6 +23,7 @@ import os
 import ldb
 import samba
 from samba import param
+import subprocess
 import tempfile
 
 # Other modules import these two classes from here, for convenience:
@@ -128,3 +129,15 @@ class ValidNetbiosNameTests(TestCase):
 
     def test_invalid_characters(self):
         self.assertFalse(samba.valid_netbios_name("*BLA"))
+
+
+class BlackboxTestCase(TestCase):
+    """Base test case for blackbox tests."""
+
+    def check_run(self, line):
+        bindir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../../bin"))
+        parts = line.split(" ")
+        if os.path.exists(os.path.join(bindir, parts[0])):
+            parts[0] = os.path.join(bindir, parts[0])
+        line = " ".join(parts)
+        subprocess.check_call(line, shell=True)
