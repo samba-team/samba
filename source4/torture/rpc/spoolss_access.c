@@ -144,6 +144,13 @@ static bool spoolss_access_setup_membership(struct torture_context *tctx,
 	struct policy_handle connect_handle, domain_handle;
 	int i;
 
+	torture_comment(tctx,
+		"Setting up BUILTIN membership for %s\n",
+		dom_sid_string(tctx, user_sid));
+	for (i=0; i < num_members; i++) {
+		torture_comment(tctx, "adding user to S-1-5-32-%d\n", members[i]);
+	}
+
 	{
 		struct samr_Connect2 r;
 		r.in.system_name = "";
