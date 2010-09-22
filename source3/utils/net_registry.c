@@ -240,8 +240,9 @@ done:
 	return ret;
 }
 
-static int net_registry_deletekey(struct net_context *c, int argc,
-				  const char **argv)
+static int net_registry_deletekey_internal(struct net_context *c, int argc,
+					   const char **argv,
+					   bool recursive)
 {
 	WERROR werr;
 	char *subkeyname;
@@ -271,7 +272,11 @@ static int net_registry_deletekey(struct net_context *c, int argc,
 		goto done;
 	}
 
-	werr = reg_deletekey(hivekey, subkeyname);
+	if (recursive) {
+		werr = reg_deletekey_recursive(hivekey, subkeyname);
+	} else {
+		werr = reg_deletekey(hivekey, subkeyname);
+	}
 	if (!W_ERROR_IS_OK(werr)) {
 		d_fprintf(stderr, "reg_deletekey %s: %s\n", _("failed"),
 			  win_errstr(werr));
@@ -283,6 +288,18 @@ static int net_registry_deletekey(struct net_context *c, int argc,
 done:
 	TALLOC_FREE(ctx);
 	return ret;
+}
+
+static int net_registry_deletekey(struct net_context *c, int argc,
+				  const char **argv)
+{
+	return net_registry_deletekey_internal(c, argc, argv, false);
+}
+
+static int net_registry_deletekey_recursive(struct net_context *c, int argc,
+					    const char **argv)
+{
+	return net_registry_deletekey_internal(c, argc, argv, true);
 }
 
 static int net_registry_getvalue_internal(struct net_context *c, int argc,
@@ -1122,6 +1139,14 @@ int net_registry(struct net_context *c, int argc, const char **argv)
 			N_("Delete a registry key"),
 			N_("net registry deletekey\n"
 			   "    Delete a registry key")
+		},
+		{
+			"deletekey_recursive",
+			net_registry_deletekey_recursive,
+			NET_TRANSPORT_LOCAL,
+			N_("Delete a registry key with subkeys"),
+			N_("net registry deletekey_recursive\n"
+			   "    Delete a registry key with subkeys")
 		},
 		{
 			"getvalue",
