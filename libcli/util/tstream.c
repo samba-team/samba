@@ -97,7 +97,9 @@ static void tstream_read_pdu_blob_done(struct tevent_req *subreq)
 		struct tstream_read_pdu_blob_state);
 	ssize_t ret;
 	int sys_errno;
-	size_t pdu_size;
+	size_t old_buf_size = state->pdu_blob.length;
+	size_t new_buf_size = 0;
+	size_t pdu_size = 0;
 	NTSTATUS status;
 	uint8_t *buf;
 
@@ -116,20 +118,26 @@ static void tstream_read_pdu_blob_done(struct tevent_req *subreq)
 		return;
 	} else if (NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES)) {
 		/* more to get */
+		if (pdu_size > 0) {
+			new_buf_size = pdu_size;
+		} else {
+			/* we don't know the size yet, so get one more byte */
+			new_buf_size = old_buf_size + 1;
+		}
 	} else if (!NT_STATUS_IS_OK(status)) {
 		tevent_req_nterror(req, status);
 		return;
 	}
 
-	buf = talloc_realloc(state, state->pdu_blob.data, uint8_t, pdu_size);
+	buf = talloc_realloc(state, state->pdu_blob.data, uint8_t, new_buf_size);
 	if (tevent_req_nomem(buf, req)) {
 		return;
 	}
 	state->pdu_blob.data = buf;
-	state->pdu_blob.length = pdu_size;
+	state->pdu_blob.length = new_buf_size;
 
-	state->tmp_vector.iov_base = (char *) (buf + state->tmp_vector.iov_len);
-	state->tmp_vector.iov_len = pdu_size - state->tmp_vector.iov_len;
+	state->tmp_vector.iov_base = (char *) (buf + old_buf_size);
+	state->tmp_vector.iov_len = new_buf_size - old_buf_size;
 
 	subreq = tstream_readv_send(state,
 				    state->caller.ev,
