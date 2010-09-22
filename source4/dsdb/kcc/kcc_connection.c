@@ -25,8 +25,8 @@
 #include "auth/auth.h"
 #include "smbd/service.h"
 #include "lib/messaging/irpc.h"
-#include "dsdb/kcc/kcc_connection.h"
 #include "dsdb/kcc/kcc_service.h"
+#include "dsdb/kcc/kcc_connection.h"
 #include "lib/ldb/include/ldb_errors.h"
 #include "../lib/util/dlinklist.h"
 #include "librpc/gen_ndr/ndr_misc.h"
@@ -177,7 +177,7 @@ struct kcc_connection_list *kccsrv_find_connections(struct kccsrv_service *s,
 	const char *attrs[] = { "objectGUID", "fromServer", NULL };
 	struct kcc_connection_list *list;
 
-	kcctpl_test(s->samdb);
+	kcctpl_test(s);
 
 	base_dn = samdb_ntds_settings_dn(s->samdb);
 	if (!base_dn) {

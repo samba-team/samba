@@ -24,6 +24,7 @@
 #include "dsdb/samdb/samdb.h"
 #include "lib/messaging/irpc.h"
 #include "librpc/gen_ndr/ndr_misc.h"
+#include "dsdb/kcc/kcc_service.h"
 
 #define FLAG_CR_NTDS_NC 0x00000001
 #define FLAG_CR_NTDS_DOMAIN 0x00000002
@@ -1057,7 +1058,7 @@ static NTSTATUS kcctpl_bridgehead_dc_failed(struct ldb_context *ldb,
 /**
  * get all bridgehead DCs satisfying the given criteria.
  */
-static NTSTATUS kcctpl_get_all_bridgehead_dcs(struct ldb_context *ldb,
+static NTSTATUS kcctpl_get_all_bridgehead_dcs(struct kccsrv_service *service,
 					      TALLOC_CTX *mem_ctx,
 					      struct GUID site_guid,
 					      struct ldb_message *cross_ref,
@@ -1085,7 +1086,7 @@ static NTSTATUS kcctpl_get_all_bridgehead_dcs(struct ldb_context *ldb,
 	tmp_ctx = talloc_new(mem_ctx);
 	NT_STATUS_HAVE_NO_MEMORY(tmp_ctx);
 
-	sites_dn = samdb_sites_dn(ldb, tmp_ctx);
+	sites_dn = samdb_sites_dn(service->samdb, tmp_ctx);
 	if (!sites_dn) {
 		DEBUG(1, (__location__ ": failed to find our own Sites DN\n"));
 
@@ -1093,7 +1094,7 @@ static NTSTATUS kcctpl_get_all_bridgehead_dcs(struct ldb_context *ldb,
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
-	ret = ldb_search(ldb, tmp_ctx, &res, sites_dn, LDB_SCOPE_ONELEVEL,
+	ret = ldb_search(service->samdb, tmp_ctx, &res, sites_dn, LDB_SCOPE_ONELEVEL,
 			 attrs, "(&(objectClass=site)(objectGUID=%s))",
 			 GUID_string(tmp_ctx, &site_guid));
 	if (ret != LDB_SUCCESS) {
@@ -1113,7 +1114,7 @@ static NTSTATUS kcctpl_get_all_bridgehead_dcs(struct ldb_context *ldb,
 	}
 	site = res->msgs[0];
 
-	schemas_dn = ldb_get_schema_basedn(ldb);
+	schemas_dn = ldb_get_schema_basedn(service->samdb);
 	if (!schemas_dn) {
 		DEBUG(1, (__location__ ": failed to find our own Schemas DN\n"));
 
@@ -1121,7 +1122,7 @@ static NTSTATUS kcctpl_get_all_bridgehead_dcs(struct ldb_context *ldb,
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
-	ret = ldb_search(ldb, tmp_ctx, &res, schemas_dn, LDB_SCOPE_SUBTREE,
+	ret = ldb_search(service->samdb, tmp_ctx, &res, schemas_dn, LDB_SCOPE_SUBTREE,
 			 NULL,
 			"(&(lDAPDisplayName=nTDSDSA)(objectClass=classSchema))");
 	if (ret != LDB_SUCCESS) {
@@ -1142,7 +1143,7 @@ static NTSTATUS kcctpl_get_all_bridgehead_dcs(struct ldb_context *ldb,
 
 	ZERO_STRUCT(all_dcs_in_site);
 
-	ret = ldb_search(ldb, tmp_ctx, &res, site->dn, LDB_SCOPE_SUBTREE,
+	ret = ldb_search(service->samdb, tmp_ctx, &res, site->dn, LDB_SCOPE_SUBTREE,
 			dc_attrs, "objectCategory=%s",
 			ldb_dn_get_linearized(schema->dn));
 	if (ret != LDB_SUCCESS) {
@@ -1220,7 +1221,7 @@ static NTSTATUS kcctpl_get_all_bridgehead_dcs(struct ldb_context *ldb,
 
 				val = el->values[j];
 
-				dn = ldb_dn_from_ldb_val(tmp_ctx, ldb, &val);
+				dn = ldb_dn_from_ldb_val(tmp_ctx, service->samdb, &val);
 				if (!dn) {
 					DEBUG(1, (__location__ ": failed to read a DN "
 						  "from bridgeheadServerListBL "
@@ -1263,11 +1264,11 @@ static NTSTATUS kcctpl_get_all_bridgehead_dcs(struct ldb_context *ldb,
 		behavior_version = samdb_result_int64(dc,
 						      "msDS-Behavior-Version", 0);
 		/* TODO: cr!nCName corresponds to default NC */
-		if (rodc && true && behavior_version < DS_BEHAVIOR_WIN2008) {
+		if (service->am_rodc && true && behavior_version < DS_BEHAVIOR_WIN2008) {
 			continue;
 		}
 
-		ret = ldb_search(ldb, tmp_ctx, &parent_res, parent_dn,
+		ret = ldb_search(service->samdb, tmp_ctx, &parent_res, parent_dn,
 				LDB_SCOPE_BASE, parent_attrs , NULL);
 
 		dc_transport_address = samdb_result_string(parent_res->msgs[0],
@@ -1281,7 +1282,7 @@ static NTSTATUS kcctpl_get_all_bridgehead_dcs(struct ldb_context *ldb,
 
 		dc_guid = samdb_result_guid(dc, "objectGUID");
 
-		status = kcctpl_bridgehead_dc_failed(ldb, dc_guid,
+		status = kcctpl_bridgehead_dc_failed(service->samdb, dc_guid,
 						     detect_failed_dcs,
 						     &failed);
 		if (NT_STATUS_IS_ERR(status)) {
@@ -1322,7 +1323,7 @@ static NTSTATUS kcctpl_get_all_bridgehead_dcs(struct ldb_context *ldb,
 /**
  * get a bridgehead DC.
  */
-static NTSTATUS kcctpl_get_bridgehead_dc(struct ldb_context *ldb,
+static NTSTATUS kcctpl_get_bridgehead_dc(struct kccsrv_service *service,
 					 TALLOC_CTX *mem_ctx,
 					 struct GUID site_guid,
 					 struct ldb_message *cross_ref,
@@ -1334,7 +1335,7 @@ static NTSTATUS kcctpl_get_bridgehead_dc(struct ldb_context *ldb,
 	struct message_list dsa_list;
 	NTSTATUS status;
 
-	status = kcctpl_get_all_bridgehead_dcs(ldb, mem_ctx,
+	status = kcctpl_get_all_bridgehead_dcs(service, mem_ctx,
 					       site_guid, cross_ref, transport,
 					       partial_replica_okay,
 					       detect_failed_dcs, &dsa_list);
@@ -1352,7 +1353,7 @@ static NTSTATUS kcctpl_get_bridgehead_dc(struct ldb_context *ldb,
 /*
  * color each vertex to indicate which kinds of NC replicas it contains.
  */
-static NTSTATUS kcctpl_color_vertices(struct ldb_context *ldb,
+static NTSTATUS kcctpl_color_vertices(struct kccsrv_service *service,
 				      struct kcctpl_graph *graph,
 				      struct ldb_message *cross_ref,
 				      bool detect_failed_dcs,
@@ -1370,10 +1371,10 @@ static NTSTATUS kcctpl_color_vertices(struct ldb_context *ldb,
 
 	found_failed_dcs = false;
 
-	tmp_ctx = talloc_new(ldb);
+	tmp_ctx = talloc_new(service);
 	NT_STATUS_HAVE_NO_MEMORY(tmp_ctx);
 
-	sites_dn = samdb_sites_dn(ldb, tmp_ctx);
+	sites_dn = samdb_sites_dn(service->samdb, tmp_ctx);
 	if (!sites_dn) {
 		DEBUG(1, (__location__ ": failed to find our own Sites DN\n"));
 
@@ -1389,7 +1390,7 @@ static NTSTATUS kcctpl_color_vertices(struct ldb_context *ldb,
 
 		vertex = &graph->vertices.data[i];
 
-		ret = ldb_search(ldb, tmp_ctx, &res, sites_dn,
+		ret = ldb_search(service->samdb, tmp_ctx, &res, sites_dn,
 				 LDB_SCOPE_SUBTREE, attrs, "objectGUID=%s",
 				 GUID_string(tmp_ctx, &vertex->id));
 		if (ret != LDB_SUCCESS) {
@@ -1409,7 +1410,7 @@ static NTSTATUS kcctpl_color_vertices(struct ldb_context *ldb,
 		}
 		site = res->msgs[0];
 
-		nc_name = samdb_result_dn(ldb, tmp_ctx, cross_ref,
+		nc_name = samdb_result_dn(service->samdb, tmp_ctx, cross_ref,
 					  "nCName", NULL);
 		if (!nc_name) {
 			DEBUG(1, (__location__ ": failed to find nCName "
@@ -1431,7 +1432,7 @@ static NTSTATUS kcctpl_color_vertices(struct ldb_context *ldb,
 		}
 	}
 
-	site = kcctpl_local_site(ldb, tmp_ctx);
+	site = kcctpl_local_site(service->samdb, tmp_ctx);
 	if (!site) {
 		DEBUG(1, (__location__ ": failed to find our own local DC's "
 			  "site\n"));
@@ -1464,7 +1465,7 @@ static NTSTATUS kcctpl_color_vertices(struct ldb_context *ldb,
 
 		vertex = &graph->vertices.data[i];
 
-		transports_dn = kcctpl_transports_dn(ldb, tmp_ctx);
+		transports_dn = kcctpl_transports_dn(service->samdb, tmp_ctx);
 		if (!transports_dn) {
 			DEBUG(1, (__location__ ": failed to find our own "
 				  "Inter-Site Transports DN\n"));
@@ -1473,7 +1474,7 @@ static NTSTATUS kcctpl_color_vertices(struct ldb_context *ldb,
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
 		}
 
-		ret = ldb_search(ldb, tmp_ctx, &res, transports_dn,
+		ret = ldb_search(service->samdb, tmp_ctx, &res, transports_dn,
 				 LDB_SCOPE_ONELEVEL, attrs,
 				 "objectClass=interSiteTransport");
 		if (ret != LDB_SUCCESS) {
@@ -1519,7 +1520,7 @@ static NTSTATUS kcctpl_color_vertices(struct ldb_context *ldb,
 				continue;
 			}
 
-			status = kcctpl_get_bridgehead_dc(ldb, tmp_ctx,
+			status = kcctpl_get_bridgehead_dc(service, tmp_ctx,
 							  site_vertex->id,
 							  cross_ref, transport,
 							  partial_replica_okay,
@@ -1655,7 +1656,7 @@ static struct GUID kcctpl_get_component_id(struct kcctpl_graph *graph,
  * copy all spanning tree edges from 'output_edges' that contain the vertex for
  * DCs in the local DC's site.
  */
-static NTSTATUS kcctpl_copy_output_edges(struct ldb_context *ldb,
+static NTSTATUS kcctpl_copy_output_edges(struct kccsrv_service *service,
 					 TALLOC_CTX *mem_ctx,
 					 struct kcctpl_graph *graph,
 					 struct kcctpl_multi_edge_list output_edges,
@@ -1669,10 +1670,10 @@ static NTSTATUS kcctpl_copy_output_edges(struct ldb_context *ldb,
 
 	ZERO_STRUCT(copy);
 
-	tmp_ctx = talloc_new(ldb);
+	tmp_ctx = talloc_new(service);
 	NT_STATUS_HAVE_NO_MEMORY(tmp_ctx);
 
-	site = kcctpl_local_site(ldb, tmp_ctx);
+	site = kcctpl_local_site(service->samdb, tmp_ctx);
 	if (!site) {
 		DEBUG(1, (__location__ ": failed to find our own local DC's "
 			  "site\n"));
@@ -2533,7 +2534,7 @@ static uint32_t kcctpl_count_components(struct kcctpl_graph *graph)
  * calculate the spanning tree and return the edges that include the vertex for
  * the local site.
  */
-static NTSTATUS kcctpl_get_spanning_tree_edges(struct ldb_context *ldb,
+static NTSTATUS kcctpl_get_spanning_tree_edges(struct kccsrv_service *service,
 					       TALLOC_CTX *mem_ctx,
 					       struct kcctpl_graph *graph,
 					       uint32_t *_component_count,
@@ -2691,7 +2692,7 @@ static NTSTATUS kcctpl_get_spanning_tree_edges(struct ldb_context *ldb,
 
 	component_count = kcctpl_count_components(graph);
 
-	status = kcctpl_copy_output_edges(ldb, tmp_ctx, graph, output_edges,
+	status = kcctpl_copy_output_edges(service, tmp_ctx, graph, output_edges,
 					  &st_edge_list);
 	if (NT_STATUS_IS_ERR(status)) {
 		DEBUG(1, (__location__ ": failed to copy edge list: %s\n",
@@ -2712,7 +2713,7 @@ static NTSTATUS kcctpl_get_spanning_tree_edges(struct ldb_context *ldb,
  * creat an nTDSConnection object with the given parameters if one does not
  * already exist.
  */
-static NTSTATUS kcctpl_create_connection(struct ldb_context *ldb,
+static NTSTATUS kcctpl_create_connection(struct kccsrv_service *service,
 					 TALLOC_CTX *mem_ctx,
 					 struct ldb_message *cross_ref,
 					 struct ldb_message *r_bridgehead,
@@ -2739,7 +2740,7 @@ static NTSTATUS kcctpl_create_connection(struct ldb_context *ldb,
 	unsigned int i, valid_connections;
 	struct GUID_list keep_connections;
 
-	tmp_ctx = talloc_new(ldb);
+	tmp_ctx = talloc_new(service);
 	NT_STATUS_HAVE_NO_MEMORY(tmp_ctx);
 
 	r_site_dn = ldb_dn_copy(tmp_ctx, r_bridgehead->dn);
@@ -2751,7 +2752,7 @@ static NTSTATUS kcctpl_create_connection(struct ldb_context *ldb,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	ret = dsdb_find_guid_by_dn(ldb, r_site_dn, &r_site_guid);
+	ret = dsdb_find_guid_by_dn(service->samdb, r_site_dn, &r_site_guid);
 	if (ret != LDB_SUCCESS) {
 		DEBUG(1, (__location__ ": failed to find objectGUID for object "
 			  "%s: %s\n", ldb_dn_get_linearized(r_site_dn),
@@ -2770,7 +2771,7 @@ static NTSTATUS kcctpl_create_connection(struct ldb_context *ldb,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	ret = dsdb_find_guid_by_dn(ldb, l_site_dn, &l_site_guid);
+	ret = dsdb_find_guid_by_dn(service->samdb, l_site_dn, &l_site_guid);
 	if (ret != LDB_SUCCESS) {
 		DEBUG(1, (__location__ ": failed to find objectGUID for object "
 			  "%s: %s\n", ldb_dn_get_linearized(l_site_dn),
@@ -2780,7 +2781,7 @@ static NTSTATUS kcctpl_create_connection(struct ldb_context *ldb,
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
-	status = kcctpl_get_all_bridgehead_dcs(ldb, tmp_ctx,
+	status = kcctpl_get_all_bridgehead_dcs(service, tmp_ctx,
 					       r_site_guid, cross_ref,
 					       transport, partial_replica_okay,
 					       false, &r_bridgeheads_all);
@@ -2790,7 +2791,7 @@ static NTSTATUS kcctpl_create_connection(struct ldb_context *ldb,
 		return status;
 	}
 
-	status = kcctpl_get_all_bridgehead_dcs(ldb, tmp_ctx,
+	status = kcctpl_get_all_bridgehead_dcs(service->samdb, tmp_ctx,
 					       r_site_guid, cross_ref,
 					       transport, partial_replica_okay,
 					       detect_failed_dcs,
@@ -2801,7 +2802,7 @@ static NTSTATUS kcctpl_create_connection(struct ldb_context *ldb,
 		return status;
 	}
 
-	status = kcctpl_get_all_bridgehead_dcs(ldb, tmp_ctx,
+	status = kcctpl_get_all_bridgehead_dcs(service, tmp_ctx,
 					       l_site_guid, cross_ref,
 					       transport, partial_replica_okay,
 					       false, &l_bridgeheads_all);
@@ -2811,7 +2812,7 @@ static NTSTATUS kcctpl_create_connection(struct ldb_context *ldb,
 		return status;
 	}
 
-	status = kcctpl_get_all_bridgehead_dcs(ldb, tmp_ctx,
+	status = kcctpl_get_all_bridgehead_dcs(service, tmp_ctx,
 					       l_site_guid, cross_ref,
 					       transport, partial_replica_okay,
 					       detect_failed_dcs,
@@ -2822,7 +2823,7 @@ static NTSTATUS kcctpl_create_connection(struct ldb_context *ldb,
 		return status;
 	}
 
-	servers_dn = samdb_sites_dn(ldb, tmp_ctx);
+	servers_dn = samdb_sites_dn(service->samdb, tmp_ctx);
 	if (!servers_dn) {
 		DEBUG(1, (__location__ ": failed to find our own Sites DN\n"));
 
@@ -2835,7 +2836,7 @@ static NTSTATUS kcctpl_create_connection(struct ldb_context *ldb,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	ret = ldb_search(ldb, tmp_ctx, &res, servers_dn, LDB_SCOPE_SUBTREE,
+	ret = ldb_search(service->samdb, tmp_ctx, &res, servers_dn, LDB_SCOPE_SUBTREE,
 			 attrs, "objectClass=nTDSConnection");
 	if (ret != LDB_SUCCESS) {
 		DEBUG(1, (__location__ ": failed to find nTDSConnection "
@@ -2861,7 +2862,7 @@ static NTSTATUS kcctpl_create_connection(struct ldb_context *ldb,
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
 		}
 
-		from_server = samdb_result_dn(ldb, tmp_ctx, connection,
+		from_server = samdb_result_dn(service->samdb, tmp_ctx, connection,
 					      "fromServer", NULL);
 		if (!from_server) {
 			DEBUG(1, (__location__ ": failed to find fromServer "
@@ -2884,7 +2885,7 @@ static NTSTATUS kcctpl_create_connection(struct ldb_context *ldb,
 			conn_opts = samdb_result_int64(connection,
 						       "options", 0);
 
-			conn_transport_type = samdb_result_dn(ldb, tmp_ctx,
+			conn_transport_type = samdb_result_dn(service->samdb, tmp_ctx,
 							      connection,
 							      "transportType",
 							      NULL);
@@ -2974,7 +2975,7 @@ static NTSTATUS kcctpl_create_connection(struct ldb_context *ldb,
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
 		}
 
-		from_server = samdb_result_dn(ldb, tmp_ctx, connection,
+		from_server = samdb_result_dn(service->samdb, tmp_ctx, connection,
 					      "fromServer", NULL);
 		if (!from_server) {
 			DEBUG(1, (__location__ ": failed to find fromServer "
@@ -2995,7 +2996,7 @@ static NTSTATUS kcctpl_create_connection(struct ldb_context *ldb,
 			conn_opts = samdb_result_int64(connection,
 						       "options", 0);
 
-			conn_transport_type = samdb_result_dn(ldb, tmp_ctx,
+			conn_transport_type = samdb_result_dn(service->samdb, tmp_ctx,
 							      connection,
 							      "transportType",
 							      NULL);
@@ -3016,7 +3017,7 @@ static NTSTATUS kcctpl_create_connection(struct ldb_context *ldb,
 				struct GUID r_guid, l_guid, conn_guid;
 				bool failed_state_r, failed_state_l;
 
-				ret = dsdb_find_guid_by_dn(ldb, from_server,
+				ret = dsdb_find_guid_by_dn(service->samdb, from_server,
 							   &r_guid);
 				if (ret != LDB_SUCCESS) {
 					DEBUG(1, (__location__ ": failed to "
@@ -3027,7 +3028,7 @@ static NTSTATUS kcctpl_create_connection(struct ldb_context *ldb,
 					return NT_STATUS_INTERNAL_DB_CORRUPTION;
 				}
 
-				ret = dsdb_find_guid_by_dn(ldb, parent_dn,
+				ret = dsdb_find_guid_by_dn(service->samdb, parent_dn,
 							   &l_guid);
 				if (ret != LDB_SUCCESS) {
 					DEBUG(1, (__location__ ": failed to "
@@ -3038,7 +3039,7 @@ static NTSTATUS kcctpl_create_connection(struct ldb_context *ldb,
 					return NT_STATUS_INTERNAL_DB_CORRUPTION;
 				}
 
-				status = kcctpl_bridgehead_dc_failed(ldb,
+				status = kcctpl_bridgehead_dc_failed(service->samdb,
 								     r_guid,
 								     detect_failed_dcs,
 								     &failed_state_r);
@@ -3052,7 +3053,7 @@ static NTSTATUS kcctpl_create_connection(struct ldb_context *ldb,
 					return status;
 				}
 
-				status = kcctpl_bridgehead_dc_failed(ldb,
+				status = kcctpl_bridgehead_dc_failed(service->samdb,
 								     l_guid,
 								     detect_failed_dcs,
 								     &failed_state_l);
@@ -3141,7 +3142,7 @@ static NTSTATUS kcctpl_create_connection(struct ldb_context *ldb,
  * construct an NC replica graph for the NC identified by the given 'cross_ref',
  * then create any additional nTDSConnection objects required.
  */
-static NTSTATUS kcctpl_create_connections(struct ldb_context *ldb,
+static NTSTATUS kcctpl_create_connections(struct kccsrv_service *service,
 					  TALLOC_CTX *mem_ctx,
 					  struct kcctpl_graph *graph,
 					  struct ldb_message *cross_ref,
@@ -3165,7 +3166,7 @@ static NTSTATUS kcctpl_create_connections(struct ldb_context *ldb,
 
 	connected = true;
 
-	status = kcctpl_color_vertices(ldb, graph, cross_ref, detect_failed_dcs,
+	status = kcctpl_color_vertices(service, graph, cross_ref, detect_failed_dcs,
 				       &found_failed_dcs);
 	if (NT_STATUS_IS_ERR(status)) {
 		DEBUG(1, (__location__ ": failed to color vertices: %s\n",
@@ -3177,7 +3178,7 @@ static NTSTATUS kcctpl_create_connections(struct ldb_context *ldb,
 	tmp_ctx = talloc_new(mem_ctx);
 	NT_STATUS_HAVE_NO_MEMORY(tmp_ctx);
 
-	site = kcctpl_local_site(ldb, tmp_ctx);
+	site = kcctpl_local_site(service->samdb, tmp_ctx);
 	if (!site) {
 		DEBUG(1, (__location__ ": failed to find our own local DC's "
 			  "site\n"));
@@ -3204,7 +3205,7 @@ static NTSTATUS kcctpl_create_connections(struct ldb_context *ldb,
 		return NT_STATUS_OK;
 	}
 
-	status = kcctpl_get_spanning_tree_edges(ldb, tmp_ctx, graph,
+	status = kcctpl_get_spanning_tree_edges(service, tmp_ctx, graph,
 						&component_count,
 						&st_edge_list);
 	if (NT_STATUS_IS_ERR(status)) {
@@ -3221,7 +3222,7 @@ static NTSTATUS kcctpl_create_connections(struct ldb_context *ldb,
 
 	partial_replica_okay = (site_vertex->color == BLACK);
 
-	transports_dn = kcctpl_transports_dn(ldb, tmp_ctx);
+	transports_dn = kcctpl_transports_dn(service->samdb, tmp_ctx);
 	if (!transports_dn) {
 		DEBUG(1, (__location__ ": failed to find our own Inter-Site "
 			  "Transports DN\n"));
@@ -3270,7 +3271,7 @@ static NTSTATUS kcctpl_create_connections(struct ldb_context *ldb,
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
 		}
 
-		ret = ldb_search(ldb, tmp_ctx, &res, transports_dn,
+		ret = ldb_search(service->samdb, tmp_ctx, &res, transports_dn,
 				 LDB_SCOPE_ONELEVEL, attrs,
 				 "(&(objectClass=interSiteTransport)"
 				 "(objectGUID=%s))", GUID_string(tmp_ctx,
@@ -3294,7 +3295,7 @@ static NTSTATUS kcctpl_create_connections(struct ldb_context *ldb,
 		}
 		transport = res->msgs[0];
 
-		status = kcctpl_get_bridgehead_dc(ldb, tmp_ctx,
+		status = kcctpl_get_bridgehead_dc(service, tmp_ctx,
 						  other_site_vertex->id,
 						  cross_ref, transport,
 						  partial_replica_okay,
@@ -3311,7 +3312,7 @@ static NTSTATUS kcctpl_create_connections(struct ldb_context *ldb,
 		if (rodc) {
 			/* TODO: l_bridgehad = nTDSDSA of local DC */
 		} else {
-			status = kcctpl_get_bridgehead_dc(ldb, tmp_ctx,
+			status = kcctpl_get_bridgehead_dc(service, tmp_ctx,
 							  site_vertex->id,
 							  cross_ref, transport,
 							  partial_replica_okay,
@@ -3340,7 +3341,7 @@ static NTSTATUS kcctpl_create_connections(struct ldb_context *ldb,
 			schedule[j] = 1;
 		}
 
-		status = kcctpl_create_connection(ldb, mem_ctx, cross_ref,
+		status = kcctpl_create_connection(service, mem_ctx, cross_ref,
 						  r_bridgehead, transport,
 						  l_bridgehead, edge->repl_info,
 						  schedule, detect_failed_dcs,
@@ -3368,7 +3369,7 @@ static NTSTATUS kcctpl_create_connections(struct ldb_context *ldb,
  * in another site, the KCC creates and nTDSConnection object to imply that edge
  * if one does not already exist.
  */
-static NTSTATUS kcctpl_create_intersite_connections(struct ldb_context *ldb,
+static NTSTATUS kcctpl_create_intersite_connections(struct kccsrv_service *service,
 						    TALLOC_CTX *mem_ctx,
 						    struct GUID_list *_keep_connections,
 						    bool *_all_connected)
@@ -3390,10 +3391,10 @@ static NTSTATUS kcctpl_create_intersite_connections(struct ldb_context *ldb,
 	tmp_ctx = talloc_new(mem_ctx);
 	NT_STATUS_HAVE_NO_MEMORY(tmp_ctx);
 
-	partitions_dn = samdb_partitions_dn(ldb, tmp_ctx);
+	partitions_dn = samdb_partitions_dn(service->samdb, tmp_ctx);
 	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(partitions_dn, tmp_ctx);
 
-	ret = ldb_search(ldb, tmp_ctx, &res, partitions_dn, LDB_SCOPE_ONELEVEL,
+	ret = ldb_search(service->samdb, tmp_ctx, &res, partitions_dn, LDB_SCOPE_ONELEVEL,
 			 attrs, "objectClass=crossRef");
 	if (ret != LDB_SUCCESS) {
 		DEBUG(1, (__location__ ": failed to find crossRef objects: "
@@ -3418,7 +3419,7 @@ static NTSTATUS kcctpl_create_intersite_connections(struct ldb_context *ldb,
 			continue;
 		}
 
-		status = kcctpl_setup_graph(ldb, tmp_ctx, &graph);
+		status = kcctpl_setup_graph(service->samdb, tmp_ctx, &graph);
 		if (NT_STATUS_IS_ERR(status)) {
 			DEBUG(1, (__location__ ": failed to create a graph: "
 				  "%s\n", nt_errstr(status)));
@@ -3427,7 +3428,7 @@ static NTSTATUS kcctpl_create_intersite_connections(struct ldb_context *ldb,
 			return status;
 		}
 
-		status = kcctpl_create_connections(ldb, mem_ctx, graph,
+		status = kcctpl_create_connections(service, mem_ctx, graph,
 						   cross_ref, true,
 						   keep_connections,
 						   &found_failed_dc,
@@ -3444,7 +3445,7 @@ static NTSTATUS kcctpl_create_intersite_connections(struct ldb_context *ldb,
 			all_connected = false;
 
 			if (found_failed_dc) {
-				status = kcctpl_create_connections(ldb, mem_ctx,
+				status = kcctpl_create_connections(service, mem_ctx,
 								   graph,
 								   cross_ref,
 								   true,
@@ -3469,15 +3470,15 @@ static NTSTATUS kcctpl_create_intersite_connections(struct ldb_context *ldb,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS kcctpl_test(struct ldb_context *ldb)
+NTSTATUS kcctpl_test(struct kccsrv_service *service)
 {
 	NTSTATUS status;
-	TALLOC_CTX *tmp_ctx = talloc_new(ldb);
+	TALLOC_CTX *tmp_ctx = talloc_new(service);
 	struct GUID_list keep;
 	bool all_connected;
 
 	DEBUG(0, ("Testing kcctpl_create_intersite_connections\n"));
-	status = kcctpl_create_intersite_connections(ldb, tmp_ctx, &keep,
+	status = kcctpl_create_intersite_connections(service, tmp_ctx, &keep,
 						     &all_connected);
 	DEBUG(4, ("%s\n", nt_errstr(status)));
 	if (NT_STATUS_IS_OK(status)) {
