@@ -298,7 +298,6 @@ class FilterOps(testtools.testresult.TestResult):
 
     def start_testsuite(self, name):
         self._ops.start_testsuite(name)
-
         self.error_added = 0
         self.fail_added = 0
         self.xfail_added = 0
@@ -335,6 +334,7 @@ class FilterOps(testtools.testresult.TestResult):
         self.expected_failures = expected_failures
         self.strip_ok_output = strip_ok_output
         self.xfail_added = 0
+        self.fail_added = 0
         self.total_xfail = 0
         self.total_error = 0
         self.total_fail = 0

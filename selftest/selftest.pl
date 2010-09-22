@@ -238,28 +238,22 @@ sub run_testsuite($$$$$)
 	Subunit::start_testsuite($name);
 	Subunit::progress_push();
 	Subunit::report_time(time());
+	system($cmd);
+	Subunit::report_time(time());
+	Subunit::progress_pop();
 
-	open(RESULTS, "$cmd 2>&1|");
-
-	Subunit::filter_add_prefix("$name\.", *RESULTS);
-
-	my $ret = 0;
-
-	unless (close(RESULTS)) {
-		if ($!) {
-			Subunit::progress_pop();
-			Subunit::end_testsuite($name, "error", "Unable to run $cmd: $!");
-			return 0;
-		} else {
-			$ret = $?;
-		}
-	} 
-
-	if ($ret & 127) {
+	if ($? == -1) {
 		Subunit::progress_pop();
-		Subunit::end_testsuite($name, "error", sprintf("Testsuite died with signal %d, %s coredump", ($ret & 127), ($ret & 128) ? "with": "without"));
+		Subunit::end_testsuite($name, "error", "Unable to run $cmd: $!");
+		return 0;
+	} elsif ($? & 127) {
+		Subunit::end_testsuite($name, "error",
+			sprintf("%s died with signal %d, %s coredump\n", $cmd, ($? & 127),  ($? & 128) ? 'with' : 'without'));
 		return 0;
 	}
+
+	my $exitcode = $? >> 8;
+
 	my $envlog = getlog_env($envname);
 	if ($envlog ne "") {
 		print "envlog: $envlog\n";
@@ -268,10 +262,6 @@ sub run_testsuite($$$$$)
 	print "command: $cmd\n";
 	printf "expanded command: %s\n", expand_environment_strings($cmd);
 
-	my $exitcode = $ret >> 8;
-
-	Subunit::report_time(time());
-	Subunit::progress_pop();
 	if ($exitcode == 0) {
 		Subunit::end_testsuite($name, "success");
 	} else {
@@ -933,7 +923,6 @@ $envvarstr
 	foreach (@todo) {
 		$i++;
 		my $cmd = $$_[2];
-		$cmd =~ s/([\(\)])/\\$1/g;
 		my $name = $$_[0];
 		my $envname = $$_[1];
 

@@ -35,12 +35,13 @@ plantestsuite() {
 	cmdline="$*"
 	echo "-- TEST --"
 	if [ "$env" = "none" ]; then
-		echo "samba4.$name"
+		fullname="samba4.$name"
 	else
-		echo "samba4.$name ($env)"
+		fullname="samba4.$name ($env)"
 	fi
+	echo $fullname
 	echo $env
-	echo $cmdline
+	echo $cmdline "2>&1" "| ../selftest/filter-subunit --prefix \"$fullname.\""
 }
 
 plantestsuite_loadlist() {
@@ -50,12 +51,13 @@ plantestsuite_loadlist() {
 	cmdline="$*"
 	echo "-- TEST-LOADLIST --"
 	if [ "$env" = "none" ]; then
-		echo "samba4.$name"
+		fullname="samba4.$name"
 	else
-		echo "samba4.$name ($env)"
+		fullname="samba4.$name ($env)"
 	fi
+	echo $fullname
 	echo $env
-	echo $cmdline
+	echo $cmdline "2>&1" "| ../selftest/filter-subunit --prefix \"$fullname.\""
 }
 
 plantestsuite_idlist() {
@@ -65,12 +67,13 @@ plantestsuite_idlist() {
 	cmdline="$*"
 	echo "-- TEST-IDLIST --"
 	if [ "$env" = "none" ]; then
-		echo "samba4.$name"
+		fullname="samba4.$name"
 	else
-		echo "samba4.$name ($env)"
+		fullname="samba4.$name ($env)"
 	fi
+	echo $fullname
 	echo $env
-	echo $cmdline
+	echo $cmdline "2>&1" "| ../selftest/filter-subunit --prefix \"$fullname.\""
 }
 
 skiptestsuite() {
@@ -296,7 +299,7 @@ for env in dc fl2000dc fl2003dc fl2008r2dc; do
 	plantestsuite_loadlist "rpc.lsa.secrets on $transport with Kerberos - use Samba3 style login, use target principal" $env $smb4torture $transport:"\$SERVER" -k yes -U"\$USERNAME"%"\$PASSWORD" -W "\$DOMAIN" "--option=clientusespnegoprincipal=yes" "--option=gensec:fake_gssapi_krb5=yes" "--option=gensec:gssapi_krb5=no" "--option=gensec:target_hostname=\$NETBIOSNAME" "RPC-LSA-SECRETS-none*" "$*"
 	plansmbtorturetestsuite NET-API-BECOME-DC $env "\$SERVER[$VALIDATE]" -U"\$USERNAME"%"\$PASSWORD" -W "\$DOMAIN" "$*"
 	plantestsuite_loadlist "rpc.echo on $transport with $bindoptions and $echooptions" $env $smb4torture $transport:"\$SERVER[$bindoptions]" $ntlmoptions -U"\$USERNAME"%"\$PASSWORD" -W "\$DOMAIN" RPC-ECHO "$*"
-	
+
     # Echo tests test bulk Kerberos encryption of DCE/RPC
 	for bindoptions in connect spnego spnego,sign spnego,seal $VALIDATE padcheck bigendian bigendian,seal; do
 	    echooptions="--option=socket:testnonblock=True --option=torture:quick=yes -k yes"

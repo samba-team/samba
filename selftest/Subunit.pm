@@ -19,41 +19,8 @@ use POSIX;
 
 require Exporter;
 @ISA = qw(Exporter);
-@EXPORT_OK = qw(filter_add_prefix);
 
 use strict;
-
-sub filter_add_prefix($$)
-{
-	my ($prefix, $fh) = @_;
-
-	while(<$fh>) {
-		if (/^test: (.+)\n/) {
-			Subunit::start_test($prefix.$1);
-		} elsif (/^(success|successful|failure|fail|skip|knownfail|error|xfail): (.*?)( \[)?([ \t]*)( multipart)?\n/) {
-			my $result = $1;
-			my $testname = $prefix.$2;
-			my $reason = undef;
-			if ($3) {
-				$reason = "";
-				# reason may be specified in next lines
-				my $terminated = 0;
-				while(<$fh>) {
-					if ($_ eq "]\n") { $terminated = 1; last; } else { $reason .= $_; }
-				}
-
-				unless ($terminated) {
-					print $reason;
-					$reason = "reason ($result) interrupted";
-					$result = "error";
-				}
-			}
-			Subunit::end_test($testname, $result, $reason);
-		} else {
-			print $_;
-		}
-	}
-}
 
 sub start_test($)
 {
