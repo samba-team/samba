@@ -312,14 +312,15 @@ ssize_t write_file(struct smb_request *req,
 		fsp->modified = True;
 
 		if (SMB_VFS_FSTAT(fsp, &fsp->fsp_name->st) == 0) {
-			int dosmode;
 			trigger_write_time_update(fsp);
-			dosmode = dos_mode(fsp->conn, fsp->fsp_name);
-			if ((lp_store_dos_attributes(SNUM(fsp->conn)) ||
-					MAP_ARCHIVE(fsp->conn)) &&
-					!IS_DOS_ARCHIVE(dosmode)) {
-				file_set_dosmode(fsp->conn, fsp->fsp_name,
+			if (!fsp->posix_open &&
+					(lp_store_dos_attributes(SNUM(fsp->conn)) ||
+					MAP_ARCHIVE(fsp->conn))) {
+				int dosmode = dos_mode(fsp->conn, fsp->fsp_name);
+				if (!IS_DOS_ARCHIVE(dosmode)) {
+					file_set_dosmode(fsp->conn, fsp->fsp_name,
 						 dosmode | aARCH, NULL, false);
+				}
 			}
 
 			/*
