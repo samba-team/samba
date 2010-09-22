@@ -21,8 +21,8 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "tevent_unix.h"
 #include "../replace/replace.h"
+#include "tevent_unix.h"
 
 bool tevent_req_is_unix_error(struct tevent_req *req, int *perrno)
 {
