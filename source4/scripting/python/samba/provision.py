@@ -1491,7 +1491,6 @@ def provision(setup_dir, logger, session_info,
                         lp=lp)
         share_ldb.load_ldif_file_add(setup_path("share.ldif"))
 
-     
     logger.info("Setting up secrets.ldb")
     secrets_ldb = setup_secretsdb(paths.secrets, setup_path, 
         session_info=session_info,
@@ -1623,7 +1622,7 @@ def provision(setup_dir, logger, session_info,
 
         provision_backend.post_setup()
         provision_backend.shutdown()
-        
+
         create_phpldapadmin_config(paths.phpldapadminconfig, setup_path, 
                                    ldapi_url)
     except:

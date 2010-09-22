@@ -253,6 +253,7 @@ static PyObject *py_open_hive(PyTypeObject *type, PyObject *args, PyObject *kwar
 	struct cli_credentials *credentials;
 	char *location;
 	struct hive_key *hive_key;
+	TALLOC_CTX *mem_ctx;
 
 	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s|OOO",
 					 discard_const_p(char *, kwnames),
@@ -261,15 +262,23 @@ static PyObject *py_open_hive(PyTypeObject *type, PyObject *args, PyObject *kwar
 					 &py_credentials))
 		return NULL;
 
-	lp_ctx = lpcfg_from_py_object(NULL, py_lp_ctx); /* FIXME: leaky */
+	mem_ctx = talloc_new(NULL);
+	if (mem_ctx == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	lp_ctx = lpcfg_from_py_object(mem_ctx, py_lp_ctx);
 	if (lp_ctx == NULL) {
 		PyErr_SetString(PyExc_TypeError, "Expected loadparm context");
+		talloc_free(mem_ctx);
 		return NULL;
 	}
 
 	credentials = cli_credentials_from_py_object(py_credentials);
 	if (credentials == NULL) {
 		PyErr_SetString(PyExc_TypeError, "Expected credentials");
+		talloc_free(mem_ctx);
 		return NULL;
 	}
 	session_info = NULL;
@@ -277,6 +286,7 @@ static PyObject *py_open_hive(PyTypeObject *type, PyObject *args, PyObject *kwar
 	result = reg_open_hive(NULL, location, session_info, credentials,
 	                       tevent_context_init(NULL),
 	                       lp_ctx, &hive_key);
+	talloc_free(mem_ctx);
 	PyErr_WERROR_IS_ERR_RAISE(result);
 
 	return py_talloc_steal(&PyHiveKey, hive_key);
@@ -307,21 +317,31 @@ static PyObject *py_open_samba(PyObject *self, PyObject *args, PyObject *kwargs)
 	PyObject *py_lp_ctx, *py_session_info, *py_credentials;
 	struct auth_session_info *session_info;
 	struct cli_credentials *credentials;
+	TALLOC_CTX *mem_ctx;
+
 	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|OOO",
 					 discard_const_p(char *, kwnames),
 					 &py_lp_ctx, &py_session_info,
 					 &py_credentials))
 		return NULL;
 
-	lp_ctx = lpcfg_from_py_object(NULL, py_lp_ctx); /* FIXME: leaky */
+	mem_ctx = talloc_new(NULL);
+	if (mem_ctx == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	lp_ctx = lpcfg_from_py_object(mem_ctx, py_lp_ctx);
 	if (lp_ctx == NULL) {
 		PyErr_SetString(PyExc_TypeError, "Expected loadparm context");
+		talloc_free(mem_ctx);
 		return NULL;
 	}
 
 	credentials = cli_credentials_from_py_object(py_credentials);
 	if (credentials == NULL) {
 		PyErr_SetString(PyExc_TypeError, "Expected credentials");
+		talloc_free(mem_ctx);
 		return NULL;
 	}
 
@@ -329,6 +349,7 @@ static PyObject *py_open_samba(PyObject *self, PyObject *args, PyObject *kwargs)
 
 	result = reg_open_samba(NULL, &reg_ctx, NULL, 
 				lp_ctx, session_info, credentials);
+	talloc_free(mem_ctx);
 	if (!W_ERROR_IS_OK(result)) {
 		PyErr_SetWERROR(result);
 		return NULL;
@@ -377,6 +398,7 @@ static PyObject *py_open_ldb_file(PyObject *self, PyObject *args, PyObject *kwar
 	struct cli_credentials *credentials;
 	struct hive_key *key;
 	struct auth_session_info *session_info;
+	TALLOC_CTX *mem_ctx;
 
 	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s|OOO", 
 					 discard_const_p(char *, kwnames),
@@ -384,15 +406,23 @@ static PyObject *py_open_ldb_file(PyObject *self, PyObject *args, PyObject *kwar
 					 &py_credentials, &py_lp_ctx))
 		return NULL;
 
-	lp_ctx = lpcfg_from_py_object(NULL, py_lp_ctx); /* FIXME: leaky */
+	mem_ctx = talloc_new(NULL);
+	if (mem_ctx == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	lp_ctx = lpcfg_from_py_object(mem_ctx, py_lp_ctx);
 	if (lp_ctx == NULL) {
 		PyErr_SetString(PyExc_TypeError, "Expected loadparm context");
+		talloc_free(mem_ctx);
 		return NULL;
 	}
 
 	credentials = cli_credentials_from_py_object(py_credentials);
 	if (credentials == NULL) {
 		PyErr_SetString(PyExc_TypeError, "Expected credentials");
+		talloc_free(mem_ctx);
 		return NULL;
 	}
 
@@ -400,6 +430,7 @@ static PyObject *py_open_ldb_file(PyObject *self, PyObject *args, PyObject *kwar
 
 	result = reg_open_ldb_file(NULL, location, session_info, credentials,
 				   s4_event_context_init(NULL), lp_ctx, &key);
+	talloc_free(mem_ctx);
 	PyErr_WERROR_IS_ERR_RAISE(result);
 
 	return py_talloc_steal(&PyHiveKey, key);

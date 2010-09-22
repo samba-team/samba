@@ -131,6 +131,10 @@ static PyObject *py_interface_ips(PyObject *self, PyObject *args)
 		return NULL;
 
 	tmp_ctx = talloc_new(NULL);
+	if (tmp_ctx == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
 
 	lp_ctx = lpcfg_from_py_object(tmp_ctx, py_lp_ctx);
 	if (lp_ctx == NULL) {

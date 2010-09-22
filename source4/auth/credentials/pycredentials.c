@@ -207,6 +207,7 @@ static PyObject *py_creds_guess(py_talloc_Object *self, PyObject *args)
 {
 	PyObject *py_lp_ctx = Py_None;
 	struct loadparm_context *lp_ctx;
+	TALLOC_CTX *mem_ctx;
 	struct cli_credentials *creds;
 
 	creds = PyCredentials_AsCliCredentials(self);
@@ -214,13 +215,21 @@ static PyObject *py_creds_guess(py_talloc_Object *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "|O", &py_lp_ctx))
 		return NULL;
 
-	lp_ctx = lpcfg_from_py_object(NULL, py_lp_ctx);
-	if (lp_ctx == NULL)
+	mem_ctx = talloc_new(NULL);
+	if (mem_ctx == NULL) {
+		PyErr_NoMemory();
 		return NULL;
+	}
+
+	lp_ctx = lpcfg_from_py_object(mem_ctx, py_lp_ctx);
+	if (lp_ctx == NULL) {
+		talloc_free(mem_ctx);
+		return NULL;
+	}
 
 	cli_credentials_guess(creds, lp_ctx);
 
-	talloc_free(lp_ctx);
+	talloc_free(mem_ctx);
 
 	Py_RETURN_NONE;
 }
@@ -231,18 +240,27 @@ static PyObject *py_creds_set_machine_account(py_talloc_Object *self, PyObject *
 	struct loadparm_context *lp_ctx;
 	NTSTATUS status;
 	struct cli_credentials *creds;
+	TALLOC_CTX *mem_ctx;
 
 	creds = PyCredentials_AsCliCredentials(self);
 
 	if (!PyArg_ParseTuple(args, "|O", &py_lp_ctx))
 		return NULL;
 
-	lp_ctx = lpcfg_from_py_object(NULL, py_lp_ctx);
-	if (lp_ctx == NULL)
+	mem_ctx = talloc_new(NULL);
+	if (mem_ctx == NULL) {
+		PyErr_NoMemory();
 		return NULL;
+	}
+
+	lp_ctx = lpcfg_from_py_object(mem_ctx, py_lp_ctx);
+	if (lp_ctx == NULL) {
+		talloc_free(mem_ctx);
+		return NULL;
+	}
 
 	status = cli_credentials_set_machine_account(creds, lp_ctx);
-	talloc_free(lp_ctx);
+	talloc_free(mem_ctx);
 
 	PyErr_NTSTATUS_IS_ERR_RAISE(status);
 
@@ -278,29 +296,39 @@ static PyObject *py_creds_get_named_ccache(py_talloc_Object *self, PyObject *arg
 	int ret;
 	const char *error_string;
 	struct cli_credentials *creds;
+	TALLOC_CTX *mem_ctx;
 
 	creds = PyCredentials_AsCliCredentials(self);
 
 	if (!PyArg_ParseTuple(args, "|Os", &py_lp_ctx, &ccache_name))
 		return NULL;
 
-	lp_ctx = lpcfg_from_py_object(NULL, py_lp_ctx); /* FIXME: leaky */
-	if (lp_ctx == NULL)
+	mem_ctx = talloc_new(NULL);
+	if (mem_ctx == NULL) {
+		PyErr_NoMemory();
 		return NULL;
+	}
 
-	event_ctx = tevent_context_init(NULL);
+	lp_ctx = lpcfg_from_py_object(mem_ctx, py_lp_ctx);
+	if (lp_ctx == NULL) {
+		talloc_free(mem_ctx);
+		return NULL;
+	}
+
+	event_ctx = tevent_context_init(mem_ctx);
 
 	ret = cli_credentials_get_named_ccache(creds, event_ctx, lp_ctx,
 					       ccache_name, &ccc, &error_string);
 	talloc_free(lp_ctx);
 	if (ret == 0) {
 		talloc_steal(ccc, event_ctx);
+		talloc_free(mem_ctx);
 		return PyCredentialCacheContainer_from_ccache_container(ccc);
 	}
 
 	PyErr_SetString(PyExc_RuntimeError, error_string?error_string:"NULL");
 
-	talloc_free(event_ctx);
+	talloc_free(mem_ctx);
 	return NULL;
 }
 

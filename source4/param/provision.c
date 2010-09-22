@@ -198,7 +198,7 @@ NTSTATUS provision_bare(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx,
 		DEBUG(0, ("Missing 'lp' attribute"));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
-	result->lp_ctx = lpcfg_from_py_object(result, py_lp_ctx);
+	result->lp_ctx = lpcfg_from_py_object(mem_ctx, py_lp_ctx);
 	result->samdb = PyLdb_AsLdbContext(PyObject_GetAttrString(py_result, "samdb"));
 
 	return NT_STATUS_OK;

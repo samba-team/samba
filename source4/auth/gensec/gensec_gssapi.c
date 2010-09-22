@@ -360,7 +360,7 @@ static NTSTATUS gensec_gssapi_client_start(struct gensec_security *gensec_securi
 					    hostname, lpcfg_realm(gensec_security->settings->lp_ctx));
 
 		name_type = GSS_C_NT_USER_NAME;
-	}		
+	}
 	name_token.value  = discard_const_p(uint8_t, principal);
 	name_token.length = strlen(principal);
 
