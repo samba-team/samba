@@ -718,10 +718,9 @@ _PUBLIC_ const char *gensec_get_name_by_oid(struct gensec_security *gensec_secur
 	}
 	return oid_string;
 }
-	
 
-/** 
- * Start a GENSEC sub-mechanism with a specifed mechansim structure, used in SPNEGO
+/**
+ * Start a GENSEC sub-mechanism with a specified mechansim structure, used in SPNEGO
  *
  */
 

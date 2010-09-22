@@ -67,7 +67,7 @@ static struct gensec_settings *settings_from_object(TALLOC_CTX *mem_ctx, PyObjec
 		PyErr_SetString(PyExc_ValueError, "settings.lp_ctx not found");
 		return NULL;
 	}
-	
+
 	s->target_hostname = PyString_AsString(py_hostname);
 	s->lp_ctx = lpcfg_from_py_object(s, py_lp_ctx);
 	return s;
@@ -81,6 +81,7 @@ static PyObject *py_gensec_start_client(PyTypeObject *type, PyObject *args, PyOb
 	const char *kwnames[] = { "settings", NULL };
 	PyObject *py_settings;
 	struct tevent_context *ev;
+	struct gensec_security *gensec;
 
 	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O", discard_const_p(char *, kwnames), &py_settings))
 		return NULL;
@@ -101,7 +102,7 @@ static PyObject *py_gensec_start_client(PyTypeObject *type, PyObject *args, PyOb
 		PyObject_DEL(self);
 		return NULL;
 	}
-	
+
 	ev = tevent_context_init(self->talloc_ctx);
 	if (ev == NULL) {
 		PyErr_NoMemory();
@@ -116,13 +117,15 @@ static PyObject *py_gensec_start_client(PyTypeObject *type, PyObject *args, PyOb
 		return NULL;
 	}
 
-	status = gensec_client_start(self->talloc_ctx, 
-		(struct gensec_security **)&self->ptr, ev, settings);
+	status = gensec_client_start(self->talloc_ctx, &gensec, ev, settings);
 	if (!NT_STATUS_IS_OK(status)) {
 		PyErr_SetNTSTATUS(status);
 		PyObject_DEL(self);
 		return NULL;
 	}
+
+	self->ptr = gensec;
+
 	return (PyObject *)self;
 }
 
@@ -132,7 +135,7 @@ static PyObject *py_gensec_session_info(PyObject *self)
 	struct gensec_security *security = (struct gensec_security *)py_talloc_get_ptr(self);
 	struct auth_session_info *info;
 	if (security->ops == NULL) {
-		PyErr_SetString(PyExc_ValueError, "gensec not fully initialised - ask Andrew");
+		PyErr_SetString(PyExc_RuntimeError, "no mechanism selected");
 		return NULL;
 	}
 	status = gensec_session_info(security, &info);
@@ -145,6 +148,24 @@ static PyObject *py_gensec_session_info(PyObject *self)
 	Py_RETURN_NONE;
 }
 
+static PyObject *py_gensec_start_mech_by_name(PyObject *self, PyObject *args)
+{
+    char *name;
+    struct gensec_security *security = (struct gensec_security *)py_talloc_get_ptr(self);
+    NTSTATUS status;
+
+    if (!PyArg_ParseTuple(args, "s", &name))
+        return NULL;
+
+    status = gensec_start_mech_by_name(security, name);
+    if (!NT_STATUS_IS_OK(status)) {
+        PyErr_SetNTSTATUS(status);
+        return NULL;
+    }
+
+    Py_RETURN_NONE;
+}
+
 static PyMethodDef py_gensec_security_methods[] = {
 	{ "start_client", (PyCFunction)py_gensec_start_client, METH_VARARGS|METH_KEYWORDS|METH_CLASS, 
 		"S.start_client(settings) -> gensec" },
@@ -152,6 +173,8 @@ static PyMethodDef py_gensec_security_methods[] = {
 		"S.start_server(auth_ctx, settings) -> gensec" },*/
 	{ "session_info", (PyCFunction)py_gensec_session_info, METH_NOARGS,
 		"S.session_info() -> info" },
+    { "start_mech_by_name", (PyCFunction)py_gensec_start_mech_by_name, METH_VARARGS, 
+        "S.start_mech_by_name(name)" },
 	{ "get_name_by_authtype", (PyCFunction)py_get_name_by_authtype, METH_VARARGS,
 		"S.get_name_by_authtype(authtype) -> name\nLookup an auth type." },
 	{ NULL }

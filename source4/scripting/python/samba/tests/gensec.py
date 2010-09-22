@@ -2,17 +2,17 @@
 
 # Unix SMB/CIFS implementation.
 # Copyright (C) Jelmer Vernooij <jelmer@samba.org> 2009
-#   
+#
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 3 of the License, or
 # (at your option) any later version.
-#   
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-#   
+#
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
@@ -35,5 +35,12 @@ class CredentialsTests(samba.tests.TestCase):
         settings["lp_ctx"] = samba.tests.env_loadparm()
         self.gensec = gensec.Security.start_client(settings)
 
+    def test_start_mech_by_unknown_name(self):
+        self.assertRaises(RuntimeError, self.gensec.start_mech_by_name, "foo")
+
+    def test_info_uninitialized(self):
+        self.assertRaises(RuntimeError, self.gensec.session_info)
+
     def test_info(self):
+        self.gensec.start_mech_by_name("spnego")
         self.assertEquals(None, self.gensec.session_info())
