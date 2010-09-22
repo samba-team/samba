@@ -58,6 +58,21 @@ plantestsuite_loadlist() {
 	echo $cmdline
 }
 
+plantestsuite_idlist() {
+	name=$1
+	env=$2
+	shift 2
+	cmdline="$*"
+	echo "-- TEST-IDLIST --"
+	if [ "$env" = "none" ]; then
+		echo "samba4.$name"
+	else
+		echo "samba4.$name ($env)"
+	fi
+	echo $env
+	echo $cmdline
+}
+
 skiptestsuite() {
 	name=$1
 	reason=$2
@@ -82,6 +97,15 @@ planperltestsuite() {
 	else
 		skiptestsuite "$name" "Test::More not available"
 	fi
+}
+
+planpythontestsuite() {
+	name=$1
+	env=$2
+	shift 2
+	other_args="$*"
+	cmdline="$SUBUNITRUN $other_args"
+	plantestsuite "$name" "$env" $cmdline
 }
 
 plansmbtorturetestsuite() {
@@ -482,22 +506,22 @@ plantestsuite "auth.python" none PYTHONPATH="$PYTHONPATH:$samba4srcdir/auth/test
 plantestsuite "security.python" none PYTHONPATH="$PYTHONPATH:$samba4srcdir/libcli/security/tests" $SUBUNITRUN bindings
 plantestsuite "misc.python" none $SUBUNITRUN samba.tests.dcerpc.misc
 plantestsuite "param.python" none PYTHONPATH="$PYTHONPATH:$samba4srcdir/param/tests" $SUBUNITRUN bindings
-plantestsuite "upgrade.python" none $SUBUNITRUN samba.tests.upgrade
-plantestsuite "samba.python" none $SUBUNITRUN samba.tests
-plantestsuite "provision.python" none $SUBUNITRUN samba.tests.provision
-plantestsuite "samba3.python" none $SUBUNITRUN samba.tests.samba3
-plantestsuite "samr.python" dc:local $SUBUNITRUN samba.tests.dcerpc.sam
-plantestsuite "dsdb.python" dc:local $SUBUNITRUN samba.tests.dsdb
-plantestsuite "netcmd.python" none $SUBUNITRUN samba.tests.netcmd
-plantestsuite "dcerpc.bare.python" dc:local $SUBUNITRUN samba.tests.dcerpc.bare
-plantestsuite "unixinfo.python" dc:local $SUBUNITRUN samba.tests.dcerpc.unix
-plantestsuite "rpc_talloc.python" none $SUBUNITRUN samba.tests.dcerpc.rpc_talloc
-plantestsuite "samdb.python" none $SUBUNITRUN samba.tests.samdb
-plantestsuite "shares.python" none $SUBUNITRUN samba.tests.shares
+planpythontestsuite "upgrade.python" none samba.tests.upgrade
+planpythontestsuite "samba.python" none samba.tests
+planpythontestsuite "provision.python" none samba.tests.provision
+planpythontestsuite "samba3.python" none samba.tests.samba3
+planpythontestsuite "samr.python" dc:local samba.tests.dcerpc.sam
+planpythontestsuite "dsdb.python" dc:local samba.tests.dsdb
+planpythontestsuite "netcmd.python" none samba.tests.netcmd
+planpythontestsuite "dcerpc.bare.python" dc:local samba.tests.dcerpc.bare
+planpythontestsuite "unixinfo.python" dc:local samba.tests.dcerpc.unix
+planpythontestsuite "rpc_talloc.python" none samba.tests.dcerpc.rpc_talloc
+planpythontestsuite "samdb.python" none samba.tests.samdb
+planpythontestsuite "shares.python" none samba.tests.shares
 plantestsuite "messaging.python" none PYTHONPATH="$PYTHONPATH:$samba4srcdir/lib/messaging/tests" $SUBUNITRUN bindings
 plantestsuite "samba3sam.python" none PYTHONPATH="$PYTHONPATH:$samba4srcdir/dsdb/samdb/ldb_modules/tests" $SUBUNITRUN samba3sam
-plantestsuite "subunit.python" none $SUBUNITRUN subunit
-plantestsuite "rpcecho.python" dc:local $SUBUNITRUN samba.tests.dcerpc.rpcecho
+planpythontestsuite "subunit.python" none subunit
+planpythontestsuite "rpcecho.python" dc:local samba.tests.dcerpc.rpcecho
 plantestsuite "winreg.python" dc:local $SUBUNITRUN -U\$USERNAME%\$PASSWORD samba.tests.dcerpc.registry
 plantestsuite "ldap.python" dc PYTHONPATH="$PYTHONPATH:../lib/subunit/python:../lib/testtools" $PYTHON $samba4srcdir/dsdb/tests/python/ldap.py \$SERVER -U\$USERNAME%\$PASSWORD -W \$DOMAIN
 plantestsuite "schemaInfo.python" dc PYTHONPATH="$PYTHONPATH:$samba4srcdir/dsdb/tests/python/" $SUBUNITRUN dsdb_schema_info -U"\$DOMAIN/\$DC_USERNAME"%"\$DC_PASSWORD"
@@ -509,10 +533,10 @@ for env in "dc" "fl2000dc" "fl2003dc" "fl2008r2dc"; do
     plantestsuite "ldap.acl.python" $env PYTHONPATH="$PYTHONPATH:../lib/subunit/python:../lib/testtools" $PYTHON $samba4srcdir/dsdb/tests/python/acl.py \$SERVER -U\$USERNAME%\$PASSWORD -W \$DOMAIN
     plantestsuite "ldap.passwords.python" $env PYTHONPATH="$PYTHONPATH:../lib/subunit/python:../lib/testtools" $PYTHON $samba4srcdir/dsdb/tests/python/passwords.py \$SERVER -U\$USERNAME%\$PASSWORD -W \$DOMAIN
 done
-plantestsuite "upgradeprovisiondc.python" dc:local $SUBUNITRUN samba.tests.upgradeprovisionneeddc
-plantestsuite "upgradeprovisionnodc.python" none $SUBUNITRUN samba.tests.upgradeprovision
-plantestsuite "xattr.python" none $SUBUNITRUN samba.tests.xattr
-plantestsuite "ntacls.python" none $SUBUNITRUN samba.tests.ntacls
+planpythontestsuite "upgradeprovisiondc.python" dc:local samba.tests.upgradeprovisionneeddc
+planpythontestsuite "upgradeprovisionnodc.python" none samba.tests.upgradeprovision
+planpythontestsuite "xattr.python" none samba.tests.xattr
+planpythontestsuite "ntacls.python" none samba.tests.ntacls
 plantestsuite "deletetest.python" dc PYTHONPATH="$PYTHONPATH:../lib/subunit/python:../lib/testtools" $PYTHON $samba4srcdir/dsdb/tests/python/deletetest.py \$SERVER -U\$USERNAME%\$PASSWORD -W \$DOMAIN
 plantestsuite "policy.python" none PYTHONPATH="$PYTHONPATH:lib/policy/tests/python" $SUBUNITRUN bindings
 plantestsuite "blackbox.samba3dump" none $PYTHON $samba4srcdir/scripting/bin/samba3dump $samba4srcdir/../testdata/samba3

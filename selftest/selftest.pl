@@ -633,8 +633,9 @@ sub read_testlist($)
 	open(IN, $filename) or die("Unable to open $filename: $!");
 
 	while (<IN>) {
-		if (/-- TEST(-LOADLIST)? --\n/) {
+		if (/-- TEST(-LOADLIST|IDLIST)? --\n/) {
 			my $supports_loadlist = (defined($1) and $1 eq "-LOADLIST");
+			my $supports_idlist = (defined($1) and $1 eq "-IDLIST");
 			my $name = <IN>;
 			$name =~ s/\n//g;
 			my $env = <IN>;
@@ -642,7 +643,7 @@ sub read_testlist($)
 			my $cmdline = <IN>;
 			$cmdline =~ s/\n//g;
 			if (should_run_test($name) == 1) {
-				push (@ret, [$name, $env, $cmdline, $supports_loadlist]);
+				push (@ret, [$name, $env, $cmdline, $supports_loadlist, $supports_idlist]);
 			}
 		} else {
 			print;
@@ -946,12 +947,16 @@ $envvarstr
 
 		# Generate a file with the individual tests to run, if the 
 		# test runner for this test suite supports it.
-		if ($$_[3] and $individual_tests and $individual_tests->{$name}) {
-			my ($fh, $listid_file) = tempfile(UNLINK => 0);
-			foreach my $test (@{$individual_tests->{$name}}) {
-				print $fh "$test\n";
+		if ($individual_tests and $individual_tests->{$name}) {
+			if ($$_[3]) {
+				my ($fh, $listid_file) = tempfile(UNLINK => 0);
+				foreach my $test (@{$individual_tests->{$name}}) {
+					print $fh "$test\n";
+				}
+				$cmd .= " --load-list=$listid_file";
+			} elsif ($$_[4]) {
+				$cmd .= join(' ', @{$individual_tests->{$name}});
 			}
-			$cmd .= " --load-list=$listid_file";
 		}
 
 		run_testsuite($envname, $name, $cmd, $i, $suitestotal);
