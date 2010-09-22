@@ -302,7 +302,7 @@ static NTSTATUS smb2_transport_finish_recv(void *private_data, DATA_BLOB blob)
 	if ((flags & SMB2_HDR_FLAG_ASYNC) &&
 	    NT_STATUS_EQUAL(req->status, STATUS_PENDING)) {
 		req->cancel.can_cancel = true;
-		req->cancel.pending_id = IVAL(hdr, SMB2_HDR_PID);
+		req->cancel.async_id = BVAL(hdr, SMB2_HDR_ASYNC_ID);
 		for (i=0; i< req->cancel.do_cancel; i++) {
 			smb2_cancel(req);
 		}

@@ -53,7 +53,7 @@ NTSTATUS smb2_cancel(struct smb2_request *r)
 
 	SIVAL(c->out.hdr, SMB2_HDR_FLAGS,	0x00000002);
 	SSVAL(c->out.hdr, SMB2_HDR_CREDIT,	0x0030);
-	SIVAL(c->out.hdr, SMB2_HDR_PID,		r->cancel.pending_id);
+	SBVAL(c->out.hdr, SMB2_HDR_ASYNC_ID,	r->cancel.async_id);
 	SBVAL(c->out.hdr, SMB2_HDR_MESSAGE_ID,	c->seqnum);
 	if (r->session) {
 		SBVAL(c->out.hdr, SMB2_HDR_SESSION_ID,	r->session->uid);

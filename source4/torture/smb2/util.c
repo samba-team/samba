@@ -322,6 +322,7 @@ NTSTATUS torture_smb2_testfile(struct smb2_tree *tree, const char *fname,
 	r.in.length      = 5;
 	r.in.offset      = 0;
 
+	// What is the purpose of this? Server returns EOF.
 	smb2_read(tree, tree, &r);
 
 	return NT_STATUS_OK;

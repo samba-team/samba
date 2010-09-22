@@ -28,7 +28,7 @@
 #define SMB2_HDR_EPOCH		0x06
 #define SMB2_HDR_STATUS		0x08
 #define SMB2_HDR_OPCODE		0x0c
-#define SMB2_HDR_CREDIT 	0x0e
+#define SMB2_HDR_CREDIT		0x0e
 #define SMB2_HDR_FLAGS		0x10
 #define SMB2_HDR_NEXT_COMMAND	0x14
 #define SMB2_HDR_MESSAGE_ID     0x18
@@ -37,6 +37,9 @@
 #define SMB2_HDR_SESSION_ID	0x28
 #define SMB2_HDR_SIGNATURE	0x30 /* 16 bytes */
 #define SMB2_HDR_BODY		0x40
+
+/* offsets into header elements for an async SMB2 request */
+#define SMB2_HDR_ASYNC_ID	0x20
 
 /* header flags */
 #define SMB2_HDR_FLAG_REDIRECT  0x01
