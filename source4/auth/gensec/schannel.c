@@ -52,7 +52,6 @@ static NTSTATUS schannel_update(struct gensec_security *gensec_security, TALLOC_
 	struct netlogon_creds_CredentialState *creds;
 	const char *workstation;
 	const char *domain;
-	uint32_t required_flags;
 
 	*out = data_blob(NULL, 0);
 
@@ -101,9 +100,6 @@ static NTSTATUS schannel_update(struct gensec_security *gensec_security, TALLOC_
 		return NT_STATUS_MORE_PROCESSING_REQUIRED;
 	case GENSEC_SERVER:
 
-		required_flags = NL_FLAG_OEM_NETBIOS_COMPUTER_NAME |
-				 NL_FLAG_OEM_NETBIOS_DOMAIN_NAME;
-
 		if (state->state != SCHANNEL_STATE_START) {
 			/* no third leg on this protocol */
 			return NT_STATUS_INVALID_PARAMETER;
@@ -119,17 +115,31 @@ static NTSTATUS schannel_update(struct gensec_security *gensec_security, TALLOC_
 			return status;
 		}
 
-		if (!(required_flags == (bind_schannel.Flags & required_flags))) {
-			return NT_STATUS_INVALID_PARAMETER;
+		if (bind_schannel.Flags & NL_FLAG_OEM_NETBIOS_DOMAIN_NAME) {
+			domain = bind_schannel.oem_netbios_domain.a;
+			if (strcasecmp_m(domain, lpcfg_workgroup(gensec_security->settings->lp_ctx)) != 0) {
+				DEBUG(3, ("Request for schannel to incorrect domain: %s != our domain %s\n",
+					  domain, lpcfg_workgroup(gensec_security->settings->lp_ctx)));
+				return NT_STATUS_LOGON_FAILURE;
+			}
+		} else if (bind_schannel.Flags & NL_FLAG_UTF8_DNS_DOMAIN_NAME) {
+			domain = bind_schannel.utf8_dns_domain.u;
+			if (strcasecmp_m(domain, lpcfg_dnsdomain(gensec_security->settings->lp_ctx)) != 0) {
+				DEBUG(3, ("Request for schannel to incorrect domain: %s != our domain %s\n",
+					  domain, lpcfg_dnsdomain(gensec_security->settings->lp_ctx)));
+				return NT_STATUS_LOGON_FAILURE;
+			}
+		} else {
+			DEBUG(3, ("Request for schannel to without domain\n"));
+			return NT_STATUS_LOGON_FAILURE;
 		}
 
-		workstation = bind_schannel.oem_netbios_computer.a;
-		domain = bind_schannel.oem_netbios_domain.a;
-
-		if (strcasecmp_m(domain, lpcfg_workgroup(gensec_security->settings->lp_ctx)) != 0) {
-			DEBUG(3, ("Request for schannel to incorrect domain: %s != our domain %s\n",
-				  domain, lpcfg_workgroup(gensec_security->settings->lp_ctx)));
-
+		if (bind_schannel.Flags & NL_FLAG_OEM_NETBIOS_COMPUTER_NAME) {
+			workstation = bind_schannel.oem_netbios_computer.a;
+		} else if (bind_schannel.Flags & NL_FLAG_UTF8_NETBIOS_COMPUTER_NAME) {
+			workstation = bind_schannel.utf8_netbios_computer.u;
+		} else {
+			DEBUG(3, ("Request for schannel to without netbios workstation\n"));
 			return NT_STATUS_LOGON_FAILURE;
 		}
 
