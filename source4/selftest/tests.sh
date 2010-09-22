@@ -104,7 +104,7 @@ planpythontestsuite() {
 	env=$2
 	module="$3"
 	shift 3
-	plantestsuite_idlist "$name" "$env" PYTHONPATH=$samba4srcdir/../lib/subunit/python:$samba4srcdir/../lib/testtools $PYTHON -m subunit.run $module
+	plantestsuite_idlist "$name" "$env" PYTHONPATH=$PYTHONPATH:$samba4srcdir/../lib/subunit/python:$samba4srcdir/../lib/testtools $PYTHON -m subunit.run $module
 }
 
 plansmbtorturetestsuite() {
@@ -175,8 +175,6 @@ do
 	plansmbtorturetestsuite "$t" dc "-U\$USERNAME%\$PASSWORD" //\$SERVER_IP/_none_
 done
 
-# only do the ldb tests when not in quick mode - they are quite slow, and ldb
-# is now pretty well tested by the rest of the quick tests anyway
 LDBDIR=$samba4srcdir/lib/ldb
 export LDBDIR
 # Don't run LDB tests when using system ldb, as we won't have ldbtest installed
@@ -498,13 +496,13 @@ fi
 SUBUNITRUN="$VALGRIND $PYTHON $samba4srcdir/scripting/bin/subunitrun"
 plantestsuite "ldb.python" none PYTHONPATH="$PYTHONPATH:$samba4srcdir/lib/ldb/tests/python/" $PYTHON $samba4srcdir/lib/ldb/tests/python/api.py
 plantestsuite "credentials.python" none PYTHONPATH="$PYTHONPATH:$samba4srcdir/auth/credentials/tests" $SUBUNITRUN bindings
-plantestsuite "gensec.python" none PYTHONPATH="$PYTHONPATH:$samba4srcdir/auth/gensec/tests" $SUBUNITRUN bindings
-plantestsuite "registry.python" none PYTHONPATH="$PYTHONPATH:$samba4srcdir/lib/registry/tests/" $SUBUNITRUN bindings
+planpythontestsuite "gensec.python" none samba.tests.gensec
+planpythontestsuite "registry.python" none samba.tests.registry
 plantestsuite "tdb.python" none PYTHONPATH="$PYTHONPATH:../lib/tdb/python/tests" $SUBUNITRUN simple
-plantestsuite "auth.python" none PYTHONPATH="$PYTHONPATH:$samba4srcdir/auth/tests/" $SUBUNITRUN bindings
-plantestsuite "security.python" none PYTHONPATH="$PYTHONPATH:$samba4srcdir/libcli/security/tests" $SUBUNITRUN bindings
-plantestsuite "misc.python" none $SUBUNITRUN samba.tests.dcerpc.misc
-plantestsuite "param.python" none PYTHONPATH="$PYTHONPATH:$samba4srcdir/param/tests" $SUBUNITRUN bindings
+planpythontestsuite "auth.python" none samba.tests.auth
+planpythontestsuite "security.python" none samba.tests.security
+planpythontestsuite "misc.python" none samba.tests.dcerpc.misc
+planpythontestsuite "param.python" none samba.tests.param
 planpythontestsuite "upgrade.python" none samba.tests.upgrade
 planpythontestsuite "samba.python" none samba.tests
 planpythontestsuite "provision.python" none samba.tests.provision
@@ -517,7 +515,7 @@ planpythontestsuite "unixinfo.python" dc:local samba.tests.dcerpc.unix
 planpythontestsuite "rpc_talloc.python" none samba.tests.dcerpc.rpc_talloc
 planpythontestsuite "samdb.python" none samba.tests.samdb
 planpythontestsuite "shares.python" none samba.tests.shares
-plantestsuite "messaging.python" none PYTHONPATH="$PYTHONPATH:$samba4srcdir/lib/messaging/tests" $SUBUNITRUN bindings
+planpythontestsuite "messaging.python" none samba.tests.messaging
 plantestsuite "samba3sam.python" none PYTHONPATH="$PYTHONPATH:$samba4srcdir/dsdb/samdb/ldb_modules/tests" $SUBUNITRUN samba3sam
 planpythontestsuite "subunit.python" none subunit
 planpythontestsuite "rpcecho.python" dc:local samba.tests.dcerpc.rpcecho
