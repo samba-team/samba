@@ -21,6 +21,7 @@
 #include "libcli/ldap/libcli_ldap.h"
 #include "lib/socket/socket.h"
 #include "lib/stream/packet.h"
+#include "system/network.h"
 
 struct ldapsrv_connection {
 	struct loadparm_context *lp_ctx;
@@ -32,26 +33,25 @@ struct ldapsrv_connection {
 	struct ldb_context *ldb;
 
 	struct {
-		struct socket_context *raw;
-		struct socket_context *tls;
-		struct socket_context *sasl;
+		struct tevent_queue *send_queue;
+		struct tstream_context *raw;
+		struct tstream_context *tls;
+		struct tstream_context *sasl;
+		struct tstream_context *active;
 	} sockets;
 
 	bool global_catalog;
-
-	struct packet_context *packet;
 
 	struct {
 		int initial_timeout;
 		int conn_idle_time;
 		int max_page_size;
 		int search_timeout;
-
-		struct tevent_timer *ite;
-		struct tevent_timer *te;
+		struct timeval endtime;
+		const char *reason;
 	} limits;
 
-	struct ldapsrv_packet_interfaces *packet_interface;
+	struct tevent_req *active_call;
 };
 
 struct ldapsrv_call {
@@ -61,18 +61,19 @@ struct ldapsrv_call {
 		struct ldapsrv_reply *prev, *next;
 		struct ldap_message *msg;
 	} *replies;
-	packet_send_callback_fn_t send_callback;
-	void *send_private;
+	struct iovec out_iov;
+
+	struct tevent_req *(*postprocess_send)(TALLOC_CTX *mem_ctx,
+					       struct tevent_context *ev,
+					       void *private_data);
+	NTSTATUS (*postprocess_recv)(struct tevent_req *req);
+	void *postprocess_private;
 };
 
 struct ldapsrv_service {
-	struct tls_params *tls_params;
+	struct tstream_tls_params *tls_params;
 	struct task_server *task;
-	struct ldapsrv_packet_interfaces {
-		struct ldapsrv_packet_interfaces *next, *prev;
-		struct packet_context *packet;
-		struct ldapsrv_service *service;
-	} *packet_interfaces;
+	struct tevent_queue *call_queue;
 };
 
 #include "ldap_server/proto.h"
