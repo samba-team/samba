@@ -91,7 +91,7 @@ plansmbtorturetestsuite() {
 	other_args="$*"
 	modname=`normalize_testname $name`
 	cmdline="$VALGRIND $smb4torture $other_args $name"
-	plantestsuite "$modname" "$env" $cmdline
+	plantestsuite_loadlist "$modname" "$env" $cmdline
 }
 
 samba4srcdir="`dirname $0`/.."
