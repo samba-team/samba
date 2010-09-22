@@ -1723,7 +1723,7 @@ static WERROR import_create_val(struct import_ctx* ctx,
 
 	status = rpccli_winreg_SetValue(ctx->pipe_hnd, mem_ctx, parent,
 					valuename, type,
-					discard_const(val), len, &werr);
+					(uint8_t *)discard_const(val), len, &werr);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_fprintf(stderr, _("registry_setvalue failed: %s\n"),
 			  nt_errstr(status));

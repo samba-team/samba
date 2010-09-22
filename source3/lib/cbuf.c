@@ -51,7 +51,7 @@ cbuf* cbuf_new(const void* ctx)
 	if (s == NULL)
 		return NULL;
 	s->size = 32;
-	s->buf  = talloc_size(s, s->size);
+	s->buf  = (char *)talloc_size(s, s->size);
 	if (s->size && (s->buf == NULL)) {
 		talloc_free(s);
 		return NULL;
@@ -66,7 +66,7 @@ cbuf* cbuf_copy(const cbuf* b)
 		return NULL;
 	}
 
-	s->buf = talloc_memdup(s, b->buf, b->size); /* only up to pos? */
+	s->buf = (char *)talloc_memdup(s, b->buf, b->size); /* only up to pos? */
 
 	/* XXX shallow did not work, because realloc */
 	/* fails with multiple references */
