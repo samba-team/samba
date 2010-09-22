@@ -22,28 +22,91 @@
 #include "../lib/util/dlinklist.h"
 #include "lib/tls/tls.h"
 #include "smbd/service_stream.h"
+#include "../lib/util/tevent_ntstatus.h"
 
-struct ldapsrv_starttls_context {
+struct ldapsrv_starttls_postprocess_context {
 	struct ldapsrv_connection *conn;
-	struct socket_context *tls_socket;
 };
 
-static void ldapsrv_start_tls(void *private_data)
-{
-	struct ldapsrv_starttls_context *ctx = talloc_get_type(private_data, struct ldapsrv_starttls_context);
-	talloc_steal(ctx->conn->connection, ctx->tls_socket);
+struct ldapsrv_starttls_postprocess_state {
+	struct ldapsrv_connection *conn;
+};
 
-	ctx->conn->sockets.tls = ctx->tls_socket;
-	ctx->conn->connection->socket = ctx->tls_socket;
-	packet_set_socket(ctx->conn->packet, ctx->conn->connection->socket);
-	packet_set_unreliable_select(ctx->conn->packet);
+static void ldapsrv_starttls_postprocess_done(struct tevent_req *subreq);
+
+static struct tevent_req *ldapsrv_starttls_postprocess_send(TALLOC_CTX *mem_ctx,
+						struct tevent_context *ev,
+						void *private_data)
+{
+	struct ldapsrv_starttls_postprocess_context *context =
+		talloc_get_type_abort(private_data,
+		struct ldapsrv_starttls_postprocess_context);
+	struct ldapsrv_connection *conn = context->conn;
+	struct tevent_req *req;
+	struct ldapsrv_starttls_postprocess_state *state;
+	struct tevent_req *subreq;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct ldapsrv_starttls_postprocess_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	state->conn = conn;
+
+	subreq = tstream_tls_accept_send(conn,
+					 conn->connection->event.ctx,
+					 conn->sockets.raw,
+					 conn->service->tls_params);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, ldapsrv_starttls_postprocess_done, req);
+
+	return req;
+}
+
+static void ldapsrv_starttls_postprocess_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req =
+		tevent_req_callback_data(subreq,
+		struct tevent_req);
+	struct ldapsrv_starttls_postprocess_state *state =
+		tevent_req_data(req,
+		struct ldapsrv_starttls_postprocess_state);
+	struct ldapsrv_connection *conn = state->conn;
+	int ret;
+	int sys_errno;
+
+	ret = tstream_tls_accept_recv(subreq, &sys_errno,
+				      conn, &conn->sockets.tls);
+	TALLOC_FREE(subreq);
+	if (ret == -1) {
+		NTSTATUS status = map_nt_error_from_unix(sys_errno);
+
+		DEBUG(1,("ldapsrv_starttls_postprocess_done: accept_tls_loop: "
+			 "tstream_tls_accept_recv() - %d:%s => %s",
+			 sys_errno, strerror(sys_errno), nt_errstr(status)));
+
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	conn->sockets.active = conn->sockets.tls;
+
+	tevent_req_done(req);
+}
+
+static NTSTATUS ldapsrv_starttls_postprocess_recv(struct tevent_req *req)
+{
+	return tevent_req_simple_recv_ntstatus(req);
 }
 
 static NTSTATUS ldapsrv_StartTLS(struct ldapsrv_call *call,
 				 struct ldapsrv_reply *reply,
 				 const char **errstr)
 {
-	struct ldapsrv_starttls_context *ctx;
+	struct ldapsrv_starttls_postprocess_context *context;
 
 	(*errstr) = NULL;
 
@@ -58,21 +121,19 @@ static NTSTATUS ldapsrv_StartTLS(struct ldapsrv_call *call,
 		return NT_STATUS_LDAP(LDAP_OPERATIONS_ERROR);
 	}
 
-	ctx = talloc(call, struct ldapsrv_starttls_context);
-	NT_STATUS_HAVE_NO_MEMORY(ctx);
-
-	ctx->conn = call->conn;
-	ctx->tls_socket = tls_init_server(call->conn->service->tls_params,
-					  call->conn->connection->socket,
-					  call->conn->connection->event.fde, 
-					  NULL);
-	if (!ctx->tls_socket) {
-		(*errstr) = talloc_asprintf(reply, "START-TLS: Failed to setup TLS socket");
+	if (call->conn->sockets.sasl) {
+		(*errstr) = talloc_asprintf(reply, "START-TLS: SASL is already enabled on this LDAP session");
 		return NT_STATUS_LDAP(LDAP_OPERATIONS_ERROR);
 	}
 
-	call->send_callback = ldapsrv_start_tls;
-	call->send_private  = ctx;
+	context = talloc(call, struct ldapsrv_starttls_postprocess_context);
+	NT_STATUS_HAVE_NO_MEMORY(context);
+
+	context->conn = call->conn;
+
+	call->postprocess_send = ldapsrv_starttls_postprocess_send;
+	call->postprocess_recv = ldapsrv_starttls_postprocess_recv;
+	call->postprocess_private = context;
 
 	reply->msg->r.ExtendedResponse.response.resultcode = LDAP_SUCCESS;
 	reply->msg->r.ExtendedResponse.response.errormessage = NULL;

@@ -22,6 +22,7 @@
 */
 
 #include "includes.h"
+#include "system/network.h"
 #include "lib/events/events.h"
 #include "auth/auth.h"
 #include "auth/credentials/credentials.h"
@@ -42,173 +43,97 @@
 #include "lib/socket/netif.h"
 #include "dsdb/samdb/samdb.h"
 #include "param/param.h"
+#include "../lib/tsocket/tsocket.h"
+#include "../lib/util/tevent_ntstatus.h"
+#include "../libcli/util/tstream.h"
+
+static void ldapsrv_terminate_connection_done(struct tevent_req *subreq);
+
 /*
   close the socket and shutdown a server_context
 */
-void ldapsrv_terminate_connection(struct ldapsrv_connection *conn, 
+static void ldapsrv_terminate_connection(struct ldapsrv_connection *conn,
 					 const char *reason)
 {
-	packet_recv_disable(conn->packet);
-	TALLOC_FREE(conn->packet);
+	struct tevent_req *subreq;
+
+	if (conn->limits.reason) {
+		return;
+	}
+
+	conn->limits.endtime = timeval_current_ofs(0, 500);
+
+	DEBUG(2,("ldapsrv_terminate_connection: %s - disconnecting\n",
+		 reason));
+
+	tevent_queue_stop(conn->sockets.send_queue);
+	if (conn->active_call) {
+		tevent_req_cancel(conn->active_call);
+		conn->active_call = NULL;
+	}
+
+	conn->limits.reason = talloc_strdup(conn, reason);
+	if (conn->limits.reason == NULL) {
+		TALLOC_FREE(conn->sockets.tls);
+		TALLOC_FREE(conn->sockets.sasl);
+		TALLOC_FREE(conn->sockets.raw);
+		stream_terminate_connection(conn->connection, reason);
+		return;
+	}
+
+	subreq = tstream_disconnect_send(conn,
+					 conn->connection->event.ctx,
+					 conn->sockets.active);
+	if (subreq == NULL) {
+		TALLOC_FREE(conn->sockets.tls);
+		TALLOC_FREE(conn->sockets.sasl);
+		TALLOC_FREE(conn->sockets.raw);
+		stream_terminate_connection(conn->connection, reason);
+		return;
+	}
+	tevent_req_set_endtime(subreq,
+			       conn->connection->event.ctx,
+			       conn->limits.endtime);
+	tevent_req_set_callback(subreq, ldapsrv_terminate_connection_done, conn);
+}
+
+static void ldapsrv_terminate_connection_done(struct tevent_req *subreq)
+{
+	struct ldapsrv_connection *conn =
+		tevent_req_callback_data(subreq,
+		struct ldapsrv_connection);
+	int ret;
+	int sys_errno;
+
+	ret = tstream_disconnect_recv(subreq, &sys_errno);
+	TALLOC_FREE(subreq);
+
+	if (conn->sockets.active == conn->sockets.raw) {
+		TALLOC_FREE(conn->sockets.tls);
+		TALLOC_FREE(conn->sockets.sasl);
+		TALLOC_FREE(conn->sockets.raw);
+		stream_terminate_connection(conn->connection,
+					    conn->limits.reason);
+		return;
+	}
+
 	TALLOC_FREE(conn->sockets.tls);
-	stream_terminate_connection(conn->connection, reason);
-}
+	TALLOC_FREE(conn->sockets.sasl);
+	conn->sockets.active = conn->sockets.raw;
 
-/*
-  handle packet errors
-*/
-static void ldapsrv_error_handler(void *private_data, NTSTATUS status)
-{
-	struct ldapsrv_connection *conn = talloc_get_type(private_data,
-							  struct ldapsrv_connection);
-	ldapsrv_terminate_connection(conn, nt_errstr(status));
-}
-
-/*
-  process a decoded ldap message
-*/
-static void ldapsrv_process_message(struct ldapsrv_connection *conn,
-				    struct ldap_message *msg)
-{
-	struct ldapsrv_call *call;
-	NTSTATUS status;
-	DATA_BLOB blob;
-
-	call = talloc(conn, struct ldapsrv_call);
-	if (!call) {
-		ldapsrv_terminate_connection(conn, "no memory");
-		return;		
-	}
-
-	call->request = talloc_steal(call, msg);
-	call->conn = conn;
-	call->replies = NULL;
-	call->send_callback = NULL;
-	call->send_private = NULL;
-
-	/* make the call */
-	status = ldapsrv_do_call(call);
-	if (!NT_STATUS_IS_OK(status)) {
-		talloc_free(call);
+	subreq = tstream_disconnect_send(conn,
+					 conn->connection->event.ctx,
+					 conn->sockets.active);
+	if (subreq == NULL) {
+		TALLOC_FREE(conn->sockets.raw);
+		stream_terminate_connection(conn->connection,
+					    conn->limits.reason);
 		return;
 	}
-
-	blob = data_blob(NULL, 0);
-
-	if (call->replies == NULL) {
-		talloc_free(call);
-		return;
-	}
-
-	/* build all the replies into a single blob */
-	while (call->replies) {
-		DATA_BLOB b;
-		bool ret;
-
-		msg = call->replies->msg;
-		if (!ldap_encode(msg, samba_ldap_control_handlers(), &b, call)) {
-			DEBUG(0,("Failed to encode ldap reply of type %d\n", msg->type));
-			talloc_free(call);
-			return;
-		}
-
-		ret = data_blob_append(call, &blob, b.data, b.length);
-		data_blob_free(&b);
-
-		talloc_set_name_const(blob.data, "Outgoing, encoded LDAP packet");
-
-		if (!ret) {
-			talloc_free(call);
-			return;
-		}
-
-		DLIST_REMOVE(call->replies, call->replies);
-	}
-
-	packet_send_callback(conn->packet, blob, 
-			     call->send_callback, call->send_private);
-	talloc_free(call);
-	return;
-}
-
-/*
-  disable packets on other sockets while processing this one
- */
-static void ldapsrv_disable_recv(struct ldapsrv_connection *conn)
-{
-	struct ldapsrv_packet_interfaces *p;
-	for (p=conn->service->packet_interfaces; p; p=p->next) {
-		if (p->packet != conn->packet) {
-			packet_recv_disable(p->packet);
-		}
-	}
-}
-
-/*
-  disable packets on other sockets while processing this one
- */
-static void ldapsrv_enable_recv(struct ldapsrv_connection *conn)
-{
-	struct ldapsrv_packet_interfaces *p;
-	for (p=conn->service->packet_interfaces; p; p=p->next) {
-		if (p->packet != conn->packet) {
-			packet_recv_enable(p->packet);
-		}
-	}
-}
-
-/*
-  decode/process data
-*/
-static NTSTATUS ldapsrv_decode(void *private_data, DATA_BLOB blob)
-{
-	NTSTATUS status;
-	struct ldapsrv_connection *conn = talloc_get_type(private_data,
-							  struct ldapsrv_connection);
-	struct asn1_data *asn1 = asn1_init(conn);
-	struct ldap_message *msg = talloc(conn, struct ldap_message);
-
-	if (asn1 == NULL || msg == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	if (!asn1_load(asn1, blob)) {
-		talloc_free(msg);
-		talloc_free(asn1);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	status = ldap_decode(asn1, samba_ldap_control_handlers(), msg);
-	if (!NT_STATUS_IS_OK(status)) {
-		asn1_free(asn1);
-		return status;
-	}
-
-	data_blob_free(&blob);
-	talloc_steal(conn, msg);
-	asn1_free(asn1);
-
-	/* disable messages on other sockets while processing this one */
-	ldapsrv_disable_recv(conn);
-
-	ldapsrv_process_message(conn, msg);
-
-	ldapsrv_enable_recv(conn);
-
-	return NT_STATUS_OK;
-}
-
-/*
- Idle timeout handler
-*/
-static void ldapsrv_conn_idle_timeout(struct tevent_context *ev,
-				      struct tevent_timer *te,
-				      struct timeval t,
-				      void *private_data)
-{
-	struct ldapsrv_connection *conn = talloc_get_type(private_data, struct ldapsrv_connection);
-
-	ldapsrv_terminate_connection(conn, "Timeout. No requests after bind");
+	tevent_req_set_endtime(subreq,
+			       conn->connection->event.ctx,
+			       conn->limits.endtime);
+	tevent_req_set_callback(subreq, ldapsrv_terminate_connection_done, conn);
 }
 
 /*
@@ -216,25 +141,7 @@ static void ldapsrv_conn_idle_timeout(struct tevent_context *ev,
 */
 void ldapsrv_recv(struct stream_connection *c, uint16_t flags)
 {
-	struct ldapsrv_connection *conn = 
-		talloc_get_type(c->private_data, struct ldapsrv_connection);
-
-	if (conn->limits.ite) { /* clean initial timeout if any */
-		talloc_free(conn->limits.ite);
-		conn->limits.ite = NULL;
-	}
-
-	if (conn->limits.te) { /* clean idle timeout if any */
-		talloc_free(conn->limits.te);
-		conn->limits.te = NULL;
-	}
-
-	packet_recv(conn->packet);
-
-	/* set idle timeout */
-	conn->limits.te = event_add_timed(c->event.ctx, conn, 
-					   timeval_current_ofs(conn->limits.conn_idle_time, 0),
-					   ldapsrv_conn_idle_timeout, conn);
+	smb_panic(__location__);
 }
 
 /*
@@ -242,20 +149,7 @@ void ldapsrv_recv(struct stream_connection *c, uint16_t flags)
 */
 static void ldapsrv_send(struct stream_connection *c, uint16_t flags)
 {
-	struct ldapsrv_connection *conn = 
-		talloc_get_type(c->private_data, struct ldapsrv_connection);
-
-	packet_queue_run(conn->packet);
-}
-
-static void ldapsrv_conn_init_timeout(struct tevent_context *ev,
-				      struct tevent_timer *te,
-				      struct timeval t,
-				      void *private_data)
-{
-	struct ldapsrv_connection *conn = talloc_get_type(private_data, struct ldapsrv_connection);
-
-	ldapsrv_terminate_connection(conn, "Timeout. No requests after initial connection");
+	smb_panic(__location__);
 }
 
 static int ldapsrv_load_limits(struct ldapsrv_connection *conn)
@@ -356,14 +250,14 @@ failed:
 	return -1;
 }
 
-/*
-  remove a packet interface from the service level list
- */
-static int packet_interface_destructor(struct ldapsrv_packet_interfaces *packet_interface)
-{
-	DLIST_REMOVE(packet_interface->service->packet_interfaces, packet_interface);
-	return 0;
-}
+static struct tevent_req *ldapsrv_process_call_send(TALLOC_CTX *mem_ctx,
+						    struct tevent_context *ev,
+						    struct tevent_queue *call_queue,
+						    struct ldapsrv_call *call);
+static NTSTATUS ldapsrv_process_call_recv(struct tevent_req *req);
+
+static bool ldapsrv_call_read_next(struct ldapsrv_connection *conn);
+static void ldapsrv_accept_tls_done(struct tevent_req *subreq);
 
 /*
   initialise a server_context from a open socket and register a event handler
@@ -379,6 +273,9 @@ static void ldapsrv_accept(struct stream_connection *c,
 	struct socket_address *socket_address;
 	NTSTATUS status;
 	int port;
+	int ret;
+	struct tevent_req *subreq;
+	struct timeval endtime;
 
 	conn = talloc_zero(c, struct ldapsrv_connection);
 	if (!conn) {
@@ -386,10 +283,31 @@ static void ldapsrv_accept(struct stream_connection *c,
 		return;
 	}
 
-	conn->packet      = NULL;
+	conn->sockets.send_queue = tevent_queue_create(conn, "ldapsev send queue");
+	if (conn->sockets.send_queue == NULL) {
+		stream_terminate_connection(c,
+					    "ldapsrv_accept: tevent_queue_create failed");
+		return;
+	}
+
+	TALLOC_FREE(c->event.fde);
+
+	/*
+	 * Clone the fd that the connection isn't closed if we create a client
+	 * connection.
+	 */
+	ret = tstream_bsd_existing_socket(conn,
+					  socket_get_fd(c->socket),
+					  &conn->sockets.raw);
+	if (ret == -1) {
+		stream_terminate_connection(c,
+					    "ldapsrv_accept: out of memory");
+		return;
+	}
+	socket_set_flags(c->socket, SOCKET_FLAG_NOCLOSE);
+
 	conn->connection  = c;
 	conn->service     = ldapsrv_service;
-	conn->sockets.raw = c->socket;
 	conn->lp_ctx      = ldapsrv_service->task->lp_ctx;
 
 	c->private_data   = conn;
@@ -401,54 +319,9 @@ static void ldapsrv_accept(struct stream_connection *c,
 	}
 	port = socket_address->port;
 	talloc_free(socket_address);
-
-	if (port == 636) {
-		struct socket_context *tls_socket = tls_init_server(ldapsrv_service->tls_params, c->socket, 
-								    c->event.fde, NULL);
-		if (!tls_socket) {
-			ldapsrv_terminate_connection(conn, "ldapsrv_accept: tls_init_server() failed");
-			return;
-		}
-		talloc_steal(c, tls_socket);
-		c->socket = tls_socket;
-		conn->sockets.tls = tls_socket;
-
-	} else if (port == 3268) /* Global catalog */ {
+	if (port == 3268) /* Global catalog */ {
 		conn->global_catalog = true;
 	}
-	conn->packet = packet_init(conn);
-	if (conn->packet == NULL) {
-		ldapsrv_terminate_connection(conn, "out of memory");
-		return;
-	}
-
-	packet_set_private(conn->packet, conn);
-	packet_set_socket(conn->packet, c->socket);
-	packet_set_callback(conn->packet, ldapsrv_decode);
-	packet_set_full_request(conn->packet, ldap_full_packet);
-	packet_set_error_handler(conn->packet, ldapsrv_error_handler);
-	packet_set_event_context(conn->packet, c->event.ctx);
-	packet_set_fde(conn->packet, c->event.fde);
-	packet_set_serialise(conn->packet);
-
-	if (conn->sockets.tls) {
-		packet_set_unreliable_select(conn->packet);
-	}
-
-	/* Ensure we don't get packets until the database is ready below */
-	packet_recv_disable(conn->packet);
-
-	/* add to the service level list of packet interfaces, to
-	 * allow us to serialise between connections
-	 */
-	conn->packet_interface = talloc(conn, struct ldapsrv_packet_interfaces);
-	if (conn->packet_interface == NULL) {
-		ldapsrv_terminate_connection(conn, "out of memory");
-	}
-	conn->packet_interface->service = ldapsrv_service;
-	conn->packet_interface->packet = conn->packet;
-	DLIST_ADD(conn->service->packet_interfaces, conn->packet_interface);
-	talloc_set_destructor(conn->packet_interface, packet_interface_destructor);
 
 	server_credentials = cli_credentials_init(conn);
 	if (!server_credentials) {
@@ -477,13 +350,405 @@ static void ldapsrv_accept(struct stream_connection *c,
 	/* register the server */	
 	irpc_add_name(c->msg_ctx, "ldap_server");
 
-	/* set connections limits */
-	conn->limits.ite = event_add_timed(c->event.ctx, conn, 
-					   timeval_current_ofs(conn->limits.initial_timeout, 0),
-					   ldapsrv_conn_init_timeout, conn);
+	conn->sockets.active = conn->sockets.raw;
 
-	packet_recv_enable(conn->packet);
+	if (port != 636) {
+		ldapsrv_call_read_next(conn);
+		return;
+	}
 
+	endtime = timeval_current_ofs(conn->limits.conn_idle_time, 0);
+
+	subreq = tstream_tls_accept_send(conn,
+					 conn->connection->event.ctx,
+					 conn->sockets.raw,
+					 conn->service->tls_params);
+	if (subreq == NULL) {
+		ldapsrv_terminate_connection(conn, "ldapsrv_accept: "
+				"no memory for tstream_tls_accept_send");
+		return;
+	}
+	tevent_req_set_endtime(subreq,
+			       conn->connection->event.ctx,
+			       endtime);
+	tevent_req_set_callback(subreq, ldapsrv_accept_tls_done, conn);
+}
+
+static void ldapsrv_accept_tls_done(struct tevent_req *subreq)
+{
+	struct ldapsrv_connection *conn =
+		tevent_req_callback_data(subreq,
+		struct ldapsrv_connection);
+	int ret;
+	int sys_errno;
+
+	ret = tstream_tls_accept_recv(subreq, &sys_errno,
+				      conn, &conn->sockets.tls);
+	TALLOC_FREE(subreq);
+	if (ret == -1) {
+		const char *reason;
+
+		reason = talloc_asprintf(conn, "ldapsrv_accept_tls_loop: "
+					 "tstream_tls_accept_recv() - %d:%s",
+					 sys_errno, strerror(sys_errno));
+		if (!reason) {
+			reason = "ldapsrv_accept_tls_loop: "
+				 "tstream_tls_accept_recv() - failed";
+		}
+
+		ldapsrv_terminate_connection(conn, reason);
+		return;
+	}
+
+	conn->sockets.active = conn->sockets.tls;
+	ldapsrv_call_read_next(conn);
+}
+
+static void ldapsrv_call_read_done(struct tevent_req *subreq);
+
+static bool ldapsrv_call_read_next(struct ldapsrv_connection *conn)
+{
+	struct tevent_req *subreq;
+
+	if (timeval_is_zero(&conn->limits.endtime)) {
+		conn->limits.endtime =
+			timeval_current_ofs(conn->limits.initial_timeout, 0);
+	} else {
+		conn->limits.endtime =
+			timeval_current_ofs(conn->limits.conn_idle_time, 0);
+	}
+
+	/*
+	 * The minimun size of a LDAP pdu is 7 bytes
+	 *
+	 * dumpasn1 -hh ldap-unbind-min.dat
+	 *
+	 *     <30 05 02 01 09 42 00>
+	 *    0    5: SEQUENCE {
+	 *     <02 01 09>
+	 *    2    1:   INTEGER 9
+	 *     <42 00>
+	 *    5    0:   [APPLICATION 2]
+	 *          :     Error: Object has zero length.
+	 *          :   }
+	 *
+	 * dumpasn1 -hh ldap-unbind-windows.dat
+	 *
+	 *     <30 84 00 00 00 05 02 01 09 42 00>
+	 *    0    5: SEQUENCE {
+	 *     <02 01 09>
+	 *    6    1:   INTEGER 9
+	 *     <42 00>
+	 *    9    0:   [APPLICATION 2]
+	 *          :     Error: Object has zero length.
+	 *          :   }
+	 *
+	 * This means using an initial read size
+	 * of 7 is ok.
+	 */
+	subreq = tstream_read_pdu_blob_send(conn,
+					    conn->connection->event.ctx,
+					    conn->sockets.active,
+					    7, /* initial_read_size */
+					    ldap_full_packet,
+					    conn);
+	if (subreq == NULL) {
+		ldapsrv_terminate_connection(conn, "ldapsrv_call_read_next: "
+				"no memory for tstream_read_pdu_blob_send");
+		return false;
+	}
+	tevent_req_set_endtime(subreq,
+			       conn->connection->event.ctx,
+			       conn->limits.endtime);
+	tevent_req_set_callback(subreq, ldapsrv_call_read_done, conn);
+	return true;
+}
+
+static void ldapsrv_call_process_done(struct tevent_req *subreq);
+
+static void ldapsrv_call_read_done(struct tevent_req *subreq)
+{
+	struct ldapsrv_connection *conn =
+		tevent_req_callback_data(subreq,
+		struct ldapsrv_connection);
+	NTSTATUS status;
+	struct ldapsrv_call *call;
+	struct asn1_data *asn1;
+	DATA_BLOB blob;
+
+	call = talloc_zero(conn, struct ldapsrv_call);
+	if (!call) {
+		ldapsrv_terminate_connection(conn, "no memory");
+		return;
+	}
+
+	call->conn = conn;
+
+	status = tstream_read_pdu_blob_recv(subreq,
+					    call,
+					    &blob);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		const char *reason;
+
+		reason = talloc_asprintf(call, "ldapsrv_call_loop: "
+					 "tstream_read_pdu_blob_recv() - %s",
+					 nt_errstr(status));
+		if (!reason) {
+			reason = nt_errstr(status);
+		}
+
+		ldapsrv_terminate_connection(conn, reason);
+		return;
+	}
+
+	asn1 = asn1_init(call);
+	if (asn1 == NULL) {
+		ldapsrv_terminate_connection(conn, "no memory");
+		return;
+	}
+
+	call->request = talloc(call, struct ldap_message);
+	if (call->request == NULL) {
+		ldapsrv_terminate_connection(conn, "no memory");
+		return;
+	}
+
+	if (!asn1_load(asn1, blob)) {
+		ldapsrv_terminate_connection(conn, "asn1_load failed");
+		return;
+	}
+
+	status = ldap_decode(asn1, samba_ldap_control_handlers(),
+			     call->request);
+	if (!NT_STATUS_IS_OK(status)) {
+		ldapsrv_terminate_connection(conn, nt_errstr(status));
+		return;
+	}
+
+	data_blob_free(&blob);
+
+
+	/* queue the call in the global queue */
+	subreq = ldapsrv_process_call_send(call,
+					   conn->connection->event.ctx,
+					   conn->service->call_queue,
+					   call);
+	if (subreq == NULL) {
+		ldapsrv_terminate_connection(conn, "ldapsrv_process_call_send failed");
+		return;
+	}
+	tevent_req_set_callback(subreq, ldapsrv_call_process_done, call);
+	conn->active_call = subreq;
+}
+
+static void ldapsrv_call_writev_done(struct tevent_req *subreq);
+
+static void ldapsrv_call_process_done(struct tevent_req *subreq)
+{
+	struct ldapsrv_call *call =
+		tevent_req_callback_data(subreq,
+		struct ldapsrv_call);
+	struct ldapsrv_connection *conn = call->conn;
+	NTSTATUS status;
+	DATA_BLOB blob = data_blob_null;
+
+	conn->active_call = NULL;
+
+	status = ldapsrv_process_call_recv(subreq);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		ldapsrv_terminate_connection(conn, nt_errstr(status));
+		return;
+	}
+
+	/* build all the replies into a single blob */
+	while (call->replies) {
+		DATA_BLOB b;
+		bool ret;
+
+		if (!ldap_encode(call->replies->msg, samba_ldap_control_handlers(), &b, call)) {
+			DEBUG(0,("Failed to encode ldap reply of type %d\n",
+				 call->replies->msg->type));
+			ldapsrv_terminate_connection(conn, "ldap_encode failed");
+			return;
+		}
+
+		ret = data_blob_append(call, &blob, b.data, b.length);
+		data_blob_free(&b);
+
+		talloc_set_name_const(blob.data, "Outgoing, encoded LDAP packet");
+
+		if (!ret) {
+			ldapsrv_terminate_connection(conn, "data_blob_append failed");
+			return;
+		}
+
+		DLIST_REMOVE(call->replies, call->replies);
+	}
+
+	if (blob.length == 0) {
+		TALLOC_FREE(call);
+
+		ldapsrv_call_read_next(conn);
+		return;
+	}
+
+	call->out_iov.iov_base = blob.data;
+	call->out_iov.iov_len = blob.length;
+
+	subreq = tstream_writev_queue_send(call,
+					   conn->connection->event.ctx,
+					   conn->sockets.active,
+					   conn->sockets.send_queue,
+					   &call->out_iov, 1);
+	if (subreq == NULL) {
+		ldapsrv_terminate_connection(conn, "stream_writev_queue_send failed");
+		return;
+	}
+	tevent_req_set_callback(subreq, ldapsrv_call_writev_done, call);
+}
+
+static void ldapsrv_call_postprocess_done(struct tevent_req *subreq);
+
+static void ldapsrv_call_writev_done(struct tevent_req *subreq)
+{
+	struct ldapsrv_call *call =
+		tevent_req_callback_data(subreq,
+		struct ldapsrv_call);
+	struct ldapsrv_connection *conn = call->conn;
+	int sys_errno;
+	int rc;
+
+	rc = tstream_writev_queue_recv(subreq, &sys_errno);
+	TALLOC_FREE(subreq);
+	if (rc == -1) {
+		const char *reason;
+
+		reason = talloc_asprintf(call, "ldapsrv_call_writev_done: "
+					 "tstream_writev_queue_recv() - %d:%s",
+					 sys_errno, strerror(sys_errno));
+		if (reason == NULL) {
+			reason = "ldapsrv_call_writev_done: "
+				 "tstream_writev_queue_recv() failed";
+		}
+
+		ldapsrv_terminate_connection(conn, reason);
+		return;
+	}
+
+	if (call->postprocess_send) {
+		subreq = call->postprocess_send(call,
+						conn->connection->event.ctx,
+						call->postprocess_private);
+		if (subreq == NULL) {
+			ldapsrv_terminate_connection(conn, "ldapsrv_call_writev_done: "
+					"call->postprocess_send - no memory");
+			return;
+		}
+		tevent_req_set_callback(subreq,
+					ldapsrv_call_postprocess_done,
+					call);
+		return;
+	}
+
+	TALLOC_FREE(call);
+
+	ldapsrv_call_read_next(conn);
+}
+
+static void ldapsrv_call_postprocess_done(struct tevent_req *subreq)
+{
+	struct ldapsrv_call *call =
+		tevent_req_callback_data(subreq,
+		struct ldapsrv_call);
+	struct ldapsrv_connection *conn = call->conn;
+	NTSTATUS status;
+
+	status = call->postprocess_recv(subreq);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		const char *reason;
+
+		reason = talloc_asprintf(call, "ldapsrv_call_postprocess_done: "
+					 "call->postprocess_recv() - %s",
+					 nt_errstr(status));
+		if (reason == NULL) {
+			reason = nt_errstr(status);
+		}
+
+		ldapsrv_terminate_connection(conn, reason);
+		return;
+	}
+
+	TALLOC_FREE(call);
+
+	ldapsrv_call_read_next(conn);
+}
+
+struct ldapsrv_process_call_state {
+	struct ldapsrv_call *call;
+};
+
+static void ldapsrv_process_call_trigger(struct tevent_req *req,
+					 void *private_data);
+
+static struct tevent_req *ldapsrv_process_call_send(TALLOC_CTX *mem_ctx,
+						    struct tevent_context *ev,
+						    struct tevent_queue *call_queue,
+						    struct ldapsrv_call *call)
+{
+	struct tevent_req *req;
+	struct ldapsrv_process_call_state *state;
+	bool ok;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct ldapsrv_process_call_state);
+	if (req == NULL) {
+		return req;
+	}
+
+	state->call = call;
+
+	ok = tevent_queue_add(call_queue, ev, req,
+			      ldapsrv_process_call_trigger, NULL);
+	if (!ok) {
+		tevent_req_nomem(NULL, req);
+		return tevent_req_post(req, ev);
+	}
+
+	return req;
+}
+
+static void ldapsrv_process_call_trigger(struct tevent_req *req,
+					 void *private_data)
+{
+	struct ldapsrv_process_call_state *state =
+		tevent_req_data(req,
+		struct ldapsrv_process_call_state);
+	NTSTATUS status;
+
+	/* make the call */
+	status = ldapsrv_do_call(state->call);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	tevent_req_done(req);
+}
+
+static NTSTATUS ldapsrv_process_call_recv(struct tevent_req *req)
+{
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	tevent_req_received(req);
+	return NT_STATUS_OK;
 }
 
 static void ldapsrv_accept_nonpriv(struct stream_connection *c)
@@ -562,7 +827,7 @@ static NTSTATUS add_socket(struct tevent_context *event_context,
 		return status;
 	}
 
-	if (tls_support(ldap_service->tls_params)) {
+	if (tstream_tls_params_enabled(ldap_service->tls_params)) {
 		/* add ldaps server */
 		port = 636;
 		status = stream_setup_socket(event_context, lp_ctx,
@@ -616,6 +881,7 @@ static void ldapsrv_task_init(struct task_server *task)
 #ifdef WITH_LDAPI_PRIV_SOCKET
 	char *priv_dir;
 #endif
+	const char *dns_host_name;
 	struct ldapsrv_service *ldap_service;
 	NTSTATUS status;
 	const struct model_ops *model_ops;
@@ -645,8 +911,28 @@ static void ldapsrv_task_init(struct task_server *task)
 
 	ldap_service->task = task;
 
-	ldap_service->tls_params = tls_initialise(ldap_service, task->lp_ctx);
-	if (ldap_service->tls_params == NULL) goto failed;
+	dns_host_name = talloc_asprintf(ldap_service, "%s.%s",
+					lpcfg_netbios_name(task->lp_ctx),
+					lpcfg_dnsdomain(task->lp_ctx));
+	if (dns_host_name == NULL) goto failed;
+
+	status = tstream_tls_params_server(ldap_service,
+					   dns_host_name,
+					   lpcfg_tls_enabled(task->lp_ctx),
+					   lpcfg_tls_keyfile(ldap_service, task->lp_ctx),
+					   lpcfg_tls_certfile(ldap_service, task->lp_ctx),
+					   lpcfg_tls_cafile(ldap_service, task->lp_ctx),
+					   lpcfg_tls_crlfile(ldap_service, task->lp_ctx),
+					   lpcfg_tls_dhpfile(ldap_service, task->lp_ctx),
+					   &ldap_service->tls_params);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("ldapsrv failed tstream_tls_patams_server - %s\n",
+			 nt_errstr(status)));
+		goto failed;
+	}
+
+	ldap_service->call_queue = tevent_queue_create(ldap_service, "ldapsrv_call_queue");
+	if (ldap_service->call_queue == NULL) goto failed;
 
 	if (lpcfg_interfaces(task->lp_ctx) && lpcfg_bind_interfaces_only(task->lp_ctx)) {
 		struct interface *ifaces;
