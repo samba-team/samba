@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 bld.SAMBA_SUBSYSTEM('DSDB_MODULE_HELPERS',
-	source='util.c ridalloc.c',
+	source='util.c ridalloc.c acl_util.c',
 	autoproto='util_proto.h',
 	deps='ldb LIBNDR SAMDB_SCHEMA MESSAGING'
 	)

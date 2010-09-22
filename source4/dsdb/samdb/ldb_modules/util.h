@@ -24,6 +24,8 @@ struct dsdb_schema;
 struct GUID;
 struct dsdb_attribute;
 struct dsdb_fsmo_extended_op;
+struct security_descriptor;
+struct dom_sid;
 
 #include "dsdb/samdb/ldb_modules/util_proto.h"
 #include "dsdb/common/util.h"

@@ -5,7 +5,8 @@ PRIVATE_DEPENDENCIES = LIBLDB LIBNDR SAMDB_SCHEMA MESSAGING
 
 DSDB_MODULE_HELPERS_OBJ_FILES = \
 	$(dsdbsrcdir)/samdb/ldb_modules/util.o \
-	$(dsdbsrcdir)/samdb/ldb_modules/ridalloc.o
+	$(dsdbsrcdir)/samdb/ldb_modules/ridalloc.o \
+	$(dsdbsrcdir)/samdb/ldb_modules/acl_util.o
 
 $(eval $(call proto_header_template,$(dsdbsrcdir)/samdb/ldb_modules/util_proto.h,$(DSDB_MODULE_HELPERS_OBJ_FILES:.o=.c)))
 
