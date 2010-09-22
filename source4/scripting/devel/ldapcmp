@@ -43,10 +43,19 @@ summary = {}
 class LDAPBase(object):
 
     def __init__(self, host, cmd_opts, creds, lp):
+        ldb_options = []
+        samdb_url = host
         if not "://" in host:
-            self.host = "ldap://" + host + ":389"
-        self.ldb = Ldb(self.host, credentials=creds, lp=lp,
-                             options=["modules:paged_searches"])
+            if os.path.isfile(host):
+                samdb_url = "tdb://%s" % host
+            else:
+                samdb_url = "ldap://%s:389" % host
+                # user 'paged_search' module when connecting remotely
+                ldb_options = ["modules:paged_searches"]
+        self.ldb = Ldb(url=samdb_url,
+                       credentials=creds,
+                       lp=lp,
+                       options=ldb_options)
         self.two_domains = cmd_opts.two
         self.quiet = cmd_opts.quiet
         self.host = host
