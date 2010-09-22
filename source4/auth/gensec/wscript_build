@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 bld.SAMBA_LIBRARY('gensec',
-	source='gensec.c socket.c',
+	source='gensec.c socket.c gensec_tstream.c',
 	pc_files='gensec.pc',
 	autoproto='gensec_proto.h',
 	public_deps='CREDENTIALS LIBSAMBA-UTIL LIBCRYPTO ASN1_UTIL samba_socket LIBPACKET LIBTSOCKET UTIL_TEVENT',
