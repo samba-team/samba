@@ -784,22 +784,15 @@ WERROR reg_deleteallvalues(struct registry_key *key)
  * Note that reg_deletekey returns ACCESS_DENIED when called on a
  * key that has subkeys.
  */
-static WERROR reg_deletekey_recursive_internal(TALLOC_CTX *ctx,
-					       struct registry_key *parent,
+static WERROR reg_deletekey_recursive_internal(struct registry_key *parent,
 					       const char *path,
 					       bool del_key)
 {
-	TALLOC_CTX *mem_ctx = NULL;
 	WERROR werr = WERR_OK;
 	struct registry_key *key;
 	char *subkey_name = NULL;
 	uint32 i;
-
-	mem_ctx = talloc_new(ctx);
-	if (mem_ctx == NULL) {
-		werr = WERR_NOMEM;
-		goto done;
-	}
+	TALLOC_CTX *mem_ctx = talloc_stackframe();
 
 	/* recurse through subkeys first */
 	werr = reg_openkey(mem_ctx, parent, path, REG_KEY_ALL, &key);
@@ -816,9 +809,7 @@ static WERROR reg_deletekey_recursive_internal(TALLOC_CTX *ctx,
 	 */
 	for (i = regsubkey_ctr_numkeys(key->subkeys) ; i > 0; i--) {
 		subkey_name = regsubkey_ctr_specific_key(key->subkeys, i-1);
-		werr = reg_deletekey_recursive_internal(mem_ctx, key,
-					subkey_name,
-					true);
+		werr = reg_deletekey_recursive_internal(key, subkey_name, true);
 		W_ERROR_NOT_OK_GOTO_DONE(werr);
 	}
 
@@ -832,8 +823,7 @@ done:
 	return werr;
 }
 
-static WERROR reg_deletekey_recursive_trans(TALLOC_CTX *ctx,
-					    struct registry_key *parent,
+static WERROR reg_deletekey_recursive_trans(struct registry_key *parent,
 					    const char *path,
 					    bool del_key)
 {
@@ -847,7 +837,7 @@ static WERROR reg_deletekey_recursive_trans(TALLOC_CTX *ctx,
 		return werr;
 	}
 
-	werr = reg_deletekey_recursive_internal(ctx, parent, path, del_key);
+	werr = reg_deletekey_recursive_internal(parent, path, del_key);
 
 	if (!W_ERROR_IS_OK(werr)) {
 		DEBUG(1, (__location__ " failed to delete key '%s' from key "
@@ -871,17 +861,15 @@ static WERROR reg_deletekey_recursive_trans(TALLOC_CTX *ctx,
 	return werr;
 }
 
-WERROR reg_deletekey_recursive(TALLOC_CTX *ctx,
-			       struct registry_key *parent,
+WERROR reg_deletekey_recursive(struct registry_key *parent,
 			       const char *path)
 {
-	return reg_deletekey_recursive_trans(ctx, parent, path, true);
+	return reg_deletekey_recursive_trans(parent, path, true);
 }
 
-WERROR reg_deletesubkeys_recursive(TALLOC_CTX *ctx,
-				   struct registry_key *parent,
+WERROR reg_deletesubkeys_recursive(struct registry_key *parent,
 				   const char *path)
 {
-	return reg_deletekey_recursive_trans(ctx, parent, path, false);
+	return reg_deletekey_recursive_trans(parent, path, false);
 }
 
