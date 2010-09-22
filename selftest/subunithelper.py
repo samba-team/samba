@@ -338,3 +338,4 @@ class FilterOps(testtools.testresult.TestResult):
         self.total_xfail = 0
         self.total_error = 0
         self.total_fail = 0
+        self.error_added = 0
