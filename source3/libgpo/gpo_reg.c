@@ -326,7 +326,7 @@ static WERROR gp_reg_del_groupmembership(TALLOC_CTX *mem_ctx,
 					   flags);
 	W_ERROR_HAVE_NO_MEMORY(path);
 
-	return reg_deletekey_recursive(mem_ctx, key, path);
+	return reg_deletekey_recursive(key, path);
 
 }
 
@@ -447,7 +447,7 @@ static WERROR gp_del_reg_state(TALLOC_CTX *mem_ctx,
 			       struct registry_key *key,
 			       const char *path)
 {
-	return reg_deletesubkeys_recursive(mem_ctx, key, path);
+	return reg_deletesubkeys_recursive(key, path);
 }
 
 /****************************************************************

@@ -721,7 +721,7 @@ static WERROR smbconf_reg_drop(struct smbconf_ctx *ctx)
 		goto done;
 	}
 
-	werr = reg_deletekey_recursive(mem_ctx, parent_key, p+1);
+	werr = reg_deletekey_recursive(parent_key, p+1);
 
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
@@ -913,8 +913,7 @@ static WERROR smbconf_reg_delete_share(struct smbconf_ctx *ctx,
 	TALLOC_CTX *mem_ctx = talloc_stackframe();
 
 	if (servicename != NULL) {
-		werr = reg_deletekey_recursive(mem_ctx, rpd(ctx)->base_key,
-					       servicename);
+		werr = reg_deletekey_recursive(rpd(ctx)->base_key, servicename);
 	} else {
 		werr = smbconf_reg_delete_values(rpd(ctx)->base_key);
 	}

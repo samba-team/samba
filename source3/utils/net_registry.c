@@ -878,7 +878,7 @@ static WERROR import_delete_key(struct import_ctx* ctx,
 		name = subkeyname;
 	}
 
-	werr = reg_deletekey_recursive(mem_ctx, parent, name);
+	werr = reg_deletekey_recursive(parent, name);
 	if (!W_ERROR_IS_OK(werr)) {
 		d_fprintf(stderr, "reg_deletekey_recursive %s: %s\n", _("failed"),
 			  win_errstr(werr));
