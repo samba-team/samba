@@ -5976,8 +5976,9 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 			  "%s -> %s\n", smb_fname_str_dbg(fsp->fsp_name),
 			  smb_fname_str_dbg(smb_fname_dst)));
 
-		if (lp_map_archive(SNUM(conn)) ||
-		    lp_store_dos_attributes(SNUM(conn))) {
+		if (!lp_unix_extensions() &&
+		    (lp_map_archive(SNUM(conn)) ||
+		    lp_store_dos_attributes(SNUM(conn)))) {
 			/* We must set the archive bit on the newly
 			   renamed file. */
 			if (SMB_VFS_STAT(conn, smb_fname_dst) == 0) {
