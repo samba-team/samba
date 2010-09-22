@@ -276,7 +276,7 @@ static int reg_format_value_hex(struct reg_format* f, const char* name, uint32_t
 
 	cpl += n;
 
-	for (ptr=data; len>1; len--,ptr++) {
+	for (ptr=(const unsigned char *)data; len>1; len--,ptr++) {
 		n = cbuf_printf(line, "%02x,", (unsigned)(*ptr));
 		if (n < 0) {
 			return n;
@@ -641,7 +641,7 @@ struct reg_format_file_opt {
 	const char* sep;
 };
 
-struct reg_format_file_opt reg_format_file_opt(void* mem_ctx, const char* opt)
+static struct reg_format_file_opt reg_format_file_opt(void* mem_ctx, const char* opt)
 {
 	static const struct reg_format_file_opt REG4 = {
 		.head = "REGEDIT4",
