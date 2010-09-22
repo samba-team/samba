@@ -379,13 +379,10 @@ int _smb_verify_password( pam_handle_t * pamh, struct samu *sampass,
         }
     }
 
-    data_name = SMB_MALLOC_ARRAY(char, sizeof(FAIL_PREFIX) + strlen( name ));
-    if (data_name == NULL) {
+    if (asprintf(&data_name, "-SMB-FAIL- %s", name) == -1) {
         _log_err(pamh, LOG_CRIT, "no memory for data-name" );
         return PAM_AUTH_ERR;
     }
-    strncpy( data_name, FAIL_PREFIX, sizeof(FAIL_PREFIX) );
-    strncpy( data_name + sizeof(FAIL_PREFIX) - 1, name, strlen( name ) + 1 );
 
     /*
      * The password we were given wasn't an encrypted password, or it

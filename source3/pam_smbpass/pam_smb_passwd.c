@@ -176,17 +176,12 @@ int pam_sm_chauthtok(pam_handle_t *pamh, int flags,
         if (getuid() != 0 && !(flags & PAM_CHANGE_EXPIRED_AUTHTOK)) {
 
             /* tell user what is happening */
-#define greeting "Changing password for "
-            Announce = SMB_MALLOC_ARRAY(char, sizeof(greeting)+strlen(user));
-            if (Announce == NULL) {
-                _log_err(pamh, LOG_CRIT, "password: out of memory");
-                TALLOC_FREE(sampass);
-                CatchSignal(SIGPIPE, oldsig_handler);
-                return PAM_BUF_ERR;
-            }
-            strncpy( Announce, greeting, sizeof(greeting) );
-            strncpy( Announce+sizeof(greeting)-1, user, strlen(user)+1 );
-#undef greeting
+		if (asprintf(&Announce, "Changing password for %s", user) == -1) {
+			_log_err(pamh, LOG_CRIT, "password: out of memory");
+			TALLOC_FREE(sampass);
+			CatchSignal(SIGPIPE, oldsig_handler);
+			return PAM_BUF_ERR;
+		}
 
             set( SMB__OLD_PASSWD, ctrl );
             retval = _smb_read_password( pamh, ctrl, Announce, "Current SMB password: ",

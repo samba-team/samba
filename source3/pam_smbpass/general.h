@@ -118,7 +118,6 @@ static const SMB_Ctrls smb_args[SMB_CTRLS_] = {
  * to authenticate themself.
  */
 
-#define FAIL_PREFIX			"-SMB-FAIL-"
 #define SMB_MAX_RETRIES			3
 
 struct _pam_failed_auth {
