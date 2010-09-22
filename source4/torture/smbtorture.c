@@ -58,7 +58,6 @@ static bool run_matching(struct torture_context *torture,
 		if (gen_fnmatch(expr, name) == 0) {
 			*matched = true;
 			reload_charcnv(torture->lp_ctx);
-			torture->active_testname = name;
 			if (restricted != NULL)
 				ret &= torture_run_suite_restricted(torture, o, restricted);
 			else
@@ -72,7 +71,6 @@ static bool run_matching(struct torture_context *torture,
 		if (gen_fnmatch(expr, name) == 0) {
 			*matched = true;
 			reload_charcnv(torture->lp_ctx);
-			torture->active_testname = name;
 			ret &= torture_run_tcase_restricted(torture, t, restricted);
 		}
 		for (p = t->tests; p; p = p->next) {
@@ -80,7 +78,6 @@ static bool run_matching(struct torture_context *torture,
 			if (gen_fnmatch(expr, name) == 0) {
 				*matched = true;
 				reload_charcnv(torture->lp_ctx);
-				torture->active_testname = name;
 				ret &= torture_run_test_restricted(torture, t, p, restricted);
 			}
 		}

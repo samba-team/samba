@@ -84,7 +84,6 @@ struct torture_context
 {
 	struct torture_results *results;
 
-	char *active_testname;
 	struct torture_test *active_test;
 	struct torture_tcase *active_tcase;
 
@@ -93,7 +92,7 @@ struct torture_context
 
 	/** Directory used for temporary test data */
 	const char *outputdir;
-	
+
 	/** Event context */
 	struct tevent_context *ev;
 

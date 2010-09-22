@@ -285,12 +285,6 @@ bool torture_run_suite_restricted(struct torture_context *context,
 	/* FIXME: Adjust torture_suite_children_count if restricted != NULL */
 	context->results->ui_ops->progress(context,
 		torture_suite_children_count(suite), TORTURE_PROGRESS_SET);
-	old_testname = context->active_testname;
-	if (old_testname != NULL)
-		context->active_testname = talloc_asprintf(context, "%s-%s",
-							   old_testname, suite->name);
-	else
-		context->active_testname = talloc_strdup(context, suite->name);
 
 	for (tcase = suite->testcases; tcase; tcase = tcase->next) {
 		ret &= torture_run_tcase_restricted(context, tcase, restricted);
@@ -301,9 +295,6 @@ bool torture_run_suite_restricted(struct torture_context *context,
 		ret &= torture_run_suite_restricted(context, tsuite, restricted);
 		context->results->ui_ops->progress(context, 0, TORTURE_PROGRESS_POP);
 	}
-
-	talloc_free(context->active_testname);
-	context->active_testname = old_testname;
 
 	if (context->results->ui_ops->suite_finish)
 		context->results->ui_ops->suite_finish(context, suite);
@@ -353,8 +344,6 @@ static bool internal_torture_run_test(struct torture_context *context,
 	char *subunit_testname = NULL;
 
 	if (tcase == NULL || strcmp(test->name, tcase->name) != 0) { 
-		old_testname = context->active_testname;
-		context->active_testname = talloc_asprintf(context, "%s-%s", old_testname, test->name);
 		subunit_testname = talloc_asprintf(context, "%s.%s", tcase->name, test->name);
 	} else {
 		subunit_testname = test->name;
@@ -405,10 +394,6 @@ static bool internal_torture_run_test(struct torture_context *context,
 	
 	talloc_free(context->last_reason);
 
-	if (tcase == NULL || strcmp(test->name, tcase->name) != 0) { 
-		talloc_free(context->active_testname);
-		context->active_testname = old_testname;
-	}
 	context->active_test = NULL;
 	context->active_tcase = NULL;
 
@@ -450,9 +435,6 @@ bool torture_run_tcase_restricted(struct torture_context *context,
 		}
 	}
 
-	old_testname = context->active_testname;
-	context->active_testname = talloc_asprintf(context, "%s-%s", 
-						   old_testname, tcase->name);
 	for (test = tcase->tests; test; test = test->next) {
 		if (setup_succeeded) {
 			ret &= internal_torture_run_test(context, tcase, test,
@@ -464,8 +446,6 @@ bool torture_run_tcase_restricted(struct torture_context *context,
 			torture_ui_test_result(context, TORTURE_FAIL, setup_reason);
 		}
 	}
-	talloc_free(context->active_testname);
-	context->active_testname = old_testname;
 
 	if (setup_succeeded && tcase->fixture_persistent && tcase->teardown &&
 		!tcase->teardown(context, tcase->data)) {
