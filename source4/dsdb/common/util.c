@@ -4075,3 +4075,49 @@ const char *samdb_dn_to_dnshostname(struct ldb_context *ldb,
 
 	return samdb_result_string(res->msgs[0], "dNSHostName", NULL);
 }
+
+/*
+  returns true if an attribute is in the filter,
+  false otherwise, provided that attribute value is provided with the expression
+*/
+bool dsdb_attr_in_parse_tree(struct ldb_parse_tree *tree,
+			     const char *attr)
+{
+       unsigned int i;
+       switch (tree->operation) {
+       case LDB_OP_AND:
+       case LDB_OP_OR:
+               for (i=0;i<tree->u.list.num_elements;i++) {
+                       if (dsdb_attr_in_parse_tree(tree->u.list.elements[i],
+                                                       attr))
+                               return true;
+               }
+               return false;
+       case LDB_OP_NOT:
+               return dsdb_attr_in_parse_tree(tree->u.isnot.child, attr);
+       case LDB_OP_EQUALITY:
+       case LDB_OP_GREATER:
+       case LDB_OP_LESS:
+       case LDB_OP_APPROX:
+               if (ldb_attr_cmp(tree->u.equality.attr, attr) == 0) {
+                       return true;
+               }
+               return false;
+       case LDB_OP_SUBSTRING:
+               if (ldb_attr_cmp(tree->u.substring.attr, attr) == 0) {
+                       return true;
+               }
+               return false;
+       case LDB_OP_PRESENT:
+	       /* (attrname=*) is not filtered out */
+               return false;
+       case LDB_OP_EXTENDED:
+               if (tree->u.extended.attr &&
+                   ldb_attr_cmp(tree->u.extended.attr, attr) == 0) {
+		       return true;
+               }
+               return false;
+       }
+       return false;
+}
+
