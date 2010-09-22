@@ -67,6 +67,11 @@ static WERROR kccsrv_connect_samdb(struct kccsrv_service *service, struct loadpa
 
 	service->ntds_guid = *ntds_guid;
 
+	if (samdb_rodc(service->samdb, &service->am_rodc) != LDB_SUCCESS) {
+		DEBUG(0,(__location__ ": Failed to determine RODC status\n"));
+		return WERR_DS_UNAVAILABLE;
+	}
+
 	return WERR_OK;
 }
 

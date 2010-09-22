@@ -1077,7 +1077,6 @@ static NTSTATUS kcctpl_get_all_bridgehead_dcs(struct kccsrv_service *service,
 	const char * const dc_attrs[] = { "objectGUID", "options", NULL };
 	struct ldb_message_element *el;
 	unsigned int i;
-	bool rodc;
 	const char *transport_name, *transport_address_attr;
 	uint64_t site_opts;
 
@@ -1155,14 +1154,6 @@ static NTSTATUS kcctpl_get_all_bridgehead_dcs(struct kccsrv_service *service,
 	}
 
 	el = ldb_msg_find_element(transport, "bridgeheadServerListBL");
-
-	ret = samdb_rodc(ldb, &rodc);
-	if (ret != LDB_SUCCESS) {
-		DEBUG(1, (__location__ ": unable to tell if we are an RODC: %s\n",
-			  ldb_strerror(ret)));
-		talloc_free(tmp_ctx);
-		return NT_STATUS_INTERNAL_DB_CORRUPTION;
-	}
 
 	transport_name = samdb_result_string(transport, "name", NULL);
 	if (!transport_name) {
@@ -3151,7 +3142,7 @@ static NTSTATUS kcctpl_create_connections(struct kccsrv_service *service,
 					  bool *_found_failed_dcs,
 					  bool *_connected)
 {
-	bool connected, found_failed_dcs, partial_replica_okay, rodc;
+	bool connected, found_failed_dcs, partial_replica_okay;
 	NTSTATUS status;
 	struct ldb_message *site;
 	TALLOC_CTX *tmp_ctx;
@@ -3231,14 +3222,6 @@ static NTSTATUS kcctpl_create_connections(struct kccsrv_service *service,
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
-	ret = samdb_rodc(ldb, &rodc);
-	if (ret != LDB_SUCCESS) {
-		DEBUG(1, (__location__ ": Unable to tell if we are an RODC: %s\n",
-			  ldb_strerror(ret)));
-		talloc_free(tmp_ctx);
-		return NT_STATUS_INTERNAL_DB_CORRUPTION;
-	}
-
 	for (i = 0; i < st_edge_list.count; i++) {
 		struct kcctpl_multi_edge *edge;
 		struct GUID other_site_id;
@@ -3309,7 +3292,7 @@ static NTSTATUS kcctpl_create_connections(struct kccsrv_service *service,
 			return status;
 		}
 
-		if (rodc) {
+		if (service->am_rodc) {
 			/* TODO: l_bridgehad = nTDSDSA of local DC */
 		} else {
 			status = kcctpl_get_bridgehead_dc(service, tmp_ctx,

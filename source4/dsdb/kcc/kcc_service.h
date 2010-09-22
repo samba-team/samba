@@ -80,6 +80,8 @@ struct kccsrv_service {
 	} periodic;
 
 	time_t last_deleted_check;
+
+	bool am_rodc;
 };
 
 struct kcc_connection_list;

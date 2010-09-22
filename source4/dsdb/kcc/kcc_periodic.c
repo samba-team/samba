@@ -307,9 +307,12 @@ NTSTATUS kccsrv_simple_update(struct kccsrv_service *s, TALLOC_CTX *mem_ctx)
 		r1->source_dsa_obj_guid      = ntds_guid;
 		r1->source_dsa_invocation_id = invocation_id;
 		r1->replica_flags            = 
-			DRSUAPI_DRS_WRIT_REP |
 			DRSUAPI_DRS_INIT_SYNC |
-			DRSUAPI_DRS_PER_SYNC;
+			DRSUAPI_DRS_PER_SYNC |
+			DRSUAPI_DRS_ADD_REF;
+		if (!s->am_rodc) {
+			r1->replica_flags |= DRSUAPI_DRS_WRIT_REP;
+		}
 		memset(r1->schedule, 0x11, sizeof(r1->schedule));
 
 		dsa_conn->servers = talloc_realloc(dsa_conn, dsa_conn->servers,
