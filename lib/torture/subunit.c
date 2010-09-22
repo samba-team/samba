@@ -41,7 +41,7 @@ static void subunit_test_start(struct torture_context *ctx,
 			       struct torture_test *test)
 {
 	printf("test: ");
-	subunit_print_testname(ctx, tcase, test);	
+	subunit_print_testname(ctx, tcase, test);
 	printf("\n");
 }
 
@@ -62,7 +62,7 @@ static void subunit_test_result(struct torture_context *context,
 		printf("skip: ");
 		break;
 	}
-	subunit_print_testname(context, context->active_tcase, context->active_test);	
+	subunit_print_testname(context, context->active_tcase, context->active_test);
 
 	if (reason)
 		printf(" [\n%s\n]", reason);

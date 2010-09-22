@@ -73,7 +73,7 @@ static bool run_matching(struct torture_context *torture,
 			*matched = true;
 			reload_charcnv(torture->lp_ctx);
 			torture->active_testname = name;
-			ret &= torture_run_tcase(torture, t);
+			ret &= torture_run_tcase_restricted(torture, t, restricted);
 		}
 		for (p = t->tests; p; p = p->next) {
 			name = talloc_asprintf(torture, "%s-%s-%s", prefix, t->name, p->name);
@@ -81,7 +81,7 @@ static bool run_matching(struct torture_context *torture,
 				*matched = true;
 				reload_charcnv(torture->lp_ctx);
 				torture->active_testname = name;
-				ret &= torture_run_test(torture, t, p);
+				ret &= torture_run_test_restricted(torture, t, p, restricted);
 			}
 		}
 	}

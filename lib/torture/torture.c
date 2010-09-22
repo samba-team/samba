@@ -1,19 +1,19 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    SMB torture UI functions
 
    Copyright (C) Jelmer Vernooij 2006-2008
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -23,6 +23,7 @@
 #include "../lib/util/dlinklist.h"
 #include "param/param.h"
 #include "system/filesys.h"
+
 
 struct torture_results *torture_results_init(TALLOC_CTX *mem_ctx, const struct torture_ui_ops *ui_ops)
 {
@@ -76,13 +77,12 @@ struct torture_context *torture_context_child(struct torture_context *parent)
 /**
  create a temporary directory.
 */
-_PUBLIC_ NTSTATUS torture_temp_dir(struct torture_context *tctx, 
-				   const char *prefix, 
-				   char **tempdir)
+_PUBLIC_ NTSTATUS torture_temp_dir(struct torture_context *tctx,
+				   const char *prefix, char **tempdir)
 {
 	SMB_ASSERT(tctx->outputdir != NULL);
 
-	*tempdir = talloc_asprintf(tctx, "%s/%s.XXXXXX", tctx->outputdir, 
+	*tempdir = talloc_asprintf(tctx, "%s/%s.XXXXXX", tctx->outputdir,
 				   prefix);
 	NT_STATUS_HAVE_NO_MEMORY(*tempdir);
 
@@ -107,9 +107,9 @@ void torture_comment(struct torture_context *context, const char *comment, ...)
 	va_start(ap, comment);
 	tmp = talloc_vasprintf(context, comment, ap);
 	va_end(ap);
-		
+
 	context->results->ui_ops->comment(context, tmp);
-	
+
 	talloc_free(tmp);
 }
 
@@ -268,6 +268,12 @@ int torture_suite_children_count(const struct torture_suite *suite)
 bool torture_run_suite(struct torture_context *context, 
 		       struct torture_suite *suite)
 {
+	return torture_run_suite_restricted(context, suite, NULL);
+}
+
+bool torture_run_suite_restricted(struct torture_context *context, 
+		       struct torture_suite *suite, const char **restricted)
+{
 	bool ret = true;
 	struct torture_tcase *tcase;
 	struct torture_suite *tsuite;
@@ -276,22 +282,23 @@ bool torture_run_suite(struct torture_context *context,
 	if (context->results->ui_ops->suite_start)
 		context->results->ui_ops->suite_start(context, suite);
 
-	context->results->ui_ops->progress(context, 
-		torture_suite_children_count(suite), TORTURE_PROGRESS_SET); 
+	/* FIXME: Adjust torture_suite_children_count if restricted != NULL */
+	context->results->ui_ops->progress(context,
+		torture_suite_children_count(suite), TORTURE_PROGRESS_SET);
 	old_testname = context->active_testname;
 	if (old_testname != NULL)
-		context->active_testname = talloc_asprintf(context, "%s-%s", 
+		context->active_testname = talloc_asprintf(context, "%s-%s",
 							   old_testname, suite->name);
 	else
 		context->active_testname = talloc_strdup(context, suite->name);
 
 	for (tcase = suite->testcases; tcase; tcase = tcase->next) {
-		ret &= torture_run_tcase(context, tcase);
+		ret &= torture_run_tcase_restricted(context, tcase, restricted);
 	}
 
 	for (tsuite = suite->children; tsuite; tsuite = tsuite->next) {
 		context->results->ui_ops->progress(context, 0, TORTURE_PROGRESS_PUSH);
-		ret &= torture_run_suite(context, tsuite);
+		ret &= torture_run_suite_restricted(context, tsuite, restricted);
 		context->results->ui_ops->progress(context, 0, TORTURE_PROGRESS_POP);
 	}
 
@@ -302,13 +309,6 @@ bool torture_run_suite(struct torture_context *context,
 		context->results->ui_ops->suite_finish(context, suite);
 
 	return ret;
-}
-
-bool torture_run_suite_restricted(struct torture_context *context, 
-		       struct torture_suite *suite, const char **restricted)
-{
-	/* FIXME */
-	return false;
 }
 
 void torture_ui_test_start(struct torture_context *context, 
@@ -330,18 +330,38 @@ void torture_ui_test_result(struct torture_context *context,
 		context->results->returncode = false;
 }
 
+static bool test_needs_running(const char *name, const char **restricted)
+{
+	int i;
+	if (restricted == NULL)
+		return true;
+	for (i = 0; restricted[i]; i++) {
+		if (!strcmp(name, restricted[i]))
+			return true;
+	}
+	return false;
+}
+
 static bool internal_torture_run_test(struct torture_context *context, 
 					  struct torture_tcase *tcase,
 					  struct torture_test *test,
-					  bool already_setup)
+					  bool already_setup,
+					  const char **restricted)
 {
 	bool success;
 	char *old_testname = NULL;
+	char *subunit_testname = NULL;
 
 	if (tcase == NULL || strcmp(test->name, tcase->name) != 0) { 
 		old_testname = context->active_testname;
 		context->active_testname = talloc_asprintf(context, "%s-%s", old_testname, test->name);
+		subunit_testname = talloc_asprintf(context, "%s.%s", tcase->name, test->name);
+	} else {
+		subunit_testname = test->name;
 	}
+
+	if (!test_needs_running(subunit_testname, restricted))
+		return true;
 
 	context->active_tcase = tcase;
 	context->active_test = test;
@@ -395,8 +415,14 @@ static bool internal_torture_run_test(struct torture_context *context,
 	return success;
 }
 
-bool torture_run_tcase(struct torture_context *context, 
+bool torture_run_tcase(struct torture_context *context,
 		       struct torture_tcase *tcase)
+{
+	return torture_run_tcase_restricted(context, tcase, NULL);
+}
+
+bool torture_run_tcase_restricted(struct torture_context *context,
+		       struct torture_tcase *tcase, const char **restricted)
 {
 	bool ret = true;
 	char *old_testname;
@@ -430,7 +456,7 @@ bool torture_run_tcase(struct torture_context *context,
 	for (test = tcase->tests; test; test = test->next) {
 		if (setup_succeeded) {
 			ret &= internal_torture_run_test(context, tcase, test,
-					tcase->fixture_persistent);
+					tcase->fixture_persistent, restricted);
 		} else {
 			context->active_tcase = tcase;
 			context->active_test = test;
@@ -459,7 +485,15 @@ bool torture_run_test(struct torture_context *context,
 					  struct torture_tcase *tcase,
 					  struct torture_test *test)
 {
-	return internal_torture_run_test(context, tcase, test, false);
+	return internal_torture_run_test(context, tcase, test, false, NULL);
+}
+
+bool torture_run_test_restricted(struct torture_context *context, 
+					  struct torture_tcase *tcase,
+					  struct torture_test *test,
+					  const char **restricted)
+{
+	return internal_torture_run_test(context, tcase, test, false, restricted);
 }
 
 int torture_setting_int(struct torture_context *test, const char *name, 

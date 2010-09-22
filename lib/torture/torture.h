@@ -227,10 +227,18 @@ bool torture_run_suite_restricted(struct torture_context *context,
 bool torture_run_tcase(struct torture_context *context,
 					   struct torture_tcase *tcase);
 
+bool torture_run_tcase_restricted(struct torture_context *context, 
+		       struct torture_tcase *tcase, const char **restricted);
+
 /* Run the specified test */
 bool torture_run_test(struct torture_context *context,
 					  struct torture_tcase *tcase,
 					  struct torture_test *test);
+
+bool torture_run_test_restricted(struct torture_context *context,
+					  struct torture_tcase *tcase,
+					  struct torture_test *test,
+					  const char **restricted);
 
 void torture_comment(struct torture_context *test, const char *comment, ...) PRINTF_ATTRIBUTE(2,3);
 void torture_warning(struct torture_context *test, const char *comment, ...) PRINTF_ATTRIBUTE(2,3);
