@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 # Bootstrap Samba and run a number of tests against it.
-# Copyright (C) 2005-2009 Jelmer Vernooij <jelmer@samba.org>
+# Copyright (C) 2005-2010 Jelmer Vernooij <jelmer@samba.org>
 # Copyright (C) 2007-2009 Stefan Metzmacher <metze@samba.org>
 
 # This program is free software; you can redistribute it and/or modify
@@ -248,7 +248,7 @@ sub run_testsuite($$$$$)
 	} elsif ($? & 127) {
 		Subunit::end_testsuite($name, "error",
 			sprintf("%s died with signal %d, %s coredump\n", $cmd, ($? & 127),  ($? & 128) ? 'with' : 'without'));
-		return 0;
+		exit(1);
 	}
 
 	my $exitcode = $? >> 8;
