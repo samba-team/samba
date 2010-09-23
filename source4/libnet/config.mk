@@ -4,7 +4,7 @@ PUBLIC_DEPENDENCIES = CREDENTIALS dcerpc dcerpc_samr RPC_NDR_LSA RPC_NDR_SRVSVC 
 LIBSAMBA-NET_OBJ_FILES = $(addprefix $(libnetsrcdir)/, \
 	libnet.o libnet_passwd.o libnet_time.o libnet_rpc.o \
 	libnet_join.o libnet_site.o libnet_become_dc.o libnet_unbecome_dc.o \
-	libnet_vampire.o libnet_samdump.o libnet_samdump_keytab.o \
+	libnet_vampire.o libnet_samdump.o \
 	libnet_samsync_ldb.o libnet_user.o libnet_group.o libnet_share.o \
 	libnet_lookup.o libnet_domain.o userinfo.o groupinfo.o userman.o \
 	groupman.o prereq_domain.o libnet_samsync.o libnet_export_keytab.o)
