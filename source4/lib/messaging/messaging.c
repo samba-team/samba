@@ -769,6 +769,8 @@ static void irpc_handler_request(struct messaging_context *msg_ctx,
 	r = talloc_zero_size(m->ndr, i->table->calls[m->header.callnum].struct_size);
 	if (r == NULL) goto failed;
 
+	m->ndr->flags |= LIBNDR_FLAG_REF_ALLOC;
+
 	/* parse the request data */
 	ndr_err = i->table->calls[i->callnum].ndr_pull(m->ndr, NDR_IN, r);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) goto failed;
