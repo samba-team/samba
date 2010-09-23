@@ -603,10 +603,10 @@ LIBMSRPC_OBJ = $(SCHANNEL_OBJ) \
 	       ../librpc/rpc/binding.o \
 	       ../librpc/rpc/dcerpc_util.o \
 	       ../librpc/rpc/binding_handle.o \
-	       librpc/rpc/dcerpc_helpers.o
+	       librpc/rpc/dcerpc_helpers.o \
+	       $(LIBCLI_EPMAPPER_OBJ)
 
-LIBMSRPC_GEN_OBJ = $(LIBCLI_EPMAPPER_OBJ) \
-		   $(LIBNDR_GEN_OBJ)
+LIBMSRPC_GEN_OBJ = $(LIBNDR_GEN_OBJ)
 
 #
 # registry-related objects
