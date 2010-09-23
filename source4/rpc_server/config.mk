@@ -205,6 +205,20 @@ PRIVATE_DEPENDENCIES = \
 dcerpc_browser_OBJ_FILES = $(rpc_serversrcdir)/browser/dcesrv_browser.o
 
 ################################################
+# Start MODULE dcerpc_eventlog6
+[MODULE::dcerpc_eventlog6]
+INIT_FUNCTION = dcerpc_server_eventlog6_init
+SUBSYSTEM = dcerpc_server
+PRIVATE_DEPENDENCIES = \
+		SAMDB	\
+		DCERPC_COMMON	\
+		NDR_DRSUAPI
+# End MODULE dcerpc_eventlog6
+################################################
+
+dcerpc_browser_OBJ_FILES = $(rpc_serversrcdir)/eventlog/dcesrv_eventlog6.o
+
+################################################
 # Start SUBSYSTEM dcerpc_server
 [SUBSYSTEM::dcerpc_server]
 PRIVATE_DEPENDENCIES = \

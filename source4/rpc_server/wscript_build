@@ -117,6 +117,12 @@ bld.SAMBA_MODULE('dcerpc_browser',
 	deps='DCERPC_COMMON NDR_BROWSER'
 	)
 
+bld.SAMBA_MODULE('dcerpc_eventlog',
+	source='eventlog/dcesrv_eventlog6.c',
+	subsystem='dcerpc_server',
+	init_function='dcerpc_server_eventlog6_init',
+	deps='DCERPC_COMMON'
+	)
 
 bld.SAMBA_LIBRARY('dcerpc_server',
 	source='dcerpc_server.c dcesrv_auth.c dcesrv_mgmt.c handles.c',

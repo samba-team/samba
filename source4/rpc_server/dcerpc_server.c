@@ -1400,6 +1400,7 @@ void dcerpc_server_init(struct loadparm_context *lp_ctx)
 	extern NTSTATUS dcerpc_server_remote_init(void);
 	extern NTSTATUS dcerpc_server_lsa_init(void);
 	extern NTSTATUS dcerpc_server_browser_init(void);
+	extern NTSTATUS dcerpc_server_eventlog6_init(void);
 	init_module_fn static_init[] = { STATIC_dcerpc_server_MODULES };
 	init_module_fn *shared_init;
 
