@@ -207,6 +207,6 @@ bld.SAMBA_SUBSYSTEM('NDR_SCHANNEL',
 bld.SAMBA_SUBSYSTEM('NDR_NBT',
 	source='../librpc/gen_ndr/ndr_nbt.c',
 	public_deps='LIBNDR NDR_NBT_BUF NDR_SECURITY NDR_STANDARD LIBCLI_NDR_NETLOGON',
-	public_headers='../../librpc/gen_ndr/nbt.h',
+	public_headers='../librpc/gen_ndr/nbt.h',
         header_path='gen_ndr'
 	)
