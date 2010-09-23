@@ -809,9 +809,9 @@ $SIG{INT} = $SIG{QUIT} = $SIG{TERM} = sub {
 	die("Received signal $signame");
 };
 
-sub setup_env($)
+sub setup_env($$)
 {
-	my ($name) = @_;
+	my ($name, $prefix) = @_;
 
 	my $testenv_vars = undef;
 
@@ -904,7 +904,7 @@ if ($opt_testenv) {
 	my $testenv_name = $ENV{SELFTEST_TESTENV};
 	$testenv_name = $testenv_default unless defined($testenv_name);
 
-	my $testenv_vars = setup_env($testenv_name);
+	my $testenv_vars = setup_env($testenv_name, $prefix);
 
 	die("Unable to setup environment $testenv_name") unless ($testenv_vars);
 
@@ -933,7 +933,7 @@ $envvarstr
 		my $name = $$_[0];
 		my $envname = $$_[1];
 
-		my $envvars = setup_env($envname);
+		my $envvars = setup_env($envname, $prefix);
 		if (not defined($envvars)) {
 			Subunit::start_testsuite($name);
 			Subunit::end_testsuite($name, "error",
