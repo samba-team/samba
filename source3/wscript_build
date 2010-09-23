@@ -907,8 +907,7 @@ RPCCLIENT_SRC = '''${RPCCLIENT_SRC1}
                    rpc_client/init_netlogon.c
                    rpc_client/init_samr.c'''
 
-PAM_WINBIND_SRC = '''../nsswitch/pam_winbind.c ${WBCOMMON_SRC}
-                  ${LIBREPLACE_SRC} ${INIPARSER_SRC}'''
+PAM_WINBIND_SRC = '../nsswitch/pam_winbind.c ${WBCOMMON_SRC} ${LIBREPLACE_SRC}'
 
 LIBSMBCLIENT_THREAD_SRC = '''libsmb/libsmb_thread_impl.c
                         libsmb/libsmb_thread_posix.c'''
@@ -1123,9 +1122,6 @@ WINBIND_KRB5_LOCATOR_SRC = '''${WINBIND_KRB5_LOCATOR_SRC1} ${LIBREPLACE_SRC}'''
 
 POPT_SRC = '''../lib/popt/findme.c ../lib/popt/popt.c ../lib/popt/poptconfig.c \
           ../lib/popt/popthelp.c ../lib/popt/poptparse.c'''
-
-INIPARSER_SRC = '''../lib/iniparser_build/iniparser.c ../lib/iniparser_build/dictionary.c
-                ../lib/iniparser_build/strlib.c'''
 
 NTLM_AUTH_SRC1 = '''utils/ntlm_auth.c utils/ntlm_auth_diagnostics.c'''
 
