@@ -1530,6 +1530,7 @@ bld.SAMBA_BINARY('locktest',
 
 bld.SAMBA_BINARY('nsstest',
                  source=NSSTEST_SRC,
+                 deps='NSS_WRAPPER',
                  vars=locals())
 
 bld.SAMBA_BINARY('pdbtest',
