@@ -906,6 +906,8 @@ restart_ctdb ()
 	
     onnode -q 1  $CTDB_TEST_WRAPPER wait_until_healthy || return 1
 
+    local debug_out=$(onnode -p all ctdb status 2>&1; onnode -p all ctdb scriptstatus 2>&1)
+
     echo "Setting RerecoveryTimeout to 1"
     onnode -pq all "$CTDB setvar RerecoveryTimeout 1"
 
@@ -919,6 +921,13 @@ restart_ctdb ()
     onnode -q 0 $CTDB recover
 
     echo "ctdb is ready"
+
+    if ! onnode 0 $CTDB_TEST_WRAPPER _cluster_is_healthy ; then
+	echo "OUCH!  Cluster is UNHEALTHY again..."
+	echo "$debug_out"
+	# Try to make the calling test fail
+	status=1
+    fi
 }
 
 ctdb_restart_when_done ()
