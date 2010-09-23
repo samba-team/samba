@@ -502,10 +502,10 @@ planpythontestsuite none samba.tests.dcerpc.rpc_talloc
 planpythontestsuite none samba.tests.samdb
 planpythontestsuite none samba.tests.shares
 planpythontestsuite none samba.tests.messaging
-plantestsuite "samba4.samba3sam.python" none PYTHONPATH="$PYTHONPATH:$samba4srcdir/dsdb/samdb/ldb_modules/tests" $SUBUNITRUN samba3sam
+planpythontestsuite none samba.tests.samba3sam
 planpythontestsuite none subunit
 planpythontestsuite dc:local samba.tests.dcerpc.rpcecho
-plantestsuite "samba4.winreg.python (dc:local)" dc:local $SUBUNITRUN -U\$USERNAME%\$PASSWORD samba.tests.dcerpc.registry
+plantestsuite_idlist "samba.tests.dcerpc.registry" dc:local $SUBUNITRUN -U\$USERNAME%\$PASSWORD samba.tests.dcerpc.registry
 plantestsuite "samba4.ldap.python (dc)" dc PYTHONPATH="$PYTHONPATH:../lib/subunit/python:../lib/testtools" $PYTHON $samba4srcdir/dsdb/tests/python/ldap.py \$SERVER -U\$USERNAME%\$PASSWORD -W \$DOMAIN
 plantestsuite "samba4.schemaInfo.python (dc)" dc PYTHONPATH="$PYTHONPATH:$samba4srcdir/dsdb/tests/python/" $SUBUNITRUN dsdb_schema_info -U"\$DOMAIN/\$DC_USERNAME"%"\$DC_PASSWORD"
 plantestsuite "samba4.urgent_replication.python (dc)" dc PYTHONPATH="$PYTHONPATH:../lib/subunit/python:../lib/testtools" $PYTHON $samba4srcdir/dsdb/tests/python/urgent_replication.py \$PREFIX_ABS/dc/private/sam.ldb
