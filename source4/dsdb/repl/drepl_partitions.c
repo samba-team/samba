@@ -37,73 +37,56 @@
 WERROR dreplsrv_load_partitions(struct dreplsrv_service *s)
 {
 	WERROR status;
-	struct ldb_dn *basedn;
-	struct ldb_result *r;
-	struct ldb_message_element *el;
-	static const char *attrs[] = { "hasMasterNCs", "msDS-hasFullReplicaNCs", NULL };
+	static const char *attrs[] = { "namingContexts", NULL };
 	unsigned int i;
 	int ret;
+	TALLOC_CTX *tmp_ctx;
+	struct ldb_result *res;
+	struct ldb_message_element *el;
 
-	basedn = samdb_ntds_settings_dn(s->samdb);
-	W_ERROR_HAVE_NO_MEMORY(basedn);
+	tmp_ctx = talloc_new(s);
+	W_ERROR_HAVE_NO_MEMORY(tmp_ctx);
 
-	ret = ldb_search(s->samdb, s, &r, basedn, LDB_SCOPE_BASE, attrs,
-			 "(objectClass=*)");
+	ret = ldb_search(s->samdb, tmp_ctx, &res,
+			 ldb_dn_new(tmp_ctx, s->samdb, ""), LDB_SCOPE_BASE, attrs, NULL);
 	if (ret != LDB_SUCCESS) {
-		return WERR_FOOBAR;
-	} else if (r->count != 1) {
-		talloc_free(r);
-		return WERR_FOOBAR;
+		DEBUG(1,("Searching for namingContexts in rootDSE failed: %s\n", ldb_errstring(s->samdb)));
+		talloc_free(tmp_ctx);
+		return WERR_DS_DRA_INTERNAL_ERROR;
+       }
+
+       el = ldb_msg_find_element(res->msgs[0], "namingContexts");
+       if (!el) {
+               DEBUG(1,("Finding namingContexts element in root_res failed: %s\n",
+			ldb_errstring(s->samdb)));
+	       talloc_free(tmp_ctx);
+	       return WERR_DS_DRA_INTERNAL_ERROR;
+       }
+
+       for (i=0; i<el->num_values; i++) {
+	       struct ldb_dn *pdn;
+	       struct dreplsrv_partition *p;
+
+	       pdn = ldb_dn_from_ldb_val(tmp_ctx, s->samdb, &el->values[i]);
+	       if (pdn == NULL) {
+		       talloc_free(tmp_ctx);
+		       return WERR_DS_DRA_INTERNAL_ERROR;
+	       }
+	       if (!ldb_dn_validate(pdn)) {
+		       return WERR_DS_DRA_INTERNAL_ERROR;
+	       }
+
+	       p = talloc_zero(s, struct dreplsrv_partition);
+	       W_ERROR_HAVE_NO_MEMORY(p);
+
+	       p->dn = talloc_steal(p, pdn);
+
+	       DLIST_ADD(s->partitions, p);
+
+	       DEBUG(2, ("dreplsrv_partition[%s] loaded\n", ldb_dn_get_linearized(p->dn)));
 	}
 
-
-
-	el = ldb_msg_find_element(r->msgs[0], "hasMasterNCs");
-
-	for (i=0; el && i < el->num_values; i++) {
-		const char *v = (const char *)el->values[i].data;
-		struct ldb_dn *pdn;
-		struct dreplsrv_partition *p;
-
-		pdn = ldb_dn_new(s, s->samdb, v);
-		if (!ldb_dn_validate(pdn)) {
-			return WERR_FOOBAR;
-		}
-
-		p = talloc_zero(s, struct dreplsrv_partition);
-		W_ERROR_HAVE_NO_MEMORY(p);
-
-		p->dn = talloc_steal(p, pdn);
-
-		DLIST_ADD(s->partitions, p);
-
-		DEBUG(2, ("dreplsrv_partition[%s] loaded\n", v));
-	}
-
-	el = ldb_msg_find_element(r->msgs[0], "msDS-hasFullReplicaNCs");
-
-	for (i=0; el && i < el->num_values; i++) {
-		const char *v = (const char *)el->values[i].data;
-		struct ldb_dn *pdn;
-		struct dreplsrv_partition *p;
-
-		pdn = ldb_dn_new(s, s->samdb, v);
-		if (!ldb_dn_validate(pdn)) {
-			return WERR_FOOBAR;
-		}
-
-		p = talloc_zero(s, struct dreplsrv_partition);
-		W_ERROR_HAVE_NO_MEMORY(p);
-
-		p->dn = talloc_steal(p, pdn);
-		p->incoming_only = true;
-
-		DLIST_ADD(s->partitions, p);
-
-		DEBUG(2, ("dreplsrv_partition[%s] loaded (incoming only)\n", v));
-	}
-
-	talloc_free(r);
+	talloc_free(tmp_ctx);
 
 	status = dreplsrv_refresh_partitions(s);
 	W_ERROR_NOT_OK_RETURN(status);
