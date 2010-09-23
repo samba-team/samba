@@ -60,6 +60,7 @@ struct torture_ui_ops
 	void (*test_result) (struct torture_context *, 
 						 enum torture_result, const char *reason);
 	void (*progress) (struct torture_context *, int offset, enum torture_progress_whence whence);
+	void (*report_time) (struct torture_context *);
 };
 
 void torture_ui_test_start(struct torture_context *context,
@@ -69,6 +70,8 @@ void torture_ui_test_start(struct torture_context *context,
 void torture_ui_test_result(struct torture_context *context,
 								enum torture_result result,
 								const char *comment);
+
+void torture_ui_report_time(struct torture_context *context);
 
 /*
  * Holds information about a specific run of the testsuite. 

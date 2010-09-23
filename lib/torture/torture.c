@@ -277,7 +277,6 @@ bool torture_run_suite_restricted(struct torture_context *context,
 	bool ret = true;
 	struct torture_tcase *tcase;
 	struct torture_suite *tsuite;
-	char *old_testname;
 
 	if (context->results->ui_ops->suite_start)
 		context->results->ui_ops->suite_start(context, suite);
@@ -346,7 +345,7 @@ static bool internal_torture_run_test(struct torture_context *context,
 	if (tcase == NULL || strcmp(test->name, tcase->name) != 0) { 
 		subunit_testname = talloc_asprintf(context, "%s.%s", tcase->name, test->name);
 	} else {
-		subunit_testname = test->name;
+		subunit_testname = talloc_strdup(context, test->name);
 	}
 
 	if (!test_needs_running(subunit_testname, restricted))
@@ -410,7 +409,6 @@ bool torture_run_tcase_restricted(struct torture_context *context,
 		       struct torture_tcase *tcase, const char **restricted)
 {
 	bool ret = true;
-	char *old_testname;
 	struct torture_test *test;
 	bool setup_succeeded = true;
 	const char * setup_reason = "Setup failed";
@@ -683,4 +681,10 @@ struct torture_test *torture_tcase_add_simple_test(struct torture_tcase *tcase,
 	DLIST_ADD_END(tcase->tests, test, struct torture_test *);
 
 	return test;
+}
+
+void torture_ui_report_time(struct torture_context *context)
+{
+	if (context->results->ui_ops->report_time)
+		context->results->ui_ops->report_time(context);
 }

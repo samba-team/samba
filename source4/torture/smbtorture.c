@@ -98,6 +98,8 @@ bool torture_run_named_tests(struct torture_context *torture, const char *name,
 	bool matched = false;
 	struct torture_suite *o;
 
+	torture_ui_report_time(torture);
+
 	if (strequal(name, "ALL")) {
 		if (restricted != NULL) {
 			printf("--load-list and ALL are incompatible\n");

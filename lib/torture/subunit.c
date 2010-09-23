@@ -37,12 +37,37 @@ static char *torture_subunit_test_name(struct torture_context *ctx,
 	}
 }
 
-static void torture_subunit_test_start(struct torture_context *ctx, 
+static void torture_subunit_report_time(struct torture_context *tctx)
+{
+	struct timespec tp;
+	struct tm *tmp;
+	char timestr[200];
+	if (clock_gettime(CLOCK_REALTIME, &tp) != 0) {
+		perror("clock_gettime");
+		return;
+	}
+
+	tmp = localtime(&tp.tv_sec);
+	if (!tmp) {
+		perror("localtime");
+		return;
+	}
+
+	if (strftime(timestr, sizeof(timestr), "%Y-%m-%d %H:%M:%S", tmp) <= 0) {
+		perror("strftime");
+		return;
+	}
+
+	printf("time: %s.%06ld\n", timestr, tp.tv_nsec / 1000);
+}
+
+static void torture_subunit_test_start(struct torture_context *context, 
 			       struct torture_tcase *tcase,
 			       struct torture_test *test)
 {
-	char *fullname = torture_subunit_test_name(ctx, ctx->active_tcase, ctx->active_test);
+	char *fullname = torture_subunit_test_name(context, context->active_tcase, context->active_test);
 	subunit_test_start(fullname);
+	torture_subunit_report_time(context);
 	talloc_free(fullname);
 }
 
@@ -50,6 +75,7 @@ static void torture_subunit_test_result(struct torture_context *context,
 				enum torture_result res, const char *reason)
 {
 	char *fullname = torture_subunit_test_name(context, context->active_tcase, context->active_test);
+	torture_subunit_report_time(context);
 	switch (res) {
 	case TORTURE_OK:
 		subunit_test_pass(fullname);
@@ -107,4 +133,5 @@ const struct torture_ui_ops torture_subunit_ui_ops = {
 	.test_result = torture_subunit_test_result,
 	.suite_start = torture_subunit_suite_start,
 	.progress = torture_subunit_progress,
+	.report_time = torture_subunit_report_time,
 };
