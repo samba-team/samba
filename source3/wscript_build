@@ -184,12 +184,6 @@ UTIL_SRC = '''../lib/util/rbtree.c ../lib/util/signal.c ../lib/util/time.c
                    ../lib/util/smb_threads.c ../lib/util/util_id.c
                    ../lib/util/blocking.c ../lib/util/rfc1738.c '''
 
-CRYPTO_SRC = '''../lib/crypto/crc32.c ../lib/crypto/md5.c
-                         ../lib/crypto/hmacmd5.c ../lib/crypto/arcfour.c
-                         ../lib/crypto/md4.c
-                         ../lib/crypto/sha256.c ../lib/crypto/hmacsha256.c
-                         ../lib/crypto/aes.c ../lib/crypto/rijndael-alg-fst.c'''
-
 LIBTEVENT_SRC0 = ''
 
 PTHREADPOOL_SRC = ''
@@ -202,7 +196,7 @@ NSS_WRAPPER_SRCS = ''
 
 ZLIB_SRCS = ''
 
-LIB_SRC = '''${LIBSAMBAUTIL_SRC} ${UTIL_SRC} ${CRYPTO_SRC}
+LIB_SRC = '''${LIBSAMBAUTIL_SRC} ${UTIL_SRC}
           lib/messages.c librpc/gen_ndr/ndr_messaging.c lib/messages_local.c
           lib/messages_ctdbd.c lib/packet.c lib/ctdbd_conn.c
           lib/interfaces.c lib/memcache.c
@@ -1293,7 +1287,7 @@ bld.SAMBA_SUBSYSTEM('KRBCLIENT',
 
 bld.SAMBA_SUBSYSTEM('LIBS',
                     source=LIB_SRC,
-                    deps='NSS_WRAPPER iconv',
+                    deps='NSS_WRAPPER iconv LIBCRYPTO',
                     vars=locals())
 
 bld.SAMBA_SUBSYSTEM('LIB_NONSMBD',
@@ -1634,6 +1628,7 @@ bld.RECURSE('../lib/popt')
 bld.RECURSE('../lib/zlib')
 bld.RECURSE('../lib/tsocket')
 bld.RECURSE('../lib/iniparser/src')
+bld.RECURSE('../lib/crypto')
 
 bld.ENFORCE_GROUP_ORDERING()
 bld.CHECK_PROJECT_RULES()
