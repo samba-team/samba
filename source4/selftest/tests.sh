@@ -57,7 +57,7 @@ plantestsuite_loadlist() {
 	fi
 	echo $fullname
 	echo $env
-	echo "$cmdline 2>&1 | ../selftest/filter-subunit --prefix=\"$fullname.\""
+	echo "$cmdline \$LOADLIST 2>&1 | ../selftest/filter-subunit --prefix=\"$fullname.\""
 }
 
 plantestsuite_idlist() {

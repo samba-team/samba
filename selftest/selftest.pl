@@ -940,7 +940,7 @@ $envvarstr
 				foreach my $test (@{$individual_tests->{$name}}) {
 					print $fh "$test\n";
 				}
-				$cmd .= " --load-list=$listid_file";
+				$cmd =~ s/\$LOADLIST/--load-list=$listid_file/g;
 			} elsif ($$_[4]) {
 				$cmd =~ s/\s+[^\s]+\s*$//;
 				$cmd .= " " . join(' ', @{$individual_tests->{$name}});
