@@ -1,4 +1,4 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    Python bindings for tevent
 
@@ -30,16 +30,41 @@ typedef struct {
 	struct tevent_context *ev;
 } TeventContext_Object;
 
+typedef struct {
+	PyObject_HEAD
+	struct tevent_queue *queue;
+} TeventQueue_Object;
+
+typedef struct {
+	PyObject_HEAD
+	struct tevent_req *req;
+} TeventReq_Object;
+
+typedef struct {
+	PyObject_HEAD
+	struct tevent_signal *signal;
+} TeventSignal_Object;
+
+typedef struct {
+	PyObject_HEAD
+	struct tevent_timer *timer;
+} TeventTimer_Object;
+
+typedef struct {
+	PyObject_HEAD
+	struct tevent_fd *fd;
+} TeventFd_Object;
+
+staticforward PyTypeObject TeventContext_Type;
+staticforward PyTypeObject TeventReq_Type;
+staticforward PyTypeObject TeventQueue_Type;
+staticforward PyTypeObject TeventSignal_Type;
+staticforward PyTypeObject TeventTimer_Type;
+staticforward PyTypeObject TeventFd_Type;
+
 static int py_context_init(struct tevent_context *ev)
 {
-	PyObject *ret, *self;
 	/* FIXME */
-	ret = PyObject_CallFunction(self, "");
-	if (ret == NULL) {
-		return -1;
-	} else {
-		return 0;
-	}
 }
 
 static struct tevent_fd *py_add_fd(struct tevent_context *ev,
@@ -130,30 +155,83 @@ const static struct tevent_ops py_tevent_ops = {
 
 static PyObject *py_register_backend(PyObject *self, PyObject *args)
 {
-	/* FIXME */
-}
+	PyObject *name, *py_backend;
 
-static PyObject *py_tevent_context_reinitialise(PyObject *self)
-{
-	/* FIXME */
+	if (!PyArg_ParseTuple(args, "O", &py_backend))
+		return NULL;
+
+	name = PyObject_GetAttrString(py_backend, "name");
+	if (name == NULL) {
+		PyErr_SetNone(PyExc_AttributeError);
+		return NULL;
+	}
+
+	if (!PyString_Check(name)) {
+		PyErr_SetNone(PyExc_TypeError);
+		return NULL;
+	}
+
+	if (!tevent_register_backend(PyString_AsString(name), &py_tevent_ops)) { /* FIXME: What to do with backend */
+		PyErr_SetNone(PyExc_RuntimeError);
+		return NULL;
+	}
+
 	Py_RETURN_NONE;
 }
 
-static PyObject *py_tevent_queue_stop(PyObject *self)
+static PyObject *py_tevent_context_reinitialise(TeventContext_Object *self)
 {
-	/* FIXME */
+	int ret = tevent_re_initialise(self->ev);
+	if (ret != 0) {
+		PyErr_SetNone(PyExc_RuntimeError);
+		return NULL;
+	}
 	Py_RETURN_NONE;
 }
 
-static PyObject *py_tevent_queue_start(PyObject *self)
+static PyObject *py_tevent_queue_stop(TeventQueue_Object *self)
 {
-	/* FIXME */
+	tevent_queue_stop(self->queue);
 	Py_RETURN_NONE;
 }
 
-static PyObject *py_tevent_queue_add(PyObject *self, PyObject *args)
+static PyObject *py_tevent_queue_start(TeventQueue_Object *self)
 {
-	/* FIXME */
+	tevent_queue_start(self->queue);
+	Py_RETURN_NONE;
+}
+
+static void py_queue_trigger(struct tevent_req *req, void *private_data)
+{
+	PyObject *callback, *ret;
+
+	ret = PyObject_CallFunction(private_data, "");
+	Py_XDECREF(ret);
+}
+
+static PyObject *py_tevent_queue_add(TeventQueue_Object *self, PyObject *args)
+{
+	TeventContext_Object *py_ev;
+	TeventReq_Object *py_req;
+	PyObject *trigger;
+	bool ret;
+
+	if (!PyArg_ParseTuple(args, "O!O!O", 
+						  &TeventContext_Type, &py_ev,
+						  &TeventReq_Type, &py_req,
+						  &trigger))
+		return NULL;
+
+	Py_INCREF(trigger);
+
+	ret = tevent_queue_add(self->queue, py_ev->ev, py_req->req,
+						   py_queue_trigger, trigger);
+	if (!ret) {
+		PyErr_SetString(PyExc_RuntimeError, "queue add failed");
+		Py_DECREF(trigger);
+		return NULL;
+	}
+
 	Py_RETURN_NONE;
 }
 
@@ -170,36 +248,174 @@ static PyMethodDef py_tevent_queue_methods[] = {
 static PyObject *py_tevent_context_wakeup_send(PyObject *self, PyObject *args)
 {
 	/* FIXME */
+
 	Py_RETURN_NONE;
 }
 
-static PyObject *py_tevent_context_loop_wait(PyObject *self)
+static PyObject *py_tevent_context_loop_wait(TeventContext_Object *self)
 {
-	/* FIXME */
+	if (tevent_loop_wait(self->ev) != 0) {
+		PyErr_SetNone(PyExc_RuntimeError);
+		return NULL;
+	}
 	Py_RETURN_NONE;
 }
 
-static PyObject *py_tevent_context_loop_once(PyObject *self)
+static PyObject *py_tevent_context_loop_once(TeventContext_Object *self)
 {
-	/* FIXME */
+	if (tevent_loop_once(self->ev) != 0) {
+		PyErr_SetNone(PyExc_RuntimeError);
+		return NULL;
+	}
 	Py_RETURN_NONE;
 }
 
-static PyObject *py_tevent_context_add_signal(PyObject *self, PyObject *args)
+static bool py_tevent_finished(PyObject *callback)
 {
-	/* FIXME */
+	PyObject *py_ret;
+	bool ret;
+
+	py_ret = PyObject_CallFunction(callback, "");
+	if (py_ret == NULL)
+		return true;
+	ret = PyObject_IsTrue(py_ret);
+	Py_DECREF(py_ret);
+	return ret;
+}
+
+static PyObject *py_tevent_context_loop_until(TeventContext_Object *self, PyObject *args)
+{
+	PyObject *callback;
+	if (!PyArg_ParseTuple(args, "O", &callback))
+		return NULL;
+
+	if (tevent_loop_until(self->ev, py_tevent_finished, callback) != 0) {
+		PyErr_SetNone(PyExc_RuntimeError);
+		return NULL;
+	}
+
+	if (PyErr_Occurred())
+		return NULL;
+
 	Py_RETURN_NONE;
 }
 
-static PyObject *py_tevent_context_add_timer(PyObject *self, PyObject *args)
+static void py_tevent_signal_handler(struct tevent_context *ev,
+					struct tevent_signal *se,
+					int signum,
+					int count,
+					void *siginfo,
+					void *private_data)
 {
-	/* FIXME */
-	Py_RETURN_NONE;
+	PyObject *callback = (PyObject *)private_data, *ret;
+
+	ret = PyObject_CallFunction(callback, "ii", signum, count);
+	Py_XDECREF(ret);
 }
 
-static PyObject *py_tevent_context_add_fd(PyObject *self, PyObject *args)
+static PyObject *py_tevent_context_add_signal(TeventContext_Object *self, PyObject *args)
 {
-	/* FIXME */
+	int signum, sa_flags;
+	PyObject *handler;
+	struct tevent_signal *sig;
+	TeventSignal_Object *ret;
+
+	if (!PyArg_ParseTuple(args, "iiO", &signum, &sa_flags, &handler))
+		return NULL;
+
+	Py_INCREF(handler);
+	sig = tevent_add_signal(self->ev, NULL, signum, sa_flags,
+							py_tevent_signal_handler, handler);
+
+	ret = PyObject_New(TeventSignal_Object, &TeventSignal_Type);
+	if (ret == NULL) {
+		PyErr_NoMemory();
+		talloc_free(sig);
+		return NULL;
+	}
+
+	ret->signal = sig;
+
+	return (PyObject *)ret;
+}
+
+static void py_timer_handler(struct tevent_context *ev,
+				       struct tevent_timer *te,
+				       struct timeval current_time,
+				       void *private_data)
+{
+	PyObject *callback = private_data, *ret;
+	ret = PyObject_CallFunction(callback, "l", te);
+	Py_XDECREF(ret);
+}
+
+static PyObject *py_tevent_context_add_timer(TeventContext_Object *self, PyObject *args)
+{
+	TeventTimer_Object *ret;
+	struct timeval next_event;
+	struct tevent_timer *timer;
+	PyObject *handler;
+	if (!PyArg_ParseTuple(args, "lO", &next_event, &handler))
+		return NULL;
+
+	timer = tevent_add_timer(self->ev, NULL, next_event, py_timer_handler,
+							 handler);
+	if (timer == NULL) {
+		PyExc_SetNone(PyExc_RuntimeError);
+		return NULL;
+	}
+
+	ret = PyObject_New(TeventTimer_Object, &TeventTimer_Type);
+	if (ret == NULL) {
+		PyErr_NoMemory();
+		talloc_free(timer);
+		return NULL;
+	}
+	ret->timer = timer;
+
+	return (PyObject *)ret;
+}
+
+static void py_fd_handler(struct tevent_context *ev,
+				    struct tevent_fd *fde,
+				    uint16_t flags,
+				    void *private_data)
+{
+	PyObject *callback = private_data, *ret;
+
+	ret = PyObject_CallFunction(callback, "i", flags);
+	Py_XDECREF(ret);
+}
+
+static PyObject *py_tevent_context_add_fd(TeventContext_Object *self, PyObject *args)
+{
+	int fd, flags;
+	PyObject *handler;
+	struct tevent_fd *tfd;
+	TeventFd_Object *ret;
+
+	if (!PyArg_ParseTuple(args, "iiO", &fd, &flags, &handler))
+		return NULL;
+
+	tfd = tevent_add_fd(self->ev, NULL, fd, flags, py_fd_handler, handler);
+	if (tfd == NULL) {
+		PyErr_SetNone(PyExc_RuntimeError);
+		return NULL;
+	}
+
+	ret = PyObject_New(TeventFd_Object, &TeventFd_Type);
+	if (ret == NULL) {
+		talloc_free(tfd);
+		return NULL;
+	}
+	ret->fd = tfd;
+
+	return (PyObject *)ret;
+}
+
+static PyObject *py_tevent_context_set_allow_nesting(TeventContext_Object *self)
+{
+	tevent_loop_allow_nesting(self->ev);
 	Py_RETURN_NONE;
 }
 
@@ -214,12 +430,16 @@ static PyMethodDef py_tevent_context_methods[] = {
 		METH_NOARGS, "S.loop_wait()" },
 	{ "loop_once", (PyCFunction)py_tevent_context_loop_once,
 		METH_NOARGS, "S.loop_once()" },
+	{ "loop_until", (PyCFunction)py_tevent_context_loop_until,
+		METH_VARARGS, "S.loop_until(callback)" },
 	{ "add_signal", (PyCFunction)py_tevent_context_add_signal,
 		METH_VARARGS, "S.add_signal(signum, sa_flags, handler) -> signal" },
 	{ "add_timer", (PyCFunction)py_tevent_context_add_timer,
 		METH_VARARGS, "S.add_timer(next_event, handler) -> timer" },
 	{ "add_fd", (PyCFunction)py_tevent_context_add_fd, 
 		METH_VARARGS, "S.add_fd(fd, flags, handler) -> fd" },
+	{ "allow_nesting", (PyCFunction)py_tevent_context_set_allow_nesting, 
+		METH_NOARGS, "Whether to allow nested tevent loops." },
 	{ NULL },
 };
 
@@ -289,9 +509,12 @@ static PyObject *py_tevent_req_set_endtime(PyObject *self, PyObject *args)
 	Py_RETURN_NONE;
 }
 
-static PyObject *py_tevent_req_cancel(PyObject *self)
+static PyObject *py_tevent_req_cancel(TeventReq_Object *self)
 {
-	/* FIXME */
+	if (!tevent_req_cancel(self->req)) {
+		PyErr_SetNone(PyExc_RuntimeError);
+		return NULL;
+	}
 	Py_RETURN_NONE;
 }
 
@@ -319,10 +542,23 @@ static PyMethodDef py_tevent_req_methods[] = {
 	{ NULL }
 };
 
-static PyObject *py_tevent_queue_get_length(PyObject *self)
+static void py_tevent_req_dealloc(TeventReq_Object *self)
 {
-	/* FIXME */
-	Py_RETURN_NONE;
+	talloc_free(self->req);
+	PyObject_DEL(self);
+}
+
+static PyTypeObject TeventReq_Type = {
+	.tp_name = "tevent.Request",
+	.tp_basicsize = sizeof(TeventReq_Object),
+	.tp_methods = py_tevent_req_methods,
+	.tp_dealloc = (destructor)py_tevent_req_dealloc,
+	/* FIXME: .tp_new = py_tevent_req_new, */
+};
+
+static PyObject *py_tevent_queue_get_length(TeventQueue_Object *self)
+{
+	return PyInt_FromLong(tevent_queue_length(self->queue));
 }
 
 static PyGetSetDef py_tevent_queue_getsetters[] = {
@@ -331,48 +567,116 @@ static PyGetSetDef py_tevent_queue_getsetters[] = {
 	{ NULL },
 };
 
+static void py_tevent_queue_dealloc(TeventQueue_Object *self)
+{
+	talloc_free(self->queue);
+	PyObject_Del(self);
+}
+
+static PyTypeObject TeventQueue_Type = {
+	.tp_name = "tevent.Queue",
+	.tp_basicsize = sizeof(TeventQueue_Object),
+	.tp_dealloc = (destructor)py_tevent_queue_dealloc,
+	.tp_flags = Py_TPFLAGS_DEFAULT,
+	.tp_getset = py_tevent_queue_getsetters,
+	.tp_methods = py_tevent_queue_methods,
+};
+
 static PyObject *py_tevent_context_signal_support(PyObject *_self)
 {
 	TeventContext_Object *self = (TeventContext_Object *)_self;
 	return PyBool_FromLong(tevent_signal_support(self->ev));
 }
 
-static PyObject *py_tevent_context_get_allow_nesting(PyObject *self)
-{
-	/* FIXME */
-	Py_RETURN_NONE;
-}
-
-static PyObject *py_tevent_context_set_allow_nesting(PyObject *self, PyObject *value)
-{
-	/* FIXME */
-	Py_RETURN_NONE;
-}
-
 static PyGetSetDef py_tevent_context_getsetters[] = {
-	{ "allow_nesting", (getter)py_tevent_context_get_allow_nesting,
-		(setter)py_tevent_context_set_allow_nesting, 
-		"Whether to allow nested tevent loops." },
 	{ "signal_support", (getter)py_tevent_context_signal_support,
 		NULL, "if this platform and tevent context support signal handling" },
 	{ NULL }
 };
 
+static void py_tevent_context_dealloc(TeventContext_Object *self)
+{
+	talloc_free(self->ev);
+	Py_Object_Del(self);
+}
+
+static PyObject *py_tevent_context_new(PyTypeObject *type, PyObject *args, PyObject *kwargs)
+{
+	char *kwnames[] = { "name", NULL };
+	char *name = NULL;
+	struct tevent_context *ev;
+	TeventContext_Object *ret;
+
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|s", kwnames, &name))
+		return NULL;
+
+	if (name == NULL) {
+		ev = tevent_context_init(NULL);
+	} else {
+		ev = tevent_context_init_byname(NULL, name);
+	}
+
+	if (ev == NULL) {
+		PyErr_SetNone(PyExc_RuntimeError);
+		return NULL;
+	}
+
+	ret = PyObject_New(TeventContext_Object, type);
+	if (ret == NULL) {
+		PyErr_NoMemory();
+		talloc_free(ev);
+		return NULL;
+	}
+
+	ret->ev = ev;
+	return (PyObject *)ret;
+}
+
 static PyTypeObject TeventContext_Type = {
+	.tp_name = "_tevent.Context",
+	.tp_new = py_tevent_context_new,
+	.tp_basicsize = sizeof(TeventContext_Object),
+	.tp_dealloc = (destructor)py_tevent_context_dealloc,
 	.tp_methods = py_tevent_context_methods,
 	.tp_getset = py_tevent_context_getsetters,
+	.tp_flags = Py_TPFLAGS_DEFAULT,
 };
 
 static PyObject *py_set_default_backend(PyObject *self, PyObject *args)
 {
-	/* FIXME */
+	char *backend_name;
+	if (!PyArg_ParseTuple(args, "s", &backend_name))
+		return NULL;
+
+	tevent_set_default_backend(backend_name);
+
 	Py_RETURN_NONE;
 }
 
 static PyObject *py_backend_list(PyObject *self)
 {
-	/* FIXME */
-	Py_RETURN_NONE;
+	PyObject *ret;
+	int i;
+	const char **backends;
+
+	ret = PyList_New(0);
+	if (ret == NULL) {
+		return NULL;
+	}
+
+	backends = tevent_backend_list(NULL);
+	if (backends == NULL) {
+		PyErr_SetNone(PyExc_RuntimeError);
+		Py_DECREF(ret);
+		return NULL;
+	}
+	for (i = 0; backends[i]; i++) {
+		PyList_Append(ret, PyString_FromString(backends[i]));
+	}
+
+	talloc_free(backends);
+
+	return ret;
 }
 
 static PyMethodDef tevent_methods[] = {
@@ -385,10 +689,47 @@ static PyMethodDef tevent_methods[] = {
 	{ NULL },
 };
 
-int inittevent(void)
+int init_tevent(void)
 {
 	PyObject *m;
-	m = Py_InitModule3("tevent", tevent_methods, "Tevent integration for twisted.");
+
+	if (PyType_Ready(&TeventContext_Type) < 0)
+		return;
+
+	if (PyType_Ready(&TeventQueue_Type) < 0)
+		return;
+
+	if (PyType_Ready(&TeventReq_Type) < 0)
+		return;
+
+	if (PyType_Ready(&TeventSignal_Type) < 0)
+		return;
+
+	if (PyType_Ready(&TeventTimer_Type) < 0)
+		return;
+
+	if (PyType_Ready(&TeventFd_Type) < 0)
+		return;
+
+	m = Py_InitModule3("_tevent", tevent_methods, "Tevent integration for twisted.");
 	if (m == NULL)
 		return;
+
+	Py_INCREF(&TeventContext_Type);
+	PyModule_AddObject(m, "Context", (PyObject *)&TeventContext_Type);
+
+	Py_INCREF(&TeventQueue_Type);
+	PyModule_AddObject(m, "Queue", (PyObject *)&TeventQueue_Type);
+
+	Py_INCREF(&TeventReq_Type);
+	PyModule_AddObject(m, "Request", (PyObject *)&TeventReq_Type);
+
+	Py_INCREF(&TeventSignal_Type);
+	PyModule_AddObject(m, "Signal", (PyObject *)&TeventSignal_Type);
+
+	Py_INCREF(&TeventTimer_Type);
+	PyModule_AddObject(m, "Timer", (PyObject *)&TeventTimer_Type);
+
+	Py_INCREF(&TeventFd_Type);
+	PyModule_AddObject(m, "Fd", (PyObject *)&TeventFd_Type);
 }
