@@ -977,7 +977,7 @@ TESTPARM_OBJ = utils/testparm.o \
 	       $(LIBSMB_ERR_OBJ)
 
 SMBTA_UTIL_OBJ = utils/smbta-util.o $(PARAM_OBJ) $(POPT_LIB_OBJ) \
-	$(LOCKING_OBJ) $(PROFILE_OBJ) $(LIB_NONSMBD_OBJ) \
+	$(LIB_NONSMBD_OBJ) \
 	$(LIBSMB_ERR_OBJ) $(FNAME_UTIL_OBJ)
 
 TEST_LP_LOAD_OBJ = param/test_lp_load.o \
