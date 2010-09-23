@@ -77,7 +77,6 @@ _PUBLIC_ NTSTATUS gensec_wrap_packets(struct gensec_security *gensec_security,
 					mem_ctx,
 					&unwrapped, &wrapped);
 		if (!NT_STATUS_IS_OK(nt_status)) {
-			talloc_free(mem_ctx);
 			return nt_status;
 		}
 		
