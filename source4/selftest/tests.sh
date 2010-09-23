@@ -34,7 +34,7 @@ plantestsuite() {
 	shift 2
 	cmdline="$*"
 	echo "-- TEST --"
-	echo $fullname
+	echo $name
 	echo $env
 	echo "$cmdline 2>&1 | ../selftest/filter-subunit --prefix=\"$name.\""
 }
@@ -61,12 +61,7 @@ plantestsuite_idlist() {
 	shift 2
 	cmdline="$*"
 	echo "-- TEST-IDLIST --"
-	if [ "$env" = "none" ]; then
-		fullname="$name"
-	else
-		fullname="$name ($env)"
-	fi
-	echo $fullname
+	echo $name
 	echo $env
 	echo $cmdline
 }
