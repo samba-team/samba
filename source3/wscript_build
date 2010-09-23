@@ -722,7 +722,6 @@ WINBINDD_SRC = '''${WINBINDD_SRC1}
                   ${PROFILE_SRC} ${SLCACHE_SRC}
                   ${DCUTIL_SRC} ${IDMAP_SRC} ${NSS_INFO_SRC}
                   ${AFS_SRC} ${AFS_SETTOKEN_SRC}
-                  ${LIBADS_SERVER_SRC}
                   ${RPC_NCACN_NP} ${NPA_TSTREAM_SRC} ${RPC_SAMR_SRC} ${RPC_LSARPC_SRC}
                   ${TDB_VALIDATE_SRC}
                   ${LIBCLI_DSSETUP_SRC}
@@ -787,7 +786,7 @@ SMBD_SRC_BASE = '''${SMBD_SRC_SRV}
                 ${PROFILE_SRC} ${PRINTBACKEND_SRC}
                 ${OPLOCK_SRC} ${NOTIFY_SRC} ${FNAME_UTIL_SRC}
                 ${LIBMSRPC_SRC}
-                ${LIBADS_SERVER_SRC} ${LIBADS_PRINTER_SRC} ${REG_FULL_SRC}
+                ${LIBADS_PRINTER_SRC} ${REG_FULL_SRC}
                 ${BUILDOPT_SRC}
                 ${LIBNET_SRC} ${LIBSMBCONF_SRC}
                 ${LIBCLI_SPOOLSS_SRC}
@@ -1048,7 +1047,7 @@ NET_SRC2 = 'utils/net_registry_util.c utils/net_help_common.c'
 NET_SRC = '''${NET_SRC1}
              ${NET_SRC2}
              ${LIBMSRPC_SRC}
-             ${LIBADS_SERVER_SRC} ${LIBADS_PRINTER_SRC}
+             ${LIBADS_PRINTER_SRC}
              ${DCUTIL_SRC}
              ${AFS_SRC} ${AFS_SETTOKEN_SRC} ${READLINE_SRC}
              ${LIBGPO_SRC} ${DISPLAY_SEC_SRC}
@@ -1142,7 +1141,6 @@ NTLM_AUTH_SRC1 = '''utils/ntlm_auth.c utils/ntlm_auth_diagnostics.c'''
 NTLM_AUTH_SRC = '''${NTLM_AUTH_SRC1}
                 ../libcli/auth/spnego_parse.c libsmb/clikrb5.c libads/kerberos.c
                 libsmb/samlogon_cache.c
-                ${LIBADS_SERVER_SRC}
                 ${LIBNMB_SRC}
                 ${LIBCLI_LDAP_NDR_SRC}
                 ${LIBNDR_GEN_SRC0} ${LIBNDR_NETLOGON_SRC}'''
@@ -1324,12 +1322,16 @@ bld.SAMBA_SUBSYSTEM('LIBADS',
                     source=LIBADS_SRC,
 		    vars=locals())
 
+bld.SAMBA_SUBSYSTEM('LIBADS_SERVER',
+                    source=LIBADS_SERVER_SRC,
+		    vars=locals())
+
 bld.SAMBA_SUBSYSTEM('SMBD_BASE',
                     source=SMBD_SRC_BASE,
                     deps='''tdb tevent dl krb5 ldap gssapi gssapi_krb5
                     NSS_WRAPPER DYNCONFIG libwbclient crypt nsl cups cap resolv ZLIB PASSDB
                     PARAM_WITHOUT_REG LIBS LIBSMB POPT_SAMBA KRBCLIENT AVAHI
-                    LIBMSRPC_GEN LIBADS''',
+                    LIBMSRPC_GEN LIBADS LIBADS_SERVER''',
                     vars=locals())
 
 #FIXME
@@ -1383,7 +1385,7 @@ bld.SAMBA_BINARY('winbindd/winbindd',
                  source=WINBINDD_SRC,
                  deps='''talloc tdb tevent cap dl ZLIB NSS_WRAPPER
                  libwbclient PASSDB ldap resolv PARAM LIB_NONSMBD LIBSMB
-                 POPT_SAMBA KRBCLIENT LIBMSRPC_GEN LIBADS''',
+                 POPT_SAMBA KRBCLIENT LIBMSRPC_GEN LIBADS LIBADS_SERVER''',
                  enabled=bld.env.build_winbind,
                  install_path='${SBINDIR}',
                  vars=locals())
@@ -1413,7 +1415,7 @@ bld.SAMBA_BINARY('smbclient',
 bld.SAMBA_BINARY('net',
                  source=NET_SRC,
                  deps='''talloc tdb libnetapi libaddns cap resolv POPT_SAMBA PASSDB LIBSMB LIB_NONSMBD
-                 PARAM_WITHOUT_REG libwbclient PARAM KRBCLIENT LIBMSRPC_GEN LIBADS
+                 PARAM_WITHOUT_REG libwbclient PARAM KRBCLIENT LIBMSRPC_GEN LIBADS LIBADS_SERVER
                  LOCALE_DIR''',
                  vars=locals())
 
@@ -1587,7 +1589,7 @@ bld.SAMBA_BINARY('ntlm_auth',
                  source=NTLM_AUTH_SRC,
                  deps='''tdb talloc cap resolv krb5 k5crypto com_err libwbclient PARAM LIB_NONSMBD
                  LIBS LIBSAMBA POPT_SAMBA ASN1_UTIL LIBTSOCKET
-                 PASSDB GROUPDB SMBLDAP WBCOMMON LIBINIPARSER''',
+                 PASSDB GROUPDB SMBLDAP WBCOMMON LIBINIPARSER LIBADS_SERVER''',
                  vars=locals())
 
 bld.SAMBA_BINARY('timelimit',
