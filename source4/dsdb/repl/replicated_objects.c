@@ -271,7 +271,9 @@ WERROR dsdb_extended_replicated_objects_convert(struct ldb_context *ldb,
 						out->objects, &out->objects[i]);
 		if (!W_ERROR_IS_OK(status)) {
 			talloc_free(out);
-			DEBUG(0,("Failed to convert object %s\n", cur->object.identifier->dn));
+			DEBUG(0,("Failed to convert object %s: %s\n",
+				 cur->object.identifier->dn,
+				 win_errstr(status)));
 			return status;
 		}
 	}
