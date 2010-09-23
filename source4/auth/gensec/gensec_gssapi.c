@@ -777,25 +777,28 @@ static NTSTATUS gensec_gssapi_update(struct gensec_security *gensec_security,
 		/* first byte is the proposed security */
 		security_accepted = maxlength_accepted[0];
 		maxlength_accepted[0] = '\0';
-		
+
 		/* Rest is the proposed max wrap length */
 		gensec_gssapi_state->max_wrap_buf_size = MIN(RIVAL(maxlength_accepted, 0), 
 							     gensec_gssapi_state->max_wrap_buf_size);
 
 		gensec_gssapi_state->sasl_protection = 0;
-		if (gensec_have_feature(gensec_security, GENSEC_FEATURE_SEAL)) {
-			if (security_accepted & NEG_SEAL) {
-				gensec_gssapi_state->sasl_protection |= NEG_SEAL;
+		if (security_accepted & NEG_SEAL) {
+			if (!gensec_have_feature(gensec_security, GENSEC_FEATURE_SEAL)) {
+				DEBUG(1, ("Remote client wanted seal, but gensec refused\n"));
+				return NT_STATUS_ACCESS_DENIED;
 			}
-		} else if (gensec_have_feature(gensec_security, GENSEC_FEATURE_SIGN)) {
-			if (security_accepted & NEG_SIGN) {
-				gensec_gssapi_state->sasl_protection |= NEG_SIGN;
+			gensec_gssapi_state->sasl_protection |= NEG_SEAL;
+		}
+		if (security_accepted & NEG_SIGN) {
+			if (!gensec_have_feature(gensec_security, GENSEC_FEATURE_SIGN)) {
+				DEBUG(1, ("Remote client wanted sign, but gensec refused\n"));
+				return NT_STATUS_ACCESS_DENIED;
 			}
-		} else if (security_accepted & NEG_NONE) {
+			gensec_gssapi_state->sasl_protection |= NEG_SIGN;
+		}
+		if (security_accepted & NEG_NONE) {
 			gensec_gssapi_state->sasl_protection |= NEG_NONE;
-		} else {
-			DEBUG(1, ("Remote client does not support unprotected connections, but we failed to negotiate anything better"));
-			return NT_STATUS_ACCESS_DENIED;
 		}
 
 		/* quirk:  This changes the value that gensec_have_feature returns, to be that after SASL negotiation */
