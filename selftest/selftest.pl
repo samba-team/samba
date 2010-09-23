@@ -153,7 +153,6 @@ my $opt_verbose = 0;
 my $opt_image = undef;
 my $opt_testenv = 0;
 my $ldap = undef;
-my $opt_analyse_cmd = undef;
 my $opt_resetup_env = undef;
 my $opt_bindir = undef;
 my $opt_load_list = undef;
@@ -339,7 +338,6 @@ my $result = GetOptions (
 		'verbose' => \$opt_verbose,
 		'testenv' => \$opt_testenv,
 		'ldap:s' => \$ldap,
-		'analyse-cmd=s' => \$opt_analyse_cmd,
 		'resetup-environment' => \$opt_resetup_env,
 		'bindir:s' => \$opt_bindir,
 		'image=s' => \$opt_image,
@@ -950,10 +948,6 @@ $envvarstr
 		}
 
 		run_testsuite($envname, $name, $cmd, $i, $suitestotal);
-
-		if (defined($opt_analyse_cmd)) {
-			system("$opt_analyse_cmd \"$name\"");
-		}
 
 		teardown_env($envname) if ($opt_resetup_env);
 	}
