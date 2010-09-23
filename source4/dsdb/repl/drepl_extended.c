@@ -102,10 +102,6 @@ static WERROR drepl_create_extended_source_dsa(struct dreplsrv_service *service,
 		return WERR_NOMEM;
 	}
 
-	if (!service->am_rodc) {
-		sdsa->repsFrom1->replica_flags = DRSUAPI_DRS_WRIT_REP;
-	}
-
 	werr = dreplsrv_out_connection_attach(service, sdsa->repsFrom1, &sdsa->conn);
 	if (!W_ERROR_IS_OK(werr)) {
 		DEBUG(0,(__location__ ": Failed to attach connection to %s\n",
@@ -147,6 +143,9 @@ static WERROR drepl_create_extended_source_dsa(struct dreplsrv_service *service,
 		}
 	}
 
+	if (!service->am_rodc) {
+		sdsa->repsFrom1->replica_flags |= DRSUAPI_DRS_WRIT_REP;
+	}
 
 	*_sdsa = sdsa;
 	return WERR_OK;
