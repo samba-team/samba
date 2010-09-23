@@ -529,31 +529,33 @@ my $interfaces = join(',', ("127.0.0.11/8",
 			    "127.0.0.15/8",
 			    "127.0.0.16/8"));
 
-my $conffile = "$prefix_abs/client/client.conf";
+my $clientdir = "$prefix_abs/client";
+
+my $conffile = "$clientdir/client.conf";
 $ENV{SMB_CONF_PATH} = $conffile;
 
-sub write_clientconf($$)
+sub write_clientconf($$$)
 {
-	my ($conffile, $vars) = @_;
+	my ($conffile, $clientdir, $vars) = @_;
 
-	mkdir("$prefix/client", 0777) unless -d "$prefix/client";
+	mkdir("$clientdir", 0777) unless -d "$clientdir";
 
-	if ( -d "$prefix/client/private" ) {
-	        unlink <$prefix/client/private/*>;
+	if ( -d "$clientdir/private" ) {
+	        unlink <$clientdir/private/*>;
 	} else {
-	        mkdir("$prefix/client/private", 0777);
+	        mkdir("$clientdir/private", 0777);
 	}
 
-	if ( -d "$prefix/client/lockdir" ) {
-	        unlink <$prefix/client/lockdir/*>;
+	if ( -d "$clientdir/lockdir" ) {
+	        unlink <$clientdir/lockdir/*>;
 	} else {
-	        mkdir("$prefix/client/lockdir", 0777);
+	        mkdir("$clientdir/lockdir", 0777);
 	}
 
-	if ( -d "$prefix_abs/client/ncalrpcdir" ) {
-	        unlink <$prefix/client/ncalrpcdir/*>;
+	if ( -d "$clientdir/ncalrpcdir" ) {
+	        unlink <$clientdir/ncalrpcdir/*>;
 	} else {
-	        mkdir("$prefix/client/ncalrpcdir", 0777);
+	        mkdir("$clientdir/ncalrpcdir", 0777);
 	}
 
 	open(CF, ">$conffile");
@@ -574,9 +576,9 @@ sub write_clientconf($$)
 		print CF "\tinterfaces = $interfaces\n";
 	}
 	print CF "
-	private dir = $prefix_abs/client/private
-	lock dir = $prefix_abs/client/lockdir
-	ncalrpc dir = $prefix_abs/client/ncalrpcdir
+	private dir = $clientdir/private
+	lock dir = $clientdir/lockdir
+	ncalrpc dir = $clientdir/ncalrpcdir
 	name resolve order = bcast file
 	panic action = $RealBin/gdb_backtrace \%PID\% \%PROG\%
 	max xmit = 32K
@@ -585,7 +587,7 @@ sub write_clientconf($$)
 	system:anonymous = true
 	client lanman auth = Yes
 	log level = 1
-	torture:basedir = $prefix_abs/client
+	torture:basedir = $clientdir
 #We don't want to pass our self-tests if the PAC code is wrong
 	gensec:require_pac = true
 	modules dir = $ENV{LD_SAMBA_MODULE_PATH}
@@ -843,7 +845,7 @@ sub setup_env($)
 		$ENV{SMB_CONF_PATH} = $testenv_vars->{SERVERCONFFILE};
 	} elsif ($option eq "client") {
 		SocketWrapper::set_default_iface(11);
-		write_clientconf($conffile, $testenv_vars);
+		write_clientconf($conffile, $clientdir, $testenv_vars);
 		$ENV{SMB_CONF_PATH} = $conffile;
 	} else {
 		die("Unknown option[$option] for envname[$envname]");
