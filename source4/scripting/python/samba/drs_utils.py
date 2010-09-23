@@ -119,7 +119,7 @@ class drs_Replicate:
         req8.destination_dsa_guid           = destination_dsa_guid
         req8.source_dsa_invocation_id	    = source_dsa_invocation_id
         req8.naming_context		    = drsuapi.DsReplicaObjectIdentifier()
-        req8.naming_context.dn              = dn.decode("utf-8")
+        req8.naming_context.dn              = dn
         req8.highwatermark                  = drsuapi.DsReplicaHighWaterMark()
         req8.highwatermark.tmp_highest_usn  = 0
         req8.highwatermark.reserved_usn	    = 0
