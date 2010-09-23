@@ -34,6 +34,8 @@
 #include "librpc/gen_ndr/ndr_samr_c.h"
 #include "param/param.h"
 #include "param/provision.h"
+#include "system/kerberos.h"
+#include "auth/kerberos/kerberos.h"
 
 /*
  * complete a domain join, when joining to a AD domain:
@@ -333,10 +335,7 @@ static NTSTATUS libnet_JoinADSDomain(struct libnet_context *ctx, struct libnet_J
 
 	rtn = ldb_msg_add_fmt(msg, "msDS-SupportedEncryptionTypes",
 			      "%lu",
-			      (long unsigned int)(ENC_CRC32 | ENC_RSA_MD5 |
-						  ENC_RC4_HMAC_MD5 |
-						  ENC_HMAC_SHA1_96_AES128 |
-						  ENC_HMAC_SHA1_96_AES256));
+			      (long unsigned int)(ENC_ALL_TYPES));
 	if (rtn != LDB_SUCCESS) {
 		r->out.error_string = NULL;
 		talloc_free(tmp_ctx);
