@@ -632,18 +632,21 @@ static NTSTATUS gensec_gssapi_update(struct gensec_security *gensec_security,
 			gensec_gssapi_state->max_wrap_buf_size = MIN(RIVAL(maxlength_proposed, 0), 
 								     gensec_gssapi_state->max_wrap_buf_size);
 			gensec_gssapi_state->sasl_protection = 0;
-			if (gensec_have_feature(gensec_security, GENSEC_FEATURE_SEAL)) {
-				if (security_supported & NEG_SEAL) {
+			if (security_supported & NEG_SEAL) {
+				if (gensec_have_feature(gensec_security, GENSEC_FEATURE_SEAL)) {
 					gensec_gssapi_state->sasl_protection |= NEG_SEAL;
 				}
-			} else if (gensec_have_feature(gensec_security, GENSEC_FEATURE_SIGN)) {
-				if (security_supported & NEG_SIGN) {
+			}
+			if (security_supported & NEG_SIGN) {
+				if (gensec_have_feature(gensec_security, GENSEC_FEATURE_SIGN)) {
 					gensec_gssapi_state->sasl_protection |= NEG_SIGN;
 				}
-			} else if (security_supported & NEG_NONE) {
+			}
+			if (security_supported & NEG_NONE) {
 				gensec_gssapi_state->sasl_protection |= NEG_NONE;
-			} else {
-				DEBUG(1, ("Remote server does not support unprotected connections"));
+			}
+			if (gensec_gssapi_state->sasl_protection == 0) {
+				DEBUG(1, ("Remote server does not support unprotected connections\n"));
 				return NT_STATUS_ACCESS_DENIED;
 			}
 
