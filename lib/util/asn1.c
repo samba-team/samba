@@ -489,6 +489,65 @@ bool asn1_peek_tag(struct asn1_data *data, uint8_t tag)
 	return (b == tag);
 }
 
+/*
+ * just get the needed size the tag would consume
+ */
+bool asn1_peek_tag_needed_size(struct asn1_data *data, uint8_t tag, size_t *size)
+{
+	off_t start_ofs = data->ofs;
+	uint8_t b;
+	size_t taglen = 0;
+
+	if (data->has_error) {
+		return false;
+	}
+
+	if (!asn1_read_uint8(data, &b)) {
+		data->ofs = start_ofs;
+		data->has_error = false;
+		return false;
+	}
+
+	if (b != tag) {
+		data->ofs = start_ofs;
+		data->has_error = false;
+		return false;
+	}
+
+	if (!asn1_read_uint8(data, &b)) {
+		data->ofs = start_ofs;
+		data->has_error = false;
+		return false;
+	}
+
+	if (b & 0x80) {
+		int n = b & 0x7f;
+		if (!asn1_read_uint8(data, &b)) {
+			data->ofs = start_ofs;
+			data->has_error = false;
+			return false;
+		}
+		taglen = b;
+		while (n > 1) {
+			if (!asn1_read_uint8(data, &b)) {
+				data->ofs = start_ofs;
+				data->has_error = false;
+				return false;
+			}
+			taglen = (taglen << 8) | b;
+			n--;
+		}
+	} else {
+		taglen = b;
+	}
+
+	*size = (data->ofs - start_ofs) + taglen;
+
+	data->ofs = start_ofs;
+	data->has_error = false;
+	return true;
+}
+
 /* start reading a nested asn1 structure */
 bool asn1_start_tag(struct asn1_data *data, uint8_t tag)
 {
@@ -942,6 +1001,30 @@ NTSTATUS asn1_full_tag(DATA_BLOB blob, uint8_t tag, size_t *packet_size)
 	talloc_free(asn1);
 
 	if (size > blob.length) {
+		return STATUS_MORE_ENTRIES;
+	}
+
+	*packet_size = size;
+	return NT_STATUS_OK;
+}
+
+NTSTATUS asn1_peek_full_tag(DATA_BLOB blob, uint8_t tag, size_t *packet_size)
+{
+	struct asn1_data asn1;
+	uint32_t size;
+	bool ok;
+
+	ZERO_STRUCT(asn1);
+	asn1.data = blob.data;
+	asn1.length = blob.length;
+
+	ok = asn1_peek_tag_needed_size(&asn1, tag, &size);
+	if (!ok) {
+		return STATUS_MORE_ENTRIES;
+	}
+
+	if (size > blob.length) {
+		*packet_size = size;
 		return STATUS_MORE_ENTRIES;
 	}		
 
