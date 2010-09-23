@@ -1050,7 +1050,6 @@ NET_SRC2 = 'utils/net_registry_util.c utils/net_help_common.c'
 
 NET_SRC = '''${NET_SRC1}
              ${NET_SRC2}
-             ${LIBADDNS_SRC0}
              ${LIBMSRPC_SRC}
              ${LIBADS_SRC} ${LIBADS_SERVER_SRC} ${LIBADS_PRINTER_SRC}
              ${DCUTIL_SRC}
@@ -1242,6 +1241,11 @@ bld.SAMBA_LIBRARY('libsmbsharemodes',
                     public_deps='''talloc tdb''',
                     vars=locals())
 
+bld.SAMBA_LIBRARY('libaddns',
+                    source=LIBADDNS_SRC,
+                    public_deps='SOCKET_WRAPPER',
+                    vars=locals())
+
 bld.SAMBA_SUBSYSTEM('LIBMSRPC_GEN',
                     source='${LIBNDR_GEN_SRC}',
                     vars=locals())
@@ -1401,7 +1405,7 @@ bld.SAMBA_BINARY('smbclient',
 
 bld.SAMBA_BINARY('net',
                  source=NET_SRC,
-                 deps='''talloc tdb libnetapi cap resolv POPT_SAMBA PASSDB LIBSMB LIB_NONSMBD
+                 deps='''talloc tdb libnetapi libaddns cap resolv POPT_SAMBA PASSDB LIBSMB LIB_NONSMBD
                  PARAM_WITHOUT_REG libwbclient PARAM KRBCLIENT LIBMSRPC_GEN
                  LOCALE_DIR''',
                  vars=locals())
