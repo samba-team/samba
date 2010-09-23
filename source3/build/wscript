@@ -45,7 +45,8 @@ def build(bld):
                         cflags=cflags)
     bld.SAMBA_SUBSYSTEM('LOCALE_DIR',
                         '../localedir.c',
-                        cflags=cflags)
+                        cflags='-DLOCALEDIR=\"%s\"' % bld.env.LOCALEDIR)
+
 
 def dynconfig_cflags(bld):
     '''work out the extra CFLAGS for dynconfig.c'''
