@@ -951,6 +951,10 @@ LIBSMBCLIENT_SRC1 = '''${LIBSMBCLIENT_SRC0}
 
 LIBSMBCLIENT_SRC = '${LIBSMBCLIENT_SRC1}'
 
+LIBSMBSHAREMODES_SRC0 = 'libsmb/smb_share_modes.c'
+
+LIBSMBSHAREMODES_SRC = '${LIBSMBSHAREMODES_SRC0}'
+
 
 # FIXME:  bigballofmud
 
@@ -1222,6 +1226,11 @@ bld.SAMBA_LIBRARY('libnetapi',
 bld.SAMBA_LIBRARY('libsmbclient',
                     source=LIBSMBCLIENT_SRC,
                     public_deps='''talloc tdb libwbclient cap PARAM LIB_NONSMBD LIBSMB KRBCLIENT PASSDB SMBLDAP GROUPDB''',
+                    vars=locals())
+
+bld.SAMBA_LIBRARY('libsmbsharemodes',
+                    source=LIBSMBSHAREMODES_SRC,
+                    public_deps='''talloc tdb''',
                     vars=locals())
 
 bld.SAMBA_SUBSYSTEM('ASN1_UTIL',
