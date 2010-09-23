@@ -369,8 +369,6 @@ LIBMSRPC_SRC = '''
                ../librpc/rpc/binding_handle.c
                ${LIBCLI_EPMAPPER_SRC}'''
 
-LIBMSRPC_GEN_SRC = '${LIBNDR_GEN_SRC}'
-
 #
 # registry-related objects
 #
@@ -726,7 +724,7 @@ WINBINDD_SRC1 = '''winbindd/winbindd.c
                    ../nsswitch/libwbclient/wb_reqtrans.c'''
 
 WINBINDD_SRC = '''${WINBINDD_SRC1}
-                  ${LIBMSRPC_SRC} ${LIBMSRPC_GEN_SRC}
+                  ${LIBMSRPC_SRC}
                   ${PROFILE_SRC} ${SLCACHE_SRC}
                   ${LIBADS_SRC}
                   ${DCUTIL_SRC} ${IDMAP_SRC} ${NSS_INFO_SRC}
@@ -796,7 +794,7 @@ SMBD_SRC_BASE = '''${SMBD_SRC_SRV}
                 ${PROFILE_SRC} ${PRINTBACKEND_SRC}
                 ${OPLOCK_SRC} ${NOTIFY_SRC} ${FNAME_UTIL_SRC}
                 ${LIBMSRPC_SRC}
-                ${LIBMSRPC_GEN_SRC} ${LIBADS_SRC}
+                ${LIBADS_SRC}
                 ${LIBADS_SERVER_SRC} ${LIBADS_PRINTER_SRC} ${REG_FULL_SRC}
                 ${BUILDOPT_SRC}
                 ${LIBNET_SRC} ${LIBSMBCONF_SRC}
@@ -852,7 +850,7 @@ SWAT_SRC1 = '''web/cgi.c web/diagnose.c web/startstop.c web/statuspage.c
 SWAT_SRC = '''${SWAT_SRC1} ${PRINTING_SRC} ${PRINTBASE_SRC}
            ${LOCKING_SRC}
            ${PLAINTEXT_AUTH_SRC}
-           ${LIBMSRPC_GEN_SRC} ${LIBMSRPC_SRC}
+           ${LIBMSRPC_SRC}
            ${PASSCHANGE_SRC} ${FNAME_UTIL_SRC}
            ${LIBCLI_SAMR_SRC}
            rpc_client/init_lsa.c'''
@@ -866,7 +864,6 @@ SMBCONTROL_SRC = '''utils/smbcontrol.c ${PRINTBASE_SRC}'''
 
 SMBTREE_SRC = '''utils/smbtree.c
              ${PROFILE_SRC}
-             ${LIBMSRPC_GEN_SRC}
              ${LIBMSRPC_SRC}
              ${LIBCLI_SRVSVC_SRC}'''
 
@@ -879,7 +876,7 @@ TEST_LP_LOAD_SRC = '''param/test_lp_load.c'''
 PASSWD_UTIL_SRC = 'utils/passwd_util.c'
 
 SMBPASSWD_SRC = '''utils/smbpasswd.c ${PASSWD_UTIL_SRC} ${PASSCHANGE_SRC}
-                ${LIBMSRPC_GEN_SRC} ${LIBMSRPC_SRC}
+                ${LIBMSRPC_SRC}
                 ${LIBCLI_SAMR_SRC}
                 rpc_client/init_lsa.c'''
 
@@ -902,7 +899,6 @@ RPCCLIENT_SRC1 = '''rpcclient/rpcclient.c rpcclient/cmd_lsarpc.c
                     ${DISPLAY_SEC_SRC}'''
 
 RPCCLIENT_SRC = '''${RPCCLIENT_SRC1}
-                   ${LIBMSRPC_GEN_SRC}
                    ${LIBMSRPC_SRC}
                    ${READLINE_SRC}
                    ${LIBADS_SRC}
@@ -944,7 +940,7 @@ LIBSMBCLIENT_SRC0 = '''libsmb/libsmb_cache.c
                     libsmb/libsmb_setget.c'''
 
 LIBSMBCLIENT_SRC1 = '''${LIBSMBCLIENT_SRC0}
-                    ${LIBMSRPC_SRC} ${LIBMSRPC_GEN_SRC}
+                    ${LIBMSRPC_SRC}
                     ${LIBCLI_SRVSVC_SRC}
                     ${LIBCLI_LSA_SRC}'''
 
@@ -974,7 +970,7 @@ LIBNETAPI_SRC0 = '''lib/netapi/netapi.c
 LIBNETAPI_SRC = '''${LIBNETAPI_SRC0} ${LIBNET_SRC}
                    ${LIBSMBCONF_SRC}
                    ${REG_SMBCONF_SRC}
-                   ${LIBMSRPC_SRC} ${LIBMSRPC_GEN_SRC}
+                   ${LIBMSRPC_SRC}
                    ${DCUTIL_SRC} ${LIBADS_SRC} ${PRIVILEGES_BASIC_SRC}
                    auth/token_util.c
                    ${LIBCLI_INITSHUTDOWN_SRC}
@@ -993,7 +989,7 @@ CLIENT_SRC1 = '''client/client.c client/clitar.c
                  client/dnsbrowse.c
                  ${LIBMSRPC_SRC}'''
 
-CLIENT_SRC = '''${CLIENT_SRC1} ${LIBMSRPC_GEN_SRC}
+CLIENT_SRC = '''${CLIENT_SRC1}
                 ${READLINE_SRC} ${DISPLAY_SEC_SRC}
                 ${LIBCLI_SRVSVC_SRC}
                 rpc_client/init_lsa.c'''
@@ -1061,7 +1057,7 @@ NET_SRC2 = 'utils/net_registry_util.c utils/net_help_common.c'
 NET_SRC = '''${NET_SRC1}
              ${NET_SRC2}
              ${LIBADDNS_SRC0}
-             ${LIBMSRPC_SRC} ${LIBMSRPC_GEN_SRC}
+             ${LIBMSRPC_SRC}
              ${LIBADS_SRC} ${LIBADS_SERVER_SRC} ${LIBADS_PRINTER_SRC}
              ${DCUTIL_SRC}
              ${AFS_SRC} ${AFS_SETTOKEN_SRC} ${READLINE_SRC}
@@ -1107,11 +1103,11 @@ LOCKTEST2_SRC = '''torture/locktest2.c ${LOCKING_SRC}
                 ${LIBNDR_GEN_SRC0} ${FNAME_UTIL_SRC}'''
 
 SMBCACLS_SRC = '''utils/smbcacls.c
-                ${LIBMSRPC_SRC} ${LIBMSRPC_GEN_SRC}
+                ${LIBMSRPC_SRC}
                 ${LIBCLI_LSA_SRC}'''
 
 SMBCQUOTAS_SRC = '''utils/smbcquotas.c
-                ${LIBMSRPC_SRC} ${LIBMSRPC_GEN_SRC}
+                ${LIBMSRPC_SRC}
                 ${LIBCLI_LSA_SRC}'''
 
 EVTLOGADM_SRC0 = 'utils/eventlogadm.c'
@@ -1167,7 +1163,7 @@ VLP_SRC = '''printing/tests/vlp.c
           ${LIBSAMBAUTIL_SRC}
           param/util.c'''
 
-RPC_OPEN_TCP_SRC = 'torture/rpc_open_tcp.c ${LIBMSRPC_SRC} ${LIBMSRPC_GEN_SRC}'
+RPC_OPEN_TCP_SRC = 'torture/rpc_open_tcp.c ${LIBMSRPC_SRC}'
 
 DBWRAP_TOOL_SRC = 'utils/dbwrap_tool.c'
 
@@ -1238,17 +1234,22 @@ bld.SAMBA_LIBRARY('libwbclient',
 bld.SAMBA_LIBRARY('libnetapi',
                     source=LIBNETAPI_SRC,
                     public_deps='''talloc tdb cap libwbclient LIB_NONSMBD LIBSMB KRBCLIENT
-                    PASSDB SMBLDAP GROUPDB PARAM_WITHOUT_REG DYNCONFIG''',
+                    PASSDB SMBLDAP GROUPDB PARAM_WITHOUT_REG DYNCONFIG
+                    LIBMSRPC_GEN''',
                     vars=locals())
 
 bld.SAMBA_LIBRARY('libsmbclient',
                     source=LIBSMBCLIENT_SRC,
-                    public_deps='''talloc tdb libwbclient cap PARAM LIB_NONSMBD LIBSMB KRBCLIENT PASSDB SMBLDAP GROUPDB''',
+                    public_deps='''talloc tdb libwbclient cap PARAM LIB_NONSMBD LIBSMB KRBCLIENT PASSDB SMBLDAP GROUPDB LIBMSRPC_GEN''',
                     vars=locals())
 
 bld.SAMBA_LIBRARY('libsmbsharemodes',
                     source=LIBSMBSHAREMODES_SRC,
                     public_deps='''talloc tdb''',
+                    vars=locals())
+
+bld.SAMBA_SUBSYSTEM('LIBMSRPC_GEN',
+                    source='${LIBNDR_GEN_SRC}',
                     vars=locals())
 
 bld.SAMBA_SUBSYSTEM('ASN1_UTIL',
@@ -1361,7 +1362,8 @@ bld.SAMBA_BINARY('smbd/smbd',
                  source=SMBD_SRC,
                  deps='''tdb tevent dl krb5 ldap gssapi gssapi_krb5
                  NSS_WRAPPER DYNCONFIG libwbclient crypt nsl cups cap resolv ZLIB PASSDB
-                 PARAM_WITHOUT_REG LIBS LIBSMB POPT_SAMBA KRBCLIENT AVAHI''',
+                 PARAM_WITHOUT_REG LIBS LIBSMB POPT_SAMBA KRBCLIENT AVAHI
+                 LIBMSRPC_GEN''',
                  install_path='${SBINDIR}',
                  vars=locals())
 
@@ -1377,7 +1379,7 @@ bld.SAMBA_BINARY('winbindd/winbindd',
                  source=WINBINDD_SRC,
                  deps='''talloc tdb tevent cap dl ZLIB NSS_WRAPPER
                  libwbclient PASSDB ldap resolv PARAM LIB_NONSMBD LIBSMB
-                 POPT_SAMBA KRBCLIENT''',
+                 POPT_SAMBA KRBCLIENT LIBMSRPC_GEN''',
                  enabled=bld.env.build_winbind,
                  install_path='${SBINDIR}',
                  vars=locals())
@@ -1385,7 +1387,8 @@ bld.SAMBA_BINARY('winbindd/winbindd',
 bld.SAMBA_BINARY('web/swat',
                  source=SWAT_SRC,
                  deps='''talloc tevent cap LIBS LIBSMB libwbclient PARAM
-                 LIB_NONSMBD resolv PASSDB POPT_SAMBA KRBCLIENT cups''',
+                 LIB_NONSMBD resolv PASSDB POPT_SAMBA KRBCLIENT cups
+                 LIBMSRPC_GEN''',
                  enabled=bld.env.build_swat,
                  install_path='${SBINDIR}',
                  vars=locals())
@@ -1393,19 +1396,19 @@ bld.SAMBA_BINARY('web/swat',
 bld.SAMBA_BINARY('rpcclient/rpcclient',
                  source=RPCCLIENT_SRC,
                  deps='''talloc tdb cap resolv POPT_SAMBA PASSDB LIBSMB LIB_NONSMBD
-                 PARAM_WITHOUT_REG libwbclient PARAM KRBCLIENT''',
+                 PARAM_WITHOUT_REG libwbclient PARAM KRBCLIENT LIBMSRPC_GEN''',
                  vars=locals())
 
 bld.SAMBA_BINARY('smbclient',
                  source=CLIENT_SRC,
                  deps='''talloc tdb cap resolv POPT_SAMBA PASSDB LIBSMB LIB_NONSMBD
-                 PARAM_WITHOUT_REG libwbclient PARAM KRBCLIENT''',
+                 PARAM_WITHOUT_REG libwbclient PARAM KRBCLIENT LIBMSRPC_GEN''',
                  vars=locals())
 
 bld.SAMBA_BINARY('net',
                  source=NET_SRC,
                  deps='''talloc tdb libnetapi cap resolv POPT_SAMBA PASSDB LIBSMB LIB_NONSMBD
-                 PARAM_WITHOUT_REG libwbclient PARAM KRBCLIENT
+                 PARAM_WITHOUT_REG libwbclient PARAM KRBCLIENT LIBMSRPC_GEN
                  LOCALE_DIR''',
                  vars=locals())
 
@@ -1447,13 +1450,13 @@ bld.SAMBA_BINARY('smbcontrol',
 bld.SAMBA_BINARY('smbtree',
                  source=SMBTREE_SRC,
                  deps='''talloc tdb tevent cap resolv libwbclient PARAM LIB_NONSMBD
-                 LIBSMB LIBSMB_ERR POPT_SAMBA KRBCLIENT PASSDB SMBLDAP GROUPDB''',
+                 LIBSMB LIBSMB_ERR POPT_SAMBA KRBCLIENT PASSDB SMBLDAP GROUPDB LIBMSRPC_GEN''',
                  vars=locals())
 
 bld.SAMBA_BINARY('smbpasswd',
                  source=SMBPASSWD_SRC,
                  deps='''talloc tdb tevent cap resolv libwbclient PARAM LIB_NONSMBD
-                 LIBSMB LIBSMB_ERR POPT_SAMBA KRBCLIENT PASSDB SMBLDAP GROUPDB''',
+                 LIBSMB LIBSMB_ERR POPT_SAMBA KRBCLIENT PASSDB SMBLDAP GROUPDB LIBMSRPC_GEN''',
                  vars=locals())
 
 bld.SAMBA_BINARY('pdbedit',
@@ -1497,13 +1500,13 @@ bld.SAMBA_BINARY('msgtest',
 bld.SAMBA_BINARY('smbcacls',
                  source=SMBCACLS_SRC,
                  deps='''talloc tdb cap resolv libwbclient PARAM LIBSMB KRBCLIENT
-                 LIB_NONSMBD PASSDB GROUPDB POPT_SAMBA SMBLDAP''',
+                 LIB_NONSMBD PASSDB GROUPDB POPT_SAMBA SMBLDAP LIBMSRPC_GEN''',
                  vars=locals())
 
 bld.SAMBA_BINARY('smbcquotas',
                  source=SMBCQUOTAS_SRC,
                  deps='''talloc tdb cap resolv libwbclient PARAM LIB_NONSMBD LIBSMB KRBCLIENT
-                 POPT_SAMBA PASSDB SMBLDAP GROUPDB''',
+                 POPT_SAMBA PASSDB SMBLDAP GROUPDB LIBMSRPC_GEN''',
                  vars=locals())
 
 bld.SAMBA_BINARY('eventlogadm',
@@ -1537,7 +1540,8 @@ bld.SAMBA_BINARY('vfstest',
                  source=VFSTEST_SRC,
                  deps='''talloc tdb tevent cap resolv libwbclient dl krb5 ldap gssapi gssapi_krb5
                  NSS_WRAPPER DYNCONFIG libwbclient crypt nsl cups ZLIB PASSDB
-                 PARAM_WITHOUT_REG LIBS LIBSMB POPT_SAMBA KRBCLIENT AVAHI''',
+                 PARAM_WITHOUT_REG LIBS LIBSMB POPT_SAMBA KRBCLIENT AVAHI
+                 LIBMSRPC_GEN''',
                  vars=locals())
 
 bld.SAMBA_BINARY('smbiconv',
@@ -1590,7 +1594,8 @@ bld.SAMBA_BINARY('timelimit',
 
 bld.SAMBA_BINARY('rpc_open_tcp',
                  source=RPC_OPEN_TCP_SRC,
-                 deps='''talloc tdb tevent resolv cap libwbclient KRBCLIENT PARAM LIBS LIBSMB LIB_NONSMBD LIBSMB_ERR ASN1_UTIL LIBTSOCKET''',
+                 deps='''talloc tdb tevent resolv cap libwbclient KRBCLIENT PARAM LIBS LIBSMB LIB_NONSMBD
+                 LIBSMB_ERR ASN1_UTIL LIBTSOCKET LIBMSRPC_GEN''',
                  vars=locals())
 
 bld.SAMBA_BINARY('test_lp_load',
