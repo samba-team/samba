@@ -1345,6 +1345,9 @@ bld.SAMBA_SUBSYSTEM('NDR_STANDARD',
                     source=LIBNDR_SRC,
                     vars=locals())
 
+#FIXME
+bld.SAMBA_SUBSYSTEM('dcerpc', '')
+
 bld.SAMBA_SUBSYSTEM('LZXPRESS',
 		    deps='replace',
 		    source='../lib/compression/lzxpress.c')
@@ -1356,6 +1359,10 @@ bld.SAMBA_SUBSYSTEM('NDR_SECURITY',
 
 bld.SAMBA_SUBSYSTEM('NDR_DCERPC',
                     source='../librpc/gen_ndr/ndr_dcerpc.c',
+                    vars=locals())
+
+bld.SAMBA_SUBSYSTEM('NDR_SRVSVC',
+                    source='../librpc/gen_ndr/ndr_srvsvc.c',
                     vars=locals())
 
 bld.SAMBA_SUBSYSTEM('LIBSAMBA-ERRORS',
