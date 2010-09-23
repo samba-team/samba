@@ -59,47 +59,6 @@ class TestCaseInTempDir(TestCase):
         os.rmdir(self.tempdir)
 
 
-class SubstituteVarTestCase(TestCase):
-
-    def test_empty(self):
-        self.assertEquals("", samba.substitute_var("", {}))
-
-    def test_nothing(self):
-        self.assertEquals("foo bar",
-                samba.substitute_var("foo bar", {"bar": "bla"}))
-
-    def test_replace(self):
-        self.assertEquals("foo bla",
-                samba.substitute_var("foo ${bar}", {"bar": "bla"}))
-
-    def test_broken(self):
-        self.assertEquals("foo ${bdkjfhsdkfh sdkfh ", 
-            samba.substitute_var("foo ${bdkjfhsdkfh sdkfh ", {"bar": "bla"}))
-
-    def test_unknown_var(self):
-        self.assertEquals("foo ${bla} gsff", 
-                samba.substitute_var("foo ${bla} gsff", {"bar": "bla"}))
-                
-    def test_check_all_substituted(self):
-        samba.check_all_substituted("nothing to see here")
-        self.assertRaises(Exception, samba.check_all_substituted,
-                "Not subsituted: ${FOOBAR}")
-
-
-class LdbExtensionTests(TestCaseInTempDir):
-
-    def test_searchone(self):
-        path = self.tempdir + "/searchone.ldb"
-        l = samba.Ldb(path)
-        try:
-            l.add({"dn": "foo=dc", "bar": "bla"})
-            self.assertEquals("bla",
-                l.searchone(basedn=ldb.Dn(l, "foo=dc"), attribute="bar"))
-        finally:
-            del l
-            os.unlink(path)
-
-
 def env_loadparm():
     lp = param.LoadParm()
     try:

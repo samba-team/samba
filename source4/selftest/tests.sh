@@ -490,7 +490,7 @@ planpythontestsuite none samba.tests.security
 planpythontestsuite none samba.tests.dcerpc.misc
 planpythontestsuite none samba.tests.param
 planpythontestsuite none samba.tests.upgrade
-planpythontestsuite none samba.tests
+planpythontestsuite none samba.tests.core
 planpythontestsuite none samba.tests.provision
 planpythontestsuite none samba.tests.samba3
 planpythontestsuite dc:local samba.tests.dcerpc.sam

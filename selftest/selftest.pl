@@ -706,7 +706,7 @@ foreach my $testsuite (@available) {
 				$match = $r;
 				$restricted_used->{$r} = 1;
 			} elsif (substr($r, 0, length($name)+1) eq "$name.") {
-				push(@{$individual_tests->{$name}}, substr($r, length($name)+1));
+				push(@{$individual_tests->{$name}}, $r);
 				$match = $r;
 				$restricted_used->{$r} = 1;
 			}
@@ -938,7 +938,7 @@ $envvarstr
 			if ($$_[3]) {
 				my ($fh, $listid_file) = tempfile(UNLINK => 0);
 				foreach my $test (@{$individual_tests->{$name}}) {
-					print $fh "$test\n";
+					print $fh substr($test, length($name)+1) . "\n";
 				}
 				$cmd =~ s/\$LOADLIST/--load-list=$listid_file/g;
 			} elsif ($$_[4]) {
