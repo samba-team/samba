@@ -339,7 +339,6 @@ static bool internal_torture_run_test(struct torture_context *context,
 					  const char **restricted)
 {
 	bool success;
-	char *old_testname = NULL;
 	char *subunit_testname = NULL;
 
 	if (tcase == NULL || strcmp(test->name, tcase->name) != 0) { 
