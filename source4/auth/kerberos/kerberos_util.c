@@ -817,8 +817,9 @@ krb5_error_code kerberos_enctype_bitmap_to_enctypes(TALLOC_CTX *mem_ctx, uint32_
 		return ENOMEM;
 	}
 	for (i=0; i<(8*sizeof(enctype_bitmap)); i++) {
-		if ((1 << i) & enctype_bitmap) {
-			(*enctypes)[j] = kerberos_enctype_bitmap_to_enctype(enctype_bitmap);
+		uint32_t bit_value = (1 << i) & enctype_bitmap;
+		if (bit_value & enctype_bitmap) {
+			(*enctypes)[j] = kerberos_enctype_bitmap_to_enctype(bit_value);
 			if (!(*enctypes)[j]) {
 				return KRB5_PROG_ETYPE_NOSUPP;
 			}
