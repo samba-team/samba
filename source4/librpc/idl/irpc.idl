@@ -21,6 +21,7 @@ import "misc.idl", "security.idl", "nbt.idl";
 		uint32 callid;
 		irpc_flags flags;
 		NTSTATUS status;
+		[flag(NDR_ALIGN8)] DATA_BLOB _pad;
 	} irpc_header;
 
 	/******************************************************
