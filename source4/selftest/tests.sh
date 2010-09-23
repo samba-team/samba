@@ -183,9 +183,8 @@ ncacn_np_tests="RPC-SCHANNEL RPC-JOIN RPC-LSA RPC-DSSETUP RPC-ALTERCONTEXT RPC-M
 ncalrpc_tests="RPC-SCHANNEL RPC-JOIN RPC-LSA RPC-DSSETUP RPC-ALTERCONTEXT RPC-MULTIBIND RPC-NETLOGON RPC-DRSUAPI RPC-ASYNCBIND RPC-LSALOOKUP RPC-LSA-GETUSER RPC-SCHANNEL2 RPC-AUTHCONTEXT"
 drs_rpc_tests=`$smb4torture --list | grep '^DRS-RPC'`
 ncacn_ip_tcp_tests="RPC-SCHANNEL RPC-JOIN RPC-LSA RPC-DSSETUP RPC-ALTERCONTEXT RPC-MULTIBIND RPC-NETLOGON RPC-HANDLES RPC-ASYNCBIND RPC-LSALOOKUP RPC-LSA-GETUSER RPC-SCHANNEL2 RPC-AUTHCONTEXT RPC-OBJECTUUID $drs_rpc_tests"
-slow_ncacn_np_tests="RPC-SAMLOGON RPC-SAMR RPC-SAMR-USERS RPC-SAMR-LARGE-DC RPC-SAMR-USERS-PRIVILEGES RPC-SAMR-PASSWORDS RPC-SAMR-PASSWORDS-PWDLASTSET"
-slow_ncalrpc_tests="RPC-SAMR RPC-SAMR-PASSWORDS"
-slow_ncacn_ip_tcp_tests="RPC-SAMR RPC-SAMR-PASSWORDS RPC-CRACKNAMES"
+slow_ncacn_np_tests="RPC-SAMLOGON RPC-SAMR-USERS RPC-SAMR-LARGE-DC RPC-SAMR-USERS-PRIVILEGES RPC-SAMR-PASSWORDS RPC-SAMR-PASSWORDS-PWDLASTSET"
+slow_ncacn_ip_tcp_tests="RPC-SAMR RPC-CRACKNAMES"
 
 all_tests="$ncalrpc_tests $ncacn_np_tests $ncacn_ip_tcp_tests $slow_ncalrpc_tests $slow_ncacn_np_tests $slow_ncacn_ip_tcp_tests RPC-LSA-SECRETS RPC-SAMBA3-SHARESEC RPC-COUNTCALLS"
 
@@ -225,18 +224,15 @@ done
 t="RPC-COUNTCALLS"
 plantestsuite_loadlist "samba4.`normalize_testname $t`" dc:local $VALGRIND $smb4torture "\$SERVER[$bindoptions]" -U"\$USERNAME"%"\$PASSWORD" -W \$DOMAIN $t "$*"
 
-for bindoptions in connect $VALIDATE ; do
-	for transport in ncalrpc ncacn_np ncacn_ip_tcp; do
-		env="dc"
-		case $transport in
-			ncalrpc) tests=$slow_ncalrpc_tests; env="dc:local" ;;
-			ncacn_np) tests=$slow_ncacn_np_tests ;;
-			ncacn_ip_tcp) tests=$slow_ncacn_ip_tcp_tests ;;
-		esac
-		for t in $tests; do
-			plantestsuite_loadlist "samba4.`normalize_testname $t` on $transport with $bindoptions" $env $VALGRIND $smb4torture $transport:"\$SERVER[$bindoptions]" -U"\$USERNAME"%"\$PASSWORD" -W \$DOMAIN $t "$*"
-		done
-	done
+for transport in ncacn_np ncacn_ip_tcp; do
+    env="dc"
+    case $transport in
+	ncacn_np) tests=$slow_ncacn_np_tests ;;
+	ncacn_ip_tcp) tests=$slow_ncacn_ip_tcp_tests ;;
+    esac
+    for t in $tests; do
+	plantestsuite_loadlist "samba4.`normalize_testname $t` on $transport" $env $VALGRIND $smb4torture $transport:"\$SERVER" -U"\$USERNAME"%"\$PASSWORD" -W \$DOMAIN $t "$*"
+    done
 done
 # Tests for the DFS referral calls implementation
 
@@ -285,7 +281,6 @@ for env in dc fl2000dc fl2003dc fl2008r2dc; do
 		plantestsuite_loadlist "samba4.rpc.lsa.secrets on $transport with $bindoptions with Kerberos - use target principal" $env $smb4torture $transport:"\$SERVER[$bindoptions]" -k yes -U"\$USERNAME"%"\$PASSWORD" -W \$DOMAIN "--option=clientusespnegoprincipal=yes" "--option=gensec:target_hostname=\$NETBIOSNAME" RPC-LSA-SECRETS "$*"
 		plantestsuite_loadlist "samba4.rpc.lsa.secrets on $transport with Kerberos - use Samba3 style login" $env $smb4torture $transport:"\$SERVER" -k yes -U"\$USERNAME"%"\$PASSWORD" -W "\$DOMAIN" "--option=gensec:fake_gssapi_krb5=yes" "--option=gensec:gssapi_krb5=no" "--option=gensec:target_hostname=\$NETBIOSNAME" "RPC-LSA-SECRETS-none*" "$*"
 		plantestsuite_loadlist "samba4.rpc.lsa.secrets on $transport with Kerberos - use Samba3 style login, use target principal" $env $smb4torture $transport:"\$SERVER" -k yes -U"\$USERNAME"%"\$PASSWORD" -W "\$DOMAIN" "--option=clientusespnegoprincipal=yes" "--option=gensec:fake_gssapi_krb5=yes" "--option=gensec:gssapi_krb5=no" "--option=gensec:target_hostname=\$NETBIOSNAME" "RPC-LSA-SECRETS-none*" "$*"
-		plansmbtorturetestsuite NET-API-BECOME-DC $env "\$SERVER[$VALIDATE]" -U"\$USERNAME"%"\$PASSWORD" -W "\$DOMAIN" "$*"
 		plantestsuite_loadlist "samba4.rpc.echo on $transport with $bindoptions and $echooptions" $env $smb4torture $transport:"\$SERVER[$bindoptions]" $ntlmoptions -U"\$USERNAME"%"\$PASSWORD" -W "\$DOMAIN" RPC-ECHO "$*"
 
 		# Echo tests test bulk Kerberos encryption of DCE/RPC
@@ -294,6 +289,7 @@ for env in dc fl2000dc fl2003dc fl2008r2dc; do
 			plantestsuite_loadlist "samba4.rpc.echo on $transport with $bindoptions and $echooptions" $env $smb4torture $transport:"\$SERVER[$bindoptions]" $echooptions -U"\$USERNAME"%"\$PASSWORD" -W "\$DOMAIN" RPC-ECHO "$*"
 		done
 	done
+	plansmbtorturetestsuite NET-API-BECOME-DC $env "\$SERVER[$VALIDATE]" -U"\$USERNAME"%"\$PASSWORD" -W "\$DOMAIN" "$*"
 done
 
 for transport in $transports; do
