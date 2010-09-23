@@ -2,7 +2,7 @@ import string, Utils
 
 # list of directory options to offer in configure
 dir_options = {
-    'with-piddir'                         : [ '${PREFIX}/var/run', 'where to put pid files' ],
+    'with-piddir'                         : [ '${PREFIX}/var/locks', 'where to put pid files' ],
     'with-privatedir'                     : [ '${PREFIX}/private', 'Where to put sam.ldb and other private files' ],
     'with-winbindd-socket-dir'            : [ '${PREFIX}/var/lib/winbindd', 'winbind socket directory' ],
     'with-winbindd-privileged-socket-dir' : [ '${PREFIX}/var/lib/winbindd_privileged', 'winbind privileged socket directory'],
@@ -11,6 +11,16 @@ dir_options = {
     'with-codepagedir'                    : [ '${PREFIX}/lib/samba', 'where to put codepages' ],
     'with-privatedir'                     : [ '${PREFIX}/private', 'where to put smbpasswd' ],
     'with-cachedir'                       : [ '${PREFIX}/var/locks', 'where to put temporary cache files' ],
+    'with-logfilebase'                    : [ '${PREFIX}/var/log/samba', 'Where to put log files' ],
+    'with-configdir'                      : [ '${PREFIX}/etc/samba', 'Where to put configuration files' ],
+    'with-swatdir'                        : [ '${PREFIX}/swat', 'Where to put SWAT files' ],
+    'with-statedir'                       : [ '${PREFIX}/var/locks', 'where to put persistent state files' ],
+    'with-cachedir'                       : [ '${PREFIX}/var/locks', 'where to put temporary cache files' ],
+    'with-ncalrpcdir'                     : [ '${PREFIX}/var/ncalrpc', 'where to put ncalrpc sockets' ],
+    'with-pammodulesdir'                  : [ '', 'Which directory to use for PAM modules' ],
+    'with-codepagedir'                    : [ '${PREFIX}/lib/samba', 'Where to put codepages' ],
+    'with-selftest-prefix'                : [ '', 'The prefix where make test will be run' ],
+    'with-selftest-shrdir'                : [ '', 'The share directory that make test will be run against' ]
     }
 
 # list of cflags to use for dynconfig.c
