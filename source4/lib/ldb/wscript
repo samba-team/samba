@@ -25,11 +25,13 @@ def set_options(opt):
     opt.BUNDLED_EXTENSION_DEFAULT('ldb', noextension='ldb')
     opt.RECURSE('lib/tdb')
     opt.RECURSE('lib/tevent')
+    opt.RECURSE('lib/replace')
 
 def configure(conf):
     conf.RECURSE('lib/tdb')
     conf.RECURSE('lib/tevent')
     conf.RECURSE('lib/popt')
+    conf.RECURSE('lib/replace')
 
     # where does the default LIBDIR end up? in conf.env somewhere?
     #
@@ -60,6 +62,7 @@ def build(bld):
     bld.RECURSE('lib/tdb')
     bld.RECURSE('lib/tevent')
     bld.RECURSE('lib/popt')
+    bld.RECURSE('lib/replace')
 
     # in Samba4 we build some extra modules, and add extra
     # capabilities to the ldb cmdline tools
