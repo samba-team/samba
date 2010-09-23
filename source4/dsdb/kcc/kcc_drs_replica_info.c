@@ -630,10 +630,11 @@ static WERROR kccdrs_replica_get_info_neighbours(TALLOC_CTX *mem_ctx,
 
 					/* append the neighbour to the neighbours array */
 					reply->neighbours->array = talloc_realloc(mem_ctx,
-										    reply->neighbours->array,
-										    struct drsuapi_DsReplicaNeighbour,
-										    reply->neighbours->count + 1);
-					reply->neighbours->array[reply->neighbours->count++] = neigh;
+										  reply->neighbours->array,
+										  struct drsuapi_DsReplicaNeighbour,
+										  reply->neighbours->count + 1);
+					reply->neighbours->array[reply->neighbours->count] = neigh;
+					reply->neighbours->count++;
 					j++;
 				}
 
