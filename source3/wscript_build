@@ -366,11 +366,10 @@ LIBMSRPC_SRC = '''
                ../librpc/rpc/binding.c
                ../librpc/rpc/dcerpc_util.c
                librpc/rpc/dcerpc_helpers.c
-               ../librpc/rpc/binding_handle.c'''
+               ../librpc/rpc/binding_handle.c
+               ${LIBCLI_EPMAPPER_SRC}'''
 
-LIBMSRPC_GEN_SRC = '''
-                   ${LIBCLI_EPMAPPER_SRC}
-                   ${LIBNDR_GEN_SRC}'''
+LIBMSRPC_GEN_SRC = '${LIBNDR_GEN_SRC}'
 
 #
 # registry-related objects
