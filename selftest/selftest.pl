@@ -686,18 +686,13 @@ if ($opt_load_list) {
 	close(LOAD_LIST);
 }
 
-Subunit::progress($#available+1);
-Subunit::report_time(time());
-
 my $individual_tests = undef;
 $individual_tests = {};
 
 foreach my $testsuite (@available) {
 	my $name = $$testsuite[0];
 	my $skipreason = skip($name);
-	if (defined($skipreason)) {
-		Subunit::skip_testsuite($name, $skipreason);
-	} elsif (defined($restricted)) {
+	if (defined($restricted)) {
 		# Find the testsuite for this test
 		my $match = undef;
 		foreach my $r (@$restricted) {
@@ -711,9 +706,17 @@ foreach my $testsuite (@available) {
 				$restricted_used->{$r} = 1;
 			}
 		}
-		push(@todo, $testsuite) if ($match);
+		if ($match) {
+			if (defined($skipreason)) {
+					Subunit::skip_testsuite($name, $skipreason);
+			} else {
+				push(@todo, $testsuite);
+			}
+		}
+	} elsif (defined($skipreason)) {
+		Subunit::skip_testsuite($name, $skipreason);
 	} else {
-		push(@todo, $testsuite); 
+		push(@todo, $testsuite);
 	}
 }
 
@@ -729,6 +732,10 @@ if (defined($restricted)) {
 }
 
 my $suitestotal = $#todo + 1;
+
+Subunit::progress($suitestotal);
+Subunit::report_time(time());
+
 my $i = 0;
 $| = 1;
 
