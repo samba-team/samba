@@ -605,7 +605,7 @@ IDMAP_SRC = 'winbindd/idmap.c winbindd/idmap_util.c ${IDMAP_RW_SRC} ${IDMAP_STAT
 #FIXME: set NSS_INFO_STATIC during configuration
 NSS_INFO_STATIC = ''
 NSS_INFO_TEMPLATE_SRC = 'winbindd/nss_info_template.c'
-NSS_INFO_SRC = 'winbindd/nss_info.c ${NSS_INFO_STATIC}'
+NSS_INFO_SRC = 'winbindd/nss_info.c'
 
 IDMAP_HASH_SRC = '''winbindd/idmap_hash/idmap_hash.c
                     winbindd/idmap_hash/mapfile.c'''
@@ -778,7 +778,7 @@ SMBD_SRC_SRV = '''smbd/server_reload.c smbd/files.c smbd/connection.c
                smbd/smb2_setinfo.c
                smbd/smb2_break.c
                ../libcli/smb/smb2_create_blob.c
-               ${MANGLE_SRC} ${VFS_STATIC}'''
+               ${MANGLE_SRC}'''
 
 SMBD_SRC_BASE = '''${SMBD_SRC_SRV}
                 ${RPC_SERVER_SRC}
@@ -797,7 +797,6 @@ SMBD_SRC_BASE = '''${SMBD_SRC_SRV}
                 ${RPC_CLIENT_SCHANNEL_SRC}
                 rpc_client/init_netlogon.c
                 rpc_client/init_samr.c
-                ${AUTH_SRC}
                 ${PRIVILEGES_BASIC_SRC}
                 ${REGFIO_SRC}
                 ${REG_API_REGF_SRC}
@@ -1169,17 +1168,14 @@ for prefix in bld.env.MODULE_PREFIXES:
     static_key = "%s_STATIC" % prefix.upper()
     shared_key = "%s_SHARED" % prefix.upper()
 
-    # Set up the static modules
-    static_src = locals()[static_key]
     for module in bld.env[static_key]:
-        static_src += "${%s_SRC} " % module
-    # for some reason static_src doesn't seem to be a reference, so save it
-    # back to the locals
-    locals()[static_key] = static_src
+        bld.SAMBA_SUBSYSTEM(module,
+                            source="${%s_SRC}" % module,
+                            vars=locals())
 
     # Set up subsystems for the shared modules
     for module in bld.env[shared_key]:
-        bld.SAMBA_SUBSYSTEM(module,
+        bld.SAMBA_MODULE(module,
                             source="${%s_SRC}" % module,
                             vars=locals())
 
@@ -1236,6 +1232,13 @@ bld.SAMBA_SUBSYSTEM('ASN1_UTIL',
                     deps='talloc',
                     local_include=False)
 
+bld.SAMBA_SUBSYSTEM('AUTH',
+                    source=AUTH_SRC,
+                    deps='''AUTH_SAM AUTH_UNIX AUTH_WINBIND AUTH_WBC
+                            AUTH_SERVER AUTH_DOMAIN AUTH_BUILTIN
+                            AUTH_NETLOGOND''',
+                    vars=locals())
+
 bld.SAMBA_SUBSYSTEM('AVAHI',
                     source=AVAHI_SRC,
                     deps='avahi-common avahi-client',
@@ -1250,7 +1253,8 @@ bld.SAMBA_SUBSYSTEM('TLDAP',
 
 bld.SAMBA_SUBSYSTEM('PASSDB',
                     source=PASSDB_SRC,
-                    deps='GROUPDB TLDAP SECRETS SMBLDAP',
+                    deps='''GROUPDB TLDAP SECRETS SMBLDAP PDB_SMBPASSWD
+                            PDB_TDBSAM PDB_WBC_SAM PDB_LDAP''',
                     vars=locals())
 
 bld.SAMBA_SUBSYSTEM('PARAM_WITHOUT_REG',
@@ -1321,8 +1325,16 @@ bld.SAMBA_SUBSYSTEM('SMBD_BASE',
                     deps='''tdb tevent dl krb5 ldap gssapi gssapi_krb5
                     NSS_WRAPPER DYNCONFIG libwbclient crypt nsl cups cap resolv ZLIB PASSDB
                     PARAM_WITHOUT_REG LIBS LIBSMB POPT_SAMBA KRBCLIENT AVAHI
-                    LIBMSRPC_GEN LIBMSRPC LIBADS LIBADS_SERVER LIBADS_PRINTER''',
+                    LIBMSRPC_GEN LIBMSRPC LIBADS LIBADS_SERVER LIBADS_PRINTER
+                    VFS_DEFAULT RPC_MODULES AUTH''',
                     vars=locals())
+
+bld.SAMBA_SUBSYSTEM('RPC_MODULES',
+                    source='',
+                    deps='''RPC_LSARPC RPC_SAMR RPC_WINREG RPC_INITSHUTDOWN
+                            RPC_DSSETUP RPC_WKSSVC RPC_SVCCTL RPC_NTSVCS
+                            RPC_NETLOGON RPC_NETDFS RPC_SRVSVC RPC_SPOOLSS
+                            RPC_EVENTLOG''')
 
 bld.SAMBA_SUBSYSTEM('LIBNDR',
                     source=LIBNDR_SRC,
@@ -1378,7 +1390,9 @@ bld.SAMBA_BINARY('winbindd/winbindd',
                  source=WINBINDD_SRC,
                  deps='''talloc tdb tevent cap dl ZLIB NSS_WRAPPER
                  libwbclient PASSDB ldap resolv PARAM LIB_NONSMBD LIBSMB
-                 POPT_SAMBA KRBCLIENT LIBMSRPC_GEN LIBMSRPC LIBADS LIBADS_SERVER''',
+                 POPT_SAMBA KRBCLIENT LIBMSRPC_GEN LIBMSRPC LIBADS LIBADS_SERVER
+                 NSS_INFO_TEMPLATE
+                 ''',
                  enabled=bld.env.build_winbind,
                  install_path='${SBINDIR}',
                  vars=locals())
