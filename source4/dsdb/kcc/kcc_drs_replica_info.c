@@ -813,12 +813,7 @@ NTSTATUS kccdrs_replica_get_info(struct irpc_message *msg,
 		value_dn = req2->value_dn_str;
 	}
 
-	/* allocate the reply and fill in some fields */
-	reply = talloc_zero(mem_ctx, union drsuapi_DsReplicaInfo);
-	NT_STATUS_HAVE_NO_MEMORY(reply);
-	req->out.info = reply;
-	req->out.info_type = talloc(mem_ctx, enum drsuapi_DsReplicaInfoType);
-	NT_STATUS_HAVE_NO_MEMORY(req->out.info_type);
+	reply = req->out.info;
 	*req->out.info_type = info_type;
 
 	/* Based on the infoType requested, retrieve the corresponding
