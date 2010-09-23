@@ -1,11 +1,9 @@
 #!/usr/bin/env python
 
-
 bld.SAMBA_LIBRARY('torture',
-	source='torture.c subunit.c ../subunit/c/lib/child.c',
+	source='torture.c subunit.c',
 	vnum='0.0.1',
 	pc_files='torture.pc',
-	public_deps='LIBSAMBA-HOSTCONFIG LIBSAMBA-UTIL LIBSAMBA-ERRORS talloc tevent',
+	public_deps='LIBSAMBA-HOSTCONFIG LIBSAMBA-UTIL LIBSAMBA-ERRORS talloc tevent subunit',
 	public_headers='torture.h'
 	)
-
