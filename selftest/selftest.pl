@@ -593,6 +593,8 @@ sub write_clientconf($$$)
 	modules dir = $ENV{LD_SAMBA_MODULE_PATH}
 	setup directory = ./setup
 	resolv:host file = $prefix_abs/dns_host_file
+#We don't want to run 'speed' tests for very long
+        torture:timelimit = 1
 ";
 	close(CF);
 }
