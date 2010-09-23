@@ -137,11 +137,12 @@ static WERROR drepl_create_extended_source_dsa(struct dreplsrv_service *service,
 	for (p=service->partitions; p; p=p->next) {
 		if (ldb_dn_compare(p->dn, nc_root) == 0) {
 			struct dreplsrv_partition_source_dsa *s;
-			for (s=p->sources; s; s=s->next) {
-				if (GUID_equal(&s->repsFrom1->source_dsa_obj_guid,
-					       &sdsa->repsFrom1->source_dsa_obj_guid)) {
-					sdsa->repsFrom1->highwatermark = s->repsFrom1->highwatermark;
-				}
+			werr = dreplsrv_partition_source_dsa_by_guid(p,
+								     &sdsa->repsFrom1->source_dsa_obj_guid,
+								     &s);
+			if (W_ERROR_IS_OK(werr)) {
+				sdsa->repsFrom1->highwatermark = s->repsFrom1->highwatermark;
+				sdsa->repsFrom1->replica_flags = s->repsFrom1->replica_flags;
 			}
 		}
 	}
