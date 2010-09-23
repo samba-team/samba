@@ -786,7 +786,7 @@ SMBD_SRC_BASE = '''${SMBD_SRC_SRV}
                 ${PROFILE_SRC} ${PRINTBACKEND_SRC}
                 ${OPLOCK_SRC} ${NOTIFY_SRC} ${FNAME_UTIL_SRC}
                 ${LIBMSRPC_SRC}
-                ${LIBADS_PRINTER_SRC} ${REG_FULL_SRC}
+                ${REG_FULL_SRC}
                 ${BUILDOPT_SRC}
                 ${LIBNET_SRC} ${LIBSMBCONF_SRC}
                 ${LIBCLI_SPOOLSS_SRC}
@@ -1047,7 +1047,6 @@ NET_SRC2 = 'utils/net_registry_util.c utils/net_help_common.c'
 NET_SRC = '''${NET_SRC1}
              ${NET_SRC2}
              ${LIBMSRPC_SRC}
-             ${LIBADS_PRINTER_SRC}
              ${DCUTIL_SRC}
              ${AFS_SRC} ${AFS_SETTOKEN_SRC} ${READLINE_SRC}
              ${LIBGPO_SRC} ${DISPLAY_SEC_SRC}
@@ -1326,12 +1325,16 @@ bld.SAMBA_SUBSYSTEM('LIBADS_SERVER',
                     source=LIBADS_SERVER_SRC,
 		    vars=locals())
 
+bld.SAMBA_SUBSYSTEM('LIBADS_PRINTER',
+                    source=LIBADS_PRINTER_SRC,
+		    vars=locals())
+
 bld.SAMBA_SUBSYSTEM('SMBD_BASE',
                     source=SMBD_SRC_BASE,
                     deps='''tdb tevent dl krb5 ldap gssapi gssapi_krb5
                     NSS_WRAPPER DYNCONFIG libwbclient crypt nsl cups cap resolv ZLIB PASSDB
                     PARAM_WITHOUT_REG LIBS LIBSMB POPT_SAMBA KRBCLIENT AVAHI
-                    LIBMSRPC_GEN LIBADS LIBADS_SERVER''',
+                    LIBMSRPC_GEN LIBADS LIBADS_SERVER LIBADS_PRINTER''',
                     vars=locals())
 
 #FIXME
@@ -1415,7 +1418,7 @@ bld.SAMBA_BINARY('smbclient',
 bld.SAMBA_BINARY('net',
                  source=NET_SRC,
                  deps='''talloc tdb libnetapi libaddns cap resolv POPT_SAMBA PASSDB LIBSMB LIB_NONSMBD
-                 PARAM_WITHOUT_REG libwbclient PARAM KRBCLIENT LIBMSRPC_GEN LIBADS LIBADS_SERVER
+                 PARAM_WITHOUT_REG libwbclient PARAM KRBCLIENT LIBMSRPC_GEN LIBADS LIBADS_SERVER LIBADS_PRINTER
                  LOCALE_DIR''',
                  vars=locals())
 
