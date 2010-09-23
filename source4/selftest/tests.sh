@@ -35,9 +35,9 @@ plantestsuite() {
 	cmdline="$*"
 	echo "-- TEST --"
 	if [ "$env" = "none" ]; then
-		fullname="samba4.$name"
+		fullname="$name"
 	else
-		fullname="samba4.$name ($env)"
+		fullname="$name ($env)"
 	fi
 	echo $fullname
 	echo $env
@@ -51,9 +51,9 @@ plantestsuite_loadlist() {
 	cmdline="$*"
 	echo "-- TEST-LOADLIST --"
 	if [ "$env" = "none" ]; then
-		fullname="samba4.$name"
+		fullname="$name"
 	else
-		fullname="samba4.$name ($env)"
+		fullname="$name ($env)"
 	fi
 	echo $fullname
 	echo $env
@@ -114,7 +114,7 @@ plansmbtorturetestsuite() {
 	env=$2
 	shift 2
 	other_args="$*"
-	modname=`normalize_testname $name`
+	modname="samba4.`normalize_testname $name`"
 	cmdline="$VALGRIND $smb4torture $other_args $name"
 	plantestsuite_loadlist "$modname" "$env" $cmdline
 }
@@ -221,20 +221,20 @@ for bindoptions in seal,padcheck $VALIDATE bigendian; do
 	 ncacn_ip_tcp) tests=$ncacn_ip_tcp_tests ;;
      esac
    for t in $tests; do
-    plantestsuite_loadlist "`normalize_testname $t` on $transport with $bindoptions" $env $VALGRIND $smb4torture $transport:"\$SERVER[$bindoptions]" -U"\$USERNAME"%"\$PASSWORD" -W \$DOMAIN $t "$*"
+    plantestsuite_loadlist "samba4.`normalize_testname $t` on $transport with $bindoptions" $env $VALGRIND $smb4torture $transport:"\$SERVER[$bindoptions]" -U"\$USERNAME"%"\$PASSWORD" -W \$DOMAIN $t "$*"
    done
-   plantestsuite_loadlist "rpc.samba3.sharesec on $transport with $bindoptions" $env $VALGRIND $smb4torture $transport:"\$SERVER[$bindoptions]" -U"\$USERNAME"%"\$PASSWORD" -W \$DOMAIN --option=torture:share=tmp RPC-SAMBA3-SHARESEC "$*"
+   plantestsuite_loadlist "samba4.rpc.samba3.sharesec on $transport with $bindoptions" $env $VALGRIND $smb4torture $transport:"\$SERVER[$bindoptions]" -U"\$USERNAME"%"\$PASSWORD" -W \$DOMAIN --option=torture:share=tmp RPC-SAMBA3-SHARESEC "$*"
  done
 done
 
 for bindoptions in "" $VALIDATE bigendian; do
  for t in $auto_rpc_tests; do
-  plantestsuite_loadlist "`normalize_testname $t` with $bindoptions" dc $VALGRIND $smb4torture "\$SERVER[$bindoptions]" -U"\$USERNAME"%"\$PASSWORD" -W \$DOMAIN $t "$*"
+  plantestsuite_loadlist "samba4.`normalize_testname $t` with $bindoptions" dc $VALGRIND $smb4torture "\$SERVER[$bindoptions]" -U"\$USERNAME"%"\$PASSWORD" -W \$DOMAIN $t "$*"
  done
 done
 
 t="RPC-COUNTCALLS"
-plantestsuite_loadlist "`normalize_testname $t`" dc:local $VALGRIND $smb4torture "\$SERVER[$bindoptions]" -U"\$USERNAME"%"\$PASSWORD" -W \$DOMAIN $t "$*"
+plantestsuite_loadlist "samba4.`normalize_testname $t`" dc:local $VALGRIND $smb4torture "\$SERVER[$bindoptions]" -U"\$USERNAME"%"\$PASSWORD" -W \$DOMAIN $t "$*"
 
 for bindoptions in connect $VALIDATE ; do
  for transport in ncalrpc ncacn_np ncacn_ip_tcp; do
@@ -245,7 +245,7 @@ for bindoptions in connect $VALIDATE ; do
 	 ncacn_ip_tcp) tests=$slow_ncacn_ip_tcp_tests ;;
      esac
    for t in $tests; do
-    plantestsuite_loadlist "`normalize_testname $t` on $transport with $bindoptions" $env $VALGRIND $smb4torture $transport:"\$SERVER[$bindoptions]" -U"\$USERNAME"%"\$PASSWORD" -W \$DOMAIN $t "$*"
+    plantestsuite_loadlist "samba4.`normalize_testname $t` on $transport with $bindoptions" $env $VALGRIND $smb4torture $transport:"\$SERVER[$bindoptions]" -U"\$USERNAME"%"\$PASSWORD" -W \$DOMAIN $t "$*"
    done
  done
 done
@@ -284,7 +284,7 @@ for ntlmoptions in \
     "-k no --option=gensec:spnego=no --option=clientntlmv2auth=yes" \
     "-k no --option=usespnego=no"; do
     name="rpc.lsa.secrets on $transport with $bindoptions with $ntlmoptions"
-    plantestsuite_loadlist "$name" dc $smb4torture $transport:"\$SERVER[$bindoptions]"  $ntlmoptions -U"\$USERNAME"%"\$PASSWORD" -W \$DOMAIN --option=gensec:target_hostname=\$NETBIOSNAME RPC-LSA-SECRETS "$*"
+    plantestsuite_loadlist "samba4.$name" dc $smb4torture $transport:"\$SERVER[$bindoptions]"  $ntlmoptions -U"\$USERNAME"%"\$PASSWORD" -W \$DOMAIN --option=gensec:target_hostname=\$NETBIOSNAME RPC-LSA-SECRETS "$*"
 done
 
 transports="ncacn_np ncacn_ip_tcp"
@@ -292,17 +292,17 @@ transports="ncacn_np ncacn_ip_tcp"
 #Kerberos varies between functional levels, so it is important to check this on all of them
 for env in dc fl2000dc fl2003dc fl2008r2dc; do
     for transport in $transports; do
-	plantestsuite_loadlist "rpc.lsa.secrets on $transport with $bindoptions with Kerberos" $env $smb4torture $transport:"\$SERVER[$bindoptions]" -k yes -U"\$USERNAME"%"\$PASSWORD" -W \$DOMAIN "--option=gensec:target_hostname=\$NETBIOSNAME" RPC-LSA-SECRETS "$*"
-	plantestsuite_loadlist "rpc.lsa.secrets on $transport with $bindoptions with Kerberos - use target principal" $env $smb4torture $transport:"\$SERVER[$bindoptions]" -k yes -U"\$USERNAME"%"\$PASSWORD" -W \$DOMAIN "--option=clientusespnegoprincipal=yes" "--option=gensec:target_hostname=\$NETBIOSNAME" RPC-LSA-SECRETS "$*"
-	plantestsuite_loadlist "rpc.lsa.secrets on $transport with Kerberos - use Samba3 style login" $env $smb4torture $transport:"\$SERVER" -k yes -U"\$USERNAME"%"\$PASSWORD" -W "\$DOMAIN" "--option=gensec:fake_gssapi_krb5=yes" "--option=gensec:gssapi_krb5=no" "--option=gensec:target_hostname=\$NETBIOSNAME" "RPC-LSA-SECRETS-none*" "$*"
-	plantestsuite_loadlist "rpc.lsa.secrets on $transport with Kerberos - use Samba3 style login, use target principal" $env $smb4torture $transport:"\$SERVER" -k yes -U"\$USERNAME"%"\$PASSWORD" -W "\$DOMAIN" "--option=clientusespnegoprincipal=yes" "--option=gensec:fake_gssapi_krb5=yes" "--option=gensec:gssapi_krb5=no" "--option=gensec:target_hostname=\$NETBIOSNAME" "RPC-LSA-SECRETS-none*" "$*"
+	plantestsuite_loadlist "samba4.rpc.lsa.secrets on $transport with $bindoptions with Kerberos" $env $smb4torture $transport:"\$SERVER[$bindoptions]" -k yes -U"\$USERNAME"%"\$PASSWORD" -W \$DOMAIN "--option=gensec:target_hostname=\$NETBIOSNAME" RPC-LSA-SECRETS "$*"
+	plantestsuite_loadlist "samba4.rpc.lsa.secrets on $transport with $bindoptions with Kerberos - use target principal" $env $smb4torture $transport:"\$SERVER[$bindoptions]" -k yes -U"\$USERNAME"%"\$PASSWORD" -W \$DOMAIN "--option=clientusespnegoprincipal=yes" "--option=gensec:target_hostname=\$NETBIOSNAME" RPC-LSA-SECRETS "$*"
+	plantestsuite_loadlist "samba4.rpc.lsa.secrets on $transport with Kerberos - use Samba3 style login" $env $smb4torture $transport:"\$SERVER" -k yes -U"\$USERNAME"%"\$PASSWORD" -W "\$DOMAIN" "--option=gensec:fake_gssapi_krb5=yes" "--option=gensec:gssapi_krb5=no" "--option=gensec:target_hostname=\$NETBIOSNAME" "RPC-LSA-SECRETS-none*" "$*"
+	plantestsuite_loadlist "samba4.rpc.lsa.secrets on $transport with Kerberos - use Samba3 style login, use target principal" $env $smb4torture $transport:"\$SERVER" -k yes -U"\$USERNAME"%"\$PASSWORD" -W "\$DOMAIN" "--option=clientusespnegoprincipal=yes" "--option=gensec:fake_gssapi_krb5=yes" "--option=gensec:gssapi_krb5=no" "--option=gensec:target_hostname=\$NETBIOSNAME" "RPC-LSA-SECRETS-none*" "$*"
 	plansmbtorturetestsuite NET-API-BECOME-DC $env "\$SERVER[$VALIDATE]" -U"\$USERNAME"%"\$PASSWORD" -W "\$DOMAIN" "$*"
-	plantestsuite_loadlist "rpc.echo on $transport with $bindoptions and $echooptions" $env $smb4torture $transport:"\$SERVER[$bindoptions]" $ntlmoptions -U"\$USERNAME"%"\$PASSWORD" -W "\$DOMAIN" RPC-ECHO "$*"
+	plantestsuite_loadlist "samba4.rpc.echo on $transport with $bindoptions and $echooptions" $env $smb4torture $transport:"\$SERVER[$bindoptions]" $ntlmoptions -U"\$USERNAME"%"\$PASSWORD" -W "\$DOMAIN" RPC-ECHO "$*"
 
     # Echo tests test bulk Kerberos encryption of DCE/RPC
 	for bindoptions in connect spnego spnego,sign spnego,seal $VALIDATE padcheck bigendian bigendian,seal; do
 	    echooptions="--option=socket:testnonblock=True --option=torture:quick=yes -k yes"
-	    plantestsuite_loadlist "rpc.echo on $transport with $bindoptions and $echooptions" $env $smb4torture $transport:"\$SERVER[$bindoptions]" $echooptions -U"\$USERNAME"%"\$PASSWORD" -W "\$DOMAIN" RPC-ECHO "$*"
+	    plantestsuite_loadlist "samba4.rpc.echo on $transport with $bindoptions and $echooptions" $env $smb4torture $transport:"\$SERVER[$bindoptions]" $echooptions -U"\$USERNAME"%"\$PASSWORD" -W "\$DOMAIN" RPC-ECHO "$*"
 	done
     done
 done
@@ -324,14 +324,14 @@ for transport in $transports; do
    if test x"$transport" = x"ncalrpc"; then
       env="dc:local"
    fi
-   plantestsuite_loadlist "rpc.echo on $transport with $bindoptions and $ntlmoptions" $env $smb4torture $transport:"\$SERVER[$bindoptions]" $ntlmoptions -U"\$USERNAME"%"\$PASSWORD" -W \$DOMAIN RPC-ECHO "$*"
+   plantestsuite_loadlist "samba4.rpc.echo on $transport with $bindoptions and $ntlmoptions" $env $smb4torture $transport:"\$SERVER[$bindoptions]" $ntlmoptions -U"\$USERNAME"%"\$PASSWORD" -W \$DOMAIN RPC-ECHO "$*"
   done
  done
 done
 
-plantestsuite_loadlist "rpc.echo on ncacn_np over smb2" dc $smb4torture ncacn_np:"\$SERVER[smb2]" -U"\$USERNAME"%"\$PASSWORD" -W \$DOMAIN RPC-ECHO "$*"
+plantestsuite_loadlist "samba4.rpc.echo on ncacn_np over smb2" dc $smb4torture ncacn_np:"\$SERVER[smb2]" -U"\$USERNAME"%"\$PASSWORD" -W \$DOMAIN RPC-ECHO "$*"
 
-plantestsuite_loadlist "ntp.signd" dc:local $smb4torture ncacn_np:"\$SERVER" -U"\$USERNAME"%"\$PASSWORD" -W \$DOMAIN NTP-SIGND "$*"
+plantestsuite_loadlist "samba4.ntp.signd" dc:local $smb4torture ncacn_np:"\$SERVER" -U"\$USERNAME"%"\$PASSWORD" -W \$DOMAIN NTP-SIGND "$*"
 
 # Tests against the NTVFS POSIX backend
 NTVFSARGS=""
@@ -357,7 +357,7 @@ done
 
 # Tests against the NTVFS CIFS backend
 for t in $base $raw; do
-    plantestsuite_loadlist "ntvfs.cifs.`normalize_testname $t`" dc $VALGRIND $smb4torture //\$NETBIOSNAME/cifs -U"\$USERNAME"%"\$PASSWORD" $NTVFSARGS $t
+    plantestsuite_loadlist "samba4.ntvfs.cifs.`normalize_testname $t`" dc $VALGRIND $smb4torture //\$NETBIOSNAME/cifs -U"\$USERNAME"%"\$PASSWORD" $NTVFSARGS $t
 done
 
 # Local tests
@@ -381,7 +381,7 @@ plansmbtorturetestsuite "DRS-UNIT" none ncalrpc: "$*"
 for f in $samba4srcdir/../pidl/tests/*.pl; do
 	 planperltestsuite "pidl.`basename $f .pl`" none $f
 done
-planperltestsuite "selftest.samba4.pl" none $samba4srcdir/../selftest/test_samba4.pl
+planperltestsuite "selftest.samba4" none $samba4srcdir/../selftest/test_samba4.pl
 
 # Blackbox Tests:
 # tests that interact directly with the command-line tools rather than using 
@@ -389,41 +389,41 @@ planperltestsuite "selftest.samba4.pl" none $samba4srcdir/../selftest/test_samba
 # work correctly.
 
 planpythontestsuite none samba.tests.blackbox.ndrdump
-plantestsuite "blackbox.net" dc:local $samba4srcdir/utils/tests/test_net.sh "\$SERVER" "\$USERNAME" "\$PASSWORD" "\$DOMAIN"
-plantestsuite "blackbox.pkinit" dc:local $bbdir/test_pkinit.sh "\$SERVER" "\$USERNAME" "\$PASSWORD" "\$REALM" "\$DOMAIN" "$PREFIX" aes256-cts-hmac-sha1-96 $CONFIGURATION 
-plantestsuite "blackbox.kinit" dc:local $bbdir/test_kinit.sh "\$SERVER" "\$USERNAME" "\$PASSWORD" "\$REALM" "\$DOMAIN" "$PREFIX" aes256-cts-hmac-sha1-96 $CONFIGURATION
-plantestsuite "blackbox.kinit" fl2000dc:local $bbdir/test_kinit.sh "\$SERVER" "\$USERNAME" "\$PASSWORD" "\$REALM" "\$DOMAIN" "$PREFIX" arcfour-hmac-md5 $CONFIGURATION
-plantestsuite "blackbox.kinit" fl2008r2dc:local $bbdir/test_kinit.sh "\$SERVER" "\$USERNAME" "\$PASSWORD" "\$REALM" "\$DOMAIN" "$PREFIX" aes256-cts-hmac-sha1-96 $CONFIGURATION
-plantestsuite "blackbox.ktpass" dc $bbdir/test_ktpass.sh $PREFIX
-plantestsuite "blackbox.passwords" dc:local $bbdir/test_passwords.sh "\$SERVER" "\$USERNAME" "\$PASSWORD" "\$REALM" "\$DOMAIN" "$PREFIX"
-plantestsuite "blackbox.export.keytab" dc:local $bbdir/test_export_keytab.sh "\$SERVER" "\$USERNAME" "\$REALM" "\$DOMAIN" "$PREFIX"
-plantestsuite "blackbox.cifsdd" dc $samba4srcdir/client/tests/test_cifsdd.sh "\$SERVER" "\$USERNAME" "\$PASSWORD" "\$DOMAIN" 
-plantestsuite "blackbox.nmblookup" dc $samba4srcdir/utils/tests/test_nmblookup.sh "\$NETBIOSNAME" "\$NETBIOSALIAS" "\$SERVER" "\$SERVER_IP" 
-plantestsuite "blackbox.nmblookup" member $samba4srcdir/utils/tests/test_nmblookup.sh "\$NETBIOSNAME" "\$NETBIOSALIAS" "\$SERVER" "\$SERVER_IP"
-plantestsuite "blackbox.locktest" dc $samba4srcdir/torture/tests/test_locktest.sh "\$SERVER" "\$USERNAME" "\$PASSWORD" "\$DOMAIN" "$PREFIX"
-plantestsuite "blackbox.masktest" dc $samba4srcdir/torture/tests/test_masktest.sh "\$SERVER" "\$USERNAME" "\$PASSWORD" "\$DOMAIN" "$PREFIX"
-plantestsuite "blackbox.gentest" dc $samba4srcdir/torture/tests/test_gentest.sh "\$SERVER" "\$USERNAME" "\$PASSWORD" "\$DOMAIN" "$PREFIX"
-plantestsuite "blackbox.wbinfo" dc:local $samba4srcdir/../nsswitch/tests/test_wbinfo.sh "\$DOMAIN" "\$USERNAME" "\$PASSWORD" "dc"
-plantestsuite "blackbox.wbinfo" member:local $samba4srcdir/../nsswitch/tests/test_wbinfo.sh "\$DOMAIN" "\$DC_USERNAME" "\$DC_PASSWORD" "member"
-plantestsuite "blackbox.chgdcpass" dc $bbdir/test_chgdcpass.sh "\$SERVER" "LOCALDC\\\$" "\$REALM" "\$DOMAIN" "$PREFIX" aes256-cts-hmac-sha1-96 $SELFTEST_PREFIX/dc
+plantestsuite "samba4.blackbox.net" dc:local $samba4srcdir/utils/tests/test_net.sh "\$SERVER" "\$USERNAME" "\$PASSWORD" "\$DOMAIN"
+plantestsuite "samba4.blackbox.pkinit" dc:local $bbdir/test_pkinit.sh "\$SERVER" "\$USERNAME" "\$PASSWORD" "\$REALM" "\$DOMAIN" "$PREFIX" aes256-cts-hmac-sha1-96 $CONFIGURATION 
+plantestsuite "samba4.blackbox.kinit" dc:local $bbdir/test_kinit.sh "\$SERVER" "\$USERNAME" "\$PASSWORD" "\$REALM" "\$DOMAIN" "$PREFIX" aes256-cts-hmac-sha1-96 $CONFIGURATION
+plantestsuite "samba4.blackbox.kinit" fl2000dc:local $bbdir/test_kinit.sh "\$SERVER" "\$USERNAME" "\$PASSWORD" "\$REALM" "\$DOMAIN" "$PREFIX" arcfour-hmac-md5 $CONFIGURATION
+plantestsuite "samba4.blackbox.kinit" fl2008r2dc:local $bbdir/test_kinit.sh "\$SERVER" "\$USERNAME" "\$PASSWORD" "\$REALM" "\$DOMAIN" "$PREFIX" aes256-cts-hmac-sha1-96 $CONFIGURATION
+plantestsuite "samba4.blackbox.ktpass" dc $bbdir/test_ktpass.sh $PREFIX
+plantestsuite "samba4.blackbox.passwords" dc:local $bbdir/test_passwords.sh "\$SERVER" "\$USERNAME" "\$PASSWORD" "\$REALM" "\$DOMAIN" "$PREFIX"
+plantestsuite "samba4.blackbox.export.keytab" dc:local $bbdir/test_export_keytab.sh "\$SERVER" "\$USERNAME" "\$REALM" "\$DOMAIN" "$PREFIX"
+plantestsuite "samba4.blackbox.cifsdd" dc $samba4srcdir/client/tests/test_cifsdd.sh "\$SERVER" "\$USERNAME" "\$PASSWORD" "\$DOMAIN" 
+plantestsuite "samba4.blackbox.nmblookup" dc $samba4srcdir/utils/tests/test_nmblookup.sh "\$NETBIOSNAME" "\$NETBIOSALIAS" "\$SERVER" "\$SERVER_IP" 
+plantestsuite "samba4.blackbox.nmblookup" member $samba4srcdir/utils/tests/test_nmblookup.sh "\$NETBIOSNAME" "\$NETBIOSALIAS" "\$SERVER" "\$SERVER_IP"
+plantestsuite "samba4.blackbox.locktest" dc $samba4srcdir/torture/tests/test_locktest.sh "\$SERVER" "\$USERNAME" "\$PASSWORD" "\$DOMAIN" "$PREFIX"
+plantestsuite "samba4.blackbox.masktest" dc $samba4srcdir/torture/tests/test_masktest.sh "\$SERVER" "\$USERNAME" "\$PASSWORD" "\$DOMAIN" "$PREFIX"
+plantestsuite "samba4.blackbox.gentest" dc $samba4srcdir/torture/tests/test_gentest.sh "\$SERVER" "\$USERNAME" "\$PASSWORD" "\$DOMAIN" "$PREFIX"
+plantestsuite "samba4.blackbox.wbinfo" dc:local $samba4srcdir/../nsswitch/tests/test_wbinfo.sh "\$DOMAIN" "\$USERNAME" "\$PASSWORD" "dc"
+plantestsuite "samba4.blackbox.wbinfo" member:local $samba4srcdir/../nsswitch/tests/test_wbinfo.sh "\$DOMAIN" "\$DC_USERNAME" "\$DC_PASSWORD" "member"
+plantestsuite "samba4.blackbox.chgdcpass" dc $bbdir/test_chgdcpass.sh "\$SERVER" "LOCALDC\\\$" "\$REALM" "\$DOMAIN" "$PREFIX" aes256-cts-hmac-sha1-96 $SELFTEST_PREFIX/dc
 
 # Tests using the "Simple" NTVFS backend
 
 for t in "BASE-RW1"; do
-    plantestsuite_loadlist "ntvfs.simple.`normalize_testname $t`" dc $VALGRIND $smb4torture $ADDARGS //\$SERVER/simple -U"\$USERNAME"%"\$PASSWORD" $t
+    plantestsuite_loadlist "samba4.ntvfs.simple.`normalize_testname $t`" dc $VALGRIND $smb4torture $ADDARGS //\$SERVER/simple -U"\$USERNAME"%"\$PASSWORD" $t
 done
 
 # Domain Member Tests
 
-plantestsuite_loadlist "rpc.echo against member server with local creds" member $VALGRIND $smb4torture ncacn_np:"\$NETBIOSNAME" -U"\$NETBIOSNAME/\$USERNAME"%"\$PASSWORD" RPC-ECHO "$*"
-plantestsuite_loadlist "rpc.echo against member server with domain creds" member $VALGRIND $smb4torture ncacn_np:"\$NETBIOSNAME" -U"\$DOMAIN/\$DC_USERNAME"%"\$DC_PASSWORD" RPC-ECHO "$*"
-plantestsuite_loadlist "rpc.samr against member server with local creds" member $VALGRIND $smb4torture ncacn_np:"\$NETBIOSNAME" -U"\$NETBIOSNAME/\$USERNAME"%"\$PASSWORD" "RPC-SAMR" "$*"
-plantestsuite_loadlist "rpc.samr.users against member server with local creds" member $VALGRIND $smb4torture ncacn_np:"\$NETBIOSNAME" -U"\$NETBIOSNAME/\$USERNAME"%"\$PASSWORD" "RPC-SAMR-USERS" "$*"
-plantestsuite_loadlist "rpc.samr.passwords against member server with local creds" member $VALGRIND $smb4torture ncacn_np:"\$NETBIOSNAME" -U"\$NETBIOSNAME/\$USERNAME"%"\$PASSWORD" "RPC-SAMR-PASSWORDS" "$*"
-plantestsuite "blackbox.smbclient against member server with local creds" member $samba4srcdir/client/tests/test_smbclient.sh "\$NETBIOSNAME" "\$USERNAME" "\$PASSWORD" "\$NETBIOSNAME" "$PREFIX" 
+plantestsuite_loadlist "samba4.rpc.echo against member server with local creds" member $VALGRIND $smb4torture ncacn_np:"\$NETBIOSNAME" -U"\$NETBIOSNAME/\$USERNAME"%"\$PASSWORD" RPC-ECHO "$*"
+plantestsuite_loadlist "samba4.rpc.echo against member server with domain creds" member $VALGRIND $smb4torture ncacn_np:"\$NETBIOSNAME" -U"\$DOMAIN/\$DC_USERNAME"%"\$DC_PASSWORD" RPC-ECHO "$*"
+plantestsuite_loadlist "samba4.rpc.samr against member server with local creds" member $VALGRIND $smb4torture ncacn_np:"\$NETBIOSNAME" -U"\$NETBIOSNAME/\$USERNAME"%"\$PASSWORD" "RPC-SAMR" "$*"
+plantestsuite_loadlist "samba4.rpc.samr.users against member server with local creds" member $VALGRIND $smb4torture ncacn_np:"\$NETBIOSNAME" -U"\$NETBIOSNAME/\$USERNAME"%"\$PASSWORD" "RPC-SAMR-USERS" "$*"
+plantestsuite_loadlist "samba4.rpc.samr.passwords against member server with local creds" member $VALGRIND $smb4torture ncacn_np:"\$NETBIOSNAME" -U"\$NETBIOSNAME/\$USERNAME"%"\$PASSWORD" "RPC-SAMR-PASSWORDS" "$*"
+plantestsuite "samba4.blackbox.smbclient against member server with local creds" member $samba4srcdir/client/tests/test_smbclient.sh "\$NETBIOSNAME" "\$USERNAME" "\$PASSWORD" "\$NETBIOSNAME" "$PREFIX" 
 
 # RPC Proxy
-plantestsuite_loadlist "rpc.echo against rpc proxy with domain creds" rpc_proxy $VALGRIND $smb4torture ncacn_ip_tcp:"\$NETBIOSNAME" -U"\$DOMAIN/\$DC_USERNAME"%"\$DC_PASSWORD" RPC-ECHO "$*"
+plantestsuite_loadlist "samba4.rpc.echo against rpc proxy with domain creds" rpc_proxy $VALGRIND $smb4torture ncacn_ip_tcp:"\$NETBIOSNAME" -U"\$DOMAIN/\$DC_USERNAME"%"\$DC_PASSWORD" RPC-ECHO "$*"
 
 # Tests SMB signing
 
@@ -439,7 +439,7 @@ for mech in \
 
 	signoptions="$mech $signing"
 	name="smb.signing on with $signoptions"
-	plantestsuite_loadlist "$name" dc $VALGRIND $smb4torture //"\$NETBIOSNAME"/tmp $signoptions -U"\$USERNAME"%"\$PASSWORD" BASE-XCOPY "$*"
+	plantestsuite_loadlist "samba4.$name" dc $VALGRIND $smb4torture //"\$NETBIOSNAME"/tmp $signoptions -U"\$USERNAME"%"\$PASSWORD" BASE-XCOPY "$*"
    done
 done
 
@@ -451,7 +451,7 @@ for mech in \
 	"-k yes --option=gensec:fake_gssapi_krb5=yes --option=gensec:gssapi_krb5=no"; do
 	signoptions="$mech --signing=off"
 	name="smb.signing on with $signoptions"
-	plantestsuite_loadlist "$name domain-creds" member $VALGRIND $smb4torture //"\$NETBIOSNAME"/tmp $signoptions -U"\$DC_USERNAME"%"\$DC_PASSWORD" BASE-XCOPY "$*"
+	plantestsuite_loadlist "samba4.$name domain-creds" member $VALGRIND $smb4torture //"\$NETBIOSNAME"/tmp $signoptions -U"\$DC_USERNAME"%"\$DC_PASSWORD" BASE-XCOPY "$*"
 done
 for mech in \
 	"-k no" \
@@ -459,11 +459,11 @@ for mech in \
 	"-k no --option=gensec:spengo=no"; do
 	signoptions="$mech --signing=off"
 	name="smb.signing on with $signoptions"
-	plantestsuite_loadlist "$name local-creds" member $VALGRIND $smb4torture //"\$NETBIOSNAME"/tmp $signoptions -U"\$NETBIOSNAME/\$USERNAME"%"\$PASSWORD" BASE-XCOPY "$*"
+	plantestsuite_loadlist "samba4.$name local-creds" member $VALGRIND $smb4torture //"\$NETBIOSNAME"/tmp $signoptions -U"\$NETBIOSNAME/\$USERNAME"%"\$PASSWORD" BASE-XCOPY "$*"
 done
-plantestsuite_loadlist "smb.signing --signing=yes anon" dc $VALGRIND $smb4torture //"\$NETBIOSNAME"/tmp -k no --signing=yes -U% BASE-XCOPY "$*"
-plantestsuite_loadlist "smb.signing --signing=required anon" dc $VALGRIND $smb4torture //"\$NETBIOSNAME"/tmp -k no --signing=required -U% BASE-XCOPY "$*"
-plantestsuite_loadlist "smb.signing --signing=no anon" member $VALGRIND $smb4torture //"\$NETBIOSNAME"/tmp -k no --signing=no -U% BASE-XCOPY "$*"
+plantestsuite_loadlist "samba4.smb.signing --signing=yes anon" dc $VALGRIND $smb4torture //"\$NETBIOSNAME"/tmp -k no --signing=yes -U% BASE-XCOPY "$*"
+plantestsuite_loadlist "samba4.smb.signing --signing=required anon" dc $VALGRIND $smb4torture //"\$NETBIOSNAME"/tmp -k no --signing=required -U% BASE-XCOPY "$*"
+plantestsuite_loadlist "samba4.smb.signing --signing=no anon" member $VALGRIND $smb4torture //"\$NETBIOSNAME"/tmp -k no --signing=no -U% BASE-XCOPY "$*"
 
 NBT_TESTS=`$smb4torture --list | grep "^NBT-" | xargs`
 
@@ -492,12 +492,12 @@ done
 nsstest4="$samba4bindir/nsstest${EXEEXT}"
 if test -f $nsstest4
 then
-	plantestsuite "nss.test using winbind" member $VALGRIND $nsstest4 $samba4bindir/shared/libnss_winbind.so
+	plantestsuite "samba4.nss.test using winbind" member $VALGRIND $nsstest4 $samba4bindir/shared/libnss_winbind.so
 fi
 
 SUBUNITRUN="$VALGRIND $PYTHON $samba4srcdir/scripting/bin/subunitrun"
 plantestsuite "ldb.python" none PYTHONPATH="$PYTHONPATH:$samba4srcdir/lib/ldb/tests/python/" $PYTHON $samba4srcdir/lib/ldb/tests/python/api.py
-plantestsuite "credentials.python" none PYTHONPATH="$PYTHONPATH:$samba4srcdir/auth/credentials/tests" $SUBUNITRUN bindings
+plantestsuite "samba4.credentials.python" none PYTHONPATH="$PYTHONPATH:$samba4srcdir/auth/credentials/tests" $SUBUNITRUN bindings
 planpythontestsuite none samba.tests.gensec
 planpythontestsuite none samba.tests.registry
 plantestsuite "tdb.python" none PYTHONPATH="$PYTHONPATH:../lib/tdb/python/tests" $SUBUNITRUN simple
@@ -518,47 +518,47 @@ planpythontestsuite none samba.tests.dcerpc.rpc_talloc
 planpythontestsuite none samba.tests.samdb
 planpythontestsuite none samba.tests.shares
 planpythontestsuite none samba.tests.messaging
-plantestsuite "samba3sam.python" none PYTHONPATH="$PYTHONPATH:$samba4srcdir/dsdb/samdb/ldb_modules/tests" $SUBUNITRUN samba3sam
+plantestsuite "samba4.samba3sam.python" none PYTHONPATH="$PYTHONPATH:$samba4srcdir/dsdb/samdb/ldb_modules/tests" $SUBUNITRUN samba3sam
 planpythontestsuite none subunit
 planpythontestsuite dc:local samba.tests.dcerpc.rpcecho
-plantestsuite "winreg.python" dc:local $SUBUNITRUN -U\$USERNAME%\$PASSWORD samba.tests.dcerpc.registry
-plantestsuite "ldap.python" dc PYTHONPATH="$PYTHONPATH:../lib/subunit/python:../lib/testtools" $PYTHON $samba4srcdir/dsdb/tests/python/ldap.py \$SERVER -U\$USERNAME%\$PASSWORD -W \$DOMAIN
-plantestsuite "schemaInfo.python" dc PYTHONPATH="$PYTHONPATH:$samba4srcdir/dsdb/tests/python/" $SUBUNITRUN dsdb_schema_info -U"\$DOMAIN/\$DC_USERNAME"%"\$DC_PASSWORD"
-plantestsuite "urgent_replication.python" dc PYTHONPATH="$PYTHONPATH:../lib/subunit/python:../lib/testtools" $PYTHON $samba4srcdir/dsdb/tests/python/urgent_replication.py \$PREFIX_ABS/dc/private/sam.ldb
+plantestsuite "samba4.winreg.python" dc:local $SUBUNITRUN -U\$USERNAME%\$PASSWORD samba.tests.dcerpc.registry
+plantestsuite "samba4.ldap.python" dc PYTHONPATH="$PYTHONPATH:../lib/subunit/python:../lib/testtools" $PYTHON $samba4srcdir/dsdb/tests/python/ldap.py \$SERVER -U\$USERNAME%\$PASSWORD -W \$DOMAIN
+plantestsuite "samba4.schemaInfo.python" dc PYTHONPATH="$PYTHONPATH:$samba4srcdir/dsdb/tests/python/" $SUBUNITRUN dsdb_schema_info -U"\$DOMAIN/\$DC_USERNAME"%"\$DC_PASSWORD"
+plantestsuite "samba4.urgent_replication.python" dc PYTHONPATH="$PYTHONPATH:../lib/subunit/python:../lib/testtools" $PYTHON $samba4srcdir/dsdb/tests/python/urgent_replication.py \$PREFIX_ABS/dc/private/sam.ldb
 for env in "dc" "fl2000dc" "fl2003dc" "fl2008r2dc"; do
-    plantestsuite "ldap_schema.python" $env PYTHONPATH="$PYTHONPATH:../lib/subunit/python:../lib/testtools" $PYTHON $samba4srcdir/dsdb/tests/python/ldap_schema.py \$SERVER -U\$USERNAME%\$PASSWORD -W \$DOMAIN
-    plantestsuite "ldap.possibleInferiors.python" $env $PYTHON $samba4srcdir/dsdb/samdb/ldb_modules/tests/possibleinferiors.py ldap://\$SERVER -U\$USERNAME%\$PASSWORD -W \$DOMAIN
-    plantestsuite "ldap.secdesc.python" $env PYTHONPATH="$PYTHONPATH:../lib/subunit/python:../lib/testtools" $PYTHON $samba4srcdir/dsdb/tests/python/sec_descriptor.py \$SERVER -U\$USERNAME%\$PASSWORD -W \$DOMAIN
-    plantestsuite "ldap.acl.python" $env PYTHONPATH="$PYTHONPATH:../lib/subunit/python:../lib/testtools" $PYTHON $samba4srcdir/dsdb/tests/python/acl.py \$SERVER -U\$USERNAME%\$PASSWORD -W \$DOMAIN
-    plantestsuite "ldap.passwords.python" $env PYTHONPATH="$PYTHONPATH:../lib/subunit/python:../lib/testtools" $PYTHON $samba4srcdir/dsdb/tests/python/passwords.py \$SERVER -U\$USERNAME%\$PASSWORD -W \$DOMAIN
+    plantestsuite "samba4.ldap_schema.python" $env PYTHONPATH="$PYTHONPATH:../lib/subunit/python:../lib/testtools" $PYTHON $samba4srcdir/dsdb/tests/python/ldap_schema.py \$SERVER -U\$USERNAME%\$PASSWORD -W \$DOMAIN
+    plantestsuite "samba4.ldap.possibleInferiors.python" $env $PYTHON $samba4srcdir/dsdb/samdb/ldb_modules/tests/possibleinferiors.py ldap://\$SERVER -U\$USERNAME%\$PASSWORD -W \$DOMAIN
+    plantestsuite "samba4.ldap.secdesc.python" $env PYTHONPATH="$PYTHONPATH:../lib/subunit/python:../lib/testtools" $PYTHON $samba4srcdir/dsdb/tests/python/sec_descriptor.py \$SERVER -U\$USERNAME%\$PASSWORD -W \$DOMAIN
+    plantestsuite "samba4.ldap.acl.python" $env PYTHONPATH="$PYTHONPATH:../lib/subunit/python:../lib/testtools" $PYTHON $samba4srcdir/dsdb/tests/python/acl.py \$SERVER -U\$USERNAME%\$PASSWORD -W \$DOMAIN
+    plantestsuite "samba4.ldap.passwords.python" $env PYTHONPATH="$PYTHONPATH:../lib/subunit/python:../lib/testtools" $PYTHON $samba4srcdir/dsdb/tests/python/passwords.py \$SERVER -U\$USERNAME%\$PASSWORD -W \$DOMAIN
 done
 planpythontestsuite dc:local samba.tests.upgradeprovisionneeddc
 planpythontestsuite none samba.tests.upgradeprovision
 planpythontestsuite none samba.tests.xattr
 planpythontestsuite none samba.tests.ntacls
-plantestsuite "deletetest.python" dc PYTHONPATH="$PYTHONPATH:../lib/subunit/python:../lib/testtools" $PYTHON $samba4srcdir/dsdb/tests/python/deletetest.py \$SERVER -U\$USERNAME%\$PASSWORD -W \$DOMAIN
-plantestsuite "policy.python" none PYTHONPATH="$PYTHONPATH:lib/policy/tests/python" $SUBUNITRUN bindings
-plantestsuite "blackbox.samba3dump" none $PYTHON $samba4srcdir/scripting/bin/samba3dump $samba4srcdir/../testdata/samba3
+plantestsuite "samba4.deletetest.python" dc PYTHONPATH="$PYTHONPATH:../lib/subunit/python:../lib/testtools" $PYTHON $samba4srcdir/dsdb/tests/python/deletetest.py \$SERVER -U\$USERNAME%\$PASSWORD -W \$DOMAIN
+plantestsuite "samba4.policy.python" none PYTHONPATH="$PYTHONPATH:lib/policy/tests/python" $SUBUNITRUN bindings
+plantestsuite "samba4.blackbox.samba3dump" none $PYTHON $samba4srcdir/scripting/bin/samba3dump $samba4srcdir/../testdata/samba3
 rm -rf $PREFIX/upgrade
-plantestsuite "blackbox.upgrade" none $PYTHON $samba4srcdir/setup/upgrade_from_s3 --targetdir=$PREFIX/upgrade $samba4srcdir/../testdata/samba3 ../testdata/samba3/smb.conf
+plantestsuite "samba4.blackbox.upgrade" none $PYTHON $samba4srcdir/setup/upgrade_from_s3 --targetdir=$PREFIX/upgrade $samba4srcdir/../testdata/samba3 ../testdata/samba3/smb.conf
 rm -rf $PREFIX/provision
 mkdir $PREFIX/provision
-plantestsuite "blackbox.provision.py" none PYTHON="$PYTHON" $samba4srcdir/setup/tests/blackbox_provision.sh "$PREFIX/provision"
-plantestsuite "blackbox.provision-backend.py" none PYTHON="$PYTHON" $samba4srcdir/setup/tests/blackbox_provision-backend.sh "$PREFIX/provision"
-plantestsuite "blackbox.upgradeprovision.py" none PYTHON="$PYTHON" $samba4srcdir/setup/tests/blackbox_upgradeprovision.sh "$PREFIX/provision"
-plantestsuite "blackbox.setpassword.py" none PYTHON="$PYTHON" $samba4srcdir/setup/tests/blackbox_setpassword.sh "$PREFIX/provision"
-plantestsuite "blackbox.newuser.py" none PYTHON="$PYTHON" $samba4srcdir/setup/tests/blackbox_newuser.sh "$PREFIX/provision"
-plantestsuite "blackbox.group.py" none PYTHON="$PYTHON" $samba4srcdir/setup/tests/blackbox_group.sh "$PREFIX/provision"
-plantestsuite "blackbox.spn.py" dc:local PYTHON="$PYTHON" $samba4srcdir/setup/tests/blackbox_spn.sh "$PREFIX/dc"
+plantestsuite "samba4.blackbox.provision.py" none PYTHON="$PYTHON" $samba4srcdir/setup/tests/blackbox_provision.sh "$PREFIX/provision"
+plantestsuite "samba4.blackbox.provision-backend.py" none PYTHON="$PYTHON" $samba4srcdir/setup/tests/blackbox_provision-backend.sh "$PREFIX/provision"
+plantestsuite "samba4.blackbox.upgradeprovision.py" none PYTHON="$PYTHON" $samba4srcdir/setup/tests/blackbox_upgradeprovision.sh "$PREFIX/provision"
+plantestsuite "samba4.blackbox.setpassword.py" none PYTHON="$PYTHON" $samba4srcdir/setup/tests/blackbox_setpassword.sh "$PREFIX/provision"
+plantestsuite "samba4.blackbox.newuser.py" none PYTHON="$PYTHON" $samba4srcdir/setup/tests/blackbox_newuser.sh "$PREFIX/provision"
+plantestsuite "samba4.blackbox.group.py" none PYTHON="$PYTHON" $samba4srcdir/setup/tests/blackbox_group.sh "$PREFIX/provision"
+plantestsuite "samba4.blackbox.spn.py" dc:local PYTHON="$PYTHON" $samba4srcdir/setup/tests/blackbox_spn.sh "$PREFIX/dc"
 
 # DRS python tests
-plantestsuite "drs_delete_object.python" vampire_dc PYTHONPATH="$PYTHONPATH:$samba4srcdir/torture/drs/python" DC1=\$DC_SERVER DC2=\$VAMPIRE_DC_SERVER $SUBUNITRUN delete_object -U"\$DOMAIN/\$DC_USERNAME"%"\$DC_PASSWORD"
-plantestsuite "drs_fsmo.python" vampire_dc PYTHONPATH="$PYTHONPATH:$samba4srcdir/torture/drs/python" DC1=\$DC_SERVER DC2=\$VAMPIRE_DC_SERVER $SUBUNITRUN fsmo -U"\$DOMAIN/\$DC_USERNAME"%"\$DC_PASSWORD"
+plantestsuite "samba4.drs_delete_object.python" vampire_dc PYTHONPATH="$PYTHONPATH:$samba4srcdir/torture/drs/python" DC1=\$DC_SERVER DC2=\$VAMPIRE_DC_SERVER $SUBUNITRUN delete_object -U"\$DOMAIN/\$DC_USERNAME"%"\$DC_PASSWORD"
+plantestsuite "samba4.drs_fsmo.python" vampire_dc PYTHONPATH="$PYTHONPATH:$samba4srcdir/torture/drs/python" DC1=\$DC_SERVER DC2=\$VAMPIRE_DC_SERVER $SUBUNITRUN fsmo -U"\$DOMAIN/\$DC_USERNAME"%"\$DC_PASSWORD"
 
 # This makes sure we test the rid allocation code
 t="RPC-SAMR-LARGE-DC"
-plantestsuite_loadlist "`normalize_testname $t.one`" vampire_dc $VALGRIND $smb4torture "\$SERVER[$bindoptions]" -U"\$USERNAME"%"\$PASSWORD" -W \$DOMAIN $t "$*"
-plantestsuite_loadlist "`normalize_testname $t.two`" vampire_dc $VALGRIND $smb4torture "\$SERVER[$bindoptions]" -U"\$USERNAME"%"\$PASSWORD" -W \$DOMAIN $t "$*"
+plantestsuite_loadlist "samba4.`normalize_testname $t.one`" vampire_dc $VALGRIND $smb4torture "\$SERVER[$bindoptions]" -U"\$USERNAME"%"\$PASSWORD" -W \$DOMAIN $t "$*"
+plantestsuite_loadlist "samba4.`normalize_testname $t.two`" vampire_dc $VALGRIND $smb4torture "\$SERVER[$bindoptions]" -U"\$USERNAME"%"\$PASSWORD" -W \$DOMAIN $t "$*"
 
 # some RODC testing
-plantestsuite_loadlist "rpc.echo to RODC" "rodc" $smb4torture ncacn_np:"\$SERVER" -k yes -U"\$USERNAME"%"\$PASSWORD" -W "\$DOMAIN" RPC-ECHO "$*"
+plantestsuite_loadlist "samba4.rpc.echo to RODC" "rodc" $smb4torture ncacn_np:"\$SERVER" -k yes -U"\$USERNAME"%"\$PASSWORD" -W "\$DOMAIN" RPC-ECHO "$*"
