@@ -230,3 +230,190 @@ bld.SAMBA_SUBSYSTEM('NDR_NBT',
 	public_headers='../librpc/gen_ndr/nbt.h',
         header_path='gen_ndr'
 	)
+
+bld.SAMBA_SUBSYSTEM('RPC_NDR_XATTR',
+	source='../librpc/gen_ndr/ndr_xattr_c.c',
+	public_deps='NDR_XATTR dcerpc'
+	)
+
+bld.SAMBA_SUBSYSTEM('RPC_NDR_ROT',
+	source='../librpc/gen_ndr/ndr_rot_c.c',
+	public_deps='NDR_ROT dcerpc'
+	)
+
+bld.SAMBA_SUBSYSTEM('RPC_NDR_AUDIOSRV',
+	source='../librpc/gen_ndr/ndr_audiosrv_c.c',
+	public_deps='NDR_AUDIOSRV dcerpc'
+	)
+
+bld.SAMBA_SUBSYSTEM('RPC_NDR_ECHO',
+	source='../librpc/gen_ndr/ndr_echo_c.c',
+	public_deps='dcerpc NDR_STANDARD'
+	)
+
+bld.SAMBA_SUBSYSTEM('RPC_NDR_DSBACKUP',
+	source='../librpc/gen_ndr/ndr_dsbackup_c.c',
+	public_deps='dcerpc NDR_DSBACKUP'
+	)
+
+bld.SAMBA_SUBSYSTEM('RPC_NDR_EFS',
+	source='../librpc/gen_ndr/ndr_efs_c.c',
+	public_deps='dcerpc NDR_EFS'
+	)
+
+bld.SAMBA_SUBSYSTEM('RPC_NDR_LSA',
+	source='../librpc/gen_ndr/ndr_lsa_c.c',
+	public_deps='dcerpc NDR_STANDARD'
+	)
+
+bld.SAMBA_SUBSYSTEM('RPC_NDR_DFS',
+	source='../librpc/gen_ndr/ndr_dfs_c.c',
+	public_deps='dcerpc NDR_STANDARD'
+	)
+
+bld.SAMBA_SUBSYSTEM('RPC_NDR_FRSAPI',
+	source='../librpc/gen_ndr/ndr_frsapi_c.c',
+	public_deps='dcerpc NDR_FRSAPI'
+	)
+
+bld.SAMBA_SUBSYSTEM('RPC_NDR_DRSUAPI',
+	source='../librpc/gen_ndr/ndr_drsuapi_c.c',
+	public_deps='dcerpc NDR_DRSUAPI'
+	)
+
+bld.SAMBA_SUBSYSTEM('RPC_NDR_DRSBLOBS',
+	source='../librpc/gen_ndr/ndr_drsblobs_c.c',
+	public_deps='dcerpc NDR_DRSBLOBS'
+	)
+
+bld.SAMBA_SUBSYSTEM('RPC_NDR_POLICYAGENT',
+	source='../librpc/gen_ndr/ndr_policyagent_c.c',
+	public_deps='dcerpc NDR_POLICYAGENT'
+	)
+
+bld.SAMBA_SUBSYSTEM('RPC_NDR_UNIXINFO',
+	source='../librpc/gen_ndr/ndr_unixinfo_c.c',
+	public_deps='dcerpc NDR_UNIXINFO'
+	)
+
+bld.SAMBA_SUBSYSTEM('RPC_NDR_BROWSER',
+	source='../librpc/gen_ndr/ndr_browser_c.c',
+	public_deps='dcerpc NDR_BROWSER'
+	)
+
+bld.SAMBA_SUBSYSTEM('RPC_NDR_SPOOLSS',
+	source='../librpc/gen_ndr/ndr_spoolss_c.c',
+	public_deps='dcerpc NDR_SPOOLSS'
+	)
+
+bld.SAMBA_SUBSYSTEM('RPC_NDR_NBT',
+	source='../librpc/gen_ndr/ndr_nbt_c.c',
+	public_deps='dcerpc NDR_NBT'
+	)
+
+bld.SAMBA_SUBSYSTEM('RPC_NDR_WKSSVC',
+	source='../librpc/gen_ndr/ndr_wkssvc_c.c',
+	public_deps='dcerpc NDR_STANDARD'
+	)
+
+bld.SAMBA_SUBSYSTEM('RPC_NDR_SRVSVC',
+	source='../librpc/gen_ndr/ndr_srvsvc_c.c',
+	public_deps='dcerpc NDR_SRVSVC'
+	)
+
+bld.SAMBA_SUBSYSTEM('RPC_NDR_SVCCTL',
+	source='../librpc/gen_ndr/ndr_svcctl_c.c',
+	public_deps='dcerpc NDR_STANDARD',
+	public_headers='../librpc/gen_ndr/ndr_svcctl_c.h',
+        header_path='gen_ndr'
+	)
+
+bld.SAMBA_SUBSYSTEM('RPC_NDR_EVENTLOG',
+	source='../librpc/gen_ndr/ndr_eventlog_c.c',
+	public_deps='dcerpc NDR_STANDARD'
+	)
+
+bld.SAMBA_SUBSYSTEM('RPC_NDR_EPMAPPER',
+	source='../librpc/gen_ndr/ndr_epmapper_c.c',
+	public_deps='tevent NDR_EPMAPPER'
+	)
+
+bld.SAMBA_SUBSYSTEM('RPC_NDR_DBGIDL',
+	source='../librpc/gen_ndr/ndr_dbgidl_c.c',
+	public_deps='dcerpc NDR_DBGIDL'
+	)
+
+bld.SAMBA_SUBSYSTEM('RPC_NDR_DSSETUP',
+	source='../librpc/gen_ndr/ndr_dssetup_c.c',
+	public_deps='dcerpc NDR_DSSETUP'
+	)
+
+bld.SAMBA_SUBSYSTEM('RPC_NDR_MSGSVC',
+	source='../librpc/gen_ndr/ndr_msgsvc_c.c',
+	public_deps='dcerpc NDR_MSGSVC'
+	)
+
+bld.SAMBA_SUBSYSTEM('RPC_NDR_WINREG',
+	source='../librpc/gen_ndr/ndr_winreg_c.c',
+	public_deps='dcerpc NDR_STANDARD'
+	)
+
+bld.SAMBA_SUBSYSTEM('RPC_NDR_INITSHUTDOWN',
+	source='../librpc/gen_ndr/ndr_initshutdown_c.c',
+	public_deps='dcerpc NDR_STANDARD'
+	)
+
+bld.SAMBA_SUBSYSTEM('RPC_NDR_MGMT',
+	source='../librpc/gen_ndr/ndr_mgmt_c.c',
+	deps='tevent NDR_MGMT'
+	)
+
+bld.SAMBA_SUBSYSTEM('RPC_NDR_PROTECTED_STORAGE',
+	source='../librpc/gen_ndr/ndr_protected_storage_c.c',
+	public_deps='dcerpc NDR_PROTECTED_STORAGE'
+	)
+
+bld.SAMBA_SUBSYSTEM('RPC_NDR_OXIDRESOLVER',
+	source='../librpc/gen_ndr/ndr_oxidresolver_c.c',
+	public_deps='dcerpc NDR_OXIDRESOLVER'
+	)
+
+bld.SAMBA_SUBSYSTEM('RPC_NDR_REMACT',
+	source='../librpc/gen_ndr/ndr_remact_c.c',
+	public_deps='dcerpc NDR_REMACT'
+	)
+
+bld.SAMBA_SUBSYSTEM('RPC_NDR_WZCSVC',
+	source='../librpc/gen_ndr/ndr_wzcsvc_c.c',
+	public_deps='dcerpc NDR_WZCSVC'
+	)
+
+bld.SAMBA_SUBSYSTEM('RPC_NDR_W32TIME',
+	source='../librpc/gen_ndr/ndr_w32time_c.c',
+	public_deps='dcerpc NDR_W32TIME'
+	)
+
+bld.SAMBA_SUBSYSTEM('RPC_NDR_SCERPC',
+	source='../librpc/gen_ndr/ndr_scerpc_c.c',
+	public_deps='dcerpc NDR_SCERPC'
+	)
+
+bld.SAMBA_SUBSYSTEM('RPC_NDR_NTSVCS',
+	source='../librpc/gen_ndr/ndr_ntsvcs_c.c',
+	public_deps='dcerpc NDR_STANDARD'
+	)
+
+bld.SAMBA_SUBSYSTEM('RPC_NDR_NETLOGON',
+	source='../librpc/gen_ndr/ndr_netlogon_c.c',
+	public_deps='NDR_STANDARD'
+	)
+
+bld.SAMBA_SUBSYSTEM('RPC_NDR_TRKWKS',
+	source='../librpc/gen_ndr/ndr_trkwks_c.c',
+	public_deps='dcerpc NDR_TRKWKS'
+	)
+
+bld.SAMBA_SUBSYSTEM('RPC_NDR_KEYSVC',
+	source='../librpc/gen_ndr/ndr_keysvc_c.c',
+	public_deps='dcerpc NDR_KEYSVC'
+	)
