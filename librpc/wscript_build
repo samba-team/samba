@@ -182,6 +182,16 @@ bld.SAMBA_SUBSYSTEM('NDR_NTPRINTING',
 	public_deps='LIBNDR'
 	)
 
+bld.SAMBA_SUBSYSTEM('NDR_SAMR',
+	source='../librpc/gen_ndr/ndr_samr.c',
+	public_deps='LIBNDR NDR_SECURITY NDR_LSARPC'
+	)
+
+bld.SAMBA_SUBSYSTEM('NDR_LSARPC',
+	source='../librpc/gen_ndr/ndr_lsa.c',
+	public_deps='LIBNDR NDR_SECURITY'
+	)
+
 bld.SAMBA_SUBSYSTEM('NDR_COMPRESSION',
 	source='../librpc/ndr/ndr_compression.c',
 	public_deps='LIBSAMBA-ERRORS LIBNDR',
