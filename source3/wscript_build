@@ -347,9 +347,9 @@ LIBSMB_SRC = '''libsmb/clientgen.c libsmb/cliconnect.c libsmb/clifile.c
 LIBMSRPC_SRC = '''
                ${SCHANNEL_SRC}
                rpc_client/cli_pipe.c
-               librpc/rpc/dcerpc_krb5.c
-               librpc/rpc/dcerpc_gssapi.c
-               librpc/rpc/dcerpc_spnego.c
+               librpc/crypto/gse_krb5.c
+               librpc/crypto/gse.c
+               librpc/crypto/cli_spnego.c
                librpc/rpc/rpc_common.c
                rpc_client/rpc_transport_np.c
                rpc_client/rpc_transport_sock.c
@@ -465,8 +465,12 @@ RPC_NCACN_NP = '''rpc_server/srv_pipe_register.c rpc_server/rpc_ncacn_np.c
 
 RPC_SERVICE = '''rpc_server/rpc_server.c'''
 
+RPC_CRYPTO = '''rpc_server/dcesrv_ntlmssp.c
+                rpc_server/dcesrv_gssapi.c
+                rpc_server/dcesrv_spnego.c'''
+
 RPC_PIPE_SRC = '''rpc_server/srv_pipe_hnd.c rpc_server/srv_pipe.c
-               ${RPC_NCACN_NP} ${RPC_SERVICE}'''
+               ${RPC_NCACN_NP} ${RPC_SERVICE} ${RPC_CRYPTO}'''
 
 RPC_RPCECHO_SRC = '''rpc_server/srv_echo_nt.c ../librpc/gen_ndr/srv_echo.c'''
 
