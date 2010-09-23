@@ -81,7 +81,11 @@ static WERROR dcesrv_eventlog6_EvtRpcRegisterControllableOperation(struct dcesrv
 static WERROR dcesrv_eventlog6_EvtRpcRegisterLogQuery(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct eventlog6_EvtRpcRegisterLogQuery *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	r->out.handle = dcesrv_handle_new(dce_call->context, 0);
+	W_ERROR_HAVE_NO_MEMORY(r->out.handle);
+	r->out.opControl = dcesrv_handle_new(dce_call->context, 0);
+	W_ERROR_HAVE_NO_MEMORY(r->out.opControl);
+	return WERR_OK;
 }
 
 
@@ -141,7 +145,7 @@ static WERROR dcesrv_eventlog6_EvtRpcMessageRenderDefault(struct dcesrv_call_sta
 static WERROR dcesrv_eventlog6_EvtRpcQueryNext(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct eventlog6_EvtRpcQueryNext *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	return WERR_OK;
 }
 
 
