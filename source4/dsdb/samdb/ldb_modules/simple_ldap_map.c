@@ -33,7 +33,7 @@
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "librpc/ndr/libndr.h"
 #include "dsdb/samdb/samdb.h"
-#include "../../../lib/ldb/include/ldb_handlers.h"
+#include <ldb_handlers.h>
 
 struct entryuuid_private {
 	struct ldb_context *ldb;
