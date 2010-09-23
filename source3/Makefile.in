@@ -3095,12 +3095,12 @@ bin/dbwrap_torture@EXEEXT@: $(DBWRAP_TORTURE_OBJ) $(LIBTALLOC) $(LIBTDB)
 install-dbwrap_torture:: bin/dbwrap_torture@EXEEXT@
 	@$(SHELL) script/installbin.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(prefix) $(BINDIR) $<
 
-bin/split_tokens@EXEEXT@: $(BINARY_PREREQS) $(SPLIT_TOKENS_OBJ) @BUILD_POPT@ $(LIBTALLOC) $(LIBTDB)
+bin/split_tokens@EXEEXT@: $(BINARY_PREREQS) $(SPLIT_TOKENS_OBJ) @BUILD_POPT@ $(LIBTALLOC) $(LIBTDB) $(LIBWBCLIENT)
 	@echo "Linking $@"
 	@$(CC) -o $@ $(SPLIT_TOKENS_OBJ) \
 		$(LDFLAGS) $(DYNEXP) \
 		$(LIBS) $(POPT_LIBS) \
-		$(LDAP_LIBS) \
+		$(LDAP_LIBS) $(LIBWBCLIENT_LIBS) \
 		$(LIBTALLOC_LIBS) $(LIBTDB_LIBS)
 
 install:: installservers installbin installman \
