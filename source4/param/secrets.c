@@ -167,3 +167,28 @@ struct dom_sid *secrets_get_domain_sid(TALLOC_CTX *mem_ctx,
 
 	return result;
 }
+
+char *keytab_name_from_msg(TALLOC_CTX *mem_ctx, struct ldb_context *ldb, struct ldb_message *msg) 
+{
+	const char *krb5keytab = ldb_msg_find_attr_as_string(msg, "krb5Keytab", NULL);
+	if (krb5keytab) {
+		return talloc_strdup(mem_ctx, krb5keytab);
+	} else {
+		char *file_keytab;
+		char *relative_path;
+		const char *privateKeytab = ldb_msg_find_attr_as_string(msg, "privateKeytab", NULL);
+		if (!privateKeytab) {
+			return NULL;
+		}
+
+		relative_path = samdb_relative_path(ldb, mem_ctx, privateKeytab);
+		if (!relative_path) {
+			return NULL;
+		}
+		file_keytab = talloc_asprintf(mem_ctx, "FILE:%s", relative_path);
+		talloc_free(relative_path);
+		return file_keytab;
+	}
+	return NULL;
+}
+

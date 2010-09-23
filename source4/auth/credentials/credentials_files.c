@@ -35,7 +35,6 @@
 #include "lib/events/events.h"
 #include "dsdb/samdb/samdb.h"
 
-
 /**
  * Read a file descriptor, and parse it for a password (eg from a file or stdin)
  *
@@ -193,7 +192,7 @@ _PUBLIC_ NTSTATUS cli_credentials_set_secrets(struct cli_credentials *cred,
 	const char *realm;
 	enum netr_SchannelType sct;
 	const char *salt_principal;
-	const char *keytab;
+	char *keytab;
 	const struct ldb_val *whenChanged;
 
 	/* ok, we are going to get it now, don't recurse back here */
@@ -310,17 +309,10 @@ _PUBLIC_ NTSTATUS cli_credentials_set_secrets(struct cli_credentials *cred,
 	/* If there was an external keytab specified by reference in
 	 * the LDB, then use this.  Otherwise we will make one up
 	 * (chewing CPU time) from the password */
-	keytab = ldb_msg_find_attr_as_string(msg, "krb5Keytab", NULL);
+	keytab = keytab_name_from_msg(cred, ldb, msg);
 	if (keytab) {
 		cli_credentials_set_keytab_name(cred, event_ctx, lp_ctx, keytab, CRED_SPECIFIED);
-	} else {
-		keytab = ldb_msg_find_attr_as_string(msg, "privateKeytab", NULL);
-		if (keytab) {
-			keytab = talloc_asprintf(mem_ctx, "FILE:%s", samdb_relative_path(ldb, mem_ctx, keytab));
-			if (keytab) {
-				cli_credentials_set_keytab_name(cred, event_ctx, lp_ctx, keytab, CRED_SPECIFIED);
-			}
-		}
+		talloc_free(keytab);
 	}
 	talloc_free(mem_ctx);
 	

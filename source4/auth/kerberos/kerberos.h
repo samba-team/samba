@@ -142,9 +142,15 @@ NTSTATUS kerberos_decode_pac(TALLOC_CTX *mem_ctx,
 				     time_t tgs_authtime,
 				     DATA_BLOB *pac);
 struct loadparm_context;
+struct ldb_message;
+struct ldb_context;
 uint32_t kerberos_enctype_to_bitmap(krb5_enctype enc_type_enum);
 /* Translate between the Microsoft msDS-SupportedEncryptionTypes values and the IETF encryption type values */
 krb5_enctype kerberos_enctype_bitmap_to_enctype(uint32_t enctype_bitmap);
+krb5_error_code smb_krb5_update_keytab(struct smb_krb5_context *smb_krb5_context,
+				       struct ldb_context *ldb, 
+				       struct ldb_message *msg,
+				       bool delete_all_kvno);
 
 #include "auth/kerberos/proto.h"
 

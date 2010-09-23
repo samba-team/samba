@@ -33,9 +33,11 @@
 #include "auth/credentials/credentials.h"
 #include "auth/credentials/credentials_krb5.h"
 #include "system/kerberos.h"
+#include "auth/kerberos/kerberos.h"
 
 struct dn_list {
-	struct cli_credentials *creds;
+	struct ldb_message *msg;
+	bool do_delete;
 	struct dn_list *prev, *next;
 };
 
@@ -81,11 +83,8 @@ static int add_modified(struct ldb_module *module, struct ldb_dn *dn, bool do_de
 	struct update_kt_private *data = talloc_get_type(ldb_module_get_private(module), struct update_kt_private);
 	struct dn_list *item;
 	char *filter;
-	char *errstring;
 	struct ldb_result *res;
-	const char *attrs[] = { NULL };
 	int ret;
-	NTSTATUS status;
 
 	filter = talloc_asprintf(data, "(&(dn=%s)(&(objectClass=kerberosSecret)(privateKeytab=*)))",
 				 ldb_dn_get_linearized(dn));
@@ -94,9 +93,9 @@ static int add_modified(struct ldb_module *module, struct ldb_dn *dn, bool do_de
 	}
 
 	ret = ldb_search(ldb, data, &res,
-			 dn, LDB_SCOPE_BASE, attrs, "%s", filter);
+			 dn, LDB_SCOPE_BASE, NULL, "%s", filter);
+	talloc_free(filter);
 	if (ret != LDB_SUCCESS) {
-		talloc_free(filter);
 		return ret;
 	}
 
@@ -106,34 +105,19 @@ static int add_modified(struct ldb_module *module, struct ldb_dn *dn, bool do_de
 		talloc_free(filter);
 		return LDB_SUCCESS;
 	}
-	talloc_free(res);
 
 	item = talloc(data->changed_dns? (void *)data->changed_dns: (void *)data, struct dn_list);
 	if (!item) {
+		talloc_free(res);
 		talloc_free(filter);
 		return ldb_oom(ldb);
 	}
 
-	item->creds = cli_credentials_init(item);
-	if (!item->creds) {
-		DEBUG(1, ("cli_credentials_init failed!"));
-		talloc_free(filter);
-		return ldb_oom(ldb);
-	}
+	item->msg = talloc_steal(item, res->msgs[0]);
+	item->do_delete = do_delete;
+	talloc_free(res);
 
-	cli_credentials_set_conf(item->creds, ldb_get_opaque(ldb, "loadparm"));
-	status = cli_credentials_set_secrets(item->creds, ldb_get_event_context(ldb), ldb_get_opaque(ldb, "loadparm"), ldb, NULL, filter, &errstring);
-	talloc_free(filter);
-	if (NT_STATUS_IS_OK(status)) {
-		if (do_delete) {
-			/* Ensure we don't helpfully keep an old keytab entry */
-			cli_credentials_set_kvno(item->creds, cli_credentials_get_kvno(item->creds)+2);	
-			/* Wipe passwords */
-			cli_credentials_set_nt_hash(item->creds, NULL, 
-						    CRED_SPECIFIED);
-		}
-		DLIST_ADD_END(data->changed_dns, item, struct dn_list *);
-	}
+	DLIST_ADD_END(data->changed_dns, item, struct dn_list *);
 	return LDB_SUCCESS;
 }
 
@@ -379,19 +363,27 @@ static int update_kt_rename(struct ldb_module *module, struct ldb_request *req)
 /* prepare for a commit */
 static int update_kt_prepare_commit(struct ldb_module *module)
 {
-	struct ldb_context *ldb;
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	struct update_kt_private *data = talloc_get_type(ldb_module_get_private(module), struct update_kt_private);
 	struct dn_list *p;
+	struct smb_krb5_context *smb_krb5_context;
+	int krb5_ret = smb_krb5_init_context(data, ldb_get_event_context(ldb), ldb_get_opaque(ldb, "loadparm"),
+					     &smb_krb5_context);
+	if (krb5_ret != 0) {
+		talloc_free(data->changed_dns);
+		data->changed_dns = NULL;
+		ldb_asprintf_errstring(ldb, "Failed to setup krb5_context: %s", error_message(krb5_ret));
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
 
 	ldb = ldb_module_get_ctx(module);
 
 	for (p=data->changed_dns; p; p = p->next) {
-		int kret;
-		kret = cli_credentials_update_keytab(p->creds, ldb_get_event_context(ldb), ldb_get_opaque(ldb, "loadparm"));
-		if (kret != 0) {
+		krb5_ret = smb_krb5_update_keytab(smb_krb5_context, ldb, p->msg, p->do_delete);
+		if (krb5_ret != 0) {
 			talloc_free(data->changed_dns);
 			data->changed_dns = NULL;
-			ldb_asprintf_errstring(ldb, "Failed to update keytab: %s", error_message(kret));
+			ldb_asprintf_errstring(ldb, "Failed to update keytab: %s", error_message(krb5_ret));
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 	}

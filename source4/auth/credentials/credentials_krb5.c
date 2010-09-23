@@ -595,7 +595,6 @@ _PUBLIC_ int cli_credentials_get_keytab(struct cli_credentials *cred,
 	krb5_error_code ret;
 	struct keytab_container *ktc;
 	struct smb_krb5_context *smb_krb5_context;
-	const char **enctype_strings;
 	TALLOC_CTX *mem_ctx;
 
 	if (cred->keytab_obtained >= (MAX(cred->principal_obtained, 
@@ -619,11 +618,8 @@ _PUBLIC_ int cli_credentials_get_keytab(struct cli_credentials *cred,
 		return ENOMEM;
 	}
 
-	enctype_strings = cli_credentials_get_enctype_strings(cred);
-	
 	ret = smb_krb5_create_memory_keytab(mem_ctx, cred, 
-					    smb_krb5_context, 
-					    enctype_strings, &ktc);
+					    smb_krb5_context, &ktc);
 	if (ret) {
 		talloc_free(mem_ctx);
 		return ret;
@@ -679,41 +675,6 @@ _PUBLIC_ int cli_credentials_set_keytab_name(struct cli_credentials *cred,
 	cred->keytab = ktc;
 	talloc_free(mem_ctx);
 
-	return ret;
-}
-
-_PUBLIC_ int cli_credentials_update_keytab(struct cli_credentials *cred, 
-					   struct tevent_context *event_ctx,
-				  struct loadparm_context *lp_ctx)
-{
-	krb5_error_code ret;
-	struct keytab_container *ktc;
-	struct smb_krb5_context *smb_krb5_context;
-	const char **enctype_strings;
-	TALLOC_CTX *mem_ctx;
-	
-	mem_ctx = talloc_new(cred);
-	if (!mem_ctx) {
-		return ENOMEM;
-	}
-
-	ret = cli_credentials_get_krb5_context(cred, event_ctx, lp_ctx, &smb_krb5_context);
-	if (ret) {
-		talloc_free(mem_ctx);
-		return ret;
-	}
-
-	enctype_strings = cli_credentials_get_enctype_strings(cred);
-	
-	ret = cli_credentials_get_keytab(cred, event_ctx, lp_ctx, &ktc);
-	if (ret != 0) {
-		talloc_free(mem_ctx);
-		return ret;
-	}
-
-	ret = smb_krb5_update_keytab(mem_ctx, cred, smb_krb5_context, enctype_strings, ktc);
-
-	talloc_free(mem_ctx);
 	return ret;
 }
 
@@ -809,21 +770,6 @@ _PUBLIC_ int cli_credentials_get_kvno(struct cli_credentials *cred)
 	return cred->kvno;
 }
 
-
-const char **cli_credentials_get_enctype_strings(struct cli_credentials *cred) 
-{
-	/* If this is ever made user-configurable, we need to add code
-	 * to remove/hide the other entries from the generated
-	 * keytab */
-	static const char *default_enctypes[] = {
-		"des-cbc-md5",
-		"aes256-cts-hmac-sha1-96",
-		"des3-cbc-sha1",
-		"arcfour-hmac-md5",
-		NULL
-	};
-	return default_enctypes;
-}
 
 const char *cli_credentials_get_salt_principal(struct cli_credentials *cred) 
 {

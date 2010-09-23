@@ -142,6 +142,7 @@ struct cli_credentials {
 };
 
 struct ldb_context;
+struct ldb_message;
 struct loadparm_context;
 struct ccache_container;
 
@@ -268,9 +269,6 @@ int cli_credentials_set_keytab_name(struct cli_credentials *cred,
 				    struct loadparm_context *lp_ctx,
 				    const char *keytab_name, 
 				    enum credentials_obtained obtained);
-int cli_credentials_update_keytab(struct cli_credentials *cred, 
-				  struct tevent_context *event_ctx,
-				  struct loadparm_context *lp_ctx);
 void cli_credentials_set_gensec_features(struct cli_credentials *creds, uint32_t gensec_features);
 uint32_t cli_credentials_get_gensec_features(struct cli_credentials *creds);
 int cli_credentials_set_ccache(struct cli_credentials *cred, 
