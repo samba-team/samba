@@ -42,19 +42,6 @@ bld.SAMBA_SUBSYSTEM('NDR_IRPC',
 	)
 
 
-bld.SAMBA_SUBSYSTEM('NDR_DCOM',
-	source='../../librpc/gen_ndr/ndr_dcom.c',
-	public_deps='LIBNDR NDR_SECURITY NDR_ORPC'
-	)
-
-
-bld.SAMBA_SUBSYSTEM('NDR_WMI',
-	source='../../librpc/ndr/ndr_wmi.c ../../librpc/gen_ndr/ndr_wmi.c',
-	public_deps='LIBNDR NDR_SECURITY NDR_DCOM'
-	)
-
-
-
 bld.SAMBA_SUBSYSTEM('NDR_SASL_HELPERS',
 	source='gen_ndr/ndr_sasl_helpers.c',
 	public_deps='LIBNDR'
