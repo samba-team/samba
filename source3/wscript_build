@@ -1086,7 +1086,7 @@ NSSTEST_SRC = '''torture/nsstest.c ${LIBSAMBAUTIL_SRC}'''
 PDBTEST_SRC = '''torture/pdbtest.c
                 ${LIBNDR_GEN_SRC0}'''
 
-VFSTEST_SRC = '''torture/cmd_vfs.c torture/vfstest.c ${SMBD_SRC_BASE} ${READLINE_SRC}'''
+VFSTEST_SRC = '''torture/cmd_vfs.c torture/vfstest.c ${READLINE_SRC}'''
 
 SMBICONV_SRC = '''torture/smbiconv.c'''
 
@@ -1323,6 +1323,14 @@ bld.SAMBA_SUBSYSTEM('SMBLDAP',
                     deps='ldap lber',
                     vars=locals())
 
+bld.SAMBA_SUBSYSTEM('SMBD_BASE',
+                    source=SMBD_SRC_BASE,
+                    deps='''tdb tevent dl krb5 ldap gssapi gssapi_krb5
+                    NSS_WRAPPER DYNCONFIG libwbclient crypt nsl cups cap resolv ZLIB PASSDB
+                    PARAM_WITHOUT_REG LIBS LIBSMB POPT_SAMBA KRBCLIENT AVAHI
+                    LIBMSRPC_GEN''',
+                    vars=locals())
+
 #FIXME
 bld.SAMBA_SUBSYSTEM('LIBNDR',
                     source=LIBNDR_SRC,
@@ -1357,11 +1365,8 @@ bld.SAMBA_SUBSYSTEM('LIBCLI_NDR_NETLOGON',
 ########################## BINARIES #################################
 
 bld.SAMBA_BINARY('smbd/smbd',
-                 source=SMBD_SRC,
-                 deps='''tdb tevent dl krb5 ldap gssapi gssapi_krb5
-                 NSS_WRAPPER DYNCONFIG libwbclient crypt nsl cups cap resolv ZLIB PASSDB
-                 PARAM_WITHOUT_REG LIBS LIBSMB POPT_SAMBA KRBCLIENT AVAHI
-                 LIBMSRPC_GEN''',
+                 source='${SMBD_SRC_MAIN}',
+                 deps='''SMBD_BASE''',
                  install_path='${SBINDIR}',
                  vars=locals())
 
@@ -1536,10 +1541,7 @@ bld.SAMBA_BINARY('pdbtest',
 
 bld.SAMBA_BINARY('vfstest',
                  source=VFSTEST_SRC,
-                 deps='''talloc tdb tevent cap resolv libwbclient dl krb5 ldap gssapi gssapi_krb5
-                 NSS_WRAPPER DYNCONFIG libwbclient crypt nsl cups ZLIB PASSDB
-                 PARAM_WITHOUT_REG LIBS LIBSMB POPT_SAMBA KRBCLIENT AVAHI
-                 LIBMSRPC_GEN''',
+                 deps='''SMBD_BASE''',
                  vars=locals())
 
 bld.SAMBA_BINARY('smbiconv',
