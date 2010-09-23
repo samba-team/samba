@@ -264,8 +264,8 @@ static void dsdb_sorted_accessors_free(struct dsdb_schema *schema)
 /*
   create the sorted accessor arrays for the schema
  */
-static int dsdb_setup_sorted_accessors(struct ldb_context *ldb,
-				       struct dsdb_schema *schema)
+int dsdb_setup_sorted_accessors(struct ldb_context *ldb,
+				struct dsdb_schema *schema)
 {
 	struct dsdb_class *cur;
 	struct dsdb_attribute *a;
