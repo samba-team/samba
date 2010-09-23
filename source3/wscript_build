@@ -955,6 +955,38 @@ LIBSMBSHAREMODES_SRC0 = 'libsmb/smb_share_modes.c'
 
 LIBSMBSHAREMODES_SRC = '${LIBSMBSHAREMODES_SRC0}'
 
+LIBNETAPI_SRC0 = '''lib/netapi/netapi.c
+                    lib/netapi/cm.c
+                    librpc/gen_ndr/ndr_libnetapi.c
+                    lib/netapi/libnetapi.c
+                    lib/netapi/joindomain.c
+                    lib/netapi/serverinfo.c
+                    lib/netapi/getdc.c
+                    lib/netapi/user.c
+                    lib/netapi/group.c
+                    lib/netapi/localgroup.c
+                    lib/netapi/samr.c
+                    lib/netapi/sid.c
+                    lib/netapi/share.c
+                    lib/netapi/file.c
+                    lib/netapi/shutdown.c
+                    lib/netapi/netlogon.c'''
+
+LIBNETAPI_SRC = '''${LIBNETAPI_SRC0} ${LIBNET_SRC}
+                   ${LIBSMBCONF_SRC}
+                   ${REG_SMBCONF_SRC}
+                   ${LIBMSRPC_SRC} ${LIBMSRPC_GEN_SRC}
+                   ${DCUTIL_SRC} ${LIBADS_SRC} ${PRIVILEGES_BASIC_SRC}
+                   auth/token_util.c
+                   ${LIBCLI_INITSHUTDOWN_SRC}
+                   ${LIBCLI_WKSSVC_SRC}
+                   ${LIBCLI_SRVSVC_SRC}
+                   ${LIBCLI_LSA_SRC}
+                   ${LIBCLI_SAMR_SRC}
+                   ${LIBCLI_NETLOGON_SRC}
+                   ${RPC_CLIENT_SCHANNEL_SRC}
+                   rpc_client/init_netlogon.c
+                   rpc_client/init_samr.c'''
 
 # FIXME:  bigballofmud
 
@@ -1205,23 +1237,10 @@ bld.SAMBA_LIBRARY('libwbclient',
                     public_deps='talloc WBCOMMON')
 
 bld.SAMBA_LIBRARY('libnetapi',
-                    source='''lib/netapi/netapi.c
-                              lib/netapi/cm.c
-                              librpc/gen_ndr/ndr_libnetapi.c
-                              lib/netapi/libnetapi.c
-                              lib/netapi/joindomain.c
-                              lib/netapi/serverinfo.c
-                              lib/netapi/getdc.c
-                              lib/netapi/user.c
-                              lib/netapi/group.c
-                              lib/netapi/localgroup.c
-                              lib/netapi/samr.c
-                              lib/netapi/sid.c
-                              lib/netapi/share.c
-                              lib/netapi/file.c
-                              lib/netapi/shutdown.c
-                              lib/netapi/netlogon.c''',
-                    public_deps='''talloc tdb''')
+                    source=LIBNETAPI_SRC,
+                    public_deps='''talloc tdb cap libwbclient LIB_NONSMBD LIBSMB KRBCLIENT
+                    PASSDB SMBLDAP GROUPDB PARAM_WITHOUT_REG DYNCONFIG''',
+                    vars=locals())
 
 bld.SAMBA_LIBRARY('libsmbclient',
                     source=LIBSMBCLIENT_SRC,
