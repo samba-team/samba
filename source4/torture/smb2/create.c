@@ -793,6 +793,7 @@ static bool test_smb2_open_brlocked(struct torture_context *tctx,
 	NTSTATUS status;
 	bool ret = true;
 	struct smb2_handle h;
+	char b = 42;
 
 	torture_comment(tctx,
 		"Testing SMB2 open with a byte range locked file\n");
@@ -819,12 +820,17 @@ static bool test_smb2_open_brlocked(struct torture_context *tctx,
 	status = smb2_create(tree, tctx, &(io.smb2));
 	CHECK_STATUS(status, NT_STATUS_OK);
 
+	status = smb2_util_write(tree, io.smb2.out.file.handle, &b, 0, 1);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
 	ZERO_STRUCT(io2.smb2);
 	io2.smb2.level = RAW_LOCK_SMB2;
 	io2.smb2.in.file.handle = io.smb2.out.file.handle;
 	io2.smb2.in.lock_count = 1;
 
+	ZERO_STRUCT(lock);
 	lock[0].offset = 0;
+	lock[0].length = 1;
 	lock[0].flags = SMB2_LOCK_FLAG_EXCLUSIVE |
 			SMB2_LOCK_FLAG_FAIL_IMMEDIATELY;
 	io2.smb2.in.locks = &lock[0];
