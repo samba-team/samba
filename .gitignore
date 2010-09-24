@@ -13,8 +13,12 @@ config.h
 config.h.in
 config.log
 config.status
-configure
-Makefile
+source3/configure
+source3/Makefile
+lib/talloc/configure
+lib/talloc/Makefile
+lib/tdb/configure
+lib/tdb/Makefile
 *.d
 *_err.c
 *_err.h
@@ -83,7 +87,6 @@ source3/library-versions
 librpc/gen_ndr/*.*
 source3/librpc/gen_ndr/*.*
 source4/librpc/gen_ndr/*.*
-source3/Makefile
 source3/nsswitch/*.so
 source3/pkgconfig/*.pc
 source3/proto_exists
@@ -313,14 +316,12 @@ packaging/RHEL-CTDB/samba.spec
 packaging/RHEL/samba.spec
 packaging/RHEL/makerpms.sh
 source3/setup
-lib/tevent/Makefile
 lib/tevent/tevent.so
 lib/tevent/libtevent.so*
 lib/tevent/libtevent.a
 lib/tdb/libtdb.so
 lib/tdb/tdb.so
 lib/tdb/libtdb.a
-lib/tdb/Makefile
 lib/tdb/bin
 docs-xml/build/catalog.xml
 docs-xml/*/images/*.eps
