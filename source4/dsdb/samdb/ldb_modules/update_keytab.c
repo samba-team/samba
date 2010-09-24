@@ -379,11 +379,15 @@ static int update_kt_prepare_commit(struct ldb_module *module)
 	ldb = ldb_module_get_ctx(module);
 
 	for (p=data->changed_dns; p; p = p->next) {
-		krb5_ret = smb_krb5_update_keytab(smb_krb5_context, ldb, p->msg, p->do_delete);
+		const char *error_string;
+		krb5_ret = smb_krb5_update_keytab(data, smb_krb5_context, ldb, p->msg, p->do_delete, &error_string);
 		if (krb5_ret != 0) {
 			talloc_free(data->changed_dns);
 			data->changed_dns = NULL;
-			ldb_asprintf_errstring(ldb, "Failed to update keytab: %s", error_message(krb5_ret));
+			ldb_asprintf_errstring(ldb, "Failed to update keytab from entry %s in %s: %s",
+					       ldb_dn_get_linearized(p->msg->dn),
+					       (const char *)ldb_get_opaque(ldb, "ldb_url"),
+					       error_string);
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 	}
