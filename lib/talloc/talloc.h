@@ -972,6 +972,15 @@ int talloc_unlink(const void *context, void *ptr);
  * which will be automatically freed on program exit. This can be used
  * to reduce the noise in memory leak reports.
  *
+ * Never use this in code that might be used in objects loaded with
+ * dlopen and unloaded with dlclose. talloc_autofree_context()
+ * internally uses atexit(3). Some platforms like modern Linux handles
+ * this fine, but for example FreeBSD does not deal well with dlopen()
+ * and atexit() used simultaneously: dlclose() does not clean up the
+ * list of atexit-handlers, so when the program exits the code that
+ * was registered from within talloc_autofree_context() is gone, the
+ * program crashes at exit.
+ *
  * @return              A talloc context, NULL on error.
  */
 void *talloc_autofree_context(void);
