@@ -600,6 +600,50 @@ return 0;
         if conf.env.with_iconv:
             conf.DEFINE('HAVE_ICONV', 1)
 
+    seteuid = False
+    if not seteuid:
+        seteuid = conf.CHECK_CODE('''
+				#define AUTOCONF_TEST 1
+				#define USE_SETREUID 1
+				#include "./lib/util_sec.c"
+				''',
+				'USE_SETREUID',
+				addmain=False,
+				execute=True,
+				msg="Checking whether setreuid is available")
+    if not seteuid:
+        seteuid = conf.CHECK_CODE('''
+				#define AUTOCONF_TEST 1
+				#define USE_SETRESUID 1
+				#include "./lib/util_sec.c"
+				''',
+				'USE_SETRESUID',
+				addmain=False,
+				execute=True,
+				msg="Checking whether setresuid is available")
+    if not seteuid:
+        seteuid = conf.CHECK_CODE('''
+				#define AUTOCONF_TEST 1
+				#define USE_SETEUID 1
+				#include "./lib/util_sec.c"
+				''',
+				'USE_SETEUID',
+				addmain=False,
+				execute=True,
+				msg="Checking whether seteuid is available")
+    if not seteuid:
+        seteuid = conf.CHECK_CODE('''
+				#define AUTOCONF_TEST 1
+				#define USE_SETUIDX 1
+				#include "./lib/util_sec.c"
+				''',
+				'USE_SETUIDX',
+				addmain=False,
+				execute=True,
+				mandatory=True,
+				msg="Checking whether setuidx is available")
+
+
     # FIXME: these should be tests for features, but the old build system just
     # checks for OSes.
     import sys
