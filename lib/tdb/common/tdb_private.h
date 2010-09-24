@@ -272,3 +272,4 @@ bool tdb_write_all(int fd, const void *buf, size_t count);
 int tdb_transaction_recover(struct tdb_context *tdb);
 void tdb_header_hash(struct tdb_context *tdb,
 		     uint32_t *magic1_hash, uint32_t *magic2_hash);
+unsigned int tdb_old_hash(TDB_DATA *key);
