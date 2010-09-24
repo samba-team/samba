@@ -2132,4 +2132,11 @@ struct ldb_dn *ldb_dn_binary_from_ldb_val(TALLOC_CTX *mem_ctx,
 int ldb_dn_get_binary(struct ldb_dn *dn, struct ldb_val *val);
 int ldb_dn_set_binary(struct ldb_dn *dn, struct ldb_val *val);
 
+/* debugging functions for ldb requests */
+void ldb_req_set_location(struct ldb_request *req, const char *location);
+const char *ldb_req_location(struct ldb_request *req);
+
+/* set the location marker on a request handle - used for debugging */
+#define LDB_REQ_SET_LOCATION(req) ldb_req_set_location(req, __location__)
+
 #endif

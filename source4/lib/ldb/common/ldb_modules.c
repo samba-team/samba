@@ -711,6 +711,8 @@ struct ldb_handle *ldb_handle_new(TALLOC_CTX *mem_ctx, struct ldb_context *ldb)
 	h->state = LDB_ASYNC_INIT;
 	h->ldb = ldb;
 	h->flags = 0;
+	h->location = NULL;
+	h->parent = NULL;
 
 	return h;
 }

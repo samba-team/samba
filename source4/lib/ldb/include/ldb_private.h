@@ -55,6 +55,10 @@ struct ldb_handle {
 	struct ldb_context *ldb;
 	unsigned flags;
 	unsigned nesting;
+
+	/* used for debugging */
+	struct ldb_request *parent;
+	const char *location;
 };
 
 /* basic module structure */

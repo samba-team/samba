@@ -34,6 +34,7 @@
 
 #define TEVENT_DEPRECATED 1
 #include "ldb_private.h"
+#include "ldb.h"
 
 static int ldb_context_destructor(void *ptr)
 {
@@ -1071,6 +1072,7 @@ int ldb_build_search_req_ex(struct ldb_request **ret_req,
 
 	if (parent) {
 		req->handle->nesting++;
+		req->handle->parent = parent;
 	}
 
 	*ret_req = req;
@@ -1435,6 +1437,7 @@ int ldb_search(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 					res,
 					ldb_search_default_callback,
 					NULL);
+	ldb_req_set_location(req, "ldb_search");
 
 	if (ret != LDB_SUCCESS) goto done;
 
@@ -1478,6 +1481,7 @@ int ldb_add(struct ldb_context *ldb,
 					NULL,
 					ldb_op_default_callback,
 					NULL);
+	ldb_req_set_location(req, "ldb_add");
 
 	if (ret != LDB_SUCCESS) return ret;
 
@@ -1508,6 +1512,7 @@ int ldb_modify(struct ldb_context *ldb,
 					NULL,
 					ldb_op_default_callback,
 					NULL);
+	ldb_req_set_location(req, "ldb_modify");
 
 	if (ret != LDB_SUCCESS) return ret;
 
@@ -1533,6 +1538,7 @@ int ldb_delete(struct ldb_context *ldb, struct ldb_dn *dn)
 					NULL,
 					ldb_op_default_callback,
 					NULL);
+	ldb_req_set_location(req, "ldb_delete");
 
 	if (ret != LDB_SUCCESS) return ret;
 
@@ -1559,6 +1565,7 @@ int ldb_rename(struct ldb_context *ldb,
 					NULL,
 					ldb_op_default_callback,
 					NULL);
+	ldb_req_set_location(req, "ldb_rename");
 
 	if (ret != LDB_SUCCESS) return ret;
 
@@ -1782,4 +1789,23 @@ unsigned int ldb_get_flags(struct ldb_context *ldb)
 void ldb_set_flags(struct ldb_context *ldb, unsigned flags)
 {
 	ldb->flags = flags;
+}
+
+
+/*
+  set the location in a ldb request. Used for debugging
+ */
+void ldb_req_set_location(struct ldb_request *req, const char *location)
+{
+	if (req && req->handle) {
+		req->handle->location = location;
+	}
+}
+
+/*
+  return the location set with dsdb_req_set_location
+ */
+const char *ldb_req_location(struct ldb_request *req)
+{
+	return req->handle->location;
 }
