@@ -55,6 +55,8 @@ static bool finddcs_cldap_nbt_lookup(struct finddcs_cldap_state *state,
 				     struct resolve_context *resolve_ctx,
 				     struct tevent_context *event_ctx);
 static void finddcs_cldap_name_resolved(struct composite_context *ctx);
+static void finddcs_cldap_next_server(struct finddcs_cldap_state *state);
+static bool finddcs_cldap_ipaddress(struct finddcs_cldap_state *state, struct finddcs *io);
 
 
 /*
@@ -91,7 +93,11 @@ struct tevent_req *finddcs_cldap_send(TALLOC_CTX *mem_ctx,
 		state->domain_sid = NULL;
 	}
 
-	if (strchr(state->domain_name, '.')) {
+	if (io->in.server_address) {
+		if (!finddcs_cldap_ipaddress(state, io)) {
+			return tevent_req_post(req, event_ctx);
+		}
+	} else if (strchr(state->domain_name, '.')) {
 		/* looks like a DNS name */
 		if (!finddcs_cldap_srv_lookup(state, io, resolve_ctx, event_ctx)) {
 			return tevent_req_post(req, event_ctx);
@@ -103,6 +109,34 @@ struct tevent_req *finddcs_cldap_send(TALLOC_CTX *mem_ctx,
 	}
 
 	return req;
+}
+
+
+/*
+  we've been told the IP of the server, bypass name
+  resolution and go straight to CLDAP
+*/
+static bool finddcs_cldap_ipaddress(struct finddcs_cldap_state *state, struct finddcs *io)
+{
+	NTSTATUS status;
+
+	state->srv_addresses = talloc_array(state, const char *, 2);
+	if (tevent_req_nomem(state->srv_addresses, state->req)) {
+		return false;
+	}
+	state->srv_addresses[0] = talloc_strdup(state->srv_addresses, io->in.server_address);
+	if (tevent_req_nomem(state->srv_addresses[0], state->req)) {
+		return false;
+	}
+	state->srv_addresses[1] = NULL;
+	state->srv_address_index = 0;
+	status = cldap_socket_init(state, state->ev, NULL, NULL, &state->cldap);
+	if (tevent_req_nterror(state->req, status)) {
+		return false;
+	}
+
+	finddcs_cldap_next_server(state);
+	return tevent_req_is_nterror(state->req, &status);
 }
 
 /*

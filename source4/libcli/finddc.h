@@ -27,6 +27,8 @@ struct finddcs {
 		const char *site_name; /* optional */
 		struct dom_sid *domain_sid; /* optional */
 		uint32_t minimum_dc_flags; /* DS_SERVER_* */
+		const char *server_address; /* optional, bypass name
+					       resolution */
 	} in;
 	struct {
 		const char *address; /* IP address of server */
