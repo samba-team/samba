@@ -1124,8 +1124,14 @@ int main(int argc, char **argv, char **envp)
 	};
 	poptContext pc;
 	int opt;
-	TALLOC_CTX *frame = talloc_stackframe();
+	TALLOC_CTX *frame;
 	NTSTATUS status;
+
+	/*
+	 * Do this before any other talloc operation
+	 */
+	talloc_enable_null_tracking();
+	frame = talloc_stackframe();
 
 	/* glibc (?) likes to print "User defined signal 1" and exit if a
 	   SIGUSR[12] is received before a handler is installed */

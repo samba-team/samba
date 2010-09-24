@@ -857,10 +857,16 @@ extern void build_options(bool screen);
 	POPT_TABLEEND
 	};
 	struct smbd_parent_context *parent = NULL;
-	TALLOC_CTX *frame = talloc_stackframe(); /* Setup tos. */
+	TALLOC_CTX *frame;
 	NTSTATUS status;
 	uint64_t unique_id;
 	struct rpc_srv_callbacks spoolss_cb;
+
+	/*
+	 * Do this before any other talloc operation
+	 */
+	talloc_enable_null_tracking();
+	frame = talloc_stackframe();
 
 	/* Initialize the event context, it will panic on error */
 	smbd_event_context();
