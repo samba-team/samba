@@ -782,7 +782,7 @@ SMBD_SRC_BASE = '''${SMBD_SRC_SRV}
                 ${OPLOCK_SRC} ${NOTIFY_SRC} ${FNAME_UTIL_SRC}
                 ${REG_FULL_SRC}
                 ${BUILDOPT_SRC}
-                ${LIBNET_SRC} ${LIBSMBCONF_SRC}
+                ${LIBSMBCONF_SRC}
                 ${LIBCLI_SPOOLSS_SRC}
                 ${LIBCLI_WINREG_SRC}
                 ${LIBCLI_SRVSVC_SRC}
@@ -939,7 +939,7 @@ LIBNETAPI_SRC0 = '''lib/netapi/netapi.c
                     lib/netapi/shutdown.c
                     lib/netapi/netlogon.c'''
 
-LIBNETAPI_SRC = '''${LIBNETAPI_SRC0} ${LIBNET_SRC}
+LIBNETAPI_SRC = '''${LIBNETAPI_SRC0}
                    ${LIBSMBCONF_SRC}
                    ${REG_SMBCONF_SRC}
                    ${DCUTIL_SRC} ${PRIVILEGES_BASIC_SRC}
@@ -972,7 +972,7 @@ SMBCONFTORT_SRC0 = 'lib/smbconf/testsuite.c'
 
 SMBCONFTORT_SRC = '''${SMBCONFTORT_SRC0}'''
 
-LIBNET_SRC = 'libnet/libnet_join.c libnet/libnet_keytab.c librpc/gen_ndr/ndr_libnet_join.c'
+LIBNET_SRC = 'libnet/libnet_join.c libnet/libnet_keytab.c'
 
 
 LIBNET_DSSYNC_SRC = '''libnet/libnet_dssync.c
@@ -1028,7 +1028,6 @@ NET_SRC = '''${NET_SRC1}
              ${NET_SRC2}
              ${DCUTIL_SRC}
              ${LIBGPO_SRC} ${DISPLAY_SEC_SRC}
-             ${LIBNET_SRC} ${LIBNET_DSSYNC_SRC} ${LIBNET_SAMSYNC_SRC}
              ${LIB_EVENTLOG_SRC} ${REGFIO_SRC}'''
 
 CUPS_SRC = '''client/smbspool.c'''
@@ -1322,7 +1321,7 @@ bld.SAMBA_SUBSYSTEM('SMBD_BASE',
                     NSS_WRAPPER DYNCONFIG libwbclient crypt nsl cups cap resolv ZLIB PASSDB
                     PARAM_WITHOUT_REG LIBS LIBSMB POPT_SAMBA KRBCLIENT AVAHI
                     LIBMSRPC_GEN LIBMSRPC LIBADS LIBADS_SERVER LIBADS_PRINTER
-                    VFS_DEFAULT RPC_MODULES AUTH LOCKING LIBAFS LIBAFS_SETTOKEN PROFILE''',
+                    VFS_DEFAULT RPC_MODULES AUTH LOCKING LIBAFS LIBAFS_SETTOKEN PROFILE LIBNET''',
                     vars=locals())
 
 bld.SAMBA_SUBSYSTEM('RPC_MODULES',
@@ -1347,6 +1346,21 @@ bld.SAMBA_SUBSYSTEM('READLINE',
 
 bld.SAMBA_SUBSYSTEM('PASSWD_UTIL',
                     source=PASSWD_UTIL_SRC,
+                    vars=locals())
+
+bld.SAMBA_SUBSYSTEM('LIBNET',
+                    source=LIBNET_SRC,
+                    deps='NDR_LIBNET_JOIN',
+                    vars=locals())
+
+bld.SAMBA_SUBSYSTEM('LIBNET_DSSYNC',
+                    source=LIBNET_DSSYNC_SRC,
+                    deps='LIBNET',
+                    vars=locals())
+
+bld.SAMBA_SUBSYSTEM('LIBNET_SAMSYNC',
+                    source=LIBNET_SAMSYNC_SRC,
+                    deps='LIBNET',
                     vars=locals())
 
 bld.SAMBA_SUBSYSTEM('LIBNDR',
@@ -1445,7 +1459,8 @@ bld.SAMBA_BINARY('net',
                  source=NET_SRC,
                  deps='''talloc tdb libnetapi libaddns cap resolv POPT_SAMBA PASSDB LIBSMB LIB_NONSMBD
                  PARAM_WITHOUT_REG libwbclient PARAM KRBCLIENT LIBMSRPC_GEN LIBMSRPC LIBADS LIBADS_SERVER LIBADS_PRINTER
-                 LOCALE_DIR LIBAFS LIBAFS_SETTOKEN READLINE PASSWD_UTIL''',
+                 LOCALE_DIR LIBAFS LIBAFS_SETTOKEN READLINE PASSWD_UTIL LIBNET
+                 LIBNET_DSSYNC LIBNET_SAMSYNC''',
                  vars=locals())
 
 bld.SAMBA_BINARY('profiles',

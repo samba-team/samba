@@ -5,6 +5,11 @@ bld.SAMBA_SUBSYSTEM('NDR_LIBNETAPI',
 	public_deps='LIBNDR'
 	)
 
+bld.SAMBA_SUBSYSTEM('NDR_LIBNET_JOIN',
+	source='gen_ndr/ndr_libnet_join.c',
+	public_deps='LIBNDR'
+	)
+
 bld.SAMBA_SUBSYSTEM('NDR_MESSAGING',
 	source='gen_ndr/ndr_messaging.c',
 	public_deps='LIBNDR'
