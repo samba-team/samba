@@ -534,12 +534,14 @@ static void py_net_dealloc(py_net_Object *self)
 static PyObject *net_obj_new(PyTypeObject *type, PyObject *args, PyObject *kwargs)
 {
 	PyObject *py_creds, *py_lp = Py_None;
-	const char *kwnames[] = { "creds", "lp", NULL };
+	const char *kwnames[] = { "creds", "lp", "server", NULL };
 	py_net_Object *ret;
 	struct loadparm_context *lp;
+	const char *server_address = NULL;
 
-	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O|O", 
-			discard_const_p(char *, kwnames), &py_creds, &py_lp))
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O|Oz",
+					 discard_const_p(char *, kwnames), &py_creds, &py_lp,
+					 &server_address))
 		return NULL;
 
 	ret = PyObject_New(py_net_Object, type);
@@ -564,6 +566,8 @@ static PyObject *net_obj_new(PyTypeObject *type, PyObject *args, PyObject *kwarg
 		Py_DECREF(ret);
 		return NULL;
 	}
+
+	ret->libnet_ctx->server_address = server_address;
 
 	ret->libnet_ctx->cred = cli_credentials_from_py_object(py_creds);
 	if (ret->libnet_ctx->cred == NULL) {
