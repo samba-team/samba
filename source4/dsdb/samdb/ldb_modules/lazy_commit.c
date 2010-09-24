@@ -50,6 +50,7 @@ static int unlazy_op(struct ldb_module *module, struct ldb_request *req)
 					      req->controls,
 					      req, dsdb_next_callback,
 					      req);
+		LDB_REQ_SET_LOCATION(new_req);
 		break;
 	case LDB_ADD:
 		ret = ldb_build_add_req(&new_req, ldb_module_get_ctx(module), req,
@@ -57,6 +58,7 @@ static int unlazy_op(struct ldb_module *module, struct ldb_request *req)
 					req->controls,
 					req, dsdb_next_callback,
 					req);
+		LDB_REQ_SET_LOCATION(new_req);
 		break;
 	case LDB_MODIFY:
 		ret = ldb_build_mod_req(&new_req, ldb_module_get_ctx(module), req,
@@ -64,6 +66,7 @@ static int unlazy_op(struct ldb_module *module, struct ldb_request *req)
 					req->controls,
 					req, dsdb_next_callback,
 					req);
+		LDB_REQ_SET_LOCATION(new_req);
 		break;
 	case LDB_DELETE:
 		ret = ldb_build_del_req(&new_req, ldb_module_get_ctx(module), req,
@@ -71,6 +74,7 @@ static int unlazy_op(struct ldb_module *module, struct ldb_request *req)
 					req->controls,
 					req, dsdb_next_callback,
 					req);
+		LDB_REQ_SET_LOCATION(new_req);
 		break;
 	case LDB_RENAME:
 		ret = ldb_build_rename_req(&new_req, ldb_module_get_ctx(module), req,
@@ -79,6 +83,7 @@ static int unlazy_op(struct ldb_module *module, struct ldb_request *req)
 					   req->controls,
 					   req, dsdb_next_callback,
 					   req);
+		LDB_REQ_SET_LOCATION(new_req);
 		break;
 	case LDB_EXTENDED:
 		ret = ldb_build_extended_req(&new_req, ldb_module_get_ctx(module),
@@ -88,6 +93,7 @@ static int unlazy_op(struct ldb_module *module, struct ldb_request *req)
 					     req->controls,
 					     req, dsdb_next_callback,
 					     req);
+		LDB_REQ_SET_LOCATION(new_req);
 		break;
 	default:
 		ldb_set_errstring(ldb_module_get_ctx(module),

@@ -27,6 +27,7 @@
 #include "dsdb/samdb/samdb.h"
 #include "util.h"
 #include "libcli/security/security.h"
+#include "lib/ldb/include/ldb_private.h"
 
 /*
   search for attrs on one DN, in the modules below
@@ -1197,4 +1198,18 @@ bool dsdb_block_anonymous_ops(struct ldb_module *module,
 
 	talloc_free(tmp_ctx);
 	return result;
+}
+
+/*
+  show the chain of requests, useful for debugging async requests
+ */
+void dsdb_req_chain_debug(struct ldb_request *req, int level)
+{
+	char *ret;
+	int i=0;
+
+	while (req && req->handle) {
+		DEBUG(level,("req[%u] %p  : %s\n", i++, req, ldb_req_location(req)));
+		req = req->handle->parent;
+	}
 }

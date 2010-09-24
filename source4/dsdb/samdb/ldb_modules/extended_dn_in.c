@@ -173,6 +173,7 @@ static int extended_base_callback(struct ldb_request *req, struct ldb_reply *are
 						      ac->req->controls,
 						      ac, extended_final_callback, 
 						      ac->req);
+			LDB_REQ_SET_LOCATION(down_req);
 			break;
 		case LDB_ADD:
 		{
@@ -191,6 +192,7 @@ static int extended_base_callback(struct ldb_request *req, struct ldb_reply *are
 						ac->req->controls,
 						ac, extended_final_callback, 
 						ac->req);
+			LDB_REQ_SET_LOCATION(down_req);
 			break;
 		}
 		case LDB_MODIFY:

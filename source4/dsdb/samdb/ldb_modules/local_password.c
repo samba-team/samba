@@ -34,6 +34,7 @@
 #include "dsdb/samdb/samdb.h"
 #include "librpc/ndr/libndr.h"
 #include "dsdb/samdb/ldb_modules/password_modules.h"
+#include "dsdb/samdb/ldb_modules/util.h"
 
 #define PASSWORD_GUID_ATTR "masterGUID"
 
@@ -1079,6 +1080,7 @@ static int local_password_search(struct ldb_module *module, struct ldb_request *
 					req->controls,
 					ac, lpdb_remote_search_callback,
 					req);
+	LDB_REQ_SET_LOCATION(remote_req);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}

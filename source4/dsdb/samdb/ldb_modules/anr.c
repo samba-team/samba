@@ -32,6 +32,7 @@
 #include "includes.h"
 #include "ldb_module.h"
 #include "dsdb/samdb/samdb.h"
+#include "dsdb/samdb/ldb_modules/util.h"
 
 /**
  * Make a and 'and' or 'or' tree from the two supplied elements 
@@ -355,6 +356,7 @@ static int anr_search(struct ldb_module *module, struct ldb_request *req)
 					req->controls,
 					ac, anr_search_callback,
 					req);
+	LDB_REQ_SET_LOCATION(down_req);
 	if (ret != LDB_SUCCESS) {
 		return ldb_operr(ldb);
 	}
