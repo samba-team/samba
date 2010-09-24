@@ -785,7 +785,8 @@ static ADS_STATUS ads_sasl_spnego_bind(ADS_STRUCT *ads)
 
 	/* the server sent us the first part of the SPNEGO exchange in the negprot 
 	   reply */
-	if (!spnego_parse_negTokenInit(talloc_tos(), blob, OIDs, &given_principal, NULL)) {
+	if (!spnego_parse_negTokenInit(talloc_tos(), blob, OIDs, &given_principal, NULL) ||
+			OIDs[0] == NULL) {
 		data_blob_free(&blob);
 		status = ADS_ERROR(LDAP_OPERATIONS_ERROR);
 		goto failed;
