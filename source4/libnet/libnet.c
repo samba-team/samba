@@ -55,5 +55,7 @@ struct libnet_context *libnet_context_init(struct tevent_context *ev,
 	/* default buffer size for various operations requiring specifying a buffer */
 	ctx->samr.buf_size = 128;
 
+	ctx->server_address = NULL;
+
 	return ctx;
 }
