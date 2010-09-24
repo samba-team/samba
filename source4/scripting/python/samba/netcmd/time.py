@@ -41,5 +41,5 @@ class cmd_time(Command):
     def run(self, server_name, credopts=None, sambaopts=None, versionopts=None):
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp)
-        net = Net(creds, lp)
+        net = Net(creds, lp, server=credopts.ipaddress)
         print net.time(server_name)

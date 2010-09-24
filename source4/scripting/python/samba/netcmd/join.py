@@ -47,7 +47,7 @@ class cmd_join(Command):
             versionopts=None, server=None, site=None):
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp)
-        net = Net(creds, lp)
+        net = Net(creds, lp, server=credopts.ipaddress)
 
         if site is None:
             site = "Default-First-Site-Name"

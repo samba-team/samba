@@ -98,6 +98,7 @@ class CredentialsOptions(optparse.OptionGroup):
     """Command line options for specifying credentials."""
     def __init__(self, parser):
         self.no_pass = True
+        self.ipaddress = None
         optparse.OptionGroup.__init__(self, parser, "Credentials Options")
         self.add_option("--simple-bind-dn", metavar="DN", action="callback",
                         callback=self._set_simple_bind_dn, type=str,
@@ -115,6 +116,9 @@ class CredentialsOptions(optparse.OptionGroup):
         self.add_option("-k", "--kerberos", metavar="KERBEROS",
                         action="callback", type=str,
                         help="Use Kerberos", callback=self._set_kerberos)
+        self.add_option("", "--ipaddress", metavar="IPADDRESS",
+                        action="callback", type=str,
+                        help="IP address of server", callback=self._set_ipaddress)
         self.creds = Credentials()
 
     def _parse_username(self, option, opt_str, arg, parser):
@@ -126,6 +130,9 @@ class CredentialsOptions(optparse.OptionGroup):
     def _set_password(self, option, opt_str, arg, parser):
         self.creds.set_password(arg)
         self.no_pass = False
+
+    def _set_ipaddress(self, option, opt_str, arg, parser):
+        self.ipaddress = arg
 
     def _set_kerberos(self, option, opt_str, arg, parser):
         if bool(arg) or arg.lower() == "yes":
