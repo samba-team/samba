@@ -96,6 +96,8 @@ ctdb_check_time_logs ()
 	echo "Information from test client:"
 	hostname
 	top -b -n 1
+	echo "Information from cluster nodes:"
+	onnode all "top -b -n 1 ; echo '/proc/slabinfo' ; cat /proc/slabinfo"
     fi
 }
 
