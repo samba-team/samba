@@ -717,7 +717,6 @@ WINBINDD_SRC1 = '''winbindd/winbindd.c
 WINBINDD_SRC = '''${WINBINDD_SRC1}
                   ${PROFILE_SRC} ${SLCACHE_SRC}
                   ${DCUTIL_SRC} ${IDMAP_SRC} ${NSS_INFO_SRC}
-                  ${AFS_SRC} ${AFS_SETTOKEN_SRC}
                   ${RPC_NCACN_NP} ${NPA_TSTREAM_SRC} ${RPC_SAMR_SRC} ${RPC_LSARPC_SRC}
                   ${TDB_VALIDATE_SRC}
                   ${LIBCLI_DSSETUP_SRC}
@@ -749,8 +748,8 @@ SMBD_SRC_SRV = '''smbd/server_reload.c smbd/files.c smbd/connection.c
                lib/sysquotas_xfs.c lib/sysquotas_4A.c
                lib/sysquotas_nfs.c
                smbd/fake_file.c
-               smbd/quotas.c smbd/ntquotas.c ${AFS_SRC} smbd/msdfs.c
-               ${AFS_SETTOKEN_SRC} smbd/aio.c smbd/statvfs.c
+               smbd/quotas.c smbd/ntquotas.c smbd/msdfs.c
+               smbd/aio.c smbd/statvfs.c
                smbd/dmapi.c smbd/signing.c
                smbd/file_access.c
                smbd/dnsregister.c smbd/globals.c
@@ -1031,7 +1030,7 @@ NET_SRC2 = 'utils/net_registry_util.c utils/net_help_common.c'
 NET_SRC = '''${NET_SRC1}
              ${NET_SRC2}
              ${DCUTIL_SRC}
-             ${AFS_SRC} ${AFS_SETTOKEN_SRC} ${READLINE_SRC}
+             ${READLINE_SRC}
              ${LIBGPO_SRC} ${DISPLAY_SEC_SRC}
              ${LIBNET_SRC} ${LIBNET_DSSYNC_SRC} ${LIBNET_SAMSYNC_SRC}
              ${LIB_EVENTLOG_SRC} ${REGFIO_SRC}'''
@@ -1096,7 +1095,7 @@ PAM_SMBPASS_SRC = '''${PAM_SMBPASS_SRC_0} ${PARAM_SRC} ${LIB_NONSMBD_SRC} ${PASS
                 ${SMBLDAP_SRC} ${LIBSAMBA_SRC} \
                 ${LIBTSOCKET_SRC}'''
 
-WBINFO_SRC = '''../nsswitch/wbinfo.c ${AFS_SETTOKEN_SRC}'''
+WBINFO_SRC = '''../nsswitch/wbinfo.c'''
 
 WINBIND_NSS_SRC = '''${WBCOMMON_SRC} ${LIBREPLACE_SRC}'''
 
@@ -1313,13 +1312,21 @@ bld.SAMBA_SUBSYSTEM('LIBADS_PRINTER',
                     source=LIBADS_PRINTER_SRC,
 		    vars=locals())
 
+bld.SAMBA_SUBSYSTEM('LIBAFS',
+                    source=AFS_SRC,
+                    vars=locals())
+
+bld.SAMBA_SUBSYSTEM('LIBAFS_SETTOKEN',
+                    source=AFS_SETTOKEN_SRC,
+                    vars=locals())
+
 bld.SAMBA_SUBSYSTEM('SMBD_BASE',
                     source=SMBD_SRC_BASE,
                     deps='''tdb tevent dl krb5 ldap gssapi gssapi_krb5
                     NSS_WRAPPER DYNCONFIG libwbclient crypt nsl cups cap resolv ZLIB PASSDB
                     PARAM_WITHOUT_REG LIBS LIBSMB POPT_SAMBA KRBCLIENT AVAHI
                     LIBMSRPC_GEN LIBMSRPC LIBADS LIBADS_SERVER LIBADS_PRINTER
-                    VFS_DEFAULT RPC_MODULES AUTH LOCKING''',
+                    VFS_DEFAULT RPC_MODULES AUTH LOCKING LIBAFS LIBAFS_SETTOKEN''',
                     vars=locals())
 
 bld.SAMBA_SUBSYSTEM('RPC_MODULES',
@@ -1396,7 +1403,8 @@ bld.SAMBA_BINARY('winbindd/winbindd',
                  deps='''talloc tdb tevent cap dl ZLIB NSS_WRAPPER
                  libwbclient PASSDB ldap resolv PARAM LIB_NONSMBD LIBSMB
                  POPT_SAMBA KRBCLIENT LIBMSRPC_GEN LIBMSRPC LIBADS LIBADS_SERVER
-                 NSS_INFO_TEMPLATE SRV_NDR_WBINT RPCCLI_NDR_WBINT
+                 NSS_INFO_TEMPLATE SRV_NDR_WBINT RPCCLI_NDR_WBINT LIBAFS
+                 LIBAFS_SETTOKEN
                  ''',
                  enabled=bld.env.build_winbind,
                  install_path='${SBINDIR}',
@@ -1429,7 +1437,7 @@ bld.SAMBA_BINARY('net',
                  source=NET_SRC,
                  deps='''talloc tdb libnetapi libaddns cap resolv POPT_SAMBA PASSDB LIBSMB LIB_NONSMBD
                  PARAM_WITHOUT_REG libwbclient PARAM KRBCLIENT LIBMSRPC_GEN LIBMSRPC LIBADS LIBADS_SERVER LIBADS_PRINTER
-                 LOCALE_DIR''',
+                 LOCALE_DIR LIBAFS LIBAFS_SETTOKEN''',
                  vars=locals())
 
 bld.SAMBA_BINARY('profiles',
@@ -1598,7 +1606,7 @@ bld.SAMBA_BINARY('wbinfo',
                  source=WBINFO_SRC,
                  deps='''talloc libwbclient tevent cap
                  NSS_WRAPPER ASN1_UTIL LIBTSOCKET PASSDB ldap PARAM LIB_NONSMBD
-                 LIBSAMBA POPT_SAMBA''',
+                 LIBSAMBA POPT_SAMBA LIBAFS_SETTOKEN''',
                  vars=locals())
 
 bld.SAMBA_BINARY('ntlm_auth',
