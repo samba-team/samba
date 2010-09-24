@@ -637,10 +637,6 @@ WINBINDD_SRC1 = '''winbindd/winbindd.c
                    winbindd/winbindd_dual.c
                    winbindd/winbindd_dual_ndr.c
                    winbindd/winbindd_dual_srv.c
-                   librpc/gen_ndr/cli_wbint.c
-                   librpc/gen_ndr/srv_wbint.c
-                   librpc/gen_ndr/ndr_wbint.c
-                   librpc/gen_ndr/ndr_wbint_c.c
                    winbindd/winbindd_async.c
                    winbindd/winbindd_creds.c
                    winbindd/winbindd_cred_cache.c
@@ -1400,7 +1396,7 @@ bld.SAMBA_BINARY('winbindd/winbindd',
                  deps='''talloc tdb tevent cap dl ZLIB NSS_WRAPPER
                  libwbclient PASSDB ldap resolv PARAM LIB_NONSMBD LIBSMB
                  POPT_SAMBA KRBCLIENT LIBMSRPC_GEN LIBMSRPC LIBADS LIBADS_SERVER
-                 NSS_INFO_TEMPLATE
+                 NSS_INFO_TEMPLATE SRV_NDR_WBINT RPCCLI_NDR_WBINT
                  ''',
                  enabled=bld.env.build_winbind,
                  install_path='${SBINDIR}',

@@ -34,3 +34,13 @@ bld.SAMBA_SUBSYSTEM('RPC_NDR_WBINT',
 	source='../librpc/gen_ndr/ndr_wbint_c.c',
 	public_deps='dcerpc NDR_WBINT'
 	)
+
+bld.SAMBA_SUBSYSTEM('RPCCLI_NDR_WBINT',
+	source='../librpc/gen_ndr/cli_wbint.c',
+	public_deps='RPC_NDR_WBINT'
+	)
+
+bld.SAMBA_SUBSYSTEM('SRV_NDR_WBINT',
+	source='../librpc/gen_ndr/srv_wbint.c',
+	public_deps='NDR_WBINT'
+	)
