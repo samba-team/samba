@@ -575,7 +575,8 @@ NTSTATUS parse_spnego_mechanisms(TALLOC_CTX *ctx,
 	*kerb_mechOID = NULL;
 
 	/* parse out the OIDs and the first sec blob */
-	if (!spnego_parse_negTokenInit(ctx, blob_in, OIDs, NULL, pblob_out)) {
+	if (!spnego_parse_negTokenInit(ctx, blob_in, OIDs, NULL, pblob_out) ||
+			(OIDs[0] == NULL)) {
 		return NT_STATUS_LOGON_FAILURE;
 	}
 

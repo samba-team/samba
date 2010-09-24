@@ -230,7 +230,7 @@ NTSTATUS spnego_server_auth_start(TALLOC_CTX *mem_ctx,
 
 	ret = spnego_parse_negTokenInit(sp_ctx, *spnego_in,
 					sp_ctx->oid_list, NULL, &token_in);
-	if (!ret) {
+	if (!ret || sp_ctx->oid_list[0] == NULL) {
 		DEBUG(3, ("Invalid SPNEGO message\n"));
 		status = NT_STATUS_INVALID_PARAMETER;
 		goto done;
