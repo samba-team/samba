@@ -1482,7 +1482,7 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 		r->out.ctr->ctr6.extended_ret = DRSUAPI_EXOP_ERR_SUCCESS;
 	}
 
-	DEBUG(r->out.ctr->ctr6.more_data?2:1,
+	DEBUG(r->out.ctr->ctr6.more_data?4:2,
 	      ("DsGetNCChanges with uSNChanged >= %llu flags 0x%08x on %s gave %u objects (done %u/%u) %u links (done %u/%u (as %s))\n",
 	       (unsigned long long)(req8->highwatermark.highest_usn+1),
 	       req8->replica_flags, ncRoot->dn,
