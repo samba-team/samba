@@ -29,7 +29,7 @@
 struct cbuf;
 
 #define USE_NATIVE_ICONV
-#ifdef USE_NATIVE_ICONV
+#if defined USE_NATIVE_ICONV && defined HAVE_NATIVE_ICONV
 #  define smb_iconv_t     iconv_t
 #  define smb_iconv(CD, IPTR, ILEN, OPTR, OLEN) \
 	iconv(CD, (char**)(IPTR), ILEN, OPTR, OLEN)
