@@ -65,6 +65,7 @@ staticforward PyTypeObject TeventFd_Type;
 static int py_context_init(struct tevent_context *ev)
 {
 	/* FIXME */
+	return 0;
 }
 
 static struct tevent_fd *py_add_fd(struct tevent_context *ev,
@@ -76,6 +77,7 @@ static struct tevent_fd *py_add_fd(struct tevent_context *ev,
 				    const char *location)
 {
 	/* FIXME */
+	return NULL;
 }
 
 static void py_set_fd_close_fn(struct tevent_fd *fde,
@@ -87,6 +89,7 @@ static void py_set_fd_close_fn(struct tevent_fd *fde,
 uint16_t py_get_fd_flags(struct tevent_fd *fde)
 {
 	/* FIXME */
+	return 0;
 }
 
 static void py_set_fd_flags(struct tevent_fd *fde, uint16_t flags)
@@ -104,6 +107,7 @@ static struct tevent_timer *py_add_timer(struct tevent_context *ev,
 					  const char *location)
 {
 	/* FIXME */
+	return NULL;
 }
 
 /* immediate event functions */
@@ -127,17 +131,20 @@ static struct tevent_signal *py_add_signal(struct tevent_context *ev,
 					    const char *location)
 {
 	/* FIXME */
+	return NULL;
 }
 
 /* loop functions */
 static int py_loop_once(struct tevent_context *ev, const char *location)
 {
 	/* FIXME */
+	return 0;
 }
 
 static int py_loop_wait(struct tevent_context *ev, const char *location)
 {
 	/* FIXME */
+	return 0;
 }
 
 const static struct tevent_ops py_tevent_ops = {
@@ -203,9 +210,9 @@ static PyObject *py_tevent_queue_start(TeventQueue_Object *self)
 
 static void py_queue_trigger(struct tevent_req *req, void *private_data)
 {
-	PyObject *callback, *ret;
+	PyObject *callback = private_data, *ret;
 
-	ret = PyObject_CallFunction(private_data, "");
+	ret = PyObject_CallFunction(callback, "");
 	Py_XDECREF(ret);
 }
 
@@ -428,13 +435,13 @@ static PyObject *py_tevent_context_add_fd(TeventContext_Object *self, PyObject *
 	return (PyObject *)ret;
 }
 
+#ifdef TEVENT_DEPRECATED
 static PyObject *py_tevent_context_set_allow_nesting(TeventContext_Object *self)
 {
 	tevent_loop_allow_nesting(self->ev);
 	Py_RETURN_NONE;
 }
-
-
+#endif
 
 static PyMethodDef py_tevent_context_methods[] = {
 	{ "reinitialise", (PyCFunction)py_tevent_context_reinitialise, METH_NOARGS,
@@ -455,8 +462,10 @@ static PyMethodDef py_tevent_context_methods[] = {
 		METH_VARARGS, "S.add_timer(next_event, handler) -> timer" },
 	{ "add_fd", (PyCFunction)py_tevent_context_add_fd, 
 		METH_VARARGS, "S.add_fd(fd, flags, handler) -> fd" },
+#ifdef TEVENT_DEPRECATED
 	{ "allow_nesting", (PyCFunction)py_tevent_context_set_allow_nesting, 
 		METH_NOARGS, "Whether to allow nested tevent loops." },
+#endif
 	{ NULL },
 };
 
@@ -570,6 +579,7 @@ static PyTypeObject TeventReq_Type = {
 	.tp_basicsize = sizeof(TeventReq_Object),
 	.tp_methods = py_tevent_req_methods,
 	.tp_dealloc = (destructor)py_tevent_req_dealloc,
+	.tp_getset = py_tevent_req_getsetters,
 	/* FIXME: .tp_new = py_tevent_req_new, */
 };
 
@@ -619,7 +629,7 @@ static void py_tevent_context_dealloc(TeventContext_Object *self)
 
 static PyObject *py_tevent_context_new(PyTypeObject *type, PyObject *args, PyObject *kwargs)
 {
-	char *kwnames[] = { "name", NULL };
+	const char *kwnames[] = { "name", NULL };
 	char *name = NULL;
 	struct tevent_context *ev;
 	TeventContext_Object *ret;
@@ -706,7 +716,7 @@ static PyMethodDef tevent_methods[] = {
 	{ NULL },
 };
 
-int init_tevent(void)
+void init_tevent(void)
 {
 	PyObject *m;
 
