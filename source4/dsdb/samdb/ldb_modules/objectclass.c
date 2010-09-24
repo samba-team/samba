@@ -709,8 +709,8 @@ static int objectclass_do_add(struct oc_context *ac)
 		if (ldb_attr_cmp(objectclass->lDAPDisplayName, "server") == 0) {
 			systemFlags |= (int32_t)(SYSTEM_FLAG_DISALLOW_MOVE_ON_DELETE | SYSTEM_FLAG_CONFIG_ALLOW_RENAME | SYSTEM_FLAG_CONFIG_ALLOW_LIMITED_MOVE);
 		} else if (ldb_attr_cmp(objectclass->lDAPDisplayName, "site") == 0
-				|| ldb_attr_cmp(objectclass->lDAPDisplayName, "serverContainer") == 0
-				|| ldb_attr_cmp(objectclass->lDAPDisplayName, "ntDSDSA") == 0) {
+				|| ldb_attr_cmp(objectclass->lDAPDisplayName, "serversContainer") == 0
+				|| ldb_attr_cmp(objectclass->lDAPDisplayName, "nTDSDSA") == 0) {
 			systemFlags |= (int32_t)(SYSTEM_FLAG_DISALLOW_MOVE_ON_DELETE);
 
 		} else if (ldb_attr_cmp(objectclass->lDAPDisplayName, "siteLink") == 0
