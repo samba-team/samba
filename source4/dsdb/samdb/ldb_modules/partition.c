@@ -258,6 +258,7 @@ static int partition_prep_request(struct partition_context *ac,
 					ac->req->controls,
 					ac, partition_req_callback,
 					ac->req);
+		LDB_REQ_SET_LOCATION(req);
 		break;
 	case LDB_ADD:
 		ret = ldb_build_add_req(&req, ldb_module_get_ctx(ac->module), ac->part_req,
@@ -265,6 +266,7 @@ static int partition_prep_request(struct partition_context *ac,
 					ac->req->controls,
 					ac, partition_req_callback,
 					ac->req);
+		LDB_REQ_SET_LOCATION(req);
 		break;
 	case LDB_MODIFY:
 		ret = ldb_build_mod_req(&req, ldb_module_get_ctx(ac->module), ac->part_req,
@@ -272,6 +274,7 @@ static int partition_prep_request(struct partition_context *ac,
 					ac->req->controls,
 					ac, partition_req_callback,
 					ac->req);
+		LDB_REQ_SET_LOCATION(req);
 		break;
 	case LDB_DELETE:
 		ret = ldb_build_del_req(&req, ldb_module_get_ctx(ac->module), ac->part_req,
@@ -279,6 +282,7 @@ static int partition_prep_request(struct partition_context *ac,
 					ac->req->controls,
 					ac, partition_req_callback,
 					ac->req);
+		LDB_REQ_SET_LOCATION(req);
 		break;
 	case LDB_RENAME:
 		ret = ldb_build_rename_req(&req, ldb_module_get_ctx(ac->module), ac->part_req,
@@ -287,6 +291,7 @@ static int partition_prep_request(struct partition_context *ac,
 					ac->req->controls,
 					ac, partition_req_callback,
 					ac->req);
+		LDB_REQ_SET_LOCATION(req);
 		break;
 	case LDB_EXTENDED:
 		ret = ldb_build_extended_req(&req, ldb_module_get_ctx(ac->module),
@@ -296,6 +301,7 @@ static int partition_prep_request(struct partition_context *ac,
 					ac->req->controls,
 					ac, partition_req_callback,
 					ac->req);
+		LDB_REQ_SET_LOCATION(req);
 		break;
 	default:
 		ldb_set_errstring(ldb_module_get_ctx(ac->module),
@@ -878,6 +884,7 @@ int partition_primary_sequence_number(struct ldb_module *module, TALLOC_CTX *mem
 				     res,
 				     ldb_extended_default_callback,
 				     NULL);
+	LDB_REQ_SET_LOCATION(treq);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(res);
 		return ret;
@@ -967,6 +974,7 @@ static int partition_sequence_number(struct ldb_module *module, struct ldb_reque
 						     res,
 						     ldb_extended_default_callback,
 						     NULL);
+			LDB_REQ_SET_LOCATION(treq);
 			if (ret != LDB_SUCCESS) {
 				talloc_free(res);
 				return ret;
@@ -1024,6 +1032,7 @@ static int partition_sequence_number(struct ldb_module *module, struct ldb_reque
 					     res,
 					     ldb_extended_default_callback,
 					     NULL);
+		LDB_REQ_SET_LOCATION(treq);
 		if (ret != LDB_SUCCESS) {
 			talloc_free(res);
 			return ret;
@@ -1068,6 +1077,7 @@ static int partition_sequence_number(struct ldb_module *module, struct ldb_reque
 						     res,
 						     ldb_extended_default_callback,
 						     NULL);
+			LDB_REQ_SET_LOCATION(treq);
 			if (ret != LDB_SUCCESS) {
 				talloc_free(res);
 				return ret;

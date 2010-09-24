@@ -241,6 +241,7 @@ static int local_password_add(struct ldb_module *module, struct ldb_request *req
 				req->controls,
 				ac, lpdb_add_callback,
 				req);
+	LDB_REQ_SET_LOCATION(remote_req);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
@@ -284,6 +285,7 @@ static int lpdb_add_callback(struct ldb_request *req,
 				NULL,
 				ac, lpdb_local_callback,
 				ac->req);
+	LDB_REQ_SET_LOCATION(local_req);
 	if (ret != LDB_SUCCESS) {
 		return ldb_module_done(ac->req, NULL, NULL, ret);
 	}
@@ -369,6 +371,7 @@ static int local_password_modify(struct ldb_module *module, struct ldb_request *
 				req->controls,
 				ac, lpdb_modify_callabck,
 				req);
+	LDB_REQ_SET_LOCATION(remote_req);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
@@ -415,6 +418,7 @@ static int lpdb_modify_callabck(struct ldb_request *req,
 				   NULL,
 				   ac, lpdb_mod_search_callback,
 				   ac->req);
+	LDB_REQ_SET_LOCATION(search_req);
 	if (ret != LDB_SUCCESS) {
 		return ldb_module_done(ac->req, NULL, NULL,
 					LDB_ERR_OPERATIONS_ERROR);
@@ -523,6 +527,7 @@ static int lpdb_mod_search_callback(struct ldb_request *req,
 					NULL,
 					ac, lpdb_local_callback,
 					ac->req);
+		LDB_REQ_SET_LOCATION(local_req);
 		if (ret != LDB_SUCCESS) {
 			return ldb_module_done(ac->req, NULL, NULL, ret);
 		}
@@ -580,6 +585,7 @@ static int local_password_delete(struct ldb_module *module,
 				req->controls,
 				ac, lpdb_delete_callabck,
 				req);
+	LDB_REQ_SET_LOCATION(remote_req);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
@@ -626,6 +632,7 @@ static int lpdb_delete_callabck(struct ldb_request *req,
 				   NULL,
 				   ac, lpdb_del_search_callback,
 				   ac->req);
+	LDB_REQ_SET_LOCATION(search_req);
 	if (ret != LDB_SUCCESS) {
 		return ldb_module_done(ac->req, NULL, NULL,
 					LDB_ERR_OPERATIONS_ERROR);
@@ -731,6 +738,7 @@ static int lpdb_del_search_callback(struct ldb_request *req,
 					NULL,
 					ac, lpdb_local_callback,
 					ac->req);
+		LDB_REQ_SET_LOCATION(local_req);
 		if (ret != LDB_SUCCESS) {
 			return ldb_module_done(ac->req, NULL, NULL, ret);
 		}
@@ -769,6 +777,7 @@ static int lpdb_local_search(struct lpdb_context *ac)
 				   NULL,
 				   ac, lpdb_local_search_callback,
 				   ac->req);
+	LDB_REQ_SET_LOCATION(local_req);
 	if (ret != LDB_SUCCESS) {
 		return ldb_operr(ldb);
 	}

@@ -132,6 +132,7 @@ static int subtree_rename_next_request(struct subtree_rename_context *ac)
 				   ac->req->controls,
 				   ac, subtree_rename_callback,
 				   ac->req);
+	LDB_REQ_SET_LOCATION(req);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
@@ -424,6 +425,7 @@ static int subtree_rename(struct ldb_module *module, struct ldb_request *req)
 				   ac, 
 				   subtree_rename_search_callback,
 				   req);
+	LDB_REQ_SET_LOCATION(search_req);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}

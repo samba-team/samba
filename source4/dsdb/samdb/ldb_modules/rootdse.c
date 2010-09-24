@@ -115,6 +115,7 @@ static int expand_dn_in_message(struct ldb_module *module, struct ldb_message *m
 				   NULL,
 				   res, ldb_search_default_callback,
 				   req);
+	LDB_REQ_SET_LOCATION(req2);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
 		return ret;
@@ -591,6 +592,7 @@ static int rootdse_search(struct ldb_module *module, struct ldb_request *req)
 					NULL,/* for now skip the controls from the client */
 					ac, rootdse_callback,
 					req);
+	LDB_REQ_SET_LOCATION(down_req);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}

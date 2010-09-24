@@ -861,6 +861,7 @@ static int entryuuid_sequence_number(struct ldb_module *module, struct ldb_reque
 				   NULL, contextCSN_attr, NULL,
 				   &seq_num, get_seq_callback,
 				   NULL);
+	LDB_REQ_SET_LOCATION(search_req);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}

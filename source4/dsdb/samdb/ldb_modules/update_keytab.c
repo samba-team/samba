@@ -176,6 +176,7 @@ static int ukt_del_op(struct update_kt_ctx *ac)
 				ac->req->controls,
 				ac, update_kt_op_callback,
 				ac->req);
+	LDB_REQ_SET_LOCATION(down_req);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
@@ -249,6 +250,7 @@ static int ukt_search_modified(struct update_kt_ctx *ac)
 				   NULL,
 				   ac, ukt_search_modified_callback,
 				   ac->req);
+	LDB_REQ_SET_LOCATION(search_req);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
@@ -278,6 +280,7 @@ static int update_kt_add(struct ldb_module *module, struct ldb_request *req)
 				req->controls,
 				ac, update_kt_op_callback,
 				req);
+	LDB_REQ_SET_LOCATION(down_req);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
@@ -307,6 +310,7 @@ static int update_kt_modify(struct ldb_module *module, struct ldb_request *req)
 				req->controls,
 				ac, update_kt_op_callback,
 				req);
+	LDB_REQ_SET_LOCATION(down_req);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
@@ -353,6 +357,7 @@ static int update_kt_rename(struct ldb_module *module, struct ldb_request *req)
 				req->controls,
 				ac, update_kt_op_callback,
 				req);
+	LDB_REQ_SET_LOCATION(down_req);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}

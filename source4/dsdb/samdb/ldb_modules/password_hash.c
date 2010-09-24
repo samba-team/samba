@@ -2183,16 +2183,19 @@ static int build_domain_data_request(struct ph_context *ac)
 					      "minPwdAge",
 					      "minPwdLength",
 					      NULL };
+	int ret;
 
 	ldb = ldb_module_get_ctx(ac->module);
 
-	return ldb_build_search_req(&ac->dom_req, ldb, ac,
-				    ldb_get_default_basedn(ldb),
-				    LDB_SCOPE_BASE,
-				    NULL, attrs,
-				    NULL,
-				    ac, get_domain_data_callback,
-				    ac->req);
+	ret = ldb_build_search_req(&ac->dom_req, ldb, ac,
+				   ldb_get_default_basedn(ldb),
+				   LDB_SCOPE_BASE,
+				   NULL, attrs,
+				   NULL,
+				   ac, get_domain_data_callback,
+				   ac->req);
+	LDB_REQ_SET_LOCATION(ac->dom_req);
+	return ret;
 }
 
 static int password_hash_add(struct ldb_module *module, struct ldb_request *req)
@@ -2370,6 +2373,7 @@ static int password_hash_add_do_add(struct ph_context *ac)
 				ac->req->controls,
 				ac, ph_op_callback,
 				ac->req);
+	LDB_REQ_SET_LOCATION(down_req);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
@@ -2530,6 +2534,7 @@ static int password_hash_modify(struct ldb_module *module, struct ldb_request *r
 				req->controls,
 				ac, ph_modify_callback,
 				req);
+	LDB_REQ_SET_LOCATION(down_req);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
@@ -2675,7 +2680,7 @@ static int password_hash_mod_search_self(struct ph_context *ac)
 				   NULL,
 				   ac, ph_mod_search_callback,
 				   ac->req);
-
+	LDB_REQ_SET_LOCATION(search_req);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
@@ -2796,6 +2801,7 @@ static int password_hash_mod_do_mod(struct ph_context *ac)
 				ac->req->controls,
 				ac, ph_op_callback,
 				ac->req);
+	LDB_REQ_SET_LOCATION(mod_req);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}

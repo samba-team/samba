@@ -645,6 +645,7 @@ static int descriptor_do_mod(struct descriptor_context *ac)
 				ac->req->controls,
 				ac, descriptor_op_callback,
 				ac->req);
+	LDB_REQ_SET_LOCATION(mod_req);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
@@ -744,6 +745,7 @@ static int descriptor_do_add(struct descriptor_context *ac)
 					ac->req->controls,
 					ac, descriptor_op_callback,
 					ac->req);
+		LDB_REQ_SET_LOCATION(add_req);
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
@@ -755,6 +757,7 @@ static int descriptor_do_add(struct descriptor_context *ac)
 				   NULL,
 				   ac, get_search_oc_callback,
 				   ac->req);
+		LDB_REQ_SET_LOCATION(search_req);
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
@@ -820,6 +823,7 @@ static int descriptor_change(struct ldb_module *module, struct ldb_request *req)
 				   NULL,
 				   ac, get_search_callback,
 				   req);
+	LDB_REQ_SET_LOCATION(search_req);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}

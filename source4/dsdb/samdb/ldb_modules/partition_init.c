@@ -562,6 +562,7 @@ static int new_partition_set_replicated_metadata(struct ldb_context *ldb,
 		ret = ldb_build_add_req(&add_req, ldb, replicate_res, 
 					replicate_res->msgs[0], NULL, NULL, 
 					ldb_op_default_callback, last_req);
+		LDB_REQ_SET_LOCATION(add_req);
 		last_req = add_req;
 		if (ret != LDB_SUCCESS) {
 			/* return directly, this is a very unlikely error */
@@ -589,6 +590,7 @@ static int new_partition_set_replicated_metadata(struct ldb_context *ldb,
 			/* Build del request */
 			ret = ldb_build_del_req(&del_req, ldb, replicate_res, replicate_res->msgs[0]->dn, NULL, NULL, 
 						ldb_op_default_callback, last_req);
+			LDB_REQ_SET_LOCATION(del_req);
 			last_req = del_req;
 			if (ret != LDB_SUCCESS) {
 				/* return directly, this is a very unlikely error */
@@ -615,6 +617,7 @@ static int new_partition_set_replicated_metadata(struct ldb_context *ldb,
 			/* Build add request */
 			ret = ldb_build_add_req(&add_req, ldb, replicate_res, replicate_res->msgs[0], NULL, NULL, 
 						ldb_op_default_callback, last_req);
+			LDB_REQ_SET_LOCATION(add_req);
 			last_req = add_req;
 			if (ret != LDB_SUCCESS) {
 				/* return directly, this is a very unlikely error */
@@ -752,7 +755,7 @@ int partition_create(struct ldb_module *module, struct ldb_request *req)
 		/* Perform modify on @PARTITION record */
 		ret = ldb_build_mod_req(&mod_req, ldb, req, mod_msg, NULL, NULL, 
 					ldb_op_default_callback, req);
-		
+		LDB_REQ_SET_LOCATION(mod_req);
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}

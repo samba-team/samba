@@ -212,6 +212,7 @@ static int extended_base_callback(struct ldb_request *req, struct ldb_reply *are
 						ac->req->controls,
 						ac, extended_final_callback, 
 						ac->req);
+			LDB_REQ_SET_LOCATION(down_req);
 			break;
 		}
 		case LDB_DELETE:
@@ -221,6 +222,7 @@ static int extended_base_callback(struct ldb_request *req, struct ldb_reply *are
 						ac->req->controls,
 						ac, extended_final_callback, 
 						ac->req);
+			LDB_REQ_SET_LOCATION(down_req);
 			break;
 		case LDB_RENAME:
 			ret = ldb_build_rename_req(&down_req,
@@ -230,6 +232,7 @@ static int extended_base_callback(struct ldb_request *req, struct ldb_reply *are
 						   ac->req->controls,
 						   ac, extended_final_callback, 
 						   ac->req);
+			LDB_REQ_SET_LOCATION(down_req);
 			break;
 		default:
 			return ldb_module_done(ac->req, NULL, NULL, LDB_ERR_OPERATIONS_ERROR);
@@ -358,6 +361,7 @@ static int extended_dn_in_fix(struct ldb_module *module, struct ldb_request *req
 					   NULL,
 					   ac, extended_base_callback,
 					   req);
+		LDB_REQ_SET_LOCATION(down_req);
 		if (ret != LDB_SUCCESS) {
 			return ldb_operr(ldb_module_get_ctx(module));
 		}

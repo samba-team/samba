@@ -79,6 +79,7 @@ struct dsdb_schema *dsdb_schema_refresh(struct ldb_module *module, struct dsdb_s
 				     res,
 				     ldb_extended_default_callback,
 				     NULL);
+	LDB_REQ_SET_LOCATION(treq);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(res);
 		return NULL;

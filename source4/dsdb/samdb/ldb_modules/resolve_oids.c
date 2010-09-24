@@ -557,6 +557,7 @@ static int resolve_oids_search(struct ldb_module *module, struct ldb_request *re
 				      req->controls,
 				      ac, resolve_oids_callback,
 				      req);
+	LDB_REQ_SET_LOCATION(down_req);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
@@ -620,6 +621,7 @@ static int resolve_oids_add(struct ldb_module *module, struct ldb_request *req)
 				req->controls,
 				ac, resolve_oids_callback,
 				req);
+	LDB_REQ_SET_LOCATION(down_req);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
@@ -684,6 +686,7 @@ static int resolve_oids_modify(struct ldb_module *module, struct ldb_request *re
 				req->controls,
 				ac, resolve_oids_callback,
 				req);
+	LDB_REQ_SET_LOCATION(down_req);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}

@@ -61,6 +61,7 @@ int dsdb_module_search_dn(struct ldb_module *module,
 				   res,
 				   ldb_search_default_callback,
 				   NULL);
+	LDB_REQ_SET_LOCATION(req);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
 		return ret;
@@ -152,6 +153,7 @@ int dsdb_module_search(struct ldb_module *module,
 				   res,
 				   ldb_search_default_callback,
 				   NULL);
+	LDB_REQ_SET_LOCATION(req);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
 		return ret;
@@ -281,6 +283,7 @@ int dsdb_module_modify(struct ldb_module *module,
 				res,
 				ldb_modify_default_callback,
 				NULL);
+	LDB_REQ_SET_LOCATION(mod_req);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
 		return ret;
@@ -339,6 +342,7 @@ int dsdb_module_rename(struct ldb_module *module,
 				   res,
 				   ldb_modify_default_callback,
 				   NULL);
+	LDB_REQ_SET_LOCATION(req);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
 		return ret;
@@ -394,6 +398,7 @@ int dsdb_module_add(struct ldb_module *module,
 				res,
 				ldb_modify_default_callback,
 				NULL);
+	LDB_REQ_SET_LOCATION(req);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
 		return ret;
@@ -449,6 +454,7 @@ int dsdb_module_del(struct ldb_module *module,
 				res,
 				ldb_modify_default_callback,
 				NULL);
+	LDB_REQ_SET_LOCATION(req);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
 		return ret;
@@ -747,6 +753,7 @@ int dsdb_module_load_partition_usn(struct ldb_module *module, struct ldb_dn *dn,
 				   NULL,
 				   res, ldb_search_default_callback,
 				   NULL);
+	LDB_REQ_SET_LOCATION(req);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
 		return ret;
@@ -868,6 +875,7 @@ int dsdb_module_save_partition_usn(struct ldb_module *module, struct ldb_dn *dn,
 				res,
 				ldb_modify_default_callback,
 				NULL);
+	LDB_REQ_SET_LOCATION(req);
 again:
 	if (ret != LDB_SUCCESS) {
 		talloc_free(msg);
@@ -895,6 +903,7 @@ again:
 					res,
 					ldb_modify_default_callback,
 					NULL);
+		LDB_REQ_SET_LOCATION(req);
 		goto again;
 	}
 

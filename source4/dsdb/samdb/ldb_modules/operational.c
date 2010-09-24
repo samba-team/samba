@@ -820,6 +820,7 @@ static int operational_search(struct ldb_module *module, struct ldb_request *req
 					req->controls,
 					ac, operational_callback,
 					req);
+	LDB_REQ_SET_LOCATION(down_req);
 	if (ret != LDB_SUCCESS) {
 		return ldb_operr(ldb);
 	}

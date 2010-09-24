@@ -183,6 +183,7 @@ static int samba3sid_add(struct ldb_module *module, struct ldb_request *req)
 				req->controls,
 				req, dsdb_next_callback,
 				req);
+	LDB_REQ_SET_LOCATION(new_req);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}

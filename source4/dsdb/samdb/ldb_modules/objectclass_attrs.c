@@ -147,10 +147,12 @@ static int attr_handler(struct oc_context *ac)
 		ret = ldb_build_add_req(&child_req, ldb, ac,
 					msg, ac->req->controls,
 					ac, oc_op_callback, ac->req);
+		LDB_REQ_SET_LOCATION(child_req);
 	} else {
 		ret = ldb_build_mod_req(&child_req, ldb, ac,
 					msg, ac->req->controls,
 					ac, oc_op_callback, ac->req);
+		LDB_REQ_SET_LOCATION(child_req);
 	}
 	if (ret != LDB_SUCCESS) {
 		return ret;
@@ -342,6 +344,7 @@ static int oc_op_callback(struct ldb_request *req, struct ldb_reply *ares)
 				   LDB_SCOPE_BASE, "(objectClass=*)",
 				   NULL, NULL, ac,
 				   get_search_callback, ac->req);
+	LDB_REQ_SET_LOCATION(search_req);
 	if (ret != LDB_SUCCESS) {
 		return ldb_module_done(ac->req, NULL, NULL, ret);
 	}

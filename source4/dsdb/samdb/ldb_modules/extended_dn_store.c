@@ -269,7 +269,7 @@ static int extended_store_replace(struct extended_dn_context *ac,
 				   ac->ldb, os, os->dsdb_dn->dn, LDB_SCOPE_BASE, NULL, 
 				   attrs, NULL, os, extended_replace_dn,
 				   ac->req);
-
+	LDB_REQ_SET_LOCATION(os->search_req);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(os);
 		return ret;
@@ -337,6 +337,7 @@ static int extended_dn_add(struct ldb_module *module, struct ldb_request *req)
 			}
 		   
 			ret = ldb_build_add_req(&ac->new_req, ac->ldb, ac, msg, req->controls, ac, extended_final_callback, req);
+			LDB_REQ_SET_LOCATION(ac->new_req);
 			if (ret != LDB_SUCCESS) {
 				return ret;
 			}
@@ -412,6 +413,7 @@ static int extended_dn_modify(struct ldb_module *module, struct ldb_request *req
 			}
 		   
 			ret = ldb_build_mod_req(&ac->new_req, ac->ldb, ac, msg, req->controls, ac, extended_final_callback, req);
+			LDB_REQ_SET_LOCATION(ac->new_req);
 			if (ret != LDB_SUCCESS) {
 				talloc_free(ac);
 				return ret;

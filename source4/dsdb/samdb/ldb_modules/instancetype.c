@@ -142,7 +142,7 @@ static int instancetype_add(struct ldb_module *module, struct ldb_request *req)
 					ac->req->controls,
 					ac, it_add_callback,
 					ac->req);
-		
+		LDB_REQ_SET_LOCATION(ac->add_req);
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
@@ -172,6 +172,7 @@ static int instancetype_add(struct ldb_module *module, struct ldb_request *req)
 				req->controls,
 				req, dsdb_next_callback,
 				req);
+	LDB_REQ_SET_LOCATION(down_req);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}

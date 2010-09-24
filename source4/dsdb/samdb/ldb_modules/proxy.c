@@ -360,7 +360,7 @@ static int proxy_search_bytree(struct ldb_module *module, struct ldb_request *re
 				      req->controls,
 				      ac, proxy_search_callback,
 				      req);
-
+	LDB_REQ_SET_LOCATION(newreq);
 	/* FIXME: warning, need a real event system hooked up for this to work properly,
 	 * 	  for now this makes the module *not* ASYNC */
 	ret = ldb_request(proxy->upstream, newreq);

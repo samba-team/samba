@@ -969,6 +969,7 @@ static int replmd_add(struct ldb_module *module, struct ldb_request *req)
 				ac, replmd_op_callback,
 				req);
 
+	LDB_REQ_SET_LOCATION(down_req);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(ac);
 		return ret;
@@ -2204,6 +2205,7 @@ static int replmd_modify(struct ldb_module *module, struct ldb_request *req)
 				req->controls,
 				ac, replmd_op_callback,
 				req);
+	LDB_REQ_SET_LOCATION(down_req);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(ac);
 		return ret;
@@ -2274,7 +2276,7 @@ static int replmd_rename(struct ldb_module *module, struct ldb_request *req)
 				   ac->req->controls,
 				   ac, replmd_rename_callback,
 				   ac->req);
-
+	LDB_REQ_SET_LOCATION(down_req);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(ac);
 		return ret;
@@ -2333,7 +2335,7 @@ static int replmd_rename_callback(struct ldb_request *req, struct ldb_reply *are
 				req->controls,
 				ac, replmd_op_callback,
 				req);
-
+	LDB_REQ_SET_LOCATION(down_req);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(ac);
 		return ret;
@@ -2880,6 +2882,7 @@ static int replmd_replicated_apply_add(struct replmd_replicated_request *ar)
 				ar,
 				replmd_op_callback,
 				ar->req);
+	LDB_REQ_SET_LOCATION(change_req);
 	if (ret != LDB_SUCCESS) return replmd_replicated_request_error(ar, ret);
 
 	return ldb_next_request(ar->module, change_req);
@@ -3144,6 +3147,7 @@ static int replmd_replicated_apply_merge(struct replmd_replicated_request *ar)
 				ar,
 				replmd_op_callback,
 				ar->req);
+	LDB_REQ_SET_LOCATION(change_req);
 	if (ret != LDB_SUCCESS) return replmd_replicated_request_error(ar, ret);
 
 	return ldb_next_request(ar->module, change_req);
@@ -3227,7 +3231,7 @@ static int replmd_replicated_apply_next(struct replmd_replicated_request *ar)
 				   ar,
 				   replmd_replicated_apply_search_callback,
 				   ar->req);
-
+	LDB_REQ_SET_LOCATION(search_req);
 	ret = ldb_request_add_control(search_req, LDB_CONTROL_SHOW_DELETED_OID, true, NULL);
 	if (ret != LDB_SUCCESS) {
 		return ret;
@@ -3567,6 +3571,7 @@ static int replmd_replicated_uptodate_modify(struct replmd_replicated_request *a
 				ar,
 				replmd_replicated_uptodate_modify_callback,
 				ar->req);
+	LDB_REQ_SET_LOCATION(change_req);
 	if (ret != LDB_SUCCESS) return replmd_replicated_request_error(ar, ret);
 
 	return ldb_next_request(ar->module, change_req);
@@ -3640,6 +3645,7 @@ static int replmd_replicated_uptodate_vector(struct replmd_replicated_request *a
 				   ar,
 				   replmd_replicated_uptodate_search_callback,
 				   ar->req);
+	LDB_REQ_SET_LOCATION(search_req);
 	if (ret != LDB_SUCCESS) return replmd_replicated_request_error(ar, ret);
 
 	return ldb_next_request(ar->module, search_req);

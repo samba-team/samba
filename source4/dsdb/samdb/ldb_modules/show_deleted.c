@@ -82,6 +82,7 @@ static int show_deleted_search(struct ldb_module *module, struct ldb_request *re
 				      req->controls,
 				      req, dsdb_next_callback,
 				      req);
+	LDB_REQ_SET_LOCATION(down_req);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}

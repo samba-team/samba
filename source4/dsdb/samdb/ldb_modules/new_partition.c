@@ -123,6 +123,7 @@ static int np_part_search_callback(struct ldb_request *req, struct ldb_reply *ar
 				     ldb, ac, DSDB_EXTENDED_CREATE_PARTITION_OID, ex_op, 
 				     NULL, ac, np_part_mod_callback, req);
 	
+	LDB_REQ_SET_LOCATION(ac->part_add);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
@@ -182,6 +183,7 @@ static int new_partition_add(struct ldb_module *module, struct ldb_request *req)
 					   LDB_SCOPE_BASE, NULL, no_attrs, req->controls, ac, 
 					   np_part_search_callback,
 					   req);
+		LDB_REQ_SET_LOCATION(ac->search_req);
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}

@@ -423,6 +423,7 @@ static int objectclass_add(struct ldb_module *module, struct ldb_request *req)
 				   NULL,
 				   ac, get_search_callback,
 				   req);
+	LDB_REQ_SET_LOCATION(search_req);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
@@ -739,6 +740,7 @@ static int objectclass_do_add(struct oc_context *ac)
 				ac->req->controls,
 				ac, oc_op_callback,
 				ac->req);
+	LDB_REQ_SET_LOCATION(add_req);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
@@ -804,6 +806,7 @@ static int objectclass_modify(struct ldb_module *module, struct ldb_request *req
 				req->controls, ac,
 				oc_changes ? oc_modify_callback : oc_op_callback,
 				req);
+	LDB_REQ_SET_LOCATION(down_req);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
@@ -853,6 +856,7 @@ static int oc_modify_callback(struct ldb_request *req, struct ldb_reply *ares)
 				   attrs, NULL, 
 				   ac, get_search_callback,
 				   ac->req);
+	LDB_REQ_SET_LOCATION(search_req);
 	if (ret != LDB_SUCCESS) {
 		return ldb_module_done(ac->req, NULL, NULL, ret);
 	}
@@ -1097,6 +1101,7 @@ static int objectclass_do_mod(struct oc_context *ac)
 				ac->req->controls,
 				ac, oc_op_callback,
 				ac->req);
+	LDB_REQ_SET_LOCATION(mod_req);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
@@ -1144,6 +1149,7 @@ static int objectclass_rename(struct ldb_module *module, struct ldb_request *req
 				   attrs, NULL,
 				   ac, get_search_callback,
 				   req);
+	LDB_REQ_SET_LOCATION(search_req);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
@@ -1195,6 +1201,7 @@ static int objectclass_do_rename(struct oc_context *ac)
 				   attrs, NULL,
 				   ac, get_search_callback,
 				   ac->req);
+	LDB_REQ_SET_LOCATION(search_req);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
@@ -1311,6 +1318,7 @@ static int objectclass_do_rename2(struct oc_context *ac)
 				   ac->req->controls,
 				   ac, oc_op_callback,
 				   ac->req);
+	LDB_REQ_SET_LOCATION(rename_req);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
@@ -1358,6 +1366,7 @@ static int objectclass_delete(struct ldb_module *module, struct ldb_request *req
 				   attrs, NULL,
 				   ac, get_search_callback,
 				   req);
+	LDB_REQ_SET_LOCATION(search_req);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}

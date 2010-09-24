@@ -563,6 +563,7 @@ static int linked_attributes_modify(struct ldb_module *module, struct ldb_reques
 					   NULL,
 					   ac, la_mod_search_callback,
 					   req);
+		LDB_REQ_SET_LOCATION(search_req);
 
 		/* We need to figure out our own extended DN, to fill in as the backlink target */
 		if (ret == LDB_SUCCESS) {
@@ -853,6 +854,7 @@ static int la_add_callback(struct ldb_request *req, struct ldb_reply *ares)
 					   NULL,
 					   ac, la_mod_search_callback,
 					   ac->req);
+		LDB_REQ_SET_LOCATION(search_req);
 
 		if (ret == LDB_SUCCESS) {
 			ret = ldb_request_add_control(search_req,
@@ -891,6 +893,7 @@ static int la_down_req(struct la_context *ac)
 					ac->req->controls,
 					ac, la_add_callback,
 					ac->req);
+		LDB_REQ_SET_LOCATION(down_req);
 		break;
 	case LDB_MODIFY:
 		ret = ldb_build_mod_req(&down_req, ldb, ac,
@@ -898,6 +901,7 @@ static int la_down_req(struct la_context *ac)
 					ac->req->controls,
 					ac, la_mod_del_callback,
 					ac->req);
+		LDB_REQ_SET_LOCATION(down_req);
 		break;
 	default:
 		ret = LDB_ERR_OPERATIONS_ERROR;

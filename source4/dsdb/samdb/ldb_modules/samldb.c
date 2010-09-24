@@ -572,6 +572,7 @@ static int samldb_add_entry(struct samldb_ctx *ac)
 				ac->req->controls,
 				ac, samldb_add_entry_callback,
 				ac->req);
+	LDB_REQ_SET_LOCATION(req);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
