@@ -876,7 +876,6 @@ RPCCLIENT_SRC1 = '''rpcclient/rpcclient.c rpcclient/cmd_lsarpc.c
                     ${DISPLAY_SEC_SRC}'''
 
 RPCCLIENT_SRC = '''${RPCCLIENT_SRC1}
-                   ${READLINE_SRC}
                    ${DCUTIL_SRC}
                    ${LIBCLI_SPOOLSS_SRC}
                    ${LIBCLI_EVENTLOG_SRC}
@@ -961,7 +960,7 @@ CLIENT_SRC1 = '''client/client.c client/clitar.c
                  client/dnsbrowse.c'''
 
 CLIENT_SRC = '''${CLIENT_SRC1}
-                ${READLINE_SRC} ${DISPLAY_SEC_SRC}
+                ${DISPLAY_SEC_SRC}
                 ${LIBCLI_SRVSVC_SRC}
                 rpc_client/init_lsa.c'''
 
@@ -1028,7 +1027,6 @@ NET_SRC2 = 'utils/net_registry_util.c utils/net_help_common.c'
 NET_SRC = '''${NET_SRC1}
              ${NET_SRC2}
              ${DCUTIL_SRC}
-             ${READLINE_SRC}
              ${LIBGPO_SRC} ${DISPLAY_SEC_SRC}
              ${LIBNET_SRC} ${LIBNET_DSSYNC_SRC} ${LIBNET_SAMSYNC_SRC}
              ${LIB_EVENTLOG_SRC} ${REGFIO_SRC}'''
@@ -1056,7 +1054,7 @@ NSSTEST_SRC = '''torture/nsstest.c ${LIBSAMBAUTIL_SRC}'''
 
 PDBTEST_SRC = '''torture/pdbtest.c'''
 
-VFSTEST_SRC = '''torture/cmd_vfs.c torture/vfstest.c ${READLINE_SRC}'''
+VFSTEST_SRC = '''torture/cmd_vfs.c torture/vfstest.c'''
 
 SMBICONV_SRC = '''torture/smbiconv.c'''
 
@@ -1343,6 +1341,10 @@ bld.SAMBA_SUBSYSTEM('PROFILE',
                     source='${PROFILE_SRC}',
                     vars=locals())
 
+bld.SAMBA_SUBSYSTEM('READLINE',
+                    source=READLINE_SRC,
+                    vars=locals())
+
 bld.SAMBA_SUBSYSTEM('LIBNDR',
                     source=LIBNDR_SRC,
                     vars=locals())
@@ -1425,21 +1427,21 @@ bld.SAMBA_BINARY('rpcclient/rpcclient',
                  source=RPCCLIENT_SRC,
                  deps='''talloc tdb cap resolv POPT_SAMBA PASSDB LIBSMB LIB_NONSMBD
                  PARAM_WITHOUT_REG libwbclient PARAM KRBCLIENT LIBMSRPC_GEN LIBMSRPC
-                 LIBADS''',
+                 LIBADS READLINE''',
                  vars=locals())
 
 bld.SAMBA_BINARY('smbclient',
                  source=CLIENT_SRC,
                  deps='''talloc tdb cap resolv POPT_SAMBA PASSDB LIBSMB LIB_NONSMBD
                  PARAM_WITHOUT_REG libwbclient PARAM KRBCLIENT LIBMSRPC_GEN
-                 LIBMSRPC''',
+                 LIBMSRPC READLINE''',
                  vars=locals())
 
 bld.SAMBA_BINARY('net',
                  source=NET_SRC,
                  deps='''talloc tdb libnetapi libaddns cap resolv POPT_SAMBA PASSDB LIBSMB LIB_NONSMBD
                  PARAM_WITHOUT_REG libwbclient PARAM KRBCLIENT LIBMSRPC_GEN LIBMSRPC LIBADS LIBADS_SERVER LIBADS_PRINTER
-                 LOCALE_DIR LIBAFS LIBAFS_SETTOKEN''',
+                 LOCALE_DIR LIBAFS LIBAFS_SETTOKEN READLINE''',
                  vars=locals())
 
 bld.SAMBA_BINARY('profiles',
@@ -1570,7 +1572,7 @@ bld.SAMBA_BINARY('pdbtest',
 
 bld.SAMBA_BINARY('vfstest',
                  source=VFSTEST_SRC,
-                 deps='''SMBD_BASE''',
+                 deps='''SMBD_BASE READLINE''',
                  vars=locals())
 
 bld.SAMBA_BINARY('smbiconv',
