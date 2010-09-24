@@ -270,6 +270,7 @@ static PyObject *py_tevent_context_loop_once(TeventContext_Object *self)
 	Py_RETURN_NONE;
 }
 
+#ifdef TEVENT_DEPRECATED
 static bool py_tevent_finished(PyObject *callback)
 {
 	PyObject *py_ret;
@@ -299,6 +300,7 @@ static PyObject *py_tevent_context_loop_until(TeventContext_Object *self, PyObje
 
 	Py_RETURN_NONE;
 }
+#endif
 
 static void py_tevent_signal_handler(struct tevent_context *ev,
 					struct tevent_signal *se,
@@ -312,6 +314,19 @@ static void py_tevent_signal_handler(struct tevent_context *ev,
 	ret = PyObject_CallFunction(callback, "ii", signum, count);
 	Py_XDECREF(ret);
 }
+
+static void py_tevent_signal_dealloc(TeventSignal_Object *self)
+{
+	talloc_free(self->signal);
+	PyObject_Del(self);
+}
+
+static PyTypeObject TeventSignal_Type = {
+	.tp_name = "Signal",
+	.tp_basicsize = sizeof(TeventSignal_Object),
+	.tp_dealloc = (destructor)py_tevent_signal_dealloc,
+	.tp_flags = Py_TPFLAGS_DEFAULT,
+};
 
 static PyObject *py_tevent_context_add_signal(TeventContext_Object *self, PyObject *args)
 {
@@ -361,7 +376,7 @@ static PyObject *py_tevent_context_add_timer(TeventContext_Object *self, PyObjec
 	timer = tevent_add_timer(self->ev, NULL, next_event, py_timer_handler,
 							 handler);
 	if (timer == NULL) {
-		PyExc_SetNone(PyExc_RuntimeError);
+		PyErr_SetNone(PyExc_RuntimeError);
 		return NULL;
 	}
 
@@ -430,8 +445,10 @@ static PyMethodDef py_tevent_context_methods[] = {
 		METH_NOARGS, "S.loop_wait()" },
 	{ "loop_once", (PyCFunction)py_tevent_context_loop_once,
 		METH_NOARGS, "S.loop_once()" },
+#ifdef TEVENT_DEPRECATED
 	{ "loop_until", (PyCFunction)py_tevent_context_loop_until,
 		METH_VARARGS, "S.loop_until(callback)" },
+#endif
 	{ "add_signal", (PyCFunction)py_tevent_context_add_signal,
 		METH_VARARGS, "S.add_signal(signum, sa_flags, handler) -> signal" },
 	{ "add_timer", (PyCFunction)py_tevent_context_add_timer,
@@ -597,7 +614,7 @@ static PyGetSetDef py_tevent_context_getsetters[] = {
 static void py_tevent_context_dealloc(TeventContext_Object *self)
 {
 	talloc_free(self->ev);
-	Py_Object_Del(self);
+	PyObject_Del(self);
 }
 
 static PyObject *py_tevent_context_new(PyTypeObject *type, PyObject *args, PyObject *kwargs)
