@@ -224,6 +224,10 @@ static NTSTATUS libnet_vampire_cb_apply_schema(struct libnet_vampire_cb_state *s
 {
 	WERROR status;
 	const struct drsuapi_DsReplicaOIDMapping_Ctr *mapping_ctr;
+	uint32_t obj_to_convert_count;
+	const struct drsuapi_DsReplicaObjectListItemEx **obj_to_convert;
+	struct dsdb_schema *working_schema;
+	struct dsdb_schema *provision_schema;
 	uint32_t object_count;
 	struct drsuapi_DsReplicaObjectListItemEx *first_object;
 	const struct drsuapi_DsReplicaObjectListItemEx *cur;
@@ -237,7 +241,7 @@ static NTSTATUS libnet_vampire_cb_apply_schema(struct libnet_vampire_cb_state *s
 	struct ldb_message *msg;
 	struct ldb_message_element *prefixMap_el;
 	uint32_t i;
-	int ret;
+	int ret, pass_no;
 	bool ok;
 	uint64_t seq_num;
 
@@ -288,11 +292,12 @@ static NTSTATUS libnet_vampire_cb_apply_schema(struct libnet_vampire_cb_state *s
 
 	schema_ldb = provision_get_schema(s, s->lp_ctx, &s->prefixmap_blob);
 	if (!schema_ldb) {
-		DEBUG(0,("Failed to re-load from local provision using remote prefixMap.  Will continue with local prefixMap\n"));
-		s->provision_schema = dsdb_get_schema(s->ldb, s);
+		DEBUG(0,("Failed to re-load from local provision using remote prefixMap. "
+			 "Will continue with local prefixMap\n"));
+		provision_schema = dsdb_get_schema(s->ldb, s);
 	} else {
-		s->provision_schema = dsdb_get_schema(schema_ldb, s);
-		ret = dsdb_reference_schema(s->ldb, s->provision_schema, false);
+		provision_schema = dsdb_get_schema(schema_ldb, s);
+		ret = dsdb_reference_schema(s->ldb, provision_schema, false);
 		if (ret != LDB_SUCCESS) {
 			DEBUG(0,("Failed to attach schema from local provision using remote prefixMap."));
 			return NT_STATUS_UNSUCCESSFUL;
@@ -300,90 +305,108 @@ static NTSTATUS libnet_vampire_cb_apply_schema(struct libnet_vampire_cb_state *s
 		talloc_free(schema_ldb);
 	}
 
-	s->provision_schema->relax_OID_conversions = true;
+	/* create a list of objects yet to be converted */
+	obj_to_convert_count = object_count;
+	obj_to_convert = talloc_array(s, const struct drsuapi_DsReplicaObjectListItemEx *, object_count);
+	NT_STATUS_HAVE_NO_MEMORY(obj_to_convert);
+	for (i = 0, cur = first_object; cur; cur = cur->next_object, i++) {
+		SMB_ASSERT(i < object_count);
+		obj_to_convert[i] = cur;
+	}
 
-	/* Now convert the schema elements, using the schema we loaded locally */
-	for (i=0, cur = first_object; cur; cur = cur->next_object, i++) {
-		struct dsdb_extended_replicated_object object;
+	/* resolve objects until all are resolved and in local schema */
+	pass_no = 1;
+	working_schema = provision_schema;
+	do {
 		TALLOC_CTX *tmp_ctx = talloc_new(s);
 		NT_STATUS_HAVE_NO_MEMORY(tmp_ctx);
 
-		/* Convert the objects into LDB messages using the
-		 * provision schema, and either the provision or DRS
-		 * prefix map - it should not matter, as these are
-		 * just schema objects, so the critical parts.  At
-		 * most we would mix up the mayContain etc for new
-		 * schema classes */
-		status = dsdb_convert_object_ex(s->ldb, s->provision_schema,
-						cur, c->gensec_skey,
-						tmp_ctx, &object);
-		if (!W_ERROR_IS_OK(status)) {
-			DEBUG(1,("Warning: Failed to convert schema object %s into ldb msg\n", cur->object.identifier->dn));
-		} else {
-			/* Convert the schema from ldb_message format
-			 * (OIDs as OID strings) into schema, using
-			 * the remote prefixMap */
-			status = dsdb_schema_set_el_from_ldb_msg(s->ldb, s->self_made_schema, object.msg);
+		ok = false;
+
+		for (i = 0; i < obj_to_convert_count; i++) {
+			struct dsdb_extended_replicated_object object;
+
+			cur = obj_to_convert[i];
+
+			/*
+			 * Convert the objects into LDB messages using the
+			 * schema we have so far. It's ok if we fail to convert
+			 * an object. We should convert more objects on next pass.
+			 */
+			status = dsdb_convert_object_ex(s->ldb, working_schema,
+							cur, c->gensec_skey,
+							tmp_ctx, &object);
 			if (!W_ERROR_IS_OK(status)) {
-				DEBUG(1,("Warning: failed to convert object %s into a schema element: %s\n",
-					 ldb_dn_get_linearized(object.msg->dn),
-					 win_errstr(status)));
+				DEBUG(1,("Warning: Failed to convert schema object %s into ldb msg\n",
+					 cur->object.identifier->dn));
+			} else {
+				/*
+				 * Convert the schema from ldb_message format
+				 * (OIDs as OID strings) into schema, using
+				 * the remote prefixMap
+				 */
+				status = dsdb_schema_set_el_from_ldb_msg(s->ldb,
+									 s->self_made_schema,
+									 object.msg);
+				if (!W_ERROR_IS_OK(status)) {
+					DEBUG(1,("Warning: failed to convert object %s into a schema element: %s\n",
+						 ldb_dn_get_linearized(object.msg->dn),
+						 win_errstr(status)));
+				}
+				/* remove cur from the list of objects to be converted */
+				obj_to_convert_count--;
+				memmove(&obj_to_convert[i], &obj_to_convert[i+1],
+					(obj_to_convert_count - i)*sizeof(obj_to_convert[0]));
+
+				/* don't skip this object */
+				i--;
+
+				/* raise flag we've converted at least one object */
+				ok = true;
 			}
 		}
 		talloc_free(tmp_ctx);
-	}
 
-	/* attach the schema we just brought over DRS to the ldb, so we can use it in dsdb_convert_object_ex below */
+		DEBUG(1,("Pass %d: %d of %d objects left to be converted.\n",
+			 pass_no, obj_to_convert_count, object_count));
+		pass_no++;
+
+		/* check if we did anything in this pass */
+		if (!ok) {
+			DEBUG(0,("Can't continue Schema load: %d objects left to be converted\n",
+				 obj_to_convert_count));
+			return NT_STATUS_INTERNAL_ERROR;
+		}
+
+		if (obj_to_convert_count) {
+			/* prepare for another cycle */
+			working_schema = s->self_made_schema;
+
+			ret = dsdb_setup_sorted_accessors(s->ldb, working_schema);
+			if (LDB_SUCCESS != ret) {
+				DEBUG(0,("Failed to create schema-cache indexes!\n"));
+				return NT_STATUS_INTERNAL_ERROR;
+			}
+		}
+	} while (obj_to_convert_count);
+
+	/* free temp objects for 1st conversion phase */
+	talloc_unlink(s, provision_schema);
+	TALLOC_FREE(obj_to_convert);
+
+	/*
+	 * attach the schema we just brought over DRS to the ldb,
+	 * so we can use it in dsdb_convert_object_ex below
+	 */
 	ret = dsdb_set_schema(s->ldb, s->self_made_schema);
 	if (ret != LDB_SUCCESS) {
-		DEBUG(0,("Failed to attach 1st pass schema from DRS.\n"));
-		return NT_STATUS_FOOBAR;
-	}
-
-	/* Now convert the schema elements again, using the schema we loaded over DRS */
-	for (i=0, cur = first_object; cur; cur = cur->next_object, i++) {
-		struct dsdb_extended_replicated_object object;
-		TALLOC_CTX *tmp_ctx = talloc_new(s);
-		NT_STATUS_HAVE_NO_MEMORY(tmp_ctx);
-
-		/* Convert the objects into LDB messages using the
-		 * self_made_schema, and the DRS prefix map.  We now
-		 * know the full schema int->OID->name mapping, so we
-		 * can get it right this time */
-		status = dsdb_convert_object_ex(s->ldb, s->self_made_schema,
-						cur, c->gensec_skey,
-						tmp_ctx, &object);
-		if (!W_ERROR_IS_OK(status)) {
-			DEBUG(0,("ERROR: Failed to convert schema object %s into ldb msg\n", cur->object.identifier->dn));
-		} else {
-			/* Convert the schema from ldb_message format
-			 * (OIDs as OID strings) into schema, using
-			 * the remote prefixMap, now that we know
-			 * names for all the schema elements (from the
-			 * first conversion) */
-			status = dsdb_schema_set_el_from_ldb_msg(s->ldb, s->self_corrected_schema, object.msg);
-			if (!W_ERROR_IS_OK(status)) {
-				DEBUG(0,("ERROR: failed to convert object %s into a schema element: %s\n",
-					 ldb_dn_get_linearized(object.msg->dn),
-					 win_errstr(status)));
-			}
-		}
-		talloc_free(tmp_ctx);
-	}
-
-	/* We don't want to use the s->self_made_schema any more */
-	s->self_made_schema = NULL;
-
-	/* attach the schema we just brought over DRS to the ldb */
-	ret = dsdb_set_schema(s->ldb, s->self_corrected_schema);
-	if (ret != LDB_SUCCESS) {
-		DEBUG(0,("Failed to attach 2nd pass (corrected) schema from DRS.\n"));
+		DEBUG(0,("Failed to attach working schema from DRS.\n"));
 		return NT_STATUS_FOOBAR;
 	}
 
 	/* we don't want to access the self made schema anymore */
-	s->schema = s->self_corrected_schema;
-	s->self_corrected_schema = NULL;
+	s->schema = s->self_made_schema;
+	s->self_made_schema = NULL;
 
 	/* Now convert the schema elements again, using the schema we finalised, ready to actually import */
 	status = dsdb_extended_replicated_objects_convert(s->ldb,
