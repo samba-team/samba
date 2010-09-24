@@ -3305,6 +3305,7 @@ static int replmd_replicated_uptodate_modify(struct replmd_replicated_request *a
 	time_t t = time(NULL);
 	NTTIME now;
 	int ret;
+	uint32_t instanceType;
 
 	ldb = ldb_module_get_ctx(ar->module);
 	ruv = ar->objs->uptodateness_vector;
@@ -3314,6 +3315,13 @@ static int replmd_replicated_uptodate_modify(struct replmd_replicated_request *a
 	nuv.version = 2;
 
 	unix_to_nt_time(&now, t);
+
+	instanceType = ldb_msg_find_attr_as_uint(ar->search_msg, "instanceType", 0);
+	if (! (instanceType & INSTANCE_TYPE_IS_NC_HEAD)) {
+		DEBUG(4,(__location__ ": Skipping UDV and repsFrom update as not NC root: %s\n",
+			 ldb_dn_get_linearized(ar->search_msg->dn)));
+		return ldb_module_done(ar->req, NULL, NULL, LDB_SUCCESS);
+	}
 
 	/*
 	 * first create the new replUpToDateVector
@@ -3613,6 +3621,7 @@ static int replmd_replicated_uptodate_vector(struct replmd_replicated_request *a
 	static const char *attrs[] = {
 		"replUpToDateVector",
 		"repsFrom",
+		"instanceType",
 		NULL
 	};
 	struct ldb_request *search_req;
