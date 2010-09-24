@@ -319,7 +319,7 @@ static PyObject *py_creds_get_named_ccache(py_talloc_Object *self, PyObject *arg
 
 	ret = cli_credentials_get_named_ccache(creds, event_ctx, lp_ctx,
 					       ccache_name, &ccc, &error_string);
-	talloc_free(lp_ctx);
+	talloc_unlink(mem_ctx, lp_ctx);
 	if (ret == 0) {
 		talloc_steal(ccc, event_ctx);
 		talloc_free(mem_ctx);
