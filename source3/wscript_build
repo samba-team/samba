@@ -1161,6 +1161,7 @@ bld.RECURSE('build')
 
 bld.RECURSE('../librpc')
 bld.RECURSE('librpc/idl')
+bld.RECURSE('librpc')
 
 bld.SAMBA_MKVERSION('include/version.h')
 
