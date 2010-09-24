@@ -782,7 +782,7 @@ SMBD_SRC_SRV = '''smbd/server_reload.c smbd/files.c smbd/connection.c
 
 SMBD_SRC_BASE = '''${SMBD_SRC_SRV}
                 ${RPC_SERVER_SRC}
-                ${LOCKING_SRC} ${PRINTING_SRC}
+                ${PRINTING_SRC}
                 ${PROFILE_SRC} ${PRINTBACKEND_SRC}
                 ${OPLOCK_SRC} ${NOTIFY_SRC} ${FNAME_UTIL_SRC}
                 ${REG_FULL_SRC}
@@ -837,14 +837,12 @@ SWAT_SRC1 = '''web/cgi.c web/diagnose.c web/startstop.c web/statuspage.c
                web/swat.c web/neg_lang.c'''
 
 SWAT_SRC = '''${SWAT_SRC1} ${PRINTING_SRC} ${PRINTBASE_SRC}
-           ${LOCKING_SRC}
            ${PLAINTEXT_AUTH_SRC}
            ${PASSCHANGE_SRC} ${FNAME_UTIL_SRC}
            ${LIBCLI_SAMR_SRC}
            rpc_client/init_lsa.c'''
 
 STATUS_SRC = '''utils/status.c utils/status_profile.c
-             ${LOCKING_SRC}
              ${PROFILE_SRC}
              ${FNAME_UTIL_SRC}'''
 
@@ -1059,8 +1057,7 @@ MASKTEST_SRC = '''torture/masktest.c'''
 
 MSGTEST_SRC = '''torture/msgtest.c'''
 
-LOCKTEST_SRC = '''torture/locktest.c ${LOCKING_SRC}
-               ${FNAME_UTIL_SRC}'''
+LOCKTEST_SRC = '''torture/locktest.c ${FNAME_UTIL_SRC}'''
 
 NSSTEST_SRC = '''torture/nsstest.c ${LIBSAMBAUTIL_SRC}'''
 
@@ -1072,8 +1069,7 @@ SMBICONV_SRC = '''torture/smbiconv.c'''
 
 LOG2PCAP_SRC = '''utils/log2pcaphex.c'''
 
-LOCKTEST2_SRC = '''torture/locktest2.c ${LOCKING_SRC}
-                ${FNAME_UTIL_SRC}'''
+LOCKTEST2_SRC = '''torture/locktest2.c ${FNAME_UTIL_SRC}'''
 
 SMBCACLS_SRC = '''utils/smbcacls.c
                 ${LIBCLI_LSA_SRC}'''
@@ -1327,7 +1323,7 @@ bld.SAMBA_SUBSYSTEM('SMBD_BASE',
                     NSS_WRAPPER DYNCONFIG libwbclient crypt nsl cups cap resolv ZLIB PASSDB
                     PARAM_WITHOUT_REG LIBS LIBSMB POPT_SAMBA KRBCLIENT AVAHI
                     LIBMSRPC_GEN LIBMSRPC LIBADS LIBADS_SERVER LIBADS_PRINTER
-                    VFS_DEFAULT RPC_MODULES AUTH''',
+                    VFS_DEFAULT RPC_MODULES AUTH LOCKING''',
                     vars=locals())
 
 bld.SAMBA_SUBSYSTEM('RPC_MODULES',
@@ -1336,6 +1332,11 @@ bld.SAMBA_SUBSYSTEM('RPC_MODULES',
                             RPC_DSSETUP RPC_WKSSVC RPC_SVCCTL RPC_NTSVCS
                             RPC_NETLOGON RPC_NETDFS RPC_SRVSVC RPC_SPOOLSS
                             RPC_EVENTLOG''')
+
+bld.SAMBA_SUBSYSTEM('LOCKING',
+                    source='${LOCKING_SRC}',
+                    deps='''tdb talloc''',
+                    vars=locals())
 
 bld.SAMBA_SUBSYSTEM('LIBNDR',
                     source=LIBNDR_SRC,
@@ -1409,7 +1410,7 @@ bld.SAMBA_BINARY('web/swat',
                  source=SWAT_SRC,
                  deps='''talloc tevent cap LIBS LIBSMB libwbclient PARAM
                  LIB_NONSMBD resolv PASSDB POPT_SAMBA KRBCLIENT cups
-                 LIBMSRPC_GEN LIBMSRPC''',
+                 LIBMSRPC_GEN LIBMSRPC LOCKING''',
                  enabled=bld.env.build_swat,
                  install_path='${SBINDIR}',
                  vars=locals())
@@ -1462,7 +1463,7 @@ bld.SAMBA_BINARY('smbta-util',
 bld.SAMBA_BINARY('smbstatus',
                  source=STATUS_SRC,
                  deps='''talloc tdb tevent cap PARAM POPT_SAMBA LIB_NONSMBD
-                 LIBSMB_ERR''',
+                 LIBSMB_ERR LOCKING''',
                  vars=locals())
 
 bld.SAMBA_BINARY('smbcontrol',
@@ -1547,7 +1548,7 @@ bld.SAMBA_BINARY('sharesec',
 bld.SAMBA_BINARY('locktest',
                  source=LOCKTEST_SRC,
                  deps='''talloc tdb tevent cap resolv libwbclient PARAM KRBCLIENT LIBSMB LIB_NONSMBD
-                 ASN1_UTIL LIBTSOCKET NDR_SAMR NDR_LSARPC''',
+                 ASN1_UTIL LIBTSOCKET NDR_SAMR NDR_LSARPC LOCKING''',
                  vars=locals())
 
 bld.SAMBA_BINARY('nsstest',
@@ -1579,7 +1580,7 @@ bld.SAMBA_BINARY('log2pcap',
 bld.SAMBA_BINARY('locktest2',
                  source=LOCKTEST2_SRC,
                  deps='''talloc tdb tevent cap resolv libwbclient PARAM KRBCLIENT LIBSMB LIB_NONSMBD
-                 ASN1_UTIL LIBTSOCKET NDR_SAMR NDR_LSARPC''',
+                 ASN1_UTIL LIBTSOCKET NDR_SAMR NDR_LSARPC LOCKING''',
                  vars=locals())
 
 bld.SAMBA_BINARY('debug2html',
