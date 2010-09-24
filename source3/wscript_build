@@ -853,11 +853,11 @@ TEST_LP_LOAD_SRC = '''param/test_lp_load.c'''
 
 PASSWD_UTIL_SRC = 'utils/passwd_util.c'
 
-SMBPASSWD_SRC = '''utils/smbpasswd.c ${PASSWD_UTIL_SRC} ${PASSCHANGE_SRC}
+SMBPASSWD_SRC = '''utils/smbpasswd.c ${PASSCHANGE_SRC}
                 ${LIBCLI_SAMR_SRC}
                 rpc_client/init_lsa.c'''
 
-PDBEDIT_SRC = '''utils/pdbedit.c ${PASSWD_UTIL_SRC}
+PDBEDIT_SRC = '''utils/pdbedit.c
                 ${LIBCLI_LDAP_NDR_SRC}'''
 
 SMBGET_SRC = '''utils/smbget.c'''
@@ -994,7 +994,7 @@ NET_SRC1 = '''utils/net.c utils/net_ads.c utils/net_help.c
               utils/net_rpc_service.c utils/net_rpc_registry.c utils/net_usershare.c
               utils/netlookup.c utils/net_sam.c utils/net_rpc_shell.c
               utils/net_util.c utils/net_rpc_sh_acct.c utils/net_rpc_audit.c
-              ${PASSWD_UTIL_SRC} utils/net_dns.c utils/net_ads_gpo.c
+              utils/net_dns.c utils/net_ads_gpo.c
               utils/net_conf.c utils/net_join.c utils/net_user.c
               utils/net_group.c utils/net_file.c utils/net_registry.c
               auth/token_util.c utils/net_dom.c utils/net_share.c
@@ -1345,6 +1345,10 @@ bld.SAMBA_SUBSYSTEM('READLINE',
                     source=READLINE_SRC,
                     vars=locals())
 
+bld.SAMBA_SUBSYSTEM('PASSWD_UTIL',
+                    source=PASSWD_UTIL_SRC,
+                    vars=locals())
+
 bld.SAMBA_SUBSYSTEM('LIBNDR',
                     source=LIBNDR_SRC,
                     vars=locals())
@@ -1441,7 +1445,7 @@ bld.SAMBA_BINARY('net',
                  source=NET_SRC,
                  deps='''talloc tdb libnetapi libaddns cap resolv POPT_SAMBA PASSDB LIBSMB LIB_NONSMBD
                  PARAM_WITHOUT_REG libwbclient PARAM KRBCLIENT LIBMSRPC_GEN LIBMSRPC LIBADS LIBADS_SERVER LIBADS_PRINTER
-                 LOCALE_DIR LIBAFS LIBAFS_SETTOKEN READLINE''',
+                 LOCALE_DIR LIBAFS LIBAFS_SETTOKEN READLINE PASSWD_UTIL''',
                  vars=locals())
 
 bld.SAMBA_BINARY('profiles',
@@ -1488,13 +1492,14 @@ bld.SAMBA_BINARY('smbtree',
 bld.SAMBA_BINARY('smbpasswd',
                  source=SMBPASSWD_SRC,
                  deps='''talloc tdb tevent cap resolv libwbclient PARAM LIB_NONSMBD
-                 LIBSMB LIBSMB_ERR POPT_SAMBA KRBCLIENT PASSDB SMBLDAP GROUPDB LIBMSRPC_GEN LIBMSRPC''',
+                 LIBSMB LIBSMB_ERR POPT_SAMBA KRBCLIENT PASSDB SMBLDAP GROUPDB LIBMSRPC_GEN LIBMSRPC PASSWD_UTIL''',
                  vars=locals())
 
 bld.SAMBA_BINARY('pdbedit',
                  source=PDBEDIT_SRC,
                  deps='''talloc tdb tevent cap resolv libwbclient PARAM LIB_NONSMBD
-                 LIBSAMBA LIBSMB_ERR POPT_SAMBA PASSDB SMBLDAP GROUPDB''',
+                 LIBSAMBA LIBSMB_ERR POPT_SAMBA PASSDB SMBLDAP GROUPDB
+                 PASSWD_UTIL''',
                  vars=locals())
 
 bld.SAMBA_BINARY('smbget',
