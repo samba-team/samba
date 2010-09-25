@@ -50,8 +50,9 @@ class LDAPBase(object):
                 samdb_url = "tdb://%s" % host
             else:
                 samdb_url = "ldap://%s:389" % host
-                # user 'paged_search' module when connecting remotely
-                ldb_options = ["modules:paged_searches"]
+        # use 'paged_search' module when connecting remotely
+        if samdb_url.lower().startswith("ldap://"):
+            ldb_options = ["modules:paged_searches"]
         self.ldb = Ldb(url=samdb_url,
                        credentials=creds,
                        lp=lp,
