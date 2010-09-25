@@ -96,7 +96,7 @@ bld.SAMBA_LIBRARY('NDR_STANDARD',
 	source='../../librpc/gen_ndr/ndr_echo.c ../../librpc/ndr/ndr_netlogon.c ../../librpc/gen_ndr/ndr_netlogon.c ../../librpc/gen_ndr/ndr_dfs.c ../../librpc/gen_ndr/ndr_atsvc.c ../../librpc/gen_ndr/ndr_wkssvc.c ../../librpc/gen_ndr/ndr_srvsvc.c ../../librpc/ndr/ndr_svcctl.c ../../librpc/gen_ndr/ndr_svcctl.c ../../librpc/gen_ndr/ndr_winreg.c ../../librpc/gen_ndr/ndr_initshutdown.c ../../librpc/gen_ndr/ndr_eventlog.c ../../librpc/gen_ndr/ndr_ntsvcs.c ../../librpc/gen_ndr/ndr_eventlog6.c',
 	vnum='0.0.1',
 	pc_files='../../librpc/ndr_standard.pc',
-	deps='NDR_SECURITY NDR_LSARPC NDR_SAMR',
+	deps='NDR_SECURITY NDR_LSA NDR_SAMR',
 	public_deps='LIBNDR',
 	public_headers='../../librpc/gen_ndr/samr.h ../../librpc/gen_ndr/ndr_samr.h ../../librpc/gen_ndr/lsa.h ../../librpc/gen_ndr/netlogon.h ../../librpc/gen_ndr/atsvc.h ../../librpc/gen_ndr/ndr_atsvc.h ../../librpc/gen_ndr/ndr_svcctl.h ../../librpc/gen_ndr/svcctl.h',
         header_path='gen_ndr'

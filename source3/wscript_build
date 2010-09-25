@@ -1416,7 +1416,7 @@ bld.SAMBA_BINARY('nmbd/nmbd',
                  source=NMBD_SRC,
                  deps='''talloc tdb tevent ZLIB cap resolv libwbclient dl
                  NSS_WRAPPER PASSDB PARAM ldap LIB_NONSMBD LIBSMB
-                 POPT_SAMBA KRBCLIENT NDR_SAMR NDR_LSARPC''',
+                 POPT_SAMBA KRBCLIENT NDR_SAMR NDR_LSA''',
                  install_path='${SBINDIR}',
                  vars=locals())
 
@@ -1471,7 +1471,7 @@ bld.SAMBA_BINARY('profiles',
 bld.SAMBA_BINARY('smbspool',
                  source=CUPS_SRC,
                  deps='''talloc tdb tevent resolv cap libwbclient POPT_SAMBA PARAM LIBSMB LIB_NONSMBD LIBS
-                 KRBCLIENT ASN1_UTIL LIBTSOCKET NDR_SAMR NDR_LSARPC''',
+                 KRBCLIENT ASN1_UTIL LIBTSOCKET NDR_SAMR NDR_LSA''',
                  vars=locals())
 
 bld.SAMBA_BINARY('testparm',
@@ -1530,7 +1530,7 @@ bld.SAMBA_BINARY('nmblookup',
 bld.SAMBA_BINARY('smbtorture',
                  source=SMBTORTURE_SRC,
                  deps='''talloc tdb tevent cap resolv libwbclient PARAM LIBSMB KRBCLIENT
-                 LIB_NONSMBD POPT_SAMBA ASN1_UTIL LIBTSOCKET NDR_SAMR NDR_LSARPC''',
+                 LIB_NONSMBD POPT_SAMBA ASN1_UTIL LIBTSOCKET NDR_SAMR NDR_LSA''',
                  vars=locals())
 
 bld.SAMBA_BINARY('smbconftort',
@@ -1541,7 +1541,7 @@ bld.SAMBA_BINARY('smbconftort',
 bld.SAMBA_BINARY('masktest',
                  source=MASKTEST_SRC,
                  deps='''talloc tdb cap resolv libwbclient PARAM LIB_NONSMBD LIBSMB KRBCLIENT
-                 ASN1_UTIL LIBTSOCKET NDR_SAMR NDR_LSARPC''',
+                 ASN1_UTIL LIBTSOCKET NDR_SAMR NDR_LSA''',
                  vars=locals())
 
 bld.SAMBA_BINARY('msgtest',
@@ -1576,7 +1576,7 @@ bld.SAMBA_BINARY('sharesec',
 bld.SAMBA_BINARY('locktest',
                  source=LOCKTEST_SRC,
                  deps='''talloc tdb tevent cap resolv libwbclient PARAM KRBCLIENT LIBSMB LIB_NONSMBD
-                 ASN1_UTIL LIBTSOCKET NDR_SAMR NDR_LSARPC LOCKING''',
+                 ASN1_UTIL LIBTSOCKET NDR_SAMR NDR_LSA LOCKING''',
                  vars=locals())
 
 bld.SAMBA_BINARY('nsstest',
@@ -1587,7 +1587,7 @@ bld.SAMBA_BINARY('nsstest',
 bld.SAMBA_BINARY('pdbtest',
                  source=PDBTEST_SRC,
                  deps='''talloc tdb cap resolv libwbclient PARAM LIBSMB KRBCLIENT LIB_NONSMBD PASSDB GROUPDB
-                 SMBLDAP POPT_SAMBA NDR_SAMR NDR_LSARPC''',
+                 SMBLDAP POPT_SAMBA NDR_SAMR NDR_LSA''',
                  vars=locals())
 
 bld.SAMBA_BINARY('vfstest',
@@ -1608,7 +1608,7 @@ bld.SAMBA_BINARY('log2pcap',
 bld.SAMBA_BINARY('locktest2',
                  source=LOCKTEST2_SRC,
                  deps='''talloc tdb tevent cap resolv libwbclient PARAM KRBCLIENT LIBSMB LIB_NONSMBD
-                 ASN1_UTIL LIBTSOCKET NDR_SAMR NDR_LSARPC LOCKING''',
+                 ASN1_UTIL LIBTSOCKET NDR_SAMR NDR_LSA LOCKING''',
                  vars=locals())
 
 bld.SAMBA_BINARY('debug2html',
@@ -1619,7 +1619,7 @@ bld.SAMBA_BINARY('debug2html',
 bld.SAMBA_BINARY('smbfilter',
                  source=SMBFILTER_SRC,
                  deps='''talloc tevent cap resolv libwbclient PARAM LIBSMB LIB_NONSMBD KRBCLIENT ASN1_UTIL LIBTSOCKET
-                 NDR_SAMR NDR_LSARPC''',
+                 NDR_SAMR NDR_LSA''',
                  vars=locals())
 
 bld.SAMBA_BINARY('versiontest',
@@ -1638,7 +1638,7 @@ bld.SAMBA_BINARY('ntlm_auth',
                  deps='''tdb talloc cap resolv krb5 k5crypto com_err libwbclient PARAM LIB_NONSMBD
                  LIBS LIBSAMBA POPT_SAMBA ASN1_UTIL LIBTSOCKET
                  PASSDB GROUPDB SMBLDAP WBCOMMON LIBINIPARSER LIBADS_SERVER
-                 NDR_SAMR NDR_LSARPC''',
+                 NDR_SAMR NDR_LSA''',
                  vars=locals())
 
 bld.SAMBA_BINARY('timelimit',
