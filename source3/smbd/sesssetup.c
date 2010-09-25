@@ -1589,7 +1589,7 @@ void reply_sesssetup_and_X(struct smb_request *req)
 		struct auth_context *plaintext_auth_context = NULL;
 
 		nt_status = make_auth_context_subsystem(
-				&plaintext_auth_context);
+			talloc_tos(), &plaintext_auth_context);
 
 		if (NT_STATUS_IS_OK(nt_status)) {
 			uint8_t chal[8];

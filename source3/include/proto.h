@@ -29,7 +29,8 @@
 NTSTATUS smb_register_auth(int version, const char *name, auth_init_function init);
 bool load_auth_module(struct auth_context *auth_context, 
 		      const char *module, auth_methods **ret) ;
-NTSTATUS make_auth_context_subsystem(struct auth_context **auth_context) ;
+NTSTATUS make_auth_context_subsystem(TALLOC_CTX *mem_ctx,
+				     struct auth_context **auth_context);
 NTSTATUS make_auth_context_fixed(struct auth_context **auth_context, uchar chal[8]) ;
 
 /* The following definitions come from auth/auth_builtin.c  */

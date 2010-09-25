@@ -42,7 +42,10 @@ NTSTATUS check_plaintext_password(const char *smb_name,
 	struct auth_usersupplied_info *user_info = NULL;
 	uint8_t chal[8];
 	NTSTATUS nt_status;
-	if (!NT_STATUS_IS_OK(nt_status = make_auth_context_subsystem(&plaintext_auth_context))) {
+
+	nt_status = make_auth_context_subsystem(talloc_tos(),
+						&plaintext_auth_context);
+	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
 	}
 

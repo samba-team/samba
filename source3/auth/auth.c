@@ -455,7 +455,8 @@ static NTSTATUS make_auth_context_text_list(TALLOC_CTX *mem_ctx,
  Make a auth_context struct for the auth subsystem
 ***************************************************************************/
 
-NTSTATUS make_auth_context_subsystem(struct auth_context **auth_context) 
+NTSTATUS make_auth_context_subsystem(TALLOC_CTX *mem_ctx,
+				     struct auth_context **auth_context)
 {
 	char **auth_method_list = NULL; 
 	NTSTATUS nt_status;
@@ -526,8 +527,7 @@ NTSTATUS make_auth_context_subsystem(struct auth_context **auth_context)
 		DEBUG(5,("Using specified auth order\n"));
 	}
 
-	nt_status = make_auth_context_text_list(talloc_autofree_context(),
-						auth_context,
+	nt_status = make_auth_context_text_list(mem_ctx, auth_context,
 						auth_method_list);
 
 	TALLOC_FREE(auth_method_list);
@@ -541,7 +541,9 @@ NTSTATUS make_auth_context_subsystem(struct auth_context **auth_context)
 NTSTATUS make_auth_context_fixed(struct auth_context **auth_context, uchar chal[8]) 
 {
 	NTSTATUS nt_status;
-	if (!NT_STATUS_IS_OK(nt_status = make_auth_context_subsystem(auth_context))) {
+	nt_status = make_auth_context_subsystem(talloc_autofree_context(),
+						auth_context);
+	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
 	}
 

@@ -38,7 +38,7 @@ static void get_challenge(struct smbd_server_connection *sconn, uint8 buff[8])
 
 	DEBUG(10, ("get challenge: creating negprot_global_auth_context\n"));
 	nt_status = make_auth_context_subsystem(
-		&sconn->smb1.negprot.auth_context);
+		sconn, &sconn->smb1.negprot.auth_context);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0, ("make_auth_context_subsystem returned %s",
 			  nt_errstr(nt_status)));

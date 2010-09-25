@@ -1360,7 +1360,9 @@ static NTSTATUS _netr_LogonSamLogon_base(struct pipes_struct *p,
 	{
 		uint8_t chal[8];
 
-		if (!NT_STATUS_IS_OK(status = make_auth_context_subsystem(&auth_context))) {
+		status = make_auth_context_subsystem(talloc_tos(),
+						     &auth_context);
+		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
 

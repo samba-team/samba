@@ -229,7 +229,7 @@ NTSTATUS auth_ntlmssp_start(struct auth_ntlmssp_state **auth_ntlmssp_state)
 		return nt_status;
 	}
 
-	nt_status = make_auth_context_subsystem(&auth_context);
+	nt_status = make_auth_context_subsystem(talloc_tos(), &auth_context);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
 	}
