@@ -2323,7 +2323,7 @@ static NTSTATUS pdb_init_ads(struct pdb_methods **pdb_method,
 	char *tmp = NULL;
 	NTSTATUS status;
 
-	m = talloc(talloc_autofree_context(), struct pdb_methods);
+	m = talloc(NULL, struct pdb_methods);
 	if (m == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
