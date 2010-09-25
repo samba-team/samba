@@ -528,11 +528,6 @@ if host.startswith("ldap://"):
     ldb_options = ["modules:paged_searches"]
 
 ldb = Ldb(host, credentials=creds, session_info=system_session(), lp=lp, options=ldb_options)
-if not "tdb://" in host:
-    gc_ldb = Ldb("%s:3268" % host, credentials=creds,
-                 session_info=system_session(), lp=lp)
-else:
-    gc_ldb = None
 
 runner = SubunitTestRunner()
 rc = 0
