@@ -1964,7 +1964,15 @@ if not "://" in host:
     else:
         host = "ldap://%s" % host
 
-ldb = SamDB(host, credentials=creds, session_info=system_session(), lp=lp, options=["modules:paged_searches"])
+# use 'paged_search' module when connecting remotely
+if host.lower().startswith("ldap://"):
+    ldb_options = ["modules:paged_searches"]
+
+ldb = SamDB(host,
+            credentials=creds,
+            session_info=system_session(),
+            lp=lp,
+            options=ldb_options)
 
 runner = SubunitTestRunner()
 rc = 0
