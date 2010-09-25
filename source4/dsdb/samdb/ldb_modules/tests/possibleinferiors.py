@@ -59,7 +59,13 @@ def uniq_list(alist):
 lp_ctx = sambaopts.get_loadparm()
 
 creds = credopts.get_credentials(lp_ctx)
-db = Ldb(url, credentials=creds, lp=lp_ctx, options=["modules:paged_searches"])
+
+ldb_options = []
+# use 'paged_search' module when connecting remotely
+if url.lower().startswith("ldap://"):
+    ldb_options = ["modules:paged_searches"]
+
+db = Ldb(url, credentials=creds, lp=lp_ctx, options=ldb_options)
 
 # get the rootDSE
 res = db.search(base="", expression="",
