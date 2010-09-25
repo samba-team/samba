@@ -23,6 +23,7 @@
 #include "libcli/raw/interfaces.h"
 #include "lib/socket/socket.h"
 #include "../lib/util/dlinklist.h"
+#include "../librpc/gen_ndr/nbt.h"
 
 struct tevent_context;
 
