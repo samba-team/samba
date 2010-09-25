@@ -51,8 +51,7 @@ LIBNDR_SRC = '''../librpc/ndr/ndr_basic.c
              ../librpc/ndr/uuid.c
              librpc/ndr/util.c'''
 
-LIBNDR_GEN_SRC0 = '''../librpc/gen_ndr/ndr_samr.c
-                  ../librpc/gen_ndr/ndr_lsa.c'''
+LIBNDR_GEN_SRC0 = '''../librpc/gen_ndr/ndr_samr.c'''
 
 LIBNDR_NETLOGON_SRC = '''../librpc/gen_ndr/ndr_netlogon.c
                   ../librpc/ndr/ndr_netlogon.c'''
@@ -149,7 +148,6 @@ LIBNDR_GEN_SRC = '''../librpc/gen_ndr/ndr_wkssvc.c
                  ../librpc/gen_ndr/ndr_winreg.c
                  ../librpc/gen_ndr/ndr_initshutdown.c
                  ../librpc/gen_ndr/ndr_srvsvc.c
-                 ../librpc/gen_ndr/ndr_eventlog.c
                  ${LIBNDR_NETLOGON_SRC}
                  ../librpc/gen_ndr/ndr_dssetup.c
                  ../librpc/gen_ndr/ndr_epmapper.c
@@ -455,7 +453,7 @@ RPC_SPOOLSS_SRC = '''rpc_server/srv_spoolss_nt.c
                   ../librpc/gen_ndr/srv_spoolss.c'''
 
 RPC_EVENTLOG_SRC = '''rpc_server/srv_eventlog_nt.c
-                   ${LIB_EVENTLOG_SRC} ../librpc/gen_ndr/srv_eventlog.c'''
+                   ../librpc/gen_ndr/srv_eventlog.c'''
 
 NPA_TSTREAM_SRC = '''../libcli/named_pipe_auth/npa_tstream.c
                      ../librpc/gen_ndr/ndr_named_pipe_auth.c'''
@@ -1028,7 +1026,7 @@ NET_SRC = '''${NET_SRC1}
              ${NET_SRC2}
              ${DCUTIL_SRC}
              ${LIBGPO_SRC} ${DISPLAY_SEC_SRC}
-             ${LIB_EVENTLOG_SRC} ${REGFIO_SRC}'''
+             ${REGFIO_SRC}'''
 
 CUPS_SRC = '''client/smbspool.c'''
 
@@ -1070,9 +1068,7 @@ SMBCQUOTAS_SRC = '''utils/smbcquotas.c
 EVTLOGADM_SRC0 = 'utils/eventlogadm.c'
 
 EVTLOGADM_SRC = '''${EVTLOGADM_SRC0}
-                registry/reg_eventlog.c ${LIB_EVENTLOG_SRC}
-                ../librpc/gen_ndr/ndr_eventlog.c
-                ../librpc/gen_ndr/ndr_lsa.c'''
+                registry/reg_eventlog.c'''
 
 SHARESEC_SRC0 = 'utils/sharesec.c'
 SHARESEC_SRC  = '''${SHARESEC_SRC0}'''
@@ -1211,7 +1207,7 @@ bld.SAMBA_SUBSYSTEM('LIBMSRPC',
 
 bld.SAMBA_SUBSYSTEM('LIBMSRPC_GEN',
                     source='${LIBNDR_GEN_SRC}',
-                    deps='LIBNDR NDR_SECURITY NDR_DCERPC',
+                    deps='LIBNDR NDR_SECURITY NDR_DCERPC NDR_EVENTLOG NDR_LSA',
                     vars=locals())
 
 bld.SAMBA_SUBSYSTEM('ASN1_UTIL',
@@ -1321,7 +1317,7 @@ bld.SAMBA_SUBSYSTEM('SMBD_BASE',
                     NSS_WRAPPER DYNCONFIG libwbclient crypt nsl cups cap resolv ZLIB PASSDB
                     PARAM_WITHOUT_REG LIBS LIBSMB POPT_SAMBA KRBCLIENT AVAHI
                     LIBMSRPC_GEN LIBMSRPC LIBADS LIBADS_SERVER LIBADS_PRINTER
-                    VFS_DEFAULT RPC_MODULES AUTH LOCKING LIBAFS LIBAFS_SETTOKEN PROFILE LIBNET''',
+                    VFS_DEFAULT RPC_MODULES AUTH LOCKING LIBAFS LIBAFS_SETTOKEN PROFILE LIBNET LIBEVENTLOG''',
                     vars=locals())
 
 bld.SAMBA_SUBSYSTEM('RPC_MODULES',
@@ -1361,6 +1357,11 @@ bld.SAMBA_SUBSYSTEM('LIBNET_DSSYNC',
 bld.SAMBA_SUBSYSTEM('LIBNET_SAMSYNC',
                     source=LIBNET_SAMSYNC_SRC,
                     deps='LIBNET',
+                    vars=locals())
+
+bld.SAMBA_SUBSYSTEM('LIBEVENTLOG',
+                    source=LIB_EVENTLOG_SRC,
+                    deps='NDR_EVENTLOG',
                     vars=locals())
 
 bld.SAMBA_SUBSYSTEM('LIBNDR',
@@ -1460,7 +1461,7 @@ bld.SAMBA_BINARY('net',
                  deps='''talloc tdb libnetapi libaddns cap resolv POPT_SAMBA PASSDB LIBSMB LIB_NONSMBD
                  PARAM_WITHOUT_REG libwbclient PARAM KRBCLIENT LIBMSRPC_GEN LIBMSRPC LIBADS LIBADS_SERVER LIBADS_PRINTER
                  LOCALE_DIR LIBAFS LIBAFS_SETTOKEN READLINE PASSWD_UTIL LIBNET
-                 LIBNET_DSSYNC LIBNET_SAMSYNC''',
+                 LIBNET_DSSYNC LIBNET_SAMSYNC LIBEVENTLOG''',
                  vars=locals())
 
 bld.SAMBA_BINARY('profiles',
@@ -1565,7 +1566,7 @@ bld.SAMBA_BINARY('smbcquotas',
 bld.SAMBA_BINARY('eventlogadm',
                  source=EVTLOGADM_SRC,
                  deps='''talloc tevent cap POPT_SAMBA LIBS PARAM
-                 LIB_NONSMBD LIBSMB_ERR PASSDB libwbclient''',
+                 LIB_NONSMBD LIBSMB_ERR PASSDB libwbclient LIBEVENTLOG''',
                  vars=locals())
 
 bld.SAMBA_BINARY('sharesec',
