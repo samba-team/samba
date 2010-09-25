@@ -133,7 +133,7 @@ NTSTATUS messaging_tdb_init(struct messaging_context *msg_ctx,
 	return NT_STATUS_OK;
 }
 
-bool messaging_tdb_parent_init(void)
+bool messaging_tdb_parent_init(TALLOC_CTX *mem_ctx)
 {
 	struct tdb_wrap *db;
 
@@ -143,8 +143,7 @@ bool messaging_tdb_parent_init(void)
 	 * work.
 	 */
 
-	db = tdb_wrap_open(talloc_autofree_context(),
-			   lock_path("messages.tdb"), 0,
+	db = tdb_wrap_open(mem_ctx, lock_path("messages.tdb"), 0,
 			   TDB_CLEAR_IF_FIRST|TDB_DEFAULT|TDB_VOLATILE,
 			   O_RDWR|O_CREAT,0600);
 	if (db == NULL) {

@@ -1126,7 +1126,7 @@ extern void build_options(bool screen);
 	if (!locking_init())
 		exit(1);
 
-	if (!messaging_tdb_parent_init()) {
+	if (!messaging_tdb_parent_init(smbd_event_context())) {
 		exit(1);
 	}
 
