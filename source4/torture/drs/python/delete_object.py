@@ -230,8 +230,9 @@ def connect_samdb(samdb_url):
             samdb_url = "tdb://%s" % samdb_url
         else:
             samdb_url = "ldap://%s" % samdb_url
-            # user 'paged_search' module when connecting remotely
-            ldb_options = ["modules:paged_searches"]
+    # use 'paged_search' module when connecting remotely
+    if samdb_url.lower().startswith("ldap://"):
+        ldb_options = ["modules:paged_searches"]
 
     return SamDB(url=samdb_url,
                  lp=samba.tests.env_loadparm(),
