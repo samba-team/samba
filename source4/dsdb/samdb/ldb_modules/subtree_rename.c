@@ -152,12 +152,17 @@ static int check_constraints(struct ldb_message *msg,
 	bool move_op = false;
 	bool rename_op = false;
 
-	/* Skip the checks if old and new DN are the same or if we relax */
+	/* Skip the checks if old and new DN are the same, or if we have the
+	 * relax control specified or if the returned objects is already
+	 * deleted and needs only to be moved for consistency. */
 
 	if (ldb_dn_compare(olddn, newdn) == 0) {
 		return LDB_SUCCESS;
 	}
 	if (ldb_request_get_control(ac->req, LDB_CONTROL_RELAX_OID) != NULL) {
+		return LDB_SUCCESS;
+	}
+	if (ldb_msg_find_attr_as_bool(msg, "isDeleted", false)) {
 		return LDB_SUCCESS;
 	}
 
@@ -382,7 +387,7 @@ static int subtree_rename(struct ldb_module *module, struct ldb_request *req)
 {
 	struct ldb_context *ldb;
 	static const char * const attrs[] = { "objectClass", "systemFlags",
-					      NULL };
+					      "isDeleted", NULL };
 	struct ldb_request *search_req;
 	struct subtree_rename_context *ac;
 	int ret;
@@ -426,6 +431,12 @@ static int subtree_rename(struct ldb_module *module, struct ldb_request *req)
 				   subtree_rename_search_callback,
 				   req);
 	LDB_REQ_SET_LOCATION(search_req);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	ret = ldb_request_add_control(search_req, LDB_CONTROL_SHOW_RECYCLED_OID,
+				      true, NULL);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
