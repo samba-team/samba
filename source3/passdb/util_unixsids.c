@@ -64,7 +64,7 @@ bool lookup_unix_user_name(const char *name, struct dom_sid *sid)
 	struct passwd *pwd;
 	bool ret;
 
-	pwd = getpwnam_alloc(talloc_autofree_context(), name);
+	pwd = getpwnam_alloc(talloc_tos(), name);
 	if (pwd == NULL) {
 		return False;
 	}
