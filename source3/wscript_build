@@ -1626,7 +1626,7 @@ bld.SAMBA_BINARY('locktest2',
                  vars=locals())
 
 bld.SAMBA_BINARY('debug2html',
-                 source=LOG2PCAP_SRC,
+                 source=DEBUG2HTML_SRC,
                  deps='''talloc popt''',
                  vars=locals())
 
