@@ -342,7 +342,7 @@ static int process_root(int local_flags)
 		load_interfaces();
 	}
 
-	if (!user_name[0] && (pwd = getpwuid_alloc(talloc_autofree_context(), geteuid()))) {
+	if (!user_name[0] && (pwd = getpwuid_alloc(talloc_tos(), geteuid()))) {
 		fstrcpy(user_name, pwd->pw_name);
 		TALLOC_FREE(pwd);
 	} 
@@ -507,7 +507,7 @@ static int process_nonroot(int local_flags)
 	}
 
 	if (!user_name[0]) {
-		pwd = getpwuid_alloc(talloc_autofree_context(), getuid());
+		pwd = getpwuid_alloc(talloc_tos(), getuid());
 		if (pwd) {
 			fstrcpy(user_name,pwd->pw_name);
 			TALLOC_FREE(pwd);
