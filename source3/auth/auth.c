@@ -421,7 +421,9 @@ bool load_auth_module(struct auth_context *auth_context,
  Make a auth_info struct for the auth subsystem
 ***************************************************************************/
 
-static NTSTATUS make_auth_context_text_list(struct auth_context **auth_context, char **text_list) 
+static NTSTATUS make_auth_context_text_list(TALLOC_CTX *mem_ctx,
+					    struct auth_context **auth_context,
+					    char **text_list)
 {
 	auth_methods *list = NULL;
 	auth_methods *t = NULL;
@@ -432,7 +434,7 @@ static NTSTATUS make_auth_context_text_list(struct auth_context **auth_context, 
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	nt_status = make_auth_context(talloc_autofree_context(), auth_context);
+	nt_status = make_auth_context(mem_ctx, auth_context);
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
@@ -524,7 +526,8 @@ NTSTATUS make_auth_context_subsystem(struct auth_context **auth_context)
 		DEBUG(5,("Using specified auth order\n"));
 	}
 
-	nt_status = make_auth_context_text_list(auth_context,
+	nt_status = make_auth_context_text_list(talloc_autofree_context(),
+						auth_context,
 						auth_method_list);
 
 	TALLOC_FREE(auth_method_list);
