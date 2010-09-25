@@ -687,20 +687,25 @@ def secretsdb_self_join(secretsdb, domain,
            "priorChanged",
            "krb5Keytab",
            "privateKeytab"]
+
+    if realm is not None:
+      if dnsdomain is None:
+          dnsdomain = realm.lower()
+      dnsname = '%s.%s' % (netbiosname.lower(), dnsdomain.lower())
+    else:
+      dnsname = None
+    shortname = netbiosname.lower()
     
     #We don't need to set msg["flatname"] here, because rdn_name will handle it, and it causes problems for modifies anyway
     msg = ldb.Message(ldb.Dn(secretsdb, "flatname=%s,cn=Primary Domains" % domain))
     msg["secureChannelType"] = [str(secure_channel_type)]
     msg["objectClass"] = ["top", "primaryDomain"]
-    if realm is not None:
-      if dnsdomain is None:
-        dnsdomain = realm.lower()
+    if dnsname is not None:
       msg["objectClass"] = ["top", "primaryDomain", "kerberosSecret"]
       msg["realm"] = [realm]
-      msg["saltPrincipal"] = ["host/%s.%s@%s" % (netbiosname.lower(), dnsdomain.lower(), realm.upper())]
+      msg["saltPrincipal"] = ["host/%s@%s" % (dnsname, realm.upper())]
       msg["msDS-KeyVersionNumber"] = [str(key_version_number)]
       msg["privateKeytab"] = ["secrets.keytab"]
-
 
     msg["secret"] = [machinepass]
     msg["samAccountName"] = ["%s$" % netbiosname]
@@ -742,10 +747,17 @@ def secretsdb_self_join(secretsdb, domain,
       secretsdb.modify(msg)
       secretsdb.rename(res[0].dn, msg.dn)
     else:
+      spn = [ 'HOST/%s' % shortname ]
+      if secure_channel_type == SEC_CHAN_BDC and dnsname is not None:
+          # we are a domain controller then we add servicePrincipalName entries
+          # for the keytab code to update
+          spn.extend([ 'HOST/%s' % dnsname ])
+      msg["servicePrincipalName"] = spn
+
       secretsdb.add(msg)
 
 
-def secretsdb_setup_dns(secretsdb, setup_path, private_dir,
+def secretsdb_setup_dns(secretsdb, setup_path, names, private_dir,
                         realm, dnsdomain,
                         dns_keytab_path, dnspass):
     """Add DNS specific bits to a secrets database.
@@ -764,6 +776,8 @@ def secretsdb_setup_dns(secretsdb, setup_path, private_dir,
             "DNSDOMAIN": dnsdomain,
             "DNS_KEYTAB": dns_keytab_path,
             "DNSPASS_B64": b64encode(dnspass),
+            "HOSTNAME": names.hostname,
+            "DNSNAME" : '%s.%s' % (names.netbiosname.lower(), names.dnsdomain.lower())
             })
 
 
@@ -944,6 +958,8 @@ def setup_self_join(samdb, names,
               "DNSDOMAIN": names.dnsdomain,
               "DOMAINDN": names.domaindn,
               "DNSPASS_B64": b64encode(dnspass),
+              "HOSTNAME" : names.hostname,
+              "DNSNAME" : '%s.%s' % (names.netbiosname.lower(), names.dnsdomain.lower())
               })
 
 def getpolicypath(sysvolpath, dnsdomain, guid):
@@ -1583,7 +1599,7 @@ def provision(setup_dir, logger, session_info,
 
 
             if serverrole == "domain controller":
-                secretsdb_setup_dns(secrets_ldb, setup_path,
+                secretsdb_setup_dns(secrets_ldb, setup_path, names,
                                     paths.private_dir,
                                     realm=names.realm, dnsdomain=names.dnsdomain,
                                     dns_keytab_path=paths.dns_keytab,
