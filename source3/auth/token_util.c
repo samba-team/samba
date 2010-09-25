@@ -109,7 +109,7 @@ struct security_token *get_root_nt_token( void )
 	uid_to_sid(&u_sid, pw->pw_uid);
 	gid_to_sid(&g_sid, pw->pw_gid);
 
-	token = create_local_nt_token(talloc_autofree_context(), &u_sid, False,
+	token = create_local_nt_token(talloc_tos(), &u_sid, False,
 				      1, &global_sid_Builtin_Administrators);
 
 	security_token_set_privilege(token, SEC_PRIV_DISK_OPERATOR);
