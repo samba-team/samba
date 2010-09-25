@@ -380,7 +380,8 @@ static NTSTATUS ctdb_read_req(struct ctdbd_connection *conn, uint32 reqid,
 			goto next_pkt;
 		}
 
-		if (!(msg_state = TALLOC_P(talloc_autofree_context(), struct deferred_msg_state))) {
+		msg_state = TALLOC_P(NULL, struct deferred_msg_state);
+		if (msg_state == NULL) {
 			DEBUG(0, ("talloc failed\n"));
 			TALLOC_FREE(hdr);
 			goto next_pkt;
