@@ -374,7 +374,7 @@ def newprovision(names, setup_dir, creds, session, smbconf, provdir, logger):
             domain=names.domain, domainguid=names.domainguid,
             domainsid=str(names.domainsid), ntdsguid=names.ntdsguid,
             policyguid=names.policyid, policyguid_dc=names.policyid_dc,
-            hostname=names.netbiosname, hostip=None, hostip6=None,
+            hostname=names.netbiosname.lower(), hostip=None, hostip6=None,
             invocationid=names.invocation, adminpass=names.adminpass,
             krbtgtpass=None, machinepass=None, dnspass=None, root=None,
             nobody=None, wheel=None, users=None,
