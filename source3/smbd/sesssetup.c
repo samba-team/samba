@@ -141,9 +141,7 @@ static NTSTATUS check_guest_password(struct auth_serversupplied_info **server_in
 	struct auth_usersupplied_info *user_info = NULL;
 
 	NTSTATUS nt_status;
-	unsigned char chal[8];
-
-	ZERO_STRUCT(chal);
+	static unsigned char chal[8] = { 0, };
 
 	DEBUG(3,("Got anonymous request\n"));
 
