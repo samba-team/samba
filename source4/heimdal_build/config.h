@@ -23,6 +23,11 @@
 
 #undef HAVE_KRB5_ENCRYPT_BLOCK
 
+/* Because it can't be defined in roken.h */
+#ifndef USE_HCRYPTO_IMATH
+#define USE_HCRYPTO_IMATH
+#endif
+
 /*Workaround for heimdal define vs samba define*/
 #ifdef HAVE_LIBINTL_H
 #define LIBINTL
