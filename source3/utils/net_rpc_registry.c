@@ -1150,7 +1150,8 @@ static int rpc_registry_copy(struct net_context *c, int argc, const char **argv 
 	d_printf(_("ok\n"));
 
 	d_printf(_("Opening %s...."), argv[1]);
-	if ( !(outfile = regfio_open( argv[1], (O_RDWR|O_CREAT|O_TRUNC), (S_IREAD|S_IWRITE) )) ) {
+	if ( !(outfile = regfio_open( argv[1], (O_RDWR|O_CREAT|O_TRUNC),
+				      (S_IRUSR|S_IWUSR) )) ) {
 		d_fprintf(stderr, _("Failed to open %s for writing\n"),argv[1]);
 		goto out;
 	}

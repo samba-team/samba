@@ -953,7 +953,7 @@ static WERROR backup_registry_key(struct registry_key_handle *krecord,
 	/* open the registry file....fail if the file already exists */
 
 	regfile = regfio_open(fname, (O_RDWR|O_CREAT|O_EXCL),
-			      (S_IREAD|S_IWRITE));
+			      (S_IRUSR|S_IWUSR));
 	if (regfile == NULL) {
 		DEBUG(0,("backup_registry_key: failed to open \"%s\" (%s)\n",
 			 fname, strerror(errno) ));
