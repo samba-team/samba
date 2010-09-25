@@ -116,6 +116,7 @@ class builder:
 class buildlist:
     '''handle build of multiple directories'''
     def __init__(self, tasklist, tasknames):
+        global tasks
         self.tlist = []
         self.tail_proc = None
         if tasknames == ['pass']:
@@ -214,7 +215,10 @@ def rebase_tree(url):
     print("Rebasing on %s" % url)
     run_cmd("git remote add -t master master %s" % url, show=True, dir=test_master)
     run_cmd("git fetch master", show=True, dir=test_master)
-    run_cmd("git rebase master/master", show=True, dir=test_master)
+    if options.fix_whitespace:
+        run_cmd("git rebase --whitespace=fix master/master", show=True, dir=test_master)
+    else:
+        run_cmd("git rebase master/master", show=True, dir=test_master)
 
 def push_to(url):
     print("Pushing to %s" % url)
@@ -243,6 +247,8 @@ parser.add_option("", "--pushto", help="push to a git url on success",
 parser.add_option("", "--push-master", help="push to %s on success" % samba_master_ssh,
                   default=False, action='store_true')
 parser.add_option("", "--mark", help="add a Tested-By signoff before pushing",
+                  default=False, action="store_true")
+parser.add_option("", "--fix-whitespace", help="fix whitespace on rebase",
                   default=False, action="store_true")
 
 
