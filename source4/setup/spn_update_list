@@ -17,7 +17,6 @@ HOST/${NETBIOSNAME}/${WORKGROUP}
 RestrictedKrbHost/${NETBIOSNAME}
 RestrictedKrbHost/${HOSTNAME}
 GC/${HOSTNAME}/${DNSDOMAIN}
-DNS/${HOSTNAME}
 
 # these are not supported yet
 # Dfsr-12F9A27C-BF97-4787-9364-D31B6C55EB04/${HOSTNAME}
