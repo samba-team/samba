@@ -13,6 +13,8 @@ samba_master_ssh = os.getenv('SAMBA_MASTER_SSH', 'git+ssh://git.samba.org/data/g
 
 cleanup_list = []
 
+os.putenv('CC', "ccache gcc")
+
 tasks = {
     "source3" : [ "./autogen.sh",
                   "./configure.developer ${PREFIX}",
