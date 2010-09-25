@@ -76,7 +76,7 @@ bool nt_token_check_domain_rid( struct security_token *token, uint32 rid )
  Create a token for the root user to be used internally by smbd.
  This is similar to running under the context of the LOCAL_SYSTEM account
  in Windows.  This is a read-only token.  Do not modify it or free() it.
- Create a copy if your need to change it.
+ Create a copy if you need to change it.
 ******************************************************************************/
 
 struct security_token *get_root_nt_token( void )
