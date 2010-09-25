@@ -67,20 +67,20 @@ class builder:
         self.tag = self.name.replace('/', '_')
         self.sequence = sequence
         self.next = 0
-        self.stdout_path = "%s/%s.stdout" % (options.testbase, self.tag)
-        self.stderr_path = "%s/%s.stderr" % (options.testbase, self.tag)
+        self.stdout_path = "%s/%s.stdout" % (testbase, self.tag)
+        self.stderr_path = "%s/%s.stderr" % (testbase, self.tag)
         cleanup_list.append(self.stdout_path)
         cleanup_list.append(self.stderr_path)
         run_cmd("rm -f %s %s" % (self.stdout_path, self.stderr_path))
         self.stdout = open(self.stdout_path, 'w')
         self.stderr = open(self.stderr_path, 'w')
         self.stdin  = open("/dev/null", 'r')
-        self.sdir = "%s/%s" % (options.testbase, self.tag)
-        self.prefix = "%s/prefix/%s" % (options.testbase, self.tag)
+        self.sdir = "%s/%s" % (testbase, self.tag)
+        self.prefix = "%s/prefix/%s" % (testbase, self.tag)
         run_cmd("rm -rf %s" % self.sdir)
-        os.makedirs(self.sdir)
         cleanup_list.append(self.sdir)
         cleanup_list.append(self.prefix)
+        os.makedirs(self.sdir)
         run_cmd("rm -rf %s" % self.sdir)
         run_cmd("git clone --shared %s %s" % (gitroot, self.sdir))
         self.start_next()
@@ -164,10 +164,8 @@ class buildlist:
 
     def start_tail(self):
         cwd = os.getcwd()
-        cmd = "tail -f "
-        for b in self.tlist:
-            cmd += "%s %s " % (b.stdout_path, b.stderr_path)
-        os.chdir(options.testbase)
+        cmd = "tail -f *.stdout *.stderr"
+        os.chdir(testbase)
         self.tail_proc = Popen(cmd, shell=True)
         os.chdir(cwd)
 
@@ -193,8 +191,15 @@ def find_git_root():
     os.chdir(cwd)
     return None
 
-def_testbase = "/memdisk/%s/autobuild.%u" % (os.getenv('USER'), os.getpid())
-def_passcmd  = "git push %s/master-passed +HEAD:master" % os.getenv("HOME")
+def rebase_tree(url):
+    print("Rebasing on %s" % url)
+    run_cmd("git remote add -t master master %s" % url, show=True, dir=test_master)
+    run_cmd("git fetch master", show=True, dir=test_master)
+    run_cmd("git rebase master/master", show=True, dir=test_master)
+
+def_testbase = os.getenv("AUTOBUILD_TESTBASE", "/memdisk/%s" % os.getenv('USER'))
+def_passcmd  = os.getenv("AUTOBUILD_PASSCMD",
+                         "git push %s/master-passed +HEAD:master" % os.getenv("HOME"))
 
 parser = OptionParser()
 parser.add_option("", "--tail", help="show output while running", default=False, action="store_true")
@@ -205,31 +210,36 @@ parser.add_option("", "--passcmd", help="command to run on success (default %s)"
                   default=def_passcmd)
 parser.add_option("", "--verbose", help="show all commands as they are run",
                   default=False, action="store_true")
+parser.add_option("", "--rebase", help="rebase on the given tree before testing",
+                  default=None, type='str')
 
 
 (options, args) = parser.parse_args()
 
-test_master = "%s/master" % options.testbase
+testbase = "%s/build.%u" % (options.testbase, os.getpid())
+test_master = "%s/master" % testbase
 
 gitroot = find_git_root()
 if gitroot is None:
     raise Exception("Failed to find git root")
 
 try:
-    os.stat(options.testbase)
-except:
-    try:
-        os.makedirs(options.testbase)
-    except Exception, reason:
-        raise Exception("Unable to create %s : %s" % (options.testbase, reason))
-    cleanup_list.append(options.testbase)
-    pass
-
-run_cmd("rm -rf %s" % test_master)
-run_cmd("git clone --shared %s %s" % (gitroot, test_master))
-cleanup_list.append(test_master)
+    os.makedirs(testbase)
+except Exception, reason:
+    raise Exception("Unable to create %s : %s" % (testbase, reason))
+cleanup_list.append(testbase)
 
 try:
+    run_cmd("rm -rf %s" % test_master)
+    cleanup_list.append(test_master)
+    run_cmd("git clone --shared %s %s" % (gitroot, test_master))
+except:
+    cleanup()
+    raise
+
+try:
+    if options.rebase is not None:
+        rebase_tree(options.rebase)
     blist = buildlist(tasks, args)
     if options.tail:
         blist.start_tail()
@@ -252,12 +262,13 @@ if status == 0:
         print("Logs in logs.tar.gz")
     blist.remove_logs()
     cleanup()
+    print(errstr)
     sys.exit(0)
 
 # something failed, gather a tar of the logs
-print(errstr)
 blist.tarlogs("logs.tar.gz")
 blist.remove_logs()
 cleanup()
+print(errstr)
 print("Logs in logs.tar.gz")
 sys.exit(os.WEXITSTATUS(status))
