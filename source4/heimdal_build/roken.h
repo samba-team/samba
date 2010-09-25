@@ -12,8 +12,6 @@
 
 #define rk_PATH_DELIM '/'
 
-/* HDB module dir - set to Samba LIBDIR/hdb ? */
-#define HDBDIR "/usr/heimdal/lib"
 #define HEIMDAL_LOCALEDIR "/usr/heimdal/locale"
 
 /* Maximum values on all known systems */
