@@ -1182,7 +1182,7 @@ bld.SAMBA_LIBRARY('libnetapi',
                     source=LIBNETAPI_SRC,
                     public_deps='''talloc tdb cap libwbclient LIB_NONSMBD LIBSMB KRBCLIENT
                     PASSDB SMBLDAP GROUPDB PARAM_WITHOUT_REG DYNCONFIG
-                    LIBMSRPC_GEN LIBMSRPC LIBADS''',
+                    LIBMSRPC_GEN LIBMSRPC LIBADS LIBNET''',
                     public_headers='lib/netapi/netapi.h',
                     vars=locals())
 
@@ -1201,7 +1201,8 @@ bld.SAMBA_LIBRARY('libsmbsharemodes',
 
 bld.SAMBA_LIBRARY('libaddns',
                     source=LIBADDNS_SRC,
-                    public_deps='SOCKET_WRAPPER',
+                    deps='SOCKET_WRAPPER',
+                    public_deps='talloc krb5 k5crypto com_err gssapi gssapi_krb5',
                     vars=locals())
 
 bld.SAMBA_SUBSYSTEM('LIBMSRPC',
