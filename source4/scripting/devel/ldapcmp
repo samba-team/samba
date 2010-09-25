@@ -445,7 +445,7 @@ class LDAPBundel(object):
         other.update_size()
         assert self.size == other.size
         assert sorted([x.upper() for x in self.dn_list]) == sorted([x.upper() for x in other.dn_list])
-        self.log( "\n* Objets to be compared: %s" % self.size )
+        self.log( "\n* Objects to be compared: %s" % self.size )
 
         index = 0
         while index < self.size:
@@ -552,8 +552,16 @@ if __name__ == "__main__":
     if creds.is_anonymous():
         parser.error("You must supply at least one username/password pair")
 
-    if not (len(args) == 1 and args[0].upper() in ["DOMAIN", "CONFIGURATION", "SCHEMA"]):
-        parser.error("Incorrect arguments")
+    # make a list of contexts to compare in
+    contexts = []
+    if len(args) == 0:
+        # if no argument given, we compare all contexts
+        contexts = ["DOMAIN", "CONFIGURATION", "SCHEMA"]
+    else:
+        for context in args:
+            if not context.upper() in ["DOMAIN", "CONFIGURATION", "SCHEMA"]:
+                parser.error("Incorrect argument: %s" % context)
+            contexts.append(context.upper())
 
     if opts.verbose and opts.quiet:
         parser.error("You cannot set --verbose and --quiet together")
@@ -564,25 +572,30 @@ if __name__ == "__main__":
     con2 = LDAPBase(opts.host2, opts, creds2, lp)
     assert len(con2.base_dn) > 0
 
-    b1 = LDAPBundel(con1, context=args[0], cmd_opts=opts)
-    b2 = LDAPBundel(con2, context=args[0], cmd_opts=opts)
-
-    if b1 == b2:
+    status = 0
+    for context in contexts:
         if not opts.quiet:
-            print "\n* Final result: SUCCESS"
-        status = 0
-    else:
+            print "\n* Comparing [%s] context..." % context
+
+        b1 = LDAPBundel(con1, context=context, cmd_opts=opts)
+        b2 = LDAPBundel(con2, context=context, cmd_opts=opts)
+
+        if b1 == b2:
+            if not opts.quiet:
+                print "\n* Result for [%s]: SUCCESS" % context
+        else:
+            if not opts.quiet:
+                print "\n* Result for [%s]: FAILURE" % context
+                print "\nSUMMARY"
+                print "---------"
+            # mark exit status as FAILURE if a least one comparison failed
+            status = -1
+
+        assert len(b1.summary["df_value_attrs"]) == len(b2.summary["df_value_attrs"])
+        b2.summary["df_value_attrs"] = []
+
         if not opts.quiet:
-            print "\n* Final result: FAILURE"
-            print "\nSUMMARY"
-            print "---------"
-        status = -1
-
-    assert len(b1.summary["df_value_attrs"]) == len(b2.summary["df_value_attrs"])
-    b2.summary["df_value_attrs"] = []
-
-    if not opts.quiet:
-        b1.print_summary()
-        b2.print_summary()
+            b1.print_summary()
+            b2.print_summary()
 
     sys.exit(status)
