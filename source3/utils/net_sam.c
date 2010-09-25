@@ -1926,7 +1926,7 @@ doma_done:
 
 	d_printf(_("Checking Guest's group.\n"));
 
-	pwd = getpwnam_alloc(talloc_autofree_context(), lp_guestaccount());
+	pwd = getpwnam_alloc(tc, lp_guestaccount());
 	if (!pwd) {
 		d_fprintf(stderr,
 			  _("Failed to find just created Guest account!\n"
