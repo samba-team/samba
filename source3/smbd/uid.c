@@ -32,7 +32,7 @@ bool change_to_guest(void)
 {
 	struct passwd *pass;
 
-	pass = getpwnam_alloc(talloc_autofree_context(), lp_guestaccount());
+	pass = getpwnam_alloc(talloc_tos(), lp_guestaccount());
 	if (!pass) {
 		return false;
 	}
