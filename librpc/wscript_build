@@ -192,6 +192,11 @@ bld.SAMBA_SUBSYSTEM('NDR_LSA',
 	public_deps='LIBNDR NDR_SECURITY'
 	)
 
+bld.SAMBA_SUBSYSTEM('NDR_EVENTLOG',
+	source='../librpc/gen_ndr/ndr_eventlog.c',
+	public_deps='LIBNDR NDR_SECURITY NDR_LSA'
+	)
+
 bld.SAMBA_SUBSYSTEM('NDR_COMPRESSION',
 	source='../librpc/ndr/ndr_compression.c',
 	public_deps='LIBSAMBA-ERRORS LIBNDR',
