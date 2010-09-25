@@ -61,8 +61,8 @@ static struct db_context *serverid_db(void)
 	if (db != NULL) {
 		return db;
 	}
-	db = db_open(talloc_autofree_context(), lock_path("serverid.tdb"),
-		     0, TDB_DEFAULT|TDB_CLEAR_IF_FIRST, O_RDWR|O_CREAT, 0644);
+	db = db_open(NULL, lock_path("serverid.tdb"), 0,
+		     TDB_DEFAULT|TDB_CLEAR_IF_FIRST, O_RDWR|O_CREAT, 0644);
 	return db;
 }
 
