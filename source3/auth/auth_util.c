@@ -761,6 +761,7 @@ static NTSTATUS make_new_server_info_system(TALLOC_CTX *mem_ctx,
 					     pwd->pw_name,
 					     false,
 					     server_info);
+	TALLOC_FREE(pwd);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
