@@ -587,7 +587,7 @@ int reg_parse_line(struct reg_parse* parser, const char* line)
 			DEBUG(0, ("value \"%s\" parse error"
 				  "at line: %i pos: %li : %s",
 				  cbuf_gets(parser->valname, 0), parser->linenum,
-				  pos-line, pos));
+				  (long int)(pos-line), pos));
 			return -3;
 		}
 	}
@@ -602,7 +602,7 @@ done:
 
 	if (!srprs_skipws(&pos) || !srprs_eol(&pos, NULL)) {
 		DEBUG(0, ("trailing garbage at line: %i pos: %li : %s\n",
-			  parser->linenum, pos-line, pos));
+			  parser->linenum, (long int)(pos-line), pos));
 		return -1;
 	}
 	return 0;
@@ -789,7 +789,8 @@ handle_iconv_errno(int err, const char* obuf, size_t linenum,
 	if (pos == *optr) {
 		pos = MAX(obuf, *optr-60);
 	}
-	DEBUG(0, ("Illegal multibyte sequence at line %lu: %s", linenum+1, pos));
+	DEBUG(0, ("Illegal multibyte sequence at line %lu: %s",
+		  (long unsigned)(linenum+1), pos));
 
 	assert(ilen > 0);
 	do {

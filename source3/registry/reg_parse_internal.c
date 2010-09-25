@@ -79,7 +79,8 @@ convert:
 			reason="Illegal multibyte sequence";
 			break;
 		}
-		DEBUG(0,("Conversion error: %s(%.80s) %li\n", reason, iptr, iptr-src));
+		DEBUG(0,("Conversion error: %s(%.80s) %li\n", reason, iptr,
+			 (long int)(iptr-src)));
 		talloc_free(dst);
 		return -1;
 	}
