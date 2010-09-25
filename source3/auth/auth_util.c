@@ -911,7 +911,8 @@ bool init_system_info(void)
 	if (system_info != NULL)
 		return True;
 
-	return NT_STATUS_IS_OK(make_new_server_info_system(talloc_autofree_context(), &system_info));
+	return NT_STATUS_IS_OK(make_new_server_info_system(NULL,
+							   &system_info));
 }
 
 NTSTATUS make_server_info_system(TALLOC_CTX *mem_ctx,
