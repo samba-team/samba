@@ -33,7 +33,7 @@ struct serverid_data {
 	uint32_t msg_flags;
 };
 
-bool serverid_parent_init(void)
+bool serverid_parent_init(TALLOC_CTX *mem_ctx)
 {
 	struct tdb_wrap *db;
 
@@ -43,8 +43,7 @@ bool serverid_parent_init(void)
 	 * work.
 	 */
 
-	db = tdb_wrap_open(talloc_autofree_context(),
-			   lock_path("serverid.tdb"),
+	db = tdb_wrap_open(mem_ctx, lock_path("serverid.tdb"),
 			   0, TDB_DEFAULT|TDB_CLEAR_IF_FIRST, O_RDWR|O_CREAT,
 			   0644);
 	if (db == NULL) {

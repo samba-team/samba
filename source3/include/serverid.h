@@ -62,6 +62,6 @@ bool serverid_traverse_read(int (*fn)(const struct server_id *id,
 /*
  * Ensure CLEAR_IF_FIRST works fine, to be called from the parent smbd
  */
-bool serverid_parent_init(void);
+bool serverid_parent_init(TALLOC_CTX *mem_ctx);
 
 #endif
