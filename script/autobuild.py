@@ -64,6 +64,9 @@ class builder:
     '''handle build of one directory'''
     def __init__(self, name, sequence):
         self.name = name
+        self.dir = self.name
+        if name == 'pass' or name == 'fail':
+            self.dir = "."
         self.tag = self.name.replace('/', '_')
         self.sequence = sequence
         self.next = 0
@@ -93,7 +96,7 @@ class builder:
         self.cmd = self.sequence[self.next].replace("${PREFIX}", "--prefix=%s" % self.prefix)
         print '%s: Running %s' % (self.name, self.cmd)
         cwd = os.getcwd()
-        os.chdir("%s/%s" % (self.sdir, self.name))
+        os.chdir("%s/%s" % (self.sdir, self.dir))
         self.proc = Popen(self.cmd, shell=True,
                           stdout=self.stdout, stderr=self.stderr, stdin=self.stdin)
         os.chdir(cwd)
@@ -105,6 +108,10 @@ class buildlist:
     def __init__(self, tasklist, tasknames):
         self.tlist = []
         self.tail_proc = None
+        if tasknames == ['pass']:
+            tasks = { 'pass' : [ '/bin/true' ]}
+        if tasknames == ['fail']:
+            tasks = { 'fail' : [ '/bin/false' ]}
         if tasknames == []:
             tasknames = tasklist
         for n in tasknames:
@@ -171,6 +178,8 @@ class buildlist:
 
 
 def cleanup():
+    if options.nocleanup:
+        return
     print("Cleaning up ....")
     for d in cleanup_list:
         run_cmd("rm -rf %s" % d)
@@ -197,21 +206,30 @@ def rebase_tree(url):
     run_cmd("git fetch master", show=True, dir=test_master)
     run_cmd("git rebase master/master", show=True, dir=test_master)
 
+def push_to(url):
+    print("Pushing to %s" % url)
+    if options.mark:
+        run_cmd("EDITOR=script/commit_mark.sh git commit --amend -c HEAD", dir=test_master)
+    run_cmd("git remote add -t master pushto %s" % url, show=True, dir=test_master)
+    run_cmd("git push pushto +HEAD:master", show=True, dir=test_master)
+
 def_testbase = os.getenv("AUTOBUILD_TESTBASE", "/memdisk/%s" % os.getenv('USER'))
-def_passcmd  = os.getenv("AUTOBUILD_PASSCMD",
-                         "git push %s/master-passed +HEAD:master" % os.getenv("HOME"))
 
 parser = OptionParser()
 parser.add_option("", "--tail", help="show output while running", default=False, action="store_true")
 parser.add_option("", "--keeplogs", help="keep logs", default=False, action="store_true")
+parser.add_option("", "--nocleanup", help="don't remove test tree", default=False, action="store_true")
 parser.add_option("", "--testbase", help="base directory to run tests in (default %s)" % def_testbase,
                   default=def_testbase)
-parser.add_option("", "--passcmd", help="command to run on success (default %s)" % def_passcmd,
-                  default=def_passcmd)
+parser.add_option("", "--passcmd", help="command to run on success", default=None)
 parser.add_option("", "--verbose", help="show all commands as they are run",
                   default=False, action="store_true")
 parser.add_option("", "--rebase", help="rebase on the given tree before testing",
                   default=None, type='str')
+parser.add_option("", "--pushto", help="push to a git url on success",
+                  default=None, type='str')
+parser.add_option("", "--mark", help="add a Tested-By signoff before pushing",
+                  default=False, action="store_true")
 
 
 (options, args) = parser.parse_args()
@@ -255,8 +273,11 @@ if options.tail:
 
 if status == 0:
     print errstr
-    print("Running passcmd: %s" % options.passcmd)
-    run_cmd(options.passcmd, dir=test_master)
+    if options.passcmd is not None:
+        print("Running passcmd: %s" % options.passcmd)
+        run_cmd(options.passcmd, dir=test_master)
+    if options.pushto is not None:
+        push_to(options.pushto)
     if options.keeplogs:
         blist.tarlogs("logs.tar.gz")
         print("Logs in logs.tar.gz")
