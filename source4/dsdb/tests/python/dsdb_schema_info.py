@@ -203,11 +203,12 @@ if not "://" in ldb_url:
         ldb_url = "tdb://%s" % ldb_url
     else:
         ldb_url = "ldap://%s" % ldb_url
-        # user 'paged_search' module when connecting remotely
-        ldb_options = ["modules:paged_searches"]
+# use 'paged_search' module when connecting remotely
+if ldb_url.lower().startswith("ldap://"):
+    ldb_options = ["modules:paged_searches"]
 
 ldb = SamDB(url=ldb_url,
-          lp=samba.tests.env_loadparm(),
-          session_info=system_session(),
-          credentials=samba.tests.cmdline_credentials,
-          options=ldb_options)
+            lp=samba.tests.env_loadparm(),
+            session_info=system_session(),
+            credentials=samba.tests.cmdline_credentials,
+            options=ldb_options)
