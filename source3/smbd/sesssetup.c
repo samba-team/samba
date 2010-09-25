@@ -147,8 +147,8 @@ static NTSTATUS check_guest_password(struct auth_serversupplied_info **server_in
 
 	DEBUG(3,("Got anonymous request\n"));
 
-	if (!NT_STATUS_IS_OK(nt_status = make_auth_context_fixed(&auth_context,
-					chal))) {
+	nt_status = make_auth_context_fixed(talloc_tos(), &auth_context, chal);
+	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
 	}
 

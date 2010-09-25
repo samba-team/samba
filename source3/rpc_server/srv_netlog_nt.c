@@ -1323,7 +1323,7 @@ static NTSTATUS _netr_LogonSamLogon_base(struct pipes_struct *p,
 	{
 		const char *wksname = nt_workstation;
 
-		status = make_auth_context_fixed(&auth_context,
+		status = make_auth_context_fixed(talloc_tos(), &auth_context,
 						 logon->network->challenge);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;

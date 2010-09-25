@@ -538,11 +538,12 @@ NTSTATUS make_auth_context_subsystem(TALLOC_CTX *mem_ctx,
  Make a auth_info struct with a fixed challenge
 ***************************************************************************/
 
-NTSTATUS make_auth_context_fixed(struct auth_context **auth_context, uchar chal[8]) 
+NTSTATUS make_auth_context_fixed(TALLOC_CTX *mem_ctx,
+				 struct auth_context **auth_context,
+				 uchar chal[8])
 {
 	NTSTATUS nt_status;
-	nt_status = make_auth_context_subsystem(talloc_autofree_context(),
-						auth_context);
+	nt_status = make_auth_context_subsystem(mem_ctx, auth_context);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
 	}
