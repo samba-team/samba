@@ -314,7 +314,7 @@ static void cgi_web_auth(void)
 		exit(0);
 	}
 
-	pwd = getpwnam_alloc(talloc_autofree_context(), user);
+	pwd = getpwnam_alloc(talloc_tos(), user);
 	if (!pwd) {
 		printf("%sCannot find user %s<br>%s\n", head, user, tail);
 		exit(0);
@@ -369,7 +369,7 @@ static bool cgi_handle_authorization(char *line)
 	 * Try and get the user from the UNIX password file.
 	 */
 
-	pass = getpwnam_alloc(talloc_autofree_context(), user);
+	pass = getpwnam_alloc(talloc_tos(), user);
 
 	rhost = client_name(1);
 	if (strequal(rhost,"UNKNOWN"))
