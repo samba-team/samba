@@ -1423,11 +1423,17 @@ static int objectclass_do_delete(struct oc_context *ac)
 		dn = ldb_msg_find_attr_as_dn(ldb, ac, ac->search_res->message,
 					     "nCName");
 		if ((ldb_dn_compare(dn, ldb_get_default_basedn(ldb)) == 0) ||
-		    (ldb_dn_compare(dn, ldb_get_config_basedn(ldb)) == 0) ||
-		    (ldb_dn_compare(dn, ldb_get_schema_basedn(ldb)) == 0)) {
+		    (ldb_dn_compare(dn, ldb_get_config_basedn(ldb)) == 0)) {
 			talloc_free(dn);
 
-			ldb_asprintf_errstring(ldb, "objectclass: Cannot delete %s, it's a crossRef object to the three main partitions!",
+			ldb_asprintf_errstring(ldb, "objectclass: Cannot delete %s, it's a crossRef object to the main or configuration partition!",
+					       ldb_dn_get_linearized(ac->req->op.del.dn));
+			return LDB_ERR_NOT_ALLOWED_ON_NON_LEAF;
+		}
+		if (ldb_dn_compare(dn, ldb_get_schema_basedn(ldb)) == 0) {
+			talloc_free(dn);
+
+			ldb_asprintf_errstring(ldb, "objectclass: Cannot delete %s, it's a crossRef object to the schema partition!",
 					       ldb_dn_get_linearized(ac->req->op.del.dn));
 			return LDB_ERR_UNWILLING_TO_PERFORM;
 		}
