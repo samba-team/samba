@@ -79,7 +79,7 @@ int dsdb_module_search_dn(struct ldb_module *module,
 	} else {
 		const struct ldb_module_ops *ops = ldb_module_get_ops(module);
 		SMB_ASSERT(dsdb_flags & DSDB_FLAG_OWN_MODULE);
-		ret = ops->modify(module, req);
+		ret = ops->search(module, req);
 	}
 	if (ret == LDB_SUCCESS) {
 		ret = ldb_wait(req->handle, LDB_WAIT_ALL);
