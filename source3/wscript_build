@@ -1175,6 +1175,7 @@ bld.SAMBA_LIBRARY('libwbclient',
                               ../nsswitch/libwbclient/wbc_pwd.c
                               ../nsswitch/libwbclient/wbc_sid.c
                               ../nsswitch/libwbclient/wbc_util.c''',
+                    public_headers='../nsswitch/libwbclient/wbclient.h',
                     public_deps='talloc WBCOMMON')
 
 bld.SAMBA_LIBRARY('libnetapi',
@@ -1182,17 +1183,20 @@ bld.SAMBA_LIBRARY('libnetapi',
                     public_deps='''talloc tdb cap libwbclient LIB_NONSMBD LIBSMB KRBCLIENT
                     PASSDB SMBLDAP GROUPDB PARAM_WITHOUT_REG DYNCONFIG
                     LIBMSRPC_GEN LIBMSRPC LIBADS''',
+                    public_headers='lib/netapi/netapi.h',
                     vars=locals())
 
 bld.SAMBA_LIBRARY('libsmbclient',
                     source=LIBSMBCLIENT_SRC,
                     public_deps='''talloc tdb libwbclient cap PARAM LIB_NONSMBD LIBSMB KRBCLIENT PASSDB SMBLDAP GROUPDB
                     LIBMSRPC_GEN LIBMSRPC''',
+                    public_headers='include/libsmbclient.h',
                     vars=locals())
 
 bld.SAMBA_LIBRARY('libsmbsharemodes',
                     source=LIBSMBSHAREMODES_SRC,
                     public_deps='''talloc tdb''',
+                    public_headers='include/smb_share_modes.h',
                     vars=locals())
 
 bld.SAMBA_LIBRARY('libaddns',
