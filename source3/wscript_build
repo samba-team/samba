@@ -870,8 +870,7 @@ RPCCLIENT_SRC1 = '''rpcclient/rpcclient.c rpcclient/cmd_lsarpc.c
                     rpcclient/cmd_shutdown.c rpcclient/cmd_test.c
                     rpcclient/cmd_wkssvc.c rpcclient/cmd_ntsvcs.c
                     rpcclient/cmd_drsuapi.c rpcclient/cmd_eventlog.c
-                    rpcclient/cmd_winreg.c
-                    ${DISPLAY_SEC_SRC}'''
+                    rpcclient/cmd_winreg.c'''
 
 RPCCLIENT_SRC = '''${RPCCLIENT_SRC1}
                    ${DCUTIL_SRC}
@@ -958,7 +957,6 @@ CLIENT_SRC1 = '''client/client.c client/clitar.c
                  client/dnsbrowse.c'''
 
 CLIENT_SRC = '''${CLIENT_SRC1}
-                ${DISPLAY_SEC_SRC}
                 ${LIBCLI_SRVSVC_SRC}
                 rpc_client/init_lsa.c'''
 
@@ -1025,7 +1023,7 @@ NET_SRC2 = 'utils/net_registry_util.c utils/net_help_common.c'
 NET_SRC = '''${NET_SRC1}
              ${NET_SRC2}
              ${DCUTIL_SRC}
-             ${LIBGPO_SRC} ${DISPLAY_SEC_SRC}
+             ${LIBGPO_SRC}
              ${REGFIO_SRC}'''
 
 CUPS_SRC = '''client/smbspool.c'''
@@ -1349,6 +1347,10 @@ bld.SAMBA_SUBSYSTEM('PASSWD_UTIL',
                     source=PASSWD_UTIL_SRC,
                     vars=locals())
 
+bld.SAMBA_SUBSYSTEM('DISPLAY_SEC',
+                    source=DISPLAY_SEC_SRC,
+                    vars=locals())
+
 bld.SAMBA_SUBSYSTEM('LIBNET',
                     source=LIBNET_SRC,
                     deps='NDR_LIBNET_JOIN',
@@ -1451,14 +1453,14 @@ bld.SAMBA_BINARY('rpcclient/rpcclient',
                  source=RPCCLIENT_SRC,
                  deps='''talloc tdb cap resolv POPT_SAMBA PASSDB LIBSMB LIB_NONSMBD
                  PARAM_WITHOUT_REG libwbclient PARAM KRBCLIENT LIBMSRPC_GEN LIBMSRPC
-                 LIBADS READLINE''',
+                 LIBADS READLINE DISPLAY_SEC''',
                  vars=locals())
 
 bld.SAMBA_BINARY('smbclient',
                  source=CLIENT_SRC,
                  deps='''talloc tdb cap resolv POPT_SAMBA PASSDB LIBSMB LIB_NONSMBD
                  PARAM_WITHOUT_REG libwbclient PARAM KRBCLIENT LIBMSRPC_GEN
-                 LIBMSRPC READLINE''',
+                 LIBMSRPC READLINE DISPLAY_SEC''',
                  vars=locals())
 
 bld.SAMBA_BINARY('net',
@@ -1466,7 +1468,7 @@ bld.SAMBA_BINARY('net',
                  deps='''talloc tdb libnetapi libaddns cap resolv POPT_SAMBA PASSDB LIBSMB LIB_NONSMBD
                  PARAM_WITHOUT_REG libwbclient PARAM KRBCLIENT LIBMSRPC_GEN LIBMSRPC LIBADS LIBADS_SERVER LIBADS_PRINTER
                  LOCALE_DIR LIBAFS LIBAFS_SETTOKEN READLINE PASSWD_UTIL LIBNET
-                 LIBNET_DSSYNC LIBNET_SAMSYNC LIBEVENTLOG''',
+                 LIBNET_DSSYNC LIBNET_SAMSYNC LIBEVENTLOG DISPLAY_SEC''',
                  vars=locals())
 
 bld.SAMBA_BINARY('profiles',
