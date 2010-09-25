@@ -318,10 +318,11 @@ static NTSTATUS libnet_vampire_cb_apply_schema(struct libnet_vampire_cb_state *s
 	pass_no = 1;
 	working_schema = provision_schema;
 	do {
+		uint32_t failed_obj_count;
 		TALLOC_CTX *tmp_ctx = talloc_new(s);
 		NT_STATUS_HAVE_NO_MEMORY(tmp_ctx);
 
-		ok = false;
+		failed_obj_count = 0;
 
 		for (i = 0; i < obj_to_convert_count; i++) {
 			struct dsdb_extended_replicated_object object;
@@ -339,6 +340,10 @@ static NTSTATUS libnet_vampire_cb_apply_schema(struct libnet_vampire_cb_state *s
 			if (!W_ERROR_IS_OK(status)) {
 				DEBUG(1,("Warning: Failed to convert schema object %s into ldb msg\n",
 					 cur->object.identifier->dn));
+
+				/* move failed object at the beginning of the list */
+				obj_to_convert[failed_obj_count] = cur;
+				failed_obj_count++;
 			} else {
 				/*
 				 * Convert the schema from ldb_message format
@@ -353,30 +358,21 @@ static NTSTATUS libnet_vampire_cb_apply_schema(struct libnet_vampire_cb_state *s
 						 ldb_dn_get_linearized(object.msg->dn),
 						 win_errstr(status)));
 				}
-				/* remove cur from the list of objects to be converted */
-				obj_to_convert_count--;
-				memmove(&obj_to_convert[i], &obj_to_convert[i+1],
-					(obj_to_convert_count - i)*sizeof(obj_to_convert[0]));
-
-				/* don't skip this object */
-				i--;
-
-				/* raise flag we've converted at least one object */
-				ok = true;
 			}
 		}
 		talloc_free(tmp_ctx);
 
 		DEBUG(1,("Pass %d: %d of %d objects left to be converted.\n",
-			 pass_no, obj_to_convert_count, object_count));
+			 pass_no, failed_obj_count, object_count));
 		pass_no++;
 
-		/* check if we did anything in this pass */
-		if (!ok) {
+		/* check if we converted any objects in this pass */
+		if (failed_obj_count == obj_to_convert_count) {
 			DEBUG(0,("Can't continue Schema load: %d objects left to be converted\n",
 				 obj_to_convert_count));
 			return NT_STATUS_INTERNAL_ERROR;
 		}
+		obj_to_convert_count = failed_obj_count;
 
 		if (obj_to_convert_count) {
 			/* prepare for another cycle */
