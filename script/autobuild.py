@@ -8,43 +8,53 @@ import os, signal, tarfile, sys, time
 from optparse import OptionParser
 
 
+samba_master = os.getenv('SAMBA_MASTER', 'git://git.samba.org/samba.git')
+samba_master_ssh = os.getenv('SAMBA_MASTER_SSH', 'git+ssh://git.samba.org/data/git/samba.git')
+
 cleanup_list = []
 
 tasks = {
     "source3" : [ "./autogen.sh",
                   "./configure.developer ${PREFIX}",
                   "make basics",
-                  "make -j",
-                  "make test" ],
+                  "make -j 4 everything", # don't use too many processes
+                  "make install",
+                  "TDB_NO_FSYNC=1 make test" ],
 
     "source4" : [ "./autogen.sh",
                   "./configure.developer ${PREFIX}",
                   "make -j",
-                  "make test" ],
+                  "make install",
+                  "TDB_NO_FSYNC=1 make test" ],
 
     "source4/lib/ldb" : [ "./autogen-waf.sh",
                           "./configure --enable-developer -C ${PREFIX}",
                           "make -j",
+                          "make install",
                           "make test" ],
 
     "lib/tdb" : [ "./autogen-waf.sh",
                   "./configure --enable-developer -C ${PREFIX}",
                   "make -j",
+                  "make install",
                   "make test" ],
 
     "lib/talloc" : [ "./autogen-waf.sh",
                      "./configure --enable-developer -C ${PREFIX}",
                      "make -j",
+                     "make install",
                      "make test" ],
 
     "lib/replace" : [ "./autogen-waf.sh",
                       "./configure --enable-developer -C ${PREFIX}",
                       "make -j",
+                      "make install",
                       "make test" ],
 
     "lib/tevent" : [ "./autogen-waf.sh",
                      "./configure --enable-developer -C ${PREFIX}",
                      "make -j",
+                     "make install",
                      "make test" ],
 }
 
@@ -226,8 +236,12 @@ parser.add_option("", "--verbose", help="show all commands as they are run",
                   default=False, action="store_true")
 parser.add_option("", "--rebase", help="rebase on the given tree before testing",
                   default=None, type='str')
+parser.add_option("", "--rebase-master", help="rebase on %s before testing" % samba_master,
+                  default=False, action='store_true')
 parser.add_option("", "--pushto", help="push to a git url on success",
                   default=None, type='str')
+parser.add_option("", "--push-master", help="push to %s on success" % samba_master_ssh,
+                  default=False, action='store_true')
 parser.add_option("", "--mark", help="add a Tested-By signoff before pushing",
                   default=False, action="store_true")
 
@@ -258,6 +272,8 @@ except:
 try:
     if options.rebase is not None:
         rebase_tree(options.rebase)
+    elif options.rebase_master:
+        rebase_tree(samba_master)
     blist = buildlist(tasks, args)
     if options.tail:
         blist.start_tail()
@@ -278,6 +294,8 @@ if status == 0:
         run_cmd(options.passcmd, dir=test_master)
     if options.pushto is not None:
         push_to(options.pushto)
+    elif options.push_master:
+        push_to(samba_master_ssh)
     if options.keeplogs:
         blist.tarlogs("logs.tar.gz")
         print("Logs in logs.tar.gz")
