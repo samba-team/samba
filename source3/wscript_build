@@ -605,6 +605,12 @@ NSS_INFO_STATIC = ''
 NSS_INFO_TEMPLATE_SRC = 'winbindd/nss_info_template.c'
 NSS_INFO_SRC = 'winbindd/nss_info.c'
 
+IDMAP_AD_SRC = '''winbindd/idmap_ad.c'''
+IDMAP_RID_SRC = '''winbindd/idmap_rid.c'''
+IDMAP_PASSDB_SRC = '''winbindd/idmap_passdb.c'''
+IDMAP_LDAP_SRC = '''winbindd/idmap_ldap.c'''
+IDMAP_TDB2_SRC = '''winbindd/idmap_tdb2.c'''
+
 IDMAP_HASH_SRC = '''winbindd/idmap_hash/idmap_hash.c
                     winbindd/idmap_hash/mapfile.c'''
 
