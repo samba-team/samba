@@ -343,11 +343,12 @@ static int auth_context_destructor(void *ptr)
  Make a auth_info struct
 ***************************************************************************/
 
-static NTSTATUS make_auth_context(struct auth_context **auth_context)
+static NTSTATUS make_auth_context(TALLOC_CTX *mem_ctx,
+				  struct auth_context **auth_context)
 {
 	struct auth_context *ctx;
 
-	ctx = talloc_zero(talloc_autofree_context(), struct auth_context);
+	ctx = talloc_zero(mem_ctx, struct auth_context);
 	if (!ctx) {
 		DEBUG(0,("make_auth_context: talloc failed!\n"));
 		return NT_STATUS_NO_MEMORY;
@@ -431,8 +432,11 @@ static NTSTATUS make_auth_context_text_list(struct auth_context **auth_context, 
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	if (!NT_STATUS_IS_OK(nt_status = make_auth_context(auth_context)))
+	nt_status = make_auth_context(talloc_autofree_context(), auth_context);
+
+	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
+	}
 
 	for (;*text_list; text_list++) { 
 		if (load_auth_module(*auth_context, *text_list, &t)) {
