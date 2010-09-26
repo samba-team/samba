@@ -1153,6 +1153,7 @@ for prefix in bld.env.MODULE_PREFIXES:
     if prefix == 'idmap': continue
     if prefix == 'charset': continue
     if prefix == 'perfcount': continue
+    if prefix == 'gpext': continue
 
     static_key = "%s_STATIC" % prefix.upper()
     shared_key = "%s_SHARED" % prefix.upper()
@@ -1435,6 +1436,32 @@ bld.SAMBA_MODULE('PERFCOUNT_ONEFS',
 bld.SAMBA_MODULE('PERFCOUNT_TEST',
                  subsystem='PERFCOUNT',
                  source=PERFCOUNT_TEST_SRC,
+                 init_function='',
+                 internal_module=True,
+                 enabled=True)
+
+bld.SAMBA_SUBSYSTEM('GPEXT',
+                    source=GPEXT_SRC,
+                    deps='''GPEXT_REGISTRY GPEXT_SCRIPTS GPEXT_SECURITY''',
+                    vars=locals())
+
+bld.SAMBA_MODULE('GPEXT_REGISTRY',
+                 subsystem='GPEXT',
+                 source=GPEXT_REGISTRY_SRC,
+                 init_function='',
+                 internal_module=True,
+                 enabled=True)
+
+bld.SAMBA_MODULE('GPEXT_SCRIPTS',
+                 subsystem='GPEXT',
+                 source=GPEXT_SCRIPTS_SRC,
+                 init_function='',
+                 internal_module=True,
+                 enabled=True)
+
+bld.SAMBA_MODULE('GPEXT_SECURITY',
+                 subsystem='GPEXT',
+                 source=GPEXT_SECURITY_SRC,
                  init_function='',
                  internal_module=True,
                  enabled=True)
