@@ -122,6 +122,10 @@ interface krb5pac
 		[in] PAC_LOGON_INFO logon_info
 		);
 
+	void decode_login_info_ctr(
+		[in] PAC_LOGON_INFO_CTR logon_info_ctr
+		);
+
 	void decode_pac_validate(
 		[in] PAC_Validate pac_validate
 		);
