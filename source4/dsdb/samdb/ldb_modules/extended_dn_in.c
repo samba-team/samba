@@ -358,7 +358,7 @@ static int extended_dn_in_fix(struct ldb_module *module, struct ldb_request *req
 					   base_dn_scope,
 					   base_dn_filter,
 					   base_dn_attrs,
-					   NULL,
+					   req->controls,
 					   ac, extended_base_callback,
 					   req);
 		LDB_REQ_SET_LOCATION(down_req);

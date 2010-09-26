@@ -146,7 +146,7 @@ echo "OPTIONS $TORTURE_OPTIONS"
 
 # Simple tests for LDAP and CLDAP
 
-for options in "" "--option=socket:testnonblock=true" "-U\$USERNAME%\$PASSWORD --option=socket:testnonblock=true" "-U\$USERNAME%\$PASSWORD" "-U\$USERNAME%\$PASSWORD -k yes" "-U\$USERNAME%\$PASSWORD -k no" "-U\$USERNAME%\$PASSWORD -k no --sign" "-U\$USERNAME%\$PASSWORD -k no --encrypt" "-U\$USERNAME%\$PASSWORD -k yes --encrypt" "-U\$USERNAME%\$PASSWORD -k yes --sign"; do
+for options in "-U\$USERNAME%\$PASSWORD --option=socket:testnonblock=true" "-U\$USERNAME%\$PASSWORD" "-U\$USERNAME%\$PASSWORD -k yes" "-U\$USERNAME%\$PASSWORD -k no" "-U\$USERNAME%\$PASSWORD -k no --sign" "-U\$USERNAME%\$PASSWORD -k no --encrypt" "-U\$USERNAME%\$PASSWORD -k yes --encrypt" "-U\$USERNAME%\$PASSWORD -k yes --sign"; do
 	plantestsuite "samba4.ldb.ldap with options $options (dc)" dc $bbdir/test_ldb.sh ldap \$SERVER $options
 done
 # see if we support ldaps
@@ -154,11 +154,11 @@ done
 	CONFIG_H="$samba4bindir/default/source4/include/config.h"
 }
 if grep ENABLE_GNUTLS.1 $CONFIG_H > /dev/null; then
-	for options in "" "-U\$USERNAME%\$PASSWORD"; do
+	for options in "-U\$USERNAME%\$PASSWORD"; do
 		plantestsuite "samba4.ldb.ldaps with options $options (dc)" dc $bbdir/test_ldb.sh ldaps \$SERVER_IP $options
 	done
 fi
-for options in "" "-U\$USERNAME%\$PASSWORD"; do
+for options in "-U\$USERNAME%\$PASSWORD"; do
 	plantestsuite "samba4.ldb.ldapi with options $options (dc:local)" dc:local $bbdir/test_ldb.sh ldapi \$PREFIX_ABS/dc/private/ldapi $options
 done
 for t in `$smb4torture --list | grep "^LDAP-"`
