@@ -1007,7 +1007,8 @@ ADS_STATUS cli_session_setup_spnego(struct cli_state *cli, const char *user,
 	 * negprot reply. It is WRONG to depend on the principal sent in the
 	 * negprot reply, but right now we do it. If we don't receive one,
 	 * we try to best guess, then fall back to NTLM.  */
-	if (!spnego_parse_negTokenInit(blob, OIDs, &principal)) {
+	if (!spnego_parse_negTokenInit(blob, OIDs, &principal) ||
+			OIDs[0] == NULL) {
 		data_blob_free(&blob);
 		return ADS_ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 	}
