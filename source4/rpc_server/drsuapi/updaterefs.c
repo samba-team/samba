@@ -125,25 +125,26 @@ WERROR drsuapi_UpdateRefs(struct drsuapi_bind_state *b_state, TALLOC_CTX *mem_ct
 {
 	WERROR werr;
 	struct ldb_dn *dn;
+	struct ldb_context *sam_ctx = b_state->sam_ctx_system?b_state->sam_ctx_system:b_state->sam_ctx;
 
 	DEBUG(4,("DsReplicaUpdateRefs for host '%s' with GUID %s options 0x%08x nc=%s\n",
 		 req->dest_dsa_dns_name, GUID_string(mem_ctx, &req->dest_dsa_guid),
 		 req->options,
 		 drs_ObjectIdentifier_to_string(mem_ctx, req->naming_context)));
 
-	dn = ldb_dn_new(mem_ctx, b_state->sam_ctx, req->naming_context->dn);
+	dn = ldb_dn_new(mem_ctx, sam_ctx, req->naming_context->dn);
 	if (dn == NULL) {
 		return WERR_DS_INVALID_DN_SYNTAX;
 	}
 
-	if (ldb_transaction_start(b_state->sam_ctx) != LDB_SUCCESS) {
+	if (ldb_transaction_start(sam_ctx) != LDB_SUCCESS) {
 		DEBUG(0,(__location__ ": Failed to start transaction on samdb: %s\n",
-			 ldb_errstring(b_state->sam_ctx)));
+			 ldb_errstring(sam_ctx)));
 		return WERR_DS_DRA_INTERNAL_ERROR;		
 	}
 
 	if (req->options & DRSUAPI_DRS_DEL_REF) {
-		werr = uref_del_dest(b_state->sam_ctx, mem_ctx, dn, &req->dest_dsa_guid, req->options);
+		werr = uref_del_dest(sam_ctx, mem_ctx, dn, &req->dest_dsa_guid, req->options);
 		if (!W_ERROR_IS_OK(werr)) {
 			DEBUG(0,("Failed to delete repsTo for %s: %s\n",
 				 GUID_string(mem_ctx, &req->dest_dsa_guid),
@@ -164,7 +165,7 @@ WERROR drsuapi_UpdateRefs(struct drsuapi_bind_state *b_state, TALLOC_CTX *mem_ct
 		dest.source_dsa_obj_guid = req->dest_dsa_guid;
 		dest.replica_flags       = req->options;
 
-		werr = uref_add_dest(b_state->sam_ctx, mem_ctx, dn, &dest, req->options);
+		werr = uref_add_dest(sam_ctx, mem_ctx, dn, &dest, req->options);
 		if (!W_ERROR_IS_OK(werr)) {
 			DEBUG(0,("Failed to add repsTo for %s: %s\n",
 				 GUID_string(mem_ctx, &dest.source_dsa_obj_guid),
@@ -173,16 +174,16 @@ WERROR drsuapi_UpdateRefs(struct drsuapi_bind_state *b_state, TALLOC_CTX *mem_ct
 		}
 	}
 
-	if (ldb_transaction_commit(b_state->sam_ctx) != LDB_SUCCESS) {
+	if (ldb_transaction_commit(sam_ctx) != LDB_SUCCESS) {
 		DEBUG(0,(__location__ ": Failed to commit transaction on samdb: %s\n",
-			 ldb_errstring(b_state->sam_ctx)));
+			 ldb_errstring(sam_ctx)));
 		return WERR_DS_DRA_INTERNAL_ERROR;		
 	}
 
 	return WERR_OK;
 
 failed:
-	ldb_transaction_cancel(b_state->sam_ctx);
+	ldb_transaction_cancel(sam_ctx);
 	return werr;
 }
 
