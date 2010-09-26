@@ -46,7 +46,6 @@ struct loadparm_context;
 
 #define AUTH_SESSION_INFO_DEFAULT_GROUPS 0x01 /* Add the user to the default world and network groups */
 #define AUTH_SESSION_INFO_AUTHENTICATED  0x02 /* Add the user to the 'authenticated users' group */
-#define AUTH_SESSION_INFO_ENTERPRISE_DC  0x04 /* Add the user to the 'enterprise DC' group */
 
 struct auth_serversupplied_info
 {

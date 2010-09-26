@@ -202,16 +202,6 @@ NTSTATUS security_token_create(TALLOC_CTX *mem_ctx,
 		ptoken->num_sids++;
 	}
 
-	if (session_info_flags & AUTH_SESSION_INFO_ENTERPRISE_DC) {
-		ptoken->sids = talloc_realloc(ptoken, ptoken->sids, struct dom_sid, ptoken->num_sids + 1);
-		NT_STATUS_HAVE_NO_MEMORY(ptoken->sids);
-
-		if (!dom_sid_parse(SID_NT_ENTERPRISE_DCS, &ptoken->sids[ptoken->num_sids])) {
-			return NT_STATUS_INTERNAL_ERROR;
-		}
-		ptoken->num_sids++;
-	}
-
 	for (i = 0; i < n_groupSIDs; i++) {
 		size_t check_sid_idx;
 		for (check_sid_idx = 1; 

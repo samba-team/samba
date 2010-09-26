@@ -91,24 +91,6 @@ _PUBLIC_ NTSTATUS auth_generate_session_info(TALLOC_CTX *mem_ctx,
 	} else if (dom_sid_equal(system_sid, server_info->account_sid)) {
 		/* Don't expand nested groups of system, anonymous etc*/
 	} else if (auth_context) {
-		if (server_info->acct_flags & ACB_SVRTRUST) {
-			dom_sid = samdb_domain_sid(auth_context->sam_ctx);
-			if (dom_sid) {
-				if (dom_sid_in_domain(dom_sid, server_info->account_sid)) {
-				session_info_flags |= AUTH_SESSION_INFO_ENTERPRISE_DC;
-				} else {
-					DEBUG(2, ("DC %s is not in our domain.  "
-						  "It will not have Enterprise Domain Controllers membership on this server",
-						  server_info->account_name));
-				}
-			} else {
-				DEBUG(2, ("Could not obtain local domain SID, "
-					  "so can not determine if DC %s is a DC of this domain.  "
-					  "It will not have Enterprise Domain Controllers membership",
-					  server_info->account_name));
-			}
-		}
-		
 		groupSIDs = talloc_array(tmp_ctx, struct dom_sid *, server_info->n_domain_groups);
 		NT_STATUS_HAVE_NO_MEMORY_AND_FREE(groupSIDs, tmp_ctx);
 		if (!groupSIDs) {
