@@ -1334,7 +1334,7 @@ bld.SAMBA_SUBSYSTEM('RPC_MODULES',
                     deps='''RPC_LSARPC RPC_SAMR RPC_WINREG RPC_INITSHUTDOWN
                             RPC_DSSETUP RPC_WKSSVC RPC_SVCCTL RPC_NTSVCS
                             RPC_NETLOGON RPC_NETDFS RPC_SRVSVC RPC_SPOOLSS
-                            RPC_EVENTLOG''')
+                            RPC_EVENTLOG RPC_RPCECHO''')
 
 bld.SAMBA_SUBSYSTEM('LOCKING',
                     source='${LOCKING_SRC}',
