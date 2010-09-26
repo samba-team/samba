@@ -565,10 +565,10 @@ static void ldap_request_timeout(struct tevent_context *ev, struct tevent_timer 
 
 
 /*
-  called on completion of a one-way ldap request
+  called on completion of a failed ldap request
 */
-static void ldap_request_complete(struct tevent_context *ev, struct tevent_timer *te, 
-				  struct timeval t, void *private_data)
+static void ldap_request_failed_complete(struct tevent_context *ev, struct tevent_timer *te,
+				      struct timeval t, void *private_data)
 {
 	struct ldap_request *req = talloc_get_type(private_data, struct ldap_request);
 	if (req->async.fn) {
@@ -577,6 +577,20 @@ static void ldap_request_complete(struct tevent_context *ev, struct tevent_timer
 }
 
 /*
+  called on completion of a one-way ldap request
+*/
+static void ldap_request_oneway_complete(void *private_data)
+{
+	struct ldap_request *req = talloc_get_type(private_data, struct ldap_request);
+	if (req->state == LDAP_REQUEST_PENDING) {
+		DLIST_REMOVE(req->conn->pending, req);
+	}
+	req->state = LDAP_REQUEST_DONE;
+	if (req->async.fn) {
+		req->async.fn(req);
+	}
+}
+/*
   send a ldap message - async interface
 */
 _PUBLIC_ struct ldap_request *ldap_request_send(struct ldap_connection *conn,
@@ -584,6 +598,7 @@ _PUBLIC_ struct ldap_request *ldap_request_send(struct ldap_connection *conn,
 {
 	struct ldap_request *req;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
+	packet_send_callback_fn_t send_callback = NULL;
 
 	req = talloc_zero(conn, struct ldap_request);
 	if (req == NULL) return NULL;
@@ -613,22 +628,15 @@ _PUBLIC_ struct ldap_request *ldap_request_send(struct ldap_connection *conn,
 		goto failed;		
 	}
 
-	status = packet_send(conn->packet, req->data);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto failed;
-	}
-
-	/* some requests don't expect a reply, so don't add those to the
-	   pending queue */
 	if (req->type == LDAP_TAG_AbandonRequest ||
 	    req->type == LDAP_TAG_UnbindRequest) {
-		req->status = NT_STATUS_OK;
-		req->state = LDAP_REQUEST_DONE;
-		/* we can't call the async callback now, as it isn't setup, so
-		   call it as next event */
-		tevent_add_timer(conn->event.event_ctx, req, timeval_zero(),
-				 ldap_request_complete, req);
-		return req;
+		send_callback = ldap_request_oneway_complete;
+	}
+
+	status = packet_send_callback(conn->packet, req->data,
+				      send_callback, req);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto failed;
 	}
 
 	req->state = LDAP_REQUEST_PENDING;
@@ -645,7 +653,7 @@ failed:
 	req->status = status;
 	req->state = LDAP_REQUEST_ERROR;
 	tevent_add_timer(conn->event.event_ctx, req, timeval_zero(),
-			 ldap_request_complete, req);
+			 ldap_request_failed_complete, req);
 
 	return req;
 }
