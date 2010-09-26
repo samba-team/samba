@@ -719,8 +719,7 @@ WINBINDD_SRC1 = '''winbindd/winbindd.c
                    ../nsswitch/libwbclient/wb_reqtrans.c'''
 
 WINBINDD_SRC = '''${WINBINDD_SRC1}
-                  ${SLCACHE_SRC}
-                  ${DCUTIL_SRC} ${IDMAP_SRC} ${NSS_INFO_SRC}
+                  ${IDMAP_SRC} ${NSS_INFO_SRC}
                   ${RPC_NCACN_NP} ${NPA_TSTREAM_SRC} ${RPC_SAMR_SRC} ${RPC_LSARPC_SRC}
                   ${TDB_VALIDATE_SRC}
                   ${LIBCLI_DSSETUP_SRC}
@@ -836,7 +835,6 @@ SWAT_SRC1 = '''web/cgi.c web/diagnose.c web/startstop.c web/statuspage.c
                web/swat.c web/neg_lang.c'''
 
 SWAT_SRC = '''${SWAT_SRC1} ${PRINTING_SRC} ${PRINTBASE_SRC}
-           ${PLAINTEXT_AUTH_SRC}
            ${PASSCHANGE_SRC} ${FNAME_UTIL_SRC}
            ${LIBCLI_SAMR_SRC}
            rpc_client/init_lsa.c'''
@@ -879,7 +877,6 @@ RPCCLIENT_SRC1 = '''rpcclient/rpcclient.c rpcclient/cmd_lsarpc.c
                     rpcclient/cmd_winreg.c'''
 
 RPCCLIENT_SRC = '''${RPCCLIENT_SRC1}
-                   ${DCUTIL_SRC}
                    ${LIBCLI_SPOOLSS_SRC}
                    ${LIBCLI_EVENTLOG_SRC}
                    ${LIBCLI_NTSVCS_SRC}
@@ -945,7 +942,7 @@ LIBNETAPI_SRC0 = '''lib/netapi/netapi.c
 LIBNETAPI_SRC = '''${LIBNETAPI_SRC0}
                    ${LIBSMBCONF_SRC}
                    ${REG_SMBCONF_SRC}
-                   ${DCUTIL_SRC} ${PRIVILEGES_BASIC_SRC}
+                   ${PRIVILEGES_BASIC_SRC}
                    auth/token_util.c
                    ${LIBCLI_INITSHUTDOWN_SRC}
                    ${LIBCLI_WKSSVC_SRC}
@@ -1028,7 +1025,6 @@ NET_SRC2 = 'utils/net_registry_util.c utils/net_help_common.c'
 
 NET_SRC = '''${NET_SRC1}
              ${NET_SRC2}
-             ${DCUTIL_SRC}
              ${LIBGPO_SRC}
              ${REGFIO_SRC}'''
 
@@ -1186,7 +1182,7 @@ bld.SAMBA_LIBRARY('libnetapi',
                     source=LIBNETAPI_SRC,
                     public_deps='''talloc tdb cap libwbclient LIB_NONSMBD LIBSMB KRBCLIENT
                     PASSDB SMBLDAP GROUPDB PARAM_WITHOUT_REG DYNCONFIG
-                    LIBMSRPC_GEN LIBMSRPC LIBADS LIBNET''',
+                    LIBMSRPC_GEN LIBMSRPC LIBADS LIBNET DCUTIL''',
                     public_headers='lib/netapi/netapi.h',
                     vars=locals())
 
@@ -1377,6 +1373,18 @@ bld.SAMBA_SUBSYSTEM('LIBEVENTLOG',
                     deps='NDR_EVENTLOG',
                     vars=locals())
 
+bld.SAMBA_SUBSYSTEM('PLAINTEXT_AUTH',
+                    source=PLAINTEXT_AUTH_SRC,
+                    vars=locals())
+
+bld.SAMBA_SUBSYSTEM('SLCACHE',
+                    source=SLCACHE_SRC,
+                    vars=locals())
+
+bld.SAMBA_SUBSYSTEM('DCUTIL',
+                    source=DCUTIL_SRC,
+                    vars=locals())
+
 bld.SAMBA_SUBSYSTEM('LIBNDR',
                     source=LIBNDR_SRC,
                     vars=locals())
@@ -1440,7 +1448,7 @@ bld.SAMBA_BINARY('winbindd/winbindd',
                  libwbclient PASSDB ldap resolv PARAM LIB_NONSMBD LIBSMB
                  POPT_SAMBA KRBCLIENT LIBMSRPC_GEN LIBMSRPC LIBADS LIBADS_SERVER
                  NSS_INFO_TEMPLATE SRV_NDR_WBINT RPCCLI_NDR_WBINT LIBAFS
-                 LIBAFS_SETTOKEN PROFILE
+                 LIBAFS_SETTOKEN PROFILE SLCACHE DCUTIL
                  ''',
                  enabled=bld.env.build_winbind,
                  install_path='${SBINDIR}',
@@ -1450,7 +1458,7 @@ bld.SAMBA_BINARY('web/swat',
                  source=SWAT_SRC,
                  deps='''talloc tevent cap LIBS LIBSMB libwbclient PARAM
                  LIB_NONSMBD resolv PASSDB POPT_SAMBA KRBCLIENT cups
-                 LIBMSRPC_GEN LIBMSRPC LOCKING''',
+                 LIBMSRPC_GEN LIBMSRPC LOCKING PLAINTEXT_AUTH''',
                  enabled=bld.env.build_swat,
                  install_path='${SBINDIR}',
                  vars=locals())
@@ -1459,7 +1467,7 @@ bld.SAMBA_BINARY('rpcclient/rpcclient',
                  source=RPCCLIENT_SRC,
                  deps='''talloc tdb cap resolv POPT_SAMBA PASSDB LIBSMB LIB_NONSMBD
                  PARAM_WITHOUT_REG libwbclient PARAM KRBCLIENT LIBMSRPC_GEN LIBMSRPC
-                 LIBADS READLINE DISPLAY_SEC''',
+                 LIBADS READLINE DISPLAY_SEC DCUTIL''',
                  vars=locals())
 
 bld.SAMBA_BINARY('smbclient',
@@ -1474,7 +1482,7 @@ bld.SAMBA_BINARY('net',
                  deps='''talloc tdb libnetapi libaddns cap resolv POPT_SAMBA PASSDB LIBSMB LIB_NONSMBD
                  PARAM_WITHOUT_REG libwbclient PARAM KRBCLIENT LIBMSRPC_GEN LIBMSRPC LIBADS LIBADS_SERVER LIBADS_PRINTER
                  LOCALE_DIR LIBAFS LIBAFS_SETTOKEN READLINE PASSWD_UTIL LIBNET
-                 LIBNET_DSSYNC LIBNET_SAMSYNC LIBEVENTLOG DISPLAY_SEC''',
+                 LIBNET_DSSYNC LIBNET_SAMSYNC LIBEVENTLOG DISPLAY_SEC DCUTIL''',
                  vars=locals())
 
 bld.SAMBA_BINARY('profiles',
