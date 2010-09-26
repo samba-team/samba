@@ -1640,7 +1640,7 @@ static void process_smb(struct smbd_server_connection *conn,
 		/*
 		 * NetBIOS session request, keepalive, etc.
 		 */
-		reply_special(conn, (char *)inbuf);
+		reply_special(conn, (char *)inbuf, nread);
 		goto done;
 	}
 

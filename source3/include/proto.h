@@ -2874,8 +2874,8 @@ bool match_mailslot_name(struct packet_struct *p, const char *mailslot_name);
 int matching_len_bits(unsigned char *p1, unsigned char *p2, size_t len);
 void sort_query_replies(char *data, int n, struct in_addr ip);
 char *name_mangle(TALLOC_CTX *mem_ctx, char *In, char name_type);
-int name_extract(char *buf,int ofs, fstring name);
-int name_len(char *s1);
+int name_extract(unsigned char *buf,size_t buf_len, unsigned int ofs, fstring name);
+int name_len(unsigned char *s1, size_t buf_len);
 
 /* The following definitions come from libsmb/nterr.c  */
 
@@ -5256,7 +5256,7 @@ bool check_fsp(connection_struct *conn, struct smb_request *req,
 	       files_struct *fsp);
 bool check_fsp_ntquota_handle(connection_struct *conn, struct smb_request *req,
 			      files_struct *fsp);
-void reply_special(struct smbd_server_connection *sconn, char *inbuf);
+void reply_special(struct smbd_server_connection *sconn, char *inbuf, size_t inbuf_len);
 void reply_tcon(struct smb_request *req);
 void reply_tcon_and_X(struct smb_request *req);
 void reply_unknown_new(struct smb_request *req, uint8 type);
