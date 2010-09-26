@@ -1130,7 +1130,7 @@ extern void build_options(bool screen);
 		exit(1);
 	}
 
-	if (!notify_internal_parent_init()) {
+	if (!notify_internal_parent_init(smbd_event_context())) {
 		exit(1);
 	}
 
