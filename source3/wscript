@@ -295,6 +295,9 @@ utimensat vsyslog _write __write __xstat
             default_static_modules.remove(m)
             default_shared_modules.append(m)
 
+    conf.env['static_modules'] = default_static_modules
+    conf.env['shared_modules'] = default_shared_modules
+
     conf.DEFINE('STRING_STATIC_MODULES', ' '.join(default_static_modules), quote=True)
 
     static_list = {}

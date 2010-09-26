@@ -2,6 +2,7 @@
 # and for SAMBA_ macros for building libraries, binaries etc
 
 import Options
+import Build
 from optparse import SUPPRESS_HELP
 
 def SAMBA3_ADD_OPTION(opt, option, help=(), dest=None, default=True,
@@ -21,3 +22,22 @@ def SAMBA3_ADD_OPTION(opt, option, help=(), dest=None, default=True,
     opt.add_option(without_val, help=SUPPRESS_HELP, action="store_false",
                    dest=dest)
 Options.Handler.SAMBA3_ADD_OPTION = SAMBA3_ADD_OPTION
+
+def SAMBA3_IS_STATIC_MODULE(bld, module):
+    '''Check whether module is in static list'''
+    if module.lower() in bld.env['static_modules']:
+        return True
+    return False
+Build.BuildContext.SAMBA3_IS_STATIC_MODULE = SAMBA3_IS_STATIC_MODULE
+
+def SAMBA3_IS_SHARED_MODULE(bld, module):
+    '''Check whether module is in shared list'''
+    if module.lower() in bld.env['shared_modules']:
+        return True
+    return False
+Build.BuildContext.SAMBA3_IS_SHARED_MODULE = SAMBA3_IS_SHARED_MODULE
+
+def SAMBA3_IS_ENABLED_MODULE(bld, module):
+    '''Check whether module is in either shared or static list '''
+    return SAMBA3_IS_STATIC_MODULE(bld, module) or SAMBA3_IS_SHARED_MODULE(bld, module)
+Build.BuildContext.SAMBA3_IS_ENABLED_MODULE = SAMBA3_IS_ENABLED_MODULE
