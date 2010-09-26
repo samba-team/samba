@@ -50,6 +50,7 @@ def set_options(opt):
     opt.SAMBA3_ADD_OPTION('pthreadpool', with_name="enable", without_name="disable")
     opt.SAMBA3_ADD_OPTION('avahi', with_name="enable", without_name="disable")
     opt.SAMBA3_ADD_OPTION('iconv')
+    opt.SAMBA3_ADD_OPTION('acl-support')
 
 
 def configure(conf):
@@ -263,6 +264,55 @@ utimensat vsyslog _write __write __xstat
 
     conf.CHECK_SAMBA3_CHARSET() # see build/charset.py
 
+    # FIXME: these should be tests for features, but the old build system just
+    # checks for OSes.
+    import sys
+    host_os = sys.platform
+
+    # Python doesn't have case switches... :/
+    # FIXME: original was *linux* | gnu* | k*bsd*-gnu | kopensolaris*-gnu | *qnx*)
+    # the search for .rfind('gnu') covers gnu* and *-gnu is that too broad?
+    if (host_os.rfind('linux') > -1) or (host_os.rfind('gnu') > -1) or (host_os.rfind('qnx') > -1):
+        if host_os.rfind('linux') > -1:
+            conf.DEFINE('LINUX', '1')
+        elif host_os.rfind('qnx') > -1:
+            conf.DEFINE('QNX', '1')
+        conf.DEFINE('STAT_ST_BLOCKSIZE', '512')
+    elif (host_os.rfind('darwin') > -1):
+        conf.DEFINE('DARWINOS', 1)
+        conf.DEFINE('STAT_ST_BLOCKSIZE', '512')
+        conf.ADD_CFLAGS('-fno-common')
+    # FIXME: Add more checks here.
+    else:
+        print "Unknown host_os '%s', please report this to samba-technical@samba.org" % host_os
+
+    #FIXME: add more checks
+    if Options.options.with_acl_support:
+        if host_os.rfind('linux') > -1:
+	    conf.CHECK_FUNCS_IN('acl_get_file', 'acl')
+	    conf.CHECK_FUNCS_IN('getxattr', 'attr')
+            if conf.CHECK_CODE('''
+acl_t acl;
+int entry_id;
+acl_entry_t *entry_p;
+return acl_get_entry(acl, entry_id, entry_p);
+''',
+                        'HAVE_POSIX_ACLS',
+                        headers='sys/types.h sys/acl.h', link=False,
+			msg="Checking for POSIX ACL support") :
+                conf.CHECK_CODE('''
+acl_permset_t permset_d;
+acl_perm_t perm;
+return acl_get_perm_np(permset_d, perm);
+''',
+                        'HAVE_ACL_GET_PERM_NP',
+                        headers='sys/types.h sys/acl.h', link=True,
+                        msg="Checking whether acl_get_perm_np() is available")
+    else:
+        conf.DEFINE('HAVE_NO_ACLS', 1)
+        conf.SET_TARGET_TYPE('acl', 'EMPTY')
+        conf.SET_TARGET_TYPE('attr', 'EMPTY')
+
 
     default_static_modules=TO_LIST('''pdb_smbpasswd pdb_tdbsam pdb_wbc_sam pdb_ldap rpc_lsarpc rpc_samr
                                       rpc_winreg rpc_initshutdown rpc_dssetup rpc_wkssvc rpc_svcctl
@@ -282,6 +332,9 @@ utimensat vsyslog _write __write __xstat
     if Options.options.developer:
         default_static_modules.extend(TO_LIST('rpc_rpcecho pdb_ads'))
         default_shared_modules.extend(TO_LIST('charset_weird perfcount_test'))
+
+    if Options.options.with_acl_support:
+        default_static_modules.extend(TO_LIST('vfs_posixacl'))
 
     move_to_shared = TO_LIST(Options.options.shared_modules)
     move_to_static = TO_LIST(Options.options.static_modules)
@@ -646,28 +699,6 @@ return 0;
 				mandatory=True,
 				msg="Checking whether setuidx is available")
 
-
-    # FIXME: these should be tests for features, but the old build system just
-    # checks for OSes.
-    import sys
-    host_os = sys.platform
-
-    # Python doesn't have case switches... :/
-    # FIXME: original was *linux* | gnu* | k*bsd*-gnu | kopensolaris*-gnu | *qnx*)
-    # the search for .rfind('gnu') covers gnu* and *-gnu is that too broad?
-    if (host_os.rfind('linux') > -1) or (host_os.rfind('gnu') > -1) or (host_os.rfind('qnx') > -1):
-        if host_os.rfind('linux') > -1:
-            conf.DEFINE('LINUX', '1')
-        elif host_os.rfind('qnx') > -1:
-            conf.DEFINE('QNX', '1')
-        conf.DEFINE('STAT_ST_BLOCKSIZE', '512')
-    elif (host_os.rfind('darwin') > -1):
-        conf.DEFINE('DARWINOS', 1)
-        conf.DEFINE('STAT_ST_BLOCKSIZE', '512')
-        conf.ADD_CFLAGS('-fno-common')
-    # FIXME: Add more checks here.
-    else:
-        print "Unknown host_os '%s', please report this to samba-technical@samba.org" % host_os
 
     conf.SAMBA_CONFIG_H('include/config.h')
 
