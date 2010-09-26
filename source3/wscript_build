@@ -1147,6 +1147,9 @@ bld.RECURSE('librpc')
 bld.SAMBA_MKVERSION('include/version.h')
 
 for prefix in bld.env.MODULE_PREFIXES:
+
+    if prefix == 'auth': continue
+
     static_key = "%s_STATIC" % prefix.upper()
     shared_key = "%s_SHARED" % prefix.upper()
 
@@ -1229,6 +1232,62 @@ bld.SAMBA_SUBSYSTEM('AUTH',
                             AUTH_SERVER AUTH_DOMAIN AUTH_BUILTIN
                             AUTH_NETLOGOND''',
                     vars=locals())
+
+bld.SAMBA_MODULE('AUTH_SAM',
+                 subsystem='AUTH',
+                 source=AUTH_SAM_SRC,
+                 init_function='',
+                 internal_module=True,
+                 enabled=True)
+
+bld.SAMBA_MODULE('AUTH_UNIX',
+                 subsystem='AUTH',
+                 source=AUTH_UNIX_SRC,
+                 init_function='',
+                 internal_module=True,
+                 enabled=True)
+
+bld.SAMBA_MODULE('AUTH_WINBIND',
+                 subsystem='AUTH',
+                 source=AUTH_WINBIND_SRC,
+                 init_function='',
+                 internal_module=True,
+                 enabled=True)
+
+bld.SAMBA_MODULE('AUTH_WBC',
+                 subsystem='AUTH',
+                 source=AUTH_WBC_SRC,
+                 init_function='',
+                 internal_module=True,
+                 enabled=True)
+
+bld.SAMBA_MODULE('AUTH_SERVER',
+                 subsystem='AUTH',
+                 source=AUTH_SERVER_SRC,
+                 init_function='',
+                 internal_module=True,
+                 enabled=True)
+
+bld.SAMBA_MODULE('AUTH_DOMAIN',
+                 subsystem='AUTH',
+                 source=AUTH_DOMAIN_SRC,
+                 init_function='',
+                 internal_module=True,
+                 enabled=True)
+
+bld.SAMBA_MODULE('AUTH_BUILTIN',
+                 subsystem='AUTH',
+                 source=AUTH_BUILTIN_SRC,
+                 init_function='',
+                 internal_module=True,
+                 enabled=True)
+
+bld.SAMBA_MODULE('AUTH_NETLOGOND',
+                 subsystem='AUTH',
+                 source=AUTH_NETLOGOND_SRC,
+                 init_function='',
+                 internal_module=True,
+                 enabled=True)
 
 bld.SAMBA_SUBSYSTEM('AVAHI',
                     source=AVAHI_SRC,
