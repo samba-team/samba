@@ -74,20 +74,44 @@ static void filter_reply(char *buf)
 	}
 }
 
-static void filter_request(char *buf)
+static void filter_request(char *buf, size_t buf_len)
 {
 	int msg_type = CVAL(buf,0);
 	int type = CVAL(buf,smb_com);
-	fstring name1,name2;
 	unsigned x;
+	fstring name1,name2;
+	int name_len1, name_len2;
+	int name_type1, name_type2;
 
 	if (msg_type) {
 		/* it's a netbios special */
-		switch (msg_type) {
+		switch (msg_type)
 		case 0x81:
 			/* session request */
-			name_extract(buf,4,name1);
-			name_extract(buf,4 + name_len(buf + 4),name2);
+			/* inbuf_size is guaranteed to be at least 4. */
+			name_len1 = name_len((unsigned char *)(buf+4),
+					buf_len - 4);
+			if (name_len1 <= 0 || name_len1 > buf_len - 4) {
+				DEBUG(0,("Invalid name length in session request\n"));
+				return;
+			}
+			name_len2 = name_len((unsigned char *)(buf+4+name_len1),
+					buf_len - 4 - name_len1);
+			if (name_len2 <= 0 || name_len2 > buf_len - 4 - name_len1) {
+				DEBUG(0,("Invalid name length in session request\n"));
+				return;
+			}
+
+			name_type1 = name_extract((unsigned char *)buf,
+					buf_len,(unsigned int)4,name1);
+			name_type2 = name_extract((unsigned char *)buf,
+					buf_len,(unsigned int)(4 + name_len1),name2);
+
+			if (name_type1 == -1 || name_type2 == -1) {
+				DEBUG(0,("Invalid name type in session request\n"));
+				return;
+			}
+
 			d_printf("sesion_request: %s -> %s\n",
 				 name1, name2);
 			if (netbiosname) {
@@ -97,11 +121,11 @@ static void filter_request(char *buf)
 					/* replace the destination netbios
 					 * name */
 					memcpy(buf+4, mangled,
-					       name_len(mangled));
+					       name_len((unsigned char *)mangled,
+							talloc_get_size(mangled)));
 					TALLOC_FREE(mangled);
 				}
 			}
-		}
 		return;
 	}
 
@@ -118,7 +142,6 @@ static void filter_request(char *buf)
 		SIVAL(buf, smb_vwv11, x);
 		break;
 	}
-
 }
 
 /****************************************************************************
@@ -184,7 +207,7 @@ static void filter_child(int c, struct sockaddr_storage *dest_ss)
 				d_printf("client closed connection\n");
 				exit(0);
 			}
-			filter_request(packet);
+			filter_request(packet, len);
 			if (!send_smb(s, packet)) {
 				d_printf("server is dead\n");
 				exit(1);
