@@ -102,6 +102,10 @@ except ldb.LdbError, (num, msg):
     print("Unable to open sam database %s : %s" % (lp.get("sam database"), msg))
     sys.exit(1)
 
+if samdb.am_rodc():
+    # don't try and update SPNs on RODC
+    exit(0)
+
 # get the substitution dictionary
 sub_vars = get_subst_vars(samdb)
 
