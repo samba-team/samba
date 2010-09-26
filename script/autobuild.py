@@ -60,6 +60,17 @@ tasks = {
                      "make test" ],
 }
 
+retry_task = [ '''set -e
+                git remote add -t master master %s
+                while :; do
+                  sleep 60
+                  git fetch master
+                  git describe > HEAD.desc
+                  git describe > master.desc
+                  diff HEAD.desc master.desc
+                done
+               ''' % samba_master]
+
 def run_cmd(cmd, dir=".", show=None):
     cwd = os.getcwd()
     os.chdir(dir)
@@ -76,9 +87,12 @@ class builder:
     '''handle build of one directory'''
     def __init__(self, name, sequence):
         self.name = name
-        self.dir = self.name
-        if name == 'pass' or name == 'fail':
+
+        if name in ['pass', 'fail', 'retry']:
             self.dir = "."
+        else:
+            self.dir = self.name
+
         self.tag = self.name.replace('/', '_')
         self.sequence = sequence
         self.next = 0
@@ -121,6 +135,7 @@ class buildlist:
         global tasks
         self.tlist = []
         self.tail_proc = None
+        self.retry = None
         if tasknames == ['pass']:
             tasks = { 'pass' : [ '/bin/true' ]}
         if tasknames == ['fail']:
@@ -130,17 +145,24 @@ class buildlist:
         for n in tasknames:
             b = builder(n, tasks[n])
             self.tlist.append(b)
+        if options.retry:
+            self.retry = builder('retry', retry_task)
+            self.need_retry = False
 
     def kill_kids(self):
+        if self.tail_proc is not None:
+            self.tail_proc.terminate()
+            self.tail_proc.wait()
+            self.tail_proc = None
+        if self.retry is not None:
+            self.retry.proc.terminate()
+            self.retry.proc.wait()
+            self.retry = None
         for b in self.tlist:
             if b.proc is not None:
                 b.proc.terminate()
                 b.proc.wait()
                 b.proc = None
-        if self.tail_proc is not None:
-            self.tail_proc.terminate()
-            self.tail_proc.wait()
-            self.tail_proc = None
 
     def wait_one(self):
         while True:
@@ -154,6 +176,12 @@ class buildlist:
                     continue
                 b.proc = None
                 return b
+            if options.retry:
+                ret = self.retry.proc.poll()
+                if ret is not None:
+                    self.need_retry = True
+                    self.retry = None
+                    return None
             if none_running:
                 return None
             time.sleep(0.1)
@@ -161,6 +189,10 @@ class buildlist:
     def run(self):
         while True:
             b = self.wait_one()
+            if options.retry and self.need_retry:
+                self.kill_kids()
+                print("retry needed")
+                return (0, "retry")
             if b is None:
                 break
             if os.WIFSIGNALED(b.status) or os.WEXITSTATUS(b.status) != 0:
@@ -252,9 +284,15 @@ parser.add_option("", "--mark", help="add a Tested-By signoff before pushing",
                   default=False, action="store_true")
 parser.add_option("", "--fix-whitespace", help="fix whitespace on rebase",
                   default=False, action="store_true")
+parser.add_option("", "--retry", help="automatically retry if master changes",
+                  default=False, action="store_true")
 
 
 (options, args) = parser.parse_args()
+
+if options.retry:
+    if not options.rebase_master and options.rebase is None:
+        raise Exception('You can only use --retry if you also rebase')
 
 testbase = "%s/build.%u" % (options.testbase, os.getpid())
 test_master = "%s/master" % testbase
@@ -269,26 +307,30 @@ except Exception, reason:
     raise Exception("Unable to create %s : %s" % (testbase, reason))
 cleanup_list.append(testbase)
 
-try:
-    run_cmd("rm -rf %s" % test_master)
-    cleanup_list.append(test_master)
-    run_cmd("git clone --shared %s %s" % (gitroot, test_master))
-except:
-    cleanup()
-    raise
+while True:
+    try:
+        run_cmd("rm -rf %s" % test_master)
+        cleanup_list.append(test_master)
+        run_cmd("git clone --shared %s %s" % (gitroot, test_master))
+    except:
+        cleanup()
+        raise
 
-try:
-    if options.rebase is not None:
-        rebase_tree(options.rebase)
-    elif options.rebase_master:
-        rebase_tree(samba_master)
-    blist = buildlist(tasks, args)
-    if options.tail:
-        blist.start_tail()
-    (status, errstr) = blist.run()
-except:
-    cleanup()
-    raise
+    try:
+        if options.rebase is not None:
+            rebase_tree(options.rebase)
+        elif options.rebase_master:
+            rebase_tree(samba_master)
+        blist = buildlist(tasks, args)
+        if options.tail:
+            blist.start_tail()
+        (status, errstr) = blist.run()
+        if status != 0 or errstr != "retry":
+            break
+        cleanup()
+    except:
+        cleanup()
+        raise
 
 blist.kill_kids()
 if options.tail:
