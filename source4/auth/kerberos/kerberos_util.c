@@ -597,6 +597,13 @@ static krb5_error_code create_keytab(TALLOC_CTX *parent_ctx,
 
 	/* Finally, do the dance to get the password to put in the entry */
 	password_s =  ldb_msg_find_attr_as_string(msg, "secret", NULL);
+
+	if (!password_s) {
+		/* There is no password here, so nothing to do */
+		talloc_free(mem_ctx);
+		return 0;
+	}
+
 	if (add_old && kvno != 0) {
 		old_secret = ldb_msg_find_attr_as_string(msg, "priorSecret", NULL);
 	} else {
