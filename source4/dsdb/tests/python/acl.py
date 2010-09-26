@@ -716,8 +716,13 @@ class AclSearchTests(AclTests):
         self.u2 = "search_u2"
         self.u3 = "search_u3"
         self.group1 = "group1"
-        self.anonymous = SamDB(url=host, session_info=system_session(),
-                               lp=lp)
+        self.creds_tmp = Credentials()
+        self.creds_tmp.set_username("")
+        self.creds_tmp.set_password("")
+        self.creds_tmp.set_domain(creds.get_domain())
+        self.creds_tmp.set_realm(creds.get_realm())
+        self.creds_tmp.set_workstation(creds.get_workstation())
+        self.anonymous = SamDB(url=host, credentials=self.creds_tmp, lp=lp);
         res = self.ldb_admin.search("CN=Directory Service, CN=Windows NT, CN=Services, "
                  + self.configuration_dn, scope=SCOPE_BASE, attrs=["dSHeuristics"])
         if "dSHeuristics" in res[0]:
@@ -769,7 +774,6 @@ class AclSearchTests(AclTests):
 
     def tearDown(self):
         super(AclSearchTests, self).tearDown()
-        self.set_dsheuristics(self.dsheuristics)
         self.delete_force(self.ldb_admin, "OU=test_search_ou2,OU=test_search_ou1," + self.base_dn)
         self.delete_force(self.ldb_admin, "OU=test_search_ou1," + self.base_dn)
         self.delete_force(self.ldb_admin, "OU=ou6,OU=ou4,OU=ou2,OU=ou1," + self.base_dn)
@@ -838,9 +842,10 @@ class AclSearchTests(AclTests):
         self.assertEquals(len(res), 1)
         self.assertTrue("dn" in res[0])
         self.assertTrue(res[0]["dn"] == Dn(self.ldb_admin, self.configuration_dn))
+        self.set_dsheuristics(self.dsheuristics)
 
     def test_search1(self):
-        """Make sure users can see ous if given LC to user and group"""
+        """Make sure users can see us if given LC to user and group"""
         self.create_clean_ou("OU=ou1," + self.base_dn)
         mod = "(A;;LC;;;%s)(A;;LC;;;%s)" % (str(self.user_sid), str(self.group_sid))
         self.dacl_add_ace("OU=ou1," + self.base_dn, mod)
@@ -879,7 +884,7 @@ class AclSearchTests(AclTests):
         self.assertEquals(sorted(res_list), sorted(self.full_list))
 
     def test_search2(self):
-        """Make sure users can't see ous if access is explicitly denied"""
+        """Make sure users can't see us if access is explicitly denied"""
         self.create_clean_ou("OU=ou1," + self.base_dn)
         self.create_ou(self.ldb_admin, "OU=ou2,OU=ou1," + self.base_dn)
         self.create_ou(self.ldb_admin, "OU=ou3,OU=ou2,OU=ou1," + self.base_dn)
@@ -925,6 +930,15 @@ class AclSearchTests(AclTests):
                        "D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)")
         self.create_ou(self.ldb_admin, "OU=ou6,OU=ou4,OU=ou2,OU=ou1," + self.base_dn,
                        "D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)")
+
+        print "Testing correct behavior on nonaccessible search base"
+        try:
+             self.ldb_user3.search("OU=ou3,OU=ou2,OU=ou1," + self.base_dn, expression="(objectClass=*)",
+                                   scope=SCOPE_BASE)
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_NO_SUCH_OBJECT)
+        else:
+            self.fail()
 
         mod = "(D;;LC;;;%s)(D;;LC;;;%s)" % (str(self.user_sid), str(self.group_sid))
         self.dacl_add_ace("OU=ou2,OU=ou1," + self.base_dn, mod)
@@ -983,6 +997,85 @@ class AclSearchTests(AclTests):
                                     scope=SCOPE_SUBTREE)
         self.assertEquals(len(res), 2)
         res_list = [ x["dn"] for x in res if x["dn"] in ok_list ]
+        self.assertEquals(sorted(res_list), sorted(ok_list))
+
+    def test_search5(self):
+        """Make sure users can see only attributes they are allowed to see"""
+        self.create_clean_ou("OU=ou1," + self.base_dn)
+        mod = "(A;CI;LC;;;%s)" % (str(self.user_sid))
+        self.dacl_add_ace("OU=ou1," + self.base_dn, mod)
+        self.create_ou(self.ldb_admin, "OU=ou2,OU=ou1," + self.base_dn,
+                       "D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)" + mod)
+        # assert user can only see dn
+        res = self.ldb_user.search("OU=ou2,OU=ou1," + self.base_dn, expression="(objectClass=*)",
+                                    scope=SCOPE_SUBTREE)
+        ok_list = ['dn']
+        self.assertEquals(len(res), 1)
+        res_list = res[0].keys()
+        self.assertEquals(res_list, ok_list)
+
+        res = self.ldb_user.search("OU=ou2,OU=ou1," + self.base_dn, expression="(objectClass=*)",
+                                    scope=SCOPE_BASE, attrs=["ou"])
+
+        self.assertEquals(len(res), 1)
+        res_list = res[0].keys()
+        self.assertEquals(res_list, ok_list)
+
+        #give read property on ou and assert user can only see dn and ou
+        mod = "(OA;;RP;bf9679f0-0de6-11d0-a285-00aa003049e2;;%s)" % (str(self.user_sid))
+        self.dacl_add_ace("OU=ou1," + self.base_dn, mod)
+        self.dacl_add_ace("OU=ou2,OU=ou1," + self.base_dn, mod)
+        res = self.ldb_user.search("OU=ou2,OU=ou1," + self.base_dn, expression="(objectClass=*)",
+                                    scope=SCOPE_SUBTREE)
+        ok_list = ['dn', 'ou']
+        self.assertEquals(len(res), 1)
+        res_list = res[0].keys()
+        self.assertEquals(sorted(res_list), sorted(ok_list))
+
+        #give read property on Public Information and assert user can see ou and other members
+        mod = "(OA;;RP;e48d0154-bcf8-11d1-8702-00c04fb96050;;%s)" % (str(self.user_sid))
+        self.dacl_add_ace("OU=ou1," + self.base_dn, mod)
+        self.dacl_add_ace("OU=ou2,OU=ou1," + self.base_dn, mod)
+        res = self.ldb_user.search("OU=ou2,OU=ou1," + self.base_dn, expression="(objectClass=*)",
+                                    scope=SCOPE_SUBTREE)
+
+        ok_list = ['dn', 'objectClass', 'ou', 'distinguishedName', 'name', 'objectGUID', 'objectCategory']
+        res_list = res[0].keys()
+        self.assertEquals(sorted(res_list), sorted(ok_list))
+
+    def test_search6(self):
+        """If an attribute that cannot be read is used in a filter, it is as if the attribute does not exist"""
+        self.create_clean_ou("OU=ou1," + self.base_dn)
+        mod = "(A;CI;LCCC;;;%s)" % (str(self.user_sid))
+        self.dacl_add_ace("OU=ou1," + self.base_dn, mod)
+        self.create_ou(self.ldb_admin, "OU=ou2,OU=ou1," + self.base_dn,
+                       "D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)" + mod)
+        self.create_ou(self.ldb_user, "OU=ou3,OU=ou2,OU=ou1," + self.base_dn,
+                       "D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)")
+
+        res = self.ldb_user.search("OU=ou1," + self.base_dn, expression="(ou=ou3)",
+                                    scope=SCOPE_SUBTREE)
+        #nothing should be returned as ou is not accessible
+        self.assertEquals(res, [])
+
+        #give read property on ou and assert user can only see dn and ou
+        mod = "(OA;;RP;bf9679f0-0de6-11d0-a285-00aa003049e2;;%s)" % (str(self.user_sid))
+        self.dacl_add_ace("OU=ou3,OU=ou2,OU=ou1," + self.base_dn, mod)
+        res = self.ldb_user.search("OU=ou1," + self.base_dn, expression="(ou=ou3)",
+                                    scope=SCOPE_SUBTREE)
+        self.assertEquals(len(res), 1)
+        ok_list = ['dn', 'ou']
+        res_list = res[0].keys()
+        self.assertEquals(sorted(res_list), sorted(ok_list))
+
+        #give read property on Public Information and assert user can see ou and other members
+        mod = "(OA;;RP;e48d0154-bcf8-11d1-8702-00c04fb96050;;%s)" % (str(self.user_sid))
+        self.dacl_add_ace("OU=ou2,OU=ou1," + self.base_dn, mod)
+        res = self.ldb_user.search("OU=ou1," + self.base_dn, expression="(ou=ou2)",
+                                   scope=SCOPE_SUBTREE)
+        self.assertEquals(len(res), 1)
+        ok_list = ['dn', 'objectClass', 'ou', 'distinguishedName', 'name', 'objectGUID', 'objectCategory']
+        res_list = res[0].keys()
         self.assertEquals(sorted(res_list), sorted(ok_list))
 
 #tests on ldap delete operations
@@ -1545,6 +1638,8 @@ if not runner.run(unittest.makeSuite(AclDeleteTests)).wasSuccessful():
 if not runner.run(unittest.makeSuite(AclRenameTests)).wasSuccessful():
     rc = 1
 if not runner.run(unittest.makeSuite(AclCARTests)).wasSuccessful():
+    rc = 1
+if not runner.run(unittest.makeSuite(AclSearchTests)).wasSuccessful():
     rc = 1
 
 sys.exit(rc)
