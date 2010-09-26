@@ -243,23 +243,6 @@ struct files_struct *files_forall(
 }
 
 /****************************************************************************
- Debug to enumerate all open files in the smbd.
-****************************************************************************/
-
-void file_dump_open_table(void)
-{
-	int count=0;
-	files_struct *fsp;
-
-	for (fsp=Files;fsp;fsp=fsp->next,count++) {
-		DEBUG(10,("Files[%d], fnum = %d, name %s, fd = %d, gen = %lu, "
-			  "fileid=%s\n", count, fsp->fnum, fsp_str_dbg(fsp),
-			  fsp->fh->fd, (unsigned long)fsp->fh->gen_id,
-			  file_id_string_tos(&fsp->file_id)));
-	}
-}
-
-/****************************************************************************
  Find a fsp given a file descriptor.
 ****************************************************************************/
 
@@ -317,22 +300,6 @@ files_struct *file_find_dif(struct file_id id, unsigned long gen_id)
 }
 
 /****************************************************************************
- Check if an fsp still exists.
-****************************************************************************/
-
-files_struct *file_find_fsp(files_struct *orig_fsp)
-{
-	files_struct *fsp;
-
-	for (fsp=Files;fsp;fsp=fsp->next) {
-		if (fsp == orig_fsp)
-			return fsp;
-	}
-
-	return NULL;
-}
-
-/****************************************************************************
  Find the first fsp given a device and inode.
  We use a singleton cache here to speed up searching from getfilepathinfo
  calls.
@@ -375,23 +342,6 @@ files_struct *file_find_di_next(files_struct *start_fsp)
 			return fsp;
 		}
 	}
-
-	return NULL;
-}
-
-/****************************************************************************
- Find a fsp that is open for printing.
-****************************************************************************/
-
-files_struct *file_find_print(void)
-{
-	files_struct *fsp;
-
-	for (fsp=Files;fsp;fsp=fsp->next) {
-		if (fsp->print_file) {
-			return fsp;
-		}
-	} 
 
 	return NULL;
 }

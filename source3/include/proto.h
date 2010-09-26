@@ -4754,17 +4754,14 @@ void file_close_conn(connection_struct *conn);
 void file_close_pid(uint16 smbpid, int vuid);
 void file_init(void);
 void file_close_user(int vuid);
-void file_dump_open_table(void);
 struct files_struct *files_forall(
 	struct files_struct *(*fn)(struct files_struct *fsp,
 				   void *private_data),
 	void *private_data);
 files_struct *file_find_fd(int fd);
 files_struct *file_find_dif(struct file_id id, unsigned long gen_id);
-files_struct *file_find_fsp(files_struct *orig_fsp);
 files_struct *file_find_di_first(struct file_id id);
 files_struct *file_find_di_next(files_struct *start_fsp);
-files_struct *file_find_print(void);
 bool file_find_subpath(files_struct *dir_fsp);
 void file_sync_all(connection_struct *conn);
 void file_free(struct smb_request *req, files_struct *fsp);
