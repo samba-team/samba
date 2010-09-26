@@ -62,12 +62,13 @@ tasks = {
 
 retry_task = [ '''set -e
                 git remote add -t master master %s
+                git fetch master
                 while :; do
                   sleep 60
+                  git describe master/master > old_master.desc
                   git fetch master
-                  git describe > HEAD.desc
-                  git describe > master.desc
-                  diff HEAD.desc master.desc
+                  git describe master/master > master.desc
+                  diff old_master.desc master.desc
                 done
                ''' % samba_master]
 
