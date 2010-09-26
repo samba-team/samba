@@ -221,7 +221,7 @@ LIB_SRC = '''${LIBSAMBAUTIL_SRC} ${UTIL_SRC}
           lib/sessionid_tdb.c
           lib/module.c lib/events.c ${LIBTEVENT_SRC0}
           lib/server_contexts.c
-          lib/ldap_escape.c ${CHARSET_STATIC}
+          lib/ldap_escape.c
           lib/secdesc.c lib/util_seaccess.c ../libcli/security/secace.c
           ../libcli/security/sddl.c
           ../libcli/security/secacl.c ${PTHREADPOOL_SRC}
@@ -491,12 +491,6 @@ PASSDB_SRC = '''${PASSDB_GET_SET_SRC} passdb/passdb.c passdb/pdb_interface.c
                 passdb/account_pol.c ${PRIVILEGES_SRC}
                 lib/util_nscd.c lib/winbind_util.c ${SERVER_MUTEX_SRC}'''
 #FIXME: lib/winbind_util.c probably is not part of PASSDB_SRC
-
-CHARSET_STATIC = ''
-CHARSET_WEIRD_SRC = 'modules/weird.c'
-CHARSET_CP850_SRC = 'modules/CP850.c'
-CHARSET_CP437_SRC = 'modules/CP437.c'
-CHARSET_MACOSXFS_SRC = 'modules/charset_macosxfs.c'
 
 GROUPDB_SRC = '''groupdb/mapping.c groupdb/mapping_tdb.c'''
 
@@ -1135,39 +1129,6 @@ bld.SAMBA_SUBSYSTEM('ASN1_UTIL',
                     deps='talloc',
                     local_include=False)
 
-bld.SAMBA_SUBSYSTEM('CHARSET',
-                    source='',
-                    deps='''CHARSET_WEIRD CHARSET_CP850 CHARSET_CP437 CHARSET_MACOSXFS''',
-                    vars=locals())
-
-bld.SAMBA_MODULE('CHARSET_WEIRD',
-                 subsystem='CHARSET',
-                 source=CHARSET_WEIRD_SRC,
-                 init_function='',
-                 internal_module=True,
-                 enabled=True)
-
-bld.SAMBA_MODULE('CHARSET_CP850',
-                 subsystem='CHARSET',
-                 source=CHARSET_CP850_SRC,
-                 init_function='',
-                 internal_module=True,
-                 enabled=True)
-
-bld.SAMBA_MODULE('CHARSET_CP437',
-                 subsystem='CHARSET',
-                 source=CHARSET_CP437_SRC,
-                 init_function='',
-                 internal_module=True,
-                 enabled=True)
-
-bld.SAMBA_MODULE('CHARSET_MACOSXFS',
-                 subsystem='CHARSET',
-                 source=CHARSET_MACOSXFS_SRC,
-                 init_function='',
-                 internal_module=True,
-                 enabled=False) #fixme
-
 bld.SAMBA_SUBSYSTEM('PERFCOUNT',
                     source='',
                     deps='''PERFCOUNT_ONEFS PERFCOUNT_TEST''',
@@ -1249,7 +1210,7 @@ bld.SAMBA_SUBSYSTEM('KRBCLIENT',
 
 bld.SAMBA_SUBSYSTEM('LIBS',
                     source=LIB_SRC,
-                    deps='NSS_WRAPPER iconv LIBCRYPTO LIBNDR NDR_SECURITY',
+                    deps='NSS_WRAPPER iconv LIBCRYPTO LIBNDR NDR_SECURITY CHARSET',
                     vars=locals())
 
 bld.SAMBA_SUBSYSTEM('LIB_NONSMBD',

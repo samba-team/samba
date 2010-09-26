@@ -401,3 +401,44 @@ bld.SAMBA_MODULE('VFS_LINUX_XFS_SGID',
                  init_function='',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('VFS_LINUX_XFS_SGID'),
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('VFS_LINUX_XFS_SGID'))
+
+
+
+CHARSET_WEIRD_SRC = 'weird.c'
+CHARSET_CP850_SRC = 'CP850.c'
+CHARSET_CP437_SRC = 'CP437.c'
+CHARSET_MACOSXFS_SRC = 'charset_macosxfs.c'
+
+
+bld.SAMBA_SUBSYSTEM('CHARSET',
+                    source='',
+                    deps='''CHARSET_WEIRD CHARSET_CP850 CHARSET_CP437 CHARSET_MACOSXFS''',
+                    vars=locals())
+
+bld.SAMBA_MODULE('CHARSET_WEIRD',
+                 subsystem='CHARSET',
+                 source=CHARSET_WEIRD_SRC,
+                 init_function='',
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('CHARSET_WEIRD'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('CHARSET_WEIRD'))
+
+bld.SAMBA_MODULE('CHARSET_CP850',
+                 subsystem='CHARSET',
+                 source=CHARSET_CP850_SRC,
+                 init_function='',
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('CHARSET_CP850'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('CHARSET_CP850'))
+
+bld.SAMBA_MODULE('CHARSET_CP437',
+                 subsystem='CHARSET',
+                 source=CHARSET_CP437_SRC,
+                 init_function='',
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('CHARSET_CP437'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('CHARSET_CP437'))
+
+bld.SAMBA_MODULE('CHARSET_MACOSXFS',
+                 subsystem='CHARSET',
+                 source=CHARSET_MACOSXFS_SRC,
+                 init_function='',
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('CHARSET_MACOSXFS'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('CHARSET_MACOSXFS'))
