@@ -442,3 +442,26 @@ bld.SAMBA_MODULE('CHARSET_MACOSXFS',
                  init_function='',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('CHARSET_MACOSXFS'),
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('CHARSET_MACOSXFS'))
+
+
+PERFCOUNT_ONEFS_SRC = 'perfcount_onefs.c'
+PERFCOUNT_TEST_SRC = 'perfcount_test.c'
+
+bld.SAMBA_SUBSYSTEM('PERFCOUNT',
+                    source='',
+                    deps='''PERFCOUNT_ONEFS PERFCOUNT_TEST''',
+                    vars=locals())
+
+bld.SAMBA_MODULE('PERFCOUNT_ONEFS',
+                 subsystem='PERFCOUNT',
+                 source=PERFCOUNT_ONEFS_SRC,
+                 init_function='',
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('PERFCOUNT_ONEFS'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('PERFCOUNT_ONEFS'))
+
+bld.SAMBA_MODULE('PERFCOUNT_TEST',
+                 subsystem='PERFCOUNT',
+                 source=PERFCOUNT_TEST_SRC,
+                 init_function='',
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('PERFCOUNT_TEST'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('PERFCOUNT_TEST'))

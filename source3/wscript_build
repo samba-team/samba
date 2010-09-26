@@ -518,10 +518,6 @@ NSS_INFO_STATIC = ''
 NSS_INFO_TEMPLATE_SRC = 'winbindd/nss_info_template.c'
 NSS_INFO_SRC = 'winbindd/nss_info.c'
 
-PERFCOUNT_STATIC = ''
-PERFCOUNT_ONEFS_SRC = 'modules/perfcount_onefs.c'
-PERFCOUNT_TEST_SRC = 'modules/perfcount_test.c'
-
 WINBINDD_SRC1 = '''winbindd/winbindd.c
                    winbindd/winbindd_group.c
                    winbindd/winbindd_util.c
@@ -1128,25 +1124,6 @@ bld.SAMBA_SUBSYSTEM('ASN1_UTIL',
                     source='../lib/util/asn1.c',
                     deps='talloc',
                     local_include=False)
-
-bld.SAMBA_SUBSYSTEM('PERFCOUNT',
-                    source='',
-                    deps='''PERFCOUNT_ONEFS PERFCOUNT_TEST''',
-                    vars=locals())
-
-bld.SAMBA_MODULE('PERFCOUNT_ONEFS',
-                 subsystem='PERFCOUNT',
-                 source=PERFCOUNT_ONEFS_SRC,
-                 init_function='',
-                 internal_module=True,
-                 enabled=False) #fixme
-
-bld.SAMBA_MODULE('PERFCOUNT_TEST',
-                 subsystem='PERFCOUNT',
-                 source=PERFCOUNT_TEST_SRC,
-                 init_function='',
-                 internal_module=True,
-                 enabled=True)
 
 bld.SAMBA_SUBSYSTEM('GPEXT',
                     source=GPEXT_SRC,
