@@ -310,8 +310,7 @@ LIBCLI_LDAP_NDR_SRC = '''../libcli/ldap/ldap_ndr.c lib/ldb_compat.c'''
 
 CLDAP_SRC = '''libads/cldap.c
         ../libcli/cldap/cldap.c
-        ../lib/util/idtree.c
-        ${LIBCLI_LDAP_MESSAGE_SRC} ${LIBCLI_LDAP_NDR_SRC}'''
+        ../lib/util/idtree.c'''
 
 TLDAP_SRC = '''lib/tldap.c lib/tldap_util.c lib/util_tsock.c'''
 
@@ -331,7 +330,6 @@ LIBSMB_SRC = '''libsmb/clientgen.c libsmb/cliconnect.c libsmb/clifile.c
              libsmb/smb_seal.c libsmb/async_smb.c
              ${LIBNMB_SRC}
              ${LIBNBT_SRC}
-             ${CLDAP_SRC}
              ${DRSUAPI_SRC}'''
 
 LIBMSRPC_SRC = '''
@@ -744,8 +742,7 @@ SMBPASSWD_SRC = '''utils/smbpasswd.c ${PASSCHANGE_SRC}
                 ${LIBCLI_SAMR_SRC}
                 rpc_client/init_lsa.c'''
 
-PDBEDIT_SRC = '''utils/pdbedit.c
-                ${LIBCLI_LDAP_NDR_SRC}'''
+PDBEDIT_SRC = '''utils/pdbedit.c'''
 
 SMBGET_SRC = '''utils/smbget.c'''
 
@@ -986,7 +983,6 @@ NTLM_AUTH_SRC = '''${NTLM_AUTH_SRC1}
                 ../libcli/auth/spnego_parse.c libsmb/clikrb5.c libads/kerberos.c
                 libsmb/samlogon_cache.c
                 ${LIBNMB_SRC}
-                ${LIBCLI_LDAP_NDR_SRC}
                 ${LIBNDR_NETLOGON_SRC}'''
 
 
@@ -1118,6 +1114,12 @@ bld.SAMBA_SUBSYSTEM('ASN1_UTIL',
                     deps='talloc',
                     local_include=False)
 
+bld.SAMBA_SUBSYSTEM('LIBCLI_LDAP_MESSAGE',
+                    source=LIBCLI_LDAP_MESSAGE_SRC)
+
+bld.SAMBA_SUBSYSTEM('LIBCLI_LDAP_NDR',
+                    source=LIBCLI_LDAP_NDR_SRC)
+
 bld.SAMBA_SUBSYSTEM('AVAHI',
                     source=AVAHI_SRC,
                     deps='avahi-common avahi-client',
@@ -1174,7 +1176,12 @@ bld.SAMBA_SUBSYSTEM('LIBSAMBA',
 
 bld.SAMBA_SUBSYSTEM('LIBSMB',
                     source=LIBSMB_SRC,
-                    deps='LIBSAMBA ZLIB',
+                    deps='LIBSAMBA ZLIB CLDAP',
+                    vars=locals())
+
+bld.SAMBA_SUBSYSTEM('CLDAP',
+                    source=CLDAP_SRC,
+                    deps='LIBCLI_LDAP_MESSAGE LIBCLI_LDAP_NDR',
                     vars=locals())
 
 bld.SAMBA_SUBSYSTEM('SECRETS',
@@ -1188,6 +1195,7 @@ bld.SAMBA_SUBSYSTEM('SMBLDAP',
 
 bld.SAMBA_SUBSYSTEM('LIBADS',
                     source=LIBADS_SRC,
+                    deps='LIBCLI_LDAP_NDR',
 		    vars=locals())
 
 bld.SAMBA_SUBSYSTEM('LIBADS_SERVER',
@@ -1426,7 +1434,7 @@ bld.SAMBA_BINARY('pdbedit',
                  source=PDBEDIT_SRC,
                  deps='''talloc tdb tevent cap resolv libwbclient PARAM LIB_NONSMBD
                  LIBSAMBA LIBSMB_ERR POPT_SAMBA PASSDB SMBLDAP GROUPDB
-                 PASSWD_UTIL''',
+                 PASSWD_UTIL LIBCLI_LDAP_NDR''',
                  vars=locals())
 
 bld.SAMBA_BINARY('smbget',
@@ -1550,7 +1558,7 @@ bld.SAMBA_BINARY('ntlm_auth',
                  deps='''tdb talloc cap resolv krb5 k5crypto com_err libwbclient PARAM LIB_NONSMBD
                  LIBS LIBSAMBA POPT_SAMBA ASN1_UTIL LIBTSOCKET
                  PASSDB GROUPDB SMBLDAP WBCOMMON LIBINIPARSER LIBADS_SERVER
-                 NDR_SAMR NDR_LSA''',
+                 NDR_SAMR NDR_LSA LIBCLI_LDAP_NDR''',
                  vars=locals())
 
 bld.SAMBA_BINARY('timelimit',
