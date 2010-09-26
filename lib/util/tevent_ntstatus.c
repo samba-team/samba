@@ -20,9 +20,12 @@
 #include "../replace/replace.h"
 #include "tevent_ntstatus.h"
 
-bool tevent_req_nterror(struct tevent_req *req,	NTSTATUS status)
+bool _tevent_req_nterror(struct tevent_req *req,
+			 NTSTATUS status,
+			 const char *location)
 {
-	return tevent_req_error(req, NT_STATUS_V(status));
+	return _tevent_req_error(req, NT_STATUS_V(status),
+				 location);
 }
 
 bool tevent_req_is_nterror(struct tevent_req *req, NTSTATUS *status)
