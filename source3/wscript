@@ -319,7 +319,8 @@ return acl_get_perm_np(permset_d, perm);
                                       rpc_ntsvcs rpc_netlogon rpc_netdfs rpc_srvsvc rpc_spoolss
                                       rpc_eventlog auth_sam auth_unix auth_winbind auth_wbc auth_server
                                       auth_domain auth_builtin auth_netlogond vfs_default
-                                      nss_info_template''')
+                                      nss_info_template idmap_tdb idmap_passdb
+                                      idmap_nss''')
 
     default_shared_modules=TO_LIST('''vfs_recycle vfs_audit vfs_extd_audit vfs_full_audit vfs_netatalk
                                       vfs_fake_perms vfs_default_quota vfs_readonly vfs_cap

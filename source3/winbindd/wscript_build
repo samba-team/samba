@@ -4,6 +4,8 @@ IDMAP_AD_SRC = '''idmap_ad.c'''
 IDMAP_RID_SRC = '''idmap_rid.c'''
 IDMAP_PASSDB_SRC = '''idmap_passdb.c'''
 IDMAP_LDAP_SRC = '''idmap_ldap.c'''
+IDMAP_NSS_SRC = '''idmap_nss.c'''
+IDMAP_TDB_SRC = '''idmap_tdb.c'''
 IDMAP_TDB2_SRC = '''idmap_tdb2.c'''
 
 IDMAP_HASH_SRC = '''idmap_hash/idmap_hash.c
@@ -51,6 +53,20 @@ bld.SAMBA_MODULE('IDMAP_LDAP',
                  init_function='',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('IDMAP_LDAP'),
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('IDMAP_LDAP'))
+
+bld.SAMBA_MODULE('IDMAP_NSS',
+                 subsystem='IDMAP',
+                 source=IDMAP_NSS_SRC,
+                 init_function='',
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('IDMAP_NSS'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('IDMAP_NSS'))
+
+bld.SAMBA_MODULE('IDMAP_TDB',
+                 subsystem='IDMAP',
+                 source=IDMAP_TDB_SRC,
+                 init_function='',
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('IDMAP_TDB'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('IDMAP_TDB'))
 
 bld.SAMBA_MODULE('IDMAP_TDB2',
                  subsystem='IDMAP',
