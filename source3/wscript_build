@@ -1151,6 +1151,7 @@ for prefix in bld.env.MODULE_PREFIXES:
     if prefix == 'auth': continue
     if prefix == 'pdb': continue
     if prefix == 'idmap': continue
+    if prefix == 'charset': continue
 
     static_key = "%s_STATIC" % prefix.upper()
     shared_key = "%s_SHARED" % prefix.upper()
@@ -1384,6 +1385,39 @@ bld.SAMBA_MODULE('IDMAP_ADEX',
                  init_function='',
                  internal_module=True,
                  enabled=True)
+
+bld.SAMBA_SUBSYSTEM('CHARSET',
+                    source='',
+                    deps='''CHARSET_WEIRD CHARSET_CP850 CHARSET_CP437 CHARSET_MACOSXFS''',
+                    vars=locals())
+
+bld.SAMBA_MODULE('CHARSET_WEIRD',
+                 subsystem='CHARSET',
+                 source=CHARSET_WEIRD_SRC,
+                 init_function='',
+                 internal_module=True,
+                 enabled=True)
+
+bld.SAMBA_MODULE('CHARSET_CP850',
+                 subsystem='CHARSET',
+                 source=CHARSET_CP850_SRC,
+                 init_function='',
+                 internal_module=True,
+                 enabled=True)
+
+bld.SAMBA_MODULE('CHARSET_CP437',
+                 subsystem='CHARSET',
+                 source=CHARSET_CP437_SRC,
+                 init_function='',
+                 internal_module=True,
+                 enabled=True)
+
+bld.SAMBA_MODULE('CHARSET_MACOSXFS',
+                 subsystem='CHARSET',
+                 source=CHARSET_MACOSXFS_SRC,
+                 init_function='',
+                 internal_module=True,
+                 enabled=False) #fixme
 
 bld.SAMBA_SUBSYSTEM('AVAHI',
                     source=AVAHI_SRC,
