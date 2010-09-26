@@ -1149,6 +1149,7 @@ bld.SAMBA_MKVERSION('include/version.h')
 for prefix in bld.env.MODULE_PREFIXES:
 
     if prefix == 'auth': continue
+    if prefix == 'pdb': continue
 
     static_key = "%s_STATIC" % prefix.upper()
     shared_key = "%s_SHARED" % prefix.upper()
@@ -1285,6 +1286,46 @@ bld.SAMBA_MODULE('AUTH_BUILTIN',
 bld.SAMBA_MODULE('AUTH_NETLOGOND',
                  subsystem='AUTH',
                  source=AUTH_NETLOGOND_SRC,
+                 init_function='',
+                 internal_module=True,
+                 enabled=True)
+
+bld.SAMBA_SUBSYSTEM('PDB',
+                    source='',
+                    deps='''PDB_TDBSAM PDB_LDAP PDB_ADS PDB_SMBPASSWD PDB_WBC_SAM''',
+                    vars=locals())
+
+bld.SAMBA_MODULE('PDB_TDBSAM',
+                 subsystem='PDB',
+                 source=PDB_TDBSAM_SRC,
+                 init_function='',
+                 internal_module=True,
+                 enabled=True)
+
+bld.SAMBA_MODULE('PDB_LDAP',
+                 subsystem='PDB',
+                 source=PDB_LDAP_SRC,
+                 init_function='',
+                 internal_module=True,
+                 enabled=True)
+
+bld.SAMBA_MODULE('PDB_ADS',
+                 subsystem='PDB',
+                 source=PDB_ADS_SRC,
+                 init_function='',
+                 internal_module=True,
+                 enabled=False) #fixme
+
+bld.SAMBA_MODULE('PDB_SMBPASSWD',
+                 subsystem='PDB',
+                 source=PDB_SMBPASSWD_SRC,
+                 init_function='',
+                 internal_module=True,
+                 enabled=True)
+
+bld.SAMBA_MODULE('PDB_WBC_SAM',
+                 subsystem='PDB',
+                 source=PDB_WBC_SAM_SRC,
                  init_function='',
                  internal_module=True,
                  enabled=True)
