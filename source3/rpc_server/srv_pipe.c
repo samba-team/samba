@@ -1184,7 +1184,8 @@ static bool pipe_spnego_auth_bind_negotiate(pipes_struct *p, prs_struct *rpc_in_
 	}
 
 	/* parse out the OIDs and the first sec blob */
-	if (!parse_negTokenTarg(blob, OIDs, &secblob)) {
+	if (!parse_negTokenTarg(blob, OIDs, &secblob) ||
+			OIDs[0] == NULL) {
 		DEBUG(0,("pipe_spnego_auth_bind_negotiate: Failed to parse the security blob.\n"));
 		goto err;
         }
