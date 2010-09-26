@@ -483,16 +483,13 @@ static bool netbios_session_retarget(struct smbd_server_connection *sconn,
 }
 
 /****************************************************************************
- Reply to a (netbios-level) special message.
+ Reply to a (netbios-level) special message. 
 ****************************************************************************/
 
-void reply_special(struct smbd_server_connection *sconn, char *inbuf)
+void reply_special(struct smbd_server_connection *sconn, char *inbuf, size_t inbuf_size)
 {
 	int msg_type = CVAL(inbuf,0);
 	int msg_flags = CVAL(inbuf,1);
-	fstring name1,name2;
-	char name_type1, name_type2;
-
 	/*
 	 * We only really use 4 bytes of the outbuf, but for the smb_setlen
 	 * calculation & friends (srv_send_smb uses that) we need the full smb
@@ -500,14 +497,19 @@ void reply_special(struct smbd_server_connection *sconn, char *inbuf)
 	 */
 	char outbuf[smb_size];
 
-	*name1 = *name2 = 0;
-
 	memset(outbuf, '\0', sizeof(outbuf));
 
 	smb_setlen(outbuf,0);
 
 	switch (msg_type) {
 	case 0x81: /* session request */
+	{
+		/* inbuf_size is guarenteed to be at least 4. */
+		fstring name1,name2;
+		int name_type1, name_type2;
+		int name_len1, name_len2;
+
+		*name1 = *name2 = 0;
 
 		if (sconn->nbt.got_session) {
 			exit_server_cleanly("multiple session request not permitted");
@@ -515,13 +517,29 @@ void reply_special(struct smbd_server_connection *sconn, char *inbuf)
 
 		SCVAL(outbuf,0,0x82);
 		SCVAL(outbuf,3,0);
-		if (name_len(inbuf+4) > 50 || 
-		    name_len(inbuf+4 + name_len(inbuf + 4)) > 50) {
+
+		/* inbuf_size is guaranteed to be at least 4. */
+		name_len1 = name_len((unsigned char *)(inbuf+4),inbuf_size - 4);
+		if (name_len1 <= 0 || name_len1 > inbuf_size - 4) {
 			DEBUG(0,("Invalid name length in session request\n"));
 			return;
 		}
-		name_type1 = name_extract(inbuf,4,name1);
-		name_type2 = name_extract(inbuf,4 + name_len(inbuf + 4),name2);
+		name_len2 = name_len((unsigned char *)(inbuf+4+name_len1),inbuf_size - 4 - name_len1);
+		if (name_len2 <= 0 || name_len2 > inbuf_size - 4 - name_len1) {
+			DEBUG(0,("Invalid name length in session request\n"));
+			return;
+		}
+
+		name_type1 = name_extract((unsigned char *)inbuf,
+				inbuf_size,(unsigned int)4,name1);
+		name_type2 = name_extract((unsigned char *)inbuf,
+				inbuf_size,(unsigned int)(4 + name_len1),name2);
+
+		if (name_type1 == -1 || name_type2 == -1) {
+			DEBUG(0,("Invalid name type in session request\n"));
+			return;
+		}
+
 		DEBUG(2,("netbios connect: name1=%s0x%x name2=%s0x%x\n",
 			 name1, name_type1, name2, name_type2));
 
@@ -564,6 +582,7 @@ void reply_special(struct smbd_server_connection *sconn, char *inbuf)
 
 		sconn->nbt.got_session = true;
 		break;
+	}
 
 	case 0x89: /* session keepalive request 
 		      (some old clients produce this?) */
