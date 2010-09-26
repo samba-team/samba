@@ -58,7 +58,7 @@ struct passwd *getpwnam_alloc(TALLOC_CTX *mem_ctx, const char *name)
 		return NULL;
 	}
 
-	for_cache = tcopy_passwd(talloc_autofree_context(), pw);
+	for_cache = tcopy_passwd(talloc_tos(), pw);
 	if (for_cache == NULL) {
 		return NULL;
 	}
