@@ -27,10 +27,10 @@ def set_options(opt):
 
     opt.add_option('--with-static-modules',
                    help=("Comma-separated list of names of modules to statically link in"),
-                   action="store", dest='static_modules', default='')
+                   action="store", dest='static_modules', default=None)
     opt.add_option('--with-shared-modules',
                    help=("Comma-separated list of names of modules to build shared"),
-                   action="store", dest='shared_modules', default='')
+                   action="store", dest='shared_modules', default=None)
     opt.add_option('--enable-selftest',
                   help=("enable options necessary for selftest"),
                   action="store_true", dest='enable_selftest', default=False)
@@ -337,22 +337,25 @@ return acl_get_perm_np(permset_d, perm);
     if Options.options.with_acl_support:
         default_static_modules.extend(TO_LIST('vfs_posixacl'))
 
-    move_to_shared = TO_LIST(Options.options.shared_modules)
-    move_to_static = TO_LIST(Options.options.static_modules)
+    explicit_shared_modules = TO_LIST(Options.options.shared_modules, delimiter=',')
+    explicit_static_modules = TO_LIST(Options.options.static_modules, delimiter=',')
 
-    for m in move_to_static:
-        if m in default_shared_modules:
-            default_shared_modules.remove(m)
-            default_static_modules.append(m)
-    for m in move_to_shared:
-        if m in default_static_modules:
-            default_static_modules.remove(m)
-            default_shared_modules.append(m)
+    final_static_modules = default_static_modules
+    final_shared_modules = default_shared_modules
 
-    conf.env['static_modules'] = default_static_modules
-    conf.env['shared_modules'] = default_shared_modules
+    for m in explicit_static_modules:
+        if m in final_shared_modules:
+            final_shared_modules.remove(m)
+        final_static_modules.append(m)
+    for m in explicit_shared_modules:
+        if m in final_static_modules:
+            final_static_modules.remove(m)
+        final_shared_modules.append(m)
 
-    conf.DEFINE('STRING_STATIC_MODULES', ' '.join(default_static_modules), quote=True)
+    conf.env['static_modules'] = final_static_modules
+    conf.env['shared_modules'] = final_shared_modules
+
+    conf.DEFINE('STRING_STATIC_MODULES', ' '.join(final_static_modules), quote=True)
 
     static_list = {}
     shared_list = {}
@@ -360,12 +363,12 @@ return acl_get_perm_np(permset_d, perm);
     prefixes = ['vfs', 'pdb', 'rpc', 'auth', 'nss_info', 'charset', 'idmap', 'gpext', 'perfcount']
     conf.env['MODULE_PREFIXES'] = prefixes
     for p in prefixes:
-        for m in default_static_modules:
+        for m in final_static_modules:
             if m.find(p) == 0:
                 if not p in static_list:
                     static_list[p] = []
                 static_list[p].append(m)
-        for m in default_shared_modules:
+        for m in final_shared_modules:
             if m.find(p) == 0:
                 if not p in shared_list:
                     shared_list[p] = []
