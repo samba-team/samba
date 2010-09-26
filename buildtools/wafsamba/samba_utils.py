@@ -194,13 +194,13 @@ def unique_list(seq):
     return result
 
 
-def TO_LIST(str):
+def TO_LIST(str, delimiter=None):
     '''Split a list, preserving quoted strings and existing lists'''
     if str is None:
         return []
     if isinstance(str, list):
         return str
-    lst = str.split()
+    lst = str.split(delimiter)
     # the string may have had quotes in it, now we
     # check if we did have quotes, and use the slower shlex
     # if we need to
