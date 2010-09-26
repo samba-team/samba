@@ -519,31 +519,10 @@ SLCACHE_SRC = '''libsmb/samlogon_cache.c'''
 
 DCUTIL_SRC  = '''libsmb/namequery_dc.c libsmb/trustdom_cache.c libsmb/trusts_util.c libsmb/dsgetdcname.c'''
 
-#FIXME: set IDMAP_STATIC during configuration
-IDMAP_STATIC=''
-IDMAP_RW_SRC = 'winbindd/idmap_rw.c'
-IDMAP_SRC = 'winbindd/idmap.c winbindd/idmap_util.c ${IDMAP_RW_SRC} ${IDMAP_STATIC}'
-
 #FIXME: set NSS_INFO_STATIC during configuration
 NSS_INFO_STATIC = ''
 NSS_INFO_TEMPLATE_SRC = 'winbindd/nss_info_template.c'
 NSS_INFO_SRC = 'winbindd/nss_info.c'
-
-IDMAP_AD_SRC = '''winbindd/idmap_ad.c'''
-IDMAP_RID_SRC = '''winbindd/idmap_rid.c'''
-IDMAP_PASSDB_SRC = '''winbindd/idmap_passdb.c'''
-IDMAP_LDAP_SRC = '''winbindd/idmap_ldap.c'''
-IDMAP_TDB2_SRC = '''winbindd/idmap_tdb2.c'''
-
-IDMAP_HASH_SRC = '''winbindd/idmap_hash/idmap_hash.c
-                    winbindd/idmap_hash/mapfile.c'''
-
-IDMAP_ADEX_SRC = '''winbindd/idmap_adex/idmap_adex.c
-                    winbindd/idmap_adex/cell_util.c
-                    winbindd/idmap_adex/likewise_cell.c
-                    winbindd/idmap_adex/provider_unified.c
-                    winbindd/idmap_adex/gc_util.c
-                    winbindd/idmap_adex/domain_util.c'''
 
 PERFCOUNT_STATIC = ''
 PERFCOUNT_ONEFS_SRC = 'modules/perfcount_onefs.c'
@@ -643,7 +622,7 @@ WINBINDD_SRC1 = '''winbindd/winbindd.c
                    ../nsswitch/libwbclient/wb_reqtrans.c'''
 
 WINBINDD_SRC = '''${WINBINDD_SRC1}
-                  ${IDMAP_SRC} ${NSS_INFO_SRC}
+                  ${NSS_INFO_SRC}
                   ${RPC_NCACN_NP} ${NPA_TSTREAM_SRC} ${RPC_SAMR_SRC} ${RPC_LSARPC_SRC}
                   ${TDB_VALIDATE_SRC}
                   ${LIBCLI_DSSETUP_SRC}
@@ -1156,60 +1135,6 @@ bld.SAMBA_SUBSYSTEM('ASN1_UTIL',
                     deps='talloc',
                     local_include=False)
 
-bld.SAMBA_SUBSYSTEM('IDMAP',
-                    source=IDMAP_SRC,
-                    deps='''IDMAP_AD IDMAP_RID IDMAP_PASSDB IDMAP_LDAP IDMAP_TDB2 IDMAP_HASH IDMAP_ADEX''',
-                    vars=locals())
-
-bld.SAMBA_MODULE('IDMAP_AD',
-                 subsystem='IDMAP',
-                 source=IDMAP_AD_SRC,
-                 init_function='',
-                 internal_module=True,
-                 enabled=True)
-
-bld.SAMBA_MODULE('IDMAP_RID',
-                 subsystem='IDMAP',
-                 source=IDMAP_RID_SRC,
-                 init_function='',
-                 internal_module=True,
-                 enabled=True)
-
-bld.SAMBA_MODULE('IDMAP_PASSDB',
-                 subsystem='IDMAP',
-                 source=IDMAP_PASSDB_SRC,
-                 init_function='',
-                 internal_module=True,
-                 enabled=True)
-
-bld.SAMBA_MODULE('IDMAP_LDAP',
-                 subsystem='IDMAP',
-                 source=IDMAP_LDAP_SRC,
-                 init_function='',
-                 internal_module=True,
-                 enabled=True)
-
-bld.SAMBA_MODULE('IDMAP_TDB2',
-                 subsystem='IDMAP',
-                 source=IDMAP_TDB2_SRC,
-                 init_function='',
-                 internal_module=True,
-                 enabled=True)
-
-bld.SAMBA_MODULE('IDMAP_HASH',
-                 subsystem='IDMAP',
-                 source=IDMAP_HASH_SRC,
-                 init_function='',
-                 internal_module=True,
-                 enabled=True)
-
-bld.SAMBA_MODULE('IDMAP_ADEX',
-                 subsystem='IDMAP',
-                 source=IDMAP_ADEX_SRC,
-                 init_function='',
-                 internal_module=True,
-                 enabled=True)
-
 bld.SAMBA_SUBSYSTEM('CHARSET',
                     source='',
                     deps='''CHARSET_WEIRD CHARSET_CP850 CHARSET_CP437 CHARSET_MACOSXFS''',
@@ -1508,7 +1433,7 @@ bld.SAMBA_BINARY('winbindd/winbindd',
                  libwbclient PASSDB ldap resolv PARAM LIB_NONSMBD LIBSMB
                  POPT_SAMBA KRBCLIENT LIBMSRPC_GEN LIBMSRPC LIBADS LIBADS_SERVER
                  NSS_INFO_TEMPLATE SRV_NDR_WBINT RPCCLI_NDR_WBINT LIBAFS
-                 LIBAFS_SETTOKEN PROFILE SLCACHE DCUTIL
+                 LIBAFS_SETTOKEN PROFILE SLCACHE DCUTIL IDMAP
                  ''',
                  enabled=bld.env.build_winbind,
                  install_path='${SBINDIR}',
@@ -1773,6 +1698,7 @@ bld.RECURSE('../lib/crypto')
 bld.RECURSE('modules')
 bld.RECURSE('auth')
 bld.RECURSE('passdb')
+bld.RECURSE('winbindd')
 
 bld.ENFORCE_GROUP_ORDERING()
 bld.CHECK_PROJECT_RULES()

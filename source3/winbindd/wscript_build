@@ -1,0 +1,74 @@
+#!/usr/bin/env python
+
+IDMAP_AD_SRC = '''idmap_ad.c'''
+IDMAP_RID_SRC = '''idmap_rid.c'''
+IDMAP_PASSDB_SRC = '''idmap_passdb.c'''
+IDMAP_LDAP_SRC = '''idmap_ldap.c'''
+IDMAP_TDB2_SRC = '''idmap_tdb2.c'''
+
+IDMAP_HASH_SRC = '''idmap_hash/idmap_hash.c
+                    idmap_hash/mapfile.c'''
+
+IDMAP_ADEX_SRC = '''idmap_adex/idmap_adex.c
+                    idmap_adex/cell_util.c
+                    idmap_adex/likewise_cell.c
+                    idmap_adex/provider_unified.c
+                    idmap_adex/gc_util.c
+                    idmap_adex/domain_util.c'''
+
+IDMAP_RW_SRC = 'idmap_rw.c'
+IDMAP_SRC = 'idmap.c idmap_util.c ${IDMAP_RW_SRC}'
+
+bld.SAMBA_SUBSYSTEM('IDMAP',
+                    source=IDMAP_SRC,
+                    deps='''IDMAP_AD IDMAP_RID IDMAP_PASSDB IDMAP_LDAP IDMAP_TDB2 IDMAP_HASH IDMAP_ADEX''',
+                    vars=locals())
+
+bld.SAMBA_MODULE('IDMAP_AD',
+                 subsystem='IDMAP',
+                 source=IDMAP_AD_SRC,
+                 init_function='',
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('IDMAP_AD'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('IDMAP_AD'))
+
+bld.SAMBA_MODULE('IDMAP_RID',
+                 subsystem='IDMAP',
+                 source=IDMAP_RID_SRC,
+                 init_function='',
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('IDMAP_RID'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('IDMAP_RID'))
+
+bld.SAMBA_MODULE('IDMAP_PASSDB',
+                 subsystem='IDMAP',
+                 source=IDMAP_PASSDB_SRC,
+                 init_function='',
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('IDMAP_PASSDB'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('IDMAP_PASSDB'))
+
+bld.SAMBA_MODULE('IDMAP_LDAP',
+                 subsystem='IDMAP',
+                 source=IDMAP_LDAP_SRC,
+                 init_function='',
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('IDMAP_LDAP'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('IDMAP_LDAP'))
+
+bld.SAMBA_MODULE('IDMAP_TDB2',
+                 subsystem='IDMAP',
+                 source=IDMAP_TDB2_SRC,
+                 init_function='',
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('IDMAP_TDB2'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('IDMAP_TDB2'))
+
+bld.SAMBA_MODULE('IDMAP_HASH',
+                 subsystem='IDMAP',
+                 source=IDMAP_HASH_SRC,
+                 init_function='',
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('IDMAP_HASH'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('IDMAP_HASH'))
+
+bld.SAMBA_MODULE('IDMAP_ADEX',
+                 subsystem='IDMAP',
+                 source=IDMAP_ADEX_SRC,
+                 init_function='',
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('IDMAP_ADEX'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('IDMAP_ADEX'))
