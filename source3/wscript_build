@@ -1152,6 +1152,7 @@ for prefix in bld.env.MODULE_PREFIXES:
     if prefix == 'pdb': continue
     if prefix == 'idmap': continue
     if prefix == 'charset': continue
+    if prefix == 'perfcount': continue
 
     static_key = "%s_STATIC" % prefix.upper()
     shared_key = "%s_SHARED" % prefix.upper()
@@ -1418,6 +1419,25 @@ bld.SAMBA_MODULE('CHARSET_MACOSXFS',
                  init_function='',
                  internal_module=True,
                  enabled=False) #fixme
+
+bld.SAMBA_SUBSYSTEM('PERFCOUNT',
+                    source='',
+                    deps='''PERFCOUNT_ONEFS PERFCOUNT_TEST''',
+                    vars=locals())
+
+bld.SAMBA_MODULE('PERFCOUNT_ONEFS',
+                 subsystem='PERFCOUNT',
+                 source=PERFCOUNT_ONEFS_SRC,
+                 init_function='',
+                 internal_module=True,
+                 enabled=False) #fixme
+
+bld.SAMBA_MODULE('PERFCOUNT_TEST',
+                 subsystem='PERFCOUNT',
+                 source=PERFCOUNT_TEST_SRC,
+                 init_function='',
+                 internal_module=True,
+                 enabled=True)
 
 bld.SAMBA_SUBSYSTEM('AVAHI',
                     source=AVAHI_SRC,
