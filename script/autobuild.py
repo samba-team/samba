@@ -72,13 +72,17 @@ retry_task = [ '''set -e
                 done
                ''' % samba_master]
 
-def run_cmd(cmd, dir=".", show=None):
+def run_cmd(cmd, dir=".", show=None, output=False):
     cwd = os.getcwd()
     os.chdir(dir)
     if show is None:
         show = options.verbose
     if show:
         print("Running: '%s' in '%s'" % (cmd, dir))
+    if output:
+        ret = Popen([cmd], shell=True, stdout=PIPE).communicate()[0]
+        os.chdir(cwd)
+        return ret
     ret = os.system(cmd)
     os.chdir(cwd)
     if ret != 0:
@@ -254,6 +258,10 @@ def rebase_tree(url):
         run_cmd("git rebase --whitespace=fix master/master", show=True, dir=test_master)
     else:
         run_cmd("git rebase master/master", show=True, dir=test_master)
+    diff = run_cmd("git --no-pager diff HEAD master/master", dir=test_master, output=True)
+    if diff == '':
+        print("No differences between HEAD and master/master - exiting")
+        sys.exit(0)
 
 def push_to(url):
     print("Pushing to %s" % url)
