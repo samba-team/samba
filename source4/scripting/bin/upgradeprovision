@@ -932,7 +932,7 @@ def update_present(ref_samdb, samdb, basedn, listPresent, usns, invocationid):
                     if attrUSN:
                         message(CHANGE, "%sAttribute: %s will be modified"
                                         "/deleted it was last modified"
-                                        "during a provision, current usn:"
+                                        " during a provision, current usn:"
                                         "%d" % (txt, att,  attrUSN))
                         txt = ""
                     else:
