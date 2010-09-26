@@ -20,6 +20,7 @@
 #include "includes.h"
 #include "nfs4_acls.h"
 #include "librpc/gen_ndr/ndr_security.h"
+#include "../libcli/security/dom_sid.h"
 #include "include/dbwrap.h"
 
 #undef DBGC_CLASS
@@ -567,7 +568,7 @@ static bool smbacl4_fill_ace4(
 		DEBUG(9, ("ace_v4->aceMask(0x%x)!=ace_nt->access_mask(0x%x)\n",
 			ace_v4->aceMask, ace_nt->access_mask));
 
-	if (sid_equal(&ace_nt->trustee, &global_sid_World)) {
+	if (dom_sid_equal(&ace_nt->trustee, &global_sid_World)) {
 		ace_v4->who.special_id = SMB_ACE4_WHO_EVERYONE;
 		ace_v4->flags |= SMB_ACE4_ID_SPECIAL;
 	} else {
