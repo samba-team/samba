@@ -1025,7 +1025,6 @@ NET_SRC2 = 'utils/net_registry_util.c utils/net_help_common.c'
 
 NET_SRC = '''${NET_SRC1}
              ${NET_SRC2}
-             ${LIBGPO_SRC}
              ${REGFIO_SRC}'''
 
 CUPS_SRC = '''client/smbspool.c'''
@@ -1213,6 +1212,10 @@ bld.SAMBA_SUBSYSTEM('LIBMSRPC',
 bld.SAMBA_SUBSYSTEM('LIBMSRPC_GEN',
                     source='${LIBNDR_GEN_SRC}',
                     deps='LIBNDR NDR_SECURITY NDR_DCERPC NDR_EVENTLOG NDR_LSA',
+                    vars=locals())
+
+bld.SAMBA_SUBSYSTEM('LIBGPO',
+                    source='${LIBGPO_SRC}',
                     vars=locals())
 
 bld.SAMBA_SUBSYSTEM('ASN1_UTIL',
@@ -1480,7 +1483,7 @@ bld.SAMBA_BINARY('smbclient',
 bld.SAMBA_BINARY('net',
                  source=NET_SRC,
                  deps='''talloc tdb libnetapi libaddns cap resolv POPT_SAMBA PASSDB LIBSMB LIB_NONSMBD
-                 PARAM_WITHOUT_REG libwbclient PARAM KRBCLIENT LIBMSRPC_GEN LIBMSRPC LIBADS LIBADS_SERVER LIBADS_PRINTER
+                 PARAM_WITHOUT_REG libwbclient PARAM KRBCLIENT LIBMSRPC_GEN LIBMSRPC LIBGPO LIBADS LIBADS_SERVER LIBADS_PRINTER
                  LOCALE_DIR LIBAFS LIBAFS_SETTOKEN READLINE PASSWD_UTIL LIBNET
                  LIBNET_DSSYNC LIBNET_SAMSYNC LIBEVENTLOG DISPLAY_SEC DCUTIL''',
                  vars=locals())
