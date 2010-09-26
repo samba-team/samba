@@ -1,0 +1,401 @@
+#!/usr/bin/env python
+
+VFS_DEFAULT_SRC = '''vfs_default.c'''
+VFS_AUDIT_SRC = '''vfs_audit.c'''
+VFS_EXTD_AUDIT_SRC = '''vfs_extd_audit.c'''
+VFS_FULL_AUDIT_SRC = '''vfs_full_audit.c'''
+VFS_FAKE_PERMS_SRC = '''vfs_fake_perms.c'''
+VFS_RECYCLE_SRC = '''vfs_recycle.c'''
+VFS_NETATALK_SRC = '''vfs_netatalk.c'''
+VFS_DEFAULT_QUOTA_SRC = '''vfs_default_quota.c'''
+VFS_READONLY_SRC = '''vfs_readonly.c getdate.c'''
+VFS_CAP_SRC = '''vfs_cap.c'''
+VFS_EXPAND_MSDFS_SRC = '''vfs_expand_msdfs.c'''
+VFS_SHADOW_COPY_SRC = '''vfs_shadow_copy.c'''
+VFS_SHADOW_COPY2_SRC = '''vfs_shadow_copy2.c'''
+VFS_AFSACL_SRC = '''vfs_afsacl.c'''
+VFS_XATTR_TDB_SRC = '''vfs_xattr_tdb.c'''
+VFS_POSIXACL_SRC = '''vfs_posixacl.c'''
+VFS_AIXACL_SRC = '''vfs_aixacl.c'''
+VFS_AIXACL2_SRC = '''vfs_aixacl2.c'''
+VFS_SOLARISACL_SRC = '''vfs_solarisacl.c'''
+VFS_ZFSACL_SRC = '''vfs_zfsacl.c'''
+VFS_HPUXACL_SRC = '''vfs_hpuxacl.c'''
+VFS_IRIXACL_SRC = '''vfs_irixacl.c'''
+VFS_TRU64ACL_SRC = '''vfs_tru64acl.c'''
+VFS_CATIA_SRC = 'vfs_catia.c'
+VFS_STREAMS_XATTR_SRC = 'vfs_streams_xattr.c'
+VFS_STREAMS_DEPOT_SRC = 'vfs_streams_depot.c'
+VFS_CACHEPRIME_SRC = 'vfs_cacheprime.c'
+VFS_PREALLOC_SRC = 'vfs_prealloc.c'
+VFS_COMMIT_SRC = 'vfs_commit.c'
+VFS_GPFS_SRC = 'vfs_gpfs.c gpfs.c'
+VFS_NOTIFY_FAM_SRC = 'vfs_notify_fam.c'
+VFS_READAHEAD_SRC = 'vfs_readahead.c'
+VFS_TSMSM_SRC = 'vfs_tsmsm.c'
+VFS_FILEID_SRC = 'vfs_fileid.c'
+VFS_AIO_FORK_SRC = 'vfs_aio_fork.c'
+VFS_PREOPEN_SRC = 'vfs_preopen.c'
+VFS_SYNCOPS_SRC = 'vfs_syncops.c'
+VFS_ACL_XATTR_SRC = 'vfs_acl_xattr.c'
+VFS_ACL_TDB_SRC = 'vfs_acl_tdb.c'
+VFS_SMB_TRAFFIC_ANALYZER_SRC = 'vfs_smb_traffic_analyzer.c'
+VFS_ONEFS_SRC = '''vfs_onefs.c onefs_acl.c onefs_system.c
+                onefs_open.c onefs_streams.c onefs_dir.c
+                onefs_cbrl.c onefs_notify.c onefs_config.c'''
+VFS_ONEFS_SHADOW_COPY_SRC = 'vfs_onefs_shadow_copy.c onefs_shadow_copy.c'
+VFS_DIRSORT_SRC = 'vfs_dirsort.c'
+VFS_SCANNEDONLY_SRC = 'vfs_scannedonly.c'
+VFS_CROSSRENAME_SRC = 'vfs_crossrename.c'
+VFS_LINUX_XFS_SGID_SRC = 'vfs_linux_xfs_sgid.c'
+
+
+bld.SAMBA_SUBSYSTEM('NFS4_ACLS',
+                    source='nfs4_acls.c')
+
+bld.SAMBA_SUBSYSTEM('VFS_AIXACL_UTIL',
+                    source='vfs_aixacl_util.c',
+                    enabled=False) #fixme
+
+bld.SAMBA_SUBSYSTEM('VFS',
+                    source='',
+                    deps='''VFS_DEFAULT VFS_AUDIT VFS_EXTD_AUDIT
+		    VFS_FULL_AUDIT VFS_FAKE_PERMS VFS_RECYCLE
+		    VFS_NETATALK VFS_DEFAULT_QUOTA VFS_READONLY
+		    VFS_CAP VFS_EXPAND_MSDFS VFS_SHADOW_COPY VFS_SHADOW_COPY2
+		    VFS_AFSACL VFS_XATTR_TDB VFS_POSIXACL VFS_AIXACL VFS_AIXACL2
+		    VFS_SOLARISACL VFS_ZFSACL VFS_HPUXACL VFS_IRIXACL
+		    VFS_TRU64ACL VFS_CATIA VFS_STREAMS_XATTR VFS_STREAMS_DEPOT
+		    VFS_CACHEPRIME VFS_PREALLOC VFS_COMMIT VFS_GPFS
+		    VFS_NOTIFY_FAM VFS_READAHEAD VFS_TSMSM VFS_FILEID
+		    VFS_AIO_FORK VFS_PREOPEN VFS_SYNCOPS VFS_ACL_XATTR
+		    VFS_ACL_TDB VFS_SMB_TRAFFIC_ANALYZER VFS_ONEFS
+		    VFS_ONEFS_SHADOW_COPY VFS_DIRSORT VFS_SCANNEDONLY
+		    VFS_CROSSRENAME VFS_LINUX_XFS_SGID''',
+                    vars=locals())
+
+bld.SAMBA_MODULE('VFS_DEFAULT',
+                 subsystem='VFS',
+                 source=VFS_DEFAULT_SRC,
+                 init_function='',
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('VFS_DEFAULT'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('VFS_DEFAULT'))
+
+bld.SAMBA_MODULE('VFS_AUDIT',
+                 subsystem='VFS',
+                 source=VFS_AUDIT_SRC,
+                 init_function='',
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('VFS_AUDIT'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('VFS_AUDIT'))
+
+bld.SAMBA_MODULE('VFS_EXTD_AUDIT',
+                 subsystem='VFS',
+                 source=VFS_EXTD_AUDIT_SRC,
+                 init_function='',
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('VFS_EXTD_AUDIT'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('VFS_EXTD_AUDIT'))
+
+bld.SAMBA_MODULE('VFS_FULL_AUDIT',
+                 subsystem='VFS',
+                 source=VFS_FULL_AUDIT_SRC,
+                 init_function='',
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('VFS_FULL_AUDIT'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('VFS_FULL_AUDIT'))
+
+bld.SAMBA_MODULE('VFS_FAKE_PERMS',
+                 subsystem='VFS',
+                 source=VFS_FAKE_PERMS_SRC,
+                 init_function='',
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('VFS_FAKE_PERMS'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('VFS_FAKE_PERMS'))
+
+bld.SAMBA_MODULE('VFS_RECYCLE',
+                 subsystem='VFS',
+                 source=VFS_RECYCLE_SRC,
+                 init_function='',
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('VFS_RECYCLE'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('VFS_RECYCLE'))
+
+bld.SAMBA_MODULE('VFS_NETATALK',
+                 subsystem='VFS',
+                 source=VFS_NETATALK_SRC,
+                 init_function='',
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('VFS_NETATALK'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('VFS_NETATALK'))
+
+bld.SAMBA_MODULE('VFS_DEFAULT_QUOTA',
+                 subsystem='VFS',
+                 source=VFS_DEFAULT_QUOTA_SRC,
+                 init_function='',
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('VFS_DEFAULT_QUOTA'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('VFS_DEFAULT_QUOTA'))
+
+bld.SAMBA_MODULE('VFS_READONLY',
+                 subsystem='VFS',
+                 source=VFS_READONLY_SRC,
+                 init_function='',
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('VFS_READONLY'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('VFS_READONLY'))
+
+bld.SAMBA_MODULE('VFS_CAP',
+                 subsystem='VFS',
+                 source=VFS_CAP_SRC,
+                 init_function='',
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('VFS_CAP'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('VFS_CAP'))
+
+bld.SAMBA_MODULE('VFS_EXPAND_MSDFS',
+                 subsystem='VFS',
+                 source=VFS_EXPAND_MSDFS_SRC,
+                 init_function='',
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('VFS_EXPAND_MSDFS'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('VFS_EXPAND_MSDFS'))
+
+bld.SAMBA_MODULE('VFS_SHADOW_COPY',
+                 subsystem='VFS',
+                 source=VFS_SHADOW_COPY_SRC,
+                 init_function='',
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('VFS_SHADOW_COPY'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('VFS_SHADOW_COPY'))
+
+bld.SAMBA_MODULE('VFS_SHADOW_COPY2',
+                 subsystem='VFS',
+                 source=VFS_SHADOW_COPY2_SRC,
+                 init_function='',
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('VFS_SHADOW_COPY2'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('VFS_SHADOW_COPY2'))
+
+bld.SAMBA_MODULE('VFS_AFSACL',
+                 subsystem='VFS',
+                 source=VFS_AFSACL_SRC,
+                 init_function='',
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('VFS_AFSACL'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('VFS_AFSACL'))
+
+bld.SAMBA_MODULE('VFS_XATTR_TDB',
+                 subsystem='VFS',
+                 source=VFS_XATTR_TDB_SRC,
+                 init_function='',
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('VFS_XATTR_TDB'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('VFS_XATTR_TDB'))
+
+bld.SAMBA_MODULE('VFS_POSIXACL',
+                 subsystem='VFS',
+                 source=VFS_POSIXACL_SRC,
+                 init_function='',
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('VFS_POSIXACL'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('VFS_POSIXACL'))
+
+bld.SAMBA_MODULE('VFS_AIXACL',
+                 subsystem='VFS',
+                 source=VFS_AIXACL_SRC,
+                 deps='VFS_AIXACL_UTIL',
+                 init_function='',
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('VFS_AIXACL'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('VFS_AIXACL'))
+
+bld.SAMBA_MODULE('VFS_AIXACL2',
+                 subsystem='VFS',
+                 source=VFS_AIXACL2_SRC,
+                 deps='NFS4_ACLS VFS_AIXACL_UTIL',
+                 init_function='',
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('VFS_AIXACL2'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('VFS_AIXACL2'))
+
+bld.SAMBA_MODULE('VFS_SOLARISACL',
+                 subsystem='VFS',
+                 source=VFS_SOLARISACL_SRC,
+                 init_function='',
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('VFS_SOLARISACL'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('VFS_SOLARISACL'))
+
+bld.SAMBA_MODULE('VFS_ZFSACL',
+                 subsystem='VFS',
+                 source=VFS_ZFSACL_SRC,
+                 deps='NFS4_ACLS',
+                 init_function='',
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('VFS_ZFSACL'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('VFS_ZFSACL'))
+
+bld.SAMBA_MODULE('VFS_HPUXACL',
+                 subsystem='VFS',
+                 source=VFS_HPUXACL_SRC,
+                 init_function='',
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('VFS_HPUXACL'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('VFS_HPUXACL'))
+
+bld.SAMBA_MODULE('VFS_IRIXACL',
+                 subsystem='VFS',
+                 source=VFS_IRIXACL_SRC,
+                 init_function='',
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('VFS_IRIXACL'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('VFS_IRIXACL'))
+
+bld.SAMBA_MODULE('VFS_TRU64ACL',
+                 subsystem='VFS',
+                 source=VFS_TRU64ACL_SRC,
+                 init_function='',
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('VFS_TRUE64ACL'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('VFS_TRUE64ACL'))
+
+bld.SAMBA_MODULE('VFS_CATIA',
+                 subsystem='VFS',
+                 source=VFS_CATIA_SRC,
+                 init_function='',
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('VFS_CATIA'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('VFS_CATIA'))
+
+bld.SAMBA_MODULE('VFS_STREAMS_XATTR',
+                 subsystem='VFS',
+                 source=VFS_STREAMS_XATTR_SRC,
+                 init_function='',
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('VFS_STREAMS_XATTR'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('VFS_STREAMS_XATTR'))
+
+bld.SAMBA_MODULE('VFS_STREAMS_DEPOT',
+                 subsystem='VFS',
+                 source=VFS_STREAMS_DEPOT_SRC,
+                 init_function='',
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('VFS_STREAMS_DEPOT'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('VFS_STREAMS_DEPOT'))
+
+bld.SAMBA_MODULE('VFS_CACHEPRIME',
+                 subsystem='VFS',
+                 source=VFS_CACHEPRIME_SRC,
+                 init_function='',
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('VFS_CACHEPRIME'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('VFS_CACHEPRIME'))
+
+bld.SAMBA_MODULE('VFS_PREALLOC',
+                 subsystem='VFS',
+                 source=VFS_PREALLOC_SRC,
+                 init_function='',
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('VFS_PREALLOC'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('VFS_PREALLOC'))
+
+bld.SAMBA_MODULE('VFS_COMMIT',
+                 subsystem='VFS',
+                 source=VFS_COMMIT_SRC,
+                 init_function='',
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('VFS_COMMIT'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('VFS_COMMIT'))
+
+bld.SAMBA_MODULE('VFS_GPFS',
+                 subsystem='VFS',
+                 source=VFS_GPFS_SRC,
+                 deps='NFS4_ACLS',
+                 init_function='',
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('VFS_GPFS'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('VFS_GPFS'))
+
+bld.SAMBA_MODULE('VFS_NOTIFY_FAM',
+                 subsystem='VFS',
+                 source=VFS_NOTIFY_FAM_SRC,
+                 init_function='',
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('VFS_NOTIFY_FAM'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('VFS_NOTIFY_FAM'))
+
+bld.SAMBA_MODULE('VFS_READAHEAD',
+                 subsystem='VFS',
+                 source=VFS_READAHEAD_SRC,
+                 init_function='',
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('VFS_READAHEAD'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('VFS_READAHEAD'))
+
+bld.SAMBA_MODULE('VFS_TSMSM',
+                 subsystem='VFS',
+                 source=VFS_TSMSM_SRC,
+                 init_function='',
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('VFS_TSMSM'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('VFS_TSMSM'))
+
+bld.SAMBA_MODULE('VFS_FILEID',
+                 subsystem='VFS',
+                 source=VFS_FILEID_SRC,
+                 init_function='',
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('VFS_FILEID'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('VFS_FILEID'))
+
+bld.SAMBA_MODULE('VFS_AIO_FORK',
+                 subsystem='VFS',
+                 source=VFS_AIO_FORK_SRC,
+                 init_function='',
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('VFS_AIO_FORK'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('VFS_AIO_FORK'))
+
+bld.SAMBA_MODULE('VFS_PREOPEN',
+                 subsystem='VFS',
+                 source=VFS_PREOPEN_SRC,
+                 init_function='',
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('VFS_PREOPEN'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('VFS_PREOPEN'))
+
+bld.SAMBA_MODULE('VFS_SYNCOPS',
+                 subsystem='VFS',
+                 source=VFS_SYNCOPS_SRC,
+                 init_function='',
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('VFS_SYNCOPS'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('VFS_SYNCOPS'))
+
+bld.SAMBA_MODULE('VFS_ACL_XATTR',
+                 subsystem='VFS',
+                 source=VFS_ACL_XATTR_SRC,
+                 init_function='',
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('VFS_ACL_XATTR'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('VFS_ACL_XATTR'))
+
+bld.SAMBA_MODULE('VFS_ACL_TDB',
+                 subsystem='VFS',
+                 source=VFS_ACL_TDB_SRC,
+                 init_function='',
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('VFS_ACL_TDB'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('VFS_ACL_TDB'))
+
+bld.SAMBA_MODULE('VFS_SMB_TRAFFIC_ANALYZER',
+                 subsystem='VFS',
+                 source=VFS_SMB_TRAFFIC_ANALYZER_SRC,
+                 init_function='',
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('VFS_SMB_TRAFFIC_ANALYZER'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('VFS_SMB_TRAFFIC_ANALYZER'))
+
+bld.SAMBA_MODULE('VFS_ONEFS',
+                 subsystem='VFS',
+                 source=VFS_ONEFS_SRC,
+                 init_function='',
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('VFS_ONEFS'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('VFS_ONEFS'))
+
+bld.SAMBA_MODULE('VFS_ONEFS_SHADOW_COPY',
+                 subsystem='VFS',
+                 source=VFS_ONEFS_SHADOW_COPY_SRC,
+                 init_function='',
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('VFS_ONEFS_SHADOW_COPY'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('VFS_ONEFS_SHADOW_COPY'))
+
+bld.SAMBA_MODULE('VFS_DIRSORT',
+                 subsystem='VFS',
+                 source=VFS_DIRSORT_SRC,
+                 init_function='',
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('VFS_DIRSORT'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('VFS_DIRSORT'))
+
+bld.SAMBA_MODULE('VFS_SCANNEDONLY',
+                 subsystem='VFS',
+                 source=VFS_SCANNEDONLY_SRC,
+                 init_function='',
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('VFS_SCANNEDONLY'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('VFS_SCANNEDONLY'))
+
+bld.SAMBA_MODULE('VFS_CROSSRENAME',
+                 subsystem='VFS',
+                 source=VFS_CROSSRENAME_SRC,
+                 init_function='',
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('VFS_CROSSRENAME'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('VFS_CROSSRENAME'))
+
+bld.SAMBA_MODULE('VFS_LINUX_XFS_SGID',
+                 subsystem='VFS',
+                 source=VFS_LINUX_XFS_SGID_SRC,
+                 init_function='',
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('VFS_LINUX_XFS_SGID'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('VFS_LINUX_XFS_SGID'))
