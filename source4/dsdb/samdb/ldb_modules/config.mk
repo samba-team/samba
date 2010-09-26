@@ -452,3 +452,14 @@ INIT_FUNCTION = LDB_MODULE(validate_update)
 ################################################
 
 ldb_validate_update_OBJ_FILES = $(dsdbsrcdir)/samdb/ldb_modules/validate_update.o
+
+################################################
+# Start MODULE ldb_aclread
+[MODULE::ldb_aclread]
+PRIVATE_DEPENDENCIES = LIBTALLOC LIBEVENTS LIBSECURITY SAMDB
+SUBSYSTEM = LIBLDB
+INIT_FUNCTION = LDB_MODULE(aclread)
+# End MODULE ldb_acl
+################################################
+
+ldb_acl_OBJ_FILES = $(dsdbsrcdir)/samdb/ldb_modules/acl_read.o

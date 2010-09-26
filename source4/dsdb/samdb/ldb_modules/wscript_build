@@ -331,3 +331,11 @@ bld.SAMBA_MODULE('ldb_lazy_commit',
 	init_function='LDB_MODULE(lazy_commit)',
 	deps='SAMDB'
 	)
+
+bld.SAMBA_MODULE('ldb_aclread',
+        source='acl_read.c',
+        subsystem='ldb',
+        init_function='LDB_MODULE(aclread)',
+        internal_module=not bld.CONFIG_SET('USING_SYSTEM_LDB'),
+        deps='talloc LIBEVENTS LIBSECURITY SAMDB'
+        )
