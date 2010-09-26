@@ -1,0 +1,84 @@
+#!/usr/bin/env python
+
+AUTH_BUILTIN_SRC = 'auth_builtin.c'
+AUTH_DOMAIN_SRC = 'auth_domain.c'
+AUTH_SAM_SRC = 'auth_sam.c check_samsec.c'
+AUTH_SERVER_SRC = 'auth_server.c'
+AUTH_UNIX_SRC = 'auth_unix.c'
+AUTH_WINBIND_SRC = 'auth_winbind.c'
+AUTH_WBC_SRC = 'auth_wbc.c'
+AUTH_SCRIPT_SRC = 'auth_script.c'
+AUTH_NETLOGOND_SRC = 'auth_netlogond.c'
+
+AUTH_STATIC = ''
+AUTH_SRC = '''${AUTH_STATIC} auth.c auth_util.c token_util.c
+           server_info.c
+           server_info_sam.c
+           user_info.c
+           user_util.c
+           user_krb5.c
+           auth_compat.c auth_ntlmssp.c'''
+
+bld.SAMBA_SUBSYSTEM('AUTH',
+                    source=AUTH_SRC,
+                    deps='''AUTH_SAM AUTH_UNIX AUTH_WINBIND AUTH_WBC
+                            AUTH_SERVER AUTH_DOMAIN AUTH_BUILTIN
+                            AUTH_NETLOGOND
+                            PLAINTEXT_AUTH SLCACHE DCUTIL''',
+                    vars=locals())
+
+bld.SAMBA_MODULE('AUTH_SAM',
+                 subsystem='AUTH',
+                 source=AUTH_SAM_SRC,
+                 init_function='',
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('AUTH_SAM'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('AUTH_SAM'))
+
+bld.SAMBA_MODULE('AUTH_UNIX',
+                 subsystem='AUTH',
+                 source=AUTH_UNIX_SRC,
+                 init_function='',
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('AUTH_UNIX'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('AUTH_UNIX'))
+
+bld.SAMBA_MODULE('AUTH_WINBIND',
+                 subsystem='AUTH',
+                 source=AUTH_WINBIND_SRC,
+                 init_function='',
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('AUTH_WINBIND'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('AUTH_WINBIND'))
+
+bld.SAMBA_MODULE('AUTH_WBC',
+                 subsystem='AUTH',
+                 source=AUTH_WBC_SRC,
+                 init_function='',
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('AUTH_WBC'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('AUTH_WBC'))
+
+bld.SAMBA_MODULE('AUTH_SERVER',
+                 subsystem='AUTH',
+                 source=AUTH_SERVER_SRC,
+                 init_function='',
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('AUTH_SERVER'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('AUTH_SERVER'))
+
+bld.SAMBA_MODULE('AUTH_DOMAIN',
+                 subsystem='AUTH',
+                 source=AUTH_DOMAIN_SRC,
+                 init_function='',
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('AUTH_DOMAIN'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('AUTH_DOMAIN'))
+
+bld.SAMBA_MODULE('AUTH_BUILTIN',
+                 subsystem='AUTH',
+                 source=AUTH_BUILTIN_SRC,
+                 init_function='',
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('AUTH_BUILTIN'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('AUTH_BUILTIN'))
+
+bld.SAMBA_MODULE('AUTH_NETLOGOND',
+                 subsystem='AUTH',
+                 source=AUTH_NETLOGOND_SRC,
+                 init_function='',
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('AUTH_NETLOGOND'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('AUTH_NETLOGOND'))

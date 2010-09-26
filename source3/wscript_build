@@ -526,26 +526,6 @@ SLCACHE_SRC = '''libsmb/samlogon_cache.c'''
 
 DCUTIL_SRC  = '''libsmb/namequery_dc.c libsmb/trustdom_cache.c libsmb/trusts_util.c libsmb/dsgetdcname.c'''
 
-AUTH_BUILTIN_SRC = 'auth/auth_builtin.c'
-AUTH_DOMAIN_SRC = 'auth/auth_domain.c'
-AUTH_SAM_SRC = 'auth/auth_sam.c auth/check_samsec.c'
-AUTH_SERVER_SRC = 'auth/auth_server.c'
-AUTH_UNIX_SRC = 'auth/auth_unix.c'
-AUTH_WINBIND_SRC = 'auth/auth_winbind.c'
-AUTH_WBC_SRC = 'auth/auth_wbc.c'
-AUTH_SCRIPT_SRC = 'auth/auth_script.c'
-AUTH_NETLOGOND_SRC = 'auth/auth_netlogond.c'
-
-AUTH_STATIC = ''
-AUTH_SRC = '''${AUTH_STATIC} auth/auth.c auth/auth_util.c auth/token_util.c
-           auth/server_info.c
-           auth/server_info_sam.c
-           auth/user_info.c
-           auth/user_util.c
-           auth/user_krb5.c
-           auth/auth_compat.c auth/auth_ntlmssp.c
-           ${PLAINTEXT_AUTH_SRC} ${SLCACHE_SRC} ${DCUTIL_SRC}'''
-
 #FIXME: set IDMAP_STATIC during configuration
 IDMAP_STATIC=''
 IDMAP_RW_SRC = 'winbindd/idmap_rw.c'
@@ -1182,69 +1162,6 @@ bld.SAMBA_SUBSYSTEM('ASN1_UTIL',
                     source='../lib/util/asn1.c',
                     deps='talloc',
                     local_include=False)
-
-bld.SAMBA_SUBSYSTEM('AUTH',
-                    source=AUTH_SRC,
-                    deps='''AUTH_SAM AUTH_UNIX AUTH_WINBIND AUTH_WBC
-                            AUTH_SERVER AUTH_DOMAIN AUTH_BUILTIN
-                            AUTH_NETLOGOND''',
-                    vars=locals())
-
-bld.SAMBA_MODULE('AUTH_SAM',
-                 subsystem='AUTH',
-                 source=AUTH_SAM_SRC,
-                 init_function='',
-                 internal_module=True,
-                 enabled=True)
-
-bld.SAMBA_MODULE('AUTH_UNIX',
-                 subsystem='AUTH',
-                 source=AUTH_UNIX_SRC,
-                 init_function='',
-                 internal_module=True,
-                 enabled=True)
-
-bld.SAMBA_MODULE('AUTH_WINBIND',
-                 subsystem='AUTH',
-                 source=AUTH_WINBIND_SRC,
-                 init_function='',
-                 internal_module=True,
-                 enabled=True)
-
-bld.SAMBA_MODULE('AUTH_WBC',
-                 subsystem='AUTH',
-                 source=AUTH_WBC_SRC,
-                 init_function='',
-                 internal_module=True,
-                 enabled=True)
-
-bld.SAMBA_MODULE('AUTH_SERVER',
-                 subsystem='AUTH',
-                 source=AUTH_SERVER_SRC,
-                 init_function='',
-                 internal_module=True,
-                 enabled=True)
-
-bld.SAMBA_MODULE('AUTH_DOMAIN',
-                 subsystem='AUTH',
-                 source=AUTH_DOMAIN_SRC,
-                 init_function='',
-                 internal_module=True,
-                 enabled=True)
-
-bld.SAMBA_MODULE('AUTH_BUILTIN',
-                 subsystem='AUTH',
-                 source=AUTH_BUILTIN_SRC,
-                 init_function='',
-                 internal_module=True,
-                 enabled=True)
-
-bld.SAMBA_MODULE('AUTH_NETLOGOND',
-                 subsystem='AUTH',
-                 source=AUTH_NETLOGOND_SRC,
-                 init_function='',
-                 internal_module=True,
-                 enabled=True)
 
 bld.SAMBA_SUBSYSTEM('PDB',
                     source='',
@@ -1902,6 +1819,7 @@ bld.RECURSE('../lib/tsocket')
 bld.RECURSE('../lib/iniparser/src')
 bld.RECURSE('../lib/crypto')
 bld.RECURSE('modules')
+bld.RECURSE('auth')
 
 bld.ENFORCE_GROUP_ORDERING()
 bld.CHECK_PROJECT_RULES()
