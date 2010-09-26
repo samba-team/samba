@@ -248,17 +248,9 @@ LIBADDNS_SRC0 = '''libaddns/dnsrecord.c libaddns/dnsutils.c  libaddns/dnssock.c
                libaddns/dnsgss.c libaddns/dnsmarshall.c'''
 LIBADDNS_SRC = '''${LIBADDNS_SRC0} ${SOCKET_WRAPPER_SRC}'''
 
-GPEXT_STATIC = ''
-GPEXT_REGISTRY_SRC = 'libgpo/gpext/registry.c'
-GPEXT_SCRIPTS_SRC = 'libgpo/gpext/scripts.c'
-GPEXT_SECURITY_SRC = 'libgpo/gpext/security.c'
-
-GPEXT_SRC = '''../libgpo/gpext/gpext.c ${GPEXT_STATIC}'''
-
 LIBGPO_SRC0 = '''../libgpo/gpo_ldap.c ../libgpo/gpo_ini.c ../libgpo/gpo_util.c
               ../libgpo/gpo_fetch.c libgpo/gpo_filesync.c ../libgpo/gpo_sec.c
-              libgpo/gpo_reg.c
-              ${GPEXT_SRC}'''
+              libgpo/gpo_reg.c'''
 LIBGPO_SRC = '''${LIBGPO_SRC0}'''
 
 LIBADS_SRC = '''libads/ldap.c
@@ -1118,38 +1110,13 @@ bld.SAMBA_SUBSYSTEM('LIBMSRPC_GEN',
 
 bld.SAMBA_SUBSYSTEM('LIBGPO',
                     source='${LIBGPO_SRC}',
+                    deps='GPEXT',
                     vars=locals())
 
 bld.SAMBA_SUBSYSTEM('ASN1_UTIL',
                     source='../lib/util/asn1.c',
                     deps='talloc',
                     local_include=False)
-
-bld.SAMBA_SUBSYSTEM('GPEXT',
-                    source=GPEXT_SRC,
-                    deps='''GPEXT_REGISTRY GPEXT_SCRIPTS GPEXT_SECURITY''',
-                    vars=locals())
-
-bld.SAMBA_MODULE('GPEXT_REGISTRY',
-                 subsystem='GPEXT',
-                 source=GPEXT_REGISTRY_SRC,
-                 init_function='',
-                 internal_module=True,
-                 enabled=True)
-
-bld.SAMBA_MODULE('GPEXT_SCRIPTS',
-                 subsystem='GPEXT',
-                 source=GPEXT_SCRIPTS_SRC,
-                 init_function='',
-                 internal_module=True,
-                 enabled=True)
-
-bld.SAMBA_MODULE('GPEXT_SECURITY',
-                 subsystem='GPEXT',
-                 source=GPEXT_SECURITY_SRC,
-                 init_function='',
-                 internal_module=True,
-                 enabled=True)
 
 bld.SAMBA_SUBSYSTEM('AVAHI',
                     source=AVAHI_SRC,
@@ -1637,6 +1604,7 @@ bld.RECURSE('modules')
 bld.RECURSE('auth')
 bld.RECURSE('passdb')
 bld.RECURSE('winbindd')
+bld.RECURSE('libgpo/gpext')
 
 bld.ENFORCE_GROUP_ORDERING()
 bld.CHECK_PROJECT_RULES()
