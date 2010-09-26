@@ -222,13 +222,17 @@ NTSTATUS libnet_vampire_cb_check_options(void *private_data,
 static NTSTATUS libnet_vampire_cb_apply_schema(struct libnet_vampire_cb_state *s,
 					       const struct libnet_BecomeDC_StoreChunk *c)
 {
+	struct schema_list {
+		struct schema_list *next, *prev;
+		const struct drsuapi_DsReplicaObjectListItemEx *obj;
+	};
+
 	WERROR status;
 	const struct drsuapi_DsReplicaOIDMapping_Ctr *mapping_ctr;
-	uint32_t obj_to_convert_count;
-	const struct drsuapi_DsReplicaObjectListItemEx **obj_to_convert;
+	struct schema_list *schema_list = NULL, *schema_list_item, *schema_list_next_item;
 	struct dsdb_schema *working_schema;
 	struct dsdb_schema *provision_schema;
-	uint32_t object_count;
+	uint32_t object_count = 0;
 	struct drsuapi_DsReplicaObjectListItemEx *first_object;
 	const struct drsuapi_DsReplicaObjectListItemEx *cur;
 	uint32_t linked_attributes_count;
@@ -306,28 +310,31 @@ static NTSTATUS libnet_vampire_cb_apply_schema(struct libnet_vampire_cb_state *s
 	}
 
 	/* create a list of objects yet to be converted */
-	obj_to_convert_count = object_count;
-	obj_to_convert = talloc_array(s, const struct drsuapi_DsReplicaObjectListItemEx *, object_count);
-	NT_STATUS_HAVE_NO_MEMORY(obj_to_convert);
-	for (i = 0, cur = first_object; cur; cur = cur->next_object, i++) {
-		SMB_ASSERT(i < object_count);
-		obj_to_convert[i] = cur;
+	for (cur = first_object; cur; cur = cur->next_object) {
+		schema_list_item = talloc(s, struct schema_list);
+		schema_list_item->obj = cur;
+		DLIST_ADD_END(schema_list, schema_list_item, struct schema_list);
 	}
 
 	/* resolve objects until all are resolved and in local schema */
 	pass_no = 1;
 	working_schema = provision_schema;
-	do {
-		uint32_t failed_obj_count;
+
+	while (schema_list) {
+		uint32_t converted_obj_count = 0;
+		uint32_t failed_obj_count = 0;
 		TALLOC_CTX *tmp_ctx = talloc_new(s);
 		NT_STATUS_HAVE_NO_MEMORY(tmp_ctx);
 
-		failed_obj_count = 0;
-
-		for (i = 0; i < obj_to_convert_count; i++) {
+		for (schema_list_item = schema_list; schema_list_item; schema_list_item=schema_list_next_item) {
 			struct dsdb_extended_replicated_object object;
 
-			cur = obj_to_convert[i];
+			cur = schema_list_item->obj;
+
+			/* Save the next item, now we have saved out
+			 * the current one, so we can DLIST_REMOVE it
+			 * safely */
+			schema_list_next_item = schema_list_item->next;
 
 			/*
 			 * Convert the objects into LDB messages using the
@@ -341,8 +348,6 @@ static NTSTATUS libnet_vampire_cb_apply_schema(struct libnet_vampire_cb_state *s
 				DEBUG(1,("Warning: Failed to convert schema object %s into ldb msg\n",
 					 cur->object.identifier->dn));
 
-				/* move failed object at the beginning of the list */
-				obj_to_convert[failed_obj_count] = cur;
 				failed_obj_count++;
 			} else {
 				/*
@@ -357,24 +362,26 @@ static NTSTATUS libnet_vampire_cb_apply_schema(struct libnet_vampire_cb_state *s
 					DEBUG(1,("Warning: failed to convert object %s into a schema element: %s\n",
 						 ldb_dn_get_linearized(object.msg->dn),
 						 win_errstr(status)));
+					failed_obj_count++;
+				} else {
+					DLIST_REMOVE(schema_list, schema_list_item);
+					converted_obj_count++;
 				}
 			}
 		}
 		talloc_free(tmp_ctx);
 
-		DEBUG(1,("Pass %d: %d of %d objects left to be converted.\n",
-			 pass_no, failed_obj_count, object_count));
+		DEBUG(4,("Schema load pass %d: %d/%d of %d objects left to be converted.\n",
+			 pass_no, failed_obj_count, converted_obj_count, object_count));
 		pass_no++;
 
 		/* check if we converted any objects in this pass */
-		if (failed_obj_count == obj_to_convert_count) {
-			DEBUG(0,("Can't continue Schema load: %d objects left to be converted\n",
-				 obj_to_convert_count));
+		if (converted_obj_count == 0) {
+			DEBUG(0,("Can't continue Schema load: didn't manage to convert any objects: all %d remaining of %d objects failed to convert\n", failed_obj_count, object_count));
 			return NT_STATUS_INTERNAL_ERROR;
 		}
-		obj_to_convert_count = failed_obj_count;
 
-		if (obj_to_convert_count) {
+		if (schema_list) {
 			/* prepare for another cycle */
 			working_schema = s->self_made_schema;
 
@@ -384,11 +391,11 @@ static NTSTATUS libnet_vampire_cb_apply_schema(struct libnet_vampire_cb_state *s
 				return NT_STATUS_INTERNAL_ERROR;
 			}
 		}
-	} while (obj_to_convert_count);
+	};
 
 	/* free temp objects for 1st conversion phase */
 	talloc_unlink(s, provision_schema);
-	TALLOC_FREE(obj_to_convert);
+	TALLOC_FREE(schema_list);
 
 	/*
 	 * attach the schema we just brought over DRS to the ldb,
