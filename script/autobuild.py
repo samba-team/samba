@@ -72,7 +72,7 @@ retry_task = [ '''set -e
                 done
                ''' % samba_master]
 
-def run_cmd(cmd, dir=".", show=None, output=False):
+def run_cmd(cmd, dir=".", show=None, output=False, checkfail=True):
     cwd = os.getcwd()
     os.chdir(dir)
     if show is None:
@@ -85,8 +85,9 @@ def run_cmd(cmd, dir=".", show=None, output=False):
         return ret
     ret = os.system(cmd)
     os.chdir(cwd)
-    if ret != 0:
+    if checkfail and ret != 0:
         raise Exception("FAILED %s: %d" % (cmd, ret))
+    return ret
 
 class builder:
     '''handle build of one directory'''
@@ -165,6 +166,7 @@ class buildlist:
             self.retry = None
         for b in self.tlist:
             if b.proc is not None:
+                run_cmd("killbysubdir %s > /dev/null 2>&1" % b.sdir, checkfail=False)
                 b.proc.terminate()
                 b.proc.wait()
                 b.proc = None
