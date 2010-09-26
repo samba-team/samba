@@ -14,6 +14,10 @@ import "misc.idl", "security.idl", "nbt.idl";
 		IRPC_FLAG_REPLY    = 0x0001
 	} irpc_flags;
 
+	typedef struct {
+		security_token *token;
+	} irpc_creds;
+
 	typedef [public] struct {
 		GUID uuid;
 		uint32 if_version;
@@ -21,6 +25,7 @@ import "misc.idl", "security.idl", "nbt.idl";
 		uint32 callid;
 		irpc_flags flags;
 		NTSTATUS status;
+		[subcontext(4)] irpc_creds creds;
 		[flag(NDR_ALIGN8)] DATA_BLOB _pad;
 	} irpc_header;
 
