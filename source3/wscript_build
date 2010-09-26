@@ -484,17 +484,10 @@ PRIVILEGES_SRC = '''lib/privileges.c'''
 
 PASSDB_GET_SET_SRC = '''passdb/pdb_get_set.c'''
 
-PDB_STATIC =        ''
-PDB_TDBSAM_SRC =    'passdb/pdb_tdb.c'
-PDB_LDAP_SRC =      'passdb/pdb_ldap.c passdb/pdb_nds.c'
-PDB_ADS_SRC =       'passdb/pdb_ads.c'
-PDB_SMBPASSWD_SRC = 'passdb/pdb_smbpasswd.c'
-PDB_WBC_SAM_SRC =   'passdb/pdb_wbc_sam.c'
-
 PASSDB_SRC = '''${PASSDB_GET_SET_SRC} passdb/passdb.c passdb/pdb_interface.c
                 passdb/util_wellknown.c passdb/util_builtin.c passdb/pdb_compat.c
                 passdb/util_unixsids.c passdb/lookup_sid.c
-                passdb/login_cache.c ${PDB_STATIC}
+                passdb/login_cache.c
                 passdb/account_pol.c ${PRIVILEGES_SRC}
                 lib/util_nscd.c lib/winbind_util.c ${SERVER_MUTEX_SRC}'''
 #FIXME: lib/winbind_util.c probably is not part of PASSDB_SRC
@@ -1163,46 +1156,6 @@ bld.SAMBA_SUBSYSTEM('ASN1_UTIL',
                     deps='talloc',
                     local_include=False)
 
-bld.SAMBA_SUBSYSTEM('PDB',
-                    source='',
-                    deps='''PDB_TDBSAM PDB_LDAP PDB_ADS PDB_SMBPASSWD PDB_WBC_SAM''',
-                    vars=locals())
-
-bld.SAMBA_MODULE('PDB_TDBSAM',
-                 subsystem='PDB',
-                 source=PDB_TDBSAM_SRC,
-                 init_function='',
-                 internal_module=True,
-                 enabled=True)
-
-bld.SAMBA_MODULE('PDB_LDAP',
-                 subsystem='PDB',
-                 source=PDB_LDAP_SRC,
-                 init_function='',
-                 internal_module=True,
-                 enabled=True)
-
-bld.SAMBA_MODULE('PDB_ADS',
-                 subsystem='PDB',
-                 source=PDB_ADS_SRC,
-                 init_function='',
-                 internal_module=True,
-                 enabled=False) #fixme
-
-bld.SAMBA_MODULE('PDB_SMBPASSWD',
-                 subsystem='PDB',
-                 source=PDB_SMBPASSWD_SRC,
-                 init_function='',
-                 internal_module=True,
-                 enabled=True)
-
-bld.SAMBA_MODULE('PDB_WBC_SAM',
-                 subsystem='PDB',
-                 source=PDB_WBC_SAM_SRC,
-                 init_function='',
-                 internal_module=True,
-                 enabled=True)
-
 bld.SAMBA_SUBSYSTEM('IDMAP',
                     source=IDMAP_SRC,
                     deps='''IDMAP_AD IDMAP_RID IDMAP_PASSDB IDMAP_LDAP IDMAP_TDB2 IDMAP_HASH IDMAP_ADEX''',
@@ -1349,8 +1302,7 @@ bld.SAMBA_SUBSYSTEM('TLDAP',
 
 bld.SAMBA_SUBSYSTEM('PASSDB',
                     source=PASSDB_SRC,
-                    deps='''GROUPDB TLDAP SECRETS SMBLDAP PDB_SMBPASSWD
-                            PDB_TDBSAM PDB_WBC_SAM PDB_LDAP''',
+                    deps='''GROUPDB TLDAP SECRETS SMBLDAP PDB''',
                     vars=locals())
 
 bld.SAMBA_SUBSYSTEM('PARAM_WITHOUT_REG',
@@ -1820,6 +1772,7 @@ bld.RECURSE('../lib/iniparser/src')
 bld.RECURSE('../lib/crypto')
 bld.RECURSE('modules')
 bld.RECURSE('auth')
+bld.RECURSE('passdb')
 
 bld.ENFORCE_GROUP_ORDERING()
 bld.CHECK_PROJECT_RULES()
