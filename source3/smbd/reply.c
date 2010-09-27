@@ -4773,7 +4773,7 @@ void reply_exit(struct smb_request *req)
 {
 	START_PROFILE(SMBexit);
 
-	file_close_pid(req->smbpid, req->vuid);
+	file_close_pid(req->sconn, req->smbpid, req->vuid);
 
 	reply_outbuf(req, 0, 0);
 

@@ -4751,7 +4751,8 @@ bool is_ntfs_default_stream_smb_fname(const struct smb_filename *smb_fname);
 NTSTATUS file_new(struct smb_request *req, connection_struct *conn,
 		  files_struct **result);
 void file_close_conn(connection_struct *conn);
-void file_close_pid(uint16 smbpid, int vuid);
+void file_close_pid(struct smbd_server_connection *sconn, uint16 smbpid,
+		    int vuid);
 void file_init(void);
 void file_close_user(int vuid);
 struct files_struct *files_forall(
