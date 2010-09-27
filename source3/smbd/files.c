@@ -248,15 +248,15 @@ struct files_struct *files_forall(
  Find a fsp given a file descriptor.
 ****************************************************************************/
 
-files_struct *file_find_fd(int fd)
+files_struct *file_find_fd(struct smbd_server_connection *sconn, int fd)
 {
 	int count=0;
 	files_struct *fsp;
 
-	for (fsp=smbd_server_conn->files;fsp;fsp=fsp->next,count++) {
+	for (fsp=sconn->files; fsp; fsp=fsp->next,count++) {
 		if (fsp->fh->fd == fd) {
 			if (count > 10) {
-				DLIST_PROMOTE(smbd_server_conn->files, fsp);
+				DLIST_PROMOTE(sconn->files, fsp);
 			}
 			return fsp;
 		}

@@ -4760,7 +4760,7 @@ struct files_struct *files_forall(
 	struct files_struct *(*fn)(struct files_struct *fsp,
 				   void *private_data),
 	void *private_data);
-files_struct *file_find_fd(int fd);
+files_struct *file_find_fd(struct smbd_server_connection *sconn, int fd);
 files_struct *file_find_dif(struct smbd_server_connection *sconn,
 			    struct file_id id, unsigned long gen_id);
 files_struct *file_find_di_first(struct smbd_server_connection *sconn,
