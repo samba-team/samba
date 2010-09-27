@@ -409,7 +409,7 @@ static int ildb_request_send(struct ildb_context *ac, struct ldap_message *msg)
 		ldb_set_errstring(ldb, "async send request failed");
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-	ac->ireq = talloc_steal(ac, req);
+	ac->ireq = talloc_reparent(ac->ildb->ldap, ac, req);
 
 	if (!ac->ireq->conn) {
 		ldb_set_errstring(ldb, "connection to remote LDAP server dropped?");

@@ -352,7 +352,7 @@ _PUBLIC_ NTSTATUS ldap_bind_sasl(struct ldap_connection *conn,
 			status = NT_STATUS_NO_MEMORY;
 			goto failed;
 		}
-		talloc_steal(tmp_ctx, req);
+		talloc_reparent(conn, tmp_ctx, req);
 
 		status = ldap_result_n(req, 0, &response);
 		if (!NT_STATUS_IS_OK(status)) {
