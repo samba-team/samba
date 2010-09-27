@@ -820,7 +820,8 @@ static bool test_EnumPrintProcessors_level(struct torture_context *tctx,
 					   const char *environment,
 					   uint32_t level,
 					   uint32_t *count_p,
-					   union spoolss_PrintProcessorInfo **info_p)
+					   union spoolss_PrintProcessorInfo **info_p,
+					   WERROR expected_result)
 {
 	struct spoolss_EnumPrintProcessors r;
 	DATA_BLOB blob;
@@ -837,7 +838,8 @@ static bool test_EnumPrintProcessors_level(struct torture_context *tctx,
 	r.out.count = &count;
 	r.out.info = &info;
 
-	torture_comment(tctx, "Testing EnumPrintProcessors level %u\n", r.in.level);
+	torture_comment(tctx, "Testing EnumPrintProcessors(%s) level %u\n",
+		r.in.environment, r.in.level);
 
 	torture_assert_ntstatus_ok(tctx,
 		dcerpc_spoolss_EnumPrintProcessors_r(b, tctx, &r),
@@ -850,7 +852,7 @@ static bool test_EnumPrintProcessors_level(struct torture_context *tctx,
 			dcerpc_spoolss_EnumPrintProcessors_r(b, tctx, &r),
 			"EnumPrintProcessors failed");
 	}
-	torture_assert_werr_ok(tctx, r.out.result,
+	torture_assert_werr_equal(tctx, r.out.result, expected_result,
 		"EnumPrintProcessors failed");
 
 	CHECK_NEEDED_SIZE_ENUM_LEVEL(spoolss_EnumPrintProcessors, info, level, count, needed, 4);
@@ -871,44 +873,24 @@ static bool test_EnumPrintProcessors(struct torture_context *tctx,
 	struct test_spoolss_context *ctx =
 		talloc_get_type_abort(private_data, struct test_spoolss_context);
 
-	uint16_t levels[] = { 1 };
-	int i, j;
+	uint16_t levels[] = {0, 1, 2, 3, 32, 256 };
+	uint16_t     ok[] = {0, 1, 0, 0, 0, 0 };
+	int i;
 	struct dcerpc_pipe *p = ctx->spoolss_pipe;
 	struct dcerpc_binding_handle *b = p->binding_handle;
 
+	torture_assert(tctx,
+		test_EnumPrintProcessors_level(tctx, b, "phantasy", 1, NULL, NULL, WERR_INVALID_ENVIRONMENT),
+		"test_EnumPrintProcessors_level failed");
+
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
-		int level = levels[i];
 		union spoolss_PrintProcessorInfo *info;
 		uint32_t count;
+		WERROR expected_result = ok[i] ? WERR_OK : WERR_INVALID_LEVEL;
 
 		torture_assert(tctx,
-			test_EnumPrintProcessors_level(tctx, b, ctx->environment, level, &count, &info),
+			test_EnumPrintProcessors_level(tctx, b, ctx->environment, levels[i], &count, &info, expected_result),
 			"test_EnumPrintProcessors_level failed");
-
-		ctx->print_processor_count[level]	= count;
-		ctx->print_processors[level]		= info;
-	}
-
-	for (i=1;i<ARRAY_SIZE(levels);i++) {
-		int level = levels[i];
-		int old_level = levels[i-1];
-		torture_assert_int_equal(tctx, ctx->print_processor_count[level], ctx->print_processor_count[old_level],
-			"EnumPrintProcessors failed");
-	}
-
-	for (i=0;i<ARRAY_SIZE(levels);i++) {
-		int level = levels[i];
-		for (j=0;j<ctx->print_processor_count[level];j++) {
-#if 0
-			union spoolss_PrintProcessorInfo *cur = &ctx->print_processors[level][j];
-			union spoolss_PrintProcessorInfo *ref = &ctx->print_processors[1][j];
-#endif
-			switch (level) {
-			case 1:
-				/* level 1 is our reference, and it makes no sense to compare it to itself */
-				break;
-			}
-		}
 	}
 
 	return true;
@@ -4424,7 +4406,7 @@ static bool test_PrintProcessors(struct torture_context *tctx,
 	torture_comment(tctx, "Testing Print Processor Info and winreg consistency\n");
 
 	torture_assert(tctx,
-		test_EnumPrintProcessors_level(tctx, b, environment, 1, &count, &info),
+		test_EnumPrintProcessors_level(tctx, b, environment, 1, &count, &info, WERR_OK),
 		"failed to enum print processors level 1");
 
 	for (i=0; i < count; i++) {
