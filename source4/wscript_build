@@ -17,7 +17,6 @@ bld.SAMBA_MKVERSION('version.h')
 # this sets up some aliases
 bld.TARGET_ALIAS('attr', 'XATTR')
 bld.TARGET_ALIAS('sasl2', 'SASL')
-bld.TARGET_ALIAS('RPC_NDR_SRVSVC', 'NDR_SRVSVC')
 
 # missing subsystems - need looking at
 bld.SAMBA_SUBSYSTEM('NETAPI', '')       # for external libnet

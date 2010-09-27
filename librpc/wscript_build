@@ -192,6 +192,16 @@ bld.SAMBA_SUBSYSTEM('NDR_LSA',
 	public_deps='LIBNDR NDR_SECURITY'
 	)
 
+bld.SAMBA_SUBSYSTEM('NDR_SVCCTL',
+	source='../librpc/gen_ndr/ndr_svcctl.c ../librpc/ndr/ndr_svcctl.c',
+	public_deps='LIBNDR NDR_SECURITY'
+	)
+
+bld.SAMBA_SUBSYSTEM('NDR_SRVSVC',
+	source='../librpc/gen_ndr/ndr_srvsvc.c',
+	public_deps='LIBNDR NDR_SECURITY NDR_SVCCTL'
+	)
+
 bld.SAMBA_SUBSYSTEM('NDR_EVENTLOG',
 	source='../librpc/gen_ndr/ndr_eventlog.c',
 	public_deps='LIBNDR NDR_SECURITY NDR_LSA'
