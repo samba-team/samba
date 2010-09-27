@@ -484,7 +484,7 @@ void file_free(struct smb_request *req, files_struct *fsp)
  Get an fsp from a 16 bit fnum.
 ****************************************************************************/
 
-files_struct *file_fnum(uint16 fnum)
+static struct files_struct *file_fnum(uint16 fnum)
 {
 	files_struct *fsp;
 	int count=0;

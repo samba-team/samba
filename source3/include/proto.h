@@ -4765,7 +4765,6 @@ files_struct *file_find_di_next(files_struct *start_fsp);
 bool file_find_subpath(files_struct *dir_fsp);
 void file_sync_all(connection_struct *conn);
 void file_free(struct smb_request *req, files_struct *fsp);
-files_struct *file_fnum(uint16 fnum);
 files_struct *file_fsp(struct smb_request *req, uint16 fid);
 NTSTATUS dup_file_fsp(struct smb_request *req, files_struct *from,
 		      uint32 access_mask, uint32 share_access,
