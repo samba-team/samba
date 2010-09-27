@@ -2050,9 +2050,7 @@ char *myhostname(void)
 {
 	static char *ret;
 	if (ret == NULL) {
-		/* This is cached forever so
-		 * use talloc_autofree_context() ctx. */
-		ret = get_myname(talloc_autofree_context());
+		ret = get_myname(NULL);
 	}
 	return ret;
 }
