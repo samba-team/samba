@@ -64,6 +64,9 @@
 #include "tevent_internal.h"
 #include "tevent_util.h"
 
+/* needed for the special ctdbd "track if time jumps unexpectedly */
+#include <time.h>
+
 struct tevent_ops_list {
 	struct tevent_ops_list *next, *prev;
 	const char *name;
@@ -578,12 +581,18 @@ done:
 	return ret;
 }
 
+
+extern pid_t ctdbd_pid;
+
 /*
   return on failure or (with 0) if all fd events are removed
 */
 int tevent_common_loop_wait(struct tevent_context *ev,
 			    const char *location)
 {
+	static time_t t=0;
+	time_t new_t;
+
 	/*
 	 * loop as long as we have events pending
 	 */
@@ -598,6 +607,19 @@ int tevent_common_loop_wait(struct tevent_context *ev,
 				     "_tevent_loop_once() failed: %d - %s\n",
 				     ret, strerror(errno));
 			return ret;
+		}
+		if (getpid() == ctdbd_pid) {
+			new_t=time(NULL);
+			if (t != 0) {
+				if (t > new_t) {
+					tevent_debug(ev, TEVENT_DEBUG_FATAL, __location__ " ERROR Time skipped backward by %d seconds\n", (int)(t-new_t));
+				}
+				/* We assume here that we get at least one event every 3 seconds */
+				if (new_t > (t+3)) {
+					tevent_debug(ev, TEVENT_DEBUG_FATAL, __location__ " ERROR Time jumped forward by %d seconds\n", (int)(new_t-t));
+				}
+			}
+			t=new_t;
 		}
 	}
 
