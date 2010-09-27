@@ -662,8 +662,6 @@ SMBD_SRC_SRV = '''smbd/server_reload.c smbd/files.c smbd/connection.c
 
 SMBD_SRC_BASE = '''${SMBD_SRC_SRV}
                 ${RPC_SERVER_SRC}
-                ${PRINTING_SRC}
-                ${PRINTBACKEND_SRC}
                 ${OPLOCK_SRC} ${NOTIFY_SRC} ${FNAME_UTIL_SRC}
                 ${REG_FULL_SRC}
                 ${BUILDOPT_SRC}
@@ -690,9 +688,7 @@ PRINTBACKEND_SRC = '''printing/printing.c
                       printing/nt_printing.c
                       printing/nt_printing_tdb.c
                       printing/nt_printing_migrate.c
-                      printing/nt_printing_ads.c
-                      ${LIBNDR_NTPRINTING_SRC}
-                      ${PRINTBASE_SRC}'''
+                      printing/nt_printing_ads.c'''
 
 SMBD_SRC = '''${SMBD_SRC_BASE} ${SMBD_SRC_MAIN}'''
 
@@ -714,7 +710,7 @@ NMBD_SRC = '${NMBD_SRC1}'
 SWAT_SRC1 = '''web/cgi.c web/diagnose.c web/startstop.c web/statuspage.c
                web/swat.c web/neg_lang.c'''
 
-SWAT_SRC = '''${SWAT_SRC1} ${PRINTING_SRC} ${PRINTBASE_SRC}
+SWAT_SRC = '''${SWAT_SRC1}
            ${PASSCHANGE_SRC} ${FNAME_UTIL_SRC}
            ${LIBCLI_SAMR_SRC}
            rpc_client/init_lsa.c'''
@@ -722,7 +718,7 @@ SWAT_SRC = '''${SWAT_SRC1} ${PRINTING_SRC} ${PRINTBASE_SRC}
 STATUS_SRC = '''utils/status.c utils/status_profile.c
              ${FNAME_UTIL_SRC}'''
 
-SMBCONTROL_SRC = '''utils/smbcontrol.c ${PRINTBASE_SRC}'''
+SMBCONTROL_SRC = '''utils/smbcontrol.c'''
 
 SMBTREE_SRC = '''utils/smbtree.c
              ${LIBCLI_SRVSVC_SRC}'''
@@ -880,7 +876,6 @@ NET_SRC1 = '''utils/net.c utils/net_ads.c utils/net_help.c
               utils/net_serverid.c
               utils/net_eventlog.c
               utils/net_printing.c
-              ${LIBNDR_NTPRINTING_SRC}
               ${LIBNDR_PREG_SRC}
               ${LIBCLI_SPOOLSS_SRC}
               ${LIBCLI_WINREG_SRC}
@@ -1224,7 +1219,8 @@ bld.SAMBA_SUBSYSTEM('SMBD_BASE',
                     NSS_WRAPPER DYNCONFIG libwbclient crypt nsl cups cap resolv ZLIB PASSDB
                     PARAM_WITHOUT_REG LIBS LIBSMB POPT_SAMBA KRBCLIENT AVAHI
                     LIBMSRPC_GEN LIBMSRPC LIBADS LIBADS_SERVER LIBADS_PRINTER
-                    VFS RPC_MODULES AUTH LOCKING LIBAFS LIBAFS_SETTOKEN PROFILE LIBNET LIBEVENTLOG REGFIO REG_API_REGF''',
+                    VFS RPC_MODULES AUTH LOCKING LIBAFS LIBAFS_SETTOKEN PROFILE LIBNET LIBEVENTLOG
+                    REGFIO REG_API_REGF PRINTING PRINTBACKEND''',
                     vars=locals())
 
 bld.SAMBA_SUBSYSTEM('RPC_MODULES',
@@ -1245,6 +1241,19 @@ bld.SAMBA_SUBSYSTEM('PROFILE',
 
 bld.SAMBA_SUBSYSTEM('READLINE',
                     source=READLINE_SRC,
+                    vars=locals())
+
+bld.SAMBA_SUBSYSTEM('PRINTBASE',
+                    source=PRINTBASE_SRC,
+                    vars=locals())
+
+bld.SAMBA_SUBSYSTEM('PRINTBACKEND',
+                    source=PRINTBACKEND_SRC,
+                    deps='PRINTBASE NDR_NTPRINTING LIBADS_PRINTER',
+                    vars=locals())
+
+bld.SAMBA_SUBSYSTEM('PRINTING',
+                    source=PRINTING_SRC,
                     vars=locals())
 
 bld.SAMBA_SUBSYSTEM('PASSWD_UTIL',
@@ -1360,7 +1369,7 @@ bld.SAMBA_BINARY('web/swat',
                  source=SWAT_SRC,
                  deps='''talloc tevent cap LIBS LIBSMB libwbclient PARAM
                  LIB_NONSMBD resolv PASSDB POPT_SAMBA KRBCLIENT cups
-                 LIBMSRPC_GEN LIBMSRPC LOCKING PLAINTEXT_AUTH''',
+                 LIBMSRPC_GEN LIBMSRPC LOCKING PLAINTEXT_AUTH PRINTBASE PRINTING''',
                  enabled=bld.env.build_swat,
                  install_path='${SBINDIR}',
                  vars=locals())
@@ -1385,7 +1394,7 @@ bld.SAMBA_BINARY('net',
                  PARAM_WITHOUT_REG libwbclient PARAM KRBCLIENT LIBMSRPC_GEN LIBMSRPC LIBGPO LIBADS LIBADS_SERVER LIBADS_PRINTER
                  LOCALE_DIR LIBAFS LIBAFS_SETTOKEN READLINE PASSWD_UTIL LIBNET
                  LIBNET_DSSYNC LIBNET_SAMSYNC LIBEVENTLOG DISPLAY_SEC DCUTIL
-                 REGFIO''',
+                 REGFIO NDR_NTPRINTING''',
                  vars=locals())
 
 bld.SAMBA_BINARY('profiles',
@@ -1420,7 +1429,7 @@ bld.SAMBA_BINARY('smbstatus',
 
 bld.SAMBA_BINARY('smbcontrol',
                  source=SMBCONTROL_SRC,
-                 deps='''talloc tdb tevent cap PARAM LIB_NONSMBD LIBSMB_ERR POPT_SAMBA''',
+                 deps='''talloc tdb tevent cap PARAM LIB_NONSMBD LIBSMB_ERR POPT_SAMBA PRINTBASE''',
                  vars=locals())
 
 bld.SAMBA_BINARY('smbtree',
