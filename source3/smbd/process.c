@@ -2410,19 +2410,16 @@ static void msg_release_ip(struct messaging_context *msg_ctx, void *private_data
 }
 
 #ifdef CLUSTER_SUPPORT
-static int client_get_tcp_info(struct sockaddr_storage *server,
+static int client_get_tcp_info(int sock, struct sockaddr_storage *server,
 			       struct sockaddr_storage *client)
 {
 	socklen_t length;
-	if (server_fd == -1) {
-		return -1;
-	}
 	length = sizeof(*server);
-	if (getsockname(server_fd, (struct sockaddr *)server, &length) != 0) {
+	if (getsockname(sock, (struct sockaddr *)server, &length) != 0) {
 		return -1;
 	}
 	length = sizeof(*client);
-	if (getpeername(server_fd, (struct sockaddr *)client, &length) != 0) {
+	if (getpeername(sock, (struct sockaddr *)client, &length) != 0) {
 		return -1;
 	}
 	return 0;
@@ -3116,7 +3113,7 @@ void smbd_process(struct smbd_server_connection *sconn)
 
 		struct sockaddr_storage srv, clnt;
 
-		if (client_get_tcp_info(&srv, &clnt) == 0) {
+		if (client_get_tcp_info(sconn->sock, &srv, &clnt) == 0) {
 			NTSTATUS status;
 			status = smbd_register_ips(sconn, &srv, &clnt);
 			if (!NT_STATUS_IS_OK(status)) {
