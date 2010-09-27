@@ -792,6 +792,43 @@ static bool test_referrals(struct torture_context *tctx, TALLOC_CTX *mem_ctx,
 	return true;
 }
 
+static bool test_abandom_request(struct torture_context *tctx,
+	struct ldap_connection *conn, const char *basedn)
+{
+	struct ldap_message *msg;
+	struct ldap_request *req;
+	NTSTATUS status;
+
+	printf("Testing the AbandonRequest with an old message id!\n");
+
+	if (!basedn) {
+		return false;
+	}
+
+	msg = new_ldap_message(conn);
+	if (!msg) {
+		return false;
+	}
+
+	printf(" Try a AbandonRequest for an old message id\n");
+
+	msg->type = LDAP_TAG_AbandonRequest;
+	msg->r.AbandonRequest.messageid = 1;
+
+	req = ldap_request_send(conn, msg);
+	if (!req) {
+		return false;
+	}
+
+	status = ldap_request_wait(req);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("error in ldap abandon request - %s\n", nt_errstr(status));
+		return false;
+	}
+
+	return true;
+}
+
 
 bool torture_ldap_basic(struct torture_context *torture)
 {
@@ -842,6 +879,10 @@ bool torture_ldap_basic(struct torture_context *torture)
 	/* referrals test here */
 
 	if (!test_referrals(torture, mem_ctx, url, basedn, partitions)) {
+		ret = false;
+	}
+
+	if (!test_abandom_request(torture, conn, basedn)) {
 		ret = false;
 	}
 
