@@ -8225,6 +8225,11 @@ WERROR _spoolss_EnumPrintProcDataTypes(struct pipes_struct *p,
 	*r->out.needed = 0;
 	*r->out.info = NULL;
 
+	if (r->in.print_processor_name == NULL ||
+	    !strequal(r->in.print_processor_name, "winprint")) {
+		return WERR_UNKNOWN_PRINTPROCESSOR;
+	}
+
 	switch (r->in.level) {
 	case 1:
 		result = enumprintprocdatatypes_level_1(p->mem_ctx, r->out.info,
