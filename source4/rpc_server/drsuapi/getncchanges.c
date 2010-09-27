@@ -1,7 +1,7 @@
 /* 
    Unix SMB/CIFS implementation.
 
-   implement the DRSUpdateRefs call
+   implement the DSGetNCChanges call
 
    Copyright (C) Anatoliy Atanasov 2009
    Copyright (C) Andrew Tridgell 2009
