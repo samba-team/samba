@@ -484,15 +484,16 @@ void file_free(struct smb_request *req, files_struct *fsp)
  Get an fsp from a 16 bit fnum.
 ****************************************************************************/
 
-static struct files_struct *file_fnum(uint16 fnum)
+static struct files_struct *file_fnum(struct smbd_server_connection *sconn,
+				      uint16 fnum)
 {
 	files_struct *fsp;
 	int count=0;
 
-	for (fsp=smbd_server_conn->files;fsp;fsp=fsp->next, count++) {
+	for (fsp=sconn->files; fsp; fsp=fsp->next, count++) {
 		if (fsp->fnum == fnum) {
 			if (count > 10) {
-				DLIST_PROMOTE(smbd_server_conn->files, fsp);
+				DLIST_PROMOTE(sconn->files, fsp);
 			}
 			return fsp;
 		}
@@ -512,7 +513,7 @@ files_struct *file_fsp(struct smb_request *req, uint16 fid)
 		return req->chain_fsp;
 	}
 
-	fsp = file_fnum(fid);
+	fsp = file_fnum(smbd_server_conn, fid);
 	if ((fsp != NULL) && (req != NULL)) {
 		req->chain_fsp = fsp;
 	}
