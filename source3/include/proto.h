@@ -4756,6 +4756,7 @@ void file_close_pid(struct smbd_server_connection *sconn, uint16 smbpid,
 void file_init(void);
 void file_close_user(struct smbd_server_connection *sconn, int vuid);
 struct files_struct *files_forall(
+	struct smbd_server_connection *sconn,
 	struct files_struct *(*fn)(struct files_struct *fsp,
 				   void *private_data),
 	void *private_data);

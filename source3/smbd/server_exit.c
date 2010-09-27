@@ -78,12 +78,11 @@ static void exit_server_common(enum server_exit_reason how,
 		TALLOC_FREE(sconn->smb1.negprot.auth_context);
 	}
 
-	if (lp_log_writeable_files_on_exit()) {
-		bool found = false;
-		files_forall(log_writeable_file_fn, &found);
-	}
-
 	if (sconn) {
+		if (lp_log_writeable_files_on_exit()) {
+			bool found = false;
+			files_forall(sconn, log_writeable_file_fn, &found);
+		}
 		had_open_conn = conn_close_all(sconn);
 		invalidate_all_vuids(sconn);
 	}

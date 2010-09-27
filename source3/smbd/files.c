@@ -226,13 +226,14 @@ void file_close_user(struct smbd_server_connection *sconn, int vuid)
  */
 
 struct files_struct *files_forall(
+	struct smbd_server_connection *sconn,
 	struct files_struct *(*fn)(struct files_struct *fsp,
 				   void *private_data),
 	void *private_data)
 {
 	struct files_struct *fsp, *next;
 
-	for (fsp = smbd_server_conn->files; fsp; fsp = next) {
+	for (fsp = sconn->files; fsp; fsp = next) {
 		struct files_struct *ret;
 		next = fsp->next;
 		ret = fn(fsp, private_data);

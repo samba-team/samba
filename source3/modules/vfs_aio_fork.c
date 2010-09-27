@@ -442,7 +442,8 @@ static struct files_struct *close_fsp_fd(struct files_struct *fsp,
 	return NULL;
 }
 
-static NTSTATUS create_aio_child(struct aio_child_list *children,
+static NTSTATUS create_aio_child(struct smbd_server_connection *sconn,
+				 struct aio_child_list *children,
 				 size_t map_size,
 				 struct aio_child **presult)
 {
@@ -480,7 +481,7 @@ static NTSTATUS create_aio_child(struct aio_child_list *children,
 	if (result->pid == 0) {
 		close(fdpair[0]);
 		result->sockfd = fdpair[1];
-		files_forall(close_fsp_fd, NULL);
+		files_forall(sconn, close_fsp_fd, NULL);
 		aio_child_loop(result->sockfd, result->map);
 	}
 
@@ -538,7 +539,8 @@ static NTSTATUS get_idle_child(struct vfs_handle_struct *handle,
 	if (child == NULL) {
 		DEBUG(10, ("no idle child found, creating new one\n"));
 
-		status = create_aio_child(children, 128*1024, &child);
+		status = create_aio_child(handle->conn->sconn, children,
+					  128*1024, &child);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(10, ("create_aio_child failed: %s\n",
 				   nt_errstr(status)));
