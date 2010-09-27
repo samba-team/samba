@@ -1625,18 +1625,18 @@ def provision(setup_dir, logger, session_info,
                 logger.info("and %s for further documentation required for secure DNS "
                         "updates", paths.namedtxt)
 
-                create_krb5_conf(paths.krb5conf, setup_path,
-                                 dnsdomain=names.dnsdomain, hostname=names.hostname,
-                                 realm=names.realm)
-                logger.info("A Kerberos configuration suitable for Samba 4 has been "
-                        "generated at %s", paths.krb5conf)
-
             lastProvisionUSNs = get_last_provision_usn(samdb)
             maxUSN = get_max_usn(samdb, str(names.rootdn))
             if lastProvisionUSNs is not None:
                 update_provision_usn(samdb, 0, maxUSN, 1)
             else:
                 set_provision_usn(samdb, 0, maxUSN)
+
+        create_krb5_conf(paths.krb5conf, setup_path,
+                         dnsdomain=names.dnsdomain, hostname=names.hostname,
+                         realm=names.realm)
+        logger.info("A Kerberos configuration suitable for Samba 4 has been "
+                    "generated at %s", paths.krb5conf)
 
         if serverrole == "domain controller":
             create_dns_update_list(lp, logger, paths, setup_path)
