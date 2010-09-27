@@ -1260,7 +1260,7 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 			search_dn = getnc_state->ncRoot_dn;
 		}
 
-		DEBUG(1,(__location__ ": getncchanges on %s using filter %s\n",
+		DEBUG(2,(__location__ ": getncchanges on %s using filter %s\n",
 			 ldb_dn_get_linearized(getnc_state->ncRoot_dn), search_filter));
 		ret = drsuapi_search_with_extended_dn(sam_ctx, getnc_state, &getnc_state->site_res,
 						      search_dn, scope, attrs,
