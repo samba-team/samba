@@ -69,3 +69,9 @@ WERROR drs_security_level_check(struct dcesrv_call_state *dce_call,
 
 void drsuapi_process_secret_attribute(struct drsuapi_DsReplicaAttribute *attr,
 				      struct drsuapi_DsReplicaMetaData *meta_data);
+
+WERROR drs_security_access_check(struct ldb_context *sam_ctx,
+				 TALLOC_CTX *mem_ctx,
+				 struct security_token *token,
+				 struct drsuapi_DsReplicaObjectIdentifier *nc,
+				 const char *ext_right);

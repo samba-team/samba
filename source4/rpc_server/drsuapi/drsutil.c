@@ -42,6 +42,34 @@ char *drs_ObjectIdentifier_to_string(TALLOC_CTX *mem_ctx,
 	return ret;
 }
 
+struct ldb_dn *drs_ObjectIdentifier_to_dn(TALLOC_CTX *mem_ctx,
+					  struct ldb_context *ldb,
+					  struct drsuapi_DsReplicaObjectIdentifier *nc)
+{
+	char *guid = NULL, *sid = NULL, *ret = NULL;
+	struct ldb_dn *new_dn;
+	if (!GUID_all_zero(&nc->guid)) {
+		guid = GUID_string(mem_ctx, &nc->guid);
+		if (guid) {
+			ret = talloc_asprintf_append(mem_ctx, "<GUID=%s>;", guid);
+		}
+	}
+	if (nc->sid.sid_rev_num != 0) {
+		sid = dom_sid_string(mem_ctx, &nc->sid);
+		if (sid) {
+			ret = talloc_asprintf_append(ret, "<SID=%s>;", sid);
+		}
+	}
+	if (nc->dn) {
+		ret = talloc_asprintf_append(ret, "%s", nc->dn);
+	}
+	new_dn = ldb_dn_new(mem_ctx, ldb, ret);
+	talloc_free(guid);
+	talloc_free(sid);
+	talloc_free(ret);
+	return new_dn;
+}
+
 int drsuapi_search_with_extended_dn(struct ldb_context *ldb,
 				    TALLOC_CTX *mem_ctx,
 				    struct ldb_result **_res,
@@ -154,4 +182,34 @@ void drsuapi_process_secret_attribute(struct drsuapi_DsReplicaAttribute *attr,
 	default:
 		return;
 	}
+}
+
+WERROR drs_security_access_check(struct ldb_context *sam_ctx,
+				 TALLOC_CTX *mem_ctx,
+				 struct security_token *token,
+				 struct drsuapi_DsReplicaObjectIdentifier *nc,
+				 const char *ext_right)
+{
+	struct ldb_dn *dn = drs_ObjectIdentifier_to_dn(mem_ctx, sam_ctx, nc);
+	int ret;
+	if (!dn) {
+		DEBUG(3,("drs_security_access_check: Null dn provided, access is denied\n"));
+		return WERR_DS_DRA_ACCESS_DENIED;
+	}
+	ret = dsdb_check_access_on_dn(sam_ctx,
+				      mem_ctx,
+				      dn,
+				      token,
+				      SEC_ADS_CONTROL_ACCESS,
+				      ext_right);
+	if (ret == LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS) {
+		DEBUG(3,("%s refused for security token\n", ext_right));
+			security_token_debug(2, token);
+			return WERR_DS_DRA_ACCESS_DENIED;
+	} else if (ret != LDB_SUCCESS) {
+		DEBUG(1,("Failed to perform access check on %s \n", ldb_dn_get_linearized(dn)));
+			return WERR_DS_DRA_ACCESS_DENIED;
+		return WERR_DS_DRA_INTERNAL_ERROR;
+	}
+	return WERR_OK;
 }
