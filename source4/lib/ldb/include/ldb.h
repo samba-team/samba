@@ -1218,6 +1218,18 @@ int ldb_build_rename_req(struct ldb_request **ret_req,
 int ldb_request_add_control(struct ldb_request *req, const char *oid, bool critical, void *data);
 
 /**
+  replace a ldb_control in a ldb_request
+
+  \param req the request struct where to add the control
+  \param oid the object identifier of the control as string
+  \param critical whether the control should be critical or not
+  \param data a talloc pointer to the control specific data
+
+  \return result code (LDB_SUCCESS on success, or a failure code)
+*/
+int ldb_request_replace_control(struct ldb_request *req, const char *oid, bool critical, void *data);
+
+/**
    check if a control with the specified "oid" exist and return it 
   \param req the request struct where to add the control
   \param oid the object identifier of the control as string

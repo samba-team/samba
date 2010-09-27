@@ -370,7 +370,7 @@ static int extended_dn_in_fix(struct ldb_module *module, struct ldb_request *req
 			struct ldb_search_options_control *control;
 			control = talloc(down_req, struct ldb_search_options_control);
 			control->search_options = 2;
-			ret = ldb_request_add_control(down_req,
+			ret = ldb_request_replace_control(down_req,
 						      LDB_CONTROL_SEARCH_OPTIONS_OID,
 						      true, control);
 			if (ret != LDB_SUCCESS) {

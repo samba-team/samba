@@ -234,6 +234,28 @@ int ldb_reply_add_control(struct ldb_reply *ares, const char *oid, bool critical
 	return LDB_SUCCESS;
 }
 
+/* Add a control to the request, replacing the old one if it is already in the request */
+int ldb_request_replace_control(struct ldb_request *req, const char *oid, bool critical, void *data)
+{
+	unsigned int n;
+	int ret;
+
+	ret = ldb_request_add_control(req, oid, critical, data);
+	if (ret != LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS) {
+		return ret;
+	}
+
+	for (n=0; req->controls[n];n++) {
+		if (strcmp(oid, req->controls[n]->oid) == 0) {
+			req->controls[n]->critical = critical;
+			req->controls[n]->data = data;
+			return LDB_SUCCESS;
+		}
+	}
+
+	return LDB_ERR_OPERATIONS_ERROR;
+}
+
 /* Parse controls from the format used on the command line and in ejs */
 
 struct ldb_control **ldb_parse_control_strings(struct ldb_context *ldb, TALLOC_CTX *mem_ctx, const char **control_strings)
