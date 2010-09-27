@@ -1107,6 +1107,7 @@ static struct tevent_req *tdgram_bsd_disconnect_send(TALLOC_CTX *mem_ctx,
 		goto post;
 	}
 
+	TALLOC_FREE(bsds->fde);
 	ret = close(bsds->fd);
 	bsds->fd = -1;
 	err = tsocket_bsd_error_from_errno(ret, errno, &dummy);
