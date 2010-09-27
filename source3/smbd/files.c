@@ -143,7 +143,7 @@ void file_close_conn(connection_struct *conn)
 {
 	files_struct *fsp, *next;
 
-	for (fsp=smbd_server_conn->files;fsp;fsp=next) {
+	for (fsp=conn->sconn->files; fsp; fsp=next) {
 		next = fsp->next;
 		if (fsp->conn == conn) {
 			close_file(NULL, fsp, SHUTDOWN_CLOSE);
