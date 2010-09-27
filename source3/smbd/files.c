@@ -513,12 +513,25 @@ files_struct *file_fsp(struct smb_request *req, uint16 fid)
 {
 	files_struct *fsp;
 
-	if ((req != NULL) && (req->chain_fsp != NULL)) {
+	if (req == NULL) {
+		/*
+		 * We should never get here. req==NULL could in theory
+		 * only happen from internal opens with a non-zero
+		 * root_dir_fid. Internal opens just don't do that, at
+		 * least they are not supposed to do so. And if they
+		 * start to do so, they better fake up a smb_request
+		 * from which we get the right smbd_server_conn. While
+		 * this should never happen, let's return NULL here.
+		 */
+		return NULL;
+	}
+
+	if (req->chain_fsp != NULL) {
 		return req->chain_fsp;
 	}
 
 	fsp = file_fnum(smbd_server_conn, fid);
-	if ((fsp != NULL) && (req != NULL)) {
+	if (fsp != NULL) {
 		req->chain_fsp = fsp;
 	}
 	return fsp;
