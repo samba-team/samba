@@ -65,7 +65,7 @@ static bool gencache_init(void)
 	DEBUG(5, ("Opening cache file at %s\n", cache_fname));
 
 again:
-	cache = tdb_open_log(cache_fname, 0, TDB_DEFAULT, open_flags, 0644);
+	cache = tdb_open_log(cache_fname, 0, TDB_DEFAULT|TDB_INCOMPATIBLE_HASH, open_flags, 0644);
 	if (cache) {
 		int ret;
 		ret = tdb_check(cache, NULL, NULL);
@@ -80,7 +80,7 @@ again:
 			first_try = false;
 			DEBUG(0, ("gencache_init: tdb_check(%s) failed - retry after CLEAR_IF_FIRST\n",
 				  cache_fname));
-			cache = tdb_open_log(cache_fname, 0, TDB_CLEAR_IF_FIRST, open_flags, 0644);
+			cache = tdb_open_log(cache_fname, 0, TDB_CLEAR_IF_FIRST|TDB_INCOMPATIBLE_HASH, open_flags, 0644);
 			if (cache) {
 				tdb_close(cache);
 				cache = NULL;
@@ -91,7 +91,7 @@ again:
 
 	if (!cache && (errno == EACCES)) {
 		open_flags = O_RDONLY;
-		cache = tdb_open_log(cache_fname, 0, TDB_DEFAULT, open_flags,
+		cache = tdb_open_log(cache_fname, 0, TDB_DEFAULT|TDB_INCOMPATIBLE_HASH, open_flags,
 				     0644);
 		if (cache) {
 			DEBUG(5, ("gencache_init: Opening cache file %s read-only.\n", cache_fname));
@@ -107,7 +107,7 @@ again:
 
 	DEBUG(5, ("Opening cache file at %s\n", cache_fname));
 
-	cache_notrans = tdb_open_log(cache_fname, 0, TDB_CLEAR_IF_FIRST,
+	cache_notrans = tdb_open_log(cache_fname, 0, TDB_CLEAR_IF_FIRST|TDB_INCOMPATIBLE_HASH,
 				     open_flags, 0644);
 	if (cache_notrans == NULL) {
 		DEBUG(5, ("Opening %s failed: %s\n", cache_fname,

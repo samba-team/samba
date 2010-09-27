@@ -302,7 +302,7 @@ int main(int argc, const char *argv[])
 	}
 
 	if (no_trans) {
-		tdb_flags |= TDB_CLEAR_IF_FIRST;
+		tdb_flags |= TDB_CLEAR_IF_FIRST|TDB_INCOMPATIBLE_HASH;
 	}
 
 	db = db_open(mem_ctx, db_name, 0, tdb_flags,  O_RDWR | O_CREAT, 0644);

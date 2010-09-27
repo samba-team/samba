@@ -95,7 +95,7 @@ struct notify_context *notify_init(TALLOC_CTX *mem_ctx, struct server_id server,
 	}
 
 	notify->db_recursive = db_open(notify, lock_path("notify.tdb"),
-				       0, TDB_SEQNUM|TDB_CLEAR_IF_FIRST,
+				       0, TDB_SEQNUM|TDB_CLEAR_IF_FIRST|TDB_INCOMPATIBLE_HASH,
 				       O_RDWR|O_CREAT, 0644);
 	if (notify->db_recursive == NULL) {
 		talloc_free(notify);
@@ -103,7 +103,7 @@ struct notify_context *notify_init(TALLOC_CTX *mem_ctx, struct server_id server,
 	}
 
 	notify->db_onelevel = db_open(notify, lock_path("notify_onelevel.tdb"),
-				      0, TDB_CLEAR_IF_FIRST,
+				      0, TDB_CLEAR_IF_FIRST|TDB_INCOMPATIBLE_HASH,
 				      O_RDWR|O_CREAT, 0644);
 	if (notify->db_onelevel == NULL) {
 		talloc_free(notify);
@@ -145,14 +145,14 @@ bool notify_internal_parent_init(TALLOC_CTX *mem_ctx)
 	 */
 
 	db1 = tdb_wrap_open(mem_ctx, lock_path("notify.tdb"),
-			    0, TDB_SEQNUM|TDB_CLEAR_IF_FIRST,
+			    0, TDB_SEQNUM|TDB_CLEAR_IF_FIRST|TDB_INCOMPATIBLE_HASH,
 			   O_RDWR|O_CREAT, 0644);
 	if (db1 == NULL) {
 		DEBUG(1, ("could not open notify.tdb: %s\n", strerror(errno)));
 		return false;
 	}
 	db2 = tdb_wrap_open(mem_ctx, lock_path("notify_onelevel.tdb"),
-			    0, TDB_CLEAR_IF_FIRST, O_RDWR|O_CREAT, 0644);
+			    0, TDB_CLEAR_IF_FIRST|TDB_INCOMPATIBLE_HASH, O_RDWR|O_CREAT, 0644);
 	if (db2 == NULL) {
 		DEBUG(1, ("could not open notify_onelevel.tdb: %s\n",
 			  strerror(errno)));

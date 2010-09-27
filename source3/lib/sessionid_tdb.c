@@ -29,7 +29,7 @@ static struct db_context *session_db_ctx(void)
 	}
 
 	session_db_ctx_ptr = db_open(NULL, lock_path("sessionid.tdb"), 0,
-				     TDB_CLEAR_IF_FIRST|TDB_DEFAULT,
+				     TDB_CLEAR_IF_FIRST|TDB_DEFAULT|TDB_INCOMPATIBLE_HASH,
 				     O_RDWR | O_CREAT, 0644);
 	return session_db_ctx_ptr;
 }

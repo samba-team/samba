@@ -33,7 +33,7 @@ static struct db_context *connections_db_ctx(bool rw)
 	open_flags = rw ? (O_RDWR|O_CREAT) : O_RDONLY;
 
 	db_ctx = db_open(NULL, lock_path("connections.tdb"), 0,
-			 TDB_CLEAR_IF_FIRST|TDB_DEFAULT, open_flags, 0644);
+			 TDB_CLEAR_IF_FIRST|TDB_INCOMPATIBLE_HASH|TDB_DEFAULT, open_flags, 0644);
 	return db_ctx;
 }
 

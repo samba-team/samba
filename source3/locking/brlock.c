@@ -273,7 +273,7 @@ void brl_init(bool read_only)
 		return;
 	}
 
-	tdb_flags = TDB_DEFAULT|TDB_VOLATILE|TDB_CLEAR_IF_FIRST;
+	tdb_flags = TDB_DEFAULT|TDB_VOLATILE|TDB_CLEAR_IF_FIRST|TDB_INCOMPATIBLE_HASH;
 
 	if (!lp_clustering()) {
 		/*
