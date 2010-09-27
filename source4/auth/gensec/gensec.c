@@ -521,18 +521,8 @@ static NTSTATUS gensec_start(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
-	(*gensec_security) = talloc(mem_ctx, struct gensec_security);
+	(*gensec_security) = talloc_zero(mem_ctx, struct gensec_security);
 	NT_STATUS_HAVE_NO_MEMORY(*gensec_security);
-
-	(*gensec_security)->ops = NULL;
-	(*gensec_security)->local_addr = NULL;
-	(*gensec_security)->remote_addr = NULL;
-	(*gensec_security)->private_data = NULL;
-
-	ZERO_STRUCT((*gensec_security)->target);
-
-	(*gensec_security)->subcontext = false;
-	(*gensec_security)->want_features = 0;
 
 	(*gensec_security)->event_ctx = ev;
 	SMB_ASSERT(settings->lp_ctx != NULL);
@@ -554,7 +544,7 @@ _PUBLIC_ NTSTATUS gensec_subcontext_start(TALLOC_CTX *mem_ctx,
 				 struct gensec_security *parent, 
 				 struct gensec_security **gensec_security)
 {
-	(*gensec_security) = talloc(mem_ctx, struct gensec_security);
+	(*gensec_security) = talloc_zero(mem_ctx, struct gensec_security);
 	NT_STATUS_HAVE_NO_MEMORY(*gensec_security);
 
 	(**gensec_security) = *parent;
