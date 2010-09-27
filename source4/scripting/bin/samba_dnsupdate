@@ -320,6 +320,11 @@ def call_rodc_update(d):
 # get the list of DNS entries we should have
 dns_update_list = lp.private_path('dns_update_list')
 
+# use our private krb5.conf to avoid problems with the wrong domain
+# bind9 nsupdate wants the default domain set
+krb5conf = lp.private_path('krb5.conf')
+os.putenv('KRB5_CONFIG', krb5conf)
+
 file = open(dns_update_list, "r")
 
 # get the substitution dictionary
