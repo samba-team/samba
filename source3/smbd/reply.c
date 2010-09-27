@@ -2073,7 +2073,7 @@ void reply_ulogoffX(struct smb_request *req)
 	/* in user level security we are supposed to close any files
 		open by this user */
 	if ((vuser != NULL) && (lp_security() != SEC_SHARE)) {
-		file_close_user(req->vuid);
+		file_close_user(sconn, req->vuid);
 	}
 
 	invalidate_vuid(sconn, req->vuid);

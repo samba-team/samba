@@ -209,11 +209,11 @@ void file_init(void)
  Close files open by a specified vuid.
 ****************************************************************************/
 
-void file_close_user(int vuid)
+void file_close_user(struct smbd_server_connection *sconn, int vuid)
 {
 	files_struct *fsp, *next;
 
-	for (fsp=smbd_server_conn->files;fsp;fsp=next) {
+	for (fsp=sconn->files; fsp; fsp=next) {
 		next=fsp->next;
 		if (fsp->vuid == vuid) {
 			close_file(NULL, fsp, SHUTDOWN_CLOSE);
