@@ -1328,3 +1328,13 @@ struct dcerpc_binding_handle *irpc_binding_handle_by_name(TALLOC_CTX *mem_ctx,
 
 	return h;
 }
+
+void irpc_binding_handle_add_security_token(struct dcerpc_binding_handle *h,
+					    struct security_token *token)
+{
+	struct irpc_bh_state *hs =
+		dcerpc_binding_handle_data(h,
+		struct irpc_bh_state);
+
+	hs->token = token;
+}

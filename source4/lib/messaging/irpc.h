@@ -71,6 +71,8 @@ struct dcerpc_binding_handle *irpc_binding_handle_by_name(TALLOC_CTX *mem_ctx,
 					struct messaging_context *msg_ctx,
 					const char *dest_task,
 					const struct ndr_interface_table *table);
+void irpc_binding_handle_add_security_token(struct dcerpc_binding_handle *h,
+					    struct security_token *token);
 
 NTSTATUS irpc_add_name(struct messaging_context *msg_ctx, const char *name);
 struct server_id *irpc_servers_byname(struct messaging_context *msg_ctx, TALLOC_CTX *mem_ctx, const char *name);
