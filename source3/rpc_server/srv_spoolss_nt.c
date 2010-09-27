@@ -8130,6 +8130,10 @@ WERROR _spoolss_EnumPrintProcessors(struct pipes_struct *p,
 	*r->out.needed = 0;
 	*r->out.info = NULL;
 
+	if (!get_short_archi(r->in.environment)) {
+		return WERR_INVALID_ENVIRONMENT;
+	}
+
 	switch (r->in.level) {
 	case 1:
 		result = enumprintprocessors_level_1(p->mem_ctx, r->out.info,
