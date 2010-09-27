@@ -44,7 +44,10 @@ import "misc.idl", "lsa.idl", "security.idl";
 		ACB_USE_DES_KEY_ONLY		= 0x00008000,  /* 1 = Use DES key only */
 		ACB_DONT_REQUIRE_PREAUTH	= 0x00010000,  /* 1 = Preauth not required */
 		ACB_PW_EXPIRED                  = 0x00020000,  /* 1 = Password Expired */
-		ACB_NO_AUTH_DATA_REQD		= 0x00080000   /* 1 = No authorization data required */
+		ACB_TRUSTED_TO_AUTHENTICATE_FOR_DELEGATION = 0x00040000,
+		ACB_NO_AUTH_DATA_REQD		= 0x00080000,  /* 1 = No authorization data required */
+		ACB_PARTIAL_SECRETS_ACCOUNT	= 0x00100000,
+		ACB_USE_AES_KEYS		= 0x00200000
 	} samr_AcctFlags;
 
 	/* SAM server specific access rights */
