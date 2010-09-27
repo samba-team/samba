@@ -96,6 +96,35 @@ NTSTATUS torture_ldap_connection2(struct torture_context *tctx, struct ldap_conn
 /* close an ldap connection to a server */
 NTSTATUS torture_ldap_close(struct ldap_connection *conn)
 {
+	struct ldap_message *msg;
+	struct ldap_request *req;
+	NTSTATUS status;
+
+	printf("Testing the most important error code -> error message conversions!\n");
+
+	msg = new_ldap_message(conn);
+	if (!msg) {
+		talloc_free(conn);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	printf(" Try a AbandonRequest for an old message id\n");
+
+	msg->type = LDAP_TAG_UnbindRequest;
+
+	req = ldap_request_send(conn, msg);
+	if (!req) {
+		talloc_free(conn);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = ldap_request_wait(req);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("error in ldap unbind request - %s\n", nt_errstr(status));
+		talloc_free(conn);
+		return status;
+	}
+
 	talloc_free(conn);
 	return NT_STATUS_OK;
 }
