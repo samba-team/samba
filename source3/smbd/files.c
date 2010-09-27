@@ -113,7 +113,7 @@ NTSTATUS file_new(struct smb_request *req, connection_struct *conn,
 		TALLOC_FREE(fsp->fh);
 	}
 
-	DLIST_ADD(smbd_server_conn->files, fsp);
+	DLIST_ADD(conn->sconn->files, fsp);
 
 	DEBUG(5,("allocated file structure %d, fnum = %d (%d used)\n",
 		 i, fsp->fnum, files_used));
@@ -417,7 +417,7 @@ void file_sync_all(connection_struct *conn)
 
 void file_free(struct smb_request *req, files_struct *fsp)
 {
-	DLIST_REMOVE(smbd_server_conn->files, fsp);
+	DLIST_REMOVE(fsp->conn->sconn->files, fsp);
 
 	TALLOC_FREE(fsp->fake_file_handle);
 
