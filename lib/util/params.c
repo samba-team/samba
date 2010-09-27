@@ -488,7 +488,7 @@ static bool Parse( myFILE *InFile,
   return( true );
   } /* Parse */
 
-static myFILE *OpenConfFile( const char *FileName )
+static myFILE *OpenConfFile(TALLOC_CTX *mem_ctx, const char *FileName )
   /* ------------------------------------------------------------------------ **
    * Open a configuration file.
    *
@@ -502,7 +502,7 @@ static myFILE *OpenConfFile( const char *FileName )
   const char *func = "params.c:OpenConfFile() -";
   myFILE *ret;
 
-  ret = talloc(talloc_autofree_context(), myFILE);
+  ret = talloc(mem_ctx, myFILE);
   if (!ret) return NULL;
 
   ret->buf = file_load(FileName, &ret->size, 0, ret);
@@ -543,7 +543,7 @@ bool pm_process( const char *FileName,
   myFILE *InFile;
   const char *func = "params.c:pm_process() -";
 
-  InFile = OpenConfFile( FileName );          /* Open the config file. */
+  InFile = OpenConfFile(talloc_autofree_context(), FileName); /* Open the config file. */
   if( NULL == InFile )
     return( false );
 
