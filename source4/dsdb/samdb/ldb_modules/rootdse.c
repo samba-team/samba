@@ -1063,7 +1063,10 @@ static int rootdse_become_master(struct ldb_module *module,
 
 	msg = messaging_client_init(tmp_ctx, lpcfg_messaging_path(tmp_ctx, lp_ctx),
 				    ldb_get_event_context(ldb));
-
+	if (!msg) {
+		ldb_asprintf_errstring(ldb, "Failed to generate client messaging context in %s", lpcfg_messaging_path(tmp_ctx, lp_ctx));
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
 	irpc_handle = irpc_binding_handle_by_name(tmp_ctx, msg,
 						  "dreplsrv",
 						  &ndr_table_irpc);
