@@ -203,18 +203,20 @@ WERROR dcesrv_drsuapi_DsReplicaUpdateRefs(struct dcesrv_call_state *dce_call, TA
 	DCESRV_PULL_HANDLE_WERR(h, r->in.bind_handle, DRSUAPI_BIND_HANDLE);
 	b_state = h->data;
 
-	werr = drs_security_level_check(dce_call, "DsReplicaUpdateRefs", SECURITY_RO_DOMAIN_CONTROLLER,
-					samdb_domain_sid(b_state->sam_ctx));
-	if (!W_ERROR_IS_OK(werr)) {
-		return werr;
-	}
-
 	if (r->in.level != 1) {
 		DEBUG(0,("DrReplicUpdateRefs - unsupported level %u\n", r->in.level));
 		return WERR_DS_DRA_INVALID_PARAMETER;
 	}
-
 	req = &r->in.req.req1;
+	werr = drs_security_access_check(b_state->sam_ctx,
+					 mem_ctx,
+					 dce_call->conn->auth_state.session_info->security_token,
+					 req->naming_context,
+					 GUID_DRS_MANAGE_TOPOLOGY);
+
+	if (!W_ERROR_IS_OK(werr)) {
+		return werr;
+	}
 
 	security_level = security_session_user_level(dce_call->conn->auth_state.session_info, NULL);
 	if (security_level < SECURITY_ADMINISTRATOR) {
