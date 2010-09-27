@@ -1329,10 +1329,6 @@ bld.SAMBA_SUBSYSTEM('NDR_DCERPC',
                     source='../librpc/gen_ndr/ndr_dcerpc.c',
                     vars=locals())
 
-bld.SAMBA_SUBSYSTEM('NDR_SRVSVC',
-                    source='../librpc/gen_ndr/ndr_srvsvc.c',
-                    vars=locals())
-
 bld.SAMBA_SUBSYSTEM('LIBSAMBA-ERRORS',
 		    source='../libcli/util/doserr.c libsmb/nterr.c')
 
