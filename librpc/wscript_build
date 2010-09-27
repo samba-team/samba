@@ -22,6 +22,16 @@ bld.SAMBA_SUBSYSTEM('NDR_DSBACKUP',
 	public_deps='LIBNDR'
 	)
 
+bld.SAMBA_SUBSYSTEM('NDR_DFS',
+	source='../librpc/gen_ndr/ndr_dfs.c',
+	public_deps='LIBNDR'
+	)
+
+bld.SAMBA_SUBSYSTEM('NDR_WINREG',
+	source='../librpc/gen_ndr/ndr_winreg.c',
+	public_deps='LIBNDR NDR_SECURITY NDR_LSA'
+	)
+
 bld.SAMBA_SUBSYSTEM('NDR_EFS',
 	source='../librpc/gen_ndr/ndr_efs.c',
 	public_deps='LIBNDR NDR_SECURITY'
@@ -202,9 +212,34 @@ bld.SAMBA_SUBSYSTEM('NDR_SRVSVC',
 	public_deps='LIBNDR NDR_SECURITY NDR_SVCCTL'
 	)
 
+bld.SAMBA_SUBSYSTEM('NDR_NETLOGON',
+	source='../librpc/gen_ndr/ndr_netlogon.c ../librpc/ndr/ndr_netlogon.c',
+	public_deps='LIBNDR NDR_SECURITY NDR_LSA NDR_SAMR NDR_NBT'
+	)
+
 bld.SAMBA_SUBSYSTEM('NDR_EVENTLOG',
 	source='../librpc/gen_ndr/ndr_eventlog.c',
 	public_deps='LIBNDR NDR_SECURITY NDR_LSA'
+	)
+
+bld.SAMBA_SUBSYSTEM('NDR_NTSVCS',
+	source='../librpc/gen_ndr/ndr_ntsvcs.c',
+	public_deps='LIBNDR'
+	)
+
+bld.SAMBA_SUBSYSTEM('NDR_WKSSVC',
+	source='../librpc/gen_ndr/ndr_wkssvc.c',
+	public_deps='LIBNDR NDR_SECURITY'
+	)
+
+bld.SAMBA_SUBSYSTEM('NDR_ECHO',
+	source='../librpc/gen_ndr/ndr_echo.c',
+	public_deps='LIBNDR'
+	)
+
+bld.SAMBA_SUBSYSTEM('NDR_INITSHUTDOWN',
+	source='../librpc/gen_ndr/ndr_initshutdown.c',
+	public_deps='LIBNDR NDR_LSA'
 	)
 
 bld.SAMBA_SUBSYSTEM('NDR_COMPRESSION',
@@ -279,6 +314,11 @@ bld.SAMBA_SUBSYSTEM('RPC_NDR_EFS',
 bld.SAMBA_SUBSYSTEM('RPC_NDR_LSA',
 	source='../librpc/gen_ndr/ndr_lsa_c.c',
 	public_deps='dcerpc NDR_STANDARD'
+	)
+
+bld.SAMBA_SUBSYSTEM('RPC_NDR_SAMR',
+	source='../librpc/gen_ndr/ndr_samr_c.c',
+	public_deps='dcerpc NDR_SAMR'
 	)
 
 bld.SAMBA_SUBSYSTEM('RPC_NDR_DFS',
