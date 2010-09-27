@@ -172,7 +172,7 @@ void file_close_pid(struct smbd_server_connection *sconn, uint16 smbpid,
  Initialise file structures.
 ****************************************************************************/
 
-void file_init(void)
+bool file_init(struct smbd_server_connection *sconn)
 {
 	int request_max_open_files = lp_max_open_files();
 	int real_lim;
@@ -197,12 +197,12 @@ void file_init(void)
 
 	SMB_ASSERT(real_max_open_files > 100);
 
-	file_bmap = bitmap_talloc(talloc_autofree_context(),
-				  real_max_open_files);
+	file_bmap = bitmap_talloc(sconn, real_max_open_files);
 
 	if (!file_bmap) {
-		exit_server("out of memory in file_init");
+		return false;
 	}
+	return true;
 }
 
 /****************************************************************************

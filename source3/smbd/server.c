@@ -794,8 +794,6 @@ static bool init_structs(void )
 	if (!init_names())
 		return False;
 
-	file_init();
-
 	if (!secrets_init())
 		return False;
 
@@ -1165,6 +1163,11 @@ extern void build_options(bool screen);
 
 	if (!init_guest_info()) {
 		DEBUG(0,("ERROR: failed to setup guest info.\n"));
+		return -1;
+	}
+
+	if (!file_init(smbd_server_conn)) {
+		DEBUG(0, ("ERROR: file_init failed\n"));
 		return -1;
 	}
 
