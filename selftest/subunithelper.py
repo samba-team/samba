@@ -258,6 +258,8 @@ class FilterOps(testtools.testresult.TestResult):
         self.total_error+=1
         self._ops.addError(test, details)
         self.output = None
+        if self.fail_immediately:
+            raise Exception("test failed and fail_immediately set")
 
     def addSkip(self, test, details=None):
         test = self._add_prefix(test)
@@ -287,6 +289,8 @@ class FilterOps(testtools.testresult.TestResult):
             if self.output:
                 self._ops.output_msg(self.output)
         self.output = None
+        if self.fail_immediately:
+            raise Exception("test failed and fail_immediately set")
 
     def addSuccess(self, test, details=None):
         test = self._add_prefix(test)
@@ -327,7 +331,7 @@ class FilterOps(testtools.testresult.TestResult):
 
         self._ops.end_testsuite(name, result, reason)
 
-    def __init__(self, out, prefix, expected_failures, strip_ok_output):
+    def __init__(self, out, prefix, expected_failures, strip_ok_output, fail_immediately=False):
         self._ops = out
         self.output = None
         self.prefix = prefix
@@ -339,3 +343,5 @@ class FilterOps(testtools.testresult.TestResult):
         self.total_error = 0
         self.total_fail = 0
         self.error_added = 0
+        self.fail_immediately = fail_immediately
+        

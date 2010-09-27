@@ -19,6 +19,8 @@ parser.add_option("--expected-failures", type="string",
 	     "failures")
 parser.add_option("--strip-passed-output", action="store_true", 
     help="Whether to strip output from tests that passed")
+parser.add_option("--fail-immediately", action="store_true", 
+    help="Whether to stop on the first error", default=False)
 
 parser.add_option("--prefix", type="string",
 	help="Add prefix to all test names")
@@ -45,6 +47,7 @@ signal.signal(signal.SIGINT, handle_sigint)
 
 out = subunithelper.SubunitOps(sys.stdout)
 msg_ops = subunithelper.FilterOps(out, opts.prefix, expected_failures,
-	opts.strip_passed_output)
+				  opts.strip_passed_output,
+				  fail_immediately=opts.fail_immediately)
 
 sys.exit(subunithelper.parse_results(msg_ops, statistics, sys.stdin))
