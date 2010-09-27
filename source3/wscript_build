@@ -65,9 +65,6 @@ LIBNDR_SPOOLSS_SRC = '''../librpc/gen_ndr/ndr_spoolss.c
 LIBNDR_NTPRINTING_SRC = '''../librpc/gen_ndr/ndr_ntprinting.c
                            ../librpc/ndr/ndr_ntprinting.c'''
 
-LIBNDR_PREG_SRC = '''librpc/gen_ndr/ndr_preg.c
-                     librpc/ndr/ndr_preg.c'''
-
 LIBNDR_XATTR_SRC = '''../librpc/gen_ndr/ndr_xattr.c
                   ../librpc/ndr/ndr_xattr.c'''
 
@@ -880,7 +877,6 @@ NET_SRC1 = '''utils/net.c utils/net_ads.c utils/net_help.c
               utils/net_serverid.c
               utils/net_eventlog.c
               utils/net_printing.c
-              ${LIBNDR_PREG_SRC}
               ${LIBCLI_SPOOLSS_SRC}
               ${LIBCLI_WINREG_SRC}
               ${LIBCLI_DRSUAPI_SRC}

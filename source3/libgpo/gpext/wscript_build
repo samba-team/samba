@@ -14,6 +14,7 @@ bld.SAMBA_SUBSYSTEM('GPEXT',
 bld.SAMBA_MODULE('GPEXT_REGISTRY',
                  subsystem='GPEXT',
                  source=GPEXT_REGISTRY_SRC,
+                 deps='NDR_PREG',
                  init_function='',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('GPEXT_REGISTRY'),
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('GPEXT_REGISTRY'))
