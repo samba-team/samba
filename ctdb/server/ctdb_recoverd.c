@@ -1676,9 +1676,9 @@ static int do_recovery(struct ctdb_recoverd *rec,
 	   We now wait for rerecovery_timeout before we allow 
 	   another recovery to take place.
 	*/
-	DEBUG(DEBUG_NOTICE, (__location__ " New recoveries supressed for the rerecovery timeout\n"));
+	DEBUG(DEBUG_NOTICE, ("Just finished a recovery. New recoveries will now be supressed for the rerecovery timeout (%d seconds)\n", ctdb->tunable.rerecovery_timeout));
 	ctdb_wait_timeout(ctdb, ctdb->tunable.rerecovery_timeout);
-	DEBUG(DEBUG_NOTICE, (__location__ " Rerecovery timeout elapsed. Recovery reactivated.\n"));
+	DEBUG(DEBUG_NOTICE, ("The rerecovery timeout has elapsed. We now allow recoveries to trigger again.\n"));
 
 	return 0;
 }
