@@ -530,7 +530,7 @@ files_struct *file_fsp(struct smb_request *req, uint16 fid)
 		return req->chain_fsp;
 	}
 
-	fsp = file_fnum(smbd_server_conn, fid);
+	fsp = file_fnum(req->sconn, fid);
 	if (fsp != NULL) {
 		req->chain_fsp = fsp;
 	}
