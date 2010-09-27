@@ -44,7 +44,7 @@ bool serverid_parent_init(void)
 
 	db = tdb_wrap_open(talloc_autofree_context(),
 			   lock_path("serverid.tdb"),
-			   0, TDB_DEFAULT|TDB_CLEAR_IF_FIRST, O_RDWR|O_CREAT,
+			   0, TDB_DEFAULT|TDB_CLEAR_IF_FIRST|TDB_INCOMPATIBLE_HASH, O_RDWR|O_CREAT,
 			   0644);
 	if (db == NULL) {
 		DEBUG(1, ("could not open serverid.tdb: %s\n",
@@ -61,8 +61,9 @@ static struct db_context *serverid_db(void)
 	if (db != NULL) {
 		return db;
 	}
-	db = db_open(talloc_autofree_context(), lock_path("serverid.tdb"),
-		     0, TDB_DEFAULT|TDB_CLEAR_IF_FIRST, O_RDWR|O_CREAT, 0644);
+	db = db_open(talloc_autofree_context(),
+		     lock_path("serverid.tdb"), 0,
+		     TDB_DEFAULT|TDB_CLEAR_IF_FIRST|TDB_INCOMPATIBLE_HASH, O_RDWR|O_CREAT, 0644);
 	return db;
 }
 

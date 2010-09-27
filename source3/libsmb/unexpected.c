@@ -47,7 +47,7 @@ void unexpected_packet(struct packet_struct *p)
 	if (!tdbd) {
 		tdbd = tdb_wrap_open(talloc_autofree_context(),
 				     lock_path("unexpected.tdb"), 0,
-				     TDB_CLEAR_IF_FIRST|TDB_DEFAULT,
+				     TDB_CLEAR_IF_FIRST|TDB_DEFAULT|TDB_INCOMPATIBLE_HASH,
 				     O_RDWR | O_CREAT, 0644);
 		if (!tdbd) {
 			DEBUG(0,("Failed to open unexpected.tdb\n"));
