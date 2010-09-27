@@ -398,6 +398,13 @@ REG_FULL_SRC = '''${REG_SMBCONF_SRC}
                registry/reg_perfcount.c
                librpc/gen_ndr/ndr_perfcount.c'''
 
+SERVICES_SRC = '''services/svc_spoolss.c
+                  services/svc_rcinit.c
+                  services/services_db.c
+                  services/svc_netlogon.c
+                  services/svc_winreg.c
+                  services/svc_wins.c'''
+
 LIB_EVENTLOG_SRC = '''lib/eventlog/eventlog.c'''
 
 RPC_STATIC = ''
@@ -427,10 +434,7 @@ RPC_WKSSVC_SRC = '''../librpc/gen_ndr/srv_wkssvc.c
                     rpc_server/srv_wkssvc_nt.c'''
 
 RPC_SVCCTL_SRC = ''' rpc_server/srv_svcctl_nt.c
-                  ../librpc/gen_ndr/srv_svcctl.c
-                  services/svc_spoolss.c services/svc_rcinit.c services/services_db.c
-                  services/svc_netlogon.c services/svc_winreg.c
-                  services/svc_wins.c'''
+                  ../librpc/gen_ndr/srv_svcctl.c'''
 
 RPC_NTSVCS_SRC = '''rpc_server/srv_ntsvcs_nt.c
                  ../librpc/gen_ndr/srv_ntsvcs.c'''
@@ -1220,7 +1224,7 @@ bld.SAMBA_SUBSYSTEM('SMBD_BASE',
                     PARAM_WITHOUT_REG LIBS LIBSMB POPT_SAMBA KRBCLIENT AVAHI
                     LIBMSRPC_GEN LIBMSRPC LIBADS LIBADS_SERVER LIBADS_PRINTER
                     VFS RPC_MODULES AUTH LOCKING LIBAFS LIBAFS_SETTOKEN PROFILE LIBNET LIBEVENTLOG
-                    REGFIO REG_API_REGF PRINTING PRINTBACKEND''',
+                    REGFIO REG_API_REGF PRINTING PRINTBACKEND SERVICES''',
                     vars=locals())
 
 bld.SAMBA_SUBSYSTEM('RPC_MODULES',
@@ -1282,6 +1286,10 @@ bld.SAMBA_SUBSYSTEM('LIBNET_SAMSYNC',
 bld.SAMBA_SUBSYSTEM('LIBEVENTLOG',
                     source=LIB_EVENTLOG_SRC,
                     deps='NDR_EVENTLOG',
+                    vars=locals())
+
+bld.SAMBA_SUBSYSTEM('SERVICES',
+                    source=SERVICES_SRC,
                     vars=locals())
 
 bld.SAMBA_SUBSYSTEM('PLAINTEXT_AUTH',
