@@ -62,7 +62,8 @@ static int aclread_callback(struct ldb_request *req, struct ldb_reply *ares)
 		 "parentGUID",
 		 NULL
 	 };
-	 int i, ret;
+	 int ret;
+	 unsigned int i;
 	 struct security_descriptor *sd;
 	 struct dom_sid *sid = NULL;
 	 TALLOC_CTX *tmp_ctx;
