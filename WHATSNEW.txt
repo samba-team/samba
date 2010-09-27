@@ -14,6 +14,55 @@ Changes since 3.5.5
 
 
 o   Jeremy Allison <jra@samba.org>
+    * BUG 7577: Fix SPNEGO auth when contacting Win7 system using Microsoft Live
+      Sign-in Assistant.
+    * BUG 7578: Fix 'net idmap restore' setting HWM to avoid duplicates.
+    * BUG 7581: Fix "admin users" when using vfs_acl_xattr.
+    * BUG 7583: Fix smbclient to connect to Alfresco JLAN CIFS server using
+      Kerberos.
+    * BUG 7589: Fix using cached credentials in ntlm_auth.
+    * BUG 7590: Fix Winbind offline login.
+    * BUG 7617: Fix smbd coredump due to uninitialized variables in the
+      performance counter code.
+    * BUG 7636: Fix Winbind internal error.
+    * BUG 7651: Fix mknod and mkfifo failing with "No such file or
+      directory".
+    * BUG 7693: Fix smbd changing mode of files on rename.
+
+
+o   Günther Deschner <gd@samba.org>
+    * BUG 7541: Fix smbd crash caused by "%D" in "printer admin".
+    * BUG 7568: Make sure cm_connect_lsa_tcp does not reset the secure channel.
+    * BUG 7658: Fix "dereferencing type-punned pointer will break
+      strict-aliasing rules" warnings).
+    * BUG 7665: Fix memory leak in netapi connection manager.
+
+
+o   Björn Jacke <bj@sernet.de>
+    * BUG 7244: Fall back to cups-config for underlinked libs.
+    * BUG 7474: Fix build on platforms without st_blocks and st_blksize stat
+      struct members.
+
+
+o   Volker Lendecke <vl@samba.org>
+    * BUG 7336: Enable idmap_passdb module build as shared.
+    * BUG 7531: Fix the charset_pull routine.
+    * BUG 7635: Fix 'smbclient -M'.
+    * BUG 7656: Fix scalability problem with hundreds of printers.
+    * BUG 7684: Fix fd leak in libwbclient.so.
+    * BUG 7688: Fix crash bug in rpcclient.
+
+
+o   Jim McDonough <jmcd@samba.org>
+    * BUG 7280: Fix auto printers with registry config.
+
+
+o   Andreas Schneider <asn@samba.org>
+    * BUG 7538: Fix GUID_from_data_blob() with length of 32.
+
+
+o   Chere Zhou <chere.zhou@isilon.com>
+    * BUG 7662: Align change notify replies on 4-byte boundary.
 
 
 ######################################################################
