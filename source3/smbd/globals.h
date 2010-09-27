@@ -36,17 +36,11 @@ extern bool dfree_broken;
 /* how many write cache buffers have been allocated */
 extern unsigned int allocated_write_caches;
 
-extern int real_max_open_files;
-extern struct bitmap *file_bmap;
-extern int files_used;
 /* A singleton cache to speed up searching by dev/inode. */
 struct fsp_singleton_cache {
 	files_struct *fsp;
 	struct file_id id;
 };
-extern struct fsp_singleton_cache fsp_fi_cache;
-extern unsigned long file_gen_counter;
-extern int first_file;
 
 extern const struct mangle_fns *mangle_fns;
 
@@ -462,7 +456,15 @@ struct smbd_server_connection {
 	} nbt;
 	bool using_smb2;
 	int trans_num;
+
 	struct files_struct *files;
+	struct bitmap *file_bmap;
+	int real_max_open_files;
+	int files_used;
+	struct fsp_singleton_cache fsp_fi_cache;
+	unsigned long file_gen_counter;
+	int first_file;
+
 	struct {
 		struct fd_event *fde;
 

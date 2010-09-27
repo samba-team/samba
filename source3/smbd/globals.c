@@ -38,20 +38,6 @@ bool dfree_broken = false;
 /* how many write cache buffers have been allocated */
 unsigned int allocated_write_caches = 0;
 
-int real_max_open_files = 0;
-struct bitmap *file_bmap = NULL;
-int files_used = 0;
-struct fsp_singleton_cache fsp_fi_cache = {
-	.fsp = NULL,
-	.id = {
-		.devid = 0,
-		.inode = 0,
-		.extid = 0
-	}
-};
-unsigned long file_gen_counter = 0;
-int first_file = 0;
-
 const struct mangle_fns *mangle_fns = NULL;
 
 unsigned char *chartest = NULL;

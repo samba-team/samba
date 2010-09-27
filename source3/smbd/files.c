@@ -28,11 +28,13 @@
  Return a unique number identifying this fsp over the life of this pid.
 ****************************************************************************/
 
-static unsigned long get_gen_count(void)
+static unsigned long get_gen_count(struct smbd_server_connection *sconn)
 {
-	if ((++file_gen_counter) == 0)
-		return ++file_gen_counter;
-	return file_gen_counter;
+	sconn->file_gen_counter += 1;
+	if (sconn->file_gen_counter == 0) {
+		sconn->file_gen_counter += 1;
+	}
+	return sconn->file_gen_counter;
 }
 
 /****************************************************************************
@@ -42,6 +44,7 @@ static unsigned long get_gen_count(void)
 NTSTATUS file_new(struct smb_request *req, connection_struct *conn,
 		  files_struct **result)
 {
+	struct smbd_server_connection *sconn = conn->sconn;
 	int i;
 	files_struct *fsp;
 	NTSTATUS status;
@@ -51,13 +54,14 @@ NTSTATUS file_new(struct smb_request *req, connection_struct *conn,
 	   reuse a file descriptor from an earlier smb connection. This code
 	   increases the chance that the errant client will get an error rather
 	   than causing corruption */
-	if (first_file == 0) {
-		first_file = (sys_getpid() ^ (int)time(NULL)) % real_max_open_files;
+	if (sconn->first_file == 0) {
+		sconn->first_file = (sys_getpid() ^ (int)time(NULL));
+		sconn->first_file %= sconn->real_max_open_files;
 	}
 
 	/* TODO: Port the id-tree implementation from Samba4 */
 
-	i = bitmap_find(file_bmap, first_file);
+	i = bitmap_find(sconn->file_bmap, sconn->first_file);
 	if (i == -1) {
 		DEBUG(0,("ERROR! Out of file structures\n"));
 		/* TODO: We have to unconditionally return a DOS error here,
@@ -90,13 +94,13 @@ NTSTATUS file_new(struct smb_request *req, connection_struct *conn,
 	fsp->fh->fd = -1;
 
 	fsp->conn = conn;
-	fsp->fh->gen_id = get_gen_count();
+	fsp->fh->gen_id = get_gen_count(sconn);
 	GetTimeOfDay(&fsp->open_time);
 
-	first_file = (i+1) % real_max_open_files;
+	sconn->first_file = (i+1) % (sconn->real_max_open_files);
 
-	bitmap_set(file_bmap, i);
-	files_used++;
+	bitmap_set(sconn->file_bmap, i);
+	sconn->files_used += 1;
 
 	fsp->fnum = i + FILE_HANDLE_OFFSET;
 	SMB_ASSERT(fsp->fnum < 65536);
@@ -113,10 +117,10 @@ NTSTATUS file_new(struct smb_request *req, connection_struct *conn,
 		TALLOC_FREE(fsp->fh);
 	}
 
-	DLIST_ADD(conn->sconn->files, fsp);
+	DLIST_ADD(sconn->files, fsp);
 
 	DEBUG(5,("allocated file structure %d, fnum = %d (%d used)\n",
-		 i, fsp->fnum, files_used));
+		 i, fsp->fnum, sconn->files_used));
 
 	if (req != NULL) {
 		req->chain_fsp = fsp;
@@ -127,7 +131,7 @@ NTSTATUS file_new(struct smb_request *req, connection_struct *conn,
 	  at the start of the list and we search from
 	  a cache hit to the *end* of the list. */
 
-	ZERO_STRUCT(fsp_fi_cache);
+	ZERO_STRUCT(sconn->fsp_fi_cache);
 
 	conn->num_files_open++;
 
@@ -184,22 +188,24 @@ bool file_init(struct smbd_server_connection *sconn)
 	 */
 	real_lim = set_maxfiles(request_max_open_files + MAX_OPEN_FUDGEFACTOR);
 
-	real_max_open_files = real_lim - MAX_OPEN_FUDGEFACTOR;
+	sconn->real_max_open_files = real_lim - MAX_OPEN_FUDGEFACTOR;
 
-	if (real_max_open_files + FILE_HANDLE_OFFSET + MAX_OPEN_PIPES > 65536)
-		real_max_open_files = 65536 - FILE_HANDLE_OFFSET - MAX_OPEN_PIPES;
+	if (sconn->real_max_open_files + FILE_HANDLE_OFFSET + MAX_OPEN_PIPES
+	    > 65536)
+		sconn->real_max_open_files =
+			65536 - FILE_HANDLE_OFFSET - MAX_OPEN_PIPES;
 
-	if(real_max_open_files != request_max_open_files) {
+	if(sconn->real_max_open_files != request_max_open_files) {
 		DEBUG(1, ("file_init: Information only: requested %d "
 			  "open files, %d are available.\n",
-			  request_max_open_files, real_max_open_files));
+			  request_max_open_files, sconn->real_max_open_files));
 	}
 
-	SMB_ASSERT(real_max_open_files > 100);
+	SMB_ASSERT(sconn->real_max_open_files > 100);
 
-	file_bmap = bitmap_talloc(sconn, real_max_open_files);
+	sconn->file_bmap = bitmap_talloc(sconn, sconn->real_max_open_files);
 
-	if (!file_bmap) {
+	if (!sconn->file_bmap) {
 		return false;
 	}
 	return true;
@@ -313,23 +319,23 @@ files_struct *file_find_di_first(struct smbd_server_connection *sconn,
 {
 	files_struct *fsp;
 
-	if (file_id_equal(&fsp_fi_cache.id, &id)) {
+	if (file_id_equal(&sconn->fsp_fi_cache.id, &id)) {
 		/* Positive or negative cache hit. */
-		return fsp_fi_cache.fsp;
+		return sconn->fsp_fi_cache.fsp;
 	}
 
-	fsp_fi_cache.id = id;
+	sconn->fsp_fi_cache.id = id;
 
 	for (fsp=sconn->files;fsp;fsp=fsp->next) {
 		if (file_id_equal(&fsp->file_id, &id)) {
 			/* Setup positive cache. */
-			fsp_fi_cache.fsp = fsp;
+			sconn->fsp_fi_cache.fsp = fsp;
 			return fsp;
 		}
 	}
 
 	/* Setup negative cache. */
-	fsp_fi_cache.fsp = NULL;
+	sconn->fsp_fi_cache.fsp = NULL;
 	return NULL;
 }
 
@@ -421,7 +427,9 @@ void file_sync_all(connection_struct *conn)
 
 void file_free(struct smb_request *req, files_struct *fsp)
 {
-	DLIST_REMOVE(fsp->conn->sconn->files, fsp);
+	struct smbd_server_connection *sconn = fsp->conn->sconn;
+
+	DLIST_REMOVE(sconn->files, fsp);
 
 	TALLOC_FREE(fsp->fake_file_handle);
 
@@ -446,11 +454,11 @@ void file_free(struct smb_request *req, files_struct *fsp)
 	/* Ensure this event will never fire. */
 	TALLOC_FREE(fsp->update_write_time_event);
 
-	bitmap_clear(file_bmap, fsp->fnum - FILE_HANDLE_OFFSET);
-	files_used--;
+	bitmap_clear(sconn->file_bmap, fsp->fnum - FILE_HANDLE_OFFSET);
+	sconn->files_used--;
 
 	DEBUG(5,("freed files structure %d (%d used)\n",
-		 fsp->fnum, files_used));
+		 fsp->fnum, sconn->files_used));
 
 	fsp->conn->num_files_open--;
 
@@ -467,8 +475,8 @@ void file_free(struct smb_request *req, files_struct *fsp)
 	}
 
 	/* Closing a file can invalidate the positive cache. */
-	if (fsp == fsp_fi_cache.fsp) {
-		ZERO_STRUCT(fsp_fi_cache);
+	if (fsp == sconn->fsp_fi_cache.fsp) {
+		ZERO_STRUCT(sconn->fsp_fi_cache);
 	}
 
 	/* Drop all remaining extensions. */
