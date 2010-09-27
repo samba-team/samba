@@ -485,8 +485,7 @@ PASSDB_SRC = '''${PASSDB_GET_SET_SRC} passdb/passdb.c passdb/pdb_interface.c
 GROUPDB_SRC = '''groupdb/mapping.c groupdb/mapping_tdb.c'''
 
 PROFILE_SRC = '''profile/profile.c'''
-PROFILES_SRC = '''utils/profiles.c
-               ${REGFIO_SRC}'''
+PROFILES_SRC = '''utils/profiles.c'''
 
 OPLOCK_SRC = '''smbd/oplock.c smbd/oplock_irix.c smbd/oplock_linux.c
              smbd/oplock_onefs.c'''
@@ -679,8 +678,6 @@ SMBD_SRC_BASE = '''${SMBD_SRC_SRV}
                 rpc_client/init_netlogon.c
                 rpc_client/init_samr.c
                 ${PRIVILEGES_BASIC_SRC}
-                ${REGFIO_SRC}
-                ${REG_API_REGF_SRC}
                 ${LIBNDR_XATTR_SRC}'''
 
 PRINTING_SRC = '''printing/pcap.c printing/print_svid.c printing/print_aix.c
@@ -906,8 +903,7 @@ NET_SRC1 = '''utils/net.c utils/net_ads.c utils/net_help.c
 NET_SRC2 = 'utils/net_registry_util.c utils/net_help_common.c'
 
 NET_SRC = '''${NET_SRC1}
-             ${NET_SRC2}
-             ${REGFIO_SRC}'''
+             ${NET_SRC2}'''
 
 CUPS_SRC = '''client/smbspool.c'''
 
@@ -1145,6 +1141,14 @@ bld.SAMBA_SUBSYSTEM('PARAM',
                     deps='PARAM_WITHOUT_REG DYNCONFIG',
                     vars=locals())
 
+bld.SAMBA_SUBSYSTEM('REGFIO',
+                    source=REGFIO_SRC,
+                    vars=locals())
+
+bld.SAMBA_SUBSYSTEM('REG_API_REGF',
+                    source=REG_API_REGF_SRC,
+                    vars=locals())
+
 bld.SAMBA_SUBSYSTEM('POPT_SAMBA',
                     source=POPT_LIB_SRC,
                     vars=locals())
@@ -1220,7 +1224,7 @@ bld.SAMBA_SUBSYSTEM('SMBD_BASE',
                     NSS_WRAPPER DYNCONFIG libwbclient crypt nsl cups cap resolv ZLIB PASSDB
                     PARAM_WITHOUT_REG LIBS LIBSMB POPT_SAMBA KRBCLIENT AVAHI
                     LIBMSRPC_GEN LIBMSRPC LIBADS LIBADS_SERVER LIBADS_PRINTER
-                    VFS RPC_MODULES AUTH LOCKING LIBAFS LIBAFS_SETTOKEN PROFILE LIBNET LIBEVENTLOG''',
+                    VFS RPC_MODULES AUTH LOCKING LIBAFS LIBAFS_SETTOKEN PROFILE LIBNET LIBEVENTLOG REGFIO REG_API_REGF''',
                     vars=locals())
 
 bld.SAMBA_SUBSYSTEM('RPC_MODULES',
@@ -1380,12 +1384,13 @@ bld.SAMBA_BINARY('net',
                  deps='''talloc tdb libnetapi libaddns cap resolv POPT_SAMBA PASSDB LIBSMB LIB_NONSMBD
                  PARAM_WITHOUT_REG libwbclient PARAM KRBCLIENT LIBMSRPC_GEN LIBMSRPC LIBGPO LIBADS LIBADS_SERVER LIBADS_PRINTER
                  LOCALE_DIR LIBAFS LIBAFS_SETTOKEN READLINE PASSWD_UTIL LIBNET
-                 LIBNET_DSSYNC LIBNET_SAMSYNC LIBEVENTLOG DISPLAY_SEC DCUTIL''',
+                 LIBNET_DSSYNC LIBNET_SAMSYNC LIBEVENTLOG DISPLAY_SEC DCUTIL
+                 REGFIO''',
                  vars=locals())
 
 bld.SAMBA_BINARY('profiles',
                  source=PROFILES_SRC,
-                 deps='''talloc tdb cap tevent POPT_SAMBA PARAM LIBS LIBSMB_ERR LIB_NONSMBD''',
+                 deps='''talloc tdb cap tevent POPT_SAMBA PARAM LIBS LIBSMB_ERR LIB_NONSMBD REGFIO''',
                  vars=locals())
 
 bld.SAMBA_BINARY('smbspool',
