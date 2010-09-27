@@ -68,7 +68,7 @@ NTSTATUS file_new(struct smb_request *req, connection_struct *conn,
 
 	/*
 	 * Make a child of the connection_struct as an fsp can't exist
-	 * indepenedent of a connection.
+	 * independent of a connection.
 	 */
 	fsp = talloc_zero(conn, struct files_struct);
 	if (!fsp) {
@@ -551,7 +551,7 @@ files_struct *file_fnum(uint16 fnum)
 }
 
 /****************************************************************************
- Get an fsp from a packet given the offset of a 16 bit fnum.
+ Get an fsp from a packet given a 16 bit fnum.
 ****************************************************************************/
 
 files_struct *file_fsp(struct smb_request *req, uint16 fid)
