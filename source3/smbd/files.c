@@ -407,7 +407,7 @@ void file_sync_all(connection_struct *conn)
 {
 	files_struct *fsp, *next;
 
-	for (fsp=smbd_server_conn->files;fsp;fsp=next) {
+	for (fsp=conn->sconn->files; fsp; fsp=next) {
 		next=fsp->next;
 		if ((conn == fsp->conn) && (fsp->fh->fd != -1)) {
 			sync_file(conn, fsp, True /* write through */);
