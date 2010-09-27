@@ -4763,7 +4763,8 @@ struct files_struct *files_forall(
 files_struct *file_find_fd(int fd);
 files_struct *file_find_dif(struct smbd_server_connection *sconn,
 			    struct file_id id, unsigned long gen_id);
-files_struct *file_find_di_first(struct file_id id);
+files_struct *file_find_di_first(struct smbd_server_connection *sconn,
+				 struct file_id id);
 files_struct *file_find_di_next(files_struct *start_fsp);
 bool file_find_subpath(files_struct *dir_fsp);
 void file_sync_all(connection_struct *conn);

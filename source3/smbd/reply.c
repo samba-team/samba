@@ -5793,7 +5793,7 @@ static void rename_open_files(connection_struct *conn,
 	bool did_rename = False;
 	NTSTATUS status;
 
-	for(fsp = file_find_di_first(lck->id); fsp;
+	for(fsp = file_find_di_first(conn->sconn, lck->id); fsp;
 	    fsp = file_find_di_next(fsp)) {
 		/* fsp_name is a relative path under the fsp. To change this for other
 		   sharepaths we need to manipulate relative paths. */
@@ -6068,7 +6068,8 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 	if (dst_exists) {
 		struct file_id fileid = vfs_file_id_from_sbuf(conn,
 		    &smb_fname_dst->st);
-		files_struct *dst_fsp = file_find_di_first(fileid);
+		files_struct *dst_fsp = file_find_di_first(conn->sconn,
+							   fileid);
 		/* The file can be open when renaming a stream */
 		if (dst_fsp && !new_is_stream) {
 			DEBUG(3, ("rename_internals_fsp: Target file open\n"));

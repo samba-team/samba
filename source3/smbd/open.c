@@ -1165,7 +1165,7 @@ NTSTATUS fcb_or_dos_open(struct smb_request *req,
 	DEBUG(5,("fcb_or_dos_open: attempting old open semantics for "
 		 "file %s.\n", smb_fname_str_dbg(smb_fname)));
 
-	for(fsp = file_find_di_first(id); fsp;
+	for(fsp = file_find_di_first(conn->sconn, id); fsp;
 	    fsp = file_find_di_next(fsp)) {
 
 		DEBUG(10,("fcb_or_dos_open: checking file %s, fd = %d, "
@@ -2773,7 +2773,8 @@ void msg_file_was_renamed(struct messaging_context *msg,
 		sharepath, smb_fname_str_dbg(smb_fname),
 		file_id_string_tos(&id)));
 
-	for(fsp = file_find_di_first(id); fsp; fsp = file_find_di_next(fsp)) {
+	for(fsp = file_find_di_first(smbd_server_conn, id); fsp;
+	    fsp = file_find_di_next(fsp)) {
 		if (memcmp(fsp->conn->connectpath, sharepath, sp_len) == 0) {
 
 			DEBUG(10,("msg_file_was_renamed: renaming file fnum %d from %s -> %s\n",

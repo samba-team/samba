@@ -308,7 +308,8 @@ files_struct *file_find_dif(struct smbd_server_connection *sconn,
  calls.
 ****************************************************************************/
 
-files_struct *file_find_di_first(struct file_id id)
+files_struct *file_find_di_first(struct smbd_server_connection *sconn,
+				 struct file_id id)
 {
 	files_struct *fsp;
 
@@ -319,7 +320,7 @@ files_struct *file_find_di_first(struct file_id id)
 
 	fsp_fi_cache.id = id;
 
-	for (fsp=smbd_server_conn->files;fsp;fsp=fsp->next) {
+	for (fsp=sconn->files;fsp;fsp=fsp->next) {
 		if (file_id_equal(&fsp->file_id, &id)) {
 			/* Setup positive cache. */
 			fsp_fi_cache.fsp = fsp;
