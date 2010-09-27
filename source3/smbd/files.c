@@ -113,7 +113,7 @@ NTSTATUS file_new(struct smb_request *req, connection_struct *conn,
 		TALLOC_FREE(fsp->fh);
 	}
 
-	DLIST_ADD(Files, fsp);
+	DLIST_ADD(smbd_server_conn->files, fsp);
 
 	DEBUG(5,("allocated file structure %d, fnum = %d (%d used)\n",
 		 i, fsp->fnum, files_used));
@@ -143,7 +143,7 @@ void file_close_conn(connection_struct *conn)
 {
 	files_struct *fsp, *next;
 
-	for (fsp=Files;fsp;fsp=next) {
+	for (fsp=smbd_server_conn->files;fsp;fsp=next) {
 		next = fsp->next;
 		if (fsp->conn == conn) {
 			close_file(NULL, fsp, SHUTDOWN_CLOSE);
@@ -159,7 +159,7 @@ void file_close_pid(uint16 smbpid, int vuid)
 {
 	files_struct *fsp, *next;
 
-	for (fsp=Files;fsp;fsp=next) {
+	for (fsp=smbd_server_conn->files;fsp;fsp=next) {
 		next = fsp->next;
 		if ((fsp->file_pid == smbpid) && (fsp->vuid == vuid)) {
 			close_file(NULL, fsp, SHUTDOWN_CLOSE);
@@ -212,7 +212,7 @@ void file_close_user(int vuid)
 {
 	files_struct *fsp, *next;
 
-	for (fsp=Files;fsp;fsp=next) {
+	for (fsp=smbd_server_conn->files;fsp;fsp=next) {
 		next=fsp->next;
 		if (fsp->vuid == vuid) {
 			close_file(NULL, fsp, SHUTDOWN_CLOSE);
@@ -231,7 +231,7 @@ struct files_struct *files_forall(
 {
 	struct files_struct *fsp, *next;
 
-	for (fsp = Files; fsp; fsp = next) {
+	for (fsp = smbd_server_conn->files; fsp; fsp = next) {
 		struct files_struct *ret;
 		next = fsp->next;
 		ret = fn(fsp, private_data);
@@ -251,10 +251,10 @@ files_struct *file_find_fd(int fd)
 	int count=0;
 	files_struct *fsp;
 
-	for (fsp=Files;fsp;fsp=fsp->next,count++) {
+	for (fsp=smbd_server_conn->files;fsp;fsp=fsp->next,count++) {
 		if (fsp->fh->fd == fd) {
 			if (count > 10) {
-				DLIST_PROMOTE(Files, fsp);
+				DLIST_PROMOTE(smbd_server_conn->files, fsp);
 			}
 			return fsp;
 		}
@@ -272,12 +272,12 @@ files_struct *file_find_dif(struct file_id id, unsigned long gen_id)
 	int count=0;
 	files_struct *fsp;
 
-	for (fsp=Files;fsp;fsp=fsp->next,count++) {
+	for (fsp=smbd_server_conn->files;fsp;fsp=fsp->next,count++) {
 		/* We can have a fsp->fh->fd == -1 here as it could be a stat open. */
 		if (file_id_equal(&fsp->file_id, &id) &&
 		    fsp->fh->gen_id == gen_id ) {
 			if (count > 10) {
-				DLIST_PROMOTE(Files, fsp);
+				DLIST_PROMOTE(smbd_server_conn->files, fsp);
 			}
 			/* Paranoia check. */
 			if ((fsp->fh->fd == -1) &&
@@ -316,7 +316,7 @@ files_struct *file_find_di_first(struct file_id id)
 
 	fsp_fi_cache.id = id;
 
-	for (fsp=Files;fsp;fsp=fsp->next) {
+	for (fsp=smbd_server_conn->files;fsp;fsp=fsp->next) {
 		if (file_id_equal(&fsp->file_id, &id)) {
 			/* Setup positive cache. */
 			fsp_fi_cache.fsp = fsp;
@@ -366,7 +366,7 @@ bool file_find_subpath(files_struct *dir_fsp)
 
 	dlen = strlen(d_fullname);
 
-	for (fsp=Files;fsp;fsp=fsp->next) {
+	for (fsp=smbd_server_conn->files;fsp;fsp=fsp->next) {
 		char *d1_fullname;
 
 		if (fsp == dir_fsp) {
@@ -403,7 +403,7 @@ void file_sync_all(connection_struct *conn)
 {
 	files_struct *fsp, *next;
 
-	for (fsp=Files;fsp;fsp=next) {
+	for (fsp=smbd_server_conn->files;fsp;fsp=next) {
 		next=fsp->next;
 		if ((conn == fsp->conn) && (fsp->fh->fd != -1)) {
 			sync_file(conn, fsp, True /* write through */);
@@ -417,7 +417,7 @@ void file_sync_all(connection_struct *conn)
 
 void file_free(struct smb_request *req, files_struct *fsp)
 {
-	DLIST_REMOVE(Files, fsp);
+	DLIST_REMOVE(smbd_server_conn->files, fsp);
 
 	TALLOC_FREE(fsp->fake_file_handle);
 
@@ -489,10 +489,10 @@ static struct files_struct *file_fnum(uint16 fnum)
 	files_struct *fsp;
 	int count=0;
 
-	for (fsp=Files;fsp;fsp=fsp->next, count++) {
+	for (fsp=smbd_server_conn->files;fsp;fsp=fsp->next, count++) {
 		if (fsp->fnum == fnum) {
 			if (count > 10) {
-				DLIST_PROMOTE(Files, fsp);
+				DLIST_PROMOTE(smbd_server_conn->files, fsp);
 			}
 			return fsp;
 		}

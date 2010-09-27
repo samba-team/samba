@@ -38,7 +38,6 @@ extern unsigned int allocated_write_caches;
 
 extern int real_max_open_files;
 extern struct bitmap *file_bmap;
-extern files_struct *Files;
 extern int files_used;
 /* A singleton cache to speed up searching by dev/inode. */
 struct fsp_singleton_cache {
@@ -463,6 +462,7 @@ struct smbd_server_connection {
 	} nbt;
 	bool using_smb2;
 	int trans_num;
+	struct files_struct *files;
 	struct {
 		struct fd_event *fde;
 

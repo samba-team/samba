@@ -40,7 +40,6 @@ unsigned int allocated_write_caches = 0;
 
 int real_max_open_files = 0;
 struct bitmap *file_bmap = NULL;
-files_struct *Files = NULL;
 int files_used = 0;
 struct fsp_singleton_cache fsp_fi_cache = {
 	.fsp = NULL,
