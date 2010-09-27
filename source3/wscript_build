@@ -72,10 +72,6 @@ LIBCLI_EVENTLOG_SRC = '''
                       ../librpc/gen_ndr/cli_eventlog.c
                       ../librpc/gen_ndr/ndr_eventlog_c.c'''
 
-LIBCLI_WINREG_SRC = '''
-                    ../librpc/gen_ndr/cli_winreg.c
-                    ../librpc/gen_ndr/ndr_winreg_c.c'''
-
 LIBCLI_NTSVCS_SRC = '''
                     ../librpc/gen_ndr/cli_ntsvcs.c
                     ../librpc/gen_ndr/ndr_ntsvcs_c.c'''
@@ -650,7 +646,6 @@ SMBD_SRC_BASE = '''${SMBD_SRC_SRV}
                 ${BUILDOPT_SRC}
                 ${LIBSMBCONF_SRC}
                 ${LIBCLI_SPOOLSS_SRC}
-                ${LIBCLI_WINREG_SRC}
                 ${LIBCLI_SRVSVC_SRC}
                 ${LIBCLI_LSA_SRC}
                 ${LIBCLI_SAMR_SRC}
@@ -745,7 +740,6 @@ RPCCLIENT_SRC = '''${RPCCLIENT_SRC1}
                    ${LIBCLI_SRVSVC_SRC}
                    ${LIBCLI_LSA_SRC}
                    ${LIBCLI_SAMR_SRC}
-                   ${LIBCLI_WINREG_SRC}
                    ${LIBCLI_NETLOGON_SRC}
                    ${RPC_CLIENT_SCHANNEL_SRC}
                    rpc_client/init_netlogon.c
@@ -859,7 +853,6 @@ NET_SRC1 = '''utils/net.c utils/net_ads.c utils/net_help.c
               utils/net_eventlog.c
               utils/net_printing.c
               ${LIBCLI_SPOOLSS_SRC}
-              ${LIBCLI_WINREG_SRC}
               ${LIBCLI_DRSUAPI_SRC}
               ${LIBCLI_INITSHUTDOWN_SRC}
               ${LIBCLI_DSSETUP_SRC}
@@ -1196,7 +1189,8 @@ bld.SAMBA_SUBSYSTEM('SMBD_BASE',
                     PARAM_WITHOUT_REG LIBS LIBSMB POPT_SAMBA KRBCLIENT AVAHI
                     LIBMSRPC_GEN LIBMSRPC LIBADS LIBADS_SERVER LIBADS_PRINTER
                     VFS RPC_MODULES AUTH LOCKING LIBAFS LIBAFS_SETTOKEN PROFILE LIBNET LIBEVENTLOG
-                    REGFIO REG_API_REGF PRINTING PRINTBACKEND SERVICES NDR_XATTR NDR_PERFCOUNT SOCKET_WRAPPER''',
+                    REGFIO REG_API_REGF PRINTING PRINTBACKEND SERVICES NDR_XATTR NDR_PERFCOUNT SOCKET_WRAPPER
+                    RPCCLI_WINREG''',
                     vars=locals())
 
 if not bld.env.developer:
@@ -1282,7 +1276,7 @@ bld.SAMBA_SUBSYSTEM('LIBNDR',
 
 #FIXME
 bld.SAMBA_SUBSYSTEM('NDR_STANDARD',
-                    source=LIBNDR_SRC,
+                    source='',
                     vars=locals())
 
 #FIXME
@@ -1312,6 +1306,10 @@ bld.SAMBA_SUBSYSTEM('NDR_NBT_BUF',
 bld.SAMBA_SUBSYSTEM('LIBCLI_NDR_NETLOGON',
 		    source='../libcli/ndr_netlogon.c',
 		    public_deps='LIBNDR NDR_SECURITY')
+
+bld.SAMBA_SUBSYSTEM('RPCCLI_WINREG',
+                    source='../librpc/gen_ndr/cli_winreg.c',
+                    public_deps='RPC_NDR_WINREG')
 
 ########################## BINARIES #################################
 
@@ -1354,7 +1352,7 @@ bld.SAMBA_BINARY('rpcclient/rpcclient',
                  source=RPCCLIENT_SRC,
                  deps='''talloc tdb cap resolv POPT_SAMBA PASSDB LIBSMB LIB_NONSMBD
                  PARAM_WITHOUT_REG libwbclient PARAM KRBCLIENT LIBMSRPC_GEN LIBMSRPC
-                 LIBADS SMBREADLINE DISPLAY_SEC DCUTIL''',
+                 LIBADS SMBREADLINE DISPLAY_SEC DCUTIL RPCCLI_WINREG''',
                  vars=locals())
 
 bld.SAMBA_BINARY('smbclient',
@@ -1370,7 +1368,7 @@ bld.SAMBA_BINARY('net',
                  PARAM_WITHOUT_REG libwbclient PARAM KRBCLIENT LIBMSRPC_GEN LIBMSRPC LIBGPO LIBADS LIBADS_SERVER LIBADS_PRINTER
                  LOCALE_DIR LIBAFS LIBAFS_SETTOKEN SMBREADLINE PASSWD_UTIL LIBNET
                  LIBNET_DSSYNC LIBNET_SAMSYNC LIBEVENTLOG DISPLAY_SEC DCUTIL
-                 REGFIO NDR_NTPRINTING''',
+                 REGFIO NDR_NTPRINTING RPCCLI_WINREG''',
                  vars=locals())
 
 bld.SAMBA_BINARY('profiles',
