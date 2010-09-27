@@ -543,7 +543,7 @@ bool pm_process( const char *FileName,
   myFILE *InFile;
   const char *func = "params.c:pm_process() -";
 
-  InFile = OpenConfFile(talloc_autofree_context(), FileName); /* Open the config file. */
+  InFile = OpenConfFile(NULL, FileName); /* Open the config file. */
   if( NULL == InFile )
     return( false );
 
