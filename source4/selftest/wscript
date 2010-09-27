@@ -51,6 +51,9 @@ def set_options(opt):
     gr.add_option('--gdbtest',
                   help=("run the testsuite within a gdb xterm window"),
                   action="store_true", dest='GDBTEST', default=False)
+    gr.add_option('--fail-immediately',
+                  help=("stop tests on first failure"),
+                  action="store_true", dest='FAIL_IMMEDIATELY', default=False)
     gr.add_option('--socket-wrapper-pcap',
                   help=("create a pcap file for each failing test"),
                   action="store_true", dest='SOCKET_WRAPPER_PCAP', default=False)
@@ -76,6 +79,10 @@ def cmd_testonly(opt):
 
     env.SUBUNIT_FORMATTER = '${PYTHON} -u ../selftest/format-subunit --prefix=${SELFTEST_PREFIX} --immediate'
     env.FILTER_XFAIL = '${PYTHON} -u ../selftest/filter-subunit --expected-failures=./selftest/knownfail'
+
+    if Options.options.FAIL_IMMEDIATELY:
+        env.FILTER_XFAIL += ' --fail-immediately'
+
     env.FORMAT_TEST_OUTPUT = '${SUBUNIT_FORMATTER}'
 
     env.OPTIONS = ''
