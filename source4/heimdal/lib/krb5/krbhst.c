@@ -370,9 +370,24 @@ krb5_krbhst_get_addrinfo(krb5_context context, krb5_krbhst_info *host,
     int ret;
 
     if (host->ai == NULL) {
+	char *hostname_dot = NULL;
 	make_hints(&hints, host->proto);
 	snprintf (portstr, sizeof(portstr), "%d", host->port);
-	ret = getaddrinfo(host->hostname, portstr, &hints, &host->ai);
+	if (strchr(host->hostname, '.') && 
+	    host->hostname[strlen(host->hostname)-1] != '.') {
+		/* avoid expansion of search domains from resolv.conf
+		   - these can be very slow if the DNS server is not up
+		   for the searched domain */
+		hostname_dot = malloc(strlen(host->hostname)+2);
+		if (hostname_dot) {
+			strcpy(hostname_dot, host->hostname);
+			hostname_dot[strlen(host->hostname)] = '.';
+			hostname_dot[strlen(host->hostname)+1] = 0;
+		}
+	}
+	ret = getaddrinfo(hostname_dot?hostname_dot:host->hostname, portstr, &hints, &host->ai);
+	if (hostname_dot) 
+		free(hostname_dot);
 	if (ret)
 	    return krb5_eai_to_heim_errno(ret, errno);
     }
