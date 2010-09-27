@@ -434,6 +434,8 @@ _PUBLIC_ bool ldap_encode(struct ldap_message *msg,
 	}
 	case LDAP_TAG_UnbindRequest: {
 /*		struct ldap_UnbindRequest *r = &msg->r.UnbindRequest; */
+		asn1_push_tag(data, ASN1_APPLICATION_SIMPLE(msg->type));
+		asn1_pop_tag(data);
 		break;
 	}
 	case LDAP_TAG_SearchRequest: {
