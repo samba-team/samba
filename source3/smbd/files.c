@@ -370,7 +370,7 @@ bool file_find_subpath(files_struct *dir_fsp)
 
 	dlen = strlen(d_fullname);
 
-	for (fsp=smbd_server_conn->files;fsp;fsp=fsp->next) {
+	for (fsp=dir_fsp->conn->sconn->files; fsp; fsp=fsp->next) {
 		char *d1_fullname;
 
 		if (fsp == dir_fsp) {
