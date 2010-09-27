@@ -269,17 +269,18 @@ files_struct *file_find_fd(int fd)
  Find a fsp given a device, inode and file_id.
 ****************************************************************************/
 
-files_struct *file_find_dif(struct file_id id, unsigned long gen_id)
+files_struct *file_find_dif(struct smbd_server_connection *sconn,
+			    struct file_id id, unsigned long gen_id)
 {
 	int count=0;
 	files_struct *fsp;
 
-	for (fsp=smbd_server_conn->files;fsp;fsp=fsp->next,count++) {
+	for (fsp=sconn->files; fsp; fsp=fsp->next,count++) {
 		/* We can have a fsp->fh->fd == -1 here as it could be a stat open. */
 		if (file_id_equal(&fsp->file_id, &id) &&
 		    fsp->fh->gen_id == gen_id ) {
 			if (count > 10) {
-				DLIST_PROMOTE(smbd_server_conn->files, fsp);
+				DLIST_PROMOTE(sconn->files, fsp);
 			}
 			/* Paranoia check. */
 			if ((fsp->fh->fd == -1) &&

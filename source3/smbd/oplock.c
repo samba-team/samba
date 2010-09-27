@@ -273,7 +273,7 @@ static files_struct *initial_break_processing(struct file_id id, unsigned long f
 	 * we have an oplock on it.
 	 */
 
-	fsp = file_find_dif(id, file_id);
+	fsp = file_find_dif(smbd_server_conn, id, file_id);
 
 	if(fsp == NULL) {
 		/* The file could have been closed in the meantime - return success. */

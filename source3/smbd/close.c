@@ -1117,7 +1117,7 @@ void msg_close_file(struct messaging_context *msg_ctx,
 		TALLOC_FREE(sm_str);
 	}
 
-	fsp = file_find_dif(e.id, e.share_file_id);
+	fsp = file_find_dif(smbd_server_conn, e.id, e.share_file_id);
 	if (!fsp) {
 		DEBUG(10,("msg_close_file: failed to find file.\n"));
 		return;

@@ -765,7 +765,7 @@ static void validate_my_share_entries(int num,
 		return;
 	}
 
-	fsp = file_find_dif(share_entry->id,
+	fsp = file_find_dif(smbd_server_conn, share_entry->id,
 			    share_entry->share_file_id);
 	if (!fsp) {
 		DEBUG(0,("validate_my_share_entries: PANIC : %s\n",
