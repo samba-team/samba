@@ -30,6 +30,11 @@ bld.SAMBA_SUBSYSTEM('NDR_SECRETS',
 	public_deps='LIBNDR'
 	)
 
+bld.SAMBA_SUBSYSTEM('NDR_PERFCOUNT',
+	source='gen_ndr/ndr_perfcount.c',
+	public_deps='LIBNDR'
+	)
+
 bld.SAMBA_SUBSYSTEM('NDR_WBINT',
 	source='gen_ndr/ndr_wbint.c',
 	public_deps='LIBNDR'
