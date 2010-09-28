@@ -3811,6 +3811,7 @@ int dsdb_search(struct ldb_context *ldb,
 	ret = dsdb_request_add_controls(req, dsdb_flags);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
+		ldb_reset_err_string(ldb);
 		return ret;
 	}
 
@@ -3827,10 +3828,12 @@ int dsdb_search(struct ldb_context *ldb,
 	if (dsdb_flags & DSDB_SEARCH_ONE_ONLY) {
 		if (res->count == 0) {
 			talloc_free(tmp_ctx);
+			ldb_reset_err_string(ldb);
 			return LDB_ERR_NO_SUCH_OBJECT;
 		}
 		if (res->count != 1) {
 			talloc_free(tmp_ctx);
+			ldb_reset_err_string(ldb);
 			return LDB_ERR_CONSTRAINT_VIOLATION;
 		}
 	}

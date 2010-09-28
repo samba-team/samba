@@ -622,6 +622,7 @@ int dsdb_module_reference_dn(struct ldb_module *module, TALLOC_CTX *mem_ctx, str
 	*dn = ldb_msg_find_attr_as_dn(ldb_module_get_ctx(module),
 				      mem_ctx, res->msgs[0], attribute);
 	if (!*dn) {
+		ldb_reset_err_string(ldb_module_get_ctx(module));
 		talloc_free(res);
 		return LDB_ERR_NO_SUCH_ATTRIBUTE;
 	}
