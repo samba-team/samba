@@ -166,6 +166,14 @@ my $prefix = "./st";
 my @includes = ();
 my @excludes = ();
 
+sub pipe_handler {
+	my $sig = shift @_;
+	print STDERR "Exiting early because of SIGPIPE.\n";
+	exit(1);
+}
+
+$SIG{PIPE} = \&pipe_handler;
+
 sub find_in_list($$)
 {
 	my ($list, $fullname) = @_;

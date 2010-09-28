@@ -53,4 +53,5 @@ msg_ops = subunithelper.FilterOps(out, opts.prefix, expected_failures,
 try:
 	sys.exit(subunithelper.parse_results(msg_ops, statistics, sys.stdin))
 except subunithelper.ImmediateFail:
+	sys.stdout.flush()
 	sys.exit(1)
