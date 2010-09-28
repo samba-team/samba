@@ -1,0 +1,13 @@
+#!/usr/bin/env python
+
+if bld.CONFIG_SET('HAVE_PAM_START'):
+    bld.SAMBA_LIBRARY('pamsmbpass',
+        source='''pam_smb_auth.c
+                  pam_smb_passwd.c
+                  pam_smb_acct.c
+                  support.c''',
+        deps='''tdb talloc pam libwbclient cap ASN1_UTIL PARAM LIB_NONSMBD PASSDB GROUPDB SMBLDAP
+                LIBSAMBA LIBTSOCKET''',
+        cflags='-DLOCALEDIR=\"%s/locale\"' % bld.env.DATADIR,
+        realname='pam_smbpass.so',
+        )

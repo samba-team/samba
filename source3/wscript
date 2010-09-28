@@ -660,6 +660,10 @@ return 0;
         if conf.env.with_iconv:
             conf.DEFINE('HAVE_ICONV', 1)
 
+    if Options.options.with_pam:
+        conf.CHECK_HEADERS('security/pam_appl.h security/pam_modules.h pam/pam_modules.h', together=True)
+        conf.CHECK_FUNCS_IN('pam_start', 'pam', checklibc=True, headers='security/pam_appl.h')
+
     seteuid = False
     if not seteuid:
         seteuid = conf.CHECK_CODE('''

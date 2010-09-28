@@ -944,12 +944,6 @@ SMBFILTER_SRC = '''utils/smbfilter.c'''
 WINBIND_WINS_NSS_SRC = '''../nsswitch/wins.c ${PARAM_SRC}
         ${LIB_NONSMBD_SRC} ${LIBSMB_ERR_SRC} ${LIBNMB_SRC}'''
 
-PAM_SMBPASS_SRC_0 = '''pam_smbpass/pam_smb_auth.c pam_smbpass/pam_smb_passwd.c
-                pam_smbpass/pam_smb_acct.c pam_smbpass/support.c ../lib/util/asn1.c'''
-PAM_SMBPASS_SRC = '''${PAM_SMBPASS_SRC_0} ${PARAM_SRC} ${LIB_NONSMBD_SRC} ${PASSDB_SRC} ${GROUPDB_SRC} \
-                ${SMBLDAP_SRC} ${LIBSAMBA_SRC} \
-                ${LIBTSOCKET_SRC}'''
-
 WBINFO_SRC = '''../nsswitch/wbinfo.c'''
 
 WINBIND_NSS_SRC = '''${WBCOMMON_SRC} ${LIBREPLACE_SRC}'''
@@ -1619,6 +1613,7 @@ bld.RECURSE('auth')
 bld.RECURSE('passdb')
 bld.RECURSE('winbindd')
 bld.RECURSE('libgpo/gpext')
+bld.RECURSE('pam_smbpass')
 
 bld.ENFORCE_GROUP_ORDERING()
 bld.CHECK_PROJECT_RULES()
