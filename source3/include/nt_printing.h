@@ -25,66 +25,6 @@
 #include "client.h"
 #include "../librpc/gen_ndr/srv_spoolss.h"
 
-/* container for a single registry key */
-
-typedef struct {
-	char			*name;
-	struct regval_ctr	*values;
-} NT_PRINTER_KEY;
-
-/* container for all printer data */
-
-typedef struct {
-	int		num_keys;
-	NT_PRINTER_KEY	*keys;
-} NT_PRINTER_DATA;
-
-typedef struct nt_printer_info_level_2
-{
-	uint32 attributes;
-	uint32 priority;
-	uint32 default_priority;
-	uint32 starttime;
-	uint32 untiltime;
-	uint32 status;
-	uint32 cjobs;
-	uint32 averageppm;
-	fstring servername;
-	fstring printername;
-	fstring sharename;
-	fstring portname;
-	fstring drivername;
-	char comment[1024];
-	fstring location;
-	struct spoolss_DeviceMode *devmode;
-	fstring sepfile;
-	fstring printprocessor;
-	fstring datatype;
-	fstring parameters;
-	NT_PRINTER_DATA *data;
-	struct sec_desc_buf *secdesc_buf;
-	uint32 changeid;
-	uint32 c_setprinter;
-	uint32 setuptime;	
-} NT_PRINTER_INFO_LEVEL_2;
-
-typedef struct nt_printer_info_level
-{
-	NT_PRINTER_INFO_LEVEL_2 *info_2;
-} NT_PRINTER_INFO_LEVEL;
-
-typedef struct
-{
-	fstring name;
-	uint32 flag;
-	uint32 width;
-	uint32 length;
-	uint32 left;
-	uint32 top;
-	uint32 right;
-	uint32 bottom;
-} nt_forms_struct;
-
 #ifndef SAMBA_PRINTER_PORT_NAME
 #define SAMBA_PRINTER_PORT_NAME "Samba Printer Port"
 #endif
