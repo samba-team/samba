@@ -30,7 +30,7 @@ static void print_asc(const unsigned char *buf,int len)
                 printf("%c", isprint(buf[i])?buf[i]:'.');
 }
 
-static void dump_data(const unsigned char *buf1,int len)
+void dump_data(const unsigned char *buf1,int len)
 {
         const unsigned char *buf = (const unsigned char *)buf1;
         int i=0;
@@ -60,6 +60,8 @@ static void dump_data(const unsigned char *buf1,int len)
                 printf("\n");
         }
 }
+
+#if _WIN32_WINNT < 0x600
 
 void NdrGetBufferMarshall(PMIDL_STUB_MESSAGE stubmsg, unsigned long len, RPC_BINDING_HANDLE hnd)
 {
@@ -119,3 +121,5 @@ RPC_STATUS WINAPI I_RpcGetBufferMarshall(PRPC_MESSAGE RpcMsg)
 	memset(RpcMsg->Buffer, 0xcd, RpcMsg->BufferLength);
 	return 0;
 }
+
+#endif /* _WIN32_WINNT < 0x600 */

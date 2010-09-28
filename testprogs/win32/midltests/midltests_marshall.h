@@ -1,5 +1,9 @@
 #include "rpc.h"
 #include "rpcndr.h"
+
+void dump_data(const unsigned char *buf1,int len);
+
+#if _WIN32_WINNT < 0x600
 #define NdrSendReceive NdrSendReceiveMarshall
 void NdrSendReceiveMarshall(PMIDL_STUB_MESSAGE stubmsg, unsigned char *buffer);
 #define NdrGetBuffer NdrGetBufferMarshall
@@ -11,6 +15,5 @@ void NdrServerInitializeNewMarshall(PRPC_MESSAGE pRpcMsg,
 #define I_RpcGetBuffer I_RpcGetBufferMarshall
 RPC_STATUS WINAPI I_RpcGetBufferMarshall(PRPC_MESSAGE pMsg);
 
-
-
+#endif /* _WIN32_WINNT < 0x600 */
 
