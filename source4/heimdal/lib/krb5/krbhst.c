@@ -370,11 +370,27 @@ krb5_krbhst_get_addrinfo(krb5_context context, krb5_krbhst_info *host,
     int ret;
 
     if (host->ai == NULL) {
-	char *hostname_dot = NULL;
 	make_hints(&hints, host->proto);
+	hints.ai_flags = AI_NUMERICHOST | AI_NUMERICSERV;
 	snprintf (portstr, sizeof(portstr), "%d", host->port);
-	if (strchr(host->hostname, '.') && 
+
+	/* First try this as an IP address - the flags we have set
+	 * will prevent it from looking up a name */
+	ret = getaddrinfo(host->hostname, portstr, &hints, &host->ai);
+	if (ret == 0) {
+		*ai = host->ai;
+		return 0;
+	}
+
+	hints.ai_flags &= ~AI_NUMERICHOST;
+
+	/* Now that we know it's not an IP, we can manipulate
+	   it as a dotted-name, to add a final . if we think
+	   it's a fully qualified DNS name */
+	if (strchr(host->hostname, '.') &&
 	    host->hostname[strlen(host->hostname)-1] != '.') {
+		char *hostname_dot = NULL;
+
 		/* avoid expansion of search domains from resolv.conf
 		   - these can be very slow if the DNS server is not up
 		   for the searched domain */
@@ -384,10 +400,12 @@ krb5_krbhst_get_addrinfo(krb5_context context, krb5_krbhst_info *host,
 			hostname_dot[strlen(host->hostname)] = '.';
 			hostname_dot[strlen(host->hostname)+1] = 0;
 		}
+		ret = getaddrinfo(hostname_dot?hostname_dot:host->hostname, portstr, &hints, &host->ai);
+		if (hostname_dot)
+			free(hostname_dot);
+	} else {
+		ret = getaddrinfo(host->hostname, portstr, &hints, &host->ai);
 	}
-	ret = getaddrinfo(hostname_dot?hostname_dot:host->hostname, portstr, &hints, &host->ai);
-	if (hostname_dot) 
-		free(hostname_dot);
 	if (ret)
 	    return krb5_eai_to_heim_errno(ret, errno);
     }
