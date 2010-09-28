@@ -130,7 +130,7 @@ static int mit_samba_get_principal(struct mit_samba_context *ctx,
 	}
 
 	ret = samba_kdc_fetch(ctx->context, ctx->db_ctx,
-			      principal, flags, hentry);
+			      principal, flags, 0, hentry);
 
 	krb5_free_principal(ctx->context, principal);
 

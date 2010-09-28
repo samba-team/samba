@@ -25,6 +25,7 @@ krb5_error_code samba_kdc_fetch(krb5_context context,
 				struct samba_kdc_db_context *kdc_db_ctx,
 				krb5_const_principal principal,
 				unsigned flags,
+				unsigned kvno,
 				hdb_entry_ex *entry_ex);
 
 krb5_error_code samba_kdc_firstkey(krb5_context context,

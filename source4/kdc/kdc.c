@@ -632,6 +632,7 @@ static NTSTATUS kdc_check_generic_kerberos(struct irpc_message *msg,
 					    kdc->config->db[0],
 					    principal,
 					    HDB_F_GET_KRBTGT | HDB_F_DECRYPT,
+					    0,
 					    &ent);
 
 	if (ret != 0) {

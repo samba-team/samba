@@ -1049,10 +1049,11 @@ static krb5_error_code samba_kdc_fetch_client(krb5_context context,
 }
 
 static krb5_error_code samba_kdc_fetch_krbtgt(krb5_context context,
-					struct samba_kdc_db_context *kdc_db_ctx,
-					TALLOC_CTX *mem_ctx,
-					krb5_const_principal principal,
-					hdb_entry_ex *entry_ex)
+					      struct samba_kdc_db_context *kdc_db_ctx,
+					      TALLOC_CTX *mem_ctx,
+					      krb5_const_principal principal,
+					      uint32_t krbtgt_number,
+					      hdb_entry_ex *entry_ex)
 {
 	struct loadparm_context *lp_ctx = kdc_db_ctx->lp_ctx;
 	krb5_error_code ret;
@@ -1070,7 +1071,7 @@ static krb5_error_code samba_kdc_fetch_krbtgt(krb5_context context,
 
 	if (lpcfg_is_my_domain_or_realm(lp_ctx, principal->realm)
 	    && lpcfg_is_my_domain_or_realm(lp_ctx, principal->name.name_string.val[1])) {
-		/* us */
+		/* us, or someone quite like us */
  		/* Cludge, cludge cludge.  If the realm part of krbtgt/realm,
  		 * is in our db, then direct the caller at our primary
  		 * krbtgt */
@@ -1078,18 +1079,35 @@ static krb5_error_code samba_kdc_fetch_krbtgt(krb5_context context,
 		int lret;
 		char *realm_fixed;
 
-		lret = dsdb_search_one(kdc_db_ctx->samdb, mem_ctx,
-				       &msg, realm_dn, LDB_SCOPE_SUBTREE,
-				       krbtgt_attrs,
-				       DSDB_SEARCH_SHOW_EXTENDED_DN,
-				       "(&(objectClass=user)(samAccountName=krbtgt))");
+		if (krbtgt_number == kdc_db_ctx->my_krbtgt_number) {
+			lret = dsdb_search_one(kdc_db_ctx->samdb, mem_ctx,
+					       &msg, kdc_db_ctx->krbtgt_dn, LDB_SCOPE_BASE,
+					       krbtgt_attrs, 0,
+					       "(objectClass=user)");
+		} else {
+			/* We need to look up an RODC krbtgt (perhaps
+			 * ours, if we are an RODC, perhaps another
+			 * RODC if we are a read-write DC */
+			lret = dsdb_search_one(kdc_db_ctx->samdb, mem_ctx,
+					       &msg, realm_dn, LDB_SCOPE_SUBTREE,
+					       krbtgt_attrs,
+					       DSDB_SEARCH_SHOW_EXTENDED_DN,
+					       "(&(objectClass=user)(msDS-SecondaryKrbTgtNumber=%u))", (unsigned)(krbtgt_number));
+		}
+
 		if (lret == LDB_ERR_NO_SUCH_OBJECT) {
-			krb5_warnx(context, "samba_kdc_fetch: could not find own KRBTGT in DB!");
-			krb5_set_error_message(context, HDB_ERR_NOENTRY, "samba_kdc_fetch: could not find own KRBTGT in DB!");
+			krb5_warnx(context, "samba_kdc_fetch: could not find KRBTGT number %u in DB!",
+				   (unsigned)(krbtgt_number));
+			krb5_set_error_message(context, HDB_ERR_NOENTRY,
+					       "samba_kdc_fetch: could not find KRBTGT number %u in DB!",
+					       (unsigned)(krbtgt_number));
 			return HDB_ERR_NOENTRY;
 		} else if (lret != LDB_SUCCESS) {
-			krb5_warnx(context, "samba_kdc_fetch: could not find own KRBTGT in DB: %s", ldb_errstring(kdc_db_ctx->samdb));
-			krb5_set_error_message(context, HDB_ERR_NOENTRY, "samba_kdc_fetch: could not find own KRBTGT in DB: %s", ldb_errstring(kdc_db_ctx->samdb));
+			krb5_warnx(context, "samba_kdc_fetch: could not find KRBTGT number %u in DB!",
+				   (unsigned)(krbtgt_number));
+			krb5_set_error_message(context, HDB_ERR_NOENTRY,
+					       "samba_kdc_fetch: could not find KRBTGT number %u in DB!",
+					       (unsigned)(krbtgt_number));
 			return HDB_ERR_NOENTRY;
 		}
 
@@ -1281,11 +1299,24 @@ krb5_error_code samba_kdc_fetch(krb5_context context,
 				struct samba_kdc_db_context *kdc_db_ctx,
 				krb5_const_principal principal,
 				unsigned flags,
+				unsigned kvno,
 				hdb_entry_ex *entry_ex)
 {
 	krb5_error_code ret = HDB_ERR_NOENTRY;
-	TALLOC_CTX *mem_ctx = talloc_named(kdc_db_ctx, 0, "samba_kdc_fetch context");
+	TALLOC_CTX *mem_ctx;
+	unsigned int krbtgt_number;
+	if (flags & HDB_F_KVNO_SPECIFIED) {
+		krbtgt_number = kvno >> 16;
+		if (kdc_db_ctx->rodc) {
+			if (krbtgt_number != kdc_db_ctx->my_krbtgt_number) {
+				return HDB_ERR_NOT_FOUND_HERE;
+			}
+		}
+	} else {
+		krbtgt_number = kdc_db_ctx->my_krbtgt_number;
+	}
 
+	mem_ctx = talloc_named(kdc_db_ctx, 0, "samba_kdc_fetch context");
 	if (!mem_ctx) {
 		ret = ENOMEM;
 		krb5_set_error_message(context, ret, "samba_kdc_fetch: talloc_named() failed!");
@@ -1298,7 +1329,7 @@ krb5_error_code samba_kdc_fetch(krb5_context context,
 	}
 	if (flags & HDB_F_GET_SERVER) {
 		/* krbtgt fits into this situation for trusted realms, and for resolving different versions of our own realm name */
-		ret = samba_kdc_fetch_krbtgt(context, kdc_db_ctx, mem_ctx, principal, entry_ex);
+		ret = samba_kdc_fetch_krbtgt(context, kdc_db_ctx, mem_ctx, principal, krbtgt_number, entry_ex);
 		if (ret != HDB_ERR_NOENTRY) goto done;
 
 		/* We return 'no entry' if it does not start with krbtgt/, so move to the common case quickly */
@@ -1306,7 +1337,7 @@ krb5_error_code samba_kdc_fetch(krb5_context context,
 		if (ret != HDB_ERR_NOENTRY) goto done;
 	}
 	if (flags & HDB_F_GET_KRBTGT) {
-		ret = samba_kdc_fetch_krbtgt(context, kdc_db_ctx, mem_ctx, principal, entry_ex);
+		ret = samba_kdc_fetch_krbtgt(context, kdc_db_ctx, mem_ctx, principal, krbtgt_number, entry_ex);
 		if (ret != HDB_ERR_NOENTRY) goto done;
 	}
 

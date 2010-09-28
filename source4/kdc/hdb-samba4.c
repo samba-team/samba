@@ -83,16 +83,17 @@ static krb5_error_code hdb_samba4_remove(krb5_context context, HDB *db, krb5_con
 }
 
 static krb5_error_code hdb_samba4_fetch(krb5_context context, HDB *db,
-				 krb5_const_principal principal,
-				 unsigned flags,
-				 hdb_entry_ex *entry_ex)
+					krb5_const_principal principal,
+					unsigned flags,
+					unsigned kvno,
+					hdb_entry_ex *entry_ex)
 {
 	struct samba_kdc_db_context *kdc_db_ctx;
 
 	kdc_db_ctx = talloc_get_type_abort(db->hdb_db,
 					   struct samba_kdc_db_context);
 
-	return samba_kdc_fetch(context, kdc_db_ctx, principal, flags, entry_ex);
+	return samba_kdc_fetch(context, kdc_db_ctx, principal, flags, kvno, entry_ex);
 }
 
 static krb5_error_code hdb_samba4_firstkey(krb5_context context, HDB *db, unsigned flags,
