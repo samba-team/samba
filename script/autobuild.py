@@ -268,7 +268,7 @@ def rebase_tree(url):
 def push_to(url):
     print("Pushing to %s" % url)
     if options.mark:
-        run_cmd("EDITOR=script/commit_mark.sh git commit --amend -c HEAD", dir=test_master)
+        run_cmd("EDITOR=script/commit_mark.sh git notes edit HEAD", dir=test_master)
     run_cmd("git remote add -t master pushto %s" % url, show=True, dir=test_master)
     run_cmd("git push pushto +HEAD:master", show=True, dir=test_master)
 
