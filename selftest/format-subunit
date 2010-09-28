@@ -200,7 +200,9 @@ class PlainFormatter(subunithelper.TestsuiteEnabledTestResult):
         print "\nA summary with detailed information can be found in:"
         print "  %s" % self.summaryfile
 
-        if not self.suitesfailed:
+        if (not self.suitesfailed and
+            not self.statistics['TESTS_UNEXPECTED_FAIL'] and
+            not self.statistics['TESTS_ERROR']):
             ok = (self.statistics['TESTS_EXPECTED_OK'] +
                   self.statistics['TESTS_EXPECTED_FAIL'])
             print "\nALL OK (%d tests in %d testsuites)" % (ok, self.suites_ok)
