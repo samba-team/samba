@@ -1620,6 +1620,63 @@ struct ldb_dn *samdb_server_site_dn(struct ldb_context *ldb, TALLOC_CTX *mem_ctx
 }
 
 /*
+  find the site name from a computers DN record
+ */
+int samdb_find_site_for_computer(struct ldb_context *ldb,
+				 TALLOC_CTX *mem_ctx, struct ldb_dn *computer_dn,
+				 const char **site_name)
+{
+	int ret;
+	struct ldb_dn *dn;
+	const struct ldb_val *rdn_val;
+
+	*site_name = NULL;
+
+	ret = samdb_reference_dn(ldb, mem_ctx, computer_dn, "serverReferenceBL", &dn);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	if (!ldb_dn_remove_child_components(dn, 2)) {
+		talloc_free(dn);
+		return LDB_ERR_INVALID_DN_SYNTAX;
+	}
+	rdn_val = ldb_dn_get_rdn_val(dn);
+	(*site_name) = talloc_strndup(mem_ctx, (const char *)rdn_val->data, rdn_val->length);
+	talloc_free(dn);
+	if (!*site_name) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	return LDB_SUCCESS;
+}
+
+/*
+  find the NTDS GUID from a computers DN record
+ */
+int samdb_find_ntdsguid_for_computer(struct ldb_context *ldb, struct ldb_dn *computer_dn,
+				     struct GUID *ntds_guid)
+{
+	int ret;
+	struct ldb_dn *dn;
+
+	*ntds_guid = GUID_zero();
+
+	ret = samdb_reference_dn(ldb, ldb, computer_dn, "serverReferenceBL", &dn);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	if (!ldb_dn_add_child_fmt(dn, "CN=NTDS Settings")) {
+		talloc_free(dn);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	ret = dsdb_find_guid_by_dn(ldb, dn, ntds_guid);
+	talloc_free(dn);
+	return ret;
+}
+
+/*
   find a 'reference' DN that points at another object
   (eg. serverReference, rIDManagerReference etc)
  */
