@@ -59,7 +59,7 @@ _PUBLIC_ NTSTATUS auth_generate_session_info(TALLOC_CTX *mem_ctx,
 	const char *filter;
 
 	struct dom_sid **groupSIDs = NULL;
-	const struct dom_sid *dom_sid, *anonymous_sid, *system_sid;
+	const struct dom_sid *anonymous_sid, *system_sid;
 
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 	NT_STATUS_HAVE_NO_MEMORY(tmp_ctx);
