@@ -146,7 +146,7 @@ bool srv_send_smb(int fd, char *buffer,
 
 	ret = write_data(fd,buf_out+nwritten,len - nwritten);
 	if (ret <= 0) {
-		DEBUG(0,("pid[%d] Error writing %d bytes to client. %d. (%s)\n",
+		DEBUG(1,("pid[%d] Error writing %d bytes to client. %d. (%s)\n",
 			(int)sys_getpid(), (int)len,(int)ret, strerror(errno) ));
 		srv_free_enc_buffer(buf_out);
 		goto out;
