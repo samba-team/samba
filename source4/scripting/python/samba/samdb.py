@@ -23,11 +23,11 @@
 
 """Convenience functions for using the SAM."""
 
-import dsdb
 import samba
 import ldb
 import time
 import base64
+from samba import dsdb
 from samba.ndr import ndr_unpack, ndr_pack
 from samba.dcerpc import drsblobs, misc
 
@@ -76,13 +76,13 @@ class SamDB(samba.Ldb):
         assert(len(res) == 1 and res[0]["defaultNamingContext"] is not None)
         return res[0]["defaultNamingContext"][0]
 
-    def enable_account(self, filter):
+    def enable_account(self, search_filter):
         """Enables an account
         
-        :param filter: LDAP filter to find the user (eg samccountname=name)
+        :param search_filter: LDAP filter to find the user (eg samccountname=name)
         """
         res = self.search(base=self.domain_dn(), scope=ldb.SCOPE_SUBTREE,
-                          expression=filter, attrs=["userAccountControl"])
+                          expression=search_filter, attrs=["userAccountControl"])
         assert(len(res) == 1)
         user_dn = res[0].dn
 
@@ -100,13 +100,13 @@ userAccountControl: %u
 """ % (user_dn, userAccountControl)
         self.modify_ldif(mod)
         
-    def force_password_change_at_next_login(self, filter):
+    def force_password_change_at_next_login(self, search_filter):
         """Forces a password change at next login
         
-        :param filter: LDAP filter to find the user (eg samccountname=name)
+        :param search_filter: LDAP filter to find the user (eg samccountname=name)
         """
         res = self.search(base=self.domain_dn(), scope=ldb.SCOPE_SUBTREE,
-                          expression=filter, attrs=[])
+                          expression=search_filter, attrs=[])
         assert(len(res) == 1)
         user_dn = res[0].dn
 
@@ -342,21 +342,21 @@ member: %s
         else:
             self.transaction_commit()
 
-    def setpassword(self, filter, password,
+    def setpassword(self, search_filter, password,
                     force_change_at_next_login=False,
                     username=None):
         """Sets the password for a user
         
-        :param filter: LDAP filter to find the user (eg samccountname=name)
+        :param search_filter: LDAP filter to find the user (eg samccountname=name)
         :param password: Password for the user
         :param force_change_at_next_login: Force password change
         """
         self.transaction_start()
         try:
             res = self.search(base=self.domain_dn(), scope=ldb.SCOPE_SUBTREE,
-                              expression=filter, attrs=[])
+                              expression=search_filter, attrs=[])
             if len(res) == 0:
-                raise Exception('Unable to find user "%s"' % (username or filter))
+                raise Exception('Unable to find user "%s"' % (username or search_filter))
             assert(len(res) == 1)
             user_dn = res[0].dn
 
@@ -374,24 +374,24 @@ unicodePwd:: %s
                   "(dn=" + str(user_dn) + ")")
 
             #  modify the userAccountControl to remove the disabled bit
-            self.enable_account(filter)
+            self.enable_account(search_filter)
         except:
             self.transaction_cancel()
             raise
         else:
             self.transaction_commit()
 
-    def setexpiry(self, filter, expiry_seconds, no_expiry_req=False):
+    def setexpiry(self, search_filter, expiry_seconds, no_expiry_req=False):
         """Sets the account expiry for a user
         
-        :param filter: LDAP filter to find the user (eg samccountname=name)
+        :param search_filter: LDAP filter to find the user (eg samccountname=name)
         :param expiry_seconds: expiry time from now in seconds
         :param no_expiry_req: if set, then don't expire password
         """
         self.transaction_start()
         try:
             res = self.search(base=self.domain_dn(), scope=ldb.SCOPE_SUBTREE,
-                          expression=filter,
+                          expression=search_filter,
                           attrs=["userAccountControl", "accountExpires"])
             assert(len(res) == 1)
             user_dn = res[0].dn
@@ -478,8 +478,8 @@ accountExpires: %u
     def set_schema(self, schema):
         self.set_schema_from_ldb(schema.ldb)
 
-    def set_schema_from_ldb(self, ldb):
-        dsdb._dsdb_set_schema_from_ldb(self, ldb)
+    def set_schema_from_ldb(self, ldb_conn):
+        dsdb._dsdb_set_schema_from_ldb(self, ldb_conn)
 
     def get_attribute_from_attid(self, attid):
         """ Get from an attid the associated attribute
