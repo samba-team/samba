@@ -612,13 +612,13 @@ static WERROR getncchanges_rid_alloc(struct drsuapi_bind_state *b_state,
 		return WERR_DS_DRA_INTERNAL_ERROR;
 	}
 
-	req_dn = ldb_dn_new(mem_ctx, ldb, req8->naming_context->dn);
+	req_dn = drs_ObjectIdentifier_to_dn(mem_ctx, ldb, req8->naming_context);
 	if (!req_dn ||
 	    !ldb_dn_validate(req_dn) ||
 	    ldb_dn_compare(req_dn, rid_manager_dn) != 0) {
 		/* that isn't the RID Manager DN */
 		DEBUG(0,(__location__ ": RID Alloc request for wrong DN %s\n",
-			 req8->naming_context->dn));
+			 drs_ObjectIdentifier_to_string(mem_ctx, req8->naming_context)));
 		ctr6->extended_ret = DRSUAPI_EXOP_ERR_MISMATCH;
 		return WERR_OK;
 	}
@@ -805,7 +805,8 @@ static WERROR getncchanges_repl_secret(struct drsuapi_bind_state *b_state,
 	const struct dom_sid **never_reveal_sids, **reveal_sids, **token_sids;
 	WERROR werr;
 
-	DEBUG(3,(__location__ ": DRSUAPI_EXOP_REPL_SECRET extended op on %s\n", ncRoot->dn));
+	DEBUG(3,(__location__ ": DRSUAPI_EXOP_REPL_SECRET extended op on %s\n",
+		 drs_ObjectIdentifier_to_string(mem_ctx, ncRoot)));
 
 	/*
 	 * we need to work out if we will allow this RODC to
@@ -821,7 +822,7 @@ static WERROR getncchanges_repl_secret(struct drsuapi_bind_state *b_state,
 		return WERR_DS_DRA_SOURCE_DISABLED;
 	}
 
-	obj_dn = ldb_dn_new(mem_ctx, b_state->sam_ctx_system, ncRoot->dn);
+	obj_dn = drs_ObjectIdentifier_to_dn(mem_ctx, b_state->sam_ctx_system, ncRoot);
 	if (!ldb_dn_validate(obj_dn)) goto failed;
 
 	rodc_dn = ldb_dn_new_fmt(mem_ctx, b_state->sam_ctx_system, "<SID=%s>",
@@ -892,20 +893,20 @@ static WERROR getncchanges_repl_secret(struct drsuapi_bind_state *b_state,
 	/* default deny */
 denied:
 	DEBUG(2,(__location__ ": Denied RODC secret replication for %s by RODC %s\n",
-		 ncRoot->dn, ldb_dn_get_linearized(rodc_res->msgs[0]->dn)));
+		 ldb_dn_get_linearized(obj_dn), ldb_dn_get_linearized(rodc_res->msgs[0]->dn)));
 	ctr6->extended_ret = DRSUAPI_EXOP_ERR_NONE;
 	return WERR_DS_DRA_ACCESS_DENIED;
 
 allowed:
 	DEBUG(2,(__location__ ": Allowed RODC secret replication for %s by RODC %s\n",
-		 ncRoot->dn, ldb_dn_get_linearized(rodc_res->msgs[0]->dn)));
+		 ldb_dn_get_linearized(obj_dn), ldb_dn_get_linearized(rodc_res->msgs[0]->dn)));
 	ctr6->extended_ret = DRSUAPI_EXOP_ERR_SUCCESS;
 	req8->highwatermark.highest_usn = 0;
 	return WERR_OK;
 
 failed:
 	DEBUG(2,(__location__ ": Failed RODC secret replication for %s by RODC %s\n",
-		 ncRoot->dn, dom_sid_string(mem_ctx, user_sid)));
+		 ldb_dn_get_linearized(obj_dn), dom_sid_string(mem_ctx, user_sid)));
 	ctr6->extended_ret = DRSUAPI_EXOP_ERR_NONE;
 	return WERR_DS_DRA_BAD_DN;
 }
@@ -932,12 +933,12 @@ static WERROR getncchanges_change_master(struct drsuapi_bind_state *b_state,
 	    - verify that we are the current master
 	 */
 
-	req_dn = ldb_dn_new(mem_ctx, ldb, req8->naming_context->dn);
+	req_dn = drs_ObjectIdentifier_to_dn(mem_ctx, ldb, req8->naming_context);
 	if (!req_dn ||
 	    !ldb_dn_validate(req_dn)) {
 		/* that is not a valid dn */
 		DEBUG(0,(__location__ ": FSMO role transfer request for invalid DN %s\n",
-			 req8->naming_context->dn));
+			 drs_ObjectIdentifier_to_string(mem_ctx, req8->naming_context)));
 		ctr6->extended_ret = DRSUAPI_EXOP_ERR_MISMATCH;
 		return WERR_OK;
 	}
@@ -961,7 +962,7 @@ static WERROR getncchanges_change_master(struct drsuapi_bind_state *b_state,
 	/* change the current master */
 	msg = ldb_msg_new(ldb);
 	W_ERROR_HAVE_NO_MEMORY(msg);
-	msg->dn = ldb_dn_new(msg, ldb, req8->naming_context->dn);
+	msg->dn = drs_ObjectIdentifier_to_dn(msg, ldb, req8->naming_context);
 	W_ERROR_HAVE_NO_MEMORY(msg->dn);
 
 	ret = dsdb_find_dn_by_guid(ldb, msg, &req8->destination_dsa_guid, &ntds_dn);
@@ -1148,7 +1149,7 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 
 	/* see if a previous replication has been abandoned */
 	if (getnc_state) {
-		struct ldb_dn *new_dn = ldb_dn_new(getnc_state, sam_ctx, ncRoot->dn);
+		struct ldb_dn *new_dn = drs_ObjectIdentifier_to_dn(getnc_state, sam_ctx, ncRoot);
 		if (ldb_dn_compare(new_dn, getnc_state->ncRoot_dn) != 0) {
 			DEBUG(0,(__location__ ": DsGetNCChanges 2nd replication on different DN %s %s (last_dn %s)\n",
 				 ldb_dn_get_linearized(new_dn),
@@ -1165,7 +1166,7 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 			return WERR_NOMEM;
 		}
 		b_state->getncchanges_state = getnc_state;
-		getnc_state->ncRoot_dn = ldb_dn_new(getnc_state, sam_ctx, ncRoot->dn);
+		getnc_state->ncRoot_dn = drs_ObjectIdentifier_to_dn(getnc_state, sam_ctx, ncRoot);
 
 		/* find out if we are to replicate Schema NC */
 		ret = ldb_dn_compare(getnc_state->ncRoot_dn,
@@ -1213,7 +1214,8 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 
 	if (!ldb_dn_validate(getnc_state->ncRoot_dn) ||
 	    ldb_dn_is_null(getnc_state->ncRoot_dn)) {
-		DEBUG(0,(__location__ ": Bad DN '%s'\n", ncRoot->dn));
+		DEBUG(0,(__location__ ": Bad DN '%s'\n",
+			 drs_ObjectIdentifier_to_string(mem_ctx, ncRoot)));
 		return WERR_DS_DRA_INVALID_PARAMETER;
 	}
 
@@ -1485,7 +1487,7 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 	DEBUG(r->out.ctr->ctr6.more_data?4:2,
 	      ("DsGetNCChanges with uSNChanged >= %llu flags 0x%08x on %s gave %u objects (done %u/%u) %u links (done %u/%u (as %s))\n",
 	       (unsigned long long)(req8->highwatermark.highest_usn+1),
-	       req8->replica_flags, ncRoot->dn,
+	       req8->replica_flags, drs_ObjectIdentifier_to_string(mem_ctx, ncRoot),
 	       r->out.ctr->ctr6.object_count,
 	       i, r->out.ctr->ctr6.more_data?getnc_state->site_res->count:i,
 	       r->out.ctr->ctr6.linked_attributes_count,
