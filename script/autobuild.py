@@ -21,13 +21,13 @@ tasks = {
                   "make basics",
                   "make -j 4 everything", # don't use too many processes
                   "make install",
-                  "TDB_NO_FSYNC=1 make test" ],
+                  "TDB_NO_FSYNC=1 make test FAIL_IMMEDIATELY=1" ],
 
     "source4" : [ "./autogen.sh",
                   "./configure.developer ${PREFIX}",
                   "make -j",
                   "make install",
-                  "TDB_NO_FSYNC=1 make test" ],
+                  "TDB_NO_FSYNC=1 make test FAIL_IMMEDIATELY=1" ],
 
     "source4/lib/ldb" : [ "./autogen-waf.sh",
                           "./configure --enable-developer -C ${PREFIX}",
