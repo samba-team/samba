@@ -162,7 +162,6 @@ NTSTATUS hdb_samba4_create_kdc(struct samba_kdc_base_context *base_ctx,
 			       krb5_context context, struct HDB **db)
 {
 	struct samba_kdc_db_context *kdc_db_ctx;
-	struct auth_session_info *session_info;
 	NTSTATUS nt_status;
 
 	*db = talloc(base_ctx, HDB);
@@ -175,50 +174,11 @@ NTSTATUS hdb_samba4_create_kdc(struct samba_kdc_base_context *base_ctx,
 	(*db)->hdb_db = NULL;
 	(*db)->hdb_capability_flags = 0;
 
-#if 1
-	/* we would prefer to use system_session(), as that would
-	 * allow us to share the samdb backend context with other parts of the
-	 * system. For now we can't as we need to override the
-	 * credentials to set CRED_DONT_USE_KERBEROS, which would
-	 * break other users of the system_session */
-	DEBUG(0,("FIXME: Using new system session for hdb\n"));
-	nt_status = auth_system_session_info(*db, base_ctx->lp_ctx, &session_info);
+	nt_status = samba_kdc_setup_db_ctx(*db, base_ctx, &kdc_db_ctx);
 	if (!NT_STATUS_IS_OK(nt_status)) {
-	       return nt_status;
+		talloc_free(*db);
+		return nt_status;
 	}
-#else
-	session_info = system_session(kdc_db_ctx->lp_ctx);
-	if (session_info == NULL) {
-		return NT_STATUS_INTERNAL_ERROR;
-	}
-#endif
-
-	/* The idea here is very simple.  Using Kerberos to
-	 * authenticate the KDC to the LDAP server is higly likely to
-	 * be circular.
-	 *
-	 * In future we may set this up to use EXERNAL and SSL
-	 * certificates, for now it will almost certainly be NTLMSSP_SET_USERNAME
-	*/
-
-	cli_credentials_set_kerberos_state(session_info->credentials,
-					   CRED_DONT_USE_KERBEROS);
-
-	kdc_db_ctx = talloc_zero(*db, struct samba_kdc_db_context);
-	if (kdc_db_ctx == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	kdc_db_ctx->ev_ctx = base_ctx->ev_ctx;
-	kdc_db_ctx->lp_ctx = base_ctx->lp_ctx;
-
-	/* Setup the link to LDB */
-	kdc_db_ctx->samdb = samdb_connect(kdc_db_ctx, base_ctx->ev_ctx,
-					  base_ctx->lp_ctx, session_info);
-	if (kdc_db_ctx->samdb == NULL) {
-		DEBUG(1, ("hdb_samba4_create: Cannot open samdb for KDC backend!"));
-		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
-	}
-
 	(*db)->hdb_db = kdc_db_ctx;
 
 	(*db)->hdb_dbc = NULL;

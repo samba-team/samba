@@ -53,10 +53,11 @@ static void mit_samba_context_free(struct mit_samba_context *ctx)
 
 static int mit_samba_context_init(struct mit_samba_context **_ctx)
 {
+	NTSTATUS status;
 	struct mit_samba_context *ctx;
 	const char *s4_conf_file;
 	int ret;
-
+	struct samba_kdc_base_context base_ctx;
 
 	ctx = talloc(NULL, struct mit_samba_context);
 	if (!ctx) {
@@ -64,46 +65,27 @@ static int mit_samba_context_init(struct mit_samba_context **_ctx)
 		goto done;
 	}
 
-	ctx->db_ctx = talloc_zero(ctx, struct samba_kdc_db_context);
-	if (!ctx->db_ctx) {
+	base_ctx.ev_ctx = tevent_context_init(ctx);
+	if (!base_ctx.ev_ctx) {
 		ret = ENOMEM;
 		goto done;
 	}
-
-	ctx->db_ctx->ev_ctx = tevent_context_init(ctx);
-	if (!ctx->db_ctx->ev_ctx) {
+	base_ctx.lp_ctx = loadparm_init(ctx);
+	if (!base_ctx.lp_ctx) {
 		ret = ENOMEM;
 		goto done;
 	}
-	ctx->db_ctx->lp_ctx = loadparm_init(ctx);
-	if (!ctx->db_ctx->lp_ctx) {
-		ret = ENOMEM;
-		goto done;
-	}
-
 	/* init s4 configuration */
-	s4_conf_file = lpcfg_configfile(ctx->db_ctx->lp_ctx);
+	s4_conf_file = lpcfg_configfile(base_ctx.lp_ctx);
 	if (s4_conf_file) {
-		lpcfg_load(ctx->db_ctx->lp_ctx, s4_conf_file);
+		lpcfg_load(base_ctx.lp_ctx, s4_conf_file);
 	} else {
-		lpcfg_load_default(ctx->db_ctx->lp_ctx);
+		lpcfg_load_default(base_ctx.lp_ctx);
 	}
 
-	ctx->session_info = system_session(ctx->db_ctx->lp_ctx);
-	if (!ctx->session_info) {
-		ret = EFAULT;
-		goto done;
-	}
-
-	cli_credentials_set_kerberos_state(ctx->session_info->credentials,
-					   CRED_DONT_USE_KERBEROS);
-
-	ctx->db_ctx->samdb = samdb_connect(ctx->db_ctx,
-					   ctx->db_ctx->ev_ctx,
-					   ctx->db_ctx->lp_ctx,
-					   ctx->session_info);
-	if (!ctx->db_ctx->samdb) {
-		ret = EFAULT;
+	status = samba_kdc_setup_db_ctx(ctx, &base_ctx, &ctx->db_ctx);
+	if (!NT_STATUS_IS_OK(status)) {
+		ret = EINVAL;
 		goto done;
 	}
 

@@ -33,6 +33,9 @@ struct samba_kdc_db_context {
 	struct loadparm_context *lp_ctx;
 	struct ldb_context *samdb;
 	struct samba_kdc_seq *seq_ctx;
+	bool rodc;
+	unsigned int my_krbtgt_number;
+	struct ldb_dn *krbtgt_dn;
 };
 
 struct samba_kdc_entry {

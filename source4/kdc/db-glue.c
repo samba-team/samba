@@ -1565,3 +1565,138 @@ samba_kdc_check_pkinit_ms_upn_match(krb5_context context,
 	return ret;
 }
 
+NTSTATUS samba_kdc_setup_db_ctx(TALLOC_CTX *mem_ctx, struct samba_kdc_base_context *base_ctx,
+				struct samba_kdc_db_context **kdc_db_ctx_out)
+{
+	NTSTATUS nt_status;
+	int ldb_ret;
+	struct ldb_message *msg;
+	struct auth_session_info *session_info;
+	struct samba_kdc_db_context *kdc_db_ctx;
+	/* The idea here is very simple.  Using Kerberos to
+	 * authenticate the KDC to the LDAP server is higly likely to
+	 * be circular.
+	 *
+	 * In future we may set this up to use EXERNAL and SSL
+	 * certificates, for now it will almost certainly be NTLMSSP_SET_USERNAME
+	*/
+
+	kdc_db_ctx = talloc_zero(mem_ctx, struct samba_kdc_db_context);
+	if (kdc_db_ctx == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	kdc_db_ctx->ev_ctx = base_ctx->ev_ctx;
+	kdc_db_ctx->lp_ctx = base_ctx->lp_ctx;
+
+#if 1
+	/* we would prefer to use system_session(), as that would
+	 * allow us to share the samdb backend context with other parts of the
+	 * system. For now we can't as we need to override the
+	 * credentials to set CRED_DONT_USE_KERBEROS, which would
+	 * break other users of the system_session */
+	DEBUG(0,("FIXME: Using new system session for hdb\n"));
+	nt_status = auth_system_session_info(kdc_db_ctx, base_ctx->lp_ctx, &session_info);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+	       return nt_status;
+	}
+#else
+	session_info = system_session(kdc_db_ctx->lp_ctx);
+	if (session_info == NULL) {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+#endif
+
+	cli_credentials_set_kerberos_state(session_info->credentials,
+					   CRED_DONT_USE_KERBEROS);
+
+	/* Setup the link to LDB */
+	kdc_db_ctx->samdb = samdb_connect(kdc_db_ctx, base_ctx->ev_ctx,
+					  base_ctx->lp_ctx, session_info);
+	if (kdc_db_ctx->samdb == NULL) {
+		DEBUG(1, ("hdb_samba4_create: Cannot open samdb for KDC backend!"));
+		talloc_free(kdc_db_ctx);
+		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
+	}
+
+	/* Find out our own krbtgt kvno */
+	ldb_ret = samdb_rodc(kdc_db_ctx->samdb, &kdc_db_ctx->rodc);
+	if (ldb_ret != LDB_SUCCESS) {
+		DEBUG(1, ("hdb_samba4_create: Cannot determine if we are an RODC in KDC backend: %s\n",
+			  ldb_errstring(kdc_db_ctx->samdb)));
+		talloc_free(kdc_db_ctx);
+		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
+	}
+	if (kdc_db_ctx->rodc) {
+		int my_krbtgt_number;
+		const char *secondary_keytab[] = { "msDS-SecondaryKrbTgtNumber", NULL };
+		struct ldb_dn *account_dn;
+		struct ldb_dn *server_dn = samdb_server_dn(kdc_db_ctx->samdb, kdc_db_ctx);
+		if (!server_dn) {
+			DEBUG(1, ("hdb_samba4_create: Cannot determine server DN in KDC backend: %s\n",
+				  ldb_errstring(kdc_db_ctx->samdb)));
+			talloc_free(kdc_db_ctx);
+			return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
+		}
+
+		ldb_ret = samdb_reference_dn(kdc_db_ctx->samdb, kdc_db_ctx, server_dn,
+					     "serverReference", &account_dn);
+		if (ldb_ret != LDB_SUCCESS) {
+			DEBUG(1, ("hdb_samba4_create: Cannot determine server account in KDC backend: %s\n",
+				  ldb_errstring(kdc_db_ctx->samdb)));
+			talloc_free(kdc_db_ctx);
+			return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
+		}
+
+		ldb_ret = samdb_reference_dn(kdc_db_ctx->samdb, kdc_db_ctx, account_dn,
+					     "msDS-KrbTgtLink", &kdc_db_ctx->krbtgt_dn);
+		talloc_free(account_dn);
+		if (ldb_ret != LDB_SUCCESS) {
+			DEBUG(1, ("hdb_samba4_create: Cannot determine RODC krbtgt account in KDC backend: %s\n",
+				  ldb_errstring(kdc_db_ctx->samdb)));
+			talloc_free(kdc_db_ctx);
+			return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
+		}
+
+		ldb_ret = dsdb_search_one(kdc_db_ctx->samdb, kdc_db_ctx,
+					  &msg, kdc_db_ctx->krbtgt_dn, LDB_SCOPE_BASE,
+					  secondary_keytab,
+					  0,
+					  "(&(objectClass=user)(msDS-SecondaryKrbTgtNumber=*))");
+		if (ldb_ret != LDB_SUCCESS) {
+			DEBUG(1, ("hdb_samba4_create: Cannot read krbtgt account %s in KDC backend to get msDS-SecondaryKrbTgtNumber: %s: %s\n",
+				  ldb_dn_get_linearized(kdc_db_ctx->krbtgt_dn),
+				  ldb_errstring(kdc_db_ctx->samdb),
+				  ldb_strerror(ldb_ret)));
+			talloc_free(kdc_db_ctx);
+			return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
+		}
+		my_krbtgt_number = ldb_msg_find_attr_as_int(msg, "msDS-SecondaryKrbTgtNumber", -1);
+		if (my_krbtgt_number == -1) {
+			DEBUG(1, ("hdb_samba4_create: Cannot read msDS-SecondaryKrbTgtNumber from krbtgt account %s in KDC backend: got %d\n",
+				  ldb_dn_get_linearized(kdc_db_ctx->krbtgt_dn),
+				  my_krbtgt_number));
+			talloc_free(kdc_db_ctx);
+			return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
+		}
+		kdc_db_ctx->my_krbtgt_number = my_krbtgt_number;
+
+	} else {
+		kdc_db_ctx->my_krbtgt_number = 0;
+		ldb_ret = dsdb_search_one(kdc_db_ctx->samdb, kdc_db_ctx,
+					  &msg, NULL, LDB_SCOPE_SUBTREE,
+					  krbtgt_attrs,
+					  DSDB_SEARCH_SHOW_EXTENDED_DN,
+					  "(&(objectClass=user)(samAccountName=krbtgt))");
+
+		if (ldb_ret != LDB_SUCCESS) {
+			DEBUG(1, ("samba_kdc_fetch: could not find own KRBTGT in DB: %s\n", ldb_errstring(kdc_db_ctx->samdb)));
+			talloc_free(kdc_db_ctx);
+			return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
+		}
+		kdc_db_ctx->krbtgt_dn = talloc_steal(kdc_db_ctx, msg->dn);
+		kdc_db_ctx->my_krbtgt_number = 0;
+		talloc_free(msg);
+	}
+	*kdc_db_ctx_out = kdc_db_ctx;
+	return NT_STATUS_OK;
+}
