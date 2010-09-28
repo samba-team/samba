@@ -8,7 +8,6 @@ GPEXT_SRC = '''../../../libgpo/gpext/gpext.c'''
 
 bld.SAMBA_SUBSYSTEM('GPEXT',
                     source=GPEXT_SRC,
-                    deps='''GPEXT_REGISTRY GPEXT_SCRIPTS GPEXT_SECURITY''',
                     vars=locals())
 
 bld.SAMBA_MODULE('GPEXT_REGISTRY',

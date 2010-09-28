@@ -10,8 +10,7 @@ AUTH_WBC_SRC = 'auth_wbc.c'
 AUTH_SCRIPT_SRC = 'auth_script.c'
 AUTH_NETLOGOND_SRC = 'auth_netlogond.c'
 
-AUTH_STATIC = ''
-AUTH_SRC = '''${AUTH_STATIC} auth.c auth_util.c token_util.c
+AUTH_SRC = '''auth.c auth_util.c token_util.c
            server_info.c
            server_info_sam.c
            user_info.c
@@ -21,10 +20,7 @@ AUTH_SRC = '''${AUTH_STATIC} auth.c auth_util.c token_util.c
 
 bld.SAMBA_SUBSYSTEM('AUTH',
                     source=AUTH_SRC,
-                    deps='''AUTH_SAM AUTH_UNIX AUTH_WINBIND AUTH_WBC
-                            AUTH_SERVER AUTH_DOMAIN AUTH_BUILTIN
-                            AUTH_NETLOGOND
-                            PLAINTEXT_AUTH SLCACHE DCUTIL''',
+                    deps='''PLAINTEXT_AUTH SLCACHE DCUTIL''',
                     vars=locals())
 
 bld.SAMBA_MODULE('AUTH_SAM',

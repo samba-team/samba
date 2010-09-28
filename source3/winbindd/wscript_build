@@ -23,7 +23,6 @@ IDMAP_SRC = 'idmap.c idmap_util.c ${IDMAP_RW_SRC}'
 
 bld.SAMBA_SUBSYSTEM('IDMAP',
                     source=IDMAP_SRC,
-                    deps='''IDMAP_AD IDMAP_RID IDMAP_PASSDB IDMAP_LDAP IDMAP_TDB2 IDMAP_HASH IDMAP_ADEX''',
                     vars=locals())
 
 bld.SAMBA_MODULE('IDMAP_AD',
