@@ -1209,6 +1209,10 @@ bld.SAMBA_SUBSYSTEM('SMBD_BASE',
                     REGFIO REG_API_REGF PRINTING PRINTBACKEND SERVICES NDR_XATTR NDR_PERFCOUNT''',
                     vars=locals())
 
+if not bld.env.developer:
+   bld.SAMBA_SUBSYSTEM('RPC_RPCECHO',
+                       source='')
+
 bld.SAMBA_SUBSYSTEM('RPC_MODULES',
                     source='',
                     deps='''RPC_LSARPC RPC_SAMR RPC_WINREG RPC_INITSHUTDOWN
