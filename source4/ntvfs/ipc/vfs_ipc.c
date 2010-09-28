@@ -228,7 +228,9 @@ static void ipc_open_done(struct tevent_req *subreq);
 static NTSTATUS validate_pipename(const char *name)
 {
 	while (*name) {
-		if (!isalnum(*name)) return NT_STATUS_INVALID_PARAMETER;
+		if (!isalnum(*name) && *name != '_') {
+			return NT_STATUS_INVALID_PARAMETER;
+		}
 		name++;
 	}
 	return NT_STATUS_OK;
