@@ -522,12 +522,12 @@ void reply_special(struct smbd_server_connection *sconn, char *inbuf, size_t inb
 		name_len1 = name_len((unsigned char *)(inbuf+4),inbuf_size - 4);
 		if (name_len1 <= 0 || name_len1 > inbuf_size - 4) {
 			DEBUG(0,("Invalid name length in session request\n"));
-			return;
+			break;
 		}
 		name_len2 = name_len((unsigned char *)(inbuf+4+name_len1),inbuf_size - 4 - name_len1);
 		if (name_len2 <= 0 || name_len2 > inbuf_size - 4 - name_len1) {
 			DEBUG(0,("Invalid name length in session request\n"));
-			return;
+			break;
 		}
 
 		name_type1 = name_extract((unsigned char *)inbuf,
@@ -537,7 +537,7 @@ void reply_special(struct smbd_server_connection *sconn, char *inbuf, size_t inb
 
 		if (name_type1 == -1 || name_type2 == -1) {
 			DEBUG(0,("Invalid name type in session request\n"));
-			return;
+			break;
 		}
 
 		DEBUG(2,("netbios connect: name1=%s0x%x name2=%s0x%x\n",
