@@ -991,6 +991,12 @@ static NTSTATUS smbd_server_connection_loop_once(struct smbd_server_connection *
 		errno = sav;
 	}
 
+	/* Check if error */
+	if (selrtn == -1) {
+		/* something is wrong. Maybe the socket is dead? */
+		return map_nt_error_from_unix(errno);
+	}
+
         if ((conn->smb1.echo_handler.trusted_fd != -1)
 	    && FD_ISSET(conn->sock, &r_fds)
 	    && FD_ISSET(conn->smb1.echo_handler.trusted_fd, &r_fds)) {
@@ -1004,12 +1010,6 @@ static NTSTATUS smbd_server_connection_loop_once(struct smbd_server_connection *
 
 	if (run_events(smbd_event_context(), selrtn, &r_fds, &w_fds)) {
 		return NT_STATUS_RETRY;
-	}
-
-	/* Check if error */
-	if (selrtn == -1) {
-		/* something is wrong. Maybe the socket is dead? */
-		return map_nt_error_from_unix(errno);
 	}
 
 	/* Did we timeout ? */
