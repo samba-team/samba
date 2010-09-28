@@ -117,6 +117,7 @@ _gsskrb5_create_ctx(
 	return GSS_S_FAILURE;
     }
     ctx->auth_context		= NULL;
+    ctx->deleg_auth_context	= NULL;
     ctx->source			= NULL;
     ctx->target			= NULL;
     ctx->kcred			= NULL;
@@ -139,13 +140,34 @@ _gsskrb5_create_ctx(
 	return GSS_S_FAILURE;
     }
 
+    kret = krb5_auth_con_init (context, &ctx->deleg_auth_context);
+    if (kret) {
+	*minor_status = kret;
+	krb5_auth_con_free(context, ctx->auth_context);
+	HEIMDAL_MUTEX_destroy(&ctx->ctx_id_mutex);
+	return GSS_S_FAILURE;
+    }
+
     kret = set_addresses(context, ctx->auth_context, input_chan_bindings);
     if (kret) {
 	*minor_status = kret;
 
+	krb5_auth_con_free(context, ctx->auth_context);
+	krb5_auth_con_free(context, ctx->deleg_auth_context);
+
 	HEIMDAL_MUTEX_destroy(&ctx->ctx_id_mutex);
 
+	return GSS_S_BAD_BINDINGS;
+    }
+
+    kret = set_addresses(context, ctx->deleg_auth_context, input_chan_bindings);
+    if (kret) {
+	*minor_status = kret;
+
 	krb5_auth_con_free(context, ctx->auth_context);
+	krb5_auth_con_free(context, ctx->deleg_auth_context);
+
+	HEIMDAL_MUTEX_destroy(&ctx->ctx_id_mutex);
 
 	return GSS_S_BAD_BINDINGS;
     }
@@ -156,6 +178,16 @@ _gsskrb5_create_ctx(
 
     krb5_auth_con_addflags(context,
 			   ctx->auth_context,
+			   KRB5_AUTH_CONTEXT_DO_SEQUENCE |
+			   KRB5_AUTH_CONTEXT_CLEAR_FORWARDED_CRED,
+			   NULL);
+
+    /*
+     * We need a sequence number
+     */
+
+    krb5_auth_con_addflags(context,
+			   ctx->deleg_auth_context,
 			   KRB5_AUTH_CONTEXT_DO_SEQUENCE |
 			   KRB5_AUTH_CONTEXT_CLEAR_FORWARDED_CRED,
 			   NULL);
@@ -538,7 +570,7 @@ init_auth_restart
     ap_options = 0;
     if (flagmask & GSS_C_DELEG_FLAG) {
 	do_delegation (context,
-		       ctx->auth_context,
+		       ctx->deleg_auth_context,
 		       ctx->ccache, ctx->kcred, ctx->target,
 		       &fwd_data, flagmask, &flags);
     }
