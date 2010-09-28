@@ -1324,10 +1324,7 @@ static int ltdb_init_rootdse(struct ldb_module *module)
 
 	ret = ldb_mod_register_control(module,
 				       LDB_CONTROL_PERMISSIVE_MODIFY_OID);
-	if (ret != LDB_SUCCESS) {
-		ldb_debug(ldb, LDB_DEBUG_TRACE, "ldb_tdb: "
-			  "Unable to register control with rootdse!");
-	}
+	/* ignore errors on this - we expect it for non-sam databases */
 
 	/* there can be no module beyond the backend, just return */
 	return LDB_SUCCESS;
