@@ -97,7 +97,8 @@ static void run_child_dns_lookup(struct dns_ex_state *state, int fd)
 		   name doesn't end in a '.'. We need to prevent the
 		   DNS library trying the search domains configured in
 		   resolv.conf */
-		state->name.name = talloc_strdup_append(state->name.name, ".");
+		state->name.name = talloc_strdup_append(discard_const_p(char, state->name.name),
+							".");
 	}
 
 	/* this is the blocking call we are going to lots of trouble
