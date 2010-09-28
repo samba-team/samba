@@ -1,0 +1,126 @@
+#!/usr/bin/env python
+
+RPC_LSARPC_SRC = '''srv_lsa_nt.c ../librpc/gen_ndr/srv_lsa.c'''
+RPC_NETLOGON_SRC = '''srv_netlog_nt.c ../librpc/gen_ndr/srv_netlogon.c'''
+RPC_SAMR_SRC = '''srv_samr_nt.c ../librpc/gen_ndr/srv_samr.c
+               srv_samr_util.c
+               srv_samr_chgpasswd.c'''
+RPC_INITSHUTDOWN_SRC = '''srv_initshutdown_nt.c ../librpc/gen_ndr/srv_initshutdown.c'''
+RPC_WINREG_SRC = '''srv_winreg_nt.c ../librpc/gen_ndr/srv_winreg.c'''
+RPC_DSSETUP_SRC = '''srv_dssetup_nt.c ../librpc/gen_ndr/srv_dssetup.c'''
+RPC_SRVSVC_SRC = '''srv_srvsvc_nt.c ../librpc/gen_ndr/srv_srvsvc.c'''
+RPC_WKSSVC_SRC = '''srv_wkssvc_nt.c ../librpc/gen_ndr/srv_wkssvc.c'''
+RPC_SVCCTL_SRC = '''srv_svcctl_nt.c ../librpc/gen_ndr/srv_svcctl.c'''
+RPC_NTSVCS_SRC = '''srv_ntsvcs_nt.c ../librpc/gen_ndr/srv_ntsvcs.c'''
+RPC_NETDFS_SRC = '''srv_dfs_nt.c ../librpc/gen_ndr/srv_dfs.c'''
+RPC_SPOOLSS_SRC = '''srv_spoolss_nt.c ../librpc/gen_ndr/srv_spoolss.c
+                     srv_spoolss_util.c'''
+RPC_EVENTLOG_SRC = '''srv_eventlog_nt.c ../librpc/gen_ndr/srv_eventlog.c'''
+RPC_RPCECHO_SRC = '''srv_echo_nt.c ../librpc/gen_ndr/srv_echo.c'''
+
+bld.SAMBA_SUBSYSTEM('rpc',
+                    source='srv_pipe_register.c',
+                    vars=locals())
+
+bld.SAMBA_MODULE('rpc_lsarpc',
+                 subsystem='rpc',
+                 source=RPC_LSARPC_SRC,
+                 init_function='',
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('RPC_LSARPC'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('RPC_LSARPC'))
+
+bld.SAMBA_MODULE('rpc_samr',
+                 subsystem='rpc',
+                 source=RPC_SAMR_SRC,
+                 init_function='',
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('RPC_SAMR'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('RPC_SAMR'))
+
+bld.SAMBA_MODULE('rpc_winreg',
+                 subsystem='rpc',
+                 source=RPC_WINREG_SRC,
+                 deps='REGFIO REG_API_REGF NDR_PERFCOUNT',
+                 init_function='',
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('RPC_WINREG'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('RPC_WINREG'))
+
+bld.SAMBA_MODULE('rpc_initshutdown',
+                 subsystem='rpc',
+                 source=RPC_INITSHUTDOWN_SRC,
+                 init_function='',
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('RPC_INITSHUTDOWN'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('RPC_INITSHUTDOWN'))
+
+bld.SAMBA_MODULE('rpc_dssetup',
+                 subsystem='rpc',
+                 source=RPC_DSSETUP_SRC,
+                 init_function='',
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('RPC_DSSETUP'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('RPC_DSSETUP'))
+
+bld.SAMBA_MODULE('rpc_wkssvc',
+                 subsystem='rpc',
+                 source=RPC_WKSSVC_SRC,
+                 deps='LIBNET',
+                 init_function='',
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('RPC_WKSSVC'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('RPC_WKSSVC'))
+
+bld.SAMBA_MODULE('rpc_svcctl',
+                 subsystem='rpc',
+                 source=RPC_SVCCTL_SRC,
+                 deps='SERVICES',
+                 init_function='',
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('RPC_SVCCTL'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('RPC_SVCCTL'))
+
+bld.SAMBA_MODULE('rpc_ntsvcs',
+                 subsystem='rpc',
+                 source=RPC_NTSVCS_SRC,
+                 init_function='',
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('RPC_NTSVCS'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('RPC_NTSVCS'))
+
+bld.SAMBA_MODULE('rpc_netlogon',
+                 subsystem='rpc',
+                 source=RPC_NETLOGON_SRC,
+                 init_function='',
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('RPC_NETLOGON'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('RPC_NETLOGON'))
+
+bld.SAMBA_MODULE('rpc_netdfs',
+                 subsystem='rpc',
+                 source=RPC_NETDFS_SRC,
+                 init_function='',
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('RPC_NETDFS'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('RPC_NETDFS'))
+
+bld.SAMBA_MODULE('rpc_srvsvc',
+                 subsystem='rpc',
+                 source=RPC_SRVSVC_SRC,
+                 init_function='',
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('RPC_SRVSVC'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('RPC_SRVSVC'))
+
+bld.SAMBA_MODULE('rpc_spoolss',
+                 subsystem='rpc',
+                 source=RPC_SPOOLSS_SRC,
+                 deps='cups PRINTING PRINTBACKEND RPCCLI_WINREG',
+                 init_function='',
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('RPC_SPOOLSS'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('RPC_SPOOLSS'))
+
+bld.SAMBA_MODULE('rpc_eventlog',
+                 subsystem='rpc',
+                 source=RPC_EVENTLOG_SRC,
+                 deps='LIBEVENTLOG',
+                 init_function='',
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('RPC_EVENTLOG'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('RPC_EVENTLOG'))
+
+bld.SAMBA_MODULE('rpc_rpcecho',
+                 subsystem='rpc',
+                 source=RPC_RPCECHO_SRC,
+                 init_function='',
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('RPC_RPCECHO'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('RPC_RPCECHO'))
