@@ -36,6 +36,7 @@
 	"userPrincipalName",			\
 	"servicePrincipalName",			\
 	"msDS-KeyVersionNumber",		\
+	"msDS-SecondaryKrbTgtNumber"            \
 	"msDS-SupportedEncryptionTypes",	\
 	"supplementalCredentials",		\
 						\

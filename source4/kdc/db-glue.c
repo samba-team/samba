@@ -212,6 +212,8 @@ static krb5_error_code samba_kdc_message2entry_keys(krb5_context context,
 	struct package_PrimaryKerberosCtr4 *pkb4 = NULL;
 	uint16_t i;
 	uint16_t allocated_keys = 0;
+	int rodc_krbtgt_number = 0;
+	bool is_rodc = false;
 
 	/* Supported Enc for this entry */
 	uint32_t supported_enctypes = ENC_ALL_TYPES; /* by default, we support all enc types */
@@ -225,7 +227,19 @@ static krb5_error_code samba_kdc_message2entry_keys(krb5_context context,
 	}
 	supported_enctypes = ldb_msg_find_attr_as_uint(msg, "msDS-SupportedEncryptionTypes",
 							supported_enctypes);
-	if (rid == DOMAIN_RID_KRBTGT) {
+	/* Is this the krbtgt or a RODC */
+
+	if (ldb_msg_find_element(msg, "msDS-SecondaryKrbTgtNumber")) {
+		is_rodc = true;
+
+		rodc_krbtgt_number = ldb_msg_find_attr_as_int(msg, "msDS-SecondaryKrbTgtNumber", -1);
+
+		if (rodc_krbtgt_number == -1) {
+			return EINVAL;
+		}
+	}
+
+	if (rid == DOMAIN_RID_KRBTGT || is_rodc) {
 		/* Be double-sure never to use DES here */
 		supported_enctypes &= ~(ENC_CRC32|ENC_RSA_MD5);
 	}
@@ -251,6 +265,9 @@ static krb5_error_code samba_kdc_message2entry_keys(krb5_context context,
 	entry_ex->entry.keys.len = 0;
 
 	entry_ex->entry.kvno = ldb_msg_find_attr_as_int(msg, "msDS-KeyVersionNumber", 0);
+	if (is_rodc) {
+		entry_ex->entry.kvno |= (rodc_krbtgt_number << 16);
+	}
 
 	/* Get keys from the db */
 
