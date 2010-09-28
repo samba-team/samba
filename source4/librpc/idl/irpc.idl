@@ -1,6 +1,6 @@
 #include "idl_types.h"
 
-import "misc.idl", "security.idl", "nbt.idl";
+import "misc.idl", "security.idl", "nbt.idl", "netlogon.idl";
 
 /*
   definitions for irpc primitives
@@ -185,5 +185,15 @@ import "misc.idl", "security.idl", "nbt.idl";
 	 */
 	void drepl_trigger_repl_secret(
 		[in] astring user_dn
+		);
+
+	/*
+	  message to do RODC DNS updates via the dnsupdate task
+	*/
+	NTSTATUS dnsupdate_RODC(
+		[in,unique] dom_sid *dom_sid,
+		[in,unique] [string,charset(UTF16)] uint16 *site_name,
+		[in] uint32 dns_ttl,
+		[in,out,ref] NL_DNS_NAME_INFO_ARRAY *dns_names
 		);
 }

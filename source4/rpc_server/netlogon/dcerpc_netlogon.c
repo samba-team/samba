@@ -36,6 +36,7 @@
 #include "cldap_server/cldap_server.h"
 #include "lib/tsocket/tsocket.h"
 #include "librpc/gen_ndr/ndr_netlogon.h"
+#include "librpc/gen_ndr/ndr_irpc.h"
 
 struct netlogon_server_pipe_state {
 	struct netr_Credential client_challenge;
@@ -2268,14 +2269,99 @@ static NTSTATUS dcesrv_netr_Unused47(struct dcesrv_call_state *dce_call, TALLOC_
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
+
+struct netr_dnsupdate_RODC_state {
+	struct dcesrv_call_state *dce_call;
+	struct netr_DsrUpdateReadOnlyServerDnsRecords *r;
+	struct dnsupdate_RODC *r2;
+};
+
+/*
+  called when the forwarded RODC dns update request is finished
+ */
+static void netr_dnsupdate_RODC_callback(struct tevent_req *req)
+{
+	struct netr_dnsupdate_RODC_state *st =
+		tevent_req_callback_data(req,
+					 struct netr_dnsupdate_RODC_state);
+	NTSTATUS status;
+
+	status = dcerpc_binding_handle_call_recv(req);
+	talloc_free(req);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,(__location__ ": IRPC callback failed %s\n", nt_errstr(status)));
+		st->dce_call->fault_code = DCERPC_FAULT_CANT_PERFORM;
+	}
+
+	st->r->out.dns_names = talloc_steal(st->dce_call, st->r2->out.dns_names);
+
+	status = dcesrv_reply(st->dce_call);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,(__location__ ": dcesrv_reply() failed - %s\n", nt_errstr(status)));
+	}
+}
+
 /*
   netr_DsrUpdateReadOnlyServerDnsRecords
 */
-static NTSTATUS dcesrv_netr_DsrUpdateReadOnlyServerDnsRecords(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+static NTSTATUS dcesrv_netr_DsrUpdateReadOnlyServerDnsRecords(struct dcesrv_call_state *dce_call,
+							      TALLOC_CTX *mem_ctx,
 							      struct netr_DsrUpdateReadOnlyServerDnsRecords *r)
 {
-	NDR_PRINT_FUNCTION_DEBUG(netr_DsrUpdateReadOnlyServerDnsRecords, NDR_IN, r);
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	struct netlogon_creds_CredentialState *creds;
+	NTSTATUS nt_status;
+	struct dcerpc_binding_handle *binding_handle;
+	struct netr_dnsupdate_RODC_state *st;
+	struct tevent_req *req;
+
+	nt_status = dcesrv_netr_creds_server_step_check(dce_call,
+							mem_ctx,
+							r->in.computer_name,
+							r->in.credential,
+							r->out.return_authenticator,
+							&creds);
+	NT_STATUS_NOT_OK_RETURN(nt_status);
+
+	if (creds->secure_channel_type != SEC_CHAN_RODC) {
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	st = talloc_zero(mem_ctx, struct netr_dnsupdate_RODC_state);
+	NT_STATUS_HAVE_NO_MEMORY(st);
+
+	st->dce_call = dce_call;
+	st->r = r;
+	st->r2 = talloc_zero(st, struct dnsupdate_RODC);
+	NT_STATUS_HAVE_NO_MEMORY(st->r2);
+
+	st->r2->in.dom_sid = creds->sid;
+	st->r2->in.site_name = r->in.site_name;
+	st->r2->in.dns_ttl = r->in.dns_ttl;
+	st->r2->in.dns_names = r->in.dns_names;
+	st->r2->out.dns_names = r->out.dns_names;
+
+	binding_handle = irpc_binding_handle_by_name(st, dce_call->msg_ctx,
+						     "dnsupdate", &ndr_table_irpc);
+	if (binding_handle == NULL) {
+		DEBUG(0,("Failed to get binding_handle for dnsupdate task\n"));
+		dce_call->fault_code = DCERPC_FAULT_CANT_PERFORM;
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	/* forward the call */
+	req = dcerpc_binding_handle_call_send(st, dce_call->event_ctx,
+					      binding_handle,
+					      NULL, &ndr_table_irpc,
+					      NDR_DNSUPDATE_RODC,
+					      st, st->r2);
+	NT_STATUS_HAVE_NO_MEMORY(req);
+
+	dce_call->state_flags |= DCESRV_CALL_STATE_FLAG_ASYNC;
+
+	/* setup the callback */
+	tevent_req_set_callback(req, netr_dnsupdate_RODC_callback, st);
+
+	return NT_STATUS_OK;
 }
 
 
