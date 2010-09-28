@@ -768,6 +768,15 @@ static NTSTATUS make_new_server_info_system(TALLOC_CTX *mem_ctx,
 
 	(*server_info)->system = true;
 
+	status = add_sid_to_array_unique((*server_info)->ptok->sids,
+					 &global_sid_System,
+					 &(*server_info)->ptok->sids,
+					 &(*server_info)->ptok->num_sids);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE((*server_info));
+		return status;
+	}
+
 	return NT_STATUS_OK;
 }
 
