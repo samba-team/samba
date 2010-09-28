@@ -52,6 +52,7 @@ parser.add_option("--verbose", action="store_true")
 parser.add_option("--all-names", action="store_true")
 parser.add_option("--all-interfaces", action="store_true")
 parser.add_option("--use-file", type="string", help="Use a file, rather than real DNS calls")
+parser.add_option("--update-list", type="string", help="Add DNS names from the given file")
 
 creds = None
 ccachename = None
@@ -107,14 +108,14 @@ class dnsobj(object):
         self.existing_port = None
         self.existing_weight = None
         self.type = list[0]
-        self.name = list[1]
+        self.name = list[1].lower()
         if self.type == 'SRV':
-            self.dest = list[2]
+            self.dest = list[2].lower()
             self.port = list[3]
         elif self.type == 'A':
             self.ip   = list[2] # usually $IP, which gets replaced
         elif self.type == 'CNAME':
-            self.dest = list[2]
+            self.dest = list[2].lower()
         else:
             print "Received unexpected DNS reply of type %s" % self.type
             raise
@@ -227,17 +228,19 @@ def call_nsupdate(d):
         fcntl.lockf(wfile, fcntl.LOCK_UN)
         return
 
+    normalised_name = d.name.rstrip('.') + '.'
+
     (tmp_fd, tmpfile) = tempfile.mkstemp()
     f = os.fdopen(tmp_fd, 'w')
     if d.type == "A":
-        f.write("update add %s %u A %s\n" % (d.name, default_ttl, d.ip))
+        f.write("update add %s %u A %s\n" % (normalised_name, default_ttl, d.ip))
     if d.type == "SRV":
         if d.existing_port is not None:
-            f.write("update delete %s SRV 0 %s %s %s\n" % (d.name, d.existing_weight,
+            f.write("update delete %s SRV 0 %s %s %s\n" % (normalised_name, d.existing_weight,
                                                            d.existing_port, d.dest))
-        f.write("update add %s %u SRV 0 100 %s %s\n" % (d.name, default_ttl, d.port, d.dest))
+        f.write("update add %s %u SRV 0 100 %s %s\n" % (normalised_name, default_ttl, d.port, d.dest))
     if d.type == "CNAME":
-        f.write("update add %s %u CNAME %s\n" % (d.name, default_ttl, d.dest))
+        f.write("update add %s %u CNAME %s\n" % (normalised_name, default_ttl, d.dest))
     if opts.verbose:
         f.write("show\n")
     f.write("send\n")
@@ -318,7 +321,10 @@ def call_rodc_update(d):
 
 
 # get the list of DNS entries we should have
-dns_update_list = lp.private_path('dns_update_list')
+if opts.update_list:
+    dns_update_list = opts.update_list
+else:
+    dns_update_list = lp.private_path('dns_update_list')
 
 # use our private krb5.conf to avoid problems with the wrong domain
 # bind9 nsupdate wants the default domain set
