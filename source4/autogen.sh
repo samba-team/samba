@@ -1,1 +1,1 @@
-../buildtools/scripts/autogen-waf.sh
+autogen-waf.sh
