@@ -92,7 +92,7 @@ class Ldb(_Ldb):
         self.register_samba_handlers()
 
         # TODO set debug
-        def msg(l,text):
+        def msg(l, text):
             print text
         #self.set_debug(msg)
 
@@ -215,7 +215,7 @@ class Ldb(_Ldb):
         """
         for changetype, msg in self.parse_ldif(ldif):
             assert changetype == ldb.CHANGETYPE_NONE
-            self.add(msg,controls)
+            self.add(msg, controls)
 
     def modify_ldif(self, ldif, controls=None):
         """Modify database based on a LDIF string.
@@ -312,7 +312,6 @@ def ensure_external_module(modulename, location):
     try:
         __import__(modulename)
     except ImportError:
-        import sys
         if _in_source_tree():
             sys.path.insert(0, 
                 os.path.join(os.path.dirname(__file__),
@@ -322,7 +321,7 @@ def ensure_external_module(modulename, location):
             sys.modules[modulename] = __import__(
                 "samba.external.%s" % modulename, fromlist=["samba.external"])
 
-import _glue
+from samba import _glue
 version = _glue.version
 interface_ips = _glue.interface_ips
 set_debug_level = _glue.set_debug_level
