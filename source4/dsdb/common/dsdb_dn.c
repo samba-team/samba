@@ -22,6 +22,8 @@
 #include "includes.h"
 #include "dsdb/samdb/samdb.h"
 #include "lib/ldb/include/ldb_module.h"
+#include "librpc/ndr/libndr.h"
+#include "libcli/security/dom_sid.h"
 
 enum dsdb_dn_format dsdb_dn_oid_to_format(const char *oid) 
 {
@@ -401,4 +403,44 @@ WERROR dsdb_dn_la_from_blob(struct ldb_context *sam_ctx,
 	}
 
 	return WERR_OK;
+}
+
+
+/*
+  format a drsuapi_DsReplicaObjectIdentifier naming context as a string
+ */
+char *drs_ObjectIdentifier_to_string(TALLOC_CTX *mem_ctx,
+				     struct drsuapi_DsReplicaObjectIdentifier *nc)
+{
+	char *ret = NULL;
+	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
+	if (!GUID_all_zero(&nc->guid)) {
+		char *guid = GUID_string(tmp_ctx, &nc->guid);
+		if (guid) {
+			ret = talloc_asprintf_append(ret, "<GUID=%s>;", guid);
+		}
+	}
+	if (nc->__ndr_size_sid != 0 && nc->sid.sid_rev_num != 0) {
+		const char *sid = dom_sid_string(tmp_ctx, &nc->sid);
+		if (sid) {
+			ret = talloc_asprintf_append(ret, "<SID=%s>;", sid);
+		}
+	}
+	if (nc->__ndr_size_dn != 0 && nc->dn) {
+		ret = talloc_asprintf_append(ret, "%s", nc->dn);
+	}
+	talloc_free(tmp_ctx);
+	talloc_steal(mem_ctx, ret);
+	return ret;
+}
+
+struct ldb_dn *drs_ObjectIdentifier_to_dn(TALLOC_CTX *mem_ctx,
+					  struct ldb_context *ldb,
+					  struct drsuapi_DsReplicaObjectIdentifier *nc)
+{
+	char *dn_string = drs_ObjectIdentifier_to_string(mem_ctx, nc);
+	struct ldb_dn *new_dn;
+	new_dn = ldb_dn_new(mem_ctx, ldb, dn_string);
+	talloc_free(dn_string);
+	return new_dn;
 }

@@ -26,50 +26,6 @@
 #include "param/param.h"
 #include "auth/session.h"
 
-/*
-  format a drsuapi_DsReplicaObjectIdentifier naming context as a string
- */
-char *drs_ObjectIdentifier_to_string(TALLOC_CTX *mem_ctx,
-				     struct drsuapi_DsReplicaObjectIdentifier *nc)
-{
-	char *guid, *sid, *ret;
-	guid = GUID_string(mem_ctx, &nc->guid);
-	sid  = dom_sid_string(mem_ctx, &nc->sid);
-	ret = talloc_asprintf(mem_ctx, "<GUID=%s>;<SID=%s>;%s",
-			      guid, sid, nc->dn);
-	talloc_free(guid);
-	talloc_free(sid);
-	return ret;
-}
-
-struct ldb_dn *drs_ObjectIdentifier_to_dn(TALLOC_CTX *mem_ctx,
-					  struct ldb_context *ldb,
-					  struct drsuapi_DsReplicaObjectIdentifier *nc)
-{
-	char *guid = NULL, *sid = NULL, *ret = NULL;
-	struct ldb_dn *new_dn;
-	if (!GUID_all_zero(&nc->guid)) {
-		guid = GUID_string(mem_ctx, &nc->guid);
-		if (guid) {
-			ret = talloc_asprintf_append(mem_ctx, "<GUID=%s>;", guid);
-		}
-	}
-	if (nc->sid.sid_rev_num != 0) {
-		sid = dom_sid_string(mem_ctx, &nc->sid);
-		if (sid) {
-			ret = talloc_asprintf_append(ret, "<SID=%s>;", sid);
-		}
-	}
-	if (nc->dn) {
-		ret = talloc_asprintf_append(ret, "%s", nc->dn);
-	}
-	new_dn = ldb_dn_new(mem_ctx, ldb, ret);
-	talloc_free(guid);
-	talloc_free(sid);
-	talloc_free(ret);
-	return new_dn;
-}
-
 int drsuapi_search_with_extended_dn(struct ldb_context *ldb,
 				    TALLOC_CTX *mem_ctx,
 				    struct ldb_result **_res,
