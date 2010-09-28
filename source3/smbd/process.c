@@ -140,7 +140,7 @@ bool srv_send_smb(struct smbd_server_connection *sconn, char *buffer,
 		 * Try and give an error message saying what
 		 * client failed.
 		 */
-		DEBUG(0,("pid[%d] Error writing %d bytes to client %s. %d. (%s)\n",
+		DEBUG(1,("pid[%d] Error writing %d bytes to client %s. %d. (%s)\n",
 			 (int)sys_getpid(), (int)len,
 			 get_peer_addr(sconn->sock, addr, sizeof(addr)),
 			 (int)ret, strerror(errno) ));
@@ -425,7 +425,7 @@ static NTSTATUS receive_smb_talloc(TALLOC_CTX *mem_ctx,	int fd,
 					p_unread, &len);
 	if (!NT_STATUS_IS_OK(status)) {
 		char addr[INET6_ADDRSTRLEN];
-		DEBUG(0, ("read_smb_length_return_keepalive failed for "
+		DEBUG(1, ("read_smb_length_return_keepalive failed for "
 			  "client %s read error = %s.\n",
 			  get_peer_addr(fd, addr, sizeof(addr)),
 			  nt_errstr(status)));
