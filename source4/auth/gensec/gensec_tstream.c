@@ -36,8 +36,6 @@ struct tstream_gensec {
 
 	struct gensec_security *gensec_security;
 
-	bool wrap;
-
 	int error;
 
 	struct {
@@ -74,11 +72,10 @@ _PUBLIC_ NTSTATUS _gensec_create_tstream(TALLOC_CTX *mem_ctx,
 	tgss->gensec_security = gensec_security;
 	tgss->error = 0;
 
-	if (gensec_have_feature(gensec_security, GENSEC_FEATURE_SIGN) ||
-	    gensec_have_feature(gensec_security, GENSEC_FEATURE_SEAL)) {
-		tgss->wrap = true;
-	} else {
-		tgss->wrap = false;
+	if (!gensec_have_feature(gensec_security, GENSEC_FEATURE_SIGN) &&
+	    !gensec_have_feature(gensec_security, GENSEC_FEATURE_SEAL)) {
+		talloc_free(gensec_stream);
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	tgss->write.max_unwrapped_size = gensec_max_input_size(gensec_security);
@@ -95,29 +92,13 @@ static ssize_t tstream_gensec_pending_bytes(struct tstream_context *stream)
 	struct tstream_gensec *tgss =
 		tstream_context_data(stream,
 		struct tstream_gensec);
-	ssize_t ret;
-
-	if (!tgss->plain_stream) {
-		errno = ENOTCONN;
-		return -1;
-	}
 
 	if (tgss->error != 0) {
 		errno = tgss->error;
 		return -1;
 	}
 
-	if (tgss->wrap) {
-		return tgss->read.left;
-	}
-
-	ret = tstream_pending_bytes(tgss->plain_stream);
-	if (ret == -1) {
-		tgss->error = errno;
-		return -1;
-	}
-
-	return ret;
+	return tgss->read.left;
 }
 
 struct tstream_gensec_readv_state {
@@ -137,7 +118,6 @@ struct tstream_gensec_readv_state {
 	int ret;
 };
 
-static void tstream_gensec_readv_plain_done(struct tevent_req *subreq);
 static void tstream_gensec_readv_wrapped_next(struct tevent_req *req);
 
 static struct tevent_req *tstream_gensec_readv_send(TALLOC_CTX *mem_ctx,
@@ -151,8 +131,6 @@ static struct tevent_req *tstream_gensec_readv_send(TALLOC_CTX *mem_ctx,
 		struct tstream_gensec);
 	struct tevent_req *req;
 	struct tstream_gensec_readv_state *state;
-	struct tevent_req *subreq;
-	ssize_t ret;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct tstream_gensec_readv_state);
@@ -160,31 +138,14 @@ static struct tevent_req *tstream_gensec_readv_send(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	ret = tstream_gensec_pending_bytes(stream);
-	if (ret == -1) {
-		tevent_req_error(req, errno);
+	if (tgss->error != 0) {
+		tevent_req_error(req, tgss->error);
 		return tevent_req_post(req, ev);
 	}
 
 	state->ev = ev;
 	state->stream = stream;
 	state->ret = 0;
-
-	if (!tgss->wrap) {
-		subreq = tstream_readv_send(state,
-					    ev,
-					    tgss->plain_stream,
-					    vector,
-					    count);
-		if (tevent_req_nomem(subreq,req)) {
-			return tevent_req_post(req, ev);
-		}
-		tevent_req_set_callback(subreq,
-					tstream_gensec_readv_plain_done,
-					req);
-
-		return req;
-	}
 
 	/*
 	 * we make a copy of the vector so we can change the structure
@@ -202,33 +163,6 @@ static struct tevent_req *tstream_gensec_readv_send(TALLOC_CTX *mem_ctx,
 	}
 
 	return req;
-}
-
-static void tstream_gensec_readv_plain_done(struct tevent_req *subreq)
-{
-	struct tevent_req *req =
-		tevent_req_callback_data(subreq,
-		struct tevent_req);
-	struct tstream_gensec_readv_state *state =
-		tevent_req_data(req,
-		struct tstream_gensec_readv_state);
-	struct tstream_gensec *tgss =
-		tstream_context_data(state->stream,
-		struct tstream_gensec);
-	int ret;
-	int sys_errno;
-
-	ret = tstream_readv_recv(subreq, &sys_errno);
-	TALLOC_FREE(subreq);
-	if (ret == -1) {
-		tgss->error = sys_errno;
-		tevent_req_error(req, sys_errno);
-		return;
-	}
-
-	state->ret = ret;
-
-	tevent_req_done(req);
 }
 
 static int tstream_gensec_readv_next_vector(struct tstream_context *unix_stream,
@@ -426,7 +360,6 @@ struct tstream_gensec_writev_state {
 	int ret;
 };
 
-static void tstream_gensec_writev_plain_done(struct tevent_req *subreq);
 static void tstream_gensec_writev_wrapped_next(struct tevent_req *req);
 
 static struct tevent_req *tstream_gensec_writev_send(TALLOC_CTX *mem_ctx,
@@ -440,8 +373,6 @@ static struct tevent_req *tstream_gensec_writev_send(TALLOC_CTX *mem_ctx,
 		struct tstream_gensec);
 	struct tevent_req *req;
 	struct tstream_gensec_writev_state *state;
-	struct tevent_req *subreq;
-	ssize_t ret;
 	int i;
 	int total;
 	int chunk;
@@ -452,29 +383,14 @@ static struct tevent_req *tstream_gensec_writev_send(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	ret = tstream_gensec_pending_bytes(stream);
-	if (ret == -1) {
-		tevent_req_error(req, errno);
+	if (tgss->error != 0) {
+		tevent_req_error(req, tgss->error);
 		return tevent_req_post(req, ev);
 	}
 
 	state->ev = ev;
 	state->stream = stream;
 	state->ret = 0;
-
-	if (!tgss->wrap) {
-		subreq = tstream_writev_send(state,
-					     ev,
-					     tgss->plain_stream,
-					     vector,
-					     count);
-		if (tevent_req_nomem(subreq, req)) {
-			return tevent_req_post(req, ev);
-		}
-		tevent_req_set_callback(subreq, tstream_gensec_writev_plain_done, req);
-
-		return req;
-	}
 
 	/*
 	 * we make a copy of the vector so we can change the structure
@@ -511,33 +427,6 @@ static struct tevent_req *tstream_gensec_writev_send(TALLOC_CTX *mem_ctx,
 	}
 
 	return req;
-}
-
-static void tstream_gensec_writev_plain_done(struct tevent_req *subreq)
-{
-	struct tevent_req *req =
-		tevent_req_callback_data(subreq,
-		struct tevent_req);
-	struct tstream_gensec_writev_state *state =
-		tevent_req_data(req,
-		struct tstream_gensec_writev_state);
-	struct tstream_gensec *tgss =
-		tstream_context_data(state->stream,
-		struct tstream_gensec);
-	int ret;
-	int sys_errno;
-
-	ret = tstream_writev_recv(subreq, &sys_errno);
-	TALLOC_FREE(subreq);
-	if (ret < 0) {
-		tgss->error = sys_errno;
-		tevent_req_error(req, sys_errno);
-		return;
-	}
-
-	state->ret = ret;
-
-	tevent_req_done(req);
 }
 
 static void tstream_gensec_writev_wrapped_done(struct tevent_req *subreq);
@@ -672,7 +561,6 @@ static struct tevent_req *tstream_gensec_disconnect_send(TALLOC_CTX *mem_ctx,
 		struct tstream_gensec);
 	struct tevent_req *req;
 	struct tstream_gensec_disconnect_state *state;
-	ssize_t ret;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct tstream_gensec_disconnect_state);
@@ -680,9 +568,8 @@ static struct tevent_req *tstream_gensec_disconnect_send(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	ret = tstream_gensec_pending_bytes(stream);
-	if (ret == -1) {
-		tevent_req_error(req, errno);
+	if (tgss->error != 0) {
+		tevent_req_error(req, tgss->error);
 		return tevent_req_post(req, ev);
 	}
 
@@ -691,6 +578,7 @@ static struct tevent_req *tstream_gensec_disconnect_send(TALLOC_CTX *mem_ctx,
 	 * on the plain stream!
 	 */
 	tgss->plain_stream = NULL;
+	tgss->error = ENOTCONN;
 
 	tevent_req_done(req);
 	return tevent_req_post(req, ev);
