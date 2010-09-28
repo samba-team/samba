@@ -104,7 +104,7 @@ static void wreplsrv_accept(struct stream_connection *conn)
 	struct tsocket_address *peer_addr;
 	char *peer_ip;
 	struct tevent_req *subreq;
-	int rc, fd;
+	int rc;
 
 	wrepl_conn = talloc_zero(conn, struct wreplsrv_in_connection);
 	if (wrepl_conn == NULL) {
@@ -122,30 +122,15 @@ static void wreplsrv_accept(struct stream_connection *conn)
 
 	TALLOC_FREE(conn->event.fde);
 
-	/*
-	 * Clone the fd that the connection isn't closed if we create a client
-	 * connection.
-	 */
-	fd = dup(socket_get_fd(conn->socket));
-	if (fd == -1) {
-		char *reason;
-
-		reason = talloc_asprintf(conn,
-					 "wrepl_accept: failed to duplicate the file descriptor - %s",
-					 strerror(errno));
-		if (reason == NULL) {
-			reason = strerror(errno);
-		}
-		stream_terminate_connection(conn, reason);
-	}
 	rc = tstream_bsd_existing_socket(wrepl_conn,
-					 fd,
+					 socket_get_fd(conn->socket),
 					 &wrepl_conn->tstream);
 	if (rc < 0) {
 		stream_terminate_connection(conn,
 					    "wrepl_accept: out of memory");
 		return;
 	}
+	socket_set_flags(conn->socket, SOCKET_FLAG_NOCLOSE);
 
 	wrepl_conn->conn = conn;
 	wrepl_conn->service = service;
