@@ -2782,7 +2782,7 @@ static NTSTATUS kcctpl_create_connection(struct kccsrv_service *service,
 		return status;
 	}
 
-	status = kcctpl_get_all_bridgehead_dcs(service->samdb, tmp_ctx,
+	status = kcctpl_get_all_bridgehead_dcs(service, tmp_ctx,
 					       r_site_guid, cross_ref,
 					       transport, partial_replica_okay,
 					       detect_failed_dcs,
