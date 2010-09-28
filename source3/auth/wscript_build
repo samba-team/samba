@@ -78,3 +78,10 @@ bld.SAMBA_MODULE('AUTH_NETLOGOND',
                  init_function='',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('AUTH_NETLOGOND'),
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('AUTH_NETLOGOND'))
+
+bld.SAMBA_MODULE('AUTH_SCRIPT',
+                 subsystem='AUTH',
+                 source=AUTH_SCRIPT_SRC,
+                 init_function='',
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('AUTH_SCRIPT'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('AUTH_SCRIPT'))
