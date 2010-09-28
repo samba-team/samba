@@ -221,6 +221,120 @@ static struct cli_state *open_nbt_connection(void)
 	return c;
 }
 
+/****************************************************************************
+ Send a corrupt session request. See rfc1002.txt 4.3 and 4.3.2.
+****************************************************************************/
+
+static bool cli_bad_session_request(struct cli_state *cli,
+                         struct nmb_name *calling, struct nmb_name *called)
+{
+        char *p;
+        int len = 4;
+        int namelen = 0;
+        char *tmp;
+
+        memcpy(&(cli->calling), calling, sizeof(*calling));
+        memcpy(&(cli->called ), called , sizeof(*called ));
+
+        /* put in the destination name */
+
+        tmp = name_mangle(talloc_tos(), cli->called.name,
+                          cli->called.name_type);
+        if (tmp == NULL) {
+                return false;
+        }
+
+        p = cli->outbuf+len;
+        namelen = name_len((unsigned char *)tmp, talloc_get_size(tmp));
+        if (namelen > 0) {
+                memcpy(p, tmp, namelen);
+                len += namelen;
+        }
+        TALLOC_FREE(tmp);
+
+	/* Deliberately corrupt the name len (first byte) */
+	*p = 100;
+
+        /* and my name */
+
+        tmp = name_mangle(talloc_tos(), cli->calling.name,
+                          cli->calling.name_type);
+        if (tmp == NULL) {
+                return false;
+        }
+
+        p = cli->outbuf+len;
+        namelen = name_len((unsigned char *)tmp, talloc_get_size(tmp));
+        if (namelen > 0) {
+                memcpy(p, tmp, namelen);
+                len += namelen;
+        }
+        TALLOC_FREE(tmp);
+	/* Deliberately corrupt the name len (first byte) */
+	*p = 100;
+
+        /* send a session request (RFC 1002) */
+        /* setup the packet length
+         * Remove four bytes from the length count, since the length
+         * field in the NBT Session Service header counts the number
+         * of bytes which follow.  The cli_send_smb() function knows
+         * about this and accounts for those four bytes.
+         * CRH.
+         */
+        len -= 4;
+        _smb_setlen(cli->outbuf,len);
+        SCVAL(cli->outbuf,0,0x81);
+
+        cli_send_smb(cli);
+        DEBUG(5,("Sent session request\n"));
+
+        if (!cli_receive_smb(cli))
+                return False;
+
+        if (CVAL(cli->inbuf,0) != 0x82) {
+                /* This is the wrong place to put the error... JRA. */
+                cli->rap_error = CVAL(cli->inbuf,4);
+                return False;
+        }
+        return(True);
+}
+
+static struct cli_state *open_bad_nbt_connection(void)
+{
+	struct nmb_name called, calling;
+	struct sockaddr_storage ss;
+	struct cli_state *c;
+	NTSTATUS status;
+
+	make_nmb_name(&calling, myname, 0x0);
+	make_nmb_name(&called , host, 0x20);
+
+        zero_sockaddr(&ss);
+
+	if (!(c = cli_initialise())) {
+		printf("Failed initialize cli_struct to connect with %s\n", host);
+		return NULL;
+	}
+
+	c->port = 139;
+
+	status = cli_connect(c, host, &ss);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("Failed to connect with %s. Error %s\n", host, nt_errstr(status) );
+		return NULL;
+	}
+
+	c->timeout = 4000; /* set a short timeout (4 seconds) */
+
+	if (!cli_bad_session_request(c, &calling, &called)) {
+		printf("Failed to connect with %s. Error %s\n", host, nt_errstr(status) );
+		return NULL;
+	}
+
+	return c;
+}
+
+
 /* Insert a NULL at the first separator of the given path and return a pointer
  * to the remainder of the string.
  */
@@ -2654,6 +2768,21 @@ static bool run_negprot_nowait(int dummy)
 	return correct;
 }
 
+/* send smb negprot commands, not reading the response */
+static bool run_bad_nbt_session(int dummy)
+{
+	static struct cli_state *cli;
+
+	printf("starting bad nbt session test\n");
+
+	if (!(cli = open_bad_nbt_connection())) {
+		return False;
+	}
+
+	cli_shutdown(cli);
+	printf("finished bad nbt session test\n");
+	return true;
+}
 
 /* send random IPC commands */
 static bool run_randomipc(int dummy)
@@ -7680,6 +7809,7 @@ static struct {
 	{ "TLDAP", run_tldap },
 	{ "STREAMERROR", run_streamerror },
 	{ "NOTIFY-BENCH", run_notify_bench },
+	{ "BAD-NBT-SESSION", run_bad_nbt_session },
 	{ "LOCAL-SUBSTITUTE", run_local_substitute, 0},
 	{ "LOCAL-GENCACHE", run_local_gencache, 0},
 	{ "LOCAL-TALLOC-DICT", run_local_talloc_dict, 0},
