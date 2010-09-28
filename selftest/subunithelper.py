@@ -222,6 +222,13 @@ def find_in_list(regexes, fullname):
     return None
 
 
+class ImmediateFail(Exception):
+    """Raised to abort immediately."""
+
+    def __init__(self):
+        super(ImmediateFail, self).__init__("test failed and fail_immediately set")
+
+
 class FilterOps(testtools.testresult.TestResult):
 
     def control_msg(self, msg):
@@ -259,7 +266,7 @@ class FilterOps(testtools.testresult.TestResult):
         self._ops.addError(test, details)
         self.output = None
         if self.fail_immediately:
-            raise Exception("test failed and fail_immediately set")
+            raise ImmediateFail()
 
     def addSkip(self, test, details=None):
         test = self._add_prefix(test)
@@ -288,9 +295,9 @@ class FilterOps(testtools.testresult.TestResult):
             self._ops.addFailure(test, details)
             if self.output:
                 self._ops.output_msg(self.output)
+            if self.fail_immediately:
+                raise ImmediateFail()
         self.output = None
-        if self.fail_immediately:
-            raise Exception("test failed and fail_immediately set")
 
     def addSuccess(self, test, details=None):
         test = self._add_prefix(test)
