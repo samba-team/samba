@@ -22,6 +22,7 @@
 import os
 import ldb
 import samba
+import samba.auth
 from samba import param
 import subprocess
 import tempfile
@@ -100,3 +101,48 @@ class BlackboxTestCase(TestCase):
             parts[0] = os.path.join(bindir, parts[0])
         line = " ".join(parts)
         subprocess.check_call(line, shell=True)
+
+
+def connect_samdb(samdb_url, lp=None, session_info=None,
+                  credentials=None, flags=0, ldb_options=None, ldap_only=False):
+    """Creates SamDB instance and connects to samdb_url database.
+
+    :param samdb_url: Url for database to connect to.
+    :param lp: Optional loadparm object
+    :param session_info: Optional session information
+    :param credentials: Optional credentials, defaults to anonymous.
+    :param flags: Optional LDB flags
+    :param ldap_only: If set, only remote LDAP connection will be created.
+
+    Added value for tests is that we have a shorthand function
+    to make proper URL for ldb.connect() while using default
+    parameters for connection based on test environment
+    """
+    samdb_url = samdb_url.lower()
+    if not "://" in samdb_url:
+        if not ldap_only and os.path.isfile(samdb_url):
+            samdb_url = "tdb://%s" % samdb_url
+        else:
+            samdb_url = "ldap://%s" % samdb_url
+    # use 'paged_search' module when connecting remotely
+    if samdb_url.startswith("ldap://"):
+        ldb_options = ["modules:paged_searches"]
+    else:
+        assert not ldap_only, \
+               "Trying to connect to %s while remote connection is required" % samdb_url
+
+    # set defaults for test environment
+    if not lp:
+        lp=env_loadparm()
+    if not session_info:
+        session_info=samba.auth.system_session()
+    if not credentials:
+        credentials=cmdline_credentials
+
+    from samba.samdb import SamDB
+    return SamDB(url=samdb_url,
+                 lp=lp,
+                 session_info=session_info,
+                 credentials=credentials,
+                 flags=flags,
+                 options=ldb_options)
