@@ -908,7 +908,7 @@ restart_ctdb ()
 	
     onnode -q 1  $CTDB_TEST_WRAPPER wait_until_healthy || return 1
 
-    local debug_out=$(onnode -p all ctdb status 2>&1; onnode -p all ctdb scriptstatus 2>&1)
+    local debug_out=$(onnode -p all ctdb status -Y 2>&1; onnode -p all ctdb scriptstatus 2>&1)
 
     echo "Setting RerecoveryTimeout to 1"
     onnode -pq all "$CTDB setvar RerecoveryTimeout 1"
