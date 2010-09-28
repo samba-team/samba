@@ -328,7 +328,7 @@ return acl_get_perm_np(permset_d, perm);
                                       charset_CP437 auth_script vfs_readahead vfs_xattr_tdb
                                       vfs_streams_xattr vfs_streams_depot vfs_acl_xattr vfs_acl_tdb
                                       vfs_smb_traffic_analyzer vfs_preopen vfs_catia vfs_scannedonly
-                                      vfs_crossrename''')
+                                      vfs_crossrename vfs_linux_xfs_sgid''')
 
     if Options.options.developer:
         default_static_modules.extend(TO_LIST('rpc_rpcecho pdb_ads'))
