@@ -911,6 +911,27 @@ failed:
 	return WERR_DS_DRA_BAD_DN;
 }
 
+
+/*
+  handle a DRSUAPI_EXOP_REPL_OBJ call
+ */
+static WERROR getncchanges_repl_obj(struct drsuapi_bind_state *b_state,
+				    TALLOC_CTX *mem_ctx,
+				    struct drsuapi_DsGetNCChangesRequest8 *req8,
+				    struct dom_sid *user_sid,
+				    struct drsuapi_DsGetNCChangesCtr6 *ctr6)
+{
+	struct drsuapi_DsReplicaObjectIdentifier *ncRoot = req8->naming_context;
+
+	DEBUG(3,(__location__ ": DRSUAPI_EXOP_REPL_OBJ extended op on %s\n",
+		 drs_ObjectIdentifier_to_string(mem_ctx, ncRoot)));
+
+	ctr6->extended_ret = DRSUAPI_EXOP_ERR_SUCCESS;
+	req8->highwatermark.highest_usn = 0;
+	return WERR_OK;
+}
+
+
 /*
   handle DRSUAPI_EXOP_FSMO_REQ_ROLE,
   DRSUAPI_EXOP_FSMO_RID_REQ_ROLE,
@@ -1204,8 +1225,14 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 			werr = getncchanges_change_master(b_state, mem_ctx, req8, &r->out.ctr->ctr6);
 			W_ERROR_NOT_OK_RETURN(werr);
 			break;
-		case DRSUAPI_EXOP_FSMO_ABANDON_ROLE:
 		case DRSUAPI_EXOP_REPL_OBJ:
+			werr = getncchanges_repl_obj(b_state, mem_ctx, req8, user_sid, &r->out.ctr->ctr6);
+			r->out.result = werr;
+			W_ERROR_NOT_OK_RETURN(werr);
+			break;
+
+		case DRSUAPI_EXOP_FSMO_ABANDON_ROLE:
+
 			DEBUG(0,(__location__ ": Request for DsGetNCChanges unsupported extended op 0x%x\n",
 				 (unsigned)req8->extended_op));
 			return WERR_DS_DRA_NOT_SUPPORTED;
@@ -1234,6 +1261,10 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 		char* search_filter;
 		enum ldb_scope scope = LDB_SCOPE_SUBTREE;
 		const char *extra_filter;
+
+		if (req8->extended_op == DRSUAPI_EXOP_REPL_OBJ) {
+			scope = LDB_SCOPE_BASE;
+		}
 
 		extra_filter = lpcfg_parm_string(dce_call->conn->dce_ctx->lp_ctx, NULL, "drs", "object filter");
 
