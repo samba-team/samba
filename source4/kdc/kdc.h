@@ -20,6 +20,9 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#ifndef _KDC_KDC_H
+#define _KDC_KDC_H
+
 #include "system/kerberos.h"
 #include "auth/kerberos/kerberos.h"
 #include <hdb.h>
@@ -50,3 +53,5 @@ bool kpasswdd_process(struct kdc_server *kdc,
 /* from hdb-samba4.c */
 NTSTATUS hdb_samba4_create_kdc(struct samba_kdc_base_context *base_ctx,
 			       krb5_context context, struct HDB **db);
+
+#endif
