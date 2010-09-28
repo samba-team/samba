@@ -1690,20 +1690,21 @@ int samdb_reference_dn(struct ldb_context *ldb, TALLOC_CTX *mem_ctx, struct ldb_
 	attrs[0] = attribute;
 	attrs[1] = NULL;
 
-	ret = ldb_search(ldb, mem_ctx, &res, base, LDB_SCOPE_BASE, attrs, NULL);
+	ret = dsdb_search(ldb, mem_ctx, &res, base, LDB_SCOPE_BASE, attrs, DSDB_SEARCH_ONE_ONLY, NULL);
 	if (ret != LDB_SUCCESS) {
 		return ret;
-	}
-	if (res->count != 1) {
-		talloc_free(res);
-		return LDB_ERR_NO_SUCH_OBJECT;
 	}
 
 	*dn = ldb_msg_find_attr_as_dn(ldb, mem_ctx, res->msgs[0], attribute);
 	if (!*dn) {
+		if (!ldb_msg_find_element(res->msgs[0], attribute)) {
+			ldb_asprintf_errstring(ldb, "Cannot find attribute %s of %s to calculate reference dn", attribute,
+					       ldb_dn_get_linearized(base));
+		} else {
+			ldb_asprintf_errstring(ldb, "Cannot interpret attribute %s of %s as a dn", attribute,
+					       ldb_dn_get_linearized(base));
+		}
 		talloc_free(res);
-		ldb_asprintf_errstring(ldb, "Cannot find dn of attribute %s of %s", attribute,
-					ldb_dn_get_linearized(base));
 		return LDB_ERR_NO_SUCH_ATTRIBUTE;
 	}
 
