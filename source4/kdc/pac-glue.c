@@ -119,6 +119,22 @@ bool samba_princ_needs_pac(struct hdb_entry_ex *princ)
 	return true;
 }
 
+/* Was the krbtgt an RODC (and we are not) */
+bool samba_krbtgt_was_untrusted_rodc(struct hdb_entry_ex *princ)
+{
+
+	struct samba_kdc_entry *p = talloc_get_type(princ->ctx, struct samba_kdc_entry);
+	int rodc_krbtgt_number;
+
+	/* The service account may be set not to want the PAC */
+	rodc_krbtgt_number = ldb_msg_find_attr_as_int(p->msg, "msDS-SecondaryKrbTgtNumber", -1);
+	if (rodc_krbtgt_number != p->kdc_db_ctx->my_krbtgt_number) {
+		return true;
+	}
+
+	return false;
+}
+
 NTSTATUS samba_kdc_get_pac_blob(TALLOC_CTX *mem_ctx,
 				struct hdb_entry_ex *client,
 				DATA_BLOB **_pac_blob)

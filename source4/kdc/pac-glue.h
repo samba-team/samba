@@ -27,6 +27,8 @@ krb5_error_code samba_make_krb5_pac(krb5_context context,
 
 bool samba_princ_needs_pac(struct hdb_entry_ex *princ);
 
+bool samba_krbtgt_was_untrusted_rodc(struct hdb_entry_ex *princ);
+
 NTSTATUS samba_kdc_get_pac_blob(TALLOC_CTX *mem_ctx,
 				struct hdb_entry_ex *client,
 				DATA_BLOB **_pac_blob);
