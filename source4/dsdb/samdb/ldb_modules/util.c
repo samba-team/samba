@@ -1214,7 +1214,6 @@ bool dsdb_block_anonymous_ops(struct ldb_module *module,
  */
 void dsdb_req_chain_debug(struct ldb_request *req, int level)
 {
-	char *ret;
 	int i=0;
 
 	while (req && req->handle) {
