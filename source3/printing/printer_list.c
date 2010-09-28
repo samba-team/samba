@@ -380,6 +380,11 @@ static int printer_list_exec_fn(struct db_record *rec, void *private_data)
 	char *comment;
 	int ret;
 
+	/* always skip PL_TIMESTAMP_KEY key */
+	if (strequal((const char *)rec->key.dptr, PL_TIMESTAMP_KEY)) {
+		return 0;
+	}
+
 	ret = tdb_unpack(rec->value.dptr, rec->value.dsize,
 			 PL_DATA_FORMAT, &time_h, &time_l, &name, &comment);
 	if (ret == -1) {
