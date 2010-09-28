@@ -165,7 +165,7 @@ pwdLastSet: 0
             if len(targetgroup) == 0:
                 raise Exception('Unable to find group "%s"' % groupname)
             assert(len(targetgroup) == 1)
-            self.delete(targetgroup[0].dn);
+            self.delete(targetgroup[0].dn)
         except:
             self.transaction_cancel()
             raise
@@ -204,22 +204,22 @@ changetype: modify
                                     expression="(|(sAMAccountName=%s)(CN=%s))" % (member, member), attrs=[])
 
                 if len(targetmember) != 1:
-                   continue
+                    continue
 
                 if add_members_operation is True and (targetgroup[0].get('member') is None or str(targetmember[0].dn) not in targetgroup[0]['member']):
-                   modified = True
-                   addtargettogroup += """add: member
+                    modified = True
+                    addtargettogroup += """add: member
 member: %s
 """ % (str(targetmember[0].dn))
 
                 elif add_members_operation is False and (targetgroup[0].get('member') is not None and str(targetmember[0].dn) in targetgroup[0]['member']):
-                   modified = True
-                   addtargettogroup += """delete: member
+                    modified = True
+                    addtargettogroup += """delete: member
 member: %s
 """ % (str(targetmember[0].dn))
 
             if modified is True:
-               self.modify_ldif(addtargettogroup)
+                self.modify_ldif(addtargettogroup)
 
         except:
             self.transaction_cancel()
@@ -258,7 +258,7 @@ member: %s
         :param physicaldeliveryoffice: Office location of the new user
         """
 
-        displayname = "";
+        displayname = ""
         if givenname is not None:
             displayname += givenname
 
@@ -277,8 +277,8 @@ member: %s
         # The new user record. Note the reliance on the SAMLDB module which
         # fills in the default informations
         ldbmessage = {"dn": user_dn,
-            "sAMAccountName": username,
-            "objectClass": "user"}
+                      "sAMAccountName": username,
+                      "objectClass": "user"}
 
         if surname is not None:
             ldbmessage["sn"] = surname
