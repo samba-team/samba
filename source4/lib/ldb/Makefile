@@ -14,12 +14,6 @@ uninstall:
 test:
 	$(WAF) test $(TEST_OPTIONS)
 
-testenv:
-	$(WAF) test --testenv $(TEST_OPTIONS)
-
-quicktest:
-	$(WAF) test --quick $(TEST_OPTIONS)
-
 dist:
 	$(WAF) dist
 
@@ -44,8 +38,6 @@ everything: all
 testsuite: all
 
 check: test
-
-torture: all
 
 # this should do an install as well, once install is finished
 installcheck: test
