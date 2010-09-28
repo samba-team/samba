@@ -196,6 +196,7 @@ static krb5_error_code samba_kdc_message2entry_keys(krb5_context context,
 						    TALLOC_CTX *mem_ctx,
 						    struct ldb_message *msg,
 						    uint32_t rid,
+						    bool is_rodc,
 						    unsigned int userAccountControl,
 						    enum samba_kdc_ent_type ent_type,
 						    hdb_entry_ex *entry_ex)
@@ -213,7 +214,6 @@ static krb5_error_code samba_kdc_message2entry_keys(krb5_context context,
 	uint16_t i;
 	uint16_t allocated_keys = 0;
 	int rodc_krbtgt_number = 0;
-	bool is_rodc = false;
 
 	/* Supported Enc for this entry */
 	uint32_t supported_enctypes = ENC_ALL_TYPES; /* by default, we support all enc types */
@@ -229,9 +229,7 @@ static krb5_error_code samba_kdc_message2entry_keys(krb5_context context,
 							supported_enctypes);
 	/* Is this the krbtgt or a RODC */
 
-	if (ldb_msg_find_element(msg, "msDS-SecondaryKrbTgtNumber")) {
-		is_rodc = true;
-
+	if (is_rodc) {
 		rodc_krbtgt_number = ldb_msg_find_attr_as_int(msg, "msDS-SecondaryKrbTgtNumber", -1);
 
 		if (rodc_krbtgt_number == -1) {
@@ -541,11 +539,16 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 	NTSTATUS status;
 
 	uint32_t rid;
+	bool is_rodc = false;
 	struct ldb_message_element *objectclasses;
 	struct ldb_val computer_val;
 	const char *samAccountName = ldb_msg_find_attr_as_string(msg, "samAccountName", NULL);
 	computer_val.data = discard_const_p(uint8_t,"computer");
 	computer_val.length = strlen((const char *)computer_val.data);
+
+	if (ldb_msg_find_element(msg, "msDS-SecondaryKrbTgtNumber")) {
+		is_rodc = true;
+	}
 
 	if (!samAccountName) {
 		ret = ENOENT;
@@ -686,6 +689,22 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 		entry_ex->entry.flags.client = 0;
 		entry_ex->entry.flags.forwardable = 1;
 		entry_ex->entry.flags.ok_as_delegate = 1;
+	} else if (is_rodc) {
+		/* The RODC krbtgt account is like the main krbtgt,
+		 * but it does not have a changepw or kadmin
+		 * service */
+
+		entry_ex->entry.valid_end = NULL;
+		entry_ex->entry.pw_end = NULL;
+
+		/* Also don't allow the RODC krbtgt to be a client (it should not be needed) */
+		entry_ex->entry.flags.client = 0;
+		entry_ex->entry.flags.invalid = 0;
+		entry_ex->entry.flags.server = 1;
+
+		entry_ex->entry.flags.client = 0;
+		entry_ex->entry.flags.forwardable = 0;
+		entry_ex->entry.flags.ok_as_delegate = 0;
 	} else if (entry_ex->entry.flags.server && ent_type == SAMBA_KDC_ENT_TYPE_SERVER) {
 		/* The account/password expiry only applies when the account is used as a
 		 * client (ie password login), not when used as a server */
@@ -735,7 +754,7 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 
 	/* Get keys from the db */
 	ret = samba_kdc_message2entry_keys(context, p, msg, 
-					   rid, userAccountControl,
+					   rid, is_rodc, userAccountControl,
 					   ent_type, entry_ex);
 	if (ret) {
 		/* Could be bougus data in the entry, or out of memory */
