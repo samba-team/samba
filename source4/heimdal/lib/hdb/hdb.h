@@ -54,6 +54,7 @@ enum hdb_lockop{ HDB_RLOCK, HDB_WLOCK };
 #define HDB_F_GET_ANY		28	/* fetch any of client,server,krbtgt */
 #define HDB_F_CANON		32	/* want canonicalition */
 #define HDB_F_ADMIN_DATA	64	/* want data that kdc don't use  */
+#define HDB_F_KVNO_SPECIFIED	128	/* we want a particular KVNO */
 
 /* hdb_capability_flags */
 #define HDB_CAP_F_HANDLE_ENTERPRISE_PRINCIPAL 1
@@ -122,7 +123,7 @@ typedef struct HDB{
      * should be fetch: client, server, krbtgt.
      */
     krb5_error_code (*hdb_fetch)(krb5_context, struct HDB*,
-				 krb5_const_principal, unsigned,
+				 krb5_const_principal, unsigned, unsigned,
 				 hdb_entry_ex*);
     /**
      * Store an entry to database

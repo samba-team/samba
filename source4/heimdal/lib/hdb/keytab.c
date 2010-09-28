@@ -213,7 +213,7 @@ hdb_get_entry(krb5_context context,
     ret = (*db->hdb_fetch)(context, db, principal,
 			   HDB_F_DECRYPT|
 			   HDB_F_GET_CLIENT|HDB_F_GET_SERVER|HDB_F_GET_KRBTGT,
-			   &ent);
+			   0, &ent);
 
     if(ret == HDB_ERR_NOENTRY) {
 	ret = KRB5_KT_NOTFOUND;

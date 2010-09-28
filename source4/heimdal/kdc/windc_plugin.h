@@ -60,6 +60,7 @@ typedef krb5_error_code
 			       const krb5_principal,
 			       struct hdb_entry_ex *,
 			       struct hdb_entry_ex *,
+			       struct hdb_entry_ex *,
 			       krb5_pac *);
 
 typedef krb5_error_code

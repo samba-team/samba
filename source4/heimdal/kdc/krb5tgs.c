@@ -281,8 +281,10 @@ check_PAC(krb5_context context,
 	  const krb5_principal client_principal,
 	  hdb_entry_ex *client,
 	  hdb_entry_ex *server,
+	  hdb_entry_ex *krbtgt,
 	  const EncryptionKey *server_key,
-	  const EncryptionKey *krbtgt_key,
+	  const EncryptionKey *krbtgt_check_key,
+	  const EncryptionKey *krbtgt_sign_key,
 	  EncTicketPart *tkt,
 	  krb5_data *rspac,
 	  int *signedpath)
@@ -325,14 +327,14 @@ check_PAC(krb5_context context,
 
 		ret = krb5_pac_verify(context, pac, tkt->authtime,
 				      client_principal,
-				      krbtgt_key, NULL);
+				      krbtgt_check_key, NULL);
 		if (ret) {
 		    krb5_pac_free(context, pac);
 		    return ret;
 		}
 
 		ret = _kdc_pac_verify(context, client_principal,
-				      client, server, &pac);
+				      client, server, krbtgt, &pac);
 		if (ret) {
 		    krb5_pac_free(context, pac);
 		    return ret;
@@ -341,7 +343,7 @@ check_PAC(krb5_context context,
 
 		ret = _krb5_pac_sign(context, pac, tkt->authtime,
 				     client_principal,
-				     server_key, krbtgt_key, rspac);
+				     server_key, krbtgt_sign_key, rspac);
 
 		krb5_pac_free(context, pac);
 
@@ -1156,7 +1158,7 @@ tgs_parse_request(krb5_context context,
 				       ap_req.ticket.sname,
 				       ap_req.ticket.realm);
 
-    ret = _kdc_db_fetch(context, config, princ, HDB_F_GET_KRBTGT, NULL, krbtgt);
+    ret = _kdc_db_fetch(context, config, princ, HDB_F_GET_KRBTGT, ap_req.ticket.enc_part.kvno, NULL, krbtgt);
 
     if(ret) {
 	const char *msg = krb5_get_error_message(context, ret);
@@ -1454,6 +1456,8 @@ tgs_build_reply(krb5_context context,
     krb5_kvno kvno;
     krb5_data rspac;
 
+    hdb_entry_ex *krbtgt_out = NULL;
+
     METHOD_DATA enc_pa_data;
 
     PrincipalName *s;
@@ -1463,7 +1467,8 @@ tgs_build_reply(krb5_context context,
     char opt_str[128];
     int signedpath = 0;
 
-    Key *tkey;
+    Key *tkey_check;
+    Key *tkey_sign;
 
     memset(&sessionkey, 0, sizeof(sessionkey));
     memset(&adtkt, 0, sizeof(adtkt));
@@ -1495,7 +1500,7 @@ tgs_build_reply(krb5_context context,
 	}
 	_krb5_principalname2krb5_principal(context, &p, t->sname, t->realm);
 	ret = _kdc_db_fetch(context, config, p,
-			    HDB_F_GET_CLIENT|HDB_F_GET_SERVER,
+			    HDB_F_GET_KRBTGT, t->enc_part.kvno,
 			    NULL, &uu);
 	krb5_free_principal(context, p);
 	if(ret){
@@ -1548,7 +1553,7 @@ tgs_build_reply(krb5_context context,
 
 server_lookup:
     ret = _kdc_db_fetch(context, config, sp, HDB_F_GET_SERVER | HDB_F_CANON,
-			NULL, &server);
+			0, NULL, &server);
 
     if(ret){
 	const char *new_rlm, *msg;
@@ -1609,7 +1614,7 @@ server_lookup:
     }
 
     ret = _kdc_db_fetch(context, config, cp, HDB_F_GET_CLIENT | HDB_F_CANON,
-			&clientdb, &client);
+			0, &clientdb, &client);
     if(ret) {
 	const char *krbtgt_realm, *msg;
 
@@ -1704,15 +1709,31 @@ server_lookup:
      */
 
     ret = hdb_enctype2key(context, &krbtgt->entry,
-			  krbtgt_etype, &tkey);
+			  krbtgt_etype, &tkey_check);
     if(ret) {
 	kdc_log(context, config, 0,
 		    "Failed to find key for krbtgt PAC check");
 	goto out;
     }
 
+    /* Now refetch the krbtgt, but get the current kvno (the sign check may have been on an old kvno) */
+    ret = _kdc_db_fetch(context, config, krbtgt->entry.principal, HDB_F_GET_KRBTGT, NULL, NULL, &krbtgt_out);
+    if (ret) {
+	kdc_log(context, config, 0,
+		    "Failed to find krbtgt in DB for krbtgt PAC signature");
+	goto out;
+    }
+
+    ret = hdb_enctype2key(context, &krbtgt_out->entry,
+			  krbtgt_etype, &tkey_sign);
+    if(ret) {
+	kdc_log(context, config, 0,
+		    "Failed to find key for krbtgt PAC signature");
+	goto out;
+    }
+
     ret = check_PAC(context, config, cp,
-		    client, server, ekey, &tkey->key,
+		    client, server, krbtgt, ekey, &tkey_check->key, &tkey_sign->key,
 		    tgt, &rspac, &signedpath);
     if (ret) {
 	const char *msg = krb5_get_error_message(context, ret);
@@ -1814,7 +1835,7 @@ server_lookup:
 		krb5_pac p = NULL;
 		krb5_data_free(&rspac);
 		ret = _kdc_db_fetch(context, config, client_principal, HDB_F_GET_CLIENT | HDB_F_CANON,
-				    &s4u2self_impersonated_clientdb, &s4u2self_impersonated_client);
+				    0, &s4u2self_impersonated_clientdb, &s4u2self_impersonated_client);
 		if (ret) {
 		    const char *msg;
 
@@ -1840,7 +1861,7 @@ server_lookup:
 		if (p != NULL) {
 		    ret = _krb5_pac_sign(context, p, ticket->ticket.authtime,
 					 s4u2self_impersonated_client->entry.principal,
-					 ekey, &tkey->key,
+					 ekey, &tkey_sign->key,
 					 &rspac);
 		    krb5_pac_free(context, p);
 		    if (ret) {
@@ -2070,7 +2091,7 @@ server_lookup:
 			 spn,
 			 client,
 			 cp,
-			 krbtgt,
+			 krbtgt_out,
 			 krbtgt_etype,
 			 spp,
 			 &rspac,
@@ -2084,6 +2105,8 @@ out:
 	
     krb5_data_free(&rspac);
     krb5_free_keyblock_contents(context, &sessionkey);
+    if(krbtgt_out)
+	_kdc_free_ent(context, krbtgt_out);
     if(server)
 	_kdc_free_ent(context, server);
     if(client)

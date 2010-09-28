@@ -86,6 +86,7 @@ _kdc_pac_verify(krb5_context context,
 		const krb5_principal client_principal,
 		hdb_entry_ex *client,
 		hdb_entry_ex *server,
+		hdb_entry_ex *krbtgt,
 		krb5_pac *pac)
 {
     if (windcft == NULL) {
@@ -93,7 +94,7 @@ _kdc_pac_verify(krb5_context context,
 	return EINVAL;
     }
     return (windcft->pac_verify)(windcctx, context,
-				 client_principal, client, server, pac);
+				 client_principal, client, server, krbtgt, pac);
 }
 
 krb5_error_code
