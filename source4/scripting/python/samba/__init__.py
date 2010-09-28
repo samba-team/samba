@@ -260,13 +260,13 @@ def check_all_substituted(text):
     raise Exception("Not all variables substituted: %s" % text[var_start:var_end+1])
 
 
-def read_and_sub_file(file, subst_vars):
+def read_and_sub_file(file_name, subst_vars):
     """Read a file and sub in variables found in it
 
-    :param file: File to be read (typically from setup directory)
+    :param file_name: File to be read (typically from setup directory)
      param subst_vars: Optional variables to subsitute in the file.
     """
-    data = open(file, 'r').read()
+    data = open(file_name, 'r').read()
     if subst_vars is not None:
         data = substitute_var(data, subst_vars)
         check_all_substituted(data)
