@@ -8,7 +8,7 @@ from optparse import OptionParser
 
 sys.path.insert(0, "bin/python")
 
-import samba
+import samba, ldb
 import samba.getopt as options
 from samba.dcerpc import drsuapi, misc
 from samba.samdb import SamDB
@@ -50,6 +50,45 @@ def do_DsBind(drs):
     (info, handle) = drs.DsBind(misc.GUID(drsuapi.DRSUAPI_DS_BIND_GUID), bind_info)
     return handle
 
+
+def drs_get_rodc_partial_attribute_set(samdb):
+    '''get a list of attributes for RODC replication'''
+    partial_attribute_set = drsuapi.DsPartialAttributeSet()
+    partial_attribute_set.version = 1
+
+    attids = []
+
+    # the exact list of attids we send is quite critical. Note that
+    # we do ask for the secret attributes, but set set SPECIAL_SECRET_PROCESSING
+    # to zero them out
+    schema_dn = samdb.get_schema_basedn()
+    res = samdb.search(base=schema_dn, scope=ldb.SCOPE_SUBTREE,
+                       expression="objectClass=attributeSchema",
+                       attrs=["lDAPDisplayName", "systemFlags",
+                              "searchFlags"])
+
+    for r in res:
+        ldap_display_name = r["lDAPDisplayName"][0]
+        if "systemFlags" in r:
+            system_flags      = r["systemFlags"][0]
+            if (int(system_flags) & (samba.dsdb.DS_FLAG_ATTR_NOT_REPLICATED |
+                                     samba.dsdb.DS_FLAG_ATTR_IS_CONSTRUCTED)):
+                continue
+        if "searchFlags" in r:
+            search_flags = r["searchFlags"][0]
+            if (int(search_flags) & samba.dsdb.SEARCH_FLAG_RODC_ATTRIBUTE):
+                continue
+        attid = samdb.get_attid_from_lDAPDisplayName(ldap_display_name)
+        attids.append(int(attid))
+
+    # the attids do need to be sorted, or windows doesn't return
+    # all the attributes we need
+    attids.sort()
+    partial_attribute_set.attids         = attids
+    partial_attribute_set.num_attids = len(attids)
+    return partial_attribute_set
+
+
 ########### main code ###########
 if __name__ == "__main__":
     parser = OptionParser("getncchanges [options] server")
@@ -60,6 +99,16 @@ if __name__ == "__main__":
 
     parser.add_option("", "--dn", dest="dn", help="DN to replicate",)
     parser.add_option("", "--exop", dest="exop", help="extended operation",)
+    parser.add_option("", "--pas", dest="use_pas", action='store_true', default=False,
+                      help="send partial attribute set",)
+    parser.add_option("", "--dest-dsa", type='str',
+                      default='"9c637462-5b8c-4467-aef2-bdb1f57bc4ef"', help="destination DSA GUID")
+    parser.add_option("", "--replica-flags", type='int',
+                      default=drsuapi.DRSUAPI_DRS_INIT_SYNC |
+                      drsuapi.DRSUAPI_DRS_PER_SYNC |
+                      drsuapi.DRSUAPI_DRS_GET_ANC |
+                      drsuapi.DRSUAPI_DRS_NEVER_SYNCED,
+                      help='replica flags')
 
     (opts, args) = parser.parse_args()
 
@@ -86,6 +135,10 @@ if __name__ == "__main__":
                   session_info=system_session(),
                   credentials=creds, lp=lp)
 
+    if opts.use_pas:
+        local_samdb = SamDB(url=None, session_info=system_session(),
+                            credentials=creds, lp=lp)
+
     if opts.dn is None:
         opts.dn = str(samdb.get_default_basedn())
 
@@ -95,7 +148,7 @@ if __name__ == "__main__":
         exop = int(opts.exop)
 
     null_guid = misc.GUID()
-    req8.destination_dsa_guid               = misc.GUID("9c637462-5b8c-4467-aef2-bdb1f57bc4ef")
+    req8.destination_dsa_guid               = misc.GUID(opts.dest_dsa)
     req8.source_dsa_invocation_id	    = misc.GUID(samdb.get_invocation_id())
     req8.naming_context			    = drsuapi.DsReplicaObjectIdentifier()
     req8.naming_context.dn                  = opts.dn.decode("utf-8")
@@ -104,18 +157,21 @@ if __name__ == "__main__":
     req8.highwatermark.reserved_usn	    = 0
     req8.highwatermark.highest_usn	    = 0
     req8.uptodateness_vector		    = None
-    req8.replica_flags			    = 0
-    req8.replica_flags			    |=  (drsuapi.DRSUAPI_DRS_INIT_SYNC |
-                                                 drsuapi.DRSUAPI_DRS_PER_SYNC |
-                                                 drsuapi.DRSUAPI_DRS_GET_ANC |
-                                                 drsuapi.DRSUAPI_DRS_NEVER_SYNCED)
+    req8.replica_flags			    = opts.replica_flags
     req8.max_object_count		     = 402
     req8.max_ndr_size			     = 402116
     req8.extended_op			     = exop
     req8.fsmo_info			     = 0
-    req8.partial_attribute_set		     = None
+    if opts.use_pas:
+        req8.partial_attribute_set	     = drs_get_rodc_partial_attribute_set(local_samdb)
+    else:
+        req8.partial_attribute_set	     = None
     req8.partial_attribute_set_ex	     = None
     req8.mapping_ctr.num_mappings	     = 0
     req8.mapping_ctr.mappings		     = None
 
-    drs.DsGetNCChanges(drs_handle, 8, req8)
+    while True:
+        (level, ctr) = drs.DsGetNCChanges(drs_handle, 8, req8)
+        if ctr.more_data == 0:
+            break
+        req8.highwatermark.tmp_highest_usn = ctr.new_highwatermark.tmp_highest_usn
