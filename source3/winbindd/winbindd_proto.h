@@ -296,6 +296,16 @@ void winbind_msg_dump_domain_list(struct messaging_context *msg_ctx,
 				  uint32_t msg_type,
 				  struct server_id server_id,
 				  DATA_BLOB *data);
+void winbind_msg_ip_dropped(struct messaging_context *msg_ctx,
+			    void *private_data,
+			    uint32_t msg_type,
+			    struct server_id server_id,
+			    DATA_BLOB *data);
+void winbind_msg_ip_dropped_parent(struct messaging_context *msg_ctx,
+				   void *private_data,
+				   uint32_t msg_type,
+				   struct server_id server_id,
+				   DATA_BLOB *data);
 bool winbindd_reinit_after_fork(const char *logfilename);
 struct winbindd_domain *wb_child_domain(void);
 
