@@ -85,6 +85,25 @@ static bool udv_filter(const struct drsuapi_DsReplicaCursorCtrEx *udv,
 	
 }
 
+static int attid_cmp(enum drsuapi_DsAttributeId a1, enum drsuapi_DsAttributeId a2)
+{
+	if (a1 == a2) return 0;
+	return ((uint32_t)a1) > ((uint32_t)a2) ? 1 : -1;
+}
+
+/*
+  check if an attribute is in a partial_attribute_set
+ */
+static bool check_partial_attribute_set(const struct dsdb_attribute *sa,
+					struct drsuapi_DsPartialAttributeSet *pas)
+{
+	enum drsuapi_DsAttributeId *result;
+	BINARY_ARRAY_SEARCH_V(pas->attids, pas->num_attids, (enum drsuapi_DsAttributeId)sa->attributeID_id,
+			      attid_cmp, result);
+	return result != NULL;
+}
+
+
 /* 
   drsuapi_DsGetNCChanges for one object
 */
@@ -97,6 +116,7 @@ static WERROR get_nc_changes_build_object(struct drsuapi_DsReplicaObjectListItem
 					  DATA_BLOB *session_key,
 					  uint64_t highest_usn,
 					  uint32_t replica_flags,
+					  struct drsuapi_DsPartialAttributeSet *partial_attribute_set,
 					  struct drsuapi_DsReplicaCursorCtrEx *uptodateness_vector,
 					  enum drsuapi_DsExtendedOperation extended_op)
 {
@@ -224,21 +244,8 @@ static WERROR get_nc_changes_build_object(struct drsuapi_DsReplicaObjectListItem
 			continue;
 		}
 
-		/*
-		 * If the recipient is a RODC, then we should only give
-		 * attributes from the RODC filtered attribute set
-		 *
-		 * TODO: This is not strictly correct, as it doesn't allow for administrators
-		 * to setup some users to transfer passwords to specific RODCs. To support that
-		 * we would instead remove this check and rely on extended ACL checking in the dsdb
-		 * acl module.
-		 */
-		if (!(replica_flags & DRSUAPI_DRS_WRIT_REP) &&
-		    !force_attribute &&
-		    !dsdb_attr_in_rodc_fas(sa)) {
-			DEBUG(4,("Skipping non-FAS attr %s in %s\n",
-				 sa->lDAPDisplayName,
-				 ldb_dn_get_linearized(msg->dn)));
+		/* filter by partial_attribute_set */
+		if (partial_attribute_set && !check_partial_attribute_set(sa, partial_attribute_set)) {
 			continue;
 		}
 
@@ -1047,6 +1054,82 @@ struct drsuapi_getncchanges_state {
 	struct drsuapi_DsReplicaCursorCtrEx *uptodateness_vector;
 };
 
+/*
+  see if this getncchanges request includes a request to reveal secret information
+ */
+static WERROR dcesrv_drsuapi_is_reveal_secrets_request(struct drsuapi_bind_state *b_state,
+						       struct drsuapi_DsGetNCChangesRequest8 *req8,
+						       bool *is_secret_request)
+{
+	enum drsuapi_DsExtendedOperation exop;
+	int i;
+	struct dsdb_schema *schema;
+
+	*is_secret_request = true;
+
+	exop = req8->extended_op;
+
+	switch (exop) {
+	case DRSUAPI_EXOP_FSMO_REQ_ROLE:
+	case DRSUAPI_EXOP_FSMO_RID_ALLOC:
+	case DRSUAPI_EXOP_FSMO_RID_REQ_ROLE:
+	case DRSUAPI_EXOP_FSMO_REQ_PDC:
+	case DRSUAPI_EXOP_FSMO_ABANDON_ROLE:
+		/* FSMO exops can reveal secrets */
+		*is_secret_request = true;
+		return WERR_OK;
+	case DRSUAPI_EXOP_REPL_SECRET:
+	case DRSUAPI_EXOP_REPL_OBJ:
+	case DRSUAPI_EXOP_NONE:
+		break;
+	}
+
+	if (req8->replica_flags & DRSUAPI_DRS_SPECIAL_SECRET_PROCESSING) {
+		*is_secret_request = false;
+		return WERR_OK;
+	}
+
+	if (exop == DRSUAPI_EXOP_REPL_SECRET ||
+	    req8->partial_attribute_set == NULL) {
+		/* they want secrets */
+		*is_secret_request = true;
+		return WERR_OK;
+	}
+
+	schema = dsdb_get_schema(b_state->sam_ctx, NULL);
+
+	/* check the attributes they asked for */
+	for (i=0; i<req8->partial_attribute_set->num_attids; i++) {
+		const struct dsdb_attribute *sa;
+		sa = dsdb_attribute_by_attributeID_id(schema, req8->partial_attribute_set->attids[i]);
+		if (sa == NULL) {
+			return WERR_DS_DRA_SCHEMA_MISMATCH;
+		}
+		if (!dsdb_attr_in_rodc_fas(sa)) {
+			*is_secret_request = true;
+			return WERR_OK;
+		}
+	}
+
+	/* check the attributes they asked for */
+	for (i=0; i<req8->partial_attribute_set_ex->num_attids; i++) {
+		const struct dsdb_attribute *sa;
+		sa = dsdb_attribute_by_attributeID_id(schema, req8->partial_attribute_set_ex->attids[i]);
+		if (sa == NULL) {
+			return WERR_DS_DRA_SCHEMA_MISMATCH;
+		}
+		if (!dsdb_attr_in_rodc_fas(sa)) {
+			*is_secret_request = true;
+			return WERR_OK;
+		}
+	}
+
+	*is_secret_request = false;
+	return WERR_OK;
+}
+
+
+
 /* 
   drsuapi_DsGetNCChanges
 
@@ -1089,6 +1172,7 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 	enum security_user_level security_level;
 	struct ldb_context *sam_ctx;
 	struct dom_sid *user_sid;
+	bool is_secret_request;
 
 	DCESRV_PULL_HANDLE_WERR(h, r->in.bind_handle, DRSUAPI_BIND_HANDLE);
 	b_state = h->data;
@@ -1141,25 +1225,42 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 		return WERR_DS_DRA_SOURCE_DISABLED;
 	}
 
-	werr = drs_security_level_check(dce_call, "DsGetNCChanges", SECURITY_RO_DOMAIN_CONTROLLER,
-					samdb_domain_sid(sam_ctx));
+	user_sid = &dce_call->conn->auth_state.session_info->security_token->sids[PRIMARY_USER_SID_INDEX];
+
+	werr = drs_security_access_check_nc_root(b_state->sam_ctx,
+						 mem_ctx,
+						 dce_call->conn->auth_state.session_info->security_token,
+						 req8->naming_context,
+						 GUID_DRS_GET_CHANGES);
 	if (!W_ERROR_IS_OK(werr)) {
 		return werr;
 	}
 
-	user_sid = &dce_call->conn->auth_state.session_info->security_token->sids[PRIMARY_USER_SID_INDEX];
-
+	werr = dcesrv_drsuapi_is_reveal_secrets_request(b_state, req8, &is_secret_request);
+	if (!W_ERROR_IS_OK(werr)) {
+		return werr;
+	}
+	if (is_secret_request && req8->extended_op != DRSUAPI_EXOP_REPL_SECRET) {
+		werr = drs_security_access_check_nc_root(b_state->sam_ctx,
+							 mem_ctx,
+							 dce_call->conn->auth_state.session_info->security_token,
+							 req8->naming_context,
+							 GUID_DRS_GET_ALL_CHANGES);
+		if (!W_ERROR_IS_OK(werr)) {
+			return werr;
+		}
+	}
 
 	/* for non-administrator replications, check that they have
 	   given the correct source_dsa_invocation_id */
 	security_level = security_session_user_level(dce_call->conn->auth_state.session_info,
 						     samdb_domain_sid(sam_ctx));
-	if (security_level == SECURITY_RO_DOMAIN_CONTROLLER &&
-	    req8->replica_flags & DRSUAPI_DRS_WRIT_REP) {
-		/* we rely on this flag being unset for RODC requests */
-		req8->replica_flags &= ~DRSUAPI_DRS_WRIT_REP;
+	if (security_level == SECURITY_RO_DOMAIN_CONTROLLER) {
+		if (req8->replica_flags & DRSUAPI_DRS_WRIT_REP) {
+			/* we rely on this flag being unset for RODC requests */
+			req8->replica_flags &= ~DRSUAPI_DRS_WRIT_REP;
+		}
 	}
-
 
 	if (req8->replica_flags & DRSUAPI_DRS_FULL_SYNC_PACKET) {
 		/* Ignore the _in_ uptpdateness vector*/
@@ -1262,7 +1363,8 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 		enum ldb_scope scope = LDB_SCOPE_SUBTREE;
 		const char *extra_filter;
 
-		if (req8->extended_op == DRSUAPI_EXOP_REPL_OBJ) {
+		if (req8->extended_op == DRSUAPI_EXOP_REPL_OBJ ||
+		    req8->extended_op == DRSUAPI_EXOP_REPL_SECRET) {
 			scope = LDB_SCOPE_BASE;
 		}
 
@@ -1380,7 +1482,9 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 						   sam_ctx, getnc_state->ncRoot_dn,
 						   getnc_state->is_schema_nc,
 						   schema, &session_key, getnc_state->min_usn,
-						   req8->replica_flags, getnc_state->uptodateness_vector,
+						   req8->replica_flags,
+						   req8->partial_attribute_set,
+						   getnc_state->uptodateness_vector,
 						   req8->extended_op);
 		if (!W_ERROR_IS_OK(werr)) {
 			return werr;
