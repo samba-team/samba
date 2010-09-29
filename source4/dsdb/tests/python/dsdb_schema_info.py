@@ -48,29 +48,36 @@ from samba.dcerpc.misc import GUID
 
 class SchemaInfoTestCase(samba.tests.TestCase):
 
+    # static SamDB connection
+    sam_db = None
+
     def setUp(self):
         super(SchemaInfoTestCase, self).setUp()
 
+        # connect SamDB if we haven't yet
+        if self.sam_db is None:
+            ldb_url = samba.tests.env_get_var_value("DC_SERVER")
+            SchemaInfoTestCase.sam_db = samba.tests.connect_samdb(ldb_url)
+
         # fetch rootDSE
-        self.ldb = ldb
-        res = ldb.search(base="", expression="", scope=SCOPE_BASE, attrs=["*"])
+        res = self.sam_db.search(base="", expression="", scope=SCOPE_BASE, attrs=["*"])
         self.assertEquals(len(res), 1)
         self.schema_dn = res[0]["schemaNamingContext"][0]
         self.base_dn = res[0]["defaultNamingContext"][0]
         self.forest_level = int(res[0]["forestFunctionality"][0])
 
         # get DC invocation_id
-        self.invocation_id = GUID(ldb.get_invocation_id())
+        self.invocation_id = GUID(self.sam_db.get_invocation_id())
 
     def tearDown(self):
         super(SchemaInfoTestCase, self).tearDown()
 
     def _getSchemaInfo(self):
         try:
-            schema_info_data = ldb.searchone(attribute="schemaInfo",
-                                             basedn=self.schema_dn,
-                                             expression="(objectClass=*)",
-                                             scope=SCOPE_BASE)
+            schema_info_data = self.sam_db.searchone(attribute="schemaInfo",
+                                                     basedn=self.schema_dn,
+                                                     expression="(objectClass=*)",
+                                                     scope=SCOPE_BASE)
             self.assertEqual(len(schema_info_data), 21)
             schema_info = ndr_unpack(schemaInfoBlob, schema_info_data)
             self.assertEqual(schema_info.marker, 0xFF)
@@ -94,7 +101,7 @@ changetype: modify
 add: schemaUpdateNow
 schemaUpdateNow: 1
 """
-        self.ldb.modify_ldif(ldif)
+        self.sam_db.modify_ldif(ldif)
 
     def _make_obj_names(self, prefix):
         obj_name = prefix + time.strftime("%s", time.gmtime())
@@ -128,7 +135,7 @@ systemOnly: FALSE
         ldif = self._make_attr_ldif(attr_name, attr_dn)
 
         # add the new attribute
-        self.ldb.add_ldif(ldif)
+        self.sam_db.add_ldif(ldif)
         self._ldap_schemaUpdateNow()
         # compare resulting schemaInfo
         schi_after = self._getSchemaInfo()
@@ -137,7 +144,7 @@ systemOnly: FALSE
         # rename the Attribute
         attr_dn_new = attr_dn.replace(attr_name, attr_name + "-NEW")
         try:
-            self.ldb.rename(attr_dn, attr_dn_new)
+            self.sam_db.rename(attr_dn, attr_dn_new)
         except LdbError, (num, _):
             self.fail("failed to change lDAPDisplayName for %s: %s" % (attr_name, _))
 
@@ -174,7 +181,7 @@ systemOnly: FALSE
         ldif = self._make_class_ldif(class_name, class_dn)
 
         # add the new Class
-        self.ldb.add_ldif(ldif)
+        self.sam_db.add_ldif(ldif)
         self._ldap_schemaUpdateNow()
         # compare resulting schemaInfo
         schi_after = self._getSchemaInfo()
@@ -183,7 +190,7 @@ systemOnly: FALSE
         # rename the Class
         class_dn_new = class_dn.replace(class_name, class_name + "-NEW")
         try:
-            self.ldb.rename(class_dn, class_dn_new)
+            self.sam_db.rename(class_dn, class_dn_new)
         except LdbError, (num, _):
             self.fail("failed to change lDAPDisplayName for %s: %s" % (class_name, _))
 
@@ -191,8 +198,3 @@ systemOnly: FALSE
         schi_after = self._getSchemaInfo()
         self._checkSchemaInfo(schi_before, schi_after)
 
-
-########################################################################################
-
-ldb_url = samba.tests.env_get_var_value("DC_SERVER")
-ldb = samba.tests.connect_samdb(ldb_url)
