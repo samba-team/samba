@@ -1597,6 +1597,11 @@ bld.SAMBA_BINARY('split_tokens',
                  LIBSAMBA''',
                  vars=locals())
 
+bld.SAMBA_BINARY('vlp',
+                 source=VLP_SRC,
+                 deps='''talloc tdb NSS_WRAPPER''',
+                 vars=locals())
+
 swat_files=recursive_dirlist('../swat', '../swat', '*')
 bld.INSTALL_FILES('${SWATDIR}', swat_files, base_name='../swat')
 
