@@ -68,6 +68,17 @@ def env_loadparm():
         raise Exception("SMB_CONF_PATH not set")
     return lp
 
+def env_get_var_value(var_name):
+    """Returns value for variable in os.environ
+
+    Function throws AssertionError if variable is defined.
+    Unit-test based python tests require certain input params
+    to be set in environment, otherwise they can't be run
+    """
+    assert var_name in os.environ.keys(), "Please supply %s in environment" % var_name
+    return os.environ[var_name]
+
+
 cmdline_credentials = None
 
 class RpcInterfaceTestCase(TestCase):
