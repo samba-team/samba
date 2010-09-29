@@ -53,10 +53,10 @@ class DrsFsmoTestCase(samba.tests.TestCase):
         self.sleep_time = 5
         # connect to DCs singleton
         if self.ldb_dc1 is None:
-            DrsFsmoTestCase.dc1 = get_env_var("DC1")
+            DrsFsmoTestCase.dc1 = samba.tests.env_get_var_value("DC1")
             DrsFsmoTestCase.ldb_dc1 = samba.tests.connect_samdb(self.dc1, ldap_only=True)
         if self.ldb_dc2 is None:
-            DrsFsmoTestCase.dc2 = get_env_var("DC2")
+            DrsFsmoTestCase.dc2 = samba.tests.env_get_var_value("DC2")
             DrsFsmoTestCase.ldb_dc2 = samba.tests.connect_samdb(self.dc2, ldap_only=True)
 
         # fetch rootDSEs
@@ -152,9 +152,3 @@ class DrsFsmoTestCase(samba.tests.TestCase):
         self._role_transfer(role="naming", role_dn=self.naming_dn)
         pass
 
-
-########################################################################################
-def get_env_var(var_name):
-    if not var_name in os.environ.keys():
-        raise AssertionError("Please supply %s in environment" % var_name)
-    return os.environ[var_name]
