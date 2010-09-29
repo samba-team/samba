@@ -101,18 +101,18 @@ static void dump_packet(const char *ctx, const char *direction,
 
 	switch (hdr->ptype) {
 	case 0: /* request */
-		printf("%s:%s: ptype[request] flen[%d] plen[%d]\n\n",
+		printf("%s:%s: ptype[request] flen[%d] plen[%d] ahint[%d]\n\n",
 		      ctx, direction, hdr->frag_length,
-		      len - 24);
+		      len - 24, *(DWORD *)(&buf[0x10]));
 		dump_data(buf + 24, len - 24);
 		printf("\n");
 		fflush(stdout);
 		break;
 
 	case 2: /* response */
-		printf("\n%s:%s: ptype[response] flen[%d] plen[%d]\n\n",
+		printf("\n%s:%s: ptype[response] flen[%d] plen[%d] ahint[%d]\n\n",
 		       ctx, direction, hdr->frag_length,
-		       len - 24);
+		       len - 24, *(DWORD *)(&buf[0x10]));
 		dump_data(buf + 24, len - 24);
 		printf("\n");
 		fflush(stdout);
