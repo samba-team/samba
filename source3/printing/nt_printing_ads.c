@@ -362,7 +362,7 @@ WERROR check_published_printers(struct messaging_context *msg_ctx)
 		}
 
 		result = winreg_get_printer(tmp_ctx, server_info, msg_ctx,
-					    NULL, lp_servicename(snum),
+					    lp_servicename(snum),
 					    &pinfo2);
 		if (!W_ERROR_IS_OK(result)) {
 			continue;
@@ -386,7 +386,7 @@ done:
 bool is_printer_published(TALLOC_CTX *mem_ctx,
 			  const struct auth_serversupplied_info *server_info,
 			  struct messaging_context *msg_ctx,
-			  char *servername, char *printer, struct GUID *guid,
+			  const char *servername, char *printer, struct GUID *guid,
 			  struct spoolss_PrinterInfo2 **info2)
 {
 	struct spoolss_PrinterInfo2 *pinfo2 = NULL;
@@ -397,7 +397,7 @@ bool is_printer_published(TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 
 	result = winreg_get_printer(mem_ctx, server_info, msg_ctx,
-				    servername, printer, &pinfo2);
+				    printer, &pinfo2);
 	if (!W_ERROR_IS_OK(result)) {
 		return false;
 	}

@@ -1340,7 +1340,6 @@ static WERROR winreg_printer_ver_to_dword(const char *str, uint64_t *data)
 WERROR winreg_create_printer(TALLOC_CTX *mem_ctx,
 			     const struct auth_serversupplied_info *server_info,
 			     struct messaging_context *msg_ctx,
-			     const char *servername,
 			     const char *sharename)
 {
 	uint32_t access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
@@ -1572,12 +1571,7 @@ WERROR winreg_create_printer(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	if (servername != NULL) {
-		info2->printername = talloc_asprintf(tmp_ctx, "\\\\%s\\%s",
-						     servername, sharename);
-	} else {
-		info2->printername = sharename;
-	}
+	info2->printername = sharename;
 	if (info2->printername == NULL) {
 		result = WERR_NOMEM;
 		goto done;
@@ -1987,7 +1981,6 @@ done:
 WERROR winreg_get_printer(TALLOC_CTX *mem_ctx,
 			  const struct auth_serversupplied_info *server_info,
 			  struct messaging_context *msg_ctx,
-			  const char *servername,
 			  const char *printer,
 			  struct spoolss_PrinterInfo2 **pinfo2)
 {
@@ -2061,14 +2054,6 @@ WERROR winreg_get_printer(TALLOC_CTX *mem_ctx,
 	FILL_STRING(info2, EMPTY_STRING, info2->printprocessor);
 	FILL_STRING(info2, EMPTY_STRING, info2->datatype);
 	FILL_STRING(info2, EMPTY_STRING, info2->parameters);
-
-	if (servername != NULL && servername[0] != '\0') {
-		info2->servername = talloc_asprintf(info2, "\\\\%s", servername);
-		if (info2->servername == NULL) {
-			result = WERR_NOMEM;
-			goto done;
-		}
-	}
 
 	for (i = 0; i < num_values; i++) {
 		v = &enum_values[i];
@@ -2184,29 +2169,6 @@ WERROR winreg_get_printer(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	/* Create the printername */
-	if (info2->servername != NULL && info2->servername[0] != '\0') {
-		if (lp_force_printername(snum)) {
-			const char *p = talloc_asprintf(info2, "%s\\%s",
-							info2->servername,
-							info2->sharename);
-				if (p == NULL) {
-					result = WERR_NOMEM;
-					goto done;
-				}
-				info2->printername = p;
-		} else {
-			char *p = talloc_asprintf(info2, "%s\\%s",
-						  info2->servername,
-						  info2->printername);
-			if (p == NULL) {
-				result = WERR_NOMEM;
-				goto done;
-			}
-			info2->printername = p;
-		}
-	}
-
 	/* Construct the Device Mode */
 	result = winreg_printer_query_binary(tmp_ctx,
 					     winreg_handle,
@@ -2235,16 +2197,6 @@ WERROR winreg_get_printer(TALLOC_CTX *mem_ctx,
 							info2->printername,
 							&info2->devmode);
 		if (!W_ERROR_IS_OK(result)) {
-			goto done;
-		}
-	}
-
-	if (info2->devmode != NULL) {
-		info2->devmode->devicename = talloc_strdup(info2->devmode,
-							   info2->printername);
-		if (info2->devmode->devicename == NULL) {
-			DEBUG(0, ("winreg_get_printer: Failed to set devicename\n"));
-			result = WERR_NOMEM;
 			goto done;
 		}
 	}

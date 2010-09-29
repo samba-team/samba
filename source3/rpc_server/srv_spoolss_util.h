@@ -74,7 +74,6 @@ enum spoolss_PrinterInfo2Mask {
 WERROR winreg_create_printer(TALLOC_CTX *mem_ctx,
 			     const struct auth_serversupplied_info *server_info,
 			     struct messaging_context *msg_ctx,
-			     const char *servername,
 			     const char *sharename);
 
 /**
@@ -116,9 +115,7 @@ WERROR winreg_update_printer(TALLOC_CTX *mem_ctx,
  *
  * @param[in]  server_info The server supplied session info.
  *
- * @param[in]  printer  The servername to use.
- *
- * @param[in]  printer  The name of the printer to get.
+  * @param[in]  printer  The name of the printer to get.
  *
  * @param[out] pinfo2   A pointer to store a PRINTER_INFO_2 structure.
  *
@@ -128,7 +125,6 @@ WERROR winreg_update_printer(TALLOC_CTX *mem_ctx,
 WERROR winreg_get_printer(TALLOC_CTX *mem_ctx,
 			  const struct auth_serversupplied_info *server_info,
 			  struct messaging_context *msg_ctx,
-			  const char *servername,
 			  const char *printer,
 			  struct spoolss_PrinterInfo2 **pinfo2);
 
