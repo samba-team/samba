@@ -168,6 +168,11 @@ static void change_packet(const char *ctx, BOOL ndr64,
 			  unsigned char *buf, int len)
 {
 	struct dcerpc_header *hdr = (struct dcerpc_header *)buf;
+	BOOL is_ndr64 = FALSE;
+	const unsigned char ndr64_buf[] = {
+		0x33, 0x05, 0x71, 0x71, 0xBA, 0xBE, 0x37, 0x49,
+		0x83, 0x19, 0xB5, 0xDB, 0xEF, 0x9C, 0xCC, 0x36
+	};
 
 	if (len < sizeof(struct dcerpc_header)) {
 		printf("%s: invalid dcerpc pdu len(%d)\n",
@@ -193,18 +198,30 @@ static void change_packet(const char *ctx, BOOL ndr64,
 
 	switch (hdr->ptype) {
 	case 11: /* bind */
-		if (buf[24] == 3 && !ndr64) {
+	case 14: /* alter_req */
+
+		if (buf[24] >= 2) {
+			int ret;
+
+			ret = memcmp(&buf[0x60], ndr64_buf, 16);
+			if (ret == 0) {
+				is_ndr64 = TRUE;
+			}
+		}
+
+		if (is_ndr64 && !ndr64) {
 			buf[24+0x48] = 0xFF;
+			memset(&buf[0x60], 0xFF, 16);
 			printf("%s: disable NDR64\n\n", ctx);
-		} else if (buf[24] < 3 && ndr64) {
+		} else if (!is_ndr64 && ndr64) {
 			printf("\n%s: got NDR32 downgrade\n\n", ctx);
 #ifndef DONOT_FORCE_NDR64
 			printf("\n\tERROR!!!\n\n");
-			buf[24] = 0x00;
+			memset(&buf[0x34], 0xFF, 16);
 			printf("You may need to run 'vcvarsall.bat amd64' before 'nmake tcp'\n");
 #endif
 			printf("\n");
-		} else if (buf[24] == 3 && ndr64) {
+		} else if (is_ndr64) {
 			printf("%s: got NDR64\n\n", ctx);
 		} else {
 			printf("%s: got NDR32\n\n", ctx);
