@@ -197,13 +197,17 @@ static void change_packet(const char *ctx, BOOL ndr64,
 			buf[24+0x48] = 0xFF;
 			printf("%s: disable NDR64\n\n", ctx);
 		} else if (buf[24] < 3 && ndr64) {
-			buf[24] = 0x00;
+			printf("\n%s: got NDR32 downgrade\n\n", ctx);
+#ifndef DONOT_FORCE_NDR64
 			printf("\n\tERROR!!!\n\n");
-			printf("%s: disable NDR32\n", ctx);
-			printf("\n");
+			buf[24] = 0x00;
 			printf("You may need to run 'vcvarsall.bat amd64' before 'nmake tcp'\n");
-		} else {
+#endif
+			printf("\n");
+		} else if (buf[24] == 3 && ndr64) {
 			printf("%s: got NDR64\n\n", ctx);
+		} else {
+			printf("%s: got NDR32\n\n", ctx);
 		}
 		//printf("%s: bind with %u pres\n", ctx, buf[24]);
 		fflush(stdout);
