@@ -232,6 +232,44 @@ static void change_packet(const char *ctx, BOOL ndr64,
 	}
 }
 
+static int sock_pending(SOCKET s)
+{
+	int ret, error;
+	int value = 0;
+	int len;
+
+	ret = ioctlsocket(s, FIONREAD, &value);
+	if (ret == -1) {
+		return ret;
+	}
+
+	if (ret != 0) {
+		/* this should not be reached */
+		return -1;
+	}
+
+	if (value != 0) {
+		return value;
+	}
+
+	error = 0;
+	len = sizeof(error);
+
+	/*
+	 * if no data is available check if the socket is in error state. For
+	 * dgram sockets it's the way to return ICMP error messages of
+	 * connected sockets to the caller.
+	 */
+	ret = getsockopt(s, SOL_SOCKET, SO_ERROR, (char *)&error, &len);
+	if (ret == -1) {
+		return ret;
+	}
+	if (error != 0) {
+		return -1;
+	}
+	return 0;
+}
+
 DWORD WINAPI NDRProxyThread(LPVOID lpParameter)
 {
 	struct NDRProxyThreadCtx *p = (struct NDRProxyThreadCtx *)lpParameter;
@@ -241,12 +279,19 @@ DWORD WINAPI NDRProxyThread(LPVOID lpParameter)
 		int ret = -1;
 		BYTE buf[5840];
 
+		Sleep(250);
+
+		ret = sock_pending(p->InSocket);
+		if (ret == 0) {
+			goto out;
+		}
+
 		r = recv(p->InSocket, buf, sizeof(buf), 0);
 		if (r <= 0) {
 			ret = WSAGetLastError();
 			printf("%s: recv(in) failed[%d][%d]\n", p->ctx->name, r, ret);
 			fflush(stdout);
-			goto next;
+			goto stop;
 		}
 
 		change_packet(p->ctx->name, p->ctx->ndr64, buf, r);
@@ -255,11 +300,17 @@ DWORD WINAPI NDRProxyThread(LPVOID lpParameter)
 		dump_packet(p->ctx->name, "in => out", buf, r);
 		fflush(stdout);
 
+out:
 		s = send(p->OutSocket, buf, r, 0);
 		if (s <= 0) {
 			ret = WSAGetLastError();
 			printf("%s: send(out) failed[%d][%d]\n", p->ctx->name, s, ret);
 			fflush(stdout);
+			goto stop;
+		}
+
+		ret = sock_pending(p->OutSocket);
+		if (ret == 0) {
 			goto next;
 		}
 
@@ -268,7 +319,7 @@ DWORD WINAPI NDRProxyThread(LPVOID lpParameter)
 			ret = WSAGetLastError();
 			printf("%s: recv(out) failed[%d][%d]\n", p->ctx->name, r, ret);
 			fflush(stdout);
-			goto next;
+			goto stop;
 		}
 
 		dump_packet(p->ctx->name, "out => in", buf, r);
@@ -279,11 +330,12 @@ DWORD WINAPI NDRProxyThread(LPVOID lpParameter)
 			ret = WSAGetLastError();
 			printf("%s: send(in) failed[%d][%d]\n", p->ctx->name, s, ret);
 			fflush(stdout);
-			goto next;
+			goto stop;
 		}
-
-	}
 next:
+		continue;
+	}
+stop:
 	closesocket(p->InSocket);
 	closesocket(p->OutSocket);
 
