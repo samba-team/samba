@@ -5749,14 +5749,7 @@ static bool call_OpenPrinterEx(struct torture_context *tctx,
 	NTSTATUS status;
 	struct dcerpc_binding_handle *b = p->binding_handle;
 
-	if (name && name[0]) {
-		r.in.printername = talloc_asprintf(tctx, "\\\\%s\\%s",
-						   dcerpc_server_name(p), name);
-	} else {
-		r.in.printername = talloc_asprintf(tctx, "\\\\%s",
-						   dcerpc_server_name(p));
-	}
-
+	r.in.printername = name;
 	r.in.datatype		= NULL;
 	r.in.devmode_ctr.devmode= devmode;
 	r.in.access_mask	= SEC_FLAG_MAXIMUM_ALLOWED;
@@ -5866,11 +5859,7 @@ static bool test_printer_rename(struct torture_context *tctx,
 		test_GetPrinter_level(tctx, b, &new_handle, 2, &info),
 		"failed to call GetPrinter level 2");
 
-	/* FIXME: we openend with servername! */
-	printer_name = talloc_asprintf(tctx, "\\\\%s\\%s",
-		dcerpc_server_name(p), printer_name_new);
-
-	torture_assert_str_equal(tctx, info.info2.printername, printer_name,
+	torture_assert_str_equal(tctx, info.info2.printername, printer_name_new,
 		"new printer name was not set");
 
 	torture_assert(tctx,
@@ -6049,6 +6038,210 @@ static bool test_EnumPrinters_old(struct torture_context *tctx,
 
 	return ret;
 }
+
+static bool test_EnumPrinters_level(struct torture_context *tctx,
+				    struct dcerpc_binding_handle *b,
+				    uint32_t flags,
+				    const char *servername,
+				    uint32_t level,
+				    uint32_t *count_p,
+				    union spoolss_PrinterInfo **info_p)
+{
+	struct spoolss_EnumPrinters r;
+	union spoolss_PrinterInfo *info;
+	uint32_t needed;
+	uint32_t count;
+
+	r.in.flags	= flags;
+	r.in.server	= servername;
+	r.in.level	= level;
+	r.in.buffer	= NULL;
+	r.in.offered	= 0;
+	r.out.needed	= &needed;
+	r.out.count	= &count;
+	r.out.info	= &info;
+
+	torture_comment(tctx, "Testing EnumPrinters(%s) level %u\n",
+		r.in.server, r.in.level);
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_spoolss_EnumPrinters_r(b, tctx, &r),
+		"EnumPrinters failed");
+	if (W_ERROR_EQUAL(r.out.result, WERR_INSUFFICIENT_BUFFER)) {
+		DATA_BLOB blob = data_blob_talloc_zero(tctx, needed);
+		r.in.buffer = &blob;
+		r.in.offered = needed;
+		torture_assert_ntstatus_ok(tctx,
+			dcerpc_spoolss_EnumPrinters_r(b, tctx, &r),
+			"EnumPrinters failed");
+	}
+
+	torture_assert_werr_ok(tctx, r.out.result, "EnumPrinters failed");
+
+	CHECK_NEEDED_SIZE_ENUM_LEVEL(spoolss_EnumPrinters, info, r.in.level, count, needed, 4);
+
+	if (count_p) {
+		*count_p = count;
+	}
+	if (info_p) {
+		*info_p = info;
+	}
+
+	return true;
+}
+
+static const char *get_short_printername(struct torture_context *tctx,
+					 const char *name)
+{
+	const char *short_name;
+
+	if (name[0] == '\\' && name[1] == '\\') {
+		name += 2;
+		short_name = strchr(name, '\\');
+		if (short_name) {
+			return talloc_strdup(tctx, short_name+1);
+		}
+	}
+
+	return name;
+}
+
+static const char *get_full_printername(struct torture_context *tctx,
+					const char *name)
+{
+	const char *full_name = talloc_strdup(tctx, name);
+	char *p;
+
+	if (name && name[0] == '\\' && name[1] == '\\') {
+		name += 2;
+		p = strchr(name, '\\');
+		if (p) {
+			return full_name;
+		}
+	}
+
+	return NULL;
+}
+
+static bool test_OnePrinter_servername(struct torture_context *tctx,
+				       struct dcerpc_pipe *p,
+				       struct dcerpc_binding_handle *b,
+				       const char *servername,
+				       const char *printername)
+{
+	union spoolss_PrinterInfo info;
+	const char *short_name = get_short_printername(tctx, printername);
+	const char *full_name = get_full_printername(tctx, printername);
+
+	if (short_name) {
+		struct policy_handle handle;
+		torture_assert(tctx,
+			call_OpenPrinterEx(tctx, p, short_name, NULL, &handle),
+			"failed to open printer");
+
+		torture_assert(tctx,
+			test_GetPrinter_level(tctx, b, &handle, 2, &info),
+			"failed to get printer info");
+
+		torture_assert_casestr_equal(tctx, info.info2.servername, NULL,
+			"unexpected servername");
+		torture_assert_casestr_equal(tctx, info.info2.printername, short_name,
+			"unexpected printername");
+
+		if (info.info2.devmode) {
+			const char *expected_devicename;
+			expected_devicename = talloc_strndup(tctx, short_name, MIN(strlen(short_name), 31));
+			torture_assert_casestr_equal(tctx, info.info2.devmode->devicename, expected_devicename,
+				"unexpected devicemode devicename");
+		}
+
+		torture_assert(tctx,
+			test_ClosePrinter(tctx, b, &handle),
+			"failed to close printer");
+	}
+
+	if (full_name) {
+		struct policy_handle handle;
+
+		torture_assert(tctx,
+			call_OpenPrinterEx(tctx, p, full_name, NULL, &handle),
+			"failed to open printer");
+
+		torture_assert(tctx,
+			test_GetPrinter_level(tctx, b, &handle, 2, &info),
+			"failed to get printer info");
+
+		torture_assert_casestr_equal(tctx, info.info2.servername, servername,
+			"unexpected servername");
+		torture_assert_casestr_equal(tctx, info.info2.printername, full_name,
+			"unexpected printername");
+
+		if (info.info2.devmode) {
+			const char *expected_devicename;
+			expected_devicename = talloc_strndup(tctx, full_name, MIN(strlen(full_name), 31));
+			torture_assert_casestr_equal(tctx, info.info2.devmode->devicename, expected_devicename,
+				"unexpected devicemode devicename");
+		}
+
+		torture_assert(tctx,
+			test_ClosePrinter(tctx, b, &handle),
+			"failed to close printer");
+	}
+
+	return true;
+}
+
+static bool test_EnumPrinters_servername(struct torture_context *tctx,
+					 void *private_data)
+{
+	struct test_spoolss_context *ctx =
+		talloc_get_type_abort(private_data, struct test_spoolss_context);
+	int i;
+	struct dcerpc_pipe *p = ctx->spoolss_pipe;
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	uint32_t count;
+	union spoolss_PrinterInfo *info;
+	const char *servername;
+	uint32_t flags = PRINTER_ENUM_NAME|PRINTER_ENUM_LOCAL;
+
+	torture_comment(tctx, "Testing servername behaviour in EnumPrinters and GetPrinters\n");
+
+	servername = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
+
+	torture_assert(tctx,
+		test_EnumPrinters_level(tctx, b, flags, servername, 2, &count, &info),
+		"failed to enumerate printers");
+
+	for (i=0; i < count; i++) {
+
+		torture_assert_casestr_equal(tctx, info[i].info2.servername, servername,
+			"unexpected servername");
+
+		torture_assert(tctx,
+			test_OnePrinter_servername(tctx, p, b, servername, info[i].info2.printername),
+			"failed to check printer");
+	}
+
+	servername = "";
+
+	torture_assert(tctx,
+		test_EnumPrinters_level(tctx, b, flags, servername, 2, &count, &info),
+		"failed to enumerate printers");
+
+	for (i=0; i < count; i++) {
+
+		torture_assert_casestr_equal(tctx, info[i].info2.servername, NULL,
+			"unexpected servername");
+
+		torture_assert(tctx,
+			test_OnePrinter_servername(tctx, p, b, servername, info[i].info2.printername),
+			"failed to check printer");
+	}
+
+
+	return true;
+}
+
 
 static bool test_GetPrinterDriver(struct torture_context *tctx,
 				  struct dcerpc_binding_handle *b,
@@ -7509,6 +7702,7 @@ struct torture_suite *torture_rpc_spoolss(TALLOC_CTX *mem_ctx)
 	torture_tcase_add_simple_test(tcase, "enum_printers", test_EnumPrinters);
 	torture_tcase_add_simple_test(tcase, "enum_ports_old", test_EnumPorts_old);
 	torture_tcase_add_simple_test(tcase, "enum_printers_old", test_EnumPrinters_old);
+	torture_tcase_add_simple_test(tcase, "enum_printers_servername", test_EnumPrinters_servername);
 	torture_tcase_add_simple_test(tcase, "enum_printer_drivers_old", test_EnumPrinterDrivers_old);
 	torture_tcase_add_simple_test(tcase, "architecture_buffer", test_architecture_buffer);
 
