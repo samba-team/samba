@@ -31,7 +31,9 @@ from samba.dsdb import (UF_NORMAL_ACCOUNT, UF_INTERDOMAIN_TRUST_ACCOUNT,
     UF_WORKSTATION_TRUST_ACCOUNT, UF_SERVER_TRUST_ACCOUNT,
     UF_PARTIAL_SECRETS_ACCOUNT,
     UF_PASSWD_NOTREQD, UF_ACCOUNTDISABLE, ATYPE_NORMAL_ACCOUNT,
-    ATYPE_WORKSTATION_TRUST, SYSTEM_FLAG_DOMAIN_DISALLOW_MOVE)
+    ATYPE_WORKSTATION_TRUST, SYSTEM_FLAG_DOMAIN_DISALLOW_MOVE,
+    SYSTEM_FLAG_CONFIG_ALLOW_RENAME, SYSTEM_FLAG_CONFIG_ALLOW_MOVE,
+    SYSTEM_FLAG_CONFIG_ALLOW_LIMITED_MOVE)
 from samba.dcerpc.security import (DOMAIN_RID_USERS, DOMAIN_RID_DOMAIN_MEMBERS,
     DOMAIN_RID_DCS, DOMAIN_RID_READONLY_DCS)
 
@@ -172,6 +174,19 @@ class BasicTests(unittest.TestCase):
             self.fail()
         except LdbError, (num, _):
             self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
+
+        # Test allowed system flags
+        self.ldb.add({
+             "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
+             "objectClass": "person",
+             "systemFlags": str(~(SYSTEM_FLAG_CONFIG_ALLOW_RENAME | SYSTEM_FLAG_CONFIG_ALLOW_MOVE | SYSTEM_FLAG_CONFIG_ALLOW_LIMITED_MOVE)) })
+
+        res = ldb.search("cn=ldaptestuser,cn=users," + self.base_dn,
+                         scope=SCOPE_BASE, attrs=["systemFlags"])
+        self.assertTrue(len(res) == 1)
+        self.assertEquals(res[0]["systemFlags"][0], "0")
+
+        self.delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
 
         self.ldb.add({
              "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
