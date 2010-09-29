@@ -282,24 +282,31 @@ struct ctdb_daemon_data {
 		if (value > ctdb->statistics.counter) {					\
 			ctdb->statistics.counter = c->hopcount;				\
 		}									\
+		if (value > ctdb->statistics_current.counter) {				\
+			ctdb->statistics_current.counter = c->hopcount;			\
+		}									\
 	}
 
 #define CTDB_INCREMENT_STAT(ctdb, counter) \
 	{										\
 		ctdb->statistics.counter++;						\
+		ctdb->statistics_current.counter++;					\
 	}
 
 #define CTDB_DECREMENT_STAT(ctdb, counter) \
 	{										\
 		if (ctdb->statistics.counter > 0)					\
 			ctdb->statistics.counter--;					\
+		if (ctdb->statistics_current.counter > 0)				\
+			ctdb->statistics_current.counter--;				\
 	}
 
 #define CTDB_UPDATE_RECLOCK_LATENCY(ctdb, name, counter, value) \
 	{										\
-		if (value > ctdb->statistics.counter) {					\
+		if (value > ctdb->statistics.counter)					\
 			ctdb->statistics.counter = value;				\
-		}									\
+		if (value > ctdb->statistics_current.counter)				\
+			ctdb->statistics_current.counter = value;			\
 											\
 		if (ctdb->tunable.reclock_latency_ms != 0) {				\
 			if (value*1000 > ctdb->tunable.reclock_latency_ms) {		\
@@ -312,9 +319,10 @@ struct ctdb_daemon_data {
 #define CTDB_UPDATE_LATENCY(ctdb, db, operation, counter, t) \
 	{										\
 		double l = timeval_elapsed(&t);						\
-		if (l > ctdb->statistics.counter) {					\
+		if (l > ctdb->statistics.counter)					\
 			ctdb->statistics.counter = l;					\
-		}									\
+		if (l > ctdb->statistics_current.counter)				\
+			ctdb->statistics_current.counter = l;				\
 											\
 		if (ctdb->tunable.log_latency_ms !=0) {					\
 			if (l*1000 > ctdb->tunable.log_latency_ms) {			\
@@ -468,6 +476,7 @@ struct ctdb_context {
 	struct ctdb_message_list *message_list;
 	struct ctdb_daemon_data daemon;
 	struct ctdb_statistics statistics;
+	struct ctdb_statistics statistics_current;
 	struct ctdb_vnn_map *vnn_map;
 	uint32_t num_clients;
 	uint32_t recovery_master;
