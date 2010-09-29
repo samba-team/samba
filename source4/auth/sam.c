@@ -36,7 +36,7 @@
 	"userPrincipalName",			\
 	"servicePrincipalName",			\
 	"msDS-KeyVersionNumber",		\
-	"msDS-SecondaryKrbTgtNumber"            \
+	"msDS-SecondaryKrbTgtNumber",		\
 	"msDS-SupportedEncryptionTypes",	\
 	"supplementalCredentials",		\
 						\
@@ -48,14 +48,14 @@
 	"objectSid",				\
 						\
 	"pwdLastSet",				\
-	"accountExpires"			
+	"accountExpires"
 
 const char *krbtgt_attrs[] = {
-	KRBTGT_ATTRS
+	KRBTGT_ATTRS, NULL
 };
 
 const char *server_attrs[] = {
-	KRBTGT_ATTRS
+	KRBTGT_ATTRS, NULL
 };
 
 const char *user_attrs[] = {
