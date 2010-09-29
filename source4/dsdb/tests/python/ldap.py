@@ -341,7 +341,7 @@ class BasicTests(unittest.TestCase):
           "objectClass")
         ldb.modify(m)
 
-        self.delete_force(self.ldb, "cn=ldaptestuser2,cn=users," + self.base_dn)
+        self.delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
 
     def test_system_only(self):
         """Test systemOnly objects"""
