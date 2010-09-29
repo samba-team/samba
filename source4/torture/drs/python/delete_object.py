@@ -53,10 +53,10 @@ class DrsDeleteObjectTestCase(samba.tests.TestCase):
 
         # connect to DCs singleton
         if self.ldb_dc1 is None:
-            DrsDeleteObjectTestCase.dc1 = get_env_var("DC1")
+            DrsDeleteObjectTestCase.dc1 = samba.tests.env_get_var_value("DC1")
             DrsDeleteObjectTestCase.ldb_dc1 = samba.tests.connect_samdb(self.dc1, ldap_only=True)
         if self.ldb_dc2 is None:
-            DrsDeleteObjectTestCase.dc2 = get_env_var("DC2")
+            DrsDeleteObjectTestCase.dc2 = samba.tests.env_get_var_value("DC2")
             DrsDeleteObjectTestCase.ldb_dc2 = samba.tests.connect_samdb(self.dc2, ldap_only=True)
 
         # fetch rootDSEs
@@ -209,9 +209,3 @@ class DrsDeleteObjectTestCase(samba.tests.TestCase):
         # check user info on DC2 - should be deleted
         self._check_user(sam_ldb=self.ldb_dc2, user_orig=user_orig, is_deleted=True)
 
-
-########################################################################################
-def get_env_var(var_name):
-    if not var_name in os.environ.keys():
-        raise AssertionError("Please supply %s in environment" % var_name)
-    return os.environ[var_name]
