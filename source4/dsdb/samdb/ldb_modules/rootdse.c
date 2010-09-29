@@ -1059,7 +1059,19 @@ static int rootdse_become_master(struct ldb_module *module,
 	struct loadparm_context *lp_ctx = ldb_get_opaque(ldb, "loadparm");
 	NTSTATUS status_call;
 	WERROR status_fn;
+	bool am_rodc;
 	struct dcerpc_binding_handle *irpc_handle;
+	int ret;
+
+	ret = samdb_rodc(ldb, &am_rodc);
+	if (ret != LDB_SUCCESS) {
+		return ldb_error(ldb, ret, "Could not determine if server is RODC.");
+	}
+
+	if (am_rodc) {
+		return ldb_error(ldb, LDB_ERR_UNWILLING_TO_PERFORM,
+				 "RODC cannot become a role master.");
+	}
 
 	msg = messaging_client_init(tmp_ctx, lpcfg_messaging_path(tmp_ctx, lp_ctx),
 				    ldb_get_event_context(ldb));
