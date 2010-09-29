@@ -600,6 +600,10 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		CHECK_CONTROL_DATA_SIZE(sizeof(struct ctdb_control_iface_info));
 		return ctdb_control_set_iface_link(ctdb, c, indata);
 
+	case CTDB_CONTROL_GET_STAT_HISTORY:
+		CHECK_CONTROL_DATA_SIZE(0);
+		return ctdb_control_get_stat_history(ctdb, c, outdata);
+
 	default:
 		DEBUG(DEBUG_CRIT,(__location__ " Unknown CTDB control opcode %u\n", opcode));
 		return -1;

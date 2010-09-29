@@ -357,6 +357,7 @@ enum ctdb_controls {CTDB_CONTROL_PROCESS_EXISTS          = 0,
 		    CTDB_CONTROL_GET_IFACES		 = 124,
 		    CTDB_CONTROL_SET_IFACE_LINK_STATE	 = 125,
 		    CTDB_CONTROL_TCP_ADD_DELAYED_UPDATE  = 126,
+		    CTDB_CONTROL_GET_STAT_HISTORY	 = 127,
 };
 
 /*
@@ -533,5 +534,69 @@ struct ctdb_all_public_ips {
 	uint32_t num;
 	struct ctdb_public_ip ips[1];
 };
+
+
+/*
+  ctdb statistics information
+ */
+struct ctdb_statistics {
+	uint32_t num_clients;
+	uint32_t frozen;
+	uint32_t recovering;
+	uint32_t client_packets_sent;
+	uint32_t client_packets_recv;
+	uint32_t node_packets_sent;
+	uint32_t node_packets_recv;
+	uint32_t keepalive_packets_sent;
+	uint32_t keepalive_packets_recv;
+	struct {
+		uint32_t req_call;
+		uint32_t reply_call;
+		uint32_t req_dmaster;
+		uint32_t reply_dmaster;
+		uint32_t reply_error;
+		uint32_t req_message;
+		uint32_t req_control;
+		uint32_t reply_control;
+	} node;
+	struct {
+		uint32_t req_call;
+		uint32_t req_message;
+		uint32_t req_control;
+	} client;
+	struct {
+		uint32_t call;
+		uint32_t control;
+		uint32_t traverse;
+	} timeouts;
+	struct {
+		double ctdbd;
+		double recd;
+	} reclock;
+	uint32_t total_calls;
+	uint32_t pending_calls;
+	uint32_t lockwait_calls;
+	uint32_t pending_lockwait_calls;
+	uint32_t childwrite_calls;
+	uint32_t pending_childwrite_calls;
+	uint32_t memory_used;
+	uint32_t __last_counter; /* hack for control_statistics_all */
+	uint32_t max_hop_count;
+	double max_call_latency;
+	double max_lockwait_latency;
+	double max_childwrite_latency;
+	uint32_t num_recoveries;
+	struct timeval statistics_start_time;
+	struct timeval statistics_current_time;
+};
+
+/*
+ * wire format for statistics history
+ */
+struct ctdb_statistics_wire {
+	uint32_t num;
+	struct ctdb_statistics stats[1];
+};
+
 
 #endif

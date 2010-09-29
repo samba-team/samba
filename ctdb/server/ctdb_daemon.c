@@ -761,6 +761,9 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork, bool use_syslog)
 
 	ctdb_set_child_logging(ctdb);
 
+	/* initialize statistics collection */
+	ctdb_statistics_init(ctdb);
+
 	/* force initial recovery for election */
 	ctdb->recovery_mode = CTDB_RECOVERY_ACTIVE;
 

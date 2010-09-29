@@ -324,6 +324,38 @@ static int control_statistics_reset(struct ctdb_context *ctdb, int argc, const c
 
 
 /*
+  display remote ctdb rolling statistics
+ */
+static int control_stats(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	int ret;
+	struct ctdb_statistics_wire *stats;
+	int i, num_records = -1;
+
+	if (argc ==1) {
+		num_records = atoi(argv[0]) - 1;
+	}
+
+	ret = ctdb_ctrl_getstathistory(ctdb, TIMELIMIT(), options.pnn, ctdb, &stats);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, ("Unable to get rolling statistics from node %u\n", options.pnn));
+		return ret;
+	}
+	for (i=0;i<stats->num;i++) {
+		if (stats->stats[i].statistics_start_time.tv_sec == 0) {
+			continue;
+		}
+		show_statistics(&stats->stats[i]);
+		if (i == num_records) {
+			break;
+		}
+		printf("===\n");
+	}
+	return 0;
+}
+
+
+/*
   display uptime of remote node
  */
 static int control_uptime(struct ctdb_context *ctdb, int argc, const char **argv)
@@ -4679,6 +4711,7 @@ static const struct {
 	{ "listvars",        control_listvars,          true,	false,  "list tunable variables"},
 	{ "statistics",      control_statistics,        false,	false, "show statistics" },
 	{ "statisticsreset", control_statistics_reset,  true,	false,  "reset statistics"},
+	{ "stats",           control_stats,             false,	false,  "show rolling statistics", "[number of history records]" },
 	{ "ip",              control_ip,                false,	false,  "show which public ip's that ctdb manages" },
 	{ "ipinfo",          control_ipinfo,            true,	false,  "show details about a public ip that ctdb manages", "<ip>" },
 	{ "ifaces",          control_ifaces,            true,	false,  "show which interfaces that ctdb manages" },

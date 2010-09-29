@@ -334,60 +334,6 @@ struct ctdb_daemon_data {
 
 
 
-/*
-  ctdb statistics information
- */
-struct ctdb_statistics {
-	uint32_t num_clients;
-	uint32_t frozen;
-	uint32_t recovering;
-	uint32_t client_packets_sent;
-	uint32_t client_packets_recv;
-	uint32_t node_packets_sent;
-	uint32_t node_packets_recv;
-	uint32_t keepalive_packets_sent;
-	uint32_t keepalive_packets_recv;
-	struct {
-		uint32_t req_call;
-		uint32_t reply_call;
-		uint32_t req_dmaster;
-		uint32_t reply_dmaster;
-		uint32_t reply_error;
-		uint32_t req_message;
-		uint32_t req_control;
-		uint32_t reply_control;
-	} node;
-	struct {
-		uint32_t req_call;
-		uint32_t req_message;
-		uint32_t req_control;
-	} client;
-	struct {
-		uint32_t call;
-		uint32_t control;
-		uint32_t traverse;
-	} timeouts;
-	struct {
-		double ctdbd;
-		double recd;
-	} reclock;
-	uint32_t total_calls;
-	uint32_t pending_calls;
-	uint32_t lockwait_calls;
-	uint32_t pending_lockwait_calls;
-	uint32_t childwrite_calls;
-	uint32_t pending_childwrite_calls;
-	uint32_t memory_used;
-	uint32_t __last_counter; /* hack for control_statistics_all */
-	uint32_t max_hop_count;
-	double max_call_latency;
-	double max_lockwait_latency;
-	double max_childwrite_latency;
-	uint32_t num_recoveries;
-	struct timeval statistics_start_time;
-	struct timeval statistics_current_time;
-};
-
 
 #define INVALID_GENERATION 1
 /* table that contains the mapping between a hash value and lmaster
@@ -477,6 +423,8 @@ struct ctdb_context {
 	struct ctdb_daemon_data daemon;
 	struct ctdb_statistics statistics;
 	struct ctdb_statistics statistics_current;
+#define MAX_STAT_HISTORY 100
+	struct ctdb_statistics statistics_history[MAX_STAT_HISTORY];
 	struct ctdb_vnn_map *vnn_map;
 	uint32_t num_clients;
 	uint32_t recovery_master;
@@ -1395,6 +1343,10 @@ int update_ip_assignment_tree(struct ctdb_context *ctdb,
 
 int ctdb_init_tevent_logging(struct ctdb_context *ctdb);
 
-int ctdb_update_stat_counter(struct ctdb_context *ctdb, uint32_t *counter, uint32_t value);
+int ctdb_statistics_init(struct ctdb_context *ctdb);
+
+int32_t ctdb_control_get_stat_history(struct ctdb_context *ctdb,
+				      struct ctdb_req_control *c,
+				      TDB_DATA *outdata);
 
 #endif
