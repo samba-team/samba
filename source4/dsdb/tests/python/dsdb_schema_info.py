@@ -193,22 +193,6 @@ systemOnly: FALSE
 
 
 ########################################################################################
-if not "DC_SERVER" in os.environ.keys():
-    raise AssertionError("Please supply TARGET_DC in environment")
-ldb_url = os.environ["DC_SERVER"]
 
-ldb_options = []
-if not "://" in ldb_url:
-    if os.path.isfile(ldb_url):
-        ldb_url = "tdb://%s" % ldb_url
-    else:
-        ldb_url = "ldap://%s" % ldb_url
-# use 'paged_search' module when connecting remotely
-if ldb_url.lower().startswith("ldap://"):
-    ldb_options = ["modules:paged_searches"]
-
-ldb = SamDB(url=ldb_url,
-            lp=samba.tests.env_loadparm(),
-            session_info=system_session(),
-            credentials=samba.tests.cmdline_credentials,
-            options=ldb_options)
+ldb_url = samba.tests.env_get_var_value("DC_SERVER")
+ldb = samba.tests.connect_samdb(ldb_url)
