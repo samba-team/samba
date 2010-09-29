@@ -703,7 +703,7 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 		entry_ex->entry.flags.server = 1;
 
 		entry_ex->entry.flags.client = 0;
-		entry_ex->entry.flags.forwardable = 0;
+		entry_ex->entry.flags.forwardable = 1;
 		entry_ex->entry.flags.ok_as_delegate = 0;
 	} else if (entry_ex->entry.flags.server && ent_type == SAMBA_KDC_ENT_TYPE_SERVER) {
 		/* The account/password expiry only applies when the account is used as a
