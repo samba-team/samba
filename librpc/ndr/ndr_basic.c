@@ -876,14 +876,21 @@ _PUBLIC_ enum ndr_err_code ndr_pull_ipv6address(struct ndr_pull *ndr, int ndr_fl
 */
 _PUBLIC_ enum ndr_err_code ndr_push_ipv6address(struct ndr_push *ndr, int ndr_flags, const char *address)
 {
-	uint32_t addr;
+	uint8_t addr[IPV6_BYTES];
+	int ret;
+
 	if (!is_ipaddress(address)) {
-		return ndr_push_error(ndr, NDR_ERR_IPV4ADDRESS,
+		return ndr_push_error(ndr, NDR_ERR_IPV6ADDRESS,
 				      "Invalid IPv6 address: '%s'",
 				      address);
 	}
-	addr = inet_addr(address);
-	NDR_CHECK(ndr_push_uint32(ndr, ndr_flags, htonl(addr)));
+	ret = inet_pton(AF_INET6, address, addr);
+	if (ret <= 0) {
+		return NDR_ERR_IPV6ADDRESS;
+	}
+
+	NDR_CHECK(ndr_push_array_uint8(ndr, ndr_flags, addr, IPV6_BYTES));
+
 	return NDR_ERR_SUCCESS;
 }
 
