@@ -77,6 +77,7 @@ base.scan.ioctl # bad idea in make test
 base.scan.pipe_number # bad idea in make test
 base.secleak # no point on build farm
 base.delaywrite # This is randomly failing, depending on timing and filesystem features
+base.winattr
 smb2.acls # new test which doesn't pass yet
 # ktutil might not be installed or from mit...
 # we should build a samba4ktutil and use that instead

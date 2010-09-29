@@ -1720,6 +1720,119 @@ static bool torture_samba3_errorpaths(struct torture_context *tctx)
 	return result;
 }
 
+/**
+  This checks file/dir birthtime
+*/
+static void list_fn(struct clilist_file_info *finfo, const char *name,
+			void *state){
+
+	/* Just to change dir access time*/
+	sleep(5);
+
+}
+
+static bool run_birthtimetest(struct torture_context *tctx,
+						   struct smbcli_state *cli)
+{
+	int fnum;
+	size_t size;
+	time_t c_time, a_time, m_time, w_time, c_time1;
+	const char *fname = "\\birthtime.tst";
+	const char *dname = "\\birthtime";
+	const char *fname2 = "\\birthtime\\birthtime.tst";
+	bool correct = true;
+	uint8_t buf[16];
+
+
+	smbcli_unlink(cli->tree, fname);
+
+	torture_comment(tctx, "Testing Birthtime for File\n");
+
+	/* Save File birthtime/creationtime */
+	fnum = smbcli_open(cli->tree, fname, O_RDWR | O_CREAT | O_TRUNC,
+				DENY_NONE);
+	if (NT_STATUS_IS_ERR(smbcli_qfileinfo(cli->tree, fnum, NULL, &size,
+				&c_time, &a_time, &m_time, NULL, NULL))) {
+		torture_comment(tctx, "ERROR: qfileinfo failed (%s)\n",
+				smbcli_errstr(cli->tree));
+		correct = false;
+	}
+	smbcli_close(cli->tree, fnum);
+
+	sleep(10);
+
+	/* Change in File attribute changes file change time*/
+	smbcli_setatr(cli->tree, fname, FILE_ATTRIBUTE_SYSTEM, 0);
+
+	fnum = smbcli_open(cli->tree, fname, O_RDWR | O_CREAT , DENY_NONE);
+	/* Writing updates modification time*/
+	smbcli_smbwrite(cli->tree, fnum,  &fname, 0, sizeof(fname));
+	/*Reading updates access time */
+	smbcli_read(cli->tree, fnum, buf, 0, 13);
+	smbcli_close(cli->tree, fnum);
+
+	if (NT_STATUS_IS_ERR(smbcli_qpathinfo2(cli->tree, fname, &c_time1,
+			&a_time, &m_time, &w_time, &size, NULL, NULL))) {
+		torture_comment(tctx, "ERROR: qpathinfo2 failed (%s)\n",
+			smbcli_errstr(cli->tree));
+		correct = false;
+	} else {
+		fprintf(stdout,"c_time = %d, c_time1 = %d\n",c_time,c_time1);
+		if (c_time1 != c_time) {
+			torture_comment(tctx, "This system updated file \
+					birth times! Not expected!\n");
+			correct = false;
+		}
+	}
+	smbcli_unlink(cli->tree, fname);
+
+	torture_comment(tctx, "Testing Birthtime for Directory\n");
+
+	/* check if the server does not update the directory birth time
+          when creating a new file */
+	if (NT_STATUS_IS_ERR(smbcli_mkdir(cli->tree, dname))) {
+		torture_comment(tctx, "ERROR: mkdir failed (%s)\n",
+				smbcli_errstr(cli->tree));
+		correct = false;
+	}
+	sleep(3);
+	if (NT_STATUS_IS_ERR(smbcli_qpathinfo2(cli->tree, "\\birthtime\\",
+			&c_time,&a_time,&m_time,&w_time, &size, NULL, NULL))){
+		torture_comment(tctx, "ERROR: qpathinfo2 failed (%s)\n",
+				smbcli_errstr(cli->tree));
+		correct = false;
+	}
+
+	/* Creating a new file changes dir modification time and change time*/
+	smbcli_unlink(cli->tree, fname2);
+	fnum = smbcli_open(cli->tree, fname2, O_RDWR | O_CREAT | O_TRUNC,
+			DENY_NONE);
+	smbcli_smbwrite(cli->tree, fnum,  &fnum, 0, sizeof(fnum));
+	smbcli_read(cli->tree, fnum, buf, 0, 13);
+	smbcli_close(cli->tree, fnum);
+
+	/* dir listing changes dir access time*/
+	smbcli_list(cli->tree, "\\birthtime\\*", 0, list_fn, cli );
+
+	if (NT_STATUS_IS_ERR(smbcli_qpathinfo2(cli->tree, "\\birthtime\\",
+			&c_time1, &a_time, &m_time,&w_time,&size,NULL,NULL))){
+		torture_comment(tctx, "ERROR: qpathinfo2 failed (%s)\n",
+				smbcli_errstr(cli->tree));
+		correct = false;
+	} else {
+		fprintf(stdout,"c_time = %d, c_time1 = %d\n",c_time,c_time1);
+		if (c_time1 != c_time) {
+			torture_comment(tctx, "This system  updated directory \
+					birth times! Not Expected!\n");
+			correct = false;
+		}
+	}
+	smbcli_unlink(cli->tree, fname2);
+	smbcli_rmdir(cli->tree, dname);
+
+	return correct;
+}
+
 
 NTSTATUS torture_base_init(void)
 {
@@ -1730,6 +1843,7 @@ NTSTATUS torture_base_init(void)
 	torture_suite_add_1smb_test(suite, "UNLINK", torture_unlinktest);
 	torture_suite_add_1smb_test(suite, "ATTR",   run_attrtest);
 	torture_suite_add_1smb_test(suite, "TRANS2", run_trans2test);
+        torture_suite_add_1smb_test(suite, "BIRTHTIME", run_birthtimetest);
 	torture_suite_add_simple_test(suite, "NEGNOWAIT", run_negprot_nowait);
 	torture_suite_add_1smb_test(suite, "DIR1",  torture_dirtest1);
 	torture_suite_add_1smb_test(suite, "DIR2",  torture_dirtest2);
