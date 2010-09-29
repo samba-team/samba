@@ -2570,3 +2570,36 @@ NTSTATUS cm_connect_netlogon(struct winbindd_domain *domain,
 	*cli = conn->netlogon_pipe;
 	return NT_STATUS_OK;
 }
+
+void winbind_msg_ip_dropped(struct messaging_context *msg_ctx,
+			    void *private_data,
+			    uint32_t msg_type,
+			    struct server_id server_id,
+			    DATA_BLOB *data)
+{
+	struct winbindd_domain *domain;
+
+	if ((data == NULL)
+	    || (data->data == NULL)
+	    || (data->length == 0)
+	    || (data->data[data->length-1] != '\0')
+	    || !is_ipaddress((char *)data->data)) {
+		DEBUG(1, ("invalid msg_ip_dropped message\n"));
+		return;
+	}
+	for (domain = domain_list(); domain != NULL; domain = domain->next) {
+		char sockaddr[INET6_ADDRSTRLEN];
+		if (domain->conn.cli == NULL) {
+			continue;
+		}
+		if (domain->conn.cli->fd == -1) {
+			continue;
+		}
+		client_socket_addr(domain->conn.cli->fd, sockaddr,
+				   sizeof(sockaddr));
+		if (strequal(sockaddr, (char *)data->data)) {
+			close(domain->conn.cli->fd);
+			domain->conn.cli->fd = -1;
+		}
+	}
+}

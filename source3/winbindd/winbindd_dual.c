@@ -1295,6 +1295,10 @@ static bool fork_domain_child(struct winbindd_child *child)
 			   MSG_DUMP_EVENT_LIST, child_msg_dump_event_list);
 	messaging_register(winbind_messaging_context(), NULL,
 			   MSG_DEBUG, debug_message);
+	messaging_register(winbind_messaging_context(), NULL,
+			   MSG_WINBIND_IP_DROPPED,
+			   winbind_msg_ip_dropped);
+
 
 	primary_domain = find_our_domain();
 
@@ -1484,5 +1488,23 @@ static bool fork_domain_child(struct winbindd_child *child)
 			exit(1);
 		}
 		TALLOC_FREE(frame);
+	}
+}
+
+void winbind_msg_ip_dropped_parent(struct messaging_context *msg_ctx,
+				   void *private_data,
+				   uint32_t msg_type,
+				   struct server_id server_id,
+				   DATA_BLOB *data)
+{
+	struct winbindd_child *child;
+
+	winbind_msg_ip_dropped(msg_ctx, private_data, msg_type,
+			       server_id, data);
+
+
+	for (child = winbindd_children; child != NULL; child = child->next) {
+		messaging_send_buf(msg_ctx, pid_to_procid(child->pid),
+				   msg_type, data->data, data->length);
 	}
 }

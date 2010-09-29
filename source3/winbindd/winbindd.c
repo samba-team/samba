@@ -1064,6 +1064,10 @@ void winbindd_register_handlers(void)
 			   MSG_WINBIND_DUMP_DOMAIN_LIST,
 			   winbind_msg_dump_domain_list);
 
+	messaging_register(winbind_messaging_context(), NULL,
+			   MSG_WINBIND_IP_DROPPED,
+			   winbind_msg_ip_dropped_parent);
+
 	/* Register handler for MSG_DEBUG. */
 	messaging_register(winbind_messaging_context(), NULL,
 			   MSG_DEBUG,

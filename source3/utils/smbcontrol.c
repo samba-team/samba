@@ -717,6 +717,22 @@ static bool do_closeshare(struct messaging_context *msg_ctx,
 			    strlen(argv[1]) + 1);
 }
 
+/* Tell winbindd an IP got dropped */
+
+static bool do_ip_dropped(struct messaging_context *msg_ctx,
+			  const struct server_id pid,
+			  const int argc, const char **argv)
+{
+	if (argc != 2) {
+		fprintf(stderr, "Usage: smbcontrol <dest> ip-dropped "
+			"<ip-address>\n");
+		return False;
+	}
+
+	return send_message(msg_ctx, pid, MSG_WINBIND_IP_DROPPED, argv[1],
+			    strlen(argv[1]) + 1);
+}
+
 /* force a blocking lock retry */
 
 static bool do_lockretry(struct messaging_context *msg_ctx,
@@ -1184,6 +1200,7 @@ static const struct {
 	{ "debuglevel", do_debuglevel, "Display current debuglevels" },
 	{ "printnotify", do_printnotify, "Send a print notify message" },
 	{ "close-share", do_closeshare, "Forcibly disconnect a share" },
+	{ "ip-dropped", do_ip_dropped, "Tell winbind that an IP got dropped" },
 	{ "lockretry", do_lockretry, "Force a blocking lock retry" },
 	{ "brl-revalidate", do_brl_revalidate, "Revalidate all brl entries" },
         { "samsync", do_samsync, "Initiate SAM synchronisation" },
