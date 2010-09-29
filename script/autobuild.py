@@ -241,18 +241,13 @@ def cleanup():
 
 def find_git_root():
     '''get to the top of the git repo'''
-    cwd=os.getcwd()
-    while os.getcwd() != '/':
-        try:
-            os.stat(".git")
-            ret = os.getcwd()
-            os.chdir(cwd)
-            return ret
-        except:
-            os.chdir("..")
-            pass
-    os.chdir(cwd)
+    p=os.getcwd()
+    while p != '/':
+        if os.path.isdir(os.path.join(p, ".git")):
+            return p
+        p = os.path.abspath(os.path.join(p, '..'))
     return None
+
 
 def rebase_tree(url):
     print("Rebasing on %s" % url)
