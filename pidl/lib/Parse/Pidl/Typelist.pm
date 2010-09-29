@@ -128,14 +128,15 @@ sub getType($)
 sub typeIs($$)
 {
 	my ($t,$tt) = @_;
-	
+
 	if (ref($t) eq "HASH") {
 		return 1 if ($t->{TYPE} eq "TYPEDEF" and $t->{DATA}->{TYPE} eq $tt);
 		return 1 if ($t->{TYPE} eq $tt);
 		return 0;
 	}
-	return 1 if (hasType($t) and getType($t)->{TYPE} eq "TYPEDEF" and 
-		         getType($t)->{DATA}->{TYPE} eq $tt);
+	if (hasType($t) and getType($t)->{TYPE} eq "TYPEDEF") {
+		return typeIs(getType($t)->{DATA}, $tt);
+	 }
 	return 0;
 }
 
