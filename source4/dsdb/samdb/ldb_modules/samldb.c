@@ -361,6 +361,7 @@ static int samldb_rodc_add(struct samldb_ctx *ac)
 	struct ldb_context *ldb = ldb_module_get_ctx(ac->module);
 	unsigned krbtgt_number, i_start, i;
 	int ret;
+	char *newpass;
 
 	/* find a unused msDC-SecondaryKrbTgtNumber */
 	i_start = generate_random() & 0xFFFF;
@@ -398,6 +399,16 @@ found:
 	}
 
 	ret = ldb_msg_add_fmt(ac->msg, "sAMAccountName", "krbtgt_%u", krbtgt_number);
+	if (ret != LDB_SUCCESS) {
+		return ldb_operr(ldb);
+	}
+
+	newpass = generate_random_password(ac, 128, 255);
+	if (newpass == NULL) {
+		return ldb_operr(ldb);
+	}
+
+	ret = ldb_msg_add_steal_string(ac->msg, "clearTextPassword", newpass);
 	if (ret != LDB_SUCCESS) {
 		return ldb_operr(ldb);
 	}
