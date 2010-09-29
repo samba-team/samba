@@ -54,10 +54,10 @@ class DrsFsmoTestCase(samba.tests.TestCase):
         # connect to DCs singleton
         if self.ldb_dc1 is None:
             DrsFsmoTestCase.dc1 = get_env_var("DC1")
-            DrsFsmoTestCase.ldb_dc1 = connect_samdb(self.dc1)
+            DrsFsmoTestCase.ldb_dc1 = samba.tests.connect_samdb(self.dc1, ldap_only=True)
         if self.ldb_dc2 is None:
             DrsFsmoTestCase.dc2 = get_env_var("DC2")
-            DrsFsmoTestCase.ldb_dc2 = connect_samdb(self.dc2)
+            DrsFsmoTestCase.ldb_dc2 = samba.tests.connect_samdb(self.dc2, ldap_only=True)
 
         # fetch rootDSEs
         if self.info_dc1 is None:
@@ -158,23 +158,3 @@ def get_env_var(var_name):
     if not var_name in os.environ.keys():
         raise AssertionError("Please supply %s in environment" % var_name)
     return os.environ[var_name]
-
-def connect_samdb(samdb_url):
-    ldb_options = []
-    if not "://" in samdb_url:
-        if os.path.isfile(samdb_url):
-            samdb_url = "tdb://%s" % samdb_url
-        else:
-            samdb_url = "ldap://%s:389" % samdb_url
-    # use 'paged_search' module when connecting remotely
-    if samdb_url.lower().startswith("ldap://"):
-        ldb_options = ["modules:paged_searches"]
-
-    return SamDB(url=samdb_url,
-                 lp=samba.tests.env_loadparm(),
-                 session_info=system_session(),
-                 credentials=samba.tests.cmdline_credentials,
-                 options=ldb_options)
-
-
-
