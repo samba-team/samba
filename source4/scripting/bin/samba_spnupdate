@@ -24,6 +24,12 @@ import os, sys
 # and don't get swallowed by a timeout
 os.putenv('PYTHONUNBUFFERED', '1')
 
+# forcing GMT avoids a problem in some timezones with kerberos. Both MIT
+# heimdal can get mutual authentication errors due to the 24 second difference
+# between UTC and GMT when using some zone files (eg. the PDT zone from
+# the US)
+os.putenv("TZ", "GMT")
+
 # Find right directory when running from source tree
 sys.path.insert(0, "bin/python")
 
