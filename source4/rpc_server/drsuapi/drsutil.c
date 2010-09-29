@@ -140,16 +140,20 @@ void drsuapi_process_secret_attribute(struct drsuapi_DsReplicaAttribute *attr,
 	}
 }
 
-WERROR drs_security_access_check(struct ldb_context *sam_ctx,
-				 TALLOC_CTX *mem_ctx,
-				 struct security_token *token,
-				 struct drsuapi_DsReplicaObjectIdentifier *nc,
-				 const char *ext_right)
+
+/*
+  check security on a DN, with logging of errors
+ */
+static WERROR drs_security_access_check_log(struct ldb_context *sam_ctx,
+					    TALLOC_CTX *mem_ctx,
+					    struct security_token *token,
+					    struct ldb_dn *dn,
+					    const char *ext_right)
 {
-	struct ldb_dn *dn = drs_ObjectIdentifier_to_dn(mem_ctx, sam_ctx, nc);
 	int ret;
 	if (!dn) {
-		DEBUG(3,("drs_security_access_check: Null dn provided, access is denied\n"));
+		DEBUG(3,("drs_security_access_check: Null dn provided, access is denied for %s\n",
+			      ext_right));
 		return WERR_DS_DRA_ACCESS_DENIED;
 	}
 	ret = dsdb_check_access_on_dn(sam_ctx,
@@ -159,13 +163,54 @@ WERROR drs_security_access_check(struct ldb_context *sam_ctx,
 				      SEC_ADS_CONTROL_ACCESS,
 				      ext_right);
 	if (ret == LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS) {
-		DEBUG(3,("%s refused for security token\n", ext_right));
-			security_token_debug(2, token);
-			return WERR_DS_DRA_ACCESS_DENIED;
+		DEBUG(3,("%s refused for security token on %s\n",
+			 ext_right, ldb_dn_get_linearized(dn)));
+		security_token_debug(2, token);
+		return WERR_DS_DRA_ACCESS_DENIED;
 	} else if (ret != LDB_SUCCESS) {
-		DEBUG(1,("Failed to perform access check on %s \n", ldb_dn_get_linearized(dn)));
-			return WERR_DS_DRA_ACCESS_DENIED;
+		DEBUG(1,("Failed to perform access check on %s\n", ldb_dn_get_linearized(dn)));
 		return WERR_DS_DRA_INTERNAL_ERROR;
 	}
 	return WERR_OK;
+}
+
+
+/*
+  check security on a object identifier
+ */
+WERROR drs_security_access_check(struct ldb_context *sam_ctx,
+				 TALLOC_CTX *mem_ctx,
+				 struct security_token *token,
+				 struct drsuapi_DsReplicaObjectIdentifier *nc,
+				 const char *ext_right)
+{
+	struct ldb_dn *dn = drs_ObjectIdentifier_to_dn(mem_ctx, sam_ctx, nc);
+	WERROR werr;
+	werr = drs_security_access_check_log(sam_ctx, mem_ctx, token, dn, ext_right);
+	talloc_free(dn);
+	return werr;
+}
+
+/*
+  check security on the NC root of a object identifier
+ */
+WERROR drs_security_access_check_nc_root(struct ldb_context *sam_ctx,
+					 TALLOC_CTX *mem_ctx,
+					 struct security_token *token,
+					 struct drsuapi_DsReplicaObjectIdentifier *nc,
+					 const char *ext_right)
+{
+	struct ldb_dn *dn, *nc_root;
+	WERROR werr;
+	int ret;
+
+	dn = drs_ObjectIdentifier_to_dn(mem_ctx, sam_ctx, nc);
+	W_ERROR_HAVE_NO_MEMORY(dn);
+	ret = dsdb_find_nc_root(sam_ctx, dn, dn, &nc_root);
+	if (ret != LDB_SUCCESS) {
+		return WERR_DS_CANT_FIND_EXPECTED_NC;
+	}
+	werr = drs_security_access_check_log(sam_ctx, mem_ctx, token, nc_root, ext_right);
+	talloc_free(dn);
+	return werr;
 }

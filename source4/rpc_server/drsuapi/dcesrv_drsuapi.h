@@ -75,3 +75,9 @@ WERROR drs_security_access_check(struct ldb_context *sam_ctx,
 				 struct security_token *token,
 				 struct drsuapi_DsReplicaObjectIdentifier *nc,
 				 const char *ext_right);
+
+WERROR drs_security_access_check_nc_root(struct ldb_context *sam_ctx,
+					 TALLOC_CTX *mem_ctx,
+					 struct security_token *token,
+					 struct drsuapi_DsReplicaObjectIdentifier *nc,
+					 const char *ext_right);
