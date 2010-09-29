@@ -355,6 +355,14 @@ class BasicTests(unittest.TestCase):
         except LdbError, (num, _):
             self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
 
+        try:
+            self.ldb.add({
+                "dn": "cn=testsecret,cn=system," + self.base_dn,
+                "objectclass": "secret"})
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
+
         self.delete_force(self.ldb, "cn=ldaptestobject," + self.base_dn)
         self.delete_force(self.ldb, "cn=testsecret,cn=system," + self.base_dn)
 
