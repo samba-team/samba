@@ -20,6 +20,7 @@ def set_options(opt):
     opt.BUNDLED_EXTENSION_DEFAULT('s3')
     opt.RECURSE('../lib/replace')
     opt.RECURSE('build')
+    opt.RECURSE('selftest')
     opt.RECURSE('../lib/nss_wrapper')
     opt.RECURSE('../lib/socket_wrapper')
     opt.RECURSE('../lib/tevent')
@@ -405,6 +406,7 @@ return acl_get_perm_np(permset_d, perm);
         conf.DEFINE('WITH_WINBIND', '1')
 
     conf.find_program('awk', var='AWK')
+    conf.find_program('perl', var='PERL')
 
     # Darwin has extra options to xattr-family functions
     conf.CHECK_CODE('getxattr(0, 0, 0, 0, 0, 0);',
