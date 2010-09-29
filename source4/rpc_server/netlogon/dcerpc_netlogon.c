@@ -940,6 +940,25 @@ static WERROR dcesrv_netr_GetDcName(struct dcesrv_call_state *dce_call, TALLOC_C
 	int ret;
 	const char *dcname;
 
+	/*
+	 * [MS-NRPC] 3.5.5.3.4 NetrGetDCName says
+	 * that the domainname needs to be a valid netbios domain
+	 * name, if it is not NULL.
+	 */
+	if (r->in.domainname) {
+		const char *dot = strchr(r->in.domainname, '.');
+		size_t len = strlen(r->in.domainname);
+
+		if (dot || len > 15) {
+			return WERR_DCNOTFOUND;
+		}
+
+		/*
+		 * TODO: Should we also varify that only valid
+		 *       netbios name characters are used?
+		 */
+	}
+
 	sam_ctx = samdb_connect(mem_ctx, dce_call->event_ctx,
 				dce_call->conn->dce_ctx->lp_ctx,
 				dce_call->conn->auth_state.session_info, 0);
