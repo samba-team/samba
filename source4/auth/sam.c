@@ -575,6 +575,22 @@ _PUBLIC_ NTSTATUS authsam_make_server_info(TALLOC_CTX *mem_ctx,
 		server_info->n_domain_groups++;
 	}
 
+	if ((server_info->acct_flags & (ACB_PARTIAL_SECRETS_ACCOUNT | ACB_WSTRUST)) ==
+	    (ACB_PARTIAL_SECRETS_ACCOUNT | ACB_WSTRUST)) {
+		/* the DOMAIN_RID_ENTERPRISE_READONLY_DCS PAC */
+		server_info->domain_groups = talloc_realloc(server_info,
+							    server_info->domain_groups,
+							    struct dom_sid *,
+							    server_info->n_domain_groups+1);
+		NT_STATUS_HAVE_NO_MEMORY_AND_FREE(server_info->domain_groups, server_info);
+		server_info->domain_groups[server_info->n_domain_groups] =
+			dom_sid_add_rid(server_info->domain_groups, domain_sid,
+				DOMAIN_RID_ENTERPRISE_READONLY_DCS);
+		NT_STATUS_HAVE_NO_MEMORY_AND_FREE(server_info->domain_groups[server_info->n_domain_groups],
+						  server_info);
+		server_info->n_domain_groups++;
+	}
+
 	server_info->authenticated = true;
 
 	talloc_free(tmp_ctx);
