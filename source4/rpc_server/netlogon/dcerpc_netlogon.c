@@ -1737,7 +1737,7 @@ static WERROR dcesrv_netr_DsRGetDCName(struct dcesrv_call_state *dce_call, TALLO
 	r2.in.domain_name = r->in.domain_name;
 	r2.in.domain_guid = r->in.domain_guid;
 
-	r2.in.site_name = NULL; /* should fill in from site GUID */
+	r2.in.site_name = NULL; /* this is correct, we should ignore site GUID */
 	r2.in.flags = r->in.flags;
 	r2.out.info = r->out.info;
 
