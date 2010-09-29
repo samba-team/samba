@@ -696,13 +696,18 @@ static int objectclass_do_add(struct oc_context *ac)
 
 		ldb_msg_remove_attr(msg, "systemFlags");
 
-		/* Only these flags may be set by a client, but we can't tell
-		 * between a client and our provision at this point
-		 * systemFlags &= ( SYSTEM_FLAG_CONFIG_ALLOW_RENAME | SYSTEM_FLAG_CONFIG_ALLOW_MOVE | SYSTEM_FLAG_CONFIG_LIMITED_MOVE);
-		 */
+		/* Only the following flags may be set by a client */
+		if (ldb_request_get_control(ac->req,
+					    LDB_CONTROL_RELAX_OID) == NULL) {
+			systemFlags &= ( SYSTEM_FLAG_CONFIG_ALLOW_RENAME
+				       | SYSTEM_FLAG_CONFIG_ALLOW_MOVE
+				       | SYSTEM_FLAG_CONFIG_ALLOW_LIMITED_MOVE
+				       | SYSTEM_FLAG_ATTR_IS_RDN );
+		}
 
-		/* This flag is only allowed on attributeSchema objects */
-		if (ldb_attr_cmp(objectclass->lDAPDisplayName, "attributeSchema") == 0) {
+		/* But the last one ("ATTR_IS_RDN") is only allowed on
+		 * "attributeSchema" objects. So truncate if it does not fit. */
+		if (ldb_attr_cmp(objectclass->lDAPDisplayName, "attributeSchema") != 0) {
 			systemFlags &= ~SYSTEM_FLAG_ATTR_IS_RDN;
 		}
 
