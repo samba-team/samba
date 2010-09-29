@@ -236,7 +236,7 @@ static void ctdb_traverse_all_timeout(struct event_context *ev, struct timed_eve
 	struct ctdb_traverse_all_handle *state = talloc_get_type(private_data, struct ctdb_traverse_all_handle);
 
 	DEBUG(DEBUG_ERR,(__location__ " Traverse all timeout on database:%s\n", state->ctdb_db->db_name));
-	state->ctdb->statistics.timeouts.traverse++;
+	CTDB_INCREMENT_STAT(state->ctdb, timeouts.traverse);
 
 	state->callback(state->private_data, tdb_null, tdb_null);
 }

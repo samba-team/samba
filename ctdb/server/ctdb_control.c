@@ -461,7 +461,7 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 
 	case CTDB_CONTROL_RECD_RECLOCK_LATENCY:
 		CHECK_CONTROL_DATA_SIZE(sizeof(double));
-		ctdb_reclock_latency(ctdb, "recd reclock", &ctdb->statistics.reclock.recd, *((double *)indata.dptr));
+		CTDB_UPDATE_RECLOCK_LATENCY(ctdb, "recd reclock", reclock.recd, *((double *)indata.dptr));
 		return 0;
 	case CTDB_CONTROL_GET_RECLOCK_FILE:
 		CHECK_CONTROL_DATA_SIZE(0);
@@ -720,7 +720,7 @@ static void ctdb_control_timeout(struct event_context *ev, struct timed_event *t
 	struct ctdb_control_state *state = talloc_get_type(private_data, struct ctdb_control_state);
 	TALLOC_CTX *tmp_ctx = talloc_new(ev);
 
-	state->ctdb->statistics.timeouts.control++;
+	CTDB_INCREMENT_STAT(state->ctdb, timeouts.control);
 
 	talloc_steal(tmp_ctx, state);
 

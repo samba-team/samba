@@ -367,47 +367,47 @@ void ctdb_input_pkt(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 
 	switch (hdr->operation) {
 	case CTDB_REQ_CALL:
-		ctdb->statistics.node.req_call++;
+		CTDB_INCREMENT_STAT(ctdb, node.req_call);
 		ctdb_request_call(ctdb, hdr);
 		break;
 
 	case CTDB_REPLY_CALL:
-		ctdb->statistics.node.reply_call++;
+		CTDB_INCREMENT_STAT(ctdb, node.reply_call);
 		ctdb_reply_call(ctdb, hdr);
 		break;
 
 	case CTDB_REPLY_ERROR:
-		ctdb->statistics.node.reply_error++;
+		CTDB_INCREMENT_STAT(ctdb, node.reply_error);
 		ctdb_reply_error(ctdb, hdr);
 		break;
 
 	case CTDB_REQ_DMASTER:
-		ctdb->statistics.node.req_dmaster++;
+		CTDB_INCREMENT_STAT(ctdb, node.req_dmaster);
 		ctdb_request_dmaster(ctdb, hdr);
 		break;
 
 	case CTDB_REPLY_DMASTER:
-		ctdb->statistics.node.reply_dmaster++;
+		CTDB_INCREMENT_STAT(ctdb, node.reply_dmaster);
 		ctdb_reply_dmaster(ctdb, hdr);
 		break;
 
 	case CTDB_REQ_MESSAGE:
-		ctdb->statistics.node.req_message++;
+		CTDB_INCREMENT_STAT(ctdb, node.req_message);
 		ctdb_request_message(ctdb, hdr);
 		break;
 
 	case CTDB_REQ_CONTROL:
-		ctdb->statistics.node.req_control++;
+		CTDB_INCREMENT_STAT(ctdb, node.req_control);
 		ctdb_request_control(ctdb, hdr);
 		break;
 
 	case CTDB_REPLY_CONTROL:
-		ctdb->statistics.node.reply_control++;
+		CTDB_INCREMENT_STAT(ctdb, node.reply_control);
 		ctdb_reply_control(ctdb, hdr);
 		break;
 
 	case CTDB_REQ_KEEPALIVE:
-		ctdb->statistics.keepalive_packets_recv++;
+		CTDB_INCREMENT_STAT(ctdb, keepalive_packets_recv);
 		break;
 
 	default:
@@ -578,7 +578,7 @@ void ctdb_queue_packet(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 		return;
 	}
 
-	ctdb->statistics.node_packets_sent++;
+	CTDB_INCREMENT_STAT(ctdb, node_packets_sent);
 
 	if (!ctdb_validate_pnn(ctdb, hdr->destnode)) {
 	  	DEBUG(DEBUG_CRIT,(__location__ " cant send to node %u that does not exist\n", 

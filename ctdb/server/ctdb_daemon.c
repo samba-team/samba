@@ -97,7 +97,7 @@ static void block_signal(int signum)
  */
 static int daemon_queue_send(struct ctdb_client *client, struct ctdb_req_header *hdr)
 {
-	client->ctdb->statistics.client_packets_sent++;
+	CTDB_INCREMENT_STAT(client->ctdb, client_packets_sent);
 	if (hdr->operation == CTDB_REQ_MESSAGE) {
 		if (ctdb_queue_length(client->queue) > client->ctdb->tunable.max_queue_depth_drop_msg) {
 			DEBUG(DEBUG_ERR,("CTDB_REQ_MESSAGE queue full - killing client connection.\n"));
@@ -184,9 +184,7 @@ static int ctdb_client_destructor(struct ctdb_client *client)
 
 	ctdb_takeover_client_destructor_hook(client);
 	ctdb_reqid_remove(client->ctdb, client->client_id);
-	if (client->ctdb->statistics.num_clients) {
-		client->ctdb->statistics.num_clients--;
-	}
+	CTDB_DECREMENT_STAT(client->ctdb, num_clients);
 
 	if (client->num_persistent_updates != 0) {
 		DEBUG(DEBUG_ERR,(__location__ " Client disconnecting with %u persistent updates in flight. Starting recovery\n", client->num_persistent_updates));
@@ -258,10 +256,9 @@ static void daemon_call_from_client_callback(struct ctdb_call_state *state)
 	res = ctdb_daemon_call_recv(state, dstate->call);
 	if (res != 0) {
 		DEBUG(DEBUG_ERR, (__location__ " ctdbd_call_recv() returned error\n"));
-		if (client->ctdb->statistics.pending_calls > 0) {
-			client->ctdb->statistics.pending_calls--;
-		}
-		ctdb_latency(ctdb_db, "call_from_client_cb 1", &client->ctdb->statistics.max_call_latency, dstate->start_time);
+		CTDB_DECREMENT_STAT(client->ctdb, pending_calls);
+
+		CTDB_UPDATE_LATENCY(client->ctdb, ctdb_db, "call_from_client_cb 1", max_call_latency, dstate->start_time);
 		return;
 	}
 
@@ -270,10 +267,8 @@ static void daemon_call_from_client_callback(struct ctdb_call_state *state)
 			       length, struct ctdb_reply_call);
 	if (r == NULL) {
 		DEBUG(DEBUG_ERR, (__location__ " Failed to allocate reply_call in ctdb daemon\n"));
-		if (client->ctdb->statistics.pending_calls > 0) {
-			client->ctdb->statistics.pending_calls--;
-		}
-		ctdb_latency(ctdb_db, "call_from_client_cb 2", &client->ctdb->statistics.max_call_latency, dstate->start_time);
+		CTDB_DECREMENT_STAT(client->ctdb, pending_calls);
+		CTDB_UPDATE_LATENCY(client->ctdb, ctdb_db, "call_from_client_cb 2", max_call_latency, dstate->start_time);
 		return;
 	}
 	r->hdr.reqid        = dstate->reqid;
@@ -288,11 +283,9 @@ static void daemon_call_from_client_callback(struct ctdb_call_state *state)
 	if (res != 0) {
 		DEBUG(DEBUG_ERR, (__location__ " Failed to queue packet from daemon to client\n"));
 	}
-	ctdb_latency(ctdb_db, "call_from_client_cb 3", &client->ctdb->statistics.max_call_latency, dstate->start_time);
+	CTDB_UPDATE_LATENCY(client->ctdb, ctdb_db, "call_from_client_cb 3", max_call_latency, dstate->start_time);
+	CTDB_DECREMENT_STAT(client->ctdb, pending_calls);
 	talloc_free(dstate);
-	if (client->ctdb->statistics.pending_calls > 0) {
-		client->ctdb->statistics.pending_calls--;
-	}
 }
 
 struct ctdb_daemon_packet_wrap {
@@ -344,18 +337,14 @@ static void daemon_request_call_from_client(struct ctdb_client *client,
 	struct ctdb_context *ctdb = client->ctdb;
 	struct ctdb_daemon_packet_wrap *w;
 
-	ctdb->statistics.total_calls++;
-	if (client->ctdb->statistics.pending_calls > 0) {
-		ctdb->statistics.pending_calls++;
-	}
+	CTDB_INCREMENT_STAT(ctdb, total_calls);
+	CTDB_DECREMENT_STAT(ctdb, pending_calls);
 
 	ctdb_db = find_ctdb_db(client->ctdb, c->db_id);
 	if (!ctdb_db) {
 		DEBUG(DEBUG_ERR, (__location__ " Unknown database in request. db_id==0x%08x",
 			  c->db_id));
-		if (client->ctdb->statistics.pending_calls > 0) {
-			ctdb->statistics.pending_calls--;
-		}
+		CTDB_DECREMENT_STAT(ctdb, pending_calls);
 		return;
 	}
 
@@ -383,9 +372,7 @@ static void daemon_request_call_from_client(struct ctdb_client *client,
 					   daemon_incoming_packet_wrap, w, True);
 	if (ret == -2) {
 		/* will retry later */
-		if (client->ctdb->statistics.pending_calls > 0) {
-			ctdb->statistics.pending_calls--;
-		}
+		CTDB_DECREMENT_STAT(ctdb, pending_calls);
 		return;
 	}
 
@@ -393,9 +380,7 @@ static void daemon_request_call_from_client(struct ctdb_client *client,
 
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR,(__location__ " Unable to fetch record\n"));
-		if (client->ctdb->statistics.pending_calls > 0) {
-			ctdb->statistics.pending_calls--;
-		}
+		CTDB_DECREMENT_STAT(ctdb, pending_calls);
 		return;
 	}
 
@@ -407,9 +392,7 @@ static void daemon_request_call_from_client(struct ctdb_client *client,
 		}
 
 		DEBUG(DEBUG_ERR,(__location__ " Unable to allocate dstate\n"));
-		if (client->ctdb->statistics.pending_calls > 0) {
-			ctdb->statistics.pending_calls--;
-		}
+		CTDB_DECREMENT_STAT(ctdb, pending_calls);
 		return;
 	}
 	dstate->start_time = timeval_current();
@@ -425,10 +408,8 @@ static void daemon_request_call_from_client(struct ctdb_client *client,
 		}
 
 		DEBUG(DEBUG_ERR,(__location__ " Unable to allocate call\n"));
-		if (client->ctdb->statistics.pending_calls > 0) {
-			ctdb->statistics.pending_calls--;
-		}
-		ctdb_latency(ctdb_db, "call_from_client 1", &ctdb->statistics.max_call_latency, dstate->start_time);
+		CTDB_DECREMENT_STAT(ctdb, pending_calls);
+		CTDB_UPDATE_LATENCY(ctdb, ctdb_db, "call_from_client 1", max_call_latency, dstate->start_time);
 		return;
 	}
 
@@ -451,10 +432,8 @@ static void daemon_request_call_from_client(struct ctdb_client *client,
 
 	if (state == NULL) {
 		DEBUG(DEBUG_ERR,(__location__ " Unable to setup call send\n"));
-		if (client->ctdb->statistics.pending_calls > 0) {
-			ctdb->statistics.pending_calls--;
-		}
-		ctdb_latency(ctdb_db, "call_from_client 2", &ctdb->statistics.max_call_latency, dstate->start_time);
+		CTDB_DECREMENT_STAT(ctdb, pending_calls);
+		CTDB_UPDATE_LATENCY(ctdb, ctdb_db, "call_from_client 2", max_call_latency, dstate->start_time);
 		return;
 	}
 	talloc_steal(state, dstate);
@@ -494,17 +473,17 @@ static void daemon_incoming_packet(void *p, struct ctdb_req_header *hdr)
 
 	switch (hdr->operation) {
 	case CTDB_REQ_CALL:
-		ctdb->statistics.client.req_call++;
+		CTDB_INCREMENT_STAT(ctdb, client.req_call);
 		daemon_request_call_from_client(client, (struct ctdb_req_call *)hdr);
 		break;
 
 	case CTDB_REQ_MESSAGE:
-		ctdb->statistics.client.req_message++;
+		CTDB_INCREMENT_STAT(ctdb, client.req_message);
 		daemon_request_message_from_client(client, (struct ctdb_req_message *)hdr);
 		break;
 
 	case CTDB_REQ_CONTROL:
-		ctdb->statistics.client.req_control++;
+		CTDB_INCREMENT_STAT(ctdb, client.req_control);
 		daemon_request_control_from_client(client, (struct ctdb_req_control *)hdr);
 		break;
 
@@ -530,7 +509,7 @@ static void ctdb_daemon_read_cb(uint8_t *data, size_t cnt, void *args)
 		return;
 	}
 
-	client->ctdb->statistics.client_packets_recv++;
+	CTDB_INCREMENT_STAT(client->ctdb, client_packets_recv);
 
 	if (cnt < sizeof(*hdr)) {
 		ctdb_set_error(client->ctdb, "Bad packet length %u in daemon\n", 
@@ -635,7 +614,7 @@ static void ctdb_accept_client(struct event_context *ev, struct fd_event *fde,
 
 	talloc_set_destructor(client, ctdb_client_destructor);
 	talloc_set_destructor(client_pid, ctdb_clientpid_destructor);
-	ctdb->statistics.num_clients++;
+	CTDB_INCREMENT_STAT(ctdb, num_clients);
 }
 
 

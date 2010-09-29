@@ -455,7 +455,7 @@ struct childwrite_handle {
 
 static int childwrite_destructor(struct childwrite_handle *h)
 {
-	h->ctdb->statistics.pending_childwrite_calls--;
+	CTDB_DECREMENT_STAT(h->ctdb, pending_childwrite_calls);
 	kill(h->child, SIGKILL);
 	return 0;
 }
@@ -475,8 +475,8 @@ static void childwrite_handler(struct event_context *ev, struct fd_event *fde,
 	int ret;
 	char c;
 
-	ctdb_latency(h->ctdb_db, "persistent", &h->ctdb->statistics.max_childwrite_latency, h->start_time);
-	h->ctdb->statistics.pending_childwrite_calls--;
+	CTDB_UPDATE_LATENCY(h->ctdb, h->ctdb_db, "persistent", max_childwrite_latency, h->start_time);
+	CTDB_DECREMENT_STAT(h->ctdb, pending_childwrite_calls);
 
 	/* the handle needs to go away when the context is gone - when
 	   the handle goes away this implicitly closes the pipe, which
@@ -508,11 +508,11 @@ struct childwrite_handle *ctdb_childwrite(struct ctdb_db_context *ctdb_db,
 	int ret;
 	pid_t parent = getpid();
 
-	ctdb_db->ctdb->statistics.childwrite_calls++;
-	ctdb_db->ctdb->statistics.pending_childwrite_calls++;
+	CTDB_INCREMENT_STAT(ctdb_db->ctdb, childwrite_calls);
+	CTDB_INCREMENT_STAT(ctdb_db->ctdb, pending_childwrite_calls);
 
 	if (!(result = talloc_zero(state, struct childwrite_handle))) {
-		ctdb_db->ctdb->statistics.pending_childwrite_calls--;
+		CTDB_DECREMENT_STAT(ctdb_db->ctdb, pending_childwrite_calls);
 		return NULL;
 	}
 
@@ -520,7 +520,7 @@ struct childwrite_handle *ctdb_childwrite(struct ctdb_db_context *ctdb_db,
 
 	if (ret != 0) {
 		talloc_free(result);
-		ctdb_db->ctdb->statistics.pending_childwrite_calls--;
+		CTDB_DECREMENT_STAT(ctdb_db->ctdb, pending_childwrite_calls);
 		return NULL;
 	}
 
@@ -530,7 +530,7 @@ struct childwrite_handle *ctdb_childwrite(struct ctdb_db_context *ctdb_db,
 		close(result->fd[0]);
 		close(result->fd[1]);
 		talloc_free(result);
-		ctdb_db->ctdb->statistics.pending_childwrite_calls--;
+		CTDB_DECREMENT_STAT(ctdb_db->ctdb, pending_childwrite_calls);
 		return NULL;
 	}
 
@@ -571,7 +571,7 @@ struct childwrite_handle *ctdb_childwrite(struct ctdb_db_context *ctdb_db,
 				   (void *)result);
 	if (result->fde == NULL) {
 		talloc_free(result);
-		ctdb_db->ctdb->statistics.pending_childwrite_calls--;
+		CTDB_DECREMENT_STAT(ctdb_db->ctdb, pending_childwrite_calls);
 		return NULL;
 	}
 	tevent_fd_set_auto_close(result->fde);

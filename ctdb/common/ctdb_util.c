@@ -123,40 +123,6 @@ static void *_idr_find_type(struct idr_context *idp, int id, const char *type, c
 	return p;
 }
 
-
-/*
-  update a max latency number
- */
-void ctdb_latency(struct ctdb_db_context *ctdb_db, const char *name, double *latency, struct timeval t)
-{
-	double l = timeval_elapsed(&t);
-	if (l > *latency) {
-		*latency = l;
-	}
-
-	if (ctdb_db->ctdb->tunable.log_latency_ms !=0) {
-		if (l*1000 > ctdb_db->ctdb->tunable.log_latency_ms) {
-			DEBUG(DEBUG_WARNING, ("High latency %.6fs for operation %s on database %s\n", l, name, ctdb_db->db_name));
-		}
-	}
-}
-
-/*
-  update a reclock latency number
- */
-void ctdb_reclock_latency(struct ctdb_context *ctdb, const char *name, double *latency, double l)
-{
-	if (l > *latency) {
-		*latency = l;
-	}
-
-	if (ctdb->tunable.reclock_latency_ms !=0) {
-		if (l*1000 > ctdb->tunable.reclock_latency_ms) {
-			DEBUG(DEBUG_ERR, ("High RECLOCK latency %fs for operation %s\n", l, name));
-		}
-	}
-}
-
 uint32_t ctdb_reqid_new(struct ctdb_context *ctdb, void *state)
 {
 	int id = idr_get_new_above(ctdb->idr, state, ctdb->lastid+1, INT_MAX);

@@ -53,8 +53,8 @@ static void lockwait_handler(struct event_context *ev, struct fd_event *fde,
 	key.dptr = talloc_memdup(tmp_ctx, key.dptr, key.dsize);
 
 	talloc_set_destructor(h, NULL);
-	ctdb_latency(h->ctdb_db, "lockwait", &h->ctdb->statistics.max_lockwait_latency, h->start_time);
-	h->ctdb->statistics.pending_lockwait_calls--;
+	CTDB_UPDATE_LATENCY(h->ctdb, h->ctdb_db, "lockwait", max_lockwait_latency, h->start_time);
+	CTDB_DECREMENT_STAT(h->ctdb, pending_lockwait_calls);
 
 	/* the handle needs to go away when the context is gone - when
 	   the handle goes away this implicitly closes the pipe, which
@@ -77,7 +77,7 @@ static void lockwait_handler(struct event_context *ev, struct fd_event *fde,
 
 static int lockwait_destructor(struct lockwait_handle *h)
 {
-	h->ctdb->statistics.pending_lockwait_calls--;
+	CTDB_DECREMENT_STAT(h->ctdb, pending_lockwait_calls);
 	kill(h->child, SIGKILL);
 	return 0;
 }
@@ -101,11 +101,11 @@ struct lockwait_handle *ctdb_lockwait(struct ctdb_db_context *ctdb_db,
 	int ret;
 	pid_t parent = getpid();
 
-	ctdb_db->ctdb->statistics.lockwait_calls++;
-	ctdb_db->ctdb->statistics.pending_lockwait_calls++;
+	CTDB_INCREMENT_STAT(ctdb_db->ctdb, lockwait_calls);
+	CTDB_INCREMENT_STAT(ctdb_db->ctdb, pending_lockwait_calls);
 
 	if (!(result = talloc_zero(private_data, struct lockwait_handle))) {
-		ctdb_db->ctdb->statistics.pending_lockwait_calls--;
+		CTDB_DECREMENT_STAT(ctdb_db->ctdb, pending_lockwait_calls);
 		return NULL;
 	}
 
@@ -113,7 +113,7 @@ struct lockwait_handle *ctdb_lockwait(struct ctdb_db_context *ctdb_db,
 
 	if (ret != 0) {
 		talloc_free(result);
-		ctdb_db->ctdb->statistics.pending_lockwait_calls--;
+		CTDB_DECREMENT_STAT(ctdb_db->ctdb, pending_lockwait_calls);
 		return NULL;
 	}
 
@@ -123,7 +123,7 @@ struct lockwait_handle *ctdb_lockwait(struct ctdb_db_context *ctdb_db,
 		close(result->fd[0]);
 		close(result->fd[1]);
 		talloc_free(result);
-		ctdb_db->ctdb->statistics.pending_lockwait_calls--;
+		CTDB_DECREMENT_STAT(ctdb_db->ctdb, pending_lockwait_calls);
 		return NULL;
 	}
 
@@ -158,7 +158,7 @@ struct lockwait_handle *ctdb_lockwait(struct ctdb_db_context *ctdb_db,
 				   (void *)result);
 	if (result->fde == NULL) {
 		talloc_free(result);
-		ctdb_db->ctdb->statistics.pending_lockwait_calls--;
+		CTDB_DECREMENT_STAT(ctdb_db->ctdb, pending_lockwait_calls);
 		return NULL;
 	}
 	tevent_fd_set_auto_close(result->fde);

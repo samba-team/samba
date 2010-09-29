@@ -73,7 +73,7 @@ static void ctdb_recv_pkt(struct ctdb_context *ctdb, uint8_t *data, uint32_t len
 {
 	struct ctdb_req_header *hdr = (struct ctdb_req_header *)data;
 
-	ctdb->statistics.node_packets_recv++;
+	CTDB_INCREMENT_STAT(ctdb, node_packets_recv);
 
 	/* up the counter for this source node, so we know its alive */
 	if (ctdb_validate_pnn(ctdb, hdr->srcnode)) {

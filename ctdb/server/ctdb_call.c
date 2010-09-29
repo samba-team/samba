@@ -463,9 +463,7 @@ void ctdb_request_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 		return;
 	}
 
-	if (c->hopcount > ctdb->statistics.max_hop_count) {
-		ctdb->statistics.max_hop_count = c->hopcount;
-	}
+	CTDB_UPDATE_STAT(ctdb, max_hop_count, c->hopcount);
 
 	/* if this nodes has done enough consecutive calls on the same record
 	   then give them the record
@@ -827,7 +825,7 @@ void ctdb_send_keepalive(struct ctdb_context *ctdb, uint32_t destnode)
 	r->hdr.destnode  = destnode;
 	r->hdr.reqid     = 0;
 	
-	ctdb->statistics.keepalive_packets_sent++;
+	CTDB_INCREMENT_STAT(ctdb, keepalive_packets_sent);
 
 	ctdb_queue_packet(ctdb, &r->hdr);
 

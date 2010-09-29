@@ -276,8 +276,58 @@ struct ctdb_daemon_data {
 	struct ctdb_queue *queue;
 };
 
+
+#define CTDB_UPDATE_STAT(ctdb, counter, value) \
+	{										\
+		if (value > ctdb->statistics.counter) {					\
+			ctdb->statistics.counter = c->hopcount;				\
+		}									\
+	}
+
+#define CTDB_INCREMENT_STAT(ctdb, counter) \
+	{										\
+		ctdb->statistics.counter++;						\
+	}
+
+#define CTDB_DECREMENT_STAT(ctdb, counter) \
+	{										\
+		if (ctdb->statistics.counter > 0)					\
+			ctdb->statistics.counter--;					\
+	}
+
+#define CTDB_UPDATE_RECLOCK_LATENCY(ctdb, name, counter, value) \
+	{										\
+		if (value > ctdb->statistics.counter) {					\
+			ctdb->statistics.counter = value;				\
+		}									\
+											\
+		if (ctdb->tunable.reclock_latency_ms != 0) {				\
+			if (value*1000 > ctdb->tunable.reclock_latency_ms) {		\
+				DEBUG(DEBUG_ERR, ("High RECLOCK latency %fs for operation %s\n", value, name));	\
+			}								\
+		}									\
+	}
+
+
+#define CTDB_UPDATE_LATENCY(ctdb, db, operation, counter, t) \
+	{										\
+		double l = timeval_elapsed(&t);						\
+		if (l > ctdb->statistics.counter) {					\
+			ctdb->statistics.counter = l;					\
+		}									\
+											\
+		if (ctdb->tunable.log_latency_ms !=0) {					\
+			if (l*1000 > ctdb->tunable.log_latency_ms) {			\
+				DEBUG(DEBUG_WARNING, ("High latency %.6fs for operation %s on database %s\n", l, operation, db->db_name));\
+			}								\
+		}									\
+	}
+
+
+
+
 /*
-  ctdb status information
+  ctdb statistics information
  */
 struct ctdb_statistics {
 	uint32_t num_clients;
@@ -747,9 +797,6 @@ int ctdb_call_local(struct ctdb_db_context *ctdb_db, struct ctdb_call *call,
 void ctdb_recv_raw_pkt(void *p, uint8_t *data, uint32_t length);
 
 int ctdb_socket_connect(struct ctdb_context *ctdb);
-
-void ctdb_latency(struct ctdb_db_context *ctdb_db, const char *name, double *latency, struct timeval t);
-void ctdb_reclock_latency(struct ctdb_context *ctdb, const char *name, double *latency, double l);
 
 #define CTDB_BAD_REQID ((uint32_t)-1)
 uint32_t ctdb_reqid_new(struct ctdb_context *ctdb, void *state);
@@ -1338,5 +1385,7 @@ int update_ip_assignment_tree(struct ctdb_context *ctdb,
 				struct ctdb_public_ip *ip);
 
 int ctdb_init_tevent_logging(struct ctdb_context *ctdb);
+
+int ctdb_update_stat_counter(struct ctdb_context *ctdb, uint32_t *counter, uint32_t value);
 
 #endif

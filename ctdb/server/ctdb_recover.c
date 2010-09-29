@@ -575,7 +575,7 @@ static int set_recmode_destructor(struct ctdb_set_recmode_state *state)
 {
 	double l = timeval_elapsed(&state->start_time);
 
-	ctdb_reclock_latency(state->ctdb, "daemon reclock", &state->ctdb->statistics.reclock.ctdbd, l);
+	CTDB_UPDATE_RECLOCK_LATENCY(state->ctdb, "daemon reclock", reclock.ctdbd, l);
 
 	if (state->fd[0] != -1) {
 		state->fd[0] = -1;
@@ -938,7 +938,7 @@ static void ctdb_end_recovery_callback(struct ctdb_context *ctdb, int status, vo
 	struct recovery_callback_state *state = talloc_get_type(p, struct recovery_callback_state);
 
 	ctdb_enable_monitoring(ctdb);
-	ctdb->statistics.num_recoveries++;
+	CTDB_INCREMENT_STAT(ctdb, num_recoveries);
 
 	if (status != 0) {
 		DEBUG(DEBUG_ERR,(__location__ " recovered event script failed (status %d)\n", status));
