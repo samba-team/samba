@@ -23,52 +23,53 @@ from samba.dcerpc import drsuapi, misc
 from samba.net import Net
 import samba, ldb
 
+
+def drs_DsBind(drs):
+    '''make a DsBind call, returning the binding handle'''
+    bind_info = drsuapi.DsBindInfoCtr()
+    bind_info.length = 28
+    bind_info.info = drsuapi.DsBindInfo28()
+    bind_info.info.supported_extensions	|= drsuapi.DRSUAPI_SUPPORTED_EXTENSION_BASE;
+    bind_info.info.supported_extensions	|= drsuapi.DRSUAPI_SUPPORTED_EXTENSION_ASYNC_REPLICATION;
+    bind_info.info.supported_extensions	|= drsuapi.DRSUAPI_SUPPORTED_EXTENSION_REMOVEAPI;
+    bind_info.info.supported_extensions	|= drsuapi.DRSUAPI_SUPPORTED_EXTENSION_MOVEREQ_V2;
+    bind_info.info.supported_extensions	|= drsuapi.DRSUAPI_SUPPORTED_EXTENSION_GETCHG_COMPRESS;
+    bind_info.info.supported_extensions	|= drsuapi.DRSUAPI_SUPPORTED_EXTENSION_DCINFO_V1;
+    bind_info.info.supported_extensions	|= drsuapi.DRSUAPI_SUPPORTED_EXTENSION_RESTORE_USN_OPTIMIZATION;
+    bind_info.info.supported_extensions	|= drsuapi.DRSUAPI_SUPPORTED_EXTENSION_KCC_EXECUTE;
+    bind_info.info.supported_extensions	|= drsuapi.DRSUAPI_SUPPORTED_EXTENSION_ADDENTRY_V2;
+    bind_info.info.supported_extensions	|= drsuapi.DRSUAPI_SUPPORTED_EXTENSION_LINKED_VALUE_REPLICATION;
+    bind_info.info.supported_extensions	|= drsuapi.DRSUAPI_SUPPORTED_EXTENSION_DCINFO_V2;
+    bind_info.info.supported_extensions	|= drsuapi.DRSUAPI_SUPPORTED_EXTENSION_INSTANCE_TYPE_NOT_REQ_ON_MOD;
+    bind_info.info.supported_extensions	|= drsuapi.DRSUAPI_SUPPORTED_EXTENSION_CRYPTO_BIND;
+    bind_info.info.supported_extensions	|= drsuapi.DRSUAPI_SUPPORTED_EXTENSION_GET_REPL_INFO;
+    bind_info.info.supported_extensions	|= drsuapi.DRSUAPI_SUPPORTED_EXTENSION_STRONG_ENCRYPTION;
+    bind_info.info.supported_extensions	|= drsuapi.DRSUAPI_SUPPORTED_EXTENSION_DCINFO_V01;
+    bind_info.info.supported_extensions	|= drsuapi.DRSUAPI_SUPPORTED_EXTENSION_TRANSITIVE_MEMBERSHIP;
+    bind_info.info.supported_extensions	|= drsuapi.DRSUAPI_SUPPORTED_EXTENSION_ADD_SID_HISTORY;
+    bind_info.info.supported_extensions	|= drsuapi.DRSUAPI_SUPPORTED_EXTENSION_POST_BETA3;
+    bind_info.info.supported_extensions	|= drsuapi.DRSUAPI_SUPPORTED_EXTENSION_GET_MEMBERSHIPS2;
+    bind_info.info.supported_extensions	|= drsuapi.DRSUAPI_SUPPORTED_EXTENSION_GETCHGREQ_V6;
+    bind_info.info.supported_extensions	|= drsuapi.DRSUAPI_SUPPORTED_EXTENSION_NONDOMAIN_NCS;
+    bind_info.info.supported_extensions	|= drsuapi.DRSUAPI_SUPPORTED_EXTENSION_GETCHGREQ_V8;
+    bind_info.info.supported_extensions	|= drsuapi.DRSUAPI_SUPPORTED_EXTENSION_GETCHGREPLY_V5;
+    bind_info.info.supported_extensions	|= drsuapi.DRSUAPI_SUPPORTED_EXTENSION_GETCHGREPLY_V6;
+    bind_info.info.supported_extensions	|= drsuapi.DRSUAPI_SUPPORTED_EXTENSION_ADDENTRYREPLY_V3;
+    bind_info.info.supported_extensions	|= drsuapi.DRSUAPI_SUPPORTED_EXTENSION_GETCHGREPLY_V7;
+    bind_info.info.supported_extensions	|= drsuapi.DRSUAPI_SUPPORTED_EXTENSION_VERIFY_OBJECT;
+    (info, handle) = drs.DsBind(misc.GUID(drsuapi.DRSUAPI_DS_BIND_GUID), bind_info)
+    return handle
+
 class drs_Replicate:
     '''DRS replication calls'''
 
     def __init__(self, binding_string, lp, creds, samdb):
         self.drs = drsuapi.drsuapi(binding_string, lp, creds)
-        self.drs_handle = self.drs_DsBind()
+        self.drs_handle = drs_DsBind(self.drs)
         self.net = Net(creds=creds, lp=lp)
         self.samdb = samdb
         self.replication_state = self.net.replicate_init(self.samdb, lp, self.drs)
 
-
-    def drs_DsBind(self):
-        '''make a DsBind call, returning the binding handle'''
-        bind_info = drsuapi.DsBindInfoCtr()
-        bind_info.length = 28
-        bind_info.info = drsuapi.DsBindInfo28()
-        bind_info.info.supported_extensions	|= drsuapi.DRSUAPI_SUPPORTED_EXTENSION_BASE;
-        bind_info.info.supported_extensions	|= drsuapi.DRSUAPI_SUPPORTED_EXTENSION_ASYNC_REPLICATION;
-        bind_info.info.supported_extensions	|= drsuapi.DRSUAPI_SUPPORTED_EXTENSION_REMOVEAPI;
-        bind_info.info.supported_extensions	|= drsuapi.DRSUAPI_SUPPORTED_EXTENSION_MOVEREQ_V2;
-        bind_info.info.supported_extensions	|= drsuapi.DRSUAPI_SUPPORTED_EXTENSION_GETCHG_COMPRESS;
-        bind_info.info.supported_extensions	|= drsuapi.DRSUAPI_SUPPORTED_EXTENSION_DCINFO_V1;
-        bind_info.info.supported_extensions	|= drsuapi.DRSUAPI_SUPPORTED_EXTENSION_RESTORE_USN_OPTIMIZATION;
-        bind_info.info.supported_extensions	|= drsuapi.DRSUAPI_SUPPORTED_EXTENSION_KCC_EXECUTE;
-        bind_info.info.supported_extensions	|= drsuapi.DRSUAPI_SUPPORTED_EXTENSION_ADDENTRY_V2;
-        bind_info.info.supported_extensions	|= drsuapi.DRSUAPI_SUPPORTED_EXTENSION_LINKED_VALUE_REPLICATION;
-        bind_info.info.supported_extensions	|= drsuapi.DRSUAPI_SUPPORTED_EXTENSION_DCINFO_V2;
-        bind_info.info.supported_extensions	|= drsuapi.DRSUAPI_SUPPORTED_EXTENSION_INSTANCE_TYPE_NOT_REQ_ON_MOD;
-        bind_info.info.supported_extensions	|= drsuapi.DRSUAPI_SUPPORTED_EXTENSION_CRYPTO_BIND;
-        bind_info.info.supported_extensions	|= drsuapi.DRSUAPI_SUPPORTED_EXTENSION_GET_REPL_INFO;
-        bind_info.info.supported_extensions	|= drsuapi.DRSUAPI_SUPPORTED_EXTENSION_STRONG_ENCRYPTION;
-        bind_info.info.supported_extensions	|= drsuapi.DRSUAPI_SUPPORTED_EXTENSION_DCINFO_V01;
-        bind_info.info.supported_extensions	|= drsuapi.DRSUAPI_SUPPORTED_EXTENSION_TRANSITIVE_MEMBERSHIP;
-        bind_info.info.supported_extensions	|= drsuapi.DRSUAPI_SUPPORTED_EXTENSION_ADD_SID_HISTORY;
-        bind_info.info.supported_extensions	|= drsuapi.DRSUAPI_SUPPORTED_EXTENSION_POST_BETA3;
-        bind_info.info.supported_extensions	|= drsuapi.DRSUAPI_SUPPORTED_EXTENSION_GET_MEMBERSHIPS2;
-        bind_info.info.supported_extensions	|= drsuapi.DRSUAPI_SUPPORTED_EXTENSION_GETCHGREQ_V6;
-        bind_info.info.supported_extensions	|= drsuapi.DRSUAPI_SUPPORTED_EXTENSION_NONDOMAIN_NCS;
-        bind_info.info.supported_extensions	|= drsuapi.DRSUAPI_SUPPORTED_EXTENSION_GETCHGREQ_V8;
-        bind_info.info.supported_extensions	|= drsuapi.DRSUAPI_SUPPORTED_EXTENSION_GETCHGREPLY_V5;
-        bind_info.info.supported_extensions	|= drsuapi.DRSUAPI_SUPPORTED_EXTENSION_GETCHGREPLY_V6;
-        bind_info.info.supported_extensions	|= drsuapi.DRSUAPI_SUPPORTED_EXTENSION_ADDENTRYREPLY_V3;
-        bind_info.info.supported_extensions	|= drsuapi.DRSUAPI_SUPPORTED_EXTENSION_GETCHGREPLY_V7;
-        bind_info.info.supported_extensions	|= drsuapi.DRSUAPI_SUPPORTED_EXTENSION_VERIFY_OBJECT;
-        (info, handle) = self.drs.DsBind(misc.GUID(drsuapi.DRSUAPI_DS_BIND_GUID), bind_info)
-        return handle
 
 
     def drs_get_rodc_partial_attribute_set(self):
