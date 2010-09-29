@@ -54,8 +54,6 @@ _der_timegm (struct tm *tm)
   static const unsigned ndays[2][12] ={
     {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31},
     {31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31}};
-  time_t res = 0;
-  unsigned i;
 
   if (tm->tm_year < 0)
       return -1;
@@ -70,17 +68,10 @@ _der_timegm (struct tm *tm)
   if (tm->tm_sec < 0 || tm->tm_sec > 59)
       return -1;
 
-  for (i = 70; i < tm->tm_year; ++i)
-    res += is_leap(i) ? 366 : 365;
-
-  for (i = 0; i < tm->tm_mon; ++i)
-    res += ndays[is_leap(tm->tm_year)][i];
-  res += tm->tm_mday - 1;
-  res *= 24;
-  res += tm->tm_hour;
-  res *= 60;
-  res += tm->tm_min;
-  res *= 60;
-  res += tm->tm_sec;
-  return res;
+  /* now call to the libc timegm(). This code used to do the
+   * calculation itself, but that calculation didn't account for the
+   * difference between UTC and GMT, which is 24 seconds in 2010. That
+   * caused a mutual authentication failure
+   */
+  return timegm(tm);
 }
