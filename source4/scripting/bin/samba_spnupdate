@@ -108,9 +108,6 @@ except ldb.LdbError, (num, msg):
     print("Unable to open sam database %s : %s" % (lp.get("sam database"), msg))
     sys.exit(1)
 
-if samdb.am_rodc():
-    # don't try and update SPNs on RODC
-    exit(0)
 
 # get the substitution dictionary
 sub_vars = get_subst_vars(samdb)
@@ -137,6 +134,8 @@ res = samdb.search(base="",
 if not res or len(res) != 1:
     print("Failed to find computer object for %s$" % sub_vars['NETBIOSNAME'])
     sys.exit(1)
+
+machine_dn = res[0]["dn"]
 
 old_spns = []
 for s in res[0]['servicePrincipalName']:
@@ -165,10 +164,58 @@ if add_list == []:
         print("Nothing to add")
     sys.exit(0)
 
-# build the modify request
-msg = ldb.Message()
-msg.dn = res[0]['dn']
-msg[""] = ldb.MessageElement(add_list,
-			     ldb.FLAG_MOD_ADD, "servicePrincipalName")
-res = samdb.modify(msg)
-sys.exit(0)
+def local_update(add_list):
+    '''store locally'''
+    global res
+    msg = ldb.Message()
+    msg.dn = res[0]['dn']
+    msg[""] = ldb.MessageElement(add_list,
+                                 ldb.FLAG_MOD_ADD, "servicePrincipalName")
+    res = samdb.modify(msg)
+
+def call_rodc_update(d):
+    '''RODCs need to use the writeSPN DRS call'''
+    global lp, sub_vars
+    from samba import drs_utils
+    from samba.dcerpc import drsuapi, nbt
+    from samba.net import Net
+
+    if opts.verbose:
+        print("Using RODC SPN update")
+
+    creds = credopts.get_credentials(lp)
+    creds.set_machine_account(lp)
+
+    net = Net(creds=creds, lp=lp)
+    try:
+        cldap_ret = net.finddc(domain, nbt.NBT_SERVER_DS | nbt.NBT_SERVER_WRITABLE)
+    except Exception, reason:
+        print("Unable to find writeable DC for domain '%s' to send DRS writeSPN to : %s" % (domain, reason))
+        sys.exit(1)
+    server = cldap_ret.pdc_dns_name
+    try:
+        drs = drsuapi.drsuapi('ncacn_ip_tcp:%s[seal,print]' % server, lp, creds)
+        drs_handle = drs_utils.drs_DsBind(drs)
+    except Exception, reason:
+        print("Unable to connect to DC '%s' for domain '%s' : %s" % (server, domain, reason))
+        sys.exit(1)
+    req1 = drsuapi.DsWriteAccountSpnRequest1()
+    req1.operation = drsuapi.DRSUAPI_DS_SPN_OPERATION_ADD
+    req1.object_dn = str(machine_dn)
+    req1.count = 0
+    spn_names = []
+    for n in add_list:
+        if n.find('E3514235-4B06-11D1-AB04-00C04FC2DCD2') != -1:
+            # this one isn't allowed for RODCs, but we don't know why yet
+            continue
+        ns = drsuapi.DsNameString()
+        ns.str = n
+        spn_names.append(ns)
+        req1.count = req1.count + 1
+    req1.spn_names = spn_names
+    (level, res) = drs.DsWriteAccountSpn(drs_handle, 1, req1)
+
+if samdb.am_rodc():
+    call_rodc_update(add_list)
+else:
+    local_update(add_list)
