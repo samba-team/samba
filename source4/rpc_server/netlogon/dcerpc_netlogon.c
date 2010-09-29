@@ -1589,6 +1589,43 @@ static WERROR dcesrv_netr_DsRGetDCNameEx2(struct dcesrv_call_state *dce_call,
 
 	/* "server_unc" is ignored by w2k3 */
 
+	if (r->in.flags & ~(DSGETDC_VALID_FLAGS)) {
+		return WERR_INVALID_FLAGS;
+	}
+
+	if (r->in.flags & DS_GC_SERVER_REQUIRED &&
+	    r->in.flags & DS_PDC_REQUIRED &&
+	    r->in.flags & DS_KDC_REQUIRED) {
+		return WERR_INVALID_FLAGS;
+	}
+	if (r->in.flags & DS_IS_FLAT_NAME &&
+	    r->in.flags & DS_IS_DNS_NAME) {
+		return WERR_INVALID_FLAGS;
+	}
+	if (r->in.flags & DS_RETURN_DNS_NAME &&
+	    r->in.flags & DS_RETURN_FLAT_NAME) {
+		return WERR_INVALID_FLAGS;
+	}
+	if (r->in.flags & DS_DIRECTORY_SERVICE_REQUIRED &&
+	    r->in.flags & DS_DIRECTORY_SERVICE_6_REQUIRED) {
+		return WERR_INVALID_FLAGS;
+	}
+
+	if (r->in.flags & DS_GOOD_TIMESERV_PREFERRED &&
+	    r->in.flags &
+	    (DS_DIRECTORY_SERVICE_REQUIRED |
+	     DS_DIRECTORY_SERVICE_PREFERRED |
+	     DS_GC_SERVER_REQUIRED |
+	     DS_PDC_REQUIRED |
+	     DS_KDC_REQUIRED)) {
+		return WERR_INVALID_FLAGS;
+	}
+
+	if (r->in.flags & DS_TRY_NEXTCLOSEST_SITE &&
+	    r->in.site_name) {
+		return WERR_INVALID_FLAGS;
+	}
+
 	/* Proof server site parameter "site_name" if it was specified */
 	server_site_name = samdb_server_site_name(sam_ctx, mem_ctx);
 	W_ERROR_HAVE_NO_MEMORY(server_site_name);
@@ -1596,8 +1633,6 @@ static WERROR dcesrv_netr_DsRGetDCNameEx2(struct dcesrv_call_state *dce_call,
 						     server_site_name) != 0)) {
 		return WERR_NO_SUCH_DOMAIN;
 	}
-
-	/* TODO: the flags are ignored for now */
 
 	guid_str = r->in.domain_guid != NULL ?
 		 GUID_string(mem_ctx, r->in.domain_guid) : NULL;
