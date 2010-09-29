@@ -24,14 +24,12 @@ tasks = {
                   "make install",
                   "TDB_NO_FSYNC=1 make test FAIL_IMMEDIATELY=1" ],
 
-    "source4" : [ "./autogen.sh",
-                  "./configure.developer ${PREFIX}",
+    "source4" : [ "./configure.developer ${PREFIX}",
                   "make -j",
                   "make install",
                   "TDB_NO_FSYNC=1 make test FAIL_IMMEDIATELY=1" ],
 
-    "source4/lib/ldb" : [ "./autogen-waf.sh",
-                          "./configure --enable-developer -C ${PREFIX}",
+    "source4/lib/ldb" : [ "./configure --enable-developer -C ${PREFIX}",
                           "make -j",
                           "make install",
                           "make test" ],
@@ -54,8 +52,7 @@ tasks = {
                       "make install",
                       "make test" ],
 
-    "lib/tevent" : [ "./autogen-waf.sh",
-                     "./configure --enable-developer -C ${PREFIX}",
+    "lib/tevent" : [ "./configure --enable-developer -C ${PREFIX}",
                      "make -j",
                      "make install",
                      "make test" ],
