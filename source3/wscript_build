@@ -151,13 +151,7 @@ REG_PARSE_PRS_SRC = '''registry/reg_parse_prs.c'''
 
 LIBREPLACE_SRC = '''${LIBREPLACE_SRCS}'''
 
-SOCKET_WRAPPER_SRC = '''${SOCKET_WRAPPER_SRCS}'''
-NSS_WRAPPER_SRC = '''${NSS_WRAPPER_SRCS}'''
-
-LIBSAMBAUTIL_SRC = '''
-                ${LIBREPLACE_SRC}
-                ${SOCKET_WRAPPER_SRC}
-                ${NSS_WRAPPER_SRC}'''
+LIBSAMBAUTIL_SRC = '''${LIBREPLACE_SRC}'''
 
 UTIL_SRC = '''../lib/util/rbtree.c ../lib/util/signal.c ../lib/util/time.c
                    ../lib/util/xfile.c ../lib/util/util_strlist.c
@@ -175,10 +169,6 @@ LIBTEVENT_SRC0 = ''
 PTHREADPOOL_SRC = ''
 
 LIBREPLACE_SRCS = ''
-
-SOCKET_WRAPPER_SRCS = ''
-
-NSS_WRAPPER_SRCS = ''
 
 ZLIB_SRCS = ''
 
@@ -237,7 +227,7 @@ KRBCLIENT_SRC = '''libads/kerberos.c libads/ads_status.c'''
 
 LIBADDNS_SRC0 = '''libaddns/dnsrecord.c libaddns/dnsutils.c  libaddns/dnssock.c
                libaddns/dnsgss.c libaddns/dnsmarshall.c'''
-LIBADDNS_SRC = '''${LIBADDNS_SRC0} ${SOCKET_WRAPPER_SRC}'''
+LIBADDNS_SRC = '''${LIBADDNS_SRC0}'''
 
 LIBGPO_SRC0 = '''../libgpo/gpo_ldap.c ../libgpo/gpo_ini.c ../libgpo/gpo_util.c
               ../libgpo/gpo_fetch.c libgpo/gpo_filesync.c ../libgpo/gpo_sec.c
@@ -1206,7 +1196,7 @@ bld.SAMBA_SUBSYSTEM('SMBD_BASE',
                     PARAM_WITHOUT_REG LIBS LIBSMB POPT_SAMBA KRBCLIENT AVAHI
                     LIBMSRPC_GEN LIBMSRPC LIBADS LIBADS_SERVER LIBADS_PRINTER
                     VFS RPC_MODULES AUTH LOCKING LIBAFS LIBAFS_SETTOKEN PROFILE LIBNET LIBEVENTLOG
-                    REGFIO REG_API_REGF PRINTING PRINTBACKEND SERVICES NDR_XATTR NDR_PERFCOUNT''',
+                    REGFIO REG_API_REGF PRINTING PRINTBACKEND SERVICES NDR_XATTR NDR_PERFCOUNT SOCKET_WRAPPER''',
                     vars=locals())
 
 if not bld.env.developer:
@@ -1375,7 +1365,7 @@ bld.SAMBA_BINARY('smbclient',
                  source=CLIENT_SRC,
                  deps='''talloc tdb cap resolv POPT_SAMBA PASSDB LIBSMB LIB_NONSMBD
                  PARAM_WITHOUT_REG libwbclient PARAM KRBCLIENT LIBMSRPC_GEN
-                 LIBMSRPC READLINE DISPLAY_SEC''',
+                 LIBMSRPC READLINE DISPLAY_SEC SOCKET_WRAPPER''',
                  vars=locals())
 
 bld.SAMBA_BINARY('net',
@@ -1448,7 +1438,7 @@ bld.SAMBA_BINARY('smbget',
 
 bld.SAMBA_BINARY('nmblookup',
                  source=NMBLOOKUP_SRC,
-                 deps='''talloc tdb tevent cap resolv PARAM LIB_NONSMBD POPT_SAMBA LIBSMB_ERR''',
+                 deps='''talloc tdb tevent cap resolv PARAM LIB_NONSMBD POPT_SAMBA LIBSMB_ERR SOCKET_WRAPPER''',
                  vars=locals())
 
 bld.SAMBA_BINARY('smbtorture',
