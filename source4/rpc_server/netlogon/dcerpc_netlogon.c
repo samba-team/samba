@@ -1572,6 +1572,8 @@ static WERROR dcesrv_netr_DsRGetDCNameEx2(struct dcesrv_call_state *dce_call,
 	char *guid_str;
 	struct netlogon_samlogon_response response;
 	NTSTATUS status;
+	const char *dc_name = NULL;
+	const char *domain_name = NULL;
 
 	ZERO_STRUCTP(r->out.info);
 
@@ -1649,17 +1651,40 @@ static WERROR dcesrv_netr_DsRGetDCNameEx2(struct dcesrv_call_state *dce_call,
 		return ntstatus_to_werror(status);
 	}
 
+	if (r->in.flags & DS_RETURN_DNS_NAME) {
+		dc_name = response.data.nt5_ex.pdc_dns_name;
+		domain_name = response.data.nt5_ex.dns_domain;
+	} else if (r->in.flags & DS_RETURN_FLAT_NAME) {
+		dc_name = response.data.nt5_ex.pdc_name;
+		domain_name = response.data.nt5_ex.domain_name;
+	} else {
+
+		/*
+		 * TODO: autodetect what we need to return
+		 * based on the given arguments
+		 */
+		dc_name = response.data.nt5_ex.pdc_name;
+		domain_name = response.data.nt5_ex.domain_name;
+	}
+
+	if (!dc_name || !dc_name[0]) {
+		return WERR_NO_SUCH_DOMAIN;
+	}
+
+	if (!domain_name || !domain_name[0]) {
+		return WERR_NO_SUCH_DOMAIN;
+	}
+
 	info = talloc(mem_ctx, struct netr_DsRGetDCNameInfo);
 	W_ERROR_HAVE_NO_MEMORY(info);
-	info->dc_unc           = talloc_asprintf(mem_ctx, "\\\\%s",
-						 response.data.nt5_ex.pdc_dns_name);
+	info->dc_unc           = talloc_asprintf(mem_ctx, "\\\\%s", dc_name);
 	W_ERROR_HAVE_NO_MEMORY(info->dc_unc);
 	info->dc_address = talloc_asprintf(mem_ctx, "\\\\%s",
 					   response.data.nt5_ex.sockaddr.pdc_ip);
 	W_ERROR_HAVE_NO_MEMORY(info->dc_address);
 	info->dc_address_type  = DS_ADDRESS_TYPE_INET; /* TODO: make this dynamic? for ipv6 */
 	info->domain_guid      = response.data.nt5_ex.domain_uuid;
-	info->domain_name      = response.data.nt5_ex.dns_domain;
+	info->domain_name      = domain_name;
 	info->forest_name      = response.data.nt5_ex.forest;
 	info->dc_flags         = response.data.nt5_ex.server_type;
 	info->dc_site_name     = response.data.nt5_ex.server_site;
