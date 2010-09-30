@@ -54,7 +54,7 @@ static void nbtd_node_status_reply(struct nbt_name_socket *nbtsock,
 
 	packet->name_trn_id = request_packet->name_trn_id;
 	packet->ancount = 1;
-	packet->operation = NBT_OPCODE_QUERY | NBT_FLAG_REPLY | NBT_FLAG_AUTHORITIVE;
+	packet->operation = NBT_OPCODE_QUERY | NBT_FLAG_REPLY | NBT_FLAG_AUTHORITATIVE;
 
 	packet->answers = talloc_array(packet, struct nbt_res_rec, 1);
 	if (packet->answers == NULL) goto failed;

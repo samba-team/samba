@@ -121,10 +121,10 @@ void nbtd_name_query_reply(struct nbt_name_socket *nbtsock,
 
 	packet->name_trn_id = request_packet->name_trn_id;
 	packet->ancount = 1;
-	packet->operation = 
-		NBT_FLAG_REPLY | 
-		NBT_OPCODE_QUERY | 
-		NBT_FLAG_AUTHORITIVE |
+	packet->operation =
+		NBT_FLAG_REPLY |
+		NBT_OPCODE_QUERY |
+		NBT_FLAG_AUTHORITATIVE |
 		NBT_FLAG_RECURSION_DESIRED |
 		NBT_FLAG_RECURSION_AVAIL;
 
@@ -177,10 +177,10 @@ void nbtd_negative_name_query_reply(struct nbt_name_socket *nbtsock,
 
 	packet->name_trn_id = request_packet->name_trn_id;
 	packet->ancount = 1;
-	packet->operation = 
-		NBT_FLAG_REPLY | 
-		NBT_OPCODE_QUERY | 
-		NBT_FLAG_AUTHORITIVE |
+	packet->operation =
+		NBT_FLAG_REPLY |
+		NBT_OPCODE_QUERY |
+		NBT_FLAG_AUTHORITATIVE |
 		NBT_RCODE_NAM;
 
 	packet->answers = talloc_array(packet, struct nbt_res_rec, 1);
@@ -221,10 +221,10 @@ void nbtd_name_registration_reply(struct nbt_name_socket *nbtsock,
 
 	packet->name_trn_id = request_packet->name_trn_id;
 	packet->ancount = 1;
-	packet->operation = 
-		NBT_FLAG_REPLY | 
+	packet->operation =
+		NBT_FLAG_REPLY |
 		NBT_OPCODE_REGISTER |
-		NBT_FLAG_AUTHORITIVE |
+		NBT_FLAG_AUTHORITATIVE |
 		NBT_FLAG_RECURSION_DESIRED |
 		NBT_FLAG_RECURSION_AVAIL |
 		rcode;
@@ -269,10 +269,10 @@ void nbtd_name_release_reply(struct nbt_name_socket *nbtsock,
 
 	packet->name_trn_id = request_packet->name_trn_id;
 	packet->ancount = 1;
-	packet->operation = 
-		NBT_FLAG_REPLY | 
+	packet->operation =
+		NBT_FLAG_REPLY |
 		NBT_OPCODE_RELEASE |
-		NBT_FLAG_AUTHORITIVE |
+		NBT_FLAG_AUTHORITATIVE |
 		rcode;
 	
 	packet->answers = talloc_array(packet, struct nbt_res_rec, 1);
@@ -315,10 +315,10 @@ void nbtd_wack_reply(struct nbt_name_socket *nbtsock,
 
 	packet->name_trn_id = request_packet->name_trn_id;
 	packet->ancount = 1;
-	packet->operation = 
-		NBT_FLAG_REPLY | 
+	packet->operation =
+		NBT_FLAG_REPLY |
 		NBT_OPCODE_WACK |
-		NBT_FLAG_AUTHORITIVE;
+		NBT_FLAG_AUTHORITATIVE;
 	
 	packet->answers = talloc_array(packet, struct nbt_res_rec, 1);
 	if (packet->answers == NULL) goto failed;

@@ -9554,10 +9554,10 @@ static void test_conflict_owned_active_vs_replica_handler_query(struct nbt_name_
 		}
 
 		/* send a positive reply */
-		rep_packet->operation	= 
-					NBT_FLAG_REPLY | 
-					NBT_OPCODE_QUERY | 
-					NBT_FLAG_AUTHORITIVE |
+		rep_packet->operation	=
+					NBT_FLAG_REPLY |
+					NBT_OPCODE_QUERY |
+					NBT_FLAG_AUTHORITATIVE |
 					NBT_FLAG_RECURSION_DESIRED |
 					NBT_FLAG_RECURSION_AVAIL;
 
@@ -9579,9 +9579,9 @@ static void test_conflict_owned_active_vs_replica_handler_query(struct nbt_name_
 	} else {
 		/* send a negative reply */
 		rep_packet->operation	=
-					NBT_FLAG_REPLY | 
-					NBT_OPCODE_QUERY | 
-					NBT_FLAG_AUTHORITIVE |
+					NBT_FLAG_REPLY |
+					NBT_OPCODE_QUERY |
+					NBT_FLAG_AUTHORITATIVE |
 					NBT_RCODE_NAM;
 
 		rep_packet->answers[0].rr_type   = NBT_QTYPE_NULL;
@@ -9632,10 +9632,10 @@ static void test_conflict_owned_active_vs_replica_handler_release(
 
 	rep_packet->name_trn_id	= req_packet->name_trn_id;
 	rep_packet->ancount	= 1;
-	rep_packet->operation	= 
-				NBT_FLAG_REPLY | 
+	rep_packet->operation	=
+				NBT_FLAG_REPLY |
 				NBT_OPCODE_RELEASE |
-				NBT_FLAG_AUTHORITIVE;
+				NBT_FLAG_AUTHORITATIVE;
 
 	rep_packet->answers	= talloc_array(rep_packet, struct nbt_res_rec, 1);
 	if (rep_packet->answers == NULL) return;

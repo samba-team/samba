@@ -25,7 +25,7 @@ interface dns
 		DNS_FLAG_RECURSION_AVAIL    = 0x0080,
 		DNS_FLAG_RECURSION_DESIRED  = 0x0100,
 		DNS_FLAG_TRUNCATION         = 0x0200,
-		DNS_FLAG_AUTHORITIVE        = 0x0400,
+		DNS_FLAG_AUTHORITATIVE      = 0x0400,
 		DNS_OPCODE                  = 0x7800,
 		DNS_FLAG_REPLY              = 0x8000
 	} dns_operation;

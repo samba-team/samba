@@ -25,7 +25,7 @@ interface nbt
 		NBT_FLAG_RECURSION_AVAIL    = 0x0080,
 		NBT_FLAG_RECURSION_DESIRED  = 0x0100,
 		NBT_FLAG_TRUNCATION         = 0x0200,
-		NBT_FLAG_AUTHORITIVE        = 0x0400,
+		NBT_FLAG_AUTHORITATIVE      = 0x0400,
 		NBT_OPCODE                  = 0x7800,
 		NBT_FLAG_REPLY              = 0x8000
 	} nbt_operation;
