@@ -64,7 +64,8 @@ static const struct {
 	{ "VacuumMaxInterval",  600,  offsetof(struct ctdb_tunable, vacuum_max_interval) },
 	{ "MaxQueueDropMsg",  1000000, offsetof(struct ctdb_tunable, max_queue_depth_drop_msg) },
 	{ "UseStatusEvents",     0,  offsetof(struct ctdb_tunable, use_status_events_for_monitoring) },
-	{ "AllowUnhealthyDBRead", 0,  offsetof(struct ctdb_tunable, allow_unhealthy_db_read) }
+	{ "AllowUnhealthyDBRead", 0,  offsetof(struct ctdb_tunable, allow_unhealthy_db_read) },
+	{ "StatHistoryInterval",  1,  offsetof(struct ctdb_tunable, stat_history_interval) }
 };
 
 /*

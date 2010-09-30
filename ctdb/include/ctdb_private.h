@@ -117,6 +117,7 @@ struct ctdb_tunable {
 	uint32_t max_queue_depth_drop_msg;
 	uint32_t use_status_events_for_monitoring;
 	uint32_t allow_unhealthy_db_read;
+	uint32_t stat_history_interval;
 };
 
 /*

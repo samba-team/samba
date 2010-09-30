@@ -35,7 +35,8 @@ static void ctdb_statistics_update(struct event_context *ev, struct timed_event 
 	bzero(&ctdb->statistics_current, sizeof(struct ctdb_statistics));
 	ctdb->statistics_current.statistics_start_time = timeval_current();
 
-	event_add_timed(ctdb->ev, ctdb, timeval_current_ofs(10, 0), ctdb_statistics_update, ctdb);
+	
+	event_add_timed(ctdb->ev, ctdb, timeval_current_ofs(ctdb->tunable.stat_history_interval, 0), ctdb_statistics_update, ctdb);
 }
 
 int ctdb_statistics_init(struct ctdb_context *ctdb)
@@ -47,7 +48,7 @@ int ctdb_statistics_init(struct ctdb_context *ctdb)
 
 	bzero(ctdb->statistics_history, sizeof(ctdb->statistics_history));
 
-	event_add_timed(ctdb->ev, ctdb, timeval_current_ofs(10, 0), ctdb_statistics_update, ctdb);
+	event_add_timed(ctdb->ev, ctdb, timeval_current_ofs(ctdb->tunable.stat_history_interval, 0), ctdb_statistics_update, ctdb);
 	return 0;
 }
 
