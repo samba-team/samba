@@ -157,7 +157,7 @@ static int control_process_exists(struct ctdb_context *ctdb, int argc, const cha
 /*
   display statistics structure
  */
-static void show_statistics(struct ctdb_statistics *s)
+static void show_statistics(struct ctdb_statistics *s, int show_header)
 {
 	TALLOC_CTX *tmp_ctx = talloc_new(NULL);
 	int i;
@@ -212,20 +212,21 @@ static void show_statistics(struct ctdb_statistics *s)
 	days    = tmp;
 
 	if (options.machinereadable){
-		printf("CTDB version:");
-		printf("Current time of statistics:");
-		printf("Statistics collected since:");
-		for (i=0;i<ARRAY_SIZE(fields);i++) {
-			printf("%s:", fields[i].name);
+		if (show_header) {
+			printf("CTDB version:");
+			printf("Current time of statistics:");
+			printf("Statistics collected since:");
+			for (i=0;i<ARRAY_SIZE(fields);i++) {
+				printf("%s:", fields[i].name);
+			}
+			printf("max_reclock_ctdbd:");
+			printf("max_reclock_recd:");
+			printf("max_call_latency:");
+			printf("max_lockwait_latency:");
+			printf("max_childwrite_latency:");
+			printf("max_childwrite_latency:");
+			printf("\n");
 		}
-		printf("max_reclock_ctdbd:");
-		printf("max_reclock_recd:");
-		printf("max_call_latency:");
-		printf("max_lockwait_latency:");
-		printf("max_childwrite_latency:");
-		printf("max_childwrite_latency:");
-		printf("\n");
-
 		printf("%d:", CTDB_VERSION);
 		printf("%d:", (int)s->statistics_current_time.tv_sec);
 		printf("%d:", (int)s->statistics_start_time.tv_sec);
@@ -311,7 +312,7 @@ static int control_statistics_all(struct ctdb_context *ctdb)
 	}
 	talloc_free(nodes);
 	printf("Gathered statistics for %u nodes\n", num_nodes);
-	show_statistics(&statistics);
+	show_statistics(&statistics, 1);
 	return 0;
 }
 
@@ -332,7 +333,7 @@ static int control_statistics(struct ctdb_context *ctdb, int argc, const char **
 		DEBUG(DEBUG_ERR, ("Unable to get statistics from node %u\n", options.pnn));
 		return ret;
 	}
-	show_statistics(&statistics);
+	show_statistics(&statistics, 1);
 	return 0;
 }
 
@@ -375,11 +376,10 @@ static int control_stats(struct ctdb_context *ctdb, int argc, const char **argv)
 		if (stats->stats[i].statistics_start_time.tv_sec == 0) {
 			continue;
 		}
-		show_statistics(&stats->stats[i]);
+		show_statistics(&stats->stats[i], i==0);
 		if (i == num_records) {
 			break;
 		}
-		printf("===\n");
 	}
 	return 0;
 }
