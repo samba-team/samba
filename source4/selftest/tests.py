@@ -126,9 +126,9 @@ def plansmbtorturetestsuite(name, env, options):
     plantestsuite_loadlist(modname, env, cmdline)
 
 
-samba4srcdir = os.path.join(os.path.dirname(__file__), "..")
+samba4srcdir = os.path.normpath(os.path.join(os.path.dirname(__file__), ".."))
 builddir = os.getenv("BUILDDIR", samba4srcdir)
-samba4bindir = os.path.join(builddir, "bin")
+samba4bindir = os.path.normpath(os.path.join(builddir, "bin"))
 smb4torture = binpath("smbtorture")
 smb4torture_testsuite_list = subprocess.Popen([smb4torture, "--list"], stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate("")[0].splitlines()
 validate = os.getenv("VALIDATE", "")
@@ -346,8 +346,8 @@ plansmbtorturetestsuite("DRS-UNIT", "none", "ncalrpc:")
 # Pidl tests
 for f in sorted(os.listdir(os.path.join(samba4srcdir, "../pidl/tests"))):
     if f.endswith(".pl"):
-        planperltestsuite("pidl.%s" % f[:-3], os.path.join(samba4srcdir, "../pidl/tests", f))
-planperltestsuite("selftest.samba4", os.path.join(samba4srcdir, "../selftest/test_samba4.pl"))
+        planperltestsuite("pidl.%s" % f[:-3], os.path.normpath(os.path.join(samba4srcdir, "../pidl/tests", f)))
+planperltestsuite("selftest.samba4", os.path.normpath(os.path.join(samba4srcdir, "../selftest/test_samba4.pl")))
 
 # Blackbox Tests:
 # tests that interact directly with the command-line tools rather than using
@@ -486,7 +486,7 @@ plantestsuite("samba4.deletetest.python(dc)", "dc", ['PYTHONPATH="$PYTHONPATH:..
 plantestsuite("samba4.policy.python", "none", ['PYTHONPATH="$PYTHONPATH:lib/policy/tests/python"', subunitrun, 'bindings'])
 plantestsuite("samba4.blackbox.samba3dump", "none", [python, os.path.join(samba4srcdir, "scripting/bin/samba3dump"), os.path.join(samba4srcdir, "../testdata/samba3")])
 os.system("rm -rf $PREFIX/upgrade")
-plantestsuite("samba4.blackbox.upgrade", "none", [python, os.path.join(samba4srcdir, "setup/upgrade_from_s3"), "--targetdir=$PREFIX/upgrade", os.path.join(samba4srcdir, "../testdata/samba3"), os.path.join(samba4srcdir, "../testdata/samba3/smb.conf")])
+plantestsuite("samba4.blackbox.upgrade", "none", [python, os.path.join(samba4srcdir, "setup/upgrade_from_s3"), "--targetdir=$PREFIX/upgrade", os.path.normpath(os.path.join(samba4srcdir, "../testdata/samba3")), os.path.normpath(os.path.join(samba4srcdir, "../testdata/samba3/smb.conf"))])
 os.system("rm -rf $PREFIX/provision") # FIXME
 os.system("mkdir $PREFIX/provision") # FIXME
 plantestsuite("samba4.blackbox.provision.py", "none", ["PYTHON=%s" % python, os.path.join(samba4srcdir, "setup/tests/blackbox_provision.sh"), '$PREFIX/provision'])
