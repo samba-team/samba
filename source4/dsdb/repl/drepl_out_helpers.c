@@ -337,11 +337,6 @@ static void dreplsrv_op_pull_source_get_changes_trigger(struct tevent_req *req)
 	NTSTATUS status;
 	uint32_t replica_flags;
 
-	if ((rf1->replica_flags & DRSUAPI_DRS_WRIT_REP) == 0 &&
-	    state->op->extended_op == DRSUAPI_EXOP_NONE) {
-		return;
-	}
-
 	r = talloc(state, struct drsuapi_DsGetNCChanges);
 	if (tevent_req_nomem(r, req)) {
 		return;
@@ -389,8 +384,6 @@ static void dreplsrv_op_pull_source_get_changes_trigger(struct tevent_req *req)
 			DEBUG(0,(__location__ ": Failed to construct partial attribute set : %s\n", nt_errstr(status)));
 			return;
 		}
-
-		replica_flags &= ~DRSUAPI_DRS_WRIT_REP;
 	}
 
 	r->in.bind_handle	= &drsuapi->bind_handle;
