@@ -84,9 +84,12 @@ static bool check_MasterNC(struct kccsrv_partition *p, struct repsFromToBlob *r,
 			continue;
 		}
 
-		el = ldb_msg_find_element(msg, "hasMasterNCs");
+		el = ldb_msg_find_element(msg, "msDS-hasMasterNCs");
 		if (!el || el->num_values == 0) {
-			continue;
+			el = ldb_msg_find_element(msg, "hasMasterNCs");
+			if (!el || el->num_values == 0) {
+				continue;
+			}
 		}
 		for (j=0; j<el->num_values; j++) {
 			dn = ldb_dn_from_ldb_val(p, p->service->samdb, &el->values[j]);
@@ -96,8 +99,10 @@ static bool check_MasterNC(struct kccsrv_partition *p, struct repsFromToBlob *r,
 			}
 			if (ldb_dn_compare(dn, p->dn) == 0) {
 				talloc_free(dn);
-				DEBUG(5,("%s hasMasterNCs match on %s in %s\n",
-					 r1->other_info->dns_name, ldb_dn_get_linearized(dn),
+				DEBUG(5,("%s %s match on %s in %s\n",
+					 r1->other_info->dns_name,
+					 el->name,
+					 ldb_dn_get_linearized(dn),
 					 ldb_dn_get_linearized(msg->dn)));
 				return true;
 			}
@@ -313,7 +318,7 @@ NTSTATUS kccsrv_simple_update(struct kccsrv_service *s, TALLOC_CTX *mem_ctx)
 	struct ldb_result *res;
 	unsigned int i;
 	int ret;
-	const char *attrs[] = { "objectGUID", "invocationID", "hasMasterNCs", NULL };
+	const char *attrs[] = { "objectGUID", "invocationID", "msDS-hasMasterNCs", "hasMasterNCs", NULL };
 	struct repsFromToBlob *reps = NULL;
 	uint32_t count = 0;
 	struct kcc_connection_list *ntds_conn, *dsa_conn;
