@@ -22,6 +22,8 @@
 #include "includes.h"
 #include "libcli/libcli.h"
 #include "torture/util.h"
+#include "system/filesys.h"
+#include "libcli/security/secace.h"
 
 extern int torture_failures;
 
@@ -182,3 +184,248 @@ error_exit:
 	return true;
 }
 
+bool torture_winattrtest(struct torture_context *tctx,
+			  struct smbcli_state *cli1)
+{
+	const char *fname = "\\winattr1.file";
+	const char *dname = "\\winattr1.dir";
+	int fnum1;
+	uint16_t attr;
+	uint16_t j;
+	uint32_t aceno;
+	int failures = 0;
+	union smb_fileinfo query, query_org;
+	NTSTATUS status;
+	struct security_descriptor *sd1, *sd2;
+
+
+	/* Test winattrs for file */
+	smbcli_unlink(cli1->tree, fname);
+
+	/* Open a file*/
+	fnum1 = smbcli_open(cli1->tree, fname, O_RDWR | O_CREAT | O_TRUNC,
+			DENY_NONE);
+	torture_assert(tctx, fnum1 != -1,
+		       talloc_asprintf(tctx, "open(1) of %s failed (%s)\n",
+		       fname, smbcli_errstr(cli1->tree)));
+
+
+	/* Get security descriptor and store it*/
+	query_org.generic.level = RAW_FILEINFO_SEC_DESC;
+	query_org.generic.in.file.fnum = fnum1;
+	status = smb_raw_fileinfo(cli1->tree, tctx, &query_org);
+	if(!NT_STATUS_IS_OK(status)){
+		torture_comment(tctx, "smb_raw_fileinfo(1) of %s failed (%s)\n",
+				fname, nt_errstr(status));
+		torture_assert_ntstatus_ok(tctx,
+				smbcli_close(cli1->tree, fnum1),
+				talloc_asprintf(tctx,
+					"close(1) of %s failed (%s)\n",
+			                fname, smbcli_errstr(cli1->tree)));
+		CHECK_MAX_FAILURES(error_exit_file);
+	}
+	sd1 = query_org.query_secdesc.out.sd;
+
+	torture_assert_ntstatus_ok(tctx, smbcli_close(cli1->tree, fnum1),
+	               talloc_asprintf(tctx, "close(1) of %s failed (%s)\n",
+			               fname, smbcli_errstr(cli1->tree)));
+
+	/*Set and get attributes*/
+	for (j = 0; j < ARRAY_SIZE(open_attrs_table); j++) {
+		torture_assert_ntstatus_ok(tctx,
+			smbcli_setatr(cli1->tree, fname, open_attrs_table[j],0),
+			talloc_asprintf(tctx, "setatr(2) failed (%s)",
+				smbcli_errstr(cli1->tree)));
+
+		torture_assert_ntstatus_ok(tctx,
+			smbcli_getatr(cli1->tree, fname, &attr, NULL, NULL),
+			talloc_asprintf(tctx, "getatr(2) failed (%s)",
+			smbcli_errstr(cli1->tree)));
+
+		/* Check the result */
+		if((j == 0)&&(attr != FILE_ATTRIBUTE_ARCHIVE)){
+			torture_comment(tctx, "getatr check failed. \
+					Attr applied [0x%x], got attr [0x%x], \
+					should be [0x%x]",
+					open_attrs_table[j],
+					(uint16_t)attr,open_attrs_table[j +1]);
+			CHECK_MAX_FAILURES(error_exit_file);
+		}else{
+
+			if((j != 0) &&(attr != open_attrs_table[j])){
+				torture_comment(tctx, "getatr check failed. \
+					Attr applied [0x%x],got attr 0x%x, \
+					should be 0x%x ",
+					open_attrs_table[j], (uint16_t)attr,
+					open_attrs_table[j]);
+				CHECK_MAX_FAILURES(error_exit_file);
+			}
+
+		}
+
+		fnum1 = smbcli_open(cli1->tree, fname, O_RDONLY | O_CREAT,
+				DENY_NONE);
+		torture_assert(tctx, fnum1 != -1,
+		       talloc_asprintf(tctx, "open(2) of %s failed (%s)\n",
+		       fname, smbcli_errstr(cli1->tree)));
+		/*Get security descriptor */
+		query.query_secdesc.level = RAW_FILEINFO_SEC_DESC;
+		query.query_secdesc.in.file.fnum = fnum1;
+		status = smb_raw_fileinfo(cli1->tree, tctx, &query);
+		if(!NT_STATUS_IS_OK(status)){
+			torture_comment(tctx,
+				"smb_raw_fileinfo(2) of %s failed (%s)\n",
+				fname, nt_errstr(status));
+			torture_assert_ntstatus_ok(tctx,
+				smbcli_close(cli1->tree, fnum1),
+				talloc_asprintf(tctx,
+					"close(2) of %s failed (%s)\n",
+					fname, smbcli_errstr(cli1->tree)));
+			CHECK_MAX_FAILURES(error_exit_file);
+		}
+		sd2 = query.query_secdesc.out.sd;
+
+		torture_assert_ntstatus_ok(tctx,smbcli_close(cli1->tree,fnum1),
+	               talloc_asprintf(tctx, "close(2) of %s failed (%s)\n",
+			               fname, smbcli_errstr(cli1->tree)));
+
+		/*Compare security descriptors -- Must be same*/
+		for (aceno=0;(sd1->dacl&&aceno < sd1->dacl->num_aces);aceno++){
+			struct security_ace *ace1 = &sd1->dacl->aces[aceno];
+			struct security_ace *ace2 = &sd2->dacl->aces[aceno];
+
+			if(!sec_ace_equal(ace1,ace2)){
+				torture_comment(tctx,
+					"ACLs changed! Not expected!\n");
+				CHECK_MAX_FAILURES(error_exit_file);
+			}
+		}
+
+		torture_comment(tctx, "[%d] setattr = [0x%x] got attr 0x%x\n",
+			j,  open_attrs_table[j], attr );
+
+	}
+
+error_exit_file:
+	smbcli_setatr(cli1->tree, fname, 0, 0);
+	smbcli_unlink(cli1->tree, fname);
+
+/* Check for Directory. */
+
+	smbcli_deltree(cli1->tree, dname);
+	smbcli_rmdir(cli1->tree,dname);
+
+	/* Open a directory */
+	fnum1 = smbcli_nt_create_full(cli1->tree, dname, 0,
+				      SEC_RIGHTS_DIR_ALL,
+				      FILE_ATTRIBUTE_DIRECTORY,
+				      NTCREATEX_SHARE_ACCESS_NONE,
+				      NTCREATEX_DISP_OPEN_IF,
+				      NTCREATEX_OPTIONS_DIRECTORY, 0);
+	/*smbcli_mkdir(cli1->tree,dname);*/
+
+	torture_assert(tctx, fnum1 != -1, talloc_asprintf(tctx,
+			"open (1) of %s failed (%s)",
+			  dname, smbcli_errstr(cli1->tree)));
+
+
+	/* Get Security Descriptor */
+	query_org.generic.level = RAW_FILEINFO_SEC_DESC;
+        query_org.generic.in.file.fnum = fnum1;
+        status = smb_raw_fileinfo(cli1->tree, tctx, &query_org);
+	if(!NT_STATUS_IS_OK(status)){
+		torture_comment(tctx, "smb_raw_fileinfo(1) of %s failed (%s)\n",
+				dname, nt_errstr(status));
+		torture_assert_ntstatus_ok(tctx,
+				smbcli_close(cli1->tree, fnum1),
+				talloc_asprintf(tctx,
+					"close(1) of %s failed (%s)\n",
+			                dname, smbcli_errstr(cli1->tree)));
+		CHECK_MAX_FAILURES(error_exit_dir);
+	}
+	sd1 = query_org.query_secdesc.out.sd;
+
+	torture_assert_ntstatus_ok(tctx,
+				smbcli_close(cli1->tree, fnum1),
+				talloc_asprintf(tctx,
+				"close (1) of %s failed (%s)", dname,
+				smbcli_errstr(cli1->tree)));
+
+	/* Set and get win attributes*/
+	for (j = 1; j < ARRAY_SIZE(open_attrs_table); j++) {
+
+		torture_assert_ntstatus_ok(tctx,
+		smbcli_setatr(cli1->tree, dname, open_attrs_table[j], 0),
+		talloc_asprintf(tctx, "setatr(2) failed (%s)",
+		smbcli_errstr(cli1->tree)));
+
+		torture_assert_ntstatus_ok(tctx,
+		smbcli_getatr(cli1->tree, dname, &attr, NULL, NULL),
+		talloc_asprintf(tctx, "getatr(2) failed (%s)",
+		smbcli_errstr(cli1->tree)));
+
+		torture_comment(tctx, "[%d] setatt = [0x%x] got attr 0x%x\n",
+			j,  open_attrs_table[j], attr );
+
+		/* Check the result */
+		if(attr != (open_attrs_table[j]|FILE_ATTRIBUTE_DIRECTORY)){
+			torture_comment(tctx, "getatr check failed. set attr \
+				[0x%x], got attr 0x%x, should be 0x%x\n",
+			        open_attrs_table[j],
+			        (uint16_t)attr,
+			        open_attrs_table[j]|FILE_ATTRIBUTE_DIRECTORY);
+			CHECK_MAX_FAILURES(error_exit_dir);
+		}
+
+		fnum1 = smbcli_nt_create_full(cli1->tree, dname, 0,
+				      SEC_RIGHTS_DIR_READ,
+				      FILE_ATTRIBUTE_DIRECTORY,
+				      NTCREATEX_SHARE_ACCESS_NONE,
+				      NTCREATEX_DISP_OPEN,
+				      0,0);
+
+		torture_assert(tctx, fnum1 != -1, talloc_asprintf(tctx,
+			"open (2) of %s failed (%s)",
+			  dname, smbcli_errstr(cli1->tree)));
+		/* Get security descriptor */
+		query.generic.level = RAW_FILEINFO_SEC_DESC;
+		query.generic.in.file.fnum = fnum1;
+		status = smb_raw_fileinfo(cli1->tree, tctx, &query);
+		if(!NT_STATUS_IS_OK(status)){
+			torture_comment(tctx, "smb_raw_fileinfo(2) of %s failed\
+					(%s)\n", dname, nt_errstr(status));
+			torture_assert_ntstatus_ok(tctx,
+					smbcli_close(cli1->tree, fnum1),
+					talloc_asprintf(tctx,
+					"close (2) of %s failed (%s)", dname,
+					smbcli_errstr(cli1->tree)));
+			CHECK_MAX_FAILURES(error_exit_dir);
+		}
+		sd2 = query.query_secdesc.out.sd;
+		torture_assert_ntstatus_ok(tctx,
+				smbcli_close(cli1->tree, fnum1),
+				talloc_asprintf(tctx,
+				"close (2) of %s failed (%s)", dname,
+				smbcli_errstr(cli1->tree)));
+
+		/* Security descriptor must be same*/
+		for (aceno=0;(sd1->dacl&&aceno < sd1->dacl->num_aces);aceno++){
+			struct security_ace *ace1 = &sd1->dacl->aces[aceno];
+			struct security_ace *ace2 = &sd2->dacl->aces[aceno];
+
+			if(!sec_ace_equal(ace1,ace2)){
+				torture_comment(tctx,
+					"ACLs changed! Not expected!\n");
+				CHECK_MAX_FAILURES(error_exit_dir);
+			}
+		}
+
+	}
+error_exit_dir:
+	smbcli_deltree(cli1->tree, dname);
+	smbcli_rmdir(cli1->tree,dname);
+
+	if(failures)
+		return false;
+	return true;
+}

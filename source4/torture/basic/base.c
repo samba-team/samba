@@ -1866,6 +1866,7 @@ NTSTATUS torture_base_init(void)
 	torture_suite_add_1smb_test(suite, "PROPERTIES", torture_test_properties);
 	torture_suite_add_1smb_test(suite, "MANGLE", torture_mangle);
 	torture_suite_add_1smb_test(suite, "OPENATTR", torture_openattrtest);
+        torture_suite_add_1smb_test(suite, "WINATTR", torture_winattrtest);
 	torture_suite_add_suite(suite, torture_charset(suite));
 	torture_suite_add_1smb_test(suite, "CHKPATH",  torture_chkpath_test);
 	torture_suite_add_1smb_test(suite, "SECLEAK",  torture_sec_leak);
