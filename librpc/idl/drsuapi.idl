@@ -814,7 +814,7 @@ interface drsuapi
 		GUID source_dra;
 		[charset(UTF16),string] uint16 *source_dra_address;
 		uint8 schedule[84];
-		uint32 replica_flags;
+		drsuapi_DrsOptions replica_flags;
 		uint32 modify_fields;
 		drsuapi_DrsOptions options;
 	} drsuapi_DsReplicaModRequest1;
