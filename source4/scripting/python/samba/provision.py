@@ -389,6 +389,7 @@ def provision_paths_from_lp(lp, dnsdomain):
     # This is stored without path prefix for the "privateKeytab" attribute in
     # "secrets_dns.ldif".
     paths.dns_keytab = "dns.keytab"
+    paths.keytab = "secrets.keytab"
 
     paths.shareconf = os.path.join(paths.private_dir, "share.ldb")
     paths.samdb = os.path.join(paths.private_dir, lp.get("sam database") or "samdb.ldb")
@@ -781,7 +782,7 @@ def secretsdb_setup_dns(secretsdb, setup_path, names, private_dir,
             })
 
 
-def setup_secretsdb(path, setup_path, session_info, backend_credentials, lp):
+def setup_secretsdb(paths, setup_path, session_info, backend_credentials, lp):
     """Setup the secrets database.
 
    :note: This function does not handle exceptions and transaction on purpose,
@@ -794,8 +795,19 @@ def setup_secretsdb(path, setup_path, session_info, backend_credentials, lp):
     :param lp: Loadparm context
     :return: LDB handle for the created secrets database
     """
-    if os.path.exists(path):
-        os.unlink(path)
+    if os.path.exists(paths.secrets):
+        os.unlink(paths.secrets)
+
+    keytab_path = os.path.join(paths.private_dir, paths.keytab)
+    if os.path.exists(keytab_path):
+        os.unlink(keytab_path)
+
+    dns_keytab_path = os.path.join(paths.private_dir, paths.dns_keytab)
+    if os.path.exists(dns_keytab_path):
+        os.unlink(dns_keytab_path)
+
+    path = paths.secrets
+
     secrets_ldb = Ldb(path, session_info=session_info, 
                       lp=lp)
     secrets_ldb.erase()
@@ -1513,7 +1525,7 @@ def provision(setup_dir, logger, session_info,
         share_ldb.load_ldif_file_add(setup_path("share.ldif"))
 
     logger.info("Setting up secrets.ldb")
-    secrets_ldb = setup_secretsdb(paths.secrets, setup_path, 
+    secrets_ldb = setup_secretsdb(paths, setup_path,
         session_info=session_info,
         backend_credentials=provision_backend.secrets_credentials, lp=lp)
 
