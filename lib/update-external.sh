@@ -7,6 +7,8 @@ WORKDIR="`mktemp -d`"
 
 echo "Updating subunit..."
 bzr export "$WORKDIR/subunit" lp:subunit 
+# Preserve wscript file
+cp "$TARGETDIR/subunit/c/wscript" "$WORKDIR/subunit/c/wscript"
 rsync -avz --delete "$WORKDIR/subunit/" "$TARGETDIR/subunit/"
 
 echo "Updating testtools..."

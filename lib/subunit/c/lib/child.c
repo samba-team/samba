@@ -80,3 +80,25 @@ subunit_test_skip(char const * const name, char const * const reason)
 {
   subunit_send_event("skip", name, reason);
 }
+
+void
+subunit_progress(enum subunit_progress_whence whence, int offset)
+{
+	switch (whence) {
+	case SUBUNIT_PROGRESS_SET:
+		printf("progress: %d\n", offset);
+		break;
+	case SUBUNIT_PROGRESS_CUR:
+		printf("progress: %+-d\n", offset);
+		break;
+	case SUBUNIT_PROGRESS_POP:
+		printf("progress: pop\n");
+		break;
+	case SUBUNIT_PROGRESS_PUSH:
+		printf("progress: push\n");
+		break;
+	default:
+		fprintf(stderr, "Invalid whence %d in subunit_progress()\n", whence);
+		break;
+	}
+}

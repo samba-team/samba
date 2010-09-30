@@ -74,6 +74,23 @@ extern void subunit_test_skip(char const * const name,
 			      char const * const reason);
 
 
+enum subunit_progress_whence {
+	SUBUNIT_PROGRESS_SET,
+	SUBUNIT_PROGRESS_CUR,
+	SUBUNIT_PROGRESS_POP,
+	SUBUNIT_PROGRESS_PUSH,
+};
+
+/**
+ * subunit_progress:
+ *
+ * Report the progress of a test run.
+ * @whence: The type of progress update to report.
+ * @offset: Offset of the progress (only for SUBUNIT_PROGRESS_SET
+ * 			and SUBUNIT_PROGRESS_CUR).
+ */
+extern void subunit_progress(enum subunit_progress_whence whence, int offset);
+
 #ifdef __cplusplus
 }
 #endif
