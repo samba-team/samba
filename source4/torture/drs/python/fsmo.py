@@ -50,7 +50,8 @@ class DrsFsmoTestCase(samba.tests.TestCase):
         super(DrsFsmoTestCase, self).setUp()
 
         # we have to wait for the replication before we make the check
-        self.sleep_time = 5
+        self.fsmo_wait_max_time = 20
+        self.fsmo_wait_sleep_time = 0.2
         # connect to DCs singleton
         if self.ldb_dc1 is None:
             DrsFsmoTestCase.dc1 = samba.tests.env_get_var_value("DC1")
@@ -100,8 +101,29 @@ class DrsFsmoTestCase(samba.tests.TestCase):
         cmd_line = "%s fsmo transfer --role=%s --host=ldap://%s:389 %s" % (net_cmd, role, DC,
                                                                            cmd_line_auth)
         ret = os.system(cmd_line)
-        self.assertEquals(ret, 0, "Transfering schema to %s has failed!" % (DC))
+        self.assertEquals(ret, 0, "Transferring schema to %s has failed!" % (DC))
         pass
+
+    def _wait_for_role_transfer(self, ldb_dc, role_dn, master):
+        """Wait for role transfer for certain amount of time
+
+        :return: (Result=True|False, CurrentMasterDnsName) tuple
+        """
+        cur_master = ''
+        retries = int(self.fsmo_wait_max_time / self.fsmo_wait_sleep_time) + 1
+        for i in range(0, retries):
+            # check if master has been transfered
+            res = ldb_dc.search(role_dn,
+                                scope=SCOPE_BASE, attrs=["fSMORoleOwner"])
+            assert len(res) == 1, "Only one fSMORoleOwner value expected!"
+            cur_master = res[0]["fSMORoleOwner"][0]
+            if master == cur_master:
+                return (True, cur_master)
+            # skip last sleep, if no need to wait anymore
+            if i != (retries - 1):
+                # wait a little bit before next retry
+                time.sleep(self.fsmo_wait_sleep_time)
+        return (False, cur_master)
 
     def _role_transfer(self, role, role_dn):
         """Triggers transfer of role from DC1 to DC2
@@ -110,26 +132,22 @@ class DrsFsmoTestCase(samba.tests.TestCase):
         print "Testing for %s role transfer from %s to %s" % (role, self.dnsname_dc1, self.dnsname_dc2)
 
         self._net_fsmo_role_transfer(DC=self.dnsname_dc2, role=role)
-        # check if the role is transfered, but wait a little first so the getncchanges can pass
-        time.sleep(self.sleep_time)
-        res = self.ldb_dc2.search(role_dn,
-                                  scope=SCOPE_BASE, attrs=["fSMORoleOwner"])
-        assert len(res) == 1
-        self.master = res[0]["fSMORoleOwner"][0]
-        self.assertEquals(self.master, self.dsServiceName_dc2,
-                          "Transfering %s role to %s has failed, master is: %s!"%(role, self.dsServiceName_dc2,self.master))
+        # check if the role is transfered
+        (res, master) = self._wait_for_role_transfer(ldb_dc=self.ldb_dc2,
+                                                     role_dn=role_dn,
+                                                     master=self.dsServiceName_dc2)
+        self.assertTrue(res,
+                        "Transferring %s role to %s has failed, master is: %s!"%(role, self.dsServiceName_dc2, master))
 
         # dc1 gets back the schema master role from dc2
         print "Testing for %s role transfer from %s to %s" % (role, self.dnsname_dc2, self.dnsname_dc1)
-        self._net_fsmo_role_transfer(DC=self.dnsname_dc1, role=role);
+        self._net_fsmo_role_transfer(DC=self.dnsname_dc1, role=role)
         # check if the role is transfered
-        time.sleep(self.sleep_time)
-        res = self.ldb_dc1.search(role_dn,
-                                  scope=SCOPE_BASE, attrs=["fSMORoleOwner"])
-        assert len(res) == 1
-        self.master = res[0]["fSMORoleOwner"][0]
-        self.assertEquals(self.master, self.dsServiceName_dc1,
-                          "Transfering %s role to %s has failed, master is %s"%(role, self.dsServiceName_dc1, self.master))
+        (res, master) = self._wait_for_role_transfer(ldb_dc=self.ldb_dc1,
+                                                     role_dn=role_dn,
+                                                     master=self.dsServiceName_dc1)
+        self.assertTrue(res,
+                        "Transferring %s role to %s has failed, master is: %s!"%(role, self.dsServiceName_dc1, master))
         pass
 
     def test_SchemaMasterTransfer(self):
