@@ -275,6 +275,45 @@ static NTSTATUS handle_question(struct dns_server *dns,
 			ai++;
 		}
 		break;
+	case DNS_QTYPE_SRV:
+		for (ri = 0; ri < el->num_values; ri++) {
+			if (recs[ri].wType != question->question_type) {
+				continue;
+			}
+
+			ZERO_STRUCT(ans[ai]);
+			ans[ai].name = question->name;
+			ans[ai].rr_type = DNS_QTYPE_SRV;
+			ans[ai].rr_class = DNS_QCLASS_IP;
+			ans[ai].ttl = recs[ri].dwTtlSeconds;
+			ans[ai].rdata.srv_record.priority = recs[ri].data.srv.wPriority;
+			ans[ai].rdata.srv_record.weight = recs[ri].data.srv.wWeight;
+			ans[ai].rdata.srv_record.port = recs[ri].data.srv.wPort;
+			ans[ai].rdata.srv_record.target = recs[ri].data.srv.nameTarget;
+			ai++;
+		}
+		break;
+	case DNS_QTYPE_SOA:
+		for (ri = 0; ri < el->num_values; ri++) {
+			if (recs[ri].wType != question->question_type) {
+				continue;
+			}
+
+			ZERO_STRUCT(ans[ai]);
+			ans[ai].name = question->name;
+			ans[ai].rr_type = DNS_QTYPE_SOA;
+			ans[ai].rr_class = DNS_QCLASS_IP;
+			ans[ai].ttl = recs[ri].dwTtlSeconds;
+			ans[ai].rdata.soa_record.mname	= recs[ri].data.soa.mname;
+			ans[ai].rdata.soa_record.rname	= recs[ri].data.soa.rname;
+			ans[ai].rdata.soa_record.serial	= recs[ri].data.soa.serial;
+			ans[ai].rdata.soa_record.refresh= recs[ri].data.soa.refresh;
+			ans[ai].rdata.soa_record.retry	= recs[ri].data.soa.retry;
+			ans[ai].rdata.soa_record.expire	= recs[ri].data.soa.expire;
+			ans[ai].rdata.soa_record.minimum= recs[ri].data.soa.minimum;
+			ai++;
+		}
+		break;
 	default:
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
