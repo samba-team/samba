@@ -48,7 +48,7 @@ plantestsuite_loadlist() {
 	if [ "$env" = "none" ]; then
 		fullname="$name"
 	else
-		fullname="$name ($env)"
+		fullname="$name($env)"
 	fi
 	echo $fullname
 	echo $env
@@ -147,7 +147,7 @@ echo "OPTIONS $TORTURE_OPTIONS"
 # Simple tests for LDAP and CLDAP
 
 for options in "-U\$USERNAME%\$PASSWORD --option=socket:testnonblock=true" "-U\$USERNAME%\$PASSWORD" "-U\$USERNAME%\$PASSWORD -k yes" "-U\$USERNAME%\$PASSWORD -k no" "-U\$USERNAME%\$PASSWORD -k no --sign" "-U\$USERNAME%\$PASSWORD -k no --encrypt" "-U\$USERNAME%\$PASSWORD -k yes --encrypt" "-U\$USERNAME%\$PASSWORD -k yes --sign"; do
-	plantestsuite "samba4.ldb.ldap with options $options (dc)" dc $bbdir/test_ldb.sh ldap \$SERVER $options
+	plantestsuite "samba4.ldb.ldap with options $options(dc)" dc $bbdir/test_ldb.sh ldap \$SERVER $options
 done
 # see if we support ldaps
 [ -n "$CONFIG_H" ] || {
@@ -155,11 +155,11 @@ done
 }
 if grep ENABLE_GNUTLS.1 $CONFIG_H > /dev/null; then
 	for options in "-U\$USERNAME%\$PASSWORD"; do
-		plantestsuite "samba4.ldb.ldaps with options $options (dc)" dc $bbdir/test_ldb.sh ldaps \$SERVER_IP $options
+		plantestsuite "samba4.ldb.ldaps with options $options(dc)" dc $bbdir/test_ldb.sh ldaps \$SERVER_IP $options
 	done
 fi
 for options in "-U\$USERNAME%\$PASSWORD"; do
-	plantestsuite "samba4.ldb.ldapi with options $options (dc:local)" dc:local $bbdir/test_ldb.sh ldapi \$PREFIX_ABS/dc/private/ldapi $options
+	plantestsuite "samba4.ldb.ldapi with options $options(dc:local)" dc:local $bbdir/test_ldb.sh ldapi \$PREFIX_ABS/dc/private/ldapi $options
 done
 for t in `$smb4torture --list | grep "^LDAP-"`
 do
@@ -170,9 +170,9 @@ LDBDIR=$samba4srcdir/lib/ldb
 export LDBDIR
 # Don't run LDB tests when using system ldb, as we won't have ldbtest installed
 if [ -f $samba4bindir/ldbtest ]; then
-	plantestsuite "ldbbase" none TEST_DATA_PREFIX=\$PREFIX $LDBDIR/tests/test-tdb.sh
+	plantestsuite "ldb.base" none TEST_DATA_PREFIX=\$PREFIX $LDBDIR/tests/test-tdb.sh
 else
-	skiptestsuite "ldbbase" "Using system LDB, ldbtest not available"
+	skiptestsuite "ldb.base" "Using system LDB, ldbtest not available"
 fi
 
 # Tests for RPC
@@ -373,23 +373,23 @@ planperltestsuite "selftest.samba4" $samba4srcdir/../selftest/test_samba4.pl
 # work correctly.
 
 planpythontestsuite none samba.tests.blackbox.ndrdump
-plantestsuite "samba4.blackbox.net (dc:local)" dc:local $samba4srcdir/utils/tests/test_net.sh "\$SERVER" "\$USERNAME" "\$PASSWORD" "\$DOMAIN"
-plantestsuite "samba4.blackbox.pkinit (dc:local)" dc:local $bbdir/test_pkinit.sh "\$SERVER" "\$USERNAME" "\$PASSWORD" "\$REALM" "\$DOMAIN" "$PREFIX" aes256-cts-hmac-sha1-96 $CONFIGURATION 
-plantestsuite "samba4.blackbox.kinit (dc:local)" dc:local $bbdir/test_kinit.sh "\$SERVER" "\$USERNAME" "\$PASSWORD" "\$REALM" "\$DOMAIN" "$PREFIX" aes256-cts-hmac-sha1-96 $CONFIGURATION
-plantestsuite "samba4.blackbox.kinit (fl2000dc:local)" fl2000dc:local $bbdir/test_kinit.sh "\$SERVER" "\$USERNAME" "\$PASSWORD" "\$REALM" "\$DOMAIN" "$PREFIX" arcfour-hmac-md5 $CONFIGURATION
-plantestsuite "samba4.blackbox.kinit (fl2008r2dc:local)" fl2008r2dc:local $bbdir/test_kinit.sh "\$SERVER" "\$USERNAME" "\$PASSWORD" "\$REALM" "\$DOMAIN" "$PREFIX" aes256-cts-hmac-sha1-96 $CONFIGURATION
-plantestsuite "samba4.blackbox.ktpass (dc)" dc $bbdir/test_ktpass.sh $PREFIX
-plantestsuite "samba4.blackbox.passwords (dc:local)" dc:local $bbdir/test_passwords.sh "\$SERVER" "\$USERNAME" "\$PASSWORD" "\$REALM" "\$DOMAIN" "$PREFIX"
-plantestsuite "samba4.blackbox.export.keytab (dc:local)" dc:local $bbdir/test_export_keytab.sh "\$SERVER" "\$USERNAME" "\$REALM" "\$DOMAIN" "$PREFIX"
-plantestsuite "samba4.blackbox.cifsdd (dc)" dc $samba4srcdir/client/tests/test_cifsdd.sh "\$SERVER" "\$USERNAME" "\$PASSWORD" "\$DOMAIN" 
-plantestsuite "samba4.blackbox.nmblookup (dc)" dc $samba4srcdir/utils/tests/test_nmblookup.sh "\$NETBIOSNAME" "\$NETBIOSALIAS" "\$SERVER" "\$SERVER_IP" 
-plantestsuite "samba4.blackbox.nmblookup (member)" member $samba4srcdir/utils/tests/test_nmblookup.sh "\$NETBIOSNAME" "\$NETBIOSALIAS" "\$SERVER" "\$SERVER_IP"
-plantestsuite "samba4.blackbox.locktest (dc)" dc $samba4srcdir/torture/tests/test_locktest.sh "\$SERVER" "\$USERNAME" "\$PASSWORD" "\$DOMAIN" "$PREFIX"
-plantestsuite "samba4.blackbox.masktest (masktest)" dc $samba4srcdir/torture/tests/test_masktest.sh "\$SERVER" "\$USERNAME" "\$PASSWORD" "\$DOMAIN" "$PREFIX"
-plantestsuite "samba4.blackbox.gentest (dc)" dc $samba4srcdir/torture/tests/test_gentest.sh "\$SERVER" "\$USERNAME" "\$PASSWORD" "\$DOMAIN" "$PREFIX"
-plantestsuite "samba4.blackbox.wbinfo (dc:local)" dc:local $samba4srcdir/../nsswitch/tests/test_wbinfo.sh "\$DOMAIN" "\$USERNAME" "\$PASSWORD" "dc"
-plantestsuite "samba4.blackbox.wbinfo (member:local)" member:local $samba4srcdir/../nsswitch/tests/test_wbinfo.sh "\$DOMAIN" "\$DC_USERNAME" "\$DC_PASSWORD" "member"
-plantestsuite "samba4.blackbox.chgdcpass (dc)" dc $bbdir/test_chgdcpass.sh "\$SERVER" "LOCALDC\\\$" "\$REALM" "\$DOMAIN" "$PREFIX" aes256-cts-hmac-sha1-96 $SELFTEST_PREFIX/dc
+plantestsuite "samba4.blackbox.net(dc:local)" dc:local $samba4srcdir/utils/tests/test_net.sh "\$SERVER" "\$USERNAME" "\$PASSWORD" "\$DOMAIN"
+plantestsuite "samba4.blackbox.pkinit(dc:local)" dc:local $bbdir/test_pkinit.sh "\$SERVER" "\$USERNAME" "\$PASSWORD" "\$REALM" "\$DOMAIN" "$PREFIX" aes256-cts-hmac-sha1-96 $CONFIGURATION 
+plantestsuite "samba4.blackbox.kinit(dc:local)" dc:local $bbdir/test_kinit.sh "\$SERVER" "\$USERNAME" "\$PASSWORD" "\$REALM" "\$DOMAIN" "$PREFIX" aes256-cts-hmac-sha1-96 $CONFIGURATION
+plantestsuite "samba4.blackbox.kinit(fl2000dc:local)" fl2000dc:local $bbdir/test_kinit.sh "\$SERVER" "\$USERNAME" "\$PASSWORD" "\$REALM" "\$DOMAIN" "$PREFIX" arcfour-hmac-md5 $CONFIGURATION
+plantestsuite "samba4.blackbox.kinit(fl2008r2dc:local)" fl2008r2dc:local $bbdir/test_kinit.sh "\$SERVER" "\$USERNAME" "\$PASSWORD" "\$REALM" "\$DOMAIN" "$PREFIX" aes256-cts-hmac-sha1-96 $CONFIGURATION
+plantestsuite "samba4.blackbox.ktpass(dc)" dc $bbdir/test_ktpass.sh $PREFIX
+plantestsuite "samba4.blackbox.passwords(dc:local)" dc:local $bbdir/test_passwords.sh "\$SERVER" "\$USERNAME" "\$PASSWORD" "\$REALM" "\$DOMAIN" "$PREFIX"
+plantestsuite "samba4.blackbox.export.keytab(dc:local)" dc:local $bbdir/test_export_keytab.sh "\$SERVER" "\$USERNAME" "\$REALM" "\$DOMAIN" "$PREFIX"
+plantestsuite "samba4.blackbox.cifsdd(dc)" dc $samba4srcdir/client/tests/test_cifsdd.sh "\$SERVER" "\$USERNAME" "\$PASSWORD" "\$DOMAIN" 
+plantestsuite "samba4.blackbox.nmblookup(dc)" dc $samba4srcdir/utils/tests/test_nmblookup.sh "\$NETBIOSNAME" "\$NETBIOSALIAS" "\$SERVER" "\$SERVER_IP" 
+plantestsuite "samba4.blackbox.nmblookup(member)" member $samba4srcdir/utils/tests/test_nmblookup.sh "\$NETBIOSNAME" "\$NETBIOSALIAS" "\$SERVER" "\$SERVER_IP"
+plantestsuite "samba4.blackbox.locktest(dc)" dc $samba4srcdir/torture/tests/test_locktest.sh "\$SERVER" "\$USERNAME" "\$PASSWORD" "\$DOMAIN" "$PREFIX"
+plantestsuite "samba4.blackbox.masktest(masktest)" dc $samba4srcdir/torture/tests/test_masktest.sh "\$SERVER" "\$USERNAME" "\$PASSWORD" "\$DOMAIN" "$PREFIX"
+plantestsuite "samba4.blackbox.gentest(dc)" dc $samba4srcdir/torture/tests/test_gentest.sh "\$SERVER" "\$USERNAME" "\$PASSWORD" "\$DOMAIN" "$PREFIX"
+plantestsuite "samba4.blackbox.wbinfo(dc:local)" dc:local $samba4srcdir/../nsswitch/tests/test_wbinfo.sh "\$DOMAIN" "\$USERNAME" "\$PASSWORD" "dc"
+plantestsuite "samba4.blackbox.wbinfo(member:local)" member:local $samba4srcdir/../nsswitch/tests/test_wbinfo.sh "\$DOMAIN" "\$DC_USERNAME" "\$DC_PASSWORD" "member"
+plantestsuite "samba4.blackbox.chgdcpass(dc)" dc $bbdir/test_chgdcpass.sh "\$SERVER" "LOCALDC\\\$" "\$REALM" "\$DOMAIN" "$PREFIX" aes256-cts-hmac-sha1-96 $SELFTEST_PREFIX/dc
 
 # Tests using the "Simple" NTVFS backend
 for t in "BASE-RW1"; do
@@ -472,7 +472,7 @@ done
 nsstest4="$samba4bindir/nsstest${EXEEXT}"
 if test -f $nsstest4
 then
-	plantestsuite "samba4.nss.test using winbind (member)" member $VALGRIND $nsstest4 $samba4bindir/shared/libnss_winbind.so
+	plantestsuite "samba4.nss.test using winbind(member)" member $VALGRIND $nsstest4 $samba4bindir/shared/libnss_winbind.so
 fi
 
 SUBUNITRUN="$VALGRIND $PYTHON $samba4srcdir/scripting/bin/subunitrun"
@@ -502,21 +502,21 @@ planpythontestsuite none samba.tests.samba3sam
 planpythontestsuite none subunit
 planpythontestsuite dc:local samba.tests.dcerpc.rpcecho
 plantestsuite_idlist "samba.tests.dcerpc.registry" dc:local $SUBUNITRUN -U\$USERNAME%\$PASSWORD samba.tests.dcerpc.registry
-plantestsuite "samba4.ldap.python (dc)" dc PYTHONPATH="$PYTHONPATH:../lib/subunit/python:../lib/testtools" $PYTHON $samba4srcdir/dsdb/tests/python/ldap.py \$SERVER -U\$USERNAME%\$PASSWORD -W \$DOMAIN
-plantestsuite "samba4.schemaInfo.python (dc)" dc PYTHONPATH="$PYTHONPATH:$samba4srcdir/dsdb/tests/python/" $SUBUNITRUN dsdb_schema_info -U"\$DOMAIN/\$DC_USERNAME"%"\$DC_PASSWORD"
-plantestsuite "samba4.urgent_replication.python (dc)" dc PYTHONPATH="$PYTHONPATH:../lib/subunit/python:../lib/testtools" $PYTHON $samba4srcdir/dsdb/tests/python/urgent_replication.py \$PREFIX_ABS/dc/private/sam.ldb
+plantestsuite "samba4.ldap.python(dc)" dc PYTHONPATH="$PYTHONPATH:../lib/subunit/python:../lib/testtools" $PYTHON $samba4srcdir/dsdb/tests/python/ldap.py \$SERVER -U\$USERNAME%\$PASSWORD -W \$DOMAIN
+plantestsuite "samba4.schemaInfo.python(dc)" dc PYTHONPATH="$PYTHONPATH:$samba4srcdir/dsdb/tests/python/" $SUBUNITRUN dsdb_schema_info -U"\$DOMAIN/\$DC_USERNAME"%"\$DC_PASSWORD"
+plantestsuite "samba4.urgent_replication.python(dc)" dc PYTHONPATH="$PYTHONPATH:../lib/subunit/python:../lib/testtools" $PYTHON $samba4srcdir/dsdb/tests/python/urgent_replication.py \$PREFIX_ABS/dc/private/sam.ldb
 for env in "dc" "fl2000dc" "fl2003dc" "fl2008r2dc"; do
-	plantestsuite "samba4.ldap_schema.python ($env)" $env PYTHONPATH="$PYTHONPATH:../lib/subunit/python:../lib/testtools" $PYTHON $samba4srcdir/dsdb/tests/python/ldap_schema.py \$SERVER -U\$USERNAME%\$PASSWORD -W \$DOMAIN
-	plantestsuite "samba4.ldap.possibleInferiors.python ($env)" $env $PYTHON $samba4srcdir/dsdb/samdb/ldb_modules/tests/possibleinferiors.py ldap://\$SERVER -U\$USERNAME%\$PASSWORD -W \$DOMAIN
-	plantestsuite "samba4.ldap.secdesc.python ($env)" $env PYTHONPATH="$PYTHONPATH:../lib/subunit/python:../lib/testtools" $PYTHON $samba4srcdir/dsdb/tests/python/sec_descriptor.py \$SERVER -U\$USERNAME%\$PASSWORD -W \$DOMAIN
-	plantestsuite "samba4.ldap.acl.python ($env)" $env PYTHONPATH="$PYTHONPATH:../lib/subunit/python:../lib/testtools" $PYTHON $samba4srcdir/dsdb/tests/python/acl.py \$SERVER -U\$USERNAME%\$PASSWORD -W \$DOMAIN
-	plantestsuite "samba4.ldap.passwords.python ($env)" $env PYTHONPATH="$PYTHONPATH:../lib/subunit/python:../lib/testtools" $PYTHON $samba4srcdir/dsdb/tests/python/passwords.py \$SERVER -U\$USERNAME%\$PASSWORD -W \$DOMAIN
+	plantestsuite "samba4.ldap_schema.python($env)" $env PYTHONPATH="$PYTHONPATH:../lib/subunit/python:../lib/testtools" $PYTHON $samba4srcdir/dsdb/tests/python/ldap_schema.py \$SERVER -U\$USERNAME%\$PASSWORD -W \$DOMAIN
+	plantestsuite "samba4.ldap.possibleInferiors.python($env)" $env $PYTHON $samba4srcdir/dsdb/samdb/ldb_modules/tests/possibleinferiors.py ldap://\$SERVER -U\$USERNAME%\$PASSWORD -W \$DOMAIN
+	plantestsuite "samba4.ldap.secdesc.python($env)" $env PYTHONPATH="$PYTHONPATH:../lib/subunit/python:../lib/testtools" $PYTHON $samba4srcdir/dsdb/tests/python/sec_descriptor.py \$SERVER -U\$USERNAME%\$PASSWORD -W \$DOMAIN
+	plantestsuite "samba4.ldap.acl.python($env)" $env PYTHONPATH="$PYTHONPATH:../lib/subunit/python:../lib/testtools" $PYTHON $samba4srcdir/dsdb/tests/python/acl.py \$SERVER -U\$USERNAME%\$PASSWORD -W \$DOMAIN
+	plantestsuite "samba4.ldap.passwords.python($env)" $env PYTHONPATH="$PYTHONPATH:../lib/subunit/python:../lib/testtools" $PYTHON $samba4srcdir/dsdb/tests/python/passwords.py \$SERVER -U\$USERNAME%\$PASSWORD -W \$DOMAIN
 done
 planpythontestsuite dc:local samba.tests.upgradeprovisionneeddc
 planpythontestsuite none samba.tests.upgradeprovision
 planpythontestsuite none samba.tests.xattr
 planpythontestsuite none samba.tests.ntacls
-plantestsuite "samba4.deletetest.python (dc)" dc PYTHONPATH="$PYTHONPATH:../lib/subunit/python:../lib/testtools" $PYTHON $samba4srcdir/dsdb/tests/python/deletetest.py \$SERVER -U\$USERNAME%\$PASSWORD -W \$DOMAIN
+plantestsuite "samba4.deletetest.python(dc)" dc PYTHONPATH="$PYTHONPATH:../lib/subunit/python:../lib/testtools" $PYTHON $samba4srcdir/dsdb/tests/python/deletetest.py \$SERVER -U\$USERNAME%\$PASSWORD -W \$DOMAIN
 plantestsuite "samba4.policy.python" none PYTHONPATH="$PYTHONPATH:lib/policy/tests/python" $SUBUNITRUN bindings
 plantestsuite "samba4.blackbox.samba3dump" none $PYTHON $samba4srcdir/scripting/bin/samba3dump $samba4srcdir/../testdata/samba3
 rm -rf $PREFIX/upgrade
@@ -529,11 +529,11 @@ plantestsuite "samba4.blackbox.upgradeprovision.py" none PYTHON="$PYTHON" $samba
 plantestsuite "samba4.blackbox.setpassword.py" none PYTHON="$PYTHON" $samba4srcdir/setup/tests/blackbox_setpassword.sh "$PREFIX/provision"
 plantestsuite "samba4.blackbox.newuser.py" none PYTHON="$PYTHON" $samba4srcdir/setup/tests/blackbox_newuser.sh "$PREFIX/provision"
 plantestsuite "samba4.blackbox.group.py" none PYTHON="$PYTHON" $samba4srcdir/setup/tests/blackbox_group.sh "$PREFIX/provision"
-plantestsuite "samba4.blackbox.spn.py (dc:local)" dc:local PYTHON="$PYTHON" $samba4srcdir/setup/tests/blackbox_spn.sh "$PREFIX/dc"
+plantestsuite "samba4.blackbox.spn.py(dc:local)" dc:local PYTHON="$PYTHON" $samba4srcdir/setup/tests/blackbox_spn.sh "$PREFIX/dc"
 
 # DRS python tests
-plantestsuite "samba4.drs_delete_object.python (vampire_dc)" vampire_dc PYTHONPATH="$PYTHONPATH:$samba4srcdir/torture/drs/python" DC1=\$DC_SERVER DC2=\$VAMPIRE_DC_SERVER $SUBUNITRUN delete_object -U"\$DOMAIN/\$DC_USERNAME"%"\$DC_PASSWORD"
-plantestsuite "samba4.drs_fsmo.python (vampire_dc)" vampire_dc PYTHONPATH="$PYTHONPATH:$samba4srcdir/torture/drs/python" DC1=\$DC_SERVER DC2=\$VAMPIRE_DC_SERVER $SUBUNITRUN fsmo -U"\$DOMAIN/\$DC_USERNAME"%"\$DC_PASSWORD"
+plantestsuite "samba4.drs_delete_object.python(vampire_dc)" vampire_dc PYTHONPATH="$PYTHONPATH:$samba4srcdir/torture/drs/python" DC1=\$DC_SERVER DC2=\$VAMPIRE_DC_SERVER $SUBUNITRUN delete_object -U"\$DOMAIN/\$DC_USERNAME"%"\$DC_PASSWORD"
+plantestsuite "samba4.drs_fsmo.python(vampire_dc)" vampire_dc PYTHONPATH="$PYTHONPATH:$samba4srcdir/torture/drs/python" DC1=\$DC_SERVER DC2=\$VAMPIRE_DC_SERVER $SUBUNITRUN fsmo -U"\$DOMAIN/\$DC_USERNAME"%"\$DC_PASSWORD"
 
 # This makes sure we test the rid allocation code
 t="RPC-SAMR-LARGE-DC"
