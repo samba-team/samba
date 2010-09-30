@@ -3059,7 +3059,8 @@ int dsdb_functional_level(struct ldb_context *ldb)
 	int *domainFunctionality =
 		talloc_get_type(ldb_get_opaque(ldb, "domainFunctionality"), int);
 	if (!domainFunctionality) {
-		DEBUG(0,(__location__ ": WARNING: domainFunctionality not setup\n"));
+		/* this is expected during initial provision */
+		DEBUG(4,(__location__ ": WARNING: domainFunctionality not setup\n"));
 		return DS_DOMAIN_FUNCTION_2000;
 	}
 	return *domainFunctionality;
