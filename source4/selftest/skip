@@ -10,10 +10,13 @@
 #
 # If a testsuite is partially succeeding, please list the failing bits 
 # in the selftest/knownfail file rather than disabling the testsuite completely.
+# That way those tests that do succeed still get run and we will be notified
+# if a known failing test suddenly starts succeeding.
 #
 # If a testsuite is very slow, please add it to selftest/slow instead.
+# This way it will still get run in "make slowtest"
 #
-# Please add a comment for each testsuite you disable explaining why 
+# Please add a comment for each testsuite you disable explaining why
 # it is being skipped.
 raw.composite
 base.iometer
