@@ -596,7 +596,7 @@ static int site_res_cmp_usn_order(struct ldb_message **m1, struct ldb_message **
  */
 static WERROR getncchanges_rid_alloc(struct drsuapi_bind_state *b_state,
 				     TALLOC_CTX *mem_ctx,
-				     struct drsuapi_DsGetNCChangesRequest8 *req8,
+				     struct drsuapi_DsGetNCChangesRequest10 *req10,
 				     struct drsuapi_DsGetNCChangesCtr6 *ctr6)
 {
 	struct ldb_dn *rid_manager_dn, *fsmo_role_dn, *req_dn;
@@ -619,13 +619,13 @@ static WERROR getncchanges_rid_alloc(struct drsuapi_bind_state *b_state,
 		return WERR_DS_DRA_INTERNAL_ERROR;
 	}
 
-	req_dn = drs_ObjectIdentifier_to_dn(mem_ctx, ldb, req8->naming_context);
+	req_dn = drs_ObjectIdentifier_to_dn(mem_ctx, ldb, req10->naming_context);
 	if (!req_dn ||
 	    !ldb_dn_validate(req_dn) ||
 	    ldb_dn_compare(req_dn, rid_manager_dn) != 0) {
 		/* that isn't the RID Manager DN */
 		DEBUG(0,(__location__ ": RID Alloc request for wrong DN %s\n",
-			 drs_ObjectIdentifier_to_string(mem_ctx, req8->naming_context)));
+			 drs_ObjectIdentifier_to_string(mem_ctx, req10->naming_context)));
 		ctr6->extended_ret = DRSUAPI_EXOP_ERR_MISMATCH;
 		return WERR_OK;
 	}
@@ -649,8 +649,8 @@ static WERROR getncchanges_rid_alloc(struct drsuapi_bind_state *b_state,
 	exop = talloc(mem_ctx, struct dsdb_fsmo_extended_op);
 	W_ERROR_HAVE_NO_MEMORY(exop);
 
-	exop->fsmo_info = req8->fsmo_info;
-	exop->destination_dsa_guid = req8->destination_dsa_guid;
+	exop->fsmo_info = req10->fsmo_info;
+	exop->destination_dsa_guid = req10->destination_dsa_guid;
 
 	ret = ldb_transaction_start(ldb);
 	if (ret != LDB_SUCCESS) {
@@ -666,7 +666,7 @@ static WERROR getncchanges_rid_alloc(struct drsuapi_bind_state *b_state,
 	 * building function to return just the set of object
 	 * documented for DRSUAPI_EXOP_FSMO_RID_ALLOC extended_op
 	 */
-	ldb_sequence_number(ldb, LDB_SEQ_HIGHEST_SEQ, &req8->highwatermark.highest_usn);
+	ldb_sequence_number(ldb, LDB_SEQ_HIGHEST_SEQ, &req10->highwatermark.highest_usn);
 
 	ret = ldb_extended(ldb, DSDB_EXTENDED_ALLOCATE_RID_POOL, exop, &ext_res);
 	if (ret != LDB_SUCCESS) {
@@ -688,7 +688,7 @@ static WERROR getncchanges_rid_alloc(struct drsuapi_bind_state *b_state,
 	base_dn = ldb_get_default_basedn(ldb);
 
 	DEBUG(2,("Allocated RID pool for server %s\n",
-		 GUID_string(mem_ctx, &req8->destination_dsa_guid)));
+		 GUID_string(mem_ctx, &req10->destination_dsa_guid)));
 
 	ctr6->extended_ret = DRSUAPI_EXOP_ERR_SUCCESS;
 
@@ -799,11 +799,11 @@ static bool sid_list_match(const struct dom_sid **list1, const struct dom_sid **
  */
 static WERROR getncchanges_repl_secret(struct drsuapi_bind_state *b_state,
 				       TALLOC_CTX *mem_ctx,
-				       struct drsuapi_DsGetNCChangesRequest8 *req8,
+				       struct drsuapi_DsGetNCChangesRequest10 *req10,
 				       struct dom_sid *user_sid,
 				       struct drsuapi_DsGetNCChangesCtr6 *ctr6)
 {
-	struct drsuapi_DsReplicaObjectIdentifier *ncRoot = req8->naming_context;
+	struct drsuapi_DsReplicaObjectIdentifier *ncRoot = req10->naming_context;
 	struct ldb_dn *obj_dn, *rodc_dn, *krbtgt_link_dn;
 	int ret;
 	const char *rodc_attrs[] = { "msDS-KrbTgtLink", "msDS-NeverRevealGroup", "msDS-RevealOnDemandGroup", NULL };
@@ -908,7 +908,7 @@ allowed:
 	DEBUG(2,(__location__ ": Allowed RODC secret replication for %s by RODC %s\n",
 		 ldb_dn_get_linearized(obj_dn), ldb_dn_get_linearized(rodc_res->msgs[0]->dn)));
 	ctr6->extended_ret = DRSUAPI_EXOP_ERR_SUCCESS;
-	req8->highwatermark.highest_usn = 0;
+	req10->highwatermark.highest_usn = 0;
 	return WERR_OK;
 
 failed:
@@ -924,17 +924,17 @@ failed:
  */
 static WERROR getncchanges_repl_obj(struct drsuapi_bind_state *b_state,
 				    TALLOC_CTX *mem_ctx,
-				    struct drsuapi_DsGetNCChangesRequest8 *req8,
+				    struct drsuapi_DsGetNCChangesRequest10 *req10,
 				    struct dom_sid *user_sid,
 				    struct drsuapi_DsGetNCChangesCtr6 *ctr6)
 {
-	struct drsuapi_DsReplicaObjectIdentifier *ncRoot = req8->naming_context;
+	struct drsuapi_DsReplicaObjectIdentifier *ncRoot = req10->naming_context;
 
 	DEBUG(3,(__location__ ": DRSUAPI_EXOP_REPL_OBJ extended op on %s\n",
 		 drs_ObjectIdentifier_to_string(mem_ctx, ncRoot)));
 
 	ctr6->extended_ret = DRSUAPI_EXOP_ERR_SUCCESS;
-	req8->highwatermark.highest_usn = 0;
+	req10->highwatermark.highest_usn = 0;
 	return WERR_OK;
 }
 
@@ -946,7 +946,7 @@ static WERROR getncchanges_repl_obj(struct drsuapi_bind_state *b_state,
  */
 static WERROR getncchanges_change_master(struct drsuapi_bind_state *b_state,
 					 TALLOC_CTX *mem_ctx,
-					 struct drsuapi_DsGetNCChangesRequest8 *req8,
+					 struct drsuapi_DsGetNCChangesRequest10 *req10,
 					 struct drsuapi_DsGetNCChangesCtr6 *ctr6)
 {
 	struct ldb_dn *fsmo_role_dn, *req_dn, *ntds_dn;
@@ -961,12 +961,12 @@ static WERROR getncchanges_change_master(struct drsuapi_bind_state *b_state,
 	    - verify that we are the current master
 	 */
 
-	req_dn = drs_ObjectIdentifier_to_dn(mem_ctx, ldb, req8->naming_context);
+	req_dn = drs_ObjectIdentifier_to_dn(mem_ctx, ldb, req10->naming_context);
 	if (!req_dn ||
 	    !ldb_dn_validate(req_dn)) {
 		/* that is not a valid dn */
 		DEBUG(0,(__location__ ": FSMO role transfer request for invalid DN %s\n",
-			 drs_ObjectIdentifier_to_string(mem_ctx, req8->naming_context)));
+			 drs_ObjectIdentifier_to_string(mem_ctx, req10->naming_context)));
 		ctr6->extended_ret = DRSUAPI_EXOP_ERR_MISMATCH;
 		return WERR_OK;
 	}
@@ -990,13 +990,13 @@ static WERROR getncchanges_change_master(struct drsuapi_bind_state *b_state,
 	/* change the current master */
 	msg = ldb_msg_new(ldb);
 	W_ERROR_HAVE_NO_MEMORY(msg);
-	msg->dn = drs_ObjectIdentifier_to_dn(msg, ldb, req8->naming_context);
+	msg->dn = drs_ObjectIdentifier_to_dn(msg, ldb, req10->naming_context);
 	W_ERROR_HAVE_NO_MEMORY(msg->dn);
 
-	ret = dsdb_find_dn_by_guid(ldb, msg, &req8->destination_dsa_guid, &ntds_dn);
+	ret = dsdb_find_dn_by_guid(ldb, msg, &req10->destination_dsa_guid, &ntds_dn);
 	if (ret != LDB_SUCCESS) {
 		DEBUG(0, (__location__ ": Unable to find NTDS object for guid %s - %s\n",
-			  GUID_string(mem_ctx, &req8->destination_dsa_guid), ldb_errstring(ldb)));
+			  GUID_string(mem_ctx, &req10->destination_dsa_guid), ldb_errstring(ldb)));
 		talloc_free(msg);
 		return WERR_DS_DRA_INTERNAL_ERROR;
 	}
@@ -1058,7 +1058,7 @@ struct drsuapi_getncchanges_state {
   see if this getncchanges request includes a request to reveal secret information
  */
 static WERROR dcesrv_drsuapi_is_reveal_secrets_request(struct drsuapi_bind_state *b_state,
-						       struct drsuapi_DsGetNCChangesRequest8 *req8,
+						       struct drsuapi_DsGetNCChangesRequest10 *req10,
 						       bool *is_secret_request)
 {
 	enum drsuapi_DsExtendedOperation exop;
@@ -1067,7 +1067,7 @@ static WERROR dcesrv_drsuapi_is_reveal_secrets_request(struct drsuapi_bind_state
 
 	*is_secret_request = true;
 
-	exop = req8->extended_op;
+	exop = req10->extended_op;
 
 	switch (exop) {
 	case DRSUAPI_EXOP_FSMO_REQ_ROLE:
@@ -1084,13 +1084,13 @@ static WERROR dcesrv_drsuapi_is_reveal_secrets_request(struct drsuapi_bind_state
 		break;
 	}
 
-	if (req8->replica_flags & DRSUAPI_DRS_SPECIAL_SECRET_PROCESSING) {
+	if (req10->replica_flags & DRSUAPI_DRS_SPECIAL_SECRET_PROCESSING) {
 		*is_secret_request = false;
 		return WERR_OK;
 	}
 
 	if (exop == DRSUAPI_EXOP_REPL_SECRET ||
-	    req8->partial_attribute_set == NULL) {
+	    req10->partial_attribute_set == NULL) {
 		/* they want secrets */
 		*is_secret_request = true;
 		return WERR_OK;
@@ -1099,9 +1099,9 @@ static WERROR dcesrv_drsuapi_is_reveal_secrets_request(struct drsuapi_bind_state
 	schema = dsdb_get_schema(b_state->sam_ctx, NULL);
 
 	/* check the attributes they asked for */
-	for (i=0; i<req8->partial_attribute_set->num_attids; i++) {
+	for (i=0; i<req10->partial_attribute_set->num_attids; i++) {
 		const struct dsdb_attribute *sa;
-		sa = dsdb_attribute_by_attributeID_id(schema, req8->partial_attribute_set->attids[i]);
+		sa = dsdb_attribute_by_attributeID_id(schema, req10->partial_attribute_set->attids[i]);
 		if (sa == NULL) {
 			return WERR_DS_DRA_SCHEMA_MISMATCH;
 		}
@@ -1112,9 +1112,9 @@ static WERROR dcesrv_drsuapi_is_reveal_secrets_request(struct drsuapi_bind_state
 	}
 
 	/* check the attributes they asked for */
-	for (i=0; i<req8->partial_attribute_set_ex->num_attids; i++) {
+	for (i=0; i<req10->partial_attribute_set_ex->num_attids; i++) {
 		const struct dsdb_attribute *sa;
-		sa = dsdb_attribute_by_attributeID_id(schema, req8->partial_attribute_set_ex->attids[i]);
+		sa = dsdb_attribute_by_attributeID_id(schema, req10->partial_attribute_set_ex->attids[i]);
 		if (sa == NULL) {
 			return WERR_DS_DRA_SCHEMA_MISMATCH;
 		}
@@ -1128,6 +1128,36 @@ static WERROR dcesrv_drsuapi_is_reveal_secrets_request(struct drsuapi_bind_state
 	return WERR_OK;
 }
 
+
+/*
+  map from req8 to req10
+ */
+static struct drsuapi_DsGetNCChangesRequest10 *
+getncchanges_map_req8(TALLOC_CTX *mem_ctx,
+		      struct drsuapi_DsGetNCChangesRequest8 *req8)
+{
+	struct drsuapi_DsGetNCChangesRequest10 *req10 = talloc_zero(mem_ctx,
+								    struct drsuapi_DsGetNCChangesRequest10);
+	if (req10 == NULL) {
+		return NULL;
+	}
+
+	req10->destination_dsa_guid = req8->destination_dsa_guid;
+	req10->source_dsa_invocation_id = req8->source_dsa_invocation_id;
+	req10->naming_context = req8->naming_context;
+	req10->highwatermark = req8->highwatermark;
+	req10->uptodateness_vector = req8->uptodateness_vector;
+	req10->replica_flags = req8->replica_flags;
+	req10->max_object_count = req8->max_object_count;
+	req10->max_ndr_size = req8->max_ndr_size;
+	req10->extended_op = req8->extended_op;
+	req10->fsmo_info = req8->fsmo_info;
+	req10->partial_attribute_set = req8->partial_attribute_set;
+	req10->partial_attribute_set_ex = req8->partial_attribute_set_ex;
+	req10->mapping_ctr = req8->mapping_ctr;
+
+	return req10;
+}
 
 
 /* 
@@ -1160,7 +1190,7 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 	struct dcesrv_handle *h;
 	struct drsuapi_bind_state *b_state;	
 	struct drsuapi_getncchanges_state *getnc_state;
-	struct drsuapi_DsGetNCChangesRequest8 *req8;
+	struct drsuapi_DsGetNCChangesRequest10 *req10;
 	uint32_t options;
 	uint32_t max_objects;
 	uint32_t max_links;
@@ -1197,20 +1227,28 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 	}
 
 	/* Check request revision. 
-	   TODO: Adding mappings to req8 from the other levels
 	 */
-	if (r->in.level != 8) {
+	switch (r->in.level) {
+	case 8:
+		req10 = getncchanges_map_req8(mem_ctx, &r->in.req->req8);
+		if (req10 == NULL) {
+			return WERR_NOMEM;
+		}
+		break;
+	case 10:
+		req10 = &r->in.req->req10;
+		break;
+	default:
 		DEBUG(0,(__location__ ": Request for DsGetNCChanges with unsupported level %u\n",
 			 r->in.level));
 		return WERR_REVISION_MISMATCH;
 	}
 
-	req8 = &r->in.req->req8;
 
         /* Perform access checks. */
 	/* TODO: we need to support a sync on a specific non-root
 	 * DN. We'll need to find the real partition root here */
-	ncRoot = req8->naming_context;
+	ncRoot = req10->naming_context;
 	if (ncRoot == NULL) {
 		DEBUG(0,(__location__ ": Request for DsGetNCChanges with no NC\n"));
 		return WERR_DS_DRA_INVALID_PARAMETER;
@@ -1221,7 +1259,7 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 	}
 	
 	if ((options & DS_NTDSDSA_OPT_DISABLE_OUTBOUND_REPL) &&
-	    !(req8->replica_flags & DRSUAPI_DRS_SYNC_FORCED)) {
+	    !(req10->replica_flags & DRSUAPI_DRS_SYNC_FORCED)) {
 		return WERR_DS_DRA_SOURCE_DISABLED;
 	}
 
@@ -1230,21 +1268,21 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 	werr = drs_security_access_check_nc_root(b_state->sam_ctx,
 						 mem_ctx,
 						 dce_call->conn->auth_state.session_info->security_token,
-						 req8->naming_context,
+						 req10->naming_context,
 						 GUID_DRS_GET_CHANGES);
 	if (!W_ERROR_IS_OK(werr)) {
 		return werr;
 	}
 
-	werr = dcesrv_drsuapi_is_reveal_secrets_request(b_state, req8, &is_secret_request);
+	werr = dcesrv_drsuapi_is_reveal_secrets_request(b_state, req10, &is_secret_request);
 	if (!W_ERROR_IS_OK(werr)) {
 		return werr;
 	}
-	if (is_secret_request && req8->extended_op != DRSUAPI_EXOP_REPL_SECRET) {
+	if (is_secret_request && req10->extended_op != DRSUAPI_EXOP_REPL_SECRET) {
 		werr = drs_security_access_check_nc_root(b_state->sam_ctx,
 							 mem_ctx,
 							 dce_call->conn->auth_state.session_info->security_token,
-							 req8->naming_context,
+							 req10->naming_context,
 							 GUID_DRS_GET_ALL_CHANGES);
 		if (!W_ERROR_IS_OK(werr)) {
 			return werr;
@@ -1256,15 +1294,15 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 	security_level = security_session_user_level(dce_call->conn->auth_state.session_info,
 						     samdb_domain_sid(sam_ctx));
 	if (security_level == SECURITY_RO_DOMAIN_CONTROLLER) {
-		if (req8->replica_flags & DRSUAPI_DRS_WRIT_REP) {
+		if (req10->replica_flags & DRSUAPI_DRS_WRIT_REP) {
 			/* we rely on this flag being unset for RODC requests */
-			req8->replica_flags &= ~DRSUAPI_DRS_WRIT_REP;
+			req10->replica_flags &= ~DRSUAPI_DRS_WRIT_REP;
 		}
 	}
 
-	if (req8->replica_flags & DRSUAPI_DRS_FULL_SYNC_PACKET) {
+	if (req10->replica_flags & DRSUAPI_DRS_FULL_SYNC_PACKET) {
 		/* Ignore the _in_ uptpdateness vector*/
-		req8->uptodateness_vector = NULL;
+		req10->uptodateness_vector = NULL;
 	} 
 
 	getnc_state = b_state->getncchanges_state;
@@ -1301,33 +1339,33 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 		 *
 		 * FIXME: we don't fully support extended operations yet
 		 */
-		switch (req8->extended_op) {
+		switch (req10->extended_op) {
 		case DRSUAPI_EXOP_NONE:
 			break;
 		case DRSUAPI_EXOP_FSMO_RID_ALLOC:
-			werr = getncchanges_rid_alloc(b_state, mem_ctx, req8, &r->out.ctr->ctr6);
+			werr = getncchanges_rid_alloc(b_state, mem_ctx, req10, &r->out.ctr->ctr6);
 			W_ERROR_NOT_OK_RETURN(werr);
 			search_dn = ldb_get_default_basedn(sam_ctx);
 			break;
 		case DRSUAPI_EXOP_REPL_SECRET:
-			werr = getncchanges_repl_secret(b_state, mem_ctx, req8, user_sid, &r->out.ctr->ctr6);
+			werr = getncchanges_repl_secret(b_state, mem_ctx, req10, user_sid, &r->out.ctr->ctr6);
 			r->out.result = werr;
 			W_ERROR_NOT_OK_RETURN(werr);
 			break;
 		case DRSUAPI_EXOP_FSMO_REQ_ROLE:
-			werr = getncchanges_change_master(b_state, mem_ctx, req8, &r->out.ctr->ctr6);
+			werr = getncchanges_change_master(b_state, mem_ctx, req10, &r->out.ctr->ctr6);
 			W_ERROR_NOT_OK_RETURN(werr);
 			break;
 		case DRSUAPI_EXOP_FSMO_RID_REQ_ROLE:
-			werr = getncchanges_change_master(b_state, mem_ctx, req8, &r->out.ctr->ctr6);
+			werr = getncchanges_change_master(b_state, mem_ctx, req10, &r->out.ctr->ctr6);
 			W_ERROR_NOT_OK_RETURN(werr);
 			break;
 		case DRSUAPI_EXOP_FSMO_REQ_PDC:
-			werr = getncchanges_change_master(b_state, mem_ctx, req8, &r->out.ctr->ctr6);
+			werr = getncchanges_change_master(b_state, mem_ctx, req10, &r->out.ctr->ctr6);
 			W_ERROR_NOT_OK_RETURN(werr);
 			break;
 		case DRSUAPI_EXOP_REPL_OBJ:
-			werr = getncchanges_repl_obj(b_state, mem_ctx, req8, user_sid, &r->out.ctr->ctr6);
+			werr = getncchanges_repl_obj(b_state, mem_ctx, req10, user_sid, &r->out.ctr->ctr6);
 			r->out.result = werr;
 			W_ERROR_NOT_OK_RETURN(werr);
 			break;
@@ -1335,7 +1373,7 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 		case DRSUAPI_EXOP_FSMO_ABANDON_ROLE:
 
 			DEBUG(0,(__location__ ": Request for DsGetNCChanges unsupported extended op 0x%x\n",
-				 (unsigned)req8->extended_op));
+				 (unsigned)req10->extended_op));
 			return WERR_DS_DRA_NOT_SUPPORTED;
 		}
 	}
@@ -1363,14 +1401,14 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 		enum ldb_scope scope = LDB_SCOPE_SUBTREE;
 		const char *extra_filter;
 
-		if (req8->extended_op == DRSUAPI_EXOP_REPL_OBJ ||
-		    req8->extended_op == DRSUAPI_EXOP_REPL_SECRET) {
+		if (req10->extended_op == DRSUAPI_EXOP_REPL_OBJ ||
+		    req10->extended_op == DRSUAPI_EXOP_REPL_SECRET) {
 			scope = LDB_SCOPE_BASE;
 		}
 
 		extra_filter = lpcfg_parm_string(dce_call->conn->dce_ctx->lp_ctx, NULL, "drs", "object filter");
 
-		getnc_state->min_usn = req8->highwatermark.highest_usn;
+		getnc_state->min_usn = req10->highwatermark.highest_usn;
 
 		/* Construct response. */
 		search_filter = talloc_asprintf(mem_ctx,
@@ -1381,13 +1419,13 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 			search_filter = talloc_asprintf(mem_ctx, "(&%s(%s))", search_filter, extra_filter);
 		}
 
-		if (req8->replica_flags & DRSUAPI_DRS_CRITICAL_ONLY) {
+		if (req10->replica_flags & DRSUAPI_DRS_CRITICAL_ONLY) {
 			search_filter = talloc_asprintf(mem_ctx,
 							"(&%s(isCriticalSystemObject=TRUE))",
 							search_filter);
 		}
 		
-		if (req8->replica_flags & DRSUAPI_DRS_ASYNC_REP) {
+		if (req10->replica_flags & DRSUAPI_DRS_ASYNC_REP) {
 			scope = LDB_SCOPE_BASE;
 		}
 		
@@ -1404,7 +1442,7 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 			return WERR_DS_DRA_INTERNAL_ERROR;
 		}
 
-		if (req8->replica_flags & DRSUAPI_DRS_GET_ANC) {
+		if (req10->replica_flags & DRSUAPI_DRS_GET_ANC) {
 			TYPESAFE_QSORT(getnc_state->site_res->msgs,
 				       getnc_state->site_res->count,
 				       site_res_cmp_parent_order);
@@ -1414,7 +1452,7 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 				       site_res_cmp_usn_order);
 		}
 
-		getnc_state->uptodateness_vector = talloc_steal(getnc_state, req8->uptodateness_vector);
+		getnc_state->uptodateness_vector = talloc_steal(getnc_state, req10->uptodateness_vector);
 		if (getnc_state->uptodateness_vector) {
 			/* make sure its sorted */
 			TYPESAFE_QSORT(getnc_state->uptodateness_vector->cursors,
@@ -1449,8 +1487,8 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 	r->out.ctr->ctr6.source_dsa_guid = *(samdb_ntds_objectGUID(sam_ctx));
 	r->out.ctr->ctr6.source_dsa_invocation_id = *(samdb_ntds_invocation_id(sam_ctx));
 
-	r->out.ctr->ctr6.old_highwatermark = req8->highwatermark;
-	r->out.ctr->ctr6.new_highwatermark = req8->highwatermark;
+	r->out.ctr->ctr6.old_highwatermark = req10->highwatermark;
+	r->out.ctr->ctr6.new_highwatermark = req10->highwatermark;
 
 	r->out.ctr->ctr6.first_object = NULL;
 	currentObject = &r->out.ctr->ctr6.first_object;
@@ -1459,8 +1497,8 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 	 * for working out what object is giving problems
 	 */
 	max_objects = lpcfg_parm_int(dce_call->conn->dce_ctx->lp_ctx, NULL, "drs", "max object sync", 1000);
-	if (req8->max_object_count < max_objects) {
-		max_objects = req8->max_object_count;
+	if (req10->max_object_count < max_objects) {
+		max_objects = req10->max_object_count;
 	}
 	/*
 	 * TODO: work out how the maximum should be calculated
@@ -1482,10 +1520,10 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 						   sam_ctx, getnc_state->ncRoot_dn,
 						   getnc_state->is_schema_nc,
 						   schema, &session_key, getnc_state->min_usn,
-						   req8->replica_flags,
-						   req8->partial_attribute_set,
+						   req10->replica_flags,
+						   req10->partial_attribute_set,
 						   getnc_state->uptodateness_vector,
-						   req8->extended_op);
+						   req10->extended_op);
 		if (!W_ERROR_IS_OK(werr)) {
 			return werr;
 		}
@@ -1493,7 +1531,7 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 		werr = get_nc_changes_add_links(sam_ctx, getnc_state,
 						getnc_state->ncRoot_dn,
 						schema, getnc_state->min_usn,
-						req8->replica_flags,
+						req10->replica_flags,
 						msg,
 						&getnc_state->la_list,
 						&getnc_state->la_count,
@@ -1535,19 +1573,19 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 
 	/* the client can us to call UpdateRefs on its behalf to
 	   re-establish monitoring of the NC */
-	if ((req8->replica_flags & (DRSUAPI_DRS_ADD_REF | DRSUAPI_DRS_REF_GCSPN)) &&
-	    !GUID_all_zero(&req8->destination_dsa_guid)) {
+	if ((req10->replica_flags & (DRSUAPI_DRS_ADD_REF | DRSUAPI_DRS_REF_GCSPN)) &&
+	    !GUID_all_zero(&req10->destination_dsa_guid)) {
 		struct drsuapi_DsReplicaUpdateRefsRequest1 ureq;
 		DEBUG(3,("UpdateRefs on getncchanges for %s\n",
-			 GUID_string(mem_ctx, &req8->destination_dsa_guid)));
+			 GUID_string(mem_ctx, &req10->destination_dsa_guid)));
 		ureq.naming_context = ncRoot;
 		ureq.dest_dsa_dns_name = talloc_asprintf(mem_ctx, "%s._msdcs.%s",
-							 GUID_string(mem_ctx, &req8->destination_dsa_guid),
+							 GUID_string(mem_ctx, &req10->destination_dsa_guid),
 							 lpcfg_dnsdomain(dce_call->conn->dce_ctx->lp_ctx));
 		if (!ureq.dest_dsa_dns_name) {
 			return WERR_NOMEM;
 		}
-		ureq.dest_dsa_guid = req8->destination_dsa_guid;
+		ureq.dest_dsa_guid = req10->destination_dsa_guid;
 		ureq.options = DRSUAPI_DRS_ADD_REF |
 			DRSUAPI_DRS_ASYNC_OP |
 			DRSUAPI_DRS_GETCHG_CHECK;
@@ -1612,7 +1650,7 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 		b_state->getncchanges_state = NULL;
 	}
 
-	if (req8->extended_op != DRSUAPI_EXOP_NONE) {
+	if (req10->extended_op != DRSUAPI_EXOP_NONE) {
 		r->out.ctr->ctr6.uptodateness_vector = NULL;
 		r->out.ctr->ctr6.nc_object_count = 0;
 		ZERO_STRUCT(r->out.ctr->ctr6.new_highwatermark);
@@ -1621,8 +1659,8 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 
 	DEBUG(r->out.ctr->ctr6.more_data?4:2,
 	      ("DsGetNCChanges with uSNChanged >= %llu flags 0x%08x on %s gave %u objects (done %u/%u) %u links (done %u/%u (as %s))\n",
-	       (unsigned long long)(req8->highwatermark.highest_usn+1),
-	       req8->replica_flags, drs_ObjectIdentifier_to_string(mem_ctx, ncRoot),
+	       (unsigned long long)(req10->highwatermark.highest_usn+1),
+	       req10->replica_flags, drs_ObjectIdentifier_to_string(mem_ctx, ncRoot),
 	       r->out.ctr->ctr6.object_count,
 	       i, r->out.ctr->ctr6.more_data?getnc_state->site_res->count:i,
 	       r->out.ctr->ctr6.linked_attributes_count,
@@ -1630,7 +1668,7 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 	       dom_sid_string(mem_ctx, user_sid)));
 
 #if 0
-	if (!r->out.ctr->ctr6.more_data && req8->extended_op != DRSUAPI_EXOP_NONE) {
+	if (!r->out.ctr->ctr6.more_data && req10->extended_op != DRSUAPI_EXOP_NONE) {
 		NDR_PRINT_FUNCTION_DEBUG(drsuapi_DsGetNCChanges, NDR_BOTH, r);
 	}
 #endif

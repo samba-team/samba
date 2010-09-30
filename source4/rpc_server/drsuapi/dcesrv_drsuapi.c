@@ -209,6 +209,7 @@ static WERROR dcesrv_drsuapi_DsBind(struct dcesrv_call_state *dce_call, TALLOC_C
 #if 0 /* we don't support XPRESS compression yet */
 	b_state->local_info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_XPRESS_COMPRESS;
 #endif
+	b_state->local_info28.supported_extensions	|= DRSUAPI_SUPPORTED_EXTENSION_GETCHGREQ_V10;
 	b_state->local_info28.site_guid			= site_guid;
 	b_state->local_info28.pid			= pid;
 	b_state->local_info28.repl_epoch		= repl_epoch;
