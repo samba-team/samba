@@ -8,6 +8,7 @@ __all__ = [
     'ErrorHolder',
     'ExtendedToOriginalDecorator',
     'iterate_tests',
+    'MultipleExceptions',
     'MultiTestResult',
     'PlaceHolder',
     'TestCase',
@@ -28,6 +29,7 @@ from testtools.runtest import (
     )
 from testtools.testcase import (
     ErrorHolder,
+    MultipleExceptions,
     PlaceHolder,
     TestCase,
     clone_test_with_new_id,

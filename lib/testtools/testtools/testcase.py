@@ -5,6 +5,7 @@
 __metaclass__ = type
 __all__ = [
     'clone_test_with_new_id',
+    'MultipleExceptions',
     'TestCase',
     'skip',
     'skipIf',
@@ -58,6 +59,13 @@ except ImportError:
         Note that this exception is private plumbing in testtools' testcase
         module.
         """
+
+
+class MultipleExceptions(Exception):
+    """Represents many exceptions raised from some operation.
+
+    :ivar args: The sys.exc_info() tuples for each exception.
+    """
 
 
 class TestCase(unittest.TestCase):
@@ -188,9 +196,14 @@ class TestCase(unittest.TestCase):
             except KeyboardInterrupt:
                 raise
             except:
-                exc_info = sys.exc_info()
-                self._report_traceback(exc_info)
-                last_exception = exc_info[1]
+                exceptions = [sys.exc_info()]
+                while exceptions:
+                    exc_info = exceptions.pop()
+                    if exc_info[0] is MultipleExceptions:
+                        exceptions.extend(exc_info[1].args)
+                        continue
+                    self._report_traceback(exc_info)
+                    last_exception = exc_info[1]
         return last_exception
 
     def addCleanup(self, function, *arguments, **keywordArguments):

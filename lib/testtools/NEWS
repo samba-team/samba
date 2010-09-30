@@ -7,6 +7,10 @@ NEXT
 Improvements
 ------------
 
+* Cleanups can raise ``testtools.MultipleExceptions`` if they have multiple
+  exceptions to report. For instance, a cleanup which is itself responsible for
+  running several different internal cleanup routines might use this.
+
 * Code duplication between assertEqual and the matcher Equals has been removed.
 
 * In normal circumstances, a TestCase will no longer share details with clones

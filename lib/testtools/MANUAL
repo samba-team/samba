@@ -42,6 +42,11 @@ logic in a try/finally block or tearDown method.  e.g.::
         self.addCleanup(foo.unlock)
         ...
 
+Cleanups can also report multiple errors, if appropriate by wrapping them in
+a testtools.MultipleExceptions object::
+
+    raise MultipleExceptions(exc_info1, exc_info2)
+
 
 TestCase.addOnException
 ~~~~~~~~~~~~~~~~~~~~~~~
