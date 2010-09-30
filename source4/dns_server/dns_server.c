@@ -39,7 +39,9 @@
 #include "librpc/gen_ndr/ndr_dnsp.h"
 #include <ldb.h>
 #include "dsdb/samdb/samdb.h"
+#include "dsdb/common/util.h"
 #include "auth/session.h"
+#include "lib/util/dlinklist.h"
 
 /* hold information about one dns socket */
 struct dns_socket {
@@ -89,6 +91,47 @@ static void dns_tcp_send(struct stream_connection *conn, uint16_t flags)
 	dns_tcp_terminate_connection(dnsconn, "dns_tcp_send: called");
 }
 
+static bool dns_name_match(const char *zone, const char *name, size_t *host_part_len)
+{
+	size_t zl = strlen(zone);
+	size_t nl = strlen(name);
+	ssize_t zi, ni;
+	static const size_t fixup = 'a' - 'A';
+
+	if (zl > nl) {
+		return false;
+	}
+
+	for (zi = zl, ni = nl; zi >= 0; zi--, ni--) {
+		char zc = zone[zi];
+		char nc = name[ni];
+
+		/* convert to lower case */
+		if (zc >= 'A' && zc <= 'Z') {
+			zc += fixup;
+		}
+		if (nc >= 'A' && nc <= 'Z') {
+			nc += fixup;
+		}
+
+		if (zc != nc) {
+			return false;
+		}
+	}
+
+	if (ni >= 0) {
+		if (name[ni] != '.') {
+			return false;
+		}
+
+		ni--;
+	}
+
+	*host_part_len = ni+1;
+
+	return true;
+}
+
 static NTSTATUS dns_name2dn(struct dns_server *dns,
 			    TALLOC_CTX *mem_ctx,
 			    const char *name,
@@ -96,7 +139,8 @@ static NTSTATUS dns_name2dn(struct dns_server *dns,
 {
 	struct ldb_dn *base;
 	struct ldb_dn *dn;
-	const char *p;
+	const struct dns_server_zone *z;
+	size_t host_part_len = 0;
 
 	if (name == NULL) {
 		return NT_STATUS_INVALID_PARAMETER;
@@ -112,16 +156,30 @@ static NTSTATUS dns_name2dn(struct dns_server *dns,
 		return NT_STATUS_OK;
 	}
 
-	p = strcasestr(name, "root-servers.net");
-	if (p != NULL) {
-		base = ldb_get_default_basedn(dns->samdb);
-		dn = ldb_dn_copy(mem_ctx, base);
-		ldb_dn_add_child_fmt(dn, "DC=%s,DC=RootDNSServers,CN=MicrosoftDNS,CN=System", name);
+	for (z = dns->zones; z != NULL; z = z->next) {
+		bool match;
+
+		match = dns_name_match(z->name, name, &host_part_len);
+		if (match) {
+			break;
+		}
+	}
+
+	if (z == NULL) {
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	}
+
+	if (host_part_len == 0) {
+		dn = ldb_dn_copy(mem_ctx, z->dn);
+		ldb_dn_add_child_fmt(dn, "DC=@");
 		*_dn = dn;
 		return NT_STATUS_OK;
 	}
 
-	return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	dn = ldb_dn_copy(mem_ctx, z->dn);
+	ldb_dn_add_child_fmt(dn, "DC=%*.*s", (int)host_part_len, (int)host_part_len, name);
+	*_dn = dn;
+	return NT_STATUS_OK;
 }
 
 static NTSTATUS handle_question(struct dns_server *dns,
@@ -714,11 +772,39 @@ static NTSTATUS dns_startup_interfaces(struct dns_server *dns, struct loadparm_c
 
 	return NT_STATUS_OK;
 }
+
+static int dns_server_sort_zones(struct ldb_message **m1, struct ldb_message **m2)
+{
+	const char *n1, *n2;
+	size_t l1, l2;
+
+	n1 = ldb_msg_find_attr_as_string(*m1, "name", NULL);
+	n2 = ldb_msg_find_attr_as_string(*m2, "name", NULL);
+
+	l1 = strlen(n1);
+	l2 = strlen(n2);
+
+	/* If the string lengths are not equal just sort by length */
+	if (l1 != l2) {
+		/* If m1 is the larger zone name, return it first */
+		return l2 - l1;
+	}
+
+	/*TODO: We need to compare DNs here, we want the DomainDNSZones first */
+	return 0;
+}
+
 static void dns_task_init(struct task_server *task)
 {
 	struct dns_server *dns;
 	NTSTATUS status;
 	struct interface *ifaces;
+	int ret;
+	struct ldb_result *res;
+	struct ldb_dn *rootdn;
+	static const char * const attrs[] = { "name", NULL};
+	int i;
+
 
 	switch (lpcfg_server_role(task->lp_ctx)) {
 	case ROLE_STANDALONE:
@@ -741,7 +827,7 @@ static void dns_task_init(struct task_server *task)
 
 	task_server_set_title(task, "task[dns]");
 
-	dns = talloc(task, struct dns_server);
+	dns = talloc_zero(task, struct dns_server);
 	if (dns == NULL) {
 		task_server_terminate(task, "dns: out of memory", true);
 		return;
@@ -749,13 +835,42 @@ static void dns_task_init(struct task_server *task)
 
 	dns->task = task;
 
-	/* Connect to a SAMDB with system privileges for fetching the old pw
-	 * hashes. */
 	dns->samdb = samdb_connect(dns, dns->task->event_ctx, dns->task->lp_ctx,
 			      system_session(dns->task->lp_ctx), 0);
 	if (!dns->samdb) {
 		task_server_terminate(task, "dns: samdb_connect failed", true);
 		return;
+	}
+
+	rootdn = ldb_dn_new(dns, dns->samdb, "");
+	if (rootdn == NULL) {
+		task_server_terminate(task, "dns: out of memory", true);
+		return;
+	}
+
+	// TODO: this search does not work against windows
+	ret = dsdb_search(dns->samdb, dns, &res, rootdn, LDB_SCOPE_SUBTREE,
+			  attrs, DSDB_SEARCH_SEARCH_ALL_PARTITIONS, "(objectClass=dnsZone)");
+	if (ret != LDB_SUCCESS) {
+		task_server_terminate(task,
+				      "dns: failed to look up root DNS zones",
+				      true);
+		return;
+	}
+
+	TYPESAFE_QSORT(res->msgs, res->count, dns_server_sort_zones);
+
+	for (i=0; i < res->count; i++) {
+		struct dns_server_zone *z;
+
+		z = talloc_zero(dns, struct dns_server_zone);
+		if (z == NULL) {
+		}
+
+		z->name = ldb_msg_find_attr_as_string(res->msgs[i], "name", NULL);
+		z->dn = talloc_move(z, &res->msgs[i]->dn);
+
+		DLIST_ADD_END(dns->zones, z, NULL);
 	}
 
 	status = dns_startup_interfaces(dns, task->lp_ctx, ifaces);

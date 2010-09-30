@@ -26,9 +26,16 @@
 
 struct tsocket_address;
 
+struct dns_server_zone {
+	struct dns_server_zone *prev, *next;
+	const char *name;
+	struct ldb_dn *dn;
+};
+
 struct dns_server {
 	struct task_server *task;
 	struct ldb_context *samdb;
+	struct dns_server_zone *zones;
 };
 
 #endif /* __DNS_SERVER_H__ */
