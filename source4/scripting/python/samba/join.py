@@ -119,7 +119,7 @@ def join_rodc(server=None, creds=None, lp=None, site=None, netbios_name=None,
             "useraccountcontrol" : str(samba.dsdb.UF_NORMAL_ACCOUNT |
                                        samba.dsdb.UF_ACCOUNTDISABLE),
             "showinadvancedviewonly" : "TRUE",
-            "description" : "tricky account"}
+            "description" : "krbtgt for %s" % ctx.samname}
         ctx.samdb.add(rec, ["rodc_join:1:1"])
 
         # now we need to search for the samAccountName attribute on the krbtgt DN,
@@ -210,6 +210,8 @@ def join_rodc(server=None, creds=None, lp=None, site=None, netbios_name=None,
                               ctx.acct_pass,
                               force_change_at_next_login=False,
                               username=ctx.samname)
+        res = ctx.samdb.search(base=ctx.acct_dn, scope=ldb.SCOPE_BASE, attrs=["msDS-keyVersionNumber"])
+        ctx.key_version_number = res[0]["msDS-keyVersionNumber"]
 
 
     def join_provision(ctx):
@@ -281,7 +283,8 @@ def join_rodc(server=None, creds=None, lp=None, site=None, netbios_name=None,
                             netbiosname=ctx.myname,
                             domainsid=security.dom_sid(ctx.domsid),
                             machinepass=ctx.acct_pass,
-                            secure_channel_type=misc.SEC_CHAN_RODC)
+                            secure_channel_type=misc.SEC_CHAN_RODC,
+                            key_version_number=ctx.key_version_number)
 
 
 
