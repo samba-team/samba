@@ -6,7 +6,8 @@
 from subprocess import Popen, PIPE
 import os, signal, tarfile, sys, time
 from optparse import OptionParser
-
+import smtplib
+from email.mime.text import MIMEText
 
 samba_master = os.getenv('SAMBA_MASTER', 'git://git.samba.org/samba.git')
 samba_master_ssh = os.getenv('SAMBA_MASTER_SSH', 'git+ssh://git.samba.org/data/git/samba.git')
@@ -102,10 +103,11 @@ class builder:
         self.tag = self.name.replace('/', '_')
         self.sequence = sequence
         self.next = 0
-        self.stdout_path = "%s/%s.stdout" % (testbase, self.tag)
-        self.stderr_path = "%s/%s.stderr" % (testbase, self.tag)
-        cleanup_list.append(self.stdout_path)
-        cleanup_list.append(self.stderr_path)
+        self.stdout_path = "%s/%s.stdout" % (gitroot, self.tag)
+        self.stderr_path = "%s/%s.stderr" % (gitroot, self.tag)
+        if options.verbose:
+            print("stdout for %s in %s" % (self.name, self.stdout_path))
+            print("stderr for %s in %s" % (self.name, self.stderr_path))
         run_cmd("rm -f %s %s" % (self.stdout_path, self.stderr_path))
         self.stdout = open(self.stdout_path, 'w')
         self.stderr = open(self.stderr_path, 'w')
@@ -204,10 +206,10 @@ class buildlist:
                 break
             if os.WIFSIGNALED(b.status) or os.WEXITSTATUS(b.status) != 0:
                 self.kill_kids()
-                return (b.status, "%s: failed '%s' with status %d" % (b.name, b.cmd, b.status))
+                return (b.status, b.name, b.tag, "%s: failed '%s' with status %d" % (b.name, b.cmd, b.status))
             b.start_next()
         self.kill_kids()
-        return (0, "All OK")
+        return (0, None, None, "All OK")
 
     def tarlogs(self, fname):
         tar = tarfile.open(fname, "w:gz")
@@ -297,7 +299,40 @@ parser.add_option("", "--fix-whitespace", help="fix whitespace on rebase",
                   default=False, action="store_true")
 parser.add_option("", "--retry", help="automatically retry if master changes",
                   default=False, action="store_true")
+parser.add_option("", "--email", help="send email to the given address on failure",
+                  type='str', default=None)
 
+
+def email_failure(status, failed_task, failed_tag, errstr):
+    '''send an email to options.email about the failure'''
+    user = os.getenv("USER")
+    text = '''
+Dear Developer,
+
+Your autobuild failed when trying to test %s with the following error:
+   %s
+
+the autobuild has been abandoned. Please fix the error and resubmit.
+
+You can see logs of the failed task here:
+
+  http://git.samba.org/%s/samba-autobuild/%s.stdout
+  http://git.samba.org/%s/samba-autobuild/%s.stderr
+
+or you can get full logs of all tasks in this job here:
+
+  http://git.samba.org/%s/samba-autobuild/logs.tar.gz
+
+''' % (failed_task, errstr, user, failed_tag, user, failed_tag, user)
+    msg = MIMEText(text)
+    msg['Subject'] = 'autobuild failure for task %s' % failed_task
+    msg['From'] = 'autobuild@samba.org'
+    msg['To'] = options.email
+
+    s = smtplib.SMTP()
+    s.connect()
+    s.sendmail(msg['From'], [msg['To']], msg.as_string())
+    s.quit()
 
 (options, args) = parser.parse_args()
 
@@ -305,7 +340,7 @@ if options.retry:
     if not options.rebase_master and options.rebase is None:
         raise Exception('You can only use --retry if you also rebase')
 
-testbase = "%s/build.%u" % (options.testbase, os.getpid())
+testbase = "%s/b%u" % (options.testbase, os.getpid())
 test_master = "%s/master" % testbase
 
 gitroot = find_git_root()
@@ -335,7 +370,7 @@ while True:
         blist = buildlist(tasks, args)
         if options.tail:
             blist.start_tail()
-        (status, errstr) = blist.run()
+        (status, failed_task, failed_tag, errstr) = blist.run()
         if status != 0 or errstr != "retry":
             break
         cleanup()
@@ -367,7 +402,10 @@ if status == 0:
 
 # something failed, gather a tar of the logs
 blist.tarlogs("logs.tar.gz")
-blist.remove_logs()
+
+if options.email is not None:
+    email_failure(status, failed_task, failed_tag, errstr)
+
 cleanup()
 print(errstr)
 print("Logs in logs.tar.gz")
