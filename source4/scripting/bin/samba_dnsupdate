@@ -380,7 +380,12 @@ get_credentials(lp)
 # ask nsupdate to add entries as needed
 for d in update_list:
     if am_rodc:
-        call_rodc_update(d)
+        if d.name.lower() == domain.lower():
+            continue
+        if d.type != 'A':
+            call_rodc_update(d)
+        else:
+            call_nsupdate(d)
     else:
         call_nsupdate(d)
 
