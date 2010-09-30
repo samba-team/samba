@@ -384,6 +384,9 @@ static void dreplsrv_op_pull_source_get_changes_trigger(struct tevent_req *req)
 			DEBUG(0,(__location__ ": Failed to construct partial attribute set : %s\n", nt_errstr(status)));
 			return;
 		}
+		if (state->op->extended_op == DRSUAPI_EXOP_REPL_SECRET) {
+			replica_flags &= ~DRSUAPI_DRS_SPECIAL_SECRET_PROCESSING;
+		}
 	}
 
 	r->in.bind_handle	= &drsuapi->bind_handle;
