@@ -211,33 +211,63 @@ static void show_statistics(struct ctdb_statistics *s)
 	tmp    /= 24;
 	days    = tmp;
 
-	printf("CTDB version %u\n", CTDB_VERSION);
-	printf("Current time of statistics  :                %s", ctime(&s->statistics_current_time.tv_sec));
-	printf("Statistics collected since  : (%03d %02d:%02d:%02d) %s", days, hours, minutes, seconds, ctime(&s->statistics_start_time.tv_sec));
-
-	for (i=0;i<ARRAY_SIZE(fields);i++) {
-		if (strchr(fields[i].name, '.')) {
-			preflen = strcspn(fields[i].name, ".")+1;
-			if (!prefix || strncmp(prefix, fields[i].name, preflen) != 0) {
-				prefix = fields[i].name;
-				printf(" %*.*s\n", preflen-1, preflen-1, fields[i].name);
-			}
-		} else {
-			preflen = 0;
+	if (options.machinereadable){
+		printf("CTDB version:");
+		printf("Current time of statistics:");
+		printf("Statistics collected since:");
+		for (i=0;i<ARRAY_SIZE(fields);i++) {
+			printf("%s:", fields[i].name);
 		}
-		printf(" %*s%-22s%*s%10u\n", 
-		       preflen?4:0, "",
-		       fields[i].name+preflen, 
-		       preflen?0:4, "",
-		       *(uint32_t *)(fields[i].offset+(uint8_t *)s));
-	}
-	printf(" %-30s     %.6f sec\n", "max_reclock_ctdbd", s->reclock.ctdbd);
-	printf(" %-30s     %.6f sec\n", "max_reclock_recd", s->reclock.recd);
+		printf("max_reclock_ctdbd:");
+		printf("max_reclock_recd:");
+		printf("max_call_latency:");
+		printf("max_lockwait_latency:");
+		printf("max_childwrite_latency:");
+		printf("max_childwrite_latency:");
+		printf("\n");
 
-	printf(" %-30s     %.6f sec\n", "max_call_latency", s->max_call_latency);
-	printf(" %-30s     %.6f sec\n", "max_lockwait_latency", s->max_lockwait_latency);
-	printf(" %-30s     %.6f sec\n", "max_childwrite_latency", s->max_childwrite_latency);
-	printf(" %-30s     %.6f sec\n", "max_childwrite_latency", s->max_childwrite_latency);
+		printf("%d:", CTDB_VERSION);
+		printf("%d:", (int)s->statistics_current_time.tv_sec);
+		printf("%d:", (int)s->statistics_start_time.tv_sec);
+		for (i=0;i<ARRAY_SIZE(fields);i++) {
+			printf("%d:", *(uint32_t *)(fields[i].offset+(uint8_t *)s));
+		}
+		printf("%.6f:", s->reclock.ctdbd);
+		printf("%.6f:", s->reclock.recd);
+		printf("%.6f:", s->max_call_latency);
+		printf("%.6f:", s->max_lockwait_latency);
+		printf("%.6f:", s->max_childwrite_latency);
+		printf("%.6f:", s->max_childwrite_latency);
+		printf("\n");
+	} else {
+		printf("CTDB version %u\n", CTDB_VERSION);
+		printf("Current time of statistics  :                %s", ctime(&s->statistics_current_time.tv_sec));
+		printf("Statistics collected since  : (%03d %02d:%02d:%02d) %s", days, hours, minutes, seconds, ctime(&s->statistics_start_time.tv_sec));
+
+		for (i=0;i<ARRAY_SIZE(fields);i++) {
+			if (strchr(fields[i].name, '.')) {
+				preflen = strcspn(fields[i].name, ".")+1;
+				if (!prefix || strncmp(prefix, fields[i].name, preflen) != 0) {
+					prefix = fields[i].name;
+					printf(" %*.*s\n", preflen-1, preflen-1, fields[i].name);
+				}
+			} else {
+				preflen = 0;
+			}
+			printf(" %*s%-22s%*s%10u\n", 
+			       preflen?4:0, "",
+			       fields[i].name+preflen, 
+			       preflen?0:4, "",
+			       *(uint32_t *)(fields[i].offset+(uint8_t *)s));
+		}
+		printf(" %-30s     %.6f sec\n", "max_reclock_ctdbd", s->reclock.ctdbd);
+		printf(" %-30s     %.6f sec\n", "max_reclock_recd", s->reclock.recd);
+
+		printf(" %-30s     %.6f sec\n", "max_call_latency", s->max_call_latency);
+		printf(" %-30s     %.6f sec\n", "max_lockwait_latency", s->max_lockwait_latency);
+		printf(" %-30s     %.6f sec\n", "max_childwrite_latency", s->max_childwrite_latency);
+		printf(" %-30s     %.6f sec\n", "max_childwrite_latency", s->max_childwrite_latency);
+	}
 
 	talloc_free(tmp_ctx);
 }
