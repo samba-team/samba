@@ -28,6 +28,7 @@
 #include "lib/socket/socket.h"
 #include "lib/tsocket/tsocket.h"
 #include "libcli/util/tstream.h"
+#include "libcli/util/ntstatus.h"
 #include "system/network.h"
 #include "lib/stream/packet.h"
 #include "lib/socket/netif.h"
@@ -84,27 +85,126 @@ static void dns_tcp_send(struct stream_connection *conn, uint16_t flags)
 	dns_tcp_terminate_connection(dnsconn, "dns_tcp_send: called");
 }
 
-bool dns_process(struct dns_server *dns,
-		 TALLOC_CTX *mem_ctx,
-		 DATA_BLOB *in,
-		 DATA_BLOB *out)
+static NTSTATUS handle_question(TALLOC_CTX *mem_ctx,
+				struct dns_name_question *question,
+				struct dns_res_rec **answers, uint16_t *ancount)
+{
+	struct dns_res_rec *ans;
+	uint16_t count = *ancount;
+	count += 1;
+	ans = talloc_realloc(NULL, *answers, struct dns_res_rec, count);
+	NT_STATUS_HAVE_NO_MEMORY(ans);
+
+	ans[0].name = talloc_strdup(ans, "example.com");
+	ans[0].rr_type = DNS_QTYPE_A;
+	ans[0].rr_class = DNS_QCLASS_IP;
+	ans[0].ttl = 0;
+	ans[0].rdata.ipv4_record = talloc_strdup(ans, "127.0.0.1");
+
+	*ancount = count;
+	*answers = ans;
+
+	return NT_STATUS_OK;
+
+}
+
+static NTSTATUS compute_reply(TALLOC_CTX *mem_ctx,
+			      struct dns_name_packet *in,
+			      struct dns_res_rec **answers,    uint16_t *ancount,
+			      struct dns_res_rec **nsrecs,     uint16_t *nscount,
+			      struct dns_res_rec **additional, uint16_t *arcount)
+{
+	uint16_t num_answers=0, num_nsrecs=0, num_additional=0;
+	struct dns_res_rec *ans=NULL, *ns=NULL, *add=NULL;
+	int i;
+	NTSTATUS status;
+
+	ans = talloc_array(mem_ctx, struct dns_res_rec, 0);
+	if (answers == NULL) return NT_STATUS_NO_MEMORY;
+
+	for (i = 0; i < in->qdcount; ++i) {
+		status = handle_question(mem_ctx, &in->questions[i], &ans, &num_answers);
+		NT_STATUS_NOT_OK_RETURN(status);
+	}
+
+	*answers = ans;
+	*ancount = num_answers;
+
+	/*FIXME: Do something for these */
+	*nsrecs  = NULL;
+	*nscount = 0;
+
+	*additional = NULL;
+	*arcount    = 0;
+
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS dns_process(struct dns_server *dns,
+			    TALLOC_CTX *mem_ctx,
+			    DATA_BLOB *in,
+			    DATA_BLOB *out)
 {
 	enum ndr_err_code ndr_err;
-	struct dns_name_packet *packet = talloc(mem_ctx, struct dns_name_packet);
-	if (packet == NULL) return false;
+	NTSTATUS ret;
+	struct dns_name_packet *in_packet = talloc(mem_ctx, struct dns_name_packet);
+	struct dns_name_packet *out_packet = talloc(mem_ctx, struct dns_name_packet);
+	struct dns_res_rec *answers, *nsrecs, *additional;
+	uint16_t num_answers, num_nsrecs, num_additional;
+
+	if (in_packet == NULL) return NT_STATUS_INVALID_PARAMETER;
 
 	dump_data(0, in->data, in->length);
 
-	ndr_err = ndr_pull_struct_blob(in, packet, packet,
+	ndr_err = ndr_pull_struct_blob(in, in_packet, in_packet,
 			(ndr_pull_flags_fn_t)ndr_pull_dns_name_packet);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		TALLOC_FREE(packet);
+		TALLOC_FREE(in_packet);
 		DEBUG(0, ("Failed to parse packet %d!\n", ndr_err));
-		return false;
+		return NT_STATUS_COULD_NOT_INTERPRET;
 	}
 
-	NDR_PRINT_DEBUG(dns_name_packet, packet);
-	return true;
+	NDR_PRINT_DEBUG(dns_name_packet, in_packet);
+	out_packet->id = in_packet->id;
+	out_packet->operation = DNS_FLAG_REPLY | DNS_FLAG_AUTHORITATIVE;
+				/* TODO: DNS_FLAG_RECURSION_DESIRED | DNS_FLAG_RECURSION_AVAIL; */
+
+	out_packet->qdcount = in_packet->qdcount;
+	out_packet->questions = in_packet->questions;
+
+	out_packet->ancount = 0;
+	out_packet->answers = NULL;
+
+	out_packet->nscount = 0;
+	out_packet->nsrecs  = NULL;
+
+	out_packet->arcount = 0;
+	out_packet->additional = NULL;
+
+	ret = compute_reply(out_packet, in_packet, &answers, &num_answers,
+			    &nsrecs, &num_nsrecs, &additional, &num_additional);
+
+	if (NT_STATUS_IS_OK(ret)) {
+		out_packet->ancount = num_answers;
+		out_packet->answers = answers;
+
+		out_packet->nscount = num_nsrecs;
+		out_packet->nsrecs  = nsrecs;
+
+		out_packet->arcount = num_additional;
+		out_packet->additional = additional;
+	}
+
+	ndr_err = ndr_push_struct_blob(out, out_packet, out_packet,
+			(ndr_push_flags_fn_t)ndr_push_dns_name_packet);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		TALLOC_FREE(in_packet);
+		TALLOC_FREE(out_packet);
+		DEBUG(0, ("Failed to push packet %d!\n", ndr_err));
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	return NT_STATUS_OK;
 }
 
 struct dns_tcp_call {
@@ -123,7 +223,6 @@ static void dns_tcp_call_loop(struct tevent_req *subreq)
 				      struct dns_tcp_connection);
 	struct dns_tcp_call *call;
 	NTSTATUS status;
-	bool ok;
 
 	call = talloc(dns_conn, struct dns_tcp_call);
 	if (call == NULL) {
@@ -160,8 +259,8 @@ static void dns_tcp_call_loop(struct tevent_req *subreq)
 	call->in.length -= 4;
 
 	/* Call dns */
-	ok = dns_process(dns_conn->dns_socket->dns, call, &call->in, &call->out);
-	if (!ok) {
+	status = dns_process(dns_conn->dns_socket->dns, call, &call->in, &call->out);
+	if (!NT_STATUS_IS_OK(status)) {
 		dns_tcp_terminate_connection(dns_conn,
 				"dns_tcp_call_loop: process function failed");
 		return;
@@ -315,7 +414,7 @@ static void dns_udp_call_loop(struct tevent_req *subreq)
 	uint8_t *buf;
 	ssize_t len;
 	int sys_errno;
-	bool ok;
+	NTSTATUS status;
 
 	call = talloc(sock, struct dns_udp_call);
 	if (call == NULL) {
@@ -339,8 +438,8 @@ static void dns_udp_call_loop(struct tevent_req *subreq)
 		 tsocket_address_string(call->src, call)));
 
 	/* Call krb5 */
-	ok = dns_process(sock->dns_socket->dns, call, &call->in, &call->out);
-	if (!ok) {
+	status = dns_process(sock->dns_socket->dns, call, &call->in, &call->out);
+	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(call);
 		goto done;
 	}

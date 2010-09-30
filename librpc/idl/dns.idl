@@ -119,18 +119,48 @@ interface dns
 		uint8  data[length];
 	} dns_rdata_data;
 
-	typedef [nodiscriminant,public] union {
-		[case(DNS_QTYPE_A),subcontext(2)]       ipv4address      ipv4_address;
-		[case(DNS_QTYPE_AAAA),subcontext(2)]	ipv6address      ipv6_address;
-		[default]                 dns_rdata_data   data;
+	typedef struct {
+		dns_string mname;
+		dns_string rname;
+		uint32     serial;
+		uint32     refresh;
+		uint32     retry;
+		uint32     expire;
+		uint32     minimum;
+	} dns_soa_record;
+
+	typedef [public] struct {
+		uint16     priority;
+		uint16     weight;
+		uint16     port;
+		dns_string target;
+	} dns_srv_record;
+
+	typedef [public] struct {
+		uint16     preference;
+		dns_string exchange;
+	} dns_mx_record;
+
+	typedef [nodiscriminant,public,flag(NDR_NOALIGN)] union {
+		[case(DNS_QTYPE_A)]     ipv4address	 ipv4_record;
+		[case(DNS_QTYPE_NS)]    dns_string       ns_record;
+		[case(DNS_QTYPE_CNAME)] dns_string       cname_record;
+		[case(DNS_QTYPE_SOA)]   dns_soa_record   soa_record;
+		[case(DNS_QTYPE_PTR)]   dns_string       ptr_record;
+		[case(DNS_QTYPE_MX)]    dns_mx_record    mx_record;
+		[case(DNS_QTYPE_AAAA)]	ipv6address	 ipv6_record;
+		[case(DNS_QTYPE_SRV)]	dns_srv_record	 srv_record;
+		[default];
 	} dns_rdata;
 
-	typedef [flag(LIBNDR_PRINT_ARRAY_HEX),public] struct {
-		dns_string   name;
+	typedef [flag(LIBNDR_PRINT_ARRAY_HEX|NDR_NOALIGN),nopush,nopull] struct {
+		dns_string name;
 		dns_qtype  rr_type;
 		dns_qclass rr_class;
 		uint32     ttl;
+		uint16     length;
 		[switch_is(rr_type)] dns_rdata rdata;
+		DATA_BLOB  unexpected;
 	} dns_res_rec;
 
 	typedef [flag(NDR_NOALIGN|NDR_BIG_ENDIAN|NDR_PAHEX),public] struct {
@@ -144,7 +174,6 @@ interface dns
 		dns_res_rec       answers[ancount];
 		dns_res_rec       nsrecs[nscount];
 		dns_res_rec       additional[arcount];
-		[flag(NDR_REMAINING)] DATA_BLOB padding;
 	} dns_name_packet;
 
         /*

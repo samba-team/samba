@@ -57,7 +57,7 @@ static enum ndr_err_code ndr_pull_component(struct ndr_pull *ndr,
 	while (loops < 5) {
 		if (*offset >= ndr->data_size) {
 			return ndr_pull_error(ndr, NDR_ERR_STRING,
-					      "BAD DNS NAME component");
+					      "BAD DNS NAME component, bad offset");
 		}
 		len = ndr->data[*offset];
 		if (len == 0) {
@@ -70,7 +70,7 @@ static enum ndr_err_code ndr_pull_component(struct ndr_pull *ndr,
 			/* its a label pointer */
 			if (1 + *offset >= ndr->data_size) {
 				return ndr_pull_error(ndr, NDR_ERR_STRING,
-						      "BAD DNS NAME component");
+						      "BAD DNS NAME component, bad label offset");
 			}
 			*max_offset = MAX(*max_offset, *offset + 2);
 			*offset = ((len&0x3F)<<8) | ndr->data[1 + *offset];
@@ -81,11 +81,11 @@ static enum ndr_err_code ndr_pull_component(struct ndr_pull *ndr,
 		if ((len & 0xC0) != 0) {
 			/* its a reserved length field */
 			return ndr_pull_error(ndr, NDR_ERR_STRING,
-					      "BAD DNS NAME component");
+					      "BAD DNS NAME component, reserved lenght field: 0x%02x", (len &0xC));
 		}
 		if (*offset + len + 2 > ndr->data_size) {
 			return ndr_pull_error(ndr, NDR_ERR_STRING,
-					      "BAD DNS NAME component");
+					      "BAD DNS NAME component, length too long");
 		}
 		*component = (uint8_t*)talloc_strndup(ndr, (const char *)&ndr->data[1 + *offset], len);
 		NDR_ERR_HAVE_NO_MEMORY(*component);
@@ -95,7 +95,7 @@ static enum ndr_err_code ndr_pull_component(struct ndr_pull *ndr,
 	}
 
 	/* too many pointers */
-	return ndr_pull_error(ndr, NDR_ERR_STRING, "BAD DNS NAME component");
+	return ndr_pull_error(ndr, NDR_ERR_STRING, "BAD DNS NAME component, too many pointers");
 }
 
 /**
@@ -207,4 +207,92 @@ _PUBLIC_ enum ndr_err_code ndr_push_dns_string(struct ndr_push *ndr, int ndr_fla
 	 * without using a label pointer, we need to terminate the string
 	 */
 	return ndr_push_bytes(ndr, (const uint8_t *)"", 1);
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_dns_res_rec(struct ndr_push *ndr, int ndr_flags, const struct dns_res_rec *r)
+{
+	{
+		uint32_t _flags_save_STRUCT = ndr->flags;
+		uint32_t _saved_offset1, _saved_offset2;
+		uint16_t length;
+		ndr_set_flags(&ndr->flags, LIBNDR_PRINT_ARRAY_HEX|LIBNDR_FLAG_NOALIGN);
+		if (ndr_flags & NDR_SCALARS) {
+			NDR_CHECK(ndr_push_align(ndr, 4));
+			NDR_CHECK(ndr_push_dns_string(ndr, NDR_SCALARS, r->name));
+			NDR_CHECK(ndr_push_dns_qtype(ndr, NDR_SCALARS, r->rr_type));
+			NDR_CHECK(ndr_push_dns_qclass(ndr, NDR_SCALARS, r->rr_class));
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->ttl));
+			_saved_offset1 = ndr->offset;
+			NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, 0));
+			NDR_CHECK(ndr_push_set_switch_value(ndr, &r->rdata, r->rr_type));
+			NDR_CHECK(ndr_push_dns_rdata(ndr, NDR_SCALARS, &r->rdata));
+
+			if (r->unexpected.length > UINT16_MAX) {
+				return ndr_push_error(ndr, NDR_ERR_LENGTH,
+						      "Unexpected blob lenght is too large");
+			}
+
+			NDR_CHECK(ndr_push_bytes(ndr, r->unexpected.data, r->unexpected.length));
+			NDR_CHECK(ndr_push_trailer_align(ndr, 4));
+			length = ndr->offset - (_saved_offset1 + 2);
+			_saved_offset2 = ndr->offset;
+			ndr->offset = _saved_offset1;
+			NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, length));
+			ndr->offset = _saved_offset2;
+		}
+		if (ndr_flags & NDR_BUFFERS) {
+			NDR_CHECK(ndr_push_dns_rdata(ndr, NDR_BUFFERS, &r->rdata));
+		}
+		ndr->flags = _flags_save_STRUCT;
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_dns_res_rec(struct ndr_pull *ndr, int ndr_flags, struct dns_res_rec *r)
+{
+	{
+		uint32_t _flags_save_STRUCT = ndr->flags;
+		uint32_t _saved_offset1;
+		uint32_t pad, length;
+
+		ndr_set_flags(&ndr->flags, LIBNDR_PRINT_ARRAY_HEX|LIBNDR_FLAG_NOALIGN);
+		if (ndr_flags & NDR_SCALARS) {
+			NDR_CHECK(ndr_pull_align(ndr, 4));
+			NDR_CHECK(ndr_pull_dns_string(ndr, NDR_SCALARS, &r->name));
+			NDR_CHECK(ndr_pull_dns_qtype(ndr, NDR_SCALARS, &r->rr_type));
+			NDR_CHECK(ndr_pull_dns_qclass(ndr, NDR_SCALARS, &r->rr_class));
+			NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->ttl));
+			NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->length));
+			_saved_offset1 = ndr->offset;
+			NDR_CHECK(ndr_pull_set_switch_value(ndr, &r->rdata, r->rr_type));
+			NDR_CHECK(ndr_pull_dns_rdata(ndr, NDR_SCALARS, &r->rdata));
+			length = ndr->offset - _saved_offset1;
+			if (length > r->length) {
+				return ndr_pull_error(ndr, NDR_ERR_LENGTH,
+						      "TODO");
+			}
+
+			r->unexpected = data_blob_null;
+			pad = r->length - length;
+			if (pad > 0) {
+				NDR_PULL_NEED_BYTES(ndr, pad);
+				r->unexpected = data_blob_talloc(ndr->current_mem_ctx,
+								 ndr->data + ndr->offset,
+								 pad);
+				if (r->unexpected.data == NULL) {
+					return ndr_pull_error(ndr, NDR_ERR_ALLOC,
+							      "Failed to allocate a data blob");
+				}
+				ndr->offset += pad;
+			}
+
+
+			NDR_CHECK(ndr_pull_trailer_align(ndr, 4));
+		}
+		if (ndr_flags & NDR_BUFFERS) {
+			NDR_CHECK(ndr_pull_dns_rdata(ndr, NDR_BUFFERS, &r->rdata));
+		}
+		ndr->flags = _flags_save_STRUCT;
+	}
+	return NDR_ERR_SUCCESS;
 }
