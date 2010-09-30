@@ -5398,6 +5398,10 @@ static WERROR construct_printer_driver_info_level(TALLOC_CTX *mem_ctx,
 	struct spoolss_DriverInfo8 *driver;
 	WERROR result;
 
+	if (level == 101) {
+		return WERR_UNKNOWN_LEVEL;
+	}
+
 	result = winreg_get_printer(mem_ctx,
 				    server_info,
 				    msg_ctx,
