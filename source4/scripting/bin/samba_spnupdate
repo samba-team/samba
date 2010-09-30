@@ -212,6 +212,8 @@ def call_rodc_update(d):
         ns.str = n
         spn_names.append(ns)
         req1.count = req1.count + 1
+    if spn_names == []:
+        return
     req1.spn_names = spn_names
     (level, res) = drs.DsWriteAccountSpn(drs_handle, 1, req1)
 
