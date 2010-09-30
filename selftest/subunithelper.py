@@ -285,7 +285,7 @@ class FilterOps(testtools.testresult.TestResult):
             self.xfail_added+=1
             self.total_xfail+=1
             if details is not None:
-                details = subunit.RemoteError(details[1].message + xfail_reason.decode("utf-8"))
+                details = subunit.RemoteError(unicode(details[1]) + xfail_reason.decode("utf-8"))
             else:
                 details = subunit.RemoteError(xfail_reason.decode("utf-8"))
             self._ops.addExpectedFailure(test, details)
