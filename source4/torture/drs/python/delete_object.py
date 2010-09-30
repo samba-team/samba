@@ -80,7 +80,6 @@ class DrsDeleteObjectTestCase(samba.tests.TestCase):
         # we will need DCs DNS names for 'net drs' command
         self.dnsname_dc1 = self.info_dc1["dnsHostName"][0]
         self.dnsname_dc2 = self.info_dc2["dnsHostName"][0]
-        pass
 
     def tearDown(self):
         super(DrsDeleteObjectTestCase, self).tearDown()
@@ -125,7 +124,6 @@ class DrsDeleteObjectTestCase(samba.tests.TestCase):
             self.assertEquals(name_cur, name_orig)
             self.assertEquals(user_orig["dn"], user_cur["dn"])
             self.assertTrue(dodn not in str(user_cur["dn"]))
-        pass
 
     def _net_drs_replicate(self, DC, fromDC):
         # find out where is net command
@@ -139,8 +137,6 @@ class DrsDeleteObjectTestCase(samba.tests.TestCase):
                                                      self.domain_dn, cmd_line_auth)
         ret = os.system(cmd_line)
         self.assertEquals(ret, 0, "Replicating %s from %s has failed!" % (DC, fromDC))
-        pass
-
 
     def test_NetReplicateCmd(self):
         """Triggers replication from DC1 to DC2
@@ -150,7 +146,6 @@ class DrsDeleteObjectTestCase(samba.tests.TestCase):
         self._net_drs_replicate(DC=self.dnsname_dc2, fromDC=self.dnsname_dc1)
         # replicate Domain NC on DC1 from DC2
         self._net_drs_replicate(DC=self.dnsname_dc1, fromDC=self.dnsname_dc2)
-        pass
 
     def test_ReplicateDeteleteObject(self):
         """Verifies how a deleted-object is replicated between two DCs.
@@ -213,8 +208,6 @@ class DrsDeleteObjectTestCase(samba.tests.TestCase):
         self._check_user(sam_ldb=self.ldb_dc1, user_orig=user_orig, is_deleted=True)
         # check user info on DC2 - should be deleted
         self._check_user(sam_ldb=self.ldb_dc2, user_orig=user_orig, is_deleted=True)
-        pass
-
 
 
 ########################################################################################
