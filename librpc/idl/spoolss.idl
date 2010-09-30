@@ -766,7 +766,7 @@ cpp_quote("#define spoolss_security_descriptor security_descriptor")
 	} spoolss_PrinterAttributes;
 
 	typedef [public,gensize] struct {
-		spoolss_PrinterAttributes flags;
+		spoolss_EnumPrinterFlags flags;
 		[relative] nstring *description;
 		[relative] nstring *name;
 		[relative] nstring *comment;
