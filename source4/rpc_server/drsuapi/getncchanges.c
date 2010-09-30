@@ -1589,6 +1589,12 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 		ureq.options = DRSUAPI_DRS_ADD_REF |
 			DRSUAPI_DRS_ASYNC_OP |
 			DRSUAPI_DRS_GETCHG_CHECK;
+
+		/* we also need to pass through the
+		   DRSUAPI_DRS_REF_GCSPN bit so that repsTo gets flagged
+		   to send notifies using the GC SPN */
+		ureq.options |= (req10->replica_flags & DRSUAPI_DRS_REF_GCSPN);
+
 		werr = drsuapi_UpdateRefs(b_state, mem_ctx, &ureq);
 		if (!W_ERROR_IS_OK(werr)) {
 			DEBUG(0,(__location__ ": Failed UpdateRefs in DsGetNCChanges - %s\n",

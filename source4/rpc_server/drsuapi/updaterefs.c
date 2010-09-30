@@ -66,6 +66,8 @@ static WERROR uref_add_dest(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 	ZERO_STRUCT(reps.r[reps.count]);
 	reps.r[reps.count].version = 1;
 	reps.r[reps.count].ctr.ctr1 = *dest;
+	/* add the GCSPN flag if the client asked for it */
+	reps.r[reps.count].ctr.ctr1.replica_flags |= (options & DRSUAPI_DRS_REF_GCSPN);
 	reps.count++;
 
 	werr = dsdb_savereps(sam_ctx, mem_ctx, dn, "repsTo", reps.r, reps.count);
