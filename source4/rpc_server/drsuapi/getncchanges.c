@@ -121,7 +121,7 @@ static WERROR get_nc_changes_build_object(struct drsuapi_DsReplicaObjectListItem
 					  enum drsuapi_DsExtendedOperation extended_op)
 {
 	const struct ldb_val *md_value;
-	unsigned int i, n;
+	uint32_t i, n;
 	struct replPropertyMetaDataBlob md;
 	uint32_t rid = 0;
 	enum ndr_err_code ndr_err;
@@ -1062,7 +1062,7 @@ static WERROR dcesrv_drsuapi_is_reveal_secrets_request(struct drsuapi_bind_state
 						       bool *is_secret_request)
 {
 	enum drsuapi_DsExtendedOperation exop;
-	int i;
+	uint32_t i;
 	struct dsdb_schema *schema;
 
 	*is_secret_request = true;
@@ -1170,7 +1170,7 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 {
 	struct drsuapi_DsReplicaObjectIdentifier *ncRoot;
 	int ret;
-	unsigned int i;
+	uint32_t i;
 	struct dsdb_schema *schema;
 	struct drsuapi_DsReplicaOIDMapping_Ctr *ctr;
 	struct drsuapi_DsReplicaObjectListItemEx **currentObject;
