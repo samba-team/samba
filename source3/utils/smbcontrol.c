@@ -1016,7 +1016,7 @@ static bool do_winbind_dump_domain_list(struct messaging_context *msg_ctx,
 	myid = procid_self();
 
 	if (argc < 1 || argc > 2) {
-		fprintf(stderr, "Usage: smbcontrol <dest> dump_domain_list "
+		fprintf(stderr, "Usage: smbcontrol <dest> dump-domain-list "
 			"<domain>\n");
 		return false;
 	}
