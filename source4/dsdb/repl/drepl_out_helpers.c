@@ -623,16 +623,22 @@ static void dreplsrv_op_pull_source_apply_changes_trigger(struct tevent_req *req
 		return;
 	}
 
+	if (state->op->extended_op != DRSUAPI_EXOP_NONE ||
+	    state->op->service->am_rodc) {
+		/*
+		  we don't do the UpdateRefs for extended ops or if we
+		  are a RODC
+		 */
+		tevent_req_done(req);
+		return;
+	}
+
 	/* now we need to update the repsTo record for this partition
 	   on the server. These records are initially established when
 	   we join the domain, but they quickly expire.  We do it here
 	   so we can use the already established DRSUAPI pipe
 	*/
-	if (state->op->extended_op == DRSUAPI_EXOP_NONE) {
-		dreplsrv_update_refs_trigger(req);
-	} else {
-		tevent_req_done(req);
-	}
+	dreplsrv_update_refs_trigger(req);
 }
 
 static void dreplsrv_update_refs_done(struct tevent_req *subreq);
