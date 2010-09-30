@@ -1133,7 +1133,7 @@ bool winbindd_reinit_after_fork(const char *logfilename)
 	status = reinit_after_fork(
 		winbind_messaging_context(),
 		winbind_event_context(),
-		messaging_server_id(winbind_messaging_context()),
+		procid_self(),
 		true);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("reinit_after_fork() failed\n"));
