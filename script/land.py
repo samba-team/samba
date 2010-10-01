@@ -132,6 +132,25 @@ class builder(object):
                           stdout=self.stdout, stderr=self.stderr, stdin=self.stdin)
         self.next += 1
 
+    def poll(self):
+        self.status = self.proc.poll()
+        return self.status
+
+    def kill(self):
+        if self.proc is not None:
+            run_cmd("killbysubdir %s > /dev/null 2>&1" % self.sdir, checkfail=False)
+            self.proc.terminate()
+            self.proc.wait()
+            self.proc = None
+
+    @property
+    def failed(self):
+        return (os.WIFSIGNALED(self.status) or os.WEXITSTATUS(self.status) != 0)
+
+    @property
+    def failure_reason(self):
+        return "%s: [%s] failed '%s' with status %d" % (self.name, self.stage, self.cmd, self.status)
+
 
 class buildlist(object):
     '''handle build of multiple directories'''
@@ -164,11 +183,7 @@ class buildlist(object):
             self.retry.proc.wait()
             self.retry = None
         for b in self.tlist:
-            if b.proc is not None:
-                run_cmd("killbysubdir %s > /dev/null 2>&1" % b.sdir, checkfail=False)
-                b.proc.terminate()
-                b.proc.wait()
-                b.proc = None
+            b.kill()
 
     def wait_one(self):
         while True:
@@ -177,8 +192,7 @@ class buildlist(object):
                 if b.proc is None:
                     continue
                 none_running = False
-                b.status = b.proc.poll()
-                if b.status is None:
+                if b.poll() is None:
                     continue
                 b.proc = None
                 return b
@@ -201,9 +215,9 @@ class buildlist(object):
                 return (0, "retry")
             if b is None:
                 break
-            if os.WIFSIGNALED(b.status) or os.WEXITSTATUS(b.status) != 0:
+            if b.failed:
                 self.kill_kids()
-                return (b.status, b.name, b.stage, b.tag, "%s: [%s] failed '%s' with status %d" % (b.name, b.stage, b.cmd, b.status))
+                return (b.status, b.name, b.stage, b.tag, b.failure_reason)
             b.start_next()
         self.kill_kids()
         return (0, None, None, None, "All OK")
