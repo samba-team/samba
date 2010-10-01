@@ -72,17 +72,18 @@ retry_task = [ ( "retry",
                 done
                ''' % samba_master, "test/plain" ) ]
 
+
 def run_cmd(cmd, dir=".", show=None, output=False, checkfail=True):
     if show is None:
         show = options.verbose
     if show:
         print("Running: '%s' in '%s'" % (cmd, dir))
     if output:
-        return Popen([cmd], shell=True, stdout=PIPE, cwd=dir).communicate()[0]
+        return Popen(cmd, stdout=PIPE, cwd=dir).communicate()[0]
     elif checkfail:
-        return check_call(cmd, shell=True, cwd=dir)
+        return check_call(cmd, cwd=dir)
     else:
-        return call(cmd, shell=True, cwd=dir)
+        return call(cmd, cwd=dir)
 
 
 class builder(object):
@@ -138,7 +139,11 @@ class builder(object):
 
     def kill(self):
         if self.proc is not None:
-            run_cmd("killbysubdir %s > /dev/null 2>&1" % self.sdir, checkfail=False)
+            try:
+                run_cmd(["killbysubdir", self.sdir], checkfail=False)
+            except OSError:
+                # killbysubdir doesn't exist ?
+                pass
             self.proc.terminate()
             self.proc.wait()
             self.proc = None
