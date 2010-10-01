@@ -547,6 +547,7 @@ static bool set_printer_hnd_name(TALLOC_CTX *mem_ctx,
 	bool found = false;
 	struct spoolss_PrinterInfo2 *info2 = NULL;
 	WERROR result;
+	char *p;
 
 	/*
 	 * Hopefully nobody names his printers like this. Maybe \ or ,
@@ -584,6 +585,18 @@ static bool set_printer_hnd_name(TALLOC_CTX *mem_ctx,
 	}
 
 	DEBUGADD(5, ("searching for [%s]\n", aprinter));
+
+	if ((p = strchr(aprinter, ',')) != NULL) {
+		if (*p == ' ')
+			p++;
+		if (strnequal(p+1, "DrvConvert", strlen("DrvConvert")) ||
+		    strnequal(p+1, " DrvConvert", strlen(" DrvConvert"))) {
+			*p = '\0';
+		} else if (strnequal(p+1, "LocalOnly", strlen("LocalOnly")) ||
+		           strnequal(p+1, " LocalOnly", strlen(" LocalOnly"))) {
+			*p = '\0';
+		}
+	}
 
 	/* check for the Port Monitor Interface */
 	if ( strequal( aprinter, SPL_XCV_MONITOR_TCPMON ) ) {
