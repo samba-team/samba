@@ -3,7 +3,7 @@
 # Copyright Andrew Tridgell 2010
 # released under GNU GPL v3 or later
 
-from subprocess import Popen, PIPE
+from subprocess import call, check_call,Popen, PIPE
 import os, tarfile, sys, time
 from optparse import OptionParser
 import smtplib
@@ -71,21 +71,17 @@ retry_task = [ '''set -e
                ''' % samba_master]
 
 def run_cmd(cmd, dir=".", show=None, output=False, checkfail=True):
-    cwd = os.getcwd()
-    os.chdir(dir)
     if show is None:
         show = options.verbose
     if show:
         print("Running: '%s' in '%s'" % (cmd, dir))
     if output:
-        ret = Popen([cmd], shell=True, stdout=PIPE).communicate()[0]
-        os.chdir(cwd)
-        return ret
-    ret = os.system(cmd)
-    os.chdir(cwd)
-    if checkfail and ret != 0:
-        raise Exception("FAILED %s: %d" % (cmd, ret))
-    return ret
+        return Popen([cmd], shell=True, stdout=PIPE, cwd=dir).communicate()[0]
+    elif checkfail:
+        return check_call(cmd, shell=True)
+    else:
+        return call(cmd, shell=True)
+
 
 class builder(object):
     '''handle build of one directory'''
