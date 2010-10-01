@@ -47,7 +47,7 @@ print "Pushing local branch"
 args = ["git", "push", "--force", "git+ssh://%s/%s" % (opts.host, remote_repo), "HEAD:HEAD"]
 print "$ " + " ".join(args)
 subprocess.check_call(args)
-remote_args = ["cd", remote_repo, "&&", "python", "./script/autobuild.py"]
+remote_args = ["python", "%s/script/land.py" % remote_repo, "--repository=%s" % remote_repo]
 if opts.email:
     remote_args.append("--email=%s" % opts.email)
 if opts.always_email:
