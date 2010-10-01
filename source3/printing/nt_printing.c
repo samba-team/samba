@@ -2102,7 +2102,7 @@ bool print_access_check(const struct auth_serversupplied_info *server_info,
 	}
 
 	result = winreg_get_printer_secdesc(mem_ctx,
-					    server_info,
+					    get_server_info_system(),
 					    msg_ctx,
 					    pname,
 					    &secdesc);

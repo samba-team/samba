@@ -1823,7 +1823,7 @@ WERROR _spoolss_OpenPrinterEx(struct pipes_struct *p,
 
 		if (!user_ok_token(uidtoname(p->server_info->utok.uid), NULL,
 				   p->server_info->ptok, snum) ||
-		    !print_access_check(get_server_info_system(),
+		    !print_access_check(p->server_info,
 					p->msg_ctx,
 					snum,
 					r->in.access_mask)) {
@@ -7796,7 +7796,7 @@ static WERROR spoolss_addprinterex_level_2(struct pipes_struct *p,
 	}
 
 	/* you must be a printer admin to add a new printer */
-	if (!print_access_check(get_server_info_system(),
+	if (!print_access_check(p->server_info,
 				p->msg_ctx,
 				snum,
 				PRINTER_ACCESS_ADMINISTER)) {
