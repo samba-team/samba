@@ -30,11 +30,11 @@ plantest() {
 	cmdline="$*"
 	echo "-- TEST --"
 	if [ "$env" = "none" ]; then
-		fulltest="samba3.$name"
+		fullname="samba3.$name"
 	else
-		fulltest="samba3.$name ($env)"
+		fullname="samba3.$name ($env)"
 	fi
-	echo $fulltest
+	echo $fullname
 	echo $env
 	echo $cmdline "2>&1" "| ../selftest/filter-subunit --prefix \"$fullname.\""
 }
