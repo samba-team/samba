@@ -58,7 +58,8 @@ tasks = {
                      ("test", "make test", "text/plain"), ],
 }
 
-retry_task = [ '''set -e
+retry_task = [ ( "retry",
+                 '''set -e
                 git remote add -t master master %s
                 git fetch master
                 while :; do
@@ -68,7 +69,7 @@ retry_task = [ '''set -e
                   git describe master/master > master.desc
                   diff old_master.desc master.desc
                 done
-               ''' % samba_master]
+               ''' % samba_master, "test/plain" ) ]
 
 def run_cmd(cmd, dir=".", show=None, output=False, checkfail=True):
     if show is None:
