@@ -764,7 +764,7 @@ if __name__ == "__main__":
 
     lp = sambaopts.get_loadparm()
     creds = credopts.get_credentials(lp)
-    creds2 = credopts.get_credentials2(lp)
+    creds2 = credopts.get_credentials2(lp, False)
     if creds2.is_anonymous():
         creds2 = creds
 
