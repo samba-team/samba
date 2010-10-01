@@ -22,12 +22,12 @@ tasks = {
                   ("make basics", "make basics", "text/plain"),
                   ("make", "make -j 4 everything", "text/plain"), # don't use too many processes
                   ("install", "make install", "text/plain"),
-                  ("test", "TDB_NO_FSYNC=1 make subunit-test FAIL_IMMEDIATELY=1", "text/x-subunit") ],
+                  ("test", "TDB_NO_FSYNC=1 make test FAIL_IMMEDIATELY=1", "text/plain") ],
 
     "source4" : [ ("configure", "./configure.developer ${PREFIX}", "text/plain"),
                   ("make", "make -j", "text/plain"),
                   ("install", "make install", "text/plain"),
-                  ("test", "TDB_NO_FSYNC=1 make subunit-test FAIL_IMMEDIATELY=1", "text/x-subunit") ],
+                  ("test", "TDB_NO_FSYNC=1 make test FAIL_IMMEDIATELY=1", "text/plain") ],
 
     "source4/lib/ldb" : [ ("configure", "./configure --enable-developer -C ${PREFIX}", "text/plain"),
                           ("make", "make -j", "text/plain"),
