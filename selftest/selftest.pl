@@ -399,6 +399,9 @@ die("using an empty prefix isn't allowed") unless $prefix ne "";
 mkdir($prefix, 0777) unless -d $prefix;
 
 my $prefix_abs = abs_path($prefix);
+my $tmpdir_abs = abs_path("$prefix/tmp");
+mkdir($tmpdir_abs, 0777) unless -d $tmpdir_abs;
+
 my $srcdir_abs = abs_path($srcdir);
 my $builddir_abs = abs_path($builddir);
 
@@ -658,6 +661,7 @@ if ($#testlists == -1) {
 }
 
 $ENV{SELFTEST_PREFIX} = "$prefix_abs";
+$ENV{SELFTEST_TMPDIR} = "$tmpdir_abs";
 if ($opt_socket_wrapper) {
 	$ENV{SELFTEST_INTERFACES} = $interfaces;
 } else {

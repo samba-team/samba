@@ -152,7 +152,7 @@ bbdir = "../testprogs/blackbox"
 
 configuration = "--configfile=$SMB_CONF_PATH"
 
-torture_options = [configuration, "--maximum-runtime=$SELFTEST_MAXTIME", "--target=$SELFTEST_TARGET", "--basedir=$SELFTEST_PREFIX/s4client"]
+torture_options = [configuration, "--maximum-runtime=$SELFTEST_MAXTIME", "--target=$SELFTEST_TARGET", "--basedir=$SELFTEST_TMPDIR"]
 if not os.getenv("SELFTEST_VERBOSE"):
     torture_options.append("--option=torture:progress=no")
 torture_options.append("--format=subunit")
@@ -485,10 +485,7 @@ planpythontestsuite("none", "samba.tests.ntacls")
 plantestsuite("samba4.deletetest.python(dc)", "dc", ['PYTHONPATH="$PYTHONPATH:../lib/subunit/python:../lib/testtools', python, os.path.join(samba4srcdir, "dsdb/tests/python/deletetest.py"), '$SERVER', '-U"$USERNAME%$PASSWORD','-W', '$DOMAIN'])
 plantestsuite("samba4.policy.python", "none", ['PYTHONPATH="$PYTHONPATH:lib/policy/tests/python"', subunitrun, 'bindings'])
 plantestsuite("samba4.blackbox.samba3dump", "none", [python, os.path.join(samba4srcdir, "scripting/bin/samba3dump"), os.path.join(samba4srcdir, "../testdata/samba3")])
-os.system("rm -rf $PREFIX/upgrade")
-plantestsuite("samba4.blackbox.upgrade", "none", [python, os.path.join(samba4srcdir, "setup/upgrade_from_s3"), "--targetdir=$PREFIX/upgrade", os.path.normpath(os.path.join(samba4srcdir, "../testdata/samba3")), os.path.normpath(os.path.join(samba4srcdir, "../testdata/samba3/smb.conf"))])
-os.system("rm -rf $PREFIX/provision") # FIXME
-os.system("mkdir $PREFIX/provision") # FIXME
+plantestsuite("samba4.blackbox.upgrade", "none", ["rm -rf $PREFIX/upgrade;", python, os.path.join(samba4srcdir, "setup/upgrade_from_s3"), "--targetdir=$PREFIX/upgrade", os.path.normpath(os.path.join(samba4srcdir, "../testdata/samba3")), os.path.normpath(os.path.join(samba4srcdir, "../testdata/samba3/smb.conf"))])
 plantestsuite("samba4.blackbox.provision.py", "none", ["PYTHON=%s" % python, os.path.join(samba4srcdir, "setup/tests/blackbox_provision.sh"), '$PREFIX/provision'])
 plantestsuite("samba4.blackbox.provision-backend.py", "none", ["PYTHON=%s" % python, os.path.join(samba4srcdir, "setup/tests/blackbox_provision-backend.sh"), '$PREFIX/provision'])
 plantestsuite("samba4.blackbox.upgradeprovision.py", "none", ["PYTHON=%s" % python, os.path.join(samba4srcdir, "setup/tests/blackbox_upgradeprovision.sh"), '$PREFIX/provision'])

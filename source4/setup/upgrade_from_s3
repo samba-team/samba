@@ -46,7 +46,6 @@ parser.add_option("--targetdir", type="string", metavar="DIR",
 
 opts, args = parser.parse_args()
 
-
 logger = logging.getLogger("upgrade")
 logger.addHandler(logging.StreamHandler(sys.stdout))
 if opts.quiet:
