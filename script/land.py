@@ -4,7 +4,7 @@
 # Copyright Jelmer Vernooij 2010
 # released under GNU GPL v3 or later
 
-from subprocess import call, check_call,Popen, PIPE
+from subprocess import call, check_call, Popen, PIPE
 import os, tarfile, sys, time
 from optparse import OptionParser
 import smtplib
@@ -86,7 +86,7 @@ def run_cmd(cmd, dir=".", show=None, output=False, checkfail=True):
         return call(cmd, cwd=dir)
 
 
-class builder(object):
+class Builder(object):
     '''handle build of one directory'''
 
     def __init__(self, name, sequence):
@@ -116,7 +116,7 @@ class builder(object):
         cleanup_list.append(self.prefix)
         os.makedirs(self.sdir)
         run_cmd("rm -rf %s" % self.sdir)
-        run_cmd("git clone --shared %s %s" % (gitroot, self.sdir))
+        run_cmd(["git", "clone", "--shared", gitroot, self.sdir])
         self.start_next()
 
     def start_next(self):
@@ -157,7 +157,7 @@ class builder(object):
         return "%s: [%s] failed '%s' with status %d" % (self.name, self.stage, self.cmd, self.status)
 
 
-class buildlist(object):
+class BuildList(object):
     '''handle build of multiple directories'''
 
     def __init__(self, tasklist, tasknames):
@@ -172,10 +172,10 @@ class buildlist(object):
         if tasknames == []:
             tasknames = tasklist
         for n in tasknames:
-            b = builder(n, tasks[n])
+            b = Builder(n, tasks[n])
             self.tlist.append(b)
         if options.retry:
-            self.retry = builder('retry', retry_task)
+            self.retry = Builder('retry', retry_task)
             self.need_retry = False
 
     def kill_kids(self):
@@ -408,7 +408,7 @@ if options.retry:
         raise Exception('You can only use --retry if you also rebase')
 
 testbase = "%s/b%u" % (options.testbase, os.getpid())
-test_master = "%s/master" % testbase
+test_master = os.path.join(testbase, "master")
 
 if options.repository is not None:
     repository = options.repository
@@ -444,7 +444,7 @@ while True:
             rebase_tree(options.rebase)
         elif options.rebase_master:
             rebase_tree(samba_master)
-        blist = buildlist(tasks, args)
+        blist = BuildList(tasks, args)
         if options.tail:
             blist.start_tail()
         (status, failed_task, failed_stage, failed_tag, errstr) = blist.run()
@@ -477,15 +477,14 @@ if status == 0:
     blist.remove_logs()
     cleanup()
     print(errstr)
-    sys.exit(0)
+else:
+    # something failed, gather a tar of the logs
+    blist.tarlogs("logs.tar.gz")
 
-# something failed, gather a tar of the logs
-blist.tarlogs("logs.tar.gz")
+    if options.email is not None:
+        email_failure(status, failed_task, failed_stage, failed_tag, errstr)
 
-if options.email is not None:
-    email_failure(status, failed_task, failed_stage, failed_tag, errstr)
-
-cleanup()
-print(errstr)
-print("Logs in logs.tar.gz")
+    cleanup()
+    print(errstr)
+    print("Logs in logs.tar.gz")
 sys.exit(status)
