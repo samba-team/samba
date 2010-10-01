@@ -507,8 +507,7 @@ krb5_error_code smb_krb5_open_keytab(TALLOC_CTX *mem_ctx,
 }
 
 static krb5_error_code keytab_add_keys(TALLOC_CTX *parent_ctx,
-				       const char *princ_string,
-				       krb5_principal princ,
+				       struct principal_container **principals,
 				       krb5_principal salt_princ,
 				       int kvno,
 				       const char *password_s,
@@ -517,13 +516,9 @@ static krb5_error_code keytab_add_keys(TALLOC_CTX *parent_ctx,
 				       krb5_keytab keytab,
 				       const char **error_string)
 {
-	int i;
+	unsigned int i, p;
 	krb5_error_code ret;
 	krb5_data password;
-	TALLOC_CTX *mem_ctx = talloc_new(parent_ctx);
-	if (!mem_ctx) {
-		return ENOMEM;
-	}
 
 	password.data = discard_const_p(char *, password_s);
 	password.length = strlen(password_s);
@@ -536,32 +531,33 @@ static krb5_error_code keytab_add_keys(TALLOC_CTX *parent_ctx,
 		ret = create_kerberos_key_from_string(smb_krb5_context->krb5_context, 
 						      salt_princ, &password, &entry.keyblock, enctypes[i]);
 		if (ret != 0) {
-			talloc_free(mem_ctx);
 			return ret;
 		}
 
-                entry.principal = princ;
-                entry.vno       = kvno;
-		ret = krb5_kt_add_entry(smb_krb5_context->krb5_context, keytab, &entry);
-		if (ret != 0) {
-			*error_string = talloc_asprintf(parent_ctx, "Failed to add enctype %d entry for %s(kvno %d) to keytab: %s\n",
-							(int)enctypes[i],
-							princ_string,
-							kvno,
-							smb_get_krb5_error_message(smb_krb5_context->krb5_context,
-										   ret, mem_ctx));
-			talloc_free(mem_ctx);
-			krb5_free_keyblock_contents(smb_krb5_context->krb5_context, &entry.keyblock);
-			return ret;
-		}
+                entry.vno = kvno;
 
-		DEBUG(5, ("Added %s(kvno %d) to keytab (enctype %d)\n", 
-			  princ_string, kvno,
-			  (int)enctypes[i]));
-		
+		for (p=0; principals[p]; p++) {
+			entry.principal = principals[p]->principal;
+			ret = krb5_kt_add_entry(smb_krb5_context->krb5_context, keytab, &entry);
+			if (ret != 0) {
+				char *k5_error_string = smb_get_krb5_error_message(smb_krb5_context->krb5_context,
+										   ret, NULL);
+				*error_string = talloc_asprintf(parent_ctx, "Failed to add enctype %d entry for %s(kvno %d) to keytab: %s\n",
+								(int)enctypes[i],
+								principals[p]->string_form,
+								kvno,
+								k5_error_string);
+				talloc_free(k5_error_string);
+				krb5_free_keyblock_contents(smb_krb5_context->krb5_context, &entry.keyblock);
+				return ret;
+			}
+
+			DEBUG(5, ("Added %s(kvno %d) to keytab (enctype %d)\n", 
+				  principals[p]->string_form, kvno,
+				  (int)enctypes[i]));
+		}
 		krb5_free_keyblock_contents(smb_krb5_context->krb5_context, &entry.keyblock);
 	}
-	talloc_free(mem_ctx);
 	return 0;
 }
 
@@ -573,7 +569,6 @@ static krb5_error_code create_keytab(TALLOC_CTX *parent_ctx,
 				     bool add_old,
 				     const char **error_string)
 {
-	unsigned int i;
 	krb5_error_code ret;
 	const char *password_s;
 	const char *old_secret;
@@ -624,26 +619,23 @@ static krb5_error_code create_keytab(TALLOC_CTX *parent_ctx,
 		return ret;
 	}
 
-	/* Walk over the principals */
-	for (i=0; principals[i]; i++) {
-		ret = keytab_add_keys(mem_ctx, principals[i]->string_form, principals[i]->principal,
+	ret = keytab_add_keys(mem_ctx, principals,
+			      salt_princ,
+			      kvno, password_s, smb_krb5_context,
+			      enctypes, keytab, error_string);
+	if (ret) {
+		talloc_free(mem_ctx);
+		return ret;
+	}
+	
+	if (old_secret) {
+		ret = keytab_add_keys(mem_ctx, principals,
 				      salt_princ,
-				      kvno, password_s, smb_krb5_context,
+				      kvno - 1, old_secret, smb_krb5_context,
 				      enctypes, keytab, error_string);
 		if (ret) {
 			talloc_free(mem_ctx);
 			return ret;
-		}
-
-		if (old_secret) {
-			ret = keytab_add_keys(mem_ctx, principals[i]->string_form, principals[i]->principal,
-					      salt_princ,
-					      kvno - 1, old_secret, smb_krb5_context,
-					      enctypes, keytab, error_string);
-			if (ret) {
-				talloc_free(mem_ctx);
-				return ret;
-			}
 		}
 	}
 
