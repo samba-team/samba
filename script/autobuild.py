@@ -246,6 +246,30 @@ def find_git_root():
     return None
 
 
+def daemonize(logfile):
+    pid = os.fork()
+    if pid == 0: # Parent
+        os.setsid()
+        pid = os.fork()
+        if pid != 0: # Actual daemon
+            os._exit(0)
+    else: # Grandparent
+        os._exit(0)
+
+    import resource      # Resource usage information.
+    maxfd = resource.getrlimit(resource.RLIMIT_NOFILE)[1]
+    if maxfd == resource.RLIM_INFINITY:
+        maxfd = 1024 # Rough guess at maximum number of open file descriptors.
+    for fd in range(0, maxfd):
+        try:
+            os.close(fd)
+        except OSError:
+            pass
+    os.open(logfile, os.O_RDWR | os.O_CREAT)
+    os.dup2(0, 1)
+    os.dup2(0, 2)
+
+
 def rebase_tree(url):
     print("Rebasing on %s" % url)
     run_cmd("git remote add -t master master %s" % url, show=True, dir=test_master)
@@ -295,6 +319,8 @@ parser.add_option("", "--retry", help="automatically retry if master changes",
                   default=False, action="store_true")
 parser.add_option("", "--email", help="send email to the given address on failure",
                   type='str', default=None)
+parser.add_option("", "--daemon", help="daemonize after initial setup",
+                  action="store_true")
 
 
 def email_failure(status, failed_task, failed_tag, errstr):
@@ -346,6 +372,11 @@ try:
 except Exception, reason:
     raise Exception("Unable to create %s : %s" % (testbase, reason))
 cleanup_list.append(testbase)
+
+if options.daemon:
+    logfile = os.path.join(testbase, "log")
+    print "Forking into the background, writing progress to %s" % logfile
+    daemonize(logfile)
 
 while True:
     try:
