@@ -247,9 +247,8 @@ def cleanup():
         run_cmd("rm -rf %s" % d)
 
 
-def find_git_root():
+def find_git_root(p):
     '''get to the top of the git repo'''
-    p=os.getcwd()
     while p != '/':
         if os.path.isdir(os.path.join(p, ".git")):
             return p
@@ -306,6 +305,7 @@ def push_to(url):
 def_testbase = os.getenv("AUTOBUILD_TESTBASE", "/memdisk/%s" % os.getenv('USER'))
 
 parser = OptionParser()
+parser.add_option("", "--repository", help="repository to run tests for", default=None, type=str)
 parser.add_option("", "--tail", help="show output while running", default=False, action="store_true")
 parser.add_option("", "--keeplogs", help="keep logs", default=False, action="store_true")
 parser.add_option("", "--nocleanup", help="don't remove test tree", default=False, action="store_true")
@@ -405,9 +405,14 @@ if options.retry:
 testbase = "%s/b%u" % (options.testbase, os.getpid())
 test_master = "%s/master" % testbase
 
-gitroot = find_git_root()
+if options.repository is not None:
+    repository = options.repository
+else:
+    repository = os.getcwd()
+
+gitroot = find_git_root(repository)
 if gitroot is None:
-    raise Exception("Failed to find git root")
+    raise Exception("Failed to find git root under %s" % repository)
 
 try:
     os.makedirs(testbase)

@@ -12,6 +12,7 @@ parser.add_option("--remote-repo", help="Location of remote repository (default:
 parser.add_option("--host", help="Host to land on (SSH connection string)", type=str, default="sn-devel-104.sn.samba.org")
 parser.add_option("--foreground", help="Don't daemonize", action="store_true", default=False)
 parser.add_option("--email", help="Email address to send build/test output to", type=str, default=None, metavar="EMAIL")
+parser.add_option("--always-email", help="always send email, even on success", action="store_true")
 parser.add_option("--rebase-master", help="rebase on master before testing", default=False, action='store_true')
 parser.add_option("--rebase", help="rebase on the given tree before testing", default=None, type='str')
 parser.add_option("--passcmd", help="command to run on success", default=None)
@@ -49,6 +50,8 @@ subprocess.check_call(args)
 remote_args = ["cd", remote_repo, "&&", "python", "./script/autobuild.py"]
 if opts.email:
     remote_args.append("--email=%s" % opts.email)
+if opts.always_email:
+    remote_args.append("--always-email")
 if not opts.foreground:
     remote_args.append("--daemon")
 if opts.nocleanup:
