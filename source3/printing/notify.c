@@ -577,6 +577,19 @@ void notify_printer_location(struct tevent_context *ev,
 		snum, strlen(location) + 1, location);
 }
 
+void notify_printer_sepfile(struct tevent_context *ev,
+			    struct messaging_context *msg_ctx,
+			    int snum, const char *sepfile)
+{
+	const char *sharename = lp_servicename(snum);
+
+	send_notify_field_buffer(
+		ev, msg_ctx,
+		sharename, PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_FIELD_SEPFILE,
+		snum, strlen(sepfile) + 1, sepfile);
+}
+
+
 void notify_printer_byname(struct tevent_context *ev,
 			   struct messaging_context *msg_ctx,
 			   const char *printername, uint32 change,

@@ -4044,6 +4044,9 @@ void notify_printer_byname(struct tevent_context *ev,
 			   struct messaging_context *msg_ctx,
 			   const char *printername, uint32 change,
 			   const char *value);
+void notify_printer_sepfile(struct tevent_context *ev,
+			    struct messaging_context *msg_ctx,
+			    int snum, const char *sepfile);
 
 /* The following definitions come from printing/pcap.c  */
 
