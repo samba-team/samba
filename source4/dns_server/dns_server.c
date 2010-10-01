@@ -230,6 +230,21 @@ static NTSTATUS handle_question(struct dns_server *dns,
 	NT_STATUS_HAVE_NO_MEMORY(ans);
 
 	switch (question->question_type) {
+	case DNS_QTYPE_CNAME:
+		for (ri = 0; ri < el->num_values; ri++) {
+			if (recs[ri].wType != question->question_type) {
+				continue;
+			}
+
+			ZERO_STRUCT(ans[ai]);
+			ans[ai].name = talloc_strdup(ans, question->name);
+			ans[ai].rr_type = DNS_QTYPE_CNAME;
+			ans[ai].rr_class = DNS_QCLASS_IP;
+			ans[ai].ttl = recs[ri].dwTtlSeconds;
+			ans[ai].rdata.cname_record = talloc_strdup(ans, recs[ri].data.cname);
+			ai++;
+		}
+		break;
 	case DNS_QTYPE_A:
 		for (ri = 0; ri < el->num_values; ri++) {
 			if (recs[ri].wType != question->question_type) {
