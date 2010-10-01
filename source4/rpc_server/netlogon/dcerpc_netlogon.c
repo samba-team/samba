@@ -2279,15 +2279,15 @@ struct netr_dnsupdate_RODC_state {
 /*
   called when the forwarded RODC dns update request is finished
  */
-static void netr_dnsupdate_RODC_callback(struct tevent_req *req)
+static void netr_dnsupdate_RODC_callback(struct tevent_req *subreq)
 {
 	struct netr_dnsupdate_RODC_state *st =
-		tevent_req_callback_data(req,
+		tevent_req_callback_data(subreq,
 					 struct netr_dnsupdate_RODC_state);
 	NTSTATUS status;
 
-	status = dcerpc_binding_handle_call_recv(req);
-	talloc_free(req);
+	status = dcerpc_dnsupdate_RODC_r_recv(subreq, st->dce_call);
+	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,(__location__ ": IRPC callback failed %s\n", nt_errstr(status)));
 		st->dce_call->fault_code = DCERPC_FAULT_CANT_PERFORM;
@@ -2312,7 +2312,7 @@ static NTSTATUS dcesrv_netr_DsrUpdateReadOnlyServerDnsRecords(struct dcesrv_call
 	NTSTATUS nt_status;
 	struct dcerpc_binding_handle *binding_handle;
 	struct netr_dnsupdate_RODC_state *st;
-	struct tevent_req *req;
+	struct tevent_req *subreq;
 
 	nt_status = dcesrv_netr_creds_server_step_check(dce_call,
 							mem_ctx,
@@ -2349,17 +2349,14 @@ static NTSTATUS dcesrv_netr_DsrUpdateReadOnlyServerDnsRecords(struct dcesrv_call
 	}
 
 	/* forward the call */
-	req = dcerpc_binding_handle_call_send(st, dce_call->event_ctx,
-					      binding_handle,
-					      NULL, &ndr_table_irpc,
-					      NDR_DNSUPDATE_RODC,
-					      st, st->r2);
-	NT_STATUS_HAVE_NO_MEMORY(req);
+	subreq = dcerpc_dnsupdate_RODC_r_send(st, dce_call->event_ctx,
+					      binding_handle, st->r2);
+	NT_STATUS_HAVE_NO_MEMORY(subreq);
 
 	dce_call->state_flags |= DCESRV_CALL_STATE_FLAG_ASYNC;
 
 	/* setup the callback */
-	tevent_req_set_callback(req, netr_dnsupdate_RODC_callback, st);
+	tevent_req_set_callback(subreq, netr_dnsupdate_RODC_callback, st);
 
 	return NT_STATUS_OK;
 }
