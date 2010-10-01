@@ -2349,9 +2349,11 @@ static void call_nt_transact_ioctl(connection_struct *conn,
 		return;
 	}
 	default:
+		/* Only print this once... */
 		if (!logged_ioctl_message) {
-			logged_ioctl_message = true; /* Only print this once... */
-			DEBUG(0,("call_nt_transact_ioctl(0x%x): Currently not implemented.\n",
+			logged_ioctl_message = true;
+			DEBUG(2,("call_nt_transact_ioctl(0x%x): "
+				 "Currently not implemented.\n",
 				 function));
 		}
 	}
