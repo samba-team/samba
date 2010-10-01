@@ -684,11 +684,9 @@ krb5_error_code kerberos_pac_to_server_info(TALLOC_CTX *mem_ctx,
 	}
 
 	/* Pull this right into the normal auth sysstem structures */
-	validation.sam3 = &info.logon_info.info->info3;
-	nt_status = make_server_info_netlogon_validation(mem_ctx,
-							 "",
-							 3, &validation,
-							 &server_info_out);
+	nt_status = make_server_info_pac(mem_ctx,
+					 info.logon_info.info,
+					 &server_info_out);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(tmp_ctx);
 		return EINVAL;

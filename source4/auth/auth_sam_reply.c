@@ -287,3 +287,40 @@ NTSTATUS make_server_info_netlogon_validation(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
+/**
+ * Make a server_info struct from the PAC_LOGON_INFO supplied in the krb5 logon
+ */
+NTSTATUS make_server_info_pac(TALLOC_CTX *mem_ctx,
+			      struct PAC_LOGON_INFO *pac_logon_info,
+			      struct auth_serversupplied_info **_server_info)
+{
+	uint32_t i;
+	NTSTATUS nt_status;
+	union netr_Validation validation;
+	struct auth_serversupplied_info *server_info;
+
+	validation.sam3 = &pac_logon_info->info3;
+
+	nt_status = make_server_info_netlogon_validation(mem_ctx, "", 3, &validation, &server_info);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		return nt_status;
+	}
+
+	if (pac_logon_info->res_groups.count > 0) {
+		struct dom_sid **rgrps;
+		size_t sidcount = server_info->n_domain_groups + pac_logon_info->res_groups.count;
+		server_info->domain_groups = rgrps
+			= talloc_realloc(server_info, server_info->domain_groups, struct dom_sid *, sidcount);
+		NT_STATUS_HAVE_NO_MEMORY(rgrps);
+
+		for (i = 0; pac_logon_info->res_group_dom_sid && i < pac_logon_info->res_groups.count; i++) {
+			size_t sid_idx = server_info->n_domain_groups + i;
+			rgrps[sid_idx]
+				= dom_sid_add_rid(rgrps, pac_logon_info->res_group_dom_sid,
+						  pac_logon_info->res_groups.rids[i].rid);
+			NT_STATUS_HAVE_NO_MEMORY(rgrps[server_info->n_domain_groups + sid_idx]);
+		}
+	}
+	*_server_info = server_info;
+	return NT_STATUS_OK;
+}
