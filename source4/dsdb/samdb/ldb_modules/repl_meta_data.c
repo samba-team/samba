@@ -4016,12 +4016,18 @@ linked_attributes[0]:
 	   has changed */
 	if (add_time_element(msg, "whenChanged", t) != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_operr(ldb);
 	}
 
 	if (add_uint64_element(msg, "uSNChanged", seq_num) != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_operr(ldb);
+	}
+
+	old_el = ldb_msg_find_element(msg, attr->lDAPDisplayName);
+	if (old_el == NULL) {
+		talloc_free(tmp_ctx);
+		return ldb_operr(ldb);
 	}
 
 	ret = dsdb_check_single_valued_link(attr, old_el);
