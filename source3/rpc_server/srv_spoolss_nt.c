@@ -6127,7 +6127,8 @@ static WERROR update_dsspooler(TALLOC_CTX *mem_ctx,
 				printer->drivername));
 
 			notify_printer_driver(server_event_context(), msg_ctx,
-					      snum, printer->drivername);
+					      snum, printer->drivername ?
+					      printer->drivername : "");
 		}
 	}
 
@@ -6145,7 +6146,8 @@ static WERROR update_dsspooler(TALLOC_CTX *mem_ctx,
 
 		if (!force_update) {
 			notify_printer_comment(server_event_context(), msg_ctx,
-					       snum, printer->comment);
+					       snum, printer->comment ?
+					       printer->comment : "");
 		}
 	}
 
@@ -6164,7 +6166,8 @@ static WERROR update_dsspooler(TALLOC_CTX *mem_ctx,
 		if (!force_update) {
 			notify_printer_sharename(server_event_context(),
 						 msg_ctx,
-						 snum, printer->sharename);
+						 snum, printer->sharename ?
+						 printer->sharename : "");
 		}
 	}
 
@@ -6191,7 +6194,7 @@ static WERROR update_dsspooler(TALLOC_CTX *mem_ctx,
 
 		if (!force_update) {
 			notify_printer_printername(server_event_context(),
-						   msg_ctx, snum, p);
+						   msg_ctx, snum, p ? p : "");
 		}
 	}
 
@@ -6209,7 +6212,8 @@ static WERROR update_dsspooler(TALLOC_CTX *mem_ctx,
 
 		if (!force_update) {
 			notify_printer_port(server_event_context(),
-					    msg_ctx, snum, printer->portname);
+					    msg_ctx, snum, printer->portname ?
+					    printer->portname : "");
 		}
 	}
 
@@ -6228,7 +6232,8 @@ static WERROR update_dsspooler(TALLOC_CTX *mem_ctx,
 		if (!force_update) {
 			notify_printer_location(server_event_context(),
 						msg_ctx, snum,
-						printer->location);
+						printer->location ?
+						printer->location : "");
 		}
 	}
 
@@ -6247,7 +6252,8 @@ static WERROR update_dsspooler(TALLOC_CTX *mem_ctx,
 		if (!force_update) {
 			notify_printer_sepfile(server_event_context(),
 					       msg_ctx, snum,
-					       printer->sepfile);
+					       printer->sepfile ?
+					       printer->sepfile : "");
 		}
 	}
 
