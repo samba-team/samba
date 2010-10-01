@@ -34,7 +34,7 @@
 #include "lib/util/util_net.h"
 
 /* don't allow an unlimited number of name components */
-#define MAX_COMPONENTS 10
+#define MAX_COMPONENTS 128
 
 /**
   print a dns string
