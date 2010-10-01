@@ -1322,9 +1322,13 @@ static NTSTATUS rpc_printer_publish_internals_args(struct rpc_pipe_client *pipe_
 						      0, /* command */
 						      &result);
 
-		if (!W_ERROR_IS_OK(result) && (W_ERROR_V(result) != W_ERROR_V(WERR_IO_PENDING))) {
-			printf(_("cannot set printer-info: %s\n"),
-			       win_errstr(result));
+		if (!W_ERROR_IS_OK(result) && !W_ERROR_EQUAL(result, WERR_IO_PENDING)) {
+			if ((action == DSPRINT_UPDATE) && W_ERROR_EQUAL(result, W_ERROR(0x80070002))) {
+				printf(_("printer not published yet\n"));
+			} else {
+				printf(_("cannot set printer-info: %s\n"),
+				       win_errstr(result));
+			}
 			goto done;
 		}
 
