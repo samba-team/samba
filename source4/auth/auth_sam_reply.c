@@ -208,7 +208,7 @@ NTSTATUS make_server_info_netlogon_validation(TALLOC_CTX *mem_ctx,
 	}
 
 	for (i = 0; i < base->groups.count; i++) {
-		server_info->domain_groups[i] = dom_sid_add_rid(server_info, base->domain_sid, base->groups.rids[i].rid);
+		server_info->domain_groups[i] = dom_sid_add_rid(server_info->domain_groups, base->domain_sid, base->groups.rids[i].rid);
 		NT_STATUS_HAVE_NO_MEMORY(server_info->domain_groups[i]);
 	}
 
