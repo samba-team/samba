@@ -23,12 +23,12 @@ tasks = {
                   ("make basics", "make basics", "text/plain"),
                   ("make", "make -j 4 everything", "text/plain"), # don't use too many processes
                   ("install", "make install", "text/plain"),
-                  ("test", "TDB_NO_FSYNC=1 make subunit-test FAIL_IMMEDIATELY=1", "text/x-subunit") ],
+                  ("test", "TDB_NO_FSYNC=1 make subunit-test", "text/x-subunit") ],
 
     "source4" : [ ("configure", "./configure.developer ${PREFIX}", "text/plain"),
                   ("make", "make -j", "text/plain"),
                   ("install", "make install", "text/plain"),
-                  ("test", "TDB_NO_FSYNC=1 make subunit-test FAIL_IMMEDIATELY=1", "text/x-subunit") ],
+                  ("test", "TDB_NO_FSYNC=1 make subunit-test", "text/x-subunit") ],
 
     "source4/lib/ldb" : [ ("configure", "./configure --enable-developer -C ${PREFIX}", "text/plain"),
                           ("make", "make -j", "text/plain"),
@@ -89,8 +89,9 @@ def run_cmd(cmd, dir=".", show=None, output=False, checkfail=True):
 class Builder(object):
     '''handle build of one directory'''
 
-    def __init__(self, name, sequence):
+    def __init__(self, name, sequence, fail_quickly=False):
         self.name = name
+        self.fail_quickly = fail_quickly
 
         if name in ['pass', 'fail', 'retry']:
             self.dir = "."
@@ -127,6 +128,8 @@ class Builder(object):
         (self.stage, self.cmd, self.output_mime_type) = self.sequence[self.next]
         self.cmd = self.cmd.replace("${PREFIX}", "--prefix=%s" % self.prefix)
         if self.output_mime_type == "text/x-subunit":
+            if self.fail_quickly:
+                self.cmd += " | %s --fail-immediately" % (os.path.join(os.path.dirname(__file__), "selftest/filter-subunit"))
             self.cmd += " | %s --immediate" % (os.path.join(os.path.dirname(__file__), "selftest/format-subunit"))
         print '%s: [%s] Running %s' % (self.name, self.stage, self.cmd)
         self.proc = Popen(self.cmd, shell=True, cwd="%s/%s" % (self.sdir, self.dir),
@@ -172,10 +175,10 @@ class BuildList(object):
         if tasknames == []:
             tasknames = tasklist
         for n in tasknames:
-            b = Builder(n, tasks[n])
+            b = Builder(n, tasks[n], not options.fail_slowly)
             self.tlist.append(b)
         if options.retry:
-            self.retry = Builder('retry', retry_task)
+            self.retry = Builder('retry', retry_task, not options.fail_slowly)
             self.need_retry = False
 
     def kill_kids(self):
@@ -338,6 +341,8 @@ parser.add_option("", "--email", help="send email to the given address on failur
 parser.add_option("", "--always-email", help="always send email, even on success",
                   action="store_true")
 parser.add_option("", "--daemon", help="daemonize after initial setup",
+                  action="store_true")
+parser.add_option("", "--fail-slowly", help="continue running tests even after one has already failed",
                   action="store_true")
 
 

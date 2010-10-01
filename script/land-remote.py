@@ -19,8 +19,10 @@ parser.add_option("--passcmd", help="command to run on success", default=None)
 parser.add_option("--tail", help="show output while running", default=False, action="store_true")
 parser.add_option("--keeplogs", help="keep logs", default=False, action="store_true")
 parser.add_option("--nocleanup", help="don't remove test tree", default=False, action="store_true")
-parser.add_option("", "--fix-whitespace", help="fix whitespace on rebase",
+parser.add_option("--fix-whitespace", help="fix whitespace on rebase",
                   default=False, action="store_true")
+parser.add_option("--fail-slowly", help="continue running tests even after one has already failed",
+                  action="store_true")
 
 (opts, args) = parser.parse_args()
 
