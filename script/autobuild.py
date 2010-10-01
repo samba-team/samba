@@ -319,6 +319,8 @@ parser.add_option("", "--retry", help="automatically retry if master changes",
                   default=False, action="store_true")
 parser.add_option("", "--email", help="send email to the given address on failure",
                   type='str', default=None)
+parser.add_option("", "--always-email", help="always send email, even on success",
+                  action="store_true")
 parser.add_option("", "--daemon", help="daemonize after initial setup",
                   action="store_true")
 
@@ -353,6 +355,35 @@ or you can get full logs of all tasks in this job here:
     s.connect()
     s.sendmail(msg['From'], [msg['To']], msg.as_string())
     s.quit()
+
+def email_success():
+    '''send an email to options.email about a successful build'''
+    user = os.getenv("USER")
+    text = '''
+Dear Developer,
+
+Your autobuild has succeeded.
+
+'''
+
+    if options.keeplogs:
+        text += '''
+
+you can get full logs of all tasks in this job here:
+
+  http://git.samba.org/%s/samba-autobuild/logs.tar.gz
+
+''' % (user,)
+    msg = MIMEText(text)
+    msg['Subject'] = 'autobuild success'
+    msg['From'] = 'autobuild@samba.org'
+    msg['To'] = options.email
+
+    s = smtplib.SMTP()
+    s.connect()
+    s.sendmail(msg['From'], [msg['To']], msg.as_string())
+    s.quit()
+
 
 (options, args) = parser.parse_args()
 
@@ -420,6 +451,8 @@ if status == 0:
     if options.keeplogs:
         blist.tarlogs("logs.tar.gz")
         print("Logs in logs.tar.gz")
+    if options.always_email:
+        email_success()
     blist.remove_logs()
     cleanup()
     print(errstr)
