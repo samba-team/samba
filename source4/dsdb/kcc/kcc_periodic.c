@@ -260,6 +260,38 @@ static NTSTATUS kccsrv_add_repsFrom(struct kccsrv_service *s, TALLOC_CTX *mem_ct
 			/* dreplsrv should refresh its state */
 			notify_dreplsrv = true;
 		}
+
+		/* remove stale repsTo entries */
+		modified = false;
+		werr = dsdb_loadreps(s->samdb, mem_ctx, p->dn, "repsTo", &our_reps, &our_count);
+		if (!W_ERROR_IS_OK(werr)) {
+			DEBUG(0,(__location__ ": Failed to load repsTo from %s - %s\n", 
+				 ldb_dn_get_linearized(p->dn), ldb_errstring(s->samdb)));
+			return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		}
+
+		/* remove any stale ones */
+		for (i=0; i<our_count; i++) {
+			if (!reps_in_list(&our_reps[i], reps, count)) {
+				DEBUG(4,(__location__ ": Removed repsTo for %s\n",
+					 our_reps[i].ctr.ctr1.other_info->dns_name));
+				memmove(&our_reps[i], &our_reps[i+1], (our_count-(i+1))*sizeof(our_reps[0]));
+				our_count--;
+				i--;
+				modified = true;
+			}
+		}
+
+		if (modified) {
+			werr = dsdb_savereps(s->samdb, mem_ctx, p->dn, "repsTo", our_reps, our_count);
+			if (!W_ERROR_IS_OK(werr)) {
+				DEBUG(0,(__location__ ": Failed to save repsTo to %s - %s\n", 
+					 ldb_dn_get_linearized(p->dn), ldb_errstring(s->samdb)));
+				return NT_STATUS_INTERNAL_DB_CORRUPTION;
+			}
+			/* dreplsrv should refresh its state */
+			notify_dreplsrv = true;
+		}
 	}
 
 	/* notify dreplsrv toplogy has changed */
