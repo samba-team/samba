@@ -196,13 +196,18 @@ class CredentialsOptionsDouble(CredentialsOptions):
     def _set_simple_bind_dn2(self, option, opt_str, arg, parser):
         self.creds2.set_bind_dn(arg)
 
-    def get_credentials2(self, lp):
+    def get_credentials2(self, lp, guess=True):
         """Obtain the credentials set on the command-line.
 
         :param lp: Loadparm object to use.
+        :param guess: Try guess Credentials from environment
         :return: Credentials object
         """
-        self.creds2.guess(lp)
+        if guess:
+            self.creds2.guess(lp)
+        elif not self.creds2.get_username():
+                self.creds2.set_anonymous()
+
         if self.no_pass2:
             self.creds2.set_cmdline_callbacks()
         return self.creds2
