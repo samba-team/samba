@@ -1091,6 +1091,11 @@ static bool get_printer_info(struct rpc_pipe_client *pipe_hnd,
 					 &hnd))
 		return false;
 
+	*info_p = talloc_zero(mem_ctx, union spoolss_PrinterInfo);
+	if (*info_p == NULL) {
+		return false;
+	}
+
 	if (!net_spoolss_getprinter(pipe_hnd, mem_ctx, &hnd, level, *info_p)) {
 		rpccli_spoolss_ClosePrinter(pipe_hnd, mem_ctx, &hnd, NULL);
 		return false;
