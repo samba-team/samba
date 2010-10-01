@@ -5637,7 +5637,7 @@ WERROR _spoolss_StartDocPrinter(struct pipes_struct *p,
 		return WERR_BADFID;
 	}
 
-	werr = print_job_start(get_server_info_system(),
+	werr = print_job_start(p->server_info,
 			       p->msg_ctx,
 			       p->client_id->name,
 			       snum,
@@ -5740,7 +5740,7 @@ WERROR _spoolss_WritePrinter(struct pipes_struct *p,
 static WERROR control_printer(struct policy_handle *handle, uint32_t command,
 			      struct pipes_struct *p)
 {
-	const struct auth_serversupplied_info *server_info = get_server_info_system();
+	const struct auth_serversupplied_info *server_info = p->server_info;
 	int snum;
 	WERROR errcode = WERR_BADFUNC;
 	struct printer_handle *Printer = find_printer_index_by_hnd(p, handle);
@@ -5799,7 +5799,7 @@ WERROR _spoolss_AbortPrinter(struct pipes_struct *p,
 		return WERR_SPL_NO_STARTDOC;
 	}
 
-	errcode = print_job_delete(get_server_info_system(),
+	errcode = print_job_delete(p->server_info,
 				   p->msg_ctx,
 				   snum,
 				   Printer->jobid);
@@ -7084,7 +7084,7 @@ static WERROR spoolss_setjob_1(TALLOC_CTX *mem_ctx,
 WERROR _spoolss_SetJob(struct pipes_struct *p,
 		       struct spoolss_SetJob *r)
 {
-	const struct auth_serversupplied_info *server_info = get_server_info_system();
+	const struct auth_serversupplied_info *server_info = p->server_info;
 	int snum;
 	WERROR errcode = WERR_BADFUNC;
 
