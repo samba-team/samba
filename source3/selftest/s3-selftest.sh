@@ -1,7 +1,9 @@
 #!/bin/sh
 
 FILTER_XFAIL="${PYTHON} -u ${SELFTESTDIR}/filter-subunit --expected-failures=${SOURCEDIR}/selftest/knownfail"
-SUBUNIT_FORMATTER="${PYTHON} -u ${SELFTESTDIR}/format-subunit --prefix=${SELFTESTPREFIX} --immediate"
+if [ "x${SUBUNIT_FORMATTER}" = x"" ]; then
+	SUBUNIT_FORMATTER="${PYTHON} -u ${SELFTESTDIR}/format-subunit --prefix=${SELFTESTPREFIX} --immediate"
+fi
 
 cleanup_and_exit() {
 	if test "$1" = 0 -o -z "$1"; then

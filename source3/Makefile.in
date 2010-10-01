@@ -3400,6 +3400,7 @@ test:: all torture timelimit
 		SELFTESTDIR="$(selftestdir)" SELFTESTPREFIX="$(selftest_prefix)" \
 		SOURCEDIR="$(srcdir)" \
 		RUN_FROM_BUILD_FARM="$(RUN_FROM_BUILD_FARM)" \
+		SUBUNIT_FORMATTER="$(SUBUNIT_FORMATTER)" \
 		PERL="$(PERL)" PYTHON="$(PYTHON)" \
 		$(srcdir)/selftest/s3-selftest.sh
 
@@ -3408,6 +3409,9 @@ test-%:
 
 buildfarm-test:
 	$(MAKE) test RUN_FROM_BUILD_FARM=yes
+
+subunit-test:
+	$(MAKE) test SUBUNIT_FORMATTER=cat
 
 SELFTEST_TESTENV = dc
 
