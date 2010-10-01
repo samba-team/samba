@@ -1689,7 +1689,7 @@ server_lookup:
      * backward.
      */
 
-    if (strcmp(krb5_principal_get_realm(context, sp),
+    if (strcmp(krb5_principal_get_realm(context, server->entry.principal),
 	       krb5_principal_get_comp_string(context,
 					      krbtgt->entry.principal,
 					      1)) != 0) {
