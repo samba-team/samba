@@ -1847,6 +1847,10 @@ verify_checksum(krb5_context context,
     }
     if(ct->checksumsize != cksum->checksum.length) {
 	krb5_clear_error_message (context);
+	krb5_set_error_message (context, KRB5KRB_AP_ERR_BAD_INTEGRITY,
+				N_("Decrypt integrity check failed for checksum type %s, length was %u, expected %u", ""),
+				ct->name, (unsigned)cksum->checksum.length, (unsigned)ct->checksumsize);
+
 	return KRB5KRB_AP_ERR_BAD_INTEGRITY; /* XXX */
     }
     keyed_checksum = (ct->flags & F_KEYED) != 0;
@@ -1874,8 +1878,14 @@ verify_checksum(krb5_context context,
 	    return ret;
     } else
 	dkey = NULL;
-    if(ct->verify)
-	return (*ct->verify)(context, dkey, data, len, usage, cksum);
+    if(ct->verify) {
+	ret = (*ct->verify)(context, dkey, data, len, usage, cksum);
+	if (ret == KRB5KRB_AP_ERR_BAD_INTEGRITY) {
+	    krb5_set_error_message (context, KRB5KRB_AP_ERR_BAD_INTEGRITY,
+				    N_("Decrypt integrity check failed for checksum type %s, key type %s", ""),
+				    ct->name, crypto->et->name);
+	}
+    }
 
     ret = krb5_data_alloc (&c.checksum, ct->checksumsize);
     if (ret)
@@ -1890,6 +1900,9 @@ verify_checksum(krb5_context context,
     if(c.checksum.length != cksum->checksum.length ||
        ct_memcmp(c.checksum.data, cksum->checksum.data, c.checksum.length)) {
 	krb5_clear_error_message (context);
+	krb5_set_error_message (context, KRB5KRB_AP_ERR_BAD_INTEGRITY,
+				N_("Decrypt integrity check failed for checksum type %s, key type %s", ""),
+				ct->name, crypto->et->name);
 	ret = KRB5KRB_AP_ERR_BAD_INTEGRITY;
     } else {
 	ret = 0;
