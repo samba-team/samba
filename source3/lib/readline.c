@@ -172,24 +172,3 @@ void smb_readline_ca_char(char c)
 	rl_completion_append_character = c;
 #endif
 }
-
-/****************************************************************************
-history
-****************************************************************************/
-int cmd_history(void)
-{
-#if defined(HAVE_LIBREADLINE) && defined(HAVE_HISTORY_LIST)
-	HIST_ENTRY **hlist;
-	int i;
-
-	hlist = history_list();
-
-	for (i = 0; hlist && hlist[i]; i++) {
-		DEBUG(0, ("%d: %s\n", i, hlist[i]->line));
-	}
-#else
-	DEBUG(0,("no history without readline support\n"));
-#endif
-
-	return 0;
-}

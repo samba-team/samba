@@ -4006,6 +4006,26 @@ int cmd_iosize(void)
 	return 0;
 }
 
+/****************************************************************************
+history
+****************************************************************************/
+static int cmd_history(void)
+{
+#if defined(HAVE_LIBREADLINE) && defined(HAVE_HISTORY_LIST)
+	HIST_ENTRY **hlist;
+	int i;
+
+	hlist = history_list();
+
+	for (i = 0; hlist && hlist[i]; i++) {
+		DEBUG(0, ("%d: %s\n", i, hlist[i]->line));
+	}
+#else
+	DEBUG(0,("no history without readline support\n"));
+#endif
+
+	return 0;
+}
 
 /* Some constants for completing filename arguments */
 
