@@ -4,7 +4,7 @@
 # released under GNU GPL v3 or later
 
 from subprocess import Popen, PIPE
-import os, signal, tarfile, sys, time
+import os, tarfile, sys, time
 from optparse import OptionParser
 import smtplib
 from email.mime.text import MIMEText
@@ -22,12 +22,12 @@ tasks = {
                   ("make basics", "make basics", "text/plain"),
                   ("make", "make -j 4 everything", "text/plain"), # don't use too many processes
                   ("install", "make install", "text/plain"),
-                  ("test", "TDB_NO_FSYNC=1 make test FAIL_IMMEDIATELY=1", "text/plain") ],
+                  ("test", "TDB_NO_FSYNC=1 make subunit-test FAIL_IMMEDIATELY=1", "text/x-subunit") ],
 
     "source4" : [ ("configure", "./configure.developer ${PREFIX}", "text/plain"),
                   ("make", "make -j", "text/plain"),
                   ("install", "make install", "text/plain"),
-                  ("test", "TDB_NO_FSYNC=1 make test FAIL_IMMEDIATELY=1", "text/plain") ],
+                  ("test", "TDB_NO_FSYNC=1 make subunit-test FAIL_IMMEDIATELY=1", "text/x-subunit") ],
 
     "source4/lib/ldb" : [ ("configure", "./configure --enable-developer -C ${PREFIX}", "text/plain"),
                           ("make", "make -j", "text/plain"),
@@ -127,6 +127,8 @@ class builder(object):
             return
         (self.stage, self.cmd, self.output_mime_type) = self.sequence[self.next]
         self.cmd = self.cmd.replace("${PREFIX}", "--prefix=%s" % self.prefix)
+        if self.output_mime_type == "text/x-subunit":
+            self.cmd += " | %s --immediate" % (os.path.join(os.path.dirname(__file__), "selftest/format-subunit"))
         print '%s: [%s] Running %s' % (self.name, self.stage, self.cmd)
         cwd = os.getcwd()
         os.chdir("%s/%s" % (self.sdir, self.dir))
