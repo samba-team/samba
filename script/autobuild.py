@@ -17,45 +17,45 @@ cleanup_list = []
 os.putenv('CC', "ccache gcc")
 
 tasks = {
-    "source3" : [ "./autogen.sh",
-                  "./configure.developer ${PREFIX}",
-                  "make basics",
-                  "make -j 4 everything", # don't use too many processes
-                  "make install",
-                  "TDB_NO_FSYNC=1 make test FAIL_IMMEDIATELY=1" ],
+    "source3" : [ ("autogen", "./autogen.sh", "text/plain"),
+                  ("configure", "./configure.developer ${PREFIX}", "text/plain"),
+                  ("make basics", "make basics", "text/plain"),
+                  ("make", "make -j 4 everything", "text/plain"), # don't use too many processes
+                  ("install", "make install", "text/plain"),
+                  ("test", "TDB_NO_FSYNC=1 make test FAIL_IMMEDIATELY=1", "text/plain") ],
 
-    "source4" : [ "./configure.developer ${PREFIX}",
-                  "make -j",
-                  "make install",
-                  "TDB_NO_FSYNC=1 make test FAIL_IMMEDIATELY=1" ],
+    "source4" : [ ("configure", "./configure.developer ${PREFIX}", "text/plain"),
+                  ("make", "make -j", "text/plain"),
+                  ("install", "make install", "text/plain"),
+                  ("test", "TDB_NO_FSYNC=1 make test FAIL_IMMEDIATELY=1", "text/plain") ],
 
-    "source4/lib/ldb" : [ "./configure --enable-developer -C ${PREFIX}",
-                          "make -j",
-                          "make install",
-                          "make test" ],
+    "source4/lib/ldb" : [ ("configure", "./configure --enable-developer -C ${PREFIX}", "text/plain"),
+                          ("make", "make -j", "text/plain"),
+                          ("install", "make install", "text/plain"),
+                          ("test", "make test", "text/plain") ],
 
-    "lib/tdb" : [ "./autogen-waf.sh",
-                  "./configure --enable-developer -C ${PREFIX}",
-                  "make -j",
-                  "make install",
-                  "make test" ],
+    "lib/tdb" : [ ("autogen", "./autogen-waf.sh", "text/plain"),
+                  ("configure", "./configure --enable-developer -C ${PREFIX}", "text/plain"),
+                  ("make", "make -j", "text/plain"),
+                  ("install", "make install", "text/plain"),
+                  ("test", "make test", "text/plain") ],
 
-    "lib/talloc" : [ "./autogen-waf.sh",
-                     "./configure --enable-developer -C ${PREFIX}",
-                     "make -j",
-                     "make install",
-                     "make test" ],
+    "lib/talloc" : [ ("autogen", "./autogen-waf.sh", "text/plain"),
+                     ("configure", "./configure --enable-developer -C ${PREFIX}", "text/plain"),
+                     ("make", "make -j", "text/plain"),
+                     ("install", "make install", "text/plain"),
+                     ("test", "make test", "text/plain"), ],
 
-    "lib/replace" : [ "./autogen-waf.sh",
-                      "./configure --enable-developer -C ${PREFIX}",
-                      "make -j",
-                      "make install",
-                      "make test" ],
+    "lib/replace" : [ ("autogen", "./autogen-waf.sh", "text/plain"),
+                      ("configure", "./configure --enable-developer -C ${PREFIX}", "text/plain"),
+                      ("make", "make -j", "text/plain"),
+                      ("install", "make install", "text/plain"),
+                      ("test", "make test", "text/plain"), ],
 
-    "lib/tevent" : [ "./configure --enable-developer -C ${PREFIX}",
-                     "make -j",
-                     "make install",
-                     "make test" ],
+    "lib/tevent" : [ ("configure", "./configure --enable-developer -C ${PREFIX}", "text/plain"),
+                     ("make", "make -j", "text/plain"),
+                     ("install", "make install", "text/plain"),
+                     ("test", "make test", "text/plain"), ],
 }
 
 retry_task = [ '''set -e
@@ -87,8 +87,9 @@ def run_cmd(cmd, dir=".", show=None, output=False, checkfail=True):
         raise Exception("FAILED %s: %d" % (cmd, ret))
     return ret
 
-class builder:
+class builder(object):
     '''handle build of one directory'''
+
     def __init__(self, name, sequence):
         self.name = name
 
@@ -124,8 +125,9 @@ class builder:
             print '%s: Completed OK' % self.name
             self.done = True
             return
-        self.cmd = self.sequence[self.next].replace("${PREFIX}", "--prefix=%s" % self.prefix)
-        print '%s: Running %s' % (self.name, self.cmd)
+        (self.stage, self.cmd, self.output_mime_type) = self.sequence[self.next]
+        self.cmd = self.cmd.replace("${PREFIX}", "--prefix=%s" % self.prefix)
+        print '%s: [%s] Running %s' % (self.name, self.stage, self.cmd)
         cwd = os.getcwd()
         os.chdir("%s/%s" % (self.sdir, self.dir))
         self.proc = Popen(self.cmd, shell=True,
@@ -134,17 +136,18 @@ class builder:
         self.next += 1
 
 
-class buildlist:
+class buildlist(object):
     '''handle build of multiple directories'''
+
     def __init__(self, tasklist, tasknames):
         global tasks
         self.tlist = []
         self.tail_proc = None
         self.retry = None
         if tasknames == ['pass']:
-            tasks = { 'pass' : [ '/bin/true' ]}
+            tasks = { 'pass' : [ ("pass", '/bin/true', "text/plain") ]}
         if tasknames == ['fail']:
-            tasks = { 'fail' : [ '/bin/false' ]}
+            tasks = { 'fail' : [ ("fail", '/bin/false', "text/plain") ]}
         if tasknames == []:
             tasknames = tasklist
         for n in tasknames:
@@ -203,10 +206,10 @@ class buildlist:
                 break
             if os.WIFSIGNALED(b.status) or os.WEXITSTATUS(b.status) != 0:
                 self.kill_kids()
-                return (b.status, b.name, b.tag, "%s: failed '%s' with status %d" % (b.name, b.cmd, b.status))
+                return (b.status, b.name, b.stage, b.tag, "%s: [%s] failed '%s' with status %d" % (b.name, b.stage, b.cmd, b.status))
             b.start_next()
         self.kill_kids()
-        return (0, None, None, "All OK")
+        return (0, None, None, None, "All OK")
 
     def tarlogs(self, fname):
         tar = tarfile.open(fname, "w:gz")
@@ -325,7 +328,7 @@ parser.add_option("", "--daemon", help="daemonize after initial setup",
                   action="store_true")
 
 
-def email_failure(status, failed_task, failed_tag, errstr):
+def email_failure(status, failed_task, failed_stage, failed_tag, errstr):
     '''send an email to options.email about the failure'''
     user = os.getenv("USER")
     text = '''
@@ -347,7 +350,7 @@ or you can get full logs of all tasks in this job here:
 
 ''' % (failed_task, errstr, user, failed_tag, user, failed_tag, user)
     msg = MIMEText(text)
-    msg['Subject'] = 'autobuild failure for task %s' % failed_task
+    msg['Subject'] = 'autobuild failure for task %s during %s' % (failed_task, failed_stage)
     msg['From'] = 'autobuild@samba.org'
     msg['To'] = options.email
 
@@ -426,7 +429,7 @@ while True:
         blist = buildlist(tasks, args)
         if options.tail:
             blist.start_tail()
-        (status, failed_task, failed_tag, errstr) = blist.run()
+        (status, failed_task, failed_stage, failed_tag, errstr) = blist.run()
         if status != 0 or errstr != "retry":
             break
         cleanup()
@@ -462,7 +465,7 @@ if status == 0:
 blist.tarlogs("logs.tar.gz")
 
 if options.email is not None:
-    email_failure(status, failed_task, failed_tag, errstr)
+    email_failure(status, failed_task, failed_stage, failed_tag, errstr)
 
 cleanup()
 print(errstr)
