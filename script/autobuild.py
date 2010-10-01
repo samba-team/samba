@@ -226,7 +226,7 @@ class buildlist:
     def start_tail(self):
         cwd = os.getcwd()
         cmd = "tail -f *.stdout *.stderr"
-        os.chdir(testbase)
+        os.chdir(gitroot)
         self.tail_proc = Popen(cmd, shell=True)
         os.chdir(cwd)
 
