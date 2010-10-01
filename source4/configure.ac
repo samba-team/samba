@@ -12,7 +12,7 @@ AC_DEFINE(CONFIG_H_IS_FROM_SAMBA,1,[Marker for samba's config.h.])
 # Configuration rules.
 m4_include(build/m4/env.m4)
 m4_include(../lib/replace/samba.m4)
-m4_include(lib/smbreadline/readline.m4)
+m4_include(../libcli/smbreadline/readline.m4)
 m4_include(heimdal_build/config.m4)
 m4_include(../lib/util/fault.m4)
 m4_include(../lib/util/signal.m4)

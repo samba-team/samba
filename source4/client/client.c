@@ -45,7 +45,7 @@
 #include "system/time.h" /* needed by some systems for asctime() */
 #include "libcli/resolve/resolve.h"
 #include "libcli/security/security.h"
-#include "lib/smbreadline/smbreadline.h"
+#include "../libcli/smbreadline/smbreadline.h"
 #include "librpc/gen_ndr/ndr_nbt.h"
 #include "param/param.h"
 #include "libcli/raw/raw_proto.h"

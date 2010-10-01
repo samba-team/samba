@@ -481,7 +481,7 @@ LIB_OBJ = $(LIBSAMBAUTIL_OBJ) $(UTIL_OBJ) $(CRYPTO_OBJ) \
 LIB_DUMMY_OBJ = lib/dummysmbd.o lib/dummyroot.o
 LIB_NONSMBD_OBJ = $(LIB_OBJ) $(LIB_DUMMY_OBJ)
 
-READLINE_OBJ = lib/readline.o
+READLINE_OBJ = ../libcli/smbreadline/smbreadline.o
 
 # Also depends on  $(SECRETS_OBJ) $(LIBSAMBA_OBJ)
 # Be sure to include them into your application

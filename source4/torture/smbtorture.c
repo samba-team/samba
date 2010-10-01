@@ -24,7 +24,7 @@
 #include "system/wait.h"
 #include "system/filesys.h"
 #include "system/readline.h"
-#include "lib/smbreadline/smbreadline.h"
+#include "../libcli/smbreadline/smbreadline.h"
 #include "libcli/libcli.h"
 #include "lib/events/events.h"
 

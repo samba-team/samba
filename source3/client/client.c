@@ -26,6 +26,8 @@
 #include "client/client_proto.h"
 #include "../librpc/gen_ndr/cli_srvsvc.h"
 #include "../lib/util/select.h"
+#include "system/readline.h"
+#include "../libcli/smbreadline/smbreadline.h"
 
 #ifndef REGISTER
 #define REGISTER 0

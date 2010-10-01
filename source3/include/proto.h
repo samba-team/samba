@@ -654,14 +654,6 @@ void privilege_set_free(PRIVILEGE_SET *priv_set);
 bool is_privileged_sid( const struct dom_sid *sid );
 bool grant_all_privileges( const struct dom_sid *sid );
 
-/* The following definitions come from lib/readline.c  */
-
-void smb_readline_done(void);
-char *smb_readline(const char *prompt, void (*callback)(void),
-		   char **(completion_fn)(const char *text, int start, int end));
-const char *smb_readline_get_line_buffer(void);
-void smb_readline_ca_char(char c);
-
 /* The following definitions come from lib/recvfile.c  */
 
 ssize_t sys_recvfile(int fromfd,

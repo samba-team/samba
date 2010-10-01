@@ -63,7 +63,7 @@ AC_ARG_WITH(readline,
 # code will generate warnings on one of them unless we have a few
 # special cases.
 AC_CHECK_LIB(readline, rl_completion_matches,
-	     [AC_DEFINE(HAVE_NEW_LIBREADLINE, 1, 
+	     [AC_DEFINE(HAVE_NEW_LIBREADLINE, 1,
 			[Do we have rl_completion_matches?])],
 	     [],
 	     [$TERMLIBS])

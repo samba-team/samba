@@ -215,8 +215,6 @@ LIB_SRC = '''${LIBSAMBAUTIL_SRC} ${UTIL_SRC}
 LIB_DUMMY_SRC = '''lib/dummysmbd.c lib/dummyroot.c'''
 LIB_NONSMBD_SRC = '''${LIB_DUMMY_SRC}'''
 
-READLINE_SRC = '''lib/readline.c'''
-
 POPT_LIB_SRC = '''lib/popt_common.c'''
 
 PARAM_WITHOUT_REG_SRC = '''param/loadparm.c param/util.c param/loadparm_server_role.c
@@ -986,6 +984,7 @@ t.env.BUILDDIR = bld.path.abspath()
 bld.SETUP_BUILD_GROUPS()
 
 bld.RECURSE('../lib/replace')
+bld.RECURSE('../libcli/smbreadline')
 print "SBINDIR=%s" % bld.env.SBINDIR
 bld.RECURSE('build')
 
@@ -1220,10 +1219,6 @@ bld.SAMBA_SUBSYSTEM('PROFILE',
                     source='${PROFILE_SRC}',
                     vars=locals())
 
-bld.SAMBA_SUBSYSTEM('READLINE',
-                    source=READLINE_SRC,
-                    vars=locals())
-
 bld.SAMBA_SUBSYSTEM('PRINTBASE',
                     source=PRINTBASE_SRC,
                     vars=locals())
@@ -1359,21 +1354,21 @@ bld.SAMBA_BINARY('rpcclient/rpcclient',
                  source=RPCCLIENT_SRC,
                  deps='''talloc tdb cap resolv POPT_SAMBA PASSDB LIBSMB LIB_NONSMBD
                  PARAM_WITHOUT_REG libwbclient PARAM KRBCLIENT LIBMSRPC_GEN LIBMSRPC
-                 LIBADS READLINE DISPLAY_SEC DCUTIL''',
+                 LIBADS SMBREADLINE DISPLAY_SEC DCUTIL''',
                  vars=locals())
 
 bld.SAMBA_BINARY('smbclient',
                  source=CLIENT_SRC,
                  deps='''talloc tdb cap resolv POPT_SAMBA PASSDB LIBSMB LIB_NONSMBD
                  PARAM_WITHOUT_REG libwbclient PARAM KRBCLIENT LIBMSRPC_GEN
-                 LIBMSRPC READLINE DISPLAY_SEC SOCKET_WRAPPER''',
+                 LIBMSRPC SMBREADLINE DISPLAY_SEC SOCKET_WRAPPER''',
                  vars=locals())
 
 bld.SAMBA_BINARY('net',
                  source=NET_SRC,
                  deps='''talloc tdb libnetapi libaddns cap resolv POPT_SAMBA PASSDB LIBSMB LIB_NONSMBD
                  PARAM_WITHOUT_REG libwbclient PARAM KRBCLIENT LIBMSRPC_GEN LIBMSRPC LIBGPO LIBADS LIBADS_SERVER LIBADS_PRINTER
-                 LOCALE_DIR LIBAFS LIBAFS_SETTOKEN READLINE PASSWD_UTIL LIBNET
+                 LOCALE_DIR LIBAFS LIBAFS_SETTOKEN SMBREADLINE PASSWD_UTIL LIBNET
                  LIBNET_DSSYNC LIBNET_SAMSYNC LIBEVENTLOG DISPLAY_SEC DCUTIL
                  REGFIO NDR_NTPRINTING''',
                  vars=locals())
@@ -1507,7 +1502,7 @@ bld.SAMBA_BINARY('pdbtest',
 
 bld.SAMBA_BINARY('vfstest',
                  source=VFSTEST_SRC,
-                 deps='''SMBD_BASE READLINE''',
+                 deps='''SMBD_BASE SMBREADLINE''',
                  vars=locals())
 
 bld.SAMBA_BINARY('smbiconv',

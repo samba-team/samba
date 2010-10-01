@@ -24,7 +24,7 @@
 #include "lib/cmdline/popt_common.h"
 #include "lib/events/events.h"
 #include "system/time.h"
-#include "lib/smbreadline/smbreadline.h"
+#include "../libcli/smbreadline/smbreadline.h"
 #include "librpc/gen_ndr/ndr_security.h"
 #include "lib/registry/tools/common.h"
 #include "param/param.h"

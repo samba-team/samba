@@ -26,6 +26,7 @@
 #include "includes.h"
 #include "popt_common.h"
 #include "vfstest.h"
+#include "../libcli/smbreadline/smbreadline.h"
 
 /* List to hold groups of commands */
 static struct cmd_list {

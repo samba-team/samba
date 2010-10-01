@@ -21,7 +21,7 @@
 
 #include "includes.h"
 #include "system/readline.h"
-#include "lib/smbreadline/smbreadline.h"
+#include "../libcli/smbreadline/smbreadline.h"
 #include "lib/cmdline/popt_common.h"
 #include "auth/credentials/credentials.h"
 #include "torture/smbtorture.h"
