@@ -1493,7 +1493,6 @@ void do_drv_upgrade_printer(struct messaging_context *msg,
 	const char *drivername;
 	int snum;
 	int n_services = lp_numservices();
-	size_t len;
 
 	tmp_ctx = talloc_new(NULL);
 	if (!tmp_ctx) return;
@@ -1505,8 +1504,7 @@ void do_drv_upgrade_printer(struct messaging_context *msg,
 		goto done;
 	}
 
-	len = MIN(data->length,sizeof(drivername)-1);
-	drivername = talloc_strndup(tmp_ctx, (const char *)data->data, len);
+	drivername = talloc_strndup(tmp_ctx, (const char *)data->data, data->length);
 	if (!drivername) {
 		DEBUG(0, ("do_drv_upgrade_printer: Out of memoery ?!\n"));
 		goto done;
@@ -1519,6 +1517,11 @@ void do_drv_upgrade_printer(struct messaging_context *msg,
 
 	for (snum = 0; snum < n_services; snum++) {
 		if (!lp_snum_ok(snum) || !lp_print_ok(snum)) {
+			continue;
+		}
+
+		/* ignore [printers] share */
+		if (strequal(lp_const_servicename(snum), "printers")) {
 			continue;
 		}
 
