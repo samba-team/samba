@@ -78,9 +78,9 @@ def run_cmd(cmd, dir=".", show=None, output=False, checkfail=True):
     if output:
         return Popen([cmd], shell=True, stdout=PIPE, cwd=dir).communicate()[0]
     elif checkfail:
-        return check_call(cmd, shell=True)
+        return check_call(cmd, shell=True, cwd=dir)
     else:
-        return call(cmd, shell=True)
+        return call(cmd, shell=True, cwd=dir)
 
 
 class builder(object):
