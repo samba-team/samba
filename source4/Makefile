@@ -14,6 +14,9 @@ uninstall:
 test:
 	$(WAF) test $(TEST_OPTIONS)
 
+subunit-test:
+	$(WAF) test --filtered-subunit $(TEST_OPTIONS)
+
 testenv:
 	$(WAF) test --testenv $(TEST_OPTIONS)
 
