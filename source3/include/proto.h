@@ -716,12 +716,6 @@ NTSTATUS se_create_child_secdesc_buf(TALLOC_CTX *ctx,
 					const struct security_descriptor *parent_ctr,
 					bool container);
 
-/* The following definitions come from lib/select.c  */
-
-void sys_select_signal(char c);
-int sys_select(int maxfd, fd_set *readfds, fd_set *writefds, fd_set *errorfds, struct timeval *tval);
-int sys_select_intr(int maxfd, fd_set *readfds, fd_set *writefds, fd_set *errorfds, struct timeval *tval);
-
 /* The following definitions come from lib/sendfile.c  */
 
 ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, SMB_OFF_T offset, size_t count);

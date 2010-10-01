@@ -430,7 +430,8 @@ UTIL_OBJ = ../lib/util/rbtree.o ../lib/util/signal.o ../lib/util/time.o \
 		   ../lib/util/become_daemon.o ../lib/util/system.o \
 		   ../lib/util/tevent_unix.o ../lib/util/tevent_ntstatus.o \
 		   ../lib/util/smb_threads.o ../lib/util/util_id.o \
-		   ../lib/util/blocking.o ../lib/util/rfc1738.o 
+		   ../lib/util/blocking.o ../lib/util/rfc1738.o \
+		   ../lib/util/select.o
 
 CRYPTO_OBJ = ../lib/crypto/crc32.o ../lib/crypto/md5.o \
 			 ../lib/crypto/hmacmd5.o ../lib/crypto/arcfour.o \
@@ -460,7 +461,7 @@ LIB_OBJ = $(LIBSAMBAUTIL_OBJ) $(UTIL_OBJ) $(CRYPTO_OBJ) \
 	  lib/util.o lib/util_names.o \
 	  lib/util_sock.o lib/sock_exec.o lib/util_sec.o \
 	  lib/substitute.o lib/dbwrap_util.o \
-	  lib/ms_fnmatch.o lib/select.o lib/errmap_unix.o \
+	  lib/ms_fnmatch.o lib/errmap_unix.o \
 	  lib/tallocmsg.o lib/dmallocmsg.o \
 	  libsmb/clisigning.o libsmb/smb_signing.o \
 	  lib/iconv.o lib/pam_errors.o intl/lang_tdb.o \

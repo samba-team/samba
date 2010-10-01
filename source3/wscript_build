@@ -162,7 +162,8 @@ UTIL_SRC = '''../lib/util/rbtree.c ../lib/util/signal.c ../lib/util/time.c
                    ../lib/util/become_daemon.c ../lib/util/system.c
                    ../lib/util/tevent_unix.c ../lib/util/tevent_ntstatus.c
                    ../lib/util/smb_threads.c ../lib/util/util_id.c
-                   ../lib/util/blocking.c ../lib/util/rfc1738.c '''
+                   ../lib/util/blocking.c ../lib/util/rfc1738.c
+                   ../lib/util/select.c'''
 
 LIBTEVENT_SRC0 = ''
 
@@ -194,7 +195,7 @@ LIB_SRC = '''${LIBSAMBAUTIL_SRC} ${UTIL_SRC}
           lib/util.c lib/util_names.c
           lib/util_sock.c lib/sock_exec.c lib/util_sec.c
           lib/substitute.c lib/dbwrap_util.c
-          lib/ms_fnmatch.c lib/select.c lib/errmap_unix.c
+          lib/ms_fnmatch.c lib/errmap_unix.c
           lib/tallocmsg.c lib/dmallocmsg.c
           libsmb/clisigning.c libsmb/smb_signing.c
           lib/iconv.c lib/pam_errors.c intl/lang_tdb.c

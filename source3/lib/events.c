@@ -20,6 +20,7 @@
 
 #include "includes.h"
 #include <tevent_internal.h>
+#include "../lib/util/select.h"
 
 /*
  * Return if there's something in the queue

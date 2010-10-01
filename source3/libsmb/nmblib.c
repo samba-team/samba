@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "../lib/util/select.h"
 
 static const struct opcode_names {
 	const char *nmb_opcode_name;

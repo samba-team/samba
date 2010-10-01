@@ -18,6 +18,7 @@
 */
 
 #include "includes.h"
+#include "../lib/util/select.h"
 
 #define SECURITY_MASK 0
 #define SECURITY_SET  0

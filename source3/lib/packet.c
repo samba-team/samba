@@ -18,6 +18,7 @@
 */
 
 #include "includes.h"
+#include "../lib/util/select.h"
 
 struct packet_context {
 	int fd;

@@ -1,29 +1,32 @@
-/* 
+/*
    Unix SMB/Netbios implementation.
    Version 3.0
    Samba select/poll implementation
    Copyright (C) Andrew Tridgell 1992-1998
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include "includes.h"
+#include "system/filesys.h"
+#include "system/select.h"
+#include "lib/util/select.h"
 
-/* This is here because it allows us to avoid a nasty race in signal handling. 
+/* This is here because it allows us to avoid a nasty race in signal handling.
    We need to guarantee that when we get a signal we get out of a select immediately
-   but doing that involves a race condition. We can avoid the race by getting the 
-   signal handler to write to a pipe that is in the select/poll list 
+   but doing that involves a race condition. We can avoid the race by getting the
+   signal handler to write to a pipe that is in the select/poll list
 
    This means all Samba signal handlers should call sys_select_signal().
 */
@@ -33,7 +36,7 @@ static int select_pipe[2];
 static volatile unsigned pipe_written, pipe_read;
 
 /*******************************************************************
- Call this from all Samba signal handlers if you want to avoid a 
+ Call this from all Samba signal handlers if you want to avoid a
  nasty signal race condition.
 ********************************************************************/
 

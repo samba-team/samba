@@ -19,6 +19,7 @@
 */
 
 #include "includes.h"
+#include "../lib/util/select.h"
 
 #ifdef HAVE_LIBREADLINE
 #  ifdef HAVE_READLINE_READLINE_H

@@ -25,6 +25,7 @@
 #include "popt_common.h"
 #include "client/client_proto.h"
 #include "../librpc/gen_ndr/cli_srvsvc.h"
+#include "../lib/util/select.h"
 
 #ifndef REGISTER
 #define REGISTER 0
