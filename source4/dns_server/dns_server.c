@@ -340,12 +340,12 @@ static NTSTATUS handle_question(struct dns_server *dns,
 
 }
 
-static NTSTATUS compute_reply(struct dns_server *dns,
-			      TALLOC_CTX *mem_ctx,
-			      struct dns_name_packet *in,
-			      struct dns_res_rec **answers,    uint16_t *ancount,
-			      struct dns_res_rec **nsrecs,     uint16_t *nscount,
-			      struct dns_res_rec **additional, uint16_t *arcount)
+static NTSTATUS dns_server_process_query(struct dns_server *dns,
+					 TALLOC_CTX *mem_ctx,
+					 struct dns_name_packet *in,
+					 struct dns_res_rec **answers,    uint16_t *ancount,
+					 struct dns_res_rec **nsrecs,     uint16_t *nscount,
+					 struct dns_res_rec **additional, uint16_t *arcount)
 {
 	uint16_t num_answers=0;
 	struct dns_res_rec *ans=NULL;
@@ -373,6 +373,27 @@ static NTSTATUS compute_reply(struct dns_server *dns,
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS dns_server_process_update(struct dns_server *dns,
+					  TALLOC_CTX *mem_ctx,
+					  struct dns_name_packet *in,
+					  struct dns_res_rec **prereqs,    uint16_t *prereq_count,
+					  struct dns_res_rec **updates,    uint16_t *update_count,
+					  struct dns_res_rec **additional, uint16_t *arcount)
+{
+	struct dns_name_question *zone;
+
+	if (in->qdcount != 1) {
+		return NT_STATUS_NOT_IMPLEMENTED;
+	}
+
+	zone = in->questions;
+
+	DEBUG(0, ("Got a dns update request.\n"));
+
+
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
 static NTSTATUS dns_process(struct dns_server *dns,
 			    TALLOC_CTX *mem_ctx,
 			    DATA_BLOB *in,
@@ -381,9 +402,11 @@ static NTSTATUS dns_process(struct dns_server *dns,
 	enum ndr_err_code ndr_err;
 	NTSTATUS ret;
 	struct dns_name_packet *in_packet = talloc_zero(mem_ctx, struct dns_name_packet);
+	/* TODO: We don't really need an out_packet. */
 	struct dns_name_packet *out_packet = talloc_zero(mem_ctx, struct dns_name_packet);
-	struct dns_res_rec *answers, *nsrecs, *additional;
-	uint16_t num_answers, num_nsrecs, num_additional;
+	struct dns_res_rec *answers = NULL, *nsrecs = NULL, *additional = NULL;
+	uint16_t num_answers = 0 , num_nsrecs = 0, num_additional = 0;
+	uint16_t reply_code;
 
 	if (in_packet == NULL) return NT_STATUS_INVALID_PARAMETER;
 
@@ -398,24 +421,31 @@ static NTSTATUS dns_process(struct dns_server *dns,
 	}
 
 	NDR_PRINT_DEBUG(dns_name_packet, in_packet);
-	out_packet->id = in_packet->id;
-	out_packet->operation = DNS_FLAG_REPLY | DNS_FLAG_AUTHORITATIVE |
-				DNS_FLAG_RECURSION_DESIRED | DNS_FLAG_RECURSION_AVAIL;
+	*out_packet = *in_packet;
+	out_packet->operation |= DNS_FLAG_REPLY;
 
-	out_packet->qdcount = in_packet->qdcount;
-	out_packet->questions = in_packet->questions;
+	switch (in_packet->operation & DNS_OPCODE) {
+	case DNS_OPCODE_QUERY:
 
-	out_packet->ancount = 0;
-	out_packet->answers = NULL;
+		ret = dns_server_process_query(dns, out_packet, in_packet,
+					       &answers, &num_answers,
+					       &nsrecs,  &num_nsrecs,
+					       &additional, &num_additional);
+		reply_code = DNS_RCODE_NXDOMAIN;
 
-	out_packet->nscount = 0;
-	out_packet->nsrecs  = NULL;
-
-	out_packet->arcount = 0;
-	out_packet->additional = NULL;
-
-	ret = compute_reply(dns, out_packet, in_packet, &answers, &num_answers,
-			    &nsrecs, &num_nsrecs, &additional, &num_additional);
+		break;
+	case DNS_OPCODE_REGISTER:
+		ret = dns_server_process_update(dns, out_packet, in_packet,
+						&answers, &num_answers,
+						&nsrecs,  &num_nsrecs,
+						&additional, &num_additional);
+		reply_code = DNS_RCODE_REFUSED;
+		break;
+	default:
+		ret = NT_STATUS_NOT_IMPLEMENTED;
+		reply_code = DNS_RCODE_NOTIMP;
+		break;
+	}
 
 	if (NT_STATUS_IS_OK(ret)) {
 		out_packet->ancount = num_answers;
@@ -426,6 +456,8 @@ static NTSTATUS dns_process(struct dns_server *dns,
 
 		out_packet->arcount = num_additional;
 		out_packet->additional = additional;
+	} else {
+		out_packet->operation |= reply_code;
 	}
 
 	NDR_PRINT_DEBUG(dns_name_packet, out_packet);
