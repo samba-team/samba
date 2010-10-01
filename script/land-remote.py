@@ -36,6 +36,7 @@ if not opts.remote_repo:
         sys.exit(1)
     remote_repo = stdout.rstrip()
     print "Remote tempdir: %s" % remote_repo
+    # Bootstrap, git.samba.org is close to sn-devel
     remote_args = ["git", "clone", "git://git.samba.org/samba.git", remote_repo]
     #remote_args = ["git", "init", remote_repo]
     print "%s$ %s" % (opts.host, " ".join(remote_args))
@@ -44,10 +45,10 @@ else:
     remote_repo = opts.remote_repo
 
 print "Pushing local branch"
-args = ["git", "push", "--force", "git+ssh://%s/%s" % (opts.host, remote_repo), "HEAD:HEAD"]
+args = ["git", "push", "--force", "git+ssh://%s/%s" % (opts.host, remote_repo), "HEAD:land"]
 print "$ " + " ".join(args)
 subprocess.check_call(args)
-remote_args = ["python", "%s/script/land.py" % remote_repo, "--repository=%s" % remote_repo]
+remote_args = ["cd", remote_repo, ";", "git", "checkout", "land", ";", "python", "./script/land.py", "--repository=%s" % remote_repo]
 if opts.email:
     remote_args.append("--email=%s" % opts.email)
 if opts.always_email:
