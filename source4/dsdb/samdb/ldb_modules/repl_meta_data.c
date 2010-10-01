@@ -2981,9 +2981,17 @@ static int replmd_replicated_apply_merge(struct replmd_replicated_request *ar)
 	md_remote = replmd_replPropertyMetaData1_find_attid(rmd, DRSUAPI_ATTRIBUTE_name);
 	if (md_remote) {
 		md_local = replmd_replPropertyMetaData1_find_attid(&omd, DRSUAPI_ATTRIBUTE_name);
-		SMB_ASSERT(md_local);
+		if (!md_local) {
+			DEBUG(0,(__location__ ": No md_local in RPMD\n"));
+			return replmd_replicated_request_werror(ar, WERR_DS_DRA_INTERNAL_ERROR);
+		}
 		if (replmd_replPropertyMetaData1_is_newer(md_local, md_remote)) {
-			SMB_ASSERT(ldb_dn_compare(msg->dn, ar->search_msg->dn) != 0);
+			if (ldb_dn_compare(msg->dn, ar->search_msg->dn) != 0) {
+				DEBUG(0,(__location__ ": DNs don't match in RPMD: %s %s\n",
+					 ldb_dn_get_linearized(msg->dn),
+					 ldb_dn_get_linearized(ar->search_msg->dn)));
+				return replmd_replicated_request_werror(ar, WERR_DS_DRA_INTERNAL_ERROR);
+			}
 			/* TODO: Find appropriate local name (dn) for the object
 			 *       and modify msg->dn appropriately */
 
