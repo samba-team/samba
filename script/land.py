@@ -128,11 +128,8 @@ class builder(object):
         if self.output_mime_type == "text/x-subunit":
             self.cmd += " | %s --immediate" % (os.path.join(os.path.dirname(__file__), "selftest/format-subunit"))
         print '%s: [%s] Running %s' % (self.name, self.stage, self.cmd)
-        cwd = os.getcwd()
-        os.chdir("%s/%s" % (self.sdir, self.dir))
-        self.proc = Popen(self.cmd, shell=True,
+        self.proc = Popen(self.cmd, shell=True, cwd="%s/%s" % (self.sdir, self.dir),
                           stdout=self.stdout, stderr=self.stderr, stdin=self.stdin)
-        os.chdir(cwd)
         self.next += 1
 
 
@@ -224,11 +221,8 @@ class buildlist(object):
             os.unlink(b.stderr_path)
 
     def start_tail(self):
-        cwd = os.getcwd()
         cmd = "tail -f *.stdout *.stderr"
-        os.chdir(gitroot)
-        self.tail_proc = Popen(cmd, shell=True)
-        os.chdir(cwd)
+        self.tail_proc = Popen(cmd, shell=True, cwd=gitroot)
 
 
 def cleanup():
