@@ -2896,19 +2896,23 @@ static bool replmd_update_is_newer(const struct GUID *current_invocation_id,
 				   const struct GUID *update_invocation_id,
 				   uint32_t current_version,
 				   uint32_t update_version,
+				   uint32_t current_usn,
+				   uint32_t update_usn,
 				   NTTIME current_change_time,
 				   NTTIME update_change_time)
 {
+	if (GUID_compare(update_invocation_id, current_invocation_id) == 0) {
+		if (update_usn != current_usn) {
+			return update_usn >= current_usn;
+		}
+	}
 	if (update_version != current_version) {
-		return update_version > current_version;
+		return update_version >= current_version;
 	}
-	if (update_change_time > current_change_time) {
-		return true;
+	if (update_change_time != current_change_time) {
+		return update_change_time >= current_change_time;
 	}
-	if (update_change_time == current_change_time) {
-		return GUID_compare(update_invocation_id, current_invocation_id) > 0;
-	}
-	return false;
+	return GUID_compare(update_invocation_id, current_invocation_id) >= 0;
 }
 
 static bool replmd_replPropertyMetaData1_is_newer(struct replPropertyMetaData1 *cur_m,
@@ -2918,6 +2922,8 @@ static bool replmd_replPropertyMetaData1_is_newer(struct replPropertyMetaData1 *
 				      &new_m->originating_invocation_id,
 				      cur_m->version,
 				      new_m->version,
+				      cur_m->originating_usn,
+				      new_m->originating_usn,
 				      cur_m->originating_change_time,
 				      new_m->originating_change_time);
 }
@@ -2937,6 +2943,52 @@ replmd_replPropertyMetaData1_find_attid(struct replPropertyMetaDataBlob *md_blob
 	return NULL;
 }
 
+
+/*
+  handle renames that come in over DRS replication
+ */
+static int replmd_replicated_handle_rename(struct replmd_replicated_request *ar,
+					   struct ldb_message *msg,
+					   struct replPropertyMetaDataBlob *rmd,
+					   struct replPropertyMetaDataBlob *omd)
+{
+	struct replPropertyMetaData1 *md_remote;
+	struct replPropertyMetaData1 *md_local;
+
+	if (ldb_dn_compare(msg->dn, ar->search_msg->dn) == 0) {
+		/* no rename */
+		return LDB_SUCCESS;
+	}
+
+	/* now we need to check for double renames. We could have a
+	 * local rename pending which our replication partner hasn't
+	 * received yet. We choose which one wins by looking at the
+	 * attribute stamps on the two objects, the newer one wins
+	 */
+	md_remote = replmd_replPropertyMetaData1_find_attid(rmd, DRSUAPI_ATTRIBUTE_name);
+	md_local  = replmd_replPropertyMetaData1_find_attid(omd, DRSUAPI_ATTRIBUTE_name);
+	/* if there is no name attribute then we have to assume the
+	   object we've received is in fact newer */
+	if (!md_remote || !md_local ||
+	    replmd_replPropertyMetaData1_is_newer(md_local, md_remote)) {
+		DEBUG(4,("replmd_replicated_request rename %s => %s\n",
+			 ldb_dn_get_linearized(ar->search_msg->dn),
+			 ldb_dn_get_linearized(msg->dn)));
+		/* pass rename to the next module
+		 * so it doesn't appear as an originating update */
+		return dsdb_module_rename(ar->module,
+					  ar->search_msg->dn, msg->dn,
+					  DSDB_FLAG_NEXT_MODULE | DSDB_MODIFY_RELAX);
+	}
+
+	/* we're going to keep our old object */
+	DEBUG(4,(__location__ ": Keeping object %s and rejecting older rename to %s\n",
+		 ldb_dn_get_linearized(ar->search_msg->dn),
+		 ldb_dn_get_linearized(msg->dn)));
+	return LDB_SUCCESS;
+}
+
+
 static int replmd_replicated_apply_merge(struct replmd_replicated_request *ar)
 {
 	struct ldb_context *ldb;
@@ -2948,8 +3000,6 @@ static int replmd_replicated_apply_merge(struct replmd_replicated_request *ar)
 	const struct ldb_val *omd_value;
 	struct replPropertyMetaDataBlob nmd;
 	struct ldb_val nmd_value;
-	struct replPropertyMetaData1 *md_remote;
-	struct replPropertyMetaData1 *md_local;
 	unsigned int i;
 	uint32_t j,ni=0;
 	unsigned int removed_attrs = 0;
@@ -2976,42 +3026,15 @@ static int replmd_replicated_apply_merge(struct replmd_replicated_request *ar)
 		}
 	}
 
-	/* check if remote 'name' has change,
-	 * which indicates a rename operation */
-	md_remote = replmd_replPropertyMetaData1_find_attid(rmd, DRSUAPI_ATTRIBUTE_name);
-	if (md_remote) {
-		md_local = replmd_replPropertyMetaData1_find_attid(&omd, DRSUAPI_ATTRIBUTE_name);
-		if (!md_local) {
-			DEBUG(0,(__location__ ": No md_local in RPMD\n"));
-			return replmd_replicated_request_werror(ar, WERR_DS_DRA_INTERNAL_ERROR);
-		}
-		if (replmd_replPropertyMetaData1_is_newer(md_local, md_remote)) {
-			if (ldb_dn_compare(msg->dn, ar->search_msg->dn) != 0) {
-				DEBUG(0,(__location__ ": DNs don't match in RPMD: %s %s\n",
-					 ldb_dn_get_linearized(msg->dn),
-					 ldb_dn_get_linearized(ar->search_msg->dn)));
-				return replmd_replicated_request_werror(ar, WERR_DS_DRA_INTERNAL_ERROR);
-			}
-			/* TODO: Find appropriate local name (dn) for the object
-			 *       and modify msg->dn appropriately */
-
-			DEBUG(4,("replmd_replicated_request rename %s => %s\n",
-				  ldb_dn_get_linearized(ar->search_msg->dn),
-				  ldb_dn_get_linearized(msg->dn)));
-			/* pass rename to the next module
-			 * so it doesn't appear as an originating update */
-			ret = dsdb_module_rename(ar->module,
-			                         ar->search_msg->dn, msg->dn,
-			                         DSDB_FLAG_NEXT_MODULE);
-			if (ret != LDB_SUCCESS) {
-				ldb_debug(ldb, LDB_DEBUG_FATAL,
-				          "replmd_replicated_request rename %s => %s failed - %s\n",
-					  ldb_dn_get_linearized(ar->search_msg->dn),
-					  ldb_dn_get_linearized(msg->dn),
-					  ldb_errstring(ldb));
-				return replmd_replicated_request_werror(ar, WERR_DS_DRA_DB_ERROR);
-			}
-		}
+	/* handle renames that come in over DRS */
+	ret = replmd_replicated_handle_rename(ar, msg, rmd, &omd);
+	if (ret != LDB_SUCCESS) {
+		ldb_debug(ldb, LDB_DEBUG_FATAL,
+			  "replmd_replicated_request rename %s => %s failed - %s\n",
+			  ldb_dn_get_linearized(ar->search_msg->dn),
+			  ldb_dn_get_linearized(msg->dn),
+			  ldb_errstring(ldb));
+		return replmd_replicated_request_werror(ar, WERR_DS_DRA_DB_ERROR);
 	}
 
 	ZERO_STRUCT(nmd);
@@ -3920,17 +3943,21 @@ linked_attributes[0]:
 		/* see if this update is newer than what we have already */
 		struct GUID invocation_id = GUID_zero();
 		uint32_t version = 0;
+		uint32_t originating_usn = 0;
 		NTTIME change_time = 0;
 		uint32_t rmd_flags = dsdb_dn_rmd_flags(pdn->dsdb_dn->dn);
 
 		dsdb_get_extended_dn_guid(pdn->dsdb_dn->dn, &invocation_id, "RMD_INVOCID");
 		dsdb_get_extended_dn_uint32(pdn->dsdb_dn->dn, &version, "RMD_VERSION");
+		dsdb_get_extended_dn_uint32(pdn->dsdb_dn->dn, &originating_usn, "RMD_ORIGINATING_USN");
 		dsdb_get_extended_dn_nttime(pdn->dsdb_dn->dn, &change_time, "RMD_CHANGETIME");
 
 		if (!replmd_update_is_newer(&invocation_id,
 					    &la->meta_data.originating_invocation_id,
 					    version,
 					    la->meta_data.version,
+					    originating_usn,
+					    la->meta_data.originating_usn,
 					    change_time,
 					    la->meta_data.originating_change_time)) {
 			DEBUG(3,("Discarding older DRS linked attribute update to %s on %s from %s\n",
