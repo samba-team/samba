@@ -124,8 +124,8 @@ class builder(object):
             return
         (self.stage, self.cmd, self.output_mime_type) = self.sequence[self.next]
         self.cmd = self.cmd.replace("${PREFIX}", "--prefix=%s" % self.prefix)
-        if self.output_mime_type == "text/x-subunit":
-            self.cmd += " | %s --immediate" % (os.path.join(os.path.dirname(__file__), "selftest/format-subunit"))
+#        if self.output_mime_type == "text/x-subunit":
+#            self.cmd += " | %s --immediate" % (os.path.join(os.path.dirname(__file__), "selftest/format-subunit"))
         print '%s: [%s] Running %s' % (self.name, self.stage, self.cmd)
         cwd = os.getcwd()
         os.chdir("%s/%s" % (self.sdir, self.dir))
