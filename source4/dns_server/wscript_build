@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 bld.SAMBA_MODULE('DNS',
-        source='dns_server.c',
+        source='dns_server.c dns_query.c dns_update.c dns_utils.c',
         subsystem='service',
         init_function='server_service_dns_init',
         deps='LIBSAMBA-HOSTCONFIG LIBTSOCKET LIBSAMBA_TSOCKET',
