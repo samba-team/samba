@@ -241,6 +241,7 @@ static NTSTATUS handle_question(struct dns_server *dns,
 			ans[ai].rr_type = DNS_QTYPE_CNAME;
 			ans[ai].rr_class = DNS_QCLASS_IP;
 			ans[ai].ttl = recs[ri].dwTtlSeconds;
+			ans[ai].length = UINT16_MAX;
 			ans[ai].rdata.cname_record = talloc_strdup(ans, recs[ri].data.cname);
 			ai++;
 		}
@@ -256,6 +257,7 @@ static NTSTATUS handle_question(struct dns_server *dns,
 			ans[ai].rr_type = DNS_QTYPE_A;
 			ans[ai].rr_class = DNS_QCLASS_IP;
 			ans[ai].ttl = recs[ri].dwTtlSeconds;
+			ans[ai].length = UINT16_MAX;
 			ans[ai].rdata.ipv4_record = talloc_strdup(ans, recs[ri].data.ipv4);
 			ai++;
 		}
@@ -271,6 +273,7 @@ static NTSTATUS handle_question(struct dns_server *dns,
 			ans[ai].rr_type = DNS_QTYPE_AAAA;
 			ans[ai].rr_class = DNS_QCLASS_IP;
 			ans[ai].ttl = recs[ri].dwTtlSeconds;
+			ans[ai].length = UINT16_MAX;
 			ans[ai].rdata.ipv6_record = recs[ri].data.ipv6;
 			ai++;
 		}
@@ -286,6 +289,7 @@ static NTSTATUS handle_question(struct dns_server *dns,
 			ans[ai].rr_type = DNS_QTYPE_NS;
 			ans[ai].rr_class = DNS_QCLASS_IP;
 			ans[ai].ttl = recs[ri].dwTtlSeconds;
+			ans[ai].length = UINT16_MAX;
 			ans[ai].rdata.ns_record = recs[ri].data.ns;
 			ai++;
 		}
@@ -301,6 +305,7 @@ static NTSTATUS handle_question(struct dns_server *dns,
 			ans[ai].rr_type = DNS_QTYPE_SRV;
 			ans[ai].rr_class = DNS_QCLASS_IP;
 			ans[ai].ttl = recs[ri].dwTtlSeconds;
+			ans[ai].length = UINT16_MAX;
 			ans[ai].rdata.srv_record.priority = recs[ri].data.srv.wPriority;
 			ans[ai].rdata.srv_record.weight = recs[ri].data.srv.wWeight;
 			ans[ai].rdata.srv_record.port = recs[ri].data.srv.wPort;
@@ -319,6 +324,7 @@ static NTSTATUS handle_question(struct dns_server *dns,
 			ans[ai].rr_type = DNS_QTYPE_SOA;
 			ans[ai].rr_class = DNS_QCLASS_IP;
 			ans[ai].ttl = recs[ri].dwTtlSeconds;
+			ans[ai].length = UINT16_MAX;
 			ans[ai].rdata.soa_record.mname	= recs[ri].data.soa.mname;
 			ans[ai].rdata.soa_record.rname	= recs[ri].data.soa.rname;
 			ans[ai].rdata.soa_record.serial	= recs[ri].data.soa.serial;
@@ -331,6 +337,10 @@ static NTSTATUS handle_question(struct dns_server *dns,
 		break;
 	default:
 		return NT_STATUS_NOT_IMPLEMENTED;
+	}
+
+	if (*ancount == ai) {
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
 	*ancount = ai;
@@ -401,14 +411,22 @@ static NTSTATUS dns_process(struct dns_server *dns,
 {
 	enum ndr_err_code ndr_err;
 	NTSTATUS ret;
-	struct dns_name_packet *in_packet = talloc_zero(mem_ctx, struct dns_name_packet);
-	/* TODO: We don't really need an out_packet. */
-	struct dns_name_packet *out_packet = talloc_zero(mem_ctx, struct dns_name_packet);
+	struct dns_name_packet *in_packet;
+	struct dns_name_packet *out_packet;
 	struct dns_res_rec *answers = NULL, *nsrecs = NULL, *additional = NULL;
 	uint16_t num_answers = 0 , num_nsrecs = 0, num_additional = 0;
 	uint16_t reply_code;
 
-	if (in_packet == NULL) return NT_STATUS_INVALID_PARAMETER;
+	if (in->length < 12) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	in_packet = talloc_zero(mem_ctx, struct dns_name_packet);
+	/* TODO: We don't really need an out_packet. */
+	out_packet = talloc_zero(mem_ctx, struct dns_name_packet);
+
+	if (in_packet == NULL) return NT_STATUS_NO_MEMORY;
+	if (out_packet == NULL) return NT_STATUS_NO_MEMORY;
 
 	dump_data(2, in->data, in->length);
 
@@ -417,7 +435,12 @@ static NTSTATUS dns_process(struct dns_server *dns,
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		TALLOC_FREE(in_packet);
 		DEBUG(0, ("Failed to parse packet %d!\n", ndr_err));
-		return NT_STATUS_COULD_NOT_INTERPRET;
+		*out = *in;
+
+		out->data[2] |= 0x80; /* Toggle DNS_FLAG_REPLY */
+		out->data[3] |= DNS_RCODE_FORMERR;
+
+		return NT_STATUS_OK;
 	}
 
 	NDR_PRINT_DEBUG(dns_name_packet, in_packet);
@@ -439,7 +462,7 @@ static NTSTATUS dns_process(struct dns_server *dns,
 						&answers, &num_answers,
 						&nsrecs,  &num_nsrecs,
 						&additional, &num_additional);
-		reply_code = DNS_RCODE_REFUSED;
+		reply_code = DNS_RCODE_NOTIMP;
 		break;
 	default:
 		ret = NT_STATUS_NOT_IMPLEMENTED;
@@ -467,7 +490,12 @@ static NTSTATUS dns_process(struct dns_server *dns,
 		TALLOC_FREE(in_packet);
 		TALLOC_FREE(out_packet);
 		DEBUG(0, ("Failed to push packet %d!\n", ndr_err));
-		return NT_STATUS_INTERNAL_ERROR;
+		*out = *in;
+
+		out->data[2] |= 0x80; /* Toggle DNS_FLAG_REPLY */
+		out->data[3] |= DNS_RCODE_SERVFAIL;
+
+		return NT_STATUS_OK;
 	}
 
 	dump_data(2, out->data, out->length);

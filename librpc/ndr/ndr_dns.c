@@ -220,9 +220,14 @@ _PUBLIC_ enum ndr_err_code ndr_push_dns_res_rec(struct ndr_push *ndr, int ndr_fl
 			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->ttl));
 			_saved_offset1 = ndr->offset;
 			NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, 0));
-			NDR_CHECK(ndr_push_set_switch_value(ndr, &r->rdata, r->rr_type));
-			NDR_CHECK(ndr_push_dns_rdata(ndr, NDR_SCALARS, &r->rdata));
-
+			if (r->length > 0) {
+				NDR_CHECK(ndr_push_set_switch_value(ndr, &r->rdata, r->rr_type));
+				NDR_CHECK(ndr_push_dns_rdata(ndr, NDR_SCALARS, &r->rdata));
+				if (r->unexpected.length > 0) {
+					return ndr_push_error(ndr, NDR_ERR_LENGTH,
+							      "Invalid...Unexpected blob lenght is too large");
+				}
+			}
 			if (r->unexpected.length > UINT16_MAX) {
 				return ndr_push_error(ndr, NDR_ERR_LENGTH,
 						      "Unexpected blob lenght is too large");
@@ -260,8 +265,12 @@ _PUBLIC_ enum ndr_err_code ndr_pull_dns_res_rec(struct ndr_pull *ndr, int ndr_fl
 			NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->ttl));
 			NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->length));
 			_saved_offset1 = ndr->offset;
-			NDR_CHECK(ndr_pull_set_switch_value(ndr, &r->rdata, r->rr_type));
-			NDR_CHECK(ndr_pull_dns_rdata(ndr, NDR_SCALARS, &r->rdata));
+			if (r->length > 0) {
+				NDR_CHECK(ndr_pull_set_switch_value(ndr, &r->rdata, r->rr_type));
+				NDR_CHECK(ndr_pull_dns_rdata(ndr, NDR_SCALARS, &r->rdata));
+			} else {
+				ZERO_STRUCT(r->rdata);
+			}
 			length = ndr->offset - _saved_offset1;
 			if (length > r->length) {
 				return ndr_pull_error(ndr, NDR_ERR_LENGTH,

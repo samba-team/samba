@@ -113,8 +113,8 @@ interface dnsp
 		dns_record_type wType;
 		uint32          dwFlags;
 		uint32          dwSerial;
-		uint32          dwTtlSeconds;
-		uint32          dwTimeStamp;
+	        [flag(NDR_BIG_ENDIAN)] uint32   dwTtlSeconds;
+		uint32		dwTimeStamp;
 		uint32          dwReserved;
 		[switch_is(wType)] dnsRecordData data;
 	} dnsp_DnssrvRpcRecord;
