@@ -5738,6 +5738,39 @@ static bool test_OpenPrinter(struct torture_context *tctx,
 	return ret;
 }
 
+static bool test_OpenPrinterEx(struct torture_context *tctx,
+			       struct dcerpc_binding_handle *b,
+			       const char *printername,
+			       const char *datatype,
+			       struct spoolss_DeviceMode *devmode,
+			       uint32_t access_mask,
+			       uint32_t level,
+			       union spoolss_UserLevel *userlevel,
+			       struct policy_handle *handle,
+			       WERROR expected_result)
+{
+	struct spoolss_OpenPrinterEx r;
+
+	r.in.printername	= printername;
+	r.in.datatype		= datatype;
+	r.in.devmode_ctr.devmode= devmode;
+	r.in.access_mask	= access_mask;
+	r.in.level		= level;
+	r.in.userlevel		= *userlevel;
+	r.out.handle		= handle;
+
+	torture_comment(tctx, "Testing OpenPrinterEx(%s)\n", r.in.printername);
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_spoolss_OpenPrinterEx_r(b, tctx, &r),
+		"OpenPrinterEx failed");
+
+	torture_assert_werr_equal(tctx, r.out.result, expected_result,
+		"OpenPrinterEx failed");
+
+	return true;
+}
+
 static bool call_OpenPrinterEx(struct torture_context *tctx,
 			       struct dcerpc_pipe *p,
 			       const char *name,
@@ -5745,17 +5778,10 @@ static bool call_OpenPrinterEx(struct torture_context *tctx,
 			       struct policy_handle *handle)
 {
 	struct spoolss_OpenPrinterEx r;
+	union spoolss_UserLevel userlevel;
 	struct spoolss_UserLevel1 userlevel1;
 	NTSTATUS status;
 	struct dcerpc_binding_handle *b = p->binding_handle;
-
-	r.in.printername = name;
-	r.in.datatype		= NULL;
-	r.in.devmode_ctr.devmode= devmode;
-	r.in.access_mask	= SEC_FLAG_MAXIMUM_ALLOWED;
-	r.in.level		= 1;
-	r.in.userlevel.level1	= &userlevel1;
-	r.out.handle = handle;
 
 	userlevel1.size = 1234;
 	userlevel1.client = "hello";
@@ -5765,15 +5791,14 @@ static bool call_OpenPrinterEx(struct torture_context *tctx,
 	userlevel1.minor = 3;
 	userlevel1.processor = 4;
 
-	torture_comment(tctx, "Testing OpenPrinterEx(%s)\n", r.in.printername);
+	userlevel.level1 = &userlevel1;
 
-	status = dcerpc_spoolss_OpenPrinterEx_r(b, tctx, &r);
-
-	torture_assert_ntstatus_ok(tctx, status, "OpenPrinterEx failed");
-
-	torture_assert_werr_ok(tctx, r.out.result, "OpenPrinterEx failed");
-
-	return true;
+	return test_OpenPrinterEx(tctx, b, name, NULL, devmode,
+				  SEC_FLAG_MAXIMUM_ALLOWED,
+				  1,
+				  &userlevel,
+				  handle,
+				  WERR_OK);
 }
 
 static bool test_printer_rename(struct torture_context *tctx,
@@ -5872,10 +5897,10 @@ static bool test_printer_rename(struct torture_context *tctx,
 }
 
 
-static bool test_OpenPrinterEx(struct torture_context *tctx,
-			       struct dcerpc_pipe *p,
-			       const char *name,
-			       const char *environment)
+static bool test_existing_printer_openprinterex(struct torture_context *tctx,
+						struct dcerpc_pipe *p,
+						const char *name,
+						const char *environment)
 {
 	struct policy_handle handle;
 	bool ret = true;
@@ -6029,7 +6054,7 @@ static bool test_EnumPrinters_old(struct torture_context *tctx,
 				if (!test_OpenPrinter(tctx, p, name, ctx->environment, false)) {
 					ret = false;
 				}
-				if (!test_OpenPrinterEx(tctx, p, name, ctx->environment)) {
+				if (!test_existing_printer_openprinterex(tctx, p, name, ctx->environment)) {
 					ret = false;
 				}
 			}
