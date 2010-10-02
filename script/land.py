@@ -201,7 +201,6 @@ class SubunitTreeStageBuilder(TreeStageBuilder):
             self.status = self.proc.poll()
             if self.status is not None:
                 self.subunit.close()
-                import pdb; pdb.set_trace()
             return self.status
 
 

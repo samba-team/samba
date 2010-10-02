@@ -7,7 +7,7 @@ import optparse
 import subprocess
 import sys
 
-parser = optparse.OptionParser("autoland-remote [options]")
+parser = optparse.OptionParser("autoland-remote [options] [trees...]")
 parser.add_option("--remote-repo", help="Location of remote repository (default: temporary repository)", type=str, default=None)
 parser.add_option("--host", help="Host to land on (SSH connection string)", type=str, default="sn-devel-104.sn.samba.org")
 parser.add_option("--foreground", help="Don't daemonize", action="store_true", default=False)
@@ -24,7 +24,7 @@ parser.add_option("--fix-whitespace", help="fix whitespace on rebase",
 parser.add_option("--fail-slowly", help="continue running tests even after one has already failed",
                   action="store_true")
 
-(opts, args) = parser.parse_args()
+(opts, extra_args) = parser.parse_args()
 
 if not opts.foreground and not opts.email:
     print "Not running in foreground and --email not specified."
@@ -71,6 +71,7 @@ if opts.rebase:
     remote_args.append("--rebase=%s" % opts.rebase)
 if opts.passcmd:
     remote_args.append("--passcmd=%s" % opts.passcmd)
+remote_args += extra_args
 print "%s$ %s" % (opts.host, " ".join(remote_args))
 args = ["ssh", "-A", opts.host] + remote_args
 sys.exit(subprocess.call(args))
