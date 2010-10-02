@@ -3760,6 +3760,32 @@ int dsdb_search_dn(struct ldb_context *ldb,
 }
 
 /*
+  search for attrs on one DN, by the GUID of the DN, allowing for
+  dsdb_flags controls
+ */
+int dsdb_search_by_dn_guid(struct ldb_context *ldb,
+			   TALLOC_CTX *mem_ctx,
+			   struct ldb_result **_res,
+			   const struct GUID *guid,
+			   const char * const *attrs,
+			   uint32_t dsdb_flags)
+{
+	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
+	struct ldb_dn *dn;
+	int ret;
+
+	dn = ldb_dn_new_fmt(tmp_ctx, ldb, "<GUID=%s>", GUID_string(tmp_ctx, guid));
+	if (!ldb_dn_validate(dn)) {
+		talloc_free(tmp_ctx);
+		return LDB_ERR_INVALID_DN_SYNTAX;
+	}
+
+	ret = dsdb_search_dn(ldb, mem_ctx, _res, dn, attrs, dsdb_flags);
+	talloc_free(tmp_ctx);
+	return ret;
+}
+
+/*
   general search with dsdb_flags for controls
  */
 int dsdb_search(struct ldb_context *ldb,
