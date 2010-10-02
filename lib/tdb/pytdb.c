@@ -97,6 +97,11 @@ static PyObject *py_tdb_open(PyTypeObject *type, PyObject *args, PyObject *kwarg
 	}
 
 	ret = PyObject_New(PyTdbObject, &PyTdb);
+	if (!ret) {
+		tdb_close(ctx);
+		return NULL;
+	}
+
 	ret->ctx = ctx;
 	ret->closed = false;
 	return (PyObject *)ret;
@@ -330,6 +335,8 @@ static PyObject *tdb_object_iter(PyTdbObject *self)
 	PyTdbIteratorObject *ret;	
 
 	ret = PyObject_New(PyTdbIteratorObject, &PyTdbIterator);
+	if (!ret)
+		return NULL;
 	ret->current = tdb_firstkey(self->ctx);
 	ret->iteratee = self;
 	Py_INCREF(self);
