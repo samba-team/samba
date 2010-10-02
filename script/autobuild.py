@@ -215,6 +215,7 @@ class buildlist(object):
         for b in self.tlist:
             tar.add(b.stdout_path, arcname="%s.stdout" % b.tag)
             tar.add(b.stderr_path, arcname="%s.stderr" % b.tag)
+        tar.add("autobuild.log")
         tar.close()
 
     def remove_logs(self):
