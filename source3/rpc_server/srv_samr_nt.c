@@ -331,8 +331,7 @@ static DISP_INFO *get_samr_dispinfo_by_sid(const struct dom_sid *psid)
 		 * Necessary only once, but it does not really hurt.
 		 */
 		if (builtin_dispinfo == NULL) {
-			builtin_dispinfo = talloc_zero(
-				talloc_autofree_context(), struct disp_info);
+			builtin_dispinfo = talloc_zero(NULL, struct disp_info);
 			if (builtin_dispinfo == NULL) {
 				return NULL;
 			}
@@ -347,8 +346,7 @@ static DISP_INFO *get_samr_dispinfo_by_sid(const struct dom_sid *psid)
 		 * Necessary only once, but it does not really hurt.
 		 */
 		if (domain_dispinfo == NULL) {
-			domain_dispinfo = talloc_zero(
-				talloc_autofree_context(), struct disp_info);
+			domain_dispinfo = talloc_zero(NULL, struct disp_info);
 			if (domain_dispinfo == NULL) {
 				return NULL;
 			}
