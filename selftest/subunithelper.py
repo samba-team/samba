@@ -376,7 +376,7 @@ class PlainFormatter(TestsuiteEnabledTestResult):
         self.totalsuites = totaltests
         self.last_time = None
 
-    @classmethod
+    @staticmethod
     def _format_time(delta):
         minutes, seconds = divmod(delta.seconds, 60)
         hours, minutes = divmod(minutes, 60)
@@ -554,3 +554,4 @@ class PlainFormatter(TestsuiteEnabledTestResult):
             self.totalsuites-=1
 
 
+class TestProtocolServer(subunit.TestProtocolServer):
