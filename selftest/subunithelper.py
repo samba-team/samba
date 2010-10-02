@@ -338,11 +338,15 @@ class FilterOps(testtools.testresult.TestResult):
 
         self._ops.end_testsuite(name, result, reason)
 
-    def __init__(self, out, prefix, expected_failures, strip_ok_output, fail_immediately=False):
+    def __init__(self, out, prefix=None, expected_failures=None,
+                 strip_ok_output=False, fail_immediately=False):
         self._ops = out
         self.output = None
         self.prefix = prefix
-        self.expected_failures = expected_failures
+        if expected_failures is not None:
+            self.expected_failures = expected_failures
+        else:
+            self.expected_failures = {}
         self.strip_ok_output = strip_ok_output
         self.xfail_added = 0
         self.fail_added = 0
@@ -355,7 +359,7 @@ class FilterOps(testtools.testresult.TestResult):
 
 class PlainFormatter(TestsuiteEnabledTestResult):
 
-    def __init__(self, summaryfile, verbose, immediate, statistics,
+    def __init__(self, verbose, immediate, statistics,
             totaltests=None):
         super(PlainFormatter, self).__init__()
         self.verbose = verbose
@@ -366,7 +370,6 @@ class PlainFormatter(TestsuiteEnabledTestResult):
         self.suitesfailed = []
         self.suites_ok = 0
         self.skips = {}
-        self.summaryfile = summaryfile
         self.index = 0
         self.name = None
         self._progress_level = 0
@@ -504,8 +507,8 @@ class PlainFormatter(TestsuiteEnabledTestResult):
                'failure': 'F',
                'success': 'S'}.get(result, "?"))
 
-    def summary(self):
-        f = open(self.summaryfile, 'w+')
+    def write_summary(self, path):
+        f = open(path, 'w+')
 
         if self.suitesfailed:
             f.write("= Failed tests =\n")
@@ -532,9 +535,6 @@ class PlainFormatter(TestsuiteEnabledTestResult):
                 f.write("\t%s\n" % name)
             f.write("\n")
         f.close()
-
-        print "\nA summary with detailed information can be found in:"
-        print "  %s" % self.summaryfile
 
         if (not self.suitesfailed and
             not self.statistics['TESTS_UNEXPECTED_FAIL'] and
