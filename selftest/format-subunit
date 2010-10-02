@@ -93,7 +93,6 @@ class PlainFormatter(subunithelper.TestsuiteEnabledTestResult):
             sys.stdout.write(output)
 
     def control_msg(self, output):
-        #$self->output_msg($output)
         pass
 
     def end_testsuite(self, name, result, reason):

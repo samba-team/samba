@@ -86,17 +86,49 @@ def run_cmd(cmd, dir=None, show=None, output=False, checkfail=True, shell=False)
         return call(cmd, cwd=dir, shell=shell)
 
 
-class Builder(object):
+class TreeStageBuilder(object):
+    """Handle building of a particular stage for a tree.
+    """
+
+    def __init__(self, tree, name, command, output_mime_type, fail_quickly=False):
+        self.tree = tree
+        self.name = name
+        self.command = command
+        self.output_mime_type = output_mime_type
+        self.fail_quickly = fail_quickly
+        self.status = None
+
+    def start(self):
+        if self.output_mime_type == "text/x-subunit":
+            if self.fail_quickly:
+                self.command += " | %s --fail-immediately" % (os.path.join(os.path.dirname(__file__), "selftest/filter-subunit"))
+            self.command += " | %s --immediate" % (os.path.join(os.path.dirname(__file__), "selftest/format-subunit"))
+        print '%s: [%s] Running %s' % (self.name, self.stage, self.command)
+        self.proc = Popen(self.command, shell=True, cwd=self.tree.dir,
+                          stdout=self.tree.stdout, stderr=self.tree.stderr, stdin=self.tree.stdin)
+
+    def poll(self):
+        self.status = self.proc.poll()
+        return self.status
+
+    def kill(self):
+        if self.proc is not None:
+            try:
+                run_cmd(["killbysubdir", self.tree.sdir], checkfail=False)
+            except OSError:
+                # killbysubdir doesn't exist ?
+                pass
+            self.proc.terminate()
+            self.proc.wait()
+            self.proc = None
+
+
+class TreeBuilder(object):
     '''handle build of one directory'''
 
     def __init__(self, name, sequence, fail_quickly=False):
         self.name = name
         self.fail_quickly = fail_quickly
-
-        if name in ['pass', 'fail', 'retry']:
-            self.dir = "."
-        else:
-            self.dir = self.name
 
         self.tag = self.name.replace('/', '_')
         self.sequence = sequence
@@ -112,9 +144,13 @@ class Builder(object):
             os.unlink(self.stderr_path)
         self.stdout = open(self.stdout_path, 'w')
         self.stderr = open(self.stderr_path, 'w')
-        self.stdin  = open("/dev/null", 'r')
+        self.stdin  = open(os.devnull, 'r')
         self.sdir = "%s/%s" % (testbase, self.tag)
-        self.prefix = "%s/prefix/%s" % (testbase, self.tag)
+        if name in ['pass', 'fail', 'retry']:
+            self.dir = self.sdir
+        else:
+            self.dir = os.path.join(self.sdir, self.name)
+        self.prefix = os.path.join(testbase, "prefix", self.tag)
         run_cmd(["rm", "-rf", self.sdir])
         cleanup_list.append(self.sdir)
         cleanup_list.append(self.prefix)
@@ -128,31 +164,25 @@ class Builder(object):
             print '%s: Completed OK' % self.name
             self.done = True
             return
-        (self.stage, self.cmd, self.output_mime_type) = self.sequence[self.next]
-        self.cmd = self.cmd.replace("${PREFIX}", "--prefix=%s" % self.prefix)
-        if self.output_mime_type == "text/x-subunit":
-            if self.fail_quickly:
-                self.cmd += " | %s --fail-immediately" % (os.path.join(os.path.dirname(__file__), "selftest/filter-subunit"))
-            self.cmd += " | %s --immediate" % (os.path.join(os.path.dirname(__file__), "selftest/format-subunit"))
-        print '%s: [%s] Running %s' % (self.name, self.stage, self.cmd)
-        self.proc = Popen(self.cmd, shell=True, cwd="%s/%s" % (self.sdir, self.dir),
-                          stdout=self.stdout, stderr=self.stderr, stdin=self.stdin)
+        (stage_name, cmd, output_mime_type) = self.sequence[self.next]
+        cmd = cmd.replace("${PREFIX}", "--prefix=%s" % self.prefix)
+        self.stage = TreeStageBuilder(self, stage_name, cmd, output_mime_type, self.fail_quickly)
         self.next += 1
 
+    def remove_logs(self):
+        os.unlink(self.stdout_path)
+        os.unlink(self.stderr_path)
+
+    @property
+    def status(self):
+        return self.stage.status
+
     def poll(self):
-        self.status = self.proc.poll()
-        return self.status
+        return self.stage.poll()
 
     def kill(self):
-        if self.proc is not None:
-            try:
-                run_cmd(["killbysubdir", self.sdir], checkfail=False)
-            except OSError:
-                # killbysubdir doesn't exist ?
-                pass
-            self.proc.terminate()
-            self.proc.wait()
-            self.proc = None
+        self.stage.kill()
+        self.stage = None
 
     @property
     def failed(self):
@@ -160,7 +190,7 @@ class Builder(object):
 
     @property
     def failure_reason(self):
-        return "%s: [%s] failed '%s' with status %d" % (self.name, self.stage, self.cmd, self.status)
+        return "%s: [%s] failed '%s' with status %d" % (self.name, self.stage.name, self.stage.cmd, self.stage.status)
 
 
 class BuildList(object):
@@ -178,10 +208,10 @@ class BuildList(object):
         if tasknames == []:
             tasknames = tasklist
         for n in tasknames:
-            b = Builder(n, tasks[n], not options.fail_slowly)
+            b = TreeBuilder(n, tasks[n], not options.fail_slowly)
             self.tlist.append(b)
         if options.retry:
-            self.retry = Builder('retry', retry_task, not options.fail_slowly)
+            self.retry = TreeBuilder('retry', retry_task, not options.fail_slowly)
             self.need_retry = False
 
     def kill_kids(self):
@@ -200,12 +230,12 @@ class BuildList(object):
         while True:
             none_running = True
             for b in self.tlist:
-                if b.proc is None:
+                if b.stage is None:
                     continue
                 none_running = False
                 if b.poll() is None:
                     continue
-                b.proc = None
+                b.stage = None
                 return b
             if options.retry:
                 ret = self.retry.proc.poll()
@@ -242,8 +272,7 @@ class BuildList(object):
 
     def remove_logs(self):
         for b in self.tlist:
-            os.unlink(b.stdout_path)
-            os.unlink(b.stderr_path)
+            b.remove_logs()
 
     def start_tail(self):
         cmd = "tail -f *.stdout *.stderr"
