@@ -509,7 +509,7 @@ WERROR NetServerGetInfo_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
-	status = rpccli_srvsvc_NetSrvGetInfo(pipe_cli, ctx,
+	status = rpccli_srvsvc_NetSrvGetInfo(pipe_cli, talloc_tos(),
 					     r->in.server_name,
 					     r->in.level,
 					     &info,
@@ -615,7 +615,7 @@ WERROR NetServerSetInfo_r(struct libnetapi_ctx *ctx,
 			goto done;
 	}
 
-	status = rpccli_srvsvc_NetSrvSetInfo(pipe_cli, ctx,
+	status = rpccli_srvsvc_NetSrvSetInfo(pipe_cli, talloc_tos(),
 					     r->in.server_name,
 					     r->in.level,
 					     &info,
@@ -648,7 +648,7 @@ WERROR NetRemoteTOD_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
-	status = rpccli_srvsvc_NetRemoteTOD(pipe_cli, ctx,
+	status = rpccli_srvsvc_NetRemoteTOD(pipe_cli, talloc_tos(),
 					    r->in.server_name,
 					    &info,
 					    &werr);

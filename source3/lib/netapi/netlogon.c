@@ -139,7 +139,7 @@ WERROR I_NetLogonControl_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
-	status = rpccli_netr_LogonControl(pipe_cli, ctx,
+	status = rpccli_netr_LogonControl(pipe_cli, talloc_tos(),
 					  r->in.server_name,
 					  r->in.function_code,
 					  r->in.query_level,
@@ -197,7 +197,7 @@ WERROR I_NetLogonControl2_r(struct libnetapi_ctx *ctx,
 	case NETLOGON_CONTROL_TC_VERIFY:
 	case NETLOGON_CONTROL_SET_DBFLAG:
 	case NETLOGON_CONTROL_FORCE_DNS_REG:
-		status = rpccli_netr_LogonControl2Ex(pipe_cli, ctx,
+		status = rpccli_netr_LogonControl2Ex(pipe_cli, talloc_tos(),
 						     r->in.server_name,
 						     r->in.function_code,
 						     r->in.query_level,
@@ -206,7 +206,7 @@ WERROR I_NetLogonControl2_r(struct libnetapi_ctx *ctx,
 						     &werr);
 		break;
 	default:
-		status = rpccli_netr_LogonControl2(pipe_cli, ctx,
+		status = rpccli_netr_LogonControl2(pipe_cli, talloc_tos(),
 						   r->in.server_name,
 						   r->in.function_code,
 						   r->in.query_level,

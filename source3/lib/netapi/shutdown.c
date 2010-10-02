@@ -46,7 +46,7 @@ WERROR NetShutdownInit_r(struct libnetapi_ctx *ctx,
 
 	init_lsa_StringLarge(&message, r->in.message);
 
-	status = rpccli_initshutdown_Init(pipe_cli, ctx,
+	status = rpccli_initshutdown_Init(pipe_cli, talloc_tos(),
 					  NULL,
 					  &message,
 					  r->in.timeout,
@@ -88,7 +88,7 @@ WERROR NetShutdownAbort_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
-	status = rpccli_initshutdown_Abort(pipe_cli, ctx,
+	status = rpccli_initshutdown_Abort(pipe_cli, talloc_tos(),
 					   NULL,
 					   &werr);
 	if (!NT_STATUS_IS_OK(status)) {

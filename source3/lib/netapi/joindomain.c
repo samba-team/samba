@@ -128,7 +128,7 @@ WERROR NetJoinDomain_r(struct libnetapi_ctx *ctx,
 
 	old_timeout = rpccli_set_timeout(pipe_cli, 600000);
 
-	status = rpccli_wkssvc_NetrJoinDomain2(pipe_cli, ctx,
+	status = rpccli_wkssvc_NetrJoinDomain2(pipe_cli, talloc_tos(),
 					       r->in.server,
 					       r->in.domain,
 					       r->in.account_ou,
@@ -258,7 +258,7 @@ WERROR NetUnjoinDomain_r(struct libnetapi_ctx *ctx,
 
 	old_timeout = rpccli_set_timeout(pipe_cli, 60000);
 
-	status = rpccli_wkssvc_NetrUnjoinDomain2(pipe_cli, ctx,
+	status = rpccli_wkssvc_NetrUnjoinDomain2(pipe_cli, talloc_tos(),
 						 r->in.server_name,
 						 r->in.account,
 						 encrypted_password,
@@ -295,7 +295,7 @@ WERROR NetGetJoinInformation_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
-	status = rpccli_wkssvc_NetrGetJoinInformation(pipe_cli, ctx,
+	status = rpccli_wkssvc_NetrGetJoinInformation(pipe_cli, talloc_tos(),
 						      r->in.server_name,
 						      &buffer,
 						      (enum wkssvc_NetJoinStatus *)r->out.name_type,
@@ -436,7 +436,7 @@ WERROR NetGetJoinableOUs_r(struct libnetapi_ctx *ctx,
 						   &encrypted_password);
 	}
 
-	status = rpccli_wkssvc_NetrGetJoinableOus2(pipe_cli, ctx,
+	status = rpccli_wkssvc_NetrGetJoinableOus2(pipe_cli, talloc_tos(),
 						   r->in.server_name,
 						   r->in.domain,
 						   r->in.account,
@@ -478,7 +478,7 @@ WERROR NetRenameMachineInDomain_r(struct libnetapi_ctx *ctx,
 						   &encrypted_password);
 	}
 
-	status = rpccli_wkssvc_NetrRenameMachineInDomain2(pipe_cli, ctx,
+	status = rpccli_wkssvc_NetrRenameMachineInDomain2(pipe_cli, talloc_tos(),
 							  r->in.server_name,
 							  r->in.new_machine_name,
 							  r->in.account,
