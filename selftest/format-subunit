@@ -24,6 +24,10 @@ parser.add_option("--prefix", type="string", default=".",
 
 opts, args = parser.parse_args()
 
+def handle_sigint(sig, stack):
+	sys.exit(0)
+signal.signal(signal.SIGINT, handle_sigint)
+
 statistics = {
     'SUITES_FAIL': 0,
     'TESTS_UNEXPECTED_OK': 0,
@@ -34,15 +38,15 @@ statistics = {
     'TESTS_SKIP': 0,
 }
 
-def handle_sigint(sig, stack):
-	sys.exit(0)
-signal.signal(signal.SIGINT, handle_sigint)
-
-msg_ops = subunithelper.PlainFormatter(os.path.join(opts.prefix, "summary"), opts.verbose,
-    opts.immediate, statistics)
+msg_ops = subunithelper.PlainFormatter(opts.verbose, opts.immediate, statistics)
 
 expected_ret = subunithelper.parse_results(msg_ops, statistics, sys.stdin)
 
-msg_ops.summary()
+summaryfile = os.path.join(opts.prefix, "summary")
+
+msg_ops.write_summary(summaryfile)
+
+print "\nA summary with detailed information can be found in:"
+print "  %s" % summaryfile
 
 sys.exit(expected_ret)
