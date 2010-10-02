@@ -344,11 +344,19 @@ You can see logs of the failed task here:
   http://git.samba.org/%s/samba-autobuild/%s.stdout
   http://git.samba.org/%s/samba-autobuild/%s.stderr
 
+A summary of the autobuild process is here:
+
+  http://git.samba.org/%s/samba-autobuild/autobuild.log
+
 or you can get full logs of all tasks in this job here:
 
   http://git.samba.org/%s/samba-autobuild/logs.tar.gz
 
-''' % (failed_task, errstr, user, failed_tag, user, failed_tag, user)
+The top commit for the tree that was built was:
+
+%s
+
+''' % (failed_task, errstr, user, failed_tag, user, failed_tag, user, user, top_commit_msg)
     msg = MIMEText(text)
     msg['Subject'] = 'autobuild failure for task %s during %s' % (failed_task, failed_stage)
     msg['From'] = 'autobuild@samba.org'
@@ -376,7 +384,14 @@ you can get full logs of all tasks in this job here:
 
   http://git.samba.org/%s/samba-autobuild/logs.tar.gz
 
-''' % (user,)
+''' % user
+
+    text += '''
+The top commit for the tree that was built was:
+
+%s
+''' % top_commit_msg
+
     msg = MIMEText(text)
     msg['Subject'] = 'autobuild success'
     msg['From'] = 'autobuild@samba.org'
@@ -400,6 +415,9 @@ test_master = "%s/master" % testbase
 gitroot = find_git_root()
 if gitroot is None:
     raise Exception("Failed to find git root")
+
+# get the top commit message, for emails
+top_commit_msg = run_cmd("git log -1", dir=gitroot, output=True)
 
 try:
     os.makedirs(testbase)
