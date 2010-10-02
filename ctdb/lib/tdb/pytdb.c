@@ -24,10 +24,10 @@
    License along with this library; if not, see <http://www.gnu.org/licenses/>.
 */
 
+#include <Python.h>
 #include "replace.h"
 #include "system/filesys.h"
 
-#include <Python.h>
 #ifndef Py_RETURN_NONE
 #define Py_RETURN_NONE return Py_INCREF(Py_None), Py_None
 #endif
