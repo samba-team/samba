@@ -3222,7 +3222,7 @@ uint32_t dsdb_dn_val_rmd_flags(const struct ldb_val *val)
 	if (val->length < 13) {
 		return 0;
 	}
-	p = memmem(val->data, val->length-2, "<RMD_FLAGS=", 11);
+	p = memmem(val->data, val->length, "<RMD_FLAGS=", 11);
 	if (!p) {
 		return 0;
 	}
