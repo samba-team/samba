@@ -1011,7 +1011,7 @@ NTSTATUS asn1_full_tag(DATA_BLOB blob, uint8_t tag, size_t *packet_size)
 NTSTATUS asn1_peek_full_tag(DATA_BLOB blob, uint8_t tag, size_t *packet_size)
 {
 	struct asn1_data asn1;
-	uint32_t size;
+	size_t size;
 	bool ok;
 
 	ZERO_STRUCT(asn1);
