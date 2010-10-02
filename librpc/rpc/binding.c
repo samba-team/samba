@@ -247,7 +247,7 @@ _PUBLIC_ NTSTATUS dcerpc_parse_binding(TALLOC_CTX *mem_ctx, const char *s, struc
 	char *p;
 	int i, j, comma_count;
 
-	b = talloc(mem_ctx, struct dcerpc_binding);
+	b = talloc_zero(mem_ctx, struct dcerpc_binding);
 	if (!b) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -651,7 +651,7 @@ _PUBLIC_ NTSTATUS dcerpc_binding_from_tower(TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 	struct dcerpc_binding *binding;
 
-	binding = talloc(mem_ctx, struct dcerpc_binding);
+	binding = talloc_zero(mem_ctx, struct dcerpc_binding);
 	NT_STATUS_HAVE_NO_MEMORY(binding);
 
 	ZERO_STRUCT(binding->object);

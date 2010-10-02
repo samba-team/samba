@@ -96,7 +96,7 @@ static NTSTATUS libnet_JoinADSDomain(struct libnet_context *ctx, struct libnet_J
 		return NT_STATUS_NO_MEMORY;
 	}
 	                                           
-	drsuapi_binding = talloc(tmp_ctx, struct dcerpc_binding);
+	drsuapi_binding = talloc_zero(tmp_ctx, struct dcerpc_binding);
 	if (!drsuapi_binding) {
 		r->out.error_string = NULL;
 		talloc_free(tmp_ctx);

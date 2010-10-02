@@ -190,6 +190,7 @@ struct dcerpc_binding {
 	struct ndr_syntax_id object;
 	const char *host;
 	const char *target_hostname;
+	const char *target_principal;
 	const char *endpoint;
 	const char **options;
 	const char *localaddress;

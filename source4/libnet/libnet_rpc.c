@@ -772,7 +772,7 @@ static void continue_epm_map_binding_send(struct composite_context *c)
 	s = talloc_get_type(c->private_data, struct rpc_connect_dci_state);
 
 	/* prepare to get endpoint mapping for the requested interface */
-	s->final_binding = talloc(s, struct dcerpc_binding);
+	s->final_binding = talloc_zero(s, struct dcerpc_binding);
 	if (composite_nomem(s->final_binding, c)) return;
 	
 	*s->final_binding = *s->lsa_pipe->binding;

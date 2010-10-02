@@ -292,6 +292,17 @@ struct composite_context *dcerpc_bind_auth_send(TALLOC_CTX *mem_ctx,
 		}
 	}
 
+	if (p->binding && p->binding->target_principal) {
+		c->status = gensec_set_target_principal(sec->generic_state,
+							p->binding->target_principal);
+		if (!NT_STATUS_IS_OK(c->status)) {
+			DEBUG(1, ("Failed to set GENSEC target principal to %s: %s\n",
+				  p->binding->target_principal, nt_errstr(c->status)));
+			composite_error(c, c->status);
+			return c;
+		}
+	}
+
 	c->status = gensec_start_mech_by_authtype(sec->generic_state,
 						  auth_type, auth_level);
 	if (!NT_STATUS_IS_OK(c->status)) {

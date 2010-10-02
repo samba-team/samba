@@ -517,7 +517,7 @@ _PUBLIC_ struct dcerpc_pipe *dcerpc_pipe_init(TALLOC_CTX *mem_ctx, struct tevent
 {
 	struct dcerpc_pipe *p;
 
-	p = talloc(mem_ctx, struct dcerpc_pipe);
+	p = talloc_zero(mem_ctx, struct dcerpc_pipe);
 	if (!p) {
 		return NULL;
 	}
