@@ -9,10 +9,12 @@ import os, tempfile, sys
 from optparse import OptionParser
 
 parser = OptionParser()
-parser.add_option("", "--tests", help="list of tests to run", default='')
-parser.add_option("", "--good", help="known good revision (default HEAD)", default='HEAD')
-parser.add_option("", "--bad", help="known bad revision (default HEAD~100)", default='HEAD~100')
-parser.add_option("", "--skip-build-errors", help="skip revision where make fails", default=False)
+parser.add_option("", "--tests", help="list of tests to run", default='*')
+parser.add_option("", "--quick", help="use make quicktest", default='')
+parser.add_option("", "--good", help="known good revision (default HEAD~100)", default='HEAD~100')
+parser.add_option("", "--bad", help="known bad revision (default HEAD)", default='HEAD')
+parser.add_option("", "--skip-build-errors", help="skip revision where make fails",
+                  action='store_true', default=False)
 parser.add_option("", "--autogen", help="run autogen before each build",action="store_true", default=False)
 parser.add_option("", "--configure", help="run configure.developer before each build",
     action="store_true", default=False)
@@ -59,7 +61,11 @@ if opts.skip_build_errors:
     f.write("make -j %u || exit 125\n" % opts.N)
 else:
     f.write("make -j %u || exit 1\n" % opts.N)
-f.write("make -j %u test TESTS='%s' FAIL_IMMEDIATELY=1 || exit 1\n" % (opts.N, opts.tests))
+if opts.quick:
+    target="quicktest"
+else:
+    target="test"
+f.write("make -j %u %s TESTS='%s' FAIL_IMMEDIATELY=1 || exit 1\n" % (opts.N, target, opts.tests))
 f.write("exit 0\n")
 f.close()
 
@@ -72,7 +78,7 @@ def cleanup():
 ret = -1
 try:
     run_cmd("git bisect reset", dir=gitroot, show=False, checkfail=False)
-    run_cmd("git bisect start %s %s --" % (opts.good, opts.bad), dir=gitroot)
+    run_cmd("git bisect start %s %s --" % (opts.bad, opts.good), dir=gitroot)
     ret = run_cmd("git bisect run bash %s" % f.name, dir=gitroot, show=True, checkfail=False)
 except KeyboardInterrupt:
     print("Cleaning up")
