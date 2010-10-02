@@ -51,7 +51,7 @@ WERROR NetGetDCName_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
-	status = rpccli_netr_GetDcName(pipe_cli, ctx,
+	status = rpccli_netr_GetDcName(pipe_cli, talloc_tos(),
 				       r->in.server_name,
 				       r->in.domain_name,
 				       (const char **)r->out.buffer,
@@ -91,7 +91,7 @@ WERROR NetGetAnyDCName_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
-	status = rpccli_netr_GetAnyDCName(pipe_cli, ctx,
+	status = rpccli_netr_GetAnyDCName(pipe_cli, talloc_tos(),
 					  r->in.server_name,
 					  r->in.domain_name,
 					  (const char **)r->out.buffer,
