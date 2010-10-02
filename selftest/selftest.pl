@@ -923,11 +923,12 @@ if ($opt_testenv) {
 	die("Unable to setup environment $testenv_name") unless ($testenv_vars);
 
 	$ENV{PIDDIR} = $testenv_vars->{PIDDIR};
+	$ENV{ENVNAME} = $testenv_name;
 
 	my $envvarstr = exported_envvars_str($testenv_vars);
 
-	my $term = ($ENV{TERMINAL} or "xterm");
-	system("$term -e 'echo -e \"
+	my $term = ($ENV{TERMINAL} or "xterm -e");
+	system("$term 'echo -e \"
 Welcome to the Samba4 Test environment '$testenv_name'
 
 This matches the client environment used in make test

@@ -90,6 +90,9 @@ def cmd_testonly(opt):
 
     env.FORMAT_TEST_OUTPUT = '${SUBUNIT_FORMATTER}'
 
+    # clean any previous temporary files
+    os.system("rm -rf %s/tmp" % env.SELFTEST_PREFIX);
+
     # put all command line options in the environment as TESTENV_*=*
     for o in dir(Options.options):
         if o[0:1] != '_':
@@ -128,6 +131,7 @@ def cmd_testonly(opt):
 
     if Options.options.SCREEN:
         server_wrapper = '../selftest/in_screen %s' % server_wrapper
+        os.environ['TERMINAL'] = '../selftest/in_screen'
     elif server_wrapper != '':
         server_wrapper = 'xterm -n server -l -e %s' % server_wrapper
 

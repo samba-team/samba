@@ -1286,10 +1286,12 @@ sub setup_env($$$)
 		return $self->setup_rodc("$path/rodc", $self->{vars}->{dc});
 	} elsif ($envname eq "all") {
 		if (not defined($self->{vars}->{dc})) {
+			$ENV{ENVNAME} = "dc";
 			$self->setup_dc("$path/dc");
 		}
 		my $ret = $self->setup_member("$path/member", $self->{vars}->{dc});
 		if (not defined($self->{vars}->{rpc_proxy})) {
+			$ENV{ENVNAME} = "rpc_proxy";
 			my $rpc_proxy_ret = $self->setup_rpc_proxy("$path/rpc_proxy", $self->{vars}->{dc});
 			
 			$ret->{RPC_PROXY_SERVER} = $rpc_proxy_ret->{SERVER};
@@ -1300,6 +1302,7 @@ sub setup_env($$$)
 			$ret->{RPC_PROXY_PASSWORD} = $rpc_proxy_ret->{PASSWORD};
 		}
 		if (not defined($self->{vars}->{fl2000dc})) {
+			$ENV{ENVNAME} = "fl2000dc";
 			my $fl2000dc_ret = $self->setup_fl2000dc("$path/fl2000dc", $self->{vars}->{dc});
 			
 			$ret->{FL2000DC_SERVER} = $fl2000dc_ret->{SERVER};
@@ -1310,6 +1313,7 @@ sub setup_env($$$)
 			$ret->{FL2000DC_PASSWORD} = $fl2000dc_ret->{PASSWORD};
 		}
 		if (not defined($self->{vars}->{fl2003dc})) {
+			$ENV{ENVNAME} = "fl2003dc";
 			my $fl2003dc_ret = $self->setup_fl2003dc("$path/fl2003dc", $self->{vars}->{dc});
 
 			$ret->{FL2003DC_SERVER} = $fl2003dc_ret->{SERVER};
@@ -1320,6 +1324,7 @@ sub setup_env($$$)
 			$ret->{FL2003DC_PASSWORD} = $fl2003dc_ret->{PASSWORD};
 		}
 		if (not defined($self->{vars}->{fl2008r2dc})) {
+			$ENV{ENVNAME} = "fl2008r2dc";
 			my $fl2008r2dc_ret = $self->setup_fl2008r2dc("$path/fl2008r2dc", $self->{vars}->{dc});
 
 			$ret->{FL2008R2DC_SERVER} = $fl2008r2dc_ret->{SERVER};

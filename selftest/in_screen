@@ -6,6 +6,17 @@ SERVERNAME="$ENVNAME"
 [ -z "$SERVERNAME" ] && SERVERNAME="base"
 basedir=$TMPDIR
 
+[ -r $basedir/$SERVERNAME.pid ] && {
+    for i in $(seq 2 100); do
+	if [ ! -r "$basedir/${SERVERNAME}-$i.pid" ]; then
+	    SERVERNAME="${SERVERNAME}-$i"
+	    break
+	fi
+    done
+}
+
+rm -f $basedir/$SERVERNAME.*
+
 # set most of the environment vars we have in the screen session too
 _ENV=""
 vars=$(mktemp)
@@ -17,7 +28,7 @@ printenv |
 cat <<EOF > $basedir/$SERVERNAME.launch
  echo \$\$ > $basedir/$SERVERNAME.pid
  . $basedir/$SERVERNAME.vars
- echo "\$(date) starting $@" >> $basedir/$SERVERNAME.log
+ echo "\$(date) starting $SERVERNAME" >> $basedir/$SERVERNAME.log
  $@
  echo \$? > $basedir/$SERVERNAME.status
  read parent < $basedir/$SERVERNAME.parent.pid
@@ -26,17 +37,18 @@ EOF
 pid=$$
 
 cleanup() {
+    trap "exit 1" SIGINT SIGTERM SIGPIPE
     [ -r $basedir/$SERVERNAME.status ] && {
 	read status < $basedir/$SERVERNAME.status
 	echo "$(date) samba exited with status $status" >> $basedir/$SERVERNAME.log
 	exit $status
     }
     read pid < $basedir/$SERVERNAME.pid
-    echo "$(date) Killing samba pid $pid" >> $basedir/$SERVERNAME.log
+    echo "$(date) Killing samba pid $pid from $$" >> $basedir/$SERVERNAME.log
     if [ "$pid" = "$$" ]; then
 	exit 1
     fi
-    kill $pid 2>&1
+    kill -9 $pid 2>&1
     exit 1
 }
 
