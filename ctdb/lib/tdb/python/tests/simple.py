@@ -137,6 +137,12 @@ class SimpleTdbTests(TestCase):
         self.tdb.clear()
         self.assertEquals(0, len(list(self.tdb)))
 
+    def test_repack(self):
+        self.tdb["foo"] = "abc"
+        self.tdb["bar"] = "def"
+        del self.tdb["foo"]
+        self.tdb.repack()
+
     def test_seqnum(self):
         self.tdb.enable_seqnum()
         seq1 = self.tdb.seqnum

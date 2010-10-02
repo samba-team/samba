@@ -343,6 +343,13 @@ static PyObject *obj_clear(PyTdbObject *self)
 	Py_RETURN_NONE;
 }
 
+static PyObject *obj_repack(PyTdbObject *self)
+{
+	int ret = tdb_repack(self->ctx);
+	PyErr_TDB_ERROR_IS_ERR_RAISE(ret, self->ctx);
+	Py_RETURN_NONE;
+}
+
 static PyObject *obj_enable_seqnum(PyTdbObject *self)
 {
 	tdb_enable_seqnum(self->ctx);
@@ -393,6 +400,8 @@ static PyMethodDef tdb_object_methods[] = {
 	{ "iterkeys", (PyCFunction)tdb_object_iter, METH_NOARGS, "S.iterkeys() -> iterator" },
 	{ "clear", (PyCFunction)obj_clear, METH_NOARGS, "S.clear() -> None\n"
 		"Wipe the entire database." },
+	{ "repack", (PyCFunction)obj_repack, METH_NOARGS, "S.repack() -> None\n"
+		"Repack the entire database." },
 	{ "enable_seqnum", (PyCFunction)obj_enable_seqnum, METH_NOARGS,
 		"S.enable_seqnum() -> None" },
 	{ "increment_seqnum_nonblock", (PyCFunction)obj_increment_seqnum_nonblock, METH_NOARGS,
