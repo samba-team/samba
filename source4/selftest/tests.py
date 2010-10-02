@@ -139,7 +139,7 @@ else:
 def smb4torture_testsuites(prefix):
     return filter(lambda x: x.startswith(prefix), smb4torture_testsuite_list)
 
-sub = subprocess.Popen("tap2subunit", stdout=subprocess.PIPE, stdin=subprocess.PIPE, shell=True)
+sub = subprocess.Popen("tap2subunit 2> /dev/null", stdout=subprocess.PIPE, stdin=subprocess.PIPE, shell=True)
 sub.communicate("")
 if sub.returncode != 0:
     tap2subunit = "PYTHONPATH=%s/../lib/subunit/python:%s/../lib/testtools %s %s/../lib/subunit/filters/tap2subunit" % (samba4srcdir, samba4srcdir, python, samba4srcdir)
