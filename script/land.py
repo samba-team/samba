@@ -16,6 +16,7 @@ import subunit
 import testtools
 import subunithelper
 from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 
 samba_master = os.getenv('SAMBA_MASTER', 'git://git.samba.org/samba.git')
 samba_master_ssh = os.getenv('SAMBA_MASTER_SSH', 'git+ssh://git.samba.org/data/git/samba.git')
@@ -169,7 +170,8 @@ class SubunitTreeStageBuilder(TreeStageBuilder):
         self.subunit_path = os.path.join(gitroot,
             "%s.%s.subunit" % (self.tree.tag, self.name))
         self.tree.logfiles.append(
-            (self.subunit_path, os.path.basename(self.subunit_path)))
+            (self.subunit_path, os.path.basename(self.subunit_path),
+             "text/x-subunit"))
         self.subunit = open(self.subunit_path, 'w')
 
         formatter = subunithelper.PlainFormatter(False, True, {})
@@ -222,8 +224,10 @@ class TreeBuilder(object):
         self.next = 0
         self.stdout_path = os.path.join(gitroot, "%s.stdout" % (self.tag, ))
         self.stderr_path = os.path.join(gitroot, "%s.stderr" % (self.tag, ))
-        self.logfiles = [(self.stdout_path, os.path.basename(self.stdout_path)),
-                         (self.stderr_path, os.path.basename(self.stderr_path))]
+        self.logfiles = [
+            (self.stdout_path, os.path.basename(self.stdout_path), "text/plain"),
+            (self.stderr_path, os.path.basename(self.stderr_path), "text/plain"),
+            ]
         if options.verbose:
             print("stdout for %s in %s" % (self.name, self.stdout_path))
             print("stderr for %s in %s" % (self.name, self.stderr_path))
@@ -268,8 +272,21 @@ class TreeBuilder(object):
         self.next += 1
 
     def remove_logs(self):
-        for path, name in self.logfiles:
+        for path, name, mime_type in self.logfiles:
             os.unlink(path)
+
+    def attach_logs(self, outer):
+        for path, name, mime_type in self.logfiles:
+            assert mime_type.startswith("text/")
+            f = open(path, 'r')
+            try:
+                f.seek(0)
+                msg = MIMEText(f.read(), mime_type[len("text/"):])
+            finally:
+                f.close()
+            msg.add_header('Content-Disposition', 'attachment',
+                           filename=name)
+            outer.attach(msg)
 
     @property
     def status(self):
@@ -369,11 +386,15 @@ class BuildList(object):
     def tarlogs(self, fname):
         tar = tarfile.open(fname, "w:gz")
         for b in self.tlist:
-            for (path, name) in b.logfiles:
+            for (path, name, mime_type) in b.logfiles:
                 tar.add(path, arcname=name)
         if os.path.exists("autobuild.log"):
             tar.add("autobuild.log")
         tar.close()
+
+    def attach_logs(self, msg):
+        for b in self.tlist:
+            b.attach_logs(msg)
 
     def remove_logs(self):
         for b in self.tlist:
@@ -484,7 +505,7 @@ parser.add_option("", "--fail-slowly", help="continue running tests even after o
                   action="store_true")
 
 
-def email_failure(status, failed_task, failed_stage, failed_tag, errstr):
+def email_failure(blist, status, failed_task, failed_stage, failed_tag, errstr):
     '''send an email to options.email about the failure'''
     user = os.getenv("USER")
     text = '''
@@ -514,17 +535,23 @@ The top commit for the tree that was built was:
 
 ''' % (failed_task, errstr, user, failed_tag, user, failed_tag, user, user,
        get_top_commit_msg(test_master))
-    msg = MIMEText(text)
+
+    msg = MIMEMultipart()
     msg['Subject'] = 'autobuild failure for task %s during %s' % (failed_task, failed_stage)
     msg['From'] = 'autobuild@samba.org'
     msg['To'] = options.email
+
+    main = MIMEText(text)
+    msg.attach(main)
+
+    blist.attach_logs(msg)
 
     s = smtplib.SMTP()
     s.connect()
     s.sendmail(msg['From'], [msg['To']], msg.as_string())
     s.quit()
 
-def email_success():
+def email_success(blist):
     '''send an email to options.email about a successful build'''
     user = os.getenv("USER")
     text = '''
@@ -549,10 +576,15 @@ The top commit for the tree that was built was:
 %s
 ''' % (get_top_commit_msg(test_master),)
 
-    msg = MIMEText(text)
+    msg = MIMEMultipart()
     msg['Subject'] = 'autobuild success'
     msg['From'] = 'autobuild@samba.org'
     msg['To'] = options.email
+
+    main = MIMEText(text, 'plain')
+    msg.attach(main)
+
+    blist.attach_logs(msg)
 
     s = smtplib.SMTP()
     s.connect()
@@ -641,7 +673,7 @@ if status == 0:
         blist.tarlogs("logs.tar.gz")
         print("Logs in logs.tar.gz")
     if options.always_email:
-        email_success()
+        email_success(blist)
     blist.remove_logs()
     cleanup()
     print(errstr)
@@ -650,7 +682,7 @@ else:
     blist.tarlogs("logs.tar.gz")
 
     if options.email is not None:
-        email_failure(status, failed_task, failed_stage, failed_tag, errstr)
+        email_failure(blist, status, failed_task, failed_stage, failed_tag, errstr)
 
     cleanup()
     print(errstr)
