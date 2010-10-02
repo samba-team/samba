@@ -1,0 +1,54 @@
+#!/bin/bash
+
+export TMPDIR="$SELFTEST_TMPDIR"
+
+SERVERNAME="$ENVNAME"
+[ -z "$SERVERNAME" ] && SERVERNAME="base"
+basedir=$TMPDIR
+
+# set most of the environment vars we have in the screen session too
+_ENV=""
+vars=$(mktemp)
+printenv |
+  egrep -v '^TERMCAP|^WINDOW|^SHELL|^STY|^SHLVL|^SAMBA_VALGRIND|\$' |
+  egrep '^[A-Z]' |
+  sed "s/\(^[^=]*=\)\(.*\)/export \1'\2'/g" > $basedir/$SERVERNAME.vars
+
+cat <<EOF > $basedir/$SERVERNAME.launch
+ echo \$\$ > $basedir/$SERVERNAME.pid
+ . $basedir/$SERVERNAME.vars
+ echo "\$(date) starting $@" >> $basedir/$SERVERNAME.log
+ $@
+ echo \$? > $basedir/$SERVERNAME.status
+ read parent < $basedir/$SERVERNAME.parent.pid
+ kill \$parent
+EOF
+pid=$$
+
+cleanup() {
+    [ -r $basedir/$SERVERNAME.status ] && {
+	read status < $basedir/$SERVERNAME.status
+	echo "$(date) samba exited with status $status" >> $basedir/$SERVERNAME.log
+	exit $status
+    }
+    read pid < $basedir/$SERVERNAME.pid
+    echo "$(date) Killing samba pid $pid" >> $basedir/$SERVERNAME.log
+    if [ "$pid" = "$$" ]; then
+	exit 1
+    fi
+    kill $pid 2>&1
+    exit 1
+}
+
+rm -f $basedir/$SERVERNAME.status $basedir/$SERVERNAME.log
+echo $$ > $basedir/$SERVERNAME.parent.pid
+trap cleanup SIGINT SIGTERM SIGPIPE
+screen -r -X screen -t test:$SERVERNAME bash $basedir/$SERVERNAME.launch
+echo "$(date) waiting in $$" >> $basedir/$SERVERNAME.log
+read stdin_var
+echo "$(date) EOF on stdin" >> $basedir/$SERVERNAME.log
+read pid < $basedir/$SERVERNAME.pid
+echo "$(date) killing $pid" >> $basedir/$SERVERNAME.log
+kill $pid 2> /dev/null
+echo "$(date) exiting" >> $basedir/$SERVERNAME.log
+exit 0

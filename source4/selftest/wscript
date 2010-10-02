@@ -48,8 +48,11 @@ def set_options(opt):
     gr.add_option('--valgrind-server',
                   help=("use valgrind on the server in the tests (opens an xterm)"),
                   action="store_true", dest='VALGRIND_SERVER', default=False)
+    gr.add_option('--screen',
+                  help=("run the samba servers in screen sessions"),
+                  action="store_true", dest='SCREEN', default=False)
     gr.add_option('--gdbtest',
-                  help=("run the testsuite within a gdb xterm window"),
+                  help=("run the servers within a gdb window"),
                   action="store_true", dest='GDBTEST', default=False)
     gr.add_option('--fail-immediately',
                   help=("stop tests on first failure"),
@@ -85,6 +88,11 @@ def cmd_testonly(opt):
 
     env.FORMAT_TEST_OUTPUT = '${SUBUNIT_FORMATTER}'
 
+    # put all command line options in the environment as TESTENV_*=*
+    for o in dir(Options.options):
+        if o[0:1] != '_':
+            os.environ['TESTENV_%s' % o.upper()] = str(getattr(Options.options, o, ''))
+
     env.OPTIONS = ''
     if not Options.options.SLOWTEST:
         env.OPTIONS += ' --exclude=./selftest/slow'
@@ -109,11 +117,20 @@ def cmd_testonly(opt):
         if Options.options.VALGRINDLOG is not None:
             os.environ['VALGRIND'] += ' --log-file=%s' % Options.options.VALGRINDLOG
 
-    if Options.options.VALGRIND_SERVER:
-        os.environ['SAMBA_VALGRIND'] = 'xterm -n server -l -e ../selftest/valgrind_run DUMMY=X'
+    server_wrapper=''
 
-    if Options.options.GDBTEST:
-        os.environ['SAMBA_VALGRIND'] = 'xterm -n server -e ../selftest/gdb_run DUMMY=X'
+    if Options.options.VALGRIND_SERVER:
+        server_wrapper = '../selftest/valgrind_run _DUMMY=X'
+    elif Options.options.GDBTEST:
+        server_wrapper = '../selftest/gdb_run _DUMMY=X'
+
+    if Options.options.SCREEN:
+        server_wrapper = '../selftest/in_screen %s' % server_wrapper
+    elif server_wrapper != '':
+        server_wrapper = 'xterm -n server -l -e %s' % server_wrapper
+
+    if server_wrapper != '':
+        os.environ['SAMBA_VALGRIND'] = server_wrapper
 
     # this is needed for systems without rpath, or with rpath disabled
     ADD_LD_LIBRARY_PATH('bin/shared')
