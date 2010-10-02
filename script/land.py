@@ -90,22 +90,15 @@ class TreeStageBuilder(object):
     """Handle building of a particular stage for a tree.
     """
 
-    def __init__(self, tree, name, command, output_mime_type, fail_quickly=False):
+    def __init__(self, tree, name, command, fail_quickly=False):
         self.tree = tree
         self.name = name
         self.command = command
-        self.output_mime_type = output_mime_type
         self.fail_quickly = fail_quickly
         self.status = None
 
     def start(self):
-        if self.output_mime_type == "text/x-subunit":
-            if self.fail_quickly:
-                self.command += " | %s --fail-immediately" % (os.path.join(os.path.dirname(__file__), "selftest/filter-subunit"))
-            self.command += " | %s --immediate" % (os.path.join(os.path.dirname(__file__), "selftest/format-subunit"))
-        print '%s: [%s] Running %s' % (self.name, self.stage, self.command)
-        self.proc = Popen(self.command, shell=True, cwd=self.tree.dir,
-                          stdout=self.tree.stdout, stderr=self.tree.stderr, stdin=self.tree.stdin)
+        raise NotImplementedError(self.start)
 
     def poll(self):
         self.status = self.proc.poll()
@@ -121,6 +114,37 @@ class TreeStageBuilder(object):
             self.proc.terminate()
             self.proc.wait()
             self.proc = None
+
+    @property
+    def failure_reason(self):
+        return "failed '%s' with status %d" % (self.cmd, self.status)
+
+    @property
+    def failed(self):
+        return (os.WIFSIGNALED(self.status) or os.WEXITSTATUS(self.status) != 0)
+
+
+class PlainTreeStageBuilder(TreeStageBuilder):
+
+    def start(self):
+        print '%s: [%s] Running %s' % (self.name, self.stage, self.command)
+        self.proc = Popen(self.command, shell=True, cwd=self.tree.dir,
+                          stdout=self.tree.stdout, stderr=self.tree.stderr, stdin=self.tree.stdin)
+
+
+class SubunitTreeStageBuilder(TreeStageBuilder):
+
+    def __init__(self, tree, name, command, fail_quickly=False):
+        super(SubunitTreeStageBuilder, self).__init__(tree, name, command, fail_quickly)
+        self.failed_tests = []
+
+    def start(self):
+        if self.fail_quickly:
+            self.command += " | %s --fail-immediately" % (os.path.join(os.path.dirname(__file__), "selftest/filter-subunit"))
+        self.command += " | %s --immediate" % (os.path.join(os.path.dirname(__file__), "selftest/format-subunit"))
+        print '%s: [%s] Running' % (self.name, self.stage)
+        self.proc = Popen(self.command, shell=True, cwd=self.tree.dir,
+                          stdout=self.tree.stdout, stderr=self.tree.stderr, stdin=self.tree.stdin)
 
 
 class TreeBuilder(object):
@@ -166,7 +190,12 @@ class TreeBuilder(object):
             return
         (stage_name, cmd, output_mime_type) = self.sequence[self.next]
         cmd = cmd.replace("${PREFIX}", "--prefix=%s" % self.prefix)
-        self.stage = TreeStageBuilder(self, stage_name, cmd, output_mime_type, self.fail_quickly)
+        if output_mime_type == "text/plain":
+            self.stage = PlainTreeStageBuilder(self, stage_name, cmd, self.fail_quickly)
+        elif output_mime_type == "text/x-subunit":
+            self.stage = SubunitTreeStageBuilder(self, stage_name, cmd, self.fail_quickly)
+        else:
+            raise Exception("Unknown output mime type %s" % output_mime_type)
         self.next += 1
 
     def remove_logs(self):
@@ -186,11 +215,11 @@ class TreeBuilder(object):
 
     @property
     def failed(self):
-        return (os.WIFSIGNALED(self.status) or os.WEXITSTATUS(self.status) != 0)
+        return self.stage.failed
 
     @property
     def failure_reason(self):
-        return "%s: [%s] failed '%s' with status %d" % (self.name, self.stage.name, self.stage.cmd, self.stage.status)
+        return "%s: [%s] %s" % (self.name, self.stage.name, self.stage.failure_reason)
 
 
 class BuildList(object):
