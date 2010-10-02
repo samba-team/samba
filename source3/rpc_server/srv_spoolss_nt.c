@@ -9606,6 +9606,9 @@ WERROR _spoolss_GetPrintProcessorDirectory(struct pipes_struct *p,
 					   struct spoolss_GetPrintProcessorDirectory *r)
 {
 	WERROR result;
+	fstring prnproc_share;
+	bool prnproc_share_exists = false;
+	int snum;
 
 	/* that's an [in out] buffer */
 
@@ -9622,10 +9625,17 @@ WERROR _spoolss_GetPrintProcessorDirectory(struct pipes_struct *p,
 
 	/* We always should reply with a local print processor directory so that
 	 * users are not forced to have a [prnproc$] share on the Samba spoolss
-	 * server - Guenther */
+	 * server, if users decide to do so, lets announce it though - Guenther */
+
+	fstrcpy(prnproc_share, "prnproc$");
+
+	snum = find_service(prnproc_share);
+	if (snum != -1) {
+		prnproc_share_exists = true;
+	}
 
 	result = getprintprocessordirectory_level_1(p->mem_ctx,
-						    NULL, /* r->in.server */
+						    prnproc_share_exists ? r->in.server : NULL,
 						    r->in.environment,
 						    &r->out.info->info1);
 	if (!W_ERROR_IS_OK(result)) {
