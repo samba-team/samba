@@ -200,7 +200,7 @@ class buildlist(object):
             if options.retry and self.need_retry:
                 self.kill_kids()
                 print("retry needed")
-                return (0, "retry")
+                return (0, None, None, None, "retry")
             if b is None:
                 break
             if os.WIFSIGNALED(b.status) or os.WEXITSTATUS(b.status) != 0:
