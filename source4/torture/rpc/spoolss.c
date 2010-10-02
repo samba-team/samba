@@ -5777,10 +5777,8 @@ static bool call_OpenPrinterEx(struct torture_context *tctx,
 			       struct spoolss_DeviceMode *devmode,
 			       struct policy_handle *handle)
 {
-	struct spoolss_OpenPrinterEx r;
 	union spoolss_UserLevel userlevel;
 	struct spoolss_UserLevel1 userlevel1;
-	NTSTATUS status;
 	struct dcerpc_binding_handle *b = p->binding_handle;
 
 	userlevel1.size = 1234;
@@ -5896,6 +5894,118 @@ static bool test_printer_rename(struct torture_context *tctx,
 	return ret;
 }
 
+static bool test_openprinter(struct torture_context *tctx,
+			     struct dcerpc_binding_handle *b,
+			     const char *real_printername)
+{
+	union spoolss_UserLevel userlevel;
+	struct policy_handle handle;
+	struct spoolss_UserLevel1 userlevel1;
+	const char *printername = NULL;
+	int i;
+
+	struct {
+		const char *suffix;
+		WERROR expected_result;
+	} tests[] = {
+		{
+			.suffix			= "rubbish",
+			.expected_result	= WERR_INVALID_PRINTER_NAME
+		},{
+			.suffix			= ", LocalOnl",
+			.expected_result	= WERR_INVALID_PRINTER_NAME
+		},{
+			.suffix			= ", localOnly",
+			.expected_result	= WERR_INVALID_PRINTER_NAME
+		},{
+			.suffix			= ", localonl",
+			.expected_result	= WERR_INVALID_PRINTER_NAME
+		},{
+			.suffix			= ",LocalOnl",
+			.expected_result	= WERR_INVALID_PRINTER_NAME
+		},{
+			.suffix			= ",localOnl2",
+			.expected_result	= WERR_INVALID_PRINTER_NAME
+		},{
+			.suffix			= ", DrvConver2t",
+			.expected_result	= WERR_INVALID_PRINTER_NAME
+		},{
+			.suffix			= ", drvconvert",
+			.expected_result	= WERR_INVALID_PRINTER_NAME
+		},{
+			.suffix			= ",drvconvert",
+			.expected_result	= WERR_INVALID_PRINTER_NAME
+		},{
+			.suffix			= ", DrvConvert",
+			.expected_result	= WERR_OK
+		},{
+			.suffix			= " , DrvConvert",
+			.expected_result	= WERR_INVALID_PRINTER_NAME
+		},{
+			.suffix			= ",DrvConvert",
+			.expected_result	= WERR_OK
+		},{
+			.suffix			= ", DrvConvertsadfasdf",
+			.expected_result	= WERR_OK
+		},{
+			.suffix			= ",DrvConvertasdfasd",
+			.expected_result	= WERR_OK
+		},{
+			.suffix			= ", LocalOnly",
+			.expected_result	= WERR_OK
+		},{
+			.suffix			= " , LocalOnly",
+			.expected_result	= WERR_INVALID_PRINTER_NAME
+		},{
+			.suffix			= ",LocalOnly",
+			.expected_result	= WERR_OK
+		},{
+			.suffix			= ", LocalOnlysagi4gjfkd",
+			.expected_result	= WERR_OK
+		},{
+			.suffix			= ",LocalOnlysagi4gjfkd",
+			.expected_result	= WERR_OK
+		}
+	};
+
+	userlevel1.size = 1234;
+	userlevel1.client = "hello";
+	userlevel1.user = "spottyfoot!";
+	userlevel1.build = 1;
+	userlevel1.major = 2;
+	userlevel1.minor = 3;
+	userlevel1.processor = 4;
+
+	userlevel.level1 = &userlevel1;
+
+	torture_comment(tctx, "Testing openprinterex printername pattern\n");
+
+	torture_assert(tctx,
+		test_OpenPrinterEx(tctx, b, real_printername, NULL, NULL, 0, 1,
+				   &userlevel, &handle,
+				   WERR_OK),
+		"OpenPrinterEx failed");
+	test_ClosePrinter(tctx, b, &handle);
+
+	for (i=0; i < ARRAY_SIZE(tests); i++) {
+
+		printername = talloc_asprintf(tctx, "%s%s",
+					      real_printername,
+					      tests[i].suffix);
+
+		torture_assert(tctx,
+			test_OpenPrinterEx(tctx, b, printername, NULL, NULL, 0, 1,
+					   &userlevel, &handle,
+					   tests[i].expected_result),
+			"OpenPrinterEx failed");
+		if (W_ERROR_IS_OK(tests[i].expected_result)) {
+			test_ClosePrinter(tctx, b, &handle);
+		}
+	}
+
+	return true;
+}
+
 
 static bool test_existing_printer_openprinterex(struct torture_context *tctx,
 						struct dcerpc_pipe *p,
@@ -5905,6 +6015,10 @@ static bool test_existing_printer_openprinterex(struct torture_context *tctx,
 	struct policy_handle handle;
 	bool ret = true;
 	struct dcerpc_binding_handle *b = p->binding_handle;
+
+	if (!test_openprinter(tctx, b, name)) {
+		return false;
+	}
 
 	if (!call_OpenPrinterEx(tctx, p, name, NULL, &handle)) {
 		return false;
@@ -6895,6 +7009,18 @@ bool test_printer_all_keys(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_openprinter_wrap(struct torture_context *tctx,
+				  void *private_data)
+{
+	struct torture_printer_context *t =
+		(struct torture_printer_context *)talloc_get_type_abort(private_data, struct torture_printer_context);
+	struct dcerpc_pipe *p = t->spoolss_pipe;
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	const char *printername = t->info2.printername;
+
+	return test_openprinter(tctx, b, printername);
+}
+
 static bool test_csetprinter(struct torture_context *tctx,
 			     void *private_data)
 {
@@ -7636,6 +7762,7 @@ static bool test_driver_info_winreg(struct torture_context *tctx,
 
 void torture_tcase_printer(struct torture_tcase *tcase)
 {
+	torture_tcase_add_simple_test(tcase, "openprinter", test_openprinter_wrap);
 	torture_tcase_add_simple_test(tcase, "csetprinter", test_csetprinter);
 	torture_tcase_add_simple_test(tcase, "print_test", test_print_test);
 	torture_tcase_add_simple_test(tcase, "print_test_extended", test_print_test_extended);
