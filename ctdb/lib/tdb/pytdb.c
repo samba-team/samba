@@ -572,6 +572,7 @@ void inittdb(void)
 	PyModule_AddObject(m, "VOLATILE", PyInt_FromLong(TDB_VOLATILE));
 	PyModule_AddObject(m, "ALLOW_NESTING", PyInt_FromLong(TDB_ALLOW_NESTING));
 	PyModule_AddObject(m, "DISALLOW_NESTING", PyInt_FromLong(TDB_DISALLOW_NESTING));
+	PyModule_AddObject(m, "INCOMPATIBLE_HASH", PyInt_FromLong(TDB_INCOMPATIBLE_HASH));
 
 	PyModule_AddObject(m, "__docformat__", PyString_FromString("restructuredText"));
 
