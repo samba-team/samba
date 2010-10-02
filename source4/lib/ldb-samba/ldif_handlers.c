@@ -527,17 +527,22 @@ static int ldif_read_prefixMap(struct ldb_context *ldb, void *mem_ctx,
 		return -1;
 	}
 
-	ndr_err = ndr_pull_struct_blob(in, tmp_ctx, blob,
-				       (ndr_pull_flags_fn_t)ndr_pull_prefixMapBlob);
-	if (NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		ndr_err = ndr_push_struct_blob(out, mem_ctx,
-					       blob,
-					       (ndr_push_flags_fn_t)ndr_push_prefixMapBlob);
-		talloc_free(tmp_ctx);
-		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-			return -1;
+	/* use the switch value to detect if this is in the binary
+	 * format
+	 */
+	if (in->length >= 4 && IVAL(in->data, 0) == PREFIX_MAP_VERSION_DSDB) {
+		ndr_err = ndr_pull_struct_blob(in, tmp_ctx, blob,
+					       (ndr_pull_flags_fn_t)ndr_pull_prefixMapBlob);
+		if (NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			ndr_err = ndr_push_struct_blob(out, mem_ctx,
+						       blob,
+						       (ndr_push_flags_fn_t)ndr_push_prefixMapBlob);
+			talloc_free(tmp_ctx);
+			if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+				return -1;
+			}
+			return 0;
 		}
-		return 0;
 	}
 
 	/* If this does not parse, then it is probably the text version, and we should try it that way */
