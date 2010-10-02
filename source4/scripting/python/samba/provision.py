@@ -1672,8 +1672,9 @@ def provision(setup_dir, logger, session_info,
             os.chmod(dns_keytab_path, 0640)
             os.chown(dns_keytab_path, -1, paths.bind_gid)
         except OSError:
-            logger.info("Failed to chown %s to bind gid %u", dns_keytab_path,
-                paths.bind_gid)
+            if os.environ.get('UID_WRAPPER'):
+                logger.info("Failed to chown %s to bind gid %u", dns_keytab_path,
+                            paths.bind_gid)
 
 
     logger.info("Please install the phpLDAPadmin configuration located at %s into /etc/phpldapadmin/config.php",
@@ -1826,7 +1827,8 @@ def create_zone_file(lp, logger, paths, targetdir, setup_path, dnsdomain,
             os.chmod(dns_dir, 0775)
             os.chmod(paths.dns, 0664)
         except OSError:
-            logger.error("Failed to chown %s to bind gid %u" % (dns_dir, paths.bind_gid))
+            if os.environ.get('UID_WRAPPER'):
+                logger.error("Failed to chown %s to bind gid %u" % (dns_dir, paths.bind_gid))
 
     if targetdir is None:
         os.system(rndc + " unfreeze " + lp.get("realm"))
