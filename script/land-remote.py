@@ -19,6 +19,7 @@ parser.add_option("--passcmd", help="command to run on success", default=None)
 parser.add_option("--tail", help="show output while running", default=False, action="store_true")
 parser.add_option("--keeplogs", help="keep logs", default=False, action="store_true")
 parser.add_option("--nocleanup", help="don't remove test tree", default=False, action="store_true")
+parser.add_option("--revision", help="revision to compile if not HEAD", default=None, type=str)
 parser.add_option("--fix-whitespace", help="fix whitespace on rebase",
                   default=False, action="store_true")
 parser.add_option("--fail-slowly", help="continue running tests even after one has already failed",
@@ -47,10 +48,15 @@ else:
     remote_repo = opts.remote_repo
 
 print "Pushing local branch"
-args = ["git", "push", "--force", "git+ssh://%s/%s" % (opts.host, remote_repo), "HEAD:land"]
+
+if opts.revision is not None:
+    revision = opts.revision
+else:
+    revision = "HEAD"
+args = ["git", "push", "--force", "git+ssh://%s/%s" % (opts.host, remote_repo), "%s:land" % revision]
 print "$ " + " ".join(args)
 subprocess.check_call(args)
-remote_args = ["cd", remote_repo, ";", "git", "checkout", "land", ";", "./script/land.py", "--repository=%s" % remote_repo]
+remote_args = ["cd", remote_repo, ";", "git", "checkout", "land", ";", "python", "-u", "./script/land.py", "--repository=%s" % remote_repo]
 if opts.email:
     remote_args.append("--email=%s" % opts.email)
 if opts.always_email:
@@ -71,6 +77,7 @@ if opts.rebase:
     remote_args.append("--rebase=%s" % opts.rebase)
 if opts.passcmd:
     remote_args.append("--passcmd=%s" % opts.passcmd)
+
 remote_args += extra_args
 print "%s$ %s" % (opts.host, " ".join(remote_args))
 args = ["ssh", "-A", opts.host] + remote_args

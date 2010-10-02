@@ -1,4 +1,4 @@
-#!/usr/bin/env python -u
+#!/usr/bin/env python
 # run tests on all Samba subprojects and push to a git tree on success
 # Copyright Andrew Tridgell 2010
 # Copyright Jelmer Vernooij 2010
@@ -91,6 +91,12 @@ def run_cmd(cmd, dir=None, show=None, output=False, checkfail=True, shell=False)
         return check_call(cmd, cwd=dir, shell=shell)
     else:
         return call(cmd, cwd=dir, shell=shell)
+
+
+def clone_gitroot(test_master, revision="HEAD"):
+    run_cmd(["git", "clone", "--shared", gitroot, test_master])
+    if revision != "HEAD":
+        run_cmd(["git", "checkout", revision])
 
 
 class TreeStageBuilder(object):
@@ -238,7 +244,7 @@ class TreeBuilder(object):
         cleanup_list.append(self.prefix)
         os.makedirs(self.sdir)
         run_cmd(["rm",  "-rf", self.sdir])
-        run_cmd(["git", "clone", "--shared", gitroot, self.sdir])
+        clone_gitroot(self.sdir, revision)
         self.start_next()
 
     def start_next(self):
@@ -445,6 +451,7 @@ def_testbase = os.getenv("AUTOBUILD_TESTBASE", "/memdisk/%s" % os.getenv('USER')
 
 parser = OptionParser()
 parser.add_option("", "--repository", help="repository to run tests for", default=None, type=str)
+parser.add_option("", "--revision", help="revision to compile if not HEAD", default=None, type=str)
 parser.add_option("", "--tail", help="show output while running", default=False, action="store_true")
 parser.add_option("", "--keeplogs", help="keep logs", default=False, action="store_true")
 parser.add_option("", "--nocleanup", help="don't remove test tree", default=False, action="store_true")
@@ -505,7 +512,8 @@ The top commit for the tree that was built was:
 
 %s
 
-''' % (failed_task, errstr, user, failed_tag, user, failed_tag, user, user, top_commit_msg)
+''' % (failed_task, errstr, user, failed_tag, user, failed_tag, user, user,
+       get_top_commit_msg(test_master))
     msg = MIMEText(text)
     msg['Subject'] = 'autobuild failure for task %s during %s' % (failed_task, failed_stage)
     msg['From'] = 'autobuild@samba.org'
@@ -539,7 +547,7 @@ you can get full logs of all tasks in this job here:
 The top commit for the tree that was built was:
 
 %s
-''' % top_commit_msg
+''' % (get_top_commit_msg(test_master),)
 
     msg = MIMEText(text)
     msg['Subject'] = 'autobuild success'
@@ -571,7 +579,13 @@ if gitroot is None:
     raise Exception("Failed to find git root under %s" % repository)
 
 # get the top commit message, for emails
-top_commit_msg = run_cmd(["git", "log", "-1"], dir=gitroot, output=True)
+if options.revision is not None:
+    revision = options.revision
+else:
+    revision = "HEAD"
+
+def get_top_commit_msg(reporoot):
+    return run_cmd(["git", "log", "-1"], dir=reporoot, output=True)
 
 try:
     os.makedirs(testbase)
@@ -588,7 +602,7 @@ while True:
     try:
         run_cmd(["rm", "-rf", test_master])
         cleanup_list.append(test_master)
-        run_cmd(["git", "clone", "--shared", gitroot, test_master])
+        clone_gitroot(test_master, revision)
     except:
         cleanup()
         raise
