@@ -1672,7 +1672,7 @@ def provision(setup_dir, logger, session_info,
             os.chmod(dns_keytab_path, 0640)
             os.chown(dns_keytab_path, -1, paths.bind_gid)
         except OSError:
-            if os.environ.get('UID_WRAPPER'):
+            if not os.environ.has_key('SAMBA_SELFTEST'):
                 logger.info("Failed to chown %s to bind gid %u", dns_keytab_path,
                             paths.bind_gid)
 
@@ -1827,7 +1827,7 @@ def create_zone_file(lp, logger, paths, targetdir, setup_path, dnsdomain,
             os.chmod(dns_dir, 0775)
             os.chmod(paths.dns, 0664)
         except OSError:
-            if os.environ.get('UID_WRAPPER'):
+            if not os.environ.has_key('SAMBA_SELFTEST'):
                 logger.error("Failed to chown %s to bind gid %u" % (dns_dir, paths.bind_gid))
 
     if targetdir is None:

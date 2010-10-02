@@ -78,6 +78,8 @@ def cmd_testonly(opt):
         print("ERROR: You must use --enable-selftest to enable selftest")
         sys.exit(1)
 
+    os.environ['SAMBA_SELFTEST'] = '1'
+
     env.TESTS  = Options.options.TESTS
 
     env.SUBUNIT_FORMATTER = '${PYTHON} -u ../selftest/format-subunit --prefix=${SELFTEST_PREFIX} --immediate'
