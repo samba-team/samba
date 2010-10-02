@@ -292,7 +292,8 @@ static WERROR dreplsrv_schedule_notify_sync(struct dreplsrv_service *service,
 					    struct repsFromToBlob *reps,
 					    TALLOC_CTX *mem_ctx,
 					    uint64_t uSN,
-					    bool is_urgent)
+					    bool is_urgent,
+					    uint32_t replica_flags)
 {
 	struct dreplsrv_notify_operation *op;
 	struct dreplsrv_partition_source_dsa *s;
@@ -307,10 +308,11 @@ static WERROR dreplsrv_schedule_notify_sync(struct dreplsrv_service *service,
 	op = talloc_zero(mem_ctx, struct dreplsrv_notify_operation);
 	W_ERROR_HAVE_NO_MEMORY(op);
 
-	op->service	= service;
-	op->source_dsa	= s;
-	op->uSN         = uSN;
-	op->is_urgent	= is_urgent;
+	op->service	  = service;
+	op->source_dsa	  = s;
+	op->uSN           = uSN;
+	op->is_urgent	  = is_urgent;
+	op->replica_flags = replica_flags;
 
 	DLIST_ADD_END(service->ops.notifies, op, struct dreplsrv_notify_operation *);
 	talloc_steal(service, op);
@@ -350,7 +352,9 @@ static WERROR dreplsrv_notify_check(struct dreplsrv_service *s,
 	/* see if any of our partners need some of our objects */
 	for (i=0; i<count; i++) {
 		struct dreplsrv_partition_source_dsa *sdsa;
+		uint32_t replica_flags;
 		sdsa = dreplsrv_find_source_dsa(p, &reps[i].ctr.ctr1.source_dsa_obj_guid);
+		replica_flags = reps[i].ctr.ctr1.replica_flags;
 		if (sdsa == NULL) continue;
 		if (sdsa->notify_uSN < uSNHighest) {
 			/* we need to tell this partner to replicate
@@ -359,7 +363,7 @@ static WERROR dreplsrv_notify_check(struct dreplsrv_service *s,
 
 			/* check if urgent replication is needed */
 			werr = dreplsrv_schedule_notify_sync(s, p, &reps[i], mem_ctx,
-							     uSNHighest, is_urgent);
+							     uSNHighest, is_urgent, replica_flags);
 			if (!W_ERROR_IS_OK(werr)) {
 				DEBUG(0,(__location__ ": Failed to setup notify to %s for %s\n",
 					 reps[i].ctr.ctr1.other_info->dns_name,

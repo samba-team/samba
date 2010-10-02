@@ -94,6 +94,61 @@ WERROR dreplsrv_load_partitions(struct dreplsrv_service *s)
 	return WERR_OK;
 }
 
+/*
+  work out the principal to use for DRS replication connections
+ */
+NTSTATUS dreplsrv_get_target_principal(struct dreplsrv_service *s,
+				       TALLOC_CTX *mem_ctx,
+				       const struct repsFromTo1 *rft,
+				       const char **target_principal)
+{
+	TALLOC_CTX *tmp_ctx;
+	struct ldb_result *res;
+	const char *attrs[] = { "dNSHostName", NULL };
+	int ret;
+	const char *hostname;
+	struct ldb_dn *dn;
+
+	*target_principal = NULL;
+
+	tmp_ctx = talloc_new(mem_ctx);
+
+	/* we need to find their hostname */
+	ret = dsdb_find_dn_by_guid(s->samdb, tmp_ctx, &rft->source_dsa_obj_guid, &dn);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(tmp_ctx);
+		/* its OK for their NTDSDSA DN not to be in our database */
+		return NT_STATUS_OK;
+	}
+
+	/* strip off the NTDS Settings */
+	if (!ldb_dn_remove_child_components(dn, 1)) {
+		talloc_free(tmp_ctx);
+		return NT_STATUS_OK;
+	}
+
+	ret = dsdb_search_dn(s->samdb, tmp_ctx, &res, dn, attrs, 0);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(tmp_ctx);
+		/* its OK for their account DN not to be in our database */
+		return NT_STATUS_OK;
+	}
+
+	hostname = ldb_msg_find_attr_as_string(res->msgs[0], "dNSHostName", NULL);
+	if (hostname == NULL) {
+		talloc_free(tmp_ctx);
+		/* its OK to not have a dnshostname */
+		return NT_STATUS_OK;
+	}
+
+	*target_principal = talloc_asprintf(mem_ctx, "GC/%s/%s",
+					    hostname,
+					    lpcfg_dnsdomain(s->task->lp_ctx));
+	talloc_free(tmp_ctx);
+	return NT_STATUS_OK;
+}
+
+
 WERROR dreplsrv_out_connection_attach(struct dreplsrv_service *s,
 				      const struct repsFromTo1 *rft,
 				      struct dreplsrv_out_connection **_conn)
@@ -132,6 +187,13 @@ WERROR dreplsrv_out_connection_attach(struct dreplsrv_service *s,
 		W_ERROR_HAVE_NO_MEMORY(binding_str);
 		nt_status = dcerpc_parse_binding(conn, binding_str, &conn->binding);
 		talloc_free(binding_str);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			return ntstatus_to_werror(nt_status);
+		}
+
+		/* use the GC principal for DRS replication */
+		nt_status = dreplsrv_get_target_principal(s, conn->binding,
+							  rft, &conn->binding->target_principal);
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			return ntstatus_to_werror(nt_status);
 		}
