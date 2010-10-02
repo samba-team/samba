@@ -253,7 +253,7 @@ class BuildList(object):
             if options.retry and self.need_retry:
                 self.kill_kids()
                 print("retry needed")
-                return (0, "retry")
+                return (0, None, None, None, "retry")
             if b is None:
                 break
             if b.failed:
@@ -268,6 +268,7 @@ class BuildList(object):
         for b in self.tlist:
             tar.add(b.stdout_path, arcname="%s.stdout" % b.tag)
             tar.add(b.stderr_path, arcname="%s.stderr" % b.tag)
+        tar.add("autobuild.log")
         tar.close()
 
     def remove_logs(self):
@@ -394,11 +395,19 @@ You can see logs of the failed task here:
   http://git.samba.org/%s/samba-autobuild/%s.stdout
   http://git.samba.org/%s/samba-autobuild/%s.stderr
 
+A summary of the autobuild process is here:
+
+  http://git.samba.org/%s/samba-autobuild/autobuild.log
+
 or you can get full logs of all tasks in this job here:
 
   http://git.samba.org/%s/samba-autobuild/logs.tar.gz
 
-''' % (failed_task, errstr, user, failed_tag, user, failed_tag, user)
+The top commit for the tree that was built was:
+
+%s
+
+''' % (failed_task, errstr, user, failed_tag, user, failed_tag, user, user, top_commit_msg)
     msg = MIMEText(text)
     msg['Subject'] = 'autobuild failure for task %s during %s' % (failed_task, failed_stage)
     msg['From'] = 'autobuild@samba.org'
@@ -426,7 +435,14 @@ you can get full logs of all tasks in this job here:
 
   http://git.samba.org/%s/samba-autobuild/logs.tar.gz
 
-''' % (user,)
+''' % user
+
+    text += '''
+The top commit for the tree that was built was:
+
+%s
+''' % top_commit_msg
+
     msg = MIMEText(text)
     msg['Subject'] = 'autobuild success'
     msg['From'] = 'autobuild@samba.org'
@@ -455,6 +471,9 @@ else:
 gitroot = find_git_root(repository)
 if gitroot is None:
     raise Exception("Failed to find git root under %s" % repository)
+
+# get the top commit message, for emails
+top_commit_msg = run_cmd("git log -1", dir=gitroot, output=True)
 
 try:
     os.makedirs(testbase)
