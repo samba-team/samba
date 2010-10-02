@@ -351,4 +351,206 @@ class FilterOps(testtools.testresult.TestResult):
         self.total_fail = 0
         self.error_added = 0
         self.fail_immediately = fail_immediately
-        
+
+
+class PlainFormatter(TestsuiteEnabledTestResult):
+
+    def __init__(self, summaryfile, verbose, immediate, statistics,
+            totaltests=None):
+        super(PlainFormatter, self).__init__()
+        self.verbose = verbose
+        self.immediate = immediate
+        self.statistics = statistics
+        self.start_time = None
+        self.test_output = {}
+        self.suitesfailed = []
+        self.suites_ok = 0
+        self.skips = {}
+        self.summaryfile = summaryfile
+        self.index = 0
+        self.name = None
+        self._progress_level = 0
+        self.totalsuites = totaltests
+        self.last_time = None
+
+    @classmethod
+    def _format_time(delta):
+        minutes, seconds = divmod(delta.seconds, 60)
+        hours, minutes = divmod(minutes, 60)
+        ret = ""
+        if hours:
+            ret += "%dh" % hours
+        if minutes:
+            ret += "%dm" % minutes
+        ret += "%ds" % seconds
+        return ret
+
+    def progress(self, offset, whence):
+        if whence == subunit.PROGRESS_POP:
+            self._progress_level -= 1
+        elif whence == subunit.PROGRESS_PUSH:
+            self._progress_level += 1
+        elif whence == subunit.PROGRESS_SET:
+            if self._progress_level == 0:
+                self.totalsuites = offset
+        elif whence == subunit.PROGRESS_CUR:
+            raise NotImplementedError
+
+    def time(self, dt):
+        if self.start_time is None:
+            self.start_time = dt
+        self.last_time = dt
+
+    def start_testsuite(self, name):
+        self.index += 1
+        self.name = name
+
+        if not self.verbose:
+            self.test_output[name] = ""
+
+        out = "[%d" % self.index
+        if self.totalsuites is not None:
+            out += "/%d" % self.totalsuites
+        if self.start_time is not None:
+            out += " in " + self._format_time(self.last_time - self.start_time)
+        if self.suitesfailed:
+            out += ", %d errors" % (len(self.suitesfailed),)
+        out += "] %s" % name
+        if self.immediate:
+            sys.stdout.write(out + "\n")
+        else:
+            sys.stdout.write(out + ": ")
+
+    def output_msg(self, output):
+        if self.verbose:
+            sys.stdout.write(output)
+        elif self.name is not None:
+            self.test_output[self.name] += output
+        else:
+            sys.stdout.write(output)
+
+    def control_msg(self, output):
+        pass
+
+    def end_testsuite(self, name, result, reason):
+        out = ""
+        unexpected = False
+
+        if not name in self.test_output:
+            print "no output for name[%s]" % name
+
+        if result in ("success", "xfail"):
+            self.suites_ok+=1
+        else:
+            self.output_msg("ERROR: Testsuite[%s]\n" % name)
+            if reason is not None:
+                self.output_msg("REASON: %s\n" % (reason,))
+            self.suitesfailed.append(name)
+            if self.immediate and not self.verbose and name in self.test_output:
+                out += self.test_output[name]
+            unexpected = True
+
+        if not self.immediate:
+            if not unexpected:
+                out += " ok\n"
+            else:
+                out += " " + result.upper() + "\n"
+
+        sys.stdout.write(out)
+
+    def startTest(self, test):
+        pass
+
+    def addSuccess(self, test):
+        self.end_test(test.id(), "success", False)
+
+    def addError(self, test, details=None):
+        self.end_test(test.id(), "error", True, details)
+
+    def addFailure(self, test, details=None):
+        self.end_test(test.id(), "failure", True, details)
+
+    def addSkip(self, test, details=None):
+        self.end_test(test.id(), "skip", False, details)
+
+    def addExpectedFail(self, test, details=None):
+        self.end_test(test.id(), "xfail", False, details)
+
+    def end_test(self, testname, result, unexpected, reason=None):
+        if not unexpected:
+            self.test_output[self.name] = ""
+            if not self.immediate:
+                sys.stdout.write({
+                    'failure': 'f',
+                    'xfail': 'X',
+                    'skip': 's',
+                    'success': '.'}.get(result, "?(%s)" % result))
+            return
+
+        if not self.name in self.test_output:
+            self.test_output[self.name] = ""
+
+        self.test_output[self.name] += "UNEXPECTED(%s): %s\n" % (result, testname)
+        if reason is not None:
+            self.test_output[self.name] += "REASON: %s\n" % (reason[1].message.encode("utf-8").strip(),)
+
+        if self.immediate and not self.verbose:
+            print self.test_output[self.name]
+            self.test_output[self.name] = ""
+
+        if not self.immediate:
+            sys.stdout.write({
+               'error': 'E',
+               'failure': 'F',
+               'success': 'S'}.get(result, "?"))
+
+    def summary(self):
+        f = open(self.summaryfile, 'w+')
+
+        if self.suitesfailed:
+            f.write("= Failed tests =\n")
+
+            for suite in self.suitesfailed:
+                f.write("== %s ==\n" % suite)
+                if suite in self.test_output:
+                    f.write(self.test_output[suite]+"\n\n")
+
+            f.write("\n")
+
+        if not self.immediate and not self.verbose:
+            for suite in self.suitesfailed:
+                print "=" * 78
+                print "FAIL: %s" % suite
+                if suite in self.test_output:
+                    print self.test_output[suite]
+                print ""
+
+        f.write("= Skipped tests =\n")
+        for reason in self.skips.keys():
+            f.write(reason + "\n")
+            for name in self.skips[reason]:
+                f.write("\t%s\n" % name)
+            f.write("\n")
+        f.close()
+
+        print "\nA summary with detailed information can be found in:"
+        print "  %s" % self.summaryfile
+
+        if (not self.suitesfailed and
+            not self.statistics['TESTS_UNEXPECTED_FAIL'] and
+            not self.statistics['TESTS_ERROR']):
+            ok = (self.statistics['TESTS_EXPECTED_OK'] +
+                  self.statistics['TESTS_EXPECTED_FAIL'])
+            print "\nALL OK (%d tests in %d testsuites)" % (ok, self.suites_ok)
+        else:
+            print "\nFAILED (%d failures and %d errors in %d testsuites)" % (
+                self.statistics['TESTS_UNEXPECTED_FAIL'],
+                self.statistics['TESTS_ERROR'],
+                len(self.suitesfailed))
+
+    def skip_testsuite(self, name, reason="UNKNOWN"):
+        self.skips.setdefault(reason, []).append(name)
+        if self.totalsuites:
+            self.totalsuites-=1
+
+
