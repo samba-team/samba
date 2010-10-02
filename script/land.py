@@ -73,17 +73,17 @@ retry_task = [ ( "retry",
                ''' % samba_master, "test/plain" ) ]
 
 
-def run_cmd(cmd, dir=".", show=None, output=False, checkfail=True):
+def run_cmd(cmd, dir=None, show=None, output=False, checkfail=True, shell=False):
     if show is None:
         show = options.verbose
     if show:
         print("Running: '%s' in '%s'" % (cmd, dir))
     if output:
-        return Popen(cmd, stdout=PIPE, cwd=dir).communicate()[0]
+        return Popen(cmd, stdout=PIPE, cwd=dir, shell=shell).communicate()[0]
     elif checkfail:
-        return check_call(cmd, cwd=dir)
+        return check_call(cmd, cwd=dir, shell=shell)
     else:
-        return call(cmd, cwd=dir)
+        return call(cmd, cwd=dir, shell=shell)
 
 
 class Builder(object):
@@ -106,17 +106,20 @@ class Builder(object):
         if options.verbose:
             print("stdout for %s in %s" % (self.name, self.stdout_path))
             print("stderr for %s in %s" % (self.name, self.stderr_path))
-        run_cmd("rm -f %s %s" % (self.stdout_path, self.stderr_path))
+        if os.path.exists(self.stdout_path):
+            os.unlink(self.stdout_path)
+        if os.path.exists(self.stderr_path):
+            os.unlink(self.stderr_path)
         self.stdout = open(self.stdout_path, 'w')
         self.stderr = open(self.stderr_path, 'w')
         self.stdin  = open("/dev/null", 'r')
         self.sdir = "%s/%s" % (testbase, self.tag)
         self.prefix = "%s/prefix/%s" % (testbase, self.tag)
-        run_cmd("rm -rf %s" % self.sdir)
+        run_cmd(["rm", "-rf", self.sdir])
         cleanup_list.append(self.sdir)
         cleanup_list.append(self.prefix)
         os.makedirs(self.sdir)
-        run_cmd("rm -rf %s" % self.sdir)
+        run_cmd(["rm",  "-rf", self.sdir])
         run_cmd(["git", "clone", "--shared", gitroot, self.sdir])
         self.start_next()
 
@@ -252,7 +255,7 @@ def cleanup():
         return
     print("Cleaning up ....")
     for d in cleanup_list:
-        run_cmd("rm -rf %s" % d)
+        run_cmd(["rm", "-rf", d])
 
 
 def find_git_root(p):
@@ -290,13 +293,13 @@ def daemonize(logfile):
 
 def rebase_tree(url):
     print("Rebasing on %s" % url)
-    run_cmd("git remote add -t master master %s" % url, show=True, dir=test_master)
-    run_cmd("git fetch master", show=True, dir=test_master)
+    run_cmd(["git", "remote", "add", "-t", "master", "master", url], show=True, dir=test_master)
+    run_cmd(["git", "fetch", "master"], show=True, dir=test_master)
     if options.fix_whitespace:
-        run_cmd("git rebase --whitespace=fix master/master", show=True, dir=test_master)
+        run_cmd(["git", "rebase", "--whitespace=fix", "master/master"], show=True, dir=test_master)
     else:
-        run_cmd("git rebase master/master", show=True, dir=test_master)
-    diff = run_cmd("git --no-pager diff HEAD master/master", dir=test_master, output=True)
+        run_cmd(["git", "rebase", "master/master"], show=True, dir=test_master)
+    diff = run_cmd(["git", "--no-pager", "diff", "HEAD", "master/master"], dir=test_master, output=True)
     if diff == '':
         print("No differences between HEAD and master/master - exiting")
         sys.exit(0)
@@ -304,11 +307,11 @@ def rebase_tree(url):
 def push_to(url):
     print("Pushing to %s" % url)
     if options.mark:
-        run_cmd("EDITOR=script/commit_mark.sh git commit --amend -c HEAD", dir=test_master)
+        run_cmd("EDITOR=script/commit_mark.sh git commit --amend -c HEAD", dir=test_master, shell=True)
         # the notes method doesn't work yet, as metze hasn't allowed refs/notes/* in master
         # run_cmd("EDITOR=script/commit_mark.sh git notes edit HEAD", dir=test_master)
-    run_cmd("git remote add -t master pushto %s" % url, show=True, dir=test_master)
-    run_cmd("git push pushto +HEAD:master", show=True, dir=test_master)
+    run_cmd(["git", "remote", "add", "-t", "master", "pushto", url], show=True, dir=test_master)
+    run_cmd(["git", "push", "pushto", "+HEAD:master"], show=True, dir=test_master)
 
 def_testbase = os.getenv("AUTOBUILD_TESTBASE", "/memdisk/%s" % os.getenv('USER'))
 
@@ -437,9 +440,9 @@ if options.daemon:
 
 while True:
     try:
-        run_cmd("rm -rf %s" % test_master)
+        run_cmd(["rm", "-rf", test_master])
         cleanup_list.append(test_master)
-        run_cmd("git clone --shared %s %s" % (gitroot, test_master))
+        run_cmd(["git", "clone", "--shared", gitroot, test_master])
     except:
         cleanup()
         raise
@@ -469,7 +472,7 @@ if status == 0:
     print errstr
     if options.passcmd is not None:
         print("Running passcmd: %s" % options.passcmd)
-        run_cmd(options.passcmd, dir=test_master)
+        run_cmd(options.passcmd, dir=test_master, shell=True)
     if options.pushto is not None:
         push_to(options.pushto)
     elif options.push_master:
