@@ -586,16 +586,22 @@ static bool set_printer_hnd_name(TALLOC_CTX *mem_ctx,
 
 	DEBUGADD(5, ("searching for [%s]\n", aprinter));
 
-	if ((p = strchr(aprinter, ',')) != NULL) {
-		if (*p == ' ')
+	p = strchr(aprinter, ',');
+	if (p != NULL) {
+		char *p2 = p;
+		p++;
+		if (*p == ' ') {
 			p++;
-		if (strnequal(p+1, "DrvConvert", strlen("DrvConvert")) ||
-		    strnequal(p+1, " DrvConvert", strlen(" DrvConvert"))) {
-			*p = '\0';
-		} else if (strnequal(p+1, "LocalOnly", strlen("LocalOnly")) ||
-		           strnequal(p+1, " LocalOnly", strlen(" LocalOnly"))) {
-			*p = '\0';
 		}
+		if (strncmp(p, "DrvConvert", strlen("DrvConvert")) == 0) {
+			*p2 = '\0';
+		} else if (strncmp(p, "LocalOnly", strlen("LocalOnly")) == 0) {
+			*p2 = '\0';
+		}
+	}
+
+	if (p) {
+		DEBUGADD(5, ("stripped handlename: [%s]\n", aprinter));
 	}
 
 	/* check for the Port Monitor Interface */
@@ -1691,7 +1697,7 @@ WERROR _spoolss_OpenPrinterEx(struct pipes_struct *p,
 		DEBUG(0,("_spoolss_OpenPrinterEx: Cannot open a printer handle "
 			"for printer %s\n", r->in.printername));
 		ZERO_STRUCTP(r->out.handle);
-		return WERR_INVALID_PARAM;
+		return WERR_INVALID_PRINTER_NAME;
 	}
 
 	Printer = find_printer_index_by_hnd(p, r->out.handle);
