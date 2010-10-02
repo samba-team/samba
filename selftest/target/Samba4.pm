@@ -88,7 +88,7 @@ sub check_or_start($$$)
 	POSIX::mkfifo($env_vars->{SAMBA_TEST_FIFO}, 0700);
 	unlink($env_vars->{SAMBA_TEST_LOG});
 	
-	print "STARTING SAMBA... ";
+	print "STARTING SAMBA for $ENV{ENVNAME}\n";
 	my $pid = fork();
 	if ($pid == 0) {
 		open STDIN, $env_vars->{SAMBA_TEST_FIFO};
@@ -139,19 +139,22 @@ sub check_or_start($$$)
 			$model = $ENV{SAMBA_PROCESS_MODEL};
 		}
 		my $ret = system("$valgrind $samba $optarg $env_vars->{CONFIGURATION} -M $model -i");
-		if ($? == -1) {
+		if ($ret == -1) {
 			print "Unable to start $samba: $ret: $!\n";
 			exit 1;
 		}
+		my $exit = ($ret >> 8);
 		unlink($env_vars->{SAMBA_TEST_FIFO});
-		my $exit = $? >> 8;
 		if ($ret == 0) {
-			print "$samba exits with status $exit\n";
+			print "$samba exited with no error\n";
+			exit 0;
 		} elsif ( $ret & 127 ) {
 			print "$samba got signal ".($ret & 127)." and exits with $exit!\n";
 		} else {
-			$ret = $? >> 8;
 			print "$samba failed with status $exit!\n";
+		}
+		if ($exit == 0) {
+			$exit = -1;
 		}
 		exit $exit;
 	}
@@ -1250,6 +1253,8 @@ sub check_env($$)
 sub setup_env($$$)
 {
 	my ($self, $envname, $path) = @_;
+
+	$ENV{ENVNAME} = $envname;
 
 	if ($envname eq "dc") {
 		return $self->setup_dc("$path/dc");
