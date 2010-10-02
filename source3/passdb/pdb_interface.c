@@ -2110,7 +2110,7 @@ NTSTATUS make_pdb_method( struct pdb_methods **methods )
 {
 	/* allocate memory for the structure as its own talloc CTX */
 
-	*methods = talloc_zero(talloc_autofree_context(), struct pdb_methods);
+	*methods = talloc_zero(NULL, struct pdb_methods);
 	if (*methods == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
