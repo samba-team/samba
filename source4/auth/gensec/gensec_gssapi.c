@@ -352,7 +352,7 @@ static NTSTATUS gensec_gssapi_client_start(struct gensec_security *gensec_securi
 	gensec_gssapi_state = talloc_get_type(gensec_security->private_data, struct gensec_gssapi_state);
 
 	principal = gensec_get_target_principal(gensec_security);
-	if (principal && lpcfg_client_use_spnego_principal(gensec_security->settings->lp_ctx)) {
+	if (principal) {
 		name_type = GSS_C_NULL_OID;
 	} else {
 		principal = talloc_asprintf(gensec_gssapi_state, "%s/%s@%s",
