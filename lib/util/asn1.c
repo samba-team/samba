@@ -527,6 +527,18 @@ bool asn1_peek_tag_needed_size(struct asn1_data *data, uint8_t tag, size_t *size
 			data->has_error = false;
 			return false;
 		}
+		if (n > 4) {
+			/*
+			 * We should not allow more than 4 bytes
+			 * for the encoding of the tag length.
+			 *
+			 * Otherwise we'd overflow the taglen
+			 * variable on 32 bit systems.
+			 */
+			data->ofs = start_ofs;
+			data->has_error = false;
+			return false;
+		}
 		taglen = b;
 		while (n > 1) {
 			if (!asn1_read_uint8(data, &b)) {
@@ -1020,7 +1032,7 @@ NTSTATUS asn1_peek_full_tag(DATA_BLOB blob, uint8_t tag, size_t *packet_size)
 
 	ok = asn1_peek_tag_needed_size(&asn1, tag, &size);
 	if (!ok) {
-		return STATUS_MORE_ENTRIES;
+		return NT_STATUS_INVALID_BUFFER_SIZE;
 	}
 
 	if (size > blob.length) {
