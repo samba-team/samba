@@ -101,7 +101,8 @@ WERROR dns_server_process_update(struct dns_server *dns,
 	struct dns_name_question *zone;
 	const struct dns_server_zone *z;
 	size_t host_part_len = 0;
-	WERROR werror = WERR_DNS_ERROR_RCODE_NOT_IMPLEMENTED;
+	WERROR werror = DNS_ERR(NOT_IMPLEMENTED);
+	bool update_allowed = false;
 
 	if (in->qdcount != 1) {
 		return DNS_ERR(FORMAT_ERROR);
@@ -135,6 +136,13 @@ WERROR dns_server_process_update(struct dns_server *dns,
 
 	werror = check_prerequsites(dns, mem_ctx, in, prereqs, prereq_count);
 	W_ERROR_NOT_OK_RETURN(werror);
+
+	/* TODO: Check if update is allowed, we probably want "always",
+	 * key-based GSSAPI, key-based bind-style TSIG and "never" as
+	 * smb.conf options. */
+	if (!update_allowed) {
+		return DNS_ERR(REFUSED);
+	}
 
 	return werror;
 }
