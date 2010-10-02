@@ -117,7 +117,7 @@ static void sig_term(int sig)
 	}
 #endif
 	DEBUG(0,("Exiting pid %d on SIGTERM\n", (int)getpid()));
-	exit(0);
+	exit(127);
 }
 
 /*
