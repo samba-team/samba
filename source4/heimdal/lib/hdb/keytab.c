@@ -210,10 +210,18 @@ hdb_get_entry(krb5_context context,
 	(*db->hdb_destroy)(context, db);
 	goto out2;
     }
-    ret = (*db->hdb_fetch)(context, db, principal,
-			   HDB_F_DECRYPT|
-			   HDB_F_GET_CLIENT|HDB_F_GET_SERVER|HDB_F_GET_KRBTGT,
-			   0, &ent);
+    
+    if (*db->hdb_fetch_kvno) {
+	    ret = (*db->hdb_fetch_kvno)(context, db, principal,
+					HDB_F_DECRYPT|HDB_F_KVNO_SPECIFIED|
+					HDB_F_GET_CLIENT|HDB_F_GET_SERVER|HDB_F_GET_KRBTGT,
+					kvno, &ent);
+    } else {
+	    ret = (*db->hdb_fetch)(context, db, principal,
+				   HDB_F_DECRYPT|
+				   HDB_F_GET_CLIENT|HDB_F_GET_SERVER|HDB_F_GET_KRBTGT,
+				   &ent);
+    }
 
     if(ret == HDB_ERR_NOENTRY) {
 	ret = KRB5_KT_NOTFOUND;

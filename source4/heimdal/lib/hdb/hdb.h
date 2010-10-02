@@ -123,8 +123,18 @@ typedef struct HDB{
      * should be fetch: client, server, krbtgt.
      */
     krb5_error_code (*hdb_fetch)(krb5_context, struct HDB*,
-				 krb5_const_principal, unsigned, unsigned,
+				 krb5_const_principal, unsigned, 
 				 hdb_entry_ex*);
+    /**
+     * Fetch an entry from the backend
+     *
+     * Fetch an entry from the backend, flags are what type of entry
+     * should be fetch: client, server, krbtgt.
+     * knvo (if specified and flags HDB_F_KVNO_SPECIFIED set) is the kvno to get
+     */
+    krb5_error_code (*hdb_fetch_kvno)(krb5_context, struct HDB*,
+				      krb5_const_principal, unsigned, unsigned,
+				      hdb_entry_ex*);
     /**
      * Store an entry to database
      */

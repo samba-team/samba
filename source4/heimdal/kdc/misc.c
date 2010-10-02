@@ -47,7 +47,7 @@ _kdc_db_fetch(krb5_context context,
     hdb_entry_ex *ent;
     krb5_error_code ret;
     int i;
-    unsigned kvno;
+    unsigned kvno = 0;
 
     if (kvno_ptr) {
 	    kvno = *kvno_ptr;
@@ -91,12 +91,22 @@ _kdc_db_fetch(krb5_context context,
 	    continue;
 	}
 
-	ret = config->db[i]->hdb_fetch(context,
-				       config->db[i],
-				       principal,
-				       flags | HDB_F_DECRYPT,
-				       kvno,
-				       ent);
+	if (config->db[i]->hdb_fetch_kvno) {
+		ret = config->db[i]->hdb_fetch_kvno(context,
+						    config->db[i],
+						    principal,
+						    flags | HDB_F_DECRYPT,
+						    kvno,
+						    ent);
+	} else {
+		flags &= ~HDB_F_KVNO_SPECIFIED;
+		ret = config->db[i]->hdb_fetch(context,
+					       config->db[i],
+					       principal,
+					       flags | HDB_F_DECRYPT,
+					       ent);
+	}
+
 	krb5_free_principal(context, enterprise_principal);
 
 	config->db[i]->hdb_close(context, config->db[i]);

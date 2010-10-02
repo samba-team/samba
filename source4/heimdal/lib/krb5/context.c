@@ -104,6 +104,18 @@ init_context_from_config_file(krb5_context context)
 
     INIT_FIELD(context, string, http_proxy, NULL, "http_proxy");
 
+    ret = krb5_config_get_bool_default(context, NULL, FALSE,
+				       "libdefaults",
+				       "allow_weak_crypto", NULL);
+    if (ret) {
+	krb5_enctype_enable(context, ETYPE_DES_CBC_CRC);
+	krb5_enctype_enable(context, ETYPE_DES_CBC_MD4);
+	krb5_enctype_enable(context, ETYPE_DES_CBC_MD5);
+	krb5_enctype_enable(context, ETYPE_DES_CBC_NONE);
+	krb5_enctype_enable(context, ETYPE_DES_CFB64_NONE);
+	krb5_enctype_enable(context, ETYPE_DES_PCBC_NONE);
+    }
+
     ret = set_etypes (context, "default_etypes", &tmptypes);
     if(ret)
 	return ret;
@@ -193,18 +205,6 @@ init_context_from_config_file(krb5_context context)
     INIT_FLAG(context, flags, KRB5_CTX_F_CHECK_PAC, TRUE, "check_pac");
     context->default_cc_name = NULL;
     context->default_cc_name_set = 0;
-
-    ret = krb5_config_get_bool_default(context, NULL, FALSE,
-				       "libdefaults",
-				       "allow_weak_crypto", NULL);
-    if (ret) {
-	krb5_enctype_enable(context, ETYPE_DES_CBC_CRC);
-	krb5_enctype_enable(context, ETYPE_DES_CBC_MD4);
-	krb5_enctype_enable(context, ETYPE_DES_CBC_MD5);
-	krb5_enctype_enable(context, ETYPE_DES_CBC_NONE);
-	krb5_enctype_enable(context, ETYPE_DES_CFB64_NONE);
-	krb5_enctype_enable(context, ETYPE_DES_PCBC_NONE);
-    }
 
     s = krb5_config_get_strings(context, NULL, "logging", "krb5", NULL);
     if(s) {

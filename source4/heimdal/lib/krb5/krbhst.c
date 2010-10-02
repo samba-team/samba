@@ -356,61 +356,66 @@ make_hints(struct addrinfo *hints, int proto)
     }
 }
 
-/*
- * return an `struct addrinfo *' in `ai' corresponding to the information
- * in `host'.  free:ing is handled by krb5_krbhst_free.
+/**
+ * Return an `struct addrinfo *' for a KDC host.
+ *
+ * Returns an the struct addrinfo in in that corresponds to the
+ * information in `host'.  free:ing is handled by krb5_krbhst_free, so
+ * the returned ai must not be released.
+ *
+ * @ingroup krb5
  */
 
 KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_krbhst_get_addrinfo(krb5_context context, krb5_krbhst_info *host,
 			 struct addrinfo **ai)
 {
-    struct addrinfo hints;
-    char portstr[NI_MAXSERV];
-    int ret;
+    int ret = 0;
 
     if (host->ai == NULL) {
-	make_hints(&hints, host->proto);
-	hints.ai_flags = AI_NUMERICHOST | AI_NUMERICSERV;
+	struct addrinfo hints;
+	char portstr[NI_MAXSERV];
+	char *hostname = host->hostname;
+
 	snprintf (portstr, sizeof(portstr), "%d", host->port);
+	make_hints(&hints, host->proto);
 
-	/* First try this as an IP address - the flags we have set
-	 * will prevent it from looking up a name */
+	/**
+	 * First try this as an IP address, this allows us to add a
+	 * dot at the end to stop using the search domains.
+	 */
+
+	hints.ai_flags |= AI_NUMERICHOST | AI_NUMERICSERV;
+
 	ret = getaddrinfo(host->hostname, portstr, &hints, &host->ai);
-	if (ret == 0) {
-		*ai = host->ai;
-		return 0;
+	if (ret == 0)
+	    goto out;
+
+	/**
+	 * If the hostname contains a dot, assumes it's a FQDN and
+	 * don't use search domains since that might be painfully slow
+	 * when machine is disconnected from that network.
+	 */
+
+	hints.ai_flags &= ~(AI_NUMERICHOST);
+
+	if (strchr(hostname, '.') && hostname[strlen(hostname) - 1] != '.') {
+	    ret = asprintf(&hostname, "%s.", host->hostname);
+	    if (ret < 0 || hostname == NULL)
+		return ENOMEM;
 	}
 
-	hints.ai_flags &= ~AI_NUMERICHOST;
-
-	/* Now that we know it's not an IP, we can manipulate
-	   it as a dotted-name, to add a final . if we think
-	   it's a fully qualified DNS name */
-	if (strchr(host->hostname, '.') &&
-	    host->hostname[strlen(host->hostname)-1] != '.') {
-		char *hostname_dot = NULL;
-
-		/* avoid expansion of search domains from resolv.conf
-		   - these can be very slow if the DNS server is not up
-		   for the searched domain */
-		hostname_dot = malloc(strlen(host->hostname)+2);
-		if (hostname_dot) {
-			strcpy(hostname_dot, host->hostname);
-			hostname_dot[strlen(host->hostname)] = '.';
-			hostname_dot[strlen(host->hostname)+1] = 0;
-		}
-		ret = getaddrinfo(hostname_dot?hostname_dot:host->hostname, portstr, &hints, &host->ai);
-		if (hostname_dot)
-			free(hostname_dot);
-	} else {
-		ret = getaddrinfo(host->hostname, portstr, &hints, &host->ai);
+	ret = getaddrinfo(hostname, portstr, &hints, &host->ai);
+	if (hostname != host->hostname)
+	    free(hostname);
+	if (ret) {
+	    ret = krb5_eai_to_heim_errno(ret, errno);
+	    goto out;
 	}
-	if (ret)
-	    return krb5_eai_to_heim_errno(ret, errno);
     }
+ out:
     *ai = host->ai;
-    return 0;
+    return ret;
 }
 
 static krb5_boolean

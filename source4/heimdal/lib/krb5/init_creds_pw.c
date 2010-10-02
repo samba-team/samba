@@ -1418,6 +1418,17 @@ krb5_init_creds_set_service(krb5_context context,
 	if (ret)
 	    return ret;
     }
+
+    /*
+     * This is for Windows RODC that are picky about what name type
+     * the server principal have, and the really strange part is that
+     * they are picky about the AS-REQ name type and not the TGS-REQ
+     * later. Oh well.
+     */
+
+    if (krb5_principal_is_krbtgt(context, principal))
+	krb5_principal_set_type(context, principal, KRB5_NT_SRV_INST);
+
     krb5_free_principal(context, ctx->cred.server);
     ctx->cred.server = principal;
 

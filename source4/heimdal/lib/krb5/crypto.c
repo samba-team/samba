@@ -1847,9 +1847,11 @@ verify_checksum(krb5_context context,
     }
     if(ct->checksumsize != cksum->checksum.length) {
 	krb5_clear_error_message (context);
-	krb5_set_error_message (context, KRB5KRB_AP_ERR_BAD_INTEGRITY,
-				N_("Decrypt integrity check failed for checksum type %s, length was %u, expected %u", ""),
-				ct->name, (unsigned)cksum->checksum.length, (unsigned)ct->checksumsize);
+	krb5_set_error_message(context, KRB5KRB_AP_ERR_BAD_INTEGRITY,
+			       N_("Decrypt integrity check failed for checksum type %s, "
+				  "length was %u, expected %u", ""),
+			       ct->name, (unsigned)cksum->checksum.length,
+			       (unsigned)ct->checksumsize);
 
 	return KRB5KRB_AP_ERR_BAD_INTEGRITY; /* XXX */
     }
@@ -1857,18 +1859,18 @@ verify_checksum(krb5_context context,
     if(keyed_checksum) {
 	struct checksum_type *kct;
 	if (crypto == NULL) {
-	    krb5_set_error_message (context, KRB5_PROG_SUMTYPE_NOSUPP,
-				    N_("Checksum type %s is keyed but no "
-				       "crypto context (key) was passed in", ""),
-				    ct->name);
+	    krb5_set_error_message(context, KRB5_PROG_SUMTYPE_NOSUPP,
+				   N_("Checksum type %s is keyed but no "
+				      "crypto context (key) was passed in", ""),
+				   ct->name);
 	    return KRB5_PROG_SUMTYPE_NOSUPP; /* XXX */
 	}
 	kct = crypto->et->keyed_checksum;
 	if (kct != NULL && kct->type != ct->type) {
-	    krb5_set_error_message (context, KRB5_PROG_SUMTYPE_NOSUPP,
-				    N_("Checksum type %s is keyed, but "
-				       "the key type %s passed didnt have that checksum "
-				       "type as the keyed type", ""),
+	    krb5_set_error_message(context, KRB5_PROG_SUMTYPE_NOSUPP,
+				   N_("Checksum type %s is keyed, but "
+				      "the key type %s passed didnt have that checksum "
+				      "type as the keyed type", ""),
 				    ct->name, crypto->et->name);
 	    return KRB5_PROG_SUMTYPE_NOSUPP; /* XXX */
 	}
@@ -1878,13 +1880,20 @@ verify_checksum(krb5_context context,
 	    return ret;
     } else
 	dkey = NULL;
+
+    /*
+     * If checksum have a verify function, lets use that instead of
+     * calling ->checksum and then compare result.
+     */
+
     if(ct->verify) {
 	ret = (*ct->verify)(context, dkey, data, len, usage, cksum);
-	if (ret == KRB5KRB_AP_ERR_BAD_INTEGRITY) {
-	    krb5_set_error_message (context, KRB5KRB_AP_ERR_BAD_INTEGRITY,
-				    N_("Decrypt integrity check failed for checksum type %s, key type %s", ""),
-				    ct->name, crypto->et->name);
-	}
+	if (ret)
+	    krb5_set_error_message(context, ret, 
+				   N_("Decrypt integrity check failed for checksum "
+				      "type %s, key type %s", ""),
+				   ct->name, crypto->et->name);
+	return ret;
     }
 
     ret = krb5_data_alloc (&c.checksum, ct->checksumsize);
@@ -1900,10 +1909,11 @@ verify_checksum(krb5_context context,
     if(c.checksum.length != cksum->checksum.length ||
        ct_memcmp(c.checksum.data, cksum->checksum.data, c.checksum.length)) {
 	krb5_clear_error_message (context);
-	krb5_set_error_message (context, KRB5KRB_AP_ERR_BAD_INTEGRITY,
-				N_("Decrypt integrity check failed for checksum type %s, key type %s", ""),
-				ct->name, crypto->et->name);
 	ret = KRB5KRB_AP_ERR_BAD_INTEGRITY;
+	krb5_set_error_message(context, ret,
+			       N_("Decrypt integrity check failed for checksum "
+				  "type %s, key type %s", ""),
+			       ct->name, crypto->et->name);
     } else {
 	ret = 0;
     }

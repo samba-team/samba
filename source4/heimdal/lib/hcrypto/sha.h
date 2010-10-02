@@ -80,4 +80,30 @@ void SHA256_Init (SHA256_CTX *);
 void SHA256_Update (SHA256_CTX *, const void *, size_t);
 void SHA256_Final (void *, SHA256_CTX *);
 
+/*
+ * SHA-2 512
+ */
+
+#define SHA512_DIGEST_LENGTH 64
+
+struct hc_sha512state {
+  uint64_t sz[2];
+  uint64_t counter[8];
+  unsigned char save[128];
+};
+
+typedef struct hc_sha512state SHA512_CTX;
+
+void SHA512_Init (SHA512_CTX *);
+void SHA512_Update (SHA512_CTX *, const void *, size_t);
+void SHA512_Final (void *, SHA512_CTX *);
+
+#define SHA384_DIGEST_LENGTH 48
+
+typedef struct hc_sha512state SHA384_CTX;
+
+void SHA384_Init (SHA384_CTX *);
+void SHA384_Update (SHA384_CTX *, const void *, size_t);
+void SHA384_Final (void *, SHA384_CTX *);
+
 #endif /* HEIM_SHA_H */

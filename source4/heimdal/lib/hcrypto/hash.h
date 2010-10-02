@@ -66,4 +66,10 @@ cshift (uint32_t x, unsigned int n)
     return CRAYFIX((x << n) | (x >> (32 - n)));
 }
 
+static inline uint64_t
+cshift64 (uint64_t x, unsigned int n)
+{
+  return ((uint64_t)x << (uint64_t)n) | ((uint64_t)x >> ((uint64_t)64 - (uint64_t)n));
+}
+
 #endif /* __hash_h__ */

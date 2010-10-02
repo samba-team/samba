@@ -177,7 +177,7 @@ get_password_entry(krb5_context context,
 	return ret;
 
     ret = _kdc_db_fetch(context, config, clientprincipal,
-			HDB_F_GET_CLIENT, &db, &user);
+			HDB_F_GET_CLIENT, NULL, &db, &user);
     krb5_free_principal(context, clientprincipal);
     if (ret)
 	return ret;
@@ -292,7 +292,7 @@ _kdc_do_digest(krb5_context context,
 	krb5_clear_error_message(context);
 
 	ret = _kdc_db_fetch(context, config, principal,
-			    HDB_F_GET_SERVER, NULL, &server);
+			    HDB_F_GET_SERVER, NULL, NULL, &server);
 	if (ret)
 	    goto out;
 
@@ -314,7 +314,7 @@ _kdc_do_digest(krb5_context context,
 	}
 
 	ret = _kdc_db_fetch(context, config, principal,
-			    HDB_F_GET_CLIENT, NULL, &client);
+			    HDB_F_GET_CLIENT, NULL, NULL, &client);
 	krb5_free_principal(context, principal);
 	if (ret)
 	    goto out;
@@ -874,7 +874,7 @@ _kdc_do_digest(krb5_context context,
 		goto failed;
 	
 	    ret = _kdc_db_fetch(context, config, clientprincipal,
-				HDB_F_GET_CLIENT, NULL, &user);
+				HDB_F_GET_CLIENT, NULL, NULL, &user);
 	    krb5_free_principal(context, clientprincipal);
 	    if (ret) {
 		krb5_set_error_message(context, ret,
@@ -1158,7 +1158,7 @@ _kdc_do_digest(krb5_context context,
 	    goto failed;
 
 	ret = _kdc_db_fetch(context, config, clientprincipal,
-			    HDB_F_GET_CLIENT, NULL, &user);
+			    HDB_F_GET_CLIENT, NULL, NULL, &user);
 	krb5_free_principal(context, clientprincipal);
 	if (ret) {
 	    krb5_set_error_message(context, ret, "NTLM user %s not in database",

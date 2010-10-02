@@ -398,7 +398,7 @@ ltm_rsa_private_decrypt(int flen, const unsigned char* from,
     if (flen > size)
 	return -2;
 
-    mp_init_multi(&in, &n, &e, &out, &bi, &b, NULL);
+    mp_init_multi(&in, &n, &e, &out, &b, &bi, NULL);
 
     BN2mpz(&n, rsa->n);
     BN2mpz(&e, rsa->e);
@@ -479,7 +479,7 @@ ltm_rsa_private_decrypt(int flen, const unsigned char* from,
     memmove(to, ptr, size);
 
  out:
-    mp_clear_multi(&e, &n, &in, &out, NULL);
+    mp_clear_multi(&e, &n, &in, &out, &b, &bi, NULL);
 
     return size;
 }
@@ -518,7 +518,9 @@ ltm_rsa_generate_key(RSA *rsa, int bits, BIGNUM *e, BN_GENCB *cb)
 
     ret = -1;
 
-    mp_init_multi(&el, &p, &q, &n, &n, &d, &dmp1, &dmq1, &iqmp, &t1, &t2, &t3, NULL);
+    mp_init_multi(&el, &p, &q, &n, &d,
+		  &dmp1, &dmq1, &iqmp,
+		  &t1, &t2, &t3, NULL);
 
     BN2mpz(&el, e);
 
@@ -588,8 +590,9 @@ ltm_rsa_generate_key(RSA *rsa, int bits, BIGNUM *e, BN_GENCB *cb)
     ret = 1;
 
 out:
-    mp_clear_multi(&el, &p, &q, &n, &d, &dmp1,
-		  &dmq1, &iqmp, &t1, &t2, &t3, NULL);
+    mp_clear_multi(&el, &p, &q, &n, &d,
+		   &dmp1, &dmq1, &iqmp,
+		   &t1, &t2, &t3, NULL);
 
     return ret;
 }

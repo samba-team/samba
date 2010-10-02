@@ -659,7 +659,11 @@ rsa_create_signature(hx509_context context,
     else
 	sig_oid = signer->signature_alg;
 
-    if (der_heim_oid_cmp(sig_oid, ASN1_OID_ID_PKCS1_SHA256WITHRSAENCRYPTION) == 0) {
+    if (der_heim_oid_cmp(sig_oid, ASN1_OID_ID_PKCS1_SHA512WITHRSAENCRYPTION) == 0) {
+	digest_alg = hx509_signature_sha512();
+    } else if (der_heim_oid_cmp(sig_oid, ASN1_OID_ID_PKCS1_SHA384WITHRSAENCRYPTION) == 0) {
+	digest_alg = hx509_signature_sha384();
+    } else if (der_heim_oid_cmp(sig_oid, ASN1_OID_ID_PKCS1_SHA256WITHRSAENCRYPTION) == 0) {
 	digest_alg = hx509_signature_sha256();
     } else if (der_heim_oid_cmp(sig_oid, ASN1_OID_ID_PKCS1_SHA1WITHRSAENCRYPTION) == 0) {
 	digest_alg = hx509_signature_sha1();
@@ -1241,6 +1245,32 @@ static const struct signature_alg pkcs1_rsa_sha1_alg = {
     rsa_create_signature
 };
 
+static const struct signature_alg rsa_with_sha512_alg = {
+    "rsa-with-sha512",
+    ASN1_OID_ID_PKCS1_SHA512WITHRSAENCRYPTION,
+    &_hx509_signature_rsa_with_sha512_data,
+    ASN1_OID_ID_PKCS1_RSAENCRYPTION,
+    &_hx509_signature_sha512_data,
+    PROVIDE_CONF|REQUIRE_SIGNER|RA_RSA_USES_DIGEST_INFO|SIG_PUBLIC_SIG|SELF_SIGNED_OK,
+    0,
+    NULL,
+    rsa_verify_signature,
+    rsa_create_signature
+};
+
+static const struct signature_alg rsa_with_sha384_alg = {
+    "rsa-with-sha384",
+    ASN1_OID_ID_PKCS1_SHA384WITHRSAENCRYPTION,
+    &_hx509_signature_rsa_with_sha384_data,
+    ASN1_OID_ID_PKCS1_RSAENCRYPTION,
+    &_hx509_signature_sha384_data,
+    PROVIDE_CONF|REQUIRE_SIGNER|RA_RSA_USES_DIGEST_INFO|SIG_PUBLIC_SIG|SELF_SIGNED_OK,
+    0,
+    NULL,
+    rsa_verify_signature,
+    rsa_create_signature
+};
+
 static const struct signature_alg rsa_with_sha256_alg = {
     "rsa-with-sha256",
     ASN1_OID_ID_PKCS1_SHA256WITHRSAENCRYPTION,
@@ -1306,6 +1336,32 @@ static const struct signature_alg dsa_sha1_alg = {
     /* create_signature */ NULL,
 };
 
+static const struct signature_alg sha512_alg = {
+    "sha-512",
+    ASN1_OID_ID_SHA512,
+    &_hx509_signature_sha512_data,
+    NULL,
+    NULL,
+    SIG_DIGEST,
+    0,
+    EVP_sha512,
+    evp_md_verify_signature,
+    evp_md_create_signature
+};
+
+static const struct signature_alg sha384_alg = {
+    "sha-384",
+    ASN1_OID_ID_SHA512,
+    &_hx509_signature_sha384_data,
+    NULL,
+    NULL,
+    SIG_DIGEST,
+    0,
+    EVP_sha384,
+    evp_md_verify_signature,
+    evp_md_create_signature
+};
+
 static const struct signature_alg sha256_alg = {
     "sha-256",
     ASN1_OID_ID_SHA256,
@@ -1355,6 +1411,8 @@ static const struct signature_alg *sig_algs[] = {
     &ecdsa_with_sha256_alg,
     &ecdsa_with_sha1_alg,
 #endif
+    &rsa_with_sha512_alg,
+    &rsa_with_sha384_alg,
     &rsa_with_sha256_alg,
     &rsa_with_sha1_alg,
     &rsa_with_sha1_alg_secsig,
@@ -1362,6 +1420,8 @@ static const struct signature_alg *sig_algs[] = {
     &rsa_with_md5_alg,
     &heim_rsa_pkcs1_x509,
     &dsa_sha1_alg,
+    &sha512_alg,
+    &sha384_alg,
     &sha256_alg,
     &sha1_alg,
     &md5_alg,
@@ -2460,7 +2520,7 @@ hx509_crypto_encrypt(hx509_crypto crypto,
 		     heim_octet_string **ciphertext)
 {
     EVP_CIPHER_CTX evp;
-    size_t padsize;
+    size_t padsize, bsize;
     int ret;
 
     *ciphertext = NULL;
@@ -2488,14 +2548,16 @@ hx509_crypto_encrypt(hx509_crypto crypto,
     }
 
     assert(crypto->flags & PADDING_FLAGS);
+
+    bsize = EVP_CIPHER_block_size(crypto->c);
+    padsize = 0;
+
     if (crypto->flags & PADDING_NONE) {
-	padsize = 0;
+	if (bsize != 1 && (length % bsize) != 0)
+	    return HX509_CMS_PADDING_ERROR;
     } else if (crypto->flags & PADDING_PKCS7) {
-	if (EVP_CIPHER_block_size(crypto->c) == 1) {
-	} else {
-	    int bsize = EVP_CIPHER_block_size(crypto->c);
+	if (bsize != 1)
 	    padsize = bsize - (length % bsize);
-	}
     }
 
     (*ciphertext)->length = length + padsize;

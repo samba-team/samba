@@ -351,7 +351,7 @@ check_PAC(krb5_context context,
 		    *signedpath = 1;
 		    ret = _krb5_pac_sign(context, pac, tkt->authtime,
 					 client_principal,
-					 server_key, krbtgt_key, rspac);
+					 server_key, krbtgt_sign_key, rspac);
 		}
 		krb5_pac_free(context, pac);
 		
@@ -1563,7 +1563,7 @@ tgs_build_reply(krb5_context context,
 
 server_lookup:
     ret = _kdc_db_fetch(context, config, sp, HDB_F_GET_SERVER | HDB_F_CANON,
-			0, NULL, &server);
+			NULL, NULL, &server);
 
     if(ret){
 	const char *new_rlm, *msg;
@@ -1624,7 +1624,7 @@ server_lookup:
     }
 
     ret = _kdc_db_fetch(context, config, cp, HDB_F_GET_CLIENT | HDB_F_CANON,
-			0, &clientdb, &client);
+			NULL, &clientdb, &client);
     if(ret) {
 	const char *krbtgt_realm, *msg;
 
@@ -1845,7 +1845,7 @@ server_lookup:
 		krb5_pac p = NULL;
 		krb5_data_free(&rspac);
 		ret = _kdc_db_fetch(context, config, client_principal, HDB_F_GET_CLIENT | HDB_F_CANON,
-				    0, &s4u2self_impersonated_clientdb, &s4u2self_impersonated_client);
+				    NULL, &s4u2self_impersonated_clientdb, &s4u2self_impersonated_client);
 		if (ret) {
 		    const char *msg;
 

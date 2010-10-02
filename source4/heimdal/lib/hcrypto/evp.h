@@ -96,6 +96,8 @@
 #define EVP_sha hc_EVP_sha
 #define EVP_sha1 hc_EVP_sha1
 #define EVP_sha256 hc_EVP_sha256
+#define EVP_sha384 hc_EVP_sha384
+#define EVP_sha512 hc_EVP_sha512
 #define PKCS5_PBKDF2_HMAC_SHA1 hc_PKCS5_PBKDF2_HMAC_SHA1
 #define EVP_BytesToKey hc_EVP_BytesToKey
 #define EVP_get_cipherbyname hc_EVP_get_cipherbyname
@@ -225,6 +227,8 @@ HC_DEPRECATED_CRYPTO const EVP_MD *EVP_md5(void);
 const EVP_MD *EVP_sha(void);
 const EVP_MD *EVP_sha1(void);
 const EVP_MD *EVP_sha256(void);
+const EVP_MD *EVP_sha384(void);
+const EVP_MD *EVP_sha512(void);
 
 const EVP_CIPHER * EVP_aes_128_cbc(void);
 const EVP_CIPHER * EVP_aes_192_cbc(void);

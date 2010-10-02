@@ -361,6 +361,36 @@ EVP_sha256(void)
 }
 
 /**
+ * The message digest SHA384
+ *
+ * @return the message digest type.
+ *
+ * @ingroup hcrypto_evp
+ */
+
+const EVP_MD *
+EVP_sha384(void)
+{
+    hcrypto_validate();
+    return EVP_DEF_OP(HCRYPTO_DEF_PROVIDER, sha384);
+}
+
+/**
+ * The message digest SHA512
+ *
+ * @return the message digest type.
+ *
+ * @ingroup hcrypto_evp
+ */
+
+const EVP_MD *
+EVP_sha512(void)
+{
+    hcrypto_validate();
+    return EVP_DEF_OP(HCRYPTO_DEF_PROVIDER, sha512);
+}
+
+/**
  * The message digest SHA1
  *
  * @return the message digest type.
