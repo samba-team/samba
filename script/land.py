@@ -4,10 +4,17 @@
 # Copyright Jelmer Vernooij 2010
 # released under GNU GPL v3 or later
 
+import fcntl
 from subprocess import call, check_call, Popen, PIPE
 import os, tarfile, sys, time
 from optparse import OptionParser
 import smtplib
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../selftest"))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../lib/testtools"))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../lib/subunit/python"))
+import subunit
+import testtools
+import subunithelper
 from email.mime.text import MIMEText
 
 samba_master = os.getenv('SAMBA_MASTER', 'git://git.samba.org/samba.git')
@@ -45,7 +52,7 @@ tasks = {
                      ("configure", "./configure --enable-developer -C ${PREFIX}", "text/plain"),
                      ("make", "make -j", "text/plain"),
                      ("install", "make install", "text/plain"),
-                     ("test", "make test", "text/plain"), ],
+                     ("test", "make test", "text/x-subunit"), ],
 
     "lib/replace" : [ ("autogen", "./autogen-waf.sh", "text/plain"),
                       ("configure", "./configure --enable-developer -C ${PREFIX}", "text/plain"),
@@ -96,6 +103,7 @@ class TreeStageBuilder(object):
         self.command = command
         self.fail_quickly = fail_quickly
         self.status = None
+        self.stdin = open(os.devnull, 'r')
 
     def start(self):
         raise NotImplementedError(self.start)
@@ -127,24 +135,74 @@ class TreeStageBuilder(object):
 class PlainTreeStageBuilder(TreeStageBuilder):
 
     def start(self):
-        print '%s: [%s] Running %s' % (self.name, self.stage, self.command)
+        print '%s: [%s] Running %s' % (self.name, self.name, self.command)
         self.proc = Popen(self.command, shell=True, cwd=self.tree.dir,
-                          stdout=self.tree.stdout, stderr=self.tree.stderr, stdin=self.tree.stdin)
+                          stdout=self.tree.stdout, stderr=self.tree.stderr,
+                          stdin=self.stdin)
+
+
+class AbortingTestResult(subunithelper.TestsuiteEnabledTestResult):
+
+    def __init__(self, stage):
+        super(AbortingTestResult, self).__init__()
+        self.stage = stage
+
+    def addError(self, test, details=None):
+        self.stage.proc.terminate()
+
+    def addFailure(self, test, details=None):
+        self.stage.proc.terminate()
 
 
 class SubunitTreeStageBuilder(TreeStageBuilder):
 
     def __init__(self, tree, name, command, fail_quickly=False):
-        super(SubunitTreeStageBuilder, self).__init__(tree, name, command, fail_quickly)
+        super(SubunitTreeStageBuilder, self).__init__(tree, name, command,
+                fail_quickly)
         self.failed_tests = []
+        self.subunit_path = os.path.join(gitroot,
+            "%s.%s.subunit" % (self.tree.tag, self.name))
+        self.tree.logfiles.append(
+            (self.subunit_path, os.path.basename(self.subunit_path)))
+        self.subunit = open(self.subunit_path, 'w')
+
+        formatter = subunithelper.PlainFormatter(False, True, {})
+        clients = [formatter, subunit.TestProtocolClient(self.subunit)]
+        if fail_quickly:
+            clients.append(AbortingTestResult(self))
+        self.subunit_server = subunit.TestProtocolServer(
+            testtools.MultiTestResult(*clients),
+            self.subunit)
+        self.buffered = ""
 
     def start(self):
-        if self.fail_quickly:
-            self.command += " | %s --fail-immediately" % (os.path.join(os.path.dirname(__file__), "selftest/filter-subunit"))
-        self.command += " | %s --immediate" % (os.path.join(os.path.dirname(__file__), "selftest/format-subunit"))
-        print '%s: [%s] Running' % (self.name, self.stage)
+        print '%s: [%s] Running' % (self.tree.name, self.name)
         self.proc = Popen(self.command, shell=True, cwd=self.tree.dir,
-                          stdout=self.tree.stdout, stderr=self.tree.stderr, stdin=self.tree.stdin)
+            stdout=PIPE, stderr=self.tree.stderr, stdin=self.stdin)
+        fd = self.proc.stdout.fileno()
+        fl = fcntl.fcntl(fd, fcntl.F_GETFL)
+        fcntl.fcntl(fd, fcntl.F_SETFL, fl | os.O_NONBLOCK)
+
+    def poll(self):
+        try:
+            data = self.proc.stdout.read()
+        except IOError:
+            return None
+        else:
+            self.tree.stdout.write(data)
+            self.buffered += data
+            buffered = ""
+            for l in self.buffered.splitlines(True):
+                if l[-1] == "\n":
+                    self.subunit_server.lineReceived(l)
+                else:
+                    buffered += l
+            self.buffered = buffered
+            self.status = self.proc.poll()
+            if self.status is not None:
+                self.subunit.close()
+                import pdb; pdb.set_trace()
+            return self.status
 
 
 class TreeBuilder(object):
@@ -157,8 +215,10 @@ class TreeBuilder(object):
         self.tag = self.name.replace('/', '_')
         self.sequence = sequence
         self.next = 0
-        self.stdout_path = "%s/%s.stdout" % (gitroot, self.tag)
-        self.stderr_path = "%s/%s.stderr" % (gitroot, self.tag)
+        self.stdout_path = os.path.join(gitroot, "%s.stdout" % (self.tag, ))
+        self.stderr_path = os.path.join(gitroot, "%s.stderr" % (self.tag, ))
+        self.logfiles = [(self.stdout_path, os.path.basename(self.stdout_path)),
+                         (self.stderr_path, os.path.basename(self.stderr_path))]
         if options.verbose:
             print("stdout for %s in %s" % (self.name, self.stdout_path))
             print("stderr for %s in %s" % (self.name, self.stderr_path))
@@ -168,8 +228,7 @@ class TreeBuilder(object):
             os.unlink(self.stderr_path)
         self.stdout = open(self.stdout_path, 'w')
         self.stderr = open(self.stderr_path, 'w')
-        self.stdin  = open(os.devnull, 'r')
-        self.sdir = "%s/%s" % (testbase, self.tag)
+        self.sdir = os.path.join(testbase, self.tag)
         if name in ['pass', 'fail', 'retry']:
             self.dir = self.sdir
         else:
@@ -187,20 +246,25 @@ class TreeBuilder(object):
         if self.next == len(self.sequence):
             print '%s: Completed OK' % self.name
             self.done = True
+            self.stdout.close()
+            self.stderr.close()
             return
         (stage_name, cmd, output_mime_type) = self.sequence[self.next]
         cmd = cmd.replace("${PREFIX}", "--prefix=%s" % self.prefix)
         if output_mime_type == "text/plain":
-            self.stage = PlainTreeStageBuilder(self, stage_name, cmd, self.fail_quickly)
+            self.stage = PlainTreeStageBuilder(self, stage_name, cmd,
+                self.fail_quickly)
         elif output_mime_type == "text/x-subunit":
-            self.stage = SubunitTreeStageBuilder(self, stage_name, cmd, self.fail_quickly)
+            self.stage = SubunitTreeStageBuilder(self, stage_name, cmd,
+                self.fail_quickly)
         else:
             raise Exception("Unknown output mime type %s" % output_mime_type)
+        self.stage.start()
         self.next += 1
 
     def remove_logs(self):
-        os.unlink(self.stdout_path)
-        os.unlink(self.stderr_path)
+        for path, name in self.logfiles:
+            os.unlink(path)
 
     @property
     def status(self):
@@ -210,16 +274,20 @@ class TreeBuilder(object):
         return self.stage.poll()
 
     def kill(self):
-        self.stage.kill()
-        self.stage = None
+        if self.stage is not None:
+            self.stage.kill()
+            self.stage = None
 
     @property
     def failed(self):
+        if self.stage is None:
+            return False
         return self.stage.failed
 
     @property
     def failure_reason(self):
-        return "%s: [%s] %s" % (self.name, self.stage.name, self.stage.failure_reason)
+        return "%s: [%s] %s" % (self.name, self.stage.name,
+            self.stage.failure_reason)
 
 
 class BuildList(object):
@@ -240,7 +308,8 @@ class BuildList(object):
             b = TreeBuilder(n, tasks[n], not options.fail_slowly)
             self.tlist.append(b)
         if options.retry:
-            self.retry = TreeBuilder('retry', retry_task, not options.fail_slowly)
+            self.retry = TreeBuilder('retry', retry_task,
+                not options.fail_slowly)
             self.need_retry = False
 
     def kill_kids(self):
@@ -295,9 +364,10 @@ class BuildList(object):
     def tarlogs(self, fname):
         tar = tarfile.open(fname, "w:gz")
         for b in self.tlist:
-            tar.add(b.stdout_path, arcname="%s.stdout" % b.tag)
-            tar.add(b.stderr_path, arcname="%s.stderr" % b.tag)
-        tar.add("autobuild.log")
+            for (path, name) in b.logfiles:
+                tar.add(path, arcname=name)
+        if os.path.exists("autobuild.log"):
+            tar.add("autobuild.log")
         tar.close()
 
     def remove_logs(self):
@@ -489,7 +559,7 @@ if options.retry:
     if not options.rebase_master and options.rebase is None:
         raise Exception('You can only use --retry if you also rebase')
 
-testbase = "%s/b%u" % (options.testbase, os.getpid())
+testbase = os.path.join(options.testbase, "b%u" % (os.getpid(),))
 test_master = os.path.join(testbase, "master")
 
 if options.repository is not None:
@@ -502,7 +572,7 @@ if gitroot is None:
     raise Exception("Failed to find git root under %s" % repository)
 
 # get the top commit message, for emails
-top_commit_msg = run_cmd("git log -1", dir=gitroot, output=True)
+top_commit_msg = run_cmd(["git", "log", "-1"], dir=gitroot, output=True)
 
 try:
     os.makedirs(testbase)
