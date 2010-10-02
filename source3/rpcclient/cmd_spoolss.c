@@ -136,6 +136,51 @@ static WERROR cmd_spoolss_open_printer_ex(struct rpc_pipe_client *cli,
 	return werror;
 }
 
+/****************************************************************************
+****************************************************************************/
+
+static WERROR cmd_spoolss_open_printer(struct rpc_pipe_client *cli,
+                                       TALLOC_CTX *mem_ctx,
+                                       int argc, const char **argv)
+{
+	WERROR 	        werror;
+	struct policy_handle	hnd;
+	uint32_t access_mask = PRINTER_ALL_ACCESS;
+	NTSTATUS status;
+	struct spoolss_DevmodeContainer devmode_ctr;
+
+	ZERO_STRUCT(devmode_ctr);
+
+	if (argc < 2) {
+		printf("Usage: %s <printername> [access_mask]\n", argv[0]);
+		return WERR_OK;
+	}
+
+	if (argc >= 3) {
+		sscanf(argv[2], "%x", &access_mask);
+	}
+
+	/* Open the printer handle */
+
+	status = rpccli_spoolss_OpenPrinter(cli, mem_ctx,
+					    argv[1],
+					    NULL,
+					    devmode_ctr,
+					    access_mask,
+					    &hnd,
+					    &werror);
+	if (W_ERROR_IS_OK(werror)) {
+		printf("Printer %s opened successfully\n", argv[1]);
+		rpccli_spoolss_ClosePrinter(cli, mem_ctx, &hnd, &werror);
+
+		if (!W_ERROR_IS_OK(werror)) {
+			printf("Error closing printer handle! (%s)\n",
+				get_dos_error_msg(werror));
+		}
+	}
+
+	return werror;
+}
 
 /****************************************************************************
 ****************************************************************************/
@@ -3557,7 +3602,8 @@ struct cmd_set spoolss_commands[] = {
 	{ "getdriver",		RPC_RTYPE_WERROR, NULL, cmd_spoolss_getdriver,		&ndr_table_spoolss.syntax_id, NULL, "Get print driver information",        "" },
 	{ "getdriverdir",	RPC_RTYPE_WERROR, NULL, cmd_spoolss_getdriverdir,	&ndr_table_spoolss.syntax_id, NULL, "Get print driver upload directory",   "" },
 	{ "getprinter", 	RPC_RTYPE_WERROR, NULL, cmd_spoolss_getprinter, 	&ndr_table_spoolss.syntax_id, NULL, "Get printer info",                    "" },
-	{ "openprinter",	RPC_RTYPE_WERROR, NULL, cmd_spoolss_open_printer_ex,	&ndr_table_spoolss.syntax_id, NULL, "Open printer handle",                 "" },
+	{ "openprinter",	RPC_RTYPE_WERROR, NULL, cmd_spoolss_open_printer,	&ndr_table_spoolss.syntax_id, NULL, "Open printer handle",                 "" },
+	{ "openprinter_ex",	RPC_RTYPE_WERROR, NULL, cmd_spoolss_open_printer_ex,	&ndr_table_spoolss.syntax_id, NULL, "Open printer handle",                 "" },
 	{ "setdriver", 		RPC_RTYPE_WERROR, NULL, cmd_spoolss_setdriver,		&ndr_table_spoolss.syntax_id, NULL, "Set printer driver",                  "" },
 	{ "getprintprocdir",	RPC_RTYPE_WERROR, NULL, cmd_spoolss_getprintprocdir,    &ndr_table_spoolss.syntax_id, NULL, "Get print processor directory",       "" },
 	{ "addform",		RPC_RTYPE_WERROR, NULL, cmd_spoolss_addform,            &ndr_table_spoolss.syntax_id, NULL, "Add form",                            "" },
