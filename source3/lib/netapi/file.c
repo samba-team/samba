@@ -42,7 +42,7 @@ WERROR NetFileClose_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
-	status = rpccli_srvsvc_NetFileClose(pipe_cli, ctx,
+	status = rpccli_srvsvc_NetFileClose(pipe_cli, talloc_tos(),
 					    r->in.server_name,
 					    r->in.fileid,
 					    &werr);
@@ -136,7 +136,7 @@ WERROR NetFileGetInfo_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
-	status = rpccli_srvsvc_NetFileGetInfo(pipe_cli, ctx,
+	status = rpccli_srvsvc_NetFileGetInfo(pipe_cli, talloc_tos(),
 					      r->in.server_name,
 					      r->in.fileid,
 					      r->in.level,
@@ -216,7 +216,7 @@ WERROR NetFileEnum_r(struct libnetapi_ctx *ctx,
 			break;
 	}
 
-	status = rpccli_srvsvc_NetFileEnum(pipe_cli, ctx,
+	status = rpccli_srvsvc_NetFileEnum(pipe_cli, talloc_tos(),
 					   r->in.server_name,
 					   r->in.base_path,
 					   r->in.user_name,

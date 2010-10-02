@@ -313,7 +313,7 @@ static NTSTATUS set_user_info_USER_INFO_X(TALLOC_CTX *ctx,
 					  session_key,
 					  &user_info.info25.password);
 
-		status = rpccli_samr_SetUserInfo2(pipe_cli, ctx,
+		status = rpccli_samr_SetUserInfo2(pipe_cli, talloc_tos(),
 						  user_handle,
 						  25,
 						  &user_info);
@@ -326,7 +326,7 @@ static NTSTATUS set_user_info_USER_INFO_X(TALLOC_CTX *ctx,
 						session_key,
 						&user_info.info23.password);
 
-			status = rpccli_samr_SetUserInfo2(pipe_cli, ctx,
+			status = rpccli_samr_SetUserInfo2(pipe_cli, talloc_tos(),
 							  user_handle,
 							  23,
 							  &user_info);
@@ -335,7 +335,7 @@ static NTSTATUS set_user_info_USER_INFO_X(TALLOC_CTX *ctx,
 
 		user_info.info21 = info21;
 
-		status = rpccli_samr_SetUserInfo(pipe_cli, ctx,
+		status = rpccli_samr_SetUserInfo(pipe_cli, talloc_tos(),
 						 user_handle,
 						 21,
 						 &user_info);
@@ -409,7 +409,7 @@ WERROR NetUserAdd_r(struct libnetapi_ctx *ctx,
 
 	init_lsa_String(&lsa_account_name, uX.usriX_name);
 
-	status = rpccli_samr_CreateUser2(pipe_cli, ctx,
+	status = rpccli_samr_CreateUser2(pipe_cli, talloc_tos(),
 					 &domain_handle,
 					 &lsa_account_name,
 					 ACB_NORMAL,
@@ -426,7 +426,7 @@ WERROR NetUserAdd_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
-	status = rpccli_samr_QueryUserInfo(pipe_cli, ctx,
+	status = rpccli_samr_QueryUserInfo(pipe_cli, talloc_tos(),
 					   &user_handle,
 					   16,
 					   &user_info);
@@ -440,7 +440,7 @@ WERROR NetUserAdd_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
-	status = rpccli_samr_GetUserPwInfo(pipe_cli, ctx,
+	status = rpccli_samr_GetUserPwInfo(pipe_cli, talloc_tos(),
 					   &user_handle,
 					   &pw_info);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -463,12 +463,12 @@ WERROR NetUserAdd_r(struct libnetapi_ctx *ctx,
 	goto done;
 
  failed:
-	rpccli_samr_DeleteUser(pipe_cli, ctx,
+	rpccli_samr_DeleteUser(pipe_cli, talloc_tos(),
 			       &user_handle);
 
  done:
 	if (is_valid_policy_hnd(&user_handle) && pipe_cli) {
-		rpccli_samr_Close(pipe_cli, ctx, &user_handle);
+		rpccli_samr_Close(pipe_cli, talloc_tos(), &user_handle);
 	}
 
 	if (ctx->disable_policy_handle_cache) {
@@ -527,7 +527,7 @@ WERROR NetUserDel_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
-	status = rpccli_samr_OpenDomain(pipe_cli, ctx,
+	status = rpccli_samr_OpenDomain(pipe_cli, talloc_tos(),
 					&connect_handle,
 					SAMR_DOMAIN_ACCESS_OPEN_ACCOUNT,
 					CONST_DISCARD(DOM_SID *, &global_sid_Builtin),
@@ -539,7 +539,7 @@ WERROR NetUserDel_r(struct libnetapi_ctx *ctx,
 
 	init_lsa_String(&lsa_account_name, r->in.user_name);
 
-	status = rpccli_samr_LookupNames(pipe_cli, ctx,
+	status = rpccli_samr_LookupNames(pipe_cli, talloc_tos(),
 					 &domain_handle,
 					 1,
 					 &lsa_account_name,
@@ -550,7 +550,7 @@ WERROR NetUserDel_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
-	status = rpccli_samr_OpenUser(pipe_cli, ctx,
+	status = rpccli_samr_OpenUser(pipe_cli, talloc_tos(),
 				      &domain_handle,
 				      SEC_STD_DELETE,
 				      user_rids.ids[0],
@@ -562,7 +562,7 @@ WERROR NetUserDel_r(struct libnetapi_ctx *ctx,
 
 	sid_compose(&user_sid, domain_sid, user_rids.ids[0]);
 
-	status = rpccli_samr_RemoveMemberFromForeignDomain(pipe_cli, ctx,
+	status = rpccli_samr_RemoveMemberFromForeignDomain(pipe_cli, talloc_tos(),
 							   &builtin_handle,
 							   &user_sid);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -570,7 +570,7 @@ WERROR NetUserDel_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
-	status = rpccli_samr_DeleteUser(pipe_cli, ctx,
+	status = rpccli_samr_DeleteUser(pipe_cli, talloc_tos(),
 					&user_handle);
 	if (!NT_STATUS_IS_OK(status)) {
 		werr = ntstatus_to_werror(status);
@@ -581,7 +581,7 @@ WERROR NetUserDel_r(struct libnetapi_ctx *ctx,
 
  done:
 	if (is_valid_policy_hnd(&user_handle)) {
-		rpccli_samr_Close(pipe_cli, ctx, &user_handle);
+		rpccli_samr_Close(pipe_cli, talloc_tos(), &user_handle);
 	}
 
 	if (ctx->disable_policy_handle_cache) {
@@ -1671,7 +1671,7 @@ WERROR NetUserGetInfo_r(struct libnetapi_ctx *ctx,
 
 	init_lsa_String(&lsa_account_name, r->in.user_name);
 
-	status = rpccli_samr_LookupNames(pipe_cli, ctx,
+	status = rpccli_samr_LookupNames(pipe_cli, talloc_tos(),
 					 &domain_handle,
 					 1,
 					 &lsa_account_name,
@@ -1698,7 +1698,7 @@ WERROR NetUserGetInfo_r(struct libnetapi_ctx *ctx,
 
  done:
 	if (is_valid_policy_hnd(&user_handle) && pipe_cli) {
-		rpccli_samr_Close(pipe_cli, ctx, &user_handle);
+		rpccli_samr_Close(pipe_cli, talloc_tos(), &user_handle);
 	}
 
 	if (ctx->disable_policy_handle_cache) {
@@ -1826,7 +1826,7 @@ WERROR NetUserSetInfo_r(struct libnetapi_ctx *ctx,
 
 	init_lsa_String(&lsa_account_name, r->in.user_name);
 
-	status = rpccli_samr_LookupNames(pipe_cli, ctx,
+	status = rpccli_samr_LookupNames(pipe_cli, talloc_tos(),
 					 &domain_handle,
 					 1,
 					 &lsa_account_name,
@@ -1837,7 +1837,7 @@ WERROR NetUserSetInfo_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
-	status = rpccli_samr_OpenUser(pipe_cli, ctx,
+	status = rpccli_samr_OpenUser(pipe_cli, talloc_tos(),
 				      &domain_handle,
 				      user_mask,
 				      user_rids.ids[0],
@@ -1866,7 +1866,7 @@ WERROR NetUserSetInfo_r(struct libnetapi_ctx *ctx,
 
  done:
 	if (is_valid_policy_hnd(&user_handle) && pipe_cli) {
-		rpccli_samr_Close(pipe_cli, ctx, &user_handle);
+		rpccli_samr_Close(pipe_cli, talloc_tos(), &user_handle);
 	}
 
 	if (ctx->disable_policy_handle_cache) {
@@ -2845,7 +2845,7 @@ WERROR NetUserGetGroups_r(struct libnetapi_ctx *ctx,
 
 	init_lsa_String(&lsa_account_name, r->in.user_name);
 
-	status = rpccli_samr_LookupNames(pipe_cli, ctx,
+	status = rpccli_samr_LookupNames(pipe_cli, talloc_tos(),
 					 &domain_handle,
 					 1,
 					 &lsa_account_name,
@@ -2856,7 +2856,7 @@ WERROR NetUserGetGroups_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
-	status = rpccli_samr_OpenUser(pipe_cli, ctx,
+	status = rpccli_samr_OpenUser(pipe_cli, talloc_tos(),
 				      &domain_handle,
 				      SAMR_USER_ACCESS_GET_GROUPS,
 				      user_rids.ids[0],
@@ -2866,7 +2866,7 @@ WERROR NetUserGetGroups_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
-	status = rpccli_samr_GetGroupsForUser(pipe_cli, ctx,
+	status = rpccli_samr_GetGroupsForUser(pipe_cli, talloc_tos(),
 					      &user_handle,
 					      &rid_array);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -2884,7 +2884,7 @@ WERROR NetUserGetGroups_r(struct libnetapi_ctx *ctx,
 		rids[i] = rid_array->rids[i].rid;
 	}
 
-	status = rpccli_samr_LookupRids(pipe_cli, ctx,
+	status = rpccli_samr_LookupRids(pipe_cli, talloc_tos(),
 					&domain_handle,
 					rid_array->count,
 					rids,
@@ -2996,7 +2996,7 @@ WERROR NetUserSetGroups_r(struct libnetapi_ctx *ctx,
 
 	init_lsa_String(&lsa_account_name, r->in.user_name);
 
-	status = rpccli_samr_LookupNames(pipe_cli, ctx,
+	status = rpccli_samr_LookupNames(pipe_cli, talloc_tos(),
 					 &domain_handle,
 					 1,
 					 &lsa_account_name,
@@ -3007,7 +3007,7 @@ WERROR NetUserSetGroups_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
-	status = rpccli_samr_OpenUser(pipe_cli, ctx,
+	status = rpccli_samr_OpenUser(pipe_cli, talloc_tos(),
 				      &domain_handle,
 				      SAMR_USER_ACCESS_GET_GROUPS,
 				      user_rids.ids[0],
@@ -3046,7 +3046,7 @@ WERROR NetUserSetGroups_r(struct libnetapi_ctx *ctx,
 		}
 	}
 
-	status = rpccli_samr_LookupNames(pipe_cli, ctx,
+	status = rpccli_samr_LookupNames(pipe_cli, talloc_tos(),
 					 &domain_handle,
 					 r->in.num_entries,
 					 lsa_names,
@@ -3060,7 +3060,7 @@ WERROR NetUserSetGroups_r(struct libnetapi_ctx *ctx,
 	member_rids = group_rids.ids;
 	num_member_rids = group_rids.count;
 
-	status = rpccli_samr_GetGroupsForUser(pipe_cli, ctx,
+	status = rpccli_samr_GetGroupsForUser(pipe_cli, talloc_tos(),
 					      &user_handle,
 					      &rid_array);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -3111,7 +3111,7 @@ WERROR NetUserSetGroups_r(struct libnetapi_ctx *ctx,
 	/* add list */
 
 	for (i=0; i < num_add_rids; i++) {
-		status = rpccli_samr_OpenGroup(pipe_cli, ctx,
+		status = rpccli_samr_OpenGroup(pipe_cli, talloc_tos(),
 					       &domain_handle,
 					       SAMR_GROUP_ACCESS_ADD_MEMBER,
 					       add_rids[i],
@@ -3121,7 +3121,7 @@ WERROR NetUserSetGroups_r(struct libnetapi_ctx *ctx,
 			goto done;
 		}
 
-		status = rpccli_samr_AddGroupMember(pipe_cli, ctx,
+		status = rpccli_samr_AddGroupMember(pipe_cli, talloc_tos(),
 						    &group_handle,
 						    user_rids.ids[0],
 						    7 /* ? */);
@@ -3131,14 +3131,14 @@ WERROR NetUserSetGroups_r(struct libnetapi_ctx *ctx,
 		}
 
 		if (is_valid_policy_hnd(&group_handle)) {
-			rpccli_samr_Close(pipe_cli, ctx, &group_handle);
+			rpccli_samr_Close(pipe_cli, talloc_tos(), &group_handle);
 		}
 	}
 
 	/* del list */
 
 	for (i=0; i < num_del_rids; i++) {
-		status = rpccli_samr_OpenGroup(pipe_cli, ctx,
+		status = rpccli_samr_OpenGroup(pipe_cli, talloc_tos(),
 					       &domain_handle,
 					       SAMR_GROUP_ACCESS_REMOVE_MEMBER,
 					       del_rids[i],
@@ -3148,7 +3148,7 @@ WERROR NetUserSetGroups_r(struct libnetapi_ctx *ctx,
 			goto done;
 		}
 
-		status = rpccli_samr_DeleteGroupMember(pipe_cli, ctx,
+		status = rpccli_samr_DeleteGroupMember(pipe_cli, talloc_tos(),
 						       &group_handle,
 						       user_rids.ids[0]);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -3157,7 +3157,7 @@ WERROR NetUserSetGroups_r(struct libnetapi_ctx *ctx,
 		}
 
 		if (is_valid_policy_hnd(&group_handle)) {
-			rpccli_samr_Close(pipe_cli, ctx, &group_handle);
+			rpccli_samr_Close(pipe_cli, talloc_tos(), &group_handle);
 		}
 	}
 
@@ -3165,7 +3165,7 @@ WERROR NetUserSetGroups_r(struct libnetapi_ctx *ctx,
 
  done:
 	if (is_valid_policy_hnd(&group_handle)) {
-		rpccli_samr_Close(pipe_cli, ctx, &group_handle);
+		rpccli_samr_Close(pipe_cli, talloc_tos(), &group_handle);
 	}
 
 	if (ctx->disable_policy_handle_cache) {
@@ -3290,7 +3290,7 @@ WERROR NetUserGetLocalGroups_r(struct libnetapi_ctx *ctx,
 
 	init_lsa_String(&lsa_account_name, r->in.user_name);
 
-	status = rpccli_samr_LookupNames(pipe_cli, ctx,
+	status = rpccli_samr_LookupNames(pipe_cli, talloc_tos(),
 					 &domain_handle,
 					 1,
 					 &lsa_account_name,
@@ -3301,7 +3301,7 @@ WERROR NetUserGetLocalGroups_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
-	status = rpccli_samr_OpenUser(pipe_cli, ctx,
+	status = rpccli_samr_OpenUser(pipe_cli, talloc_tos(),
 				      &domain_handle,
 				      SAMR_USER_ACCESS_GET_GROUPS,
 				      user_rids.ids[0],
@@ -3311,7 +3311,7 @@ WERROR NetUserGetLocalGroups_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
-	status = rpccli_samr_GetGroupsForUser(pipe_cli, ctx,
+	status = rpccli_samr_GetGroupsForUser(pipe_cli, talloc_tos(),
 					      &user_handle,
 					      &rid_array);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -3352,7 +3352,7 @@ WERROR NetUserGetLocalGroups_r(struct libnetapi_ctx *ctx,
 		}
 	}
 
-	status = rpccli_samr_GetAliasMembership(pipe_cli, ctx,
+	status = rpccli_samr_GetAliasMembership(pipe_cli, talloc_tos(),
 						&domain_handle,
 						&sid_array,
 						&domain_rids);
@@ -3369,7 +3369,7 @@ WERROR NetUserGetLocalGroups_r(struct libnetapi_ctx *ctx,
 		}
 	}
 
-	status = rpccli_samr_GetAliasMembership(pipe_cli, ctx,
+	status = rpccli_samr_GetAliasMembership(pipe_cli, talloc_tos(),
 						&builtin_handle,
 						&sid_array,
 						&builtin_rids);
@@ -3386,7 +3386,7 @@ WERROR NetUserGetLocalGroups_r(struct libnetapi_ctx *ctx,
 		}
 	}
 
-	status = rpccli_samr_LookupRids(pipe_cli, ctx,
+	status = rpccli_samr_LookupRids(pipe_cli, talloc_tos(),
 					&builtin_handle,
 					num_rids,
 					rids,

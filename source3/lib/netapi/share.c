@@ -215,7 +215,7 @@ WERROR NetShareAdd_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
-	status = rpccli_srvsvc_NetShareAdd(pipe_cli, ctx,
+	status = rpccli_srvsvc_NetShareAdd(pipe_cli, talloc_tos(),
 					   r->in.server_name,
 					   r->in.level,
 					   &info,
@@ -259,7 +259,7 @@ WERROR NetShareDel_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
-	status = rpccli_srvsvc_NetShareDel(pipe_cli, ctx,
+	status = rpccli_srvsvc_NetShareDel(pipe_cli, talloc_tos(),
 					   r->in.server_name,
 					   r->in.net_name,
 					   r->in.reserved,
@@ -338,7 +338,7 @@ WERROR NetShareEnum_r(struct libnetapi_ctx *ctx,
 			break;
 	}
 
-	status = rpccli_srvsvc_NetShareEnumAll(pipe_cli, ctx,
+	status = rpccli_srvsvc_NetShareEnumAll(pipe_cli, talloc_tos(),
 					       r->in.server_name,
 					       &info_ctr,
 					       r->in.prefmaxlen,
@@ -423,7 +423,7 @@ WERROR NetShareGetInfo_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
-	status = rpccli_srvsvc_NetShareGetInfo(pipe_cli, ctx,
+	status = rpccli_srvsvc_NetShareGetInfo(pipe_cli, talloc_tos(),
 					       r->in.server_name,
 					       r->in.net_name,
 					       r->in.level,
@@ -502,7 +502,7 @@ WERROR NetShareSetInfo_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
-	status = rpccli_srvsvc_NetShareSetInfo(pipe_cli, ctx,
+	status = rpccli_srvsvc_NetShareSetInfo(pipe_cli, talloc_tos(),
 					       r->in.server_name,
 					       r->in.net_name,
 					       r->in.level,
