@@ -552,6 +552,3 @@ class PlainFormatter(TestsuiteEnabledTestResult):
         self.skips.setdefault(reason, []).append(name)
         if self.totalsuites:
             self.totalsuites-=1
-
-
-class TestProtocolServer(subunit.TestProtocolServer):
