@@ -1634,7 +1634,6 @@ samba_kdc_check_pkinit_ms_upn_match(krb5_context context,
 NTSTATUS samba_kdc_setup_db_ctx(TALLOC_CTX *mem_ctx, struct samba_kdc_base_context *base_ctx,
 				struct samba_kdc_db_context **kdc_db_ctx_out)
 {
-	NTSTATUS nt_status;
 	int ldb_ret;
 	struct ldb_message *msg;
 	struct auth_session_info *session_info;
