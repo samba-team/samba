@@ -347,9 +347,15 @@ void msg_force_tdis(struct messaging_context *msg,
 		    struct server_id server_id,
 		    DATA_BLOB *data)
 {
-	struct smbd_server_connection *sconn = smbd_server_conn;
+	struct smbd_server_connection *sconn;
 	connection_struct *conn, *next;
 	fstring sharename;
+
+	sconn = msg_ctx_to_sconn(msg);
+	if (sconn == NULL) {
+		DEBUG(1, ("could not find sconn\n"));
+		return;
+	}
 
 	fstrcpy(sharename, (const char *)data->data);
 
