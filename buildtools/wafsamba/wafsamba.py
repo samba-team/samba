@@ -117,6 +117,9 @@ def SAMBA_LIBRARY(bld, libname, source,
                   hide_symbols=False,
                   is_bundled=False,
                   manpages=None,
+                  heimdal_autoproto=None,
+                  heimdal_autoproto_options=None,
+                  heimdal_autoproto_private=None,
                   enabled=True):
     '''define a Samba library'''
 
@@ -216,6 +219,11 @@ def SAMBA_LIBRARY(bld, libname, source,
 
     if manpages is not None and 'XSLTPROC_MANPAGES' in bld.env and bld.env['XSLTPROC_MANPAGES']:
         bld.MANPAGES(manpages)
+
+    if heimdal_autoproto is not None:
+        bld.HEIMDAL_AUTOPROTO(heimdal_autoproto, source, options=heimdal_autoproto_options)
+    if heimdal_autoproto_private is not None:
+        bld.HEIMDAL_AUTOPROTO_PRIVATE(heimdal_autoproto_private, source)
 
 
 Build.BuildContext.SAMBA_LIBRARY = SAMBA_LIBRARY
@@ -394,9 +402,6 @@ def SAMBA_SUBSYSTEM(bld, modname, source,
                     cflags_end=None,
                     group='main',
                     init_function_sentinal=None,
-                    heimdal_autoproto=None,
-                    heimdal_autoproto_options=None,
-                    heimdal_autoproto_private=None,
                     autoproto=None,
                     autoproto_extra_source='',
                     depends_on='',
@@ -452,10 +457,6 @@ def SAMBA_SUBSYSTEM(bld, modname, source,
     if cflags_end is not None:
         t.samba_cflags.extend(TO_LIST(cflags_end))
 
-    if heimdal_autoproto is not None:
-        bld.HEIMDAL_AUTOPROTO(heimdal_autoproto, source, options=heimdal_autoproto_options)
-    if heimdal_autoproto_private is not None:
-        bld.HEIMDAL_AUTOPROTO_PRIVATE(heimdal_autoproto_private, source)
     if autoproto is not None:
         bld.SAMBA_AUTOPROTO(autoproto, source + TO_LIST(autoproto_extra_source))
     if public_headers is not None:
