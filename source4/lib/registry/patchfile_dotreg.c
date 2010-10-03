@@ -46,7 +46,7 @@ struct dotreg_data {
  */
 _PUBLIC_ char *dotreg_data_blob_hex_string(TALLOC_CTX *mem_ctx, const DATA_BLOB *blob)
 {
-	int i;
+	size_t i;
 	char *hex_string;
 
 	hex_string = talloc_array(mem_ctx, char, (blob->length*3)+1);
