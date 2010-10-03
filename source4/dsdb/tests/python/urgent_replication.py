@@ -96,7 +96,7 @@ class UrgentReplicationTests(samba.tests.TestCase):
             "objectclass":"server",
             "cn":"test server",
             "name":"test server",
-            "systemFlags":"50000000"});
+            "systemFlags":"50000000", ["relax:0"]});
 
         self.ldb.add_ldif(
             """dn: cn=NTDS Settings test,cn=test server,cn=Servers,cn=Default-First-Site-Name,cn=Sites,cn=Configuration,%s""" % (self.base_dn) + """
@@ -139,7 +139,7 @@ systemFlags: 33554432""", ["relax:0"]);
                       "nCName": self.base_dn,
                       "showInAdvancedViewOnly": "TRUE",
                       "name": "test crossRef",
-                      "systemFlags": "1"});
+                      "systemFlags": "1", ["relax:0"]});
 
         # urgent replication should be enabled when creating
         res = self.ldb.load_partition_usn("cn=Configuration," + self.base_dn)
@@ -182,8 +182,7 @@ oMSyntax: 64
 systemOnly: FALSE
 searchFlags: 8
 lDAPDisplayName: test attributeSchema
-name: test attributeSchema
-systemFlags: 0""");
+name: test attributeSchema""");
 
             # urgent replication should be enabled when creating
             res = self.ldb.load_partition_usn("cn=Schema,cn=Configuration," + self.base_dn)
