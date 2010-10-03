@@ -91,6 +91,40 @@ static WERROR check_prerequsites(struct dns_server *dns,
 	return WERR_OK;
 }
 
+static WERROR update_prescan(const struct dns_name_question *zone,
+			     const struct dns_res_rec *updates, uint16_t count)
+{
+	const struct dns_res_rec *r;
+	uint16_t i;
+	size_t host_part_len;
+	bool match;
+
+	for (i = 0; i < count; i++) {
+		r = &updates[i];
+		match = dns_name_match(zone->name, r->name, &host_part_len);
+		if (!match) {
+			return DNS_ERR(NOTZONE);
+		}
+		if (zone->question_class == r->rr_class) {
+			/*TODO: also check for AXFR,MAILA,MAILB  */
+			if (r->rr_type == DNS_QTYPE_ALL) {
+				return DNS_ERR(FORMAT_ERROR);
+			}
+		} else if (r->rr_class == DNS_QCLASS_ANY) {
+			if (r->ttl != 0 || r->length != 0) {
+				return DNS_ERR(FORMAT_ERROR);
+			}
+		} else if (r->rr_class == DNS_QCLASS_NONE) {
+			if (r->ttl != 0 || r->rr_type == DNS_QTYPE_ALL) {
+				return DNS_ERR(FORMAT_ERROR);
+			}
+		} else {
+			return DNS_ERR(FORMAT_ERROR);
+		}
+	}
+	return WERR_OK;
+}
+
 WERROR dns_server_process_update(struct dns_server *dns,
 				 TALLOC_CTX *mem_ctx,
 				 struct dns_name_packet *in,
@@ -143,6 +177,9 @@ WERROR dns_server_process_update(struct dns_server *dns,
 	if (!update_allowed) {
 		return DNS_ERR(REFUSED);
 	}
+
+	werror = update_prescan(in->questions, *updates, *update_count);
+	W_ERROR_NOT_OK_RETURN(werror);
 
 	return werror;
 }
