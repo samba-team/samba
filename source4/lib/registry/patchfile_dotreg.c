@@ -40,6 +40,62 @@ struct dotreg_data {
 	int fd;
 };
 
+/* 
+ * This is basically a copy of data_blob_hex_string_upper, but with comma's 
+ * between the bytes in hex.
+ */
+_PUBLIC_ char *dotreg_data_blob_hex_string(TALLOC_CTX *mem_ctx, const DATA_BLOB *blob)
+{
+	int i;
+	char *hex_string;
+
+	hex_string = talloc_array(mem_ctx, char, (blob->length*3)+1);
+	if (!hex_string) {
+		return NULL;
+	}
+
+	for (i = 0; i < blob->length; i++)
+		slprintf(&hex_string[i*3], 4, "%02X,", blob->data[i]);
+
+	hex_string[(blob->length*3)] = '\0';
+	return hex_string;
+}
+
+/* 
+ * This is basically a copy of reg_val_data_string, except that this function
+ * has no 0x for dwords, everything else is regarded as binary, and binary 
+ * strings are represented with bytes comma-separated.
+ */
+_PUBLIC_ char *reg_val_dotreg_string(TALLOC_CTX *mem_ctx, uint32_t type,
+				   const DATA_BLOB data)
+{
+	char *ret = NULL;
+
+	if (data.length == 0)
+		return talloc_strdup(mem_ctx, "");
+
+	switch (type) {
+		case REG_EXPAND_SZ:
+		case REG_SZ:
+			convert_string_talloc(mem_ctx,
+							  CH_UTF16, CH_UNIX, data.data, data.length,
+							  (void **)&ret, NULL, false);
+			break;
+		case REG_DWORD:
+		case REG_DWORD_BIG_ENDIAN:
+			SMB_ASSERT(data.length == sizeof(uint32_t));
+			ret = talloc_asprintf(mem_ctx, "%08x",
+					      IVAL(data.data, 0));
+			break;
+		default: /* default means treat as binary */
+		case REG_BINARY:
+			ret = dotreg_data_blob_hex_string(mem_ctx, &data);
+			break;
+	}
+
+	return ret;
+}
+
 static WERROR reg_dotreg_diff_add_key(void *_data, const char *key_name)
 {
 	struct dotreg_data *data = (struct dotreg_data *)_data;
@@ -63,11 +119,25 @@ static WERROR reg_dotreg_diff_set_value(void *_data, const char *path,
 					uint32_t value_type, DATA_BLOB value)
 {
 	struct dotreg_data *data = (struct dotreg_data *)_data;
-	char *data_string = reg_val_data_string(NULL, 
+	char *data_string = reg_val_dotreg_string(NULL, 
 						value_type, value);
+	char *type_string;
+
 	W_ERROR_HAVE_NO_MEMORY(data_string);
-	fdprintf(data->fd, "\"%s\"=%s:%s\n",
-		 value_name, str_regtype(value_type), data_string);
+	if (value_type == REG_DWORD) {
+		type_string = talloc_strdup(data_string ,"dword");
+	} else if (value_type == REG_BINARY) {
+		type_string = talloc_strdup(data_string, "hex");
+	} else {
+		type_string = talloc_asprintf(data_string, "hex(%x)", value_type);
+	}
+	if (value_name[0] == '\0') {
+		fdprintf(data->fd, "@=%s:%s\n", type_string, data_string);
+	} else {
+		fdprintf(data->fd, "\"%s\"=%s:%s\n",
+			 value_name, type_string, data_string);
+	}
+
 	talloc_free(data_string);
 
 	return WERR_OK;
