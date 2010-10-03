@@ -1654,26 +1654,10 @@ NTSTATUS samba_kdc_setup_db_ctx(TALLOC_CTX *mem_ctx, struct samba_kdc_base_conte
 	kdc_db_ctx->ev_ctx = base_ctx->ev_ctx;
 	kdc_db_ctx->lp_ctx = base_ctx->lp_ctx;
 
-#if 1
-	/* we would prefer to use system_session(), as that would
-	 * allow us to share the samdb backend context with other parts of the
-	 * system. For now we can't as we need to override the
-	 * credentials to set CRED_DONT_USE_KERBEROS, which would
-	 * break other users of the system_session */
-	DEBUG(0,("FIXME: Using new system session for hdb\n"));
-	nt_status = auth_system_session_info(kdc_db_ctx, base_ctx->lp_ctx, &session_info);
-	if (!NT_STATUS_IS_OK(nt_status)) {
-	       return nt_status;
-	}
-#else
 	session_info = system_session(kdc_db_ctx->lp_ctx);
 	if (session_info == NULL) {
 		return NT_STATUS_INTERNAL_ERROR;
 	}
-#endif
-
-	cli_credentials_set_kerberos_state(session_info->credentials,
-					   CRED_DONT_USE_KERBEROS);
 
 	/* Setup the link to LDB */
 	kdc_db_ctx->samdb = samdb_connect(kdc_db_ctx, base_ctx->ev_ctx,
