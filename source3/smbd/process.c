@@ -1570,7 +1570,8 @@ static connection_struct *switch_message(uint8 type, struct smb_request *req, in
  Construct a reply to the incoming packet.
 ****************************************************************************/
 
-static void construct_reply(char *inbuf, int size, size_t unread_bytes,
+static void construct_reply(struct smbd_server_connection *sconn,
+			    char *inbuf, int size, size_t unread_bytes,
 			    uint32_t seqnum, bool encrypted,
 			    struct smb_perfcount_data *deferred_pcd)
 {
@@ -1581,8 +1582,8 @@ static void construct_reply(char *inbuf, int size, size_t unread_bytes,
 		smb_panic("could not allocate smb_request");
 	}
 
-	if (!init_smb_request(req, smbd_server_conn, (uint8 *)inbuf,
-			      unread_bytes, encrypted, seqnum)) {
+	if (!init_smb_request(req, sconn, (uint8 *)inbuf, unread_bytes,
+			      encrypted, seqnum)) {
 		exit_server_cleanly("Invalid SMB request");
 	}
 
@@ -1675,7 +1676,8 @@ static void process_smb(struct smbd_server_connection *sconn,
 
 	show_msg((char *)inbuf);
 
-	construct_reply((char *)inbuf,nread,unread_bytes,seqnum,encrypted,deferred_pcd);
+	construct_reply(sconn, (char *)inbuf, nread, unread_bytes, seqnum,
+			encrypted, deferred_pcd);
 	sconn->trans_num++;
 
 done:
