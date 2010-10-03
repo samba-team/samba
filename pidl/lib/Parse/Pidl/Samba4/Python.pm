@@ -506,7 +506,7 @@ sub PythonFunctionPackIn($$$)
 		if ($metadata_args->{in}->{$e->{NAME}}) {
 			my $py_var = "py_".$metadata_args->{in}->{$e->{NAME}};
 			$self->pidl("PY_CHECK_TYPE(&PyList_Type, $py_var, $fail);");
-			my $val = "PyList_Size($py_var)";
+			my $val = "PyList_GET_SIZE($py_var)";
 			if ($e->{LEVELS}[0]->{TYPE} eq "POINTER") {
 				$self->pidl("r->in.$e->{NAME} = talloc_ptrtype(r, r->in.$e->{NAME});");
 				$self->pidl("*r->in.$e->{NAME} = $val;");
@@ -844,8 +844,21 @@ sub ConvertObjectFromPythonData($$$$$$;$)
 	}
 
 	if ($actual_ctype->{TYPE} eq "ENUM" or $actual_ctype->{TYPE} eq "BITMAP") {
-		$self->pidl("PY_CHECK_TYPE(&PyInt_Type, $cvar, $fail);");
+		$self->pidl("if (PyLong_Check($cvar)) {");
+		$self->indent;
+		$self->pidl("$target = PyLong_AsLongLong($cvar);");
+		$self->deindent;
+		$self->pidl("} else if (PyInt_Check($cvar)) {");
+		$self->indent;
 		$self->pidl("$target = PyInt_AsLong($cvar);");
+		$self->deindent;
+		$self->pidl("} else {");
+		$self->indent;
+		$self->pidl("PyErr_Format(PyExc_TypeError, \"Expected type %s or %s\",\\");
+		$self->pidl("  PyInt_Type.tp_name, PyLong_Type.tp_name);");
+		$self->pidl($fail);
+		$self->deindent;
+		$self->pidl("}");
 		return;
 	}
 	if ($actual_ctype->{TYPE} eq "SCALAR" ) {
@@ -863,8 +876,6 @@ sub ConvertObjectFromPythonData($$$$$$;$)
 			$self->pidl("PyErr_Format(PyExc_TypeError, \"Expected type %s or %s\",\\");
 			$self->pidl("  PyInt_Type.tp_name, PyLong_Type.tp_name);");
 			$self->pidl($fail);
-			$self->deindent;
-			$self->pidl("}");
 			$self->deindent;
 			$self->pidl("}");
 			return;
@@ -895,23 +906,23 @@ sub ConvertObjectFromPythonData($$$$$$;$)
 	}
 
 	if ($actual_ctype->{TYPE} eq "SCALAR" and $actual_ctype->{NAME} eq "DATA_BLOB") {
-		$self->pidl("$target = data_blob_talloc($mem_ctx, PyString_AsString($cvar), PyString_Size($cvar));");
+		$self->pidl("$target = data_blob_talloc($mem_ctx, PyString_AS_STRING($cvar), PyString_GET_SIZE($cvar));");
 		return;
 	}
 
 	if ($actual_ctype->{TYPE} eq "SCALAR" and 
 		($actual_ctype->{NAME} eq "string" or $actual_ctype->{NAME} eq "nbt_string" or $actual_ctype->{NAME} eq "nbt_name" or $actual_ctype->{NAME} eq "wrepl_nbt_name")) {
-		$self->pidl("$target = talloc_strdup($mem_ctx, PyString_AsString($cvar));");
+		$self->pidl("$target = talloc_strdup($mem_ctx, PyString_AS_STRING($cvar));");
 		return;
 	}
 
 	if ($actual_ctype->{TYPE} eq "SCALAR" and $actual_ctype->{NAME} eq "ipv4address") {
-		$self->pidl("$target = PyString_AsString($cvar);");
+		$self->pidl("$target = PyString_AS_STRING($cvar);");
 		return;
 	}
 
 	if ($actual_ctype->{TYPE} eq "SCALAR" and $actual_ctype->{NAME} eq "dnsp_name") {
-		$self->pidl("$target = PyString_AsString($cvar);");
+		$self->pidl("$target = PyString_AS_STRING($cvar);");
 		return;
 	}
 
@@ -980,11 +991,11 @@ sub ConvertObjectFromPythonLevel($$$$$$$$)
 			$self->pidl("if (PyUnicode_Check($py_var)) {");
 			$self->indent;
 			# FIXME: Use Unix charset setting rather than utf-8
-			$self->pidl($var_name . " = PyString_AsString(PyUnicode_AsEncodedString($py_var, \"utf-8\", \"ignore\"));");
+			$self->pidl($var_name . " = PyString_AS_STRING(PyUnicode_AsEncodedString($py_var, \"utf-8\", \"ignore\"));");
 			$self->deindent;
 			$self->pidl("} else if (PyString_Check($py_var)) {");
 			$self->indent;
-			$self->pidl($var_name . " = PyString_AsString($py_var);");
+			$self->pidl($var_name . " = PyString_AS_STRING($py_var);");
 			$self->deindent;
 			$self->pidl("} else {");
 			$self->indent;
@@ -999,13 +1010,13 @@ sub ConvertObjectFromPythonLevel($$$$$$$$)
 			$self->indent;
 			$self->pidl("int $counter;");
 			if (ArrayDynamicallyAllocated($e, $l)) {
-				$self->pidl("$var_name = talloc_array_ptrtype($mem_ctx, $var_name, PyList_Size($py_var));");
+				$self->pidl("$var_name = talloc_array_ptrtype($mem_ctx, $var_name, PyList_GET_SIZE($py_var));");
 				$self->pidl("if (!$var_name) { $fail; }");
 				$self->pidl("talloc_set_name_const($var_name, \"ARRAY: $var_name\");");
 			}
-			$self->pidl("for ($counter = 0; $counter < PyList_Size($py_var); $counter++) {");
+			$self->pidl("for ($counter = 0; $counter < PyList_GET_SIZE($py_var); $counter++) {");
 			$self->indent;
-			$self->ConvertObjectFromPythonLevel($env, $var_name, "PyList_GetItem($py_var, $counter)", $e, GetNextLevel($e, $l), $var_name."[$counter]", $fail);
+			$self->ConvertObjectFromPythonLevel($env, $var_name, "PyList_GET_ITEM($py_var, $counter)", $e, GetNextLevel($e, $l), $var_name."[$counter]", $fail);
 			$self->deindent;
 			$self->pidl("}");
 			$self->deindent;
