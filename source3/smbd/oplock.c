@@ -429,11 +429,18 @@ void process_oplock_async_level2_break_message(struct messaging_context *msg_ctx
 						      struct server_id src,
 						      DATA_BLOB *data)
 {
+	struct smbd_server_connection *sconn;
 	struct share_mode_entry msg;
 	files_struct *fsp;
 
 	if (data->data == NULL) {
 		DEBUG(0, ("Got NULL buffer\n"));
+		return;
+	}
+
+	sconn = msg_ctx_to_sconn(msg_ctx);
+	if (sconn == NULL) {
+		DEBUG(1, ("could not find sconn\n"));
 		return;
 	}
 
@@ -449,8 +456,7 @@ void process_oplock_async_level2_break_message(struct messaging_context *msg_ctx
 		   "%s/%lu\n", procid_str(talloc_tos(), &src),
 		   file_id_string_tos(&msg.id), msg.share_file_id));
 
-	fsp = initial_break_processing(smbd_server_conn, msg.id,
-				       msg.share_file_id);
+	fsp = initial_break_processing(sconn, msg.id, msg.share_file_id);
 
 	if (fsp == NULL) {
 		/* We hit a race here. Break messages are sent, and before we
