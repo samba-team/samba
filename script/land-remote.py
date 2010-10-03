@@ -4,8 +4,11 @@
 # Published under the GPL, v3 or later
 
 import optparse
+import os
 import subprocess
 import sys
+
+samba_master = os.getenv('SAMBA_MASTER', 'git://git.samba.org/samba.git')
 
 parser = optparse.OptionParser("autoland-remote [options] [trees...]")
 parser.add_option("--remote-repo", help="Location of remote repository (default: temporary repository)", type=str, default=None)
@@ -14,6 +17,10 @@ parser.add_option("--foreground", help="Don't daemonize", action="store_true", d
 parser.add_option("--email", help="Email address to send build/test output to", type=str, default=None, metavar="EMAIL")
 parser.add_option("--always-email", help="always send email, even on success", action="store_true")
 parser.add_option("--rebase-master", help="rebase on master before testing", default=False, action='store_true')
+parser.add_option("--push-master", help="push to samba.org master on success",
+                  default=False, action='store_true')
+parser.add_option("--pushto", help="push to a git url on success",
+                  default=None, type='str')
 parser.add_option("--rebase", help="rebase on the given tree before testing", default=None, type='str')
 parser.add_option("--passcmd", help="command to run on success", default=None)
 parser.add_option("--tail", help="show output while running", default=False, action="store_true")
@@ -31,6 +38,10 @@ if not opts.foreground and not opts.email:
     print "Not running in foreground and --email not specified."
     sys.exit(1)
 
+if not opts.foreground and opts.push_master:
+    print "Unable to push to master when not running in foreground."
+    sys.exit(1)
+
 if not opts.remote_repo:
     print "%s$ mktemp -d" % opts.host
     f = subprocess.Popen(["ssh", opts.host, "mktemp", "-d"], stdout=subprocess.PIPE)
@@ -40,7 +51,7 @@ if not opts.remote_repo:
     remote_repo = stdout.rstrip()
     print "Remote tempdir: %s" % remote_repo
     # Bootstrap, git.samba.org is close to sn-devel
-    remote_args = ["git", "clone", "git://git.samba.org/samba.git", remote_repo]
+    remote_args = ["git", "clone", samba_master, remote_repo]
     #remote_args = ["git", "init", remote_repo]
     print "%s$ %s" % (opts.host, " ".join(remote_args))
     subprocess.check_call(["ssh", opts.host] + remote_args)
@@ -77,6 +88,10 @@ if opts.rebase:
     remote_args.append("--rebase=%s" % opts.rebase)
 if opts.passcmd:
     remote_args.append("--passcmd=%s" % opts.passcmd)
+if opts.pushto:
+    remote_args.append("--pushto=%s" % opts.pushto)
+if opts.push_master:
+    remote_args.append("--push-master")
 
 remote_args += extra_args
 print "%s$ %s" % (opts.host, " ".join(remote_args))

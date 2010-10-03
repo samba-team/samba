@@ -448,13 +448,16 @@ def daemonize(logfile):
 
 def rebase_tree(url):
     print("Rebasing on %s" % url)
-    run_cmd(["git", "remote", "add", "-t", "master", "master", url], show=True, dir=test_master)
+    run_cmd(["git", "remote", "add", "-t", "master", "master", url], show=True,
+            dir=test_master)
     run_cmd(["git", "fetch", "master"], show=True, dir=test_master)
     if options.fix_whitespace:
-        run_cmd(["git", "rebase", "--whitespace=fix", "master/master"], show=True, dir=test_master)
+        run_cmd(["git", "rebase", "--whitespace=fix", "master/master"],
+                show=True, dir=test_master)
     else:
         run_cmd(["git", "rebase", "master/master"], show=True, dir=test_master)
-    diff = run_cmd(["git", "--no-pager", "diff", "HEAD", "master/master"], dir=test_master, output=True)
+    diff = run_cmd(["git", "--no-pager", "diff", "HEAD", "master/master"],
+        dir=test_master, output=True)
     if diff == '':
         print("No differences between HEAD and master/master - exiting")
         sys.exit(0)
@@ -462,46 +465,51 @@ def rebase_tree(url):
 def push_to(url):
     print("Pushing to %s" % url)
     if options.mark:
-        run_cmd("EDITOR=script/commit_mark.sh git commit --amend -c HEAD", dir=test_master, shell=True)
-        # the notes method doesn't work yet, as metze hasn't allowed refs/notes/* in master
-        # run_cmd("EDITOR=script/commit_mark.sh git notes edit HEAD", dir=test_master)
-    run_cmd(["git", "remote", "add", "-t", "master", "pushto", url], show=True, dir=test_master)
-    run_cmd(["git", "push", "pushto", "+HEAD:master"], show=True, dir=test_master)
+        run_cmd("EDITOR=script/commit_mark.sh git commit --amend -c HEAD",
+            dir=test_master, shell=True)
+        # the notes method doesn't work yet, as metze hasn't allowed
+        # refs/notes/* in master
+        # run_cmd("EDITOR=script/commit_mark.sh git notes edit HEAD",
+        #     dir=test_master)
+    run_cmd(["git", "remote", "add", "-t", "master", "pushto", url], show=True,
+        dir=test_master)
+    run_cmd(["git", "push", "pushto", "+HEAD:master"], show=True,
+        dir=test_master)
 
 def_testbase = os.getenv("AUTOBUILD_TESTBASE", "/memdisk/%s" % os.getenv('USER'))
 
 parser = OptionParser()
-parser.add_option("", "--repository", help="repository to run tests for", default=None, type=str)
-parser.add_option("", "--revision", help="revision to compile if not HEAD", default=None, type=str)
-parser.add_option("", "--tail", help="show output while running", default=False, action="store_true")
-parser.add_option("", "--keeplogs", help="keep logs", default=False, action="store_true")
-parser.add_option("", "--nocleanup", help="don't remove test tree", default=False, action="store_true")
-parser.add_option("", "--testbase", help="base directory to run tests in (default %s)" % def_testbase,
+parser.add_option("--repository", help="repository to run tests for", default=None, type=str)
+parser.add_option("--revision", help="revision to compile if not HEAD", default=None, type=str)
+parser.add_option("--tail", help="show output while running", default=False, action="store_true")
+parser.add_option("--keeplogs", help="keep logs", default=False, action="store_true")
+parser.add_option("--nocleanup", help="don't remove test tree", default=False, action="store_true")
+parser.add_option("--testbase", help="base directory to run tests in (default %s)" % def_testbase,
                   default=def_testbase)
-parser.add_option("", "--passcmd", help="command to run on success", default=None)
-parser.add_option("", "--verbose", help="show all commands as they are run",
+parser.add_option("--passcmd", help="command to run on success", default=None)
+parser.add_option("--verbose", help="show all commands as they are run",
                   default=False, action="store_true")
-parser.add_option("", "--rebase", help="rebase on the given tree before testing",
+parser.add_option("--rebase", help="rebase on the given tree before testing",
                   default=None, type='str')
-parser.add_option("", "--rebase-master", help="rebase on %s before testing" % samba_master,
+parser.add_option("--rebase-master", help="rebase on %s before testing" % samba_master,
                   default=False, action='store_true')
-parser.add_option("", "--pushto", help="push to a git url on success",
+parser.add_option("--pushto", help="push to a git url on success",
                   default=None, type='str')
-parser.add_option("", "--push-master", help="push to %s on success" % samba_master_ssh,
+parser.add_option("--push-master", help="push to %s on success" % samba_master_ssh,
                   default=False, action='store_true')
-parser.add_option("", "--mark", help="add a Tested-By signoff before pushing",
+parser.add_option("--mark", help="add a Tested-By signoff before pushing",
                   default=False, action="store_true")
-parser.add_option("", "--fix-whitespace", help="fix whitespace on rebase",
+parser.add_option("--fix-whitespace", help="fix whitespace on rebase",
                   default=False, action="store_true")
-parser.add_option("", "--retry", help="automatically retry if master changes",
+parser.add_option("--retry", help="automatically retry if master changes",
                   default=False, action="store_true")
-parser.add_option("", "--email", help="send email to the given address on failure",
+parser.add_option("--email", help="send email to the given address on failure",
                   type='str', default=None)
-parser.add_option("", "--always-email", help="always send email, even on success",
+parser.add_option("--always-email", help="always send email, even on success",
                   action="store_true")
-parser.add_option("", "--daemon", help="daemonize after initial setup",
+parser.add_option("--daemon", help="daemonize after initial setup",
                   action="store_true")
-parser.add_option("", "--fail-slowly", help="continue running tests even after one has already failed",
+parser.add_option("--fail-slowly", help="continue running tests even after one has already failed",
                   action="store_true")
 
 
@@ -537,7 +545,8 @@ The top commit for the tree that was built was:
        get_top_commit_msg(test_master))
 
     msg = MIMEMultipart()
-    msg['Subject'] = 'autobuild failure for task %s during %s' % (failed_task, failed_stage)
+    msg['Subject'] = 'autobuild failure for task %s during %s' % (
+        failed_task, failed_stage)
     msg['From'] = 'autobuild@samba.org'
     msg['To'] = options.email
 
@@ -682,7 +691,8 @@ else:
     blist.tarlogs("logs.tar.gz")
 
     if options.email is not None:
-        email_failure(blist, status, failed_task, failed_stage, failed_tag, errstr)
+        email_failure(blist, status, failed_task, failed_stage, failed_tag,
+            errstr)
 
     cleanup()
     print(errstr)
