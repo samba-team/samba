@@ -117,9 +117,6 @@ def SAMBA_LIBRARY(bld, libname, source,
                   hide_symbols=False,
                   is_bundled=False,
                   manpages=None,
-                  heimdal_autoproto=None,
-                  heimdal_autoproto_options=None,
-                  heimdal_autoproto_private=None,
                   enabled=True):
     '''define a Samba library'''
 
@@ -219,11 +216,6 @@ def SAMBA_LIBRARY(bld, libname, source,
 
     if manpages is not None and 'XSLTPROC_MANPAGES' in bld.env and bld.env['XSLTPROC_MANPAGES']:
         bld.MANPAGES(manpages)
-
-    if heimdal_autoproto is not None:
-        bld.HEIMDAL_AUTOPROTO(heimdal_autoproto, source, options=heimdal_autoproto_options)
-    if heimdal_autoproto_private is not None:
-        bld.HEIMDAL_AUTOPROTO_PRIVATE(heimdal_autoproto_private, source)
 
 
 Build.BuildContext.SAMBA_LIBRARY = SAMBA_LIBRARY
