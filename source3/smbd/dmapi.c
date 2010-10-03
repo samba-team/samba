@@ -188,7 +188,7 @@ const void *dmapi_get_current_session(void)
 bool dmapi_have_session(void)
 {
 	if (!dmapi_ctx) {
-		dmapi_ctx = talloc(struct smbd_dmapi_context);
+		dmapi_ctx = talloc(NULL, struct smbd_dmapi_context);
 		if (!dmapi_ctx) {
 			exit_server("unable to allocate smbd_dmapi_context");
 		}
