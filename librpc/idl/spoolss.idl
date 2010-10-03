@@ -2233,6 +2233,42 @@ cpp_quote("#define spoolss_security_descriptor security_descriptor")
 
 	/******************/
 	/* Function: 0x25 */
+
+	typedef [public,gensize] struct {
+		[string,charset(UTF16)] uint16 *port_name;
+	} spoolss_SetPortInfo1;
+
+	typedef [public,gensize] struct {
+		[string,charset(UTF16)] uint16 *port_name;
+		[string,charset(UTF16)] uint16 *monitor_name;
+		[string,charset(UTF16)] uint16 *description;
+		spoolss_PortType port_type;
+		uint32 reserved;
+	} spoolss_SetPortInfo2;
+
+	typedef [public,gensize] struct {
+		spoolss_PortStatus status;
+		[string,charset(UTF16)] uint16 *status_string;
+		spoolss_PortSeverity severity;
+	} spoolss_SetPortInfo3;
+
+	typedef [public,gensize] struct {
+		[string,charset(UTF16)] uint16 *port_name;
+		DATA_BLOB monitor_data; /* relative ?? */
+	} spoolss_SetPortInfoFF;
+
+	typedef [switch_type(uint32)] union {
+		[case(1)] spoolss_SetPortInfo1 *info1;
+		[case(2)] spoolss_SetPortInfo2 *info2;
+		[case(3)] spoolss_SetPortInfo3 *info3;
+		[case(0xff)] spoolss_SetPortInfoFF *infoFF;
+	} spoolss_SetPortInfo;
+
+	typedef struct {
+		uint32 level;
+		[switch_is(level)] spoolss_SetPrinterInfo info;
+	} spoolss_SetPortInfoContainer;
+
 	WERROR spoolss_AddPort(
 	       [in,unique] [string,charset(UTF16)] uint16 *server_name,
 	       [in] uint32 unknown,
@@ -2470,7 +2506,17 @@ cpp_quote("#define spoolss_security_descriptor security_descriptor")
 
 	/******************/
 	/* Function: 0x3d */
-	[todo] WERROR spoolss_AddPortEx(
+
+	typedef struct {
+		uint32 monitor_data_size;
+		[size_is(monitor_data_size),unique] uint8 *monitor_data;
+	} spoolss_PortVarContainer;
+
+	WERROR spoolss_AddPortEx(
+		[in,unique] [string,charset(UTF16)] uint16 *servername,
+		[in,ref] spoolss_SetPortInfoContainer *port_ctr,
+		[in,ref] spoolss_PortVarContainer *port_var_ctr,
+		[in,unique] [string,charset(UTF16)] uint16 *monitor_name
 	);
 
 	/******************/
