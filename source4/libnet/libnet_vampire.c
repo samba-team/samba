@@ -68,9 +68,6 @@ struct libnet_vampire_cb_state {
 	 * converted, because we may not know them yet */
 	struct dsdb_schema *self_made_schema;
 
-	/* 2nd pass, with full ID->OID->name table */
-	struct dsdb_schema *self_corrected_schema;
-
 	/* prefixMap in LDB format, from the remote DRS server */
 	DATA_BLOB prefixmap_blob;
 	const struct dsdb_schema *schema;
@@ -565,15 +562,8 @@ NTSTATUS libnet_vampire_cb_schema_chunk(void *private_data,
 		 * other. */
 		s->self_made_schema = dsdb_new_schema(s);
 		NT_STATUS_HAVE_NO_MEMORY(s->self_made_schema);
-		s->self_corrected_schema = dsdb_new_schema(s);
-		NT_STATUS_HAVE_NO_MEMORY(s->self_corrected_schema);
 
 		status = dsdb_load_prefixmap_from_drsuapi(s->self_made_schema, mapping_ctr);
-		if (!W_ERROR_IS_OK(status)) {
-			return werror_to_ntstatus(status);
-		}
-
-		status = dsdb_load_prefixmap_from_drsuapi(s->self_corrected_schema, mapping_ctr);
 		if (!W_ERROR_IS_OK(status)) {
 			return werror_to_ntstatus(status);
 		}
