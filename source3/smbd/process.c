@@ -1636,7 +1636,7 @@ static void construct_reply(char *inbuf, int size, size_t unread_bytes,
 /****************************************************************************
  Process an smb from the client
 ****************************************************************************/
-static void process_smb(struct smbd_server_connection *conn,
+static void process_smb(struct smbd_server_connection *sconn,
 			uint8_t *inbuf, size_t nread, size_t unread_bytes,
 			uint32_t seqnum, bool encrypted,
 			struct smb_perfcount_data *deferred_pcd)
@@ -1648,17 +1648,17 @@ static void process_smb(struct smbd_server_connection *conn,
 	DEBUG( 6, ( "got message type 0x%x of len 0x%x\n", msg_type,
 		    smb_len(inbuf) ) );
 	DEBUG(3, ("Transaction %d of length %d (%u toread)\n",
-		  conn->trans_num, (int)nread, (unsigned int)unread_bytes));
+		  sconn->trans_num, (int)nread, (unsigned int)unread_bytes));
 
 	if (msg_type != 0) {
 		/*
 		 * NetBIOS session request, keepalive, etc.
 		 */
-		reply_special(conn, (char *)inbuf, nread);
+		reply_special(sconn, (char *)inbuf, nread);
 		goto done;
 	}
 
-	if (smbd_server_conn->using_smb2) {
+	if (sconn->using_smb2) {
 		/* At this point we're not really using smb2,
 		 * we make the decision here.. */
 		if (smbd_is_smb2_header(inbuf, nread)) {
@@ -1675,10 +1675,10 @@ static void process_smb(struct smbd_server_connection *conn,
 	show_msg((char *)inbuf);
 
 	construct_reply((char *)inbuf,nread,unread_bytes,seqnum,encrypted,deferred_pcd);
-	conn->trans_num++;
+	sconn->trans_num++;
 
 done:
-	conn->smb1.num_requests++;
+	sconn->smb1.num_requests++;
 
 	/* The timeout_processing function isn't run nearly
 	   often enough to implement 'max log size' without
@@ -1687,7 +1687,7 @@ done:
 	   level 10.  Checking every 50 SMBs is a nice
 	   tradeoff of performance vs log file size overrun. */
 
-	if ((conn->smb1.num_requests % 50) == 0 &&
+	if ((sconn->smb1.num_requests % 50) == 0 &&
 	    need_to_check_log_size()) {
 		change_to_root_user();
 		check_log_size();
