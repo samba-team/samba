@@ -412,7 +412,8 @@ static NTSTATUS receive_smb_raw_talloc(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS receive_smb_talloc(TALLOC_CTX *mem_ctx,	int fd,
+static NTSTATUS receive_smb_talloc(TALLOC_CTX *mem_ctx,
+				   struct smbd_server_connection *sconn,
 				   char **buffer, unsigned int timeout,
 				   size_t *p_unread, bool *p_encrypted,
 				   size_t *p_len,
@@ -424,14 +425,12 @@ static NTSTATUS receive_smb_talloc(TALLOC_CTX *mem_ctx,	int fd,
 
 	*p_encrypted = false;
 
-	status = receive_smb_raw_talloc(mem_ctx, smbd_server_conn, buffer,
-					timeout, p_unread, &len);
+	status = receive_smb_raw_talloc(mem_ctx, sconn, buffer, timeout,
+					p_unread, &len);
 	if (!NT_STATUS_IS_OK(status)) {
-		char addr[INET6_ADDRSTRLEN];
 		DEBUG(1, ("read_smb_length_return_keepalive failed for "
 			  "client %s read error = %s.\n",
-			  get_peer_addr(fd, addr, sizeof(addr)),
-			  nt_errstr(status)));
+			  sconn->client_id.addr, nt_errstr(status)));
 		return status;
 	}
 
@@ -447,7 +446,7 @@ static NTSTATUS receive_smb_talloc(TALLOC_CTX *mem_ctx,	int fd,
 	}
 
 	/* Check the incoming SMB signature. */
-	if (!srv_check_sign_mac(smbd_server_conn, *buffer, seqnum, trusted_channel)) {
+	if (!srv_check_sign_mac(sconn, *buffer, seqnum, trusted_channel)) {
 		DEBUG(0, ("receive_smb: SMB Signature verification failed on "
 			  "incoming packet!\n"));
 		return NT_STATUS_INVALID_NETWORK_RESPONSE;
@@ -2303,7 +2302,7 @@ static void smbd_server_connection_read_handler(
 		}
 
 		/* TODO: make this completely nonblocking */
-		status = receive_smb_talloc(mem_ctx, fd,
+		status = receive_smb_talloc(mem_ctx, conn,
 					    (char **)(void *)&inbuf,
 					    0, /* timeout */
 					    &unread_bytes,
@@ -2313,7 +2312,7 @@ static void smbd_server_connection_read_handler(
 		smbd_unlock_socket(conn);
 	} else {
 		/* TODO: make this completely nonblocking */
-		status = receive_smb_talloc(mem_ctx, fd,
+		status = receive_smb_talloc(mem_ctx, conn,
 					    (char **)(void *)&inbuf,
 					    0, /* timeout */
 					    &unread_bytes,
@@ -2735,7 +2734,7 @@ static void smbd_echo_reader(struct tevent_context *ev,
 
 	DEBUG(10,("echo_handler[%d]: reading pdu\n", (int)sys_getpid()));
 
-	status = receive_smb_talloc(state->pending, sconn->sock,
+	status = receive_smb_talloc(state->pending, sconn,
 				    (char **)(void *)&state->pending[num_pending].iov_base,
 				    0 /* timeout */,
 				    &unread,
