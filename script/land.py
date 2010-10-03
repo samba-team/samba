@@ -4,6 +4,7 @@
 # Copyright Jelmer Vernooij 2010
 # released under GNU GPL v3 or later
 
+from cStringIO import StringIO
 import fcntl
 from subprocess import call, check_call, Popen, PIPE
 import os, tarfile, sys, time
@@ -15,6 +16,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../lib/subunit/pytho
 import subunit
 import testtools
 import subunithelper
+from email.mime.application import MIMEApplication
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
@@ -197,7 +199,6 @@ class SubunitTreeStageBuilder(TreeStageBuilder):
         except IOError:
             return None
         else:
-            self.tree.stdout.write(data)
             self.buffered += data
             buffered = ""
             for l in self.buffered.splitlines(True):
@@ -274,19 +275,6 @@ class TreeBuilder(object):
     def remove_logs(self):
         for path, name, mime_type in self.logfiles:
             os.unlink(path)
-
-    def attach_logs(self, outer):
-        for path, name, mime_type in self.logfiles:
-            assert mime_type.startswith("text/")
-            f = open(path, 'r')
-            try:
-                f.seek(0)
-                msg = MIMEText(f.read(), mime_type[len("text/"):])
-            finally:
-                f.close()
-            msg.add_header('Content-Disposition', 'attachment',
-                           filename=name)
-            outer.attach(msg)
 
     @property
     def status(self):
@@ -383,8 +371,8 @@ class BuildList(object):
         self.kill_kids()
         return (0, None, None, None, "All OK")
 
-    def tarlogs(self, fname):
-        tar = tarfile.open(fname, "w:gz")
+    def tarlogs(self, name=None, fileobj=None):
+        tar = tarfile.open(name=name, fileobj=fileobj, mode="w:gz")
         for b in self.tlist:
             for (path, name, mime_type) in b.logfiles:
                 tar.add(path, arcname=name)
@@ -392,9 +380,13 @@ class BuildList(object):
             tar.add("autobuild.log")
         tar.close()
 
-    def attach_logs(self, msg):
-        for b in self.tlist:
-            b.attach_logs(msg)
+    def attach_logs(self, outer):
+        f = StringIO()
+        self.tarlogs(fileobj=f)
+        msg = MIMEApplication(f.getvalue(), "x-gzip")
+        msg.add_header('Content-Disposition', 'attachment',
+                       filename="logs.tar.gz")
+        outer.attach(msg)
 
     def remove_logs(self):
         for b in self.tlist:
