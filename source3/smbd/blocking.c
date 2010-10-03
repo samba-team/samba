@@ -828,7 +828,7 @@ static void process_blocking_lock_cancel_message(struct messaging_context *ctx,
 						 struct server_id server_id,
 						 DATA_BLOB *data)
 {
-	struct smbd_server_connection *sconn = smbd_server_conn;
+	struct smbd_server_connection *sconn;
 	NTSTATUS err;
 	const char *msg = (const char *)data->data;
 	struct blocking_lock_record *blr;
@@ -842,6 +842,12 @@ static void process_blocking_lock_cancel_message(struct messaging_context *ctx,
 			  "Got invalid msg len %d\n", (int)data->length));
 		smb_panic("process_blocking_lock_cancel_message: bad msg");
         }
+
+	sconn = msg_ctx_to_sconn(ctx);
+	if (sconn == NULL) {
+		DEBUG(1, ("could not find sconn\n"));
+		return;
+	}
 
 	memcpy(&blr, msg, sizeof(blr));
 	memcpy(&err, &msg[sizeof(blr)], sizeof(NTSTATUS));
