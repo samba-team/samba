@@ -57,7 +57,8 @@ _PUBLIC_ char *dotreg_data_blob_hex_string(TALLOC_CTX *mem_ctx, const DATA_BLOB 
 	for (i = 0; i < blob->length; i++)
 		slprintf(&hex_string[i*3], 4, "%02X,", blob->data[i]);
 
-	hex_string[(blob->length*3)] = '\0';
+	/* Remove last comma and NULL-terminate the string */
+	hex_string[(blob->length*3)-1] = '\0';
 	return hex_string;
 }
 
@@ -121,21 +122,34 @@ static WERROR reg_dotreg_diff_set_value(void *_data, const char *path,
 	struct dotreg_data *data = (struct dotreg_data *)_data;
 	char *data_string = reg_val_dotreg_string(NULL, 
 						value_type, value);
-	char *type_string;
+	char *data_incl_type;
 
 	W_ERROR_HAVE_NO_MEMORY(data_string);
-	if (value_type == REG_DWORD) {
-		type_string = talloc_strdup(data_string ,"dword");
-	} else if (value_type == REG_BINARY) {
-		type_string = talloc_strdup(data_string, "hex");
-	} else {
-		type_string = talloc_asprintf(data_string, "hex(%x)", value_type);
+
+	switch (value_type) {
+		case REG_SZ:
+			data_incl_type = talloc_asprintf(data_string, "\"%s\"", 
+					data_string);
+			break;
+		case REG_DWORD:
+			data_incl_type = talloc_asprintf(data_string, 
+					"dword:%s", data_string);
+			break;
+		case REG_BINARY:
+			data_incl_type = talloc_asprintf(data_string, "hex:%s",
+					data_string);
+			break;
+		default:
+			data_incl_type = talloc_asprintf(data_string, "hex(%x):%s", 
+					value_type, data_string);
+			break;
 	}
+
 	if (value_name[0] == '\0') {
-		fdprintf(data->fd, "@=%s:%s\n", type_string, data_string);
+		fdprintf(data->fd, "@=%s\n", data_incl_type);
 	} else {
-		fdprintf(data->fd, "\"%s\"=%s:%s\n",
-			 value_name, type_string, data_string);
+		fdprintf(data->fd, "\"%s\"=%s\n",
+			 value_name, data_incl_type);
 	}
 
 	talloc_free(data_string);
