@@ -44,7 +44,7 @@ struct dotreg_data {
  * This is basically a copy of data_blob_hex_string_upper, but with comma's 
  * between the bytes in hex.
  */
-_PUBLIC_ char *dotreg_data_blob_hex_string(TALLOC_CTX *mem_ctx, const DATA_BLOB *blob)
+static char *dotreg_data_blob_hex_string(TALLOC_CTX *mem_ctx, const DATA_BLOB *blob)
 {
 	size_t i;
 	char *hex_string;
@@ -67,7 +67,7 @@ _PUBLIC_ char *dotreg_data_blob_hex_string(TALLOC_CTX *mem_ctx, const DATA_BLOB 
  * has no 0x for dwords, everything else is regarded as binary, and binary 
  * strings are represented with bytes comma-separated.
  */
-_PUBLIC_ char *reg_val_dotreg_string(TALLOC_CTX *mem_ctx, uint32_t type,
+static char *reg_val_dotreg_string(TALLOC_CTX *mem_ctx, uint32_t type,
 				   const DATA_BLOB data)
 {
 	char *ret = NULL;
