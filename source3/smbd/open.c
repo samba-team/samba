@@ -743,7 +743,8 @@ sa = 0x%x, share = 0x%x\n", (num), (unsigned int)(am), (unsigned int)(right), (u
 }
 
 #if defined(DEVELOPER)
-static void validate_my_share_entries(int num,
+static void validate_my_share_entries(struct smbd_server_connection *sconn,
+				      int num,
 				      struct share_mode_entry *share_entry)
 {
 	files_struct *fsp;
@@ -765,7 +766,7 @@ static void validate_my_share_entries(int num,
 		return;
 	}
 
-	fsp = file_find_dif(smbd_server_conn, share_entry->id,
+	fsp = file_find_dif(sconn, share_entry->id,
 			    share_entry->share_file_id);
 	if (!fsp) {
 		DEBUG(0,("validate_my_share_entries: PANIC : %s\n",
@@ -856,7 +857,8 @@ static NTSTATUS open_mode_check(connection_struct *conn,
 	
 #if defined(DEVELOPER)
 	for(i = 0; i < lck->num_share_modes; i++) {
-		validate_my_share_entries(i, &lck->share_modes[i]);
+		validate_my_share_entries(conn->sconn, i,
+					  &lck->share_modes[i]);
 	}
 #endif
 
