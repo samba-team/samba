@@ -1212,13 +1212,13 @@ static PyObject *py_ldb_search(PyLdbObject *self, PyObject *args, PyObject *kwar
 				   ldb_search_default_callback,
 				   NULL);
 
-	talloc_steal(req, attrs);
-
 	if (ret != LDB_SUCCESS) {
 		talloc_free(mem_ctx);
 		PyErr_LDB_ERROR_IS_ERR_RAISE(PyExc_LdbError, ret, ldb_ctx);
 		return NULL;
 	}
+
+	talloc_steal(req, attrs);
 
 	ret = ldb_request(ldb_ctx, req);
 
