@@ -14,8 +14,6 @@ from samba_version import *
 from samba_autoconf import *
 from samba_patterns import *
 from samba_pidl import *
-from samba_errtable import *
-from samba_asn1 import *
 from samba_autoproto import *
 from samba_python import *
 from samba_deps import *
