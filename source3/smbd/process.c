@@ -1662,13 +1662,13 @@ static void process_smb(struct smbd_server_connection *sconn,
 		/* At this point we're not really using smb2,
 		 * we make the decision here.. */
 		if (smbd_is_smb2_header(inbuf, nread)) {
-			smbd_smb2_first_negprot(smbd_server_conn, inbuf, nread);
+			smbd_smb2_first_negprot(sconn, inbuf, nread);
 			return;
 		} else if (nread >= smb_size && valid_smb_header(inbuf)
 				&& CVAL(inbuf, smb_com) != 0x72) {
 			/* This is a non-negprot SMB1 packet.
 			   Disable SMB2 from now on. */
-			smbd_server_conn->using_smb2 = false;
+			sconn->using_smb2 = false;
 		}
 	}
 
