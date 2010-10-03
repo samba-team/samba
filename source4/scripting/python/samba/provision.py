@@ -1727,13 +1727,15 @@ def provision_become_dc(setup_dir=None,
     logger = logging.getLogger("provision")
     samba.set_debug_level(debuglevel)
 
-    return provision(setup_dir, logger, system_session(), None,
-              smbconf=smbconf, targetdir=targetdir, samdb_fill=FILL_DRS,
-              realm=realm, rootdn=rootdn, domaindn=domaindn, schemadn=schemadn,
-              configdn=configdn, serverdn=serverdn, domain=domain,
-              hostname=hostname, hostip="127.0.0.1", domainsid=domainsid,
-              machinepass=machinepass, serverrole="domain controller",
-              sitename=sitename)
+    res = provision(setup_dir, logger, system_session(), None,
+                    smbconf=smbconf, targetdir=targetdir, samdb_fill=FILL_DRS,
+                    realm=realm, rootdn=rootdn, domaindn=domaindn, schemadn=schemadn,
+                    configdn=configdn, serverdn=serverdn, domain=domain,
+                    hostname=hostname, hostip="127.0.0.1", domainsid=domainsid,
+                    machinepass=machinepass, serverrole="domain controller",
+                    sitename=sitename)
+    res.lp.set("debuglevel", str(debuglevel))
+    return res
 
 
 def create_phpldapadmin_config(path, setup_path, ldapi_uri):
