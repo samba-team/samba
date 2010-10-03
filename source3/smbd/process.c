@@ -356,7 +356,8 @@ static NTSTATUS receive_smb_raw_talloc_partial_read(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS receive_smb_raw_talloc(TALLOC_CTX *mem_ctx, int fd,
+static NTSTATUS receive_smb_raw_talloc(TALLOC_CTX *mem_ctx,
+				       struct smbd_server_connection *sconn,
 				       char **buffer, unsigned int timeout,
 				       size_t *p_unread, size_t *plen)
 {
@@ -367,7 +368,8 @@ static NTSTATUS receive_smb_raw_talloc(TALLOC_CTX *mem_ctx, int fd,
 
 	*p_unread = 0;
 
-	status = read_smb_length_return_keepalive(fd, lenbuf, timeout, &len);
+	status = read_smb_length_return_keepalive(sconn->sock, lenbuf, timeout,
+						  &len);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -375,11 +377,11 @@ static NTSTATUS receive_smb_raw_talloc(TALLOC_CTX *mem_ctx, int fd,
 	if (CVAL(lenbuf,0) == 0 && min_recv_size &&
 	    (smb_len_large(lenbuf) > /* Could be a UNIX large writeX. */
 		(min_recv_size + STANDARD_WRITE_AND_X_HEADER_SIZE)) &&
-	    !srv_is_signing_active(smbd_server_conn) &&
-	    smbd_server_conn->smb1.echo_handler.trusted_fde == NULL) {
+	    !srv_is_signing_active(sconn) &&
+	    sconn->smb1.echo_handler.trusted_fde == NULL) {
 
 		return receive_smb_raw_talloc_partial_read(
-			mem_ctx, lenbuf, smbd_server_conn, buffer, timeout,
+			mem_ctx, lenbuf, sconn, buffer, timeout,
 			p_unread, plen);
 	}
 
@@ -401,7 +403,7 @@ static NTSTATUS receive_smb_raw_talloc(TALLOC_CTX *mem_ctx, int fd,
 
 	memcpy(*buffer, lenbuf, sizeof(lenbuf));
 
-	status = read_packet_remainder(fd, (*buffer)+4, timeout, len);
+	status = read_packet_remainder(sconn->sock, (*buffer)+4, timeout, len);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -422,8 +424,8 @@ static NTSTATUS receive_smb_talloc(TALLOC_CTX *mem_ctx,	int fd,
 
 	*p_encrypted = false;
 
-	status = receive_smb_raw_talloc(mem_ctx, fd, buffer, timeout,
-					p_unread, &len);
+	status = receive_smb_raw_talloc(mem_ctx, smbd_server_conn, buffer,
+					timeout, p_unread, &len);
 	if (!NT_STATUS_IS_OK(status)) {
 		char addr[INET6_ADDRSTRLEN];
 		DEBUG(1, ("read_smb_length_return_keepalive failed for "
