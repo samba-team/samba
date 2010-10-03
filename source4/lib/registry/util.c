@@ -78,6 +78,11 @@ _PUBLIC_ char *reg_val_description(TALLOC_CTX *mem_ctx,
 			       reg_val_data_string(mem_ctx, data_type, data));
 }
 
+/*
+ * This implements reading hex bytes that include comma's.
+ * It was previously handled by strhex_to_data_blob, but that did not cover 
+ * the format used by windows.
+ */
 static DATA_BLOB reg_strhex_to_data_blob(TALLOC_CTX *mem_ctx, const char *str)
 {
 	DATA_BLOB ret;

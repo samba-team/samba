@@ -52,7 +52,7 @@ struct regf_data {
 	time_t last_write;
 };
 
-static WERROR regf_save_hbin(struct regf_data *data, int flush);
+static WERROR regf_save_hbin(struct regf_data *data, bool flush);
 
 struct regf_key_data {
 	struct hive_key key;
@@ -1973,7 +1973,7 @@ static WERROR regf_set_value(struct hive_key *key, const char *name,
 	return regf_save_hbin(private_data->hive, 0);
 }
 
-static WERROR regf_save_hbin(struct regf_data *regf, int flush)
+static WERROR regf_save_hbin(struct regf_data *regf, bool flush)
 {
 	struct tdr_push *push = tdr_push_init(regf);
 	unsigned int i;
