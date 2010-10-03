@@ -759,6 +759,13 @@ CPPFLAGS="$old_CPPFLAGS"
 # subdirectory of headers.
 AC_CHECK_HEADERS(valgrind.h valgrind/valgrind.h valgrind/memcheck.h)
 
+if test x"$enable_developer" = x"yes" ; then
+   if test x"$ac_cv_header_valgrind_h" = xyes -o \
+           x"$ac_cv_header_valgrind_valgrind_h" = xyes ; then
+      AC_DEFINE(VALGRIND,1,[Whether we have valgrind headers])
+   fi
+fi
+
 #
 # HPUX has a bug in that including shadow.h causes a re-definition of MAXINT.
 # This causes configure to fail to detect it. Check for shadow separately on HPUX.
