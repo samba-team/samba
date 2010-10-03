@@ -1305,10 +1305,10 @@ static WERROR dcesrv_spoolss_AddPrinterEx(struct dcesrv_call_state *dce_call, TA
 
 
 /* 
-  spoolss_47 
+  spoolss_SetPort
 */
-static WERROR dcesrv_spoolss_47(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct spoolss_47 *r)
+static WERROR dcesrv_spoolss_SetPort(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_SetPort *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }

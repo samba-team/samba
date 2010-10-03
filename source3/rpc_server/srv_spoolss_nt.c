@@ -10294,11 +10294,11 @@ WERROR _spoolss_44(struct pipes_struct *p,
 }
 
 /****************************************************************
- _spoolss_47
+ _spoolss_SetPort
 ****************************************************************/
 
-WERROR _spoolss_47(struct pipes_struct *p,
-		   struct spoolss_47 *r)
+WERROR _spoolss_SetPort(struct pipes_struct *p,
+			struct spoolss_SetPort *r)
 {
 	p->rng_fault_state = true;
 	return WERR_NOT_SUPPORTED;

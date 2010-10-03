@@ -2831,7 +2831,10 @@ cpp_quote("#define spoolss_security_descriptor security_descriptor")
 
 	/******************/
 	/* Function: 0x47 */
-	[todo] WERROR spoolss_47(
+	WERROR spoolss_SetPort(
+		[in,unique] [string,charset(UTF16)] uint16 *servername,
+		[in,unique] [string,charset(UTF16)] uint16 *port_name,
+		[in,ref] spoolss_SetPortInfoContainer *port_ctr
 	);
 
 	/******************/
