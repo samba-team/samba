@@ -173,7 +173,7 @@ NTSTATUS libnet_vampire_cb_prepare_db(void *private_data,
 	}
 
 	s->ldb = talloc_steal(s, result.samdb);
-	s->lp_ctx = talloc_steal(s, result.lp_ctx);
+	s->lp_ctx = talloc_reparent(talloc_parent(result.lp_ctx), s, result.lp_ctx);
 	s->provision_schema = dsdb_get_schema(s->ldb, s);
 	s->server_dn_str = talloc_steal(s, p->dest_dsa->server_dn_str);
 
