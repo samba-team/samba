@@ -585,7 +585,7 @@ static void process_kernel_oplock_break(struct messaging_context *msg_ctx,
 					struct server_id src,
 					DATA_BLOB *data)
 {
-	struct smbd_server_connection *sconn = smbd_server_conn;
+	struct smbd_server_connection *sconn;
 	struct file_id id;
 	unsigned long file_id;
 	files_struct *fsp;
@@ -600,6 +600,12 @@ static void process_kernel_oplock_break(struct messaging_context *msg_ctx,
 		return;
 	}
 
+	sconn = msg_ctx_to_sconn(msg_ctx);
+	if (sconn == NULL) {
+		DEBUG(1, ("could not find sconn\n"));
+		return;
+	}
+
 	/* Pull the data from the message. */
 	pull_file_id_24((char *)data->data, &id);
 	file_id = (unsigned long)IVAL(data->data, 24);
@@ -608,7 +614,7 @@ static void process_kernel_oplock_break(struct messaging_context *msg_ctx,
 		   procid_str(talloc_tos(), &src), file_id_string_tos(&id),
 		   (unsigned int)file_id));
 
-	fsp = initial_break_processing(smbd_server_conn, id, file_id);
+	fsp = initial_break_processing(sconn, id, file_id);
 
 	if (fsp == NULL) {
 		DEBUG(3, ("Got a kernel oplock break message for a file "
