@@ -1103,8 +1103,15 @@ void msg_close_file(struct messaging_context *msg_ctx,
 			struct server_id server_id,
 			DATA_BLOB *data)
 {
+	struct smbd_server_connection *sconn;
 	files_struct *fsp = NULL;
 	struct share_mode_entry e;
+
+	sconn = msg_ctx_to_sconn(msg_ctx);
+	if (sconn == NULL) {
+		DEBUG(1, ("could not find sconn\n"));
+		return;
+	}
 
 	message_to_share_mode_entry(&e, (char *)data->data);
 
@@ -1118,7 +1125,7 @@ void msg_close_file(struct messaging_context *msg_ctx,
 		TALLOC_FREE(sm_str);
 	}
 
-	fsp = file_find_dif(smbd_server_conn, e.id, e.share_file_id);
+	fsp = file_find_dif(sconn, e.id, e.share_file_id);
 	if (!fsp) {
 		DEBUG(10,("msg_close_file: failed to find file.\n"));
 		return;
