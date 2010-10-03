@@ -454,8 +454,16 @@ static void received_unlock_msg(struct messaging_context *msg,
 				struct server_id server_id,
 				DATA_BLOB *data)
 {
+	struct smbd_server_connection *sconn;
+
 	DEBUG(10,("received_unlock_msg (SMB2)\n"));
-	process_blocking_lock_queue_smb2(smbd_server_conn, timeval_current());
+
+	sconn = msg_ctx_to_sconn(msg);
+	if (sconn == NULL) {
+		DEBUG(1, ("could not find sconn\n"));
+		return;
+	}
+	process_blocking_lock_queue_smb2(sconn, timeval_current());
 }
 
 /****************************************************************
