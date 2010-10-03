@@ -50,8 +50,9 @@ if not opts.remote_repo:
         sys.exit(1)
     remote_repo = stdout.rstrip()
     print "Remote tempdir: %s" % remote_repo
-    # Bootstrap, git.samba.org is close to sn-devel
-    remote_args = ["git", "clone", samba_master, remote_repo]
+    # Bootstrap, git.samba.org is usually more easily accessible.
+    #remote_args = ["git", "clone", samba_master, remote_repo]
+    remote_args = ["if [ -d /data/git/samba.git ]; then git clone --shared /data/git/samba.git %s; else git clone --shared %s %s; fi" % (remote_repo, samba_master, remote_repo)]
     #remote_args = ["git", "init", remote_repo]
     print "%s$ %s" % (opts.host, " ".join(remote_args))
     subprocess.check_call(["ssh", opts.host] + remote_args)
@@ -68,6 +69,11 @@ args = ["git", "push", "--force", "git+ssh://%s/%s" % (opts.host, remote_repo), 
 print "$ " + " ".join(args)
 subprocess.check_call(args)
 remote_args = ["cd", remote_repo, ";", "git", "checkout", "land", ";", "python", "-u", "./script/land.py", "--repository=%s" % remote_repo]
+
+if (opts.email and not (opts.foreground or opts.pushto or opts.push_master)):
+    # Force always emailing if there's nothing else to do
+    opts.always_email = True
+
 if opts.email:
     remote_args.append("--email=%s" % opts.email)
 if opts.always_email:
