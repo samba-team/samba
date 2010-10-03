@@ -850,13 +850,11 @@ sub ConvertObjectFromPythonData($$$$$$;$)
 	}
 	if ($actual_ctype->{TYPE} eq "SCALAR" ) {
 		if (expandAlias($actual_ctype->{NAME}) =~ /^(u?int64|hyper|dlong|udlong|udlongr|NTTIME_hyper|NTTIME|NTTIME_1sec)$/) {
-			$self->pidl("if (PyObject_TypeCheck($cvar, &PyLong_Type)) {");
+			$self->pidl("if (PyLong_Check($cvar)) {");
 			$self->indent;
 			$self->pidl("$target = PyLong_AsLongLong($cvar);");
 			$self->deindent;
-			$self->pidl("} else {");
-			$self->indent;
-			$self->pidl("if (PyObject_TypeCheck($cvar, &PyInt_Type)) {");
+			$self->pidl("} else if (PyInt_Check($cvar)) {");
 			$self->indent;
 			$self->pidl("$target = PyInt_AsLong($cvar);");
 			$self->deindent;
