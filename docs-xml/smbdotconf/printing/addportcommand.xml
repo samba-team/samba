@@ -15,7 +15,7 @@
 	<listitem><para><parameter moreinfo="none">device URI</parameter></para></listitem>
     </itemizedlist>
 		
-    <para>The deviceURI is in the for of socket://&lt;hostname&gt;[:&lt;portnumber&gt;]
+    <para>The deviceURI is in the format of socket://&lt;hostname&gt;[:&lt;portnumber&gt;]
 	or lpd://&lt;hostname&gt;/&lt;queuename&gt;.</para>
 </description>
 
