@@ -256,7 +256,9 @@ static void wait_before_sending_break(void)
  Ensure that we have a valid oplock.
 ****************************************************************************/
 
-static files_struct *initial_break_processing(struct file_id id, unsigned long file_id)
+static files_struct *initial_break_processing(
+	struct smbd_server_connection *sconn, struct file_id id,
+	unsigned long file_id)
 {
 	files_struct *fsp = NULL;
 
@@ -273,7 +275,7 @@ static files_struct *initial_break_processing(struct file_id id, unsigned long f
 	 * we have an oplock on it.
 	 */
 
-	fsp = file_find_dif(smbd_server_conn, id, file_id);
+	fsp = file_find_dif(sconn, id, file_id);
 
 	if(fsp == NULL) {
 		/* The file could have been closed in the meantime - return success. */
@@ -447,7 +449,8 @@ void process_oplock_async_level2_break_message(struct messaging_context *msg_ctx
 		   "%s/%lu\n", procid_str(talloc_tos(), &src),
 		   file_id_string_tos(&msg.id), msg.share_file_id));
 
-	fsp = initial_break_processing(msg.id, msg.share_file_id);
+	fsp = initial_break_processing(smbd_server_conn, msg.id,
+				       msg.share_file_id);
 
 	if (fsp == NULL) {
 		/* We hit a race here. Break messages are sent, and before we
@@ -492,7 +495,8 @@ static void process_oplock_break_message(struct messaging_context *msg_ctx,
 		   procid_str(talloc_tos(), &src), file_id_string_tos(&msg.id),
 		   msg.share_file_id));
 
-	fsp = initial_break_processing(msg.id, msg.share_file_id);
+	fsp = initial_break_processing(smbd_server_conn, msg.id,
+				       msg.share_file_id);
 
 	if (fsp == NULL) {
 		/* We hit a race here. Break messages are sent, and before we
@@ -593,7 +597,7 @@ static void process_kernel_oplock_break(struct messaging_context *msg_ctx,
 		   procid_str(talloc_tos(), &src), file_id_string_tos(&id),
 		   (unsigned int)file_id));
 
-	fsp = initial_break_processing(id, file_id);
+	fsp = initial_break_processing(smbd_server_conn, id, file_id);
 
 	if (fsp == NULL) {
 		DEBUG(3, ("Got a kernel oplock break message for a file "
