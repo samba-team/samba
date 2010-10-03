@@ -244,7 +244,8 @@ static NTSTATUS read_packet_remainder(int fd, char *buffer,
 
 static NTSTATUS receive_smb_raw_talloc_partial_read(TALLOC_CTX *mem_ctx,
 						    const char lenbuf[4],
-						    int fd, char **buffer,
+						    struct smbd_server_connection *sconn,
+						    char **buffer,
 						    unsigned int timeout,
 						    size_t *p_unread,
 						    size_t *len_ret)
@@ -258,16 +259,14 @@ static NTSTATUS receive_smb_raw_talloc_partial_read(TALLOC_CTX *mem_ctx,
 	memcpy(writeX_header, lenbuf, 4);
 
 	status = read_fd_with_timeout(
-		fd, writeX_header + 4,
+		sconn->sock, writeX_header + 4,
 		STANDARD_WRITE_AND_X_HEADER_SIZE,
 		STANDARD_WRITE_AND_X_HEADER_SIZE,
 		timeout, NULL);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		char addr[INET6_ADDRSTRLEN];
 		DEBUG(0, ("read_fd_with_timeout failed for client %s read "
-			  "error = %s.\n",
-			  get_peer_addr(fd, addr, sizeof(addr)),
+			  "error = %s.\n", sconn->client_id.addr,
 			  nt_errstr(status)));
 		return status;
 	}
@@ -277,8 +276,7 @@ static NTSTATUS receive_smb_raw_talloc_partial_read(TALLOC_CTX *mem_ctx,
 	 * valid writeX call.
 	 */
 
-	if (is_valid_writeX_buffer(smbd_server_conn,
-				   (uint8_t *)writeX_header)) {
+	if (is_valid_writeX_buffer(sconn, (uint8_t *)writeX_header)) {
 		/*
 		 * If the data offset is beyond what
 		 * we've read, drain the extra bytes.
@@ -288,7 +286,7 @@ static NTSTATUS receive_smb_raw_talloc_partial_read(TALLOC_CTX *mem_ctx,
 
 		if (doff > STANDARD_WRITE_AND_X_HEADER_SIZE) {
 			size_t drain = doff - STANDARD_WRITE_AND_X_HEADER_SIZE;
-			if (drain_socket(fd, drain) != drain) {
+			if (drain_socket(sconn->sock, drain) != drain) {
 	                        smb_panic("receive_smb_raw_talloc_partial_read:"
 					" failed to drain pending bytes");
 	                }
@@ -343,7 +341,8 @@ static NTSTATUS receive_smb_raw_talloc_partial_read(TALLOC_CTX *mem_ctx,
 
 	if(toread > 0) {
 		status = read_packet_remainder(
-			fd, (*buffer) + 4 + STANDARD_WRITE_AND_X_HEADER_SIZE,
+			sconn->sock,
+			(*buffer) + 4 + STANDARD_WRITE_AND_X_HEADER_SIZE,
 			timeout, toread);
 
 		if (!NT_STATUS_IS_OK(status)) {
@@ -380,7 +379,8 @@ static NTSTATUS receive_smb_raw_talloc(TALLOC_CTX *mem_ctx, int fd,
 	    smbd_server_conn->smb1.echo_handler.trusted_fde == NULL) {
 
 		return receive_smb_raw_talloc_partial_read(
-			mem_ctx, lenbuf, fd, buffer, timeout, p_unread, plen);
+			mem_ctx, lenbuf, smbd_server_conn, buffer, timeout,
+			p_unread, plen);
 	}
 
 	if (!valid_packet_size(len)) {
