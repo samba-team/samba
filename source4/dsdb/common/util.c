@@ -2517,6 +2517,7 @@ int dsdb_find_guid_attr_by_dn(struct ldb_context *ldb,
 	attrs[1] = NULL;
 
 	ret = dsdb_search_dn(ldb, tmp_ctx, &res, dn, attrs,
+			     DSDB_SEARCH_SHOW_DELETED |
 			     DSDB_SEARCH_SHOW_RECYCLED);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
@@ -2592,6 +2593,7 @@ int dsdb_find_sid_by_dn(struct ldb_context *ldb,
 	ZERO_STRUCTP(sid);
 
 	ret = dsdb_search_dn(ldb, tmp_ctx, &res, dn, attrs,
+			     DSDB_SEARCH_SHOW_DELETED |
 			     DSDB_SEARCH_SHOW_RECYCLED);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
@@ -3275,6 +3277,7 @@ int dsdb_wellknown_dn(struct ldb_context *samdb, TALLOC_CTX *mem_ctx,
 	}
 
 	ret = dsdb_search_dn(samdb, tmp_ctx, &res, dn, attrs,
+			     DSDB_SEARCH_SHOW_DELETED |
 			     DSDB_SEARCH_SHOW_RECYCLED);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
@@ -3574,7 +3577,7 @@ int dsdb_request_add_controls(struct ldb_request *req, uint32_t dsdb_flags)
 	}
 
 	if (dsdb_flags & DSDB_SEARCH_SHOW_RECYCLED) {
-		ret = ldb_request_add_control(req, LDB_CONTROL_SHOW_RECYCLED_OID, true, NULL);
+		ret = ldb_request_add_control(req, LDB_CONTROL_SHOW_RECYCLED_OID, false, NULL);
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
