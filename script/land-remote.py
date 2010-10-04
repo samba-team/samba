@@ -37,6 +37,9 @@ parser.add_option("--fail-slowly", help="continue running tests even after one h
 if opts.email is None and os.getenv("EMAIL") is not None:
     opts.email = os.getenv("EMAIL")
 
+if opts.email:
+    print "Sending email to %s" % opts.email
+
 if not opts.foreground and not opts.email:
     print "Not running in foreground and --email not specified."
     sys.exit(1)
