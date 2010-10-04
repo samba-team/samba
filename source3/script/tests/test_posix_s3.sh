@@ -52,7 +52,7 @@ rpc="$rpc rpc.lsa.privileges "
 rpc="$rpc rpc.samr rpc.samr.users rpc.samr.users.privileges rpc.samr.passwords"
 rpc="$rpc rpc.samr.passwords.pwdlastset rpc.samr.large.dc rpc.samr.machine.auth"
 rpc="$rpc rpc.netlogon.s3 rpc.netlogon.admin"
-rpc="$rpc rpc.schannel rpc.schannel2 rpc.bench.schannel1 rpc.join rpc.bind"
+rpc="$rpc rpc.schannel rpc.schannel2 rpc.bench.schannel1 rpc.join rpc.bind rpc.epmapper"
 
 local="local.nss.wrapper local.ndr"
 
