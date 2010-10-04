@@ -27,6 +27,7 @@
 #include "includes.h"
 #include "printing.h"
 #include "smbd/globals.h"
+#include "fake_file.h"
 #include "../librpc/gen_ndr/cli_spoolss.h"
 #include "rpc_client/cli_spoolss.h"
 #include "rpc_client/init_spoolss.h"

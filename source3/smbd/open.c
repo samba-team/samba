@@ -22,6 +22,7 @@
 #include "includes.h"
 #include "printing.h"
 #include "smbd/globals.h"
+#include "fake_file.h"
 #include "librpc/gen_ndr/messaging.h"
 #include "../librpc/gen_ndr/ndr_security.h"
 
