@@ -751,7 +751,7 @@ static WERROR clean_up_driver_struct_level(TALLOC_CTX *mem_ctx,
 					   const char **config_file,
 					   const char **help_file,
 					   struct spoolss_StringArray *dependent_files,
-					   uint32_t *version)
+					   enum spoolss_DriverOSVersion *version)
 {
 	const char *short_architecture;
 	int i;
