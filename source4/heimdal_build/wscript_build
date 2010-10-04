@@ -69,7 +69,7 @@ def HEIMDAL_ASN1(bld, name, source,
             target = cfile,
             shell = True,
             on_results=True,
-	    ext_out = '.c',
+        ext_out = '.c',
             ext_in = '.x',
             depends_on = name + '_ASN1',
             name = name + '_C')
@@ -427,10 +427,10 @@ bld.HEIMDAL_LIBRARY('HEIMDAL_HDB',
                               ../heimdal/lib/hdb/ext.c ../heimdal/lib/hdb/keytab.c ../heimdal/lib/hdb/hdb-keytab.c
                               ../heimdal/lib/hdb/mkey.c ../heimdal/lib/hdb/ndbm.c ../heimdal/lib/hdb/hdb_err.c
                               hdb-glue.c''',
-                    includes='../heimdal/lib/hdb ../heimdal/lib/com_err',
+                    includes='../heimdal/lib/hdb',
                     heimdal_autoproto='../heimdal/lib/hdb/hdb-protos.h',
                     heimdal_autoproto_private='../heimdal/lib/hdb/hdb-private.h',
-                    deps='HDB_LDB HEIMDAL_KRB5 HEIMDAL_HDB_KEYS HEIMDAL_ROKEN HEIMDAL_HCRYPTO HEIMDAL_COM_ERR HEIMDAL_HDB_ASN1',
+                    deps='HDB_LDB HEIMDAL_KRB5 HEIMDAL_HDB_KEYS HEIMDAL_ROKEN HEIMDAL_HCRYPTO com_err HEIMDAL_HDB_ASN1',
     )
 
 
@@ -530,8 +530,8 @@ bld.HEIMDAL_LIBRARY('HEIMDAL_KRB5',
                                store_mem.c ticket.c time.c transited.c
                                v4_glue.c version.c warn.c krb5_err.c
                                heim_err.c k524_err.c krb_err.c''') + ' krb5-glue.c',
-                    includes='../heimdal/lib/krb5 ../heimdal/lib/asn1 ../heimdal/lib/com_err',
-                    public_deps='HEIMDAL_COM_ERR',
+                    includes='../heimdal/lib/krb5 ../heimdal/lib/asn1',
+                    public_deps='com_err',
                     heimdal_autoproto='../heimdal/lib/krb5/krb5-protos.h',
                     heimdal_autoproto_options='-E KRB5_LIB -q -P comment -o',
                     heimdal_autoproto_private='../heimdal/lib/krb5/krb5-private.h',
@@ -543,7 +543,7 @@ bld.HEIMDAL_LIBRARY('HEIMDAL_KRB5',
 bld.SAMBA_SUBSYSTEM('HEIMDAL_HEIM_ASN1',
     '../heimdal/lib/asn1/der_get.c ../heimdal/lib/asn1/der_put.c ../heimdal/lib/asn1/der_free.c ../heimdal/lib/asn1/der_format.c ../heimdal/lib/asn1/der_length.c ../heimdal/lib/asn1/der_copy.c ../heimdal/lib/asn1/der_cmp.c ../heimdal/lib/asn1/extra.c ../heimdal/lib/asn1/timegm.c ../heimdal/lib/asn1/asn1_err.c',
         includes='../heimdal/lib/asn1',
-    deps='HEIMDAL_ROKEN HEIMDAL_COM_ERR'
+    deps='HEIMDAL_ROKEN com_err'
     )
 
 
@@ -567,14 +567,14 @@ bld.SAMBA_SUBSYSTEM('HEIMDAL_HCRYPTO',
 bld.HEIMDAL_LIBRARY('HEIMDAL_HX509',
     '../heimdal/lib/hx509/ca.c ../heimdal/lib/hx509/cert.c ../heimdal/lib/hx509/cms.c ../heimdal/lib/hx509/collector.c ../heimdal/lib/hx509/crypto.c ../heimdal/lib/hx509/error.c ../heimdal/lib/hx509/env.c ../heimdal/lib/hx509/file.c ../heimdal/lib/hx509/keyset.c ../heimdal/lib/hx509/ks_dir.c ../heimdal/lib/hx509/ks_file.c ../heimdal/lib/hx509/ks_keychain.c ../heimdal/lib/hx509/ks_mem.c ../heimdal/lib/hx509/ks_null.c ../heimdal/lib/hx509/ks_p11.c ../heimdal/lib/hx509/ks_p12.c ../heimdal/lib/hx509/lock.c ../heimdal/lib/hx509/name.c ../heimdal/lib/hx509/peer.c ../heimdal/lib/hx509/print.c ../heimdal/lib/hx509/req.c ../heimdal/lib/hx509/revoke.c ../heimdal/lib/hx509/sel.c ../heimdal/lib/hx509/hx509_err.c ../heimdal/lib/hx509/sel-lex.c ../heimdal/lib/hx509/sel-gram.c',
     includes='../heimdal/lib/hx509',
-    deps='HEIMDAL_ROKEN HEIMDAL_COM_ERR HEIMDAL_HEIM_ASN1 HEIMDAL_HCRYPTO HEIMDAL_CMS_ASN1 HEIMDAL_RFC2459_ASN1 HEIMDAL_OCSP_ASN1 HEIMDAL_PKCS8_ASN1 HEIMDAL_PKCS9_ASN1 HEIMDAL_PKCS12_ASN1 HEIMDAL_PKINIT_ASN1 HEIMDAL_PKCS10_ASN1 HEIMDAL_WIND',
+    deps='HEIMDAL_ROKEN com_err HEIMDAL_HEIM_ASN1 HEIMDAL_HCRYPTO HEIMDAL_CMS_ASN1 HEIMDAL_RFC2459_ASN1 HEIMDAL_OCSP_ASN1 HEIMDAL_PKCS8_ASN1 HEIMDAL_PKCS9_ASN1 HEIMDAL_PKCS12_ASN1 HEIMDAL_PKINIT_ASN1 HEIMDAL_PKCS10_ASN1 HEIMDAL_WIND',
     )
 
 
 bld.HEIMDAL_LIBRARY('HEIMDAL_WIND',
     '../heimdal/lib/wind/wind_err.c ../heimdal/lib/wind/stringprep.c ../heimdal/lib/wind/errorlist.c ../heimdal/lib/wind/errorlist_table.c ../heimdal/lib/wind/normalize.c ../heimdal/lib/wind/normalize_table.c ../heimdal/lib/wind/combining.c ../heimdal/lib/wind/combining_table.c ../heimdal/lib/wind/utf8.c ../heimdal/lib/wind/bidi.c ../heimdal/lib/wind/bidi_table.c ../heimdal/lib/wind/ldap.c ../heimdal/lib/wind/map.c ../heimdal/lib/wind/map_table.c',
     includes='../heimdal/lib/wind',
-    deps='HEIMDAL_ROKEN HEIMDAL_COM_ERR',
+    deps='HEIMDAL_ROKEN com_err',
     )
 
 bld.SAMBA_SUBSYSTEM('HEIMDAL_ROKEN_HOSTCC',
@@ -587,14 +587,12 @@ bld.SAMBA_SUBSYSTEM('HEIMDAL_ROKEN_HOSTCC',
     deps='LIBREPLACE_HOSTCC',
     )
 
-
-bld.SAMBA_SUBSYSTEM('HEIMDAL_COM_ERR',
-    '../heimdal/lib/com_err/com_err.c ../heimdal/lib/com_err/error.c',
-    includes='../heimdal/lib/com_err',
-    deps='HEIMDAL_ROKEN',
-        enabled=not bld.CONFIG_SET('HAVE_COM_ERR')
-    )
-
+if not bld.CONFIG_SET('USING_SYSTEM_COM_ERR'):
+    bld.HEIMDAL_LIBRARY('com_err',
+        '../heimdal/lib/com_err/com_err.c ../heimdal/lib/com_err/error.c',
+        includes='../heimdal/lib/com_err',
+        deps='HEIMDAL_ROKEN',
+        )
 
 # here is the asn1 compiler build rule
 bld.SAMBA_BINARY('asn1_compile',
