@@ -403,7 +403,7 @@ bld.HEIMDAL_LIBRARY('roken',
     )
 
 
-bld.HEIMDAL_LIBRARY('HEIMDAL_KDC',
+bld.HEIMDAL_LIBRARY('kdc',
                     source='../heimdal/kdc/default_config.c ../heimdal/kdc/kerberos5.c ../heimdal/kdc/krb5tgs.c ../heimdal/kdc/pkinit.c ../heimdal/kdc/log.c ../heimdal/kdc/misc.c ../heimdal/kdc/kaserver.c ../heimdal/kdc/digest.c ../heimdal/kdc/process.c ../heimdal/kdc/windc.c ../heimdal/kdc/kx509.c',
                     includes='../heimdal/kdc',
                     heimdal_autoproto='../heimdal/kdc/kdc-protos.h',
