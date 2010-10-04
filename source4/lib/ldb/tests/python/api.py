@@ -611,6 +611,12 @@ class ModuleTests(unittest.TestCase):
         self.assertEquals(["init"], ops)
 
 
+class VersionTests(unittest.TestCase):
+
+    def test_version(self):
+        self.assertTrue(isinstance(ldb.__version__, str))
+
+
 if __name__ == '__main__':
     import unittest
     unittest.TestProgram()

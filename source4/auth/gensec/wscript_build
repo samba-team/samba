@@ -6,6 +6,7 @@ bld.SAMBA_LIBRARY('gensec',
 	autoproto='gensec_proto.h',
 	public_deps='CREDENTIALS LIBSAMBA-UTIL LIBCRYPTO ASN1_UTIL samba_socket LIBPACKET LIBTSOCKET UTIL_TEVENT',
 	public_headers='gensec.h',
+	deps='com_err',
 	vnum='0.0.1'
 	)
 

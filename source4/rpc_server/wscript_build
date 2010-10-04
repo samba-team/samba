@@ -89,7 +89,7 @@ bld.SAMBA_MODULE('dcerpc_lsarpc',
 	autoproto='lsa/proto.h',
 	subsystem='dcerpc_server',
 	init_function='dcerpc_server_lsa_init',
-	deps='SAMDB DCERPC_COMMON NDR_STANDARD LIBCLI_AUTH NDR_DSSETUP'
+	deps='SAMDB DCERPC_COMMON NDR_STANDARD LIBCLI_AUTH NDR_DSSETUP com_err'
 	)
 
 

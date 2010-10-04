@@ -3,7 +3,7 @@
 bld.SAMBA_SUBSYSTEM('KERBEROS',
 	source='kerberos.c clikrb5.c kerberos_heimdal.c kerberos_pac.c gssapi_parse.c krb5_init_context.c keytab_copy.c',
 	autoproto='proto.h',
-	public_deps='krb5 NDR_KRB5PAC samba_socket LIBCLI_RESOLVE',
+	public_deps='krb5 NDR_KRB5PAC samba_socket LIBCLI_RESOLVE com_err',
 	deps='ASN1_UTIL auth_sam_reply tevent LIBPACKET LIBNDR'
 	)
 

@@ -139,7 +139,8 @@ def build(bld):
 
         bld.SAMBA_PYTHON('pyldb', 'pyldb.c',
                          deps='ldb pyldb_util',
-                         realname='ldb.so')
+                         realname='ldb.so',
+                         cflags='-DPACKAGE_VERSION=\"%s\"' % VERSION)
 
         bld.SAMBA_MODULE('ldb_paged_results',
                          'modules/paged_results.c',

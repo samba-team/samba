@@ -2744,4 +2744,6 @@ void initldb(void)
 	PyModule_AddObject(m, "MessageElement", (PyObject *)&PyLdbMessageElement);
 	PyModule_AddObject(m, "Module", (PyObject *)&PyLdbModule);
 	PyModule_AddObject(m, "Tree", (PyObject *)&PyLdbTree);
+
+	PyModule_AddObject(m, "__version__", PyString_FromString(PACKAGE_VERSION));
 }
