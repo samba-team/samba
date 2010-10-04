@@ -532,11 +532,11 @@ static void prune_printername_cache(void)
  XcvDataPort() interface.
 ****************************************************************************/
 
-static bool set_printer_hnd_name(TALLOC_CTX *mem_ctx,
-				 const struct auth_serversupplied_info *server_info,
-				 struct messaging_context *msg_ctx,
-				 struct printer_handle *Printer,
-				 const char *handlename)
+static WERROR set_printer_hnd_name(TALLOC_CTX *mem_ctx,
+				   const struct auth_serversupplied_info *server_info,
+				   struct messaging_context *msg_ctx,
+				   struct printer_handle *Printer,
+				   const char *handlename)
 {
 	int snum;
 	int n_services=lp_numservices();
@@ -568,20 +568,20 @@ static bool set_printer_hnd_name(TALLOC_CTX *mem_ctx,
 			aprinter++;
 		}
 		if (!is_myname_or_ipaddr(servername)) {
-			return false;
+			return WERR_INVALID_PRINTER_NAME;
 		}
 		Printer->servername = talloc_asprintf(Printer, "\\\\%s", servername);
 		if (Printer->servername == NULL) {
-			return false;
+			return WERR_NOMEM;
 		}
 	}
 
 	if (Printer->printer_type == SPLHND_SERVER) {
-		return true;
+		return WERR_OK;
 	}
 
 	if (Printer->printer_type != SPLHND_PRINTER) {
-		return false;
+		return WERR_INVALID_HANDLE;
 	}
 
 	DEBUGADD(5, ("searching for [%s]\n", aprinter));
@@ -631,7 +631,7 @@ static bool set_printer_hnd_name(TALLOC_CTX *mem_ctx,
 		if (!found) {
 			DEBUG(4, ("Printer %s not found\n", aprinter));
 			SAFE_FREE(tmp);
-			return false;
+			return WERR_INVALID_PRINTER_NAME;
 		}
 		fstrcpy(sname, tmp);
 		SAFE_FREE(tmp);
@@ -702,7 +702,7 @@ static bool set_printer_hnd_name(TALLOC_CTX *mem_ctx,
 			TALLOC_FREE(cache_key);
 		}
 		DEBUGADD(4,("Printer not found\n"));
-		return false;
+		return WERR_INVALID_PRINTER_NAME;
 	}
 
 	if (cache_key != NULL) {
@@ -714,7 +714,7 @@ static bool set_printer_hnd_name(TALLOC_CTX *mem_ctx,
 
 	fstrcpy(Printer->sharename, sname);
 
-	return true;
+	return WERR_OK;
 }
 
 /****************************************************************************
@@ -727,6 +727,7 @@ static WERROR open_printer_hnd(struct pipes_struct *p,
 			       uint32_t access_granted)
 {
 	struct printer_handle *new_printer;
+	WERROR result;
 
 	DEBUG(10,("open_printer_hnd: name [%s]\n", name));
 
@@ -752,12 +753,13 @@ static WERROR open_printer_hnd(struct pipes_struct *p,
 		return WERR_INVALID_HANDLE;
 	}
 
-	if (!set_printer_hnd_name(p->mem_ctx,
-				  get_server_info_system(),
-				  p->msg_ctx,
-				  new_printer, name)) {
+	result = set_printer_hnd_name(p->mem_ctx,
+				      get_server_info_system(),
+				      p->msg_ctx,
+				      new_printer, name);
+	if (!W_ERROR_IS_OK(result)) {
 		close_printer_handle(p, hnd);
-		return WERR_INVALID_HANDLE;
+		return result;
 	}
 
 	new_printer->access_granted = access_granted;
