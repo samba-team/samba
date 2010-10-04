@@ -126,7 +126,7 @@ def plansmbtorturetestsuite(name, env, options):
     plantestsuite_loadlist(modname, env, cmdline)
 
 
-samba4srcdir = os.path.normpath(os.path.join(os.path.dirname(__file__), ".."))
+samba4srcdir = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 builddir = os.getenv("BUILDDIR", samba4srcdir)
 samba4bindir = os.path.normpath(os.path.join(builddir, "bin"))
 smb4torture = binpath("smbtorture")
