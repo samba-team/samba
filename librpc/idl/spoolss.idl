@@ -2282,7 +2282,10 @@ cpp_quote("#define spoolss_security_descriptor security_descriptor")
 
 	/******************/
 	/* Function: 0x27 */
-	[todo] WERROR spoolss_DeletePort(
+	WERROR spoolss_DeletePort(
+	       [in,unique] [string,charset(UTF16)] uint16 *server_name,
+	       [in] uint32 ptr,
+	       [in,ref] [string,charset(UTF16)] uint16 *port_name
 	);
 
 	/******************/
