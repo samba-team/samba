@@ -408,7 +408,7 @@ bld.HEIMDAL_LIBRARY('HEIMDAL_KDC',
                     includes='../heimdal/kdc',
                     heimdal_autoproto='../heimdal/kdc/kdc-protos.h',
                     heimdal_autoproto_private='../heimdal/kdc/kdc-private.h',
-                    deps='roken HEIMDAL_KRB5 HEIMDAL_HDB HEIMDAL_HEIM_ASN1 HEIMDAL_DIGEST_ASN1 HEIMDAL_KX509_ASN1 heimntlm HEIMDAL_HCRYPTO',
+                    deps='roken HEIMDAL_KRB5 hdb HEIMDAL_HEIM_ASN1 HEIMDAL_DIGEST_ASN1 HEIMDAL_KX509_ASN1 heimntlm HEIMDAL_HCRYPTO',
                     )
 
 
@@ -427,7 +427,7 @@ bld.SAMBA_SUBSYSTEM('HEIMDAL_HDB_KEYS',
     )
 
 
-bld.HEIMDAL_LIBRARY('HEIMDAL_HDB',
+bld.HEIMDAL_LIBRARY('hdb',
                     source='''../heimdal/lib/hdb/db.c ../heimdal/lib/hdb/dbinfo.c ../heimdal/lib/hdb/hdb.c
                               ../heimdal/lib/hdb/ext.c ../heimdal/lib/hdb/keytab.c ../heimdal/lib/hdb/hdb-keytab.c
                               ../heimdal/lib/hdb/mkey.c ../heimdal/lib/hdb/ndbm.c ../heimdal/lib/hdb/hdb_err.c
