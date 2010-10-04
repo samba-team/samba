@@ -48,7 +48,7 @@
 		<varlistentry>
 			<term>-H &lt;ldb-url&gt;</term>
 			<listitem><para>
-				LDB URL to connect to. See ldb(7) for details.
+				LDB URL to connect to. See ldb(3) for details.
 			</para></listitem>
 		</varlistentry>
 
@@ -83,7 +83,7 @@
 <refsect1>
 	<title>SEE ALSO</title>
 
-	<para>ldb(7), ldbmodify, ldbdel, ldif(5)</para>
+	<para>ldb(3), ldbmodify, ldbdel, ldif(5)</para>
 
 </refsect1>
 

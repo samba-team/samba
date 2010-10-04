@@ -27,7 +27,7 @@
 <refsect1>
 	<title>DESCRIPTION</title>
 
-	<para>ldbadd adds records to an ldb(7) database. It reads 
+	<para>ldbadd adds records to an ldb(3) database. It reads 
 		the ldif(5) files specified on the command line and adds 
 		the records from these files to the LDB database, which is specified 
 		by the -H option or the LDB_URL environment variable.
@@ -52,7 +52,7 @@
 		<varlistentry>
 			<term>-H &lt;ldb-url&gt;</term>
 			<listitem><para>
-				LDB URL to connect to. See ldb(7) for details.
+				LDB URL to connect to. See ldb(3) for details.
 			</para></listitem>
 		</varlistentry>
 		
@@ -81,7 +81,7 @@
 <refsect1>
 	<title>SEE ALSO</title>
 
-	<para>ldb(7), ldbmodify, ldbdel, ldif(5)</para>
+	<para>ldb(3), ldbmodify, ldbdel, ldif(5)</para>
 
 </refsect1>
 

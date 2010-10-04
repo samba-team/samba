@@ -172,7 +172,7 @@
     <refsect1>
 	<title>SEE ALSO</title>
 	
-	<para>ldb(7), ldbmodify(1), ldbdel(1), ldif(5), vi(1)</para>
+	<para>ldb(3), ldbmodify(1), ldbdel(1), ldif(5), vi(1)</para>
 
     </refsect1>
 

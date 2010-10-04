@@ -26,7 +26,7 @@
 <refsect1>
 	<title>DESCRIPTION</title>
 
-	<para>ldbdel deletes records from an ldb(7) database. 
+	<para>ldbdel deletes records from an ldb(3) database. 
 		It deletes the records identified by the dn's specified 
 		on the command-line. </para>
 
@@ -50,7 +50,7 @@
 		<varlistentry>
 			<term>-H &lt;ldb-url&gt;</term>
 			<listitem><para>
-				LDB URL to connect to. See ldb(7) for details.
+				LDB URL to connect to. See ldb(3) for details.
 			</para></listitem>
 		</varlistentry>
 		
@@ -79,7 +79,7 @@
 <refsect1>
 	<title>SEE ALSO</title>
 
-	<para>ldb(7), ldbmodify, ldbadd, ldif(5)</para>
+	<para>ldb(3), ldbmodify, ldbadd, ldif(5)</para>
 
 </refsect1>
 
