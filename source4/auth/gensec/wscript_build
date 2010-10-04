@@ -22,7 +22,7 @@ bld.SAMBA_MODULE('gensec_gssapi',
 	source='gensec_gssapi.c',
 	subsystem='gensec',
 	init_function='gensec_gssapi_init',
-	deps='HEIMDAL_GSSAPI CREDENTIALS KERBEROS'
+	deps='gssapi CREDENTIALS KERBEROS'
 	)
 
 

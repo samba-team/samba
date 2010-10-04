@@ -439,7 +439,7 @@ bld.HEIMDAL_LIBRARY('HEIMDAL_HDB',
     )
 
 
-bld.HEIMDAL_LIBRARY('HEIMDAL_GSSAPI',
+bld.HEIMDAL_LIBRARY('gssapi',
                     '''
 ../heimdal/lib/gssapi/spnego/init_sec_context.c ../heimdal/lib/gssapi/spnego/external.c ../heimdal/lib/gssapi/spnego/compat.c
 ../heimdal/lib/gssapi/spnego/context_stubs.c ../heimdal/lib/gssapi/spnego/cred_stubs.c ../heimdal/lib/gssapi/spnego/accept_sec_context.c
