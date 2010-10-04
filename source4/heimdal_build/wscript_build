@@ -165,12 +165,56 @@ Build.BuildContext.HEIMDAL_AUTOPROTO_PRIVATE = HEIMDAL_AUTOPROTO_PRIVATE
 def HEIMDAL_LIBRARY(bld, libname, source, deps,
                   includes='',
                   cflags='',
+                  vnum=None,
                   heimdal_autoproto=None,
                   heimdal_autoproto_options=None,
-                  heimdal_autoproto_private=None):
-    bld.SAMBA_LIBRARY(libname=libname, source=source, deps=deps,
-        cflags=cflags, includes=includes,
-        is_bundled=True)
+                  heimdal_autoproto_private=None,
+                  is_bundled=True):
+    '''define a Heimdal library'''
+
+    obj_target = libname + '.objlist'
+
+    # first create a target for building the object files for this library
+    # by separating in this way, we avoid recompiling the C files
+    # separately for the install library and the build library
+    bld.HEIMDAL_SUBSYSTEM(obj_target,
+                        source         = source,
+                        deps           = deps,
+                        includes       = includes,
+                        cflags         = cflags,
+                        group          = 'main')
+
+    if not SET_TARGET_TYPE(bld, libname, "LIBRARY"):
+        return
+
+    # the library itself will depend on that object target
+    deps = TO_LIST(deps)
+    deps.append(obj_target)
+
+    if not is_bundled:
+        # Sanitize the library name
+        bundled_name = libname.lower().replace('_', '-')
+        while bundled_name.startswith("lib"):
+            bundled_name = bundled_name[3:]
+    else:
+        bundled_name = libname + '-samba4'
+
+    features = 'cc cshlib symlink_lib install_lib'
+
+    bld.SET_BUILD_GROUP('main')
+    t = bld(
+        features        = features,
+        source          = [],
+        target          = bundled_name,
+        samba_cflags    = CURRENT_CFLAGS(bld, libname, cflags),
+        samba_deps      = deps,
+        samba_includes  = includes,
+        vnum            = vnum,
+        install_path    = None,
+        name            = libname,
+        is_bundled      = is_bundled,
+        )
+
     if heimdal_autoproto is not None:
         bld.HEIMDAL_AUTOPROTO(heimdal_autoproto, source,
             options=heimdal_autoproto_options)
@@ -209,13 +253,11 @@ def HEIMDAL_SUBSYSTEM(bld, modname, source,
                     includes='',
                     cflags='',
                     group='main',
-                    depends_on='',
                     local_include=True,
                     local_include_first=True,
                     enabled=True,
                     use_hostcc=False,
-                    use_global_deps=True,
-                    vars=None):
+                    use_global_deps=True):
     '''define a Heimdal subsystem'''
 
     if not enabled:
@@ -225,7 +267,6 @@ def HEIMDAL_SUBSYSTEM(bld, modname, source,
     if not SET_TARGET_TYPE(bld, modname, 'SUBSYSTEM'):
         return
 
-    source = bld.EXPAND_VARIABLES(source, vars=vars)
     source = TO_LIST(source)
 
     bld.SET_BUILD_GROUP(group)
@@ -235,7 +276,7 @@ def HEIMDAL_SUBSYSTEM(bld, modname, source,
         source         = source,
         target         = modname,
         samba_cflags   = CURRENT_CFLAGS(bld, modname, cflags),
-        depends_on     = depends_on,
+        depends_on     = '',
         samba_deps     = TO_LIST(deps),
         samba_includes = includes,
         local_include  = local_include,
