@@ -98,7 +98,8 @@ def build(bld):
                      'pytdb.c',
                      deps='tdb',
                      enabled=not bld.env.disable_python,
-                     realname='tdb.so')
+                     realname='tdb.so',
+                     cflags='-DPACKAGE_VERSION=\"%s\"' % VERSION)
 
     if bld.env.standalone_tdb:
         bld.env.PKGCONFIGDIR = '${LIBDIR}/pkgconfig'
