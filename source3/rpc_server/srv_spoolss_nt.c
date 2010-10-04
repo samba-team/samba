@@ -721,8 +721,10 @@ static bool set_printer_hnd_name(TALLOC_CTX *mem_ctx,
  Find first available printer slot. creates a printer handle for you.
  ****************************************************************************/
 
-static bool open_printer_hnd(struct pipes_struct *p, struct policy_handle *hnd,
-			     const char *name, uint32_t access_granted)
+static WERROR open_printer_hnd(struct pipes_struct *p,
+			       struct policy_handle *hnd,
+			       const char *name,
+			       uint32_t access_granted)
 {
 	struct printer_handle *new_printer;
 
@@ -730,14 +732,14 @@ static bool open_printer_hnd(struct pipes_struct *p, struct policy_handle *hnd,
 
 	new_printer = talloc_zero(p->mem_ctx, struct printer_handle);
 	if (new_printer == NULL) {
-		return false;
+		return WERR_NOMEM;
 	}
 	talloc_set_destructor(new_printer, printer_entry_destructor);
 
 	/* This also steals the printer_handle on the policy_handle */
 	if (!create_policy_hnd(p, hnd, new_printer)) {
 		TALLOC_FREE(new_printer);
-		return false;
+		return WERR_INVALID_HANDLE;
 	}
 
 	/* Add to the internal list. */
@@ -747,7 +749,7 @@ static bool open_printer_hnd(struct pipes_struct *p, struct policy_handle *hnd,
 
 	if (!set_printer_hnd_printertype(new_printer, name)) {
 		close_printer_handle(p, hnd);
-		return false;
+		return WERR_INVALID_HANDLE;
 	}
 
 	if (!set_printer_hnd_name(p->mem_ctx,
@@ -755,7 +757,7 @@ static bool open_printer_hnd(struct pipes_struct *p, struct policy_handle *hnd,
 				  p->msg_ctx,
 				  new_printer, name)) {
 		close_printer_handle(p, hnd);
-		return false;
+		return WERR_INVALID_HANDLE;
 	}
 
 	new_printer->access_granted = access_granted;
@@ -763,7 +765,7 @@ static bool open_printer_hnd(struct pipes_struct *p, struct policy_handle *hnd,
 	DEBUG(5, ("%d printer handles active\n",
 		  (int)num_pipe_handles(p)));
 
-	return true;
+	return WERR_OK;
 }
 
 /***************************************************************************
@@ -1683,6 +1685,7 @@ WERROR _spoolss_OpenPrinterEx(struct pipes_struct *p,
 {
 	int snum;
 	struct printer_handle *Printer=NULL;
+	WERROR result;
 
 	if (!r->in.printername) {
 		return WERR_INVALID_PARAM;
@@ -1693,11 +1696,12 @@ WERROR _spoolss_OpenPrinterEx(struct pipes_struct *p,
 
 	DEBUGADD(3,("checking name: %s\n", r->in.printername));
 
-	if (!open_printer_hnd(p, r->out.handle, r->in.printername, 0)) {
+	result = open_printer_hnd(p, r->out.handle, r->in.printername, 0);
+	if (!W_ERROR_IS_OK(result)) {
 		DEBUG(0,("_spoolss_OpenPrinterEx: Cannot open a printer handle "
 			"for printer %s\n", r->in.printername));
 		ZERO_STRUCTP(r->out.handle);
-		return WERR_INVALID_PRINTER_NAME;
+		return result;
 	}
 
 	Printer = find_printer_index_by_hnd(p, r->out.handle);
@@ -7853,10 +7857,11 @@ static WERROR spoolss_addprinterex_level_2(struct pipes_struct *p,
 		return err;
 	}
 
-	if (!open_printer_hnd(p, handle, info2->printername, PRINTER_ACCESS_ADMINISTER)) {
+	err = open_printer_hnd(p, handle, info2->printername, PRINTER_ACCESS_ADMINISTER);
+	if (!W_ERROR_IS_OK(err)) {
 		/* Handle open failed - remove addition. */
 		ZERO_STRUCTP(handle);
-		return WERR_ACCESS_DENIED;
+		return err;
 	}
 
 	return WERR_OK;
