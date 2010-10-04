@@ -166,9 +166,9 @@ def HEIMDAL_LIBRARY(bld, libname, source, deps,
                   includes='',
                   cflags='',
                   vnum=None,
-                  heimdal_autoproto=None,
-                  heimdal_autoproto_options=None,
-                  heimdal_autoproto_private=None,
+                  autoproto=None,
+                  autoproto_options=None,
+                  autoproto_private=None,
                   is_bundled=True):
     '''define a Heimdal library'''
 
@@ -215,17 +215,16 @@ def HEIMDAL_LIBRARY(bld, libname, source, deps,
         is_bundled      = is_bundled,
         )
 
-    if heimdal_autoproto is not None:
-        bld.HEIMDAL_AUTOPROTO(heimdal_autoproto, source,
-            options=heimdal_autoproto_options)
-    if heimdal_autoproto_private is not None:
-        bld.HEIMDAL_AUTOPROTO_PRIVATE(heimdal_autoproto_private, source)
+    if autoproto is not None:
+        bld.HEIMDAL_AUTOPROTO(autoproto, source,
+            options=autoproto_options)
+    if autoproto_private is not None:
+        bld.HEIMDAL_AUTOPROTO_PRIVATE(autoproto_private, source)
 
 Build.BuildContext.HEIMDAL_LIBRARY = HEIMDAL_LIBRARY
 
 def HEIMDAL_GENERATOR(bld, name, rule, source='', target='',
-                    group='generators', enabled=True,
-                    vars=None):
+        group='generators', enabled=True):
     '''A generic source generator target'''
 
     if not SET_TARGET_TYPE(bld, name, 'GENERATOR'):
@@ -237,7 +236,7 @@ def HEIMDAL_GENERATOR(bld, name, rule, source='', target='',
     bld.SET_BUILD_GROUP(group)
     t = bld(
         rule=rule,
-        source=bld.EXPAND_VARIABLES(source, vars=vars),
+        source=source,
         target=target,
         shell=isinstance(rule, str),
         on_results=True,
@@ -288,6 +287,63 @@ def HEIMDAL_SUBSYSTEM(bld, modname, source,
     return t
 
 Build.BuildContext.HEIMDAL_SUBSYSTEM = HEIMDAL_SUBSYSTEM
+
+def HEIMDAL_BINARY(bld, binname, source,
+                 deps='',
+                 includes='',
+                 ldflags=None,
+                 cflags='',
+                 use_hostcc=False,
+                 use_global_deps=True,
+                 compiler=None,
+                 group='binaries',
+                 local_include=True,
+                 install=True,
+                 install_path=None,
+                 enabled=True):
+    '''define a Samba binary'''
+
+    if not SET_TARGET_TYPE(bld, binname, 'BINARY'):
+        return
+
+    features = 'cc cprogram symlink_bin install_bin'
+
+    obj_target = binname + '.objlist'
+
+    # first create a target for building the object files for this binary
+    # by separating in this way, we avoid recompiling the C files
+    # separately for the install binary and the build binary
+    bld.SAMBA_SUBSYSTEM(obj_target,
+                        source         = source,
+                        deps           = deps,
+                        includes       = includes,
+                        cflags         = cflags,
+                        group          = group,
+                        local_include  = local_include,
+                        use_hostcc     = use_hostcc,
+                        use_global_deps= use_global_deps)
+
+    bld.SET_BUILD_GROUP(group)
+
+    # the binary itself will depend on that object target
+    deps = TO_LIST(deps)
+    deps.append(obj_target)
+
+    t = bld(
+        features       = features,
+        source         = [],
+        target         = binname,
+        samba_cflags   = CURRENT_CFLAGS(bld, binname, cflags),
+        samba_deps     = deps,
+        samba_includes = includes,
+        local_include  = local_include,
+        top            = True,
+        install_path   = None,
+        samba_install  = install
+        )
+
+Build.BuildContext.HEIMDAL_BINARY = HEIMDAL_BINARY
+
 
 bld.HEIMDAL_GENERATOR(
     name="HEIMDAL_ERRORLIST",
@@ -515,8 +571,8 @@ bld.HEIMDAL_LIBRARY('roken',
 bld.HEIMDAL_LIBRARY('kdc',
                     source='../heimdal/kdc/default_config.c ../heimdal/kdc/kerberos5.c ../heimdal/kdc/krb5tgs.c ../heimdal/kdc/pkinit.c ../heimdal/kdc/log.c ../heimdal/kdc/misc.c ../heimdal/kdc/kaserver.c ../heimdal/kdc/digest.c ../heimdal/kdc/process.c ../heimdal/kdc/windc.c ../heimdal/kdc/kx509.c',
                     includes='../heimdal/kdc',
-                    heimdal_autoproto='../heimdal/kdc/kdc-protos.h',
-                    heimdal_autoproto_private='../heimdal/kdc/kdc-private.h',
+                    autoproto='../heimdal/kdc/kdc-protos.h',
+                    autoproto_private='../heimdal/kdc/kdc-private.h',
                     deps='roken krb5 hdb HEIMDAL_HEIM_ASN1 HEIMDAL_DIGEST_ASN1 HEIMDAL_KX509_ASN1 heimntlm HEIMDAL_HCRYPTO',
                     )
 
@@ -524,7 +580,7 @@ bld.HEIMDAL_LIBRARY('kdc',
 bld.HEIMDAL_LIBRARY('heimntlm',
                     source='../heimdal/lib/ntlm/ntlm.c',
                     includes='../heimdal/lib/ntlm',
-                    heimdal_autoproto='../heimdal/lib/ntlm/heimntlm-protos.h',
+                    autoproto='../heimdal/lib/ntlm/heimntlm-protos.h',
                     deps='roken HEIMDAL_HCRYPTO krb5',
     )
 
@@ -542,8 +598,8 @@ bld.HEIMDAL_LIBRARY('hdb',
                               ../heimdal/lib/hdb/mkey.c ../heimdal/lib/hdb/ndbm.c ../heimdal/lib/hdb/hdb_err.c
                               hdb-glue.c''',
                     includes='../heimdal/lib/hdb',
-                    heimdal_autoproto='../heimdal/lib/hdb/hdb-protos.h',
-                    heimdal_autoproto_private='../heimdal/lib/hdb/hdb-private.h',
+                    autoproto='../heimdal/lib/hdb/hdb-protos.h',
+                    autoproto_private='../heimdal/lib/hdb/hdb-private.h',
                     deps='HDB_LDB krb5 HEIMDAL_HDB_KEYS roken HEIMDAL_HCRYPTO com_err HEIMDAL_HDB_ASN1',
     )
 
@@ -645,9 +701,9 @@ bld.HEIMDAL_LIBRARY('krb5',
                                v4_glue.c version.c warn.c krb5_err.c
                                heim_err.c k524_err.c krb_err.c''') + ' krb5-glue.c',
                     includes='../heimdal/lib/krb5 ../heimdal/lib/asn1',
-                    heimdal_autoproto='../heimdal/lib/krb5/krb5-protos.h',
-                    heimdal_autoproto_options='-E KRB5_LIB -q -P comment -o',
-                    heimdal_autoproto_private='../heimdal/lib/krb5/krb5-private.h',
+                    autoproto='../heimdal/lib/krb5/krb5-protos.h',
+                    autoproto_options='-E KRB5_LIB -q -P comment -o',
+                    autoproto_private='../heimdal/lib/krb5/krb5-private.h',
             cflags = bld.dynconfig_cflags(),
             deps='roken HEIMDAL_PKINIT_ASN1 wind HEIMDAL_KRB5_ASN1 hx509 HEIMDAL_HCRYPTO LIBSAMBA-HOSTCONFIG intl com_err',
                     )
@@ -708,7 +764,7 @@ if not bld.CONFIG_SET('USING_SYSTEM_COM_ERR'):
         )
 
 # here is the asn1 compiler build rule
-bld.SAMBA_BINARY('asn1_compile',
+bld.HEIMDAL_BINARY('asn1_compile',
     '../heimdal/lib/asn1/main.c ../heimdal/lib/asn1/gen.c ../heimdal/lib/asn1/gen_copy.c ../heimdal/lib/asn1/gen_decode.c ../heimdal/lib/asn1/gen_encode.c ../heimdal/lib/asn1/gen_free.c ../heimdal/lib/asn1/gen_glue.c ../heimdal/lib/asn1/gen_length.c ../heimdal/lib/asn1/gen_seq.c ../heimdal/lib/asn1/gen_template.c ../heimdal/lib/asn1/hash.c ../heimdal/lib/asn1/symbol.c ../heimdal/lib/asn1/asn1parse.c ../heimdal/lib/asn1/lex.c ../heimdal/lib/vers/print_version.c',
     use_hostcc=True,
         use_global_deps=False,
@@ -721,7 +777,7 @@ bld.SAMBA_BINARY('asn1_compile',
 
 
 if not bld.CONFIG_SET('USING_SYSTEM_COMPILE_ET'):
-    bld.SAMBA_BINARY('compile_et',
+    bld.HEIMDAL_BINARY('compile_et',
         '../heimdal/lib/vers/print_version.c ../heimdal/lib/com_err/parse.c ../heimdal/lib/com_err/lex.c ../heimdal/lib/com_err/compile_et.c',
         use_hostcc=True,
         use_global_deps=False,
@@ -733,7 +789,7 @@ if not bld.CONFIG_SET('USING_SYSTEM_COMPILE_ET'):
         )
     bld.env['COMPILE_ET'] = os.path.join(bld.env['BUILD_DIRECTORY'], 'compile_et')
 
-bld.SAMBA_BINARY('samba4kinit',
+bld.HEIMDAL_BINARY('samba4kinit',
     '../heimdal/kuser/kinit.c ../heimdal/lib/vers/print_version.c',
         includes='../heimdal/lib/roken',
         deps='krb5 heimntlm',
@@ -741,7 +797,7 @@ bld.SAMBA_BINARY('samba4kinit',
     )
 
 
-bld.SAMBA_BINARY('samba4kpasswd',
+bld.HEIMDAL_BINARY('samba4kpasswd',
     '../heimdal/kpasswd/kpasswd.c ../heimdal/lib/vers/print_version.c',
         includes='../heimdal/lib/roken',
         deps='krb5 heimntlm',
@@ -749,7 +805,7 @@ bld.SAMBA_BINARY('samba4kpasswd',
     )
 
 
-bld.SAMBA_BINARY('rkpty',
+bld.HEIMDAL_BINARY('rkpty',
     '../heimdal/lib/roken/rkpty.c',
         deps='roken OPENPTY',
         cflags='-DPACKAGE="Samba"',
