@@ -180,7 +180,32 @@ def HEIMDAL_LIBRARY(bld, libname, source, deps,
 
 Build.BuildContext.HEIMDAL_LIBRARY = HEIMDAL_LIBRARY
 
-bld.SAMBA_GENERATOR(
+def HEIMDAL_GENERATOR(bld, name, rule, source='', target='',
+                    group='generators', enabled=True,
+                    vars=None):
+    '''A generic source generator target'''
+
+    if not SET_TARGET_TYPE(bld, name, 'GENERATOR'):
+        return
+
+    if not enabled:
+        return
+
+    bld.SET_BUILD_GROUP(group)
+    t = bld(
+        rule=rule,
+        source=bld.EXPAND_VARIABLES(source, vars=vars),
+        target=target,
+        shell=isinstance(rule, str),
+        on_results=True,
+        before='cc',
+        ext_out='.c',
+        name=name)
+
+    return t
+Build.BuildContext.HEIMDAL_GENERATOR = HEIMDAL_GENERATOR
+
+bld.HEIMDAL_GENERATOR(
     name="HEIMDAL_ERRORLIST",
     rule="${PYTHON} ${SRC[0].abspath()} ${SRC[1].abspath()} ${SRC[1].parent.abspath(env)}",
     source = '../heimdal/lib/wind/gen-errorlist.py ../heimdal/lib/wind/rfc3454.txt ../heimdal/lib/wind/stringprep.py',
@@ -188,21 +213,21 @@ bld.SAMBA_GENERATOR(
     )
 
 
-bld.SAMBA_GENERATOR(
+bld.HEIMDAL_GENERATOR(
     name = 'HEIMDAL_NORMALIZE_TABLE',
     rule="${PYTHON} ${SRC[0].abspath()} ${SRC[1].abspath()} ${SRC[2].abspath()} ${SRC[1].parent.abspath(env)}",
     source = '../heimdal/lib/wind/gen-normalize.py ../heimdal/lib/wind/UnicodeData.txt ../heimdal/lib/wind/CompositionExclusions-3.2.0.txt',
     target = '../heimdal/lib/wind/normalize_table.h ../heimdal/lib/wind/normalize_table.c'
 )
 
-bld.SAMBA_GENERATOR(
+bld.HEIMDAL_GENERATOR(
     name = 'HEIMDAL_COMBINING_TABLE',
     rule="${PYTHON} ${SRC[0].abspath()} ${SRC[1].abspath()} ${SRC[1].parent.abspath(env)}",
     source = '../heimdal/lib/wind/gen-combining.py ../heimdal/lib/wind/UnicodeData.txt',
     target = '../heimdal/lib/wind/combining_table.h ../heimdal/lib/wind/combining_table.c'
 )
 
-bld.SAMBA_GENERATOR(
+bld.HEIMDAL_GENERATOR(
     name = 'HEIMDAL_BIDI_TABLE',
     rule="${PYTHON} ${SRC[0].abspath()} ${SRC[1].abspath()} ${SRC[1].parent.abspath(env)}",
     source = '../heimdal/lib/wind/gen-bidi.py ../heimdal/lib/wind/rfc3454.txt',
@@ -210,7 +235,7 @@ bld.SAMBA_GENERATOR(
 )
 
 
-bld.SAMBA_GENERATOR(
+bld.HEIMDAL_GENERATOR(
     name = 'HEIMDAL_MAP_TABLE',
     rule="${PYTHON} ${SRC[0].abspath()} ${SRC[2].abspath()} ${SRC[2].parent.abspath(env)}",
     source = '../heimdal/lib/wind/gen-map.py ../heimdal/lib/wind/stringprep.py ../heimdal/lib/wind/rfc3454.txt',
@@ -485,7 +510,7 @@ bld.HEIMDAL_LIBRARY('gssapi',
     )
 
 
-bld.SAMBA_GENERATOR(
+bld.HEIMDAL_GENERATOR(
     name="HEIMDAL_IFADDRS_H",
     rule="rm -f ${TGT} && ln ${SRC} ${TGT}",
     source = 'ifaddrs.hin',
@@ -493,7 +518,7 @@ bld.SAMBA_GENERATOR(
     enabled = not bld.CONFIG_SET('HAVE_IFADDRS_H')
     )
 
-bld.SAMBA_GENERATOR(
+bld.HEIMDAL_GENERATOR(
     group='build_compiler_source',
     name="HEIMDAL_ERR_H",
     rule="rm -f ${TGT} && ln ${SRC} ${TGT}",
