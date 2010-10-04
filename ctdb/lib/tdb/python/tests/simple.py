@@ -160,6 +160,12 @@ class SimpleTdbTests(TestCase):
         self.tdb.remove_flags(tdb.NOMMAP)
 
 
+class VersionTests(TestCase):
+
+    def test_present(self):
+        self.assertTrue(isinstance(tdb.__version__, str))
+
+
 if __name__ == '__main__':
     import unittest
     unittest.TestProgram()

@@ -592,6 +592,8 @@ void inittdb(void)
 
 	PyModule_AddObject(m, "__docformat__", PyString_FromString("restructuredText"));
 
+	PyModule_AddObject(m, "__version__", PyString_FromString(PACKAGE_VERSION));
+
 	Py_INCREF(&PyTdb);
 	PyModule_AddObject(m, "Tdb", (PyObject *)&PyTdb);
 
