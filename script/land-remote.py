@@ -45,8 +45,8 @@ if not opts.foreground and not opts.email:
     sys.exit(1)
 
 if not opts.foreground and opts.push_master:
-    print "Unable to push to master when not running in foreground."
-    sys.exit(1)
+    print "Pushing to master, forcing run in foreground."
+    opts.foreground = True
 
 if not opts.remote_repo:
     print "%s$ mktemp -d" % opts.host
