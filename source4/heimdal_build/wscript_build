@@ -1,13 +1,12 @@
 #!/usr/bin/env python
 
-import Build
 import os
 from samba_utils import SET_TARGET_TYPE, TO_LIST
 from samba_autoconf import CURRENT_CFLAGS
 
 # waf build tool for building .et files with compile_et
 
-def HEIMDAL_ASN1(bld, name, source,
+def HEIMDAL_ASN1(name, source,
                options='',
                directory='',
                option_file=None,
@@ -23,7 +22,7 @@ def HEIMDAL_ASN1(bld, name, source,
 
     # for ASN1 compilation, I always put it in build_source, as it doesn't make
     # sense elsewhere
-    bld.SET_BUILD_GROUP('build_source')
+    bld.set_group('build_source')
 
     out_files = []
     out_files.append("../heimdal/%s/asn1_%s_asn1.x" % (directory, bname))
@@ -94,7 +93,7 @@ def HEIMDAL_ASN1(bld, name, source,
             depends_on = name + '_ASN1',
             name = name + '_PRIV_H')
 
-    bld.SET_BUILD_GROUP('main')
+    bld.set_group('main')
 
     includes = TO_LIST(includes)
     includes.append(os.path.dirname(out_files[0]))
@@ -108,9 +107,8 @@ def HEIMDAL_ASN1(bld, name, source,
             samba_includes = includes,
             local_include  = True)
 
-Build.BuildContext.HEIMDAL_ASN1 = HEIMDAL_ASN1
 
-def HEIMDAL_ERRTABLE(bld, name, source):
+def HEIMDAL_ERRTABLE(name, source):
     '''Build a heimdal errtable from a .et file'''
 
     bname = source[0:-3]; # strip off the .et suffix
@@ -118,7 +116,7 @@ def HEIMDAL_ERRTABLE(bld, name, source):
     if not SET_TARGET_TYPE(bld, name, 'ET'):
         return
 
-    bld.SET_BUILD_GROUP('build_source')
+    bld.set_group('build_source')
 
     out_files = []
     out_files.append('%s.c' % bname)
@@ -137,11 +135,10 @@ def HEIMDAL_ERRTABLE(bld, name, source):
             source  = sources,
             target  = out_files,
             name    = name)
-Build.BuildContext.HEIMDAL_ERRTABLE = HEIMDAL_ERRTABLE
 
-def HEIMDAL_AUTOPROTO(bld, header, source, options=None, group='prototypes'):
+def HEIMDAL_AUTOPROTO(header, source, options=None, group='prototypes'):
     '''rule for heimdal prototype generation'''
-    bld.SET_BUILD_GROUP(group)
+    bld.set_group(group)
     if options is None:
         options='-q -P comment -o'
     SET_TARGET_TYPE(bld, header, 'PROTOTYPE')
@@ -153,16 +150,14 @@ def HEIMDAL_AUTOPROTO(bld, header, source, options=None, group='prototypes'):
             before='cc')
     t.env.HEIMDAL = os.path.join(bld.srcnode.abspath(), 'source4/heimdal')
     t.env.OPTIONS = options
-Build.BuildContext.HEIMDAL_AUTOPROTO = HEIMDAL_AUTOPROTO
 
 
-def HEIMDAL_AUTOPROTO_PRIVATE(bld, header, source):
+def HEIMDAL_AUTOPROTO_PRIVATE(header, source):
     '''rule for private heimdal prototype generation'''
-    bld.HEIMDAL_AUTOPROTO(header, source, options='-q -P comment -p')
-Build.BuildContext.HEIMDAL_AUTOPROTO_PRIVATE = HEIMDAL_AUTOPROTO_PRIVATE
+    HEIMDAL_AUTOPROTO(header, source, options='-q -P comment -p')
 
 
-def HEIMDAL_LIBRARY(bld, libname, source, deps,
+def HEIMDAL_LIBRARY(libname, source, deps,
                   includes='',
                   cflags='',
                   vnum=None,
@@ -177,7 +172,7 @@ def HEIMDAL_LIBRARY(bld, libname, source, deps,
     # first create a target for building the object files for this library
     # by separating in this way, we avoid recompiling the C files
     # separately for the install library and the build library
-    bld.HEIMDAL_SUBSYSTEM(obj_target,
+    HEIMDAL_SUBSYSTEM(obj_target,
                         source         = source,
                         deps           = deps,
                         includes       = includes,
@@ -201,7 +196,7 @@ def HEIMDAL_LIBRARY(bld, libname, source, deps,
 
     features = 'cc cshlib symlink_lib install_lib'
 
-    bld.SET_BUILD_GROUP('main')
+    bld.set_group('main')
     t = bld(
         features        = features,
         source          = [],
@@ -216,25 +211,21 @@ def HEIMDAL_LIBRARY(bld, libname, source, deps,
         )
 
     if autoproto is not None:
-        bld.HEIMDAL_AUTOPROTO(autoproto, source,
+        HEIMDAL_AUTOPROTO(autoproto, source,
             options=autoproto_options)
     if autoproto_private is not None:
-        bld.HEIMDAL_AUTOPROTO_PRIVATE(autoproto_private, source)
+        HEIMDAL_AUTOPROTO_PRIVATE(autoproto_private, source)
 
-Build.BuildContext.HEIMDAL_LIBRARY = HEIMDAL_LIBRARY
 
-def HEIMDAL_GENERATOR(bld, name, rule, source='', target='',
-        group='generators', enabled=True):
+def HEIMDAL_GENERATOR(name, rule, source='', target='',
+        group='generators'):
     '''A generic source generator target'''
 
     if not SET_TARGET_TYPE(bld, name, 'GENERATOR'):
         return
 
-    if not enabled:
-        return
-
-    bld.SET_BUILD_GROUP(group)
-    t = bld(
+    bld.set_group(group)
+    return bld(
         rule=rule,
         source=source,
         target=target,
@@ -244,33 +235,26 @@ def HEIMDAL_GENERATOR(bld, name, rule, source='', target='',
         ext_out='.c',
         name=name)
 
-    return t
-Build.BuildContext.HEIMDAL_GENERATOR = HEIMDAL_GENERATOR
 
-def HEIMDAL_SUBSYSTEM(bld, modname, source,
+def HEIMDAL_SUBSYSTEM(modname, source,
                     deps='',
                     includes='',
                     cflags='',
                     group='main',
                     local_include=True,
                     local_include_first=True,
-                    enabled=True,
                     use_hostcc=False,
                     use_global_deps=True):
     '''define a Heimdal subsystem'''
-
-    if not enabled:
-        SET_TARGET_TYPE(bld, modname, 'DISABLED')
-        return
 
     if not SET_TARGET_TYPE(bld, modname, 'SUBSYSTEM'):
         return
 
     source = TO_LIST(source)
 
-    bld.SET_BUILD_GROUP(group)
+    bld.set_group(group)
 
-    t = bld(
+    return bld(
         features       = 'cc',
         source         = source,
         target         = modname,
@@ -284,11 +268,8 @@ def HEIMDAL_SUBSYSTEM(bld, modname, source,
         samba_use_global_deps = use_global_deps
         )
 
-    return t
 
-Build.BuildContext.HEIMDAL_SUBSYSTEM = HEIMDAL_SUBSYSTEM
-
-def HEIMDAL_BINARY(bld, binname, source,
+def HEIMDAL_BINARY(binname, source,
                  deps='',
                  includes='',
                  ldflags=None,
@@ -299,8 +280,7 @@ def HEIMDAL_BINARY(bld, binname, source,
                  group='binaries',
                  local_include=True,
                  install=True,
-                 install_path=None,
-                 enabled=True):
+                 install_path=None):
     '''define a Samba binary'''
 
     if not SET_TARGET_TYPE(bld, binname, 'BINARY'):
@@ -313,7 +293,7 @@ def HEIMDAL_BINARY(bld, binname, source,
     # first create a target for building the object files for this binary
     # by separating in this way, we avoid recompiling the C files
     # separately for the install binary and the build binary
-    bld.SAMBA_SUBSYSTEM(obj_target,
+    HEIMDAL_SUBSYSTEM(obj_target,
                         source         = source,
                         deps           = deps,
                         includes       = includes,
@@ -323,7 +303,7 @@ def HEIMDAL_BINARY(bld, binname, source,
                         use_hostcc     = use_hostcc,
                         use_global_deps= use_global_deps)
 
-    bld.SET_BUILD_GROUP(group)
+    bld.set_group(group)
 
     # the binary itself will depend on that object target
     deps = TO_LIST(deps)
@@ -342,10 +322,8 @@ def HEIMDAL_BINARY(bld, binname, source,
         samba_install  = install
         )
 
-Build.BuildContext.HEIMDAL_BINARY = HEIMDAL_BINARY
 
-
-bld.HEIMDAL_GENERATOR(
+HEIMDAL_GENERATOR(
     name="HEIMDAL_ERRORLIST",
     rule="${PYTHON} ${SRC[0].abspath()} ${SRC[1].abspath()} ${SRC[1].parent.abspath(env)}",
     source = '../heimdal/lib/wind/gen-errorlist.py ../heimdal/lib/wind/rfc3454.txt ../heimdal/lib/wind/stringprep.py',
@@ -353,21 +331,21 @@ bld.HEIMDAL_GENERATOR(
     )
 
 
-bld.HEIMDAL_GENERATOR(
+HEIMDAL_GENERATOR(
     name = 'HEIMDAL_NORMALIZE_TABLE',
     rule="${PYTHON} ${SRC[0].abspath()} ${SRC[1].abspath()} ${SRC[2].abspath()} ${SRC[1].parent.abspath(env)}",
     source = '../heimdal/lib/wind/gen-normalize.py ../heimdal/lib/wind/UnicodeData.txt ../heimdal/lib/wind/CompositionExclusions-3.2.0.txt',
     target = '../heimdal/lib/wind/normalize_table.h ../heimdal/lib/wind/normalize_table.c'
 )
 
-bld.HEIMDAL_GENERATOR(
+HEIMDAL_GENERATOR(
     name = 'HEIMDAL_COMBINING_TABLE',
     rule="${PYTHON} ${SRC[0].abspath()} ${SRC[1].abspath()} ${SRC[1].parent.abspath(env)}",
     source = '../heimdal/lib/wind/gen-combining.py ../heimdal/lib/wind/UnicodeData.txt',
     target = '../heimdal/lib/wind/combining_table.h ../heimdal/lib/wind/combining_table.c'
 )
 
-bld.HEIMDAL_GENERATOR(
+HEIMDAL_GENERATOR(
     name = 'HEIMDAL_BIDI_TABLE',
     rule="${PYTHON} ${SRC[0].abspath()} ${SRC[1].abspath()} ${SRC[1].parent.abspath(env)}",
     source = '../heimdal/lib/wind/gen-bidi.py ../heimdal/lib/wind/rfc3454.txt',
@@ -375,7 +353,7 @@ bld.HEIMDAL_GENERATOR(
 )
 
 
-bld.HEIMDAL_GENERATOR(
+HEIMDAL_GENERATOR(
     name = 'HEIMDAL_MAP_TABLE',
     rule="${PYTHON} ${SRC[0].abspath()} ${SRC[2].abspath()} ${SRC[2].parent.abspath(env)}",
     source = '../heimdal/lib/wind/gen-map.py ../heimdal/lib/wind/stringprep.py ../heimdal/lib/wind/rfc3454.txt',
@@ -383,7 +361,7 @@ bld.HEIMDAL_GENERATOR(
 )
 
 
-bld.HEIMDAL_ASN1('HEIMDAL_SPNEGO_ASN1',
+HEIMDAL_ASN1('HEIMDAL_SPNEGO_ASN1',
         source='../heimdal/lib/gssapi/spnego/spnego.asn1',
     options='--sequence=MechTypeList',
         includes='../heimdal/lib/asn1',
@@ -391,65 +369,65 @@ bld.HEIMDAL_ASN1('HEIMDAL_SPNEGO_ASN1',
     )
 
 
-bld.HEIMDAL_ASN1('HEIMDAL_GSSAPI_ASN1',
+HEIMDAL_ASN1('HEIMDAL_GSSAPI_ASN1',
     '../heimdal/lib/gssapi/mech/gssapi.asn1',
         includes='../heimdal/lib/asn1',
     directory='lib/gssapi'
     )
 
 
-bld.HEIMDAL_ASN1('HEIMDAL_KRB5_ASN1',
+HEIMDAL_ASN1('HEIMDAL_KRB5_ASN1',
     '../heimdal/lib/asn1/krb5.asn1',
     option_file='../heimdal/lib/asn1/krb5.opt',
     directory='lib/asn1'
     )
 
 
-bld.HEIMDAL_ASN1('HEIMDAL_DIGEST_ASN1',
+HEIMDAL_ASN1('HEIMDAL_DIGEST_ASN1',
     '../heimdal/lib/asn1/digest.asn1',
     directory='lib/asn1'
     )
 
 
-bld.HEIMDAL_ASN1('HEIMDAL_PKCS8_ASN1',
+HEIMDAL_ASN1('HEIMDAL_PKCS8_ASN1',
     '../heimdal/lib/asn1/pkcs8.asn1',
     directory='lib/asn1'
     )
 
 
-bld.HEIMDAL_ASN1('HEIMDAL_PKCS9_ASN1',
+HEIMDAL_ASN1('HEIMDAL_PKCS9_ASN1',
     '../heimdal/lib/asn1/pkcs9.asn1',
     directory='lib/asn1'
     )
 
 
-bld.HEIMDAL_ASN1('HEIMDAL_PKCS12_ASN1',
+HEIMDAL_ASN1('HEIMDAL_PKCS12_ASN1',
     '../heimdal/lib/asn1/pkcs12.asn1',
     directory='lib/asn1'
     )
 
 
-bld.HEIMDAL_ASN1('HEIMDAL_RFC2459_ASN1',
+HEIMDAL_ASN1('HEIMDAL_RFC2459_ASN1',
     '../heimdal/lib/asn1/rfc2459.asn1',
     options='--preserve-binary=TBSCertificate --preserve-binary=TBSCRLCertList --preserve-binary=Name --sequence=GeneralNames --sequence=Extensions --sequence=CRLDistributionPoints',
     directory='lib/asn1'
     )
 
 
-bld.HEIMDAL_ASN1('HEIMDAL_PKINIT_ASN1',
+HEIMDAL_ASN1('HEIMDAL_PKINIT_ASN1',
     '../heimdal/lib/asn1/pkinit.asn1',
     directory='lib/asn1'
     )
 
 
-bld.HEIMDAL_ASN1('HEIMDAL_CMS_ASN1',
+HEIMDAL_ASN1('HEIMDAL_CMS_ASN1',
     '../heimdal/lib/asn1/cms.asn1',
     option_file='../heimdal/lib/asn1/cms.opt',
     directory='lib/asn1'
     )
 
 
-bld.HEIMDAL_ASN1('HEIMDAL_OCSP_ASN1',
+HEIMDAL_ASN1('HEIMDAL_OCSP_ASN1',
     '../heimdal/lib/hx509/ocsp.asn1',
     options='--preserve-binary=OCSPTBSRequest --preserve-binary=OCSPResponseData',
         includes='../heimdal/lib/asn1',
@@ -457,13 +435,13 @@ bld.HEIMDAL_ASN1('HEIMDAL_OCSP_ASN1',
     )
 
 
-bld.HEIMDAL_ASN1('HEIMDAL_KX509_ASN1',
+HEIMDAL_ASN1('HEIMDAL_KX509_ASN1',
     '../heimdal/lib/asn1/kx509.asn1',
     directory='lib/asn1'
     )
 
 
-bld.HEIMDAL_ASN1('HEIMDAL_PKCS10_ASN1',
+HEIMDAL_ASN1('HEIMDAL_PKCS10_ASN1',
     '../heimdal/lib/hx509/pkcs10.asn1',
     options='--preserve-binary=CertificationRequestInfo',
         includes='../heimdal/lib/asn1',
@@ -471,43 +449,43 @@ bld.HEIMDAL_ASN1('HEIMDAL_PKCS10_ASN1',
     )
 
 
-bld.HEIMDAL_ASN1('HEIMDAL_HDB_ASN1',
+HEIMDAL_ASN1('HEIMDAL_HDB_ASN1',
     '../heimdal/lib/hdb/hdb.asn1',
         includes='../heimdal/lib/asn1')
 
-bld.HEIMDAL_ERRTABLE('HEIMDAL_ASN1_ERR_ET',
+HEIMDAL_ERRTABLE('HEIMDAL_ASN1_ERR_ET',
     '../heimdal/lib/asn1/asn1_err.et')
 
 
-bld.HEIMDAL_ERRTABLE('HEIMDAL_HDB_ERR_ET',
+HEIMDAL_ERRTABLE('HEIMDAL_HDB_ERR_ET',
     '../heimdal/lib/hdb/hdb_err.et')
 
 
-bld.HEIMDAL_ERRTABLE('HEIMDAL_HEIM_ERR_ET',
+HEIMDAL_ERRTABLE('HEIMDAL_HEIM_ERR_ET',
     '../heimdal/lib/krb5/heim_err.et')
 
 
-bld.HEIMDAL_ERRTABLE('HEIMDAL_K524_ERR_ET',
+HEIMDAL_ERRTABLE('HEIMDAL_K524_ERR_ET',
     '../heimdal/lib/krb5/k524_err.et')
 
 
-bld.HEIMDAL_ERRTABLE('HEIMDAL_KRB_ERR_ET',
+HEIMDAL_ERRTABLE('HEIMDAL_KRB_ERR_ET',
     '../heimdal/lib/krb5/krb_err.et')
 
 
-bld.HEIMDAL_ERRTABLE('HEIMDAL_KRB5_ERR_ET',
+HEIMDAL_ERRTABLE('HEIMDAL_KRB5_ERR_ET',
     '../heimdal/lib/krb5/krb5_err.et')
 
 
-bld.HEIMDAL_ERRTABLE('HEIMDAL_GKRB5_ERR_ET',
+HEIMDAL_ERRTABLE('HEIMDAL_GKRB5_ERR_ET',
     '../heimdal/lib/gssapi/krb5/gkrb5_err.et')
 
 
-bld.HEIMDAL_ERRTABLE('HEIMDAL_HX509_ERR_ET',
+HEIMDAL_ERRTABLE('HEIMDAL_HX509_ERR_ET',
     '../heimdal/lib/hx509/hx509_err.et')
 
 
-bld.HEIMDAL_ERRTABLE('WIND_ERR_ET',
+HEIMDAL_ERRTABLE('WIND_ERR_ET',
     '../heimdal/lib/wind/wind_err.et')
 
 ROKEN_HOSTCC_SOURCE = '''
@@ -561,14 +539,14 @@ ROKEN_SOURCE = ROKEN_HOSTCC_SOURCE + '''
     ../heimdal/lib/roken/roken_gethostby.c
 '''
 
-bld.HEIMDAL_LIBRARY('roken',
+HEIMDAL_LIBRARY('roken',
     ROKEN_SOURCE,
     includes='../heimdal/lib/roken ../heimdal/include ../../lib/socket_wrapper',
     deps='resolv UID_WRAPPER util',
     )
 
 
-bld.HEIMDAL_LIBRARY('kdc',
+HEIMDAL_LIBRARY('kdc',
                     source='../heimdal/kdc/default_config.c ../heimdal/kdc/kerberos5.c ../heimdal/kdc/krb5tgs.c ../heimdal/kdc/pkinit.c ../heimdal/kdc/log.c ../heimdal/kdc/misc.c ../heimdal/kdc/kaserver.c ../heimdal/kdc/digest.c ../heimdal/kdc/process.c ../heimdal/kdc/windc.c ../heimdal/kdc/kx509.c',
                     includes='../heimdal/kdc',
                     autoproto='../heimdal/kdc/kdc-protos.h',
@@ -577,7 +555,7 @@ bld.HEIMDAL_LIBRARY('kdc',
                     )
 
 
-bld.HEIMDAL_LIBRARY('heimntlm',
+HEIMDAL_LIBRARY('heimntlm',
                     source='../heimdal/lib/ntlm/ntlm.c',
                     includes='../heimdal/lib/ntlm',
                     autoproto='../heimdal/lib/ntlm/heimntlm-protos.h',
@@ -585,14 +563,14 @@ bld.HEIMDAL_LIBRARY('heimntlm',
     )
 
 
-bld.HEIMDAL_SUBSYSTEM('HEIMDAL_HDB_KEYS',
+HEIMDAL_SUBSYSTEM('HEIMDAL_HDB_KEYS',
     '../heimdal/lib/hdb/keys.c',
     includes='../heimdal/lib/hdb',
     deps='roken HEIMDAL_HCRYPTO krb5 HEIMDAL_HDB_ASN1'
     )
 
 
-bld.HEIMDAL_LIBRARY('hdb',
+HEIMDAL_LIBRARY('hdb',
                     source='''../heimdal/lib/hdb/db.c ../heimdal/lib/hdb/dbinfo.c ../heimdal/lib/hdb/hdb.c
                               ../heimdal/lib/hdb/ext.c ../heimdal/lib/hdb/keytab.c ../heimdal/lib/hdb/hdb-keytab.c
                               ../heimdal/lib/hdb/mkey.c ../heimdal/lib/hdb/ndbm.c ../heimdal/lib/hdb/hdb_err.c
@@ -604,7 +582,7 @@ bld.HEIMDAL_LIBRARY('hdb',
     )
 
 
-bld.HEIMDAL_LIBRARY('gssapi',
+HEIMDAL_LIBRARY('gssapi',
                     '''
 ../heimdal/lib/gssapi/spnego/init_sec_context.c ../heimdal/lib/gssapi/spnego/external.c ../heimdal/lib/gssapi/spnego/compat.c
 ../heimdal/lib/gssapi/spnego/context_stubs.c ../heimdal/lib/gssapi/spnego/cred_stubs.c ../heimdal/lib/gssapi/spnego/accept_sec_context.c
@@ -650,24 +628,24 @@ bld.HEIMDAL_LIBRARY('gssapi',
     )
 
 
-bld.HEIMDAL_GENERATOR(
-    name="HEIMDAL_IFADDRS_H",
-    rule="rm -f ${TGT} && ln ${SRC} ${TGT}",
-    source = 'ifaddrs.hin',
-    target = 'ifaddrs.h',
-    enabled = not bld.CONFIG_SET('HAVE_IFADDRS_H')
-    )
+if not bld.CONFIG_SET('HAVE_IFADDRS_H'):
+    HEIMDAL_GENERATOR(
+        name="HEIMDAL_IFADDRS_H",
+        rule="rm -f ${TGT} && ln ${SRC} ${TGT}",
+        source = 'ifaddrs.hin',
+        target = 'ifaddrs.h',
+        )
 
-bld.HEIMDAL_GENERATOR(
-    group='build_compiler_source',
-    name="HEIMDAL_ERR_H",
-    rule="rm -f ${TGT} && ln ${SRC} ${TGT}",
-    source = '../heimdal/lib/roken/err.hin',
-    target = '../heimdal/lib/roken/err.h',
-    enabled = not bld.CONFIG_SET('HAVE_ERR_H')
-    )
+if not bld.CONFIG_SET('HAVE_ERR_H'):
+    HEIMDAL_GENERATOR(
+        group='build_compiler_source',
+        name="HEIMDAL_ERR_H",
+        rule="rm -f ${TGT} && ln ${SRC} ${TGT}",
+        source = '../heimdal/lib/roken/err.hin',
+        target = '../heimdal/lib/roken/err.h',
+        )
 
-bld.HEIMDAL_LIBRARY('krb5',
+HEIMDAL_LIBRARY('krb5',
                     bld.SUBDIR('../heimdal/lib/krb5/',
                                '''acache.c add_et_list.c
                                addr_families.c appdefault.c
@@ -709,44 +687,44 @@ bld.HEIMDAL_LIBRARY('krb5',
                     )
 
 
-bld.HEIMDAL_SUBSYSTEM('HEIMDAL_HEIM_ASN1',
+HEIMDAL_SUBSYSTEM('HEIMDAL_HEIM_ASN1',
     '../heimdal/lib/asn1/der_get.c ../heimdal/lib/asn1/der_put.c ../heimdal/lib/asn1/der_free.c ../heimdal/lib/asn1/der_format.c ../heimdal/lib/asn1/der_length.c ../heimdal/lib/asn1/der_copy.c ../heimdal/lib/asn1/der_cmp.c ../heimdal/lib/asn1/extra.c ../heimdal/lib/asn1/timegm.c ../heimdal/lib/asn1/asn1_err.c',
         includes='../heimdal/lib/asn1',
     deps='roken com_err'
     )
 
 
-bld.HEIMDAL_SUBSYSTEM('HEIMDAL_HCRYPTO_IMATH',
+HEIMDAL_SUBSYSTEM('HEIMDAL_HCRYPTO_IMATH',
     '../heimdal/lib/hcrypto/imath/imath.c ../heimdal/lib/hcrypto/imath/iprime.c',
         includes='../heimdal/lib/hcrypto/imath',
     deps='roken'
     )
-bld.HEIMDAL_SUBSYSTEM('HEIMDAL_HCRYPTO_LTM',
+HEIMDAL_SUBSYSTEM('HEIMDAL_HCRYPTO_LTM',
     '../heimdal/lib/hcrypto/libtommath/bncore.c ../heimdal/lib/hcrypto/libtommath/bn_mp_init.c ../heimdal/lib/hcrypto/libtommath/bn_mp_clear.c ../heimdal/lib/hcrypto/libtommath/bn_mp_exch.c ../heimdal/lib/hcrypto/libtommath/bn_mp_grow.c ../heimdal/lib/hcrypto/libtommath/bn_mp_shrink.c ../heimdal/lib/hcrypto/libtommath/bn_mp_clamp.c ../heimdal/lib/hcrypto/libtommath/bn_mp_zero.c ../heimdal/lib/hcrypto/libtommath/bn_mp_zero_multi.c ../heimdal/lib/hcrypto/libtommath/bn_mp_set.c ../heimdal/lib/hcrypto/libtommath/bn_mp_set_int.c ../heimdal/lib/hcrypto/libtommath/bn_mp_init_size.c ../heimdal/lib/hcrypto/libtommath/bn_mp_copy.c ../heimdal/lib/hcrypto/libtommath/bn_mp_init_copy.c ../heimdal/lib/hcrypto/libtommath/bn_mp_abs.c ../heimdal/lib/hcrypto/libtommath/bn_mp_neg.c ../heimdal/lib/hcrypto/libtommath/bn_mp_cmp_mag.c ../heimdal/lib/hcrypto/libtommath/bn_mp_cmp.c ../heimdal/lib/hcrypto/libtommath/bn_mp_cmp_d.c ../heimdal/lib/hcrypto/libtommath/bn_mp_rshd.c ../heimdal/lib/hcrypto/libtommath/bn_mp_lshd.c ../heimdal/lib/hcrypto/libtommath/bn_mp_mod_2d.c ../heimdal/lib/hcrypto/libtommath/bn_mp_div_2d.c ../heimdal/lib/hcrypto/libtommath/bn_mp_mul_2d.c ../heimdal/lib/hcrypto/libtommath/bn_mp_div_2.c ../heimdal/lib/hcrypto/libtommath/bn_mp_mul_2.c ../heimdal/lib/hcrypto/libtommath/bn_s_mp_add.c ../heimdal/lib/hcrypto/libtommath/bn_s_mp_sub.c ../heimdal/lib/hcrypto/libtommath/bn_fast_s_mp_mul_digs.c ../heimdal/lib/hcrypto/libtommath/bn_s_mp_mul_digs.c ../heimdal/lib/hcrypto/libtommath/bn_fast_s_mp_mul_high_digs.c ../heimdal/lib/hcrypto/libtommath/bn_s_mp_mul_high_digs.c ../heimdal/lib/hcrypto/libtommath/bn_fast_s_mp_sqr.c ../heimdal/lib/hcrypto/libtommath/bn_s_mp_sqr.c ../heimdal/lib/hcrypto/libtommath/bn_mp_add.c ../heimdal/lib/hcrypto/libtommath/bn_mp_sub.c ../heimdal/lib/hcrypto/libtommath/bn_mp_karatsuba_mul.c ../heimdal/lib/hcrypto/libtommath/bn_mp_mul.c ../heimdal/lib/hcrypto/libtommath/bn_mp_karatsuba_sqr.c ../heimdal/lib/hcrypto/libtommath/bn_mp_sqr.c ../heimdal/lib/hcrypto/libtommath/bn_mp_div.c ../heimdal/lib/hcrypto/libtommath/bn_mp_mod.c ../heimdal/lib/hcrypto/libtommath/bn_mp_add_d.c ../heimdal/lib/hcrypto/libtommath/bn_mp_sub_d.c ../heimdal/lib/hcrypto/libtommath/bn_mp_mul_d.c ../heimdal/lib/hcrypto/libtommath/bn_mp_div_d.c ../heimdal/lib/hcrypto/libtommath/bn_mp_mod_d.c ../heimdal/lib/hcrypto/libtommath/bn_mp_expt_d.c ../heimdal/lib/hcrypto/libtommath/bn_mp_addmod.c ../heimdal/lib/hcrypto/libtommath/bn_mp_submod.c ../heimdal/lib/hcrypto/libtommath/bn_mp_mulmod.c ../heimdal/lib/hcrypto/libtommath/bn_mp_sqrmod.c ../heimdal/lib/hcrypto/libtommath/bn_mp_gcd.c ../heimdal/lib/hcrypto/libtommath/bn_mp_lcm.c ../heimdal/lib/hcrypto/libtommath/bn_fast_mp_invmod.c ../heimdal/lib/hcrypto/libtommath/bn_mp_invmod.c ../heimdal/lib/hcrypto/libtommath/bn_mp_reduce.c ../heimdal/lib/hcrypto/libtommath/bn_mp_montgomery_setup.c ../heimdal/lib/hcrypto/libtommath/bn_fast_mp_montgomery_reduce.c ../heimdal/lib/hcrypto/libtommath/bn_mp_montgomery_reduce.c ../heimdal/lib/hcrypto/libtommath/bn_mp_exptmod_fast.c ../heimdal/lib/hcrypto/libtommath/bn_mp_exptmod.c ../heimdal/lib/hcrypto/libtommath/bn_mp_2expt.c ../heimdal/lib/hcrypto/libtommath/bn_mp_n_root.c ../heimdal/lib/hcrypto/libtommath/bn_mp_jacobi.c ../heimdal/lib/hcrypto/libtommath/bn_reverse.c ../heimdal/lib/hcrypto/libtommath/bn_mp_count_bits.c ../heimdal/lib/hcrypto/libtommath/bn_mp_read_unsigned_bin.c ../heimdal/lib/hcrypto/libtommath/bn_mp_read_signed_bin.c ../heimdal/lib/hcrypto/libtommath/bn_mp_to_unsigned_bin.c ../heimdal/lib/hcrypto/libtommath/bn_mp_to_signed_bin.c ../heimdal/lib/hcrypto/libtommath/bn_mp_unsigned_bin_size.c ../heimdal/lib/hcrypto/libtommath/bn_mp_signed_bin_size.c ../heimdal/lib/hcrypto/libtommath/bn_mp_xor.c ../heimdal/lib/hcrypto/libtommath/bn_mp_and.c ../heimdal/lib/hcrypto/libtommath/bn_mp_or.c ../heimdal/lib/hcrypto/libtommath/bn_mp_rand.c ../heimdal/lib/hcrypto/libtommath/bn_mp_montgomery_calc_normalization.c ../heimdal/lib/hcrypto/libtommath/bn_mp_prime_is_divisible.c ../heimdal/lib/hcrypto/libtommath/bn_prime_tab.c ../heimdal/lib/hcrypto/libtommath/bn_mp_prime_fermat.c ../heimdal/lib/hcrypto/libtommath/bn_mp_prime_miller_rabin.c ../heimdal/lib/hcrypto/libtommath/bn_mp_prime_is_prime.c ../heimdal/lib/hcrypto/libtommath/bn_mp_prime_next_prime.c ../heimdal/lib/hcrypto/libtommath/bn_mp_find_prime.c ../heimdal/lib/hcrypto/libtommath/bn_mp_isprime.c ../heimdal/lib/hcrypto/libtommath/bn_mp_dr_reduce.c ../heimdal/lib/hcrypto/libtommath/bn_mp_dr_is_modulus.c ../heimdal/lib/hcrypto/libtommath/bn_mp_dr_setup.c ../heimdal/lib/hcrypto/libtommath/bn_mp_reduce_setup.c ../heimdal/lib/hcrypto/libtommath/bn_mp_toom_mul.c ../heimdal/lib/hcrypto/libtommath/bn_mp_toom_sqr.c ../heimdal/lib/hcrypto/libtommath/bn_mp_div_3.c ../heimdal/lib/hcrypto/libtommath/bn_s_mp_exptmod.c ../heimdal/lib/hcrypto/libtommath/bn_mp_reduce_2k.c ../heimdal/lib/hcrypto/libtommath/bn_mp_reduce_is_2k.c ../heimdal/lib/hcrypto/libtommath/bn_mp_reduce_2k_setup.c ../heimdal/lib/hcrypto/libtommath/bn_mp_reduce_2k_l.c ../heimdal/lib/hcrypto/libtommath/bn_mp_reduce_is_2k_l.c ../heimdal/lib/hcrypto/libtommath/bn_mp_reduce_2k_setup_l.c ../heimdal/lib/hcrypto/libtommath/bn_mp_radix_smap.c ../heimdal/lib/hcrypto/libtommath/bn_mp_read_radix.c ../heimdal/lib/hcrypto/libtommath/bn_mp_toradix.c ../heimdal/lib/hcrypto/libtommath/bn_mp_radix_size.c ../heimdal/lib/hcrypto/libtommath/bn_mp_fread.c ../heimdal/lib/hcrypto/libtommath/bn_mp_fwrite.c ../heimdal/lib/hcrypto/libtommath/bn_mp_cnt_lsb.c ../heimdal/lib/hcrypto/libtommath/bn_error.c ../heimdal/lib/hcrypto/libtommath/bn_mp_init_multi.c ../heimdal/lib/hcrypto/libtommath/bn_mp_clear_multi.c ../heimdal/lib/hcrypto/libtommath/bn_mp_exteuclid.c ../heimdal/lib/hcrypto/libtommath/bn_mp_toradix_n.c ../heimdal/lib/hcrypto/libtommath/bn_mp_prime_random_ex.c ../heimdal/lib/hcrypto/libtommath/bn_mp_get_int.c ../heimdal/lib/hcrypto/libtommath/bn_mp_sqrt.c ../heimdal/lib/hcrypto/libtommath/bn_mp_is_square.c ../heimdal/lib/hcrypto/libtommath/bn_mp_init_set.c ../heimdal/lib/hcrypto/libtommath/bn_mp_init_set_int.c ../heimdal/lib/hcrypto/libtommath/bn_mp_invmod_slow.c ../heimdal/lib/hcrypto/libtommath/bn_mp_prime_rabin_miller_trials.c ../heimdal/lib/hcrypto/libtommath/bn_mp_to_signed_bin_n.c ../heimdal/lib/hcrypto/libtommath/bn_mp_to_unsigned_bin_n.c',
         includes='../heimdal/lib/hcrypto/libtommath'
     )
 
-bld.HEIMDAL_SUBSYSTEM('HEIMDAL_HCRYPTO',
+HEIMDAL_SUBSYSTEM('HEIMDAL_HCRYPTO',
     '../heimdal/lib/hcrypto/aes.c ../heimdal/lib/hcrypto/bn.c ../heimdal/lib/hcrypto/dh.c ../heimdal/lib/hcrypto/dh-ltm.c ../heimdal/lib/hcrypto/dh-imath.c ../heimdal/lib/hcrypto/des.c ../heimdal/lib/hcrypto/dsa.c ../heimdal/lib/hcrypto/engine.c ../heimdal/lib/hcrypto/md2.c ../heimdal/lib/hcrypto/md4.c ../heimdal/lib/hcrypto/md5.c ../heimdal/lib/hcrypto/rsa.c ../heimdal/lib/hcrypto/rsa-ltm.c ../heimdal/lib/hcrypto/rsa-imath.c ../heimdal/lib/hcrypto/rc2.c ../heimdal/lib/hcrypto/rc4.c ../heimdal/lib/hcrypto/rijndael-alg-fst.c ../heimdal/lib/hcrypto/rnd_keys.c ../heimdal/lib/hcrypto/sha.c ../heimdal/lib/hcrypto/sha256.c ../heimdal/lib/hcrypto/sha512.c ../heimdal/lib/hcrypto/ui.c ../heimdal/lib/hcrypto/evp.c ../heimdal/lib/hcrypto/evp-hcrypto.c ../heimdal/lib/hcrypto/pkcs5.c ../heimdal/lib/hcrypto/pkcs12.c ../heimdal/lib/hcrypto/rand.c ../heimdal/lib/hcrypto/rand-egd.c ../heimdal/lib/hcrypto/rand-unix.c ../heimdal/lib/hcrypto/rand-fortuna.c ../heimdal/lib/hcrypto/rand-timer.c ../heimdal/lib/hcrypto/hmac.c ../heimdal/lib/hcrypto/camellia.c ../heimdal/lib/hcrypto/camellia-ntt.c ../heimdal/lib/hcrypto/common.c ../heimdal/lib/hcrypto/validate.c',
     includes='../heimdal/lib/hcrypto ../heimdal/lib',
     deps='roken HEIMDAL_HEIM_ASN1 HEIMDAL_HCRYPTO_IMATH HEIMDAL_RFC2459_ASN1 HEIMDAL_HCRYPTO_LTM'
     )
 
 
-bld.HEIMDAL_LIBRARY('hx509',
+HEIMDAL_LIBRARY('hx509',
     '../heimdal/lib/hx509/ca.c ../heimdal/lib/hx509/cert.c ../heimdal/lib/hx509/cms.c ../heimdal/lib/hx509/collector.c ../heimdal/lib/hx509/crypto.c ../heimdal/lib/hx509/error.c ../heimdal/lib/hx509/env.c ../heimdal/lib/hx509/file.c ../heimdal/lib/hx509/keyset.c ../heimdal/lib/hx509/ks_dir.c ../heimdal/lib/hx509/ks_file.c ../heimdal/lib/hx509/ks_keychain.c ../heimdal/lib/hx509/ks_mem.c ../heimdal/lib/hx509/ks_null.c ../heimdal/lib/hx509/ks_p11.c ../heimdal/lib/hx509/ks_p12.c ../heimdal/lib/hx509/lock.c ../heimdal/lib/hx509/name.c ../heimdal/lib/hx509/peer.c ../heimdal/lib/hx509/print.c ../heimdal/lib/hx509/req.c ../heimdal/lib/hx509/revoke.c ../heimdal/lib/hx509/sel.c ../heimdal/lib/hx509/hx509_err.c ../heimdal/lib/hx509/sel-lex.c ../heimdal/lib/hx509/sel-gram.c',
     includes='../heimdal/lib/hx509',
     deps='roken com_err HEIMDAL_HEIM_ASN1 HEIMDAL_HCRYPTO HEIMDAL_CMS_ASN1 HEIMDAL_RFC2459_ASN1 HEIMDAL_OCSP_ASN1 HEIMDAL_PKCS8_ASN1 HEIMDAL_PKCS9_ASN1 HEIMDAL_PKCS12_ASN1 HEIMDAL_PKINIT_ASN1 HEIMDAL_PKCS10_ASN1 wind',
     )
 
 
-bld.HEIMDAL_LIBRARY('wind',
+HEIMDAL_LIBRARY('wind',
     '../heimdal/lib/wind/wind_err.c ../heimdal/lib/wind/stringprep.c ../heimdal/lib/wind/errorlist.c ../heimdal/lib/wind/errorlist_table.c ../heimdal/lib/wind/normalize.c ../heimdal/lib/wind/normalize_table.c ../heimdal/lib/wind/combining.c ../heimdal/lib/wind/combining_table.c ../heimdal/lib/wind/utf8.c ../heimdal/lib/wind/bidi.c ../heimdal/lib/wind/bidi_table.c ../heimdal/lib/wind/ldap.c ../heimdal/lib/wind/map.c ../heimdal/lib/wind/map_table.c',
     includes='../heimdal/lib/wind',
     deps='roken com_err',
     )
 
-bld.HEIMDAL_SUBSYSTEM('ROKEN_HOSTCC',
+HEIMDAL_SUBSYSTEM('ROKEN_HOSTCC',
     ROKEN_HOSTCC_SOURCE,
     use_hostcc=True,
     use_global_deps=False,
@@ -757,14 +735,14 @@ bld.HEIMDAL_SUBSYSTEM('ROKEN_HOSTCC',
     )
 
 if not bld.CONFIG_SET('USING_SYSTEM_COM_ERR'):
-    bld.HEIMDAL_LIBRARY('com_err',
+    HEIMDAL_LIBRARY('com_err',
         '../heimdal/lib/com_err/com_err.c ../heimdal/lib/com_err/error.c',
         includes='../heimdal/lib/com_err',
         deps='roken',
         )
 
 # here is the asn1 compiler build rule
-bld.HEIMDAL_BINARY('asn1_compile',
+HEIMDAL_BINARY('asn1_compile',
     '../heimdal/lib/asn1/main.c ../heimdal/lib/asn1/gen.c ../heimdal/lib/asn1/gen_copy.c ../heimdal/lib/asn1/gen_decode.c ../heimdal/lib/asn1/gen_encode.c ../heimdal/lib/asn1/gen_free.c ../heimdal/lib/asn1/gen_glue.c ../heimdal/lib/asn1/gen_length.c ../heimdal/lib/asn1/gen_seq.c ../heimdal/lib/asn1/gen_template.c ../heimdal/lib/asn1/hash.c ../heimdal/lib/asn1/symbol.c ../heimdal/lib/asn1/asn1parse.c ../heimdal/lib/asn1/lex.c ../heimdal/lib/vers/print_version.c',
     use_hostcc=True,
         use_global_deps=False,
@@ -777,7 +755,7 @@ bld.HEIMDAL_BINARY('asn1_compile',
 
 
 if not bld.CONFIG_SET('USING_SYSTEM_COMPILE_ET'):
-    bld.HEIMDAL_BINARY('compile_et',
+    HEIMDAL_BINARY('compile_et',
         '../heimdal/lib/vers/print_version.c ../heimdal/lib/com_err/parse.c ../heimdal/lib/com_err/lex.c ../heimdal/lib/com_err/compile_et.c',
         use_hostcc=True,
         use_global_deps=False,
@@ -789,7 +767,7 @@ if not bld.CONFIG_SET('USING_SYSTEM_COMPILE_ET'):
         )
     bld.env['COMPILE_ET'] = os.path.join(bld.env['BUILD_DIRECTORY'], 'compile_et')
 
-bld.HEIMDAL_BINARY('samba4kinit',
+HEIMDAL_BINARY('samba4kinit',
     '../heimdal/kuser/kinit.c ../heimdal/lib/vers/print_version.c',
         includes='../heimdal/lib/roken',
         deps='krb5 heimntlm',
@@ -797,7 +775,7 @@ bld.HEIMDAL_BINARY('samba4kinit',
     )
 
 
-bld.HEIMDAL_BINARY('samba4kpasswd',
+HEIMDAL_BINARY('samba4kpasswd',
     '../heimdal/kpasswd/kpasswd.c ../heimdal/lib/vers/print_version.c',
         includes='../heimdal/lib/roken',
         deps='krb5 heimntlm',
@@ -805,7 +783,7 @@ bld.HEIMDAL_BINARY('samba4kpasswd',
     )
 
 
-bld.HEIMDAL_BINARY('rkpty',
+HEIMDAL_BINARY('rkpty',
     '../heimdal/lib/roken/rkpty.c',
         deps='roken OPENPTY',
         cflags='-DPACKAGE="Samba"',
@@ -821,7 +799,7 @@ HEIMDAL_GSSAPI_SPNEGO_SOURCE = '''
     ../heimdal/lib/gssapi/spnego/accept_sec_context.c
 '''
 
-bld.HEIMDAL_AUTOPROTO_PRIVATE('../heimdal/lib/gssapi/spnego/spnego-private.h',
+HEIMDAL_AUTOPROTO_PRIVATE('../heimdal/lib/gssapi/spnego/spnego-private.h',
                               HEIMDAL_GSSAPI_SPNEGO_SOURCE)
 
 
@@ -876,7 +854,7 @@ HEIMDAL_GSSAPI_KRB5_SOURCE = '''
     ../heimdal/lib/gssapi/krb5/aeap.c
 '''
 
-bld.HEIMDAL_AUTOPROTO_PRIVATE('../heimdal/lib/gssapi/krb5/gsskrb5-private.h',
+HEIMDAL_AUTOPROTO_PRIVATE('../heimdal/lib/gssapi/krb5/gsskrb5-private.h',
                               HEIMDAL_GSSAPI_KRB5_SOURCE)
 
 
@@ -907,11 +885,11 @@ HEIMDAL_HX509_OBJH_SOURCE = '''
     ../heimdal/lib/hx509/hx509_err.c
 '''
 
-bld.HEIMDAL_AUTOPROTO('../heimdal/lib/hx509/hx509-protos.h',
+HEIMDAL_AUTOPROTO('../heimdal/lib/hx509/hx509-protos.h',
                       HEIMDAL_HX509_OBJH_SOURCE,
                       options="-R '^(_|^C)' -E HX509_LIB -q -P comment -o")
 
-bld.HEIMDAL_AUTOPROTO('../heimdal/lib/hx509/hx509-private.h',
+HEIMDAL_AUTOPROTO('../heimdal/lib/hx509/hx509-private.h',
                       HEIMDAL_HX509_OBJH_SOURCE,
                       options="-q -P comment -p")
 
@@ -925,13 +903,13 @@ HEIMDAL_HEIM_ASN1_DER_SOURCE = '''
     ../heimdal/lib/asn1/der_cmp.c
 '''
 
-bld.HEIMDAL_AUTOPROTO('../heimdal/lib/asn1/der-protos.h',
+HEIMDAL_AUTOPROTO('../heimdal/lib/asn1/der-protos.h',
                       HEIMDAL_HEIM_ASN1_DER_SOURCE,
                       group = 'compiler_prototypes',
                       options="-q -P comment -o")
 
 
-bld.HEIMDAL_AUTOPROTO('../heimdal/lib/asn1/der-private.h',
+HEIMDAL_AUTOPROTO('../heimdal/lib/asn1/der-private.h',
                       HEIMDAL_HEIM_ASN1_DER_SOURCE,
                       group = 'compiler_prototypes',
                       options="-q -P comment -p")
