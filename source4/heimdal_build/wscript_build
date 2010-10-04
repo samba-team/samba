@@ -408,11 +408,11 @@ bld.HEIMDAL_LIBRARY('HEIMDAL_KDC',
                     includes='../heimdal/kdc',
                     heimdal_autoproto='../heimdal/kdc/kdc-protos.h',
                     heimdal_autoproto_private='../heimdal/kdc/kdc-private.h',
-                    deps='roken HEIMDAL_KRB5 HEIMDAL_HDB HEIMDAL_HEIM_ASN1 HEIMDAL_DIGEST_ASN1 HEIMDAL_KX509_ASN1 HEIMDAL_NTLM HEIMDAL_HCRYPTO',
+                    deps='roken HEIMDAL_KRB5 HEIMDAL_HDB HEIMDAL_HEIM_ASN1 HEIMDAL_DIGEST_ASN1 HEIMDAL_KX509_ASN1 heimntlm HEIMDAL_HCRYPTO',
                     )
 
 
-bld.HEIMDAL_LIBRARY('HEIMDAL_NTLM',
+bld.HEIMDAL_LIBRARY('heimntlm',
                     source='../heimdal/lib/ntlm/ntlm.c',
                     includes='../heimdal/lib/ntlm',
                     heimdal_autoproto='../heimdal/lib/ntlm/heimntlm-protos.h',
@@ -628,7 +628,7 @@ if not bld.CONFIG_SET('USING_SYSTEM_COMPILE_ET'):
 bld.SAMBA_BINARY('samba4kinit',
     '../heimdal/kuser/kinit.c ../heimdal/lib/vers/print_version.c',
         includes='../heimdal/lib/roken',
-    deps='HEIMDAL_KRB5 HEIMDAL_NTLM',
+        deps='HEIMDAL_KRB5 heimntlm',
         install=False
     )
 
@@ -636,14 +636,14 @@ bld.SAMBA_BINARY('samba4kinit',
 bld.SAMBA_BINARY('samba4kpasswd',
     '../heimdal/kpasswd/kpasswd.c ../heimdal/lib/vers/print_version.c',
         includes='../heimdal/lib/roken',
-    deps='HEIMDAL_KRB5 HEIMDAL_NTLM',
+        deps='HEIMDAL_KRB5 heimntlm',
         install=False
     )
 
 
 bld.SAMBA_BINARY('rkpty',
     '../heimdal/lib/roken/rkpty.c',
-    deps='roken OPENPTY',
+        deps='roken OPENPTY',
         cflags='-DPACKAGE="Samba"',
         install=False
     )
