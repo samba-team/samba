@@ -833,7 +833,7 @@ int ldb_module_done(struct ldb_request *req,
 }
 
 /* to be used *only* in modules init functions.
- * this function i synchronous and will register
+ * this function is synchronous and will register
  * the requested OID in the rootdse module if present
  * otherwise it will return an error */
 int ldb_mod_register_control(struct ldb_module *module, const char *oid)
