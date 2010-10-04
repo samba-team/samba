@@ -7,6 +7,7 @@ import unittest
 
 import ldb
 
+
 def filename():
     return os.tempnam()
 
@@ -320,6 +321,10 @@ class SimpleLdb(unittest.TestCase):
         })
         res = l.search(expression="(dn=dc=somedn)")
         self.assertEquals("foo\0bar", res[0]["displayname"][0])
+
+    def test_no_crash_broken_expr(self):
+        l = ldb.Ldb(filename())
+        self.assertRaises(ldb.LdbError,lambda: l.search("", ldb.SCOPE_SUBTREE, "&(dc=*)(dn=*)", ["dc"]))
 
 
 class DnTests(unittest.TestCase):
