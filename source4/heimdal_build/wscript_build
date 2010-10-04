@@ -124,12 +124,17 @@ def HEIMDAL_ERRTABLE(bld, name, source):
     out_files.append('%s.c' % bname)
     out_files.append('%s.h' % bname)
 
-    t = bld(rule='${SRC[1].abspath(env)} . ${TGT[0].parent.abspath(env)} default/source4/heimdal_build/compile_et ${SRC[0].abspath(env)} ${TGT[0].bldpath(env)}',
+    sources = [source, 'et_compile_wrapper.sh']
+
+    if not bld.CONFIG_SET('USING_SYSTEM_COMPILE_ET'):
+        sources.append('compile_et')
+
+    t = bld(rule='${SRC[1].abspath(env)} ${TGT[0].parent.abspath(env)} ${COMPILE_ET} ${SRC[0].abspath(env)} ${TGT[0].bldpath(env)}',
             ext_out = '.c',
             before  = 'cc',
             on_results = True,
             shell   = True,
-            source  = [source, 'et_compile_wrapper.sh', 'compile_et'],
+            source  = sources,
             target  = out_files,
             name    = name)
 Build.BuildContext.HEIMDAL_ERRTABLE = HEIMDAL_ERRTABLE
@@ -602,22 +607,23 @@ bld.SAMBA_BINARY('asn1_compile',
         cflags='-DSOCKET_WRAPPER_DISABLE=1 -DNSS_WRAPPER_DISABLE=1 -D_SAMBA_HOSTCC_',
         includes='../heimdal/lib/asn1 ../heimdal/lib/roken',
         group='build_compilers',
-    deps='HEIMDAL_ROKEN_HOSTCC LIBREPLACE_HOSTCC',
+        deps='HEIMDAL_ROKEN_HOSTCC',
         install=False
     )
 
 
-bld.SAMBA_BINARY('compile_et',
-    '../heimdal/lib/vers/print_version.c ../heimdal/lib/com_err/parse.c ../heimdal/lib/com_err/lex.c ../heimdal/lib/com_err/compile_et.c',
-    use_hostcc=True,
+if not bld.CONFIG_SET('USING_SYSTEM_COMPILE_ET'):
+    bld.SAMBA_BINARY('compile_et',
+        '../heimdal/lib/vers/print_version.c ../heimdal/lib/com_err/parse.c ../heimdal/lib/com_err/lex.c ../heimdal/lib/com_err/compile_et.c',
+        use_hostcc=True,
         use_global_deps=False,
-    includes='../heimdal/lib/com_err',
+        includes='../heimdal/lib/com_err',
         group='build_compilers',
         cflags='-DSOCKET_WRAPPER_DISABLE=1 -DNSS_WRAPPER_DISABLE=1 -D_SAMBA_HOSTCC_',
-    deps='HEIMDAL_ROKEN_HOSTCC LIBREPLACE_HOSTCC',
+        deps='HEIMDAL_ROKEN_HOSTCC',
         install=False
-    )
-
+        )
+    bld.env['COMPILE_ET'] = os.path.join(bld.env['BUILD_DIRECTORY'], 'compile_et')
 
 bld.SAMBA_BINARY('samba4kinit',
     '../heimdal/kuser/kinit.c ../heimdal/lib/vers/print_version.c',
