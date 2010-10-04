@@ -409,7 +409,7 @@ static WERROR delete_printer_hook(TALLOC_CTX *ctx, struct security_token *token,
 	reload_services(msg_ctx, -1, false);
 	unbecome_root();
 
-	if ( lp_servicenumber( sharename )  > 0 )
+	if ( lp_servicenumber( sharename ) >= 0 )
 		return WERR_ACCESS_DENIED;
 
 	return WERR_OK;
