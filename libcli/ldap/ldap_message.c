@@ -1611,5 +1611,12 @@ _PUBLIC_ NTSTATUS ldap_decode(struct asn1_data *data,
 */
 NTSTATUS ldap_full_packet(void *private_data, DATA_BLOB blob, size_t *packet_size)
 {
+	if (blob.length < 6) {
+		/*
+		 * We need at least 6 bytes to workout the length
+		 * of the pdu.
+		 */
+		return STATUS_MORE_ENTRIES;
+	}
 	return asn1_peek_full_tag(blob, ASN1_SEQUENCE(0), packet_size);
 }
