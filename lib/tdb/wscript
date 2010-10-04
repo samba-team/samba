@@ -36,6 +36,8 @@ def configure(conf):
         if conf.CHECK_BUNDLED_SYSTEM('tdb', minversion=VERSION,
                                      implied_deps='replace'):
             conf.define('USING_SYSTEM_TDB', 1)
+        if conf.CHECK_BUNDLED_SYSTEM_PYTHON('pytdb', 'tdb', minversion=VERSION):
+            conf.define('USING_SYSTEM_PYTDB', 1)
 
     conf.env.disable_python = getattr(Options.options, 'disable_python', False)
 
@@ -92,14 +94,13 @@ def build(bld):
                          'tools/tdbtool.c',
                          'tdb', manpages='manpages/tdbtool.8')
 
-    s4_build = getattr(bld.env, '_SAMBA_BUILD_', 0) == 4
-
-    bld.SAMBA_PYTHON('pytdb',
-                     'pytdb.c',
-                     deps='tdb',
-                     enabled=not bld.env.disable_python,
-                     realname='tdb.so',
-                     cflags='-DPACKAGE_VERSION=\"%s\"' % VERSION)
+    if not bld.CONFIG_SET('USING_SYSTEM_PYTDB'):
+        bld.SAMBA_PYTHON('pytdb',
+                         'pytdb.c',
+                         deps='tdb',
+                         enabled=not bld.env.disable_python,
+                         realname='tdb.so',
+                         cflags='-DPACKAGE_VERSION=\"%s\"' % VERSION)
 
     if bld.env.standalone_tdb:
         bld.env.PKGCONFIGDIR = '${LIBDIR}/pkgconfig'
