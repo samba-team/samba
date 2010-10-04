@@ -408,7 +408,7 @@ bld.HEIMDAL_LIBRARY('kdc',
                     includes='../heimdal/kdc',
                     heimdal_autoproto='../heimdal/kdc/kdc-protos.h',
                     heimdal_autoproto_private='../heimdal/kdc/kdc-private.h',
-                    deps='roken HEIMDAL_KRB5 hdb HEIMDAL_HEIM_ASN1 HEIMDAL_DIGEST_ASN1 HEIMDAL_KX509_ASN1 heimntlm HEIMDAL_HCRYPTO',
+                    deps='roken krb5 hdb HEIMDAL_HEIM_ASN1 HEIMDAL_DIGEST_ASN1 HEIMDAL_KX509_ASN1 heimntlm HEIMDAL_HCRYPTO',
                     )
 
 
@@ -416,14 +416,14 @@ bld.HEIMDAL_LIBRARY('heimntlm',
                     source='../heimdal/lib/ntlm/ntlm.c',
                     includes='../heimdal/lib/ntlm',
                     heimdal_autoproto='../heimdal/lib/ntlm/heimntlm-protos.h',
-                    deps='roken HEIMDAL_HCRYPTO HEIMDAL_KRB5',
+                    deps='roken HEIMDAL_HCRYPTO krb5',
     )
 
 
 bld.SAMBA_SUBSYSTEM('HEIMDAL_HDB_KEYS',
     '../heimdal/lib/hdb/keys.c',
     includes='../heimdal/lib/hdb',
-    deps='roken HEIMDAL_HCRYPTO HEIMDAL_KRB5 HEIMDAL_HDB_ASN1'
+    deps='roken HEIMDAL_HCRYPTO krb5 HEIMDAL_HDB_ASN1'
     )
 
 
@@ -435,7 +435,7 @@ bld.HEIMDAL_LIBRARY('hdb',
                     includes='../heimdal/lib/hdb',
                     heimdal_autoproto='../heimdal/lib/hdb/hdb-protos.h',
                     heimdal_autoproto_private='../heimdal/lib/hdb/hdb-private.h',
-                    deps='HDB_LDB HEIMDAL_KRB5 HEIMDAL_HDB_KEYS roken HEIMDAL_HCRYPTO com_err HEIMDAL_HDB_ASN1',
+                    deps='HDB_LDB krb5 HEIMDAL_HDB_KEYS roken HEIMDAL_HCRYPTO com_err HEIMDAL_HDB_ASN1',
     )
 
 
@@ -481,7 +481,7 @@ bld.HEIMDAL_LIBRARY('gssapi',
 ../heimdal/lib/gssapi/mech/gss_export_sec_context.c ../heimdal/lib/gssapi/mech/gss_inquire_context.c ../heimdal/lib/gssapi/mech/gss_release_name.c
 ../heimdal/lib/gssapi/mech/gss_set_cred_option.c  ../heimdal/lib/gssapi/mech/gss_pseudo_random.c gssapi-glue.c''',
     includes='../heimdal/lib/gssapi ../heimdal/lib/gssapi/gssapi ../heimdal/lib/gssapi/spnego ../heimdal/lib/gssapi/krb5 ../heimdal/lib/gssapi/mech',
-    deps='HEIMDAL_HCRYPTO HEIMDAL_HEIM_ASN1 HEIMDAL_SPNEGO_ASN1 HEIMDAL_GSSAPI_ASN1 roken HEIMDAL_KRB5',
+    deps='HEIMDAL_HCRYPTO HEIMDAL_HEIM_ASN1 HEIMDAL_SPNEGO_ASN1 HEIMDAL_GSSAPI_ASN1 roken krb5',
     )
 
 
@@ -502,7 +502,7 @@ bld.SAMBA_GENERATOR(
     enabled = not bld.CONFIG_SET('HAVE_ERR_H')
     )
 
-bld.HEIMDAL_LIBRARY('HEIMDAL_KRB5',
+bld.HEIMDAL_LIBRARY('krb5',
                     bld.SUBDIR('../heimdal/lib/krb5/',
                                '''acache.c add_et_list.c
                                addr_families.c appdefault.c
@@ -541,7 +541,7 @@ bld.HEIMDAL_LIBRARY('HEIMDAL_KRB5',
                     heimdal_autoproto_options='-E KRB5_LIB -q -P comment -o',
                     heimdal_autoproto_private='../heimdal/lib/krb5/krb5-private.h',
             cflags = bld.dynconfig_cflags(),
-            deps='roken HEIMDAL_PKINIT_ASN1 wind HEIMDAL_KRB5_ASN1 HEIMDAL_HX509 HEIMDAL_HCRYPTO LIBSAMBA-HOSTCONFIG intl',
+            deps='roken HEIMDAL_PKINIT_ASN1 wind HEIMDAL_KRB5_ASN1 hx509 HEIMDAL_HCRYPTO LIBSAMBA-HOSTCONFIG intl',
                     )
 
 
@@ -569,7 +569,7 @@ bld.SAMBA_SUBSYSTEM('HEIMDAL_HCRYPTO',
     )
 
 
-bld.HEIMDAL_LIBRARY('HEIMDAL_HX509',
+bld.HEIMDAL_LIBRARY('hx509',
     '../heimdal/lib/hx509/ca.c ../heimdal/lib/hx509/cert.c ../heimdal/lib/hx509/cms.c ../heimdal/lib/hx509/collector.c ../heimdal/lib/hx509/crypto.c ../heimdal/lib/hx509/error.c ../heimdal/lib/hx509/env.c ../heimdal/lib/hx509/file.c ../heimdal/lib/hx509/keyset.c ../heimdal/lib/hx509/ks_dir.c ../heimdal/lib/hx509/ks_file.c ../heimdal/lib/hx509/ks_keychain.c ../heimdal/lib/hx509/ks_mem.c ../heimdal/lib/hx509/ks_null.c ../heimdal/lib/hx509/ks_p11.c ../heimdal/lib/hx509/ks_p12.c ../heimdal/lib/hx509/lock.c ../heimdal/lib/hx509/name.c ../heimdal/lib/hx509/peer.c ../heimdal/lib/hx509/print.c ../heimdal/lib/hx509/req.c ../heimdal/lib/hx509/revoke.c ../heimdal/lib/hx509/sel.c ../heimdal/lib/hx509/hx509_err.c ../heimdal/lib/hx509/sel-lex.c ../heimdal/lib/hx509/sel-gram.c',
     includes='../heimdal/lib/hx509',
     deps='roken com_err HEIMDAL_HEIM_ASN1 HEIMDAL_HCRYPTO HEIMDAL_CMS_ASN1 HEIMDAL_RFC2459_ASN1 HEIMDAL_OCSP_ASN1 HEIMDAL_PKCS8_ASN1 HEIMDAL_PKCS9_ASN1 HEIMDAL_PKCS12_ASN1 HEIMDAL_PKINIT_ASN1 HEIMDAL_PKCS10_ASN1 wind',
@@ -628,7 +628,7 @@ if not bld.CONFIG_SET('USING_SYSTEM_COMPILE_ET'):
 bld.SAMBA_BINARY('samba4kinit',
     '../heimdal/kuser/kinit.c ../heimdal/lib/vers/print_version.c',
         includes='../heimdal/lib/roken',
-        deps='HEIMDAL_KRB5 heimntlm',
+        deps='krb5 heimntlm',
         install=False
     )
 
@@ -636,7 +636,7 @@ bld.SAMBA_BINARY('samba4kinit',
 bld.SAMBA_BINARY('samba4kpasswd',
     '../heimdal/kpasswd/kpasswd.c ../heimdal/lib/vers/print_version.c',
         includes='../heimdal/lib/roken',
-        deps='HEIMDAL_KRB5 heimntlm',
+        deps='krb5 heimntlm',
         install=False
     )
 
