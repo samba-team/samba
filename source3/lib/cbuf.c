@@ -27,7 +27,6 @@
  */
 
 
-#include <assert.h>
 #include "includes.h"
 #include "cbuf.h"
 
