@@ -25,6 +25,12 @@
 
 typedef uint32_t error_status_t;
 
+/* An endpoint combined with an interface description */
+struct dcesrv_ep_iface {
+	const char *name;
+	struct epm_tower ep;
+};
+
 /* A rpc service interface like samr, lsarpc or netlogon */
 struct dcesrv_iface {
 	const char *name;
@@ -133,7 +139,7 @@ static uint32_t build_ep_list(TALLOC_CTX *mem_ctx,
 			      struct dcesrv_endpoint *endpoint_list,
 			      struct dcesrv_ep_iface **peps)
 {
-	struct dcesrv_ep_iface *eps;
+	struct dcesrv_ep_iface *eps = NULL;
 	struct dcesrv_endpoint *d;
 	uint32_t total = 0;
 	NTSTATUS status;
@@ -375,16 +381,83 @@ error_status_t _epm_Lookup(struct pipes_struct *p,
 	return EPMAPPER_STATUS_CANT_PERFORM_OP;
 }
 
-
 /*
+ * epm_Map
+ *
  * Apply some algorithm (using the fields in the map_tower) to an endpoint map
  * to produce a list of protocol towers.
  */
 error_status_t _epm_Map(struct pipes_struct *p,
 			struct epm_Map *r)
 {
-	p->rng_fault_state = true;
-	return EPMAPPER_STATUS_CANT_PERFORM_OP;
+	enum dcerpc_transport_t transport;
+	struct ndr_syntax_id ndr_syntax;
+	struct dcesrv_ep_iface *eps;
+	struct epm_floor *floors;
+	uint32_t count, i;
+
+	count = build_ep_list(p->mem_ctx, endpoint_table, &eps);
+
+	ZERO_STRUCT(*r->out.entry_handle);
+	r->out.num_towers = talloc(p->mem_ctx, uint32_t);
+	if (r->out.num_towers == NULL) {
+		return EPMAPPER_STATUS_NO_MEMORY;
+	}
+
+	*r->out.num_towers = 1;
+	r->out.towers = talloc(p->mem_ctx, struct epm_twr_p_t);
+	if (r->out.towers == NULL) {
+		return EPMAPPER_STATUS_NO_MEMORY;
+	}
+
+	r->out.towers->twr = talloc(p->mem_ctx, struct epm_twr_t);
+	if (r->out.towers->twr == NULL) {
+		return EPMAPPER_STATUS_NO_MEMORY;
+	}
+
+	if (r->in.map_tower == NULL || r->in.max_towers == 0 ||
+			r->in.map_tower->tower.num_floors < 3) {
+		goto failed;
+	}
+
+	floors = r->in.map_tower->tower.floors;
+
+	dcerpc_floor_get_lhs_data(&r->in.map_tower->tower.floors[1], &ndr_syntax);
+
+	if (floors[1].lhs.protocol != EPM_PROTOCOL_UUID ||
+			!GUID_equal(&ndr_syntax.uuid, &ndr_transfer_syntax.uuid) ||
+			ndr_syntax.if_version != ndr_transfer_syntax.if_version) {
+		goto failed;
+	}
+
+	transport = dcerpc_transport_by_tower(&r->in.map_tower->tower);
+	if (transport == -1) {
+		DEBUG(2, ("epm_Insert: Client requested unknown transport with levels: "));
+		for (i = 2; i < r->in.map_tower->tower.num_floors; i++) {
+			DEBUG(2, ("%d, ", r->in.map_tower->tower.floors[i].lhs.protocol));
+		}
+		DEBUG(2, ("\n"));
+		goto failed;
+	}
+
+	for (i = 0; i < count; i++) {
+		if (data_blob_cmp(&r->in.map_tower->tower.floors[0].lhs.lhs_data,
+					&eps[i].ep.floors[0].lhs.lhs_data) != 0 ||
+				transport != dcerpc_transport_by_tower(&eps[i].ep)) {
+			continue;
+		}
+
+		r->out.towers->twr->tower = eps[i].ep;
+		r->out.towers->twr->tower_length = 0;
+
+		return EPMAPPER_STATUS_OK;
+	}
+
+failed:
+	*r->out.num_towers = 0;
+	r->out.towers->twr = NULL;
+
+	return EPMAPPER_STATUS_NO_MORE_ENTRIES;
 }
 
 /*
