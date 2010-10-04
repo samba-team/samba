@@ -139,6 +139,38 @@ def CHECK_BUNDLED_SYSTEM(conf, libname, minversion='0.0.0',
         sys.exit(1)
     return False
 
+
+@runonce
+@conf
+def CHECK_BUNDLED_SYSTEM_PYTHON(conf, libname, modulename, minversion='0.0.0'):
+    '''check if a python module is available on the system and
+    has the specified minimum version.
+    '''
+    if conf.LIB_MUST_BE_BUNDLED(libname):
+        return False
+
+    # see if the library should only use a system version if another dependent
+    # system version is found. That prevents possible use of mixed library
+    # versions
+    minversion = minimum_library_version(conf, libname, minversion)
+
+    try:
+        m = __import__(modulename)
+    except ImportError:
+        found = False
+    else:
+        try:
+            version = m.__version__
+        except AttributeError:
+            found = False
+        else:
+            found = tuple(minversion.split(".")) >= tuple(version.split("."))
+    if not found and not conf.LIB_MAY_BE_BUNDLED(libname):
+        Logs.error('ERROR: Python module %s of version %s not found, and bundling disabled' % (libname, minversion))
+        sys.exit(1)
+    return found
+
+
 def NONSHARED_BINARY(bld, name):
     '''return True if a binary should be built without non-system shared libs'''
     if bld.env.DISABLE_SHARED:
