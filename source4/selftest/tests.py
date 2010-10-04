@@ -443,7 +443,7 @@ else:
     skiptestsuite("samba4.nss.test using winbind(member)", "nsstest not available")
 
 subunitrun = valgrindify(python) + " " + os.path.join(samba4srcdir, "scripting/bin/subunitrun")
-plantestsuite("ldb.python", "none", ['PYTHONPATH="$PYTHONPATH:$samba4srcdir/lib/ldb/tests/python/"', python, '$samba4srcdir/lib/ldb/tests/python/api.py'])
+plantestsuite("ldb.python", "none", ['PYTHONPATH="$PYTHONPATH:./lib/ldb/tests/python/"', subunitrun, 'api'])
 planpythontestsuite("none", "samba.tests.credentials")
 planpythontestsuite("none", "samba.tests.gensec")
 planpythontestsuite("none", "samba.tests.registry")
