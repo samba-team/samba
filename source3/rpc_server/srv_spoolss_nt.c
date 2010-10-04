@@ -10388,33 +10388,33 @@ WERROR _spoolss_53(struct pipes_struct *p,
 }
 
 /****************************************************************
- _spoolss_55
+ _spoolss_AddPerMachineConnection
 ****************************************************************/
 
-WERROR _spoolss_55(struct pipes_struct *p,
-		   struct spoolss_55 *r)
+WERROR _spoolss_AddPerMachineConnection(struct pipes_struct *p,
+					struct spoolss_AddPerMachineConnection *r)
 {
 	p->rng_fault_state = true;
 	return WERR_NOT_SUPPORTED;
 }
 
 /****************************************************************
- _spoolss_56
+ _spoolss_DeletePerMachineConnection
 ****************************************************************/
 
-WERROR _spoolss_56(struct pipes_struct *p,
-		   struct spoolss_56 *r)
+WERROR _spoolss_DeletePerMachineConnection(struct pipes_struct *p,
+					   struct spoolss_DeletePerMachineConnection *r)
 {
 	p->rng_fault_state = true;
 	return WERR_NOT_SUPPORTED;
 }
 
 /****************************************************************
- _spoolss_57
+ _spoolss_EnumPerMachineConnections
 ****************************************************************/
 
-WERROR _spoolss_57(struct pipes_struct *p,
-		   struct spoolss_57 *r)
+WERROR _spoolss_EnumPerMachineConnections(struct pipes_struct *p,
+					  struct spoolss_EnumPerMachineConnections *r)
 {
 	p->rng_fault_state = true;
 	return WERR_NOT_SUPPORTED;

@@ -1445,30 +1445,30 @@ static WERROR dcesrv_spoolss_DeletePrinterDriverEx(struct dcesrv_call_state *dce
 
 
 /* 
-  spoolss_55 
+  spoolss_AddPerMachineConnection
 */
-static WERROR dcesrv_spoolss_55(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct spoolss_55 *r)
+static WERROR dcesrv_spoolss_AddPerMachineConnection(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_AddPerMachineConnection *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
 /* 
-  spoolss_56 
+  spoolss_DeletePerMachineConnection
 */
-static WERROR dcesrv_spoolss_56(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct spoolss_56 *r)
+static WERROR dcesrv_spoolss_DeletePerMachineConnection(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_DeletePerMachineConnection *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
 /* 
-  spoolss_57 
+  spoolss_EnumPerMachineConnections
 */
-static WERROR dcesrv_spoolss_57(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct spoolss_57 *r)
+static WERROR dcesrv_spoolss_EnumPerMachineConnections(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_EnumPerMachineConnections *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }

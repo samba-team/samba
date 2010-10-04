@@ -2986,17 +2986,23 @@ cpp_quote("#define spoolss_security_descriptor security_descriptor")
 
 	/******************/
 	/* Function: 0x55 */
-	[todo] WERROR spoolss_55(
+	WERROR spoolss_AddPerMachineConnection(
+		[in,unique] [string,charset(UTF16)] uint16 *server,
+		[in,ref] [string,charset(UTF16)] uint16 *printername,
+		[in,ref] [string,charset(UTF16)] uint16 *printserver,
+		[in,ref] [string,charset(UTF16)] uint16 *provider
 	);
 
 	/******************/
 	/* Function: 0x56 */
-	[todo] WERROR spoolss_56(
+	WERROR spoolss_DeletePerMachineConnection(
+		[in,unique] [string,charset(UTF16)] uint16 *server,
+		[in,ref] [string,charset(UTF16)] uint16 *printername
 	);
 
 	/******************/
 	/* Function: 0x57 */
-	[todo] WERROR spoolss_57(
+	[todo] WERROR spoolss_EnumPerMachineConnections(
 	);
 
 	/******************/
