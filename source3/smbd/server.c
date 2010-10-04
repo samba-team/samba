@@ -47,6 +47,7 @@
 #include "../librpc/gen_ndr/srv_svcctl.h"
 #include "../librpc/gen_ndr/srv_winreg.h"
 #include "../librpc/gen_ndr/srv_wkssvc.h"
+#include "../librpc/gen_ndr/srv_epmapper.h"
 
 #include "printing/nt_printing_migrate.h"
 
