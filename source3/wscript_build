@@ -952,7 +952,7 @@ SPLIT_TOKENS_SRC = 'utils/split_tokens.c'
 LIBS='ICONV'
 
 bld.SAMBA_GENERATOR('build_options',
-                    source='include/config.h script/mkbuildoptions.awk',
+                    source='include/config.h script/mkbuildoptions-waf.awk',
                     target='smbd/build_options.c',
                     rule='${AWK} -f ${SRC[1].abspath(env)} > ${TGT} < ${SRC[0].abspath(env)}')
 
