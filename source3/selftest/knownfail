@@ -1,3 +1,4 @@
 .*printer.*print_test_extended # fails on some hosts due to timing issues ?
+.*printer.*print_test # fails on some hosts due to timing issues ?
 samba3.posix_s3.rap.printing # fails sometimes on sn-devel
-samba3.posix_s3.rpc.spoolss.printer # also fails sometimes
+samba3.posix_s3.rpc.spoolss.*PRINTSERVER.enum_printers_old
