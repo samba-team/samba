@@ -481,11 +481,6 @@ SLCACHE_SRC = '''libsmb/samlogon_cache.c'''
 
 DCUTIL_SRC  = '''libsmb/namequery_dc.c libsmb/trustdom_cache.c libsmb/trusts_util.c libsmb/dsgetdcname.c'''
 
-#FIXME: set NSS_INFO_STATIC during configuration
-NSS_INFO_STATIC = ''
-NSS_INFO_TEMPLATE_SRC = 'winbindd/nss_info_template.c'
-NSS_INFO_SRC = 'winbindd/nss_info.c'
-
 WINBINDD_SRC1 = '''winbindd/winbindd.c
                    winbindd/winbindd_group.c
                    winbindd/winbindd_util.c
@@ -580,7 +575,6 @@ WINBINDD_SRC1 = '''winbindd/winbindd.c
                    ../nsswitch/libwbclient/wb_reqtrans.c'''
 
 WINBINDD_SRC = '''${WINBINDD_SRC1}
-                  ${NSS_INFO_SRC}
                   ${RPC_NCACN_NP} ${NPA_TSTREAM_SRC} ${RPC_SAMR_SRC} ${RPC_LSARPC_SRC}
                   ${TDB_VALIDATE_SRC}
                   ${LIBCLI_DSSETUP_SRC}
@@ -996,6 +990,7 @@ for prefix in bld.env.MODULE_PREFIXES:
     if prefix == 'perfcount': continue
     if prefix == 'gpext': continue
     if prefix == 'vfs': continue
+    if prefix == 'nss_info': continue
 
     static_key = "%s_STATIC" % prefix.upper()
     shared_key = "%s_SHARED" % prefix.upper()
@@ -1332,8 +1327,8 @@ bld.SAMBA_BINARY('winbindd/winbindd',
                  deps='''talloc tdb tevent cap dl ZLIB NSS_WRAPPER
                  libwbclient PASSDB ldap resolv PARAM LIB_NONSMBD LIBSMB
                  POPT_SAMBA KRBCLIENT LIBMSRPC_GEN LIBMSRPC LIBADS LIBADS_SERVER
-                 NSS_INFO_TEMPLATE SRV_NDR_WBINT RPCCLI_NDR_WBINT LIBAFS
-                 LIBAFS_SETTOKEN PROFILE SLCACHE DCUTIL IDMAP
+                 SRV_NDR_WBINT RPCCLI_NDR_WBINT LIBAFS
+                 LIBAFS_SETTOKEN PROFILE SLCACHE DCUTIL IDMAP NSS_INFO
                  ''',
                  enabled=bld.env.build_winbind,
                  install_path='${SBINDIR}',

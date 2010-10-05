@@ -87,3 +87,52 @@ bld.SAMBA_MODULE('IDMAP_ADEX',
                  init_function='',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('IDMAP_ADEX'),
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('IDMAP_ADEX'))
+
+NSS_INFO_TEMPLATE_SRC = 'nss_info_template.c'
+NSS_INFO_SRC = 'nss_info.c'
+
+bld.SAMBA_SUBSYSTEM('NSS_INFO',
+                    source=NSS_INFO_SRC,
+                    vars=locals())
+
+bld.SAMBA_MODULE('NSS_INFO_TEMPLATE',
+                 subsystem='NSS_INFO',
+                 source=NSS_INFO_TEMPLATE_SRC,
+                 init_function='',
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('NSS_INFO_TEMPLATE'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('NSS_INFO_TEMPLATE'))
+
+bld.SAMBA_MODULE('NSS_INFO_ADEX',
+                 subsystem='NSS_INFO',
+                 source=IDMAP_ADEX_SRC,
+                 init_function='',
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('IDMAP_ADEX'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('IDMAP_ADEX'))
+
+bld.SAMBA_MODULE('NSS_INFO_HASH',
+                 subsystem='NSS_INFO',
+                 source=IDMAP_HASH_SRC,
+                 init_function='',
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('IDMAP_HASH'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('IDMAP_HASH'))
+
+bld.SAMBA_MODULE('NSS_INFO_RFC2307',
+                 subsystem='NSS_INFO',
+                 source=IDMAP_AD_SRC,
+                 init_function='',
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('IDMAP_AD'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('IDMAP_AD'))
+
+bld.SAMBA_MODULE('NSS_INFO_SFU20',
+                 subsystem='NSS_INFO',
+                 source=IDMAP_AD_SRC,
+                 init_function='',
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('IDMAP_AD'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('IDMAP_AD'))
+
+bld.SAMBA_MODULE('NSS_INFO_SFU',
+                 subsystem='NSS_INFO',
+                 source=IDMAP_AD_SRC,
+                 init_function='',
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('IDMAP_AD'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('IDMAP_AD'))
