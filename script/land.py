@@ -147,7 +147,7 @@ class TreeStageBuilder(object):
 
     @property
     def failure_reason(self):
-        return "failed '%s' with exit code %d" % (self.command, self.exitcode)
+        raise NotImplementedError(self.failure_reason)
 
     @property
     def failed(self):
@@ -161,6 +161,10 @@ class PlainTreeStageBuilder(TreeStageBuilder):
         self.proc = Popen(self.command, shell=True, cwd=self.tree.dir,
                           stdout=self.tree.stdout, stderr=self.tree.stderr,
                           stdin=self.stdin)
+
+    @property
+    def failure_reason(self):
+        return "failed '%s' with exit code %d" % (self.command, self.exitcode)
 
 
 class AbortingTestResult(subunithelper.TestsuiteEnabledTestResult):
@@ -176,12 +180,27 @@ class AbortingTestResult(subunithelper.TestsuiteEnabledTestResult):
         self.stage.proc.terminate()
 
 
+class FailureTrackingTestResult(subunithelper.TestsuiteEnabledTestResult):
+
+    def __init__(self, stage):
+        super(AbortingTestResult, self).__init__()
+        self.stage = stage
+
+    def addError(self, test, details=None):
+        if self.stage.failed_test is None:
+            self.stage.failed_test = ("error", test)
+
+    def addFailure(self, test, details=None):
+        if self.stage.failed_test is None:
+            self.stage.failed_test = ("failure", test)
+
+
 class SubunitTreeStageBuilder(TreeStageBuilder):
 
     def __init__(self, tree, name, command, fail_quickly=False):
         super(SubunitTreeStageBuilder, self).__init__(tree, name, command,
                 fail_quickly)
-        self.failed_tests = []
+        self.failed_test = None
         self.subunit_path = os.path.join(gitroot,
             "%s.%s.subunit" % (self.tree.tag, self.name))
         self.tree.logfiles.append(
@@ -190,7 +209,8 @@ class SubunitTreeStageBuilder(TreeStageBuilder):
         self.subunit = open(self.subunit_path, 'w')
 
         formatter = subunithelper.PlainFormatter(False, True, {})
-        clients = [formatter, subunit.TestProtocolClient(self.subunit)]
+        clients = [formatter, subunit.TestProtocolClient(self.subunit),
+                   FailureTrackingTestResult(self)]
         if fail_quickly:
             clients.append(AbortingTestResult(self))
         self.subunit_server = subunit.TestProtocolServer(
@@ -224,6 +244,13 @@ class SubunitTreeStageBuilder(TreeStageBuilder):
             if self.exitcode is not None:
                 self.subunit.close()
             return self.exitcode
+
+    @property
+    def failure_reason(self):
+        if self.failed_test:
+            return "failed '%s' with %s in test %s" (self.command, self.failed_test[0], self.failed_test[1])
+        else:
+            return "failed '%s' with exit code %d in unknown test" % (self.command, self.exitcode)
 
 
 class TreeBuilder(object):
