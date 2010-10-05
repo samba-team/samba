@@ -69,19 +69,6 @@ tasks = {
                      ("test", "make test", "text/plain"), ],
 }
 
-retry_task = [ ( "retry",
-                 '''set -e
-                git remote add -t master master %s
-                git fetch master
-                while :; do
-                  sleep 60
-                  git describe master/master > old_master.desc
-                  git fetch master
-                  git describe master/master > master.desc
-                  diff old_master.desc master.desc
-                done
-               ''' % samba_master, "test/plain" ) ]
-
 
 def run_cmd(cmd, dir=None, show=None, output=False, checkfail=True, shell=False):
     if show is None:
@@ -100,6 +87,32 @@ def clone_gitroot(test_master, revision="HEAD"):
     run_cmd(["git", "clone", "--shared", gitroot, test_master])
     if revision != "HEAD":
         run_cmd(["git", "checkout", revision])
+
+
+class RetryChecker(object):
+    """Check whether it is necessary to retry."""
+
+    def __init__(self, dir):
+        run_cmd(["git", "remote", "add", "-t", "master", "master", samba_master])
+        run_cmd(["git", "fetch", "master"])
+        cmd = '''set -e
+                while :; do
+                  sleep 60
+                  git describe master/master > old_master.desc
+                  git fetch master
+                  git describe master/master > master.desc
+                  diff old_master.desc master.desc
+                done
+               '''
+        self.proc = Popen(cmd, shell=True, cwd=self.dir)
+
+    def poll(self):
+        return self.proc.poll()
+
+    def kill(self):
+        self.proc.terminate()
+        self.proc.wait()
+        self.retry.proc = None
 
 
 class TreeStageBuilder(object):
@@ -318,8 +331,7 @@ class BuildList(object):
             b = TreeBuilder(n, tasks[n], not options.fail_slowly)
             self.tlist.append(b)
         if options.retry:
-            self.retry = TreeBuilder('retry', retry_task,
-                not options.fail_slowly)
+            self.retry = RetryChecker(self.sdir)
             self.need_retry = False
 
     def kill_kids(self):
@@ -328,9 +340,7 @@ class BuildList(object):
             self.tail_proc.wait()
             self.tail_proc = None
         if self.retry is not None:
-            self.retry.proc.terminate()
-            self.retry.proc.wait()
-            self.retry = None
+            self.retry.kill()
         for b in self.tlist:
             b.kill()
 
@@ -346,8 +356,8 @@ class BuildList(object):
                 b.stage = None
                 return b
             if options.retry:
-                ret = self.retry.proc.poll()
-                if ret is not None:
+                ret = self.retry.poll()
+                if ret:
                     self.need_retry = True
                     self.retry = None
                     return None
