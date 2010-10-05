@@ -25,9 +25,7 @@
 #include "lib/ldb/include/ldb_errors.h"
 #include "dsdb/samdb/samdb.h"
 #include "auth/gensec/gensec.h"
-#include "auth/gensec/gensec_tstream.h"
 #include "param/param.h"
-#include "../lib/util/tevent_ntstatus.h"
 
 static NTSTATUS ldapsrv_BindSimple(struct ldapsrv_call *call)
 {
@@ -96,42 +94,20 @@ static NTSTATUS ldapsrv_BindSimple(struct ldapsrv_call *call)
 	return NT_STATUS_OK;
 }
 
-struct ldapsrv_sasl_postprocess_context {
+struct ldapsrv_sasl_context {
 	struct ldapsrv_connection *conn;
-	struct tstream_context *sasl;
+	struct socket_context *sasl_socket;
 };
 
-struct ldapsrv_sasl_postprocess_state {
-	uint8_t dummy;
-};
-
-static struct tevent_req *ldapsrv_sasl_postprocess_send(TALLOC_CTX *mem_ctx,
-						struct tevent_context *ev,
-						void *private_data)
+static void ldapsrv_set_sasl(void *private_data)
 {
-	struct ldapsrv_sasl_postprocess_context *context =
-		talloc_get_type_abort(private_data,
-		struct ldapsrv_sasl_postprocess_context);
-	struct tevent_req *req;
-	struct ldapsrv_sasl_postprocess_state *state;
+	struct ldapsrv_sasl_context *ctx = talloc_get_type(private_data, struct ldapsrv_sasl_context);
+	talloc_steal(ctx->conn->connection, ctx->sasl_socket);
+	talloc_unlink(ctx->conn->connection, ctx->conn->connection->socket);
 
-	req = tevent_req_create(mem_ctx, &state,
-				struct ldapsrv_sasl_postprocess_state);
-	if (req == NULL) {
-		return NULL;
-	}
-
-	TALLOC_FREE(context->conn->sockets.sasl);
-	context->conn->sockets.sasl = talloc_move(context->conn, &context->sasl);
-	context->conn->sockets.active = context->conn->sockets.sasl;
-
-	tevent_req_done(req);
-	return tevent_req_post(req, ev);
-}
-
-static NTSTATUS ldapsrv_sasl_postprocess_recv(struct tevent_req *req)
-{
-	return tevent_req_simple_recv_ntstatus(req);
+	ctx->conn->sockets.sasl = ctx->sasl_socket;
+	ctx->conn->connection->socket = ctx->sasl_socket;
+	packet_set_socket(ctx->conn->packet, ctx->conn->connection->socket);
 }
 
 static NTSTATUS ldapsrv_BindSASL(struct ldapsrv_call *call)
@@ -217,47 +193,36 @@ static NTSTATUS ldapsrv_BindSASL(struct ldapsrv_call *call)
 		errstr = NULL;
 	} else if (NT_STATUS_IS_OK(status)) {
 		struct auth_session_info *old_session_info=NULL;
-		struct ldapsrv_sasl_postprocess_context *context = NULL;
+		struct ldapsrv_sasl_context *ctx;
 
 		result = LDAP_SUCCESS;
 		errstr = NULL;
 
-		if (gensec_have_feature(conn->gensec, GENSEC_FEATURE_SIGN) ||
-		    gensec_have_feature(conn->gensec, GENSEC_FEATURE_SEAL)) {
+		ctx = talloc(call, struct ldapsrv_sasl_context);
 
-			context = talloc(call, struct ldapsrv_sasl_postprocess_context);
-
-			if (!context) {
-				status = NT_STATUS_NO_MEMORY;
-			}
+		if (!ctx) {
+			status = NT_STATUS_NO_MEMORY;
+		} else {
+			ctx->conn = conn;
+			status = gensec_socket_init(conn->gensec,
+						    conn->connection,
+						    conn->connection->socket,
+						    conn->connection->event.ctx,
+						    stream_io_handler_callback,
+						    conn->connection,
+						    &ctx->sasl_socket);
 		}
 
-		if (context && conn->sockets.tls) {
-			TALLOC_FREE(context);
-			status = NT_STATUS_NOT_SUPPORTED;
-			result = LDAP_UNWILLING_TO_PERFORM;
-			errstr = talloc_asprintf(reply,
-						 "SASL:[%s]: Sign or Seal are not allowed if TLS is used",
-						 req->creds.SASL.mechanism);
-		}
-
-		if (context) {
-			context->conn = conn;
-			status = gensec_create_tstream(context,
-						       context->conn->gensec,
-						       context->conn->sockets.raw,
-						       &context->sasl);
-		}
-
-		if (result != LDAP_SUCCESS) {
-			conn->session_info = old_session_info;
-		} else if (!NT_STATUS_IS_OK(status)) {
+		if (!ctx || !NT_STATUS_IS_OK(status)) {
 			conn->session_info = old_session_info;
 			result = LDAP_OPERATIONS_ERROR;
 			errstr = talloc_asprintf(reply, 
 						 "SASL:[%s]: Failed to setup SASL socket: %s", 
 						 req->creds.SASL.mechanism, nt_errstr(status));
 		} else {
+
+			call->send_callback = ldapsrv_set_sasl;
+			call->send_private = ctx;
 
 			old_session_info = conn->session_info;
 			conn->session_info = NULL;
@@ -285,12 +250,6 @@ static NTSTATUS ldapsrv_BindSASL(struct ldapsrv_call *call)
 								 nt_errstr(status));
 				}
 			}
-		}
-
-		if (NT_STATUS_IS_OK(status) && context) {
-			call->postprocess_send = ldapsrv_sasl_postprocess_send;
-			call->postprocess_recv = ldapsrv_sasl_postprocess_recv;
-			call->postprocess_private = context;
 		}
 	} else {
 		status = auth_nt_status_squash(status);
