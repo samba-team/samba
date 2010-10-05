@@ -6,12 +6,12 @@ defaultNamingContext: ${DOMAINDN}
 rootDomainNamingContext: ${ROOTDN}
 configurationNamingContext: ${CONFIGDN}
 schemaNamingContext: ${SCHEMADN}
-supportedLDAPVersion: 3
 supportedLDAPVersion: 2
+supportedLDAPVersion: 3
 isSynchronized: FALSE
 vendorName: Samba Team (http://samba.org)
 supportedCapabilities: 1.2.840.113556.1.4.800
-supportedCapabilities: 1.2.840.113556.1.4.1791
 supportedCapabilities: 1.2.840.113556.1.4.1670
+supportedCapabilities: 1.2.840.113556.1.4.1791
 supportedCapabilities: 1.2.840.113556.1.4.1935
 supportedCapabilities: 1.2.840.113556.1.4.2080
