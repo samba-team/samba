@@ -24,7 +24,7 @@ def install_binary(self):
         return
 
     # work out the install path, expanding variables
-    install_path = self.samba_inst_path or '${BINDIR}'
+    install_path = getattr(self, 'samba_inst_path', None) or '${BINDIR}'
     install_path = bld.EXPAND_VARIABLES(install_path)
 
     orig_target = os.path.basename(self.target)
@@ -58,13 +58,13 @@ def install_library(self):
     install_ldflags = install_rpath(bld)
     build_ldflags   = build_rpath(bld)
 
-    if not Options.is_install or not self.samba_install:
+    if not Options.is_install or not getattr(self, 'samba_install', True):
         # just need to set the build rpath if we are not installing
         self.env.RPATH = build_ldflags
         return
 
     # setup the install path, expanding variables
-    install_path = self.samba_inst_path or '${LIBDIR}'
+    install_path = getattr(self, 'samba_inst_path', None) or '${LIBDIR}'
     install_path = bld.EXPAND_VARIABLES(install_path)
 
     if install_ldflags != build_ldflags:
@@ -83,7 +83,7 @@ def install_library(self):
 
     dev_link     = None
 
-    if self.samba_realname:
+    if getattr(self, 'samba_realname', None):
         install_name = self.samba_realname
         install_link = None
         if getattr(self, 'samba_type', None) == 'PYTHON':
