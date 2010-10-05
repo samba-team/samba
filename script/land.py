@@ -183,7 +183,7 @@ class AbortingTestResult(subunithelper.TestsuiteEnabledTestResult):
 class FailureTrackingTestResult(subunithelper.TestsuiteEnabledTestResult):
 
     def __init__(self, stage):
-        super(AbortingTestResult, self).__init__()
+        super(FailureTrackingTestResult, self).__init__()
         self.stage = stage
 
     def addError(self, test, details=None):
@@ -581,7 +581,7 @@ The top commit for the tree that was built was:
 
     msg = MIMEMultipart()
     msg['Subject'] = 'autobuild failure for task %s during %s' % (
-        failed_task, failed_stage)
+        failed_task, failed_stage.name)
     msg['From'] = 'autobuild@samba.org'
     msg['To'] = options.email
 
