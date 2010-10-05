@@ -78,6 +78,20 @@ static const struct dcesrv_iface *find_interface(const struct dcesrv_endpoint *e
 	return NULL;
 }
 
+static struct dcesrv_iface_list *find_interface_list(const struct dcesrv_endpoint *endpoint,
+						     const struct dcesrv_iface *iface)
+{
+	struct dcesrv_iface_list *iflist;
+
+	for (iflist = endpoint->iface_list; iflist; iflist = iflist->next) {
+		if (interface_match(iflist->iface, iface)) {
+			return iflist;
+		}
+	}
+
+	return NULL;
+}
+
 /*
  * Check if two endpoints match.
  */
@@ -271,17 +285,83 @@ done:
 
 
 /*
-  epm_Delete
-*/
+ * epm_Delete
+ *
+ * Delete the specified entries from an endpoint map.
+ */
 error_status_t _epm_Delete(struct pipes_struct *p,
-		   struct epm_Delete *r)
+			   struct epm_Delete *r)
 {
-	/* Check if we have a priviledged pipe/handle */
+	TALLOC_CTX *tmp_ctx;
+	error_status_t rc;
+	NTSTATUS status;
+	uint32_t i;
 
-	/* Delete the entry */
+	DEBUG(3, ("_epm_Delete: Trying to delete %u entries.\n",
+		  r->in.num_ents));
 
-	p->rng_fault_state = true;
-	return EPMAPPER_STATUS_CANT_PERFORM_OP;
+	tmp_ctx = talloc_stackframe();
+	if (tmp_ctx == NULL) {
+		return EPMAPPER_STATUS_NO_MEMORY;
+	}
+
+	/* TODO Check if we have a priviledged pipe/handle */
+
+	for (i = 0; i < r->in.num_ents; i++) {
+		struct dcerpc_binding *b = NULL;
+		struct dcesrv_endpoint *ep;
+		struct dcesrv_iface iface;
+		struct dcesrv_iface_list *iflist;
+
+		status = dcerpc_binding_from_tower(tmp_ctx,
+						   &r->in.entries[i].tower->tower,
+						   &b);
+		if (!NT_STATUS_IS_OK(status)) {
+			rc = EPMAPPER_STATUS_NO_MEMORY;
+			goto done;
+		}
+
+		DEBUG(3, ("_epm_Delete: Deleting transport '%s' for '%s'\n",
+			  derpc_transport_string_by_transport(b->transport),
+			  r->in.entries[i].annotation));
+
+		ep = find_endpoint(endpoint_table, b);
+		if (ep == NULL) {
+			rc = EPMAPPER_STATUS_OK;
+			goto done;
+		}
+
+		iface.name = r->in.entries[i].annotation;
+		iface.syntax_id = b->object;
+
+		iflist = find_interface_list(ep, &iface);
+		if (iflist == NULL) {
+			DEBUG(0, ("_epm_Delete: No interfaces left, delete endpoint\n"));
+			DLIST_REMOVE(endpoint_table, ep);
+			talloc_free(ep);
+
+			rc = EPMAPPER_STATUS_OK;
+			goto done;
+		}
+
+		DLIST_REMOVE(ep->iface_list, iflist);
+
+		if (ep->iface_list == NULL) {
+			DEBUG(0, ("_epm_Delete: No interfaces left, delete endpoint\n"));
+			DLIST_REMOVE(endpoint_table, ep);
+			talloc_free(ep);
+
+			rc = EPMAPPER_STATUS_OK;
+			goto done;
+		}
+
+	}
+
+	rc = EPMAPPER_STATUS_OK;
+done:
+	talloc_free(tmp_ctx);
+
+	return rc;
 }
 
 
