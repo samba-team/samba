@@ -124,15 +124,15 @@ class TreeStageBuilder(object):
         self.name = name
         self.command = command
         self.fail_quickly = fail_quickly
-        self.status = None
+        self.exitcode = None
         self.stdin = open(os.devnull, 'r')
 
     def start(self):
         raise NotImplementedError(self.start)
 
     def poll(self):
-        self.status = self.proc.poll()
-        return self.status
+        self.exitcode = self.proc.poll()
+        return self.exitcode
 
     def kill(self):
         if self.proc is not None:
@@ -147,11 +147,11 @@ class TreeStageBuilder(object):
 
     @property
     def failure_reason(self):
-        return "failed '%s' with status %d" % (self.cmd, self.status)
+        return "failed '%s' with exit code %d" % (self.command, self.exitcode)
 
     @property
     def failed(self):
-        return (os.WIFSIGNALED(self.status) or os.WEXITSTATUS(self.status) != 0)
+        return (self.exitcode != 0)
 
 
 class PlainTreeStageBuilder(TreeStageBuilder):
@@ -220,10 +220,10 @@ class SubunitTreeStageBuilder(TreeStageBuilder):
                 else:
                     buffered += l
             self.buffered = buffered
-            self.status = self.proc.poll()
-            if self.status is not None:
+            self.exitcode = self.proc.poll()
+            if self.exitcode is not None:
                 self.subunit.close()
-            return self.status
+            return self.exitcode
 
 
 class TreeBuilder(object):
@@ -236,6 +236,7 @@ class TreeBuilder(object):
         self.tag = self.name.replace('/', '_')
         self.sequence = sequence
         self.next = 0
+        self.stages = []
         self.stdout_path = os.path.join(gitroot, "%s.stdout" % (self.tag, ))
         self.stderr_path = os.path.join(gitroot, "%s.stderr" % (self.tag, ))
         self.logfiles = [
@@ -264,6 +265,7 @@ class TreeBuilder(object):
         run_cmd(["rm",  "-rf", self.sdir])
         clone_gitroot(self.sdir, revision)
         self.start_next()
+        self.exitcode = None
 
     def start_next(self):
         if self.next == len(self.sequence):
@@ -275,42 +277,47 @@ class TreeBuilder(object):
         (stage_name, cmd, output_mime_type) = self.sequence[self.next]
         cmd = cmd.replace("${PREFIX}", "--prefix=%s" % self.prefix)
         if output_mime_type == "text/plain":
-            self.stage = PlainTreeStageBuilder(self, stage_name, cmd,
+            self.current_stage = PlainTreeStageBuilder(self, stage_name, cmd,
                 self.fail_quickly)
         elif output_mime_type == "text/x-subunit":
-            self.stage = SubunitTreeStageBuilder(self, stage_name, cmd,
+            self.current_stage = SubunitTreeStageBuilder(self, stage_name, cmd,
                 self.fail_quickly)
         else:
             raise Exception("Unknown output mime type %s" % output_mime_type)
-        self.stage.start()
+        self.stages.append(self.current_stage)
+        self.current_stage.start()
         self.next += 1
 
     def remove_logs(self):
         for path, name, mime_type in self.logfiles:
             os.unlink(path)
 
-    @property
-    def status(self):
-        return self.stage.status
-
     def poll(self):
-        return self.stage.poll()
+        self.exitcode = self.current_stage.poll()
+        if self.exitcode is not None:
+            self.current_stage = None
+        return self.exitcode
 
     def kill(self):
-        if self.stage is not None:
-            self.stage.kill()
-            self.stage = None
+        if self.current_stage is not None:
+            self.current_stage.kill()
+            self.current_stage = None
 
     @property
     def failed(self):
-        if self.stage is None:
-            return False
-        return self.stage.failed
+        return any([s.failed for s in self.stages])
+
+    @property
+    def failed_stage(self):
+        for s in self.stages:
+            if s.failed:
+                return s
+        return s
 
     @property
     def failure_reason(self):
-        return "%s: [%s] %s" % (self.name, self.stage.name,
-            self.stage.failure_reason)
+        return "%s: [%s] %s" % (self.name, self.failed_stage.name,
+            self.failed_stage.failure_reason)
 
 
 class BuildList(object):
@@ -348,12 +355,11 @@ class BuildList(object):
         while True:
             none_running = True
             for b in self.tlist:
-                if b.stage is None:
+                if b.current_stage is None:
                     continue
                 none_running = False
                 if b.poll() is None:
                     continue
-                b.stage = None
                 return b
             if options.retry:
                 ret = self.retry.poll()
@@ -376,7 +382,7 @@ class BuildList(object):
                 break
             if b.failed:
                 self.kill_kids()
-                return (b.status, b.name, b.stage, b.tag, b.failure_reason)
+                return (b.exitcode, b.name, b.failed_stage, b.tag, b.failure_reason)
             b.start_next()
         self.kill_kids()
         return (0, None, None, None, "All OK")
@@ -515,7 +521,7 @@ parser.add_option("--fail-slowly", help="continue running tests even after one h
                   action="store_true")
 
 
-def email_failure(blist, status, failed_task, failed_stage, failed_tag, errstr):
+def email_failure(blist, exitcode, failed_task, failed_stage, failed_tag, errstr):
     '''send an email to options.email about the failure'''
     user = os.getenv("USER")
     text = '''
@@ -658,8 +664,8 @@ while True:
         blist = BuildList(tasks, args)
         if options.tail:
             blist.start_tail()
-        (status, failed_task, failed_stage, failed_tag, errstr) = blist.run()
-        if status != 0 or errstr != "retry":
+        (exitcode, failed_task, failed_stage, failed_tag, errstr) = blist.run()
+        if exitcode != 0 or errstr != "retry":
             break
         cleanup()
     except:
@@ -671,7 +677,7 @@ if options.tail:
     print("waiting for tail to flush")
     time.sleep(1)
 
-if status == 0:
+if exitcode == 0:
     print errstr
     if options.passcmd is not None:
         print("Running passcmd: %s" % options.passcmd)
@@ -693,10 +699,10 @@ else:
     blist.tarlogs("logs.tar.gz")
 
     if options.email is not None:
-        email_failure(blist, status, failed_task, failed_stage, failed_tag,
+        email_failure(blist, exitcode, failed_task, failed_stage, failed_tag,
             errstr)
 
     cleanup()
     print(errstr)
     print("Logs in logs.tar.gz")
-sys.exit(status)
+sys.exit(exitcode)
