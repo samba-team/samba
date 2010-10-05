@@ -1230,7 +1230,7 @@ static NTSTATUS dcesrv_lsa_OpenTrustedDomain(struct dcesrv_call_state *dce_call,
 		/* search for the trusted_domain record */
 		ret = gendb_search(trusted_domain_state->policy->sam_ldb,
 				   mem_ctx, policy_state->domain_dn, &msgs, attrs,
-				   "(&(samaccountname=%s$)(objectclass=user)(userAccountControl:1.2.840.113556.1.4.803:=%d))", 
+				   "(&(samaccountname=%s$)(objectclass=user)(userAccountControl:1.2.840.113556.1.4.803:=%u))",
 				   flatname, UF_INTERDOMAIN_TRUST_ACCOUNT);
 		if (ret == 1) {
 			trusted_domain_state->trusted_domain_user_dn = talloc_steal(trusted_domain_state, msgs[0]->dn);

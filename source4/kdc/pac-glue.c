@@ -107,7 +107,7 @@ bool samba_princ_needs_pac(struct hdb_entry_ex *princ)
 {
 
 	struct samba_kdc_entry *p = talloc_get_type(princ->ctx, struct samba_kdc_entry);
-	unsigned int userAccountControl;
+	uint32_t userAccountControl;
 
 
 	/* The service account may be set not to want the PAC */

@@ -85,7 +85,7 @@ static KerberosTime ldb_msg_find_krb5time_ldap_time(struct ldb_message *msg, con
     return timegm(&tm);
 }
 
-static HDBFlags uf2HDBFlags(krb5_context context, int userAccountControl, enum samba_kdc_ent_type ent_type)
+static HDBFlags uf2HDBFlags(krb5_context context, uint32_t userAccountControl, enum samba_kdc_ent_type ent_type)
 {
 	HDBFlags flags = int2HDBFlags(0);
 
@@ -197,7 +197,7 @@ static krb5_error_code samba_kdc_message2entry_keys(krb5_context context,
 						    struct ldb_message *msg,
 						    uint32_t rid,
 						    bool is_rodc,
-						    unsigned int userAccountControl,
+						    uint32_t userAccountControl,
 						    enum samba_kdc_ent_type ent_type,
 						    hdb_entry_ex *entry_ex)
 {
@@ -544,7 +544,7 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 					 hdb_entry_ex *entry_ex)
 {
 	struct loadparm_context *lp_ctx = kdc_db_ctx->lp_ctx;
-	unsigned int userAccountControl;
+	uint32_t userAccountControl;
 	unsigned int i;
 	krb5_error_code ret = 0;
 	krb5_boolean is_computer = FALSE;
