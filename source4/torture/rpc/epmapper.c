@@ -188,8 +188,8 @@ static bool test_Lookup(struct torture_context *tctx,
 	return true;
 }
 
-static bool test_Delete(struct dcerpc_binding_handle *b,
-			TALLOC_CTX *mem_ctx,
+static bool test_Delete(struct torture_context *tctx,
+			struct dcerpc_binding_handle *h,
 			struct epm_entry_t *entries)
 {
 	NTSTATUS status;
@@ -197,53 +197,69 @@ static bool test_Delete(struct dcerpc_binding_handle *b,
 
 	r.in.num_ents = 1;
 	r.in.entries = entries;
-	
-	status = dcerpc_epm_Delete_r(b, mem_ctx, &r);
+
+	status = dcerpc_epm_Delete_r(h, tctx, &r);
 	if (NT_STATUS_IS_ERR(status)) {
-		printf("Delete failed - %s\n", nt_errstr(status));
+		torture_comment(tctx,
+				"epm_Delete failed - %s\n",
+				nt_errstr(status));
 		return false;
 	}
 
-	if (r.out.result != 0) {
-		printf("Delete failed - %d\n", r.out.result);
+	if (r.out.result != EPMAPPER_STATUS_OK) {
+		torture_comment(tctx,
+				"epm_Delete failed - internal error: 0x%.4x\n",
+				r.out.result);
 		return false;
 	}
 
 	return true;
 }
 
-static bool test_Insert(struct torture_context *tctx, 
-						struct dcerpc_pipe *p)
+static bool test_Insert_noreplace(struct torture_context *tctx,
+				  struct dcerpc_pipe *p)
 {
+	bool ok;
 	NTSTATUS status;
 	struct epm_Insert r;
-	struct dcerpc_binding *bd;
-	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct dcerpc_binding *b;
+	struct dcerpc_binding_handle *h = p->binding_handle;
+
+	torture_comment(tctx, "Testing epm_Insert(noreplace) and epm_Delete\n");
+
+	if (torture_setting_bool(tctx, "samba4", false)) {
+		torture_skip(tctx, "Skip Insert test against Samba4");
+	}
 
 	r.in.num_ents = 1;
-
 	r.in.entries = talloc_array(tctx, struct epm_entry_t, 1);
+
 	ZERO_STRUCT(r.in.entries[0].object);
 	r.in.entries[0].annotation = "smbtorture endpoint";
-	status = dcerpc_parse_binding(tctx, "ncalrpc:[SMBTORTURE]", &bd);
-	torture_assert_ntstatus_ok(tctx, status, 
-							   "Unable to generate dcerpc_binding struct");
+
+	status = dcerpc_parse_binding(tctx, "ncalrpc:[SMBTORTURE]", &b);
+	torture_assert_ntstatus_ok(tctx,
+				   status,
+				   "Unable to generate dcerpc_binding struct");
 
 	r.in.entries[0].tower = talloc(tctx, struct epm_twr_t);
 
-	status = dcerpc_binding_build_tower(tctx, bd, &r.in.entries[0].tower->tower);
-	torture_assert_ntstatus_ok(tctx, status, 
-							   "Unable to build tower from binding struct");
-	
+	status = dcerpc_binding_build_tower(tctx,
+					    b,
+					    &r.in.entries[0].tower->tower);
+	torture_assert_ntstatus_ok(tctx,
+				   status,
+				   "Unable to build tower from binding struct");
 	r.in.replace = 0;
 
-	status = dcerpc_epm_Insert_r(b, tctx, &r);
-	torture_assert_ntstatus_ok(tctx, status, "Insert failed");
+	status = dcerpc_epm_Insert_r(h, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status, "epm_Insert failed");
 
-	torture_assert(tctx, r.out.result == 0, "Insert failed");
+	torture_assert(tctx, r.out.result == 0, "epm_Insert failed");
 
-	if (!test_Delete(b, tctx, r.in.entries)) {
-		return false; 
+	ok = test_Delete(tctx, h, r.in.entries);
+	if (!ok) {
+		return false;
 	}
 
 	return true;
@@ -269,12 +285,15 @@ struct torture_suite *torture_rpc_epmapper(TALLOC_CTX *mem_ctx)
 	struct torture_suite *suite = torture_suite_create(mem_ctx, "epmapper");
 	struct torture_rpc_tcase *tcase;
 
-	tcase = torture_suite_add_rpc_iface_tcase(suite, "epmapper", 
-											  &ndr_table_epmapper);
+	tcase = torture_suite_add_rpc_iface_tcase(suite,
+						  "epmapper",
+						  &ndr_table_epmapper);
 
-	torture_rpc_tcase_add_test(tcase, "Lookup", test_Lookup);
-	torture_rpc_tcase_add_test(tcase, "Insert", test_Insert);
-	torture_rpc_tcase_add_test(tcase, "InqObject", test_InqObject);
+	torture_rpc_tcase_add_test(tcase,
+				   "Insert_noreplace",
+				   test_Insert_noreplace);
 
 	return suite;
 }
+
+/* vim: set ts=8 sw=8 noet cindent syntax=c.doxygen: */
