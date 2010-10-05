@@ -263,7 +263,7 @@ static bool srprs_key(const char** ptr, cbuf* key, bool* del)
 {
 	const char* pos = *ptr;
 	const char* closing_bracket_pos = NULL;
-	size_t      closing_bracket_idx;
+	size_t      closing_bracket_idx = 0;
 
 	if (!srprs_skipws(&pos) || !srprs_char(&pos, '[')) {
 		return false;
