@@ -61,10 +61,13 @@ static int subtree_delete(struct ldb_module *module, struct ldb_request *req)
 	}
 	if (res->count > 0) {
 		if (ldb_request_get_control(req, LDB_CONTROL_TREE_DELETE_OID) == NULL) {
+			/* Do not add any DN outputs to this error string!
+			 * Some MMC consoles (eg release 2000) have a strange
+			 * bug and prevent subtree deletes afterwards. */
 			ldb_asprintf_errstring(ldb_module_get_ctx(module),
-					       "Cannot delete %s, not a leaf node "
-					       "(has %d children)\n",
-					       ldb_dn_get_linearized(req->op.del.dn),
+					       "subtree_delete: Unable to "
+					       "delete a non-leaf node "
+					       "(it has %u children)!",
 					       res->count);
 			talloc_free(res);
 			return LDB_ERR_NOT_ALLOWED_ON_NON_LEAF;
