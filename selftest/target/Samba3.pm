@@ -521,6 +521,7 @@ sub provision($$$$$$)
 
 #	min receivefile size = 4000
 
+	max protocol = SMB2
 	read only = no
 	smbd:sharedelay = 100000
 #	smbd:writetimeupdatedelay = 500000
