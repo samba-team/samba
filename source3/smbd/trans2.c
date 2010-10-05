@@ -5991,7 +5991,7 @@ static NTSTATUS smb2_file_rename_information(connection_struct *conn,
 				conn,
 				req->flags2 & FLAGS2_DFS_PATHNAMES,
 				newname,
-				0,
+				UCF_SAVE_LCOMP,
 				NULL,
 				&smb_fname_dst);
 	if (!NT_STATUS_IS_OK(status)) {
