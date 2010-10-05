@@ -28,6 +28,7 @@ typedef uint32_t error_status_t;
 /* An endpoint combined with an interface description */
 struct dcesrv_ep_iface {
 	const char *name;
+	struct ndr_syntax_id syntax_id;
 	struct epm_tower ep;
 };
 
@@ -161,8 +162,7 @@ static uint32_t build_ep_list(TALLOC_CTX *mem_ctx,
 		struct dcerpc_binding *description;
 
 		for (iface = d->iface_list; iface != NULL; iface = iface->next) {
-			if (uuid != NULL &&
-			    !interface_match_by_uuid(iface->iface, uuid)) {
+			if (uuid && !interface_match_by_uuid(iface->iface, uuid)) {
 				continue;
 			}
 
@@ -173,7 +173,9 @@ static uint32_t build_ep_list(TALLOC_CTX *mem_ctx,
 			if (eps == NULL) {
 				return 0;
 			}
-			eps[total].name = iface->iface->name;
+			eps[total].name = talloc_strdup(eps,
+							iface->iface->name);
+			eps[total].syntax_id = iface->iface->syntax_id;
 
 			description = d->ep_description;
 			description->object = iface->iface->syntax_id;
@@ -387,13 +389,330 @@ done:
 
 
 /*
-  epm_Lookup
-*/
+ * epm_Lookup
+ *
+ * Lookup entries in an endpoint map.
+ */
 error_status_t _epm_Lookup(struct pipes_struct *p,
-		   struct epm_Lookup *r)
+			   struct epm_Lookup *r)
 {
-	p->rng_fault_state = true;
-	return EPMAPPER_STATUS_CANT_PERFORM_OP;
+	struct policy_handle *entry_handle;
+	TALLOC_CTX *tmp_ctx;
+	error_status_t rc;
+	uint32_t count = 0;
+	uint32_t num_ents = 0;
+	uint32_t i;
+	bool match = false;
+	bool ok;
+
+	struct rpc_eps {
+		struct dcesrv_ep_iface *e;
+		uint32_t count;
+	} *eps;
+
+	*r->out.num_ents = 0;
+	r->out.entries = NULL;
+
+	tmp_ctx = talloc_stackframe();
+	if (tmp_ctx == NULL) {
+		return EPMAPPER_STATUS_NO_MEMORY;
+	}
+
+	DEBUG(3, ("_epm_Lookup: Trying to lookup max. %u entries.\n",
+		  r->in.max_ents));
+
+	if (r->in.entry_handle == NULL ||
+	    policy_handle_empty(r->in.entry_handle)) {
+		struct GUID *obj;
+
+		DEBUG(5, ("_epm_Lookup: No entry_handle found, creating it.\n"));
+
+		eps = talloc_zero(tmp_ctx, struct rpc_eps);
+		if (eps == NULL) {
+			rc = EPMAPPER_STATUS_NO_MEMORY;
+			goto done;
+		}
+
+		if (r->in.object == NULL || GUID_all_zero(r->in.object)) {
+			obj = NULL;
+		} else {
+			obj = r->in.object;
+		}
+
+		switch (r->in.inquiry_type) {
+		case RPC_C_EP_ALL_ELTS:
+			/*
+			 * Return all elements from the endpoint map. The
+			 * interface_id, vers_option, and object parameters MUST
+			 * be ignored.
+			 */
+			eps->count = build_ep_list(eps,
+						   endpoint_table,
+						   NULL,
+						   &eps->e);
+			break;
+		case RPC_C_EP_MATCH_BY_IF:
+			/*
+			 * Return endpoint map elements that contain the
+			 * interface identifier specified by the interface_id
+			 * and vers_option values.
+			 *
+			 * RPC_C_EP_MATCH_BY_IF and RPC_C_EP_MATCH_BY_BOTH
+			 * need both the same endpoint list. There is a second
+			 * check for the inquiry_type below which differentiates
+			 * between them.
+			 */
+		case RPC_C_EP_MATCH_BY_BOTH:
+			/*
+			 * Return endpoint map elements that contain the
+			 * interface identifier and object UUID specified by
+			 * interface_id, vers_option, and object.
+			 */
+			eps->count = build_ep_list(eps,
+						   endpoint_table,
+						   &r->in.interface_id->uuid,
+						   &eps->e);
+			break;
+		case RPC_C_EP_MATCH_BY_OBJ:
+			/*
+			 * Return endpoint map elements that contain the object
+			 * UUID specified by object.
+			 */
+			eps->count = build_ep_list(eps,
+						   endpoint_table,
+						   r->in.object,
+						   &eps->e);
+			break;
+		default:
+			rc = EPMAPPER_STATUS_CANT_PERFORM_OP;
+			goto done;
+		}
+
+		if (eps->count == 0) {
+			rc = EPMAPPER_STATUS_NO_MORE_ENTRIES;
+			goto done;
+		}
+
+		ok = create_policy_hnd(p, r->out.entry_handle, eps);
+		if (!ok) {
+			rc = EPMAPPER_STATUS_NO_MEMORY;
+			goto done;
+		}
+
+		ok = find_policy_by_hnd(p, r->out.entry_handle, (void **)(void*) &eps);
+		if (!ok) {
+			rc = EPMAPPER_STATUS_NO_MEMORY;
+			goto done;
+		}
+		entry_handle = r->out.entry_handle;
+	} else {
+		DEBUG(5, ("_epm_Lookup: Trying to find entry_handle.\n"));
+
+		ok = find_policy_by_hnd(p, r->in.entry_handle, (void **)(void*) &eps);
+		if (!ok) {
+			rc = EPMAPPER_STATUS_NO_MEMORY;
+			goto done;
+		}
+		entry_handle = r->in.entry_handle;
+	}
+
+	if (eps == NULL || eps->e == NULL) {
+		rc = EPMAPPER_STATUS_NO_MORE_ENTRIES;
+		goto done;
+	}
+
+	/* return the next N elements */
+	count = r->in.max_ents;
+	if (count > eps->count) {
+		count = eps->count;
+	}
+
+	DEBUG(3, ("_epm_Lookup: Find %u entries\n", count));
+
+	if (count == 0) {
+		close_policy_hnd(p, entry_handle);
+		ZERO_STRUCTP(r->out.entry_handle);
+
+		rc = EPMAPPER_STATUS_NO_MORE_ENTRIES;
+		goto done;
+	}
+
+	r->out.entries = talloc_array(p->mem_ctx, struct epm_entry_t, count);
+	if (r->out.entries == NULL) {
+		rc = EPMAPPER_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	for (i = 0; i < count; i++) {
+		match = false;
+
+		switch (r->in.inquiry_type) {
+		case RPC_C_EP_ALL_ELTS:
+			/*
+			 * Return all elements from the endpoint map. The
+			 * interface_id, vers_option, and object parameters MUST
+			 * be ignored.
+			 */
+			match = true;
+			break;
+		case RPC_C_EP_MATCH_BY_IF:
+			/*
+			 * Return endpoint map elements that contain the
+			 * interface identifier specified by the interface_id
+			 * and vers_option values.
+			 */
+			if (GUID_equal(&r->in.interface_id->uuid,
+				       &eps->e[i].syntax_id.uuid)) {
+				match = true;
+			}
+			break;
+		case RPC_C_EP_MATCH_BY_OBJ:
+			/*
+			 * Return endpoint map elements that contain the object
+			 * UUID specified by object.
+			 */
+			if (GUID_equal(r->in.object,
+				       &eps->e[i].syntax_id.uuid)) {
+				match = true;
+			}
+			break;
+		case RPC_C_EP_MATCH_BY_BOTH:
+			/*
+			 * Return endpoint map elements that contain the
+			 * interface identifier and object UUID specified by
+			 * interface_id, vers_option, and object.
+			 */
+			if (GUID_equal(&r->in.interface_id->uuid,
+				       &eps->e[i].syntax_id.uuid) &&
+			    GUID_equal(r->in.object, &eps->e[i].syntax_id.uuid)) {
+				match = true;
+			}
+			break;
+		default:
+			return EPMAPPER_STATUS_CANT_PERFORM_OP;
+		}
+
+		if (match) {
+			if (r->in.inquiry_type == RPC_C_EP_MATCH_BY_IF ||
+			    r->in.inquiry_type == RPC_C_EP_MATCH_BY_OBJ) {
+				/* Check inteface version */
+
+				match = false;
+				switch (r->in.vers_option) {
+				case RPC_C_VERS_ALL:
+					/*
+					 * Return endpoint map elements that
+					 * contain the specified interface UUID,
+					 * regardless of the version numbers.
+					 */
+					match = true;
+					break;
+				case RPC_C_VERS_COMPATIBLE:
+					/*
+					 * Return the endpoint map elements that
+					 * contain the same major versions of
+					 * the specified interface UUID and a
+					 * minor version greater than or equal
+					 * to the minor version of the specified
+					 * UUID.
+					 */
+					if (r->in.interface_id->vers_major ==
+					    (eps->e[i].syntax_id.if_version >> 16) &&
+					    r->in.interface_id->vers_minor <=
+					    (eps->e[i].syntax_id.if_version && 0xFFFF)) {
+						match = true;
+					}
+					break;
+				case RPC_C_VERS_EXACT:
+					/*
+					 * Return endpoint map elements that
+					 * contain the specified version of the
+					 * specified interface UUID.
+					 */
+					if (r->in.interface_id->vers_major ==
+					    (eps->e[i].syntax_id.if_version >> 16) &&
+					    r->in.interface_id->vers_minor ==
+					    (eps->e[i].syntax_id.if_version && 0xFFFF)) {
+						match = true;
+					}
+					match = true;
+					break;
+				case RPC_C_VERS_MAJOR_ONLY:
+					/*
+					 * Return endpoint map elements that
+					 * contain the same version of the
+					 * specified interface UUID and ignore
+					 * the minor version.
+					 */
+					if (r->in.interface_id->vers_major ==
+					    (eps->e[i].syntax_id.if_version >> 16)) {
+						match = true;
+					}
+					match = true;
+					break;
+				case RPC_C_VERS_UPTO:
+					/*
+					 * Return endpoint map elements that
+					 * contain a version of the specified
+					 * interface UUID less than or equal to
+					 * the specified major and minor
+					 * version.
+					 */
+					if (r->in.interface_id->vers_major >
+					    eps->e[i].syntax_id.if_version >> 16) {
+						match = true;
+					} else {
+						if (r->in.interface_id->vers_major ==
+						    (eps->e[i].syntax_id.if_version >> 16) &&
+						    r->in.interface_id->vers_minor >=
+						    (eps->e[i].syntax_id.if_version && 0xFFFF)) {
+							match = true;
+						}
+					}
+					break;
+				default:
+					return EPMAPPER_STATUS_CANT_PERFORM_OP;
+				}
+			}
+		}
+
+		if (match) {
+			ZERO_STRUCT(r->out.entries[num_ents].object);
+
+			DEBUG(10, ("_epm_Lookup: Adding tower for '%s'\n",
+				   eps->e[i].name));
+			r->out.entries[num_ents].annotation = talloc_strdup(r->out.entries,
+									    eps->e[i].name);
+			r->out.entries[num_ents].tower = talloc(r->out.entries,
+								struct epm_twr_t);
+			if (r->out.entries[num_ents].tower == NULL) {
+				rc = EPMAPPER_STATUS_NO_MEMORY;
+				goto done;
+			}
+			r->out.entries[num_ents].tower->tower.floors = talloc_move(r->out.entries[num_ents].tower, &eps->e[i].ep.floors);
+			r->out.entries[num_ents].tower->tower.num_floors = eps->e[i].ep.num_floors;
+			r->out.entries[num_ents].tower->tower_length = 0;
+
+			num_ents++;
+		}
+	} /* end for loop */
+
+	*r->out.num_ents = num_ents;
+
+	eps->count -= count;
+	eps->e += count;
+	if (eps->count == 0) {
+		close_policy_hnd(p, entry_handle);
+		ZERO_STRUCTP(r->out.entry_handle);
+		rc = EPMAPPER_STATUS_NO_MORE_ENTRIES;
+		goto done;
+	}
+
+	rc = EPMAPPER_STATUS_OK;
+done:
+	talloc_free(tmp_ctx);
+
+	return rc;
 }
 
 /*
