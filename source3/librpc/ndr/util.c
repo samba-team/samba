@@ -101,6 +101,9 @@ const char *ndr_errstr(enum ndr_err_code err)
 	case NDR_ERR_IPV4ADDRESS:
 		return "NDR_ERR_IPV4ADDRESS";
 		break;
+	case NDR_ERR_IPV6ADDRESS:
+		return "NDR_ERR_IPV6ADDRESS";
+		break;
 	case NDR_ERR_INVALID_POINTER:
 		return "NDR_ERR_INVALID_POINTER";
 		break;
