@@ -28,7 +28,7 @@ all_info.out.fname
 internal_information.out.file_id
 EOF
 
-testit "gentest" $VALGRIND $gentest //$SERVER/test1 //$SERVER/test2 --num-ops=100 --ignore=$PREFIX/gentest.ignore -W "$DOMAIN" -U"$USERNAME%$PASSWORD" -U"$USERNAME%$PASSWORD" $@ || failed=`expr $failed + 1`
+testit "gentest" $VALGRIND $gentest //$SERVER/test1 //$SERVER/test2 --seed=1 --num-ops=100 --ignore=$PREFIX/gentest.ignore -W "$DOMAIN" -U"$USERNAME%$PASSWORD" -U"$USERNAME%$PASSWORD" $@ || failed=`expr $failed + 1`
 
 rm -f $PREFIX/gentest.ignore
 
