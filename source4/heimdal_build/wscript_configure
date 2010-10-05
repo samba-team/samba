@@ -60,7 +60,7 @@ conf.CHECK_STRUCTURE_MEMBER('DIR', 'dd_fd', define='HAVE_DIR_DD_FD',  headers='d
 
 conf.DEFINE('SAMBA4_INTERNAL_HEIMDAL', 1)
 
-if conf.CHECK_BUNDLED_SYSTEM('com_err', checkfunctions='com_err', headers='com_err.h'):
+if conf.CHECK_BUNDLED_SYSTEM('com_err',  minversion='1.41.11', checkfunctions='com_err com_right_r', headers='com_err.h com_right.h'):
     conf.define('USING_SYSTEM_COM_ERR', 1)
 
 if conf.find_program('compile_et', var='COMPILE_ET'):
