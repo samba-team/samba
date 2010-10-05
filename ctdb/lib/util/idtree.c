@@ -105,7 +105,7 @@ static int sub_alloc(struct idr_context *idp, void *ptr, int *starting_id)
 	int n, m, sh;
 	struct idr_layer *p, *new;
 	struct idr_layer *pa[MAX_LEVEL];
-	int l, id, oid;
+	unsigned int l, id, oid;
 	uint32_t bm;
 
 	memset(pa, 0, sizeof(pa));
