@@ -1102,6 +1102,37 @@ int samdb_msg_set_string(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx, struc
 }
 
 /*
+ * sets a signed integer in a message
+ */
+int samdb_msg_set_int(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx,
+		      struct ldb_message *msg, const char *attr_name, int v)
+{
+	struct ldb_message_element *el;
+
+	el = ldb_msg_find_element(msg, attr_name);
+	if (el) {
+		el->num_values = 0;
+	}
+	return samdb_msg_add_int(sam_ldb, mem_ctx, msg, attr_name, v);
+}
+
+/*
+ * sets an unsigned integer in a message
+ */
+int samdb_msg_set_uint(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx,
+		       struct ldb_message *msg, const char *attr_name,
+		       unsigned int v)
+{
+	struct ldb_message_element *el;
+
+	el = ldb_msg_find_element(msg, attr_name);
+	if (el) {
+		el->num_values = 0;
+	}
+	return samdb_msg_add_uint(sam_ldb, mem_ctx, msg, attr_name, v);
+}
+
+/*
  * Handle ldb_request in transaction
  */
 static int dsdb_autotransaction_request(struct ldb_context *sam_ldb,
