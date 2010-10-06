@@ -100,6 +100,15 @@ def CHECK_BUNDLED_SYSTEM(conf, libname, minversion='0.0.0',
     if found in conf.env:
         return conf.env[found]
 
+    def check_functions_headers():
+        '''helper function for CHECK_BUNDLED_SYSTEM'''
+        if checkfunctions is None:
+            return True
+        if require_headers and headers and not conf.CHECK_HEADERS(headers):
+            return False
+        return conf.CHECK_FUNCS_IN(checkfunctions, libname, headers=headers,
+                                   empty_decl=False, set_target=False)
+
     # see if the library should only use a system version if another dependent
     # system version is found. That prevents possible use of mixed library
     # versions
@@ -116,22 +125,21 @@ def CHECK_BUNDLED_SYSTEM(conf, libname, minversion='0.0.0',
     minversion = minimum_library_version(conf, libname, minversion)
 
     # try pkgconfig first
-    if conf.check_cfg(package=libname,
+    if (conf.check_cfg(package=libname,
                       args='"%s >= %s" --cflags --libs' % (libname, minversion),
-                      msg='Checking for system %s >= %s' % (libname, minversion)):
+                      msg='Checking for system %s >= %s' % (libname, minversion)) and
+        check_functions_headers()):
         conf.SET_TARGET_TYPE(libname, 'SYSLIB')
         conf.env[found] = True
         if implied_deps:
             conf.SET_SYSLIB_DEPS(libname, implied_deps)
         return True
     if checkfunctions is not None:
-        headers_ok = True
-        if require_headers and headers and not conf.CHECK_HEADERS(headers):
-            headers_ok = False
-        if headers_ok and conf.CHECK_FUNCS_IN(checkfunctions, libname, headers=headers, empty_decl=False):
+        if check_functions_headers():
             conf.env[found] = True
             if implied_deps:
                 conf.SET_SYSLIB_DEPS(libname, implied_deps)
+            conf.SET_TARGET_TYPE(libname, 'SYSLIB')
             return True
     conf.env[found] = False
     if not conf.LIB_MAY_BE_BUNDLED(libname):

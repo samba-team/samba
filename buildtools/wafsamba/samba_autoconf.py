@@ -461,13 +461,17 @@ def library_flags(conf, libs):
 
 
 @conf
-def CHECK_LIB(conf, libs, mandatory=False, empty_decl=True):
-    '''check if a set of libraries exist'''
+def CHECK_LIB(conf, libs, mandatory=False, empty_decl=True, set_target=True):
+    '''check if a set of libraries exist as system libraries
 
+    returns the sublist of libs that do exist as a syslib or []
+    '''
+
+    ret = []
     liblist  = TO_LIST(libs)
-    ret = True
     for lib in liblist[:]:
         if GET_TARGET_TYPE(conf, lib) == 'SYSLIB':
+            ret.append(lib)
             continue
 
         (ccflags, ldflags) = library_flags(conf, lib)
@@ -478,12 +482,14 @@ def CHECK_LIB(conf, libs, mandatory=False, empty_decl=True):
                 sys.exit(1)
             if empty_decl:
                 # if it isn't a mandatory library, then remove it from dependency lists
-                SET_TARGET_TYPE(conf, lib, 'EMPTY')
-            ret = False
+                if set_target:
+                    SET_TARGET_TYPE(conf, lib, 'EMPTY')
         else:
             conf.define('HAVE_LIB%s' % lib.upper().replace('-','_'), 1)
             conf.env['LIB_' + lib.upper()] = lib
-            LOCAL_CACHE_SET(conf, 'TARGET_TYPE', lib, 'SYSLIB')
+            if set_target:
+                conf.SET_TARGET_TYPE(lib, 'SYSLIB')
+            ret.append(lib)
 
     return ret
 
@@ -491,7 +497,7 @@ def CHECK_LIB(conf, libs, mandatory=False, empty_decl=True):
 
 @conf
 def CHECK_FUNCS_IN(conf, list, library, mandatory=False, checklibc=False,
-                   headers=None, link=True, empty_decl=True):
+                   headers=None, link=True, empty_decl=True, set_target=True):
     """
     check that the functions in 'list' are available in 'library'
     if they are, then make that library available as a dependency
@@ -525,19 +531,15 @@ def CHECK_FUNCS_IN(conf, list, library, mandatory=False, checklibc=False,
                 SET_TARGET_TYPE(conf, lib, 'EMPTY')
         return True
 
-    conf.CHECK_LIB(liblist, empty_decl=empty_decl)
+    checklist = conf.CHECK_LIB(liblist, empty_decl=empty_decl, set_target=set_target)
     for lib in liblist[:]:
-        if not GET_TARGET_TYPE(conf, lib) == 'SYSLIB':
-            if mandatory:
-                Logs.error("Mandatory library '%s' not found for functions '%s'" % (lib, list))
-                sys.exit(1)
-            # if it isn't a mandatory library, then remove it from dependency lists
-            liblist.remove(lib)
-            continue
+        if not lib in checklist and mandatory:
+            Logs.error("Mandatory library '%s' not found for functions '%s'" % (lib, list))
+            sys.exit(1)
 
     ret = True
     for f in remaining:
-        if not CHECK_FUNC(conf, f, lib=' '.join(liblist), headers=headers, link=link):
+        if not CHECK_FUNC(conf, f, lib=' '.join(checklist), headers=headers, link=link):
             ret = False
 
     return ret
