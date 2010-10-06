@@ -11,6 +11,10 @@ import shlex
 LIB_PATH="shared"
 
 
+# sigh, python octal constants are a mess
+MODE_644 = int('644', 8)
+MODE_755 = int('755', 8)
+
 @conf
 def SET_TARGET_TYPE(ctx, target, value):
     '''set the target type of a target'''

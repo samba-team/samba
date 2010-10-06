@@ -173,7 +173,7 @@ class samba_version_file(samba_version):
                     value = split_line[1].strip('"')
                     version_dict[split_line[0]] = value
             except:
-                print "Failed to parse line %s from %s" % (line, version_file)
+                print("Failed to parse line %s from %s" % (line, version_file))
                 raise
             
         super(samba_version_file, self).__init__(version_dict, have_git=have_git)
