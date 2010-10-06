@@ -216,7 +216,7 @@ NTSTATUS dsdb_add_user(struct ldb_context *ldb,
 
 	if (samdb_msg_add_uint(ldb, tmp_ctx, msg,
 			       "userAccountControl",
-			       user_account_control) != 0) {
+			       user_account_control) != LDB_SUCCESS) {
 		ldb_transaction_cancel(ldb);
 		talloc_free(tmp_ctx);
 		return NT_STATUS_NO_MEMORY;
