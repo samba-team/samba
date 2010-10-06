@@ -58,3 +58,8 @@ etags:
 
 ctags:
 	$(WAF) ctags
+
+# this allows for things like "make bin/smbtorture"
+bin/%:: FORCE
+	$(WAF) --targets=`basename $@`
+FORCE:
