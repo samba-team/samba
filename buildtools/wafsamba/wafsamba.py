@@ -36,7 +36,7 @@ LIB_PATH="shared"
 os.putenv('PYTHONUNBUFFERED', '1')
 
 
-if Constants.HEXVERSION < 0x105016:
+if Constants.HEXVERSION < 0x105019:
     Logs.error('''
 Please use the version of waf that comes with Samba, not
 a system installed version. See http://wiki.samba.org/index.php/Waf
