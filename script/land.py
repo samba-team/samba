@@ -16,6 +16,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../lib/subunit/pytho
 import subunit
 import testtools
 import subunithelper
+import tempfile
 from email.mime.application import MIMEApplication
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -511,7 +512,12 @@ def push_to(url):
     run_cmd(["git", "push", "pushto", "+HEAD:master"], show=True,
         dir=test_master)
 
-def_testbase = os.getenv("AUTOBUILD_TESTBASE", "/memdisk/%s" % os.getenv('USER'))
+def_testbase = os.getenv("AUTOBUILD_TESTBASE")
+if def_testbase is None:
+    if os.path.exists("/memdisk"):
+        def_testbase = "/memdisk/%s" % os.getenv('USER')
+    else:
+        def_testbase = os.path.join(tempfile.gettempdir(), "autobuild-%s" % os.getenv("USER"))
 
 parser = OptionParser()
 parser.add_option("--repository", help="repository to run tests for", default=None, type=str)
