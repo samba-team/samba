@@ -2583,6 +2583,14 @@ static bool smbd_echo_reply(int fd,
 	char *outbuf;
 	bool ok;
 
+	if ((inbuf_len == 4) && (CVAL(inbuf, 0) == SMBkeepalive)) {
+		DEBUG(10, ("Got netbios keepalive\n"));
+		/*
+		 * Just swallow it
+		 */
+		return true;
+	}
+
 	if (inbuf_len < smb_size) {
 		DEBUG(10, ("Got short packet: %d bytes\n", (int)inbuf_len));
 		return false;
@@ -2720,13 +2728,6 @@ static void smbd_echo_reader(struct tevent_context *ev,
 		exit(1);
 	}
 
-	/*
-	 * place the seqnum in the packet so that the main process can reply
-	 * with signing
-	 */
-	SIVAL((uint8_t *)state->pending[num_pending].iov_base, smb_ss_field, seqnum);
-	SIVAL((uint8_t *)state->pending[num_pending].iov_base, smb_ss_field+4, NT_STATUS_V(NT_STATUS_OK));
-
 	reply = smbd_echo_reply(smbd_server_fd(),
 				(uint8_t *)state->pending[num_pending].iov_base,
 				state->pending[num_pending].iov_len,
@@ -2737,10 +2738,22 @@ static void smbd_echo_reader(struct tevent_context *ev,
 		state->pending = talloc_realloc(state, state->pending,
 						struct iovec,
 						num_pending);
-	} else {
-		DEBUG(10,("echo_handler[%d]: forward to main\n", (int)sys_getpid()));
-		smbd_echo_activate_writer(state);
+		return;
 	}
+
+	if (state->pending[num_pending].iov_len >= smb_size) {
+		/*
+		 * place the seqnum in the packet so that the main process
+		 * can reply with signing
+		 */
+		SIVAL((uint8_t *)state->pending[num_pending].iov_base,
+		      smb_ss_field, seqnum);
+		SIVAL((uint8_t *)state->pending[num_pending].iov_base,
+		      smb_ss_field+4, NT_STATUS_V(NT_STATUS_OK));
+	}
+
+	DEBUG(10,("echo_handler[%d]: forward to main\n", (int)sys_getpid()));
+	smbd_echo_activate_writer(state);
 }
 
 static void smbd_echo_loop(struct smbd_server_connection *sconn,
