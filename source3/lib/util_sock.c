@@ -289,6 +289,12 @@ static const smb_socket_option socket_options[] = {
 #ifdef TCP_QUICKACK
   {"TCP_QUICKACK", IPPROTO_TCP, TCP_QUICKACK, 0, OPT_BOOL},
 #endif
+#ifdef TCP_KEEPALIVE_THRESHOLD
+  {"TCP_KEEPALIVE_THRESHOLD", IPPROTO_TCP, TCP_KEEPALIVE_THRESHOLD, 0, OPT_INT},
+#endif
+#ifdef TCP_KEEPALIVE_ABORT_THRESHOLD
+  {"TCP_KEEPALIVE_ABORT_THRESHOLD", IPPROTO_TCP, TCP_KEEPALIVE_ABORT_THRESHOLD, 0, OPT_INT},
+#endif
   {NULL,0,0,0,0}};
 
 /****************************************************************************
