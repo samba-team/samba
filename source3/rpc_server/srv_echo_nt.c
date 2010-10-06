@@ -100,7 +100,7 @@ NTSTATUS _echo_TestCall2(struct pipes_struct *p, struct echo_TestCall2 *r)
 
 uint32 _echo_TestSleep(struct pipes_struct *p, struct echo_TestSleep *r)
 {
-	p->rng_fault_state = True;
+	smb_msleep(r->in.seconds * 1000);
 	return 0;
 }
 
