@@ -192,62 +192,6 @@ static int samldb_check_sAMAccountName(struct samldb_ctx *ac)
 	return samldb_next_step(ac);
 }
 
-/* sAMAccountType handling */
-
-static int samldb_check_sAMAccountType(struct samldb_ctx *ac)
-{
-	struct ldb_context *ldb;
-	unsigned int account_type;
-	unsigned int group_type;
-	unsigned int uac;
-	int ret;
-
-	ldb = ldb_module_get_ctx(ac->module);
-
-	/* make sure sAMAccountType is not specified */
-	if (ldb_msg_find_element(ac->msg, "sAMAccountType") != NULL) {
-		ldb_asprintf_errstring(ldb,
-			"sAMAccountType must not be specified!");
-		return LDB_ERR_UNWILLING_TO_PERFORM;
-	}
-
-	if (strcmp("user", ac->type) == 0) {
-		uac = samdb_result_uint(ac->msg, "userAccountControl", 0);
-		if (uac == 0) {
-			ldb_asprintf_errstring(ldb,
-				"userAccountControl invalid!");
-			return LDB_ERR_UNWILLING_TO_PERFORM;
-		} else {
-			account_type = ds_uf2atype(uac);
-			ret = samdb_msg_add_uint(ldb,
-						 ac->msg, ac->msg,
-						 "sAMAccountType",
-						 account_type);
-			if (ret != LDB_SUCCESS) {
-				return ret;
-			}
-		}
-	} else if (strcmp("group", ac->type) == 0) {
-		group_type = samdb_result_uint(ac->msg, "groupType", 0);
-		if (group_type == 0) {
-			ldb_asprintf_errstring(ldb,
-				"groupType invalid!\n");
-			return LDB_ERR_UNWILLING_TO_PERFORM;
-		} else {
-			account_type = ds_gtype2atype(group_type);
-			ret = samdb_msg_add_uint(ldb,
-						 ac->msg, ac->msg,
-						 "sAMAccountType",
-						 account_type);
-			if (ret != LDB_SUCCESS) {
-				return ret;
-			}
-		}
-	}
-
-	return samldb_next_step(ac);
-}
-
 /* primaryGroupID handling */
 
 static int samldb_check_primaryGroupID(struct samldb_ctx *ac)
@@ -615,51 +559,35 @@ static bool check_rodc_critical_attribute(struct ldb_message *msg)
 
 static int samldb_fill_object(struct samldb_ctx *ac)
 {
-	struct ldb_context *ldb;
-	struct loadparm_context *lp_ctx;
-	enum sid_generator sid_generator;
+	struct ldb_context *ldb = ldb_module_get_ctx(ac->module);
 	int ret;
-	struct ldb_control *rodc_control;
-	struct dom_sid *sid;
-
-	ldb = ldb_module_get_ctx(ac->module);
 
 	/* Add informations for the different account types */
 	if (strcmp(ac->type, "user") == 0) {
-		ret = samdb_find_or_add_attribute(ldb, ac->msg,
-			"userAccountControl", "546");
+		struct ldb_control *rodc_control = ldb_request_get_control(ac->req,
+									   LDB_CONTROL_RODC_DCPROMO_OID);
+		if (rodc_control != NULL) {
+			/* see [MS-ADTS] 3.1.1.3.4.1.23 LDAP_SERVER_RODC_DCPROMO_OID */
+			rodc_control->critical = false;
+			ret = samldb_add_step(ac, samldb_rodc_add);
+			if (ret != LDB_SUCCESS) return ret;
+		}
+
+		/* check if we have a valid sAMAccountName */
+		ret = samldb_add_step(ac, samldb_check_sAMAccountName);
 		if (ret != LDB_SUCCESS) return ret;
-		ret = samdb_find_or_add_attribute(ldb, ac->msg,
-			"badPwdCount", "0");
+
+		ret = samldb_add_step(ac, samldb_add_entry);
 		if (ret != LDB_SUCCESS) return ret;
-		ret = samdb_find_or_add_attribute(ldb, ac->msg,
-			"codePage", "0");
-		if (ret != LDB_SUCCESS) return ret;
-		ret = samdb_find_or_add_attribute(ldb, ac->msg,
-			"countryCode", "0");
-		if (ret != LDB_SUCCESS) return ret;
-		ret = samdb_find_or_add_attribute(ldb, ac->msg,
-			"badPasswordTime", "0");
-		if (ret != LDB_SUCCESS) return ret;
-		ret = samdb_find_or_add_attribute(ldb, ac->msg,
-			"lastLogoff", "0");
-		if (ret != LDB_SUCCESS) return ret;
-		ret = samdb_find_or_add_attribute(ldb, ac->msg,
-			"lastLogon", "0");
-		if (ret != LDB_SUCCESS) return ret;
-		ret = samdb_find_or_add_attribute(ldb, ac->msg,
-			"pwdLastSet", "0");
-		if (ret != LDB_SUCCESS) return ret;
-		ret = samdb_find_or_add_attribute(ldb, ac->msg,
-			"accountExpires", "9223372036854775807");
-		if (ret != LDB_SUCCESS) return ret;
-		ret = samdb_find_or_add_attribute(ldb, ac->msg,
-			"logonCount", "0");
-		if (ret != LDB_SUCCESS) return ret;
+
 	} else if (strcmp(ac->type, "group") == 0) {
-		ret = samdb_find_or_add_attribute(ldb, ac->msg,
-			"groupType", "-2147483646");
+		/* check if we have a valid sAMAccountName */
+		ret = samldb_add_step(ac, samldb_check_sAMAccountName);
 		if (ret != LDB_SUCCESS) return ret;
+
+		ret = samldb_add_step(ac, samldb_add_entry);
+		if (ret != LDB_SUCCESS) return ret;
+
 	} else if (strcmp(ac->type, "classSchema") == 0) {
 		const struct ldb_val *rdn_value, *def_obj_cat_val;
 
@@ -674,7 +602,6 @@ static int samldb_fill_object(struct samldb_ctx *ac)
 					       ldb_dn_get_linearized(ac->msg->dn));
 			return LDB_ERR_UNWILLING_TO_PERFORM;
 		}
-
 
 		rdn_value = ldb_dn_get_rdn_val(ac->msg->dn);
 		if (!ldb_msg_find_element(ac->msg, "lDAPDisplayName")) {
@@ -738,7 +665,6 @@ static int samldb_fill_object(struct samldb_ctx *ac)
 		ret = samldb_add_step(ac, samldb_find_for_defaultObjectCategory);
 		if (ret != LDB_SUCCESS) return ret;
 
-		return samldb_first_step(ac);
 	} else if (strcmp(ac->type, "attributeSchema") == 0) {
 		const struct ldb_val *rdn_value;
 		rdn_value = ldb_dn_get_rdn_val(ac->msg->dn);
@@ -783,58 +709,11 @@ static int samldb_fill_object(struct samldb_ctx *ac)
 		ret = samldb_add_step(ac, samldb_add_entry);
 		if (ret != LDB_SUCCESS) return ret;
 
-		return samldb_first_step(ac);
 	} else {
 		ldb_asprintf_errstring(ldb,
 			"Invalid entry type!");
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-
-	rodc_control = ldb_request_get_control(ac->req, LDB_CONTROL_RODC_DCPROMO_OID);
-	if (rodc_control) {
-		/* see [MS-ADTS] 3.1.1.3.4.1.23 LDAP_SERVER_RODC_DCPROMO_OID */
-		rodc_control->critical = false;
-		ret = samldb_add_step(ac, samldb_rodc_add);
-		if (ret != LDB_SUCCESS) return ret;
-	}
-
-	/* check if we have a valid sAMAccountName */
-	ret = samldb_add_step(ac, samldb_check_sAMAccountName);
-	if (ret != LDB_SUCCESS) return ret;
-
-	/* check account_type/group_type */
-	ret = samldb_add_step(ac, samldb_check_sAMAccountType);
-	if (ret != LDB_SUCCESS) return ret;
-
-	/* check if we have a valid primary group ID */
-	if (strcmp(ac->type, "user") == 0) {
-		ret = samldb_add_step(ac, samldb_check_primaryGroupID);
-		if (ret != LDB_SUCCESS) return ret;
-	}
-
-	lp_ctx = talloc_get_type(ldb_get_opaque(ldb, "loadparm"),
-		 struct loadparm_context);
-
-	/* don't allow objectSid to be specified without the RELAX control */
-	sid = samdb_result_dom_sid(ac, ac->msg, "objectSid");
-	if (sid && !ldb_request_get_control(ac->req, LDB_CONTROL_RELAX_OID) &&
-	    !dsdb_module_am_system(ac->module)) {
-		ldb_asprintf_errstring(ldb, "No SID may be specified in user/group creation for %s",
-				       ldb_dn_get_linearized(ac->msg->dn));
-		return LDB_ERR_UNWILLING_TO_PERFORM;
-	}
-
-	if (sid == NULL) {
-		sid_generator = lpcfg_sid_generator(lp_ctx);
-		if (sid_generator == SID_GENERATOR_INTERNAL) {
-			ret = samldb_add_step(ac, samldb_allocate_sid);
-			if (ret != LDB_SUCCESS) return ret;
-		}
-	}
-
-	/* finally proceed with adding the entry */
-	ret = samldb_add_step(ac, samldb_add_entry);
-	if (ret != LDB_SUCCESS) return ret;
 
 	return samldb_first_step(ac);
 }
@@ -1280,12 +1159,24 @@ static int samldb_add(struct ldb_module *module, struct ldb_request *req)
 	if (samdb_find_attribute(ldb, ac->msg,
 				 "objectclass", "user") != NULL) {
 		ac->type = "user";
+
+		ret = samldb_objectclass_trigger(ac);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+
 		return samldb_fill_object(ac);
 	}
 
 	if (samdb_find_attribute(ldb, ac->msg,
 				 "objectclass", "group") != NULL) {
 		ac->type = "group";
+
+		ret = samldb_objectclass_trigger(ac);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+
 		return samldb_fill_object(ac);
 	}
 
