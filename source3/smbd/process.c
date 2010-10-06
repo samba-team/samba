@@ -2813,6 +2813,7 @@ static bool fork_echo_handler(struct smbd_server_connection *sconn)
 		NTSTATUS status;
 
 		close(listener_pipe[0]);
+		set_blocking(listener_pipe[1], false);
 
 		status = reinit_after_fork(smbd_messaging_context(),
 					   smbd_event_context(),
