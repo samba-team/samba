@@ -1247,10 +1247,21 @@ static int samldb_modify(struct ldb_module *module, struct ldb_request *req)
 
 	ldb = ldb_module_get_ctx(module);
 
-	if (ldb_msg_find_element(req->op.mod.message, "sAMAccountType") != NULL) {
-		ldb_asprintf_errstring(ldb,
-			"sAMAccountType must not be specified!");
+	/* make sure that "sAMAccountType" is not specified */
+	el = ldb_msg_find_element(req->op.mod.message, "sAMAccountType");
+	if (el != NULL) {
+		ldb_set_errstring(ldb,
+			"samldb: sAMAccountType must not be specified!");
 		return LDB_ERR_UNWILLING_TO_PERFORM;
+	}
+	/* make sure that "isCriticalSystemObject" is not specified */
+	el = ldb_msg_find_element(req->op.mod.message, "isCriticalSystemObject");
+	if (el != NULL) {
+		if (ldb_request_get_control(req, LDB_CONTROL_RELAX_OID) == NULL) {
+			ldb_set_errstring(ldb,
+				"samldb: isCriticalSystemObject must not be specified!");
+			return LDB_ERR_UNWILLING_TO_PERFORM;
+		}
 	}
 
 	/* msDS-IntId is not allowed to be modified
