@@ -379,6 +379,45 @@ class BasicTests(unittest.TestCase):
         self.delete_force(self.ldb, "cn=ldaptestobject," + self.base_dn)
         self.delete_force(self.ldb, "cn=testsecret,cn=system," + self.base_dn)
 
+        try:
+            self.ldb.add({
+                "dn": "cn=ldaptestcontainer," + self.base_dn,
+                "objectclass": "container",
+                "isCriticalSystemObject": "TRUE"})
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
+
+        self.ldb.add({
+            "dn": "cn=ldaptestcontainer," + self.base_dn,
+            "objectclass": "container"})
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestcontainer," + self.base_dn)
+        m["isCriticalSystemObject"] = MessageElement("TRUE", FLAG_MOD_REPLACE,
+          "isCriticalSystemObject")
+        try:
+            ldb.modify(m)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
+
+        self.delete_force(self.ldb, "cn=ldaptestcontainer," + self.base_dn)
+
+        # Proof if DC SAM object has "isCriticalSystemObject" set
+        res = self.ldb.search("", scope=SCOPE_BASE, attrs=["serverName"])
+        self.assertTrue(len(res) == 1)
+        self.assertTrue("serverName" in res[0])
+        res = self.ldb.search(res[0]["serverName"][0], scope=SCOPE_BASE,
+                              attrs=["serverReference"])
+        self.assertTrue(len(res) == 1)
+        self.assertTrue("serverReference" in res[0])
+        res = self.ldb.search(res[0]["serverReference"][0], scope=SCOPE_BASE,
+                              attrs=["isCriticalSystemObject"])
+        self.assertTrue(len(res) == 1)
+        self.assertTrue("isCriticalSystemObject" in res[0])
+        self.assertEquals(res[0]["isCriticalSystemObject"][0], "TRUE")
+
     def test_invalid_parent(self):
         """Test adding an object with invalid parent"""
         print "Test adding an object with invalid parent"""
