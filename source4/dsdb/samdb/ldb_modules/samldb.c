@@ -612,7 +612,7 @@ static bool check_rodc_critical_attribute(struct ldb_message *msg)
 }
 
 
-static int samldb_fill_object(struct samldb_ctx *ac, const char *type)
+static int samldb_fill_object(struct samldb_ctx *ac)
 {
 	struct ldb_context *ldb;
 	struct loadparm_context *lp_ctx;
@@ -624,7 +624,6 @@ static int samldb_fill_object(struct samldb_ctx *ac, const char *type)
 	ldb = ldb_module_get_ctx(ac->module);
 
 	/* Add informations for the different account types */
-	ac->type = type;
 	if (strcmp(ac->type, "user") == 0) {
 		ret = samdb_find_or_add_attribute(ldb, ac->msg,
 			"userAccountControl", "546");
@@ -1103,12 +1102,14 @@ static int samldb_add(struct ldb_module *module, struct ldb_request *req)
 
 	if (samdb_find_attribute(ldb, ac->msg,
 				 "objectclass", "user") != NULL) {
-		return samldb_fill_object(ac, "user");
+		ac->type = "user";
+		return samldb_fill_object(ac);
 	}
 
 	if (samdb_find_attribute(ldb, ac->msg,
 				 "objectclass", "group") != NULL) {
-		return samldb_fill_object(ac, "group");
+		ac->type = "group";
+		return samldb_fill_object(ac);
 	}
 
 	/* perhaps a foreignSecurityPrincipal? */
@@ -1126,7 +1127,8 @@ static int samldb_add(struct ldb_module *module, struct ldb_request *req)
 			return ret;
 		}
 
-		return samldb_fill_object(ac, "classSchema");
+		ac->type = "classSchema";
+		return samldb_fill_object(ac);
 	}
 
 	if (samdb_find_attribute(ldb, ac->msg,
@@ -1137,7 +1139,8 @@ static int samldb_add(struct ldb_module *module, struct ldb_request *req)
 			return ret;
 		}
 
-		return samldb_fill_object(ac, "attributeSchema");
+		ac->type = "attributeSchema";
+		return samldb_fill_object(ac);
 	}
 
 	talloc_free(ac);
