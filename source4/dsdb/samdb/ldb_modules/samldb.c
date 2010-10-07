@@ -899,6 +899,16 @@ static int samldb_objectclass_trigger(struct samldb_ctx *ac)
 
 			group_type = strtoul((const char *)el->values[0].data,
 					     NULL, 0);
+
+			/* The creation of builtin groups requires the
+			 * RELAX control */
+			if (group_type == GTYPE_SECURITY_BUILTIN_LOCAL_GROUP) {
+				if (ldb_request_get_control(ac->req,
+							    LDB_CONTROL_RELAX_OID) == NULL) {
+					return LDB_ERR_UNWILLING_TO_PERFORM;
+				}
+			}
+
 			account_type = ds_gtype2atype(group_type);
 			if (account_type == 0) {
 				ldb_set_errstring(ldb, "samldb: Unrecognized account type!");
@@ -1288,11 +1298,53 @@ static int samldb_modify(struct ldb_module *module, struct ldb_request *req)
 
 	el = ldb_msg_find_element(ac->msg, "groupType");
 	if (el && (LDB_FLAG_MOD_TYPE(el->flags) == LDB_FLAG_MOD_REPLACE) && el->num_values == 1) {
-		uint32_t group_type;
+		uint32_t group_type, old_group_type;
 
 		modified = true;
 
 		group_type = strtoul((const char *)el->values[0].data, NULL, 0);
+		old_group_type = samdb_search_uint(ldb, ac, 0, ac->msg->dn,
+						   "groupType", NULL);
+		if (old_group_type == 0) {
+			return ldb_operr(ldb);
+		}
+
+		/* Group type switching isn't so easy as it seems: We can only
+		 * change in this directions: global <-> universal <-> local
+		 * On each step also the group type itself
+		 * (security/distribution) is variable. */
+
+		switch (group_type) {
+		case GTYPE_SECURITY_GLOBAL_GROUP:
+		case GTYPE_DISTRIBUTION_GLOBAL_GROUP:
+			/* change to "universal" allowed */
+			if ((old_group_type == GTYPE_SECURITY_DOMAIN_LOCAL_GROUP) ||
+			    (old_group_type == GTYPE_DISTRIBUTION_DOMAIN_LOCAL_GROUP)) {
+				return LDB_ERR_UNWILLING_TO_PERFORM;
+			}
+		break;
+
+		case GTYPE_SECURITY_UNIVERSAL_GROUP:
+		case GTYPE_DISTRIBUTION_UNIVERSAL_GROUP:
+			/* each change allowed */
+		break;
+
+		case GTYPE_SECURITY_DOMAIN_LOCAL_GROUP:
+		case GTYPE_DISTRIBUTION_DOMAIN_LOCAL_GROUP:
+			/* change to "universal" allowed */
+			if ((old_group_type == GTYPE_SECURITY_GLOBAL_GROUP) ||
+			    (old_group_type == GTYPE_DISTRIBUTION_GLOBAL_GROUP)) {
+				return LDB_ERR_UNWILLING_TO_PERFORM;
+			}
+		break;
+
+		case GTYPE_SECURITY_BUILTIN_LOCAL_GROUP:
+		default:
+			/* we don't allow this "groupType" values */
+			return LDB_ERR_UNWILLING_TO_PERFORM;
+		break;
+		}
+
 		account_type =  ds_gtype2atype(group_type);
 		ret = samdb_msg_add_uint(ldb, ac->msg, ac->msg,
 					 "sAMAccountType",
