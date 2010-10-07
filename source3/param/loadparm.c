@@ -5326,7 +5326,7 @@ static void init_globals(bool reinit_globals)
 	Globals.bWinbindTrustedDomainsOnly = False;
 	Globals.bWinbindNestedGroups = True;
 	Globals.winbind_expand_groups = 1;
-	Globals.szWinbindNssInfo = str_list_make_v3(talloc_autofree_context(), "template", NULL);
+	Globals.szWinbindNssInfo = str_list_make_v3(NULL, "template", NULL);
 	Globals.bWinbindRefreshTickets = False;
 	Globals.bWinbindOfflineLogon = False;
 
@@ -6109,7 +6109,7 @@ const char **lp_parm_string_list(int snum, const char *type, const char *option,
 		return (const char **)def;
 
 	if (data->list==NULL) {
-		data->list = str_list_make_v3(talloc_autofree_context(), data->value, NULL);
+		data->list = str_list_make_v3(NULL, data->value, NULL);
 	}
 
 	return (const char **)data->list;
@@ -7420,7 +7420,7 @@ static bool handle_netbios_scope(int snum, const char *pszParmValue, char **ptr)
 static bool handle_netbios_aliases(int snum, const char *pszParmValue, char **ptr)
 {
 	TALLOC_FREE(Globals.szNetbiosAliases);
-	Globals.szNetbiosAliases = str_list_make_v3(talloc_autofree_context(), pszParmValue, NULL);
+	Globals.szNetbiosAliases = str_list_make_v3(NULL, pszParmValue, NULL);
 	return set_netbios_aliases((const char **)Globals.szNetbiosAliases);
 }
 
@@ -7718,8 +7718,7 @@ static void init_copymap(struct service *pservice)
 
 	TALLOC_FREE(pservice->copymap);
 
-	pservice->copymap = bitmap_talloc(talloc_autofree_context(),
-					  NUMPARAMETERS);
+	pservice->copymap = bitmap_talloc(NULL, NUMPARAMETERS);
 	if (!pservice->copymap)
 		DEBUG(0,
 		      ("Couldn't allocate copymap!! (size %d)\n",
@@ -7853,7 +7852,7 @@ bool lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 		case P_LIST:
 			TALLOC_FREE(*((char ***)parm_ptr));
 			*(char ***)parm_ptr = str_list_make_v3(
-				talloc_autofree_context(), pszParmValue, NULL);
+				NULL, pszParmValue, NULL);
 			break;
 
 		case P_STRING:
