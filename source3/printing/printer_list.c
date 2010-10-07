@@ -35,7 +35,7 @@ static struct db_context *get_printer_list_db(void)
 	if (db != NULL) {
 		return db;
 	}
-	db = db_open(talloc_autofree_context(), PL_DB_NAME(), 0,
+	db = db_open(NULL, PL_DB_NAME(), 0,
 		     TDB_DEFAULT|TDB_CLEAR_IF_FIRST|TDB_INCOMPATIBLE_HASH,
 		     O_RDWR|O_CREAT, 0644);
 	return db;
