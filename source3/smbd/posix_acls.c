@@ -3822,7 +3822,7 @@ NTSTATUS append_parent_acl(files_struct *fsp,
  This should be the only external function needed for the UNIX style set ACL.
 ****************************************************************************/
 
-NTSTATUS set_nt_acl(files_struct *fsp, uint32 security_info_sent, const SEC_DESC *psd)
+NTSTATUS set_nt_acl(files_struct *fsp, uint32 security_info_sent, const SEC_DESC *psd_orig)
 {
 	connection_struct *conn = fsp->conn;
 	uid_t user = (uid_t)-1;
@@ -3837,6 +3837,7 @@ NTSTATUS set_nt_acl(files_struct *fsp, uint32 security_info_sent, const SEC_DESC
 	bool set_acl_as_root = false;
 	bool acl_set_support = false;
 	bool ret = false;
+	SEC_DESC *psd = NULL;
 
 	DEBUG(10,("set_nt_acl: called for file %s\n",
 		  fsp_str_dbg(fsp)));
@@ -3844,6 +3845,15 @@ NTSTATUS set_nt_acl(files_struct *fsp, uint32 security_info_sent, const SEC_DESC
 	if (!CAN_WRITE(conn)) {
 		DEBUG(10,("set acl rejected on read-only share\n"));
 		return NT_STATUS_MEDIA_WRITE_PROTECTED;
+	}
+
+	if (!psd_orig) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	psd = dup_sec_desc(talloc_tos(), psd_orig);
+	if (!psd) {
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	/*
