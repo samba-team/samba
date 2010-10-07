@@ -2168,7 +2168,9 @@ static NTSTATUS dcesrv_samr_QueryGroupMember(struct dcesrv_call_state *dce_call,
 			return status;
 		}
 
-		array->types[array->count] = 7; /* RID type of some kind, not sure what the value means. */
+		array->types[array->count] = SE_GROUP_MANDATORY |
+					     SE_GROUP_ENABLED_BY_DEFAULT |
+					     SE_GROUP_ENABLED;
 		array->count++;
 	}
 
