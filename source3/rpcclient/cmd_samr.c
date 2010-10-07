@@ -721,7 +721,7 @@ static NTSTATUS cmd_samr_query_groupmem(struct rpc_pipe_client *cli,
 	uint32 access_mask = MAXIMUM_ALLOWED_ACCESS;
 	int i;
 	unsigned int old_timeout;
-	struct samr_RidTypeArray *rids = NULL;
+	struct samr_RidAttrArray *rids = NULL;
 
 	if ((argc < 2) || (argc > 3)) {
 		printf("Usage: %s rid [access mask]\n", argv[0]);
@@ -773,7 +773,7 @@ static NTSTATUS cmd_samr_query_groupmem(struct rpc_pipe_client *cli,
 
 	for (i = 0; i < rids->count; i++) {
 		printf("\trid:[0x%x] attr:[0x%x]\n", rids->rids[i],
-		       rids->types[i]);
+		       rids->attributes[i]);
 	}
 
 	rpccli_samr_Close(cli, mem_ctx, &group_pol);

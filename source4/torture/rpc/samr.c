@@ -5616,7 +5616,7 @@ static bool test_QueryGroupMember(struct dcerpc_binding_handle *b,
 				  struct policy_handle *handle)
 {
 	struct samr_QueryGroupMember r;
-	struct samr_RidTypeArray *rids = NULL;
+	struct samr_RidAttrArray *rids = NULL;
 	bool ret = true;
 
 	torture_comment(tctx, "Testing QueryGroupMember\n");
@@ -7010,7 +7010,7 @@ static bool test_AddGroupMember(struct dcerpc_binding_handle *b,
 	struct samr_AddGroupMember r;
 	struct samr_DeleteGroupMember d;
 	struct samr_QueryGroupMember q;
-	struct samr_RidTypeArray *rids = NULL;
+	struct samr_RidAttrArray *rids = NULL;
 	struct samr_SetMemberAttributesOfGroup s;
 	uint32_t rid;
 	bool found_member = false;

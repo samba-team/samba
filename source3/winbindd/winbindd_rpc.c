@@ -692,7 +692,7 @@ NTSTATUS rpc_lookup_groupmem(TALLOC_CTX *mem_ctx,
 	switch(type) {
 	case SID_NAME_DOM_GRP:
 	{
-		struct samr_RidTypeArray *rids = NULL;
+		struct samr_RidAttrArray *rids = NULL;
 
 		status = rpccli_samr_OpenGroup(samr_pipe,
 					       mem_ctx,
