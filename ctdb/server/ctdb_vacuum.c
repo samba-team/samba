@@ -578,7 +578,7 @@ static int update_tuning_db(struct ctdb_db_context *ctdb_db, struct vacuum_data 
 		}
 		tdata.last_interval = tdata.new_interval;
 	} else {
-		DEBUG(DEBUG_ERR,(__location__ " Cannot find tunedb record for %s. Using default interval\n", ctdb_db->db_name));
+		DEBUG(DEBUG_DEBUG,(__location__ " Cannot find tunedb record for %s. Using default interval\n", ctdb_db->db_name));
 		tdata.last_num_repack = freelist;
 		tdata.last_num_empty = vdata->delete_count;
 		tdata.last_interval = ctdb_db->ctdb->tunable.vacuum_default_interval;
