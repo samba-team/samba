@@ -926,7 +926,8 @@ bool init_oplocks(struct messaging_context *msg_ctx)
 #elif HAVE_KERNEL_OPLOCKS_LINUX
 		koplocks = linux_init_kernel_oplocks(NULL);
 #elif HAVE_ONEFS
-		koplocks = onefs_init_kernel_oplocks(talloc_autofree_context());
+#error Isilon, please check if the NULL context is okay here. Thanks!
+		koplocks = onefs_init_kernel_oplocks(NULL);
 #endif
 	}
 
