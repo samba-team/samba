@@ -10,6 +10,7 @@ Major enhancements in Samba 3.5.6 include:
 
   o Fix smbd panic on invalid NetBIOS session request (bug #7698).
   o Fix smbd crash caused by "%D" in "printer admin" (bug #7541).
+  o Fix crash bug with invalid SPNEGO token (bug #7694).
   o Fix Winbind internal error (bug #7636).
 
 
@@ -32,6 +33,7 @@ o   Jeremy Allison <jra@samba.org>
     * BUG 7651: Fix mknod and mkfifo failing with "No such file or
       directory".
     * BUG 7693: Fix smbd changing mode of files on rename.
+    * BUG 7694: Fix crash bug with invalid SPNEGO token.
     * BUG 7698: Fix smbd panic on invalid NetBIOS session request.
 
 
@@ -57,6 +59,7 @@ o   Volker Lendecke <vl@samba.org>
     * BUG 7684: Fix fd leak in libwbclient.so.
     * BUG 7688: Fix crash bug in rpcclient.
     * BUG 7470: Standardize S_IREAD and S_IWRITE.
+    * BUG 7715: Fix file corruption when setting Samba "write wache wize".
 
 
 o   Jim McDonough <jmcd@samba.org>
