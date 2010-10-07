@@ -4462,50 +4462,6 @@ static int control_wipedb(struct ctdb_context *ctdb, int argc,
 }
 
 /*
- * set flags of a node in the nodemap
- */
-static int control_setflags(struct ctdb_context *ctdb, int argc, const char **argv)
-{
-	int ret;
-	int32_t status;
-	int node;
-	int flags;
-	TDB_DATA data;
-	struct ctdb_node_flag_change c;
-
-	if (argc != 2) {
-		usage();
-		return -1;
-	}
-
-	if (sscanf(argv[0], "%d", &node) != 1) {
-		DEBUG(DEBUG_ERR, ("Badly formed node\n"));
-		usage();
-		return -1;
-	}
-	if (sscanf(argv[1], "0x%x", &flags) != 1) {
-		DEBUG(DEBUG_ERR, ("Badly formed flags\n"));
-		usage();
-		return -1;
-	}
-
-	c.pnn       = node;
-	c.old_flags = 0;
-	c.new_flags = flags;
-
-	data.dsize = sizeof(c);
-	data.dptr = (unsigned char *)&c;
-
-	ret = ctdb_control(ctdb, options.pnn, 0, CTDB_CONTROL_MODIFY_FLAGS, 0, 
-			   data, NULL, NULL, &status, NULL, NULL);
-	if (ret != 0 || status != 0) {
-		DEBUG(DEBUG_ERR,("Failed to modify flags\n"));
-		return -1;
-	}
-	return 0;
-}
-
-/*
   dump memory usage
  */
 static int control_dumpmemory(struct ctdb_context *ctdb, int argc, const char **argv)
@@ -4803,7 +4759,6 @@ static const struct {
 	{ "dumpdbbackup",    control_dumpdbbackup,      false,	true,  "dump database backup from a file.", "<file>"},
 	{ "wipedb",           control_wipedb,        false,	false, "wipe the contents of a database.", "<dbname>"},
 	{ "recmaster",        control_recmaster,        false,	false, "show the pnn for the recovery master."},
-	{ "setflags",        control_setflags,          false,	false, "set flags for a node in the nodemap.", "<node> <flags>"},
 	{ "scriptstatus",    control_scriptstatus,  false,	false, "show the status of the monitoring scripts (or all scripts)", "[all]"},
 	{ "enablescript",     control_enablescript,  false,	false, "enable an eventscript", "<script>"},
 	{ "disablescript",    control_disablescript,  false,	false, "disable an eventscript", "<script>"},
