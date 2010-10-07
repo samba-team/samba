@@ -31,6 +31,13 @@ from samba.dsdb import (UF_NORMAL_ACCOUNT, UF_INTERDOMAIN_TRUST_ACCOUNT,
     UF_WORKSTATION_TRUST_ACCOUNT, UF_SERVER_TRUST_ACCOUNT,
     UF_PARTIAL_SECRETS_ACCOUNT,
     UF_PASSWD_NOTREQD, UF_ACCOUNTDISABLE, ATYPE_NORMAL_ACCOUNT,
+    GTYPE_SECURITY_BUILTIN_LOCAL_GROUP, GTYPE_SECURITY_DOMAIN_LOCAL_GROUP,
+    GTYPE_SECURITY_GLOBAL_GROUP, GTYPE_SECURITY_UNIVERSAL_GROUP,
+    GTYPE_DISTRIBUTION_DOMAIN_LOCAL_GROUP, GTYPE_DISTRIBUTION_GLOBAL_GROUP,
+    GTYPE_DISTRIBUTION_UNIVERSAL_GROUP,
+    ATYPE_SECURITY_GLOBAL_GROUP, ATYPE_SECURITY_UNIVERSAL_GROUP,
+    ATYPE_SECURITY_LOCAL_GROUP, ATYPE_DISTRIBUTION_GLOBAL_GROUP,
+    ATYPE_DISTRIBUTION_UNIVERSAL_GROUP, ATYPE_DISTRIBUTION_LOCAL_GROUP,
     ATYPE_WORKSTATION_TRUST, SYSTEM_FLAG_DOMAIN_DISALLOW_MOVE,
     SYSTEM_FLAG_CONFIG_ALLOW_RENAME, SYSTEM_FLAG_CONFIG_ALLOW_MOVE,
     SYSTEM_FLAG_CONFIG_ALLOW_LIMITED_MOVE)
@@ -642,6 +649,594 @@ class SamTests(unittest.TestCase):
         self.assertTrue(users_group_found)
 
         self.delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+
+    def test_groupType(self):
+        """Test the groupType behaviour"""
+        print "Testing groupType behaviour\n"
+
+        # You can never create or change to a
+        # "GTYPE_SECURITY_BUILTIN_LOCAL_GROUP"
+
+        # Add operation
+
+        # Invalid attribute
+        try:
+            ldb.add({
+                "dn": "cn=ldaptestgroup,cn=users," + self.base_dn,
+                "objectclass": "group",
+                "groupType": "0"})
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
+        self.delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+
+        try:
+            ldb.add({
+                "dn": "cn=ldaptestgroup,cn=users," + self.base_dn,
+                "objectclass": "group",
+                "groupType": str(GTYPE_SECURITY_BUILTIN_LOCAL_GROUP)})
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
+        self.delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+
+        ldb.add({
+            "dn": "cn=ldaptestgroup,cn=users," + self.base_dn,
+            "objectclass": "group",
+            "groupType": str(GTYPE_SECURITY_GLOBAL_GROUP)})
+
+        res1 = ldb.search("cn=ldaptestgroup,cn=users," + self.base_dn,
+                          scope=SCOPE_BASE, attrs=["sAMAccountType"])
+        self.assertTrue(len(res1) == 1)
+        self.assertEquals(int(res1[0]["sAMAccountType"][0]),
+          ATYPE_SECURITY_GLOBAL_GROUP)
+        self.delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+
+        ldb.add({
+            "dn": "cn=ldaptestgroup,cn=users," + self.base_dn,
+            "objectclass": "group",
+            "groupType": str(GTYPE_SECURITY_UNIVERSAL_GROUP)})
+
+        res1 = ldb.search("cn=ldaptestgroup,cn=users," + self.base_dn,
+                          scope=SCOPE_BASE, attrs=["sAMAccountType"])
+        self.assertTrue(len(res1) == 1)
+        self.assertEquals(int(res1[0]["sAMAccountType"][0]),
+          ATYPE_SECURITY_UNIVERSAL_GROUP)
+        self.delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+
+        ldb.add({
+            "dn": "cn=ldaptestgroup,cn=users," + self.base_dn,
+            "objectclass": "group",
+            "groupType": str(GTYPE_SECURITY_DOMAIN_LOCAL_GROUP)})
+
+        res1 = ldb.search("cn=ldaptestgroup,cn=users," + self.base_dn,
+                          scope=SCOPE_BASE, attrs=["sAMAccountType"])
+        self.assertTrue(len(res1) == 1)
+        self.assertEquals(int(res1[0]["sAMAccountType"][0]),
+          ATYPE_SECURITY_LOCAL_GROUP)
+        self.delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+
+        ldb.add({
+            "dn": "cn=ldaptestgroup,cn=users," + self.base_dn,
+            "objectclass": "group",
+            "groupType": str(GTYPE_DISTRIBUTION_GLOBAL_GROUP)})
+
+        res1 = ldb.search("cn=ldaptestgroup,cn=users," + self.base_dn,
+                          scope=SCOPE_BASE, attrs=["sAMAccountType"])
+        self.assertTrue(len(res1) == 1)
+        self.assertEquals(int(res1[0]["sAMAccountType"][0]),
+          ATYPE_DISTRIBUTION_GLOBAL_GROUP)
+        self.delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+
+        ldb.add({
+            "dn": "cn=ldaptestgroup,cn=users," + self.base_dn,
+            "objectclass": "group",
+            "groupType": str(GTYPE_DISTRIBUTION_UNIVERSAL_GROUP)})
+
+        res1 = ldb.search("cn=ldaptestgroup,cn=users," + self.base_dn,
+                          scope=SCOPE_BASE, attrs=["sAMAccountType"])
+        self.assertTrue(len(res1) == 1)
+        self.assertEquals(int(res1[0]["sAMAccountType"][0]),
+          ATYPE_DISTRIBUTION_UNIVERSAL_GROUP)
+        self.delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+
+        ldb.add({
+            "dn": "cn=ldaptestgroup,cn=users," + self.base_dn,
+            "objectclass": "group",
+            "groupType": str(GTYPE_DISTRIBUTION_DOMAIN_LOCAL_GROUP)})
+
+        res1 = ldb.search("cn=ldaptestgroup,cn=users," + self.base_dn,
+                          scope=SCOPE_BASE, attrs=["sAMAccountType"])
+        self.assertTrue(len(res1) == 1)
+        self.assertEquals(int(res1[0]["sAMAccountType"][0]),
+          ATYPE_DISTRIBUTION_LOCAL_GROUP)
+        self.delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+
+        # Modify operation
+
+        ldb.add({
+            "dn": "cn=ldaptestgroup,cn=users," + self.base_dn,
+            "objectclass": "group"})
+
+        # We can change in this direction: global <-> universal <-> local
+        # On each step also the group type itself (security/distribution) is
+        # variable.
+
+        # After creation we should have a "security global group"
+        res1 = ldb.search("cn=ldaptestgroup,cn=users," + self.base_dn,
+                          scope=SCOPE_BASE, attrs=["sAMAccountType"])
+        self.assertTrue(len(res1) == 1)
+        self.assertEquals(int(res1[0]["sAMAccountType"][0]),
+          ATYPE_SECURITY_GLOBAL_GROUP)
+
+        # Invalid attribute
+        try:
+            m = Message()
+            m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+            m["groupType"] = MessageElement("0",
+              FLAG_MOD_REPLACE, "groupType")
+            ldb.modify(m)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
+
+        # Security groups
+
+        # Default is "global group"
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+        m["groupType"] = MessageElement(
+          str(GTYPE_SECURITY_GLOBAL_GROUP),
+          FLAG_MOD_REPLACE, "groupType")
+        ldb.modify(m)
+
+        res1 = ldb.search("cn=ldaptestgroup,cn=users," + self.base_dn,
+                          scope=SCOPE_BASE, attrs=["sAMAccountType"])
+        self.assertTrue(len(res1) == 1)
+        self.assertEquals(int(res1[0]["sAMAccountType"][0]),
+          ATYPE_SECURITY_GLOBAL_GROUP)
+
+        # Change to "local" (shouldn't work)
+
+        try:
+            m = Message()
+            m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+            m["groupType"] = MessageElement(
+              str(GTYPE_SECURITY_DOMAIN_LOCAL_GROUP),
+              FLAG_MOD_REPLACE, "groupType")
+            ldb.modify(m)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
+
+        # Change to "universal"
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+        m["groupType"] = MessageElement(
+         str(GTYPE_SECURITY_UNIVERSAL_GROUP),
+          FLAG_MOD_REPLACE, "groupType")
+        ldb.modify(m)
+
+        res1 = ldb.search("cn=ldaptestgroup,cn=users," + self.base_dn,
+                          scope=SCOPE_BASE, attrs=["sAMAccountType"])
+        self.assertTrue(len(res1) == 1)
+        self.assertEquals(int(res1[0]["sAMAccountType"][0]),
+          ATYPE_SECURITY_UNIVERSAL_GROUP)
+
+        # Change back to "global"
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+        m["groupType"] = MessageElement(
+          str(GTYPE_SECURITY_GLOBAL_GROUP),
+          FLAG_MOD_REPLACE, "groupType")
+        ldb.modify(m)
+
+        res1 = ldb.search("cn=ldaptestgroup,cn=users," + self.base_dn,
+                          scope=SCOPE_BASE, attrs=["sAMAccountType"])
+        self.assertTrue(len(res1) == 1)
+        self.assertEquals(int(res1[0]["sAMAccountType"][0]),
+          ATYPE_SECURITY_GLOBAL_GROUP)
+
+        # Change back to "universal"
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+        m["groupType"] = MessageElement(
+         str(GTYPE_SECURITY_UNIVERSAL_GROUP),
+          FLAG_MOD_REPLACE, "groupType")
+        ldb.modify(m)
+
+        res1 = ldb.search("cn=ldaptestgroup,cn=users," + self.base_dn,
+                          scope=SCOPE_BASE, attrs=["sAMAccountType"])
+        self.assertTrue(len(res1) == 1)
+        self.assertEquals(int(res1[0]["sAMAccountType"][0]),
+          ATYPE_SECURITY_UNIVERSAL_GROUP)
+
+        # Change to "local"
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+        m["groupType"] = MessageElement(
+          str(GTYPE_SECURITY_DOMAIN_LOCAL_GROUP),
+          FLAG_MOD_REPLACE, "groupType")
+        ldb.modify(m)
+
+        res1 = ldb.search("cn=ldaptestgroup,cn=users," + self.base_dn,
+                          scope=SCOPE_BASE, attrs=["sAMAccountType"])
+        self.assertTrue(len(res1) == 1)
+        self.assertEquals(int(res1[0]["sAMAccountType"][0]),
+          ATYPE_SECURITY_LOCAL_GROUP)
+
+        # Change to "global" (shouldn't work)
+
+        try:
+            m = Message()
+            m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+            m["groupType"] = MessageElement(
+              str(GTYPE_SECURITY_GLOBAL_GROUP),
+              FLAG_MOD_REPLACE, "groupType")
+            ldb.modify(m)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
+
+        # Change to "builtin local" (shouldn't work)
+
+        try:
+            m = Message()
+            m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+            m["groupType"] = MessageElement(
+              str(GTYPE_SECURITY_BUILTIN_LOCAL_GROUP),
+              FLAG_MOD_REPLACE, "groupType")
+            ldb.modify(m)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+
+        # Change back to "universal"
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+        m["groupType"] = MessageElement(
+         str(GTYPE_SECURITY_UNIVERSAL_GROUP),
+          FLAG_MOD_REPLACE, "groupType")
+        ldb.modify(m)
+
+        res1 = ldb.search("cn=ldaptestgroup,cn=users," + self.base_dn,
+                          scope=SCOPE_BASE, attrs=["sAMAccountType"])
+        self.assertTrue(len(res1) == 1)
+        self.assertEquals(int(res1[0]["sAMAccountType"][0]),
+          ATYPE_SECURITY_UNIVERSAL_GROUP)
+
+        # Change to "builtin local" (shouldn't work)
+
+        try:
+            m = Message()
+            m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+            m["groupType"] = MessageElement(
+              str(GTYPE_SECURITY_BUILTIN_LOCAL_GROUP),
+              FLAG_MOD_REPLACE, "groupType")
+            ldb.modify(m)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
+
+        # Change back to "global"
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+        m["groupType"] = MessageElement(
+          str(GTYPE_SECURITY_GLOBAL_GROUP),
+          FLAG_MOD_REPLACE, "groupType")
+        ldb.modify(m)
+
+        res1 = ldb.search("cn=ldaptestgroup,cn=users," + self.base_dn,
+                          scope=SCOPE_BASE, attrs=["sAMAccountType"])
+        self.assertTrue(len(res1) == 1)
+        self.assertEquals(int(res1[0]["sAMAccountType"][0]),
+          ATYPE_SECURITY_GLOBAL_GROUP)
+
+        # Change to "builtin local" (shouldn't work)
+
+        try:
+            m = Message()
+            m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+            m["groupType"] = MessageElement(
+              str(GTYPE_SECURITY_BUILTIN_LOCAL_GROUP),
+              FLAG_MOD_REPLACE, "groupType")
+            ldb.modify(m)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
+
+        # Distribution groups
+
+        # Default is "global group"
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+        m["groupType"] = MessageElement(
+          str(GTYPE_DISTRIBUTION_GLOBAL_GROUP),
+          FLAG_MOD_REPLACE, "groupType")
+        ldb.modify(m)
+
+        res1 = ldb.search("cn=ldaptestgroup,cn=users," + self.base_dn,
+                          scope=SCOPE_BASE, attrs=["sAMAccountType"])
+        self.assertTrue(len(res1) == 1)
+        self.assertEquals(int(res1[0]["sAMAccountType"][0]),
+          ATYPE_DISTRIBUTION_GLOBAL_GROUP)
+
+        # Change to local (shouldn't work)
+
+        try:
+            m = Message()
+            m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+            m["groupType"] = MessageElement(
+              str(GTYPE_DISTRIBUTION_DOMAIN_LOCAL_GROUP),
+              FLAG_MOD_REPLACE, "groupType")
+            ldb.modify(m)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
+
+        # Change to "universal"
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+        m["groupType"] = MessageElement(
+         str(GTYPE_DISTRIBUTION_UNIVERSAL_GROUP),
+          FLAG_MOD_REPLACE, "groupType")
+        ldb.modify(m)
+
+        res1 = ldb.search("cn=ldaptestgroup,cn=users," + self.base_dn,
+                          scope=SCOPE_BASE, attrs=["sAMAccountType"])
+        self.assertTrue(len(res1) == 1)
+        self.assertEquals(int(res1[0]["sAMAccountType"][0]),
+          ATYPE_DISTRIBUTION_UNIVERSAL_GROUP)
+
+        # Change back to "global"
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+        m["groupType"] = MessageElement(
+          str(GTYPE_DISTRIBUTION_GLOBAL_GROUP),
+          FLAG_MOD_REPLACE, "groupType")
+        ldb.modify(m)
+
+        res1 = ldb.search("cn=ldaptestgroup,cn=users," + self.base_dn,
+                          scope=SCOPE_BASE, attrs=["sAMAccountType"])
+        self.assertTrue(len(res1) == 1)
+        self.assertEquals(int(res1[0]["sAMAccountType"][0]),
+          ATYPE_DISTRIBUTION_GLOBAL_GROUP)
+
+        # Change back to "universal"
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+        m["groupType"] = MessageElement(
+         str(GTYPE_DISTRIBUTION_UNIVERSAL_GROUP),
+          FLAG_MOD_REPLACE, "groupType")
+        ldb.modify(m)
+
+        res1 = ldb.search("cn=ldaptestgroup,cn=users," + self.base_dn,
+                          scope=SCOPE_BASE, attrs=["sAMAccountType"])
+        self.assertTrue(len(res1) == 1)
+        self.assertEquals(int(res1[0]["sAMAccountType"][0]),
+          ATYPE_DISTRIBUTION_UNIVERSAL_GROUP)
+
+        # Change to "local"
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+        m["groupType"] = MessageElement(
+          str(GTYPE_DISTRIBUTION_DOMAIN_LOCAL_GROUP),
+          FLAG_MOD_REPLACE, "groupType")
+        ldb.modify(m)
+
+        res1 = ldb.search("cn=ldaptestgroup,cn=users," + self.base_dn,
+                          scope=SCOPE_BASE, attrs=["sAMAccountType"])
+        self.assertTrue(len(res1) == 1)
+        self.assertEquals(int(res1[0]["sAMAccountType"][0]),
+          ATYPE_DISTRIBUTION_LOCAL_GROUP)
+
+        # Change to "global" (shouldn't work)
+
+        try:
+            m = Message()
+            m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+            m["groupType"] = MessageElement(
+              str(GTYPE_DISTRIBUTION_GLOBAL_GROUP),
+              FLAG_MOD_REPLACE, "groupType")
+            ldb.modify(m)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
+
+        # Change back to "universal"
+
+        # Try to add invalid member to group 1 - should be denied
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+        m["member"] = MessageElement(
+          "cn=ldaptestuser3,cn=users," + self.base_dn,
+          FLAG_MOD_ADD, "member")
+        try:
+            ldb.modify(m)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_NO_SUCH_OBJECT)
+
+        # Make group 2 secondary
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+        m["groupType"] = MessageElement(
+         str(GTYPE_DISTRIBUTION_UNIVERSAL_GROUP),
+          FLAG_MOD_REPLACE, "groupType")
+        ldb.modify(m)
+
+        res1 = ldb.search("cn=ldaptestgroup,cn=users," + self.base_dn,
+                          scope=SCOPE_BASE, attrs=["sAMAccountType"])
+        self.assertTrue(len(res1) == 1)
+        self.assertEquals(int(res1[0]["sAMAccountType"][0]),
+          ATYPE_DISTRIBUTION_UNIVERSAL_GROUP)
+
+        # Change back to "global"
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+        m["groupType"] = MessageElement(
+          str(GTYPE_DISTRIBUTION_GLOBAL_GROUP),
+          FLAG_MOD_REPLACE, "groupType")
+        ldb.modify(m)
+
+        res1 = ldb.search("cn=ldaptestgroup,cn=users," + self.base_dn,
+                          scope=SCOPE_BASE, attrs=["sAMAccountType"])
+        self.assertTrue(len(res1) == 1)
+        self.assertEquals(int(res1[0]["sAMAccountType"][0]),
+          ATYPE_DISTRIBUTION_GLOBAL_GROUP)
+
+        # Both group types: this performs only random checks - all possibilities
+        # would require too much code.
+
+        # Default is "global group"
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+        m["groupType"] = MessageElement(
+          str(GTYPE_SECURITY_GLOBAL_GROUP),
+          FLAG_MOD_REPLACE, "groupType")
+        ldb.modify(m)
+
+        res1 = ldb.search("cn=ldaptestgroup,cn=users," + self.base_dn,
+                          scope=SCOPE_BASE, attrs=["sAMAccountType"])
+        self.assertTrue(len(res1) == 1)
+        self.assertEquals(int(res1[0]["sAMAccountType"][0]),
+          ATYPE_SECURITY_GLOBAL_GROUP)
+
+        # Change to "local" (shouldn't work)
+
+        try:
+            m = Message()
+            m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+            m["groupType"] = MessageElement(
+              str(GTYPE_DISTRIBUTION_DOMAIN_LOCAL_GROUP),
+              FLAG_MOD_REPLACE, "groupType")
+            ldb.modify(m)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
+
+        # Change to "universal"
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+        m["groupType"] = MessageElement(
+         str(GTYPE_DISTRIBUTION_UNIVERSAL_GROUP),
+          FLAG_MOD_REPLACE, "groupType")
+        ldb.modify(m)
+
+        res1 = ldb.search("cn=ldaptestgroup,cn=users," + self.base_dn,
+                          scope=SCOPE_BASE, attrs=["sAMAccountType"])
+        self.assertTrue(len(res1) == 1)
+        self.assertEquals(int(res1[0]["sAMAccountType"][0]),
+          ATYPE_DISTRIBUTION_UNIVERSAL_GROUP)
+
+        # Change back to "global"
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+        m["groupType"] = MessageElement(
+          str(GTYPE_SECURITY_GLOBAL_GROUP),
+          FLAG_MOD_REPLACE, "groupType")
+        ldb.modify(m)
+
+        res1 = ldb.search("cn=ldaptestgroup,cn=users," + self.base_dn,
+                          scope=SCOPE_BASE, attrs=["sAMAccountType"])
+        self.assertTrue(len(res1) == 1)
+        self.assertEquals(int(res1[0]["sAMAccountType"][0]),
+          ATYPE_SECURITY_GLOBAL_GROUP)
+
+        # Change back to "universal"
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+        m["groupType"] = MessageElement(
+         str(GTYPE_SECURITY_UNIVERSAL_GROUP),
+          FLAG_MOD_REPLACE, "groupType")
+        ldb.modify(m)
+
+        res1 = ldb.search("cn=ldaptestgroup,cn=users," + self.base_dn,
+                          scope=SCOPE_BASE, attrs=["sAMAccountType"])
+        self.assertTrue(len(res1) == 1)
+        self.assertEquals(int(res1[0]["sAMAccountType"][0]),
+          ATYPE_SECURITY_UNIVERSAL_GROUP)
+
+        # Change to "local"
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+        m["groupType"] = MessageElement(
+          str(GTYPE_DISTRIBUTION_DOMAIN_LOCAL_GROUP),
+          FLAG_MOD_REPLACE, "groupType")
+        ldb.modify(m)
+
+        res1 = ldb.search("cn=ldaptestgroup,cn=users," + self.base_dn,
+                          scope=SCOPE_BASE, attrs=["sAMAccountType"])
+        self.assertTrue(len(res1) == 1)
+        self.assertEquals(int(res1[0]["sAMAccountType"][0]),
+          ATYPE_DISTRIBUTION_LOCAL_GROUP)
+
+        # Change to "global" (shouldn't work)
+
+        try:
+            m = Message()
+            m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+            m["groupType"] = MessageElement(
+              str(GTYPE_DISTRIBUTION_GLOBAL_GROUP),
+              FLAG_MOD_REPLACE, "groupType")
+            ldb.modify(m)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
+
+        # Change back to "universal"
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+        m["groupType"] = MessageElement(
+         str(GTYPE_SECURITY_UNIVERSAL_GROUP),
+          FLAG_MOD_REPLACE, "groupType")
+        ldb.modify(m)
+
+        res1 = ldb.search("cn=ldaptestgroup,cn=users," + self.base_dn,
+                          scope=SCOPE_BASE, attrs=["sAMAccountType"])
+        self.assertTrue(len(res1) == 1)
+        self.assertEquals(int(res1[0]["sAMAccountType"][0]),
+          ATYPE_SECURITY_UNIVERSAL_GROUP)
+
+        # Change back to "global"
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+        m["groupType"] = MessageElement(
+          str(GTYPE_SECURITY_GLOBAL_GROUP),
+          FLAG_MOD_REPLACE, "groupType")
+        ldb.modify(m)
+
+        res1 = ldb.search("cn=ldaptestgroup,cn=users," + self.base_dn,
+                          scope=SCOPE_BASE, attrs=["sAMAccountType"])
+        self.assertTrue(len(res1) == 1)
+        self.assertEquals(int(res1[0]["sAMAccountType"][0]),
+          ATYPE_SECURITY_GLOBAL_GROUP)
+
+        self.delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+
 
 if not "://" in host:
     if os.path.isfile(host):
