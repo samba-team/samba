@@ -37,10 +37,14 @@
      syncops:onclose = no
   that can be set either globally or per share.
 
+  you can also disable the module completely for a service with
+     syncops:disable = true
+
  */
 
 struct syncops_config_data {
 	bool onclose;
+	bool disable;
 };
 
 /*
@@ -129,8 +133,16 @@ static int syncops_rename(vfs_handle_struct *handle,
 			  const struct smb_filename *smb_fname_src,
 			  const struct smb_filename *smb_fname_dst)
 {
-	int ret = SMB_VFS_NEXT_RENAME(handle, smb_fname_src, smb_fname_dst);
-	if (ret == 0) {
+
+	int ret;
+	struct syncops_config_data *config;
+
+	SMB_VFS_HANDLE_GET_DATA(handle, config,
+				struct syncops_config_data,
+				return -1);
+
+	ret = SMB_VFS_NEXT_RENAME(handle, smb_fname_src, smb_fname_dst);
+	if (ret == 0 && !config->disable) {
 		syncops_two_names(smb_fname_src->base_name,
 				  smb_fname_dst->base_name);
 	}
@@ -139,14 +151,28 @@ static int syncops_rename(vfs_handle_struct *handle,
 
 /* handle the rest with a macro */
 #define SYNCOPS_NEXT(op, fname, args) do {   \
-	int ret = SMB_VFS_NEXT_ ## op args; \
-	if (ret == 0 && fname) syncops_name(fname); \
+	int ret; \
+	struct syncops_config_data *config; \
+	SMB_VFS_HANDLE_GET_DATA(handle, config, \
+				struct syncops_config_data, \
+				return -1); \
+	ret = SMB_VFS_NEXT_ ## op args; \
+	if (ret == 0 \
+		&& !config->disable \
+		&& fname) syncops_name(fname); \
 	return ret; \
 } while (0)
 
 #define SYNCOPS_NEXT_SMB_FNAME(op, fname, args) do {   \
-	int ret = SMB_VFS_NEXT_ ## op args; \
-	if (ret == 0 && fname) syncops_smb_fname(fname); \
+	int ret; \
+	struct syncops_config_data *config; \
+	SMB_VFS_HANDLE_GET_DATA(handle, config, \
+				struct syncops_config_data, \
+				return -1); \
+	ret = SMB_VFS_NEXT_ ## op args; \
+	if (ret == 0 \
+	&& !config->disable \
+	&& fname) syncops_smb_fname(fname); \
 	return ret; \
 } while (0)
 
@@ -228,6 +254,9 @@ int syncops_connect(struct vfs_handle_struct *handle, const char *service,
 
 	config->onclose = lp_parm_bool(SNUM(handle->conn), "syncops",
 					"onclose", true);
+
+	config->disable = lp_parm_bool(SNUM(handle->conn), "syncops",
+					"disable", false);
 
 	SMB_VFS_HANDLE_SET_DATA(handle, config,
 				NULL, struct syncops_config_data,
