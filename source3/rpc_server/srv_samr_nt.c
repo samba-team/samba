@@ -5500,7 +5500,7 @@ NTSTATUS _samr_QueryGroupMember(struct pipes_struct *p,
 	uint32 *attr=NULL;
 
 	NTSTATUS status;
-	struct samr_RidTypeArray *rids = NULL;
+	struct samr_RidAttrArray *rids = NULL;
 
 	ginfo = policy_handle_find(p, r->in.group_handle,
 				   SAMR_GROUP_ACCESS_GET_MEMBERS, NULL,
@@ -5509,7 +5509,7 @@ NTSTATUS _samr_QueryGroupMember(struct pipes_struct *p,
 		return status;
 	}
 
-	rids = TALLOC_ZERO_P(p->mem_ctx, struct samr_RidTypeArray);
+	rids = TALLOC_ZERO_P(p->mem_ctx, struct samr_RidAttrArray);
 	if (!rids) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -5548,7 +5548,7 @@ NTSTATUS _samr_QueryGroupMember(struct pipes_struct *p,
 	}
 
 	rids->count = num_members;
-	rids->types = attr;
+	rids->attributes = attr;
 	rids->rids = rid;
 
 	*r->out.rids = rids;

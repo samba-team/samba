@@ -234,7 +234,7 @@ WERROR NetGroupDel_r(struct libnetapi_ctx *ctx,
 	struct samr_Ids rids;
 	struct samr_Ids types;
 	union samr_GroupInfo *info = NULL;
-	struct samr_RidTypeArray *rid_array = NULL;
+	struct samr_RidAttrArray *rid_array = NULL;
 
 	ZERO_STRUCT(connect_handle);
 	ZERO_STRUCT(domain_handle);
@@ -1260,7 +1260,7 @@ WERROR NetGroupGetUsers_r(struct libnetapi_ctx *ctx,
 	struct lsa_String lsa_account_name;
 	struct dom_sid2 *domain_sid = NULL;
 	struct samr_Ids group_rids, name_types;
-	struct samr_RidTypeArray *rid_array = NULL;
+	struct samr_RidAttrArray *rid_array = NULL;
 	struct lsa_Strings names;
 	struct samr_Ids member_types;
 
@@ -1408,7 +1408,7 @@ WERROR NetGroupSetUsers_r(struct libnetapi_ctx *ctx,
 	union samr_GroupInfo *group_info = NULL;
 	struct samr_Ids user_rids, name_types;
 	struct samr_Ids group_rids, group_types;
-	struct samr_RidTypeArray *rid_array = NULL;
+	struct samr_RidAttrArray *rid_array = NULL;
 	struct lsa_String *lsa_names = NULL;
 
 	uint32_t *add_rids = NULL;

@@ -658,12 +658,12 @@ import "misc.idl", "lsa.idl", "security.idl";
 	typedef struct {
 		uint32 count;
 		[size_is(count)] uint32 *rids;
-		[size_is(count)] uint32 *types;
-	} samr_RidTypeArray;
+		[size_is(count)] samr_GroupAttrs *attributes;
+	} samr_RidAttrArray;
 
 	NTSTATUS samr_QueryGroupMember(
 		[in,ref]  policy_handle *group_handle,
-		[out,ref] samr_RidTypeArray **rids
+		[out,ref] samr_RidAttrArray **rids
 		);
 
 

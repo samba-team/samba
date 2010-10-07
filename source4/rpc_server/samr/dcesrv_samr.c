@@ -2118,7 +2118,7 @@ static NTSTATUS dcesrv_samr_QueryGroupMember(struct dcesrv_call_state *dce_call,
 	struct dcesrv_handle *h;
 	struct samr_account_state *a_state;
 	struct samr_domain_state *d_state;
-	struct samr_RidTypeArray *array;
+	struct samr_RidAttrArray *array;
 	unsigned int i, num_members;
 	struct dom_sid *members;
 	NTSTATUS status;
@@ -2135,7 +2135,7 @@ static NTSTATUS dcesrv_samr_QueryGroupMember(struct dcesrv_call_state *dce_call,
 		return status;
 	}
 
-	array = talloc_zero(mem_ctx, struct samr_RidTypeArray);
+	array = talloc_zero(mem_ctx, struct samr_RidAttrArray);
 	if (array == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -2151,8 +2151,8 @@ static NTSTATUS dcesrv_samr_QueryGroupMember(struct dcesrv_call_state *dce_call,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	array->types = talloc_array(array, uint32_t, num_members);
-	if (array->types == NULL) {
+	array->attributes = talloc_array(array, uint32_t, num_members);
+	if (array->attributes == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -2168,9 +2168,9 @@ static NTSTATUS dcesrv_samr_QueryGroupMember(struct dcesrv_call_state *dce_call,
 			return status;
 		}
 
-		array->types[array->count] = SE_GROUP_MANDATORY |
-					     SE_GROUP_ENABLED_BY_DEFAULT |
-					     SE_GROUP_ENABLED;
+		array->attributes[array->count] = SE_GROUP_MANDATORY |
+						  SE_GROUP_ENABLED_BY_DEFAULT |
+						  SE_GROUP_ENABLED;
 		array->count++;
 	}
 

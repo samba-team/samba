@@ -618,7 +618,7 @@ static NTSTATUS msrpc_lookup_groupmem(struct winbindd_domain *domain,
 	unsigned int j, r;
 	struct rpc_pipe_client *cli;
 	unsigned int orig_timeout;
-	struct samr_RidTypeArray *rids = NULL;
+	struct samr_RidAttrArray *rids = NULL;
 
 	DEBUG(3,("msrpc_lookup_groupmem: %s sid=%s\n", domain->name,
 		  sid_string_dbg(group_sid)));

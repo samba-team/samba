@@ -812,7 +812,7 @@ static bool test_samr_group(struct torture_context *tctx,
 	}
 	{
 		struct samr_QueryGroupMember r;
-		struct samr_RidTypeArray *rids;
+		struct samr_RidAttrArray *rids;
 
 		r.in.group_handle = &group_handle;
 		r.out.rids = &rids;

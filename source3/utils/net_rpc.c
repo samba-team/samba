@@ -1511,7 +1511,7 @@ static NTSTATUS rpc_group_delete_internals(struct net_context *c,
 	bool group_is_primary = false;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	uint32_t group_rid;
-	struct samr_RidTypeArray *rids = NULL;
+	struct samr_RidAttrArray *rids = NULL;
 	/* char **names; */
 	int i;
 	/* struct samr_RidWithAttribute *user_gids; */
@@ -2512,7 +2512,7 @@ static NTSTATUS rpc_list_group_members(struct net_context *c,
 	struct policy_handle group_pol;
 	uint32 num_members, *group_rids;
 	int i;
-	struct samr_RidTypeArray *rids = NULL;
+	struct samr_RidAttrArray *rids = NULL;
 	struct lsa_Strings names;
 	struct samr_Ids types;
 
