@@ -5541,8 +5541,11 @@ NTSTATUS _samr_QueryGroupMember(struct pipes_struct *p,
 		attr = NULL;
 	}
 
-	for (i=0; i<num_members; i++)
-		attr[i] = SID_NAME_USER;
+	for (i=0; i<num_members; i++) {
+		attr[i] = SE_GROUP_MANDATORY |
+			  SE_GROUP_ENABLED_BY_DEFAULT |
+			  SE_GROUP_ENABLED;
+	}
 
 	rids->count = num_members;
 	rids->types = attr;
