@@ -10,17 +10,24 @@ from optparse import OptionParser
 
 parser = OptionParser()
 parser.add_option("", "--tests", help="list of tests to run", default='*')
-parser.add_option("", "--quick", help="use make quicktest", default='')
 parser.add_option("", "--good", help="known good revision (default HEAD~100)", default='HEAD~100')
 parser.add_option("", "--bad", help="known bad revision (default HEAD)", default='HEAD')
 parser.add_option("", "--skip-build-errors", help="skip revision where make fails",
                   action='store_true', default=False)
 parser.add_option("", "--autogen", help="run autogen before each build",action="store_true", default=False)
+parser.add_option("", "--autogen-command", help="command to use for autogen (default ./autogen.sh)",
+                  type='str', default="./autogen.sh")
 parser.add_option("", "--configure", help="run configure.developer before each build",
     action="store_true", default=False)
+parser.add_option("", "--configure-command", help="the command for configure (default ./configure.developer)",
+                  type='str', default="./configure.developer")
+parser.add_option("", "--build-command", help="the command to build the tree (default 'make -j')",
+                  type='str', default="make -j")
+parser.add_option("", "--test-command", help="the command to test the tree (default 'make test')",
+                  type='str', default="make test")
 parser.add_option("", "--clean", help="run make clean before each build",
-    action="store_true", default=False)
-parser.add_option("-j", "", help="use make -j N", dest='N', type='int', action="store", default=1)
+                  action="store_true", default=False)
+
 
 (opts, args) = parser.parse_args()
 
@@ -52,20 +59,17 @@ f = tempfile.NamedTemporaryFile(delete=False)
 f.write("set -x\n")
 f.write("cd %s || exit 125\n" % cwd)
 if opts.autogen:
-    f.write("./autogen.sh || exit 125\n")
+    f.write("%s || exit 125\n" % opts.autogen_command)
 if opts.configure:
-    f.write("./configure.developer || exit 125\n")
+    f.write("%s || exit 125\n" % opts.configure_command)
 if opts.clean:
     f.write("make clean || exit 125\n")
 if opts.skip_build_errors:
-    f.write("make -j %u || exit 125\n" % opts.N)
+    build_err = 125
 else:
-    f.write("make -j %u || exit 1\n" % opts.N)
-if opts.quick:
-    target="quicktest"
-else:
-    target="test"
-f.write("make -j %u %s TESTS='%s' FAIL_IMMEDIATELY=1 || exit 1\n" % (opts.N, target, opts.tests))
+    build_err = 1
+f.write("%s || exit %u\n" % (opts.build_command, build_err))
+f.write("%s || exit 1\n" % opts.test_command)
 f.write("exit 0\n")
 f.close()
 
@@ -87,5 +91,6 @@ except Exception, reason:
     print("Failed bisect: %s" % reason)
     cleanup()
 
+run_cmd("git bisect reset", dir=gitroot)
 os.unlink(f.name)
 sys.exit(ret)
