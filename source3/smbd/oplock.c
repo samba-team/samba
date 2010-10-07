@@ -922,7 +922,7 @@ bool init_oplocks(struct messaging_context *msg_ctx)
 
 	if (lp_kernel_oplocks()) {
 #if HAVE_KERNEL_OPLOCKS_IRIX
-		koplocks = irix_init_kernel_oplocks(talloc_autofree_context());
+		koplocks = irix_init_kernel_oplocks(NULL);
 #elif HAVE_KERNEL_OPLOCKS_LINUX
 		koplocks = linux_init_kernel_oplocks(NULL);
 #elif HAVE_ONEFS
