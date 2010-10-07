@@ -31,6 +31,7 @@
 #include "secrets.h"
 #include "memcache.h"
 #include "ctdbd_conn.h"
+#include "printing/printer_list.h"
 
 #include "../librpc/gen_ndr/srv_dfs.h"
 #include "../librpc/gen_ndr/srv_dssetup.h"
@@ -1137,6 +1138,10 @@ extern void build_options(bool screen);
 	}
 
 	if (!serverid_parent_init(smbd_event_context())) {
+		exit(1);
+	}
+
+	if (!printer_list_parent_init()) {
 		exit(1);
 	}
 
