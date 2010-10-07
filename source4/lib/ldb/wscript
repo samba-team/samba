@@ -214,9 +214,11 @@ def build(bld):
 
 def test(ctx):
     '''run ldb testsuite'''
-    import Utils
+    import Utils, samba_utils
     cmd = 'tests/test-tdb.sh'
-    os.system(cmd)
+    ret = samba_utils.RUN_COMMAND(cmd)
+    print("testsuite returned %d" % ret)
+    sys.exit(ret)
 
 def dist():
     '''makes a tarball for distribution'''

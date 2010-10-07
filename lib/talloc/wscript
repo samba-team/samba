@@ -87,9 +87,11 @@ def build(bld):
 
 def test(ctx):
     '''run talloc testsuite'''
-    import Utils
+    import Utils, samba_utils
     cmd = os.path.join(Utils.g_module.blddir, 'talloc_testsuite')
-    os.system(cmd)
+    ret = samba_utils.RUN_COMMAND(cmd)
+    print("testsuite returned %d" % ret)
+    sys.exit(ret)
 
 def dist():
     '''makes a tarball for distribution'''
