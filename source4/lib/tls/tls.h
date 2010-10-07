@@ -75,7 +75,7 @@ NTSTATUS tstream_tls_params_client(TALLOC_CTX *mem_ctx,
 
 NTSTATUS tstream_tls_params_server(TALLOC_CTX *mem_ctx,
 				   const char *dns_host_name,
-				   bool disable,
+				   bool enabled,
 				   const char *key_file,
 				   const char *cert_file,
 				   const char *ca_file,

@@ -975,7 +975,7 @@ extern void tls_cert_generate(TALLOC_CTX *, const char *, const char *, const ch
 */
 NTSTATUS tstream_tls_params_server(TALLOC_CTX *mem_ctx,
 				   const char *dns_host_name,
-				   bool disable,
+				   bool enabled,
 				   const char *key_file,
 				   const char *cert_file,
 				   const char *ca_file,
@@ -986,6 +986,16 @@ NTSTATUS tstream_tls_params_server(TALLOC_CTX *mem_ctx,
 	struct tstream_tls_params *tlsp;
 #if ENABLE_GNUTLS
 	int ret;
+
+	if (!enabled || key_file == NULL || *key_file == 0) {
+		tlsp = talloc_zero(mem_ctx, struct tstream_tls_params);
+		NT_STATUS_HAVE_NO_MEMORY(tlsp);
+		talloc_set_destructor(tlsp, tstream_tls_params_destructor);
+		tlsp->tls_enabled = false;
+
+		*_tlsp = tlsp;
+		return NT_STATUS_OK;
+	}
 
 	ret = gnutls_global_init();
 	if (ret != GNUTLS_E_SUCCESS) {
