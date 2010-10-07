@@ -6,27 +6,27 @@ GPEXT_SECURITY_SRC = 'security.c'
 
 GPEXT_SRC = '''../../../libgpo/gpext/gpext.c'''
 
-bld.SAMBA_SUBSYSTEM('GPEXT',
+bld.SAMBA_SUBSYSTEM('gpext',
                     source=GPEXT_SRC,
                     vars=locals())
 
-bld.SAMBA_MODULE('GPEXT_REGISTRY',
-                 subsystem='GPEXT',
+bld.SAMBA_MODULE('gpext_registry',
+                 subsystem='gpext',
                  source=GPEXT_REGISTRY_SRC,
                  deps='NDR_PREG',
                  init_function='',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('GPEXT_REGISTRY'),
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('GPEXT_REGISTRY'))
 
-bld.SAMBA_MODULE('GPEXT_SCRIPTS',
-                 subsystem='GPEXT',
+bld.SAMBA_MODULE('gpext_scripts',
+                 subsystem='gpext',
                  source=GPEXT_SCRIPTS_SRC,
                  init_function='',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('GPEXT_SCRIPTS'),
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('GPEXT_SCRIPTS'))
 
-bld.SAMBA_MODULE('GPEXT_SECURITY',
-                 subsystem='GPEXT',
+bld.SAMBA_MODULE('gpext_security',
+                 subsystem='gpext',
                  source=GPEXT_SECURITY_SRC,
                  init_function='',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('GPEXT_SECURITY'),

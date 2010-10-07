@@ -1058,7 +1058,7 @@ bld.SAMBA_SUBSYSTEM('LIBMSRPC_GEN',
 
 bld.SAMBA_SUBSYSTEM('LIBGPO',
                     source='${LIBGPO_SRC}',
-                    deps='GPEXT',
+                    deps='gpext',
                     vars=locals())
 
 bld.SAMBA_SUBSYSTEM('ASN1_UTIL',
@@ -1116,7 +1116,7 @@ bld.SAMBA_SUBSYSTEM('KRBCLIENT',
 
 bld.SAMBA_SUBSYSTEM('LIBS',
                     source=LIB_SRC,
-                    deps='NSS_WRAPPER iconv LIBCRYPTO LIBNDR NDR_SECURITY CHARSET NDR_MESSAGING',
+                    deps='NSS_WRAPPER iconv LIBCRYPTO LIBNDR NDR_SECURITY charset NDR_MESSAGING',
                     vars=locals())
 
 bld.SAMBA_SUBSYSTEM('LIB_NONSMBD',
@@ -1182,7 +1182,7 @@ bld.SAMBA_SUBSYSTEM('SMBD_BASE',
                     NSS_WRAPPER DYNCONFIG libwbclient crypt nsl cups cap resolv ZLIB PASSDB
                     PARAM_WITHOUT_REG LIBS LIBSMB POPT_SAMBA KRBCLIENT AVAHI
                     LIBMSRPC_GEN LIBMSRPC LIBADS LIBADS_SERVER LIBADS_PRINTER
-                    VFS RPC_MODULES AUTH LOCKING LIBAFS LIBAFS_SETTOKEN PROFILE LIBNET LIBEVENTLOG
+                    vfs vfs_default vfs_posixacl RPC_MODULES auth LOCKING LIBAFS LIBAFS_SETTOKEN PROFILE LIBNET LIBEVENTLOG
                     REGFIO REG_API_REGF PRINTING PRINTBACKEND SERVICES NDR_XATTR NDR_PERFCOUNT SOCKET_WRAPPER
                     RPCCLI_WINREG''',
                     vars=locals())
@@ -1327,7 +1327,7 @@ bld.SAMBA_BINARY('winbindd/winbindd',
                  libwbclient PASSDB ldap resolv PARAM LIB_NONSMBD LIBSMB
                  POPT_SAMBA KRBCLIENT LIBMSRPC_GEN LIBMSRPC LIBADS LIBADS_SERVER
                  SRV_NDR_WBINT RPCCLI_NDR_WBINT LIBAFS
-                 LIBAFS_SETTOKEN PROFILE SLCACHE DCUTIL IDMAP NSS_INFO
+                 LIBAFS_SETTOKEN PROFILE SLCACHE DCUTIL idmap nss_info
                  ''',
                  enabled=bld.env.build_winbind,
                  install_path='${SBINDIR}',
