@@ -10,7 +10,7 @@ objectClass: computer
 accountExpires: 9223372036854775807
 dNSHostName: ${DNSNAME}
 # "MSDFSR-ComputerReferenceBL" doesn't exist since we still miss DFSR support
-isCriticalSystemObject: TRUE
+# "isCritcalSystemObject" is now filled in by the samldb LDB module
 localPolicyFlags: 0
 operatingSystem: Samba
 operatingSystemVersion: ${SAMBA_VERSION_STRING}
