@@ -1128,6 +1128,18 @@ static int vfs_gpfs_ntimes(struct vfs_handle_struct *handle,
 
 }
 
+static int vfs_gpfs_ftruncate(vfs_handle_struct *handle, files_struct *fsp,
+				SMB_OFF_T len)
+{
+	int result;
+
+	result = smbd_gpfs_ftruncate(fsp->fh->fd, len);
+	if ((result == -1) && (errno == ENOSYS)) {
+		return SMB_VFS_NEXT_FTRUNCATE(handle, fsp, len);
+	}
+	return result;
+}
+
 int vfs_gpfs_connect(struct vfs_handle_struct *handle, const char *service,
 			const char *user)
 {
@@ -1180,6 +1192,7 @@ static struct vfs_fn_pointers vfs_gpfs_fns = {
         .fstat = vfs_gpfs_fstat,
         .lstat = vfs_gpfs_lstat,
 	.ntimes = vfs_gpfs_ntimes,
+	.ftruncate = vfs_gpfs_ftruncate
 };
 
 NTSTATUS vfs_gpfs_init(void);
