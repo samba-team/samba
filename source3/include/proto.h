@@ -745,7 +745,7 @@ struct security_descriptor *make_standard_sec_desc(TALLOC_CTX *ctx, const struct
 				 struct security_acl *dacl, size_t *sd_size);
 struct sec_desc_buf *make_sec_desc_buf(TALLOC_CTX *ctx, size_t len, struct security_descriptor *sec_desc);
 struct sec_desc_buf *dup_sec_desc_buf(TALLOC_CTX *ctx, struct sec_desc_buf *src);
-NTSTATUS sec_desc_add_sid(TALLOC_CTX *ctx, struct security_descriptor **psd, struct dom_sid *sid, uint32 mask, size_t *sd_size);
+NTSTATUS sec_desc_add_sid(TALLOC_CTX *ctx, struct security_descriptor **psd, const struct dom_sid *sid, uint32 mask, size_t *sd_size);
 NTSTATUS sec_desc_mod_sid(struct security_descriptor *sd, struct dom_sid *sid, uint32 mask);
 NTSTATUS sec_desc_del_sid(TALLOC_CTX *ctx, struct security_descriptor **psd, struct dom_sid *sid, size_t *sd_size);
 bool sd_has_inheritable_components(const struct security_descriptor *parent_ctr, bool container);

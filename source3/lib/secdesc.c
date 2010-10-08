@@ -419,7 +419,7 @@ struct sec_desc_buf *dup_sec_desc_buf(TALLOC_CTX *ctx, struct sec_desc_buf *src)
  Add a new SID with its permissions to struct security_descriptor.
 ********************************************************************/
 
-NTSTATUS sec_desc_add_sid(TALLOC_CTX *ctx, struct security_descriptor **psd, struct dom_sid *sid, uint32 mask, size_t *sd_size)
+NTSTATUS sec_desc_add_sid(TALLOC_CTX *ctx, struct security_descriptor **psd, const struct dom_sid *sid, uint32 mask, size_t *sd_size)
 {
 	struct security_descriptor *sd   = 0;
 	struct security_acl  *dacl = 0;
