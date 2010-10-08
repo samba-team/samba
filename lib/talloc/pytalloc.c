@@ -109,7 +109,7 @@ int py_talloc_default_cmp(PyObject *_obj1, PyObject *_obj2)
 	if (obj1->ob_type != obj2->ob_type)
 		return (obj1->ob_type - obj2->ob_type);
 
-	return (py_talloc_get_ptr(obj1) - py_talloc_get_ptr(obj2));
+	return ((char *)py_talloc_get_ptr(obj1) - (char *)py_talloc_get_ptr(obj2));
 }
 
 static void py_cobject_talloc_free(void *ptr)
