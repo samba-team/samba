@@ -592,7 +592,6 @@ SMBD_SRC_BASE = '''${SMBD_SRC_SRV}
                 ${LIBCLI_LSA_SRC}
                 ${LIBCLI_SAMR_SRC}
                 ${LIBCLI_NETLOGON_SRC}
-                ${RPC_CLIENT_SCHANNEL_SRC}
                 rpc_client/init_netlogon.c
                 rpc_client/init_samr.c'''
 
@@ -679,7 +678,6 @@ RPCCLIENT_SRC = '''${RPCCLIENT_SRC1}
                    ${LIBCLI_LSA_SRC}
                    ${LIBCLI_SAMR_SRC}
                    ${LIBCLI_NETLOGON_SRC}
-                   ${RPC_CLIENT_SCHANNEL_SRC}
                    rpc_client/init_netlogon.c
                    rpc_client/init_samr.c'''
 
@@ -737,7 +735,6 @@ LIBNETAPI_SRC = '''${LIBNETAPI_SRC0}
                    ${LIBCLI_LSA_SRC}
                    ${LIBCLI_SAMR_SRC}
                    ${LIBCLI_NETLOGON_SRC}
-                   ${RPC_CLIENT_SCHANNEL_SRC}
                    rpc_client/init_netlogon.c
                    rpc_client/init_samr.c'''
 
@@ -798,7 +795,6 @@ NET_SRC1 = '''utils/net.c utils/net_ads.c utils/net_help.c
               ${LIBCLI_LSA_SRC}
               ${LIBCLI_SAMR_SRC}
               ${LIBCLI_NETLOGON_SRC}
-              ${RPC_CLIENT_SCHANNEL_SRC}
               rpc_client/init_netlogon.c
               rpc_client/init_samr.c
               registry/reg_parse.c registry/reg_format.c
@@ -945,7 +941,8 @@ bld.SAMBA_LIBRARY('libnetapi',
                     source=LIBNETAPI_SRC,
                     public_deps='''talloc tdb cap libwbclient LIB_NONSMBD LIBSMB KRBCLIENT
                     PASSDB SMBLDAP GROUPDB PARAM_WITHOUT_REG DYNCONFIG
-                    LIBMSRPC_GEN LIBMSRPC LIBADS LIBNET DCUTIL NDR_LIBNETAPI''',
+                    LIBMSRPC_GEN LIBMSRPC LIBADS LIBNET DCUTIL NDR_LIBNETAPI
+                    RPC_CLIENT_SCHANNEL''',
                     public_headers='lib/netapi/netapi.h',
                     vars=locals())
 
@@ -1217,6 +1214,11 @@ bld.SAMBA_SUBSYSTEM('RPCCLI_ECHO',
                     source='../librpc/gen_ndr/cli_echo.c',
                     public_deps='RPC_NDR_ECHO')
 
+bld.SAMBA_SUBSYSTEM('RPC_CLIENT_SCHANNEL',
+                    source=RPC_CLIENT_SCHANNEL_SRC,
+                    vars=locals())
+
+
 ########################## BINARIES #################################
 
 bld.SAMBA_BINARY('smbd/smbd',
@@ -1258,7 +1260,8 @@ bld.SAMBA_BINARY('rpcclient/rpcclient',
                  source=RPCCLIENT_SRC,
                  deps='''talloc tdb cap resolv POPT_SAMBA PASSDB LIBSMB LIB_NONSMBD
                  PARAM_WITHOUT_REG libwbclient PARAM KRBCLIENT LIBMSRPC_GEN LIBMSRPC
-                 LIBADS SMBREADLINE DCUTIL RPCCLI_WINREG RPCCLI_ECHO''',
+                 LIBADS SMBREADLINE DCUTIL RPCCLI_WINREG RPCCLI_ECHO
+                 RPC_CLIENT_SCHANNEL''',
                  vars=locals())
 
 bld.SAMBA_BINARY('smbclient',
@@ -1274,7 +1277,8 @@ bld.SAMBA_BINARY('net',
                  PARAM_WITHOUT_REG libwbclient PARAM KRBCLIENT LIBMSRPC_GEN LIBMSRPC LIBGPO LIBADS LIBADS_SERVER LIBADS_PRINTER
                  LOCALE_DIR LIBAFS LIBAFS_SETTOKEN SMBREADLINE PASSWD_UTIL LIBNET
                  LIBNET_DSSYNC LIBNET_SAMSYNC LIBEVENTLOG DCUTIL
-                 REGFIO NDR_NTPRINTING RPCCLI_WINREG''',
+                 REGFIO NDR_NTPRINTING RPCCLI_WINREG
+                 RPC_CLIENT_SCHANNEL''',
                  vars=locals())
 
 bld.SAMBA_BINARY('profiles',
