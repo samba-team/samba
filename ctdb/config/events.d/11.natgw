@@ -33,7 +33,7 @@ delete_all() {
 	iptables -D POSTROUTING -t nat -s $CTDB_NATGW_PRIVATE_NETWORK -d ! $CTDB_NATGW_PRIVATE_NETWORK -j MASQUERADE >/dev/null 2>/dev/null
 
 	# remove any iptables rule we may have on this address
-	iptables -D INPUT -p tcp --syn -d _ip/32 -j REJECT 2>/dev/null
+	iptables -D INPUT -p tcp --syn -d $_ip/32 -j REJECT 2>/dev/null
 }
 
 case "$1" in 
