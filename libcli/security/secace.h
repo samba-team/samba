@@ -24,15 +24,15 @@
 #include "librpc/gen_ndr/security.h"
 
 bool sec_ace_object(uint8_t type);
-void sec_ace_copy(struct security_ace *ace_dest, struct security_ace *ace_src);
+void sec_ace_copy(struct security_ace *ace_dest, const struct security_ace *ace_src);
 void init_sec_ace(struct security_ace *t, const struct dom_sid *sid, enum security_ace_type type,
 		  uint32_t mask, uint8_t flag);
-NTSTATUS sec_ace_add_sid(TALLOC_CTX *ctx, struct security_ace **pp_new, struct security_ace *old, unsigned *num, struct dom_sid *sid, uint32_t mask);
-NTSTATUS sec_ace_mod_sid(struct security_ace *ace, size_t num, struct dom_sid *sid, uint32_t mask);
-NTSTATUS sec_ace_del_sid(TALLOC_CTX *ctx, struct security_ace **pp_new, struct security_ace *old, uint32_t *num, struct dom_sid *sid);
-bool sec_ace_equal(struct security_ace *s1, struct security_ace *s2);
-int nt_ace_inherit_comp( struct security_ace *a1, struct security_ace *a2);
-int nt_ace_canon_comp( struct security_ace *a1, struct security_ace *a2);
+NTSTATUS sec_ace_add_sid(TALLOC_CTX *ctx, struct security_ace **pp_new, struct security_ace *old, unsigned *num, const struct dom_sid *sid, uint32_t mask);
+NTSTATUS sec_ace_mod_sid(struct security_ace *ace, size_t num, const struct dom_sid *sid, uint32_t mask);
+NTSTATUS sec_ace_del_sid(TALLOC_CTX *ctx, struct security_ace **pp_new, struct security_ace *old, uint32_t *num, const struct dom_sid *sid);
+bool sec_ace_equal(const struct security_ace *s1, const struct security_ace *s2);
+int nt_ace_inherit_comp( const struct security_ace *a1, const struct security_ace *a2);
+int nt_ace_canon_comp( const struct security_ace *a1, const struct security_ace *a2);
 void dacl_sort_into_canonical_order(struct security_ace *srclist, unsigned int num_aces);
 
 #endif /*_ACE_H_*/
