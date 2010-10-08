@@ -47,7 +47,7 @@ struct tstream_tls {
 
 	struct tevent_context *current_ev;
 
-	struct tevent_immediate *im;
+	struct tevent_immediate *retry_im;
 
 	struct {
 		uint8_t buffer[1024];
@@ -104,7 +104,7 @@ static void tstream_tls_retry(struct tstream_context *stream, bool deferred)
 	}
 
 	if (tlss->write.req && tlss->read.req && !deferred) {
-		tevent_schedule_immediate(tlss->im, tlss->current_ev,
+		tevent_schedule_immediate(tlss->retry_im, tlss->current_ev,
 					  tstream_tls_retry_trigger,
 					  stream);
 	}
@@ -899,8 +899,8 @@ struct tevent_req *_tstream_tls_connect_send(TALLOC_CTX *mem_ctx,
 	tlss->plain_stream = plain_stream;
 
 	tlss->current_ev = ev;
-	tlss->im = tevent_create_immediate(tlss);
-	if (tevent_req_nomem(tlss->im, req)) {
+	tlss->retry_im = tevent_create_immediate(tlss);
+	if (tevent_req_nomem(tlss->retry_im, req)) {
 		return tevent_req_post(req, ev);
 	}
 
@@ -1147,8 +1147,8 @@ struct tevent_req *_tstream_tls_accept_send(TALLOC_CTX *mem_ctx,
 	tlss->plain_stream = plain_stream;
 
 	tlss->current_ev = ev;
-	tlss->im = tevent_create_immediate(tlss);
-	if (tevent_req_nomem(tlss->im, req)) {
+	tlss->retry_im = tevent_create_immediate(tlss);
+	if (tevent_req_nomem(tlss->retry_im, req)) {
 		return tevent_req_post(req, ev);
 	}
 
