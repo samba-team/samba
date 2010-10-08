@@ -24,8 +24,6 @@
 #include "gpfs_gpl.h"
 #include "vfs_gpfs.h"
 
-static bool gpfs_share_modes;
-static bool gpfs_leases;
 static bool gpfs_getrealfilename;
 static bool gpfs_winattr;
 
@@ -46,10 +44,6 @@ bool set_gpfs_sharemode(files_struct *fsp, uint32 access_mask,
 	unsigned int allow = GPFS_SHARE_NONE;
 	unsigned int deny = GPFS_DENY_NONE;
 	int result;
-
-	if (!gpfs_share_modes) {
-		return True;
-	}
 
 	if (gpfs_set_share_fn == NULL) {
 		return False;
@@ -95,10 +89,6 @@ bool set_gpfs_sharemode(files_struct *fsp, uint32 access_mask,
 int set_gpfs_lease(int fd, int leasetype)
 {
 	int gpfs_type = GPFS_LEASE_NONE;
-
-	if (!gpfs_leases) {
-		return True;
-	}
 
 	if (gpfs_set_lease_fn == NULL) {
 		errno = EINVAL;
@@ -249,8 +239,6 @@ void init_gpfs(void)
         init_gpfs_function(&gpfs_get_winattrs_fn,"gpfs_get_winattrs");
 
 
-	gpfs_share_modes = lp_parm_bool(-1, "gpfs", "sharemodes", True);
-	gpfs_leases      = lp_parm_bool(-1, "gpfs", "leases", True);
 	gpfs_getrealfilename = lp_parm_bool(-1, "gpfs", "getrealfilename",
 					    True);
 	gpfs_winattr = lp_parm_bool(-1, "gpfs", "winattr", False);
