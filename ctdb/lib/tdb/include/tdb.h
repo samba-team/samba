@@ -55,6 +55,7 @@ extern "C" {
 #define TDB_VOLATILE   256 /* Activate the per-hashchain freelist, default 5 */
 #define TDB_ALLOW_NESTING 512 /* Allow transactions to nest */
 #define TDB_DISALLOW_NESTING 1024 /* Disallow transactions to nest */
+#define TDB_INCOMPATIBLE_HASH 2048 /* Better hashing: can't be opened by tdb < 1.2.6. */
 
 /* error codes */
 enum TDB_ERROR {TDB_SUCCESS=0, TDB_ERR_CORRUPT, TDB_ERR_IO, TDB_ERR_LOCK, 
@@ -147,6 +148,7 @@ _PUBLIC_ void tdb_add_flags(struct tdb_context *tdb, unsigned flag);
 _PUBLIC_ void tdb_remove_flags(struct tdb_context *tdb, unsigned flag);
 _PUBLIC_ void tdb_enable_seqnum(struct tdb_context *tdb);
 _PUBLIC_ void tdb_increment_seqnum_nonblock(struct tdb_context *tdb);
+_PUBLIC_ unsigned int tdb_jenkins_hash(TDB_DATA *key);
 _PUBLIC_ int tdb_check(struct tdb_context *tdb,
 	      int (*check)(TDB_DATA key, TDB_DATA data, void *private_data),
 	      void *private_data);
