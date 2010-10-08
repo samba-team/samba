@@ -72,7 +72,7 @@ monitor_interfaces()
 			ok=1 # we only set ok for interfaces known to ctdbd
 			ctdb setifacelink $IFACE up
 		}
-		return 0;
+		continue;
 	    }
 
 	    case $IFACE in
