@@ -51,9 +51,17 @@ struct tstream_tls {
 
 	struct {
 		uint8_t buffer[1024];
+		off_t ofs;
 		struct iovec iov;
 		struct tevent_req *subreq;
-	} push, pull;
+		struct tevent_immediate *im;
+	} push;
+
+	struct {
+		uint8_t buffer[1024];
+		struct iovec iov;
+		struct tevent_req *subreq;
+	} pull;
 
 	struct {
 		struct tevent_req *req;
@@ -132,7 +140,9 @@ static void tstream_tls_retry_trigger(struct tevent_context *ctx,
 }
 
 #if ENABLE_GNUTLS
-static void tstream_tls_push_done(struct tevent_req *subreq);
+static void tstream_tls_push_trigger_write(struct tevent_context *ev,
+					   struct tevent_immediate *im,
+					   void *private_data);
 
 static ssize_t tstream_tls_push_function(gnutls_transport_ptr ptr,
 					 const void *buf, size_t size)
@@ -143,7 +153,7 @@ static ssize_t tstream_tls_push_function(gnutls_transport_ptr ptr,
 	struct tstream_tls *tlss =
 		tstream_context_data(stream,
 		struct tstream_tls);
-	struct tevent_req *subreq;
+	size_t len;
 
 	if (tlss->error != 0) {
 		errno = tlss->error;
@@ -155,24 +165,79 @@ static ssize_t tstream_tls_push_function(gnutls_transport_ptr ptr,
 		return -1;
 	}
 
-	tlss->push.iov.iov_base = tlss->push.buffer;
-	tlss->push.iov.iov_len = MIN(size, sizeof(tlss->push.buffer));
+	if (tlss->push.ofs == sizeof(tlss->push.buffer)) {
+		errno = EAGAIN;
+		return -1;
+	}
 
-	memcpy(tlss->push.buffer, buf, tlss->push.iov.iov_len);
+	len = MIN(size, sizeof(tlss->push.buffer) - tlss->push.ofs);
+	memcpy(tlss->push.buffer + tlss->push.ofs, buf, len);
+
+	if (tlss->push.im == NULL) {
+		tlss->push.im = tevent_create_immediate(tlss);
+		if (tlss->push.im == NULL) {
+			errno = ENOMEM;
+			return -1;
+		}
+	}
+
+	if (tlss->push.ofs == 0) {
+		/*
+		 * We'll do start the tstream_writev
+		 * in the next event cycle.
+		 *
+		 * This way we can batch all push requests,
+		 * if they fit into the buffer.
+		 *
+		 * This is important as gnutls_handshake()
+		 * had a bug in some versions e.g. 2.4.1
+		 * and others (See bug #7218) and it doesn't
+		 * handle EAGAIN.
+		 */
+		tevent_schedule_immediate(tlss->push.im,
+					  tlss->current_ev,
+					  tstream_tls_push_trigger_write,
+					  stream);
+	}
+
+	tlss->push.ofs += len;
+	return len;
+}
+
+static void tstream_tls_push_done(struct tevent_req *subreq);
+
+static void tstream_tls_push_trigger_write(struct tevent_context *ev,
+					   struct tevent_immediate *im,
+					   void *private_data)
+{
+	struct tstream_context *stream =
+		talloc_get_type_abort(private_data,
+		struct tstream_context);
+	struct tstream_tls *tlss =
+		tstream_context_data(stream,
+		struct tstream_tls);
+	struct tevent_req *subreq;
+
+	if (tlss->push.subreq) {
+		/* nothing todo */
+		return;
+	}
+
+	tlss->push.iov.iov_base = (char *)tlss->push.buffer;
+	tlss->push.iov.iov_len = tlss->push.ofs;
 
 	subreq = tstream_writev_send(tlss,
 				     tlss->current_ev,
 				     tlss->plain_stream,
 				     &tlss->push.iov, 1);
 	if (subreq == NULL) {
-		errno = ENOMEM;
-		return -1;
+		tlss->error = ENOMEM;
+		tstream_tls_retry(stream, false);
+		return;
 	}
 	tevent_req_set_callback(subreq, tstream_tls_push_done, stream);
 
 	tlss->push.subreq = subreq;
-
-	return tlss->push.iov.iov_len;
 }
 
 static void tstream_tls_push_done(struct tevent_req *subreq)
@@ -188,6 +253,7 @@ static void tstream_tls_push_done(struct tevent_req *subreq)
 
 	tlss->push.subreq = NULL;
 	ZERO_STRUCT(tlss->push.iov);
+	tlss->push.ofs = 0;
 
 	ret = tstream_writev_recv(subreq, &sys_errno);
 	TALLOC_FREE(subreq);
