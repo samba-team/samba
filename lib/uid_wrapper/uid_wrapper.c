@@ -52,7 +52,7 @@ static void uwrap_init(void)
 		uwrap.enabled = true;
 		/* put us in one group */
 		uwrap.ngroups = 1;
-		uwrap.groups = talloc_array(talloc_autofree_context(), gid_t, 1);
+		uwrap.groups = talloc_array(NULL, gid_t, 1);
 		uwrap.groups[0] = 0;
 	}
 }
@@ -116,7 +116,7 @@ _PUBLIC_ int uwrap_setgroups(size_t size, const gid_t *list)
 	uwrap.groups = NULL;
 
 	if (size != 0) {
-		uwrap.groups = talloc_array(talloc_autofree_context(), gid_t, size);
+		uwrap.groups = talloc_array(NULL, gid_t, size);
 		if (uwrap.groups == NULL) {
 			errno = ENOMEM;
 			return -1;
