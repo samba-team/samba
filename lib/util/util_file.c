@@ -235,7 +235,7 @@ _PUBLIC_ void *map_file(const char *fname, size_t size)
 	}
 #endif
 	if (!p) {
-		p = file_load(fname, &s2, 0, talloc_autofree_context());
+		p = file_load(fname, &s2, 0, NULL);
 		if (!p) return NULL;
 		if (s2 != size) {
 			DEBUG(1,("incorrect size for %s - got %d expected %d\n",
