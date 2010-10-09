@@ -559,12 +559,14 @@ static bool test_dsintid_schema(struct torture_context *tctx, struct DsIntIdTest
 }
 
 /**
- * Fetch Domain NC and check ATTID values returned.
- * When Domain partition is replicated, ATTID
+ * Fetch non-Schema NC and check ATTID values returned.
+ * When non-Schema partition is replicated, ATTID
  * should be msDS-IntId value for the attribute
  * if this value exists
  */
-static bool test_dsintid_domain(struct torture_context *tctx, struct DsIntIdTestCtx *ctx)
+static bool _test_dsintid(struct torture_context *tctx,
+			  struct DsIntIdTestCtx *ctx,
+			  const char *nc_dn_str)
 {
 	uint32_t i;
 	const struct dsdb_schema *ldap_schema;
@@ -580,8 +582,8 @@ static bool test_dsintid_domain(struct torture_context *tctx, struct DsIntIdTest
 	torture_assert(tctx, mem_ctx, "Not enough memory");
 
 	/* fetch whole Schema partition */
-	torture_comment(tctx, "Fetch partition: %s\n", ctx->domain_dn);
-	if (!_test_GetNCChanges(tctx, &ctx->dsa_bind, ctx->domain_dn, mem_ctx, &ctr6)) {
+	torture_comment(tctx, "Fetch partition: %s\n", nc_dn_str);
+	if (!_test_GetNCChanges(tctx, &ctx->dsa_bind, nc_dn_str, mem_ctx, &ctr6)) {
 		torture_fail(tctx, "_test_GetNCChanges() failed");
 	}
 
@@ -641,6 +643,28 @@ static bool test_dsintid_domain(struct torture_context *tctx, struct DsIntIdTest
 	talloc_free(mem_ctx);
 
 	return true;
+}
+
+/**
+ * Fetch Domain NC and check ATTID values returned.
+ * When Domain partition is replicated, ATTID
+ * should be msDS-IntId value for the attribute
+ * if this value exists
+ */
+static bool test_dsintid_configuration(struct torture_context *tctx, struct DsIntIdTestCtx *ctx)
+{
+	return _test_dsintid(tctx, ctx, ctx->config_dn);
+}
+
+/**
+ * Fetch Configuration NC and check ATTID values returned.
+ * When Configuration partition is replicated, ATTID
+ * should be msDS-IntId value for the attribute
+ * if this value exists
+ */
+static bool test_dsintid_domain(struct torture_context *tctx, struct DsIntIdTestCtx *ctx)
+{
+	return _test_dsintid(tctx, ctx, ctx->domain_dn);
 }
 
 
@@ -708,5 +732,6 @@ void torture_drs_rpc_dsintid_tcase(struct torture_suite *suite)
 				  torture_dsintid_tcase_teardown);
 
 	test = torture_tcase_add_simple_test(tcase, "Schema", (run_func)test_dsintid_schema);
+	test = torture_tcase_add_simple_test(tcase, "Configuration", (run_func)test_dsintid_configuration);
 	test = torture_tcase_add_simple_test(tcase, "Domain", (run_func)test_dsintid_domain);
 }
