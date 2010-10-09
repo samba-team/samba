@@ -580,7 +580,7 @@ static bool test_dsintid_domain(struct torture_context *tctx, struct DsIntIdTest
 	torture_assert(tctx, mem_ctx, "Not enough memory");
 
 	/* fetch whole Schema partition */
-	torture_comment(tctx, "Fetch partition: %s\n", ctx->schema_dn);
+	torture_comment(tctx, "Fetch partition: %s\n", ctx->domain_dn);
 	if (!_test_GetNCChanges(tctx, &ctx->dsa_bind, ctx->domain_dn, mem_ctx, &ctr6)) {
 		torture_fail(tctx, "_test_GetNCChanges() failed");
 	}
