@@ -130,8 +130,8 @@ def cmd_testonly(opt):
         server_wrapper = '../selftest/gdb_run _DUMMY=X'
 
     if Options.options.SCREEN:
-        server_wrapper = '../selftest/in_screen %s' % server_wrapper
-        os.environ['TERMINAL'] = '../selftest/in_screen'
+        server_wrapper = '%s/../selftest/in_screen %s' % (os.getcwd(), server_wrapper)
+        os.environ['TERMINAL'] = '%s/../selftest/in_screen' % os.getcwd()
     elif server_wrapper != '':
         server_wrapper = 'xterm -n server -l -e %s' % server_wrapper
 

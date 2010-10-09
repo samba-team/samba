@@ -88,6 +88,7 @@ sub check_or_start($$$)
 	POSIX::mkfifo($env_vars->{SAMBA_TEST_FIFO}, 0700);
 	unlink($env_vars->{SAMBA_TEST_LOG});
 	
+	my $pwd = `pwd`;
 	print "STARTING SAMBA for $ENV{ENVNAME}\n";
 	my $pid = fork();
 	if ($pid == 0) {
@@ -138,9 +139,11 @@ sub check_or_start($$$)
 		if (defined($ENV{SAMBA_PROCESS_MODEL})) {
 			$model = $ENV{SAMBA_PROCESS_MODEL};
 		}
-		my $ret = system("$valgrind $samba $optarg $env_vars->{CONFIGURATION} -M $model -i");
+		chomp($pwd);
+		my $cmdline = "$valgrind ${pwd}/$samba $optarg $env_vars->{CONFIGURATION} -M $model -i";
+		my $ret = system("$cmdline");
 		if ($ret == -1) {
-			print "Unable to start $samba: $ret: $!\n";
+			print "Unable to start $cmdline: $ret: $!\n";
 			exit 1;
 		}
 		my $exit = ($ret >> 8);

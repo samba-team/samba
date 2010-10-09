@@ -1,10 +1,24 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 export TMPDIR="$SELFTEST_TMPDIR"
 
 SERVERNAME="$ENVNAME"
 [ -z "$SERVERNAME" ] && SERVERNAME="base"
 basedir=$TMPDIR
+osname=$(uname)
+if [ "$osname" = "Linux" ]; then
+	vars=$(mktemp)
+else
+	vars=$(mktemp -t tmpsmb)
+	function seq() {
+		dpt=$1
+		end=$2
+		while [ $dpt -le $end ]; do
+			echo "$dpt"
+			dpt=$(( $dpt + 1))
+		done
+	}
+fi
 
 [ -r $basedir/$SERVERNAME.pid ] && {
     for i in $(seq 2 100); do
@@ -19,7 +33,6 @@ rm -f $basedir/$SERVERNAME.*
 
 # set most of the environment vars we have in the screen session too
 _ENV=""
-vars=$(mktemp)
 printenv |
   egrep -v '^TERMCAP|^WINDOW|^SHELL|^STY|^SHLVL|^SAMBA_VALGRIND|\$' |
   egrep '^[A-Z]' |
