@@ -489,6 +489,7 @@ static bool test_dsintid_schema(struct torture_context *tctx, struct DsIntIdTest
 	const struct drsuapi_DsReplicaAttribute *drs_attr;
 	const struct drsuapi_DsReplicaAttributeCtr *attr_ctr;
 	const struct drsuapi_DsReplicaObjectListItemEx *cur;
+	const struct drsuapi_DsReplicaLinkedAttribute *la;
 	TALLOC_CTX *mem_ctx;
 
 	mem_ctx = talloc_new(ctx);
@@ -531,6 +532,27 @@ static bool test_dsintid_schema(struct torture_context *tctx, struct DsIntIdTest
 		}
 	}
 
+	/* verify ATTIDs for Linked Attributes */
+	torture_comment(tctx, "Verify ATTIDs for Linked Attributes (%u)\n",
+			ctr6->linked_attributes_count);
+	for (i = 0; i < ctr6->linked_attributes_count; i++) {
+		la = &ctr6->linked_attributes[i];
+		dsdb_attr = dsdb_attribute_by_attributeID_id(ldap_schema, la->attid);
+
+		torture_assert(tctx,
+			       la->attid == dsdb_attr->attributeID_id,
+			       _make_error_message(ctx, la->attid,
+						   dsdb_attr,
+						   la->identifier))
+		if (dsdb_attr->msDS_IntId) {
+			torture_assert(tctx,
+				       drs_attr->attid != dsdb_attr->msDS_IntId,
+				       _make_error_message(ctx, la->attid,
+							   dsdb_attr,
+							   la->identifier))
+		}
+	}
+
 	talloc_free(mem_ctx);
 
 	return true;
@@ -551,6 +573,7 @@ static bool test_dsintid_domain(struct torture_context *tctx, struct DsIntIdTest
 	const struct drsuapi_DsReplicaAttribute *drs_attr;
 	const struct drsuapi_DsReplicaAttributeCtr *attr_ctr;
 	const struct drsuapi_DsReplicaObjectListItemEx *cur;
+	const struct drsuapi_DsReplicaLinkedAttribute *la;
 	TALLOC_CTX *mem_ctx;
 
 	mem_ctx = talloc_new(ctx);
@@ -590,6 +613,28 @@ static bool test_dsintid_domain(struct torture_context *tctx, struct DsIntIdTest
 								   dsdb_attr,
 								   cur->object.identifier));
 			}
+		}
+	}
+
+	/* verify ATTIDs for Linked Attributes */
+	torture_comment(tctx, "Verify ATTIDs for Linked Attributes (%u)\n",
+			ctr6->linked_attributes_count);
+	for (i = 0; i < ctr6->linked_attributes_count; i++) {
+		la = &ctr6->linked_attributes[i];
+		dsdb_attr = dsdb_attribute_by_attributeID_id(ldap_schema, la->attid);
+
+		if (dsdb_attr->msDS_IntId) {
+			torture_assert(tctx,
+				       la->attid == dsdb_attr->msDS_IntId,
+				       _make_error_message(ctx, la->attid,
+							   dsdb_attr,
+							   la->identifier));
+		} else {
+			torture_assert(tctx,
+				       la->attid == dsdb_attr->attributeID_id,
+				       _make_error_message(ctx, la->attid,
+							   dsdb_attr,
+							   la->identifier));
 		}
 	}
 
