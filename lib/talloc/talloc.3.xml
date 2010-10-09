@@ -10,7 +10,7 @@
 <refpurpose>hierarchical reference counted memory pool system with destructors</refpurpose>
   </refnamediv>
   <refsynopsisdiv>
-<synopsis>#include &lt;talloc/talloc.h&gt;</synopsis>
+<synopsis>#include &lt;talloc.h&gt;</synopsis>
   </refsynopsisdiv>
   <refsect1><title>DESCRIPTION</title>
     <para>
