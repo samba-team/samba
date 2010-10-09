@@ -460,17 +460,17 @@ static bool _test_GetNCChanges(struct torture_context *tctx,
 }
 
 static char * _make_error_message(TALLOC_CTX *mem_ctx,
-                                  const struct dsdb_attribute *dsdb_attr,
-                                  const struct drsuapi_DsReplicaAttribute *drs_attr,
-                                  const struct drsuapi_DsReplicaObjectListItemEx *drs_obj)
+				  enum drsuapi_DsAttributeId drs_attid,
+				  const struct dsdb_attribute *dsdb_attr,
+				  const struct drsuapi_DsReplicaObjectIdentifier *identifier)
 {
 	return talloc_asprintf(mem_ctx, "\nInvalid ATTID for %1$s (%2$s)\n"
 			       " drs_attid:      %3$11d (0x%3$08X)\n"
 			       " msDS_IntId:     %4$11d (0x%4$08X)\n"
 			       " attributeId_id: %5$11d (0x%5$08X)",
 			       dsdb_attr->lDAPDisplayName,
-			       drs_obj->object.identifier->dn,
-			       drs_attr->attid,
+			       identifier->dn,
+			       drs_attid,
 			       dsdb_attr->msDS_IntId,
 			       dsdb_attr->attributeID_id);
 }
@@ -518,11 +518,15 @@ static bool test_dsintid_schema(struct torture_context *tctx, struct DsIntIdTest
 
 			torture_assert(tctx,
 				       drs_attr->attid == dsdb_attr->attributeID_id,
-				       _make_error_message(ctx, dsdb_attr, drs_attr, cur))
+				       _make_error_message(ctx, drs_attr->attid,
+							   dsdb_attr,
+							   cur->object.identifier));
 			if (dsdb_attr->msDS_IntId) {
 				torture_assert(tctx,
-				               drs_attr->attid != dsdb_attr->msDS_IntId,
-				               _make_error_message(ctx, dsdb_attr, drs_attr, cur))
+					       drs_attr->attid != dsdb_attr->msDS_IntId,
+					       _make_error_message(ctx, drs_attr->attid,
+								   dsdb_attr,
+								   cur->object.identifier));
 			}
 		}
 	}
@@ -576,11 +580,15 @@ static bool test_dsintid_domain(struct torture_context *tctx, struct DsIntIdTest
 			if (dsdb_attr->msDS_IntId) {
 				torture_assert(tctx,
 				               drs_attr->attid == dsdb_attr->msDS_IntId,
-				               _make_error_message(ctx, dsdb_attr, drs_attr, cur))
+					       _make_error_message(ctx, drs_attr->attid,
+								   dsdb_attr,
+								   cur->object.identifier));
 			} else {
 				torture_assert(tctx,
 					       drs_attr->attid == dsdb_attr->attributeID_id,
-					       _make_error_message(ctx, dsdb_attr, drs_attr, cur))
+					       _make_error_message(ctx, drs_attr->attid,
+								   dsdb_attr,
+								   cur->object.identifier));
 			}
 		}
 	}
