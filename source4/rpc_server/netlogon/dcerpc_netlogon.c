@@ -131,7 +131,7 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3(struct dcesrv_call_state *dce_ca
 	}
 
 	sam_ctx = samdb_connect(mem_ctx, dce_call->event_ctx, dce_call->conn->dce_ctx->lp_ctx,
-				system_session(dce_call->conn->dce_ctx->lp_ctx));
+				system_session(dce_call->conn->dce_ctx->lp_ctx), 0);
 	if (sam_ctx == NULL) {
 		return NT_STATUS_INVALID_SYSTEM_SERVICE;
 	}
@@ -400,7 +400,7 @@ static NTSTATUS dcesrv_netr_ServerPasswordSet(struct dcesrv_call_state *dce_call
 							&creds);
 	NT_STATUS_NOT_OK_RETURN(nt_status);
 
-	sam_ctx = samdb_connect(mem_ctx, dce_call->event_ctx, dce_call->conn->dce_ctx->lp_ctx, system_session(dce_call->conn->dce_ctx->lp_ctx));
+	sam_ctx = samdb_connect(mem_ctx, dce_call->event_ctx, dce_call->conn->dce_ctx->lp_ctx, system_session(dce_call->conn->dce_ctx->lp_ctx), 0);
 	if (sam_ctx == NULL) {
 		return NT_STATUS_INVALID_SYSTEM_SERVICE;
 	}
@@ -458,7 +458,7 @@ static NTSTATUS dcesrv_netr_ServerPasswordSet2(struct dcesrv_call_state *dce_cal
 							&creds);
 	NT_STATUS_NOT_OK_RETURN(nt_status);
 
-	sam_ctx = samdb_connect(mem_ctx, dce_call->event_ctx, dce_call->conn->dce_ctx->lp_ctx, system_session(dce_call->conn->dce_ctx->lp_ctx));
+	sam_ctx = samdb_connect(mem_ctx, dce_call->event_ctx, dce_call->conn->dce_ctx->lp_ctx, system_session(dce_call->conn->dce_ctx->lp_ctx), 0);
 	if (sam_ctx == NULL) {
 		return NT_STATUS_INVALID_SYSTEM_SERVICE;
 	}
@@ -942,7 +942,7 @@ static WERROR dcesrv_netr_GetDcName(struct dcesrv_call_state *dce_call, TALLOC_C
 
 	sam_ctx = samdb_connect(mem_ctx, dce_call->event_ctx,
 				dce_call->conn->dce_ctx->lp_ctx,
-				dce_call->conn->auth_state.session_info);
+				dce_call->conn->auth_state.session_info, 0);
 	if (sam_ctx == NULL) {
 		return WERR_DS_UNAVAILABLE;
 	}
@@ -1057,7 +1057,7 @@ static WERROR dcesrv_netr_GetAnyDCName(struct dcesrv_call_state *dce_call, TALLO
 	}
 
 	sam_ctx = samdb_connect(mem_ctx, dce_call->event_ctx, lp_ctx,
-				dce_call->conn->auth_state.session_info);
+				dce_call->conn->auth_state.session_info, 0);
 	if (sam_ctx == NULL) {
 		return WERR_DS_UNAVAILABLE;
 	}
@@ -1184,7 +1184,7 @@ static WERROR dcesrv_netr_DsRGetSiteName(struct dcesrv_call_state *dce_call, TAL
 	struct loadparm_context *lp_ctx = dce_call->conn->dce_ctx->lp_ctx;
 
 	sam_ctx = samdb_connect(mem_ctx, dce_call->event_ctx, lp_ctx,
-				dce_call->conn->auth_state.session_info);
+				dce_call->conn->auth_state.session_info, 0);
 	if (sam_ctx == NULL) {
 		return WERR_DS_UNAVAILABLE;
 	}
@@ -1293,7 +1293,7 @@ static NTSTATUS dcesrv_netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_cal
 
 	sam_ctx = samdb_connect(mem_ctx, dce_call->event_ctx,
 				dce_call->conn->dce_ctx->lp_ctx,
-				system_session(dce_call->conn->dce_ctx->lp_ctx));
+				system_session(dce_call->conn->dce_ctx->lp_ctx), 0);
 	if (sam_ctx == NULL) {
 		return NT_STATUS_INVALID_SYSTEM_SERVICE;
 	}
@@ -1557,7 +1557,7 @@ static WERROR dcesrv_netr_DsRGetDCNameEx2(struct dcesrv_call_state *dce_call,
 	ZERO_STRUCTP(r->out.info);
 
 	sam_ctx = samdb_connect(mem_ctx, dce_call->event_ctx, lp_ctx,
-				dce_call->conn->auth_state.session_info);
+				dce_call->conn->auth_state.session_info, 0);
 	if (sam_ctx == NULL) {
 		return WERR_DS_UNAVAILABLE;
 	}
@@ -1708,7 +1708,7 @@ static WERROR dcesrv_netr_DsRAddressToSitenamesExW(struct dcesrv_call_state *dce
 	uint32_t i;
 
 	sam_ctx = samdb_connect(mem_ctx, dce_call->event_ctx, lp_ctx,
-				dce_call->conn->auth_state.session_info);
+				dce_call->conn->auth_state.session_info, 0);
 	if (sam_ctx == NULL) {
 		return WERR_DS_UNAVAILABLE;
 	}
@@ -1824,7 +1824,7 @@ static WERROR dcesrv_netr_DsrGetDcSiteCoverageW(struct dcesrv_call_state *dce_ca
 	struct loadparm_context *lp_ctx = dce_call->conn->dce_ctx->lp_ctx;
 
 	sam_ctx = samdb_connect(mem_ctx, dce_call->event_ctx, lp_ctx,
-				dce_call->conn->auth_state.session_info);
+				dce_call->conn->auth_state.session_info, 0);
 	if (sam_ctx == NULL) {
 		return WERR_DS_UNAVAILABLE;
 	}
@@ -2003,7 +2003,7 @@ static WERROR dcesrv_netr_DsrEnumerateDomainTrusts(struct dcesrv_call_state *dce
 	r->out.trusts = trusts;
 
 	sam_ctx = samdb_connect(mem_ctx, dce_call->event_ctx, lp_ctx,
-				dce_call->conn->auth_state.session_info);
+				dce_call->conn->auth_state.session_info, 0);
 	if (sam_ctx == NULL) {
 		return WERR_GENERAL_FAILURE;
 	}
@@ -2153,7 +2153,7 @@ static WERROR dcesrv_netr_DsRGetForestTrustInformation(struct dcesrv_call_state 
 	}
 
 	sam_ctx = samdb_connect(mem_ctx, dce_call->event_ctx, lp_ctx,
-				dce_call->conn->auth_state.session_info);
+				dce_call->conn->auth_state.session_info, 0);
 	if (sam_ctx == NULL) {
 		return WERR_GENERAL_FAILURE;
 	}
@@ -2223,7 +2223,7 @@ static NTSTATUS dcesrv_netr_GetForestTrustInformation(struct dcesrv_call_state *
 	}
 
 	sam_ctx = samdb_connect(mem_ctx, dce_call->event_ctx, lp_ctx,
-				dce_call->conn->auth_state.session_info);
+				dce_call->conn->auth_state.session_info, 0);
 	if (sam_ctx == NULL) {
 		return NT_STATUS_UNSUCCESSFUL;
 	}

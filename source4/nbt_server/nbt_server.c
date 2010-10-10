@@ -66,7 +66,7 @@ static void nbtd_task_init(struct task_server *task)
 		return;
 	}
 
-	nbtsrv->sam_ctx = samdb_connect(nbtsrv, task->event_ctx, task->lp_ctx, system_session(task->lp_ctx));
+	nbtsrv->sam_ctx = samdb_connect(nbtsrv, task->event_ctx, task->lp_ctx, system_session(task->lp_ctx), 0);
 	if (nbtsrv->sam_ctx == NULL) {
 		task_server_terminate(task, "nbtd failed to open samdb", true);
 		return;

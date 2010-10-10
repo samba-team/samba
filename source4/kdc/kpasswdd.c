@@ -180,7 +180,7 @@ static bool kpasswdd_change_password(struct kdc_server *kdc,
 	/* Connect to a SAMDB with system privileges for fetching the old pw
 	 * hashes. */
 	samdb = samdb_connect(mem_ctx, kdc->task->event_ctx, kdc->task->lp_ctx,
-			      system_session(kdc->task->lp_ctx));
+			      system_session(kdc->task->lp_ctx), 0);
 	if (!samdb) {
 		return kpasswdd_make_error_reply(kdc, mem_ctx,
 						KRB5_KPASSWD_HARDERROR,
@@ -213,7 +213,7 @@ static bool kpasswdd_change_password(struct kdc_server *kdc,
 
 	/* Start a SAM with user privileges for the password change */
 	samdb = samdb_connect(mem_ctx, kdc->task->event_ctx, kdc->task->lp_ctx,
-			      session_info);
+			      session_info, 0);
 	if (!samdb) {
 		return kpasswdd_make_error_reply(kdc, mem_ctx,
 						KRB5_KPASSWD_HARDERROR,
@@ -371,7 +371,7 @@ static bool kpasswd_process_request(struct kdc_server *kdc,
 		}
 		krb5_free_principal(context, principal);
 
-		samdb = samdb_connect(mem_ctx, kdc->task->event_ctx, kdc->task->lp_ctx, session_info);
+		samdb = samdb_connect(mem_ctx, kdc->task->event_ctx, kdc->task->lp_ctx, session_info, 0);
 		if (!samdb) {
 			return kpasswdd_make_error_reply(kdc, mem_ctx,
 							 KRB5_KPASSWD_HARDERROR,

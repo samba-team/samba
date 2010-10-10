@@ -123,14 +123,15 @@ struct cli_credentials *samdb_credentials(struct tevent_context *event_ctx,
 struct ldb_context *samdb_connect(TALLOC_CTX *mem_ctx, 
 				  struct tevent_context *ev_ctx,
 				  struct loadparm_context *lp_ctx,
-				  struct auth_session_info *session_info)
+				  struct auth_session_info *session_info,
+				  int flags)
 {
 	struct ldb_context *ldb;
 	struct dsdb_schema *schema;
 	ldb = ldb_wrap_connect(mem_ctx, ev_ctx, lp_ctx,
 			       lpcfg_sam_url(lp_ctx), session_info,
 			       samdb_credentials(ev_ctx, lp_ctx),
-			       0);
+			       flags);
 
 	if (!ldb) {
 		return NULL;

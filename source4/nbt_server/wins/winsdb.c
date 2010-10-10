@@ -1013,7 +1013,7 @@ struct winsdb_handle *winsdb_connect(TALLOC_CTX *mem_ctx,
 
 	h->ldb = ldb_wrap_connect(h, ev_ctx, lp_ctx, lock_path(h, lp_ctx, lpcfg_wins_url(lp_ctx)),
 				  NULL, NULL, flags);
-	if (!h->ldb) goto failed;	
+	if (!h->ldb) goto failed;
 
 	h->caller = caller;
 	h->hook_script = lpcfg_wins_hook(lp_ctx);

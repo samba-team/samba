@@ -1216,7 +1216,8 @@ NTSTATUS libnet_samsync_ldb(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, str
 	state->sam_ldb         = samdb_connect(mem_ctx, 
 					       ctx->event_ctx,
 					       ctx->lp_ctx,
-					       r->in.session_info);
+					       r->in.session_info,
+						   0);
 	if (!state->sam_ldb) {
 		return NT_STATUS_INTERNAL_DB_ERROR;
 	}

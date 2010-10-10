@@ -194,12 +194,10 @@ static int map_ldb_error(TALLOC_CTX *mem_ctx, int ldb_err,
 */
 NTSTATUS ldapsrv_backend_Init(struct ldapsrv_connection *conn) 
 {
-	conn->ldb = ldb_wrap_connect(conn, 
+	conn->ldb = samdb_connect(conn, 
 				     conn->connection->event.ctx,
 				     conn->lp_ctx,
-				     lpcfg_sam_url(conn->lp_ctx),
 				     conn->session_info,
-				     samdb_credentials(conn->connection->event.ctx, conn->lp_ctx),
 				     conn->global_catalog ? LDB_FLG_RDONLY : 0);
 	if (conn->ldb == NULL) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;

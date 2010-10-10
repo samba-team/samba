@@ -1235,7 +1235,7 @@ NTSTATUS crack_name_to_nt4_name(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_OK;
 	}
 
-	ldb = samdb_connect(mem_ctx, ev_ctx, lp_ctx, system_session(lp_ctx));
+	ldb = samdb_connect(mem_ctx, ev_ctx, lp_ctx, system_session(lp_ctx), 0);
 	if (ldb == NULL) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
