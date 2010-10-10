@@ -2,7 +2,7 @@
 
 bld.SAMBA_SUBSYSTEM('LIBCRYPTO',
 	source='crc32.c md5.c hmacmd5.c md4.c arcfour.c sha256.c hmacsha256.c aes.c rijndael-alg-fst.c',
-        deps='talloc'
+	deps='talloc'
 	)
 
 
