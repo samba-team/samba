@@ -495,7 +495,7 @@ class PlainFormatter(TestsuiteEnabledTestResult):
 
         self.test_output[self.name] += "UNEXPECTED(%s): %s\n" % (result, testname)
         if reason is not None:
-            self.test_output[self.name] += "REASON: %s\n" % (reason[1].message.encode("utf-8").strip(),)
+            self.test_output[self.name] += "REASON: %s\n" % (unicode(reason[1]).encode("utf-8").strip(),)
 
         if self.immediate and not self.verbose:
             print self.test_output[self.name]
