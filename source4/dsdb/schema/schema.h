@@ -27,6 +27,7 @@
 struct dsdb_attribute;
 struct dsdb_class;
 struct dsdb_schema;
+struct dsdb_dn;
 
 struct dsdb_syntax_ctx {
 	struct ldb_context *ldb;
