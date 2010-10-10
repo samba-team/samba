@@ -94,20 +94,6 @@ static struct ldb_wrap {
 	struct ldb_context *ldb;
 } *ldb_wrap_list;
 
-/*
-  see if two database opens are equivalent
- */
-static bool ldb_wrap_same_context(const struct ldb_wrap_context *c1,
-				  const struct ldb_wrap_context *c2)
-{
-	return (c1->ev == c2->ev &&
-		c1->lp_ctx == c2->lp_ctx &&
-		c1->session_info == c2->session_info &&
-		c1->credentials == c2->credentials &&
-		c1->flags == c2->flags &&
-		(c1->url == c2->url || strcmp(c1->url, c2->url) == 0));
-}
-
 /* 
    free a ldb_wrap structure
  */
@@ -117,13 +103,17 @@ static int ldb_wrap_destructor(struct ldb_wrap *w)
 	return 0;
 }
 
-static ldb_context *samba_ldb_init(TALLOC_CTX *mem_ctx,
+ struct ldb_context *samba_ldb_init(TALLOC_CTX *mem_ctx,
 								  struct tevent_context *ev,
 								  struct loadparm_context *lp_ctx,
 								  struct auth_session_info *session_info,
-								  struct cli_credentials *credentials
+								  struct cli_credentials *credentials,
+								  int flags
 								  )
 {
+	struct ldb_context *ldb;
+	int ret;
+
 	/* we want to use the existing event context if possible. This
 	   relies on the fact that in smbd, everything is a child of
 	   the main event_context */
@@ -191,6 +181,28 @@ static ldb_context *samba_ldb_init(TALLOC_CTX *mem_ctx,
 	return ldb;
 }
 
+ struct ldb_context *ldb_wrap_find(const char *url,
+								  struct tevent_context *ev,
+								  struct loadparm_context *lp_ctx,
+								  struct auth_session_info *session_info,
+								  struct cli_credentials *credentials,
+								  int flags)
+{
+	struct ldb_wrap *w;
+	/* see if we can re-use an existing ldb */
+	for (w=ldb_wrap_list; w; w=w->next) {
+		if (w->context.ev == ev &&
+		    w->context.lp_ctx == lp_ctx &&
+		    w->context.session_info == session_info &&
+		    w->context.credentials == credentials &&
+		    w->context.flags == flags &&
+		    (w->context.url == url || strcmp(w->context.url, url) == 0))
+			return w->ldb;
+	}
+
+	return NULL;
+}
+
 /*
   wrapped connection to a ldb database
   to close just talloc_free() the returned ldb_context
@@ -208,24 +220,14 @@ static ldb_context *samba_ldb_init(TALLOC_CTX *mem_ctx,
 	struct ldb_context *ldb;
 	int ret;
 	char *real_url = NULL;
-	struct ldb_wrap *w;
 	struct ldb_wrap_context c;
+	struct ldb_wrap *w;
 
-	c.url          = url;
-	c.ev           = ev;
-	c.lp_ctx       = lp_ctx;
-	c.session_info = session_info;
-	c.credentials  = credentials;
-	c.flags        = flags;
+	ldb = ldb_wrap_find(url, ev, lp_ctx, session_info, credentials, flags);
+	if (ldb != NULL)
+		return talloc_reference(mem_ctx, ldb);
 
-	/* see if we can re-use an existing ldb */
-	for (w=ldb_wrap_list; w; w=w->next) {
-		if (ldb_wrap_same_context(&c, &w->context)) {
-			return talloc_reference(mem_ctx, w->ldb);
-		}
-	}
-
-	ldb = samba_ldb_init(mem_ctx, ev, lp_ctx, session_info, credentials);
+	ldb = samba_ldb_init(mem_ctx, ev, lp_ctx, session_info, credentials, flags);
 
 	if (ldb == NULL)
 		return NULL;
@@ -256,6 +258,13 @@ static ldb_context *samba_ldb_init(TALLOC_CTX *mem_ctx,
 		talloc_free(ldb);
 		return NULL;
 	}
+
+	c.url          = url;
+	c.ev           = ev;
+	c.lp_ctx       = lp_ctx;
+	c.session_info = session_info;
+	c.credentials  = credentials;
+	c.flags        = flags;
 
 	w->context = c;
 	w->context.url = talloc_strdup(w, url);

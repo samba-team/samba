@@ -22,6 +22,8 @@
 #ifndef _LDB_WRAP_H_
 #define _LDB_WRAP_H_
 
+#include <talloc.h>
+
 struct auth_session_info;
 struct ldb_message;
 struct ldb_dn;
@@ -41,12 +43,17 @@ struct ldb_context *ldb_wrap_connect(TALLOC_CTX *mem_ctx,
 
 void ldb_wrap_fork_hook(void);
 
-static ldb_context *samba_ldb_init(TALLOC_CTX *mem_ctx,
+struct ldb_context *samba_ldb_init(TALLOC_CTX *mem_ctx,
 								  struct tevent_context *ev,
 								  struct loadparm_context *lp_ctx,
 								  struct auth_session_info *session_info,
-								  struct cli_credentials *credentials
-								  );
-
+								  struct cli_credentials *credentials,
+								  int flags);
+struct ldb_context *ldb_wrap_find(const char *url,
+								  struct tevent_context *ev,
+								  struct loadparm_context *lp_ctx,
+								  struct auth_session_info *session_info,
+								  struct cli_credentials *credentials,
+								  int flags);
 
 #endif /* _LDB_WRAP_H_ */
