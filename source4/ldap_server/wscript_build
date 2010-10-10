@@ -6,6 +6,6 @@ bld.SAMBA_MODULE('LDAP',
 	autoproto='proto.h',
 	subsystem='service',
 	init_function='server_service_ldap_init',
-	deps='CREDENTIALS LIBCLI_LDAP SAMDB process_model gensec LIBSAMBA-HOSTCONFIG'
+	deps='CREDENTIALS LIBCLI_LDAP SAMDB process_model gensec LIBSAMBA-HOSTCONFIG samba_server_gensec'
 	)
 
