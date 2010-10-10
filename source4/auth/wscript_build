@@ -11,7 +11,7 @@ bld.SAMBA_SUBSYSTEM('auth_session',
 	autoproto='session_proto.h',
 	public_deps='CREDENTIALS',
 	public_headers='session.h',
-        header_path='samba',
+	header_path='samba',
 	deps='SAMDB auth_sam'
 	)
 
@@ -26,7 +26,7 @@ bld.SAMBA_SUBSYSTEM('auth_system_session',
 	source='system_session.c',
 	autoproto='system_session_proto.h',
 	public_deps='CREDENTIALS',
-	deps='auth_session LIBSAMBA-UTIL LIBSECURITY'
+	deps='auth_session',
 	)
 
 
