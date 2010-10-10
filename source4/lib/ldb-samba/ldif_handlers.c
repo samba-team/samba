@@ -1299,7 +1299,6 @@ int ldb_register_samba_handlers(struct ldb_context *ldb)
 			return ret;
 		}
 
-		
 	}
 
 	return LDB_SUCCESS;

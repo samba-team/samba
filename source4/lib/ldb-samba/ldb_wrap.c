@@ -61,7 +61,7 @@ static void ldb_wrap_debug(void *context, enum ldb_debug_level level,
 	case LDB_DEBUG_TRACE:
 		samba_level = 5;
 		break;
-		
+
 	};
 	vasprintf(&s, fmt, ap);
 	if (!s) return;
@@ -116,6 +116,7 @@ static int ldb_wrap_destructor(struct ldb_wrap *w)
 	DLIST_REMOVE(ldb_wrap_list, w);
 	return 0;
 }
+
 
 /*
   wrapped connection to a ldb database
@@ -266,14 +267,6 @@ static int ldb_wrap_destructor(struct ldb_wrap *w)
 	w->ldb = ldb;
 
 	DLIST_ADD(ldb_wrap_list, w);
-
-	/* make the resulting schema global */
-	if (lp_ctx != NULL && strcmp(lpcfg_sam_url(lp_ctx), url) == 0) {
-		struct dsdb_schema *schema = dsdb_get_schema(ldb, NULL);
-		if (schema) {
-			dsdb_make_schema_global(ldb, schema);
-		}
-	}
 
 	DEBUG(3,("ldb_wrap open of %s\n", url));
 

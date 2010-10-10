@@ -9,7 +9,7 @@ bld.SAMBA_SUBSYSTEM('LDBSAMBA',
 	autoproto='ldif_handlers_proto.h',
 	public_deps='ldb',
 	public_headers='ldb_wrap.h',
-	deps='LIBSECURITY SAMDB_SCHEMA LIBNDR NDR_DRSBLOBS CREDENTIALS UTIL_LDB NDR_DNSP'
+	deps='LIBSECURITY LIBNDR NDR_DRSBLOBS CREDENTIALS UTIL_LDB NDR_DNSP'
 	)
 
 

@@ -126,13 +126,22 @@ struct ldb_context *samdb_connect(TALLOC_CTX *mem_ctx,
 				  struct auth_session_info *session_info)
 {
 	struct ldb_context *ldb;
+	struct dsdb_schema *schema;
 	ldb = ldb_wrap_connect(mem_ctx, ev_ctx, lp_ctx,
 			       lpcfg_sam_url(lp_ctx), session_info,
 			       samdb_credentials(ev_ctx, lp_ctx),
 			       0);
+
 	if (!ldb) {
 		return NULL;
 	}
+
+	schema = dsdb_get_schema(ldb, NULL);
+	/* make the resulting schema global */
+	if (schema) {
+		dsdb_make_schema_global(ldb, schema);
+	}
+
 	return ldb;
 }
 
