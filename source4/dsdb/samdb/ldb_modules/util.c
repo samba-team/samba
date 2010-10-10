@@ -954,18 +954,6 @@ int dsdb_recyclebin_enabled(struct ldb_module *module, bool *enabled)
 	return LDB_SUCCESS;
 }
 
-bool is_attr_in_list(const char * const * attrs, const char *attr)
-{
-	unsigned int i;
-
-	for (i = 0; attrs[i]; i++) {
-		if (ldb_attr_cmp(attrs[i], attr) == 0)
-			return true;
-	}
-
-	return false;
-}
-
 int dsdb_msg_constrainted_update_int32(struct ldb_module *module,
 				       struct ldb_message *msg,
 				       const char *attr,

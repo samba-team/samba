@@ -42,7 +42,6 @@
 #include "lib/util/tsort.h"
 #include "dsdb/common/util.h"
 #include "lib/socket/socket.h"
-#include "dsdb/samdb/ldb_modules/util.h"
 #include "librpc/gen_ndr/irpc.h"
 
 /*
@@ -4251,5 +4250,17 @@ bool dsdb_attr_in_parse_tree(struct ldb_parse_tree *tree,
                return false;
        }
        return false;
+}
+
+bool is_attr_in_list(const char * const * attrs, const char *attr)
+{
+	unsigned int i;
+
+	for (i = 0; attrs[i]; i++) {
+		if (ldb_attr_cmp(attrs[i], attr) == 0)
+			return true;
+	}
+
+	return false;
 }
 
