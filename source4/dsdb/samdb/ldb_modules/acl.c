@@ -39,6 +39,7 @@
 #include "librpc/gen_ndr/ndr_security.h"
 #include "param/param.h"
 #include "dsdb/samdb/ldb_modules/util.h"
+#include "dsdb/samdb/ldb_modules/schema.h"
 #include "lib/util/tsort.h"
 
 struct extended_access_check_attribute {

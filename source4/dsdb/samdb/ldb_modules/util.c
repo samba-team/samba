@@ -484,33 +484,6 @@ int dsdb_module_del(struct ldb_module *module,
 	return ret;
 }
 
-const struct dsdb_class * get_last_structural_class(const struct dsdb_schema *schema,const struct ldb_message_element *element)
-{
-	const struct dsdb_class *last_class = NULL;
-	unsigned int i;
-
-	for (i = 0; i < element->num_values; i++){
-		const struct dsdb_class *tmp_class = dsdb_class_by_lDAPDisplayName_ldb_val(schema, &element->values[i]);
-
-		if(tmp_class == NULL) {
-			continue;
-		}
-
-		if(tmp_class->objectClassCategory > 1) {
-			continue;
-		}
-
-		if (!last_class) {
-			last_class = tmp_class;
-		} else {
-			if (tmp_class->subClass_order > last_class->subClass_order)
-				last_class = tmp_class;
-		}
-	}
-
-	return last_class;
-}
-
 /*
   check if a single valued link has multiple non-deleted values
 

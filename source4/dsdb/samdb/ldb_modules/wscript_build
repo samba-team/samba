@@ -3,13 +3,19 @@
 bld.SAMBA_SUBSYSTEM('DSDB_MODULE_HELPERS',
 	source='util.c acl_util.c',
 	autoproto='util_proto.h',
-	deps='ldb LIBNDR SAMDB_SCHEMA'
+	deps='ldb LIBNDR SAMDB_COMMON'
 	)
 
 bld.SAMBA_SUBSYSTEM('DSDB_MODULE_HELPER_RIDALLOC',
 	source='ridalloc.c',
 	autoproto='ridalloc.h',
 	deps='MESSAGING',
+	)
+
+bld.SAMBA_SUBSYSTEM('DSDB_MODULE_HELPER_SCHEMA',
+	source='schema.c',
+	autoproto='schema.h',
+	deps='SAMDB_SCHEMA'
 	)
 
 bld.SAMBA_MODULE('ldb_samba_dsdb',
@@ -135,7 +141,7 @@ bld.SAMBA_MODULE('ldb_rootdse',
 	subsystem='ldb',
 	init_function='LDB_MODULE(rootdse)',
 	internal_module=not bld.CONFIG_SET('USING_SYSTEM_LDB'),
-	deps='talloc LIBEVENTS SAMDB'
+	deps='talloc LIBEVENTS SAMDB MESSAGING'
 	)
 
 
@@ -226,7 +232,7 @@ bld.SAMBA_MODULE('ldb_objectclass',
 	subsystem='ldb',
 	init_function='LDB_MODULE(objectclass)',
 	internal_module=not bld.CONFIG_SET('USING_SYSTEM_LDB'),
-	deps='talloc LIBEVENTS LIBSECURITY NDR_SECURITY SAMDB DSDB_MODULE_HELPERS LIBSAMBA-UTIL'
+	deps='talloc LIBEVENTS LIBSECURITY NDR_SECURITY SAMDB DSDB_MODULE_HELPERS LIBSAMBA-UTIL DSDB_MODULE_HELPER_SCHEMA'
 	)
 
 
@@ -307,7 +313,7 @@ bld.SAMBA_MODULE('ldb_descriptor',
 	subsystem='ldb',
 	init_function='LDB_MODULE(descriptor)',
 	internal_module=not bld.CONFIG_SET('USING_SYSTEM_LDB'),
-	deps='talloc LIBEVENTS LIBSECURITY NDR_SECURITY SAMDB DSDB_MODULE_HELPERS'
+	deps='talloc LIBEVENTS LIBSECURITY NDR_SECURITY SAMDB DSDB_MODULE_HELPERS DSDB_MODULE_HELPER_SCHEMA'
 	)
 
 
@@ -325,7 +331,7 @@ bld.SAMBA_MODULE('ldb_acl',
 	subsystem='ldb',
 	init_function='LDB_MODULE(acl)',
 	internal_module=not bld.CONFIG_SET('USING_SYSTEM_LDB'),
-	deps='talloc LIBEVENTS LIBSECURITY SAMDB DSDB_MODULE_HELPERS'
+	deps='talloc LIBEVENTS LIBSECURITY SAMDB DSDB_MODULE_HELPERS DSDB_MODULE_HELPER_SCHEMA'
 	)
 
 

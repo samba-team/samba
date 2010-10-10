@@ -39,6 +39,7 @@
 #include "librpc/ndr/libndr.h"
 #include "librpc/gen_ndr/ndr_security.h"
 #include "libcli/security/security.h"
+#include "dsdb/samdb/ldb_modules/schema.h"
 #include "auth/auth.h"
 #include "param/param.h"
 #include "util.h"
