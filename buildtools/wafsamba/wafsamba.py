@@ -322,7 +322,9 @@ def SAMBA_MODULE(bld, modname, source,
                  internal_module=True,
                  local_include=True,
                  vars=None,
-                 enabled=True):
+                 enabled=True,
+                 pyembed=True,
+                 ):
     '''define a Samba module.'''
 
     source = bld.EXPAND_VARIABLES(source, vars=vars)
@@ -378,7 +380,8 @@ def SAMBA_MODULE(bld, modname, source,
                           local_include=local_include,
                           vars=vars,
                           link_name=build_link_name,
-                          install_path="${MODULESDIR}/%s" % subsystem
+                          install_path="${MODULESDIR}/%s" % subsystem,
+                          pyembed=pyembed,
                           )
 
 Build.BuildContext.SAMBA_MODULE = SAMBA_MODULE
@@ -406,7 +409,8 @@ def SAMBA_SUBSYSTEM(bld, modname, source,
                     use_global_deps=True,
                     vars=None,
                     hide_symbols=False,
-                    pyembed=False):
+                    pyembed=False,
+                    pyext=False):
     '''define a Samba subsystem'''
 
     if not enabled:
@@ -431,6 +435,8 @@ def SAMBA_SUBSYSTEM(bld, modname, source,
     features = 'cc'
     if pyembed:
         features += ' pyembed'
+    if pyext:
+        features += ' pyext'
 
     t = bld(
         features       = features,
