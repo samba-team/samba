@@ -5,7 +5,8 @@ bld.SAMBA_LIBRARY('policy',
 	pc_files='policy.pc',
 	public_deps='ldb LIBSAMBA-NET',
 	public_headers='policy.h',
-	vnum='0.0.1'
+	vnum='0.0.1',
+	pyembed=True
 	)
 
 bld.SAMBA_PYTHON('py_policy',

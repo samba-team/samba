@@ -2,17 +2,18 @@
 
 
 bld.SAMBA_SUBSYSTEM('WEB_WSGI',
-				source='wsgi.c',
-				deps='talloc LIBTSOCKET',
-				pyembed=True
-                 )
+		source='wsgi.c',
+		pyext=True,
+		deps='talloc LIBTSOCKET',
+		)
 
 
 bld.SAMBA_MODULE('WEB',
-                 source='web_server.c',
-                 autoproto='proto.h',
-                 autoproto_extra_source='wsgi.c',
-                 subsystem='service',
-                 init_function='server_service_web_init',
-                 deps='LIBTLS smbcalls process_model LIBPYTHON WEB_WSGI'
-                 )
+		source='web_server.c',
+		autoproto='proto.h',
+		autoproto_extra_source='wsgi.c',
+		subsystem='service',
+		init_function='server_service_web_init',
+		deps='LIBTLS smbcalls process_model LIBPYTHON WEB_WSGI',
+		pyembed=True,
+		)

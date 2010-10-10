@@ -148,8 +148,8 @@ def SAMBA_LIBRARY(bld, libname, source,
                         group          = group,
                         autoproto      = autoproto,
                         depends_on     = depends_on,
-                        pyembed        = pyembed,
                         hide_symbols   = hide_symbols,
+                        pyext          = (target_type == "PYTHON"),
                         local_include  = local_include)
 
     if BUILTIN_LIBRARY(bld, libname):
@@ -270,9 +270,9 @@ def SAMBA_BINARY(bld, binname, source,
                         group          = group,
                         autoproto      = autoproto,
                         subsystem_name = subsystem_name,
-                        pyembed        = pyembed,
                         local_include  = local_include,
                         use_hostcc     = use_hostcc,
+                        pyext          = pyembed,
                         use_global_deps= use_global_deps)
 
     bld.SET_BUILD_GROUP(group)
@@ -409,7 +409,6 @@ def SAMBA_SUBSYSTEM(bld, modname, source,
                     use_global_deps=True,
                     vars=None,
                     hide_symbols=False,
-                    pyembed=False,
                     pyext=False):
     '''define a Samba subsystem'''
 
@@ -433,8 +432,6 @@ def SAMBA_SUBSYSTEM(bld, modname, source,
     bld.SET_BUILD_GROUP(group)
 
     features = 'cc'
-    if pyembed:
-        features += ' pyembed'
     if pyext:
         features += ' pyext'
 
