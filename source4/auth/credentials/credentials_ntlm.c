@@ -27,19 +27,6 @@
 #include "libcli/auth/libcli_auth.h"
 #include "auth/credentials/credentials.h"
 
-_PUBLIC_ void cli_credentials_get_ntlm_username_domain(struct cli_credentials *cred, TALLOC_CTX *mem_ctx, 
-					      const char **username, 
-					      const char **domain) 
-{
-	if (cred->principal_obtained > cred->username_obtained) {
-		*domain = talloc_strdup(mem_ctx, "");
-		*username = cli_credentials_get_principal(cred, mem_ctx);
-	} else {
-		*domain = cli_credentials_get_domain(cred);
-		*username = cli_credentials_get_username(cred);
-	}
-}
-
 _PUBLIC_ NTSTATUS cli_credentials_get_ntlm_response(struct cli_credentials *cred, TALLOC_CTX *mem_ctx, 
 					   int *flags,
 					   DATA_BLOB challenge, DATA_BLOB target_info, 
