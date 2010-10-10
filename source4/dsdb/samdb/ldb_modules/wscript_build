@@ -1,11 +1,16 @@
 #!/usr/bin/env python
 
 bld.SAMBA_SUBSYSTEM('DSDB_MODULE_HELPERS',
-	source='util.c ridalloc.c acl_util.c',
+	source='util.c acl_util.c',
 	autoproto='util_proto.h',
-	deps='ldb LIBNDR SAMDB_SCHEMA MESSAGING'
+	deps='ldb LIBNDR SAMDB_SCHEMA'
 	)
 
+bld.SAMBA_SUBSYSTEM('DSDB_MODULE_HELPER_RIDALLOC',
+	source='ridalloc.c',
+	autoproto='ridalloc.h',
+	deps='MESSAGING',
+	)
 
 bld.SAMBA_MODULE('ldb_samba_dsdb',
 	source='samba_dsdb.c',
@@ -93,7 +98,7 @@ bld.SAMBA_MODULE('ldb_samldb',
 	subsystem='ldb',
 	init_function='LDB_MODULE(samldb)',
 	internal_module=not bld.CONFIG_SET('USING_SYSTEM_LDB'),
-	deps='talloc LIBEVENTS SAMDB DSDB_MODULE_HELPERS'
+	deps='talloc LIBEVENTS SAMDB DSDB_MODULE_HELPERS DSDB_MODULE_HELPER_RIDALLOC'
 	)
 
 
@@ -111,7 +116,7 @@ bld.SAMBA_MODULE('ldb_samba3sid',
 	subsystem='ldb',
 	init_function='LDB_MODULE(samba3sid)',
 	internal_module=not bld.CONFIG_SET('USING_SYSTEM_LDB'),
-	deps='talloc LIBEVENTS ldb SMBPASSWD NSS_WRAPPER LIBSECURITY NDR_SECURITY LDBSAMBA'
+	deps='talloc LIBEVENTS ldb SMBPASSWD NSS_WRAPPER LIBSECURITY NDR_SECURITY LDBSAMBA DSDB_MODULE_HELPERS'
 	)
 
 
@@ -320,7 +325,7 @@ bld.SAMBA_MODULE('ldb_acl',
 	subsystem='ldb',
 	init_function='LDB_MODULE(acl)',
 	internal_module=not bld.CONFIG_SET('USING_SYSTEM_LDB'),
-	deps='talloc LIBEVENTS LIBSECURITY SAMDB'
+	deps='talloc LIBEVENTS LIBSECURITY SAMDB DSDB_MODULE_HELPERS'
 	)
 
 

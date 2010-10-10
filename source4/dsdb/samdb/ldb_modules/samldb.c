@@ -34,6 +34,7 @@
 #include "ldb_module.h"
 #include "dsdb/samdb/samdb.h"
 #include "dsdb/samdb/ldb_modules/util.h"
+#include "dsdb/samdb/ldb_modules/ridalloc.h"
 #include "libcli/security/security.h"
 #include "librpc/gen_ndr/ndr_security.h"
 #include "../lib/util/util_ldb.h"

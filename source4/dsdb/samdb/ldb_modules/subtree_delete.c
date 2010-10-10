@@ -35,6 +35,7 @@
 #include <ldb.h>
 #include <ldb_module.h>
 #include "dsdb/samdb/ldb_modules/util.h"
+#include "dsdb/common/util.h"
 
 
 static int subtree_delete(struct ldb_module *module, struct ldb_request *req)
