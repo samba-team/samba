@@ -60,5 +60,8 @@ bool ldb_wrap_add(const char *url, struct tevent_context *ev,
 				  struct cli_credentials *credentials,
 				  int flags,
 				  struct ldb_context *ldb);
+char *ldb_relative_path(struct ldb_context *ldb,
+				 TALLOC_CTX *mem_ctx,
+				 const char *name);
 
 #endif /* _LDB_WRAP_H_ */

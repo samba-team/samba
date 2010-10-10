@@ -31,6 +31,7 @@
 
 #include "dsdb/samdb/ldb_modules/partition.h"
 #include "lib/util/tsort.h"
+#include "lib/ldb-samba/ldb_wrap.h"
 
 static int partition_sort_compare(const void *v1, const void *v2)
 {
@@ -218,7 +219,7 @@ static int new_partition_from_dn(struct ldb_context *ldb, struct partition_priva
 		(*partition)->backend_url = data->ldapBackend;
 	} else {
 		/* the backend LDB is the DN (base64 encoded if not 'plain') followed by .ldb */
-		backend_url = samdb_relative_path(ldb, 
+		backend_url = ldb_relative_path(ldb, 
 						  *partition, 
 						  filename);
 		if (!backend_url) {

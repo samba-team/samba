@@ -43,33 +43,6 @@
 #include "param/secrets.h"
 #include "auth/auth.h"
 
-char *samdb_relative_path(struct ldb_context *ldb,
-				 TALLOC_CTX *mem_ctx, 
-				 const char *name) 
-{
-	const char *base_url = 
-		(const char *)ldb_get_opaque(ldb, "ldb_url");
-	char *path, *p, *full_name;
-	if (name == NULL) {
-		return NULL;
-	}
-	if (strncmp("tdb://", base_url, 6) == 0) {
-		base_url = base_url+6;
-	}
-	path = talloc_strdup(mem_ctx, base_url);
-	if (path == NULL) {
-		return NULL;
-	}
-	if ( (p = strrchr(path, '/')) != NULL) {
-		p[0] = '\0';
-		full_name = talloc_asprintf(mem_ctx, "%s/%s", path, name);
-	} else {
-		full_name = talloc_asprintf(mem_ctx, "./%s", name);
-	}
-	talloc_free(path);
-	return full_name;
-}
-
 /*
   make sure the static credentials are not freed
  */

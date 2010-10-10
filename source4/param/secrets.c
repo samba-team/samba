@@ -181,7 +181,7 @@ char *keytab_name_from_msg(TALLOC_CTX *mem_ctx, struct ldb_context *ldb, struct 
 			return NULL;
 		}
 
-		relative_path = samdb_relative_path(ldb, mem_ctx, privateKeytab);
+		relative_path = ldb_relative_path(ldb, mem_ctx, privateKeytab);
 		if (!relative_path) {
 			return NULL;
 		}
