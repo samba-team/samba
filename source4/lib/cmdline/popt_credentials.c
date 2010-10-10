@@ -31,13 +31,13 @@
  *		-k,--use-kerberos
  *		-N,--no-pass
  *		-S,--signing
- *              -P --machine-pass
- *                 --simple-bind-dn
- *                 --password
+ *		-P,--machine-pass
+ *		--simple-bind-dn
+ *		--password
  */
 
-
 static bool dont_ask;
+static bool machine_account_pending;
 
 enum opt { OPT_SIMPLE_BIND_DN, OPT_PASSWORD, OPT_KERBEROS, OPT_SIGN, OPT_ENCRYPT };
 
@@ -65,6 +65,11 @@ static void popt_common_credentials_callback(poptContext con,
 		if (!dont_ask) {
 			cli_credentials_set_cmdline_callbacks(cmdline_credentials);
 		}
+
+		if (machine_account_pending) {
+			cli_credentials_set_machine_account(cmdline_credentials, cmdline_lp_ctx);
+		}
+
 		return;
 
 	}
@@ -97,7 +102,7 @@ static void popt_common_credentials_callback(poptContext con,
 
 	case 'P':
 		/* Later, after this is all over, get the machine account details from the secrets.ldb */
-		cli_credentials_set_machine_account_pending(cmdline_credentials, cmdline_lp_ctx);
+		machine_account_pending = true;
 		break;
 
 	case OPT_KERBEROS:
