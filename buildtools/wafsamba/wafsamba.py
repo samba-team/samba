@@ -366,6 +366,9 @@ def SAMBA_MODULE(bld, modname, source,
 
         build_link_name = "modules/%s/%s" % (subsystem, realname)
 
+        if init_function:
+            cflags += " -D%s=samba_init_module" % init_function
+
         bld.SAMBA_LIBRARY(modname,
                           source,
                           deps=deps,
