@@ -27,7 +27,8 @@
 #include "auth/credentials/credentials_proto.h"
 #include "auth/credentials/credentials_krb5.h"
 #include "auth/kerberos/kerberos_credentials.h"
-#include "ldb.h"
+#include "auth/kerberos/kerberos_util.h"
+#include <ldb.h>
 #include "param/secrets.h"
 
 struct principal_container {
