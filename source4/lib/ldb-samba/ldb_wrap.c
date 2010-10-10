@@ -107,8 +107,7 @@ static int ldb_wrap_destructor(struct ldb_wrap *w)
 								  struct tevent_context *ev,
 								  struct loadparm_context *lp_ctx,
 								  struct auth_session_info *session_info,
-								  struct cli_credentials *credentials,
-								  int flags
+								  struct cli_credentials *credentials
 								  )
 {
 	struct ldb_context *ldb;
@@ -164,15 +163,6 @@ static int ldb_wrap_destructor(struct ldb_wrap *w)
 		return NULL;
 	}
 
-	/* allow admins to force non-sync ldb for all databases */
-	if (lpcfg_parm_bool(lp_ctx, NULL, "ldb", "nosync", false)) {
-		flags |= LDB_FLG_NOSYNC;
-	}
-
-	if (DEBUGLVL(10)) {
-		flags |= LDB_FLG_ENABLE_TRACING;
-	}
-
 	/* we usually want Samba databases to be private. If we later
 	   find we need one public, we will need to add a parameter to
 	   ldb_wrap_connect() */
@@ -203,6 +193,90 @@ static int ldb_wrap_destructor(struct ldb_wrap *w)
 	return NULL;
 }
 
+int samba_ldb_connect(struct ldb_context *ldb, struct loadparm_context *lp_ctx, const char *url, int flags)
+{
+	int ret;
+	char *real_url = NULL;
+
+	/* allow admins to force non-sync ldb for all databases */
+	if (lpcfg_parm_bool(lp_ctx, NULL, "ldb", "nosync", false)) {
+		flags |= LDB_FLG_NOSYNC;
+	}
+
+	if (DEBUGLVL(10)) {
+		flags |= LDB_FLG_ENABLE_TRACING;
+	}
+
+	real_url = private_path(ldb, lp_ctx, url);
+	if (real_url == NULL) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	ret = ldb_connect(ldb, real_url, flags, NULL);
+
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	/* setup for leak detection */
+	ldb_set_opaque(ldb, "wrap_url", real_url);
+
+	return LDB_SUCCESS;
+}
+
+ bool ldb_wrap_add(const char *url, struct tevent_context *ev,
+				  struct loadparm_context *lp_ctx,
+				  struct auth_session_info *session_info,
+				  struct cli_credentials *credentials,
+				  int flags,
+				  struct ldb_context *ldb)
+{
+	struct ldb_wrap *w;
+	struct ldb_wrap_context c;
+
+	/* add to the list of open ldb contexts */
+	w = talloc(ldb, struct ldb_wrap);
+	if (w == NULL) {
+		return false;
+	}
+
+	c.url          = url;
+	c.ev           = ev;
+	c.lp_ctx       = lp_ctx;
+	c.session_info = session_info;
+	c.credentials  = credentials;
+	c.flags        = flags;
+
+	w->context = c;
+	w->context.url = talloc_strdup(w, url);
+	if (w->context.url == NULL) {
+		return false;
+	}
+
+	if (session_info) {
+		/* take a reference to the session_info, as it is
+		 * possible for the ldb to live longer than the
+		 * session_info. This happens when a DRS DsBind call
+		 * reuses a handle, but the original connection is
+		 * shutdown. The token for the new connection is still
+		 * valid, so we need the session_info to remain valid for
+		 * ldb modules to use
+		 */
+		if (talloc_reference(w, session_info) == NULL) {
+			return false;
+		}
+	}
+
+	w->ldb = ldb;
+
+	DLIST_ADD(ldb_wrap_list, w);
+
+	talloc_set_destructor(w, ldb_wrap_destructor);
+
+	return true;
+}
+
+
 /*
   wrapped connection to a ldb database
   to close just talloc_free() the returned ldb_context
@@ -219,82 +293,28 @@ static int ldb_wrap_destructor(struct ldb_wrap *w)
 {
 	struct ldb_context *ldb;
 	int ret;
-	char *real_url = NULL;
-	struct ldb_wrap_context c;
-	struct ldb_wrap *w;
 
 	ldb = ldb_wrap_find(url, ev, lp_ctx, session_info, credentials, flags);
 	if (ldb != NULL)
 		return talloc_reference(mem_ctx, ldb);
 
-	ldb = samba_ldb_init(mem_ctx, ev, lp_ctx, session_info, credentials, flags);
+	ldb = samba_ldb_init(mem_ctx, ev, lp_ctx, session_info, credentials);
 
 	if (ldb == NULL)
 		return NULL;
 
-	if (lp_ctx != NULL && strcmp(lpcfg_sam_url(lp_ctx), url) == 0) {
-		dsdb_set_global_schema(ldb);
-	}
-
-	real_url = private_path(ldb, lp_ctx, url);
-	if (real_url == NULL) {
-		talloc_free(ldb);
-		return NULL;
-	}
-
-	
-	ret = ldb_connect(ldb, real_url, flags, NULL);
+	ret = samba_ldb_connect(ldb, lp_ctx, url, flags);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(ldb);
 		return NULL;
 	}
 
-	/* setup for leak detection */
-	ldb_set_opaque(ldb, "wrap_url", real_url);
-	
-	/* add to the list of open ldb contexts */
-	w = talloc(ldb, struct ldb_wrap);
-	if (w == NULL) {
+	if (!ldb_wrap_add(url, ev, lp_ctx, session_info, credentials, flags, ldb)) {
 		talloc_free(ldb);
 		return NULL;
 	}
-
-	c.url          = url;
-	c.ev           = ev;
-	c.lp_ctx       = lp_ctx;
-	c.session_info = session_info;
-	c.credentials  = credentials;
-	c.flags        = flags;
-
-	w->context = c;
-	w->context.url = talloc_strdup(w, url);
-	if (w->context.url == NULL) {
-		talloc_free(ldb);
-		return NULL;
-	}
-
-	if (session_info) {
-		/* take a reference to the session_info, as it is
-		 * possible for the ldb to live longer than the
-		 * session_info. This happens when a DRS DsBind call
-		 * reuses a handle, but the original connection is
-		 * shutdown. The token for the new connection is still
-		 * valid, so we need the session_info to remain valid for
-		 * ldb modules to use
-		 */
-		if (talloc_reference(w, session_info) == NULL) {
-			talloc_free(ldb);
-			return NULL;
-		}
-	}
-
-	w->ldb = ldb;
-
-	DLIST_ADD(ldb_wrap_list, w);
 
 	DEBUG(3,("ldb_wrap open of %s\n", url));
-
-	talloc_set_destructor(w, ldb_wrap_destructor);
 
 	return ldb;
 }

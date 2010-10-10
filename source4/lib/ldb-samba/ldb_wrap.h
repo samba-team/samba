@@ -47,13 +47,18 @@ struct ldb_context *samba_ldb_init(TALLOC_CTX *mem_ctx,
 								  struct tevent_context *ev,
 								  struct loadparm_context *lp_ctx,
 								  struct auth_session_info *session_info,
-								  struct cli_credentials *credentials,
-								  int flags);
+								  struct cli_credentials *credentials);
 struct ldb_context *ldb_wrap_find(const char *url,
 								  struct tevent_context *ev,
 								  struct loadparm_context *lp_ctx,
 								  struct auth_session_info *session_info,
 								  struct cli_credentials *credentials,
 								  int flags);
+bool ldb_wrap_add(const char *url, struct tevent_context *ev,
+				  struct loadparm_context *lp_ctx,
+				  struct auth_session_info *session_info,
+				  struct cli_credentials *credentials,
+				  int flags,
+				  struct ldb_context *ldb);
 
 #endif /* _LDB_WRAP_H_ */

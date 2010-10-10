@@ -128,12 +128,27 @@ struct ldb_context *samdb_connect(TALLOC_CTX *mem_ctx,
 {
 	struct ldb_context *ldb;
 	struct dsdb_schema *schema;
-	ldb = ldb_wrap_connect(mem_ctx, ev_ctx, lp_ctx,
-			       lpcfg_sam_url(lp_ctx), session_info,
-			       samdb_credentials(ev_ctx, lp_ctx),
-			       flags);
+	const char *url;
+	struct cli_credentials *credentials;
+	int ret;
 
-	if (!ldb) {
+	url  = lpcfg_sam_url(lp_ctx);
+	credentials = samdb_credentials(ev_ctx, lp_ctx);
+
+	ldb = ldb_wrap_find(url, ev_ctx, lp_ctx, session_info, credentials, flags);
+	if (ldb != NULL)
+		return talloc_reference(mem_ctx, ldb);
+
+	ldb = samba_ldb_init(mem_ctx, ev_ctx, lp_ctx, session_info, credentials);
+
+	if (ldb == NULL)
+		return NULL;
+
+	dsdb_set_global_schema(ldb);
+
+	ret = samba_ldb_connect(ldb, lp_ctx, url, flags);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(ldb);
 		return NULL;
 	}
 
@@ -141,6 +156,11 @@ struct ldb_context *samdb_connect(TALLOC_CTX *mem_ctx,
 	/* make the resulting schema global */
 	if (schema) {
 		dsdb_make_schema_global(ldb, schema);
+	}
+
+	if (!ldb_wrap_add(url, ev_ctx, lp_ctx, session_info, credentials, flags, ldb)) {
+		talloc_free(ldb);
+		return NULL;
 	}
 
 	return ldb;

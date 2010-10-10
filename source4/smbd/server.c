@@ -191,7 +191,7 @@ static void prime_ldb_databases(struct tevent_context *event_ctx)
 	TALLOC_CTX *db_context;
 	db_context = talloc_new(event_ctx);
 
-	samdb_connect(db_context, event_ctx, cmdline_lp_ctx, system_session(cmdline_lp_ctx));
+	samdb_connect(db_context, event_ctx, cmdline_lp_ctx, system_session(cmdline_lp_ctx), 0);
 	privilege_connect(db_context, event_ctx, cmdline_lp_ctx);
 
 	/* we deliberately leave these open, which allows them to be
