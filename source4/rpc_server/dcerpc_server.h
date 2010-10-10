@@ -377,6 +377,11 @@ NTSTATUS dcesrv_fetch_session_key(struct dcesrv_connection *p, DATA_BLOB *sessio
 #define DCESRV_PULL_HANDLE(h, inhandle, t) DCESRV_PULL_HANDLE_RETVAL(h, inhandle, t, NT_STATUS_INVALID_HANDLE)
 #define DCESRV_PULL_HANDLE_WERR(h, inhandle, t) DCESRV_PULL_HANDLE_RETVAL(h, inhandle, t, WERR_BADFID)
 
+NTSTATUS dcesrv_add_ep(struct dcesrv_context *dce_ctx,
+		       struct loadparm_context *lp_ctx,
+		       struct dcesrv_endpoint *e,
+		       struct tevent_context *event_ctx,
+		       const struct model_ops *model_ops);
 
 
 #endif /* SAMBA_DCERPC_SERVER_H */

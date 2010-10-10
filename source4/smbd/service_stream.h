@@ -74,4 +74,6 @@ struct stream_server_ops {
 	void (*send_handler)(struct stream_connection *, uint16_t);
 };
 
+void stream_terminate_connection(struct stream_connection *srv_conn, const char *reason);
+
 #endif /* __SERVICE_STREAM_H__ */

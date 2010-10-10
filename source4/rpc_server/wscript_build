@@ -4,8 +4,8 @@ bld.SAMBA_SUBSYSTEM('DCERPC_COMMON',
 	source='common/server_info.c common/share_info.c common/forward.c',
 	autoproto='common/proto.h',
 	public_headers='common/common.h',
-        header_path='dcerpc_server',
-	deps='ldb'
+	header_path='dcerpc_server',
+	deps='ldb dcerpc_server'
 	)
 
 
@@ -38,7 +38,7 @@ bld.SAMBA_MODULE('dcerpc_srvsvc',
 	autoproto='srvsvc/proto.h',
 	subsystem='dcerpc_server',
 	init_function='dcerpc_server_srvsvc_init',
-	deps='DCERPC_COMMON NDR_SRVSVC share'
+	deps='DCERPC_COMMON NDR_SRVSVC share ntvfs'
 	)
 
 
@@ -80,7 +80,7 @@ bld.SAMBA_MODULE('dcerpc_netlogon',
 	source='netlogon/dcerpc_netlogon.c',
 	subsystem='dcerpc_server',
 	init_function='dcerpc_server_netlogon_init',
-	deps='DCERPC_COMMON RPC_NDR_IRPC SCHANNELDB NDR_STANDARD auth_sam LIBSAMBA-HOSTCONFIG'
+	deps='DCERPC_COMMON RPC_NDR_IRPC COMMON_SCHANNELDB NDR_STANDARD auth_sam LIBSAMBA-HOSTCONFIG CLDAPD'
 	)
 
 
@@ -127,7 +127,7 @@ bld.SAMBA_MODULE('dcerpc_eventlog',
 bld.SAMBA_LIBRARY('dcerpc_server',
 	source='dcerpc_server.c dcesrv_auth.c dcesrv_mgmt.c handles.c',
 	pc_files='dcerpc_server.pc',
-	deps='LIBCLI_AUTH LIBNDR samba_server_gensec dcerpc_remote',
+	deps='LIBCLI_AUTH LIBNDR samba_server_gensec dcerpc_remote service',
 	public_deps='dcerpc',
 	autoproto='dcerpc_server_proto.h',
 	public_headers='dcerpc_server.h',
