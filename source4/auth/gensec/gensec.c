@@ -1394,6 +1394,10 @@ bool gensec_setting_bool(struct gensec_settings *settings, const char *mechanism
 	return lpcfg_parm_bool(settings->lp_ctx, NULL, mechanism, name, default_value);
 }
 
+#ifndef STATIC_gensec_MODULES
+#define STATIC_gensec_MODULES NULL
+#endif
+
 /*
   initialise the GENSEC subsystem
 */
