@@ -42,7 +42,7 @@ static const struct {
 	{ "EventScriptUnhealthyOnTimeout", 0, offsetof(struct ctdb_tunable, script_unhealthy_on_timeout) },/* OBSOLETE */
 	{ "RecoveryGracePeriod", 120,  offsetof(struct ctdb_tunable, recovery_grace_period) },
 	{ "RecoveryBanPeriod",  300,  offsetof(struct ctdb_tunable, recovery_ban_period) },
-	{ "DatabaseHashSize", 10000,  offsetof(struct ctdb_tunable, database_hash_size) },
+	{ "DatabaseHashSize", 100001, offsetof(struct ctdb_tunable, database_hash_size) },
 	{ "DatabaseMaxDead",      5,  offsetof(struct ctdb_tunable, database_max_dead) },
 	{ "RerecoveryTimeout",   10,  offsetof(struct ctdb_tunable, rerecovery_timeout) },
 	{ "EnableBans",           1,  offsetof(struct ctdb_tunable, enable_bans) },
