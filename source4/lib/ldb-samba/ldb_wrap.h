@@ -40,4 +40,13 @@ struct ldb_context *ldb_wrap_connect(TALLOC_CTX *mem_ctx,
 				     unsigned int flags);
 
 void ldb_wrap_fork_hook(void);
+
+static ldb_context *samba_ldb_init(TALLOC_CTX *mem_ctx,
+								  struct tevent_context *ev,
+								  struct loadparm_context *lp_ctx,
+								  struct auth_session_info *session_info,
+								  struct cli_credentials *credentials
+								  );
+
+
 #endif /* _LDB_WRAP_H_ */

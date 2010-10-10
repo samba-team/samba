@@ -117,6 +117,79 @@ static int ldb_wrap_destructor(struct ldb_wrap *w)
 	return 0;
 }
 
+static ldb_context *samba_ldb_init(TALLOC_CTX *mem_ctx,
+								  struct tevent_context *ev,
+								  struct loadparm_context *lp_ctx,
+								  struct auth_session_info *session_info,
+								  struct cli_credentials *credentials
+								  )
+{
+	/* we want to use the existing event context if possible. This
+	   relies on the fact that in smbd, everything is a child of
+	   the main event_context */
+	if (ev == NULL) {
+		return NULL;
+	}
+
+	ldb = ldb_init(mem_ctx, ev);
+	if (ldb == NULL) {
+		return NULL;
+	}
+
+	ldb_set_modules_dir(ldb,
+			    talloc_asprintf(ldb,
+					    "%s/ldb",
+					    lpcfg_modulesdir(lp_ctx)));
+
+	ldb_set_debug(ldb, ldb_wrap_debug, NULL);
+
+	ldb_set_utf8_fns(ldb, NULL, wrap_casefold);
+
+	if (session_info) {
+		if (ldb_set_opaque(ldb, "sessionInfo", session_info)) {
+			talloc_free(ldb);
+			return NULL;
+		}
+	}
+
+	if (credentials) {
+		if (ldb_set_opaque(ldb, "credentials", credentials)) {
+			talloc_free(ldb);
+			return NULL;
+		}
+	}
+
+	if (ldb_set_opaque(ldb, "loadparm", lp_ctx)) {
+		talloc_free(ldb);
+		return NULL;
+	}
+
+	/* This must be done before we load the schema, as these
+	 * handlers for objectSid and objectGUID etc must take
+	 * precedence over the 'binary attribute' declaration in the
+	 * schema */
+	ret = ldb_register_samba_handlers(ldb);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(ldb);
+		return NULL;
+	}
+
+	/* allow admins to force non-sync ldb for all databases */
+	if (lpcfg_parm_bool(lp_ctx, NULL, "ldb", "nosync", false)) {
+		flags |= LDB_FLG_NOSYNC;
+	}
+
+	if (DEBUGLVL(10)) {
+		flags |= LDB_FLG_ENABLE_TRACING;
+	}
+
+	/* we usually want Samba databases to be private. If we later
+	   find we need one public, we will need to add a parameter to
+	   ldb_wrap_connect() */
+	ldb_set_create_perms(ldb, 0600);
+
+	return ldb;
+}
 
 /*
   wrapped connection to a ldb database
@@ -152,59 +225,14 @@ static int ldb_wrap_destructor(struct ldb_wrap *w)
 		}
 	}
 
-	/* we want to use the existing event context if possible. This
-	   relies on the fact that in smbd, everything is a child of
-	   the main event_context */
-	if (ev == NULL) {
+	ldb = samba_ldb_init(mem_ctx, ev, lp_ctx, session_info, credentials);
+
+	if (ldb == NULL)
 		return NULL;
-	}
-
-	ldb = ldb_init(mem_ctx, ev);
-	if (ldb == NULL) {
-		return NULL;
-	}
-
-	ldb_set_modules_dir(ldb,
-			    talloc_asprintf(ldb,
-					    "%s/ldb",
-					    lpcfg_modulesdir(lp_ctx)));
-
-	if (session_info) {
-		if (ldb_set_opaque(ldb, "sessionInfo", session_info)) {
-			talloc_free(ldb);
-			return NULL;
-		}
-	}
-
-	if (credentials) {
-		if (ldb_set_opaque(ldb, "credentials", credentials)) {
-			talloc_free(ldb);
-			return NULL;
-		}
-	}
-
-	if (ldb_set_opaque(ldb, "loadparm", lp_ctx)) {
-		talloc_free(ldb);
-		return NULL;
-	}
-
-	/* This must be done before we load the schema, as these
-	 * handlers for objectSid and objectGUID etc must take
-	 * precedence over the 'binary attribute' declaration in the
-	 * schema */
-	ret = ldb_register_samba_handlers(ldb);
-	if (ret != LDB_SUCCESS) {
-		talloc_free(ldb);
-		return NULL;
-	}
 
 	if (lp_ctx != NULL && strcmp(lpcfg_sam_url(lp_ctx), url) == 0) {
 		dsdb_set_global_schema(ldb);
 	}
-
-	ldb_set_debug(ldb, ldb_wrap_debug, NULL);
-
-	ldb_set_utf8_fns(ldb, NULL, wrap_casefold);
 
 	real_url = private_path(ldb, lp_ctx, url);
 	if (real_url == NULL) {
@@ -212,19 +240,6 @@ static int ldb_wrap_destructor(struct ldb_wrap *w)
 		return NULL;
 	}
 
-	/* allow admins to force non-sync ldb for all databases */
-	if (lpcfg_parm_bool(lp_ctx, NULL, "ldb", "nosync", false)) {
-		flags |= LDB_FLG_NOSYNC;
-	}
-
-	if (DEBUGLVL(10)) {
-		flags |= LDB_FLG_ENABLE_TRACING;
-	}
-
-	/* we usually want Samba databases to be private. If we later
-	   find we need one public, we will need to add a parameter to
-	   ldb_wrap_connect() */
-	ldb_set_create_perms(ldb, 0600);
 	
 	ret = ldb_connect(ldb, real_url, flags, NULL);
 	if (ret != LDB_SUCCESS) {
