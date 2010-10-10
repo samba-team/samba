@@ -460,7 +460,7 @@ bld.SAMBA_SUBSYSTEM('RPC_NDR_NTSVCS',
 
 bld.SAMBA_SUBSYSTEM('RPC_NDR_NETLOGON',
 	source='../librpc/gen_ndr/ndr_netlogon_c.c',
-	public_deps='NDR_STANDARD'
+	public_deps='NDR_STANDARD tevent'
 	)
 
 bld.SAMBA_SUBSYSTEM('RPC_NDR_TRKWKS',
