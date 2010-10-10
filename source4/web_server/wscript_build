@@ -2,9 +2,9 @@
 
 
 bld.SAMBA_SUBSYSTEM('WEB_WSGI',
-                 source='wsgi.c',
-                 deps='talloc LIBTSOCKET',
-				 needs_python=True
+				source='wsgi.c',
+				deps='talloc LIBTSOCKET',
+				pyembed=True
                  )
 
 

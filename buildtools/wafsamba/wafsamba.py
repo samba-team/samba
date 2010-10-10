@@ -106,7 +106,7 @@ def SAMBA_LIBRARY(bld, libname, source,
                   vars=None,
                   install_path=None,
                   install=True,
-                  needs_python=False,
+                  pyembed=False,
                   target_type='LIBRARY',
                   bundled_extension=True,
                   link_name=None,
@@ -148,7 +148,7 @@ def SAMBA_LIBRARY(bld, libname, source,
                         group          = group,
                         autoproto      = autoproto,
                         depends_on     = depends_on,
-                        needs_python   = needs_python,
+                        pyembed        = pyembed,
                         hide_symbols   = hide_symbols,
                         local_include  = local_include)
 
@@ -174,7 +174,7 @@ def SAMBA_LIBRARY(bld, libname, source,
     features = 'cc cshlib symlink_lib install_lib'
     if target_type == 'PYTHON':
         features += ' pyext'
-    elif needs_python:
+    if pyembed:
         features += ' pyembed'
     if abi_file:
         features += ' abi_check'
@@ -236,7 +236,7 @@ def SAMBA_BINARY(bld, binname, source,
                  manpages=None,
                  local_include=True,
                  subsystem_name=None,
-                 needs_python=False,
+                 pyembed=False,
                  vars=None,
                  install=True,
                  install_path=None,
@@ -251,7 +251,7 @@ def SAMBA_BINARY(bld, binname, source,
         return
 
     features = 'cc cprogram symlink_bin install_bin'
-    if needs_python:
+    if pyembed:
         features += ' pyembed'
 
     obj_target = binname + '.objlist'
@@ -270,7 +270,7 @@ def SAMBA_BINARY(bld, binname, source,
                         group          = group,
                         autoproto      = autoproto,
                         subsystem_name = subsystem_name,
-                        needs_python   = needs_python,
+                        pyembed        = pyembed,
                         local_include  = local_include,
                         use_hostcc     = use_hostcc,
                         use_global_deps= use_global_deps)
@@ -403,7 +403,7 @@ def SAMBA_SUBSYSTEM(bld, modname, source,
                     use_global_deps=True,
                     vars=None,
                     hide_symbols=False,
-                    needs_python=False):
+                    pyembed=False):
     '''define a Samba subsystem'''
 
     if not enabled:
@@ -426,8 +426,8 @@ def SAMBA_SUBSYSTEM(bld, modname, source,
     bld.SET_BUILD_GROUP(group)
 
     features = 'cc'
-    if needs_python:
-        features += ' pyext'
+    if pyembed:
+        features += ' pyembed'
 
     t = bld(
         features       = features,

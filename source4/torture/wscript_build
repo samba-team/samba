@@ -144,7 +144,7 @@ bld.SAMBA_SUBSYSTEM('torturemain',
                     source='smbtorture.c torture.c shell.c',
                     subsystem_name='smbtorture',
                     deps='torture popt POPT_SAMBA POPT_CREDENTIALS dcerpc LIBCLI_SMB SMBREADLINE ' + TORTURE_MODULES,
-                    needs_python=True
+                    pyembed=True
                     )
 
 bld.SAMBA_BINARY('smbtorture',
@@ -152,7 +152,7 @@ bld.SAMBA_BINARY('smbtorture',
                  manpages='man/smbtorture.1',
                  public_headers='smbtorture.h',
                  deps='torturemain torture popt POPT_SAMBA POPT_CREDENTIALS dcerpc LIBCLI_SMB SMBREADLINE ' + TORTURE_MODULES,
-                 needs_python=True
+                 pyembed=True
                  )
 
 # this is used in the build farm to build a smbtorture.static binary for s3
@@ -160,7 +160,7 @@ bld.SAMBA_BINARY('smbtorture.static',
                  source=[],
                  deps='torturemain torture popt POPT_SAMBA POPT_CREDENTIALS dcerpc LIBCLI_SMB SMBREADLINE ' + TORTURE_MODULES,
                  enabled = bld.env.BUILD_FARM,
-                 needs_python=True
+                 pyembed=True
                  )
 bld.env.NONSHARED_BINARIES.append('smbtorture.static')
 

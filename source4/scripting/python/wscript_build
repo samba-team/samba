@@ -1,19 +1,19 @@
 #!/usr/bin/env python
 
 bld.SAMBA_SUBSYSTEM('LIBPYTHON',
-                 source='modules.c',
-                 public_deps='EXT_LIB_PYTHON',
-                 init_function_sentinal='{NULL,NULL}',
-				 needs_python=True,
-				 deps='talloc',
+				source='modules.c',
+				public_deps='EXT_LIB_PYTHON',
+				init_function_sentinal='{NULL,NULL}',
+				pyembed=True,
+				deps='talloc',
 	)
 
 
 bld.SAMBA_SUBSYSTEM('PYTALLOC',
-                 source='../../../lib/talloc/pytalloc.c',
-                 public_deps='EXT_LIB_PYTHON talloc',
-				 needs_python=True,
-                 )
+				source='../../../lib/talloc/pytalloc.c',
+				public_deps='EXT_LIB_PYTHON talloc',
+				pyembed=True,
+)
 
 
 bld.SAMBA_PYTHON('python_uuid',

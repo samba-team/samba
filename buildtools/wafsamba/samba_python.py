@@ -27,7 +27,7 @@ def SAMBA_PYTHON(bld, name,
 
     if realname is None:
         # a SAMBA_PYTHON target without a realname is just a
-        # library with needs_python=True
+        # library with pyembed=True
         bld.SAMBA_LIBRARY(name,
                           source=source,
                           deps=deps,
@@ -36,7 +36,7 @@ def SAMBA_PYTHON(bld, name,
                           cflags=cflags,
                           local_include=local_include,
                           vars=vars,
-                          needs_python=True,
+                          pyembed=True,
                           enabled=enabled)
         return
 
@@ -52,7 +52,7 @@ def SAMBA_PYTHON(bld, name,
                       local_include=local_include,
                       vars=vars,
                       link_name=link_name,
-                      needs_python=True,
+                      pyembed=True,
                       target_type='PYTHON',
                       install_path='${PYTHONDIR}',
                       enabled=enabled)
