@@ -1967,7 +1967,17 @@ _PUBLIC_ ssize_t swrap_sendto(int s, const void *buf, size_t len, int flags, con
 			si->defer_connect = 0;
 		}
 
-		ret = real_sendto(s, buf, len, flags, (struct sockaddr *)&un_addr, sizeof(un_addr));
+		/* Man page for Linux says:
+		 * "the error EISONN may be returned when they are not NULL and 0"
+		 * But in practice it's not on x86/amd64, but on other unix it is
+		 * (ie. freebsd)
+		 * So if we are already connected we send NULL/0
+		 */
+		if (si->connected) {
+			ret = real_sendto(s, buf, len, flags, NULL, 0);
+		} else {
+			ret = real_sendto(s, buf, len, flags, (struct sockaddr *)&un_addr, sizeof(un_addr));
+		}
 		break;
 	default:
 		ret = -1;
