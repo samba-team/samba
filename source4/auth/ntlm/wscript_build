@@ -4,7 +4,7 @@ bld.SAMBA_MODULE('auth_sam_module',
 	source='auth_sam.c',
 	subsystem='auth',
 	init_function='auth_sam_init',
-	deps='SAMDB auth_sam ntlm_check'
+	deps='SAMDB auth_sam ntlm_check LIBSAMBA-HOSTCONFIG'
 	)
 
 
