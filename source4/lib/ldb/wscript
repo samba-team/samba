@@ -77,21 +77,20 @@ def build(bld):
                             ldb_attributes.c attrib_handlers.c ldb_controls.c qsort.c''')
 
     if s4_build:
-        builtin_ildap = not bld.CONFIG_SET('USING_SYSTEM_LDB')
         # this is only in the s4 build
         bld.SAMBA_MODULE('ldb_ildap', 'ldb_ildap/ldb_ildap.c',
                          init_function='LDB_BACKEND(ldapi),LDB_BACKEND(ldaps),LDB_BACKEND(ldap)',
                          deps='talloc LIBCLI_LDAP CREDENTIALS auth_system_session',
                          aliases='ldb_ldaps ldb_ldapi ldb_ldap',
-                         internal_module=builtin_ildap,
+                         internal_module=False,
                          subsystem='ldb')
     else:
-        builtin_ildap = False
         # this is not included in the s4 build
         bld.SAMBA_MODULE('ldb_ldap', 'ldb_ldap/ldb_ldap.c',
                          init_function='LDB_BACKEND(ldapi),LDB_BACKEND(ldaps),LDB_BACKEND(ldap)',
                          deps='talloc lber ldap',
                          enabled=bld.env.ENABLE_LDAP_BACKEND,
+                         internal_module=False,
                          subsystem='ldb')
 
     # we're not currently linking against the ldap libs, but ldb.pc.in
@@ -102,10 +101,7 @@ def build(bld):
         bld.env.PACKAGE_VERSION = VERSION
         bld.env.PKGCONFIGDIR = '${LIBDIR}/pkgconfig'
 
-    if builtin_ildap:
-        abi_file = 'ABI/ldb-ildap-%s.sigs' % VERSION
-    else:
-        abi_file = 'ABI/ldb-%s.sigs' % VERSION
+    abi_file = 'ABI/ldb-%s.sigs' % VERSION
 
     bld.SAMBA_SUBSYSTEM('pyldb_util', deps='ldb', source='pyldb_util.c', pyext=True)
 
