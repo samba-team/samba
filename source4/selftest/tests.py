@@ -146,7 +146,7 @@ if sub.returncode != 0:
 else:
     tap2subunit = "tap2subunit"
 
-subprocess.check_call([smb4torture, "-V"])
+subprocess.call([smb4torture, "-V"])
 
 bbdir = "../testprogs/blackbox"
 
