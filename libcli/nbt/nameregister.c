@@ -156,7 +156,7 @@ struct nbt_name_register_bcast_state {
 	struct nbt_name_request *req;
 };
 
-static void name_register_bcast_handler(struct nbt_name_request *req);
+static void nbt_name_register_bcast_handler(struct nbt_name_request *req);
 
 /*
   the async send call for a 4 stage name registration
@@ -193,7 +193,7 @@ _PUBLIC_ struct composite_context *nbt_name_register_bcast_send(struct nbt_name_
 	state->req = nbt_name_register_send(nbtsock, state->io);
 	if (state->req == NULL) goto failed;
 
-	state->req->async.fn      = name_register_bcast_handler;
+	state->req->async.fn = nbt_name_register_bcast_handler;
 	state->req->async.private_data = c;
 
 	c->private_data	= state;
@@ -211,7 +211,7 @@ failed:
 /*
   state handler for 4 stage name registration
 */
-static void name_register_bcast_handler(struct nbt_name_request *req)
+static void nbt_name_register_bcast_handler(struct nbt_name_request *req)
 {
 	struct composite_context *c = talloc_get_type(req->async.private_data, struct composite_context);
 	struct nbt_name_register_bcast_state *state = talloc_get_type(c->private_data, struct nbt_name_register_bcast_state);
@@ -234,7 +234,7 @@ static void name_register_bcast_handler(struct nbt_name_request *req)
 			c->state = COMPOSITE_STATE_ERROR;
 			c->status = NT_STATUS_NO_MEMORY;
 		} else {
-			state->req->async.fn      = name_register_bcast_handler;
+			state->req->async.fn = nbt_name_register_bcast_handler;
 			state->req->async.private_data = c;
 		}
 	} else if (!NT_STATUS_IS_OK(status)) {
