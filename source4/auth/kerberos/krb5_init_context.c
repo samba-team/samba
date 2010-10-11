@@ -356,7 +356,6 @@ krb5_error_code smb_krb5_send_and_recv_func(krb5_context context,
 
 krb5_error_code
 smb_krb5_init_context_basic(TALLOC_CTX *tmp_ctx,
-			    struct tevent_context *ev,
 			    struct loadparm_context *lp_ctx,
 			    krb5_context *_krb5_context)
 {
@@ -431,7 +430,7 @@ krb5_error_code smb_krb5_init_context(void *parent_ctx,
 		return ENOMEM;
 	}
 
-	ret = smb_krb5_init_context_basic(tmp_ctx, ev, lp_ctx,
+	ret = smb_krb5_init_context_basic(tmp_ctx, lp_ctx,
 					  &(*smb_krb5_context)->krb5_context);
 	if (ret) {
 		DEBUG(1,("smb_krb5_context_init_basic failed (%s)\n",

@@ -91,7 +91,6 @@ static int mit_samba_context_init(struct mit_samba_context **_ctx)
 
 	/* init heimdal's krb_context and log facilities */
 	ret = smb_krb5_init_context_basic(ctx,
-					  ctx->db_ctx->ev_ctx,
 					  ctx->db_ctx->lp_ctx,
 					  &ctx->context);
 	if (ret) {

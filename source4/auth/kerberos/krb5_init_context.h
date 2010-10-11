@@ -27,7 +27,6 @@ struct loadparm_context;
 
 krb5_error_code
 smb_krb5_init_context_basic(TALLOC_CTX *tmp_ctx,
-			    struct tevent_context *ev,
 			    struct loadparm_context *lp_ctx,
 			    krb5_context *_krb5_context);
 
