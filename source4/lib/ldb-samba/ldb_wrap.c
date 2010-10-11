@@ -113,13 +113,6 @@ static int ldb_wrap_destructor(struct ldb_wrap *w)
 	struct ldb_context *ldb;
 	int ret;
 
-	/* we want to use the existing event context if possible. This
-	   relies on the fact that in smbd, everything is a child of
-	   the main event_context */
-	if (ev == NULL) {
-		return NULL;
-	}
-
 	ldb = ldb_init(mem_ctx, ev);
 	if (ldb == NULL) {
 		return NULL;
