@@ -28,6 +28,7 @@ struct tsocket_address;
 
 struct dns_server {
 	struct task_server *task;
+	struct ldb_context *samdb;
 };
 
 #endif /* __DNS_SERVER_H__ */

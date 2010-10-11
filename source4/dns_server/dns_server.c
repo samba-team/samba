@@ -36,6 +36,10 @@
 #include "param/param.h"
 #include "librpc/ndr/libndr.h"
 #include "librpc/gen_ndr/ndr_dns.h"
+#include "librpc/gen_ndr/ndr_dnsp.h"
+#include <ldb.h>
+#include "dsdb/samdb/samdb.h"
+#include "auth/session.h"
 
 /* hold information about one dns socket */
 struct dns_socket {
@@ -85,37 +89,154 @@ static void dns_tcp_send(struct stream_connection *conn, uint16_t flags)
 	dns_tcp_terminate_connection(dnsconn, "dns_tcp_send: called");
 }
 
-static NTSTATUS handle_question(TALLOC_CTX *mem_ctx,
-				struct dns_name_question *question,
+static NTSTATUS dns_name2dn(struct dns_server *dns,
+			    TALLOC_CTX *mem_ctx,
+			    const char *name,
+			    struct ldb_dn **_dn)
+{
+	struct ldb_dn *base;
+	struct ldb_dn *dn;
+	const char *p;
+
+	if (name == NULL) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	/*TODO: Check if 'name' is a valid DNS name */
+
+	if (strcmp(name, "") == 0) {
+		base = ldb_get_default_basedn(dns->samdb);
+		dn = ldb_dn_copy(mem_ctx, base);
+		ldb_dn_add_child_fmt(dn, "DC=@,DC=RootDNSServers,CN=MicrosoftDNS,CN=System");
+		*_dn = dn;
+		return NT_STATUS_OK;
+	}
+
+	p = strcasestr(name, "root-servers.net");
+	if (p != NULL) {
+		base = ldb_get_default_basedn(dns->samdb);
+		dn = ldb_dn_copy(mem_ctx, base);
+		ldb_dn_add_child_fmt(dn, "DC=%s,DC=RootDNSServers,CN=MicrosoftDNS,CN=System", name);
+		*_dn = dn;
+		return NT_STATUS_OK;
+	}
+
+	return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+}
+
+static NTSTATUS handle_question(struct dns_server *dns,
+				TALLOC_CTX *mem_ctx,
+				const struct dns_name_question *question,
 				struct dns_res_rec **answers, uint16_t *ancount)
 {
 	struct dns_res_rec *ans;
-	uint16_t count = *ancount;
-	count += 1;
-	ans = talloc_realloc(NULL, *answers, struct dns_res_rec, count);
+	struct ldb_dn *dn = NULL;
+	NTSTATUS status;
+	static const char * const attrs[] = { "dnsRecord", NULL};
+	int ret;
+	uint16_t ai = *ancount;
+	uint16_t ri;
+	struct ldb_message *msg = NULL;
+	struct dnsp_DnssrvRpcRecord *recs;
+	struct ldb_message_element *el;
+
+	status = dns_name2dn(dns, mem_ctx, question->name, &dn);
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	ret = dsdb_search_one(dns->samdb, mem_ctx, &msg, dn,
+			      LDB_SCOPE_BASE, attrs, 0, "%s", "(objectClass=dnsNode)");
+	if (ret != LDB_SUCCESS) {
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	}
+
+	el = ldb_msg_find_element(msg, attrs[0]);
+	if (el == NULL) {
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	}
+
+	recs = talloc_array(mem_ctx, struct dnsp_DnssrvRpcRecord, el->num_values);
+	for (ri = 0; ri < el->num_values; ri++) {
+		struct ldb_val *v = &el->values[ri];
+		enum ndr_err_code ndr_err;
+
+		ndr_err = ndr_pull_struct_blob(v, recs, &recs[ri],
+				(ndr_pull_flags_fn_t)ndr_pull_dnsp_DnssrvRpcRecord);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			DEBUG(0, ("Failed to grab dnsp_DnssrvRpcRecord\n"));
+			return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		}
+	}
+
+	ans = talloc_realloc(mem_ctx, *answers, struct dns_res_rec,
+			     ai + el->num_values);
 	NT_STATUS_HAVE_NO_MEMORY(ans);
 
-	ans[0].name = talloc_strdup(ans, "example.com");
-	ans[0].rr_type = DNS_QTYPE_A;
-	ans[0].rr_class = DNS_QCLASS_IP;
-	ans[0].ttl = 0;
-	ans[0].rdata.ipv4_record = talloc_strdup(ans, "127.0.0.1");
+	switch (question->question_type) {
+	case DNS_QTYPE_A:
+		for (ri = 0; ri < el->num_values; ri++) {
+			if (recs[ri].wType != question->question_type) {
+				continue;
+			}
 
-	*ancount = count;
+			ZERO_STRUCT(ans[ai]);
+			ans[ai].name = talloc_strdup(ans, question->name);
+			ans[ai].rr_type = DNS_QTYPE_A;
+			ans[ai].rr_class = DNS_QCLASS_IP;
+			ans[ai].ttl = recs[ri].dwTtlSeconds;
+			ans[ai].rdata.ipv4_record = talloc_strdup(ans, recs[ri].data.ipv4);
+			ai++;
+		}
+		break;
+	case DNS_QTYPE_AAAA:
+		for (ri = 0; ri < el->num_values; ri++) {
+			if (recs[ri].wType != question->question_type) {
+				continue;
+			}
+
+			ZERO_STRUCT(ans[ai]);
+			ans[ai].name = talloc_strdup(ans, question->name);
+			ans[ai].rr_type = DNS_QTYPE_AAAA;
+			ans[ai].rr_class = DNS_QCLASS_IP;
+			ans[ai].ttl = recs[ri].dwTtlSeconds;
+			ans[ai].rdata.ipv6_record = recs[ri].data.ipv6;
+			ai++;
+		}
+		break;
+	case DNS_QTYPE_NS:
+		for (ri = 0; ri < el->num_values; ri++) {
+			if (recs[ri].wType != question->question_type) {
+				continue;
+			}
+
+			ZERO_STRUCT(ans[ai]);
+			ans[ai].name = question->name;
+			ans[ai].rr_type = DNS_QTYPE_NS;
+			ans[ai].rr_class = DNS_QCLASS_IP;
+			ans[ai].ttl = recs[ri].dwTtlSeconds;
+			ans[ai].rdata.ns_record = recs[ri].data.ns;
+			ai++;
+		}
+		break;
+	default:
+		return NT_STATUS_NOT_IMPLEMENTED;
+	}
+
+	*ancount = ai;
 	*answers = ans;
 
 	return NT_STATUS_OK;
 
 }
 
-static NTSTATUS compute_reply(TALLOC_CTX *mem_ctx,
+static NTSTATUS compute_reply(struct dns_server *dns,
+			      TALLOC_CTX *mem_ctx,
 			      struct dns_name_packet *in,
 			      struct dns_res_rec **answers,    uint16_t *ancount,
 			      struct dns_res_rec **nsrecs,     uint16_t *nscount,
 			      struct dns_res_rec **additional, uint16_t *arcount)
 {
-	uint16_t num_answers=0, num_nsrecs=0, num_additional=0;
-	struct dns_res_rec *ans=NULL, *ns=NULL, *add=NULL;
+	uint16_t num_answers=0;
+	struct dns_res_rec *ans=NULL;
 	int i;
 	NTSTATUS status;
 
@@ -123,7 +244,7 @@ static NTSTATUS compute_reply(TALLOC_CTX *mem_ctx,
 	if (answers == NULL) return NT_STATUS_NO_MEMORY;
 
 	for (i = 0; i < in->qdcount; ++i) {
-		status = handle_question(mem_ctx, &in->questions[i], &ans, &num_answers);
+		status = handle_question(dns, mem_ctx, &in->questions[i], &ans, &num_answers);
 		NT_STATUS_NOT_OK_RETURN(status);
 	}
 
@@ -147,14 +268,14 @@ static NTSTATUS dns_process(struct dns_server *dns,
 {
 	enum ndr_err_code ndr_err;
 	NTSTATUS ret;
-	struct dns_name_packet *in_packet = talloc(mem_ctx, struct dns_name_packet);
-	struct dns_name_packet *out_packet = talloc(mem_ctx, struct dns_name_packet);
+	struct dns_name_packet *in_packet = talloc_zero(mem_ctx, struct dns_name_packet);
+	struct dns_name_packet *out_packet = talloc_zero(mem_ctx, struct dns_name_packet);
 	struct dns_res_rec *answers, *nsrecs, *additional;
 	uint16_t num_answers, num_nsrecs, num_additional;
 
 	if (in_packet == NULL) return NT_STATUS_INVALID_PARAMETER;
 
-	dump_data(0, in->data, in->length);
+	dump_data(2, in->data, in->length);
 
 	ndr_err = ndr_pull_struct_blob(in, in_packet, in_packet,
 			(ndr_pull_flags_fn_t)ndr_pull_dns_name_packet);
@@ -166,8 +287,8 @@ static NTSTATUS dns_process(struct dns_server *dns,
 
 	NDR_PRINT_DEBUG(dns_name_packet, in_packet);
 	out_packet->id = in_packet->id;
-	out_packet->operation = DNS_FLAG_REPLY | DNS_FLAG_AUTHORITATIVE;
-				/* TODO: DNS_FLAG_RECURSION_DESIRED | DNS_FLAG_RECURSION_AVAIL; */
+	out_packet->operation = DNS_FLAG_REPLY | DNS_FLAG_AUTHORITATIVE |
+				DNS_FLAG_RECURSION_DESIRED | DNS_FLAG_RECURSION_AVAIL;
 
 	out_packet->qdcount = in_packet->qdcount;
 	out_packet->questions = in_packet->questions;
@@ -181,7 +302,7 @@ static NTSTATUS dns_process(struct dns_server *dns,
 	out_packet->arcount = 0;
 	out_packet->additional = NULL;
 
-	ret = compute_reply(out_packet, in_packet, &answers, &num_answers,
+	ret = compute_reply(dns, out_packet, in_packet, &answers, &num_answers,
 			    &nsrecs, &num_nsrecs, &additional, &num_additional);
 
 	if (NT_STATUS_IS_OK(ret)) {
@@ -195,6 +316,7 @@ static NTSTATUS dns_process(struct dns_server *dns,
 		out_packet->additional = additional;
 	}
 
+	NDR_PRINT_DEBUG(dns_name_packet, out_packet);
 	ndr_err = ndr_push_struct_blob(out, out_packet, out_packet,
 			(ndr_push_flags_fn_t)ndr_push_dns_name_packet);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
@@ -204,6 +326,7 @@ static NTSTATUS dns_process(struct dns_server *dns,
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
+	dump_data(2, out->data, out->length);
 	return NT_STATUS_OK;
 }
 
@@ -261,6 +384,7 @@ static void dns_tcp_call_loop(struct tevent_req *subreq)
 	/* Call dns */
 	status = dns_process(dns_conn->dns_socket->dns, call, &call->in, &call->out);
 	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("dns_process returned %s\n", nt_errstr(status)));
 		dns_tcp_terminate_connection(dns_conn,
 				"dns_tcp_call_loop: process function failed");
 		return;
@@ -441,6 +565,7 @@ static void dns_udp_call_loop(struct tevent_req *subreq)
 	status = dns_process(sock->dns_socket->dns, call, &call->in, &call->out);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(call);
+		DEBUG(0, ("dns_process returned %s\n", nt_errstr(status)));
 		goto done;
 	}
 
@@ -623,6 +748,15 @@ static void dns_task_init(struct task_server *task)
 	}
 
 	dns->task = task;
+
+	/* Connect to a SAMDB with system privileges for fetching the old pw
+	 * hashes. */
+	dns->samdb = samdb_connect(dns, dns->task->event_ctx, dns->task->lp_ctx,
+			      system_session(dns->task->lp_ctx), 0);
+	if (!dns->samdb) {
+		task_server_terminate(task, "dns: samdb_connect failed", true);
+		return;
+	}
 
 	status = dns_startup_interfaces(dns, task->lp_ctx, ifaces);
 	if (!NT_STATUS_IS_OK(status)) {
