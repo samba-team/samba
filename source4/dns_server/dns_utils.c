@@ -21,6 +21,7 @@
 
 #include "includes.h"
 #include "libcli/util/ntstatus.h"
+#include "libcli/util/werror.h"
 #include "librpc/ndr/libndr.h"
 #include "librpc/gen_ndr/ndr_dns.h"
 #include "librpc/gen_ndr/ndr_dnsp.h"
@@ -29,39 +30,33 @@
 #include "dsdb/common/util.h"
 #include "dns_server/dns_server.h"
 
-NTSTATUS dns_err_to_ntstatus(enum dns_rcode rcode)
+uint8_t werr_to_dns_err(WERROR werr)
 {
-	switch (rcode) {
-	case DNS_RCODE_OK: return NT_STATUS_OK;
-	case DNS_RCODE_FORMERR: return NT_STATUS_INVALID_PARAMETER;
-	case DNS_RCODE_SERVFAIL: return NT_STATUS_INTERNAL_ERROR;
-	case DNS_RCODE_NXDOMAIN: return NT_STATUS_OBJECT_NAME_NOT_FOUND;
-	case DNS_RCODE_NOTIMP: return NT_STATUS_NOT_IMPLEMENTED;
-	case DNS_RCODE_REFUSED: return NT_STATUS_ACCESS_DENIED;
-	case DNS_RCODE_NOTAUTH: return NT_STATUS_FOOBAR;
-	default: return NT_STATUS_NONE_MAPPED;
-	}
-}
-
-uint8_t ntstatus_to_dns_err(NTSTATUS status)
-{
-	if (NT_STATUS_EQUAL(NT_STATUS_OK, status)) {
+	if (W_ERROR_EQUAL(WERR_OK, werr)) {
 		return DNS_RCODE_OK;
-	} else if (NT_STATUS_EQUAL(NT_STATUS_INVALID_PARAMETER, status)) {
+	} else if (W_ERROR_EQUAL(DNS_ERR(FORMAT_ERROR), werr)) {
 		return DNS_RCODE_FORMERR;
-	} else if (NT_STATUS_EQUAL(NT_STATUS_INTERNAL_ERROR, status)) {
+	} else if (W_ERROR_EQUAL(DNS_ERR(SERVER_FAILURE), werr)) {
 		return DNS_RCODE_SERVFAIL;
-	} else if (NT_STATUS_EQUAL(NT_STATUS_OBJECT_NAME_NOT_FOUND, status)) {
+	} else if (W_ERROR_EQUAL(DNS_ERR(NAME_ERROR), werr)) {
 		return DNS_RCODE_NXDOMAIN;
-	} else if (NT_STATUS_EQUAL(NT_STATUS_NOT_IMPLEMENTED, status)) {
+	} else if (W_ERROR_EQUAL(DNS_ERR(NOT_IMPLEMENTED), werr)) {
 		return DNS_RCODE_NOTIMP;
-	} else if (NT_STATUS_EQUAL(NT_STATUS_ACCESS_DENIED, status)) {
+	} else if (W_ERROR_EQUAL(DNS_ERR(REFUSED), werr)) {
 		return DNS_RCODE_REFUSED;
-	} else if (NT_STATUS_EQUAL(NT_STATUS_FOOBAR, status)) {
+	} else if (W_ERROR_EQUAL(DNS_ERR(YXDOMAIN), werr)) {
+		return DNS_RCODE_YXDOMAIN;
+	} else if (W_ERROR_EQUAL(DNS_ERR(YXRRSET), werr)) {
+		return DNS_RCODE_YXRRSET;
+	} else if (W_ERROR_EQUAL(DNS_ERR(NXRRSET), werr)) {
+		return DNS_RCODE_NXRRSET;
+	} else if (W_ERROR_EQUAL(DNS_ERR(NOTAUTH), werr)) {
 		return DNS_RCODE_NOTAUTH;
+	} else if (W_ERROR_EQUAL(DNS_ERR(NOTZONE), werr)) {
+		return DNS_RCODE_NOTZONE;
 	}
-	DEBUG(0, ("No mapping exists for %s\n", nt_errstr(status)));
-	return DNS_RCODE_NOTIMP;
+	DEBUG(5, ("No mapping exists for %%s\n"));
+	return DNS_RCODE_SERVFAIL;
 }
 
 bool dns_name_match(const char *zone, const char *name, size_t *host_part_len)
@@ -105,10 +100,10 @@ bool dns_name_match(const char *zone, const char *name, size_t *host_part_len)
 	return true;
 }
 
-NTSTATUS dns_name2dn(struct dns_server *dns,
-		     TALLOC_CTX *mem_ctx,
-		     const char *name,
-		     struct ldb_dn **_dn)
+WERROR dns_name2dn(struct dns_server *dns,
+		   TALLOC_CTX *mem_ctx,
+		   const char *name,
+		   struct ldb_dn **_dn)
 {
 	struct ldb_dn *base;
 	struct ldb_dn *dn;
@@ -116,7 +111,7 @@ NTSTATUS dns_name2dn(struct dns_server *dns,
 	size_t host_part_len = 0;
 
 	if (name == NULL) {
-		return NT_STATUS_INVALID_PARAMETER;
+		return DNS_ERR(FORMAT_ERROR);
 	}
 
 	/*TODO: Check if 'name' is a valid DNS name */
@@ -126,7 +121,7 @@ NTSTATUS dns_name2dn(struct dns_server *dns,
 		dn = ldb_dn_copy(mem_ctx, base);
 		ldb_dn_add_child_fmt(dn, "DC=@,DC=RootDNSServers,CN=MicrosoftDNS,CN=System");
 		*_dn = dn;
-		return NT_STATUS_OK;
+		return WERR_OK;
 	}
 
 	for (z = dns->zones; z != NULL; z = z->next) {
@@ -139,18 +134,18 @@ NTSTATUS dns_name2dn(struct dns_server *dns,
 	}
 
 	if (z == NULL) {
-		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+		return DNS_ERR(NAME_ERROR);
 	}
 
 	if (host_part_len == 0) {
 		dn = ldb_dn_copy(mem_ctx, z->dn);
 		ldb_dn_add_child_fmt(dn, "DC=@");
 		*_dn = dn;
-		return NT_STATUS_OK;
+		return WERR_OK;
 	}
 
 	dn = ldb_dn_copy(mem_ctx, z->dn);
 	ldb_dn_add_child_fmt(dn, "DC=%*.*s", (int)host_part_len, (int)host_part_len, name);
 	*_dn = dn;
-	return NT_STATUS_OK;
+	return WERR_OK;
 }

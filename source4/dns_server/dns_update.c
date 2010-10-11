@@ -29,26 +29,27 @@
 #include "dsdb/common/util.h"
 #include "dns_server/dns_server.h"
 
-NTSTATUS dns_server_process_update(struct dns_server *dns,
-				   TALLOC_CTX *mem_ctx,
-				   struct dns_name_packet *in,
-				   struct dns_res_rec **prereqs,    uint16_t *prereq_count,
-				   struct dns_res_rec **updates,    uint16_t *update_count,
-				   struct dns_res_rec **additional, uint16_t *arcount)
+
+WERROR dns_server_process_update(struct dns_server *dns,
+				 TALLOC_CTX *mem_ctx,
+				 struct dns_name_packet *in,
+				 const struct dns_res_rec *prereqs, uint16_t prereq_count,
+				 struct dns_res_rec **updates,      uint16_t *update_count,
+				 struct dns_res_rec **additional,   uint16_t *arcount)
 {
 	struct dns_name_question *zone;
-	NTSTATUS status;
 	const struct dns_server_zone *z;
 	size_t host_part_len = 0;
+	uint16_t i;
 
 	if (in->qdcount != 1) {
-		return NT_STATUS_INVALID_PARAMETER;
+		return DNS_ERR(FORMAT_ERROR);
 	}
 
 	zone = in->questions;
 
 	if (zone->question_type != DNS_QTYPE_SOA) {
-		return NT_STATUS_INVALID_PARAMETER;
+		return DNS_ERR(FORMAT_ERROR);
 	}
 
 	DEBUG(0, ("Got a dns update request.\n"));
@@ -63,12 +64,12 @@ NTSTATUS dns_server_process_update(struct dns_server *dns,
 	}
 
 	if (z == NULL) {
-		return NT_STATUS_FOOBAR;
+		return DNS_ERR(NOTAUTH);
 	}
 
 	if (host_part_len != 0) {
-		return NT_STATUS_NOT_IMPLEMENTED;
+		return DNS_ERR(NOT_IMPLEMENTED);
 	}
 
-	return NT_STATUS_NOT_IMPLEMENTED;
+	return DNS_ERR(NOT_IMPLEMENTED);
 }

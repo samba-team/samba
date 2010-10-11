@@ -20,7 +20,7 @@
 */
 
 #include "includes.h"
-#include "libcli/util/ntstatus.h"
+#include "libcli/util/werror.h"
 #include "librpc/ndr/libndr.h"
 #include "librpc/gen_ndr/ndr_dns.h"
 #include "librpc/gen_ndr/ndr_dnsp.h"
@@ -29,14 +29,14 @@
 #include "dsdb/common/util.h"
 #include "dns_server/dns_server.h"
 
-static NTSTATUS handle_question(struct dns_server *dns,
-				TALLOC_CTX *mem_ctx,
-				const struct dns_name_question *question,
-				struct dns_res_rec **answers, uint16_t *ancount)
+static WERROR handle_question(struct dns_server *dns,
+			      TALLOC_CTX *mem_ctx,
+			      const struct dns_name_question *question,
+			      struct dns_res_rec **answers, uint16_t *ancount)
 {
 	struct dns_res_rec *ans;
 	struct ldb_dn *dn = NULL;
-	NTSTATUS status;
+	WERROR werror;
 	static const char * const attrs[] = { "dnsRecord", NULL};
 	int ret;
 	uint16_t ai = *ancount;
@@ -45,18 +45,18 @@ static NTSTATUS handle_question(struct dns_server *dns,
 	struct dnsp_DnssrvRpcRecord *recs;
 	struct ldb_message_element *el;
 
-	status = dns_name2dn(dns, mem_ctx, question->name, &dn);
-	NT_STATUS_NOT_OK_RETURN(status);
+	werror = dns_name2dn(dns, mem_ctx, question->name, &dn);
+	W_ERROR_NOT_OK_RETURN(werror);
 
 	ret = dsdb_search_one(dns->samdb, mem_ctx, &msg, dn,
 			      LDB_SCOPE_BASE, attrs, 0, "%s", "(objectClass=dnsNode)");
 	if (ret != LDB_SUCCESS) {
-		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+		return DNS_ERR(NAME_ERROR);
 	}
 
 	el = ldb_msg_find_element(msg, attrs[0]);
 	if (el == NULL) {
-		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+		return DNS_ERR(NAME_ERROR);
 	}
 
 	recs = talloc_array(mem_ctx, struct dnsp_DnssrvRpcRecord, el->num_values);
@@ -68,13 +68,13 @@ static NTSTATUS handle_question(struct dns_server *dns,
 				(ndr_pull_flags_fn_t)ndr_pull_dnsp_DnssrvRpcRecord);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			DEBUG(0, ("Failed to grab dnsp_DnssrvRpcRecord\n"));
-			return NT_STATUS_INTERNAL_DB_CORRUPTION;
+			return DNS_ERR(SERVER_FAILURE);
 		}
 	}
 
 	ans = talloc_realloc(mem_ctx, *answers, struct dns_res_rec,
 			     ai + el->num_values);
-	NT_STATUS_HAVE_NO_MEMORY(ans);
+	W_ERROR_HAVE_NO_MEMORY(ans);
 
 	switch (question->question_type) {
 	case DNS_QTYPE_CNAME:
@@ -185,38 +185,38 @@ static NTSTATUS handle_question(struct dns_server *dns,
 		}
 		break;
 	default:
-		return NT_STATUS_NOT_IMPLEMENTED;
+		return DNS_ERR(NOT_IMPLEMENTED);
 	}
 
 	if (*ancount == ai) {
-		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+		return DNS_ERR(NAME_ERROR);
 	}
 
 	*ancount = ai;
 	*answers = ans;
 
-	return NT_STATUS_OK;
+	return WERR_OK;
 
 }
 
-NTSTATUS dns_server_process_query(struct dns_server *dns,
-				  TALLOC_CTX *mem_ctx,
-				  struct dns_name_packet *in,
-				  struct dns_res_rec **answers,    uint16_t *ancount,
-				  struct dns_res_rec **nsrecs,     uint16_t *nscount,
-				  struct dns_res_rec **additional, uint16_t *arcount)
+WERROR dns_server_process_query(struct dns_server *dns,
+				TALLOC_CTX *mem_ctx,
+				struct dns_name_packet *in,
+				struct dns_res_rec **answers,    uint16_t *ancount,
+				struct dns_res_rec **nsrecs,     uint16_t *nscount,
+				struct dns_res_rec **additional, uint16_t *arcount)
 {
 	uint16_t num_answers=0;
 	struct dns_res_rec *ans=NULL;
 	int i;
-	NTSTATUS status;
+	WERROR werror;
 
 	ans = talloc_array(mem_ctx, struct dns_res_rec, 0);
-	if (answers == NULL) return NT_STATUS_NO_MEMORY;
+	W_ERROR_HAVE_NO_MEMORY(ans);
 
 	for (i = 0; i < in->qdcount; ++i) {
-		status = handle_question(dns, mem_ctx, &in->questions[i], &ans, &num_answers);
-		NT_STATUS_NOT_OK_RETURN(status);
+		werror = handle_question(dns, mem_ctx, &in->questions[i], &ans, &num_answers);
+		W_ERROR_NOT_OK_RETURN(werror);
 	}
 
 	*answers = ans;
@@ -229,5 +229,5 @@ NTSTATUS dns_server_process_query(struct dns_server *dns,
 	*additional = NULL;
 	*arcount    = 0;
 
-	return NT_STATUS_OK;
+	return WERR_OK;
 }

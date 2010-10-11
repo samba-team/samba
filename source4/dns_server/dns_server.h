@@ -39,26 +39,26 @@ struct dns_server {
 };
 
 
-NTSTATUS dns_server_process_query(struct dns_server *dns,
-				  TALLOC_CTX *mem_ctx,
-				  struct dns_name_packet *in,
-				  struct dns_res_rec **answers,    uint16_t *ancount,
-				  struct dns_res_rec **nsrecs,     uint16_t *nscount,
-				  struct dns_res_rec **additional, uint16_t *arcount);
+WERROR dns_server_process_query(struct dns_server *dns,
+				TALLOC_CTX *mem_ctx,
+				struct dns_name_packet *in,
+				struct dns_res_rec **answers,    uint16_t *ancount,
+				struct dns_res_rec **nsrecs,     uint16_t *nscount,
+				struct dns_res_rec **additional, uint16_t *arcount);
 
-NTSTATUS dns_server_process_update(struct dns_server *dns,
-				   TALLOC_CTX *mem_ctx,
-				   struct dns_name_packet *in,
-				   struct dns_res_rec **prereqs,    uint16_t *prereq_count,
-				   struct dns_res_rec **updates,    uint16_t *update_count,
-				   struct dns_res_rec **additional, uint16_t *arcount);
+WERROR dns_server_process_update(struct dns_server *dns,
+				 TALLOC_CTX *mem_ctx,
+				 struct dns_name_packet *in,
+				 const struct dns_res_rec *prereqs, uint16_t prereq_count,
+				 struct dns_res_rec **updates,      uint16_t *update_count,
+				 struct dns_res_rec **additional,   uint16_t *arcount);
 
-NTSTATUS dns_err_to_ntstatus(enum dns_rcode rcode);
-uint8_t ntstatus_to_dns_err(NTSTATUS status);
+uint8_t werr_to_dns_err(WERROR werror);
 bool dns_name_match(const char *zone, const char *name, size_t *host_part_len);
-NTSTATUS dns_name2dn(struct dns_server *dns,
-		     TALLOC_CTX *mem_ctx,
-		     const char *name,
-		     struct ldb_dn **_dn);
+WERROR dns_name2dn(struct dns_server *dns,
+		   TALLOC_CTX *mem_ctx,
+		   const char *name,
+		   struct ldb_dn **_dn);
 
+#define DNS_ERR(err_str) WERR_DNS_ERROR_RCODE_##err_str
 #endif /* __DNS_SERVER_H__ */

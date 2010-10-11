@@ -97,12 +97,11 @@ static NTSTATUS dns_process(struct dns_server *dns,
 			    DATA_BLOB *out)
 {
 	enum ndr_err_code ndr_err;
-	NTSTATUS ret;
+	WERROR ret;
 	struct dns_name_packet *in_packet;
 	struct dns_name_packet *out_packet;
 	struct dns_res_rec *answers = NULL, *nsrecs = NULL, *additional = NULL;
 	uint16_t num_answers = 0 , num_nsrecs = 0, num_additional = 0;
-	uint16_t reply_code;
 
 	if (in->length < 12) {
 		return NT_STATUS_INVALID_PARAMETER;
@@ -141,23 +140,20 @@ static NTSTATUS dns_process(struct dns_server *dns,
 					       &answers, &num_answers,
 					       &nsrecs,  &num_nsrecs,
 					       &additional, &num_additional);
-		reply_code = DNS_RCODE_NXDOMAIN;
 
 		break;
 	case DNS_OPCODE_REGISTER:
 		ret = dns_server_process_update(dns, out_packet, in_packet,
-						&answers, &num_answers,
+						answers, num_answers,
 						&nsrecs,  &num_nsrecs,
 						&additional, &num_additional);
-		reply_code = ntstatus_to_dns_err(ret);
 		break;
 	default:
-		ret = NT_STATUS_NOT_IMPLEMENTED;
-		reply_code = DNS_RCODE_NOTIMP;
+		ret = WERR_DNS_ERROR_RCODE_NOT_IMPLEMENTED;
 		break;
 	}
 
-	if (NT_STATUS_IS_OK(ret)) {
+	if (W_ERROR_IS_OK(ret)) {
 		out_packet->ancount = num_answers;
 		out_packet->answers = answers;
 
@@ -167,7 +163,7 @@ static NTSTATUS dns_process(struct dns_server *dns,
 		out_packet->arcount = num_additional;
 		out_packet->additional = additional;
 	} else {
-		out_packet->operation |= reply_code;
+		out_packet->operation |= werr_to_dns_err(ret);
 	}
 
 	NDR_PRINT_DEBUG(dns_name_packet, out_packet);
