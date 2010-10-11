@@ -536,6 +536,13 @@ struct ctdb_all_public_ips {
 };
 
 
+struct latency_counter {
+	int num;
+	double min;
+	double max;
+	double total;
+};
+
 /*
   ctdb statistics information
  */
@@ -570,8 +577,8 @@ struct ctdb_statistics {
 		uint32_t traverse;
 	} timeouts;
 	struct {
-		double ctdbd;
-		double recd;
+		struct latency_counter ctdbd;
+		struct latency_counter recd;
 	} reclock;
 	uint32_t total_calls;
 	uint32_t pending_calls;
@@ -582,9 +589,9 @@ struct ctdb_statistics {
 	uint32_t memory_used;
 	uint32_t __last_counter; /* hack for control_statistics_all */
 	uint32_t max_hop_count;
-	double max_call_latency;
-	double max_lockwait_latency;
-	double max_childwrite_latency;
+	struct latency_counter call_latency;
+	struct latency_counter lockwait_latency;
+	struct latency_counter childwrite_latency;
 	uint32_t num_recoveries;
 	struct timeval statistics_start_time;
 	struct timeval statistics_current_time;

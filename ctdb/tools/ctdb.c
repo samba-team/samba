@@ -219,11 +219,29 @@ static void show_statistics(struct ctdb_statistics *s, int show_header)
 			for (i=0;i<ARRAY_SIZE(fields);i++) {
 				printf("%s:", fields[i].name);
 			}
-			printf("max_reclock_ctdbd:");
-			printf("max_reclock_recd:");
+			printf("num_reclock_ctdbd_latency:");
+			printf("min_reclock_ctdbd_latency:");
+			printf("avg_reclock_ctdbd_latency:");
+			printf("max_reclock_ctdbd_latency:");
+
+			printf("num_reclock_recd_latency:");
+			printf("min_reclock_recd_latency:");
+			printf("avg_reclock_recd_latency:");
+			printf("max_reclock_recd_latency:");
+
+			printf("num_call_latency:");
+			printf("min_call_latency:");
+			printf("avg_call_latency:");
 			printf("max_call_latency:");
+
+			printf("num_lockwait_latency:");
+			printf("min_lockwait_latency:");
+			printf("avg_lockwait_latency:");
 			printf("max_lockwait_latency:");
-			printf("max_childwrite_latency:");
+
+			printf("num_childwrite_latency:");
+			printf("min_childwrite_latency:");
+			printf("avg_childwrite_latency:");
 			printf("max_childwrite_latency:");
 			printf("\n");
 		}
@@ -233,12 +251,30 @@ static void show_statistics(struct ctdb_statistics *s, int show_header)
 		for (i=0;i<ARRAY_SIZE(fields);i++) {
 			printf("%d:", *(uint32_t *)(fields[i].offset+(uint8_t *)s));
 		}
-		printf("%.6f:", s->reclock.ctdbd);
-		printf("%.6f:", s->reclock.recd);
-		printf("%.6f:", s->max_call_latency);
-		printf("%.6f:", s->max_lockwait_latency);
-		printf("%.6f:", s->max_childwrite_latency);
-		printf("%.6f:", s->max_childwrite_latency);
+		printf("%d:", s->reclock.ctdbd.num);
+		printf("%.6f:", s->reclock.ctdbd.min);
+		printf("%.6f:", s->reclock.ctdbd.num?s->reclock.ctdbd.total/s->reclock.ctdbd.num:0.0);
+		printf("%.6f:", s->reclock.ctdbd.max);
+
+		printf("%d:", s->reclock.recd.num);
+		printf("%.6f:", s->reclock.recd.min);
+		printf("%.6f:", s->reclock.recd.num?s->reclock.recd.total/s->reclock.recd.num:0.0);
+		printf("%.6f:", s->reclock.recd.max);
+
+		printf("%d:", s->call_latency.num);
+		printf("%.6f:", s->call_latency.min);
+		printf("%.6f:", s->call_latency.num?s->call_latency.total/s->call_latency.num:0.0);
+		printf("%.6f:", s->call_latency.max);
+
+		printf("%d:", s->lockwait_latency.num);
+		printf("%.6f:", s->lockwait_latency.min);
+		printf("%.6f:", s->lockwait_latency.num?s->lockwait_latency.total/s->lockwait_latency.num:0.0);
+		printf("%.6f:", s->lockwait_latency.max);
+
+		printf("%d:", s->childwrite_latency.num);
+		printf("%.6f:", s->childwrite_latency.min);
+		printf("%.6f:", s->childwrite_latency.num?s->childwrite_latency.total/s->childwrite_latency.num:0.0);
+		printf("%.6f:", s->childwrite_latency.max);
 		printf("\n");
 	} else {
 		printf("CTDB version %u\n", CTDB_VERSION);
@@ -261,13 +297,13 @@ static void show_statistics(struct ctdb_statistics *s, int show_header)
 			       preflen?0:4, "",
 			       *(uint32_t *)(fields[i].offset+(uint8_t *)s));
 		}
-		printf(" %-30s     %.6f sec\n", "max_reclock_ctdbd", s->reclock.ctdbd);
-		printf(" %-30s     %.6f sec\n", "max_reclock_recd", s->reclock.recd);
+		printf(" %-30s     %.6f/%.6f/%.6f sec out of %d\n", "reclock_ctdbd       MIN/AVG/MAX", s->reclock.ctdbd.min, s->reclock.ctdbd.num?s->reclock.ctdbd.total/s->reclock.ctdbd.num:0.0, s->reclock.ctdbd.max, s->reclock.ctdbd.num);
 
-		printf(" %-30s     %.6f sec\n", "max_call_latency", s->max_call_latency);
-		printf(" %-30s     %.6f sec\n", "max_lockwait_latency", s->max_lockwait_latency);
-		printf(" %-30s     %.6f sec\n", "max_childwrite_latency", s->max_childwrite_latency);
-		printf(" %-30s     %.6f sec\n", "max_childwrite_latency", s->max_childwrite_latency);
+		printf(" %-30s     %.6f/%.6f/%.6f sec out of %d\n", "reclock_recd       MIN/AVG/MAX", s->reclock.recd.min, s->reclock.recd.num?s->reclock.recd.total/s->reclock.recd.num:0.0, s->reclock.recd.max, s->reclock.recd.num);
+
+		printf(" %-30s     %.6f/%.6f/%.6f sec out of %d\n", "call_latency       MIN/AVG/MAX", s->call_latency.min, s->call_latency.num?s->call_latency.total/s->call_latency.num:0.0, s->call_latency.max, s->call_latency.num);
+		printf(" %-30s     %.6f/%.6f/%.6f sec out of %d\n", "lockwait_latency   MIN/AVG/MAX", s->lockwait_latency.min, s->lockwait_latency.num?s->lockwait_latency.total/s->lockwait_latency.num:0.0, s->lockwait_latency.max, s->lockwait_latency.num);
+		printf(" %-30s     %.6f/%.6f/%.6f sec out of %d\n", "childwrite_latency MIN/AVG/MAX", s->childwrite_latency.min, s->childwrite_latency.num?s->childwrite_latency.total/s->childwrite_latency.num:0.0, s->childwrite_latency.max, s->childwrite_latency.num);
 	}
 
 	talloc_free(tmp_ctx);
@@ -305,10 +341,10 @@ static int control_statistics_all(struct ctdb_context *ctdb)
 		}
 		statistics.max_hop_count = 
 			MAX(statistics.max_hop_count, s1.max_hop_count);
-		statistics.max_call_latency = 
-			MAX(statistics.max_call_latency, s1.max_call_latency);
-		statistics.max_lockwait_latency = 
-			MAX(statistics.max_lockwait_latency, s1.max_lockwait_latency);
+		statistics.call_latency.max = 
+			MAX(statistics.call_latency.max, s1.call_latency.max);
+		statistics.lockwait_latency.max = 
+			MAX(statistics.lockwait_latency.max, s1.lockwait_latency.max);
 	}
 	talloc_free(nodes);
 	printf("Gathered statistics for %u nodes\n", num_nodes);

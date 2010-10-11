@@ -258,7 +258,7 @@ static void daemon_call_from_client_callback(struct ctdb_call_state *state)
 		DEBUG(DEBUG_ERR, (__location__ " ctdbd_call_recv() returned error\n"));
 		CTDB_DECREMENT_STAT(client->ctdb, pending_calls);
 
-		CTDB_UPDATE_LATENCY(client->ctdb, ctdb_db, "call_from_client_cb 1", max_call_latency, dstate->start_time);
+		CTDB_UPDATE_LATENCY(client->ctdb, ctdb_db, "call_from_client_cb 1", call_latency, dstate->start_time);
 		return;
 	}
 
@@ -268,7 +268,7 @@ static void daemon_call_from_client_callback(struct ctdb_call_state *state)
 	if (r == NULL) {
 		DEBUG(DEBUG_ERR, (__location__ " Failed to allocate reply_call in ctdb daemon\n"));
 		CTDB_DECREMENT_STAT(client->ctdb, pending_calls);
-		CTDB_UPDATE_LATENCY(client->ctdb, ctdb_db, "call_from_client_cb 2", max_call_latency, dstate->start_time);
+		CTDB_UPDATE_LATENCY(client->ctdb, ctdb_db, "call_from_client_cb 2", call_latency, dstate->start_time);
 		return;
 	}
 	r->hdr.reqid        = dstate->reqid;
@@ -283,7 +283,7 @@ static void daemon_call_from_client_callback(struct ctdb_call_state *state)
 	if (res != 0) {
 		DEBUG(DEBUG_ERR, (__location__ " Failed to queue packet from daemon to client\n"));
 	}
-	CTDB_UPDATE_LATENCY(client->ctdb, ctdb_db, "call_from_client_cb 3", max_call_latency, dstate->start_time);
+	CTDB_UPDATE_LATENCY(client->ctdb, ctdb_db, "call_from_client_cb 3", call_latency, dstate->start_time);
 	CTDB_DECREMENT_STAT(client->ctdb, pending_calls);
 	talloc_free(dstate);
 }
@@ -409,7 +409,7 @@ static void daemon_request_call_from_client(struct ctdb_client *client,
 
 		DEBUG(DEBUG_ERR,(__location__ " Unable to allocate call\n"));
 		CTDB_DECREMENT_STAT(ctdb, pending_calls);
-		CTDB_UPDATE_LATENCY(ctdb, ctdb_db, "call_from_client 1", max_call_latency, dstate->start_time);
+		CTDB_UPDATE_LATENCY(ctdb, ctdb_db, "call_from_client 1", call_latency, dstate->start_time);
 		return;
 	}
 
@@ -433,7 +433,7 @@ static void daemon_request_call_from_client(struct ctdb_client *client,
 	if (state == NULL) {
 		DEBUG(DEBUG_ERR,(__location__ " Unable to setup call send\n"));
 		CTDB_DECREMENT_STAT(ctdb, pending_calls);
-		CTDB_UPDATE_LATENCY(ctdb, ctdb_db, "call_from_client 2", max_call_latency, dstate->start_time);
+		CTDB_UPDATE_LATENCY(ctdb, ctdb_db, "call_from_client 2", call_latency, dstate->start_time);
 		return;
 	}
 	talloc_steal(state, dstate);

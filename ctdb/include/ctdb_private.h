@@ -304,10 +304,21 @@ struct ctdb_daemon_data {
 
 #define CTDB_UPDATE_RECLOCK_LATENCY(ctdb, name, counter, value) \
 	{										\
-		if (value > ctdb->statistics.counter)					\
-			ctdb->statistics.counter = value;				\
-		if (value > ctdb->statistics_current.counter)				\
-			ctdb->statistics_current.counter = value;			\
+		if (value > ctdb->statistics.counter.max)					\
+			ctdb->statistics.counter.max = value;				\
+		if (value > ctdb->statistics_current.counter.max)				\
+			ctdb->statistics_current.counter.max = value;			\
+											\
+		if (ctdb->statistics.counter.num == 0 || value < ctdb->statistics.counter.min)	\
+			ctdb->statistics.counter.min = value;				\
+		if (ctdb->statistics_current.counter.num == 0 || value < ctdb->statistics_current.counter.min)	\
+			ctdb->statistics_current.counter.min = value;			\
+											\
+		ctdb->statistics.counter.total += value;					\
+		ctdb->statistics_current.counter.total += value;				\
+											\
+		ctdb->statistics.counter.num++;						\
+		ctdb->statistics_current.counter.num++;					\
 											\
 		if (ctdb->tunable.reclock_latency_ms != 0) {				\
 			if (value*1000 > ctdb->tunable.reclock_latency_ms) {		\
@@ -320,10 +331,22 @@ struct ctdb_daemon_data {
 #define CTDB_UPDATE_LATENCY(ctdb, db, operation, counter, t) \
 	{										\
 		double l = timeval_elapsed(&t);						\
-		if (l > ctdb->statistics.counter)					\
-			ctdb->statistics.counter = l;					\
-		if (l > ctdb->statistics_current.counter)				\
-			ctdb->statistics_current.counter = l;				\
+											\
+		if (l > ctdb->statistics.counter.max)					\
+			ctdb->statistics.counter.max = l;				\
+		if (l > ctdb->statistics_current.counter.max)				\
+			ctdb->statistics_current.counter.max = l;			\
+											\
+		if (ctdb->statistics.counter.num == 0 || l < ctdb->statistics.counter.min)	\
+			ctdb->statistics.counter.min = l;				\
+		if (ctdb->statistics_current.counter.num == 0 || l < ctdb->statistics_current.counter.min)	\
+			ctdb->statistics_current.counter.min = l;			\
+											\
+		ctdb->statistics.counter.total += l;					\
+		ctdb->statistics_current.counter.total += l;				\
+											\
+		ctdb->statistics.counter.num++;						\
+		ctdb->statistics_current.counter.num++;					\
 											\
 		if (ctdb->tunable.log_latency_ms !=0) {					\
 			if (l*1000 > ctdb->tunable.log_latency_ms) {			\
