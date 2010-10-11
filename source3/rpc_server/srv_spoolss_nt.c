@@ -1693,6 +1693,15 @@ WERROR _spoolss_OpenPrinterEx(struct pipes_struct *p,
 		return WERR_INVALID_PARAM;
 	}
 
+	if (r->in.level < 0 || r->in.level > 3) {
+		return WERR_INVALID_PARAM;
+	}
+	if ((r->in.level == 1 && !r->in.userlevel.level1) ||
+	    (r->in.level == 2 && !r->in.userlevel.level2) ||
+	    (r->in.level == 3 && !r->in.userlevel.level3)) {
+		return WERR_INVALID_PARAM;
+	}
+
 	/* some sanity check because you can open a printer or a print server */
 	/* aka: \\server\printer or \\server */
 
