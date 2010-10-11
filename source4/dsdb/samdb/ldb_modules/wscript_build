@@ -112,7 +112,7 @@ bld.SAMBA_MODULE('ldb_samba3sam',
 	source='samba3sam.c',
 	subsystem='ldb',
 	init_function='LDB_MODULE(samba3sam)',
-	internal_module=not bld.CONFIG_SET('USING_SYSTEM_LDB'),
+	internal_module=False,
 	deps='talloc LIBEVENTS ldb SMBPASSWD NSS_WRAPPER LIBSECURITY NDR_SECURITY'
 	)
 
@@ -121,7 +121,7 @@ bld.SAMBA_MODULE('ldb_samba3sid',
 	source='samba3sid.c',
 	subsystem='ldb',
 	init_function='LDB_MODULE(samba3sid)',
-	internal_module=not bld.CONFIG_SET('USING_SYSTEM_LDB'),
+	internal_module=False,
 	deps='talloc LIBEVENTS ldb SMBPASSWD NSS_WRAPPER LIBSECURITY NDR_SECURITY LDBSAMBA DSDB_MODULE_HELPERS'
 	)
 
@@ -131,7 +131,7 @@ bld.SAMBA_MODULE('ldb_simple_ldap_map',
 	aliases='entryuuid nsuniqueid',
 	subsystem='ldb',
 	init_function='LDB_MODULE(entryuuid),LDB_MODULE(nsuniqueid)',
-	internal_module=not bld.CONFIG_SET('USING_SYSTEM_LDB'),
+	internal_module=False,
 	deps='talloc LIBEVENTS ldb LIBNDR'
 	)
 
@@ -149,7 +149,7 @@ bld.SAMBA_MODULE('ldb_password_hash',
 	source='password_hash.c',
 	subsystem='ldb',
 	init_function='LDB_MODULE(password_hash)',
-	internal_module=not bld.CONFIG_SET('USING_SYSTEM_LDB'),
+	internal_module=False,
 	deps='talloc LIBEVENTS SAMDB LIBCLI_AUTH NDR_DRSBLOBS KERBEROS HEIMDAL_HDB_KEYS krb5 com_err'
 	)
 
@@ -158,7 +158,7 @@ bld.SAMBA_MODULE('ldb_local_password',
 	source='local_password.c',
 	subsystem='ldb',
 	init_function='LDB_MODULE(local_password)',
-	internal_module=not bld.CONFIG_SET('USING_SYSTEM_LDB'),
+	internal_module=False,
 	deps='talloc LIBEVENTS LIBNDR SAMDB'
 	)
 
@@ -194,7 +194,7 @@ bld.SAMBA_MODULE('ldb_show_deleted',
 	source='show_deleted.c',
 	subsystem='ldb',
 	init_function='LDB_MODULE(show_deleted)',
-	internal_module=not bld.CONFIG_SET('USING_SYSTEM_LDB'),
+	internal_module=False,
 	deps='talloc LIBEVENTS LIBSAMBA-UTIL DSDB_MODULE_HELPERS'
 	)
 
@@ -204,7 +204,7 @@ bld.SAMBA_MODULE('ldb_partition',
 	autoproto='partition_proto.h',
 	subsystem='ldb',
 	init_function='LDB_MODULE(partition)',
-	internal_module=not bld.CONFIG_SET('USING_SYSTEM_LDB'),
+	internal_module=False,
 	deps='talloc LIBEVENTS SAMDB DSDB_MODULE_HELPERS'
 	)
 
@@ -249,7 +249,7 @@ bld.SAMBA_MODULE('ldb_subtree_rename',
 	source='subtree_rename.c',
 	subsystem='ldb',
 	init_function='LDB_MODULE(subtree_rename)',
-	internal_module=not bld.CONFIG_SET('USING_SYSTEM_LDB'),
+	internal_module=False,
 	deps='talloc LIBEVENTS LIBSAMBA-UTIL ldb SAMDB_COMMON'
 	)
 
@@ -258,7 +258,7 @@ bld.SAMBA_MODULE('ldb_subtree_delete',
 	source='subtree_delete.c',
 	subsystem='ldb',
 	init_function='LDB_MODULE(subtree_delete)',
-	internal_module=not bld.CONFIG_SET('USING_SYSTEM_LDB'),
+	internal_module=False,
 	deps='talloc LIBEVENTS LIBSAMBA-UTIL DSDB_MODULE_HELPERS'
 	)
 
@@ -276,7 +276,7 @@ bld.SAMBA_MODULE('ldb_ranged_results',
 	source='ranged_results.c',
 	subsystem='ldb',
 	init_function='LDB_MODULE(ranged_results)',
-	internal_module=not bld.CONFIG_SET('USING_SYSTEM_LDB'),
+	internal_module=False,
 	deps='talloc LIBEVENTS LIBSAMBA-UTIL ldb'
 	)
 
