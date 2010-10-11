@@ -86,10 +86,9 @@ struct tdb_wrap *secrets_init(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_c
   connect to the secrets ldb
 */
 struct ldb_context *secrets_db_connect(TALLOC_CTX *mem_ctx,
-					struct tevent_context *ev_ctx,
 					struct loadparm_context *lp_ctx)
 {
-	return ldb_wrap_connect(mem_ctx, ev_ctx, lp_ctx, lpcfg_secrets_url(lp_ctx),
+	return ldb_wrap_connect(mem_ctx, NULL, lp_ctx, lpcfg_secrets_url(lp_ctx),
 			       NULL, NULL, 0);
 }
 
@@ -98,7 +97,6 @@ struct ldb_context *secrets_db_connect(TALLOC_CTX *mem_ctx,
  * @return pointer to a SID object if the SID could be obtained, NULL otherwise
  */
 struct dom_sid *secrets_get_domain_sid(TALLOC_CTX *mem_ctx,
-				       struct tevent_context *ev_ctx,
 				       struct loadparm_context *lp_ctx,
 				       const char *domain,
 				       enum netr_SchannelType *sec_channel_type,
@@ -114,7 +112,7 @@ struct dom_sid *secrets_get_domain_sid(TALLOC_CTX *mem_ctx,
 
 	*errstring = NULL;
 
-	ldb = secrets_db_connect(mem_ctx, ev_ctx, lp_ctx);
+	ldb = secrets_db_connect(mem_ctx, lp_ctx);
 	if (ldb == NULL) {
 		DEBUG(5, ("secrets_db_connect failed\n"));
 		return NULL;

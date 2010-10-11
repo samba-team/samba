@@ -74,7 +74,7 @@ _PUBLIC_ NTSTATUS cli_credentials_set_secrets(struct cli_credentials *cred,
 
 	if (!ldb) {
 		/* Local secrets are stored in secrets.ldb */
-		ldb = secrets_db_connect(mem_ctx, event_ctx, lp_ctx);
+		ldb = secrets_db_connect(mem_ctx, lp_ctx);
 		if (!ldb) {
 			/* set anonymous as the fallback, if the machine account won't work */
 			cli_credentials_set_anonymous(cred);

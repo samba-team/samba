@@ -43,9 +43,8 @@ struct ldb_message;
 struct ldb_context;
 
 struct tdb_wrap *secrets_init(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx);
-struct ldb_context *secrets_db_connect(TALLOC_CTX *mem_ctx, struct tevent_context *ev_ctx, struct loadparm_context *lp_ctx);
+struct ldb_context *secrets_db_connect(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx);
 struct dom_sid *secrets_get_domain_sid(TALLOC_CTX *mem_ctx,
-				       struct tevent_context *ev_ctx,
 				       struct loadparm_context *lp_ctx,
 				       const char *domain,
 				       enum netr_SchannelType *sec_channel_type,

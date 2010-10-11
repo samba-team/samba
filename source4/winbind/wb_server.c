@@ -237,7 +237,6 @@ static void winbind_task_init(struct task_server *task)
 	switch (lpcfg_server_role(service->task->lp_ctx)) {
 	case ROLE_STANDALONE:
 		primary_sid = secrets_get_domain_sid(service,
-						     service->task->event_ctx,
 						     service->task->lp_ctx,
 						     lpcfg_netbios_name(service->task->lp_ctx),
 						     &service->sec_channel_type,
@@ -253,7 +252,6 @@ static void winbind_task_init(struct task_server *task)
 		break;
 	case ROLE_DOMAIN_MEMBER:
 		primary_sid = secrets_get_domain_sid(service,
-						     service->task->event_ctx,
 						     service->task->lp_ctx,
 						     lpcfg_workgroup(service->task->lp_ctx),
 						     &service->sec_channel_type,
@@ -268,7 +266,6 @@ static void winbind_task_init(struct task_server *task)
 		break;
 	case ROLE_DOMAIN_CONTROLLER:
 		primary_sid = secrets_get_domain_sid(service,
-						     service->task->event_ctx,
 						     service->task->lp_ctx,
 						     lpcfg_workgroup(service->task->lp_ctx),
 						     &service->sec_channel_type,
