@@ -84,6 +84,15 @@ static const struct dcesrv_iface *find_interface(const struct dcesrv_endpoint *e
 	return NULL;
 }
 
+/*
+ * See if a uuid and if_version match to an interface
+ */
+static bool interface_match_by_uuid(const struct dcesrv_iface *iface,
+				    const struct GUID *uuid)
+{
+	return GUID_equal(&iface->syntax_id.uuid, uuid);
+}
+
 static struct dcesrv_iface_list *find_interface_list(const struct dcesrv_endpoint *endpoint,
 						     const struct dcesrv_iface *iface)
 {
@@ -137,6 +146,7 @@ static struct dcesrv_endpoint *find_endpoint(struct dcesrv_endpoint *endpoint_li
  */
 static uint32_t build_ep_list(TALLOC_CTX *mem_ctx,
 			      struct dcesrv_endpoint *endpoint_list,
+			      const struct GUID *uuid,
 			      struct dcesrv_ep_iface **peps)
 {
 	struct dcesrv_ep_iface *eps = NULL;
@@ -151,6 +161,11 @@ static uint32_t build_ep_list(TALLOC_CTX *mem_ctx,
 		struct dcerpc_binding *description;
 
 		for (iface = d->iface_list; iface != NULL; iface = iface->next) {
+			if (uuid != NULL &&
+			    !interface_match_by_uuid(iface->iface, uuid)) {
+				continue;
+			}
+
 			eps = talloc_realloc(mem_ctx,
 					     eps,
 					     struct dcesrv_ep_iface,
@@ -396,7 +411,7 @@ error_status_t _epm_Map(struct pipes_struct *p,
 	struct epm_floor *floors;
 	uint32_t count, i;
 
-	count = build_ep_list(p->mem_ctx, endpoint_table, &eps);
+	count = build_ep_list(p->mem_ctx, endpoint_table, NULL, &eps);
 
 	ZERO_STRUCT(*r->out.entry_handle);
 	r->out.num_towers = talloc(p->mem_ctx, uint32_t);
