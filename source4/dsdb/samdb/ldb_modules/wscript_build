@@ -223,7 +223,7 @@ bld.SAMBA_MODULE('ldb_update_keytab',
 	subsystem='ldb',
 	init_function='LDB_MODULE(update_keytab)',
 	internal_module=not bld.CONFIG_SET('USING_SYSTEM_LDB'),
-	deps='talloc LIBEVENTS CREDENTIALS ldb com_err'
+	deps='talloc LIBEVENTS CREDENTIALS ldb com_err KERBEROS_UTIL'
 	)
 
 

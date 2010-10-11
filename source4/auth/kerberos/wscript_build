@@ -10,6 +10,6 @@ bld.SAMBA_SUBSYSTEM('KERBEROS',
 bld.SAMBA_SUBSYSTEM('KERBEROS_UTIL',
 	autoproto='kerberos_util.h',
 	source='kerberos_util.c',
-	deps='KERBEROS com_err ldb SECRETS',
+	deps='KERBEROS com_err ldb CREDENTIALS_KRB5 SECRETS',
 	)
 

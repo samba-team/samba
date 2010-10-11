@@ -19,7 +19,7 @@ bld.SAMBA_MODULE('auth_server',
 	source='auth_server.c',
 	subsystem='auth',
 	init_function='auth_server_init',
-	deps='LIBSAMBA-UTIL LIBCLI_SMB'
+	deps='LIBSAMBA-UTIL LIBCLI_SMB CREDENTIALS_NTLM'
 	)
 
 
