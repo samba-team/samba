@@ -1686,7 +1686,7 @@ sub ParseUnionPushPrimitives($$$$)
 
 	my $have_default = 0;
 
-	$self->pidl("int level = ndr_push_get_switch_value($ndr, $varname);");
+	$self->pidl("uint32_t level = ndr_push_get_switch_value($ndr, $varname);");
 
 	if (defined($e->{SWITCH_TYPE})) {
 		$self->pidl("NDR_CHECK(ndr_push_$e->{SWITCH_TYPE}($ndr, NDR_SCALARS, level));");
@@ -1733,7 +1733,7 @@ sub ParseUnionPushDeferred($$$$)
 
 	my $have_default = 0;
 
-	$self->pidl("int level = ndr_push_get_switch_value($ndr, $varname);");
+	$self->pidl("uint32_t level = ndr_push_get_switch_value($ndr, $varname);");
 	if (defined($e->{PROPERTIES}{relative_base})) {
 		# retrieve the current offset as base for relative pointers
 		# based on the toplevel struct/union
@@ -1792,7 +1792,7 @@ sub ParseUnionPrint($$$$$)
 	my ($self,$e,$ndr,$name,$varname) = @_;
 	my $have_default = 0;
 
-	$self->pidl("int level;");
+	$self->pidl("uint32_t level;");
 	foreach my $el (@{$e->{ELEMENTS}}) {
 		$self->DeclareArrayVariables($el);
 	}
@@ -1919,7 +1919,7 @@ sub ParseUnionPull($$$$)
 	my ($self,$e,$ndr,$varname) = @_;
 	my $switch_type = $e->{SWITCH_TYPE};
 
-	$self->pidl("int level;");
+	$self->pidl("uint32_t level;");
 	if (defined($switch_type)) {
 		if (Parse::Pidl::Typelist::typeIs($switch_type, "ENUM")) {
 			$switch_type = Parse::Pidl::Typelist::enum_type_fn(getType($switch_type)->{DATA});
