@@ -23,7 +23,6 @@
 #include <tevent.h>
 #include "../libcli/nbt/libnbt.h"
 #include "../libcli/nbt/nbt_proto.h"
-#include "libcli/composite/composite.h"
 #include "lib/socket/socket.h"
 #include "librpc/gen_ndr/ndr_nbt.h"
 #include "../lib/util/tevent_ntstatus.h"
@@ -152,120 +151,113 @@ _PUBLIC_ NTSTATUS nbt_name_register(struct nbt_name_socket *nbtsock,
 */
 struct nbt_name_register_bcast_state {
 	struct nbt_name_socket *nbtsock;
-	struct nbt_name_register *io;
-	struct nbt_name_request *req;
+	struct nbt_name_register io;
 };
 
-static void nbt_name_register_bcast_handler(struct nbt_name_request *req);
+static void nbt_name_register_bcast_handler(struct nbt_name_request *subreq);
 
 /*
   the async send call for a 4 stage name registration
 */
-_PUBLIC_ struct composite_context *nbt_name_register_bcast_send(struct nbt_name_socket *nbtsock,
-							       struct nbt_name_register_bcast *io)
+_PUBLIC_ struct tevent_req *nbt_name_register_bcast_send(TALLOC_CTX *mem_ctx,
+					struct tevent_context *ev,
+					struct nbt_name_socket *nbtsock,
+					struct nbt_name_register_bcast *io)
 {
-	struct composite_context *c;
+	struct tevent_req *req;
 	struct nbt_name_register_bcast_state *state;
+	struct nbt_name_request *subreq;
 
-	c = talloc_zero(nbtsock, struct composite_context);
-	if (c == NULL) goto failed;
+	req = tevent_req_create(mem_ctx, &state,
+				struct nbt_name_register_bcast_state);
+	if (req == NULL) {
+		return NULL;
+	}
 
-	state = talloc(c, struct nbt_name_register_bcast_state);
-	if (state == NULL) goto failed;
-
-	state->io = talloc(state, struct nbt_name_register);
-	if (state->io == NULL) goto failed;
-
-	state->io->in.name            = io->in.name;
-	state->io->in.dest_addr       = io->in.dest_addr;
-	state->io->in.dest_port       = io->in.dest_port;
-	state->io->in.address         = io->in.address;
-	state->io->in.nb_flags        = io->in.nb_flags;
-	state->io->in.register_demand = false;
-	state->io->in.broadcast       = true;
-	state->io->in.multi_homed     = false;
-	state->io->in.ttl             = io->in.ttl;
-	state->io->in.timeout         = 1;
-	state->io->in.retries         = 2;
+	state->io.in.name            = io->in.name;
+	state->io.in.dest_addr       = io->in.dest_addr;
+	state->io.in.dest_port       = io->in.dest_port;
+	state->io.in.address         = io->in.address;
+	state->io.in.nb_flags        = io->in.nb_flags;
+	state->io.in.register_demand = false;
+	state->io.in.broadcast       = true;
+	state->io.in.multi_homed     = false;
+	state->io.in.ttl             = io->in.ttl;
+	state->io.in.timeout         = 1;
+	state->io.in.retries         = 2;
 
 	state->nbtsock = nbtsock;
 
-	state->req = nbt_name_register_send(nbtsock, state->io);
-	if (state->req == NULL) goto failed;
+	subreq = nbt_name_register_send(nbtsock, &state->io);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
 
-	state->req->async.fn = nbt_name_register_bcast_handler;
-	state->req->async.private_data = c;
+	subreq->async.fn = nbt_name_register_bcast_handler;
+	subreq->async.private_data = req;
 
-	c->private_data	= state;
-	c->state	= COMPOSITE_STATE_IN_PROGRESS;
-	c->event_ctx	= nbtsock->event_ctx;
-
-	return c;
-
-failed:
-	talloc_free(c);
-	return NULL;
+	return req;
 }
 
-
-/*
-  state handler for 4 stage name registration
-*/
-static void nbt_name_register_bcast_handler(struct nbt_name_request *req)
+static void nbt_name_register_bcast_handler(struct nbt_name_request *subreq)
 {
-	struct composite_context *c = talloc_get_type(req->async.private_data, struct composite_context);
-	struct nbt_name_register_bcast_state *state = talloc_get_type(c->private_data, struct nbt_name_register_bcast_state);
+	struct tevent_req *req =
+		talloc_get_type_abort(subreq->async.private_data,
+		struct tevent_req);
+	struct nbt_name_register_bcast_state *state =
+		tevent_req_data(req,
+		struct nbt_name_register_bcast_state);
 	NTSTATUS status;
 
-	status = nbt_name_register_recv(state->req, state, state->io);
+	status = nbt_name_register_recv(subreq, state, &state->io);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
-		if (state->io->in.register_demand == true) {
-			/* all done */
-			c->state = COMPOSITE_STATE_DONE;
-			c->status = NT_STATUS_OK;
-			goto done;
+		if (state->io.in.register_demand == true) {
+			tevent_req_done(req);
+			return;
 		}
 
 		/* the registration timed out - good, send the demand */
-		state->io->in.register_demand = true;
-		state->io->in.retries         = 0;
-		state->req = nbt_name_register_send(state->nbtsock, state->io);
-		if (state->req == NULL) {
-			c->state = COMPOSITE_STATE_ERROR;
-			c->status = NT_STATUS_NO_MEMORY;
-		} else {
-			state->req->async.fn = nbt_name_register_bcast_handler;
-			state->req->async.private_data = c;
+		state->io.in.register_demand = true;
+		state->io.in.retries         = 0;
+
+		subreq = nbt_name_register_send(state->nbtsock, &state->io);
+		if (tevent_req_nomem(subreq, req)) {
+			return;
 		}
-	} else if (!NT_STATUS_IS_OK(status)) {
-		c->state = COMPOSITE_STATE_ERROR;
-		c->status = status;
-	} else {
-		c->state = COMPOSITE_STATE_ERROR;
-		c->status = NT_STATUS_CONFLICTING_ADDRESSES;
-		DEBUG(3,("Name registration conflict from %s for %s with ip %s - rcode %d\n",
-			 state->io->out.reply_from,
-			 nbt_name_string(state, &state->io->out.name),
-			 state->io->out.reply_addr,
-			 state->io->out.rcode));
+
+		subreq->async.fn = nbt_name_register_bcast_handler;
+		subreq->async.private_data = req;
+		return;
 	}
 
-done:
-	if (c->state >= COMPOSITE_STATE_DONE &&
-	    c->async.fn) {
-		c->async.fn(c);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
 	}
+
+	DEBUG(3,("Name registration conflict from %s for %s with ip %s - rcode %d\n",
+		 state->io.out.reply_from,
+		 nbt_name_string(state, &state->io.out.name),
+		 state->io.out.reply_addr,
+		 state->io.out.rcode));
+
+	tevent_req_nterror(req, NT_STATUS_CONFLICTING_ADDRESSES);
 }
 
 /*
   broadcast 4 part name register - recv
 */
-_PUBLIC_ NTSTATUS nbt_name_register_bcast_recv(struct composite_context *c)
+_PUBLIC_ NTSTATUS nbt_name_register_bcast_recv(struct tevent_req *req)
 {
 	NTSTATUS status;
-	status = composite_wait(c);
-	talloc_free(c);
-	return status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	tevent_req_received(req);
+	return NT_STATUS_OK;
 }
 
 /*
@@ -274,8 +266,36 @@ _PUBLIC_ NTSTATUS nbt_name_register_bcast_recv(struct composite_context *c)
 NTSTATUS nbt_name_register_bcast(struct nbt_name_socket *nbtsock,
 				 struct nbt_name_register_bcast *io)
 {
-	struct composite_context *c = nbt_name_register_bcast_send(nbtsock, io);
-	return nbt_name_register_bcast_recv(c);
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct tevent_context *ev;
+	struct tevent_req *subreq;
+	NTSTATUS status;
+
+	/*
+	 * TODO: create a temporary event context
+	 */
+	ev = nbtsock->event_ctx;
+
+	subreq = nbt_name_register_bcast_send(frame, ev, nbtsock, io);
+	if (subreq == NULL) {
+		talloc_free(frame);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (!tevent_req_poll(subreq, ev)) {
+		status = map_nt_error_from_unix(errno);
+		talloc_free(frame);
+		return status;
+	}
+
+	status = nbt_name_register_bcast_recv(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(frame);
+		return status;
+	}
+
+	TALLOC_FREE(frame);
+	return NT_STATUS_OK;
 }
 
 

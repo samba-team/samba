@@ -136,15 +136,16 @@ struct nbtd_register_name_state {
 /*
   a name registration has completed
 */
-static void nbtd_register_name_handler(struct composite_context *subreq)
+static void nbtd_register_name_handler(struct tevent_req *subreq)
 {
 	struct nbtd_register_name_state *state =
-		talloc_get_type_abort(subreq->async.private_data,
+		tevent_req_callback_data(subreq,
 		struct nbtd_register_name_state);
 	struct nbtd_iface_name *iname = state->iname;
 	NTSTATUS status;
 
 	status = nbt_name_register_bcast_recv(subreq);
+	TALLOC_FREE(subreq);
 	if (NT_STATUS_IS_OK(status)) {
 		/* good - nobody complained about our registration */
 		iname->nb_flags |= NBT_NM_ACTIVE;
@@ -178,7 +179,7 @@ static void nbtd_register_name_iface(struct nbtd_interface *iface,
 	struct nbtd_iface_name *iname;
 	const char *scope = lpcfg_netbios_scope(iface->nbtsrv->task->lp_ctx);
 	struct nbtd_register_name_state *state;
-	struct composite_context *subreq;
+	struct tevent_req *subreq;
 	struct nbtd_server *nbtsrv = iface->nbtsrv;
 
 	iname = talloc(iface, struct nbtd_iface_name);
@@ -230,13 +231,13 @@ static void nbtd_register_name_iface(struct nbtd_interface *iface,
 
 	nbtsrv->stats.total_sent++;
 
-	subreq = nbt_name_register_bcast_send(iface->nbtsock, &state->io);
+	subreq = nbt_name_register_bcast_send(state, nbtsrv->task->event_ctx,
+					      iface->nbtsock, &state->io);
 	if (subreq == NULL) {
 		return;
 	}
 
-	subreq->async.fn = nbtd_register_name_handler;
-	subreq->async.private_data = state;
+	tevent_req_set_callback(subreq, nbtd_register_name_handler, state);
 }
 
 

@@ -339,13 +339,13 @@ NDR_SCALAR_PROTO(nbt_string, const char *)
 NDR_BUFFER_PROTO(nbt_name, struct nbt_name)
 NTSTATUS nbt_rcode_to_ntstatus(uint8_t rcode);
 
-struct composite_context;
-struct composite_context *nbt_name_register_bcast_send(struct nbt_name_socket *nbtsock,
-						       struct nbt_name_register_bcast *io);
-NTSTATUS nbt_name_register_bcast_recv(struct composite_context *c);
-
 struct tevent_context;
 struct tevent_req;
+struct tevent_req *nbt_name_register_bcast_send(TALLOC_CTX *mem_ctx,
+					struct tevent_context *ev,
+					struct nbt_name_socket *nbtsock,
+					struct nbt_name_register_bcast *io);
+NTSTATUS nbt_name_register_bcast_recv(struct tevent_req *req);
 struct tevent_req *nbt_name_register_wins_send(TALLOC_CTX *mem_ctx,
 					       struct tevent_context *ev,
 					       struct nbt_name_socket *nbtsock,
