@@ -112,27 +112,23 @@ _PUBLIC_ enum ndr_err_code ndr_pull_dns_string(struct ndr_pull *ndr, int ndr_fla
 		return NDR_ERR_SUCCESS;
 	}
 
-	name = NULL;
+	name = talloc_strdup(ndr->current_mem_ctx, "");
 
 	/* break up name into a list of components */
 	for (num_components=0;num_components<MAX_COMPONENTS;num_components++) {
 		uint8_t *component = NULL;
 		NDR_CHECK(ndr_pull_component(ndr, &component, &offset, &max_offset));
 		if (component == NULL) break;
-		if (name) {
+		if (num_components > 0) {
 			name = talloc_asprintf_append_buffer(name, ".%s", component);
-			NDR_ERR_HAVE_NO_MEMORY(name);
 		} else {
-			name = (char *)component;
+			name = talloc_asprintf_append_buffer(name, "%s", component);
 		}
+		NDR_ERR_HAVE_NO_MEMORY(name);
 	}
 	if (num_components == MAX_COMPONENTS) {
 		return ndr_pull_error(ndr, NDR_ERR_STRING,
 				      "BAD DNS NAME too many components");
-	}
-	if (num_components == 0) {
-		name = talloc_strdup(ndr, "");
-		NDR_ERR_HAVE_NO_MEMORY(name);
 	}
 
 	(*s) = name;
