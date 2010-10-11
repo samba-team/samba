@@ -91,6 +91,40 @@ static void dns_tcp_send(struct stream_connection *conn, uint16_t flags)
 	dns_tcp_terminate_connection(dnsconn, "dns_tcp_send: called");
 }
 
+static NTSTATUS dns_err_to_ntstatus(enum dns_rcode rcode)
+{
+	switch (rcode) {
+	case DNS_RCODE_OK: return NT_STATUS_OK;
+	case DNS_RCODE_FORMERR: return NT_STATUS_INVALID_PARAMETER;
+	case DNS_RCODE_SERVFAIL: return NT_STATUS_INTERNAL_ERROR;
+	case DNS_RCODE_NXDOMAIN: return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	case DNS_RCODE_NOTIMP: return NT_STATUS_NOT_IMPLEMENTED;
+	case DNS_RCODE_REFUSED: return NT_STATUS_ACCESS_DENIED;
+	case DNS_RCODE_NOTAUTH: return NT_STATUS_FOOBAR;
+	default: return NT_STATUS_NONE_MAPPED;
+	}
+}
+
+static uint8_t ntstatus_to_dns_err(NTSTATUS status)
+{
+	if (NT_STATUS_EQUAL(NT_STATUS_OK, status)) {
+		return DNS_RCODE_OK;
+	} else if (NT_STATUS_EQUAL(NT_STATUS_INVALID_PARAMETER, status)) {
+		return DNS_RCODE_FORMERR;
+	} else if (NT_STATUS_EQUAL(NT_STATUS_INTERNAL_ERROR, status)) {
+		return DNS_RCODE_SERVFAIL;
+	} else if (NT_STATUS_EQUAL(NT_STATUS_OBJECT_NAME_NOT_FOUND, status)) {
+		return DNS_RCODE_NXDOMAIN;
+	} else if (NT_STATUS_EQUAL(NT_STATUS_NOT_IMPLEMENTED, status)) {
+		return DNS_RCODE_NOTIMP;
+	} else if (NT_STATUS_EQUAL(NT_STATUS_ACCESS_DENIED, status)) {
+		return DNS_RCODE_REFUSED;
+	} else if (NT_STATUS_EQUAL(NT_STATUS_FOOBAR, status)) {
+		return DNS_RCODE_NOTAUTH;
+	}
+	DEBUG(0, ("No mapping exists for %s\n", nt_errstr(status)));
+}
+
 static bool dns_name_match(const char *zone, const char *name, size_t *host_part_len)
 {
 	size_t zl = strlen(zone);
@@ -462,7 +496,7 @@ static NTSTATUS dns_process(struct dns_server *dns,
 						&answers, &num_answers,
 						&nsrecs,  &num_nsrecs,
 						&additional, &num_additional);
-		reply_code = DNS_RCODE_NOTIMP;
+		reply_code = ntstatus_to_dns_err(ret);
 		break;
 	default:
 		ret = NT_STATUS_NOT_IMPLEMENTED;
