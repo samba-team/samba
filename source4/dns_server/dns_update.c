@@ -29,6 +29,67 @@
 #include "dsdb/common/util.h"
 #include "dns_server/dns_server.h"
 
+static WERROR check_prerequsites(struct dns_server *dns,
+				 TALLOC_CTX *mem_ctx,
+				 const struct dns_name_packet *in,
+				 const struct dns_res_rec *prereqs, uint16_t count)
+{
+	const struct dns_name_question *zone;
+	size_t host_part_len = 0;
+	uint16_t i;
+
+	zone = in->questions;
+
+	for (i = 0; i < count; i++) {
+		const struct dns_res_rec *r = &prereqs[i];
+		bool match;
+
+		if (r->ttl != 0) {
+			return DNS_ERR(FORMAT_ERROR);
+		}
+		match = dns_name_match(zone->name, r->name, &host_part_len);
+		if (!match) {
+			/* TODO: check if we need to echo all prereqs if the
+			 * first fails */
+			return DNS_ERR(NOTZONE);
+		}
+		if (r->rr_class == DNS_QCLASS_ANY) {
+			if (r->length != 0) {
+				return DNS_ERR(FORMAT_ERROR);
+			}
+			if (r->rr_type == DNS_QTYPE_ALL) {
+				/* TODO: Check if zone has at least one RR */
+				return DNS_ERR(NAME_ERROR);
+			} else {
+				/* TODO: Check if RR exists of the specified type */
+				return DNS_ERR(NXRRSET);
+			}
+			continue;
+		}
+		if (r->rr_class == DNS_QCLASS_NONE) {
+			if (r->length != 0) {
+				return DNS_ERR(FORMAT_ERROR);
+			}
+			if (r->rr_type == DNS_QTYPE_ALL) {
+				/* TODO: Return this error if the given name exits in this zone */
+				return DNS_ERR(YXDOMAIN);
+			} else {
+				/* TODO: Return error if there's an RRset of this type in the zone */
+				return DNS_ERR(YXRRSET);
+			}
+			continue;
+		}
+		if (r->rr_class == zone->question_class) {
+			/* Check if there's a RR with this */
+			return DNS_ERR(NOT_IMPLEMENTED);
+		} else {
+			return DNS_ERR(FORMAT_ERROR);
+		}
+	}
+
+
+	return WERR_OK;
+}
 
 WERROR dns_server_process_update(struct dns_server *dns,
 				 TALLOC_CTX *mem_ctx,
@@ -40,7 +101,7 @@ WERROR dns_server_process_update(struct dns_server *dns,
 	struct dns_name_question *zone;
 	const struct dns_server_zone *z;
 	size_t host_part_len = 0;
-	uint16_t i;
+	WERROR werror = WERR_DNS_ERROR_RCODE_NOT_IMPLEMENTED;
 
 	if (in->qdcount != 1) {
 		return DNS_ERR(FORMAT_ERROR);
@@ -68,8 +129,12 @@ WERROR dns_server_process_update(struct dns_server *dns,
 	}
 
 	if (host_part_len != 0) {
+		/* TODO: We need to delegate this one */
 		return DNS_ERR(NOT_IMPLEMENTED);
 	}
 
-	return DNS_ERR(NOT_IMPLEMENTED);
+	werror = check_prerequsites(dns, mem_ctx, in, prereqs, prereq_count);
+	W_ERROR_NOT_OK_RETURN(werror);
+
+	return werror;
 }
