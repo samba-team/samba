@@ -332,6 +332,7 @@ krb5_error_code principal_from_credentials(TALLOC_CTX *parent_ctx,
  krb5_error_code kinit_to_ccache(TALLOC_CTX *parent_ctx,
 				 struct cli_credentials *credentials,
 				 struct smb_krb5_context *smb_krb5_context,
+				 struct tevent_context *event_ctx,
 				 krb5_ccache ccache,
 				 enum credentials_obtained *obtained,
 				 const char **error_string)
@@ -392,6 +393,13 @@ krb5_error_code principal_from_credentials(TALLOC_CTX *parent_ctx,
 
 	tries = 2;
 	while (tries--) {
+		struct tevent_context *previous_ev;
+		/* Do this every time, in case we have weird recursive issues here */
+		ret = smb_krb5_context_set_event_ctx(smb_krb5_context, event_ctx, &previous_ev);
+		if (ret) {
+			talloc_free(mem_ctx);
+			return ret;
+		}
 		if (password) {
 			ret = kerberos_kinit_password_cc(smb_krb5_context->krb5_context, ccache, 
 							 princ, password,
@@ -399,6 +407,7 @@ krb5_error_code principal_from_credentials(TALLOC_CTX *parent_ctx,
 							 krb_options,
 							 NULL, &kdc_time);
 		} else if (impersonate_principal) {
+			talloc_free(mem_ctx);
 			(*error_string) = "INTERNAL error: Cannot impersonate principal with just a keyblock.  A password must be specified in the credentials";
 			return EINVAL;
 		} else {
@@ -411,6 +420,7 @@ krb5_error_code principal_from_credentials(TALLOC_CTX *parent_ctx,
 				talloc_free(mem_ctx);
 				(*error_string) = "kinit_to_ccache: No password available for kinit\n";
 				krb5_get_init_creds_opt_free(smb_krb5_context->krb5_context, krb_options);
+				smb_krb5_context_remove_event_ctx(smb_krb5_context, previous_ev, event_ctx);
 				return EINVAL;
 			}
 			ret = krb5_keyblock_init(smb_krb5_context->krb5_context,
@@ -426,6 +436,8 @@ krb5_error_code principal_from_credentials(TALLOC_CTX *parent_ctx,
 				krb5_free_keyblock_contents(smb_krb5_context->krb5_context, &keyblock);
 			}
 		}
+
+		smb_krb5_context_remove_event_ctx(smb_krb5_context, previous_ev, event_ctx);
 
 		if (ret == KRB5KRB_AP_ERR_SKEW || ret == KRB5_KDCREP_SKEW) {
 			/* Perhaps we have been given an invalid skew, so try again without it */
@@ -460,6 +472,7 @@ krb5_error_code principal_from_credentials(TALLOC_CTX *parent_ctx,
 		ret = kinit_to_ccache(parent_ctx,
 				      credentials,
 				      smb_krb5_context,
+				      event_ctx,
 				      ccache, obtained,
 				      error_string);
 	}

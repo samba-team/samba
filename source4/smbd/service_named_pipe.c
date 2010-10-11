@@ -226,7 +226,6 @@ static void named_pipe_accept_done(struct tevent_req *subreq)
 		cli_credentials_set_anonymous(creds);
 
 		ret = cli_credentials_set_client_gss_creds(creds,
-							   conn->event.ctx,
 							   conn->lp_ctx,
 							   cred_handle,
 							   CRED_SPECIFIED,

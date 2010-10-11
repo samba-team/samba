@@ -147,7 +147,6 @@ static NTSTATUS gensec_gssapi_start(struct gensec_security *gensec_security)
 {
 	struct gensec_gssapi_state *gensec_gssapi_state;
 	krb5_error_code ret;
-	struct gsskrb5_send_to_kdc send_to_kdc;
 	const char *realm;
 
 	gensec_gssapi_state = talloc(gensec_security, struct gensec_gssapi_state);
@@ -209,7 +208,7 @@ static NTSTATUS gensec_gssapi_start(struct gensec_security *gensec_security)
 	gensec_gssapi_state->pac = data_blob(NULL, 0);
 
 	ret = smb_krb5_init_context(gensec_gssapi_state,
-				    gensec_security->event_ctx,
+				    NULL,
 				    gensec_security->settings->lp_ctx,
 				    &gensec_gssapi_state->smb_krb5_context);
 	if (ret) {
@@ -236,16 +235,6 @@ static NTSTATUS gensec_gssapi_start(struct gensec_security *gensec_security)
 	gensec_gssapi_state->sig_size = 0;
 
 	talloc_set_destructor(gensec_gssapi_state, gensec_gssapi_destructor);
-
-	send_to_kdc.func = smb_krb5_send_and_recv_func;
-	send_to_kdc.ptr = gensec_security->event_ctx;
-
-	ret = gsskrb5_set_send_to_kdc(&send_to_kdc);
-	if (ret) {
-		DEBUG(1,("gensec_krb5_start: gsskrb5_set_send_to_kdc failed\n"));
-		talloc_free(gensec_gssapi_state);
-		return NT_STATUS_INTERNAL_ERROR;
-	}
 
 	realm = lpcfg_realm(gensec_security->settings->lp_ctx);
 	if (realm != NULL) {
@@ -290,7 +279,6 @@ static NTSTATUS gensec_gssapi_server_start(struct gensec_security *gensec_securi
 		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 	} else {
 		ret = cli_credentials_get_server_gss_creds(machine_account, 
-							   gensec_security->event_ctx, 
 							   gensec_security->settings->lp_ctx, &gcc);
 		if (ret) {
 			DEBUG(1, ("Aquiring acceptor credentials failed: %s\n", 
@@ -469,6 +457,17 @@ static NTSTATUS gensec_gssapi_update(struct gensec_security *gensec_security,
 		switch (gensec_security->gensec_role) {
 		case GENSEC_CLIENT:
 		{
+			struct gsskrb5_send_to_kdc send_to_kdc;
+			krb5_error_code ret;
+			send_to_kdc.func = smb_krb5_send_and_recv_func;
+			send_to_kdc.ptr = gensec_security->event_ctx;
+
+			min_stat = gsskrb5_set_send_to_kdc(&send_to_kdc);
+			if (min_stat) {
+				DEBUG(1,("gensec_krb5_start: gsskrb5_set_send_to_kdc failed\n"));
+				return NT_STATUS_INTERNAL_ERROR;
+			}
+
 			maj_stat = gss_init_sec_context(&min_stat, 
 							gensec_gssapi_state->client_cred->creds,
 							&gensec_gssapi_state->gssapi_context, 
@@ -485,6 +484,16 @@ static NTSTATUS gensec_gssapi_update(struct gensec_security *gensec_security,
 			if (gss_oid_p) {
 				gensec_gssapi_state->gss_oid = gss_oid_p;
 			}
+
+			send_to_kdc.func = smb_krb5_send_and_recv_func;
+			send_to_kdc.ptr = NULL;
+
+			ret = gsskrb5_set_send_to_kdc(&send_to_kdc);
+			if (ret) {
+				DEBUG(1,("gensec_krb5_start: gsskrb5_set_send_to_kdc failed\n"));
+				return NT_STATUS_INTERNAL_ERROR;
+			}
+
 			break;
 		}
 		case GENSEC_SERVER:
@@ -1369,7 +1378,6 @@ static NTSTATUS gensec_gssapi_session_info(struct gensec_security *gensec_securi
 		cli_credentials_set_anonymous(session_info->credentials);
 		
 		ret = cli_credentials_set_client_gss_creds(session_info->credentials, 
-							   gensec_security->event_ctx,
 							   gensec_security->settings->lp_ctx,
 							   gensec_gssapi_state->delegated_cred_handle,
 							   CRED_SPECIFIED, &error_string);

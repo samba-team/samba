@@ -55,8 +55,7 @@ static int samdb_credentials_destructor(struct cli_credentials *creds)
   this returns a static set of system credentials. It is static so
   that we always get the same pointer in ldb_wrap_connect()
  */
-struct cli_credentials *samdb_credentials(struct tevent_context *event_ctx, 
-					  struct loadparm_context *lp_ctx)
+struct cli_credentials *samdb_credentials(struct loadparm_context *lp_ctx)
 {
 	static struct cli_credentials *static_credentials;
 	struct cli_credentials *cred;
@@ -77,7 +76,7 @@ struct cli_credentials *samdb_credentials(struct tevent_context *event_ctx,
 	 * anyway */
 	cli_credentials_set_kerberos_state(cred, CRED_DONT_USE_KERBEROS);
 
-	if (!NT_STATUS_IS_OK(cli_credentials_set_secrets(cred, event_ctx, lp_ctx, NULL, NULL,
+	if (!NT_STATUS_IS_OK(cli_credentials_set_secrets(cred, lp_ctx, NULL, NULL,
 							 SECRETS_LDAP_FILTER, &error_string))) {
 		DEBUG(5, ("(normal if no LDAP backend) %s", error_string));
 		/* Perfectly OK - if not against an LDAP backend */
@@ -106,7 +105,7 @@ struct ldb_context *samdb_connect(TALLOC_CTX *mem_ctx,
 	int ret;
 
 	url  = lpcfg_sam_url(lp_ctx);
-	credentials = samdb_credentials(ev_ctx, lp_ctx);
+	credentials = samdb_credentials(lp_ctx);
 
 	ldb = ldb_wrap_find(url, ev_ctx, lp_ctx, session_info, credentials, flags);
 	if (ldb != NULL)

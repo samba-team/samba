@@ -211,18 +211,37 @@ krb5_error_code smb_krb5_send_and_recv_func(krb5_context context,
 	struct addrinfo *ai, *a;
 	struct smb_krb5_socket *smb_krb5;
 
-	struct tevent_context *ev = talloc_get_type(data, struct tevent_context);
+	DATA_BLOB send_blob;
 
-	DATA_BLOB send_blob = data_blob_const(send_buf->data, send_buf->length);
+	struct tevent_context *ev;
+	TALLOC_CTX *tmp_ctx = talloc_new(NULL);
+	if (!tmp_ctx) {
+		return ENOMEM;
+	}
+
+	if (!data) {
+		/* If no event context was available, then create one for this loop */
+		ev = tevent_context_init(tmp_ctx);
+		if (!ev) {
+			talloc_free(tmp_ctx);
+			return ENOMEM;
+		}
+	} else {
+		ev = talloc_get_type_abort(data, struct tevent_context);
+	}
+
+	send_blob = data_blob_const(send_buf->data, send_buf->length);
 
 	ret = krb5_krbhst_get_addrinfo(context, hi, &ai);
 	if (ret) {
+		talloc_free(tmp_ctx);
 		return ret;
 	}
 
 	for (a = ai; a; a = ai->ai_next) {
-		smb_krb5 = talloc(NULL, struct smb_krb5_socket);
+		smb_krb5 = talloc(tmp_ctx, struct smb_krb5_socket);
 		if (!smb_krb5) {
+			talloc_free(tmp_ctx);
 			return ENOMEM;
 		}
 		smb_krb5->hi = hi;
@@ -237,7 +256,7 @@ krb5_error_code smb_krb5_send_and_recv_func(krb5_context context,
 			break;
 #endif
 		default:
-			talloc_free(smb_krb5);
+			talloc_free(tmp_ctx);
 			return EINVAL;
 		}
 
@@ -250,7 +269,7 @@ krb5_error_code smb_krb5_send_and_recv_func(krb5_context context,
 			status = socket_create(name, SOCKET_TYPE_STREAM, &smb_krb5->sock, 0);
 			break;
 		case KRB5_KRBHST_HTTP:
-			talloc_free(smb_krb5);
+			talloc_free(tmp_ctx);
 			return EINVAL;
 		}
 		if (!NT_STATUS_IS_OK(status)) {
@@ -319,13 +338,27 @@ krb5_error_code smb_krb5_send_and_recv_func(krb5_context context,
 			packet_send(smb_krb5->packet, smb_krb5->request);
 			break;
 		case KRB5_KRBHST_HTTP:
-			talloc_free(smb_krb5);
+			talloc_free(tmp_ctx);
 			return EINVAL;
 		}
 		while ((NT_STATUS_IS_OK(smb_krb5->status)) && !smb_krb5->reply.length) {
 			if (tevent_loop_once(ev) != 0) {
-				talloc_free(smb_krb5);
+				talloc_free(tmp_ctx);
 				return EINVAL;
+			}
+
+			/* After each and every event loop, reset the
+			 * send_to_kdc pointers to what they were when
+			 * we entered this loop.  That way, if a
+			 * nested event has invalidated them, we put
+			 * it back before we return to the heimdal
+			 * code */
+			ret = krb5_set_send_to_kdc_func(context,
+							smb_krb5_send_and_recv_func,
+							data);
+			if (ret != 0) {
+				talloc_free(tmp_ctx);
+				return ret;
 			}
 		}
 		if (NT_STATUS_EQUAL(smb_krb5->status, NT_STATUS_IO_TIMEOUT)) {
@@ -341,13 +374,14 @@ krb5_error_code smb_krb5_send_and_recv_func(krb5_context context,
 
 		ret = krb5_data_copy(recv_buf, smb_krb5->reply.data, smb_krb5->reply.length);
 		if (ret) {
-			talloc_free(smb_krb5);
+			talloc_free(tmp_ctx);
 			return ret;
 		}
 		talloc_free(smb_krb5);
 
 		break;
 	}
+	talloc_free(tmp_ctx);
 	if (a) {
 		return 0;
 	}
@@ -415,7 +449,7 @@ smb_krb5_init_context_basic(TALLOC_CTX *tmp_ctx,
 krb5_error_code smb_krb5_init_context(void *parent_ctx,
 				      struct tevent_context *ev,
 				      struct loadparm_context *lp_ctx,
-				       struct smb_krb5_context **smb_krb5_context)
+				      struct smb_krb5_context **smb_krb5_context)
 {
 	krb5_error_code ret;
 	TALLOC_CTX *tmp_ctx;
@@ -423,7 +457,7 @@ krb5_error_code smb_krb5_init_context(void *parent_ctx,
 	initialize_krb5_error_table();
 
 	tmp_ctx = talloc_new(parent_ctx);
-	*smb_krb5_context = talloc(tmp_ctx, struct smb_krb5_context);
+	*smb_krb5_context = talloc_zero(tmp_ctx, struct smb_krb5_context);
 
 	if (!*smb_krb5_context || !tmp_ctx) {
 		talloc_free(tmp_ctx);
@@ -463,14 +497,14 @@ krb5_error_code smb_krb5_init_context(void *parent_ctx,
 	krb5_set_warn_dest((*smb_krb5_context)->krb5_context, (*smb_krb5_context)->logf);
 
 	/* Set use of our socket lib */
-	ret = krb5_set_send_to_kdc_func((*smb_krb5_context)->krb5_context,
-					smb_krb5_send_and_recv_func,
-					ev);
-	if (ret) {
-		DEBUG(1,("krb5_set_send_recv_func failed (%s)\n",
-			 smb_get_krb5_error_message((*smb_krb5_context)->krb5_context, ret, tmp_ctx)));
-		talloc_free(tmp_ctx);
-		return ret;
+	if (ev) {
+		struct tevent_context *previous_ev;
+		ret = smb_krb5_context_set_event_ctx(*smb_krb5_context,
+						     ev, &previous_ev);
+		if (ret) {
+			talloc_free(tmp_ctx);
+			return ret;
+		}
 	}
 
 	talloc_steal(parent_ctx, *smb_krb5_context);
@@ -484,3 +518,58 @@ krb5_error_code smb_krb5_init_context(void *parent_ctx,
 	return 0;
 }
 
+krb5_error_code smb_krb5_context_set_event_ctx(struct smb_krb5_context *smb_krb5_context,
+					       struct tevent_context *ev,
+					       struct tevent_context **previous_ev)
+{
+	int ret;
+	if (!ev) {
+		return EINVAL;
+	}
+
+	if (smb_krb5_context->current_ev) {
+		*previous_ev = smb_krb5_context->current_ev;
+	}
+
+	smb_krb5_context->current_ev = talloc_reference(smb_krb5_context, ev);
+	if (!smb_krb5_context->current_ev) {
+		return ENOMEM;
+	}
+
+	/* Set use of our socket lib */
+	ret = krb5_set_send_to_kdc_func(smb_krb5_context->krb5_context,
+					smb_krb5_send_and_recv_func,
+					ev);
+	if (ret) {
+		TALLOC_CTX *tmp_ctx = talloc_new(NULL);
+		DEBUG(1,("krb5_set_send_recv_func failed (%s)\n",
+			 smb_get_krb5_error_message(smb_krb5_context->krb5_context, ret, tmp_ctx)));
+		talloc_free(tmp_ctx);
+		talloc_unlink(smb_krb5_context, smb_krb5_context->current_ev);
+		smb_krb5_context->current_ev = NULL;
+		return ret;
+	}
+	return 0;
+}
+
+krb5_error_code smb_krb5_context_remove_event_ctx(struct smb_krb5_context *smb_krb5_context,
+						  struct tevent_context *previous_ev,
+						  struct tevent_context *ev)
+{
+	int ret;
+	talloc_unlink(smb_krb5_context, ev);
+	/* If there was a mismatch with things happening on a stack, then don't wipe things */
+	smb_krb5_context->current_ev = previous_ev;
+	/* Set use of our socket lib */
+	ret = krb5_set_send_to_kdc_func(smb_krb5_context->krb5_context,
+					smb_krb5_send_and_recv_func,
+					previous_ev);
+	if (ret) {
+		TALLOC_CTX *tmp_ctx = talloc_new(NULL);
+		DEBUG(1,("krb5_set_send_recv_func failed (%s)\n",
+			 smb_get_krb5_error_message(smb_krb5_context->krb5_context, ret, tmp_ctx)));
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+	return 0;
+}

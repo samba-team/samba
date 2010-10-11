@@ -42,7 +42,6 @@
  * @retval NTSTATUS error detailing any failure
  */
 _PUBLIC_ NTSTATUS cli_credentials_set_secrets(struct cli_credentials *cred, 
-					      struct tevent_context *event_ctx,
 					      struct loadparm_context *lp_ctx,
 					      struct ldb_context *ldb,
 					      const char *base,
@@ -180,7 +179,7 @@ _PUBLIC_ NTSTATUS cli_credentials_set_secrets(struct cli_credentials *cred,
 	 * (chewing CPU time) from the password */
 	keytab = keytab_name_from_msg(cred, ldb, msg);
 	if (keytab) {
-		cli_credentials_set_keytab_name(cred, event_ctx, lp_ctx, keytab, CRED_SPECIFIED);
+		cli_credentials_set_keytab_name(cred, lp_ctx, keytab, CRED_SPECIFIED);
 		talloc_free(keytab);
 	}
 	talloc_free(mem_ctx);
@@ -205,9 +204,9 @@ _PUBLIC_ NTSTATUS cli_credentials_set_machine_account(struct cli_credentials *cr
 	 * any more */
 	cred->machine_account_pending = false;
 	filter = talloc_asprintf(cred, SECRETS_PRIMARY_DOMAIN_FILTER, 
-				       cli_credentials_get_domain(cred));
-	status = cli_credentials_set_secrets(cred, event_context_find(cred), lp_ctx, NULL,
-					   SECRETS_PRIMARY_DOMAIN_DN,
+				 cli_credentials_get_domain(cred));
+	status = cli_credentials_set_secrets(cred, lp_ctx, NULL,
+					     SECRETS_PRIMARY_DOMAIN_DN,
 					     filter, &error_string);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Could not find machine account in secrets database: %s: %s", nt_errstr(status), error_string));
@@ -223,7 +222,6 @@ _PUBLIC_ NTSTATUS cli_credentials_set_machine_account(struct cli_credentials *cr
  * @retval NTSTATUS error detailing any failure
  */
 NTSTATUS cli_credentials_set_krbtgt(struct cli_credentials *cred,
-			            struct tevent_context *event_ctx,
 				    struct loadparm_context *lp_ctx)
 {
 	NTSTATUS status;
@@ -236,7 +234,7 @@ NTSTATUS cli_credentials_set_krbtgt(struct cli_credentials *cred,
 	filter = talloc_asprintf(cred, SECRETS_KRBTGT_SEARCH,
 				       cli_credentials_get_realm(cred),
 				       cli_credentials_get_domain(cred));
-	status = cli_credentials_set_secrets(cred, event_ctx, lp_ctx, NULL,
+	status = cli_credentials_set_secrets(cred, lp_ctx, NULL,
 					     SECRETS_PRINCIPALS_DN,
 					     filter, &error_string);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -253,7 +251,6 @@ NTSTATUS cli_credentials_set_krbtgt(struct cli_credentials *cred,
  * @retval NTSTATUS error detailing any failure
  */
 _PUBLIC_ NTSTATUS cli_credentials_set_stored_principal(struct cli_credentials *cred,
-						       struct tevent_context *event_ctx,
 					      struct loadparm_context *lp_ctx,
 					      const char *serviceprincipal)
 {
@@ -268,7 +265,7 @@ _PUBLIC_ NTSTATUS cli_credentials_set_stored_principal(struct cli_credentials *c
 				 cli_credentials_get_realm(cred),
 				 cli_credentials_get_domain(cred),
 				 serviceprincipal);
-	status = cli_credentials_set_secrets(cred, event_ctx, lp_ctx, NULL,
+	status = cli_credentials_set_secrets(cred, lp_ctx, NULL,
 					     SECRETS_PRINCIPALS_DN, filter,
 					     &error_string);
 	if (!NT_STATUS_IS_OK(status)) {

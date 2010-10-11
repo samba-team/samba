@@ -119,7 +119,6 @@ static NTSTATUS gensec_krb5_start(struct gensec_security *gensec_security, bool 
 	talloc_set_destructor(gensec_krb5_state, gensec_krb5_destroy); 
 
 	if (cli_credentials_get_krb5_context(creds, 
-					     gensec_security->event_ctx, 
 					     gensec_security->settings->lp_ctx, &gensec_krb5_state->smb_krb5_context)) {
 		talloc_free(gensec_krb5_state);
 		return NT_STATUS_INTERNAL_ERROR;
@@ -240,6 +239,7 @@ static NTSTATUS gensec_krb5_common_client_start(struct gensec_security *gensec_s
 	const char *error_string;
 	const char *principal;
 	krb5_data in_data;
+	struct tevent_context *previous_ev;
 
 	hostname = gensec_get_target_hostname(gensec_security);
 	if (!hostname) {
@@ -299,6 +299,12 @@ static NTSTATUS gensec_krb5_common_client_start(struct gensec_security *gensec_s
 	}
 	in_data.length = 0;
 	
+	/* Do this every time, in case we have weird recursive issues here */
+	ret = smb_krb5_context_set_event_ctx(gensec_krb5_state->smb_krb5_context, gensec_security->event_ctx, &previous_ev);
+	if (ret != 0) {
+		DEBUG(1, ("gensec_krb5_start: Setting event context failed\n"));
+		return NT_STATUS_NO_MEMORY;
+	}
 	if (principal) {
 		krb5_principal target_principal;
 		ret = krb5_parse_name(gensec_krb5_state->smb_krb5_context->krb5_context, principal,
@@ -322,6 +328,9 @@ static NTSTATUS gensec_krb5_common_client_start(struct gensec_security *gensec_s
 				  &in_data, ccache_container->ccache, 
 				  &gensec_krb5_state->enc_ticket);
 	}
+
+	smb_krb5_context_remove_event_ctx(gensec_krb5_state->smb_krb5_context, previous_ev, gensec_security->event_ctx);
+
 	switch (ret) {
 	case 0:
 		return NT_STATUS_OK;
@@ -488,7 +497,6 @@ static NTSTATUS gensec_krb5_update(struct gensec_security *gensec_security,
 
 		/* Grab the keytab, however generated */
 		ret = cli_credentials_get_keytab(gensec_get_credentials(gensec_security), 
-					         gensec_security->event_ctx, 
 						 gensec_security->settings->lp_ctx, &keytab);
 		if (ret) {
 			return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;

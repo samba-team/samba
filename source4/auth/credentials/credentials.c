@@ -727,7 +727,7 @@ _PUBLIC_ void cli_credentials_guess(struct cli_credentials *cred,
 	}
 	
 	if (cli_credentials_get_kerberos_state(cred) != CRED_DONT_USE_KERBEROS) {
-		cli_credentials_set_ccache(cred, event_context_find(cred), lp_ctx, NULL, CRED_GUESS_FILE,
+		cli_credentials_set_ccache(cred, lp_ctx, NULL, CRED_GUESS_FILE,
 					   &error_string);
 	}
 }

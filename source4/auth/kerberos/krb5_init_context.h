@@ -20,6 +20,7 @@
 struct smb_krb5_context {
 	krb5_context krb5_context;
 	krb5_log_facility *logf;
+	struct tevent_context *current_ev;
 };
 	
 struct tevent_context;

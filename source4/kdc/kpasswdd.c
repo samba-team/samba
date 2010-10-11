@@ -519,7 +519,7 @@ bool kpasswdd_process(struct kdc_server *kdc,
 	keytab_name = talloc_asprintf(server_credentials, "HDB:samba4&%p", kdc->base_ctx);
 
 	cli_credentials_set_username(server_credentials, "kadmin/changepw", CRED_SPECIFIED);
-	ret = cli_credentials_set_keytab_name(server_credentials, kdc->task->event_ctx, kdc->task->lp_ctx, keytab_name, CRED_SPECIFIED);
+	ret = cli_credentials_set_keytab_name(server_credentials, kdc->task->lp_ctx, keytab_name, CRED_SPECIFIED);
 	if (ret != 0) {
 		ret = kpasswdd_make_unauth_error_reply(kdc, mem_ctx,
 						       KRB5_KPASSWD_HARDERROR,
