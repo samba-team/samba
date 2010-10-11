@@ -40,7 +40,7 @@ bld.SAMBA_MODULE('ldb_objectguid',
 	source='objectguid.c',
 	subsystem='ldb',
 	init_function='LDB_MODULE(objectguid)',
-	internal_module=not bld.CONFIG_SET('USING_SYSTEM_LDB'),
+	internal_module=False,
 	deps='SAMDB talloc LIBEVENTS LIBNDR'
 	)
 
@@ -330,7 +330,7 @@ bld.SAMBA_MODULE('ldb_acl',
 	source='acl.c',
 	subsystem='ldb',
 	init_function='LDB_MODULE(acl)',
-	internal_module=not bld.CONFIG_SET('USING_SYSTEM_LDB'),
+	internal_module=False,
 	deps='talloc LIBEVENTS LIBSECURITY SAMDB DSDB_MODULE_HELPERS DSDB_MODULE_HELPER_SCHEMA'
 	)
 
@@ -338,15 +338,15 @@ bld.SAMBA_MODULE('ldb_acl',
 bld.SAMBA_MODULE('ldb_lazy_commit',
 	source='lazy_commit.c',
 	subsystem='ldb',
-	internal_module=not bld.CONFIG_SET('USING_SYSTEM_LDB'),
+	internal_module=False,
 	init_function='LDB_MODULE(lazy_commit)',
 	deps='SAMDB'
 	)
 
 bld.SAMBA_MODULE('ldb_aclread',
-        source='acl_read.c',
-        subsystem='ldb',
-        init_function='LDB_MODULE(aclread)',
-        internal_module=not bld.CONFIG_SET('USING_SYSTEM_LDB'),
-        deps='talloc LIBEVENTS LIBSECURITY SAMDB'
-        )
+	source='acl_read.c',
+	subsystem='ldb',
+	init_function='LDB_MODULE(aclread)',
+	internal_module=False,
+	deps='talloc LIBEVENTS LIBSECURITY SAMDB',
+	)
