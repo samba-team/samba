@@ -152,6 +152,65 @@ struct refresh_wins_state {
 	struct nbt_name_request *req;
 };
 
+static void name_refresh_wins_handler(struct nbt_name_request *req);
+
+/**
+  the async send call for a multi-server WINS refresh
+*/
+_PUBLIC_ struct composite_context *nbt_name_refresh_wins_send(struct nbt_name_socket *nbtsock,
+						      struct nbt_name_refresh_wins *io)
+{
+	struct composite_context *c;
+	struct refresh_wins_state *state;
+
+	c = talloc_zero(nbtsock, struct composite_context);
+	if (c == NULL) goto failed;
+
+	state = talloc(c, struct refresh_wins_state);
+	if (state == NULL) goto failed;
+
+	state->io = talloc(state, struct nbt_name_refresh);
+	if (state->io == NULL) goto failed;
+
+	state->wins_port = io->in.wins_port;
+	state->wins_servers = (const char **)str_list_copy(state, io->in.wins_servers);
+	if (state->wins_servers == NULL ||
+	    state->wins_servers[0] == NULL) goto failed;
+
+	state->addresses = (const char **)str_list_copy(state, io->in.addresses);
+	if (state->addresses == NULL ||
+	    state->addresses[0] == NULL) goto failed;
+
+	state->io->in.name            = io->in.name;
+	state->io->in.dest_addr       = state->wins_servers[0];
+	state->io->in.dest_port       = state->wins_port;
+	state->io->in.address         = io->in.addresses[0];
+	state->io->in.nb_flags        = io->in.nb_flags;
+	state->io->in.broadcast       = false;
+	state->io->in.ttl             = io->in.ttl;
+	state->io->in.timeout         = 2;
+	state->io->in.retries         = 2;
+
+	state->nbtsock     = nbtsock;
+	state->address_idx = 0;
+
+	state->req = nbt_name_refresh_send(nbtsock, state->io);
+	if (state->req == NULL) goto failed;
+
+	state->req->async.fn      = name_refresh_wins_handler;
+	state->req->async.private_data = c;
+
+	c->private_data	= state;
+	c->state	= COMPOSITE_STATE_IN_PROGRESS;
+	c->event_ctx	= nbtsock->event_ctx;
+
+	return c;
+
+failed:
+	talloc_free(c);
+	return NULL;
+}
+
 
 /**
   state handler for WINS multi-homed multi-server name refresh
@@ -212,63 +271,6 @@ done:
 	    c->async.fn) {
 		c->async.fn(c);
 	}
-}
-
-/**
-  the async send call for a multi-server WINS refresh
-*/
-_PUBLIC_ struct composite_context *nbt_name_refresh_wins_send(struct nbt_name_socket *nbtsock,
-						      struct nbt_name_refresh_wins *io)
-{
-	struct composite_context *c;
-	struct refresh_wins_state *state;
-
-	c = talloc_zero(nbtsock, struct composite_context);
-	if (c == NULL) goto failed;
-
-	state = talloc(c, struct refresh_wins_state);
-	if (state == NULL) goto failed;
-
-	state->io = talloc(state, struct nbt_name_refresh);
-	if (state->io == NULL) goto failed;
-
-	state->wins_port = io->in.wins_port;
-	state->wins_servers = (const char **)str_list_copy(state, io->in.wins_servers);
-	if (state->wins_servers == NULL ||
-	    state->wins_servers[0] == NULL) goto failed;
-
-	state->addresses = (const char **)str_list_copy(state, io->in.addresses);
-	if (state->addresses == NULL ||
-	    state->addresses[0] == NULL) goto failed;
-
-	state->io->in.name            = io->in.name;
-	state->io->in.dest_addr       = state->wins_servers[0];
-	state->io->in.dest_port       = state->wins_port;
-	state->io->in.address         = io->in.addresses[0];
-	state->io->in.nb_flags        = io->in.nb_flags;
-	state->io->in.broadcast       = false;
-	state->io->in.ttl             = io->in.ttl;
-	state->io->in.timeout         = 2;
-	state->io->in.retries         = 2;
-
-	state->nbtsock     = nbtsock;
-	state->address_idx = 0;
-
-	state->req = nbt_name_refresh_send(nbtsock, state->io);
-	if (state->req == NULL) goto failed;
-
-	state->req->async.fn      = name_refresh_wins_handler;
-	state->req->async.private_data = c;
-
-	c->private_data	= state;
-	c->state	= COMPOSITE_STATE_IN_PROGRESS;
-	c->event_ctx	= nbtsock->event_ctx;
-
-	return c;
-
-failed:
-	talloc_free(c);
-	return NULL;
 }
 
 /*
