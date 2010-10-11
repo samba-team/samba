@@ -94,8 +94,9 @@ struct ldb_context *ldb_init(TALLOC_CTX *mem_ctx, struct tevent_context *ev_ctx)
 	int ret;
 
 	ldb = talloc_zero(mem_ctx, struct ldb_context);
-	/* FIXME: Hack a new event context so that CMD line utilities work
-	 * until we have them all converted */
+	/* A new event context so that callers who don't want ldb
+	 * operating on thier global event context can work without
+	 * having to provide their own private one explicitly */
 	if (ev_ctx == NULL) {
 		ev_ctx = tevent_context_init(ldb);
 		tevent_set_debug(ev_ctx, ldb_tevent_debug, ldb);
