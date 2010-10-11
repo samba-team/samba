@@ -172,19 +172,23 @@ static void nbtd_wins_refresh(struct tevent_context *ev, struct tevent_timer *te
 	tevent_req_set_callback(subreq, nbtd_wins_refresh_handler, state);
 }
 
+struct nbtd_wins_register_state {
+	struct nbtd_iface_name *iname;
+	struct nbt_name_register_wins io;
+};
 
 /*
   called when a wins name register has completed
 */
-static void nbtd_wins_register_handler(struct composite_context *c)
+static void nbtd_wins_register_handler(struct composite_context *subreq)
 {
 	NTSTATUS status;
-	struct nbt_name_register_wins io;
-	struct nbtd_iface_name *iname = talloc_get_type(c->async.private_data, 
-							struct nbtd_iface_name);
-	TALLOC_CTX *tmp_ctx = talloc_new(iname);
+	struct nbtd_wins_register_state *state =
+		talloc_get_type_abort(subreq->async.private_data,
+		struct nbtd_wins_register_state);
+	struct nbtd_iface_name *iname = state->iname;
 
-	status = nbt_name_register_wins_recv(c, tmp_ctx, &io);
+	status = nbt_name_register_wins_recv(subreq, state, &state->io);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
 		/* none of the WINS servers responded - try again 
 		   periodically */
@@ -194,23 +198,24 @@ static void nbtd_wins_register_handler(struct composite_context *c)
 				timeval_current_ofs(wins_retry_time, 0),
 				nbtd_wins_register_retry,
 				iname);
-		talloc_free(tmp_ctx);
+		talloc_free(state);
 		return;
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1,("Name register failure with WINS for %s - %s\n", 
-			 nbt_name_string(tmp_ctx, &iname->name), nt_errstr(status)));
-		talloc_free(tmp_ctx);
+			 nbt_name_string(state, &iname->name), nt_errstr(status)));
+		talloc_free(state);
 		return;
 	}	
 
-	if (io.out.rcode != 0) {
+	if (state->io.out.rcode != 0) {
 		DEBUG(1,("WINS server %s rejected name register of %s - %s\n", 
-			 io.out.wins_server, nbt_name_string(tmp_ctx, &iname->name), 
-			 nt_errstr(nbt_rcode_to_ntstatus(io.out.rcode))));
+			 state->io.out.wins_server,
+			 nbt_name_string(state, &iname->name),
+			 nt_errstr(nbt_rcode_to_ntstatus(state->io.out.rcode))));
 		iname->nb_flags |= NBT_NM_CONFLICT;
-		talloc_free(tmp_ctx);
+		talloc_free(state);
 		return;
 	}	
 
@@ -221,17 +226,18 @@ static void nbtd_wins_register_handler(struct composite_context *c)
 		 * talloc_free() would generate a warning,
 		 * so steal it into the tmp context
 		 */
-		talloc_steal(tmp_ctx, iname->wins_server);
+		talloc_steal(state, iname->wins_server);
 	}
-	iname->wins_server = talloc_steal(iname, io.out.wins_server);
+	iname->wins_server = talloc_move(iname, &state->io.out.wins_server);
 
 	iname->registration_time = timeval_current();
-	nbtd_wins_start_refresh_timer(iname);
 
 	DEBUG(3,("Registered %s with WINS server %s\n",
-		 nbt_name_string(tmp_ctx, &iname->name), iname->wins_server));
+		 nbt_name_string(state, &iname->name), iname->wins_server));
 
-	talloc_free(tmp_ctx);
+	talloc_free(state);
+
+	nbtd_wins_start_refresh_timer(iname);
 }
 
 /*
@@ -240,28 +246,36 @@ static void nbtd_wins_register_handler(struct composite_context *c)
 void nbtd_winsclient_register(struct nbtd_iface_name *iname)
 {
 	struct nbtd_interface *iface = iname->iface;
-	struct nbt_name_register_wins io;
-	struct composite_context *c;
+	struct nbt_name_socket *nbtsock = wins_socket(iface);
+	struct nbtd_wins_register_state *state;
+	struct composite_context *subreq;
+
+	state = talloc_zero(iname, struct nbtd_wins_register_state);
+	if (state == NULL) {
+		return;
+	}
+
+	state->iname = iname;
 
 	/* setup a wins name register request */
-	io.in.name            = iname->name;
-	io.in.wins_port       = lpcfg_nbt_port(iname->iface->nbtsrv->task->lp_ctx);
-	io.in.wins_servers    = lpcfg_wins_server_list(iname->iface->nbtsrv->task->lp_ctx);
-	io.in.addresses       = nbtd_address_list(iface, iname);
-	io.in.nb_flags        = iname->nb_flags;
-	io.in.ttl             = iname->ttl;
+	state->io.in.name         = iname->name;
+	state->io.in.wins_port    = lpcfg_nbt_port(iface->nbtsrv->task->lp_ctx);
+	state->io.in.wins_servers = lpcfg_wins_server_list(iface->nbtsrv->task->lp_ctx);
+	state->io.in.addresses    = nbtd_address_list(iface, state);
+	state->io.in.nb_flags     = iname->nb_flags;
+	state->io.in.ttl          = iname->ttl;
 
-	if (!io.in.addresses) {
+	if (state->io.in.addresses == NULL) {
+		talloc_free(state);
 		return;
 	}
 
-	c = nbt_name_register_wins_send(wins_socket(iface), &io);
-	if (c == NULL) {
-		talloc_free(io.in.addresses);
+	subreq = nbt_name_register_wins_send(nbtsock, &state->io);
+	if (subreq == NULL) {
+		talloc_free(state);
 		return;
 	}
-	talloc_steal(c, io.in.addresses);
 
-	c->async.fn = nbtd_wins_register_handler;
-	c->async.private_data = iname;
+	subreq->async.fn = nbtd_wins_register_handler;
+	subreq->async.private_data = state;
 }
