@@ -23,7 +23,7 @@ bld.SAMBA_MODULE('ldb_samba_dsdb',
 	subsystem='ldb',
 	init_function='LDB_MODULE(samba_dsdb)',
 	deps='SAMDB talloc LIBEVENTS LIBNDR DSDB_MODULE_HELPERS',
-	internal_module=not bld.CONFIG_SET('USING_SYSTEM_LDB'),
+	internal_module=False,
 	)
 
 
@@ -31,7 +31,7 @@ bld.SAMBA_MODULE('ldb_samba_secrets',
 	source='samba_secrets.c',
 	subsystem='ldb',
 	init_function='LDB_MODULE(samba_secrets)',
-	internal_module=not bld.CONFIG_SET('USING_SYSTEM_LDB'),
+	internal_module=False,
 	deps='SAMDB talloc LIBEVENTS LIBNDR'
 	)
 
@@ -49,7 +49,7 @@ bld.SAMBA_MODULE('ldb_repl_meta_data',
 	source='repl_meta_data.c',
 	subsystem='ldb',
 	init_function='LDB_MODULE(repl_meta_data)',
-	internal_module=not bld.CONFIG_SET('USING_SYSTEM_LDB'),
+	internal_module=False,
 	deps='SAMDB talloc LIBEVENTS LIBNDR NDR_DRSUAPI NDR_DRSBLOBS LIBNDR DSDB_MODULE_HELPERS'
 	)
 
@@ -58,7 +58,7 @@ bld.SAMBA_MODULE('ldb_dsdb_cache',
 	source='dsdb_cache.c',
 	subsystem='ldb',
 	init_function='LDB_MODULE(dsdb_cache)',
-	internal_module=not bld.CONFIG_SET('USING_SYSTEM_LDB'),
+	internal_module=False,
 	deps='SAMDB talloc LIBEVENTS'
 	)
 
@@ -85,7 +85,7 @@ bld.SAMBA_MODULE('ldb_naming_fsmo',
 	source='naming_fsmo.c',
 	subsystem='ldb',
 	init_function='LDB_MODULE(naming_fsmo)',
-	internal_module=not bld.CONFIG_SET('USING_SYSTEM_LDB'),
+	internal_module=False,
 	deps='SAMDB talloc LIBEVENTS DSDB_MODULE_HELPERS'
 	)
 
@@ -94,7 +94,7 @@ bld.SAMBA_MODULE('ldb_pdc_fsmo',
 	source='pdc_fsmo.c',
 	subsystem='ldb',
 	init_function='LDB_MODULE(pdc_fsmo)',
-	internal_module=not bld.CONFIG_SET('USING_SYSTEM_LDB'),
+	internal_module=False,
 	deps='SAMDB talloc LIBEVENTS DSDB_MODULE_HELPERS'
 	)
 
@@ -103,7 +103,7 @@ bld.SAMBA_MODULE('ldb_samldb',
 	source='samldb.c',
 	subsystem='ldb',
 	init_function='LDB_MODULE(samldb)',
-	internal_module=not bld.CONFIG_SET('USING_SYSTEM_LDB'),
+	internal_module=False,
 	deps='talloc LIBEVENTS SAMDB DSDB_MODULE_HELPERS DSDB_MODULE_HELPER_RIDALLOC'
 	)
 
