@@ -84,10 +84,6 @@ LIBCLI_DFS_SRC = '''
                  ../librpc/gen_ndr/cli_dfs.c
                  ../librpc/gen_ndr/ndr_dfs_c.c'''
 
-LIBCLI_ECHO_SRC = '''
-                  ../librpc/gen_ndr/cli_echo.c
-                  ../librpc/gen_ndr/ndr_echo_c.c'''
-
 LIBCLI_INITSHUTDOWN_SRC = '''
                           ../librpc/gen_ndr/cli_initshutdown.c
                           ../librpc/gen_ndr/ndr_initshutdown_c.c'''
@@ -131,7 +127,6 @@ LIBCLI_EPMAPPER_SRC = '''
 LIBNDR_GEN_SRC = '''../librpc/gen_ndr/ndr_wkssvc.c
                  ${LIBNDR_GEN_SRC0}
                  ../librpc/gen_ndr/ndr_dfs.c
-                 ../librpc/gen_ndr/ndr_echo.c
                  ../librpc/gen_ndr/ndr_winreg.c
                  ../librpc/gen_ndr/ndr_initshutdown.c
                  ../librpc/gen_ndr/ndr_srvsvc.c
@@ -726,7 +721,6 @@ RPCCLIENT_SRC = '''${RPCCLIENT_SRC1}
                    ${LIBCLI_NTSVCS_SRC}
                    ${LIBCLI_DRSUAPI_SRC}
                    ${LIBCLI_DFS_SRC}
-                   ${LIBCLI_ECHO_SRC}
                    ${LIBCLI_DSSETUP_SRC}
                    ${LIBCLI_WKSSVC_SRC}
                    ${LIBCLI_SRVSVC_SRC}
@@ -872,6 +866,7 @@ NMBLOOKUP_SRC = '''utils/nmblookup.c ${LIBNMB_SRC}'''
 SMBTORTURE_SRC1 = '''torture/torture.c torture/nbio.c torture/scanner.c torture/utable.c
                 torture/denytest.c torture/mangle_test.c
                 torture/nbench.c
+                torture/test_async_echo.c
                 torture/test_posix_append.c'''
 
 SMBTORTURE_SRC = '''${SMBTORTURE_SRC1} ${TLDAP_SRC}
@@ -1053,7 +1048,8 @@ bld.SAMBA_SUBSYSTEM('LIBMSRPC',
 
 bld.SAMBA_SUBSYSTEM('LIBMSRPC_GEN',
                     source='${LIBNDR_GEN_SRC}',
-                    deps='LIBNDR NDR_SECURITY NDR_DCERPC NDR_EVENTLOG NDR_LSA',
+                    deps='''LIBNDR NDR_SECURITY NDR_DCERPC NDR_EVENTLOG NDR_LSA
+                    NDR_ECHO''',
                     vars=locals())
 
 bld.SAMBA_SUBSYSTEM('LIBGPO',
@@ -1305,6 +1301,10 @@ bld.SAMBA_SUBSYSTEM('RPCCLI_WINREG',
                     source='../librpc/gen_ndr/cli_winreg.c',
                     public_deps='RPC_NDR_WINREG')
 
+bld.SAMBA_SUBSYSTEM('RPCCLI_ECHO',
+                    source='../librpc/gen_ndr/cli_echo.c',
+                    public_deps='RPC_NDR_ECHO')
+
 ########################## BINARIES #################################
 
 bld.SAMBA_BINARY('smbd/smbd',
@@ -1346,7 +1346,7 @@ bld.SAMBA_BINARY('rpcclient/rpcclient',
                  source=RPCCLIENT_SRC,
                  deps='''talloc tdb cap resolv POPT_SAMBA PASSDB LIBSMB LIB_NONSMBD
                  PARAM_WITHOUT_REG libwbclient PARAM KRBCLIENT LIBMSRPC_GEN LIBMSRPC
-                 LIBADS SMBREADLINE DISPLAY_SEC DCUTIL RPCCLI_WINREG''',
+                 LIBADS SMBREADLINE DISPLAY_SEC DCUTIL RPCCLI_WINREG RPCCLI_ECHO''',
                  vars=locals())
 
 bld.SAMBA_BINARY('smbclient',
@@ -1432,7 +1432,7 @@ bld.SAMBA_BINARY('nmblookup',
 bld.SAMBA_BINARY('smbtorture',
                  source=SMBTORTURE_SRC,
                  deps='''talloc tdb tevent cap resolv libwbclient PARAM LIBSMB KRBCLIENT
-                 LIB_NONSMBD POPT_SAMBA ASN1_UTIL LIBTSOCKET NDR_SAMR NDR_LSA''',
+                 LIB_NONSMBD POPT_SAMBA ASN1_UTIL LIBTSOCKET NDR_LSA LIBMSRPC LIBMSRPC_GEN RPCCLI_ECHO''',
                  vars=locals())
 
 bld.SAMBA_BINARY('smbconftort',

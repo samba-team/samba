@@ -298,7 +298,7 @@ bld.SAMBA_SUBSYSTEM('RPC_NDR_AUDIOSRV',
 
 bld.SAMBA_SUBSYSTEM('RPC_NDR_ECHO',
 	source='../librpc/gen_ndr/ndr_echo_c.c',
-	public_deps='dcerpc NDR_STANDARD'
+	public_deps='dcerpc NDR_ECHO'
 	)
 
 bld.SAMBA_SUBSYSTEM('RPC_NDR_DSBACKUP',
