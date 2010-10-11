@@ -83,7 +83,7 @@ _PUBLIC_ NTSTATUS cli_credentials_set_secrets(struct cli_credentials *cred,
 		}
 	}
 
-	ldb_ret = dsdb_search_one(ldb, ldb, &msg,
+	ldb_ret = dsdb_search_one(ldb, mem_ctx, &msg,
 				  ldb_dn_new(mem_ctx, ldb, base),
 				  LDB_SCOPE_SUBTREE,
 				  NULL, 0, "%s", filter);
