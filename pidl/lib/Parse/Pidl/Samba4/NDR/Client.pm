@@ -723,6 +723,24 @@ sub ParseFunction($$$)
 {
 	my ($self, $if, $fn) = @_;
 
+	if ($self->ParseFunctionHasPipes($fn)) {
+		$self->pidl_both("/*");
+		$self->pidl_both(" * The following function is skipped because");
+		$self->pidl_both(" * it uses pipes:");
+		$self->pidl_both(" *");
+		$self->pidl_both(" * dcerpc_$fn->{NAME}_r_send()");
+		$self->pidl_both(" * dcerpc_$fn->{NAME}_r_recv()");
+		$self->pidl_both(" * dcerpc_$fn->{NAME}_r()");
+		$self->pidl_both(" *");
+		$self->pidl_both(" * dcerpc_$fn->{NAME}_send()");
+		$self->pidl_both(" * dcerpc_$fn->{NAME}_recv()");
+		$self->pidl_both(" * dcerpc_$fn->{NAME}()");
+		$self->pidl_both(" */");
+		$self->pidl_both("");
+		warning($fn, "$fn->{NAME}: dcerpc client does not support pipe yet");
+		return;
+	}
+
 	$self->ParseFunction_r_State($if, $fn, $fn->{NAME});
 	$self->ParseFunction_r_Send($if, $fn, $fn->{NAME});
 	$self->ParseFunction_r_Done($if, $fn, $fn->{NAME});
