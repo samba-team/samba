@@ -150,7 +150,7 @@ _PUBLIC_ NTSTATUS nbt_name_register(struct nbt_name_socket *nbtsock,
   a 4 step broadcast registration. 3 lots of name registration requests, followed by
   a name registration demand
 */
-struct register_bcast_state {
+struct nbt_name_register_bcast_state {
 	struct nbt_name_socket *nbtsock;
 	struct nbt_name_register *io;
 	struct nbt_name_request *req;
@@ -165,12 +165,12 @@ _PUBLIC_ struct composite_context *nbt_name_register_bcast_send(struct nbt_name_
 							       struct nbt_name_register_bcast *io)
 {
 	struct composite_context *c;
-	struct register_bcast_state *state;
+	struct nbt_name_register_bcast_state *state;
 
 	c = talloc_zero(nbtsock, struct composite_context);
 	if (c == NULL) goto failed;
 
-	state = talloc(c, struct register_bcast_state);
+	state = talloc(c, struct nbt_name_register_bcast_state);
 	if (state == NULL) goto failed;
 
 	state->io = talloc(state, struct nbt_name_register);
@@ -214,7 +214,7 @@ failed:
 static void name_register_bcast_handler(struct nbt_name_request *req)
 {
 	struct composite_context *c = talloc_get_type(req->async.private_data, struct composite_context);
-	struct register_bcast_state *state = talloc_get_type(c->private_data, struct register_bcast_state);
+	struct nbt_name_register_bcast_state *state = talloc_get_type(c->private_data, struct nbt_name_register_bcast_state);
 	NTSTATUS status;
 
 	status = nbt_name_register_recv(state->req, state, state->io);
