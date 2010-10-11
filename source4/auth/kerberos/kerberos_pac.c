@@ -655,7 +655,6 @@ krb5_error_code kerberos_pac_to_server_info(TALLOC_CTX *mem_ctx,
 	krb5_data k5pac_logon_info_in, k5pac_srv_checksum_in, k5pac_kdc_checksum_in;
 
 	union PAC_INFO info;
-	union netr_Validation validation;
 	struct auth_serversupplied_info *server_info_out;
 
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
