@@ -160,7 +160,7 @@ interface dns
 		dns_qtype  rr_type;
 		dns_qclass rr_class;
 		uint32     ttl;
-		uint16     length;
+		uint16     length; /* Should be set to either UINT16_MAX or 0 */
 		[switch_is(rr_type)] dns_rdata rdata;
 		DATA_BLOB  unexpected;
 	} dns_res_rec;

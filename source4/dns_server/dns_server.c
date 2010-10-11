@@ -286,6 +286,8 @@ static NTSTATUS handle_question(struct dns_server *dns,
 				continue;
 			}
 
+			/* TODO: if the record actually is a DNS_QTYPE_A */
+
 			ZERO_STRUCT(ans[ai]);
 			ans[ai].name = talloc_strdup(ans, question->name);
 			ans[ai].rr_type = DNS_QTYPE_A;
@@ -425,15 +427,37 @@ static NTSTATUS dns_server_process_update(struct dns_server *dns,
 					  struct dns_res_rec **additional, uint16_t *arcount)
 {
 	struct dns_name_question *zone;
+	const struct dns_server_zone *z;
+	size_t host_part_len = 0;
 
 	if (in->qdcount != 1) {
-		return NT_STATUS_NOT_IMPLEMENTED;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	zone = in->questions;
 
+	if (zone->question_type != DNS_QTYPE_SOA) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
 	DEBUG(0, ("Got a dns update request.\n"));
 
+	for (z = dns->zones; z != NULL; z = z->next) {
+		bool match;
+
+		match = dns_name_match(z->name, zone->name, &host_part_len);
+		if (match) {
+			break;
+		}
+	}
+
+	if (z == NULL) {
+		return NT_STATUS_FOOBAR;
+	}
+
+	if (host_part_len != 0) {
+		return NT_STATUS_NOT_IMPLEMENTED;
+	}
 
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
