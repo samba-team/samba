@@ -104,6 +104,8 @@ if opts.pushto:
     remote_args.append("--pushto=%s" % opts.pushto)
 if opts.push_master:
     remote_args.append("--push-master")
+if opts.fail_slowly:
+    remote_args.append("--fail-slowly")
 
 remote_args += extra_args
 print "%s$ %s" % (opts.host, " ".join(remote_args))
