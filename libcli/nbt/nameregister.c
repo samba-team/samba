@@ -290,7 +290,7 @@ struct nbt_name_register_wins_state {
 	struct nbt_name_request *req;
 };
 
-static void name_register_wins_handler(struct nbt_name_request *req);
+static void nbt_name_register_wins_handler(struct nbt_name_request *req);
 
 /*
   the async send call for a multi-server WINS register
@@ -337,7 +337,7 @@ _PUBLIC_ struct composite_context *nbt_name_register_wins_send(struct nbt_name_s
 	state->req = nbt_name_register_send(nbtsock, state->io);
 	if (state->req == NULL) goto failed;
 
-	state->req->async.fn      = name_register_wins_handler;
+	state->req->async.fn = nbt_name_register_wins_handler;
 	state->req->async.private_data = c;
 
 	c->private_data	= state;
@@ -354,7 +354,7 @@ failed:
 /*
   state handler for WINS multi-homed multi-server name register
 */
-static void name_register_wins_handler(struct nbt_name_request *req)
+static void nbt_name_register_wins_handler(struct nbt_name_request *req)
 {
 	struct composite_context *c = talloc_get_type(req->async.private_data,
 						      struct composite_context);
@@ -380,7 +380,7 @@ static void name_register_wins_handler(struct nbt_name_request *req)
 			c->state = COMPOSITE_STATE_ERROR;
 			c->status = NT_STATUS_NO_MEMORY;
 		} else {
-			state->req->async.fn      = name_register_wins_handler;
+			state->req->async.fn = nbt_name_register_wins_handler;
 			state->req->async.private_data = c;
 		}
 	} else if (!NT_STATUS_IS_OK(status)) {
@@ -396,7 +396,7 @@ static void name_register_wins_handler(struct nbt_name_request *req)
 				c->state = COMPOSITE_STATE_ERROR;
 				c->status = NT_STATUS_NO_MEMORY;
 			} else {
-				state->req->async.fn      = name_register_wins_handler;
+				state->req->async.fn = nbt_name_register_wins_handler;
 				state->req->async.private_data = c;
 			}
 		} else {
