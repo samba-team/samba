@@ -116,6 +116,7 @@ static int local_deltree(const char *path)
 			closedir(dir);
 			return -1;
 		}
+		DEBUG(0, ("About to remove %s\n", name));
 		ret = remove(name);
 		if (ret == 0) {
 			talloc_free(name);
