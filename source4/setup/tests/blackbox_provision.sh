@@ -42,5 +42,12 @@ reprovision() {
 }
 
 testit "reprovision" reprovision
+rm -rf $PREFIX/simple-default
+rm -rf $PREFIX/simple-dc
+rm -rf $PREFIX/blank-dc
+rm -rf $PREFIX/simple-member
+rm -rf $PREFIX/simple-standalone
+rm -rf $PREFIX/partitions-only-dc
+rm -rf $PREFIX/reprovision
 
 exit $failed

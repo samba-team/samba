@@ -31,4 +31,12 @@ upgradeprovision_full() {
 testit "upgradeprovision" upgradeprovision
 testit "upgradeprovision_full" upgradeprovision_full
 
+if [ -d $PREFIX/upgradeprovision ]; then
+  rm -fr $PREFIX/upgradeprovision
+fi
+
+if [ -d $PREFIX/upgradeprovision_full ]; then
+  rm -fr $PREFIX/upgradeprovision_full
+fi
+
 exit $failed
