@@ -12,6 +12,7 @@ use Exporter;
 
 use Parse::Pidl qw(fatal warning error);
 use Parse::Pidl::Util qw(has_property ParseExpr);
+use Parse::Pidl::NDR qw(ContainsPipe);
 use Parse::Pidl::Typelist qw(mapTypeName);
 use Parse::Pidl::Samba4 qw(choose_header is_intree DeclLong);
 use Parse::Pidl::Samba4::Header qw(GenerateFunctionInEnv GenerateFunctionOutEnv);
@@ -42,6 +43,17 @@ sub new($)
 	my ($class) = shift;
 	my $self = { res => "", res_hdr => "", tabs => "" };
 	bless($self, $class);
+}
+
+sub ParseFunctionHasPipes($$)
+{
+	my ($self, $fn) = @_;
+
+	foreach my $e (@{$fn->{ELEMENTS}}) {
+		return 1 if ContainsPipe($e, $e->{LEVELS}[0]);
+	}
+
+	return 0;
 }
 
 sub ParseFunction_r_State($$$$)
@@ -199,6 +211,17 @@ sub ParseFunction_r_Sync($$$$)
 {
 	my ($self, $if, $fn, $name) = @_;
 	my $uname = uc $name;
+
+	if ($self->ParseFunctionHasPipes($fn)) {
+		$self->pidl_both("/*");
+		$self->pidl_both(" * The following function is skipped because");
+		$self->pidl_both(" * it uses pipes:");
+		$self->pidl_both(" *");
+		$self->pidl_both(" * dcerpc_$name\_r()");
+		$self->pidl_both(" */");
+		$self->pidl_both("");
+		return;
+	}
 
 	my $proto = "NTSTATUS dcerpc_$name\_r(struct dcerpc_binding_handle *h, TALLOC_CTX *mem_ctx, struct $name *r)";
 
@@ -621,6 +644,17 @@ sub ParseFunction_Recv($$$$)
 sub ParseFunction_Sync($$$$)
 {
 	my ($self, $if, $fn, $name) = @_;
+
+	if ($self->ParseFunctionHasPipes($fn)) {
+		$self->pidl_both("/*");
+		$self->pidl_both(" * The following function is skipped because");
+		$self->pidl_both(" * it uses pipes:");
+		$self->pidl_both(" *");
+		$self->pidl_both(" * dcerpc_$name()");
+		$self->pidl_both(" */");
+		$self->pidl_both("");
+		return;
+	}
 
 	my $uname = uc $name;
 	my $fn_args = "";
