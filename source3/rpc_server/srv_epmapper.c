@@ -476,13 +476,22 @@ failed:
 }
 
 /*
-  epm_LookupHandleFree
-*/
+ * epm_LookupHandleFree
+ */
 error_status_t _epm_LookupHandleFree(struct pipes_struct *p,
-			     struct epm_LookupHandleFree *r)
+				     struct epm_LookupHandleFree *r)
 {
-	p->rng_fault_state = true;
-	return EPMAPPER_STATUS_CANT_PERFORM_OP;
+	if (r->in.entry_handle == NULL) {
+		return EPMAPPER_STATUS_OK;
+	}
+
+	if (is_valid_policy_hnd(r->in.entry_handle)) {
+		close_policy_hnd(p, r->in.entry_handle);
+	}
+
+	r->out.entry_handle = r->in.entry_handle;
+
+	return EPMAPPER_STATUS_OK;
 }
 
 
