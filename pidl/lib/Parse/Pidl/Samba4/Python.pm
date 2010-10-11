@@ -12,7 +12,7 @@ use strict;
 use Parse::Pidl qw(warning fatal error);
 use Parse::Pidl::Typelist qw(hasType resolveType getType mapTypeName expandAlias);
 use Parse::Pidl::Util qw(has_property ParseExpr unmake_str);
-use Parse::Pidl::NDR qw(GetPrevLevel GetNextLevel ContainsDeferred is_charset_array);
+use Parse::Pidl::NDR qw(GetPrevLevel GetNextLevel ContainsDeferred ContainsPipe is_charset_array);
 use Parse::Pidl::CUtil qw(get_value_of get_pointer_to);
 use Parse::Pidl::Samba4 qw(ArrayDynamicallyAllocated);
 use Parse::Pidl::Samba4::Header qw(GenerateFunctionInEnv GenerateFunctionOutEnv EnvSubstituteValue GenerateStructEnv);
@@ -658,6 +658,15 @@ sub Interface($$$)
 			next if has_property($d, "noopnum");
 			next if has_property($d, "nopython");
 			next if has_property($d, "todo");
+
+			my $skip = 0;
+			foreach my $e (@{$d->{ELEMENTS}}) {
+				if (ContainsPipe($e, $e->{LEVELS}[0])) {
+					$skip = 1;
+					last;
+				}
+			}
+			next if $skip;
 
 			my $prettyname = $d->{NAME};
 
