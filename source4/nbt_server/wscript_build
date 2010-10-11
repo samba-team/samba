@@ -12,7 +12,7 @@ bld.SAMBA_MODULE('ldb_wins_ldb',
 	subsystem='ldb',
 	init_function='LDB_MODULE(wins_ldb)',
 	deps='ldb LIBNETIF LIBSAMBA-HOSTCONFIG LIBSAMBA-UTIL',
-	internal_module=not bld.CONFIG_SET('USING_SYSTEM_LDB'),
+	internal_module=False,
 	)
 
 
