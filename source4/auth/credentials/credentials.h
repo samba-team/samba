@@ -299,4 +299,5 @@ NTSTATUS cli_credentials_set_secrets(struct cli_credentials *cred,
 				     char **error_string);
  int cli_credentials_get_kvno(struct cli_credentials *cred);
 
+
 #endif /* __CREDENTIALS_H__ */

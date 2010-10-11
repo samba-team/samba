@@ -30,7 +30,7 @@
 #include "../lib/util/util_ldb.h"
 #include "auth/credentials/credentials.h"
 #include "auth/credentials/credentials_krb5.h"
-#include "auth/credentials/credentials_proto.h"
+#include "auth/kerberos/kerberos_util.h"
 #include "param/param.h"
 #include "lib/events/events.h"
 #include "dsdb/samdb/samdb.h"
