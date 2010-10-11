@@ -63,4 +63,5 @@ struct wins_challenge_io {
 	} out;
 };
 
+struct composite_context;
 #include "nbt_server/wins/winsserver_proto.h"
