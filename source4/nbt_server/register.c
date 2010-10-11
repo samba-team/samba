@@ -128,26 +128,31 @@ static void nbtd_start_refresh_timer(struct nbtd_iface_name *iname)
 			name_refresh_handler, iname);
 }
 
+struct nbtd_register_name_state {
+	struct nbtd_iface_name *iname;
+	struct nbt_name_register_bcast io;
+};
 
 /*
   a name registration has completed
 */
-static void nbtd_register_handler(struct composite_context *creq)
+static void nbtd_register_name_handler(struct composite_context *subreq)
 {
-	struct nbtd_iface_name *iname = talloc_get_type(creq->async.private_data, 
-							struct nbtd_iface_name);
+	struct nbtd_register_name_state *state =
+		talloc_get_type_abort(subreq->async.private_data,
+		struct nbtd_register_name_state);
+	struct nbtd_iface_name *iname = state->iname;
 	NTSTATUS status;
-	TALLOC_CTX *tmp_ctx = talloc_new(iname);
 
-	status = nbt_name_register_bcast_recv(creq);
+	status = nbt_name_register_bcast_recv(subreq);
 	if (NT_STATUS_IS_OK(status)) {
 		/* good - nobody complained about our registration */
 		iname->nb_flags |= NBT_NM_ACTIVE;
 		DEBUG(3,("Registered %s with %s on interface %s\n",
-			 nbt_name_string(tmp_ctx, &iname->name), 
+			 nbt_name_string(state, &iname->name),
 			 iname->iface->ip_address, iname->iface->bcast_address));
 		iname->registration_time = timeval_current();
-		talloc_free(tmp_ctx);
+		talloc_free(state);
 		nbtd_start_refresh_timer(iname);
 		return;
 	}
@@ -156,10 +161,10 @@ static void nbtd_register_handler(struct composite_context *creq)
 	iname->nb_flags |= NBT_NM_CONFLICT;
 
 	DEBUG(1,("Error registering %s with %s on interface %s - %s\n",
-		 nbt_name_string(tmp_ctx, &iname->name),
+		 nbt_name_string(state, &iname->name),
 		 iname->iface->ip_address, iname->iface->bcast_address,
 		 nt_errstr(status)));
-	talloc_free(tmp_ctx);
+	talloc_free(state);
 }
 
 
@@ -172,8 +177,8 @@ static void nbtd_register_name_iface(struct nbtd_interface *iface,
 {
 	struct nbtd_iface_name *iname;
 	const char *scope = lpcfg_netbios_scope(iface->nbtsrv->task->lp_ctx);
-	struct nbt_name_register_bcast io;
-	struct composite_context *creq;
+	struct nbtd_register_name_state *state;
+	struct composite_context *subreq;
 	struct nbtd_server *nbtsrv = iface->nbtsrv;
 
 	iname = talloc(iface, struct nbtd_iface_name);
@@ -208,20 +213,30 @@ static void nbtd_register_name_iface(struct nbtd_interface *iface,
 		return;
 	}
 
+	state = talloc_zero(iname, struct nbtd_register_name_state);
+	if (state == NULL) {
+		return;
+	}
+
+	state->iname = iname;
+
 	/* setup a broadcast name registration request */
-	io.in.name            = iname->name;
-	io.in.dest_addr       = iface->bcast_address;
-	io.in.dest_port       = lpcfg_nbt_port(iface->nbtsrv->task->lp_ctx);
-	io.in.address         = iface->ip_address;
-	io.in.nb_flags        = nb_flags;
-	io.in.ttl             = iname->ttl;
+	state->io.in.name      = iname->name;
+	state->io.in.dest_addr = iface->bcast_address;
+	state->io.in.dest_port = lpcfg_nbt_port(iface->nbtsrv->task->lp_ctx);
+	state->io.in.address   = iface->ip_address;
+	state->io.in.nb_flags  = nb_flags;
+	state->io.in.ttl       = iname->ttl;
 
 	nbtsrv->stats.total_sent++;
-	creq = nbt_name_register_bcast_send(iface->nbtsock, &io);
-	if (creq == NULL) return;
 
-	creq->async.fn = nbtd_register_handler;
-	creq->async.private_data = iname;
+	subreq = nbt_name_register_bcast_send(iface->nbtsock, &state->io);
+	if (subreq == NULL) {
+		return;
+	}
+
+	subreq->async.fn = nbtd_register_name_handler;
+	subreq->async.private_data = state;
 }
 
 
