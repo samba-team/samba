@@ -343,13 +343,16 @@ struct composite_context;
 struct composite_context *nbt_name_register_bcast_send(struct nbt_name_socket *nbtsock,
 						       struct nbt_name_register_bcast *io);
 NTSTATUS nbt_name_register_bcast_recv(struct composite_context *c);
-struct composite_context *nbt_name_register_wins_send(struct nbt_name_socket *nbtsock,
-						      struct nbt_name_register_wins *io);
-NTSTATUS nbt_name_register_wins_recv(struct composite_context *c, TALLOC_CTX *mem_ctx,
-				     struct nbt_name_register_wins *io);
 
 struct tevent_context;
 struct tevent_req;
+struct tevent_req *nbt_name_register_wins_send(TALLOC_CTX *mem_ctx,
+					       struct tevent_context *ev,
+					       struct nbt_name_socket *nbtsock,
+					       struct nbt_name_register_wins *io);
+NTSTATUS nbt_name_register_wins_recv(struct tevent_req *req,
+				     TALLOC_CTX *mem_ctx,
+				     struct nbt_name_register_wins *io);
 struct tevent_req *nbt_name_refresh_wins_send(TALLOC_CTX *mem_ctx,
 					      struct tevent_context *ev,
 					      struct nbt_name_socket *nbtsock,

@@ -180,15 +180,16 @@ struct nbtd_wins_register_state {
 /*
   called when a wins name register has completed
 */
-static void nbtd_wins_register_handler(struct composite_context *subreq)
+static void nbtd_wins_register_handler(struct tevent_req *subreq)
 {
 	NTSTATUS status;
 	struct nbtd_wins_register_state *state =
-		talloc_get_type_abort(subreq->async.private_data,
+		tevent_req_callback_data(subreq,
 		struct nbtd_wins_register_state);
 	struct nbtd_iface_name *iname = state->iname;
 
 	status = nbt_name_register_wins_recv(subreq, state, &state->io);
+	TALLOC_FREE(subreq);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
 		/* none of the WINS servers responded - try again 
 		   periodically */
@@ -248,7 +249,7 @@ void nbtd_winsclient_register(struct nbtd_iface_name *iname)
 	struct nbtd_interface *iface = iname->iface;
 	struct nbt_name_socket *nbtsock = wins_socket(iface);
 	struct nbtd_wins_register_state *state;
-	struct composite_context *subreq;
+	struct tevent_req *subreq;
 
 	state = talloc_zero(iname, struct nbtd_wins_register_state);
 	if (state == NULL) {
@@ -270,12 +271,12 @@ void nbtd_winsclient_register(struct nbtd_iface_name *iname)
 		return;
 	}
 
-	subreq = nbt_name_register_wins_send(nbtsock, &state->io);
+	subreq = nbt_name_register_wins_send(state, iface->nbtsrv->task->event_ctx,
+					     nbtsock, &state->io);
 	if (subreq == NULL) {
 		talloc_free(state);
 		return;
 	}
 
-	subreq->async.fn = nbtd_wins_register_handler;
-	subreq->async.private_data = state;
+	tevent_req_set_callback(subreq, nbtd_wins_register_handler, state);
 }
