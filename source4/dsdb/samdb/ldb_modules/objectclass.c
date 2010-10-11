@@ -734,6 +734,15 @@ static int objectclass_do_add(struct oc_context *ac)
 				return ret;
 			}
 		}
+
+		/* make sure that "isCriticalSystemObject" is not specified! */
+		el = ldb_msg_find_element(msg, "isCriticalSystemObject");
+		if ((el != NULL) &&
+                    !ldb_request_get_control(ac->req, LDB_CONTROL_RELAX_OID)) {
+			ldb_set_errstring(ldb,
+					  "objectclass: 'isCriticalSystemObject' must not be specified!");
+			return LDB_ERR_UNWILLING_TO_PERFORM;
+		}
 	}
 
 	ret = ldb_msg_sanity_check(ldb, msg);
