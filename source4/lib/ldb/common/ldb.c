@@ -97,7 +97,7 @@ struct ldb_context *ldb_init(TALLOC_CTX *mem_ctx, struct tevent_context *ev_ctx)
 	/* FIXME: Hack a new event context so that CMD line utilities work
 	 * until we have them all converted */
 	if (ev_ctx == NULL) {
-		ev_ctx = tevent_context_init(talloc_autofree_context());
+		ev_ctx = tevent_context_init(ldb);
 		tevent_set_debug(ev_ctx, ldb_tevent_debug, ldb);
 		tevent_loop_allow_nesting(ev_ctx);
 	}
