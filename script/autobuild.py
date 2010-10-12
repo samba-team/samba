@@ -341,14 +341,17 @@ Your autobuild failed when trying to test %s with the following error:
 
 the autobuild has been abandoned. Please fix the error and resubmit.
 
+A summary of the autobuild process is here:
+
+  http://git.samba.org/%s/samba-autobuild/autobuild.log
+''' % (failed_task, errstr, user)
+    
+    if failed_task != 'rebase':
+        text += '''
 You can see logs of the failed task here:
 
   http://git.samba.org/%s/samba-autobuild/%s.stdout
   http://git.samba.org/%s/samba-autobuild/%s.stderr
-
-A summary of the autobuild process is here:
-
-  http://git.samba.org/%s/samba-autobuild/autobuild.log
 
 or you can get full logs of all tasks in this job here:
 
@@ -358,7 +361,7 @@ The top commit for the tree that was built was:
 
 %s
 
-''' % (failed_task, errstr, user, failed_tag, user, failed_tag, user, user, top_commit_msg)
+''' % (user, failed_tag, user, failed_tag, user, top_commit_msg)
     msg = MIMEText(text)
     msg['Subject'] = 'autobuild failure for task %s during %s' % (failed_task, failed_stage)
     msg['From'] = 'autobuild@samba.org'
@@ -442,10 +445,14 @@ while True:
         raise
 
     try:
-        if options.rebase is not None:
-            rebase_tree(options.rebase)
-        elif options.rebase_master:
-            rebase_tree(samba_master)
+        try:
+            if options.rebase is not None:
+                rebase_tree(options.rebase)
+            elif options.rebase_master:
+                rebase_tree(samba_master)
+        except:
+            email_failure(-1, 'rebase', 'rebase', 'rebase', 'rebase on master failed')
+            sys.exit(1)
         blist = buildlist(tasks, args)
         if options.tail:
             blist.start_tail()
