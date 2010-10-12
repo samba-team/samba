@@ -329,6 +329,9 @@ static NTSTATUS get_nt_acl_internal(vfs_handle_struct *handle,
 
 	if (memcmp(&hash[0], &hash_tmp[0], XATTR_SD_HASH_SIZE) == 0) {
 		/* Hash matches, return blob sd. */
+		DEBUG(10, ("get_nt_acl_internal: blob hash "
+			"matches for file %s\n",
+			name ));
 		goto out;
 	}
 
@@ -369,6 +372,11 @@ static NTSTATUS get_nt_acl_internal(vfs_handle_struct *handle,
 							psbuf,
 							psd);
 		}
+		/* The underlying POSIX module always sets
+		   the ~SEC_DESC_DACL_PROTECTED bit, as ACLs
+		   can't be inherited in this way under POSIX.
+		   Remove it for Windows-style ACLs. */
+		psd->type &= ~SEC_DESC_DACL_PROTECTED;
 	}
 
 	if (!(security_info & SECINFO_OWNER)) {
@@ -662,61 +670,41 @@ static NTSTATUS get_nt_acl_common(vfs_handle_struct *handle,
 *********************************************************************/
 
 static NTSTATUS fset_nt_acl_common(vfs_handle_struct *handle, files_struct *fsp,
-        uint32_t security_info_sent, const struct security_descriptor *psd)
+        uint32_t security_info_sent, const struct security_descriptor *orig_psd)
 {
 	NTSTATUS status;
 	DATA_BLOB blob;
 	struct security_descriptor *pdesc_next = NULL;
+	struct security_descriptor *psd = NULL;
 	uint8_t hash[XATTR_SD_HASH_SIZE];
 
 	if (DEBUGLEVEL >= 10) {
 		DEBUG(10,("fset_nt_acl_xattr: incoming sd for file %s\n",
 			  fsp_str_dbg(fsp)));
 		NDR_PRINT_DEBUG(security_descriptor,
-			CONST_DISCARD(struct security_descriptor *,psd));
+			CONST_DISCARD(struct security_descriptor *,orig_psd));
 	}
 
-        /* Ensure we have OWNER/GROUP/DACL set. */
+	status = get_nt_acl_internal(handle, fsp,
+			NULL,
+			SECINFO_OWNER|SECINFO_GROUP|SECINFO_DACL|SECINFO_SACL,
+			&psd);
 
-	if ((security_info_sent & (SECINFO_OWNER|
-				SECINFO_GROUP|
-				SECINFO_DACL)) !=
-				(SECINFO_OWNER|
-				 SECINFO_GROUP|
-				 SECINFO_DACL)) {
-		/* No we don't - read from the existing SD. */
-		struct security_descriptor *nc_psd = NULL;
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 
-		status = get_nt_acl_internal(handle, fsp,
-				NULL,
-				(SECINFO_OWNER|
-				 SECINFO_GROUP|
-				 SECINFO_DACL),
-				&nc_psd);
-
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
-		}
-
-		/* This is safe as nc_psd is discarded at fn exit. */
-		if (security_info_sent & SECINFO_OWNER) {
-			nc_psd->owner_sid = psd->owner_sid;
-		}
-		security_info_sent |= SECINFO_OWNER;
-
-		if (security_info_sent & SECINFO_GROUP) {
-			nc_psd->group_sid = psd->group_sid;
-		}
-		security_info_sent |= SECINFO_GROUP;
-
-		if (security_info_sent & SECINFO_DACL) {
-			nc_psd->dacl = dup_sec_acl(talloc_tos(), psd->dacl);
-			if (nc_psd->dacl == NULL) {
-				return NT_STATUS_NO_MEMORY;
-			}
-		}
-		security_info_sent |= SECINFO_DACL;
-		psd = nc_psd;
+	if ((security_info_sent & SECINFO_OWNER) && (orig_psd->owner_sid != NULL)) {
+		psd->owner_sid = orig_psd->owner_sid;
+	}
+	if ((security_info_sent & SECINFO_GROUP) && (orig_psd->group_sid != NULL)) {
+		psd->group_sid = orig_psd->group_sid;
+	}
+	if (security_info_sent & SECINFO_DACL) {
+		psd->dacl = orig_psd->dacl;
+	}
+	if (security_info_sent & SECINFO_SACL) {
+		psd->sacl = orig_psd->sacl;
 	}
 
 	status = SMB_VFS_NEXT_FSET_NT_ACL(handle, fsp, security_info_sent, psd);
