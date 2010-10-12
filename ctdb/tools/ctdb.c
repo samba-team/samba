@@ -2331,7 +2331,6 @@ again:
 		return 0;
 	}
 
-	DEBUG(DEBUG_ERR,("Timed out waiting for recmaster ipreallocate. Trying again\n"));
 	retries++;
 	sleep(1);
 	goto again;
