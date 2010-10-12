@@ -836,11 +836,15 @@ NTSTATUS set_sd(files_struct *fsp, uint8_t *data, uint32_t sd_len,
 	struct security_descriptor *psd = NULL;
 	NTSTATUS status;
 
+	if (sd_len == 0) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
 	if (!CAN_WRITE(fsp->conn)) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	if (sd_len == 0 || !lp_nt_acl_support(SNUM(fsp->conn))) {
+	if (!lp_nt_acl_support(SNUM(fsp->conn))) {
 		return NT_STATUS_OK;
 	}
 
@@ -857,9 +861,43 @@ NTSTATUS set_sd(files_struct *fsp, uint8_t *data, uint32_t sd_len,
 		security_info_sent &= ~SECINFO_GROUP;
 	}
 
-	/* Convert all the generic bits. */
-	security_acl_map_generic(psd->dacl, &file_generic_mapping);
-	security_acl_map_generic(psd->sacl, &file_generic_mapping);
+	/* Ensure we have at least one thing set. */
+	if ((security_info_sent & (SECINFO_OWNER|SECINFO_GROUP|SECINFO_DACL|SECINFO_SACL)) == 0) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	/* Ensure we have the rights to do this. */
+	if (security_info_sent & SECINFO_OWNER) {
+		if (!(fsp->access_mask & SEC_STD_WRITE_OWNER)) {
+			return NT_STATUS_ACCESS_DENIED;
+		}
+	}
+
+	if (security_info_sent & SECINFO_GROUP) {
+		if (!(fsp->access_mask & SEC_STD_WRITE_OWNER)) {
+			return NT_STATUS_ACCESS_DENIED;
+		}
+	}
+
+	if (security_info_sent & SECINFO_DACL) {
+		if (!(fsp->access_mask & SEC_STD_WRITE_DAC)) {
+			return NT_STATUS_ACCESS_DENIED;
+		}
+		/* Convert all the generic bits. */
+		if (psd->dacl) {
+			security_acl_map_generic(psd->dacl, &file_generic_mapping);
+		}
+	}
+
+	if (security_info_sent & SECINFO_SACL) {
+		if (!(fsp->access_mask & SEC_FLAG_SYSTEM_SECURITY)) {
+			return NT_STATUS_ACCESS_DENIED;
+		}
+		/* Convert all the generic bits. */
+		if (psd->sacl) {
+			security_acl_map_generic(psd->sacl, &file_generic_mapping);
+		}
+	}
 
 	if (DEBUGLEVEL >= 10) {
 		DEBUG(10,("set_sd for file %s\n", fsp_str_dbg(fsp)));
@@ -1806,6 +1844,19 @@ NTSTATUS smbd_do_query_security_desc(connection_struct *conn,
 	}
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
+	}
+
+	if (!(security_info_wanted & SECINFO_OWNER)) {
+		psd->owner_sid = NULL;
+	}
+	if (!(security_info_wanted & SECINFO_GROUP)) {
+		psd->group_sid = NULL;
+	}
+	if (!(security_info_wanted & SECINFO_DACL)) {
+		psd->dacl = NULL;
+	}
+	if (!(security_info_wanted & SECINFO_SACL)) {
+		psd->sacl = NULL;
 	}
 
 	/* If the SACL/DACL is NULL, but was requested, we mark that it is
