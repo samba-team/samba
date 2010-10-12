@@ -33,7 +33,7 @@
 #include "librpc/gen_ndr/srv_lsa.h"
 #include "rpc_client/cli_samr.h"
 #include "rpc_client/cli_lsarpc.h"
-#include "../libcli/security/dom_sid.h"
+#include "../libcli/security/security.h"
 
 /* Query display info for a domain */
 NTSTATUS rpc_query_user_list(TALLOC_CTX *mem_ctx,

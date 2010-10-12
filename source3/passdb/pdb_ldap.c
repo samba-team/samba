@@ -47,7 +47,7 @@
 #include "../libcli/auth/libcli_auth.h"
 #include "secrets.h"
 #include "idmap_cache.h"
-#include "../libcli/security/dom_sid.h"
+#include "../libcli/security/security.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_PASSDB

@@ -26,7 +26,7 @@
 #include "../libcli/auth/libcli_auth.h"
 #include "../lib/crypto/arcfour.h"
 #include "rpc_client/init_lsa.h"
-#include "../libcli/security/dom_sid.h"
+#include "../libcli/security/security.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_AUTH

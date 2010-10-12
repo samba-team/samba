@@ -20,6 +20,7 @@
 
 #include "includes.h"
 #include "utils/net.h"
+#include "../libcli/security/security.h"
 
 struct {
 	const char *us_errstr;

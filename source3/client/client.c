@@ -28,6 +28,7 @@
 #include "../lib/util/select.h"
 #include "system/readline.h"
 #include "../libcli/smbreadline/smbreadline.h"
+#include "../libcli/security/security.h"
 
 #ifndef REGISTER
 #define REGISTER 0

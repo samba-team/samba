@@ -27,6 +27,7 @@
 #include "libnet/libnet_join.h"
 #include "../libcli/auth/libcli_auth.h"
 #include "../librpc/gen_ndr/srv_wkssvc.h"
+#include "../libcli/security/security.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV

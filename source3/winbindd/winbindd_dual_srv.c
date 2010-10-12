@@ -26,6 +26,7 @@
 #include "librpc/gen_ndr/srv_wbint.h"
 #include "../librpc/gen_ndr/cli_netlogon.h"
 #include "idmap.h"
+#include "../libcli/security/security.h"
 
 void _wbint_Ping(struct pipes_struct *p, struct wbint_Ping *r)
 {

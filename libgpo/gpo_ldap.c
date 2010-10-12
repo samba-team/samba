@@ -23,6 +23,7 @@
 #include "libgpo/gpo_s4.h"
 #include "source4/libgpo/ads_convenience.h"
 #endif
+#include "../libcli/security/security.h"
 
 /****************************************************************
  parse the raw extension string into a GP_EXT structure

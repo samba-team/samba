@@ -24,7 +24,7 @@
 #include "secrets.h"
 #include "memcache.h"
 #include "idmap_cache.h"
-#include "../libcli/security/dom_sid.h"
+#include "../libcli/security/security.h"
 
 /*****************************************************************
  Dissect a user-provided name into domain, name, sid and type.

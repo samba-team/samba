@@ -21,7 +21,7 @@
 #include "includes.h"
 #include "nsswitch/libwbclient/wbc_async.h"
 #include "torture/proto.h"
-#include "libcli/security/dom_sid.h"
+#include "libcli/security/security.h"
 #include "tldap.h"
 #include "tldap_util.h"
 #include "../librpc/gen_ndr/svcctl.h"

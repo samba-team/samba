@@ -24,6 +24,7 @@
 #include "nt_printing.h"
 #include "registry.h"
 #include "registry/reg_objects.h"
+#include "../libcli/security/security.h"
 
 /* support itanium as well */
 static const struct print_architecture_table_node archi_table[]= {

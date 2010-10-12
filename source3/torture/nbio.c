@@ -21,6 +21,7 @@
 
 #include "includes.h"
 #include "torture/proto.h"
+#include "../libcli/security/security.h"
 
 #define MAX_FILES 1000
 

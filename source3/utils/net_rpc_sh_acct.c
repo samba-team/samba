@@ -20,6 +20,7 @@
 #include "popt_common.h"
 #include "utils/net.h"
 #include "../librpc/gen_ndr/cli_samr.h"
+#include "../libcli/security/security.h"
 
 /*
  * Do something with the account policies. Read them all, run a function on

@@ -36,10 +36,13 @@ struct object_tree {
 #include "libcli/security/dom_sid.h"
 #include "libcli/security/secace.h"
 #include "libcli/security/secacl.h"
-#include "libcli/security/proto.h"
 #include "libcli/security/security_descriptor.h"
 #include "libcli/security/security_token.h"
 #include "libcli/security/sddl.h"
 #include "libcli/security/privileges.h"
+
+#if _SAMBA_BUILD_ >= 4
+#include "libcli/security/proto.h"
+#endif
 
 #endif

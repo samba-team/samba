@@ -19,9 +19,7 @@
 */
 
 #include "includes.h"
-#include "librpc/gen_ndr/security.h"
-#include "libcli/security/secace.h"
-#include "libcli/security/dom_sid.h"
+#include "libcli/security/security.h"
 #include "librpc/ndr/libndr.h"
 
 /****************************************************************************

@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "libcli/security/security.h"
 
 /* Map generic access rights to object specific rights.  This technique is
    used to give meaning to assigning read, write, execute and all access to

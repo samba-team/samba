@@ -36,7 +36,7 @@
 #include "../lib/crypto/md4.h"
 #include "rpc_client/init_lsa.h"
 #include "rpc_server/rpc_ncacn_np.h"
-#include "../libcli/security/dom_sid.h"
+#include "../libcli/security/security.h"
 
 extern userdom_struct current_user_info;
 

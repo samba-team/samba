@@ -25,6 +25,7 @@
 #include "includes.h"
 #include "smbldap.h"
 #include "secrets.h"
+#include "../libcli/security/security.h"
 
 /* Try not to hit the up or down server forever */
 

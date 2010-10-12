@@ -24,7 +24,7 @@
 
 #include "includes.h"
 #include "popt_common.h"
-#include "../libcli/security/dom_sid.h"
+#include "../libcli/security/security.h"
 
 static TALLOC_CTX *ctx;
 

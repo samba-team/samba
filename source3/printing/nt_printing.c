@@ -32,6 +32,7 @@
 #include "nt_printing.h"
 #include "secrets.h"
 #include "../librpc/gen_ndr/netlogon.h"
+#include "../libcli/security/security.h"
 
 /* Map generic permissions to printer object specific permissions */
 

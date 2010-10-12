@@ -21,6 +21,7 @@
 #include "includes.h"
 #include "smbd/globals.h"
 #include "../libcli/smb/smb_common.h"
+#include "../libcli/security/security.h"
 
 static NTSTATUS smbd_smb2_tree_connect(struct smbd_smb2_request *req,
 				       const char *in_path,

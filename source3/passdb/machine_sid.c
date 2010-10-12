@@ -23,7 +23,7 @@
 #include "includes.h"
 #include "secrets.h"
 #include "dbwrap.h"
-#include "../libcli/security/dom_sid.h"
+#include "../libcli/security/security.h"
 
 /* NOTE! the global_sam_sid is the SID of our local SAM. This is only
    equal to the domain SID when we are a DC, otherwise its our

@@ -32,6 +32,7 @@
 #include "rpc_client/cli_spoolss.h"
 #include "rpc_client/init_spoolss.h"
 #include "rpc_server/rpc_ncacn_np.h"
+#include "libcli/security/security.h"
 
 /****************************************************************************
  Ensure we check the path in *exactly* the same way as W2K for a findfirst/findnext

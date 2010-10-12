@@ -24,6 +24,7 @@
 #include "printing/nt_printing_tdb.h"
 #include "librpc/gen_ndr/spoolss.h"
 #include "librpc/gen_ndr/ndr_security.h"
+#include "libcli/security/security.h"
 
 #define FORMS_PREFIX "FORMS/"
 #define DRIVERS_PREFIX "DRIVERS/"

@@ -30,7 +30,7 @@
 #include "../librpc/gen_ndr/ndr_wbint.h"
 #include "ads.h"
 #include "nss_info.h"
-#include "../libcli/security/dom_sid.h"
+#include "../libcli/security/security.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND

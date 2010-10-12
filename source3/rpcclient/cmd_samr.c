@@ -30,7 +30,7 @@
 #include "rpc_client/cli_samr.h"
 #include "rpc_client/init_samr.h"
 #include "rpc_client/init_lsa.h"
-#include "../libcli/security/dom_sid.h"
+#include "../libcli/security/security.h"
 
 extern struct dom_sid domain_sid;
 

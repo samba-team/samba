@@ -21,6 +21,7 @@
 #include "includes.h"
 #include "smbd/globals.h"
 #include "../libcli/smb/smb_common.h"
+#include "libcli/security/security.h"
 
 static struct tevent_req *smbd_smb2_read_send(TALLOC_CTX *mem_ctx,
 					      struct tevent_context *ev,

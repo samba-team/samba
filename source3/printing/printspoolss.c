@@ -22,6 +22,7 @@
 #include "../librpc/gen_ndr/cli_spoolss.h"
 #include "rpc_server/rpc_ncacn_np.h"
 #include "smbd/globals.h"
+#include "../libcli/security/security.h"
 
 void print_spool_terminate(struct connection_struct *conn,
 			   struct print_file_data *print_file);

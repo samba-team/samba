@@ -21,6 +21,7 @@
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "../librpc/gen_ndr/ndr_security.h"
 #include "../libgpo/gpo.h"
+#include "../libcli/security/security.h"
 #if _SAMBA_BUILD_ == 4
 #include "system/filesys.h"
 #include "auth/auth.h"

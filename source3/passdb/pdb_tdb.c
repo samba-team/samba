@@ -24,6 +24,7 @@
 
 #include "includes.h"
 #include "dbwrap.h"
+#include "../libcli/security/security.h"
 
 #if 0 /* when made a module use this */
 

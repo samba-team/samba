@@ -19,6 +19,7 @@
 
 #include "includes.h"
 #include "smbd/globals.h"
+#include "libcli/security/security.h"
 
 #define VALID_FNUM(fnum)   (((fnum) >= 0) && ((fnum) < real_max_open_files))
 

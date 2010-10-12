@@ -20,7 +20,7 @@
 #include "includes.h"
 #include "winbindd.h"
 #include "librpc/gen_ndr/cli_wbint.h"
-#include "../libcli/security/dom_sid.h"
+#include "../libcli/security/security.h"
 
 struct wb_getgrsid_state {
 	struct tevent_context *ev;

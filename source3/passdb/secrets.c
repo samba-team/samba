@@ -27,6 +27,7 @@
 #include "librpc/gen_ndr/ndr_secrets.h"
 #include "secrets.h"
 #include "dbwrap.h"
+#include "../libcli/security/security.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_PASSDB

@@ -19,6 +19,7 @@
 */
 
 #include "includes.h"
+#include "../libcli/security/security.h"
 
 #if defined(WITH_WINBIND)
 

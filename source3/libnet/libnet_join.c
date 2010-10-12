@@ -35,7 +35,7 @@
 #include "secrets.h"
 #include "rpc_client/init_lsa.h"
 #include "krb5_env.h"
-#include "../libcli/security/dom_sid.h"
+#include "../libcli/security/security.h"
 
 /****************************************************************
 ****************************************************************/

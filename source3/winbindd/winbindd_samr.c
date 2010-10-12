@@ -34,6 +34,7 @@
 #include "rpc_client/cli_lsarpc.h"
 #include "../librpc/gen_ndr/srv_lsa.h"
 #include "rpc_server/rpc_ncacn_np.h"
+#include "../libcli/security/security.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND

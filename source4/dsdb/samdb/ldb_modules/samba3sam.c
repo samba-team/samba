@@ -14,7 +14,6 @@
 #include "librpc/gen_ndr/ndr_samr.h"
 #include "librpc/ndr/libndr.h"
 #include "libcli/security/security.h"
-#include "libcli/security/proto.h"
 #include "lib/samba3/samba3.h"
 
 /*

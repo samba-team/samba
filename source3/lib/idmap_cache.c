@@ -19,6 +19,7 @@
 
 #include "includes.h"
 #include "idmap_cache.h"
+#include "../libcli/security/security.h"
 
 /**
  * Find a sid2uid mapping

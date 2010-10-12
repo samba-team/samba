@@ -19,6 +19,7 @@
 
 #include "includes.h"
 #include "winbindd.h"
+#include "../libcli/security/security.h"
 
 struct winbindd_sid_to_gid_state {
 	struct dom_sid sid;

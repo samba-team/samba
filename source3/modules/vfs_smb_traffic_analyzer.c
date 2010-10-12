@@ -22,7 +22,7 @@
 #include "includes.h"
 #include "../lib/crypto/crypto.h"
 #include "vfs_smb_traffic_analyzer.h"
-#include "../libcli/security/dom_sid.h"
+#include "../libcli/security/security.h"
 #include "secrets.h"
 #include "../librpc/gen_ndr/ndr_netlogon.h"
 

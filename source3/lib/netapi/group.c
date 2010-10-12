@@ -25,7 +25,7 @@
 #include "lib/netapi/libnetapi.h"
 #include "../librpc/gen_ndr/cli_samr.h"
 #include "rpc_client/init_lsa.h"
-#include "../libcli/security/dom_sid.h"
+#include "../libcli/security/security.h"
 
 /****************************************************************
 ****************************************************************/

@@ -23,7 +23,7 @@
 #include "includes.h"
 #include "winbindd.h"
 #include "secrets.h"
-#include "../libcli/security/dom_sid.h"
+#include "../libcli/security/security.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND

@@ -19,6 +19,7 @@
 
 #include "includes.h"
 #include "winbindd.h"
+#include "../libcli/security/security.h"
 
 struct winbindd_getsidaliases_state {
 	struct dom_sid sid;

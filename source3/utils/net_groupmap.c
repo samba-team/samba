@@ -23,6 +23,7 @@
 
 #include "includes.h"
 #include "utils/net.h"
+#include "../libcli/security/security.h"
 
 /*********************************************************
  Figure out if the input was an NT group or a SID string.

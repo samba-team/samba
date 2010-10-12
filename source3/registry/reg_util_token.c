@@ -19,6 +19,7 @@
 
 #include "includes.h"
 #include "reg_util_token.h"
+#include "../libcli/security/security.h"
 
 /*
  * create a fake token just with enough rights to

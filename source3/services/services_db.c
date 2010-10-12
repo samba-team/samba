@@ -25,6 +25,7 @@
 #include "registry.h"
 #include "registry/reg_api.h"
 #include "registry/reg_api_util.h"
+#include "../libcli/security/security.h"
 
 struct rcinit_file_information {
 	char *description;

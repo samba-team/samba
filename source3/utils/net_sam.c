@@ -22,6 +22,7 @@
 #include "utils/net.h"
 #include "../librpc/gen_ndr/samr.h"
 #include "smbldap.h"
+#include "../libcli/security/security.h"
 
 /*
  * Set a user's data

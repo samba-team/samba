@@ -19,6 +19,7 @@
 
 #include "includes.h"
 #include "torture/proto.h"
+#include "../libcli/security/security.h"
 
 bool torture_utable(int dummy)
 {

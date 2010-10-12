@@ -36,7 +36,7 @@
 #include "secrets.h"
 #include "lib/netapi/netapi.h"
 #include "rpc_client/init_lsa.h"
-#include "../libcli/security/dom_sid.h"
+#include "../libcli/security/security.h"
 
 static int net_mode_share;
 static bool sync_files(struct copy_clistate *cp_clistate, const char *mask);

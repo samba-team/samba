@@ -20,7 +20,7 @@
 */
 
 #include "includes.h"
-#include "../libcli/security/dom_sid.h"
+#include "../libcli/security/security.h"
 
 extern const struct generic_mapping file_generic_mapping;
 

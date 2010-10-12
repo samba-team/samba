@@ -22,6 +22,7 @@
 #include "winbindd_proto.h"
 #include "idmap.h"
 #include "idmap_cache.h"
+#include "../libcli/security/security.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_IDMAP

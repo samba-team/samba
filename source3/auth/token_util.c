@@ -27,8 +27,8 @@
 #include "includes.h"
 #include "secrets.h"
 #include "memcache.h"
-#include "../libcli/security/dom_sid.h"
 #include "../librpc/gen_ndr/netlogon.h"
+#include "../libcli/security/security.h"
 
 /****************************************************************************
  Check for a SID in an struct security_token

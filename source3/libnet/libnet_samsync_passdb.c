@@ -25,7 +25,7 @@
 
 #include "includes.h"
 #include "libnet/libnet_samsync.h"
-#include "../libcli/security/dom_sid.h"
+#include "../libcli/security/security.h"
 
 /* Convert a struct samu_DELTA to a struct samu. */
 #define STRING_CHANGED (old_string && !new_string) ||\

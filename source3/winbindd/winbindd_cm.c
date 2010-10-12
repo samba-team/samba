@@ -72,6 +72,7 @@
 #include "libsmb/clidgram.h"
 #include "ads.h"
 #include "secrets.h"
+#include "../libcli/security/security.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND

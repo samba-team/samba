@@ -20,6 +20,7 @@
 
 #include "includes.h"
 #include "smbd/globals.h"
+#include "libcli/security/security.h"
 
 /*
    This module implements directory related functions for Samba.

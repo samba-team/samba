@@ -23,10 +23,7 @@
 
 #include "includes.h"
 #include "librpc/gen_ndr/ndr_security.h"
-#include "../libcli/security/dom_sid.h"
-#if _SAMBA_BUILD_ == 4
-#include "libcli/security/security.h"
-#endif
+#include "../libcli/security/security.h"
 
 /*
   return the wire size of a security_ace

@@ -18,7 +18,7 @@
  */
 
 #include "includes.h"
-#include "libcli/security/dom_sid.h"
+#include "libcli/security/security.h"
 #include "../libgpo/gpo.h"
 #if _SAMBA_BUILD_ == 4
 #include "libgpo/ads_convenience.h"

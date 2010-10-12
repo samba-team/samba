@@ -34,6 +34,7 @@
 #include "../librpc/gen_ndr/cli_spoolss.h"
 #include "rpc_client/init_spoolss.h"
 #include "librpc/gen_ndr/messaging.h"
+#include "../libcli/security/security.h"
 #include "librpc/gen_ndr/ndr_security.h"
 #include "registry.h"
 #include "registry/reg_objects.h"

@@ -19,6 +19,7 @@
 
 #include "includes.h"
 #include "smbd/globals.h"
+#include "../libcli/security/security.h"
 
 /*
  * No prefix means direct username

@@ -20,8 +20,7 @@
 */
 
 #include "includes.h"
-#include "libcli/security/security_descriptor.h"
-#include "libcli/security/dom_sid.h"
+#include "libcli/security/security.h"
 
 /*
   return a blank security descriptor (no owners, dacl or sacl)

@@ -26,7 +26,7 @@
 /* function(s) moved from auth/auth_util.c to minimize linker deps */
 
 #include "includes.h"
-#include "../libcli/security/dom_sid.h"
+#include "../libcli/security/security.h"
 
 /****************************************************************************
  Duplicate a SID token.

@@ -18,7 +18,7 @@
 */
 
 #include "includes.h"
-#include "../libcli/security/dom_sid.h"
+#include "../libcli/security/security.h"
 
 bool sid_check_is_unix_users(const struct dom_sid *sid)
 {

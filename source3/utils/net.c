@@ -45,6 +45,7 @@
 #include "utils/net.h"
 #include "secrets.h"
 #include "lib/netapi/netapi.h"
+#include "../libcli/security/security.h"
 
 extern bool AllowDebugChange;
 

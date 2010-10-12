@@ -27,7 +27,7 @@
 #include "../librpc/gen_ndr/cli_lsa.h"
 #include "rpc_client/cli_lsarpc.h"
 #include "rpc_client/init_lsa.h"
-#include "../libcli/security/dom_sid.h"
+#include "../libcli/security/security.h"
 
 static NTSTATUS libnetapi_samr_lookup_and_open_alias(TALLOC_CTX *mem_ctx,
 						     struct rpc_pipe_client *pipe_cli,

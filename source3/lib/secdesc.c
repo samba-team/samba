@@ -22,7 +22,7 @@
 
 #include "includes.h"
 #include "../librpc/gen_ndr/ndr_security.h"
-#include "../libcli/security/dom_sid.h"
+#include "../libcli/security/security.h"
 
 #define ALL_SECURITY_INFORMATION (SECINFO_OWNER|SECINFO_GROUP|\
 					SECINFO_DACL|SECINFO_SACL|\

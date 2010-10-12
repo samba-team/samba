@@ -29,6 +29,7 @@
 #include "../libcli/auth/libcli_auth.h"
 #include "../librpc/gen_ndr/xattr.h"
 #include "../librpc/gen_ndr/ndr_security.h"
+#include "libcli/security/security.h"
 
 #define DIR_ENTRY_SAFETY_MARGIN 4096
 

@@ -20,6 +20,7 @@
 #include "includes.h"
 #include "tldap.h"
 #include "tldap_util.h"
+#include "../libcli/security/security.h"
 
 bool tldap_entry_values(struct tldap_message *msg, const char *attribute,
 			int *num_values, DATA_BLOB **values)

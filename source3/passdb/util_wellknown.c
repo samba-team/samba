@@ -21,7 +21,7 @@
 */
 
 #include "includes.h"
-#include "../libcli/security/dom_sid.h"
+#include "../libcli/security/security.h"
 
 struct rid_name_map {
 	uint32 rid;

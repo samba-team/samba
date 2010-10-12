@@ -23,7 +23,7 @@
 #include "includes.h"
 #include "groupdb/mapping.h"
 #include "dbwrap.h"
-#include "../libcli/security/dom_sid.h"
+#include "../libcli/security/security.h"
 
 static struct db_context *db; /* used for driver files */
 

@@ -22,6 +22,7 @@
 #include "librpc/gen_ndr/cli_wbint.h"
 #include "idmap_cache.h"
 #include "idmap.h"
+#include "../libcli/security/security.h"
 
 struct wb_uid2sid_state {
 	struct tevent_context *ev;

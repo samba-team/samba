@@ -19,6 +19,7 @@
  * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "../libcli/security/security.h"
 #include "../librpc/gen_ndr/ndr_security.h"
 
 static NTSTATUS create_acl_blob(const struct security_descriptor *psd,

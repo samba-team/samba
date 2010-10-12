@@ -27,8 +27,7 @@
 #include "libsmb_internal.h"
 #include "../librpc/gen_ndr/ndr_lsa.h"
 #include "rpc_client/cli_lsarpc.h"
-#include "../libcli/security/dom_sid.h"
-
+#include "../libcli/security/security.h"
 
 /*
  * Find an lsa pipe handle associated with a cli struct.

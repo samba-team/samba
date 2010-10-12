@@ -25,7 +25,7 @@
 #include "../librpc/gen_ndr/samr.h"
 #include "memcache.h"
 #include "nsswitch/winbind_client.h"
-#include "../libcli/security/dom_sid.h"
+#include "../libcli/security/security.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_PASSDB

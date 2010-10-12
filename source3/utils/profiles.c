@@ -23,7 +23,7 @@
 #include "popt_common.h"
 #include "registry/reg_objects.h"
 #include "registry/regfio.h"
-#include "../libcli/security/dom_sid.h"
+#include "../libcli/security/security.h"
 
 /* GLOBAL VARIABLES */
 
