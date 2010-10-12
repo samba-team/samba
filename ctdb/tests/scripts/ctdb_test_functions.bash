@@ -934,6 +934,7 @@ restart_ctdb ()
     done
 
     echo "Cluster UNHEALTHY...  too many attempts..."
+    echo "$debug_out"
     # Try to make the calling test fail
     status=1
     return 1
