@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import string, Utils, Options, sys, Build
+import string, Utils, Options, sys, Build, os
 from samba_utils import EXPAND_VARIABLES
 
 # list of directory options to offer in configure
@@ -120,7 +120,12 @@ def dynconfig_cflags(bld):
     '''work out the extra CFLAGS for dynconfig.c'''
     cflags = []
     for f in dyn_cflags.keys():
-        cflags.append('-D%s="%s"' % (f, bld.env[f]))
+        if not Options.is_install and f == 'MODULESDIR':
+            # we want binaries run from the source dir to use the current
+            # modules, not the installed ones
+            cflags.append('-DMODULESDIR="%s"' % os.path.join(os.getcwd(), 'bin/modules'))
+        else:
+            cflags.append('-D%s="%s"' % (f, bld.env[f]))
     return cflags
 Build.BuildContext.dynconfig_cflags = dynconfig_cflags
 
@@ -132,4 +137,3 @@ def build(bld):
                         public_headers='../version.h',
                         header_path='samba',
                         cflags=cflags)
-
