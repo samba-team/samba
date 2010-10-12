@@ -104,7 +104,7 @@ static struct builtin_regkey_value builtin_registry_values[] = {
 	{ KEY_PRINTING_2K,
 		"DefaultSpoolDirectory", REG_SZ, { "C:\\Windows\\System32\\Spool\\Printers" } },
 	{ KEY_EVENTLOG,
-		"DisplayName", REG_SZ, { "Event Log" } }, 
+		"DisplayName", REG_SZ, { "Event Log" } },
 	{ KEY_EVENTLOG,
 		"ErrorControl", REG_DWORD, { (char*)0x00000001 } },
 	{ NULL, NULL, 0, { NULL } }
@@ -516,7 +516,7 @@ WERROR regdb_init(void)
 				state_path("registry.tdb"), strerror(errno) ));
 			return werr;
 		}
-		
+
 		DEBUG(10,("regdb_init: Successfully created registry tdb\n"));
 	}
 
@@ -580,14 +580,14 @@ WERROR regdb_open( void )
 		regdb_refcount++;
 		return WERR_OK;
 	}
-	
+
 	become_root();
 
 	regdb = db_open(NULL, state_path("registry.tdb"), 0,
 			      REG_TDB_FLAGS, O_RDWR, 0600);
 	if ( !regdb ) {
 		result = ntstatus_to_werror( map_nt_error_from_unix( errno ) );
-		DEBUG(0,("regdb_open: Failed to open %s! (%s)\n", 
+		DEBUG(0,("regdb_open: Failed to open %s! (%s)\n",
 			state_path("registry.tdb"), strerror(errno) ));
 	}
 
@@ -1942,10 +1942,10 @@ bool regdb_values_need_update(struct regval_ctr *values)
 	return (regdb_get_seqnum() != regval_ctr_get_seqnum(values));
 }
 
-/* 
+/*
  * Table of function pointers for default access
  */
- 
+
 struct registry_ops regdb_ops = {
 	.fetch_subkeys = regdb_fetch_keys,
 	.fetch_values = regdb_fetch_values,
