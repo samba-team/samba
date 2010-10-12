@@ -3863,6 +3863,29 @@ NTSTATUS set_nt_acl(files_struct *fsp, uint32 security_info_sent, const struct s
 		return NT_STATUS_NO_MEMORY;
 	}
 
+	if((security_info_sent & SECINFO_DACL) &&
+			(psd->type & SEC_DESC_DACL_PRESENT) &&
+			(psd->dacl == NULL)) {
+		struct security_ace ace;
+
+		/* We can't have NULL DACL in POSIX.
+		   Use Everyone -> full access. */
+
+		init_sec_ace(&ace,
+				&global_sid_World,
+				SEC_ACE_TYPE_ACCESS_ALLOWED,
+				GENERIC_ALL_ACCESS,
+				0);
+		psd->dacl = make_sec_acl(talloc_tos(),
+					NT4_ACL_REVISION,
+					1,
+					&ace);
+		if (psd->dacl == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		security_acl_map_generic(psd->dacl, &file_generic_mapping);
+	}
+
 	/*
 	 * Get the current state of the file.
 	 */
@@ -3878,6 +3901,14 @@ NTSTATUS set_nt_acl(files_struct *fsp, uint32 security_info_sent, const struct s
 	/*
 	 * Unpack the user/group/world id's.
 	 */
+
+	/* POSIX can't cope with missing owner/group. */
+	if ((security_info_sent & SECINFO_OWNER) && (psd->owner_sid == NULL)) {
+		security_info_sent &= ~SECINFO_OWNER;
+	}
+	if ((security_info_sent & SECINFO_GROUP) && (psd->group_sid == NULL)) {
+		security_info_sent &= ~SECINFO_GROUP;
+	}
 
 	status = unpack_nt_owners( conn, &user, &grp, security_info_sent, psd);
 	if (!NT_STATUS_IS_OK(status)) {
