@@ -26,8 +26,8 @@ tasks = {
 
     "source4" : [ ("configure", "./configure.developer ${PREFIX}", "text/plain"),
                   ("make", "make -j", "text/plain"),
-                  ("install", "make install", "text/plain"),
-                  ("test", "TDB_NO_FSYNC=1 make test FAIL_IMMEDIATELY=1", "text/plain") ],
+                  ("test", "TDB_NO_FSYNC=1 make test FAIL_IMMEDIATELY=1", "text/plain"),
+                  ("install", "make install", "text/plain") ],
 
     "source4/lib/ldb" : [ ("configure", "./configure --enable-developer -C ${PREFIX}", "text/plain"),
                           ("make", "make -j", "text/plain"),
