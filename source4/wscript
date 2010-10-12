@@ -8,7 +8,7 @@ VERSION=None
 
 import sys, os
 sys.path.insert(0, srcdir+"/buildtools/wafsamba")
-import wafsamba, Options, samba_dist, Scripting
+import wafsamba, Options, samba_dist, Scripting, Utils
 
 
 def load_version(have_git=False):
@@ -92,6 +92,9 @@ def configure(conf):
     conf.check_tool('python')
     conf.check_python_version((2,4,2))
     conf.check_python_headers(mandatory=True)
+
+    if int(conf.env['PYTHON_VERSION'][0]) >= 3:
+        raise Utils.WafError('Python version 3.x is not supported by Samba yet')
 
     conf.RECURSE('dynconfig')
     conf.RECURSE('scripting/python')
