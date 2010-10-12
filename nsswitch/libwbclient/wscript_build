@@ -4,11 +4,3 @@ bld.SAMBA_SUBSYSTEM('LIBWBCLIENT',
 	source='wbc_guid.c wbc_idmap.c wbclient.c wbc_pam.c wbc_pwd.c wbc_sid.c wbc_util.c',
 	deps='LIBWINBIND-CLIENT'
 	)
-
-
-bld.SAMBA_SUBSYSTEM('LIBWBCLIENT_ASYNC',
-	source='wbc_async.c wbc_idmap_async.c wbc_pam_async.c wbc_sid_async.c wbc_util_async.c wb_reqtrans.c',
-        cflags='-DWINBINDD_SOCKET_DIR=\"%s\"' % bld.env.WINBINDD_SOCKET_DIR,
-	public_deps='LIBASYNC_REQ tevent talloc UTIL_TEVENT LIBWBCLIENT',
-	)
-
