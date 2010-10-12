@@ -144,16 +144,18 @@ bool torture_net_become_dc(struct torture_context *torture)
 
 	lp_ctx = libnet_vampire_cb_lp_ctx(s);
 	sam_ldb_path = talloc_asprintf(s, "%s/%s", location, "private/sam.ldb");
+	lpcfg_set_cmdline(lp_ctx, "sam database", sam_ldb_path);
 	torture_comment(torture, "Reopen the SAM LDB with system credentials and all replicated data: %s\n", sam_ldb_path);
-	ldb = ldb_wrap_connect(s, torture->ev, lp_ctx, sam_ldb_path,
-				  system_session(lp_ctx),
-				  NULL, 0);
-	torture_assert_int_equal_goto(torture, (ldb?1:0), 1, ret, cleanup,
+	ldb = samdb_connect(s, torture->ev, lp_ctx, system_session(lp_ctx), 0);
+	torture_assert_goto(torture, ldb != NULL, ret, cleanup,
 				      talloc_asprintf(torture,
 				      "Failed to open '%s'\n", sam_ldb_path));
 
+	torture_assert_goto(torture, dsdb_uses_global_schema(ldb), ret, cleanup,
+						"Uses global schema");
+
 	schema = dsdb_get_schema(ldb, s);
-	torture_assert_int_equal_goto(torture, (schema?1:0), 1, ret, cleanup,
+	torture_assert_goto(torture, schema != NULL, ret, cleanup,
 				      "Failed to get loaded dsdb_schema\n");
 
 	/* Make sure we get this from the command line */
@@ -174,7 +176,7 @@ cleanup:
 				   "libnet_UnbecomeDC() failed - %s %s\n",
 				   nt_errstr(status), u.out.error_string));
 
-	/* Leave domain. */                          
+	/* Leave domain. */
 	torture_leave_domain(torture, tj);
 
 	talloc_free(s);

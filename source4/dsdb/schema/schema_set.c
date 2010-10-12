@@ -487,6 +487,11 @@ int dsdb_set_global_schema(struct ldb_context *ldb)
 	return ret;
 }
 
+bool dsdb_uses_global_schema(struct ldb_context *ldb)
+{
+	return (ldb_get_opaque(ldb, "dsdb_use_global_schema") != NULL);
+}
+
 /**
  * Find the schema object for this ldb
  *
@@ -505,7 +510,7 @@ struct dsdb_schema *dsdb_get_schema(struct ldb_context *ldb, TALLOC_CTX *referen
 	}
 
 	/* see if we have a cached copy */
-	use_global_schema = (ldb_get_opaque(ldb, "dsdb_use_global_schema") != NULL);
+	use_global_schema = dsdb_uses_global_schema(ldb);
 	if (use_global_schema) {
 		schema_in = global_schema;
 	} else {
