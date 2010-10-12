@@ -140,7 +140,7 @@ bld.SAMBA_MODULE('ldb_rootdse',
 	source='rootdse.c',
 	subsystem='ldb',
 	init_function='LDB_MODULE(rootdse)',
-	internal_module=not bld.CONFIG_SET('USING_SYSTEM_LDB'),
+	internal_module=False,
 	deps='talloc LIBEVENTS SAMDB MESSAGING'
 	)
 
@@ -166,7 +166,7 @@ bld.SAMBA_MODULE('ldb_extended_dn_in',
 	source='extended_dn_in.c',
 	subsystem='ldb',
 	init_function='LDB_MODULE(extended_dn_in)',
-	internal_module=not bld.CONFIG_SET('USING_SYSTEM_LDB'),
+	internal_module=False,
 	deps='talloc LIBEVENTS LIBSAMBA-UTIL'
 	)
 
@@ -176,7 +176,7 @@ bld.SAMBA_MODULE('ldb_extended_dn_out',
 	aliases='extended_dn_out_ldb extended_dn_out_openldap extended_dn_out_fds',
 	subsystem='ldb',
 	deps='talloc LIBEVENTS LIBNDR LIBSAMBA-UTIL SAMDB',
-	internal_module=not bld.CONFIG_SET('USING_SYSTEM_LDB'),
+	internal_module=False,
 	init_function='LDB_MODULE(extended_dn_out_ldb),LDB_MODULE(extended_dn_out_openldap),LDB_MODULE(extended_dn_out_fds)'
 	)
 
@@ -185,7 +185,7 @@ bld.SAMBA_MODULE('ldb_extended_dn_store',
 	source='extended_dn_store.c',
 	subsystem='ldb',
 	init_function='LDB_MODULE(extended_dn_store)',
-	internal_module=not bld.CONFIG_SET('USING_SYSTEM_LDB'),
+	internal_module=False,
 	deps='talloc LIBEVENTS LIBSAMBA-UTIL SAMDB DSDB_MODULE_HELPERS'
 	)
 
@@ -213,7 +213,7 @@ bld.SAMBA_MODULE('ldb_new_partition',
 	source='new_partition.c',
 	subsystem='ldb',
 	init_function='LDB_MODULE(new_partition)',
-	internal_module=not bld.CONFIG_SET('USING_SYSTEM_LDB'),
+	internal_module=False,
 	deps='talloc LIBEVENTS SAMDB DSDB_MODULE_HELPERS'
 	)
 
@@ -222,7 +222,7 @@ bld.SAMBA_MODULE('ldb_update_keytab',
 	source='update_keytab.c',
 	subsystem='ldb',
 	init_function='LDB_MODULE(update_keytab)',
-	internal_module=not bld.CONFIG_SET('USING_SYSTEM_LDB'),
+	internal_module=False,
 	deps='talloc LIBEVENTS CREDENTIALS ldb com_err KERBEROS_UTIL'
 	)
 
@@ -231,7 +231,7 @@ bld.SAMBA_MODULE('ldb_objectclass',
 	source='objectclass.c',
 	subsystem='ldb',
 	init_function='LDB_MODULE(objectclass)',
-	internal_module=not bld.CONFIG_SET('USING_SYSTEM_LDB'),
+	internal_module=False,
 	deps='talloc LIBEVENTS LIBSECURITY NDR_SECURITY SAMDB DSDB_MODULE_HELPERS LIBSAMBA-UTIL DSDB_MODULE_HELPER_SCHEMA'
 	)
 
@@ -241,7 +241,7 @@ bld.SAMBA_MODULE('ldb_objectclass_attrs',
 	subsystem='ldb',
 	init_function='LDB_MODULE(objectclass_attrs)',
 	deps='talloc SAMDB LIBSAMBA-UTIL',
-	internal_module=not bld.CONFIG_SET('USING_SYSTEM_LDB'),
+	internal_module=False,
 	)
 
 
@@ -267,7 +267,7 @@ bld.SAMBA_MODULE('ldb_linked_attributes',
 	source='linked_attributes.c',
 	subsystem='ldb',
 	init_function='LDB_MODULE(linked_attributes)',
-	internal_module=not bld.CONFIG_SET('USING_SYSTEM_LDB'),
+	internal_module=False,
 	deps='talloc LIBEVENTS SAMDB DSDB_MODULE_HELPERS'
 	)
 
@@ -285,7 +285,7 @@ bld.SAMBA_MODULE('ldb_anr',
 	source='anr.c',
 	subsystem='ldb',
 	init_function='LDB_MODULE(anr)',
-	internal_module=not bld.CONFIG_SET('USING_SYSTEM_LDB'),
+	internal_module=False,
 	deps='talloc LIBEVENTS LIBSAMBA-UTIL SAMDB'
 	)
 
@@ -294,7 +294,7 @@ bld.SAMBA_MODULE('ldb_instancetype',
 	source='instancetype.c',
 	subsystem='ldb',
 	init_function='LDB_MODULE(instancetype)',
-	internal_module=not bld.CONFIG_SET('USING_SYSTEM_LDB'),
+	internal_module=False,
 	deps='talloc LIBEVENTS LIBSAMBA-UTIL SAMDB'
 	)
 
@@ -303,7 +303,7 @@ bld.SAMBA_MODULE('ldb_operational',
 	source='operational.c',
 	subsystem='ldb',
 	init_function='LDB_MODULE(operational)',
-	internal_module=not bld.CONFIG_SET('USING_SYSTEM_LDB'),
+	internal_module=False,
 	deps='talloc tevent LIBSAMBA-UTIL SAMDB_COMMON DSDB_MODULE_HELPERS auth auth_session'
 	)
 
@@ -312,7 +312,7 @@ bld.SAMBA_MODULE('ldb_descriptor',
 	source='descriptor.c',
 	subsystem='ldb',
 	init_function='LDB_MODULE(descriptor)',
-	internal_module=not bld.CONFIG_SET('USING_SYSTEM_LDB'),
+	internal_module=False,
 	deps='talloc LIBEVENTS LIBSECURITY NDR_SECURITY SAMDB DSDB_MODULE_HELPERS DSDB_MODULE_HELPER_SCHEMA'
 	)
 
@@ -321,7 +321,7 @@ bld.SAMBA_MODULE('ldb_resolve_oids',
 	source='resolve_oids.c',
 	subsystem='ldb',
 	init_function='LDB_MODULE(resolve_oids)',
-	internal_module=not bld.CONFIG_SET('USING_SYSTEM_LDB'),
+	internal_module=False,
 	deps='SAMDB talloc LIBEVENTS LIBNDR'
 	)
 
