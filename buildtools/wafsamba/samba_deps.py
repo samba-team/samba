@@ -709,7 +709,7 @@ def calculate_final_deps(bld, tgt_list, loops):
                     # we could break this in either direction. If one of the libraries
                     # has a version number, and will this be distributed publicly, then
                     # we should make it the lower level library in the DAG
-                    debug('deps: removing library loop %s from %s', t.sname, t2.sname)
+                    Logs.warn('deps: removing library loop %s from %s' % (t.sname, t2.sname))
                     dependency_loop(loops, t, t2.sname)
                     t2.final_libs.remove(t.sname)
 
