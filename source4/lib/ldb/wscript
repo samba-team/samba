@@ -13,7 +13,7 @@ while not os.path.exists(srcdir+'/buildtools') and len(srcdir.split('/')) < 5:
     srcdir = '../' + srcdir
 sys.path.insert(0, srcdir + '/buildtools/wafsamba')
 
-import wafsamba, samba_dist
+import wafsamba, samba_dist, Options
 
 samba_dist.DIST_DIRS('''source4/lib/ldb:. lib/replace:lib/replace lib/talloc:lib/talloc
                         lib/tdb:lib/tdb lib/tevent:lib/tevent lib/popt:lib/popt
@@ -72,8 +72,8 @@ def build(bld):
                              'ldb_map.c ldb_map_inbound.c ldb_map_outbound.c')
 
     COMMON_SRC = bld.SUBDIR('common',
-                            '''ldb.c ldb_ldif.c ldb_parse.c ldb_msg.c ldb_utf8.c
-                            ldb_debug.c ldb_dn.c ldb_match.c ldb_modules.c ldb_options.c
+                            '''ldb_modules.c ldb_ldif.c ldb_parse.c ldb_msg.c ldb_utf8.c
+                            ldb_debug.c ldb_dn.c ldb_match.c ldb_options.c
                             ldb_attributes.c attrib_handlers.c ldb_controls.c qsort.c''')
 
     if s4_build:
@@ -101,36 +101,36 @@ def build(bld):
         bld.env.PACKAGE_VERSION = VERSION
         bld.env.PKGCONFIGDIR = '${LIBDIR}/pkgconfig'
 
-    abi_file = 'ABI/ldb-%s.sigs' % VERSION
 
     bld.SAMBA_SUBSYSTEM('pyldb_util', deps='ldb', source='pyldb_util.c', pyext=True)
 
     if not bld.CONFIG_SET('USING_SYSTEM_LDB'):
-        modules_dir = bld.EXPAND_VARIABLES('${LDB_MODULESDIR}')
-        if bld.env.standalone_ldb:
-            bld.SAMBA_LIBRARY('ldb',
-                              COMMON_SRC + ' ' + LDB_MAP_SRC,
-                              deps='tevent',
-                              includes='include',
-                              public_headers='include/ldb.h include/ldb_errors.h '\
-                                  'include/ldb_module.h include/ldb_handlers.h',
-                              pc_files='ldb.pc',
-                              cflags='-DLDB_MODULESDIR=\"%s\"' % modules_dir,
-                              abi_file=abi_file,
-                              abi_match='!ldb_*module_ops !ldb_*backend_ops ldb_*',
-                              vnum=VERSION, manpages='man/ldb.3',
-                              is_bundled=not bld.env.standalone_ldb)
+        if Options.is_install:
+            modules_dir = bld.EXPAND_VARIABLES('${LDB_MODULESDIR}')
         else:
-            bld.SAMBA_LIBRARY('ldb',
-                              COMMON_SRC + ' ' + LDB_MAP_SRC,
-                              deps='tevent',
-                              includes='include',
-                              public_headers='include/ldb.h include/ldb_errors.h '\
-                                  'include/ldb_module.h include/ldb_handlers.h',
-                              pc_files='ldb.pc',
-                              cflags='-DLDB_MODULESDIR=\"%s\"' % modules_dir,
-                              vnum=VERSION, manpages='man/ldb.3',
-                              is_bundled=not bld.env.standalone_ldb)
+            # when we run from the source directory, we want to use
+            # the current modules, not the installed ones
+            modules_dir = os.path.join(os.getcwd(), 'bin/modules/ldb')
+
+        if bld.env.standalone_ldb:
+            # do ABI checking on the standalone ldb
+            abi_file = 'ABI/ldb-%s.sigs' % VERSION
+            abi_match = '!ldb_*module_ops !ldb_*backend_ops ldb_*'
+        else:
+            abi_file = None
+            abi_match = None
+
+        bld.SAMBA_LIBRARY('ldb',
+                          COMMON_SRC + ' ' + LDB_MAP_SRC,
+                          deps='tevent LIBLDB_MAIN',
+                          includes='include',
+                          public_headers='include/ldb.h include/ldb_errors.h '\
+                          'include/ldb_module.h include/ldb_handlers.h',
+                          pc_files='ldb.pc',
+                          vnum=VERSION, manpages='man/ldb.3',
+                          abi_file = abi_file,
+                          abi_match = abi_match,
+                          is_bundled=not bld.env.standalone_ldb)
 
         bld.SAMBA_PYTHON('pyldb', 'pyldb.c',
                          deps='ldb pyldb_util',
@@ -192,6 +192,14 @@ def build(bld):
                 'LIBCMDLINE_CREDENTIALS gensec'
     else:
         extra_cmdline_deps = ''
+
+    # have a separate subsystem for common/ldb.c, so it can rebuild
+    # for install with a different -DLDB_MODULESDIR=
+    bld.SAMBA_SUBSYSTEM('LIBLDB_MAIN',
+                        'common/ldb.c',
+                        deps='tevent',
+                        includes='include',
+                        cflags='-DLDB_MODULESDIR=\"%s\"' % modules_dir)
 
     bld.SAMBA_SUBSYSTEM('LIBLDB_CMDLINE',
                         'tools/ldbutil.c tools/cmdline.c',
