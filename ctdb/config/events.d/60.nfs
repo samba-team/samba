@@ -79,7 +79,12 @@ case "$1" in
 	} || exit $?
 
 	# check that lockd responds to rpc requests
-	ctdb_check_rpc "lockd" 100021 1
+	(ctdb_check_rpc "lockd" 100021 1)
+	[ $? = "0" ] || {
+		echo "Trying to restart lock manager service"
+		startstop_nfslock restart
+		exit 1
+	}
 
 	# mount needs special handling since it is sometimes not started
 	# correctly on RHEL5
