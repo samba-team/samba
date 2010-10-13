@@ -13,6 +13,12 @@ def ADD_GLOBAL_DEPENDENCY(ctx, dep):
     ctx.env.GLOBAL_DEPENDENCIES.append(dep)
 
 
+@conf
+def BREAK_CIRCULAR_LIBRARY_DEPENDENCIES(ctx):
+    '''indicate that circular dependencies between libraries should be broken.'''
+    ctx.env.ALLOW_CIRCULAR_LIB_DEPENDENCIES = True
+
+
 def TARGET_ALIAS(bld, target, alias):
     '''define an alias for a target name'''
     cache = LOCAL_CACHE(bld, 'TARGET_ALIAS')
@@ -706,13 +712,17 @@ def calculate_final_deps(bld, tgt_list, loops):
             for l in t.final_libs.copy():
                 t2 = bld.name_to_obj(l, bld.env)
                 if t.sname in t2.final_libs:
-                    # we could break this in either direction. If one of the libraries
-                    # has a version number, and will this be distributed publicly, then
-                    # we should make it the lower level library in the DAG
-                    Logs.warn('deps: removing library loop %s from %s' % (t.sname, t2.sname))
-                    dependency_loop(loops, t, t2.sname)
-                    t2.final_libs.remove(t.sname)
-
+                    if getattr(bld.env, "ALLOW_CIRCULAR_LIB_DEPENDENCIES", False):
+                        # we could break this in either direction. If one of the libraries
+                        # has a version number, and will this be distributed publicly, then
+                        # we should make it the lower level library in the DAG
+                        Logs.warn('deps: removing library loop %s from %s' % (t.sname, t2.sname))
+                        dependency_loop(loops, t, t2.sname)
+                        t2.final_libs.remove(t.sname)
+                    else:
+                        Logs.error('ERROR: circular library dependency between %s and %s'
+                            % (t.sname, t2.sname))
+                        sys.exit(1)
 
     for loop in loops:
         debug('deps: Found dependency loops for target %s : %s', loop, loops[loop])
