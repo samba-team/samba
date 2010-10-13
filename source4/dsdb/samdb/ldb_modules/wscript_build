@@ -67,7 +67,7 @@ bld.SAMBA_MODULE('ldb_schema_load',
 	source='schema_load.c',
 	subsystem='ldb',
 	init_function='LDB_MODULE(schema_load)',
-	internal_module=not bld.CONFIG_SET('USING_SYSTEM_LDB'),
+	internal_module=False,
 	deps='SAMDB talloc LIBEVENTS DSDB_MODULE_HELPERS'
 	)
 
