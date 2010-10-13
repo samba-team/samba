@@ -1455,6 +1455,15 @@ static void dcesrv_terminate_connection(struct dcesrv_connection *dce_conn, cons
 
 	stream_terminate_connection(srv_conn, reason);
 }
+/* We need this include to be able to compile on some plateforms
+ * (ie. freebsd 7.2) as it seems that <sys/uio.h> is not included
+ * correctly.
+ * It has to be that deep because otherwise we have a conflict on
+ * const struct dcesrv_interface declaration.
+ * This is mostly due to socket_wrapper defining #define bind swrap_bind
+ * which conflict with the bind used before.
+ */
+#include "system/network.h"
 
 struct dcesrv_sock_reply_state {
 	struct dcesrv_connection *dce_conn;
