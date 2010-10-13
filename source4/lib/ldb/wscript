@@ -187,19 +187,19 @@ def build(bld):
                          deps='tdb',
                          subsystem='ldb')
 
+        # have a separate subsystem for common/ldb.c, so it can rebuild
+        # for install with a different -DLDB_MODULESDIR=
+        bld.SAMBA_SUBSYSTEM('LIBLDB_MAIN',
+                            'common/ldb.c',
+                            deps='tevent',
+                            includes='include',
+                            cflags='-DLDB_MODULESDIR=\"%s\"' % modules_dir)
+
     if s4_build:
         extra_cmdline_deps = ' LDBSAMBA POPT_SAMBA POPT_CREDENTIALS ' \
                 'LIBCMDLINE_CREDENTIALS gensec'
     else:
         extra_cmdline_deps = ''
-
-    # have a separate subsystem for common/ldb.c, so it can rebuild
-    # for install with a different -DLDB_MODULESDIR=
-    bld.SAMBA_SUBSYSTEM('LIBLDB_MAIN',
-                        'common/ldb.c',
-                        deps='tevent',
-                        includes='include',
-                        cflags='-DLDB_MODULESDIR=\"%s\"' % modules_dir)
 
     bld.SAMBA_SUBSYSTEM('LIBLDB_CMDLINE',
                         'tools/ldbutil.c tools/cmdline.c',
