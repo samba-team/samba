@@ -755,6 +755,7 @@ if not bld.CONFIG_SET('USING_SYSTEM_COM_ERR'):
         '../heimdal/lib/com_err/com_err.c ../heimdal/lib/com_err/error.c',
         includes='../heimdal/lib/com_err',
         deps='roken',
+        vnum='0.25',
         )
 
 # here is the asn1 compiler build rule
