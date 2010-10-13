@@ -1029,97 +1029,177 @@ static int ldif_read_range64(struct ldb_context *ldb, void *mem_ctx,
 	return LDB_SUCCESS;
 }
 
+/*
+  when this operator_fn is set for a syntax, the backend calls is in
+  preference to the comparison function. We are told the exact
+  comparison operation that is needed, and we can return errors
+ */
+static int samba_syntax_operator_fn(struct ldb_context *ldb, enum ldb_parse_op operation,
+				    const struct ldb_schema_attribute *a,
+				    const struct ldb_val *v1, const struct ldb_val *v2, bool *matched)
+{
+	switch (operation) {
+	case LDB_OP_AND:
+	case LDB_OP_OR:
+	case LDB_OP_NOT:
+	case LDB_OP_SUBSTRING:
+	case LDB_OP_APPROX:
+	case LDB_OP_EXTENDED:
+		/* handled in the backends */
+		return LDB_ERR_INAPPROPRIATE_MATCHING;
+
+	case LDB_OP_GREATER:
+	case LDB_OP_LESS:
+	case LDB_OP_EQUALITY:
+	{
+		TALLOC_CTX *tmp_ctx = talloc_new(ldb);
+		int ret;
+		if (tmp_ctx == NULL) {
+			return ldb_oom(ldb);
+		}
+		ret = a->syntax->comparison_fn(ldb, tmp_ctx, v1, v2);
+		talloc_free(tmp_ctx);
+		if (operation == LDB_OP_GREATER) {
+			*matched = (ret > 0);
+		} else if (operation == LDB_OP_LESS) {
+			*matched = (ret < 0);
+		} else {
+			*matched = (ret == 0);
+		}
+		return LDB_SUCCESS;
+	}
+
+	case LDB_OP_PRESENT:
+		*matched = true;
+		return LDB_SUCCESS;
+	}
+
+	/* we shouldn't get here */
+	return LDB_ERR_INAPPROPRIATE_MATCHING;
+}
+
+/*
+  special operation for DNs, to take account of the RMD_FLAGS deleted bit
+ */
+static int samba_syntax_operator_dn(struct ldb_context *ldb, enum ldb_parse_op operation,
+				    const struct ldb_schema_attribute *a,
+				    const struct ldb_val *v1, const struct ldb_val *v2, bool *matched)
+{
+	if (operation == LDB_OP_PRESENT && dsdb_dn_is_deleted_val(v1)) {
+		/* If the DN is deleted, then we can't search for it */
+		*matched = false;
+		return LDB_SUCCESS;
+	}
+	return samba_syntax_operator_fn(ldb, operation, a, v1, v2, matched);
+}
+
+
 static const struct ldb_schema_syntax samba_syntaxes[] = {
 	{
 		.name		  = LDB_SYNTAX_SAMBA_SID,
 		.ldif_read_fn	  = ldif_read_objectSid,
 		.ldif_write_fn	  = ldif_write_objectSid,
 		.canonicalise_fn  = ldif_canonicalise_objectSid,
-		.comparison_fn	  = ldif_comparison_objectSid
+		.comparison_fn	  = ldif_comparison_objectSid,
+		.operator_fn      = samba_syntax_operator_fn
 	},{
 		.name		  = LDB_SYNTAX_SAMBA_SECURITY_DESCRIPTOR,
 		.ldif_read_fn	  = ldif_read_ntSecurityDescriptor,
 		.ldif_write_fn	  = ldif_write_ntSecurityDescriptor,
 		.canonicalise_fn  = ldb_handler_copy,
-		.comparison_fn	  = ldb_comparison_binary
+		.comparison_fn	  = ldb_comparison_binary,
+		.operator_fn      = samba_syntax_operator_fn
 	},{
 		.name		  = LDB_SYNTAX_SAMBA_GUID,
 		.ldif_read_fn	  = ldif_read_objectGUID,
 		.ldif_write_fn	  = ldif_write_objectGUID,
 		.canonicalise_fn  = ldif_canonicalise_objectGUID,
-		.comparison_fn	  = ldif_comparison_objectGUID
+		.comparison_fn	  = ldif_comparison_objectGUID,
+		.operator_fn      = samba_syntax_operator_fn
 	},{
 		.name		  = LDB_SYNTAX_SAMBA_OBJECT_CATEGORY,
 		.ldif_read_fn	  = ldb_handler_copy,
 		.ldif_write_fn	  = ldb_handler_copy,
 		.canonicalise_fn  = ldif_canonicalise_objectCategory,
-		.comparison_fn	  = ldif_comparison_objectCategory
+		.comparison_fn	  = ldif_comparison_objectCategory,
+		.operator_fn      = samba_syntax_operator_fn
 	},{
 		.name		  = LDB_SYNTAX_SAMBA_SCHEMAINFO,
 		.ldif_read_fn	  = ldb_handler_copy,
 		.ldif_write_fn	  = ldif_write_schemaInfo,
 		.canonicalise_fn  = ldb_handler_copy,
-		.comparison_fn	  = ldb_comparison_binary
+		.comparison_fn	  = ldb_comparison_binary,
+		.operator_fn      = samba_syntax_operator_fn
 	},{
 		.name		  = LDB_SYNTAX_SAMBA_PREFIX_MAP,
 		.ldif_read_fn	  = ldif_read_prefixMap,
 		.ldif_write_fn	  = ldif_write_prefixMap,
 		.canonicalise_fn  = ldif_canonicalise_prefixMap,
-		.comparison_fn	  = ldif_comparison_prefixMap
+		.comparison_fn	  = ldif_comparison_prefixMap,
+		.operator_fn      = samba_syntax_operator_fn
 	},{
 		.name		  = LDB_SYNTAX_SAMBA_INT32,
 		.ldif_read_fn	  = ldb_handler_copy,
 		.ldif_write_fn	  = ldb_handler_copy,
 		.canonicalise_fn  = ldif_canonicalise_int32,
-		.comparison_fn	  = ldif_comparison_int32
+		.comparison_fn	  = ldif_comparison_int32,
+		.operator_fn      = samba_syntax_operator_fn
 	},{
 		.name		  = LDB_SYNTAX_SAMBA_REPSFROMTO,
 		.ldif_read_fn	  = ldb_handler_copy,
 		.ldif_write_fn	  = ldif_write_repsFromTo,
 		.canonicalise_fn  = ldb_handler_copy,
-		.comparison_fn	  = ldb_comparison_binary
+		.comparison_fn	  = ldb_comparison_binary,
+		.operator_fn      = samba_syntax_operator_fn
 	},{
 		.name		  = LDB_SYNTAX_SAMBA_REPLPROPERTYMETADATA,
 		.ldif_read_fn	  = ldb_handler_copy,
 		.ldif_write_fn	  = ldif_write_replPropertyMetaData,
 		.canonicalise_fn  = ldb_handler_copy,
-		.comparison_fn	  = ldb_comparison_binary
+		.comparison_fn	  = ldb_comparison_binary,
+		.operator_fn      = samba_syntax_operator_fn
 	},{
 		.name		  = LDB_SYNTAX_SAMBA_REPLUPTODATEVECTOR,
 		.ldif_read_fn	  = ldb_handler_copy,
 		.ldif_write_fn	  = ldif_write_replUpToDateVector,
 		.canonicalise_fn  = ldb_handler_copy,
-		.comparison_fn	  = ldb_comparison_binary
+		.comparison_fn	  = ldb_comparison_binary,
+		.operator_fn      = samba_syntax_operator_fn
 	},{
 		.name		  = DSDB_SYNTAX_BINARY_DN,
 		.ldif_read_fn	  = ldb_handler_copy,
 		.ldif_write_fn	  = ldb_handler_copy,
 		.canonicalise_fn  = dsdb_dn_binary_canonicalise,
-		.comparison_fn	  = dsdb_dn_binary_comparison
+		.comparison_fn	  = dsdb_dn_binary_comparison,
+		.operator_fn      = samba_syntax_operator_fn
 	},{
 		.name		  = DSDB_SYNTAX_STRING_DN,
 		.ldif_read_fn	  = ldb_handler_copy,
 		.ldif_write_fn	  = ldb_handler_copy,
 		.canonicalise_fn  = dsdb_dn_string_canonicalise,
-		.comparison_fn	  = dsdb_dn_string_comparison
+		.comparison_fn	  = dsdb_dn_string_comparison,
+		.operator_fn      = samba_syntax_operator_fn
 	},{
 		.name		  = LDB_SYNTAX_DN,
 		.ldif_read_fn	  = ldb_handler_copy,
 		.ldif_write_fn	  = ldb_handler_copy,
 		.canonicalise_fn  = samba_ldb_dn_link_canonicalise,
 		.comparison_fn	  = samba_ldb_dn_link_comparison,
+		.operator_fn      = samba_syntax_operator_dn
 	},{
 		.name		  = LDB_SYNTAX_SAMBA_RANGE64,
 		.ldif_read_fn	  = ldif_read_range64,
 		.ldif_write_fn	  = ldif_write_range64,
 		.canonicalise_fn  = ldif_canonicalise_int64,
-		.comparison_fn	  = ldif_comparison_int64
+		.comparison_fn	  = ldif_comparison_int64,
+		.operator_fn      = samba_syntax_operator_fn
 	},{
 		.name		  = LDB_SYNTAX_SAMBA_DNSRECORD,
 		.ldif_read_fn	  = ldb_handler_copy,
 		.ldif_write_fn	  = ldif_write_dnsRecord,
 		.canonicalise_fn  = ldb_handler_copy,
-		.comparison_fn	  = ldb_comparison_binary
+		.comparison_fn	  = ldb_comparison_binary,
+		.operator_fn      = samba_syntax_operator_fn
 	}
 };
 
