@@ -384,6 +384,7 @@ static int search_func(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, voi
 	struct ltdb_context *ac;
 	struct ldb_message *msg;
 	int ret;
+	bool matched;
 
 	ac = talloc_get_type(state, struct ltdb_context);
 	ldb = ldb_module_get_ctx(ac->module);
@@ -415,8 +416,13 @@ static int search_func(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, voi
 	}
 
 	/* see if it matches the given expression */
-	if (!ldb_match_msg(ldb, msg,
-			   ac->tree, ac->base, ac->scope)) {
+	ret = ldb_match_msg_error(ldb, msg,
+				  ac->tree, ac->base, ac->scope, &matched);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(msg);
+		return -1;
+	}
+	if (!matched) {
 		talloc_free(msg);
 		return 0;
 	}

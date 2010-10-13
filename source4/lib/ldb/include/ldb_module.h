@@ -135,6 +135,13 @@ int ldb_match_msg(struct ldb_context *ldb,
 		  struct ldb_dn *base,
 		  enum ldb_scope scope);
 
+int ldb_match_msg_error(struct ldb_context *ldb,
+			const struct ldb_message *msg,
+			const struct ldb_parse_tree *tree,
+			struct ldb_dn *base,
+			enum ldb_scope scope,
+			bool *matched);
+
 int ldb_match_msg_objectclass(const struct ldb_message *msg,
 			      const char *objectclass);
 

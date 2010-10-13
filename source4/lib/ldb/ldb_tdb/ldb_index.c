@@ -918,6 +918,7 @@ static int ltdb_index_filter(const struct dn_list *dn_list,
 	for (i = 0; i < dn_list->count; i++) {
 		struct ldb_dn *dn;
 		int ret;
+		bool matched;
 
 		msg = ldb_msg_new(ac);
 		if (!msg) {
@@ -944,8 +945,13 @@ static int ltdb_index_filter(const struct dn_list *dn_list,
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 
-		if (!ldb_match_msg(ldb, msg,
-				   ac->tree, ac->base, ac->scope)) {
+		ret = ldb_match_msg_error(ldb, msg,
+					  ac->tree, ac->base, ac->scope, &matched);
+		if (ret != LDB_SUCCESS) {
+			talloc_free(msg);
+			return ret;
+		}
+		if (!matched) {
 			talloc_free(msg);
 			continue;
 		}

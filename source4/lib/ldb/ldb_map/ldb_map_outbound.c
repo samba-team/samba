@@ -1070,14 +1070,19 @@ int map_return_entry(struct map_context *ac, struct ldb_reply *ares)
 	const char * const *attrs;
 	struct ldb_context *ldb;
 	unsigned int i;
+	int ret;
+	bool matched;
 
 	ldb = ldb_module_get_ctx(ac->module);
 
 	/* Merged result doesn't match original query, skip */
-	if (!ldb_match_msg(ldb, ares->message,
-			   ac->req->op.search.tree,
-			   ac->req->op.search.base,
-			   ac->req->op.search.scope)) {
+	ret = ldb_match_msg_error(ldb, ares->message,
+				  ac->req->op.search.tree,
+				  ac->req->op.search.base,
+				  ac->req->op.search.scope,
+				  &matched);
+	if (ret != LDB_SUCCESS) return ret;
+	if (!matched) {
 		ldb_debug(ldb, LDB_DEBUG_TRACE, "ldb_map: "
 			  "Skipping record '%s': "
 			  "doesn't match original search",
