@@ -23,13 +23,13 @@ from ldb import ERR_NOT_ALLOWED_ON_NON_LEAF, ERR_OTHER, ERR_INVALID_DN_SYNTAX
 from ldb import ERR_NO_SUCH_ATTRIBUTE
 from ldb import ERR_OBJECT_CLASS_VIOLATION, ERR_NOT_ALLOWED_ON_RDN
 from ldb import ERR_NAMING_VIOLATION, ERR_CONSTRAINT_VIOLATION
-from ldb import ERR_UNDEFINED_ATTRIBUTE_TYPE
+from ldb import ERR_UNDEFINED_ATTRIBUTE_TYPE, ERR_INSUFFICIENT_ACCESS_RIGHTS
 from ldb import Message, MessageElement, Dn
 from ldb import FLAG_MOD_ADD, FLAG_MOD_REPLACE, FLAG_MOD_DELETE
 from samba import Ldb
 from samba.dsdb import (UF_NORMAL_ACCOUNT, UF_INTERDOMAIN_TRUST_ACCOUNT,
     UF_WORKSTATION_TRUST_ACCOUNT, UF_SERVER_TRUST_ACCOUNT,
-    UF_PARTIAL_SECRETS_ACCOUNT,
+    UF_PARTIAL_SECRETS_ACCOUNT, UF_TEMP_DUPLICATE_ACCOUNT,
     UF_PASSWD_NOTREQD, UF_ACCOUNTDISABLE, ATYPE_NORMAL_ACCOUNT,
     GTYPE_SECURITY_BUILTIN_LOCAL_GROUP, GTYPE_SECURITY_DOMAIN_LOCAL_GROUP,
     GTYPE_SECURITY_GLOBAL_GROUP, GTYPE_SECURITY_UNIVERSAL_GROUP,
@@ -96,6 +96,7 @@ class SamTests(unittest.TestCase):
         print "baseDN: %s\n" % self.base_dn
 
         self.delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+        self.delete_force(self.ldb, "cn=ldaptestcomputer,cn=users," + self.base_dn)
         self.delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
         self.delete_force(self.ldb, "cn=ldaptestuser2,cn=users," + self.base_dn)
 
@@ -571,7 +572,7 @@ class SamTests(unittest.TestCase):
         self.assertFalse("objectClass" in res1[0])
         self.assertTrue("canonicalName" in res1[0])
 
-        res1 = ldb.search("cn=users,"+self.base_dn,
+        res1 = ldb.search("cn=users," + self.base_dn,
                           scope=SCOPE_BASE, attrs=["primaryGroupToken"])
         self.assertTrue(len(res1) == 1)
         self.assertFalse("primaryGroupToken" in res1[0])
@@ -1237,6 +1238,450 @@ class SamTests(unittest.TestCase):
 
         self.delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
 
+    def test_userAccountControl(self):
+        """Test the userAccountControl behaviour"""
+        print "Testing userAccountControl behaviour\n"
+
+        # With a user object
+
+        # Add operation
+
+        # As user you can only set a normal account.
+        # The UF_PASSWD_NOTREQD flag is needed since we haven't requested a
+        # password yet.
+        # With SYSTEM rights you can set a interdomain trust account.
+
+        # Invalid attribute
+        try:
+            ldb.add({
+                "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
+                "objectclass": ["user", "person"],
+                "userAccountControl": "0"})
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
+        self.delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+
+# This has to wait until s4 supports it (needs a password module change)
+#        try:
+#            ldb.add({
+#                "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
+#                "objectclass": ["user", "person"],
+#                "userAccountControl": str(UF_NORMAL_ACCOUNT)})
+#            self.fail()
+#        except LdbError, (num, _):
+#            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
+#        self.delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+
+        ldb.add({
+            "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
+            "objectclass": ["user", "person"],
+            "userAccountControl": str(UF_NORMAL_ACCOUNT | UF_PASSWD_NOTREQD)})
+
+        res1 = ldb.search("cn=ldaptestuser,cn=users," + self.base_dn,
+                          scope=SCOPE_BASE, attrs=["sAMAccountType"])
+        self.assertTrue(len(res1) == 1)
+        self.assertEquals(int(res1[0]["sAMAccountType"][0]),
+          ATYPE_NORMAL_ACCOUNT)
+        self.delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+
+        try:
+            ldb.add({
+                "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
+                "objectclass": ["user", "person"],
+                "userAccountControl": str(UF_TEMP_DUPLICATE_ACCOUNT)})
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_OTHER)
+        self.delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+
+# This isn't supported yet in s4
+#        try:
+#            ldb.add({
+#                "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
+#                "objectclass": ["user", "person"],
+#                "userAccountControl": str(UF_SERVER_TRUST_ACCOUNT)})
+#            self.fail()
+#        except LdbError, (num, _):
+#            self.assertEquals(num, ERR_OBJECT_CLASS_VIOLATION)
+#        self.delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+#
+#        try:
+#            ldb.add({
+#                "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
+#                "objectclass": ["user", "person"],
+#                "userAccountControl": str(UF_WORKSTATION_TRUST_ACCOUNT)})
+#        except LdbError, (num, _):
+#            self.assertEquals(num, ERR_OBJECT_CLASS_VIOLATION)
+#        self.delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+
+# This isn't supported yet in s4 - needs ACL module adaption
+#        try:
+#            ldb.add({
+#                "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
+#                "objectclass": ["user", "person"],
+#                "userAccountControl": str(UF_INTERDOMAIN_TRUST_ACCOUNT)})
+#            self.fail()
+#        except LdbError, (num, _):
+#            self.assertEquals(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
+#        self.delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+
+        # Modify operation
+
+        ldb.add({
+            "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
+            "objectclass": ["user", "person"]})
+
+        # After creation we should have a normal account
+        res1 = ldb.search("cn=ldaptestuser,cn=users," + self.base_dn,
+                          scope=SCOPE_BASE, attrs=["sAMAccountType"])
+        self.assertTrue(len(res1) == 1)
+        self.assertEquals(int(res1[0]["sAMAccountType"][0]),
+          ATYPE_NORMAL_ACCOUNT)
+
+        # As user you can only switch from a normal account to a workstation
+        # trust account and back.
+        # The UF_PASSWD_NOTREQD flag is needed since we haven't requested a
+        # password yet.
+        # With SYSTEM rights you can switch to a interdomain trust account.
+
+        # Invalid attribute
+        try:
+            m = Message()
+            m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+            m["userAccountControl"] = MessageElement("0",
+              FLAG_MOD_REPLACE, "userAccountControl")
+            ldb.modify(m)
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
+
+# This has to wait until s4 supports it (needs a password module change)
+#        try:
+#            m = Message()
+#            m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+#            m["userAccountControl"] = MessageElement(
+#              str(UF_NORMAL_ACCOUNT),
+#              FLAG_MOD_REPLACE, "userAccountControl")
+#            ldb.modify(m)
+#        except LdbError, (num, _):
+#            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+        m["userAccountControl"] = MessageElement(
+          str(UF_NORMAL_ACCOUNT | UF_PASSWD_NOTREQD),
+          FLAG_MOD_REPLACE, "userAccountControl")
+        ldb.modify(m)
+
+        res1 = ldb.search("cn=ldaptestuser,cn=users," + self.base_dn,
+                          scope=SCOPE_BASE, attrs=["sAMAccountType"])
+        self.assertTrue(len(res1) == 1)
+        self.assertEquals(int(res1[0]["sAMAccountType"][0]),
+          ATYPE_NORMAL_ACCOUNT)
+
+        try:
+            m = Message()
+            m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+            m["userAccountControl"] = MessageElement(
+              str(UF_TEMP_DUPLICATE_ACCOUNT),
+              FLAG_MOD_REPLACE, "userAccountControl")
+            ldb.modify(m)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_OTHER)
+
+# This isn't supported yet in s4
+#        try:
+#            m = Message()
+#            m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+#            m["userAccountControl"] = MessageElement(
+#              str(UF_SERVER_TRUST_ACCOUNT),
+#              FLAG_MOD_REPLACE, "userAccountControl")
+#            ldb.modify(m)
+#            self.fail()
+#        except LdbError, (num, _):
+#            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+        m["userAccountControl"] = MessageElement(
+          str(UF_WORKSTATION_TRUST_ACCOUNT),
+          FLAG_MOD_REPLACE, "userAccountControl")
+        ldb.modify(m)
+
+        res1 = ldb.search("cn=ldaptestuser,cn=users," + self.base_dn,
+                          scope=SCOPE_BASE, attrs=["sAMAccountType"])
+        self.assertTrue(len(res1) == 1)
+        self.assertEquals(int(res1[0]["sAMAccountType"][0]),
+          ATYPE_WORKSTATION_TRUST)
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+        m["userAccountControl"] = MessageElement(
+          str(UF_NORMAL_ACCOUNT | UF_PASSWD_NOTREQD),
+          FLAG_MOD_REPLACE, "userAccountControl")
+        ldb.modify(m)
+
+        res1 = ldb.search("cn=ldaptestuser,cn=users," + self.base_dn,
+                          scope=SCOPE_BASE, attrs=["sAMAccountType"])
+        self.assertTrue(len(res1) == 1)
+        self.assertEquals(int(res1[0]["sAMAccountType"][0]),
+          ATYPE_NORMAL_ACCOUNT)
+
+# This isn't supported yet in s4 - needs ACL module adaption
+#        try:
+#            m = Message()
+#            m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+#            m["userAccountControl"] = MessageElement(
+#              str(UF_INTERDOMAIN_TRUST_ACCOUNT),
+#              FLAG_MOD_REPLACE, "userAccountControl")
+#            ldb.modify(m)
+#            self.fail()
+#        except LdbError, (num, _):
+#            self.assertEquals(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
+
+        # With a computer object
+
+        # Add operation
+
+        # As computer you can set a normal account and a server trust account.
+        # The UF_PASSWD_NOTREQD flag is needed since we haven't requested a
+        # password yet.
+        # With SYSTEM rights you can set a interdomain trust account.
+
+        # Invalid attribute
+        try:
+            ldb.add({
+                "dn": "cn=ldaptestcomputer,cn=computers," + self.base_dn,
+                "objectclass": ["computer"],
+                "userAccountControl": "0"})
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
+        self.delete_force(self.ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
+
+# This has to wait until s4 supports it (needs a password module change)
+#        try:
+#            ldb.add({
+#                "dn": "cn=ldaptestcomputer,cn=computers," + self.base_dn,
+#                "objectclass": ["computer"],
+#                "userAccountControl": str(UF_NORMAL_ACCOUNT)})
+#            self.fail()
+#        except LdbError, (num, _):
+#            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
+#        self.delete_force(self.ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
+
+        ldb.add({
+            "dn": "cn=ldaptestcomputer,cn=computers," + self.base_dn,
+            "objectclass": ["computer"],
+            "userAccountControl": str(UF_NORMAL_ACCOUNT | UF_PASSWD_NOTREQD)})
+
+        res1 = ldb.search("cn=ldaptestcomputer,cn=computers," + self.base_dn,
+                          scope=SCOPE_BASE, attrs=["sAMAccountType"])
+        self.assertTrue(len(res1) == 1)
+        self.assertEquals(int(res1[0]["sAMAccountType"][0]),
+          ATYPE_NORMAL_ACCOUNT)
+        self.delete_force(self.ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
+
+        try:
+            ldb.add({
+                "dn": "cn=ldaptestcomputer,cn=computers," + self.base_dn,
+                "objectclass": ["computer"],
+                "userAccountControl": str(UF_TEMP_DUPLICATE_ACCOUNT)})
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_OTHER)
+        self.delete_force(self.ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
+
+        ldb.add({
+            "dn": "cn=ldaptestcomputer,cn=computers," + self.base_dn,
+            "objectclass": ["computer"],
+            "userAccountControl": str(UF_SERVER_TRUST_ACCOUNT)})
+
+        res1 = ldb.search("cn=ldaptestcomputer,cn=computers," + self.base_dn,
+                          scope=SCOPE_BASE, attrs=["sAMAccountType"])
+        self.assertTrue(len(res1) == 1)
+        self.assertEquals(int(res1[0]["sAMAccountType"][0]),
+          ATYPE_WORKSTATION_TRUST)
+        self.delete_force(self.ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
+
+        try:
+            ldb.add({
+                "dn": "cn=ldaptestcomputer,cn=computers," + self.base_dn,
+                "objectclass": ["computer"],
+                "userAccountControl": str(UF_WORKSTATION_TRUST_ACCOUNT)})
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_OBJECT_CLASS_VIOLATION)
+        self.delete_force(self.ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
+
+# This isn't supported yet in s4 - needs ACL module adaption
+#        try:
+#            ldb.add({
+#                "dn": "cn=ldaptestcomputer,cn=computers," + self.base_dn,
+#                "objectclass": ["computer"],
+#                "userAccountControl": str(UF_INTERDOMAIN_TRUST_ACCOUNT)})
+#            self.fail()
+#        except LdbError, (num, _):
+#            self.assertEquals(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
+#        self.delete_force(self.ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
+
+        # Modify operation
+
+        ldb.add({
+            "dn": "cn=ldaptestcomputer,cn=computers," + self.base_dn,
+            "objectclass": ["computer"]})
+
+        # After creation we should have a normal account
+        res1 = ldb.search("cn=ldaptestcomputer,cn=computers," + self.base_dn,
+                          scope=SCOPE_BASE, attrs=["sAMAccountType"])
+        self.assertTrue(len(res1) == 1)
+        self.assertEquals(int(res1[0]["sAMAccountType"][0]),
+          ATYPE_NORMAL_ACCOUNT)
+
+        # As computer you can switch from a normal account to a workstation
+        # or server trust account and back (also swapping between trust
+        # accounts is allowed).
+        # The UF_PASSWD_NOTREQD flag is needed since we haven't requested a
+        # password yet.
+        # With SYSTEM rights you can switch to a interdomain trust account.
+
+        # Invalid attribute
+        try:
+            m = Message()
+            m.dn = Dn(ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
+            m["userAccountControl"] = MessageElement("0",
+              FLAG_MOD_REPLACE, "userAccountControl")
+            ldb.modify(m)
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
+
+# This has to wait until s4 supports it (needs a password module change)
+#        try:
+#            m = Message()
+#            m.dn = Dn(ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
+#            m["userAccountControl"] = MessageElement(
+#              str(UF_NORMAL_ACCOUNT),
+#              FLAG_MOD_REPLACE, "userAccountControl")
+#            ldb.modify(m)
+#        except LdbError, (num, _):
+#            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
+        m["userAccountControl"] = MessageElement(
+          str(UF_NORMAL_ACCOUNT | UF_PASSWD_NOTREQD),
+          FLAG_MOD_REPLACE, "userAccountControl")
+        ldb.modify(m)
+
+        res1 = ldb.search("cn=ldaptestcomputer,cn=computers," + self.base_dn,
+                          scope=SCOPE_BASE, attrs=["sAMAccountType"])
+        self.assertTrue(len(res1) == 1)
+        self.assertEquals(int(res1[0]["sAMAccountType"][0]),
+          ATYPE_NORMAL_ACCOUNT)
+
+        try:
+            m = Message()
+            m.dn = Dn(ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
+            m["userAccountControl"] = MessageElement(
+              str(UF_TEMP_DUPLICATE_ACCOUNT),
+              FLAG_MOD_REPLACE, "userAccountControl")
+            ldb.modify(m)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_OTHER)
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
+        m["userAccountControl"] = MessageElement(
+          str(UF_SERVER_TRUST_ACCOUNT),
+          FLAG_MOD_REPLACE, "userAccountControl")
+        ldb.modify(m)
+
+        res1 = ldb.search("cn=ldaptestcomputer,cn=computers," + self.base_dn,
+                          scope=SCOPE_BASE, attrs=["sAMAccountType"])
+        self.assertTrue(len(res1) == 1)
+        self.assertEquals(int(res1[0]["sAMAccountType"][0]),
+          ATYPE_WORKSTATION_TRUST)
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
+        m["userAccountControl"] = MessageElement(
+          str(UF_NORMAL_ACCOUNT | UF_PASSWD_NOTREQD),
+          FLAG_MOD_REPLACE, "userAccountControl")
+        ldb.modify(m)
+
+        res1 = ldb.search("cn=ldaptestcomputer,cn=computers," + self.base_dn,
+                          scope=SCOPE_BASE, attrs=["sAMAccountType"])
+        self.assertTrue(len(res1) == 1)
+        self.assertEquals(int(res1[0]["sAMAccountType"][0]),
+          ATYPE_NORMAL_ACCOUNT)
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
+        m["userAccountControl"] = MessageElement(
+          str(UF_WORKSTATION_TRUST_ACCOUNT),
+          FLAG_MOD_REPLACE, "userAccountControl")
+        ldb.modify(m)
+
+        res1 = ldb.search("cn=ldaptestcomputer,cn=computers," + self.base_dn,
+                          scope=SCOPE_BASE, attrs=["sAMAccountType"])
+        self.assertTrue(len(res1) == 1)
+        self.assertEquals(int(res1[0]["sAMAccountType"][0]),
+          ATYPE_WORKSTATION_TRUST)
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
+        m["userAccountControl"] = MessageElement(
+          str(UF_NORMAL_ACCOUNT | UF_PASSWD_NOTREQD),
+          FLAG_MOD_REPLACE, "userAccountControl")
+        ldb.modify(m)
+
+        res1 = ldb.search("cn=ldaptestcomputer,cn=computers," + self.base_dn,
+                          scope=SCOPE_BASE, attrs=["sAMAccountType"])
+        self.assertTrue(len(res1) == 1)
+        self.assertEquals(int(res1[0]["sAMAccountType"][0]),
+          ATYPE_NORMAL_ACCOUNT)
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
+        m["userAccountControl"] = MessageElement(
+          str(UF_SERVER_TRUST_ACCOUNT),
+          FLAG_MOD_REPLACE, "userAccountControl")
+        ldb.modify(m)
+
+        res1 = ldb.search("cn=ldaptestcomputer,cn=computers," + self.base_dn,
+                          scope=SCOPE_BASE, attrs=["sAMAccountType"])
+        self.assertTrue(len(res1) == 1)
+        self.assertEquals(int(res1[0]["sAMAccountType"][0]),
+          ATYPE_WORKSTATION_TRUST)
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
+        m["userAccountControl"] = MessageElement(
+          str(UF_WORKSTATION_TRUST_ACCOUNT),
+          FLAG_MOD_REPLACE, "userAccountControl")
+        ldb.modify(m)
+
+        res1 = ldb.search("cn=ldaptestcomputer,cn=computers," + self.base_dn,
+                          scope=SCOPE_BASE, attrs=["sAMAccountType"])
+        self.assertTrue(len(res1) == 1)
+        self.assertEquals(int(res1[0]["sAMAccountType"][0]),
+          ATYPE_WORKSTATION_TRUST)
+
+# This isn't supported yet in s4 - needs ACL module adaption
+#        try:
+#            m = Message()
+#            m.dn = Dn(ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
+#            m["userAccountControl"] = MessageElement(
+#              str(UF_INTERDOMAIN_TRUST_ACCOUNT),
+#              FLAG_MOD_REPLACE, "userAccountControl")
+#            ldb.modify(m)
+#            self.fail()
+#        except LdbError, (num, _):
+#            self.assertEquals(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
+
+        self.delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+        self.delete_force(self.ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
 
 if not "://" in host:
     if os.path.isfile(host):
