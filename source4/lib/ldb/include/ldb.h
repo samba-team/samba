@@ -353,6 +353,10 @@ char *ldb_binary_encode_string(TALLOC_CTX *mem_ctx, const char *string);
 */
 typedef int (*ldb_attr_handler_t)(struct ldb_context *, TALLOC_CTX *mem_ctx, const struct ldb_val *, struct ldb_val *);
 typedef int (*ldb_attr_comparison_t)(struct ldb_context *, TALLOC_CTX *mem_ctx, const struct ldb_val *, const struct ldb_val *);
+struct ldb_schema_attribute;
+typedef int (*ldb_attr_operator_t)(struct ldb_context *, enum ldb_parse_op operation,
+				   const struct ldb_schema_attribute *a,
+				   const struct ldb_val *, const struct ldb_val *, bool *matched);
 
 /*
   attribute handler structure
@@ -370,6 +374,7 @@ struct ldb_schema_syntax {
 	ldb_attr_handler_t ldif_write_fn;
 	ldb_attr_handler_t canonicalise_fn;
 	ldb_attr_comparison_t comparison_fn;
+	ldb_attr_operator_t operator_fn;
 };
 
 struct ldb_schema_attribute {

@@ -553,8 +553,16 @@ static int msg_delete_element(struct ldb_module *module,
 	a = ldb_schema_attribute_by_name(ldb, el->name);
 
 	for (i=0;i<el->num_values;i++) {
-		if (a->syntax->comparison_fn(ldb, ldb,
-					     &el->values[i], val) == 0) {
+		bool matched;
+		if (a->syntax->operator_fn) {
+			ret = a->syntax->operator_fn(ldb, LDB_OP_EQUALITY, a,
+						     &el->values[i], val, &matched);
+			if (ret != LDB_SUCCESS) return ret;
+		} else {
+			matched = (a->syntax->comparison_fn(ldb, ldb,
+							    &el->values[i], val) == 0);
+		}
+		if (matched) {
 			if (el->num_values == 1) {
 				return msg_delete_attribute(module, ldb, msg, name);
 			}

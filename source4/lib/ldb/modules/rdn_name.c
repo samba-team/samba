@@ -147,9 +147,16 @@ static int rdn_name_add(struct ldb_module *module, struct ldb_request *req)
 		}
 		/* normalise attribute value */
 		for (i = 0; i < attribute->num_values; i++) {
-			ret = a->syntax->comparison_fn(ldb, msg,
-					&rdn_val, &attribute->values[i]);
-			if (ret == 0) {
+			bool matched;
+			if (a->syntax->operator_fn) {
+				ret = a->syntax->operator_fn(ldb, LDB_OP_EQUALITY, a,
+							     &rdn_val, &attribute->values[i], &matched);
+				if (ret != LDB_SUCCESS) return ret;
+			} else {
+				matched = (a->syntax->comparison_fn(ldb, msg,
+								    &rdn_val, &attribute->values[i]) == 0);
+			}
+			if (matched) {
 				/* overwrite so it matches in case */
 				attribute->values[i] = rdn_val;
 				break;
