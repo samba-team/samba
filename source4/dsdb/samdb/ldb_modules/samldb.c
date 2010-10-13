@@ -24,7 +24,7 @@
  *
  *  Component: ldb samldb module
  *
- *  Description: add embedded user/group creation functionality
+ *  Description: various internal DSDB triggers - most for SAM specific objects
  *
  *  Author: Simo Sorce
  */
@@ -166,14 +166,14 @@ static int samldb_check_sAMAccountName(struct samldb_ctx *ac)
 {
 	struct ldb_context *ldb = ldb_module_get_ctx(ac->module);
 	const char *name;
-        int ret;
+	int ret;
 
-        if (ldb_msg_find_element(ac->msg, "sAMAccountName") == NULL) {
-                ret = samldb_generate_sAMAccountName(ldb, ac->msg);
-                if (ret != LDB_SUCCESS) {
-                        return ret;
-                }
-        }
+	if (ldb_msg_find_element(ac->msg, "sAMAccountName") == NULL) {
+		ret = samldb_generate_sAMAccountName(ldb, ac->msg);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+	}
 
 	name = ldb_msg_find_attr_as_string(ac->msg, "sAMAccountName", NULL);
 	if (name == NULL) {
@@ -321,7 +321,7 @@ static int samldb_find_for_defaultObjectCategory(struct samldb_ctx *ac)
 	struct ldb_context *ldb = ldb_module_get_ctx(ac->module);
 	struct ldb_result *res;
 	const char *no_attrs[] = { NULL };
-        int ret;
+	int ret;
 
 	ac->res_dn = NULL;
 
