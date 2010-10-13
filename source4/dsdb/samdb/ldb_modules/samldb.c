@@ -830,6 +830,12 @@ static int samldb_objectclass_trigger(struct samldb_ctx *ac)
 			/* Step 1.3: "userAccountControl" -> "sAMAccountType" mapping */
 			user_account_control = strtoul((const char *)el->values[0].data,
 						       NULL, 0);
+
+			/* Temporary duplicate accounts aren't allowed */
+			if ((user_account_control & UF_TEMP_DUPLICATE_ACCOUNT) != 0) {
+				return LDB_ERR_OTHER;
+			}
+
 			account_type = ds_uf2atype(user_account_control);
 			if (account_type == 0) {
 				ldb_set_errstring(ldb, "samldb: Unrecognized account type!");
@@ -1386,6 +1392,12 @@ static int samldb_modify(struct ldb_module *module, struct ldb_request *req)
 
 		user_account_control = strtoul((const char *)el->values[0].data,
 			NULL, 0);
+
+		/* Temporary duplicate accounts aren't allowed */
+		if ((user_account_control & UF_TEMP_DUPLICATE_ACCOUNT) != 0) {
+			return LDB_ERR_OTHER;
+		}
+
 		account_type = ds_uf2atype(user_account_control);
 		if (account_type == 0) {
 			ldb_set_errstring(ldb, "samldb: Unrecognized account type!");
