@@ -702,7 +702,7 @@ static int get_vacuum_interval(struct ctdb_db_context *ctdb_db)
 		       flags,
 		       O_RDWR|O_CREAT, 0600);
 	if (!tdb) {
-		DEBUG(DEBUG_ERR,("Unable to open/create database %s using default interval\n", vac_dbname));
+		DEBUG(DEBUG_ERR,("Unable to open/create database %s using default interval. Errno : %s (%d)\n", vac_dbname, strerror(errno), errno));
 		talloc_free(tmp_ctx);
 		return interval;
 	}
