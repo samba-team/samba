@@ -96,7 +96,7 @@ _PUBLIC_ NTSTATUS torture_temp_dir(struct torture_context *tctx,
 
 static int local_deltree(const char *path)
 {
-	int ret;
+	int ret = 0;
 	struct dirent *dirent;
 	DIR *dir = opendir(path);
 	if (!dir) {
