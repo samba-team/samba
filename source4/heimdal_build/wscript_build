@@ -157,10 +157,9 @@ def HEIMDAL_AUTOPROTO_PRIVATE(header, source):
     HEIMDAL_AUTOPROTO(header, source, options='-q -P comment -p')
 
 
-def HEIMDAL_LIBRARY(libname, source, deps,
+def HEIMDAL_LIBRARY(libname, source, deps, vnum,
                   includes='',
                   cflags='',
-                  vnum=None,
                   autoproto=None,
                   autoproto_options=None,
                   autoproto_extra='',
@@ -544,6 +543,7 @@ HEIMDAL_LIBRARY('roken',
     ROKEN_SOURCE,
     includes='../heimdal/lib/roken ../heimdal/include ../../lib/socket_wrapper',
     deps='resolv UID_WRAPPER util',
+    vnum='19.0.1',
     )
 
 
@@ -553,6 +553,7 @@ HEIMDAL_LIBRARY('kdc',
                     autoproto='../heimdal/kdc/kdc-protos.h',
                     autoproto_private='../heimdal/kdc/kdc-private.h',
                     deps='roken krb5 hdb HEIMDAL_HEIM_ASN1 HEIMDAL_DIGEST_ASN1 HEIMDAL_KX509_ASN1 heimntlm HEIMDAL_HCRYPTO com_err',
+                    vnum='2.0.0',
                     )
 
 
@@ -561,6 +562,7 @@ HEIMDAL_LIBRARY('heimntlm',
                     includes='../heimdal/lib/ntlm',
                     autoproto='../heimdal/lib/ntlm/heimntlm-protos.h',
                     deps='roken HEIMDAL_HCRYPTO krb5',
+                    vnum='1.0.1',
     )
 
 
@@ -580,6 +582,7 @@ HEIMDAL_LIBRARY('hdb',
                     autoproto='../heimdal/lib/hdb/hdb-protos.h',
                     autoproto_private='../heimdal/lib/hdb/hdb-private.h',
                     deps='HDB_LDB krb5 HEIMDAL_HDB_KEYS roken HEIMDAL_HCRYPTO com_err HEIMDAL_HDB_ASN1',
+                    vnum='11.0.2',
     )
 
 
@@ -626,6 +629,7 @@ HEIMDAL_LIBRARY('gssapi',
 ../heimdal/lib/gssapi/mech/gss_set_cred_option.c  ../heimdal/lib/gssapi/mech/gss_pseudo_random.c gssapi-glue.c''',
     includes='../heimdal/lib/gssapi ../heimdal/lib/gssapi/gssapi ../heimdal/lib/gssapi/spnego ../heimdal/lib/gssapi/krb5 ../heimdal/lib/gssapi/mech',
     deps='HEIMDAL_HCRYPTO HEIMDAL_HEIM_ASN1 HEIMDAL_SPNEGO_ASN1 HEIMDAL_GSSAPI_ASN1 roken krb5 com_err',
+    vnum='2.0.0',
     )
 
 
@@ -693,6 +697,7 @@ HEIMDAL_LIBRARY('krb5',
                     autoproto_extra='../heimdal/lib/krb5/expand_path.c ../heimdal/lib/krb5/plugin.c',
                     autoproto_private='../heimdal/lib/krb5/krb5-private.h',
             deps='roken HEIMDAL_PKINIT_ASN1 wind HEIMDAL_KRB5_ASN1 hx509 HEIMDAL_HCRYPTO LIBSAMBA-HOSTCONFIG intl com_err HEIMDAL_CONFIG',
+            vnum='26.0.0',
                     )
 
 
@@ -724,6 +729,7 @@ HEIMDAL_LIBRARY('hx509',
     '../heimdal/lib/hx509/ca.c ../heimdal/lib/hx509/cert.c ../heimdal/lib/hx509/cms.c ../heimdal/lib/hx509/collector.c ../heimdal/lib/hx509/crypto.c ../heimdal/lib/hx509/error.c ../heimdal/lib/hx509/env.c ../heimdal/lib/hx509/file.c ../heimdal/lib/hx509/keyset.c ../heimdal/lib/hx509/ks_dir.c ../heimdal/lib/hx509/ks_file.c ../heimdal/lib/hx509/ks_keychain.c ../heimdal/lib/hx509/ks_mem.c ../heimdal/lib/hx509/ks_null.c ../heimdal/lib/hx509/ks_p11.c ../heimdal/lib/hx509/ks_p12.c ../heimdal/lib/hx509/lock.c ../heimdal/lib/hx509/name.c ../heimdal/lib/hx509/peer.c ../heimdal/lib/hx509/print.c ../heimdal/lib/hx509/req.c ../heimdal/lib/hx509/revoke.c ../heimdal/lib/hx509/sel.c ../heimdal/lib/hx509/hx509_err.c ../heimdal/lib/hx509/sel-lex.c ../heimdal/lib/hx509/sel-gram.c',
     includes='../heimdal/lib/hx509',
     deps='roken com_err HEIMDAL_HEIM_ASN1 HEIMDAL_HCRYPTO HEIMDAL_CMS_ASN1 HEIMDAL_RFC2459_ASN1 HEIMDAL_OCSP_ASN1 HEIMDAL_PKCS8_ASN1 HEIMDAL_PKCS9_ASN1 HEIMDAL_PKCS12_ASN1 HEIMDAL_PKINIT_ASN1 HEIMDAL_PKCS10_ASN1 wind HEIMDAL_KRB5_ASN1',
+    vnum='5.0.0',
     )
 
 
@@ -731,6 +737,7 @@ HEIMDAL_LIBRARY('wind',
     '../heimdal/lib/wind/wind_err.c ../heimdal/lib/wind/stringprep.c ../heimdal/lib/wind/errorlist.c ../heimdal/lib/wind/errorlist_table.c ../heimdal/lib/wind/normalize.c ../heimdal/lib/wind/normalize_table.c ../heimdal/lib/wind/combining.c ../heimdal/lib/wind/combining_table.c ../heimdal/lib/wind/utf8.c ../heimdal/lib/wind/bidi.c ../heimdal/lib/wind/bidi_table.c ../heimdal/lib/wind/ldap.c ../heimdal/lib/wind/map.c ../heimdal/lib/wind/map_table.c',
     includes='../heimdal/lib/wind',
     deps='roken com_err',
+    vnum='0.0.0',
     )
 
 HEIMDAL_SUBSYSTEM('ROKEN_HOSTCC',
