@@ -1346,6 +1346,10 @@ static int samldb_modify(struct ldb_module *module, struct ldb_request *req)
 		}
 
 		account_type =  ds_gtype2atype(group_type);
+		if (account_type == 0) {
+			ldb_set_errstring(ldb, "samldb: Unrecognized account type!");
+			return LDB_ERR_UNWILLING_TO_PERFORM;
+		}
 		ret = samdb_msg_add_uint(ldb, ac->msg, ac->msg,
 					 "sAMAccountType",
 					 account_type);
@@ -1383,6 +1387,10 @@ static int samldb_modify(struct ldb_module *module, struct ldb_request *req)
 		user_account_control = strtoul((const char *)el->values[0].data,
 			NULL, 0);
 		account_type = ds_uf2atype(user_account_control);
+		if (account_type == 0) {
+			ldb_set_errstring(ldb, "samldb: Unrecognized account type!");
+			return LDB_ERR_UNWILLING_TO_PERFORM;
+		}
 		ret = samdb_msg_add_uint(ldb, ac->msg, ac->msg,
 					 "sAMAccountType",
 					 account_type);
