@@ -103,7 +103,7 @@ static int ldb_match_present(struct ldb_context *ldb,
 	}
 
 	if (a->syntax->operator_fn) {
-		int i;
+		unsigned int i;
 		for (i = 0; i < el->num_values; i++) {
 			int ret = a->syntax->operator_fn(ldb, LDB_OP_PRESENT, a, &el->values[i], NULL, matched);
 			if (ret != LDB_SUCCESS) return ret;
