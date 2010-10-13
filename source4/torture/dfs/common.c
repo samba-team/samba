@@ -36,6 +36,7 @@ NTSTATUS dfs_cli_do_call(struct smbcli_tree *tree,
 	uint16_t setup = TRANSACT2_GET_DFS_REFERRAL;
 	struct smb_trans2 trans;
 
+	ZERO_STRUCT(trans);
 	trans.in.max_param = 0;
 	trans.in.max_data = 4096;
 	trans.in.max_setup = 0;
@@ -44,7 +45,6 @@ NTSTATUS dfs_cli_do_call(struct smbcli_tree *tree,
 	trans.in.setup_count = 1;
 	trans.in.setup = &setup;
 	trans.in.trans_name = NULL;
-	ZERO_STRUCT(trans.out);
 
 	ndr_err = ndr_push_struct_blob(&trans.in.params, tree,
 			&ref->in.req,
