@@ -163,6 +163,7 @@ def HEIMDAL_LIBRARY(libname, source, deps,
                   vnum=None,
                   autoproto=None,
                   autoproto_options=None,
+                  autoproto_extra='',
                   autoproto_private=None,
                   is_bundled=True):
     '''define a Heimdal library'''
@@ -211,10 +212,10 @@ def HEIMDAL_LIBRARY(libname, source, deps,
         )
 
     if autoproto is not None:
-        HEIMDAL_AUTOPROTO(autoproto, source,
+        HEIMDAL_AUTOPROTO(autoproto, source + ' ' + autoproto_extra,
             options=autoproto_options)
     if autoproto_private is not None:
-        HEIMDAL_AUTOPROTO_PRIVATE(autoproto_private, source)
+        HEIMDAL_AUTOPROTO_PRIVATE(autoproto_private, source + ' ' + autoproto_extra)
 
 
 def HEIMDAL_GENERATOR(name, rule, source='', target='',
@@ -645,6 +646,15 @@ if not bld.CONFIG_SET('HAVE_ERR_H'):
         target = '../heimdal/lib/roken/err.h',
         )
 
+# expand_path.c needs some of the install paths
+HEIMDAL_SUBSYSTEM('HEIMDAL_CONFIG',
+                  '../heimdal/lib/krb5/expand_path.c ../heimdal/lib/krb5/plugin.c',
+                  includes='../heimdal/lib/krb5 ../heimdal/lib/asn1',
+                  cflags = bld.dynconfig_cflags('LIBDIR BINDIR LIBEXECDIR SBINDIR'),
+                  deps='HEIMDAL_HCRYPTO wind hx509'
+                  )
+
+
 HEIMDAL_LIBRARY('krb5',
                     bld.SUBDIR('../heimdal/lib/krb5/',
                                '''acache.c add_et_list.c
@@ -656,7 +666,6 @@ HEIMDAL_LIBRARY('krb5',
                                copy_host_realm.c crc.c creds.c
                                crypto.c data.c eai_to_heim_errno.c
                                error_string.c expand_hostname.c
-                               expand_path.c
                                fcache.c free.c free_host_realm.c
                                generate_seq_number.c generate_subkey.c
                                get_addrs.c get_cred.c
@@ -670,7 +679,7 @@ HEIMDAL_LIBRARY('krb5',
                                mcache.c misc.c mk_error.c mk_priv.c
                                mk_rep.c mk_req.c mk_req_ext.c
                                mit_glue.c n-fold.c padata.c pkinit.c
-                               plugin.c principal.c prog_setup.c pac.c
+                               principal.c prog_setup.c pac.c
                                pcache.c prompter_posix.c rd_cred.c rd_error.c
                                rd_priv.c rd_rep.c rd_req.c replay.c
                                send_to_kdc.c set_default_realm.c
@@ -681,9 +690,9 @@ HEIMDAL_LIBRARY('krb5',
                     includes='../heimdal/lib/krb5 ../heimdal/lib/asn1',
                     autoproto='../heimdal/lib/krb5/krb5-protos.h',
                     autoproto_options='-E KRB5_LIB -q -P comment -o',
+                    autoproto_extra='../heimdal/lib/krb5/expand_path.c ../heimdal/lib/krb5/plugin.c',
                     autoproto_private='../heimdal/lib/krb5/krb5-private.h',
-            cflags = bld.dynconfig_cflags(),
-            deps='roken HEIMDAL_PKINIT_ASN1 wind HEIMDAL_KRB5_ASN1 hx509 HEIMDAL_HCRYPTO LIBSAMBA-HOSTCONFIG intl com_err',
+            deps='roken HEIMDAL_PKINIT_ASN1 wind HEIMDAL_KRB5_ASN1 hx509 HEIMDAL_HCRYPTO LIBSAMBA-HOSTCONFIG intl com_err HEIMDAL_CONFIG',
                     )
 
 

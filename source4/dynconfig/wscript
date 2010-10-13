@@ -116,10 +116,12 @@ def configure(conf):
         sys.exit(1)
 
 
-def dynconfig_cflags(bld):
+def dynconfig_cflags(bld, list=None):
     '''work out the extra CFLAGS for dynconfig.c'''
     cflags = []
     for f in dyn_cflags.keys():
+        if list and not f in list:
+            continue
         if not Options.is_install and f == 'MODULESDIR':
             # we want binaries run from the source dir to use the current
             # modules, not the installed ones
