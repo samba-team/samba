@@ -161,7 +161,7 @@ static bool net_drs_showrepl_print_dc_info(struct net_drs_context *drs_ctx)
 	/* Site-name\DC-name */
 	d_printf("%s\\%s\n", site_name, dc_name);
 	/* DSA Options */
-	options = samdb_result_uint(ntds_msgs[0], "options", 0);
+	options = ldb_msg_find_attr_as_uint(ntds_msgs[0], "options", 0);
 	if (options) {
 		/* TODO: Print options as string in IS_GC... etc form */
 		d_printf("DSA Options: 0x%08X\n", options);
@@ -169,7 +169,7 @@ static bool net_drs_showrepl_print_dc_info(struct net_drs_context *drs_ctx)
 		d_printf("DSA Options: (none)\n");
 	}
 	/* Site Options */
-	options = samdb_result_uint(site_msgs[0], "options", 0);
+	options = ldb_msg_find_attr_as_uint(site_msgs[0], "options", 0);
 	if (options) {
 		/* TODO: Print options in string */
 		d_printf("DSA Options: 0x%08X\n", options);
@@ -383,7 +383,7 @@ static bool net_drs_showrepl_print_connection_objects(struct net_drs_context *dr
 	NET_DRS_CHECK_GOTO(dn, failed, "No dsServiceName value in RootDSE!\n");
 
 	/* DNS host name for target DC */
-	dc_dns_name = samdb_result_string(drs_ctx->ldap.rootdse	, "dnsHostName", NULL);
+	dc_dns_name = ldb_msg_find_attr_as_string(drs_ctx->ldap.rootdse	, "dnsHostName", NULL);
 	NET_DRS_CHECK_GOTO(dc_dns_name, failed, "No dsServiceName value in dnsHostName!\n");
 
 	/* Enum. Connection objects under NTDS Settings */
@@ -404,17 +404,17 @@ static bool net_drs_showrepl_print_connection_objects(struct net_drs_context *dr
 
 		d_printf("Connection --\n");
 		d_printf("\tConnection name : %s\n",
-			 samdb_result_string(conn_msg, "name", NULL));
+			 ldb_msg_find_attr_as_string(conn_msg, "name", NULL));
 		d_printf("\tEnabled         : %s\n",
-			 samdb_result_string(conn_msg, "enabledConnection", "TRUE"));
+			 ldb_msg_find_attr_as_string(conn_msg, "enabledConnection", "TRUE"));
 		d_printf("\tServer DNS name : %s\n", dc_dns_name);
 		d_printf("\tServer DN  name : %s\n",
-			 samdb_result_string(conn_msg, "fromServer", NULL));
-		transport_type = samdb_result_string(conn_msg, "transportType", NULL);
+			 ldb_msg_find_attr_as_string(conn_msg, "fromServer", NULL));
+		transport_type = ldb_msg_find_attr_as_string(conn_msg, "transportType", NULL);
 		d_printf("\t\tTransportType: %s\n",
 		         net_drs_transport_type_str(drs_ctx, transport_type));
 		/* TODO: print Connection options in friendly format */
-		options = samdb_result_uint(conn_msg, "options", 0);
+		options = ldb_msg_find_attr_as_uint(conn_msg, "options", 0);
 		d_printf("\t\toptions:  0x%08X\n", options);
 
 		/* print replicated NCs for this connection */

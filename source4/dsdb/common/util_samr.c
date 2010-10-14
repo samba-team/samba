@@ -196,7 +196,7 @@ NTSTATUS dsdb_add_user(struct ldb_context *ldb,
 
 	/* Change the account control to be the correct account type.
 	 * The default is for a workstation account */
-	user_account_control = samdb_result_uint(msg, "userAccountControl", 0);
+	user_account_control = ldb_msg_find_attr_as_uint(msg, "userAccountControl", 0);
 	user_account_control = (user_account_control &
 				~(UF_NORMAL_ACCOUNT |
 				  UF_INTERDOMAIN_TRUST_ACCOUNT |

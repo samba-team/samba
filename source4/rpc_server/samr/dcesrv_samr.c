@@ -43,13 +43,13 @@
 /* these query macros make samr_Query[User|Group|Alias]Info a bit easier to read */
 
 #define QUERY_STRING(msg, field, attr) \
-	info->field.string = samdb_result_string(msg, attr, "");
+	info->field.string = ldb_msg_find_attr_as_string(msg, attr, "");
 #define QUERY_UINT(msg, field, attr) \
-	info->field = samdb_result_uint(msg, attr, 0);
+	info->field = ldb_msg_find_attr_as_uint(msg, attr, 0);
 #define QUERY_RID(msg, field, attr) \
 	info->field = samdb_result_rid_from_sid(mem_ctx, msg, attr, 0);
 #define QUERY_UINT64(msg, field, attr) \
-	info->field = samdb_result_uint64(msg, attr, 0);
+	info->field = ldb_msg_find_attr_as_uint64(msg, attr, 0);
 #define QUERY_APASSC(msg, field, attr) \
 	info->field = samdb_result_allow_password_change(sam_ctx, mem_ctx, \
 							 a_state->domain_state->domain_dn, msg, attr);
@@ -462,15 +462,15 @@ static NTSTATUS dcesrv_samr_info_DomInfo1(struct samr_domain_state *state,
 				   struct samr_DomInfo1 *info)
 {
 	info->min_password_length =
-		samdb_result_uint(dom_msgs[0], "minPwdLength", 0);
+		ldb_msg_find_attr_as_uint(dom_msgs[0], "minPwdLength", 0);
 	info->password_history_length =
-		samdb_result_uint(dom_msgs[0], "pwdHistoryLength", 0);
+		ldb_msg_find_attr_as_uint(dom_msgs[0], "pwdHistoryLength", 0);
 	info->password_properties = 
-		samdb_result_uint(dom_msgs[0], "pwdProperties", 0);
+		ldb_msg_find_attr_as_uint(dom_msgs[0], "pwdProperties", 0);
 	info->max_password_age = 
-		samdb_result_int64(dom_msgs[0], "maxPwdAge", 0);
+		ldb_msg_find_attr_as_int64(dom_msgs[0], "maxPwdAge", 0);
 	info->min_password_age = 
-		samdb_result_int64(dom_msgs[0], "minPwdAge", 0);
+		ldb_msg_find_attr_as_int64(dom_msgs[0], "minPwdAge", 0);
 
 	return NT_STATUS_OK;
 }
@@ -495,7 +495,7 @@ static NTSTATUS dcesrv_samr_info_DomGeneralInformation(struct samr_domain_state 
 	info->force_logoff_time = ldb_msg_find_attr_as_uint64(dom_msgs[0], "forceLogoff", 
 							    0x8000000000000000LL);
 
-	info->oem_information.string = samdb_result_string(dom_msgs[0], "oEMInformation", NULL);
+	info->oem_information.string = ldb_msg_find_attr_as_string(dom_msgs[0], "oEMInformation", NULL);
 	info->domain_name.string  = state->domain_name;
 
 	info->sequence_num = ldb_msg_find_attr_as_uint64(dom_msgs[0], "modifiedCount", 
@@ -554,7 +554,7 @@ static NTSTATUS dcesrv_samr_info_DomOEMInformation(struct samr_domain_state *sta
 				    struct ldb_message **dom_msgs,
 				   struct samr_DomOEMInformation *info)
 {
-	info->oem_information.string = samdb_result_string(dom_msgs[0], "oEMInformation", NULL);
+	info->oem_information.string = ldb_msg_find_attr_as_string(dom_msgs[0], "oEMInformation", NULL);
 
 	return NT_STATUS_OK;
 }
@@ -1119,7 +1119,7 @@ static NTSTATUS dcesrv_samr_EnumDomainGroups(struct dcesrv_call_state *dce_call,
 		entries[count].idx =
 			group_sid->sub_auths[group_sid->num_auths-1];
 		entries[count].name.string =
-			samdb_result_string(res[i], "sAMAccountName", "");
+			ldb_msg_find_attr_as_string(res[i], "sAMAccountName", "");
 		count += 1;
 	}
 
@@ -1310,7 +1310,7 @@ static NTSTATUS dcesrv_samr_EnumDomainUsers(struct dcesrv_call_state *dce_call, 
 		}
 		entries[count].idx = samdb_result_rid_from_sid(mem_ctx, res[i],
 							       "objectSid", 0);
-		entries[count].name.string = samdb_result_string(res[i],
+		entries[count].name.string = ldb_msg_find_attr_as_string(res[i],
 								 "sAMAccountName", "");
 		count += 1;
 	}
@@ -1474,7 +1474,7 @@ static NTSTATUS dcesrv_samr_EnumDomainAliases(struct dcesrv_call_state *dce_call
 		entries[count].idx =
 			alias_sid->sub_auths[alias_sid->num_auths-1];
 		entries[count].name.string =
-			samdb_result_string(res[i], "sAMAccountName", "");
+			ldb_msg_find_attr_as_string(res[i], "sAMAccountName", "");
 		count += 1;
 	}
 
@@ -1651,7 +1651,7 @@ static NTSTATUS dcesrv_samr_LookupNames(struct dcesrv_call_state *dce_call, TALL
 			continue;
 		}
 		
-		atype = samdb_result_uint(res[0], "sAMAccountType", 0);
+		atype = ldb_msg_find_attr_as_uint(res[0], "sAMAccountType", 0);
 		if (atype == 0) {
 			status = STATUS_SOME_UNMAPPED;
 			continue;
@@ -1769,7 +1769,7 @@ static NTSTATUS dcesrv_samr_OpenGroup(struct dcesrv_call_state *dce_call, TALLOC
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
-	groupname = samdb_result_string(msgs[0], "sAMAccountName", NULL);
+	groupname = ldb_msg_find_attr_as_string(msgs[0], "sAMAccountName", NULL);
 	if (groupname == NULL) {
 		DEBUG(0,("sAMAccountName field missing for sid %s\n", 
 			 dom_sid_string(mem_ctx, sid)));
@@ -2233,7 +2233,7 @@ static NTSTATUS dcesrv_samr_OpenAlias(struct dcesrv_call_state *dce_call, TALLOC
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
-	alias_name = samdb_result_string(msgs[0], "sAMAccountName", NULL);
+	alias_name = ldb_msg_find_attr_as_string(msgs[0], "sAMAccountName", NULL);
 	if (alias_name == NULL) {
 		DEBUG(0,("sAMAccountName field missing for sid %s\n", 
 			 dom_sid_string(mem_ctx, sid)));
@@ -2620,7 +2620,7 @@ static NTSTATUS dcesrv_samr_OpenUser(struct dcesrv_call_state *dce_call, TALLOC_
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
-	account_name = samdb_result_string(msgs[0], "sAMAccountName", NULL);
+	account_name = ldb_msg_find_attr_as_string(msgs[0], "sAMAccountName", NULL);
 	if (account_name == NULL) {
 		DEBUG(0,("sAMAccountName field missing for sid %s\n", 
 			 dom_sid_string(mem_ctx, sid)));
@@ -3723,12 +3723,12 @@ static NTSTATUS dcesrv_samr_QueryDisplayInfo(struct dcesrv_call_state *dce_call,
 							res[i], 
 							d_state->domain_dn);
 			entriesGeneral[count].account_name.string =
-				samdb_result_string(res[i],
+				ldb_msg_find_attr_as_string(res[i],
 						    "sAMAccountName", "");
 			entriesGeneral[count].full_name.string =
-				samdb_result_string(res[i], "displayName", "");
+				ldb_msg_find_attr_as_string(res[i], "displayName", "");
 			entriesGeneral[count].description.string =
-				samdb_result_string(res[i], "description", "");
+				ldb_msg_find_attr_as_string(res[i], "description", "");
 			break;
 		case 2:
 			entriesFull[count].idx = count + 1;
@@ -3741,10 +3741,10 @@ static NTSTATUS dcesrv_samr_QueryDisplayInfo(struct dcesrv_call_state *dce_call,
 							res[i], 
 							d_state->domain_dn) | ACB_NORMAL;
 			entriesFull[count].account_name.string =
-				samdb_result_string(res[i], "sAMAccountName",
+				ldb_msg_find_attr_as_string(res[i], "sAMAccountName",
 						    "");
 			entriesFull[count].description.string =
-				samdb_result_string(res[i], "description", "");
+				ldb_msg_find_attr_as_string(res[i], "description", "");
 			break;
 		case 3:
 			entriesFullGroup[count].idx = count + 1;
@@ -3754,16 +3754,16 @@ static NTSTATUS dcesrv_samr_QueryDisplayInfo(struct dcesrv_call_state *dce_call,
 			entriesFullGroup[count].acct_flags
 				= SE_GROUP_MANDATORY | SE_GROUP_ENABLED_BY_DEFAULT | SE_GROUP_ENABLED;
 			entriesFullGroup[count].account_name.string =
-				samdb_result_string(res[i], "sAMAccountName",
+				ldb_msg_find_attr_as_string(res[i], "sAMAccountName",
 						    "");
 			entriesFullGroup[count].description.string =
-				samdb_result_string(res[i], "description", "");
+				ldb_msg_find_attr_as_string(res[i], "description", "");
 			break;
 		case 4:
 		case 5:
 			entriesAscii[count].idx = count + 1;
 			entriesAscii[count].account_name.string =
-				samdb_result_string(res[i], "sAMAccountName",
+				ldb_msg_find_attr_as_string(res[i], "sAMAccountName",
 						    "");
 			break;
 		}
@@ -4118,9 +4118,9 @@ static NTSTATUS dcesrv_samr_GetDomPwInfo(struct dcesrv_call_state *dce_call, TAL
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
-	r->out.info->min_password_length = samdb_result_uint(msgs[0],
+	r->out.info->min_password_length = ldb_msg_find_attr_as_uint(msgs[0],
 		"minPwdLength", 0);
-	r->out.info->password_properties = samdb_result_uint(msgs[0],
+	r->out.info->password_properties = ldb_msg_find_attr_as_uint(msgs[0],
 		"pwdProperties", 1);
 
 	talloc_free(msgs);

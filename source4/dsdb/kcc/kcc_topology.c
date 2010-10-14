@@ -262,8 +262,8 @@ static int kcctpl_sort_bridgeheads(const void *bridgehead1,
 	bh1 = (const struct ldb_message *) bridgehead1;
 	bh2 = (const struct ldb_message *) bridgehead2;
 
-	bh1_opts = samdb_result_int64(bh1, "options", 0);
-	bh2_opts = samdb_result_int64(bh2, "options", 0);
+	bh1_opts = ldb_msg_find_attr_as_int64(bh1, "options", 0);
+	bh2_opts = ldb_msg_find_attr_as_int64(bh2, "options", 0);
 
 	cmp_gc = (bh1_opts & NTDSDSA_OPT_IS_GC) -
 		 (bh2_opts & NTDSDSA_OPT_IS_GC);
@@ -618,9 +618,9 @@ static NTSTATUS kcctpl_create_edge(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 		edge->vertex_ids.data[i] = guid;
 	}
 
-	edge->repl_info.cost = samdb_result_int64(site_link, "cost", 0);
-	edge->repl_info.options = samdb_result_int64(site_link, "options", 0);
-	edge->repl_info.interval = samdb_result_int64(site_link,
+	edge->repl_info.cost = ldb_msg_find_attr_as_int64(site_link, "cost", 0);
+	edge->repl_info.options = ldb_msg_find_attr_as_int64(site_link, "options", 0);
+	edge->repl_info.interval = ldb_msg_find_attr_as_int64(site_link,
 						      "replInterval", 0);
 	/* TODO: edge->repl_info.schedule = site_link!schedule */
 	edge->type = type;
@@ -850,7 +850,7 @@ static NTSTATUS kcctpl_setup_graph(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 		talloc_free(tmp_ctx);
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
-	site_opts = samdb_result_int64(site, "options", 0);
+	site_opts = ldb_msg_find_attr_as_int64(site, "options", 0);
 
 	transports_dn = kcctpl_transports_dn(ldb, tmp_ctx);
 	if (!transports_dn) {
@@ -918,7 +918,7 @@ static NTSTATUS kcctpl_setup_graph(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 			graph->edges.count++;
 		}
 
-		transport_opts = samdb_result_int64(transport, "options", 0);
+		transport_opts = ldb_msg_find_attr_as_int64(transport, "options", 0);
 		if (!(transport_opts & NTDSTRANSPORT_OPT_BRIDGES_REQUIRED) &&
 		    !(site_opts & NTDSSETTINGS_OPT_W2K3_BRIDGES_REQUIRED)) {
 			struct kcctpl_multi_edge_set *edge_set, *new_data;
@@ -1040,7 +1040,7 @@ static NTSTATUS kcctpl_bridgehead_dc_failed(struct ldb_context *ldb,
 
 	settings = res->msgs[0];
 
-	settings_opts = samdb_result_int64(settings, "options", 0);
+	settings_opts = ldb_msg_find_attr_as_int64(settings, "options", 0);
 	if (settings_opts & NTDSSETTINGS_OPT_IS_TOPL_DETECT_STALE_DISABLED) {
 		failed = false;
 	} else if (true) { /* TODO: how to get kCCFailedLinks and
@@ -1155,7 +1155,7 @@ static NTSTATUS kcctpl_get_all_bridgehead_dcs(struct kccsrv_service *service,
 
 	el = ldb_msg_find_element(transport, "bridgeheadServerListBL");
 
-	transport_name = samdb_result_string(transport, "name", NULL);
+	transport_name = ldb_msg_find_attr_as_string(transport, "name", NULL);
 	if (!transport_name) {
 		DEBUG(1, (__location__ ": failed to find name attribute of "
 			  "object %s\n", ldb_dn_get_linearized(transport->dn)));
@@ -1164,7 +1164,7 @@ static NTSTATUS kcctpl_get_all_bridgehead_dcs(struct kccsrv_service *service,
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
-	transport_address_attr = samdb_result_string(transport,
+	transport_address_attr = ldb_msg_find_attr_as_string(transport,
 						     "transportAddressAttribute",
 						     NULL);
 	if (!transport_address_attr) {
@@ -1176,7 +1176,7 @@ static NTSTATUS kcctpl_get_all_bridgehead_dcs(struct kccsrv_service *service,
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
-	site_opts = samdb_result_int64(site, "options", 0);
+	site_opts = ldb_msg_find_attr_as_int64(site, "options", 0);
 
 	for (i = 0; i < res->count; i++) {
 		struct ldb_message *dc, *new_data;
@@ -1252,7 +1252,7 @@ static NTSTATUS kcctpl_get_all_bridgehead_dcs(struct kccsrv_service *service,
 			}
 		}
 
-		behavior_version = samdb_result_int64(dc,
+		behavior_version = ldb_msg_find_attr_as_int64(dc,
 						      "msDS-Behavior-Version", 0);
 		/* TODO: cr!nCName corresponds to default NC */
 		if (service->am_rodc && true && behavior_version < DS_BEHAVIOR_WIN2008) {
@@ -1262,7 +1262,7 @@ static NTSTATUS kcctpl_get_all_bridgehead_dcs(struct kccsrv_service *service,
 		ret = ldb_search(service->samdb, tmp_ctx, &parent_res, parent_dn,
 				LDB_SCOPE_BASE, parent_attrs , NULL);
 
-		dc_transport_address = samdb_result_string(parent_res->msgs[0],
+		dc_transport_address = ldb_msg_find_attr_as_string(parent_res->msgs[0],
 							   transport_address_attr,
 							   NULL);
 
@@ -1444,7 +1444,7 @@ static NTSTATUS kcctpl_color_vertices(struct kccsrv_service *service,
 
 	partial_replica_okay = (site_vertex->color == BLACK);
 
-	cr_flags = samdb_result_int64(cross_ref, "systemFlags", 0);
+	cr_flags = ldb_msg_find_attr_as_int64(cross_ref, "systemFlags", 0);
 
 	for (i = 0; i < graph->vertices.count; i++) {
 		struct kcctpl_vertex *vertex;
@@ -1486,7 +1486,7 @@ static NTSTATUS kcctpl_color_vertices(struct kccsrv_service *service,
 
 			transport = res->msgs[j];
 
-			transport_name = samdb_result_string(transport,
+			transport_name = ldb_msg_find_attr_as_string(transport,
 							     "name", NULL);
 			if (!transport_name) {
 				DEBUG(1, (__location__ ": failed to find name "
@@ -2873,7 +2873,7 @@ static NTSTATUS kcctpl_create_connection(struct kccsrv_service *service,
 			uint8_t conn_schedule[84];
 			struct ldb_dn *conn_transport_type;
 
-			conn_opts = samdb_result_int64(connection,
+			conn_opts = ldb_msg_find_attr_as_int64(connection,
 						       "options", 0);
 
 			conn_transport_type = samdb_result_dn(service->samdb, tmp_ctx,
@@ -2984,7 +2984,7 @@ static NTSTATUS kcctpl_create_connection(struct kccsrv_service *service,
 			uint64_t conn_opts;
 			struct ldb_dn *conn_transport_type;
 
-			conn_opts = samdb_result_int64(connection,
+			conn_opts = ldb_msg_find_attr_as_int64(connection,
 						       "options", 0);
 
 			conn_transport_type = samdb_result_dn(service->samdb, tmp_ctx,
@@ -3396,8 +3396,8 @@ static NTSTATUS kcctpl_create_intersite_connections(struct kccsrv_service *servi
 		NTSTATUS status;
 
 		cross_ref = res->msgs[i];
-		cr_enabled = samdb_result_uint(cross_ref, "enabled", -1);
-		cr_flags = samdb_result_int64(cross_ref, "systemFlags", 0);
+		cr_enabled = ldb_msg_find_attr_as_uint(cross_ref, "enabled", -1);
+		cr_flags = ldb_msg_find_attr_as_int64(cross_ref, "systemFlags", 0);
 		if ((cr_enabled == 0) || !(cr_flags & FLAG_CR_NTDS_NC)) {
 			continue;
 		}

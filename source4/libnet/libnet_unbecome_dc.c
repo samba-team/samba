@@ -403,11 +403,11 @@ static NTSTATUS unbecomeDC_ldap_computer_object(struct libnet_UnbecomeDC_state *
 		return NT_STATUS_INVALID_NETWORK_RESPONSE;
 	}
 
-	s->dest_dsa.computer_dn_str	= samdb_result_string(r->msgs[0], "distinguishedName", NULL);
+	s->dest_dsa.computer_dn_str	= ldb_msg_find_attr_as_string(r->msgs[0], "distinguishedName", NULL);
 	if (!s->dest_dsa.computer_dn_str) return NT_STATUS_INVALID_NETWORK_RESPONSE;
 	talloc_steal(s, s->dest_dsa.computer_dn_str);
 
-	s->dest_dsa.user_account_control = samdb_result_uint(r->msgs[0], "userAccountControl", 0);
+	s->dest_dsa.user_account_control = ldb_msg_find_attr_as_uint(r->msgs[0], "userAccountControl", 0);
 
 	talloc_free(r);
 	return NT_STATUS_OK;

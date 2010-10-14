@@ -2008,11 +2008,11 @@ static NTSTATUS dcesrv_lsa_QueryTrustedDomainInfo(struct dcesrv_call_state *dce_
 	switch (r->in.level) {
 	case LSA_TRUSTED_DOMAIN_INFO_NAME:
 		info->name.netbios_name.string
-			= samdb_result_string(msg, "flatname", NULL);					   
+			= ldb_msg_find_attr_as_string(msg, "flatname", NULL);
 		break;
 	case LSA_TRUSTED_DOMAIN_INFO_POSIX_OFFSET:
 		info->posix_offset.posix_offset
-			= samdb_result_uint(msg, "posixOffset", 0);					   
+			= ldb_msg_find_attr_as_uint(msg, "posixOffset", 0);
 		break;
 #if 0  /* Win2k3 doesn't implement this */
 	case LSA_TRUSTED_DOMAIN_INFO_BASIC:
@@ -2028,16 +2028,15 @@ static NTSTATUS dcesrv_lsa_QueryTrustedDomainInfo(struct dcesrv_call_state *dce_
 	case LSA_TRUSTED_DOMAIN_INFO_FULL_INFO:
 		ZERO_STRUCT(info->full_info);
 		return fill_trust_domain_ex(mem_ctx, msg, &info->full_info.info_ex);
-
 	case LSA_TRUSTED_DOMAIN_INFO_FULL_INFO_2_INTERNAL:
 		ZERO_STRUCT(info->full_info2_internal);
 		info->full_info2_internal.posix_offset.posix_offset
-			= samdb_result_uint(msg, "posixOffset", 0);					   
+			= ldb_msg_find_attr_as_uint(msg, "posixOffset", 0);
 		return fill_trust_domain_ex(mem_ctx, msg, &info->full_info2_internal.info.info_ex);
 		
 	case LSA_TRUSTED_DOMAIN_SUPPORTED_ENCRYPTION_TYPES:
 		info->enc_types.enc_types
-			= samdb_result_uint(msg, "msDs-supportedEncryptionTypes", KERB_ENCTYPE_RC4_HMAC_MD5);
+			= ldb_msg_find_attr_as_uint(msg, "msDs-supportedEncryptionTypes", KERB_ENCTYPE_RC4_HMAC_MD5);
 		break;
 
 	case LSA_TRUSTED_DOMAIN_INFO_CONTROLLERS:
@@ -2232,7 +2231,7 @@ static NTSTATUS dcesrv_lsa_EnumTrustDom(struct dcesrv_call_state *dce_call, TALL
 	}
 	for (i=0;i<count;i++) {
 		entries[i].sid = samdb_result_dom_sid(mem_ctx, domains[i], "securityIdentifier");
-		entries[i].name.string = samdb_result_string(domains[i], "flatname", NULL);
+		entries[i].name.string = ldb_msg_find_attr_as_string(domains[i], "flatname", NULL);
 	}
 
 	/* sort the results by name */
@@ -4286,8 +4285,8 @@ static NTSTATUS dcesrv_lsa_lsaRSetForestTrustInformation(struct dcesrv_call_stat
 
 	tdo_dn = dom_res[i]->dn;
 
-	trust_attributes = samdb_result_uint(dom_res[i],
-					     "trustAttributes", 0);
+	trust_attributes = ldb_msg_find_attr_as_uint(dom_res[i],
+						     "trustAttributes", 0);
 	if (!(trust_attributes & NETR_TRUST_ATTRIBUTE_FOREST_TRANSITIVE)) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}

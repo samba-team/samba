@@ -1658,10 +1658,13 @@ static int setup_io(struct ph_context *ac,
 
 	io->ac				= ac;
 
-	io->u.userAccountControl	= samdb_result_uint(searched_msg, "userAccountControl", 0);
+	io->u.userAccountControl	= ldb_msg_find_attr_as_uint(searched_msg,
+								    "userAccountControl", 0);
 	io->u.pwdLastSet		= samdb_result_nttime(searched_msg, "pwdLastSet", 0);
-	io->u.sAMAccountName		= samdb_result_string(searched_msg, "sAMAccountName", NULL);
-	io->u.user_principal_name	= samdb_result_string(searched_msg, "userPrincipalName", NULL);
+	io->u.sAMAccountName		= ldb_msg_find_attr_as_string(searched_msg,
+								      "sAMAccountName", NULL);
+	io->u.user_principal_name	= ldb_msg_find_attr_as_string(searched_msg,
+								      "userPrincipalName", NULL);
 	io->u.is_computer		= ldb_msg_check_string_attribute(searched_msg, "objectClass", "computer");
 
 	if (io->u.sAMAccountName == NULL) {
@@ -2091,11 +2094,16 @@ static int get_domain_data_callback(struct ldb_request *req,
 		}
 
 		/* Setup the "domain data" structure */
-		ac->status->domain_data.pwdProperties = samdb_result_uint(ares->message, "pwdProperties", -1);
-		ac->status->domain_data.pwdHistoryLength = samdb_result_uint(ares->message, "pwdHistoryLength", -1);
-		ac->status->domain_data.maxPwdAge = samdb_result_int64(ares->message, "maxPwdAge", -1);
-		ac->status->domain_data.minPwdAge = samdb_result_int64(ares->message, "minPwdAge", -1);
-		ac->status->domain_data.minPwdLength = samdb_result_uint(ares->message, "minPwdLength", -1);
+		ac->status->domain_data.pwdProperties =
+			ldb_msg_find_attr_as_uint(ares->message, "pwdProperties", -1);
+		ac->status->domain_data.pwdHistoryLength =
+			ldb_msg_find_attr_as_uint(ares->message, "pwdHistoryLength", -1);
+		ac->status->domain_data.maxPwdAge =
+			ldb_msg_find_attr_as_int64(ares->message, "maxPwdAge", -1);
+		ac->status->domain_data.minPwdAge =
+			ldb_msg_find_attr_as_int64(ares->message, "minPwdAge", -1);
+		ac->status->domain_data.minPwdLength =
+			ldb_msg_find_attr_as_uint(ares->message, "minPwdLength", -1);
 		ac->status->domain_data.store_cleartext =
 			ac->status->domain_data.pwdProperties & DOMAIN_PASSWORD_STORE_CLEARTEXT;
 

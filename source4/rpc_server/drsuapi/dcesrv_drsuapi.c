@@ -135,7 +135,8 @@ static WERROR dcesrv_drsuapi_DsBind(struct dcesrv_call_state *dce_call, TALLOC_C
 	if (ntds_res->count != 1) {
 		return WERR_DS_DRA_INTERNAL_ERROR;
 	}
-	repl_epoch = samdb_result_uint(ntds_res->msgs[0], "ms-DS-ReplicationEpoch", 0);
+	repl_epoch = ldb_msg_find_attr_as_uint(ntds_res->msgs[0],
+					       "ms-DS-ReplicationEpoch", 0);
 
 	/*
 	 * The "process identifier" of the client.

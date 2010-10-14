@@ -811,7 +811,7 @@ static WERROR DsCrackNameOneFilter(struct ldb_context *sam_ctx, TALLOC_CTX *mem_
 			return WERR_OK;
 		}
 
-		info1->dns_domain_name	= samdb_result_string(domain_res->msgs[0], "dnsRoot", NULL);
+		info1->dns_domain_name	= ldb_msg_find_attr_as_string(domain_res->msgs[0], "dnsRoot", NULL);
 		W_ERROR_HAVE_NO_MEMORY(info1->dns_domain_name);
 		info1->status		= DRSUAPI_DS_NAME_STATUS_DOMAIN_ONLY;
 	} else {
@@ -939,7 +939,7 @@ static WERROR DsCrackNameOneFilter(struct ldb_context *sam_ctx, TALLOC_CTX *mem_
 		return WERR_OK;
 	}
 	case DRSUAPI_DS_NAME_FORMAT_CANONICAL: {
-		info1->result_name	= samdb_result_string(result, "canonicalName", NULL);
+		info1->result_name	= ldb_msg_find_attr_as_string(result, "canonicalName", NULL);
 		info1->status		= DRSUAPI_DS_NAME_STATUS_OK;
 		return WERR_OK;
 	}
@@ -979,10 +979,10 @@ static WERROR DsCrackNameOneFilter(struct ldb_context *sam_ctx, TALLOC_CTX *mem_
 				info1->status = DRSUAPI_DS_NAME_STATUS_NOT_UNIQUE;
 				return WERR_OK;
 			}
-			_dom = samdb_result_string(domain_res->msgs[0], "nETBIOSName", NULL);
+			_dom = ldb_msg_find_attr_as_string(domain_res->msgs[0], "nETBIOSName", NULL);
 			W_ERROR_HAVE_NO_MEMORY(_dom);
 		} else {
-			_acc = samdb_result_string(result, "sAMAccountName", NULL);
+			_acc = ldb_msg_find_attr_as_string(result, "sAMAccountName", NULL);
 			if (!_acc) {
 				info1->status = DRSUAPI_DS_NAME_STATUS_NO_MAPPING;
 				return WERR_OK;
@@ -1043,7 +1043,7 @@ static WERROR DsCrackNameOneFilter(struct ldb_context *sam_ctx, TALLOC_CTX *mem_
 					info1->status = DRSUAPI_DS_NAME_STATUS_NOT_UNIQUE;
 					return WERR_OK;
 				}
-				_dom = samdb_result_string(domain_res2->msgs[0], "nETBIOSName", NULL);
+				_dom = ldb_msg_find_attr_as_string(domain_res2->msgs[0], "nETBIOSName", NULL);
 				W_ERROR_HAVE_NO_MEMORY(_dom);
 			}
 		}
@@ -1066,9 +1066,9 @@ static WERROR DsCrackNameOneFilter(struct ldb_context *sam_ctx, TALLOC_CTX *mem_
 		return WERR_OK;
 	}
 	case DRSUAPI_DS_NAME_FORMAT_DISPLAY: {
-		info1->result_name	= samdb_result_string(result, "displayName", NULL);
+		info1->result_name	= ldb_msg_find_attr_as_string(result, "displayName", NULL);
 		if (!info1->result_name) {
-			info1->result_name	= samdb_result_string(result, "sAMAccountName", NULL);
+			info1->result_name	= ldb_msg_find_attr_as_string(result, "sAMAccountName", NULL);
 		} 
 		if (!info1->result_name) {
 			info1->status = DRSUAPI_DS_NAME_STATUS_NOT_FOUND;

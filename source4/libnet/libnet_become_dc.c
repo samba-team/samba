@@ -1073,7 +1073,7 @@ static NTSTATUS becomeDC_ldap1_infrastructure_fsmo(struct libnet_BecomeDC_state 
 		return NT_STATUS_INVALID_NETWORK_RESPONSE;
 	}
 
-	s->infrastructure_fsmo.dns_name	= samdb_result_string(r->msgs[0], "dnsHostName", NULL);
+	s->infrastructure_fsmo.dns_name	= ldb_msg_find_attr_as_string(r->msgs[0], "dnsHostName", NULL);
 	if (!s->infrastructure_fsmo.dns_name) return NT_STATUS_INVALID_NETWORK_RESPONSE;
 	talloc_steal(s, s->infrastructure_fsmo.dns_name);
 
@@ -1133,7 +1133,7 @@ static NTSTATUS becomeDC_ldap1_rid_manager_fsmo(struct libnet_BecomeDC_state *s)
 		return NT_STATUS_INVALID_NETWORK_RESPONSE;
 	}
 
-	reference_dn_str	= samdb_result_string(r->msgs[0], "rIDManagerReference", NULL);
+	reference_dn_str	= ldb_msg_find_attr_as_string(r->msgs[0], "rIDManagerReference", NULL);
 	if (!reference_dn_str) return NT_STATUS_INVALID_NETWORK_RESPONSE;
 
 	basedn = ldb_dn_new(s, s->ldap1.ldb, reference_dn_str);
@@ -1151,7 +1151,7 @@ static NTSTATUS becomeDC_ldap1_rid_manager_fsmo(struct libnet_BecomeDC_state *s)
 		return NT_STATUS_INVALID_NETWORK_RESPONSE;
 	}
 
-	s->rid_manager_fsmo.ntds_dn_str	= samdb_result_string(r->msgs[0], "fSMORoleOwner", NULL);
+	s->rid_manager_fsmo.ntds_dn_str	= ldb_msg_find_attr_as_string(r->msgs[0], "fSMORoleOwner", NULL);
 	if (!s->rid_manager_fsmo.ntds_dn_str) return NT_STATUS_INVALID_NETWORK_RESPONSE;
 	talloc_steal(s, s->rid_manager_fsmo.ntds_dn_str);
 
@@ -1175,7 +1175,7 @@ static NTSTATUS becomeDC_ldap1_rid_manager_fsmo(struct libnet_BecomeDC_state *s)
 		return NT_STATUS_INVALID_NETWORK_RESPONSE;
 	}
 
-	s->rid_manager_fsmo.dns_name	= samdb_result_string(r->msgs[0], "dnsHostName", NULL);
+	s->rid_manager_fsmo.dns_name	= ldb_msg_find_attr_as_string(r->msgs[0], "dnsHostName", NULL);
 	if (!s->rid_manager_fsmo.dns_name) return NT_STATUS_INVALID_NETWORK_RESPONSE;
 	talloc_steal(s, s->rid_manager_fsmo.dns_name);
 
@@ -1260,11 +1260,11 @@ static NTSTATUS becomeDC_ldap1_computer_object(struct libnet_BecomeDC_state *s)
 		return NT_STATUS_INVALID_NETWORK_RESPONSE;
 	}
 
-	s->dest_dsa.computer_dn_str	= samdb_result_string(r->msgs[0], "distinguishedName", NULL);
+	s->dest_dsa.computer_dn_str	= ldb_msg_find_attr_as_string(r->msgs[0], "distinguishedName", NULL);
 	if (!s->dest_dsa.computer_dn_str) return NT_STATUS_INVALID_NETWORK_RESPONSE;
 	talloc_steal(s, s->dest_dsa.computer_dn_str);
 
-	s->dest_dsa.user_account_control = samdb_result_uint(r->msgs[0], "userAccountControl", 0);
+	s->dest_dsa.user_account_control = ldb_msg_find_attr_as_uint(r->msgs[0], "userAccountControl", 0);
 
 	talloc_free(r);
 	return NT_STATUS_OK;
@@ -1298,7 +1298,7 @@ static NTSTATUS becomeDC_ldap1_server_object_1(struct libnet_BecomeDC_state *s)
 		return NT_STATUS_INVALID_NETWORK_RESPONSE;
 	}
 
-	server_reference_dn_str = samdb_result_string(r->msgs[0], "serverReference", NULL);
+	server_reference_dn_str = ldb_msg_find_attr_as_string(r->msgs[0], "serverReference", NULL);
 	if (server_reference_dn_str) {
 		server_reference_dn	= ldb_dn_new(r, s->ldap1.ldb, server_reference_dn_str);
 		NT_STATUS_HAVE_NO_MEMORY(server_reference_dn);
@@ -1317,7 +1317,7 @@ static NTSTATUS becomeDC_ldap1_server_object_1(struct libnet_BecomeDC_state *s)
 	}
 
 	/* if the server object is already for the dest_dsa, then we don't need to create it */
-	s->dest_dsa.server_dn_str	= samdb_result_string(r->msgs[0], "distinguishedName", NULL);
+	s->dest_dsa.server_dn_str	= ldb_msg_find_attr_as_string(r->msgs[0], "distinguishedName", NULL);
 	if (!s->dest_dsa.server_dn_str) return NT_STATUS_INVALID_NETWORK_RESPONSE;
 	talloc_steal(s, s->dest_dsa.server_dn_str);
 
@@ -1352,7 +1352,7 @@ static NTSTATUS becomeDC_ldap1_server_object_2(struct libnet_BecomeDC_state *s)
 		return NT_STATUS_INVALID_NETWORK_RESPONSE;
 	}
 
-	server_reference_bl_dn_str = samdb_result_string(r->msgs[0], "serverReferenceBL", NULL);
+	server_reference_bl_dn_str = ldb_msg_find_attr_as_string(r->msgs[0], "serverReferenceBL", NULL);
 	if (!server_reference_bl_dn_str) {
 		/* if no back link is present, we're done for this function */
 		talloc_free(r);
@@ -1360,7 +1360,7 @@ static NTSTATUS becomeDC_ldap1_server_object_2(struct libnet_BecomeDC_state *s)
 	}
 
 	/* if the server object is already for the dest_dsa, then we don't need to create it */
-	s->dest_dsa.server_dn_str	= samdb_result_string(r->msgs[0], "serverReferenceBL", NULL);
+	s->dest_dsa.server_dn_str	= ldb_msg_find_attr_as_string(r->msgs[0], "serverReferenceBL", NULL);
 	if (s->dest_dsa.server_dn_str) {
 		/* if a back link is present, we know that the server object is present */
 		talloc_steal(s, s->dest_dsa.server_dn_str);

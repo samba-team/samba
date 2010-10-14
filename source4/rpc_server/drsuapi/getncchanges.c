@@ -865,7 +865,8 @@ static WERROR getncchanges_repl_secret(struct drsuapi_bind_state *b_state,
 		goto denied;
 	}
 
-	if (samdb_result_uint(obj_res->msgs[0], "UserAccountControl", 0) &
+	if (ldb_msg_find_attr_as_uint(obj_res->msgs[0],
+				      "userAccountControl", 0) &
 	    UF_INTERDOMAIN_TRUST_ACCOUNT) {
 		goto denied;
 	}

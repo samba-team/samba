@@ -950,7 +950,7 @@ static int samldb_prim_group_set(struct samldb_ctx *ac)
 	uint32_t rid;
 	struct dom_sid *sid;
 
-	rid = samdb_result_uint(ac->msg, "primaryGroupID", (uint32_t) -1);
+	rid = ldb_msg_find_attr_as_uint(ac->msg, "primaryGroupID", (uint32_t) -1);
 	if (rid == (uint32_t) -1) {
 		/* we aren't affected of any primary group set */
 		return LDB_SUCCESS;
@@ -1000,7 +1000,7 @@ static int samldb_prim_group_change(struct samldb_ctx *ac)
 
 	/* Finds out the DN of the old primary group */
 
-	rid = samdb_result_uint(res->msgs[0], "primaryGroupID", (uint32_t) -1);
+	rid = ldb_msg_find_attr_as_uint(res->msgs[0], "primaryGroupID", (uint32_t) -1);
 	if (rid == (uint32_t) -1) {
 		/* User objects do always have a mandatory "primaryGroupID"
 		 * attribute. If this doesn't exist then the object is of the
@@ -1021,7 +1021,7 @@ static int samldb_prim_group_change(struct samldb_ctx *ac)
 
 	/* Finds out the DN of the new primary group */
 
-	rid = samdb_result_uint(ac->msg, "primaryGroupID", (uint32_t) -1);
+	rid = ldb_msg_find_attr_as_uint(ac->msg, "primaryGroupID", (uint32_t) -1);
 	if (rid == (uint32_t) -1) {
 		/* we aren't affected of any primary group change */
 		return LDB_SUCCESS;

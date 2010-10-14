@@ -84,7 +84,7 @@ NTSTATUS kccsrv_check_deleted(struct kccsrv_service *s, TALLOC_CTX *mem_ctx)
 			const char *tstring;
 			time_t whenChanged = 0;
 
-			tstring = samdb_result_string(res->msgs[i], "whenChanged", NULL);
+			tstring = ldb_msg_find_attr_as_string(res->msgs[i], "whenChanged", NULL);
 			if (tstring) {
 				whenChanged = ldb_string_to_time(tstring);
 			}

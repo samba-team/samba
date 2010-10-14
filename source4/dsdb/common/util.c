@@ -111,7 +111,7 @@ const char *samdb_search_string_v(struct ldb_context *sam_ldb,
 		return NULL;
 	}
 
-	return samdb_result_string(res[0], attr_name, NULL);
+	return ldb_msg_find_attr_as_string(res[0], attr_name, NULL);
 }
 
 /*
@@ -235,7 +235,7 @@ unsigned int samdb_search_uint(struct ldb_context *sam_ldb,
 		return default_value;
 	}
 
-	return samdb_result_uint(res[0], attr_name, default_value);
+	return ldb_msg_find_attr_as_uint(res[0], attr_name, default_value);
 }
 
 /*
@@ -263,7 +263,7 @@ int64_t samdb_search_int64(struct ldb_context *sam_ldb,
 		return default_value;
 	}
 
-	return samdb_result_int64(res[0], attr_name, default_value);
+	return ldb_msg_find_attr_as_int64(res[0], attr_name, default_value);
 }
 
 /*
@@ -309,36 +309,11 @@ int samdb_search_string_multiple(struct ldb_context *sam_ldb,
 	}
 
 	for (i=0;i<count;i++) {
-		(*strs)[i] = samdb_result_string(res[i], attr_name, NULL);
+		(*strs)[i] = ldb_msg_find_attr_as_string(res[i], attr_name, NULL);
 	}
 	(*strs)[count] = NULL;
 
 	return count;
-}
-
-/*
-  pull a uint from a result set. 
-*/
-unsigned int samdb_result_uint(const struct ldb_message *msg, const char *attr, unsigned int default_value)
-{
-	return ldb_msg_find_attr_as_uint(msg, attr, default_value);
-}
-
-/*
-  pull a (signed) int64 from a result set. 
-*/
-int64_t samdb_result_int64(const struct ldb_message *msg, const char *attr, int64_t default_value)
-{
-	return ldb_msg_find_attr_as_int64(msg, attr, default_value);
-}
-
-/*
-  pull a string from a result set. 
-*/
-const char *samdb_result_string(const struct ldb_message *msg, const char *attr, 
-				const char *default_value)
-{
-	return ldb_msg_find_attr_as_string(msg, attr, default_value);
 }
 
 struct ldb_dn *samdb_result_dn(struct ldb_context *ldb, TALLOC_CTX *mem_ctx, const struct ldb_message *msg,
@@ -477,16 +452,6 @@ NTTIME samdb_result_account_expires(const struct ldb_message *msg)
 }
 
 /*
-  pull a uint64_t from a result set. 
-*/
-uint64_t samdb_result_uint64(const struct ldb_message *msg, const char *attr,
-			     uint64_t default_value)
-{
-	return ldb_msg_find_attr_as_uint64(msg, attr, default_value);
-}
-
-
-/*
   construct the allow_password_change field from the PwdLastSet attribute and the 
   domain password settings
 */
@@ -496,7 +461,7 @@ NTTIME samdb_result_allow_password_change(struct ldb_context *sam_ldb,
 					  struct ldb_message *msg, 
 					  const char *attr)
 {
-	uint64_t attr_time = samdb_result_uint64(msg, attr, 0);
+	uint64_t attr_time = ldb_msg_find_attr_as_uint64(msg, attr, 0);
 	int64_t minPwdAge;
 
 	if (attr_time == 0) {
@@ -521,7 +486,7 @@ NTTIME samdb_result_force_password_change(struct ldb_context *sam_ldb,
 					  struct ldb_dn *domain_dn, 
 					  struct ldb_message *msg)
 {
-	int64_t attr_time = samdb_result_int64(msg, "pwdLastSet", 0);
+	int64_t attr_time = ldb_msg_find_attr_as_int64(msg, "pwdLastSet", 0);
 	uint32_t userAccountControl = ldb_msg_find_attr_as_uint(msg,
 								"userAccountControl",
 								0);
@@ -3024,7 +2989,7 @@ int samdb_ntds_options(struct ldb_context *ldb, uint32_t *options)
 		goto failed;
 	}
 
-	*options = samdb_result_uint(res->msgs[0], "options", 0);
+	*options = ldb_msg_find_attr_as_uint(res->msgs[0], "options", 0);
 
 	talloc_free(tmp_ctx);
 
@@ -3051,7 +3016,7 @@ const char* samdb_ntds_object_category(TALLOC_CTX *tmp_ctx, struct ldb_context *
 		goto failed;
 	}
 
-	return samdb_result_string(res->msgs[0], "objectCategory", NULL);
+	return ldb_msg_find_attr_as_string(res->msgs[0], "objectCategory", NULL);
 
 failed:
 	DEBUG(1,("Failed to find our own NTDS Settings objectCategory in the ldb!\n"));
@@ -4204,7 +4169,7 @@ const char *samdb_dn_to_dnshostname(struct ldb_context *ldb,
 		return NULL;
 	}
 
-	return samdb_result_string(res->msgs[0], "dNSHostName", NULL);
+	return ldb_msg_find_attr_as_string(res->msgs[0], "dNSHostName", NULL);
 }
 
 /*

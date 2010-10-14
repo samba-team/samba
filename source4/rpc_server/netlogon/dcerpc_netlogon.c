@@ -1240,8 +1240,8 @@ static NTSTATUS fill_one_domain_info(TALLOC_CTX *mem_ctx,
 		info->domain_guid = samdb_result_guid(res, "objectGUID");
 		info->domain_sid = samdb_result_dom_sid(mem_ctx, res, "objectSid");
 	} else {
-		info->domainname.string = samdb_result_string(res, "flatName", NULL);
-		info->dns_domainname.string = samdb_result_string(res, "trustPartner", NULL);
+		info->domainname.string = ldb_msg_find_attr_as_string(res, "flatName", NULL);
+		info->dns_domainname.string = ldb_msg_find_attr_as_string(res, "trustPartner", NULL);
 		info->domain_guid = samdb_result_guid(res, "objectGUID");
 		info->domain_sid = samdb_result_dom_sid(mem_ctx, res, "securityIdentifier");
 	}
@@ -1335,7 +1335,7 @@ static NTSTATUS dcesrv_netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_cal
 		}
 
 		/* Gets the old DNS hostname */
-		old_dns_hostname = samdb_result_string(res1[0], "dNSHostName",
+		old_dns_hostname = ldb_msg_find_attr_as_string(res1[0], "dNSHostName",
 			NULL);
 
 		/*
@@ -1472,7 +1472,7 @@ static NTSTATUS dcesrv_netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_cal
 		NT_STATUS_NOT_OK_RETURN(status);
 
 		/* Sets the supported encryption types */
-		domain_info->supported_enc_types = samdb_result_uint(res1[0],
+		domain_info->supported_enc_types = ldb_msg_find_attr_as_uint(res1[0],
 			"msDS-SupportedEncryptionTypes",
 			default_supported_enc_types);
 
@@ -1848,7 +1848,7 @@ static WERROR dcesrv_netr_DsrGetDcSiteCoverageW(struct dcesrv_call_state *dce_ca
 #define GET_CHECK_STR(dest, mem, msg, attr) \
 do {\
 	const char *s; \
-	s = samdb_result_string(msg, attr, NULL); \
+	s = ldb_msg_find_attr_as_string(msg, attr, NULL); \
 	if (!s) { \
 		DEBUG(0, ("DB Error, TustedDomain entry (%s) " \
 			  "without flatname\n", \
@@ -1894,8 +1894,8 @@ static WERROR fill_trusted_domains_array(TALLOC_CTX *mem_ctx,
 		unsigned int trust_dir;
 		uint32_t flags = 0;
 
-		trust_dir = samdb_result_uint(dom_res[i],
-					      "trustDirection", 0);
+		trust_dir = ldb_msg_find_attr_as_uint(dom_res[i],
+						      "trustDirection", 0);
 
 		if (trust_dir & LSA_TRUST_DIRECTION_INBOUND) {
 			flags |= NETR_TRUST_FLAG_INBOUND;
@@ -1928,10 +1928,10 @@ static WERROR fill_trusted_domains_array(TALLOC_CTX *mem_ctx,
 		}
 
 		trusts->array[n].trust_type =
-				samdb_result_uint(dom_res[i],
+				ldb_msg_find_attr_as_uint(dom_res[i],
 						  "trustType", 0);
 		trusts->array[n].trust_attributes =
-				samdb_result_uint(dom_res[i],
+				ldb_msg_find_attr_as_uint(dom_res[i],
 						  "trustAttributes", 0);
 
 		if ((trusts->array[n].trust_type == NETR_TRUST_TYPE_MIT) ||

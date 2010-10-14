@@ -493,7 +493,7 @@ static int dsdb_schema_setup_ldb_schema_attribute(struct ldb_context *ldb,
 
 #define GET_BOOL_LDB(msg, attr, p, elem, strict) do { \
 	const char *str; \
-	str = samdb_result_string(msg, attr, NULL);\
+	str = ldb_msg_find_attr_as_string(msg, attr, NULL);\
 	if (str == NULL) { \
 		if (strict) { \
 			d_printf("%s: %s == NULL\n", __location__, attr); \
@@ -512,11 +512,11 @@ static int dsdb_schema_setup_ldb_schema_attribute(struct ldb_context *ldb,
 } while (0)
 
 #define GET_UINT32_LDB(msg, attr, p, elem) do { \
-	(p)->elem = samdb_result_uint(msg, attr, 0);\
+	(p)->elem = ldb_msg_find_attr_as_uint(msg, attr, 0);\
 } while (0)
 
 #define GET_UINT32_PTR_LDB(msg, attr, mem_ctx, p, elem) do {		\
-	uint64_t _v = samdb_result_uint64(msg, attr, UINT64_MAX);\
+	uint64_t _v = ldb_msg_find_attr_as_uint64(msg, attr, UINT64_MAX);\
 	if (_v == UINT64_MAX) { \
 		(p)->elem = NULL; \
 	} else if (_v > UINT32_MAX) { \

@@ -175,7 +175,7 @@ _PUBLIC_ NTSTATUS authsam_account_ok(TALLOC_CTX *mem_ctx,
 	must_change_time = samdb_result_force_password_change(sam_ctx, mem_ctx, 
 							      domain_dn, msg);
 
-	workstation_list = samdb_result_string(msg, "userWorkstations", NULL);
+	workstation_list = ldb_msg_find_attr_as_string(msg, "userWorkstations", NULL);
 
 	/* Quit if the account was disabled. */
 	if (acct_flags & ACB_DISABLED) {
@@ -439,7 +439,7 @@ _PUBLIC_ NTSTATUS authsam_make_server_info(TALLOC_CTX *mem_ctx,
 
 	primary_group_sid = dom_sid_add_rid(server_info,
 					    domain_sid,
-					    samdb_result_uint(msg, "primaryGroupID", ~0));
+					    ldb_msg_find_attr_as_uint(msg, "primaryGroupID", ~0));
 	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(primary_group_sid, server_info);
 
 	/* Filter out builtin groups from this token.  We will search
@@ -493,32 +493,32 @@ _PUBLIC_ NTSTATUS authsam_make_server_info(TALLOC_CTX *mem_ctx,
 	server_info->n_domain_groups = num_groupSIDs;
 
 	server_info->account_name = talloc_steal(server_info,
-		samdb_result_string(msg, "sAMAccountName", NULL));
+		ldb_msg_find_attr_as_string(msg, "sAMAccountName", NULL));
 
 	server_info->domain_name = talloc_strdup(server_info, domain_name);
 	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(server_info->domain_name,
 		server_info);
 
-	str = samdb_result_string(msg, "displayName", "");
+	str = ldb_msg_find_attr_as_string(msg, "displayName", "");
 	server_info->full_name = talloc_strdup(server_info, str);
 	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(server_info->full_name, server_info);
 
-	str = samdb_result_string(msg, "scriptPath", "");
+	str = ldb_msg_find_attr_as_string(msg, "scriptPath", "");
 	server_info->logon_script = talloc_strdup(server_info, str);
 	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(server_info->logon_script,
 		server_info);
 
-	str = samdb_result_string(msg, "profilePath", "");
+	str = ldb_msg_find_attr_as_string(msg, "profilePath", "");
 	server_info->profile_path = talloc_strdup(server_info, str);
 	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(server_info->profile_path,
 		server_info);
 
-	str = samdb_result_string(msg, "homeDirectory", "");
+	str = ldb_msg_find_attr_as_string(msg, "homeDirectory", "");
 	server_info->home_directory = talloc_strdup(server_info, str);
 	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(server_info->home_directory,
 		server_info);
 
-	str = samdb_result_string(msg, "homeDrive", "");
+	str = ldb_msg_find_attr_as_string(msg, "homeDrive", "");
 	server_info->home_drive = talloc_strdup(server_info, str);
 	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(server_info->home_drive, server_info);
 
@@ -537,8 +537,8 @@ _PUBLIC_ NTSTATUS authsam_make_server_info(TALLOC_CTX *mem_ctx,
 	server_info->force_password_change
 		= samdb_result_force_password_change(sam_ctx, mem_ctx,
 			domain_dn, msg);
-	server_info->logon_count = samdb_result_uint(msg, "logonCount", 0);
-	server_info->bad_password_count = samdb_result_uint(msg, "badPwdCount",
+	server_info->logon_count = ldb_msg_find_attr_as_uint(msg, "logonCount", 0);
+	server_info->bad_password_count = ldb_msg_find_attr_as_uint(msg, "badPwdCount",
 		0);
 
 	server_info->acct_flags = samdb_result_acct_flags(sam_ctx, mem_ctx, 
