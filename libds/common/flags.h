@@ -208,7 +208,7 @@
 /* wellknown GUIDs for optional directory features */
 #define DS_GUID_FEATURE_RECYCLE_BIN		      "766ddcd8-acd0-445e-f3b9-a7f9b6744f2a"
 
-/* dsHeurisrics character indexes see MS-ADTS 7.1.1.2.4.1.2 */
+/* dsHeuristics character indexes see MS-ADTS 7.1.1.2.4.1.2 */
 
 #define DS_HR_SUPFIRSTLASTANR                     0x00000001
 #define DS_HR_SUPLASTFIRSTANR                     0x00000002
