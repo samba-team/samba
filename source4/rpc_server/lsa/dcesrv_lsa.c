@@ -3185,7 +3185,7 @@ static NTSTATUS dcesrv_lsa_SetSecret(struct dcesrv_call_state *dce_call, TALLOC_
 			}
 		} else {
 			if (samdb_msg_add_delete(secret_state->sam_ldb, 
-						 mem_ctx, msg, "priorValue")) {
+						 mem_ctx, msg, "priorValue") != LDB_SUCCESS) {
 				return NT_STATUS_NO_MEMORY;
 			}
 			
