@@ -74,13 +74,13 @@ static int sptr_db_search(struct ldb_context *ldb,
 
 #define SET_STRING(ldb, mod, attr, value) do { \
 	if (value == NULL) return WERR_INVALID_PARAM; \
-	if (samdb_msg_add_string(ldb, (TALLOC_CTX *)mod, mod, attr, value) != 0) { \
+	if (samdb_msg_add_string(ldb, (TALLOC_CTX *)mod, mod, attr, value) != LDB_SUCCESS) { \
 		return WERR_NOMEM; \
 	} \
 } while (0)
 
 #define SET_UINT(ldb, mod, attr, value) do { \
-	if (samdb_msg_add_uint(ldb, (TALLOC_CTX *)mod, mod, attr, value) != 0) { \
+	if (samdb_msg_add_uint(ldb, (TALLOC_CTX *)mod, mod, attr, value) != LDB_SUCCESS) { \
 		return WERR_NOMEM; \
 	} \
 } while (0)
