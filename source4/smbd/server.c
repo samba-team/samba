@@ -262,6 +262,7 @@ static void show_build(void)
 	};
 	int i;
 
+	printf("Samba version: %s\n", SAMBA_VERSION_STRING);
 	printf("Build environment:\n");
 #ifdef BUILD_SYSTEM
 	printf("   Build host:  %s\n", BUILD_SYSTEM);
