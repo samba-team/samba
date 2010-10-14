@@ -1026,14 +1026,6 @@ int samdb_msg_add_parameters(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx, s
 	val.data = (uint8_t *)parameters->array;
 	return ldb_msg_add_value(msg, attr_name, &val, NULL);
 }
-/*
-  add a general value element to a message
-*/
-int samdb_msg_add_value(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx, struct ldb_message *msg,
-			      const char *attr_name, const struct ldb_val *val)
-{
-	return ldb_msg_add_value(msg, attr_name, val, NULL);
-}
 
 /*
   sets a general value element to a message
@@ -2094,8 +2086,8 @@ NTSTATUS samdb_set_password(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 	if ((new_password != NULL)
 			&& ((lmNewHash == NULL) && (ntNewHash == NULL))) {
 		/* we have the password as plaintext UTF16 */
-		CHECK_RET(samdb_msg_add_value(ldb, mem_ctx, msg,
-			"clearTextPassword", new_password));
+		CHECK_RET(ldb_msg_add_value(msg, "clearTextPassword",
+					    new_password, NULL));
 		el = ldb_msg_find_element(msg, "clearTextPassword");
 		el->flags = LDB_FLAG_MOD_REPLACE;
 	} else if ((new_password == NULL)

@@ -3139,8 +3139,7 @@ static NTSTATUS dcesrv_lsa_SetSecret(struct dcesrv_call_state *dce_call, TALLOC_
 		val.length = secret.length;
 		
 		/* set value */
-		if (samdb_msg_add_value(secret_state->sam_ldb, 
-					mem_ctx, msg, "priorValue", &val) != LDB_SUCCESS) {
+		if (ldb_msg_add_value(msg, "priorValue", &val, NULL) != LDB_SUCCESS) {
 			return NT_STATUS_NO_MEMORY; 
 		}
 		
@@ -3180,9 +3179,8 @@ static NTSTATUS dcesrv_lsa_SetSecret(struct dcesrv_call_state *dce_call, TALLOC_
 		
 		if (old_val) {
 			/* set old value */
-			if (samdb_msg_add_value(secret_state->sam_ldb, 
-						mem_ctx, msg, "priorValue", 
-						old_val) != 0) {
+			if (ldb_msg_add_value(msg, "priorValue",
+					      old_val, NULL) != LDB_SUCCESS) {
 				return NT_STATUS_NO_MEMORY; 
 			}
 		} else {
@@ -3221,8 +3219,7 @@ static NTSTATUS dcesrv_lsa_SetSecret(struct dcesrv_call_state *dce_call, TALLOC_
 		val.length = secret.length;
 		
 		/* set value */
-		if (samdb_msg_add_value(secret_state->sam_ldb, 
-					mem_ctx, msg, "currentValue", &val) != LDB_SUCCESS) {
+		if (ldb_msg_add_value(msg, "currentValue", &val, NULL) != LDB_SUCCESS) {
 			return NT_STATUS_NO_MEMORY; 
 		}
 		
