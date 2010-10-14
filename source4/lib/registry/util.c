@@ -177,7 +177,7 @@ _PUBLIC_ bool reg_string_to_val(TALLOC_CTX *mem_ctx, const char *type_str,
 			}
 			break;
 		case REG_QWORD: {
-			uint64_t tmp = strtoll(data_str, NULL, 0);
+			uint64_t tmp = strtoll(data_str, NULL, 16);
 			*data = data_blob_talloc(mem_ctx, NULL, sizeof(uint64_t));
 			if (data->data == NULL) return false;
 			SBVAL(data->data, 0, tmp);
