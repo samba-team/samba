@@ -793,7 +793,7 @@ static int samldb_objectclass_trigger(struct samldb_ctx *ac)
 		/* Step 1.2: Default values */
 		ret = samdb_find_or_add_attribute(ldb, ac->msg,
 			"userAccountControl",
-			talloc_asprintf(ac->msg, "%u", UF_NORMAL_ACCOUNT));
+			talloc_asprintf(ac->msg, "%d", UF_NORMAL_ACCOUNT));
 		if (ret != LDB_SUCCESS) return ret;
 		ret = samdb_find_or_add_attribute(ldb, ac->msg,
 			"badPwdCount", "0");
@@ -896,7 +896,7 @@ static int samldb_objectclass_trigger(struct samldb_ctx *ac)
 		/* Step 2.2: Default values */
 		ret = samdb_find_or_add_attribute(ldb, ac->msg,
 			"groupType",
-			talloc_asprintf(ac->msg, "%u", GTYPE_SECURITY_GLOBAL_GROUP));
+			talloc_asprintf(ac->msg, "%d", GTYPE_SECURITY_GLOBAL_GROUP));
 		if (ret != LDB_SUCCESS) return ret;
 
 		/* Step 2.3: "groupType" -> "sAMAccountType" */
