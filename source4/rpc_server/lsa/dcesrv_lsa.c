@@ -1017,7 +1017,7 @@ static NTSTATUS dcesrv_lsa_CreateTrustedDomain_base(struct dcesrv_call_state *dc
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	samdb_msg_add_string(sam_ldb, mem_ctx, msg, "flatname", netbios_name);
+	ldb_msg_add_string(msg, "flatname", netbios_name);
 
 	if (r->in.info->sid) {
 		ret = samdb_msg_add_dom_sid(sam_ldb, mem_ctx, msg, "securityIdentifier", r->in.info->sid);
@@ -1027,7 +1027,7 @@ static NTSTATUS dcesrv_lsa_CreateTrustedDomain_base(struct dcesrv_call_state *dc
 		}
 	}
 
-	samdb_msg_add_string(sam_ldb, mem_ctx, msg, "objectClass", "trustedDomain");
+	ldb_msg_add_string(msg, "objectClass", "trustedDomain");
 
 	samdb_msg_add_int(sam_ldb, mem_ctx, msg, "trustType", r->in.info->trust_type);
 
@@ -1036,7 +1036,7 @@ static NTSTATUS dcesrv_lsa_CreateTrustedDomain_base(struct dcesrv_call_state *dc
 	samdb_msg_add_int(sam_ldb, mem_ctx, msg, "trustDirection", r->in.info->trust_direction);
 
 	if (dns_name) {
-		samdb_msg_add_string(sam_ldb, mem_ctx, msg, "trustPartner", dns_name);
+		ldb_msg_add_string(msg, "trustPartner", dns_name);
 	}
 
 	if (trustAuthIncoming.data) {
@@ -2630,7 +2630,7 @@ static NTSTATUS dcesrv_lsa_AddRemoveAccountRights(struct dcesrv_call_state *dce_
 			talloc_free(msg);
 			return NT_STATUS_NO_MEMORY;
 		}
-		samdb_msg_add_string(state->pdb, msg, msg, "comment", "added via LSA");
+		ldb_msg_add_string(msg, "comment", "added via LSA");
 		ret = ldb_add(state->pdb, msg);		
 	}
 	if (ret != LDB_SUCCESS) {
@@ -2957,8 +2957,7 @@ static NTSTATUS dcesrv_lsa_CreateSecret(struct dcesrv_call_state *dce_call, TALL
 		if (ret != LDB_SUCCESS) return NT_STATUS_NO_MEMORY;
 	} 
 
-	ret = samdb_msg_add_string(secret_state->sam_ldb, mem_ctx, msg,
-				   "objectClass", "secret");
+	ret = ldb_msg_add_string(msg, "objectClass", "secret");
 	if (ret != LDB_SUCCESS) return NT_STATUS_NO_MEMORY;
 	
 	secret_state->secret_dn = talloc_reference(secret_state, msg->dn);

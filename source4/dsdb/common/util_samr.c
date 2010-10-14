@@ -140,10 +140,8 @@ NTSTATUS dsdb_add_user(struct ldb_context *ldb,
 		return NT_STATUS_FOOBAR;
 	}
 
-	samdb_msg_add_string(ldb, tmp_ctx, msg, "sAMAccountName",
-		account_name);
-	samdb_msg_add_string(ldb, tmp_ctx, msg, "objectClass",
-		obj_class);
+	ldb_msg_add_string(msg, "sAMAccountName", account_name);
+	ldb_msg_add_string(msg, "objectClass", obj_class);
 
 	/* create the user */
 	ret = ldb_add(ldb, msg);
@@ -289,8 +287,8 @@ NTSTATUS dsdb_add_domain_group(struct ldb_context *ldb,
 		talloc_free(tmp_ctx);
 		return NT_STATUS_NO_MEMORY;
 	}
-	samdb_msg_add_string(ldb, tmp_ctx, msg, "sAMAccountName", groupname);
-	samdb_msg_add_string(ldb, tmp_ctx, msg, "objectClass", "group");
+	ldb_msg_add_string(msg, "sAMAccountName", groupname);
+	ldb_msg_add_string(msg, "objectClass", "group");
 
 	/* create the group */
 	ret = ldb_add(ldb, msg);
@@ -369,8 +367,8 @@ NTSTATUS dsdb_add_domain_alias(struct ldb_context *ldb,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	samdb_msg_add_string(ldb, mem_ctx, msg, "sAMAccountName", alias_name);
-	samdb_msg_add_string(ldb, mem_ctx, msg, "objectClass", "group");
+	ldb_msg_add_string(msg, "sAMAccountName", alias_name);
+	ldb_msg_add_string(msg, "objectClass", "group");
 	samdb_msg_add_int(ldb, mem_ctx, msg, "groupType", GTYPE_SECURITY_DOMAIN_LOCAL_GROUP);
 
 	/* create the alias */

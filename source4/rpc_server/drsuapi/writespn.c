@@ -185,10 +185,9 @@ WERROR dcesrv_drsuapi_DsWriteAccountSpn(struct dcesrv_call_state *dce_call, TALL
 						       req->spn_names[i].str)) {
 					passed_checks = false;
 				}
-				ret = samdb_msg_add_string(b_state->sam_ctx,
-							   msg, msg,
-							   "servicePrincipalName",
-							   req->spn_names[i].str);
+				ret = ldb_msg_add_string(msg,
+							 "servicePrincipalName",
+							 req->spn_names[i].str);
 				if (ret != LDB_SUCCESS) {
 					return WERR_NOMEM;
 				}

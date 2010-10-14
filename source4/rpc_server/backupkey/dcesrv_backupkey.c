@@ -118,12 +118,12 @@ static NTSTATUS set_lsa_secret(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	ret = samdb_msg_add_string(ldb, mem_ctx, msg, "cn", name2);
+	ret = ldb_msg_add_string(msg, "cn", name2);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(msg);
 		return NT_STATUS_NO_MEMORY;
 	}
-	ret = samdb_msg_add_string(ldb, mem_ctx, msg, "objectClass", "secret");
+	ret = ldb_msg_add_string(msg, "objectClass", "secret");
 	if (ret != LDB_SUCCESS) {
 		talloc_free(msg);
 		return NT_STATUS_NO_MEMORY;

@@ -2311,8 +2311,8 @@ NTSTATUS samdb_create_foreign_security_principal(struct ldb_context *sam_ctx, TA
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	ret = samdb_msg_add_string(sam_ctx, msg, msg,
-				   "objectClass", "foreignSecurityPrincipal");
+	ret = ldb_msg_add_string(msg, "objectClass",
+				 "foreignSecurityPrincipal");
 	if (ret != LDB_SUCCESS) {
 		talloc_free(sidstr);
 		return NT_STATUS_NO_MEMORY;

@@ -93,9 +93,7 @@ static NTSTATUS samsync_ldb_add_foreignSecurityPrincipal(TALLOC_CTX *mem_ctx,
 	if ( ! ldb_dn_add_child_fmt(msg->dn, "CN=%s", sidstr))
 		return NT_STATUS_UNSUCCESSFUL;
 	
-	samdb_msg_add_string(state->sam_ldb, mem_ctx, msg,
-			     "objectClass",
-			     "foreignSecurityPrincipal");
+	ldb_msg_add_string(msg, "objectClass", "foreignSecurityPrincipal");
 
 	*fsp_dn = msg->dn;
 
@@ -194,8 +192,8 @@ static NTSTATUS samsync_ldb_handle_domain(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	samdb_msg_add_string(state->sam_ldb, mem_ctx, 
-			     msg, "oEMInformation", domain->oem_information.string);
+	ldb_msg_add_string(msg, "oEMInformation",
+			   domain->oem_information.string);
 
 	samdb_msg_add_int64(state->sam_ldb, mem_ctx, 
 			    msg, "forceLogoff", domain->force_logoff_time);
@@ -418,8 +416,7 @@ static NTSTATUS samsync_ldb_handle_user(TALLOC_CTX *mem_ctx,
 		obj_class = "user";
 	}
 	if (add) {
-		samdb_msg_add_string(state->sam_ldb, mem_ctx, msg, 
-				     "objectClass", obj_class);
+		ldb_msg_add_string(msg, "objectClass", obj_class);
 		if (!msg->dn) {
 			msg->dn = ldb_dn_copy(mem_ctx, state->base_dn[database]);
 			ldb_dn_add_child_fmt(msg->dn, "CN=%s,CN=%s", cn_name, container);
@@ -573,8 +570,7 @@ static NTSTATUS samsync_ldb_handle_group(TALLOC_CTX *mem_ctx,
 	obj_class = "group";
 
 	if (add) {
-		samdb_msg_add_string(state->sam_ldb, mem_ctx, msg, 
-				     "objectClass", obj_class);
+		ldb_msg_add_string(msg, "objectClass", obj_class);
 		msg->dn = ldb_dn_copy(mem_ctx, state->base_dn[database]);
 		ldb_dn_add_child_fmt(msg->dn, "CN=%s,CN=%s", cn_name, container);
 		if (!msg->dn) {
@@ -791,8 +787,7 @@ static NTSTATUS samsync_ldb_handle_alias(TALLOC_CTX *mem_ctx,
 	obj_class = "group";
 
 	if (add) {
-		samdb_msg_add_string(state->sam_ldb, mem_ctx, msg, 
-				     "objectClass", obj_class);
+		ldb_msg_add_string(msg, "objectClass", obj_class);
 		msg->dn = ldb_dn_copy(mem_ctx, state->base_dn[database]);
 		ldb_dn_add_child_fmt(msg->dn, "CN=%s,CN=%s", cn_name, container);
 		if (!msg->dn) {
@@ -970,8 +965,7 @@ static NTSTATUS samsync_ldb_handle_account(TALLOC_CTX *mem_ctx,
 	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(msg->dn, msg);
 
 	for (i=0; i< account->privilege_entries; i++) {
-		samdb_msg_add_string(state->pdb, mem_ctx, msg, "privilege",
-				     account->privilege_name[i].string);
+		ldb_msg_add_string(msg, "privilege", account->privilege_name[i].string);
 	}
 
 	ret = dsdb_replace(state->pdb, msg, 0);
@@ -980,7 +974,7 @@ static NTSTATUS samsync_ldb_handle_account(TALLOC_CTX *mem_ctx,
 			talloc_free(msg);
 			return NT_STATUS_NO_MEMORY;
 		}
-		samdb_msg_add_string(state->pdb, msg, msg, "comment", "added via samsync");
+		ldb_msg_add_string(msg, "comment", "added via samsync");
 		ret = ldb_add(state->pdb, msg);		
 	}
 

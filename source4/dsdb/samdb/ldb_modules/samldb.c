@@ -1268,8 +1268,8 @@ static int samldb_user_account_control_change(struct samldb_ctx *ac)
 
 	if (user_account_control
 	    & (UF_SERVER_TRUST_ACCOUNT | UF_PARTIAL_SECRETS_ACCOUNT)) {
-		ret = samdb_msg_add_string(ldb, ac->msg, ac->msg,
-					   "isCriticalSystemObject", "TRUE");
+		ret = ldb_msg_add_string(ac->msg, "isCriticalSystemObject",
+					 "TRUE");
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}

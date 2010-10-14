@@ -76,7 +76,7 @@ static int sptr_db_search(struct ldb_context *ldb,
 
 #define SET_STRING(ldb, mod, attr, value) do { \
 	if (value == NULL) return WERR_INVALID_PARAM; \
-	if (samdb_msg_add_string(ldb, (TALLOC_CTX *)mod, mod, attr, value) != LDB_SUCCESS) { \
+	if (ldb_msg_add_string(mod, attr, value) != LDB_SUCCESS) { \
 		return WERR_NOMEM; \
 	} \
 } while (0)
