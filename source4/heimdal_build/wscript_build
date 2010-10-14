@@ -59,8 +59,8 @@ def HEIMDAL_ASN1(name, source,
         t.env.OPTION_FILE = "--option-file=%s" % os.path.normpath(os.path.join(bld.curdir, option_file))
 
     cfile = out_files[0][0:-2] + '.c'
-    hfile = out_files[1][0:-3] + '.h',
-    hpriv = out_files[2][0:-3] + '.h',
+    hfile = out_files[1][0:-3] + '.h'
+    hpriv = out_files[2][0:-3] + '.h'
 
     # now generate a .c file from the .x file
     t = bld(rule='''( echo '#include "config.h"' && cat ${SRC} ) > ${TGT}''',
@@ -68,7 +68,7 @@ def HEIMDAL_ASN1(name, source,
             target = cfile,
             shell = True,
             on_results=True,
-        ext_out = '.c',
+            ext_out = '.c',
             ext_in = '.x',
             depends_on = name + '_ASN1',
             name = name + '_C')
