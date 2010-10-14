@@ -101,7 +101,7 @@ static NTSTATUS samsync_ldb_add_foreignSecurityPrincipal(TALLOC_CTX *mem_ctx,
 
 	/* create the alias */
 	ret = ldb_add(state->sam_ldb, msg);
-	if (ret != 0) {
+	if (ret != LDB_SUCCESS) {
 		*error_string = talloc_asprintf(mem_ctx, "Failed to create foreignSecurityPrincipal "
 						"record %s: %s",
 						ldb_dn_get_linearized(msg->dn),
@@ -433,7 +433,7 @@ static NTSTATUS samsync_ldb_handle_user(TALLOC_CTX *mem_ctx,
 		}
 
 		ret = ldb_add(state->sam_ldb, msg);
-		if (ret != 0) {
+		if (ret != LDB_SUCCESS) {
 			struct ldb_dn *first_try_dn = msg->dn;
 			/* Try again with the default DN */
 			if (!remote_msgs) {
@@ -444,7 +444,7 @@ static NTSTATUS samsync_ldb_handle_user(TALLOC_CTX *mem_ctx,
 			} else {
 				msg->dn = talloc_steal(msg, remote_msgs[0]->dn);
 				ret = ldb_add(state->sam_ldb, msg);
-				if (ret != 0) {
+				if (ret != LDB_SUCCESS) {
 					*error_string = talloc_asprintf(mem_ctx, "Failed to create user record.  Tried both %s and %s: %s",
 									ldb_dn_get_linearized(first_try_dn),
 									ldb_dn_get_linearized(msg->dn),
@@ -455,7 +455,7 @@ static NTSTATUS samsync_ldb_handle_user(TALLOC_CTX *mem_ctx,
 		}
 	} else {
 		ret = dsdb_replace(state->sam_ldb, msg, 0);
-		if (ret != 0) {
+		if (ret != LDB_SUCCESS) {
 			*error_string = talloc_asprintf(mem_ctx, "Failed to modify user record %s: %s",
 							ldb_dn_get_linearized(msg->dn),
 							ldb_errstring(state->sam_ldb));
@@ -497,7 +497,7 @@ static NTSTATUS samsync_ldb_delete_user(TALLOC_CTX *mem_ctx,
 	}
 
 	ret = ldb_delete(state->sam_ldb, msgs[0]->dn);
-	if (ret != 0) {
+	if (ret != LDB_SUCCESS) {
 		*error_string = talloc_asprintf(mem_ctx, "Failed to delete user record %s: %s",
 						ldb_dn_get_linearized(msgs[0]->dn),
 						ldb_errstring(state->sam_ldb));
@@ -586,7 +586,7 @@ static NTSTATUS samsync_ldb_handle_group(TALLOC_CTX *mem_ctx,
 		}
 
 		ret = ldb_add(state->sam_ldb, msg);
-		if (ret != 0) {
+		if (ret != LDB_SUCCESS) {
 			*error_string = talloc_asprintf(mem_ctx, "Failed to create group record %s: %s",
 							ldb_dn_get_linearized(msg->dn),
 							ldb_errstring(state->sam_ldb));
@@ -594,7 +594,7 @@ static NTSTATUS samsync_ldb_handle_group(TALLOC_CTX *mem_ctx,
 		}
 	} else {
 		ret = dsdb_replace(state->sam_ldb, msg, 0);
-		if (ret != 0) {
+		if (ret != LDB_SUCCESS) {
 			*error_string = talloc_asprintf(mem_ctx, "Failed to modify group record %s: %s",
 							ldb_dn_get_linearized(msg->dn),
 							ldb_errstring(state->sam_ldb));
@@ -636,7 +636,7 @@ static NTSTATUS samsync_ldb_delete_group(TALLOC_CTX *mem_ctx,
 	}
 	
 	ret = ldb_delete(state->sam_ldb, msgs[0]->dn);
-	if (ret != 0) {
+	if (ret != LDB_SUCCESS) {
 		*error_string = talloc_asprintf(mem_ctx, "Failed to delete group record %s: %s",
 						ldb_dn_get_linearized(msgs[0]->dn),
 						ldb_errstring(state->sam_ldb));
@@ -709,7 +709,7 @@ static NTSTATUS samsync_ldb_handle_group_member(TALLOC_CTX *mem_ctx,
 	}
 	
 	ret = dsdb_replace(state->sam_ldb, msg, 0);
-	if (ret != 0) {
+	if (ret != LDB_SUCCESS) {
 		*error_string = talloc_asprintf(mem_ctx, "Failed to modify group record %s: %s",
 						ldb_dn_get_linearized(msg->dn),
 						ldb_errstring(state->sam_ldb));
@@ -800,7 +800,7 @@ static NTSTATUS samsync_ldb_handle_alias(TALLOC_CTX *mem_ctx,
 		}
 
 		ret = ldb_add(state->sam_ldb, msg);
-		if (ret != 0) {
+		if (ret != LDB_SUCCESS) {
 			*error_string = talloc_asprintf(mem_ctx, "Failed to create alias record %s: %s",
 							ldb_dn_get_linearized(msg->dn),
 							ldb_errstring(state->sam_ldb));
@@ -808,7 +808,7 @@ static NTSTATUS samsync_ldb_handle_alias(TALLOC_CTX *mem_ctx,
 		}
 	} else {
 		ret = dsdb_replace(state->sam_ldb, msg, 0);
-		if (ret != 0) {
+		if (ret != LDB_SUCCESS) {
 			*error_string = talloc_asprintf(mem_ctx, "Failed to modify alias record %s: %s",
 							ldb_dn_get_linearized(msg->dn),
 							ldb_errstring(state->sam_ldb));
@@ -845,7 +845,7 @@ static NTSTATUS samsync_ldb_delete_alias(TALLOC_CTX *mem_ctx,
 	}
 
 	ret = ldb_delete(state->sam_ldb, msgs[0]->dn);
-	if (ret != 0) {
+	if (ret != LDB_SUCCESS) {
 		*error_string = talloc_asprintf(mem_ctx, "Failed to delete alias record %s: %s",
 						ldb_dn_get_linearized(msgs[0]->dn),
 						ldb_errstring(state->sam_ldb));
@@ -927,7 +927,7 @@ static NTSTATUS samsync_ldb_handle_alias_member(TALLOC_CTX *mem_ctx,
 	}
 
 	ret = dsdb_replace(state->sam_ldb, msg, 0);
-	if (ret != 0) {
+	if (ret != LDB_SUCCESS) {
 		*error_string = talloc_asprintf(mem_ctx, "Failed to modify group record %s: %s",
 						ldb_dn_get_linearized(msg->dn),
 						ldb_errstring(state->sam_ldb));
@@ -980,7 +980,7 @@ static NTSTATUS samsync_ldb_handle_account(TALLOC_CTX *mem_ctx,
 		ret = ldb_add(state->pdb, msg);		
 	}
 
-	if (ret != 0) {
+	if (ret != LDB_SUCCESS) {
 		*error_string = talloc_asprintf(mem_ctx, "Failed to modify privilege record %s",
 						ldb_dn_get_linearized(msg->dn));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
@@ -1029,7 +1029,7 @@ static NTSTATUS samsync_ldb_delete_account(TALLOC_CTX *mem_ctx,
 			     "privilege");
 
 	ret = dsdb_replace(state->sam_ldb, msg, 0);
-	if (ret != 0) {
+	if (ret != LDB_SUCCESS) {
 		*error_string = talloc_asprintf(mem_ctx, "Failed to modify privilege record %s",
 						ldb_dn_get_linearized(msg->dn));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
