@@ -946,6 +946,7 @@ def check_project_rules(bld):
     if load_samba_deps(bld, tgt_list):
         return
 
+    bld.new_rules = True    
     Logs.info("Checking project rules ...")
 
     debug('deps: project rules checking started')

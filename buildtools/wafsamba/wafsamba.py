@@ -26,6 +26,7 @@ import irixcc
 import generic_cc
 import samba_dist
 import samba_wildcard
+import stale_files
 
 # some systems have broken threading in python
 if os.environ.get('WAF_NOTHREADS') == '1':
