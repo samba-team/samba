@@ -926,6 +926,9 @@ int samdb_msg_add_int(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx, struct l
 		       const char *attr_name, int v)
 {
 	const char *s = talloc_asprintf(mem_ctx, "%d", v);
+	if (s == NULL) {
+		return ldb_oom(sam_ldb);
+	}
 	return samdb_msg_add_string(sam_ldb, mem_ctx, msg, attr_name, s);
 }
 
@@ -945,6 +948,9 @@ int samdb_msg_add_int64(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx, struct
 			const char *attr_name, int64_t v)
 {
 	const char *s = talloc_asprintf(mem_ctx, "%lld", (long long)v);
+	if (s == NULL) {
+		return ldb_oom(sam_ldb);
+	}
 	return samdb_msg_add_string(sam_ldb, mem_ctx, msg, attr_name, s);
 }
 
