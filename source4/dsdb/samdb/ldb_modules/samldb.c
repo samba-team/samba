@@ -282,7 +282,7 @@ static int samldb_rodc_add(struct samldb_ctx *ac)
 		}
 	}
 
-	ldb_asprintf_errstring(ldb_module_get_ctx(ac->module),
+	ldb_asprintf_errstring(ldb,
 			       "%08X: Unable to find available msDS-SecondaryKrbTgtNumber",
 			       W_ERROR_V(WERR_NO_SYSTEM_RESOURCES));
 	return LDB_ERR_OTHER;
