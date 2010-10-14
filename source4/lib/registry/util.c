@@ -35,8 +35,9 @@ _PUBLIC_ char *reg_val_data_string(TALLOC_CTX *mem_ctx, uint32_t type,
 		case REG_EXPAND_SZ:
 		case REG_SZ:
 			convert_string_talloc(mem_ctx,
-							  CH_UTF16, CH_UNIX, data.data, data.length,
-							  (void **)&ret, NULL, false);
+					      CH_UTF16, CH_UNIX,
+					      data.data, data.length,
+					      (void **)&ret, NULL, false);
 			break;
 		case REG_DWORD:
 		case REG_DWORD_BIG_ENDIAN:
@@ -68,7 +69,7 @@ _PUBLIC_ char *reg_val_data_string(TALLOC_CTX *mem_ctx, uint32_t type,
 }
 
 /** Generate a string that describes a registry value */
-_PUBLIC_ char *reg_val_description(TALLOC_CTX *mem_ctx, 
+_PUBLIC_ char *reg_val_description(TALLOC_CTX *mem_ctx,
 				   const char *name,
 				   uint32_t data_type,
 				   const DATA_BLOB data)
@@ -80,7 +81,7 @@ _PUBLIC_ char *reg_val_description(TALLOC_CTX *mem_ctx,
 
 /*
  * This implements reading hex bytes that include comma's.
- * It was previously handled by strhex_to_data_blob, but that did not cover 
+ * It was previously handled by strhex_to_data_blob, but that did not cover
  * the format used by windows.
  */
 static DATA_BLOB reg_strhex_to_data_blob(TALLOC_CTX *mem_ctx, const char *str)
@@ -101,7 +102,7 @@ static DATA_BLOB reg_strhex_to_data_blob(TALLOC_CTX *mem_ctx, const char *str)
 		lo = strchr(HEXCHARS, toupper(str[i]));
 		if (lo == NULL)
 			break;
-		
+
 		ret.data[j] = PTR_DIFF(hi, HEXCHARS) << 4;
 		ret.data[j] += PTR_DIFF(lo, HEXCHARS);
 		j++;
@@ -112,7 +113,7 @@ static DATA_BLOB reg_strhex_to_data_blob(TALLOC_CTX *mem_ctx, const char *str)
 		}
 	}
 	return ret;
-} 
+}
 
 
 _PUBLIC_ bool reg_string_to_val(TALLOC_CTX *mem_ctx, const char *type_str,
@@ -158,10 +159,10 @@ _PUBLIC_ bool reg_string_to_val(TALLOC_CTX *mem_ctx, const char *type_str,
 	switch (*type) {
 		case REG_SZ:
 			return convert_string_talloc(mem_ctx,
-								 CH_UNIX, CH_UTF16, data_str,
-								 strlen(data_str)+1,
-								 (void **)&data->data,
-								 &data->length, false);
+						     CH_UNIX, CH_UTF16,
+						     data_str, strlen(data_str)+1,
+						     (void **)&data->data,
+						     &data->length, false);
 			break;
 		case REG_MULTI_SZ:
 		case REG_EXPAND_SZ:
