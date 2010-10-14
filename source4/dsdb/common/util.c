@@ -2344,9 +2344,12 @@ NTSTATUS samdb_create_foreign_security_principal(struct ldb_context *sam_ctx, TA
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	samdb_msg_add_string(sam_ctx, msg, msg,
-			     "objectClass",
-			     "foreignSecurityPrincipal");
+	ret = samdb_msg_add_string(sam_ctx, msg, msg,
+				   "objectClass", "foreignSecurityPrincipal");
+	if (ret != LDB_SUCCESS) {
+		talloc_free(sidstr);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	/* create the alias */
 	ret = ldb_add(sam_ctx, msg);
