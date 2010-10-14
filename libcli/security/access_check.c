@@ -179,6 +179,10 @@ NTSTATUS se_access_check(const struct security_descriptor *sd,
 			bits_remaining));
 	}
 
+#if (_SAMBA_BUILD_ >= 4)
+	/* s3 had this with #if 0 previously. To be sure the merge
+	   doesn't change any behaviour, we have the above #if check
+	   on _SAMBA_BUILD_. */
 	if (access_desired & SEC_FLAG_SYSTEM_SECURITY) {
 		if (security_token_has_privilege(token, SEC_PRIV_SECURITY)) {
 			bits_remaining &= ~SEC_FLAG_SYSTEM_SECURITY;
@@ -186,6 +190,7 @@ NTSTATUS se_access_check(const struct security_descriptor *sd,
 			return NT_STATUS_PRIVILEGE_NOT_HELD;
 		}
 	}
+#endif
 
 	/* a NULL dacl allows access */
 	if ((sd->type & SEC_DESC_DACL_PRESENT) && sd->dacl == NULL) {
