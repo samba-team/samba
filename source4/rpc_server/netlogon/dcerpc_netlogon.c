@@ -1431,16 +1431,12 @@ static NTSTATUS dcesrv_netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_cal
 				"dNSHostname",
 			r->in.query->workstation_info->dns_hostname);
 
-			samdb_msg_add_string(sam_ctx, mem_ctx, new_msg,
-				"servicePrincipalName",
-				talloc_asprintf(mem_ctx, "HOST/%s",
-				r->in.computer_name)
-			);
-			samdb_msg_add_string(sam_ctx, mem_ctx, new_msg,
-				"servicePrincipalName",
-				talloc_asprintf(mem_ctx, "HOST/%s",
-				r->in.query->workstation_info->dns_hostname)
-			);
+			ldb_msg_add_string(new_msg, "servicePrincipalName",
+					   talloc_asprintf(new_msg, "HOST/%s",
+					   r->in.computer_name));
+			ldb_msg_add_string(new_msg, "servicePrincipalName",
+					   talloc_asprintf(new_msg, "HOST/%s",
+					   r->in.query->workstation_info->dns_hostname));
 		}
 
 		if (dsdb_replace(sam_ctx, new_msg, 0) != LDB_SUCCESS) {

@@ -604,9 +604,8 @@ static int samldb_fill_object(struct samldb_ctx *ac)
 			 * caller. Use the entry DN for it. */
 			ac->dn = ac->msg->dn;
 
-			ret = samdb_msg_add_string(ldb, ac->msg, ac->msg,
-						   "defaultObjectCategory",
-						   ldb_dn_get_linearized(ac->dn));
+			ret = ldb_msg_add_string(ac->msg, "defaultObjectCategory",
+						 ldb_dn_alloc_linearized(ac, ac->dn));
 			if (ret != LDB_SUCCESS) {
 				ldb_oom(ldb);
 				return ret;
