@@ -828,8 +828,9 @@ static int samldb_objectclass_trigger(struct samldb_ctx *ac)
 			uint32_t user_account_control, account_type;
 
 			/* Step 1.3: "userAccountControl" -> "sAMAccountType" mapping */
-			user_account_control = strtoul((const char *)el->values[0].data,
-						       NULL, 0);
+			user_account_control = ldb_msg_find_attr_as_uint(ac->msg,
+									 "userAccountControl",
+									 0);
 
 			/* Temporary duplicate accounts aren't allowed */
 			if ((user_account_control & UF_TEMP_DUPLICATE_ACCOUNT) != 0) {
@@ -903,8 +904,8 @@ static int samldb_objectclass_trigger(struct samldb_ctx *ac)
 		if (el != NULL) {
 			uint32_t group_type, account_type;
 
-			group_type = strtoul((const char *)el->values[0].data,
-					     NULL, 0);
+			group_type = ldb_msg_find_attr_as_uint(ac->msg,
+							       "groupType", 0);
 
 			/* The creation of builtin groups requires the
 			 * RELAX control */
@@ -1308,7 +1309,7 @@ static int samldb_modify(struct ldb_module *module, struct ldb_request *req)
 
 		modified = true;
 
-		group_type = strtoul((const char *)el->values[0].data, NULL, 0);
+		group_type = ldb_msg_find_attr_as_uint(ac->msg, "groupType", 0);
 		old_group_type = samdb_search_uint(ldb, ac, 0, ac->msg->dn,
 						   "groupType", NULL);
 		if (old_group_type == 0) {
@@ -1390,8 +1391,9 @@ static int samldb_modify(struct ldb_module *module, struct ldb_request *req)
 
 		modified = true;
 
-		user_account_control = strtoul((const char *)el->values[0].data,
-			NULL, 0);
+		user_account_control = ldb_msg_find_attr_as_uint(ac->msg,
+								 "userAccountControl",
+								 0);
 
 		/* Temporary duplicate accounts aren't allowed */
 		if ((user_account_control & UF_TEMP_DUPLICATE_ACCOUNT) != 0) {
