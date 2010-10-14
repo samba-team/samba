@@ -770,12 +770,11 @@ int samdb_find_or_add_attribute(struct ldb_context *ldb, struct ldb_message *msg
 int samdb_msg_add_string(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx, struct ldb_message *msg,
 			 const char *attr_name, const char *str)
 {
-	char *s = talloc_strdup(mem_ctx, str);
-	char *a = talloc_strdup(mem_ctx, attr_name);
-	if (s == NULL || a == NULL) {
+	const char *s = talloc_strdup(mem_ctx, str);
+	if (s == NULL) {
 		return ldb_oom(sam_ldb);
 	}
-	return ldb_msg_add_string(msg, a, s);
+	return ldb_msg_add_string(msg, attr_name, s);
 }
 
 /*
