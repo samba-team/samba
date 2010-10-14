@@ -454,6 +454,7 @@ static int construct_msds_keyversionnumber(struct ldb_module *module,
 	enum ndr_err_code ndr_err;
 	const struct ldb_val *omd_value;
 	struct replPropertyMetaDataBlob *omd;
+	int ret;
 
 	omd_value = ldb_msg_find_ldb_val(msg, "replPropertyMetaData");
 	if (!omd_value) {
@@ -486,7 +487,14 @@ static int construct_msds_keyversionnumber(struct ldb_module *module,
 	}
 	for (i=0; i<omd->ctr.ctr1.count; i++) {
 		if (omd->ctr.ctr1.array[i].attid == DRSUAPI_ATTRIBUTE_unicodePwd) {
-			ldb_msg_add_fmt(msg, "msDS-KeyVersionNumber", "%u", omd->ctr.ctr1.array[i].version);
+			ret = samdb_msg_add_uint(ldb_module_get_ctx(module),
+						 msg, msg,
+						 "msDS-KeyVersionNumber",
+						 omd->ctr.ctr1.array[i].version);
+			if (ret != LDB_SUCCESS) {
+				talloc_free(omd);
+				return ret;
+			}
 			break;
 		}
 	}

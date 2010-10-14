@@ -814,8 +814,8 @@ static NTSTATUS add_trust_user(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	ret = ldb_msg_add_fmt(msg, "userAccountControl", "%u",
-			      UF_INTERDOMAIN_TRUST_ACCOUNT);
+	ret = samdb_msg_add_uint(sam_ldb, msg, msg, "userAccountControl",
+				 UF_INTERDOMAIN_TRUST_ACCOUNT);
 	if (ret != LDB_SUCCESS) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -1419,6 +1419,7 @@ static NTSTATUS get_tdo(struct ldb_context *sam, TALLOC_CTX *mem_ctx,
 }
 
 static NTSTATUS update_uint32_t_value(TALLOC_CTX *mem_ctx,
+				      struct ldb_context *sam_ldb,
 				      struct ldb_message *orig,
 				      struct ldb_message *dest,
 				      const char *attribute,
@@ -1427,7 +1428,6 @@ static NTSTATUS update_uint32_t_value(TALLOC_CTX *mem_ctx,
 {
 	const struct ldb_val *orig_val;
 	uint32_t orig_uint = 0;
-	char *str_val;
 	int flags = 0;
 	int ret;
 
@@ -1455,11 +1455,7 @@ static NTSTATUS update_uint32_t_value(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	str_val = talloc_asprintf(mem_ctx, "%u", value);
-	if (!str_val) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	ret = ldb_msg_add_steal_string(dest, attribute, str_val);
+	ret = samdb_msg_add_uint(sam_ldb, dest, dest, attribute, value);
 	if (ret != LDB_SUCCESS) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -1721,7 +1717,8 @@ static NTSTATUS setInfoTrustedDomain_base(struct dcesrv_call_state *dce_call,
 	msg->dn = dom_msg->dn;
 
 	if (posix_offset) {
-		nt_status = update_uint32_t_value(mem_ctx, dom_msg, msg,
+		nt_status = update_uint32_t_value(mem_ctx, p_state->sam_ldb,
+						  dom_msg, msg,
 						  "trustPosixOffset",
 						  *posix_offset, NULL);
 		if (!NT_STATUS_IS_OK(nt_status)) {
@@ -1735,7 +1732,8 @@ static NTSTATUS setInfoTrustedDomain_base(struct dcesrv_call_state *dce_call,
 		uint32_t tmp;
 		int origtype;
 
-		nt_status = update_uint32_t_value(mem_ctx, dom_msg, msg,
+		nt_status = update_uint32_t_value(mem_ctx, p_state->sam_ldb,
+						  dom_msg, msg,
 						  "trustDirection",
 						  info_ex->trust_direction,
 						  &origdir);
@@ -1766,7 +1764,8 @@ static NTSTATUS setInfoTrustedDomain_base(struct dcesrv_call_state *dce_call,
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 
-		nt_status = update_uint32_t_value(mem_ctx, dom_msg, msg,
+		nt_status = update_uint32_t_value(mem_ctx, p_state->sam_ldb,
+						  dom_msg, msg,
 						  "trustAttributes",
 						  info_ex->trust_attributes,
 						  &origattrs);
@@ -1785,7 +1784,8 @@ static NTSTATUS setInfoTrustedDomain_base(struct dcesrv_call_state *dce_call,
 	}
 
 	if (enc_types) {
-		nt_status = update_uint32_t_value(mem_ctx, dom_msg, msg,
+		nt_status = update_uint32_t_value(mem_ctx, p_state->sam_ldb,
+						  dom_msg, msg,
 						  "msDS-SupportedEncryptionTypes",
 						  *enc_types, NULL);
 		if (!NT_STATUS_IS_OK(nt_status)) {

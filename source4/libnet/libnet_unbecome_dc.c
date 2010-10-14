@@ -431,8 +431,9 @@ static NTSTATUS unbecomeDC_ldap_modify_computer(struct libnet_UnbecomeDC_state *
 	msg->dn = ldb_dn_new(msg, s->ldap.ldb, s->dest_dsa.computer_dn_str);
 	NT_STATUS_HAVE_NO_MEMORY(msg->dn);
 
-	ret = ldb_msg_add_fmt(msg, "userAccountControl", "%u", user_account_control);
-	if (ret != 0) {
+	ret = samdb_msg_add_uint(s->ldap.ldb, msg, msg, "userAccountControl",
+				 user_account_control);
+	if (ret != LDB_SUCCESS) {
 		talloc_free(msg);
 		return NT_STATUS_NO_MEMORY;
 	}

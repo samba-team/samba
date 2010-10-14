@@ -285,8 +285,9 @@ static int rootdse_add_dynamic(struct ldb_module *module, struct ldb_message *ms
 		uint64_t seq_num;
 		int ret = ldb_sequence_number(ldb, LDB_SEQ_HIGHEST_SEQ, &seq_num);
 		if (ret == LDB_SUCCESS) {
-			if (ldb_msg_add_fmt(msg, "highestCommittedUSN",
-					    "%llu", (unsigned long long)seq_num) != LDB_SUCCESS) {
+			if (samdb_msg_add_uint64(ldb, msg, msg,
+						 "highestCommittedUSN",
+						 seq_num) != LDB_SUCCESS) {
 				goto failed;
 			}
 		}
@@ -300,8 +301,8 @@ static int rootdse_add_dynamic(struct ldb_module *module, struct ldb_message *ms
 			n++;
 		}
 
-		if (ldb_msg_add_fmt(msg, "dsSchemaAttrCount",
-				    "%u", n) != LDB_SUCCESS) {
+		if (samdb_msg_add_uint(ldb, msg, msg, "dsSchemaAttrCount",
+				       n) != LDB_SUCCESS) {
 			goto failed;
 		}
 	}
@@ -314,15 +315,15 @@ static int rootdse_add_dynamic(struct ldb_module *module, struct ldb_message *ms
 			n++;
 		}
 
-		if (ldb_msg_add_fmt(msg, "dsSchemaClassCount",
-				    "%u", n) != LDB_SUCCESS) {
+		if (samdb_msg_add_uint(ldb, msg, msg, "dsSchemaClassCount",
+				       n) != LDB_SUCCESS) {
 			goto failed;
 		}
 	}
 
 	if (schema && do_attribute_explicit(attrs, "dsSchemaPrefixCount")) {
-		if (ldb_msg_add_fmt(msg, "dsSchemaPrefixCount",
-				    "%u", schema->prefixmap->length) != LDB_SUCCESS) {
+		if (samdb_msg_add_uint(ldb, msg, msg, "dsSchemaPrefixCount",
+				       schema->prefixmap->length) != LDB_SUCCESS) {
 			goto failed;
 		}
 	}

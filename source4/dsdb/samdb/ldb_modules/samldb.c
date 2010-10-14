@@ -293,7 +293,8 @@ found:
 		return ldb_operr(ldb);
 	}
 
-	ret = ldb_msg_add_fmt(ac->msg, "msDS-SecondaryKrbTgtNumber", "%u", krbtgt_number);
+	ret = samdb_msg_add_uint(ldb, ac->msg, ac->msg,
+				 "msDS-SecondaryKrbTgtNumber", krbtgt_number);
 	if (ret != LDB_SUCCESS) {
 		return ldb_operr(ldb);
 	}
@@ -757,6 +758,7 @@ static int samldb_objectclass_trigger(struct samldb_ctx *ac)
 	struct ldb_message_element *el, *el2;
 	enum sid_generator sid_generator;
 	struct dom_sid *sid;
+	const char *tempstr;
 	int ret;
 
 	/* make sure that "sAMAccountType" is not specified */
@@ -791,9 +793,10 @@ static int samldb_objectclass_trigger(struct samldb_ctx *ac)
 
 	if (strcmp(ac->type, "user") == 0) {
 		/* Step 1.2: Default values */
+		tempstr = talloc_asprintf(ac->msg, "%d", UF_NORMAL_ACCOUNT);
+		if (tempstr == NULL) return ldb_operr(ldb);
 		ret = samdb_find_or_add_attribute(ldb, ac->msg,
-			"userAccountControl",
-			talloc_asprintf(ac->msg, "%d", UF_NORMAL_ACCOUNT));
+			"userAccountControl", tempstr);
 		if (ret != LDB_SUCCESS) return ret;
 		ret = samdb_find_or_add_attribute(ldb, ac->msg,
 			"badPwdCount", "0");
@@ -894,9 +897,11 @@ static int samldb_objectclass_trigger(struct samldb_ctx *ac)
 
 	} else if (strcmp(ac->type, "group") == 0) {
 		/* Step 2.2: Default values */
+		tempstr = talloc_asprintf(ac->msg, "%d",
+					  GTYPE_SECURITY_GLOBAL_GROUP);
+		if (tempstr == NULL) return ldb_operr(ldb);
 		ret = samdb_find_or_add_attribute(ldb, ac->msg,
-			"groupType",
-			talloc_asprintf(ac->msg, "%d", GTYPE_SECURITY_GLOBAL_GROUP));
+			"groupType", tempstr);
 		if (ret != LDB_SUCCESS) return ret;
 
 		/* Step 2.3: "groupType" -> "sAMAccountType" */

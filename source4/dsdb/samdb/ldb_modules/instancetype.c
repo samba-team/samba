@@ -162,7 +162,7 @@ static int instancetype_add(struct ldb_module *module, struct ldb_request *req)
 	 */
 	instanceType = INSTANCE_TYPE_WRITE;
 
-	ret = ldb_msg_add_fmt(msg, "instanceType", "%u", instanceType);
+	ret = samdb_msg_add_uint(ldb, msg, msg, "instanceType", instanceType);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}

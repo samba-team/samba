@@ -425,8 +425,8 @@ static int acl_sDRightsEffective(struct ldb_module *module,
 			flags |= SECINFO_SACL;
 		}
 	}
-	ldb_msg_add_fmt(msg, "sDRightsEffective", "%u", flags);
-	return LDB_SUCCESS;
+	return samdb_msg_add_uint(ldb_module_get_ctx(module), msg, msg,
+				  "sDRightsEffective", flags);
 }
 
 static int acl_add(struct ldb_module *module, struct ldb_request *req)
