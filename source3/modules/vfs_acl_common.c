@@ -895,6 +895,10 @@ static NTSTATUS create_file_acl_common(struct vfs_handle_struct *handle,
 					result,
 					&info);
 
+	if (!NT_STATUS_IS_OK(status)) {
+		goto out;
+	}
+
 	if (info != FILE_WAS_CREATED) {
 		/* File/directory was opened, not created. */
 		goto out;
@@ -902,7 +906,7 @@ static NTSTATUS create_file_acl_common(struct vfs_handle_struct *handle,
 
 	fsp = *result;
 
-	if (!NT_STATUS_IS_OK(status) || fsp == NULL) {
+	if (fsp == NULL) {
 		/* Only handle success. */
 		goto out;
 	}
