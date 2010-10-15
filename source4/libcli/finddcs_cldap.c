@@ -94,15 +94,18 @@ struct tevent_req *finddcs_cldap_send(TALLOC_CTX *mem_ctx,
 	}
 
 	if (io->in.server_address) {
+		DEBUG(4,("finddcs: searching for a DC by IP %s\n", io->in.server_address));
 		if (!finddcs_cldap_ipaddress(state, io)) {
 			return tevent_req_post(req, event_ctx);
 		}
 	} else if (strchr(state->domain_name, '.')) {
 		/* looks like a DNS name */
+		DEBUG(4,("finddcs: searching for a DC by DNS domain %s\n", state->domain_name));
 		if (!finddcs_cldap_srv_lookup(state, io, resolve_ctx, event_ctx)) {
 			return tevent_req_post(req, event_ctx);
 		}
 	} else {
+		DEBUG(4,("finddcs: searching for a DC by NBT lookup %s\n", state->domain_name));
 		if (!finddcs_cldap_nbt_lookup(state, io, resolve_ctx, event_ctx)) {
 			return tevent_req_post(req, event_ctx);
 		}
@@ -156,6 +159,8 @@ static bool finddcs_cldap_srv_lookup(struct finddcs_cldap_state *state,
 	} else {
 		state->srv_name = talloc_asprintf(state, "_ldap._tcp.%s", io->in.domain_name);
 	}
+
+	DEBUG(4,("finddcs: looking for SRV records for %s\n", state->srv_name));
 
 	make_nbt_name(&name, state->srv_name, 0);
 
@@ -229,6 +234,8 @@ static void finddcs_cldap_next_server(struct finddcs_cldap_state *state)
 		NETLOGON_NT_VERSION_IP;
 	state->netlogon->in.map_response = true;
 
+	DEBUG(4,("finddcs: performing CLDAP query on %s\n", state->netlogon->in.dest_address));
+
 	subreq = cldap_netlogon_send(state, state->cldap, state->netlogon);
 	if (tevent_req_nomem(subreq, state->req)) {
 		return;
@@ -258,7 +265,7 @@ static void finddcs_cldap_netlogon_replied(struct tevent_req *subreq)
 	if (state->minimum_dc_flags !=
 	    (state->minimum_dc_flags & state->netlogon->out.netlogon.data.nt5_ex.server_type)) {
 		/* the server didn't match the minimum requirements */
-		DEBUG(4,(__location__ ": Skipping DC %s with server_type=0x%08x - required 0x%08x\n",
+		DEBUG(4,("finddcs: Skipping DC %s with server_type=0x%08x - required 0x%08x\n",
 			 state->srv_addresses[state->srv_address_index],
 			 state->netlogon->out.netlogon.data.nt5_ex.server_type,
 			 state->minimum_dc_flags));
@@ -266,6 +273,10 @@ static void finddcs_cldap_netlogon_replied(struct tevent_req *subreq)
 		finddcs_cldap_next_server(state);
 		return;
 	}
+
+	DEBUG(4,("finddcs: Found matching DC %s with server_type=0x%08x\n",
+		 state->srv_addresses[state->srv_address_index],
+		 state->netlogon->out.netlogon.data.nt5_ex.server_type));
 
 	tevent_req_done(state->req);
 }
