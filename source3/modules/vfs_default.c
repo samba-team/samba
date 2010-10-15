@@ -217,7 +217,7 @@ static int vfswrap_mkdir(vfs_handle_struct *handle,  const char *path, mode_t mo
 	if (lp_inherit_acls(SNUM(handle->conn))
 	    && parent_dirname(talloc_tos(), path, &parent, NULL)
 	    && (has_dacl = directory_has_default_acl(handle->conn, parent)))
-		mode = 0777;
+		mode = (0777 & lp_dir_mask(SNUM(handle->conn)));
 
 	TALLOC_FREE(parent);
 
