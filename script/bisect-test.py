@@ -9,7 +9,6 @@ import os, tempfile, sys
 from optparse import OptionParser
 
 parser = OptionParser()
-parser.add_option("", "--tests", help="list of tests to run", default='*')
 parser.add_option("", "--good", help="known good revision (default HEAD~100)", default='HEAD~100')
 parser.add_option("", "--bad", help="known bad revision (default HEAD)", default='HEAD')
 parser.add_option("", "--skip-build-errors", help="skip revision where make fails",
