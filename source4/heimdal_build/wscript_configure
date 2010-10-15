@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+import Logs, sys
+
 conf.CHECK_TYPE('u_char', 'uint8_t')
 conf.CHECK_TYPE('u_int32_t', 'uint32_t')
 
@@ -62,6 +64,24 @@ conf.DEFINE('SAMBA4_INTERNAL_HEIMDAL', 1)
 
 if conf.CHECK_BUNDLED_SYSTEM('com_err', checkfunctions='com_right_r com_err', headers='com_err.h'):
     conf.define('USING_SYSTEM_COM_ERR', 1)
+
+def check_bundled_heimdal_lib(name, functions, headers):
+    # Only use system library if the user requested the bundled one not be used.
+    if conf.LIB_MAY_BE_BUNDLED(name):
+        return
+    lib = name
+    setattr(conf.env, "CPPPATH_%s" % name.upper(), ["/usr/include/heimdal"])
+    setattr(conf.env, "LIBPATH_%s" % name.upper(), ["/usr/lib/heimdal"])
+    if not conf.CHECK_HEADERS(headers, lib=lib):
+        Logs.error('ERROR: Unable to find missing header %s' % headers)
+        sys.exit(1)
+    if not conf.CHECK_LIB([lib], mandatory=True, set_target=True):
+        Logs.error('ERROR: Unable to find missing library %s' % lib)
+        sys.exit(1)
+    conf.define('USING_SYSTEM_%s' % name.upper(), 1)
+
+
+check_bundled_heimdal_lib("wind", "wind_stringprep", "wind.h")
 
 # disable trying to use an external compile_et until we have a configure
 # test that checks that the system one actually works. On some systems it

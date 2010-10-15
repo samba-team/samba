@@ -323,44 +323,6 @@ def HEIMDAL_BINARY(binname, source,
         )
 
 
-HEIMDAL_GENERATOR(
-    name="HEIMDAL_ERRORLIST",
-    rule="${PYTHON} ${SRC[0].abspath()} ${SRC[1].abspath()} ${SRC[1].parent.abspath(env)}",
-    source = '../heimdal/lib/wind/gen-errorlist.py ../heimdal/lib/wind/rfc3454.txt ../heimdal/lib/wind/stringprep.py',
-    target = '../heimdal/lib/wind/errorlist_table.c ../heimdal/lib/wind/errorlist_table.h'
-    )
-
-
-HEIMDAL_GENERATOR(
-    name = 'HEIMDAL_NORMALIZE_TABLE',
-    rule="${PYTHON} ${SRC[0].abspath()} ${SRC[1].abspath()} ${SRC[2].abspath()} ${SRC[1].parent.abspath(env)}",
-    source = '../heimdal/lib/wind/gen-normalize.py ../heimdal/lib/wind/UnicodeData.txt ../heimdal/lib/wind/CompositionExclusions-3.2.0.txt',
-    target = '../heimdal/lib/wind/normalize_table.h ../heimdal/lib/wind/normalize_table.c'
-)
-
-HEIMDAL_GENERATOR(
-    name = 'HEIMDAL_COMBINING_TABLE',
-    rule="${PYTHON} ${SRC[0].abspath()} ${SRC[1].abspath()} ${SRC[1].parent.abspath(env)}",
-    source = '../heimdal/lib/wind/gen-combining.py ../heimdal/lib/wind/UnicodeData.txt',
-    target = '../heimdal/lib/wind/combining_table.h ../heimdal/lib/wind/combining_table.c'
-)
-
-HEIMDAL_GENERATOR(
-    name = 'HEIMDAL_BIDI_TABLE',
-    rule="${PYTHON} ${SRC[0].abspath()} ${SRC[1].abspath()} ${SRC[1].parent.abspath(env)}",
-    source = '../heimdal/lib/wind/gen-bidi.py ../heimdal/lib/wind/rfc3454.txt',
-    target = '../heimdal/lib/wind/bidi_table.h ../heimdal/lib/wind/bidi_table.c'
-)
-
-
-HEIMDAL_GENERATOR(
-    name = 'HEIMDAL_MAP_TABLE',
-    rule="${PYTHON} ${SRC[0].abspath()} ${SRC[2].abspath()} ${SRC[2].parent.abspath(env)}",
-    source = '../heimdal/lib/wind/gen-map.py ../heimdal/lib/wind/stringprep.py ../heimdal/lib/wind/rfc3454.txt',
-    target = '../heimdal/lib/wind/map_table.h ../heimdal/lib/wind/map_table.c'
-)
-
-
 HEIMDAL_ASN1('HEIMDAL_SPNEGO_ASN1',
         source='../heimdal/lib/gssapi/spnego/spnego.asn1',
     options='--sequence=MechTypeList',
@@ -484,9 +446,6 @@ HEIMDAL_ERRTABLE('HEIMDAL_GKRB5_ERR_ET',
 HEIMDAL_ERRTABLE('HEIMDAL_HX509_ERR_ET',
     '../heimdal/lib/hx509/hx509_err.et')
 
-
-HEIMDAL_ERRTABLE('WIND_ERR_ET',
-    '../heimdal/lib/wind/wind_err.et')
 
 ROKEN_HOSTCC_SOURCE = '''
     ../heimdal/lib/roken/base64.c
@@ -628,7 +587,7 @@ HEIMDAL_LIBRARY('gssapi',
 ../heimdal/lib/gssapi/mech/gss_export_sec_context.c ../heimdal/lib/gssapi/mech/gss_inquire_context.c ../heimdal/lib/gssapi/mech/gss_release_name.c
 ../heimdal/lib/gssapi/mech/gss_set_cred_option.c  ../heimdal/lib/gssapi/mech/gss_pseudo_random.c gssapi-glue.c''',
     includes='../heimdal/lib/gssapi ../heimdal/lib/gssapi/gssapi ../heimdal/lib/gssapi/spnego ../heimdal/lib/gssapi/krb5 ../heimdal/lib/gssapi/mech',
-    deps='HEIMDAL_HCRYPTO HEIMDAL_HEIM_ASN1 HEIMDAL_SPNEGO_ASN1 HEIMDAL_GSSAPI_ASN1 roken krb5 com_err',
+    deps='HEIMDAL_HCRYPTO HEIMDAL_HEIM_ASN1 HEIMDAL_SPNEGO_ASN1 HEIMDAL_GSSAPI_ASN1 roken krb5 com_err wind',
     vnum='2.0.0',
     )
 
@@ -733,12 +692,53 @@ HEIMDAL_LIBRARY('hx509',
     )
 
 
-HEIMDAL_LIBRARY('wind',
-    '../heimdal/lib/wind/wind_err.c ../heimdal/lib/wind/stringprep.c ../heimdal/lib/wind/errorlist.c ../heimdal/lib/wind/errorlist_table.c ../heimdal/lib/wind/normalize.c ../heimdal/lib/wind/normalize_table.c ../heimdal/lib/wind/combining.c ../heimdal/lib/wind/combining_table.c ../heimdal/lib/wind/utf8.c ../heimdal/lib/wind/bidi.c ../heimdal/lib/wind/bidi_table.c ../heimdal/lib/wind/ldap.c ../heimdal/lib/wind/map.c ../heimdal/lib/wind/map_table.c',
-    includes='../heimdal/lib/wind',
-    deps='roken com_err',
-    vnum='0.0.0',
+if not bld.CONFIG_SET('USING_SYSTEM_WIND'):
+    HEIMDAL_ERRTABLE('WIND_ERR_ET',
+        '../heimdal/lib/wind/wind_err.et')
+
+    HEIMDAL_GENERATOR(
+        name="HEIMDAL_ERRORLIST",
+        rule="${PYTHON} ${SRC[0].abspath()} ${SRC[1].abspath()} ${SRC[1].parent.abspath(env)}",
+        source = '../heimdal/lib/wind/gen-errorlist.py ../heimdal/lib/wind/rfc3454.txt ../heimdal/lib/wind/stringprep.py',
+        target = '../heimdal/lib/wind/errorlist_table.c ../heimdal/lib/wind/errorlist_table.h'
+        )
+
+
+    HEIMDAL_GENERATOR(
+        name = 'HEIMDAL_NORMALIZE_TABLE',
+        rule="${PYTHON} ${SRC[0].abspath()} ${SRC[1].abspath()} ${SRC[2].abspath()} ${SRC[1].parent.abspath(env)}",
+        source = '../heimdal/lib/wind/gen-normalize.py ../heimdal/lib/wind/UnicodeData.txt ../heimdal/lib/wind/CompositionExclusions-3.2.0.txt',
+        target = '../heimdal/lib/wind/normalize_table.h ../heimdal/lib/wind/normalize_table.c'
     )
+
+    HEIMDAL_GENERATOR(
+        name = 'HEIMDAL_COMBINING_TABLE',
+        rule="${PYTHON} ${SRC[0].abspath()} ${SRC[1].abspath()} ${SRC[1].parent.abspath(env)}",
+        source = '../heimdal/lib/wind/gen-combining.py ../heimdal/lib/wind/UnicodeData.txt',
+        target = '../heimdal/lib/wind/combining_table.h ../heimdal/lib/wind/combining_table.c'
+    )
+
+    HEIMDAL_GENERATOR(
+        name = 'HEIMDAL_BIDI_TABLE',
+        rule="${PYTHON} ${SRC[0].abspath()} ${SRC[1].abspath()} ${SRC[1].parent.abspath(env)}",
+        source = '../heimdal/lib/wind/gen-bidi.py ../heimdal/lib/wind/rfc3454.txt',
+        target = '../heimdal/lib/wind/bidi_table.h ../heimdal/lib/wind/bidi_table.c'
+    )
+
+
+    HEIMDAL_GENERATOR(
+        name = 'HEIMDAL_MAP_TABLE',
+        rule="${PYTHON} ${SRC[0].abspath()} ${SRC[2].abspath()} ${SRC[2].parent.abspath(env)}",
+        source = '../heimdal/lib/wind/gen-map.py ../heimdal/lib/wind/stringprep.py ../heimdal/lib/wind/rfc3454.txt',
+        target = '../heimdal/lib/wind/map_table.h ../heimdal/lib/wind/map_table.c'
+    )
+
+    HEIMDAL_LIBRARY('wind',
+          '../heimdal/lib/wind/wind_err.c ../heimdal/lib/wind/stringprep.c ../heimdal/lib/wind/errorlist.c ../heimdal/lib/wind/errorlist_table.c ../heimdal/lib/wind/normalize.c ../heimdal/lib/wind/normalize_table.c ../heimdal/lib/wind/combining.c ../heimdal/lib/wind/combining_table.c ../heimdal/lib/wind/utf8.c ../heimdal/lib/wind/bidi.c ../heimdal/lib/wind/bidi_table.c ../heimdal/lib/wind/ldap.c ../heimdal/lib/wind/map.c ../heimdal/lib/wind/map_table.c',
+          includes='../heimdal/lib/wind',
+          deps='roken com_err',
+          vnum='0.0.0',
+          )
 
 HEIMDAL_SUBSYSTEM('ROKEN_HOSTCC',
     ROKEN_HOSTCC_SOURCE,
