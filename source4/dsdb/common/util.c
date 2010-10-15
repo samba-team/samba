@@ -929,7 +929,7 @@ int samdb_msg_add_int(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx, struct l
 	if (s == NULL) {
 		return ldb_oom(sam_ldb);
 	}
-	return samdb_msg_add_string(sam_ldb, mem_ctx, msg, attr_name, s);
+	return ldb_msg_add_string(msg, attr_name, s);
 }
 
 /*
@@ -951,7 +951,7 @@ int samdb_msg_add_int64(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx, struct
 	if (s == NULL) {
 		return ldb_oom(sam_ldb);
 	}
-	return samdb_msg_add_string(sam_ldb, mem_ctx, msg, attr_name, s);
+	return ldb_msg_add_string(msg, attr_name, s);
 }
 
 /*
