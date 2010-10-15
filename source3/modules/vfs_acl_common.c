@@ -256,6 +256,10 @@ static NTSTATUS get_nt_acl_internal(vfs_handle_struct *handle,
 	uint8_t hash_tmp[XATTR_SD_HASH_SIZE];
 	struct security_descriptor *psd = NULL;
 	struct security_descriptor *pdesc_next = NULL;
+	bool ignore_file_system_acl = lp_parm_bool(SNUM(handle->conn),
+						ACL_MODULE_NAME,
+						"ignore system acls",
+						false);
 
 	if (fsp && name == NULL) {
 		name = fsp->fsp_name->base_name;
@@ -319,6 +323,9 @@ static NTSTATUS get_nt_acl_internal(vfs_handle_struct *handle,
 			goto out;
 	}
 
+	if (ignore_file_system_acl) {
+		goto out;
+	}
 
 	status = hash_sd_sha256(pdesc_next, hash_tmp);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -355,28 +362,45 @@ static NTSTATUS get_nt_acl_internal(vfs_handle_struct *handle,
 		 * inheritable ACE entries we have to fake them.
 		 */
 		if (fsp) {
-			is_directory = fsp->is_directory;
+			status = vfs_stat_fsp(fsp);
+			if (!NT_STATUS_IS_OK(status)) {
+				return status;
+			}
 			psbuf = &fsp->fsp_name->st;
 		} else {
-			if (vfs_stat_smb_fname(handle->conn,
+			int ret = vfs_stat_smb_fname(handle->conn,
 						name,
-						&sbuf) == 0) {
-				is_directory = S_ISDIR(sbuf.st_ex_mode);
+						&sbuf);
+			if (ret == -1) {
+				return map_nt_error_from_unix(errno);
 			}
 		}
-		if (is_directory &&
+		is_directory = S_ISDIR(sbuf.st_ex_mode);
+
+		if (ignore_file_system_acl) {
+			TALLOC_FREE(pdesc_next);
+			status = make_default_filesystem_acl(talloc_tos(),
+						name,
+						psbuf,
+						&psd);
+			if (!NT_STATUS_IS_OK(status)) {
+				return status;
+			}
+		} else {
+			if (is_directory &&
 				!sd_has_inheritable_components(psd,
 							true)) {
-			add_directory_inheritable_components(handle,
+				add_directory_inheritable_components(handle,
 							name,
 							psbuf,
 							psd);
+			}
+			/* The underlying POSIX module always sets
+			   the ~SEC_DESC_DACL_PROTECTED bit, as ACLs
+			   can't be inherited in this way under POSIX.
+			   Remove it for Windows-style ACLs. */
+			psd->type &= ~SEC_DESC_DACL_PROTECTED;
 		}
-		/* The underlying POSIX module always sets
-		   the ~SEC_DESC_DACL_PROTECTED bit, as ACLs
-		   can't be inherited in this way under POSIX.
-		   Remove it for Windows-style ACLs. */
-		psd->type &= ~SEC_DESC_DACL_PROTECTED;
 	}
 
 	if (!(security_info & SECINFO_OWNER)) {
