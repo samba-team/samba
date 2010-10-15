@@ -29,6 +29,7 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_VFS
 
+#define ACL_MODULE_NAME "acl_tdb"
 #include "modules/vfs_acl_common.c"
 
 static unsigned int ref_count;
