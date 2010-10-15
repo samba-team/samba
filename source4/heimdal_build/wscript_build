@@ -511,7 +511,7 @@ HEIMDAL_LIBRARY('kdc',
                     includes='../heimdal/kdc',
                     autoproto='../heimdal/kdc/kdc-protos.h',
                     autoproto_private='../heimdal/kdc/kdc-private.h',
-                    deps='roken krb5 hdb HEIMDAL_HEIM_ASN1 HEIMDAL_DIGEST_ASN1 HEIMDAL_KX509_ASN1 heimntlm HEIMDAL_HCRYPTO com_err',
+                    deps='roken krb5 hdb HEIMDAL_HEIM_ASN1 HEIMDAL_DIGEST_ASN1 HEIMDAL_KX509_ASN1 heimntlm HEIMDAL_HCRYPTO com_err wind',
                     vnum='2.0.0',
                     )
 
@@ -540,7 +540,7 @@ HEIMDAL_LIBRARY('hdb',
                     includes='../heimdal/lib/hdb',
                     autoproto='../heimdal/lib/hdb/hdb-protos.h',
                     autoproto_private='../heimdal/lib/hdb/hdb-private.h',
-                    deps='HDB_LDB krb5 HEIMDAL_HDB_KEYS roken HEIMDAL_HCRYPTO com_err HEIMDAL_HDB_ASN1',
+                    deps='HDB_LDB krb5 HEIMDAL_HDB_KEYS roken HEIMDAL_HCRYPTO com_err HEIMDAL_HDB_ASN1 wind',
                     vnum='11.0.2',
     )
 
