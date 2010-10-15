@@ -1753,6 +1753,14 @@ static bool create_canon_ace_lists(files_struct *fsp,
 				continue;
 			}
 
+			if (lp_force_unknown_acl_user(SNUM(fsp->conn))) {
+				DEBUG(10, ("create_canon_ace_lists: ignoring "
+					"unknown or foreign SID %s\n",
+					sid_string_dbg(&psa->trustee)));
+				SAFE_FREE(current_ace);
+				continue;
+			}
+
 			free_canon_ace_list(file_ace);
 			free_canon_ace_list(dir_ace);
 			DEBUG(0, ("create_canon_ace_lists: unable to map SID "
