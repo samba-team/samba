@@ -447,64 +447,102 @@ HEIMDAL_ERRTABLE('HEIMDAL_HX509_ERR_ET',
     '../heimdal/lib/hx509/hx509_err.et')
 
 
-ROKEN_HOSTCC_SOURCE = '''
-    ../heimdal/lib/roken/base64.c
-    ../heimdal/lib/roken/ct.c
-    ../heimdal/lib/roken/hex.c
-    ../heimdal/lib/roken/bswap.c
-    ../heimdal/lib/roken/dumpdata.c
-    ../heimdal/lib/roken/emalloc.c
-    ../heimdal/lib/roken/ecalloc.c
-    ../heimdal/lib/roken/getarg.c
-    ../heimdal/lib/roken/get_window_size.c
-    ../heimdal/lib/roken/getdtablesize.c
-    ../heimdal/lib/roken/h_errno.c
-    ../heimdal/lib/roken/issuid.c
-    ../heimdal/lib/roken/net_read.c
-    ../heimdal/lib/roken/net_write.c
-    ../heimdal/lib/roken/parse_time.c
-    ../heimdal/lib/roken/parse_units.c
-    ../heimdal/lib/roken/signal.c
-    ../heimdal/lib/roken/vis.c
-    ../heimdal/lib/roken/strlwr.c
-    ../heimdal/lib/roken/strsep_copy.c
-    ../heimdal/lib/roken/strsep.c
-    ../heimdal/lib/roken/strupr.c
-    ../heimdal/lib/roken/strpool.c
-    ../heimdal/lib/roken/estrdup.c
-    ../heimdal/lib/roken/erealloc.c
-    ../heimdal/lib/roken/simple_exec.c
-    ../heimdal/lib/roken/strcollect.c
-    ../heimdal/lib/roken/rtbl.c
-    ../heimdal/lib/roken/cloexec.c
-    ../heimdal/lib/roken/xfree.c
-    replace.c
-'''
+if not bld.CONFIG_SET('USING_SYSTEM_ROKEN'):
 
-if not bld.CONFIG_SET('HAVE_GETPROGNAME'):
-    ROKEN_HOSTCC_SOURCE += '''
-        ../heimdal/lib/roken/getprogname.c
-        ../heimdal/lib/roken/setprogname.c
+    if not bld.CONFIG_SET('HAVE_IFADDRS_H'):
+        HEIMDAL_GENERATOR(
+            name="HEIMDAL_IFADDRS_H",
+            rule="rm -f ${TGT} && ln ${SRC} ${TGT}",
+            source = 'ifaddrs.hin',
+            target = 'ifaddrs.h',
+            )
+
+    if not bld.CONFIG_SET('HAVE_ERR_H'):
+        HEIMDAL_GENERATOR(
+            group='build_compiler_source',
+            name="HEIMDAL_ERR_H",
+            rule="rm -f ${TGT} && ln ${SRC} ${TGT}",
+            source = '../heimdal/lib/roken/err.hin',
+            target = '../heimdal/lib/roken/err.h',
+            )
+
+    ROKEN_HOSTCC_SOURCE = '''
+        ../heimdal/lib/roken/base64.c
+        ../heimdal/lib/roken/ct.c
+        ../heimdal/lib/roken/hex.c
+        ../heimdal/lib/roken/bswap.c
+        ../heimdal/lib/roken/dumpdata.c
+        ../heimdal/lib/roken/emalloc.c
+        ../heimdal/lib/roken/ecalloc.c
+        ../heimdal/lib/roken/getarg.c
+        ../heimdal/lib/roken/get_window_size.c
+        ../heimdal/lib/roken/getdtablesize.c
+        ../heimdal/lib/roken/h_errno.c
+        ../heimdal/lib/roken/issuid.c
+        ../heimdal/lib/roken/net_read.c
+        ../heimdal/lib/roken/net_write.c
+        ../heimdal/lib/roken/parse_time.c
+        ../heimdal/lib/roken/parse_units.c
+        ../heimdal/lib/roken/signal.c
+        ../heimdal/lib/roken/vis.c
+        ../heimdal/lib/roken/strlwr.c
+        ../heimdal/lib/roken/strsep_copy.c
+        ../heimdal/lib/roken/strsep.c
+        ../heimdal/lib/roken/strupr.c
+        ../heimdal/lib/roken/strpool.c
+        ../heimdal/lib/roken/estrdup.c
+        ../heimdal/lib/roken/erealloc.c
+        ../heimdal/lib/roken/simple_exec.c
+        ../heimdal/lib/roken/strcollect.c
+        ../heimdal/lib/roken/rtbl.c
+        ../heimdal/lib/roken/cloexec.c
+        ../heimdal/lib/roken/xfree.c
+        replace.c
     '''
 
-if not bld.CONFIG_SET('HAVE_CLOSEFROM'):
-    ROKEN_HOSTCC_SOURCE += '''
-        ../heimdal/lib/roken/closefrom.c
+    if not bld.CONFIG_SET('HAVE_GETPROGNAME'):
+        ROKEN_HOSTCC_SOURCE += '''
+            ../heimdal/lib/roken/getprogname.c
+            ../heimdal/lib/roken/setprogname.c
+        '''
+
+    if not bld.CONFIG_SET('HAVE_CLOSEFROM'):
+        ROKEN_HOSTCC_SOURCE += '''
+            ../heimdal/lib/roken/closefrom.c
+        '''
+
+    ROKEN_SOURCE = ROKEN_HOSTCC_SOURCE + '''
+        ../heimdal/lib/roken/resolve.c
+        ../heimdal/lib/roken/socket.c
+        ../heimdal/lib/roken/roken_gethostby.c
     '''
 
-ROKEN_SOURCE = ROKEN_HOSTCC_SOURCE + '''
-    ../heimdal/lib/roken/resolve.c
-    ../heimdal/lib/roken/socket.c
-    ../heimdal/lib/roken/roken_gethostby.c
-'''
+    HEIMDAL_LIBRARY('roken',
+        ROKEN_SOURCE,
+        includes='../heimdal/lib/roken ../heimdal/include ../../lib/socket_wrapper',
+        deps='resolv UID_WRAPPER util',
+        vnum='19.0.1',
+        )
 
-HEIMDAL_LIBRARY('roken',
-    ROKEN_SOURCE,
-    includes='../heimdal/lib/roken ../heimdal/include ../../lib/socket_wrapper',
-    deps='resolv UID_WRAPPER util',
-    vnum='19.0.1',
-    )
+    HEIMDAL_SUBSYSTEM('ROKEN_HOSTCC',
+        ROKEN_HOSTCC_SOURCE,
+        use_hostcc=True,
+        use_global_deps=False,
+        includes='../heimdal/lib/roken',
+        cflags='-DSOCKET_WRAPPER_DISABLE=1 -DNSS_WRAPPER_DISABLE=1 -D_SAMBA_HOSTCC_',
+        group='compiler_libraries',
+        deps='LIBREPLACE_HOSTCC',
+        )
 
+    HEIMDAL_BINARY('rkpty',
+        '../heimdal/lib/roken/rkpty.c',
+            deps='roken OPENPTY',
+            cflags='-DPACKAGE="Samba"',
+            install=False
+        )
+else:
+    HEIMDAL_SUBSYSTEM('ROKEN_HOSTCC', '', use_hostcc=True, use_global_deps=False, deps='roken',
+        group='compiler_libraries')
 
 HEIMDAL_LIBRARY('kdc',
                     source='../heimdal/kdc/default_config.c ../heimdal/kdc/kerberos5.c ../heimdal/kdc/krb5tgs.c ../heimdal/kdc/pkinit.c ../heimdal/kdc/log.c ../heimdal/kdc/misc.c ../heimdal/kdc/kaserver.c ../heimdal/kdc/digest.c ../heimdal/kdc/process.c ../heimdal/kdc/windc.c ../heimdal/kdc/kx509.c',
@@ -590,24 +628,6 @@ HEIMDAL_LIBRARY('gssapi',
     deps='HEIMDAL_HCRYPTO HEIMDAL_HEIM_ASN1 HEIMDAL_SPNEGO_ASN1 HEIMDAL_GSSAPI_ASN1 roken krb5 com_err wind',
     vnum='2.0.0',
     )
-
-
-if not bld.CONFIG_SET('HAVE_IFADDRS_H'):
-    HEIMDAL_GENERATOR(
-        name="HEIMDAL_IFADDRS_H",
-        rule="rm -f ${TGT} && ln ${SRC} ${TGT}",
-        source = 'ifaddrs.hin',
-        target = 'ifaddrs.h',
-        )
-
-if not bld.CONFIG_SET('HAVE_ERR_H'):
-    HEIMDAL_GENERATOR(
-        group='build_compiler_source',
-        name="HEIMDAL_ERR_H",
-        rule="rm -f ${TGT} && ln ${SRC} ${TGT}",
-        source = '../heimdal/lib/roken/err.hin',
-        target = '../heimdal/lib/roken/err.h',
-        )
 
 # expand_path.c needs some of the install paths
 HEIMDAL_SUBSYSTEM('HEIMDAL_CONFIG',
@@ -740,16 +760,6 @@ if not bld.CONFIG_SET('USING_SYSTEM_WIND'):
           vnum='0.0.0',
           )
 
-HEIMDAL_SUBSYSTEM('ROKEN_HOSTCC',
-    ROKEN_HOSTCC_SOURCE,
-    use_hostcc=True,
-    use_global_deps=False,
-    includes='../heimdal/lib/roken',
-    cflags='-DSOCKET_WRAPPER_DISABLE=1 -DNSS_WRAPPER_DISABLE=1 -D_SAMBA_HOSTCC_',
-    group='compiler_libraries',
-    deps='LIBREPLACE_HOSTCC',
-    )
-
 if not bld.CONFIG_SET('USING_SYSTEM_COM_ERR'):
     HEIMDAL_LIBRARY('com_err',
         '../heimdal/lib/com_err/com_err.c ../heimdal/lib/com_err/error.c',
@@ -764,9 +774,9 @@ HEIMDAL_BINARY('asn1_compile',
     use_hostcc=True,
         use_global_deps=False,
         cflags='-DSOCKET_WRAPPER_DISABLE=1 -DNSS_WRAPPER_DISABLE=1 -D_SAMBA_HOSTCC_',
-        includes='../heimdal/lib/asn1 ../heimdal/lib/roken',
+        includes='../heimdal/lib/asn1',
         group='build_compilers',
-        deps='ROKEN_HOSTCC',
+        deps='ROKEN_HOSTCC LIBREPLACE_HOSTCC',
         install=False
     )
 
@@ -779,33 +789,24 @@ if not bld.CONFIG_SET('USING_SYSTEM_COMPILE_ET'):
         includes='../heimdal/lib/com_err',
         group='build_compilers',
         cflags='-DSOCKET_WRAPPER_DISABLE=1 -DNSS_WRAPPER_DISABLE=1 -D_SAMBA_HOSTCC_',
-        deps='ROKEN_HOSTCC',
+        deps='ROKEN_HOSTCC LIBREPLACE_HOSTCC',
         install=False
         )
     bld.env['COMPILE_ET'] = os.path.join(bld.env['BUILD_DIRECTORY'], 'compile_et')
 
 HEIMDAL_BINARY('samba4kinit',
     '../heimdal/kuser/kinit.c ../heimdal/lib/vers/print_version.c',
-        includes='../heimdal/lib/roken',
-        deps='krb5 heimntlm',
+        deps='krb5 heimntlm roken',
         install=False
     )
 
 
 HEIMDAL_BINARY('samba4kpasswd',
     '../heimdal/kpasswd/kpasswd.c ../heimdal/lib/vers/print_version.c',
-        includes='../heimdal/lib/roken',
-        deps='krb5 heimntlm',
+        deps='krb5 heimntlm roken',
         install=False
     )
 
-
-HEIMDAL_BINARY('rkpty',
-    '../heimdal/lib/roken/rkpty.c',
-        deps='roken OPENPTY',
-        cflags='-DPACKAGE="Samba"',
-        install=False
-    )
 
 HEIMDAL_GSSAPI_SPNEGO_SOURCE = '''
     ../heimdal/lib/gssapi/spnego/init_sec_context.c
