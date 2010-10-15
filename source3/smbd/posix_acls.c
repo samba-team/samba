@@ -3870,29 +3870,6 @@ NTSTATUS set_nt_acl(files_struct *fsp, uint32 security_info_sent, const struct s
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if((security_info_sent & SECINFO_DACL) &&
-			(psd->type & SEC_DESC_DACL_PRESENT) &&
-			(psd->dacl == NULL)) {
-		struct security_ace ace;
-
-		/* We can't have NULL DACL in POSIX.
-		   Use Everyone -> full access. */
-
-		init_sec_ace(&ace,
-				&global_sid_World,
-				SEC_ACE_TYPE_ACCESS_ALLOWED,
-				GENERIC_ALL_ACCESS,
-				0);
-		psd->dacl = make_sec_acl(talloc_tos(),
-					NT4_ACL_REVISION,
-					1,
-					&ace);
-		if (psd->dacl == NULL) {
-			return NT_STATUS_NO_MEMORY;
-		}
-		security_acl_map_generic(psd->dacl, &file_generic_mapping);
-	}
-
 	/*
 	 * Get the current state of the file.
 	 */
@@ -3966,6 +3943,39 @@ NTSTATUS set_nt_acl(files_struct *fsp, uint32 security_info_sent, const struct s
 	}
 
 	create_file_sids(&fsp->fsp_name->st, &file_owner_sid, &file_grp_sid);
+
+	if((security_info_sent & SECINFO_DACL) &&
+			(psd->type & SEC_DESC_DACL_PRESENT) &&
+			(psd->dacl == NULL)) {
+		struct security_ace ace[3];
+
+		/* We can't have NULL DACL in POSIX.
+		   Use owner/group/Everyone -> full access. */
+
+		init_sec_ace(&ace[0],
+				&file_owner_sid,
+				SEC_ACE_TYPE_ACCESS_ALLOWED,
+				GENERIC_ALL_ACCESS,
+				0);
+		init_sec_ace(&ace[1],
+				&file_grp_sid,
+				SEC_ACE_TYPE_ACCESS_ALLOWED,
+				GENERIC_ALL_ACCESS,
+				0);
+		init_sec_ace(&ace[2],
+				&global_sid_World,
+				SEC_ACE_TYPE_ACCESS_ALLOWED,
+				GENERIC_ALL_ACCESS,
+				0);
+		psd->dacl = make_sec_acl(talloc_tos(),
+					NT4_ACL_REVISION,
+					3,
+					ace);
+		if (psd->dacl == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		security_acl_map_generic(psd->dacl, &file_generic_mapping);
+	}
 
 	acl_perms = unpack_canon_ace(fsp, &fsp->fsp_name->st, &file_owner_sid,
 				     &file_grp_sid, &file_ace_list,
