@@ -395,6 +395,13 @@ static NTSTATUS get_nt_acl_internal(vfs_handle_struct *handle,
 
 	TALLOC_FREE(blob.data);
 	*ppdesc = psd;
+
+	if (DEBUGLEVEL >= 10) {
+		DEBUG(10,("get_nt_acl_internal: returning acl for %s is:\n",
+			name ));
+		NDR_PRINT_DEBUG(security_descriptor, psd);
+	}
+
 	return NT_STATUS_OK;
 }
 
