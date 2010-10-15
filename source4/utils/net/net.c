@@ -156,7 +156,7 @@ int net_run_function(struct net_context *ctx,
 			return functable[i].fn(ctx, argc-1, argv+1);
 	}
 
-	d_printf("No command: %s\n", argv[0]);
+	d_printf("No command: '%s'\n", argv[0]);
 	return usage_fn(ctx, argc, argv);
 }
 
@@ -317,13 +317,15 @@ static int binary_net(int argc, const char **argv)
 		return 1;
 	}
 
-	if (argc > 1) {
-		py_cmd = PyDict_GetItemString(py_cmds, argv[1]);
-		if (py_cmd != NULL) {
-			rc = py_call_with_string_args(py_cmd, "_run",
-				argc-1, argv+1);
-			talloc_free(ev);
-			return rc;
+	for (i=1; i<argc; i++) {
+		if (argv[i][0] != '-') {
+			py_cmd = PyDict_GetItemString(py_cmds, argv[i]);
+			if (py_cmd != NULL) {
+				rc = py_call_with_string_args(py_cmd, "_run",
+							      argc-1, argv+1);
+				talloc_free(ev);
+				return rc;
+			}
 		}
 	}
 
