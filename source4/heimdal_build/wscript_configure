@@ -65,19 +65,23 @@ conf.DEFINE('SAMBA4_INTERNAL_HEIMDAL', 1)
 if conf.CHECK_BUNDLED_SYSTEM('com_err', checkfunctions='com_right_r com_err', headers='com_err.h'):
     conf.define('USING_SYSTEM_COM_ERR', 1)
 
-def check_bundled_heimdal_lib(name, functions='', headers='', onlyif=None):
+def check_system_heimdal_lib(name, functions='', headers='', onlyif=None):
     # Only use system library if the user requested the bundled one not be used.
     if conf.LIB_MAY_BE_BUNDLED(name):
-        return
+        return False
     setattr(conf.env, "CPPPATH_%s" % name.upper(), ["/usr/include/heimdal"])
     setattr(conf.env, "LIBPATH_%s" % name.upper(), ["/usr/lib/heimdal"])
     conf.CHECK_BUNDLED_SYSTEM(name, checkfunctions=functions, headers=headers,
         onlyif=onlyif)
     conf.define('USING_SYSTEM_%s' % name.upper(), 1)
+    return True
 
-
-check_bundled_heimdal_lib("roken")
-check_bundled_heimdal_lib("wind", "wind_stringprep", "wind.h", onlyif="roken")
+if check_system_heimdal_lib("roken"):
+    conf.env.CPPPATH_ROKEN_HOSTCC = conf.env.CPPPATH_ROKEN
+    conf.env.LIBPATH_ROKEN_HOSTCC = conf.env.LIBPATH_ROKEN
+    conf.env.LIB_ROKEN_HOSTCC = "roken"
+    conf.SET_TARGET_TYPE("ROKEN_HOSTCC", 'SYSLIB')
+check_system_heimdal_lib("wind", "wind_stringprep", "wind.h", onlyif="roken")
 
 # disable trying to use an external compile_et until we have a configure
 # test that checks that the system one actually works. On some systems it

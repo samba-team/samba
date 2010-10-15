@@ -540,9 +540,6 @@ if not bld.CONFIG_SET('USING_SYSTEM_ROKEN'):
             cflags='-DPACKAGE="Samba"',
             install=False
         )
-else:
-    HEIMDAL_SUBSYSTEM('ROKEN_HOSTCC', '', use_hostcc=True, use_global_deps=False, deps='roken',
-        group='compiler_libraries')
 
 HEIMDAL_LIBRARY('kdc',
                     source='../heimdal/kdc/default_config.c ../heimdal/kdc/kerberos5.c ../heimdal/kdc/krb5tgs.c ../heimdal/kdc/pkinit.c ../heimdal/kdc/log.c ../heimdal/kdc/misc.c ../heimdal/kdc/kaserver.c ../heimdal/kdc/digest.c ../heimdal/kdc/process.c ../heimdal/kdc/windc.c ../heimdal/kdc/kx509.c',
@@ -768,42 +765,54 @@ if not bld.CONFIG_SET('USING_SYSTEM_COM_ERR'):
         vnum='0.25',
         )
 
+HEIMDAL_SUBSYSTEM('HEIMDAL_VERS_HOSTCC',
+       '../heimdal/lib/vers/print_version.c ../heimdal_build/version.c',
+        group='build_compilers',
+       deps='LIBREPLACE_HOSTCC ROKEN_HOSTCC',
+       use_global_deps=False,
+       use_hostcc=True)
+
+HEIMDAL_SUBSYSTEM('HEIMDAL_VERS',
+       '../heimdal/lib/vers/print_version.c ../heimdal_build/version.c',
+        group='build_compilers',
+        deps='roken')
+
 # here is the asn1 compiler build rule
 HEIMDAL_BINARY('asn1_compile',
-    '../heimdal/lib/asn1/main.c ../heimdal/lib/asn1/gen.c ../heimdal/lib/asn1/gen_copy.c ../heimdal/lib/asn1/gen_decode.c ../heimdal/lib/asn1/gen_encode.c ../heimdal/lib/asn1/gen_free.c ../heimdal/lib/asn1/gen_glue.c ../heimdal/lib/asn1/gen_length.c ../heimdal/lib/asn1/gen_seq.c ../heimdal/lib/asn1/gen_template.c ../heimdal/lib/asn1/hash.c ../heimdal/lib/asn1/symbol.c ../heimdal/lib/asn1/asn1parse.c ../heimdal/lib/asn1/lex.c ../heimdal/lib/vers/print_version.c',
+    '../heimdal/lib/asn1/main.c ../heimdal/lib/asn1/gen.c ../heimdal/lib/asn1/gen_copy.c ../heimdal/lib/asn1/gen_decode.c ../heimdal/lib/asn1/gen_encode.c ../heimdal/lib/asn1/gen_free.c ../heimdal/lib/asn1/gen_glue.c ../heimdal/lib/asn1/gen_length.c ../heimdal/lib/asn1/gen_seq.c ../heimdal/lib/asn1/gen_template.c ../heimdal/lib/asn1/hash.c ../heimdal/lib/asn1/symbol.c ../heimdal/lib/asn1/asn1parse.c ../heimdal/lib/asn1/lex.c',
     use_hostcc=True,
         use_global_deps=False,
         cflags='-DSOCKET_WRAPPER_DISABLE=1 -DNSS_WRAPPER_DISABLE=1 -D_SAMBA_HOSTCC_',
         includes='../heimdal/lib/asn1',
         group='build_compilers',
-        deps='ROKEN_HOSTCC LIBREPLACE_HOSTCC',
+        deps='ROKEN_HOSTCC LIBREPLACE_HOSTCC HEIMDAL_VERS_HOSTCC',
         install=False
     )
 
 
 if not bld.CONFIG_SET('USING_SYSTEM_COMPILE_ET'):
     HEIMDAL_BINARY('compile_et',
-        '../heimdal/lib/vers/print_version.c ../heimdal/lib/com_err/parse.c ../heimdal/lib/com_err/lex.c ../heimdal/lib/com_err/compile_et.c',
+        '../heimdal/lib/com_err/parse.c ../heimdal/lib/com_err/lex.c ../heimdal/lib/com_err/compile_et.c',
         use_hostcc=True,
         use_global_deps=False,
         includes='../heimdal/lib/com_err',
         group='build_compilers',
         cflags='-DSOCKET_WRAPPER_DISABLE=1 -DNSS_WRAPPER_DISABLE=1 -D_SAMBA_HOSTCC_',
-        deps='ROKEN_HOSTCC LIBREPLACE_HOSTCC',
+        deps='ROKEN_HOSTCC LIBREPLACE_HOSTCC HEIMDAL_VERS_HOSTCC',
         install=False
         )
     bld.env['COMPILE_ET'] = os.path.join(bld.env['BUILD_DIRECTORY'], 'compile_et')
 
 HEIMDAL_BINARY('samba4kinit',
-    '../heimdal/kuser/kinit.c ../heimdal/lib/vers/print_version.c',
-        deps='krb5 heimntlm roken',
+    '../heimdal/kuser/kinit.c',
+        deps='krb5 heimntlm roken HEIMDAL_VERS',
         install=False
     )
 
 
 HEIMDAL_BINARY('samba4kpasswd',
-    '../heimdal/kpasswd/kpasswd.c ../heimdal/lib/vers/print_version.c',
-        deps='krb5 heimntlm roken',
+    '../heimdal/kpasswd/kpasswd.c',
+        deps='krb5 heimntlm roken HEIMDAL_VERS',
         install=False
     )
 
