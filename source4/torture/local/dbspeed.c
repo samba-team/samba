@@ -145,7 +145,8 @@ static bool ldb_add_record(struct ldb_context *ldb, unsigned rid)
 		return false;
 	}
 
-	if (ldb_msg_add_fmt(msg, "UID", "%u", rid) != 0) {
+	ret = ldb_msg_add_fmt(msg, "UID", "%u", rid);
+	if (ret != LDB_SUCCESS) {
 		talloc_free(msg);
 		return false;
 	}
