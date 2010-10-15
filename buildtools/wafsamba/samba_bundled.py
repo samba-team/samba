@@ -104,7 +104,7 @@ def CHECK_BUNDLED_SYSTEM(conf, libname, minversion='0.0.0',
         '''helper function for CHECK_BUNDLED_SYSTEM'''
         if checkfunctions is None:
             return True
-        if require_headers and headers and not conf.CHECK_HEADERS(headers):
+        if require_headers and headers and not conf.CHECK_HEADERS(headers, lib=libname):
             return False
         return conf.CHECK_FUNCS_IN(checkfunctions, libname, headers=headers,
                                    empty_decl=False, set_target=False)

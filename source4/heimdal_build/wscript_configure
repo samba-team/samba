@@ -72,12 +72,7 @@ def check_bundled_heimdal_lib(name, functions, headers):
     lib = name
     setattr(conf.env, "CPPPATH_%s" % name.upper(), ["/usr/include/heimdal"])
     setattr(conf.env, "LIBPATH_%s" % name.upper(), ["/usr/lib/heimdal"])
-    if not conf.CHECK_HEADERS(headers, lib=lib):
-        Logs.error('ERROR: Unable to find missing header %s' % headers)
-        sys.exit(1)
-    if not conf.CHECK_LIB([lib], mandatory=True, set_target=True):
-        Logs.error('ERROR: Unable to find missing library %s' % lib)
-        sys.exit(1)
+    conf.CHECK_BUNDLED_SYSTEM("wind", checkfunctions=functions, headers=headers)
     conf.define('USING_SYSTEM_%s' % name.upper(), 1)
 
 
