@@ -1997,7 +1997,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 
         if ((flags2 & O_CREAT) && lp_inherit_acls(SNUM(conn)) &&
 	    (def_acl = directory_has_default_acl(conn, parent_dir))) {
-		unx_mode = 0777;
+		unx_mode = (0777 & lp_create_mask(SNUM(conn)));
 	}
 
 	DEBUG(4,("calling open_file with flags=0x%X flags2=0x%X mode=0%o, "
