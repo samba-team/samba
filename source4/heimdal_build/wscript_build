@@ -501,7 +501,7 @@ HEIMDAL_LIBRARY('kdc',
                     includes='../heimdal/kdc',
                     autoproto='../heimdal/kdc/kdc-protos.h',
                     autoproto_private='../heimdal/kdc/kdc-private.h',
-                    deps='roken krb5 hdb HEIMDAL_HEIM_ASN1 HEIMDAL_DIGEST_ASN1 HEIMDAL_KX509_ASN1 heimntlm HEIMDAL_HCRYPTO com_err wind',
+                    deps='roken krb5 hdb asn1 HEIMDAL_DIGEST_ASN1 HEIMDAL_KX509_ASN1 heimntlm HEIMDAL_HCRYPTO com_err wind',
                     vnum='2.0.0',
                     )
 
@@ -577,7 +577,7 @@ HEIMDAL_LIBRARY('gssapi',
 ../heimdal/lib/gssapi/mech/gss_export_sec_context.c ../heimdal/lib/gssapi/mech/gss_inquire_context.c ../heimdal/lib/gssapi/mech/gss_release_name.c
 ../heimdal/lib/gssapi/mech/gss_set_cred_option.c  ../heimdal/lib/gssapi/mech/gss_pseudo_random.c gssapi-glue.c''',
     includes='../heimdal/lib/gssapi ../heimdal/lib/gssapi/gssapi ../heimdal/lib/gssapi/spnego ../heimdal/lib/gssapi/krb5 ../heimdal/lib/gssapi/mech',
-    deps='HEIMDAL_HCRYPTO HEIMDAL_HEIM_ASN1 HEIMDAL_SPNEGO_ASN1 HEIMDAL_GSSAPI_ASN1 roken krb5 com_err wind',
+    deps='HEIMDAL_HCRYPTO asn1 HEIMDAL_SPNEGO_ASN1 HEIMDAL_GSSAPI_ASN1 roken krb5 com_err wind',
     vnum='2.0.0',
     )
 
@@ -631,12 +631,38 @@ HEIMDAL_LIBRARY('krb5',
             vnum='26.0.0',
                     )
 
+if not bld.CONFIG_SET("USING_SYSTEM_ASN1"):
+    HEIMDAL_HEIM_ASN1_DER_SOURCE = '''
+        ../heimdal/lib/asn1/der_get.c
+        ../heimdal/lib/asn1/der_put.c
+        ../heimdal/lib/asn1/der_free.c
+        ../heimdal/lib/asn1/der_format.c
+        ../heimdal/lib/asn1/der_length.c
+        ../heimdal/lib/asn1/der_copy.c
+        ../heimdal/lib/asn1/der_cmp.c
+    '''
 
-HEIMDAL_SUBSYSTEM('HEIMDAL_HEIM_ASN1',
-    '../heimdal/lib/asn1/der_get.c ../heimdal/lib/asn1/der_put.c ../heimdal/lib/asn1/der_free.c ../heimdal/lib/asn1/der_format.c ../heimdal/lib/asn1/der_length.c ../heimdal/lib/asn1/der_copy.c ../heimdal/lib/asn1/der_cmp.c ../heimdal/lib/asn1/extra.c ../heimdal/lib/asn1/timegm.c ../heimdal/lib/asn1/asn1_err.c',
+    HEIMDAL_AUTOPROTO('../heimdal/lib/asn1/der-protos.h',
+                          HEIMDAL_HEIM_ASN1_DER_SOURCE,
+                          group = 'compiler_prototypes',
+                          options="-q -P comment -o")
+
+
+    HEIMDAL_AUTOPROTO('../heimdal/lib/asn1/der-private.h',
+                          HEIMDAL_HEIM_ASN1_DER_SOURCE,
+                          group = 'compiler_prototypes',
+                          options="-q -P comment -p")
+
+    HEIMDAL_SUBSYSTEM('HEIMDAL_HEIM_ASN1',
+        HEIMDAL_HEIM_ASN1_DER_SOURCE + '../heimdal/lib/asn1/extra.c ../heimdal/lib/asn1/timegm.c ../heimdal/lib/asn1/asn1_err.c',
         includes='../heimdal/lib/asn1',
-    deps='roken com_err'
-    )
+        deps='roken com_err'
+        )
+
+    HEIMDAL_LIBRARY('asn1',
+            deps="HEIMDAL_HEIM_ASN1",
+            source='',
+            vnum='8.0.0')
 
 
 HEIMDAL_SUBSYSTEM('HEIMDAL_HCRYPTO_IMATH',
@@ -653,7 +679,7 @@ if not bld.CONFIG_SET("USING_SYSTEM_TOMMATH"):
 HEIMDAL_SUBSYSTEM('HEIMDAL_HCRYPTO',
     '../heimdal/lib/hcrypto/aes.c ../heimdal/lib/hcrypto/bn.c ../heimdal/lib/hcrypto/dh.c ../heimdal/lib/hcrypto/dh-ltm.c ../heimdal/lib/hcrypto/dh-imath.c ../heimdal/lib/hcrypto/des.c ../heimdal/lib/hcrypto/dsa.c ../heimdal/lib/hcrypto/engine.c ../heimdal/lib/hcrypto/md2.c ../heimdal/lib/hcrypto/md4.c ../heimdal/lib/hcrypto/md5.c ../heimdal/lib/hcrypto/rsa.c ../heimdal/lib/hcrypto/rsa-ltm.c ../heimdal/lib/hcrypto/rsa-imath.c ../heimdal/lib/hcrypto/rc2.c ../heimdal/lib/hcrypto/rc4.c ../heimdal/lib/hcrypto/rijndael-alg-fst.c ../heimdal/lib/hcrypto/rnd_keys.c ../heimdal/lib/hcrypto/sha.c ../heimdal/lib/hcrypto/sha256.c ../heimdal/lib/hcrypto/sha512.c ../heimdal/lib/hcrypto/ui.c ../heimdal/lib/hcrypto/evp.c ../heimdal/lib/hcrypto/evp-hcrypto.c ../heimdal/lib/hcrypto/pkcs5.c ../heimdal/lib/hcrypto/pkcs12.c ../heimdal/lib/hcrypto/rand.c ../heimdal/lib/hcrypto/rand-egd.c ../heimdal/lib/hcrypto/rand-unix.c ../heimdal/lib/hcrypto/rand-fortuna.c ../heimdal/lib/hcrypto/rand-timer.c ../heimdal/lib/hcrypto/hmac.c ../heimdal/lib/hcrypto/camellia.c ../heimdal/lib/hcrypto/camellia-ntt.c ../heimdal/lib/hcrypto/common.c ../heimdal/lib/hcrypto/validate.c',
     includes='../heimdal/lib/hcrypto ../heimdal/lib ../heimdal/include',
-    deps='roken HEIMDAL_HEIM_ASN1 HEIMDAL_HCRYPTO_IMATH HEIMDAL_RFC2459_ASN1 tommath'
+    deps='roken asn1 HEIMDAL_HCRYPTO_IMATH HEIMDAL_RFC2459_ASN1 tommath'
     )
 
 
@@ -736,7 +762,7 @@ if not bld.CONFIG_SET("USING_SYSTEM_HX509"):
     HEIMDAL_LIBRARY('hx509',
         '../heimdal/lib/hx509/ca.c ../heimdal/lib/hx509/cert.c ../heimdal/lib/hx509/cms.c ../heimdal/lib/hx509/collector.c ../heimdal/lib/hx509/crypto.c ../heimdal/lib/hx509/error.c ../heimdal/lib/hx509/env.c ../heimdal/lib/hx509/file.c ../heimdal/lib/hx509/keyset.c ../heimdal/lib/hx509/ks_dir.c ../heimdal/lib/hx509/ks_file.c ../heimdal/lib/hx509/ks_keychain.c ../heimdal/lib/hx509/ks_mem.c ../heimdal/lib/hx509/ks_null.c ../heimdal/lib/hx509/ks_p11.c ../heimdal/lib/hx509/ks_p12.c ../heimdal/lib/hx509/lock.c ../heimdal/lib/hx509/name.c ../heimdal/lib/hx509/peer.c ../heimdal/lib/hx509/print.c ../heimdal/lib/hx509/req.c ../heimdal/lib/hx509/revoke.c ../heimdal/lib/hx509/sel.c ../heimdal/lib/hx509/hx509_err.c ../heimdal/lib/hx509/sel-lex.c ../heimdal/lib/hx509/sel-gram.c',
         includes='../heimdal/lib/hx509',
-        deps='roken com_err HEIMDAL_HEIM_ASN1 HEIMDAL_HCRYPTO HEIMDAL_CMS_ASN1 HEIMDAL_RFC2459_ASN1 HEIMDAL_OCSP_ASN1 HEIMDAL_PKCS8_ASN1 HEIMDAL_PKCS9_ASN1 HEIMDAL_PKCS12_ASN1 HEIMDAL_PKINIT_ASN1 HEIMDAL_PKCS10_ASN1 wind HEIMDAL_KRB5_ASN1',
+        deps='roken com_err asn1 HEIMDAL_HCRYPTO HEIMDAL_CMS_ASN1 HEIMDAL_RFC2459_ASN1 HEIMDAL_OCSP_ASN1 HEIMDAL_PKCS8_ASN1 HEIMDAL_PKCS9_ASN1 HEIMDAL_PKCS12_ASN1 HEIMDAL_PKINIT_ASN1 HEIMDAL_PKCS10_ASN1 wind HEIMDAL_KRB5_ASN1',
         vnum='5.0.0',
         )
 
@@ -916,24 +942,4 @@ HEIMDAL_AUTOPROTO_PRIVATE('../heimdal/lib/gssapi/krb5/gsskrb5-private.h',
                               HEIMDAL_GSSAPI_KRB5_SOURCE)
 
 
-HEIMDAL_HEIM_ASN1_DER_SOURCE = '''
-    ../heimdal/lib/asn1/der_get.c
-    ../heimdal/lib/asn1/der_put.c
-    ../heimdal/lib/asn1/der_free.c
-    ../heimdal/lib/asn1/der_format.c
-    ../heimdal/lib/asn1/der_length.c
-    ../heimdal/lib/asn1/der_copy.c
-    ../heimdal/lib/asn1/der_cmp.c
-'''
-
-HEIMDAL_AUTOPROTO('../heimdal/lib/asn1/der-protos.h',
-                      HEIMDAL_HEIM_ASN1_DER_SOURCE,
-                      group = 'compiler_prototypes',
-                      options="-q -P comment -o")
-
-
-HEIMDAL_AUTOPROTO('../heimdal/lib/asn1/der-private.h',
-                      HEIMDAL_HEIM_ASN1_DER_SOURCE,
-                      group = 'compiler_prototypes',
-                      options="-q -P comment -p")
 

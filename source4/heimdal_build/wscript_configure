@@ -83,6 +83,7 @@ if check_system_heimdal_lib("roken"):
     conf.SET_TARGET_TYPE("ROKEN_HOSTCC", 'SYSLIB')
 check_system_heimdal_lib("wind", "wind_stringprep", "wind.h", onlyif="roken")
 check_system_heimdal_lib("hx509", "hx509_bitstring_print", "hx509.h", onlyif="roken wind")
+check_system_heimdal_lib("asn1", "initialize_asn1_error_table", "asn1_err.h", onlyif="roken com_err")
 
 # With the proper checks in place we should be able to build against the system libtommath.
 # conf.CHECK_BUNDLED_SYSTEM('tommath', checkfunctions='mp_init', headers='tommath.h')
