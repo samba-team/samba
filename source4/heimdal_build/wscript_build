@@ -142,6 +142,7 @@ def HEIMDAL_AUTOPROTO(header, source, options=None, group='prototypes'):
     if options is None:
         options='-q -P comment -o'
     SET_TARGET_TYPE(bld, header, 'PROTOTYPE')
+    source = [os.path.join("../heimdal", x) for x in TO_LIST(source)]
     t = bld(rule='${PERL} ${HEIMDAL}/cf/make-proto.pl ${OPTIONS} ${TGT[0].abspath(env)} ${SRC}',
             source=source,
             target=header,
@@ -250,7 +251,7 @@ def HEIMDAL_SUBSYSTEM(modname, source,
     if not SET_TARGET_TYPE(bld, modname, 'SUBSYSTEM'):
         return
 
-    source = TO_LIST(source)
+    source = [os.path.join("../heimdal", x) for x in TO_LIST(source)]
 
     bld.set_group(group)
 
@@ -421,54 +422,54 @@ if not bld.CONFIG_SET('USING_SYSTEM_ROKEN'):
             )
 
     ROKEN_HOSTCC_SOURCE = '''
-        ../heimdal/lib/roken/base64.c
-        ../heimdal/lib/roken/ct.c
-        ../heimdal/lib/roken/hex.c
-        ../heimdal/lib/roken/bswap.c
-        ../heimdal/lib/roken/dumpdata.c
-        ../heimdal/lib/roken/emalloc.c
-        ../heimdal/lib/roken/ecalloc.c
-        ../heimdal/lib/roken/getarg.c
-        ../heimdal/lib/roken/get_window_size.c
-        ../heimdal/lib/roken/getdtablesize.c
-        ../heimdal/lib/roken/h_errno.c
-        ../heimdal/lib/roken/issuid.c
-        ../heimdal/lib/roken/net_read.c
-        ../heimdal/lib/roken/net_write.c
-        ../heimdal/lib/roken/parse_time.c
-        ../heimdal/lib/roken/parse_units.c
-        ../heimdal/lib/roken/signal.c
-        ../heimdal/lib/roken/vis.c
-        ../heimdal/lib/roken/strlwr.c
-        ../heimdal/lib/roken/strsep_copy.c
-        ../heimdal/lib/roken/strsep.c
-        ../heimdal/lib/roken/strupr.c
-        ../heimdal/lib/roken/strpool.c
-        ../heimdal/lib/roken/estrdup.c
-        ../heimdal/lib/roken/erealloc.c
-        ../heimdal/lib/roken/simple_exec.c
-        ../heimdal/lib/roken/strcollect.c
-        ../heimdal/lib/roken/rtbl.c
-        ../heimdal/lib/roken/cloexec.c
-        ../heimdal/lib/roken/xfree.c
-        replace.c
+        lib/roken/base64.c
+        lib/roken/ct.c
+        lib/roken/hex.c
+        lib/roken/bswap.c
+        lib/roken/dumpdata.c
+        lib/roken/emalloc.c
+        lib/roken/ecalloc.c
+        lib/roken/getarg.c
+        lib/roken/get_window_size.c
+        lib/roken/getdtablesize.c
+        lib/roken/h_errno.c
+        lib/roken/issuid.c
+        lib/roken/net_read.c
+        lib/roken/net_write.c
+        lib/roken/parse_time.c
+        lib/roken/parse_units.c
+        lib/roken/signal.c
+        lib/roken/vis.c
+        lib/roken/strlwr.c
+        lib/roken/strsep_copy.c
+        lib/roken/strsep.c
+        lib/roken/strupr.c
+        lib/roken/strpool.c
+        lib/roken/estrdup.c
+        lib/roken/erealloc.c
+        lib/roken/simple_exec.c
+        lib/roken/strcollect.c
+        lib/roken/rtbl.c
+        lib/roken/cloexec.c
+        lib/roken/xfree.c
+        ../heimdal_build/replace.c
     '''
 
     if not bld.CONFIG_SET('HAVE_GETPROGNAME'):
         ROKEN_HOSTCC_SOURCE += '''
-            ../heimdal/lib/roken/getprogname.c
-            ../heimdal/lib/roken/setprogname.c
+            lib/roken/getprogname.c
+            lib/roken/setprogname.c
         '''
 
     if not bld.CONFIG_SET('HAVE_CLOSEFROM'):
         ROKEN_HOSTCC_SOURCE += '''
-            ../heimdal/lib/roken/closefrom.c
+            lib/roken/closefrom.c
         '''
 
     ROKEN_SOURCE = ROKEN_HOSTCC_SOURCE + '''
-        ../heimdal/lib/roken/resolve.c
-        ../heimdal/lib/roken/socket.c
-        ../heimdal/lib/roken/roken_gethostby.c
+        lib/roken/resolve.c
+        lib/roken/socket.c
+        lib/roken/roken_gethostby.c
     '''
 
     HEIMDAL_LIBRARY('roken',
@@ -515,7 +516,7 @@ HEIMDAL_LIBRARY('heimntlm',
 
 
 HEIMDAL_SUBSYSTEM('HEIMDAL_HDB_KEYS',
-    '../heimdal/lib/hdb/keys.c',
+    'lib/hdb/keys.c',
     includes='../heimdal/lib/hdb',
     deps='roken HEIMDAL_HCRYPTO krb5 HEIMDAL_HDB_ASN1'
     )
@@ -525,7 +526,7 @@ HEIMDAL_LIBRARY('hdb',
                     source='''../heimdal/lib/hdb/db.c ../heimdal/lib/hdb/dbinfo.c ../heimdal/lib/hdb/hdb.c
                               ../heimdal/lib/hdb/ext.c ../heimdal/lib/hdb/keytab.c ../heimdal/lib/hdb/hdb-keytab.c
                               ../heimdal/lib/hdb/mkey.c ../heimdal/lib/hdb/ndbm.c ../heimdal/lib/hdb/hdb_err.c
-                              hdb-glue.c''',
+                              ../heimdal_build/hdb-glue.c''',
                     includes='../heimdal/lib/hdb',
                     autoproto='../heimdal/lib/hdb/hdb-protos.h',
                     autoproto_private='../heimdal/lib/hdb/hdb-private.h',
@@ -574,7 +575,7 @@ HEIMDAL_LIBRARY('gssapi',
 ../heimdal/lib/gssapi/mech/gss_import_sec_context.c ../heimdal/lib/gssapi/mech/gss_inquire_cred.c ../heimdal/lib/gssapi/mech/gss_wrap.c
 ../heimdal/lib/gssapi/mech/gss_import_name.c ../heimdal/lib/gssapi/mech/gss_duplicate_name.c ../heimdal/lib/gssapi/mech/gss_unwrap.c
 ../heimdal/lib/gssapi/mech/gss_export_sec_context.c ../heimdal/lib/gssapi/mech/gss_inquire_context.c ../heimdal/lib/gssapi/mech/gss_release_name.c
-../heimdal/lib/gssapi/mech/gss_set_cred_option.c  ../heimdal/lib/gssapi/mech/gss_pseudo_random.c gssapi-glue.c''',
+../heimdal/lib/gssapi/mech/gss_set_cred_option.c  ../heimdal/lib/gssapi/mech/gss_pseudo_random.c ../heimdal_build/gssapi-glue.c''',
     includes='../heimdal/lib/gssapi ../heimdal/lib/gssapi/gssapi ../heimdal/lib/gssapi/spnego ../heimdal/lib/gssapi/krb5 ../heimdal/lib/gssapi/mech',
     deps='HEIMDAL_HCRYPTO asn1 HEIMDAL_SPNEGO_ASN1 HEIMDAL_GSSAPI_ASN1 roken krb5 com_err wind',
     vnum='2.0.0',
@@ -582,7 +583,7 @@ HEIMDAL_LIBRARY('gssapi',
 
 # expand_path.c needs some of the install paths
 HEIMDAL_SUBSYSTEM('HEIMDAL_CONFIG',
-                  '../heimdal/lib/krb5/expand_path.c ../heimdal/lib/krb5/plugin.c',
+                  'lib/krb5/expand_path.c lib/krb5/plugin.c',
                   includes='../heimdal/lib/krb5 ../heimdal/lib/asn1 ../heimdal/include',
                   cflags = bld.dynconfig_cflags('LIBDIR BINDIR LIBEXECDIR SBINDIR'),
                   deps='HEIMDAL_HCRYPTO wind hx509'
@@ -620,7 +621,7 @@ HEIMDAL_LIBRARY('krb5',
                                store.c store_emem.c store_fd.c
                                store_mem.c ticket.c time.c transited.c
                                v4_glue.c version.c warn.c krb5_err.c
-                               heim_err.c k524_err.c krb_err.c''') + ' krb5-glue.c',
+                               heim_err.c k524_err.c krb_err.c''') + ' ../heimdal_build/krb5-glue.c',
                     includes='../heimdal/lib/krb5 ../heimdal/lib/asn1 ../heimdal/include',
                     autoproto='../heimdal/lib/krb5/krb5-protos.h',
                     autoproto_options='-E KRB5_LIB -q -P comment -o',
@@ -632,13 +633,13 @@ HEIMDAL_LIBRARY('krb5',
 
 if not bld.CONFIG_SET("USING_SYSTEM_ASN1"):
     HEIMDAL_HEIM_ASN1_DER_SOURCE = '''
-        ../heimdal/lib/asn1/der_get.c
-        ../heimdal/lib/asn1/der_put.c
-        ../heimdal/lib/asn1/der_free.c
-        ../heimdal/lib/asn1/der_format.c
-        ../heimdal/lib/asn1/der_length.c
-        ../heimdal/lib/asn1/der_copy.c
-        ../heimdal/lib/asn1/der_cmp.c
+        lib/asn1/der_get.c
+        lib/asn1/der_put.c
+        lib/asn1/der_free.c
+        lib/asn1/der_format.c
+        lib/asn1/der_length.c
+        lib/asn1/der_copy.c
+        lib/asn1/der_cmp.c
     '''
 
     HEIMDAL_AUTOPROTO('../heimdal/lib/asn1/der-protos.h',
@@ -665,18 +666,18 @@ if not bld.CONFIG_SET("USING_SYSTEM_ASN1"):
 
 
 HEIMDAL_SUBSYSTEM('HEIMDAL_HCRYPTO_IMATH',
-    '../heimdal/lib/hcrypto/imath/imath.c ../heimdal/lib/hcrypto/imath/iprime.c',
+    'lib/hcrypto/imath/imath.c lib/hcrypto/imath/iprime.c',
         includes='../heimdal/lib/hcrypto/imath',
     deps='roken'
     )
 if not bld.CONFIG_SET("USING_SYSTEM_TOMMATH"):
     HEIMDAL_SUBSYSTEM('tommath',
-        '../heimdal/lib/hcrypto/libtommath/bncore.c ../heimdal/lib/hcrypto/libtommath/bn_mp_init.c ../heimdal/lib/hcrypto/libtommath/bn_mp_clear.c ../heimdal/lib/hcrypto/libtommath/bn_mp_exch.c ../heimdal/lib/hcrypto/libtommath/bn_mp_grow.c ../heimdal/lib/hcrypto/libtommath/bn_mp_shrink.c ../heimdal/lib/hcrypto/libtommath/bn_mp_clamp.c ../heimdal/lib/hcrypto/libtommath/bn_mp_zero.c ../heimdal/lib/hcrypto/libtommath/bn_mp_zero_multi.c ../heimdal/lib/hcrypto/libtommath/bn_mp_set.c ../heimdal/lib/hcrypto/libtommath/bn_mp_set_int.c ../heimdal/lib/hcrypto/libtommath/bn_mp_init_size.c ../heimdal/lib/hcrypto/libtommath/bn_mp_copy.c ../heimdal/lib/hcrypto/libtommath/bn_mp_init_copy.c ../heimdal/lib/hcrypto/libtommath/bn_mp_abs.c ../heimdal/lib/hcrypto/libtommath/bn_mp_neg.c ../heimdal/lib/hcrypto/libtommath/bn_mp_cmp_mag.c ../heimdal/lib/hcrypto/libtommath/bn_mp_cmp.c ../heimdal/lib/hcrypto/libtommath/bn_mp_cmp_d.c ../heimdal/lib/hcrypto/libtommath/bn_mp_rshd.c ../heimdal/lib/hcrypto/libtommath/bn_mp_lshd.c ../heimdal/lib/hcrypto/libtommath/bn_mp_mod_2d.c ../heimdal/lib/hcrypto/libtommath/bn_mp_div_2d.c ../heimdal/lib/hcrypto/libtommath/bn_mp_mul_2d.c ../heimdal/lib/hcrypto/libtommath/bn_mp_div_2.c ../heimdal/lib/hcrypto/libtommath/bn_mp_mul_2.c ../heimdal/lib/hcrypto/libtommath/bn_s_mp_add.c ../heimdal/lib/hcrypto/libtommath/bn_s_mp_sub.c ../heimdal/lib/hcrypto/libtommath/bn_fast_s_mp_mul_digs.c ../heimdal/lib/hcrypto/libtommath/bn_s_mp_mul_digs.c ../heimdal/lib/hcrypto/libtommath/bn_fast_s_mp_mul_high_digs.c ../heimdal/lib/hcrypto/libtommath/bn_s_mp_mul_high_digs.c ../heimdal/lib/hcrypto/libtommath/bn_fast_s_mp_sqr.c ../heimdal/lib/hcrypto/libtommath/bn_s_mp_sqr.c ../heimdal/lib/hcrypto/libtommath/bn_mp_add.c ../heimdal/lib/hcrypto/libtommath/bn_mp_sub.c ../heimdal/lib/hcrypto/libtommath/bn_mp_karatsuba_mul.c ../heimdal/lib/hcrypto/libtommath/bn_mp_mul.c ../heimdal/lib/hcrypto/libtommath/bn_mp_karatsuba_sqr.c ../heimdal/lib/hcrypto/libtommath/bn_mp_sqr.c ../heimdal/lib/hcrypto/libtommath/bn_mp_div.c ../heimdal/lib/hcrypto/libtommath/bn_mp_mod.c ../heimdal/lib/hcrypto/libtommath/bn_mp_add_d.c ../heimdal/lib/hcrypto/libtommath/bn_mp_sub_d.c ../heimdal/lib/hcrypto/libtommath/bn_mp_mul_d.c ../heimdal/lib/hcrypto/libtommath/bn_mp_div_d.c ../heimdal/lib/hcrypto/libtommath/bn_mp_mod_d.c ../heimdal/lib/hcrypto/libtommath/bn_mp_expt_d.c ../heimdal/lib/hcrypto/libtommath/bn_mp_addmod.c ../heimdal/lib/hcrypto/libtommath/bn_mp_submod.c ../heimdal/lib/hcrypto/libtommath/bn_mp_mulmod.c ../heimdal/lib/hcrypto/libtommath/bn_mp_sqrmod.c ../heimdal/lib/hcrypto/libtommath/bn_mp_gcd.c ../heimdal/lib/hcrypto/libtommath/bn_mp_lcm.c ../heimdal/lib/hcrypto/libtommath/bn_fast_mp_invmod.c ../heimdal/lib/hcrypto/libtommath/bn_mp_invmod.c ../heimdal/lib/hcrypto/libtommath/bn_mp_reduce.c ../heimdal/lib/hcrypto/libtommath/bn_mp_montgomery_setup.c ../heimdal/lib/hcrypto/libtommath/bn_fast_mp_montgomery_reduce.c ../heimdal/lib/hcrypto/libtommath/bn_mp_montgomery_reduce.c ../heimdal/lib/hcrypto/libtommath/bn_mp_exptmod_fast.c ../heimdal/lib/hcrypto/libtommath/bn_mp_exptmod.c ../heimdal/lib/hcrypto/libtommath/bn_mp_2expt.c ../heimdal/lib/hcrypto/libtommath/bn_mp_n_root.c ../heimdal/lib/hcrypto/libtommath/bn_mp_jacobi.c ../heimdal/lib/hcrypto/libtommath/bn_reverse.c ../heimdal/lib/hcrypto/libtommath/bn_mp_count_bits.c ../heimdal/lib/hcrypto/libtommath/bn_mp_read_unsigned_bin.c ../heimdal/lib/hcrypto/libtommath/bn_mp_read_signed_bin.c ../heimdal/lib/hcrypto/libtommath/bn_mp_to_unsigned_bin.c ../heimdal/lib/hcrypto/libtommath/bn_mp_to_signed_bin.c ../heimdal/lib/hcrypto/libtommath/bn_mp_unsigned_bin_size.c ../heimdal/lib/hcrypto/libtommath/bn_mp_signed_bin_size.c ../heimdal/lib/hcrypto/libtommath/bn_mp_xor.c ../heimdal/lib/hcrypto/libtommath/bn_mp_and.c ../heimdal/lib/hcrypto/libtommath/bn_mp_or.c ../heimdal/lib/hcrypto/libtommath/bn_mp_rand.c ../heimdal/lib/hcrypto/libtommath/bn_mp_montgomery_calc_normalization.c ../heimdal/lib/hcrypto/libtommath/bn_mp_prime_is_divisible.c ../heimdal/lib/hcrypto/libtommath/bn_prime_tab.c ../heimdal/lib/hcrypto/libtommath/bn_mp_prime_fermat.c ../heimdal/lib/hcrypto/libtommath/bn_mp_prime_miller_rabin.c ../heimdal/lib/hcrypto/libtommath/bn_mp_prime_is_prime.c ../heimdal/lib/hcrypto/libtommath/bn_mp_prime_next_prime.c ../heimdal/lib/hcrypto/libtommath/bn_mp_find_prime.c ../heimdal/lib/hcrypto/libtommath/bn_mp_isprime.c ../heimdal/lib/hcrypto/libtommath/bn_mp_dr_reduce.c ../heimdal/lib/hcrypto/libtommath/bn_mp_dr_is_modulus.c ../heimdal/lib/hcrypto/libtommath/bn_mp_dr_setup.c ../heimdal/lib/hcrypto/libtommath/bn_mp_reduce_setup.c ../heimdal/lib/hcrypto/libtommath/bn_mp_toom_mul.c ../heimdal/lib/hcrypto/libtommath/bn_mp_toom_sqr.c ../heimdal/lib/hcrypto/libtommath/bn_mp_div_3.c ../heimdal/lib/hcrypto/libtommath/bn_s_mp_exptmod.c ../heimdal/lib/hcrypto/libtommath/bn_mp_reduce_2k.c ../heimdal/lib/hcrypto/libtommath/bn_mp_reduce_is_2k.c ../heimdal/lib/hcrypto/libtommath/bn_mp_reduce_2k_setup.c ../heimdal/lib/hcrypto/libtommath/bn_mp_reduce_2k_l.c ../heimdal/lib/hcrypto/libtommath/bn_mp_reduce_is_2k_l.c ../heimdal/lib/hcrypto/libtommath/bn_mp_reduce_2k_setup_l.c ../heimdal/lib/hcrypto/libtommath/bn_mp_radix_smap.c ../heimdal/lib/hcrypto/libtommath/bn_mp_read_radix.c ../heimdal/lib/hcrypto/libtommath/bn_mp_toradix.c ../heimdal/lib/hcrypto/libtommath/bn_mp_radix_size.c ../heimdal/lib/hcrypto/libtommath/bn_mp_fread.c ../heimdal/lib/hcrypto/libtommath/bn_mp_fwrite.c ../heimdal/lib/hcrypto/libtommath/bn_mp_cnt_lsb.c ../heimdal/lib/hcrypto/libtommath/bn_error.c ../heimdal/lib/hcrypto/libtommath/bn_mp_init_multi.c ../heimdal/lib/hcrypto/libtommath/bn_mp_clear_multi.c ../heimdal/lib/hcrypto/libtommath/bn_mp_exteuclid.c ../heimdal/lib/hcrypto/libtommath/bn_mp_toradix_n.c ../heimdal/lib/hcrypto/libtommath/bn_mp_prime_random_ex.c ../heimdal/lib/hcrypto/libtommath/bn_mp_get_int.c ../heimdal/lib/hcrypto/libtommath/bn_mp_sqrt.c ../heimdal/lib/hcrypto/libtommath/bn_mp_is_square.c ../heimdal/lib/hcrypto/libtommath/bn_mp_init_set.c ../heimdal/lib/hcrypto/libtommath/bn_mp_init_set_int.c ../heimdal/lib/hcrypto/libtommath/bn_mp_invmod_slow.c ../heimdal/lib/hcrypto/libtommath/bn_mp_prime_rabin_miller_trials.c ../heimdal/lib/hcrypto/libtommath/bn_mp_to_signed_bin_n.c ../heimdal/lib/hcrypto/libtommath/bn_mp_to_unsigned_bin_n.c',
+        'lib/hcrypto/libtommath/bncore.c lib/hcrypto/libtommath/bn_mp_init.c lib/hcrypto/libtommath/bn_mp_clear.c lib/hcrypto/libtommath/bn_mp_exch.c lib/hcrypto/libtommath/bn_mp_grow.c lib/hcrypto/libtommath/bn_mp_shrink.c lib/hcrypto/libtommath/bn_mp_clamp.c lib/hcrypto/libtommath/bn_mp_zero.c lib/hcrypto/libtommath/bn_mp_zero_multi.c lib/hcrypto/libtommath/bn_mp_set.c lib/hcrypto/libtommath/bn_mp_set_int.c lib/hcrypto/libtommath/bn_mp_init_size.c lib/hcrypto/libtommath/bn_mp_copy.c lib/hcrypto/libtommath/bn_mp_init_copy.c lib/hcrypto/libtommath/bn_mp_abs.c lib/hcrypto/libtommath/bn_mp_neg.c lib/hcrypto/libtommath/bn_mp_cmp_mag.c lib/hcrypto/libtommath/bn_mp_cmp.c lib/hcrypto/libtommath/bn_mp_cmp_d.c lib/hcrypto/libtommath/bn_mp_rshd.c lib/hcrypto/libtommath/bn_mp_lshd.c lib/hcrypto/libtommath/bn_mp_mod_2d.c lib/hcrypto/libtommath/bn_mp_div_2d.c lib/hcrypto/libtommath/bn_mp_mul_2d.c lib/hcrypto/libtommath/bn_mp_div_2.c lib/hcrypto/libtommath/bn_mp_mul_2.c lib/hcrypto/libtommath/bn_s_mp_add.c lib/hcrypto/libtommath/bn_s_mp_sub.c lib/hcrypto/libtommath/bn_fast_s_mp_mul_digs.c lib/hcrypto/libtommath/bn_s_mp_mul_digs.c lib/hcrypto/libtommath/bn_fast_s_mp_mul_high_digs.c lib/hcrypto/libtommath/bn_s_mp_mul_high_digs.c lib/hcrypto/libtommath/bn_fast_s_mp_sqr.c lib/hcrypto/libtommath/bn_s_mp_sqr.c lib/hcrypto/libtommath/bn_mp_add.c lib/hcrypto/libtommath/bn_mp_sub.c lib/hcrypto/libtommath/bn_mp_karatsuba_mul.c lib/hcrypto/libtommath/bn_mp_mul.c lib/hcrypto/libtommath/bn_mp_karatsuba_sqr.c lib/hcrypto/libtommath/bn_mp_sqr.c lib/hcrypto/libtommath/bn_mp_div.c lib/hcrypto/libtommath/bn_mp_mod.c lib/hcrypto/libtommath/bn_mp_add_d.c lib/hcrypto/libtommath/bn_mp_sub_d.c lib/hcrypto/libtommath/bn_mp_mul_d.c lib/hcrypto/libtommath/bn_mp_div_d.c lib/hcrypto/libtommath/bn_mp_mod_d.c lib/hcrypto/libtommath/bn_mp_expt_d.c lib/hcrypto/libtommath/bn_mp_addmod.c lib/hcrypto/libtommath/bn_mp_submod.c lib/hcrypto/libtommath/bn_mp_mulmod.c lib/hcrypto/libtommath/bn_mp_sqrmod.c lib/hcrypto/libtommath/bn_mp_gcd.c lib/hcrypto/libtommath/bn_mp_lcm.c lib/hcrypto/libtommath/bn_fast_mp_invmod.c lib/hcrypto/libtommath/bn_mp_invmod.c lib/hcrypto/libtommath/bn_mp_reduce.c lib/hcrypto/libtommath/bn_mp_montgomery_setup.c lib/hcrypto/libtommath/bn_fast_mp_montgomery_reduce.c lib/hcrypto/libtommath/bn_mp_montgomery_reduce.c lib/hcrypto/libtommath/bn_mp_exptmod_fast.c lib/hcrypto/libtommath/bn_mp_exptmod.c lib/hcrypto/libtommath/bn_mp_2expt.c lib/hcrypto/libtommath/bn_mp_n_root.c lib/hcrypto/libtommath/bn_mp_jacobi.c lib/hcrypto/libtommath/bn_reverse.c lib/hcrypto/libtommath/bn_mp_count_bits.c lib/hcrypto/libtommath/bn_mp_read_unsigned_bin.c lib/hcrypto/libtommath/bn_mp_read_signed_bin.c lib/hcrypto/libtommath/bn_mp_to_unsigned_bin.c lib/hcrypto/libtommath/bn_mp_to_signed_bin.c lib/hcrypto/libtommath/bn_mp_unsigned_bin_size.c lib/hcrypto/libtommath/bn_mp_signed_bin_size.c lib/hcrypto/libtommath/bn_mp_xor.c lib/hcrypto/libtommath/bn_mp_and.c lib/hcrypto/libtommath/bn_mp_or.c lib/hcrypto/libtommath/bn_mp_rand.c lib/hcrypto/libtommath/bn_mp_montgomery_calc_normalization.c lib/hcrypto/libtommath/bn_mp_prime_is_divisible.c lib/hcrypto/libtommath/bn_prime_tab.c lib/hcrypto/libtommath/bn_mp_prime_fermat.c lib/hcrypto/libtommath/bn_mp_prime_miller_rabin.c lib/hcrypto/libtommath/bn_mp_prime_is_prime.c lib/hcrypto/libtommath/bn_mp_prime_next_prime.c lib/hcrypto/libtommath/bn_mp_find_prime.c lib/hcrypto/libtommath/bn_mp_isprime.c lib/hcrypto/libtommath/bn_mp_dr_reduce.c lib/hcrypto/libtommath/bn_mp_dr_is_modulus.c lib/hcrypto/libtommath/bn_mp_dr_setup.c lib/hcrypto/libtommath/bn_mp_reduce_setup.c lib/hcrypto/libtommath/bn_mp_toom_mul.c lib/hcrypto/libtommath/bn_mp_toom_sqr.c lib/hcrypto/libtommath/bn_mp_div_3.c lib/hcrypto/libtommath/bn_s_mp_exptmod.c lib/hcrypto/libtommath/bn_mp_reduce_2k.c lib/hcrypto/libtommath/bn_mp_reduce_is_2k.c lib/hcrypto/libtommath/bn_mp_reduce_2k_setup.c lib/hcrypto/libtommath/bn_mp_reduce_2k_l.c lib/hcrypto/libtommath/bn_mp_reduce_is_2k_l.c lib/hcrypto/libtommath/bn_mp_reduce_2k_setup_l.c lib/hcrypto/libtommath/bn_mp_radix_smap.c lib/hcrypto/libtommath/bn_mp_read_radix.c lib/hcrypto/libtommath/bn_mp_toradix.c lib/hcrypto/libtommath/bn_mp_radix_size.c lib/hcrypto/libtommath/bn_mp_fread.c lib/hcrypto/libtommath/bn_mp_fwrite.c lib/hcrypto/libtommath/bn_mp_cnt_lsb.c lib/hcrypto/libtommath/bn_error.c lib/hcrypto/libtommath/bn_mp_init_multi.c lib/hcrypto/libtommath/bn_mp_clear_multi.c lib/hcrypto/libtommath/bn_mp_exteuclid.c lib/hcrypto/libtommath/bn_mp_toradix_n.c lib/hcrypto/libtommath/bn_mp_prime_random_ex.c lib/hcrypto/libtommath/bn_mp_get_int.c lib/hcrypto/libtommath/bn_mp_sqrt.c lib/hcrypto/libtommath/bn_mp_is_square.c lib/hcrypto/libtommath/bn_mp_init_set.c lib/hcrypto/libtommath/bn_mp_init_set_int.c lib/hcrypto/libtommath/bn_mp_invmod_slow.c lib/hcrypto/libtommath/bn_mp_prime_rabin_miller_trials.c lib/hcrypto/libtommath/bn_mp_to_signed_bin_n.c lib/hcrypto/libtommath/bn_mp_to_unsigned_bin_n.c',
             includes='../heimdal/lib/hcrypto/libtommath'
         )
 
 HEIMDAL_SUBSYSTEM('HEIMDAL_HCRYPTO',
-    '../heimdal/lib/hcrypto/aes.c ../heimdal/lib/hcrypto/bn.c ../heimdal/lib/hcrypto/dh.c ../heimdal/lib/hcrypto/dh-ltm.c ../heimdal/lib/hcrypto/dh-imath.c ../heimdal/lib/hcrypto/des.c ../heimdal/lib/hcrypto/dsa.c ../heimdal/lib/hcrypto/engine.c ../heimdal/lib/hcrypto/md2.c ../heimdal/lib/hcrypto/md4.c ../heimdal/lib/hcrypto/md5.c ../heimdal/lib/hcrypto/rsa.c ../heimdal/lib/hcrypto/rsa-ltm.c ../heimdal/lib/hcrypto/rsa-imath.c ../heimdal/lib/hcrypto/rc2.c ../heimdal/lib/hcrypto/rc4.c ../heimdal/lib/hcrypto/rijndael-alg-fst.c ../heimdal/lib/hcrypto/rnd_keys.c ../heimdal/lib/hcrypto/sha.c ../heimdal/lib/hcrypto/sha256.c ../heimdal/lib/hcrypto/sha512.c ../heimdal/lib/hcrypto/ui.c ../heimdal/lib/hcrypto/evp.c ../heimdal/lib/hcrypto/evp-hcrypto.c ../heimdal/lib/hcrypto/pkcs5.c ../heimdal/lib/hcrypto/pkcs12.c ../heimdal/lib/hcrypto/rand.c ../heimdal/lib/hcrypto/rand-egd.c ../heimdal/lib/hcrypto/rand-unix.c ../heimdal/lib/hcrypto/rand-fortuna.c ../heimdal/lib/hcrypto/rand-timer.c ../heimdal/lib/hcrypto/hmac.c ../heimdal/lib/hcrypto/camellia.c ../heimdal/lib/hcrypto/camellia-ntt.c ../heimdal/lib/hcrypto/common.c ../heimdal/lib/hcrypto/validate.c',
+    'lib/hcrypto/aes.c lib/hcrypto/bn.c lib/hcrypto/dh.c lib/hcrypto/dh-ltm.c lib/hcrypto/dh-imath.c lib/hcrypto/des.c lib/hcrypto/dsa.c lib/hcrypto/engine.c lib/hcrypto/md2.c lib/hcrypto/md4.c lib/hcrypto/md5.c lib/hcrypto/rsa.c lib/hcrypto/rsa-ltm.c lib/hcrypto/rsa-imath.c lib/hcrypto/rc2.c lib/hcrypto/rc4.c lib/hcrypto/rijndael-alg-fst.c lib/hcrypto/rnd_keys.c lib/hcrypto/sha.c lib/hcrypto/sha256.c lib/hcrypto/sha512.c lib/hcrypto/ui.c lib/hcrypto/evp.c lib/hcrypto/evp-hcrypto.c lib/hcrypto/pkcs5.c lib/hcrypto/pkcs12.c lib/hcrypto/rand.c lib/hcrypto/rand-egd.c lib/hcrypto/rand-unix.c lib/hcrypto/rand-fortuna.c lib/hcrypto/rand-timer.c lib/hcrypto/hmac.c lib/hcrypto/camellia.c lib/hcrypto/camellia-ntt.c lib/hcrypto/common.c lib/hcrypto/validate.c',
     includes='../heimdal/lib/hcrypto ../heimdal/lib ../heimdal/include',
     deps='roken asn1 HEIMDAL_HCRYPTO_IMATH HEIMDAL_RFC2459_ASN1 tommath'
     )
@@ -686,7 +687,7 @@ if not bld.CONFIG_SET("USING_SYSTEM_HX509"):
     HEIMDAL_ASN1('HEIMDAL_OCSP_ASN1',
         '../heimdal/lib/hx509/ocsp.asn1',
         options='--preserve-binary=OCSPTBSRequest --preserve-binary=OCSPResponseData',
-            includes='../heimdal/lib/asn1',
+        includes='../heimdal/lib/asn1',
         directory='lib/hx509'
         )
 
@@ -716,7 +717,7 @@ if not bld.CONFIG_SET("USING_SYSTEM_HX509"):
     HEIMDAL_ASN1('HEIMDAL_PKCS10_ASN1',
         '../heimdal/lib/hx509/pkcs10.asn1',
         options='--preserve-binary=CertificationRequestInfo',
-            includes='../heimdal/lib/asn1',
+        includes='../heimdal/lib/asn1',
         directory='lib/hx509'
         )
 
@@ -724,30 +725,30 @@ if not bld.CONFIG_SET("USING_SYSTEM_HX509"):
         '../heimdal/lib/hx509/hx509_err.et')
 
     HEIMDAL_HX509_OBJH_SOURCE = '''
-        ../heimdal/lib/hx509/ca.c
-        ../heimdal/lib/hx509/cert.c
-        ../heimdal/lib/hx509/cms.c
-        ../heimdal/lib/hx509/collector.c
-        ../heimdal/lib/hx509/crypto.c
-        ../heimdal/lib/hx509/error.c
-        ../heimdal/lib/hx509/env.c
-        ../heimdal/lib/hx509/file.c
-        ../heimdal/lib/hx509/keyset.c
-        ../heimdal/lib/hx509/ks_dir.c
-        ../heimdal/lib/hx509/ks_file.c
-        ../heimdal/lib/hx509/ks_keychain.c
-        ../heimdal/lib/hx509/ks_mem.c
-        ../heimdal/lib/hx509/ks_null.c
-        ../heimdal/lib/hx509/ks_p11.c
-        ../heimdal/lib/hx509/ks_p12.c
-        ../heimdal/lib/hx509/lock.c
-        ../heimdal/lib/hx509/name.c
-        ../heimdal/lib/hx509/peer.c
-        ../heimdal/lib/hx509/print.c
-        ../heimdal/lib/hx509/req.c
-        ../heimdal/lib/hx509/revoke.c
-        ../heimdal/lib/hx509/sel.c
-        ../heimdal/lib/hx509/hx509_err.c
+        lib/hx509/ca.c
+        lib/hx509/cert.c
+        lib/hx509/cms.c
+        lib/hx509/collector.c
+        lib/hx509/crypto.c
+        lib/hx509/error.c
+        lib/hx509/env.c
+        lib/hx509/file.c
+        lib/hx509/keyset.c
+        lib/hx509/ks_dir.c
+        lib/hx509/ks_file.c
+        lib/hx509/ks_keychain.c
+        lib/hx509/ks_mem.c
+        lib/hx509/ks_null.c
+        lib/hx509/ks_p11.c
+        lib/hx509/ks_p12.c
+        lib/hx509/lock.c
+        lib/hx509/name.c
+        lib/hx509/peer.c
+        lib/hx509/print.c
+        lib/hx509/req.c
+        lib/hx509/revoke.c
+        lib/hx509/sel.c
+        lib/hx509/hx509_err.c
     '''
 
     HEIMDAL_AUTOPROTO('../heimdal/lib/hx509/hx509-protos.h',
@@ -759,7 +760,7 @@ if not bld.CONFIG_SET("USING_SYSTEM_HX509"):
                           options="-q -P comment -p")
 
     HEIMDAL_LIBRARY('hx509',
-        '../heimdal/lib/hx509/ca.c ../heimdal/lib/hx509/cert.c ../heimdal/lib/hx509/cms.c ../heimdal/lib/hx509/collector.c ../heimdal/lib/hx509/crypto.c ../heimdal/lib/hx509/error.c ../heimdal/lib/hx509/env.c ../heimdal/lib/hx509/file.c ../heimdal/lib/hx509/keyset.c ../heimdal/lib/hx509/ks_dir.c ../heimdal/lib/hx509/ks_file.c ../heimdal/lib/hx509/ks_keychain.c ../heimdal/lib/hx509/ks_mem.c ../heimdal/lib/hx509/ks_null.c ../heimdal/lib/hx509/ks_p11.c ../heimdal/lib/hx509/ks_p12.c ../heimdal/lib/hx509/lock.c ../heimdal/lib/hx509/name.c ../heimdal/lib/hx509/peer.c ../heimdal/lib/hx509/print.c ../heimdal/lib/hx509/req.c ../heimdal/lib/hx509/revoke.c ../heimdal/lib/hx509/sel.c ../heimdal/lib/hx509/hx509_err.c ../heimdal/lib/hx509/sel-lex.c ../heimdal/lib/hx509/sel-gram.c',
+        'lib/hx509/ca.c lib/hx509/cert.c lib/hx509/cms.c lib/hx509/collector.c lib/hx509/crypto.c lib/hx509/error.c lib/hx509/env.c lib/hx509/file.c lib/hx509/keyset.c lib/hx509/ks_dir.c lib/hx509/ks_file.c lib/hx509/ks_keychain.c lib/hx509/ks_mem.c lib/hx509/ks_null.c lib/hx509/ks_p11.c lib/hx509/ks_p12.c lib/hx509/lock.c lib/hx509/name.c lib/hx509/peer.c lib/hx509/print.c lib/hx509/req.c lib/hx509/revoke.c lib/hx509/sel.c lib/hx509/hx509_err.c lib/hx509/sel-lex.c lib/hx509/sel-gram.c',
         includes='../heimdal/lib/hx509',
         deps='roken com_err asn1 HEIMDAL_HCRYPTO HEIMDAL_CMS_ASN1 HEIMDAL_RFC2459_ASN1 HEIMDAL_OCSP_ASN1 HEIMDAL_PKCS8_ASN1 HEIMDAL_PKCS9_ASN1 HEIMDAL_PKCS12_ASN1 HEIMDAL_PKINIT_ASN1 HEIMDAL_PKCS10_ASN1 wind HEIMDAL_KRB5_ASN1',
         vnum='5.0.0',
@@ -822,14 +823,14 @@ if not bld.CONFIG_SET('USING_SYSTEM_COM_ERR'):
         )
 
 HEIMDAL_SUBSYSTEM('HEIMDAL_VERS_HOSTCC',
-       '../heimdal/lib/vers/print_version.c ../heimdal_build/version.c',
+       'lib/vers/print_version.c ../heimdal_build/version.c',
         group='build_compilers',
        deps='LIBREPLACE_HOSTCC ROKEN_HOSTCC',
        use_global_deps=False,
        use_hostcc=True)
 
 HEIMDAL_SUBSYSTEM('HEIMDAL_VERS',
-       '../heimdal/lib/vers/print_version.c ../heimdal_build/version.c',
+       'lib/vers/print_version.c ../heimdal_build/version.c',
         group='build_compilers',
         deps='roken')
 
