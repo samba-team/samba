@@ -496,8 +496,9 @@ if not bld.CONFIG_SET('USING_SYSTEM_ROKEN'):
             install=False
         )
 
-HEIMDAL_LIBRARY('kdc',
-                    source='../heimdal/kdc/default_config.c ../heimdal/kdc/kerberos5.c ../heimdal/kdc/krb5tgs.c ../heimdal/kdc/pkinit.c ../heimdal/kdc/log.c ../heimdal/kdc/misc.c ../heimdal/kdc/kaserver.c ../heimdal/kdc/digest.c ../heimdal/kdc/process.c ../heimdal/kdc/windc.c ../heimdal/kdc/kx509.c',
+KDC_SOURCE='../heimdal/kdc/default_config.c ../heimdal/kdc/kerberos5.c ../heimdal/kdc/krb5tgs.c ../heimdal/kdc/pkinit.c ../heimdal/kdc/log.c ../heimdal/kdc/misc.c ../heimdal/kdc/kaserver.c ../heimdal/kdc/digest.c ../heimdal/kdc/process.c ../heimdal/kdc/windc.c ../heimdal/kdc/kx509.c'
+
+HEIMDAL_LIBRARY('kdc', source=KDC_SOURCE,
                     includes='../heimdal/kdc',
                     autoproto='../heimdal/kdc/kdc-protos.h',
                     autoproto_private='../heimdal/kdc/kdc-private.h',
@@ -505,9 +506,9 @@ HEIMDAL_LIBRARY('kdc',
                     vnum='2.0.0',
                     )
 
-
+HEIMNTLM_SOURCE = '../heimdal/lib/ntlm/ntlm.c'
 HEIMDAL_LIBRARY('heimntlm',
-                    source='../heimdal/lib/ntlm/ntlm.c',
+                    source=HEIMNTLM_SOURCE,
                     includes='../heimdal/lib/ntlm',
                     autoproto='../heimdal/lib/ntlm/heimntlm-protos.h',
                     deps='roken HEIMDAL_HCRYPTO krb5',
@@ -522,11 +523,13 @@ HEIMDAL_SUBSYSTEM('HEIMDAL_HDB_KEYS',
     )
 
 
-HEIMDAL_LIBRARY('hdb',
-                    source='''../heimdal/lib/hdb/db.c ../heimdal/lib/hdb/dbinfo.c ../heimdal/lib/hdb/hdb.c
+HDB_SOURCE = '''../heimdal/lib/hdb/db.c ../heimdal/lib/hdb/dbinfo.c ../heimdal/lib/hdb/hdb.c
                               ../heimdal/lib/hdb/ext.c ../heimdal/lib/hdb/keytab.c ../heimdal/lib/hdb/hdb-keytab.c
                               ../heimdal/lib/hdb/mkey.c ../heimdal/lib/hdb/ndbm.c ../heimdal/lib/hdb/hdb_err.c
-                              ../heimdal_build/hdb-glue.c''',
+                              ../heimdal_build/hdb-glue.c'''
+
+HEIMDAL_LIBRARY('hdb',
+                    source=HDB_SOURCE,
                     includes='../heimdal/lib/hdb',
                     autoproto='../heimdal/lib/hdb/hdb-protos.h',
                     autoproto_private='../heimdal/lib/hdb/hdb-private.h',
@@ -585,13 +588,11 @@ HEIMDAL_LIBRARY('gssapi',
 HEIMDAL_SUBSYSTEM('HEIMDAL_CONFIG',
                   'lib/krb5/expand_path.c lib/krb5/plugin.c',
                   includes='../heimdal/lib/krb5 ../heimdal/lib/asn1 ../heimdal/include',
-                  cflags = bld.dynconfig_cflags('LIBDIR BINDIR LIBEXECDIR SBINDIR'),
+                  cflags=bld.dynconfig_cflags('LIBDIR BINDIR LIBEXECDIR SBINDIR'),
                   deps='HEIMDAL_HCRYPTO wind hx509'
                   )
 
-
-HEIMDAL_LIBRARY('krb5',
-                    bld.SUBDIR('../heimdal/lib/krb5/',
+KRB5_SOURCE = bld.SUBDIR('../heimdal/lib/krb5/',
                                '''acache.c add_et_list.c
                                addr_families.c appdefault.c
                                asn1_glue.c auth_context.c
@@ -621,7 +622,9 @@ HEIMDAL_LIBRARY('krb5',
                                store.c store_emem.c store_fd.c
                                store_mem.c ticket.c time.c transited.c
                                v4_glue.c version.c warn.c krb5_err.c
-                               heim_err.c k524_err.c krb_err.c''') + ' ../heimdal_build/krb5-glue.c',
+                               heim_err.c k524_err.c krb_err.c''') + ' ../heimdal_build/krb5-glue.c'
+
+HEIMDAL_LIBRARY('krb5', KRB5_SOURCE,
                     includes='../heimdal/lib/krb5 ../heimdal/lib/asn1 ../heimdal/include',
                     autoproto='../heimdal/lib/krb5/krb5-protos.h',
                     autoproto_options='-E KRB5_LIB -q -P comment -o',
