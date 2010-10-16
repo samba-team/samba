@@ -185,14 +185,16 @@ static int connect_acl_xattr(struct vfs_handle_struct *handle,
 		return ret;
 	}
 
-	/* Ensure we have "inherit acls = yes" if we're
+	/* Ensure we have the parameters correct if we're
 	 * using this module. */
 	DEBUG(2,("connect_acl_xattr: setting 'inherit acls = true' "
-		"and 'dos filemode = true' for service %s\n",
+		"'dos filemode = true' and "
+		"'force unknown acl user = true' for service %s\n",
 		service ));
 
         lp_do_parameter(SNUM(handle->conn), "inherit acls", "true");
         lp_do_parameter(SNUM(handle->conn), "dos filemode", "true");
+        lp_do_parameter(SNUM(handle->conn), "force unknown acl user", "true");
 
 	return 0;
 }
