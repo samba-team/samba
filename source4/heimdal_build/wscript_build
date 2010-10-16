@@ -7,6 +7,9 @@ from samba_autoconf import CURRENT_CFLAGS
 def heimdal_path(p):
     return os.path.join("../heimdal", p)
 
+def heimdal_paths(ps):
+    return [heimdal_path(p) for p in TO_LIST(ps)]
+
 # waf build tool for building .et files with compile_et
 
 def HEIMDAL_ASN1(name, source,
@@ -145,7 +148,7 @@ def HEIMDAL_AUTOPROTO(header, source, options=None, group='prototypes'):
     if options is None:
         options='-q -P comment -o'
     SET_TARGET_TYPE(bld, header, 'PROTOTYPE')
-    source = [os.path.join("../heimdal", x) for x in TO_LIST(source)]
+    source = heimdal_paths(source)
     t = bld(rule='${PERL} ${HEIMDAL}/cf/make-proto.pl ${OPTIONS} ${TGT[0].abspath(env)} ${SRC}',
             source=source,
             target=header,
@@ -244,7 +247,7 @@ def HEIMDAL_SUBSYSTEM(modname, source,
     if not SET_TARGET_TYPE(bld, modname, 'SUBSYSTEM'):
         return
 
-    source = [os.path.join("../heimdal", x) for x in TO_LIST(source)]
+    source = heimdal_paths(source)
 
     bld.set_group(group)
 
@@ -664,7 +667,7 @@ if not bld.CONFIG_SET("USING_SYSTEM_ASN1"):
 
 HEIMDAL_SUBSYSTEM('HEIMDAL_HCRYPTO_IMATH',
     'lib/hcrypto/imath/imath.c lib/hcrypto/imath/iprime.c',
-        includes='../heimdal/lib/hcrypto/imath',
+    includes='../heimdal/lib/hcrypto/imath',
     deps='roken'
     )
 if not bld.CONFIG_SET("USING_SYSTEM_TOMMATH"):
