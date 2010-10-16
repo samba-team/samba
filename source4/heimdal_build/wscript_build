@@ -370,36 +370,22 @@ HEIMDAL_ASN1('HEIMDAL_KX509_ASN1',
     )
 
 
-HEIMDAL_ASN1('HEIMDAL_HDB_ASN1',
-    'lib/hdb/hdb.asn1',
-        includes='../heimdal/lib/asn1')
+HEIMDAL_ASN1('HEIMDAL_HDB_ASN1', 'lib/hdb/hdb.asn1',
+    includes='../heimdal/lib/asn1')
 
-HEIMDAL_ERRTABLE('HEIMDAL_ASN1_ERR_ET',
-    'lib/asn1/asn1_err.et')
+HEIMDAL_ERRTABLE('HEIMDAL_ASN1_ERR_ET', 'lib/asn1/asn1_err.et')
 
+HEIMDAL_ERRTABLE('HEIMDAL_HDB_ERR_ET', 'lib/hdb/hdb_err.et')
 
-HEIMDAL_ERRTABLE('HEIMDAL_HDB_ERR_ET',
-    'lib/hdb/hdb_err.et')
+HEIMDAL_ERRTABLE('HEIMDAL_HEIM_ERR_ET', 'lib/krb5/heim_err.et')
 
+HEIMDAL_ERRTABLE('HEIMDAL_K524_ERR_ET', 'lib/krb5/k524_err.et')
 
-HEIMDAL_ERRTABLE('HEIMDAL_HEIM_ERR_ET',
-    'lib/krb5/heim_err.et')
+HEIMDAL_ERRTABLE('HEIMDAL_KRB_ERR_ET', 'lib/krb5/krb_err.et')
 
+HEIMDAL_ERRTABLE('HEIMDAL_KRB5_ERR_ET', 'lib/krb5/krb5_err.et')
 
-HEIMDAL_ERRTABLE('HEIMDAL_K524_ERR_ET',
-    'lib/krb5/k524_err.et')
-
-
-HEIMDAL_ERRTABLE('HEIMDAL_KRB_ERR_ET',
-    'lib/krb5/krb_err.et')
-
-
-HEIMDAL_ERRTABLE('HEIMDAL_KRB5_ERR_ET',
-    'lib/krb5/krb5_err.et')
-
-
-HEIMDAL_ERRTABLE('HEIMDAL_GKRB5_ERR_ET',
-    'lib/gssapi/krb5/gkrb5_err.et')
+HEIMDAL_ERRTABLE('HEIMDAL_GKRB5_ERR_ET', 'lib/gssapi/krb5/gkrb5_err.et')
 
 
 if not bld.CONFIG_SET('USING_SYSTEM_ROKEN'):
@@ -489,8 +475,7 @@ if not bld.CONFIG_SET('USING_SYSTEM_ROKEN'):
         deps='LIBREPLACE_HOSTCC',
         )
 
-    HEIMDAL_BINARY('rkpty',
-        '../heimdal/lib/roken/rkpty.c',
+    HEIMDAL_BINARY('rkpty', 'lib/roken/rkpty.c',
             deps='roken OPENPTY',
             cflags='-DPACKAGE="Samba"',
             install=False
@@ -840,7 +825,7 @@ HEIMDAL_SUBSYSTEM('HEIMDAL_VERS',
 
 # here is the asn1 compiler build rule
 HEIMDAL_BINARY('asn1_compile',
-    '../heimdal/lib/asn1/main.c ../heimdal/lib/asn1/gen.c ../heimdal/lib/asn1/gen_copy.c ../heimdal/lib/asn1/gen_decode.c ../heimdal/lib/asn1/gen_encode.c ../heimdal/lib/asn1/gen_free.c ../heimdal/lib/asn1/gen_glue.c ../heimdal/lib/asn1/gen_length.c ../heimdal/lib/asn1/gen_seq.c ../heimdal/lib/asn1/gen_template.c ../heimdal/lib/asn1/hash.c ../heimdal/lib/asn1/symbol.c ../heimdal/lib/asn1/asn1parse.c ../heimdal/lib/asn1/lex.c',
+    'lib/asn1/main.c lib/asn1/gen.c lib/asn1/gen_copy.c lib/asn1/gen_decode.c lib/asn1/gen_encode.c lib/asn1/gen_free.c lib/asn1/gen_glue.c lib/asn1/gen_length.c lib/asn1/gen_seq.c lib/asn1/gen_template.c lib/asn1/hash.c lib/asn1/symbol.c lib/asn1/asn1parse.c lib/asn1/lex.c',
     use_hostcc=True,
         use_global_deps=False,
         cflags='-DSOCKET_WRAPPER_DISABLE=1 -DNSS_WRAPPER_DISABLE=1 -D_SAMBA_HOSTCC_',
@@ -853,7 +838,7 @@ HEIMDAL_BINARY('asn1_compile',
 
 if not bld.CONFIG_SET('USING_SYSTEM_COMPILE_ET'):
     HEIMDAL_BINARY('compile_et',
-        '../heimdal/lib/com_err/parse.c ../heimdal/lib/com_err/lex.c ../heimdal/lib/com_err/compile_et.c',
+        'lib/com_err/parse.c lib/com_err/lex.c lib/com_err/compile_et.c',
         use_hostcc=True,
         use_global_deps=False,
         includes='../heimdal/lib/com_err',
@@ -865,14 +850,14 @@ if not bld.CONFIG_SET('USING_SYSTEM_COMPILE_ET'):
     bld.env['COMPILE_ET'] = os.path.join(bld.env['BUILD_DIRECTORY'], 'compile_et')
 
 HEIMDAL_BINARY('samba4kinit',
-    '../heimdal/kuser/kinit.c',
+    'kuser/kinit.c',
     deps='krb5 heimntlm roken HEIMDAL_VERS',
     install=False
     )
 
 
 HEIMDAL_BINARY('samba4kpasswd',
-    '../heimdal/kpasswd/kpasswd.c',
+    'kpasswd/kpasswd.c',
     deps='krb5 heimntlm roken HEIMDAL_VERS',
     install=False
     )
