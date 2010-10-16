@@ -1711,7 +1711,7 @@ struct ldb_dn *ldb_dn_get_parent(TALLOC_CTX *mem_ctx, struct ldb_dn *dn)
 
 */
 static char *ldb_dn_canonical(TALLOC_CTX *mem_ctx, struct ldb_dn *dn, int ex_format) {
-	long long int i;
+	unsigned int i;
 	TALLOC_CTX *tmpctx;
 	char *cracked = NULL;
 	const char *format = (ex_format ? "\n" : "/" );
@@ -1723,7 +1723,7 @@ static char *ldb_dn_canonical(TALLOC_CTX *mem_ctx, struct ldb_dn *dn, int ex_for
 	tmpctx = talloc_new(mem_ctx);
 
 	/* Walk backwards down the DN, grabbing 'dc' components at first */
-	for (i = dn->comp_num - 1; i >= 0; i--) {
+	for (i = dn->comp_num - 1; i != (unsigned int) -1; i--) {
 		if (ldb_attr_cmp(dn->components[i].name, "dc") != 0) {
 			break;
 		}
@@ -1742,7 +1742,7 @@ static char *ldb_dn_canonical(TALLOC_CTX *mem_ctx, struct ldb_dn *dn, int ex_for
 	}
 
 	/* Only domain components?  Finish here */
-	if (i < 0) {
+	if (i == (unsigned int) -1) {
 		cracked = talloc_strdup_append_buffer(cracked, format);
 		talloc_steal(mem_ctx, cracked);
 		goto done;
