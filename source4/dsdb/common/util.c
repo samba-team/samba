@@ -933,8 +933,17 @@ int samdb_msg_add_int(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx, struct l
 }
 
 /*
-  add a unsigned int element to a message
-*/
+ * Add an unsigned int element to a message
+ *
+ * The issue here is that we have not yet first cast to int32_t explicitly,
+ * before we cast to an signed int to printf() into the %d or cast to a
+ * int64_t before we then cast to a long long to printf into a %lld.
+ *
+ * There are *no* unsigned integers in Active Directory LDAP, even the RID
+ * allocations and ms-DS-Secondary-KrbTgt-Number are *signed* quantities.
+ * (See the schema, and the syntax definitions in schema_syntax.c).
+ *
+ */
 int samdb_msg_add_uint(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx, struct ldb_message *msg,
 		       const char *attr_name, unsigned int v)
 {
@@ -955,8 +964,17 @@ int samdb_msg_add_int64(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx, struct
 }
 
 /*
-  add a uint64_t element to a message
-*/
+ * Add an unsigned int64_t (uint64_t) element to a message
+ *
+ * The issue here is that we have not yet first cast to int32_t explicitly,
+ * before we cast to an signed int to printf() into the %d or cast to a
+ * int64_t before we then cast to a long long to printf into a %lld.
+ *
+ * There are *no* unsigned integers in Active Directory LDAP, even the RID
+ * allocations and ms-DS-Secondary-KrbTgt-Number are *signed* quantities.
+ * (See the schema, and the syntax definitions in schema_syntax.c).
+ *
+ */
 int samdb_msg_add_uint64(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx, struct ldb_message *msg,
 			const char *attr_name, uint64_t v)
 {
@@ -1078,7 +1096,16 @@ int samdb_msg_set_int(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx,
 }
 
 /*
- * sets an unsigned integer in a message
+ * Sets an unsigned int element in a message
+ *
+ * The issue here is that we have not yet first cast to int32_t explicitly,
+ * before we cast to an signed int to printf() into the %d or cast to a
+ * int64_t before we then cast to a long long to printf into a %lld.
+ *
+ * There are *no* unsigned integers in Active Directory LDAP, even the RID
+ * allocations and ms-DS-Secondary-KrbTgt-Number are *signed* quantities.
+ * (See the schema, and the syntax definitions in schema_syntax.c).
+ *
  */
 int samdb_msg_set_uint(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx,
 		       struct ldb_message *msg, const char *attr_name,
