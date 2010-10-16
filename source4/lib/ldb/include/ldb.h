@@ -654,10 +654,36 @@ typedef int (*ldb_qsort_cmp_fn_t) (void *v1, void *v2, void *opaque);
 /** 
     OID to allow the server to be more 'fast and loose' with the data being added.  
 
-    \sa 
-
+    \sa <a href="http://msdn.microsoft.com/en-us/library/aa366982(v=VS.85).aspx">Microsoft documentation of this OID</a>
 */
 #define LDB_CONTROL_SERVER_LAZY_COMMIT   "1.2.840.113556.1.4.619"
+
+/**
+   Control for RODC join -see [MS-ADTS] section 3.1.1.3.4.1.23
+
+   \sa <a href="">Microsoft documentation of this OID</a>
+*/
+#define LDB_CONTROL_RODC_DCPROMO_OID "1.2.840.113556.1.4.1341"
+
+/* Other standardised controls */
+
+/**
+   OID for the allowing client to request temporary relaxed
+   enforcement of constraints of the x.500 model.
+
+   \sa <a href="http://opends.dev.java.net/public/standards/draft-zeilenga-ldap-managedit.txt">draft managedit</a>.
+*/
+#define LDB_CONTROL_RELAX_OID "1.3.6.1.4.1.4203.666.5.12"
+
+/*
+   OID for LDAP Extended Operation PASSWORD_CHANGE.
+
+   This Extended operation is used to allow user password changes by the user
+   itself.
+*/
+#define LDB_EXTENDED_PASSWORD_CHANGE_OID	"1.3.6.1.4.1.4203.1.11.1"
+
+/* Extended operations */
 
 /**
    OID for LDAP Extended Operation FAST_BIND
@@ -683,31 +709,6 @@ typedef int (*ldb_qsort_cmp_fn_t) (void *v1, void *v2, void *opaque);
    interval. Otherwise the entry is going to be removed.
 */
 #define LDB_EXTENDED_DYNAMIC_OID	"1.3.6.1.4.1.1466.101.119.1"
-
-/* Other standardised controls */
-
-/**
-   OID for the allowing client to request temporary relaxed
-   enforcement of constraints of the x.500 model.
-
-   \sa <a href="http://opends.dev.java.net/public/standards/draft-zeilenga-ldap-managedit.txt">draft managedit</a>.
-*/
-#define LDB_CONTROL_RELAX_OID "1.3.6.1.4.1.4203.666.5.12"
-
-/**
-   control for RODC join
-   See [MS-ADTS] section 3.1.1.3.4.1.23
-*/
-#define LDB_CONTROL_RODC_DCPROMO_OID "1.2.840.113556.1.4.1341"
-
-/*
-   OID for LDAP Extended Operation PASSWORD_CHANGE.
-
-   This Extended operation is used to allow user password changes by the user
-   itself.
-*/
-#define LDB_EXTENDED_PASSWORD_CHANGE_OID	"1.3.6.1.4.1.4203.1.11.1"
-
 
 struct ldb_sd_flags_control {
 	/*
