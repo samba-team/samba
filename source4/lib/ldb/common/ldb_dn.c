@@ -1029,7 +1029,7 @@ char *ldb_dn_alloc_casefold(TALLOC_CTX *mem_ctx, struct ldb_dn *dn)
 int ldb_dn_compare_base(struct ldb_dn *base, struct ldb_dn *dn)
 {
 	int ret;
-	long long int n_base, n_dn;
+	unsigned int n_base, n_dn;
 
 	if ( ! base || base->invalid) return 1;
 	if ( ! dn || dn->invalid) return -1;
@@ -1080,7 +1080,7 @@ int ldb_dn_compare_base(struct ldb_dn *base, struct ldb_dn *dn)
 	n_base = base->comp_num - 1;
 	n_dn = dn->comp_num - 1;
 
-	while (n_base >= 0) {
+	while (n_base != (unsigned int) -1) {
 		char *b_name = base->components[n_base].cf_name;
 		char *dn_name = dn->components[n_dn].cf_name;
 
