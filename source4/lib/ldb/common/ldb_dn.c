@@ -1486,7 +1486,7 @@ bool ldb_dn_add_child(struct ldb_dn *dn, struct ldb_dn *child)
 
 	if (dn->components) {
 		unsigned int n;
-		long long int i, j;
+		unsigned int i, j;
 
 		if (dn->comp_num == 0) {
 			return false;
@@ -1514,7 +1514,8 @@ bool ldb_dn_add_child(struct ldb_dn *dn, struct ldb_dn *child)
 			return false;
 		}
 
-		for (i = dn->comp_num - 1, j = n - 1; i >= 0; i--, j--) {
+		for (i = dn->comp_num - 1, j = n - 1; i != (unsigned int) -1;
+		     i--, j--) {
 			dn->components[j] = dn->components[i];
 		}
 
