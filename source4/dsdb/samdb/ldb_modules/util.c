@@ -616,55 +616,6 @@ int dsdb_module_rid_manager_dn(struct ldb_module *module, TALLOC_CTX *mem_ctx, s
 					"rIDManagerReference", dn);
 }
 
-
-/*
-  update an integer attribute safely via a constrained delete/add
- */
-int dsdb_module_constrainted_update_integer(struct ldb_module *module, struct ldb_dn *dn,
-					    const char *attr, uint64_t old_val, uint64_t new_val)
-{
-	struct ldb_message *msg;
-	struct ldb_message_element *el;
-	struct ldb_val v1, v2;
-	int ret;
-	char *vstring;
-
-	msg = ldb_msg_new(module);
-	msg->dn = dn;
-
-	ret = ldb_msg_add_empty(msg, attr, LDB_FLAG_MOD_DELETE, &el);
-	if (ret != LDB_SUCCESS) {
-		talloc_free(msg);
-		return ret;
-	}
-	el->num_values = 1;
-	el->values = &v1;
-	vstring = talloc_asprintf(msg, "%llu", (unsigned long long)old_val);
-	if (!vstring) {
-		talloc_free(msg);
-		return ldb_module_oom(module);
-	}
-	v1 = data_blob_string_const(vstring);
-
-	ret = ldb_msg_add_empty(msg, attr, LDB_FLAG_MOD_ADD, &el);
-	if (ret != LDB_SUCCESS) {
-		talloc_free(msg);
-		return ret;
-	}
-	el->num_values = 1;
-	el->values = &v2;
-	vstring = talloc_asprintf(msg, "%llu", (unsigned long long)new_val);
-	if (!vstring) {
-		talloc_free(msg);
-		return ldb_module_oom(module);
-	}
-	v2 = data_blob_string_const(vstring);
-
-	ret = dsdb_module_modify(module, msg, DSDB_FLAG_NEXT_MODULE);
-	talloc_free(msg);
-	return ret;
-}
-
 /*
   used to chain to the callers callback
  */
@@ -674,31 +625,6 @@ int dsdb_next_callback(struct ldb_request *req, struct ldb_reply *ares)
 
 	talloc_steal(up_req, req);
 	return up_req->callback(up_req, ares);
-}
-
-
-/*
-  set an integer attribute
- */
-int dsdb_module_set_integer(struct ldb_module *module, struct ldb_dn *dn,
-			    const char *attr, uint64_t new_val)
-{
-	struct ldb_message *msg;
-	int ret;
-
-	msg = ldb_msg_new(module);
-	msg->dn = dn;
-
-	ret = ldb_msg_add_fmt(msg, attr, "%llu", (unsigned long long)new_val);
-	if (ret != LDB_SUCCESS) {
-		talloc_free(msg);
-		return ret;
-	}
-	msg->elements[0].flags = LDB_FLAG_MOD_REPLACE;
-
-	ret = dsdb_module_modify(module, msg, DSDB_FLAG_NEXT_MODULE);
-	talloc_free(msg);
-	return ret;
 }
 
 /*
