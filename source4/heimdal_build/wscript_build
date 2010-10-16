@@ -324,16 +324,16 @@ def HEIMDAL_BINARY(binname, source,
 
 
 HEIMDAL_ASN1('HEIMDAL_SPNEGO_ASN1',
-        source='../heimdal/lib/gssapi/spnego/spnego.asn1',
+    source='../heimdal/lib/gssapi/spnego/spnego.asn1',
     options='--sequence=MechTypeList',
-        includes='../heimdal/lib/asn1',
+    includes='../heimdal/lib/asn1',
     directory='lib/gssapi'
     )
 
 
 HEIMDAL_ASN1('HEIMDAL_GSSAPI_ASN1',
     '../heimdal/lib/gssapi/mech/gssapi.asn1',
-        includes='../heimdal/lib/asn1',
+    includes='../heimdal/lib/asn1',
     directory='lib/gssapi'
     )
 
@@ -400,10 +400,6 @@ HEIMDAL_ERRTABLE('HEIMDAL_KRB5_ERR_ET',
 
 HEIMDAL_ERRTABLE('HEIMDAL_GKRB5_ERR_ET',
     '../heimdal/lib/gssapi/krb5/gkrb5_err.et')
-
-
-HEIMDAL_ERRTABLE('HEIMDAL_HX509_ERR_ET',
-    '../heimdal/lib/hx509/hx509_err.et')
 
 
 if not bld.CONFIG_SET('USING_SYSTEM_ROKEN'):
@@ -699,6 +695,44 @@ if not bld.CONFIG_SET("USING_SYSTEM_HX509"):
         directory='lib/hx509'
         )
 
+    HEIMDAL_ERRTABLE('HEIMDAL_HX509_ERR_ET',
+        '../heimdal/lib/hx509/hx509_err.et')
+
+    HEIMDAL_HX509_OBJH_SOURCE = '''
+        ../heimdal/lib/hx509/ca.c
+        ../heimdal/lib/hx509/cert.c
+        ../heimdal/lib/hx509/cms.c
+        ../heimdal/lib/hx509/collector.c
+        ../heimdal/lib/hx509/crypto.c
+        ../heimdal/lib/hx509/error.c
+        ../heimdal/lib/hx509/env.c
+        ../heimdal/lib/hx509/file.c
+        ../heimdal/lib/hx509/keyset.c
+        ../heimdal/lib/hx509/ks_dir.c
+        ../heimdal/lib/hx509/ks_file.c
+        ../heimdal/lib/hx509/ks_keychain.c
+        ../heimdal/lib/hx509/ks_mem.c
+        ../heimdal/lib/hx509/ks_null.c
+        ../heimdal/lib/hx509/ks_p11.c
+        ../heimdal/lib/hx509/ks_p12.c
+        ../heimdal/lib/hx509/lock.c
+        ../heimdal/lib/hx509/name.c
+        ../heimdal/lib/hx509/peer.c
+        ../heimdal/lib/hx509/print.c
+        ../heimdal/lib/hx509/req.c
+        ../heimdal/lib/hx509/revoke.c
+        ../heimdal/lib/hx509/sel.c
+        ../heimdal/lib/hx509/hx509_err.c
+    '''
+
+    HEIMDAL_AUTOPROTO('../heimdal/lib/hx509/hx509-protos.h',
+                          HEIMDAL_HX509_OBJH_SOURCE,
+                          options="-R '^(_|^C)' -E HX509_LIB -q -P comment -o")
+
+    HEIMDAL_AUTOPROTO('../heimdal/lib/hx509/hx509-private.h',
+                          HEIMDAL_HX509_OBJH_SOURCE,
+                          options="-q -P comment -p")
+
     HEIMDAL_LIBRARY('hx509',
         '../heimdal/lib/hx509/ca.c ../heimdal/lib/hx509/cert.c ../heimdal/lib/hx509/cms.c ../heimdal/lib/hx509/collector.c ../heimdal/lib/hx509/crypto.c ../heimdal/lib/hx509/error.c ../heimdal/lib/hx509/env.c ../heimdal/lib/hx509/file.c ../heimdal/lib/hx509/keyset.c ../heimdal/lib/hx509/ks_dir.c ../heimdal/lib/hx509/ks_file.c ../heimdal/lib/hx509/ks_keychain.c ../heimdal/lib/hx509/ks_mem.c ../heimdal/lib/hx509/ks_null.c ../heimdal/lib/hx509/ks_p11.c ../heimdal/lib/hx509/ks_p12.c ../heimdal/lib/hx509/lock.c ../heimdal/lib/hx509/name.c ../heimdal/lib/hx509/peer.c ../heimdal/lib/hx509/print.c ../heimdal/lib/hx509/req.c ../heimdal/lib/hx509/revoke.c ../heimdal/lib/hx509/sel.c ../heimdal/lib/hx509/hx509_err.c ../heimdal/lib/hx509/sel-lex.c ../heimdal/lib/hx509/sel-gram.c',
         includes='../heimdal/lib/hx509',
@@ -881,41 +915,6 @@ HEIMDAL_GSSAPI_KRB5_SOURCE = '''
 HEIMDAL_AUTOPROTO_PRIVATE('../heimdal/lib/gssapi/krb5/gsskrb5-private.h',
                               HEIMDAL_GSSAPI_KRB5_SOURCE)
 
-
-HEIMDAL_HX509_OBJH_SOURCE = '''
-    ../heimdal/lib/hx509/ca.c
-    ../heimdal/lib/hx509/cert.c
-    ../heimdal/lib/hx509/cms.c
-    ../heimdal/lib/hx509/collector.c
-    ../heimdal/lib/hx509/crypto.c
-    ../heimdal/lib/hx509/error.c
-    ../heimdal/lib/hx509/env.c
-    ../heimdal/lib/hx509/file.c
-    ../heimdal/lib/hx509/keyset.c
-    ../heimdal/lib/hx509/ks_dir.c
-    ../heimdal/lib/hx509/ks_file.c
-    ../heimdal/lib/hx509/ks_keychain.c
-    ../heimdal/lib/hx509/ks_mem.c
-    ../heimdal/lib/hx509/ks_null.c
-    ../heimdal/lib/hx509/ks_p11.c
-    ../heimdal/lib/hx509/ks_p12.c
-    ../heimdal/lib/hx509/lock.c
-    ../heimdal/lib/hx509/name.c
-    ../heimdal/lib/hx509/peer.c
-    ../heimdal/lib/hx509/print.c
-    ../heimdal/lib/hx509/req.c
-    ../heimdal/lib/hx509/revoke.c
-    ../heimdal/lib/hx509/sel.c
-    ../heimdal/lib/hx509/hx509_err.c
-'''
-
-HEIMDAL_AUTOPROTO('../heimdal/lib/hx509/hx509-protos.h',
-                      HEIMDAL_HX509_OBJH_SOURCE,
-                      options="-R '^(_|^C)' -E HX509_LIB -q -P comment -o")
-
-HEIMDAL_AUTOPROTO('../heimdal/lib/hx509/hx509-private.h',
-                      HEIMDAL_HX509_OBJH_SOURCE,
-                      options="-q -P comment -p")
 
 HEIMDAL_HEIM_ASN1_DER_SOURCE = '''
     ../heimdal/lib/asn1/der_get.c
