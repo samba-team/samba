@@ -181,6 +181,7 @@ class BasicDeleteTests(unittest.TestCase):
                          attrs=["dsServiceName", "dNSHostName"])
         self.assertEquals(len(res), 1)
 
+        # Delete failing since DC's nTDSDSA object is protected
         try:
             ldb.delete(res[0]["dsServiceName"][0])
             self.fail()
@@ -191,6 +192,7 @@ class BasicDeleteTests(unittest.TestCase):
                          expression="(&(objectClass=computer)(dNSHostName=" + res[0]["dNSHostName"][0] + "))")
         self.assertEquals(len(res), 1)
 
+        # Deletes failing since DC's rIDSet object is protected
         try:
             ldb.delete(res[0]["rIDSetReferences"][0])
             self.fail()
@@ -201,6 +203,8 @@ class BasicDeleteTests(unittest.TestCase):
             self.fail()
         except LdbError, (num, _):
             self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
+
+        # Deletes failing since three main crossRef objects are protected
 
         try:
             ldb.delete("cn=Enterprise Schema,cn=Partitions," + self.configuration_dn)
@@ -239,11 +243,16 @@ class BasicDeleteTests(unittest.TestCase):
         except LdbError, (num, _):
             self.assertEquals(num, ERR_NOT_ALLOWED_ON_NON_LEAF)
 
-        # Performs some "systemFlags" testing
-
         # Delete failing since "SYSTEM_FLAG_DISALLOW_DELETE"
         try:
             ldb.delete("CN=Users," + self.base_dn)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
+
+        # Tree-delete failing since "isCriticalSystemObject"
+        try:
+            ldb.delete("CN=Computers," + self.base_dn, ["tree_delete:1"])
             self.fail()
         except LdbError, (num, _):
             self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)

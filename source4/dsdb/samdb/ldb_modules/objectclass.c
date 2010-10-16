@@ -1348,7 +1348,8 @@ static int objectclass_do_delete(struct oc_context *ac);
 static int objectclass_delete(struct ldb_module *module, struct ldb_request *req)
 {
 	static const char * const attrs[] = { "nCName", "objectClass",
-					      "systemFlags", NULL };
+					      "systemFlags",
+					      "isCriticalSystemObject", NULL };
 	struct ldb_context *ldb;
 	struct ldb_request *search_req;
 	struct oc_context *ac;
@@ -1397,6 +1398,7 @@ static int objectclass_do_delete(struct oc_context *ac)
 	struct ldb_context *ldb;
 	struct ldb_dn *dn;
 	int32_t systemFlags;
+	bool isCriticalSystemObject;
 	int ret;
 
 	ldb = ldb_module_get_ctx(ac->module);
@@ -1464,6 +1466,19 @@ static int objectclass_do_delete(struct oc_context *ac)
 		ldb_asprintf_errstring(ldb, "objectclass: Cannot delete %s, it isn't permitted!",
 				       ldb_dn_get_linearized(ac->req->op.del.dn));
 		return LDB_ERR_UNWILLING_TO_PERFORM;
+	}
+
+	/* isCriticalSystemObject - but this only applies on tree delete
+	 * operations - MS-ADTS 3.1.1.5.5.7.2 */
+	if (ldb_request_get_control(ac->req, LDB_CONTROL_TREE_DELETE_OID) != NULL) {
+		isCriticalSystemObject = ldb_msg_find_attr_as_bool(ac->search_res->message,
+								   "isCriticalSystemObject", false);
+		if (isCriticalSystemObject) {
+			ldb_asprintf_errstring(ldb,
+					       "objectclass: Cannot tree-delete %s, it's a critical system object!",
+					       ldb_dn_get_linearized(ac->req->op.del.dn));
+			return LDB_ERR_UNWILLING_TO_PERFORM;
+		}
 	}
 
 	return ldb_next_request(ac->module, ac->req);
