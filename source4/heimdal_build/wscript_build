@@ -4,6 +4,9 @@ import os
 from samba_utils import SET_TARGET_TYPE, TO_LIST
 from samba_autoconf import CURRENT_CFLAGS
 
+def heimdal_path(p):
+    return os.path.join("../heimdal", p)
+
 # waf build tool for building .et files with compile_et
 
 def HEIMDAL_ASN1(name, source,
@@ -161,9 +164,6 @@ def HEIMDAL_AUTOPROTO_PRIVATE(header, source):
 def HEIMDAL_LIBRARY(libname, source, deps, vnum,
                   includes='',
                   cflags='',
-                  autoproto=None,
-                  autoproto_options=None,
-                  autoproto_extra='',
                   is_bundled=True):
     '''define a Heimdal library'''
 
@@ -209,10 +209,6 @@ def HEIMDAL_LIBRARY(libname, source, deps, vnum,
         name            = libname,
         is_bundled      = is_bundled,
         )
-
-    if autoproto is not None:
-        HEIMDAL_AUTOPROTO(autoproto, source + ' ' + autoproto_extra,
-            options=autoproto_options)
 
 
 def HEIMDAL_GENERATOR(name, rule, source='', target='',
@@ -497,20 +493,20 @@ KDC_SOURCE='../heimdal/kdc/default_config.c ../heimdal/kdc/kerberos5.c ../heimda
 
 HEIMDAL_LIBRARY('kdc', source=KDC_SOURCE,
                     includes='../heimdal/kdc',
-                    autoproto='../heimdal/kdc/kdc-protos.h',
                     deps='roken krb5 hdb asn1 HEIMDAL_DIGEST_ASN1 HEIMDAL_KX509_ASN1 heimntlm HEIMDAL_HCRYPTO com_err wind',
                     vnum='2.0.0',
                     )
+HEIMDAL_AUTOPROTO('../heimdal/kdc/kdc-protos.h', KDC_SOURCE)
 HEIMDAL_AUTOPROTO_PRIVATE('../heimdal/kdc/kdc-private.h', KDC_SOURCE)
 
 HEIMNTLM_SOURCE = '../heimdal/lib/ntlm/ntlm.c'
 HEIMDAL_LIBRARY('heimntlm',
                     source=HEIMNTLM_SOURCE,
                     includes='../heimdal/lib/ntlm',
-                    autoproto='../heimdal/lib/ntlm/heimntlm-protos.h',
                     deps='roken HEIMDAL_HCRYPTO krb5',
                     vnum='1.0.1',
     )
+HEIMDAL_AUTOPROTO('../heimdal/lib/ntlm/heimntlm-protos.h', HEIMNTLM_SOURCE)
 
 
 HEIMDAL_SUBSYSTEM('HEIMDAL_HDB_KEYS',
@@ -528,10 +524,10 @@ HDB_SOURCE = '''../heimdal/lib/hdb/db.c ../heimdal/lib/hdb/dbinfo.c ../heimdal/l
 HEIMDAL_LIBRARY('hdb',
                     source=HDB_SOURCE,
                     includes='../heimdal/lib/hdb',
-                    autoproto='../heimdal/lib/hdb/hdb-protos.h',
                     deps='HDB_LDB krb5 HEIMDAL_HDB_KEYS roken HEIMDAL_HCRYPTO com_err HEIMDAL_HDB_ASN1 wind',
                     vnum='11.0.2',
     )
+HEIMDAL_AUTOPROTO('../heimdal/lib/hdb/hdb-protos.h', HDB_SOURCE)
 HEIMDAL_AUTOPROTO_PRIVATE('../heimdal/lib/hdb/hdb-private.h', HDB_SOURCE)
 
 
@@ -623,14 +619,14 @@ KRB5_SOURCE = bld.SUBDIR('../heimdal/lib/krb5/',
 
 HEIMDAL_LIBRARY('krb5', KRB5_SOURCE,
                     includes='../heimdal/lib/krb5 ../heimdal/lib/asn1 ../heimdal/include',
-                    autoproto='../heimdal/lib/krb5/krb5-protos.h',
-                    autoproto_options='-E KRB5_LIB -q -P comment -o',
-                    autoproto_extra='../heimdal/lib/krb5/expand_path.c ../heimdal/lib/krb5/plugin.c',
             deps='roken HEIMDAL_PKINIT_ASN1 wind HEIMDAL_KRB5_ASN1 hx509 HEIMDAL_HCRYPTO LIBSAMBA-HOSTCONFIG intl com_err HEIMDAL_CONFIG',
             vnum='26.0.0',
                     )
-HEIMDAL_AUTOPROTO_PRIVATE('../heimdal/lib/krb5/krb5-private.h',
-    KRB5_SOURCE + ' ../heimdal/lib/krb5/expand_path.c ../heimdal/lib/krb5/plugin.c')
+KRB5_PROTO_SOURCE = KRB5_SOURCE + ' ../heimdal/lib/krb5/expand_path.c ../heimdal/lib/krb5/plugin.c'
+
+HEIMDAL_AUTOPROTO_PRIVATE('../heimdal/lib/krb5/krb5-private.h', KRB5_PROTO_SOURCE)
+HEIMDAL_AUTOPROTO('../heimdal/lib/krb5/krb5-protos.h', KRB5_PROTO_SOURCE,
+    options='-E KRB5_LIB -q -P comment -o')
 
 if not bld.CONFIG_SET("USING_SYSTEM_ASN1"):
     HEIMDAL_HEIM_ASN1_DER_SOURCE = '''
