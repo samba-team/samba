@@ -84,6 +84,10 @@ if check_system_heimdal_lib("roken"):
 check_system_heimdal_lib("wind", "wind_stringprep", "wind.h", onlyif="roken")
 check_system_heimdal_lib("hx509", "hx509_bitstring_print", "hx509.h", onlyif="roken wind")
 
+# With the proper checks in place we should be able to build against the system libtommath.
+# conf.CHECK_BUNDLED_SYSTEM('tommath', checkfunctions='mp_init', headers='tommath.h')
+# conf.define('USING_SYSTEM_TOMMATH', 1)
+
 # disable trying to use an external compile_et until we have a configure
 # test that checks that the system one actually works. On some systems it
 # results in missing symbols (eg. OpenSUSE 10.2 'opi' in the build farm)
