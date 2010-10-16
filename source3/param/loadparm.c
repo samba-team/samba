@@ -6277,9 +6277,6 @@ static int add_a_service(const struct service *pservice, const char *name)
 	if (name) {
 		i = getservicebyname(name, NULL);
 		if (i >= 0) {
-			/* Clean all parametric options for service */
-			/* They will be added during parsing again */
-			free_param_opts(&ServicePtrs[i]->param_opt);
 			return (i);
 		}
 	}
@@ -8111,6 +8108,9 @@ static bool do_section(const char *pszSectionName, void *userdata)
 			DEBUG(0, ("Failed to add a new service\n"));
 			return (False);
 		}
+		/* Clean all parametric options for service */
+		/* They will be added during parsing again */
+		free_param_opts(&ServicePtrs[iServiceIndex]->param_opt);
 	}
 
 	return (bRetval);
