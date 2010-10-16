@@ -103,8 +103,8 @@ def HEIMDAL_ASN1(name, source,
             target         = name,
             samba_cflags   = CURRENT_CFLAGS(bld, name, ''),
             depends_on     = '',
-            samba_deps     = TO_LIST('roken'),
-            samba_includes = includes,
+            samba_deps     = TO_LIST('roken replace'),
+            samba_includes = includes + ["/usr/include/heimdal"],
             local_include  = True)
 
 
@@ -629,7 +629,7 @@ HEIMDAL_LIBRARY('gssapi',
 # expand_path.c needs some of the install paths
 HEIMDAL_SUBSYSTEM('HEIMDAL_CONFIG',
                   '../heimdal/lib/krb5/expand_path.c ../heimdal/lib/krb5/plugin.c',
-                  includes='../heimdal/lib/krb5 ../heimdal/lib/asn1',
+                  includes='../heimdal/lib/krb5 ../heimdal/lib/asn1 ../heimdal/include',
                   cflags = bld.dynconfig_cflags('LIBDIR BINDIR LIBEXECDIR SBINDIR'),
                   deps='HEIMDAL_HCRYPTO wind hx509'
                   )
@@ -667,7 +667,7 @@ HEIMDAL_LIBRARY('krb5',
                                store_mem.c ticket.c time.c transited.c
                                v4_glue.c version.c warn.c krb5_err.c
                                heim_err.c k524_err.c krb_err.c''') + ' krb5-glue.c',
-                    includes='../heimdal/lib/krb5 ../heimdal/lib/asn1',
+                    includes='../heimdal/lib/krb5 ../heimdal/lib/asn1 ../heimdal/include',
                     autoproto='../heimdal/lib/krb5/krb5-protos.h',
                     autoproto_options='-E KRB5_LIB -q -P comment -o',
                     autoproto_extra='../heimdal/lib/krb5/expand_path.c ../heimdal/lib/krb5/plugin.c',
@@ -696,7 +696,7 @@ HEIMDAL_SUBSYSTEM('HEIMDAL_HCRYPTO_LTM',
 
 HEIMDAL_SUBSYSTEM('HEIMDAL_HCRYPTO',
     '../heimdal/lib/hcrypto/aes.c ../heimdal/lib/hcrypto/bn.c ../heimdal/lib/hcrypto/dh.c ../heimdal/lib/hcrypto/dh-ltm.c ../heimdal/lib/hcrypto/dh-imath.c ../heimdal/lib/hcrypto/des.c ../heimdal/lib/hcrypto/dsa.c ../heimdal/lib/hcrypto/engine.c ../heimdal/lib/hcrypto/md2.c ../heimdal/lib/hcrypto/md4.c ../heimdal/lib/hcrypto/md5.c ../heimdal/lib/hcrypto/rsa.c ../heimdal/lib/hcrypto/rsa-ltm.c ../heimdal/lib/hcrypto/rsa-imath.c ../heimdal/lib/hcrypto/rc2.c ../heimdal/lib/hcrypto/rc4.c ../heimdal/lib/hcrypto/rijndael-alg-fst.c ../heimdal/lib/hcrypto/rnd_keys.c ../heimdal/lib/hcrypto/sha.c ../heimdal/lib/hcrypto/sha256.c ../heimdal/lib/hcrypto/sha512.c ../heimdal/lib/hcrypto/ui.c ../heimdal/lib/hcrypto/evp.c ../heimdal/lib/hcrypto/evp-hcrypto.c ../heimdal/lib/hcrypto/pkcs5.c ../heimdal/lib/hcrypto/pkcs12.c ../heimdal/lib/hcrypto/rand.c ../heimdal/lib/hcrypto/rand-egd.c ../heimdal/lib/hcrypto/rand-unix.c ../heimdal/lib/hcrypto/rand-fortuna.c ../heimdal/lib/hcrypto/rand-timer.c ../heimdal/lib/hcrypto/hmac.c ../heimdal/lib/hcrypto/camellia.c ../heimdal/lib/hcrypto/camellia-ntt.c ../heimdal/lib/hcrypto/common.c ../heimdal/lib/hcrypto/validate.c',
-    includes='../heimdal/lib/hcrypto ../heimdal/lib',
+    includes='../heimdal/lib/hcrypto ../heimdal/lib ../heimdal/include',
     deps='roken HEIMDAL_HEIM_ASN1 HEIMDAL_HCRYPTO_IMATH HEIMDAL_RFC2459_ASN1 HEIMDAL_HCRYPTO_LTM'
     )
 
@@ -805,15 +805,15 @@ if not bld.CONFIG_SET('USING_SYSTEM_COMPILE_ET'):
 
 HEIMDAL_BINARY('samba4kinit',
     '../heimdal/kuser/kinit.c',
-        deps='krb5 heimntlm roken HEIMDAL_VERS',
-        install=False
+    deps='krb5 heimntlm roken HEIMDAL_VERS',
+    install=False
     )
 
 
 HEIMDAL_BINARY('samba4kpasswd',
     '../heimdal/kpasswd/kpasswd.c',
-        deps='krb5 heimntlm roken HEIMDAL_VERS',
-        install=False
+    deps='krb5 heimntlm roken HEIMDAL_VERS',
+    install=False
     )
 
 
