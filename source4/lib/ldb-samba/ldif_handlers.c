@@ -427,7 +427,7 @@ static int ldif_write_ntSecurityDescriptor(struct ldb_context *ldb, void *mem_ct
 }
 
 /* 
-   canonicalise an objectCategory.  We use the short form as the cannoical form:
+   canonicalise an objectCategory.  We use the short form as the canonical form:
    cn=Person,cn=Schema,cn=Configuration,<basedn> becomes 'person'
 */
 
