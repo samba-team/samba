@@ -1291,7 +1291,6 @@ static PyObject *py_ldb_sequence_number(PyLdbObject *self, PyObject *args)
 	int type, ret;
 	uint64_t value;
 
-	/* type "int" rather than "enum" for "scope" is intentional */
 	if (!PyArg_ParseTuple(args, "i", &type))
 		return NULL;
 
