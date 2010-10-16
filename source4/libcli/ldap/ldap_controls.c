@@ -1156,9 +1156,10 @@ static const struct ldap_control_handler ldap_known_controls[] = {
 	{ LDB_CONTROL_PERMISSIVE_MODIFY_OID, decode_flag_request, encode_flag_request },
 	{ LDB_CONTROL_SERVER_LAZY_COMMIT, decode_flag_request, encode_flag_request },
 	{ LDB_CONTROL_RODC_DCPROMO_OID, decode_flag_request, encode_flag_request },
-	{ LDB_CONTROL_RELAX_OID, decode_flag_request, encode_flag_request },
 	{ DSDB_OPENLDAP_DEREFERENCE_CONTROL, decode_openldap_dereference, encode_openldap_dereference },
 
+/* LDB_CONTROL_RELAX_OID is internal only, and has no network representation */
+	{ LDB_CONTROL_RELAX_OID, NULL, NULL },
 /* DSDB_CONTROL_CURRENT_PARTITION_OID is internal only, and has no network representation */
 	{ DSDB_CONTROL_CURRENT_PARTITION_OID, NULL, NULL },
 /* DSDB_CONTROL_REPLICATED_UPDATE_OID is internal only, and has no network representation */
