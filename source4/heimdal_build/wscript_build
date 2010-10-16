@@ -11,7 +11,6 @@ def heimdal_paths(ps):
     return [heimdal_path(p) for p in TO_LIST(ps)]
 
 # waf build tool for building .et files with compile_et
-
 def HEIMDAL_ASN1(name, source,
                options='',
                directory='',
@@ -19,6 +18,7 @@ def HEIMDAL_ASN1(name, source,
                includes=''):
     '''Build a ASN1 file using the asn1 compiler.
        This will produce 2 output files'''
+    source = heimdal_path(source)
     bname = os.path.basename(source)[0:-5];
     dname = os.path.dirname(source)
     asn1name = "%s_asn1" % bname
@@ -30,10 +30,11 @@ def HEIMDAL_ASN1(name, source,
     # sense elsewhere
     bld.set_group('build_source')
 
-    out_files = []
-    out_files.append("../heimdal/%s/asn1_%s_asn1.x" % (directory, bname))
-    out_files.append("../heimdal/%s/%s_asn1.hx" % (directory, bname))
-    out_files.append("../heimdal/%s/%s_asn1-priv.hx" % (directory, bname))
+    out_files = heimdal_paths([
+        "%s/asn1_%s_asn1.x" % (directory, bname),
+        "%s/%s_asn1.hx" % (directory, bname),
+        "%s/%s_asn1-priv.hx" % (directory, bname),
+        ])
 
     # the ${TGT[0].parent.abspath(env)} expression gives us the parent directory of
     # the first target in the build directory
@@ -321,7 +322,7 @@ def HEIMDAL_BINARY(binname, source,
 
 
 HEIMDAL_ASN1('HEIMDAL_SPNEGO_ASN1',
-    source='../heimdal/lib/gssapi/spnego/spnego.asn1',
+    source='lib/gssapi/spnego/spnego.asn1',
     options='--sequence=MechTypeList',
     includes='../heimdal/lib/asn1',
     directory='lib/gssapi'
@@ -329,46 +330,46 @@ HEIMDAL_ASN1('HEIMDAL_SPNEGO_ASN1',
 
 
 HEIMDAL_ASN1('HEIMDAL_GSSAPI_ASN1',
-    '../heimdal/lib/gssapi/mech/gssapi.asn1',
+    'lib/gssapi/mech/gssapi.asn1',
     includes='../heimdal/lib/asn1',
     directory='lib/gssapi'
     )
 
 
 HEIMDAL_ASN1('HEIMDAL_KRB5_ASN1',
-    '../heimdal/lib/asn1/krb5.asn1',
+    'lib/asn1/krb5.asn1',
     option_file='../heimdal/lib/asn1/krb5.opt',
     directory='lib/asn1'
     )
 
 
 HEIMDAL_ASN1('HEIMDAL_DIGEST_ASN1',
-    '../heimdal/lib/asn1/digest.asn1',
+    'lib/asn1/digest.asn1',
     directory='lib/asn1'
     )
 
 
 HEIMDAL_ASN1('HEIMDAL_RFC2459_ASN1',
-    '../heimdal/lib/asn1/rfc2459.asn1',
+    'lib/asn1/rfc2459.asn1',
     options='--preserve-binary=TBSCertificate --preserve-binary=TBSCRLCertList --preserve-binary=Name --sequence=GeneralNames --sequence=Extensions --sequence=CRLDistributionPoints',
     directory='lib/asn1'
     )
 
 
 HEIMDAL_ASN1('HEIMDAL_PKINIT_ASN1',
-    '../heimdal/lib/asn1/pkinit.asn1',
+    'lib/asn1/pkinit.asn1',
     directory='lib/asn1'
     )
 
 
 HEIMDAL_ASN1('HEIMDAL_KX509_ASN1',
-    '../heimdal/lib/asn1/kx509.asn1',
+    'lib/asn1/kx509.asn1',
     directory='lib/asn1'
     )
 
 
 HEIMDAL_ASN1('HEIMDAL_HDB_ASN1',
-    '../heimdal/lib/hdb/hdb.asn1',
+    'lib/hdb/hdb.asn1',
         includes='../heimdal/lib/asn1')
 
 HEIMDAL_ERRTABLE('HEIMDAL_ASN1_ERR_ET',
@@ -686,37 +687,37 @@ HEIMDAL_SUBSYSTEM('HEIMDAL_HCRYPTO',
 
 if not bld.CONFIG_SET("USING_SYSTEM_HX509"):
     HEIMDAL_ASN1('HEIMDAL_OCSP_ASN1',
-        '../heimdal/lib/hx509/ocsp.asn1',
+        'lib/hx509/ocsp.asn1',
         options='--preserve-binary=OCSPTBSRequest --preserve-binary=OCSPResponseData',
         includes='../heimdal/lib/asn1',
         directory='lib/hx509'
         )
 
     HEIMDAL_ASN1('HEIMDAL_PKCS8_ASN1',
-        '../heimdal/lib/asn1/pkcs8.asn1',
+        'lib/asn1/pkcs8.asn1',
         directory='lib/asn1'
         )
 
 
     HEIMDAL_ASN1('HEIMDAL_PKCS9_ASN1',
-        '../heimdal/lib/asn1/pkcs9.asn1',
+        'lib/asn1/pkcs9.asn1',
         directory='lib/asn1'
         )
 
 
     HEIMDAL_ASN1('HEIMDAL_PKCS12_ASN1',
-        '../heimdal/lib/asn1/pkcs12.asn1',
+        'lib/asn1/pkcs12.asn1',
         directory='lib/asn1'
         )
 
     HEIMDAL_ASN1('HEIMDAL_CMS_ASN1',
-        '../heimdal/lib/asn1/cms.asn1',
+        'lib/asn1/cms.asn1',
         option_file='../heimdal/lib/asn1/cms.opt',
         directory='lib/asn1'
         )
 
     HEIMDAL_ASN1('HEIMDAL_PKCS10_ASN1',
-        '../heimdal/lib/hx509/pkcs10.asn1',
+        'lib/hx509/pkcs10.asn1',
         options='--preserve-binary=CertificationRequestInfo',
         includes='../heimdal/lib/asn1',
         directory='lib/hx509'
