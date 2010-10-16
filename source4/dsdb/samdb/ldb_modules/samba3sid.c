@@ -46,9 +46,8 @@ static int samba3sid_next_sid(struct ldb_module *module,
 				"sambaNextGroupRid", "sambaSID", NULL };
 	int ret;
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
-	int sambaNextRid, sambaNextGroupRid, sambaNextUserRid;
 	struct ldb_message *msg;
-	int rid;
+	uint32_t sambaNextRid, sambaNextGroupRid, sambaNextUserRid, rid;
 	const char *sambaSID;
 
 	ret = dsdb_module_search(module, tmp_ctx, &res, NULL, LDB_SCOPE_SUBTREE,
@@ -75,9 +74,12 @@ static int samba3sid_next_sid(struct ldb_module *module,
 	}
 	msg = res->msgs[0];
 
-	sambaNextRid = ldb_msg_find_attr_as_uint(msg, "sambaNextRid", -1);
-	sambaNextUserRid = ldb_msg_find_attr_as_uint(msg, "sambaNextUserRid", -1);
-	sambaNextGroupRid = ldb_msg_find_attr_as_uint(msg, "sambaNextGroupRid", -1);
+	sambaNextRid = ldb_msg_find_attr_as_uint(msg, "sambaNextRid",
+						 (uint32_t) -1);
+	sambaNextUserRid = ldb_msg_find_attr_as_uint(msg, "sambaNextUserRid",
+						     (uint32_t) -1);
+	sambaNextGroupRid = ldb_msg_find_attr_as_uint(msg, "sambaNextGroupRid",
+						      (uint32_t) -1);
 	sambaSID = ldb_msg_find_attr_as_string(msg, "sambaSID", NULL);
 
 	if (sambaSID == NULL) {
@@ -90,15 +92,15 @@ static int samba3sid_next_sid(struct ldb_module *module,
 	}
 
 	/* choose the highest of the 3 - see pdb_ldap.c for an
-	 * explanation */
+	 * explaination */
 	rid = sambaNextRid;
-	if (sambaNextUserRid > rid) {
+	if ((sambaNextUserRid != (uint32_t) -1) && (sambaNextUserRid > rid)) {
 		rid = sambaNextUserRid;
 	}
-	if (sambaNextGroupRid > rid) {
+	if ((sambaNextGroupRid != (uint32_t) -1) && (sambaNextGroupRid > rid)) {
 		rid = sambaNextGroupRid;
 	}
-	if (rid == -1) {
+	if (rid == (uint32_t) -1) {
 		ldb_asprintf_errstring(ldb,
 				       __location__
 				       ": No sambaNextRid in %s",
@@ -110,15 +112,15 @@ static int samba3sid_next_sid(struct ldb_module *module,
 	/* sambaNextRid is actually the previous RID .... */
 	rid += 1;
 
-	(*sid) = talloc_asprintf(tmp_ctx, "%s-%d", sambaSID, rid);
+	(*sid) = talloc_asprintf(tmp_ctx, "%s-%u", sambaSID, rid);
 	if (!*sid) {
 		talloc_free(tmp_ctx);
 		return ldb_module_oom(module);
 	}
 
-	ret = dsdb_module_constrainted_update_integer(module, msg->dn,
-						      "sambaNextRid",
-						      sambaNextRid, rid);
+	ret = dsdb_module_constrainted_update_uint32(module, msg->dn,
+						     "sambaNextRid",
+						     &sambaNextRid, &rid);
 	if (ret != LDB_SUCCESS) {
 		ldb_asprintf_errstring(ldb,
 				       __location__
