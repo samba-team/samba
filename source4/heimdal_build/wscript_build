@@ -245,8 +245,6 @@ def HEIMDAL_SUBSYSTEM(modname, source,
                     includes='',
                     cflags='',
                     group='main',
-                    local_include=True,
-                    local_include_first=True,
                     use_hostcc=False,
                     use_global_deps=True):
     '''define a Heimdal subsystem'''
@@ -266,8 +264,8 @@ def HEIMDAL_SUBSYSTEM(modname, source,
         depends_on     = '',
         samba_deps     = TO_LIST(deps),
         samba_includes = includes,
-        local_include  = local_include,
-        local_include_first  = local_include_first,
+        local_include  = True,
+        local_include_first  = True,
         samba_use_hostcc = use_hostcc,
         samba_use_global_deps = use_global_deps
         )
@@ -281,7 +279,6 @@ def HEIMDAL_BINARY(binname, source,
                  use_global_deps=True,
                  compiler=None,
                  group='binaries',
-                 local_include=True,
                  install=True,
                  install_path=None):
     '''define a Samba binary'''
@@ -302,7 +299,6 @@ def HEIMDAL_BINARY(binname, source,
                         includes       = includes,
                         cflags         = cflags,
                         group          = group,
-                        local_include  = local_include,
                         use_hostcc     = use_hostcc,
                         use_global_deps= use_global_deps)
 
@@ -319,7 +315,7 @@ def HEIMDAL_BINARY(binname, source,
         samba_cflags   = CURRENT_CFLAGS(bld, binname, cflags),
         samba_deps     = deps,
         samba_includes = includes,
-        local_include  = local_include,
+        local_include  = True,
         top            = True,
         install_path   = None,
         samba_install  = install
