@@ -23,6 +23,9 @@ def HEIMDAL_ASN1(name, source,
     dname = os.path.dirname(source)
     asn1name = "%s_asn1" % bname
 
+    if option_file:
+        option_file = heimdal_path(option_file)
+
     if not SET_TARGET_TYPE(bld, name, 'ASN1'):
         return
 
@@ -340,7 +343,7 @@ HEIMDAL_ASN1('HEIMDAL_GSSAPI_ASN1',
 
 HEIMDAL_ASN1('HEIMDAL_KRB5_ASN1',
     'lib/asn1/krb5.asn1',
-    option_file='../heimdal/lib/asn1/krb5.opt',
+    option_file='lib/asn1/krb5.opt',
     directory='lib/asn1'
     )
 
@@ -699,7 +702,7 @@ if not bld.CONFIG_SET("USING_SYSTEM_HX509"):
 
     HEIMDAL_ASN1('HEIMDAL_CMS_ASN1',
         'lib/asn1/cms.asn1',
-        option_file='../heimdal/lib/asn1/cms.opt',
+        option_file='lib/asn1/cms.opt',
         directory='lib/asn1'
         )
 
