@@ -48,5 +48,5 @@ msg='Checking for CPPFunction')
 if conf.CHECK_FUNCS_IN('rl_completion_matches', 'readline'):
     conf.DEFINE('HAVE_NEW_LIBREADLINE', 1)
 
-if conf.CHECK_FUNCS_IN('rl_event_hook', 'readline'):
+if conf.CHECK_FUNCS_IN('history_list', 'readline'):
     conf.DEFINE('HAVE_HISTORY_LIST', 1)
