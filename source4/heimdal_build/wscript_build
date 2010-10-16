@@ -144,6 +144,7 @@ def HEIMDAL_ERRTABLE(name, source):
 
 def HEIMDAL_AUTOPROTO(header, source, options=None, group='prototypes'):
     '''rule for heimdal prototype generation'''
+    header = heimdal_path(header)
     bld.set_group(group)
     if options is None:
         options='-q -P comment -o'
@@ -499,8 +500,8 @@ HEIMDAL_LIBRARY('kdc', source=KDC_SOURCE,
                     deps='roken krb5 hdb asn1 HEIMDAL_DIGEST_ASN1 HEIMDAL_KX509_ASN1 heimntlm HEIMDAL_HCRYPTO com_err wind',
                     vnum='2.0.0',
                     )
-HEIMDAL_AUTOPROTO('../heimdal/kdc/kdc-protos.h', KDC_SOURCE)
-HEIMDAL_AUTOPROTO_PRIVATE('../heimdal/kdc/kdc-private.h', KDC_SOURCE)
+HEIMDAL_AUTOPROTO('kdc/kdc-protos.h', KDC_SOURCE)
+HEIMDAL_AUTOPROTO_PRIVATE('kdc/kdc-private.h', KDC_SOURCE)
 
 HEIMNTLM_SOURCE = 'lib/ntlm/ntlm.c'
 HEIMDAL_LIBRARY('heimntlm',
@@ -509,7 +510,7 @@ HEIMDAL_LIBRARY('heimntlm',
                     deps='roken HEIMDAL_HCRYPTO krb5',
                     vnum='1.0.1',
     )
-HEIMDAL_AUTOPROTO('../heimdal/lib/ntlm/heimntlm-protos.h', HEIMNTLM_SOURCE)
+HEIMDAL_AUTOPROTO('lib/ntlm/heimntlm-protos.h', HEIMNTLM_SOURCE)
 
 
 HEIMDAL_SUBSYSTEM('HEIMDAL_HDB_KEYS',
@@ -530,8 +531,8 @@ HEIMDAL_LIBRARY('hdb',
                     deps='HDB_LDB krb5 HEIMDAL_HDB_KEYS roken HEIMDAL_HCRYPTO com_err HEIMDAL_HDB_ASN1 wind',
                     vnum='11.0.2',
     )
-HEIMDAL_AUTOPROTO('../heimdal/lib/hdb/hdb-protos.h', HDB_SOURCE)
-HEIMDAL_AUTOPROTO_PRIVATE('../heimdal/lib/hdb/hdb-private.h', HDB_SOURCE)
+HEIMDAL_AUTOPROTO('lib/hdb/hdb-protos.h', HDB_SOURCE)
+HEIMDAL_AUTOPROTO_PRIVATE('lib/hdb/hdb-private.h', HDB_SOURCE)
 
 
 HEIMDAL_LIBRARY('gssapi',
@@ -627,8 +628,8 @@ HEIMDAL_LIBRARY('krb5', KRB5_SOURCE,
                     )
 KRB5_PROTO_SOURCE = KRB5_SOURCE + ['lib/krb5/expand_path.c', 'lib/krb5/plugin.c']
 
-HEIMDAL_AUTOPROTO_PRIVATE('../heimdal/lib/krb5/krb5-private.h', KRB5_PROTO_SOURCE)
-HEIMDAL_AUTOPROTO('../heimdal/lib/krb5/krb5-protos.h', KRB5_PROTO_SOURCE,
+HEIMDAL_AUTOPROTO_PRIVATE('lib/krb5/krb5-private.h', KRB5_PROTO_SOURCE)
+HEIMDAL_AUTOPROTO('lib/krb5/krb5-protos.h', KRB5_PROTO_SOURCE,
     options='-E KRB5_LIB -q -P comment -o')
 
 if not bld.CONFIG_SET("USING_SYSTEM_ASN1"):
@@ -642,13 +643,13 @@ if not bld.CONFIG_SET("USING_SYSTEM_ASN1"):
         lib/asn1/der_cmp.c
     '''
 
-    HEIMDAL_AUTOPROTO('../heimdal/lib/asn1/der-protos.h',
+    HEIMDAL_AUTOPROTO('lib/asn1/der-protos.h',
                           HEIMDAL_HEIM_ASN1_DER_SOURCE,
                           group = 'compiler_prototypes',
                           options="-q -P comment -o")
 
 
-    HEIMDAL_AUTOPROTO('../heimdal/lib/asn1/der-private.h',
+    HEIMDAL_AUTOPROTO('lib/asn1/der-private.h',
                           HEIMDAL_HEIM_ASN1_DER_SOURCE,
                           group = 'compiler_prototypes',
                           options="-q -P comment -p")
@@ -751,11 +752,11 @@ if not bld.CONFIG_SET("USING_SYSTEM_HX509"):
         lib/hx509/hx509_err.c
     '''
 
-    HEIMDAL_AUTOPROTO('../heimdal/lib/hx509/hx509-protos.h',
+    HEIMDAL_AUTOPROTO('lib/hx509/hx509-protos.h',
                           HEIMDAL_HX509_OBJH_SOURCE,
                           options="-R '^(_|^C)' -E HX509_LIB -q -P comment -o")
 
-    HEIMDAL_AUTOPROTO('../heimdal/lib/hx509/hx509-private.h',
+    HEIMDAL_AUTOPROTO('lib/hx509/hx509-private.h',
                           HEIMDAL_HX509_OBJH_SOURCE,
                           options="-q -P comment -p")
 
@@ -883,7 +884,7 @@ HEIMDAL_GSSAPI_SPNEGO_SOURCE = '''
     lib/gssapi/spnego/accept_sec_context.c
 '''
 
-HEIMDAL_AUTOPROTO_PRIVATE('../heimdal/lib/gssapi/spnego/spnego-private.h',
+HEIMDAL_AUTOPROTO_PRIVATE('lib/gssapi/spnego/spnego-private.h',
                               HEIMDAL_GSSAPI_SPNEGO_SOURCE)
 
 
@@ -938,7 +939,7 @@ HEIMDAL_GSSAPI_KRB5_SOURCE = '''
     lib/gssapi/krb5/aeap.c
 '''
 
-HEIMDAL_AUTOPROTO_PRIVATE('../heimdal/lib/gssapi/krb5/gsskrb5-private.h',
+HEIMDAL_AUTOPROTO_PRIVATE('lib/gssapi/krb5/gsskrb5-private.h',
                               HEIMDAL_GSSAPI_KRB5_SOURCE)
 
 
