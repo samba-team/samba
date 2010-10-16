@@ -118,6 +118,8 @@ def HEIMDAL_ASN1(name, source,
 def HEIMDAL_ERRTABLE(name, source):
     '''Build a heimdal errtable from a .et file'''
 
+    source = heimdal_path(source)
+
     bname = source[0:-3]; # strip off the .et suffix
 
     if not SET_TARGET_TYPE(bld, name, 'ET'):
@@ -373,31 +375,31 @@ HEIMDAL_ASN1('HEIMDAL_HDB_ASN1',
         includes='../heimdal/lib/asn1')
 
 HEIMDAL_ERRTABLE('HEIMDAL_ASN1_ERR_ET',
-    '../heimdal/lib/asn1/asn1_err.et')
+    'lib/asn1/asn1_err.et')
 
 
 HEIMDAL_ERRTABLE('HEIMDAL_HDB_ERR_ET',
-    '../heimdal/lib/hdb/hdb_err.et')
+    'lib/hdb/hdb_err.et')
 
 
 HEIMDAL_ERRTABLE('HEIMDAL_HEIM_ERR_ET',
-    '../heimdal/lib/krb5/heim_err.et')
+    'lib/krb5/heim_err.et')
 
 
 HEIMDAL_ERRTABLE('HEIMDAL_K524_ERR_ET',
-    '../heimdal/lib/krb5/k524_err.et')
+    'lib/krb5/k524_err.et')
 
 
 HEIMDAL_ERRTABLE('HEIMDAL_KRB_ERR_ET',
-    '../heimdal/lib/krb5/krb_err.et')
+    'lib/krb5/krb_err.et')
 
 
 HEIMDAL_ERRTABLE('HEIMDAL_KRB5_ERR_ET',
-    '../heimdal/lib/krb5/krb5_err.et')
+    'lib/krb5/krb5_err.et')
 
 
 HEIMDAL_ERRTABLE('HEIMDAL_GKRB5_ERR_ET',
-    '../heimdal/lib/gssapi/krb5/gkrb5_err.et')
+    'lib/gssapi/krb5/gkrb5_err.et')
 
 
 if not bld.CONFIG_SET('USING_SYSTEM_ROKEN'):
@@ -724,7 +726,7 @@ if not bld.CONFIG_SET("USING_SYSTEM_HX509"):
         )
 
     HEIMDAL_ERRTABLE('HEIMDAL_HX509_ERR_ET',
-        '../heimdal/lib/hx509/hx509_err.et')
+        'lib/hx509/hx509_err.et')
 
     HEIMDAL_HX509_OBJH_SOURCE = '''
         lib/hx509/ca.c
@@ -770,7 +772,7 @@ if not bld.CONFIG_SET("USING_SYSTEM_HX509"):
 
 if not bld.CONFIG_SET('USING_SYSTEM_WIND'):
     HEIMDAL_ERRTABLE('WIND_ERR_ET',
-        '../heimdal/lib/wind/wind_err.et')
+        'lib/wind/wind_err.et')
 
     HEIMDAL_GENERATOR(
         name="HEIMDAL_ERRORLIST",
