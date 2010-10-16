@@ -1600,7 +1600,7 @@ bool ldb_dn_add_child_fmt(struct ldb_dn *dn, const char *child_fmt, ...)
 
 bool ldb_dn_remove_base_components(struct ldb_dn *dn, unsigned int num)
 {
-	long long int i;
+	unsigned int i;
 
 	if ( ! ldb_dn_validate(dn)) {
 		return false;
@@ -1611,11 +1611,11 @@ bool ldb_dn_remove_base_components(struct ldb_dn *dn, unsigned int num)
 	}
 
 	/* free components */
-	for (i = num; i > 0; i--) {
-		LDB_FREE(dn->components[dn->comp_num - i].name);
-		LDB_FREE(dn->components[dn->comp_num - i].value.data);
-		LDB_FREE(dn->components[dn->comp_num - i].cf_name);
-		LDB_FREE(dn->components[dn->comp_num - i].cf_value.data);
+	for (i = dn->comp_num - num; i < dn->comp_num; i++) {
+		LDB_FREE(dn->components[i].name);
+		LDB_FREE(dn->components[i].value.data);
+		LDB_FREE(dn->components[i].cf_name);
+		LDB_FREE(dn->components[i].cf_value.data);
 	}
 
 	dn->comp_num -= num;
