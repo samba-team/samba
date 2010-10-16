@@ -1,14 +1,22 @@
 #!/usr/bin/env python
 
 import os
-from samba_utils import SET_TARGET_TYPE, TO_LIST
+from samba_utils import SET_TARGET_TYPE
 from samba_autoconf import CURRENT_CFLAGS
+
+def to_list(str):
+    '''Split a list, preserving quoted strings and existing lists'''
+    if str is None:
+        return []
+    if isinstance(str, list):
+        return str
+    return str.split(None)
 
 def heimdal_path(p):
     return os.path.join("../heimdal", p)
 
 def heimdal_paths(ps):
-    return [heimdal_path(p) for p in TO_LIST(ps)]
+    return [heimdal_path(p) for p in to_list(ps)]
 
 # waf build tool for building .et files with compile_et
 def HEIMDAL_ASN1(name, source,
@@ -47,7 +55,7 @@ def HEIMDAL_ASN1(name, source,
     cd_rule = 'cd ${TGT[0].parent.abspath(env)}'
     asn1_rule = cd_rule + ' && ${BLDBIN}/asn1_compile ${OPTION_FILE} ${ASN1OPTIONS} --one-code-file ${SRC[0].abspath(env)} ${ASN1NAME}'
 
-    source = TO_LIST(source)
+    source = to_list(source)
     source.append('asn1_compile')
 
     if option_file is not None:
@@ -105,7 +113,7 @@ def HEIMDAL_ASN1(name, source,
 
     bld.set_group('main')
 
-    includes = TO_LIST(includes)
+    includes = to_list(includes)
     includes.append(os.path.dirname(out_files[0]))
 
     t = bld(features       = 'cc',
@@ -113,7 +121,7 @@ def HEIMDAL_ASN1(name, source,
             target         = name,
             samba_cflags   = CURRENT_CFLAGS(bld, name, ''),
             depends_on     = '',
-            samba_deps     = TO_LIST('roken replace'),
+            samba_deps     = to_list('roken replace'),
             samba_includes = includes + ["/usr/include/heimdal"],
             local_include  = True)
 
@@ -193,7 +201,7 @@ def HEIMDAL_LIBRARY(libname, source, deps, vnum,
         return
 
     # the library itself will depend on that object target
-    deps = TO_LIST(deps)
+    deps = to_list(deps)
     deps.append(obj_target)
 
     if not is_bundled:
@@ -262,7 +270,7 @@ def HEIMDAL_SUBSYSTEM(modname, source,
         target         = modname,
         samba_cflags   = CURRENT_CFLAGS(bld, modname, cflags),
         depends_on     = '',
-        samba_deps     = TO_LIST(deps),
+        samba_deps     = to_list(deps),
         samba_includes = includes,
         local_include  = True,
         local_include_first  = True,
@@ -305,7 +313,7 @@ def HEIMDAL_BINARY(binname, source,
     bld.set_group(group)
 
     # the binary itself will depend on that object target
-    deps = TO_LIST(deps)
+    deps = to_list(deps)
     deps.append(obj_target)
 
     t = bld(
@@ -576,7 +584,7 @@ HEIMDAL_SUBSYSTEM('HEIMDAL_CONFIG',
                   deps='HEIMDAL_HCRYPTO wind hx509'
                   )
 
-KRB5_SOURCE = [os.path.join('lib/krb5/', x) for x in TO_LIST(
+KRB5_SOURCE = [os.path.join('lib/krb5/', x) for x in to_list(
                                '''acache.c add_et_list.c
                                addr_families.c appdefault.c
                                asn1_glue.c auth_context.c
