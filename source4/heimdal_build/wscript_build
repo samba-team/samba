@@ -351,24 +351,6 @@ HEIMDAL_ASN1('HEIMDAL_DIGEST_ASN1',
     )
 
 
-HEIMDAL_ASN1('HEIMDAL_PKCS8_ASN1',
-    '../heimdal/lib/asn1/pkcs8.asn1',
-    directory='lib/asn1'
-    )
-
-
-HEIMDAL_ASN1('HEIMDAL_PKCS9_ASN1',
-    '../heimdal/lib/asn1/pkcs9.asn1',
-    directory='lib/asn1'
-    )
-
-
-HEIMDAL_ASN1('HEIMDAL_PKCS12_ASN1',
-    '../heimdal/lib/asn1/pkcs12.asn1',
-    directory='lib/asn1'
-    )
-
-
 HEIMDAL_ASN1('HEIMDAL_RFC2459_ASN1',
     '../heimdal/lib/asn1/rfc2459.asn1',
     options='--preserve-binary=TBSCertificate --preserve-binary=TBSCRLCertList --preserve-binary=Name --sequence=GeneralNames --sequence=Extensions --sequence=CRLDistributionPoints',
@@ -382,32 +364,9 @@ HEIMDAL_ASN1('HEIMDAL_PKINIT_ASN1',
     )
 
 
-HEIMDAL_ASN1('HEIMDAL_CMS_ASN1',
-    '../heimdal/lib/asn1/cms.asn1',
-    option_file='../heimdal/lib/asn1/cms.opt',
-    directory='lib/asn1'
-    )
-
-
-HEIMDAL_ASN1('HEIMDAL_OCSP_ASN1',
-    '../heimdal/lib/hx509/ocsp.asn1',
-    options='--preserve-binary=OCSPTBSRequest --preserve-binary=OCSPResponseData',
-        includes='../heimdal/lib/asn1',
-    directory='lib/hx509'
-    )
-
-
 HEIMDAL_ASN1('HEIMDAL_KX509_ASN1',
     '../heimdal/lib/asn1/kx509.asn1',
     directory='lib/asn1'
-    )
-
-
-HEIMDAL_ASN1('HEIMDAL_PKCS10_ASN1',
-    '../heimdal/lib/hx509/pkcs10.asn1',
-    options='--preserve-binary=CertificationRequestInfo',
-        includes='../heimdal/lib/asn1',
-    directory='lib/hx509'
     )
 
 
@@ -701,13 +660,50 @@ HEIMDAL_SUBSYSTEM('HEIMDAL_HCRYPTO',
     )
 
 
-HEIMDAL_LIBRARY('hx509',
-    '../heimdal/lib/hx509/ca.c ../heimdal/lib/hx509/cert.c ../heimdal/lib/hx509/cms.c ../heimdal/lib/hx509/collector.c ../heimdal/lib/hx509/crypto.c ../heimdal/lib/hx509/error.c ../heimdal/lib/hx509/env.c ../heimdal/lib/hx509/file.c ../heimdal/lib/hx509/keyset.c ../heimdal/lib/hx509/ks_dir.c ../heimdal/lib/hx509/ks_file.c ../heimdal/lib/hx509/ks_keychain.c ../heimdal/lib/hx509/ks_mem.c ../heimdal/lib/hx509/ks_null.c ../heimdal/lib/hx509/ks_p11.c ../heimdal/lib/hx509/ks_p12.c ../heimdal/lib/hx509/lock.c ../heimdal/lib/hx509/name.c ../heimdal/lib/hx509/peer.c ../heimdal/lib/hx509/print.c ../heimdal/lib/hx509/req.c ../heimdal/lib/hx509/revoke.c ../heimdal/lib/hx509/sel.c ../heimdal/lib/hx509/hx509_err.c ../heimdal/lib/hx509/sel-lex.c ../heimdal/lib/hx509/sel-gram.c',
-    includes='../heimdal/lib/hx509',
-    deps='roken com_err HEIMDAL_HEIM_ASN1 HEIMDAL_HCRYPTO HEIMDAL_CMS_ASN1 HEIMDAL_RFC2459_ASN1 HEIMDAL_OCSP_ASN1 HEIMDAL_PKCS8_ASN1 HEIMDAL_PKCS9_ASN1 HEIMDAL_PKCS12_ASN1 HEIMDAL_PKINIT_ASN1 HEIMDAL_PKCS10_ASN1 wind HEIMDAL_KRB5_ASN1',
-    vnum='5.0.0',
-    )
+if not bld.CONFIG_SET("USING_SYSTEM_HX509"):
+    HEIMDAL_ASN1('HEIMDAL_OCSP_ASN1',
+        '../heimdal/lib/hx509/ocsp.asn1',
+        options='--preserve-binary=OCSPTBSRequest --preserve-binary=OCSPResponseData',
+            includes='../heimdal/lib/asn1',
+        directory='lib/hx509'
+        )
 
+    HEIMDAL_ASN1('HEIMDAL_PKCS8_ASN1',
+        '../heimdal/lib/asn1/pkcs8.asn1',
+        directory='lib/asn1'
+        )
+
+
+    HEIMDAL_ASN1('HEIMDAL_PKCS9_ASN1',
+        '../heimdal/lib/asn1/pkcs9.asn1',
+        directory='lib/asn1'
+        )
+
+
+    HEIMDAL_ASN1('HEIMDAL_PKCS12_ASN1',
+        '../heimdal/lib/asn1/pkcs12.asn1',
+        directory='lib/asn1'
+        )
+
+    HEIMDAL_ASN1('HEIMDAL_CMS_ASN1',
+        '../heimdal/lib/asn1/cms.asn1',
+        option_file='../heimdal/lib/asn1/cms.opt',
+        directory='lib/asn1'
+        )
+
+    HEIMDAL_ASN1('HEIMDAL_PKCS10_ASN1',
+        '../heimdal/lib/hx509/pkcs10.asn1',
+        options='--preserve-binary=CertificationRequestInfo',
+            includes='../heimdal/lib/asn1',
+        directory='lib/hx509'
+        )
+
+    HEIMDAL_LIBRARY('hx509',
+        '../heimdal/lib/hx509/ca.c ../heimdal/lib/hx509/cert.c ../heimdal/lib/hx509/cms.c ../heimdal/lib/hx509/collector.c ../heimdal/lib/hx509/crypto.c ../heimdal/lib/hx509/error.c ../heimdal/lib/hx509/env.c ../heimdal/lib/hx509/file.c ../heimdal/lib/hx509/keyset.c ../heimdal/lib/hx509/ks_dir.c ../heimdal/lib/hx509/ks_file.c ../heimdal/lib/hx509/ks_keychain.c ../heimdal/lib/hx509/ks_mem.c ../heimdal/lib/hx509/ks_null.c ../heimdal/lib/hx509/ks_p11.c ../heimdal/lib/hx509/ks_p12.c ../heimdal/lib/hx509/lock.c ../heimdal/lib/hx509/name.c ../heimdal/lib/hx509/peer.c ../heimdal/lib/hx509/print.c ../heimdal/lib/hx509/req.c ../heimdal/lib/hx509/revoke.c ../heimdal/lib/hx509/sel.c ../heimdal/lib/hx509/hx509_err.c ../heimdal/lib/hx509/sel-lex.c ../heimdal/lib/hx509/sel-gram.c',
+        includes='../heimdal/lib/hx509',
+        deps='roken com_err HEIMDAL_HEIM_ASN1 HEIMDAL_HCRYPTO HEIMDAL_CMS_ASN1 HEIMDAL_RFC2459_ASN1 HEIMDAL_OCSP_ASN1 HEIMDAL_PKCS8_ASN1 HEIMDAL_PKCS9_ASN1 HEIMDAL_PKCS12_ASN1 HEIMDAL_PKINIT_ASN1 HEIMDAL_PKCS10_ASN1 wind HEIMDAL_KRB5_ASN1',
+        vnum='5.0.0',
+        )
 
 if not bld.CONFIG_SET('USING_SYSTEM_WIND'):
     HEIMDAL_ERRTABLE('WIND_ERR_ET',
