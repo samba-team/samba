@@ -259,7 +259,7 @@ static bool samldb_krbtgtnumber_available(struct samldb_ctx *ac, unsigned krbtgt
 static int samldb_rodc_add(struct samldb_ctx *ac)
 {
 	struct ldb_context *ldb = ldb_module_get_ctx(ac->module);
-	unsigned krbtgt_number, i_start, i;
+	uint32_t krbtgt_number, i_start, i;
 	int ret;
 	char *newpass;
 
@@ -359,7 +359,7 @@ static int samldb_add_handle_msDS_IntId(struct samldb_ctx *ac)
 	int ret;
 	bool id_exists;
 	uint32_t msds_intid;
-	uint32_t system_flags;
+	int32_t system_flags;
 	struct ldb_context *ldb;
 	struct ldb_result *ldb_res;
 	struct ldb_dn *schema_dn;
@@ -389,7 +389,7 @@ static int samldb_add_handle_msDS_IntId(struct samldb_ctx *ac)
 	}
 
 	/* check systemFlags for SCHEMA_BASE_OBJECT flag */
-	system_flags = ldb_msg_find_attr_as_uint(ac->msg, "systemFlags", 0);
+	system_flags = ldb_msg_find_attr_as_int(ac->msg, "systemFlags", 0);
 	if (system_flags & SYSTEM_FLAG_SCHEMA_BASE_OBJECT) {
 		return LDB_SUCCESS;
 	}
@@ -423,7 +423,8 @@ static int samldb_add_handle_msDS_IntId(struct samldb_ctx *ac)
 		talloc_free(ldb_res);
 	} while(id_exists);
 
-	return ldb_msg_add_fmt(ac->msg, "msDS-IntId", "%d", msds_intid);
+	return samdb_msg_add_int(ldb, ac->msg, ac->msg, "msDS-IntId",
+				 msds_intid);
 }
 
 
