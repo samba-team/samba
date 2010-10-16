@@ -274,10 +274,12 @@ member: %s
 
         user_dn = "CN=%s,%s,%s" % (cn, (userou or "CN=Users"), self.domain_dn())
 
+        user_principal_name = "%s@%s" % (username, self.domain_dn().replace("DC=", "").replace(",", "."))
         # The new user record. Note the reliance on the SAMLDB module which
         # fills in the default informations
         ldbmessage = {"dn": user_dn,
                       "sAMAccountName": username,
+                      "userPrincipalName": user_principal_name,
                       "objectClass": "user"}
 
         if surname is not None:
