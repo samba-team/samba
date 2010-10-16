@@ -173,7 +173,10 @@ def configure(conf):
     conf.CHECK_C_PROTOTYPE('dlopen', 'void *dlopen(const char* filename, unsigned int flags)',
                            define='DLOPEN_TAKES_UNSIGNED_FLAGS', headers='dlfcn.h dl.h')
 
-    conf.CHECK_FUNCS_IN('fdatasync', 'rt', checklibc=True)
+    if conf.CHECK_FUNCS_IN('fdatasync', 'rt', checklibc=True):
+        # some systems are missing the declaration
+        conf.CHECK_DECLS('fdatasync')
+
     conf.CHECK_FUNCS_IN('clock_gettime', 'rt', checklibc=True)
 
     # these headers need to be tested as a group on freebsd

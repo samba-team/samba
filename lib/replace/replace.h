@@ -756,6 +756,8 @@ char *ufc_crypt(const char *key, const char *salt);
 
 #ifndef HAVE_FDATASYNC
 #define fdatasync(fd) fsync(fd)
+#elif !defined(HAVE_DECL_FDATASYNC)
+int fdatasync(int );
 #endif
 
 /* these are used to mark symbols as local to a shared lib, or

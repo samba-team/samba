@@ -115,6 +115,7 @@ AC_CHECK_FUNCS(fdatasync,,[
 		[libreplace_cv_HAVE_FDATASYNC_IN_LIBRT=yes
 		AC_DEFINE(HAVE_FDATASYNC, 1, Define to 1 if there is support for fdatasync)])
 ])
+AC_HAVE_DECL(fdatasync, [#include <unistd.h>])
 AC_CHECK_FUNCS(clock_gettime,libreplace_cv_have_clock_gettime=yes,[
 	AC_CHECK_LIB(rt, clock_gettime,
 		[libreplace_cv_HAVE_CLOCK_GETTIME_IN_LIBRT=yes
