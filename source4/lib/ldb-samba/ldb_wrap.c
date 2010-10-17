@@ -103,6 +103,15 @@ static int ldb_wrap_destructor(struct ldb_wrap *w)
 	return 0;
 }
 
+/*
+ * The casefolder for s4's LDB databases - Unicode-safe
+ */
+char *wrap_casefold(void *context, void *mem_ctx, const char *s, size_t n)
+{
+	return strupper_talloc_n(mem_ctx, s, n);
+}
+
+
  struct ldb_context *samba_ldb_init(TALLOC_CTX *mem_ctx,
 								  struct tevent_context *ev,
 								  struct loadparm_context *lp_ctx,

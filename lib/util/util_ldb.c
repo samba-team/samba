@@ -127,8 +127,3 @@ int gendb_add_ldif(struct ldb_context *ldb, const char *ldif_string)
 	return ret;
 }
 
-char *wrap_casefold(void *context, void *mem_ctx, const char *s, size_t n)
-{
-	return strupper_talloc_n(mem_ctx, s, n);
-}
-
