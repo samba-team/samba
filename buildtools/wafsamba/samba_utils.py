@@ -527,3 +527,42 @@ def reconfigure(ctx):
     bld = samba_wildcard.fake_build_environment()
     Configure.autoconfig = True
     Scripting.check_configured(bld)
+
+
+def map_shlib_extension(ctx, name, python=False):
+    '''map a filename with a shared library extension of .so to the real shlib name'''
+    if name is None:
+        return None
+    (root1, ext1) = os.path.splitext(name)
+    if python:
+        (root2, ext2) = os.path.splitext(ctx.env.pyext_PATTERN)
+    else:
+        (root2, ext2) = os.path.splitext(ctx.env.shlib_PATTERN)
+    return root1+ext2
+Build.BuildContext.map_shlib_extension = map_shlib_extension
+
+
+def make_libname(ctx, name, nolibprefix=False, version=None, python=False):
+    """make a library filename
+         Options:
+              nolibprefix: don't include the lib prefix
+              version    : add a version number
+              python     : if we should use python module name conventions"""
+
+    if python:
+        libname = ctx.env.pyext_PATTERN % name
+    else:
+        libname = ctx.env.shlib_PATTERN % name
+    if nolibprefix and libname[0:3] == 'lib':
+        libname = libname[3:]
+    if version:
+        if version[0] == '.':
+            version = version[1:]
+        (root, ext) = os.path.splitext(libname)
+        if ext == ".dylib":
+            # special case - version goes before the prefix
+            libname = "%s.%s%s" % (root, version, ext)
+        else:
+            libname = "%s%s.%s" % (root, ext, version)
+    return libname
+Build.BuildContext.make_libname = make_libname

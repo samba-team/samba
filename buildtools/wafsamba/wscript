@@ -280,7 +280,12 @@ def configure(conf):
     if 'HAVE_SYS_TIME_H' in conf.env and 'HAVE_TIME_H' in conf.env:
         conf.DEFINE('TIME_WITH_SYS_TIME', 1)
 
-    conf.define('SHLIBEXT', "so", quote=True)
+    # cope with different extensions for libraries
+    (root, ext) = os.path.splitext(conf.env.shlib_PATTERN)
+    if ext[0] == '.':
+        conf.define('SHLIBEXT', ext[1:], quote=True)
+    else:
+        conf.define('SHLIBEXT', "so", quote=True)
 
     conf.CHECK_CODE('long one = 1; return ((char *)(&one))[0]',
                     execute=True,

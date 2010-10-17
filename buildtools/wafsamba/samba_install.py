@@ -87,21 +87,21 @@ def install_library(self):
         install_name = self.samba_realname
         install_link = None
         if getattr(self, 'samba_type', None) == 'PYTHON':
-            inst_name    = '%s.so' % t.target
+            inst_name    = bld.make_libname(t.target, nolibprefix=True, python=True)
         else:
-            inst_name    = 'lib%s.so' % t.target
+            inst_name    = bld.make_libname(t.target)
     elif self.vnum:
         vnum_base    = self.vnum.split('.')[0]
-        install_name = 'lib%s.so.%s' % (self.target, self.vnum)
-        install_link = 'lib%s.so.%s' % (self.target, vnum_base)
-        inst_name    = 'lib%s.so' % t.target
+        install_name = bld.make_libname(self.target, version=self.vnum)
+        install_link = bld.make_libname(self.target, version=vnum_base)
+        inst_name    = bld.make_libname(t.target)
         if not self.is_bundled:
             # only generate the dev link for non-bundled libs
-            dev_link     = 'lib%s.so' % self.target
+            dev_link     = bld.make_libname(self.target)
     else:
-        install_name = 'lib%s.so' % self.target
+        install_name = bld.make_libname(self.target)
         install_link = None
-        inst_name    = 'lib%s.so' % t.target
+        inst_name    = bld.make_libname(t.target)
 
     if t.env.SONAME_ST and install_link:
         t.env.append_value('LINKFLAGS', t.env.SONAME_ST % install_link)
@@ -142,7 +142,7 @@ def symlink_lib(self):
 
     link_target = getattr(self, 'link_name', '')
     if link_target == '':
-        link_target = '%s/lib%s.so%s' % (LIB_PATH, self.target, soext)
+        link_target = '%s/%s' % (LIB_PATH, self.bld.make_libname(self.target, version=soext))
 
     link_target = os.path.join(blddir, link_target)
 

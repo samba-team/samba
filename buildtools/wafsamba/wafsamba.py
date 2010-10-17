@@ -164,6 +164,9 @@ def SAMBA_LIBRARY(bld, libname, source,
     deps = TO_LIST(deps)
     deps.append(obj_target)
 
+    realname = bld.map_shlib_extension(realname, python=(target_type=='PYTHON'))
+    link_name = bld.map_shlib_extension(link_name, python=(target_type=='PYTHON'))
+
     if target_type == 'PYTHON' or realname or not is_bundled:
         # Sanitize the library name
         bundled_name = libname.lower().replace('_', '-')
@@ -363,7 +366,7 @@ def SAMBA_MODULE(bld, modname, source,
             while realname.startswith(subsystem+"_"):
                 realname = realname[len(subsystem+"_"):]
 
-        realname = bld.env.shlib_PATTERN % realname
+        realname = bld.make_libname(realname)
         while realname.startswith("lib"):
             realname = realname[len("lib"):]
 
