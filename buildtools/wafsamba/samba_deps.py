@@ -978,7 +978,8 @@ def check_project_rules(bld):
     debug('deps: project rules checking completed - %u targets checked',
           len(tgt_list))
 
-    save_samba_deps(bld, tgt_list)
+    if not bld.is_install:
+        save_samba_deps(bld, tgt_list)
 
     Logs.info("Project rules pass")
 
