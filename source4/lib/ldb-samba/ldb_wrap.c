@@ -1,20 +1,20 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
 
    LDB wrap functions
 
    Copyright (C) Andrew Tridgell 2004-2009
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -40,10 +40,10 @@
 /*
   this is used to catch debug messages from ldb
 */
-static void ldb_wrap_debug(void *context, enum ldb_debug_level level, 
+static void ldb_wrap_debug(void *context, enum ldb_debug_level level,
 			   const char *fmt, va_list ap)  PRINTF_ATTRIBUTE(3,0);
 
-static void ldb_wrap_debug(void *context, enum ldb_debug_level level, 
+static void ldb_wrap_debug(void *context, enum ldb_debug_level level,
 			   const char *fmt, va_list ap)
 {
 	int samba_level = -1;
@@ -73,7 +73,7 @@ static void ldb_wrap_debug(void *context, enum ldb_debug_level level,
 /*
   connecting to a ldb can be a relatively expensive operation because
   of the schema and partition loads. We keep a list of open ldb
-  contexts here, and try to re-use when possible. 
+  contexts here, and try to re-use when possible.
 
   This means callers of ldb_wrap_connect() must use talloc_unlink() or
   the free of a parent to destroy the context
@@ -82,8 +82,8 @@ static struct ldb_wrap {
 	struct ldb_wrap *next, *prev;
 	struct ldb_wrap_context {
 		/* the context is what we use to tell if two ldb
-		 * connections are exactly equivalent 
-		 */		 
+		 * connections are exactly equivalent
+		 */
 		const char *url;
 		struct tevent_context *ev;
 		struct loadparm_context *lp_ctx;
@@ -94,7 +94,7 @@ static struct ldb_wrap {
 	struct ldb_context *ldb;
 } *ldb_wrap_list;
 
-/* 
+/*
    free a ldb_wrap structure
  */
 static int ldb_wrap_destructor(struct ldb_wrap *w)
@@ -113,11 +113,10 @@ char *wrap_casefold(void *context, void *mem_ctx, const char *s, size_t n)
 
 
  struct ldb_context *samba_ldb_init(TALLOC_CTX *mem_ctx,
-								  struct tevent_context *ev,
-								  struct loadparm_context *lp_ctx,
-								  struct auth_session_info *session_info,
-								  struct cli_credentials *credentials
-								  )
+				    struct tevent_context *ev,
+				    struct loadparm_context *lp_ctx,
+				    struct auth_session_info *session_info,
+				    struct cli_credentials *credentials)
 {
 	struct ldb_context *ldb;
 	int ret;
@@ -174,11 +173,11 @@ char *wrap_casefold(void *context, void *mem_ctx, const char *s, size_t n)
 }
 
  struct ldb_context *ldb_wrap_find(const char *url,
-								  struct tevent_context *ev,
-								  struct loadparm_context *lp_ctx,
-								  struct auth_session_info *session_info,
-								  struct cli_credentials *credentials,
-								  int flags)
+				   struct tevent_context *ev,
+				   struct loadparm_context *lp_ctx,
+				   struct auth_session_info *session_info,
+				   struct cli_credentials *credentials,
+				   int flags)
 {
 	struct ldb_wrap *w;
 	/* see if we can re-use an existing ldb */
@@ -195,7 +194,8 @@ char *wrap_casefold(void *context, void *mem_ctx, const char *s, size_t n)
 	return NULL;
 }
 
-int samba_ldb_connect(struct ldb_context *ldb, struct loadparm_context *lp_ctx, const char *url, int flags)
+int samba_ldb_connect(struct ldb_context *ldb, struct loadparm_context *lp_ctx,
+		      const char *url, int flags)
 {
 	int ret;
 	char *real_url = NULL;
@@ -227,11 +227,11 @@ int samba_ldb_connect(struct ldb_context *ldb, struct loadparm_context *lp_ctx, 
 }
 
  bool ldb_wrap_add(const char *url, struct tevent_context *ev,
-				  struct loadparm_context *lp_ctx,
-				  struct auth_session_info *session_info,
-				  struct cli_credentials *credentials,
-				  int flags,
-				  struct ldb_context *ldb)
+		   struct loadparm_context *lp_ctx,
+		   struct auth_session_info *session_info,
+		   struct cli_credentials *credentials,
+		   int flags,
+		   struct ldb_context *ldb)
 {
 	struct ldb_wrap *w;
 	struct ldb_wrap_context c;
@@ -286,12 +286,12 @@ int samba_ldb_connect(struct ldb_context *ldb, struct loadparm_context *lp_ctx, 
   TODO:  We need an error_string parameter
  */
  struct ldb_context *ldb_wrap_connect(TALLOC_CTX *mem_ctx,
-				     struct tevent_context *ev,
-				     struct loadparm_context *lp_ctx,
-				     const char *url,
-				     struct auth_session_info *session_info,
-				     struct cli_credentials *credentials,
-				     unsigned int flags)
+				      struct tevent_context *ev,
+				      struct loadparm_context *lp_ctx,
+				      const char *url,
+				      struct auth_session_info *session_info,
+				      struct cli_credentials *credentials,
+				      unsigned int flags)
 {
 	struct ldb_context *ldb;
 	int ret;
@@ -333,7 +333,7 @@ int samba_ldb_connect(struct ldb_context *ldb, struct loadparm_context *lp_ctx, 
 		if (ldb_transaction_cancel_noerr(w->ldb) != LDB_SUCCESS) {
 			smb_panic("Failed to cancel child transactions\n");
 		}
-	}	
+	}
 
 	if (tdb_reopen_all(1) == -1) {
 		smb_panic("tdb_reopen_all failed\n");
@@ -341,10 +341,10 @@ int samba_ldb_connect(struct ldb_context *ldb, struct loadparm_context *lp_ctx, 
 }
 
  char *ldb_relative_path(struct ldb_context *ldb,
-				 TALLOC_CTX *mem_ctx, 
-				 const char *name) 
+			 TALLOC_CTX *mem_ctx,
+			 const char *name)
 {
-	const char *base_url = 
+	const char *base_url =
 		(const char *)ldb_get_opaque(ldb, "ldb_url");
 	char *path, *p, *full_name;
 	if (name == NULL) {
