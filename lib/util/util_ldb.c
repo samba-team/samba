@@ -110,20 +110,3 @@ int gendb_search_dn(struct ldb_context *ldb,
 	return gendb_search(ldb, mem_ctx, dn, res, attrs, NULL);
 }
 
-/*
-  setup some initial ldif in a ldb
-*/
-int gendb_add_ldif(struct ldb_context *ldb, const char *ldif_string)
-{
-	struct ldb_ldif *ldif;
-	const char *s = ldif_string;
-	int ret;
-	while (s && *s != '\0') {
-		ldif = ldb_ldif_read_string(ldb, &s);
-		if (ldif == NULL) return -1;
-		ret = ldb_add(ldb, ldif->msg);
-		talloc_free(ldif);
-	}
-	return ret;
-}
-
