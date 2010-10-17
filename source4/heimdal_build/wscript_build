@@ -378,6 +378,7 @@ HEIMDAL_ASN1('HEIMDAL_KX509_ASN1',
 
 
 HEIMDAL_ASN1('HEIMDAL_HDB_ASN1', 'lib/hdb/hdb.asn1',
+    directory='lib/asn1',
     includes='../heimdal/lib/asn1')
 
 HEIMDAL_ERRTABLE('HEIMDAL_ASN1_ERR_ET', 'lib/asn1/asn1_err.et')
