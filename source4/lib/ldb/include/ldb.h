@@ -510,12 +510,6 @@ typedef int (*ldb_qsort_cmp_fn_t) (void *v1, void *v2, void *opaque);
 */
 #define LDB_CONTROL_AS_SYSTEM_OID "1.3.6.1.4.1.7165.4.3.7"
 
-/**
-   LDB_CONTROL_RELAX_OID relaxes some of the AD constraints to allow some
-   special operations - should be used carefully!
-*/
-#define LDB_CONTROL_RELAX_OID "1.3.6.1.4.1.4203.666.5.12"
-
 /* AD controls */
 
 /**
@@ -672,6 +666,14 @@ typedef int (*ldb_qsort_cmp_fn_t) (void *v1, void *v2, void *opaque);
 #define LDB_CONTROL_RODC_DCPROMO_OID "1.2.840.113556.1.4.1341"
 
 /* Other standardised controls */
+
+/**
+   OID for the allowing client to request temporary relaxed
+   enforcement of constraints of the x.500 model.
+
+   \sa <a href="http://opends.dev.java.net/public/standards/draft-zeilenga-ldap-managedit.txt">draft managedit</a>.
+*/
+#define LDB_CONTROL_RELAX_OID "1.3.6.1.4.1.4203.666.5.12"
 
 /*
    OID for LDAP Extended Operation PASSWORD_CHANGE.
