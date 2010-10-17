@@ -132,7 +132,7 @@ bld.SAMBA_MODULE('ldb_simple_ldap_map',
 	subsystem='ldb',
 	init_function='LDB_MODULE(entryuuid),LDB_MODULE(nsuniqueid)',
 	internal_module=False,
-	deps='talloc LIBEVENTS ldb LIBNDR'
+	deps='talloc LIBEVENTS ldb LIBNDR LDBSAMBA'
 	)
 
 
