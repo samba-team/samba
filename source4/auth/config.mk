@@ -29,7 +29,7 @@ auth_system_session_OBJ_FILES = $(addprefix $(authsrcdir)/, system_session.o)
 $(eval $(call proto_header_template,$(authsrcdir)/system_session_proto.h,$(auth_system_session_OBJ_FILES:.o=.c)))
 
 [SUBSYSTEM::auth_sam]
-PUBLIC_DEPENDENCIES = SAMDB LIBSECURITY
+PUBLIC_DEPENDENCIES = SAMDB UTIL_LDB LIBSECURITY
 PRIVATE_DEPENDENCIES = LDAP_ENCODE
 
 auth_sam_OBJ_FILES = $(addprefix $(authsrcdir)/, sam.o)

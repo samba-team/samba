@@ -34,6 +34,7 @@
 #include "system/time.h"
 #include "system/filesys.h"
 #include "ldb_wrap.h"
+#include "../lib/util/util_ldb.h"
 #include "dsdb/samdb/samdb.h"
 #include "../libds/common/flags.h"
 #include "param/param.h"

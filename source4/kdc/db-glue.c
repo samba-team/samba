@@ -30,6 +30,7 @@
 #include "auth/auth.h"
 #include "auth/credentials/credentials.h"
 #include "auth/auth_sam.h"
+#include "../lib/util/util_ldb.h"
 #include "dsdb/samdb/samdb.h"
 #include "dsdb/common/util.h"
 #include "librpc/ndr/libndr.h"

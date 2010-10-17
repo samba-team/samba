@@ -28,6 +28,7 @@
 #include "dsdb/samdb/samdb.h"
 #include "auth/auth.h"
 #include "libcli/auth/libcli_auth.h"
+#include "../lib/util/util_ldb.h"
 
 /* 
   samr_ChangePasswordUser 

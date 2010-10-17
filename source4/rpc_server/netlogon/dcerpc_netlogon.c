@@ -26,6 +26,7 @@
 #include "auth/auth.h"
 #include "auth/auth_sam_reply.h"
 #include "dsdb/samdb/samdb.h"
+#include "../lib/util/util_ldb.h"
 #include "../libcli/auth/schannel.h"
 #include "libcli/security/security.h"
 #include "param/param.h"
