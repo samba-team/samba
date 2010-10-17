@@ -14,7 +14,7 @@ bld.SAMBA_LIBRARY('SAMDB',
 bld.SAMBA_SUBSYSTEM('SAMDB_COMMON',
 	source='common/util.c common/util_samr.c common/dsdb_dn.c common/dsdb_access.c ../../libds/common/flag_mapping.c',
 	autoproto='common/proto.h',
-	deps='ldb NDR_DRSBLOBS LIBCLI_LDAP_NDR UTIL_LDB LIBCLI_AUTH LIBTSOCKET samba_socket LIBSAMBA-HOSTCONFIG'
+	deps='ldb NDR_DRSBLOBS LIBCLI_LDAP_NDR LIBCLI_AUTH LIBTSOCKET samba_socket LIBSAMBA-HOSTCONFIG'
 	)
 
 

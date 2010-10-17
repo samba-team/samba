@@ -33,7 +33,6 @@
 #include "auth/credentials/credentials_krb5.h"
 #include "auth/auth.h"
 #include "dsdb/samdb/samdb.h"
-#include "../lib/util/util_ldb.h"
 #include "rpc_server/dcerpc_server.h"
 #include "rpc_server/samr/proto.h"
 #include "libcli/security/security.h"

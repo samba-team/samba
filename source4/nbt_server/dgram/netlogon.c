@@ -26,7 +26,6 @@
 #include "lib/ldb/include/ldb.h"
 #include "dsdb/samdb/samdb.h"
 #include "auth/auth.h"
-#include "../lib/util/util_ldb.h"
 #include "param/param.h"
 #include "smbd/service_task.h"
 #include "cldap_server/cldap_server.h"

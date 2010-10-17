@@ -24,7 +24,6 @@
 #include "net_drs.h"
 #include "lib/ldb/include/ldb.h"
 #include "dsdb/samdb/samdb.h"
-#include "lib/util/util_ldb.h"
 
 
 /**

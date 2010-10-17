@@ -36,7 +36,6 @@
 #include "libcli/ldap/ldap_ndr.h"
 #include "libcli/security/security.h"
 #include "rpc_server/samr/proto.h"
-#include "../lib/util/util_ldb.h"
 #include "param/param.h"
 #include "lib/util/tsort.h"
 

@@ -34,7 +34,6 @@
 #include "auth/auth.h"
 #include "dsdb/samdb/samdb.h"
 #include "ldb_wrap.h"
-#include "../lib/util/util_ldb.h"
 #include "rpc_server/common/common.h"
 #include "param/param.h"
 

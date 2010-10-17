@@ -32,7 +32,6 @@
 #include "libcli/ldap/ldap_ndr.h"
 #include "libcli/security/security.h"
 #include "auth/auth.h"
-#include "../lib/util/util_ldb.h"
 #include "dsdb/samdb/samdb.h"
 #include "dsdb/common/util.h"
 #include "param/param.h"
