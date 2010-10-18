@@ -112,9 +112,8 @@ class ExistingBackend(ProvisionBackend):
 
         super(ExistingBackend, self).__init__(backend_type=backend_type,
                 paths=paths, setup_path=setup_path, lp=lp,
-                credentials=credentials, names=names, logger=logger)
-
-        self.ldapi_uri = ldapi_uri
+                credentials=credentials, names=names, logger=logger,
+                ldap_backend_forced_uri=ldap_backend_forced_uri)
 
     def init(self):
         # Check to see that this 'existing' LDAP backend in fact exists
@@ -134,9 +133,10 @@ class ExistingBackend(ProvisionBackend):
 class LDAPBackend(ProvisionBackend):
 
     def __init__(self, backend_type, paths=None, setup_path=None, lp=None,
-            credentials=None, names=None, logger=None, domainsid=None,
-            schema=None, hostname=None, ldapadminpass=None, slapd_path=None,
-            ldap_backend_extra_port=None, ldap_dryrun_mode=False):
+                 credentials=None, names=None, logger=None, domainsid=None,
+                 schema=None, hostname=None, ldapadminpass=None, slapd_path=None,
+                 ldap_backend_extra_port=None,
+                 ldap_backend_forced_uri=None, ldap_dryrun_mode=False):
 
         super(LDAPBackend, self).__init__(backend_type=backend_type,
                 paths=paths, setup_path=setup_path, lp=lp,
@@ -157,7 +157,10 @@ class LDAPBackend(ProvisionBackend):
         self.ldap_backend_extra_port = ldap_backend_extra_port
         self.ldap_dryrun_mode = ldap_dryrun_mode
 
-        self.ldapi_uri = "ldapi://%s" % urllib.quote(os.path.join(self.ldapdir, "ldapi"), safe="")
+        if ldap_backend_forced_uri is not None:
+            self.ldap_uri = ldap_backend_forced_uri
+        else:
+            self.ldap_uri = "ldapi://%s" % urllib.quote(os.path.join(self.ldapdir, "ldapi"), safe="")
 
         if not os.path.exists(self.ldapdir):
             os.mkdir(self.ldapdir)
@@ -165,10 +168,10 @@ class LDAPBackend(ProvisionBackend):
     def init(self):
         from samba.provision import ProvisioningError
         # we will shortly start slapd with ldapi for final provisioning. first
-        # check with ldapsearch -> rootDSE via self.ldapi_uri if another
+        # check with ldapsearch -> rootDSE via self.ldap_uri if another
         # instance of slapd is already running 
         try:
-            ldapi_db = Ldb(self.ldapi_uri)
+            ldapi_db = Ldb(self.ldap_uri)
             ldapi_db.search(base="", scope=SCOPE_BASE,
                 expression="(objectClass=OpenLDAProotDSE)")
             try:
@@ -180,7 +183,7 @@ class LDAPBackend(ProvisionBackend):
                 p = f.read()
                 f.close()
                 self.logger.info("Check for slapd Process with PID: " + str(p) + " and terminate it manually.")
-            raise SlapdAlreadyRunning(self.ldapi_uri)
+            raise SlapdAlreadyRunning(self.ldap_uri)
         except LdbError:
             # XXX: We should never be catching all Ldb errors
             pass
@@ -243,7 +246,7 @@ class LDAPBackend(ProvisionBackend):
         while self.slapd.poll() is None:
             # Wait until the socket appears
             try:
-                ldapi_db = Ldb(self.ldapi_uri, lp=self.lp, credentials=self.credentials)
+                ldapi_db = Ldb(self.ldap_uri, lp=self.lp, credentials=self.credentials)
                 ldapi_db.search(base="", scope=SCOPE_BASE,
                                                     expression="(objectClass=OpenLDAProotDSE)")
                 # If we have got here, then we must have a valid connection to the LDAP server!
@@ -282,13 +285,14 @@ class OpenLDAPBackend(LDAPBackend):
             credentials=None, names=None, logger=None, domainsid=None,
             schema=None, hostname=None, ldapadminpass=None, slapd_path=None,
             ldap_backend_extra_port=None, ldap_dryrun_mode=False,
-            ol_mmr_urls=None, nosync=False):
+            ol_mmr_urls=None, nosync=False, ldap_backend_forced_uri=None):
         super(OpenLDAPBackend, self).__init__( backend_type=backend_type,
                 paths=paths, setup_path=setup_path, lp=lp,
                 credentials=credentials, names=names, logger=logger,
                 domainsid=domainsid, schema=schema, hostname=hostname,
                 ldapadminpass=ldapadminpass, slapd_path=slapd_path,
                 ldap_backend_extra_port=ldap_backend_extra_port,
+                ldap_backend_forced_uri=ldap_backend_forced_uri,
                 ldap_dryrun_mode=ldap_dryrun_mode)
 
         self.ol_mmr_urls = ol_mmr_urls
@@ -496,7 +500,6 @@ class OpenLDAPBackend(LDAPBackend):
             f.close()
 
         # now we generate the needed strings to start slapd automatically,
-        # first ldapi_uri...
         if self.ldap_backend_extra_port is not None:
             # When we use MMR, we can't use 0.0.0.0 as it uses the name
             # specified there as part of it's clue as to it's own name,
@@ -515,12 +518,12 @@ class OpenLDAPBackend(LDAPBackend):
             "-h"]
 
         # copy this command so we have two version, one with -d0 and only
-        # ldapi, and one with all the listen commands
+        # ldapi (or the forced ldap_uri), and one with all the listen commands
         self.slapd_command = list(self.slapd_provision_command)
     
-        self.slapd_provision_command.extend([self.ldapi_uri, "-d0"])
+        self.slapd_provision_command.extend([self.ldap_uri, "-d0"])
 
-        uris = self.ldapi_uri
+        uris = self.ldap_uri
         if server_port_string is not "":
             uris = uris + " " + server_port_string
 
@@ -569,6 +572,7 @@ class FDSBackend(LDAPBackend):
                 domainsid=domainsid, schema=schema, hostname=hostname,
                 ldapadminpass=ldapadminpass, slapd_path=slapd_path,
                 ldap_backend_extra_port=ldap_backend_extra_port,
+                ldap_backend_forced_uri=ldap_backend_forced_uri,
                 ldap_dryrun_mode=ldap_dryrun_mode)
 
         self.root = root
@@ -737,7 +741,7 @@ class FDSBackend(LDAPBackend):
             raise ProvisioningError("ldif2db failed")
 
     def post_setup(self):
-        ldapi_db = Ldb(self.ldapi_uri, credentials=self.credentials)
+        ldapi_db = Ldb(self.ldap_uri, credentials=self.credentials)
 
         # configure in-directory access control on Fedora DS via the aci
         # attribute (over a direct ldapi:// socket)

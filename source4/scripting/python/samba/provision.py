@@ -644,7 +644,7 @@ def setup_samdb_partitions(samdb_path, setup_path, logger, lp, session_info,
 
     ldap_backend_line = "# No LDAP backend"
     if provision_backend.type is not "ldb":
-        ldap_backend_line = "ldapBackend: %s" % provision_backend.ldapi_uri
+        ldap_backend_line = "ldapBackend: %s" % provision_backend.ldap_uri
 
     samdb.transaction_start()
     try:
@@ -1338,7 +1338,7 @@ def provision(setup_dir, logger, session_info,
               dnspass=None, root=None, nobody=None, users=None, 
               wheel=None, backup=None, aci=None, serverrole=None,
               dom_for_fun_level=None,
-              ldap_backend_extra_port=None, backend_type=None,
+              ldap_backend_extra_port=None, ldap_backend_forced_uri=None, backend_type=None,
               sitename=None,
               ol_mmr_urls=None, ol_olc=None, 
               setup_ds_path=None, slapd_path=None, nosync=False,
@@ -1469,47 +1469,49 @@ def provision(setup_dir, logger, session_info,
 
     if backend_type == "ldb":
         provision_backend = LDBBackend(backend_type,
-                                         paths=paths, setup_path=setup_path,
-                                         lp=lp, credentials=credentials, 
-                                         names=names,
-                                         logger=logger)
+                                       paths=paths, setup_path=setup_path,
+                                       lp=lp, credentials=credentials, 
+                                       names=names,
+                                       logger=logger)
     elif backend_type == "existing":
         provision_backend = ExistingBackend(backend_type,
-                                         paths=paths, setup_path=setup_path,
-                                         lp=lp, credentials=credentials, 
-                                         names=names,
-                                         logger=logger,
-                                         ldapi_url=ldapi_url)
+                                            paths=paths, setup_path=setup_path,
+                                            lp=lp, credentials=credentials, 
+                                            names=names,
+                                            logger=logger,
+                                            ldap_backend_forced_uri=ldap_backend_forced_uri)
     elif backend_type == "fedora-ds":
         provision_backend = FDSBackend(backend_type,
-                                         paths=paths, setup_path=setup_path,
-                                         lp=lp, credentials=credentials, 
-                                         names=names,
-                                         logger=logger,
-                                         domainsid=domainsid,
-                                         schema=schema,
-                                         hostname=hostname,
-                                         ldapadminpass=ldapadminpass,
-                                         slapd_path=slapd_path,
-                                         ldap_backend_extra_port=ldap_backend_extra_port,
-                                         ldap_dryrun_mode=ldap_dryrun_mode,
-                                         root=root,
-                                         setup_ds_path=setup_ds_path)
+                                       paths=paths, setup_path=setup_path,
+                                       lp=lp, credentials=credentials, 
+                                       names=names,
+                                       logger=logger,
+                                       domainsid=domainsid,
+                                       schema=schema,
+                                       hostname=hostname,
+                                       ldapadminpass=ldapadminpass,
+                                       slapd_path=slapd_path,
+                                       ldap_backend_extra_port=ldap_backend_extra_port,
+                                       ldap_dryrun_mode=ldap_dryrun_mode,
+                                       root=root,
+                                       setup_ds_path=setup_ds_path,
+                                       ldap_backend_forced_uri=ldap_backend_forced_uri)
     elif backend_type == "openldap":
         provision_backend = OpenLDAPBackend(backend_type,
-                                         paths=paths, setup_path=setup_path,
-                                         lp=lp, credentials=credentials, 
-                                         names=names,
-                                         logger=logger,
-                                         domainsid=domainsid,
-                                         schema=schema,
-                                         hostname=hostname,
-                                         ldapadminpass=ldapadminpass,
-                                         slapd_path=slapd_path,
-                                         ldap_backend_extra_port=ldap_backend_extra_port,
-                                         ldap_dryrun_mode=ldap_dryrun_mode,
-                                         ol_mmr_urls=ol_mmr_urls, 
-                                         nosync=nosync)
+                                            paths=paths, setup_path=setup_path,
+                                            lp=lp, credentials=credentials, 
+                                            names=names,
+                                            logger=logger,
+                                            domainsid=domainsid,
+                                            schema=schema,
+                                            hostname=hostname,
+                                            ldapadminpass=ldapadminpass,
+                                            slapd_path=slapd_path,
+                                            ldap_backend_extra_port=ldap_backend_extra_port,
+                                            ldap_dryrun_mode=ldap_dryrun_mode,
+                                            ol_mmr_urls=ol_mmr_urls, 
+                                            nosync=nosync,
+                                            ldap_backend_forced_uri=ldap_backend_forced_uri)
     else:
         raise ValueError("Unknown LDAP backend type selected")
 
