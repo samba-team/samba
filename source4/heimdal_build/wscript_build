@@ -582,7 +582,7 @@ HEIMDAL_SUBSYSTEM('HEIMDAL_CONFIG',
                   'lib/krb5/expand_path.c lib/krb5/plugin.c',
                   includes='../heimdal/lib/krb5 ../heimdal/lib/asn1 ../heimdal/include',
                   cflags=bld.dynconfig_cflags('LIBDIR BINDIR LIBEXECDIR SBINDIR'),
-                  deps='HEIMDAL_HCRYPTO wind hx509'
+                  deps='HEIMDAL_HCRYPTO wind hx509 com_err'
                   )
 
 KRB5_SOURCE = [os.path.join('lib/krb5/', x) for x in to_list(
