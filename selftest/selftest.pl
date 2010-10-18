@@ -135,9 +135,10 @@ use SocketWrapper;
 
 eval {
 require Time::HiRes;
+Time::HiRes->import("time");
 };
-unless ($@) {
-	use Time::HiRes qw(time);
+if ($@) {
+	print "You don't have Time::Hires installed !\n";
 }
 
 my $opt_help = 0;
