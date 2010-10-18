@@ -148,7 +148,8 @@ def cmd_testonly(opt):
     if os.path.exists(st_done):
         os.unlink(st_done)
 
-    cmd = '(${PERL} ../selftest/selftest.pl --prefix=${SELFTEST_PREFIX} --builddir=. --srcdir=. --exclude=./selftest/skip --testlist="${PYTHON} ./selftest/tests.py|" ${OPTIONS} --socket-wrapper ${TESTS} && touch ${SELFTEST_PREFIX}/st_done) | ${FILTER_OPTIONS} | tee ${SELFTEST_PREFIX}/subunit'
+    # We use the full path rather than relative path because it cause problems on some plateforms (ie. solaris 8).
+    cmd = '(${PERL} %s/../selftest/selftest.pl --prefix=${SELFTEST_PREFIX} --builddir=. --srcdir=. --exclude=./selftest/skip --testlist="${PYTHON} ./selftest/tests.py|" ${OPTIONS} --socket-wrapper ${TESTS} && touch ${SELFTEST_PREFIX}/st_done) | ${FILTER_OPTIONS} | tee ${SELFTEST_PREFIX}/subunit' % (os.getcwd())
     if os.environ.get('RUN_FROM_BUILD_FARM') is None and not Options.options.FILTERED_SUBUNIT:
         cmd += ' | ${FORMAT_TEST_OUTPUT}'
     cmd = EXPAND_VARIABLES(opt, cmd)
