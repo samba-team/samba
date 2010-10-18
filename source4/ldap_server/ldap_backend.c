@@ -1157,6 +1157,6 @@ NTSTATUS ldapsrv_do_call(struct ldapsrv_call *call)
 	case LDAP_TAG_ExtendedRequest:
 		return ldapsrv_ExtendedRequest(call);
 	default:
-		return ldapsrv_unwilling(call, 2);
+		return ldapsrv_unwilling(call, LDAP_PROTOCOL_ERROR);
 	}
 }
