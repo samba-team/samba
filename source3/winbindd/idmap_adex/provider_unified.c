@@ -25,6 +25,7 @@
 #include "idmap.h"
 #include "idmap_adex.h"
 #include "../libcli/ldap/ldap_ndr.h"
+#include "../libcli/security/dom_sid.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_IDMAP

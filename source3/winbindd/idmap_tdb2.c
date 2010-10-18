@@ -36,6 +36,7 @@
 #include "idmap.h"
 #include "idmap_rw.h"
 #include "dbwrap.h"
+#include "../libcli/security/dom_sid.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_IDMAP
