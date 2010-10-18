@@ -548,7 +548,8 @@ static int msg_delete_element(struct ldb_module *module,
 		return LDB_ERR_NO_SUCH_ATTRIBUTE;
 	}
 
-	el = &msg->elements[found];
+	i = (unsigned int) found;
+	el = &(msg->elements[i]);
 
 	a = ldb_schema_attribute_by_name(ldb, el->name);
 
@@ -608,7 +609,7 @@ int ltdb_modify_internal(struct ldb_module *module,
 	struct ltdb_private *ltdb = talloc_get_type(data, struct ltdb_private);
 	TDB_DATA tdb_key, tdb_data;
 	struct ldb_message *msg2;
-	unsigned i, j, k;
+	unsigned int i, j, k;
 	int ret = LDB_SUCCESS, idx;
 	struct ldb_control *control_permissive = NULL;
 
@@ -698,7 +699,8 @@ int ltdb_modify_internal(struct ldb_module *module,
 					goto done;
 				}
 			} else {
-				el2 = &(msg2->elements[idx]);
+				j = (unsigned int) idx;
+				el2 = &(msg2->elements[j]);
 
 				/* Check that values don't exist yet on multi-
 				   valued attributes or aren't provided twice */
@@ -773,7 +775,8 @@ int ltdb_modify_internal(struct ldb_module *module,
 			/* Checks if element already exists */
 			idx = find_element(msg2, el->name);
 			if (idx != -1) {
-				el2 = &(msg2->elements[idx]);
+				j = (unsigned int) idx;
+				el2 = &(msg2->elements[j]);
 				if (ldb_msg_element_compare(el, el2) == 0) {
 					/* we are replacing with the same values */
 					continue;
@@ -1274,7 +1277,7 @@ static int ltdb_handle_request(struct ldb_module *module,
 	struct ltdb_context *ac;
 	struct tevent_timer *te;
 	struct timeval tv;
-	int i;
+	unsigned int i;
 
 	ldb = ldb_module_get_ctx(module);
 
