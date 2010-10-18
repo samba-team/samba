@@ -365,7 +365,7 @@ done:
  unpack a pjob from a tdb buffer
 ***********************************************************************/
 
-int unpack_pjob( uint8 *buf, int buflen, struct printjob *pjob )
+static int unpack_pjob( uint8 *buf, int buflen, struct printjob *pjob )
 {
 	int	len = 0;
 	int	used;

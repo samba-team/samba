@@ -115,7 +115,6 @@ void print_spool_terminate(struct connection_struct *conn,
 
 /* The following definitions come from printing/printing.c  */
 
-int unpack_pjob( uint8 *buf, int buflen, struct printjob *pjob );
 uint32 sysjob_to_jobid(int unix_jobid);
 bool print_notify_register_pid(int snum);
 bool print_notify_deregister_pid(int snum);
