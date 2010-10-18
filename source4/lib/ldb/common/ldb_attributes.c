@@ -123,8 +123,8 @@ static const struct ldb_schema_attribute *ldb_schema_attribute_by_name_internal(
 	const char *name)
 {
 	/* for binary search we need signed variables */
-	long long int i, e, b = 0;
-	int r;
+	int r, i, e, b = 0;
+	unsigned int u_i;
 	const struct ldb_schema_attribute *def = &ldb_attribute_default;
 
 	/* as handlers are sorted, '*' must be the first if present */
@@ -139,9 +139,10 @@ static const struct ldb_schema_attribute *ldb_schema_attribute_by_name_internal(
 	while (b <= e) {
 		i = (b + e) / 2;
 
-		r = ldb_attr_cmp(name, ldb->schema.attributes[i].name);
+		u_i = (unsigned int) i;
+		r = ldb_attr_cmp(name, ldb->schema.attributes[u_i].name);
 		if (r == 0) {
-			return &ldb->schema.attributes[i];
+			return &ldb->schema.attributes[u_i];
 		}
 		if (r < 0) {
 			e = i - 1;
