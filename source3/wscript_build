@@ -195,13 +195,16 @@ LIB_SRC = '''${LIBSAMBAUTIL_SRC} ${UTIL_SRC}
           lib/module.c lib/events.c ${LIBTEVENT_SRC0}
           lib/server_contexts.c
           lib/ldap_escape.c
-          lib/secdesc.c lib/util_seaccess.c ../libcli/security/secace.c
+          lib/secdesc.c ../libcli/security/access_check.c
+          ../libcli/security/secace.c
+          ../libcli/security/object_tree.c
           ../libcli/security/sddl.c
           ../libcli/security/secacl.c ${PTHREADPOOL_SRC}
           lib/fncall.c
           libads/krb5_errs.c lib/system_smbd.c lib/audit.c
           lib/file_id.c lib/idmap_cache.c
-          ../libcli/security/dom_sid.c ../libcli/security/security_descriptor.c'''
+          ../libcli/security/dom_sid.c ../libcli/security/security_descriptor.c
+          ../libcli/security/security_token.c ../libcli/security/util_sid.c'''
 
 LIB_DUMMY_SRC = '''lib/dummysmbd.c lib/dummyroot.c'''
 LIB_NONSMBD_SRC = '''${LIB_DUMMY_SRC}'''
