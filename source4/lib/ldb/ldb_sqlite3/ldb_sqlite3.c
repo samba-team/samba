@@ -1520,7 +1520,7 @@ static void lsql_callback(struct tevent_context *ev,
  */
 	default:
 		/* no other op supported */
-		ret = LDB_ERR_UNWILLING_TO_PERFORM;
+		ret = LDB_ERR_PROTOCOL_ERROR;
 	}
 
 	if (!ctx->callback_failed) {

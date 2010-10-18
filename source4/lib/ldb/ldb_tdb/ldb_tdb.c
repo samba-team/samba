@@ -1241,7 +1241,7 @@ static void ltdb_callback(struct tevent_context *ev,
 		goto done;
 	default:
 		/* no other op supported */
-		ret = LDB_ERR_UNWILLING_TO_PERFORM;
+		ret = LDB_ERR_PROTOCOL_ERROR;
 	}
 
 	if (!ctx->request_terminated) {

@@ -810,7 +810,7 @@ static int lldb_handle_request(struct ldb_module *module, struct ldb_request *re
 		break;
 	default:
 		/* no other op supported */
-		ret = LDB_ERR_OPERATIONS_ERROR;
+		ret = LDB_ERR_PROTOCOL_ERROR;
 		break;
 	}
 
