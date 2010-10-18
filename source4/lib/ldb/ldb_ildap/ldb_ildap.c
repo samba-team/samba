@@ -404,6 +404,8 @@ static int ildb_request_send(struct ildb_context *ac, struct ldap_message *msg)
 
 	ldb = ldb_module_get_ctx(ac->module);
 
+	ldb_request_set_state(ac->req, LDB_ASYNC_PENDING);
+
 	req = ldap_request_send(ac->ildb->ldap, msg);
 	if (req == NULL) {
 		ldb_set_errstring(ldb, "async send request failed");
