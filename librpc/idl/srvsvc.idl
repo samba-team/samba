@@ -3,7 +3,7 @@
 /*
   srvsvc interface definitions
 */
-import "security.idl", "svcctl.idl";
+import "misc.idl", "security.idl", "svcctl.idl";
 
 [ uuid("4b324fc8-1670-01d3-1278-5a47bf6ee188"),
   version(3.0),
