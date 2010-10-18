@@ -891,6 +891,7 @@ struct ldb_request *map_search_base_req(struct map_context *ac, struct ldb_dn *d
 					NULL,
 					context, callback,
 					ac->req);
+	LDB_REQ_SET_LOCATION(req);
 	if (ret != LDB_SUCCESS) {
 		return NULL;
 	}
@@ -938,6 +939,7 @@ struct ldb_request *map_build_fixup_req(struct map_context *ac,
 				ac, msg, NULL,
 				context, callback,
 				ac->req);
+	LDB_REQ_SET_LOCATION(req);
 	if (ret != LDB_SUCCESS) {
 		goto failed;
 	}

@@ -414,6 +414,7 @@ int map_add(struct ldb_module *module, struct ldb_request *req)
 				req->controls,
 				ac, map_op_remote_callback,
 				req);
+	LDB_REQ_SET_LOCATION(ac->remote_req);
 	if (ret != LDB_SUCCESS) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
@@ -451,6 +452,7 @@ static int map_add_do_local(struct map_context *ac)
 				ac,
 				map_op_local_callback,
 				ac->req);
+	LDB_REQ_SET_LOCATION(local_req);
 	if (ret != LDB_SUCCESS) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
@@ -522,6 +524,7 @@ int map_modify(struct ldb_module *module, struct ldb_request *req)
 				req->controls,
 				ac, map_op_remote_callback,
 				req);
+	LDB_REQ_SET_LOCATION(ac->remote_req);
 	if (ret != LDB_SUCCESS) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
@@ -571,6 +574,7 @@ static int map_modify_do_local(struct map_context *ac)
 					ac,
 					map_op_local_callback,
 					ac->req);
+		LDB_REQ_SET_LOCATION(local_req);
 		if (ret != LDB_SUCCESS) {
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
@@ -582,6 +586,7 @@ static int map_modify_do_local(struct map_context *ac)
 					ac,
 					map_op_local_callback,
 					ac->req);
+		LDB_REQ_SET_LOCATION(local_req);
 		if (ret != LDB_SUCCESS) {
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
@@ -628,6 +633,7 @@ int map_delete(struct ldb_module *module, struct ldb_request *req)
 				   ac,
 				   map_op_remote_callback,
 				   req);
+	LDB_REQ_SET_LOCATION(ac->remote_req);
 	if (ret != LDB_SUCCESS) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
@@ -670,6 +676,7 @@ static int map_delete_do_local(struct map_context *ac)
 				   ac,
 				   map_op_local_callback,
 				   ac->req);
+	LDB_REQ_SET_LOCATION(local_req);
 	if (ret != LDB_SUCCESS) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
@@ -721,6 +728,7 @@ int map_rename(struct ldb_module *module, struct ldb_request *req)
 				   req->controls,
 				   ac, map_op_remote_callback,
 				   req);
+	LDB_REQ_SET_LOCATION(ac->remote_req);
 	if (ret != LDB_SUCCESS) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
@@ -764,6 +772,7 @@ static int map_rename_do_local(struct map_context *ac)
 				   ac,
 				   map_rename_local_callback,
 				   ac->req);
+	LDB_REQ_SET_LOCATION(local_req);
 	if (ret != LDB_SUCCESS) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}

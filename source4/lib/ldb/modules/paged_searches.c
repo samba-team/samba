@@ -270,6 +270,7 @@ static int ps_search(struct ldb_module *module, struct ldb_request *req)
 					ac,
 					ps_callback,
 					ac->req);
+	LDB_REQ_SET_LOCATION(ac->down_req);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
@@ -351,6 +352,7 @@ static int ps_init(struct ldb_module *module)
 				   attrs, NULL,
 				   data, check_supported_paged,
 				   NULL);
+	LDB_REQ_SET_LOCATION(req);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}

@@ -1208,6 +1208,7 @@ int map_search(struct ldb_module *module, struct ldb_request *req)
 				      req->controls,
 				      ac, map_remote_search_callback,
 				      req);
+	LDB_REQ_SET_LOCATION(remote_req);
 	if (ret != LDB_SUCCESS) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
