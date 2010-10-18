@@ -303,7 +303,7 @@ class OpenLDAPBackend(LDAPBackend):
         self.olcseedldif        = os.path.join(self.ldapdir, "olc_seed.ldif")
 
         self.schema = Schema(self.setup_path, self.domainsid,
-                schemadn=self.names.schemadn, serverdn=self.names.serverdn,
+                schemadn=self.names.schemadn, 
                 files=[setup_path("schema_samba4.ldif")])
 
     def setup_db_config(self, dbdir):
@@ -603,7 +603,6 @@ class FDSBackend(LDAPBackend):
                 self.setup_path,
                 self.domainsid,
                 schemadn=self.names.schemadn,
-                serverdn=self.names.serverdn,
                 files=[setup_path("schema_samba4.ldif"), self.samba3_ldif],
                 additional_prefixmap=["1000:1.3.6.1.4.1.7165.2.1", "1001:1.3.6.1.4.1.7165.2.2"])
 

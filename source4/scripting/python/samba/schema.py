@@ -54,13 +54,12 @@ def get_schema_descriptor(domain_sid):
 class Schema(object):
 
     def __init__(self, setup_path, domain_sid, invocationid=None, schemadn=None,
-                 serverdn=None, files=None, override_prefixmap=None, additional_prefixmap=None):
+                 files=None, override_prefixmap=None, additional_prefixmap=None):
         """Load schema for the SamDB from the AD schema files and samba4_schema.ldif
         
         :param samdb: Load a schema into a SamDB.
         :param setup_path: Setup path function.
         :param schemadn: DN of the schema
-        :param serverdn: DN of the server
         
         Returns the schema data loaded, to avoid double-parsing when then needing to add it to the db
         """
@@ -68,8 +67,6 @@ class Schema(object):
         self.schemadn = schemadn
         # We need to have the am_rodc=False just to keep some warnings quiet - this isn't a real SAM, so it's meaningless.
         self.ldb = SamDB(global_schema=False, am_rodc=False)
-        if serverdn is not None:
-            self.ldb.set_ntds_settings_dn("CN=NTDS Settings,%s" % serverdn)
         if invocationid is not None:
             self.ldb.set_invocation_id(invocationid)
 
@@ -87,7 +84,7 @@ class Schema(object):
 
         self.schema_dn_modify = read_and_sub_file(
             setup_path("provision_schema_basedn_modify.ldif"),
-            {"SCHEMADN": schemadn, "SERVERDN": serverdn})
+            {"SCHEMADN": schemadn})
 
         descr = b64encode(get_schema_descriptor(domain_sid))
         self.schema_dn_add = read_and_sub_file(
@@ -174,7 +171,6 @@ def get_dnsyntax_attributes(schemadn,schemaldb):
 
 def ldb_with_schema(setup_dir=None,
         schemadn="cn=schema,cn=configuration,dc=example,dc=com", 
-        serverdn="cn=server,cn=servers,cn=default-first-site-name,cn=sites,cn=cn=configuration,dc=example,dc=com",
         domainsid=None,
         override_prefixmap=None):
     """Load schema for the SamDB from the AD schema files and samba4_schema.ldif
@@ -195,4 +191,4 @@ def ldb_with_schema(setup_dir=None,
         domainsid = security.random_sid()
     else:
         domainsid = security.dom_sid(domainsid)
-    return Schema(setup_path, domainsid, schemadn=schemadn, serverdn=serverdn, override_prefixmap=override_prefixmap)
+    return Schema(setup_path, domainsid, schemadn=schemadn, override_prefixmap=override_prefixmap)

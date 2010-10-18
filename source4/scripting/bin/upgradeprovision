@@ -1671,8 +1671,7 @@ if __name__ == '__main__':
         new_ldbs.startTransactions()
 
         # 12)
-        schema = Schema(setup_path, names.domainsid, schemadn=str(names.schemadn),
-                         serverdn=str(names.serverdn))
+        schema = Schema(setup_path, names.domainsid, schemadn=str(names.schemadn))
         # We create a closure that will be invoked just before schema reload
         def schemareloadclosure():
             basesam = Ldb(paths.samdb, session_info=session, credentials=creds, lp=lp,
