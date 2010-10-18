@@ -282,7 +282,7 @@ bool ber_write_partial_OID_String(TALLOC_CTX *mem_ctx, DATA_BLOB *blob, const ch
 		return false;
 	}
 
-	/* Add partially endcoded subidentifier */
+	/* Add partially encoded sub-identifier */
 	if (p) {
 		DATA_BLOB tmp_blob = strhex_to_data_blob(tmp_ctx, p);
 		data_blob_append(mem_ctx, blob, tmp_blob.data, tmp_blob.length);
