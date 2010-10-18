@@ -562,8 +562,10 @@ def SAMBA_CONFIG_H(conf, path=None):
 
     if Options.options.developer:
         # we add these here to ensure that -Wstrict-prototypes is not set during configure
-        conf.ADD_CFLAGS('-Wall -g -Wshadow -Wstrict-prototypes -Wpointer-arith -Wcast-qual -Wcast-align -Wwrite-strings -Werror-implicit-function-declaration -Wformat=2 -Wno-format-y2k -Wl,-no-undefined',
+        conf.ADD_CFLAGS('-Wall -g -Wshadow -Wstrict-prototypes -Wpointer-arith -Wcast-qual -Wcast-align -Wwrite-strings -Werror-implicit-function-declaration -Wformat=2 -Wno-format-y2k',
                         testflags=True)
+        conf.ADD_LDFLAGS('-Wl,-no-undefined', testflags=True)
+
 
     if Options.options.picky_developer:
         conf.ADD_CFLAGS('-Werror', testflags=True)
@@ -605,6 +607,21 @@ def ADD_CFLAGS(conf, flags, testflags=False):
         conf.env['EXTRA_CFLAGS'] = []
     conf.env['EXTRA_CFLAGS'].extend(TO_LIST(flags))
 
+@conf
+def ADD_LDFLAGS(conf, flags, testflags=False):
+    '''add some LDFLAGS to the command line
+       optionally set testflags to ensure all the flags work
+    '''
+    if testflags:
+        ok_flags=[]
+        for f in flags.split():
+            if CHECK_CFLAGS(conf, f):
+                ok_flags.append(f)
+        flags = ok_flags
+    if not 'EXTRA_LDFLAGS' in conf.env:
+        conf.env['EXTRA_LDFLAGS'] = []
+    conf.env['EXTRA_LDFLAGS'].extend(TO_LIST(flags))
+
 
 
 @conf
@@ -627,6 +644,14 @@ def CURRENT_CFLAGS(bld, target, cflags, hide_symbols=False):
     if hide_symbols and bld.env.HAVE_VISIBILITY_ATTR:
         ret.append('-fvisibility=hidden')
     return ret
+
+
+def CURRENT_LDFLAGS(bld, target, cflags, hide_symbols=False):
+    '''work out the current loader flags. local flags are added first'''
+    flags = CURRENT_CFLAGS(bld, target, cflags, hide_symbols=hide_symbols)
+    if 'EXTRA_LDFLAGS' in bld.env:
+        flags.extend(bld.env['EXTRA_LDFLAGS'])
+    return flags
 
 
 @conf
