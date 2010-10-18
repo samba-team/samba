@@ -29,7 +29,6 @@
 #include "dsdb/samdb/ldb_modules/util.h"
 #include "libcli/security/security.h"
 #include "librpc/gen_ndr/ndr_security.h"
-#include "../lib/util/util_ldb.h"
 #include "ldb_wrap.h"
 #include "param/param.h"
 
