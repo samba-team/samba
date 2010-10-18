@@ -4,7 +4,7 @@
    Copyright (C) Andrew Tridgell 2004
    Copyright (C) Stefan Metzmacher 2004
    Copyright (C) Simo Sorce 2006-2008
-   Copyright (C) Matthias Dieter Wallnöfer 2009
+   Copyright (C) Matthias Dieter Wallnöfer 2009-2010
 
      ** NOTE! The following LGPL license applies to the ldb
      ** library. This does NOT imply that all of Samba is released
@@ -296,7 +296,7 @@ static int ltdb_add_internal(struct ldb_module *module,
 		struct ldb_message_element *el = &msg->elements[i];
 
 		if (el->num_values == 0) {
-			ldb_asprintf_errstring(ldb, "attribute %s on %s specified, but with 0 values (illegal)", 
+			ldb_asprintf_errstring(ldb, "attribute '%s' on '%s' specified, but with 0 values (illegal)",
 					       el->name, ldb_dn_get_linearized(msg->dn));
 			return LDB_ERR_CONSTRAINT_VIOLATION;
 		}
@@ -655,7 +655,8 @@ int ltdb_modify_internal(struct ldb_module *module,
 		case LDB_FLAG_MOD_ADD:
 
 			if (el->num_values == 0) {
-				ldb_asprintf_errstring(ldb, "attribute %s on %s specified, but with 0 values (illigal)",
+				ldb_asprintf_errstring(ldb,
+						       "attribute '%s': attribute on '%s' specified, but with 0 values (illegal)",
 						       el->name, ldb_dn_get_linearized(msg2->dn));
 				ret = LDB_ERR_CONSTRAINT_VIOLATION;
 				goto done;
@@ -691,7 +692,8 @@ int ltdb_modify_internal(struct ldb_module *module,
 					ret = LDB_ERR_OTHER;
 					goto done;
 				}
-				ret = ltdb_index_add_element(module, msg2->dn, el);
+				ret = ltdb_index_add_element(module, msg2->dn,
+							     el);
 				if (ret != LDB_SUCCESS) {
 					goto done;
 				}
@@ -713,12 +715,16 @@ int ltdb_modify_internal(struct ldb_module *module,
 							continue;
 						}
 
-						ldb_asprintf_errstring(ldb, "%s: value #%d already exists", el->name, j);
+						ldb_asprintf_errstring(ldb,
+								       "attribute '%s': value #%u on '%s' already exists",
+								       el->name, j, ldb_dn_get_linearized(msg2->dn));
 						ret = LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS;
 						goto done;
 					}
 					if (ldb_msg_find_val(el, &el->values[j]) != &el->values[j]) {
-						ldb_asprintf_errstring(ldb, "%s: value #%d provided more than once", el->name, j);
+						ldb_asprintf_errstring(ldb,
+								       "attribute '%s': value #%u on '%s' provided more than once",
+								       el->name, j, ldb_dn_get_linearized(msg2->dn));
 						ret = LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS;
 						goto done;
 					}
@@ -756,12 +762,15 @@ int ltdb_modify_internal(struct ldb_module *module,
 			/* TODO: This is O(n^2) - replace with more efficient check */
 			for (j=0; j<el->num_values; j++) {
 				if (ldb_msg_find_val(el, &el->values[j]) != &el->values[j]) {
-					ldb_asprintf_errstring(ldb, "%s: value #%d provided more than once", el->name, j);
+					ldb_asprintf_errstring(ldb,
+							       "attribute '%s': value #%u on '%s' provided more than once",
+							       el->name, j, ldb_dn_get_linearized(msg2->dn));
 					ret = LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS;
 					goto done;
 				}
 			}
 
+			/* Checks if element already exists */
 			idx = find_element(msg2, el->name);
 			if (idx != -1) {
 				el2 = &(msg2->elements[idx]);
@@ -771,7 +780,8 @@ int ltdb_modify_internal(struct ldb_module *module,
 				}
 			
 				/* Delete the attribute if it exists in the DB */
-				if (msg_delete_attribute(module, ldb, msg2, el->name) != 0) {
+				if (msg_delete_attribute(module, ldb, msg2,
+							 el->name) != 0) {
 					ret = LDB_ERR_OTHER;
 					goto done;
 				}
@@ -805,7 +815,8 @@ int ltdb_modify_internal(struct ldb_module *module,
 				    control_permissive) {
 					ret = LDB_SUCCESS;
 				} else {
-					ldb_asprintf_errstring(ldb, "No such attribute: %s for delete on %s",
+					ldb_asprintf_errstring(ldb,
+							       "attribute '%s': no such attribute for delete on '%s'",
 							       msg->elements[i].name, dn);
 				}
 				if (ret != LDB_SUCCESS) {
@@ -822,7 +833,8 @@ int ltdb_modify_internal(struct ldb_module *module,
 					    control_permissive) {
 						ret = LDB_SUCCESS;
 					} else {
-						ldb_asprintf_errstring(ldb, "No matching attribute value when deleting attribute: %s on %s",
+						ldb_asprintf_errstring(ldb,
+								       "attribute '%s': no matching attribute value while deleting attribute on '%s'",
 								       msg->elements[i].name, dn);
 					}
 					if (ret != LDB_SUCCESS) {
@@ -833,9 +845,9 @@ int ltdb_modify_internal(struct ldb_module *module,
 			break;
 		default:
 			ldb_asprintf_errstring(ldb,
-				"Invalid ldb_modify flags on %s: 0x%x",
-				msg->elements[i].name,
-				msg->elements[i].flags & LDB_FLAG_MOD_MASK);
+					       "attribute '%s': invalid modify flags on '%s': 0x%x",
+					       msg->elements[i].name, ldb_dn_get_linearized(msg->dn),
+					       msg->elements[i].flags & LDB_FLAG_MOD_MASK);
 			ret = LDB_ERR_PROTOCOL_ERROR;
 			goto done;
 		}
