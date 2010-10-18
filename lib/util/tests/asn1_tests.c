@@ -29,7 +29,7 @@ struct oid_data {
 };
 
 /* Data for successful OIDs conversions */
-struct oid_data oid_data_ok[] = {
+static const struct oid_data oid_data_ok[] = {
 	{
 		.oid = "2.5.4.0",
 		.bin_oid = "550400"
@@ -65,7 +65,7 @@ struct oid_data oid_data_ok[] = {
 };
 
 /* Data for successful Partial OIDs conversions */
-struct oid_data partial_oid_data_ok[] = {
+static const struct oid_data partial_oid_data_ok[] = {
 	{
 		.oid = "2.5.4.130:0x81",
 		.bin_oid = "5504810281"
@@ -100,7 +100,7 @@ static bool test_ber_write_OID_String(struct torture_context *tctx)
 	char *hex_str;
 	DATA_BLOB blob;
 	TALLOC_CTX *mem_ctx;
-	struct oid_data *data = oid_data_ok;
+	const struct oid_data *data = oid_data_ok;
 
 	mem_ctx = talloc_new(tctx);
 
@@ -129,7 +129,7 @@ static bool test_ber_read_OID_String(struct torture_context *tctx)
 	const char *oid;
 	DATA_BLOB oid_blob;
 	TALLOC_CTX *mem_ctx;
-	struct oid_data *data = oid_data_ok;
+	const struct oid_data *data = oid_data_ok;
 
 	mem_ctx = talloc_new(tctx);
 
@@ -157,7 +157,7 @@ static bool test_ber_write_partial_OID_String(struct torture_context *tctx)
 	char *hex_str;
 	DATA_BLOB blob;
 	TALLOC_CTX *mem_ctx;
-	struct oid_data *data = oid_data_ok;
+	const struct oid_data *data = oid_data_ok;
 
 	mem_ctx = talloc_new(tctx);
 
@@ -202,7 +202,7 @@ static bool test_ber_read_partial_OID_String(struct torture_context *tctx)
 	const char *oid;
 	DATA_BLOB oid_blob;
 	TALLOC_CTX *mem_ctx;
-	struct oid_data *data = oid_data_ok;
+	const struct oid_data *data = oid_data_ok;
 
 	mem_ctx = talloc_new(tctx);
 
