@@ -2965,3 +2965,16 @@ bool tevent_req_poll_ntstatus(struct tevent_req *req,
 	}
 	return ret;
 }
+
+bool any_nt_status_not_ok(NTSTATUS err1, NTSTATUS err2, NTSTATUS *result)
+{
+	if (!NT_STATUS_IS_OK(err1)) {
+		*result = err1;
+		return true;
+	}
+	if (!NT_STATUS_IS_OK(err2)) {
+		*result = err2;
+		return true;
+	}
+	return false;
+}
