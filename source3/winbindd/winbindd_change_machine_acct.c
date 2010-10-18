@@ -75,12 +75,8 @@ static void winbindd_change_machine_acct_done(struct tevent_req *subreq)
 	NTSTATUS status, result;
 
 	status = dcerpc_wbint_ChangeMachineAccount_recv(subreq, state, &result);
-	if (!NT_STATUS_IS_OK(status)) {
+	if (any_nt_status_not_ok(status, result, &status)) {
 		tevent_req_nterror(req, status);
-		return;
-	}
-	if (!NT_STATUS_IS_OK(result)) {
-		tevent_req_nterror(req, result);
 		return;
 	}
 	tevent_req_done(req);

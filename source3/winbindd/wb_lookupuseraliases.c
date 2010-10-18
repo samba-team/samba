@@ -65,12 +65,8 @@ static void wb_lookupuseraliases_done(struct tevent_req *subreq)
 
 	status = dcerpc_wbint_LookupUserAliases_recv(subreq, state, &result);
 	TALLOC_FREE(subreq);
-	if (!NT_STATUS_IS_OK(status)) {
+	if (any_nt_status_not_ok(status, result, &status)) {
 		tevent_req_nterror(req, status);
-		return;
-	}
-	if (!NT_STATUS_IS_OK(result)) {
-		tevent_req_nterror(req, result);
 		return;
 	}
 	tevent_req_done(req);
