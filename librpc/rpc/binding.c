@@ -685,14 +685,14 @@ _PUBLIC_ NTSTATUS dcerpc_binding_from_tower(TALLOC_CTX *mem_ctx,
 
 	/* Set endpoint */
 	if (tower->num_floors >= 4) {
-		binding->endpoint = dcerpc_floor_get_rhs_data(mem_ctx, &tower->floors[3]);
+		binding->endpoint = dcerpc_floor_get_rhs_data(binding, &tower->floors[3]);
 	} else {
 		binding->endpoint = NULL;
 	}
 
 	/* Set network address */
 	if (tower->num_floors >= 5) {
-		binding->host = dcerpc_floor_get_rhs_data(mem_ctx, &tower->floors[4]);
+		binding->host = dcerpc_floor_get_rhs_data(binding, &tower->floors[4]);
 		NT_STATUS_HAVE_NO_MEMORY(binding->host);
 		binding->target_hostname = binding->host;
 	}
