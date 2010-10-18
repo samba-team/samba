@@ -529,9 +529,17 @@ sub provision_raw_prepare($$$$$$$$$$)
 	push (@provision_options, "NSS_WRAPPER_GROUP=\"$ctx->{nsswrap_group}\"");
 	if (defined($ENV{GDB_PROVISION})) {
 		push (@provision_options, "gdb --args");
+		if (!defined($ENV{PYTHON})) {
+		    push (@provision_options, "env");
+		    push (@provision_options, "python");
+		}
 	}
 	if (defined($ENV{VALGRIND_PROVISION})) {
 		push (@provision_options, "valgrind");
+		if (!defined($ENV{PYTHON})) {
+		    push (@provision_options, "env");
+		    push (@provision_options, "python");
+		}
 	}
 	if (defined($ENV{PYTHON})) {
 		push (@provision_options, $ENV{PYTHON});
