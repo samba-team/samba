@@ -8,20 +8,8 @@ loadconfig
 STATEDIR=$CTDB_VARDIR/state/gpfs
 
 
-# filesystems needed by nfs
-NFS_FSS=`cat /etc/exports | egrep -v "^#" | sed -e "s/[ \t]*[^ \t]*$//" -e "s/\"//g"`
-
-
-
 check_if_healthy() {
         mkdir -p $STATEDIR/fs
-        FS=`(cd $STATEDIR/fs ; ls )`
-        [ -z "$FS" ] || {
-                MISSING=`echo $FS | sed -e "s/@/\//g"`
-                logger Filesystems required for NFS are missing. Node is UNHEALTHY. [$MISSING]
-                $CTDB_BASE/events.d/62.cnfs unhealthy "GPFS filesystems required for NFS are not mounted : [$MISSING]"
-                exit 0
-        }
 
         [ -f "$STATEDIR/gpfsnoquorum" ] && {
                 logger No GPFS quorum. Node is UNHEALTHY
@@ -40,64 +28,6 @@ case "$1" in
         ;;
 
 
-    # This event is called from the GPFS callbacks when a filesystem is
-    # unmounted
-    gpfsumount)
-        # is this a filesystem we need for nfs?
-        echo "$NFS_FSS" | egrep "^$2" >/dev/null || {
-                # no
-                exit 0
-        }
-
-        logger "GPFS unmounted filesystem $2 used by NFS. Mark node as UNHEALTHY"
-
-        MFS=`echo $2 | sed -e "s/\//@/g"`
-        mkdir -p $STATEDIR/fs
-        touch "$STATEDIR/fs/$MFS"
-        $CTDB_BASE/events.d/62.cnfs unhealthy "GPFS unmounted filesystem $2 used by NFS"
-        ;;
-
-    # This event is called from the GPFS callbacks when a filesystem is
-    # mounted
-    gpfsmount)
-        # is this a filesystem we need for nfs?
-        echo "$NFS_FSS" | egrep "^$2" >/dev/null || {
-                # no
-                exit 0
-        }
-
-        logger "GPFS mounted filesystem $2 used by NFS."
-
-        MFS=`echo $2 | sed -e "s/\//@/g"`
-        mkdir -p $STATEDIR/fs
-        rm -f "$STATEDIR/fs/$MFS"
-
-        check_if_healthy
-        ;;
-
-
-
-    # This event is called from the gpfs callback when GPFS is being shutdown.
-    gpfsshutdown)
-        logger "GPFS is shutting down. Marking node as UNHEALTHY and trigger a CTDB failover"
-        $CTDB_BASE/events.d/62.cnfs unhealthy "GPFS was shut down!"
-        ;;
-
-
-    # This event is called from the gpfs callback when GPFS has started.
-    # It checks that all required NFS filesystems are mounted 
-    # and flags the node healthy if so.
-    gpfsstartup)
-	# assume we always have quorum when starting
-	# we are only interested in the case when we explicitely
-	# lost quorum in an otherwise happy cluster
-        mkdir -p $STATEDIR
-        rm -f "$STATEDIR/gpfsnoquorum"
-        logger "GPFS is is started."
-        check_if_healthy
-        ;;
-
-
     gpfsquorumreached)
         mkdir -p $STATEDIR
         rm -f "$STATEDIR/gpfsnoquorum"
@@ -111,10 +41,6 @@ case "$1" in
         logger "GPFS quorum has been lost."
         $CTDB_BASE/events.d/62.cnfs unhealthy "GPFS quorum was lost! Marking node as UNHEALTHY."
         ;;
-
-
-
-
 
     unhealthy)
         # Mark the node as UNHEALTHY which means all public addresses
