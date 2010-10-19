@@ -756,10 +756,12 @@ static void ldb_trace_request(struct ldb_context *ldb, struct ldb_request *req)
 		ldb_debug_add(ldb, " control: <NONE>\n");
 	} else {
 		for (i=0; req->controls && req->controls[i]; i++) {
-			ldb_debug_add(ldb, " control: %s  crit:%u  data:%s\n", 
-				      req->controls[i]->oid, 
-				      req->controls[i]->critical, 
-				      req->controls[i]->data?"yes":"no");
+			if (req->controls[i]->oid) {
+				ldb_debug_add(ldb, " control: %s  crit:%u  data:%s\n",
+					      req->controls[i]->oid,
+					      req->controls[i]->critical,
+					      req->controls[i]->data?"yes":"no");
+			}
 		}
 	}
 	

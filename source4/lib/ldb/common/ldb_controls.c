@@ -41,7 +41,7 @@ struct ldb_control *ldb_request_get_control(struct ldb_request *req, const char 
 
 	if (req->controls != NULL) {
 		for (i = 0; req->controls[i]; i++) {
-			if (strcmp(oid, req->controls[i]->oid) == 0) {
+			if (req->controls[i]->oid && strcmp(oid, req->controls[i]->oid) == 0) {
 				break;
 			}
 		}
@@ -60,7 +60,7 @@ struct ldb_control *ldb_reply_get_control(struct ldb_reply *rep, const char *oid
 
 	if (rep->controls != NULL) {
 		for (i = 0; rep->controls[i]; i++) {
-			if (strcmp(oid, rep->controls[i]->oid) == 0) {
+			if (rep->controls[i]->oid && strcmp(oid, rep->controls[i]->oid) == 0) {
 				break;
 			}
 		}
@@ -170,7 +170,7 @@ int ldb_request_add_control(struct ldb_request *req, const char *oid, bool criti
 
 	for (n=0; req->controls && req->controls[n];n++) { 
 		/* having two controls of the same OID makes no sense */
-		if (strcmp(oid, req->controls[n]->oid) == 0) {
+		if (req->controls[n]->oid && strcmp(oid, req->controls[n]->oid) == 0) {
 			return LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS;
 		}
 	}
@@ -208,7 +208,7 @@ int ldb_reply_add_control(struct ldb_reply *ares, const char *oid, bool critical
 
 	for (n=0; ares->controls && ares->controls[n];) { 
 		/* having two controls of the same OID makes no sense */
-		if (strcmp(oid, ares->controls[n]->oid) == 0) {
+		if (ares->controls[n]->oid && strcmp(oid, ares->controls[n]->oid) == 0) {
 			return LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS;
 		}
 		n++; 
@@ -246,7 +246,7 @@ int ldb_request_replace_control(struct ldb_request *req, const char *oid, bool c
 	}
 
 	for (n=0; req->controls[n];n++) {
-		if (strcmp(oid, req->controls[n]->oid) == 0) {
+		if (req->controls[n]->oid && strcmp(oid, req->controls[n]->oid) == 0) {
 			req->controls[n]->critical = critical;
 			req->controls[n]->data = data;
 			return LDB_SUCCESS;
