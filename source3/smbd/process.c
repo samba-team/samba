@@ -48,8 +48,12 @@ static bool smbd_lock_socket_internal(struct smbd_server_connection *sconn)
 
 	DEBUG(10,("pid[%d] wait for socket lock\n", (int)sys_getpid()));
 
-	ok = fcntl_lock(sconn->smb1.echo_handler.socket_lock_fd,
+	do {
+		ok = fcntl_lock(
+			sconn->smb1.echo_handler.socket_lock_fd,
 			SMB_F_SETLKW, 0, 0, F_WRLCK);
+	} while (!ok && (errno == EINTR));
+
 	if (!ok) {
 		return false;
 	}
@@ -80,8 +84,12 @@ static bool smbd_unlock_socket_internal(struct smbd_server_connection *sconn)
 		return true;
 	}
 
-	ok = fcntl_lock(sconn->smb1.echo_handler.socket_lock_fd,
+	do {
+		ok = fcntl_lock(
+			sconn->smb1.echo_handler.socket_lock_fd,
 			SMB_F_SETLKW, 0, 0, F_UNLCK);
+	} while (!ok && (errno == EINTR));
+
 	if (!ok) {
 		return false;
 	}
