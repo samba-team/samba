@@ -33,7 +33,6 @@ init the conn structures
 void conn_init(struct smbd_server_connection *sconn)
 {
 	sconn->smb1.tcons.Connections = NULL;
-	sconn->smb1.tcons.num_open = 0;
 	sconn->smb1.tcons.bmap = bitmap_talloc(sconn, BITMAP_BLOCK_SZ);
 }
 
@@ -42,7 +41,7 @@ return the number of open connections
 ****************************************************************************/
 int conn_num_open(struct smbd_server_connection *sconn)
 {
-	return sconn->smb1.tcons.num_open;
+	return sconn->num_tcons_open;
 }
 
 
@@ -161,7 +160,7 @@ find_again:
 
 	bitmap_set(sconn->smb1.tcons.bmap, i);
 
-	sconn->smb1.tcons.num_open++;
+	sconn->num_tcons_open++;
 
 	string_set(&conn->connectpath,"");
 	string_set(&conn->origpath,"");
@@ -329,8 +328,8 @@ void conn_free(connection_struct *conn)
 		bitmap_clear(conn->sconn->smb1.tcons.bmap, conn->cnum);
 	}
 
-	SMB_ASSERT(conn->sconn->smb1.tcons.num_open > 0);
-	conn->sconn->smb1.tcons.num_open--;
+	SMB_ASSERT(conn->sconn->num_tcons_open > 0);
+	conn->sconn->num_tcons_open--;
 
 	conn_free_internal(conn);
 }

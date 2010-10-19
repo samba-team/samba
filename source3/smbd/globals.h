@@ -465,6 +465,9 @@ struct smbd_server_connection {
 	unsigned long file_gen_counter;
 	int first_file;
 
+	/* number of open connections (tcons) */
+	int num_tcons_open;
+
 	struct {
 		struct fd_event *fde;
 
@@ -531,7 +534,6 @@ struct smbd_server_connection {
 			connection_struct *Connections;
 			/* number of open connections */
 			struct bitmap *bmap;
-			int num_open;
 		} tcons;
 		struct smb_signing_state *signing_state;
 		/* List to store partial SPNEGO auth fragments. */

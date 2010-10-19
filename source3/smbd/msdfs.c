@@ -256,7 +256,7 @@ NTSTATUS create_conn_struct(TALLOC_CTX *ctx,
 	conn->params->service = snum;
 
 	conn->sconn = smbd_server_conn;
-	conn->sconn->smb1.tcons.num_open += 1;
+	conn->sconn->num_tcons_open++;
 
 	if (server_info != NULL) {
 		conn->server_info = copy_serverinfo(conn, server_info);
