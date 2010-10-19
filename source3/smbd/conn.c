@@ -55,13 +55,31 @@ int conn_num_open(struct smbd_server_connection *sconn)
 bool conn_snum_used(int snum)
 {
 	struct smbd_server_connection *sconn = smbd_server_conn;
-	connection_struct *conn;
-	for (conn=sconn->smb1.tcons.Connections;conn;conn=conn->next) {
-		if (conn->params->service == snum) {
-			return(True);
+
+	if (sconn->using_smb2) {
+		/* SMB2 */
+		struct smbd_smb2_session *sess;
+		for (sess = sconn->smb2.sessions.list; sess; sess = sess->next) {
+			struct smbd_smb2_tcon *ptcon;
+
+			for (ptcon = sess->tcons.list; ptcon; ptcon = ptcon->next) {
+				if (ptcon->compat_conn &&
+						ptcon->compat_conn->params &&
+						(ptcon->compat_conn->params->service = snum)) {
+					return true;
+				}
+			}
+		}
+	} else {
+		/* SMB1 */
+		connection_struct *conn;
+		for (conn=sconn->smb1.tcons.Connections;conn;conn=conn->next) {
+			if (conn->params->service == snum) {
+				return true;
+			}
 		}
 	}
-	return(False);
+	return false;
 }
 
 /****************************************************************************
@@ -70,16 +88,31 @@ bool conn_snum_used(int snum)
 
 connection_struct *conn_find(struct smbd_server_connection *sconn,unsigned cnum)
 {
-	int count=0;
-	connection_struct *conn;
+	if (sconn->using_smb2) {
+		/* SMB2 */
+		struct smbd_smb2_session *sess;
+		for (sess = sconn->smb2.sessions.list; sess; sess = sess->next) {
+			struct smbd_smb2_tcon *ptcon;
 
-	for (conn=sconn->smb1.tcons.Connections;conn;conn=conn->next,count++) {
-		if (conn->cnum == cnum) {
-			if (count > 10) {
-				DLIST_PROMOTE(sconn->smb1.tcons.Connections,
-					      conn);
+			for (ptcon = sess->tcons.list; ptcon; ptcon = ptcon->next) {
+				if (ptcon->compat_conn &&
+						ptcon->compat_conn->cnum == cnum) {
+					return ptcon->compat_conn;
+				}
 			}
-			return conn;
+		}
+	} else {
+		/* SMB1 */
+		int count=0;
+		connection_struct *conn;
+		for (conn=sconn->smb1.tcons.Connections;conn;conn=conn->next,count++) {
+			if (conn->cnum == cnum) {
+				if (count > 10) {
+					DLIST_PROMOTE(sconn->smb1.tcons.Connections,
+						conn);
+				}
+				return conn;
+			}
 		}
 	}
 
@@ -99,6 +132,7 @@ connection_struct *conn_new(struct smbd_server_connection *sconn)
         int find_offset = 1;
 
 	if (sconn->using_smb2) {
+		/* SMB2 */
 		if (!(conn=TALLOC_ZERO_P(NULL, connection_struct)) ||
 		    !(conn->params = TALLOC_P(conn, struct share_params))) {
 			DEBUG(0,("TALLOC_ZERO() failed!\n"));
@@ -109,6 +143,7 @@ connection_struct *conn_new(struct smbd_server_connection *sconn)
 		return conn;
 	}
 
+	/* SMB1 */
 find_again:
 	i = bitmap_find(sconn->smb1.tcons.bmap, find_offset);
 
@@ -182,24 +217,22 @@ find_again:
 
 bool conn_close_all(struct smbd_server_connection *sconn)
 {
+	bool ret = false;
 	if (sconn->using_smb2) {
 		/* SMB2 */
-		if (sconn->smb2.sessions.list &&
-				sconn->smb2.sessions.list->tcons.list) {
+		struct smbd_smb2_session *sess;
+		for (sess = sconn->smb2.sessions.list; sess; sess = sess->next) {
 			struct smbd_smb2_tcon *tcon, *tc_next;
 
-			for (tcon = sconn->smb2.sessions.list->tcons.list;
-					tcon; tcon = tc_next) {
+			for (tcon = sess->tcons.list; tcon; tcon = tc_next) {
 				tc_next = tcon->next;
 				TALLOC_FREE(tcon);
+				ret = true;
 			}
-			return true;
 		}
-		return false;
 	} else {
 		/* SMB1 */
 		connection_struct *conn, *next;
-		bool ret = false;
 
 		for (conn=sconn->smb1.tcons.Connections;conn;conn=next) {
 			next=conn->next;
@@ -207,8 +240,8 @@ bool conn_close_all(struct smbd_server_connection *sconn)
 			close_cnum(conn, conn->vuid);
 			ret = true;
 		}
-		return ret;
 	}
+	return ret;
 }
 
 /****************************************************************************
@@ -262,11 +295,29 @@ void conn_clear_vuid_caches(struct smbd_server_connection *sconn,uint16_t vuid)
 {
 	connection_struct *conn;
 
-	for (conn=sconn->smb1.tcons.Connections;conn;conn=conn->next) {
-		if (conn->vuid == vuid) {
-			conn->vuid = UID_FIELD_INVALID;
+	if (sconn->using_smb2) {
+		/* SMB2 */
+		struct smbd_smb2_session *sess;
+		for (sess = sconn->smb2.sessions.list; sess; sess = sess->next) {
+			struct smbd_smb2_tcon *ptcon;
+
+			for (ptcon = sess->tcons.list; ptcon; ptcon = ptcon->next) {
+				if (ptcon->compat_conn) {
+					if (ptcon->compat_conn->vuid == vuid) {
+						ptcon->compat_conn->vuid = UID_FIELD_INVALID;
+					}
+					conn_clear_vuid_cache(ptcon->compat_conn, vuid);
+				}
+			}
 		}
-		conn_clear_vuid_cache(conn, vuid);
+	} else {
+		/* SMB1 */
+		for (conn=sconn->smb1.tcons.Connections;conn;conn=conn->next) {
+			if (conn->vuid == vuid) {
+				conn->vuid = UID_FIELD_INVALID;
+			}
+			conn_clear_vuid_cache(conn, vuid);
+		}
 	}
 }
 
@@ -320,10 +371,12 @@ void conn_free(connection_struct *conn)
 	}
 
 	if (conn->sconn->using_smb2) {
+		/* SMB2 */
 		conn_free_internal(conn);
 		return;
 	}
 
+	/* SMB1 */
 	DLIST_REMOVE(conn->sconn->smb1.tcons.Connections, conn);
 
 	if (conn->sconn->smb1.tcons.bmap != NULL) {
@@ -371,12 +424,32 @@ void msg_force_tdis(struct messaging_context *msg,
 		return;
 	}
 
-	for (conn=sconn->smb1.tcons.Connections;conn;conn=next) {
-		next=conn->next;
-		if (strequal(lp_servicename(SNUM(conn)), sharename)) {
-			DEBUG(1,("Forcing close of share %s cnum=%d\n",
-				 sharename, conn->cnum));
-			close_cnum(conn, (uint16)-1);
+	if (sconn->using_smb2) {
+		/* SMB2 */
+		struct smbd_smb2_session *sess;
+		for (sess = sconn->smb2.sessions.list; sess; sess = sess->next) {
+			struct smbd_smb2_tcon *tcon, *tc_next;
+
+			for (tcon = sess->tcons.list; tcon; tcon = tc_next) {
+				tc_next = tcon->next;
+				if (tcon->compat_conn &&
+						strequal(lp_servicename(SNUM(tcon->compat_conn)),
+								sharename)) {
+					DEBUG(1,("Forcing close of share %s cnum=%d\n",
+						sharename, tcon->compat_conn->cnum));
+					TALLOC_FREE(tcon);
+				}
+			}
+		}
+	} else {
+		/* SMB1 */
+		for (conn=sconn->smb1.tcons.Connections;conn;conn=next) {
+			next=conn->next;
+			if (strequal(lp_servicename(SNUM(conn)), sharename)) {
+				DEBUG(1,("Forcing close of share %s cnum=%d\n",
+					sharename, conn->cnum));
+				close_cnum(conn, (uint16)-1);
+			}
 		}
 	}
 }
