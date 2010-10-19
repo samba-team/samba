@@ -350,3 +350,11 @@ bld.SAMBA_MODULE('ldb_aclread',
 	internal_module=False,
 	deps='talloc LIBEVENTS LIBSECURITY SAMDB',
 	)
+
+bld.SAMBA_MODULE('ldb_simple_dn',
+	source='simple_dn.c',
+	subsystem='ldb',
+	init_function='LDB_MODULE(simple_dn)',
+	internal_module=False,
+	deps='talloc DSDB_MODULE_HELPERS'
+	)
