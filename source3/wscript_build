@@ -195,16 +195,10 @@ LIB_SRC = '''${LIBSAMBAUTIL_SRC} ${UTIL_SRC}
           lib/module.c lib/events.c ${LIBTEVENT_SRC0}
           lib/server_contexts.c
           lib/ldap_escape.c
-          lib/secdesc.c ../libcli/security/access_check.c
-          ../libcli/security/secace.c
-          ../libcli/security/object_tree.c
-          ../libcli/security/sddl.c
-          ../libcli/security/secacl.c ${PTHREADPOOL_SRC}
+          lib/secdesc.c ${PTHREADPOOL_SRC}
           lib/fncall.c
           libads/krb5_errs.c lib/system_smbd.c lib/audit.c
-          lib/file_id.c lib/idmap_cache.c
-          ../libcli/security/dom_sid.c ../libcli/security/security_descriptor.c
-          ../libcli/security/security_token.c ../libcli/security/util_sid.c'''
+          lib/file_id.c lib/idmap_cache.c'''
 
 LIB_DUMMY_SRC = '''lib/dummysmbd.c lib/dummyroot.c'''
 LIB_NONSMBD_SRC = '''${LIB_DUMMY_SRC}'''
@@ -213,7 +207,7 @@ POPT_LIB_SRC = '''lib/popt_common.c'''
 
 PARAM_WITHOUT_REG_SRC = '''param/loadparm.c param/util.c param/loadparm_server_role.c
                            lib/sharesec.c lib/ldap_debug_handler.c'''
-PARAM_REG_ADD_SRC = '''${REG_SMBCONF_SRC} ${LIBSMBCONF_SRC} ${PRIVILEGES_BASIC_SRC}'''
+PARAM_REG_ADD_SRC = '''${REG_SMBCONF_SRC} ${LIBSMBCONF_SRC}'''
 PARAM_SRC = '''${PARAM_REG_ADD_SRC}'''
 
 KRBCLIENT_SRC = '''libads/kerberos.c libads/ads_status.c'''
@@ -398,8 +392,6 @@ RPC_SERVER_SRC = '''${RPC_PIPE_SRC} ${NPA_TSTREAM_SRC}'''
 RPC_CLIENT_SCHANNEL_SRC = '''rpc_client/cli_pipe_schannel.c'''
 
 LOCKING_SRC = '''locking/locking.c locking/brlock.c locking/posix.c'''
-
-PRIVILEGES_BASIC_SRC = '''../libcli/security/privileges.c'''
 
 PRIVILEGES_SRC = '''lib/privileges.c'''
 
@@ -602,8 +594,7 @@ SMBD_SRC_BASE = '''${SMBD_SRC_SRV}
                 ${LIBCLI_NETLOGON_SRC}
                 ${RPC_CLIENT_SCHANNEL_SRC}
                 rpc_client/init_netlogon.c
-                rpc_client/init_samr.c
-                ${PRIVILEGES_BASIC_SRC}'''
+                rpc_client/init_samr.c'''
 
 PRINTING_SRC = '''printing/pcap.c printing/print_svid.c printing/print_aix.c
                printing/print_cups.c printing/print_generic.c
@@ -665,8 +656,6 @@ SMBPASSWD_SRC = '''utils/smbpasswd.c ${PASSCHANGE_SRC}
 PDBEDIT_SRC = '''utils/pdbedit.c'''
 
 SMBGET_SRC = '''utils/smbget.c'''
-
-DISPLAY_SEC_SRC= '../libcli/security/display_sec.c'
 
 RPCCLIENT_SRC1 = '''rpcclient/rpcclient.c rpcclient/cmd_lsarpc.c
                     rpcclient/cmd_samr.c rpcclient/cmd_spoolss.c
@@ -741,7 +730,6 @@ LIBNETAPI_SRC0 = '''lib/netapi/netapi.c
 LIBNETAPI_SRC = '''${LIBNETAPI_SRC0}
                    ${LIBSMBCONF_SRC}
                    ${REG_SMBCONF_SRC}
-                   ${PRIVILEGES_BASIC_SRC}
                    auth/token_util.c
                    ${LIBCLI_INITSHUTDOWN_SRC}
                    ${LIBCLI_WKSSVC_SRC}
@@ -933,6 +921,7 @@ bld.RECURSE('build')
 bld.RECURSE('../librpc')
 bld.RECURSE('librpc/idl')
 bld.RECURSE('librpc')
+bld.RECURSE('../libcli/security')
 
 bld.SAMBA_MKVERSION('include/version.h')
 
@@ -1050,7 +1039,7 @@ bld.SAMBA_SUBSYSTEM('KRBCLIENT',
 
 bld.SAMBA_SUBSYSTEM('LIBS',
                     source=LIB_SRC,
-                    deps='NSS_WRAPPER iconv LIBCRYPTO LIBNDR NDR_SECURITY charset NDR_MESSAGING',
+                    deps='NSS_WRAPPER iconv LIBCRYPTO LIBNDR LIBSECURITY NDR_SECURITY charset NDR_MESSAGING',
                     vars=locals())
 
 bld.SAMBA_SUBSYSTEM('LIB_NONSMBD',
@@ -1145,10 +1134,6 @@ bld.SAMBA_SUBSYSTEM('PRINTING',
 
 bld.SAMBA_SUBSYSTEM('PASSWD_UTIL',
                     source=PASSWD_UTIL_SRC,
-                    vars=locals())
-
-bld.SAMBA_SUBSYSTEM('DISPLAY_SEC',
-                    source=DISPLAY_SEC_SRC,
                     vars=locals())
 
 bld.SAMBA_SUBSYSTEM('LIBNET',
@@ -1273,14 +1258,14 @@ bld.SAMBA_BINARY('rpcclient/rpcclient',
                  source=RPCCLIENT_SRC,
                  deps='''talloc tdb cap resolv POPT_SAMBA PASSDB LIBSMB LIB_NONSMBD
                  PARAM_WITHOUT_REG libwbclient PARAM KRBCLIENT LIBMSRPC_GEN LIBMSRPC
-                 LIBADS SMBREADLINE DISPLAY_SEC DCUTIL RPCCLI_WINREG RPCCLI_ECHO''',
+                 LIBADS SMBREADLINE DCUTIL RPCCLI_WINREG RPCCLI_ECHO''',
                  vars=locals())
 
 bld.SAMBA_BINARY('smbclient',
                  source=CLIENT_SRC,
                  deps='''talloc tdb cap resolv POPT_SAMBA PASSDB LIBSMB LIB_NONSMBD
                  PARAM_WITHOUT_REG libwbclient PARAM KRBCLIENT LIBMSRPC_GEN
-                 LIBMSRPC SMBREADLINE DISPLAY_SEC SOCKET_WRAPPER''',
+                 LIBMSRPC SMBREADLINE SOCKET_WRAPPER''',
                  vars=locals())
 
 bld.SAMBA_BINARY('net',
@@ -1288,7 +1273,7 @@ bld.SAMBA_BINARY('net',
                  deps='''talloc tdb libnetapi libaddns cap resolv POPT_SAMBA PASSDB LIBSMB LIB_NONSMBD
                  PARAM_WITHOUT_REG libwbclient PARAM KRBCLIENT LIBMSRPC_GEN LIBMSRPC LIBGPO LIBADS LIBADS_SERVER LIBADS_PRINTER
                  LOCALE_DIR LIBAFS LIBAFS_SETTOKEN SMBREADLINE PASSWD_UTIL LIBNET
-                 LIBNET_DSSYNC LIBNET_SAMSYNC LIBEVENTLOG DISPLAY_SEC DCUTIL
+                 LIBNET_DSSYNC LIBNET_SAMSYNC LIBEVENTLOG DCUTIL
                  REGFIO NDR_NTPRINTING RPCCLI_WINREG''',
                  vars=locals())
 
