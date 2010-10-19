@@ -55,6 +55,9 @@ if [ -z "$enc" ]; then
 fi
 if [ -z "$path" ]; then
   path=`dirname $0`/../bin/
+  if [ ! -f ${path}ldbsearch ]; then
+    path=`dirname $0`/../../bin/
+  fi
 fi
 if [ -z "$outfile" -o -z "$princ" -o -z "$pass" ]; then
   echo "At least one mandatory parameter (--out, --princ, --pass) was not specified"
