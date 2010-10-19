@@ -263,10 +263,17 @@ static NTSTATUS gensec_sasl_wrap_packets(struct gensec_security *gensec_security
 								      struct gensec_sasl_state);
 	const char *out_data;
 	unsigned int out_len;
+	unsigned len_permitted;
+	int sasl_ret = sasl_getprop(gensec_sasl_state->conn, SASL_SSF,
+			(const void**)&len_permitted);
+	if (sasl_ret != SASL_OK) {
+		return sasl_nt_status(sasl_ret);
+	}
+	len_permitted = MIN(len_permitted, in->length);
 
-	int sasl_ret = sasl_encode(gensec_sasl_state->conn,
-				   (char*)in->data, in->length, &out_data,
-				   &out_len);
+	sasl_ret = sasl_encode(gensec_sasl_state->conn,
+			       (char*)in->data, len_permitted, &out_data,
+			       &out_len);
 	if (sasl_ret == SASL_OK) {
 		*out = data_blob_talloc(out_mem_ctx, out_data, out_len);
 		*len_processed = in->length;
