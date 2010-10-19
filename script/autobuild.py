@@ -273,6 +273,13 @@ def daemonize(logfile):
     os.dup2(0, 1)
     os.dup2(0, 2)
 
+def write_pidfile(fname):
+    '''write a pid file, cleanup on exit'''
+    f = open(fname, mode='w')
+    f.write("%u\n" % os.getpid())
+    f.close()
+    cleanup_list.append(fname)
+
 
 def rebase_tree(url):
     print("Rebasing on %s" % url)
@@ -434,6 +441,8 @@ if options.daemon:
     logfile = os.path.join(testbase, "log")
     print "Forking into the background, writing progress to %s" % logfile
     daemonize(logfile)
+
+write_pidfile(gitroot + "/autobuild.pid")
 
 while True:
     try:
