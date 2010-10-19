@@ -66,7 +66,8 @@ fi
 if [ -z $host ]; then
   host=`hostname`
 fi
-kvno=`${path}ldbsearch -H ldap://$host "(|(samaccountname=$princ)(serviceprincipalname=$princ))" msds-keyversionnumber  -k 1 -N 2>/dev/null| grep -i msds-keyversionnumber`
+
+kvno=`${path}ldbsearch -H ldap://$host "(|(samaccountname=$princ)(serviceprincipalname=$princ)(userprincipalname=$princ))" msds-keyversionnumber  -k 1 -N 2>/dev/null| grep -i msds-keyversionnumber`
 if [ "$kvno" == "" ]; then
   echo -ne "Unable to find kvno for principal $princ\n"
   echo -ne " check that you are authentified with kerberos\n"
