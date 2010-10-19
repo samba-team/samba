@@ -80,7 +80,6 @@ static WERROR _dsdb_prefixmap_from_ldb_val(const struct ldb_val *pfm_ldb_val,
 				(ndr_pull_flags_fn_t)ndr_pull_prefixMapBlob);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		NTSTATUS nt_status = ndr_map_error2ntstatus(ndr_err);
-		talloc_free(temp_ctx);
 		DEBUG(0,("_dsdb_prefixmap_from_ldb_val: Failed to parse prefixmap of length %u: %s\n",
 			 (unsigned int)pfm_ldb_val->length, ndr_map_error2string(ndr_err)));
 		talloc_free(temp_ctx);
