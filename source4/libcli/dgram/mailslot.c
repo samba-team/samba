@@ -129,7 +129,7 @@ struct dgram_mailslot_handler *dgram_mailslot_temp(struct nbt_dgram_socket *dgms
 		if (name == NULL) return NULL;
 		if (dgram_mailslot_find(dgmsock, name)) {
 			talloc_free(name);
-			return NULL;
+			continue;
 		}
 		dgmslot = dgram_mailslot_listen(dgmsock, name, handler, private_data);
 		talloc_free(name);
