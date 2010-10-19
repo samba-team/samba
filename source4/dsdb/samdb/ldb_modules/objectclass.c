@@ -1498,6 +1498,13 @@ static int objectclass_init(struct ldb_module *module)
 	/* Look for the opaque to indicate we might have to cut down the DN of defaultObjectCategory */
 	ldb_module_set_private(module, ldb_get_opaque(ldb, DSDB_EXTENDED_DN_STORE_FORMAT_OPAQUE_NAME));
 
+	ret = ldb_mod_register_control(module, LDB_CONTROL_RODC_DCPROMO_OID);
+	if (ret != LDB_SUCCESS) {
+		ldb_debug(ldb, LDB_DEBUG_ERROR,
+			  "objectclass_init: Unable to register control DCPROMO with rootdse\n");
+		return ldb_operr(ldb);
+	}
+
 	return ret;
 }
 
