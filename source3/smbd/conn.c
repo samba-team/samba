@@ -1,19 +1,20 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    Manage connections_struct structures
    Copyright (C) Andrew Tridgell 1998
    Copyright (C) Alexander Bokovoy 2002
-   
+   Copyright (C) Jeremy Allison 2010
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -25,11 +26,13 @@
  * maximum size of the bitmap is the largest positive integer, but you will hit
  * the "max connections" limit, looong before that.
  */
+
 #define BITMAP_BLOCK_SZ 128
 
 /****************************************************************************
-init the conn structures
+ Init the conn structures.
 ****************************************************************************/
+
 void conn_init(struct smbd_server_connection *sconn)
 {
 	sconn->smb1.tcons.Connections = NULL;
@@ -37,17 +40,18 @@ void conn_init(struct smbd_server_connection *sconn)
 }
 
 /****************************************************************************
-return the number of open connections
+ Return the number of open connections.
 ****************************************************************************/
+
 int conn_num_open(struct smbd_server_connection *sconn)
 {
 	return sconn->num_tcons_open;
 }
 
-
 /****************************************************************************
-check if a snum is in use
+ Check if a snum is in use.
 ****************************************************************************/
+
 bool conn_snum_used(int snum)
 {
 	struct smbd_server_connection *sconn = smbd_server_conn;
@@ -83,10 +87,11 @@ connection_struct *conn_find(struct smbd_server_connection *sconn,unsigned cnum)
 }
 
 /****************************************************************************
-  find first available connection slot, starting from a random position.
-The randomisation stops problems with the server dieing and clients
-thinking the server is still available.
+ Find first available connection slot, starting from a random position.
+ The randomisation stops problems with the server dieing and clients
+ thinking the server is still available.
 ****************************************************************************/
+
 connection_struct *conn_new(struct smbd_server_connection *sconn)
 {
 	connection_struct *conn;
@@ -106,7 +111,7 @@ connection_struct *conn_new(struct smbd_server_connection *sconn)
 
 find_again:
 	i = bitmap_find(sconn->smb1.tcons.bmap, find_offset);
-	
+
 	if (i == -1) {
                 /* Expand the connections bitmap. */
                 int             oldsz = sconn->smb1.tcons.bmap->n;
@@ -164,7 +169,7 @@ find_again:
 
 	string_set(&conn->connectpath,"");
 	string_set(&conn->origpath,"");
-	
+
 	DLIST_ADD(sconn->smb1.tcons.Connections, conn);
 
 	return conn;
@@ -172,8 +177,9 @@ find_again:
 
 /****************************************************************************
  Close all conn structures.
-return true if any were closed
+ Return true if any were closed.
 ****************************************************************************/
+
 bool conn_close_all(struct smbd_server_connection *sconn)
 {
 	if (sconn->using_smb2) {
@@ -294,7 +300,7 @@ static void conn_free_internal(connection_struct *conn)
 	free_namearray(conn->hide_list);
 	free_namearray(conn->veto_oplock_list);
 	free_namearray(conn->aio_write_behind_list);
-	
+
 	string_free(&conn->connectpath);
 	string_free(&conn->origpath);
 
@@ -333,13 +339,14 @@ void conn_free(connection_struct *conn)
 
 	conn_free_internal(conn);
 }
- 
+
 /****************************************************************************
-receive a smbcontrol message to forcibly unmount a share
-the message contains just a share name and all instances of that
-share are unmounted
-the special sharename '*' forces unmount of all shares
+ Receive a smbcontrol message to forcibly unmount a share.
+ The message contains just a share name and all instances of that
+ share are unmounted.
+ The special sharename '*' forces unmount of all shares.
 ****************************************************************************/
+
 void msg_force_tdis(struct messaging_context *msg,
 		    void *private_data,
 		    uint32_t msg_type,
