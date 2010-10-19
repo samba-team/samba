@@ -855,7 +855,7 @@ uint8_t winsdb_modify(struct winsdb_handle *h, struct winsdb_record *rec, uint32
 	TALLOC_CTX *tmp_ctx = talloc_new(wins_db);
 	int trans;
 	int ret;
-	int i;
+	unsigned int i;
 
 	trans = ldb_transaction_start(wins_db);
 	if (trans != LDB_SUCCESS) goto failed;
