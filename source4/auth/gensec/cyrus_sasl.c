@@ -29,6 +29,7 @@
 struct gensec_sasl_state {
 	sasl_conn_t *conn;
 	int step;
+	bool wrap;
 };
 
 static NTSTATUS sasl_nt_status(int sasl_ret) 
@@ -125,7 +126,7 @@ static NTSTATUS gensec_sasl_client_start(struct gensec_security *gensec_security
 
 	sasl_callback_t *callbacks;
 
-	gensec_sasl_state = talloc(gensec_security, struct gensec_sasl_state);
+	gensec_sasl_state = talloc_zero(gensec_security, struct gensec_sasl_state);
 	if (!gensec_sasl_state) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -173,26 +174,27 @@ static NTSTATUS gensec_sasl_client_start(struct gensec_security *gensec_security
 				   local_addr, remote_addr, callbacks, 0,
 				   &gensec_sasl_state->conn);
 	
-	if (sasl_ret == SASL_OK || sasl_ret == SASL_CONTINUE) {
+	if (sasl_ret == SASL_OK) {
 		sasl_security_properties_t props;
 		talloc_set_destructor(gensec_sasl_state, gensec_sasl_dispose);
-
+		
 		ZERO_STRUCT(props);
 		if (gensec_security->want_features & GENSEC_FEATURE_SIGN) {
 			props.min_ssf = 1;
+			props.max_ssf = 1;
+			props.maxbufsize = 65536;
+			gensec_sasl_state->wrap = true;
 		}
 		if (gensec_security->want_features & GENSEC_FEATURE_SEAL) {
 			props.min_ssf = 40;
-		}
-		
-		props.max_ssf = UINT_MAX;
-		props.maxbufsize = 65536;
-		sasl_ret = sasl_setprop(gensec_sasl_state->conn, SASL_SEC_PROPS, &props);
-		if (sasl_ret != SASL_OK) {
-			return sasl_nt_status(sasl_ret);
+			props.max_ssf = UINT_MAX;
+			props.maxbufsize = 65536;
+			gensec_sasl_state->wrap = true;
 		}
 
-	} else {
+		sasl_ret = sasl_setprop(gensec_sasl_state->conn, SASL_SEC_PROPS, &props);
+	}
+	if (sasl_ret != SASL_OK) {
 		DEBUG(1, ("GENSEC SASL: client_new failed: %s\n", sasl_errdetail(gensec_sasl_state->conn)));
 	}
 	return sasl_nt_status(sasl_ret);
@@ -281,7 +283,14 @@ static bool gensec_sasl_have_feature(struct gensec_security *gensec_security,
 	struct gensec_sasl_state *gensec_sasl_state = talloc_get_type(gensec_security->private_data,
 								      struct gensec_sasl_state);
 	sasl_ssf_t ssf;
-	int sasl_ret = sasl_getprop(gensec_sasl_state->conn, SASL_SSF,
+	int sasl_ret;
+
+	/* If we did not elect to wrap, then we have neither sign nor seal, no matter what the SSF claims */
+	if (!gensec_sasl_state->wrap) {
+		return false;
+	}
+	
+	sasl_ret = sasl_getprop(gensec_sasl_state->conn, SASL_SSF,
 			(const void**)&ssf);
 	if (sasl_ret != SASL_OK) {
 		return false;
