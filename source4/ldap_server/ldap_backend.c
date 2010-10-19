@@ -27,6 +27,7 @@
 #include "smbd/service_stream.h"
 #include "dsdb/samdb/samdb.h"
 #include "lib/ldb/include/ldb_errors.h"
+#include "lib/ldb/include/ldb_module.h"
 #include "ldb_wrap.h"
 
 #define VALID_DN_SYNTAX(dn) do {\
@@ -319,6 +320,10 @@ static int ldb_add_with_controls(struct ldb_context *ldb,
 		return ret;
 	}
 
+	ldb_req_mark_untrusted(req);
+
+	LDB_REQ_SET_LOCATION(req);
+
 	ret = ldb_request(ldb, req);
 	if (ret == LDB_SUCCESS) {
 		ret = ldb_wait(req->handle, LDB_WAIT_ALL);
@@ -365,6 +370,10 @@ static int ldb_mod_req_with_controls(struct ldb_context *ldb,
 		return ret;
 	}
 
+	ldb_req_mark_untrusted(req);
+
+	LDB_REQ_SET_LOCATION(req);
+
 	ret = ldb_request(ldb, req);
 	if (ret == LDB_SUCCESS) {
 		ret = ldb_wait(req->handle, LDB_WAIT_ALL);
@@ -403,6 +412,10 @@ static int ldb_del_req_with_controls(struct ldb_context *ldb,
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
+
+	ldb_req_mark_untrusted(req);
+
+	LDB_REQ_SET_LOCATION(req);
 
 	ret = ldb_request(ldb, req);
 	if (ret == LDB_SUCCESS) {
@@ -443,6 +456,10 @@ int ldb_rename_with_controls(struct ldb_context *ldb,
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
+
+	ldb_req_mark_untrusted(req);
+
+	LDB_REQ_SET_LOCATION(req);
 
 	ret = ldb_request(ldb, req);
 	if (ret == LDB_SUCCESS) {
@@ -579,6 +596,10 @@ static NTSTATUS ldapsrv_SearchRequest(struct ldapsrv_call *call)
 
 	ldb_request_add_control(lreq, DSDB_CONTROL_SEARCH_APPLY_ACCESS, false, NULL);
 	ldb_set_timeout(samdb, lreq, req->timelimit);
+
+	ldb_req_mark_untrusted(lreq);
+
+	LDB_REQ_SET_LOCATION(lreq);
 
 	ldb_ret = ldb_request(samdb, lreq);
 
