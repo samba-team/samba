@@ -68,7 +68,6 @@ class SamDB(samba.Ldb):
         return dsdb._am_rodc(self)
 
     def domain_dn(self):
-        # find the DNs for the domain
         res = self.search(base="",
                           scope=ldb.SCOPE_BASE,
                           expression="(defaultNamingContext=*)",
