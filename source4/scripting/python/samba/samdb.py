@@ -274,7 +274,8 @@ member: %s
 
         user_dn = "CN=%s,%s,%s" % (cn, (userou or "CN=Users"), self.domain_dn())
 
-        user_principal_name = "%s@%s" % (username, self.domain_dn().replace("DC=", "").replace(",", "."))
+        dnsdomain = ldb.Dn(self, self.domain_dn()).canonical_str().replace("/", "")
+        user_principal_name = "%s@%s" % (username, dnsdomain)
         # The new user record. Note the reliance on the SAMLDB module which
         # fills in the default informations
         ldbmessage = {"dn": user_dn,
