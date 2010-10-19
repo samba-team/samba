@@ -936,32 +936,6 @@ bld.RECURSE('librpc')
 
 bld.SAMBA_MKVERSION('include/version.h')
 
-for prefix in bld.env.MODULE_PREFIXES:
-
-    if prefix == 'auth': continue
-    if prefix == 'pdb': continue
-    if prefix == 'idmap': continue
-    if prefix == 'charset': continue
-    if prefix == 'perfcount': continue
-    if prefix == 'gpext': continue
-    if prefix == 'vfs': continue
-    if prefix == 'nss_info': continue
-    if prefix == 'rpc': continue
-
-    static_key = "%s_STATIC" % prefix.upper()
-    shared_key = "%s_SHARED" % prefix.upper()
-
-    for module in bld.env[static_key]:
-        bld.SAMBA_SUBSYSTEM(module,
-                            source="${%s_SRC}" % module,
-                            vars=locals())
-
-    # Set up subsystems for the shared modules
-    for module in bld.env[shared_key]:
-        bld.SAMBA_MODULE(module,
-                            source="${%s_SRC}" % module,
-                            vars=locals())
-
 ######################## SUBSYSTEMS #################################
 
 bld.SAMBA_SUBSYSTEM('WBCOMMON',
