@@ -689,6 +689,7 @@ int dsdb_module_load_partition_usn(struct ldb_module *module, struct ldb_dn *dn,
 		   an implicit value of zero */
 		*uSN = 0;
 		talloc_free(tmp_ctx);
+		ldb_reset_err_string(ldb);
 		return LDB_SUCCESS;
 	}
 
