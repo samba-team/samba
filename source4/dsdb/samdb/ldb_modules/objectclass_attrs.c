@@ -139,6 +139,19 @@ static int attr_handler(struct oc_context *ac)
 			}
 		}
 
+		/* Multi-valued replace operations are generally denied but
+		 * there do exist exceptions where attributes have the flag
+		 * "FLAG_ATTR_REQ_PARTIAL_SET_MEMBER" set. */
+		if ((ac->req->operation == LDB_MODIFY) &&
+		    (LDB_FLAG_MOD_TYPE(msg->elements[i].flags) == LDB_FLAG_MOD_REPLACE) &&
+		    (msg->elements[i].num_values > 1) &&
+		    ((attr->systemFlags & DS_FLAG_ATTR_REQ_PARTIAL_SET_MEMBER) == 0)) {
+			ldb_asprintf_errstring(ldb, "objectclass_attrs: attribute '%s' on entry '%s' is replaced multi-valued!",
+					       msg->elements[i].name,
+					       ldb_dn_get_linearized(msg->dn));
+			return LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS;
+		}
+
 		/* Substitute the attribute name to match in case */
 		msg->elements[i].name = attr->lDAPDisplayName;
 	}
