@@ -38,6 +38,8 @@
 
 static struct ldb_cmdline options; /* needs to be static for older compilers */
 
+enum ldb_cmdline_options { CMDLINE_RELAX=1 };
+
 static struct poptOption popt_options[] = {
 	POPT_AUTOHELP
 	{ "url",       'H', POPT_ARG_STRING, &options.url, 0, "database URL", "URL" },
@@ -62,6 +64,7 @@ static struct poptOption popt_options[] = {
 	{ "show-recycled", 0, POPT_ARG_NONE, NULL, 'R', "show recycled objects", NULL },
 	{ "show-deactivated-link", 0, POPT_ARG_NONE, NULL, 'd', "show deactivated links", NULL },
 	{ "reveal", 0, POPT_ARG_NONE, NULL, 'r', "reveal ldb internals", NULL },
+	{ "relax", 0, POPT_ARG_NONE, NULL, CMDLINE_RELAX, "pass relax control", NULL },
 	{ "cross-ncs", 0, POPT_ARG_NONE, NULL, 'N', "search across NC boundaries", NULL },
 	{ "extended-dn", 0, POPT_ARG_NONE, NULL, 'E', "show extended DNs", NULL },
 #if (_SAMBA_BUILD_ >= 4)
@@ -234,6 +237,12 @@ struct ldb_cmdline *ldb_cmdline_process(struct ldb_context *ldb,
 			break;
 		case 'r':
 			if (!add_control(ret, "reveal_internals:0")) {
+				fprintf(stderr, __location__ ": out of memory\n");
+				goto failed;
+			}
+			break;
+		case CMDLINE_RELAX:
+			if (!add_control(ret, "relax:0")) {
 				fprintf(stderr, __location__ ": out of memory\n");
 				goto failed;
 			}
