@@ -55,6 +55,7 @@ static bool smbd_lock_socket_internal(struct smbd_server_connection *sconn)
 	} while (!ok && (errno == EINTR));
 
 	if (!ok) {
+		DEBUG(1, ("fcntl_lock failed: %s\n", strerror(errno)));
 		return false;
 	}
 
@@ -91,6 +92,7 @@ static bool smbd_unlock_socket_internal(struct smbd_server_connection *sconn)
 	} while (!ok && (errno == EINTR));
 
 	if (!ok) {
+		DEBUG(1, ("fcntl_lock failed: %s\n", strerror(errno)));
 		return false;
 	}
 
