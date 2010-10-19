@@ -48,6 +48,8 @@ struct ldb_module_ops;
 struct ldb_backend_ops;
 
 #define LDB_HANDLE_FLAG_DONE_CALLED 1
+/* call is from an untrusted source - eg. over ldap:// */
+#define LDB_HANDLE_FLAG_UNTRUSTED   2
 
 struct ldb_handle {
 	int status;

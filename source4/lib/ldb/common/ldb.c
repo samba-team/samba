@@ -1810,3 +1810,20 @@ const char *ldb_req_location(struct ldb_request *req)
 {
 	return req->handle->location;
 }
+
+/**
+  mark a request as untrusted. This tells the rootdse module to remove
+  unregistered controls
+ */
+void ldb_req_mark_untrusted(struct ldb_request *req)
+{
+	req->handle->flags |= LDB_HANDLE_FLAG_UNTRUSTED;
+}
+
+/**
+   return true is a request is untrusted
+ */
+bool ldb_req_is_untrusted(struct ldb_request *req)
+{
+	return (req->handle->flags & LDB_HANDLE_FLAG_UNTRUSTED) != 0;
+}

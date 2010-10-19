@@ -216,4 +216,15 @@ void ldb_set_default_dns(struct ldb_context *ldb);
 */
 int ldb_reply_add_control(struct ldb_reply *ares, const char *oid, bool critical, void *data);
 
+/**
+  mark a request as untrusted. This tells the rootdse module to remove
+  unregistered controls
+ */
+void ldb_req_mark_untrusted(struct ldb_request *req);
+
+/**
+   return true is a request is untrusted
+ */
+bool ldb_req_is_untrusted(struct ldb_request *req);
+
 #endif
