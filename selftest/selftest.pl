@@ -253,7 +253,7 @@ sub run_testsuite($$$$$)
 	if ($? == -1) {
 		Subunit::progress_pop();
 		Subunit::end_testsuite($name, "error", "Unable to run $cmd: $!");
-		return 0;
+		exit(1);
 	} elsif ($? & 127) {
 		Subunit::end_testsuite($name, "error",
 			sprintf("%s died with signal %d, %s coredump\n", $cmd, ($? & 127),  ($? & 128) ? 'with' : 'without'));
@@ -953,7 +953,8 @@ $envvarstr
 		if (not defined($envvars)) {
 			Subunit::start_testsuite($name);
 			Subunit::end_testsuite($name, "error",
-				"unable to set up environment $envname");
+				"unable to set up environment $envname - exiting");
+			exit(1);
 			next;
 		}
 
