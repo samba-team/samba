@@ -27,6 +27,17 @@ case "$1" in
 	done
 	;;
 
+    updateip)
+	oiface=$2
+	niface=$3
+	cat $CTDB_BASE/static-routes | egrep "^$niface " | while read IFACE DEST GW; do
+	    ip route add $DEST via $GW dev $IFACE >/dev/null 2>/dev/null
+	done
+	cat $CTDB_BASE/static-routes | egrep "^$oiface " | while read IFACE DEST GW; do
+	    ip route add $DEST via $GW dev $IFACE >/dev/null 2>/dev/null
+	done
+	;;
+
     *)
 	ctdb_standard_event_handler "$@"
 	;;
