@@ -535,33 +535,83 @@ static int rootdse_callback(struct ldb_request *req, struct ldb_reply *ares)
 }
 
 /*
-  mark our registered controls as non-critical in the request
+  filter from controls from clients in several ways
 
-  This is needed as clients may mark controls as critical even if they
-  are not needed at all in a request. For example, the centrify client
-  sets the SD_FLAGS control as critical on ldap modify requests which
-  are setting the dNSHostName attribute on the machine account. That
-  request doesn't need SD_FLAGS at all, but centrify adds it on all
-  ldap requests.
+  1) mark our registered controls as non-critical in the request
+
+    This is needed as clients may mark controls as critical even if
+    they are not needed at all in a request. For example, the centrify
+    client sets the SD_FLAGS control as critical on ldap modify
+    requests which are setting the dNSHostName attribute on the
+    machine account. That request doesn't need SD_FLAGS at all, but
+    centrify adds it on all ldap requests.
+
+  2) if this request is untrusted then remove any non-registered
+     controls that are non-critical
+
+    This is used on ldap:// connections to prevent remote users from
+    setting an internal control that may be dangerous
+
+  3) if this request is untrusted then fail any request that includes
+     a critical non-registered control
  */
-static void rootdse_mark_noncritical(struct ldb_module *module, struct ldb_control **controls)
+static int rootdse_filter_controls(struct ldb_module *module, struct ldb_request *req)
 {
 	unsigned int i, j;
 	struct private_data *priv = talloc_get_type(ldb_module_get_private(module), struct private_data);
+	bool is_untrusted;
 
-	if (!controls) return;
+	if (!req->controls) {
+		return LDB_SUCCESS;
+	}
 
-	for (i=0; controls[i]; i++) {
-		if (controls[i]->critical == 0) {
+	is_untrusted = ldb_req_is_untrusted(req);
+
+	for (i=0; req->controls[i]; i++) {
+		bool is_registered = false;
+		bool is_critical = (req->controls[i]->critical != 0);
+
+		if (req->controls[i]->oid == NULL) {
 			continue;
 		}
-		for (j=0; j<priv->num_controls; j++) {
-			if (strcasecmp(priv->controls[j], controls[i]->oid) == 0) {
-				controls[i]->critical = 0;
+
+		if (is_untrusted || is_critical) {
+			for (j=0; j<priv->num_controls; j++) {
+				if (strcasecmp(priv->controls[j], req->controls[i]->oid) == 0) {
+					is_registered = true;
+					break;
+				}
 			}
 		}
+
+		if (is_untrusted && !is_registered) {
+			if (!is_critical) {
+				/* remove it by marking the oid NULL */
+				req->controls[i]->oid = NULL;
+				req->controls[i]->data = NULL;
+				req->controls[i]->critical = 0;
+				continue;
+			}
+			/* its a critical unregistered control - give
+			   an error */
+			ldb_asprintf_errstring(ldb_module_get_ctx(module),
+					       "Attempt to use critical non-registered control '%s'",
+					       req->controls[i]->oid);
+			return LDB_ERR_UNSUPPORTED_CRITICAL_EXTENSION;
+		}
+
+		if (!is_critical) {
+			continue;
+		}
+
+		if (is_registered) {
+			req->controls[i]->critical = 0;
+		}
 	}
+
+	return LDB_SUCCESS;
 }
+
 
 static int rootdse_search(struct ldb_module *module, struct ldb_request *req)
 {
@@ -570,7 +620,10 @@ static int rootdse_search(struct ldb_module *module, struct ldb_request *req)
 	struct ldb_request *down_req;
 	int ret;
 
-	rootdse_mark_noncritical(module, req->controls);
+	ret = rootdse_filter_controls(module, req);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
 
 	ldb = ldb_module_get_ctx(module);
 
@@ -1036,8 +1089,12 @@ static int rootdse_schemaupdatenow(struct ldb_module *module, struct ldb_request
 static int rootdse_add(struct ldb_module *module, struct ldb_request *req)
 {
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
+	int ret;
 
-	rootdse_mark_noncritical(module, req->controls);
+	ret = rootdse_filter_controls(module, req);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
 
 	/*
 		If dn is not "" we should let it pass through
@@ -1103,8 +1160,12 @@ static int rootdse_become_master(struct ldb_module *module,
 static int rootdse_modify(struct ldb_module *module, struct ldb_request *req)
 {
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
+	int ret;
 
-	rootdse_mark_noncritical(module, req->controls);
+	ret = rootdse_filter_controls(module, req);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
 
 	/*
 		If dn is not "" we should let it pass through
@@ -1146,8 +1207,12 @@ static int rootdse_modify(struct ldb_module *module, struct ldb_request *req)
 static int rootdse_delete(struct ldb_module *module, struct ldb_request *req)
 {
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
+	int ret;
 
-	rootdse_mark_noncritical(module, req->controls);
+	ret = rootdse_filter_controls(module, req);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
 
 	/*
 		If dn is not "" we should let it pass through
