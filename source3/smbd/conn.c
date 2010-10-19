@@ -245,34 +245,92 @@ bool conn_close_all(struct smbd_server_connection *sconn)
 }
 
 /****************************************************************************
+ Update last used timestamps.
+****************************************************************************/
+
+static void conn_lastused_update(struct smbd_server_connection *sconn,time_t t)
+{
+	if (sconn->using_smb2) {
+		/* SMB2 */
+		struct smbd_smb2_session *sess;
+		for (sess = sconn->smb2.sessions.list; sess; sess = sess->next) {
+			struct smbd_smb2_tcon *ptcon;
+
+			for (ptcon = sess->tcons.list; ptcon; ptcon = ptcon->next) {
+				connection_struct *conn = ptcon->compat_conn;
+				/* Update if connection wasn't idle. */
+				if (conn && conn->lastused != conn->lastused_count) {
+					conn->lastused = t;
+					conn->lastused_count = t;
+				}
+			}
+		}
+	} else {
+		/* SMB1 */
+		connection_struct *conn;
+		for (conn=sconn->smb1.tcons.Connections;conn;conn=conn->next) {
+			/* Update if connection wasn't idle. */
+			if (conn->lastused != conn->lastused_count) {
+				conn->lastused = t;
+				conn->lastused_count = t;
+			}
+		}
+	}
+}
+
+/****************************************************************************
  Idle inactive connections.
 ****************************************************************************/
 
-bool conn_idle_all(struct smbd_server_connection *sconn,time_t t)
+bool conn_idle_all(struct smbd_server_connection *sconn, time_t t)
 {
 	int deadtime = lp_deadtime()*60;
-	connection_struct *conn;
 
-	if (deadtime <= 0)
+	conn_lastused_update(sconn, t);
+
+	if (deadtime <= 0) {
 		deadtime = DEFAULT_SMBD_TIMEOUT;
+	}
 
-	for (conn=sconn->smb1.tcons.Connections;conn;conn=conn->next) {
+	if (sconn->using_smb2) {
+		/* SMB2 */
+		struct smbd_smb2_session *sess;
+		for (sess = sconn->smb2.sessions.list; sess; sess = sess->next) {
+			struct smbd_smb2_tcon *ptcon;
 
-		time_t age = t - conn->lastused;
+			for (ptcon = sess->tcons.list; ptcon; ptcon = ptcon->next) {
+				time_t age;
+				connection_struct *conn = ptcon->compat_conn;
 
-		/* Update if connection wasn't idle. */
-		if (conn->lastused != conn->lastused_count) {
-			conn->lastused = t;
-			conn->lastused_count = t;
+				if (conn == NULL) {
+					continue;
+				}
+
+				age = t - conn->lastused;
+				/* close dirptrs on connections that are idle */
+				if (age > DPTR_IDLE_TIMEOUT) {
+					dptr_idlecnum(conn);
+				}
+
+				if (conn->num_files_open > 0 || age < deadtime) {
+					return false;
+				}
+			}
 		}
+	} else {
+		/* SMB1 */
+		connection_struct *conn;
+		for (conn=sconn->smb1.tcons.Connections;conn;conn=conn->next) {
+			time_t age = t - conn->lastused;
 
-		/* close dirptrs on connections that are idle */
-		if (age > DPTR_IDLE_TIMEOUT) {
-			dptr_idlecnum(conn);
-		}
+			/* close dirptrs on connections that are idle */
+			if (age > DPTR_IDLE_TIMEOUT) {
+				dptr_idlecnum(conn);
+			}
 
-		if (conn->num_files_open > 0 || age < deadtime) {
-			return False;
+			if (conn->num_files_open > 0 || age < deadtime) {
+				return false;
+			}
 		}
 	}
 
@@ -281,10 +339,10 @@ bool conn_idle_all(struct smbd_server_connection *sconn,time_t t)
 	 * idle with a handle open.
 	 */
 	if (check_open_pipes()) {
-		return False;
+		return false;
 	}
 
-	return True;
+	return true;
 }
 
 /****************************************************************************
