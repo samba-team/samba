@@ -207,7 +207,7 @@ POPT_LIB_SRC = '''lib/popt_common.c'''
 
 PARAM_WITHOUT_REG_SRC = '''param/loadparm.c param/util.c param/loadparm_server_role.c
                            lib/sharesec.c lib/ldap_debug_handler.c'''
-PARAM_REG_ADD_SRC = '''${REG_SMBCONF_SRC} ${LIBSMBCONF_SRC}'''
+PARAM_REG_ADD_SRC = '''${REG_SMBCONF_SRC}'''
 PARAM_SRC = '''${PARAM_REG_ADD_SRC}'''
 
 KRBCLIENT_SRC = '''libads/kerberos.c libads/ads_status.c'''
@@ -586,7 +586,6 @@ SMBD_SRC_BASE = '''${SMBD_SRC_SRV}
                 ${OPLOCK_SRC} ${NOTIFY_SRC} ${FNAME_UTIL_SRC}
                 ${REG_FULL_SRC}
                 ${BUILDOPT_SRC}
-                ${LIBSMBCONF_SRC}
                 ${LIBCLI_SPOOLSS_SRC}
                 ${LIBCLI_SRVSVC_SRC}
                 ${LIBCLI_LSA_SRC}
@@ -726,7 +725,6 @@ LIBNETAPI_SRC0 = '''lib/netapi/netapi.c
                     lib/netapi/netlogon.c'''
 
 LIBNETAPI_SRC = '''${LIBNETAPI_SRC0}
-                   ${LIBSMBCONF_SRC}
                    ${REG_SMBCONF_SRC}
                    auth/token_util.c
                    ${LIBCLI_INITSHUTDOWN_SRC}
@@ -942,7 +940,7 @@ bld.SAMBA_LIBRARY('libnetapi',
                     public_deps='''talloc tdb cap libwbclient LIB_NONSMBD LIBSMB KRBCLIENT
                     PASSDB SMBLDAP GROUPDB PARAM_WITHOUT_REG DYNCONFIG
                     LIBMSRPC_GEN LIBMSRPC LIBADS LIBNET DCUTIL NDR_LIBNETAPI
-                    RPC_CLIENT_SCHANNEL''',
+                    RPC_CLIENT_SCHANNEL LIBSMBCONF''',
                     public_headers='lib/netapi/netapi.h',
                     vars=locals())
 
@@ -1014,7 +1012,7 @@ bld.SAMBA_SUBSYSTEM('PARAM_WITHOUT_REG',
 
 bld.SAMBA_SUBSYSTEM('PARAM',
                     source=PARAM_SRC,
-                    deps='PARAM_WITHOUT_REG DYNCONFIG',
+                    deps='PARAM_WITHOUT_REG DYNCONFIG LIBSMBCONF',
                     vars=locals())
 
 bld.SAMBA_SUBSYSTEM('REGFIO',
@@ -1096,6 +1094,10 @@ bld.SAMBA_SUBSYSTEM('LIBAFS_SETTOKEN',
                     source=AFS_SETTOKEN_SRC,
                     vars=locals())
 
+bld.SAMBA_SUBSYSTEM('LIBSMBCONF',
+                    source=LIBSMBCONF_SRC,
+                    vars=locals())
+
 bld.SAMBA_SUBSYSTEM('SMBD_BASE',
                     source=SMBD_SRC_BASE,
                     deps='''tdb tevent dl krb5 ldap gssapi gssapi_krb5
@@ -1104,6 +1106,7 @@ bld.SAMBA_SUBSYSTEM('SMBD_BASE',
                     LIBMSRPC_GEN LIBMSRPC LIBADS LIBADS_SERVER LIBADS_PRINTER
                     vfs vfs_default vfs_posixacl auth rpc LOCKING LIBAFS LIBAFS_SETTOKEN PROFILE
                     PRINTING PRINTBACKEND NDR_XATTR REGFIO SOCKET_WRAPPER
+                    LIBSMBCONF
                     ''',
                     vars=locals())
 
