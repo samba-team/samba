@@ -820,7 +820,7 @@ MSGTEST_SRC = '''torture/msgtest.c'''
 
 LOCKTEST_SRC = '''torture/locktest.c ${FNAME_UTIL_SRC}'''
 
-NSSTEST_SRC = '''torture/nsstest.c ${LIBSAMBAUTIL_SRC}'''
+NSSTEST_SRC = '''../nsswitch/nsstest.c ${LIBSAMBAUTIL_SRC}'''
 
 PDBTEST_SRC = '''torture/pdbtest.c'''
 

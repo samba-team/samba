@@ -1216,7 +1216,7 @@ LOCKTEST_OBJ = torture/locktest.o $(PARAM_OBJ) $(LOCKING_OBJ) $(KRBCLIENT_OBJ) \
                $(LIBSMB_OBJ) $(LIB_NONSMBD_OBJ) \
                $(LIBNDR_GEN_OBJ0) $(FNAME_UTIL_OBJ)
 
-NSSTEST_OBJ = torture/nsstest.o $(LIBSAMBAUTIL_OBJ)
+NSSTEST_OBJ = ../nsswitch/nsstest.o $(LIBSAMBAUTIL_OBJ)
 
 PDBTEST_OBJ = torture/pdbtest.o $(PARAM_OBJ) $(LIBSMB_OBJ) $(KRBCLIENT_OBJ) \
 		$(LIB_NONSMBD_OBJ) $(PASSDB_OBJ) $(GROUPDB_OBJ) \
