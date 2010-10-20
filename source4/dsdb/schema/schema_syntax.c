@@ -30,6 +30,7 @@
 #include "system/time.h"
 #include "../lib/util/charset/charset.h"
 #include "librpc/ndr/libndr.h"
+#include "../lib/util/asn1.h"
 
 /**
  * Initialize dsdb_syntax_ctx with default values
@@ -1303,6 +1304,44 @@ static WERROR dsdb_syntax_OID_ldb_to_drsuapi(const struct dsdb_syntax_ctx *ctx,
 	return _dsdb_syntax_auto_OID_ldb_to_drsuapi(ctx, attr, in, mem_ctx, out);
 }
 
+static WERROR _dsdb_syntax_OID_validate_numericoid(const struct dsdb_syntax_ctx *ctx,
+						   const struct dsdb_attribute *attr,
+						   const struct ldb_message_element *in)
+{
+	unsigned int i;
+	TALLOC_CTX *tmp_ctx;
+
+	tmp_ctx = talloc_new(ctx->ldb);
+	W_ERROR_HAVE_NO_MEMORY(tmp_ctx);
+
+	for (i=0; i < in->num_values; i++) {
+		DATA_BLOB blob;
+		const char *oid_out;
+		const char *oid = (const char*)in->values[i].data;
+
+		if (!ber_write_OID_String(tmp_ctx, &blob, oid)) {
+			DEBUG(0,("ber_write_OID_String() failed for %s\n", oid));
+			talloc_free(tmp_ctx);
+			return WERR_INVALID_PARAMETER;
+		}
+
+		if (!ber_read_OID_String(tmp_ctx, blob, &oid_out)) {
+			DEBUG(0,("ber_read_OID_String() failed for %s\n",
+				 hex_encode_talloc(tmp_ctx, blob.data, blob.length)));
+			talloc_free(tmp_ctx);
+			return WERR_INVALID_PARAMETER;
+		}
+
+		if (strcmp(oid, oid_out) != 0) {
+			talloc_free(tmp_ctx);
+			return WERR_INVALID_PARAMETER;
+		}
+	}
+
+	talloc_free(tmp_ctx);
+	return WERR_OK;
+}
+
 static WERROR dsdb_syntax_OID_validate_ldb(const struct dsdb_syntax_ctx *ctx,
 					   const struct dsdb_attribute *attr,
 					   const struct ldb_message_element *in)
@@ -1316,14 +1355,19 @@ static WERROR dsdb_syntax_OID_validate_ldb(const struct dsdb_syntax_ctx *ctx,
 		return WERR_FOOBAR;
 	}
 
+	switch (attr->attributeID_id) {
+	case DRSUAPI_ATTRIBUTE_governsID:
+	case DRSUAPI_ATTRIBUTE_attributeID:
+	case DRSUAPI_ATTRIBUTE_attributeSyntax:
+		return _dsdb_syntax_OID_validate_numericoid(ctx, attr, in);
+	}
+
 	/*
 	 * TODO: optimize and verify this code
 	 */
 
 	tmp_ctx = talloc_new(ctx->ldb);
-	if (tmp_ctx == NULL) {
-		return WERR_NOMEM;
-	}
+	W_ERROR_HAVE_NO_MEMORY(tmp_ctx);
 
 	status = dsdb_syntax_OID_ldb_to_drsuapi(ctx,
 						attr,
