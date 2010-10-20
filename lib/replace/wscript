@@ -229,6 +229,25 @@ def configure(conf):
                            addmain=False,
                            msg='Checking for working strptime'):
         conf.DEFINE('REPLACE_STRPTIME', 1)
+    else:
+       conf.CHECK_CODE('''
+                        const char *s = "20070414101546Z";
+                        char *ret;
+                        struct tm t;
+                        memset(&t, 0, sizeof(t));
+                        ret = strptime(s, "%Y%m%d%H%M%S", &t);
+                        if (ret == NULL || t.tm_wday != 6) {
+                            return 0;
+                        } else {
+                            return 1;
+                        }
+                        ''',
+                        msg="Checking correct behavior of strptime",
+                        headers = 'time.h',
+                        execute = True,
+                        define_ret = True,
+                        define = 'REPLACE_STRPTIME',
+                        )
 
     if conf.CONFIG_SET('HAVE_KRB5_H'):
         # Check for KRB5_DEPRECATED handling
