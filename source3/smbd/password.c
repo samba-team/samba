@@ -222,7 +222,7 @@ int register_homes_share(const char *username)
 		return result;
 	}
 
-	pwd = getpwnam_alloc(talloc_tos(), username);
+	pwd = Get_Pwnam_alloc(talloc_tos(), username);
 
 	if ((pwd == NULL) || (pwd->pw_dir[0] == '\0')) {
 		DEBUG(3, ("No home directory defined for user '%s'\n",

@@ -641,7 +641,7 @@ static NTSTATUS get_guest_info3(TALLOC_CTX *mem_ctx,
 	struct passwd *pwd;
 	const char *tmp;
 
-	pwd = getpwnam_alloc(mem_ctx, guest_account);
+	pwd = Get_Pwnam_alloc(mem_ctx, guest_account);
 	if (pwd == NULL) {
 		DEBUG(0,("SamInfo3_for_guest: Unable to locate guest "
 			 "account [%s]!\n", guest_account));
@@ -793,7 +793,7 @@ NTSTATUS make_serverinfo_from_username(TALLOC_CTX *mem_ctx,
 	struct passwd *pwd;
 	NTSTATUS status;
 
-	pwd = getpwnam_alloc(talloc_tos(), username);
+	pwd = Get_Pwnam_alloc(talloc_tos(), username);
 	if (pwd == NULL) {
 		return NT_STATUS_NO_SUCH_USER;
 	}

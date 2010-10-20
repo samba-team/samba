@@ -178,7 +178,7 @@ LIB_SRC = '''${LIBSAMBAUTIL_SRC} ${UTIL_SRC}
           lib/system.c lib/sendfile.c lib/recvfile.c lib/time.c
           lib/username.c
           ../libds/common/flag_mapping.c
-          lib/util_pw.c lib/access.c lib/smbrun.c
+          lib/access.c lib/smbrun.c
           lib/bitmap.c lib/dprintf.c ${UTIL_REG_SRC}
           lib/wins_srv.c
           lib/util_str.c lib/clobber.c lib/util_sid.c

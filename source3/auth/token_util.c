@@ -757,14 +757,14 @@ NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
 		 * about the mapping of guest sid to lp_guestaccount()
 		 * username and will return the unix_pw info for a guest
 		 * user. Use it if it's there, else lookup the *uid details
-		 * using getpwnam_alloc(). See bug #6291 for details. JRA.
+		 * using Get_Pwnam_alloc(). See bug #6291 for details. JRA.
 		 */
 
 		/* We must always assign the *uid. */
 		if (sam_acct->unix_pw == NULL) {
-			struct passwd *pwd = getpwnam_alloc(sam_acct, *found_username );
+			struct passwd *pwd = Get_Pwnam_alloc(sam_acct, *found_username );
 			if (!pwd) {
-				DEBUG(10, ("getpwnam_alloc failed for %s\n",
+				DEBUG(10, ("Get_Pwnam_alloc failed for %s\n",
 					*found_username));
 				result = NT_STATUS_NO_SUCH_USER;
 				goto done;

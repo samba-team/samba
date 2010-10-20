@@ -352,7 +352,7 @@ static bool guest_user_info( struct samu *user )
 	NTSTATUS result;
 	const char *guestname = lp_guestaccount();
 
-	pwd = getpwnam_alloc(talloc_tos(), guestname);
+	pwd = Get_Pwnam_alloc(talloc_tos(), guestname);
 	if (pwd == NULL) {
 		DEBUG(0,("guest_user_info: Unable to locate guest account [%s]!\n", 
 			guestname));
@@ -1546,7 +1546,7 @@ static NTSTATUS pdb_default_enum_group_memberships(struct pdb_methods *methods,
 	/* Ignore the primary group SID.  Honor the real Unix primary group.
 	   The primary group SID is only of real use to Windows clients */
 
-	if ( !(pw = getpwnam_alloc(mem_ctx, username)) ) {
+	if ( !(pw = Get_Pwnam_alloc(mem_ctx, username)) ) {
 		return NT_STATUS_NO_SUCH_USER;
 	}
 

@@ -1198,9 +1198,9 @@ static bool build_smb_pass (struct smb_passwd *smb_pw, const struct samu *sampas
 
 		/* If the user specified a RID, make sure its able to be both stored and retreived */
 		if (rid == DOMAIN_RID_GUEST) {
-			struct passwd *passwd = getpwnam_alloc(NULL, lp_guestaccount());
+			struct passwd *passwd = Get_Pwnam_alloc(NULL, lp_guestaccount());
 			if (!passwd) {
-				DEBUG(0, ("Could not find guest account via getpwnam()! (%s)\n", lp_guestaccount()));
+				DEBUG(0, ("Could not find guest account via Get_Pwnam_alloc()! (%s)\n", lp_guestaccount()));
 				return False;
 			}
 			smb_pw->smb_userid=passwd->pw_uid;

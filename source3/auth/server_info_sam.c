@@ -70,7 +70,7 @@ NTSTATUS make_server_info_sam(struct auth_serversupplied_info **server_info,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if ( !(pwd = getpwnam_alloc(result, username)) ) {
+	if ( !(pwd = Get_Pwnam_alloc(result, username)) ) {
 		DEBUG(1, ("User %s in passdb, but getpwnam() fails!\n",
 			  pdb_get_username(sampass)));
 		TALLOC_FREE(result);

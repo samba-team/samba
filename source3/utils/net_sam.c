@@ -1856,7 +1856,7 @@ doma_done:
 
 		sid_compose(&sid, get_global_sam_sid(), DOMAIN_RID_GUEST);
 
-		pwd = getpwnam_alloc(tc, lp_guestaccount());
+		pwd = Get_Pwnam_alloc(tc, lp_guestaccount());
 
 		if (!pwd) {
 			if (domusers_gid == -1) {
@@ -1927,7 +1927,7 @@ doma_done:
 
 	d_printf(_("Checking Guest's group.\n"));
 
-	pwd = getpwnam_alloc(tc, lp_guestaccount());
+	pwd = Get_Pwnam_alloc(tc, lp_guestaccount());
 	if (!pwd) {
 		d_fprintf(stderr,
 			  _("Failed to find just created Guest account!\n"
