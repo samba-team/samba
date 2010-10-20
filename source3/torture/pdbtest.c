@@ -277,7 +277,7 @@ int main(int argc, char **argv)
 		exit(1);
 	}
 	
-	if ((pwd = getpwnam_alloc(ctx, unix_user)) == NULL) {
+	if ((pwd = Get_Pwnam_alloc(ctx, unix_user)) == NULL) {
 		fprintf(stderr, "Error getting user information for %s\n", unix_user);
 		exit(1);
 	}
