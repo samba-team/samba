@@ -52,11 +52,12 @@ bld.SAMBA_SUBSYSTEM('PAM_ERRORS',
 	)
 
 
-bld.SAMBA_SUBSYSTEM('auth',
-	source='auth.c auth_util.c auth_simple.c',
-	autoproto='auth_proto.h',
-	deps='LIBSAMBA-UTIL LIBSECURITY SAMDB CREDENTIALS UTIL_TEVENT',
-	)
+bld.SAMBA_LIBRARY('auth',
+                  source='auth.c auth_util.c auth_simple.c',
+                  autoproto='auth_proto.h',
+                  deps='LIBSAMBA-UTIL LIBSECURITY SAMDB CREDENTIALS UTIL_TEVENT',
+                  private_library=True
+                  )
 
 bld.SAMBA_MODULE('auth_server_service',
 	source='auth_server_service.c',
