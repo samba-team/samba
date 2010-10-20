@@ -298,7 +298,7 @@ int ltdb_cache_load(struct ldb_module *module)
 	baseinfo = ldb_msg_new(ltdb->cache);
 	if (baseinfo == NULL) goto failed;
 
-	baseinfo_dn = ldb_dn_new(module, ldb, LTDB_BASEINFO);
+	baseinfo_dn = ldb_dn_new(baseinfo, ldb, LTDB_BASEINFO);
 	if (baseinfo_dn == NULL) goto failed;
 
 	r= ltdb_search_dn1(module, baseinfo_dn, baseinfo);
@@ -351,6 +351,7 @@ int ltdb_cache_load(struct ldb_module *module)
 	ltdb_attributes_unload(module);
 
 	talloc_free(ltdb->cache->indexlist);
+	talloc_free(ltdb->cache->attributes);
 
 	ltdb->cache->indexlist = ldb_msg_new(ltdb->cache);
 	ltdb->cache->attributes = ldb_msg_new(ltdb->cache);
@@ -383,14 +384,12 @@ int ltdb_cache_load(struct ldb_module *module)
 done:
 	talloc_free(options);
 	talloc_free(baseinfo);
-	talloc_free(baseinfo_dn);
 	talloc_free(indexlist_dn);
 	return 0;
 
 failed:
 	talloc_free(options);
 	talloc_free(baseinfo);
-	talloc_free(baseinfo_dn);
 	talloc_free(indexlist_dn);
 	return -1;
 }
@@ -422,6 +421,7 @@ int ltdb_increase_sequence_number(struct ldb_module *module)
 
 	s = talloc_asprintf(msg, "%llu", ltdb->sequence_number+1);
 	if (!s) {
+		talloc_free(msg);
 		errno = ENOMEM;
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
@@ -458,6 +458,7 @@ int ltdb_increase_sequence_number(struct ldb_module *module)
 
 	s = ldb_timestring(msg, t);
 	if (s == NULL) {
+		talloc_free(msg);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
