@@ -29,6 +29,10 @@
 #include <stdio.h>
 #include <stdarg.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * @defgroup talloc The talloc API
  *
@@ -1699,6 +1703,10 @@ void talloc_set_log_stderr(void);
 
 #ifndef TALLOC_MAX_DEPTH
 #define TALLOC_MAX_DEPTH 10000
+#endif
+
+#ifdef __cplusplus
+} /* end of extern "C" */
 #endif
 
 #endif
