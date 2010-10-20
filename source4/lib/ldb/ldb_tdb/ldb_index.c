@@ -217,15 +217,13 @@ static int ltdb_dn_list_store_full(struct ldb_module *module, struct ldb_dn *dn,
 
 	msg = ldb_msg_new(module);
 	if (!msg) {
-		ldb_module_oom(module);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_module_oom(module);
 	}
 
 	ret = ldb_msg_add_fmt(msg, LTDB_IDXVERSION, "%u", LTDB_INDEXING_VERSION);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(msg);
-		ldb_module_oom(module);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_module_oom(module);
 	}
 
 	msg->dn = dn;
@@ -234,9 +232,8 @@ static int ltdb_dn_list_store_full(struct ldb_module *module, struct ldb_dn *dn,
 
 		ret = ldb_msg_add_empty(msg, LTDB_IDX, LDB_FLAG_MOD_ADD, &el);
 		if (ret != LDB_SUCCESS) {
-			ldb_module_oom(module);
 			talloc_free(msg);
-			return LDB_ERR_OPERATIONS_ERROR;
+			return ldb_module_oom(module);
 		}
 		el->values = list->dn;
 		el->num_values = list->count;
@@ -347,13 +344,13 @@ int ltdb_index_transaction_commit(struct ldb_module *module)
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 
 	ldb_reset_err_string(ldb);
+
 	if (ltdb->idxptr->itdb) {
 		tdb_traverse(ltdb->idxptr->itdb, ltdb_index_traverse_store, module);
 		tdb_close(ltdb->idxptr->itdb);
 	}
 
 	ret = ltdb->idxptr->error;
-
 	if (ret != LDB_SUCCESS) {
 		if (!ldb_errstring(ldb)) {
 			ldb_set_errstring(ldb, ldb_strerror(ret));
@@ -774,8 +771,7 @@ static int ltdb_index_dn_and(struct ldb_module *module,
 
 		list2 = talloc_zero(list, struct dn_list);
 		if (list2 == NULL) {
-			ldb_module_oom(module);
-			return LDB_ERR_OPERATIONS_ERROR;
+			return ldb_module_oom(module);
 		}
 			
 		ret = ltdb_index_dn(module, subtree, index_list, list2);
@@ -1023,23 +1019,20 @@ int ltdb_search_indexed(struct ltdb_context *ac, uint32_t *match_count)
 
 	dn_list = talloc_zero(ac, struct dn_list);
 	if (dn_list == NULL) {
-		ldb_module_oom(ac->module);
-		return LDB_ERR_OPERATIONS_ERROR;
+		return ldb_module_oom(ac->module);
 	}
 
 	switch (ac->scope) {
 	case LDB_SCOPE_BASE:
 		dn_list->dn = talloc_array(dn_list, struct ldb_val, 1);
 		if (dn_list->dn == NULL) {
-			ldb_module_oom(ac->module);
 			talloc_free(dn_list);
-			return LDB_ERR_OPERATIONS_ERROR;
+			return ldb_module_oom(ac->module);
 		}
 		dn_list->dn[0].data = discard_const_p(unsigned char, ldb_dn_get_linearized(ac->base));
 		if (dn_list->dn[0].data == NULL) {
-			ldb_module_oom(ac->module);
 			talloc_free(dn_list);
-			return LDB_ERR_OPERATIONS_ERROR;
+			return ldb_module_oom(ac->module);
 		}
 		dn_list->dn[0].length = strlen((char *)dn_list->dn[0].data);
 		dn_list->count = 1;
