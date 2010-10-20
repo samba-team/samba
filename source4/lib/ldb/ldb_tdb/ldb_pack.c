@@ -208,7 +208,6 @@ int ltdb_unpack_data(struct ldb_module *module,
 	}
 
 	if (message->num_elements == 0) {
-		message->elements = NULL;
 		return 0;
 	}
 	
