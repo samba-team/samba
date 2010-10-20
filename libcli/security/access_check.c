@@ -287,7 +287,7 @@ NTSTATUS sec_access_check_ds(const struct security_descriptor *sd,
         uint32_t bits_remaining;
         struct object_tree *node;
         const struct GUID *type;
-	struct dom_sid *ps_sid = dom_sid_parse_talloc(NULL, SID_NT_SELF);
+        struct dom_sid *ps_sid = dom_sid_parse_talloc(sd, SID_NT_SELF);
 
         *access_granted = access_desired;
         bits_remaining = access_desired;
@@ -304,13 +304,15 @@ NTSTATUS sec_access_check_ds(const struct security_descriptor *sd,
                 if (security_token_has_privilege(token, SEC_PRIV_SECURITY)) {
                         bits_remaining &= ~SEC_FLAG_SYSTEM_SECURITY;
                 } else {
+                        talloc_free(ps_sid);
                         return NT_STATUS_PRIVILEGE_NOT_HELD;
                 }
         }
 
         /* a NULL dacl allows access */
         if ((sd->type & SEC_DESC_DACL_PRESENT) && sd->dacl == NULL) {
-		*access_granted = access_desired;
+                *access_granted = access_desired;
+                talloc_free(ps_sid);
                 return NT_STATUS_OK;
         }
 
@@ -356,6 +358,7 @@ NTSTATUS sec_access_check_ds(const struct security_descriptor *sd,
                         break;
                 case SEC_ACE_TYPE_ACCESS_DENIED:
                         if (bits_remaining & ace->access_mask) {
+                                talloc_free(ps_sid);
                                 return NT_STATUS_ACCESS_DENIED;
                         }
                         break;
@@ -377,12 +380,13 @@ NTSTATUS sec_access_check_ds(const struct security_descriptor *sd,
 
                         if (ace->type == SEC_ACE_TYPE_ACCESS_ALLOWED_OBJECT) {
                                 object_tree_modify_access(node, ace->access_mask);
-				if (node->remaining_access == 0) {
-					return NT_STATUS_OK;
-				}
-                        }
-                        else {
+                                if (node->remaining_access == 0) {
+                                        talloc_free(ps_sid);
+                                        return NT_STATUS_OK;
+                                }
+                        } else {
                                 if (node->remaining_access & ace->access_mask){
+                                        talloc_free(ps_sid);
                                         return NT_STATUS_ACCESS_DENIED;
                                 }
                         }
@@ -393,6 +397,7 @@ NTSTATUS sec_access_check_ds(const struct security_descriptor *sd,
         }
 
 done:
+        talloc_free(ps_sid);
         if (bits_remaining != 0) {
                 return NT_STATUS_ACCESS_DENIED;
         }
