@@ -390,7 +390,7 @@ def build_direct_deps(bld, tgt_list):
         t.direct_objects = set()
         t.direct_libs = set()
         t.direct_syslibs = set()
-        deps = t.samba_deps_extended
+        deps = t.samba_deps_extended[:]
         if getattr(t, 'samba_use_global_deps', False):
             deps.extend(global_deps)
         for d in deps:
@@ -632,7 +632,7 @@ def break_dependency_loops(bld, tgt_list):
     # add in the replacement dependencies
     for t in tgt_list:
         for loop in loops:
-            for attr in ['direct_objects', 'indirect_objects', 'direct_libs', 'indirect_libs']:
+            for attr in ['indirect_objects', 'indirect_libs']:
                 objs = getattr(t, attr, set())
                 if loop in objs:
                     diff = loops[loop].difference(objs)
