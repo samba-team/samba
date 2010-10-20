@@ -40,7 +40,7 @@
 /* The use of strcasecmp here is safe, all the comparison strings are ASCII */
 #undef strcasecmp
 
-#define NUM_SHORT_LIST_PRIVS 8
+#define NUM_SHORT_LIST_PRIVS 9
 
 static const struct {
 	enum sec_privilege luid;
@@ -58,15 +58,12 @@ static const struct {
 	{SEC_PRIV_PRINT_OPERATOR,  SEC_PRIV_PRINT_OPERATOR_BIT,	 "SePrintOperatorPrivilege",	"Manage printers"},
 	{SEC_PRIV_ADD_USERS,       SEC_PRIV_ADD_USERS_BIT,	 "SeAddUsersPrivilege",		"Add users and groups to the domain"},
 	{SEC_PRIV_DISK_OPERATOR,   SEC_PRIV_DISK_OPERATOR_BIT,	 "SeDiskOperatorPrivilege",	"Manage disk shares"},
+	{SEC_PRIV_SECURITY,	   SEC_PRIV_SECURITY_BIT,	 "SeSecurityPrivilege",	"System security"},
+
 
 	/* The list from here on is not displayed in the code from
 	 * source3, and is after index NUM_SHORT_LIST_PRIVS for that
 	 * reason */ 
-
-	{SEC_PRIV_SECURITY,
-	 SEC_PRIV_SECURITY_BIT,
-	 "SeSecurityPrivilege",
-	"System security"},
 
 	{SEC_PRIV_SYSTEMTIME,
 	 SEC_PRIV_SYSTEMTIME_BIT,

@@ -1837,6 +1837,16 @@ NTSTATUS smbd_do_query_security_desc(connection_struct *conn,
 	 * Get the permissions to return.
 	 */
 
+	if ((security_info_wanted & SECINFO_SACL) &&
+			!(fsp->access_mask & SEC_FLAG_SYSTEM_SECURITY)) {
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	if ((security_info_wanted & (SECINFO_DACL|SECINFO_OWNER|SECINFO_GROUP)) &&
+			!(fsp->access_mask & SEC_STD_READ_CONTROL)) {
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
 	if (!lp_nt_acl_support(SNUM(conn))) {
 		status = get_null_nt_acl(mem_ctx, &psd);
 	} else {
