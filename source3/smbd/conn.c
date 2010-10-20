@@ -197,6 +197,7 @@ bool conn_idle_all(struct smbd_server_connection *sconn,time_t t)
 	int deadtime = lp_deadtime()*60;
 	pipes_struct *plist = NULL;
 	connection_struct *conn;
+	bool ret = true;
 
 	if (deadtime <= 0)
 		deadtime = DEFAULT_SMBD_TIMEOUT;
@@ -209,6 +210,7 @@ bool conn_idle_all(struct smbd_server_connection *sconn,time_t t)
 		if (conn->lastused != conn->lastused_count) {
 			conn->lastused = t;
 			conn->lastused_count = t;
+			age = 0;
 		}
 
 		/* close dirptrs on connections that are idle */
@@ -217,7 +219,7 @@ bool conn_idle_all(struct smbd_server_connection *sconn,time_t t)
 		}
 
 		if (conn->num_files_open > 0 || age < deadtime) {
-			return False;
+			ret = false;
 		}
 	}
 
@@ -229,11 +231,12 @@ bool conn_idle_all(struct smbd_server_connection *sconn,time_t t)
 	for (plist = get_first_internal_pipe(); plist;
 	     plist = get_next_internal_pipe(plist)) {
 		if (num_pipe_handles(plist->pipe_handles) != 0) {
-			return False;
+			ret = false;
+			break;
 		}
 	}
 	
-	return True;
+	return ret;
 }
 
 /****************************************************************************
