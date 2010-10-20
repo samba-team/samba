@@ -74,7 +74,7 @@ static bool test_notify_dir(struct smbcli_state *cli, struct smbcli_state *cli2,
 	struct smbcli_request *req, *req2;
 	extern int torture_numops;
 
-	printf("TESTING CHANGE NOTIFY ON DIRECTRIES\n");
+	printf("TESTING CHANGE NOTIFY ON DIRECTORIES\n");
 		
 	/*
 	  get a handle on the directory
