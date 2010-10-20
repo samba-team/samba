@@ -116,6 +116,7 @@ def SAMBA_LIBRARY(bld, libname, source,
                   hide_symbols=False,
                   is_bundled=False,
                   manpages=None,
+                  private_library=False,
                   enabled=True):
     '''define a Samba library'''
 
@@ -167,13 +168,22 @@ def SAMBA_LIBRARY(bld, libname, source,
     realname = bld.map_shlib_extension(realname, python=(target_type=='PYTHON'))
     link_name = bld.map_shlib_extension(link_name, python=(target_type=='PYTHON'))
 
+    if private_library:
+        # private libraries always get the 'bundling' treatment with respect
+        # to the library name suffix
+        is_bundled = True
+
+    # we don't want any public libraries without version numbers
+    if not private_library and vnum is None and target_type != 'PYTHON' and not realname:
+        raise Utils.WafError("public library '%s' must have a vnum" % libname)
+
     if target_type == 'PYTHON' or realname or not is_bundled:
         # Sanitize the library name
         bundled_name = libname.lower().replace('_', '-')
         while bundled_name.startswith("lib"):
             bundled_name = bundled_name[3:]
     else:
-        bundled_name = BUNDLED_NAME(bld, libname, bundled_extension)
+        bundled_name = BUNDLED_NAME(bld, libname, bundled_extension, private_library)
 
     features = 'cc cshlib symlink_lib install_lib'
     if target_type == 'PYTHON':

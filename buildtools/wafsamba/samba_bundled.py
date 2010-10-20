@@ -4,11 +4,11 @@ from Configure import conf
 import Logs
 from samba_utils import *
 
-def BUNDLED_NAME(bld, name, bundled_extension):
+def BUNDLED_NAME(bld, name, bundled_extension, private_library):
     '''possibly rename a library to include a bundled extension'''
     if bld.env.DISABLE_SHARED or not bundled_extension:
         return name
-    if name in bld.env.BUNDLED_EXTENSION_EXCEPTION:
+    if name in bld.env.BUNDLED_EXTENSION_EXCEPTION and not private_library:
         return name
     extension = getattr(bld.env, 'BUNDLED_EXTENSION', '')
     if extension:
