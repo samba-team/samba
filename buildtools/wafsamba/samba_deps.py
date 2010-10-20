@@ -47,30 +47,48 @@ Build.BuildContext.EXPAND_ALIAS = EXPAND_ALIAS
 
 def expand_subsystem_deps(bld):
     '''expand the reverse dependencies resulting from subsystem
-       attributes of modules'''
-    subsystems = LOCAL_CACHE(bld, 'INIT_FUNCTIONS')
+       attributes of modules. This is walking over the complete list
+       of declared subsystems, and expands the samba_deps_extended list for any
+       module<->subsystem dependencies'''
+
+    subsystem_list = LOCAL_CACHE(bld, 'INIT_FUNCTIONS')
     aliases    = LOCAL_CACHE(bld, 'TARGET_ALIAS')
     targets    = LOCAL_CACHE(bld, 'TARGET_TYPE')
 
-    for s in subsystems:
-        if s in aliases:
-            s = aliases[s]
-        bld.ASSERT(s in targets, "Subsystem target %s not declared" % s)
-        type = targets[s]
+    for subsystem_name in subsystem_list:
+        if subsystem_name in aliases:
+            subsystem_name = aliases[subsystem_name]
+        bld.ASSERT(subsystem_name in targets, "Subsystem target %s not declared" % subsystem_name)
+        type = targets[subsystem_name]
         if type == 'DISABLED' or type == 'EMPTY':
             continue
 
-        t = bld.name_to_obj(s, bld.env)
-        for d in subsystems[s]:
-            type = targets[d['TARGET']]
-            if type != 'DISABLED' and type != 'EMPTY':
-                bld.ASSERT(t is not None,
-                    "Subsystem target %s for %s (%s) not found" % (s, d['TARGET'], type))
-                t.samba_deps_extended.append(d['TARGET'])
-                t2 = bld.name_to_obj(d['TARGET'], bld.env)
-                t2.samba_includes_extended.extend(t.samba_includes_extended)
-                t2.samba_deps_extended.extend(t.samba_deps_extended)
-        t.samba_deps_extended = unique_list(t.samba_deps_extended)
+        # for example,
+        #    subsystem_name = dcerpc_server (a subsystem)
+        #    subsystem      = dcerpc_server (a subsystem object)
+        #    module_name    = rpc_epmapper (a module within the dcerpc_server subsystem)
+        #    module         = rpc_epmapper (a module object within the dcerpc_server subsystem)
+
+        subsystem = bld.name_to_obj(subsystem_name, bld.env)
+        for d in subsystem_list[subsystem_name]:
+            module_name = d['TARGET']
+            module_type = targets[module_name]
+            if module_type in ['DISABLED', 'EMPTY']:
+                continue
+            bld.ASSERT(subsystem is not None,
+                       "Subsystem target %s for %s (%s) not found" % (subsystem_name, module_name, module_type))
+            if module_type in ['SUBSYSTEM']:
+                # if a module is a plain object type (not a library) then the
+                # subsystem it is part of needs to have it as a dependency, so targets
+                # that depend on this subsystem get the modules of that subsystem
+                subsystem.samba_deps_extended.append(module_name)
+            module = bld.name_to_obj(module_name, bld.env)
+            module.samba_includes_extended.extend(subsystem.samba_includes_extended)
+            if targets[subsystem_name] in ['SUBSYSTEM']:
+                # if a subsystem is a plain object type (not a library) then any modules
+                # in that subsystem need to depend on the subsystem
+                module.samba_deps_extended.extend(subsystem.samba_deps_extended)
+        subsystem.samba_deps_extended = unique_list(subsystem.samba_deps_extended)
 
 
 
