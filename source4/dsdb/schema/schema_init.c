@@ -631,8 +631,10 @@ WERROR dsdb_attribute_from_ldb(struct ldb_context *ldb,
 	}
 
 	if (dsdb_schema_setup_ldb_schema_attribute(ldb, attr) != LDB_SUCCESS) {
-		DEBUG(0,(__location__ ": Unknown schema syntax for %s\n",
-			 attr->lDAPDisplayName));
+		DEBUG(0,(__location__ ": Unknown schema syntax for %s - ldb_syntax: %s, ldap_oid: %s\n",
+			 attr->lDAPDisplayName,
+			 attr->syntax->ldb_syntax,
+			 attr->syntax->ldap_oid));
 		return WERR_DS_ATT_SCHEMA_REQ_SYNTAX;
 	}
 
