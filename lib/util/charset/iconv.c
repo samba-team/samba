@@ -159,7 +159,7 @@ static bool is_utf16(const char *name)
 }
 
 int smb_iconv_t_destructor(smb_iconv_t hwd)
-{ 
+{
 #ifdef HAVE_NATIVE_ICONV
 	if (hwd->cd_pull != NULL && hwd->cd_pull != (iconv_t)-1)
 		iconv_close(hwd->cd_pull);
@@ -260,9 +260,6 @@ _PUBLIC_ smb_iconv_t smb_iconv_open_ex(TALLOC_CTX *mem_ctx, const char *tocode,
 	}
 	if (is_utf16(tocode)) {
 		ret->direct = sys_iconv;
-		/* could be set just above - so we need to close iconv */
-		if (ret->cd_direct != NULL && ret->cd_direct != (iconv_t)-1)
-			iconv_close(ret->cd_direct);
 		ret->cd_direct = ret->cd_pull;
 		ret->cd_pull = NULL;
 		return ret;
