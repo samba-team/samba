@@ -283,14 +283,26 @@ char *rep_strcasestr(const char *haystack, const char *needle);
 char *rep_strtok_r(char *s, const char *delim, char **save_ptr);
 #endif
 
+
+
 #ifndef HAVE_STRTOLL
-#define strtoll rep_strtoll
 long long int rep_strtoll(const char *str, char **endptr, int base);
+#define strtoll rep_strtoll
+#else
+#ifdef HAVE_BSD_STRTOLL
+long long int rep_strtoll(const char *str, char **endptr, int base);
+#define strtoll rep_strtoll
+#endif
 #endif
 
 #ifndef HAVE_STRTOULL
 #define strtoull rep_strtoull
 unsigned long long int rep_strtoull(const char *str, char **endptr, int base);
+#else
+#ifdef HAVE_BSD_STRTOLL
+long long int rep_strtoull(const char *str, char **endptr, int base);
+#define strtoull rep_strtoull
+#endif
 #endif
 
 #ifndef HAVE_FTRUNCATE

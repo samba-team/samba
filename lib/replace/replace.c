@@ -3,6 +3,7 @@
    replacement routines for broken systems
    Copyright (C) Andrew Tridgell 1992-1998
    Copyright (C) Jelmer Vernooij 2005-2008
+   Copyright (C) Matthieu Patou  2010
 
      ** NOTE! The following LGPL license applies to the replace
      ** library. This does NOT imply that all of Samba is released
@@ -502,6 +503,7 @@ char *rep_strtok_r(char *s, const char *delim, char **save_ptr)
 }
 #endif
 
+
 #ifndef HAVE_STRTOLL
 long long int rep_strtoll(const char *str, char **endptr, int base)
 {
@@ -515,7 +517,29 @@ long long int rep_strtoll(const char *str, char **endptr, int base)
 # error "You need a strtoll function"
 #endif
 }
-#endif
+#else
+#ifdef HAVE_BSD_STRTOLL
+#ifdef HAVE_STRTOQ
+long long int rep_strtoll(const char *str, char **endptr, int base)
+{
+	long long int nb = strtoq(str, endptr, base);
+	/* In linux EINVAL is only returned if base is not ok */
+	if (errno == EINVAL) {
+		if (base == 0 || (base >1 && base <37)) {
+			/* Base was ok so it's because we were not
+			 * able to make the convertion.
+			 * Let's reset errno.
+			 */
+			errno = 0;
+		}
+	}
+	return nb;
+}
+#else
+#error "You need the strtoq function"
+#endif /* HAVE_STRTOQ */
+#endif /* HAVE_BSD_STRTOLL */
+#endif /* HAVE_STRTOLL */
 
 
 #ifndef HAVE_STRTOULL
@@ -531,7 +555,29 @@ unsigned long long int rep_strtoull(const char *str, char **endptr, int base)
 # error "You need a strtoull function"
 #endif
 }
-#endif
+#else
+#ifdef HAVE_BSD_STRTOLL
+#ifdef HAVE_STRTOUQ
+long long int rep_strtoull(const char *str, char **endptr, int base)
+{
+	unsigned long long int nb = strtouq(str, endptr, base);
+	/* In linux EINVAL is only returned if base is not ok */
+	if (errno == EINVAL) {
+		if (base == 0 || (base >1 && base <37)) {
+			/* Base was ok so it's because we were not
+			 * able to make the convertion.
+			 * Let's reset errno.
+			 */
+			errno = 0;
+		}
+	}
+	return nb;
+}
+#else
+#error "You need the strtouq function"
+#endif /* HAVE_STRTOUQ */
+#endif /* HAVE_BSD_STRTOLL */
+#endif /* HAVE_STRTOULL */
 
 #ifndef HAVE_SETENV
 int rep_setenv(const char *name, const char *value, int overwrite) 
