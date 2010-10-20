@@ -7,10 +7,11 @@ bld.SAMBA_SUBSYSTEM('NDR_NBT_BUF',
 	)
 
 
-bld.SAMBA_SUBSYSTEM('LIBCLI_NBT',
-	source='lmhosts.c nbtsocket.c namequery.c nameregister.c namerefresh.c namerelease.c dns_hosts_file.c',
-	public_deps='LIBNDR NDR_NBT tevent UTIL_TEVENT NDR_SECURITY samba_socket LIBSAMBA-UTIL'
-	)
+bld.SAMBA_LIBRARY('LIBCLI_NBT',
+                  source='lmhosts.c nbtsocket.c namequery.c nameregister.c namerefresh.c namerelease.c dns_hosts_file.c',
+                  public_deps='LIBNDR NDR_NBT tevent UTIL_TEVENT NDR_SECURITY samba_socket LIBSAMBA-UTIL',
+                  private_library=True
+                  )
 
 
 bld.SAMBA_BINARY('nmblookup',
