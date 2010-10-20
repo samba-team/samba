@@ -373,7 +373,7 @@ static int ltdb_delete_internal(struct ldb_module *module, struct ldb_dn *dn)
 	struct ldb_message *msg;
 	int ret = LDB_SUCCESS;
 
-	msg = talloc(module, struct ldb_message);
+	msg = ldb_msg_new(module);
 	if (msg == NULL) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
@@ -629,7 +629,7 @@ int ltdb_modify_internal(struct ldb_module *module,
 		return ltdb_err_map(tdb_error(ltdb->tdb));
 	}
 
-	msg2 = talloc(tdb_key.dptr, struct ldb_message);
+	msg2 = ldb_msg_new(tdb_key.dptr);
 	if (msg2 == NULL) {
 		free(tdb_data.dptr);
 		ret = LDB_ERR_OTHER;
@@ -912,7 +912,7 @@ static int ltdb_rename(struct ltdb_context *ctx)
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	msg = talloc(ctx, struct ldb_message);
+	msg = ldb_msg_new(ctx);
 	if (msg == NULL) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
@@ -1070,7 +1070,7 @@ static int ltdb_sequence_number(struct ltdb_context *ctx,
 
 	dn = ldb_dn_new(tmp_ctx, ldb, LTDB_BASEINFO);
 
-	msg = talloc(tmp_ctx, struct ldb_message);
+	msg = ldb_msg_new(tmp_ctx);
 	if (msg == NULL) {
 		ret = LDB_ERR_OPERATIONS_ERROR;
 		goto done;
