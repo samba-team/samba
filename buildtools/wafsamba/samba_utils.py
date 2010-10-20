@@ -533,6 +533,9 @@ def map_shlib_extension(ctx, name, python=False):
     '''map a filename with a shared library extension of .so to the real shlib name'''
     if name is None:
         return None
+    if name[-1:].isdigit():
+        # some libraries have specified versions in the wscript rule
+        return name
     (root1, ext1) = os.path.splitext(name)
     if python:
         (root2, ext2) = os.path.splitext(ctx.env.pyext_PATTERN)
