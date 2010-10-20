@@ -10,5 +10,7 @@ def build(bld):
 	if bld.CONFIG_SET('USING_SYSTEM_SUBUNIT'):
 		return
 
-	bld.SAMBA_LIBRARY('subunit', source='lib/child.c', is_bundled=True,
-			includes='include')
+	bld.SAMBA_LIBRARY('subunit',
+			  source='lib/child.c',
+			  private_library=True,
+			  includes='include')
