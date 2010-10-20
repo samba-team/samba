@@ -1134,6 +1134,9 @@ bool nt_time_is_set(const NTTIME *nt);
 
 /* The following definitions come from lib/username.c  */
 
+struct passwd *tcopy_passwd(TALLOC_CTX *mem_ctx, const struct passwd *from) ;
+void flush_pwnam_cache(void);
+struct passwd *getpwuid_alloc(TALLOC_CTX *mem_ctx, uid_t uid) ;
 char *get_user_home_dir(TALLOC_CTX *mem_ctx, const char *user);
 struct passwd *Get_Pwnam_alloc(TALLOC_CTX *mem_ctx, const char *user);
 
@@ -1321,13 +1324,6 @@ NTSTATUS merge_nt_token(TALLOC_CTX *mem_ctx,
 			const struct nt_user_token *token_2,
 			struct nt_user_token **token_out);
 bool token_sid_in_ace(const NT_USER_TOKEN *token, const struct security_ace *ace);
-
-/* The following definitions come from lib/util_pw.c  */
-
-struct passwd *tcopy_passwd(TALLOC_CTX *mem_ctx, const struct passwd *from) ;
-void flush_pwnam_cache(void);
-struct passwd *getpwnam_alloc(TALLOC_CTX *mem_ctx, const char *name);
-struct passwd *getpwuid_alloc(TALLOC_CTX *mem_ctx, uid_t uid) ;
 
 /* The following definitions come from ..libcli/registry/util_reg.c  */
 

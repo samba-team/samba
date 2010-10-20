@@ -1305,7 +1305,7 @@ uid_t nametouid(const char *name)
 	char *p;
 	uid_t u;
 
-	pass = getpwnam_alloc(talloc_autofree_context(), name);
+	pass = Get_Pwnam_alloc(talloc_autofree_context(), name);
 	if (pass) {
 		u = pass->pw_uid;
 		TALLOC_FREE(pass);

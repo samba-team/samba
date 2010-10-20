@@ -3,6 +3,7 @@
    Username handling
    Copyright (C) Andrew Tridgell 1992-1998
    Copyright (C) Jeremy Allison 1997-2001.
+   Copyright (C) Andrew Bartlett 2002
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -19,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "memcache.h"
 
 /* internal functions */
 static struct passwd *uname_string_combinations(char *s, TALLOC_CTX *mem_ctx,
@@ -27,6 +29,66 @@ static struct passwd *uname_string_combinations(char *s, TALLOC_CTX *mem_ctx,
 static struct passwd *uname_string_combinations2(char *s, TALLOC_CTX *mem_ctx, int offset,
 						 struct passwd * (*fn) (TALLOC_CTX *mem_ctx, const char *),
 						 int N);
+
+static struct passwd *getpwnam_alloc(TALLOC_CTX *mem_ctx, const char *name)
+{
+	struct passwd *pw, *for_cache;
+
+	pw = (struct passwd *)memcache_lookup_talloc(
+		NULL, GETPWNAM_CACHE, data_blob_string_const_null(name));
+	if (pw != NULL) {
+		return tcopy_passwd(mem_ctx, pw);
+	}
+
+	pw = sys_getpwnam(name);
+	if (pw == NULL) {
+		return NULL;
+	}
+
+	for_cache = tcopy_passwd(talloc_autofree_context(), pw);
+	if (for_cache == NULL) {
+		return NULL;
+	}
+
+	memcache_add_talloc(NULL, GETPWNAM_CACHE,
+			    data_blob_string_const_null(name), &for_cache);
+
+	return tcopy_passwd(mem_ctx, pw);
+}
+
+struct passwd *tcopy_passwd(TALLOC_CTX *mem_ctx, const struct passwd *from) 
+{
+	struct passwd *ret = TALLOC_P(mem_ctx, struct passwd);
+	if (!ret) {
+		return NULL;
+	}
+	ret->pw_name = talloc_strdup(ret, from->pw_name);
+	ret->pw_passwd = talloc_strdup(ret, from->pw_passwd);
+	ret->pw_uid = from->pw_uid;
+	ret->pw_gid = from->pw_gid;
+	ret->pw_gecos = talloc_strdup(ret, from->pw_gecos);
+	ret->pw_dir = talloc_strdup(ret, from->pw_dir);
+	ret->pw_shell = talloc_strdup(ret, from->pw_shell);
+	return ret;
+}
+
+void flush_pwnam_cache(void)
+{
+	memcache_flush(NULL, GETPWNAM_CACHE);
+}
+
+struct passwd *getpwuid_alloc(TALLOC_CTX *mem_ctx, uid_t uid)
+{
+	struct passwd *temp;
+
+	temp = sys_getpwuid(uid);
+
+	if (!temp) {
+		return NULL;
+	}
+
+	return tcopy_passwd(mem_ctx, temp);
+}
 
 /****************************************************************************
  Get a users home directory.

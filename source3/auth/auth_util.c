@@ -729,7 +729,7 @@ NTSTATUS make_serverinfo_from_username(TALLOC_CTX *mem_ctx,
 	struct passwd *pwd;
 	NTSTATUS status;
 
-	pwd = getpwnam_alloc(talloc_tos(), username);
+	pwd = Get_Pwnam_alloc(talloc_tos(), username);
 	if (pwd == NULL) {
 		return NT_STATUS_NO_SUCH_USER;
 	}
