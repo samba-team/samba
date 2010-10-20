@@ -179,6 +179,7 @@ normal_index:
 
 	ret = ltdb_search_dn1(module, dn, msg);
 	if (ret != LDB_SUCCESS) {
+		talloc_free(msg);
 		return ret;
 	}
 
@@ -412,7 +413,10 @@ static struct ldb_dn *ltdb_index_key(struct ldb_context *ldb,
 	}
 	if (ldb_should_b64_encode(ldb, &v)) {
 		char *vstr = ldb_base64_encode(ldb, (char *)v.data, v.length);
-		if (!vstr) return NULL;
+		if (!vstr) {
+			talloc_free(attr_folded);
+			return NULL;
+		}
 		ret = ldb_dn_new_fmt(ldb, ldb, "%s:%s::%s", LTDB_INDEX, attr_folded, vstr);
 		talloc_free(vstr);
 	} else {
@@ -962,6 +966,7 @@ static int ltdb_index_filter(const struct dn_list *dn_list,
 
 		ret = ldb_module_send_entry(ac->req, msg, NULL);
 		if (ret != LDB_SUCCESS) {
+			talloc_free(msg);
 			ac->request_terminated = true;
 			return ret;
 		}
