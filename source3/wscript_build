@@ -207,8 +207,6 @@ POPT_LIB_SRC = '''lib/popt_common.c'''
 
 PARAM_WITHOUT_REG_SRC = '''param/loadparm.c param/util.c param/loadparm_server_role.c
                            lib/sharesec.c lib/ldap_debug_handler.c'''
-PARAM_REG_ADD_SRC = '''${REG_SMBCONF_SRC}'''
-PARAM_SRC = '''${PARAM_REG_ADD_SRC}'''
 
 KRBCLIENT_SRC = '''libads/kerberos.c libads/ads_status.c'''
 
@@ -351,13 +349,13 @@ REG_BASE_SRC = '''registry/reg_api.c
                ${REG_BACKENDS_BASE_SRC}
                ${REG_INIT_BASIC_SRC}'''
 
-REG_SMBCONF_SRC = '''${REG_BASE_SRC}
+REG_SMBCONF_SRC = '''
                   ${REG_BACKENDS_SMBCONF_SRC}
                   ${REG_INIT_SMBCONF_SRC}
                   registry/reg_util_token.c
                   registry/reg_api_util.c'''
 
-REG_FULL_SRC = '''${REG_SMBCONF_SRC}
+REG_FULL_SRC = '''
                ${REG_BACKENDS_EXTRA_SRC}
                ${REG_INIT_FULL_SRC}
                registry/reg_eventlog.c
@@ -584,7 +582,6 @@ SMBD_SRC_SRV = '''smbd/server_reload.c smbd/files.c smbd/connection.c
 SMBD_SRC_BASE = '''${SMBD_SRC_SRV}
                 ${RPC_SERVER_SRC}
                 ${OPLOCK_SRC} ${NOTIFY_SRC} ${FNAME_UTIL_SRC}
-                ${REG_FULL_SRC}
                 ${BUILDOPT_SRC}
                 ${LIBCLI_SPOOLSS_SRC}
                 ${LIBCLI_SRVSVC_SRC}
@@ -725,7 +722,6 @@ LIBNETAPI_SRC0 = '''lib/netapi/netapi.c
                     lib/netapi/netlogon.c'''
 
 LIBNETAPI_SRC = '''${LIBNETAPI_SRC0}
-                   ${REG_SMBCONF_SRC}
                    auth/token_util.c
                    ${LIBCLI_INITSHUTDOWN_SRC}
                    ${LIBCLI_WKSSVC_SRC}
@@ -940,7 +936,7 @@ bld.SAMBA_LIBRARY('libnetapi',
                     public_deps='''talloc tdb cap libwbclient LIB_NONSMBD LIBSMB KRBCLIENT
                     PASSDB SMBLDAP GROUPDB PARAM_WITHOUT_REG DYNCONFIG
                     LIBMSRPC_GEN LIBMSRPC LIBADS LIBNET DCUTIL NDR_LIBNETAPI
-                    RPC_CLIENT_SCHANNEL LIBSMBCONF''',
+                    RPC_CLIENT_SCHANNEL LIBSMBCONF REG_SMBCONF''',
                     public_headers='lib/netapi/netapi.h',
                     vars=locals())
 
@@ -1011,7 +1007,7 @@ bld.SAMBA_SUBSYSTEM('PARAM_WITHOUT_REG',
                     source=PARAM_WITHOUT_REG_SRC)
 
 bld.SAMBA_SUBSYSTEM('PARAM',
-                    source=PARAM_SRC,
+                    source='',
                     deps='PARAM_WITHOUT_REG DYNCONFIG LIBSMBCONF',
                     vars=locals())
 
@@ -1021,6 +1017,20 @@ bld.SAMBA_SUBSYSTEM('REGFIO',
 
 bld.SAMBA_SUBSYSTEM('REG_API_REGF',
                     source=REG_API_REGF_SRC,
+                    vars=locals())
+
+bld.SAMBA_SUBSYSTEM('REG_BASE',
+                    source=REG_BASE_SRC,
+                    vars=locals())
+
+bld.SAMBA_SUBSYSTEM('REG_SMBCONF',
+                    source=REG_SMBCONF_SRC,
+                    deps='REG_BASE',
+                    vars=locals())
+
+bld.SAMBA_SUBSYSTEM('REG_FULL',
+                    source=REG_FULL_SRC,
+                    deps='REG_SMBCONF',
                     vars=locals())
 
 bld.SAMBA_SUBSYSTEM('POPT_SAMBA',
@@ -1096,6 +1106,7 @@ bld.SAMBA_SUBSYSTEM('LIBAFS_SETTOKEN',
 
 bld.SAMBA_SUBSYSTEM('LIBSMBCONF',
                     source=LIBSMBCONF_SRC,
+                    deps='REG_BASE REG_SMBCONF',
                     vars=locals())
 
 bld.SAMBA_SUBSYSTEM('SMBD_BASE',
@@ -1106,7 +1117,7 @@ bld.SAMBA_SUBSYSTEM('SMBD_BASE',
                     LIBMSRPC_GEN LIBMSRPC LIBADS LIBADS_SERVER LIBADS_PRINTER
                     vfs vfs_default vfs_posixacl auth rpc LOCKING LIBAFS LIBAFS_SETTOKEN PROFILE
                     PRINTING PRINTBACKEND NDR_XATTR REGFIO SOCKET_WRAPPER
-                    LIBSMBCONF
+                    LIBSMBCONF REG_FULL
                     ''',
                     vars=locals())
 
