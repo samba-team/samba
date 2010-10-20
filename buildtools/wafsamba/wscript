@@ -100,6 +100,14 @@ def set_options(opt):
 		   help=("Update ABI signature files for libraries"),
 		   action='store_true', dest='ABI_UPDATE', default=False)
 
+    gr.add_option('--show-deps',
+		   help=("Show dependency tree for the given target"),
+		   dest='SHOWDEPS', default='')
+
+    gr.add_option('--show-duplicates',
+                  help=("Show objects which are included in multiple binaries or libraries"),
+                  action='store_true', dest='SHOW_DUPLICATES', default=False)
+
     gr = opt.add_option_group('cross compilation options')
 
     gr.add_option('--cross-compile',

@@ -792,6 +792,61 @@ def calculate_final_deps(bld, tgt_list, loops):
     debug('deps: removed duplicate dependencies')
 
 
+def show_dependencies(bld, target, seen):
+    '''recursively show the dependencies of target'''
+
+    if target in seen:
+        return
+
+    t = bld.name_to_obj(target, bld.env)
+    if t is None:
+        Logs.error("ERROR: Unable to find target '%s'" % target)
+        sys.exit(1)
+
+    Logs.info('%s(OBJECTS): %s' % (target, t.direct_objects))
+    Logs.info('%s(LIBS): %s' % (target, t.direct_libs))
+    Logs.info('%s(SYSLIBS): %s' % (target, t.direct_syslibs))
+
+    seen.add(target)
+
+    for t2 in t.direct_objects:
+        show_dependencies(bld, t2, seen)
+
+
+def show_object_duplicates(bld, tgt_list):
+    '''show a list of object files that are included in more than
+    one library or binary'''
+
+    targets = LOCAL_CACHE(bld, 'TARGET_TYPE')
+
+    used_by = {}
+
+    Logs.info("showing duplicate objects")
+
+    for t in tgt_list:
+        if not targets[t.sname] in [ 'LIBRARY' ]:
+            continue
+        for n in getattr(t, 'final_objects', set()):
+            t2 = bld.name_to_obj(n, bld.env)
+            if not n in used_by:
+                used_by[n] = set()
+            used_by[n].add(t.sname)
+
+    for n in used_by:
+        if len(used_by[n]) > 1:
+            Logs.info("target '%s' is used by %s" % (n, used_by[n]))
+
+    Logs.info("showing indirect dependency counts (sorted by count)")
+
+    def indirect_count(t1, t2):
+        return len(t2.indirect_objects) - len(t1.indirect_objects)
+
+    sorted_list = sorted(tgt_list, cmp=indirect_count)
+    for t in sorted_list:
+        if len(t.indirect_objects) > 1:
+            Logs.info("%s depends on %u indirect objects" % (t.sname, len(t.indirect_objects)))
+
+
 ######################################################################
 # this provides a way to save our dependency calculations between runs
 savedeps_version = 3
@@ -943,7 +998,10 @@ def check_project_rules(bld):
 
     add_samba_attributes(bld, tgt_list)
 
-    if load_samba_deps(bld, tgt_list):
+    force_project_rules = (Options.options.SHOWDEPS or
+                           Options.options.SHOW_DUPLICATES)
+
+    if not force_project_rules and load_samba_deps(bld, tgt_list):
         return
 
     bld.new_rules = True    
@@ -953,8 +1011,15 @@ def check_project_rules(bld):
 
     expand_subsystem_deps(bld)
     build_direct_deps(bld, tgt_list)
+
     break_dependency_loops(bld, tgt_list)
     calculate_final_deps(bld, tgt_list, loops)
+
+    if Options.options.SHOWDEPS:
+            show_dependencies(bld, Options.options.SHOWDEPS, set())
+
+    if Options.options.SHOW_DUPLICATES:
+            show_object_duplicates(bld, tgt_list)
 
     # run the various attribute generators
     for f in [ build_dependencies, build_includes, add_init_functions ]:
