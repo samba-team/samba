@@ -167,6 +167,12 @@ static bool ldap_encode_control(void *mem_ctx, struct asn1_data *data,
 	}
 
 	for (i = 0; handlers[i].oid != NULL; i++) {
+		if (!ctrl->oid) {
+			/* not encoding this control, the OID has been
+			 * set to NULL indicating it isn't really
+			 * here */
+			return true;
+		}
 		if (strcmp(handlers[i].oid, ctrl->oid) == 0) {
 			if (!handlers[i].encode) {
 				if (ctrl->critical) {
