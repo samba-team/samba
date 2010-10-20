@@ -364,39 +364,69 @@ def SAMBA_MODULE(bld, modname, source,
         SET_TARGET_TYPE(bld, modname, 'DISABLED')
         return
 
-    modnames = [modname] + TO_LIST(aliases)
-    for modname in modnames:
-        obj_target = modname + '.objlist'
-
-        realname = modname
-        if subsystem is not None:
-            deps += ' ' + subsystem
-            while realname.startswith("lib"+subsystem+"_"):
-                realname = realname[len("lib"+subsystem+"_"):]
-            while realname.startswith(subsystem+"_"):
-                realname = realname[len(subsystem+"_"):]
-
-        realname = bld.make_libname(realname)
-        while realname.startswith("lib"):
-            realname = realname[len("lib"):]
-
-        build_link_name = "modules/%s/%s" % (subsystem, realname)
-
+    if aliases is not None:
+        # if we have aliases, then create a private base library, and a set
+        # of modules on top of that library
         if init_function:
             cflags += " -D%s=samba_init_module" % init_function
 
-        bld.SAMBA_LIBRARY(modname,
+        basename = modname + '-base'
+        bld.SAMBA_LIBRARY(basename,
                           source,
                           deps=deps,
                           cflags=cflags,
-                          realname = realname,
                           autoproto = autoproto,
                           local_include=local_include,
                           vars=vars,
-                          link_name=build_link_name,
-                          install_path="${MODULESDIR}/%s" % subsystem,
                           pyembed=pyembed,
+                          private_library=True
                           )
+
+        aliases = TO_LIST(aliases)
+        aliases.append(modname)
+
+        for alias in aliases:
+            bld.SAMBA_MODULE(alias,
+                             source=[],
+                             internal_module=False,
+                             subsystem=subsystem,
+                             init_function=init_function,
+                             deps=basename)
+        return
+
+
+    obj_target = modname + '.objlist'
+
+    realname = modname
+    if subsystem is not None:
+        deps += ' ' + subsystem
+        while realname.startswith("lib"+subsystem+"_"):
+            realname = realname[len("lib"+subsystem+"_"):]
+        while realname.startswith(subsystem+"_"):
+            realname = realname[len(subsystem+"_"):]
+
+    realname = bld.make_libname(realname)
+    while realname.startswith("lib"):
+        realname = realname[len("lib"):]
+
+    build_link_name = "modules/%s/%s" % (subsystem, realname)
+
+    if init_function:
+        cflags += " -D%s=samba_init_module" % init_function
+
+    bld.SAMBA_LIBRARY(modname,
+                      source,
+                      deps=deps,
+                      cflags=cflags,
+                      realname = realname,
+                      autoproto = autoproto,
+                      local_include=local_include,
+                      vars=vars,
+                      link_name=build_link_name,
+                      install_path="${MODULESDIR}/%s" % subsystem,
+                      pyembed=pyembed,
+                      )
+
 
 Build.BuildContext.SAMBA_MODULE = SAMBA_MODULE
 
