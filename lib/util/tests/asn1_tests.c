@@ -64,6 +64,17 @@ static const struct oid_data oid_data_ok[] = {
 	},
 };
 
+/* Data for successful OIDs conversions */
+static const char *oid_data_err[] = {
+		"",		/* empty OID */
+		".2.5.4.130",	/* first sub-identifier is empty */
+		"2.5.4.130.",	/* last sub-identifier is empty */
+		"2..5.4.130",	/* second sub-identifier is empty */
+		"2.5..4.130",	/* third sub-identifier is empty */
+		"2.abc.4.130", 	/* invalid sub-identifier */
+		"2.5abc.4.130", /* invalid sub-identifier (alpha-numeric)*/
+};
+
 /* Data for successful Partial OIDs conversions */
 static const struct oid_data partial_oid_data_ok[] = {
 	{
@@ -104,6 +115,7 @@ static bool test_ber_write_OID_String(struct torture_context *tctx)
 
 	mem_ctx = talloc_new(tctx);
 
+	/* check for valid OIDs */
 	for (i = 0; i < ARRAY_SIZE(oid_data_ok); i++) {
 		torture_assert(tctx, ber_write_OID_String(mem_ctx, &blob, data[i].oid),
 				"ber_write_OID_String failed");
@@ -115,6 +127,16 @@ static bool test_ber_write_OID_String(struct torture_context *tctx)
 				talloc_asprintf(mem_ctx,
 						"Failed: oid=%s, bin_oid:%s",
 						data[i].oid, data[i].bin_oid));
+	}
+
+	/* check for invalid OIDs */
+	for (i = 0; i < ARRAY_SIZE(oid_data_err); i++) {
+		torture_assert(tctx,
+			       !ber_write_OID_String(mem_ctx, &blob, oid_data_err[i]),
+			       talloc_asprintf(mem_ctx,
+					       "Should fail for [%s] -> %s",
+					       oid_data_err[i],
+					       hex_encode_talloc(mem_ctx, blob.data, blob.length)));
 	}
 
 	talloc_free(mem_ctx);
