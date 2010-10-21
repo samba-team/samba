@@ -14,6 +14,6 @@ bld.SAMBA_MODULE('WEB',
 		autoproto_extra_source='wsgi.c',
 		subsystem='service',
 		init_function='server_service_web_init',
-		deps='LIBTLS smbcalls process_model LIBPYTHON WEB_WSGI',
+		deps='LIBTLS process_model LIBPYTHON WEB_WSGI',
 		pyembed=True,
 		)

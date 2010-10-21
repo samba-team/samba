@@ -484,7 +484,7 @@ if not bld.CONFIG_SET('USING_SYSTEM_ROKEN'):
         )
 
     HEIMDAL_BINARY('rkpty', 'lib/roken/rkpty.c',
-            deps='roken OPENPTY',
+            deps='roken',
             cflags='-DPACKAGE="Samba"',
             install=False
         )
@@ -524,7 +524,7 @@ HDB_SOURCE = '''lib/hdb/db.c lib/hdb/dbinfo.c lib/hdb/hdb.c
 HEIMDAL_LIBRARY('hdb',
                     source=HDB_SOURCE,
                     includes='../heimdal/lib/hdb',
-                    deps='HDB_LDB krb5 HEIMDAL_HDB_KEYS roken HEIMDAL_HCRYPTO com_err HEIMDAL_HDB_ASN1 wind',
+                    deps='krb5 HEIMDAL_HDB_KEYS roken HEIMDAL_HCRYPTO com_err HEIMDAL_HDB_ASN1 wind',
                     vnum='11.0.2',
     )
 HEIMDAL_AUTOPROTO('lib/hdb/hdb-protos.h', HDB_SOURCE)

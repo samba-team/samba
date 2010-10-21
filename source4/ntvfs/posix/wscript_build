@@ -34,7 +34,7 @@ bld.SAMBA_MODULE('ntvfs_posix',
 	autoproto='vfs_posix_proto.h',
 	subsystem='ntvfs',
 	init_function='ntvfs_posix_init',
-	deps='NDR_XATTR WRAP_XATTR BLKID ntvfs_common MESSAGING LIBWBCLIENT_OLD pvfs_acl pvfs_aio',
+	deps='NDR_XATTR WRAP_XATTR ntvfs_common MESSAGING LIBWBCLIENT_OLD pvfs_acl pvfs_aio',
 	internal_module=True
 	)
 

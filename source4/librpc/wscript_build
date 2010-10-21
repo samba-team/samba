@@ -202,7 +202,7 @@ bld.SAMBA_PYTHON('python_winreg',
 
 bld.SAMBA_PYTHON('python_dcerpc_misc',
 	source='../../librpc/gen_ndr/py_misc.c',
-	deps='PYTALLOC pyrpc_util NDR_MISC NDR_KRB5PAC',
+	deps='PYTALLOC pyrpc_util NDR_KRB5PAC',
 	realname='samba/dcerpc/misc.so'
 	)
 
