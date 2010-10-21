@@ -24,7 +24,7 @@ bld.SAMBA_BINARY('ndrdump',
 
 bld.SAMBA_SUBSYSTEM('NDR_SECURITY',
 	source='../../librpc/gen_ndr/ndr_security.c ../../librpc/ndr/ndr_sec_helper.c gen_ndr/ndr_server_id.c',
-	public_deps='LIBNDR LIBSECURITY',
+	public_deps='LIBNDR',
 	public_headers='../../librpc/gen_ndr/security.h gen_ndr/server_id.h',
 	header_path='gen_ndr'
 	)
@@ -96,11 +96,10 @@ bld.SAMBA_LIBRARY('NDR_STANDARD',
 	source='../../librpc/gen_ndr/ndr_atsvc.c ../../librpc/gen_ndr/ndr_eventlog6.c',
 	vnum='0.0.1',
 	pc_files='../../librpc/ndr_standard.pc',
-	deps='NDR_SECURITY NDR_LSA NDR_SAMR NDR_NETLOGON NDR_EVENTLOG NDR_DFS NDR_NTSVCS NDR_SVCCTL NDR_INITSHUTDOWN NDR_WKSSVC NDR_SRVSVC NDR_WINREG NDR_ECHO',
+	deps='NDR_SECURITY NDR_LSA NDR_SAMR NDR_NETLOGON NDR_EVENTLOG NDR_DFS NDR_NTSVCS NDR_SVCCTL NDR_INITSHUTDOWN NDR_WKSSVC NDR_SRVSVC NDR_WINREG NDR_ECHO LIBSECURITY',
 	public_deps='LIBNDR',
 	public_headers='../../librpc/gen_ndr/samr.h ../../librpc/gen_ndr/ndr_samr.h ../../librpc/gen_ndr/lsa.h ../../librpc/gen_ndr/netlogon.h ../../librpc/gen_ndr/atsvc.h ../../librpc/gen_ndr/ndr_atsvc.h ../../librpc/gen_ndr/ndr_svcctl.h ../../librpc/gen_ndr/svcctl.h',
-        header_path='gen_ndr',
-        grouping_library=True
+        header_path='gen_ndr'
 	)
 
 # create a grouping library to consolidate our samba4 specific NDR code
@@ -301,7 +300,7 @@ bld.SAMBA_PYTHON('python_irpc',
 
 bld.SAMBA_PYTHON('python_winbind',
 	source='gen_ndr/py_winbind.c',
-	deps='RPC_NDR_WINBIND PYTALLOC pyrpc_util',
+	deps='RPC_NDR_WINBIND PYTALLOC pyrpc_util python_netlogon',
 	realname='samba/dcerpc/winbind.so'
 	)
 
