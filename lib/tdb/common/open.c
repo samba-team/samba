@@ -129,7 +129,7 @@ static int tdb_already_open(dev_t device,
    try to call tdb_error or tdb_errname, just do strerror(errno).
 
    @param name may be NULL for internal databases. */
-struct tdb_context *tdb_open(const char *name, int hash_size, int tdb_flags,
+_PUBLIC_ struct tdb_context *tdb_open(const char *name, int hash_size, int tdb_flags,
 		      int open_flags, mode_t mode)
 {
 	return tdb_open_ex(name, hash_size, tdb_flags, open_flags, mode, NULL, NULL);
@@ -162,7 +162,7 @@ static bool check_header_hash(struct tdb_context *tdb,
 	return check_header_hash(tdb, false, m1, m2);
 }
 
-struct tdb_context *tdb_open_ex(const char *name, int hash_size, int tdb_flags,
+_PUBLIC_ struct tdb_context *tdb_open_ex(const char *name, int hash_size, int tdb_flags,
 				int open_flags, mode_t mode,
 				const struct tdb_logging_context *log_ctx,
 				tdb_hash_func hash_fn)
@@ -451,7 +451,7 @@ struct tdb_context *tdb_open_ex(const char *name, int hash_size, int tdb_flags,
  * Set the maximum number of dead records per hash chain
  */
 
-void tdb_set_max_dead(struct tdb_context *tdb, int max_dead)
+_PUBLIC_ void tdb_set_max_dead(struct tdb_context *tdb, int max_dead)
 {
 	tdb->max_dead_records = max_dead;
 }
@@ -461,7 +461,7 @@ void tdb_set_max_dead(struct tdb_context *tdb, int max_dead)
  *
  * @returns -1 for error; 0 for success.
  **/
-int tdb_close(struct tdb_context *tdb)
+_PUBLIC_ int tdb_close(struct tdb_context *tdb)
 {
 	struct tdb_context **i;
 	int ret = 0;
@@ -502,13 +502,13 @@ int tdb_close(struct tdb_context *tdb)
 }
 
 /* register a loging function */
-void tdb_set_logging_function(struct tdb_context *tdb,
-                              const struct tdb_logging_context *log_ctx)
+_PUBLIC_ void tdb_set_logging_function(struct tdb_context *tdb,
+                                       const struct tdb_logging_context *log_ctx)
 {
         tdb->log = *log_ctx;
 }
 
-void *tdb_get_logging_private(struct tdb_context *tdb)
+_PUBLIC_ void *tdb_get_logging_private(struct tdb_context *tdb)
 {
 	return tdb->log.log_private;
 }
@@ -577,13 +577,13 @@ fail:
 
 /* reopen a tdb - this can be used after a fork to ensure that we have an independent
    seek pointer from our parent and to re-establish locks */
-int tdb_reopen(struct tdb_context *tdb)
+_PUBLIC_ int tdb_reopen(struct tdb_context *tdb)
 {
 	return tdb_reopen_internal(tdb, tdb->flags & TDB_CLEAR_IF_FIRST);
 }
 
 /* reopen all tdb's */
-int tdb_reopen_all(int parent_longlived)
+_PUBLIC_ int tdb_reopen_all(int parent_longlived)
 {
 	struct tdb_context *tdb;
 

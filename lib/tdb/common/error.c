@@ -27,7 +27,7 @@
 
 #include "tdb_private.h"
 
-enum TDB_ERROR tdb_error(struct tdb_context *tdb)
+_PUBLIC_ enum TDB_ERROR tdb_error(struct tdb_context *tdb)
 {
 	return tdb->ecode;
 }
@@ -46,7 +46,7 @@ static struct tdb_errname {
 	     {TDB_ERR_RDONLY, "write not permitted"} };
 
 /* Error string for the last tdb error */
-const char *tdb_errorstr(struct tdb_context *tdb)
+_PUBLIC_ const char *tdb_errorstr(struct tdb_context *tdb)
 {
 	uint32_t i;
 	for (i = 0; i < sizeof(emap) / sizeof(struct tdb_errname); i++)
