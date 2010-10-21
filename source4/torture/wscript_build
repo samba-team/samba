@@ -154,17 +154,6 @@ bld.SAMBA_BINARY('smbtorture',
                  pyembed=True
                  )
 
-# this is used in the build farm to build a smbtorture.static binary for s3
-bld.SAMBA_BINARY('smbtorture.static',
-                 source=[],
-                 deps='torturemain torture popt POPT_SAMBA POPT_CREDENTIALS dcerpc LIBCLI_SMB SMBREADLINE ' + TORTURE_MODULES,
-                 enabled = bld.env.BUILD_FARM,
-                 pyembed=True
-                 )
-bld.env.NONSHARED_BINARIES.append('smbtorture.static')
-
-
-
 bld.SAMBA_BINARY('gentest',
 	source='gentest.c',
 	manpages='man/gentest.1',
