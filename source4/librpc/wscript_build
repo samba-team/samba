@@ -110,6 +110,14 @@ bld.SAMBA_LIBRARY('NDR_SAMBA4',
                   grouping_library=True
                   )
 
+# a grouping library for RPC_NDR subsystems that may be used by more than one target
+bld.SAMBA_LIBRARY('RPC_NDR_SAMBA4',
+                  source=[],
+                  deps='RPC_NDR_WINBIND',
+                  private_library=True,
+                  grouping_library=True
+                  )
+
 
 bld.SAMBA_PIDL_TABLES('GEN_NDR_TABLES', 'gen_ndr/tables.c')
 

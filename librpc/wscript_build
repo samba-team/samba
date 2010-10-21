@@ -484,7 +484,7 @@ bld.SAMBA_LIBRARY('NDR_SAMBA',
 # a grouping library for RPC_NDR subsystems that may be used by more than one target
 bld.SAMBA_LIBRARY('RPC_NDR_SAMBA',
                   source=[],
-                  deps='RPC_NDR_DRSUAPI RPC_NDR_LSA RPC_NDR_WINBIND RPC_NDR_WINREG',
+                  deps='RPC_NDR_DRSUAPI RPC_NDR_LSA RPC_NDR_WINREG',
                   private_library=True,
                   grouping_library=True
                   )
