@@ -46,7 +46,7 @@
   For the NAME form, returns a pointer to an empty string (thus
   allowing for boolean options).
  */
-_PRIVATE_ const char *ldb_options_find(struct ldb_context *ldb, const char *options[],
+const char *ldb_options_find(struct ldb_context *ldb, const char *options[],
 				       const char *option_name)
 {
 	size_t len = strlen(option_name);
