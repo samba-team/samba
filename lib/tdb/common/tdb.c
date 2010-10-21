@@ -27,13 +27,13 @@
 
 #include "tdb_private.h"
 
-TDB_DATA tdb_null;
+_PUBLIC_ TDB_DATA tdb_null;
 
 /*
   non-blocking increment of the tdb sequence number if the tdb has been opened using
   the TDB_SEQNUM flag
 */
-void tdb_increment_seqnum_nonblock(struct tdb_context *tdb)
+_PUBLIC_ void tdb_increment_seqnum_nonblock(struct tdb_context *tdb)
 {
 	tdb_off_t seqnum=0;
 
@@ -199,7 +199,7 @@ static TDB_DATA _tdb_fetch(struct tdb_context *tdb, TDB_DATA key)
 	return ret;
 }
 
-TDB_DATA tdb_fetch(struct tdb_context *tdb, TDB_DATA key)
+_PUBLIC_ TDB_DATA tdb_fetch(struct tdb_context *tdb, TDB_DATA key)
 {
 	TDB_DATA ret = _tdb_fetch(tdb, key);
 
@@ -225,7 +225,7 @@ TDB_DATA tdb_fetch(struct tdb_context *tdb, TDB_DATA key)
  * Return -1 if the record was not found.
  */
 
-int tdb_parse_record(struct tdb_context *tdb, TDB_DATA key,
+_PUBLIC_ int tdb_parse_record(struct tdb_context *tdb, TDB_DATA key,
 		     int (*parser)(TDB_DATA key, TDB_DATA data,
 				   void *private_data),
 		     void *private_data)
@@ -270,7 +270,7 @@ static int tdb_exists_hash(struct tdb_context *tdb, TDB_DATA key, uint32_t hash)
 	return 1;
 }
 
-int tdb_exists(struct tdb_context *tdb, TDB_DATA key)
+_PUBLIC_ int tdb_exists(struct tdb_context *tdb, TDB_DATA key)
 {
 	uint32_t hash = tdb->hash_fn(&key);
 	int ret;
@@ -429,7 +429,7 @@ static int tdb_delete_hash(struct tdb_context *tdb, TDB_DATA key, uint32_t hash)
 	return ret;
 }
 
-int tdb_delete(struct tdb_context *tdb, TDB_DATA key)
+_PUBLIC_ int tdb_delete(struct tdb_context *tdb, TDB_DATA key)
 {
 	uint32_t hash = tdb->hash_fn(&key);
 	int ret;
@@ -599,7 +599,7 @@ static int _tdb_store(struct tdb_context *tdb, TDB_DATA key,
 
    return 0 on success, -1 on failure
 */
-int tdb_store(struct tdb_context *tdb, TDB_DATA key, TDB_DATA dbuf, int flag)
+_PUBLIC_ int tdb_store(struct tdb_context *tdb, TDB_DATA key, TDB_DATA dbuf, int flag)
 {
 	uint32_t hash;
 	int ret;
@@ -622,7 +622,7 @@ int tdb_store(struct tdb_context *tdb, TDB_DATA key, TDB_DATA dbuf, int flag)
 }
 
 /* Append to an entry. Create if not exist. */
-int tdb_append(struct tdb_context *tdb, TDB_DATA key, TDB_DATA new_dbuf)
+_PUBLIC_ int tdb_append(struct tdb_context *tdb, TDB_DATA key, TDB_DATA new_dbuf)
 {
 	uint32_t hash;
 	TDB_DATA dbuf;
@@ -673,7 +673,7 @@ failed:
   return the name of the current tdb file
   useful for external logging functions
 */
-const char *tdb_name(struct tdb_context *tdb)
+_PUBLIC_ const char *tdb_name(struct tdb_context *tdb)
 {
 	return tdb->name;
 }
@@ -683,7 +683,7 @@ const char *tdb_name(struct tdb_context *tdb)
   useful for external routines that want to check the device/inode
   of the fd
 */
-int tdb_fd(struct tdb_context *tdb)
+_PUBLIC_ int tdb_fd(struct tdb_context *tdb)
 {
 	return tdb->fd;
 }
@@ -692,7 +692,7 @@ int tdb_fd(struct tdb_context *tdb)
   return the current logging function
   useful for external tdb routines that wish to log tdb errors
 */
-tdb_log_func tdb_log_fn(struct tdb_context *tdb)
+_PUBLIC_ tdb_log_func tdb_log_fn(struct tdb_context *tdb)
 {
 	return tdb->log.log_fn;
 }
@@ -708,7 +708,7 @@ tdb_log_func tdb_log_fn(struct tdb_context *tdb)
   The aim of this sequence number is to allow for a very lightweight
   test of a possible tdb change.
 */
-int tdb_get_seqnum(struct tdb_context *tdb)
+_PUBLIC_ int tdb_get_seqnum(struct tdb_context *tdb)
 {
 	tdb_off_t seqnum=0;
 
@@ -716,22 +716,22 @@ int tdb_get_seqnum(struct tdb_context *tdb)
 	return seqnum;
 }
 
-int tdb_hash_size(struct tdb_context *tdb)
+_PUBLIC_ int tdb_hash_size(struct tdb_context *tdb)
 {
 	return tdb->header.hash_size;
 }
 
-size_t tdb_map_size(struct tdb_context *tdb)
+_PUBLIC_ size_t tdb_map_size(struct tdb_context *tdb)
 {
 	return tdb->map_size;
 }
 
-int tdb_get_flags(struct tdb_context *tdb)
+_PUBLIC_ int tdb_get_flags(struct tdb_context *tdb)
 {
 	return tdb->flags;
 }
 
-void tdb_add_flags(struct tdb_context *tdb, unsigned flags)
+_PUBLIC_ void tdb_add_flags(struct tdb_context *tdb, unsigned flags)
 {
 	if ((flags & TDB_ALLOW_NESTING) &&
 	    (flags & TDB_DISALLOW_NESTING)) {
@@ -751,7 +751,7 @@ void tdb_add_flags(struct tdb_context *tdb, unsigned flags)
 	tdb->flags |= flags;
 }
 
-void tdb_remove_flags(struct tdb_context *tdb, unsigned flags)
+_PUBLIC_ void tdb_remove_flags(struct tdb_context *tdb, unsigned flags)
 {
 	if ((flags & TDB_ALLOW_NESTING) &&
 	    (flags & TDB_DISALLOW_NESTING)) {
@@ -775,7 +775,7 @@ void tdb_remove_flags(struct tdb_context *tdb, unsigned flags)
 /*
   enable sequence number handling on an open tdb
 */
-void tdb_enable_seqnum(struct tdb_context *tdb)
+_PUBLIC_ void tdb_enable_seqnum(struct tdb_context *tdb)
 {
 	tdb->flags |= TDB_SEQNUM;
 }
@@ -812,7 +812,7 @@ static int tdb_free_region(struct tdb_context *tdb, tdb_off_t offset, ssize_t le
 
   This code carefully steps around the recovery area, leaving it alone
  */
-int tdb_wipe_all(struct tdb_context *tdb)
+_PUBLIC_ int tdb_wipe_all(struct tdb_context *tdb)
 {
 	int i;
 	tdb_off_t offset = 0;
@@ -919,7 +919,7 @@ static int repack_traverse(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data,
 /*
   repack a tdb
  */
-int tdb_repack(struct tdb_context *tdb)
+_PUBLIC_ int tdb_repack(struct tdb_context *tdb)
 {
 	struct tdb_context *tmp_db;
 	struct traverse_state state;

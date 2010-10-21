@@ -80,7 +80,7 @@ static int tdb_dump_chain(struct tdb_context *tdb, int i)
 	return tdb_unlock(tdb, i, F_WRLCK);
 }
 
-void tdb_dump_all(struct tdb_context *tdb)
+_PUBLIC_ void tdb_dump_all(struct tdb_context *tdb)
 {
 	int i;
 	for (i=0;i<tdb->header.hash_size;i++) {
@@ -90,7 +90,7 @@ void tdb_dump_all(struct tdb_context *tdb)
 	tdb_dump_chain(tdb, -1);
 }
 
-int tdb_printfreelist(struct tdb_context *tdb)
+_PUBLIC_ int tdb_printfreelist(struct tdb_context *tdb)
 {
 	int ret;
 	long total_free = 0;

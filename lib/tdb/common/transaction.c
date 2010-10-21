@@ -529,12 +529,12 @@ fail_allrecord_lock:
 	return -1;
 }
 
-int tdb_transaction_start(struct tdb_context *tdb)
+_PUBLIC_ int tdb_transaction_start(struct tdb_context *tdb)
 {
 	return _tdb_transaction_start(tdb, TDB_LOCK_WAIT);
 }
 
-int tdb_transaction_start_nonblock(struct tdb_context *tdb)
+_PUBLIC_ int tdb_transaction_start_nonblock(struct tdb_context *tdb)
 {
 	return _tdb_transaction_start(tdb, TDB_LOCK_NOWAIT|TDB_LOCK_PROBE);
 }
@@ -625,7 +625,7 @@ static int _tdb_transaction_cancel(struct tdb_context *tdb)
 /*
   cancel the current transaction
 */
-int tdb_transaction_cancel(struct tdb_context *tdb)
+_PUBLIC_ int tdb_transaction_cancel(struct tdb_context *tdb)
 {
 	tdb_trace(tdb, "tdb_transaction_cancel");
 	return _tdb_transaction_cancel(tdb);
@@ -975,8 +975,8 @@ static int _tdb_transaction_prepare_commit(struct tdb_context *tdb)
 /*
    prepare to commit the current transaction
 */
-int tdb_transaction_prepare_commit(struct tdb_context *tdb)
-{	
+_PUBLIC_ int tdb_transaction_prepare_commit(struct tdb_context *tdb)
+{
 	tdb_trace(tdb, "tdb_transaction_prepare_commit");
 	return _tdb_transaction_prepare_commit(tdb);
 }
@@ -984,8 +984,8 @@ int tdb_transaction_prepare_commit(struct tdb_context *tdb)
 /*
   commit the current transaction
 */
-int tdb_transaction_commit(struct tdb_context *tdb)
-{	
+_PUBLIC_ int tdb_transaction_commit(struct tdb_context *tdb)
+{
 	const struct tdb_methods *methods;
 	int i;
 	bool need_repack;

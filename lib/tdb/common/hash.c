@@ -374,7 +374,7 @@ static uint32_t hashlittle( const void *key, size_t length )
   return c;
 }
 
-unsigned int tdb_jenkins_hash(TDB_DATA *key)
+_PUBLIC_ unsigned int tdb_jenkins_hash(TDB_DATA *key)
 {
 	return hashlittle(key->dptr, key->dsize);
 }

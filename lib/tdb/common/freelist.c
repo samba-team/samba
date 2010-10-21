@@ -367,7 +367,7 @@ tdb_off_t tdb_allocate(struct tdb_context *tdb, tdb_len_t length, struct tdb_rec
 /* 
    return the size of the freelist - used to decide if we should repack 
 */
-int tdb_freelist_size(struct tdb_context *tdb)
+_PUBLIC_ int tdb_freelist_size(struct tdb_context *tdb)
 {
 	tdb_off_t ptr;
 	int count=0;
