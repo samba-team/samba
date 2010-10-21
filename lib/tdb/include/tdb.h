@@ -101,6 +101,7 @@ void tdb_set_max_dead(struct tdb_context *tdb, int max_dead);
 
 int tdb_reopen(struct tdb_context *tdb);
 int tdb_reopen_all(int parent_longlived);
+__attribute__((deprecated)) void tdb_logging_function(struct tdb_context *tdb, tdb_log_func);
 void tdb_set_logging_function(struct tdb_context *tdb, const struct tdb_logging_context *log_ctx);
 enum TDB_ERROR tdb_error(struct tdb_context *tdb);
 const char *tdb_errorstr(struct tdb_context *tdb);
