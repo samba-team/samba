@@ -130,7 +130,7 @@ def build(bld):
                           vnum=VERSION, manpages='man/ldb.3',
                           abi_file = abi_file,
                           abi_match = abi_match,
-                          is_bundled=not bld.env.standalone_ldb)
+                          private_library=not bld.env.standalone_ldb)
 
         bld.SAMBA_PYTHON('pyldb', 'pyldb.c',
                          deps='ldb pyldb_util',

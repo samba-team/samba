@@ -71,7 +71,7 @@ def build(bld):
                           abi_match='tdb_*',
                           hide_symbols=True,
                           vnum=VERSION,
-                          is_bundled=not bld.env.standalone_tdb)
+                          private_library=not bld.env.standalone_tdb)
 
         bld.SAMBA_BINARY('tdbtorture',
                          'tools/tdbtorture.c',

@@ -95,7 +95,7 @@ def install_library(self):
         install_name = bld.make_libname(self.target, version=self.vnum)
         install_link = bld.make_libname(self.target, version=vnum_base)
         inst_name    = bld.make_libname(t.target)
-        if not self.is_bundled:
+        if not self.private_library:
             # only generate the dev link for non-bundled libs
             dev_link     = bld.make_libname(self.target)
     else:

@@ -182,7 +182,7 @@ def HEIMDAL_AUTOPROTO_PRIVATE(header, source):
 def HEIMDAL_LIBRARY(libname, source, deps, vnum,
                   includes='',
                   cflags='',
-                  is_bundled=True):
+                  private_library=True):
     '''define a Heimdal library'''
 
     obj_target = libname + '.objlist'
@@ -204,7 +204,7 @@ def HEIMDAL_LIBRARY(libname, source, deps, vnum,
     deps = to_list(deps)
     deps.append(obj_target)
 
-    if not is_bundled:
+    if not private_library:
         # Sanitize the library name
         bundled_name = libname.lower().replace('_', '-')
         while bundled_name.startswith("lib"):
@@ -225,7 +225,7 @@ def HEIMDAL_LIBRARY(libname, source, deps, vnum,
         vnum            = vnum,
         install_path    = None,
         name            = libname,
-        is_bundled      = is_bundled,
+        private_library = private_library
         )
 
 

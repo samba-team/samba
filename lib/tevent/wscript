@@ -74,7 +74,7 @@ def build(bld):
                           abi_file='ABI/tevent-%s.sigs' % VERSION,
                           abi_match='tevent_* _tevent_*',
                           vnum=VERSION, 
-                          is_bundled=not bld.env.standalone_tevent)
+                          private_library=not bld.env.standalone_tevent)
 
     if bld.env.standalone_tevent:
         bld.env.PKGCONFIGDIR = '${LIBDIR}/pkgconfig'
