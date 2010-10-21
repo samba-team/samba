@@ -929,6 +929,7 @@ bld.SAMBA_LIBRARY('libwbclient',
                               ../nsswitch/libwbclient/wbc_sid.c
                               ../nsswitch/libwbclient/wbc_util.c''',
                     public_headers='../nsswitch/libwbclient/wbclient.h',
+                    private_library=True,
                     public_deps='talloc WBCOMMON')
 
 bld.SAMBA_LIBRARY('libnetapi',
@@ -938,6 +939,7 @@ bld.SAMBA_LIBRARY('libnetapi',
                     LIBMSRPC_GEN LIBMSRPC LIBADS LIBNET DCUTIL NDR_LIBNETAPI
                     RPC_CLIENT_SCHANNEL LIBSMBCONF REG_SMBCONF''',
                     public_headers='lib/netapi/netapi.h',
+                    private_library=True,
                     vars=locals())
 
 bld.SAMBA_LIBRARY('libsmbclient',
@@ -945,18 +947,21 @@ bld.SAMBA_LIBRARY('libsmbclient',
                     public_deps='''talloc tdb libwbclient cap PARAM LIB_NONSMBD LIBSMB KRBCLIENT PASSDB SMBLDAP GROUPDB
                     LIBMSRPC_GEN LIBMSRPC''',
                     public_headers='include/libsmbclient.h',
+                    private_library=True,
                     vars=locals())
 
 bld.SAMBA_LIBRARY('libsmbsharemodes',
                     source=LIBSMBSHAREMODES_SRC,
                     public_deps='''talloc tdb''',
                     public_headers='include/smb_share_modes.h',
+                    private_library=True,
                     vars=locals())
 
 bld.SAMBA_LIBRARY('libaddns',
                     source=LIBADDNS_SRC,
                     deps='SOCKET_WRAPPER',
                     public_deps='talloc krb5 k5crypto com_err gssapi gssapi_krb5',
+                    private_library=True,
                     vars=locals())
 
 bld.SAMBA_SUBSYSTEM('LIBMSRPC',
