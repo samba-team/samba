@@ -70,9 +70,10 @@ int dsdb_module_schema_info_blob_read(struct ldb_module *ldb_module,
 
 	blob_val = ldb_msg_find_ldb_val(schema_res->msgs[0], "schemaInfo");
 	if (!blob_val) {
-		DEBUG(0,("dsdb_module_schema_info_blob_read: no schemaInfo attribute found\n"));
+		ldb_asprintf_errstring(ldb_module_get_ctx(ldb_module),
+				       "dsdb_module_schema_info_blob_read: no schemaInfo attribute found");
 		talloc_free(schema_res);
-		return ldb_operr(ldb_module_get_ctx(ldb_module));
+		return LDB_ERR_NO_SUCH_ATTRIBUTE;
 	}
 
 	/* transfer .data ownership to mem_ctx */
