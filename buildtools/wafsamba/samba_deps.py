@@ -883,7 +883,7 @@ def show_object_duplicates(bld, tgt_list):
     Logs.info("showing duplicate objects")
 
     for t in tgt_list:
-        if not targets[t.sname] in [ 'LIBRARY' ]:
+        if not targets[t.sname] in [ 'LIBRARY', 'PYTHON' ]:
             continue
         for n in getattr(t, 'final_objects', set()):
             t2 = bld.name_to_obj(n, bld.env)
@@ -1073,10 +1073,11 @@ def check_project_rules(bld):
     build_direct_deps(bld, tgt_list)
 
     break_dependency_loops(bld, tgt_list)
-    calculate_final_deps(bld, tgt_list, loops)
 
     if Options.options.SHOWDEPS:
             show_dependencies(bld, Options.options.SHOWDEPS, set())
+
+    calculate_final_deps(bld, tgt_list, loops)
 
     if Options.options.SHOW_DUPLICATES:
             show_object_duplicates(bld, tgt_list)
