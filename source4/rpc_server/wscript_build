@@ -1,11 +1,17 @@
 #!/usr/bin/env python
 
+bld.SAMBA_SUBSYSTEM('DCERPC_SHARE',
+	source='common/server_info.c common/share_info.c',
+	autoproto='common/share.h',
+	deps='ldb'
+	)
+
 bld.SAMBA_SUBSYSTEM('DCERPC_COMMON',
-	source='common/server_info.c common/share_info.c common/forward.c',
+	source='common/forward.c',
 	autoproto='common/proto.h',
 	public_headers='common/common.h',
 	header_path='dcerpc_server',
-	deps='ldb dcerpc_server'
+	deps='ldb DCERPC_SHARE'
 	)
 
 

@@ -23,6 +23,7 @@
 #include "rpc_server/dcerpc_server.h"
 #include "librpc/gen_ndr/ndr_wkssvc.h"
 #include "rpc_server/common/common.h"
+#include "rpc_server/common/share.h"
 #include "param/param.h"
 
 /*
