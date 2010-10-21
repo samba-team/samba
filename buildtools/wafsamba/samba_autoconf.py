@@ -436,6 +436,15 @@ def CHECK_CFLAGS(conf, cflags):
                       ccflags=cflags,
                       msg="Checking compiler accepts %s" % cflags)
 
+@conf
+def CHECK_LDFLAGS(conf, ldflags):
+    '''check if the given ldflags are accepted by the linker
+    '''
+    return conf.check(fragment='int main(void) { return 0; }\n',
+                      execute=0,
+                      ldflags=ldflags,
+                      msg="Checking linker accepts %s" % ldflags)
+
 
 @conf
 def CONFIG_SET(conf, option):
@@ -619,7 +628,7 @@ def ADD_LDFLAGS(conf, flags, testflags=False):
     if testflags:
         ok_flags=[]
         for f in flags.split():
-            if CHECK_CFLAGS(conf, f):
+            if CHECK_LDFLAGS(conf, f):
                 ok_flags.append(f)
         flags = ok_flags
     if not 'EXTRA_LDFLAGS' in conf.env:
