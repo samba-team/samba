@@ -457,6 +457,10 @@ def library_flags(conf, libs):
         extra_ldflags = TO_LIST(getattr(conf.env, 'LDFLAGS_%s' % lib.upper(), []))
         ccflags.extend(extra_ccflags)
         ldflags.extend(extra_ldflags)
+    if 'EXTRA_LDFLAGS' in conf.env:
+        ldflags.extend(conf.env['EXTRA_LDFLAGS'])
+    ccflags = unique_list(ccflags)
+    ldflags = unique_list(ldflags)
     return (ccflags, ldflags)
 
 
@@ -644,14 +648,6 @@ def CURRENT_CFLAGS(bld, target, cflags, hide_symbols=False):
     if hide_symbols and bld.env.HAVE_VISIBILITY_ATTR:
         ret.append('-fvisibility=hidden')
     return ret
-
-
-def CURRENT_LDFLAGS(bld, target, cflags, hide_symbols=False):
-    '''work out the current loader flags. local flags are added first'''
-    flags = CURRENT_CFLAGS(bld, target, cflags, hide_symbols=hide_symbols)
-    if 'EXTRA_LDFLAGS' in bld.env:
-        flags.extend(bld.env['EXTRA_LDFLAGS'])
-    return flags
 
 
 @conf

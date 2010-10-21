@@ -2,7 +2,7 @@
 
 import os
 from samba_utils import SET_TARGET_TYPE
-from samba_autoconf import CURRENT_CFLAGS, CURRENT_LDFLAGS
+from samba_autoconf import CURRENT_CFLAGS
 
 def to_list(str):
     '''Split a list, preserving quoted strings and existing lists'''
@@ -219,7 +219,6 @@ def HEIMDAL_LIBRARY(libname, source, deps, vnum,
         features        = features,
         source          = [],
         target          = bundled_name,
-        samba_cflags    = CURRENT_LDFLAGS(bld, libname, cflags),
         samba_deps      = deps,
         samba_includes  = includes,
         vnum            = vnum,
@@ -320,7 +319,6 @@ def HEIMDAL_BINARY(binname, source,
         features       = features,
         source         = [],
         target         = binname,
-        samba_cflags   = CURRENT_LDFLAGS(bld, binname, cflags),
         samba_deps     = deps,
         samba_includes = includes,
         local_include  = True,
