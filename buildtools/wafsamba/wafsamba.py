@@ -184,7 +184,9 @@ def SAMBA_LIBRARY(bld, libname, source,
     features = 'cc cshlib symlink_lib install_lib'
     if target_type == 'PYTHON':
         features += ' pyext'
-    if pyembed:
+    if pyext or pyembed:
+        # this is quite strange. we should add pyext feature for pyext
+        # but that breaks the build. This may be a bug in the waf python tool
         features += ' pyembed'
     if abi_file:
         features += ' abi_check'
