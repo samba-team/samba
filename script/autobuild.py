@@ -278,7 +278,6 @@ def write_pidfile(fname):
     f = open(fname, mode='w')
     f.write("%u\n" % os.getpid())
     f.close()
-    cleanup_list.append(fname)
 
 
 def rebase_tree(url):
@@ -472,6 +471,8 @@ while True:
     except:
         cleanup()
         raise
+
+cleanup_list.append(gitroot + "/autobuild.pid")
 
 blist.kill_kids()
 if options.tail:
