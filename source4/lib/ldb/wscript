@@ -102,7 +102,11 @@ def build(bld):
         bld.env.PKGCONFIGDIR = '${LIBDIR}/pkgconfig'
 
 
-    bld.SAMBA_SUBSYSTEM('pyldb_util', deps='ldb', source='pyldb_util.c', pyext=True)
+    bld.SAMBA_LIBRARY('pyldb_util',
+                      deps='ldb',
+                      source='pyldb_util.c',
+                      pyext=True,
+                      private_library=True)
 
     if not bld.CONFIG_SET('USING_SYSTEM_LDB'):
         if Options.is_install:
