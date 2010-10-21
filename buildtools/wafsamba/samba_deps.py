@@ -378,6 +378,36 @@ def add_samba_attributes(bld, tgt_list):
         t.samba_includes_extended = TO_LIST(t.samba_includes)[:]
         t.ccflags = getattr(t, 'samba_cflags', '')
 
+def replace_grouping_libraries(bld, tgt_list):
+    '''replace dependencies based on grouping libraries
+
+    If a library is marked as a grouping library, then any target that
+    depends on a subsystem that is part of that grouping library gets
+    that dependency replaced with a dependency on the grouping library
+    '''
+
+    targets  = LOCAL_CACHE(bld, 'TARGET_TYPE')
+
+    grouping = {}
+
+    # find our list of grouping libraries, mapped from the subsystems they depend on
+    for t in tgt_list:
+        if not getattr(t, 'grouping_library', False):
+            continue
+        for dep in t.samba_deps_extended:
+            if targets[dep] == 'SUBSYSTEM':
+                grouping[dep] = t.sname
+
+    # now replace any dependencies on elements of grouping libraries
+    for t in tgt_list:
+        for i in range(len(t.samba_deps_extended)):
+            dep = t.samba_deps_extended[i]
+            if dep in grouping:
+                if t.sname != grouping[dep]:
+                    debug("deps: target %s: replacing dependency %s with grouping library %s" % (t.sname, dep, grouping[dep]))
+                    t.samba_deps_extended[i] = grouping[dep]
+
+
 
 def build_direct_deps(bld, tgt_list):
     '''build the direct_objects and direct_libs sets for each target'''
@@ -868,7 +898,7 @@ def show_object_duplicates(bld, tgt_list):
 ######################################################################
 # this provides a way to save our dependency calculations between runs
 savedeps_version = 3
-savedeps_inputs  = ['samba_deps', 'samba_includes', 'local_include', 'local_include_first', 'samba_cflags', 'source']
+savedeps_inputs  = ['samba_deps', 'samba_includes', 'local_include', 'local_include_first', 'samba_cflags', 'source', 'grouping_library']
 savedeps_outputs = ['uselib', 'uselib_local', 'add_objects', 'includes', 'ccflags']
 savedeps_outenv  = ['INC_PATHS']
 savedeps_envvars = ['NONSHARED_BINARIES', 'GLOBAL_DEPENDENCIES']
@@ -1028,6 +1058,7 @@ def check_project_rules(bld):
     debug('deps: project rules checking started')
 
     expand_subsystem_deps(bld)
+    replace_grouping_libraries(bld, tgt_list)
     build_direct_deps(bld, tgt_list)
 
     break_dependency_loops(bld, tgt_list)
