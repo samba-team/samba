@@ -63,7 +63,7 @@ bld.SAMBA_SUBSYSTEM('torture_registry',
 
 bld.SAMBA_PYTHON('py_registry',
 	source='pyregistry.c',
-	public_deps='registry PYTALLOC pycredentials pyparam_util',
+	public_deps='registry PYTALLOC pyparam_util',
 	realname='samba/registry.so'
 	)
 

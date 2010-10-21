@@ -41,14 +41,14 @@ bld.SAMBA_MODULE('ntvfs_posix',
 
 bld.SAMBA_PYTHON('python_xattr_native',
 	source='python/pyxattr_native.c',
-	deps='LIBNDR ldb SAMDB CREDENTIALS python_dcerpc_security pyparam_util WRAP_XATTR attr',
+	deps='LIBNDR ldb SAMDB CREDENTIALS pyparam_util WRAP_XATTR attr',
 	realname='samba/xattr_native.so'
 	)
 
 
 bld.SAMBA_PYTHON('python_xattr_tdb',
 	source='python/pyxattr_tdb.c xattr_tdb.c',
-	deps='LIBNDR ldb python_dcerpc_security pyparam_util share attr',
+	deps='LIBNDR ldb pyparam_util share attr',
 	realname='samba/xattr_tdb.so'
 	)
 

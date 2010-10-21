@@ -9,7 +9,7 @@ bld.SAMBA_SUBSYSTEM('MESSAGING',
 
 bld.SAMBA_PYTHON('python_messaging',
 	source='pymessaging.c',
-	deps='MESSAGING LIBEVENTS python_irpc pyparam_util',
+	deps='MESSAGING LIBEVENTS pyparam_util',
 	realname='samba/messaging.so'
 	)
 
