@@ -120,7 +120,7 @@ static int ltdb_attributes_load(struct ldb_module *module)
 	if (ldb->schema.attribute_handler_override) {
 		/* we skip loading the @ATTRIBUTES record when a module is supplying
 		   its own attribute handling */
-		return LDB_SUCCESS;
+		return 0;
 	}
 
 	dn = ldb_dn_new(module, ldb, LTDB_ATTRIBUTES);
