@@ -414,14 +414,22 @@ def build_direct_deps(bld, tgt_list):
 
     targets  = LOCAL_CACHE(bld, 'TARGET_TYPE')
     syslib_deps  = LOCAL_CACHE(bld, 'SYSLIB_DEPS')
+
     global_deps = bld.env.GLOBAL_DEPENDENCIES
+    global_deps_exclude = set()
+    for dep in global_deps:
+        t = bld.name_to_obj(dep, bld.env)
+        for d in t.samba_deps:
+            # prevent loops from the global dependencies list
+            global_deps_exclude.add(d)
+            global_deps_exclude.add(d + '.objlist')
 
     for t in tgt_list:
         t.direct_objects = set()
         t.direct_libs = set()
         t.direct_syslibs = set()
         deps = t.samba_deps_extended[:]
-        if getattr(t, 'samba_use_global_deps', False):
+        if getattr(t, 'samba_use_global_deps', False) and not t.sname in global_deps_exclude:
             deps.extend(global_deps)
         for d in deps:
             d = EXPAND_ALIAS(bld, d)
