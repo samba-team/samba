@@ -46,6 +46,7 @@ const SE_PRIV se_disk_operators  = SE_DISK_OPERATOR;
 const SE_PRIV se_remote_shutdown = SE_REMOTE_SHUTDOWN;
 const SE_PRIV se_restore         = SE_RESTORE;
 const SE_PRIV se_take_ownership  = SE_TAKE_OWNERSHIP;
+const SE_PRIV se_security	 = SE_SECURITY;
 
 /********************************************************************
  This is a list of privileges reported by a WIndows 2000 SP4 AD DC
@@ -106,6 +107,7 @@ PRIVS privs[] = {
 	{SE_PRINT_OPERATOR,	"SePrintOperatorPrivilege",	"Manage printers",			   { 0x1001,	0x0 }},
 	{SE_ADD_USERS,		"SeAddUsersPrivilege",		"Add users and groups to the domain",	   { 0x1002,	0x0 }},
 	{SE_DISK_OPERATOR,	"SeDiskOperatorPrivilege",	"Manage disk shares",			   { 0x1003,	0x0 }},
+	{SE_SECURITY,		"SeSecurityPrivilege",		"Manage auditing and security log",	   { 0x0008,	0x0 }},
 
 	{SE_END, "", "", { 0x0, 0x0 }}
 };
