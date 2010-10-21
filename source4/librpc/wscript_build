@@ -99,8 +99,17 @@ bld.SAMBA_LIBRARY('NDR_STANDARD',
 	deps='NDR_SECURITY NDR_LSA NDR_SAMR NDR_NETLOGON NDR_EVENTLOG NDR_DFS NDR_NTSVCS NDR_SVCCTL NDR_INITSHUTDOWN NDR_WKSSVC NDR_SRVSVC NDR_WINREG NDR_ECHO',
 	public_deps='LIBNDR',
 	public_headers='../../librpc/gen_ndr/samr.h ../../librpc/gen_ndr/ndr_samr.h ../../librpc/gen_ndr/lsa.h ../../librpc/gen_ndr/netlogon.h ../../librpc/gen_ndr/atsvc.h ../../librpc/gen_ndr/ndr_atsvc.h ../../librpc/gen_ndr/ndr_svcctl.h ../../librpc/gen_ndr/svcctl.h',
-        header_path='gen_ndr'
+        header_path='gen_ndr',
+        grouping_library=True
 	)
+
+# create a grouping library to consolidate our samba4 specific NDR code
+bld.SAMBA_LIBRARY('NDR_SAMBA4',
+                  source=[],
+                  deps='NDR_WINBIND NDR_IRPC',
+                  private_library=True,
+                  grouping_library=True
+                  )
 
 
 bld.SAMBA_PIDL_TABLES('GEN_NDR_TABLES', 'gen_ndr/tables.c')
