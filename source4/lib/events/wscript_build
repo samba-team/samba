@@ -3,7 +3,7 @@
 
 bld.SAMBA_LIBRARY('LIBEVENTS',
                   source='tevent_s4.c',
+                  deps='LIBSAMBA-UTIL',
                   public_deps='tevent',
                   private_library=True
                   )
-
