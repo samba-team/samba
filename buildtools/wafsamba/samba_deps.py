@@ -439,7 +439,9 @@ def build_direct_deps(bld, tgt_list):
                 sys.exit(1)
             if targets[d] in [ 'EMPTY', 'DISABLED' ]:
                 continue
-            if targets[d] == 'PYTHON':
+            if targets[d] == 'PYTHON' and targets[t.sname] != 'PYTHON' and t.sname.find('.objlist') == -1:
+                # this check should be more restrictive, but for now we have pidl-generated python
+                # code that directly depends on other python modules
                 Logs.error('ERROR: Target %s has dependency on python module %s' % (t.sname, d))
                 sys.exit(1)
             if targets[d] == 'SYSLIB':
