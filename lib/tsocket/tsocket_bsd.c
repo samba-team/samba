@@ -263,6 +263,9 @@ int _tsocket_address_bsd_from_sockaddr(TALLOC_CTX *mem_ctx,
 	memcpy(&bsda->u.ss, sa, sa_socklen);
 
 	bsda->sa_socklen = sa_socklen;
+#ifdef HAVE_STRUCT_SOCKADDR_SA_LEN
+	bsda->u.sa.sa_len = bsda->sa_socklen;
+#endif
 
 	*_addr = addr;
 	return 0;
@@ -291,6 +294,9 @@ ssize_t tsocket_address_bsd_sockaddr(const struct tsocket_address *addr,
 	}
 
 	memcpy(sa, &bsda->u.ss, sa_socklen);
+#ifdef HAVE_STRUCT_SOCKADDR_SA_LEN
+	sa->sa_len = sa_socklen;
+#endif
 	return sa_socklen;
 }
 
@@ -900,6 +906,9 @@ static void tdgram_bsd_recvfrom_handler(void *private_data)
 
 	ZERO_STRUCTP(bsda);
 	bsda->sa_socklen = sizeof(bsda->u.ss);
+#ifdef HAVE_STRUCT_SOCKADDR_SA_LEN
+	bsda->u.sa.sa_len = bsda->sa_socklen;
+#endif
 
 	ret = recvfrom(bsds->fd, state->buf, state->len, 0,
 		       &bsda->u.sa, &bsda->sa_socklen);
@@ -2095,6 +2104,9 @@ static struct tevent_req *tstream_bsd_connect_send(TALLOC_CTX *mem_ctx,
 
 		ZERO_STRUCTP(lrbsda);
 		lrbsda->sa_socklen = sizeof(lrbsda->u.ss);
+#ifdef HAVE_STRUCT_SOCKADDR_SA_LEN
+		lrbsda->u.sa.sa_len = lrbsda->sa_socklen;
+#endif
 	}
 
 	state->fd = socket(sa_fam, SOCK_STREAM, 0);
