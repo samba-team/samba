@@ -27,7 +27,7 @@ bld.SAMBA_SUBSYSTEM('UNIX_PRIVS',
 
 bld.SAMBA_SUBSYSTEM('WRAP_XATTR',
 	source='wrap_xattr.c',
-	public_deps='XATTR',
+	public_deps='attr',
 	deps='talloc',
 	local_include=False
 	)

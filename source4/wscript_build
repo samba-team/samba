@@ -14,11 +14,6 @@ bld.SAMBA_MKVERSION('version.h')
 
 # bld.ENABLE_MAGIC_ORDERING()
 
-# we don't always use consistent names for our subsystems.
-# this sets up some aliases
-bld.TARGET_ALIAS('attr', 'XATTR')
-bld.TARGET_ALIAS('sasl2', 'SASL')
-
 bld.RECURSE('../lib/replace')
 bld.RECURSE('../lib/talloc')
 bld.RECURSE('../lib/tdb')
