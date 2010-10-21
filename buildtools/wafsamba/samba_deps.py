@@ -439,6 +439,9 @@ def build_direct_deps(bld, tgt_list):
                 sys.exit(1)
             if targets[d] in [ 'EMPTY', 'DISABLED' ]:
                 continue
+            if targets[d] == 'PYTHON':
+                Logs.error('ERROR: Target %s has dependency on python module %s' % (t.sname, d))
+                sys.exit(1)
             if targets[d] == 'SYSLIB':
                 t.direct_syslibs.add(d)
                 if d in syslib_deps:
