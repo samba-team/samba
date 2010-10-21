@@ -147,7 +147,7 @@ bld.SAMBA_MODULE('ldb_rootdse',
 	subsystem='ldb',
 	init_function='LDB_MODULE(rootdse)',
 	internal_module=False,
-	deps='talloc LIBEVENTS SAMDB MESSAGING LIBSECURITY_SESSION'
+	deps='talloc LIBEVENTS SAMDB MESSAGING LIBSECURITY_SESSION DSDB_MODULE_HELPERS'
 	)
 
 
@@ -301,7 +301,7 @@ bld.SAMBA_MODULE('ldb_instancetype',
 	subsystem='ldb',
 	init_function='LDB_MODULE(instancetype)',
 	internal_module=False,
-	deps='talloc LIBEVENTS LIBSAMBA-UTIL SAMDB'
+	deps='talloc LIBEVENTS LIBSAMBA-UTIL SAMDB DSDB_MODULE_HELPERS'
 	)
 
 
@@ -346,7 +346,7 @@ bld.SAMBA_MODULE('ldb_lazy_commit',
 	subsystem='ldb',
 	internal_module=False,
 	init_function='LDB_MODULE(lazy_commit)',
-	deps='SAMDB'
+	deps='SAMDB DSDB_MODULE_HELPERS'
 	)
 
 bld.SAMBA_MODULE('ldb_aclread',
@@ -354,7 +354,7 @@ bld.SAMBA_MODULE('ldb_aclread',
 	subsystem='ldb',
 	init_function='LDB_MODULE(aclread)',
 	internal_module=False,
-	deps='talloc LIBEVENTS LIBSECURITY SAMDB',
+	deps='talloc LIBEVENTS LIBSECURITY SAMDB DSDB_MODULE_HELPERS',
 	)
 
 bld.SAMBA_MODULE('ldb_simple_dn',
