@@ -156,7 +156,7 @@ bld.SAMBA_MODULE('ldb_password_hash',
 	subsystem='ldb',
 	init_function='LDB_MODULE(password_hash)',
 	internal_module=False,
-	deps='talloc LIBEVENTS SAMDB LIBCLI_AUTH NDR_DRSBLOBS KERBEROS HEIMDAL_HDB_KEYS krb5 com_err'
+	deps='talloc LIBEVENTS SAMDB LIBCLI_AUTH NDR_DRSBLOBS KERBEROS hdb krb5 com_err'
 	)
 
 
