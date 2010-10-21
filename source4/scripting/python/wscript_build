@@ -1,5 +1,11 @@
 #!/usr/bin/env python
 
+bld.SAMBA_LIBRARY('samba_python',
+                  source=[],
+                  deps='LIBPYTHON PYTALLOC pyrpc_util',
+                  grouping_library=True,
+                  private_library=True)
+
 bld.SAMBA_SUBSYSTEM('LIBPYTHON',
 		source='modules.c',
 		public_deps='EXT_LIB_PYTHON',
