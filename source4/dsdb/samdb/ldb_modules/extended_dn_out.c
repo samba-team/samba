@@ -46,7 +46,57 @@ struct extended_dn_out_private {
 	bool dereference;
 	bool normalise;
 	struct dsdb_openldap_dereference_control *dereference_control;
+	const char **attrs;
 };
+
+/* Do the lazy init of the derererence control */
+
+static int extended_dn_out_dereference_setup_control(struct ldb_context *ldb, struct extended_dn_out_private *p)
+{
+	const struct dsdb_schema *schema;
+	struct dsdb_openldap_dereference_control *dereference_control;
+	struct dsdb_attribute *cur;
+
+	unsigned int i = 0;
+	if (p->dereference_control) {
+		return LDB_SUCCESS;
+	}
+
+	schema = dsdb_get_schema(ldb, p);
+	if (!schema) {
+		/* No schema on this DB (yet) */
+		return LDB_SUCCESS;
+	}
+
+	p->dereference_control = dereference_control
+		= talloc_zero(p, struct dsdb_openldap_dereference_control);
+
+	if (!p->dereference_control) {
+		return ldb_oom(ldb);
+	}
+
+	for (cur = schema->attributes; cur; cur = cur->next) {
+		if (dsdb_dn_oid_to_format(cur->syntax->ldap_oid) != DSDB_NORMAL_DN) {
+			continue;
+		}
+		dereference_control->dereference
+			= talloc_realloc(p, dereference_control->dereference,
+					 struct dsdb_openldap_dereference *, i + 2);
+		if (!dereference_control) {
+			return ldb_oom(ldb);
+		}
+		dereference_control->dereference[i] = talloc(dereference_control->dereference,
+					 struct dsdb_openldap_dereference);
+		if (!dereference_control->dereference[i]) {
+			return ldb_oom(ldb);
+		}
+		dereference_control->dereference[i]->source_attribute = cur->lDAPDisplayName;
+		dereference_control->dereference[i]->dereference_attribute = p->attrs;
+		i++;
+		dereference_control->dereference[i] = NULL;
+	}
+	return LDB_SUCCESS;
+}
 
 static char **copy_attrs(void *mem_ctx, const char * const * attrs)
 {
@@ -661,12 +711,28 @@ static int extended_dn_out_search(struct ldb_module *module, struct ldb_request 
 	/* Add in dereference control, if we were asked to, we are
 	 * using the 'dereference' mode (such as with an OpenLDAP
 	 * backend) and have the control prepared */
-	if (control && p && p->dereference && p->dereference_control) {
-		ret = ldb_request_add_control(down_req,
-					      DSDB_OPENLDAP_DEREFERENCE_CONTROL,
-					      critical, p->dereference_control);
+	if (control && p && p->dereference) {
+		ret = extended_dn_out_dereference_setup_control(ldb, p);
 		if (ret != LDB_SUCCESS) {
 			return ret;
+		}
+
+		/* We should always have this, but before the schema
+		 * is with us, things get tricky */
+		if (p->dereference_control) {
+
+			/* This control must *not* be critical,
+			 * because if this particular request did not
+			 * return any dereferencable attributes in the
+			 * end, then OpenLDAP will reply with
+			 * unavailableCriticalExtension, rather than
+			 * just an empty return control */
+			ret = ldb_request_add_control(down_req,
+						      DSDB_OPENLDAP_DEREFERENCE_CONTROL,
+						      false, p->dereference_control);
+			if (ret != LDB_SUCCESS) {
+				return ret;
+			}
 		}
 	}
 
@@ -731,24 +797,19 @@ static int extended_dn_out_ldb_init(struct ldb_module *module)
 static int extended_dn_out_dereference_init(struct ldb_module *module, const char *attrs[])
 {
 	int ret;
-	unsigned int i = 0;
 	struct extended_dn_out_private *p = talloc_zero(module, struct extended_dn_out_private);
 	struct dsdb_extended_dn_store_format *dn_format;
-	struct dsdb_openldap_dereference_control *dereference_control;
-	struct dsdb_attribute *cur;
-	struct ldb_context *ldb = ldb_module_get_ctx(module);
-	const struct dsdb_schema *schema;
 
 	ldb_module_set_private(module, p);
 
 	if (!p) {
-		return ldb_oom(ldb);
+		return ldb_module_oom(module);
 	}
 
 	dn_format = talloc(p, struct dsdb_extended_dn_store_format);
 	if (!dn_format) {
 		talloc_free(p);
-		return ldb_oom(ldb_module_get_ctx(module));
+		return ldb_module_oom(module);
 	}
 
 	dn_format->store_extended_dn_in_ldb = false;
@@ -761,57 +822,19 @@ static int extended_dn_out_dereference_init(struct ldb_module *module, const cha
 
 	p->dereference = true;
 
+	p->attrs = attrs;
 	/* At the moment, servers that need dereference also need the
 	 * DN and attribute names to be normalised */
 	p->normalise = true;
 
 	ret = ldb_mod_register_control(module, LDB_CONTROL_EXTENDED_DN_OID);
 	if (ret != LDB_SUCCESS) {
-		ldb_debug(ldb, LDB_DEBUG_ERROR,
-			"extended_dn_out: Unable to register control with rootdse!\n");
-		return ldb_operr(ldb);
+		ldb_debug(ldb_module_get_ctx(module), LDB_DEBUG_ERROR,
+			  "extended_dn_out: Unable to register control with rootdse!\n");
+		return ldb_operr(ldb_module_get_ctx(module));
 	}
 
-	ret = ldb_next_init(module);
-
-	if (ret != LDB_SUCCESS) {
-		return ret;
-	}
-
-	schema = dsdb_get_schema(ldb, p);
-	if (!schema) {
-		/* No schema on this DB (yet) */
-		return LDB_SUCCESS;
-	}
-
-	p->dereference_control = dereference_control
-		= talloc_zero(p, struct dsdb_openldap_dereference_control);
-
-	if (!p->dereference_control) {
-		return ldb_oom(ldb);
-	}
-	
-	for (cur = schema->attributes; cur; cur = cur->next) {
-		if (dsdb_dn_oid_to_format(cur->syntax->ldap_oid) == DSDB_INVALID_DN) {
-			continue;
-		}
-		dereference_control->dereference
-			= talloc_realloc(p, dereference_control->dereference,
-					 struct dsdb_openldap_dereference *, i + 2);
-		if (!dereference_control) {
-			return ldb_oom(ldb);
-		}
-		dereference_control->dereference[i] = talloc(dereference_control->dereference,  
-					 struct dsdb_openldap_dereference);
-		if (!dereference_control->dereference[i]) {
-			return ldb_oom(ldb);
-		}
-		dereference_control->dereference[i]->source_attribute = cur->lDAPDisplayName;
-		dereference_control->dereference[i]->dereference_attribute = attrs;
-		i++;
-		dereference_control->dereference[i] = NULL;
-	}
-	return LDB_SUCCESS;
+	return ldb_next_init(module);
 }
 
 static int extended_dn_out_openldap_init(struct ldb_module *module)
