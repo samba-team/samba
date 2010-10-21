@@ -724,23 +724,28 @@ struct tevent_req *tstream_inet_tcp_connect_send(TALLOC_CTX *mem_ctx,
  *
  * @param[in]  mem_ctx  The talloc memory context to use.
  *
- * @param[in]  stream   A tstream_context pointer to setup the tcp communication
+ * @param[out] stream   A tstream_context pointer to setup the tcp communication
  *                      on. This function will allocate the memory.
+ *
+ * @param[out] local    The real 'inet' tsocket_address of the local endpoint.
+ *                      This parameter is optional and can be NULL.
  *
  * @return              0 on success, -1 on error with perrno set.
  */
 int tstream_inet_tcp_connect_recv(struct tevent_req *req,
 				  int *perrno,
 				  TALLOC_CTX *mem_ctx,
-				  struct tstream_context **stream);
+				  struct tstream_context **stream,
+				  struct tsocket_address **local)
 #else
 int _tstream_inet_tcp_connect_recv(struct tevent_req *req,
 				   int *perrno,
 				   TALLOC_CTX *mem_ctx,
 				   struct tstream_context **stream,
+				   struct tsocket_address **local,
 				   const char *location);
-#define tstream_inet_tcp_connect_recv(req, perrno, mem_ctx, stream) \
-	_tstream_inet_tcp_connect_recv(req, perrno, mem_ctx, stream, \
+#define tstream_inet_tcp_connect_recv(req, perrno, mem_ctx, stream, local) \
+	_tstream_inet_tcp_connect_recv(req, perrno, mem_ctx, stream, local, \
 				       __location__)
 #endif
 

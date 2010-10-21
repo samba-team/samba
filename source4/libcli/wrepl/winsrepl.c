@@ -248,7 +248,7 @@ static void wrepl_connect_done(struct tevent_req *subreq)
 	int sys_errno;
 
 	ret = tstream_inet_tcp_connect_recv(subreq, &sys_errno,
-					    state, &state->stream);
+					    state, &state->stream, NULL);
 	if (ret != 0) {
 		NTSTATUS status = map_nt_error_from_unix(sys_errno);
 		tevent_req_nterror(req, status);

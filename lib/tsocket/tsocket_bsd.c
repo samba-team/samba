@@ -2302,10 +2302,11 @@ int _tstream_inet_tcp_connect_recv(struct tevent_req *req,
 				   int *perrno,
 				   TALLOC_CTX *mem_ctx,
 				   struct tstream_context **stream,
+				   struct tsocket_address **local,
 				   const char *location)
 {
 	return tstream_bsd_connect_recv(req, perrno,
-					mem_ctx, stream, NULL,
+					mem_ctx, stream, local,
 					location);
 }
 
