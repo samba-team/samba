@@ -285,7 +285,7 @@ NTSTATUS sec_access_check_ds(const struct security_descriptor *sd,
         uint32_t bits_remaining;
         struct object_tree *node;
         const struct GUID *type;
-        struct dom_sid *ps_sid = dom_sid_parse_talloc(sd, SID_NT_SELF);
+        struct dom_sid *ps_sid = dom_sid_parse_talloc(NULL, SID_NT_SELF);
 
         *access_granted = access_desired;
         bits_remaining = access_desired;
