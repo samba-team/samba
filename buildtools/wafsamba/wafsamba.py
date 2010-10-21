@@ -108,6 +108,7 @@ def SAMBA_LIBRARY(bld, libname, source,
                   install_path=None,
                   install=True,
                   pyembed=False,
+                  pyext=False,
                   target_type='LIBRARY',
                   bundled_extension=True,
                   link_name=None,
@@ -151,7 +152,7 @@ def SAMBA_LIBRARY(bld, libname, source,
                         autoproto      = autoproto,
                         depends_on     = depends_on,
                         hide_symbols   = hide_symbols,
-                        pyext          = (target_type == "PYTHON"),
+                        pyext          = pyext or (target_type == "PYTHON"),
                         local_include  = local_include)
 
     if BUILTIN_LIBRARY(bld, libname):
