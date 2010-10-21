@@ -33,10 +33,11 @@ bld.SAMBA_SUBSYSTEM('PAC_GLUE',
 	)
 
 
-bld.SAMBA_SUBSYSTEM('DB_GLUE',
+bld.SAMBA_LIBRARY('DB_GLUE',
 	source='db-glue.c',
 	local_include=False,
-	deps='ldb auth_sam auth_sam_reply CREDENTIALS hdb LIBSAMBA-HOSTCONFIG com_err'
+	deps='ldb auth_sam auth_sam_reply CREDENTIALS hdb LIBSAMBA-HOSTCONFIG com_err',
+        private_library=True
 	)
 
 
