@@ -476,7 +476,7 @@ bld.SAMBA_SUBSYSTEM('RPC_NDR_KEYSVC',
 # a grouping library for NDR subsystems that may be used by more than one target
 bld.SAMBA_LIBRARY('NDR_SAMBA',
                   source=[],
-                  deps='NDR_DRSBLOBS NDR_DRSUAPI NDR_IDMAP NDR_NTLMSSP NDR_SCHANNEL NDR_MGMT NDR_KRB5PAC NDR_DNSP NDR_EPMAPPER',
+                  deps='NDR_DRSBLOBS NDR_DRSUAPI NDR_IDMAP NDR_NTLMSSP NDR_SCHANNEL NDR_MGMT NDR_KRB5PAC NDR_DNSP NDR_EPMAPPER NDR_XATTR NDR_UNIXINFO',
                   private_library=True,
                   grouping_library=True
                   )
