@@ -106,7 +106,7 @@ bld.SAMBA_LIBRARY('NDR_STANDARD',
 # create a grouping library to consolidate our samba4 specific NDR code
 bld.SAMBA_LIBRARY('NDR_SAMBA4',
                   source=[],
-                  deps='NDR_WINBIND NDR_IRPC',
+                  deps='NDR_WINBIND NDR_IRPC NDR_NFS4ACL NDR_OPENDB NDR_NOTIFY',
                   private_library=True,
                   grouping_library=True
                   )
