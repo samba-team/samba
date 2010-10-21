@@ -706,7 +706,7 @@ static int samldb_fill_foreignSecurityPrincipal_object(struct samldb_ctx *ac)
 
 static int samldb_schema_info_update(struct samldb_ctx *ac)
 {
-	WERROR werr;
+	int ret;
 	struct ldb_context *ldb;
 	struct dsdb_schema *schema;
 
@@ -729,14 +729,11 @@ static int samldb_schema_info_update(struct samldb_ctx *ac)
 		return ldb_operr(ldb);
 	}
 
-	werr = dsdb_module_schema_info_update(ac->module, schema, DSDB_FLAG_NEXT_MODULE);
-	if (!W_ERROR_IS_OK(werr)) {
-		ldb_debug_set(ldb, LDB_DEBUG_FATAL,
-			      "samldb_schema_info_update: "
-		              "dsdb_module_schema_info_update failed with %s",
-		              win_errstr(werr));
-		DEBUG(0,(__location__ ": %s\n", ldb_errstring(ldb)));
-		return ldb_operr(ldb);
+	ret = dsdb_module_schema_info_update(ac->module, schema, DSDB_FLAG_NEXT_MODULE);
+	if (ret != LDB_SUCCESS) {
+		ldb_asprintf_errstring(ldb, "samldb_schema_info_update: dsdb_module_schema_info_update failed with %s",
+				       ldb_errstring(ldb));
+		return ret;
 	}
 
 	return LDB_SUCCESS;

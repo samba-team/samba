@@ -1,7 +1,13 @@
 #!/usr/bin/env python
 
+bld.SAMBA_LIBRARY('DSDB_MODULE',
+                  source=[],
+                  deps='DSDB_MODULE_HELPERS DSDB_MODULE_HELPER_SCHEMA DSDB_MODULE_HELPER_RIDALLOC',
+                  private_library=True,
+                  grouping_library=True)
+
 bld.SAMBA_SUBSYSTEM('DSDB_MODULE_HELPERS',
-	source='util.c acl_util.c',
+	source='util.c acl_util.c schema_util.c',
 	autoproto='util_proto.h',
 	deps='ldb LIBNDR SAMDB_COMMON LIBSECURITY_SESSION'
 	)
