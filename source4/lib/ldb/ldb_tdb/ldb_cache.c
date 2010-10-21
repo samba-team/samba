@@ -348,10 +348,8 @@ int ltdb_cache_load(struct ldb_module *module)
 	talloc_free(ltdb->cache->last_attribute.name);
 	memset(&ltdb->cache->last_attribute, 0, sizeof(ltdb->cache->last_attribute));
 
-	ltdb_attributes_unload(module);
-
 	talloc_free(ltdb->cache->indexlist);
-	talloc_free(ltdb->cache->attributes);
+	ltdb_attributes_unload(module); /* calls internally "talloc_free" */
 
 	ltdb->cache->indexlist = ldb_msg_new(ltdb->cache);
 	ltdb->cache->attributes = ldb_msg_new(ltdb->cache);
