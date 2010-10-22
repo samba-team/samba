@@ -72,6 +72,7 @@ my $scalar_alignment = {
 	'WERROR' => 4,
 	'NTSTATUS' => 4,
 	'COMRESULT' => 4,
+	'dns_string' => 4,
 	'nbt_string' => 4,
 	'wrepl_nbt_name' => 4,
 	'ipv4address' => 4,

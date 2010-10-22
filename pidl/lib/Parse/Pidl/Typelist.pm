@@ -20,7 +20,7 @@ use strict;
 my %types = ();
 
 my @reference_scalars = (
-	"string", "string_array", "nbt_string",
+	"string", "string_array", "nbt_string", "dns_string",
 	"wrepl_nbt_name", "ipv4address", "ipv6address"
 );
 
@@ -54,6 +54,7 @@ my %scalars = (
 	"WERROR"	=> "WERROR",
 	"NTSTATUS"	=> "NTSTATUS",
 	"COMRESULT" => "COMRESULT",
+	"dns_string"	=> "const char *",
 	"nbt_string"	=> "const char *",
 	"wrepl_nbt_name"=> "struct nbt_name *",
 	"ipv4address"	=> "const char *",

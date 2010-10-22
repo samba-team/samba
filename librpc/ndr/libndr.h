@@ -92,6 +92,7 @@ struct ndr_push {
 	struct ndr_token_list *relative_list;
 	struct ndr_token_list *relative_begin_list;
 	struct ndr_token_list *nbt_string_list;
+	struct ndr_token_list *dns_string_list;
 	struct ndr_token_list *full_ptr_list;
 
 	/* this is used to ensure we generate unique reference IDs */

@@ -33,6 +33,8 @@
 #include "lib/socket/netif.h"
 #include "dns_server/dns_server.h"
 #include "param/param.h"
+#include "librpc/ndr/libndr.h"
+#include "librpc/gen_ndr/ndr_dns.h"
 
 /* hold information about one dns socket */
 struct dns_socket {
@@ -87,7 +89,21 @@ bool dns_process(struct dns_server *dns,
 		 DATA_BLOB *in,
 		 DATA_BLOB *out)
 {
-	DEBUG(0, ("FIXME: actually process DNS packet here\n"));
+	enum ndr_err_code ndr_err;
+	struct dns_name_packet *packet = talloc(mem_ctx, struct dns_name_packet);
+	if (packet == NULL) return false;
+
+	dump_data(0, in->data, in->length);
+
+	ndr_err = ndr_pull_struct_blob(in, packet, packet,
+			(ndr_pull_flags_fn_t)ndr_pull_dns_name_packet);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		TALLOC_FREE(packet);
+		DEBUG(0, ("Failed to parse packet %d!\n", ndr_err));
+		return false;
+	}
+
+	NDR_PRINT_DEBUG(dns_name_packet, packet);
 	return true;
 }
 

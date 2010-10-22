@@ -10,7 +10,7 @@
 
 import "misc.idl";
 [
-	helper("librpc/ndr/ndr_dnsp.h"),
+	helper("librpc/ndr/ndr_dns.h"),
 	helpstring("DNS records"),
 	version(0.0),
 	uuid("a047c001-5f22-40b0-9d52-7042c43f711a")
@@ -109,7 +109,7 @@ interface dns
 	} dns_qtype;
 
 	typedef [public] struct {
-		dnsp_name  name;
+		dns_string name;
 		dns_qtype  question_type;
 		dns_qclass question_class;
 	} dns_name_question;
@@ -120,12 +120,13 @@ interface dns
 	} dns_rdata_data;
 
 	typedef [nodiscriminant,public] union {
-		[case(DNS_QTYPE_A)]       ipv4address      ipv4_address;
+		[case(DNS_QTYPE_A),subcontext(2)]       ipv4address      ipv4_address;
+		[case(DNS_QTYPE_AAAA),subcontext(2)]	ipv6address      ipv6_address;
 		[default]                 dns_rdata_data   data;
 	} dns_rdata;
 
 	typedef [flag(LIBNDR_PRINT_ARRAY_HEX),public] struct {
-		dnsp_name  name;
+		dns_string   name;
 		dns_qtype  rr_type;
 		dns_qclass rr_class;
 		uint32     ttl;
