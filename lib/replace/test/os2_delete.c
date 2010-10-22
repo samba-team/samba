@@ -46,7 +46,7 @@ static void create_files(void)
 	for (i=0;i<NUM_FILES;i++) {
 		char fname[40];
 		int fd;
-		sprintf(fname, TESTDIR "/test%u.txt", i);
+		snprintf(fname, sizeof(fname), TESTDIR "/test%u.txt", i);
 		fd = open(fname, O_CREAT|O_RDWR, 0600);
 		if (fd < 0) {
 			FAILED("open");
@@ -79,7 +79,7 @@ static int os2_delete(DIR *d)
 	/* delete the first few */
 	for (j=0; j<MIN(i, DELETE_SIZE); j++) {
 		char fname[40];
-		sprintf(fname, TESTDIR "/%s", names[j]);
+		snprintf(fname, sizeof(fname), TESTDIR "/%s", names[j]);
 		unlink(fname) == 0 || FAILED("unlink");
 	}
 
