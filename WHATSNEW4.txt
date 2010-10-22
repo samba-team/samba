@@ -1,4 +1,4 @@
-What's new in Samba 4 alpha13
+What's new in Samba 4 alpha14
 =============================
 
 Samba 4 is the ambitious next version of the Samba suite that is being
@@ -6,16 +6,13 @@ developed in parallel to the stable 3.x series. The main emphasis in
 this branch is support for the Active Directory logon protocols used
 by Windows 2000 and above.
 
-Samba4 alpha13 follows on from the alpha release series we have been
-publishing since September 2007. Since this file has referred to alpha 12
-for a while before any release happened and since Debian packages
-have been published that presumed the existance of a alpha12 release
-we are skipping alpha12 and going straight to alpha13.
+Samba4 alpha14 follows on from the alpha release series we have been
+publishing since September 2007.
 
 WARNINGS
 ========
 
-Samba4 alpha13 is not a final Samba release.  That is more a reference
+Samba4 alpha14 is not a final Samba release.  That is more a reference
 to Samba4's lack of the features we expect you will need than a
 statement of code quality, but clearly it hasn't seen a broad
 deployment yet.  If you were to upgrade Samba3 (or indeed Windows) to
@@ -65,7 +62,7 @@ working on modules to map between AD-like behaviours and this backend.
 We are aiming for Samba 4 to be powerful frontend to large
 directories.
 
-CHANGES SINCE alpha11
+CHANGES SINCE alpha13
 =====================
 
 We have continued our commitment to provide a full DRS implementation for our
@@ -76,46 +73,10 @@ http://wiki.samba.org/index.php/Samba4_DRS_TODO_List
 
 Beside this the release includes (among a lot of other things):
 
-* a new build system based on WAF
-Andrew Tridgell (tridge) invested much time to bring this up. He achieved a
-marvellous work which brings us faster building, easier management and smaller
-binaries.
-
-* enhancements in Samba4 winbind to provide a fairly good implementation of the
-most important functions needed by "libnss_winbind" and "pam_winbind"
-This two components allow a user/group mapping for Windows accounts on UNIX and
-UNIX-like systems. Therefore also these accounts can be used to connect to
-services as "ssh", "login", "Xsession" and so on.
-More informations available at http://wiki.samba.org/index.php/Samba4/Winbind
-and for winbind in general, "libnss_winbind" and "pam_winbind" in the Samba 3.X
-documentation.
-
-* server side NT ACLs manipulation
-These can now also be set on the command line directly on the server. See
-"net acl" for further informations.
-
-* dynamic DNS updates
-Up-to-date DNS entries are essential for Active Directory deployments. As for
-the moment Samba4 isn't yet capable to interoperate with Microsofts AD DNS
-server (regarding RPCs, ADs zone entries...) a kind of update script has been
-developed. It also permits the update of the "grant" and "resource" lists.
-
-* registry improvements
-The registry code was reworked, improved and retested. This was achieved by the
-new torture tests written by gd and some additional testing against Windows
-("regedit" - Windows Registry Editor and "regedt32" - Windows NT Registry Editor).
-Also some real bugs were fixed.
-
-* new Kerberos HEIMDAL release
-Andrew Bartlett (abartlet) imported a new release with various bugfixes
-
-* DCE/RPC code unification work
-Stefan Metzmacher (metze) started his work to unify these codebases between s3
-and s4
-
-* And much more
-We always try to fix bugs and keep improving the (source) quality of our
-program.
+* a script for backuping production provision
+Although still in development, samba4 is already used in a couple of production sites
+and such kind of use case is intensifying. This script is intendended for administrators
+to allow them to make a periodic backup of the provision in case of problem.
 
 CHANGES
 =======
@@ -140,7 +101,7 @@ KNOWN ISSUES
   and server.  (The NTP work in the previous alphas are partly to assist
   with this problem).
 
-- The DRS replication code often fails, and is very new
+- The DRS replication code fails, and is very new
 
 - Users upgrading existing databases to Samba4 should carefully
   consult upgrading-samba4.txt.  We have made a number of changes in
