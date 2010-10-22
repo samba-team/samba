@@ -17,6 +17,11 @@ bld.SAMBA_SUBSYSTEM('NDR_DNSSERVER',
 	public_deps='LIBNDR'
 	)
 
+bld.SAMBA_SUBSYSTEM('NDR_DNS',
+	source='../librpc/gen_ndr/ndr_dns.c',
+	public_deps='LIBNDR NDR_DNSP'
+	)
+
 bld.SAMBA_SUBSYSTEM('NDR_DSBACKUP',
 	source='../librpc/gen_ndr/ndr_dsbackup.c',
 	public_deps='LIBNDR'
