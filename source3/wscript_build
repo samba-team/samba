@@ -152,6 +152,7 @@ UTIL_SRC = '''../lib/util/rbtree.c ../lib/util/signal.c ../lib/util/time.c
                    ../lib/util/genrand.c ../lib/util/util_net.c
                    ../lib/util/become_daemon.c ../lib/util/system.c
                    ../lib/util/tevent_unix.c ../lib/util/tevent_ntstatus.c
+                   ../lib/util/tevent_werror.c
                    ../lib/util/smb_threads.c ../lib/util/util_id.c
                    ../lib/util/blocking.c ../lib/util/rfc1738.c
                    ../lib/util/select.c'''
