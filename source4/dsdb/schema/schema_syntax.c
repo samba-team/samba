@@ -2393,9 +2393,16 @@ static const struct dsdb_syntax dsdb_syntaxes[] = {
 		.ldap_oid		= "1.2.840.113556.1.4.1362",
 		.oMSyntax		= 27,
 		.attributeSyntax_oid	= "2.5.5.3",
-		.drsuapi_to_ldb		= dsdb_syntax_FOOBAR_drsuapi_to_ldb,
-		.ldb_to_drsuapi		= dsdb_syntax_FOOBAR_ldb_to_drsuapi,
-		.validate_ldb		= dsdb_syntax_FOOBAR_validate_ldb,
+		.drsuapi_to_ldb		= dsdb_syntax_DATA_BLOB_drsuapi_to_ldb,
+		.ldb_to_drsuapi		= dsdb_syntax_DATA_BLOB_ldb_to_drsuapi,
+		.validate_ldb		= dsdb_syntax_DATA_BLOB_validate_ldb,
+		.equality               = "caseExactMatch",
+		.substring              = "caseExactSubstringsMatch",
+		/* TODO (kim): according to LDAP rfc we should be using same comparison
+		 * as Directory String (LDB_SYNTAX_DIRECTORY_STRING), but case sensitive.
+		 * But according to ms docs binary compare should do the job:
+		 * http://msdn.microsoft.com/en-us/library/cc223200(v=PROT.10).aspx */
+		.ldb_syntax		= LDB_SYNTAX_OCTET_STRING,
 	},{
 		.name			= "String(Unicode)",
 		.ldap_oid		= LDB_SYNTAX_DIRECTORY_STRING,
