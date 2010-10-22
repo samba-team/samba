@@ -497,8 +497,8 @@ WERROR regdb_init(void)
 	WERROR werr;
 
 	if (regdb) {
-		DEBUG(10, ("regdb_init: incrementing refcount (%d)\n",
-			  regdb_refcount));
+		DEBUG(10, ("regdb_init: incrementing refcount (%d->%d)\n",
+			   regdb_refcount, regdb_refcount+1));
 		regdb_refcount++;
 		return WERR_OK;
 	}
@@ -519,6 +519,8 @@ WERROR regdb_init(void)
 	}
 
 	regdb_refcount = 1;
+	DEBUG(10, ("regdb_init: registry db openend. refcount reset (%d)\n",
+		   regdb_refcount));
 
 	expected_version = REGVER_V2;
 
@@ -574,7 +576,8 @@ WERROR regdb_open( void )
 	WERROR result = WERR_OK;
 
 	if ( regdb ) {
-		DEBUG(10,("regdb_open: incrementing refcount (%d)\n", regdb_refcount));
+		DEBUG(10, ("regdb_open: incrementing refcount (%d->%d)\n",
+			   regdb_refcount, regdb_refcount+1));
 		regdb_refcount++;
 		return WERR_OK;
 	}
@@ -592,7 +595,8 @@ WERROR regdb_open( void )
 	unbecome_root();
 
 	regdb_refcount = 1;
-	DEBUG(10,("regdb_open: refcount reset (%d)\n", regdb_refcount));
+	DEBUG(10, ("regdb_open: registry db opened. refcount reset (%d)\n",
+		   regdb_refcount));
 
 	return result;
 }
@@ -608,7 +612,8 @@ int regdb_close( void )
 
 	regdb_refcount--;
 
-	DEBUG(10,("regdb_close: decrementing refcount (%d)\n", regdb_refcount));
+	DEBUG(10, ("regdb_close: decrementing refcount (%d->%d)\n",
+		   regdb_refcount+1, regdb_refcount));
 
 	if ( regdb_refcount > 0 )
 		return 0;
