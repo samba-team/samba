@@ -286,12 +286,12 @@ char *rep_strtok_r(char *s, const char *delim, char **save_ptr);
 
 
 #ifndef HAVE_STRTOLL
-long long int rep_strtoll(const char *str, char **endptr, int base);
 #define strtoll rep_strtoll
+long long int rep_strtoll(const char *str, char **endptr, int base);
 #else
 #ifdef HAVE_BSD_STRTOLL
-long long int rep_strtoll(const char *str, char **endptr, int base);
 #define strtoll rep_strtoll
+long long int rep_strtoll(const char *str, char **endptr, int base);
 #endif
 #endif
 
@@ -300,8 +300,8 @@ long long int rep_strtoll(const char *str, char **endptr, int base);
 unsigned long long int rep_strtoull(const char *str, char **endptr, int base);
 #else
 #ifdef HAVE_BSD_STRTOLL /* yes, it's not HAVE_BSD_STRTOULL */
-unsigned long long int rep_strtoull(const char *str, char **endptr, int base);
 #define strtoull rep_strtoull
+unsigned long long int rep_strtoull(const char *str, char **endptr, int base);
 #endif
 #endif
 
