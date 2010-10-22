@@ -2082,7 +2082,7 @@ bool print_access_check(const struct auth_serversupplied_info *server_info,
 	/* Always allow root or SE_PRINT_OPERATROR to do anything */
 
 	if (server_info->utok.uid == sec_initial_uid()
-	    || s3_security_token_has_privilege(server_info->ptok, SEC_PRIV_PRINT_OPERATOR)) {
+	    || security_token_has_privilege(server_info->ptok, SEC_PRIV_PRINT_OPERATOR)) {
 		return True;
 	}
 

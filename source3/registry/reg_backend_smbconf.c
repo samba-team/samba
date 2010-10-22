@@ -60,7 +60,7 @@ static bool smbconf_reg_access_check(const char *keyname, uint32 requested,
 				     uint32 *granted,
 				     const struct security_token *token)
 {
-	if (!s3_security_token_has_privilege(token, SEC_PRIV_DISK_OPERATOR)) {
+	if (!security_token_has_privilege(token, SEC_PRIV_DISK_OPERATOR)) {
 		return False;
 	}
 

@@ -379,7 +379,7 @@ static WERROR delete_printer_hook(TALLOC_CTX *ctx, struct security_token *token,
 		return WERR_NOMEM;
 	}
 	if ( token )
-		is_print_op = s3_security_token_has_privilege(token, SEC_PRIV_PRINT_OPERATOR);
+		is_print_op = security_token_has_privilege(token, SEC_PRIV_PRINT_OPERATOR);
 
 	DEBUG(10,("Running [%s]\n", command));
 
@@ -1790,7 +1790,7 @@ WERROR _spoolss_OpenPrinterEx(struct pipes_struct *p,
 			   and not a printer admin, then fail */
 
 			if ((p->server_info->utok.uid != sec_initial_uid()) &&
-			    !s3_security_token_has_privilege(p->server_info->ptok, SEC_PRIV_PRINT_OPERATOR) &&
+			    !security_token_has_privilege(p->server_info->ptok, SEC_PRIV_PRINT_OPERATOR) &&
 			    !token_contains_name_in_list(
 				    uidtoname(p->server_info->utok.uid),
 				    p->server_info->info3->base.domain.string,
@@ -2033,7 +2033,7 @@ WERROR _spoolss_DeletePrinterDriver(struct pipes_struct *p,
 	   and not a printer admin, then fail */
 
 	if ( (p->server_info->utok.uid != sec_initial_uid())
-	     && !s3_security_token_has_privilege(p->server_info->ptok, SEC_PRIV_PRINT_OPERATOR)
+	     && !security_token_has_privilege(p->server_info->ptok, SEC_PRIV_PRINT_OPERATOR)
 		&& !token_contains_name_in_list(
 			uidtoname(p->server_info->utok.uid),
 			p->server_info->info3->base.domain.string,
@@ -2138,7 +2138,7 @@ WERROR _spoolss_DeletePrinterDriverEx(struct pipes_struct *p,
 	   and not a printer admin, then fail */
 
 	if ( (p->server_info->utok.uid != sec_initial_uid())
-		&& !s3_security_token_has_privilege(p->server_info->ptok, SEC_PRIV_PRINT_OPERATOR)
+		&& !security_token_has_privilege(p->server_info->ptok, SEC_PRIV_PRINT_OPERATOR)
 		&& !token_contains_name_in_list(
 			uidtoname(p->server_info->utok.uid),
 			p->server_info->info3->base.domain.string,
@@ -6023,7 +6023,7 @@ static WERROR add_port_hook(TALLOC_CTX *ctx, struct security_token *token, const
 	}
 
 	if ( token )
-		is_print_op = s3_security_token_has_privilege(token, SEC_PRIV_PRINT_OPERATOR);
+		is_print_op = security_token_has_privilege(token, SEC_PRIV_PRINT_OPERATOR);
 
 	DEBUG(10,("Running [%s]\n", command));
 
@@ -6080,7 +6080,7 @@ static bool add_printer_hook(TALLOC_CTX *ctx, struct security_token *token,
 	}
 
 	if ( token )
-		is_print_op = s3_security_token_has_privilege(token, SEC_PRIV_PRINT_OPERATOR);
+		is_print_op = security_token_has_privilege(token, SEC_PRIV_PRINT_OPERATOR);
 
 	DEBUG(10,("Running [%s]\n", command));
 
@@ -8406,7 +8406,7 @@ WERROR _spoolss_AddForm(struct pipes_struct *p,
 	   and not a printer admin, then fail */
 
 	if ((p->server_info->utok.uid != sec_initial_uid()) &&
-	    !s3_security_token_has_privilege(p->server_info->ptok, SEC_PRIV_PRINT_OPERATOR) &&
+	    !security_token_has_privilege(p->server_info->ptok, SEC_PRIV_PRINT_OPERATOR) &&
 	    !token_contains_name_in_list(uidtoname(p->server_info->utok.uid),
 					  p->server_info->info3->base.domain.string,
 					  NULL,
@@ -8474,7 +8474,7 @@ WERROR _spoolss_DeleteForm(struct pipes_struct *p,
 	}
 
 	if ((p->server_info->utok.uid != sec_initial_uid()) &&
-	    !s3_security_token_has_privilege(p->server_info->ptok, SEC_PRIV_PRINT_OPERATOR) &&
+	    !security_token_has_privilege(p->server_info->ptok, SEC_PRIV_PRINT_OPERATOR) &&
 	    !token_contains_name_in_list(uidtoname(p->server_info->utok.uid),
 					  p->server_info->info3->base.domain.string,
 					  NULL,
@@ -8538,7 +8538,7 @@ WERROR _spoolss_SetForm(struct pipes_struct *p,
 	   and not a printer admin, then fail */
 
 	if ((p->server_info->utok.uid != sec_initial_uid()) &&
-	     !s3_security_token_has_privilege(p->server_info->ptok, SEC_PRIV_PRINT_OPERATOR) &&
+	     !security_token_has_privilege(p->server_info->ptok, SEC_PRIV_PRINT_OPERATOR) &&
 	     !token_contains_name_in_list(uidtoname(p->server_info->utok.uid),
 					  p->server_info->info3->base.domain.string,
 					  NULL,

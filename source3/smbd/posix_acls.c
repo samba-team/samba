@@ -3556,8 +3556,8 @@ int try_chown(connection_struct *conn, struct smb_filename *smb_fname,
 	/* Case (2) / (3) */
 	if (lp_enable_privileges()) {
 
-		bool has_take_ownership_priv = s3_security_token_has_privilege(get_current_nttok(conn), SEC_PRIV_TAKE_OWNERSHIP);
-		bool has_restore_priv = s3_security_token_has_privilege(get_current_nttok(conn), SEC_PRIV_RESTORE);
+		bool has_take_ownership_priv = security_token_has_privilege(get_current_nttok(conn), SEC_PRIV_TAKE_OWNERSHIP);
+		bool has_restore_priv = security_token_has_privilege(get_current_nttok(conn), SEC_PRIV_RESTORE);
 
 		/* Case (2) */
 		if ( ( has_take_ownership_priv && ( uid == get_current_uid(conn) ) ) ||

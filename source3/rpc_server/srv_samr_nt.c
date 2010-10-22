@@ -200,8 +200,8 @@ NTSTATUS access_check_object( struct security_descriptor *psd, struct security_t
 	   by privileges (mostly having to do with creating/modifying/deleting
 	   users and groups) */
 
-	if ((needed_priv_1 != SEC_PRIV_INVALID && s3_security_token_has_privilege(token, needed_priv_1)) ||
-	    (needed_priv_2 != SEC_PRIV_INVALID && s3_security_token_has_privilege(token, needed_priv_2))) {
+	if ((needed_priv_1 != SEC_PRIV_INVALID && security_token_has_privilege(token, needed_priv_1)) ||
+	    (needed_priv_2 != SEC_PRIV_INVALID && security_token_has_privilege(token, needed_priv_2))) {
 		saved_mask = (des_access & rights_mask);
 		des_access &= ~saved_mask;
 
@@ -572,7 +572,7 @@ NTSTATUS _samr_OpenDomain(struct pipes_struct *p,
 	 * Users with SeAddUser get the ability to manipulate groups
 	 * and aliases.
 	 */
-	if (s3_security_token_has_privilege(p->server_info->ptok, SEC_PRIV_ADD_USERS)) {
+	if (security_token_has_privilege(p->server_info->ptok, SEC_PRIV_ADD_USERS)) {
 		extra_access |= (SAMR_DOMAIN_ACCESS_CREATE_GROUP |
 				SAMR_DOMAIN_ACCESS_ENUM_ACCOUNTS |
 				SAMR_DOMAIN_ACCESS_OPEN_ACCOUNT |
@@ -3845,13 +3845,13 @@ NTSTATUS _samr_CreateUser2(struct pipes_struct *p,
 		can_add_account = true;
 	} else if (acb_info & ACB_WSTRUST) {
 		needed_priv = SEC_PRIV_MACHINE_ACCOUNT;
-		can_add_account = s3_security_token_has_privilege(p->server_info->ptok, SEC_PRIV_MACHINE_ACCOUNT);
+		can_add_account = security_token_has_privilege(p->server_info->ptok, SEC_PRIV_MACHINE_ACCOUNT);
 	} else if (acb_info & ACB_NORMAL &&
 		  (account[strlen(account)-1] != '$')) {
 		/* usrmgr.exe (and net rpc trustdom grant) creates a normal user
 		   account for domain trusts and changes the ACB flags later */
 		needed_priv = SEC_PRIV_ADD_USERS;
-		can_add_account = s3_security_token_has_privilege(p->server_info->ptok, SEC_PRIV_ADD_USERS);
+		can_add_account = security_token_has_privilege(p->server_info->ptok, SEC_PRIV_ADD_USERS);
 	} else if (lp_enable_privileges()) {
 		/* implicit assumption of a BDC or domain trust account here
 		 * (we already check the flags earlier) */

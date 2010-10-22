@@ -10132,11 +10132,3 @@ bool lp_readraw(void)
 	}
 	return _lp_readraw();
 }
-
-bool s3_security_token_has_privilege(const struct security_token *token, enum sec_privilege privilege)
-{
-        if (!lp_enable_privileges()) {
-                return false;
-        }
-        return security_token_has_privilege(token, privilege);
-}
