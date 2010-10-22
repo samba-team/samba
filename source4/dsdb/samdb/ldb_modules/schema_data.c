@@ -191,7 +191,7 @@ static int schema_data_add(struct ldb_module *module, struct ldb_request *req)
 	status = dsdb_schema_pfm_find_oid(schema->prefixmap, oid, NULL);
 	if (!W_ERROR_IS_OK(status)) {
 		/* check for internal errors */
-		if (!W_ERROR_EQUAL(WERR_DS_NO_MSDS_INTID, status)) {
+		if (!W_ERROR_EQUAL(status, WERR_NOT_FOUND)) {
 			ldb_debug_set(ldb, LDB_DEBUG_ERROR,
 			              "schema_data_add: failed to map %s[%s]: %s\n",
 			              oid_attr, oid, win_errstr(status));

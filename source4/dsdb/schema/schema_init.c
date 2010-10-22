@@ -233,7 +233,7 @@ WERROR dsdb_create_prefix_mapping(struct ldb_context *ldb, struct dsdb_schema *s
 		/* prefix found*/
 		talloc_free(mem_ctx);
 		return status;
-	} else if (!W_ERROR_EQUAL(WERR_DS_NO_MSDS_INTID, status)) {
+	} else if (!W_ERROR_EQUAL(status, WERR_NOT_FOUND)) {
 		/* error */
 		DEBUG(0,("dsdb_create_prefix_mapping: dsdb_find_prefix_for_oid: %s\n",
 			win_errstr(status)));

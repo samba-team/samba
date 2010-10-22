@@ -229,7 +229,7 @@ WERROR dsdb_schema_pfm_find_binary_oid(const struct dsdb_schema_prefixmap *pfm,
 		}
 	}
 
-	return WERR_DS_NO_MSDS_INTID;
+	return WERR_NOT_FOUND;
 }
 
 /**
