@@ -2507,7 +2507,7 @@ static NTSTATUS open_directory(connection_struct *conn,
 	}
 
 	if ((access_mask & SEC_FLAG_SYSTEM_SECURITY) &
-			!security_token_has_privilege(get_current_nttok(conn),
+			!s3_security_token_has_privilege(get_current_nttok(conn),
 					SEC_PRIV_SECURITY)) {
 		DEBUG(10, ("open_directory: open on %s "
 			"failed - SEC_FLAG_SYSTEM_SECURITY denied.\n",
@@ -3031,7 +3031,7 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 	}
 
 	if ((access_mask & SEC_FLAG_SYSTEM_SECURITY) &&
-			!security_token_has_privilege(get_current_nttok(conn),
+			!s3_security_token_has_privilege(get_current_nttok(conn),
 					SEC_PRIV_SECURITY)) {
 		DEBUG(10, ("create_file_unixpath: open on %s "
 			"failed - SEC_FLAG_SYSTEM_SECURITY denied.\n",

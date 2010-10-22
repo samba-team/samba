@@ -823,7 +823,7 @@ WERROR _wkssvc_NetrJoinDomain2(struct pipes_struct *p,
 		return WERR_INVALID_PARAM;
 	}
 
-	if (!security_token_has_privilege(token, SEC_PRIV_MACHINE_ACCOUNT) &&
+	if (!s3_security_token_has_privilege(token, SEC_PRIV_MACHINE_ACCOUNT) &&
 	    !nt_token_check_domain_rid(token, DOMAIN_RID_ADMINS) &&
 	    !nt_token_check_sid(&global_sid_Builtin_Administrators, token)) {
 		DEBUG(5,("_wkssvc_NetrJoinDomain2: account doesn't have "
@@ -894,7 +894,7 @@ WERROR _wkssvc_NetrUnjoinDomain2(struct pipes_struct *p,
 		return WERR_INVALID_PARAM;
 	}
 
-	if (!security_token_has_privilege(token, SEC_PRIV_MACHINE_ACCOUNT) &&
+	if (!s3_security_token_has_privilege(token, SEC_PRIV_MACHINE_ACCOUNT) &&
 	    !nt_token_check_domain_rid(token, DOMAIN_RID_ADMINS) &&
 	    !nt_token_check_sid(&global_sid_Builtin_Administrators, token)) {
 		DEBUG(5,("_wkssvc_NetrUnjoinDomain2: account doesn't have "

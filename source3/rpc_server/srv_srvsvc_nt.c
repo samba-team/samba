@@ -1572,7 +1572,7 @@ WERROR _srvsvc_NetShareSetInfo(struct pipes_struct *p,
 	if (lp_print_ok(snum))
 		return WERR_ACCESS_DENIED;
 
-	is_disk_op = security_token_has_privilege(p->server_info->ptok, SEC_PRIV_DISK_OPERATOR);
+	is_disk_op = s3_security_token_has_privilege(p->server_info->ptok, SEC_PRIV_DISK_OPERATOR);
 
 	/* fail out now if you are not root and not a disk op */
 
@@ -1774,7 +1774,7 @@ WERROR _srvsvc_NetShareAdd(struct pipes_struct *p,
 		*r->out.parm_error = 0;
 	}
 
-	is_disk_op = security_token_has_privilege(p->server_info->ptok, SEC_PRIV_DISK_OPERATOR);
+	is_disk_op = s3_security_token_has_privilege(p->server_info->ptok, SEC_PRIV_DISK_OPERATOR);
 
 	if (p->server_info->utok.uid != sec_initial_uid()  && !is_disk_op )
 		return WERR_ACCESS_DENIED;
@@ -1967,7 +1967,7 @@ WERROR _srvsvc_NetShareDel(struct pipes_struct *p,
 	if (lp_print_ok(snum))
 		return WERR_ACCESS_DENIED;
 
-	is_disk_op = security_token_has_privilege(p->server_info->ptok, SEC_PRIV_DISK_OPERATOR);
+	is_disk_op = s3_security_token_has_privilege(p->server_info->ptok, SEC_PRIV_DISK_OPERATOR);
 
 	if (p->server_info->utok.uid != sec_initial_uid()  && !is_disk_op )
 		return WERR_ACCESS_DENIED;
@@ -2519,7 +2519,7 @@ WERROR _srvsvc_NetFileClose(struct pipes_struct *p,
 
 	DEBUG(5,("_srvsvc_NetFileClose: %d\n", __LINE__));
 
-	is_disk_op = security_token_has_privilege(p->server_info->ptok, SEC_PRIV_DISK_OPERATOR);
+	is_disk_op = s3_security_token_has_privilege(p->server_info->ptok, SEC_PRIV_DISK_OPERATOR);
 
 	if (p->server_info->utok.uid != sec_initial_uid() && !is_disk_op) {
 		return WERR_ACCESS_DENIED;
