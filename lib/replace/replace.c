@@ -558,7 +558,7 @@ unsigned long long int rep_strtoull(const char *str, char **endptr, int base)
 #else
 #ifdef HAVE_BSD_STRTOLL
 #ifdef HAVE_STRTOUQ
-long long int rep_strtoull(const char *str, char **endptr, int base)
+unsigned long long int rep_strtoull(const char *str, char **endptr, int base)
 {
 	unsigned long long int nb = strtouq(str, endptr, base);
 	/* In linux EINVAL is only returned if base is not ok */
