@@ -20,7 +20,7 @@ samba_dist.DIST_DIRS('lib/replace buildtools:buildtools')
 
 def set_options(opt):
     opt.BUILTIN_DEFAULT('NONE')
-    opt.BUNDLED_EXTENSION_DEFAULT('')
+    opt.PRIVATE_EXTENSION_DEFAULT('')
     opt.RECURSE('buildtools/wafsamba')
 
 @wafsamba.runonce

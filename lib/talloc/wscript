@@ -24,7 +24,7 @@ samba_dist.DIST_DIRS('lib/talloc:. lib/replace:lib/replace buildtools:buildtools
 
 def set_options(opt):
     opt.BUILTIN_DEFAULT('replace')
-    opt.BUNDLED_EXTENSION_DEFAULT('talloc', noextension='talloc')
+    opt.PRIVATE_EXTENSION_DEFAULT('talloc', noextension='talloc')
     opt.RECURSE('lib/replace')
     opt.add_option('--enable-talloc-compat1',
                    help=("Build talloc 1.x.x compat library [False]"),

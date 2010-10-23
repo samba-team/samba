@@ -179,7 +179,7 @@ def SAMBA_LIBRARY(bld, libname, source,
         while bundled_name.startswith("lib"):
             bundled_name = bundled_name[3:]
     else:
-        bundled_name = BUNDLED_NAME(bld, libname, bundled_extension, private_library)
+        bundled_name = PRIVATE_NAME(bld, libname, bundled_extension, private_library)
 
     features = 'cc cshlib symlink_lib install_lib'
     if target_type == 'PYTHON':

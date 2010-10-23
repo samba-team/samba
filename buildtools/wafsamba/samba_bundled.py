@@ -4,13 +4,13 @@ from Configure import conf
 import Logs
 from samba_utils import *
 
-def BUNDLED_NAME(bld, name, bundled_extension, private_library):
+def PRIVATE_NAME(bld, name, bundled_extension, private_library):
     '''possibly rename a library to include a bundled extension'''
     if bld.env.DISABLE_SHARED or not bundled_extension:
         return name
-    if name in bld.env.BUNDLED_EXTENSION_EXCEPTION and not private_library:
+    if name in bld.env.PRIVATE_EXTENSION_EXCEPTION and not private_library:
         return name
-    extension = getattr(bld.env, 'BUNDLED_EXTENSION', '')
+    extension = getattr(bld.env, 'PRIVATE_EXTENSION', '')
     if extension:
         return name + '-' + extension
     return name
@@ -46,13 +46,13 @@ def BUILTIN_DEFAULT(opt, builtins):
 Options.Handler.BUILTIN_DEFAULT = BUILTIN_DEFAULT
 
 
-def BUNDLED_EXTENSION_DEFAULT(opt, extension, noextension=''):
-    '''set a default bundled library extension'''
-    if 'BUNDLED_EXTENSION_DEFAULT' in Options.options:
+def PRIVATE_EXTENSION_DEFAULT(opt, extension, noextension=''):
+    '''set a default private library extension'''
+    if 'PRIVATE_EXTENSION_DEFAULT' in Options.options:
         return
-    Options.options['BUNDLED_EXTENSION_DEFAULT'] = extension
-    Options.options['BUNDLED_EXTENSION_EXCEPTION'] = noextension
-Options.Handler.BUNDLED_EXTENSION_DEFAULT = BUNDLED_EXTENSION_DEFAULT
+    Options.options['PRIVATE_EXTENSION_DEFAULT'] = extension
+    Options.options['PRIVATE_EXTENSION_EXCEPTION'] = noextension
+Options.Handler.PRIVATE_EXTENSION_DEFAULT = PRIVATE_EXTENSION_DEFAULT
 
 
 def minimum_library_version(conf, libname, default):
