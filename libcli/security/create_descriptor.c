@@ -19,7 +19,7 @@
  *  Name: create_descriptor
  *
  *  Component: routines for calculating and creating security descriptors
- *  as described in MS-DTYP 2.5.2.2
+ *  as described in MS-DTYP 2.5.3.x
  *
  *  Description:
  *
