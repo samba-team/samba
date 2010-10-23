@@ -34,14 +34,14 @@ bld.SAMBA_MODULE('ntvfs_posix',
 	autoproto='vfs_posix_proto.h',
 	subsystem='ntvfs',
 	init_function='ntvfs_posix_init',
-	deps='NDR_XATTR WRAP_XATTR ntvfs_common MESSAGING LIBWBCLIENT_OLD pvfs_acl pvfs_aio',
+	deps='NDR_XATTR wrap_xattr ntvfs_common MESSAGING LIBWBCLIENT_OLD pvfs_acl pvfs_aio',
 	internal_module=True
 	)
 
 
 bld.SAMBA_PYTHON('python_xattr_native',
 	source='python/pyxattr_native.c',
-	deps='LIBNDR ldb SAMDB CREDENTIALS pyparam_util WRAP_XATTR attr',
+	deps='LIBNDR ldb SAMDB CREDENTIALS pyparam_util wrap_xattr attr',
 	realname='samba/xattr_native.so'
 	)
 
