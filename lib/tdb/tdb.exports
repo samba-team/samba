@@ -23,7 +23,6 @@
            tdb_freelist_size;
            tdb_get_flags;
            tdb_get_logging_private;
-           tdb_logging_function;
            tdb_get_seqnum;
            tdb_hash_size;
            tdb_increment_seqnum_nonblock;
