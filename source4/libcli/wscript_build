@@ -23,7 +23,7 @@ bld.SAMBA_SUBSYSTEM('LIBCLI_LSA',
 	source='util/clilsa.c',
 	autoproto='util/clilsa.h',
 	public_deps='RPC_NDR_LSA',
-	deps='LIBSECURITY'
+	deps='libsecurity'
 	)
 
 
@@ -79,7 +79,7 @@ bld.SAMBA_SUBSYSTEM('LIBCLI_FINDDCS',
 bld.SAMBA_SUBSYSTEM('LIBCLI_SMB',
 	source='clireadwrite.c cliconnect.c clifile.c clilist.c clitrans2.c climessage.c clideltree.c',
 	autoproto='libcli_proto.h',
-	public_deps='LIBCLI_RAW LIBSAMBA-ERRORS LIBCLI_AUTH LIBCLI_SMB_COMPOSITE LIBCLI_NBT LIBSECURITY LIBCLI_RESOLVE LIBCLI_DGRAM LIBCLI_SMB2 LIBCLI_FINDDCS samba_socket'
+	public_deps='LIBCLI_RAW LIBSAMBA-ERRORS LIBCLI_AUTH LIBCLI_SMB_COMPOSITE LIBCLI_NBT libsecurity LIBCLI_RESOLVE LIBCLI_DGRAM LIBCLI_SMB2 LIBCLI_FINDDCS samba_socket'
 	)
 
 
@@ -87,7 +87,7 @@ bld.SAMBA_SUBSYSTEM('LIBCLI_RAW',
 	source='raw/rawfile.c raw/smb_signing.c raw/clisocket.c raw/clitransport.c raw/clisession.c raw/clitree.c raw/clierror.c raw/rawrequest.c raw/rawreadwrite.c raw/rawsearch.c raw/rawsetfileinfo.c raw/raweas.c raw/rawtrans.c raw/clioplock.c raw/rawnegotiate.c raw/rawfsinfo.c raw/rawfileinfo.c raw/rawnotify.c raw/rawioctl.c raw/rawacl.c raw/rawdate.c raw/rawlpq.c raw/rawshadow.c',
 	autoproto='raw/raw_proto.h',
 	public_deps='samba_socket LIBPACKET gensec LIBCRYPTO CREDENTIALS LIBCLI_SMB_COMMON',
-	deps='LIBCLI_COMPOSITE LP_RESOLVE gensec LIBCLI_RESOLVE LIBSECURITY LIBNDR'
+	deps='LIBCLI_COMPOSITE LP_RESOLVE gensec LIBCLI_RESOLVE libsecurity LIBNDR'
 	)
 
 bld.RECURSE('smb2')

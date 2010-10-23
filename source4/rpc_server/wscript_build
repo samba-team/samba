@@ -77,7 +77,7 @@ bld.SAMBA_MODULE('dcerpc_winreg',
 	source='winreg/rpc_winreg.c',
 	subsystem='dcerpc_server',
 	init_function='dcerpc_server_winreg_init',
-	deps='registry NDR_STANDARD LIBSECURITY_SESSION',
+	deps='registry NDR_STANDARD libsecurity_session',
 	internal_module=True
 	)
 
@@ -95,7 +95,7 @@ bld.SAMBA_MODULE('dcerpc_lsarpc',
 	autoproto='lsa/proto.h',
 	subsystem='dcerpc_server',
 	init_function='dcerpc_server_lsa_init',
-	deps='SAMDB DCERPC_COMMON NDR_STANDARD LIBCLI_AUTH NDR_DSSETUP com_err LIBSECURITY_SESSION'
+	deps='SAMDB DCERPC_COMMON NDR_STANDARD LIBCLI_AUTH NDR_DSSETUP com_err libsecurity_session'
 	)
 
 
@@ -112,7 +112,7 @@ bld.SAMBA_MODULE('dcerpc_drsuapi',
 	source='drsuapi/dcesrv_drsuapi.c drsuapi/updaterefs.c drsuapi/getncchanges.c drsuapi/addentry.c drsuapi/writespn.c drsuapi/drsutil.c',
 	subsystem='dcerpc_server',
 	init_function='dcerpc_server_drsuapi_init',
-	deps='SAMDB DCERPC_COMMON NDR_DRSUAPI LIBSECURITY_SESSION'
+	deps='SAMDB DCERPC_COMMON NDR_DRSUAPI libsecurity_session'
 	)
 
 

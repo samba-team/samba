@@ -9,7 +9,7 @@ bld.SAMBA_LIBRARY('DSDB_MODULE',
 bld.SAMBA_SUBSYSTEM('DSDB_MODULE_HELPERS',
 	source='util.c acl_util.c schema_util.c',
 	autoproto='util_proto.h',
-	deps='ldb LIBNDR samdb_common LIBSECURITY_SESSION'
+	deps='ldb LIBNDR samdb_common libsecurity_session'
 	)
 
 bld.SAMBA_SUBSYSTEM('DSDB_MODULE_HELPER_RIDALLOC',
@@ -56,7 +56,7 @@ bld.SAMBA_MODULE('ldb_repl_meta_data',
 	subsystem='ldb',
 	init_function='LDB_MODULE(repl_meta_data)',
 	internal_module=False,
-	deps='SAMDB talloc libevents LIBNDR NDR_DRSUAPI NDR_DRSBLOBS LIBNDR DSDB_MODULE_HELPERS LIBSECURITY_SESSION'
+	deps='SAMDB talloc libevents LIBNDR NDR_DRSUAPI NDR_DRSBLOBS LIBNDR DSDB_MODULE_HELPERS libsecurity_session'
 	)
 
 
@@ -119,7 +119,7 @@ bld.SAMBA_MODULE('ldb_samba3sam',
 	subsystem='ldb',
 	init_function='LDB_MODULE(samba3sam)',
 	internal_module=False,
-	deps='talloc libevents ldb SMBPASSWD LIBSECURITY NDR_SECURITY'
+	deps='talloc libevents ldb SMBPASSWD libsecurity NDR_SECURITY'
 	)
 
 
@@ -128,7 +128,7 @@ bld.SAMBA_MODULE('ldb_samba3sid',
 	subsystem='ldb',
 	init_function='LDB_MODULE(samba3sid)',
 	internal_module=False,
-	deps='talloc libevents ldb SMBPASSWD LIBSECURITY NDR_SECURITY LDBSAMBA DSDB_MODULE_HELPERS'
+	deps='talloc libevents ldb SMBPASSWD libsecurity NDR_SECURITY LDBSAMBA DSDB_MODULE_HELPERS'
 	)
 
 
@@ -147,7 +147,7 @@ bld.SAMBA_MODULE('ldb_rootdse',
 	subsystem='ldb',
 	init_function='LDB_MODULE(rootdse)',
 	internal_module=False,
-	deps='talloc libevents SAMDB MESSAGING LIBSECURITY_SESSION DSDB_MODULE_HELPERS'
+	deps='talloc libevents SAMDB MESSAGING libsecurity_session DSDB_MODULE_HELPERS'
 	)
 
 
@@ -238,7 +238,7 @@ bld.SAMBA_MODULE('ldb_objectclass',
 	subsystem='ldb',
 	init_function='LDB_MODULE(objectclass)',
 	internal_module=False,
-	deps='talloc libevents LIBSECURITY NDR_SECURITY SAMDB DSDB_MODULE_HELPERS LIBSAMBA-UTIL DSDB_MODULE_HELPER_SCHEMA'
+	deps='talloc libevents libsecurity NDR_SECURITY SAMDB DSDB_MODULE_HELPERS LIBSAMBA-UTIL DSDB_MODULE_HELPER_SCHEMA'
 	)
 
 
@@ -319,7 +319,7 @@ bld.SAMBA_MODULE('ldb_descriptor',
 	subsystem='ldb',
 	init_function='LDB_MODULE(descriptor)',
 	internal_module=False,
-	deps='talloc libevents LIBSECURITY NDR_SECURITY SAMDB DSDB_MODULE_HELPERS DSDB_MODULE_HELPER_SCHEMA'
+	deps='talloc libevents libsecurity NDR_SECURITY SAMDB DSDB_MODULE_HELPERS DSDB_MODULE_HELPER_SCHEMA'
 	)
 
 
@@ -337,7 +337,7 @@ bld.SAMBA_MODULE('ldb_acl',
 	subsystem='ldb',
 	init_function='LDB_MODULE(acl)',
 	internal_module=False,
-	deps='talloc libevents LIBSECURITY SAMDB DSDB_MODULE_HELPERS DSDB_MODULE_HELPER_SCHEMA'
+	deps='talloc libevents libsecurity SAMDB DSDB_MODULE_HELPERS DSDB_MODULE_HELPER_SCHEMA'
 	)
 
 
@@ -354,7 +354,7 @@ bld.SAMBA_MODULE('ldb_aclread',
 	subsystem='ldb',
 	init_function='LDB_MODULE(aclread)',
 	internal_module=False,
-	deps='talloc libevents LIBSECURITY SAMDB DSDB_MODULE_HELPERS',
+	deps='talloc libevents libsecurity SAMDB DSDB_MODULE_HELPERS',
 	)
 
 bld.SAMBA_MODULE('ldb_simple_dn',

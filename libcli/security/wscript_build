@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 
-bld.SAMBA_LIBRARY('LIBSECURITY',
+bld.SAMBA_LIBRARY('libsecurity',
                   source='dom_sid.c display_sec.c secace.c secacl.c security_descriptor.c sddl.c privileges.c security_token.c access_check.c object_tree.c create_descriptor.c util_sid.c',
                   private_library=True,
                   deps='talloc LIBNDR NDR_SECURITY'
