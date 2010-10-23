@@ -105,20 +105,20 @@ bld.SAMBA_LIBRARY('NDR_STANDARD',
 	)
 
 # create a grouping library to consolidate our samba4 specific NDR code
-bld.SAMBA_LIBRARY('NDR_SAMBA4',
-                  source=[],
-                  deps='NDR_WINBIND NDR_IRPC NDR_NFS4ACL NDR_OPENDB NDR_NOTIFY',
-                  private_library=True,
-                  grouping_library=True
-                  )
+bld.SAMBA_LIBRARY('ndr_samba4',
+	source=[],
+	deps='NDR_WINBIND NDR_IRPC NDR_NFS4ACL NDR_OPENDB NDR_NOTIFY',
+	private_library=True,
+	grouping_library=True
+	)
 
 # a grouping library for RPC_NDR subsystems that may be used by more than one target
-bld.SAMBA_LIBRARY('RPC_NDR_SAMBA4',
-                  source=[],
-                  deps='RPC_NDR_WINBIND',
-                  private_library=True,
-                  grouping_library=True
-                  )
+bld.SAMBA_LIBRARY('rpc_ndr_samba4',
+	source=[],
+	deps='RPC_NDR_WINBIND',
+	private_library=True,
+	grouping_library=True
+	)
 
 
 bld.SAMBA_PIDL_TABLES('GEN_NDR_TABLES', 'gen_ndr/tables.c')
