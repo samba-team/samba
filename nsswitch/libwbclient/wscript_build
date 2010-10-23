@@ -2,6 +2,6 @@
 
 bld.SAMBA_LIBRARY('LIBWBCLIENT',
                   source='wbc_guid.c wbc_idmap.c wbclient.c wbc_pam.c wbc_pwd.c wbc_sid.c wbc_util.c',
-                  deps='LIBWINBIND-CLIENT',
+                  deps='libwinbind-client',
                   private_library=True
                   )

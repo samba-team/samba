@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-bld.SAMBA_LIBRARY('LIBWINBIND-CLIENT',
+bld.SAMBA_LIBRARY('libwinbind-client',
                   source='wb_common.c',
                   deps='replace',
                   cflags='-DSOCKET_WRAPPER_DISABLE=1 -DWINBINDD_SOCKET_DIR=\"%s\"' % bld.env.WINBINDD_SOCKET_DIR,
@@ -16,19 +16,19 @@ bld.SAMBA_BINARY('nsstest',
 
 bld.SAMBA_BINARY('wbinfo',
 	source='wbinfo.c',
-	deps='LIBSAMBA-UTIL LIBCLI_AUTH popt POPT_SAMBA LIBWINBIND-CLIENT LIBWBCLIENT tevent UTIL_TEVENT LIBASYNC_REQ LIBSECURITY LIBNDR NDR_SECURITY'
+	deps='LIBSAMBA-UTIL LIBCLI_AUTH popt POPT_SAMBA libwinbind-client LIBWBCLIENT tevent UTIL_TEVENT LIBASYNC_REQ LIBSECURITY LIBNDR NDR_SECURITY'
 	)
 
 bld.SAMBA_LIBRARY('nss_winbind',
     source='../nsswitch/winbind_nss_linux.c',
-    deps='LIBWINBIND-CLIENT',
+    deps='libwinbind-client',
     realname='libnss_winbind.so.2',
     vnum='2')
 
 if bld.CONFIG_SET('HAVE_PAM_START'):
     bld.SAMBA_LIBRARY('pamwinbind',
         source='../nsswitch/pam_winbind.c',
-        deps='talloc LIBWBCLIENT LIBWINBIND-CLIENT LIBINIPARSER pam',
+        deps='talloc LIBWBCLIENT libwinbind-client LIBINIPARSER pam',
         cflags='-DLOCALEDIR=\"%s/locale\"' % bld.env.DATADIR,
         realname='pam_winbind.so',
         )
