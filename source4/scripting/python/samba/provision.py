@@ -81,10 +81,23 @@ def find_setup_dir():
         return ret
     raise Exception("Unable to find setup directory.")
 
-# descriptors of the naming contexts
-# hard coded at this point, but will probably be changed when
-# we enable different fsmo roles
+# Descriptors of naming contexts and other important objects
 
+# "get_schema_descriptor" is located in "schema.py"
+
+def get_sites_descriptor(domain_sid):
+    sddl = "O:EAG:EAD:AI(A;;RPLCLORC;;;AU)" \
+           "(A;;RPWPCRCCLCLORCWOWDSW;;;EA)" \
+           "(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)" \
+           "(A;CIID;RPWPCRCCDCLCLORCWOWDSDDTSW;;;EA)" \
+           "(A;CIID;RPWPCRCCLCLORCWOWDSDSW;;;DA)" \
+           "S:AI(AU;CISA;CCDCSDDT;;;WD)" \
+           "(OU;CIIOSA;CR;;f0f8ffab-1191-11d0-a060-00aa006c33ed;WD)" \
+           "(OU;CIIOSA;WP;f30e3bbe-9ff0-11d1-b603-0000f80367c1;bf967ab3-0de6-11d0-a285-00aa003049e2;WD)" \
+           "(OU;CIIOSA;WP;f30e3bbf-9ff0-11d1-b603-0000f80367c1;bf967ab3-0de6-11d0-a285-00aa003049e2;WD)" \
+           "(OU;CIIOSA;WP;3e10944c-c354-11d0-aff8-0000f80367c1;b7b13124-b82e-11d0-afee-0000f80367c1;WD)"
+    sec = security.descriptor.from_sddl(sddl, domain_sid)
+    return ndr_pack(sec)
 
 def get_config_descriptor(domain_sid):
     sddl = "O:EAG:EAD:(OA;;CR;1131f6aa-9c07-11d1-f79f-00c04fc2dcd2;;ED)" \
@@ -1163,6 +1176,7 @@ def setup_samdb(path, setup_path, session_info, provision_backend, lp, names,
         samdb.invocation_id = invocationid
 
         logger.info("Setting up sam.ldb configuration data")
+        descr = b64encode(get_sites_descriptor(domainsid))
         setup_add_ldif(samdb, setup_path("provision_configuration.ldif"), {
             "CONFIGDN": names.configdn,
             "NETBIOSNAME": names.netbiosname,
@@ -1173,7 +1187,8 @@ def setup_samdb(path, setup_path, session_info, provision_backend, lp, names,
             "DOMAINDN": names.domaindn,
             "SERVERDN": names.serverdn,
             "FOREST_FUNCTIONALITY": str(forestFunctionality),
-            "DOMAIN_FUNCTIONALITY": str(domainFunctionality)
+            "DOMAIN_FUNCTIONALITY": str(domainFunctionality),
+            "SITES_DESCRIPTOR": descr
             })
 
         logger.info("Setting up display specifiers")
