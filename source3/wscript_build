@@ -1213,29 +1213,29 @@ bld.SAMBA_SUBSYSTEM('NDR_DCERPC',
                     source='../librpc/gen_ndr/ndr_dcerpc.c',
                     vars=locals())
 
-bld.SAMBA_SUBSYSTEM('LIBSAMBA-ERRORS',
-		    source='../libcli/util/doserr.c libsmb/nterr.c')
+bld.SAMBA_SUBSYSTEM('libsamba-errors',
+	source='../libcli/util/doserr.c libsmb/nterr.c')
 
 bld.SAMBA_SUBSYSTEM('NDR_NBT_BUF',
-		    source='../libcli/nbt/nbtname.c',
-		    deps='talloc',
-		    autoproto='nbtname.h')
+	source='../libcli/nbt/nbtname.c',
+	deps='talloc',
+	autoproto='nbtname.h')
 
 bld.SAMBA_SUBSYSTEM('LIBCLI_NDR_NETLOGON',
-		    source='../libcli/ndr_netlogon.c',
-		    public_deps='LIBNDR NDR_SECURITY')
+	source='../libcli/ndr_netlogon.c',
+	public_deps='LIBNDR NDR_SECURITY')
 
 bld.SAMBA_SUBSYSTEM('RPCCLI_WINREG',
-                    source='../librpc/gen_ndr/cli_winreg.c',
-                    public_deps='RPC_NDR_WINREG')
+	source='../librpc/gen_ndr/cli_winreg.c',
+	public_deps='RPC_NDR_WINREG')
 
 bld.SAMBA_SUBSYSTEM('RPCCLI_ECHO',
-                    source='../librpc/gen_ndr/cli_echo.c',
-                    public_deps='RPC_NDR_ECHO')
+	source='../librpc/gen_ndr/cli_echo.c',
+	public_deps='RPC_NDR_ECHO')
 
 bld.SAMBA_SUBSYSTEM('RPC_CLIENT_SCHANNEL',
-                    source=RPC_CLIENT_SCHANNEL_SRC,
-                    vars=locals())
+	source=RPC_CLIENT_SCHANNEL_SRC,
+	vars=locals())
 
 
 ########################## BINARIES #################################

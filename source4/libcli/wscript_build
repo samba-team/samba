@@ -4,7 +4,7 @@ bld.RECURSE('ldap')
 bld.RECURSE('security')
 bld.RECURSE('wbclient')
 
-bld.SAMBA_LIBRARY('LIBSAMBA-ERRORS',
+bld.SAMBA_LIBRARY('libsamba-errors',
                   source='../../libcli/util/doserr.c util/errormap.c util/nterr.c',
                   public_headers='../../libcli/util/error.h ../../libcli/util/ntstatus.h ../../libcli/util/doserr.h ../../libcli/util/werror.h',
                   header_path='core',
@@ -65,7 +65,7 @@ bld.SAMBA_SUBSYSTEM('LIBCLI_RESOLVE',
 bld.SAMBA_SUBSYSTEM('LP_RESOLVE',
 	source='resolve/bcast.c resolve/nbtlist.c resolve/wins.c resolve/dns_ex.c resolve/file.c resolve/host.c resolve/resolve_lp.c',
 	autoproto='resolve/lp_proto.h',
-	deps='LIBCLI_NBT LIBSAMBA-HOSTCONFIG libnetif'
+	deps='LIBCLI_NBT libsamba-hostconfig libnetif'
 	)
 
 
@@ -79,7 +79,7 @@ bld.SAMBA_SUBSYSTEM('LIBCLI_FINDDCS',
 bld.SAMBA_SUBSYSTEM('LIBCLI_SMB',
 	source='clireadwrite.c cliconnect.c clifile.c clilist.c clitrans2.c climessage.c clideltree.c',
 	autoproto='libcli_proto.h',
-	public_deps='LIBCLI_RAW LIBSAMBA-ERRORS LIBCLI_AUTH LIBCLI_SMB_COMPOSITE LIBCLI_NBT libsecurity LIBCLI_RESOLVE LIBCLI_DGRAM LIBCLI_SMB2 LIBCLI_FINDDCS samba_socket'
+	public_deps='LIBCLI_RAW libsamba-errors LIBCLI_AUTH LIBCLI_SMB_COMPOSITE LIBCLI_NBT libsecurity LIBCLI_RESOLVE LIBCLI_DGRAM LIBCLI_SMB2 LIBCLI_FINDDCS samba_socket'
 	)
 
 

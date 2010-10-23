@@ -10,13 +10,13 @@ bld.SAMBA_LIBRARY('libwinbind-client',
 
 bld.SAMBA_BINARY('nsstest',
 	source='nsstest.c',
-	deps='LIBSAMBA-UTIL LIBSAMBA-HOSTCONFIG'
+	deps='libsamba-util libsamba-hostconfig'
 	)
 
 
 bld.SAMBA_BINARY('wbinfo',
 	source='wbinfo.c',
-	deps='LIBSAMBA-UTIL LIBCLI_AUTH popt POPT_SAMBA libwinbind-client LIBWBCLIENT tevent UTIL_TEVENT LIBASYNC_REQ libsecurity LIBNDR NDR_SECURITY'
+	deps='libsamba-util LIBCLI_AUTH popt POPT_SAMBA libwinbind-client LIBWBCLIENT tevent UTIL_TEVENT LIBASYNC_REQ libsecurity LIBNDR NDR_SECURITY'
 	)
 
 bld.SAMBA_LIBRARY('nss_winbind',

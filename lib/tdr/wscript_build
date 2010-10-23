@@ -4,7 +4,7 @@
 bld.SAMBA_SUBSYSTEM('TDR',
 	source='tdr.c',
 	autoproto='tdr_proto.h',
-	public_deps='talloc LIBSAMBA-UTIL',
+	public_deps='talloc libsamba-util',
 	public_headers='tdr.h'
 	)
 

@@ -3,7 +3,7 @@
 
 bld.SAMBA_LIBRARY('libevents',
                   source='tevent_s4.c',
-                  deps='LIBSAMBA-UTIL',
+                  deps='libsamba-util',
                   public_deps='tevent',
                   private_library=True
                   )

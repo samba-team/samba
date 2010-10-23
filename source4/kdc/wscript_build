@@ -4,14 +4,14 @@ bld.SAMBA_MODULE('KDC',
 	source='kdc.c kpasswdd.c',
 	subsystem='service',
 	init_function='server_service_kdc_init',
-	deps='kdc HDB_SAMBA4 WDC_SAMBA4 LIBSAMBA-HOSTCONFIG LIBTSOCKET LIBSAMBA_TSOCKET com_err samba_server_gensec',
+	deps='kdc HDB_SAMBA4 WDC_SAMBA4 libsamba-hostconfig LIBTSOCKET LIBSAMBA_TSOCKET com_err samba_server_gensec',
 	local_include=False
 	)
 
 
 bld.SAMBA_SUBSYSTEM('HDB_SAMBA4',
 	source='hdb-samba4.c',
-	deps='ldb auth_sam auth_sam_reply CREDENTIALS hdb DB_GLUE LIBSAMBA-HOSTCONFIG com_err',
+	deps='ldb auth_sam auth_sam_reply CREDENTIALS hdb DB_GLUE libsamba-hostconfig com_err',
 	includes='../heimdal/kdc',
 	local_include=False
 	)
@@ -21,7 +21,7 @@ bld.SAMBA_SUBSYSTEM('WDC_SAMBA4',
 	source='wdc-samba4.c',
 	local_include_first=False,
 	includes='../heimdal/kdc',
-	deps='ldb auth_sam auth_sam_reply CREDENTIALS hdb PAC_GLUE LIBSAMBA-HOSTCONFIG com_err'
+	deps='ldb auth_sam auth_sam_reply CREDENTIALS hdb PAC_GLUE libsamba-hostconfig com_err'
 	)
 
 
@@ -29,14 +29,14 @@ bld.SAMBA_SUBSYSTEM('PAC_GLUE',
 	source='pac-glue.c',
 	local_include_first=False,
 	includes='../heimdal/kdc',
-	deps='ldb auth_sam auth_sam_reply CREDENTIALS hdb LIBSAMBA-HOSTCONFIG com_err'
+	deps='ldb auth_sam auth_sam_reply CREDENTIALS hdb libsamba-hostconfig com_err'
 	)
 
 
 bld.SAMBA_LIBRARY('DB_GLUE',
 	source='db-glue.c',
 	local_include=False,
-	deps='ldb auth_sam auth_sam_reply CREDENTIALS hdb LIBSAMBA-HOSTCONFIG com_err',
+	deps='ldb auth_sam auth_sam_reply CREDENTIALS hdb libsamba-hostconfig com_err',
         private_library=True
 	)
 
@@ -44,7 +44,7 @@ bld.SAMBA_LIBRARY('DB_GLUE',
 bld.SAMBA_SUBSYSTEM('MIT_SAMBA',
 	source='mit_samba.c',
 	local_include=False,
-	deps='ldb auth_sam auth_sam_reply CREDENTIALS hdb DB_GLUE PAC_GLUE LIBSAMBA-HOSTCONFIG com_err'
+	deps='ldb auth_sam auth_sam_reply CREDENTIALS hdb DB_GLUE PAC_GLUE libsamba-hostconfig com_err'
 	)
 
 

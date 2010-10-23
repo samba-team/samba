@@ -2,7 +2,7 @@
 
 bld.SAMBA_SUBSYSTEM('COM',
 	source='tables.c rot.c main.c',
-	deps='LIBSAMBA-UTIL LIBSAMBA-HOSTCONFIG libevents LIBNDR PIDL_DCOM'
+	deps='libsamba-util libsamba-hostconfig libevents LIBNDR PIDL_DCOM'
 	)
 
 

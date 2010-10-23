@@ -4,6 +4,6 @@
 bld.SAMBA_SUBSYSTEM('LIBCLI_CLDAP',
 	source='cldap.c',
 	public_deps='LIBCLI_LDAP',
-	deps='LIBTSOCKET LIBSAMBA-UTIL UTIL_TEVENT ldb LIBCLI_NETLOGON'
+	deps='LIBTSOCKET libsamba-util UTIL_TEVENT ldb LIBCLI_NETLOGON'
 	)
 

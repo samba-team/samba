@@ -4,7 +4,7 @@ bld.SAMBA_MODULE('auth_sam_module',
 	source='auth_sam.c',
 	subsystem='auth',
 	init_function='auth_sam_init',
-	deps='SAMDB auth_sam ntlm_check LIBSAMBA-HOSTCONFIG'
+	deps='SAMDB auth_sam ntlm_check libsamba-hostconfig'
 	)
 
 
@@ -19,7 +19,7 @@ bld.SAMBA_MODULE('auth_server',
 	source='auth_server.c',
 	subsystem='auth',
 	init_function='auth_server_init',
-	deps='LIBSAMBA-UTIL LIBCLI_SMB CREDENTIALS_NTLM'
+	deps='libsamba-util LIBCLI_SMB CREDENTIALS_NTLM'
 	)
 
 
@@ -55,7 +55,7 @@ bld.SAMBA_SUBSYSTEM('PAM_ERRORS',
 bld.SAMBA_LIBRARY('auth',
 	source='auth.c auth_util.c auth_simple.c',
 	autoproto='auth_proto.h',
-	deps='LIBSAMBA-UTIL libsecurity SAMDB CREDENTIALS UTIL_TEVENT',
+	deps='libsamba-util libsecurity SAMDB CREDENTIALS UTIL_TEVENT',
 	private_library=True
 	)
 

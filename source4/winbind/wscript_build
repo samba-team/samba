@@ -6,7 +6,7 @@ bld.SAMBA_MODULE('WINBIND',
 	autoproto='wb_proto.h',
 	subsystem='service',
 	init_function='server_service_winbind_init',
-	deps='WB_HELPER IDMAP NDR_WINBIND process_model RPC_NDR_LSA dcerpc_samr PAM_ERRORS LIBCLI_LDAP LIBSAMBA-NET LIBSAMBA_TSOCKET'
+	deps='WB_HELPER IDMAP NDR_WINBIND process_model RPC_NDR_LSA dcerpc_samr PAM_ERRORS LIBCLI_LDAP libsamba-net LIBSAMBA_TSOCKET'
 	)
 
 

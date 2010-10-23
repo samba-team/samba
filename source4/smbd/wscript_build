@@ -18,7 +18,7 @@ bld.SAMBA_BINARY('samba',
 	source='server.c',
 	manpages='samba.8',
 	subsystem_name='service',
-	deps='''libevents process_model service LIBSAMBA-HOSTCONFIG LIBSAMBA-UTIL POPT_SAMBA PIDFILE
+	deps='''libevents process_model service libsamba-hostconfig libsamba-util POPT_SAMBA PIDFILE
                 popt gensec registry ntptr ntvfs share CLUSTER DCESRV COMMON_SCHANNELDB SECRETS''',
 	pyembed=True,
 	install_path='${SBINDIR}'
@@ -70,6 +70,6 @@ bld.SAMBA_MODULE('process_model_onefork',
 bld.SAMBA_SUBSYSTEM('process_model',
 	source='process_model.c',
 	autoproto='process_model_proto.h',
-	deps='LIBSAMBA-UTIL LIBSAMBA-HOSTCONFIG'
+	deps='libsamba-util libsamba-hostconfig'
 	)
 

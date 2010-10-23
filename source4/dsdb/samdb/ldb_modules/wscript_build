@@ -173,7 +173,7 @@ bld.SAMBA_MODULE('ldb_extended_dn_in',
 	subsystem='ldb',
 	init_function='LDB_MODULE(extended_dn_in)',
 	internal_module=False,
-	deps='talloc libevents LIBSAMBA-UTIL'
+	deps='talloc libevents libsamba-util'
 	)
 
 
@@ -181,7 +181,7 @@ bld.SAMBA_MODULE('ldb_extended_dn_out',
 	source='extended_dn_out.c',
 	aliases='ldb_extended_dn_out_ldb ldb_extended_dn_out_openldap ldb_extended_dn_out_fds',
 	subsystem='ldb',
-	deps='talloc libevents LIBNDR LIBSAMBA-UTIL SAMDB',
+	deps='talloc libevents LIBNDR libsamba-util SAMDB',
 	internal_module=False,
 	init_function='LDB_MODULE(extended_dn_out_ldb),LDB_MODULE(extended_dn_out_openldap),LDB_MODULE(extended_dn_out_fds)'
 	)
@@ -192,7 +192,7 @@ bld.SAMBA_MODULE('ldb_extended_dn_store',
 	subsystem='ldb',
 	init_function='LDB_MODULE(extended_dn_store)',
 	internal_module=False,
-	deps='talloc libevents LIBSAMBA-UTIL SAMDB DSDB_MODULE_HELPERS'
+	deps='talloc libevents libsamba-util SAMDB DSDB_MODULE_HELPERS'
 	)
 
 
@@ -201,7 +201,7 @@ bld.SAMBA_MODULE('ldb_show_deleted',
 	subsystem='ldb',
 	init_function='LDB_MODULE(show_deleted)',
 	internal_module=False,
-	deps='talloc libevents LIBSAMBA-UTIL DSDB_MODULE_HELPERS'
+	deps='talloc libevents libsamba-util DSDB_MODULE_HELPERS'
 	)
 
 
@@ -238,7 +238,7 @@ bld.SAMBA_MODULE('ldb_objectclass',
 	subsystem='ldb',
 	init_function='LDB_MODULE(objectclass)',
 	internal_module=False,
-	deps='talloc libevents libsecurity NDR_SECURITY SAMDB DSDB_MODULE_HELPERS LIBSAMBA-UTIL DSDB_MODULE_HELPER_SCHEMA'
+	deps='talloc libevents libsecurity NDR_SECURITY SAMDB DSDB_MODULE_HELPERS libsamba-util DSDB_MODULE_HELPER_SCHEMA'
 	)
 
 
@@ -246,7 +246,7 @@ bld.SAMBA_MODULE('ldb_objectclass_attrs',
 	source='objectclass_attrs.c',
 	subsystem='ldb',
 	init_function='LDB_MODULE(objectclass_attrs)',
-	deps='talloc SAMDB LIBSAMBA-UTIL',
+	deps='talloc SAMDB libsamba-util',
 	internal_module=False,
 	)
 
@@ -256,7 +256,7 @@ bld.SAMBA_MODULE('ldb_subtree_rename',
 	subsystem='ldb',
 	init_function='LDB_MODULE(subtree_rename)',
 	internal_module=False,
-	deps='talloc libevents LIBSAMBA-UTIL ldb samdb_common'
+	deps='talloc libevents libsamba-util ldb samdb_common'
 	)
 
 
@@ -265,7 +265,7 @@ bld.SAMBA_MODULE('ldb_subtree_delete',
 	subsystem='ldb',
 	init_function='LDB_MODULE(subtree_delete)',
 	internal_module=False,
-	deps='talloc libevents LIBSAMBA-UTIL DSDB_MODULE_HELPERS'
+	deps='talloc libevents libsamba-util DSDB_MODULE_HELPERS'
 	)
 
 
@@ -283,7 +283,7 @@ bld.SAMBA_MODULE('ldb_ranged_results',
 	subsystem='ldb',
 	init_function='LDB_MODULE(ranged_results)',
 	internal_module=False,
-	deps='talloc libevents LIBSAMBA-UTIL ldb'
+	deps='talloc libevents libsamba-util ldb'
 	)
 
 
@@ -292,7 +292,7 @@ bld.SAMBA_MODULE('ldb_anr',
 	subsystem='ldb',
 	init_function='LDB_MODULE(anr)',
 	internal_module=False,
-	deps='talloc libevents LIBSAMBA-UTIL SAMDB'
+	deps='talloc libevents libsamba-util SAMDB'
 	)
 
 
@@ -301,7 +301,7 @@ bld.SAMBA_MODULE('ldb_instancetype',
 	subsystem='ldb',
 	init_function='LDB_MODULE(instancetype)',
 	internal_module=False,
-	deps='talloc libevents LIBSAMBA-UTIL SAMDB DSDB_MODULE_HELPERS'
+	deps='talloc libevents libsamba-util SAMDB DSDB_MODULE_HELPERS'
 	)
 
 
@@ -310,7 +310,7 @@ bld.SAMBA_MODULE('ldb_operational',
 	subsystem='ldb',
 	init_function='LDB_MODULE(operational)',
 	internal_module=False,
-	deps='talloc tevent LIBSAMBA-UTIL samdb_common DSDB_MODULE_HELPERS auth auth_session'
+	deps='talloc tevent libsamba-util samdb_common DSDB_MODULE_HELPERS auth auth_session'
 	)
 
 

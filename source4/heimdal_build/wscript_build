@@ -617,7 +617,7 @@ KRB5_SOURCE = [os.path.join('lib/krb5/', x) for x in to_list(
 
 HEIMDAL_LIBRARY('krb5', KRB5_SOURCE,
                     includes='../heimdal/lib/krb5 ../heimdal/lib/asn1 ../heimdal/include',
-            deps='roken HEIMDAL_PKINIT_ASN1 wind HEIMDAL_KRB5_ASN1 hx509 HEIMDAL_HCRYPTO LIBSAMBA-HOSTCONFIG intl com_err HEIMDAL_CONFIG',
+            deps='roken HEIMDAL_PKINIT_ASN1 wind HEIMDAL_KRB5_ASN1 hx509 HEIMDAL_HCRYPTO libsamba-hostconfig intl com_err HEIMDAL_CONFIG',
             vnum='26.0.0',
                     )
 KRB5_PROTO_SOURCE = KRB5_SOURCE + ['lib/krb5/expand_path.c', 'lib/krb5/plugin.c']

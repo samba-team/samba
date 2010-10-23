@@ -3,14 +3,14 @@
 bld.SAMBA_LIBRARY('libnetif',
     source='interface.c netif.c',
     autoproto='netif_proto.h',
-    deps='LIBSAMBA-UTIL',
+    deps='libsamba-util',
     private_library=True
     )
 
 bld.SAMBA_MODULE('socket_ip',
     source='socket_ip.c',
     subsystem='samba_socket',
-    deps='LIBSAMBA-ERRORS',
+    deps='libsamba-errors',
     internal_module=True
     )
 

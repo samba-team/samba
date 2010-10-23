@@ -4,6 +4,6 @@ bld.SAMBA_LIBRARY('torture',
 	source='torture.c subunit.c',
 	vnum='0.0.1',
 	pc_files='torture.pc',
-	public_deps='LIBSAMBA-HOSTCONFIG LIBSAMBA-UTIL LIBSAMBA-ERRORS talloc tevent subunit',
+	public_deps='libsamba-hostconfig libsamba-util libsamba-errors talloc tevent subunit',
 	public_headers='torture.h'
 	)

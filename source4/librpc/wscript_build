@@ -6,7 +6,7 @@ bld.RECURSE('idl')
 bld.SAMBA_LIBRARY('LIBNDR',
 	source='../../librpc/ndr/ndr_string.c ../../librpc/ndr/ndr_basic.c ../../librpc/ndr/uuid.c ../../librpc/ndr/ndr.c ../../librpc/ndr/ndr_misc.c ../../librpc/gen_ndr/ndr_misc.c',
 	pc_files='../../librpc/ndr.pc',
-	public_deps='LIBSAMBA-ERRORS talloc LIBSAMBA-UTIL CHARSET',
+	public_deps='libsamba-errors talloc libsamba-util CHARSET',
 	public_headers='../../librpc/gen_ndr/misc.h ../../librpc/gen_ndr/ndr_misc.h ../../librpc/ndr/libndr.h:ndr.h',
 	header_path= [ ( '*gen_ndr*', 'gen_ndr' ) ],
 	depends_on='PIDL_MISC',
@@ -17,7 +17,7 @@ bld.SAMBA_LIBRARY('LIBNDR',
 bld.SAMBA_BINARY('ndrdump',
 	source='../../librpc/tools/ndrdump.c',
 	manpages='../../librpc/tools/ndrdump.1',
-	deps='LIBSAMBA-HOSTCONFIG LIBSAMBA-UTIL popt POPT_SAMBA ndr_table LIBSAMBA-ERRORS'
+	deps='libsamba-hostconfig libsamba-util popt POPT_SAMBA ndr_table libsamba-errors'
 	)
 
 
@@ -218,7 +218,7 @@ bld.SAMBA_SUBSYSTEM('pyrpc_util',
 
 bld.SAMBA_PYTHON('python_dcerpc',
 	source='rpc/pyrpc.c',
-	public_deps='LIBCLI_SMB LIBSAMBA-UTIL LIBSAMBA-HOSTCONFIG dcerpc_samr RPC_NDR_LSA DYNCONFIG pyrpc_util',
+	public_deps='LIBCLI_SMB libsamba-util libsamba-hostconfig dcerpc_samr RPC_NDR_LSA DYNCONFIG pyrpc_util',
 	realname='samba/dcerpc/base.so'
 	)
 

@@ -4,7 +4,7 @@ bld.SAMBA_LIBRARY('gensec',
 	source='gensec.c socket.c gensec_tstream.c',
 	pc_files='gensec.pc',
 	autoproto='gensec_proto.h',
-	public_deps='UTIL_TEVENT LIBSAMBA-UTIL LIBSAMBA-ERRORS LIBPACKET auth_system_session',
+	public_deps='UTIL_TEVENT libsamba-util libsamba-errors LIBPACKET auth_system_session',
 	public_headers='gensec.h',
 	deps='com_err',
 	vnum='0.0.1'

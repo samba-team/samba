@@ -11,13 +11,13 @@ bld.SAMBA_SUBSYSTEM('POPT_SAMBA',
 	public_deps='popt',
 	public_headers='popt_common.h:popt.h',
 	header_path='samba',
-	deps='talloc LIBSAMBA-HOSTCONFIG'
+	deps='talloc libsamba-hostconfig'
 	)
 
 bld.SAMBA_SUBSYSTEM('POPT_CREDENTIALS',
 	source='popt_credentials.c',
 	autoproto='popt_credentials.h',
 	public_deps='CREDENTIALS CREDENTIALS_SECRETS LIBCMDLINE_CREDENTIALS popt',
-	deps='LIBSAMBA-UTIL'
+	deps='libsamba-util'
 	)
 

@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 
-bld.SAMBA_LIBRARY('LIBSAMBA-HOSTCONFIG',
+bld.SAMBA_LIBRARY('libsamba-hostconfig',
 	source='loadparm.c generic.c util.c',
 	pc_files='samba-hostconfig.pc',
 	vnum='0.0.1',
 	deps='DYNCONFIG CHARSET',
-	public_deps='LIBSAMBA-UTIL',
+	public_deps='libsamba-util',
 	public_headers='param.h',
 	autoproto='param_proto.h',
 	)
@@ -21,7 +21,7 @@ bld.SAMBA_SUBSYSTEM('PROVISION',
 bld.SAMBA_SUBSYSTEM('share',
 	source='share.c',
 	public_headers='share.h',
-	deps='LIBSAMBA-UTIL'
+	deps='libsamba-util'
 	)
 
 
@@ -29,7 +29,7 @@ bld.SAMBA_MODULE('share_classic',
 	source='share_classic.c',
 	subsystem='share',
 	init_function='share_classic_init',
-	deps='LIBSAMBA-UTIL'
+	deps='libsamba-util'
 	)
 
 
@@ -49,14 +49,14 @@ bld.SAMBA_SUBSYSTEM('SECRETS',
 
 bld.SAMBA_PYTHON('param',
 	source='pyparam.c',
-	deps='LIBSAMBA-HOSTCONFIG PYTALLOC',
+	deps='libsamba-hostconfig PYTALLOC',
 	realname='samba/param.so'
 	)
 
 
 bld.SAMBA_SUBSYSTEM('pyparam_util',
 	source='pyparam_util.c',
-	deps='LIBPYTHON LIBSAMBA-HOSTCONFIG',
+	deps='LIBPYTHON libsamba-hostconfig',
 	pyext=True,
 	)
 
