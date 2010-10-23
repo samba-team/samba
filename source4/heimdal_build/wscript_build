@@ -467,7 +467,7 @@ if not bld.CONFIG_SET('USING_SYSTEM_ROKEN'):
     HEIMDAL_LIBRARY('roken',
         ROKEN_SOURCE,
         includes='../heimdal/lib/roken ../heimdal/include ../../lib/socket_wrapper',
-        deps='resolv UID_WRAPPER util',
+        deps='resolv util',
         vnum='19.0.1',
         )
 
