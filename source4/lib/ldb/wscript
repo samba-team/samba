@@ -107,6 +107,7 @@ def build(bld):
                       source='pyldb_util.c',
                       public_headers='pyldb.h',
                       vnum=VERSION,
+                      pc_files='pyldb.pc',
                       pyext=True)
 
     if not bld.CONFIG_SET('USING_SYSTEM_LDB'):
