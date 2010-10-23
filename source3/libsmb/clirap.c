@@ -1122,41 +1122,30 @@ NTSTATUS cli_qfilename(struct cli_state *cli, uint16_t fnum, char *name,
  Send a qfileinfo call.
 ****************************************************************************/
 
-bool cli_qfileinfo_basic(struct cli_state *cli, uint16_t fnum,
-			 uint16 *mode, SMB_OFF_T *size,
-			 struct timespec *create_time,
-			 struct timespec *access_time,
-			 struct timespec *write_time,
-			 struct timespec *change_time,
-			 SMB_INO_T *ino)
+NTSTATUS cli_qfileinfo_basic(struct cli_state *cli, uint16_t fnum,
+			     uint16 *mode, SMB_OFF_T *size,
+			     struct timespec *create_time,
+			     struct timespec *access_time,
+			     struct timespec *write_time,
+			     struct timespec *change_time,
+			     SMB_INO_T *ino)
 {
-	uint32_t data_len = 0;
-	uint16 setup;
-	uint8_t param[4];
-	uint8_t *rdata=NULL;
+	uint8_t *rdata;
+	uint32_t num_rdata;
 	NTSTATUS status;
 
 	/* if its a win95 server then fail this - win95 totally screws it
 	   up */
-	if (cli->win95) return False;
+	if (cli->win95) {
+		return NT_STATUS_NOT_SUPPORTED;
+	}
 
-	SSVAL(param, 0, fnum);
-	SSVAL(param, 2, SMB_QUERY_FILE_ALL_INFO);
-
-	SSVAL(&setup, 0, TRANSACT2_QFILEINFO);
-
-	status = cli_trans(talloc_tos(), cli, SMBtrans2,
-			   NULL, -1, 0, 0, /* name, fid, function, flags */
-			   &setup, 1, 0,          /* setup, length, max */
-			   param, 4, 2,   /* param, length, max */
-			   NULL, 0, MIN(cli->max_xmit, 0xffff), /* data, length, max */
-			   NULL,				/* recv_flags2 */
-			   NULL, 0, NULL, /* rsetup, length */
-			   NULL, 0, NULL,	/* rparam, length */
-			   &rdata, 68, &data_len);
-
+	status = cli_qfileinfo(talloc_tos(), cli, fnum,
+			       SMB_QUERY_FILE_ALL_INFO,
+			       68, MIN(cli->max_xmit, 0xffff),
+			       &rdata, &num_rdata);
 	if (!NT_STATUS_IS_OK(status)) {
-		return false;
+		return status;
 	}
 
 	if (create_time) {
@@ -1182,7 +1171,7 @@ bool cli_qfileinfo_basic(struct cli_state *cli, uint16_t fnum,
 	}
 
 	TALLOC_FREE(rdata);
-	return True;
+	return NT_STATUS_OK;
 }
 
 /****************************************************************************

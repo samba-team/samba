@@ -730,9 +730,10 @@ SMBC_lseek_ctx(SMBCCTX *context,
 		}
 
 		/*d_printf(">>>lseek: resolved path as %s\n", targetpath);*/
-		if (!cli_qfileinfo_basic(targetcli, file->cli_fd, NULL,
-					 &size, NULL, NULL, NULL, NULL, NULL))
-		{
+		if (!NT_STATUS_IS_OK(cli_qfileinfo_basic(
+					     targetcli, file->cli_fd, NULL,
+					     &size, NULL, NULL, NULL, NULL,
+					     NULL))) {
                         SMB_OFF_T b_size = size;
 			if (!NT_STATUS_IS_OK(cli_getattrE(targetcli, file->cli_fd,
                                           NULL, &b_size, NULL, NULL, NULL))) {

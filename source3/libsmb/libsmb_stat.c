@@ -250,8 +250,8 @@ SMBC_fstat_ctx(SMBCCTX *context,
 
 	/*d_printf(">>>fstat: resolving %s\n", path);*/
 	if (!cli_resolve_path(frame, "", context->internal->auth_info,
-			file->srv->cli, path,
-			&targetcli, &targetpath)) {
+			      file->srv->cli, path,
+			      &targetcli, &targetpath)) {
 		d_printf("Could not resolve %s\n", path);
                 errno = ENOENT;
 		TALLOC_FREE(frame);
@@ -259,12 +259,13 @@ SMBC_fstat_ctx(SMBCCTX *context,
 	}
 	/*d_printf(">>>fstat: resolved path as %s\n", targetpath);*/
 
-	if (!cli_qfileinfo_basic(targetcli, file->cli_fd, &mode, &size,
-				 NULL,
-				 &access_time_ts,
-				 &write_time_ts,
-				 &change_time_ts,
-				 &ino)) {
+	if (!NT_STATUS_IS_OK(cli_qfileinfo_basic(
+				     targetcli, file->cli_fd, &mode, &size,
+				     NULL,
+				     &access_time_ts,
+				     &write_time_ts,
+				     &change_time_ts,
+				     &ino))) {
 		time_t change_time, access_time, write_time;
 
 		if (!NT_STATUS_IS_OK(cli_getattrE(targetcli, file->cli_fd, &mode, &size,

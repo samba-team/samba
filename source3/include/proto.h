@@ -2329,13 +2329,13 @@ NTSTATUS cli_qpathinfo_streams(struct cli_state *cli, const char *fname,
 			       struct stream_struct **pstreams);
 NTSTATUS cli_qfilename(struct cli_state *cli, uint16_t fnum, char *name,
 		       size_t namelen);
-bool cli_qfileinfo_basic(struct cli_state *cli, uint16_t fnum,
-			 uint16 *mode, SMB_OFF_T *size,
-			 struct timespec *create_time,
-			 struct timespec *access_time,
-			 struct timespec *write_time,
-			 struct timespec *change_time,
-			 SMB_INO_T *ino);
+NTSTATUS cli_qfileinfo_basic(struct cli_state *cli, uint16_t fnum,
+			     uint16 *mode, SMB_OFF_T *size,
+			     struct timespec *create_time,
+			     struct timespec *access_time,
+			     struct timespec *write_time,
+			     struct timespec *change_time,
+			     SMB_INO_T *ino);
 struct tevent_req *cli_qpathinfo_basic_send(TALLOC_CTX *mem_ctx,
 					    struct event_context *ev,
 					    struct cli_state *cli,

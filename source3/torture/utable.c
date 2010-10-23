@@ -159,8 +159,9 @@ bool torture_casetable(int dummy)
 
 		size = 0;
 
-		if (!cli_qfileinfo_basic(cli, fnum, NULL, &size,
-					 NULL, NULL, NULL, NULL, NULL)) {
+		if (!NT_STATUS_IS_OK(cli_qfileinfo_basic(
+					     cli, fnum, NULL, &size,
+					     NULL, NULL, NULL, NULL, NULL))) {
 			continue;
 		}
 

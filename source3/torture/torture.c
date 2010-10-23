@@ -915,8 +915,9 @@ static bool run_readwritelarge(int dummy)
 
 	cli_write(cli1, fnum1, 0, buf, 0, sizeof(buf));
 
-	if (!cli_qfileinfo_basic(cli1, fnum1, NULL, &fsize, NULL, NULL, NULL,
-				 NULL, NULL)) {
+	if (!NT_STATUS_IS_OK(cli_qfileinfo_basic(
+				     cli1, fnum1, NULL, &fsize, NULL, NULL,
+				     NULL, NULL, NULL))) {
 		printf("qfileinfo failed (%s)\n", cli_errstr(cli1));
 		correct = False;
 	}
@@ -949,8 +950,9 @@ static bool run_readwritelarge(int dummy)
 
 	cli_smbwrite(cli1, fnum1, buf, 0, sizeof(buf));
 
-	if (!cli_qfileinfo_basic(cli1, fnum1, NULL, &fsize, NULL, NULL, NULL,
-				 NULL, NULL)) {
+	if (!NT_STATUS_IS_OK(cli_qfileinfo_basic(
+				     cli1, fnum1, NULL, &fsize, NULL, NULL,
+				     NULL, NULL, NULL))) {
 		printf("qfileinfo failed (%s)\n", cli_errstr(cli1));
 		correct = False;
 	}
@@ -2977,9 +2979,10 @@ static bool run_trans2test(int dummy)
 	cli_unlink(cli, fname, aSYSTEM | aHIDDEN);
 	cli_open(cli, fname, 
 			O_RDWR | O_CREAT | O_TRUNC, DENY_NONE, &fnum);
-	if (!cli_qfileinfo_basic(cli, fnum, NULL, &size, &c_time_ts,
-				 &a_time_ts, &w_time_ts,
-			   &m_time_ts, NULL)) {
+	if (!NT_STATUS_IS_OK(cli_qfileinfo_basic(
+				     cli, fnum, NULL, &size, &c_time_ts,
+				     &a_time_ts, &w_time_ts,
+				     &m_time_ts, NULL))) {
 		printf("ERROR: qfileinfo failed (%s)\n", cli_errstr(cli));
 		correct = False;
 	}
