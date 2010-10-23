@@ -9,7 +9,7 @@ bld.SAMBA_LIBRARY('DSDB_MODULE',
 bld.SAMBA_SUBSYSTEM('DSDB_MODULE_HELPERS',
 	source='util.c acl_util.c schema_util.c',
 	autoproto='util_proto.h',
-	deps='ldb LIBNDR SAMDB_COMMON LIBSECURITY_SESSION'
+	deps='ldb LIBNDR samdb_common LIBSECURITY_SESSION'
 	)
 
 bld.SAMBA_SUBSYSTEM('DSDB_MODULE_HELPER_RIDALLOC',
@@ -256,7 +256,7 @@ bld.SAMBA_MODULE('ldb_subtree_rename',
 	subsystem='ldb',
 	init_function='LDB_MODULE(subtree_rename)',
 	internal_module=False,
-	deps='talloc libevents LIBSAMBA-UTIL ldb SAMDB_COMMON'
+	deps='talloc libevents LIBSAMBA-UTIL ldb samdb_common'
 	)
 
 
@@ -310,7 +310,7 @@ bld.SAMBA_MODULE('ldb_operational',
 	subsystem='ldb',
 	init_function='LDB_MODULE(operational)',
 	internal_module=False,
-	deps='talloc tevent LIBSAMBA-UTIL SAMDB_COMMON DSDB_MODULE_HELPERS auth auth_session'
+	deps='talloc tevent LIBSAMBA-UTIL samdb_common DSDB_MODULE_HELPERS auth auth_session'
 	)
 
 
