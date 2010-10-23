@@ -600,8 +600,7 @@ static void dns_task_init(struct task_server *task)
 	struct ldb_result *res;
 	struct ldb_dn *rootdn;
 	static const char * const attrs[] = { "name", NULL};
-	int i;
-
+	unsigned int i;
 
 	switch (lpcfg_server_role(task->lp_ctx)) {
 	case ROLE_STANDALONE:

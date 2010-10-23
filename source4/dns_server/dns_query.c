@@ -40,7 +40,7 @@ static WERROR handle_question(struct dns_server *dns,
 	static const char * const attrs[] = { "dnsRecord", NULL};
 	int ret;
 	uint16_t ai = *ancount;
-	uint16_t ri;
+	unsigned int ri;
 	struct ldb_message *msg = NULL;
 	struct dnsp_DnssrvRpcRecord *recs;
 	struct ldb_message_element *el;
@@ -206,9 +206,8 @@ WERROR dns_server_process_query(struct dns_server *dns,
 				struct dns_res_rec **nsrecs,     uint16_t *nscount,
 				struct dns_res_rec **additional, uint16_t *arcount)
 {
-	uint16_t num_answers=0;
+	uint16_t i, num_answers=0;
 	struct dns_res_rec *ans=NULL;
-	int i;
 	WERROR werror;
 
 	ans = talloc_array(mem_ctx, struct dns_res_rec, 0);
