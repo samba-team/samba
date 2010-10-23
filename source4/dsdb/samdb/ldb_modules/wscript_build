@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 
-bld.SAMBA_LIBRARY('DSDB_MODULE',
-                  source=[],
-                  deps='DSDB_MODULE_HELPERS DSDB_MODULE_HELPER_SCHEMA DSDB_MODULE_HELPER_RIDALLOC',
-                  private_library=True,
-                  grouping_library=True)
+bld.SAMBA_LIBRARY('dsdb_module',
+	source=[],
+	deps='DSDB_MODULE_HELPERS DSDB_MODULE_HELPER_SCHEMA DSDB_MODULE_HELPER_RIDALLOC',
+	private_library=True,
+	grouping_library=True)
 
 bld.SAMBA_SUBSYSTEM('DSDB_MODULE_HELPERS',
 	source='util.c acl_util.c schema_util.c',
@@ -119,7 +119,7 @@ bld.SAMBA_MODULE('ldb_samba3sam',
 	subsystem='ldb',
 	init_function='LDB_MODULE(samba3sam)',
 	internal_module=False,
-	deps='talloc libevents ldb SMBPASSWD libsecurity NDR_SECURITY'
+	deps='talloc libevents ldb smbpasswd libsecurity NDR_SECURITY'
 	)
 
 
@@ -128,7 +128,7 @@ bld.SAMBA_MODULE('ldb_samba3sid',
 	subsystem='ldb',
 	init_function='LDB_MODULE(samba3sid)',
 	internal_module=False,
-	deps='talloc libevents ldb SMBPASSWD libsecurity NDR_SECURITY LDBSAMBA DSDB_MODULE_HELPERS'
+	deps='talloc libevents ldb libsecurity NDR_SECURITY LDBSAMBA DSDB_MODULE_HELPERS'
 	)
 
 
