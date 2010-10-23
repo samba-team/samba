@@ -5265,6 +5265,139 @@ NTSTATUS cli_qpathinfo(TALLOC_CTX *mem_ctx, struct cli_state *cli,
 	return status;
 }
 
+struct cli_qfileinfo_state {
+	uint16_t setup[1];
+	uint8_t param[4];
+	uint8_t *data;
+	uint32_t min_rdata;
+	uint8_t *rdata;
+	uint32_t num_rdata;
+};
+
+static void cli_qfileinfo_done(struct tevent_req *subreq);
+
+struct tevent_req *cli_qfileinfo_send(TALLOC_CTX *mem_ctx,
+				      struct tevent_context *ev,
+				      struct cli_state *cli, uint16_t fnum,
+				      uint16_t level, uint32_t min_rdata,
+				      uint32_t max_rdata)
+{
+	struct tevent_req *req, *subreq;
+	struct cli_qfileinfo_state *state;
+
+	req = tevent_req_create(mem_ctx, &state, struct cli_qfileinfo_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->min_rdata = min_rdata;
+	SSVAL(state->param, 0, fnum);
+	SSVAL(state->param, 2, level);
+	SSVAL(state->setup, 0, TRANSACT2_QFILEINFO);
+
+	subreq = cli_trans_send(
+		state,			/* mem ctx. */
+		ev,			/* event ctx. */
+		cli,			/* cli_state. */
+		SMBtrans2,		/* cmd. */
+		NULL,			/* pipe name. */
+		-1,			/* fid. */
+		0,			/* function. */
+		0,			/* flags. */
+		state->setup,		/* setup. */
+		1,			/* num setup uint16_t words. */
+		0,			/* max returned setup. */
+		state->param,		/* param. */
+		sizeof(state->param),	/* num param. */
+		2,			/* max returned param. */
+		NULL,			/* data. */
+		0,			/* num data. */
+		max_rdata);		/* max returned data. */
+
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, cli_qfileinfo_done, req);
+	return req;
+}
+
+static void cli_qfileinfo_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct cli_qfileinfo_state *state = tevent_req_data(
+		req, struct cli_qfileinfo_state);
+	NTSTATUS status;
+
+	status = cli_trans_recv(subreq, state, NULL, NULL, 0, NULL,
+				NULL, 0, NULL,
+				&state->rdata, state->min_rdata,
+				&state->num_rdata);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+	tevent_req_done(req);
+}
+
+NTSTATUS cli_qfileinfo_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
+			    uint8_t **rdata, uint32_t *num_rdata)
+{
+	struct cli_qfileinfo_state *state = tevent_req_data(
+		req, struct cli_qfileinfo_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		return status;
+	}
+	if (rdata != NULL) {
+		*rdata = talloc_move(mem_ctx, &state->rdata);
+	} else {
+		TALLOC_FREE(state->rdata);
+	}
+	if (num_rdata != NULL) {
+		*num_rdata = state->num_rdata;
+	}
+	return NT_STATUS_OK;
+}
+
+NTSTATUS cli_qfileinfo(TALLOC_CTX *mem_ctx, struct cli_state *cli,
+		       uint16_t fnum, uint16_t level, uint32_t min_rdata,
+		       uint32_t max_rdata,
+		       uint8_t **rdata, uint32_t *num_rdata)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct event_context *ev;
+	struct tevent_req *req;
+	NTSTATUS status = NT_STATUS_NO_MEMORY;
+
+	if (cli_has_async_calls(cli)) {
+		/*
+		 * Can't use sync call while an async call is in flight
+		 */
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto fail;
+	}
+	ev = event_context_init(frame);
+	if (ev == NULL) {
+		goto fail;
+	}
+	req = cli_qfileinfo_send(frame, ev, cli, fnum, level, min_rdata,
+				 max_rdata);
+	if (req == NULL) {
+		goto fail;
+	}
+	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
+		goto fail;
+	}
+	status = cli_qfileinfo_recv(req, mem_ctx, rdata, num_rdata);
+ fail:
+	TALLOC_FREE(frame);
+	if (!NT_STATUS_IS_OK(status)) {
+		cli_set_error(cli, status);
+	}
+	return status;
+}
+
 struct cli_flush_state {
 	uint16_t vwv[1];
 };
