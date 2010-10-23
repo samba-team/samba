@@ -984,10 +984,17 @@ def update_present(ref_samdb, samdb, basedn, listPresent, usns, invocationid):
         delta.dn = dn
         if len(delta.items()) >1:
             attributes=", ".join(delta.keys())
+            modcontrols = []
+            relaxedatt = ['iscriticalsystemobject', 'grouptype']
+            # Let's try to reduce as much as possible the use of relax control
+            #for checkedatt in relaxedatt:
+            for attr in delta.keys():
+                if attr.lower() in relaxedatt:
+                    modcontrols = ["relax:0", "local_oid:1.3.6.1.4.1.7165.4.3.16:0"]
             message(CHANGE, "%s is different from the reference one, changed"
                             " attributes: %s\n" % (dn, attributes))
             changed += 1
-            samdb.modify(delta)
+            samdb.modify(delta, modcontrols)
     return changed
 
 def reload_full_schema(samdb, names):
