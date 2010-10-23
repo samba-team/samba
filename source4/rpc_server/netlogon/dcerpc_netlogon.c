@@ -125,6 +125,19 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3(struct dcesrv_call_state *dce_ca
 				  NETLOGON_NEG_AUTHENTICATED_RPC_LSASS |
 				  NETLOGON_NEG_AUTHENTICATED_RPC;
 
+	switch (r->in.secure_channel_type) {
+	case SEC_CHAN_WKSTA:
+	case SEC_CHAN_DNS_DOMAIN:
+	case SEC_CHAN_DOMAIN:
+	case SEC_CHAN_BDC:
+	case SEC_CHAN_RODC:
+		break;
+	default:
+		DEBUG(1, ("Client asked for an invalid secure channel type: %d\n",
+			  r->in.secure_channel_type));
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
 	sam_ctx = samdb_connect(mem_ctx, dce_call->event_ctx, dce_call->conn->dce_ctx->lp_ctx,
 				system_session(dce_call->conn->dce_ctx->lp_ctx), 0);
 	if (sam_ctx == NULL) {
@@ -221,9 +234,8 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3(struct dcesrv_call_state *dce_ca
 			return NT_STATUS_ACCESS_DENIED;
 		}
 	} else {
-		DEBUG(1, ("Client asked for an invalid secure channel type: %d\n",
-			  r->in.secure_channel_type));
-		return NT_STATUS_ACCESS_DENIED;
+		/* we should never reach this */
+		return NT_STATUS_INTERNAL_ERROR;
 	}
 
 	*r->out.rid = samdb_result_rid_from_sid(mem_ctx, msgs[0],
