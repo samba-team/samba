@@ -2984,7 +2984,7 @@ static bool run_trans2test(int dummy)
 		correct = False;
 	}
 
-	if (!cli_qfilename(cli, fnum, pname, sizeof(pname))) {
+	if (!NT_STATUS_IS_OK(cli_qfilename(cli, fnum, pname, sizeof(pname)))) {
 		printf("ERROR: qfilename failed (%s)\n", cli_errstr(cli));
 		correct = False;
 	}
