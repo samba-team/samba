@@ -44,7 +44,7 @@ bld.SAMBA_SUBSYSTEM('LIBCLI_SMB_COMPOSITE',
 
 bld.SAMBA_SUBSYSTEM('LIBCLI_DGRAM',
 	source='dgram/dgramsocket.c dgram/mailslot.c dgram/netlogon.c dgram/browse.c',
-	public_deps='LIBCLI_NBT LIBNDR LIBCLI_RESOLVE LIBCLI_NETLOGON LIBCLI_RESOLVE'
+	public_deps='cli_nbt LIBNDR LIBCLI_RESOLVE LIBCLI_NETLOGON LIBCLI_RESOLVE'
 	)
 
 
@@ -65,21 +65,21 @@ bld.SAMBA_SUBSYSTEM('LIBCLI_RESOLVE',
 bld.SAMBA_SUBSYSTEM('LP_RESOLVE',
 	source='resolve/bcast.c resolve/nbtlist.c resolve/wins.c resolve/dns_ex.c resolve/file.c resolve/host.c resolve/resolve_lp.c',
 	autoproto='resolve/lp_proto.h',
-	deps='LIBCLI_NBT libsamba-hostconfig libnetif'
+	deps='cli_nbt libsamba-hostconfig libnetif'
 	)
 
 
 bld.SAMBA_SUBSYSTEM('LIBCLI_FINDDCS',
 	source='finddcs_nbt.c finddcs_cldap.c',
 	autoproto='finddcs_proto.h',
-	public_deps='LIBCLI_NBT MESSAGING RPC_NDR_IRPC LIBCLI_CLDAP'
+	public_deps='cli_nbt MESSAGING RPC_NDR_IRPC LIBCLI_CLDAP'
 	)
 
 
 bld.SAMBA_SUBSYSTEM('LIBCLI_SMB',
 	source='clireadwrite.c cliconnect.c clifile.c clilist.c clitrans2.c climessage.c clideltree.c',
 	autoproto='libcli_proto.h',
-	public_deps='LIBCLI_RAW libsamba-errors LIBCLI_AUTH LIBCLI_SMB_COMPOSITE LIBCLI_NBT libsecurity LIBCLI_RESOLVE LIBCLI_DGRAM LIBCLI_SMB2 LIBCLI_FINDDCS samba_socket'
+	public_deps='LIBCLI_RAW libsamba-errors LIBCLI_AUTH LIBCLI_SMB_COMPOSITE cli_nbt libsecurity LIBCLI_RESOLVE LIBCLI_DGRAM LIBCLI_SMB2 LIBCLI_FINDDCS samba_socket'
 	)
 
 

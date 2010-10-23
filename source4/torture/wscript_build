@@ -114,7 +114,7 @@ bld.SAMBA_MODULE('TORTURE_NBT',
 	autoproto='nbt/proto.h',
 	subsystem='smbtorture',
 	init_function='torture_nbt_init',
-	deps='LIBCLI_SMB LIBCLI_NBT LIBCLI_DGRAM LIBCLI_WREPL torture_rpc',
+	deps='LIBCLI_SMB cli_nbt LIBCLI_DGRAM LIBCLI_WREPL torture_rpc',
 	internal_module=True
 	)
 
