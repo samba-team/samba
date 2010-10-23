@@ -3660,6 +3660,13 @@ int dsdb_request_add_controls(struct ldb_request *req, uint32_t dsdb_flags)
 		}
 	}
 
+	if (dsdb_flags & DSDB_PROVISION) {
+		ret = ldb_request_add_control(req, LDB_CONTROL_PROVISION_OID, false, NULL);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+	}
+
 	return LDB_SUCCESS;
 }
 

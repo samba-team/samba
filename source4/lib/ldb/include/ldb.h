@@ -510,6 +510,12 @@ typedef int (*ldb_qsort_cmp_fn_t) (void *v1, void *v2, void *opaque);
 */
 #define LDB_CONTROL_AS_SYSTEM_OID "1.3.6.1.4.1.7165.4.3.7"
 
+/**
+   LDB_CONTROL_PROVISION_OID is used to skip some constraint checks. It's is
+   mainly thought to be used for the provisioning.
+*/
+#define LDB_CONTROL_PROVISION_OID "1.3.6.1.4.1.7165.4.3.16"
+
 /* AD controls */
 
 /**
