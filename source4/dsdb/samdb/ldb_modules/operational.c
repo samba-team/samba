@@ -777,9 +777,9 @@ static int operational_search(struct ldb_module *module, struct ldb_request *req
 	ac->controls_flags = talloc(ac, struct op_controls_flags);
 	/* remember if the SD_FLAGS_OID was set */
 	ac->controls_flags->sd = (ldb_request_get_control(req, LDB_CONTROL_SD_FLAGS_OID) != NULL);
-	/* remember if the LDB_CONTROL_BYPASSOPERATIONAL_OID */
-	ac->controls_flags->bypassoperational = (ldb_request_get_control(req,
-							LDB_CONTROL_BYPASSOPERATIONAL_OID) != NULL);
+	/* remember if the LDB_CONTROL_BYPASS_OPERATIONAL_OID */
+	ac->controls_flags->bypassoperational =
+		(ldb_request_get_control(req, LDB_CONTROL_BYPASS_OPERATIONAL_OID) != NULL);
 
 	/* in the list of attributes we are looking for, rename any
 	   attributes to the alias for any hidden attributes that can

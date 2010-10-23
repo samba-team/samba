@@ -1181,8 +1181,8 @@ static const struct ldap_control_handler ldap_known_controls[] = {
 	{ DSDB_CONTROL_APPLY_LINKS, NULL, NULL },
 /* DSDB_CONTROL_BYPASS_PASSWORD_HASH_OID is internal only, and has no network representation */
 	{ DSDB_CONTROL_BYPASS_PASSWORD_HASH_OID, NULL, NULL },
-/* LDB_CONTROL_BYPASSOPERATIONAL_OID is internal only, and has no network representation */
-	{ LDB_CONTROL_BYPASSOPERATIONAL_OID, NULL, NULL },
+/* LDB_CONTROL_BYPASS_OPERATIONAL_OID is internal only, and has no network representation */
+	{ LDB_CONTROL_BYPASS_OPERATIONAL_OID, NULL, NULL },
 /* DSDB_CONTROL_CHANGEREPLMETADATA_OID is internal only, and has no network representation */
 	{ DSDB_CONTROL_CHANGEREPLMETADATA_OID, NULL, NULL },
 /* DSDB_CONTROL_SEARCH_APPLY_ACCESS is internal only, and has no network representation */

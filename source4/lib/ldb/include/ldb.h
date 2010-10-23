@@ -487,7 +487,7 @@ typedef int (*ldb_qsort_cmp_fn_t) (void *v1, void *v2, void *opaque);
   It can be used to access attribute that used to be stored in the sam 
   and that are now calculated.
 */
-#define LDB_CONTROL_BYPASSOPERATIONAL_OID "1.3.6.1.4.1.7165.4.3.13"
+#define LDB_CONTROL_BYPASS_OPERATIONAL_OID "1.3.6.1.4.1.7165.4.3.13"
 
 /**
   OID for recalculate SD control. This control force the
