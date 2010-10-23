@@ -60,7 +60,7 @@ bld.SAMBA_MODULE('dcerpc_unixinfo',
 	source='unixinfo/dcesrv_unixinfo.c',
 	subsystem='dcerpc_server',
 	init_function='dcerpc_server_unixinfo_init',
-	deps='DCERPC_COMMON SAMDB NDR_UNIXINFO NSS_WRAPPER LIBWBCLIENT_OLD'
+	deps='DCERPC_COMMON SAMDB NDR_UNIXINFO LIBWBCLIENT_OLD'
 	)
 
 

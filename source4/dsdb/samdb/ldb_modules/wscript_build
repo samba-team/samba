@@ -119,7 +119,7 @@ bld.SAMBA_MODULE('ldb_samba3sam',
 	subsystem='ldb',
 	init_function='LDB_MODULE(samba3sam)',
 	internal_module=False,
-	deps='talloc libevents ldb SMBPASSWD NSS_WRAPPER LIBSECURITY NDR_SECURITY'
+	deps='talloc libevents ldb SMBPASSWD LIBSECURITY NDR_SECURITY'
 	)
 
 
@@ -128,7 +128,7 @@ bld.SAMBA_MODULE('ldb_samba3sid',
 	subsystem='ldb',
 	init_function='LDB_MODULE(samba3sid)',
 	internal_module=False,
-	deps='talloc libevents ldb SMBPASSWD NSS_WRAPPER LIBSECURITY NDR_SECURITY LDBSAMBA DSDB_MODULE_HELPERS'
+	deps='talloc libevents ldb SMBPASSWD LIBSECURITY NDR_SECURITY LDBSAMBA DSDB_MODULE_HELPERS'
 	)
 
 

@@ -1049,7 +1049,7 @@ bld.SAMBA_SUBSYSTEM('KRBCLIENT',
 
 bld.SAMBA_SUBSYSTEM('LIBS',
                     source=LIB_SRC,
-                    deps='NSS_WRAPPER iconv LIBCRYPTO LIBNDR LIBSECURITY NDR_SECURITY charset NDR_MESSAGING',
+                    deps='iconv LIBCRYPTO LIBNDR LIBSECURITY NDR_SECURITY charset NDR_MESSAGING',
                     vars=locals())
 
 bld.SAMBA_SUBSYSTEM('LIB_NONSMBD',
@@ -1117,7 +1117,7 @@ bld.SAMBA_SUBSYSTEM('LIBSMBCONF',
 bld.SAMBA_SUBSYSTEM('SMBD_BASE',
                     source=SMBD_SRC_BASE,
                     deps='''tdb tevent dl krb5 ldap gssapi gssapi_krb5
-                    NSS_WRAPPER DYNCONFIG libwbclient crypt nsl cups cap resolv ZLIB PASSDB
+                    DYNCONFIG libwbclient crypt nsl cups cap resolv ZLIB PASSDB
                     PARAM_WITHOUT_REG LIBS LIBSMB POPT_SAMBA KRBCLIENT AVAHI
                     LIBMSRPC_GEN LIBMSRPC LIBADS LIBADS_SERVER LIBADS_PRINTER
                     vfs vfs_default vfs_posixacl auth rpc LOCKING LIBAFS LIBAFS_SETTOKEN PROFILE
@@ -1249,14 +1249,14 @@ bld.SAMBA_BINARY('smbd/smbd',
 bld.SAMBA_BINARY('nmbd/nmbd',
                  source=NMBD_SRC,
                  deps='''talloc tdb tevent ZLIB cap resolv libwbclient dl
-                 NSS_WRAPPER PASSDB PARAM ldap LIB_NONSMBD LIBSMB
+                 PASSDB PARAM ldap LIB_NONSMBD LIBSMB
                  POPT_SAMBA KRBCLIENT NDR_SAMR NDR_LSA''',
                  install_path='${SBINDIR}',
                  vars=locals())
 
 bld.SAMBA_BINARY('winbindd/winbindd',
                  source=WINBINDD_SRC,
-                 deps='''talloc tdb tevent cap dl ZLIB NSS_WRAPPER
+                 deps='''talloc tdb tevent cap dl ZLIB 
                  libwbclient PASSDB ldap resolv PARAM LIB_NONSMBD LIBSMB
                  POPT_SAMBA KRBCLIENT LIBMSRPC_GEN LIBMSRPC LIBADS LIBADS_SERVER
                  SRV_NDR_WBINT RPCCLI_NDR_WBINT LIBAFS
@@ -1313,7 +1313,7 @@ bld.SAMBA_BINARY('smbspool',
 
 bld.SAMBA_BINARY('testparm',
                  source=TESTPARM_SRC,
-                 deps='''talloc tevent ldap cap NSS_WRAPPER
+                 deps='''talloc tevent ldap cap 
                  libwbclient ASN1_UTIL LIBTSOCKET PASSDB PARAM LIB_NONSMBD
                  LIBSMB_ERR POPT_SAMBA''',
                  vars=locals())
@@ -1418,7 +1418,7 @@ bld.SAMBA_BINARY('locktest',
 
 bld.SAMBA_BINARY('nsstest',
                  source=NSSTEST_SRC,
-                 deps='NSS_WRAPPER',
+                 deps='',
                  vars=locals())
 
 bld.SAMBA_BINARY('pdbtest',
@@ -1466,7 +1466,7 @@ bld.SAMBA_BINARY('versiontest',
 bld.SAMBA_BINARY('wbinfo',
                  source=WBINFO_SRC,
                  deps='''talloc libwbclient tevent cap
-                 NSS_WRAPPER ASN1_UTIL LIBTSOCKET PASSDB ldap PARAM LIB_NONSMBD
+                 ASN1_UTIL LIBTSOCKET PASSDB ldap PARAM LIB_NONSMBD
                  LIBSAMBA POPT_SAMBA LIBAFS_SETTOKEN''',
                  vars=locals())
 
@@ -1512,7 +1512,7 @@ bld.SAMBA_BINARY('split_tokens',
 
 bld.SAMBA_BINARY('vlp',
                  source=VLP_SRC,
-                 deps='''talloc tdb NSS_WRAPPER''',
+                 deps='''talloc tdb''',
                  vars=locals())
 
 swat_files=recursive_dirlist('../swat', '../swat', '*')
