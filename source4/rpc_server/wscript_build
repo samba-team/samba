@@ -35,7 +35,7 @@ bld.SAMBA_MODULE('dcerpc_remote',
 	source='remote/dcesrv_remote.c',
 	subsystem='dcerpc_server',
 	init_function='dcerpc_server_remote_init',
-	deps='LIBCLI_SMB NDR_TABLE'
+	deps='LIBCLI_SMB ndr_table'
 	)
 
 

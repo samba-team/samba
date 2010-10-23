@@ -17,7 +17,7 @@ bld.SAMBA_LIBRARY('LIBNDR',
 bld.SAMBA_BINARY('ndrdump',
 	source='../../librpc/tools/ndrdump.c',
 	manpages='../../librpc/tools/ndrdump.1',
-	deps='LIBSAMBA-HOSTCONFIG LIBSAMBA-UTIL popt POPT_SAMBA NDR_TABLE LIBSAMBA-ERRORS'
+	deps='LIBSAMBA-HOSTCONFIG LIBSAMBA-UTIL popt POPT_SAMBA ndr_table LIBSAMBA-ERRORS'
 	)
 
 
@@ -96,12 +96,12 @@ bld.SAMBA_LIBRARY('NDR_STANDARD',
 	source='../../librpc/gen_ndr/ndr_atsvc.c ../../librpc/gen_ndr/ndr_eventlog6.c',
 	vnum='0.0.1',
 	pc_files='../../librpc/ndr_standard.pc',
-        deps='''NDR_SECURITY NDR_LSA NDR_SAMR NDR_NETLOGON NDR_EVENTLOG NDR_DFS
-        NDR_NTSVCS NDR_SVCCTL NDR_INITSHUTDOWN NDR_WKSSVC NDR_SRVSVC NDR_WINREG
-        NDR_ECHO LIBSECURITY NDR_DNS''',
+	deps='''NDR_SECURITY NDR_LSA NDR_SAMR NDR_NETLOGON NDR_EVENTLOG NDR_DFS
+	NDR_NTSVCS NDR_SVCCTL NDR_INITSHUTDOWN NDR_WKSSVC NDR_SRVSVC NDR_WINREG
+	NDR_ECHO LIBSECURITY NDR_DNS''',
 	public_deps='LIBNDR',
 	public_headers='../../librpc/gen_ndr/samr.h ../../librpc/gen_ndr/ndr_samr.h ../../librpc/gen_ndr/lsa.h ../../librpc/gen_ndr/netlogon.h ../../librpc/gen_ndr/atsvc.h ../../librpc/gen_ndr/ndr_atsvc.h ../../librpc/gen_ndr/ndr_svcctl.h ../../librpc/gen_ndr/svcctl.h',
-        header_path='gen_ndr'
+	header_path='gen_ndr'
 	)
 
 # create a grouping library to consolidate our samba4 specific NDR code
@@ -123,7 +123,7 @@ bld.SAMBA_LIBRARY('RPC_NDR_SAMBA4',
 
 bld.SAMBA_PIDL_TABLES('GEN_NDR_TABLES', 'gen_ndr/tables.c')
 
-bld.SAMBA_LIBRARY('NDR_TABLE',
+bld.SAMBA_LIBRARY('ndr_table',
 	source='../../librpc/ndr/ndr_table.c gen_ndr/tables.c',
         public_deps='''NDR_STANDARD NDR_AUDIOSRV NDR_DSBACKUP NDR_EFS
         NDR_DRSUAPI NDR_POLICYAGENT NDR_UNIXINFO NDR_SPOOLSS NDR_EPMAPPER

@@ -3,7 +3,7 @@
 
 bld.SAMBA_SUBSYSTEM('WMI',
 	source='wmicore.c wbemdata.c ../../../librpc/gen_ndr/dcom_p.c',
-	public_deps='RPC_NDR_OXIDRESOLVER NDR_DCOM RPC_NDR_REMACT NDR_TABLE DCOM_PROXY_DCOM DCOM'
+	public_deps='RPC_NDR_OXIDRESOLVER NDR_DCOM RPC_NDR_REMACT ndr_table DCOM_PROXY_DCOM DCOM'
 	)
 
 
