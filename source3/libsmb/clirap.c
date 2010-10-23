@@ -1144,13 +1144,13 @@ bool cli_qfilename(struct cli_state *cli, uint16_t fnum, char *name, size_t name
  Send a qfileinfo call.
 ****************************************************************************/
 
-bool cli_qfileinfo(struct cli_state *cli, uint16_t fnum,
-		   uint16 *mode, SMB_OFF_T *size,
-		   struct timespec *create_time,
-                   struct timespec *access_time,
-                   struct timespec *write_time,
-		   struct timespec *change_time,
-                   SMB_INO_T *ino)
+bool cli_qfileinfo_basic(struct cli_state *cli, uint16_t fnum,
+			 uint16 *mode, SMB_OFF_T *size,
+			 struct timespec *create_time,
+			 struct timespec *access_time,
+			 struct timespec *write_time,
+			 struct timespec *change_time,
+			 SMB_INO_T *ino)
 {
 	uint32_t data_len = 0;
 	uint16 setup;

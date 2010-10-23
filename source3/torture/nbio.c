@@ -253,7 +253,8 @@ void nb_qfileinfo(int fnum)
 {
 	int i;
 	i = find_handle(fnum);
-	cli_qfileinfo(c, ftable[i].fd, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+	cli_qfileinfo_basic(c, ftable[i].fd, NULL, NULL, NULL, NULL, NULL,
+			    NULL, NULL);
 }
 
 void nb_qfsinfo(int level)

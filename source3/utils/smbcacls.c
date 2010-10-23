@@ -680,7 +680,7 @@ static uint16 get_fileinfo(struct cli_state *cli, const char *filename)
 		printf("Failed to open %s: %s\n", filename, cli_errstr(cli));
 	}
 
-	if (!cli_qfileinfo(cli, fnum, &mode, NULL, NULL, NULL,
+	if (!cli_qfileinfo_basic(cli, fnum, &mode, NULL, NULL, NULL,
                                              NULL, NULL, NULL)) {
 		printf("Failed to file info %s: %s\n", filename,
                                                        cli_errstr(cli));

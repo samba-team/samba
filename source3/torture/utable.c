@@ -159,8 +159,10 @@ bool torture_casetable(int dummy)
 
 		size = 0;
 
-		if (!cli_qfileinfo(cli, fnum, NULL, &size, 
-				   NULL, NULL, NULL, NULL, NULL)) continue;
+		if (!cli_qfileinfo_basic(cli, fnum, NULL, &size,
+					 NULL, NULL, NULL, NULL, NULL)) {
+			continue;
+		}
 
 		if (size > 0) {
 			/* found a character equivalence! */
