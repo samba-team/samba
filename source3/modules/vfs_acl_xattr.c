@@ -29,6 +29,8 @@
 #define DBGC_CLASS DBGC_VFS
 
 /* Pull in the common functions. */
+#define ACL_MODULE_NAME "acl_xattr"
+
 #include "modules/vfs_acl_common.c"
 
 /*******************************************************************
