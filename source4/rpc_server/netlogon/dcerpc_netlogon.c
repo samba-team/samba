@@ -165,7 +165,7 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3(struct dcesrv_call_state *dce_ca
 		if (num_records == 0) {
 			DEBUG(3,("Couldn't find trust [%s] in samdb.\n",
 				 encoded_account));
-			return NT_STATUS_ACCESS_DENIED;
+			return NT_STATUS_NO_TRUST_SAM_ACCOUNT;
 		}
 
 		if (num_records > 1) {
@@ -176,7 +176,7 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3(struct dcesrv_call_state *dce_ca
 		flatname = ldb_msg_find_attr_as_string(msgs[0], "flatname", NULL);
 		if (!flatname) {
 			/* No flatname for this trust - we can't proceed */
-			return NT_STATUS_ACCESS_DENIED;
+			return NT_STATUS_NO_TRUST_SAM_ACCOUNT;
 		}
 		account_name = talloc_asprintf(mem_ctx, "%s$", flatname);
 
@@ -196,7 +196,7 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3(struct dcesrv_call_state *dce_ca
 	if (num_records == 0) {
 		DEBUG(3,("Couldn't find user [%s] in samdb.\n",
 			 r->in.account_name));
-		return NT_STATUS_ACCESS_DENIED;
+		return NT_STATUS_NO_TRUST_SAM_ACCOUNT;
 	}
 
 	if (num_records > 1) {
@@ -208,30 +208,30 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3(struct dcesrv_call_state *dce_ca
 
 	if (user_account_control & UF_ACCOUNTDISABLE) {
 		DEBUG(1, ("Account [%s] is disabled\n", r->in.account_name));
-		return NT_STATUS_ACCESS_DENIED;
+		return NT_STATUS_NO_TRUST_SAM_ACCOUNT;
 	}
 
 	if (r->in.secure_channel_type == SEC_CHAN_WKSTA) {
 		if (!(user_account_control & UF_WORKSTATION_TRUST_ACCOUNT)) {
 			DEBUG(1, ("Client asked for a workstation secure channel, but is not a workstation (member server) acb flags: 0x%x\n", user_account_control));
-			return NT_STATUS_ACCESS_DENIED;
+			return NT_STATUS_NO_TRUST_SAM_ACCOUNT;
 		}
 	} else if (r->in.secure_channel_type == SEC_CHAN_DOMAIN ||
 		   r->in.secure_channel_type == SEC_CHAN_DNS_DOMAIN) {
 		if (!(user_account_control & UF_INTERDOMAIN_TRUST_ACCOUNT)) {
 			DEBUG(1, ("Client asked for a trusted domain secure channel, but is not a trusted domain: acb flags: 0x%x\n", user_account_control));
 
-			return NT_STATUS_ACCESS_DENIED;
+			return NT_STATUS_NO_TRUST_SAM_ACCOUNT;
 		}
 	} else if (r->in.secure_channel_type == SEC_CHAN_BDC) {
 		if (!(user_account_control & UF_SERVER_TRUST_ACCOUNT)) {
 			DEBUG(1, ("Client asked for a server secure channel, but is not a server (domain controller): acb flags: 0x%x\n", user_account_control));
-			return NT_STATUS_ACCESS_DENIED;
+			return NT_STATUS_NO_TRUST_SAM_ACCOUNT;
 		}
 	} else if (r->in.secure_channel_type == SEC_CHAN_RODC) {
 		if (!(user_account_control & UF_PARTIAL_SECRETS_ACCOUNT)) {
 			DEBUG(1, ("Client asked for a RODC secure channel, but is not a RODC: acb flags: 0x%x\n", user_account_control));
-			return NT_STATUS_ACCESS_DENIED;
+			return NT_STATUS_NO_TRUST_SAM_ACCOUNT;
 		}
 	} else {
 		/* we should never reach this */
