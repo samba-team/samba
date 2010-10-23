@@ -27,7 +27,7 @@ bld.SAMBA_MODULE('auth_winbind',
 	source='auth_winbind.c',
 	subsystem='auth',
 	init_function='auth_winbind_init',
-	deps='RPC_NDR_WINBIND MESSAGING LIBWBCLIENT'
+	deps='RPC_NDR_WINBIND MESSAGING wbclient'
 	)
 
 
