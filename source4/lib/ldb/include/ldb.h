@@ -677,6 +677,8 @@ typedef int (*ldb_qsort_cmp_fn_t) (void *v1, void *v2, void *opaque);
    OID for the allowing client to request temporary relaxed
    enforcement of constraints of the x.500 model.
 
+   Mainly used for the OpenLDAP backend.
+
    \sa <a href="http://opends.dev.java.net/public/standards/draft-zeilenga-ldap-managedit.txt">draft managedit</a>.
 */
 #define LDB_CONTROL_RELAX_OID "1.3.6.1.4.1.4203.666.5.12"
