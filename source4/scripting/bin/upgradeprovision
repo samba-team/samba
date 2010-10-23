@@ -378,7 +378,10 @@ def handle_special_case(att, delta, new, old, usn, basedn, aldb):
         if (str(old[0].dn) == "%s" % (str(names.rootdn))
                 and att == "subRefs" and flag == FLAG_MOD_REPLACE):
             return True
-
+        #Allow to change revision of ForestUpdates objects
+        if (att == "revision" or att == "objectVersion"):
+            if str(delta.dn).lower().find("domainupdates") and str(delta.dn).lower().find("forestupdates") > 0:
+                return True
         if str(delta.dn).endswith("CN=DisplaySpecifiers, %s" % names.configdn):
             return True
 
