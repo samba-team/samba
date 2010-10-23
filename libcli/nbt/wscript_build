@@ -2,22 +2,22 @@
 
 bld.SAMBA_SUBSYSTEM('NDR_NBT_BUF',
 	source='nbtname.c',
-        deps='talloc',
+	deps='talloc',
 	autoproto='nbtname.h'
 	)
 
 
 bld.SAMBA_LIBRARY('LIBCLI_NBT',
-                  source='lmhosts.c nbtsocket.c namequery.c nameregister.c namerefresh.c namerelease.c dns_hosts_file.c',
-                  public_deps='LIBNDR NDR_NBT tevent UTIL_TEVENT NDR_SECURITY samba_socket LIBSAMBA-UTIL',
-                  private_library=True
-                  )
+	source='lmhosts.c nbtsocket.c namequery.c nameregister.c namerefresh.c namerelease.c dns_hosts_file.c',
+	public_deps='LIBNDR NDR_NBT tevent UTIL_TEVENT NDR_SECURITY samba_socket LIBSAMBA-UTIL',
+	private_library=True
+	)
 
 
 bld.SAMBA_BINARY('nmblookup',
 	source='tools/nmblookup.c',
 	manpages='man/nmblookup.1',
-	deps='LIBSAMBA-HOSTCONFIG LIBSAMBA-UTIL LIBCLI_NBT popt POPT_SAMBA LIBNETIF LIBCLI_RESOLVE'
+	deps='LIBSAMBA-HOSTCONFIG LIBSAMBA-UTIL LIBCLI_NBT popt POPT_SAMBA libnetif LIBCLI_RESOLVE'
 	)
 
 

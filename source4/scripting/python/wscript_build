@@ -1,41 +1,41 @@
 #!/usr/bin/env python
 
 bld.SAMBA_LIBRARY('samba_python',
-                  source=[],
-                  deps='LIBPYTHON PYTALLOC pyrpc_util',
-                  grouping_library=True,
-                  private_library=True,
-                  pyext=True)
+	source=[],
+	deps='LIBPYTHON PYTALLOC pyrpc_util',
+	grouping_library=True,
+	private_library=True,
+	pyext=True)
 
 bld.SAMBA_SUBSYSTEM('LIBPYTHON',
-		source='modules.c',
-		public_deps='EXT_LIB_PYTHON',
-		init_function_sentinal='{NULL,NULL}',
-		deps='talloc',
-		pyext=True,
-		)
+	source='modules.c',
+	public_deps='EXT_LIB_PYTHON',
+	init_function_sentinal='{NULL,NULL}',
+	deps='talloc',
+	pyext=True,
+	)
 
 
 bld.SAMBA_SUBSYSTEM('PYTALLOC',
-		source='../../../lib/talloc/pytalloc.c',
-		public_deps='EXT_LIB_PYTHON talloc',
-		pyext=True,
-		)
+	source='../../../lib/talloc/pytalloc.c',
+	public_deps='EXT_LIB_PYTHON talloc',
+	pyext=True,
+	)
 
 
 bld.SAMBA_PYTHON('python_uuid',
-		source='uuidmodule.c',
-		deps='LIBNDR',
-		realname='uuid.so',
-		enabled = float(bld.env.PYTHON_VERSION) <= 2.4
-		)
+	source='uuidmodule.c',
+	deps='LIBNDR',
+	realname='uuid.so',
+	enabled = float(bld.env.PYTHON_VERSION) <= 2.4
+	)
 
 
 bld.SAMBA_PYTHON('python_glue',
-		source='pyglue.c',
-		deps='pyparam_util LIBSAMBA-UTIL LIBNETIF PYTALLOC',
-		realname='samba/_glue.so'
-		)
+	source='pyglue.c',
+	deps='pyparam_util LIBSAMBA-UTIL libnetif PYTALLOC',
+	realname='samba/_glue.so'
+	)
 
 
 # create a dummy subsystem for EXT_LIB_PYTHON

@@ -4,7 +4,7 @@ bld.SAMBA_MODULE('service_cldap',
 	source='cldap_server.c',
 	subsystem='service',
 	init_function='server_service_cldapd_init',
-	deps='CLDAPD process_model LIBNETIF'
+	deps='CLDAPD process_model libnetif'
 	)
 
 
