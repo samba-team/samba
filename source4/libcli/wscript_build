@@ -30,7 +30,7 @@ bld.SAMBA_SUBSYSTEM('LIBCLI_LSA',
 bld.SAMBA_SUBSYSTEM('LIBCLI_COMPOSITE',
 	source='composite/composite.c',
 	autoproto='composite/proto.h',
-	public_deps='LIBEVENTS'
+	public_deps='libevents'
 	)
 
 
@@ -51,7 +51,7 @@ bld.SAMBA_SUBSYSTEM('LIBCLI_DGRAM',
 bld.SAMBA_SUBSYSTEM('LIBCLI_WREPL',
 	source='wrepl/winsrepl.c',
 	autoproto='wrepl/winsrepl_proto.h',
-	public_deps='NDR_WINSREPL samba_socket LIBEVENTS LIBPACKET LIBSAMBA_TSOCKET'
+	public_deps='NDR_WINSREPL samba_socket libevents LIBPACKET LIBSAMBA_TSOCKET'
 	)
 
 

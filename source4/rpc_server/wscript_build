@@ -19,7 +19,7 @@ bld.SAMBA_MODULE('dcerpc_rpcecho',
 	source='echo/rpc_echo.c',
 	subsystem='dcerpc_server',
 	init_function='dcerpc_server_rpcecho_init',
-	deps='NDR_STANDARD LIBEVENTS'
+	deps='NDR_STANDARD libevents'
 	)
 
 

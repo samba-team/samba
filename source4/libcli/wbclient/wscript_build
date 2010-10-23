@@ -2,7 +2,7 @@
 
 bld.SAMBA_SUBSYSTEM('LIBWBCLIENT_OLD',
 	source='wbclient.c',
-	public_deps='LIBSAMBA-ERRORS LIBEVENTS',
+	public_deps='LIBSAMBA-ERRORS libevents',
 	deps='NDR_WINBIND MESSAGING RPC_NDR_WINBIND'
 	)
 
