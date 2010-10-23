@@ -125,11 +125,6 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3(struct dcesrv_call_state *dce_ca
 				  NETLOGON_NEG_AUTHENTICATED_RPC_LSASS |
 				  NETLOGON_NEG_AUTHENTICATED_RPC;
 
-	if (!pipe_state) {
-		DEBUG(1, ("No challenge requested by client, cannot authenticate\n"));
-		return NT_STATUS_ACCESS_DENIED;
-	}
-
 	sam_ctx = samdb_connect(mem_ctx, dce_call->event_ctx, dce_call->conn->dce_ctx->lp_ctx,
 				system_session(dce_call->conn->dce_ctx->lp_ctx), 0);
 	if (sam_ctx == NULL) {
@@ -236,6 +231,11 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3(struct dcesrv_call_state *dce_ca
 
 	mach_pwd = samdb_result_hash(mem_ctx, msgs[0], "unicodePwd");
 	if (mach_pwd == NULL) {
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	if (!pipe_state) {
+		DEBUG(1, ("No challenge requested by client, cannot authenticate\n"));
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
