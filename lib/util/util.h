@@ -42,7 +42,6 @@ extern const char *panic_action;
 #include "../lib/util/time.h"
 #include "../lib/util/data_blob.h"
 #include "../lib/util/xfile.h"
-#include "../lib/util/mutex.h"
 #include "../lib/util/byteorder.h"
 #include "../lib/util/talloc_stack.h"
 
@@ -778,15 +777,6 @@ int ms_fnmatch(const char *pattern, const char *string, enum protocol_types prot
 /** a generic fnmatch function - uses for non-CIFS pattern matching */
 int gen_fnmatch(const char *pattern, const char *string);
 #endif
-
-/* The following definitions come from lib/util/mutex.c  */
-
-
-/**
-  register a set of mutex/rwlock handlers. 
-  Should only be called once in the execution of smbd.
-*/
-_PUBLIC_ bool register_mutex_handlers(const char *name, struct mutex_ops *ops);
 
 /* The following definitions come from lib/util/idtree.c  */
 
