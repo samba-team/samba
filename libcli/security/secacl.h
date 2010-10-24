@@ -26,7 +26,6 @@
 struct security_acl *make_sec_acl(TALLOC_CTX *ctx, enum security_acl_revision revision,
 		      int num_aces, struct security_ace *ace_list);
 struct security_acl *dup_sec_acl(TALLOC_CTX *ctx, struct security_acl *src);
-bool sec_acl_equal(struct security_acl *s1, struct security_acl *s2);
 
 
 #endif /*_SECACL_H_*/
