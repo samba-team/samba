@@ -892,7 +892,7 @@ bld.RECURSE('../libcli/security')
 bld.SAMBA_SUBSYSTEM('WBCOMMON',
                     source=WBCOMMON_SRC)
 
-bld.SAMBA_LIBRARY('libwbclient',
+bld.SAMBA_LIBRARY('wbclient',
                     source='''../nsswitch/libwbclient/wbc_guid.c
                               ../nsswitch/libwbclient/wbc_idmap.c
                               ../nsswitch/libwbclient/wbclient.c
@@ -904,7 +904,7 @@ bld.SAMBA_LIBRARY('libwbclient',
                     private_library=True,
                     public_deps='talloc WBCOMMON')
 
-bld.SAMBA_LIBRARY('libnetapi',
+bld.SAMBA_LIBRARY('netapi',
                     source=LIBNETAPI_SRC,
                     public_deps='''talloc tdb cap libwbclient LIB_NONSMBD LIBSMB KRBCLIENT
                     PASSDB SMBLDAP GROUPDB PARAM_WITHOUT_REG DYNCONFIG
@@ -914,7 +914,7 @@ bld.SAMBA_LIBRARY('libnetapi',
                     private_library=True,
                     vars=locals())
 
-bld.SAMBA_LIBRARY('libsmbclient',
+bld.SAMBA_LIBRARY('smbclient',
                     source=LIBSMBCLIENT_SRC,
                     public_deps='''talloc tdb libwbclient cap PARAM LIB_NONSMBD LIBSMB KRBCLIENT PASSDB SMBLDAP GROUPDB
                     LIBMSRPC_GEN LIBMSRPC''',
@@ -922,14 +922,14 @@ bld.SAMBA_LIBRARY('libsmbclient',
                     private_library=True,
                     vars=locals())
 
-bld.SAMBA_LIBRARY('libsmbsharemodes',
+bld.SAMBA_LIBRARY('smbsharemodes',
                     source=LIBSMBSHAREMODES_SRC,
                     public_deps='''talloc tdb''',
                     public_headers='include/smb_share_modes.h',
                     private_library=True,
                     vars=locals())
 
-bld.SAMBA_LIBRARY('libaddns',
+bld.SAMBA_LIBRARY('addns',
                     source=LIBADDNS_SRC,
                     public_deps='talloc krb5 k5crypto com_err gssapi gssapi_krb5',
                     private_library=True,
@@ -937,7 +937,7 @@ bld.SAMBA_LIBRARY('libaddns',
 
 bld.SAMBA_SUBSYSTEM('LIBMSRPC',
                     source='${LIBMSRPC_SRC}',
-                    deps='LIBNDR NDR_SECURITY NDR_DCERPC NDR_SCHANNEL',
+                    deps='ndr NDR_SECURITY NDR_DCERPC NDR_SCHANNEL',
                     vars=locals())
 
 bld.SAMBA_SUBSYSTEM('LIBMSRPC_GEN',
@@ -1019,7 +1019,7 @@ bld.SAMBA_SUBSYSTEM('KRBCLIENT',
 
 bld.SAMBA_SUBSYSTEM('LIBS',
                     source=LIB_SRC,
-                    deps='iconv LIBCRYPTO LIBNDR security NDR_SECURITY charset NDR_MESSAGING',
+                    deps='iconv LIBCRYPTO ndr security NDR_SECURITY charset NDR_MESSAGING',
                     vars=locals())
 
 bld.SAMBA_SUBSYSTEM('LIB_NONSMBD',
@@ -1158,7 +1158,7 @@ bld.SAMBA_SUBSYSTEM('DCUTIL',
                     source=DCUTIL_SRC,
                     vars=locals())
 
-bld.SAMBA_SUBSYSTEM('LIBNDR',
+bld.SAMBA_SUBSYSTEM('ndr',
                     source=LIBNDR_SRC,
                     vars=locals())
 
@@ -1182,14 +1182,14 @@ bld.SAMBA_SUBSYSTEM('LZXPRESS',
 
 bld.SAMBA_SUBSYSTEM('NDR_SECURITY',
                     source='''../librpc/gen_ndr/ndr_security.c ../librpc/ndr/ndr_sec_helper.c''',
-                    deps='LIBNDR',
+                    deps='ndr',
                     vars=locals())
 
 bld.SAMBA_SUBSYSTEM('NDR_DCERPC',
                     source='../librpc/gen_ndr/ndr_dcerpc.c',
                     vars=locals())
 
-bld.SAMBA_SUBSYSTEM('libsamba-errors',
+bld.SAMBA_SUBSYSTEM('samba-errors',
 	source='../libcli/util/doserr.c libsmb/nterr.c')
 
 bld.SAMBA_SUBSYSTEM('NDR_NBT_BUF',
@@ -1199,7 +1199,7 @@ bld.SAMBA_SUBSYSTEM('NDR_NBT_BUF',
 
 bld.SAMBA_SUBSYSTEM('LIBCLI_NDR_NETLOGON',
 	source='../libcli/ndr_netlogon.c',
-	public_deps='LIBNDR NDR_SECURITY')
+	public_deps='ndr NDR_SECURITY')
 
 bld.SAMBA_SUBSYSTEM('RPCCLI_WINREG',
 	source='../librpc/gen_ndr/cli_winreg.c',

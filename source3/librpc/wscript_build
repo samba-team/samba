@@ -2,42 +2,42 @@
 
 bld.SAMBA_SUBSYSTEM('NDR_LIBNETAPI',
 	source='gen_ndr/ndr_libnetapi.c',
-	public_deps='LIBNDR'
+	public_deps='ndr'
 	)
 
 bld.SAMBA_SUBSYSTEM('NDR_LIBNET_JOIN',
 	source='gen_ndr/ndr_libnet_join.c',
-	public_deps='LIBNDR'
+	public_deps='ndr'
 	)
 
 bld.SAMBA_SUBSYSTEM('NDR_MESSAGING',
 	source='gen_ndr/ndr_messaging.c',
-	public_deps='LIBNDR'
+	public_deps='ndr'
 	)
 
 bld.SAMBA_SUBSYSTEM('NDR_NOTIFY',
 	source='gen_ndr/ndr_notify.c',
-	public_deps='LIBNDR'
+	public_deps='ndr'
 	)
 
 bld.SAMBA_SUBSYSTEM('NDR_PREG',
 	source='gen_ndr/ndr_preg.c ndr/ndr_preg.c',
-	public_deps='LIBNDR'
+	public_deps='ndr'
 	)
 
 bld.SAMBA_SUBSYSTEM('NDR_SECRETS',
 	source='gen_ndr/ndr_secrets.c',
-	public_deps='LIBNDR'
+	public_deps='ndr'
 	)
 
 bld.SAMBA_SUBSYSTEM('NDR_PERFCOUNT',
 	source='gen_ndr/ndr_perfcount.c',
-	public_deps='LIBNDR'
+	public_deps='ndr'
 	)
 
 bld.SAMBA_SUBSYSTEM('NDR_WBINT',
 	source='gen_ndr/ndr_wbint.c',
-	public_deps='LIBNDR'
+	public_deps='ndr'
 	)
 
 bld.SAMBA_SUBSYSTEM('RPC_NDR_WBINT',

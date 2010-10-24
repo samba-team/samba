@@ -2,7 +2,7 @@
 
 bld.SAMBA_SUBSYSTEM('ntlm_check',
 	source='ntlm_check.c',
-	deps='libsamba-util'
+	deps='samba-util'
 	)
 
 

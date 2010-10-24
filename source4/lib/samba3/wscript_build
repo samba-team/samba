@@ -3,7 +3,7 @@
 
 bld.SAMBA_LIBRARY('smbpasswd',
                   source='smbpasswd.c',
-                  deps='CHARSET libsamba-util',
+                  deps='CHARSET samba-util',
                   private_library=True
                   )
 

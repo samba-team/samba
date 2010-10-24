@@ -86,7 +86,7 @@ bld.SAMBA_MODULE('dcerpc_netlogon',
 	source='netlogon/dcerpc_netlogon.c',
 	subsystem='dcerpc_server',
 	init_function='dcerpc_server_netlogon_init',
-	deps='DCERPC_COMMON RPC_NDR_IRPC COMMON_SCHANNELDB NDR_STANDARD auth_sam libsamba-hostconfig CLDAPD'
+	deps='DCERPC_COMMON RPC_NDR_IRPC COMMON_SCHANNELDB NDR_STANDARD auth_sam samba-hostconfig CLDAPD'
 	)
 
 
@@ -133,7 +133,7 @@ bld.SAMBA_MODULE('dcerpc_eventlog',
 bld.SAMBA_LIBRARY('dcerpc_server',
 	source='dcerpc_server.c dcesrv_auth.c dcesrv_mgmt.c handles.c',
 	pc_files='dcerpc_server.pc',
-	deps='LIBCLI_AUTH LIBNDR samba_server_gensec dcerpc_remote service',
+	deps='LIBCLI_AUTH ndr samba_server_gensec dcerpc_remote service',
 	public_deps='dcerpc',
 	autoproto='dcerpc_server_proto.h',
 	public_headers='dcerpc_server.h',

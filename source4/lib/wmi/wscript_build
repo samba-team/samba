@@ -21,6 +21,6 @@ bld.SAMBA_BINARY('wmis',
 
 bld.SAMBA_PYTHON('pywmi',
 	source='wmi_wrap.c',
-	public_deps='LIBCLI_SMB LIBNDR libsamba-util libsamba-config WMI'
+	public_deps='LIBCLI_SMB ndr samba-util samba-config WMI'
 	)
 

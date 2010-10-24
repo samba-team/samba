@@ -176,8 +176,6 @@ def SAMBA_LIBRARY(bld, libname, source,
     if target_type == 'PYTHON' or realname or not private_library:
         # Sanitize the library name
         bundled_name = libname.lower().replace('_', '-')
-        while bundled_name.startswith("lib"):
-            bundled_name = bundled_name[3:]
     else:
         bundled_name = PRIVATE_NAME(bld, libname, bundled_extension, private_library)
 

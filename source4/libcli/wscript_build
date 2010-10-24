@@ -44,7 +44,7 @@ bld.SAMBA_SUBSYSTEM('LIBCLI_SMB_COMPOSITE',
 
 bld.SAMBA_SUBSYSTEM('LIBCLI_DGRAM',
 	source='dgram/dgramsocket.c dgram/mailslot.c dgram/netlogon.c dgram/browse.c',
-	public_deps='cli_nbt LIBNDR LIBCLI_RESOLVE LIBCLI_NETLOGON LIBCLI_RESOLVE'
+	public_deps='cli_nbt ndr LIBCLI_RESOLVE LIBCLI_NETLOGON LIBCLI_RESOLVE'
 	)
 
 
@@ -65,7 +65,7 @@ bld.SAMBA_SUBSYSTEM('LIBCLI_RESOLVE',
 bld.SAMBA_SUBSYSTEM('LP_RESOLVE',
 	source='resolve/bcast.c resolve/nbtlist.c resolve/wins.c resolve/dns_ex.c resolve/file.c resolve/host.c resolve/resolve_lp.c',
 	autoproto='resolve/lp_proto.h',
-	deps='cli_nbt libsamba-hostconfig netif'
+	deps='cli_nbt samba-hostconfig netif'
 	)
 
 
@@ -87,7 +87,7 @@ bld.SAMBA_SUBSYSTEM('LIBCLI_RAW',
 	source='raw/rawfile.c raw/smb_signing.c raw/clisocket.c raw/clitransport.c raw/clisession.c raw/clitree.c raw/clierror.c raw/rawrequest.c raw/rawreadwrite.c raw/rawsearch.c raw/rawsetfileinfo.c raw/raweas.c raw/rawtrans.c raw/clioplock.c raw/rawnegotiate.c raw/rawfsinfo.c raw/rawfileinfo.c raw/rawnotify.c raw/rawioctl.c raw/rawacl.c raw/rawdate.c raw/rawlpq.c raw/rawshadow.c',
 	autoproto='raw/raw_proto.h',
 	public_deps='samba_socket LIBPACKET gensec LIBCRYPTO CREDENTIALS LIBCLI_SMB_COMMON',
-	deps='LIBCLI_COMPOSITE LP_RESOLVE gensec LIBCLI_RESOLVE security LIBNDR'
+	deps='LIBCLI_COMPOSITE LP_RESOLVE gensec LIBCLI_RESOLVE security ndr'
 	)
 
 bld.RECURSE('smb2')
