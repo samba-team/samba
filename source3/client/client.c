@@ -3289,6 +3289,51 @@ static int cmd_geteas(void)
 }
 
 /****************************************************************************
+ Set an EA of a file
+****************************************************************************/
+
+static int cmd_setea(void)
+{
+	TALLOC_CTX *ctx = talloc_tos();
+	char *src = NULL;
+	char *name = NULL;
+	char *eaname = NULL;
+	char *eavalue = NULL;
+	char *targetname = NULL;
+	struct cli_state *targetcli;
+
+	if (!next_token_talloc(ctx, &cmd_ptr, &name, NULL)
+	    || !next_token_talloc(ctx, &cmd_ptr, &eaname, NULL)) {
+		d_printf("setea filename eaname value\n");
+		return 1;
+	}
+	if (!next_token_talloc(ctx, &cmd_ptr, &eavalue, NULL)) {
+		eavalue = talloc_strdup(ctx, "");
+	}
+	src = talloc_asprintf(ctx,
+			"%s%s",
+			client_get_cur_dir(),
+			name);
+	if (!src) {
+		return 1;
+	}
+
+	if (!cli_resolve_path(ctx, "", auth_info, cli, src, &targetcli,
+			      &targetname)) {
+		d_printf("stat %s: %s\n", src, cli_errstr(cli));
+		return 1;
+	}
+
+	if (!cli_set_ea_path(targetcli, targetname, eaname, eavalue,
+			     strlen(eavalue))) {
+		d_printf("set_ea %s: %s\n", src, cli_errstr(cli));
+		return 1;
+	}
+
+	return 0;
+}
+
+/****************************************************************************
  UNIX stat.
 ****************************************************************************/
 
@@ -4169,6 +4214,8 @@ static struct {
   {"rm",cmd_del,"<mask> delete all matching files",{COMPL_REMOTE,COMPL_NONE}},
   {"rmdir",cmd_rmdir,"<directory> remove a directory",{COMPL_NONE,COMPL_NONE}},
   {"showacls",cmd_showacls,"toggle if ACLs are shown or not",{COMPL_NONE,COMPL_NONE}},  
+  {"setea", cmd_setea, "<file name> <eaname> <eaval> Set an EA of a file",
+   {COMPL_REMOTE, COMPL_LOCAL}},
   {"setmode",cmd_setmode,"filename <setmode string> change modes of file",{COMPL_REMOTE,COMPL_NONE}},
   {"stat",cmd_stat,"filename Do a UNIX extensions stat call on a file",{COMPL_REMOTE,COMPL_REMOTE}},
   {"symlink",cmd_symlink,"<oldname> <newname> create a UNIX symlink",{COMPL_REMOTE,COMPL_REMOTE}},
