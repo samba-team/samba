@@ -179,12 +179,12 @@ bld.SAMBA_SUBSYSTEM('NDR_RAP',
 
 bld.SAMBA_SUBSYSTEM('NDR_IDMAP',
 	source='../librpc/gen_ndr/ndr_idmap.c',
-	public_deps='ndr NDR_STANDARD'
+	public_deps='ndr ndr-standard'
 	)
 
 bld.SAMBA_SUBSYSTEM('NDR_NTLMSSP',
 	source='../librpc/ndr/ndr_ntlmssp.c ../librpc/gen_ndr/ndr_ntlmssp.c',
-	public_deps='ndr NDR_STANDARD'
+	public_deps='ndr ndr-standard'
 	)
 
 bld.SAMBA_SUBSYSTEM('NDR_DNSP',
@@ -255,7 +255,7 @@ bld.SAMBA_SUBSYSTEM('NDR_COMPRESSION',
 
 bld.SAMBA_SUBSYSTEM('NDR_DRSUAPI',
 	source='../librpc/ndr/ndr_drsuapi.c ../librpc/gen_ndr/ndr_drsuapi.c',
-	public_deps='ndr NDR_COMPRESSION NDR_SECURITY NDR_STANDARD ASN1_UTIL'
+	public_deps='ndr NDR_COMPRESSION NDR_SECURITY ndr-standard ASN1_UTIL'
 	)
 
 bld.SAMBA_SUBSYSTEM('NDR_DRSBLOBS',
@@ -265,7 +265,7 @@ bld.SAMBA_SUBSYSTEM('NDR_DRSBLOBS',
 
 bld.SAMBA_SUBSYSTEM('NDR_KRB5PAC',
 	source='../librpc/ndr/ndr_krb5pac.c ../librpc/gen_ndr/ndr_krb5pac.c',
-	public_deps='ndr NDR_STANDARD NDR_SECURITY'
+	public_deps='ndr ndr-standard NDR_SECURITY'
 	)
 
 
@@ -281,7 +281,7 @@ bld.SAMBA_SUBSYSTEM('NDR_SCHANNEL',
 
 bld.SAMBA_SUBSYSTEM('NDR_NBT',
 	source='../librpc/gen_ndr/ndr_nbt.c',
-	public_deps='ndr NDR_NBT_BUF NDR_SECURITY NDR_STANDARD LIBCLI_NDR_NETLOGON',
+	public_deps='ndr NDR_NBT_BUF NDR_SECURITY ndr-standard LIBCLI_NDR_NETLOGON',
 	public_headers='../librpc/gen_ndr/nbt.h',
         header_path='gen_ndr'
 	)
@@ -318,7 +318,7 @@ bld.SAMBA_SUBSYSTEM('RPC_NDR_EFS',
 
 bld.SAMBA_SUBSYSTEM('RPC_NDR_LSA',
 	source='../librpc/gen_ndr/ndr_lsa_c.c',
-	public_deps='dcerpc NDR_STANDARD'
+	public_deps='dcerpc ndr-standard'
 	)
 
 bld.SAMBA_SUBSYSTEM('RPC_NDR_SAMR',
@@ -328,7 +328,7 @@ bld.SAMBA_SUBSYSTEM('RPC_NDR_SAMR',
 
 bld.SAMBA_SUBSYSTEM('RPC_NDR_DFS',
 	source='../librpc/gen_ndr/ndr_dfs_c.c',
-	public_deps='dcerpc NDR_STANDARD'
+	public_deps='dcerpc ndr-standard'
 	)
 
 bld.SAMBA_SUBSYSTEM('RPC_NDR_FRSAPI',
@@ -373,7 +373,7 @@ bld.SAMBA_SUBSYSTEM('RPC_NDR_NBT',
 
 bld.SAMBA_SUBSYSTEM('RPC_NDR_WKSSVC',
 	source='../librpc/gen_ndr/ndr_wkssvc_c.c',
-	public_deps='dcerpc NDR_STANDARD'
+	public_deps='dcerpc ndr-standard'
 	)
 
 bld.SAMBA_SUBSYSTEM('RPC_NDR_SRVSVC',
@@ -383,14 +383,14 @@ bld.SAMBA_SUBSYSTEM('RPC_NDR_SRVSVC',
 
 bld.SAMBA_SUBSYSTEM('RPC_NDR_SVCCTL',
 	source='../librpc/gen_ndr/ndr_svcctl_c.c',
-	public_deps='dcerpc NDR_STANDARD',
+	public_deps='dcerpc ndr-standard',
 	public_headers='../librpc/gen_ndr/ndr_svcctl_c.h',
         header_path='gen_ndr'
 	)
 
 bld.SAMBA_SUBSYSTEM('RPC_NDR_EVENTLOG',
 	source='../librpc/gen_ndr/ndr_eventlog_c.c',
-	public_deps='dcerpc NDR_STANDARD'
+	public_deps='dcerpc ndr-standard'
 	)
 
 bld.SAMBA_SUBSYSTEM('RPC_NDR_EPMAPPER',
@@ -415,12 +415,12 @@ bld.SAMBA_SUBSYSTEM('RPC_NDR_MSGSVC',
 
 bld.SAMBA_SUBSYSTEM('RPC_NDR_WINREG',
 	source='../librpc/gen_ndr/ndr_winreg_c.c',
-	public_deps='dcerpc NDR_STANDARD'
+	public_deps='dcerpc ndr-standard'
 	)
 
 bld.SAMBA_SUBSYSTEM('RPC_NDR_INITSHUTDOWN',
 	source='../librpc/gen_ndr/ndr_initshutdown_c.c',
-	public_deps='dcerpc NDR_STANDARD'
+	public_deps='dcerpc ndr-standard'
 	)
 
 bld.SAMBA_SUBSYSTEM('RPC_NDR_MGMT',
@@ -460,12 +460,12 @@ bld.SAMBA_SUBSYSTEM('RPC_NDR_SCERPC',
 
 bld.SAMBA_SUBSYSTEM('RPC_NDR_NTSVCS',
 	source='../librpc/gen_ndr/ndr_ntsvcs_c.c',
-	public_deps='dcerpc NDR_STANDARD'
+	public_deps='dcerpc ndr-standard'
 	)
 
 bld.SAMBA_SUBSYSTEM('RPC_NDR_NETLOGON',
 	source='../librpc/gen_ndr/ndr_netlogon_c.c',
-	public_deps='NDR_STANDARD tevent'
+	public_deps='ndr-standard tevent'
 	)
 
 bld.SAMBA_SUBSYSTEM('RPC_NDR_TRKWKS',

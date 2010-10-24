@@ -1163,7 +1163,7 @@ bld.SAMBA_SUBSYSTEM('ndr',
                     vars=locals())
 
 #FIXME
-bld.SAMBA_SUBSYSTEM('NDR_STANDARD',
+bld.SAMBA_SUBSYSTEM('ndr-standard',
                     source='',
                     deps='''
                     NDR_SECURITY NDR_LSA NDR_SAMR NDR_NETLOGON NDR_EVENTLOG NDR_DFS

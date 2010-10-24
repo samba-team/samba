@@ -88,11 +88,11 @@ bld.SAMBA_SUBSYSTEM('NDR_WINSREPL',
 
 bld.SAMBA_SUBSYSTEM('NDR_WINBIND',
 	source='gen_ndr/ndr_winbind.c',
-	public_deps='NDR_IDMAP ndr NDR_STANDARD'
+	public_deps='NDR_IDMAP ndr ndr-standard'
 	)
 
 
-bld.SAMBA_LIBRARY('NDR_STANDARD',
+bld.SAMBA_LIBRARY('ndr-standard',
 	source='../../librpc/gen_ndr/ndr_atsvc.c ../../librpc/gen_ndr/ndr_eventlog6.c',
 	vnum='0.0.1',
 	pc_files='../../librpc/ndr_standard.pc',
@@ -125,7 +125,7 @@ bld.SAMBA_PIDL_TABLES('GEN_NDR_TABLES', 'gen_ndr/tables.c')
 
 bld.SAMBA_LIBRARY('ndr_table',
 	source='../../librpc/ndr/ndr_table.c gen_ndr/tables.c',
-        public_deps='''NDR_STANDARD NDR_AUDIOSRV NDR_DSBACKUP NDR_EFS
+        public_deps='''ndr-standard NDR_AUDIOSRV NDR_DSBACKUP NDR_EFS
         NDR_DRSUAPI NDR_POLICYAGENT NDR_UNIXINFO NDR_SPOOLSS NDR_EPMAPPER
         NDR_DBGIDL NDR_DSSETUP NDR_MSGSVC NDR_WINSIF NDR_MGMT
         NDR_PROTECTED_STORAGE NDR_OXIDRESOLVER NDR_REMACT NDR_WZCSVC
@@ -156,14 +156,14 @@ bld.SAMBA_LIBRARY('dcerpc_samr',
 	source='../../librpc/gen_ndr/ndr_samr_c.c',
 	pc_files='dcerpc_samr.pc',
 	vnum='0.0.1',
-	public_deps='dcerpc NDR_STANDARD',
+	public_deps='dcerpc ndr-standard',
 	public_headers='../../librpc/gen_ndr/ndr_samr_c.h',
 	header_path='gen_ndr'
 	)
 
 bld.SAMBA_SUBSYSTEM('RPC_NDR_DNS',
 	source='../../librpc/gen_ndr/ndr_dns_c.c',
-	public_deps='dcerpc NDR_STANDARD',
+	public_deps='dcerpc ndr-standard',
 	)
 
 
@@ -171,7 +171,7 @@ bld.SAMBA_LIBRARY('dcerpc_atsvc',
 	source='../../librpc/gen_ndr/ndr_atsvc_c.c',
 	pc_files='dcerpc_atsvc.pc',
 	vnum='0.0.1',
-	public_deps='dcerpc NDR_STANDARD',
+	public_deps='dcerpc ndr-standard',
 	public_headers='../../librpc/gen_ndr/ndr_atsvc_c.h',
 	header_path='gen_ndr'
 	)
