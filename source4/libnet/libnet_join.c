@@ -332,9 +332,8 @@ static NTSTATUS libnet_JoinADSDomain(struct libnet_context *ctx, struct libnet_J
 	}
 	msg->dn = res->msgs[0]->dn;
 
-	rtn = ldb_msg_add_fmt(msg, "msDS-SupportedEncryptionTypes",
-			      "%lu",
-			      (long unsigned int)(ENC_ALL_TYPES));
+	rtn = samdb_msg_add_uint(remote_ldb, msg, msg,
+				 "msDS-SupportedEncryptionTypes", ENC_ALL_TYPES);
 	if (rtn != LDB_SUCCESS) {
 		r->out.error_string = NULL;
 		talloc_free(tmp_ctx);

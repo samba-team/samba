@@ -746,7 +746,7 @@ int dsdb_module_save_partition_usn(struct ldb_module *module, struct ldb_dn *dn,
 		return ldb_module_oom(module);
 	}
 
-	ret = ldb_msg_add_fmt(msg, "uSNHighest", "%llu", (unsigned long long)uSN);
+	ret = samdb_msg_add_uint64(ldb, msg, msg, "uSNHighest", uSN);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(msg);
 		return ret;
@@ -755,7 +755,8 @@ int dsdb_module_save_partition_usn(struct ldb_module *module, struct ldb_dn *dn,
 
 	/* urgent_uSN is optional so may not be stored */
 	if (urgent_uSN) {
-		ret = ldb_msg_add_fmt(msg, "uSNUrgent", "%llu", (unsigned long long)urgent_uSN);
+		ret = samdb_msg_add_uint64(ldb, msg, msg, "uSNUrgent",
+					   urgent_uSN);
 		if (ret != LDB_SUCCESS) {
 			talloc_free(msg);
 			return ret;

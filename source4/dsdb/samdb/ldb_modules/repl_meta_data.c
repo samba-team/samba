@@ -536,16 +536,19 @@ static int add_time_element(struct ldb_message *msg, const char *attr, time_t t)
 /*
   add a uint64_t element to a record
 */
-static int add_uint64_element(struct ldb_message *msg, const char *attr, uint64_t v)
+static int add_uint64_element(struct ldb_context *ldb, struct ldb_message *msg,
+			      const char *attr, uint64_t v)
 {
 	struct ldb_message_element *el;
+	int ret;
 
 	if (ldb_msg_find_element(msg, attr) != NULL) {
 		return LDB_SUCCESS;
 	}
 
-	if (ldb_msg_add_fmt(msg, attr, "%llu", (unsigned long long)v) != LDB_SUCCESS) {
-		return LDB_ERR_OPERATIONS_ERROR;
+	ret = samdb_msg_add_uint64(ldb, msg, msg, attr, v);
+	if (ret != LDB_SUCCESS) {
+		return ret;
 	}
 
 	el = ldb_msg_find_element(msg, attr);
@@ -2232,7 +2235,8 @@ static int replmd_modify(struct ldb_module *module, struct ldb_request *req)
 			return ret;
 		}
 
-		if (add_uint64_element(msg, "uSNChanged", ac->seq_num) != LDB_SUCCESS) {
+		if (add_uint64_element(ldb, msg, "uSNChanged",
+				       ac->seq_num) != LDB_SUCCESS) {
 			talloc_free(ac);
 			return ret;
 		}
@@ -2347,7 +2351,8 @@ static int replmd_rename_callback(struct ldb_request *req, struct ldb_reply *are
 		return ret;
 	}
 
-	if (add_uint64_element(msg, "uSNChanged", ac->seq_num) != LDB_SUCCESS) {
+	if (add_uint64_element(ldb, msg, "uSNChanged",
+			       ac->seq_num) != LDB_SUCCESS) {
 		talloc_free(ac);
 		return ret;
 	}
@@ -4063,7 +4068,8 @@ linked_attributes[0]:
 		return ldb_operr(ldb);
 	}
 
-	if (add_uint64_element(msg, "uSNChanged", seq_num) != LDB_SUCCESS) {
+	if (add_uint64_element(ldb, msg, "uSNChanged",
+			       seq_num) != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
 		return ldb_operr(ldb);
 	}
