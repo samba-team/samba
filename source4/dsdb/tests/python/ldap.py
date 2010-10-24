@@ -613,15 +613,15 @@ class BasicTests(unittest.TestCase):
             "objectclass": "group",
             "description": ["desc1", "desc2"]})
 
-#        m = Message()
-#        m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
-#        m["description"] = MessageElement(["desc1","desc2"], FLAG_MOD_REPLACE,
-#          "description")
-#        try:
-#            ldb.modify(m)
-#            self.fail()
-#        except LdbError, (num, _):
-#            self.assertEquals(num, ERR_ATTRIBUTE_OR_VALUE_EXISTS)
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+        m["description"] = MessageElement(["desc1","desc2"], FLAG_MOD_REPLACE,
+          "description")
+        try:
+            ldb.modify(m)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_ATTRIBUTE_OR_VALUE_EXISTS)
 
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
@@ -655,15 +655,15 @@ class BasicTests(unittest.TestCase):
           "description")
         ldb.modify(m)
 
-#        m = Message()
-#        m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
-#        m["description"] = MessageElement(["desc1","desc2"], FLAG_MOD_REPLACE,
-#          "description")
-#        try:
-#            ldb.modify(m)
-#            self.fail()
-#        except LdbError, (num, _):
-#            self.assertEquals(num, ERR_ATTRIBUTE_OR_VALUE_EXISTS)
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+        m["description"] = MessageElement(["desc1","desc2"], FLAG_MOD_REPLACE,
+          "description")
+        try:
+            ldb.modify(m)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_ATTRIBUTE_OR_VALUE_EXISTS)
 
 #        m = Message()
 #        m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
