@@ -226,9 +226,9 @@ static void cli_posix_link_internal_done(struct tevent_req *subreq)
 static struct tevent_req *cli_posix_link_internal_send(TALLOC_CTX *mem_ctx,
 					struct event_context *ev,
 					struct cli_state *cli,
+					uint16_t level,
 					const char *oldname,
-					const char *newname,
-					bool hardlink)
+					const char *newname)
 {
 	struct tevent_req *req = NULL, *subreq = NULL;
 	struct link_state *state = NULL;
@@ -247,7 +247,7 @@ static struct tevent_req *cli_posix_link_internal_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 	memset(state->param, '\0', 6);
-	SSVAL(state->param,0,hardlink ? SMB_SET_FILE_UNIX_HLINK : SMB_SET_FILE_UNIX_LINK);
+	SSVAL(state->param, 0, level);
 
 	state->param = trans2_bytes_push_str(state->param, cli_ucs2(cli), newname,
 				   strlen(newname)+1, NULL);
@@ -299,8 +299,8 @@ struct tevent_req *cli_posix_symlink_send(TALLOC_CTX *mem_ctx,
 					const char *oldname,
 					const char *newname)
 {
-	return cli_posix_link_internal_send(mem_ctx, ev, cli,
-			oldname, newname, false);
+	return cli_posix_link_internal_send(
+		mem_ctx, ev, cli, SMB_SET_FILE_UNIX_LINK, oldname, newname);
 }
 
 NTSTATUS cli_posix_symlink_recv(struct tevent_req *req)
@@ -517,8 +517,8 @@ struct tevent_req *cli_posix_hardlink_send(TALLOC_CTX *mem_ctx,
 					const char *oldname,
 					const char *newname)
 {
-	return cli_posix_link_internal_send(mem_ctx, ev, cli,
-			oldname, newname, true);
+	return cli_posix_link_internal_send(
+		mem_ctx, ev, cli, SMB_SET_FILE_UNIX_HLINK, oldname, newname);
 }
 
 NTSTATUS cli_posix_hardlink_recv(struct tevent_req *req)
