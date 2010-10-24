@@ -27,6 +27,15 @@
  * Debugging code.  See also debug.c
  */
 
+/* the maximum debug level to compile into the code. This assumes a good
+   optimising compiler that can remove unused code
+   for embedded or low-memory systems set this to a value like 2 to get
+   only important messages. This gives *much* smaller binaries
+*/
+#ifndef MAX_DEBUG_LEVEL
+#define MAX_DEBUG_LEVEL 1000
+#endif
+
 /* mkproto.awk has trouble with ifdef'd function definitions (it ignores
  * the #ifdef directive and will read both definitions, thus creating two
  * diffferent prototype declarations), so we must do these by hand.
