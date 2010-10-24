@@ -1768,6 +1768,15 @@ bool cli_state_is_connected(struct cli_state *cli);
 
 /* The following definitions come from libsmb/clifile.c  */
 
+struct tevent_req *cli_setpathinfo_send(TALLOC_CTX *mem_ctx,
+					struct tevent_context *ev,
+					struct cli_state *cli,
+					uint16_t level,
+					const char *path,
+					uint8_t *data,
+					size_t data_len);
+NTSTATUS cli_setpathinfo_recv(struct tevent_req *req);
+
 struct tevent_req *cli_posix_symlink_send(TALLOC_CTX *mem_ctx,
 					struct event_context *ev,
 					struct cli_state *cli,
