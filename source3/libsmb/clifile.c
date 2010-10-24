@@ -305,12 +305,7 @@ struct tevent_req *cli_posix_symlink_send(TALLOC_CTX *mem_ctx,
 
 NTSTATUS cli_posix_symlink_recv(struct tevent_req *req)
 {
-	NTSTATUS status;
-
-	if (tevent_req_is_nterror(req, &status)) {
-		return status;
-	}
-	return NT_STATUS_OK;
+	return tevent_req_simple_recv_ntstatus(req);
 }
 
 NTSTATUS cli_posix_symlink(struct cli_state *cli,
@@ -523,12 +518,7 @@ struct tevent_req *cli_posix_hardlink_send(TALLOC_CTX *mem_ctx,
 
 NTSTATUS cli_posix_hardlink_recv(struct tevent_req *req)
 {
-	NTSTATUS status;
-
-	if (tevent_req_is_nterror(req, &status)) {
-		return status;
-	}
-	return NT_STATUS_OK;
+	return tevent_req_simple_recv_ntstatus(req);
 }
 
 NTSTATUS cli_posix_hardlink(struct cli_state *cli,
@@ -1029,12 +1019,7 @@ struct tevent_req *cli_posix_chmod_send(TALLOC_CTX *mem_ctx,
 
 NTSTATUS cli_posix_chmod_recv(struct tevent_req *req)
 {
-	NTSTATUS status;
-
-	if (tevent_req_is_nterror(req, &status)) {
-		return status;
-	}
-	return NT_STATUS_OK;
+	return tevent_req_simple_recv_ntstatus(req);
 }
 
 NTSTATUS cli_posix_chmod(struct cli_state *cli, const char *fname, mode_t mode)
@@ -1103,12 +1088,7 @@ struct tevent_req *cli_posix_chown_send(TALLOC_CTX *mem_ctx,
 
 NTSTATUS cli_posix_chown_recv(struct tevent_req *req)
 {
-	NTSTATUS status;
-
-	if (tevent_req_is_nterror(req, &status)) {
-		return status;
-	}
-	return NT_STATUS_OK;
+	return tevent_req_simple_recv_ntstatus(req);
 }
 
 NTSTATUS cli_posix_chown(struct cli_state *cli,
@@ -1889,12 +1869,7 @@ struct tevent_req *cli_nt_delete_on_close_send(TALLOC_CTX *mem_ctx,
 
 NTSTATUS cli_nt_delete_on_close_recv(struct tevent_req *req)
 {
-	NTSTATUS status;
-
-	if (tevent_req_is_nterror(req, &status)) {
-		return status;
-	}
-	return NT_STATUS_OK;
+	return tevent_req_simple_recv_ntstatus(req);
 }
 
 NTSTATUS cli_nt_delete_on_close(struct cli_state *cli, uint16_t fnum, bool flag)
@@ -2500,12 +2475,7 @@ struct tevent_req *cli_ftruncate_send(TALLOC_CTX *mem_ctx,
 
 NTSTATUS cli_ftruncate_recv(struct tevent_req *req)
 {
-	NTSTATUS status;
-
-	if (tevent_req_is_nterror(req, &status)) {
-		return status;
-	}
-	return NT_STATUS_OK;
+	return tevent_req_simple_recv_ntstatus(req);
 }
 
 NTSTATUS cli_ftruncate(struct cli_state *cli, uint16_t fnum, uint64_t size)
@@ -3071,12 +3041,7 @@ struct tevent_req *cli_posix_lock_send(TALLOC_CTX *mem_ctx,
 
 NTSTATUS cli_posix_lock_recv(struct tevent_req *req)
 {
-	NTSTATUS status;
-
-	if (tevent_req_is_nterror(req, &status)) {
-		return status;
-	}
-	return NT_STATUS_OK;
+	return tevent_req_simple_recv_ntstatus(req);
 }
 
 NTSTATUS cli_posix_lock(struct cli_state *cli, uint16_t fnum,
@@ -3152,12 +3117,7 @@ struct tevent_req *cli_posix_unlock_send(TALLOC_CTX *mem_ctx,
 
 NTSTATUS cli_posix_unlock_recv(struct tevent_req *req)
 {
-	NTSTATUS status;
-
-	if (tevent_req_is_nterror(req, &status)) {
-		return status;
-	}
-	return NT_STATUS_OK;
+	return tevent_req_simple_recv_ntstatus(req);
 }
 
 NTSTATUS cli_posix_unlock(struct cli_state *cli, uint16_t fnum, uint64_t offset, uint64_t len)
@@ -4730,12 +4690,7 @@ struct tevent_req *cli_posix_mkdir_send(TALLOC_CTX *mem_ctx,
 
 NTSTATUS cli_posix_mkdir_recv(struct tevent_req *req)
 {
-	NTSTATUS status;
-
-	if (tevent_req_is_nterror(req, &status)) {
-		return status;
-	}
-	return NT_STATUS_OK;
+	return tevent_req_simple_recv_ntstatus(req);
 }
 
 NTSTATUS cli_posix_mkdir(struct cli_state *cli, const char *fname, mode_t mode)
@@ -4872,12 +4827,7 @@ struct tevent_req *cli_posix_unlink_send(TALLOC_CTX *mem_ctx,
 
 NTSTATUS cli_posix_unlink_recv(struct tevent_req *req)
 {
-	NTSTATUS status;
-
-	if (tevent_req_is_nterror(req, &status)) {
-		return status;
-	}
-	return NT_STATUS_OK;
+	return tevent_req_simple_recv_ntstatus(req);
 }
 
 /****************************************************************************
@@ -4943,12 +4893,7 @@ struct tevent_req *cli_posix_rmdir_send(TALLOC_CTX *mem_ctx,
 
 NTSTATUS cli_posix_rmdir_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx)
 {
-	NTSTATUS status;
-
-	if (tevent_req_is_nterror(req, &status)) {
-		return status;
-	}
-	return NT_STATUS_OK;
+	return tevent_req_simple_recv_ntstatus(req);
 }
 
 NTSTATUS cli_posix_rmdir(struct cli_state *cli, const char *fname)
