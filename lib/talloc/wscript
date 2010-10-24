@@ -6,6 +6,7 @@ VERSION = '2.0.3'
 
 blddir = 'bin'
 
+import Logs
 import os, sys
 
 # find the buildtools directory
@@ -29,24 +30,42 @@ def set_options(opt):
     opt.add_option('--enable-talloc-compat1',
                    help=("Build talloc 1.x.x compat library [False]"),
                    action="store_true", dest='TALLOC_COMPAT1', default=False)
+    if opt.IN_LAUNCH_DIR():
+        opt.add_option('--disable-python',
+                       help=("disable the pytevent module"),
+                       action="store_true", dest='disable_python', default=False)
+
 
 def configure(conf):
     conf.RECURSE('lib/replace')
 
     conf.env.standalone_talloc = conf.IN_LAUNCH_DIR()
 
+    conf.env.disable_python = getattr(Options.options, 'disable_python', False)
+
     if not conf.env.standalone_talloc:
         if conf.CHECK_BUNDLED_SYSTEM('talloc', minversion=VERSION,
                                      implied_deps='replace'):
             conf.define('USING_SYSTEM_TALLOC', 1)
+        if conf.CHECK_BUNDLED_SYSTEM('pytalloc-util', minversion=VERSION,
+                                     implied_deps='talloc replace'):
+            conf.define('USING_SYSTEM_PYTALLOC_UTIL', 1)
 
     conf.env.TALLOC_COMPAT1 = Options.options.TALLOC_COMPAT1
 
     if conf.env.standalone_talloc:
         conf.find_program('xsltproc', var='XSLTPROC')
 
-    conf.SAMBA_CONFIG_H()
+    if not conf.env.disable_python:
+        # also disable if we don't have the python libs installed
+        conf.check_tool('python')
+        conf.check_python_version((2,4,2))
+        conf.check_python_headers(mandatory=False)
+        if not conf.env.HAVE_PYTHON_H:
+            Logs.warn('Disabling pytalloc-util as python devel libs not found')
+            conf.env.disable_python = True
 
+    conf.SAMBA_CONFIG_H()
 
 
 def build(bld):
@@ -64,8 +83,11 @@ def build(bld):
         bld.SAMBA_LIBRARY('talloc-compat1',
                           'compat/talloc_compat1.c',
                           deps='talloc',
-                          enabled = bld.env.TALLOC_COMPAT1,
+                          enabled=bld.env.TALLOC_COMPAT1,
                           vnum=VERSION)
+
+        if not bld.env.disable_python:
+            bld.PKG_CONFIG_FILES('pytalloc-util.pc', vnum=VERSION)
     else:
         private_library = True
         vnum = None
@@ -82,7 +104,7 @@ def build(bld):
                           private_library=private_library,
                           manpages='talloc.3')
 
-    if not bld.CONFIG_SET('USING_SYSTEM_PYTALLOC_UTIL'):
+    if not bld.CONFIG_SET('USING_SYSTEM_PYTALLOC_UTIL') and not bld.env.disable_python:
 
         bld.SAMBA_SUBSYSTEM('PYTALLOC',
             source='pytalloc.c',
