@@ -210,18 +210,11 @@ NTSTATUS cli_setpathinfo_recv(struct tevent_req *req)
  Creates new name (sym)linked to oldname.
 ****************************************************************************/
 
-struct link_state {
-	uint16_t setup;
-	uint8_t *param;
+struct cli_posix_link_internal_state {
 	uint8_t *data;
 };
 
-static void cli_posix_link_internal_done(struct tevent_req *subreq)
-{
-	NTSTATUS status = cli_trans_recv(subreq, NULL, NULL, NULL, 0, NULL,
-					 NULL, 0, NULL, NULL, 0, NULL);
-	tevent_req_simple_finish_ntstatus(subreq, status);
-}
+static void cli_posix_link_internal_done(struct tevent_req *subreq);
 
 static struct tevent_req *cli_posix_link_internal_send(TALLOC_CTX *mem_ctx,
 					struct event_context *ev,
@@ -231,29 +224,12 @@ static struct tevent_req *cli_posix_link_internal_send(TALLOC_CTX *mem_ctx,
 					const char *newname)
 {
 	struct tevent_req *req = NULL, *subreq = NULL;
-	struct link_state *state = NULL;
+	struct cli_posix_link_internal_state *state = NULL;
 
-	req = tevent_req_create(mem_ctx, &state, struct link_state);
+	req = tevent_req_create(mem_ctx, &state,
+				struct cli_posix_link_internal_state);
 	if (req == NULL) {
 		return NULL;
-	}
-
-	/* Setup setup word. */
-	SSVAL(&state->setup, 0, TRANSACT2_SETPATHINFO);
-
-	/* Setup param array. */
-	state->param = talloc_array(state, uint8_t, 6);
-	if (tevent_req_nomem(state->param, req)) {
-		return tevent_req_post(req, ev);
-	}
-	memset(state->param, '\0', 6);
-	SSVAL(state->param, 0, level);
-
-	state->param = trans2_bytes_push_str(state->param, cli_ucs2(cli), newname,
-				   strlen(newname)+1, NULL);
-
-	if (tevent_req_nomem(state->param, req)) {
-		return tevent_req_post(req, ev);
 	}
 
 	/* Setup data array. */
@@ -261,32 +237,23 @@ static struct tevent_req *cli_posix_link_internal_send(TALLOC_CTX *mem_ctx,
 	if (tevent_req_nomem(state->data, req)) {
 		return tevent_req_post(req, ev);
 	}
-	state->data = trans2_bytes_push_str(state->data, cli_ucs2(cli), oldname,
-				   strlen(oldname)+1, NULL);
+	state->data = trans2_bytes_push_str(
+		state->data, cli_ucs2(cli), oldname, strlen(oldname)+1, NULL);
 
-	subreq = cli_trans_send(state,			/* mem ctx. */
-				ev,			/* event ctx. */
-				cli,			/* cli_state. */
-				SMBtrans2,		/* cmd. */
-				NULL,			/* pipe name. */
-				-1,			/* fid. */
-				0,			/* function. */
-				0,			/* flags. */
-				&state->setup,		/* setup. */
-				1,			/* num setup uint16_t words. */
-				0,			/* max returned setup. */
-				state->param,		/* param. */
-				talloc_get_size(state->param),	/* num param. */
-				2,			/* max returned param. */
-				state->data,		/* data. */
-				talloc_get_size(state->data),	/* num data. */
-				0);			/* max returned data. */
-
+	subreq = cli_setpathinfo_send(
+		state, ev, cli, level, newname,
+		state->data, talloc_get_size(state->data));
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
 	tevent_req_set_callback(subreq, cli_posix_link_internal_done, req);
 	return req;
+}
+
+static void cli_posix_link_internal_done(struct tevent_req *subreq)
+{
+	NTSTATUS status = cli_setpathinfo_recv(subreq);
+	tevent_req_simple_finish_ntstatus(subreq, status);
 }
 
 /****************************************************************************
