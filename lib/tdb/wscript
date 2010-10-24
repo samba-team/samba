@@ -62,6 +62,16 @@ def build(bld):
                             freelistcheck.c lock.c dump.c freelist.c
                             io.c open.c transaction.c hash.c''')
 
+    if bld.env.standalone_tdb:
+        bld.env.PKGCONFIGDIR = '${LIBDIR}/pkgconfig'
+        bld.PKG_CONFIG_FILES('tdb.pc', vnum=VERSION)
+        bld.INSTALL_FILES('${INCLUDEDIR}', 'include/tdb.h', flat=True)
+        vnum = VERSION
+        private_library = False
+    else:
+        private_library = True
+        vnum = None
+
     if not bld.CONFIG_SET('USING_SYSTEM_TDB'):
         bld.SAMBA_LIBRARY('tdb',
                           COMMON_SRC,
@@ -70,8 +80,8 @@ def build(bld):
                           abi_file='ABI/tdb-%s.sigs' % VERSION,
                           abi_match='tdb_*',
                           hide_symbols=True,
-                          vnum=VERSION,
-                          private_library=not bld.env.standalone_tdb)
+                          vnum=vnum,
+                          private_library=private_library)
 
         bld.SAMBA_BINARY('tdbtorture',
                          'tools/tdbtorture.c',
@@ -103,10 +113,6 @@ def build(bld):
                          realname='tdb.so',
                          cflags='-DPACKAGE_VERSION=\"%s\"' % VERSION)
 
-    if bld.env.standalone_tdb:
-        bld.env.PKGCONFIGDIR = '${LIBDIR}/pkgconfig'
-        bld.PKG_CONFIG_FILES('tdb.pc', vnum=VERSION)
-        bld.INSTALL_FILES('${INCLUDEDIR}', 'include/tdb.h', flat=True)
 
 
 def test(ctx):

@@ -130,9 +130,13 @@ def build(bld):
             # do ABI checking on the standalone ldb
             abi_file = 'ABI/ldb-%s.sigs' % VERSION
             abi_match = '!ldb_*module_ops !ldb_*backend_ops ldb_*'
+            private_library = False
+            vnum = VERSION
         else:
             abi_file = None
             abi_match = None
+            private_library = True
+            vnum = None
 
         bld.SAMBA_LIBRARY('ldb',
                           COMMON_SRC + ' ' + LDB_MAP_SRC,
@@ -141,10 +145,10 @@ def build(bld):
                           public_headers='include/ldb.h include/ldb_errors.h '\
                           'include/ldb_module.h include/ldb_handlers.h',
                           pc_files='ldb.pc',
-                          vnum=VERSION, manpages='man/ldb.3',
+                          vnum=vnum, manpages='man/ldb.3',
                           abi_file = abi_file,
                           abi_match = abi_match,
-                          private_library=not bld.env.standalone_ldb)
+                          private_library=private_library)
 
         bld.SAMBA_PYTHON('pyldb', 'pyldb.c',
                          deps='ldb pyldb-util',

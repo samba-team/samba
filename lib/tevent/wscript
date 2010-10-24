@@ -66,6 +66,16 @@ def build(bld):
     if bld.CONFIG_SET('HAVE_EPOLL'):
         SRC += ' tevent_epoll.c'
 
+    if bld.env.standalone_tevent:
+        bld.env.PKGCONFIGDIR = '${LIBDIR}/pkgconfig'
+        bld.PKG_CONFIG_FILES('tevent.pc', vnum=VERSION)
+        bld.INSTALL_FILES('${INCLUDEDIR}', 'tevent.h')
+        private_library = False
+        vnum = VERSION
+    else:
+        private_library = True
+        vnum = None
+
     if not bld.CONFIG_SET('USING_SYSTEM_TEVENT'):
         bld.SAMBA_LIBRARY('tevent',
                           SRC,
@@ -73,13 +83,8 @@ def build(bld):
                           enabled= not bld.CONFIG_SET('USING_SYSTEM_TEVENT'),
                           abi_file='ABI/tevent-%s.sigs' % VERSION,
                           abi_match='tevent_* _tevent_*',
-                          vnum=VERSION, 
-                          private_library=not bld.env.standalone_tevent)
-
-    if bld.env.standalone_tevent:
-        bld.env.PKGCONFIGDIR = '${LIBDIR}/pkgconfig'
-        bld.PKG_CONFIG_FILES('tevent.pc', vnum=VERSION)
-        bld.INSTALL_FILES('${INCLUDEDIR}', 'tevent.h')
+                          vnum=vnum,
+                          private_library=private_library)
 
     bld.SAMBA_PYTHON('pytevent',
                      'pytevent.c',

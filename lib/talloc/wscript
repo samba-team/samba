@@ -52,6 +52,24 @@ def configure(conf):
 def build(bld):
     bld.RECURSE('lib/replace')
 
+    if bld.env.standalone_talloc:
+        bld.env.PKGCONFIGDIR = '${LIBDIR}/pkgconfig'
+        bld.env.TALLOC_VERSION = VERSION
+        bld.PKG_CONFIG_FILES('talloc.pc', vnum=VERSION)
+        bld.INSTALL_FILES('${INCLUDEDIR}', 'talloc.h')
+        private_library = False
+        vnum = VERSION
+
+        # should we also install the symlink to libtalloc1.so here?
+        bld.SAMBA_LIBRARY('talloc-compat1',
+                          'compat/talloc_compat1.c',
+                          deps='talloc',
+                          enabled = bld.env.TALLOC_COMPAT1,
+                          vnum=VERSION)
+    else:
+        private_library = True
+        vnum = None
+
     if not bld.CONFIG_SET('USING_SYSTEM_TALLOC'):
 
         bld.SAMBA_LIBRARY('talloc',
@@ -60,17 +78,9 @@ def build(bld):
                           abi_file='ABI/talloc-%s.sigs' % VERSION,
                           abi_match='talloc* _talloc*',
                           hide_symbols=True,
-                          vnum=VERSION,
-                          private_library=not bld.env.standalone_talloc,
+                          vnum=vnum,
+                          private_library=private_library,
                           manpages='talloc.3')
-
-        # should we also install the symlink to libtalloc1.so here?
-        bld.SAMBA_LIBRARY('talloc-compat1',
-                          'compat/talloc_compat1.c',
-                          deps='talloc',
-                          enabled = bld.env.TALLOC_COMPAT1,
-                          vnum=VERSION,
-                          private_library=not bld.env.standalone_talloc)
 
     if not getattr(bld.env, '_SAMBA_BUILD_', 0) == 4:
         # s4 already has the talloc testsuite builtin to smbtorture
@@ -79,11 +89,6 @@ def build(bld):
                          deps='talloc',
                          install=False)
 
-    if bld.env.standalone_talloc:
-        bld.env.PKGCONFIGDIR = '${LIBDIR}/pkgconfig'
-        bld.env.TALLOC_VERSION = VERSION
-        bld.PKG_CONFIG_FILES('talloc.pc', vnum=VERSION)
-        bld.INSTALL_FILES('${INCLUDEDIR}', 'talloc.h')
 
 def test(ctx):
     '''run talloc testsuite'''
