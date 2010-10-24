@@ -181,6 +181,12 @@ def SAMBA_LIBRARY(bld, libname, source,
     else:
         bundled_name = PRIVATE_NAME(bld, libname, bundled_extension, private_library)
 
+    if private_library:
+        if vnum:
+            Logs.error("vnum is invalid for private libraries")
+            sys.exit(1)
+        vnum = bld.env.PACKAGE_VERSION
+
     features = 'cc cshlib symlink_lib install_lib'
     if target_type == 'PYTHON':
         features += ' pyext'
@@ -879,7 +885,6 @@ def subst_at_vars(task):
     s = f.write(contents)
     f.close()
     return 0
-
 
 
 def PKG_CONFIG_FILES(bld, pc_files, vnum=None):
