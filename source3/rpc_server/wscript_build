@@ -1,22 +1,22 @@
 #!/usr/bin/env python
 
-RPC_LSARPC_SRC = '''srv_lsa_nt.c ../librpc/gen_ndr/srv_lsa.c'''
-RPC_NETLOGON_SRC = '''srv_netlog_nt.c ../librpc/gen_ndr/srv_netlogon.c'''
-RPC_SAMR_SRC = '''srv_samr_nt.c ../librpc/gen_ndr/srv_samr.c
+RPC_LSARPC_SRC = '''srv_lsa_nt.c ../../librpc/gen_ndr/srv_lsa.c'''
+RPC_NETLOGON_SRC = '''srv_netlog_nt.c ../../librpc/gen_ndr/srv_netlogon.c'''
+RPC_SAMR_SRC = '''srv_samr_nt.c ../../librpc/gen_ndr/srv_samr.c
                srv_samr_util.c
                srv_samr_chgpasswd.c'''
-RPC_INITSHUTDOWN_SRC = '''srv_initshutdown_nt.c ../librpc/gen_ndr/srv_initshutdown.c'''
-RPC_WINREG_SRC = '''srv_winreg_nt.c ../librpc/gen_ndr/srv_winreg.c'''
-RPC_DSSETUP_SRC = '''srv_dssetup_nt.c ../librpc/gen_ndr/srv_dssetup.c'''
-RPC_SRVSVC_SRC = '''srv_srvsvc_nt.c ../librpc/gen_ndr/srv_srvsvc.c'''
-RPC_WKSSVC_SRC = '''srv_wkssvc_nt.c ../librpc/gen_ndr/srv_wkssvc.c'''
-RPC_SVCCTL_SRC = '''srv_svcctl_nt.c ../librpc/gen_ndr/srv_svcctl.c'''
-RPC_NTSVCS_SRC = '''srv_ntsvcs_nt.c ../librpc/gen_ndr/srv_ntsvcs.c'''
-RPC_NETDFS_SRC = '''srv_dfs_nt.c ../librpc/gen_ndr/srv_dfs.c'''
-RPC_SPOOLSS_SRC = '''srv_spoolss_nt.c ../librpc/gen_ndr/srv_spoolss.c
+RPC_INITSHUTDOWN_SRC = '''srv_initshutdown_nt.c ../../librpc/gen_ndr/srv_initshutdown.c'''
+RPC_WINREG_SRC = '''srv_winreg_nt.c ../../librpc/gen_ndr/srv_winreg.c'''
+RPC_DSSETUP_SRC = '''srv_dssetup_nt.c ../../librpc/gen_ndr/srv_dssetup.c'''
+RPC_SRVSVC_SRC = '''srv_srvsvc_nt.c ../../librpc/gen_ndr/srv_srvsvc.c'''
+RPC_WKSSVC_SRC = '''srv_wkssvc_nt.c ../../librpc/gen_ndr/srv_wkssvc.c'''
+RPC_SVCCTL_SRC = '''srv_svcctl_nt.c ../../librpc/gen_ndr/srv_svcctl.c'''
+RPC_NTSVCS_SRC = '''srv_ntsvcs_nt.c ../../librpc/gen_ndr/srv_ntsvcs.c'''
+RPC_NETDFS_SRC = '''srv_dfs_nt.c ../../librpc/gen_ndr/srv_dfs.c'''
+RPC_SPOOLSS_SRC = '''srv_spoolss_nt.c ../../librpc/gen_ndr/srv_spoolss.c
                      srv_spoolss_util.c'''
-RPC_EVENTLOG_SRC = '''srv_eventlog_nt.c ../librpc/gen_ndr/srv_eventlog.c'''
-RPC_RPCECHO_SRC = '''srv_echo_nt.c ../librpc/gen_ndr/srv_echo.c'''
+RPC_EVENTLOG_SRC = '''srv_eventlog_nt.c ../../librpc/gen_ndr/srv_eventlog.c'''
+RPC_RPCECHO_SRC = '''srv_echo_nt.c ../../librpc/gen_ndr/srv_echo.c'''
 
 bld.SAMBA_SUBSYSTEM('rpc',
                     source='srv_pipe_register.c',
