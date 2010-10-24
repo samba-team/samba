@@ -4672,17 +4672,11 @@ NTSTATUS cli_posix_mkdir(struct cli_state *cli, const char *fname, mode_t mode)
  unlink or rmdir - POSIX semantics.
 ****************************************************************************/
 
-struct unlink_state {
-	uint16_t setup;
+struct cli_posix_unlink_internal_state {
 	uint8_t data[2];
 };
 
-static void cli_posix_unlink_internal_done(struct tevent_req *subreq)
-{
-	NTSTATUS status = cli_trans_recv(subreq, NULL, NULL, NULL, 0, NULL,
-					 NULL, 0, NULL, NULL, 0, NULL);
-	tevent_req_simple_finish_ntstatus(subreq, status);
-}
+static void cli_posix_unlink_internal_done(struct tevent_req *subreq);
 
 static struct tevent_req *cli_posix_unlink_internal_send(TALLOC_CTX *mem_ctx,
 					struct event_context *ev,
@@ -4691,58 +4685,32 @@ static struct tevent_req *cli_posix_unlink_internal_send(TALLOC_CTX *mem_ctx,
 					uint16_t level)
 {
 	struct tevent_req *req = NULL, *subreq = NULL;
-	struct unlink_state *state = NULL;
-	uint8_t *param = NULL;
+	struct cli_posix_unlink_internal_state *state = NULL;
 
-	req = tevent_req_create(mem_ctx, &state, struct unlink_state);
+	req = tevent_req_create(mem_ctx, &state,
+				struct cli_posix_unlink_internal_state);
 	if (req == NULL) {
 		return NULL;
-	}
-
-	/* Setup setup word. */
-	SSVAL(&state->setup, 0, TRANSACT2_SETPATHINFO);
-
-	/* Setup param array. */
-	param = talloc_array(state, uint8_t, 6);
-	if (tevent_req_nomem(param, req)) {
-		return tevent_req_post(req, ev);
-	}
-	memset(param, '\0', 6);
-	SSVAL(param, 0, SMB_POSIX_PATH_UNLINK);
-
-	param = trans2_bytes_push_str(param, cli_ucs2(cli), fname,
-				   strlen(fname)+1, NULL);
-
-	if (tevent_req_nomem(param, req)) {
-		return tevent_req_post(req, ev);
 	}
 
 	/* Setup data word. */
 	SSVAL(state->data, 0, level);
 
-	subreq = cli_trans_send(state,			/* mem ctx. */
-				ev,			/* event ctx. */
-				cli,			/* cli_state. */
-				SMBtrans2,		/* cmd. */
-				NULL,			/* pipe name. */
-				-1,			/* fid. */
-				0,			/* function. */
-				0,			/* flags. */
-				&state->setup,		/* setup. */
-				1,			/* num setup uint16_t words. */
-				0,			/* max returned setup. */
-				param,			/* param. */
-				talloc_get_size(param),	/* num param. */
-				2,			/* max returned param. */
-				state->data,		/* data. */
-				2,			/* num data. */
-				0);			/* max returned data. */
-
+	subreq = cli_setpathinfo_send(state, ev, cli,
+				      SMB_POSIX_PATH_UNLINK,
+				      fname,
+				      state->data, sizeof(state->data));
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
 	tevent_req_set_callback(subreq, cli_posix_unlink_internal_done, req);
 	return req;
+}
+
+static void cli_posix_unlink_internal_done(struct tevent_req *subreq)
+{
+	NTSTATUS status = cli_setpathinfo_recv(subreq);
+	tevent_req_simple_finish_ntstatus(subreq, status);
 }
 
 struct tevent_req *cli_posix_unlink_send(TALLOC_CTX *mem_ctx,
