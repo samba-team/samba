@@ -4688,7 +4688,7 @@ static struct tevent_req *cli_posix_unlink_internal_send(TALLOC_CTX *mem_ctx,
 					struct event_context *ev,
 					struct cli_state *cli,
 					const char *fname,
-					bool is_dir)
+					uint16_t level)
 {
 	struct tevent_req *req = NULL, *subreq = NULL;
 	struct unlink_state *state = NULL;
@@ -4718,8 +4718,7 @@ static struct tevent_req *cli_posix_unlink_internal_send(TALLOC_CTX *mem_ctx,
 	}
 
 	/* Setup data word. */
-	SSVAL(state->data, 0, is_dir ? SMB_POSIX_UNLINK_DIRECTORY_TARGET :
-			SMB_POSIX_UNLINK_FILE_TARGET);
+	SSVAL(state->data, 0, level);
 
 	subreq = cli_trans_send(state,			/* mem ctx. */
 				ev,			/* event ctx. */
@@ -4751,7 +4750,8 @@ struct tevent_req *cli_posix_unlink_send(TALLOC_CTX *mem_ctx,
 					struct cli_state *cli,
 					const char *fname)
 {
-	return cli_posix_unlink_internal_send(mem_ctx, ev, cli, fname, false);
+	return cli_posix_unlink_internal_send(mem_ctx, ev, cli, fname,
+					      SMB_POSIX_UNLINK_FILE_TARGET);
 }
 
 NTSTATUS cli_posix_unlink_recv(struct tevent_req *req)
@@ -4817,7 +4817,9 @@ struct tevent_req *cli_posix_rmdir_send(TALLOC_CTX *mem_ctx,
 					struct cli_state *cli,
 					const char *fname)
 {
-	return cli_posix_unlink_internal_send(mem_ctx, ev, cli, fname, true);
+	return cli_posix_unlink_internal_send(
+		mem_ctx, ev, cli, fname,
+		SMB_POSIX_UNLINK_DIRECTORY_TARGET);
 }
 
 NTSTATUS cli_posix_rmdir_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx)
