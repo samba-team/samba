@@ -3231,6 +3231,63 @@ static int cmd_getfacl(void)
 	return 0;
 }
 
+static void printf_cb(const char *buf, void *private_data)
+{
+	printf("%s", buf);
+}
+
+/****************************************************************************
+ Get the EA list of a file
+****************************************************************************/
+
+static int cmd_geteas(void)
+{
+	TALLOC_CTX *ctx = talloc_tos();
+	char *src = NULL;
+	char *name = NULL;
+	char *targetname = NULL;
+	struct cli_state *targetcli;
+	NTSTATUS status;
+	size_t i, num_eas;
+	struct ea_struct *eas;
+
+	if (!next_token_talloc(ctx, &cmd_ptr,&name,NULL)) {
+		d_printf("geteas filename\n");
+		return 1;
+	}
+	src = talloc_asprintf(ctx,
+			"%s%s",
+			client_get_cur_dir(),
+			name);
+	if (!src) {
+		return 1;
+	}
+
+	if (!cli_resolve_path(ctx, "", auth_info, cli, src, &targetcli,
+			      &targetname)) {
+		d_printf("stat %s: %s\n", src, cli_errstr(cli));
+		return 1;
+	}
+
+	status = cli_get_ea_list_path(targetcli, targetname, talloc_tos(),
+				      &num_eas, &eas);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("cli_get_ea_list_path: %s\n", nt_errstr(status));
+		return 1;
+	}
+
+	for (i=0; i<num_eas; i++) {
+		d_printf("%s (%d) =\n", eas[i].name, (int)eas[i].flags);
+		dump_data_cb(eas[i].value.data, eas[i].value.length, false,
+			     printf_cb, NULL);
+		d_printf("\n");
+	}
+
+	TALLOC_FREE(eas);
+
+	return 0;
+}
+
 /****************************************************************************
  UNIX stat.
 ****************************************************************************/
@@ -4070,6 +4127,8 @@ static struct {
   {"exit",cmd_quit,"logoff the server",{COMPL_NONE,COMPL_NONE}},
   {"get",cmd_get,"<remote name> [local name] get a file",{COMPL_REMOTE,COMPL_LOCAL}},
   {"getfacl",cmd_getfacl,"<file name> get the POSIX ACL on a file (UNIX extensions only)",{COMPL_REMOTE,COMPL_LOCAL}},
+  {"geteas", cmd_geteas, "<file name> get the EA list of a file",
+   {COMPL_REMOTE, COMPL_LOCAL}},
   {"hardlink",cmd_hardlink,"<src> <dest> create a Windows hard link",{COMPL_REMOTE,COMPL_REMOTE}},
   {"help",cmd_help,"[command] give help on a command",{COMPL_NONE,COMPL_NONE}},
   {"history",cmd_history,"displays the command history",{COMPL_NONE,COMPL_NONE}},
