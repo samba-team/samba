@@ -300,11 +300,29 @@ _PUBLIC_ bool fcntl_lock(int fd, int op, off_t offset, off_t count, int type)
 	return true;
 }
 
-void print_asc(int level, const uint8_t *buf,int len)
+static void debugadd_cb(const char *buf, void *private_data)
+{
+	int *plevel = (int *)private_data;
+	DEBUGADD(*plevel, ("%s", buf));
+}
+
+void print_asc_cb(const uint8_t *buf, int len,
+		  void (*cb)(const char *buf, void *private_data),
+		  void *private_data)
 {
 	int i;
-	for (i=0;i<len;i++)
-		DEBUGADD(level,("%c", isprint(buf[i])?buf[i]:'.'));
+	char s[2];
+	s[1] = 0;
+
+	for (i=0; i<len; i++) {
+		s[0] = isprint(buf[i]) ? buf[i] : '.';
+		cb(s, private_data);
+	}
+}
+
+void print_asc(int level, const uint8_t *buf,int len)
+{
+	print_asc_cb(buf, len, debugadd_cb, &level);
 }
 
 /**

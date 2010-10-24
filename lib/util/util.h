@@ -840,6 +840,9 @@ bool pm_process( const char *fileName,
 bool unmap_file(void *start, size_t size);
 
 void print_asc(int level, const uint8_t *buf,int len);
+void print_asc_cb(const uint8_t *buf, int len,
+		  void (*cb)(const char *buf, void *private_data),
+		  void *private_data);
 
 /**
  * Add an id to an array of ids.
