@@ -1280,61 +1280,6 @@ NTSTATUS cli_qpathinfo_basic(struct cli_state *cli, const char *name,
 }
 
 /****************************************************************************
- Send a qfileinfo call.
-****************************************************************************/
-
-bool cli_qfileinfo_test(struct cli_state *cli, uint16_t fnum, int level, char **poutdata, uint32 *poutlen)
-{
-	unsigned int data_len = 0;
-	unsigned int param_len = 0;
-	uint16 setup = TRANSACT2_QFILEINFO;
-	char param[4];
-	char *rparam=NULL, *rdata=NULL;
-
-	*poutdata = NULL;
-	*poutlen = 0;
-
-	/* if its a win95 server then fail this - win95 totally screws it
-	   up */
-	if (cli->win95)
-		return False;
-
-	param_len = 4;
-
-	SSVAL(param, 0, fnum);
-	SSVAL(param, 2, level);
-
-	if (!cli_send_trans(cli, SMBtrans2,
-                            NULL,                           /* name */
-                            -1, 0,                          /* fid, flags */
-                            &setup, 1, 0,                   /* setup, length, max */
-                            param, param_len, 2,            /* param, length, max */
-                            NULL, data_len, cli->max_xmit   /* data, length, max */
-                           )) {
-		return False;
-	}
-
-	if (!cli_receive_trans(cli, SMBtrans2,
-                               &rparam, &param_len,
-                               &rdata, &data_len)) {
-		return False;
-	}
-
-	*poutdata = (char *)memdup(rdata, data_len);
-	if (!*poutdata) {
-		SAFE_FREE(rdata);
-		SAFE_FREE(rparam);
-		return False;
-	}
-
-	*poutlen = data_len;
-
-	SAFE_FREE(rdata);
-	SAFE_FREE(rparam);
-	return True;
-}
-
-/****************************************************************************
  Send a qpathinfo SMB_QUERY_FILE_ALT_NAME_INFO call.
 ****************************************************************************/
 

@@ -3100,22 +3100,24 @@ static bool run_trans2test(int dummy)
   This checks new W2K calls.
 */
 
-static bool new_trans(struct cli_state *pcli, int fnum, int level)
+static NTSTATUS new_trans(struct cli_state *pcli, int fnum, int level)
 {
-	char *buf = NULL;
+	uint8_t *buf = NULL;
 	uint32 len;
-	bool correct = True;
+	NTSTATUS status;
 
-	if (!cli_qfileinfo_test(pcli, fnum, level, &buf, &len)) {
-		printf("ERROR: qfileinfo (%d) failed (%s)\n", level, cli_errstr(pcli));
-		correct = False;
+	status = cli_qfileinfo(talloc_tos(), pcli, fnum, level, 0,
+			       pcli->max_xmit, &buf, &len);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("ERROR: qfileinfo (%d) failed (%s)\n", level,
+		       nt_errstr(status));
 	} else {
 		printf("qfileinfo: level %d, len = %u\n", level, len);
 		dump_data(0, (uint8 *)buf, len);
 		printf("\n");
 	}
-	SAFE_FREE(buf);
-	return correct;
+	TALLOC_FREE(buf);
+	return status;
 }
 
 static bool run_w2ktest(int dummy)
@@ -3426,17 +3428,6 @@ static bool run_deletetest(int dummy)
 		correct = False;
 		goto fail;
 	}
-
-#if 0 /* JRATEST */
-        {
-                uint32 *accinfo = NULL;
-                uint32 len;
-                cli_qfileinfo_test(cli1, fnum1, SMB_FILE_ACCESS_INFORMATION, (char **)&accinfo, &len);
-		if (accinfo)
-	                printf("access mode = 0x%lx\n", *accinfo);
-                SAFE_FREE(accinfo);
-        }
-#endif
 
 	if (!NT_STATUS_IS_OK(cli_close(cli1, fnum1))) {
 		printf("[1] close failed (%s)\n", cli_errstr(cli1));
