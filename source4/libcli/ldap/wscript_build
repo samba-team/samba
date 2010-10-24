@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-bld.SAMBA_LIBRARY('cli_ldap',
+bld.SAMBA_LIBRARY('cli-ldap',
                   source='ldap_client.c ldap_bind.c ldap_ildap.c ldap_controls.c',
                   autoproto='ldap_proto.h',
                   public_deps='errors tevent LIBPACKET',

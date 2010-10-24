@@ -11,7 +11,7 @@ bld.SAMBA_MODULE('KDC',
 
 bld.SAMBA_SUBSYSTEM('HDB_SAMBA4',
 	source='hdb-samba4.c',
-	deps='ldb auth_sam auth_sam_reply CREDENTIALS hdb db_glue samba-hostconfig com_err',
+	deps='ldb auth_sam auth_sam_reply CREDENTIALS hdb db-glue samba-hostconfig com_err',
 	includes='../heimdal/kdc',
 	local_include=False
 	)
@@ -33,7 +33,7 @@ bld.SAMBA_SUBSYSTEM('PAC_GLUE',
 	)
 
 
-bld.SAMBA_LIBRARY('db_glue',
+bld.SAMBA_LIBRARY('db-glue',
 	source='db-glue.c',
 	local_include=False,
 	deps='ldb auth_sam auth_sam_reply CREDENTIALS hdb samba-hostconfig com_err',
@@ -44,14 +44,14 @@ bld.SAMBA_LIBRARY('db_glue',
 bld.SAMBA_SUBSYSTEM('MIT_SAMBA',
 	source='mit_samba.c',
 	local_include=False,
-	deps='ldb auth_sam auth_sam_reply CREDENTIALS hdb db_glue PAC_GLUE samba-hostconfig com_err'
+	deps='ldb auth_sam auth_sam_reply CREDENTIALS hdb db-glue PAC_GLUE samba-hostconfig com_err'
 	)
 
 
-bld.SAMBA_LIBRARY('mit_samba',
-                  source='',
-                  deps='MIT_SAMBA',
-                  external_library=True,
-                  realname='mit_samba.so'
-                  )
+bld.SAMBA_LIBRARY('mit-samba',
+	source='',
+	deps='MIT_SAMBA',
+	external_library=True,
+	realname='mit_samba.so'
+	)
 

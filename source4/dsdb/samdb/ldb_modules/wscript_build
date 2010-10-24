@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-bld.SAMBA_LIBRARY('dsdb_module',
+bld.SAMBA_LIBRARY('dsdb-module',
 	source=[],
 	deps='DSDB_MODULE_HELPERS DSDB_MODULE_HELPER_SCHEMA DSDB_MODULE_HELPER_RIDALLOC',
 	private_library=True,
@@ -9,7 +9,7 @@ bld.SAMBA_LIBRARY('dsdb_module',
 bld.SAMBA_SUBSYSTEM('DSDB_MODULE_HELPERS',
 	source='util.c acl_util.c schema_util.c',
 	autoproto='util_proto.h',
-	deps='ldb ndr samdb_common security_session'
+	deps='ldb ndr samdb-common security-session'
 	)
 
 bld.SAMBA_SUBSYSTEM('DSDB_MODULE_HELPER_RIDALLOC',
@@ -56,7 +56,7 @@ bld.SAMBA_MODULE('ldb_repl_meta_data',
 	subsystem='ldb',
 	init_function='LDB_MODULE(repl_meta_data)',
 	internal_module=False,
-	deps='SAMDB talloc events ndr NDR_DRSUAPI NDR_DRSBLOBS ndr DSDB_MODULE_HELPERS security_session'
+	deps='SAMDB talloc events ndr NDR_DRSUAPI NDR_DRSBLOBS ndr DSDB_MODULE_HELPERS security-session'
 	)
 
 
@@ -147,7 +147,7 @@ bld.SAMBA_MODULE('ldb_rootdse',
 	subsystem='ldb',
 	init_function='LDB_MODULE(rootdse)',
 	internal_module=False,
-	deps='talloc events SAMDB MESSAGING security_session DSDB_MODULE_HELPERS'
+	deps='talloc events SAMDB MESSAGING security-session DSDB_MODULE_HELPERS'
 	)
 
 
@@ -256,7 +256,7 @@ bld.SAMBA_MODULE('ldb_subtree_rename',
 	subsystem='ldb',
 	init_function='LDB_MODULE(subtree_rename)',
 	internal_module=False,
-	deps='talloc events samba-util ldb samdb_common'
+	deps='talloc events samba-util ldb samdb-common'
 	)
 
 
@@ -310,7 +310,7 @@ bld.SAMBA_MODULE('ldb_operational',
 	subsystem='ldb',
 	init_function='LDB_MODULE(operational)',
 	internal_module=False,
-	deps='talloc tevent samba-util samdb_common DSDB_MODULE_HELPERS auth auth_session'
+	deps='talloc tevent samba-util samdb-common DSDB_MODULE_HELPERS auth auth_session'
 	)
 
 

@@ -27,7 +27,7 @@ bld.SAMBA_GENERATOR('external_init_py',
 bld.INSTALL_FILES('${PYTHONDIR}/samba/external', 'empty_file', destname='__init__.py')
 
 # a grouping library for event and socket related subsystems
-bld.SAMBA_LIBRARY('samba_sockets',
+bld.SAMBA_LIBRARY('samba-sockets',
                   source=[],
                   private_library=True,
                   grouping_library=True,

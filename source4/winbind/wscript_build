@@ -6,20 +6,20 @@ bld.SAMBA_MODULE('WINBIND',
 	autoproto='wb_proto.h',
 	subsystem='service',
 	init_function='server_service_winbind_init',
-	deps='WB_HELPER IDMAP NDR_WINBIND process_model RPC_NDR_LSA dcerpc_samr PAM_ERRORS cli_ldap samba-net LIBSAMBA_TSOCKET'
+	deps='WB_HELPER IDMAP NDR_WINBIND process_model RPC_NDR_LSA dcerpc-samr PAM_ERRORS cli-ldap samba-net LIBSAMBA_TSOCKET'
 	)
 
 
 bld.SAMBA_SUBSYSTEM('WB_HELPER',
 	source='wb_async_helpers.c wb_utils.c',
 	autoproto='wb_helper.h',
-	public_deps='RPC_NDR_LSA dcerpc_samr'
+	public_deps='RPC_NDR_LSA dcerpc-samr'
 	)
 
 
 bld.SAMBA_SUBSYSTEM('IDMAP',
 	source='idmap.c',
 	autoproto='idmap_proto.h',
-	public_deps='samdb_common LDBSAMBA'
+	public_deps='samdb-common LDBSAMBA'
 	)
 

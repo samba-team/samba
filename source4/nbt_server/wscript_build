@@ -19,7 +19,7 @@ bld.SAMBA_MODULE('ldb_wins_ldb',
 bld.SAMBA_SUBSYSTEM('NBTD_WINS',
 	source='wins/winsserver.c wins/winsclient.c wins/winswack.c wins/wins_dns_proxy.c',
 	autoproto='wins/winsserver_proto.h',
-	deps='cli_nbt WINSDB'
+	deps='cli-nbt WINSDB'
 	)
 
 
@@ -33,7 +33,7 @@ bld.SAMBA_SUBSYSTEM('NBTD_DGRAM',
 bld.SAMBA_SUBSYSTEM('NBT_SERVER',
 	source='interfaces.c register.c query.c nodestatus.c defense.c packet.c irpc.c',
 	autoproto='nbt_server_proto.h',
-	deps='cli_nbt NBTD_WINS NBTD_DGRAM'
+	deps='cli-nbt NBTD_WINS NBTD_DGRAM'
 	)
 
 

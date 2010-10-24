@@ -44,7 +44,7 @@ bld.SAMBA_MODULE('torture_rpc',
 	autoproto='rpc/proto.h',
 	subsystem='smbtorture',
 	init_function='torture_rpc_init',
-	deps='ndr_table RPC_NDR_UNIXINFO dcerpc_samr RPC_NDR_WINREG RPC_NDR_INITSHUTDOWN RPC_NDR_OXIDRESOLVER RPC_NDR_EVENTLOG RPC_NDR_ECHO RPC_NDR_SVCCTL RPC_NDR_NETLOGON dcerpc_atsvc RPC_NDR_DRSUAPI RPC_NDR_LSA RPC_NDR_EPMAPPER RPC_NDR_DFS RPC_NDR_FRSAPI RPC_NDR_SPOOLSS RPC_NDR_SRVSVC RPC_NDR_WKSSVC RPC_NDR_ROT RPC_NDR_DSSETUP RPC_NDR_REMACT RPC_NDR_OXIDRESOLVER RPC_NDR_NTSVCS WB_HELPER samba-net LIBCLI_AUTH POPT_CREDENTIALS TORTURE_LDAP TORTURE_UTIL TORTURE_RAP dcerpc_server service process_model ntvfs RPC_NDR_BROWSER LIBCLI_DRSUAPI TORTURE_DFS',
+	deps='ndr-table RPC_NDR_UNIXINFO dcerpc-samr RPC_NDR_WINREG RPC_NDR_INITSHUTDOWN RPC_NDR_OXIDRESOLVER RPC_NDR_EVENTLOG RPC_NDR_ECHO RPC_NDR_SVCCTL RPC_NDR_NETLOGON dcerpc-atsvc RPC_NDR_DRSUAPI RPC_NDR_LSA RPC_NDR_EPMAPPER RPC_NDR_DFS RPC_NDR_FRSAPI RPC_NDR_SPOOLSS RPC_NDR_SRVSVC RPC_NDR_WKSSVC RPC_NDR_ROT RPC_NDR_DSSETUP RPC_NDR_REMACT RPC_NDR_OXIDRESOLVER RPC_NDR_NTSVCS WB_HELPER samba-net LIBCLI_AUTH POPT_CREDENTIALS TORTURE_LDAP TORTURE_UTIL TORTURE_RAP dcerpc_server service process_model ntvfs RPC_NDR_BROWSER LIBCLI_DRSUAPI TORTURE_DFS',
 	internal_module=True
 	)
 
@@ -102,7 +102,7 @@ bld.SAMBA_MODULE('TORTURE_UNIX',
 bld.SAMBA_MODULE('TORTURE_LDAP',
 	source='ldap/common.c ldap/basic.c ldap/schema.c ldap/uptodatevector.c ldap/cldap.c ldap/cldapbench.c ldap/ldap_sort.c ldap/nested_search.c',
 	subsystem='smbtorture',
-	deps='cli_ldap LIBCLI_CLDAP SAMDB POPT_CREDENTIALS torture LDBSAMBA',
+	deps='cli-ldap LIBCLI_CLDAP SAMDB POPT_CREDENTIALS torture LDBSAMBA',
 	internal_module=True,
 	autoproto='ldap/proto.h',
 	init_function='torture_ldap_init'
@@ -114,7 +114,7 @@ bld.SAMBA_MODULE('TORTURE_NBT',
 	autoproto='nbt/proto.h',
 	subsystem='smbtorture',
 	init_function='torture_nbt_init',
-	deps='LIBCLI_SMB cli_nbt LIBCLI_DGRAM LIBCLI_WREPL torture_rpc',
+	deps='LIBCLI_SMB cli-nbt LIBCLI_DGRAM LIBCLI_WREPL torture_rpc',
 	internal_module=True
 	)
 

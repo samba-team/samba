@@ -7,7 +7,7 @@ bld.SAMBA_SUBSYSTEM('NDR_NBT_BUF',
 	)
 
 
-bld.SAMBA_LIBRARY('cli_nbt',
+bld.SAMBA_LIBRARY('cli-nbt',
 	source='lmhosts.c nbtsocket.c namequery.c nameregister.c namerefresh.c namerelease.c dns_hosts_file.c',
 	public_deps='ndr NDR_NBT tevent UTIL_TEVENT NDR_SECURITY samba_socket samba-util',
 	private_library=True
@@ -17,7 +17,7 @@ bld.SAMBA_LIBRARY('cli_nbt',
 bld.SAMBA_BINARY('nmblookup',
 	source='tools/nmblookup.c',
 	manpages='man/nmblookup.1',
-	deps='samba-hostconfig samba-util cli_nbt popt POPT_SAMBA netif LIBCLI_RESOLVE'
+	deps='samba-hostconfig samba-util cli-nbt popt POPT_SAMBA netif LIBCLI_RESOLVE'
 	)
 
 
@@ -35,7 +35,7 @@ bld.SAMBA_SUBSYSTEM('LIBCLI_NETLOGON',
 
 bld.SAMBA_PYTHON('python_netbios',
 	source='pynbt.c',
-	public_deps='cli_nbt DYNCONFIG samba-hostconfig',
+	public_deps='cli-nbt DYNCONFIG samba-hostconfig',
 	realname='samba/netbios.so'
 	)
 

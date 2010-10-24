@@ -88,7 +88,7 @@ def build(bld):
         # this is only in the s4 build
         bld.SAMBA_MODULE('ldb_ildap', 'ldb_ildap/ldb_ildap.c',
                          init_function='LDB_BACKEND(ldapi),LDB_BACKEND(ldaps),LDB_BACKEND(ldap)',
-                         deps='talloc cli_ldap CREDENTIALS auth_system_session',
+                         deps='talloc cli-ldap CREDENTIALS auth_system_session',
                          aliases='ldb_ldaps ldb_ldapi ldb_ldap',
                          internal_module=False,
                          subsystem='ldb')

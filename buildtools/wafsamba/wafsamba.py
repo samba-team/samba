@@ -174,8 +174,7 @@ def SAMBA_LIBRARY(bld, libname, source,
         raise Utils.WafError("public library '%s' must have a vnum" % libname)
 
     if target_type == 'PYTHON' or realname or not private_library:
-        # Sanitize the library name
-        bundled_name = libname.lower().replace('_', '-')
+        bundled_name = libname.replace('_', '-')
     else:
         bundled_name = PRIVATE_NAME(bld, libname, bundled_extension, private_library)
 

@@ -17,7 +17,7 @@ bld.SAMBA_LIBRARY('ndr',
 bld.SAMBA_BINARY('ndrdump',
 	source='../../librpc/tools/ndrdump.c',
 	manpages='../../librpc/tools/ndrdump.1',
-	deps='samba-hostconfig samba-util popt POPT_SAMBA ndr_table errors'
+	deps='samba-hostconfig samba-util popt POPT_SAMBA ndr-table errors'
 	)
 
 
@@ -105,7 +105,7 @@ bld.SAMBA_LIBRARY('ndr-standard',
 	)
 
 # create a grouping library to consolidate our samba4 specific NDR code
-bld.SAMBA_LIBRARY('ndr_samba4',
+bld.SAMBA_LIBRARY('ndr-samba4',
 	source=[],
 	deps='NDR_WINBIND NDR_IRPC NDR_NFS4ACL NDR_OPENDB NDR_NOTIFY',
 	private_library=True,
@@ -113,7 +113,7 @@ bld.SAMBA_LIBRARY('ndr_samba4',
 	)
 
 # a grouping library for RPC_NDR subsystems that may be used by more than one target
-bld.SAMBA_LIBRARY('rpc_ndr_samba4',
+bld.SAMBA_LIBRARY('dcerpc-samba4',
 	source=[],
 	deps='RPC_NDR_WINBIND',
 	private_library=True,
@@ -123,7 +123,7 @@ bld.SAMBA_LIBRARY('rpc_ndr_samba4',
 
 bld.SAMBA_PIDL_TABLES('GEN_NDR_TABLES', 'gen_ndr/tables.c')
 
-bld.SAMBA_LIBRARY('ndr_table',
+bld.SAMBA_LIBRARY('ndr-table',
 	source='../../librpc/ndr/ndr_table.c gen_ndr/tables.c',
         public_deps='''ndr-standard NDR_AUDIOSRV NDR_DSBACKUP NDR_EFS
         NDR_DRSUAPI NDR_POLICYAGENT NDR_UNIXINFO NDR_SPOOLSS NDR_EPMAPPER
@@ -152,7 +152,7 @@ bld.SAMBA_SUBSYSTEM('RPC_NDR_WINBIND',
 	)
 
 
-bld.SAMBA_LIBRARY('dcerpc_samr',
+bld.SAMBA_LIBRARY('dcerpc-samr',
 	source='../../librpc/gen_ndr/ndr_samr_c.c',
 	pc_files='dcerpc_samr.pc',
 	vnum='0.0.1',
@@ -167,7 +167,7 @@ bld.SAMBA_SUBSYSTEM('RPC_NDR_DNS',
 	)
 
 
-bld.SAMBA_LIBRARY('dcerpc_atsvc',
+bld.SAMBA_LIBRARY('dcerpc-atsvc',
 	source='../../librpc/gen_ndr/ndr_atsvc_c.c',
 	pc_files='dcerpc_atsvc.pc',
 	vnum='0.0.1',
@@ -214,7 +214,7 @@ bld.SAMBA_SUBSYSTEM('pyrpc_util',
 
 bld.SAMBA_PYTHON('python_dcerpc',
 	source='rpc/pyrpc.c',
-	public_deps='LIBCLI_SMB samba-util samba-hostconfig dcerpc_samr RPC_NDR_LSA DYNCONFIG pyrpc_util',
+	public_deps='LIBCLI_SMB samba-util samba-hostconfig dcerpc-samr RPC_NDR_LSA DYNCONFIG pyrpc_util',
 	realname='samba/dcerpc/base.so'
 	)
 
@@ -263,7 +263,7 @@ bld.SAMBA_PYTHON('python_mgmt',
 
 bld.SAMBA_PYTHON('python_atsvc',
 	source='../../librpc/gen_ndr/py_atsvc.c',
-	deps='dcerpc_atsvc PYTALLOC pyrpc_util',
+	deps='dcerpc-atsvc PYTALLOC pyrpc_util',
 	realname='samba/dcerpc/atsvc.so'
 	)
 
@@ -277,7 +277,7 @@ bld.SAMBA_PYTHON('python_dcerpc_nbt',
 
 bld.SAMBA_PYTHON('python_samr',
 	source='../../librpc/gen_ndr/py_samr.c',
-	deps='dcerpc_samr PYTALLOC pyrpc_util',
+	deps='dcerpc-samr PYTALLOC pyrpc_util',
 	realname='samba/dcerpc/samr.so'
 	)
 
