@@ -511,6 +511,7 @@ static int add_time_element(struct ldb_message *msg, const char *attr, time_t t)
 {
 	struct ldb_message_element *el;
 	char *s;
+	int ret;
 
 	if (ldb_msg_find_element(msg, attr) != NULL) {
 		return LDB_SUCCESS;
@@ -521,8 +522,9 @@ static int add_time_element(struct ldb_message *msg, const char *attr, time_t t)
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	if (ldb_msg_add_string(msg, attr, s) != LDB_SUCCESS) {
-		return LDB_ERR_OPERATIONS_ERROR;
+	ret = ldb_msg_add_string(msg, attr, s);
+	if (ret != LDB_SUCCESS) {
+		return ret;
 	}
 
 	el = ldb_msg_find_element(msg, attr);
@@ -2230,13 +2232,14 @@ static int replmd_modify(struct ldb_module *module, struct ldb_request *req)
 	/* we only change whenChanged and uSNChanged if the seq_num
 	   has changed */
 	if (ac->seq_num != 0) {
-		if (add_time_element(msg, "whenChanged", t) != LDB_SUCCESS) {
+		ret = add_time_element(msg, "whenChanged", t);
+		if (ret != LDB_SUCCESS) {
 			talloc_free(ac);
 			return ret;
 		}
 
-		if (add_uint64_element(ldb, msg, "uSNChanged",
-				       ac->seq_num) != LDB_SUCCESS) {
+		ret = add_uint64_element(ldb, msg, "uSNChanged", ac->seq_num);
+		if (ret != LDB_SUCCESS) {
 			talloc_free(ac);
 			return ret;
 		}
@@ -2346,13 +2349,14 @@ static int replmd_rename_callback(struct ldb_request *req, struct ldb_reply *are
 	}
 	talloc_steal(down_req, msg);
 
-	if (add_time_element(msg, "whenChanged", t) != LDB_SUCCESS) {
+	ret = add_time_element(msg, "whenChanged", t);
+	if (ret != LDB_SUCCESS) {
 		talloc_free(ac);
 		return ret;
 	}
 
-	if (add_uint64_element(ldb, msg, "uSNChanged",
-			       ac->seq_num) != LDB_SUCCESS) {
+	ret = add_uint64_element(ldb, msg, "uSNChanged", ac->seq_num);
+	if (ret != LDB_SUCCESS) {
 		talloc_free(ac);
 		return ret;
 	}

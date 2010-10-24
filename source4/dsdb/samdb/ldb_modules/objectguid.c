@@ -55,18 +55,20 @@ static int add_time_element(struct ldb_message *msg, const char *attr, time_t t)
 {
 	struct ldb_message_element *el;
 	char *s;
+	int ret;
 
 	if (ldb_msg_find_element(msg, attr) != NULL) {
-		return 0;
+		return LDB_SUCCESS;
 	}
 
 	s = ldb_timestring(msg, t);
 	if (s == NULL) {
-		return -1;
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	if (ldb_msg_add_string(msg, attr, s) != 0) {
-		return -1;
+	ret = ldb_msg_add_string(msg, attr, s);
+	if (ret != LDB_SUCCESS) {
+		return ret;
 	}
 
 	el = ldb_msg_find_element(msg, attr);
@@ -74,7 +76,7 @@ static int add_time_element(struct ldb_message *msg, const char *attr, time_t t)
 	   is ignored */
 	el->flags = LDB_FLAG_MOD_REPLACE;
 
-	return 0;
+	return LDB_SUCCESS;
 }
 
 /*
@@ -84,13 +86,15 @@ static int add_uint64_element(struct ldb_context *ldb, struct ldb_message *msg,
 			      const char *attr, uint64_t v)
 {
 	struct ldb_message_element *el;
+	int ret;
 
 	if (ldb_msg_find_element(msg, attr) != NULL) {
-		return 0;
+		return LDB_SUCCESS;
 	}
 
-	if (samdb_msg_add_uint64(ldb, msg, msg, attr, v) != LDB_SUCCESS) {
-		return -1;
+	ret = samdb_msg_add_uint64(ldb, msg, msg, attr, v);
+	if (ret != LDB_SUCCESS) {
+		return ret;
 	}
 
 	el = ldb_msg_find_element(msg, attr);
@@ -98,7 +102,7 @@ static int add_uint64_element(struct ldb_context *ldb, struct ldb_message *msg,
 	   is ignored */
 	el->flags = LDB_FLAG_MOD_REPLACE;
 
-	return 0;
+	return LDB_SUCCESS;
 }
 
 struct og_context {
@@ -175,12 +179,12 @@ static int objectguid_add(struct ldb_module *module, struct ldb_request *req)
 	guid = GUID_random();
 
 	ret = dsdb_msg_add_guid(msg, &guid, "objectGUID");
-	if (ret) {
+	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
 	
-	if (add_time_element(msg, "whenCreated", t) != 0 ||
-	    add_time_element(msg, "whenChanged", t) != 0) {
+	if (add_time_element(msg, "whenCreated", t) != LDB_SUCCESS ||
+	    add_time_element(msg, "whenChanged", t) != LDB_SUCCESS) {
 		return ldb_operr(ldb);
 	}
 
@@ -189,8 +193,10 @@ static int objectguid_add(struct ldb_module *module, struct ldb_request *req)
 	 * make sure this function is split and a callback is used */
 	ret = ldb_sequence_number(ldb, LDB_SEQ_NEXT, &seq_num);
 	if (ret == LDB_SUCCESS) {
-		if (add_uint64_element(ldb, msg, "uSNCreated", seq_num) != 0 ||
-		    add_uint64_element(ldb, msg, "uSNChanged", seq_num) != 0) {
+		if (add_uint64_element(ldb, msg, "uSNCreated",
+				       seq_num) != LDB_SUCCESS ||
+		    add_uint64_element(ldb, msg, "uSNChanged",
+				       seq_num) != LDB_SUCCESS) {
 			return ldb_operr(ldb);
 		}
 	}
@@ -242,14 +248,15 @@ static int objectguid_modify(struct ldb_module *module, struct ldb_request *req)
 		return ldb_operr(ldb);
 	}
 
-	if (add_time_element(msg, "whenChanged", t) != 0) {
+	if (add_time_element(msg, "whenChanged", t) != LDB_SUCCESS) {
 		return ldb_operr(ldb);
 	}
 
 	/* Get a sequence number from the backend */
 	ret = ldb_sequence_number(ldb, LDB_SEQ_NEXT, &seq_num);
 	if (ret == LDB_SUCCESS) {
-		if (add_uint64_element(ldb, msg, "uSNChanged", seq_num) != 0) {
+		if (add_uint64_element(ldb, msg, "uSNChanged",
+				       seq_num) != LDB_SUCCESS) {
 			return ldb_operr(ldb);
 		}
 	}
