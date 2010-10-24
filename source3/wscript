@@ -17,7 +17,7 @@ VERSION=version.STRING
 
 def set_options(opt):
     opt.BUILTIN_DEFAULT('NONE')
-    opt.BUNDLED_EXTENSION_DEFAULT('s3')
+    opt.PRIVATE_EXTENSION_DEFAULT('s3')
     opt.RECURSE('../lib/replace')
     opt.RECURSE('build')
     opt.RECURSE('selftest')
