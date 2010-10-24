@@ -62,7 +62,7 @@ rpc.lsa.forest							# Not provided by Samba 4
 ^samba4.ntvfs.cifs.raw.samba3.*					# Samba3-specific test
 samba4.ntvfs.cifs.raw.
 ^samba4.rpc..*samba3.*						# Samba3-specific test
-^samba4.net.domopen.*$				# Hangs for some reason
+^samba4.samba-tool.domopen.*$				# Hangs for some reason
 nss.test						# Fails
 raw.offline 			# Samba 4 doesn't have much offline support yet
 rpc.autoidl  # this one just generates a lot of noise, and is no longer useful

@@ -20,16 +20,16 @@
 */
 
 #include "includes.h"
-#include "utils/net/net.h"
+#include "samba_tool/samba_tool.h"
 #include "librpc/gen_ndr/ndr_drsuapi_c.h"
-#include "utils/net/drs/net_drs.h"
+#include "samba_tool/drs/drs.h"
 #include "lib/ldb/include/ldb.h"
 #include "ldb_wrap.h"
 #include "system/filesys.h"
 
 
 /**
- * 'net drs' supported sub-commands
+ * 'samba-tool drs' supported sub-commands
  */
 static const struct net_functable net_drs_functable[] = {
 	{ "bind", "Display replication features for a domain controller\n", net_drs_bind_cmd, net_drs_bind_usage },
@@ -43,7 +43,7 @@ static const struct net_functable net_drs_functable[] = {
 };
 
 /**
- * 'net drs' entry point
+ * 'samba-tool drs' entry point
  */
 int net_drs(struct net_context *ctx, int argc, const char **argv)
 {
@@ -51,11 +51,11 @@ int net_drs(struct net_context *ctx, int argc, const char **argv)
 }
 
 /**
- * 'net drs' usage message
+ * 'samba-tool drs' usage message
  */
 int net_drs_usage(struct net_context *ctx, int argc, const char **argv)
 {
-	d_printf("net drs <command> [options]\n");
+	d_printf("samba-tool drs <command> [options]\n");
 	d_printf("\n");
 	d_printf("Currently implemented commands:\n");
 	d_printf("  bind      - Display DC replication features\n");
@@ -309,7 +309,7 @@ static int net_drs_context_destructor(struct net_drs_context *drs_ctx)
 
 /**
  * Create net_drs_context context to be used
- * by 'net drs' sub-commands
+ * by 'samba-tool drs' sub-commands
  */
 bool net_drs_create_context(struct net_context *net_ctx,
 			    const char *dc_binding,

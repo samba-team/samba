@@ -1,6 +1,6 @@
-/* 
-   Samba Unix/Linux SMB client library 
-   Distributed SMB/CIFS Server Management Utility 
+/*
+   Samba Unix/Linux SMB client library
+   Distributed SMB/CIFS Server Management Utility
 
    Copyright (C) 2004 Stefan Metzmacher (metze@samba.org)
 
@@ -8,18 +8,18 @@
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include "includes.h"
-#include "utils/net/net.h"
+#include "samba_tool/samba_tool.h"
 #include "libnet/libnet.h"
 #include "system/filesys.h"
 #include "lib/events/events.h"
@@ -32,7 +32,7 @@
 static int net_password_change_usage(struct net_context *ctx, int argc, const char **argv)
 {
 	d_printf("net_password_change_usage: TODO\n");
-	return 0;	
+	return 0;
 }
 
 
@@ -47,15 +47,15 @@ static int net_password_change(struct net_context *ctx, int argc, const char **a
 	if (argc > 0 && argv[0]) {
 		new_password = argv[0];
 	} else {
-		password_prompt = talloc_asprintf(ctx, "Enter new password for account [%s\\%s]:", 
-							cli_credentials_get_domain(ctx->credentials), 
+		password_prompt = talloc_asprintf(ctx, "Enter new password for account [%s\\%s]:",
+							cli_credentials_get_domain(ctx->credentials),
 							cli_credentials_get_username(ctx->credentials));
 		new_password = getpass(password_prompt);
 	}
 
 	libnetctx = libnet_context_init(ctx->event_ctx, ctx->lp_ctx);
 	if (!libnetctx) {
-		return -1;	
+		return -1;
 	}
 	libnetctx->cred = ctx->credentials;
 
@@ -82,7 +82,7 @@ static int net_password_change(struct net_context *ctx, int argc, const char **a
 static int net_password_set_usage(struct net_context *ctx, int argc, const char **argv)
 {
 	d_printf("net_password_set_usage: TODO\n");
-	return 0;	
+	return 0;
 }
 
 
@@ -123,14 +123,14 @@ static int net_password_set(struct net_context *ctx, int argc, const char **argv
 	}
 
 	if (!new_password) {
-		password_prompt = talloc_asprintf(ctx, "Enter new password for account [%s\\%s]:", 
+		password_prompt = talloc_asprintf(ctx, "Enter new password for account [%s\\%s]:",
 							domain_name, account_name);
 		new_password = getpass(password_prompt);
 	}
 
 	libnetctx = libnet_context_init(ctx->event_ctx, ctx->lp_ctx);
 	if (!libnetctx) {
-		return -1;	
+		return -1;
 	}
 	libnetctx->cred = ctx->credentials;
 
@@ -159,13 +159,13 @@ static const struct net_functable net_password_functable[] = {
 	{NULL, NULL}
 };
 
-int net_password(struct net_context *ctx, int argc, const char **argv) 
+int net_password(struct net_context *ctx, int argc, const char **argv)
 {
 	return net_run_function(ctx, argc, argv, net_password_functable, net_password_usage);
 }
 
 int net_password_usage(struct net_context *ctx, int argc, const char **argv)
 {
-	d_printf("net password <command> [options]\n");
-	return 0;	
+	d_printf("samba-tool password <command> [options]\n");
+	return 0;
 }

@@ -77,7 +77,7 @@ class DrsDeleteObjectTestCase(samba.tests.TestCase):
         self.config_dn = self.info_dc1["configurationNamingContext"][0]
         self.forest_level = int(self.info_dc1["forestFunctionality"][0])
 
-        # we will need DCs DNS names for 'net drs' command
+        # we will need DCs DNS names for 'samba-tool drs' command
         self.dnsname_dc1 = self.info_dc1["dnsHostName"][0]
         self.dnsname_dc2 = self.info_dc2["dnsHostName"][0]
 
@@ -127,13 +127,13 @@ class DrsDeleteObjectTestCase(samba.tests.TestCase):
 
     def _net_drs_replicate(self, DC, fromDC):
         # find out where is net command
-        net_cmd = os.path.abspath("./bin/net")
+        samba_tool_cmd = os.path.abspath("./bin/samba-tool")
         # make command line credentials string
         creds = samba.tests.cmdline_credentials
         cmd_line_auth = "-U%s/%s%%%s" % (creds.get_domain(),
                                          creds.get_username(), creds.get_password())
-        # bin/net drs replicate <Dest_DC_NAME> <Src_DC_NAME> <Naming Context>
-        cmd_line = "%s drs replicate %s %s %s %s" % (net_cmd, DC, fromDC,
+        # bin/samba-tool drs replicate <Dest_DC_NAME> <Src_DC_NAME> <Naming Context>
+        cmd_line = "%s drs replicate %s %s %s %s" % (samba_tool_cmd, DC, fromDC,
                                                      self.domain_dn, cmd_line_auth)
         ret = os.system(cmd_line)
         self.assertEquals(ret, 0, "Replicating %s from %s has failed!" % (DC, fromDC))

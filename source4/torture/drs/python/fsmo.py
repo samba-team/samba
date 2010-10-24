@@ -91,13 +91,13 @@ class DrsFsmoTestCase(samba.tests.TestCase):
         super(DrsFsmoTestCase, self).tearDown()
 
     def _net_fsmo_role_transfer(self, DC, role):
-        # find out where is net command
-        net_cmd = os.path.abspath("./bin/net")
+        # find out where is samba-tool command
+        net_cmd = os.path.abspath("./bin/samba-tool")
         # make command line credentials string
         creds = samba.tests.cmdline_credentials
         cmd_line_auth = "-U%s/%s%%%s" % (creds.get_domain(),
                                          creds.get_username(), creds.get_password())
-        # bin/net fsmo transfer --role=role --host=ldap://DC:389
+        # bin/samba-tool fsmo transfer --role=role --host=ldap://DC:389
         cmd_line = "%s fsmo transfer --role=%s --host=ldap://%s:389 %s" % (net_cmd, role, DC,
                                                                            cmd_line_auth)
         ret = os.system(cmd_line)

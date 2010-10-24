@@ -22,7 +22,7 @@
 */
 
 #include "includes.h"
-#include "utils/net/net.h"
+#include "samba_tool/samba_tool.h"
 #include "lib/ldb/include/ldb.h"
 #include "auth/auth.h"
 #include "param/param.h"
@@ -33,8 +33,8 @@
 
 static int net_gpo_list_all_usage(struct net_context *ctx, int argc, const char **argv)
 {
-	d_printf("Syntax: net gpo listall [options]\n");
-	d_printf("For a list of available options, please type net gpo listall --help\n");
+	d_printf("Syntax: samba-tool gpo listall [options]\n");
+	d_printf("For a list of available options, please type samba-tool gpo listall --help\n");
 	return 0;
 }
 
@@ -85,8 +85,8 @@ static int net_gpo_list_all(struct net_context *ctx, int argc, const char **argv
 
 static int net_gpo_get_gpo_usage(struct net_context *ctx, int argc, const char **argv)
 {
-	d_printf("Syntax: net gpo show <dn> [options]\n");
-	d_printf("For a list of available options, please type net gpo show --help\n");
+	d_printf("Syntax: samba-tool gpo show <dn> [options]\n");
+	d_printf("For a list of available options, please type samba-tool gpo show --help\n");
 	return 0;
 }
 
@@ -145,8 +145,8 @@ static int net_gpo_get_gpo(struct net_context *ctx, int argc, const char **argv)
 
 static int net_gpo_link_get_usage(struct net_context *ctx, int argc, const char **argv)
 {
-	d_printf("Syntax: net gpo getlink <dn> [options]\n");
-	d_printf("For a list of available options, please type net gpo getlink --help\n");
+	d_printf("Syntax: samba-tool gpo getlink <dn> [options]\n");
+	d_printf("For a list of available options, please type samba-tool gpo getlink --help\n");
 	return 0;
 }
 
@@ -199,8 +199,8 @@ static int net_gpo_link_get(struct net_context *ctx, int argc, const char **argv
 
 static int net_gpo_list_usage(struct net_context *ctx, int argc, const char **argv)
 {
-	d_printf("Syntax: net gpo list <username> [options]\n");
-	d_printf("For a list of available options, please type net gpo list --help\n");
+	d_printf("Syntax: samba-tool gpo list <username> [options]\n");
+	d_printf("For a list of available options, please type samba-tool gpo list --help\n");
 	return 0;
 }
 
@@ -302,8 +302,8 @@ static int net_gpo_list(struct net_context *ctx, int argc, const char **argv)
 
 static int net_gpo_link_set_usage(struct net_context *ctx, int argc, const char **argv)
 {
-	d_printf("Syntax: net gpo setlink <container> <gpo> ['disable'] ['enforce'] [options]\n");
-	d_printf("For a list of available options, please type net gpo setlink --help\n");
+	d_printf("Syntax: samba-tool gpo setlink <container> <gpo> ['disable'] ['enforce'] [options]\n");
+	d_printf("For a list of available options, please type samba-tool gpo setlink --help\n");
 	return 0;
 }
 
@@ -352,8 +352,8 @@ static int net_gpo_link_set(struct net_context *ctx, int argc, const char **argv
 
 static int net_gpo_link_del_usage(struct net_context *ctx, int argc, const char **argv)
 {
-	d_printf("Syntax: net gpo dellink <container> <gpo> [options]\n");
-	d_printf("For a list of available options, please type net gpo dellink --help\n");
+	d_printf("Syntax: samba-tool gpo dellink <container> <gpo> [options]\n");
+	d_printf("For a list of available options, please type samba-tool gpo dellink --help\n");
 	return 0;
 }
 
@@ -389,8 +389,8 @@ static int net_gpo_link_del(struct net_context *ctx, int argc, const char **argv
 
 static int net_gpo_inheritance_get_usage(struct net_context *ctx, int argc, const char **argv)
 {
-	d_printf("Syntax: net gpo getinheritance <container> [options]\n");
-	d_printf("For a list of available options, please type net gpo getinheritance --help\n");
+	d_printf("Syntax: samba-tool gpo getinheritance <container> [options]\n");
+	d_printf("For a list of available options, please type samba-tool gpo getinheritance --help\n");
 	return 0;
 }
 
@@ -429,8 +429,8 @@ static int net_gpo_inheritance_get(struct net_context *ctx, int argc, const char
 
 static int net_gpo_inheritance_set_usage(struct net_context *ctx, int argc, const char **argv)
 {
-	d_printf("Syntax: net gpo setinheritance <container> <\"block\"|\"inherit\"> [options]\n");
-	d_printf("For a list of available options, please type net gpo setinheritance --help\n");
+	d_printf("Syntax: samba-tool gpo setinheritance <container> <\"block\"|\"inherit\"> [options]\n");
+	d_printf("For a list of available options, please type samba-tool gpo setinheritance --help\n");
 	return 0;
 }
 
@@ -473,8 +473,8 @@ static int net_gpo_inheritance_set(struct net_context *ctx, int argc, const char
 
 static int net_gpo_fetch_usage(struct net_context *ctx, int argc, const char **argv)
 {
-	d_printf("Syntax: net gpo fetch <container> [options]\n");
-	d_printf("For a list of available options, please type net gpo fetch --help\n");
+	d_printf("Syntax: samba-tool gpo fetch <container> [options]\n");
+	d_printf("For a list of available options, please type samba-tool gpo fetch --help\n");
 	return 0;
 }
 
@@ -514,8 +514,8 @@ static int net_gpo_fetch(struct net_context *ctx, int argc, const char **argv)
 }
 static int net_gpo_create_usage(struct net_context *ctx, int argc, const char **argv)
 {
-	d_printf("Syntax: net gpo create <displayname> [options]\n");
-	d_printf("For a list of available options, please type net gpo create --help\n");
+	d_printf("Syntax: samba-tool gpo create <displayname> [options]\n");
+	d_printf("For a list of available options, please type samba-tool gpo create --help\n");
 	return 0;
 }
 
@@ -548,8 +548,8 @@ static int net_gpo_create(struct net_context *ctx, int argc, const char **argv)
 
 static int net_gpo_set_acl_usage(struct net_context *ctx, int argc, const char **argv)
 {
-	d_printf("Syntax: net gpo setacl <dn> <sddl> [options]\n");
-	d_printf("For a list of available options, please type net gpo setacl --help\n");
+	d_printf("Syntax: samba-tool gpo setacl <dn> <sddl> [options]\n");
+	d_printf("For a list of available options, please type samba-tool gpo setacl --help\n");
 	return 0;
 }
 
@@ -607,8 +607,8 @@ static const struct net_functable net_gpo_functable[] = {
 
 int net_gpo_usage(struct net_context *ctx, int argc, const char **argv)
 {
-	d_printf("Syntax: net gpo <command> [options]\n");
-	d_printf("For available commands, please type net gpo help\n");
+	d_printf("Syntax: samba-tool gpo <command> [options]\n");
+	d_printf("For available commands, please type samba-tool gpo help\n");
 	return 0;
 }
 

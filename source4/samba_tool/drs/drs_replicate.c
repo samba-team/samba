@@ -20,8 +20,8 @@
 */
 
 #include "includes.h"
-#include "utils/net/net.h"
-#include "net_drs.h"
+#include "samba_tool/samba_tool.h"
+#include "samba_tool/drs/drs.h"
 #include "lib/ldb/include/ldb.h"
 #include "dsdb/samdb/samdb.h"
 
@@ -193,7 +193,7 @@ static bool net_drs_replicate_sync_nc(struct net_drs_context *drs_ctx,
 }
 
 /**
- * 'net drs replicate' command entry point
+ * 'samba-tool drs replicate' command entry point
  */
 int net_drs_replicate_cmd(struct net_context *ctx, int argc, const char **argv)
 {
@@ -243,10 +243,10 @@ failed:
 }
 
 /**
- * 'net drs replicate' usage
+ * 'samba-tool drs replicate' usage
  */
 int net_drs_replicate_usage(struct net_context *ctx, int argc, const char **argv)
 {
-	d_printf("net drs replicate <Dest_DC_NAME> <Src_DC_NAME> <Naming Context>\n");
+	d_printf("samba-tool drs replicate <Dest_DC_NAME> <Src_DC_NAME> <Naming Context>\n");
 	return 0;
 }

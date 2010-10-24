@@ -20,8 +20,8 @@
 */
 
 #include "includes.h"
-#include "utils/net/net.h"
-#include "utils/net/drs/net_drs.h"
+#include "samba_tool/samba_tool.h"
+#include "samba_tool/drs/drs.h"
 #include "lib/ldb/include/ldb.h"
 
 
@@ -91,7 +91,7 @@ failed:
 }
 
 /**
- * 'net drs kcc' command entry point
+ * 'samba-tool drs kcc' command entry point
  */
 int net_drs_kcc_cmd(struct net_context *ctx, int argc, const char **argv)
 {
@@ -161,10 +161,10 @@ failed:
 }
 
 /**
- * 'net drs kcc' usage
+ * 'samba-tool drs kcc' usage
  */
 int net_drs_kcc_usage(struct net_context *ctx, int argc, const char **argv)
 {
-	d_printf("net drs kcc <DC_NAME>\n");
+	d_printf("samba-tool drs kcc <DC_NAME>\n");
 	return 0;
 }

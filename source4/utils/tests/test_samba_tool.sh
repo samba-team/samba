@@ -1,5 +1,5 @@
 #!/bin/sh
-# Blackbox tests for net
+# Blackbox tests for samba-tool
 
 SERVER=$1
 USERNAME=$2
@@ -11,7 +11,7 @@ failed=0
 
 samba4bindir="$BUILDDIR/bin"
 smbclient="$samba4bindir/smbclient$EXEEXT"
-net="$samba4bindir/net$EXEEXT"
+samba_tool="$samba4bindir/samba-tool$EXEEXT"
 
 testit() {
 	name="$1"
@@ -33,8 +33,8 @@ testit "Test login with --machine-pass without kerberos" $VALGRIND $smbclient -c
 
 testit "Test login with --machine-pass and kerberos" $VALGRIND $smbclient -c 'ls' $CONFIGURATION //$SERVER/tmp --machine-pass -k yes
 
-testit "time" $VALGRIND $net time $SERVER $CONFIGURATION  -W "$DOMAIN" -U"$USERNAME%$PASSWORD" $@
+testit "time" $VALGRIND $samba_tool time $SERVER $CONFIGURATION  -W "$DOMAIN" -U"$USERNAME%$PASSWORD" $@
 
-# FIXME: testit "domainlevel.show" $VALGRIND $net domainlevel show $CONFIGURATION
+# FIXME: testit "domainlevel.show" $VALGRIND $samba_tool domainlevel show $CONFIGURATION
 
 exit $failed

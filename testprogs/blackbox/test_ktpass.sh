@@ -13,14 +13,14 @@ shift 1
 . `dirname $0`/subunit.sh
 
 
-net="$BUILDDIR/bin/net"
+samba_tool="$BUILDDIR/bin/samba-tool"
 samba4bindir="$BUILDDIR/bin"
 samba4kinit="$samba4bindir/samba4kinit$EXEEXT"
 CONFIG="--configfile=$PREFIX/dc/etc/smb.conf"
 
 TESTUSER="ktpassUser"
 
-testit "newuser" $net newuser $CONFIG $TESTUSER testp@ssw0Rd || failed=`expr $failed + 1`
+testit "newuser" $samba_tool newuser $CONFIG $TESTUSER testp@ssw0Rd || failed=`expr $failed + 1`
 
 KRB5CCNAME="$PREFIX/tmpccache"
 export KRB5CCNAME

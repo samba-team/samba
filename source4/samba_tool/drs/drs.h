@@ -19,8 +19,8 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef NET_DRS_H_
-#define NET_DRS_H_
+#ifndef SAMBA_TOOL_DRS_H_
+#define SAMBA_TOOL_DRS_H_
 
 #include "librpc/gen_ndr/ndr_drsuapi_c.h"
 
@@ -82,6 +82,6 @@ struct net_drs_context {
 };
 
 
-#include "utils/net/drs/net_drs_proto.h"
+#include "samba_tool/drs/drs_proto.h"
 
-#endif /* NET_DRS_H_ */
+#endif /* SAMBA_TOOL_DRS_H_ */

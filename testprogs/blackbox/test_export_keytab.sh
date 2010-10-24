@@ -21,8 +21,8 @@ failed=0
 samba4bindir="$BUILDDIR/bin"
 smbclient="$samba4bindir/smbclient$EXEEXT"
 samba4kinit="$samba4bindir/samba4kinit$EXEEXT"
-net="$samba4bindir/net$EXEEXT"
-newuser="$net newuser"
+samba_tool="$samba4bindir/samba-tool$EXEEXT"
+newuser="$samba_tool newuser"
 
 . `dirname $0`/subunit.sh
 
@@ -46,8 +46,8 @@ USERPASS=testPaSS@01%
 
 testit "create user locally" $VALGRIND $newuser nettestuser $USERPASS $@ || failed=`expr $failed + 1`
 
-testit "export keytab from domain" $VALGRIND $net export keytab $PREFIX/tmpkeytab $@ || failed=`expr $failed + 1`
-testit "export keytab from domain (2nd time)" $VALGRIND $net export keytab $PREFIX/tmpkeytab $@ || failed=`expr $failed + 1`
+testit "export keytab from domain" $VALGRIND $samba_tool export keytab $PREFIX/tmpkeytab $@ || failed=`expr $failed + 1`
+testit "export keytab from domain (2nd time)" $VALGRIND $samba_tool export keytab $PREFIX/tmpkeytab $@ || failed=`expr $failed + 1`
 
 KRB5CCNAME="$PREFIX/tmpuserccache"
 export KRB5CCNAME
@@ -61,7 +61,7 @@ export KRB5CCNAME
 
 testit "kinit with keytab as $USERNAME" $VALGRIND $samba4kinit --keytab=$PREFIX/tmpkeytab --request-pac $USERNAME@$REALM   || failed=`expr $failed + 1`
 
-testit "del user" $VALGRIND $net user delete nettestuser -k yes $@ || failed=`expr $failed + 1`
+testit "del user" $VALGRIND $samba_tool user delete nettestuser -k yes $@ || failed=`expr $failed + 1`
 
 rm -f $PREFIX/tmpadminccache $PREFIX/tmpuserccache $PREFIX/tmpkeytab
 exit $failed

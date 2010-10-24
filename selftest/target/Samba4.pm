@@ -880,11 +880,11 @@ sub provision_member($$$)
 		return undef;
 	}
 
-	my $net = $self->bindir_path("net");
+	my $samba_tool = $self->bindir_path("samba-tool");
 	my $cmd = "";
 	$cmd .= "SOCKET_WRAPPER_DEFAULT_IFACE=\"$ret->{SOCKET_WRAPPER_DEFAULT_IFACE}\" ";
 	$cmd .= "KRB5_CONFIG=\"$ret->{KRB5_CONFIG}\" ";
-	$cmd .= "$net join $ret->{CONFIGURATION} $dcvars->{REALM} member";
+	$cmd .= "$samba_tool join $ret->{CONFIGURATION} $dcvars->{REALM} member";
 	$cmd .= " -U$dcvars->{DC_USERNAME}\%$dcvars->{DC_PASSWORD}";
 
 	unless (system($cmd) == 0) {
@@ -935,11 +935,11 @@ sub provision_rpc_proxy($$$)
 		return undef;
 	}
 
-	my $net = $self->bindir_path("net");
+	my $samba_tool = $self->bindir_path("samba-tool");
 	my $cmd = "";
 	$cmd .= "SOCKET_WRAPPER_DEFAULT_IFACE=\"$ret->{SOCKET_WRAPPER_DEFAULT_IFACE}\" ";
 	$cmd .= "KRB5_CONFIG=\"$ret->{KRB5_CONFIG}\" ";
-	$cmd .= "$net join $ret->{CONFIGURATION} $dcvars->{REALM} member";
+	$cmd .= "$samba_tool join $ret->{CONFIGURATION} $dcvars->{REALM} member";
 	$cmd .= " -U$dcvars->{DC_USERNAME}\%$dcvars->{DC_PASSWORD}";
 
 	unless (system($cmd) == 0) {
@@ -991,11 +991,11 @@ sub provision_vampire_dc($$$)
 		return undef;
 	}
 
-	my $net = $self->bindir_path("net");
+	my $samba_tool = $self->bindir_path("samba-tool");
 	my $cmd = "";
 	$cmd .= "SOCKET_WRAPPER_DEFAULT_IFACE=\"$ret->{SOCKET_WRAPPER_DEFAULT_IFACE}\" ";
 	$cmd .= "KRB5_CONFIG=\"$ret->{KRB5_CONFIG}\" ";
-	$cmd .= "$net vampire $ret->{CONFIGURATION} $dcvars->{REALM} --realm=$dcvars->{REALM}";
+	$cmd .= "$samba_tool vampire $ret->{CONFIGURATION} $dcvars->{REALM} --realm=$dcvars->{REALM}";
 	$cmd .= " -U$dcvars->{DC_USERNAME}\%$dcvars->{DC_PASSWORD}";
 
 	unless (system($cmd) == 0) {
@@ -1169,11 +1169,11 @@ sub provision_rodc($$$)
 		return undef;
 	}
 
-	my $net = $self->bindir_path("net");
+	my $samba_tool = $self->bindir_path("samba-tool");
 	my $cmd = "";
 	$cmd .= "SOCKET_WRAPPER_DEFAULT_IFACE=\"$ret->{SOCKET_WRAPPER_DEFAULT_IFACE}\" ";
 	$cmd .= "KRB5_CONFIG=\"$ret->{KRB5_CONFIG}\" ";
-	$cmd .= "$net join $ret->{CONFIGURATION} $dcvars->{REALM} RODC";
+	$cmd .= "$samba_tool join $ret->{CONFIGURATION} $dcvars->{REALM} RODC";
 	$cmd .= " -U$dcvars->{DC_USERNAME}\%$dcvars->{DC_PASSWORD}";
 	$cmd .= " --server=$dcvars->{DC_SERVER}";
 
@@ -1461,11 +1461,11 @@ sub setup_vampire_dc($$$)
 
 	# force replicated DC to update repsTo/repsFrom
 	# for vampired partitions
-	my $net = $self->bindir_path("net");
+	my $samba_tool = $self->bindir_path("samba-tool");
 	my $cmd = "";
 	$cmd .= "SOCKET_WRAPPER_DEFAULT_IFACE=\"$env->{SOCKET_WRAPPER_DEFAULT_IFACE}\"";
 	$cmd .= " KRB5_CONFIG=\"$env->{KRB5_CONFIG}\"";
-	$cmd .= " $net drs kcc $env->{DC_SERVER}";
+	$cmd .= " $samba_tool drs kcc $env->{DC_SERVER}";
 	$cmd .= " -U$dc_vars->{DC_USERNAME}\%$dc_vars->{DC_PASSWORD}";
 	unless (system($cmd) == 0) {
 		warn("Failed to exec kcc\n$cmd");
@@ -1477,7 +1477,7 @@ sub setup_vampire_dc($$$)
 	my $base_dn = "DC=".join(",DC=", split(/\./, $dc_vars->{REALM}));
 	$cmd = "SOCKET_WRAPPER_DEFAULT_IFACE=\"$env->{SOCKET_WRAPPER_DEFAULT_IFACE}\"";
 	$cmd .= " KRB5_CONFIG=\"$env->{KRB5_CONFIG}\"";
-	$cmd .= " $net drs replicate $env->{DC_SERVER} $env->{VAMPIRE_DC_SERVER}";
+	$cmd .= " $samba_tool drs replicate $env->{DC_SERVER} $env->{VAMPIRE_DC_SERVER}";
 	$cmd .= " -U$dc_vars->{DC_USERNAME}\%$dc_vars->{DC_PASSWORD}";
 	# replicate Configuration NC
 	my $cmd_repl = "$cmd \"CN=Configuration,$base_dn\"";

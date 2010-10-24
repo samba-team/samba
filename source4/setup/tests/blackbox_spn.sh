@@ -13,21 +13,21 @@ shift 1
 . `dirname $0`/../../../testprogs/blackbox/subunit.sh
 
 
-net="./bin/net"
+samba_tool="./bin/samba-tool"
 
 CONFIG="--configfile=$PREFIX/etc/smb.conf"
 
 #creation of two test subjects
-testit "addspn" $net spn add FOO/bar Administrator $CONFIG
-testit "delspn" $net spn delete FOO/bar $CONFIG
-testit "readdspn" $net spn add FOO/bar Administrator $CONFIG
-testit_expect_failure "failexistingspn" $net spn add FOO/bar Guest $CONFIG
-testit "existingspnforce" $net spn add --force FOO/bar Guest  $CONFIG
-testit_expect_failure "faildelspnnotgooduser" $net spn delete FOO/bar krbtgt $CONFIG
-testit_expect_failure "faildelspnmoreoneuser" $net spn delete FOO/bar $CONFIG
-testit "deluserspn" $net spn delete FOO/bar Guest $CONFIG
-testit "dellastuserspn" $net spn delete FOO/bar $CONFIG
-testit_expect_failure "faildelspn" $net spn delete FOO/bar $CONFIG
-testit_expect_failure "failaddspn" $net spn add FOO/bar nonexistinguser $CONFIG
+testit "addspn" $samba_tool spn add FOO/bar Administrator $CONFIG
+testit "delspn" $samba_tool spn delete FOO/bar $CONFIG
+testit "readdspn" $samba_tool spn add FOO/bar Administrator $CONFIG
+testit_expect_failure "failexistingspn" $samba_tool spn add FOO/bar Guest $CONFIG
+testit "existingspnforce" $samba_tool spn add --force FOO/bar Guest  $CONFIG
+testit_expect_failure "faildelspnnotgooduser" $samba_tool spn delete FOO/bar krbtgt $CONFIG
+testit_expect_failure "faildelspnmoreoneuser" $samba_tool spn delete FOO/bar $CONFIG
+testit "deluserspn" $samba_tool spn delete FOO/bar Guest $CONFIG
+testit "dellastuserspn" $samba_tool spn delete FOO/bar $CONFIG
+testit_expect_failure "faildelspn" $samba_tool spn delete FOO/bar $CONFIG
+testit_expect_failure "failaddspn" $samba_tool spn add FOO/bar nonexistinguser $CONFIG
 
 exit $failed

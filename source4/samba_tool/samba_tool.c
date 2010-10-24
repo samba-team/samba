@@ -1,6 +1,6 @@
-/* 
-   Samba Unix/Linux SMB client library 
-   Distributed SMB/CIFS Server Management Utility 
+/*
+   Samba Unix/Linux SMB client library
+   Distributed SMB/CIFS Server Management Utility
    Copyright (C) 2001 Steve French  (sfrench@us.ibm.com)
    Copyright (C) 2001 Jim McDonough (jmcd@us.ibm.com)
    Copyright (C) 2001 Andrew Tridgell (tridge@samba.org)
@@ -19,16 +19,16 @@
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
- 
+
 /*****************************************************/
 /*                                                   */
 /*   Distributed SMB/CIFS Server Management Utility  */
@@ -43,7 +43,7 @@
 
 #include <Python.h>
 #include "includes.h"
-#include "utils/net/net.h"
+#include "samba_tool/samba_tool.h"
 #include "lib/cmdline/popt_common.h"
 #include "lib/ldb/include/ldb.h"
 #include "librpc/rpc/dcerpc.h"
@@ -51,7 +51,7 @@
 #include "lib/events/events.h"
 #include "auth/credentials/credentials.h"
 #include "scripting/python/modules.h"
-#include "utils/net/drs/net_drs.h"
+#include "samba_tool/drs/drs.h"
 
 /* There's no Py_ssize_t in 2.4, apparently */
 #if PY_MAJOR_VERSION == 2 && PY_MINOR_VERSION < 5
@@ -89,7 +89,7 @@ static int py_call_with_string_args(PyObject *self, const char *method, int argc
 	if (py_method == NULL) {
 		PyErr_Print();
 		return 1;
-	}	
+	}
 
 	ret = PyObject_CallObject(py_method, args);
 
@@ -117,7 +117,7 @@ static PyObject *py_commands(void)
 	if (netcmd_module == NULL) {
 		PyErr_Print();
 		return NULL;
-	}	
+	}
 
 	py_cmds = PyObject_GetAttrString(netcmd_module, "commands");
 	if (py_cmds == NULL) {
@@ -135,11 +135,11 @@ static PyObject *py_commands(void)
 
 /*
   run a function from a function table. If not found then
-  call the specified usage function 
+  call the specified usage function
 */
 int net_run_function(struct net_context *ctx,
 			int argc, const char **argv,
-			const struct net_functable *functable, 
+			const struct net_functable *functable,
 			int (*usage_fn)(struct net_context *ctx, int argc, const char **argv))
 {
 	int i;
@@ -184,7 +184,7 @@ int net_run_usage(struct net_context *ctx,
 
 	py_cmd = PyDict_GetItemString(py_cmds, argv[0]);
 	if (py_cmd != NULL) {
-		return py_call_with_string_args(py_cmd, "usage", argc-1, 
+		return py_call_with_string_args(py_cmd, "usage", argc-1,
                                                 argv+1);
 	}
 
@@ -247,7 +247,7 @@ static int net_help_python(void)
 			return 1;
 		}
 		if (!PyString_Check(py_desc)) {
-			d_printf("Command description for %s not a string\n", 
+			d_printf("Command description for %s not a string\n",
 				name);
 			return 1;
 		}
@@ -272,7 +272,7 @@ int net_help(struct net_context *ctx, const struct net_functable *ftable)
 static int net_usage(struct net_context *ctx, int argc, const char **argv)
 {
 	d_printf("Usage:\n");
-	d_printf("net <command> [options]\n");
+	d_printf("samba-tool <command> [options]\n");
 	net_help(ctx, net_functable);
 	return -1;
 }
@@ -329,13 +329,13 @@ static int binary_net(int argc, const char **argv)
 		}
 	}
 
-	pc = poptGetContext("net", argc, (const char **) argv, long_options, 
+	pc = poptGetContext("net", argc, (const char **) argv, long_options,
 			    POPT_CONTEXT_KEEP_FIRST);
 
 	while((opt = poptGetNextOpt(pc)) != -1) {
 		switch (opt) {
 		default:
-			d_printf("Invalid option %s: %s\n", 
+			d_printf("Invalid option %s: %s\n",
 				 poptBadOption(pc, 0), poptStrerror(opt));
 			net_usage(ctx, argc, argv);
 			exit(1);

@@ -1,6 +1,6 @@
-/* 
-   Samba Unix/Linux SMB client library 
-   Distributed SMB/CIFS Server Management Utility 
+/*
+   Samba Unix/Linux SMB client library
+   Distributed SMB/CIFS Server Management Utility
 
    Copyright (C) 2004 Stefan Metzmacher <metze@samba.org>
    Copyright (C) 2005 Andrew Bartlett <abartlet@samba.org>
@@ -9,18 +9,18 @@
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include "includes.h"
-#include "utils/net/net.h"
+#include "samba_tool/samba_tool.h"
 #include "libnet/libnet.h"
 #include "librpc/gen_ndr/samr.h"
 #include "auth/auth.h"
@@ -33,7 +33,7 @@ static const struct net_functable net_samdump_functable[] = {
 	{NULL, NULL, NULL, NULL}
 };
 
-int net_samdump(struct net_context *ctx, int argc, const char **argv) 
+int net_samdump(struct net_context *ctx, int argc, const char **argv)
 {
 	NTSTATUS status;
 	struct libnet_context *libnetctx;
@@ -45,14 +45,14 @@ int net_samdump(struct net_context *ctx, int argc, const char **argv)
 		break;
 	case 1:
 	default:
-		rc = net_run_function(ctx, argc, argv, net_samdump_functable, 
+		rc = net_run_function(ctx, argc, argv, net_samdump_functable,
 				      net_samdump_usage);
 		return rc;
 	}
 
 	libnetctx = libnet_context_init(ctx->event_ctx, ctx->lp_ctx);
 	if (!libnetctx) {
-		return -1;	
+		return -1;
 	}
 	libnetctx->cred = ctx->credentials;
 
@@ -75,17 +75,17 @@ int net_samdump(struct net_context *ctx, int argc, const char **argv)
 
 int net_samdump_usage(struct net_context *ctx, int argc, const char **argv)
 {
-	d_printf("net samdump\n");
-	return 0;	
+	d_printf("samba-tool samdump\n");
+	return 0;
 }
 
 int net_samdump_help(struct net_context *ctx, int argc, const char **argv)
 {
 	d_printf("Dumps the sam of the domain we are joined to.\n");
-	return 0;	
+	return 0;
 }
 
-int net_samsync_ldb(struct net_context *ctx, int argc, const char **argv) 
+int net_samsync_ldb(struct net_context *ctx, int argc, const char **argv)
 {
 	NTSTATUS status;
 	struct libnet_context *libnetctx;
@@ -93,7 +93,7 @@ int net_samsync_ldb(struct net_context *ctx, int argc, const char **argv)
 
 	libnetctx = libnet_context_init(ctx->event_ctx, ctx->lp_ctx);
 	if (!libnetctx) {
-		return -1;	
+		return -1;
 	}
 	libnetctx->cred = ctx->credentials;
 
@@ -119,12 +119,12 @@ int net_samsync_ldb(struct net_context *ctx, int argc, const char **argv)
 
 int net_samsync_ldb_usage(struct net_context *ctx, int argc, const char **argv)
 {
-	d_printf("net samsync\n");
-	return 0;	
+	d_printf("samba-tool samsync\n");
+	return 0;
 }
 
 int net_samsync_ldb_help(struct net_context *ctx, int argc, const char **argv)
 {
 	d_printf("Synchronise into the local ldb the SAM of a domain.\n");
-	return 0;	
+	return 0;
 }

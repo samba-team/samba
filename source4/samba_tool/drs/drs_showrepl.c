@@ -20,8 +20,8 @@
 */
 
 #include "includes.h"
-#include "utils/net/net.h"
-#include "net_drs.h"
+#include "samba_tool/samba_tool.h"
+#include "samba_tool/drs/drs.h"
 #include "lib/ldb/include/ldb.h"
 #include "dsdb/samdb/samdb.h"
 #include "lib/util/util_ldb.h"
@@ -539,7 +539,7 @@ static bool net_drs_showrepl_print_link_failures(struct net_drs_context *drs_ctx
 }
 
 /**
- * 'net drs showrepl' command entry point
+ * 'samba-tool drs showrepl' command entry point
  */
 int net_drs_showrepl_cmd(struct net_context *ctx, int argc, const char **argv)
 {
@@ -596,10 +596,10 @@ failed:
 }
 
 /**
- * 'net drs showrepl' usage
+ * 'samba-tool drs showrepl' usage
  */
 int net_drs_showrepl_usage(struct net_context *ctx, int argc, const char **argv)
 {
-	d_printf("net drs showrepl <DC_NAME>\n");
+	d_printf("samba-tool drs showrepl <DC_NAME>\n");
 	return 0;
 }

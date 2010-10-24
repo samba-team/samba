@@ -20,8 +20,8 @@
 */
 
 #include "includes.h"
-#include "utils/net/net.h"
-#include "utils/net/drs/net_drs.h"
+#include "samba_tool/samba_tool.h"
+#include "samba_tool/drs/drs.h"
 
 
 #define DEFINE_FLAG(_flag, _win_name) {_flag, #_flag, _win_name}
@@ -131,6 +131,6 @@ int net_drs_bind_cmd(struct net_context *ctx, int argc, const char **argv)
 
 int net_drs_bind_usage(struct net_context *ctx, int argc, const char **argv)
 {
-	d_printf("net drs bind <DC_NAME>\n");
+	d_printf("samba-tool drs bind <DC_NAME>\n");
 	return 0;
 }

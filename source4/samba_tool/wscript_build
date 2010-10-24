@@ -1,0 +1,17 @@
+#!/usr/bin/env python
+
+bld.SAMBA_MODULE('samba_tool_drs',
+	source='drs/drs.c drs/drs_bind.c drs/drs_kcc.c drs/drs_replicate.c drs/drs_showrepl.c',
+	autoproto='drs/drs_proto.h',
+	subsystem='samba-tool',
+	deps='LIBCLI_DRSUAPI ldb LDBSAMBA',
+	internal_module=True
+	)
+
+
+bld.SAMBA_BINARY('samba-tool',
+	source='samba_tool.c password.c vampire.c gpo.c',
+	autoproto='proto.h',
+	deps='samba-hostconfig samba-util samba-net popt POPT_SAMBA POPT_CREDENTIALS samba_tool_drs policy auth',
+	pyembed=True
+	)
