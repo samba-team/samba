@@ -82,6 +82,14 @@ def build(bld):
                           private_library=private_library,
                           manpages='talloc.3')
 
+    if not bld.CONFIG_SET('USING_SYSTEM_PYTALLOC_UTIL'):
+
+        bld.SAMBA_SUBSYSTEM('PYTALLOC',
+            source='pytalloc.c',
+            public_deps='EXT_LIB_PYTHON talloc',
+            pyext=True,
+            )
+
     if not getattr(bld.env, '_SAMBA_BUILD_', 0) == 4:
         # s4 already has the talloc testsuite builtin to smbtorture
         bld.SAMBA_BINARY('talloc_testsuite',

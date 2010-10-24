@@ -16,13 +16,6 @@ bld.SAMBA_SUBSYSTEM('LIBPYTHON',
 	)
 
 
-bld.SAMBA_SUBSYSTEM('PYTALLOC',
-	source='../../../lib/talloc/pytalloc.c',
-	public_deps='EXT_LIB_PYTHON talloc',
-	pyext=True,
-	)
-
-
 bld.SAMBA_PYTHON('python_uuid',
 	source='uuidmodule.c',
 	deps='ndr',
