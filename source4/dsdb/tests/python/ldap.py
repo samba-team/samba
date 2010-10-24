@@ -591,14 +591,9 @@ class BasicTests(unittest.TestCase):
 
         self.delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
 
-    def test_multi_valued_attributes(self):
-        """Test multi-valued attributes"""
-        print "Test multi-valued attributes"""
-
-# TODO: In this test I added some special tests where I got very unusual
-# results back from a real AD. s4 doesn't match them and I've no idea how to
-# implement those error cases (maybe there exists a special trigger for
-# "description" attributes which handle them)
+    def test_description_attribute(self):
+        """Test description attribute"""
+        print "Test description attribute"""
 
         self.ldb.add({
             "dn": "cn=ldaptestgroup,cn=users," + self.base_dn,
@@ -606,12 +601,29 @@ class BasicTests(unittest.TestCase):
             "objectclass": "group",
             "description": "desc1"})
 
+        res = ldb.search("cn=ldaptestgroup,cn=users," + self.base_dn,
+                         scope=SCOPE_BASE, attrs=["description"])
+        self.assertTrue(len(res) == 1)
+        self.assertTrue("description" in res[0])
+        self.assertTrue(len(res[0]["description"]) == 1)
+        self.assertEquals(res[0]["description"][0], "desc1")
+
         self.delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
 
         self.ldb.add({
             "dn": "cn=ldaptestgroup,cn=users," + self.base_dn,
             "objectclass": "group",
             "description": ["desc1", "desc2"]})
+
+        res = ldb.search("cn=ldaptestgroup,cn=users," + self.base_dn,
+                         scope=SCOPE_BASE, attrs=["description"])
+        self.assertTrue(len(res) == 1)
+        self.assertTrue("description" in res[0])
+        self.assertTrue(len(res[0]["description"]) == 2)
+        self.assertTrue(res[0]["description"][0] == "desc1" or
+                        res[0]["description"][1] == "desc1")
+        self.assertTrue(res[0]["description"][0] == "desc2" or
+                        res[0]["description"][1] == "desc2")
 
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
@@ -625,19 +637,58 @@ class BasicTests(unittest.TestCase):
 
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+        m["description"] = MessageElement(["desc1","desc2"], FLAG_MOD_DELETE,
+          "description")
+        ldb.modify(m)
+
+        self.delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+
+        self.ldb.add({
+            "dn": "cn=ldaptestgroup,cn=users," + self.base_dn,
+            "objectclass": "group" })
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
         m["description"] = MessageElement("desc1", FLAG_MOD_REPLACE,
           "description")
         ldb.modify(m)
 
-#        m = Message()
-#        m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
-#        m["description"] = MessageElement("desc3", FLAG_MOD_ADD,
-#          "description")
-#        try:
-#            ldb.modify(m)
-#            self.fail()
-#        except LdbError, (num, _):
-#            self.assertEquals(num, ERR_ATTRIBUTE_OR_VALUE_EXISTS)
+        res = ldb.search("cn=ldaptestgroup,cn=users," + self.base_dn,
+                         scope=SCOPE_BASE, attrs=["description"])
+        self.assertTrue(len(res) == 1)
+        self.assertTrue("description" in res[0])
+        self.assertTrue(len(res[0]["description"]) == 1)
+        self.assertEquals(res[0]["description"][0], "desc1")
+
+        self.delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+
+        self.ldb.add({
+            "dn": "cn=ldaptestgroup,cn=users," + self.base_dn,
+            "objectclass": "group",
+            "description": ["desc1", "desc2"]})
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+        m["description"] = MessageElement("desc1", FLAG_MOD_REPLACE,
+          "description")
+        ldb.modify(m)
+
+        res = ldb.search("cn=ldaptestgroup,cn=users," + self.base_dn,
+                         scope=SCOPE_BASE, attrs=["description"])
+        self.assertTrue(len(res) == 1)
+        self.assertTrue("description" in res[0])
+        self.assertTrue(len(res[0]["description"]) == 1)
+        self.assertEquals(res[0]["description"][0], "desc1")
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+        m["description"] = MessageElement("desc3", FLAG_MOD_ADD,
+          "description")
+        try:
+            ldb.modify(m)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_ATTRIBUTE_OR_VALUE_EXISTS)
 
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
@@ -654,6 +705,10 @@ class BasicTests(unittest.TestCase):
         m["description"] = MessageElement("desc1", FLAG_MOD_DELETE,
           "description")
         ldb.modify(m)
+        res = ldb.search("cn=ldaptestgroup,cn=users," + self.base_dn,
+                         scope=SCOPE_BASE, attrs=["description"])
+        self.assertTrue(len(res) == 1)
+        self.assertFalse("description" in res[0])
 
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
@@ -665,21 +720,28 @@ class BasicTests(unittest.TestCase):
         except LdbError, (num, _):
             self.assertEquals(num, ERR_ATTRIBUTE_OR_VALUE_EXISTS)
 
-#        m = Message()
-#        m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
-#        m["description"] = MessageElement(["desc3", "desc4"], FLAG_MOD_ADD,
-#          "description")
-#        try:
-#            ldb.modify(m)
-#            self.fail()
-#        except LdbError, (num, _):
-#            self.assertEquals(num, ERR_ATTRIBUTE_OR_VALUE_EXISTS)
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+        m["description"] = MessageElement(["desc3", "desc4"], FLAG_MOD_ADD,
+          "description")
+        try:
+            ldb.modify(m)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_ATTRIBUTE_OR_VALUE_EXISTS)
 
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
-        m["description"] = MessageElement("desc3", FLAG_MOD_ADD,
+        m["description"] = MessageElement("desc1", FLAG_MOD_ADD,
           "description")
         ldb.modify(m)
+
+        res = ldb.search("cn=ldaptestgroup,cn=users," + self.base_dn,
+                         scope=SCOPE_BASE, attrs=["description"])
+        self.assertTrue(len(res) == 1)
+        self.assertTrue("description" in res[0])
+        self.assertTrue(len(res[0]["description"]) == 1)
+        self.assertEquals(res[0]["description"][0], "desc1")
 
         self.delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
 
