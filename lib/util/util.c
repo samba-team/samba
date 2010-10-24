@@ -326,20 +326,19 @@ void print_asc(int level, const uint8_t *buf,int len)
 }
 
 /**
- * Write dump of binary data to the log file.
- *
- * The data is only written if the log level is at least level.
+ * Write dump of binary data to a callback
  */
-static void _dump_data(int level, const uint8_t *buf, int len,
-		       bool omit_zero_bytes)
+void dump_data_cb(const uint8_t *buf, int len,
+		  bool omit_zero_bytes,
+		  void (*cb)(const char *buf, void *private_data),
+		  void *private_data)
 {
 	int i=0;
 	static const uint8_t empty[16] = { 0, };
 	bool skipped = false;
+	char tmp[16];
 
 	if (len<=0) return;
-
-	if (!DEBUGLVL(level)) return;
 
 	for (i=0;i<len;) {
 
@@ -354,23 +353,30 @@ static void _dump_data(int level, const uint8_t *buf, int len,
 			}
 
 			if (i<len)  {
-				DEBUGADD(level,("[%04X] ",i));
+				snprintf(tmp, sizeof(tmp), "[%04X] ", i);
+				cb(tmp, private_data);
 			}
 		}
 
-		DEBUGADD(level,("%02X ",(int)buf[i]));
+		snprintf(tmp, sizeof(tmp), "%02X ", (int)buf[i]);
+		cb(tmp, private_data);
 		i++;
-		if (i%8 == 0) DEBUGADD(level,("  "));
+		if (i%8 == 0) {
+			cb("  ", private_data);
+		}
 		if (i%16 == 0) {
 
-			print_asc(level,&buf[i-16],8); DEBUGADD(level,(" "));
-			print_asc(level,&buf[i-8],8); DEBUGADD(level,("\n"));
+			print_asc_cb(&buf[i-16], 8, cb, private_data);
+			cb(" ", private_data);
+			print_asc_cb(&buf[i-8], 8, cb, private_data);
+			cb("\n", private_data);
 
 			if ((omit_zero_bytes == true) &&
 			    (len > i+16) &&
 			    (memcmp(&buf[i], &empty, 16) == 0)) {
 				if (!skipped) {
-					DEBUGADD(level,("skipping zero buffer bytes\n"));
+					cb("skipping zero buffer bytes\n",
+					   private_data);
 					skipped = true;
 				}
 			}
@@ -380,14 +386,21 @@ static void _dump_data(int level, const uint8_t *buf, int len,
 	if (i%16) {
 		int n;
 		n = 16 - (i%16);
-		DEBUGADD(level,(" "));
-		if (n>8) DEBUGADD(level,(" "));
-		while (n--) DEBUGADD(level,("   "));
+		cb(" ", private_data);
+		if (n>8) {
+			cb(" ", private_data);
+		}
+		while (n--) {
+			cb("   ", private_data);
+		}
 		n = MIN(8,i%16);
-		print_asc(level,&buf[i-(i%16)],n); DEBUGADD(level,( " " ));
+		print_asc_cb(&buf[i-(i%16)], n, cb, private_data);
+		cb(" ", private_data);
 		n = (i%16) - n;
-		if (n>0) print_asc(level,&buf[i-n],n);
-		DEBUGADD(level,("\n"));
+		if (n>0) {
+			print_asc_cb(&buf[i-n], n, cb, private_data);
+		}
+		cb("\n", private_data);
 	}
 
 }
@@ -399,7 +412,10 @@ static void _dump_data(int level, const uint8_t *buf, int len,
  */
 _PUBLIC_ void dump_data(int level, const uint8_t *buf, int len)
 {
-	_dump_data(level, buf, len, false);
+	if (!DEBUGLVL(level)) {
+		return;
+	}
+	dump_data_cb(buf, len, false, debugadd_cb, &level);
 }
 
 /**
@@ -410,7 +426,10 @@ _PUBLIC_ void dump_data(int level, const uint8_t *buf, int len)
  */
 _PUBLIC_ void dump_data_skip_zeros(int level, const uint8_t *buf, int len)
 {
-	_dump_data(level, buf, len, true);
+	if (!DEBUGLVL(level)) {
+		return;
+	}
+	dump_data_cb(buf, len, true, debugadd_cb, &level);
 }
 
 

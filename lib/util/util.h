@@ -674,6 +674,14 @@ _PUBLIC_ bool process_exists_by_pid(pid_t pid);
 _PUBLIC_ bool fcntl_lock(int fd, int op, off_t offset, off_t count, int type);
 
 /**
+ * Write dump of binary data to a callback
+ */
+void dump_data_cb(const uint8_t *buf, int len,
+		  bool omit_zero_bytes,
+		  void (*cb)(const char *buf, void *private_data),
+		  void *private_data);
+
+/**
  * Write dump of binary data to the log file.
  *
  * The data is only written if the log level is at least level.
