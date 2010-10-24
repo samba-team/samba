@@ -11,6 +11,6 @@ bld.SAMBA_LIBRARY('policy',
 
 bld.SAMBA_PYTHON('py_policy',
 	source='pypolicy.c',
-	public_deps='policy PYTALLOC',
+	public_deps='policy pytalloc-util',
 	realname='samba/policy.so'
 	)

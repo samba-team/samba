@@ -48,7 +48,7 @@ bld.SAMBA_SUBSYSTEM('auth_sam_reply',
 bld.SAMBA_PYTHON('pyauth',
 	source='pyauth.c',
 	public_deps='auth_system_session',
-	deps='SAMDB PYTALLOC pyparam_util',
+	deps='SAMDB pytalloc-util pyparam_util',
 	realname='samba/auth.so'
 	)
 

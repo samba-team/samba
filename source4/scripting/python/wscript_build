@@ -2,7 +2,7 @@
 
 bld.SAMBA_LIBRARY('samba_python',
 	source=[],
-	deps='LIBPYTHON PYTALLOC pyrpc_util',
+	deps='LIBPYTHON pytalloc-util pyrpc_util',
 	grouping_library=True,
 	private_library=True,
 	pyext=True)
@@ -26,7 +26,7 @@ bld.SAMBA_PYTHON('python_uuid',
 
 bld.SAMBA_PYTHON('python_glue',
 	source='pyglue.c',
-	deps='pyparam_util samba-util netif PYTALLOC',
+	deps='pyparam_util samba-util netif pytalloc-util',
 	realname='samba/_glue.so'
 	)
 

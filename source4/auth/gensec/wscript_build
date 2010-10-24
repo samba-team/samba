@@ -57,7 +57,7 @@ bld.SAMBA_MODULE('gensec_schannel',
 
 bld.SAMBA_PYTHON('pygensec',
 	source='pygensec.c',
-	deps='gensec PYTALLOC pyparam_util',
+	deps='gensec pytalloc-util pyparam_util',
 	realname='samba/gensec.so'
 	)
 
