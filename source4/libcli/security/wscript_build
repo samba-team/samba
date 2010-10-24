@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 
-bld.SAMBA_LIBRARY('libsecurity_session',
+bld.SAMBA_LIBRARY('security_session',
 	source='session.c',
 	autoproto='session_proto.h',
-	public_deps='libsecurity',
+	public_deps='security',
 	private_library=True
 	)
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-bld.SAMBA_LIBRARY('libnetif',
+bld.SAMBA_LIBRARY('netif',
     source='interface.c netif.c',
     autoproto='netif_proto.h',
     deps='libsamba-util',
@@ -10,7 +10,7 @@ bld.SAMBA_LIBRARY('libnetif',
 bld.SAMBA_MODULE('socket_ip',
     source='socket_ip.c',
     subsystem='samba_socket',
-    deps='libsamba-errors',
+    deps='errors',
     internal_module=True
     )
 

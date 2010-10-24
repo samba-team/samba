@@ -11,7 +11,7 @@ bld.SAMBA_MODULE('ldb_wins_ldb',
 	source='wins/wins_ldb.c',
 	subsystem='ldb',
 	init_function='LDB_MODULE(wins_ldb)',
-	deps='ldb libnetif libsamba-hostconfig libsamba-util',
+	deps='ldb netif libsamba-hostconfig libsamba-util',
 	internal_module=False,
 	)
 

@@ -249,7 +249,7 @@ bld.SAMBA_SUBSYSTEM('NDR_INITSHUTDOWN',
 
 bld.SAMBA_SUBSYSTEM('NDR_COMPRESSION',
 	source='../librpc/ndr/ndr_compression.c',
-	public_deps='libsamba-errors LIBNDR',
+	public_deps='errors LIBNDR',
 	deps='ZLIB LZXPRESS'
 	)
 

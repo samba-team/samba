@@ -60,7 +60,7 @@ bld.SAMBA_SUBSYSTEM('pyparam_util',
 	pyext=True,
 	)
 
-bld.SAMBA_LIBRARY('libshares',
+bld.SAMBA_LIBRARY('shares',
                   source=[],
                   deps='share share_classic share_ldb',
                   grouping_library=True,
