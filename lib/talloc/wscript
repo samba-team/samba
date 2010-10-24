@@ -86,7 +86,7 @@ def build(bld):
 
         bld.SAMBA_SUBSYSTEM('PYTALLOC',
             source='pytalloc.c',
-            public_deps='EXT_LIB_PYTHON talloc',
+            public_deps='talloc',
             pyext=True,
             )
 
