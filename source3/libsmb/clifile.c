@@ -4246,6 +4246,7 @@ static bool parse_ea_blob(TALLOC_CTX *ctx, const uint8_t *rdata,
 	if (ea_size == 0) {
 		/* No EA's present. */
 		*pnum_eas = 0;
+		*pea_list = NULL;
 		return true;
 	}
 
@@ -4268,6 +4269,7 @@ static bool parse_ea_blob(TALLOC_CTX *ctx, const uint8_t *rdata,
 
 	if (num_eas == 0) {
 		*pnum_eas = 0;
+		*pea_list = NULL;
 		return true;
 	}
 
