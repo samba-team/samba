@@ -4206,49 +4206,6 @@ bool cli_set_ea_fnum(struct cli_state *cli, uint16_t fnum, const char *ea_name, 
  Get an extended attribute list utility fn.
 *********************************************************/
 
-static bool parse_ea_blob(TALLOC_CTX *mem_ctx, const uint8_t *rdata,
-			  size_t rdata_len,
-			  size_t *pnum_eas, struct ea_struct **pea_list);
-
-static bool cli_get_ea_list(struct cli_state *cli,
-		uint16_t setup, char *param, unsigned int param_len,
-		TALLOC_CTX *ctx,
-		size_t *pnum_eas,
-		struct ea_struct **pea_list)
-{
-	unsigned int data_len = 0;
-	unsigned int rparam_len, rdata_len;
-	char *rparam=NULL, *rdata=NULL;
-	bool ret = False;
-
-	*pnum_eas = 0;
-	if (pea_list) {
-	 	*pea_list = NULL;
-	}
-
-	if (!cli_send_trans(cli, SMBtrans2,
-			NULL,           /* Name */
-			-1, 0,          /* fid, flags */
-			&setup, 1, 0,   /* setup, length, max */
-			param, param_len, 10, /* param, length, max */
-			NULL, data_len, cli->max_xmit /* data, length, max */
-				)) {
-		return False;
-	}
-
-	if (!cli_receive_trans(cli, SMBtrans2,
-			&rparam, &rparam_len,
-			&rdata, &rdata_len)) {
-		return False;
-	}
-
-	ret = parse_ea_blob(ctx, (uint8_t *)rdata, rdata_len, pnum_eas,
-			    pea_list);
-	SAFE_FREE(rparam);
-	SAFE_FREE(rdata);
-	return ret;
-}
-
 static bool parse_ea_blob(TALLOC_CTX *ctx, const uint8_t *rdata,
 			  size_t rdata_len,
 			  size_t *pnum_eas, struct ea_struct **pea_list)
@@ -4447,25 +4404,6 @@ NTSTATUS cli_get_ea_list_path(struct cli_state *cli, const char *path,
 		cli_set_error(cli, status);
 	}
 	return status;
-}
-
-/*********************************************************
- Get an extended attribute list from an fnum.
-*********************************************************/
-
-bool cli_get_ea_list_fnum(struct cli_state *cli, uint16_t fnum,
-		TALLOC_CTX *ctx,
-		size_t *pnum_eas,
-		struct ea_struct **pea_list)
-{
-	uint16_t setup = TRANSACT2_QFILEINFO;
-	char param[6];
-
-	memset(param, 0, 6);
-	SSVAL(param,0,fnum);
-	SSVAL(param,2,SMB_INFO_SET_EA);
-
-	return cli_get_ea_list(cli, setup, param, 6, ctx, pnum_eas, pea_list);
 }
 
 /****************************************************************************
