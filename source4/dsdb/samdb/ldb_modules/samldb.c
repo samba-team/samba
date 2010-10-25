@@ -298,12 +298,13 @@ found:
 		return ldb_operr(ldb);
 	}
 
-	ret = ldb_msg_add_fmt(ac->msg, "sAMAccountName", "krbtgt_%u", krbtgt_number);
+	ret = ldb_msg_add_fmt(ac->msg, "sAMAccountName", "krbtgt_%u",
+			      krbtgt_number);
 	if (ret != LDB_SUCCESS) {
 		return ldb_operr(ldb);
 	}
 
-	newpass = generate_random_password(ac, 128, 255);
+	newpass = generate_random_password(ac->msg, 128, 255);
 	if (newpass == NULL) {
 		return ldb_operr(ldb);
 	}
@@ -563,8 +564,8 @@ static int samldb_fill_object(struct samldb_ctx *ac)
 		if (!ldb_msg_find_element(ac->msg, "lDAPDisplayName")) {
 			/* the RDN has prefix "CN" */
 			ret = ldb_msg_add_string(ac->msg, "lDAPDisplayName",
-				samdb_cn_to_lDAPDisplayName(ac,
-					(const char *) rdn_value->data));
+				samdb_cn_to_lDAPDisplayName(ac->msg,
+							    (const char *) rdn_value->data));
 			if (ret != LDB_SUCCESS) {
 				ldb_oom(ldb);
 				return ret;
@@ -605,7 +606,7 @@ static int samldb_fill_object(struct samldb_ctx *ac)
 			ac->dn = ac->msg->dn;
 
 			ret = ldb_msg_add_string(ac->msg, "defaultObjectCategory",
-						 ldb_dn_alloc_linearized(ac, ac->dn));
+						 ldb_dn_alloc_linearized(ac->msg, ac->dn));
 			if (ret != LDB_SUCCESS) {
 				ldb_oom(ldb);
 				return ret;
@@ -627,7 +628,7 @@ static int samldb_fill_object(struct samldb_ctx *ac)
 			/* the RDN has prefix "CN" */
 			ret = ldb_msg_add_string(ac->msg, "lDAPDisplayName",
 				samdb_cn_to_lDAPDisplayName(ac->msg,
-					(const char *) rdn_value->data));
+							    (const char *) rdn_value->data));
 			if (ret != LDB_SUCCESS) {
 				ldb_oom(ldb);
 				return ret;
@@ -1055,7 +1056,7 @@ static int samldb_prim_group_change(struct samldb_ctx *ac)
 		msg = talloc_zero(ac, struct ldb_message);
 		msg->dn = new_prim_group_dn;
 
-		ret = samdb_msg_add_delval(ldb, ac, msg, "member",
+		ret = samdb_msg_add_delval(ldb, msg, msg, "member",
 					   ldb_dn_get_linearized(ac->msg->dn));
 		if (ret != LDB_SUCCESS) {
 			return ret;
@@ -1070,7 +1071,7 @@ static int samldb_prim_group_change(struct samldb_ctx *ac)
 		msg = talloc_zero(ac, struct ldb_message);
 		msg->dn = prev_prim_group_dn;
 
-		ret = samdb_msg_add_addval(ldb, ac, msg, "member",
+		ret = samdb_msg_add_addval(ldb, msg, msg, "member",
 					   ldb_dn_get_linearized(ac->msg->dn));
 		if (ret != LDB_SUCCESS) {
 			return ret;
