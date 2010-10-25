@@ -24,6 +24,7 @@ tasks = {
                   ("install", "make install", "text/plain"),
                   ("test", "TDB_NO_FSYNC=1 make test FAIL_IMMEDIATELY=1", "text/plain") ],
 
+    # We have 'test' before 'install' because, 'test' should work without 'install'
     "source4" : [ ("configure", "./configure.developer ${PREFIX}", "text/plain"),
                   ("make", "make -j", "text/plain"),
                   ("test", "TDB_NO_FSYNC=1 make test FAIL_IMMEDIATELY=1", "text/plain"),
@@ -34,6 +35,7 @@ tasks = {
                           ("install", "make install", "text/plain"),
                           ("test", "TDB_NO_FSYNC=1 make test", "text/plain") ],
 
+    # We don't use TDB_NO_FSYNC=1 here, because we want to test the transaction code
     "lib/tdb" : [ ("autogen", "./autogen-waf.sh", "text/plain"),
                   ("configure", "./configure --enable-developer -C ${PREFIX}", "text/plain"),
                   ("make", "make -j", "text/plain"),
