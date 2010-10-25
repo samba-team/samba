@@ -524,11 +524,13 @@ static NTSTATUS dcesrv_samr_info_DomGeneralInformation(struct samr_domain_state 
 					     "(objectClass=user)");
 	info->num_groups = samdb_search_count(state->sam_ctx, mem_ctx,
 					      state->domain_dn,
-					      "(&(objectClass=group)(groupType=%u))",
+					      "(&(objectClass=group)(|(groupType=%u)(groupType=%u)))",
+					      GTYPE_SECURITY_UNIVERSAL_GROUP,
 					      GTYPE_SECURITY_GLOBAL_GROUP);
 	info->num_aliases = samdb_search_count(state->sam_ctx, mem_ctx,
 					       state->domain_dn,
-					       "(&(objectClass=group)(groupType=%u))",
+					       "(&(objectClass=group)(|(groupType=%u)(groupType=%u)))",
+					       GTYPE_SECURITY_BUILTIN_LOCAL_GROUP,
 					       GTYPE_SECURITY_DOMAIN_LOCAL_GROUP);
 
 	return NT_STATUS_OK;
@@ -3570,8 +3572,8 @@ static NTSTATUS dcesrv_samr_GetGroupsForUser(struct dcesrv_call_state *dce_call,
 				    attrs, d_state->domain_sid,
 				    "(&(member=%s)(|(grouptype=%d)(grouptype=%d))(objectclass=group))",
 				    ldb_dn_get_linearized(a_state->account_dn),
-				    GTYPE_SECURITY_GLOBAL_GROUP,
-				    GTYPE_SECURITY_UNIVERSAL_GROUP);
+				    GTYPE_SECURITY_UNIVERSAL_GROUP,
+				    GTYPE_SECURITY_GLOBAL_GROUP);
 	if (count < 0)
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 
