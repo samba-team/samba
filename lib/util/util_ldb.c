@@ -55,22 +55,23 @@ int gendb_search_v(struct ldb_context *ldb,
 			 expr?"%s":NULL, expr);
 
 	if (ret == LDB_SUCCESS) {
-		talloc_steal(mem_ctx, res->msgs);
-
 		DEBUG(6,("gendb_search_v: %s %s -> %d\n",
 			 basedn?ldb_dn_get_linearized(basedn):"NULL",
 			 expr?expr:"NULL", res->count));
 
 		ret = res->count;
-		*msgs = res->msgs;
+		if (msgs != NULL) {
+			*msgs = talloc_steal(mem_ctx, res->msgs);
+		}
 		talloc_free(res);
 	} else if (scope == LDB_SCOPE_BASE && ret == LDB_ERR_NO_SUCH_OBJECT) {
 		ret = 0;
-		*msgs = NULL;
+		if (msgs != NULL) *msgs = NULL;
 	} else {
 		DEBUG(4,("gendb_search_v: search failed: %s\n",
 					ldb_errstring(ldb)));
 		ret = -1;
+		if (msgs != NULL) *msgs = NULL;
 	}
 
 	talloc_free(expr);

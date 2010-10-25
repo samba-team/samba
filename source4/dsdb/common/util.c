@@ -196,13 +196,12 @@ int samdb_search_count(struct ldb_context *sam_ldb,
 		       const char *format, ...) _PRINTF_ATTRIBUTE(3,4)
 {
 	va_list ap;
-	struct ldb_message **res;
 	const char *attrs[] = { NULL };
 	int ret;
 	TALLOC_CTX *tmp_ctx = talloc_new(sam_ldb);
 
 	va_start(ap, format);
-	ret = gendb_search_v(sam_ldb, tmp_ctx, basedn, &res, attrs, format, ap);
+	ret = gendb_search_v(sam_ldb, tmp_ctx, basedn, NULL, attrs, format, ap);
 	va_end(ap);
 	talloc_free(tmp_ctx);
 
