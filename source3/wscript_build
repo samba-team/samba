@@ -40,9 +40,6 @@ COMPRESSION_SRC = '../lib/compression/mszip.c ../lib/compression/lzxpress.c'
 DRSUAPI_SRC = '''${LIBNDR_DRSUAPI_SRC}
               ${COMPRESSION_SRC}'''
 
-LIBNDR_NTLMSSP_SRC = '''../librpc/gen_ndr/ndr_ntlmssp.c
-                     ../librpc/ndr/ndr_ntlmssp.c'''
-
 LIBNDR_SRC = '''../librpc/ndr/ndr_basic.c
              ../librpc/ndr/ndr.c
              ../librpc/ndr/ndr_misc.c
@@ -264,7 +261,6 @@ LIBSMB_SRC0 = '''
                libsmb/ntlmssp_wrap.c
                ../libcli/auth/ntlmssp.c
                ../libcli/auth/ntlmssp_sign.c
-               ${LIBNDR_NTLMSSP_SRC}
                ../libcli/auth/ntlmssp_ndr.c
                ../libcli/auth/ntlmssp_server.c'''
 
@@ -1064,7 +1060,7 @@ bld.SAMBA_SUBSYSTEM('LIBSMB_ERR',
 
 bld.SAMBA_SUBSYSTEM('LIBSAMBA',
                     source=LIBSAMBA_SRC,
-                    deps='LIBSMB_ERR',
+                    deps='LIBSMB_ERR NDR_NTLMSSP',
                     vars=locals())
 
 bld.SAMBA_SUBSYSTEM('LIBSMB',
