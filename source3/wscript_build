@@ -861,8 +861,7 @@ NTLM_AUTH_SRC1 = '''utils/ntlm_auth.c utils/ntlm_auth_diagnostics.c'''
 NTLM_AUTH_SRC = '''${NTLM_AUTH_SRC1}
                 ../libcli/auth/spnego_parse.c libsmb/clikrb5.c libads/kerberos.c
                 libsmb/samlogon_cache.c
-                ${LIBNMB_SRC}
-                ${LIBNDR_NETLOGON_SRC}'''
+                ${LIBNMB_SRC}'''
 
 
 VLP_SRC = '''printing/tests/vlp.c
@@ -1473,7 +1472,7 @@ bld.SAMBA_BINARY('ntlm_auth',
                  deps='''tdb talloc cap resolv krb5 k5crypto com_err libwbclient PARAM LIB_NONSMBD
                  LIBS LIBSAMBA POPT_SAMBA ASN1_UTIL LIBTSOCKET
                  PASSDB GROUPDB SMBLDAP WBCOMMON LIBINIPARSER LIBADS_SERVER
-                 NDR_SAMR NDR_LSA LIBCLI_LDAP_NDR''',
+                 NDR_SAMR NDR_LSA NDR_NETLOGON LIBCLI_LDAP_NDR''',
                  vars=locals())
 
 bld.SAMBA_BINARY('timelimit',
