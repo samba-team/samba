@@ -236,16 +236,19 @@ static int samldb_allocate_sid(struct samldb_ctx *ac)
 /*
   see if a krbtgt_number is available
  */
-static bool samldb_krbtgtnumber_available(struct samldb_ctx *ac, unsigned krbtgt_number)
+static bool samldb_krbtgtnumber_available(struct samldb_ctx *ac,
+					  uint32_t krbtgt_number)
 {
 	TALLOC_CTX *tmp_ctx = talloc_new(ac);
 	struct ldb_result *res;
-	const char *attrs[] = { NULL };
+	const char *no_attrs[] = { NULL };
 	int ret;
 
-	ret = dsdb_module_search(ac->module, tmp_ctx, &res, NULL, LDB_SCOPE_SUBTREE,
-				 attrs, DSDB_FLAG_NEXT_MODULE,
-				 "msDC-SecondaryKrbTgtNumber=%u", krbtgt_number);
+	ret = dsdb_module_search(ac->module, tmp_ctx, &res, NULL,
+				 LDB_SCOPE_SUBTREE, no_attrs,
+				 DSDB_FLAG_NEXT_MODULE,
+				 "(msDC-SecondaryKrbTgtNumber=%u)",
+				 krbtgt_number);
 	if (ret == LDB_SUCCESS && res->count == 0) {
 		talloc_free(tmp_ctx);
 		return true;
