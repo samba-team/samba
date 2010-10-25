@@ -132,8 +132,8 @@ static int samldb_next_step(struct samldb_ctx *ac)
 		return ac->curstep->fn(ac);
 	}
 
-	/* we exit the samldb module here */
-	/* If someone set an ares to forward controls and response back to the caller, use them */
+	/* We exit the samldb module here. If someone set an "ares" to forward
+	 * controls and response back to the caller, use them. */
 	if (ac->ares) {
 		return ldb_module_done(ac->req, ac->ares->controls,
 				       ac->ares->response, LDB_SUCCESS);
@@ -145,7 +145,8 @@ static int samldb_next_step(struct samldb_ctx *ac)
 
 /* sAMAccountName handling */
 
-static int samldb_generate_sAMAccountName(struct ldb_context *ldb, struct ldb_message *msg)
+static int samldb_generate_sAMAccountName(struct ldb_context *ldb,
+					  struct ldb_message *msg)
 {
 	char *name;
 
@@ -290,7 +291,8 @@ static int samldb_rodc_add(struct samldb_ctx *ac)
 	return LDB_ERR_OTHER;
 
 found:
-	ret = ldb_msg_add_empty(ac->msg, "msDS-SecondaryKrbTgtNumber", LDB_FLAG_INTERNAL_DISABLE_VALIDATION, NULL);
+	ret = ldb_msg_add_empty(ac->msg, "msDS-SecondaryKrbTgtNumber",
+				LDB_FLAG_INTERNAL_DISABLE_VALIDATION, NULL);
 	if (ret != LDB_SUCCESS) {
 		return ldb_operr(ldb);
 	}
@@ -331,7 +333,8 @@ static int samldb_find_for_defaultObjectCategory(struct samldb_ctx *ac)
 
 	ret = dsdb_module_search(ac->module, ac, &res,
 				 ac->dn, LDB_SCOPE_BASE, no_attrs,
-				 DSDB_SEARCH_SHOW_DN_IN_STORAGE_FORMAT | DSDB_FLAG_NEXT_MODULE,
+				 DSDB_SEARCH_SHOW_DN_IN_STORAGE_FORMAT
+				 | DSDB_FLAG_NEXT_MODULE,
 				 "(objectClass=classSchema)");
 	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
 		/* Don't be pricky when the DN doesn't exist if we have the */
@@ -371,7 +374,8 @@ static int samldb_add_handle_msDS_IntId(struct samldb_ctx *ac)
 	schema_dn = ldb_get_schema_basedn(ldb);
 
 	/* replicated update should always go through */
-	if (ldb_request_get_control(ac->req, DSDB_CONTROL_REPLICATED_UPDATE_OID)) {
+	if (ldb_request_get_control(ac->req,
+				    DSDB_CONTROL_REPLICATED_UPDATE_OID)) {
 		return LDB_SUCCESS;
 	}
 
@@ -506,7 +510,8 @@ static bool check_rodc_critical_attribute(struct ldb_message *msg)
 
 	schemaFlagsEx = ldb_msg_find_attr_as_uint(msg, "schemaFlagsEx", 0);
 	searchFlags = ldb_msg_find_attr_as_uint(msg, "searchFlags", 0);
-	rodc_filtered_flags = (SEARCH_FLAG_RODC_ATTRIBUTE | SEARCH_FLAG_CONFIDENTIAL);
+	rodc_filtered_flags = (SEARCH_FLAG_RODC_ATTRIBUTE
+			      | SEARCH_FLAG_CONFIDENTIAL);
 
 	if ((schemaFlagsEx & SCHEMA_FLAG_ATTR_IS_CRITICAL) &&
 		((searchFlags & rodc_filtered_flags) == rodc_filtered_flags)) {
@@ -714,7 +719,8 @@ static int samldb_schema_info_update(struct samldb_ctx *ac)
 	struct dsdb_schema *schema;
 
 	/* replicated update should always go through */
-	if (ldb_request_get_control(ac->req, DSDB_CONTROL_REPLICATED_UPDATE_OID)) {
+	if (ldb_request_get_control(ac->req,
+				    DSDB_CONTROL_REPLICATED_UPDATE_OID)) {
 		return LDB_SUCCESS;
 	}
 
@@ -732,7 +738,8 @@ static int samldb_schema_info_update(struct samldb_ctx *ac)
 		return ldb_operr(ldb);
 	}
 
-	ret = dsdb_module_schema_info_update(ac->module, schema, DSDB_FLAG_NEXT_MODULE);
+	ret = dsdb_module_schema_info_update(ac->module, schema,
+					     DSDB_FLAG_NEXT_MODULE);
 	if (ret != LDB_SUCCESS) {
 		ldb_asprintf_errstring(ldb, "samldb_schema_info_update: dsdb_module_schema_info_update failed with %s",
 				       ldb_errstring(ldb));
@@ -1289,7 +1296,8 @@ static int samldb_modify(struct ldb_module *module, struct ldb_request *req)
 	/* msDS-IntId is not allowed to be modified
 	 * except when modification comes from replication */
 	if (ldb_msg_find_element(req->op.mod.message, "msDS-IntId")) {
-		if (!ldb_request_get_control(req, DSDB_CONTROL_REPLICATED_UPDATE_OID)) {
+		if (!ldb_request_get_control(req,
+					     DSDB_CONTROL_REPLICATED_UPDATE_OID)) {
 			return LDB_ERR_CONSTRAINT_VIOLATION;
 		}
 	}
@@ -1309,7 +1317,8 @@ static int samldb_modify(struct ldb_module *module, struct ldb_request *req)
 	}
 
 	el = ldb_msg_find_element(ac->msg, "groupType");
-	if (el && (LDB_FLAG_MOD_TYPE(el->flags) == LDB_FLAG_MOD_REPLACE) && el->num_values == 1) {
+	if (el && (LDB_FLAG_MOD_TYPE(el->flags) == LDB_FLAG_MOD_REPLACE)
+	    && el->num_values == 1) {
 		uint32_t group_type, old_group_type;
 
 		modified = true;
@@ -1377,7 +1386,8 @@ static int samldb_modify(struct ldb_module *module, struct ldb_request *req)
 	}
 
 	el = ldb_msg_find_element(ac->msg, "primaryGroupID");
-	if (el && (LDB_FLAG_MOD_TYPE(el->flags) == LDB_FLAG_MOD_REPLACE) && el->num_values == 1) {
+	if (el && (LDB_FLAG_MOD_TYPE(el->flags) == LDB_FLAG_MOD_REPLACE)
+	    && el->num_values == 1) {
 		modified = true;
 
 		ret = samldb_prim_group_change(ac);
@@ -1391,7 +1401,8 @@ static int samldb_modify(struct ldb_module *module, struct ldb_request *req)
 	}
 
 	el = ldb_msg_find_element(ac->msg, "userAccountControl");
-	if (el && (LDB_FLAG_MOD_TYPE(el->flags) == LDB_FLAG_MOD_REPLACE) && el->num_values == 1) {
+	if (el && (LDB_FLAG_MOD_TYPE(el->flags) == LDB_FLAG_MOD_REPLACE)
+	    && el->num_values == 1) {
 		uint32_t user_account_control;
 
 		modified = true;
@@ -1450,7 +1461,8 @@ static int samldb_modify(struct ldb_module *module, struct ldb_request *req)
 	}
 
 	el = ldb_msg_find_element(ac->msg, "member");
-	if (el && el->flags & (LDB_FLAG_MOD_ADD|LDB_FLAG_MOD_REPLACE) && el->num_values == 1) {
+	if (el && el->flags & (LDB_FLAG_MOD_ADD|LDB_FLAG_MOD_REPLACE)
+	    && el->num_values == 1) {
 		ret = samldb_member_check(ac);
 		if (ret != LDB_SUCCESS) {
 			return ret;
@@ -1555,7 +1567,8 @@ static int samldb_extended_allocate_rid_pool(struct ldb_module *module, struct l
 	struct dsdb_fsmo_extended_op *exop;
 	int ret;
 
-	exop = talloc_get_type(req->op.extended.data, struct dsdb_fsmo_extended_op);
+	exop = talloc_get_type(req->op.extended.data,
+			       struct dsdb_fsmo_extended_op);
 	if (!exop) {
 		ldb_debug(ldb, LDB_DEBUG_FATAL, "samldb_extended_allocate_rid_pool: invalid extended data\n");
 		return LDB_ERR_PROTOCOL_ERROR;
