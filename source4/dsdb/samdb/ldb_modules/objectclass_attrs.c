@@ -139,17 +139,47 @@ static int attr_handler(struct oc_context *ac)
 			}
 		}
 
-		/* Multi-valued replace operations are generally denied but
-		 * there do exist exceptions where attributes have the flag
-		 * "FLAG_ATTR_REQ_PARTIAL_SET_MEMBER" set. */
+		/* "description" on AD is very special: it's nearly single-
+		 * valued (only on add operations it isn't). */
 		if ((ac->req->operation == LDB_MODIFY) &&
-		    (LDB_FLAG_MOD_TYPE(msg->elements[i].flags) == LDB_FLAG_MOD_REPLACE) &&
-		    (msg->elements[i].num_values > 1) &&
-		    ((attr->systemFlags & DS_FLAG_ATTR_REQ_PARTIAL_SET_MEMBER) == 0)) {
-			ldb_asprintf_errstring(ldb, "objectclass_attrs: attribute '%s' on entry '%s' is replaced multi-valued!",
-					       msg->elements[i].name,
-					       ldb_dn_get_linearized(msg->dn));
-			return LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS;
+		    (ldb_attr_cmp(attr->lDAPDisplayName, "description") == 0)) {
+			/* Multi-valued add or replace operations are always
+			 * denied */
+			if ((LDB_FLAG_MOD_TYPE(msg->elements[i].flags)
+			    != LDB_FLAG_MOD_DELETE) &&
+			    (msg->elements[i].num_values > 1)) {
+				ldb_asprintf_errstring(ldb,
+						       "objectclass_attrs: attribute '%s' on entry '%s' is changed using a multi-valued add or replace operation!",
+						       msg->elements[i].name,
+						       ldb_dn_get_linearized(msg->dn));
+				return LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS;
+			}
+
+			/* Add operations are only allowed if no value exists */
+			if (LDB_FLAG_MOD_TYPE(msg->elements[i].flags)
+			    == LDB_FLAG_MOD_ADD) {
+				const char *attrs[] = { attr->lDAPDisplayName,
+							NULL };
+				struct ldb_result *res;
+				struct ldb_message_element *el;
+
+				ret = ldb_search(ldb, ac, &res, msg->dn,
+						 LDB_SCOPE_BASE, attrs, NULL);
+				if (ret != LDB_SUCCESS) {
+					return ret;
+				}
+
+				el = ldb_msg_find_element(res->msgs[0],
+							  attr->lDAPDisplayName);
+				if (el != NULL) {
+					ldb_asprintf_errstring(ldb,
+							       "objectclass_attrs: attribute '%s' on entry '%s' is changed using an add operation, but there a value already exists!",
+							       msg->elements[i].name,
+							       ldb_dn_get_linearized(msg->dn));
+					return LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS;
+				}
+				talloc_free(res);
+			}
 		}
 
 		/* Substitute the attribute name to match in case */
