@@ -48,14 +48,6 @@ LIBNDR_SRC = '''../librpc/ndr/ndr_basic.c
              ../librpc/ndr/uuid.c
              librpc/ndr/util.c'''
 
-LIBNDR_GEN_SRC0 = '''../librpc/gen_ndr/ndr_samr.c'''
-
-LIBNDR_NETLOGON_SRC = '''../librpc/gen_ndr/ndr_netlogon.c
-                  ../librpc/ndr/ndr_netlogon.c'''
-
-LIBNDR_SPOOLSS_SRC = '''../librpc/gen_ndr/ndr_spoolss.c
-                  ../librpc/ndr/ndr_spoolss_buf.c'''
-
 LIBCLI_SPOOLSS_SRC = '''
                      ../librpc/gen_ndr/cli_spoolss.c
                      ../librpc/gen_ndr/ndr_spoolss_c.c
@@ -117,18 +109,6 @@ LIBCLI_NETLOGON_SRC = '''
 LIBCLI_EPMAPPER_SRC = '''
                       ../librpc/gen_ndr/cli_epmapper.c
                       ../librpc/gen_ndr/ndr_epmapper_c.c'''
-
-LIBNDR_GEN_SRC = '''../librpc/gen_ndr/ndr_wkssvc.c
-                 ${LIBNDR_GEN_SRC0}
-                 ../librpc/gen_ndr/ndr_dfs.c
-                 ../librpc/gen_ndr/ndr_winreg.c
-                 ../librpc/gen_ndr/ndr_initshutdown.c
-                 ../librpc/gen_ndr/ndr_srvsvc.c
-                 ${LIBNDR_NETLOGON_SRC}
-                 ../librpc/gen_ndr/ndr_dssetup.c
-                 ../librpc/gen_ndr/ndr_epmapper.c
-                 ../librpc/gen_ndr/ndr_ntsvcs.c
-                 ${LIBNDR_SPOOLSS_SRC}'''
 
 # this includes only the low level parse code, not stuff
 # that requires knowledge of security contexts
@@ -961,9 +941,8 @@ bld.SAMBA_SUBSYSTEM('LIBMSRPC',
                     vars=locals())
 
 bld.SAMBA_SUBSYSTEM('LIBMSRPC_GEN',
-                    source='${LIBNDR_GEN_SRC}',
-                    deps='''LIBNDR NDR_SECURITY NDR_DCERPC NDR_EVENTLOG NDR_LSA
-                    NDR_ECHO''',
+                    source='',
+                    deps='''NDR_STANDARD NDR_DSSETUP NDR_SPOOLSS''',
                     vars=locals())
 
 bld.SAMBA_SUBSYSTEM('LIBGPO',
