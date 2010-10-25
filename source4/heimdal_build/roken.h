@@ -21,10 +21,6 @@
 /* We want PKINIT */
 #define PKINIT 1
 
-#define VERSIONLIST {"Lorikeet-Heimdal, Modified for Samba4"}
-
-#define VERSION "Samba"
-
 #define ROKEN_LIB_FUNCTION
 #define ROKEN_LIB_CALL
 #define GETHOSTBYADDR_PROTO_COMPATIBLE

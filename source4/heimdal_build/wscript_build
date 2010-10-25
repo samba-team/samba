@@ -483,7 +483,6 @@ if not bld.CONFIG_SET('USING_SYSTEM_ROKEN'):
 
     HEIMDAL_BINARY('rkpty', 'lib/roken/rkpty.c',
             deps='roken',
-            cflags='-DPACKAGE="Samba"',
             install=False
         )
 

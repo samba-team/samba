@@ -9,6 +9,14 @@
 #include "include/config.h"
 #include "../replace/replace.h"
 
+#define VERSIONLIST {"Lorikeet-Heimdal, Modified for Samba4"}
+
+#define VERSION "Samba"
+
+#define PACKAGE VERSION
+#define PACKAGE_BUGREPORT "https://bugzilla.samba.org/"
+#define PACKAGE_VERSION VERSION
+
 #define RCSID(msg) struct __rcsid { int __rcsdi; }
 #define KRB5
 
