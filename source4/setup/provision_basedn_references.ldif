@@ -7,7 +7,7 @@ changetype: modify
 replace: rIDManagerReference
 rIDManagerReference: CN=RID Manager$,CN=System,${DOMAINDN}
 -
-replace: wellKnownObjects
+add: wellKnownObjects
 wellKnownObjects: B:32:6227f0af1fc2410d8e3bb10615bb5b0f:CN=NTDS Quotas,${DOMAINDN}
 wellKnownObjects: B:32:f4be92a4c777485e878e9421d53087db:CN=Microsoft,CN=Program Data,${DOMAINDN}
 wellKnownObjects: B:32:09460c08ae1e4a4ea0f64aee7daa1e5a:CN=Program Data,${DOMAINDN}
