@@ -904,6 +904,8 @@ t.env.BUILDDIR = bld.path.abspath()
 
 bld.SETUP_BUILD_GROUPS()
 
+bld.SAMBA_MKVERSION('include/version.h')
+
 bld.RECURSE('../lib/replace')
 bld.RECURSE('../libcli/smbreadline')
 print "SBINDIR=%s" % bld.env.SBINDIR
@@ -913,8 +915,6 @@ bld.RECURSE('../librpc')
 bld.RECURSE('librpc/idl')
 bld.RECURSE('librpc')
 bld.RECURSE('../libcli/security')
-
-bld.SAMBA_MKVERSION('include/version.h')
 
 ######################## SUBSYSTEMS #################################
 

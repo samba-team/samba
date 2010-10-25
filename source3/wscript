@@ -3,6 +3,9 @@
 srcdir = '..'
 blddir = 'bin'
 
+APPNAME='samba'
+VERSION=None
+
 import sys, os
 from optparse import SUPPRESS_HELP
 sys.path.insert(0, srcdir+"/buildtools/wafsamba")
@@ -11,9 +14,16 @@ import build.charset
 import samba_utils
 import samba3
 
-version = wafsamba.samba_version_file("./VERSION")
-
-VERSION=version.STRING
+def load_version(have_git=False):
+    '''load samba versions either from ./VERSION or git
+    return a version object for detailed breakdown'''
+    import samba_utils, Utils
+    if not have_git:
+        env = samba_utils.LOAD_ENVIRONMENT()
+        have_git = 'GIT' in env
+    version = wafsamba.samba_version_file("./VERSION", have_git=have_git)
+    Utils.g_module.VERSION = version.STRING
+    return version
 
 def set_options(opt):
     opt.BUILTIN_DEFAULT('NONE')
@@ -57,16 +67,12 @@ def set_options(opt):
 def configure(conf):
     from samba_utils import TO_LIST
 
-    conf.DEFINE('PACKAGE_NAME', 'Samba', quote=True)
-    conf.DEFINE('PACKAGE_STRING', 'Samba %s' % version.MAJOR, quote=True)
-    conf.DEFINE('PACKAGE_TARNAME',  'samba', quote=True)
-    conf.DEFINE('PACKAGE_URL', "", quote=True)
-    conf.DEFINE('PACKAGE_VERSION', "%s" % version.MAJOR, quote=True)
-    conf.DEFINE('PACKAGE_BUGREPORT', 'samba-technical@samba.org', quote=True)
+    version = load_version(have_git=True)
 
     conf.DEFINE('CONFIG_H_IS_FROM_SAMBA', 1)
     conf.DEFINE('_SAMBA_BUILD_', version.MAJOR, add_to_cflags=True)
     conf.DEFINE('HAVE_CONFIG_H', 1, add_to_cflags=True)
+
     if Options.options.developer:
         conf.ADD_CFLAGS('-DDEVELOPER -DDEBUG_PASSWORD')
         conf.env['developer'] = True
