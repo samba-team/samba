@@ -116,6 +116,10 @@ def configure(conf):
     conf.RECURSE('../pidl')
     conf.RECURSE('selftest')
 
+    # we don't want any libraries or modules to rely on runtime
+    # resolution of symbols
+    conf.ADD_LDFLAGS('-Wl,-no-undefined', testflags=True)
+
     # we don't want PYTHONDIR in config.h, as otherwise changing
     # --prefix causes a complete rebuild
     del(conf.env.defines['PYTHONDIR'])
