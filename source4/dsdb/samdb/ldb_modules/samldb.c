@@ -180,7 +180,7 @@ static int samldb_check_sAMAccountName(struct samldb_ctx *ac)
 		return ldb_operr(ldb);
 	}
 
-	ret = samdb_search_count(ldb, NULL, "(sAMAccountName=%s)",
+	ret = samdb_search_count(ldb, ac, NULL, "(sAMAccountName=%s)",
 				 ldb_binary_encode_string(ac, name));
 	if ((ret < 0) || (ret > 1)) {
 		return ldb_operr(ldb);
@@ -1523,7 +1523,7 @@ static int samldb_prim_group_users_check(struct samldb_ctx *ac)
 	}
 
 	/* Deny delete requests from groups which are primary ones */
-	count = samdb_search_count(ldb, NULL,
+	count = samdb_search_count(ldb, ac, NULL,
 				   "(&(primaryGroupID=%u)(objectClass=user))",
 				   rid);
 	if (count < 0) {

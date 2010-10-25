@@ -192,18 +192,17 @@ struct dom_sid *samdb_search_dom_sid(struct ldb_context *sam_ldb,
   return the count of the number of records in the sam matching the query
 */
 int samdb_search_count(struct ldb_context *sam_ldb,
+		       TALLOC_CTX *mem_ctx,
 		       struct ldb_dn *basedn,
-		       const char *format, ...) _PRINTF_ATTRIBUTE(3,4)
+		       const char *format, ...) _PRINTF_ATTRIBUTE(4,5)
 {
 	va_list ap;
 	const char *attrs[] = { NULL };
 	int ret;
-	TALLOC_CTX *tmp_ctx = talloc_new(sam_ldb);
 
 	va_start(ap, format);
-	ret = gendb_search_v(sam_ldb, tmp_ctx, basedn, NULL, attrs, format, ap);
+	ret = gendb_search_v(sam_ldb, mem_ctx, basedn, NULL, attrs, format, ap);
 	va_end(ap);
-	talloc_free(tmp_ctx);
 
 	return ret;
 }
@@ -1870,7 +1869,7 @@ const char *samdb_client_site_name(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 		 * is for sure the same as our server site). If more sites do
 		 * exist then we don't know which one to use and set the site
 		 * name to "". */
-		cnt = samdb_search_count(ldb, sites_container_dn,
+		cnt = samdb_search_count(ldb, mem_ctx, sites_container_dn,
 					 "(objectClass=site)");
 		if (cnt == 1) {
 			site_name = samdb_server_site_name(ldb, mem_ctx);
