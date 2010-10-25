@@ -884,7 +884,7 @@ NTSTATUS ctdbd_db_attach(struct ctdbd_connection *conn,
 			       persistent
 			       ? CTDB_CONTROL_DB_ATTACH_PERSISTENT
 			       : CTDB_CONTROL_DB_ATTACH,
-			       0, 0, data, NULL, &data, &cstatus);
+			       tdb_flags, 0, data, NULL, &data, &cstatus);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, (__location__ " ctdb_control for db_attach "
 			  "failed: %s\n", nt_errstr(status)));
