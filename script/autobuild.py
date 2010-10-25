@@ -32,7 +32,7 @@ tasks = {
     "source4/lib/ldb" : [ ("configure", "./configure --enable-developer -C ${PREFIX}", "text/plain"),
                           ("make", "make -j", "text/plain"),
                           ("install", "make install", "text/plain"),
-                          ("test", "make test", "text/plain") ],
+                          ("test", "TDB_NO_FSYNC=1 make test", "text/plain") ],
 
     "lib/tdb" : [ ("autogen", "./autogen-waf.sh", "text/plain"),
                   ("configure", "./configure --enable-developer -C ${PREFIX}", "text/plain"),
