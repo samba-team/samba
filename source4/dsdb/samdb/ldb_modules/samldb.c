@@ -646,7 +646,8 @@ static int samldb_fill_object(struct samldb_ctx *ac)
 		/* do not allow to mark an attributeSchema as RODC filtered if it
 		 * is system-critical */
 		if (check_rodc_critical_attribute(ac->msg)) {
-			ldb_asprintf_errstring(ldb, "Refusing schema add of %s - cannot combine critical attribute with RODC filtering",
+			ldb_asprintf_errstring(ldb,
+					       "samldb: refusing schema add of %s - cannot combine critical attribute with RODC filtering",
 					       ldb_dn_get_linearized(ac->msg->dn));
 			return LDB_ERR_UNWILLING_TO_PERFORM;
 		}
@@ -696,8 +697,7 @@ static int samldb_fill_foreignSecurityPrincipal_object(struct samldb_ctx *ac)
 					   (const char *)ldb_dn_get_rdn_val(ac->msg->dn)->data);
 		if (sid == NULL) {
 			ldb_set_errstring(ldb,
-					"No valid SID found in "
-					"ForeignSecurityPrincipal CN!");
+					  "samldb: No valid SID found in ForeignSecurityPrincipal CN!");
 			return LDB_ERR_CONSTRAINT_VIOLATION;
 		}
 		if (! samldb_msg_add_sid(ac->msg, "objectSid", sid)) {
@@ -741,7 +741,8 @@ static int samldb_schema_info_update(struct samldb_ctx *ac)
 	ret = dsdb_module_schema_info_update(ac->module, schema,
 					     DSDB_FLAG_NEXT_MODULE);
 	if (ret != LDB_SUCCESS) {
-		ldb_asprintf_errstring(ldb, "samldb_schema_info_update: dsdb_module_schema_info_update failed with %s",
+		ldb_asprintf_errstring(ldb,
+				       "samldb_schema_info_update: dsdb_module_schema_info_update failed with %s",
 				       ldb_errstring(ldb));
 		return ret;
 	}
@@ -772,7 +773,7 @@ static int samldb_objectclass_trigger(struct samldb_ctx *ac)
 	el = ldb_msg_find_element(ac->msg, "sAMAccountType");
 	if (el != NULL) {
 		ldb_set_errstring(ldb,
-			"samldb: sAMAccountType must not be specified!");
+				  "samldb: sAMAccountType must not be specified!");
 		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
 
@@ -784,7 +785,8 @@ static int samldb_objectclass_trigger(struct samldb_ctx *ac)
 	sid = samdb_result_dom_sid(ac, ac->msg, "objectSid");
 	if ((sid != NULL) && (!dsdb_module_am_system(ac->module)) &&
 	    (ldb_request_get_control(ac->req, LDB_CONTROL_RELAX_OID) == NULL)) {
-		ldb_asprintf_errstring(ldb, "No SID may be specified in user/group modifications for %s",
+		ldb_asprintf_errstring(ldb,
+				       "samldb: no SID may be specified in user/group modifications for %s",
 				       ldb_dn_get_linearized(ac->msg->dn));
 		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
@@ -1280,7 +1282,7 @@ static int samldb_modify(struct ldb_module *module, struct ldb_request *req)
 	el = ldb_msg_find_element(req->op.mod.message, "sAMAccountType");
 	if (el != NULL) {
 		ldb_set_errstring(ldb,
-			"samldb: sAMAccountType must not be specified!");
+				  "samldb: sAMAccountType must not be specified!");
 		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
 	/* make sure that "isCriticalSystemObject" is not specified */
@@ -1288,7 +1290,7 @@ static int samldb_modify(struct ldb_module *module, struct ldb_request *req)
 	if (el != NULL) {
 		if (ldb_request_get_control(req, LDB_CONTROL_RELAX_OID) == NULL) {
 			ldb_set_errstring(ldb,
-				"samldb: isCriticalSystemObject must not be specified!");
+					  "samldb: isCriticalSystemObject must not be specified!");
 			return LDB_ERR_UNWILLING_TO_PERFORM;
 		}
 	}
@@ -1570,7 +1572,8 @@ static int samldb_extended_allocate_rid_pool(struct ldb_module *module, struct l
 	exop = talloc_get_type(req->op.extended.data,
 			       struct dsdb_fsmo_extended_op);
 	if (!exop) {
-		ldb_debug(ldb, LDB_DEBUG_FATAL, "samldb_extended_allocate_rid_pool: invalid extended data\n");
+		ldb_set_errstring(ldb,
+				  "samldb_extended_allocate_rid_pool: invalid extended data");
 		return LDB_ERR_PROTOCOL_ERROR;
 	}
 
