@@ -53,9 +53,6 @@ LIBNDR_GEN_SRC0 = '''../librpc/gen_ndr/ndr_samr.c'''
 LIBNDR_NETLOGON_SRC = '''../librpc/gen_ndr/ndr_netlogon.c
                   ../librpc/ndr/ndr_netlogon.c'''
 
-LIBNDR_SCHANNEL_SRC = '''../librpc/gen_ndr/ndr_schannel.c
-                  ../librpc/ndr/ndr_schannel.c'''
-
 LIBNDR_SPOOLSS_SRC = '''../librpc/gen_ndr/ndr_spoolss.c
                   ../librpc/ndr/ndr_spoolss_buf.c'''
 
@@ -277,8 +274,7 @@ TLDAP_SRC = '''lib/tldap.c lib/tldap_util.c lib/util_tsock.c'''
 
 SCHANNEL_SRC = '''../libcli/auth/credentials.c
                ../libcli/auth/schannel_sign.c
-               ../libcli/auth/schannel_state_tdb.c
-               ${LIBNDR_SCHANNEL_SRC}'''
+               ../libcli/auth/schannel_state_tdb.c'''
 
 LIBSMB_SRC = '''libsmb/clientgen.c libsmb/cliconnect.c libsmb/clifile.c
              libsmb/clikrb5.c libsmb/clispnego.c
@@ -962,7 +958,7 @@ bld.SAMBA_LIBRARY('libaddns',
 
 bld.SAMBA_SUBSYSTEM('LIBMSRPC',
                     source='${LIBMSRPC_SRC}',
-                    deps='LIBNDR NDR_SECURITY NDR_DCERPC',
+                    deps='LIBNDR NDR_SECURITY NDR_DCERPC NDR_SCHANNEL',
                     vars=locals())
 
 bld.SAMBA_SUBSYSTEM('LIBMSRPC_GEN',
