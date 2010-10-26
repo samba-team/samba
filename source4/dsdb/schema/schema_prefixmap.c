@@ -259,9 +259,14 @@ WERROR dsdb_schema_pfm_find_oid(const struct dsdb_schema_prefixmap *pfm,
 
 /**
  * Make ATTID for given OID
+ * If OID is not in prefixMap, new prefix
+ * may be added depending on 'can_change_pfm' flag
  * Reference: [MS-DRSR] section 5.12.2
  */
-WERROR dsdb_schema_pfm_make_attid(struct dsdb_schema_prefixmap *pfm, const char *oid, uint32_t *attid)
+static WERROR dsdb_schema_pfm_make_attid_impl(struct dsdb_schema_prefixmap *pfm,
+					      const char *oid,
+					      bool can_change_pfm,
+					      uint32_t *attid)
 {
 	WERROR werr;
 	uint32_t idx;
@@ -287,6 +292,11 @@ WERROR dsdb_schema_pfm_make_attid(struct dsdb_schema_prefixmap *pfm, const char 
 		/* free memory allocated for bin_oid */
 		data_blob_free(&bin_oid);
 	} else {
+		/* return error in read-only mode */
+		if (!can_change_pfm) {
+			return werr;
+		}
+
 		/* entry does not exists, add it */
 		werr = _dsdb_schema_pfm_add_entry(pfm, bin_oid, &idx);
 		W_ERROR_NOT_OK_RETURN(werr);
@@ -309,6 +319,33 @@ WERROR dsdb_schema_pfm_make_attid(struct dsdb_schema_prefixmap *pfm, const char 
 	return WERR_OK;
 }
 
+/**
+ * Make ATTID for given OID
+ * Reference: [MS-DRSR] section 5.12.2
+ *
+ * Note: This function may change prefixMap if prefix
+ * for supplied 'oid' doesn't exists yet.
+ * It is recommended to be used mostly when caller
+ * want to add new prefixes.
+ * Otherwise dsdb_schema_pfm_attid_from_oid() should be used.
+ */
+WERROR dsdb_schema_pfm_make_attid(struct dsdb_schema_prefixmap *pfm,
+				  const char *oid,
+				  uint32_t *attid)
+{
+	return dsdb_schema_pfm_make_attid_impl(pfm, oid, true, attid);
+}
+
+/**
+ * Make ATTID for given OID
+ * Reference: [MS-DRSR] section 5.12.2
+ */
+WERROR dsdb_schema_pfm_attid_from_oid(struct dsdb_schema_prefixmap *pfm,
+				      const char *oid,
+				      uint32_t *attid)
+{
+	return dsdb_schema_pfm_make_attid_impl(pfm, oid, false, attid);
+}
 
 /**
  * Make OID for given ATTID.
