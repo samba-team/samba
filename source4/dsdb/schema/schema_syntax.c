@@ -1087,9 +1087,9 @@ static WERROR _dsdb_syntax_auto_OID_ldb_to_drsuapi(const struct dsdb_syntax_ctx 
 		} else {
 			uint32_t attid;
 			WERROR werr;
-			werr = dsdb_schema_pfm_make_attid(ctx->schema->prefixmap,
-							  (const char *)v->data,
-							  &attid);
+			werr = dsdb_schema_pfm_attid_from_oid(ctx->schema->prefixmap,
+							      (const char *)v->data,
+							      &attid);
 			W_ERROR_NOT_OK_RETURN(werr);
 			SIVAL(blobs[i].data, 0, attid);
 		}
@@ -1210,9 +1210,9 @@ static WERROR _dsdb_syntax_OID_oid_ldb_to_drsuapi(const struct dsdb_syntax_ctx *
 		blobs[i] = data_blob_talloc(blobs, NULL, 4);
 		W_ERROR_HAVE_NO_MEMORY(blobs[i].data);
 
-		status = dsdb_schema_pfm_make_attid(ctx->schema->prefixmap,
-						    (const char *)in->values[i].data,
-						    &attid);
+		status = dsdb_schema_pfm_attid_from_oid(ctx->schema->prefixmap,
+						        (const char *)in->values[i].data,
+						        &attid);
 		W_ERROR_NOT_OK_RETURN(status);
 
 		SIVAL(blobs[i].data, 0, attid);
