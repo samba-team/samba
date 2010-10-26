@@ -936,12 +936,24 @@ bool next_token_no_ltrim_talloc(TALLOC_CTX *ctx,
 	return next_token_internal_talloc(ctx, ptr, pp_buff, sep, false);
 }
 
+struct anonymous_shared_header {
+	union {
+		size_t length;
+		uint8_t pad[16];
+	} u;
+};
+
 /* Map a shared memory buffer of at least nelem counters. */
-void *anonymous_shared_allocate(size_t bufsz)
+void *anonymous_shared_allocate(size_t orig_bufsz)
 {
+	void *ptr;
 	void *buf;
 	size_t pagesz = getpagesize();
 	size_t pagecnt;
+	size_t bufsz = orig_bufsz;
+	struct anonymous_shared_header *hdr;
+
+	bufsz += sizeof(*hdr);
 
 	/* round up to full pages */
 	pagecnt = bufsz / pagesz;
@@ -949,6 +961,12 @@ void *anonymous_shared_allocate(size_t bufsz)
 		pagecnt += 1;
 	}
 	bufsz = pagesz * pagecnt;
+
+	if (orig_bufsz >= bufsz) {
+		/* integer wrap */
+		errno = ENOMEM;
+		return NULL;
+	}
 
 #ifdef MAP_ANON
 	/* BSD */
@@ -963,8 +981,27 @@ void *anonymous_shared_allocate(size_t bufsz)
 		return NULL;
 	}
 
-	return buf;
+	hdr = (struct anonymous_shared_header *)buf;
+	hdr->u.length = bufsz;
 
+	ptr = (void *)(&hdr[1]);
+
+	return ptr;
+}
+
+void anonymous_shared_free(void *ptr)
+{
+	struct anonymous_shared_header *hdr;
+
+	if (ptr == NULL) {
+		return;
+	}
+
+	hdr = (struct anonymous_shared_header *)ptr;
+
+	hdr--;
+
+	munmap(hdr, hdr->u.length);
 }
 
 #ifdef DEVELOPER
