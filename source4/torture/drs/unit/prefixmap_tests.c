@@ -306,9 +306,6 @@ static bool torture_drs_unit_pfm_make_attid_small_map(struct torture_context *tc
 	/* create new prefix map */
 	werr = dsdb_schema_pfm_new(mem_ctx, &pfm);
 	torture_assert_werr_ok(tctx, werr, "dsdb_schema_pfm_new() failed!");
-	torture_assert(tctx, pfm != NULL, "NULL prefixMap created!");
-	torture_assert(tctx, pfm->length > 0, "Empty prefixMap created!");
-	torture_assert(tctx, pfm->prefixes != NULL, "No prefixes for newly created prefixMap!");
 
 	/* make some ATTIDs and check result */
 	for (i = 0; i < ARRAY_SIZE(_prefixmap_test_data); i++) {
