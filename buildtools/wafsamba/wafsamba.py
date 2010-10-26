@@ -182,7 +182,7 @@ def SAMBA_LIBRARY(bld, libname, source,
         if vnum:
             Logs.error("vnum is invalid for private libraries")
             sys.exit(1)
-        vnum = bld.env.PACKAGE_VERSION
+        vnum = Utils.g_module.VERSION
 
     features = 'cc cshlib symlink_lib install_lib'
     if target_type == 'PYTHON':
