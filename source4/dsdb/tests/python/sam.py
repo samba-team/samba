@@ -96,9 +96,10 @@ class SamTests(unittest.TestCase):
         print "baseDN: %s\n" % self.base_dn
 
         self.delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+        self.delete_force(self.ldb, "cn=ldaptestuser2,cn=users," + self.base_dn)
         self.delete_force(self.ldb, "cn=ldaptestcomputer,cn=users," + self.base_dn)
         self.delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
-        self.delete_force(self.ldb, "cn=ldaptestuser2,cn=users," + self.base_dn)
+        self.delete_force(self.ldb, "cn=ldaptestgroup2,cn=users," + self.base_dn)
 
     def test_users_groups(self):
         """This tests the SAM users and groups behaviour"""
@@ -415,17 +416,77 @@ class SamTests(unittest.TestCase):
         self.assertTrue(len(res1) == 1)
         self.assertFalse("member" in res1[0])
 
+        # Primary group member
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestgroup2,cn=users," + self.base_dn)
+        m["member"] = MessageElement("cn=ldaptestuser,cn=users," + self.base_dn,
+                                     FLAG_MOD_DELETE, "member")
+        try:
+            ldb.modify(m)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
+
         # Also this should be denied
         try:
             ldb.add({
-              "dn": "cn=ldaptestuser1,cn=users," + self.base_dn,
+              "dn": "cn=ldaptestuser2,cn=users," + self.base_dn,
               "objectclass": ["user", "person"],
               "primaryGroupID": "0"})
             self.fail()
         except LdbError, (num, _):
             self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
 
+        # Recreate user accounts
+
         self.delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+
+        ldb.add({
+            "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
+            "objectclass": ["user", "person"]})
+
+        ldb.add({
+            "dn": "cn=ldaptestuser2,cn=users," + self.base_dn,
+            "objectclass": ["user", "person"]})
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestgroup2,cn=users," + self.base_dn)
+        m["member"] = MessageElement("cn=ldaptestuser,cn=users," + self.base_dn,
+                                     FLAG_MOD_ADD, "member")
+        ldb.modify(m)
+
+        # Invalid member
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestgroup2,cn=users," + self.base_dn)
+        m["member"] = MessageElement("cn=ldaptestuser1,cn=users," + self.base_dn,
+                                     FLAG_MOD_REPLACE, "member")
+        try:
+            ldb.modify(m)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_NO_SUCH_OBJECT)
+
+        # Invalid member
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestgroup2,cn=users," + self.base_dn)
+        m["member"] = MessageElement(["cn=ldaptestuser,cn=users," + self.base_dn,
+                                      "cn=ldaptestuser1,cn=users," + self.base_dn],
+                                     FLAG_MOD_REPLACE, "member")
+        try:
+            ldb.modify(m)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_NO_SUCH_OBJECT)
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestgroup2,cn=users," + self.base_dn)
+        m["member"] = MessageElement(["cn=ldaptestuser,cn=users," + self.base_dn,
+                                      "cn=ldaptestuser2,cn=users," + self.base_dn],
+                                     FLAG_MOD_REPLACE, "member")
+        ldb.modify(m)
+
+        self.delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+        self.delete_force(self.ldb, "cn=ldaptestuser2,cn=users," + self.base_dn)
         self.delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
         self.delete_force(self.ldb, "cn=ldaptestgroup2,cn=users," + self.base_dn)
 
