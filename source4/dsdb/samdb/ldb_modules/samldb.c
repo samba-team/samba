@@ -1158,7 +1158,12 @@ static int samldb_member_check(struct samldb_ctx *ac)
 		}
 
 		if (ldb_dn_compare(group_dn, ac->msg->dn) == 0) {
-			return LDB_ERR_ENTRY_ALREADY_EXISTS;
+			if (LDB_FLAG_MOD_TYPE(el->flags)
+			    == LDB_FLAG_MOD_DELETE) {
+				return LDB_ERR_UNWILLING_TO_PERFORM;
+			} else {
+				return LDB_ERR_ENTRY_ALREADY_EXISTS;
+			}
 		}
 	}
 
@@ -1463,8 +1468,7 @@ static int samldb_modify(struct ldb_module *module, struct ldb_request *req)
 	}
 
 	el = ldb_msg_find_element(ac->msg, "member");
-	if (el && el->flags & (LDB_FLAG_MOD_ADD|LDB_FLAG_MOD_REPLACE)
-	    && el->num_values == 1) {
+	if (el != NULL) {
 		ret = samldb_member_check(ac);
 		if (ret != LDB_SUCCESS) {
 			return ret;
