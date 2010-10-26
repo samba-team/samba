@@ -98,6 +98,12 @@ struct smbd_shm_signing {
 	size_t len2;
 };
 
+static int smbd_shm_signing_destructor(struct smbd_shm_signing *s)
+{
+	anonymous_shared_free(s->shm_pointer);
+	return 0;
+}
+
 static void *smbd_shm_signing_alloc(TALLOC_CTX *mem_ctx, size_t len)
 {
 	struct smbd_shm_signing *s = talloc_get_type_abort(mem_ctx,
@@ -180,6 +186,7 @@ bool srv_init_signing(struct smbd_server_connection *conn)
 			talloc_free(s);
 			return false;
 		}
+		talloc_set_destructor(s, smbd_shm_signing_destructor);
 		conn->smb1.signing_state = smb_signing_init_ex(s,
 							allowed, mandatory,
 							smbd_shm_signing_alloc,
