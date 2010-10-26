@@ -435,7 +435,7 @@ def build_direct_deps(bld, tgt_list):
             d = EXPAND_ALIAS(bld, d)
             if d == t.sname: continue
             if not d in targets:
-                Logs.error("Unknown dependency %s in %s" % (d, t.sname))
+                Logs.error("Unknown dependency '%s' in '%s'" % (d, t.sname))
                 sys.exit(1)
             if targets[d] in [ 'EMPTY', 'DISABLED' ]:
                 continue
