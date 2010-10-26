@@ -87,6 +87,7 @@ SRCDIR="`dirname $0`/../.."
 BINDIR="`pwd`/bin"
 SCRIPTDIR=$SRCDIR/script/tests
 LIBDIR=$PREFIX_ABS/lib
+VFS_MODULESDIR=$BINDIR
 PIDDIR=$PREFIX_ABS/pid
 CONFFILE=$LIBDIR/client.conf
 SAMBA4CONFFILE=$LIBDIR/samba4client.conf
@@ -329,7 +330,7 @@ cat >$SERVERCONFFILE<<EOF
 	map readonly = no
 	store dos attributes = yes
 	create mask = 755
-	vfs objects = $BINDIR/xattr_tdb.so $BINDIR/streams_depot.so
+	vfs objects = $VFS_MODULESDIR/xattr_tdb.so $VFS_MODULESDIR/streams_depot.so
 
 	printing = vlp
 	print command = $BINDIR/vlp tdbfile=$LOCKDIR/vlp.tdb print %p %s

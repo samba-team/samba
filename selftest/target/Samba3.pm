@@ -356,6 +356,7 @@ sub provision($$$$$$)
 
 	my $prefix_abs = abs_path($prefix);
 	my $bindir_abs = abs_path($self->{bindir});
+	my $vfs_modulesdir_abs = $bindir_abs;
 
 	my @dirs = ();
 
@@ -530,7 +531,7 @@ sub provision($$$$$$)
 	map readonly = no
 	store dos attributes = yes
 	create mask = 755
-	vfs objects = $bindir_abs/xattr_tdb.so $bindir_abs/streams_depot.so
+	vfs objects = $vfs_modulesdir_abs/xattr_tdb.so $vfs_modulesdir_abs/streams_depot.so
 
 	printing = vlp
 	print command = $bindir_abs/vlp tdbfile=$lockdir/vlp.tdb print %p %s
