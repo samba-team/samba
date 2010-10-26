@@ -60,7 +60,7 @@ from samba.upgradehelpers import (dn_sort, get_paths, newprovision,
                                  delta_update_basesamdb, update_policyids,
                                  update_machine_account_password,
                                  search_constructed_attrs_stored,
-                                 int64range2str,
+                                 int64range2str, update_dns_account_password,
                                  increment_calculated_keyversion_number)
 
 replace=2**FLAG_MOD_REPLACE
@@ -1723,8 +1723,34 @@ if __name__ == '__main__':
             # as the delta_upgrade
             schemareloadclosure()
             sync_calculated_attributes(ldbs.sam, names)
+            res = ldbs.sam.search(expression="(samaccountname=dns)",
+                                scope=SCOPE_SUBTREE, attrs=["dn"],
+                                controls=["search_options:1:2"])
+            if len(res) > 0:
+                message(SIMPLE, "You still have the old dns object for managing"
+                                "dynamic DNS, but you didn't supply --full so "
+                                "correct update can't be done")
+                ldbs.groupedRollback()
+                new_ldbs.groupedRollback()
+                shutil.rmtree(provisiondir)
+                sys.exit(1)
         # 14)
         update_secrets(new_ldbs.secrets, ldbs.secrets, message)
+        # 14bis)
+        res = ldbs.sam.search(expression="(samaccountname=dns)",
+                                  scope=SCOPE_SUBTREE, attrs=["dn"],
+                                  controls=["search_options:1:2"])
+
+        if (len(res) == 1):
+            ldbs.sam.delete(res[0]["dn"])
+            res2 = ldbs.secrets.search(expression="(samaccountname=dns)",
+                                  scope=SCOPE_SUBTREE, attrs=["dn"])
+            update_dns_account_password(ldbs.sam, ldbs.secrets, names)
+            message(SIMPLE, "IMPORTANT !!! "
+                            "If you were using Dynmaic DNS before you need"
+                            " to update your configuration, so that the "
+                            "tkey-gssapi-credential has the following value:"
+                            "DNS/%s.%s" % (names.netbiosname.lower(), names.realm.lower()))
         # 15)
         message(SIMPLE, "Update machine account")
         update_machine_account_password(ldbs.sam, ldbs.secrets, names)

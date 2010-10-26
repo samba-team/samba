@@ -632,6 +632,13 @@ def update_secrets(newsecrets_ldb, secrets_ldb, messagefunc):
         delta.dn = current[0].dn
         secrets_ldb.modify(delta)
 
+    res2 = secrets_ldb.search(expression="(samaccountname=dns)",
+                                scope=SCOPE_SUBTREE, attrs=["dn"])
+
+    if (len(res2) == 1):
+            messagefunc(SIMPLE, "Remove old dns account")
+            secrets_ldb.delete(res2[0]["dn"])
+
 def getOEMInfo(samdb, rootdn):
     """Return OEM Information on the top level
     Samba4 use to store version info in this field
@@ -855,6 +862,47 @@ clearTextPassword:: """ + base64.b64encode(machinepass.encode('utf-16-le')) + ""
         raise ProvisioningError("Unable to find a Secure Channel"
                                 "of type SEC_CHAN_BDC")
 
+def update_dns_account_password(samdb, secrets_ldb, names):
+    """Update (change) the password of the dns both in the SAM db and in
+       secret one
+
+    :param samdb: An LDB object related to the sam.ldb file of a given provision
+    :param secrets_ldb: An LDB object related to the secrets.ldb file of a given
+                        provision
+    :param names: List of key provision parameters"""
+
+    expression = "samAccountName=dns-%s" % names.netbiosname
+    secrets_msg = secrets_ldb.search(expression=expression)
+    if len(secrets_msg) == 1:
+        res = samdb.search(expression=expression, attrs=[])
+        assert(len(res) == 1)
+
+        msg = ldb.Message(res[0].dn)
+        machinepass = samba.generate_random_password(128, 255)
+        mputf16 = machinepass.encode('utf-16-le')
+        msg["clearTextPassword"] = ldb.MessageElement(mputf16,
+                                                ldb.FLAG_MOD_REPLACE,
+                                                "clearTextPassword")
+
+        samdb.modify(msg)
+
+        res = samdb.search(expression=expression,
+                     attrs=["msDs-keyVersionNumber"])
+        assert(len(res) == 1)
+        kvno = str(res[0]["msDs-keyVersionNumber"])
+
+        msg = ldb.Message(secrets_msg[0].dn)
+        msg["secret"] = ldb.MessageElement(machinepass,
+                                                ldb.FLAG_MOD_REPLACE,
+                                                "secret")
+        msg["msDS-KeyVersionNumber"] = ldb.MessageElement(kvno,
+                                                ldb.FLAG_MOD_REPLACE,
+                                                "msDS-KeyVersionNumber")
+
+        secrets_ldb.modify(msg)
+    else:
+        raise ProvisioningError("Unable to find an object"
+                                " with %s" % expression )
 
 def search_constructed_attrs_stored(samdb, rootdn, attrs):
     """Search a given sam DB for calculated attributes that are
