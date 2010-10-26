@@ -161,11 +161,6 @@ bld.SAMBA_LIBRARY('dcerpc-samr',
 	header_path='gen_ndr'
 	)
 
-bld.SAMBA_SUBSYSTEM('RPC_NDR_DNS',
-	source='../../librpc/gen_ndr/ndr_dns_c.c',
-	public_deps='dcerpc ndr-standard',
-	)
-
 
 bld.SAMBA_LIBRARY('dcerpc-atsvc',
 	source='../../librpc/gen_ndr/ndr_atsvc_c.c',
@@ -359,12 +354,6 @@ bld.SAMBA_PYTHON('python_dcerpc_xattr',
 	source='../../librpc/gen_ndr/py_xattr.c',
 	deps='pytalloc-util pyrpc_util RPC_NDR_XATTR',
 	realname='samba/dcerpc/xattr.so'
-	)
-
-bld.SAMBA_PYTHON('python_dns',
-	source='../../librpc/gen_ndr/py_dns.c',
-	deps='pytalloc-util NDR_DNS pyrpc_util RPC_NDR_DNS',
-	realname='samba/dcerpc/dns.so'
 	)
 
 bld.SAMBA_PYTHON('python_netlogon',
