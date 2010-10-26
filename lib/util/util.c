@@ -937,7 +937,7 @@ bool next_token_no_ltrim_talloc(TALLOC_CTX *ctx,
 }
 
 /* Map a shared memory buffer of at least nelem counters. */
-void *allocate_anonymous_shared(size_t bufsz)
+void *anonymous_shared_allocate(size_t bufsz)
 {
 	void *buf;
 	size_t pagesz = getpagesize();

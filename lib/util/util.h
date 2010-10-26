@@ -858,7 +858,7 @@ bool add_gid_to_array_unique(TALLOC_CTX *mem_ctx, gid_t gid,
 /**
  * Allocate anonymous shared memory of the given size
  */
-void *allocate_anonymous_shared(size_t bufsz);
+void *anonymous_shared_allocate(size_t bufsz);
 
 /*
   run a command as a child process, with a timeout.
