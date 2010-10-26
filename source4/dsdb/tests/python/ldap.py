@@ -20,7 +20,7 @@ from ldb import SCOPE_SUBTREE, SCOPE_ONELEVEL, SCOPE_BASE, LdbError
 from ldb import ERR_NO_SUCH_OBJECT, ERR_ATTRIBUTE_OR_VALUE_EXISTS
 from ldb import ERR_ENTRY_ALREADY_EXISTS, ERR_UNWILLING_TO_PERFORM
 from ldb import ERR_NOT_ALLOWED_ON_NON_LEAF, ERR_OTHER, ERR_INVALID_DN_SYNTAX
-from ldb import ERR_NO_SUCH_ATTRIBUTE
+from ldb import ERR_NO_SUCH_ATTRIBUTE, ERR_INVALID_ATTRIBUTE_SYNTAX
 from ldb import ERR_OBJECT_CLASS_VIOLATION, ERR_NOT_ALLOWED_ON_RDN
 from ldb import ERR_NAMING_VIOLATION, ERR_CONSTRAINT_VIOLATION
 from ldb import ERR_UNDEFINED_ATTRIBUTE_TYPE
@@ -744,6 +744,61 @@ class BasicTests(unittest.TestCase):
         self.assertEquals(res[0]["description"][0], "desc1")
 
         self.delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+
+    def test_attribute_ranges(self):
+        """Test attribute ranges"""
+        print "Test attribute ranges"""
+
+        # Too short (min. 1)
+        try:
+            ldb.add({
+               "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
+               "objectClass": "person",
+               "sn": "" })
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_INVALID_ATTRIBUTE_SYNTAX)
+
+        # Too long (max. 64)
+#        try:
+#            ldb.add({
+#               "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
+#               "objectClass": "person",
+#               "sn": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" })
+#            self.fail()
+#        except LdbError, (num, _):
+#            self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
+
+        ldb.add({
+           "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
+           "objectClass": "person" })
+
+        # Too short (min. 1)
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+        m["sn"] = MessageElement("", FLAG_MOD_REPLACE, "sn")
+        try:
+            ldb.modify(m)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_INVALID_ATTRIBUTE_SYNTAX)
+
+        # Too long (max. 64)
+#        m = Message()
+#        m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+#        m["sn"] = MessageElement("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", FLAG_MOD_REPLACE, "sn")
+#        try:
+#            ldb.modify(m)
+#            self.fail()
+#        except LdbError, (num, _):
+#            self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+        m["sn"] = MessageElement("x", FLAG_MOD_REPLACE, "sn")
+        ldb.modify(m)
+
+        self.delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
 
     def test_empty_messages(self):
         """Test empty messages"""
