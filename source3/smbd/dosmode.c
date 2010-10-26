@@ -249,7 +249,7 @@ static bool get_ea_dos_attribute(connection_struct *conn,
 #else
 				) {
 #endif
-			DEBUG(1,("get_ea_dos_attributes: Cannot get attribute "
+			DEBUG(1,("get_ea_dos_attribute: Cannot get attribute "
 				 "from EA on file %s: Error = %s\n",
 				 smb_fname_str_dbg(smb_fname),
 				 strerror(errno)));
@@ -265,7 +265,7 @@ static bool get_ea_dos_attribute(connection_struct *conn,
 			(ndr_pull_flags_fn_t)ndr_pull_xattr_DOSATTRIB);
 
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		DEBUG(1,("get_ea_dos_attributes: bad ndr decode "
+		DEBUG(1,("get_ea_dos_attribute: bad ndr decode "
 			 "from EA on file %s: Error = %s\n",
 			 smb_fname_str_dbg(smb_fname),
 			 ndr_errstr(ndr_err)));
@@ -289,7 +289,7 @@ static bool get_ea_dos_attribute(connection_struct *conn,
 				update_stat_ex_create_time(&smb_fname->st,
 							create_time);
 
-				DEBUG(10,("get_ea_dos_attributes: file %s case 1 "
+				DEBUG(10,("get_ea_dos_attribute: file %s case 1 "
 					"set btime %s\n",
 					smb_fname_str_dbg(smb_fname),
 					time_to_asc(convert_timespec_to_time_t(
@@ -311,7 +311,7 @@ static bool get_ea_dos_attribute(connection_struct *conn,
 				update_stat_ex_create_time(&smb_fname->st,
 							create_time);
 
-				DEBUG(10,("get_ea_dos_attributes: file %s case 3 "
+				DEBUG(10,("get_ea_dos_attribute: file %s case 3 "
 					"set btime %s\n",
 					smb_fname_str_dbg(smb_fname),
 					time_to_asc(convert_timespec_to_time_t(
@@ -319,7 +319,7 @@ static bool get_ea_dos_attribute(connection_struct *conn,
 			}
 			break;
 			default:
-				DEBUG(1,("get_ea_dos_attributes: Badly formed DOSATTRIB on "
+				DEBUG(1,("get_ea_dos_attribute: Badly formed DOSATTRIB on "
 					 "file %s - %s\n", smb_fname_str_dbg(smb_fname),
 					 attrstr));
 	                return false;
