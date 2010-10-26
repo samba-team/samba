@@ -22,6 +22,7 @@
 */
 
 #include "includes.h"
+#include "librpc/gen_ndr/ndr_xattr.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_VFS
@@ -926,6 +927,9 @@ static int vfs_gpfs_fchmod(vfs_handle_struct *handle, files_struct *fsp, mode_t 
 
 static int gpfs_set_xattr(struct vfs_handle_struct *handle,  const char *path,
                            const char *name, const void *value, size_t size,  int flags){
+	struct xattr_DOSATTRIB dosattrib;
+        enum ndr_err_code ndr_err;
+        DATA_BLOB blob;
         const char *attrstr = value;
         unsigned int dosmode=0;
         struct gpfs_winattr attrs;
@@ -939,11 +943,31 @@ static int gpfs_set_xattr(struct vfs_handle_struct *handle,  const char *path,
 		return SMB_VFS_NEXT_SETXATTR(handle,path,name,value,size,flags);
         }
 
-        if (size < 2 || attrstr[0] != '0' || attrstr[1] != 'x' ||
-                                sscanf(attrstr, "%x", &dosmode) != 1) {
-                        DEBUG(1,("gpfs_set_xattr: Trying to set badly formed DOSATTRIB on file %s - %s\n", path, attrstr));
-                return False;
-        }
+	blob.data = (uint8_t *)attrstr;
+	blob.length = size;
+
+	ndr_err = ndr_pull_struct_blob(&blob, talloc_tos(), &dosattrib,
+			(ndr_pull_flags_fn_t)ndr_pull_xattr_DOSATTRIB);
+
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		DEBUG(1, ("gpfs_set_xattr: bad ndr decode "
+			  "from EA on file %s: Error = %s\n",
+			  path, ndr_errstr(ndr_err)));
+		return false;
+	}
+
+	if (dosattrib.version != 3) {
+		DEBUG(1, ("gpfs_set_xattr: expected dosattrib version 3, got "
+			  "%d\n", (int)dosattrib.version));
+		return false;
+	}
+	if (!(dosattrib.info.info3.valid_flags & XATTR_DOSINFO_ATTRIB)) {
+		DEBUG(10, ("gpfs_set_xattr: XATTR_DOSINFO_ATTRIB not "
+			   "valid, ignoring\n"));
+		return true;
+	}
+
+	dosmode = dosattrib.info.info3.attrib;
 
         attrs.winAttrs = 0;
         /*Just map RD_ONLY, ARCHIVE, SYSTEM and HIDDEN. Ignore the others*/
@@ -1009,9 +1033,9 @@ static ssize_t gpfs_get_xattr(struct vfs_handle_struct *handle,  const char *pat
                 dosmode |= FILE_ATTRIBUTE_READONLY;
         }
 
-        snprintf(attrstr, size, "0x%x", dosmode & SAMBA_ATTRIBUTES_MASK);
+        snprintf(attrstr, size, "0x%2.2x", dosmode & SAMBA_ATTRIBUTES_MASK);
         DEBUG(10, ("gpfs_get_xattr: returning %s\n",attrstr));
-        return size;
+        return 4;
 }
 
 static int vfs_gpfs_stat(struct vfs_handle_struct *handle,
