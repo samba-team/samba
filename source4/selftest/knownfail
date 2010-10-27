@@ -78,4 +78,5 @@ samba4.smb2.compound.*.RELATED1
 samba4.smb2.compound.*.RELATED2
 samba4.smb2.compound.*.INVALID2
 samba4.ldap.acl.*.search.* # ACL search behaviour not enabled by default
+samba4.ldap.acl.*.ntSecurityDescriptor.* # ACL extended checks on search not enabled by default
 

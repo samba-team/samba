@@ -1621,6 +1621,65 @@ replace: userPassword
 userPassword: thatsAcomplPASS1
 """)
 
+class AclExtendedTests(AclTests):
+
+    def setUp(self):
+        super(AclExtendedTests, self).setUp()
+        #regular user, will be the creator
+        self.u1 = "ext_u1"
+        #regular user
+        self.u2 = "ext_u2"
+        #admin user
+        self.u3 = "ext_u3"
+        self.create_enable_user(self.u1)
+        self.create_enable_user(self.u2)
+        self.create_enable_user(self.u3)
+        self.add_group_member(self.ldb_admin, "CN=Domain Admins,CN=Users," + self.base_dn,
+                              self.get_user_dn(self.u3))
+        self.ldb_user1 = self.get_ldb_connection(self.u1, self.user_pass)
+        self.ldb_user2 = self.get_ldb_connection(self.u2, self.user_pass)
+        self.ldb_user3 = self.get_ldb_connection(self.u3, self.user_pass)
+        self.user_sid1 = self.get_object_sid(self.get_user_dn(self.u1))
+        self.user_sid2 = self.get_object_sid(self.get_user_dn(self.u2))
+
+    def tearDown(self):
+        super(AclExtendedTests, self).tearDown()
+        self.delete_force(self.ldb_admin, self.get_user_dn(self.u1))
+        self.delete_force(self.ldb_admin, self.get_user_dn(self.u2))
+        self.delete_force(self.ldb_admin, self.get_user_dn(self.u3))
+        self.delete_force(self.ldb_admin, "CN=ext_group1,OU=ext_ou1," + self.base_dn)
+        self.delete_force(self.ldb_admin, "ou=ext_ou1," + self.base_dn)
+
+    def test_ntSecurityDescriptor(self):
+        #create empty ou
+        self.create_ou(self.ldb_admin, "ou=ext_ou1," + self.base_dn)
+        #give u1 Create children access
+        mod = "(A;;CC;;;%s)" % str(self.user_sid1)
+        self.dacl_add_ace("OU=ext_ou1," + self.base_dn, mod)
+        mod = "(A;;LC;;;%s)" % str(self.user_sid2)
+        self.dacl_add_ace("OU=ext_ou1," + self.base_dn, mod)
+        #create a group under that, grant RP to u2
+        self.create_group(self.ldb_user1, "CN=ext_group1,OU=ext_ou1," + self.base_dn)
+        mod = "(A;;RP;;;%s)" % str(self.user_sid2)
+        self.dacl_add_ace("CN=ext_group1,OU=ext_ou1," + self.base_dn, mod)
+        #u2 must not read the descriptor
+        res = self.ldb_user2.search("CN=ext_group1,OU=ext_ou1," + self.base_dn,
+                                    SCOPE_BASE, None, ["nTSecurityDescriptor"])
+        self.assertNotEqual(res,[])
+        self.assertFalse("nTSecurityDescriptor" in res[0].keys())
+        #grant RC to u2 - still no access
+        mod = "(A;;RC;;;%s)" % str(self.user_sid2)
+        self.dacl_add_ace("CN=ext_group1,OU=ext_ou1," + self.base_dn, mod)
+        res = self.ldb_user2.search("CN=ext_group1,OU=ext_ou1," + self.base_dn,
+                                    SCOPE_BASE, None, ["nTSecurityDescriptor"])
+        self.assertNotEqual(res,[])
+        self.assertFalse("nTSecurityDescriptor" in res[0].keys())
+        #u3 is member of administrators group, should be able to read sd
+        res = self.ldb_user3.search("CN=ext_group1,OU=ext_ou1," + self.base_dn,
+                                    SCOPE_BASE, None, ["nTSecurityDescriptor"])
+        self.assertEqual(len(res),1)
+        self.assertTrue("nTSecurityDescriptor" in res[0].keys())
+
 # Important unit running information
 
 if not "://" in host:
@@ -1641,5 +1700,8 @@ if not runner.run(unittest.makeSuite(AclCARTests)).wasSuccessful():
     rc = 1
 if not runner.run(unittest.makeSuite(AclSearchTests)).wasSuccessful():
     rc = 1
+if not runner.run(unittest.makeSuite(AclExtendedTests)).wasSuccessful():
+    rc = 1
+
 
 sys.exit(rc)

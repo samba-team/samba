@@ -146,7 +146,7 @@ static int aclread_callback(struct ldb_request *req, struct ldb_reply *ares)
 								     tmp_ctx,
 								     sd,
 								     sid,
-								     SEC_FLAG_SYSTEM_SECURITY,
+								     SEC_FLAG_SYSTEM_SECURITY|SEC_STD_READ_CONTROL,
 								     attr);
 			 } else {
 				 ret = acl_check_access_on_attribute(ac->module,
