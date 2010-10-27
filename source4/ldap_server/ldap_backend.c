@@ -594,7 +594,6 @@ static NTSTATUS ldapsrv_SearchRequest(struct ldapsrv_call *call)
 		}
 	}
 
-	ldb_request_add_control(lreq, DSDB_CONTROL_SEARCH_APPLY_ACCESS, false, NULL);
 	ldb_set_timeout(samdb, lreq, req->timelimit);
 
 	ldb_req_mark_untrusted(lreq);

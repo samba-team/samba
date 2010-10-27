@@ -195,25 +195,24 @@ static int aclread_search(struct ldb_module *module, struct ldb_request *req)
 	struct aclread_context *ac;
 	struct ldb_request *down_req;
 	struct ldb_control *as_system = ldb_request_get_control(req, LDB_CONTROL_AS_SYSTEM_OID);
-	struct ldb_control *apply_access = ldb_request_get_control(req, DSDB_CONTROL_SEARCH_APPLY_ACCESS);
 	struct auth_session_info *session_info;
 	struct ldb_result *res;
 	struct ldb_message_element *parent;
 	struct aclread_private *p;
+	bool is_untrusted = ldb_req_is_untrusted(req);
 	static const char *acl_attrs[] = {
 		 "parentGUID",
 		 NULL
-	 };
+	};
+
 	ldb = ldb_module_get_ctx(module);
 	p = talloc_get_type(ldb_module_get_private(module), struct aclread_private);
-	if (apply_access != NULL) {
-		apply_access->critical = 0;
-	}
+
 	/* skip access checks if we are system or system control is supplied
 	 * or this is not LDAP server request */
 	if (!p || !p->enabled ||
 	    dsdb_module_am_system(module)
-	    || as_system || !apply_access) {
+	    || as_system || !is_untrusted) {
 		return ldb_next_request(module, req);
 	}
 	/* no checks on special dn */
