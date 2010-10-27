@@ -1,6 +1,6 @@
 # Samba automatic dependency handling and project rules
 
-import Build, os, re, Environment, Logs
+import Build, os, re, Environment, Logs, time
 from samba_utils import *
 from samba_autoconf import *
 from samba_bundled import BUILTIN_LIBRARY
@@ -70,6 +70,7 @@ def expand_subsystem_deps(bld):
         #    module         = rpc_epmapper (a module object within the dcerpc_server subsystem)
 
         subsystem = bld.name_to_obj(subsystem_name, bld.env)
+        bld.ASSERT(subsystem is not None, "Unable to find subsystem %s" % subsystem_name)
         for d in subsystem_list[subsystem_name]:
             module_name = d['TARGET']
             module_type = targets[module_name]
@@ -83,6 +84,7 @@ def expand_subsystem_deps(bld):
                 # that depend on this subsystem get the modules of that subsystem
                 subsystem.samba_deps_extended.append(module_name)
             module = bld.name_to_obj(module_name, bld.env)
+            bld.ASSERT(module is not None, "Unable to find module %s in subsystem %s" % (module_name, subsystem_name))
             module.samba_includes_extended.extend(subsystem.samba_includes_extended)
             if targets[subsystem_name] in ['SUBSYSTEM']:
                 # if a subsystem is a plain object type (not a library) then any modules
@@ -125,6 +127,7 @@ def build_dependencies(self):
            up_list.append(l.upper())
         self.uselib = up_list
 
+
 def build_includes(self):
     '''This builds the right set of includes for a target.
 
@@ -165,7 +168,7 @@ def build_includes(self):
     for d in inc_deps:
         t = bld.name_to_obj(d, bld.env)
         bld.ASSERT(t is not None, "Unable to find dependency %s for %s" % (d, self.sname))
-        inclist = getattr(t, 'samba_includes_extended', [])
+        inclist = getattr(t, 'samba_includes_extended', [])[:]
         if getattr(t, 'local_include', True) == True:
             inclist.append('.')
         if inclist == []:
@@ -253,41 +256,53 @@ def add_init_functions(self):
 
 
 def check_duplicate_sources(bld, tgt_list):
-    '''see if we are compiling the same source file into multiple
-    subsystem targets for the same library or binary'''
+    '''see if we are compiling the same source file more than once
+       without an allow_duplicates attribute'''
 
     debug('deps: checking for duplicate sources')
 
     targets = LOCAL_CACHE(bld, 'TARGET_TYPE')
     ret = True
 
-    seen = set()
+    global tstart
 
     for t in tgt_list:
-        obj_sources = getattr(t, 'source', '')
+        source_list = TO_LIST(getattr(t, 'source', ''))
         tpath = os.path.normpath(os_path_relpath(t.path.abspath(bld.env), t.env.BUILD_DIRECTORY + '/default'))
-        obj_sources = bld.SUBDIR(tpath, obj_sources)
-        t.samba_source_set = set(TO_LIST(obj_sources))
+	obj_sources = set()
+        for s in source_list:
+            p = os.path.normpath(os.path.join(tpath, s))
+            if p in obj_sources:
+                Logs.error("ERROR: source %s appears twice in target '%s'" % (p, t.sname))
+                sys.exit(1)
+            obj_sources.add(p)
+        t.samba_source_set = obj_sources
 
+    subsystems = {}
+
+    # build a list of targets that each source file is part of
     for t in tgt_list:
+        sources = []
         if not targets[t.sname] in [ 'LIBRARY', 'BINARY', 'PYTHON' ]:
             continue
-
-        sources = []
         for obj in t.add_objects:
             t2 = t.bld.name_to_obj(obj, bld.env)
             source_set = getattr(t2, 'samba_source_set', set())
-            sources.append( { 'dep':obj, 'src':source_set} )
-        for s in sources:
-            for s2 in sources:
-                if s['dep'] == s2['dep']: continue
-                common = s['src'].intersection(s2['src'])
-                if common.difference(seen):
-                    Logs.error("Target %s has duplicate source files in %s and %s : %s" % (t.sname,
-                                                                                      s['dep'], s2['dep'],
-                                                                                      common))
-                    seen = seen.union(common)
-                    ret = False
+            for s in source_set:
+                if not s in subsystems:
+                    subsystems[s] = {}
+                if not t.sname in subsystems[s]:
+                    subsystems[s][t.sname] = []
+                subsystems[s][t.sname].append(t2.sname)
+
+    for s in subsystems:
+        if len(subsystems[s]) > 1 and Options.options.SHOW_DUPLICATES:
+            Logs.warn("WARNING: source %s is in more than one target: %s" % (s, subsystems[s].keys()))
+        for tname in subsystems[s]:
+            if len(subsystems[s][tname]) > 1:
+                Logs.error("ERROR: source %s is in more than one subsystem of target '%s': %s" % (s, tname, subsystems[s][tname]))
+                sys.exit(1)
+                
     return ret
 
 
@@ -1065,21 +1080,36 @@ def check_project_rules(bld):
     if not force_project_rules and load_samba_deps(bld, tgt_list):
         return
 
+    global tstart
+    tstart = time.clock()
+
     bld.new_rules = True    
     Logs.info("Checking project rules ...")
 
     debug('deps: project rules checking started')
 
     expand_subsystem_deps(bld)
+
+    debug("deps: expand_subsystem_deps: %f" % (time.clock() - tstart))
+
     replace_grouping_libraries(bld, tgt_list)
+
+    debug("deps: replace_grouping_libraries: %f" % (time.clock() - tstart))
+
     build_direct_deps(bld, tgt_list)
 
+    debug("deps: build_direct_deps: %f" % (time.clock() - tstart))
+
     break_dependency_loops(bld, tgt_list)
+
+    debug("deps: break_dependency_loops: %f" % (time.clock() - tstart))
 
     if Options.options.SHOWDEPS:
             show_dependencies(bld, Options.options.SHOWDEPS, set())
 
     calculate_final_deps(bld, tgt_list, loops)
+
+    debug("deps: calculate_final_deps: %f" % (time.clock() - tstart))
 
     if Options.options.SHOW_DUPLICATES:
             show_object_duplicates(bld, tgt_list)
@@ -1088,6 +1118,7 @@ def check_project_rules(bld):
     for f in [ build_dependencies, build_includes, add_init_functions ]:
         debug('deps: project rules checking %s', f)
         for t in tgt_list: f(t)
+        debug("deps: %s: %f" % (f, time.clock() - tstart))
 
     debug('deps: project rules stage1 completed')
 
@@ -1097,17 +1128,25 @@ def check_project_rules(bld):
         Logs.error("Duplicate sources present - aborting")
         sys.exit(1)
 
+    debug("deps: check_duplicate_sources: %f" % (time.clock() - tstart))
+
     if not check_group_ordering(bld, tgt_list):
         Logs.error("Bad group ordering - aborting")
         sys.exit(1)
 
+    debug("deps: check_group_ordering: %f" % (time.clock() - tstart))
+
     show_final_deps(bld, tgt_list)
+
+    debug("deps: show_final_deps: %f" % (time.clock() - tstart))
 
     debug('deps: project rules checking completed - %u targets checked',
           len(tgt_list))
 
     if not bld.is_install:
         save_samba_deps(bld, tgt_list)
+
+    debug("deps: save_samba_deps: %f" % (time.clock() - tstart))
 
     Logs.info("Project rules pass")
 
