@@ -166,7 +166,8 @@ _PUBLIC_ void ndr_print_debug_helper(struct ndr_print *ndr, const char *format, 
 {
 	va_list ap;
 	char *s = NULL;
-	int i, ret;
+	uint32_t i;
+	int ret;
 
 	va_start(ap, format);
 	ret = vasprintf(&s, format, ap);
@@ -193,7 +194,7 @@ _PUBLIC_ void ndr_print_debug_helper(struct ndr_print *ndr, const char *format, 
 _PUBLIC_ void ndr_print_printf_helper(struct ndr_print *ndr, const char *format, ...) 
 {
 	va_list ap;
-	int i;
+	uint32_t i;
 
 	if (!ndr->no_newline) {
 		for (i=0;i<ndr->depth;i++) {
@@ -212,7 +213,7 @@ _PUBLIC_ void ndr_print_printf_helper(struct ndr_print *ndr, const char *format,
 _PUBLIC_ void ndr_print_string_helper(struct ndr_print *ndr, const char *format, ...)
 {
 	va_list ap;
-	int i;
+	uint32_t i;
 
 	if (!ndr->no_newline) {
 		for (i=0;i<ndr->depth;i++) {
