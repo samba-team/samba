@@ -621,14 +621,14 @@ static bool _reg_perfcount_add_counter(struct PERF_DATA_BLOCK *block,
 	obj = NULL;
 	memset(buf, 0, PERFCOUNT_MAX_LEN);
 	memcpy(buf, data.dptr, data.dsize);
-	begin = index(buf, '[');
-	end = index(buf, ']');
+	begin = strchr(buf, '[');
+	end = strchr(buf, ']');
 	if(begin == NULL || end == NULL)
 		return False;
 	start = begin+1;
 
 	while(start < end) {
-		stop = index(start, ',');
+		stop = strchr(start, ',');
 		if(stop == NULL)
 			stop = end;
 		*stop = '\0';
