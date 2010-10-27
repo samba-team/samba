@@ -594,9 +594,9 @@ WERROR dsdb_attribute_from_ldb(struct ldb_context *ldb,
 		/* set an invalid value */
 		attr->attributeSyntax_id = 0xFFFFFFFF;
 	} else {
-		status = dsdb_schema_pfm_make_attid(schema->prefixmap,
-						    attr->attributeSyntax_oid,
-						    &attr->attributeSyntax_id);
+		status = dsdb_schema_pfm_attid_from_oid(schema->prefixmap,
+							attr->attributeSyntax_oid,
+							&attr->attributeSyntax_id);
 		if (!W_ERROR_IS_OK(status)) {
 			DEBUG(0,("%s: '%s': unable to map attributeSyntax_ %s: %s\n",
 				__location__, attr->lDAPDisplayName, attr->attributeSyntax_oid,
