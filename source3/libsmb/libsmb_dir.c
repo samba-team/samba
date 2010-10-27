@@ -1049,6 +1049,7 @@ SMBC_getdents_ctx(SMBCCTX *context,
 
 	while ((dirlist = dir->dir_next)) {
 		struct smbc_dirent *dirent;
+		struct smbc_dirent *currentEntry = (struct smbc_dirent *)ndir;
 
 		if (!dirlist->dirent) {
 
@@ -1085,16 +1086,22 @@ SMBC_getdents_ctx(SMBCCTX *context,
 
 		}
 
-		memcpy(ndir, dirent, reqd); /* Copy the data in ... */
+		memcpy(currentEntry, dirent, reqd); /* Copy the data in ... */
 
-		((struct smbc_dirent *)ndir)->comment =
-			(char *)(&((struct smbc_dirent *)ndir)->name +
-                                 dirent->namelen +
-                                 1);
+		currentEntry->comment = &currentEntry->name[0] +
+						dirent->namelen + 1;
 
 		ndir += reqd;
-
 		rem -= reqd;
+
+		/* Try and align the struct for the next entry
+		   on a valid pointer boundary by appending zeros */
+		while((rem > 0) && ((unsigned long long)ndir & (sizeof(void*) - 1))) {
+			*ndir = '\0';
+			rem--;
+			ndir++;
+			currentEntry->dirlen++;
+		}
 
 		dir->dir_next = dirlist = dirlist -> next;
 	}
