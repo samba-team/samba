@@ -35,7 +35,7 @@ LIBNDR_DRSUAPI_SRC = '''../librpc/ndr/ndr_drsuapi.c
                      ../librpc/ndr/ndr_drsblobs.c
                      ../librpc/gen_ndr/ndr_drsblobs.c'''
 
-COMPRESSION_SRC = '../lib/compression/mszip.c ../lib/compression/lzxpress.c'
+COMPRESSION_SRC = '../lib/compression/mszip.c'
 
 DRSUAPI_SRC = '''${LIBNDR_DRSUAPI_SRC}
               ${COMPRESSION_SRC}'''
@@ -1039,7 +1039,7 @@ bld.SAMBA_SUBSYSTEM('LIBSAMBA',
 
 bld.SAMBA_SUBSYSTEM('LIBSMB',
                     source=LIBSMB_SRC,
-                    deps='LIBSAMBA ZLIB CLDAP',
+                    deps='LIBSAMBA ZLIB LZXPRESS CLDAP',
                     vars=locals())
 
 bld.SAMBA_SUBSYSTEM('CLDAP',
