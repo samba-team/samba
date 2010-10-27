@@ -80,11 +80,11 @@ def build(bld):
         vnum = VERSION
 
         # should we also install the symlink to libtalloc1.so here?
-        bld.SAMBA_LIBRARY('talloc-compat1',
+        bld.SAMBA_LIBRARY('talloc-compat1-%s' % (VERSION),
                           'compat/talloc_compat1.c',
-                          deps='talloc',
-                          enabled=bld.env.TALLOC_COMPAT1,
-                          vnum=VERSION)
+                          public_deps='talloc',
+                          soname='libtalloc.so.1',
+                          enabled=bld.env.TALLOC_COMPAT1)
 
         if not bld.env.disable_python:
             bld.PKG_CONFIG_FILES('pytalloc-util.pc', vnum=VERSION)
