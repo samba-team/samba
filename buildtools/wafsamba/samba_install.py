@@ -98,6 +98,10 @@ def install_library(self):
         if not self.private_library:
             # only generate the dev link for non-bundled libs
             dev_link     = bld.make_libname(self.target)
+    elif getattr(self, 'soname', ''):
+        install_name = bld.make_libname(self.target)
+        install_link = self.soname
+        inst_name    = bld.make_libname(t.target)
     else:
         install_name = bld.make_libname(self.target)
         install_link = None
@@ -119,6 +123,15 @@ def install_library(self):
                        install_name)
 
 
+@feature('cshlib')
+@after('apply_implib')
+@before('apply_vnum')
+def apply_soname(self):
+    '''install a library, taking account of the different rpath varients'''
+
+    if self.env.SONAME_ST and getattr(self, 'soname', ''):
+        self.env.append_value('LINKFLAGS', self.env.SONAME_ST % self.soname)
+        self.env.SONAME_ST = ''
 
 ##############################
 # handle the creation of links for libraries and binaries in the build tree

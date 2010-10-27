@@ -97,6 +97,7 @@ def SAMBA_LIBRARY(bld, libname, source,
                   header_path=None,
                   pc_files=None,
                   vnum=None,
+                  soname=None,
                   cflags='',
                   external_library=False,
                   realname=None,
@@ -170,7 +171,7 @@ def SAMBA_LIBRARY(bld, libname, source,
     link_name = bld.map_shlib_extension(link_name, python=(target_type=='PYTHON'))
 
     # we don't want any public libraries without version numbers
-    if not private_library and vnum is None and target_type != 'PYTHON' and not realname:
+    if not private_library and vnum is None and soname is None and target_type != 'PYTHON' and not realname:
         raise Utils.WafError("public library '%s' must have a vnum" % libname)
 
     if target_type == 'PYTHON' or realname or not private_library:
@@ -207,6 +208,7 @@ def SAMBA_LIBRARY(bld, libname, source,
         samba_includes  = includes,
         local_include   = local_include,
         vnum            = vnum,
+        soname          = soname,
         install_path    = None,
         samba_inst_path = install_path,
         name            = libname,
