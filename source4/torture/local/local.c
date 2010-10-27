@@ -24,6 +24,7 @@
 #include "torture/auth/proto.h"
 #include "../lib/crypto/test_proto.h"
 #include "lib/registry/tests/proto.h"
+#include "lib/replace/replace-test.h"
 
 /* ignore me */ static struct torture_suite *
 	(*suite_generators[]) (TALLOC_CTX *mem_ctx) =

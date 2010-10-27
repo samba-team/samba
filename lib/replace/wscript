@@ -407,13 +407,16 @@ def build(bld):
                       private_library=True,
                       deps='crypt dl nsl socket rt')
 
-    TEST_SOURCES = '''test/testsuite.c test/main.c test/strptime.c
-                      test/os2_delete.c test/getifaddrs.c'''
-
+    bld.SAMBA_LIBRARY('replace-test',
+                      source='''test/testsuite.c test/strptime.c
+                      test/os2_delete.c test/getifaddrs.c''',
+                      autoproto='replace-test.h',
+                      deps='replace',
+                      private_library=True)
 
     bld.SAMBA_BINARY('replace_testsuite',
-                     TEST_SOURCES,
-                     deps='replace',
+                     source='test/main.c',
+                     deps='replace replace-test',
                      install=False)
 
     # build replacements for stdint.h and stdbool.h if needed
