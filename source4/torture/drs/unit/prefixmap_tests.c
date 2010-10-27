@@ -3,7 +3,7 @@
 
    DRSUAPI prefixMap unit tests
 
-   Copyright (C) Kamen Mazdrashki <kamen.mazdrashki@postpath.com> 2009
+   Copyright (C) Kamen Mazdrashki <kamenim@samba.org> 2009-2010
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -52,7 +52,10 @@ struct drsut_pfm_oid_data {
 };
 
 /**
- * Default prefixMap initialization data
+ * Default prefixMap initialization data.
+ * This prefixMap is what dsdb_schema_pfm_new() should return.
+ * Based on: MS-DRSR, 5.16.4 ATTRTYP-to-OID Conversion
+ *           procedure NewPrefixTable( )
  */
 static const struct drsut_pfm_oid_data _prefixmap_test_new_data[] = {
 	{.id=0x00000000, .bin_oid="5504",                 .oid_prefix="2.5.4"},
@@ -77,7 +80,9 @@ static const struct drsut_pfm_oid_data _prefixmap_test_new_data[] = {
 };
 
 /**
- * Data to be used for creating full prefix map for testing
+ * Data to be used for creating full prefix map for testing.
+ * 'full-prefixMap' is based on what w2k8 returns as a prefixMap
+ * on clean installation - i.e. prefixMap for clean Schema
  */
 static const struct drsut_pfm_oid_data _prefixmap_full_map_data[] = {
 	{.id=0x00000000, .bin_oid="0x5504",                     .oid_prefix="2.5.4"},
@@ -157,7 +162,6 @@ static const struct {
 
 /**
  * Creates dsdb_schema_prefixmap based on predefined data
- *
  */
 static WERROR _drsut_prefixmap_new(const struct drsut_pfm_oid_data *_pfm_init_data, uint32_t count,
 				   TALLOC_CTX *mem_ctx, struct dsdb_schema_prefixmap **_pfm)
@@ -189,6 +193,9 @@ static WERROR _drsut_prefixmap_new(const struct drsut_pfm_oid_data *_pfm_init_da
 	return WERR_OK;
 }
 
+/**
+ * Compares two prefixMaps for being equal - same items on same indexes
+ */
 static bool _torture_drs_pfm_compare_same(struct torture_context *tctx,
 					  const struct dsdb_schema_prefixmap *pfm_left,
 					  const struct dsdb_schema_prefixmap *pfm_right,
@@ -690,7 +697,7 @@ static bool torture_drs_unit_pfm_read_write_ldb(struct torture_context *tctx, st
 }
 
 /**
- * Test rdsdb_create_prefix_mapping
+ * Test dsdb_create_prefix_mapping
  */
 static bool torture_drs_unit_dsdb_create_prefix_mapping(struct torture_context *tctx, struct drsut_prefixmap_data *priv)
 {
