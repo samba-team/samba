@@ -127,10 +127,6 @@ static void exit_server_common(enum server_exit_reason how,
 	TALLOC_FREE(smbd_memcache_ctx);
 
 	if (how != SERVER_EXIT_NORMAL) {
-		int oldlevel = DEBUGLEVEL;
-
-		DEBUGLEVEL = 10;
-
 		DEBUGSEP(0);
 		DEBUG(0,("Abnormal server exit: %s\n",
 			reason ? reason : "no explanation provided"));
@@ -138,7 +134,6 @@ static void exit_server_common(enum server_exit_reason how,
 
 		log_stack_trace();
 
-		DEBUGLEVEL = oldlevel;
 		dump_core();
 
 	} else {
