@@ -260,7 +260,15 @@ def configure(conf):
         conf.env.RPATH_ON_BUILD   = False
 
     # we should use the PIC options in waf instead
-    conf.ADD_CFLAGS('-fPIC', testflags=True)
+    # Some compilo didn't support -fPIC but just print a warning
+    if conf.env['COMPILER_CC'] == "suncc":
+        conf.ADD_CFLAGS('-KPIC', testflags=True)
+        # we really want define here as we need to have this
+        # define even during the tests otherwise detection of
+        # boolean is broken
+        conf.DEFINE('_STDC_C99', 1, add_to_cflags=True)
+    else:
+        conf.ADD_CFLAGS('-fPIC', testflags=True)
 
     conf.CHECK_INLINE()
 
