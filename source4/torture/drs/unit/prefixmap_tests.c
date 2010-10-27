@@ -139,24 +139,26 @@ static const struct drsut_pfm_oid_data _prefixmap_full_map_data[] = {
 
 
 /**
- * OID-to-ATTID mappings to be used for testing
+ * OID-to-ATTID mappings to be used for testing.
+ * An entry is marked as 'exists=true' if it exists in
+ * base prefixMap (_prefixmap_test_new_data)
  */
 static const struct {
 	const char 	*oid;
 	uint32_t 	id;
 	uint32_t 	attid;
+	bool		exists;
 } _prefixmap_test_data[] = {
-	{.oid="2.5.4.0", 		.id=0x00000000, .attid=0x000000},
-	{.oid="2.5.4.42", 		.id=0x00000000, .attid=0x00002a},
-	{.oid="1.2.840.113556.1.2.1", 	.id=0x00000002, .attid=0x020001},
-	{.oid="1.2.840.113556.1.2.13", 	.id=0x00000002, .attid=0x02000d},
-	{.oid="1.2.840.113556.1.2.281", .id=0x00000002, .attid=0x020119},
-	{.oid="1.2.840.113556.1.4.125", .id=0x00000009, .attid=0x09007d},
-	{.oid="1.2.840.113556.1.4.146", .id=0x00000009, .attid=0x090092},
-	{.oid="1.2.250.1", 	 	.id=0x00001b86, .attid=0x1b860001},
-	{.oid="1.2.250.130", 	 	.id=0x00001b86, .attid=0x1b860082},
-	{.oid="1.2.250.16386", 	 	.id=0x00001c78, .attid=0x1c788002},
-	{.oid="1.2.250.2097154", 	.id=0x00001c7b, .attid=0x1c7b8002},
+	{.oid="2.5.4.0", 		.id=0x00000000, .attid=0x000000,   .exists=true},
+	{.oid="2.5.4.42", 		.id=0x00000000, .attid=0x00002a,   .exists=true},
+	{.oid="1.2.840.113556.1.2.1", 	.id=0x00000002, .attid=0x020001,   .exists=true},
+	{.oid="1.2.840.113556.1.2.13", 	.id=0x00000002, .attid=0x02000d,   .exists=true},
+	{.oid="1.2.840.113556.1.2.281", .id=0x00000002, .attid=0x020119,   .exists=true},
+	{.oid="1.2.840.113556.1.4.125", .id=0x00000009, .attid=0x09007d,   .exists=true},
+	{.oid="1.2.840.113556.1.4.146", .id=0x00000009, .attid=0x090092,   .exists=true},
+	{.oid="1.2.250.1", 	 	.id=0x00001b86, .attid=0x1b860001, .exists=false},
+	{.oid="1.2.250.16386", 	 	.id=0x00001c78, .attid=0x1c788002, .exists=false},
+	{.oid="1.2.250.2097154", 	.id=0x00001c7b, .attid=0x1c7b8002, .exists=false},
 };
 
 
@@ -401,22 +403,6 @@ static bool torture_drs_unit_pfm_attid_from_oid_base_map(struct torture_context 
 	struct dsdb_schema_prefixmap *pfm = NULL;
 	struct dsdb_schema_prefixmap pfm_prev;
 	TALLOC_CTX *mem_ctx;
-	const struct {
-		const char 	*oid;
-		uint32_t 	attid;
-		bool		exists;	/* if this prefix already exists or should be added */
-	} _test_data[] = {
-		{.oid="2.5.4.0", 		.attid=0x00000000, true},
-		{.oid="2.5.4.42", 		.attid=0x0000002a, true},
-		{.oid="1.2.840.113556.1.2.1", 	.attid=0x00020001, true},
-		{.oid="1.2.840.113556.1.2.13", 	.attid=0x0002000d, true},
-		{.oid="1.2.840.113556.1.2.281", .attid=0x00020119, true},
-		{.oid="1.2.840.113556.1.4.125", .attid=0x0009007d, true},
-		{.oid="1.2.840.113556.1.4.146", .attid=0x00090092, true},
-		{.oid="1.2.250.1", 	 	.attid=0x1b860001, false},
-		{.oid="1.2.250.16386", 	 	.attid=0x1c788002, false},
-		{.oid="1.2.250.2097154", 	.attid=0x1c7b8002, false},
-	};
 
 	mem_ctx = talloc_new(priv);
 	torture_assert(tctx, mem_ctx, "Unexpected: Have no memory!");
@@ -430,22 +416,24 @@ static bool torture_drs_unit_pfm_attid_from_oid_base_map(struct torture_context 
 	pfm_prev.prefixes = talloc_reference(mem_ctx, pfm->prefixes);
 
 	/* get some ATTIDs and check result */
-	for (i = 0; i < ARRAY_SIZE(_test_data); i++) {
-		werr = dsdb_schema_pfm_attid_from_oid(pfm, _test_data[i].oid, &attid);
+	for (i = 0; i < ARRAY_SIZE(_prefixmap_test_data); i++) {
+		werr = dsdb_schema_pfm_attid_from_oid(pfm, _prefixmap_test_data[i].oid, &attid);
 
 		/* prepare error message */
 		err_msg = talloc_asprintf(mem_ctx,
 					  "dsdb_schema_pfm_attid_from_oid() failed for %s",
-					  _test_data[i].oid);
+					  _prefixmap_test_data[i].oid);
 		torture_assert(tctx, err_msg, "Unexpected: Have no memory!");
 
 
 		/* verify pfm hasn't been altered */
-		if (_test_data[i].exists) {
+		if (_prefixmap_test_data[i].exists) {
 			/* should succeed and return valid ATTID */
 			torture_assert_werr_ok(tctx, werr, err_msg);
 			/* verify ATTID */
-			torture_assert_int_equal(tctx, attid, _test_data[i].attid, err_msg);
+			torture_assert_int_equal(tctx,
+						 attid, _prefixmap_test_data[i].attid,
+						 err_msg);
 		} else {
 			/* should fail */
 			torture_assert_werr_equal(tctx, werr, WERR_NOT_FOUND, err_msg);
@@ -705,22 +693,6 @@ static bool torture_drs_unit_dsdb_create_prefix_mapping(struct torture_context *
 	uint32_t i;
 	struct dsdb_schema *schema;
 	TALLOC_CTX *mem_ctx;
-	const struct {
-		const char 	*oid;
-		uint32_t 	attid;
-		bool		exists;	/* if this prefix already exists or should be added */
-	} _test_data[] = {
-		{.oid="2.5.4.0", 		.attid=0x00000000, true},
-		{.oid="2.5.4.42", 		.attid=0x0000002a, true},
-		{.oid="1.2.840.113556.1.2.1", 	.attid=0x00020001, true},
-		{.oid="1.2.840.113556.1.2.13", 	.attid=0x0002000d, true},
-		{.oid="1.2.840.113556.1.2.281", .attid=0x00020119, true},
-		{.oid="1.2.840.113556.1.4.125", .attid=0x0009007d, true},
-		{.oid="1.2.840.113556.1.4.146", .attid=0x00090092, true},
-		{.oid="1.2.250.1", 	 	.attid=0x1b860001, false},
-		{.oid="1.2.250.16386", 	 	.attid=0x1c788002, false},
-		{.oid="1.2.250.2097154", 	.attid=0x1c7b8002, false},
-	};
 
 	mem_ctx = talloc_new(tctx);
 	torture_assert(tctx, mem_ctx, "Unexpected: Have no memory!");
@@ -737,7 +709,7 @@ static bool torture_drs_unit_dsdb_create_prefix_mapping(struct torture_context *
 	werr = dsdb_write_prefixes_from_schema_to_ldb(mem_ctx, priv->ldb_ctx, schema);
 	torture_assert_werr_ok(tctx, werr, "dsdb_write_prefixes_from_schema_to_ldb() failed");
 
-	for (i = 0; i < ARRAY_SIZE(_test_data); i++) {
+	for (i = 0; i < ARRAY_SIZE(_prefixmap_test_data); i++) {
 		struct dsdb_schema_prefixmap *pfm_ldb;
 		struct dsdb_schema_prefixmap *pfm_prev;
 
@@ -745,11 +717,11 @@ static bool torture_drs_unit_dsdb_create_prefix_mapping(struct torture_context *
 		pfm_prev = talloc_reference(schema, schema->prefixmap);
 
 		/* call dsdb_create_prefix_mapping() and check result accordingly */
-		werr = dsdb_create_prefix_mapping(priv->ldb_ctx, schema, _test_data[i].oid);
+		werr = dsdb_create_prefix_mapping(priv->ldb_ctx, schema, _prefixmap_test_data[i].oid);
 		torture_assert_werr_ok(tctx, werr, "dsdb_create_prefix_mapping() failed");
 
 		/* verify pfm has been altered or not if needed */
-		if (_test_data[i].exists) {
+		if (_prefixmap_test_data[i].exists) {
 			torture_assert(tctx, pfm_prev == schema->prefixmap,
 				       "schema->prefixmap has been reallocated!");
 			if (!_torture_drs_pfm_compare_same(tctx, pfm_prev, schema->prefixmap, true)) {
