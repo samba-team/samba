@@ -190,6 +190,25 @@ _PUBLIC_ void ndr_print_debug_helper(struct ndr_print *ndr, const char *format, 
 	free(s);
 }
 
+_PUBLIC_ void ndr_print_printf_helper(struct ndr_print *ndr, const char *format, ...) 
+{
+	va_list ap;
+	int i;
+
+	if (!ndr->no_newline) {
+		for (i=0;i<ndr->depth;i++) {
+			printf("    ");
+		}
+	}
+
+	va_start(ap, format);
+	vprintf(format, ap);
+	va_end(ap);
+	if (!ndr->no_newline) {
+		printf("\n");
+	}
+}
+
 _PUBLIC_ void ndr_print_string_helper(struct ndr_print *ndr, const char *format, ...)
 {
 	va_list ap;

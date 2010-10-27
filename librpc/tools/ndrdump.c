@@ -127,13 +127,14 @@ static const struct ndr_interface_table *load_iface_from_plugin(const char *plug
 	return p;
 }
 
+static void printf_cb(const char *buf, void *private_data)
+{
+	printf("%s", buf);
+}
+
 static void ndrdump_data(uint8_t *d, uint32_t l, bool force)
 {
-	if (force) {
-		dump_data(0, d, l);
-	} else {
-		dump_data_skip_zeros(0, d, l);
-	}
+	dump_data_cb(d, l, !force, printf_cb, NULL);
 }
 
  int main(int argc, const char *argv[])
@@ -172,18 +173,12 @@ static void ndrdump_data(uint8_t *d, uint32_t l, bool force)
 		{ NULL }
 	};
 
-	if (DEBUGLEVEL < 1) {
-		DEBUGLEVEL = 1;
-	}
-
 	ndr_table_init();
 
 	/* Initialise samba stuff */
 	load_case_tables();
 
 	setlinebuf(stdout);
-
-	dbf = x_stderr;
 
 	setup_logging_stdout();
 
@@ -354,7 +349,7 @@ static void ndrdump_data(uint8_t *d, uint32_t l, bool force)
 	}
 
 	ndr_print = talloc_zero(mem_ctx, struct ndr_print);
-	ndr_print->print = ndr_print_debug_helper;
+	ndr_print->print = ndr_print_printf_helper;
 	ndr_print->depth = 1;
 	f->ndr_print(ndr_print, function, flags, st);
 
