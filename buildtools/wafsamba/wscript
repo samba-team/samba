@@ -267,6 +267,7 @@ def configure(conf):
         # define even during the tests otherwise detection of
         # boolean is broken
         conf.DEFINE('_STDC_C99', 1, add_to_cflags=True)
+        conf.DEFINE('_XPG6', 1, add_to_cflags=True)
     else:
         conf.ADD_CFLAGS('-fPIC', testflags=True)
 
