@@ -443,6 +443,11 @@ def guess_names(lp=None, hostname=None, domain=None, dnsdomain=None,
     netbiosname = lp.get("netbios name")
     if netbiosname is None:
         netbiosname = hostname
+        # remove forbidden chars
+        for char in  " !#$%&'()-.@^_{}~":
+            netbiosname = "".join(netbiosname.split(char))
+        #force the length to be <16
+        netbiosname = netbiosname[0:15]
     assert netbiosname is not None
     netbiosname = netbiosname.upper()
     if not valid_netbios_name(netbiosname):
@@ -534,7 +539,14 @@ def make_smbconf(smbconf, setup_path, hostname, domain, realm, serverrole,
     assert smbconf is not None
     if hostname is None:
         hostname = socket.gethostname().split(".")[0]
-    netbiosname = hostname.upper()
+        netbiosname = hostname.upper()
+        # remove forbidden chars
+        for char in  " !#$%&'()-.@^_{}~":
+            netbiosname = "".join(netbiosname.split(char))
+        #force the length to be <16
+        netbiosname = netbiosname[0:15]
+    else:
+        netbiosname = hostname.upper()
 
     if serverrole is None:
         serverrole = "standalone"
@@ -1436,12 +1448,10 @@ def provision(setup_dir, logger, session_info,
 
     lp = samba.param.LoadParm()
     lp.load(smbconf)
-
     names = guess_names(lp=lp, hostname=hostname, domain=domain,
                         dnsdomain=realm, serverrole=serverrole,
                         domaindn=domaindn, configdn=configdn, schemadn=schemadn,
                         serverdn=serverdn, sitename=sitename)
-
     paths = provision_paths_from_lp(lp, names.dnsdomain)
 
     paths.bind_gid = bind_gid
