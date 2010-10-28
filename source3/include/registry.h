@@ -170,9 +170,6 @@ WERROR reg_setkeysecurity(struct registry_key *key,
 			  struct security_descriptor *psecdesc);
 WERROR reg_getversion(uint32_t *version);
 WERROR reg_deleteallvalues(struct registry_key *key);
-WERROR reg_open_path(TALLOC_CTX *mem_ctx, const char *orig_path,
-		     uint32 desired_access, const struct nt_user_token *token,
-		     struct registry_key **pkey);
 WERROR reg_deletekey_recursive(TALLOC_CTX *ctx,
 			       struct registry_key *parent,
 			       const char *path);
