@@ -70,7 +70,7 @@ static void ctdb_send_error(struct ctdb_context *ctdb,
 	int msglen, len;
 
 	if (ctdb->methods == NULL) {
-		DEBUG(DEBUG_ERR,(__location__ " Failed to send error. Transport is DOWN\n"));
+		DEBUG(DEBUG_INFO,(__location__ " Failed to send error. Transport is DOWN\n"));
 		return;
 	}
 
@@ -413,7 +413,7 @@ void ctdb_request_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	struct ctdb_db_context *ctdb_db;
 
 	if (ctdb->methods == NULL) {
-		DEBUG(DEBUG_ERR,(__location__ " Failed ctdb_request_call. Transport is DOWN\n"));
+		DEBUG(DEBUG_INFO,(__location__ " Failed ctdb_request_call. Transport is DOWN\n"));
 		return;
 	}
 
@@ -730,7 +730,7 @@ struct ctdb_call_state *ctdb_daemon_call_send_remote(struct ctdb_db_context *ctd
 	struct ctdb_context *ctdb = ctdb_db->ctdb;
 
 	if (ctdb->methods == NULL) {
-		DEBUG(DEBUG_ERR,(__location__ " Failed send packet. Transport is down\n"));
+		DEBUG(DEBUG_INFO,(__location__ " Failed send packet. Transport is down\n"));
 		return NULL;
 	}
 
@@ -814,7 +814,7 @@ void ctdb_send_keepalive(struct ctdb_context *ctdb, uint32_t destnode)
 	struct ctdb_req_keepalive *r;
 	
 	if (ctdb->methods == NULL) {
-		DEBUG(DEBUG_ERR,(__location__ " Failed to send keepalive. Transport is DOWN\n"));
+		DEBUG(DEBUG_INFO,(__location__ " Failed to send keepalive. Transport is DOWN\n"));
 		return;
 	}
 

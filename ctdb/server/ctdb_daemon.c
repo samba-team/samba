@@ -874,7 +874,7 @@ struct ctdb_req_header *_ctdb_transport_allocate(struct ctdb_context *ctdb,
 	size = (length+(CTDB_DS_ALIGNMENT-1)) & ~(CTDB_DS_ALIGNMENT-1);
 
 	if (ctdb->methods == NULL) {
-		DEBUG(DEBUG_ERR,(__location__ " Unable to allocate transport packet for operation %u of length %u. Transport is DOWN.\n",
+		DEBUG(DEBUG_INFO,(__location__ " Unable to allocate transport packet for operation %u of length %u. Transport is DOWN.\n",
 			 operation, (unsigned)length));
 		return NULL;
 	}
@@ -1099,7 +1099,7 @@ int ctdb_daemon_send_message(struct ctdb_context *ctdb, uint32_t pnn,
 	int len;
 
 	if (ctdb->methods == NULL) {
-		DEBUG(DEBUG_ERR,(__location__ " Failed to send message. Transport is DOWN\n"));
+		DEBUG(DEBUG_INFO,(__location__ " Failed to send message. Transport is DOWN\n"));
 		return -1;
 	}
 

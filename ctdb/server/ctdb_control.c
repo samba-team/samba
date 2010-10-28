@@ -750,7 +750,7 @@ int ctdb_daemon_send_control(struct ctdb_context *ctdb, uint32_t destnode,
 	size_t len;
 
 	if (ctdb->methods == NULL) {
-		DEBUG(DEBUG_ERR,(__location__ " Failed to send control. Transport is DOWN\n"));
+		DEBUG(DEBUG_INFO,(__location__ " Failed to send control. Transport is DOWN\n"));
 		return -1;
 	}
 
