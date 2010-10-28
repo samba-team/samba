@@ -156,10 +156,6 @@ static int resolve_oids_parse_tree_need(struct ldb_context *ldb,
 		return LDB_ERR_COMPARE_FALSE;
 	}
 
-	if (a->syntax->oMSyntax != 6) {
-		return LDB_ERR_COMPARE_FALSE;
-	}
-
 	return resolve_oids_need_value(ldb, schema, a, valp);
 }
 
