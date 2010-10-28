@@ -48,6 +48,7 @@ VFS_DIRSORT_SRC = 'vfs_dirsort.c'
 VFS_SCANNEDONLY_SRC = 'vfs_scannedonly.c'
 VFS_CROSSRENAME_SRC = 'vfs_crossrename.c'
 VFS_LINUX_XFS_SGID_SRC = 'vfs_linux_xfs_sgid.c'
+VFS_TIME_AUDIT_SRC = 'vfs_time_audit.c'
 
 
 bld.SAMBA_SUBSYSTEM('NFS4_ACLS',
@@ -391,6 +392,13 @@ bld.SAMBA_MODULE('vfs_linux_xfs_sgid',
                  init_function='',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('VFS_LINUX_XFS_SGID'),
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('VFS_LINUX_XFS_SGID'))
+
+bld.SAMBA_MODULE('vfs_time_audit',
+                 subsystem='vfs',
+                 source=VFS_TIME_AUDIT_SRC,
+                 init_function='',
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('VFS_TIME_AUDIT'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('VFS_TIME_AUDIT'))
 
 
 
