@@ -21,6 +21,7 @@
 
 #ifdef HAVE_GPFS
 
+#include "libcli/security/security.h"
 #include "gpfs_gpl.h"
 #include "vfs_gpfs.h"
 
