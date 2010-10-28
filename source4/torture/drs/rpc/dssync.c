@@ -544,50 +544,50 @@ static bool test_analyse_objects(struct torture_context *tctx,
 			attr = &cur->object.attribute_ctr.attributes[i];
 
 			switch (attr->attid) {
-			case DRSUAPI_ATTRIBUTE_dBCSPwd:
+			case DRSUAPI_ATTID_dBCSPwd:
 				name	= "dBCSPwd";
 				rcrypt	= true;
 				break;
-			case DRSUAPI_ATTRIBUTE_unicodePwd:
+			case DRSUAPI_ATTID_unicodePwd:
 				name	= "unicodePwd";
 				rcrypt	= true;
 				break;
-			case DRSUAPI_ATTRIBUTE_ntPwdHistory:
+			case DRSUAPI_ATTID_ntPwdHistory:
 				name	= "ntPwdHistory";
 				rcrypt	= true;
 				break;
-			case DRSUAPI_ATTRIBUTE_lmPwdHistory:
+			case DRSUAPI_ATTID_lmPwdHistory:
 				name	= "lmPwdHistory";
 				rcrypt	= true;
 				break;
-			case DRSUAPI_ATTRIBUTE_supplementalCredentials:
+			case DRSUAPI_ATTID_supplementalCredentials:
 				name	= "supplementalCredentials";
 				pull_fn = (ndr_pull_flags_fn_t)ndr_pull_supplementalCredentialsBlob;
 				print_fn = (ndr_print_fn_t)ndr_print_supplementalCredentialsBlob;
 				ptr = talloc(ctx, struct supplementalCredentialsBlob);
 				break;
-			case DRSUAPI_ATTRIBUTE_priorValue:
+			case DRSUAPI_ATTID_priorValue:
 				name	= "priorValue";
 				break;
-			case DRSUAPI_ATTRIBUTE_currentValue:
+			case DRSUAPI_ATTID_currentValue:
 				name	= "currentValue";
 				break;
-			case DRSUAPI_ATTRIBUTE_trustAuthOutgoing:
+			case DRSUAPI_ATTID_trustAuthOutgoing:
 				name	= "trustAuthOutgoing";
 				pull_fn = (ndr_pull_flags_fn_t)ndr_pull_trustAuthInOutBlob;
 				print_fn = (ndr_print_fn_t)ndr_print_trustAuthInOutBlob;
 				ptr = talloc(ctx, struct trustAuthInOutBlob);
 				break;
-			case DRSUAPI_ATTRIBUTE_trustAuthIncoming:
+			case DRSUAPI_ATTID_trustAuthIncoming:
 				name	= "trustAuthIncoming";
 				pull_fn = (ndr_pull_flags_fn_t)ndr_pull_trustAuthInOutBlob;
 				print_fn = (ndr_print_fn_t)ndr_print_trustAuthInOutBlob;
 				ptr = talloc(ctx, struct trustAuthInOutBlob);
 				break;
-			case DRSUAPI_ATTRIBUTE_initialAuthOutgoing:
+			case DRSUAPI_ATTID_initialAuthOutgoing:
 				name	= "initialAuthOutgoing";
 				break;
-			case DRSUAPI_ATTRIBUTE_initialAuthIncoming:
+			case DRSUAPI_ATTID_initialAuthIncoming:
 				name	= "initialAuthIncoming";
 				break;
 			default:

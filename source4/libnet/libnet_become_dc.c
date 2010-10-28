@@ -1837,7 +1837,7 @@ static void becomeDC_drsuapi1_add_entry_send(struct libnet_BecomeDC_state *s)
 
 		vs[0].blob		= &vd[0];
 
-		attrs[i].attid			= DRSUAPI_ATTRIBUTE_ntSecurityDescriptor;
+		attrs[i].attid			= DRSUAPI_ATTID_ntSecurityDescriptor;
 		attrs[i].value_ctr.num_values	= 1;
 		attrs[i].value_ctr.values	= vs;
 
@@ -1863,7 +1863,7 @@ static void becomeDC_drsuapi1_add_entry_send(struct libnet_BecomeDC_state *s)
 
 		vs[0].blob		= &vd[0];
 
-		attrs[i].attid			= DRSUAPI_ATTRIBUTE_objectClass;
+		attrs[i].attid			= DRSUAPI_ATTID_objectClass;
 		attrs[i].value_ctr.num_values	= 1;
 		attrs[i].value_ctr.values	= vs;
 
@@ -1903,7 +1903,7 @@ static void becomeDC_drsuapi1_add_entry_send(struct libnet_BecomeDC_state *s)
 
 		vs[0].blob		= &vd[0];
 
-		attrs[i].attid			= DRSUAPI_ATTRIBUTE_objectCategory;
+		attrs[i].attid			= DRSUAPI_ATTID_objectCategory;
 		attrs[i].value_ctr.num_values	= 1;
 		attrs[i].value_ctr.values	= vs;
 
@@ -1929,7 +1929,7 @@ static void becomeDC_drsuapi1_add_entry_send(struct libnet_BecomeDC_state *s)
 
 		vs[0].blob		= &vd[0];
 
-		attrs[i].attid			= DRSUAPI_ATTRIBUTE_invocationId;
+		attrs[i].attid			= DRSUAPI_ATTID_invocationId;
 		attrs[i].value_ctr.num_values	= 1;
 		attrs[i].value_ctr.values	= vs;
 
@@ -1985,7 +1985,7 @@ static void becomeDC_drsuapi1_add_entry_send(struct libnet_BecomeDC_state *s)
 		vs[1].blob		= &vd[1];
 		vs[2].blob		= &vd[2];
 
-		attrs[i].attid			= DRSUAPI_ATTRIBUTE_hasMasterNCs;
+		attrs[i].attid			= DRSUAPI_ATTID_hasMasterNCs;
 		attrs[i].value_ctr.num_values	= 3;
 		attrs[i].value_ctr.values	= vs;
 
@@ -2041,7 +2041,7 @@ static void becomeDC_drsuapi1_add_entry_send(struct libnet_BecomeDC_state *s)
 		vs[1].blob		= &vd[1];
 		vs[2].blob		= &vd[2];
 
-		attrs[i].attid			= DRSUAPI_ATTRIBUTE_msDS_hasMasterNCs;
+		attrs[i].attid			= DRSUAPI_ATTID_msDS_hasMasterNCs;
 		attrs[i].value_ctr.num_values	= 3;
 		attrs[i].value_ctr.values	= vs;
 
@@ -2073,7 +2073,7 @@ static void becomeDC_drsuapi1_add_entry_send(struct libnet_BecomeDC_state *s)
 
 		vs[0].blob		= &vd[0];
 
-		attrs[i].attid			= DRSUAPI_ATTRIBUTE_dMDLocation;
+		attrs[i].attid			= DRSUAPI_ATTID_dMDLocation;
 		attrs[i].value_ctr.num_values	= 1;
 		attrs[i].value_ctr.values	= vs;
 
@@ -2105,7 +2105,7 @@ static void becomeDC_drsuapi1_add_entry_send(struct libnet_BecomeDC_state *s)
 
 		vs[0].blob		= &vd[0];
 
-		attrs[i].attid			= DRSUAPI_ATTRIBUTE_msDS_HasDomainNCs;
+		attrs[i].attid			= DRSUAPI_ATTID_msDS_HasDomainNCs;
 		attrs[i].value_ctr.num_values	= 1;
 		attrs[i].value_ctr.values	= vs;
 
@@ -2130,7 +2130,7 @@ static void becomeDC_drsuapi1_add_entry_send(struct libnet_BecomeDC_state *s)
 
 		vs[0].blob		= &vd[0];
 
-		attrs[i].attid			= DRSUAPI_ATTRIBUTE_msDS_Behavior_Version;
+		attrs[i].attid			= DRSUAPI_ATTID_msDS_Behavior_Version;
 		attrs[i].value_ctr.num_values	= 1;
 		attrs[i].value_ctr.values	= vs;
 
@@ -2159,7 +2159,7 @@ static void becomeDC_drsuapi1_add_entry_send(struct libnet_BecomeDC_state *s)
 
 		vs[0].blob		= &vd[0];
 
-		attrs[i].attid			= DRSUAPI_ATTRIBUTE_systemFlags;
+		attrs[i].attid			= DRSUAPI_ATTID_systemFlags;
 		attrs[i].value_ctr.num_values	= 1;
 		attrs[i].value_ctr.values	= vs;
 
@@ -2191,7 +2191,7 @@ static void becomeDC_drsuapi1_add_entry_send(struct libnet_BecomeDC_state *s)
 
 		vs[0].blob		= &vd[0];
 
-		attrs[i].attid			= DRSUAPI_ATTRIBUTE_serverReference;
+		attrs[i].attid			= DRSUAPI_ATTID_serverReference;
 		attrs[i].value_ctr.num_values	= 1;
 		attrs[i].value_ctr.values	= vs;
 
@@ -2216,7 +2216,7 @@ static void becomeDC_drsuapi1_add_entry_send(struct libnet_BecomeDC_state *s)
 
 		vs[0].blob		= &vd[0];
 
-		attrs[i].attid			= DRSUAPI_ATTRIBUTE_options;
+		attrs[i].attid			= DRSUAPI_ATTID_options;
 		attrs[i].value_ctr.num_values	= 1;
 		attrs[i].value_ctr.values	= vs;
 

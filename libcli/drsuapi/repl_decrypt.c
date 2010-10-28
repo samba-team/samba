@@ -146,19 +146,19 @@ WERROR drsuapi_decrypt_attribute(TALLOC_CTX *mem_ctx,
 	}
 
 	switch (attr->attid) {
-	case DRSUAPI_ATTRIBUTE_dBCSPwd:
-	case DRSUAPI_ATTRIBUTE_unicodePwd:
-	case DRSUAPI_ATTRIBUTE_ntPwdHistory:
-	case DRSUAPI_ATTRIBUTE_lmPwdHistory:
+	case DRSUAPI_ATTID_dBCSPwd:
+	case DRSUAPI_ATTID_unicodePwd:
+	case DRSUAPI_ATTID_ntPwdHistory:
+	case DRSUAPI_ATTID_lmPwdHistory:
 		rid_crypt = true;
 		break;
-	case DRSUAPI_ATTRIBUTE_supplementalCredentials:
-	case DRSUAPI_ATTRIBUTE_priorValue:
-	case DRSUAPI_ATTRIBUTE_currentValue:
-	case DRSUAPI_ATTRIBUTE_trustAuthOutgoing:
-	case DRSUAPI_ATTRIBUTE_trustAuthIncoming:
-	case DRSUAPI_ATTRIBUTE_initialAuthOutgoing:
-	case DRSUAPI_ATTRIBUTE_initialAuthIncoming:
+	case DRSUAPI_ATTID_supplementalCredentials:
+	case DRSUAPI_ATTID_priorValue:
+	case DRSUAPI_ATTID_currentValue:
+	case DRSUAPI_ATTID_trustAuthOutgoing:
+	case DRSUAPI_ATTID_trustAuthIncoming:
+	case DRSUAPI_ATTID_initialAuthOutgoing:
+	case DRSUAPI_ATTID_initialAuthIncoming:
 		break;
 	default:
 		return WERR_OK;
@@ -308,19 +308,19 @@ WERROR drsuapi_encrypt_attribute(TALLOC_CTX *mem_ctx,
 	}
 
 	switch (attr->attid) {
-	case DRSUAPI_ATTRIBUTE_dBCSPwd:
-	case DRSUAPI_ATTRIBUTE_unicodePwd:
-	case DRSUAPI_ATTRIBUTE_ntPwdHistory:
-	case DRSUAPI_ATTRIBUTE_lmPwdHistory:
+	case DRSUAPI_ATTID_dBCSPwd:
+	case DRSUAPI_ATTID_unicodePwd:
+	case DRSUAPI_ATTID_ntPwdHistory:
+	case DRSUAPI_ATTID_lmPwdHistory:
 		rid_crypt = true;
 		break;
-	case DRSUAPI_ATTRIBUTE_supplementalCredentials:
-	case DRSUAPI_ATTRIBUTE_priorValue:
-	case DRSUAPI_ATTRIBUTE_currentValue:
-	case DRSUAPI_ATTRIBUTE_trustAuthOutgoing:
-	case DRSUAPI_ATTRIBUTE_trustAuthIncoming:
-	case DRSUAPI_ATTRIBUTE_initialAuthOutgoing:
-	case DRSUAPI_ATTRIBUTE_initialAuthIncoming:
+	case DRSUAPI_ATTID_supplementalCredentials:
+	case DRSUAPI_ATTID_priorValue:
+	case DRSUAPI_ATTID_currentValue:
+	case DRSUAPI_ATTID_trustAuthOutgoing:
+	case DRSUAPI_ATTID_trustAuthIncoming:
+	case DRSUAPI_ATTID_initialAuthOutgoing:
+	case DRSUAPI_ATTID_initialAuthIncoming:
 		break;
 	default:
 		return WERR_OK;

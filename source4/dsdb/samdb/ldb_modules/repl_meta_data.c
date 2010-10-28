@@ -2989,8 +2989,8 @@ static int replmd_replicated_handle_rename(struct replmd_replicated_request *ar,
 	 * received yet. We choose which one wins by looking at the
 	 * attribute stamps on the two objects, the newer one wins
 	 */
-	md_remote = replmd_replPropertyMetaData1_find_attid(rmd, DRSUAPI_ATTRIBUTE_name);
-	md_local  = replmd_replPropertyMetaData1_find_attid(omd, DRSUAPI_ATTRIBUTE_name);
+	md_remote = replmd_replPropertyMetaData1_find_attid(rmd, DRSUAPI_ATTID_name);
+	md_local  = replmd_replPropertyMetaData1_find_attid(omd, DRSUAPI_ATTID_name);
 	/* if there is no name attribute then we have to assume the
 	   object we've received is in fact newer */
 	if (!md_remote || !md_local ||
@@ -3095,7 +3095,7 @@ static int replmd_replicated_apply_merge(struct replmd_replicated_request *ar)
 				break;
 			}
 
-			if (rmd->ctr.ctr1.array[i].attid != DRSUAPI_ATTRIBUTE_instanceType) {
+			if (rmd->ctr.ctr1.array[i].attid != DRSUAPI_ATTID_instanceType) {
 				DEBUG(3,("Discarding older DRS attribute update to %s on %s from %s\n",
 					 msg->elements[i-removed_attrs].name,
 					 ldb_dn_get_linearized(msg->dn),
@@ -3848,7 +3848,7 @@ linked_attributes[0]:
                 sid                      : S-0-0
                 __ndr_size_dn            : 0x00000000 (0)
                 dn                       : ''
-        attid                    : DRSUAPI_ATTRIBUTE_member (0x1F)
+        attid                    : DRSUAPI_ATTID_member (0x1F)
         value: struct drsuapi_DsAttributeValue
             __ndr_size               : 0x0000007e (126)
             blob                     : *

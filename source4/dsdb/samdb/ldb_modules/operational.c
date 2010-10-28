@@ -486,7 +486,7 @@ static int construct_msds_keyversionnumber(struct ldb_module *module,
 		return LDB_SUCCESS;
 	}
 	for (i=0; i<omd->ctr.ctr1.count; i++) {
-		if (omd->ctr.ctr1.array[i].attid == DRSUAPI_ATTRIBUTE_unicodePwd) {
+		if (omd->ctr.ctr1.array[i].attid == DRSUAPI_ATTID_unicodePwd) {
 			ret = samdb_msg_add_uint(ldb_module_get_ctx(module),
 						 msg, msg,
 						 "msDS-KeyVersionNumber",

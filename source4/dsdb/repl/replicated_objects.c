@@ -141,7 +141,7 @@ WERROR dsdb_convert_object_ex(struct ldb_context *ldb,
 			whenChanged = d->originating_change_time;
 		}
 
-		if (a->attid == DRSUAPI_ATTRIBUTE_name) {
+		if (a->attid == DRSUAPI_ATTID_name) {
 			name_a = a;
 			name_d = d;
 			rdn_m = &md->ctr.ctr1.array[md->ctr.ctr1.count];

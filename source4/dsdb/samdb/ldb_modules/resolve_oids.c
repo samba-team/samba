@@ -46,11 +46,11 @@ static int resolve_oids_need_value(struct ldb_context *ldb,
 	}
 
 	switch (a->attributeID_id) {
-	case DRSUAPI_ATTRIBUTE_objectClass:
-	case DRSUAPI_ATTRIBUTE_subClassOf:
-	case DRSUAPI_ATTRIBUTE_auxiliaryClass:
-	case DRSUAPI_ATTRIBUTE_systemPossSuperiors:
-	case DRSUAPI_ATTRIBUTE_possSuperiors:
+	case DRSUAPI_ATTID_objectClass:
+	case DRSUAPI_ATTID_subClassOf:
+	case DRSUAPI_ATTID_auxiliaryClass:
+	case DRSUAPI_ATTID_systemPossSuperiors:
+	case DRSUAPI_ATTID_possSuperiors:
 		str = talloc_strndup(ldb, (char *)valp->data, valp->length);
 		if (!str) {
 			return ldb_oom(ldb);
@@ -61,10 +61,10 @@ static int resolve_oids_need_value(struct ldb_context *ldb,
 			return LDB_ERR_COMPARE_FALSE;
 		}
 		return LDB_ERR_COMPARE_TRUE;
-	case DRSUAPI_ATTRIBUTE_systemMustContain:
-	case DRSUAPI_ATTRIBUTE_systemMayContain:
-	case DRSUAPI_ATTRIBUTE_mustContain:
-	case DRSUAPI_ATTRIBUTE_mayContain:
+	case DRSUAPI_ATTID_systemMustContain:
+	case DRSUAPI_ATTID_systemMayContain:
+	case DRSUAPI_ATTID_mustContain:
+	case DRSUAPI_ATTID_mayContain:
 		str = talloc_strndup(ldb, (char *)valp->data, valp->length);
 		if (!str) {
 			return ldb_oom(ldb);
@@ -75,9 +75,9 @@ static int resolve_oids_need_value(struct ldb_context *ldb,
 			return LDB_ERR_COMPARE_FALSE;
 		}
 		return LDB_ERR_COMPARE_TRUE;
-	case DRSUAPI_ATTRIBUTE_governsID:
-	case DRSUAPI_ATTRIBUTE_attributeID:
-	case DRSUAPI_ATTRIBUTE_attributeSyntax:
+	case DRSUAPI_ATTID_governsID:
+	case DRSUAPI_ATTID_attributeID:
+	case DRSUAPI_ATTID_attributeSyntax:
 		return LDB_ERR_COMPARE_FALSE;
 	}
 
@@ -233,11 +233,11 @@ static int resolve_oids_replace_value(struct ldb_context *ldb,
 	}
 
 	switch (a->attributeID_id) {
-	case DRSUAPI_ATTRIBUTE_objectClass:
-	case DRSUAPI_ATTRIBUTE_subClassOf:
-	case DRSUAPI_ATTRIBUTE_auxiliaryClass:
-	case DRSUAPI_ATTRIBUTE_systemPossSuperiors:
-	case DRSUAPI_ATTRIBUTE_possSuperiors:
+	case DRSUAPI_ATTID_objectClass:
+	case DRSUAPI_ATTID_subClassOf:
+	case DRSUAPI_ATTID_auxiliaryClass:
+	case DRSUAPI_ATTID_systemPossSuperiors:
+	case DRSUAPI_ATTID_possSuperiors:
 		str = talloc_strndup(schema, (char *)valp->data, valp->length);
 		if (!str) {
 			return ldb_oom(ldb);
@@ -249,10 +249,10 @@ static int resolve_oids_replace_value(struct ldb_context *ldb,
 		}
 		*valp = data_blob_string_const(vo->lDAPDisplayName);
 		return LDB_SUCCESS;
-	case DRSUAPI_ATTRIBUTE_systemMustContain:
-	case DRSUAPI_ATTRIBUTE_systemMayContain:
-	case DRSUAPI_ATTRIBUTE_mustContain:
-	case DRSUAPI_ATTRIBUTE_mayContain:
+	case DRSUAPI_ATTID_systemMustContain:
+	case DRSUAPI_ATTID_systemMayContain:
+	case DRSUAPI_ATTID_mustContain:
+	case DRSUAPI_ATTID_mayContain:
 		str = talloc_strndup(schema, (char *)valp->data, valp->length);
 		if (!str) {
 			return ldb_oom(ldb);
@@ -264,9 +264,9 @@ static int resolve_oids_replace_value(struct ldb_context *ldb,
 		}
 		*valp = data_blob_string_const(va->lDAPDisplayName);
 		return LDB_SUCCESS;
-	case DRSUAPI_ATTRIBUTE_governsID:
-	case DRSUAPI_ATTRIBUTE_attributeID:
-	case DRSUAPI_ATTRIBUTE_attributeSyntax:
+	case DRSUAPI_ATTID_governsID:
+	case DRSUAPI_ATTID_attributeID:
+	case DRSUAPI_ATTID_attributeSyntax:
 		return LDB_SUCCESS;
 	}
 

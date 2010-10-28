@@ -273,7 +273,7 @@ static NTSTATUS parse_object(TALLOC_CTX *mem_ctx,
 
 		attr = &cur->object.attribute_ctr.attributes[i];
 
-		if (attr->attid == DRSUAPI_ATTRIBUTE_servicePrincipalName) {
+		if (attr->attid == DRSUAPI_ATTID_servicePrincipalName) {
 			uint32_t count;
 			num_spns = attr->value_ctr.num_values;
 			spn = TALLOC_ARRAY(mem_ctx, char *, num_spns);
@@ -297,7 +297,7 @@ static NTSTATUS parse_object(TALLOC_CTX *mem_ctx,
 		blob = attr->value_ctr.values[0].blob;
 
 		switch (attr->attid) {
-			case DRSUAPI_ATTRIBUTE_unicodePwd:
+			case DRSUAPI_ATTID_unicodePwd:
 
 				if (blob->length != 16) {
 					break;
@@ -318,27 +318,27 @@ static NTSTATUS parse_object(TALLOC_CTX *mem_ctx,
 				}
 				kvno = cur->meta_data_ctr->meta_data[i].version;
 				break;
-			case DRSUAPI_ATTRIBUTE_ntPwdHistory:
+			case DRSUAPI_ATTID_ntPwdHistory:
 				pwd_history_len = blob->length / 16;
 				pwd_history = blob->data;
 				break;
-			case DRSUAPI_ATTRIBUTE_userPrincipalName:
+			case DRSUAPI_ATTID_userPrincipalName:
 				pull_string_talloc(mem_ctx, NULL, 0, &upn,
 						   blob->data, blob->length,
 						   STR_UNICODE);
 				break;
-			case DRSUAPI_ATTRIBUTE_sAMAccountName:
+			case DRSUAPI_ATTID_sAMAccountName:
 				pull_string_talloc(mem_ctx, NULL, 0, &name,
 						   blob->data, blob->length,
 						   STR_UNICODE);
 				break;
-			case DRSUAPI_ATTRIBUTE_sAMAccountType:
+			case DRSUAPI_ATTID_sAMAccountType:
 				sam_type = IVAL(blob->data, 0);
 				break;
-			case DRSUAPI_ATTRIBUTE_userAccountControl:
+			case DRSUAPI_ATTID_userAccountControl:
 				uacc = IVAL(blob->data, 0);
 				break;
-			case DRSUAPI_ATTRIBUTE_supplementalCredentials:
+			case DRSUAPI_ATTID_supplementalCredentials:
 				status = parse_supplemental_credentials(mem_ctx,
 									blob,
 									&pkb3,

@@ -207,7 +207,7 @@ static WERROR get_nc_changes_build_object(struct drsuapi_DsReplicaObjectListItem
 		   instanceType then don't include it */
 		if (md.ctr.ctr1.array[i].local_usn < highest_usn &&
 		    extended_op != DRSUAPI_EXOP_REPL_SECRET &&
-		    md.ctr.ctr1.array[i].attid != DRSUAPI_ATTRIBUTE_instanceType) continue;
+		    md.ctr.ctr1.array[i].attid != DRSUAPI_ATTID_instanceType) continue;
 
 		/* don't include the rDN */
 		if (md.ctr.ctr1.array[i].attid == rdn_sa->attributeID_id) continue;
@@ -237,7 +237,7 @@ static WERROR get_nc_changes_build_object(struct drsuapi_DsReplicaObjectListItem
 		}
 
 		/* filter by uptodateness_vector */
-		if (md.ctr.ctr1.array[i].attid != DRSUAPI_ATTRIBUTE_instanceType &&
+		if (md.ctr.ctr1.array[i].attid != DRSUAPI_ATTID_instanceType &&
 		    !force_attribute &&
 		    udv_filter(uptodateness_vector,
 			       &md.ctr.ctr1.array[i].originating_invocation_id, 
@@ -262,7 +262,7 @@ static WERROR get_nc_changes_build_object(struct drsuapi_DsReplicaObjectListItem
 	 * change the 'name' attribute, so they won't be ignored by
 	 * this */
 	if (n == 0 ||
-	    (n == 1 && attids[0] == DRSUAPI_ATTRIBUTE_instanceType)) {
+	    (n == 1 && attids[0] == DRSUAPI_ATTID_instanceType)) {
 		talloc_free(obj->meta_data_ctr);
 		obj->meta_data_ctr = NULL;
 		return WERR_OK;

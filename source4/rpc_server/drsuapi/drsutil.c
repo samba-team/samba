@@ -119,17 +119,17 @@ void drsuapi_process_secret_attribute(struct drsuapi_DsReplicaAttribute *attr,
 	}
 
 	switch (attr->attid) {
-	case DRSUAPI_ATTRIBUTE_dBCSPwd:
-	case DRSUAPI_ATTRIBUTE_unicodePwd:
-	case DRSUAPI_ATTRIBUTE_ntPwdHistory:
-	case DRSUAPI_ATTRIBUTE_lmPwdHistory:
-	case DRSUAPI_ATTRIBUTE_supplementalCredentials:
-	case DRSUAPI_ATTRIBUTE_priorValue:
-	case DRSUAPI_ATTRIBUTE_currentValue:
-	case DRSUAPI_ATTRIBUTE_trustAuthOutgoing:
-	case DRSUAPI_ATTRIBUTE_trustAuthIncoming:
-	case DRSUAPI_ATTRIBUTE_initialAuthOutgoing:
-	case DRSUAPI_ATTRIBUTE_initialAuthIncoming:
+	case DRSUAPI_ATTID_dBCSPwd:
+	case DRSUAPI_ATTID_unicodePwd:
+	case DRSUAPI_ATTID_ntPwdHistory:
+	case DRSUAPI_ATTID_lmPwdHistory:
+	case DRSUAPI_ATTID_supplementalCredentials:
+	case DRSUAPI_ATTID_priorValue:
+	case DRSUAPI_ATTID_currentValue:
+	case DRSUAPI_ATTID_trustAuthOutgoing:
+	case DRSUAPI_ATTID_trustAuthIncoming:
+	case DRSUAPI_ATTID_initialAuthOutgoing:
+	case DRSUAPI_ATTID_initialAuthIncoming:
 		/*set value to null*/
 		attr->value_ctr.num_values = 0;
 		talloc_free(attr->value_ctr.values);

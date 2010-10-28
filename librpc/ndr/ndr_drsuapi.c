@@ -154,34 +154,34 @@ _PUBLIC_ void ndr_print_drsuapi_DsReplicaAttribute(struct ndr_print *ndr,
 	ndr->depth++;
 	ndr_print_drsuapi_DsAttributeId(ndr, "attid", r->attid);
 	switch (r->attid) {
-	case DRSUAPI_ATTRIBUTE_objectClass:
-	case DRSUAPI_ATTRIBUTE_possSuperiors:
-	case DRSUAPI_ATTRIBUTE_subClassOf:
-	case DRSUAPI_ATTRIBUTE_governsID:
-	case DRSUAPI_ATTRIBUTE_mustContain:
-	case DRSUAPI_ATTRIBUTE_mayContain:
-	case DRSUAPI_ATTRIBUTE_rDNAttId:
-	case DRSUAPI_ATTRIBUTE_attributeID:
-	case DRSUAPI_ATTRIBUTE_attributeSyntax:
-	case DRSUAPI_ATTRIBUTE_auxiliaryClass:
-	case DRSUAPI_ATTRIBUTE_systemPossSuperiors:
-	case DRSUAPI_ATTRIBUTE_systemMayContain:
-	case DRSUAPI_ATTRIBUTE_systemMustContain:
-	case DRSUAPI_ATTRIBUTE_systemAuxiliaryClass:
-	case DRSUAPI_ATTRIBUTE_transportAddressAttribute:
+	case DRSUAPI_ATTID_objectClass:
+	case DRSUAPI_ATTID_possSuperiors:
+	case DRSUAPI_ATTID_subClassOf:
+	case DRSUAPI_ATTID_governsID:
+	case DRSUAPI_ATTID_mustContain:
+	case DRSUAPI_ATTID_mayContain:
+	case DRSUAPI_ATTID_rDNAttId:
+	case DRSUAPI_ATTID_attributeID:
+	case DRSUAPI_ATTID_attributeSyntax:
+	case DRSUAPI_ATTID_auxiliaryClass:
+	case DRSUAPI_ATTID_systemPossSuperiors:
+	case DRSUAPI_ATTID_systemMayContain:
+	case DRSUAPI_ATTID_systemMustContain:
+	case DRSUAPI_ATTID_systemAuxiliaryClass:
+	case DRSUAPI_ATTID_transportAddressAttribute:
 		/* ATTIDs for classSchema and attributeSchema */
 		_print_drsuapi_DsAttributeValueCtr(ndr, "value_ctr", &r->value_ctr,
 		                                   _print_drsuapi_DsAttributeValue_attid);
 		break;
-	case DRSUAPI_ATTRIBUTE_cn:
-	case DRSUAPI_ATTRIBUTE_ou:
-	case DRSUAPI_ATTRIBUTE_description:
-	case DRSUAPI_ATTRIBUTE_displayName:
-	case DRSUAPI_ATTRIBUTE_dMDLocation:
-	case DRSUAPI_ATTRIBUTE_adminDisplayName:
-	case DRSUAPI_ATTRIBUTE_adminDescription:
-	case DRSUAPI_ATTRIBUTE_lDAPDisplayName:
-	case DRSUAPI_ATTRIBUTE_name:
+	case DRSUAPI_ATTID_cn:
+	case DRSUAPI_ATTID_ou:
+	case DRSUAPI_ATTID_description:
+	case DRSUAPI_ATTID_displayName:
+	case DRSUAPI_ATTID_dMDLocation:
+	case DRSUAPI_ATTID_adminDisplayName:
+	case DRSUAPI_ATTID_adminDescription:
+	case DRSUAPI_ATTID_lDAPDisplayName:
+	case DRSUAPI_ATTID_name:
 		_print_drsuapi_DsAttributeValueCtr(ndr, "value_ctr", &r->value_ctr,
 		                                   _print_drsuapi_DsAttributeValue_str);
 		break;
