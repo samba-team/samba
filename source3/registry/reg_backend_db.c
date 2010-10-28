@@ -420,7 +420,7 @@ static int regdb_normalize_keynames_fn(struct db_record *rec,
 		new_rec.value.dptr = rec->value.dptr;
 		new_rec.value.dsize = rec->value.dsize;
 		new_rec.key.dptr = (unsigned char *) keyname;
-		new_rec.key.dsize = strlen(keyname);
+		new_rec.key.dsize = strlen(keyname)+1;
 		new_rec.private_data = rec->private_data;
 
 		/* Delete the original record and store the normalized key */
