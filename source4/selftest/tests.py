@@ -314,7 +314,7 @@ plantestsuite_loadlist("samba4.ntp.signd", "dc:local", [smb4torture, 'ncacn_np:$
 # Tests against the NTVFS POSIX backend
 ntvfsargs = ["--option=torture:sharedelay=10000", "--option=torture:oplocktimeout=3", "--option=torture:writetimeupdatedelay=50000"]
 
-smb2 = filter(lambda x: "SMB2-DIR" not in x, smb4torture_testsuites("SMB2-"))
+smb2 = smb4torture_testsuites("SMB2-")
 #The QFILEINFO-IPC test needs to be on ipc$
 raw = filter(lambda x: "RAW-QFILEINFO-IPC" not in x, smb4torture_testsuites("RAW-"))
 base = smb4torture_testsuites("BASE-")

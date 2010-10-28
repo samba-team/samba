@@ -32,6 +32,7 @@ smb2.notify
 smb2.scan
 smb2.lease
 smb2.durable.open
+smb2.dir
 ntvfs.cifs.base.charset
 ntvfs.cifs.base.iometer
 ntvfs.cifs.base.casetable
