@@ -271,6 +271,8 @@ def configure(conf):
     else:
         conf.ADD_CFLAGS('-fPIC', testflags=True)
 
+    if sys.platform == 'darwin':
+        conf.ADD_LDFLAGS('-fno-common', testflags=True)
     conf.CHECK_INLINE()
 
     # check for pkgconfig
