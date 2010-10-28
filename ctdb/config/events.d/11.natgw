@@ -22,7 +22,7 @@ delete_all() {
 	local _maskbits=`echo $CTDB_NATGW_PUBLIC_IP | cut -d '/' -f2`
 
 	[ -z "$CTDB_NATGW_PUBLIC_IFACE" ] || {
-	    delete_ip_from_iface $CTDB_NATGW_PUBLIC_IFACE $_ip $_maskbits
+	    delete_ip_from_iface $CTDB_NATGW_PUBLIC_IFACE $_ip $_maskbits 2>/dev/null
 	}
 	delete_ip_from_iface lo $_ip 32
 
