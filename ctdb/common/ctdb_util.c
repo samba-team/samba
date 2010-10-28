@@ -127,7 +127,7 @@ uint32_t ctdb_reqid_new(struct ctdb_context *ctdb, void *state)
 {
 	int id = idr_get_new_above(ctdb->idr, state, ctdb->lastid+1, INT_MAX);
 	if (id < 0) {
-		DEBUG(DEBUG_NOTICE, ("Reqid wrap!\n"));
+		DEBUG(DEBUG_DEBUG, ("Reqid wrap!\n"));
 		id = idr_get_new(ctdb->idr, state, INT_MAX);
 	}
 	ctdb->lastid = id;
