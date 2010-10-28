@@ -754,25 +754,27 @@ static int vfswrap_ntimes(vfs_handle_struct *handle,
 		goto out;
 	}
 
-	if (null_timespec(ft->atime)) {
-		ft->atime= smb_fname->st.st_ex_atime;
-	}
+	if (ft != NULL) {
+		if (null_timespec(ft->atime)) {
+			ft->atime= smb_fname->st.st_ex_atime;
+		}
 
-	if (null_timespec(ft->mtime)) {
-		ft->mtime = smb_fname->st.st_ex_mtime;
-	}
+		if (null_timespec(ft->mtime)) {
+			ft->mtime = smb_fname->st.st_ex_mtime;
+		}
 
-	if (!null_timespec(ft->create_time)) {
-		set_create_timespec_ea(handle->conn,
-				smb_fname,
-				ft->create_time);
-	}
+		if (!null_timespec(ft->create_time)) {
+			set_create_timespec_ea(handle->conn,
+					       smb_fname,
+					       ft->create_time);
+		}
 
-	if ((timespec_compare(&ft->atime,
-				&smb_fname->st.st_ex_atime) == 0) &&
-			(timespec_compare(&ft->mtime,
-				&smb_fname->st.st_ex_mtime) == 0)) {
-		return 0;
+		if ((timespec_compare(&ft->atime,
+				      &smb_fname->st.st_ex_atime) == 0) &&
+		    (timespec_compare(&ft->mtime,
+				      &smb_fname->st.st_ex_mtime) == 0)) {
+			return 0;
+		}
 	}
 
 #if defined(HAVE_UTIMENSAT)
