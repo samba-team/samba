@@ -134,6 +134,7 @@ bool winbindd_cache_validate_and_initialize(void);
 bool wcache_tdc_fetch_list( struct winbindd_tdc_domain **domains, size_t *num_domains );
 bool wcache_tdc_add_domain( struct winbindd_domain *domain );
 struct winbindd_tdc_domain * wcache_tdc_fetch_domain( TALLOC_CTX *ctx, const char *name );
+struct winbindd_tdc_domain* wcache_tdc_fetch_domainbysid(TALLOC_CTX *ctx, const struct dom_sid *sid);
 void wcache_tdc_clear( void );
 #ifdef HAVE_ADS
 struct ads_struct;

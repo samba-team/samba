@@ -4542,6 +4542,58 @@ struct winbindd_tdc_domain * wcache_tdc_fetch_domain( TALLOC_CTX *ctx, const cha
 	return d;	
 }
 
+/*********************************************************************
+ ********************************************************************/
+
+struct winbindd_tdc_domain*
+	wcache_tdc_fetch_domainbysid(TALLOC_CTX *ctx,
+				     const struct dom_sid *sid)
+{
+	struct winbindd_tdc_domain *dom_list = NULL;
+	size_t num_domains = 0;
+	int i;
+	struct winbindd_tdc_domain *d = NULL;
+
+	DEBUG(10,("wcache_tdc_fetch_domainbysid: Searching for domain %s\n",
+		  sid_string_dbg(sid)));
+
+	if (!init_wcache()) {
+		return false;
+	}
+
+	/* fetch the list */
+
+	wcache_tdc_fetch_list(&dom_list, &num_domains);
+
+	for (i = 0; i<num_domains; i++) {
+		if (sid_equal(sid, &(dom_list[i].sid))) {
+			DEBUG(10, ("wcache_tdc_fetch_domainbysid: "
+				   "Found domain %s for SID %s\n",
+				   dom_list[i].domain_name,
+				   sid_string_dbg(sid)));
+
+			d = TALLOC_P(ctx, struct winbindd_tdc_domain);
+			if (!d)
+				break;
+
+			d->domain_name = talloc_strdup(d,
+						       dom_list[i].domain_name);
+
+			d->dns_name = talloc_strdup(d, dom_list[i].dns_name);
+			sid_copy(&d->sid, &dom_list[i].sid);
+			d->trust_flags = dom_list[i].trust_flags;
+			d->trust_type = dom_list[i].trust_type;
+			d->trust_attribs = dom_list[i].trust_attribs;
+
+			break;
+		}
+	}
+
+        TALLOC_FREE(dom_list);
+
+	return d;
+}
+
 
 /*********************************************************************
  ********************************************************************/
