@@ -172,6 +172,9 @@ codepoint_t next_codepoint(const char *str, size_t *size);
 ssize_t push_codepoint(char *str, codepoint_t c);
 
 /* codepoints */
+codepoint_t next_codepoint_convenience_ext(struct smb_iconv_convenience *ic,
+			    const char *str, charset_t src_charset,
+			    size_t *size);
 codepoint_t next_codepoint_convenience(struct smb_iconv_convenience *ic, 
 			    const char *str, size_t *size);
 ssize_t push_codepoint_convenience(struct smb_iconv_convenience *ic, 

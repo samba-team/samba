@@ -373,17 +373,25 @@ _PUBLIC_ bool convert_string_talloc_convenience(TALLOC_CTX *ctx,
 	return true;
 }
 
-/*
-  return the unicode codepoint for the next multi-byte CH_UNIX character
-  in the string
 
-  also return the number of bytes consumed (which tells the caller
-  how many bytes to skip to get to the next CH_UNIX character)
-
-  return INVALID_CODEPOINT if the next character cannot be converted
-*/
-_PUBLIC_ codepoint_t next_codepoint_convenience(struct smb_iconv_convenience *ic, 
-				    const char *str, size_t *size)
+/**
+ * Return the unicode codepoint for the next character in the input
+ * string in the given src_charset.
+ * The unicode codepoint (codepoint_t) is an unsinged 32 bit value.
+ *
+ * Also return the number of bytes consumed (which tells the caller
+ * how many bytes to skip to get to the next src_charset-character).
+ *
+ * This is implemented (in the non-ascii-case) by first converting the
+ * next character in the input string to UTF16_LE and then calculating
+ * the unicode codepoint from that.
+ *
+ * Return INVALID_CODEPOINT if the next character cannot be converted.
+ */
+_PUBLIC_ codepoint_t next_codepoint_convenience_ext(
+			struct smb_iconv_convenience *ic,
+			const char *str, charset_t src_charset,
+			size_t *size)
 {
 	/* it cannot occupy more than 4 bytes in UTF16 format */
 	uint8_t buf[4];
@@ -404,7 +412,7 @@ _PUBLIC_ codepoint_t next_codepoint_convenience(struct smb_iconv_convenience *ic
 	ilen_orig = strnlen(str, 5);
 	ilen = ilen_orig;
 
-	descriptor = get_conv_handle(ic, CH_UNIX, CH_UTF16);
+	descriptor = get_conv_handle(ic, src_charset, CH_UTF16);
 	if (descriptor == (smb_iconv_t)-1) {
 		*size = 1;
 		return INVALID_CODEPOINT;
@@ -443,6 +451,21 @@ _PUBLIC_ codepoint_t next_codepoint_convenience(struct smb_iconv_convenience *ic
 
 	/* no other length is valid */
 	return INVALID_CODEPOINT;
+}
+
+/*
+  return the unicode codepoint for the next multi-byte CH_UNIX character
+  in the string
+
+  also return the number of bytes consumed (which tells the caller
+  how many bytes to skip to get to the next CH_UNIX character)
+
+  return INVALID_CODEPOINT if the next character cannot be converted
+*/
+_PUBLIC_ codepoint_t next_codepoint_convenience(struct smb_iconv_convenience *ic,
+				    const char *str, size_t *size)
+{
+	return next_codepoint_convenience_ext(ic, str, CH_UNIX, size);
 }
 
 /*
