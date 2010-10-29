@@ -118,16 +118,12 @@ _PUBLIC_ void dbghdrclass(int level, int dclass, const char *location, const cha
 _PUBLIC_ void dbgtext(const char *format, ...)
 {
 	va_list ap;
-	char *s = NULL;
 
 	if (!check_reopen_logs()) return;
 
 	va_start(ap, format);
-	vasprintf(&s, format, ap);
+	vdprintf(state.fd, format, ap);
 	va_end(ap);
-
-	write(state.fd, s, strlen(s));
-	free(s);
 }
 
 _PUBLIC_ const char *logfile = NULL;
