@@ -457,9 +457,9 @@ static NTSTATUS dcesrv_samr_OpenDomain(struct dcesrv_call_state *dce_call, TALLO
   return DomInfo1
 */
 static NTSTATUS dcesrv_samr_info_DomInfo1(struct samr_domain_state *state,
-				   TALLOC_CTX *mem_ctx,
-				    struct ldb_message **dom_msgs,
-				   struct samr_DomInfo1 *info)
+					  TALLOC_CTX *mem_ctx,
+					  struct ldb_message **dom_msgs,
+					  struct samr_DomInfo1 *info)
 {
 	info->min_password_length =
 		ldb_msg_find_attr_as_uint(dom_msgs[0], "minPwdLength", 0);
@@ -538,9 +538,9 @@ static NTSTATUS dcesrv_samr_info_DomGeneralInformation(struct samr_domain_state 
   return DomInfo3
 */
 static NTSTATUS dcesrv_samr_info_DomInfo3(struct samr_domain_state *state,
-				   TALLOC_CTX *mem_ctx,
-				    struct ldb_message **dom_msgs,
-				   struct samr_DomInfo3 *info)
+					  TALLOC_CTX *mem_ctx,
+					  struct ldb_message **dom_msgs,
+					  struct samr_DomInfo3 *info)
 {
 	info->force_logoff_time = ldb_msg_find_attr_as_uint64(dom_msgs[0], "forceLogoff", 
 						      0x8000000000000000LL);
@@ -567,9 +567,9 @@ static NTSTATUS dcesrv_samr_info_DomOEMInformation(struct samr_domain_state *sta
   return DomInfo5
 */
 static NTSTATUS dcesrv_samr_info_DomInfo5(struct samr_domain_state *state,
-				   TALLOC_CTX *mem_ctx,
-				    struct ldb_message **dom_msgs,
-				   struct samr_DomInfo5 *info)
+					  TALLOC_CTX *mem_ctx,
+					  struct ldb_message **dom_msgs,
+					  struct samr_DomInfo5 *info)
 {
 	info->domain_name.string  = state->domain_name;
 
@@ -596,9 +596,9 @@ static NTSTATUS dcesrv_samr_info_DomInfo6(struct samr_domain_state *state,
   return DomInfo7
 */
 static NTSTATUS dcesrv_samr_info_DomInfo7(struct samr_domain_state *state,
-				   TALLOC_CTX *mem_ctx,
-				    struct ldb_message **dom_msgs,
-				   struct samr_DomInfo7 *info)
+					  TALLOC_CTX *mem_ctx,
+					  struct ldb_message **dom_msgs,
+					  struct samr_DomInfo7 *info)
 {
 
 	switch (state->role) {
@@ -627,9 +627,9 @@ static NTSTATUS dcesrv_samr_info_DomInfo7(struct samr_domain_state *state,
   return DomInfo8
 */
 static NTSTATUS dcesrv_samr_info_DomInfo8(struct samr_domain_state *state,
-				   TALLOC_CTX *mem_ctx,
-				    struct ldb_message **dom_msgs,
-				   struct samr_DomInfo8 *info)
+					  TALLOC_CTX *mem_ctx,
+					  struct ldb_message **dom_msgs,
+					  struct samr_DomInfo8 *info)
 {
 	info->sequence_num = ldb_msg_find_attr_as_uint64(dom_msgs[0], "modifiedCount", 
 					       time(NULL));
@@ -644,9 +644,9 @@ static NTSTATUS dcesrv_samr_info_DomInfo8(struct samr_domain_state *state,
   return DomInfo9
 */
 static NTSTATUS dcesrv_samr_info_DomInfo9(struct samr_domain_state *state,
-				   TALLOC_CTX *mem_ctx,
-				    struct ldb_message **dom_msgs,
-				   struct samr_DomInfo9 *info)
+					  TALLOC_CTX *mem_ctx,
+					  struct ldb_message **dom_msgs,
+					  struct samr_DomInfo9 *info)
 {
 	info->domain_server_state = DOMAIN_SERVER_ENABLED;
 
@@ -657,9 +657,9 @@ static NTSTATUS dcesrv_samr_info_DomInfo9(struct samr_domain_state *state,
   return DomInfo11
 */
 static NTSTATUS dcesrv_samr_info_DomGeneralInformation2(struct samr_domain_state *state,
-				    TALLOC_CTX *mem_ctx,
-				    struct ldb_message **dom_msgs,
-				    struct samr_DomGeneralInformation2 *info)
+							TALLOC_CTX *mem_ctx,
+							struct ldb_message **dom_msgs,
+							struct samr_DomGeneralInformation2 *info)
 {
 	NTSTATUS status;
 	status = dcesrv_samr_info_DomGeneralInformation(state, mem_ctx, dom_msgs, &info->general);
@@ -680,9 +680,9 @@ static NTSTATUS dcesrv_samr_info_DomGeneralInformation2(struct samr_domain_state
   return DomInfo12
 */
 static NTSTATUS dcesrv_samr_info_DomInfo12(struct samr_domain_state *state,
-				   TALLOC_CTX *mem_ctx,
-				    struct ldb_message **dom_msgs,
-				   struct samr_DomInfo12 *info)
+					   TALLOC_CTX *mem_ctx,
+					   struct ldb_message **dom_msgs,
+					   struct samr_DomInfo12 *info)
 {
 	info->lockout_duration = ldb_msg_find_attr_as_int64(dom_msgs[0], "lockoutDuration", 
 						    -18000000000LL);
@@ -697,9 +697,9 @@ static NTSTATUS dcesrv_samr_info_DomInfo12(struct samr_domain_state *state,
   return DomInfo13
 */
 static NTSTATUS dcesrv_samr_info_DomInfo13(struct samr_domain_state *state,
-				    TALLOC_CTX *mem_ctx,
-				    struct ldb_message **dom_msgs,
-				    struct samr_DomInfo13 *info)
+					   TALLOC_CTX *mem_ctx,
+					   struct ldb_message **dom_msgs,
+					   struct samr_DomInfo13 *info)
 {
 	info->sequence_num = ldb_msg_find_attr_as_uint64(dom_msgs[0], "modifiedCount", 
 					       time(NULL));
@@ -715,8 +715,9 @@ static NTSTATUS dcesrv_samr_info_DomInfo13(struct samr_domain_state *state,
 /* 
   samr_QueryDomainInfo 
 */
-static NTSTATUS dcesrv_samr_QueryDomainInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-				     struct samr_QueryDomainInfo *r)
+static NTSTATUS dcesrv_samr_QueryDomainInfo(struct dcesrv_call_state *dce_call,
+					    TALLOC_CTX *mem_ctx,
+					    struct samr_QueryDomainInfo *r)
 {
 	struct dcesrv_handle *h;
 	struct samr_domain_state *d_state;
