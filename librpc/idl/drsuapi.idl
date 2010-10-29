@@ -467,7 +467,8 @@ interface drsuapi
 		DRSUAPI_ATTID_msDS_HasDomainNCs			= 0x0009071c,
 		DRSUAPI_ATTID_msDS_hasMasterNCs			= 0x0009072c,
 		DRSUAPI_ATTID_isRecycled			= 0x0009080a,
-		DRSUAPI_ATTID_NONE				= 0xFFFFFFFF
+
+		DRSUAPI_ATTID_INVALID				= 0xFFFFFFFF
 	} drsuapi_DsAttributeId;
 
 	typedef struct {
