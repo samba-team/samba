@@ -7,7 +7,7 @@
 # overall this makes some build tasks quite a bit faster
 
 from TaskGen import feature, after
-import preproc
+import preproc, Task
 
 @feature('cc', 'cxx')
 @after('apply_type_vars', 'apply_lib_vars', 'apply_core')
@@ -148,3 +148,18 @@ Task.TaskBase.hash_constraints = hash_constraints
 
 # 	return task
 
+
+def suncc_wrap(cls):
+	'''work around a problem with cc on solaris not handling module aliases
+	which have empty libs'''
+	if getattr(cls, 'solaris_wrap', False):
+		return
+        cls.solaris_wrap = True
+        oldrun = cls.run
+        def run(self):
+		if self.env.CC_NAME == "sun" and not self.inputs:
+			self.env = self.env.copy()
+			self.env.append_value('LINKFLAGS', '-')
+		return oldrun(self)
+        cls.run = run
+suncc_wrap(Task.TaskBase.classes['cc_link'])
