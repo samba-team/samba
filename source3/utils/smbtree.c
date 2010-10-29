@@ -291,9 +291,7 @@ static bool print_tree(struct user_auth_info *user_info)
 
 	setlinebuf(stdout);
 
-	dbf = x_stderr;
-
-	setup_logging(argv[0],True);
+	setup_logging(argv[0], DEBUG_STDERR);
 
 	auth_info = user_auth_info_init(frame);
 	if (auth_info == NULL) {

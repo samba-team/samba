@@ -604,14 +604,12 @@ static void usage(void)
 
 	load_case_tables();
 
-	dbf = x_stderr;
-
 	if (argc < 3 || argv[1][0] == '-') {
 		usage();
 		exit(1);
 	}
 
-	setup_logging(argv[0],True);
+	setup_logging(argv[0], DEBUG_STDOUT);
 
 	for (server=0;server<NSERVERS;server++) {
 		share[server] = argv[1+server];

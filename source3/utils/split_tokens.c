@@ -50,7 +50,7 @@ int main(int argc, const char *argv[])
 
 	while(poptGetNextOpt(pc) != -1);
 
-	setup_logging(poptGetArg(pc), true);
+	setup_logging(poptGetArg(pc), DEBUG_STDERR);
 
 	sequence = poptGetArg(pc);
 
@@ -59,7 +59,6 @@ int main(int argc, const char *argv[])
 		return 1;
 	}
 
-	dbf = x_stderr;
 	DEBUGLEVEL = 0;
 	AllowDebugChange = false;
 

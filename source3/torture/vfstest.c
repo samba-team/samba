@@ -462,7 +462,7 @@ int main(int argc, char *argv[])
 
 	/* the following functions are part of the Samba debugging
 	   facilities.  See lib/debug.c */
-	setup_logging("vfstest", True);
+	setup_logging("vfstest", DEBUG_STDOUT);
 	
 	/* Load command lists */
 

@@ -215,7 +215,7 @@ int main(int argc, const char **argv)
 
 	load_case_tables();
 	DEBUGLEVEL_CLASS[DBGC_ALL] = 0;
-	dbf = x_stderr;
+	setup_logging(argv[0], DEBUG_STDERR);
 	AllowDebugChange = false;
 	lp_load(get_dyn_CONFIGFILE(), true, false, false, true);
 

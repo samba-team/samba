@@ -1379,7 +1379,7 @@ int main(int argc, const char **argv)
 
 	load_case_tables();
 
-	setup_logging(argv[0],True);
+	setup_logging(argv[0], DEBUG_STDOUT);
 
 	/* Parse command line arguments using popt */
 

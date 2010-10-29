@@ -258,6 +258,7 @@ int main(int argc, const char *argv[])
 		setlinebuf(stdout);
 	}
 
+	setup_logging(argv[0], DEBUG_STDERR);
 	DEBUGLEVEL_CLASS[DBGC_ALL] = 0;
 
 	pc = poptGetContext(argv[0], argc, argv, popt_options, POPT_CONTEXT_KEEP_FIRST);
@@ -279,7 +280,6 @@ int main(int argc, const char *argv[])
 	}
 
 	load_case_tables();
-	dbf = x_stderr;
 	AllowDebugChange = false;
 	lp_load(get_dyn_CONFIGFILE(), true, false, false, true);
 

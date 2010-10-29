@@ -543,10 +543,8 @@ int main(int argc, const char *argv[])
 	}
 
 	/* set default debug level to 1 regardless of what smb.conf sets */
-	setup_logging( "sharesec", True );
+	setup_logging( "sharesec", DEBUG_STDERR);
 	DEBUGLEVEL_CLASS[DBGC_ALL] = 1;
-	dbf = x_stderr;
-	x_setbuf( x_stderr, NULL );
 
 	pc = poptGetContext("sharesec", argc, argv, long_options, 0);
 

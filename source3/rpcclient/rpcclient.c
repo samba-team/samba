@@ -912,7 +912,7 @@ out_free:
 
 	/* the following functions are part of the Samba debugging
 	   facilities.  See lib/debug.c */
-	setup_logging("rpcclient", True);
+	setup_logging("rpcclient", DEBUG_STDOUT);
 
 	rpcclient_auth_info = user_auth_info_init(frame);
 	if (rpcclient_auth_info == NULL) {

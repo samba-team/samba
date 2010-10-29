@@ -49,7 +49,7 @@ static void pong_message(struct messaging_context *msg_ctx,
 
 	load_case_tables();
 
-	setup_logging(argv[0],True);
+	setup_logging(argv[0], DEBUG_STDOUT);
 
 	lp_load(get_dyn_CONFIGFILE(),False,False,False,True);
 

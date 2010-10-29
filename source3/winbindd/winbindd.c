@@ -1217,7 +1217,11 @@ int main(int argc, char **argv, char **envp)
 			SAFE_FREE(lfile);
 		}
 	}
-	setup_logging("winbindd", log_stdout);
+	if (log_stdout) {
+		setup_logging("winbindd", DEBUG_STDOUT);
+	} else {
+		setup_logging("winbindd", DEBUG_FILE);
+	}
 	reopen_logs();
 
 	DEBUG(0,("winbindd version %s started.\n", samba_version_string()));

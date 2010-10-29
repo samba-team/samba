@@ -863,8 +863,11 @@ static bool open_sockets(bool isdaemon, int port)
 		DEBUG(0,("ERROR: Can't log to stdout (-S) unless daemon is in foreground (-F) or interactive (-i)\n"));
 		exit(1);
 	}
-
-	setup_logging( argv[0], log_stdout );
+	if (log_stdout) {
+		setup_logging( argv[0], DEBUG_STDOUT);
+	} else {
+		setup_logging( argv[0], DEBUG_FILE);
+	}
 
 	reopen_logs();
 
@@ -1024,8 +1027,8 @@ static bool open_sockets(bool isdaemon, int port)
 	TALLOC_FREE(frame);
 	process();
 
-	if (dbf)
-		x_fclose(dbf);
+	debug_close_dbf();
+
 	kill_async_dns_child();
 	return(0);
 }

@@ -259,7 +259,7 @@ int main(int argc, char **argv)
 
 	/* Load configuration */
 	lp_load(get_dyn_CONFIGFILE(), False, False, True, True);
-	setup_logging("pdbtest", True);
+	setup_logging("pdbtest", DEBUG_STDOUT);
 
 	if (backend == NULL) {
 		backend = lp_passdb_backend();

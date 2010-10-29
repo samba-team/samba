@@ -59,8 +59,6 @@ bool dbghdr( int level, const char *location, const char *func);
 #pragma mips_frequency_hint NEVER dbghdr
 #endif
 
-extern XFILE *dbf;
-
 /* If we have these macros, we can add additional info to the header. */
 
 #ifdef HAVE_FUNCTION_MACRO
@@ -250,6 +248,13 @@ extern bool *DEBUGLEVEL_CLASS_ISSET;
 
 /* The following definitions come from lib/debug.c  */
 
+/* Possible destinations for the debug log (in order of precedence,
+ * only a higher value will override a lower value */
+enum debug_logtype {DEBUG_DEFAULT_STDERR = 0, DEBUG_STDOUT = 1, DEBUG_FILE = 2, DEBUG_STDERR = 3};
+
+void setup_logging(const char *prog_name, enum debug_logtype new_logtype);
+
+void debug_close_dbf(void);
 void gfree_debugsyms(void);
 const char *debug_classname_from_index(int ndx);
 int debug_add_class(const char *classname);
@@ -258,8 +263,6 @@ bool debug_parse_levels(const char *params_str);
 void debug_message(struct messaging_context *msg_ctx, void *private_data, uint32_t msg_type, struct server_id src, DATA_BLOB *data);
 void debug_init(void);
 void debug_register_msgs(struct messaging_context *msg_ctx);
-void setup_logging(const char *pname, bool interactive);
-void setup_logging_stdout( void );
 void debug_set_logfile(const char *name);
 bool reopen_logs( void );
 void force_check_log_size( void );
@@ -270,3 +273,4 @@ bool dbghdrclass(int level, int cls, const char *location, const char *func);
 bool dbghdr(int level, const char *location, const char *func);
 
 #endif
+

@@ -2557,7 +2557,7 @@ enum {
 	/* Samba client initialisation */
 	load_case_tables();
 
-	dbf = x_stderr;
+	setup_logging("ntlm_auth", DEBUG_STDERR);
 
 	/* Parse options */
 

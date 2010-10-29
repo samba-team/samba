@@ -1203,10 +1203,8 @@ static struct cli_state *connect_one(struct user_auth_info *auth_info,
 
 
 	/* set default debug level to 1 regardless of what smb.conf sets */
-	setup_logging( "smbcacls", True );
+	setup_logging( "smbcacls", DEBUG_STDERR);
 	DEBUGLEVEL_CLASS[DBGC_ALL] = 1;
-	dbf = x_stderr;
-	x_setbuf( x_stderr, NULL );
 	AllowDebugChange = false;
 
 	setlinebuf(stdout);

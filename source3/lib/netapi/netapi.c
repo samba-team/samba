@@ -80,11 +80,8 @@ NET_API_STATUS libnetapi_init(struct libnetapi_ctx **context)
 	}
 
 	/* prevent setup_logging() from closing x_stderr... */
-	dbf = 0;
-	setup_logging("libnetapi", true);
+	setup_logging("libnetapi", DEBUG_STDERR);
 
-	dbf = x_stderr;
-	x_setbuf(x_stderr, NULL);
 	AllowDebugChange = false;
 
 	load_case_tables();

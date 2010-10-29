@@ -7937,15 +7937,13 @@ static void usage(void)
 	TALLOC_CTX *frame = talloc_stackframe();
 	int seed = time(NULL);
 
-	dbf = x_stdout;
-
 #ifdef HAVE_SETBUFFER
 	setbuffer(stdout, NULL, 0);
 #endif
 
-	load_case_tables();
+	setup_logging("smbtorture", DEBUG_STDOUT);
 
-	setup_logging("smbtorture", true);
+	load_case_tables();
 
 	if (is_default_dyn_CONFIGFILE()) {
 		if(getenv("SMB_CONF_PATH")) {

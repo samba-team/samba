@@ -49,7 +49,7 @@ int main(int argc, const char **argv)
 
 	while(poptGetNextOpt(pc) != -1);
 
-	setup_logging(poptGetArg(pc), True);
+	setup_logging(poptGetArg(pc), DEBUG_STDERR);
 
 	if (poptPeekArg(pc)) {
 		config_file = poptGetArg(pc);
@@ -61,7 +61,6 @@ int main(int argc, const char **argv)
 		count = atoi(count_str);
 	}
 
-	dbf = x_stderr;
 	/* Don't let the debuglevel be changed by smb.conf. */
 	AllowDebugChange = False;
 

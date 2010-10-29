@@ -70,16 +70,22 @@
  *   a newline.
  */
 
+/* state variables for the debug system */
+static struct {
+	XFILE   *dbf;   /* The log file handle */
+	enum debug_logtype logtype; /* The type of logging we are doing: eg stdout, file, stderr */
+	const char *prog_name;
+	bool reopening_logs;
+} state;
+
 /* -------------------------------------------------------------------------- **
  * External variables.
  *
- *  dbf           - Global debug file handle.
  *  debugf        - Debug file name.
  *  DEBUGLEVEL    - System-wide debug message limit.  Messages with message-
  *                  levels higher than DEBUGLEVEL will not be processed.
  */
 
-XFILE   *dbf        = NULL;
 static char *debugf = NULL;
 bool    debug_warn_unknown_class = True;
 bool    debug_auto_add_unknown_class = True;
@@ -109,10 +115,6 @@ int     DEBUGLEVEL = &debug_all_class_hack;
 /* -------------------------------------------------------------------------- **
  * Internal variables.
  *
- *  stdout_logging  - Default False, if set to True then dbf will be set to
- *                    stdout and debug output will go to dbf only, and not
- *                    to syslog.  Set in setup_logging() and read in Debug1().
- *
  *  debug_count     - Number of debug messages that have been output.
  *                    Used to check log size.
  *
@@ -133,7 +135,6 @@ int     DEBUGLEVEL = &debug_all_class_hack;
  *                    are unable to open a new log file for some reason.
  */
 
-static bool    stdout_logging = False;
 static int     debug_count    = 0;
 #ifdef WITH_SYSLOG
 static int     syslog_level   = 0;
@@ -564,54 +565,35 @@ void debug_register_msgs(struct messaging_context *msg_ctx)
 			   debuglevel_message);
 }
 
-/***************************************************************************
- Get ready for syslog stuff
-**************************************************************************/
-
-void setup_logging(const char *pname, bool interactive)
+/**
+  control the name of the logfile and whether logging will be to stdout, stderr
+  or a file, and set up syslog
+*/
+void setup_logging(const char *prog_name, enum debug_logtype new_logtype)
 {
 	debug_init();
-
-	/* reset to allow multiple setup calls, going from interactive to
-	   non-interactive */
-	stdout_logging = False;
-	if (dbf) {
-		x_fflush(dbf);
-                if (dbf != x_stdout) {
-                        (void) x_fclose(dbf);
-                }
+	if (state.logtype < new_logtype) {
+		state.logtype = new_logtype;
 	}
-
-	dbf = NULL;
-
-	if (interactive) {
-		stdout_logging = True;
-		dbf = x_stdout;
-		x_setbuf( x_stdout, NULL );
+	if (prog_name) {
+		state.prog_name = prog_name;
 	}
+	reopen_logs();
+
+	if (state.logtype == DEBUG_FILE) {
 #ifdef WITH_SYSLOG
-	else {
-		const char *p = strrchr_m( pname,'/' );
+		const char *p = strrchr_m( prog_name,'/' );
 		if (p)
-			pname = p + 1;
+			prog_name = p + 1;
 #ifdef LOG_DAEMON
-		openlog( pname, LOG_PID, SYSLOG_FACILITY );
+		openlog( prog_name, LOG_PID, SYSLOG_FACILITY );
 #else
 		/* for old systems that have no facility codes. */
-		openlog( pname, LOG_PID );
+		openlog( prog_name, LOG_PID );
+#endif
 #endif
 	}
-#endif
 }
-
-/**
-   Just run logging to stdout for this program 
-*/
-_PUBLIC_ void setup_logging_stdout(void)
-{
-	setup_logging(NULL, True);
-}
-
 
 /***************************************************************************
  Set the logfile name.
@@ -623,6 +605,18 @@ void debug_set_logfile(const char *name)
 	debugf = SMB_STRDUP(name);
 }
 
+static void debug_close_xfile(XFILE *dbf)
+{
+	if (dbf && (dbf != x_stderr && dbf != x_stdout)) {
+		x_fclose(dbf);
+	}
+}
+
+void debug_close_dbf(void)
+{
+	debug_close_xfile(state.dbf);
+	state.dbf = NULL;
+}
 /**************************************************************************
  reopen the log files
  note that we now do this unconditionally
@@ -631,16 +625,37 @@ void debug_set_logfile(const char *name)
  Fix from dgibson@linuxcare.com.
 **************************************************************************/
 
-bool reopen_logs( void )
+/**
+  reopen the log file (usually called because the log file name might have changed)
+*/
+bool reopen_logs(void)
 {
-	char *fname = NULL;
 	mode_t oldumask;
 	XFILE *new_dbf = NULL;
 	XFILE *old_dbf = NULL;
 	bool ret = True;
 
-	if (stdout_logging)
-		return True;
+	char *fname = NULL;
+	if (state.reopening_logs) {
+		return true;
+	}
+
+	switch (state.logtype) {
+	case DEBUG_STDOUT:
+		state.dbf = x_stdout;
+		x_setbuf( x_stdout, NULL );
+		return true;
+
+	case DEBUG_DEFAULT_STDERR:
+	case DEBUG_STDERR:
+		debug_close_xfile(state.dbf);
+		state.dbf = x_stderr;
+		x_setbuf( x_stderr, NULL );
+		return true;
+
+	case DEBUG_FILE:
+		break;
+	}
 
 	oldumask = umask( 022 );
 
@@ -670,15 +685,15 @@ bool reopen_logs( void )
 		log_overflow = True;
 		DEBUG(0, ("Unable to open new log file %s: %s\n", debugf, strerror(errno)));
 		log_overflow = False;
-		if (dbf)
-			x_fflush(dbf);
+		if (state.dbf)
+			x_fflush(state.dbf);
 		ret = False;
 	} else {
 		x_setbuf(new_dbf, NULL);
-		old_dbf = dbf;
-		dbf = new_dbf;
+		old_dbf = state.dbf;
+		state.dbf = new_dbf;
 		if (old_dbf)
-			(void) x_fclose(old_dbf);
+			debug_close_xfile(old_dbf);
 	}
 
 	/* Fix from klausr@ITAP.Physik.Uni-Stuttgart.De
@@ -689,7 +704,7 @@ bool reopen_logs( void )
 	(void)umask(oldumask);
 
 	/* Take over stderr to catch output into logs */
-	if (dbf && dup2(x_fileno(dbf), 2) == -1) {
+	if (state.dbf && dup2(x_fileno(state.dbf), 2) == -1) {
 		close_low_fds(True); /* Close stderr too, if dup2 can't point it
 					at the logfile */
 	}
@@ -718,7 +733,7 @@ bool need_to_check_log_size( void )
 		return( False );
 
 	maxlog = lp_max_log_size() * 1024;
-	if( !dbf || maxlog <= 0 ) {
+	if( !state.dbf || maxlog <= 0 ) {
 		debug_count = 0;
 		return(False);
 	}
@@ -747,10 +762,10 @@ void check_log_size( void )
 
 	maxlog = lp_max_log_size() * 1024;
 
-	if(sys_fstat(x_fileno(dbf), &st, false) == 0
+	if(sys_fstat(x_fileno(state.dbf), &st, false) == 0
 	   && st.st_ex_size > maxlog ) {
 		(void)reopen_logs();
-		if( dbf && get_file_size( debugf ) > maxlog ) {
+		if( state.dbf && get_file_size( debugf ) > maxlog ) {
 			char *name = NULL;
 
 			if (asprintf(&name, "%s.old", debugf ) < 0) {
@@ -770,7 +785,7 @@ void check_log_size( void )
 	 * Here's where we need to panic if dbf == NULL..
 	 */
 
-	if(dbf == NULL) {
+	if(state.dbf == NULL) {
 		/* This code should only be reached in very strange
 		 * circumstances. If we merely fail to open the new log we
 		 * should stick with the old one. ergo this should only be
@@ -778,8 +793,8 @@ void check_log_size( void )
 		 * startup or when the log level is increased from zero.
 		 * -dwg 6 June 2000
 		 */
-		dbf = x_fopen( "/dev/console", O_WRONLY, 0);
-		if(dbf) {
+		state.dbf = x_fopen( "/dev/console", O_WRONLY, 0);
+		if(state.dbf) {
 			DEBUG(0,("check_log_size: open of debug file %s failed - using console.\n",
 					debugf ));
 		} else {
@@ -804,10 +819,10 @@ void check_log_size( void )
 
 	debug_count++;
 
-	if( stdout_logging ) {
+	if ( state.logtype != DEBUG_FILE ) {
 		va_start( ap, format_str );
-		if(dbf)
-			(void)x_vfprintf( dbf, format_str, ap );
+		if(state.dbf)
+			(void)x_vfprintf( state.dbf, format_str, ap );
 		va_end( ap );
 		errno = old_errno;
 		goto done;
@@ -822,13 +837,13 @@ void check_log_size( void )
 	if( !lp_syslog_only() )
 #endif
 	{
-		if( !dbf ) {
+		if( !state.dbf ) {
 			mode_t oldumask = umask( 022 );
 
-			dbf = x_fopen( debugf, O_WRONLY|O_APPEND|O_CREAT, 0644 );
+			state.dbf = x_fopen( debugf, O_WRONLY|O_APPEND|O_CREAT, 0644 );
 			(void)umask( oldumask );
-			if( dbf ) {
-				x_setbuf( dbf, NULL );
+			if( state.dbf ) {
+				x_setbuf( state.dbf, NULL );
 			} else {
 				errno = old_errno;
 				goto done;
@@ -880,11 +895,11 @@ void check_log_size( void )
 #endif
 	{
 		va_start( ap, format_str );
-		if(dbf)
-			(void)x_vfprintf( dbf, format_str, ap );
+		if(state.dbf)
+			(void)x_vfprintf( state.dbf, format_str, ap );
 		va_end( ap );
-		if(dbf)
-			(void)x_fflush( dbf );
+		if(state.dbf)
+			(void)x_fflush( state.dbf );
 	}
 
  done:
@@ -926,7 +941,7 @@ static void bufr_print( void )
 static void format_debug_text( const char *msg )
 {
 	size_t i;
-	bool timestamp = (!stdout_logging && (lp_timestamp_logs() || !(lp_loaded())));
+	bool timestamp = (state.logtype == DEBUG_FILE && (lp_timestamp_logs() || !(lp_loaded())));
 
 	if (!format_bufr) {
 		debug_init();
@@ -970,8 +985,8 @@ static void format_debug_text( const char *msg )
 void dbgflush( void )
 {
 	bufr_print();
-	if(dbf)
-		(void)x_fflush( dbf );
+	if(state.dbf)
+		(void)x_fflush( state.dbf );
 }
 
 /***************************************************************************
@@ -1021,8 +1036,9 @@ bool dbghdrclass(int level, int cls, const char *location, const char *func)
 #endif
 
 	/* Don't print a header if we're logging to stdout. */
-	if( stdout_logging )
+	if ( state.logtype != DEBUG_FILE ) {
 		return( True );
+	}
 
 	/* Print the header if timestamps are turned on.  If parameters are
 	 * not yet loaded, then default to timestamps on.

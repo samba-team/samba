@@ -295,7 +295,7 @@ int main(int argc, char *argv[])
 
 	load_case_tables();
 
-	setup_logging(argv[0],True);
+	setup_logging(argv[0], DEBUG_STDOUT);
 
 	configfile = get_dyn_CONFIGFILE();
 

@@ -1946,7 +1946,7 @@ int tar_parseargs(int argc, char *argv[], const char *Optarg, int Optind)
 		 * tar output
 		 */
 		if (tarhandle == 1)  {
-			dbf = x_stderr;
+			setup_logging("smbclient", DEBUG_STDERR);
 		}
 		if (!argv[Optind]) {
 			DEBUG(0,("Must specify tar filename\n"));

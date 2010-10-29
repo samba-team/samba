@@ -915,7 +915,11 @@ extern void build_options(bool screen);
 		log_stdout = True;
 	}
 
-	setup_logging(argv[0],log_stdout);
+	if (log_stdout) {
+		setup_logging(argv[0], DEBUG_STDOUT);
+	} else {
+		setup_logging(argv[0], DEBUG_FILE);
+	}
 
 	if (print_build_options) {
 		build_options(True); /* Display output to screen as well as debug */

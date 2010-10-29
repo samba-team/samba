@@ -5046,11 +5046,8 @@ static int do_message_op(struct user_auth_info *a_info)
 	set_global_myname( "" );
 
         /* set default debug level to 1 regardless of what smb.conf sets */
-	setup_logging( "smbclient", true );
+	setup_logging( "smbclient", DEBUG_DEFAULT_STDERR );
 	DEBUGLEVEL_CLASS[DBGC_ALL] = 1;
-	if ((dbf = x_fdup(x_stderr))) {
-		x_setbuf( dbf, NULL );
-	}
 
 	load_case_tables();
 
@@ -5119,10 +5116,7 @@ static int do_message_op(struct user_auth_info *a_info)
 			}
 			break;
 		case 'E':
-			if (dbf) {
-				x_fclose(dbf);
-			}
-			dbf = x_stderr;
+			setup_logging("smbclient", DEBUG_STDERR );
 			display_set_stderr();
 			break;
 
@@ -5215,7 +5209,7 @@ static int do_message_op(struct user_auth_info *a_info)
 	}
 
 	if ( override_logfile )
-		setup_logging( lp_logfile(), false );
+		setup_logging( lp_logfile(), DEBUG_FILE );
 
 	if (!lp_load(get_dyn_CONFIGFILE(),true,false,false,true)) {
 		fprintf(stderr, "%s: Can't load %s - run testparm to debug it\n",

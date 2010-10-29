@@ -484,8 +484,6 @@ static void usage(void)
 
 	setlinebuf(stdout);
 
-	dbf = x_stderr;
-
 	DEBUGLEVEL = 0;
 	AllowDebugChange = False;
 
@@ -498,7 +496,7 @@ static void usage(void)
 
 	all_string_sub(share,"/","\\",0);
 
-	setup_logging(argv[0],True);
+	setup_logging(argv[0], DEBUG_STDERR);
 
 	argc -= 1;
 	argv += 1;

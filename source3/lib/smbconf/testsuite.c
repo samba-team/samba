@@ -294,7 +294,7 @@ int main(int argc, const char **argv)
 	};
 
 	load_case_tables();
-	dbf = x_stderr;
+	setup_logging(argv[0], DEBUG_STDERR);
 
 	/* parse options */
 	pc = poptGetContext("smbconftort", argc, (const char **)argv,

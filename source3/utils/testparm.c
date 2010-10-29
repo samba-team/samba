@@ -365,7 +365,7 @@ rameter is ignored when using CUPS libraries.\n",
 		exit(0);
 	}
 
-	setup_logging(poptGetArg(pc), True);
+	setup_logging(poptGetArg(pc), DEBUG_STDERR);
 
 	if (poptPeekArg(pc)) 
 		config_file = poptGetArg(pc);
@@ -381,7 +381,6 @@ rameter is ignored when using CUPS libraries.\n",
 		goto done;
 	}
 
-	dbf = x_stderr;
 	/* Don't let the debuglevel be changed by smb.conf. */
 	AllowDebugChange = False;
 

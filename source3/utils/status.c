@@ -309,9 +309,7 @@ static int traverse_sessionid(const char *key, struct sessionid *session,
 	sec_init();
 	load_case_tables();
 
-	setup_logging(argv[0],True);
-
-	dbf = x_stderr;
+	setup_logging(argv[0], DEBUG_STDERR);
 
 	if (getuid() != geteuid()) {
 		d_printf("smbstatus should not be run setuid\n");

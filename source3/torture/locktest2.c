@@ -491,12 +491,12 @@ static void usage(void)
 
 	setlinebuf(stdout);
 
-	dbf = x_stderr;
-
 	if (argc < 5 || argv[1][0] == '-') {
 		usage();
 		exit(1);
 	}
+
+	setup_logging(argv[0], DEBUG_STDOUT);
 
 	share1 = argv[1];
 	share2 = argv[2];
@@ -505,8 +505,6 @@ static void usage(void)
 
 	all_string_sub(share1,"/","\\",0);
 	all_string_sub(share2,"/","\\",0);
-
-	setup_logging(argv[0],True);
 
 	argc -= 4;
 	argv += 4;

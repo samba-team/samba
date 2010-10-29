@@ -240,7 +240,7 @@ main(int argc,			/* I - Number of command-line arguments */
          * Setup the SAMBA server state...
          */
 
-	setup_logging("smbspool", True);
+	setup_logging("smbspool", DEBUG_STDOUT);
 
 	lp_set_in_client(True);	/* Make sure that we tell lp_load we are */
 

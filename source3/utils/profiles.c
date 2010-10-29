@@ -215,9 +215,7 @@ int main( int argc, char *argv[] )
 
 	/* setup logging options */
 
-	setup_logging( "profiles", True );
-	dbf = x_stderr;
-	x_setbuf( x_stderr, NULL );
+	setup_logging( "profiles", DEBUG_STDERR);
 
 	pc = poptGetContext("profiles", argc, (const char **)argv, long_options,
 		POPT_CONTEXT_KEEP_FIRST);

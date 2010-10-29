@@ -259,7 +259,7 @@ int main(int argc,char *argv[])
 
 	load_case_tables();
 
-	setup_logging(argv[0],True);
+	setup_logging(argv[0], DEBUG_STDOUT);
 
 	pc = poptGetContext("nmblookup", argc, (const char **)argv,
 			long_options, POPT_CONTEXT_KEEP_FIRST);

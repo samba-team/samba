@@ -822,6 +822,8 @@ static struct functable net_func[] = {
 
 	zero_sockaddr(&c->opt_dest_ip);
 
+	setup_logging(argv[0], DEBUG_STDERR);
+
 	load_case_tables();
 
 	setlocale(LC_ALL, "");
@@ -834,7 +836,6 @@ static struct functable net_func[] = {
 
 	/* set default debug level to 0 regardless of what smb.conf sets */
 	DEBUGLEVEL_CLASS[DBGC_ALL] = 0;
-	dbf = x_stderr;
 	c->private_data = net_func;
 
 	pc = poptGetContext(NULL, argc, (const char **) argv, long_options,

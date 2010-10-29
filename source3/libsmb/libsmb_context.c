@@ -47,7 +47,7 @@ SMBC_module_init(void * punused)
                 
     load_case_tables();
                 
-    setup_logging("libsmbclient", True);
+    setup_logging("libsmbclient", DEBUG_STDOUT);
 
     /* Here we would open the smb.conf file if needed ... */
                 
@@ -561,8 +561,7 @@ smbc_init_context(SMBCCTX *context)
              * leave it up to the user. If any one context spefies debug to
              * stderr then all will be.
              */
-            dbf = x_stderr;
-            x_setbuf(x_stderr, NULL);
+	    setup_logging("libsmbclient", DEBUG_STDERR);
         }
                 
         if ((!smbc_getFunctionAuthData(context) &&
