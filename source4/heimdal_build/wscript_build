@@ -430,7 +430,6 @@ if not bld.CONFIG_SET('USING_SYSTEM_ROKEN'):
         lib/roken/net_write.c
         lib/roken/parse_time.c
         lib/roken/parse_units.c
-        lib/roken/signal.c
         lib/roken/vis.c
         lib/roken/strlwr.c
         lib/roken/strsep_copy.c
