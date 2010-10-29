@@ -633,6 +633,7 @@ bool reopen_logs(void)
 
 	switch (state.logtype) {
 	case DEBUG_STDOUT:
+		debug_close_fd(state.fd);
 		state.fd = 1;
 		return true;
 
@@ -689,7 +690,7 @@ bool reopen_logs(void)
 	(void)umask(oldumask);
 
 	/* Take over stderr to catch output into logs */
-	if (state.fd && dup2(state.fd, 2) == -1) {
+	if (state.fd > 0 && dup2(state.fd, 2) == -1) {
 		close_low_fds(True); /* Close stderr too, if dup2 can't point it
 					at the logfile */
 	}
@@ -718,7 +719,7 @@ bool need_to_check_log_size( void )
 		return( False );
 
 	maxlog = lp_max_log_size() * 1024;
-	if( !state.fd || maxlog <= 0 ) {
+	if ( state.fd > 0 || maxlog <= 0 ) {
 		debug_count = 0;
 		return(False);
 	}
@@ -750,7 +751,7 @@ void check_log_size( void )
 	if(sys_fstat(state.fd, &st, false) == 0
 	   && st.st_ex_size > maxlog ) {
 		(void)reopen_logs();
-		if( state.fd && get_file_size( debugf ) > maxlog ) {
+		if( state.fd > 0 && get_file_size( debugf ) > maxlog ) {
 			char *name = NULL;
 
 			if (asprintf(&name, "%s.old", debugf ) < 0) {
@@ -767,10 +768,10 @@ void check_log_size( void )
 	}
 
 	/*
-	 * Here's where we need to panic if state.fd == NULL..
+	 * Here's where we need to panic if state.fd == 0 or -1 (invalid values)
 	 */
 
-	if(state.fd == 0) {
+	if (state.fd <= 0) {
 		/* This code should only be reached in very strange
 		 * circumstances. If we merely fail to open the new log we
 		 * should stick with the old one. ergo this should only be
@@ -779,7 +780,7 @@ void check_log_size( void )
 		 * -dwg 6 June 2000
 		 */
 		int fd = open( "/dev/console", O_WRONLY, 0);
-		if (fd == -1) {
+		if (fd != -1) {
 			state.fd = fd;
 			DEBUG(0,("check_log_size: open of debug file %s failed - using console.\n",
 					debugf ));
@@ -807,7 +808,7 @@ void check_log_size( void )
 
 	if ( state.logtype != DEBUG_FILE ) {
 		va_start( ap, format_str );
-		if(state.fd)
+		if (state.fd > 0)
 			(void)vdprintf( state.fd, format_str, ap );
 		va_end( ap );
 		errno = old_errno;
@@ -823,7 +824,7 @@ void check_log_size( void )
 	if( !lp_syslog_only() )
 #endif
 	{
-		if( !state.fd ) {
+		if( state.fd <= 0 ) {
 			mode_t oldumask = umask( 022 );
 			int fd = open( debugf, O_WRONLY|O_APPEND|O_CREAT, 0644 );
 			(void)umask( oldumask );
@@ -879,7 +880,7 @@ void check_log_size( void )
 #endif
 	{
 		va_start( ap, format_str );
-		if(state.fd)
+		if (state.fd > 0)
 			(void)vdprintf( state.fd, format_str, ap );
 		va_end( ap );
 	}
