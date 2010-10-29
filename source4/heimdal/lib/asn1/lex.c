@@ -1657,7 +1657,7 @@ YY_RULE_SETUP
 			  yylval.constant = strtol((const char *)yytext,
 						   &e, 0);
 			  if(e == y)
-			    error_message("malformed constant (%s)", yytext);
+			    lex_err_message("malformed constant (%s)", yytext);
 			  else
 			    return NUMBER;
 			}
@@ -1694,7 +1694,7 @@ YY_RULE_SETUP
 case 94:
 YY_RULE_SETUP
 #line 273 "lex.l"
-{ error_message("Ignoring char(%c)\n", *yytext); }
+{ lex_err_message("Ignoring char(%c)\n", *yytext); }
 	YY_BREAK
 case 95:
 YY_RULE_SETUP
@@ -2712,7 +2712,7 @@ yywrap ()
 #endif
 
 void
-error_message (const char *format, ...)
+lex_err_message (const char *format, ...)
 {
     va_list args;
 
@@ -2726,6 +2726,6 @@ error_message (const char *format, ...)
 static void
 unterminated(const char *type, unsigned start_lineno)
 {
-    error_message("unterminated %s, possibly started on line %d\n", type, start_lineno);
+    lex_err_message("unterminated %s, possibly started on line %d\n", type, start_lineno);
 }
 

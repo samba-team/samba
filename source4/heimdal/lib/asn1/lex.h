@@ -35,7 +35,7 @@
 
 #include <roken.h>
 
-void error_message (const char *, ...)
+void lex_err_message (const char *, ...)
 __attribute__ ((format (printf, 1, 2)));
 extern int error_flag;
 

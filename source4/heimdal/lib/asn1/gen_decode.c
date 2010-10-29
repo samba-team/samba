@@ -143,7 +143,7 @@ find_tag (const Type *t,
     case TType:
 	if ((t->symbol->stype == Stype && t->symbol->type == NULL)
 	    || t->symbol->stype == SUndefined) {
-	    error_message("%s is imported or still undefined, "
+	    lex_err_message("%s is imported or still undefined, "
 			  " can't generate tag checking data in CHOICE "
 			  "without this information",
 			  t->symbol->name);

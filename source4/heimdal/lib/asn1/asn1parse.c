@@ -1794,21 +1794,21 @@ yyreduce:
 
 /* Line 1455 of yacc.c  */
 #line 244 "heimdal/lib/asn1/asn1parse.y"
-    { error_message("implicit tagging is not supported"); }
+    { lex_err_message("implicit tagging is not supported"); }
     break;
 
   case 5:
 
 /* Line 1455 of yacc.c  */
 #line 246 "heimdal/lib/asn1/asn1parse.y"
-    { error_message("automatic tagging is not supported"); }
+    { lex_err_message("automatic tagging is not supported"); }
     break;
 
   case 7:
 
 /* Line 1455 of yacc.c  */
 #line 251 "heimdal/lib/asn1/asn1parse.y"
-    { error_message("no extensibility options supported"); }
+    { lex_err_message("no extensibility options supported"); }
     break;
 
   case 17:
@@ -1888,9 +1888,9 @@ yyreduce:
 #line 354 "heimdal/lib/asn1/asn1parse.y"
     {
 		    if((yyvsp[(2) - (5)].value)->type != integervalue)
-			error_message("Non-integer used in first part of range");
+			lex_err_message("Non-integer used in first part of range");
 		    if((yyvsp[(2) - (5)].value)->type != integervalue)
-			error_message("Non-integer in second part of range");
+			lex_err_message("Non-integer in second part of range");
 		    (yyval.range) = ecalloc(1, sizeof(*(yyval.range)));
 		    (yyval.range)->min = (yyvsp[(2) - (5)].value)->u.integervalue;
 		    (yyval.range)->max = (yyvsp[(4) - (5)].value)->u.integervalue;
@@ -1903,7 +1903,7 @@ yyreduce:
 #line 364 "heimdal/lib/asn1/asn1parse.y"
     {	
 		    if((yyvsp[(2) - (5)].value)->type != integervalue)
-			error_message("Non-integer in first part of range");
+			lex_err_message("Non-integer in first part of range");
 		    (yyval.range) = ecalloc(1, sizeof(*(yyval.range)));
 		    (yyval.range)->min = (yyvsp[(2) - (5)].value)->u.integervalue;
 		    (yyval.range)->max = (yyvsp[(2) - (5)].value)->u.integervalue - 1;
@@ -1916,7 +1916,7 @@ yyreduce:
 #line 372 "heimdal/lib/asn1/asn1parse.y"
     {	
 		    if((yyvsp[(4) - (5)].value)->type != integervalue)
-			error_message("Non-integer in second part of range");
+			lex_err_message("Non-integer in second part of range");
 		    (yyval.range) = ecalloc(1, sizeof(*(yyval.range)));
 		    (yyval.range)->min = (yyvsp[(4) - (5)].value)->u.integervalue + 2;
 		    (yyval.range)->max = (yyvsp[(4) - (5)].value)->u.integervalue;
@@ -1929,7 +1929,7 @@ yyreduce:
 #line 380 "heimdal/lib/asn1/asn1parse.y"
     {
 		    if((yyvsp[(2) - (3)].value)->type != integervalue)
-			error_message("Non-integer used in limit");
+			lex_err_message("Non-integer used in limit");
 		    (yyval.range) = ecalloc(1, sizeof(*(yyval.range)));
 		    (yyval.range)->min = (yyvsp[(2) - (3)].value)->u.integervalue;
 		    (yyval.range)->max = (yyvsp[(2) - (3)].value)->u.integervalue;
@@ -2177,7 +2177,7 @@ yyreduce:
 		  Symbol *s = addsym((yyvsp[(1) - (1)].name));
 		  (yyval.type) = new_type(TType);
 		  if(s->stype != Stype && s->stype != SUndefined)
-		    error_message ("%s is not a type\n", (yyvsp[(1) - (1)].name));
+		    lex_err_message ("%s is not a type\n", (yyvsp[(1) - (1)].name));
 		  else
 		    (yyval.type)->symbol = s;
 		}
@@ -2247,7 +2247,7 @@ yyreduce:
 #line 607 "heimdal/lib/asn1/asn1parse.y"
     {
 		    if ((yyvsp[(3) - (3)].value)->type != objectidentifiervalue)
-			error_message("Non-OID used in ENCODED BY constraint");
+			lex_err_message("Non-OID used in ENCODED BY constraint");
 		    (yyval.constraint_spec) = new_constraint_spec(CT_CONTENTS);
 		    (yyval.constraint_spec)->u.content.type = NULL;
 		    (yyval.constraint_spec)->u.content.encoding = (yyvsp[(3) - (3)].value);
@@ -2260,7 +2260,7 @@ yyreduce:
 #line 615 "heimdal/lib/asn1/asn1parse.y"
     {
 		    if ((yyvsp[(5) - (5)].value)->type != objectidentifiervalue)
-			error_message("Non-OID used in ENCODED BY constraint");
+			lex_err_message("Non-OID used in ENCODED BY constraint");
 		    (yyval.constraint_spec) = new_constraint_spec(CT_CONTENTS);
 		    (yyval.constraint_spec)->u.content.type = (yyvsp[(2) - (5)].type);
 		    (yyval.constraint_spec)->u.content.encoding = (yyvsp[(5) - (5)].value);
@@ -2635,7 +2635,7 @@ yyreduce:
 		    Symbol *s = addsym((yyvsp[(1) - (1)].name));
 		    if(s->stype != SValue ||
 		       s->value->type != objectidentifiervalue) {
-			error_message("%s is not an object identifier\n",
+			lex_err_message("%s is not an object identifier\n",
 				      s->name);
 			exit(1);
 		    }
@@ -2659,7 +2659,7 @@ yyreduce:
     {
 			Symbol *s = addsym((yyvsp[(1) - (1)].name));
 			if(s->stype != SValue)
-				error_message ("%s is not a value\n",
+				lex_err_message ("%s is not a value\n",
 						s->name);
 			else
 				(yyval.value) = s->value;
@@ -2950,7 +2950,7 @@ yyreturn:
 void
 yyerror (const char *s)
 {
-     error_message ("%s\n", s);
+     lex_err_message ("%s\n", s);
 }
 
 static Type *
