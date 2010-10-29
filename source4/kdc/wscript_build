@@ -32,6 +32,12 @@ bld.SAMBA_SUBSYSTEM('PAC_GLUE',
 	deps='ldb auth_sam auth_sam_reply CREDENTIALS hdb samba-hostconfig com_err'
 	)
 
+bld.SAMBA_LIBRARY('pac',
+                  source=[],
+                  deps='PAC_GLUE',
+                  private_library=True,
+                  grouping_library=True)
+
 
 bld.SAMBA_LIBRARY('db-glue',
 	source='db-glue.c',
