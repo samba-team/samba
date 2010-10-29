@@ -72,7 +72,7 @@
 
 /* state variables for the debug system */
 static struct {
-	XFILE   *dbf;   /* The log file handle */
+	int fd;   /* The log file handle */
 	enum debug_logtype logtype; /* The type of logging we are doing: eg stdout, file, stderr */
 	const char *prog_name;
 	bool reopening_logs;
@@ -601,18 +601,13 @@ void debug_set_logfile(const char *name)
 	debugf = SMB_STRDUP(name);
 }
 
-static void debug_close_xfile(XFILE *dbf)
+static void debug_close_fd(int fd)
 {
-	if (dbf && (dbf != x_stderr && dbf != x_stdout)) {
-		x_fclose(dbf);
+	if (fd > 2) {
+		close(fd);
 	}
 }
 
-void debug_close_dbf(void)
-{
-	debug_close_xfile(state.dbf);
-	state.dbf = NULL;
-}
 /**************************************************************************
  reopen the log files
  note that we now do this unconditionally
@@ -627,8 +622,8 @@ void debug_close_dbf(void)
 bool reopen_logs(void)
 {
 	mode_t oldumask;
-	XFILE *new_dbf = NULL;
-	XFILE *old_dbf = NULL;
+	int new_fd = 0;
+	int old_fd = 0;
 	bool ret = True;
 
 	char *fname = NULL;
@@ -638,15 +633,13 @@ bool reopen_logs(void)
 
 	switch (state.logtype) {
 	case DEBUG_STDOUT:
-		state.dbf = x_stdout;
-		x_setbuf( x_stdout, NULL );
+		state.fd = 1;
 		return true;
 
 	case DEBUG_DEFAULT_STDERR:
 	case DEBUG_STDERR:
-		debug_close_xfile(state.dbf);
-		state.dbf = x_stderr;
-		x_setbuf( x_stderr, NULL );
+		debug_close_fd(state.fd);
+		state.fd = 2;
 		return true;
 
 	case DEBUG_FILE:
@@ -675,21 +668,17 @@ bool reopen_logs(void)
 	}
 
 	debugf = fname;
-	new_dbf = x_fopen( debugf, O_WRONLY|O_APPEND|O_CREAT, 0644);
+	new_fd = open( debugf, O_WRONLY|O_APPEND|O_CREAT, 0644);
 
-	if (!new_dbf) {
+	if (new_fd == -1) {
 		log_overflow = True;
 		DEBUG(0, ("Unable to open new log file %s: %s\n", debugf, strerror(errno)));
 		log_overflow = False;
-		if (state.dbf)
-			x_fflush(state.dbf);
 		ret = False;
 	} else {
-		x_setbuf(new_dbf, NULL);
-		old_dbf = state.dbf;
-		state.dbf = new_dbf;
-		if (old_dbf)
-			debug_close_xfile(old_dbf);
+		old_fd = state.fd;
+		state.fd = new_fd;
+		debug_close_fd(old_fd);
 	}
 
 	/* Fix from klausr@ITAP.Physik.Uni-Stuttgart.De
@@ -700,7 +689,7 @@ bool reopen_logs(void)
 	(void)umask(oldumask);
 
 	/* Take over stderr to catch output into logs */
-	if (state.dbf && dup2(x_fileno(state.dbf), 2) == -1) {
+	if (state.fd && dup2(state.fd, 2) == -1) {
 		close_low_fds(True); /* Close stderr too, if dup2 can't point it
 					at the logfile */
 	}
@@ -729,7 +718,7 @@ bool need_to_check_log_size( void )
 		return( False );
 
 	maxlog = lp_max_log_size() * 1024;
-	if( !state.dbf || maxlog <= 0 ) {
+	if( !state.fd || maxlog <= 0 ) {
 		debug_count = 0;
 		return(False);
 	}
@@ -758,10 +747,10 @@ void check_log_size( void )
 
 	maxlog = lp_max_log_size() * 1024;
 
-	if(sys_fstat(x_fileno(state.dbf), &st, false) == 0
+	if(sys_fstat(state.fd, &st, false) == 0
 	   && st.st_ex_size > maxlog ) {
 		(void)reopen_logs();
-		if( state.dbf && get_file_size( debugf ) > maxlog ) {
+		if( state.fd && get_file_size( debugf ) > maxlog ) {
 			char *name = NULL;
 
 			if (asprintf(&name, "%s.old", debugf ) < 0) {
@@ -778,10 +767,10 @@ void check_log_size( void )
 	}
 
 	/*
-	 * Here's where we need to panic if dbf == NULL..
+	 * Here's where we need to panic if state.fd == NULL..
 	 */
 
-	if(state.dbf == NULL) {
+	if(state.fd == 0) {
 		/* This code should only be reached in very strange
 		 * circumstances. If we merely fail to open the new log we
 		 * should stick with the old one. ergo this should only be
@@ -789,8 +778,9 @@ void check_log_size( void )
 		 * startup or when the log level is increased from zero.
 		 * -dwg 6 June 2000
 		 */
-		state.dbf = x_fopen( "/dev/console", O_WRONLY, 0);
-		if(state.dbf) {
+		int fd = open( "/dev/console", O_WRONLY, 0);
+		if (fd == -1) {
+			state.fd = fd;
 			DEBUG(0,("check_log_size: open of debug file %s failed - using console.\n",
 					debugf ));
 		} else {
@@ -817,8 +807,8 @@ void check_log_size( void )
 
 	if ( state.logtype != DEBUG_FILE ) {
 		va_start( ap, format_str );
-		if(state.dbf)
-			(void)x_vfprintf( state.dbf, format_str, ap );
+		if(state.fd)
+			(void)vdprintf( state.fd, format_str, ap );
 		va_end( ap );
 		errno = old_errno;
 		goto done;
@@ -833,17 +823,15 @@ void check_log_size( void )
 	if( !lp_syslog_only() )
 #endif
 	{
-		if( !state.dbf ) {
+		if( !state.fd ) {
 			mode_t oldumask = umask( 022 );
-
-			state.dbf = x_fopen( debugf, O_WRONLY|O_APPEND|O_CREAT, 0644 );
+			int fd = open( debugf, O_WRONLY|O_APPEND|O_CREAT, 0644 );
 			(void)umask( oldumask );
-			if( state.dbf ) {
-				x_setbuf( state.dbf, NULL );
-			} else {
+			if(fd == -1) {
 				errno = old_errno;
 				goto done;
 			}
+			state.fd = fd;
 		}
 	}
 
@@ -891,11 +879,9 @@ void check_log_size( void )
 #endif
 	{
 		va_start( ap, format_str );
-		if(state.dbf)
-			(void)x_vfprintf( state.dbf, format_str, ap );
+		if(state.fd)
+			(void)vdprintf( state.fd, format_str, ap );
 		va_end( ap );
-		if(state.dbf)
-			(void)x_fflush( state.dbf );
 	}
 
  done:
@@ -981,8 +967,6 @@ static void format_debug_text( const char *msg )
 void dbgflush( void )
 {
 	bufr_print();
-	if(state.dbf)
-		(void)x_fflush( state.dbf );
 }
 
 /***************************************************************************

@@ -1027,8 +1027,6 @@ static bool open_sockets(bool isdaemon, int port)
 	TALLOC_FREE(frame);
 	process();
 
-	debug_close_dbf();
-
 	kill_async_dns_child();
 	return(0);
 }
