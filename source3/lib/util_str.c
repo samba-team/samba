@@ -1454,10 +1454,12 @@ void strupper_m(char *s)
 }
 
 /**
- Count the number of UCS2 characters in a string. Normally this will
- be the same as the number of bytes in a string for single byte strings,
- but will be different for multibyte.
-**/
+ * Calculate the number of 16-bit units that would be needed to convert
+ * the input string which is expected to be in CH_UNIX encoding to UTF16.
+ *
+ * This will be the same as the number of bytes in a string for single
+ * byte strings, but will be different for multibyte.
+ */
 
 size_t strlen_m(const char *s)
 {
