@@ -1793,17 +1793,23 @@ size_t align_string(const void *base_ptr, const char *p, int flags)
 	return 0;
 }
 
-/*
-  Return the unicode codepoint for the next multi-byte CH_UNIX character
-  in the string. The unicode codepoint (codepoint_t) is an unsinged 32 bit value.
+/**
+ * Return the unicode codepoint for the next character in the input
+ * string in the given src_charset.
+ * The unicode codepoint (codepoint_t) is an unsinged 32 bit value.
+ *
+ * Also return the number of bytes consumed (which tells the caller
+ * how many bytes to skip to get to the next src_charset-character).
+ *
+ * This is implemented (in the non-ascii-case) by first converting the
+ * next character in the input string to UTF16_LE and then calculating
+ * the unicode codepoint from that.
+ *
+ * Return INVALID_CODEPOINT if the next character cannot be converted.
+ */
 
-  Also return the number of bytes consumed (which tells the caller
-  how many bytes to skip to get to the next CH_UNIX character).
-
-  Return INVALID_CODEPOINT if the next character cannot be converted.
-*/
-
-codepoint_t next_codepoint(const char *str, size_t *size)
+codepoint_t next_codepoint_ext(const char *str, charset_t src_charset,
+			       size_t *size)
 {
 	/* It cannot occupy more than 4 bytes in UTF16 format */
 	uint8_t buf[4];
@@ -1827,7 +1833,7 @@ codepoint_t next_codepoint(const char *str, size_t *size)
 
         lazy_initialize_conv();
 
-        descriptor = conv_handles[CH_UNIX][CH_UTF16LE];
+	descriptor = conv_handles[src_charset][CH_UTF16LE];
 	if (descriptor == (smb_iconv_t)-1 || descriptor == (smb_iconv_t)0) {
 		*size = 1;
 		return INVALID_CODEPOINT;
@@ -1874,6 +1880,21 @@ codepoint_t next_codepoint(const char *str, size_t *size)
 
 	/* no other length is valid */
 	return INVALID_CODEPOINT;
+}
+
+/*
+  Return the unicode codepoint for the next multi-byte CH_UNIX character
+  in the string. The unicode codepoint (codepoint_t) is an unsinged 32 bit value.
+
+  Also return the number of bytes consumed (which tells the caller
+  how many bytes to skip to get to the next CH_UNIX character).
+
+  Return INVALID_CODEPOINT if the next character cannot be converted.
+*/
+
+codepoint_t next_codepoint(const char *str, size_t *size)
+{
+	return next_codepoint_ext(str, CH_UNIX, size);
 }
 
 /*
