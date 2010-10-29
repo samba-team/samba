@@ -180,7 +180,7 @@ static void ndrdump_data(uint8_t *d, uint32_t l, bool force)
 
 	setlinebuf(stdout);
 
-	setup_logging_stdout();
+	setup_logging("ndrdump", DEBUG_STDOUT);
 
 	pc = poptGetContext("ndrdump", argc, argv, long_options, 0);
 	

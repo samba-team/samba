@@ -37,7 +37,6 @@ static int debug_all_class_hack = 1;
 int *DEBUGLEVEL_CLASS = &debug_all_class_hack; /* For samba 3 */
 static bool debug_all_class_isset_hack = true;
 bool    *DEBUGLEVEL_CLASS_ISSET = &debug_all_class_isset_hack; /* For samba 3 */
-XFILE *dbf = NULL; /* For Samba 3*/
 
 /* the registered mutex handlers */
 static struct {
@@ -207,14 +206,6 @@ _PUBLIC_ void setup_logging(const char *prog_name, enum debug_logtype new_logtyp
 		state.prog_name = prog_name;
 	}
 	reopen_logs();
-}
-
-/**
-   Just run logging to stdout for this program 
-*/
-_PUBLIC_ void setup_logging_stdout(void)
-{
-	setup_logging(NULL, DEBUG_STDOUT);
 }
 
 /**
