@@ -483,9 +483,10 @@ static NTSTATUS dcesrv_samr_info_DomGeneralInformation(struct samr_domain_state 
 						       struct ldb_message **dom_msgs,
 						       struct samr_DomGeneralInformation *info)
 {
-	/* FIXME: this has a completely different meaning
-	 * MS-SAMR 2.2.4.1 - ReplicaSourceNodeName */
-	info->primary.string = talloc_strdup(mem_ctx, "");
+	/* MS-SAMR 2.2.4.1 - ReplicaSourceNodeName: "domainReplica" attribute */
+	info->primary.string = ldb_msg_find_attr_as_string(dom_msgs[0],
+							   "domainReplica",
+							   "");
 
 	info->force_logoff_time = ldb_msg_find_attr_as_uint64(dom_msgs[0], "forceLogoff", 
 							    0x8000000000000000LL);
@@ -575,13 +576,14 @@ static NTSTATUS dcesrv_samr_info_DomInfo5(struct samr_domain_state *state,
   return DomInfo6
 */
 static NTSTATUS dcesrv_samr_info_DomInfo6(struct samr_domain_state *state,
-				   TALLOC_CTX *mem_ctx,
-				   struct ldb_message **dom_msgs,
-				   struct samr_DomInfo6 *info)
+					  TALLOC_CTX *mem_ctx,
+					  struct ldb_message **dom_msgs,
+					  struct samr_DomInfo6 *info)
 {
-	/* FIXME: this has a completely different meaning
-	 * MS-SAMR 2.2.4.1 - ReplicaSourceNodeName */
-	info->primary.string = talloc_strdup(mem_ctx, "");
+	/* MS-SAMR 2.2.4.1 - ReplicaSourceNodeName: "domainReplica" attribute */
+	info->primary.string = ldb_msg_find_attr_as_string(dom_msgs[0],
+							   "domainReplica",
+							   "");
 
 	return NT_STATUS_OK;
 }
@@ -740,8 +742,9 @@ static NTSTATUS dcesrv_samr_QueryDomainInfo(struct dcesrv_call_state *dce_call, 
 	case 2:
 	{
 		static const char * const attrs2[] = {"forceLogoff",
-						      "oEMInformation", 
-						      "modifiedCount", 
+						      "oEMInformation",
+						      "modifiedCount",
+						      "domainReplica",
 						      NULL};
 		attrs = attrs2;
 		break;
@@ -767,7 +770,8 @@ static NTSTATUS dcesrv_samr_QueryDomainInfo(struct dcesrv_call_state *dce_call, 
 	}
 	case 6:
 	{
-		static const char * const attrs2[] = { NULL };
+		static const char * const attrs2[] = { "domainReplica",
+						       NULL };
 		attrs = attrs2;
 		break;
 	}
