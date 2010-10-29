@@ -569,3 +569,22 @@ def make_libname(ctx, name, nolibprefix=False, version=None, python=False):
             libname = "%s%s.%s" % (root, ext, version)
     return libname
 Build.BuildContext.make_libname = make_libname
+
+
+def get_tgt_list(bld):
+    '''return a list of build objects for samba'''
+
+    targets = LOCAL_CACHE(bld, 'TARGET_TYPE')
+
+    # build a list of task generators we are interested in
+    tgt_list = []
+    for tgt in targets:
+        type = targets[tgt]
+        if not type in ['SUBSYSTEM', 'MODULE', 'BINARY', 'LIBRARY', 'ASN1', 'PYTHON']:
+            continue
+        t = bld.name_to_obj(tgt, bld.env)
+        if t is None:
+            Logs.error("Target %s of type %s has no task generator" % (tgt, type))
+            sys.exit(1)
+        tgt_list.append(t)
+    return tgt_list

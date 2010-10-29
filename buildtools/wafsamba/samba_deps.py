@@ -1077,21 +1077,10 @@ def load_samba_deps(bld, tgt_list):
 def check_project_rules(bld):
     '''check the project rules - ensuring the targets are sane'''
 
-    targets = LOCAL_CACHE(bld, 'TARGET_TYPE')
     loops = {}
     inc_loops = {}
 
-    # build a list of task generators we are interested in
-    tgt_list = []
-    for tgt in targets:
-        type = targets[tgt]
-        if not type in ['SUBSYSTEM', 'MODULE', 'BINARY', 'LIBRARY', 'ASN1', 'PYTHON']:
-            continue
-        t = bld.name_to_obj(tgt, bld.env)
-        if t is None:
-            Logs.error("Target %s of type %s has no task generator" % (tgt, type))
-            sys.exit(1)
-        tgt_list.append(t)
+    tgt_list = get_tgt_list(bld)
 
     add_samba_attributes(bld, tgt_list)
 
