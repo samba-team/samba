@@ -2831,7 +2831,8 @@ static bool test_QueryUserInfo_pwdlastset(struct dcerpc_binding_handle *b,
 
 	*pwdlastset = pwdlastset21;
 
-	torture_comment(tctx, "(pwdlastset: %lld)\n", *pwdlastset);
+	torture_comment(tctx, "(pwdlastset: %llu)\n",
+			(unsigned long long) *pwdlastset);
 
 	return true;
 }
@@ -3207,8 +3208,8 @@ static bool test_SetPassword_pwdlastset(struct dcerpc_pipe *p,
 		default:
 			if (pwdlastset_new != 0) {
 				torture_warning(tctx, "pwdLastSet test failed: "
-					"expected pwdLastSet 0 but got %lld\n",
-					pwdlastset_old);
+					"expected pwdLastSet 0 but got %llu\n",
+					(unsigned long long) pwdlastset_old);
 				ret = false;
 			}
 			break;
@@ -3275,14 +3276,15 @@ static bool test_SetPassword_pwdlastset(struct dcerpc_pipe *p,
 		default:
 			if (pwdlastset_old >= pwdlastset_new) {
 				torture_warning(tctx, "pwdLastSet test failed: "
-					"expected last pwdlastset (%lld) < new pwdlastset (%lld)\n",
-					pwdlastset_old, pwdlastset_new);
+					"expected last pwdlastset (%llu) < new pwdlastset (%llu)\n",
+					(unsigned long long) pwdlastset_old,
+					(unsigned long long) pwdlastset_new);
 				ret = false;
 			}
 			if (pwdlastset_new == 0) {
 				torture_warning(tctx, "pwdLastSet test failed: "
-					"expected non-0 pwdlastset, got: %lld\n",
-					pwdlastset_new);
+					"expected non-0 pwdlastset, got: %llu\n",
+					(unsigned long long) pwdlastset_new);
 				ret = false;
 			}
 			break;
@@ -3350,14 +3352,15 @@ static bool test_SetPassword_pwdlastset(struct dcerpc_pipe *p,
 		default:
 			if (pwdlastset_old >= pwdlastset_new) {
 				torture_warning(tctx, "pwdLastSet test failed: "
-					"expected last pwdlastset (%lld) < new pwdlastset (%lld)\n",
-					pwdlastset_old, pwdlastset_new);
+					"expected last pwdlastset (%llu) < new pwdlastset (%llu)\n",
+					(unsigned long long) pwdlastset_old,
+					(unsigned long long) pwdlastset_new);
 				ret = false;
 			}
 			if (pwdlastset_new == 0) {
 				torture_warning(tctx, "pwdLastSet test failed: "
-					"expected non-0 pwdlastset, got: %lld\n",
-					pwdlastset_new);
+					"expected non-0 pwdlastset, got: %llu\n",
+					(unsigned long long) pwdlastset_new);
 				ret = false;
 			}
 			break;
@@ -3433,8 +3436,8 @@ static bool test_SetPassword_pwdlastset(struct dcerpc_pipe *p,
 		default:
 			if (pwdlastset_new != 0) {
 				torture_warning(tctx, "pwdLastSet test failed: "
-					"expected pwdLastSet 0, got %lld\n",
-					pwdlastset_old);
+					"expected pwdLastSet 0, got %llu\n",
+					(unsigned long long) pwdlastset_old);
 				ret = false;
 			}
 			break;
