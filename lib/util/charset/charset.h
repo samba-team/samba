@@ -39,11 +39,6 @@ typedef enum {CH_UTF16LE=0, CH_UTF16=0, CH_UNIX, CH_DISPLAY, CH_DOS, CH_UTF8, CH
 
 typedef uint16_t smb_ucs2_t;
 
-/*
- * SMB UCS2 (16-bit unicode) internal type.
- * smb_ucs2_t is *always* in little endian format.
- */
-
 #ifdef WORDS_BIGENDIAN
 #define UCS2_SHIFT 8
 #else
