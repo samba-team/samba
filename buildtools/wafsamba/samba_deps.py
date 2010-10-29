@@ -754,6 +754,25 @@ def reduce_objects(bld, tgt_list):
     return True
 
 
+def show_library_loop(bld, lib1, lib2, path, seen):
+    '''show the detailed path of a library loop between lib1 and lib2'''
+
+    t = bld.name_to_obj(lib1, bld.env)
+    if not lib2 in getattr(t, 'final_libs', set()):
+        return
+
+    for d in t.samba_deps_extended:
+        if d in seen:
+            continue
+        seen.add(d)
+        path2 = path + '=>' + d
+        if d == lib2:
+            Logs.warn('library loop path: ' + path2)
+            return
+        show_library_loop(bld, d, lib2, path2, seen)
+        seen.remove(d)
+
+
 def calculate_final_deps(bld, tgt_list, loops):
     '''calculate the final library and object dependencies'''
     for t in tgt_list:
@@ -798,6 +817,8 @@ def calculate_final_deps(bld, tgt_list, loops):
                     else:
                         Logs.error('ERROR: circular library dependency between %s and %s'
                             % (t.sname, t2.sname))
+                        show_library_loop(bld, t.sname, t2.sname, t.sname, set())
+                        show_library_loop(bld, t2.sname, t.sname, t2.sname, set())
                         sys.exit(1)
 
     for loop in loops:
