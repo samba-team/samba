@@ -28,9 +28,9 @@
 
 const char *client_get_cur_dir(void);
 const char *client_set_cur_dir(const char *newdir);
-void do_list(const char *mask,
+NTSTATUS do_list(const char *mask,
 			uint16 attribute,
-			void (*fn)(struct cli_state *cli_state, struct file_info *,
+			NTSTATUS (*fn)(struct cli_state *cli_state, struct file_info *,
 				   const char *dir),
 			bool rec,
 			bool dirs);

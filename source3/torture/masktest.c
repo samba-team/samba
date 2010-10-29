@@ -265,7 +265,7 @@ static struct cli_state *connect_one(char *share)
 static char *resultp;
 static struct file_info *f_info;
 
-static void listfn(const char *mnt, struct file_info *f, const char *s,
+static NTSTATUS listfn(const char *mnt, struct file_info *f, const char *s,
 		   void *state)
 {
 	if (strcmp(f->name,".") == 0) {
@@ -276,6 +276,7 @@ static void listfn(const char *mnt, struct file_info *f, const char *s,
 		resultp[2] = '+';
 	}
 	f_info = f;
+	return NT_STATUS_OK;
 }
 
 static void get_real_name(struct cli_state *cli,

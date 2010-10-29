@@ -114,9 +114,9 @@ static int tarhandle;
 
 static void writetarheader(int f,  const char *aname, uint64_t size, time_t mtime,
 			   const char *amode, unsigned char ftype);
-static void do_atar(const char *rname_in, char *lname,
+static NTSTATUS do_atar(const char *rname_in, char *lname,
 		    struct file_info *finfo1);
-static void do_tar(struct cli_state *cli_state, struct file_info *finfo,
+static NTSTATUS do_tar(struct cli_state *cli_state, struct file_info *finfo,
 		   const char *dir);
 static void oct_it(uint64_t value, int ndgs, char *p);
 static void fixtarname(char *tptr, const char *fp, size_t l);
@@ -615,7 +615,7 @@ static void do_setrattr(char *name, uint16 attr, int set)
 append one remote file to the tar file
 ***************************************************************************/
 
-static void do_atar(const char *rname_in, char *lname,
+static NTSTATUS do_atar(const char *rname_in, char *lname,
 		    struct file_info *finfo1)
 {
 	uint16_t fnum = (uint16_t)-1;
@@ -628,7 +628,7 @@ static void do_atar(const char *rname_in, char *lname,
 	int datalen=0;
 	char *rname = NULL;
 	TALLOC_CTX *ctx = talloc_stackframe();
-
+	NTSTATUS status = NT_STATUS_OK;
 	struct timespec tp_start;
 
 	clock_gettime_mono(&tp_start);
@@ -636,6 +636,7 @@ static void do_atar(const char *rname_in, char *lname,
 	data = SMB_MALLOC_ARRAY(char, read_size);
 	if (!data) {
 		DEBUG(0,("do_atar: out of memory.\n"));
+		status = NT_STATUS_NO_MEMORY;
 		goto cleanup;
 	}
 
@@ -662,10 +663,12 @@ static void do_atar(const char *rname_in, char *lname,
 
 	rname = clean_name(ctx, rname_in);
 	if (!rname) {
+		status = NT_STATUS_NO_MEMORY;
 		goto cleanup;
 	}
 
-	if (!NT_STATUS_IS_OK(cli_open(cli, rname, O_RDONLY, DENY_NONE, &fnum))) {
+	status = cli_open(cli, rname, O_RDONLY, DENY_NONE, &fnum);
+	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("%s opening remote file %s (%s)\n",
 				cli_errstr(cli),rname, client_get_cur_dir()));
 		goto cleanup;
@@ -674,6 +677,7 @@ static void do_atar(const char *rname_in, char *lname,
 	finfo.name = string_create_s(strlen(rname));
 	if (finfo.name == NULL) {
 		DEBUG(0, ("Unable to allocate space for finfo.name in do_atar\n"));
+		status = NT_STATUS_NO_MEMORY;
 		goto cleanup;
 	}
 
@@ -704,6 +708,7 @@ static void do_atar(const char *rname_in, char *lname,
 
 			if (datalen == -1) {
 				DEBUG(0,("Error reading file %s : %s\n", rname, cli_errstr(cli)));
+				status = cli_nt_error(cli);
 				break;
 			}
 
@@ -732,10 +737,12 @@ static void do_atar(const char *rname_in, char *lname,
 
 			if (dotarbuf(tarhandle,data,datalen) != datalen) {
 				DEBUG(0,("Error writing to tar file - %s\n", strerror(errno)));
+				status = map_nt_error_from_unix(errno);
 				break;
 			}
 
 			if ( (datalen == 0) && (finfo.size != 0) ) {
+				status = NT_STATUS_UNSUCCESSFUL;
 				DEBUG(0,("Error reading file %s. Got 0 bytes\n", rname));
 				break;
 			}
@@ -748,8 +755,10 @@ static void do_atar(const char *rname_in, char *lname,
 			if (nread < finfo.size) {
 				DEBUG(0, ("Didn't get entire file. size=%.0f, nread=%d\n",
 							(double)finfo.size, (int)nread));
-				if (padit(data, (uint64_t)sizeof(data), finfo.size - nread))
+				if (padit(data, (uint64_t)sizeof(data), finfo.size - nread)) {
+					status = map_nt_error_from_unix(errno);
 					DEBUG(0,("Error writing tar file - %s\n", strerror(errno)));
+				}
 			}
 
 			/* round tar file to nearest block */
@@ -761,6 +770,7 @@ static void do_atar(const char *rname_in, char *lname,
 		} else {
 			DEBUG(4, ("skipping %s - initial read failed (file was locked ?)\n", finfo.name));
 			shallitime=0;
+			status = NT_STATUS_UNSUCCESSFUL;
 		}
 	}
 
@@ -800,19 +810,21 @@ static void do_atar(const char *rname_in, char *lname,
 	}
 	TALLOC_FREE(ctx);
 	SAFE_FREE(data);
+	return status;
 }
 
 /****************************************************************************
 Append single file to tar file (or not)
 ***************************************************************************/
 
-static void do_tar(struct cli_state *cli_state, struct file_info *finfo,
+static NTSTATUS do_tar(struct cli_state *cli_state, struct file_info *finfo,
 		   const char *dir)
 {
 	TALLOC_CTX *ctx = talloc_stackframe();
+	NTSTATUS status = NT_STATUS_OK;
 
 	if (strequal(finfo->name,"..") || strequal(finfo->name,"."))
-		return;
+		return NT_STATUS_OK;
 
 	/* Is it on the exclude list ? */
 	if (!tar_excl && clipn) {
@@ -825,7 +837,7 @@ static void do_tar(struct cli_state *cli_state, struct file_info *finfo,
 				client_get_cur_dir(),
 				finfo->name);
 		if (!exclaim) {
-			return;
+			return NT_STATUS_NO_MEMORY;
 		}
 
 		DEBUG(5, ("...tar_re_search: %d\n", tar_re_search));
@@ -834,7 +846,7 @@ static void do_tar(struct cli_state *cli_state, struct file_info *finfo,
 				(tar_re_search && mask_match_list(exclaim, cliplist, clipn, True))) {
 			DEBUG(3,("Skipping file %s\n", exclaim));
 			TALLOC_FREE(exclaim);
-			return;
+			return NT_STATUS_OK;
 		}
 		TALLOC_FREE(exclaim);
 	}
@@ -846,7 +858,7 @@ static void do_tar(struct cli_state *cli_state, struct file_info *finfo,
 
 		saved_curdir = talloc_strdup(ctx, client_get_cur_dir());
 		if (!saved_curdir) {
-			return;
+			return NT_STATUS_NO_MEMORY;
 		}
 
 		DEBUG(5, ("strlen(cur_dir)=%d, \
@@ -859,7 +871,7 @@ strlen(finfo->name)=%d\nname=%s,cur_dir=%s\n",
 				client_get_cur_dir(),
 				finfo->name);
 		if (!new_cd) {
-			return;
+			return NT_STATUS_NO_MEMORY;
 		}
 		client_set_cur_dir(new_cd);
 
@@ -878,10 +890,10 @@ strlen(finfo->name)=%d\nname=%s,cur_dir=%s\n",
 				"%s*",
 				client_get_cur_dir());
 		if (!mtar_mask) {
-			return;
+			return NT_STATUS_NO_MEMORY;
 		}
 		DEBUG(5, ("Doing list with mtar_mask: %s\n", mtar_mask));
-		do_list(mtar_mask, attribute, do_tar, False, True);
+		status = do_list(mtar_mask, attribute, do_tar, False, True);
 		client_set_cur_dir(saved_curdir);
 		TALLOC_FREE(saved_curdir);
 		TALLOC_FREE(new_cd);
@@ -892,11 +904,12 @@ strlen(finfo->name)=%d\nname=%s,cur_dir=%s\n",
 					client_get_cur_dir(),
 					finfo->name);
 		if (!rname) {
-			return;
+			return NT_STATUS_NO_MEMORY;
 		}
-		do_atar(rname,finfo->name,finfo);
+		status = do_atar(rname,finfo->name,finfo);
 		TALLOC_FREE(rname);
 	}
+	return status;
 }
 
 /****************************************************************************

@@ -220,7 +220,7 @@ static size_t interpret_long_filename(TALLOC_CTX *ctx,
 ****************************************************************************/
 
 int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
-		 void (*fn)(const char *, struct file_info *, const char *,
+		 NTSTATUS (*fn)(const char *, struct file_info *, const char *,
 			    void *), void *state)
 {
 #if 1
@@ -540,7 +540,7 @@ static bool interpret_short_filename(TALLOC_CTX *ctx,
 ****************************************************************************/
 
 int cli_list_old(struct cli_state *cli,const char *Mask,uint16 attribute,
-		 void (*fn)(const char *, struct file_info *, const char *,
+		 NTSTATUS (*fn)(const char *, struct file_info *, const char *,
 			    void *), void *state)
 {
 	char *p;
@@ -678,7 +678,7 @@ int cli_list_old(struct cli_state *cli,const char *Mask,uint16 attribute,
 ****************************************************************************/
 
 int cli_list(struct cli_state *cli,const char *Mask,uint16 attribute,
-	     void (*fn)(const char *, struct file_info *, const char *,
+	     NTSTATUS (*fn)(const char *, struct file_info *, const char *,
 			void *), void *state)
 {
 	if (cli->protocol <= PROTOCOL_LANMAN1)

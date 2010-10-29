@@ -262,10 +262,11 @@ void nb_qfsinfo(int level)
 	cli_dskattr(c, &bsize, &total, &avail);
 }
 
-static void find_fn(const char *mnt, struct file_info *finfo, const char *name,
+static NTSTATUS find_fn(const char *mnt, struct file_info *finfo, const char *name,
 		    void *state)
 {
 	/* noop */
+	return NT_STATUS_OK;
 }
 
 void nb_findfirst(const char *mask)
@@ -282,25 +283,29 @@ void nb_flush(int fnum)
 
 static int total_deleted;
 
-static void delete_fn(const char *mnt, struct file_info *finfo,
+static NTSTATUS delete_fn(const char *mnt, struct file_info *finfo,
 		      const char *name, void *state)
 {
 	char *s, *n;
-	if (finfo->name[0] == '.') return;
+	if (finfo->name[0] == '.') return NT_STATUS_OK;
 
 	n = SMB_STRDUP(name);
 	n[strlen(n)-1] = 0;
 	if (asprintf(&s, "%s%s", n, finfo->name) == -1) {
 		printf("asprintf failed\n");
-		return;
+		return NT_STATUS_NO_MEMORY;
 	}
 	if (finfo->mode & aDIR) {
 		char *s2;
 		if (asprintf(&s2, "%s\\*", s) == -1) {
 			printf("asprintf failed\n");
-			return;
+			return NT_STATUS_NO_MEMORY;
 		}
-		cli_list(c, s2, aDIR, delete_fn, NULL);
+		if (cli_list(c, s2, aDIR, delete_fn, NULL) < 0) {
+			free(n);
+			free(s2);
+			return cli_nt_error(c);
+		}
 		nb_rmdir(s);
 	} else {
 		total_deleted++;
@@ -308,6 +313,7 @@ static void delete_fn(const char *mnt, struct file_info *finfo,
 	}
 	free(s);
 	free(n);
+	return NT_STATUS_OK;
 }
 
 void nb_deltree(const char *dname)
