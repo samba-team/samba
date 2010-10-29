@@ -90,8 +90,10 @@ smbc_getDebug(SMBCCTX *c)
 void
 smbc_setDebug(SMBCCTX *c, int debug)
 {
+	char buf[32];
+	snprintf(buf, sizeof(buf), "%d", debug);
         c->debug = debug;
-        DEBUGLEVEL = debug;
+	lp_set_cmdline("log level", buf); 
 }
 
 /**

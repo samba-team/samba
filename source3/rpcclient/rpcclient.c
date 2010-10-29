@@ -324,7 +324,7 @@ static NTSTATUS cmd_debuglevel(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 	}
 
 	if (argc == 2) {
-		DEBUGLEVEL = atoi(argv[1]);
+		lp_set_cmdline("log level", argv[1]);
 	}
 
 	printf("debuglevel is %d\n", DEBUGLEVEL);

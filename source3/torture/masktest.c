@@ -515,7 +515,7 @@ static void usage(void)
 			NumLoops = atoi(optarg);
 			break;
 		case 'd':
-			DEBUGLEVEL = atoi(optarg);
+			lp_set_cmdline("log level", optarg);
 			break;
 		case 'E':
 			die_on_error = 1;

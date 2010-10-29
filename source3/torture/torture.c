@@ -8009,7 +8009,7 @@ static void usage(void)
 			torture_numops = atoi(optarg);
 			break;
 		case 'd':
-			DEBUGLEVEL = atoi(optarg);
+			lp_set_cmdline("log level", optarg);
 			break;
 		case 'O':
 			sockops = optarg;

@@ -188,7 +188,7 @@ static NTSTATUS cmd_debuglevel(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int a
 	}
 
 	if (argc == 2) {
-		DEBUGLEVEL = atoi(argv[1]);
+		lp_set_cmdline("log level", argv[1]);
 	}
 
 	printf("debuglevel is %d\n", DEBUGLEVEL);
