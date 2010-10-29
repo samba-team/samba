@@ -947,6 +947,9 @@ def samba_display(self):
         if target_type in type_map:
             return progress_display(self, type_map[target_type], self.name)
 
+    if len(self.inputs) == 0:
+        return Task.Task.old_display(self)
+
     fname = self.inputs[0].bldpath(self.env)
     if fname[0:3] == '../':
         fname = fname[3:]
