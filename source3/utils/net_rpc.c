@@ -39,7 +39,7 @@
 #include "../libcli/security/security.h"
 
 static int net_mode_share;
-static bool sync_files(struct copy_clistate *cp_clistate, const char *mask);
+static NTSTATUS sync_files(struct copy_clistate *cp_clistate, const char *mask);
 
 /**
  * @file net_rpc.c
@@ -3347,7 +3347,7 @@ static int rpc_share_migrate_shares(struct net_context *c, int argc,
  * @param state	arg-pointer
  *
  **/
-static void copy_fn(const char *mnt, struct file_info *f,
+static NTSTATUS copy_fn(const char *mnt, struct file_info *f,
 		    const char *mask, void *state)
 {
 	static NTSTATUS nt_status;
@@ -3363,7 +3363,7 @@ static void copy_fn(const char *mnt, struct file_info *f,
 	c = local_state->c;
 
 	if (strequal(f->name, ".") || strequal(f->name, ".."))
-		return;
+		return NT_STATUS_OK;
 
 	DEBUG(3,("got mask: %s, name: %s\n", mask, f->name));
 
@@ -3391,12 +3391,14 @@ static void copy_fn(const char *mnt, struct file_info *f,
 			break;
 		default:
 			d_fprintf(stderr, _("Unsupported mode %d\n"), net_mode_share);
-			return;
+			return NT_STATUS_INTERNAL_ERROR;
 		}
 
-		if (!NT_STATUS_IS_OK(nt_status))
+		if (!NT_STATUS_IS_OK(nt_status)) {
 			printf(_("could not handle dir %s: %s\n"),
 				dir, nt_errstr(nt_status));
+			return nt_status;
+		}
 
 		/* search below that directory */
 		fstrcpy(new_mask, dir);
@@ -3404,11 +3406,13 @@ static void copy_fn(const char *mnt, struct file_info *f,
 
 		old_dir = local_state->cwd;
 		local_state->cwd = dir;
-		if (!sync_files(local_state, new_mask))
+		nt_status = sync_files(local_state, new_mask);
+		if (!NT_STATUS_IS_OK(nt_status)) {
 			printf(_("could not handle files\n"));
+		}
 		local_state->cwd = old_dir;
 
-		return;
+		return nt_status;
 	}
 
 
@@ -3434,13 +3438,13 @@ static void copy_fn(const char *mnt, struct file_info *f,
 	default:
 		d_fprintf(stderr, _("Unsupported file mode %d\n"),
 			  net_mode_share);
-		return;
+		return NT_STATUS_INTERNAL_ERROR;
 	}
 
 	if (!NT_STATUS_IS_OK(nt_status))
 		printf(_("could not handle file %s: %s\n"),
 			filename, nt_errstr(nt_status));
-
+	return nt_status;
 }
 
 /**
@@ -3452,7 +3456,7 @@ static void copy_fn(const char *mnt, struct file_info *f,
  *
  * @return 		Boolean result
  **/
-static bool sync_files(struct copy_clistate *cp_clistate, const char *mask)
+static NTSTATUS sync_files(struct copy_clistate *cp_clistate, const char *mask)
 {
 	struct cli_state *targetcli;
 	char *targetpath = NULL;
@@ -3465,7 +3469,7 @@ static bool sync_files(struct copy_clistate *cp_clistate, const char *mask)
 		d_fprintf(stderr, _("cli_resolve_path %s failed with error: "
 				    "%s\n"),
 			mask, cli_errstr(cp_clistate->cli_share_src));
-		return false;
+		return cli_nt_error(cp_clistate->cli_share_src);
 	}
 
 	status = cli_list(targetcli, targetpath, cp_clistate->attribute,
@@ -3473,10 +3477,9 @@ static bool sync_files(struct copy_clistate *cp_clistate, const char *mask)
 	if (!NT_STATUS_IS_OK(status)) {
 		d_fprintf(stderr, _("listing %s failed with error: %s\n"),
 			  mask, nt_errstr(status));
-		return false;
 	}
 
-	return true;
+	return status;
 }
 
 
@@ -3633,10 +3636,10 @@ static NTSTATUS rpc_share_migrate_files_internals(struct net_context *c,
 			goto done;
 		}
 
-		if (!sync_files(&cp_clistate, mask)) {
+		nt_status = sync_files(&cp_clistate, mask);
+		if (!NT_STATUS_IS_OK(nt_status)) {
 			d_fprintf(stderr, _("could not handle files for share: "
 					    "%s\n"), info502.name);
-			nt_status = NT_STATUS_UNSUCCESSFUL;
 			goto done;
 		}
 	}

@@ -469,7 +469,7 @@ static NTSTATUS cli_list_old_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 
 NTSTATUS cli_list_old(struct cli_state *cli, const char *mask,
 		      uint16 attribute,
-		      void (*fn)(const char *, struct file_info *,
+		      NTSTATUS (*fn)(const char *, struct file_info *,
 				 const char *, void *), void *state)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
@@ -504,7 +504,10 @@ NTSTATUS cli_list_old(struct cli_state *cli, const char *mask,
 	}
 	num_finfo = talloc_array_length(finfo);
 	for (i=0; i<num_finfo; i++) {
-		fn(cli->dfs_mountpoint, &finfo[i], mask, state);
+		status = fn(cli->dfs_mountpoint, &finfo[i], mask, state);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto fail;
+		}
 	}
  fail:
 	TALLOC_FREE(frame);
@@ -795,7 +798,7 @@ static NTSTATUS cli_list_trans_recv(struct tevent_req *req,
 
 NTSTATUS cli_list_trans(struct cli_state *cli, const char *mask,
 			uint16_t attribute, int info_level,
-			void (*fn)(const char *mnt, struct file_info *finfo,
+			NTSTATUS (*fn)(const char *mnt, struct file_info *finfo,
 				   const char *mask, void *private_data),
 			void *private_data)
 {
@@ -830,7 +833,10 @@ NTSTATUS cli_list_trans(struct cli_state *cli, const char *mask,
 	}
 	num_finfo = talloc_array_length(finfo);
 	for (i=0; i<num_finfo; i++) {
-		fn(cli->dfs_mountpoint, &finfo[i], mask, private_data);
+		status = fn(cli->dfs_mountpoint, &finfo[i], mask, private_data);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto fail;
+		}
 	}
  fail:
 	TALLOC_FREE(frame);
@@ -911,7 +917,7 @@ NTSTATUS cli_list_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 }
 
 NTSTATUS cli_list(struct cli_state *cli, const char *mask, uint16 attribute,
-		  void (*fn)(const char *, struct file_info *, const char *,
+		  NTSTATUS (*fn)(const char *, struct file_info *, const char *,
 			     void *), void *state)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
@@ -952,7 +958,10 @@ NTSTATUS cli_list(struct cli_state *cli, const char *mask, uint16 attribute,
 	}
 
 	for (i=0; i<num_finfo; i++) {
-		fn(cli->dfs_mountpoint, &finfo[i], mask, state);
+		status = fn(cli->dfs_mountpoint, &finfo[i], mask, state);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto fail;
+		}
 	}
  fail:
 	TALLOC_FREE(frame);

@@ -269,7 +269,7 @@ struct rn_state {
 	char *short_name;
 };
 
-static void listfn(const char *mnt, struct file_info *f, const char *s,
+static NTSTATUS listfn(const char *mnt, struct file_info *f, const char *s,
 		   void *private_data)
 {
 	struct rn_state *state = (struct rn_state *)private_data;
@@ -281,17 +281,22 @@ static void listfn(const char *mnt, struct file_info *f, const char *s,
 		resultp[2] = '+';
 	}
 
-	if ((state == NULL) || ISDOT(f->name) || ISDOTDOT(f->name))  {
-		return;
+	if (state == NULL) {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	if (ISDOT(f->name) || ISDOTDOT(f->name))  {
+		return NT_STATUS_OK;
 	}
 
 	fstrcpy(state->short_name, f->short_name);
 	strlower_m(state->short_name);
 	*state->pp_long_name = SMB_STRDUP(f->name);
 	if (!*state->pp_long_name) {
-		return;
+		return NT_STATUS_NO_MEMORY;
 	}
 	strlower_m(*state->pp_long_name);
+	return NT_STATUS_OK;
 }
 
 static void get_real_name(struct cli_state *cli,

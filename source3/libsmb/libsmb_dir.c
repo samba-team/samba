@@ -147,9 +147,10 @@ list_unique_wg_fn(const char *name,
 	dirent_type = dir->dir_type;
 
 	if (add_dirent(dir, name, comment, dirent_type) < 0) {
-
 		/* An error occurred, what do we do? */
 		/* FIXME: Add some code here */
+		/* Change cli_NetServerEnum to take a fn
+		   returning NTSTATUS... JRA. */
 	}
 
         /* Point to the one just added */
@@ -227,14 +228,14 @@ list_fn(const char *name,
         }
 
 	if (add_dirent(dir, name, comment, dirent_type) < 0) {
-
 		/* An error occurred, what do we do? */
 		/* FIXME: Add some code here */
-
+		/* Change cli_NetServerEnum to take a fn
+		   returning NTSTATUS... JRA. */
 	}
 }
 
-static void
+static NTSTATUS
 dir_list_fn(const char *mnt,
             struct file_info *finfo,
             const char *mask,
@@ -243,13 +244,10 @@ dir_list_fn(const char *mnt,
 
 	if (add_dirent((SMBCFILE *)state, finfo->name, "",
 		       (finfo->mode&aDIR?SMBC_DIR:SMBC_FILE)) < 0) {
-
-		/* Handle an error ... */
-
-		/* FIXME: Add some code ... */
-
+		SMBCFILE *dir = (SMBCFILE *)state;
+		return map_nt_error_from_unix(dir->dir_error);
 	}
-
+	return NT_STATUS_OK;
 }
 
 static int
@@ -1211,7 +1209,7 @@ SMBC_mkdir_ctx(SMBCCTX *context,
  * Our list function simply checks to see if a directory is not empty
  */
 
-static void
+static NTSTATUS
 rmdir_list_fn(const char *mnt,
               struct file_info *finfo,
               const char *mask,
@@ -1222,6 +1220,7 @@ rmdir_list_fn(const char *mnt,
 		bool *smbc_rmdir_dirempty = (bool *)state;
 		*smbc_rmdir_dirempty = false;
         }
+	return NT_STATUS_OK;
 }
 
 /*

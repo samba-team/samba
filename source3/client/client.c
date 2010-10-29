@@ -527,14 +527,15 @@ static bool do_this_one(struct file_info *finfo)
  Display info about a file.
 ****************************************************************************/
 
-static void display_finfo(struct cli_state *cli_state, struct file_info *finfo,
+static NTSTATUS display_finfo(struct cli_state *cli_state, struct file_info *finfo,
 			  const char *dir)
 {
 	time_t t;
 	TALLOC_CTX *ctx = talloc_tos();
+	NTSTATUS status = NT_STATUS_OK;
 
 	if (!do_this_one(finfo)) {
-		return;
+		return NT_STATUS_OK;
 	}
 
 	t = finfo->mtime_ts.tv_sec; /* the time is assumed to be passed as GMT */
@@ -548,11 +549,10 @@ static void display_finfo(struct cli_state *cli_state, struct file_info *finfo,
 	} else {
 		char *afname = NULL;
 		uint16_t fnum;
-		NTSTATUS status;
 
 		/* skip if this is . or .. */
 		if ( strequal(finfo->name,"..") || strequal(finfo->name,".") )
-			return;
+			return NT_STATUS_OK;
 		/* create absolute filename for cli_ntcreate() FIXME */
 		afname = talloc_asprintf(ctx,
 					"%s%s%s",
@@ -560,7 +560,7 @@ static void display_finfo(struct cli_state *cli_state, struct file_info *finfo,
 					CLI_DIRSEP_STR,
 					finfo->name);
 		if (!afname) {
-			return;
+			return NT_STATUS_NO_MEMORY;
 		}
 		/* print file meta date header */
 		d_printf( "FILENAME:%s\n", finfo->name);
@@ -581,6 +581,7 @@ static void display_finfo(struct cli_state *cli_state, struct file_info *finfo,
 				DEBUG( 0, ("display_finfo() failed to "
 					"get security descriptor: %s",
 					cli_errstr(cli_state)));
+				status = cli_nt_error(cli_state);
 			} else {
 				display_sec_desc(sd);
 			}
@@ -588,18 +589,20 @@ static void display_finfo(struct cli_state *cli_state, struct file_info *finfo,
 		}
 		TALLOC_FREE(afname);
 	}
+	return status;
 }
 
 /****************************************************************************
  Accumulate size of a file.
 ****************************************************************************/
 
-static void do_du(struct cli_state *cli_state, struct file_info *finfo,
+static NTSTATUS do_du(struct cli_state *cli_state, struct file_info *finfo,
 		  const char *dir)
 {
 	if (do_this_one(finfo)) {
 		dir_total += finfo->size;
 	}
+	return NT_STATUS_OK;
 }
 
 static bool do_list_recurse;
@@ -608,7 +611,7 @@ static char *do_list_queue = 0;
 static long do_list_queue_size = 0;
 static long do_list_queue_start = 0;
 static long do_list_queue_end = 0;
-static void (*do_list_fn)(struct cli_state *cli_state, struct file_info *,
+static NTSTATUS (*do_list_fn)(struct cli_state *cli_state, struct file_info *,
 			  const char *dir);
 
 /****************************************************************************
@@ -726,18 +729,19 @@ static int do_list_queue_empty(void)
  A helper for do_list.
 ****************************************************************************/
 
-static void do_list_helper(const char *mntpoint, struct file_info *f,
+static NTSTATUS do_list_helper(const char *mntpoint, struct file_info *f,
 			   const char *mask, void *state)
 {
 	struct cli_state *cli_state = (struct cli_state *)state;
 	TALLOC_CTX *ctx = talloc_tos();
 	char *dir = NULL;
 	char *dir_end = NULL;
+	NTSTATUS status = NT_STATUS_OK;
 
 	/* Work out the directory. */
 	dir = talloc_strdup(ctx, mask);
 	if (!dir) {
-		return;
+		return NT_STATUS_NO_MEMORY;
 	}
 	if ((dir_end = strrchr(dir, CLI_DIRSEP_CHAR)) != NULL) {
 		*dir_end = '\0';
@@ -745,7 +749,10 @@ static void do_list_helper(const char *mntpoint, struct file_info *f,
 
 	if (f->mode & aDIR) {
 		if (do_list_dirs && do_this_one(f)) {
-			do_list_fn(cli_state, f, dir);
+			status = do_list_fn(cli_state, f, dir);
+			if (!NT_STATUS_IS_OK(status)) {
+				return status;
+			}
 		}
 		if (do_list_recurse &&
 		    f->name &&
@@ -757,7 +764,7 @@ static void do_list_helper(const char *mntpoint, struct file_info *f,
 			if (!f->name[0]) {
 				d_printf("Empty dir name returned. Possible server misconfiguration.\n");
 				TALLOC_FREE(dir);
-				return;
+				return NT_STATUS_UNSUCCESSFUL;
 			}
 
 			mask2 = talloc_asprintf(ctx,
@@ -766,7 +773,7 @@ static void do_list_helper(const char *mntpoint, struct file_info *f,
 					mask);
 			if (!mask2) {
 				TALLOC_FREE(dir);
-				return;
+				return NT_STATUS_NO_MEMORY;
 			}
 			p = strrchr_m(mask2,CLI_DIRSEP_CHAR);
 			if (p) {
@@ -780,28 +787,29 @@ static void do_list_helper(const char *mntpoint, struct file_info *f,
 					CLI_DIRSEP_STR);
 			if (!mask2) {
 				TALLOC_FREE(dir);
-				return;
+				return NT_STATUS_NO_MEMORY;
 			}
 			add_to_do_list_queue(mask2);
 			TALLOC_FREE(mask2);
 		}
 		TALLOC_FREE(dir);
-		return;
+		return NT_STATUS_OK;
 	}
 
 	if (do_this_one(f)) {
-		do_list_fn(cli_state, f, dir);
+		status = do_list_fn(cli_state, f, dir);
 	}
 	TALLOC_FREE(dir);
+	return status;
 }
 
 /****************************************************************************
  A wrapper around cli_list that adds recursion.
 ****************************************************************************/
 
-void do_list(const char *mask,
+NTSTATUS do_list(const char *mask,
 			uint16 attribute,
-			void (*fn)(struct cli_state *cli_state, struct file_info *,
+			NTSTATUS (*fn)(struct cli_state *cli_state, struct file_info *,
 				   const char *dir),
 			bool rec,
 			bool dirs)
@@ -810,6 +818,8 @@ void do_list(const char *mask,
 	TALLOC_CTX *ctx = talloc_tos();
 	struct cli_state *targetcli = NULL;
 	char *targetpath = NULL;
+	NTSTATUS ret_status = NT_STATUS_OK;
+	NTSTATUS status = NT_STATUS_OK;
 
 	if (in_do_list && rec) {
 		fprintf(stderr, "INTERNAL ERROR: do_list called recursively when the recursive flag is true\n");
@@ -837,7 +847,7 @@ void do_list(const char *mask,
 			char *head = talloc_strdup(ctx, do_list_queue_head());
 
 			if (!head) {
-				return;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			/* check for dfs */
@@ -848,8 +858,13 @@ void do_list(const char *mask,
 				continue;
 			}
 
-			cli_list(targetcli, targetpath, attribute,
+			status = cli_list(targetcli, targetpath, attribute,
 				 do_list_helper, targetcli);
+			if (!NT_STATUS_IS_OK(status)) {
+				d_printf("%s listing %s\n",
+					 nt_errstr(status), targetpath);
+				ret_status = status;
+			}
 			remove_do_list_queue_head();
 			if ((! do_list_queue_empty()) && (fn == display_finfo)) {
 				char *next_file = do_list_queue_head();
@@ -877,22 +892,24 @@ void do_list(const char *mask,
 	} else {
 		/* check for dfs */
 		if (cli_resolve_path(ctx, "", auth_info, cli, mask, &targetcli, &targetpath)) {
-			NTSTATUS status;
 
 			status = cli_list(targetcli, targetpath, attribute,
 					  do_list_helper, targetcli);
 			if (!NT_STATUS_IS_OK(status)) {
 				d_printf("%s listing %s\n",
 					 nt_errstr(status), targetpath);
+				ret_status = status;
 			}
 			TALLOC_FREE(targetpath);
 		} else {
 			d_printf("do_list: [%s] %s\n", mask, cli_errstr(cli));
+			ret_status = cli_nt_error(cli);
 		}
 	}
 
 	in_do_list = 0;
 	reset_do_list_queue();
+	return ret_status;
 }
 
 /****************************************************************************
@@ -906,6 +923,7 @@ static int cmd_dir(void)
 	char *mask = NULL;
 	char *buf = NULL;
 	int rc = 1;
+	NTSTATUS status;
 
 	dir_total = 0;
 	mask = talloc_strdup(ctx, client_get_cur_dir());
@@ -932,7 +950,10 @@ static int cmd_dir(void)
 		client_set_cwd(client_get_cur_dir());
 	}
 
-	do_list(mask, attribute, display_finfo, recurse, true);
+	status = do_list(mask, attribute, display_finfo, recurse, true);
+	if (!NT_STATUS_IS_OK(status)) {
+		return 1;
+	}
 
 	rc = do_dskattr();
 
@@ -951,6 +972,7 @@ static int cmd_du(void)
 	uint16 attribute = aDIR | aSYSTEM | aHIDDEN;
 	char *mask = NULL;
 	char *buf = NULL;
+	NTSTATUS status;
 	int rc = 1;
 
 	dir_total = 0;
@@ -976,7 +998,10 @@ static int cmd_du(void)
 		mask = talloc_strdup(ctx, "*");
 	}
 
-	do_list(mask, attribute, do_du, recurse, true);
+	status = do_list(mask, attribute, do_du, recurse, true);
+	if (!NT_STATUS_IS_OK(status)) {
+		return 1;
+	}
 
 	rc = do_dskattr();
 
@@ -1178,10 +1203,11 @@ static int cmd_get(void)
  Do an mget operation on one file.
 ****************************************************************************/
 
-static void do_mget(struct cli_state *cli_state, struct file_info *finfo,
+static NTSTATUS do_mget(struct cli_state *cli_state, struct file_info *finfo,
 		    const char *dir)
 {
 	TALLOC_CTX *ctx = talloc_tos();
+	NTSTATUS status = NT_STATUS_OK;
 	char *rname = NULL;
 	char *quest = NULL;
 	char *saved_curdir = NULL;
@@ -1189,32 +1215,32 @@ static void do_mget(struct cli_state *cli_state, struct file_info *finfo,
 	char *new_cd = NULL;
 
 	if (!finfo->name) {
-		return;
+		return NT_STATUS_OK;
 	}
 
 	if (strequal(finfo->name,".") || strequal(finfo->name,".."))
-		return;
+		return NT_STATUS_OK;
 
 	if (abort_mget)	{
 		d_printf("mget aborted\n");
-		return;
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	if (finfo->mode & aDIR) {
 		if (asprintf(&quest,
 			 "Get directory %s? ",finfo->name) < 0) {
-			return;
+			return NT_STATUS_NO_MEMORY;
 		}
 	} else {
 		if (asprintf(&quest,
 			 "Get file %s? ",finfo->name) < 0) {
-			return;
+			return NT_STATUS_NO_MEMORY;
 		}
 	}
 
 	if (prompt && !yesno(quest)) {
 		SAFE_FREE(quest);
-		return;
+		return NT_STATUS_OK;
 	}
 	SAFE_FREE(quest);
 
@@ -1224,17 +1250,17 @@ static void do_mget(struct cli_state *cli_state, struct file_info *finfo,
 				client_get_cur_dir(),
 				finfo->name);
 		if (!rname) {
-			return;
+			return NT_STATUS_NO_MEMORY;
 		}
 		do_get(rname, finfo->name, false);
 		TALLOC_FREE(rname);
-		return;
+		return NT_STATUS_OK;
 	}
 
 	/* handle directories */
 	saved_curdir = talloc_strdup(ctx, client_get_cur_dir());
 	if (!saved_curdir) {
-		return;
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	new_cd = talloc_asprintf(ctx,
@@ -1243,7 +1269,7 @@ static void do_mget(struct cli_state *cli_state, struct file_info *finfo,
 				finfo->name,
 				CLI_DIRSEP_STR);
 	if (!new_cd) {
-		return;
+		return NT_STATUS_NO_MEMORY;
 	}
 	client_set_cur_dir(new_cd);
 
@@ -1256,13 +1282,13 @@ static void do_mget(struct cli_state *cli_state, struct file_info *finfo,
 	    mkdir(finfo->name,0777) != 0) {
 		d_printf("failed to create directory %s\n",finfo->name);
 		client_set_cur_dir(saved_curdir);
-		return;
+		return map_nt_error_from_unix(errno);
 	}
 
 	if (chdir(finfo->name) != 0) {
 		d_printf("failed to chdir to directory %s\n",finfo->name);
 		client_set_cur_dir(saved_curdir);
-		return;
+		return map_nt_error_from_unix(errno);
 	}
 
 	mget_mask = talloc_asprintf(ctx,
@@ -1270,18 +1296,24 @@ static void do_mget(struct cli_state *cli_state, struct file_info *finfo,
 			client_get_cur_dir());
 
 	if (!mget_mask) {
-		return;
+		return NT_STATUS_NO_MEMORY;
 	}
 
-	do_list(mget_mask, aSYSTEM | aHIDDEN | aDIR,do_mget,false, true);
+	status = do_list(mget_mask, aSYSTEM | aHIDDEN | aDIR,do_mget,false, true);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
 	if (chdir("..") == -1) {
 		d_printf("do_mget: failed to chdir to .. (error %s)\n",
 			strerror(errno) );
+		return map_nt_error_from_unix(errno);
 	}
 	client_set_cur_dir(saved_curdir);
 	TALLOC_FREE(mget_mask);
 	TALLOC_FREE(saved_curdir);
 	TALLOC_FREE(new_cd);
+	return NT_STATUS_OK;
 }
 
 /****************************************************************************
@@ -1359,6 +1391,7 @@ static int cmd_mget(void)
 	uint16 attribute = aSYSTEM | aHIDDEN;
 	char *mget_mask = NULL;
 	char *buf = NULL;
+	NTSTATUS status = NT_STATUS_OK;
 
 	if (recurse) {
 		attribute |= aDIR;
@@ -1367,6 +1400,7 @@ static int cmd_mget(void)
 	abort_mget = false;
 
 	while (next_token_talloc(ctx, &cmd_ptr,&buf,NULL)) {
+
 		mget_mask = talloc_strdup(ctx, client_get_cur_dir());
 		if (!mget_mask) {
 			return 1;
@@ -1380,7 +1414,10 @@ static int cmd_mget(void)
 		if (!mget_mask) {
 			return 1;
 		}
-		do_list(mget_mask, attribute, do_mget, false, true);
+		status = do_list(mget_mask, attribute, do_mget, false, true);
+		if (!NT_STATUS_IS_OK(status)) {
+			return 1;
+		}
 	}
 
 	if (mget_mask == NULL) {
@@ -1395,7 +1432,10 @@ static int cmd_mget(void)
 		if (!mget_mask) {
 			return 1;
 		}
-		do_list(mget_mask, attribute, do_mget, false, true);
+		status = do_list(mget_mask, attribute, do_mget, false, true);
+		if (!NT_STATUS_IS_OK(status)) {
+			return 1;
+		}
 	}
 
 	return 0;
@@ -2165,7 +2205,7 @@ static int cmd_queue(void)
  Delete some files.
 ****************************************************************************/
 
-static void do_del(struct cli_state *cli_state, struct file_info *finfo,
+static NTSTATUS do_del(struct cli_state *cli_state, struct file_info *finfo,
 		   const char *dir)
 {
 	TALLOC_CTX *ctx = talloc_tos();
@@ -2178,12 +2218,12 @@ static void do_del(struct cli_state *cli_state, struct file_info *finfo,
 				CLI_DIRSEP_CHAR,
 				finfo->name);
 	if (!mask) {
-		return;
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	if (finfo->mode & aDIR) {
 		TALLOC_FREE(mask);
-		return;
+		return NT_STATUS_OK;
 	}
 
 	status = cli_unlink(cli_state, mask, aSYSTEM | aHIDDEN);
@@ -2192,6 +2232,7 @@ static void do_del(struct cli_state *cli_state, struct file_info *finfo,
 			 nt_errstr(status), mask);
 	}
 	TALLOC_FREE(mask);
+	return status;
 }
 
 /****************************************************************************
@@ -2203,6 +2244,7 @@ static int cmd_del(void)
 	TALLOC_CTX *ctx = talloc_tos();
 	char *mask = NULL;
 	char *buf = NULL;
+	NTSTATUS status = NT_STATUS_OK;
 	uint16 attribute = aSYSTEM | aHIDDEN;
 
 	if (recurse) {
@@ -2222,7 +2264,10 @@ static int cmd_del(void)
 		return 1;
 	}
 
-	do_list(mask,attribute,do_del,false,false);
+	status = do_list(mask,attribute,do_del,false,false);
+	if (!NT_STATUS_IS_OK(status)) {
+		return 1;
+	}
 	return 0;
 }
 
@@ -4362,7 +4407,7 @@ struct completion_remote {
 	int len;
 };
 
-static void completion_remote_filter(const char *mnt,
+static NTSTATUS completion_remote_filter(const char *mnt,
 				struct file_info *f,
 				const char *mask,
 				void *state)
@@ -4370,13 +4415,13 @@ static void completion_remote_filter(const char *mnt,
 	struct completion_remote *info = (struct completion_remote *)state;
 
 	if (info->count >= MAX_COMPLETIONS - 1) {
-		return;
+		return NT_STATUS_OK;
 	}
 	if (strncmp(info->text, f->name, info->len) != 0) {
-		return;
+		return NT_STATUS_OK;
 	}
 	if (ISDOT(f->name) || ISDOTDOT(f->name)) {
-		return;
+		return NT_STATUS_OK;
 	}
 
 	if ((info->dirmask[0] == 0) && !(f->mode & aDIR))
@@ -4388,12 +4433,12 @@ static void completion_remote_filter(const char *mnt,
 		tmp = talloc_strdup(ctx,info->dirmask);
 		if (!tmp) {
 			TALLOC_FREE(ctx);
-			return;
+			return NT_STATUS_NO_MEMORY;
 		}
 		tmp = talloc_asprintf_append(tmp, "%s", f->name);
 		if (!tmp) {
 			TALLOC_FREE(ctx);
-			return;
+			return NT_STATUS_NO_MEMORY;
 		}
 		if (f->mode & aDIR) {
 			tmp = talloc_asprintf_append(tmp, "%s",
@@ -4401,13 +4446,13 @@ static void completion_remote_filter(const char *mnt,
 		}
 		if (!tmp) {
 			TALLOC_FREE(ctx);
-			return;
+			return NT_STATUS_NO_MEMORY;
 		}
 		info->matches[info->count] = SMB_STRDUP(tmp);
 		TALLOC_FREE(ctx);
 	}
 	if (info->matches[info->count] == NULL) {
-		return;
+		return NT_STATUS_OK;
 	}
 	if (f->mode & aDIR) {
 		smb_readline_ca_char(0);
@@ -4422,6 +4467,7 @@ static void completion_remote_filter(const char *mnt,
 		}
 	}
 	info->count++;
+	return NT_STATUS_OK;
 }
 
 static char **remote_completion(const char *text, int len)

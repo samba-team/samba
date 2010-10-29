@@ -4923,13 +4923,14 @@ static bool run_openattrtest(int dummy)
 	return correct;
 }
 
-static void list_fn(const char *mnt, struct file_info *finfo,
+static NTSTATUS list_fn(const char *mnt, struct file_info *finfo,
 		    const char *name, void *state)
 {
 	int *matched = (int *)state;
 	if (matched != NULL) {
 		*matched += 1;
 	}
+	return NT_STATUS_OK;
 }
 
 /*
@@ -4995,7 +4996,7 @@ static bool run_dirtest(int dummy)
 	return correct;
 }
 
-static void del_fn(const char *mnt, struct file_info *finfo, const char *mask,
+static NTSTATUS del_fn(const char *mnt, struct file_info *finfo, const char *mask,
 		   void *state)
 {
 	struct cli_state *pcli = (struct cli_state *)state;
@@ -5003,7 +5004,7 @@ static void del_fn(const char *mnt, struct file_info *finfo, const char *mask,
 	slprintf(fname, sizeof(fname), "\\LISTDIR\\%s", finfo->name);
 
 	if (strcmp(finfo->name, ".") == 0 || strcmp(finfo->name, "..") == 0)
-		return;
+		return NT_STATUS_OK;
 
 	if (finfo->mode & aDIR) {
 		if (!NT_STATUS_IS_OK(cli_rmdir(pcli, fname)))
@@ -5012,6 +5013,7 @@ static void del_fn(const char *mnt, struct file_info *finfo, const char *mask,
 		if (!NT_STATUS_IS_OK(cli_unlink(pcli, fname, aSYSTEM | aHIDDEN)))
 			printf("del_fn: failed to unlink %s\n,", fname );
 	}
+	return NT_STATUS_OK;
 }
 
 
@@ -6312,23 +6314,30 @@ static bool run_uid_regression_test(int dummy)
 static const char *illegal_chars = "*\\/?<>|\":";
 static char force_shortname_chars[] = " +,.[];=\177";
 
-static void shortname_del_fn(const char *mnt, struct file_info *finfo,
+static NTSTATUS shortname_del_fn(const char *mnt, struct file_info *finfo,
 			     const char *mask, void *state)
 {
 	struct cli_state *pcli = (struct cli_state *)state;
 	fstring fname;
+	NTSTATUS status = NT_STATUS_OK;
+
 	slprintf(fname, sizeof(fname), "\\shortname\\%s", finfo->name);
 
 	if (strcmp(finfo->name, ".") == 0 || strcmp(finfo->name, "..") == 0)
-		return;
+		return NT_STATUS_OK;
 
 	if (finfo->mode & aDIR) {
-		if (!NT_STATUS_IS_OK(cli_rmdir(pcli, fname)))
+		status = cli_rmdir(pcli, fname);
+		if (!NT_STATUS_IS_OK(status)) {
 			printf("del_fn: failed to rmdir %s\n,", fname );
+		}
 	} else {
-		if (!NT_STATUS_IS_OK(cli_unlink(pcli, fname, aSYSTEM | aHIDDEN)))
+		status = cli_unlink(pcli, fname, aSYSTEM | aHIDDEN);
+		if (!NT_STATUS_IS_OK(status)) {
 			printf("del_fn: failed to unlink %s\n,", fname );
+		}
 	}
+	return status;
 }
 
 struct sn_state {
@@ -6337,7 +6346,7 @@ struct sn_state {
 	bool val;
 };
 
-static void shortname_list_fn(const char *mnt, struct file_info *finfo,
+static NTSTATUS shortname_list_fn(const char *mnt, struct file_info *finfo,
 			      const char *name, void *state)
 {
 	struct sn_state *s = (struct sn_state  *)state;
@@ -6362,6 +6371,7 @@ static void shortname_list_fn(const char *mnt, struct file_info *finfo,
 		s->val = true;
 	}
 	s->matched += 1;
+	return NT_STATUS_OK;
 }
 
 static bool run_shortname_test(int dummy)
