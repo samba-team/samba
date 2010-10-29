@@ -491,7 +491,9 @@ static NTSTATUS dcesrv_samr_info_DomGeneralInformation(struct samr_domain_state 
 	info->force_logoff_time = ldb_msg_find_attr_as_uint64(dom_msgs[0], "forceLogoff", 
 							    0x8000000000000000LL);
 
-	info->oem_information.string = ldb_msg_find_attr_as_string(dom_msgs[0], "oEMInformation", NULL);
+	info->oem_information.string = ldb_msg_find_attr_as_string(dom_msgs[0],
+								   "oEMInformation",
+								   "");
 	info->domain_name.string  = state->domain_name;
 
 	info->sequence_num = ldb_msg_find_attr_as_uint64(dom_msgs[0], "modifiedCount", 
@@ -554,7 +556,9 @@ static NTSTATUS dcesrv_samr_info_DomOEMInformation(struct samr_domain_state *sta
 				    struct ldb_message **dom_msgs,
 				   struct samr_DomOEMInformation *info)
 {
-	info->oem_information.string = ldb_msg_find_attr_as_string(dom_msgs[0], "oEMInformation", NULL);
+	info->oem_information.string = ldb_msg_find_attr_as_string(dom_msgs[0],
+								   "oEMInformation",
+								   "");
 
 	return NT_STATUS_OK;
 }
