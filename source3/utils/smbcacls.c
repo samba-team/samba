@@ -27,8 +27,6 @@
 #include "rpc_client/cli_lsarpc.h"
 #include "../libcli/security/security.h"
 
-extern bool AllowDebugChange;
-
 static int test_args;
 
 #define CREATE_ACCESS_READ READ_CONTROL_ACCESS
@@ -1204,8 +1202,7 @@ static struct cli_state *connect_one(struct user_auth_info *auth_info,
 
 	/* set default debug level to 1 regardless of what smb.conf sets */
 	setup_logging( "smbcacls", DEBUG_STDERR);
-	DEBUGLEVEL_CLASS[DBGC_ALL] = 1;
-	AllowDebugChange = false;
+	lp_set_cmdline("log level", "1");
 
 	setlinebuf(stdout);
 

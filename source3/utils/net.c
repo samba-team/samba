@@ -47,8 +47,6 @@
 #include "lib/netapi/netapi.h"
 #include "../libcli/security/security.h"
 
-extern bool AllowDebugChange;
-
 #ifdef WITH_FAKE_KASERVER
 #include "utils/net_afs.h"
 #endif
@@ -835,7 +833,7 @@ static struct functable net_func[] = {
 #endif
 
 	/* set default debug level to 0 regardless of what smb.conf sets */
-	DEBUGLEVEL_CLASS[DBGC_ALL] = 0;
+	lp_set_cmdline("log level", "0");
 	c->private_data = net_func;
 
 	pc = poptGetContext(NULL, argc, (const char **) argv, long_options,
@@ -874,11 +872,6 @@ static struct functable net_func[] = {
 		}
 	}
 
-	/*
-	 * Don't load debug level from smb.conf. It should be
-	 * set by cmdline arg or remain default (0)
-	 */
-	AllowDebugChange = false;
 	lp_load(get_dyn_CONFIGFILE(), true, false, false, true);
 
  	argv_new = (const char **)poptGetArgs(pc);

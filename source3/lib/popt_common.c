@@ -36,7 +36,6 @@
 
 enum {OPT_OPTION=1};
 
-extern bool AllowDebugChange;
 extern bool override_logfile;
 
 static void set_logfile(poptContext con, const char * arg)
@@ -107,8 +106,7 @@ static void popt_common_callback(poptContext con,
 
 	case 'd':
 		if (arg) {
-			debug_parse_levels(arg);
-			AllowDebugChange = False;
+			lp_set_cmdline("log level", arg);
 		}
 		break;
 

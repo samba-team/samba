@@ -22,8 +22,6 @@
 #include "includes.h"
 #include "dbwrap.h"
 
-extern bool AllowDebugChange;
-
 typedef enum { OP_FETCH, OP_STORE, OP_DELETE, OP_ERASE, OP_LISTKEYS } dbwrap_op;
 
 typedef enum { TYPE_INT32, TYPE_UINT32 } dbwrap_type;
@@ -214,9 +212,8 @@ int main(int argc, const char **argv)
 	int ret = 1;
 
 	load_case_tables();
-	DEBUGLEVEL_CLASS[DBGC_ALL] = 0;
+	lp_set_cmdline("log level", "0");
 	setup_logging(argv[0], DEBUG_STDERR);
-	AllowDebugChange = false;
 	lp_load(get_dyn_CONFIGFILE(), true, false, false, true);
 
 	if ((argc < 3) || (argc > 6)) {

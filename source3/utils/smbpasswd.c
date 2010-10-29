@@ -20,8 +20,6 @@
 #include "secrets.h"
 #include "../librpc/gen_ndr/samr.h"
 
-extern bool AllowDebugChange;
-
 /*
  * Next two lines needed for SunOS and don't
  * hurt anything else...
@@ -569,8 +567,6 @@ int main(int argc, char **argv)
 	TALLOC_CTX *frame = talloc_stackframe();
 	int local_flags = 0;
 	int ret;
-
-	AllowDebugChange = False;
 
 #if defined(HAVE_SET_AUTH_PARAMETERS)
 	set_auth_parameters(argc, argv);

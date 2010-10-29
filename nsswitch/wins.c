@@ -94,8 +94,7 @@ static int wins_lookup_open_socket_in(void)
 static void nss_wins_init(void)
 {
 	initialised = 1;
-	DEBUGLEVEL = 0;
-	AllowDebugChange = False;
+	lp_set_cmdline("log level", "0");
 
 	TimeInit();
 	setup_logging("nss_wins",False);

@@ -33,8 +33,6 @@
 #include <time.h>
 #endif
 
-extern bool AllowDebugChange;
-
 #define DEFAULT_DB_NAME "transaction.tdb"
 
 static int timelimit = 10;
@@ -259,7 +257,7 @@ int main(int argc, const char *argv[])
 	}
 
 	setup_logging(argv[0], DEBUG_STDERR);
-	DEBUGLEVEL_CLASS[DBGC_ALL] = 0;
+	lp_set_cmdline("log level", "0");
 
 	pc = poptGetContext(argv[0], argc, argv, popt_options, POPT_CONTEXT_KEEP_FIRST);
 
@@ -280,7 +278,6 @@ int main(int argc, const char *argv[])
 	}
 
 	load_case_tables();
-	AllowDebugChange = false;
 	lp_load(get_dyn_CONFIGFILE(), true, false, false, true);
 
 	ev_ctx = tevent_context_init(mem_ctx);

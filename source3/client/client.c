@@ -5047,7 +5047,7 @@ static int do_message_op(struct user_auth_info *a_info)
 
         /* set default debug level to 1 regardless of what smb.conf sets */
 	setup_logging( "smbclient", DEBUG_DEFAULT_STDERR );
-	DEBUGLEVEL_CLASS[DBGC_ALL] = 1;
+	lp_set_cmdline("log level", "1");
 
 	load_case_tables();
 
@@ -5189,12 +5189,6 @@ static int do_message_op(struct user_auth_info *a_info)
 		set_cmdline_auth_info_password(auth_info,
 					       poptGetArg(pc));
 	}
-
-	/*
-	 * Don't load debug level from smb.conf. It should be
-	 * set by cmdline arg or remain default (0)
-	 */
-	AllowDebugChange = false;
 
 	/* save the workgroup...
 

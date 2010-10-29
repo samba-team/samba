@@ -22,8 +22,6 @@
 #include "includes.h"
 #include "popt_common.h"
 
-extern bool AllowDebugChange;
-
 static bool give_flags = false;
 static bool use_bcast = true;
 static bool got_bcast = false;

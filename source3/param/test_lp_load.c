@@ -20,8 +20,6 @@
 #include "includes.h"
 #include "popt_common.h"
 
-extern bool AllowDebugChange;
-
 int main(int argc, const char **argv)
 {
 	const char *config_file = get_dyn_CONFIGFILE();
@@ -41,7 +39,7 @@ int main(int argc, const char **argv)
 	TALLOC_CTX *frame = talloc_stackframe();
 
 	load_case_tables();
-	DEBUGLEVEL_CLASS[DBGC_ALL] = 0;
+	lp_set_cmdline("log level", "0");
 
 	pc = poptGetContext(NULL, argc, argv, long_options,
 			    POPT_CONTEXT_KEEP_FIRST);
@@ -60,9 +58,6 @@ int main(int argc, const char **argv)
 	if (count_str != NULL) {
 		count = atoi(count_str);
 	}
-
-	/* Don't let the debuglevel be changed by smb.conf. */
-	AllowDebugChange = False;
 
 	for (i=0; i < count; i++) {
 		printf("call lp_load() #%d: ", i+1);

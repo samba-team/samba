@@ -26,8 +26,6 @@
 #include "includes.h"
 #include "popt_common.h"
 
-extern bool AllowDebugChange;
-
 int main(int argc, const char *argv[])
 {
 	const char *config_file = get_dyn_CONFIGFILE();
@@ -58,9 +56,8 @@ int main(int argc, const char *argv[])
 		fprintf(stderr, "ERROR: missing sequence string\n");
 		return 1;
 	}
-
-	DEBUGLEVEL = 0;
-	AllowDebugChange = false;
+	
+	lp_set_cmdline("log level", "0");
 
 	if (!lp_load(config_file,false,true,false,true)) {
 		fprintf(stderr,"Error loading services.\n");

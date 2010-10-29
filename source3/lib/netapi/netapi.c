@@ -23,8 +23,6 @@
 #include "secrets.h"
 #include "krb5_env.h"
 
-extern bool AllowDebugChange;
-
 struct libnetapi_ctx *stat_ctx = NULL;
 TALLOC_CTX *frame = NULL;
 static bool libnetapi_initialized = false;
@@ -75,14 +73,10 @@ NET_API_STATUS libnetapi_init(struct libnetapi_ctx **context)
 		return W_ERROR_V(WERR_NOMEM);
 	}
 
-	if (!DEBUGLEVEL) {
-		DEBUGLEVEL = 0;
-	}
+	lp_set_cmdline("log level", "0");
 
 	/* prevent setup_logging() from closing x_stderr... */
 	setup_logging("libnetapi", DEBUG_STDERR);
-
-	AllowDebugChange = false;
 
 	load_case_tables();
 
@@ -91,8 +85,6 @@ NET_API_STATUS libnetapi_init(struct libnetapi_ctx **context)
 		fprintf(stderr, "error loading %s\n", get_dyn_CONFIGFILE() );
 		return W_ERROR_V(WERR_GENERAL_FAILURE);
 	}
-
-	AllowDebugChange = true;
 
 	init_names();
 	load_interfaces();
@@ -185,9 +177,8 @@ NET_API_STATUS libnetapi_free(struct libnetapi_ctx *ctx)
 NET_API_STATUS libnetapi_set_debuglevel(struct libnetapi_ctx *ctx,
 					const char *debuglevel)
 {
-	AllowDebugChange = true;
 	ctx->debuglevel = talloc_strdup(ctx, debuglevel);
-	if (!debug_parse_levels(debuglevel)) {
+	if (!lp_set_cmdline("log level", debuglevel)) {
 		return W_ERROR_V(WERR_GENERAL_FAILURE);
 	}
 	return NET_API_STATUS_SUCCESS;

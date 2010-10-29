@@ -34,7 +34,6 @@ static int ignore_dot_errors = 0;
 
 extern char *optarg;
 extern int optind;
-extern bool AllowDebugChange;
 
 /* a test fn for LANMAN mask support */
 static int ms_fnmatch_lanman_core(const char *pattern, const char *string)
@@ -484,8 +483,7 @@ static void usage(void)
 
 	setlinebuf(stdout);
 
-	DEBUGLEVEL = 0;
-	AllowDebugChange = False;
+	lp_set_cmdline("log level", "0");
 
 	if (argc < 2 || argv[1][0] == '-') {
 		usage();

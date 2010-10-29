@@ -89,7 +89,6 @@ static struct {
 static char *debugf = NULL;
 bool    debug_warn_unknown_class = True;
 bool    debug_auto_add_unknown_class = True;
-bool    AllowDebugChange = True;
 
 /*
    used to check if the user specified a
@@ -468,9 +467,6 @@ bool debug_parse_levels(const char *params_str)
 
 	/* Just in case */
 	debug_init();
-
-	if (AllowDebugChange == False)
-		return True;
 
 	params = str_list_make_v3(talloc_tos(), params_str, NULL);
 
