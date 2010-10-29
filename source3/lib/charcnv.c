@@ -1827,7 +1827,7 @@ codepoint_t next_codepoint_ext(const char *str, charset_t src_charset,
 
 	/*
 	 * We assume that no multi-byte character can take more than
-	 * 5 bytes. This is OK as we only support codepoints up to 1M
+	 * 5 bytes. This is OK as we only support codepoints up to 1M (U+100000)
 	 */
 
 	ilen_orig = strnlen(str, 5);
@@ -1843,7 +1843,7 @@ codepoint_t next_codepoint_ext(const char *str, charset_t src_charset,
 
 	/*
 	 * This looks a little strange, but it is needed to cope
-	 * with codepoints above 64k which are encoded as per RFC2781.
+	 * with codepoints above 64k (U+10000) which are encoded as per RFC2781.
 	 */
 	olen = 2;
 	outbuf = (char *)buf;
