@@ -1420,6 +1420,8 @@ const char *lang_msg_rotate(TALLOC_CTX *ctx, const char *msgid)
 	open("/dev/null", O_WRONLY);
 	setup_logging("swat", DEBUG_FILE);
 
+	load_case_tables();
+	
 	pc = poptGetContext("swat", argc, (const char **) argv, long_options, 0);
 
 	/* Parse command line options */
@@ -1428,8 +1430,6 @@ const char *lang_msg_rotate(TALLOC_CTX *ctx, const char *msgid)
 
 	poptFreeContext(pc);
 
-	load_case_tables();
-	
 	/* This should set a more apporiate log file */
 	load_config(True);
 	reopen_logs();

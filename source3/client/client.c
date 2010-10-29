@@ -5047,9 +5047,9 @@ static int do_message_op(struct user_auth_info *a_info)
 
         /* set default debug level to 1 regardless of what smb.conf sets */
 	setup_logging( "smbclient", DEBUG_DEFAULT_STDERR );
-	lp_set_cmdline("log level", "1");
-
 	load_case_tables();
+
+	lp_set_cmdline("log level", "1");
 
 	auth_info = user_auth_info_init(frame);
 	if (auth_info == NULL) {

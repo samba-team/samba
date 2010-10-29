@@ -1199,7 +1199,6 @@ static struct cli_state *connect_one(struct user_auth_info *auth_info,
 
 	load_case_tables();
 
-
 	/* set default debug level to 1 regardless of what smb.conf sets */
 	setup_logging( "smbcacls", DEBUG_STDERR);
 	lp_set_cmdline("log level", "1");

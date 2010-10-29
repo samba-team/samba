@@ -869,6 +869,8 @@ extern void build_options(bool screen);
 	talloc_enable_null_tracking();
 	frame = talloc_stackframe();
 
+	load_case_tables();
+
 	/* Initialize the event context, it will panic on error */
 	smbd_event_context();
 
@@ -925,8 +927,6 @@ extern void build_options(bool screen);
 		build_options(True); /* Display output to screen as well as debug */
 		exit(0);
 	}
-
-	load_case_tables();
 
 #ifdef HAVE_SETLUID
 	/* needed for SecureWare on SCO */

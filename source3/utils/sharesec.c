@@ -544,6 +544,9 @@ int main(int argc, const char *argv[])
 
 	/* set default debug level to 1 regardless of what smb.conf sets */
 	setup_logging( "sharesec", DEBUG_STDERR);
+
+	load_case_tables();
+
 	lp_set_cmdline("log level", "1");
 
 	pc = poptGetContext("sharesec", argc, argv, long_options, 0);
@@ -591,8 +594,6 @@ int main(int argc, const char *argv[])
 	}
 
 	setlinebuf(stdout);
-
-	load_case_tables();
 
 	lp_load( get_dyn_CONFIGFILE(), False, False, False, True );
 
