@@ -102,8 +102,7 @@ def LOCAL_CACHE_SET(ctx, cachename, key, value):
 def ASSERT(ctx, expression, msg):
     '''a build assert call'''
     if not expression:
-        Logs.error("ERROR: %s\n" % msg)
-        raise AssertionError
+        raise Utils.WafError("ERROR: %s\n" % msg)
 Build.BuildContext.ASSERT = ASSERT
 
 
