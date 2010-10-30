@@ -93,6 +93,27 @@ def find_config_dir(conf):
         conf.fatal('cannot use the configuration test folder %r' % dir)
     return dir
 
+@conf
+def CHECK_SHLIB_W_PYTHON(conf, msg):
+    '''check if we need -undefined dynamic_lookup'''
+
+    dir = find_config_dir(conf)
+
+    env = conf.env
+
+    snip = '''
+#include <Python.h>
+#include <crt_externs.h>
+#define environ (*_NSGetEnviron())
+
+static PyObject *ldb_module = NULL;
+int foo(int v) {
+    extern char **environ;
+    environ[0] = 1;
+    ldb_module = PyImport_ImportModule("ldb");
+    return v * 2;
+}'''
+    return conf.check(features='cc cshlib',uselib='PYEMBED',fragment=snip,msg=msg)
 
 # this one is quite complex, and should probably be broken up
 # into several parts. I'd quite like to create a set of CHECK_COMPOUND()

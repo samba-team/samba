@@ -86,6 +86,11 @@ def configure(conf):
     conf.check_python_version((2,4,2))
     conf.check_python_headers(mandatory=True)
 
+    if not conf.env['HAVE_ENVIRON_DECL']:
+        if not conf.CHECK_SHLIB_W_PYTHON("Checking if -single_module is not needed"):
+            conf.env.append_value('shlib_LINKFLAGS', ['-single_module'])
+        if not conf.CHECK_SHLIB_W_PYTHON("Checking if -undefined dynamic_lookup is not need"):
+            conf.env.append_value('shlib_LINKFLAGS', ['-undefined', 'dynamic_lookup'])
     if int(conf.env['PYTHON_VERSION'][0]) >= 3:
         raise Utils.WafError('Python version 3.x is not supported by Samba yet')
 
