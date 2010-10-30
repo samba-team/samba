@@ -9,13 +9,14 @@ bld.SAMBA_SUBSYSTEM('LZXPRESS',
 bld.SAMBA_SUBSYSTEM('GENCACHE',
 	source='../../source3/lib/gencache.c',
         enabled=False,
-	deps='TDB_WRAP'
+	deps='tdb-wrap'
 	)
 
 
-bld.SAMBA_SUBSYSTEM('TDB_WRAP',
-	source='tdb_wrap.c',
-	public_deps='tdb talloc',
-	public_headers='tdb_wrap.h'
-	)
+bld.SAMBA_LIBRARY('tdb-wrap',
+                  source='tdb_wrap.c',
+                  deps='tdb talloc samba-util',
+                  public_headers='tdb_wrap.h',
+                  private_library=True
+                  )
 

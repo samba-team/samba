@@ -21,6 +21,6 @@ bld.SAMBA_SUBSYSTEM('LIBCLI_AUTH',
 
 bld.SAMBA_SUBSYSTEM('COMMON_SCHANNELDB',
 	source='schannel_state_tdb.c',
-	deps='TDB_WRAP'
+	deps='tdb-wrap'
 	)
 
