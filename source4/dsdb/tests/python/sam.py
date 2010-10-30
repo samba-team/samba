@@ -427,6 +427,17 @@ class SamTests(unittest.TestCase):
         except LdbError, (num, _):
             self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
 
+        # Delete invalid group member
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestgroup2,cn=users," + self.base_dn)
+        m["member"] = MessageElement("cn=ldaptestuser1,cn=users," + self.base_dn,
+                                     FLAG_MOD_DELETE, "member")
+        try:
+            ldb.modify(m)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
+
         # Also this should be denied
         try:
             ldb.add({
@@ -455,6 +466,17 @@ class SamTests(unittest.TestCase):
                                      FLAG_MOD_ADD, "member")
         ldb.modify(m)
 
+        # Already added
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestgroup2,cn=users," + self.base_dn)
+        m["member"] = MessageElement("cn=ldaptestuser,cn=users," + self.base_dn,
+                                     FLAG_MOD_ADD, "member")
+        try:
+            ldb.modify(m)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_ENTRY_ALREADY_EXISTS)
+
         # Invalid member
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestgroup2,cn=users," + self.base_dn)
@@ -472,6 +494,19 @@ class SamTests(unittest.TestCase):
         m["member"] = MessageElement(["cn=ldaptestuser,cn=users," + self.base_dn,
                                       "cn=ldaptestuser1,cn=users," + self.base_dn],
                                      FLAG_MOD_REPLACE, "member")
+        try:
+            ldb.modify(m)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_NO_SUCH_OBJECT)
+
+        # Invalid member
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestgroup2,cn=users," + self.base_dn)
+        m["member"] = MessageElement("cn=ldaptestuser,cn=users," + self.base_dn,
+                                     FLAG_MOD_REPLACE, "member")
+        m["member"] = MessageElement("cn=ldaptestuser1,cn=users," + self.base_dn,
+                                     FLAG_MOD_ADD, "member")
         try:
             ldb.modify(m)
             self.fail()
