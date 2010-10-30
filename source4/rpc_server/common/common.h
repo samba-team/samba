@@ -24,10 +24,12 @@
 #define _DCERPC_SERVER_COMMON_H_
 
 struct share_config;
+struct dcesrv_connection;
 struct dcesrv_context;
 struct dcesrv_context;
 struct dcesrv_call_state;
 struct ndr_interface_table;
+struct ncacn_packet;
 
 struct dcerpc_server_info { 
 	const char *domain_name;
