@@ -1695,6 +1695,7 @@ _PUBLIC_ int swrap_connect(int s, const struct sockaddr *serv_addr, socklen_t ad
 	int ret;
 	struct sockaddr_un un_addr;
 	struct socket_info *si = find_socket_info(s);
+	int bcast = 0;
 
 	if (!si) {
 		return real_connect(s, serv_addr, addrlen);
@@ -1710,8 +1711,14 @@ _PUBLIC_ int swrap_connect(int s, const struct sockaddr *serv_addr, socklen_t ad
 		return -1;
 	}
 
-	ret = sockaddr_convert_to_un(si, (const struct sockaddr *)serv_addr, addrlen, &un_addr, 0, NULL);
+	ret = sockaddr_convert_to_un(si, (const struct sockaddr *)serv_addr,
+				     addrlen, &un_addr, 0, &bcast);
 	if (ret == -1) return -1;
+
+	if (bcast) {
+		errno = ENETUNREACH;
+		return -1;
+	}
 
 	if (si->type == SOCK_DGRAM) {
 		si->defer_connect = 1;
