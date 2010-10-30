@@ -2251,55 +2251,36 @@ _PUBLIC_ ssize_t swrap_read(int s, void *buf, size_t len)
 
 _PUBLIC_ ssize_t swrap_send(int s, const void *buf, size_t len, int flags)
 {
-	int ret;
+	struct msghdr msg;
+	struct iovec tmp;
+	struct sockaddr_un un_addr;
+	ssize_t ret;
 	struct socket_info *si = find_socket_info(s);
 
 	if (!si) {
 		return real_send(s, buf, len, flags);
 	}
 
-	if (si->type == SOCK_STREAM) {
-		/* cut down to 1500 byte packets for stream sockets,
-		 * which makes it easier to format PCAP capture files
-		 * (as the caller will simply continue from here) */
-		len = MIN(len, 1500);
-	}
+	tmp.iov_base = discard_const_p(char, buf);
+	tmp.iov_len = len;
 
-	if (si->defer_connect) {
-		struct sockaddr_un un_addr;
-		int bcast = 0;
+	msg.msg_name = NULL;           /* optional address */
+	msg.msg_namelen = 0;           /* size of address */
+	msg.msg_iov = &tmp;            /* scatter/gather array */
+	msg.msg_iovlen = 1;            /* # elements in msg_iov */
+	msg.msg_control = NULL;        /* ancillary data, see below */
+	msg.msg_controllen = 0;        /* ancillary data buffer len */
+	msg.msg_flags = 0;             /* flags on received message */
 
-		if (si->bound == 0) {
-			ret = swrap_auto_bind(si, si->family);
-			if (ret == -1) return -1;
-		}
+	ret = swrap_sendmsg_before(si, &msg, &tmp, &un_addr, NULL, NULL, NULL);
+	if (ret == -1) return -1;
 
-		ret = sockaddr_convert_to_un(si, si->peername, si->peername_len,
-					     &un_addr, 0, &bcast);
-		if (ret == -1) return -1;
-
-		ret = real_connect(s, (struct sockaddr *)(void *)&un_addr,
-				   sizeof(un_addr));
-
-		/* to give better errors */
-		if (ret == -1 && errno == ENOENT) {
-			errno = EHOSTUNREACH;
-		}
-
-		if (ret == -1) {
-			return ret;
-		}
-		si->defer_connect = 0;
-	}
+	buf = msg.msg_iov[0].iov_base;
+	len = msg.msg_iov[0].iov_len;
 
 	ret = real_send(s, buf, len, flags);
 
-	if (ret == -1) {
-		swrap_dump_packet(si, NULL, SWRAP_SEND, buf, len);
-		swrap_dump_packet(si, NULL, SWRAP_SEND_RST, NULL, 0);
-	} else {
-		swrap_dump_packet(si, NULL, SWRAP_SEND, buf, ret);
-	}
+	swrap_sendmsg_after(si, &msg, NULL, ret);
 
 	return ret;
 }
