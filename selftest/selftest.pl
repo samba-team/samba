@@ -602,7 +602,6 @@ sub write_clientconf($$$)
 	torture:basedir = $clientdir
 #We don't want to pass our self-tests if the PAC code is wrong
 	gensec:require_pac = true
-	modules dir = $ENV{LD_SAMBA_MODULE_PATH}
 	setup directory = ./setup
 	resolv:host file = $prefix_abs/dns_host_file
 #We don't want to run 'speed' tests for very long
