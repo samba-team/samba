@@ -20,7 +20,7 @@ bld.SAMBA_BINARY('samba',
 	manpages='samba.8',
 	subsystem_name='service',
 	deps='''events process_model service samba-hostconfig samba-util POPT_SAMBA PIDFILE
-                popt gensec registry ntptr ntvfs share CLUSTER COMMON_SCHANNELDB SECRETS''',
+                popt gensec registry ntptr ntvfs share cluster COMMON_SCHANNELDB SECRETS''',
 	pyembed=True,
 	install_path='${SBINDIR}'
 	)
@@ -32,7 +32,7 @@ bld.SAMBA_MODULE('process_model_single',
                  source='process_single.c',
                  subsystem='process_model',
                  init_function='process_model_single_init',
-                 deps='CLUSTER process_model samba-sockets',
+                 deps='cluster process_model samba-sockets',
                  internal_module=False
                  )
 
@@ -41,7 +41,7 @@ bld.SAMBA_MODULE('process_model_standard',
                  source='process_standard.c',
                  subsystem='process_model',
                  init_function='process_model_standard_init',
-                 deps='events LDBSAMBA process_model samba-sockets CLUSTER',
+                 deps='events LDBSAMBA process_model samba-sockets cluster',
                  internal_module=False
                  )
 
@@ -51,7 +51,7 @@ bld.SAMBA_MODULE('process_model_thread',
                  subsystem='process_model',
                  init_function='process_model_thread_init',
                  enabled=False,
-                 deps='pthread samba-sockets CLUSTER process_model',
+                 deps='pthread samba-sockets cluster process_model',
                  internal_module=False
                  )
 
@@ -60,7 +60,7 @@ bld.SAMBA_MODULE('process_model_prefork',
                  source='process_prefork.c',
                  subsystem='process_model',
                  init_function='process_model_prefork_init',
-                 deps='events LDBSAMBA CLUSTER samba-sockets process_model',
+                 deps='events LDBSAMBA cluster samba-sockets process_model',
                  internal_module=False
                  )
 
@@ -68,7 +68,7 @@ bld.SAMBA_MODULE('process_model_onefork',
                  source='process_onefork.c',
                  subsystem='process_model',
                  init_function='process_model_onefork_init',
-                 deps='events LDBSAMBA process_model CLUSTER samba-sockets',
+                 deps='events LDBSAMBA process_model cluster samba-sockets',
                  internal_module=False
                  )
 
