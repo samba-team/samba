@@ -23,6 +23,7 @@
 #include "../librpc/gen_ndr/rap.h"
 #include "libcli/raw/interfaces.h"
 #include "librpc/gen_ndr/srvsvc.h"
+#include "librpc/gen_ndr/dcerpc.h"
 #include "rpc_server/common/common.h"
 #include "rpc_server/common/share.h"
 #include "param/param.h"

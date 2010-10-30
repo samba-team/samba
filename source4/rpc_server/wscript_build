@@ -7,7 +7,7 @@ bld.SAMBA_SUBSYSTEM('DCERPC_SHARE',
 	)
 
 bld.SAMBA_SUBSYSTEM('DCERPC_COMMON',
-	source='common/forward.c',
+	source='common/forward.c common/reply.c dcesrv_auth.c',
 	autoproto='common/proto.h',
 	public_headers='common/common.h',
 	header_path='dcerpc_server',
@@ -131,7 +131,7 @@ bld.SAMBA_MODULE('dcerpc_eventlog',
 	)
 
 bld.SAMBA_LIBRARY('dcerpc_server',
-	source='dcerpc_server.c dcesrv_auth.c dcesrv_mgmt.c handles.c',
+	source='dcerpc_server.c dcesrv_mgmt.c handles.c',
 	pc_files='dcerpc_server.pc',
 	deps='LIBCLI_AUTH ndr samba_server_gensec dcerpc_remote service',
 	public_deps='dcerpc',
@@ -140,12 +140,12 @@ bld.SAMBA_LIBRARY('dcerpc_server',
 	vnum='0.0.1'
 	)
 
-bld.SAMBA_MODULE('DCESRV',
+bld.SAMBA_MODULE('dcesrv',
 	source='service_rpc.c',
 	autoproto='service_rpc.h',
 	subsystem='service',
 	init_function='server_service_rpc_init',
-	internal_module=True,
+	internal_module=False,
 	deps='dcerpc_server'
 	)
 

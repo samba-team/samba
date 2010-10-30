@@ -22,6 +22,7 @@
 #include "includes.h"
 #include <tevent.h>
 #include "rpc_server/dcerpc_server.h"
+#include "librpc/gen_ndr/dcerpc.h"
 #include "rpc_server/common/common.h"
 #include "messaging/irpc.h"
 #include "auth/auth.h"

@@ -35,6 +35,8 @@
 #include "dsdb/samdb/samdb.h"
 #include "ldb_wrap.h"
 #include "../lib/util/util_ldb.h"
+#include "librpc/gen_ndr/dcerpc.h"
+#include "rpc_server/dcerpc_server.h"
 #include "rpc_server/common/common.h"
 #include "param/param.h"
 
