@@ -5,7 +5,7 @@ bld.SAMBA_MODULE('SERVICE_SMB',
 	autoproto='service_smb_proto.h',
 	subsystem='service',
 	init_function='server_service_smb_init',
-	deps='SMB_SERVER',
+	deps='SMB_SERVER netif shares samba-hostconfig',
 	internal_module=True
 	)
 

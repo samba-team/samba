@@ -6,7 +6,7 @@ bld.RECURSE('idl')
 bld.SAMBA_LIBRARY('ndr',
 	source='../../librpc/ndr/ndr_string.c ../../librpc/ndr/ndr_basic.c ../../librpc/ndr/uuid.c ../../librpc/ndr/ndr.c ../../librpc/ndr/ndr_misc.c ../../librpc/gen_ndr/ndr_misc.c',
 	pc_files='../../librpc/ndr.pc',
-	public_deps='errors talloc samba-util CHARSET',
+	public_deps='errors talloc samba-util',
 	public_headers='../../librpc/gen_ndr/misc.h ../../librpc/gen_ndr/ndr_misc.h ../../librpc/ndr/libndr.h:ndr.h',
 	header_path= [ ( '*gen_ndr*', 'gen_ndr' ) ],
 	depends_on='PIDL_MISC',
@@ -24,7 +24,7 @@ bld.SAMBA_BINARY('ndrdump',
 
 bld.SAMBA_SUBSYSTEM('NDR_SECURITY',
 	source='../../librpc/gen_ndr/ndr_security.c ../../librpc/ndr/ndr_sec_helper.c gen_ndr/ndr_server_id.c',
-	public_deps='ndr',
+	deps='ndr security',
 	public_headers='../../librpc/gen_ndr/security.h gen_ndr/server_id.h',
 	header_path='gen_ndr'
 	)
@@ -107,7 +107,7 @@ bld.SAMBA_LIBRARY('ndr-standard',
 # create a grouping library to consolidate our samba4 specific NDR code
 bld.SAMBA_LIBRARY('ndr-samba4',
 	source=[],
-	deps='NDR_WINBIND NDR_IRPC NDR_NFS4ACL NDR_OPENDB NDR_NOTIFY',
+	deps='NDR_WINBIND NDR_IRPC NDR_NFS4ACL NDR_OPENDB NDR_NOTIFY ndr-table',
 	private_library=True,
 	grouping_library=True
 	)

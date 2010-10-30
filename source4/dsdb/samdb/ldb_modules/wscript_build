@@ -310,7 +310,7 @@ bld.SAMBA_MODULE('ldb_operational',
 	subsystem='ldb',
 	init_function='LDB_MODULE(operational)',
 	internal_module=False,
-	deps='talloc tevent samba-util samdb-common DSDB_MODULE_HELPERS auth auth_session'
+	deps='talloc tevent samba-util samdb-common DSDB_MODULE_HELPERS auth SAMDB'
 	)
 
 
