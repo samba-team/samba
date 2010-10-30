@@ -2132,8 +2132,11 @@ _PUBLIC_ ssize_t swrap_recvfrom(int s, void *buf, size_t len, int flags, struct 
 
 _PUBLIC_ ssize_t swrap_sendto(int s, const void *buf, size_t len, int flags, const struct sockaddr *to, socklen_t tolen)
 {
+	struct msghdr msg;
+	struct iovec tmp;
 	struct sockaddr_un un_addr;
-	int ret;
+	const struct sockaddr_un *to_un = NULL;
+	ssize_t ret;
 	struct socket_info *si = find_socket_info(s);
 	int bcast = 0;
 
@@ -2141,104 +2144,50 @@ _PUBLIC_ ssize_t swrap_sendto(int s, const void *buf, size_t len, int flags, con
 		return real_sendto(s, buf, len, flags, to, tolen);
 	}
 
-	if (si->connected) {
-		if (to) {
-			errno = EISCONN;
-			return -1;
+	tmp.iov_base = discard_const_p(char, buf);
+	tmp.iov_len = len;
+
+	msg.msg_name = discard_const_p(struct sockaddr, to); /* optional address */
+	msg.msg_namelen = tolen;       /* size of address */
+	msg.msg_iov = &tmp;            /* scatter/gather array */
+	msg.msg_iovlen = 1;            /* # elements in msg_iov */
+	msg.msg_control = NULL;        /* ancillary data, see below */
+	msg.msg_controllen = 0;        /* ancillary data buffer len */
+	msg.msg_flags = 0;             /* flags on received message */
+
+	ret = swrap_sendmsg_before(si, &msg, &tmp, &un_addr, &to_un, &to, &bcast);
+	if (ret == -1) return -1;
+
+	buf = msg.msg_iov[0].iov_base;
+	len = msg.msg_iov[0].iov_len;
+
+	if (bcast) {
+		struct stat st;
+		unsigned int iface;
+		unsigned int prt = ntohs(((const struct sockaddr_in *)to)->sin_port);
+		char type;
+
+		type = SOCKET_TYPE_CHAR_UDP;
+
+		for(iface=0; iface <= MAX_WRAPPED_INTERFACES; iface++) {
+			snprintf(un_addr.sun_path, sizeof(un_addr.sun_path), "%s/"SOCKET_FORMAT,
+				 socket_wrapper_dir(), type, iface, prt);
+			if (stat(un_addr.sun_path, &st) != 0) continue;
+
+			/* ignore the any errors in broadcast sends */
+			real_sendto(s, buf, len, flags,
+				    (struct sockaddr *)(void *)&un_addr,
+				    sizeof(un_addr));
 		}
 
-		to = si->peername;
-		tolen = si->peername_len;
-	}
-
-	switch (si->type) {
-	case SOCK_STREAM:
-		/* cut down to 1500 byte packets for stream sockets,
-		 * which makes it easier to format PCAP capture files
-		 * (as the caller will simply continue from here) */
-		len = MIN(len, 1500);
-
-		ret = real_send(s, buf, len, flags);
-		break;
-	case SOCK_DGRAM:
-		if (si->bound == 0) {
-			ret = swrap_auto_bind(si, si->family);
-			if (ret == -1) return -1;
-		}
-
-		ret = sockaddr_convert_to_un(si, to, tolen, &un_addr, 0, &bcast);
-		if (ret == -1) return -1;
-
-		if (bcast) {
-			struct stat st;
-			unsigned int iface;
-			unsigned int prt = ntohs(((const struct sockaddr_in *)to)->sin_port);
-			char type;
-
-			type = SOCKET_TYPE_CHAR_UDP;
-
-			for(iface=0; iface <= MAX_WRAPPED_INTERFACES; iface++) {
-				snprintf(un_addr.sun_path, sizeof(un_addr.sun_path), "%s/"SOCKET_FORMAT, 
-					 socket_wrapper_dir(), type, iface, prt);
-				if (stat(un_addr.sun_path, &st) != 0) continue;
-
-				/* ignore the any errors in broadcast sends */
-				real_sendto(s, buf, len, flags,
-					    (struct sockaddr *)(void *)&un_addr,
-					    sizeof(un_addr));
-			}
-
-			swrap_dump_packet(si, to, SWRAP_SENDTO, buf, len);
-
-			return len;
-		}
-
-		if (si->defer_connect) {
-			ret = real_connect(s, (struct sockaddr *)(void *)&un_addr,
-					   sizeof(un_addr));
-
-			/* to give better errors */
-			if (ret == -1 && errno == ENOENT) {
-				errno = EHOSTUNREACH;
-			}
-
-			if (ret == -1) {
-				return ret;
-			}
-			si->defer_connect = 0;
-		}
-
-		/* Man page for Linux says:
-		 * "the error EISONN may be returned when they are not NULL and 0"
-		 * But in practice it's not on x86/amd64, but on other unix it is
-		 * (ie. freebsd)
-		 * So if we are already connected we send NULL/0
-		 */
-		if (si->connected) {
-			ret = real_sendto(s, buf, len, flags, NULL, 0);
-		} else {
-			ret = real_sendto(s, buf, len, flags,
-					  (struct sockaddr *)(void *)&un_addr,
-					  sizeof(un_addr));
-		}
-		break;
-	default:
-		ret = -1;
-		errno = EHOSTUNREACH;
-		break;
-	}
-
-	/* to give better errors */
-	if (ret == -1 && errno == ENOENT) {
-		errno = EHOSTUNREACH;
-	}
-
-	if (ret == -1) {
 		swrap_dump_packet(si, to, SWRAP_SENDTO, buf, len);
-		swrap_dump_packet(si, to, SWRAP_SENDTO_UNREACH, buf, len);
-	} else {
-		swrap_dump_packet(si, to, SWRAP_SENDTO, buf, ret);
+
+		return len;
 	}
+
+	ret = real_sendto(s, buf, len, flags, msg.msg_name, msg.msg_namelen);
+
+	swrap_sendmsg_after(si, &msg, to, ret);
 
 	return ret;
 }
