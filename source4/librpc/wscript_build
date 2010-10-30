@@ -123,7 +123,7 @@ bld.SAMBA_LIBRARY('dcerpc-samba4',
 
 bld.SAMBA_PIDL_TABLES('GEN_NDR_TABLES', 'gen_ndr/tables.c')
 
-bld.SAMBA_LIBRARY('ndr-table',
+bld.SAMBA_SUBSYSTEM('ndr-table',
 	source='../../librpc/ndr/ndr_table.c gen_ndr/tables.c',
         public_deps='''ndr-standard NDR_AUDIOSRV NDR_DSBACKUP NDR_EFS
         NDR_DRSUAPI NDR_POLICYAGENT NDR_UNIXINFO NDR_SPOOLSS NDR_EPMAPPER
@@ -136,7 +136,6 @@ bld.SAMBA_LIBRARY('ndr-table',
         NDR_FRSTRANS NDR_NFS4ACL NDR_NTP_SIGND NDR_DCOM NDR_WMI
         NDR_NAMED_PIPE_AUTH NDR_NTLMSSP NDR_DFSBLOBS NDR_DNSP
         NDR_NTPRINTING NDR_DNS''',
-        private_library=True,
         depends_on='GEN_NDR_TABLES'
         )
 
