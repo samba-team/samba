@@ -301,7 +301,7 @@ static int lpdb_add_callback(struct ldb_request *req,
  * MODIFY
  ****************************************************************************/
 
-static int lpdb_modify_callabck(struct ldb_request *req,
+static int lpdb_modify_callback(struct ldb_request *req,
 				struct ldb_reply *ares);
 static int lpdb_mod_search_callback(struct ldb_request *req,
 				    struct ldb_reply *ares);
@@ -369,7 +369,7 @@ static int local_password_modify(struct ldb_module *module, struct ldb_request *
 	ret = ldb_build_mod_req(&remote_req, ldb, ac,
 				remote_message,
 				req->controls,
-				ac, lpdb_modify_callabck,
+				ac, lpdb_modify_callback,
 				req);
 	LDB_REQ_SET_LOCATION(remote_req);
 	if (ret != LDB_SUCCESS) {
@@ -381,7 +381,7 @@ static int local_password_modify(struct ldb_module *module, struct ldb_request *
 
 /* On a modify, we don't have the objectGUID handy, so we need to
  * search our DN for it */
-static int lpdb_modify_callabck(struct ldb_request *req,
+static int lpdb_modify_callback(struct ldb_request *req,
 				struct ldb_reply *ares)
 {
 	struct ldb_context *ldb;
@@ -546,7 +546,7 @@ static int lpdb_mod_search_callback(struct ldb_request *req,
  * DELETE
  ****************************************************************************/
 
-static int lpdb_delete_callabck(struct ldb_request *req,
+static int lpdb_delete_callback(struct ldb_request *req,
 				struct ldb_reply *ares);
 static int lpdb_del_search_callback(struct ldb_request *req,
 				    struct ldb_reply *ares);
@@ -583,7 +583,7 @@ static int local_password_delete(struct ldb_module *module,
 	ret = ldb_build_del_req(&remote_req, ldb, ac,
 				req->op.del.dn,
 				req->controls,
-				ac, lpdb_delete_callabck,
+				ac, lpdb_delete_callback,
 				req);
 	LDB_REQ_SET_LOCATION(remote_req);
 	if (ret != LDB_SUCCESS) {
@@ -595,7 +595,7 @@ static int local_password_delete(struct ldb_module *module,
 
 /* On a modify, we don't have the objectGUID handy, so we need to
  * search our DN for it */
-static int lpdb_delete_callabck(struct ldb_request *req,
+static int lpdb_delete_callback(struct ldb_request *req,
 				struct ldb_reply *ares)
 {
 	struct ldb_context *ldb;
