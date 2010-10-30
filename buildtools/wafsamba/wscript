@@ -104,6 +104,10 @@ def set_options(opt):
 		   help=("Show dependency tree for the given target"),
 		   dest='SHOWDEPS', default='')
 
+    gr.add_option('--symbol-check',
+                  help=("check symbols in object files against project rules"),
+                  action='store_true', dest='SYMBOLCHECK', default=False)
+
     gr.add_option('--show-duplicates',
                   help=("Show objects which are included in multiple binaries or libraries"),
                   action='store_true', dest='SHOW_DUPLICATES', default=False)

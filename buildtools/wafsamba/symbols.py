@@ -38,7 +38,7 @@ def symbols_extract(objfiles, dynamic=False):
         else:
             symbol_type = cols[0]
             symbol = cols[1]
-        if symbol_type in "BDGTRVWS":
+        if symbol_type in "BDGTRVWSi":
             # its a public symbol
             ret[filename]["PUBLIC"].add(symbol)
         elif symbol_type in "U":
@@ -99,7 +99,7 @@ def build_symbol_sets(bld, tgt_list):
     for obj in objlist:
         t = objmap[obj]
         t.public_symbols = t.public_symbols.union(symbols[obj]["PUBLIC"])
-        t.undefined_symbols = t.public_symbols.union(symbols[obj]["UNDEFINED"])
+        t.undefined_symbols = t.undefined_symbols.union(symbols[obj]["UNDEFINED"])
 
     t.undefined_symbols = t.undefined_symbols.difference(t.public_symbols)
 
@@ -110,7 +110,24 @@ def build_symbol_sets(bld, tgt_list):
         for s in t.public_symbols:
             bld.env.symbol_map[s] = real_name(t.sname)
 
-    # now do the same for syslibs
+    targets = LOCAL_CACHE(bld, 'TARGET_TYPE')
+
+    bld.env.public_symbols = {}
+    for t in tgt_list:
+        name = real_name(t.sname)
+        if name in bld.env.public_symbols:
+            bld.env.public_symbols[name] = bld.env.public_symbols[name].union(t.public_symbols)
+        else:
+            bld.env.public_symbols[name] = t.public_symbols
+        if t.samba_type == 'LIBRARY':
+            for dep in t.add_objects:
+                t2 = bld.name_to_obj(dep, bld.env)
+                bld.ASSERT(t2 is not None, "Library '%s' has unknown dependency '%s'" % (name, dep))
+                bld.env.public_symbols[name] = bld.env.public_symbols[name].union(t2.public_symbols)
+
+
+def build_syslib_sets(bld, tgt_list):
+    '''build the public_symbols for all syslibs'''
 
     # work out what syslibs we depend on, and what targets those are used in
     syslibs = {}
@@ -132,7 +149,7 @@ def build_symbol_sets(bld, tgt_list):
             print("Unable to find syslib path for %s used by %s" % lib)
         if path is not None:
             syslib_paths.append(path)
-            objmap[path] = lib
+            objmap[path] = lib.lower()
 
     # add in libc
     syslib_paths.append(bld.env.libc_path)
@@ -148,22 +165,15 @@ def build_symbol_sets(bld, tgt_list):
     # add to the map of symbols to dependencies
     for lib in symbols:
         for sym in symbols[lib]["PUBLIC"]:
-            bld.env.symbol_map[sym] = objmap[lib].lower()
+            bld.env.symbol_map[sym] = objmap[lib]
 
     # keep the libc symbols as well, as these are useful for some of the
     # sanity checks
     bld.env.libc_symbols = symbols[bld.env.libc_path]["PUBLIC"]
 
-    # a combined map of dependency name to public_symbols
-    bld.env.all_symbols = {}
+    # add to the combined map of dependency name to public_symbols
     for lib in bld.env.syslib_symbols:
-        bld.env.all_symbols[lib] = bld.env.syslib_symbols[lib]
-    for t in tgt_list:
-        name = real_name(t.sname)
-        if bld.name_to_obj(t.sname + '.objlist', bld.env):
-            continue
-        bld.env.all_symbols[name] = t.public_symbols
-
+        bld.env.public_symbols[objmap[lib]] = bld.env.syslib_symbols[lib]
 
 def build_autodeps(bld, t):
     '''build the set of dependencies for a target'''
@@ -196,7 +206,6 @@ def build_autodeps(bld, t):
             if t2.in_library == t.in_library:
                 # if we're part of the same library, we don't need to autodep
                 continue
-            print("adding library %s for symbol %s" % (t2.in_library[0], sym))
             deps.add(t2.in_library[0])
     t.autodeps = deps
 
@@ -211,7 +220,8 @@ def build_library_names(bld, tgt_list):
             for obj in t.samba_deps_extended:
                 t2 = bld.name_to_obj(obj, bld.env)
                 if t2 and t2.samba_type in [ 'SUBSYSTEM', 'ASN1' ]:
-                    t2.in_library.append(t.sname)
+                    if not t.sname in t2.in_library:
+                        t2.in_library.append(t.sname)
 
 
 def check_library_deps(bld, t):
@@ -229,9 +239,9 @@ def check_library_deps(bld, t):
             continue
         for dep2 in t2.autodeps:
             if dep2 == name and t.in_library != t2.in_library:
-                Logs.error("Illegal mutual dependency %s <=> %s" % (name, real_name(t2.sname)))
-                Logs.error("Libraries must match. %s != %s" % (t.in_library, t2.in_library))
-                sys.exit(1)
+                Logs.warn("WARNING: mutual dependency %s <=> %s" % (name, real_name(t2.sname)))
+                Logs.warn("Libraries should match. %s != %s" % (t.in_library, t2.in_library))
+                # raise Utils.WafError("illegal mutual dependency")
 
 
 def check_syslib_collisions(bld, tgt_list):
@@ -254,35 +264,87 @@ def check_syslib_collisions(bld, tgt_list):
         raise Utils.WafError("symbols in common with system libraries")
 
 
-def check_dep_list(bld, t):
-    '''check for depenencies that can be removed'''
+def check_dependencies(bld, t):
+    '''check for depenencies that should be changed'''
+
     if bld.name_to_obj(t.sname + ".objlist", bld.env):
         return
+
+    targets = LOCAL_CACHE(bld, 'TARGET_TYPE')
+
+    remaining = t.undefined_symbols.copy()
+    remaining = remaining.difference(t.public_symbols)
+
+    sname = real_name(t.sname)
+
     deps = set(t.samba_deps)
-    diff = deps.difference(t.autodeps)
-    for d in ['replace']:
-        if d in diff:
-            diff.remove(d)
-    if diff:
-        Logs.info("Target '%s' could remove deps: %s" % (real_name(t.sname), " ".join(diff)))
-    diff = t.autodeps.difference(deps)
-    for d in diff:
-        Logs.info("Target '%s' should add dep '%s' for symbols %s" % (
-            real_name(t.sname), d, t.undefined_symbols.intersection(bld.env.all_symbols[d])))
+    for d in t.samba_deps:
+        if targets[d] in [ 'EMPTY', 'DISABLED', 'SYSLIB' ]:
+            continue
+        bld.ASSERT(d in bld.env.public_symbols, "Failed to find symbol list for dependency '%s'" % d)
+        diff = remaining.intersection(bld.env.public_symbols[d])
+        if not diff and targets[sname] != 'LIBRARY':
+            Logs.info("Target '%s' has no dependency on %s" % (sname, d))
+        else:
+            remaining = remaining.difference(diff)
+
+    t.unsatisfied_symbols = set()
+    needed = {}
+    for sym in remaining:
+        if sym in bld.env.symbol_map:
+            dep = bld.env.symbol_map[sym]
+            if not dep in needed:
+                needed[dep] = set()
+            needed[dep].add(sym)
+        else:
+            t.unsatisfied_symbols.add(sym)
+
+    for dep in needed:
+        Logs.info("Target '%s' should add dep '%s' for symbols %s" % (sname, dep, " ".join(needed[dep])))
 
 
-def symbols_autodep(task):
-    '''check the dependency lists'''
+
+def check_syslib_dependencies(bld, t):
+    '''check for syslib depenencies'''
+
+    if bld.name_to_obj(t.sname + ".objlist", bld.env):
+        return
+
+    sname = real_name(t.sname)
+
+    remaining = set()
+
+    features = TO_LIST(t.features)
+    if 'pyembed' in features or 'pyext' in features:
+        t.unsatisfied_symbols = t.unsatisfied_symbols.difference(bld.env.public_symbols['python'])
+
+    needed = {}
+    for sym in t.unsatisfied_symbols:
+        if sym in bld.env.symbol_map:
+            dep = bld.env.symbol_map[sym]
+            if dep == 'c':
+                continue
+            if not dep in needed:
+                needed[dep] = set()
+            needed[dep].add(sym)
+        else:
+            remaining.add(sym)
+
+    for dep in needed:
+        Logs.info("Target '%s' should add syslib dep '%s' for symbols %s" % (sname, dep, " ".join(needed[dep])))
+
+    if remaining:
+        debug("deps: Target '%s' has unsatisfied symbols: %s" % (sname, " ".join(remaining)))
+
+
+
+def symbols_symbolcheck(task):
+    '''check the internal dependency lists'''
     bld = task.env.bld
     tgt_list = get_tgt_list(bld)
 
     build_symbol_sets(bld, tgt_list)
     build_library_names(bld, tgt_list)
-
-    t = bld.name_to_obj('SERVICE_SMB', bld.env)
-    build_autodeps(bld, t)
-    check_dep_list(bld, t)
-    return
 
     for t in tgt_list:
         t.autodeps = set()
@@ -290,19 +352,31 @@ def symbols_autodep(task):
             build_autodeps(bld, t)
 
     for t in tgt_list:
-        check_library_deps(bld, t)
-
-    check_syslib_collisions(bld, tgt_list)
-
+        check_dependencies(bld, t)
 
     for t in tgt_list:
-        check_dep_list(bld, t)
+        check_library_deps(bld, t)
+
+def symbols_syslibcheck(task):
+    '''check the syslib dependencies'''
+    bld = task.env.bld
+    tgt_list = get_tgt_list(bld)
+
+    build_syslib_sets(bld, tgt_list)
+    check_syslib_collisions(bld, tgt_list)
+
+    for t in tgt_list:
+        check_syslib_dependencies(bld, t)
 
 
-def AUTODEP(bld):
+def SYMBOL_CHECK(bld):
     '''check our dependency lists'''
-    if bld.env.DEVELOPER_MODE:
-        bld.SET_BUILD_GROUP('final')
-        task = bld(rule=symbols_autodep, always=True, name='Autodep')
+    if Options.options.SYMBOLCHECK:
+        bld.SET_BUILD_GROUP('symbolcheck')
+        task = bld(rule=symbols_symbolcheck, always=True, name='symbol checking')
         task.env.bld = bld
-Build.BuildContext.AUTODEP = AUTODEP
+
+        bld.SET_BUILD_GROUP('syslibcheck')
+        task = bld(rule=symbols_syslibcheck, always=True, name='syslib checking')
+        task.env.bld = bld
+Build.BuildContext.SYMBOL_CHECK = SYMBOL_CHECK
