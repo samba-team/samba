@@ -460,6 +460,10 @@ static bool test_start_dcerpc_server(struct torture_context *tctx,
 
 	torture_comment(tctx, "Listening for callbacks on %s\n", address);
 
+	status = process_model_init(tctx->lp_ctx);
+	torture_assert_ntstatus_ok(tctx, status,
+				   "unable to initialize process models");
+
 	status = smbsrv_add_socket(event_ctx, tctx->lp_ctx, process_model_startup("single"), address);
 	torture_assert_ntstatus_ok(tctx, status, "starting smb server");
 
