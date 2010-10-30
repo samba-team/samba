@@ -133,7 +133,7 @@ def configure(conf):
                        int s = socket(AF_INET6, SOCK_STREAM, 0);
                        int ret = getaddrinfo(NULL, NULL, NULL, &ai);
                        if (ret != 0) {
-			  const char *es = gai_strerror(ret);
+                           const char *es = gai_strerror(ret);
                        }
                        freeaddrinfo(ai);
                        {
@@ -226,7 +226,7 @@ def configure(conf):
         conf.DEFINE('HAVE_EPOLL', 1)
 
     if not conf.CHECK_CODE('''#define LIBREPLACE_CONFIGURE_TEST_STRPTIME
-		       #include "test/strptime.c"''',
+                           #include "test/strptime.c"''',
                            define='HAVE_STRPTIME',
                            addmain=False,
                            msg='Checking for working strptime'):
@@ -270,7 +270,7 @@ def configure(conf):
     conf.SAMBA_BUILD_ENV()
 
     conf.CHECK_CODE('''
-		    typedef struct {unsigned x;} FOOBAR;
+                    typedef struct {unsigned x;} FOOBAR;
                     #define X_FOOBAR(x) ((FOOBAR) { x })
                     #define FOO_ONE X_FOOBAR(1)
                     FOOBAR f = FOO_ONE;
@@ -401,11 +401,11 @@ def build(bld):
     bld.SAMBA_LIBRARY('replace',
                       source=REPLACE_SOURCE,
                       group='base_libraries',
-					  # FIXME: Ideally symbols should be hidden here so they 
-					  # don't appear in the global namespace when Samba 
-					  # libraries are loaded, but this doesn't appear to work 
-					  # at the moment:
-					  # hide_symbols=bld.BUILTIN_LIBRARY('replace'),
+                      # FIXME: Ideally symbols should be hidden here so they 
+                      # don't appear in the global namespace when Samba 
+                      # libraries are loaded, but this doesn't appear to work 
+                      # at the moment:
+                      # hide_symbols=bld.BUILTIN_LIBRARY('replace'),
                       private_library=True,
                       deps='crypt dl nsl socket rt')
 
