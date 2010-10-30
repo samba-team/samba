@@ -972,3 +972,15 @@ def samba_display(self):
 
 Task.TaskBase.classes['Task'].old_display = Task.TaskBase.classes['Task'].display
 Task.TaskBase.classes['Task'].display = samba_display
+
+
+@after('apply_link')
+@feature('cshlib')
+def apply_bundle_remove_dynamiclib_patch(self):
+    if self.env['MACBUNDLE'] or getattr(self,'mac_bundle',False):
+        if not getattr(self,'vnum',None):
+            try:
+                self.env['LINKFLAGS'].remove('-dynamiclib')
+                self.env['LINKFLAGS'].remove('-single_module')
+            except ValueError:
+                pass
