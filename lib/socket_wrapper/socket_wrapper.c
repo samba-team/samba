@@ -2285,72 +2285,91 @@ _PUBLIC_ ssize_t swrap_send(int s, const void *buf, size_t len, int flags)
 	return ret;
 }
 
-_PUBLIC_ ssize_t swrap_sendmsg(int s, const struct msghdr *msg, int flags)
+_PUBLIC_ ssize_t swrap_sendmsg(int s, const struct msghdr *omsg, int flags)
 {
-	int ret;
-	uint8_t *buf;
-	off_t ofs = 0;
-	size_t i;
-	size_t remain;
-
+	struct msghdr msg;
+	struct iovec tmp;
+	struct sockaddr_un un_addr;
+	const struct sockaddr_un *to_un = NULL;
+	const struct sockaddr *to = NULL;
+	ssize_t ret;
 	struct socket_info *si = find_socket_info(s);
+	int bcast = 0;
 
 	if (!si) {
-		return real_sendmsg(s, msg, flags);
+		return real_sendmsg(s, omsg, flags);
 	}
 
-	if (si->defer_connect) {
-		struct sockaddr_un un_addr;
-		int bcast = 0;
+	tmp.iov_base = NULL;
+	tmp.iov_len = 0;
 
-		if (si->bound == 0) {
-			ret = swrap_auto_bind(si, si->family);
-			if (ret == -1) return -1;
+	msg.msg_name = omsg->msg_name;             /* optional address */
+	msg.msg_namelen = omsg->msg_namelen;       /* size of address */
+	msg.msg_iov = omsg->msg_iov;               /* scatter/gather array */
+	msg.msg_iovlen = omsg->msg_iovlen;         /* # elements in msg_iov */
+	msg.msg_control = omsg->msg_control;       /* ancillary data, see below */
+	msg.msg_controllen = omsg->msg_controllen; /* ancillary data buffer len */
+	msg.msg_flags = omsg->msg_flags;           /* flags on received message */
+
+	ret = swrap_sendmsg_before(si, &msg, &tmp, &un_addr, &to_un, &to, &bcast);
+	if (ret == -1) return -1;
+
+	if (bcast) {
+		struct stat st;
+		unsigned int iface;
+		unsigned int prt = ntohs(((const struct sockaddr_in *)to)->sin_port);
+		char type;
+		size_t i, len = 0;
+		uint8_t *buf;
+		off_t ofs = 0;
+		size_t avail = 0;
+		size_t remain;
+
+		for (i=0; i < msg.msg_iovlen; i++) {
+			avail += msg.msg_iov[i].iov_len;
 		}
 
-		ret = sockaddr_convert_to_un(si, si->peername, si->peername_len,
-					     &un_addr, 0, &bcast);
-		if (ret == -1) return -1;
+		len = avail;
+		remain = avail;
 
-		ret = real_connect(s, (struct sockaddr *)(void *)&un_addr,
-				   sizeof(un_addr));
-
-		/* to give better errors */
-		if (ret == -1 && errno == ENOENT) {
-			errno = EHOSTUNREACH;
+		/* we capture it as one single packet */
+		buf = (uint8_t *)malloc(remain);
+		if (!buf) {
+			return -1;
 		}
 
-		if (ret == -1) {
-			return ret;
+		for (i=0; i < msg.msg_iovlen; i++) {
+			size_t this_time = MIN(remain, msg.msg_iov[i].iov_len);
+			memcpy(buf + ofs,
+			       msg.msg_iov[i].iov_base,
+			       this_time);
+			ofs += this_time;
+			remain -= this_time;
 		}
-		si->defer_connect = 0;
+
+		type = SOCKET_TYPE_CHAR_UDP;
+
+		for(iface=0; iface <= MAX_WRAPPED_INTERFACES; iface++) {
+			snprintf(un_addr.sun_path, sizeof(un_addr.sun_path), "%s/"SOCKET_FORMAT,
+				 socket_wrapper_dir(), type, iface, prt);
+			if (stat(un_addr.sun_path, &st) != 0) continue;
+
+			msg.msg_name = &un_addr;           /* optional address */
+			msg.msg_namelen = sizeof(un_addr); /* size of address */
+
+			/* ignore the any errors in broadcast sends */
+			real_sendmsg(s, &msg, flags);
+		}
+
+		swrap_dump_packet(si, to, SWRAP_SENDTO, buf, len);
+		free(buf);
+
+		return len;
 	}
 
-	ret = real_sendmsg(s, msg, flags);
-	remain = ret;
+	ret = real_sendmsg(s, &msg, flags);
 
-	/* we capture it as one single packet */
-	buf = (uint8_t *)malloc(ret);
-	if (!buf) {
-		/* we just not capture the packet */
-		errno = 0;
-		return ret;
-	}
-
-	for (i=0; i < msg->msg_iovlen; i++) {
-		size_t this_time = MIN(remain, msg->msg_iov[i].iov_len);
-		memcpy(buf + ofs,
-		       msg->msg_iov[i].iov_base,
-		       this_time);
-		ofs += this_time;
-		remain -= this_time;
-	}
-
-	swrap_dump_packet(si, NULL, SWRAP_SEND, buf, ret);
-	free(buf);
-	if (ret == -1) {
-		swrap_dump_packet(si, NULL, SWRAP_SEND_RST, NULL, 0);
-	}
+	swrap_sendmsg_after(si, &msg, to, ret);
 
 	return ret;
 }
