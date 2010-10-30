@@ -194,7 +194,7 @@ static int resolve_oids_message_need(struct ldb_context *ldb,
 				     struct dsdb_schema *schema,
 				     const struct ldb_message *msg)
 {
-	int i;
+	unsigned int i;
 
 	for (i=0; i < msg->num_elements; i++) {
 		int ret;
@@ -453,7 +453,7 @@ static int resolve_oids_search(struct ldb_module *module, struct ldb_request *re
 	bool needed = false;
 	const char * const *attrs1;
 	const char **attrs2;
-	uint32_t i;
+	unsigned int i;
 
 	ldb = ldb_module_get_ctx(module);
 	schema = dsdb_get_schema(ldb, NULL);
