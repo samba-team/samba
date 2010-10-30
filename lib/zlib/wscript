@@ -15,6 +15,12 @@ def configure(conf):
                     msg='Checking for ZLIB_VERNUM >= 0x1230',
                     define='HAVE_ZLIB')
 
+    # If we don't do this then we will receive an error that lib 'z'
+    # is already declared as a system lib (for the cases where zlibVersion
+    # is defined
+    if not conf.env['HAVE_ZLIB']:
+                conf.LOCAL_CACHE_SET('TARGET_TYPE', 'z', 'EMPTY')
+
 def build(bld):
     if not bld.CONFIG_SET('HAVE_ZLIB'):
         bld.SAMBA_LIBRARY('z',
