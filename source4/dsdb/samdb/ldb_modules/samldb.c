@@ -1002,7 +1002,40 @@ static int samldb_prim_group_change(struct samldb_ctx *ac)
 	uint32_t rid;
 	struct dom_sid *sid;
 	struct ldb_dn *prev_prim_group_dn, *new_prim_group_dn;
+	unsigned int i;
 	int ret;
+
+	/* We've to walk over all modification entries and consider the
+	 * "primaryGroupID" ones.
+	 *
+	 * 1.) Add operations aren't allowed and there is returned
+	 *     "ATTRIBUTE_OR_VALUE_EXISTS".
+	 * 2.) Replace operations are allowed but the last one is taken
+	 * 3.) Delete operations are also not allowed and there is returned
+	 *     "UNWILLING_TO_PERFORM".
+	 *
+	 * If "el" is afterwards NULL then that means we've nothing to do here.
+	 */
+	el = NULL;
+	for (i = 0; i < ac->msg->num_elements; i++) {
+		if (ldb_attr_cmp(ac->msg->elements[i].name,
+				 "primaryGroupID") != 0) {
+			continue;
+		}
+
+		el = &ac->msg->elements[i];
+		if (LDB_FLAG_MOD_TYPE(el->flags) == LDB_FLAG_MOD_ADD) {
+			return LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS;
+		}
+		if (LDB_FLAG_MOD_TYPE(el->flags) == LDB_FLAG_MOD_DELETE) {
+			return LDB_ERR_UNWILLING_TO_PERFORM;
+		}
+	}
+	if (el == NULL) {
+		return LDB_SUCCESS;
+	}
+
+	/* Okay, now for sure we are performing a "primaryGroupID" replace */
 
 	/* Fetch informations from the existing object */
 
@@ -1033,9 +1066,20 @@ static int samldb_prim_group_change(struct samldb_ctx *ac)
 		return ldb_operr(ldb);
 	}
 
-	/* Finds out the DN of the new primary group */
+	/* Finds out the DN of the new primary group
+	 * Notice: in order to parse the primary group ID correctly we create
+	 * a temporary message here. */
 
-	rid = ldb_msg_find_attr_as_uint(ac->msg, "primaryGroupID", (uint32_t) -1);
+	msg = ldb_msg_new(ac->msg);
+	if (msg == NULL) {
+		return ldb_module_oom(ac->module);
+	}
+	ret = ldb_msg_add(msg, el, 0);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+	rid = ldb_msg_find_attr_as_uint(msg, "primaryGroupID", (uint32_t) -1);
+	talloc_free(msg);
 	if (rid == (uint32_t) -1) {
 		/* we aren't affected of any primary group change */
 		return LDB_SUCCESS;
@@ -1066,6 +1110,9 @@ static int samldb_prim_group_change(struct samldb_ctx *ac)
 
 		/* Remove the "member" attribute on the new primary group */
 		msg = talloc_zero(ac, struct ldb_message);
+		if (msg == NULL) {
+			return ldb_module_oom(ac->module);
+		}
 		msg->dn = new_prim_group_dn;
 
 		ret = samdb_msg_add_delval(ldb, msg, msg, "member",
@@ -1081,6 +1128,9 @@ static int samldb_prim_group_change(struct samldb_ctx *ac)
 
 		/* Add a "member" attribute for the previous primary group */
 		msg = talloc_zero(ac, struct ldb_message);
+		if (msg == NULL) {
+			return ldb_module_oom(ac->module);
+		}
 		msg->dn = prev_prim_group_dn;
 
 		ret = samdb_msg_add_addval(ldb, msg, msg, "member",
@@ -1094,6 +1144,8 @@ static int samldb_prim_group_change(struct samldb_ctx *ac)
 			return ret;
 		}
 	}
+
+	talloc_free(res);
 
 	return LDB_SUCCESS;
 }
@@ -1424,18 +1476,11 @@ static int samldb_modify(struct ldb_module *module, struct ldb_request *req)
 	}
 
 	el = ldb_msg_find_element(ac->msg, "primaryGroupID");
-	if (el && (LDB_FLAG_MOD_TYPE(el->flags) == LDB_FLAG_MOD_REPLACE)
-	    && el->num_values == 1) {
-		modified = true;
-
+	if (el != NULL) {
 		ret = samldb_prim_group_change(ac);
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
-	}
-	el = ldb_msg_find_element(ac->msg, "primaryGroupID");
-	if (el && (LDB_FLAG_MOD_TYPE(el->flags) == LDB_FLAG_MOD_DELETE)) {
-		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
 
 	el = ldb_msg_find_element(ac->msg, "userAccountControl");
