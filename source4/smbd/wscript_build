@@ -33,7 +33,7 @@ bld.SAMBA_MODULE('process_model_single',
                  subsystem='process_model',
                  init_function='process_model_single_init',
                  deps='cluster process_model samba-sockets',
-                 internal_module=False
+                 internal_module=True
                  )
 
 
