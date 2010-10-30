@@ -269,9 +269,8 @@ bool run_init_functions(init_module_fn *fns)
 static char *modules_path(TALLOC_CTX* mem_ctx, struct loadparm_context *lp_ctx,
 			  const char *name)
 {
-	const char *env_moduledir = getenv("LD_SAMBA_MODULE_PATH");
 	return talloc_asprintf(mem_ctx, "%s/%s", 
-			       env_moduledir?env_moduledir:lpcfg_modulesdir(lp_ctx),
+			       lpcfg_modulesdir(lp_ctx),
 			       name);
 }
 

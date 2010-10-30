@@ -421,7 +421,7 @@ $ENV{EXEEXT} = $exeext;
 my $tls_enabled = not $opt_quick;
 $ENV{TLS_ENABLED} = ($tls_enabled?"yes":"no");
 $ENV{LDB_MODULES_PATH} = "$bindir_abs/modules/ldb";
-$ENV{LD_SAMBA_MODULE_PATH} = "$bindir_abs/modules";
+
 sub prefix_pathvar($$)
 {
 	my ($name, $newpath) = @_;
