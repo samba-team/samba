@@ -298,7 +298,7 @@ static int extended_dn_add(struct ldb_module *module, struct ldb_request *req)
 {
 	struct extended_dn_context *ac;
 	int ret;
-	int i, j;
+	unsigned int i, j;
 
 	if (ldb_dn_is_special(req->op.add.message->dn)) {
 		/* do not manipulate our control entries */
@@ -371,7 +371,7 @@ static int extended_dn_modify(struct ldb_module *module, struct ldb_request *req
 	/* Determine the effect of the modification */
 	/* Apply the modify to the linked entry */
 
-	int i, j;
+	unsigned int i, j;
 	struct extended_dn_context *ac;
 	int ret;
 
