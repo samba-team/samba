@@ -50,7 +50,7 @@
 #include "lex.h"
 #include "gen_locl.h"
 
-static void lex_err_message (const char *format, ...);
+void lex_err_message (const char *format, ...);
 
 static unsigned lineno = 1;
 
@@ -283,7 +283,7 @@ yywrap ()
 }
 #endif
 
-static void
+void
 lex_err_message (const char *format, ...)
 {
     va_list args;
