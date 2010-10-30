@@ -1109,7 +1109,7 @@ static int samldb_prim_group_change(struct samldb_ctx *ac)
 		}
 
 		/* Remove the "member" attribute on the new primary group */
-		msg = talloc_zero(ac, struct ldb_message);
+		msg = ldb_msg_new(ac->msg);
 		if (msg == NULL) {
 			return ldb_module_oom(ac->module);
 		}
@@ -1125,9 +1125,10 @@ static int samldb_prim_group_change(struct samldb_ctx *ac)
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
+		talloc_free(msg);
 
 		/* Add a "member" attribute for the previous primary group */
-		msg = talloc_zero(ac, struct ldb_message);
+		msg = ldb_msg_new(ac->msg);
 		if (msg == NULL) {
 			return ldb_module_oom(ac->module);
 		}
@@ -1143,6 +1144,7 @@ static int samldb_prim_group_change(struct samldb_ctx *ac)
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
+		talloc_free(msg);
 	}
 
 	talloc_free(res);
