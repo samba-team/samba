@@ -45,11 +45,12 @@ bld.SAMBA_MODULE('KCC_SRV',
 
 
 bld.SAMBA_MODULE('DNS_UPDATE_SRV',
-	source='dns/dns_update.c',
-	subsystem='service',
-	init_function='server_service_dnsupdate_init',
-	deps='SAMDB process_model UTIL_RUNCMD'
-	)
+                 source='dns/dns_update.c',
+                 subsystem='service',
+                 init_function='server_service_dnsupdate_init',
+                 deps='SAMDB UTIL_RUNCMD samba-util ldb samdb-common errors talloc auth_system_session samba-hostconfig',
+                 internal_module=False
+                 )
 
 bld.SAMBA_PYTHON('python_dsdb',
                  source='pydsdb.c',
