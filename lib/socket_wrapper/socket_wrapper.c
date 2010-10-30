@@ -2448,65 +2448,33 @@ int swrap_readv(int s, const struct iovec *vector, size_t count)
 
 int swrap_writev(int s, const struct iovec *vector, size_t count)
 {
-	int ret;
+	struct msghdr msg;
+	struct iovec tmp;
+	struct sockaddr_un un_addr;
+	ssize_t ret;
 	struct socket_info *si = find_socket_info(s);
-	struct iovec v;
 
 	if (!si) {
 		return real_writev(s, vector, count);
 	}
 
-	if (si->type == SOCK_STREAM && count > 0) {
-		/* cut down to 1500 byte packets for stream sockets,
-		 * which makes it easier to format PCAP capture files
-		 * (as the caller will simply continue from here) */
-		size_t i, len = 0;
+	tmp.iov_base = NULL;
+	tmp.iov_len = 0;
 
-		for (i=0; i < count; i++) {
-			size_t nlen;
-			nlen = len + vector[i].iov_len;
-			if (nlen > 1500) {
-				break;
-			}
-		}
-		count = i;
-		if (count == 0) {
-			v = vector[0];
-			v.iov_len = MIN(v.iov_len, 1500);
-			vector = &v;
-			count = 1;
-		}
-	}
+	msg.msg_name = NULL;           /* optional address */
+	msg.msg_namelen = 0;           /* size of address */
+	msg.msg_iov = discard_const_p(struct iovec, vector); /* scatter/gather array */
+	msg.msg_iovlen = count;        /* # elements in msg_iov */
+	msg.msg_control = NULL;        /* ancillary data, see below */
+	msg.msg_controllen = 0;        /* ancillary data buffer len */
+	msg.msg_flags = 0;             /* flags on received message */
 
-	ret = real_writev(s, vector, count);
-	if (ret == -1) {
-		swrap_dump_packet(si, NULL, SWRAP_SEND_RST, NULL, 0);
-	} else {
-		uint8_t *buf;
-		off_t ofs = 0;
-		size_t i;
-		size_t remain = ret;
+	ret = swrap_sendmsg_before(si, &msg, &tmp, &un_addr, NULL, NULL, NULL);
+	if (ret == -1) return -1;
 
-		/* we capture it as one single packet */
-		buf = (uint8_t *)malloc(ret);
-		if (!buf) {
-			/* we just not capture the packet */
-			errno = 0;
-			return ret;
-		}
+	ret = real_writev(s, msg.msg_iov, msg.msg_iovlen);
 
-		for (i=0; i < count; i++) {
-			size_t this_time = MIN(remain, vector[i].iov_len);
-			memcpy(buf + ofs,
-			       vector[i].iov_base,
-			       this_time);
-			ofs += this_time;
-			remain -= this_time;
-		}
-
-		swrap_dump_packet(si, NULL, SWRAP_SEND, buf, ret);
-		free(buf);
-	}
+	swrap_sendmsg_after(si, &msg, NULL, ret);
 
 	return ret;
 }
