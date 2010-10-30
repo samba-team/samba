@@ -41,7 +41,7 @@ Options.default_prefix = '/usr/local/samba'
 
 
 def set_options(opt):
-    opt.BUILTIN_DEFAULT('replace')
+    opt.BUILTIN_DEFAULT('NONE')
     opt.PRIVATE_EXTENSION_DEFAULT('samba4')
     opt.RECURSE('../lib/replace')
     opt.RECURSE('dynconfig')
