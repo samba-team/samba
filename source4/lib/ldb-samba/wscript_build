@@ -4,15 +4,22 @@
 # as a built-in module and this delutes the symbols in the ldb library with 
 # the symbols of all of ldb_ildap's dependencies. 
 
-bld.SAMBA_SUBSYSTEM('LDBSAMBA',
-	source='ldif_handlers.c ldb_wrap.c',
-	autoproto='ldif_handlers_proto.h',
-	public_deps='ldb',
-	public_headers='ldb_wrap.h',
-	deps='security ndr NDR_DRSBLOBS CREDENTIALS NDR_DNSP SAMDB'
-	)
+bld.SAMBA_LIBRARY('LDBSAMBA',
+                  source='ldif_handlers.c',
+                  autoproto='ldif_handlers_proto.h',
+                  public_deps='ldb',
+                  public_headers='ldb_wrap.h',
+                  deps='security ndr NDR_DRSBLOBS NDR_DNSP ldbwrap samdb-common SAMDB_SCHEMA',
+                  private_library=True
+                  )
+
+bld.SAMBA_SUBSYSTEM('ldbwrap',
+                    source='ldb_wrap.c',
+                    public_headers='ldb_wrap.h',
+                    deps='ldb samba-util LDBSAMBA samba-hostconfig'
+                    )
 
 
 bld.SAMBA_PYTHON('python_samba__ldb', 'pyldb.c',
-				 deps='LDBSAMBA pyparam_util',
-				 realname='samba/_ldb.so')
+                 deps='LDBSAMBA pyparam_util ldbwrap',
+                 realname='samba/_ldb.so')

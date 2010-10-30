@@ -37,13 +37,13 @@ bld.SAMBA_MODULE('share_ldb',
 	source='share_ldb.c',
 	subsystem='share',
 	init_function='share_ldb_init',
-	deps='LDBSAMBA'
+	deps='LDBSAMBA auth_system_session'
 	)
 
 
 bld.SAMBA_SUBSYSTEM('SECRETS',
 	source='secrets.c',
-	deps='ldb TDB_WRAP UTIL_TDB NDR_SECURITY tevent LDBSAMBA'
+	deps='ldb TDB_WRAP UTIL_TDB NDR_SECURITY tevent ldbwrap'
 	)
 
 

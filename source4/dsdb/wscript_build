@@ -6,7 +6,7 @@ bld.SAMBA_LIBRARY('SAMDB',
 	source='samdb/samdb.c samdb/samdb_privilege.c samdb/cracknames.c repl/replicated_objects.c',
 	autoproto='samdb/samdb_proto.h',
 	public_deps='krb5',
-	deps='ndr NDR_DRSUAPI NDR_DRSBLOBS auth_system_session LIBCLI_AUTH ndr SAMDB_SCHEMA LDBSAMBA samdb-common LIBCLI_DRSUAPI LIBCLI_LDAP_NDR samba-util com_err KERBEROS CREDENTIALS CREDENTIALS_SECRETS',
+	deps='ndr NDR_DRSUAPI NDR_DRSBLOBS auth_system_session LIBCLI_AUTH ndr SAMDB_SCHEMA LDBSAMBA samdb-common LIBCLI_DRSUAPI LIBCLI_LDAP_NDR samba-util com_err authkrb5 CREDENTIALS ldbwrap',
 	vnum='0.0.1'
 	)
 

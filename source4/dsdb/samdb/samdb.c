@@ -26,6 +26,7 @@
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "librpc/gen_ndr/ndr_security.h"
 #include "lib/events/events.h"
+#include "lib/ldb-samba/ldb_wrap.h"
 #include "lib/ldb/include/ldb.h"
 #include "lib/ldb/include/ldb_errors.h"
 #include "libcli/security/security.h"
