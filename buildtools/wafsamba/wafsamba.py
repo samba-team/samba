@@ -27,6 +27,7 @@ import generic_cc
 import samba_dist
 import samba_wildcard
 import stale_files
+import symbols
 
 # some systems have broken threading in python
 if os.environ.get('WAF_NOTHREADS') == '1':
@@ -102,7 +103,7 @@ def SAMBA_LIBRARY(bld, libname, source,
                   external_library=False,
                   realname=None,
                   autoproto=None,
-                  group='main',
+                  group='libraries',
                   depends_on='',
                   local_include=True,
                   vars=None,
@@ -138,6 +139,11 @@ def SAMBA_LIBRARY(bld, libname, source,
     else:
         obj_target = libname + '.objlist'
 
+    if group == 'libraries':
+        subsystem_group = 'main'
+    else:
+        subsystem_group = group
+
     # first create a target for building the object files for this library
     # by separating in this way, we avoid recompiling the C files
     # separately for the install library and the build library
@@ -149,7 +155,7 @@ def SAMBA_LIBRARY(bld, libname, source,
                         public_headers = public_headers,
                         header_path    = header_path,
                         cflags         = cflags,
-                        group          = group,
+                        group          = subsystem_group,
                         autoproto      = autoproto,
                         depends_on     = depends_on,
                         hide_symbols   = hide_symbols,
@@ -276,6 +282,11 @@ def SAMBA_BINARY(bld, binname, source,
     source = bld.EXPAND_VARIABLES(source, vars=vars)
     source = unique_list(TO_LIST(source))
 
+    if group == 'binaries':
+        subsystem_group = 'main'
+    else:
+        subsystem_group = group
+
     # first create a target for building the object files for this binary
     # by separating in this way, we avoid recompiling the C files
     # separately for the install binary and the build binary
@@ -284,7 +295,7 @@ def SAMBA_BINARY(bld, binname, source,
                         deps           = deps,
                         includes       = includes,
                         cflags         = cflags,
-                        group          = group,
+                        group          = subsystem_group,
                         autoproto      = autoproto,
                         subsystem_name = subsystem_name,
                         local_include  = local_include,
@@ -346,10 +357,6 @@ def SAMBA_MODULE(bld, modname, source,
     source = bld.EXPAND_VARIABLES(source, vars=vars)
 
     if internal_module or BUILTIN_LIBRARY(bld, modname):
-        # treat internal modules as subsystems for now
-        if subsystem is not None:
-            deps += ' ' + subsystem
-
         bld.SAMBA_SUBSYSTEM(modname, source,
                     deps=deps,
                     includes=includes,
@@ -560,7 +567,10 @@ def SETUP_BUILD_GROUPS(bld):
     bld.add_group('build_source')
     bld.add_group('prototypes')
     bld.add_group('main')
+    bld.add_group('symbolcheck')
+    bld.add_group('libraries')
     bld.add_group('binaries')
+    bld.add_group('syslibcheck')
     bld.add_group('final')
 Build.BuildContext.SETUP_BUILD_GROUPS = SETUP_BUILD_GROUPS
 

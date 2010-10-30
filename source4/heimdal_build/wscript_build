@@ -214,7 +214,7 @@ def HEIMDAL_LIBRARY(libname, source, deps, vnum,
 
     features = 'cc cshlib symlink_lib install_lib'
 
-    bld.set_group('main')
+    bld.set_group('libraries')
     t = bld(
         features        = features,
         source          = [],
@@ -297,6 +297,11 @@ def HEIMDAL_BINARY(binname, source,
 
     obj_target = binname + '.objlist'
 
+    if group == 'binaries':
+        subsystem_group = 'main'
+    else:
+        subsystem_group = group
+
     # first create a target for building the object files for this binary
     # by separating in this way, we avoid recompiling the C files
     # separately for the install binary and the build binary
@@ -305,7 +310,7 @@ def HEIMDAL_BINARY(binname, source,
                         deps           = deps,
                         includes       = includes,
                         cflags         = cflags,
-                        group          = group,
+                        group          = subsystem_group,
                         use_hostcc     = use_hostcc,
                         use_global_deps= use_global_deps)
 
