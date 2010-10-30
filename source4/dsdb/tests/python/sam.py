@@ -402,6 +402,15 @@ class SamTests(unittest.TestCase):
           FLAG_MOD_REPLACE, "primaryGroupID")
         ldb.modify(m)
 
+        # Swap the groups (does not really make sense but does the same)
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+        m["primaryGroupID"] = MessageElement(str(group_rid_1),
+          FLAG_MOD_REPLACE, "primaryGroupID")
+        m["primaryGroupID"] = MessageElement(str(group_rid_2),
+          FLAG_MOD_REPLACE, "primaryGroupID")
+        ldb.modify(m)
+
         # Old primary group should contain a "member" attribute for the user,
         # the new shouldn't contain anymore one
         res1 = ldb.search("cn=ldaptestgroup, cn=users," + self.base_dn,
