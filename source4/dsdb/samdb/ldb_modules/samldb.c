@@ -1113,55 +1113,86 @@ static int samldb_prim_group_trigger(struct samldb_ctx *ac)
 
 static int samldb_member_check(struct samldb_ctx *ac)
 {
-	struct ldb_context *ldb;
+	struct ldb_context *ldb = ldb_module_get_ctx(ac->module);
 	struct ldb_message_element *el;
 	struct ldb_dn *member_dn, *group_dn;
 	uint32_t prim_group_rid;
 	struct dom_sid *sid;
-	unsigned int i;
+	unsigned int i, j;
+	int cnt;
 
-	ldb = ldb_module_get_ctx(ac->module);
-
-	el = ldb_msg_find_element(ac->msg, "member");
-	if (el == NULL) {
-		/* we aren't affected */
-		return LDB_SUCCESS;
-	}
-
-	for (i = 0; i < el->num_values; i++) {
-		/* Denies to add "member"s to groups which are primary ones
-		 * for them */
-		member_dn = ldb_dn_from_ldb_val(ac, ldb, &el->values[i]);
-		if (!ldb_dn_validate(member_dn)) {
-			return ldb_operr(ldb);
-		}
-
-		prim_group_rid = samdb_search_uint(ldb, ac, (uint32_t) -1,
-						   member_dn, "primaryGroupID",
-						   NULL);
-		if (prim_group_rid == (uint32_t) -1) {
-			/* the member hasn't to be a user account -> therefore
-			 * no check needed in this case. */
+	/* We've to walk over all modification entries and consider the "member"
+	 * ones. */
+	for (i = 0; i < ac->msg->num_elements; i++) {
+		if (ldb_attr_cmp(ac->msg->elements[i].name, "member") != 0) {
 			continue;
 		}
 
-		sid = dom_sid_add_rid(ac, samdb_domain_sid(ldb),
-				      prim_group_rid);
-		if (sid == NULL) {
-			return ldb_operr(ldb);
-		}
+		el = &ac->msg->elements[i];
+		for (j = 0; j < el->num_values; j++) {
+			member_dn = ldb_dn_from_ldb_val(ac, ldb,
+							&el->values[j]);
+			if (!ldb_dn_validate(member_dn)) {
+				return ldb_operr(ldb);
+			}
 
-		group_dn = samdb_search_dn(ldb, ac, NULL, "(objectSid=%s)",
-					   ldap_encode_ndr_dom_sid(ac, sid));
-		if (group_dn == NULL) {
-			return ldb_operr(ldb);
-		}
-
-		if (ldb_dn_compare(group_dn, ac->msg->dn) == 0) {
-			if (LDB_FLAG_MOD_TYPE(el->flags)
+			/* The "member" attribute can be modified with the
+			 * following restrictions (beside a valid DN):
+			 *
+			 * - "add" operations can only be performed when the
+			 *   member still doesn't exist - if not then return
+			 *   ERR_ENTRY_ALREADY_EXISTS (not
+			 *   ERR_ATTRIBUTE_OR_VALUE_EXISTS!)
+			 * - "delete" operations can only be performed when the
+			 *   member does exist - if not then return
+			 *   ERR_UNWILLING_TO_PERFORM (not
+			 *   ERR_NO_SUCH_ATTRIBUTE!)
+			 * - primary group check
+			 */
+			cnt = samdb_search_count(ldb, ac, ac->msg->dn,
+						 "(member=%s)",
+						 ldb_dn_get_linearized(member_dn));
+			if (cnt < 0) {
+				return ldb_operr(ldb);
+			}
+			if ((cnt > 0) && (LDB_FLAG_MOD_TYPE(el->flags)
+			    == LDB_FLAG_MOD_ADD)) {
+				return LDB_ERR_ENTRY_ALREADY_EXISTS;
+			}
+			if ((cnt == 0) && LDB_FLAG_MOD_TYPE(el->flags)
 			    == LDB_FLAG_MOD_DELETE) {
 				return LDB_ERR_UNWILLING_TO_PERFORM;
-			} else {
+			}
+
+			/* Denies to add "member"s to groups which are primary
+			 * ones for them - in this case return
+			 * ERR_ENTRY_ALREADY_EXISTS. */
+
+			prim_group_rid = samdb_search_uint(ldb, ac,
+							   (uint32_t) -1,
+							   member_dn,
+							   "primaryGroupID",
+							   NULL);
+			if (prim_group_rid == (uint32_t) -1) {
+				/* the member hasn't to be a user account ->
+				 * therefore no check needed in this case. */
+				continue;
+			}
+
+			sid = dom_sid_add_rid(ac, samdb_domain_sid(ldb),
+					      prim_group_rid);
+			if (sid == NULL) {
+				return ldb_operr(ldb);
+			}
+
+			group_dn = samdb_search_dn(ldb, ac, NULL,
+						   "(objectSid=%s)",
+						   ldap_encode_ndr_dom_sid(ac, sid));
+			if (group_dn == NULL) {
+				return ldb_operr(ldb);
+			}
+
+			if (ldb_dn_compare(group_dn, ac->msg->dn) == 0) {
 				return LDB_ERR_ENTRY_ALREADY_EXISTS;
 			}
 		}
