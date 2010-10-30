@@ -1870,6 +1870,32 @@ _PUBLIC_ int swrap_setsockopt(int s, int  level,  int  optname,  const  void  *o
 	}
 }
 
+_PUBLIC_ int swrap_ioctl(int s, int r, void *p)
+{
+	int ret;
+	struct socket_info *si = find_socket_info(s);
+	int value;
+
+	if (!si) {
+		return real_ioctl(s, r, p);
+	}
+
+	ret = real_ioctl(s, r, p);
+
+	switch (r) {
+	case FIONREAD:
+		value = *((int *)p);
+		if (ret == -1 && errno != EAGAIN && errno != ENOBUFS) {
+			swrap_dump_packet(si, NULL, SWRAP_PENDING_RST, NULL, 0);
+		} else if (value == 0) { /* END OF FILE */
+			swrap_dump_packet(si, NULL, SWRAP_PENDING_RST, NULL, 0);
+		}
+		break;
+	}
+
+	return ret;
+}
+
 _PUBLIC_ ssize_t swrap_recvfrom(int s, void *buf, size_t len, int flags, struct sockaddr *from, socklen_t *fromlen)
 {
 	struct sockaddr_un un_addr;
@@ -2021,32 +2047,6 @@ _PUBLIC_ ssize_t swrap_sendto(int s, const void *buf, size_t len, int flags, con
 		swrap_dump_packet(si, to, SWRAP_SENDTO_UNREACH, buf, len);
 	} else {
 		swrap_dump_packet(si, to, SWRAP_SENDTO, buf, ret);
-	}
-
-	return ret;
-}
-
-_PUBLIC_ int swrap_ioctl(int s, int r, void *p)
-{
-	int ret;
-	struct socket_info *si = find_socket_info(s);
-	int value;
-
-	if (!si) {
-		return real_ioctl(s, r, p);
-	}
-
-	ret = real_ioctl(s, r, p);
-
-	switch (r) {
-	case FIONREAD:
-		value = *((int *)p);
-		if (ret == -1 && errno != EAGAIN && errno != ENOBUFS) {
-			swrap_dump_packet(si, NULL, SWRAP_PENDING_RST, NULL, 0);
-		} else if (value == 0) { /* END OF FILE */
-			swrap_dump_packet(si, NULL, SWRAP_PENDING_RST, NULL, 0);
-		}
-		break;
 	}
 
 	return ret;
