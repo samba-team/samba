@@ -61,6 +61,7 @@ import samba.registry
 from samba.schema import Schema
 from samba.samdb import SamDB
 
+VALID_NETBIOS_CHARS = " !#$%&'()-.@^_{}~"
 __docformat__ = "restructuredText"
 DEFAULT_POLICY_GUID = "31B2F340-016D-11D2-945F-00C04FB984F9"
 DEFAULT_DC_POLICY_GUID = "6AC1786C-016F-11D2-945F-00C04fB984F9"
@@ -444,10 +445,12 @@ def guess_names(lp=None, hostname=None, domain=None, dnsdomain=None,
     if netbiosname is None:
         netbiosname = hostname
         # remove forbidden chars
-        for char in  " !#$%&'()-.@^_{}~":
-            netbiosname = "".join(netbiosname.split(char))
+        newnbname = ""
+        for x in netbiosname:
+            if x.isalnum() or x in VALID_NETBIOS_CHARS:
+                newnbname = "%s%c" % (newnbname, x)
         #force the length to be <16
-        netbiosname = netbiosname[0:15]
+        netbiosname = newnbname[0:15]
     assert netbiosname is not None
     netbiosname = netbiosname.upper()
     if not valid_netbios_name(netbiosname):
@@ -541,10 +544,12 @@ def make_smbconf(smbconf, setup_path, hostname, domain, realm, serverrole,
         hostname = socket.gethostname().split(".")[0]
         netbiosname = hostname.upper()
         # remove forbidden chars
-        for char in  " !#$%&'()-.@^_{}~":
-            netbiosname = "".join(netbiosname.split(char))
+        newnbname = ""
+        for x in netbiosname:
+            if x.isalnum() or x in VALID_NETBIOS_CHARS:
+                newnbname = "%s%c" % (newnbname, x)
         #force the length to be <16
-        netbiosname = netbiosname[0:15]
+        netbiosname = newnbname[0:15]
     else:
         netbiosname = hostname.upper()
 
