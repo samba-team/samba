@@ -53,8 +53,7 @@ def configure(conf):
 
     conf.env.TALLOC_COMPAT1 = Options.options.TALLOC_COMPAT1
 
-    if conf.env.standalone_talloc:
-        conf.find_program('xsltproc', var='XSLTPROC')
+    conf.CHECK_XSLTPROC_MANPAGES()
 
     if not conf.env.disable_python:
         # also disable if we don't have the python libs installed
