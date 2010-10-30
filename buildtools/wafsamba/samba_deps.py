@@ -83,13 +83,6 @@ def expand_subsystem_deps(bld):
                 # subsystem it is part of needs to have it as a dependency, so targets
                 # that depend on this subsystem get the modules of that subsystem
                 subsystem.samba_deps_extended.append(module_name)
-            module = bld.name_to_obj(module_name, bld.env)
-            bld.ASSERT(module is not None, "Unable to find module %s in subsystem %s" % (module_name, subsystem_name))
-            module.samba_includes_extended.extend(subsystem.samba_includes_extended)
-            if targets[subsystem_name] in ['SUBSYSTEM']:
-                # if a subsystem is a plain object type (not a library) then any modules
-                # in that subsystem need to depend on the subsystem
-                module.samba_deps_extended.extend(subsystem.samba_deps_extended)
         subsystem.samba_deps_extended = unique_list(subsystem.samba_deps_extended)
 
 
