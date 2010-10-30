@@ -405,6 +405,7 @@ def replace_grouping_libraries(bld, tgt_list):
         if not getattr(t, 'grouping_library', False):
             continue
         for dep in t.samba_deps_extended:
+            bld.ASSERT(dep in targets, "grouping library target %s not declared in %s" % (dep, t.sname))
             if targets[dep] == 'SUBSYSTEM':
                 grouping[dep] = t.sname
 
