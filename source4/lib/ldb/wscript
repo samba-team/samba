@@ -223,7 +223,7 @@ def build(bld):
 
     if s4_build:
         extra_cmdline_deps = ' LDBSAMBA POPT_SAMBA POPT_CREDENTIALS ' \
-                'LIBCMDLINE_CREDENTIALS gensec'
+                'cmdline-credentials gensec'
     else:
         extra_cmdline_deps = ''
 

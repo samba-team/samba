@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 
-bld.SAMBA_SUBSYSTEM('LIBCMDLINE_CREDENTIALS',
-	source='credentials.c',
-	autoproto='credentials.h',
-	public_deps='CREDENTIALS popt'
-	)
+bld.SAMBA_LIBRARY('cmdline-credentials',
+                  source='credentials.c',
+                  autoproto='credentials.h',
+                  public_deps='CREDENTIALS popt',
+                  private_library=True)
 
 bld.SAMBA_SUBSYSTEM('POPT_SAMBA',
 	source='popt_common.c',
@@ -17,7 +17,7 @@ bld.SAMBA_SUBSYSTEM('POPT_SAMBA',
 bld.SAMBA_SUBSYSTEM('POPT_CREDENTIALS',
 	source='popt_credentials.c',
 	autoproto='popt_credentials.h',
-	public_deps='CREDENTIALS CREDENTIALS_SECRETS LIBCMDLINE_CREDENTIALS popt',
+	public_deps='CREDENTIALS CREDENTIALS_SECRETS cmdline-credentials popt',
 	deps='samba-util'
 	)
 
