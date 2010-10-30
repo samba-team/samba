@@ -19,30 +19,11 @@ def BREAK_CIRCULAR_LIBRARY_DEPENDENCIES(ctx):
     ctx.env.ALLOW_CIRCULAR_LIB_DEPENDENCIES = True
 
 
-def TARGET_ALIAS(bld, target, alias):
-    '''define an alias for a target name'''
-    cache = LOCAL_CACHE(bld, 'TARGET_ALIAS')
-    if alias in cache:
-        Logs.error("Target alias %s already set to %s : newalias %s" % (alias, cache[alias], target))
-        sys.exit(1)
-    cache[alias] = target
-Build.BuildContext.TARGET_ALIAS = TARGET_ALIAS
-
-
 @conf
 def SET_SYSLIB_DEPS(conf, target, deps):
     '''setup some implied dependencies for a SYSLIB'''
     cache = LOCAL_CACHE(conf, 'SYSLIB_DEPS')
     cache[target] = deps
-
-
-def EXPAND_ALIAS(bld, target):
-    '''expand a target name via an alias'''
-    aliases = LOCAL_CACHE(bld, 'TARGET_ALIAS')
-    if target in aliases:
-        return aliases[target]
-    return target
-Build.BuildContext.EXPAND_ALIAS = EXPAND_ALIAS
 
 
 def expand_subsystem_deps(bld):
@@ -52,12 +33,9 @@ def expand_subsystem_deps(bld):
        module<->subsystem dependencies'''
 
     subsystem_list = LOCAL_CACHE(bld, 'INIT_FUNCTIONS')
-    aliases    = LOCAL_CACHE(bld, 'TARGET_ALIAS')
     targets    = LOCAL_CACHE(bld, 'TARGET_TYPE')
 
     for subsystem_name in subsystem_list:
-        if subsystem_name in aliases:
-            subsystem_name = aliases[subsystem_name]
         bld.ASSERT(subsystem_name in targets, "Subsystem target %s not declared" % subsystem_name)
         type = targets[subsystem_name]
         if type == 'DISABLED' or type == 'EMPTY':
@@ -443,7 +421,6 @@ def build_direct_deps(bld, tgt_list):
         if getattr(t, 'samba_use_global_deps', False) and not t.sname in global_deps_exclude:
             deps.extend(global_deps)
         for d in deps:
-            d = EXPAND_ALIAS(bld, d)
             if d == t.sname: continue
             if not d in targets:
                 Logs.error("Unknown dependency '%s' in '%s'" % (d, t.sname))
@@ -947,7 +924,7 @@ savedeps_inputs  = ['samba_deps', 'samba_includes', 'local_include', 'local_incl
 savedeps_outputs = ['uselib', 'uselib_local', 'add_objects', 'includes', 'ccflags', 'ldflags', 'samba_deps_extended']
 savedeps_outenv  = ['INC_PATHS']
 savedeps_envvars = ['NONSHARED_BINARIES', 'GLOBAL_DEPENDENCIES']
-savedeps_caches  = ['GLOBAL_DEPENDENCIES', 'TARGET_ALIAS', 'TARGET_TYPE', 'INIT_FUNCTIONS', 'SYSLIB_DEPS']
+savedeps_caches  = ['GLOBAL_DEPENDENCIES', 'TARGET_TYPE', 'INIT_FUNCTIONS', 'SYSLIB_DEPS']
 savedeps_files   = ['buildtools/wafsamba/samba_deps.py']
 
 def save_samba_deps(bld, tgt_list):

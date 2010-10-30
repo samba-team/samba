@@ -324,12 +324,6 @@ def SAMBA_BINARY(bld, binname, source,
         samba_install  = install
         )
 
-    # setup the subsystem_name as an alias for the real
-    # binary name, so it can be found when expanding
-    # subsystem dependencies
-    if subsystem_name is not None:
-        bld.TARGET_ALIAS(subsystem_name, binname)
-
     if manpages is not None and 'XSLTPROC_MANPAGES' in bld.env and bld.env['XSLTPROC_MANPAGES']:
         bld.MANPAGES(manpages)
 
