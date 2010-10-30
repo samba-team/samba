@@ -1896,6 +1896,197 @@ _PUBLIC_ int swrap_ioctl(int s, int r, void *p)
 	return ret;
 }
 
+static ssize_t swrap_sendmsg_before(struct socket_info *si,
+				    struct msghdr *msg,
+				    struct iovec *tmp_iov,
+				    struct sockaddr_un *tmp_un,
+				    const struct sockaddr_un **to_un,
+				    const struct sockaddr **to,
+				    int *bcast)
+{
+	size_t i, len = 0;
+	ssize_t ret;
+
+	if (to_un) {
+		*to_un = NULL;
+	}
+	if (to) {
+		*to = NULL;
+	}
+	if (bcast) {
+		*bcast = 0;
+	}
+
+	switch (si->type) {
+	case SOCK_STREAM:
+		if (!si->connected) {
+			errno = ENOTCONN;
+			return -1;
+		}
+
+		if (msg->msg_iovlen == 0) {
+			break;
+		}
+
+		/*
+		 * cut down to 1500 byte packets for stream sockets,
+		 * which makes it easier to format PCAP capture files
+		 * (as the caller will simply continue from here)
+		 */
+
+		for (i=0; i < msg->msg_iovlen; i++) {
+			size_t nlen;
+			nlen = len + msg->msg_iov[i].iov_len;
+			if (nlen > 1500) {
+				break;
+			}
+		}
+		msg->msg_iovlen = i;
+		if (msg->msg_iovlen == 0) {
+			*tmp_iov = msg->msg_iov[0];
+			tmp_iov->iov_len = MIN(tmp_iov->iov_len, 1500);
+			msg->msg_iov = tmp_iov;
+			msg->msg_iovlen = 1;
+		}
+		break;
+
+	case SOCK_DGRAM:
+		if (si->connected) {
+			if (msg->msg_name) {
+				errno = EISCONN;
+				return -1;
+			}
+		} else {
+			const struct sockaddr *msg_name;
+			msg_name = (const struct sockaddr *)msg->msg_name;
+
+			if (msg_name == NULL) {
+				errno = ENOTCONN;
+				return -1;
+			}
+
+
+			ret = sockaddr_convert_to_un(si, msg_name, msg->msg_namelen,
+						     tmp_un, 0, bcast);
+			if (ret == -1) return -1;
+
+			if (to_un) {
+				*to_un = tmp_un;
+			}
+			if (to) {
+				*to = msg_name;
+			}
+			msg->msg_name = tmp_un;
+			msg->msg_namelen = sizeof(*tmp_un);
+		}
+
+		if (si->bound == 0) {
+			ret = swrap_auto_bind(si, si->family);
+			if (ret == -1) return -1;
+		}
+
+		if (!si->defer_connect) {
+			break;
+		}
+
+		ret = sockaddr_convert_to_un(si, si->peername, si->peername_len,
+					     tmp_un, 0, NULL);
+		if (ret == -1) return -1;
+
+		ret = real_connect(si->fd, (struct sockaddr *)(void *)tmp_un,
+				   sizeof(*tmp_un));
+
+		/* to give better errors */
+		if (ret == -1 && errno == ENOENT) {
+			errno = EHOSTUNREACH;
+		}
+
+		if (ret == -1) {
+			return ret;
+		}
+
+		si->defer_connect = 0;
+		break;
+	default:
+		errno = EHOSTUNREACH;
+		return -1;
+	}
+
+	return 0;
+}
+
+static void swrap_sendmsg_after(struct socket_info *si,
+				struct msghdr *msg,
+				const struct sockaddr *to,
+				ssize_t ret)
+{
+	int saved_errno = errno;
+	size_t i, len = 0;
+	uint8_t *buf;
+	off_t ofs = 0;
+	size_t avail = 0;
+	size_t remain;
+
+	/* to give better errors */
+	if (ret == -1 && saved_errno == ENOENT) {
+		saved_errno = EHOSTUNREACH;
+	}
+
+	for (i=0; i < msg->msg_iovlen; i++) {
+		avail += msg->msg_iov[i].iov_len;
+	}
+
+	if (ret == -1) {
+		remain = MIN(80, avail);
+	} else {
+		remain = ret;
+	}
+
+	/* we capture it as one single packet */
+	buf = (uint8_t *)malloc(remain);
+	if (!buf) {
+		/* we just not capture the packet */
+		errno = saved_errno;
+		return;
+	}
+
+	for (i=0; i < msg->msg_iovlen; i++) {
+		size_t this_time = MIN(remain, msg->msg_iov[i].iov_len);
+		memcpy(buf + ofs,
+		       msg->msg_iov[i].iov_base,
+		       this_time);
+		ofs += this_time;
+		remain -= this_time;
+	}
+	len = ofs;
+
+	switch (si->type) {
+	case SOCK_STREAM:
+		if (ret == -1) {
+			swrap_dump_packet(si, NULL, SWRAP_SEND, buf, len);
+			swrap_dump_packet(si, NULL, SWRAP_SEND_RST, NULL, 0);
+		} else {
+			swrap_dump_packet(si, NULL, SWRAP_SEND, buf, len);
+		}
+		break;
+
+	case SOCK_DGRAM:
+		if (si->connected) {
+			to = si->peername;
+		}
+		if (ret == -1) {
+			swrap_dump_packet(si, to, SWRAP_SENDTO, buf, len);
+			swrap_dump_packet(si, to, SWRAP_SENDTO_UNREACH, buf, len);
+		} else {
+			swrap_dump_packet(si, to, SWRAP_SENDTO, buf, len);
+		}
+		break;
+	}
+
+	free(buf);
+	errno = saved_errno;
+}
+
 _PUBLIC_ ssize_t swrap_recvfrom(int s, void *buf, size_t len, int flags, struct sockaddr *from, socklen_t *fromlen)
 {
 	struct sockaddr_un un_addr;
