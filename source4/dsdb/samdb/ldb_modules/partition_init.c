@@ -45,7 +45,9 @@ static int partition_sort_compare(const void *v1, const void *v2)
 }
 
 /* Load the list of DNs that we must replicate to all partitions */
-static int partition_load_replicate_dns(struct ldb_context *ldb, struct partition_private_data *data, struct ldb_message *msg) 
+static int partition_load_replicate_dns(struct ldb_context *ldb,
+					struct partition_private_data *data,
+					struct ldb_message *msg)
 {
 	struct ldb_message_element *replicate_attributes = ldb_msg_find_element(msg, "replicateEntries");
 
@@ -53,7 +55,7 @@ static int partition_load_replicate_dns(struct ldb_context *ldb, struct partitio
 	if (!replicate_attributes) {
 		data->replicate = NULL;
 	} else {
-		int i;
+		unsigned int i;
 		data->replicate = talloc_array(data, struct ldb_dn *, replicate_attributes->num_values + 1);
 		if (!data->replicate) {
 			return ldb_oom(ldb);
