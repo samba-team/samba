@@ -1454,14 +1454,14 @@ void strupper_m(char *s)
 }
 
 /**
- * Calculate the number of 16-bit units that would be needed to convert
- * the input string which is expected to be in CH_UNIX encoding to UTF16.
- *
- * This will be the same as the number of bytes in a string for single
- * byte strings, but will be different for multibyte.
+ * Calculate the number of units (8 or 16-bit, depending on the
+ * destination charset), that would be needed to convert the input
+ * string which is expected to be in in src_charset encoding to the
+ * destination charset (which should be a unicode charset).
  */
 
-size_t strlen_m(const char *s)
+size_t strlen_m_ext(const char *s, const charset_t src_charset,
+		    const charset_t dst_charset)
 {
 	size_t count = 0;
 
@@ -1480,18 +1480,60 @@ size_t strlen_m(const char *s)
 
 	while (*s) {
 		size_t c_size;
-		codepoint_t c = next_codepoint(s, &c_size);
-		if (c < 0x10000) {
-			/* Unicode char fits into 16 bits. */
-			count += 1;
-		} else {
-			/* Double-width unicode char - 32 bits. */
-			count += 2;
-		}
+		codepoint_t c = next_codepoint_ext(s, src_charset, &c_size);
 		s += c_size;
+
+		switch (dst_charset) {
+		case CH_UTF16LE:
+		case CH_UTF16BE:
+		case CH_UTF16MUNGED:
+			if (c < 0x10000) {
+				/* Unicode char fits into 16 bits. */
+				count += 1;
+			} else {
+				/* Double-width unicode char - 32 bits. */
+				count += 2;
+			}
+			break;
+		case CH_UTF8:
+			/*
+			 * this only checks ranges, and does not
+			 * check for invalid codepoints
+			 */
+			if (c < 0x80) {
+				count += 1;
+			} else if (c < 0x800) {
+				count += 2;
+			} else if (c < 0x1000) {
+				count += 3;
+			} else {
+				count += 4;
+			}
+			break;
+		default:
+			/*
+			 * non-unicode encoding:
+			 * assume that each codepoint fits into
+			 * one unit in the destination encoding.
+			 */
+			count += 1;
+		}
 	}
 
 	return count;
+}
+
+/**
+ * Calculate the number of 16-bit units that would bee needed to convert
+ * the input string which is expected to be in CH_UNIX encoding to UTF16.
+ *
+ * This will be the same as the number of bytes in a string for single
+ * byte strings, but will be different for multibyte.
+ */
+
+size_t strlen_m(const char *s)
+{
+	return strlen_m_ext(s, CH_UNIX, CH_UTF16LE);
 }
 
 /**
