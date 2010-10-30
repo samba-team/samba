@@ -27,6 +27,8 @@ def set_options(opt):
 def configure(conf):
     conf.RECURSE('buildtools/wafsamba')
 
+    conf.env.standalone_replace = conf.IN_LAUNCH_DIR()
+
     conf.DEFINE('LIBREPLACE_NETWORK_CHECKS', 1)
 
     # on Tru64 certain features are only available with _OSF_SOURCE set to 1
@@ -407,17 +409,17 @@ def build(bld):
                       private_library=True,
                       deps='crypt dl nsl socket rt')
 
-    bld.SAMBA_LIBRARY('replace-test',
+    bld.SAMBA_SUBSYSTEM('replace-test',
                       source='''test/testsuite.c test/strptime.c
                       test/os2_delete.c test/getifaddrs.c''',
                       autoproto='replace-test.h',
-                      deps='replace',
-                      private_library=True)
+                      deps='replace')
 
-    bld.SAMBA_BINARY('replace_testsuite',
-                     source='test/main.c',
-                     deps='replace replace-test',
-                     install=False)
+    if bld.env.standalone_replace:
+        bld.SAMBA_BINARY('replace_testsuite',
+                         source='test/main.c',
+                         deps='replace replace-test',
+                         install=False)
 
     # build replacements for stdint.h and stdbool.h if needed
     bld.SAMBA_GENERATOR('replace_stdint_h',
