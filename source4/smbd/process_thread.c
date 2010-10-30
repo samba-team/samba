@@ -511,7 +511,7 @@ static void thread_fault_handler(int sig)
 /*
   called when the process model is selected
 */
-static void thread_model_init(struct tevent_context *event_context)
+static void thread_model_init(void)
 {
 	struct mutex_ops m_ops;
 	struct debug_ops d_ops;
@@ -520,7 +520,7 @@ static void thread_model_init(struct tevent_context *event_context)
 	ZERO_STRUCT(d_ops);
 
 	pthread_key_create(&title_key, NULL);
-	pthread_setspecific(title_key, talloc_strdup(event_context, ""));
+	pthread_setspecific(title_key, NULL);
 
 	/* register mutex/rwlock handlers */
 	m_ops.mutex_init = thread_mutex_init;

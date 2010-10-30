@@ -56,7 +56,7 @@ static void dcesrv_task_init(struct task_server *task)
 
 	/* run the rpc server as a single process to allow for shard
 	 * handles, and sharing of ldb contexts */
-	model_ops = process_model_startup(task->event_ctx, "single");
+	model_ops = process_model_startup("single");
 	if (!model_ops) goto failed;
 
 	status = dcesrv_init_context(task->event_ctx,

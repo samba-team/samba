@@ -307,7 +307,7 @@ static void websrv_task_init(struct task_server *task)
 	task_server_set_title(task, "task[websrv]");
 
 	/* run the web server as a single process */
-	model_ops = process_model_startup(task->event_ctx, "single");
+	model_ops = process_model_startup("single");
 	if (!model_ops) goto failed;
 
 	if (lpcfg_interfaces(task->lp_ctx) && lpcfg_bind_interfaces_only(task->lp_ctx)) {

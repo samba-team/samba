@@ -83,7 +83,7 @@ NTSTATUS server_service_startup(struct tevent_context *event_ctx,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	model_ops = process_model_startup(event_ctx, model);
+	model_ops = process_model_startup(model);
 	if (!model_ops) {
 		DEBUG(0,("process_model_startup('%s') failed\n", model));
 		return NT_STATUS_INTERNAL_ERROR;

@@ -26,6 +26,7 @@
 
 #include "lib/socket/socket.h"
 #include "smbd/service.h"
+#include "smbd/process_model_proto.h"
 
 /* modules can use the following to determine if the interface has changed
  * please increment the version number after each interface change
@@ -41,7 +42,7 @@ struct model_ops {
 	const char *name;
 
 	/* called at startup when the model is selected */
-	void (*model_init)(struct tevent_context *);
+	void (*model_init)(void);
 
 	/* function to accept new connection */
 	void (*accept_connection)(struct tevent_context *, 
@@ -78,7 +79,7 @@ struct process_model_critical_sizes {
 
 extern const struct model_ops single_ops;
 
-const struct model_ops *process_model_startup(struct tevent_context *ev, const char *model);
+const struct model_ops *process_model_startup(const char *model);
 NTSTATUS register_process_model(const void *_ops);
 NTSTATUS process_model_init(struct loadparm_context *lp_ctx);
 

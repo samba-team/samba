@@ -49,7 +49,7 @@ static int none_setproctitle(const char *fmt, ...)
 /*
   called when the process model is selected
 */
-static void prefork_model_init(struct tevent_context *ev)
+static void prefork_model_init(void)
 {
 	signal(SIGCHLD, SIG_IGN);
 }

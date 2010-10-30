@@ -50,7 +50,7 @@ static int child_pipe[2];
 /*
   called when the process model is selected
 */
-static void standard_model_init(struct tevent_context *ev)
+static void standard_model_init(void)
 {
 	pipe(child_pipe);
 	signal(SIGCHLD, SIG_IGN);

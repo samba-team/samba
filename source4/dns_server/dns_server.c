@@ -550,7 +550,7 @@ static NTSTATUS dns_startup_interfaces(struct dns_server *dns, struct loadparm_c
 	/* within the dns task we want to be a single process, so
 	   ask for the single process model ops and pass these to the
 	   stream_setup_socket() call. */
-	model_ops = process_model_startup(dns->task->event_ctx, "single");
+	model_ops = process_model_startup("single");
 	if (!model_ops) {
 		DEBUG(0,("Can't find 'single' process model_ops\n"));
 		return NT_STATUS_INTERNAL_ERROR;

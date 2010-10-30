@@ -119,7 +119,7 @@ static void samba3_smb_task_init(struct task_server *task)
 	NTSTATUS status;
 	const struct model_ops *model_ops;
 
-	model_ops = process_model_startup(task->event_ctx, "standard");
+	model_ops = process_model_startup("standard");
 
 	if (model_ops == NULL) {
 		goto failed;

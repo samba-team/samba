@@ -22,31 +22,51 @@
 #include "smbd/process_model.h"
 #include "param/param.h"
 
-static const struct model_ops *process_model_byname(const char *name);
+/* the list of currently registered process models */
+static struct process_model {
+	struct model_ops *ops;
+	bool initialised;
+} *models = NULL;
+static int num_models;
+
+
+/*
+  return the operations structure for a named backend of the specified type
+*/
+static struct process_model *process_model_byname(const char *name)
+{
+	int i;
+
+	for (i=0;i<num_models;i++) {
+		if (strcmp(models[i].ops->name, name) == 0) {
+			return &models[i];
+		}
+	}
+
+	return NULL;
+}
+
 
 /*
   setup the events for the chosen process model
 */
-_PUBLIC_ const struct model_ops *process_model_startup(struct tevent_context *ev, const char *model)
+_PUBLIC_ const struct model_ops *process_model_startup(const char *model)
 {
-	const struct model_ops *ops;
+	struct process_model *m;
 
-	ops = process_model_byname(model);
-	if (!ops) {
+	m = process_model_byname(model);
+	if (m == NULL) {
 		DEBUG(0,("Unknown process model '%s'\n", model));
 		exit(-1);
 	}
 
-	ops->model_init(ev);
+	if (!m->initialised) {
+		m->initialised = true;
+		m->ops->model_init();
+	}
 
-	return ops;
+	return m->ops;
 }
-
-/* the list of currently registered process models */
-static struct process_model {
-	struct model_ops *ops;
-} *models = NULL;
-static int num_models;
 
 /*
   register a process model. 
@@ -97,22 +117,6 @@ _PUBLIC_ NTSTATUS process_model_init(struct loadparm_context *lp_ctx)
 	talloc_free(shared_init);
 	
 	return NT_STATUS_OK;
-}
-
-/*
-  return the operations structure for a named backend of the specified type
-*/
-static const struct model_ops *process_model_byname(const char *name)
-{
-	int i;
-
-	for (i=0;i<num_models;i++) {
-		if (strcmp(models[i].ops->name, name) == 0) {
-			return models[i].ops;
-		}
-	}
-
-	return NULL;
 }
 
 /*
