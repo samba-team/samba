@@ -225,14 +225,16 @@ def add_init_functions(self):
     if m is not None:
         modules.append(m)
 
-    if modules == []:
-        return
-
     sentinal = getattr(self, 'init_function_sentinal', 'NULL')
 
     targets    = LOCAL_CACHE(bld, 'TARGET_TYPE')
-
     cflags = getattr(self, 'samba_cflags', [])[:]
+
+    if modules == []:
+        cflags.append('-DSTATIC_%s_MODULES=%s' % (sname.replace('-','_'), sentinal))
+        self.ccflags = cflags
+        return
+
     for m in modules:
         bld.ASSERT(m in subsystems,
                    "No init_function defined for module '%s' in target '%s'" % (m, self.sname))
