@@ -412,7 +412,6 @@ def build(bld):
     bld.SAMBA_SUBSYSTEM('replace-test',
                       source='''test/testsuite.c test/strptime.c
                       test/os2_delete.c test/getifaddrs.c''',
-                      autoproto='replace-test.h',
                       deps='replace')
 
     if bld.env.standalone_replace:
