@@ -249,11 +249,12 @@ _PUBLIC_ char *alpha_strcpy(char *dest, const char *src, const char *other_safe_
 }
 
 /**
- Count the number of UCS2 characters in a string. Normally this will
- be the same as the number of bytes in a string for single byte strings,
- but will be different for multibyte.
-**/
-_PUBLIC_ size_t strlen_m(const char *s)
+ * Calculate the number of units (8 or 16-bit, depending on the
+ * destination charset), that would be needed to convert the input
+ * string which is expected to be in in src_charset encoding to the
+ * destination charset (which should be a unicode charset).
+ */
+_PUBLIC_ size_t strlen_m_ext(const char *s, charset_t src_charset, charset_t dst_charset)
 {
 	size_t count = 0;
 	struct smb_iconv_convenience *ic = get_iconv_convenience();
@@ -273,16 +274,55 @@ _PUBLIC_ size_t strlen_m(const char *s)
 
 	while (*s) {
 		size_t c_size;
-		codepoint_t c = next_codepoint_convenience(ic, s, &c_size);
-		if (c < 0x10000) {
-			count += 1;
-		} else {
-			count += 2;
-		}
+		codepoint_t c = next_codepoint_convenience_ext(ic, s, src_charset, &c_size);
 		s += c_size;
+
+		switch (dst_charset) {
+		case CH_UTF16LE:
+		case CH_UTF16BE:
+		case CH_UTF16MUNGED:
+			if (c < 0x10000) {
+				count += 1;
+			} else {
+				count += 2;
+			}
+			break;
+		case CH_UTF8:
+			/*
+			 * this only checks ranges, and does not
+			 * check for invalid codepoints
+			 */
+			if (c < 0x80) {
+				count += 1;
+			} else if (c < 0x800) {
+				count += 2;
+			} else if (c < 0x1000) {
+				count += 3;
+			} else {
+				count += 4;
+			}
+			break;
+		default:
+			/*
+			 * non-unicode encoding:
+			 * assume that each codepoint fits into
+			 * one unit in the destination encoding.
+			 */
+			count += 1;
+		}
 	}
 
 	return count;
+}
+
+/**
+ Count the number of UCS2 characters in a string. Normally this will
+ be the same as the number of bytes in a string for single byte strings,
+ but will be different for multibyte.
+**/
+_PUBLIC_ size_t strlen_m(const char *s)
+{
+	return strlen_m_ext(s, CH_UNIX, CH_UTF16LE);
 }
 
 /**
