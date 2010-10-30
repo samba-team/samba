@@ -751,6 +751,53 @@ static int samldb_schema_info_update(struct samldb_ctx *ac)
 }
 
 /*
+ * Gets back a single-valued attribute by the rules of the SAM triggers when
+ * performing a modify operation
+ */
+static int samldb_get_single_valued_attr(struct samldb_ctx *ac,
+					 const char *attr_name,
+					 struct ldb_message_element **attr)
+{
+	struct ldb_context *ldb = ldb_module_get_ctx(ac->module);
+	struct ldb_message_element *el = NULL;
+	unsigned int i;
+
+	/* We've to walk over all modification entries and consider the
+	 * "attr_name" ones.
+	 *
+	 * 1.) Add operations aren't allowed and there is returned
+	 *     "ATTRIBUTE_OR_VALUE_EXISTS".
+	 * 2.) Replace operations are allowed but the last one is taken
+	 * 3.) Delete operations are also not allowed and there is returned
+	 *     "UNWILLING_TO_PERFORM".
+	 *
+	 * If "el" is afterwards NULL then that means we've nothing to do here.
+	 */
+	for (i = 0; i < ac->msg->num_elements; i++) {
+		if (ldb_attr_cmp(ac->msg->elements[i].name, attr_name) != 0) {
+			continue;
+		}
+
+		el = &ac->msg->elements[i];
+		if (LDB_FLAG_MOD_TYPE(el->flags) == LDB_FLAG_MOD_ADD) {
+			ldb_asprintf_errstring(ldb,
+					       "samldb: attribute '%s' already exists!",
+					       attr_name);
+			return LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS;
+		}
+		if (LDB_FLAG_MOD_TYPE(el->flags) == LDB_FLAG_MOD_DELETE) {
+			ldb_asprintf_errstring(ldb,
+					       "samldb: attribute '%s' cannot be deleted!",
+					       attr_name);
+			return LDB_ERR_UNWILLING_TO_PERFORM;
+		}
+	}
+
+	*attr = el;
+	return LDB_SUCCESS;
+}
+
+/*
  * "Objectclass" trigger (MS-SAMR 3.1.1.8.1)
  *
  * Has to be invoked on "add" and "modify" operations on "user", "computer" and
@@ -1002,40 +1049,16 @@ static int samldb_prim_group_change(struct samldb_ctx *ac)
 	uint32_t rid;
 	struct dom_sid *sid;
 	struct ldb_dn *prev_prim_group_dn, *new_prim_group_dn;
-	unsigned int i;
 	int ret;
 
-	/* We've to walk over all modification entries and consider the
-	 * "primaryGroupID" ones.
-	 *
-	 * 1.) Add operations aren't allowed and there is returned
-	 *     "ATTRIBUTE_OR_VALUE_EXISTS".
-	 * 2.) Replace operations are allowed but the last one is taken
-	 * 3.) Delete operations are also not allowed and there is returned
-	 *     "UNWILLING_TO_PERFORM".
-	 *
-	 * If "el" is afterwards NULL then that means we've nothing to do here.
-	 */
-	el = NULL;
-	for (i = 0; i < ac->msg->num_elements; i++) {
-		if (ldb_attr_cmp(ac->msg->elements[i].name,
-				 "primaryGroupID") != 0) {
-			continue;
-		}
-
-		el = &ac->msg->elements[i];
-		if (LDB_FLAG_MOD_TYPE(el->flags) == LDB_FLAG_MOD_ADD) {
-			return LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS;
-		}
-		if (LDB_FLAG_MOD_TYPE(el->flags) == LDB_FLAG_MOD_DELETE) {
-			return LDB_ERR_UNWILLING_TO_PERFORM;
-		}
+	ret = samldb_get_single_valued_attr(ac, "primaryGroupID", &el);
+	if (ret != LDB_SUCCESS) {
+		return ret;
 	}
 	if (el == NULL) {
+		/* we are not affected */
 		return LDB_SUCCESS;
 	}
-
-	/* Okay, now for sure we are performing a "primaryGroupID" replace */
 
 	/* Fetch informations from the existing object */
 
