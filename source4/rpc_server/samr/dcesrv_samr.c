@@ -1994,7 +1994,6 @@ static NTSTATUS dcesrv_samr_AddGroupMember(struct dcesrv_call_state *dce_call, T
 	switch (ret) {
 	case LDB_SUCCESS:
 		return NT_STATUS_OK;
-	case LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS:
 	case LDB_ERR_ENTRY_ALREADY_EXISTS:
 		return NT_STATUS_MEMBER_IN_GROUP;
 	case LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS:
@@ -2099,7 +2098,7 @@ static NTSTATUS dcesrv_samr_DeleteGroupMember(struct dcesrv_call_state *dce_call
 	switch (ret) {
 	case LDB_SUCCESS:
 		return NT_STATUS_OK;
-	case LDB_ERR_NO_SUCH_ATTRIBUTE:
+	case LDB_ERR_UNWILLING_TO_PERFORM:
 		return NT_STATUS_MEMBER_NOT_IN_GROUP;
 	case LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS:
 		return NT_STATUS_ACCESS_DENIED;
@@ -2468,7 +2467,6 @@ static NTSTATUS dcesrv_samr_AddAliasMember(struct dcesrv_call_state *dce_call, T
 	switch (ret) {
 	case LDB_SUCCESS:
 		return NT_STATUS_OK;
-	case LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS:
 	case LDB_ERR_ENTRY_ALREADY_EXISTS:
 		return NT_STATUS_MEMBER_IN_GROUP;
 	case LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS:
@@ -2521,7 +2519,7 @@ static NTSTATUS dcesrv_samr_DeleteAliasMember(struct dcesrv_call_state *dce_call
 	switch (ret) {
 	case LDB_SUCCESS:
 		return NT_STATUS_OK;
-	case LDB_ERR_NO_SUCH_ATTRIBUTE:
+	case LDB_ERR_UNWILLING_TO_PERFORM:
 		return NT_STATUS_MEMBER_NOT_IN_GROUP;
 	case LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS:
 		return NT_STATUS_ACCESS_DENIED;
