@@ -1188,6 +1188,169 @@ static int samldb_prim_group_trigger(struct samldb_ctx *ac)
 	return ret;
 }
 
+static int samldb_user_account_control_change(struct samldb_ctx *ac)
+{
+	struct ldb_context *ldb = ldb_module_get_ctx(ac->module);
+	uint32_t user_account_control, account_type;
+	struct ldb_message_element *el;
+	struct ldb_message *tmp_msg;
+	int ret;
+
+	ret = samldb_get_single_valued_attr(ac, "userAccountControl", &el);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+	if (el == NULL) {
+		/* we are not affected */
+		return LDB_SUCCESS;
+	}
+
+	/* Create a temporary message for fetching the "userAccountControl" */
+	tmp_msg = ldb_msg_new(ac->msg);
+	if (tmp_msg == NULL) {
+		return ldb_module_oom(ac->module);
+	}
+	ret = ldb_msg_add(tmp_msg, el, 0);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+	user_account_control = ldb_msg_find_attr_as_uint(tmp_msg,
+							 "userAccountControl",
+							 0);
+	talloc_free(tmp_msg);
+
+	/* Temporary duplicate accounts aren't allowed */
+	if ((user_account_control & UF_TEMP_DUPLICATE_ACCOUNT) != 0) {
+		return LDB_ERR_OTHER;
+	}
+
+	account_type = ds_uf2atype(user_account_control);
+	if (account_type == 0) {
+		ldb_set_errstring(ldb, "samldb: Unrecognized account type!");
+		return LDB_ERR_UNWILLING_TO_PERFORM;
+	}
+	ret = samdb_msg_add_uint(ldb, ac->msg, ac->msg, "sAMAccountType",
+				 account_type);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+	el = ldb_msg_find_element(ac->msg, "sAMAccountType");
+	el->flags = LDB_FLAG_MOD_REPLACE;
+
+	if (user_account_control
+	    & (UF_SERVER_TRUST_ACCOUNT | UF_PARTIAL_SECRETS_ACCOUNT)) {
+		ret = samdb_msg_add_string(ldb, ac->msg, ac->msg,
+					   "isCriticalSystemObject", "TRUE");
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+		el = ldb_msg_find_element(ac->msg,
+					   "isCriticalSystemObject");
+		el->flags = LDB_FLAG_MOD_REPLACE;
+	}
+
+	if (!ldb_msg_find_element(ac->msg, "primaryGroupID")) {
+		uint32_t rid = ds_uf2prim_group_rid(user_account_control);
+		ret = samdb_msg_add_uint(ldb, ac->msg, ac->msg,
+					 "primaryGroupID", rid);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+		el = ldb_msg_find_element(ac->msg,
+					   "primaryGroupID");
+		el->flags = LDB_FLAG_MOD_REPLACE;
+	}
+
+	return LDB_SUCCESS;
+}
+
+static int samldb_group_type_change(struct samldb_ctx *ac)
+{
+	struct ldb_context *ldb = ldb_module_get_ctx(ac->module);
+	uint32_t group_type, old_group_type, account_type;
+	struct ldb_message_element *el;
+	struct ldb_message *tmp_msg;
+	int ret;
+
+	ret = samldb_get_single_valued_attr(ac, "groupType", &el);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+	if (el == NULL) {
+		/* we are not affected */
+		return LDB_SUCCESS;
+	}
+
+	/* Create a temporary message for fetching the "groupType" */
+	tmp_msg = ldb_msg_new(ac->msg);
+	if (tmp_msg == NULL) {
+		return ldb_module_oom(ac->module);
+	}
+	ret = ldb_msg_add(tmp_msg, el, 0);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+	group_type = ldb_msg_find_attr_as_uint(tmp_msg, "groupType", 0);
+	talloc_free(tmp_msg);
+
+	old_group_type = samdb_search_uint(ldb, ac, 0, ac->msg->dn,
+					   "groupType", NULL);
+	if (old_group_type == 0) {
+		return ldb_operr(ldb);
+	}
+
+	/* Group type switching isn't so easy as it seems: We can only
+	 * change in this directions: global <-> universal <-> local
+	 * On each step also the group type itself
+	 * (security/distribution) is variable. */
+
+	switch (group_type) {
+	case GTYPE_SECURITY_GLOBAL_GROUP:
+	case GTYPE_DISTRIBUTION_GLOBAL_GROUP:
+		/* change to "universal" allowed */
+		if ((old_group_type == GTYPE_SECURITY_DOMAIN_LOCAL_GROUP) ||
+		    (old_group_type == GTYPE_DISTRIBUTION_DOMAIN_LOCAL_GROUP)) {
+			return LDB_ERR_UNWILLING_TO_PERFORM;
+		}
+	break;
+
+	case GTYPE_SECURITY_UNIVERSAL_GROUP:
+	case GTYPE_DISTRIBUTION_UNIVERSAL_GROUP:
+		/* each change allowed */
+	break;
+
+	case GTYPE_SECURITY_DOMAIN_LOCAL_GROUP:
+	case GTYPE_DISTRIBUTION_DOMAIN_LOCAL_GROUP:
+		/* change to "universal" allowed */
+		if ((old_group_type == GTYPE_SECURITY_GLOBAL_GROUP) ||
+		    (old_group_type == GTYPE_DISTRIBUTION_GLOBAL_GROUP)) {
+			return LDB_ERR_UNWILLING_TO_PERFORM;
+		}
+	break;
+
+	case GTYPE_SECURITY_BUILTIN_LOCAL_GROUP:
+	default:
+		/* we don't allow this "groupType" values */
+		return LDB_ERR_UNWILLING_TO_PERFORM;
+	break;
+	}
+
+	account_type =  ds_gtype2atype(group_type);
+	if (account_type == 0) {
+		ldb_set_errstring(ldb, "samldb: Unrecognized account type!");
+		return LDB_ERR_UNWILLING_TO_PERFORM;
+	}
+	ret = samdb_msg_add_uint(ldb, ac->msg, ac->msg, "sAMAccountType",
+				 account_type);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+	el = ldb_msg_find_element(ac->msg, "sAMAccountType");
+	el->flags = LDB_FLAG_MOD_REPLACE;
+
+	return LDB_SUCCESS;
+}
+
 static int samldb_member_check(struct samldb_ctx *ac)
 {
 	struct ldb_context *ldb = ldb_module_get_ctx(ac->module);
@@ -1379,10 +1542,9 @@ static int samldb_modify(struct ldb_module *module, struct ldb_request *req)
 {
 	struct ldb_context *ldb;
 	struct samldb_ctx *ac;
-	struct ldb_message_element *el, *el2;
+	struct ldb_message_element *el;
 	bool modified = false;
 	int ret;
-	uint32_t account_type;
 
 	if (ldb_dn_is_special(req->op.mod.message->dn)) {
 		/* do not manipulate our control entries */
@@ -1431,75 +1593,6 @@ static int samldb_modify(struct ldb_module *module, struct ldb_request *req)
 		return ldb_operr(ldb);
 	}
 
-	el = ldb_msg_find_element(ac->msg, "groupType");
-	if (el && (LDB_FLAG_MOD_TYPE(el->flags) == LDB_FLAG_MOD_REPLACE)
-	    && el->num_values == 1) {
-		uint32_t group_type, old_group_type;
-
-		modified = true;
-
-		group_type = ldb_msg_find_attr_as_uint(ac->msg, "groupType", 0);
-		old_group_type = samdb_search_uint(ldb, ac, 0, ac->msg->dn,
-						   "groupType", NULL);
-		if (old_group_type == 0) {
-			return ldb_operr(ldb);
-		}
-
-		/* Group type switching isn't so easy as it seems: We can only
-		 * change in this directions: global <-> universal <-> local
-		 * On each step also the group type itself
-		 * (security/distribution) is variable. */
-
-		switch (group_type) {
-		case GTYPE_SECURITY_GLOBAL_GROUP:
-		case GTYPE_DISTRIBUTION_GLOBAL_GROUP:
-			/* change to "universal" allowed */
-			if ((old_group_type == GTYPE_SECURITY_DOMAIN_LOCAL_GROUP) ||
-			    (old_group_type == GTYPE_DISTRIBUTION_DOMAIN_LOCAL_GROUP)) {
-				return LDB_ERR_UNWILLING_TO_PERFORM;
-			}
-		break;
-
-		case GTYPE_SECURITY_UNIVERSAL_GROUP:
-		case GTYPE_DISTRIBUTION_UNIVERSAL_GROUP:
-			/* each change allowed */
-		break;
-
-		case GTYPE_SECURITY_DOMAIN_LOCAL_GROUP:
-		case GTYPE_DISTRIBUTION_DOMAIN_LOCAL_GROUP:
-			/* change to "universal" allowed */
-			if ((old_group_type == GTYPE_SECURITY_GLOBAL_GROUP) ||
-			    (old_group_type == GTYPE_DISTRIBUTION_GLOBAL_GROUP)) {
-				return LDB_ERR_UNWILLING_TO_PERFORM;
-			}
-		break;
-
-		case GTYPE_SECURITY_BUILTIN_LOCAL_GROUP:
-		default:
-			/* we don't allow this "groupType" values */
-			return LDB_ERR_UNWILLING_TO_PERFORM;
-		break;
-		}
-
-		account_type =  ds_gtype2atype(group_type);
-		if (account_type == 0) {
-			ldb_set_errstring(ldb, "samldb: Unrecognized account type!");
-			return LDB_ERR_UNWILLING_TO_PERFORM;
-		}
-		ret = samdb_msg_add_uint(ldb, ac->msg, ac->msg,
-					 "sAMAccountType",
-					 account_type);
-		if (ret != LDB_SUCCESS) {
-			return ret;
-		}
-		el2 = ldb_msg_find_element(ac->msg, "sAMAccountType");
-		el2->flags = LDB_FLAG_MOD_REPLACE;
-	}
-	el = ldb_msg_find_element(ac->msg, "groupType");
-	if (el && (LDB_FLAG_MOD_TYPE(el->flags) == LDB_FLAG_MOD_DELETE)) {
-		return LDB_ERR_UNWILLING_TO_PERFORM;
-	}
-
 	el = ldb_msg_find_element(ac->msg, "primaryGroupID");
 	if (el != NULL) {
 		ret = samldb_prim_group_change(ac);
@@ -1509,63 +1602,21 @@ static int samldb_modify(struct ldb_module *module, struct ldb_request *req)
 	}
 
 	el = ldb_msg_find_element(ac->msg, "userAccountControl");
-	if (el && (LDB_FLAG_MOD_TYPE(el->flags) == LDB_FLAG_MOD_REPLACE)
-	    && el->num_values == 1) {
-		uint32_t user_account_control;
-
+	if (el != NULL) {
 		modified = true;
-
-		user_account_control = ldb_msg_find_attr_as_uint(ac->msg,
-								 "userAccountControl",
-								 0);
-
-		/* Temporary duplicate accounts aren't allowed */
-		if ((user_account_control & UF_TEMP_DUPLICATE_ACCOUNT) != 0) {
-			return LDB_ERR_OTHER;
-		}
-
-		account_type = ds_uf2atype(user_account_control);
-		if (account_type == 0) {
-			ldb_set_errstring(ldb, "samldb: Unrecognized account type!");
-			return LDB_ERR_UNWILLING_TO_PERFORM;
-		}
-		ret = samdb_msg_add_uint(ldb, ac->msg, ac->msg,
-					 "sAMAccountType",
-					 account_type);
+		ret = samldb_user_account_control_change(ac);
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
-		el2 = ldb_msg_find_element(ac->msg, "sAMAccountType");
-		el2->flags = LDB_FLAG_MOD_REPLACE;
-
-		if (user_account_control & (UF_SERVER_TRUST_ACCOUNT | UF_PARTIAL_SECRETS_ACCOUNT)) {
-			ret = samdb_msg_add_string(ldb, ac->msg, ac->msg,
-						   "isCriticalSystemObject",
-						   "TRUE");
-			if (ret != LDB_SUCCESS) {
-				return ret;
-			}
-			el2 = ldb_msg_find_element(ac->msg,
-						   "isCriticalSystemObject");
-			el2->flags = LDB_FLAG_MOD_REPLACE;
-		}
-
-		if (!ldb_msg_find_element(ac->msg, "primaryGroupID")) {
-			uint32_t rid = ds_uf2prim_group_rid(user_account_control);
-
-			ret = samdb_msg_add_uint(ldb, ac->msg, ac->msg,
-						 "primaryGroupID", rid);
-			if (ret != LDB_SUCCESS) {
-				return ret;
-			}
-			el2 = ldb_msg_find_element(ac->msg,
-						   "primaryGroupID");
-			el2->flags = LDB_FLAG_MOD_REPLACE;
-		}
 	}
-	el = ldb_msg_find_element(ac->msg, "userAccountControl");
-	if (el && (LDB_FLAG_MOD_TYPE(el->flags) == LDB_FLAG_MOD_DELETE)) {
-		return LDB_ERR_UNWILLING_TO_PERFORM;
+
+	el = ldb_msg_find_element(ac->msg, "groupType");
+	if (el != NULL) {
+		modified = true;
+		ret = samldb_group_type_change(ac);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
 	}
 
 	el = ldb_msg_find_element(ac->msg, "member");
