@@ -763,6 +763,9 @@ def calculate_final_deps(bld, tgt_list, loops):
     # handle any non-shared binaries
     for t in tgt_list:
         if t.samba_type == 'BINARY' and bld.NONSHARED_BINARY(t.sname):
+            subsystem_list = LOCAL_CACHE(bld, 'INIT_FUNCTIONS')
+            targets = LOCAL_CACHE(bld, 'TARGET_TYPE')
+
             # replace lib deps with objlist deps
             for l in t.final_libs:
                 objname = l + '.objlist'
@@ -772,6 +775,22 @@ def calculate_final_deps(bld, tgt_list, loops):
                     sys.exit(1)
                 t.final_objects.add(objname)
                 t.final_objects = t.final_objects.union(extended_objects(bld, t2, set()))
+                if l in subsystem_list:
+                    # its a subsystem - we also need the contents of any modules
+                    for d in subsystem_list[l]:
+                        module_name = d['TARGET']
+                        if targets[module_name] == 'LIBRARY':
+                            objname = module_name + '.objlist'
+                        elif targets[module_name] == 'SUBSYSTEM':
+                            objname = module_name
+                        else:
+                            continue
+                        t2 = bld.name_to_obj(objname, bld.env)
+                        if t2 is None:
+                            Logs.error('ERROR: subsystem %s not found' % objname)
+                            sys.exit(1)
+                        t.final_objects.add(objname)
+                        t.final_objects = t.final_objects.union(extended_objects(bld, t2, set()))
             t.final_libs = set()
 
     # find any library loops
