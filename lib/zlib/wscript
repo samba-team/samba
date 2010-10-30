@@ -16,10 +16,8 @@ def configure(conf):
                     define='HAVE_ZLIB')
 
 def build(bld):
-    if bld.CONFIG_SET('HAVE_ZLIB'):
-        bld.TARGET_ALIAS('z', 'ZLIB')
-    else:
-        bld.SAMBA_LIBRARY('ZLIB',
+    if not bld.CONFIG_SET('HAVE_ZLIB'):
+        bld.SAMBA_LIBRARY('z',
                           private_library=True,
                           deps='replace',
                           source='''adler32.c compress.c crc32.c gzio.c

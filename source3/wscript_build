@@ -137,8 +137,6 @@ PTHREADPOOL_SRC = ''
 
 LIBREPLACE_SRCS = ''
 
-ZLIB_SRCS = ''
-
 LIB_SRC = '''${LIBSAMBAUTIL_SRC} ${UTIL_SRC}
           lib/messages.c lib/messages_local.c
           lib/messages_ctdbd.c lib/packet.c lib/ctdbd_conn.c
@@ -1039,7 +1037,7 @@ bld.SAMBA_SUBSYSTEM('LIBSAMBA',
 
 bld.SAMBA_SUBSYSTEM('LIBSMB',
                     source=LIBSMB_SRC,
-                    deps='LIBSAMBA ZLIB LZXPRESS CLDAP',
+                    deps='LIBSAMBA z LZXPRESS CLDAP',
                     vars=locals())
 
 bld.SAMBA_SUBSYSTEM('CLDAP',
@@ -1087,7 +1085,7 @@ bld.SAMBA_SUBSYSTEM('LIBSMBCONF',
 bld.SAMBA_SUBSYSTEM('SMBD_BASE',
                     source=SMBD_SRC_BASE,
                     deps='''tdb tevent dl krb5 ldap gssapi gssapi_krb5
-                    DYNCONFIG libwbclient crypt nsl cups cap resolv ZLIB PASSDB
+                    DYNCONFIG libwbclient crypt nsl cups cap resolv z PASSDB
                     PARAM_WITHOUT_REG LIBS LIBSMB POPT_SAMBA KRBCLIENT AVAHI
                     LIBMSRPC_GEN LIBMSRPC LIBADS LIBADS_SERVER LIBADS_PRINTER
                     vfs vfs_default vfs_posixacl auth rpc LOCKING LIBAFS LIBAFS_SETTOKEN PROFILE
@@ -1223,7 +1221,7 @@ bld.SAMBA_BINARY('smbd/smbd',
 
 bld.SAMBA_BINARY('nmbd/nmbd',
                  source=NMBD_SRC,
-                 deps='''talloc tdb tevent ZLIB cap resolv libwbclient dl
+                 deps='''talloc tdb tevent z cap resolv libwbclient dl
                  PASSDB PARAM ldap LIB_NONSMBD LIBSMB
                  POPT_SAMBA KRBCLIENT NDR_SAMR NDR_LSA''',
                  install_path='${SBINDIR}',
@@ -1231,7 +1229,7 @@ bld.SAMBA_BINARY('nmbd/nmbd',
 
 bld.SAMBA_BINARY('winbindd/winbindd',
                  source=WINBINDD_SRC,
-                 deps='''talloc tdb tevent cap dl ZLIB 
+                 deps='''talloc tdb tevent cap dl z
                  libwbclient PASSDB ldap resolv PARAM LIB_NONSMBD LIBSMB
                  POPT_SAMBA KRBCLIENT LIBMSRPC_GEN LIBMSRPC LIBADS LIBADS_SERVER
                  SRV_NDR_WBINT RPCCLI_NDR_WBINT LIBAFS

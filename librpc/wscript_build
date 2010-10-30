@@ -250,7 +250,7 @@ bld.SAMBA_SUBSYSTEM('NDR_INITSHUTDOWN',
 bld.SAMBA_SUBSYSTEM('NDR_COMPRESSION',
 	source='../librpc/ndr/ndr_compression.c',
 	public_deps='errors ndr',
-	deps='ZLIB LZXPRESS'
+	deps='z LZXPRESS'
 	)
 
 bld.SAMBA_SUBSYSTEM('NDR_DRSUAPI',
