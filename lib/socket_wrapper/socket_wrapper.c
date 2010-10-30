@@ -2244,6 +2244,11 @@ int swrap_readv(int s, const struct iovec *vector, size_t count)
 		return real_readv(s, vector, count);
 	}
 
+	if (!si->connected) {
+		errno = ENOTCONN;
+		return -1;
+	}
+
 	if (si->type == SOCK_STREAM && count > 0) {
 		/* cut down to 1500 byte packets for stream sockets,
 		 * which makes it easier to format PCAP capture files
