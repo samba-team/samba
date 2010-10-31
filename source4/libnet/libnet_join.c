@@ -272,7 +272,7 @@ static NTSTATUS libnet_JoinADSDomain(struct libnet_context *ctx, struct libnet_J
 
 	{
 		unsigned int i;
-		const char *service_principal_name[6];
+		const char *service_principal_name[2];
 		const char *dns_host_name = strlower_talloc(tmp_ctx, 
 							    talloc_asprintf(tmp_ctx, 
 									    "%s.%s", 
@@ -285,12 +285,10 @@ static NTSTATUS libnet_JoinADSDomain(struct libnet_context *ctx, struct libnet_J
 			return NT_STATUS_NO_MEMORY;
 		}
 
-		service_principal_name[0] = talloc_asprintf(tmp_ctx, "host/%s", dns_host_name);
-		service_principal_name[1] = talloc_asprintf(tmp_ctx, "host/%s", strlower_talloc(tmp_ctx, r->in.netbios_name));
-		service_principal_name[2] = talloc_asprintf(tmp_ctx, "host/%s/%s", dns_host_name, realm);
-		service_principal_name[3] = talloc_asprintf(tmp_ctx, "host/%s/%s", strlower_talloc(tmp_ctx, r->in.netbios_name), realm);
-		service_principal_name[4] = talloc_asprintf(tmp_ctx, "host/%s/%s", dns_host_name, r->out.domain_name);
-		service_principal_name[5] = talloc_asprintf(tmp_ctx, "host/%s/%s", strlower_talloc(tmp_ctx, r->in.netbios_name), r->out.domain_name);
+		service_principal_name[0] = talloc_asprintf(tmp_ctx, "HOST/%s",
+							    dns_host_name);
+		service_principal_name[1] = talloc_asprintf(tmp_ctx, "HOST/%s",
+							    r->in.netbios_name);
 		
 		for (i=0; i < ARRAY_SIZE(service_principal_name); i++) {
 			if (!service_principal_name[i]) {
@@ -306,7 +304,8 @@ static NTSTATUS libnet_JoinADSDomain(struct libnet_context *ctx, struct libnet_J
 			}
 		}
 
-		rtn = samdb_msg_add_string(remote_ldb, tmp_ctx, msg, "dNSHostName", dns_host_name);
+		rtn = samdb_msg_add_string(remote_ldb, tmp_ctx, msg,
+					   "dNSHostName", dns_host_name);
 		if (rtn != LDB_SUCCESS) {
 			r->out.error_string = NULL;
 			talloc_free(tmp_ctx);
