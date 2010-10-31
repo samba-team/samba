@@ -39,7 +39,6 @@ static void samba3_smb_accept(struct stream_connection *conn)
 	const char *prog;
 	char *argv[2];
 	char *reason;
-	extern char **environ;
 
 	close(0);
 	close(1);
@@ -65,7 +64,7 @@ static void samba3_smb_accept(struct stream_connection *conn)
 	}
 	argv[1] = NULL;
 
-	execve(argv[0], argv, environ);
+	execv(argv[0], argv);
 
 	/*
 	 * Should never get here
