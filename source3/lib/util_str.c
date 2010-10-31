@@ -1523,6 +1523,15 @@ size_t strlen_m_ext(const char *s, const charset_t src_charset,
 	return count;
 }
 
+size_t strlen_m_ext_term(const char *s, const charset_t src_charset,
+			 const charset_t dst_charset)
+{
+	if (!s) {
+		return 0;
+	}
+	return strlen_m_ext(s, src_charset, dst_charset) + 1;
+}
+
 /**
  * Calculate the number of 16-bit units that would bee needed to convert
  * the input string which is expected to be in CH_UNIX encoding to UTF16.
