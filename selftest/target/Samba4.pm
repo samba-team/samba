@@ -697,7 +697,6 @@ nogroup:x:65534:nobody
 		warn("Failed to create a valid smb.conf configuration $testparm!");
 		return undef;
 	}
-
 	unless (system("($testparm $configuration -v --suppress-prompt --parameter-name=\"netbios name\" --section-name=global 2> /dev/null | grep -i \"^$ctx->{netbiosname}\" ) >/dev/null 2>&1") == 0) {
 		warn("Failed to create a valid smb.conf configuration! $testparm $configuration -v --suppress-prompt --parameter-name=\"netbios name\" --section-name=global");
 		return undef;
@@ -836,7 +835,8 @@ sub provision($$$$$$$$$)
 	}
 
 	my $ret = $self->provision_raw_step1($ctx);
-	unless ($ret) {
+	unless (defined $ret) {
+		print "coin coin\n";
 		return undef;
 	}
 
@@ -1033,6 +1033,7 @@ sub provision_dc($$)
 				   "locDCpass1",
 				   "127.0.0.1", "");
 
+	return undef unless(defined $ret);
 	unless($self->add_wins_config("$prefix/private")) {
 		warn("Unable to add wins configuration");
 		return undef;
@@ -1357,11 +1358,13 @@ sub setup_member($$$)
 
 	my $env = $self->provision_member($path, $dc_vars);
 
-	$self->check_or_start($env, ($ENV{SMBD_MAXTIME} or 7500));
+	if (defined $env) {
+		$self->check_or_start($env, ($ENV{SMBD_MAXTIME} or 7500));
 
-	$self->wait_for_start($env);
+		$self->wait_for_start($env);
 
-	$self->{vars}->{member} = $env;
+		$self->{vars}->{member} = $env;
+	}
 
 	return $env;
 }
@@ -1372,12 +1375,13 @@ sub setup_rpc_proxy($$$)
 
 	my $env = $self->provision_rpc_proxy($path, $dc_vars);
 
+	if (defined $env) {
 	$self->check_or_start($env, ($ENV{SMBD_MAXTIME} or 7500));
 
 	$self->wait_for_start($env);
 
 	$self->{vars}->{rpc_proxy} = $env;
-
+	}
 	return $env;
 }
 
@@ -1386,14 +1390,14 @@ sub setup_dc($$)
 	my ($self, $path) = @_;
 
 	my $env = $self->provision_dc($path);
+	if (defined $env) {
+		$self->check_or_start($env,
+			($ENV{SMBD_MAXTIME} or 7500));
 
-	$self->check_or_start($env, 
-		($ENV{SMBD_MAXTIME} or 7500));
+		$self->wait_for_start($env);
 
-	$self->wait_for_start($env);
-
-	$self->{vars}->{dc} = $env;
-
+		$self->{vars}->{dc} = $env;
+	}
 	return $env;
 }
 
@@ -1402,13 +1406,14 @@ sub setup_fl2000dc($$)
 	my ($self, $path) = @_;
 
 	my $env = $self->provision_fl2000dc($path);
+	if (defined $env) {
+		$self->check_or_start($env,
+			($ENV{SMBD_MAXTIME} or 7500));
 
-	$self->check_or_start($env, 
-		($ENV{SMBD_MAXTIME} or 7500));
+		$self->wait_for_start($env);
 
-	$self->wait_for_start($env);
-
-	$self->{vars}->{fl2000dc} = $env;
+		$self->{vars}->{fl2000dc} = $env;
+	}
 
 	return $env;
 }
@@ -1419,13 +1424,14 @@ sub setup_fl2003dc($$)
 
 	my $env = $self->provision_fl2003dc($path);
 
-	$self->check_or_start($env,
-		($ENV{SMBD_MAXTIME} or 7500));
+	if (defined $env) {
+		$self->check_or_start($env,
+			($ENV{SMBD_MAXTIME} or 7500));
 
-	$self->wait_for_start($env);
+		$self->wait_for_start($env);
 
-	$self->{vars}->{fl2003dc} = $env;
-
+		$self->{vars}->{fl2003dc} = $env;
+	}
 	return $env;
 }
 
@@ -1435,12 +1441,14 @@ sub setup_fl2008r2dc($$)
 
 	my $env = $self->provision_fl2008r2dc($path);
 
-	$self->check_or_start($env,
-		($ENV{SMBD_MAXTIME} or 7500));
+	if (defined $env) {
+		$self->check_or_start($env,
+			($ENV{SMBD_MAXTIME} or 7500));
 
-	$self->wait_for_start($env);
+		$self->wait_for_start($env);
 
-	$self->{vars}->{fl2008r2dc} = $env;
+		$self->{vars}->{fl2008r2dc} = $env;
+	}
 
 	return $env;
 }
@@ -1451,44 +1459,46 @@ sub setup_vampire_dc($$$)
 
 	my $env = $self->provision_vampire_dc($path, $dc_vars);
 
-	$self->check_or_start($env,
-		($ENV{SMBD_MAXTIME} or 7500));
+	if (defined $env) {
+		$self->check_or_start($env,
+			($ENV{SMBD_MAXTIME} or 7500));
 
-	$self->wait_for_start($env);
+		$self->wait_for_start($env);
 
-	$self->{vars}->{vampire_dc} = $env;
+		$self->{vars}->{vampire_dc} = $env;
 
-	# force replicated DC to update repsTo/repsFrom
-	# for vampired partitions
-	my $samba_tool = $self->bindir_path("samba-tool");
-	my $cmd = "";
-	$cmd .= "SOCKET_WRAPPER_DEFAULT_IFACE=\"$env->{SOCKET_WRAPPER_DEFAULT_IFACE}\"";
-	$cmd .= " KRB5_CONFIG=\"$env->{KRB5_CONFIG}\"";
-	$cmd .= " $samba_tool drs kcc $env->{DC_SERVER}";
-	$cmd .= " -U$dc_vars->{DC_USERNAME}\%$dc_vars->{DC_PASSWORD}";
-	unless (system($cmd) == 0) {
-		warn("Failed to exec kcc\n$cmd");
-		return undef;
-	}
+		# force replicated DC to update repsTo/repsFrom
+		# for vampired partitions
+		my $samba_tool = $self->bindir_path("samba-tool");
+		my $cmd = "";
+		$cmd .= "SOCKET_WRAPPER_DEFAULT_IFACE=\"$env->{SOCKET_WRAPPER_DEFAULT_IFACE}\"";
+		$cmd .= " KRB5_CONFIG=\"$env->{KRB5_CONFIG}\"";
+		$cmd .= " $samba_tool drs kcc $env->{DC_SERVER}";
+		$cmd .= " -U$dc_vars->{DC_USERNAME}\%$dc_vars->{DC_PASSWORD}";
+		unless (system($cmd) == 0) {
+			warn("Failed to exec kcc\n$cmd");
+			return undef;
+		}
 
-	# as 'vampired' dc may add data in its local replica
-	# we need to synchronize data between DCs
-	my $base_dn = "DC=".join(",DC=", split(/\./, $dc_vars->{REALM}));
-	$cmd = "SOCKET_WRAPPER_DEFAULT_IFACE=\"$env->{SOCKET_WRAPPER_DEFAULT_IFACE}\"";
-	$cmd .= " KRB5_CONFIG=\"$env->{KRB5_CONFIG}\"";
-	$cmd .= " $samba_tool drs replicate $env->{DC_SERVER} $env->{VAMPIRE_DC_SERVER}";
-	$cmd .= " -U$dc_vars->{DC_USERNAME}\%$dc_vars->{DC_PASSWORD}";
-	# replicate Configuration NC
-	my $cmd_repl = "$cmd \"CN=Configuration,$base_dn\"";
-	unless(system($cmd_repl) == 0) {
-		warn("Failed to replicate\n$cmd_repl");
-		return undef;
-	}
-	# replicate Default NC
-	$cmd_repl = "$cmd \"$base_dn\"";
-	unless(system($cmd_repl) == 0) {
-		warn("Failed to replicate\n$cmd_repl");
-		return undef;
+		# as 'vampired' dc may add data in its local replica
+		# we need to synchronize data between DCs
+		my $base_dn = "DC=".join(",DC=", split(/\./, $dc_vars->{REALM}));
+		$cmd = "SOCKET_WRAPPER_DEFAULT_IFACE=\"$env->{SOCKET_WRAPPER_DEFAULT_IFACE}\"";
+		$cmd .= " KRB5_CONFIG=\"$env->{KRB5_CONFIG}\"";
+		$cmd .= " $samba_tool drs replicate $env->{DC_SERVER} $env->{VAMPIRE_DC_SERVER}";
+		$cmd .= " -U$dc_vars->{DC_USERNAME}\%$dc_vars->{DC_PASSWORD}";
+		# replicate Configuration NC
+		my $cmd_repl = "$cmd \"CN=Configuration,$base_dn\"";
+		unless(system($cmd_repl) == 0) {
+			warn("Failed to replicate\n$cmd_repl");
+			return undef;
+		}
+		# replicate Default NC
+		$cmd_repl = "$cmd \"$base_dn\"";
+		unless(system($cmd_repl) == 0) {
+			warn("Failed to replicate\n$cmd_repl");
+			return undef;
+		}
 	}
 
 	return $env;
