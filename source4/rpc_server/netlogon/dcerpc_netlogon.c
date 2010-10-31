@@ -1366,8 +1366,9 @@ static NTSTATUS dcesrv_netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_cal
 		}
 
 		/* Gets the old DNS hostname */
-		old_dns_hostname = ldb_msg_find_attr_as_string(res1[0], "dNSHostName",
-			NULL);
+		old_dns_hostname = ldb_msg_find_attr_as_string(res1[0],
+							       "dNSHostName",
+							       NULL);
 
 		/*
 		 * Updates the DNS hostname when the client wishes that the
@@ -1391,9 +1392,12 @@ static NTSTATUS dcesrv_netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_cal
 		new_msg->dn = workstation_dn;
 
 		/* Sets the OS name */
-		samdb_msg_set_string(sam_ctx, mem_ctx, new_msg,
-			"operatingSystem",
-			r->in.query->workstation_info->os_name.string);
+		ret = samdb_msg_set_string(sam_ctx, mem_ctx, new_msg,
+					   "operatingSystem",
+					   r->in.query->workstation_info->os_name.string);
+		if (ret != LDB_SUCCESS) {
+			return NT_STATUS_NO_MEMORY;
+		}
 
 		/*
 		 * Sets informations from "os_version". On an empty structure
@@ -1402,24 +1406,35 @@ static NTSTATUS dcesrv_netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_cal
 		if (r->in.query->workstation_info->os_version.os != NULL) {
 			os_version = &r->in.query->workstation_info->os_version.os->os;
 
-			samdb_msg_set_string(sam_ctx, mem_ctx, new_msg,
-					     "operatingSystemServicePack",
-					     os_version->CSDVersion);
+			ret = samdb_msg_set_string(sam_ctx, mem_ctx, new_msg,
+						   "operatingSystemServicePack",
+						   os_version->CSDVersion);
+			if (ret != LDB_SUCCESS) {
+				return NT_STATUS_NO_MEMORY;
+			}
 
-			samdb_msg_set_string(sam_ctx, mem_ctx, new_msg,
-				"operatingSystemVersion",
-				talloc_asprintf(mem_ctx, "%d.%d (%d)",
-					os_version->MajorVersion,
-					os_version->MinorVersion,
-					os_version->BuildNumber
-				)
-			);
+			ret = samdb_msg_set_string(sam_ctx, mem_ctx, new_msg,
+						   "operatingSystemVersion",
+						   talloc_asprintf(mem_ctx,
+						   "%u.%u (%u)",
+						   os_version->MajorVersion,
+						   os_version->MinorVersion,
+						   os_version->BuildNumber));
+			if (ret != LDB_SUCCESS) {
+				return NT_STATUS_NO_MEMORY;
+			}
 		} else {
-			samdb_msg_add_delete(sam_ctx, mem_ctx, new_msg,
-					     "operatingSystemServicePack");
+			ret = samdb_msg_add_delete(sam_ctx, mem_ctx, new_msg,
+						   "operatingSystemServicePack");
+			if (ret != LDB_SUCCESS) {
+				return NT_STATUS_NO_MEMORY;
+			}
 
-			samdb_msg_add_delete(sam_ctx, mem_ctx, new_msg,
-					     "operatingSystemVersion");
+			ret = samdb_msg_add_delete(sam_ctx, mem_ctx, new_msg,
+						   "operatingSystemVersion");
+			if (ret != LDB_SUCCESS) {
+				return NT_STATUS_NO_MEMORY;
+			}
 		}
 
 		/*
@@ -1427,20 +1442,32 @@ static NTSTATUS dcesrv_netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_cal
 		 * are fine to start the update.
 		 */
 		if (update_dns_hostname) {
-			samdb_msg_set_string(sam_ctx, mem_ctx, new_msg,
-				"dNSHostname",
-			r->in.query->workstation_info->dns_hostname);
+			ret = samdb_msg_set_string(sam_ctx, mem_ctx, new_msg,
+						   "dNSHostname",
+						   r->in.query->workstation_info->dns_hostname);
+			if (ret != LDB_SUCCESS) {
+				return NT_STATUS_NO_MEMORY;
+			}
 
 			/* This manual "servicePrincipalName" generation is
 			 * still needed! Since the update in the samldb LDB
 			 * module does only work if the entries already exist
 			 * which isn't always the case. */
-			ldb_msg_add_string(new_msg, "servicePrincipalName",
-					   talloc_asprintf(new_msg, "HOST/%s",
-					   r->in.computer_name));
-			ldb_msg_add_string(new_msg, "servicePrincipalName",
-					   talloc_asprintf(new_msg, "HOST/%s",
-					   r->in.query->workstation_info->dns_hostname));
+			ret = ldb_msg_add_string(new_msg,
+						 "servicePrincipalName",
+						 talloc_asprintf(new_msg, "HOST/%s",
+						 r->in.computer_name));
+			if (ret != LDB_SUCCESS) {
+				return NT_STATUS_NO_MEMORY;
+			}
+
+			ret = ldb_msg_add_string(new_msg,
+						 "servicePrincipalName",
+						 talloc_asprintf(new_msg, "HOST/%s",
+						 r->in.query->workstation_info->dns_hostname));
+			if (ret != LDB_SUCCESS) {
+				return NT_STATUS_NO_MEMORY;
+			}
 		}
 
 		if (dsdb_replace(sam_ctx, new_msg, 0) != LDB_SUCCESS) {
@@ -1545,7 +1572,6 @@ static NTSTATUS dcesrv_netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_cal
 
 	return NT_STATUS_OK;
 }
-
 
 
 /*
