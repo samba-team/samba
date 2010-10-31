@@ -97,7 +97,7 @@ class SamTests(unittest.TestCase):
 
         self.delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
         self.delete_force(self.ldb, "cn=ldaptestuser2,cn=users," + self.base_dn)
-        self.delete_force(self.ldb, "cn=ldaptestcomputer,cn=users," + self.base_dn)
+        self.delete_force(self.ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
         self.delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
         self.delete_force(self.ldb, "cn=ldaptestgroup2,cn=users," + self.base_dn)
 
@@ -1787,6 +1787,156 @@ class SamTests(unittest.TestCase):
 
         self.delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
         self.delete_force(self.ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
+
+    def test_dNSHostName(self):
+        """Test the dNSHostName behaviour"""
+        print "Testing dNSHostName behaviour\n"
+
+        ldb.add({
+            "dn": "cn=ldaptestcomputer,cn=computers," + self.base_dn,
+            "objectclass": "computer",
+            "dNSHostName": "testname.testdom"})
+
+        res = ldb.search("cn=ldaptestcomputer,cn=computers," + self.base_dn,
+                          scope=SCOPE_BASE, attrs=["servicePrincipalName"])
+        self.assertTrue(len(res) == 1)
+        self.assertFalse("servicePrincipalName" in res[0])
+
+        self.delete_force(self.ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
+
+        ldb.add({
+            "dn": "cn=ldaptestcomputer,cn=computers," + self.base_dn,
+            "objectclass": "computer",
+            "servicePrincipalName": "HOST/testname.testdom"})
+
+        res = ldb.search("cn=ldaptestcomputer,cn=computers," + self.base_dn,
+                          scope=SCOPE_BASE, attrs=["dNSHostName"])
+        self.assertTrue(len(res) == 1)
+        self.assertFalse("dNSHostName" in res[0])
+
+        self.delete_force(self.ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
+
+        ldb.add({
+            "dn": "cn=ldaptestcomputer,cn=computers," + self.base_dn,
+            "objectclass": "computer",
+            "dNSHostName": "testname2.testdom",
+            "servicePrincipalName": "HOST/testname.testdom"})
+
+        res = ldb.search("cn=ldaptestcomputer,cn=computers," + self.base_dn,
+                          scope=SCOPE_BASE, attrs=["dNSHostName"])
+        self.assertTrue(len(res) == 1)
+        self.assertEquals(res[0]["dNSHostName"][0], "testname2.testdom")
+
+        res = ldb.search("cn=ldaptestcomputer,cn=computers," + self.base_dn,
+                          scope=SCOPE_BASE, attrs=["servicePrincipalName"])
+        self.assertTrue(len(res) == 1)
+        self.assertEquals(res[0]["servicePrincipalName"][0],
+                          "HOST/testname.testdom")
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
+        m["dNSHostName"] = MessageElement("testname.testdoM",
+                                          FLAG_MOD_REPLACE, "dNSHostName")
+        ldb.modify(m)
+
+        res = ldb.search("cn=ldaptestcomputer,cn=computers," + self.base_dn,
+                          scope=SCOPE_BASE, attrs=["servicePrincipalName"])
+        self.assertTrue(len(res) == 1)
+        self.assertEquals(res[0]["servicePrincipalName"][0],
+                          "HOST/testname.testdom")
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
+        m["dNSHostName"] = MessageElement("testname2.testdom2",
+                                          FLAG_MOD_REPLACE, "dNSHostName")
+        ldb.modify(m)
+
+        res = ldb.search("cn=ldaptestcomputer,cn=computers," + self.base_dn,
+                          scope=SCOPE_BASE, attrs=["servicePrincipalName"])
+        self.assertTrue(len(res) == 1)
+        self.assertEquals(res[0]["servicePrincipalName"][0],
+                          "HOST/testname2.testdom2")
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
+        m["dNSHostName"] = MessageElement([],
+                                          FLAG_MOD_DELETE, "dNSHostName")
+        ldb.modify(m)
+
+        res = ldb.search("cn=ldaptestcomputer,cn=computers," + self.base_dn,
+                          scope=SCOPE_BASE, attrs=["servicePrincipalName"])
+        self.assertTrue(len(res) == 1)
+        self.assertEquals(res[0]["servicePrincipalName"][0],
+                          "HOST/testname2.testdom2")
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
+        m["dNSHostName"] = MessageElement("testname.testdom3",
+                                          FLAG_MOD_REPLACE, "dNSHostName")
+        ldb.modify(m)
+
+        res = ldb.search("cn=ldaptestcomputer,cn=computers," + self.base_dn,
+                          scope=SCOPE_BASE, attrs=["servicePrincipalName"])
+        self.assertTrue(len(res) == 1)
+        self.assertEquals(res[0]["servicePrincipalName"][0],
+                          "HOST/testname2.testdom2")
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
+        m["dNSHostName"] = MessageElement("testname2.testdom2",
+                                          FLAG_MOD_REPLACE, "dNSHostName")
+        ldb.modify(m)
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
+        m["dNSHostName"] = MessageElement("testname3.testdom3",
+                                          FLAG_MOD_REPLACE, "dNSHostName")
+        m["servicePrincipalName"] = MessageElement("HOST/testname2.testdom2",
+                                                   FLAG_MOD_REPLACE,
+                                                   "servicePrincipalName")
+        ldb.modify(m)
+
+        res = ldb.search("cn=ldaptestcomputer,cn=computers," + self.base_dn,
+                          scope=SCOPE_BASE, attrs=["servicePrincipalName"])
+        self.assertTrue(len(res) == 1)
+        self.assertEquals(res[0]["servicePrincipalName"][0],
+                          "HOST/testname3.testdom3")
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
+        m["servicePrincipalName"] = MessageElement("HOST/testname2.testdom2",
+                                                   FLAG_MOD_REPLACE,
+                                                   "servicePrincipalName")
+        m["dNSHostName"] = MessageElement("testname4.testdom4",
+                                          FLAG_MOD_REPLACE, "dNSHostName")
+        ldb.modify(m)
+
+        res = ldb.search("cn=ldaptestcomputer,cn=computers," + self.base_dn,
+                          scope=SCOPE_BASE, attrs=["servicePrincipalName"])
+        self.assertTrue(len(res) == 1)
+        self.assertEquals(res[0]["servicePrincipalName"][0],
+                          "HOST/testname2.testdom2")
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
+        m["servicePrincipalName"] = MessageElement([],
+                                                   FLAG_MOD_DELETE,
+                                                   "servicePrincipalName")
+        ldb.modify(m)
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
+        m["dNSHostName"] = MessageElement("testname2.testdom2",
+                                          FLAG_MOD_REPLACE, "dNSHostName")
+        ldb.modify(m)
+
+        res = ldb.search("cn=ldaptestcomputer,cn=computers," + self.base_dn,
+                          scope=SCOPE_BASE, attrs=["servicePrincipalName"])
+        self.assertTrue(len(res) == 1)
+        self.assertFalse("servicePrincipalName" in res[0])
+
+        self.delete_force(self.ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
+
 
 if not "://" in host:
     if os.path.isfile(host):
