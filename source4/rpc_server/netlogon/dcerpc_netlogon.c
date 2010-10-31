@@ -1431,6 +1431,10 @@ static NTSTATUS dcesrv_netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_cal
 				"dNSHostname",
 			r->in.query->workstation_info->dns_hostname);
 
+			/* This manual "servicePrincipalName" generation is
+			 * still needed! Since the update in the samldb LDB
+			 * module does only work if the entries already exist
+			 * which isn't always the case. */
 			ldb_msg_add_string(new_msg, "servicePrincipalName",
 					   talloc_asprintf(new_msg, "HOST/%s",
 					   r->in.computer_name));
