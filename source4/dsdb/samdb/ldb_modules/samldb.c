@@ -186,6 +186,9 @@ static int samldb_check_sAMAccountName(struct samldb_ctx *ac)
 		return ldb_operr(ldb);
 	}
 	if (ret == 1) {
+		ldb_asprintf_errstring(ldb,
+				       "samldb: Account name (sAMAccountName) '%s' already in use!",
+				       name);
 		return LDB_ERR_ENTRY_ALREADY_EXISTS;
 	}
 
@@ -1354,6 +1357,69 @@ static int samldb_group_type_change(struct samldb_ctx *ac)
 	return LDB_SUCCESS;
 }
 
+static int samldb_sam_accountname_check(struct samldb_ctx *ac)
+{
+	struct ldb_context *ldb = ldb_module_get_ctx(ac->module);
+	const char *no_attrs[] = { NULL };
+	struct ldb_result *res;
+	const char *sam_accountname, *enc_str;
+	struct ldb_message_element *el;
+	struct ldb_message *tmp_msg;
+	int ret;
+
+	ret = samldb_get_single_valued_attr(ac, "sAMAccountName", &el);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+	if (el == NULL) {
+		/* we are not affected */
+		return LDB_SUCCESS;
+	}
+
+	/* Create a temporary message for fetching the "sAMAccountName" */
+	tmp_msg = ldb_msg_new(ac->msg);
+	if (tmp_msg == NULL) {
+		return ldb_module_oom(ac->module);
+	}
+	ret = ldb_msg_add(tmp_msg, el, 0);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+	sam_accountname = ldb_msg_find_attr_as_string(tmp_msg, "sAMAccountName",
+						      NULL);
+	talloc_free(tmp_msg);
+
+	if (sam_accountname == NULL) {
+		return ldb_operr(ldb);
+	}
+
+	enc_str = ldb_binary_encode_string(ac, sam_accountname);
+	if (enc_str == NULL) {
+		return ldb_module_oom(ac->module);
+	}
+
+	/* Make sure that a "sAMAccountName" is only used once */
+
+	ret = ldb_search(ldb, ac, &res, NULL, LDB_SCOPE_SUBTREE, no_attrs,
+			 "(sAMAccountName=%s)", enc_str);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+	if (res->count > 1) {
+		return ldb_operr(ldb);
+	} else if (res->count == 1) {
+		if (ldb_dn_compare(res->msgs[0]->dn, ac->msg->dn) != 0) {
+			ldb_asprintf_errstring(ldb,
+					       "samldb: Account name (sAMAccountName) '%s' already in use!",
+					       sam_accountname);
+			return LDB_ERR_ENTRY_ALREADY_EXISTS;
+		}
+	}
+	talloc_free(res);
+
+	return LDB_SUCCESS;
+}
+
 static int samldb_member_check(struct samldb_ctx *ac)
 {
 	struct ldb_context *ldb = ldb_module_get_ctx(ac->module);
@@ -1763,6 +1829,14 @@ static int samldb_modify(struct ldb_module *module, struct ldb_request *req)
 	if (el != NULL) {
 		modified = true;
 		ret = samldb_group_type_change(ac);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+	}
+
+	el = ldb_msg_find_element(ac->msg, "sAMAccountName");
+	if (el != NULL) {
+		ret = samldb_sam_accountname_check(ac);
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
