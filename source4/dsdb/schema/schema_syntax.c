@@ -171,7 +171,7 @@ static WERROR dsdb_syntax_BOOL_ldb_to_drsuapi(const struct dsdb_syntax_ctx *ctx,
 	unsigned int i;
 	DATA_BLOB *blobs;
 
-	if (attr->attributeID_id == 0xFFFFFFFF) {
+	if (attr->attributeID_id == DRSUAPI_ATTID_INVALID) {
 		return WERR_FOOBAR;
 	}
 
@@ -210,7 +210,7 @@ static WERROR dsdb_syntax_BOOL_validate_ldb(const struct dsdb_syntax_ctx *ctx,
 {
 	unsigned int i;
 
-	if (attr->attributeID_id == 0xFFFFFFFF) {
+	if (attr->attributeID_id == DRSUAPI_ATTID_INVALID) {
 		return WERR_FOOBAR;
 	}
 
@@ -280,7 +280,7 @@ static WERROR dsdb_syntax_INT32_ldb_to_drsuapi(const struct dsdb_syntax_ctx *ctx
 	unsigned int i;
 	DATA_BLOB *blobs;
 
-	if (attr->attributeID_id == 0xFFFFFFFF) {
+	if (attr->attributeID_id == DRSUAPI_ATTID_INVALID) {
 		return WERR_FOOBAR;
 	}
 
@@ -319,7 +319,7 @@ static WERROR dsdb_syntax_INT32_validate_ldb(const struct dsdb_syntax_ctx *ctx,
 {
 	unsigned int i;
 
-	if (attr->attributeID_id == 0xFFFFFFFF) {
+	if (attr->attributeID_id == DRSUAPI_ATTID_INVALID) {
 		return WERR_FOOBAR;
 	}
 
@@ -407,7 +407,7 @@ static WERROR dsdb_syntax_INT64_ldb_to_drsuapi(const struct dsdb_syntax_ctx *ctx
 	unsigned int i;
 	DATA_BLOB *blobs;
 
-	if (attr->attributeID_id == 0xFFFFFFFF) {
+	if (attr->attributeID_id == DRSUAPI_ATTID_INVALID) {
 		return WERR_FOOBAR;
 	}
 
@@ -444,7 +444,7 @@ static WERROR dsdb_syntax_INT64_validate_ldb(const struct dsdb_syntax_ctx *ctx,
 {
 	unsigned int i;
 
-	if (attr->attributeID_id == 0xFFFFFFFF) {
+	if (attr->attributeID_id == DRSUAPI_ATTID_INVALID) {
 		return WERR_FOOBAR;
 	}
 
@@ -542,7 +542,7 @@ static WERROR dsdb_syntax_NTTIME_UTC_ldb_to_drsuapi(const struct dsdb_syntax_ctx
 	unsigned int i;
 	DATA_BLOB *blobs;
 
-	if (attr->attributeID_id == 0xFFFFFFFF) {
+	if (attr->attributeID_id == DRSUAPI_ATTID_INVALID) {
 		return WERR_FOOBAR;
 	}
 
@@ -582,7 +582,7 @@ static WERROR dsdb_syntax_NTTIME_UTC_validate_ldb(const struct dsdb_syntax_ctx *
 {
 	unsigned int i;
 
-	if (attr->attributeID_id == 0xFFFFFFFF) {
+	if (attr->attributeID_id == DRSUAPI_ATTID_INVALID) {
 		return WERR_FOOBAR;
 	}
 
@@ -674,7 +674,7 @@ static WERROR dsdb_syntax_NTTIME_ldb_to_drsuapi(const struct dsdb_syntax_ctx *ct
 	unsigned int i;
 	DATA_BLOB *blobs;
 
-	if (attr->attributeID_id == 0xFFFFFFFF) {
+	if (attr->attributeID_id == DRSUAPI_ATTID_INVALID) {
 		return WERR_FOOBAR;
 	}
 
@@ -718,7 +718,7 @@ static WERROR dsdb_syntax_NTTIME_validate_ldb(const struct dsdb_syntax_ctx *ctx,
 {
 	unsigned int i;
 
-	if (attr->attributeID_id == 0xFFFFFFFF) {
+	if (attr->attributeID_id == DRSUAPI_ATTID_INVALID) {
 		return WERR_FOOBAR;
 	}
 
@@ -789,7 +789,7 @@ static WERROR dsdb_syntax_DATA_BLOB_ldb_to_drsuapi(const struct dsdb_syntax_ctx 
 	unsigned int i;
 	DATA_BLOB *blobs;
 
-	if (attr->attributeID_id == 0xFFFFFFFF) {
+	if (attr->attributeID_id == DRSUAPI_ATTID_INVALID) {
 		return WERR_FOOBAR;
 	}
 
@@ -818,7 +818,7 @@ static WERROR dsdb_syntax_DATA_BLOB_validate_one_val(const struct dsdb_syntax_ct
 						     const struct dsdb_attribute *attr,
 						     const struct ldb_val *val)
 {
-	if (attr->attributeID_id == 0xFFFFFFFF) {
+	if (attr->attributeID_id == DRSUAPI_ATTID_INVALID) {
 		return WERR_FOOBAR;
 	}
 
@@ -844,7 +844,7 @@ static WERROR dsdb_syntax_DATA_BLOB_validate_ldb(const struct dsdb_syntax_ctx *c
 	unsigned int i;
 	WERROR status;
 
-	if (attr->attributeID_id == 0xFFFFFFFF) {
+	if (attr->attributeID_id == DRSUAPI_ATTID_INVALID) {
 		return WERR_FOOBAR;
 	}
 
@@ -1273,7 +1273,7 @@ static WERROR dsdb_syntax_OID_ldb_to_drsuapi(const struct dsdb_syntax_ctx *ctx,
 					     TALLOC_CTX *mem_ctx,
 					     struct drsuapi_DsReplicaAttribute *out)
 {
-	if (attr->attributeID_id == 0xFFFFFFFF) {
+	if (attr->attributeID_id == DRSUAPI_ATTID_INVALID) {
 		return WERR_FOOBAR;
 	}
 
@@ -1351,7 +1351,7 @@ static WERROR dsdb_syntax_OID_validate_ldb(const struct dsdb_syntax_ctx *ctx,
 	struct ldb_message_element ldb_tmp;
 	TALLOC_CTX *tmp_ctx;
 
-	if (attr->attributeID_id == 0xFFFFFFFF) {
+	if (attr->attributeID_id == DRSUAPI_ATTID_INVALID) {
 		return WERR_FOOBAR;
 	}
 
@@ -1443,7 +1443,7 @@ static WERROR dsdb_syntax_UNICODE_ldb_to_drsuapi(const struct dsdb_syntax_ctx *c
 	unsigned int i;
 	DATA_BLOB *blobs;
 
-	if (attr->attributeID_id == 0xFFFFFFFF) {
+	if (attr->attributeID_id == DRSUAPI_ATTID_INVALID) {
 		return WERR_FOOBAR;
 	}
 
@@ -1480,7 +1480,7 @@ static WERROR dsdb_syntax_UNICODE_validate_one_val(const struct dsdb_syntax_ctx 
 	size_t size;
 	bool ok;
 
-	if (attr->attributeID_id == 0xFFFFFFFF) {
+	if (attr->attributeID_id == DRSUAPI_ATTID_INVALID) {
 		return WERR_FOOBAR;
 	}
 
@@ -1517,7 +1517,7 @@ static WERROR dsdb_syntax_UNICODE_validate_ldb(const struct dsdb_syntax_ctx *ctx
 	WERROR status;
 	unsigned int i;
 
-	if (attr->attributeID_id == 0xFFFFFFFF) {
+	if (attr->attributeID_id == DRSUAPI_ATTID_INVALID) {
 		return WERR_FOOBAR;
 	}
 
@@ -1656,7 +1656,7 @@ static WERROR dsdb_syntax_DN_ldb_to_drsuapi(const struct dsdb_syntax_ctx *ctx,
 	unsigned int i;
 	DATA_BLOB *blobs;
 
-	if (attr->attributeID_id == 0xFFFFFFFF) {
+	if (attr->attributeID_id == DRSUAPI_ATTID_INVALID) {
 		return WERR_FOOBAR;
 	}
 
@@ -1738,7 +1738,7 @@ static WERROR dsdb_syntax_DN_validate_one_val(const struct dsdb_syntax_ctx *ctx,
 
 	W_ERROR_HAVE_NO_MEMORY(tmp_ctx);
 
-	if (attr->attributeID_id == 0xFFFFFFFF) {
+	if (attr->attributeID_id == DRSUAPI_ATTID_INVALID) {
 		return WERR_FOOBAR;
 	}
 
@@ -1821,7 +1821,7 @@ static WERROR dsdb_syntax_DN_validate_ldb(const struct dsdb_syntax_ctx *ctx,
 {
 	unsigned int i;
 
-	if (attr->attributeID_id == 0xFFFFFFFF) {
+	if (attr->attributeID_id == DRSUAPI_ATTID_INVALID) {
 		return WERR_FOOBAR;
 	}
 
@@ -1962,7 +1962,7 @@ static WERROR dsdb_syntax_DN_BINARY_ldb_to_drsuapi(const struct dsdb_syntax_ctx 
 	unsigned int i;
 	DATA_BLOB *blobs;
 
-	if (attr->attributeID_id == 0xFFFFFFFF) {
+	if (attr->attributeID_id == DRSUAPI_ATTID_INVALID) {
 		return WERR_FOOBAR;
 	}
 
@@ -2041,7 +2041,7 @@ static WERROR dsdb_syntax_DN_BINARY_validate_ldb(const struct dsdb_syntax_ctx *c
 {
 	unsigned int i;
 
-	if (attr->attributeID_id == 0xFFFFFFFF) {
+	if (attr->attributeID_id == DRSUAPI_ATTID_INVALID) {
 		return WERR_FOOBAR;
 	}
 
@@ -2111,7 +2111,7 @@ static WERROR dsdb_syntax_DN_STRING_validate_ldb(const struct dsdb_syntax_ctx *c
 {
 	unsigned int i;
 
-	if (attr->attributeID_id == 0xFFFFFFFF) {
+	if (attr->attributeID_id == DRSUAPI_ATTID_INVALID) {
 		return WERR_FOOBAR;
 	}
 
@@ -2205,7 +2205,7 @@ static WERROR dsdb_syntax_PRESENTATION_ADDRESS_ldb_to_drsuapi(const struct dsdb_
 	unsigned int i;
 	DATA_BLOB *blobs;
 
-	if (attr->attributeID_id == 0xFFFFFFFF) {
+	if (attr->attributeID_id == DRSUAPI_ATTID_INVALID) {
 		return WERR_FOOBAR;
 	}
 

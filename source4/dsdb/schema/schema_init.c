@@ -562,7 +562,7 @@ WERROR dsdb_attribute_from_ldb(struct ldb_context *ldb,
 	GET_STRING_LDB(msg, "attributeID", attr, attr, attributeID_oid, true);
 	if (!schema->prefixmap || schema->prefixmap->length == 0) {
 		/* set an invalid value */
-		attr->attributeID_id = 0xFFFFFFFF;
+		attr->attributeID_id = DRSUAPI_ATTID_INVALID;
 	} else {
 		status = dsdb_schema_pfm_make_attid(schema->prefixmap,
 						    attr->attributeID_oid,
@@ -592,7 +592,7 @@ WERROR dsdb_attribute_from_ldb(struct ldb_context *ldb,
 	GET_STRING_LDB(msg, "attributeSyntax", attr, attr, attributeSyntax_oid, true);
 	if (!schema->prefixmap || schema->prefixmap->length == 0) {
 		/* set an invalid value */
-		attr->attributeSyntax_id = 0xFFFFFFFF;
+		attr->attributeSyntax_id = DRSUAPI_ATTID_INVALID;
 	} else {
 		status = dsdb_schema_pfm_attid_from_oid(schema->prefixmap,
 							attr->attributeSyntax_oid,
@@ -655,7 +655,7 @@ WERROR dsdb_class_from_ldb(struct dsdb_schema *schema,
 	GET_STRING_LDB(msg, "governsID", obj, obj, governsID_oid, true);
 	if (!schema->prefixmap || schema->prefixmap->length == 0) {
 		/* set an invalid value */
-		obj->governsID_id = 0xFFFFFFFF;
+		obj->governsID_id = DRSUAPI_ATTID_INVALID;
 	} else {
 		status = dsdb_schema_pfm_make_attid(schema->prefixmap,
 						    obj->governsID_oid,
