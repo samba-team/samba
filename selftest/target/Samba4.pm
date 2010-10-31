@@ -13,10 +13,10 @@ use POSIX;
 sub new($$$$$) {
 	my ($classname, $bindir, $ldap, $setupdir, $exeext) = @_;
 	$exeext = "" unless defined($exeext);
-	my $self = { 
-		vars => {}, 
-		ldap => $ldap, 
-		bindir => $bindir, 
+	my $self = {
+		vars => {},
+		ldap => $ldap,
+		bindir => $bindir,
 		setupdir => $setupdir,
 		exeext => $exeext
 	};
@@ -79,7 +79,7 @@ sub slapd_stop($$)
 	return 1;
 }
 
-sub check_or_start($$$) 
+sub check_or_start($$$)
 {
 	my ($self, $env_vars, $max_time) = @_;
 	return 0 if ( -p $env_vars->{SAMBA_TEST_FIFO});
@@ -104,9 +104,9 @@ sub check_or_start($$$)
 		my $valgrind = "";
 		if (defined($ENV{SAMBA_VALGRIND})) {
 		    $valgrind = $ENV{SAMBA_VALGRIND};
-		} 
+		}
 
-		$ENV{KRB5_CONFIG} = $env_vars->{KRB5_CONFIG}; 
+		$ENV{KRB5_CONFIG} = $env_vars->{KRB5_CONFIG};
 		$ENV{WINBINDD_SOCKET_DIR} = $env_vars->{WINBINDD_SOCKET_DIR};
 
 		$ENV{NSS_WRAPPER_PASSWD} = $env_vars->{NSS_WRAPPER_PASSWD};
@@ -133,7 +133,7 @@ sub check_or_start($$$)
 
 		# allow selection of the process model using
 		# the environment varibale SAMBA_PROCESS_MODEL
-		# that allows us to change the process model for 
+		# that allows us to change the process model for
 		# individual machines in the build farm
 		my $model = "single";
 		if (defined($ENV{SAMBA_PROCESS_MODEL})) {
@@ -175,8 +175,8 @@ sub wait_for_start($$)
 	print "delaying for nbt name registration\n";
 	sleep 2;
 
-	# This will return quickly when things are up, but be slow if we 
-	# need to wait for (eg) SSL init 
+	# This will return quickly when things are up, but be slow if we
+	# need to wait for (eg) SSL init
 	my $nmblookup = $self->bindir_path("nmblookup");
 	system("$nmblookup $testenv_vars->{CONFIGURATION} $testenv_vars->{SERVER}");
 	system("$nmblookup $testenv_vars->{CONFIGURATION} -U $testenv_vars->{SERVER_IP} $testenv_vars->{SERVER}");
@@ -270,7 +270,7 @@ YX70obsCAQI=
 EOF
 	close(DHFILE);
 
-	#Likewise, we pregenerate the key material.  This allows the 
+	#Likewise, we pregenerate the key material.  This allows the
 	#other certificates to be pre-generated
 	open(KEYFILE, ">$keyfile");
 	print KEYFILE <<EOF;
@@ -312,7 +312,7 @@ yoZeAErTALjyZYZEPcECQQDlUi0N8DFxQ/lOwWyR3Hailft+mPqoPCa8QHlQZnlG
 -----END RSA PRIVATE KEY-----
 EOF
 
-	#generated with 
+	#generated with
 	# hxtool issue-certificate --self-signed --issue-ca \
 	# --ca-private-key="FILE:$KEYFILE" \
 	# --subject="CN=CA,DC=samba,DC=example,DC=com" \
@@ -336,7 +336,7 @@ HTLk2sGigsWwrJ2N99sG/cqSJLJ1MFwLrs6koweBnYU0f/g=
 -----END CERTIFICATE-----
 EOF
 
-	#generated with GNUTLS internally in Samba.  
+	#generated with GNUTLS internally in Samba.
 
 	open(CERTFILE, ">$certfile");
 	print CERTFILE <<EOF;
@@ -452,7 +452,7 @@ EOF
 
 sub provision_raw_prepare($$$$$$$$$$)
 {
-	my ($self, $prefix, $server_role, $netbiosname, $netbiosalias, 
+	my ($self, $prefix, $server_role, $netbiosname, $netbiosalias,
 	    $domain, $realm, $functional_level,
 	    $swiface, $password, $kdc_ipv4) = @_;
 	my $ctx;
@@ -749,8 +749,8 @@ sub provision_raw_step2($$$)
 
 sub provision($$$$$$$$$)
 {
-	my ($self, $prefix, $server_role, $netbiosname, $netbiosalias, 
-	    $domain, $realm, $functional_level, 
+	my ($self, $prefix, $server_role, $netbiosname, $netbiosalias,
+	    $domain, $realm, $functional_level,
 	    $swiface, $password, $kdc_ipv4, $extra_smbconf_options) = @_;
 
 	my $ctx = $self->provision_raw_prepare($prefix, $server_role,
@@ -868,8 +868,8 @@ sub provision_member($$$)
 				   "member server",
 				   "localmember",
 				   "member3",
-				   "SAMBADOMAIN", 
-				   "samba.example.com", 
+				   "SAMBADOMAIN",
+				   "samba.example.com",
 				   "2008",
 				   3,
 				   "locMEMpass3",
@@ -922,8 +922,8 @@ sub provision_rpc_proxy($$$)
 				   "member server",
 				   "localrpcproxy",
 				   "rpcproxy4",
-				   "SAMBADOMAIN", 
-				   "samba.example.com", 
+				   "SAMBADOMAIN",
+				   "samba.example.com",
 				   "2008",
 				   4,
 				   "locRPCproxypass4",
@@ -965,8 +965,8 @@ sub provision_vampire_dc($$$)
 	my $ctx = $self->provision_raw_prepare($prefix, "domain controller",
 					       "localvampiredc",
 					       "dc2",
-					       "SAMBADOMAIN", 
-					       "samba.example.com", 
+					       "SAMBADOMAIN",
+					       "samba.example.com",
 					       "2008",
 					       2, $dcvars->{PASSWORD},
 					       $dcvars->{SERVER_IP});
@@ -1026,8 +1026,8 @@ sub provision_dc($$)
 				   "domain controller",
 				   "localdc",
 				   "dc1",
-				   "SAMBADOMAIN", 
-				   "samba.example.com", 
+				   "SAMBADOMAIN",
+				   "samba.example.com",
 				   "2008",
 				   1,
 				   "locDCpass1",
@@ -1058,8 +1058,8 @@ sub provision_fl2000dc($$)
 				   "domain controller",
 				   "dc5",
 				   "localfl2000dc",
-				   "SAMBA2000", 
-				   "samba2000.example.com", 
+				   "SAMBA2000",
+				   "samba2000.example.com",
 				   "2000",
 				   5,
 				   "locDCpass5",
@@ -1250,7 +1250,7 @@ sub getlog_env($$)
 	close(LOG);
 
 	return "" if $out eq $title;
- 
+
 	return $out;
 }
 
