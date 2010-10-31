@@ -954,14 +954,10 @@ def setup_self_join(samdb, names,
               "SERVERDN": names.serverdn,
               "INVOCATIONID": invocationid,
               "NETBIOSNAME": names.netbiosname,
-              "DEFAULTSITE": names.sitename,
               "DNSNAME": "%s.%s" % (names.hostname, names.dnsdomain),
               "MACHINEPASS_B64": b64encode(machinepass),
-              "REALM": names.realm,
-              "DOMAIN": names.domain,
               "DOMAINSID": str(domainsid),
               "DCRID": str(next_rid),
-              "DNSDOMAIN": names.dnsdomain,
               "SAMBA_VERSION_STRING": version,
               "NTDSGUID": ntdsguid_line,
               "DOMAIN_CONTROLLER_FUNCTIONALITY": str(domainControllerFunctionality)})
@@ -970,7 +966,6 @@ def setup_self_join(samdb, names,
               "POLICYGUID": policyguid,
               "POLICYGUID_DC": policyguid_dc,
               "DNSDOMAIN": names.dnsdomain,
-              "DOMAINSID": str(domainsid),
               "DOMAINDN": names.domaindn})
     
     # add the NTDSGUID based SPNs
@@ -981,15 +976,12 @@ def setup_self_join(samdb, names,
 
     # Setup fSMORoleOwner entries to point at the newly created DC entry
     setup_modify_ldif(samdb, setup_path("provision_self_join_modify.ldif"), {
-              "DOMAIN": names.domain,
-              "DNSDOMAIN": names.dnsdomain,
               "DOMAINDN": names.domaindn,
               "CONFIGDN": names.configdn,
               "SCHEMADN": names.schemadn, 
               "DEFAULTSITE": names.sitename,
               "SERVERDN": names.serverdn,
               "NETBIOSNAME": names.netbiosname,
-              "NTDSGUID": names.ntdsguid,
               "RIDALLOCATIONSTART": str(next_rid + 100),
               "RIDALLOCATIONEND": str(next_rid + 100 + 499),
               })

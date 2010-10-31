@@ -15,20 +15,8 @@ localPolicyFlags: 0
 operatingSystem: Samba
 operatingSystemVersion: ${SAMBA_VERSION_STRING}
 sAMAccountName: ${NETBIOSNAME}$
-# "servicePrincipalName"s for FRS and DFSR don't exit since we still miss DFRS support
-# "servicePrincipalName"s for DNS ("ldap/../ForestDnsZones",
-# "ldap/../DomainDnsZones", "DNS/..") don't exist since we don't support AD DNS
-servicePrincipalName: GC/${DNSNAME}/${REALM}
-servicePrincipalName: HOST/${DNSNAME}/${DOMAIN}
-servicePrincipalName: HOST/${NETBIOSNAME}
-servicePrincipalName: HOST/${DNSNAME}
-servicePrincipalName: HOST/${DNSNAME}/${REALM}
-# "servicePrincipalName"s with GUIDs are located in
-# "provision_self_join_modify.ldif"
-servicePrincipalName: ldap/${DNSNAME}/${DOMAIN}
-servicePrincipalName: ldap/${NETBIOSNAME}
-servicePrincipalName: ldap/${DNSNAME}
-servicePrincipalName: ldap/${DNSNAME}/${REALM}
+# The "servicePrincipalName" updates are now handled by the "samba_spnupdate"
+# script
 userAccountControl: 532480
 userPassword:: ${MACHINEPASS_B64}
 objectSID: ${DOMAINSID}-${DCRID}
