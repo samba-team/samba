@@ -47,7 +47,9 @@ WERROR dcesrv_drsuapi_DsWriteAccountSpn(struct dcesrv_call_state *dce_call, TALL
 		case 1: {
 			struct drsuapi_DsWriteAccountSpnRequest1 *req;
 			struct ldb_message *msg;
-			int count, i, ret;
+			uint32_t count;
+			unsigned int i;
+			int ret;
 			unsigned spn_count=0;
 
 			req = &r->in.req->req1;
@@ -96,8 +98,9 @@ WERROR dcesrv_drsuapi_DsWriteAccountSpn(struct dcesrv_call_state *dce_call, TALL
 			}
 
 			/* Apply to database */
-			ret = dsdb_modify(b_state->sam_ctx, msg, DSDB_MODIFY_PERMISSIVE);
-			if (ret != 0) {
+			ret = dsdb_modify(b_state->sam_ctx, msg,
+					  DSDB_MODIFY_PERMISSIVE);
+			if (ret != LDB_SUCCESS) {
 				DEBUG(0,("Failed to modify SPNs on %s: %s\n",
 					 ldb_dn_get_linearized(msg->dn),
 					 ldb_errstring(b_state->sam_ctx)));
