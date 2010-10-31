@@ -61,9 +61,3 @@ ctags:
 bin/%:: FORCE
 	$(WAF) --targets=`basename $@`
 FORCE:
-
-configure: autogen-waf.sh ../../buildtools/scripts/configure.waf
-	./autogen-waf.sh
-
-Makefile: autogen-waf.sh configure ../../buildtools/scripts/Makefile.waf
-	./autogen-waf.sh
