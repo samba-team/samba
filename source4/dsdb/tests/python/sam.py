@@ -129,7 +129,7 @@ class SamTests(unittest.TestCase):
         try:
             ldb.add({
                 "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
-                "objectclass": ["user", "person"],
+                "objectclass": "user",
                 "sAMAccountName": "administrator"})
             self.fail()
         except LdbError, (num, _):
@@ -140,7 +140,7 @@ class SamTests(unittest.TestCase):
         try:
             ldb.add({
                 "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
-                "objectclass": ["user", "person"],
+                "objectclass": "user",
                 "primaryGroupID": "0"})
             self.fail()
         except LdbError, (num, _):
@@ -151,7 +151,7 @@ class SamTests(unittest.TestCase):
         try:
             ldb.add({
                 "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
-                "objectclass": ["user", "person"],
+                "objectclass": "user",
                 "primaryGroupID": str(group_rid_1)})
             self.fail()
         except LdbError, (num, _):
@@ -185,7 +185,7 @@ class SamTests(unittest.TestCase):
 
         ldb.add({
             "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
-            "objectclass": ["user", "person"]})
+            "objectclass": "user"})
 
         res1 = ldb.search("cn=ldaptestuser,cn=users," + self.base_dn,
                           scope=SCOPE_BASE, attrs=["primaryGroupID"])
@@ -196,7 +196,7 @@ class SamTests(unittest.TestCase):
 
         ldb.add({
             "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
-            "objectclass": ["user", "person"],
+            "objectclass": "user",
             "userAccountControl": str(UF_NORMAL_ACCOUNT | UF_PASSWD_NOTREQD) })
 
         res1 = ldb.search("cn=ldaptestuser,cn=users," + self.base_dn,
@@ -211,7 +211,7 @@ class SamTests(unittest.TestCase):
 
         ldb.add({
             "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
-            "objectclass": ["computer"],
+            "objectclass": "computer",
             "userAccountControl": str(UF_WORKSTATION_TRUST_ACCOUNT | UF_PASSWD_NOTREQD) })
 
         res1 = ldb.search("cn=ldaptestuser,cn=users," + self.base_dn,
@@ -223,7 +223,7 @@ class SamTests(unittest.TestCase):
 
         ldb.add({
             "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
-            "objectclass": ["computer"],
+            "objectclass": "computer",
             "userAccountControl": str(UF_SERVER_TRUST_ACCOUNT | UF_PASSWD_NOTREQD) })
 
         res1 = ldb.search("cn=ldaptestuser,cn=users," + self.base_dn,
@@ -238,7 +238,7 @@ class SamTests(unittest.TestCase):
         # we have a fallback in the assertion)
         ldb.add({
             "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
-            "objectclass": ["computer"],
+            "objectclass": "computer",
             "userAccountControl": str(UF_PARTIAL_SECRETS_ACCOUNT | UF_WORKSTATION_TRUST_ACCOUNT | UF_PASSWD_NOTREQD) })
 
         res1 = ldb.search("cn=ldaptestuser,cn=users," + self.base_dn,
@@ -253,7 +253,7 @@ class SamTests(unittest.TestCase):
 
         ldb.add({
             "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
-            "objectclass": ["user", "person"]})
+            "objectclass": "user"})
 
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
@@ -273,7 +273,7 @@ class SamTests(unittest.TestCase):
 
         ldb.add({
             "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
-            "objectclass": ["computer"]})
+            "objectclass": "computer"})
 
         res1 = ldb.search("cn=ldaptestuser,cn=users," + self.base_dn,
                           scope=SCOPE_BASE, attrs=["primaryGroupID"])
@@ -323,7 +323,7 @@ class SamTests(unittest.TestCase):
 
         ldb.add({
             "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
-            "objectclass": ["user", "person"]})
+            "objectclass": "user"})
 
         # Try to set an invalid account name
         m = Message()
@@ -490,7 +490,7 @@ class SamTests(unittest.TestCase):
         try:
             ldb.add({
               "dn": "cn=ldaptestuser2,cn=users," + self.base_dn,
-              "objectclass": ["user", "person"],
+              "objectclass": "user",
               "primaryGroupID": "0"})
             self.fail()
         except LdbError, (num, _):
@@ -502,11 +502,11 @@ class SamTests(unittest.TestCase):
 
         ldb.add({
             "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
-            "objectclass": ["user", "person"]})
+            "objectclass": "user"})
 
         ldb.add({
             "dn": "cn=ldaptestuser2,cn=users," + self.base_dn,
-            "objectclass": ["user", "person"]})
+            "objectclass": "user"})
 
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestgroup2,cn=users," + self.base_dn)
@@ -579,7 +579,7 @@ class SamTests(unittest.TestCase):
 
         ldb.add({
             "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
-            "objectclass": ["user", "person"]})
+            "objectclass": "user"})
         ldb.add({
             "dn": "cn=ldaptestgroup,cn=users," + self.base_dn,
             "objectclass": "group"})
@@ -741,7 +741,7 @@ class SamTests(unittest.TestCase):
 
         ldb.add({
             "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
-            "objectclass": ["user", "person"]})
+            "objectclass": "user"})
 
         ldb.add({
             "dn": "cn=ldaptestgroup,cn=users," + self.base_dn,
@@ -818,7 +818,7 @@ class SamTests(unittest.TestCase):
 
         ldb.add({
             "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
-            "objectclass": ["user", "person"]})
+            "objectclass": "user"})
 
         # This testuser should contain at least two "tokenGroups" entries
         # (exactly two on an unmodified "Domain Users" and "Users" group)
@@ -1447,7 +1447,7 @@ class SamTests(unittest.TestCase):
         try:
             ldb.add({
                 "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
-                "objectclass": ["user", "person"],
+                "objectclass": "user",
                 "userAccountControl": "0"})
             self.fail()
         except LdbError, (num, _):
@@ -1458,7 +1458,7 @@ class SamTests(unittest.TestCase):
 #        try:
 #            ldb.add({
 #                "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
-#                "objectclass": ["user", "person"],
+#                "objectclass": "user",
 #                "userAccountControl": str(UF_NORMAL_ACCOUNT)})
 #            self.fail()
 #        except LdbError, (num, _):
@@ -1467,7 +1467,7 @@ class SamTests(unittest.TestCase):
 
         ldb.add({
             "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
-            "objectclass": ["user", "person"],
+            "objectclass": "user",
             "userAccountControl": str(UF_NORMAL_ACCOUNT | UF_PASSWD_NOTREQD)})
 
         res1 = ldb.search("cn=ldaptestuser,cn=users," + self.base_dn,
@@ -1480,7 +1480,7 @@ class SamTests(unittest.TestCase):
         try:
             ldb.add({
                 "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
-                "objectclass": ["user", "person"],
+                "objectclass": "user",
                 "userAccountControl": str(UF_TEMP_DUPLICATE_ACCOUNT)})
             self.fail()
         except LdbError, (num, _):
@@ -1491,7 +1491,7 @@ class SamTests(unittest.TestCase):
 #        try:
 #            ldb.add({
 #                "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
-#                "objectclass": ["user", "person"],
+#                "objectclass": "user",
 #                "userAccountControl": str(UF_SERVER_TRUST_ACCOUNT)})
 #            self.fail()
 #        except LdbError, (num, _):
@@ -1501,7 +1501,7 @@ class SamTests(unittest.TestCase):
 #        try:
 #            ldb.add({
 #                "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
-#                "objectclass": ["user", "person"],
+#                "objectclass": "user",
 #                "userAccountControl": str(UF_WORKSTATION_TRUST_ACCOUNT)})
 #        except LdbError, (num, _):
 #            self.assertEquals(num, ERR_OBJECT_CLASS_VIOLATION)
@@ -1511,7 +1511,7 @@ class SamTests(unittest.TestCase):
 #        try:
 #            ldb.add({
 #                "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
-#                "objectclass": ["user", "person"],
+#                "objectclass": "user",
 #                "userAccountControl": str(UF_INTERDOMAIN_TRUST_ACCOUNT)})
 #            self.fail()
 #        except LdbError, (num, _):
@@ -1522,7 +1522,7 @@ class SamTests(unittest.TestCase):
 
         ldb.add({
             "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
-            "objectclass": ["user", "person"]})
+            "objectclass": "user"})
 
         # After creation we should have a normal account
         res1 = ldb.search("cn=ldaptestuser,cn=users," + self.base_dn,
@@ -1645,7 +1645,7 @@ class SamTests(unittest.TestCase):
         try:
             ldb.add({
                 "dn": "cn=ldaptestcomputer,cn=computers," + self.base_dn,
-                "objectclass": ["computer"],
+                "objectclass": "computer",
                 "userAccountControl": "0"})
             self.fail()
         except LdbError, (num, _):
@@ -1656,7 +1656,7 @@ class SamTests(unittest.TestCase):
 #        try:
 #            ldb.add({
 #                "dn": "cn=ldaptestcomputer,cn=computers," + self.base_dn,
-#                "objectclass": ["computer"],
+#                "objectclass": "computer",
 #                "userAccountControl": str(UF_NORMAL_ACCOUNT)})
 #            self.fail()
 #        except LdbError, (num, _):
@@ -1665,7 +1665,7 @@ class SamTests(unittest.TestCase):
 
         ldb.add({
             "dn": "cn=ldaptestcomputer,cn=computers," + self.base_dn,
-            "objectclass": ["computer"],
+            "objectclass": "computer",
             "userAccountControl": str(UF_NORMAL_ACCOUNT | UF_PASSWD_NOTREQD)})
 
         res1 = ldb.search("cn=ldaptestcomputer,cn=computers," + self.base_dn,
@@ -1678,7 +1678,7 @@ class SamTests(unittest.TestCase):
         try:
             ldb.add({
                 "dn": "cn=ldaptestcomputer,cn=computers," + self.base_dn,
-                "objectclass": ["computer"],
+                "objectclass": "computer",
                 "userAccountControl": str(UF_TEMP_DUPLICATE_ACCOUNT)})
             self.fail()
         except LdbError, (num, _):
@@ -1687,7 +1687,7 @@ class SamTests(unittest.TestCase):
 
         ldb.add({
             "dn": "cn=ldaptestcomputer,cn=computers," + self.base_dn,
-            "objectclass": ["computer"],
+            "objectclass": "computer",
             "userAccountControl": str(UF_SERVER_TRUST_ACCOUNT)})
 
         res1 = ldb.search("cn=ldaptestcomputer,cn=computers," + self.base_dn,
@@ -1700,7 +1700,7 @@ class SamTests(unittest.TestCase):
         try:
             ldb.add({
                 "dn": "cn=ldaptestcomputer,cn=computers," + self.base_dn,
-                "objectclass": ["computer"],
+                "objectclass": "computer",
                 "userAccountControl": str(UF_WORKSTATION_TRUST_ACCOUNT)})
         except LdbError, (num, _):
             self.assertEquals(num, ERR_OBJECT_CLASS_VIOLATION)
@@ -1710,7 +1710,7 @@ class SamTests(unittest.TestCase):
 #        try:
 #            ldb.add({
 #                "dn": "cn=ldaptestcomputer,cn=computers," + self.base_dn,
-#                "objectclass": ["computer"],
+#                "objectclass": "computer",
 #                "userAccountControl": str(UF_INTERDOMAIN_TRUST_ACCOUNT)})
 #            self.fail()
 #        except LdbError, (num, _):
@@ -1721,7 +1721,7 @@ class SamTests(unittest.TestCase):
 
         ldb.add({
             "dn": "cn=ldaptestcomputer,cn=computers," + self.base_dn,
-            "objectclass": ["computer"]})
+            "objectclass": "computer"})
 
         # After creation we should have a normal account
         res1 = ldb.search("cn=ldaptestcomputer,cn=computers," + self.base_dn,

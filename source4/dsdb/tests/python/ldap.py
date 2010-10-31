@@ -1087,7 +1087,7 @@ objectClass: container
 
         self.ldb.add({
              "dn": "cn=ldaptestuser2,cn=users," + self.base_dn,
-             "objectclass": ["user", "person"] })
+             "objectclass": "user" })
 
         ldb.rename("cn=ldaptestuser2,cn=users," + self.base_dn, "cn=ldaptestuser2,cn=users," + self.base_dn)
         ldb.rename("cn=ldaptestuser2,cn=users," + self.base_dn, "cn=ldaptestuser3,cn=users," + self.base_dn)
@@ -1184,13 +1184,13 @@ objectClass: container
 
         self.ldb.add({
              "dn": "cn=ldaptestuser5,cn=users," + self.base_dn,
-             "objectclass": ["user", "person"] })
+             "objectclass": "user" })
 
         ldb.rename("cn=ldaptestuser5,cn=users," + self.base_dn, "cn=ldaptestUSER5,cn=users," + self.base_dn)
         self.delete_force(self.ldb, "cn=ldaptestuser5,cn=users," + self.base_dn)
         self.ldb.add({
              "dn": "cn=ldaptestuser5,cn=users," + self.base_dn,
-             "objectclass": ["user", "person"] })
+             "objectclass": "user" })
         ldb.rename("cn=ldaptestuser5,cn=Users," + self.base_dn, "cn=ldaptestUSER5,cn=users," + self.base_dn)
         res = ldb.search(expression="cn=ldaptestuser5")
         print "Found %u records" % len(res)
@@ -1304,14 +1304,14 @@ objectClass: container
         try:
             ldb.add({
                 "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
-                "objectclass": ["user", "person"],
+                "objectclass": "user",
                 "memberOf": "cn=ldaptestgroup,cn=users," + self.base_dn})
         except LdbError, (num, _):
             self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
 
         ldb.add({
             "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
-            "objectclass": ["user", "person"]})
+            "objectclass": "user"})
 
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
@@ -1417,7 +1417,7 @@ objectClass: container
 
         ldb.add({
             "dn": "cn=ldaptestuser,cn=uSers," + self.base_dn,
-            "objectclass": ["user", "person"],
+            "objectclass": "user",
             "cN": "LDAPtestUSER",
             "givenname": "ldap",
             "sn": "testy"})
