@@ -125,6 +125,17 @@ class SamTests(unittest.TestCase):
         group_rid_2 = security.dom_sid(ldb.schema_format_value("objectSID",
           res1[0]["objectSID"][0])).split()[1]
 
+        # Try to create a user with an invalid account name
+        try:
+            ldb.add({
+                "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
+                "objectclass": ["user", "person"],
+                "sAMAccountName": "administrator"})
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_ENTRY_ALREADY_EXISTS)
+        self.delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+
         # Try to create a user with an invalid primary group
         try:
             ldb.add({
@@ -313,6 +324,34 @@ class SamTests(unittest.TestCase):
         ldb.add({
             "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
             "objectclass": ["user", "person"]})
+
+        # Try to set an invalid account name
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+        m["sAMAccountName"] = MessageElement("administrator", FLAG_MOD_REPLACE,
+          "sAMAccountName")
+        try:
+            ldb.modify(m)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_ENTRY_ALREADY_EXISTS)
+
+        # But to reset the actual "sAMAccountName" should still be possible
+        res1 = ldb.search("cn=ldaptestuser,cn=users," + self.base_dn,
+                          scope=SCOPE_BASE, attrs=["sAMAccountName"])
+        self.assertTrue(len(res1) == 1)
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+        m["sAMAccountName"] = MessageElement(res1[0]["sAMAccountName"][0], FLAG_MOD_REPLACE,
+          "sAMAccountName")
+        ldb.modify(m)
+
+        # And another (free) name should be possible as well
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+        m["sAMAccountName"] = MessageElement("xxx_ldaptestuser_xxx", FLAG_MOD_REPLACE,
+          "sAMAccountName")
+        ldb.modify(m)
 
         # We should be able to reset our actual primary group
         m = Message()
@@ -629,6 +668,26 @@ class SamTests(unittest.TestCase):
         m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
         m["sAMAccountType"] = MessageElement([], FLAG_MOD_DELETE,
           "sAMAccountType")
+        try:
+            ldb.modify(m)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+        m["sAMAccountName"] = MessageElement("test", FLAG_MOD_ADD,
+          "sAMAccountName")
+        try:
+            ldb.modify(m)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_ATTRIBUTE_OR_VALUE_EXISTS)
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+        m["sAMAccountName"] = MessageElement([], FLAG_MOD_DELETE,
+          "sAMAccountName")
         try:
             ldb.modify(m)
             self.fail()
