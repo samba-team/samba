@@ -474,12 +474,19 @@ def library_flags(conf, libs):
 
 
 @conf
-def CHECK_LIB(conf, libs, mandatory=False, empty_decl=True, set_target=True):
+def CHECK_LIB(conf, libs, mandatory=False, empty_decl=True, set_target=True, shlib=False):
     '''check if a set of libraries exist as system libraries
 
     returns the sublist of libs that do exist as a syslib or []
     '''
 
+    fragment= '''
+int foo()
+{
+    int v = 2;
+    return v*2;
+}
+'''
     ret = []
     liblist  = TO_LIST(libs)
     for lib in liblist[:]:
@@ -488,8 +495,12 @@ def CHECK_LIB(conf, libs, mandatory=False, empty_decl=True, set_target=True):
             continue
 
         (ccflags, ldflags) = library_flags(conf, lib)
+        if shlib:
+            res = conf.check(features='cc cshlib', fragment=fragment, lib=lib, uselib_store=lib, ccflags=ccflags, ldflags=ldflags)
+        else:
+            res = conf.check(lib=lib, uselib_store=lib, ccflags=ccflags, ldflags=ldflags)
 
-        if not conf.check(lib=lib, uselib_store=lib, ccflags=ccflags, ldflags=ldflags):
+        if not res:
             if mandatory:
                 Logs.error("Mandatory library '%s' not found for functions '%s'" % (lib, list))
                 sys.exit(1)
