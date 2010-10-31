@@ -15,8 +15,6 @@ config.log
 config.status
 source3/configure
 source3/Makefile
-lib/talloc/configure
-lib/talloc/Makefile
 lib/tdb/configure
 lib/tdb/Makefile
 *.d
