@@ -275,6 +275,16 @@ def configure(conf):
     else:
         conf.ADD_CFLAGS('-fPIC', testflags=True)
 
+    # On Solaris 8 with suncc (at least) the flags for the linker to define the name of the
+    # library are not always working (if the command line is very very long and with a lot
+    # files)
+
+    if conf.env['COMPILER_CC'] == "suncc":
+        save = conf.env['SONAME_ST']
+        conf.env['SONAME_ST'] = '-Wl,-h,%s'
+        if not conf.CHECK_SHLIB_INTRASINC_NAME_FLAGS("Checking if flags %s are ok" % conf.env['SONAME_ST']):
+            conf.env['SONAME_ST'] = save
+
     conf.CHECK_INLINE()
 
     # check for pkgconfig

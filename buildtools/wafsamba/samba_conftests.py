@@ -94,6 +94,20 @@ def find_config_dir(conf):
     return dir
 
 @conf
+def CHECK_SHLIB_INTRASINC_NAME_FLAGS(conf, msg):
+    '''
+        check if the waf default flags for setting the name of lib
+        are ok
+    '''
+
+    snip = '''
+int foo(int v) {
+    return v * 2;
+}
+'''
+    return conf.check(features='cc cshlib',vnum="1",fragment=snip,msg=msg)
+
+@conf
 def CHECK_SHLIB_W_PYTHON(conf, msg):
     '''check if we need -undefined dynamic_lookup'''
 
