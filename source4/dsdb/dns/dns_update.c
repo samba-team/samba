@@ -297,7 +297,7 @@ static void dnsupdate_check_names(struct dnsupdate_service *service)
 	DEBUG(3,("Calling DNS name update script\n"));
 	service->nameupdate.subreq = samba_runcmd_send(service,
 						       service->task->event_ctx,
-						       timeval_current_ofs(10, 0),
+						       timeval_current_ofs(20, 0),
 						       2, 0,
 						       dns_update_command,
 						       NULL);
@@ -312,7 +312,7 @@ static void dnsupdate_check_names(struct dnsupdate_service *service)
 	DEBUG(3,("Calling SPN name update script\n"));
 	service->nameupdate.spnreq = samba_runcmd_send(service,
 						       service->task->event_ctx,
-						       timeval_current_ofs(10, 0),
+						       timeval_current_ofs(20, 0),
 						       2, 0,
 						       spn_update_command,
 						       NULL);
