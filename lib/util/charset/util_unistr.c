@@ -992,6 +992,12 @@ _PUBLIC_ bool convert_string_talloc(TALLOC_CTX *ctx,
 											 allow_badcharcnv);
 }
 
+_PUBLIC_ codepoint_t next_codepoint_ext(const char *str, charset_t src_charset,
+					size_t *size)
+{
+	return next_codepoint_convenience_ext(get_iconv_convenience(), str,
+					      src_charset, size);
+}
 
 _PUBLIC_ codepoint_t next_codepoint(const char *str, size_t *size)
 {

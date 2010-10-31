@@ -168,6 +168,8 @@ ssize_t iconv_talloc(TALLOC_CTX *mem_ctx,
 
 extern struct smb_iconv_convenience *global_iconv_convenience;
 
+codepoint_t next_codepoint_ext(const char *str, charset_t src_charset,
+			       size_t *size);
 codepoint_t next_codepoint(const char *str, size_t *size);
 ssize_t push_codepoint(char *str, codepoint_t c);
 
