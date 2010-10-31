@@ -1521,6 +1521,14 @@ size_t strlen_m_ext(const char *s, const charset_t dst_charset)
 	return count;
 }
 
+size_t strlen_m_ext_term(const char *s, const charset_t dst_charset)
+{
+	if (!s) {
+		return 0;
+	}
+	return strlen_m_ext(s, dst_charset) + 1;
+}
+
 /**
  Count the number of UCS2 characters in a string. Normally this will
  be the same as the number of bytes in a string for single byte strings,
