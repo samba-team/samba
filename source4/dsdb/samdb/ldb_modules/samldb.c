@@ -1768,6 +1768,13 @@ static int samldb_modify(struct ldb_module *module, struct ldb_request *req)
 
 	ldb = ldb_module_get_ctx(module);
 
+	/* make sure that "objectSid" is not specified */
+	el = ldb_msg_find_element(req->op.mod.message, "objectSid");
+	if (el != NULL) {
+		ldb_set_errstring(ldb,
+				  "samldb: objectSid must not be specified!");
+		return LDB_ERR_UNWILLING_TO_PERFORM;
+	}
 	/* make sure that "sAMAccountType" is not specified */
 	el = ldb_msg_find_element(req->op.mod.message, "sAMAccountType");
 	if (el != NULL) {
