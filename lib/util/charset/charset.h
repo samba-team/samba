@@ -121,6 +121,8 @@ struct smb_iconv_convenience;
 
 char *strchr_m(const char *s, char c);
 size_t strlen_m_ext(const char *s, charset_t src_charset, charset_t dst_charset);
+size_t strlen_m_ext_term(const char *s, charset_t src_charset,
+			 charset_t dst_charset);
 size_t strlen_m_term(const char *s);
 size_t strlen_m_term_null(const char *s);
 size_t strlen_m(const char *s);
