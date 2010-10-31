@@ -406,9 +406,10 @@ _PUBLIC_ codepoint_t next_codepoint_convenience_ext(
 		return (codepoint_t)str[0];
 	}
 
-	/* we assume that no multi-byte character can take
-	   more than 5 bytes. This is OK as we only
-	   support codepoints up to 1M */
+	/*
+	 * we assume that no multi-byte character can take more than 5 bytes.
+	 * This is OK as we only support codepoints up to 1M (U+100000)
+	 */
 	ilen_orig = strnlen(str, 5);
 	ilen = ilen_orig;
 
@@ -418,8 +419,10 @@ _PUBLIC_ codepoint_t next_codepoint_convenience_ext(
 		return INVALID_CODEPOINT;
 	}
 
-	/* this looks a little strange, but it is needed to cope
-	   with codepoints above 64k */
+	/*
+	 * this looks a little strange, but it is needed to cope with
+	 * codepoints above 64k (U+1000) which are encoded as per RFC2781.
+	 */
 	olen = 2;
 	outbuf = (char *)buf;
 	smb_iconv(descriptor, &str, &ilen, &outbuf, &olen);
