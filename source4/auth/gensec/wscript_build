@@ -23,7 +23,7 @@ bld.SAMBA_MODULE('gensec_gssapi',
 	source='gensec_gssapi.c',
 	subsystem='gensec',
 	init_function='gensec_gssapi_init',
-	deps='gssapi CREDENTIALS authkrb5'
+	deps='gssapi CREDENTIALS authkrb5 com_err'
 	)
 
 
