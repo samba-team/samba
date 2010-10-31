@@ -1444,6 +1444,152 @@ static int samldb_member_check(struct samldb_ctx *ac)
 	return LDB_SUCCESS;
 }
 
+/* This trigger adapts the "servicePrincipalName" attributes if the
+ * "dNSHostName" attribute changes */
+static int samldb_service_principal_names_change(struct samldb_ctx *ac)
+{
+	struct ldb_context *ldb = ldb_module_get_ctx(ac->module);
+	struct ldb_message_element *el = NULL;
+	struct ldb_message *msg;
+	const char *attrs[] = { "servicePrincipalName", NULL };
+	struct ldb_result *res;
+	const char *dns_hostname, *old_dns_hostname;
+	unsigned int i;
+	int ret;
+
+	/* Here it's not the same logic as with "samldb_get_single_valued_attr".
+	 * We need to:
+	 *
+	 * - consider "add" and "replace" operations - the last value we take
+	 * - ignore "delete" operations - obviously this attribute isn't
+	 *   write protected
+	 */
+	for (i = 0; i < ac->msg->num_elements; i++) {
+		if (ldb_attr_cmp(ac->msg->elements[i].name,
+				 "dNSHostName") != 0) {
+			continue;
+		}
+
+		if (LDB_FLAG_MOD_TYPE(ac->msg->elements[i].flags)
+		    != LDB_FLAG_MOD_DELETE) {
+			el = &ac->msg->elements[i];
+		}
+	}
+	if (el == NULL) {
+		/* we are not affected */
+		return LDB_SUCCESS;
+	}
+
+	/* Create a temporary message for fetching the "dNSHostName" */
+	msg = ldb_msg_new(ac->msg);
+	if (msg == NULL) {
+		return ldb_module_oom(ac->module);
+	}
+	ret = ldb_msg_add(msg, el, 0);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+	dns_hostname = ldb_msg_find_attr_as_string(msg, "dNSHostName", "");
+	talloc_free(msg);
+
+	old_dns_hostname = samdb_search_string(ldb, ac, ac->msg->dn,
+					       "dNSHostName", NULL);
+	if ((old_dns_hostname == NULL) || (strcasecmp(old_dns_hostname,
+						      dns_hostname) == 0)) {
+		/* Well, if there's no old DNS hostname then we cannot do this.
+		 * And if old and new DNS name do match we are also finished
+		 * here. */
+		return LDB_SUCCESS;
+	}
+
+	/* Potential "servicePrincipalName" changes in the same request have to
+	 * be handled before the update (Windows behaviour). */
+	el = ldb_msg_find_element(ac->msg, "servicePrincipalName");
+	if (el != NULL) {
+		msg = ldb_msg_new(ac->msg);
+		if (msg == NULL) {
+			return ldb_module_oom(ac->module);
+		}
+		msg->dn = ac->msg->dn;
+
+		do {
+			ret = ldb_msg_add(msg, el, el->flags);
+			if (ret != LDB_SUCCESS) {
+				return ret;
+			}
+
+			ldb_msg_remove_element(ac->msg, el);
+
+			el = ldb_msg_find_element(ac->msg,
+						  "servicePrincipalName");
+		} while (el != NULL);
+
+		ret = dsdb_module_modify(ac->module, msg,
+					 DSDB_FLAG_NEXT_MODULE);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+		talloc_free(msg);
+	}
+
+	/* Fetch the "servicePrincipalName"s if any */
+	ret = ldb_search(ldb, ac, &res, ac->msg->dn, LDB_SCOPE_BASE, attrs,
+			 NULL);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+	if ((res->count != 1) || (res->msgs[0]->num_elements > 1)) {
+		return ldb_operr(ldb);
+	}
+
+	if (res->msgs[0]->num_elements == 1) {
+		/* Yes, we do have "servicePrincipalName"s. First we update them
+		 * locally, that means we do always substitute the current
+		 * "dNSHostName" with the new one and then we append this to the
+		 * modification request (Windows behaviour). */
+
+		for (i = 0; i < res->msgs[0]->elements[0].num_values; i++) {
+			char *old_str, *new_str, *pos;
+			const char *tok;
+
+			old_str = (char *)
+				res->msgs[0]->elements[0].values[i].data;
+
+			new_str = talloc_strdup(ac->msg,
+						strtok_r(old_str, "/", &pos));
+			if (new_str == NULL) {
+				return ldb_module_oom(ac->module);
+			}
+
+			while ((tok = strtok_r(NULL, "/", &pos)) != NULL) {
+				if (strcasecmp(tok, old_dns_hostname) == 0) {
+					tok = dns_hostname;
+				}
+
+				new_str = talloc_asprintf(ac->msg, "%s/%s",
+							  new_str, tok);
+				if (new_str == NULL) {
+					return ldb_module_oom(ac->module);
+				}
+			}
+
+			ret = ldb_msg_add_string(ac->msg,
+						 "servicePrincipalName",
+						 new_str);
+			if (ret != LDB_SUCCESS) {
+				return ret;
+			}
+		}
+
+		el = ldb_msg_find_element(ac->msg, "servicePrincipalName");
+		el->flags = LDB_FLAG_MOD_REPLACE;
+	}
+
+	talloc_free(res);
+
+	return LDB_SUCCESS;
+}
+
 
 /* add */
 static int samldb_add(struct ldb_module *module, struct ldb_request *req)
@@ -1625,6 +1771,15 @@ static int samldb_modify(struct ldb_module *module, struct ldb_request *req)
 	el = ldb_msg_find_element(ac->msg, "member");
 	if (el != NULL) {
 		ret = samldb_member_check(ac);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+	}
+
+	el = ldb_msg_find_element(ac->msg, "dNSHostName");
+	if (el != NULL) {
+		modified = true;
+		ret = samldb_service_principal_names_change(ac);
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
