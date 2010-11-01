@@ -385,7 +385,7 @@ static void start_test_index(struct ldb_context **ldb)
 }
 
 
-static void usage(void)
+static void usage(struct ldb_context *ldb)
 {
 	printf("Usage: ldbtest <options>\n");
 	printf("Options:\n");

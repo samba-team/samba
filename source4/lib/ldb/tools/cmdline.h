@@ -46,7 +46,8 @@ struct ldb_cmdline {
 	int tracing;
 };
 
-struct ldb_cmdline *ldb_cmdline_process(struct ldb_context *ldb, int argc, const char **argv,
+struct ldb_cmdline *ldb_cmdline_process(struct ldb_context *ldb, int argc,
+					const char **argv,
 					void (*usage)(struct ldb_context *));
 
 
