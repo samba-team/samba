@@ -1384,8 +1384,8 @@ static int samldb_sam_accountname_check(struct samldb_ctx *ac)
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
-	sam_accountname = ldb_msg_find_attr_as_string(tmp_msg, "sAMAccountName",
-						      NULL);
+	sam_accountname = talloc_steal(ac,
+				       ldb_msg_find_attr_as_string(tmp_msg, "sAMAccountName", NULL));
 	talloc_free(tmp_msg);
 
 	if (sam_accountname == NULL) {
