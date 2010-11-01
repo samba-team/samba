@@ -259,4 +259,54 @@ int ldb_modules_hook(struct ldb_context *ldb, enum ldb_module_hook_type t);
         return LDB_ERR_UNAVAILABLE; \
  }} while (0)
 
+
+/*
+  return a string representation of the calling chain for the given
+  ldb request
+ */
+char *ldb_module_call_chain(struct ldb_request *req, TALLOC_CTX *mem_ctx);
+
+/*
+  return the next module in the chain
+ */
+struct ldb_module *ldb_module_next(struct ldb_module *module);
+
+/*
+  set the next module in the module chain
+ */
+void ldb_module_set_next(struct ldb_module *module, struct ldb_module *next);
+
+/*
+  load a list of modules
+ */
+int ldb_module_load_list(struct ldb_context *ldb, const char **module_list,
+			 struct ldb_module *backend, struct ldb_module **out);
+
+/*
+  get the popt_options pointer in the ldb structure. This allows a ldb
+  module to change the command line parsing
+ */
+struct poptOption **ldb_module_popt_options(struct ldb_context *ldb);
+
+/* modules are called in inverse order on the stack.
+   Lets place them as an admin would think the right order is.
+   Modules order is important */
+const char **ldb_modules_list_from_string(struct ldb_context *ldb, TALLOC_CTX *mem_ctx, const char *string);
+
+/*
+  return the current ldb flags LDB_FLG_*
+ */
+uint32_t ldb_module_flags(struct ldb_context *ldb);
+
+int ldb_module_connect_backend(struct ldb_context *ldb,
+			       const char *url,
+			       const char *options[],
+			       struct ldb_module **backend_module);
+
+/*
+  initialise a chain of modules
+ */
+int ldb_module_init_chain(struct ldb_context *ldb, struct ldb_module *module);
+
+
 #endif

@@ -131,10 +131,6 @@ struct ldb_context {
 
 /* The following definitions come from lib/ldb/common/ldb.c  */
 
-int ldb_connect_backend(struct ldb_context *ldb, const char *url, const char *options[],
-			struct ldb_module **backend_module);
-
-
 extern const struct ldb_module_ops ldb_objectclass_module_ops;
 extern const struct ldb_module_ops ldb_paged_results_module_ops;
 extern const struct ldb_module_ops ldb_rdn_name_module_ops;
@@ -173,9 +169,7 @@ void ldb_dump_results(struct ldb_context *ldb, struct ldb_result *result, FILE *
 /* The following definitions come from lib/ldb/common/ldb_modules.c  */
 
 const char **ldb_modules_list_from_string(struct ldb_context *ldb, TALLOC_CTX *mem_ctx, const char *string);
-int ldb_load_modules_list(struct ldb_context *ldb, const char **module_list, struct ldb_module *backend, struct ldb_module **out);
 int ldb_load_modules(struct ldb_context *ldb, const char *options[]);
-int ldb_init_module_chain(struct ldb_context *ldb, struct ldb_module *module);
 
 struct ldb_val ldb_binary_decode(TALLOC_CTX *mem_ctx, const char *str);
 

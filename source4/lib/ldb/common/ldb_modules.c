@@ -185,10 +185,10 @@ int ldb_register_backend(const char *url_prefix, ldb_connect_fn connectfn, bool 
    This allows modules to get at only the backend module, for example where a
    module may wish to direct certain requests at a particular backend.
 */
-int ldb_connect_backend(struct ldb_context *ldb,
-			const char *url,
-			const char *options[],
-			struct ldb_module **backend_module)
+int ldb_module_connect_backend(struct ldb_context *ldb,
+			       const char *url,
+			       const char *options[],
+			       struct ldb_module **backend_module)
 {
 	int ret;
 	char *backend;
@@ -287,8 +287,11 @@ int ldb_register_module(const struct ldb_module_ops *ops)
 	return 0;
 }
 
-
-int ldb_load_modules_list(struct ldb_context *ldb, const char **module_list, struct ldb_module *backend, struct ldb_module **out)
+/*
+  load a list of modules
+ */
+int ldb_module_load_list(struct ldb_context *ldb, const char **module_list,
+			 struct ldb_module *backend, struct ldb_module **out)
 {
 	struct ldb_module *module;
 	unsigned int i;
@@ -326,7 +329,10 @@ int ldb_load_modules_list(struct ldb_context *ldb, const char **module_list, str
 	return LDB_SUCCESS;
 }
 
-int ldb_init_module_chain(struct ldb_context *ldb, struct ldb_module *module)
+/*
+  initialise a chain of modules
+ */
+int ldb_module_init_chain(struct ldb_context *ldb, struct ldb_module *module)
 {
 	while (module && module->ops->init_context == NULL)
 		module = module->next;
@@ -407,7 +413,7 @@ int ldb_load_modules(struct ldb_context *ldb, const char *options[])
 	}
 
 	if (modules != NULL) {
-		ret = ldb_load_modules_list(ldb, modules, ldb->modules, &ldb->modules);
+		ret = ldb_module_load_list(ldb, modules, ldb->modules, &ldb->modules);
 		if (ret != LDB_SUCCESS) {
 			talloc_free(mem_ctx);
 			return ret;
@@ -416,7 +422,7 @@ int ldb_load_modules(struct ldb_context *ldb, const char *options[])
 		ldb_debug(ldb, LDB_DEBUG_TRACE, "No modules specified for this database");
 	}
 
-	ret = ldb_init_module_chain(ldb, ldb->modules);
+	ret = ldb_module_init_chain(ldb, ldb->modules);
 	talloc_free(mem_ctx);
 	return ret;
 }
@@ -563,7 +569,7 @@ int ldb_next_init(struct ldb_module *module)
 {
 	module = module->next;
 
-	return ldb_init_module_chain(module->ldb, module);
+	return ldb_module_init_chain(module->ldb, module);
 }
 
 int ldb_next_start_trans(struct ldb_module *module)
@@ -1043,4 +1049,68 @@ int ldb_modules_load(const char *modules_path, const char *version)
 	talloc_free(path);
 
 	return LDB_SUCCESS;
+}
+
+
+/*
+  return a string representation of the calling chain for the given
+  ldb request
+ */
+char *ldb_module_call_chain(struct ldb_request *req, TALLOC_CTX *mem_ctx)
+{
+	char *ret;
+	int i=0;
+
+	ret = talloc_strdup(mem_ctx, "");
+	if (ret == NULL) {
+		return NULL;
+	}
+
+	while (req && req->handle) {
+		char *s = talloc_asprintf_append_buffer(ret, "req[%u] %p  : %s\n",
+							i++, req, ldb_req_location(req));
+		if (s == NULL) {
+			talloc_free(ret);
+			return NULL;
+		}
+		ret = s;
+		req = req->handle->parent;
+	}
+	return ret;
+}
+
+
+/*
+  return the next module in the chain
+ */
+struct ldb_module *ldb_module_next(struct ldb_module *module)
+{
+	return module->next;
+}
+
+/*
+  set the next module in the module chain
+ */
+void ldb_module_set_next(struct ldb_module *module, struct ldb_module *next)
+{
+	module->next = next;
+}
+
+
+/*
+  get the popt_options pointer in the ldb structure. This allows a ldb
+  module to change the command line parsing
+ */
+struct poptOption **ldb_module_popt_options(struct ldb_context *ldb)
+{
+	return &ldb->popt_options;
+}
+
+
+/*
+  return the current ldb flags LDB_FLG_*
+ */
+uint32_t ldb_module_flags(struct ldb_context *ldb)
+{
+	return ldb->flags;
 }

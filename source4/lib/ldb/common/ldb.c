@@ -245,7 +245,7 @@ int ldb_connect(struct ldb_context *ldb, const char *url,
 		return ret;
 	}
 
-	ret = ldb_connect_backend(ldb, url, options, &ldb->modules);
+	ret = ldb_module_connect_backend(ldb, url, options, &ldb->modules);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}

@@ -24,7 +24,6 @@
 #include "replace.h"
 #include "system/filesys.h"
 #include "system/time.h"
-#include "ldb_private.h"
 #include "ldb.h"
 #include "ldb_module.h"
 #include "tools/cmdline.h"
@@ -66,7 +65,8 @@ static struct poptOption builtin_popt_options[] = {
 void ldb_cmdline_help(struct ldb_context *ldb, const char *cmdname, FILE *f)
 {
 	poptContext pc;
-	pc = poptGetContext(cmdname, 0, NULL, ldb->popt_options,
+	struct poptOption **popt_options = ldb_module_popt_options(ldb);
+	pc = poptGetContext(cmdname, 0, NULL, *popt_options,
 			    POPT_CONTEXT_KEEP_FIRST);
 	poptPrintHelp(pc, f, 0);
 }
@@ -103,6 +103,7 @@ struct ldb_cmdline *ldb_cmdline_process(struct ldb_context *ldb,
 	int opt;
 	int flags = 0;
 	int rc;
+	struct poptOption **popt_options;
 
 	/* make the ldb utilities line buffered */
 	setlinebuf(stdout);
@@ -129,7 +130,8 @@ struct ldb_cmdline *ldb_cmdline_process(struct ldb_context *ldb,
 
 	options.scope = LDB_SCOPE_DEFAULT;
 
-	ldb->popt_options = builtin_popt_options;
+	popt_options = ldb_module_popt_options(ldb);
+	(*popt_options) = builtin_popt_options;
 
 	rc = ldb_modules_hook(ldb, LDB_MODULE_HOOK_CMDLINE_OPTIONS);
 	if (rc != LDB_SUCCESS) {
@@ -137,7 +139,7 @@ struct ldb_cmdline *ldb_cmdline_process(struct ldb_context *ldb,
 		goto failed;
 	}
 
-	pc = poptGetContext(argv[0], argc, argv, ldb->popt_options,
+	pc = poptGetContext(argv[0], argc, argv, *popt_options,
 			    POPT_CONTEXT_KEEP_FIRST);
 
 	while((opt = poptGetNextOpt(pc)) != -1) {
