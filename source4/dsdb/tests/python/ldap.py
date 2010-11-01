@@ -152,6 +152,15 @@ class BasicTests(unittest.TestCase):
         try:
             self.ldb.add({
                 "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
+                "objectClass": [] })
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
+
+        # Invalid objectclass specified
+        try:
+            self.ldb.add({
+                "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
                 "objectClass": "X" })
             self.fail()
         except LdbError, (num, _):
@@ -298,6 +307,16 @@ class BasicTests(unittest.TestCase):
         m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
         m["objectClass"] = MessageElement(["top", "person", "bootableDevice",
           "connectionPoint"], FLAG_MOD_REPLACE, "objectClass")
+        try:
+            ldb.modify(m)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_OBJECT_CLASS_VIOLATION)
+
+        # We cannot remove all object classes by an empty replace
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+        m["objectClass"] = MessageElement([], FLAG_MOD_REPLACE, "objectClass")
         try:
             ldb.modify(m)
             self.fail()

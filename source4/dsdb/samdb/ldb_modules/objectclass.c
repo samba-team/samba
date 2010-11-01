@@ -518,6 +518,12 @@ static int objectclass_do_add(struct oc_context *ac)
 			talloc_free(mem_ctx);
 			return LDB_ERR_OBJECT_CLASS_VIOLATION;
 		}
+		if (objectclass_element->num_values == 0) {
+			ldb_asprintf_errstring(ldb, "objectclass: Cannot add %s, at least one (structural) objectclass has to be specified!",
+					       ldb_dn_get_linearized(msg->dn));
+			talloc_free(mem_ctx);
+			return LDB_ERR_CONSTRAINT_VIOLATION;
+		}
 
 		/* Here we do now get the "objectClass" list from the
 		 * database. */
