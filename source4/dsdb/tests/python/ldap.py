@@ -1437,7 +1437,7 @@ objectClass: container
 
         res = self.ldb.search(base=("<WKGUID=ab1d30f3768811d1aded00c04fd8d5cd,%s>" % self.base_dn), scope=SCOPE_BASE, attrs=[])
         self.assertEquals(len(res), 1)
-        
+
         res2 = self.ldb.search(scope=SCOPE_BASE, attrs=["wellKnownObjects"], expression=("wellKnownObjects=B:32:ab1d30f3768811d1aded00c04fd8d5cd:%s" % res[0].dn))
         self.assertEquals(len(res2), 1)
 
@@ -2343,9 +2343,22 @@ objectClass: posixAccount"""% (self.base_dn))
         user_name = "testdescriptoruser1"
         user_dn = "CN=%s,CN=Users,%s" % (user_name, self.base_dn)
         #
-        # Test add_ldif() with SDDL security descriptor input
+        # Test an empty security descriptor (naturally this shouldn't work)
         #
         self.delete_force(self.ldb, user_dn)
+        try:
+            self.ldb.add({ "dn": user_dn,
+                           "objectClass": "user",
+                           "sAMAccountName": user_name,
+                           "nTSecurityDescriptor": [] })
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
+        finally:
+            self.delete_force(self.ldb, user_dn)
+        #
+        # Test add_ldif() with SDDL security descriptor input
+        #
         try:
             sddl = "O:DUG:DUD:PAI(A;;RPWP;;;AU)S:PAI"
             self.ldb.add_ldif("""
@@ -2407,11 +2420,49 @@ nTSecurityDescriptor:: """ + desc_base64)
         user_name = "testdescriptoruser2"
         user_dn = "CN=%s,CN=Users,%s" % (user_name, self.base_dn)
         #
-        # Delete user object and test modify_ldif() with SDDL security descriptor input
+        # Test an empty security descriptor (naturally this shouldn't work)
+        #
+        self.delete_force(self.ldb, user_dn)
+        self.ldb.add({ "dn": user_dn,
+                       "objectClass": "user",
+                       "sAMAccountName": user_name })
+
+        m = Message()
+        m.dn = Dn(ldb, user_dn)
+        m["nTSecurityDescriptor"] = MessageElement([], FLAG_MOD_ADD,
+                                                   "nTSecurityDescriptor")
+        try:
+            self.ldb.modify(m)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
+
+        m = Message()
+        m.dn = Dn(ldb, user_dn)
+        m["nTSecurityDescriptor"] = MessageElement([], FLAG_MOD_REPLACE,
+                                                   "nTSecurityDescriptor")
+        try:
+            self.ldb.modify(m)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
+
+        m = Message()
+        m.dn = Dn(ldb, user_dn)
+        m["nTSecurityDescriptor"] = MessageElement([], FLAG_MOD_DELETE,
+                                                   "nTSecurityDescriptor")
+        try:
+            self.ldb.modify(m)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
+
+        self.delete_force(self.ldb, user_dn)
+        #
+        # Test modify_ldif() with SDDL security descriptor input
         # Add ACE to the original descriptor test
         #
         try:
-            self.delete_force(self.ldb, user_dn)
             self.ldb.add_ldif("""
 dn: """ + user_dn + """
 objectclass: user
@@ -2585,7 +2636,7 @@ class BaseDnTests(unittest.TestCase):
         res = self.ldb.search("", scope=SCOPE_BASE,
                 attrs=["namingContexts", "defaultNamingContext", "schemaNamingContext", "configurationNamingContext"])
         self.assertEquals(len(res), 1)
-        
+
         ncs = set([])
         for nc in res[0]["namingContexts"]:
             self.assertTrue(nc not in ncs)

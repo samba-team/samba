@@ -55,6 +55,7 @@ struct descriptor_context {
 	struct ldb_reply *search_res;
 	struct ldb_reply *search_oc_res;
 	struct ldb_val *parentsd_val;
+	struct ldb_message_element *sd_element;
 	struct ldb_val *sd_val;
 	int (*step_fn)(struct descriptor_context *);
 };
@@ -553,14 +554,13 @@ static int descriptor_do_mod(struct descriptor_context *ac)
 	struct ldb_context *ldb;
 	const struct dsdb_schema *schema;
 	struct ldb_request *mod_req;
-	struct ldb_message_element *objectclass_element, *tmp_element, *oldsd_el;
+	struct ldb_message_element *objectclass_element, *oldsd_el;
 	struct ldb_val *oldsd_val = NULL;
 	int ret;
 	DATA_BLOB *sd;
 	const struct dsdb_class *objectclass;
 	struct ldb_control *sd_control;
 	struct ldb_control *sd_control2;
-	int flags = 0;
 	uint32_t sd_flags = 0;
 
 	ldb = ldb_module_get_ctx(ac->module);
@@ -578,7 +578,8 @@ static int descriptor_do_mod(struct descriptor_context *ac)
 	}
 
 	sd_control = ldb_request_get_control(ac->req, LDB_CONTROL_SD_FLAGS_OID);
-	sd_control2 = ldb_request_get_control(ac->req, LDB_CONTROL_RECALCULATE_SD_OID);
+	sd_control2 = ldb_request_get_control(ac->req,
+					      LDB_CONTROL_RECALCULATE_SD_OID);
 	if (sd_control) {
 		struct ldb_sd_flags_control *sdctr = (struct ldb_sd_flags_control *)sd_control->data;
 		sd_flags = sdctr->secinfo_flags;
@@ -586,34 +587,44 @@ static int descriptor_do_mod(struct descriptor_context *ac)
 		sd_flags = sd_flags & 0x0000000F;
 	}
 	if (sd_flags != 0) {
-		oldsd_el = ldb_msg_find_element(ac->search_oc_res->message, "nTSecurityDescriptor");
+		oldsd_el = ldb_msg_find_element(ac->search_oc_res->message,
+						"nTSecurityDescriptor");
 		if (oldsd_el) {
 			oldsd_val = oldsd_el->values;
 		}
 	}
-	sd = get_new_descriptor(ac->module, ac->msg->dn, ac, objectclass,
-				ac->parentsd_val, ac->sd_val, oldsd_val, sd_flags);
-	if (ac->sd_val) {
-		tmp_element = ldb_msg_find_element(ac->msg,
-						   "nTSecurityDescriptor");
-		flags = tmp_element->flags;
-		ldb_msg_remove_attr(ac->msg, "nTSecurityDescriptor");
+
+	sd = get_new_descriptor(ac->module, ac->msg->dn, ac,
+				objectclass, ac->parentsd_val,
+				ac->sd_val, oldsd_val, sd_flags);
+	if (sd != NULL) {
+		if (ac->sd_val != NULL) {
+			ac->sd_element->values[0] = *sd;
+		} else if (sd_control2 != NULL) {
+			/* In this branche we really do force the recalculation
+			 * of the SD */
+			ldb_msg_remove_attr(ac->msg, "nTSecurityDescriptor");
+
+			ret = ldb_msg_add_steal_value(ac->msg,
+						      "nTSecurityDescriptor",
+						      sd);
+			if (ret != LDB_SUCCESS) {
+				return ret;
+			}
+			ac->sd_element = ldb_msg_find_element(ac->msg,
+							      "nTSecurityDescriptor");
+			ac->sd_element->flags = LDB_FLAG_MOD_REPLACE;
+		}
 	}
 
-	if (sd) {
-		ret = ldb_msg_add_steal_value(ac->msg,
-					      "nTSecurityDescriptor", sd);
-		if (ret != LDB_SUCCESS) {
-			return ret;
-		}
-		tmp_element = ldb_msg_find_element(ac->msg,
-						   "nTSecurityDescriptor");
-		if (sd_control2) {
-			tmp_element->flags = LDB_FLAG_MOD_REPLACE;
-		} else {
-			tmp_element->flags = flags;
-		}
+	/* mark the controls as non-critical since we've handled them */
+	if (sd_control != NULL) {
+		sd_control->critical = 0;
 	}
+	if (sd_control2 != NULL) {
+		sd_control2->critical = 0;
+	}
+
 	ret = ldb_build_mod_req(&mod_req, ldb, ac,
 				ac->msg,
 				ac->req->controls,
@@ -622,11 +633,6 @@ static int descriptor_do_mod(struct descriptor_context *ac)
 	LDB_REQ_SET_LOCATION(mod_req);
 	if (ret != LDB_SUCCESS) {
 		return ret;
-	}
-	/* mark it non-critical, so we don't get an error from the
-	   backend, but mark that we've handled it */
-	if (sd_control) {
-		sd_control->critical = 0;
 	}
 
 	return ldb_next_request(ac->module, mod_req);
@@ -637,7 +643,7 @@ static int descriptor_do_add(struct descriptor_context *ac)
 	struct ldb_context *ldb;
 	const struct dsdb_schema *schema;
 	struct ldb_request *add_req;
-	struct ldb_message_element *objectclass_element, *sd_element = NULL;
+	struct ldb_message_element *objectclass_element;
 	int ret;
 	DATA_BLOB *sd;
 	const struct dsdb_class *objectclass;
@@ -676,12 +682,16 @@ static int descriptor_do_add(struct descriptor_context *ac)
 		return ldb_operr(ldb);
 	}
 
-
-	/* get the security descriptor values*/
-	sd_element = ldb_msg_find_element(ac->msg, "nTSecurityDescriptor");
-	if (sd_element) {
-		ac->sd_val = talloc_memdup(ac, &sd_element->values[0], sizeof(struct ldb_val));
+	/* Check if there is a valid security descriptor provided */
+	ac->sd_element = dsdb_get_single_valued_attr(ac->msg,
+						     "nTSecurityDescriptor",
+						     ac->req->operation);
+	if ((ac->sd_element != NULL) && (ac->sd_element->num_values == 1)) {
+		ac->sd_val = talloc_memdup(ac,
+					   &ac->sd_element->values[0],
+					   sizeof(struct ldb_val));
 	}
+
 	/* NC's have no parent */
 	/* FIXME: this has to be made dynamic at some point */
 	if ((ldb_dn_compare(ac->msg->dn, (ldb_get_schema_basedn(ldb))) == 0) ||
@@ -702,15 +712,16 @@ static int descriptor_do_add(struct descriptor_context *ac)
 		sd = get_new_descriptor(ac->module, ac->msg->dn, ac,
 					objectclass, ac->parentsd_val,
 					ac->sd_val, NULL, 0);
-		if (ac->sd_val) {
-			ldb_msg_remove_attr(ac->msg, "nTSecurityDescriptor");
-		}
-
-		if (sd) {
-			ret = ldb_msg_add_steal_value(ac->msg,
-						      "nTSecurityDescriptor", sd);
-			if (ret != LDB_SUCCESS) {
-				return ret;
+		if (sd != NULL) {
+			if (ac->sd_val != NULL) {
+				ac->sd_element->values[0] = *sd;
+			} else if (ac->sd_element == NULL) {
+				ret = ldb_msg_add_steal_value(ac->msg,
+							      "nTSecurityDescriptor",
+							      sd);
+				if (ret != LDB_SUCCESS) {
+					return ret;
+				}
 			}
 		}
 
@@ -759,9 +770,12 @@ static int descriptor_change(struct ldb_module *module, struct ldb_request *req)
 		break;
 	case LDB_MODIFY:
 		dn = req->op.mod.message->dn;
-		sd_element = ldb_msg_find_element(req->op.mod.message, "nTSecurityDescriptor");
-		/* This control allow forcing the recalculation of the SD */
-		sd_control = ldb_request_get_control(req, LDB_CONTROL_RECALCULATE_SD_OID);
+		sd_element = ldb_msg_find_element(req->op.mod.message,
+						  "nTSecurityDescriptor");
+		/* This control forces the recalculation of the SD also when
+		 * no modification is performed. */
+		sd_control = ldb_request_get_control(req,
+						     LDB_CONTROL_RECALCULATE_SD_OID);
 		if (!sd_element && !sd_control) {
 			return ldb_next_request(module, req);
 		}
