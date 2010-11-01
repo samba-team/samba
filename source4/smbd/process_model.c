@@ -103,25 +103,24 @@ _PUBLIC_ NTSTATUS register_process_model(const void *_ops)
 
 _PUBLIC_ NTSTATUS process_model_init(struct loadparm_context *lp_ctx)
 {
-	extern NTSTATUS process_model_thread_init(void);
-	extern NTSTATUS process_model_standard_init(void);
-	extern NTSTATUS process_model_prefork_init(void);
-	extern NTSTATUS process_model_onefork_init(void);
-	extern NTSTATUS process_model_single_init(void);
+#define _MODULE_PROTO(init) extern NTSTATUS init(void);
+	STATIC_process_model_MODULES_PROTO;
+	init_module_fn static_init[] = { STATIC_process_model_MODULES };
+	init_module_fn *shared_init;
 	static bool initialised;
 
-	if (!initialised) {
-		init_module_fn static_init[] = { STATIC_process_model_MODULES };
-		init_module_fn *shared_init;
-		initialised = true;
-		shared_init = load_samba_modules(NULL, lp_ctx, "process_model");
-
-		run_init_functions(static_init);
-		run_init_functions(shared_init);
-
-		talloc_free(shared_init);
+	if (initialised) {
+		return NT_STATUS_OK;
 	}
+	initialised = true;
+
+	shared_init = load_samba_modules(NULL, lp_ctx, "process_model");
 	
+	run_init_functions(static_init);
+	run_init_functions(shared_init);
+
+	talloc_free(shared_init);
+
 	return NT_STATUS_OK;
 }
 
