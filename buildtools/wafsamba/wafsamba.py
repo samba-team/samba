@@ -336,6 +336,7 @@ def SAMBA_MODULE(bld, modname, source,
                  includes='',
                  subsystem=None,
                  init_function=None,
+                 module_init_name='samba_init_module',
                  autoproto=None,
                  autoproto_extra_source='',
                  aliases=None,
@@ -371,7 +372,7 @@ def SAMBA_MODULE(bld, modname, source,
         # if we have aliases, then create a private base library, and a set
         # of modules on top of that library
         if init_function:
-            cflags += " -D%s=samba_init_module" % init_function
+            cflags += " -D%s=%s" % (init_function, module_init_name)
 
         basename = modname + '-base'
         bld.SAMBA_LIBRARY(basename,
@@ -415,7 +416,7 @@ def SAMBA_MODULE(bld, modname, source,
     build_link_name = "modules/%s/%s" % (subsystem, realname)
 
     if init_function:
-        cflags += " -D%s=samba_init_module" % init_function
+        cflags += " -D%s=%s" % (init_function, module_init_name)
 
     bld.SAMBA_LIBRARY(modname,
                       source,
