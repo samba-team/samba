@@ -39,6 +39,7 @@ printenv |
   sed "s/\(^[^=]*=\)\(.*\)/export \1'\2'/g" > $basedir/$SERVERNAME.vars
 
 cat <<EOF > $basedir/$SERVERNAME.launch
+cd $PWD
  echo \$\$ > $basedir/$SERVERNAME.pid
  . $basedir/$SERVERNAME.vars
  echo "\$(date) starting $SERVERNAME" >> $basedir/$SERVERNAME.log
