@@ -23,3 +23,21 @@ bld.SAMBA_SUBSYSTEM('ldbwrap',
 bld.SAMBA_PYTHON('python_samba__ldb', 'pyldb.c',
                  deps='LDBSAMBA pyparam_util ldbwrap',
                  realname='samba/_ldb.so')
+
+bld.SAMBA_MODULE('ldbsamba_extensions',
+                 source='samba_extensions.c',
+                 init_function='ldb_samba_extensions_init',
+                 module_init_name='ldb_init_module',
+                 subsystem='ldb',
+                 deps='ldb LDBSAMBA POPT_SAMBA POPT_CREDENTIALS cmdline-credentials gensec',
+                 internal_module=False)
+
+
+# the s4-internal ldap backend
+bld.SAMBA_MODULE('ldb_ildap',
+                 source='ldb_ildap.c',
+                 init_function='ldb_ildap_init',
+                 module_init_name='ldb_init_module',
+                 deps='talloc cli-ldap CREDENTIALS auth_system_session',
+                 internal_module=False,
+                 subsystem='ldb')
