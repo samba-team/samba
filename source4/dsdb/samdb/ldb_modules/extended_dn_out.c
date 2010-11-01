@@ -859,20 +859,41 @@ static int extended_dn_out_fds_init(struct ldb_module *module)
 	return extended_dn_out_dereference_init(module, attrs);
 }
 
-_PUBLIC_ const struct ldb_module_ops ldb_extended_dn_out_ldb_module_ops = {
+static const struct ldb_module_ops ldb_extended_dn_out_ldb_module_ops = {
 	.name		   = "extended_dn_out_ldb",
 	.search            = extended_dn_out_ldb_search,
 	.init_context	   = extended_dn_out_ldb_init,
 };
 
-_PUBLIC_ const struct ldb_module_ops ldb_extended_dn_out_openldap_module_ops = {
+static const struct ldb_module_ops ldb_extended_dn_out_openldap_module_ops = {
 	.name		   = "extended_dn_out_openldap",
 	.search            = extended_dn_out_openldap_search,
 	.init_context	   = extended_dn_out_openldap_init,
 };
 
-_PUBLIC_ const struct ldb_module_ops ldb_extended_dn_out_fds_module_ops = {
+static const struct ldb_module_ops ldb_extended_dn_out_fds_module_ops = {
 	.name		   = "extended_dn_out_fds",
 	.search            = extended_dn_out_fds_search,
 	.init_context	   = extended_dn_out_fds_init,
 };
+
+/*
+  initialise the module
+ */
+_PUBLIC_ int ldb_extended_dn_out_init(const char *ldb_version)
+{
+	int ret;
+	ret = ldb_register_module(&ldb_extended_dn_out_ldb_module_ops);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+	ret = ldb_register_module(&ldb_extended_dn_out_openldap_module_ops);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+	ret = ldb_register_module(&ldb_extended_dn_out_fds_module_ops);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+	return LDB_SUCCESS;
+}

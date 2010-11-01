@@ -178,13 +178,13 @@ bld.SAMBA_MODULE('ldb_extended_dn_in',
 
 
 bld.SAMBA_MODULE('ldb_extended_dn_out',
-	source='extended_dn_out.c',
-	aliases='ldb_extended_dn_out_ldb ldb_extended_dn_out_openldap ldb_extended_dn_out_fds',
-	subsystem='ldb',
-	deps='talloc events ndr samba-util SAMDB',
-	internal_module=False,
-	init_function='LDB_MODULE(extended_dn_out_ldb),LDB_MODULE(extended_dn_out_openldap),LDB_MODULE(extended_dn_out_fds)'
-	)
+                 source='extended_dn_out.c',
+                 init_function='ldb_extended_dn_out_init',
+                 module_init_name='ldb_init_module',
+                 subsystem='ldb',
+                 deps='talloc events ndr samba-util SAMDB',
+                 internal_module=False,
+                 )
 
 
 bld.SAMBA_MODULE('ldb_extended_dn_store',
