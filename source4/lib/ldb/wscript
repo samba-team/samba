@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 APPNAME = 'ldb'
-VERSION = '0.9.17'
+VERSION = '0.9.18'
 
 blddir = 'bin'
 
@@ -95,7 +95,8 @@ def build(bld):
     else:
         # this is not included in the s4 build
         bld.SAMBA_MODULE('ldb_ldap', 'ldb_ldap/ldb_ldap.c',
-                         init_function='LDB_BACKEND(ldapi),LDB_BACKEND(ldaps),LDB_BACKEND(ldap)',
+                         init_function='ldb_ldap_init',
+                         module_init_name='ldb_init_module',
                          deps='talloc lber ldap',
                          enabled=bld.env.ENABLE_LDAP_BACKEND,
                          internal_module=False,
