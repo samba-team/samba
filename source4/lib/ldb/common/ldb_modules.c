@@ -207,7 +207,7 @@ int ldb_module_connect_backend(struct ldb_context *ldb,
 
 	if (be == NULL) {
 		ldb_debug(ldb, LDB_DEBUG_FATAL,
-			  "Unable to find backend for '%s'", url);
+			  "Unable to find backend for '%s' - do you need to set LDB_MODULES_PATH?", url);
 		return LDB_ERR_OTHER;
 	}
 
@@ -309,7 +309,7 @@ int ldb_module_load_list(struct ldb_context *ldb, const char **module_list,
 		ops = ldb_find_module_ops(module_list[i]);
 
 		if (ops == NULL) {
-			ldb_debug(ldb, LDB_DEBUG_WARNING, "WARNING: Module [%s] not found",
+			ldb_debug(ldb, LDB_DEBUG_FATAL, "WARNING: Module [%s] not found - do you need to set LDB_MODULES_PATH?",
 				  module_list[i]);
 			continue;
 		}
