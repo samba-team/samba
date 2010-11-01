@@ -109,7 +109,9 @@ NTSTATUS rpc_query_user_list(TALLOC_CTX *mem_ctx,
 			}
 
 			dst->full_name = talloc_strdup(info, src->full_name.string);
-			if (dst->full_name == NULL) {
+			if ((src->full_name.string != NULL) &&
+			    (dst->full_name == NULL))
+			{
 				return NT_STATUS_NO_MEMORY;
 			}
 
