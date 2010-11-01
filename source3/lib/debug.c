@@ -564,6 +564,12 @@ void debug_register_msgs(struct messaging_context *msg_ctx)
 /**
   control the name of the logfile and whether logging will be to stdout, stderr
   or a file, and set up syslog
+
+  new_log indicates the destination for the debug log (an enum in
+  order of precedence - once set to DEBUG_FILE, it is not possible to
+  reset to DEBUG_STDOUT for example.  This makes it easy to override
+  for debug to stderr on the command line, as the smb.conf cannot
+  reset it back to file-based logging
 */
 void setup_logging(const char *prog_name, enum debug_logtype new_logtype)
 {

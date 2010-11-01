@@ -248,8 +248,11 @@ extern bool *DEBUGLEVEL_CLASS_ISSET;
 
 /* The following definitions come from lib/debug.c  */
 
-/* Possible destinations for the debug log (in order of precedence,
- * only a higher value will override a lower value */
+/** Possible destinations for the debug log (in order of precedence -
+ * once set to DEBUG_FILE, it is not possible to reset to DEBUG_STDOUT
+ * for example.  This makes it easy to override for debug to stderr on
+ * the command line, as the smb.conf cannot reset it back to
+ * file-based logging */
 enum debug_logtype {DEBUG_DEFAULT_STDERR = 0, DEBUG_STDOUT = 1, DEBUG_FILE = 2, DEBUG_STDERR = 3};
 
 void setup_logging(const char *prog_name, enum debug_logtype new_logtype);
