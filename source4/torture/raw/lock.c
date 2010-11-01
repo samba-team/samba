@@ -1611,11 +1611,11 @@ static bool test_zerobytelocks(struct torture_context *tctx, struct smbcli_state
 	     i++) {
 		torture_comment(tctx, "  ... {%d, %llu, %llu} + {%d, %llu, %llu} = %s\n",
 		    zero_byte_tests[i].lock1.pid,
-		    zero_byte_tests[i].lock1.offset,
-		    zero_byte_tests[i].lock1.count,
+		    (unsigned long long) zero_byte_tests[i].lock1.offset,
+		    (unsigned long long) zero_byte_tests[i].lock1.count,
 		    zero_byte_tests[i].lock2.pid,
-		    zero_byte_tests[i].lock2.offset,
-		    zero_byte_tests[i].lock2.count,
+		    (unsigned long long) zero_byte_tests[i].lock2.offset,
+		    (unsigned long long) zero_byte_tests[i].lock2.count,
 		    nt_errstr(zero_byte_tests[i].exp_status));
 
 		/* Lock both locks. */

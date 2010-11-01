@@ -3514,7 +3514,8 @@ static bool torture_oplock_handler_hold(struct smb2_transport *transport,
 
 	if (i == ARRAY_SIZE(hold_info)) {
 		printf("oplock break for unknown handle 0x%llx%llx\n",
-		       handle->data[0], handle->data[1]);
+		       (unsigned long long) handle->data[0],
+		       (unsigned long long) handle->data[1]);
 		return false;
 	}
 

@@ -793,16 +793,16 @@ static bool test_GetNCChanges(struct torture_context *tctx,
 				torture_comment(tctx,
 						"start[%d] tmp_higest_usn: %llu , highest_usn: %llu\n",
 						y,
-						r.in.req->req5.highwatermark.tmp_highest_usn,
-						r.in.req->req5.highwatermark.highest_usn);
+						(unsigned long long) r.in.req->req5.highwatermark.tmp_highest_usn,
+						(unsigned long long) r.in.req->req5.highwatermark.highest_usn);
 			}
 
 			if (r.in.level == 8) {
 				torture_comment(tctx,
 						"start[%d] tmp_higest_usn: %llu , highest_usn: %llu\n",
 						y,
-						r.in.req->req8.highwatermark.tmp_highest_usn,
-						r.in.req->req8.highwatermark.highest_usn);
+						(unsigned long long) r.in.req->req8.highwatermark.tmp_highest_usn,
+						(unsigned long long) r.in.req->req8.highwatermark.highest_usn);
 			}
 
 			status = dcerpc_drsuapi_DsGetNCChanges_r(ctx->new_dc.drsuapi.drs_handle, ctx, &r);
@@ -822,8 +822,8 @@ static bool test_GetNCChanges(struct torture_context *tctx,
 				torture_comment(tctx,
 						"end[%d] tmp_highest_usn: %llu , highest_usn: %llu\n",
 						y,
-						ctr1->new_highwatermark.tmp_highest_usn,
-						ctr1->new_highwatermark.highest_usn);
+						(unsigned long long) ctr1->new_highwatermark.tmp_highest_usn,
+						(unsigned long long) ctr1->new_highwatermark.highest_usn);
 
 				if (!test_analyse_objects(tctx, ctx, nc_dn_str, &ctr1->mapping_ctr,  ctr1->object_count,
 							  ctr1->first_object, &gensec_skey)) {
@@ -857,8 +857,8 @@ static bool test_GetNCChanges(struct torture_context *tctx,
 				torture_comment(tctx,
 						"end[%d] tmp_highest_usn: %llu , highest_usn: %llu\n",
 						y,
-						ctr6->new_highwatermark.tmp_highest_usn,
-						ctr6->new_highwatermark.highest_usn);
+						(unsigned long long) ctr6->new_highwatermark.tmp_highest_usn,
+						(unsigned long long) ctr6->new_highwatermark.highest_usn);
 
 				if (!test_analyse_objects(tctx, ctx, nc_dn_str, &ctr6->mapping_ctr,  ctr6->object_count,
 							  ctr6->first_object, &gensec_skey)) {

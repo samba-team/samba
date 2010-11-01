@@ -1373,10 +1373,10 @@ static bool test_zerobytelength(struct torture_context *torture,
 	for (i = 0; i < ARRAY_SIZE(zero_byte_tests); i++) {
 		torture_comment(torture,
 		    "  ... {%llu, %llu} + {%llu, %llu} = %s\n",
-		    zero_byte_tests[i].lock1.offset,
-		    zero_byte_tests[i].lock1.length,
-		    zero_byte_tests[i].lock2.offset,
-		    zero_byte_tests[i].lock2.length,
+		    (unsigned long long) zero_byte_tests[i].lock1.offset,
+		    (unsigned long long) zero_byte_tests[i].lock1.length,
+		    (unsigned long long) zero_byte_tests[i].lock2.offset,
+		    (unsigned long long) zero_byte_tests[i].lock2.length,
 		    nt_errstr(zero_byte_tests[i].status));
 
 		/* Lock both locks. */
@@ -1410,10 +1410,10 @@ static bool test_zerobytelength(struct torture_context *torture,
 	for (i = 0; i < ARRAY_SIZE(zero_byte_tests); i++) {
 		torture_comment(torture,
 		    "  ... {%llu, %llu} + {%llu, %llu} = %s\n",
-		    zero_byte_tests[i].lock1.offset,
-		    zero_byte_tests[i].lock1.length,
-		    zero_byte_tests[i].lock2.offset,
-		    zero_byte_tests[i].lock2.length,
+		    (unsigned long long) zero_byte_tests[i].lock1.offset,
+		    (unsigned long long) zero_byte_tests[i].lock1.length,
+		    (unsigned long long) zero_byte_tests[i].lock2.offset,
+		    (unsigned long long) zero_byte_tests[i].lock2.length,
 		    nt_errstr(zero_byte_tests[i].status));
 
 		/* Lock both locks. */
@@ -2524,7 +2524,7 @@ static bool test_range(struct torture_context *torture,
 		CHECK_STATUS_CMT(status, NT_STATUS_OK,
 				 talloc_asprintf(torture,
 				     "lock h failed at offset %#llx ",
-				     el[0].offset));
+				     (unsigned long long) el[0].offset));
 
 		lck.in.file.handle	= h2;
 		el[0].offset		= offset - 2;
@@ -2532,7 +2532,7 @@ static bool test_range(struct torture_context *torture,
 		CHECK_STATUS_CMT(status, NT_STATUS_OK,
 				 talloc_asprintf(torture,
 				     "lock h2 failed at offset %#llx ",
-				     el[0].offset));
+				     (unsigned long long) el[0].offset));
 	}
 
 	torture_comment(torture, "  testing %d locks\n", torture_numops);
@@ -2546,7 +2546,8 @@ static bool test_range(struct torture_context *torture,
 		CHECK_STATUS_CMT(status, NT_STATUS_LOCK_NOT_GRANTED,
 				 talloc_asprintf(torture,
 				     "lock h at offset %#llx should not have "
-				     "succeeded ", el[0].offset));
+				     "succeeded ",
+				     (unsigned long long) el[0].offset));
 
 		lck.in.file.handle	= h;
 		el[0].offset		= offset - 2;
@@ -2554,7 +2555,8 @@ static bool test_range(struct torture_context *torture,
 		CHECK_STATUS_CMT(status, NT_STATUS_LOCK_NOT_GRANTED,
 				 talloc_asprintf(torture,
 				     "lock h2 at offset %#llx should not have "
-				     "succeeded ", el[0].offset));
+				     "succeeded ",
+				     (unsigned long long) el[0].offset));
 
 		lck.in.file.handle	= h2;
 		el[0].offset		= offset - 1;
@@ -2562,7 +2564,8 @@ static bool test_range(struct torture_context *torture,
 		CHECK_STATUS_CMT(status, NT_STATUS_LOCK_NOT_GRANTED,
 				 talloc_asprintf(torture,
 				     "lock h at offset %#llx should not have "
-				     "succeeded ", el[0].offset));
+				     "succeeded ",
+				     (unsigned long long) el[0].offset));
 
 		lck.in.file.handle	= h2;
 		el[0].offset		= offset - 2;
@@ -2570,7 +2573,8 @@ static bool test_range(struct torture_context *torture,
 		CHECK_STATUS_CMT(status, NT_STATUS_LOCK_NOT_GRANTED,
 				 talloc_asprintf(torture,
 				     "lock h2 at offset %#llx should not have "
-				     "succeeded ", el[0].offset));
+				     "succeeded ",
+				     (unsigned long long) el[0].offset));
 	}
 
 	torture_comment(torture, "  removing %d locks\n", torture_numops);
@@ -2586,7 +2590,7 @@ static bool test_range(struct torture_context *torture,
 		CHECK_STATUS_CMT(status, NT_STATUS_OK,
 				 talloc_asprintf(torture,
 				     "unlock from h failed at offset %#llx ",
-				     el[0].offset));
+				     (unsigned long long) el[0].offset));
 
 		lck.in.file.handle	= h2;
 		el[0].offset		= offset - 2;
@@ -2594,7 +2598,7 @@ static bool test_range(struct torture_context *torture,
 		CHECK_STATUS_CMT(status, NT_STATUS_OK,
 				 talloc_asprintf(torture,
 				     "unlock from h2 failed at offset %#llx ",
-				     el[0].offset));
+				     (unsigned long long) el[0].offset));
 	}
 
 done:
