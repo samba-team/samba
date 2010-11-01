@@ -920,16 +920,33 @@ static int entryuuid_extended(struct ldb_module *module, struct ldb_request *req
 	return ldb_next_request(module, req);
 }
 
-_PUBLIC_ const struct ldb_module_ops ldb_entryuuid_module_ops = {
+static const struct ldb_module_ops ldb_entryuuid_module_ops = {
 	.name		   = "entryuuid",
 	.init_context	   = entryuuid_init,
 	.extended          = entryuuid_extended,
 	LDB_MAP_OPS
 };
 
-_PUBLIC_ const struct ldb_module_ops ldb_nsuniqueid_module_ops = {
+static const struct ldb_module_ops ldb_nsuniqueid_module_ops = {
 	.name		   = "nsuniqueid",
 	.init_context	   = nsuniqueid_init,
 	.extended          = entryuuid_extended,
 	LDB_MAP_OPS
 };
+
+/*
+  initialise the module
+ */
+_PUBLIC_ int ldb_simple_ldap_map_init(const char *ldb_version)
+{
+	int ret;
+	ret = ldb_register_module(&ldb_entryuuid_module_ops);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+	ret = ldb_register_module(&ldb_nsuniqueid_module_ops);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+	return LDB_SUCCESS;
+}
