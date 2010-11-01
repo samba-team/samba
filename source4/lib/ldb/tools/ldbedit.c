@@ -31,7 +31,9 @@
  *  Author: Andrew Tridgell
  */
 
-#include "ldb_includes.h"
+#include "replace.h"
+#include "system/filesys.h"
+#include "system/time.h"
 #include "system/filesys.h"
 #include "ldb.h"
 #include "tools/cmdline.h"

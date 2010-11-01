@@ -35,7 +35,9 @@
  *  Author: Jelmer Vernooij, Martin Kuehl
  */
 
-#include "ldb_includes.h"
+#include "replace.h"
+#include "system/filesys.h"
+#include "system/time.h"
 #include "ldb_map.h"
 #include "ldb_map_private.h"
 

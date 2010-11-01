@@ -37,7 +37,9 @@
 #ifndef _LDB_PRIVATE_H_
 #define _LDB_PRIVATE_H_ 1
 
-#include "ldb_includes.h"
+#include "replace.h"
+#include "system/filesys.h"
+#include "system/time.h"
 #include "ldb.h"
 #include "ldb_module.h"
 

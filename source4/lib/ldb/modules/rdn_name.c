@@ -36,7 +36,9 @@
  *      Simo Sorce Mar 2006
  */
 
-#include "ldb_includes.h"
+#include "replace.h"
+#include "system/filesys.h"
+#include "system/time.h"
 #include "ldb_module.h"
 
 struct rename_context {
