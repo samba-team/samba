@@ -92,6 +92,16 @@ struct ldb_context *ldb_init(TALLOC_CTX *mem_ctx, struct tevent_context *ev_ctx)
 {
 	struct ldb_context *ldb;
 	int ret;
+	const char *modules_path = getenv("LDB_MODULES_PATH");
+
+	if (modules_path == NULL) {
+		modules_path = LDB_MODULESDIR;
+	}
+
+	ret = ldb_modules_load(modules_path, LDB_VERSION);
+	if (ret != LDB_SUCCESS) {
+		return NULL;
+	}
 
 	ldb = talloc_zero(mem_ctx, struct ldb_context);
 	/* A new event context so that callers who don't want ldb

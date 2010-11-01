@@ -227,4 +227,7 @@ void ldb_req_mark_untrusted(struct ldb_request *req);
  */
 bool ldb_req_is_untrusted(struct ldb_request *req);
 
+/* load all modules from the given directory */
+int ldb_modules_load(const char *modules_path, const char *version);
+
 #endif

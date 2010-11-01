@@ -219,7 +219,7 @@ def build(bld):
                             'common/ldb.c',
                             deps='tevent',
                             includes='include',
-                            cflags='-DLDB_MODULESDIR=\"%s\"' % modules_dir)
+                            cflags='-DLDB_MODULESDIR=\"%s\" -DLDB_VERSION=\"%s\"' % (modules_dir, VERSION))
 
     if s4_build:
         extra_cmdline_deps = ' LDBSAMBA POPT_SAMBA POPT_CREDENTIALS ' \

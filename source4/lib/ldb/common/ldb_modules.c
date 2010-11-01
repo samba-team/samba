@@ -33,6 +33,7 @@
 
 #include "ldb_private.h"
 #include "dlinklist.h"
+#include "system/dir.h"
 
 #define LDB_MODULE_PREFIX	"modules:"
 #define LDB_MODULE_PREFIX_LEN	8
@@ -866,6 +867,190 @@ int ldb_mod_register_control(struct ldb_module *module, const char *oid)
 
 	return ret;
 }
+
+static int ldb_modules_load_dir(const char *modules_dir, const char *version);
+
+
+/*
+  load one module. A static list of loaded module inode numbers is
+  used to prevent a module being loaded twice
+
+  dlopen() is used on the module, and dlsym() is then used to look for
+  a ldb_init_module() function. If present, that function is called
+  with the ldb version number as an argument.
+
+  The ldb_init_module() function will typically call
+  ldb_register_module() and ldb_register_backend() to register a
+  module or backend, but it may also be used to register command line
+  handling functions, ldif handlers or any other local
+  modififications.
+
+  The ldb_init_module() function does not get a ldb_context passed in,
+  as modules will be used for multiple ldb context handles. The call
+  from the first ldb_init() is just a convenient way to ensure it is
+  called early enough.
+ */
+static int ldb_modules_load_one(const char *path, const char *version)
+{
+	void *handle;
+	int (*init_fn)(const char *);
+	int ret;
+	struct stat st;
+	static struct loaded {
+		struct loaded *next, *prev;
+		ino_t st_ino;
+		dev_t st_dev;
+	} *loaded;
+	struct loaded *le;
+
+	ret = stat(path, &st);
+	if (ret != 0) {
+		fprintf(stderr, "ldb: unable to stat module %s : %s\n", path, strerror(errno));
+		return LDB_ERR_UNAVAILABLE;
+	}
+
+	for (le=loaded; le; le=le->next) {
+		if (le->st_ino == st.st_ino &&
+		    le->st_dev == st.st_dev) {
+			/* its already loaded */
+			return LDB_SUCCESS;
+		}
+	}
+
+	le = talloc(loaded, struct loaded);
+	if (le == NULL) {
+		fprintf(stderr, "ldb: unable to allocated loaded entry\n");
+		return LDB_ERR_UNAVAILABLE;
+	}
+
+	le->st_ino = st.st_ino;
+	le->st_dev = st.st_dev;
+
+	DLIST_ADD_END(loaded, le, struct loaded);
+
+	/* if it is a directory, recurse */
+	if (S_ISDIR(st.st_mode)) {
+		return ldb_modules_load_dir(path, version);
+	}
+
+	handle = dlopen(path, RTLD_NOW);
+	if (handle == NULL) {
+		fprintf(stderr, "ldb: unable to dlopen %s : %s", path, dlerror());
+		return LDB_SUCCESS;
+	}
+
+	init_fn = dlsym(handle, "ldb_init_module");
+	if (init_fn == NULL) {
+		/* ignore it, it could be an old-style
+		 * module. Once we've converted all modules we
+		 * could consider this an error */
+		dlclose(handle);
+		return LDB_SUCCESS;
+	}
+
+	ret = init_fn(version);
+	return ret;
+}
+
+
+/*
+  load all modules from the given ldb modules directory. This is run once
+  during the first ldb_init() call.
+
+  Modules are loaded in alphabetical order to ensure that any module
+  load ordering dependencies are reproducible. Modules should avoid
+  relying on load order
+ */
+static int ldb_modules_load_dir(const char *modules_dir, const char *version)
+{
+	DIR *dir;
+	struct dirent *de;
+	const char **modlist = NULL;
+	TALLOC_CTX *tmp_ctx = talloc_new(NULL);
+	unsigned i, num_modules = 0;
+
+	dir = opendir(modules_dir);
+	if (dir == NULL) {
+		talloc_free(tmp_ctx);
+		fprintf(stderr, "ldb: unable to open modules directory '%s' - %s\n",
+			modules_dir, strerror(errno));
+		return LDB_ERR_UNAVAILABLE;
+	}
+
+
+	while ((de = readdir(dir))) {
+		if (ISDOT(de->d_name) || ISDOTDOT(de->d_name))
+			continue;
+
+		modlist = talloc_realloc(tmp_ctx, modlist, const char *, num_modules+1);
+		if (modlist == NULL) {
+			talloc_free(tmp_ctx);
+			closedir(dir);
+			fprintf(stderr, "ldb: unable to allocate modules list\n");
+			return LDB_ERR_UNAVAILABLE;
+		}
+		modlist[num_modules] = talloc_asprintf(modlist, "%s/%s", modules_dir, de->d_name);
+		if (modlist[num_modules] == NULL) {
+			talloc_free(tmp_ctx);
+			closedir(dir);
+			fprintf(stderr, "ldb: unable to allocate module list entry\n");
+			return LDB_ERR_UNAVAILABLE;
+		}
+		num_modules++;
+	}
+
+	closedir(dir);
+
+	/* sort the directory, so we get consistent load ordering */
+	qsort(modlist, num_modules, sizeof(modlist[0]), QSORT_CAST strcmp);
+
+	for (i=0; i<num_modules; i++) {
+		int ret = ldb_modules_load_one(modlist[i], version);
+		if (ret != LDB_SUCCESS) {
+			fprintf(stderr, "ldb: failed to initialise module %s : %s",
+				modlist[i], ldb_strerror(ret));
+			talloc_free(tmp_ctx);
+			return ret;
+		}
+	}
+
+	talloc_free(tmp_ctx);
+
+	return LDB_SUCCESS;
+}
+
+/*
+  load all modules from the given ldb modules path, colon
+  separated.
+
+  modules are loaded recursively for all subdirectories in the paths
+ */
+int ldb_modules_load(const char *modules_path, const char *version)
+{
+	char *tok, *path, *tok_ptr=NULL;
+
+	path = talloc_strdup(NULL, modules_path);
+	if (path == NULL) {
+		fprintf(stderr, "ldb: failed to allocate modules_path");
+		return LDB_ERR_UNAVAILABLE;
+	}
+
+	for (tok=strtok_r(path, ":", &tok_ptr);
+	     tok;
+	     tok=strtok_r(NULL, ":", &tok_ptr)) {
+		int ret;
+
+		ret = ldb_modules_load_dir(tok, version);
+		if (ret != LDB_SUCCESS) {
+			talloc_free(path);
+			return ret;
+		}
+	}
+	talloc_free(path);
+
+	return LDB_SUCCESS;
+}
+
 
 #ifdef STATIC_ldb_MODULES
 #define STATIC_LIBLDB_MODULES STATIC_ldb_MODULES
