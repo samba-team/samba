@@ -1875,9 +1875,9 @@ class SamTests(unittest.TestCase):
         self.delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
         self.delete_force(self.ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
 
-    def test_dNSHostName(self):
-        """Test the dNSHostName behaviour"""
-        print "Testing dNSHostName behaviour\n"
+    def test_service_principal_name_updates(self):
+        """Test the servicePrincipalNames update behaviour"""
+        print "Testing servicePrincipalNames update behaviour\n"
 
         ldb.add({
             "dn": "cn=ldaptestcomputer,cn=computers," + self.base_dn,
@@ -1885,7 +1885,7 @@ class SamTests(unittest.TestCase):
             "dNSHostName": "testname.testdom"})
 
         res = ldb.search("cn=ldaptestcomputer,cn=computers," + self.base_dn,
-                          scope=SCOPE_BASE, attrs=["servicePrincipalName"])
+                         scope=SCOPE_BASE, attrs=["servicePrincipalName"])
         self.assertTrue(len(res) == 1)
         self.assertFalse("servicePrincipalName" in res[0])
 
@@ -1910,12 +1910,12 @@ class SamTests(unittest.TestCase):
             "servicePrincipalName": "HOST/testname.testdom"})
 
         res = ldb.search("cn=ldaptestcomputer,cn=computers," + self.base_dn,
-                          scope=SCOPE_BASE, attrs=["dNSHostName"])
+                         scope=SCOPE_BASE, attrs=["dNSHostName"])
         self.assertTrue(len(res) == 1)
         self.assertEquals(res[0]["dNSHostName"][0], "testname2.testdom")
 
         res = ldb.search("cn=ldaptestcomputer,cn=computers," + self.base_dn,
-                          scope=SCOPE_BASE, attrs=["servicePrincipalName"])
+                         scope=SCOPE_BASE, attrs=["servicePrincipalName"])
         self.assertTrue(len(res) == 1)
         self.assertEquals(res[0]["servicePrincipalName"][0],
                           "HOST/testname.testdom")
@@ -1927,7 +1927,7 @@ class SamTests(unittest.TestCase):
         ldb.modify(m)
 
         res = ldb.search("cn=ldaptestcomputer,cn=computers," + self.base_dn,
-                          scope=SCOPE_BASE, attrs=["servicePrincipalName"])
+                         scope=SCOPE_BASE, attrs=["servicePrincipalName"])
         self.assertTrue(len(res) == 1)
         self.assertEquals(res[0]["servicePrincipalName"][0],
                           "HOST/testname.testdom")
@@ -1939,7 +1939,7 @@ class SamTests(unittest.TestCase):
         ldb.modify(m)
 
         res = ldb.search("cn=ldaptestcomputer,cn=computers," + self.base_dn,
-                          scope=SCOPE_BASE, attrs=["servicePrincipalName"])
+                         scope=SCOPE_BASE, attrs=["servicePrincipalName"])
         self.assertTrue(len(res) == 1)
         self.assertEquals(res[0]["servicePrincipalName"][0],
                           "HOST/testname2.testdom2")
@@ -1951,7 +1951,7 @@ class SamTests(unittest.TestCase):
         ldb.modify(m)
 
         res = ldb.search("cn=ldaptestcomputer,cn=computers," + self.base_dn,
-                          scope=SCOPE_BASE, attrs=["servicePrincipalName"])
+                         scope=SCOPE_BASE, attrs=["servicePrincipalName"])
         self.assertTrue(len(res) == 1)
         self.assertEquals(res[0]["servicePrincipalName"][0],
                           "HOST/testname2.testdom2")
@@ -1963,7 +1963,7 @@ class SamTests(unittest.TestCase):
         ldb.modify(m)
 
         res = ldb.search("cn=ldaptestcomputer,cn=computers," + self.base_dn,
-                          scope=SCOPE_BASE, attrs=["servicePrincipalName"])
+                         scope=SCOPE_BASE, attrs=["servicePrincipalName"])
         self.assertTrue(len(res) == 1)
         self.assertEquals(res[0]["servicePrincipalName"][0],
                           "HOST/testname2.testdom2")
@@ -1999,7 +1999,7 @@ class SamTests(unittest.TestCase):
         ldb.modify(m)
 
         res = ldb.search("cn=ldaptestcomputer,cn=computers," + self.base_dn,
-                          scope=SCOPE_BASE, attrs=["servicePrincipalName"])
+                         scope=SCOPE_BASE, attrs=["servicePrincipalName"])
         self.assertTrue(len(res) == 1)
         self.assertEquals(res[0]["servicePrincipalName"][0],
                           "HOST/testname2.testdom2")
@@ -2018,9 +2018,204 @@ class SamTests(unittest.TestCase):
         ldb.modify(m)
 
         res = ldb.search("cn=ldaptestcomputer,cn=computers," + self.base_dn,
-                          scope=SCOPE_BASE, attrs=["servicePrincipalName"])
+                         scope=SCOPE_BASE, attrs=["servicePrincipalName"])
         self.assertTrue(len(res) == 1)
         self.assertFalse("servicePrincipalName" in res[0])
+
+        self.delete_force(self.ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
+
+        ldb.add({
+            "dn": "cn=ldaptestcomputer,cn=computers," + self.base_dn,
+            "objectclass": "computer",
+            "sAMAccountName": "testname$"})
+
+        res = ldb.search("cn=ldaptestcomputer,cn=computers," + self.base_dn,
+                         scope=SCOPE_BASE, attrs=["servicePrincipalName"])
+        self.assertTrue(len(res) == 1)
+        self.assertFalse("servicePrincipalName" in res[0])
+
+        self.delete_force(self.ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
+
+        ldb.add({
+            "dn": "cn=ldaptestcomputer,cn=computers," + self.base_dn,
+            "objectclass": "computer",
+            "servicePrincipalName": "HOST/testname"})
+
+        res = ldb.search("cn=ldaptestcomputer,cn=computers," + self.base_dn,
+                         scope=SCOPE_BASE, attrs=["sAMAccountName"])
+        self.assertTrue(len(res) == 1)
+        self.assertTrue("sAMAccountName" in res[0])
+
+        self.delete_force(self.ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
+
+        ldb.add({
+            "dn": "cn=ldaptestcomputer,cn=computers," + self.base_dn,
+            "objectclass": "computer",
+            "sAMAccountName": "testname$",
+            "servicePrincipalName": "HOST/testname"})
+
+        res = ldb.search("cn=ldaptestcomputer,cn=computers," + self.base_dn,
+                         scope=SCOPE_BASE, attrs=["sAMAccountName"])
+        self.assertTrue(len(res) == 1)
+        self.assertEquals(res[0]["sAMAccountName"][0], "testname$")
+
+        res = ldb.search("cn=ldaptestcomputer,cn=computers," + self.base_dn,
+                         scope=SCOPE_BASE, attrs=["servicePrincipalName"])
+        self.assertTrue(len(res) == 1)
+        self.assertEquals(res[0]["servicePrincipalName"][0],
+                          "HOST/testname")
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
+        m["sAMAccountName"] = MessageElement("testnamE$",
+                                             FLAG_MOD_REPLACE, "sAMAccountName")
+        ldb.modify(m)
+
+        res = ldb.search("cn=ldaptestcomputer,cn=computers," + self.base_dn,
+                         scope=SCOPE_BASE, attrs=["servicePrincipalName"])
+        self.assertTrue(len(res) == 1)
+        self.assertEquals(res[0]["servicePrincipalName"][0],
+                          "HOST/testname")
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
+        m["sAMAccountName"] = MessageElement("testname",
+                                             FLAG_MOD_REPLACE, "sAMAccountName")
+        ldb.modify(m)
+
+        res = ldb.search("cn=ldaptestcomputer,cn=computers," + self.base_dn,
+                         scope=SCOPE_BASE, attrs=["servicePrincipalName"])
+        self.assertTrue(len(res) == 1)
+        self.assertEquals(res[0]["servicePrincipalName"][0],
+                          "HOST/testname")
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
+        m["sAMAccountName"] = MessageElement("test$name$",
+                                             FLAG_MOD_REPLACE, "sAMAccountName")
+        ldb.modify(m)
+
+        res = ldb.search("cn=ldaptestcomputer,cn=computers," + self.base_dn,
+                         scope=SCOPE_BASE, attrs=["servicePrincipalName"])
+        self.assertTrue(len(res) == 1)
+        self.assertEquals(res[0]["servicePrincipalName"][0],
+                          "HOST/test$name")
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
+        m["sAMAccountName"] = MessageElement("testname2",
+                                             FLAG_MOD_REPLACE, "sAMAccountName")
+        ldb.modify(m)
+
+        res = ldb.search("cn=ldaptestcomputer,cn=computers," + self.base_dn,
+                         scope=SCOPE_BASE, attrs=["servicePrincipalName"])
+        self.assertTrue(len(res) == 1)
+        self.assertEquals(res[0]["servicePrincipalName"][0],
+                          "HOST/testname2")
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
+        m["sAMAccountName"] = MessageElement("testname3",
+                                             FLAG_MOD_REPLACE, "sAMAccountName")
+        m["servicePrincipalName"] = MessageElement("HOST/testname2",
+                                                   FLAG_MOD_REPLACE,
+                                                   "servicePrincipalName")
+        ldb.modify(m)
+
+        res = ldb.search("cn=ldaptestcomputer,cn=computers," + self.base_dn,
+                         scope=SCOPE_BASE, attrs=["servicePrincipalName"])
+        self.assertTrue(len(res) == 1)
+        self.assertEquals(res[0]["servicePrincipalName"][0],
+                          "HOST/testname3")
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
+        m["servicePrincipalName"] = MessageElement("HOST/testname2",
+                                                   FLAG_MOD_REPLACE,
+                                                   "servicePrincipalName")
+        m["sAMAccountName"] = MessageElement("testname4",
+                                             FLAG_MOD_REPLACE, "sAMAccountName")
+        ldb.modify(m)
+
+        res = ldb.search("cn=ldaptestcomputer,cn=computers," + self.base_dn,
+                         scope=SCOPE_BASE, attrs=["servicePrincipalName"])
+        self.assertTrue(len(res) == 1)
+        self.assertEquals(res[0]["servicePrincipalName"][0],
+                          "HOST/testname2")
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
+        m["servicePrincipalName"] = MessageElement([],
+                                                   FLAG_MOD_DELETE,
+                                                   "servicePrincipalName")
+        ldb.modify(m)
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
+        m["sAMAccountName"] = MessageElement("testname2",
+                                             FLAG_MOD_REPLACE, "sAMAccountName")
+        ldb.modify(m)
+
+        res = ldb.search("cn=ldaptestcomputer,cn=computers," + self.base_dn,
+                         scope=SCOPE_BASE, attrs=["servicePrincipalName"])
+        self.assertTrue(len(res) == 1)
+        self.assertFalse("servicePrincipalName" in res[0])
+
+        self.delete_force(self.ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
+
+        ldb.add({
+            "dn": "cn=ldaptestcomputer,cn=computers," + self.base_dn,
+            "objectclass": "computer",
+            "dNSHostName": "testname.testdom",
+            "sAMAccountName": "testname$",
+            "servicePrincipalName": [ "HOST/testname.testdom", "HOST/testname" ]
+        })
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
+        m["dNSHostName"] = MessageElement("testname2.testdom",
+                                          FLAG_MOD_REPLACE, "dNSHostName")
+        m["sAMAccountName"] = MessageElement("testname2$",
+                                             FLAG_MOD_REPLACE, "sAMAccountName")
+        ldb.modify(m)
+
+        res = ldb.search("cn=ldaptestcomputer,cn=computers," + self.base_dn,
+                         scope=SCOPE_BASE, attrs=["dNSHostName", "sAMAccountName", "servicePrincipalName"])
+        self.assertTrue(len(res) == 1)
+        self.assertEquals(res[0]["dNSHostName"][0], "testname2.testdom")
+        self.assertEquals(res[0]["sAMAccountName"][0], "testname2$")
+        self.assertTrue(res[0]["servicePrincipalName"][0] == "HOST/testname2" or
+                        res[0]["servicePrincipalName"][1] == "HOST/testname2")
+        self.assertTrue(res[0]["servicePrincipalName"][0] == "HOST/testname2.testdom" or
+                        res[0]["servicePrincipalName"][1] == "HOST/testname2.testdom")
+
+        self.delete_force(self.ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
+
+        ldb.add({
+            "dn": "cn=ldaptestcomputer,cn=computers," + self.base_dn,
+            "objectclass": "computer",
+            "dNSHostName": "testname.testdom",
+            "sAMAccountName": "testname$",
+            "servicePrincipalName": [ "HOST/testname.testdom", "HOST/testname" ]
+        })
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
+        m["sAMAccountName"] = MessageElement("testname2$",
+                                             FLAG_MOD_REPLACE, "sAMAccountName")
+        m["dNSHostName"] = MessageElement("testname2.testdom",
+                                          FLAG_MOD_REPLACE, "dNSHostName")
+        ldb.modify(m)
+
+        res = ldb.search("cn=ldaptestcomputer,cn=computers," + self.base_dn,
+                         scope=SCOPE_BASE, attrs=["dNSHostName", "sAMAccountName", "servicePrincipalName"])
+        self.assertTrue(len(res) == 1)
+        self.assertEquals(res[0]["dNSHostName"][0], "testname2.testdom")
+        self.assertEquals(res[0]["sAMAccountName"][0], "testname2$")
+        self.assertTrue(res[0]["servicePrincipalName"][0] == "HOST/testname2" or
+                        res[0]["servicePrincipalName"][1] == "HOST/testname2")
+        self.assertTrue(res[0]["servicePrincipalName"][0] == "HOST/testname2.testdom" or
+                        res[0]["servicePrincipalName"][1] == "HOST/testname2.testdom")
 
         self.delete_force(self.ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
 
