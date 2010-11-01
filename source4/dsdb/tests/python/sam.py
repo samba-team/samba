@@ -136,6 +136,17 @@ class SamTests(unittest.TestCase):
             self.assertEquals(num, ERR_ENTRY_ALREADY_EXISTS)
         self.delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
 
+        # Try to create a user with an invalid account name
+        try:
+            ldb.add({
+                "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
+                "objectclass": "user",
+                "sAMAccountName": []})
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
+        self.delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+
         # Try to create a user with an invalid primary group
         try:
             ldb.add({
@@ -711,6 +722,16 @@ class SamTests(unittest.TestCase):
             self.fail()
         except LdbError, (num, _):
             self.assertEquals(num, ERR_ATTRIBUTE_OR_VALUE_EXISTS)
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+        m["sAMAccountName"] = MessageElement([], FLAG_MOD_REPLACE,
+          "sAMAccountName")
+        try:
+            ldb.modify(m)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
 
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)

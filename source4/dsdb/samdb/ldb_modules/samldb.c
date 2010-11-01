@@ -177,7 +177,10 @@ static int samldb_check_sAMAccountName(struct samldb_ctx *ac)
 
 	name = ldb_msg_find_attr_as_string(ac->msg, "sAMAccountName", NULL);
 	if (name == NULL) {
-		return ldb_operr(ldb);
+		/* The "sAMAccountName" cannot be nothing */
+		ldb_set_errstring(ldb,
+				  "samldb: Empty account names aren't allowed!");
+		return LDB_ERR_CONSTRAINT_VIOLATION;
 	}
 
 	ret = samdb_search_count(ldb, ac, NULL, "(sAMAccountName=%s)",
@@ -1389,7 +1392,10 @@ static int samldb_sam_accountname_check(struct samldb_ctx *ac)
 	talloc_free(tmp_msg);
 
 	if (sam_accountname == NULL) {
-		return ldb_operr(ldb);
+		/* The "sAMAccountName" cannot be nothing */
+		ldb_set_errstring(ldb,
+				  "samldb: Empty account names aren't allowed!");
+		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
 
 	enc_str = ldb_binary_encode_string(ac, sam_accountname);
