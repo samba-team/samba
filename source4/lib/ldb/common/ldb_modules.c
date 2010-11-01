@@ -888,6 +888,11 @@ static int ldb_modules_load_dir(const char *modules_dir, const char *version)
 
 	dir = opendir(modules_dir);
 	if (dir == NULL) {
+		if (errno == ENOENT) {
+			talloc_free(tmp_ctx);
+			/* we don't have any modules */
+			return LDB_SUCCESS;
+		}
 		talloc_free(tmp_ctx);
 		fprintf(stderr, "ldb: unable to open modules directory '%s' - %s\n",
 			modules_dir, strerror(errno));
