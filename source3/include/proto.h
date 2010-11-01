@@ -481,7 +481,7 @@ size_t pull_string_talloc_fn(const char *function,
 			int flags);
 size_t align_string(const void *base_ptr, const char *p, int flags);
 codepoint_t next_codepoint_ext(const char *str, charset_t src_charset,
-			       size_t *size);
+			       size_t *bytes_consumed);
 codepoint_t next_codepoint(const char *str, size_t *size);
 
 /* The following definitions come from lib/clobber.c  */

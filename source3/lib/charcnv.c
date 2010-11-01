@@ -1809,7 +1809,7 @@ size_t align_string(const void *base_ptr, const char *p, int flags)
  */
 
 codepoint_t next_codepoint_ext(const char *str, charset_t src_charset,
-			       size_t *size)
+			       size_t *bytes_consumed)
 {
 	/* It cannot occupy more than 4 bytes in UTF16 format */
 	uint8_t buf[4];
@@ -1821,7 +1821,7 @@ codepoint_t next_codepoint_ext(const char *str, charset_t src_charset,
 
 	/* fastpath if the character is ASCII */
 	if ((str[0] & 0x80) == 0) {
-		*size = 1;
+		*bytes_consumed = 1;
 		return (codepoint_t)str[0];
 	}
 
@@ -1837,7 +1837,7 @@ codepoint_t next_codepoint_ext(const char *str, charset_t src_charset,
 
 	descriptor = conv_handles[src_charset][CH_UTF16LE];
 	if (descriptor == (smb_iconv_t)-1 || descriptor == (smb_iconv_t)0) {
-		*size = 1;
+		*bytes_consumed = 1;
 		return INVALID_CODEPOINT;
 	}
 
@@ -1858,7 +1858,7 @@ codepoint_t next_codepoint_ext(const char *str, charset_t src_charset,
 		smb_iconv(descriptor,  &str, &ilen, &outbuf, &olen);
 		if (olen == 4) {
 			/* We didn't convert any bytes */
-			*size = 1;
+			*bytes_consumed = 1;
 			return INVALID_CODEPOINT;
 		}
 		olen = 4 - olen;
@@ -1866,7 +1866,7 @@ codepoint_t next_codepoint_ext(const char *str, charset_t src_charset,
 		olen = 2 - olen;
 	}
 
-	*size = ilen_orig - ilen;
+	*bytes_consumed = ilen_orig - ilen;
 
 	if (olen == 2) {
 		/* 2 byte, UTF16-LE encoded value. */
