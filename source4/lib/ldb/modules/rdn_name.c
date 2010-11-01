@@ -377,9 +377,14 @@ static int rdn_name_modify(struct ldb_module *module, struct ldb_request *req)
 	return ldb_next_request(module, req);
 }
 
-const struct ldb_module_ops ldb_rdn_name_module_ops = {
+static const struct ldb_module_ops ldb_rdn_name_module_ops = {
 	.name              = "rdn_name",
 	.add               = rdn_name_add,
 	.modify            = rdn_name_modify,
 	.rename            = rdn_name_rename
 };
+
+int ldb_rdn_name_init(const char *version)
+{
+	return ldb_register_module(&ldb_rdn_name_module_ops);
+}

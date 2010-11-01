@@ -123,7 +123,7 @@ static int skel_init(struct ldb_module *module)
 	return ldb_next_init(module);
 }
 
-const struct ldb_module_ops ldb_skel_module_ops = {
+static const struct ldb_module_ops ldb_skel_module_ops = {
 	.name		   = "skel",
 	.init_context	   = skel_init,
 	.search            = skel_search,
@@ -136,3 +136,8 @@ const struct ldb_module_ops ldb_skel_module_ops = {
 	.end_transaction   = skel_end_trans,
 	.del_transaction   = skel_del_trans,
 };
+
+int ldb_skel_init(const char *version)
+{
+	return ldb_register_module(&ldb_skel_module_ops);
+}

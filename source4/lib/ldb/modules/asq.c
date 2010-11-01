@@ -400,8 +400,13 @@ static int asq_init(struct ldb_module *module)
 	return ldb_next_init(module);
 }
 
-const struct ldb_module_ops ldb_asq_module_ops = {
+static const struct ldb_module_ops ldb_asq_module_ops = {
 	.name		   = "asq",
 	.search		   = asq_search,
 	.init_context	   = asq_init
 };
+
+int ldb_asq_init(const char *ldb_version)
+{
+	return ldb_register_module(&ldb_asq_module_ops);
+}

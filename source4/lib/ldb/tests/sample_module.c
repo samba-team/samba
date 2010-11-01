@@ -54,9 +54,14 @@ int sample_modify(struct ldb_module *mod, struct ldb_request *req)
 }
 
 
-const struct ldb_module_ops ldb_sample_module_ops = {
+static struct ldb_module_ops ldb_sample_module_ops = {
 	.name              = "sample",
 	.add		   = sample_add,
 	.del		   = sample_modify,
 	.modify		   = sample_modify,
 };
+
+int ldb_sample_init(const char *version)
+{
+	return ldb_register_module(&ldb_sample_module_ops);
+}

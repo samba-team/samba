@@ -423,8 +423,13 @@ static int paged_request_init(struct ldb_module *module)
 	return ldb_next_init(module);
 }
 
-const struct ldb_module_ops ldb_paged_results_module_ops = {
+static const struct ldb_module_ops ldb_paged_results_module_ops = {
 	.name           = "paged_results",
 	.search         = paged_search,
 	.init_context 	= paged_request_init
 };
+
+int ldb_paged_results_init(const char *version)
+{
+	return ldb_register_module(&ldb_paged_results_module_ops);
+}

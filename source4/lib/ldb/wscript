@@ -97,9 +97,9 @@ def build(bld):
         bld.SAMBA_MODULE('ldb_ldap', 'ldb_ldap/ldb_ldap.c',
                          init_function='ldb_ldap_init',
                          module_init_name='ldb_init_module',
-                         deps='talloc lber ldap',
+                         deps='talloc lber ldap ldb',
                          enabled=bld.env.ENABLE_LDAP_BACKEND,
-                         internal_module=False,
+                         internal_module=True,
                          subsystem='ldb')
 
     # we're not currently linking against the ldap libs, but ldb.pc.in
@@ -158,50 +158,58 @@ def build(bld):
 
         bld.SAMBA_MODULE('ldb_paged_results',
                          'modules/paged_results.c',
-                         init_function='LDB_MODULE(paged_results)',
+                         init_function='ldb_paged_results_init',
+                         module_init_name='ldb_init_module',
                          deps='ldb',
                          subsystem='ldb')
 
         bld.SAMBA_MODULE('ldb_asq',
                          'modules/asq.c',
-                         init_function='LDB_MODULE(asq)',
+                         init_function='ldb_asq_init',
+                         module_init_name='ldb_init_module',
                          deps='ldb',
                          subsystem='ldb')
 
         bld.SAMBA_MODULE('ldb_server_sort',
                          'modules/sort.c',
-                         init_function='LDB_MODULE(server_sort)',
+                         init_function='ldb_server_sort_init',
+                         module_init_name='ldb_init_module',
                          deps='ldb',
                          subsystem='ldb')
 
         bld.SAMBA_MODULE('ldb_paged_searches',
                          'modules/paged_searches.c',
-                         init_function='LDB_MODULE(paged_searches)',
+                         init_function='ldb_paged_searches_init',
+                         module_init_name='ldb_init_module',
                          enabled = s4_build,
                          deps='ldb',
                          subsystem='ldb')
 
         bld.SAMBA_MODULE('ldb_rdn_name',
                          'modules/rdn_name.c',
-                         init_function='LDB_MODULE(rdn_name)',
+                         init_function='ldb_rdn_name_init',
+                         module_init_name='ldb_init_module',
                          deps='ldb',
                          subsystem='ldb')
 
         bld.SAMBA_MODULE('ldb_sample',
                          'tests/sample_module.c',
-                         init_function='LDB_MODULE(sample)',
+                         init_function='ldb_sample_init',
+                         module_init_name='ldb_init_module',
                          deps='ldb',
                          subsystem='ldb')
 
         bld.SAMBA_MODULE('ldb_skel',
                          'modules/skel.c',
-                         init_function='LDB_MODULE(skel)',
+                         init_function='ldb_skel_init',
+                         module_init_name='ldb_init_module',
                          deps='ldb',
                          subsystem='ldb')
 
         bld.SAMBA_MODULE('ldb_sqlite3',
                          'sqlite3/ldb_sqlite3.c',
-                         init_function='LDB_BACKEND(sqlite3)',
+                         init_function='ldb_sqlite3_init',
+                         module_init_name='ldb_init_module',
                          enabled=False,
                          deps='ldb',
                          subsystem='ldb')
@@ -210,7 +218,8 @@ def build(bld):
                          bld.SUBDIR('ldb_tdb',
                                     '''ldb_tdb.c ldb_pack.c ldb_search.c ldb_index.c
                                     ldb_cache.c ldb_tdb_wrap.c'''),
-                         init_function='LDB_BACKEND(tdb)',
+                         init_function='ldb_tdb_init',
+                         module_init_name='ldb_init_module',
                          deps='tdb ldb',
                          subsystem='ldb')
 
