@@ -33,8 +33,6 @@
 #include "lib/ldb/include/ldb.h"
 #include "lib/ldb/include/ldb_errors.h"
 #include "lib/ldb/include/ldb_module.h"
-#include "lib/ldb/include/ldb_private.h"
-
 #include "dsdb/samdb/ldb_modules/util.h"
 #include "dsdb/samdb/samdb.h"
 
@@ -78,8 +76,8 @@ static int samba_secrets_init(struct ldb_module *module)
 	/* The backend (at least until the partitions module
 	 * reconfigures things) is the next module in the currently
 	 * loaded chain */
-	backend_module = module->next;
-	ret = ldb_load_modules_list(ldb, reverse_module_list, backend_module, &module_chain);
+	backend_module = ldb_module_next(module);
+	ret = ldb_module_load_list(ldb, reverse_module_list, backend_module, &module_chain);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
 		return ret;
@@ -87,7 +85,7 @@ static int samba_secrets_init(struct ldb_module *module)
 
 	talloc_free(tmp_ctx);
 	/* Set this as the 'next' module, so that we effectivly append it to module chain */
-	module->next = module_chain;
+	ldb_module_set_next(module, module_chain);
 
 	return ldb_next_init(module);
 }

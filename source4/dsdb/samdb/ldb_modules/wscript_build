@@ -64,16 +64,6 @@ bld.SAMBA_MODULE('ldb_repl_meta_data',
 	)
 
 
-bld.SAMBA_MODULE('ldb_dsdb_cache',
-	source='dsdb_cache.c',
-	subsystem='ldb',
-	init_function='ldb_dsdb_cache_module_init',
-        module_init_name='ldb_init_module',
-	internal_module=False,
-	deps='SAMDB talloc events'
-	)
-
-
 bld.SAMBA_MODULE('ldb_schema_load',
 	source='schema_load.c',
 	subsystem='ldb',

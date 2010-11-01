@@ -24,7 +24,6 @@
 
 #include "includes.h"
 #include "ldb_module.h"
-#include "ldb_private.h"
 #include "lib/cmdline/popt_common.h"
 #include "auth/gensec/gensec.h"
 #include "auth/auth.h"
@@ -62,18 +61,19 @@ static int extensions_hook(struct ldb_context *ldb, enum ldb_module_hook_type t)
 	switch (t) {
 	case LDB_MODULE_HOOK_CMDLINE_OPTIONS: {
 		unsigned len1, len2;
+		struct poptOption **popt_options = ldb_module_popt_options(ldb);
 		struct poptOption *new_array;
 
-		len1 = calculate_popt_array_length(ldb->popt_options);
+		len1 = calculate_popt_array_length(*popt_options);
 		len2 = calculate_popt_array_length(cmdline_extensions);
 		new_array = talloc_array(NULL, struct poptOption, len1+len2+1);
 		if (NULL == new_array) {
 			return ldb_oom(ldb);
 		}
 
-		memcpy(new_array, ldb->popt_options, len1*sizeof(struct poptOption));
+		memcpy(new_array, *popt_options, len1*sizeof(struct poptOption));
 		memcpy(new_array+len1, cmdline_extensions, (1+len2)*sizeof(struct poptOption));
-		ldb->popt_options = new_array;
+		(*popt_options) = new_array;
 		return LDB_SUCCESS;
 	}
 

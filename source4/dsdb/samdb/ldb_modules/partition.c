@@ -68,7 +68,7 @@ static struct partition_context *partition_init_ctx(struct ldb_module *module, s
  */
 int partition_request(struct ldb_module *module, struct ldb_request *request)
 {
-	if ((module && module->ldb->flags & LDB_FLG_ENABLE_TRACING)) { \
+	if ((module && ldb_module_flags(ldb_module_get_ctx(module)) & LDB_FLG_ENABLE_TRACING)) { \
 		const struct dsdb_control_current_partition *partition = NULL;
 		struct ldb_control *partition_ctrl = ldb_request_get_control(request, DSDB_CONTROL_CURRENT_PARTITION_OID);
 		if (partition_ctrl) {
@@ -77,10 +77,10 @@ int partition_request(struct ldb_module *module, struct ldb_request *request)
 		}
 
 		if (partition != NULL) {
-			ldb_debug(module->ldb, LDB_DEBUG_TRACE, "partition_request() -> %s", 
+			ldb_debug(ldb_module_get_ctx(module), LDB_DEBUG_TRACE, "partition_request() -> %s",
 				  ldb_dn_get_linearized(partition->dn));			
 		} else {
-			ldb_debug(module->ldb, LDB_DEBUG_TRACE, "partition_request() -> (metadata partition)");			
+			ldb_debug(ldb_module_get_ctx(module), LDB_DEBUG_TRACE, "partition_request() -> (metadata partition)");
 		}
 	}
 
@@ -138,7 +138,7 @@ static int partition_req_callback(struct ldb_request *req,
 	struct ldb_control *partition_ctrl;
 
 	ac = talloc_get_type(req->context, struct partition_context);
-	data = talloc_get_type(ac->module->private_data, struct partition_private_data);
+	data = talloc_get_type(ldb_module_get_private(ac->module), struct partition_private_data);
 
 	if (!ares) {
 		return ldb_module_done(ac->req, NULL, NULL,
@@ -369,7 +369,7 @@ static int partition_send_all(struct ldb_module *module,
 			      struct ldb_request *req) 
 {
 	unsigned int i;
-	struct partition_private_data *data = talloc_get_type(module->private_data, 
+	struct partition_private_data *data = talloc_get_type(ldb_module_get_private(module),
 							      struct partition_private_data);
 	int ret = partition_prep_request(ac, NULL);
 	if (ret != LDB_SUCCESS) {
@@ -396,7 +396,7 @@ static int partition_replicate(struct ldb_module *module, struct ldb_request *re
 	unsigned int i;
 	int ret;
 	struct dsdb_partition *partition;
-	struct partition_private_data *data = talloc_get_type(module->private_data, 
+	struct partition_private_data *data = talloc_get_type(ldb_module_get_private(module),
 							      struct partition_private_data);
 	if (!data || !data->partitions) {
 		return ldb_next_request(module, req);
@@ -454,7 +454,7 @@ static int partition_search(struct ldb_module *module, struct ldb_request *req)
 {
 	struct ldb_control **saved_controls;
 	/* Find backend */
-	struct partition_private_data *data = talloc_get_type(module->private_data, 
+	struct partition_private_data *data = talloc_get_type(ldb_module_get_private(module),
 							      struct partition_private_data);
 	struct partition_context *ac;
 	struct ldb_context *ldb;
@@ -677,7 +677,7 @@ static int partition_rename(struct ldb_module *module, struct ldb_request *req)
 	/* Find backend */
 	struct dsdb_partition *backend, *backend2;
 	
-	struct partition_private_data *data = talloc_get_type(module->private_data, 
+	struct partition_private_data *data = talloc_get_type(ldb_module_get_private(module),
 							      struct partition_private_data);
 
 	/* Skip the lot if 'data' isn't here yet (initialisation) */
@@ -711,13 +711,13 @@ static int partition_start_trans(struct ldb_module *module)
 {
 	unsigned int i;
 	int ret;
-	struct partition_private_data *data = talloc_get_type(module->private_data, 
+	struct partition_private_data *data = talloc_get_type(ldb_module_get_private(module),
 							      struct partition_private_data);
 	/* Look at base DN */
 	/* Figure out which partition it is under */
 	/* Skip the lot if 'data' isn't here yet (initialization) */
-	if ((module && module->ldb->flags & LDB_FLG_ENABLE_TRACING)) {
-		ldb_debug(module->ldb, LDB_DEBUG_TRACE, "partition_start_trans() -> (metadata partition)");
+	if ((module && ldb_module_flags(ldb_module_get_ctx(module)) & LDB_FLG_ENABLE_TRACING)) {
+		ldb_debug(ldb_module_get_ctx(module), LDB_DEBUG_TRACE, "partition_start_trans() -> (metadata partition)");
 	}
 	ret = ldb_next_start_trans(module);
 	if (ret != LDB_SUCCESS) {
@@ -730,8 +730,8 @@ static int partition_start_trans(struct ldb_module *module)
 	}
 
 	for (i=0; data && data->partitions && data->partitions[i]; i++) {
-		if ((module && module->ldb->flags & LDB_FLG_ENABLE_TRACING)) {
-			ldb_debug(module->ldb, LDB_DEBUG_TRACE, "partition_start_trans() -> %s", 
+		if ((module && ldb_module_flags(ldb_module_get_ctx(module)) & LDB_FLG_ENABLE_TRACING)) {
+			ldb_debug(ldb_module_get_ctx(module), LDB_DEBUG_TRACE, "partition_start_trans() -> %s",
 				  ldb_dn_get_linearized(data->partitions[i]->ctrl->dn));
 		}
 		ret = ldb_next_start_trans(data->partitions[i]->module);
@@ -754,27 +754,27 @@ static int partition_start_trans(struct ldb_module *module)
 static int partition_prepare_commit(struct ldb_module *module)
 {
 	unsigned int i;
-	struct partition_private_data *data = talloc_get_type(module->private_data, 
+	struct partition_private_data *data = talloc_get_type(ldb_module_get_private(module),
 							      struct partition_private_data);
 
 	for (i=0; data && data->partitions && data->partitions[i]; i++) {
 		int ret;
 
-		if ((module && module->ldb->flags & LDB_FLG_ENABLE_TRACING)) {
-			ldb_debug(module->ldb, LDB_DEBUG_TRACE, "partition_prepare_commit() -> %s", 
+		if ((module && ldb_module_flags(ldb_module_get_ctx(module)) & LDB_FLG_ENABLE_TRACING)) {
+			ldb_debug(ldb_module_get_ctx(module), LDB_DEBUG_TRACE, "partition_prepare_commit() -> %s",
 				  ldb_dn_get_linearized(data->partitions[i]->ctrl->dn));
 		}
 		ret = ldb_next_prepare_commit(data->partitions[i]->module);
 		if (ret != LDB_SUCCESS) {
-			ldb_asprintf_errstring(module->ldb, "prepare_commit error on %s: %s",
+			ldb_asprintf_errstring(ldb_module_get_ctx(module), "prepare_commit error on %s: %s",
 					       ldb_dn_get_linearized(data->partitions[i]->ctrl->dn),
-					       ldb_errstring(module->ldb));
+					       ldb_errstring(ldb_module_get_ctx(module)));
 			return ret;
 		}
 	}
 
-	if ((module && module->ldb->flags & LDB_FLG_ENABLE_TRACING)) {
-		ldb_debug(module->ldb, LDB_DEBUG_TRACE, "partition_prepare_commit() -> (metadata partition)");
+	if ((module && ldb_module_flags(ldb_module_get_ctx(module)) & LDB_FLG_ENABLE_TRACING)) {
+		ldb_debug(ldb_module_get_ctx(module), LDB_DEBUG_TRACE, "partition_prepare_commit() -> (metadata partition)");
 	}
 	return ldb_next_prepare_commit(module);
 }
@@ -785,7 +785,7 @@ static int partition_end_trans(struct ldb_module *module)
 {
 	int ret, ret2;
 	unsigned int i;
-	struct partition_private_data *data = talloc_get_type(module->private_data, 
+	struct partition_private_data *data = talloc_get_type(ldb_module_get_private(module),
 							      struct partition_private_data);
 
 	ret = LDB_SUCCESS;
@@ -798,21 +798,21 @@ static int partition_end_trans(struct ldb_module *module)
 	}
 
 	for (i=0; data && data->partitions && data->partitions[i]; i++) {
-		if ((module && module->ldb->flags & LDB_FLG_ENABLE_TRACING)) {
-			ldb_debug(module->ldb, LDB_DEBUG_TRACE, "partition_end_trans() -> %s", 
+		if ((module && ldb_module_flags(ldb_module_get_ctx(module)) & LDB_FLG_ENABLE_TRACING)) {
+			ldb_debug(ldb_module_get_ctx(module), LDB_DEBUG_TRACE, "partition_end_trans() -> %s",
 				  ldb_dn_get_linearized(data->partitions[i]->ctrl->dn));
 		}
 		ret2 = ldb_next_end_trans(data->partitions[i]->module);
 		if (ret2 != LDB_SUCCESS) {
-			ldb_asprintf_errstring(module->ldb, "end_trans error on %s: %s",
+			ldb_asprintf_errstring(ldb_module_get_ctx(module), "end_trans error on %s: %s",
 					       ldb_dn_get_linearized(data->partitions[i]->ctrl->dn),
-					       ldb_errstring(module->ldb));
+					       ldb_errstring(ldb_module_get_ctx(module)));
 			ret = ret2;
 		}
 	}
 
-	if ((module && module->ldb->flags & LDB_FLG_ENABLE_TRACING)) {
-		ldb_debug(module->ldb, LDB_DEBUG_TRACE, "partition_end_trans() -> (metadata partition)");
+	if ((module && ldb_module_flags(ldb_module_get_ctx(module)) & LDB_FLG_ENABLE_TRACING)) {
+		ldb_debug(ldb_module_get_ctx(module), LDB_DEBUG_TRACE, "partition_end_trans() -> (metadata partition)");
 	}
 	ret2 = ldb_next_end_trans(module);
 	if (ret2 != LDB_SUCCESS) {
@@ -826,18 +826,18 @@ static int partition_del_trans(struct ldb_module *module)
 {
 	int ret, final_ret = LDB_SUCCESS;
 	unsigned int i;
-	struct partition_private_data *data = talloc_get_type(module->private_data, 
+	struct partition_private_data *data = talloc_get_type(ldb_module_get_private(module),
 							      struct partition_private_data);
 	for (i=0; data && data->partitions && data->partitions[i]; i++) {
-		if ((module && module->ldb->flags & LDB_FLG_ENABLE_TRACING)) {
-			ldb_debug(module->ldb, LDB_DEBUG_TRACE, "partition_del_trans() -> %s", 
+		if ((module && ldb_module_flags(ldb_module_get_ctx(module)) & LDB_FLG_ENABLE_TRACING)) {
+			ldb_debug(ldb_module_get_ctx(module), LDB_DEBUG_TRACE, "partition_del_trans() -> %s",
 				  ldb_dn_get_linearized(data->partitions[i]->ctrl->dn));
 		}
 		ret = ldb_next_del_trans(data->partitions[i]->module);
 		if (ret != LDB_SUCCESS) {
-			ldb_asprintf_errstring(module->ldb, "del_trans error on %s: %s",
+			ldb_asprintf_errstring(ldb_module_get_ctx(module), "del_trans error on %s: %s",
 					       ldb_dn_get_linearized(data->partitions[i]->ctrl->dn),
-					       ldb_errstring(module->ldb));
+					       ldb_errstring(ldb_module_get_ctx(module)));
 			final_ret = ret;
 		}
 	}	
@@ -848,8 +848,8 @@ static int partition_del_trans(struct ldb_module *module)
 	}
 	data->in_transaction--;
 
-	if ((module && module->ldb->flags & LDB_FLG_ENABLE_TRACING)) {
-		ldb_debug(module->ldb, LDB_DEBUG_TRACE, "partition_del_trans() -> (metadata partition)");
+	if ((module && ldb_module_flags(ldb_module_get_ctx(module)) & LDB_FLG_ENABLE_TRACING)) {
+		ldb_debug(ldb_module_get_ctx(module), LDB_DEBUG_TRACE, "partition_del_trans() -> (metadata partition)");
 	}
 	ret = ldb_next_del_trans(module);
 	if (ret != LDB_SUCCESS) {
@@ -923,7 +923,7 @@ static int partition_sequence_number(struct ldb_module *module, struct ldb_reque
 	uint64_t seq_number = 0;
 	uint64_t timestamp_sequence = 0;
 	uint64_t timestamp = 0;
-	struct partition_private_data *data = talloc_get_type(module->private_data, 
+	struct partition_private_data *data = talloc_get_type(ldb_module_get_private(module),
 							      struct partition_private_data);
 	struct ldb_seqnum_request *seq;
 	struct ldb_seqnum_result *seqr;
@@ -1164,7 +1164,7 @@ static int partition_extended(struct ldb_module *module, struct ldb_request *req
 	struct partition_context *ac;
 	int ret;
 
-	data = talloc_get_type(module->private_data, struct partition_private_data);
+	data = talloc_get_type(ldb_module_get_private(module), struct partition_private_data);
 	if (!data) {
 		return ldb_next_request(module, req);
 	}

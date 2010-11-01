@@ -32,6 +32,7 @@
 #include "dsdb/samdb/ldb_modules/partition.h"
 #include "lib/util/tsort.h"
 #include "lib/ldb-samba/ldb_wrap.h"
+#include "system/filesys.h"
 
 static int partition_sort_compare(const void *v1, const void *v2)
 {
@@ -232,7 +233,7 @@ static int new_partition_from_dn(struct ldb_context *ldb, struct partition_priva
 		}
 		(*partition)->backend_url = talloc_steal((*partition), backend_url);
 
-		if (!(ldb->flags & LDB_FLG_RDONLY)) {
+		if (!(ldb_module_flags(ldb) & LDB_FLG_RDONLY)) {
 			char *p;
 			char *backend_dir = talloc_strdup(*partition, backend_url);
 			
@@ -251,7 +252,7 @@ static int new_partition_from_dn(struct ldb_context *ldb, struct partition_priva
 	ctrl->version = DSDB_CONTROL_CURRENT_PARTITION_VERSION;
 	ctrl->dn = talloc_steal(ctrl, dn);
 	
-	ret = ldb_connect_backend(ldb, (*partition)->backend_url, NULL, &backend_module);
+	ret = ldb_module_connect_backend(ldb, (*partition)->backend_url, NULL, &backend_module);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
@@ -264,7 +265,7 @@ static int new_partition_from_dn(struct ldb_context *ldb, struct partition_priva
 		talloc_free(*partition);
 		return LDB_ERR_CONSTRAINT_VIOLATION;
 	}
-	ret = ldb_load_modules_list(ldb, modules, backend_module, &module_chain);
+	ret = ldb_module_load_list(ldb, modules, backend_module, &module_chain);
 	if (ret != LDB_SUCCESS) {
 		ldb_asprintf_errstring(ldb, 
 				       "partition_init: "
@@ -273,7 +274,7 @@ static int new_partition_from_dn(struct ldb_context *ldb, struct partition_priva
 		talloc_free(*partition);
 		return ret;
 	}
-	ret = ldb_init_module_chain(ldb, module_chain);
+	ret = ldb_module_init_chain(ldb, module_chain);
 	if (ret != LDB_SUCCESS) {
 		ldb_asprintf_errstring(ldb,
 				       "partition_init: "
@@ -289,13 +290,13 @@ static int new_partition_from_dn(struct ldb_context *ldb, struct partition_priva
 		talloc_free(*partition);
 		return ldb_oom(ldb);
 	}
-	(*partition)->module->next = talloc_steal((*partition)->module, module_chain);
+	ldb_module_set_next((*partition)->module, talloc_steal((*partition)->module, module_chain));
 
 	/* if we were in a transaction then we need to start a
 	   transaction on this new partition, otherwise we'll get a
 	   transaction mismatch when we end the transaction */
 	if (data->in_transaction) {
-		if (ldb->flags & LDB_FLG_ENABLE_TRACING) {
+		if (ldb_module_flags(ldb) & LDB_FLG_ENABLE_TRACING) {
 			ldb_debug(ldb, LDB_DEBUG_TRACE, "partition_start_trans() -> %s (new partition)", 
 				  ldb_dn_get_linearized((*partition)->ctrl->dn));
 		}
@@ -685,7 +686,7 @@ int partition_create(struct ldb_module *module, struct ldb_request *req)
 	struct dsdb_create_partition_exop *ex_op = talloc_get_type(req->op.extended.data, struct dsdb_create_partition_exop);
 	struct ldb_dn *dn = ex_op->new_dn;
 
-	data = talloc_get_type(module->private_data, struct partition_private_data);
+	data = talloc_get_type(ldb_module_get_private(module), struct partition_private_data);
 	if (!data) {
 		/* We are not going to create a partition before we are even set up */
 		return LDB_ERR_UNWILLING_TO_PERFORM;
@@ -830,7 +831,7 @@ int partition_init(struct ldb_module *module)
 		return ret;
 	}
 
-	module->private_data = talloc_steal(module, data);
+	ldb_module_set_private(module, talloc_steal(module, data));
 	talloc_free(mem_ctx);
 
 	ret = ldb_mod_register_control(module, LDB_CONTROL_DOMAIN_SCOPE_OID);
