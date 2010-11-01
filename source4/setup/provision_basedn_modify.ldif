@@ -72,9 +72,6 @@ nextRid: ${NEXTRID}
 replace: nTMixedDomain
 nTMixedDomain: 0
 -
-replace: objectSid
-objectSid: ${DOMAINSID}
--
 # This does only exist in SAMBA
 replace: oEMInformation
 oEMInformation: Provisioned by SAMBA ${SAMBA_VERSION_STRING}

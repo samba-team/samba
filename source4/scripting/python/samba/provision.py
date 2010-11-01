@@ -1127,22 +1127,18 @@ def setup_samdb(path, setup_path, session_info, provision_backend, lp, names,
         descr = b64encode(get_domain_descriptor(domainsid))
         setup_add_ldif(samdb, setup_path("provision_basedn.ldif"), {
                 "DOMAINDN": names.domaindn,
-                "DOMAINGUID": domainguid_line,
-                "DESCRIPTOR": descr
+                "DOMAINSID": str(domainsid),
+                "DESCRIPTOR": descr,
+                "DOMAINGUID": domainguid_line
                 })
 
-
         setup_modify_ldif(samdb, setup_path("provision_basedn_modify.ldif"), {
+            "DOMAINDN": names.domaindn,
             "CREATTIME": str(int(time.time() * 1e7)), # seconds -> ticks
-            "DOMAINSID": str(domainsid),
             "NEXTRID": str(next_rid),
-            "SCHEMADN": names.schemadn, 
-            "NETBIOSNAME": names.netbiosname,
             "DEFAULTSITE": names.sitename,
             "CONFIGDN": names.configdn,
-            "SERVERDN": names.serverdn,
             "POLICYGUID": policyguid,
-            "DOMAINDN": names.domaindn,
             "DOMAIN_FUNCTIONALITY": str(domainFunctionality),
             "SAMBA_VERSION_STRING": version
             })
