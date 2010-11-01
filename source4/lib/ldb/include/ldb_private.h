@@ -125,6 +125,8 @@ struct ldb_context {
 	bool prepare_commit_done;
 
 	char *partial_debug;
+
+	struct poptOption *popt_options;
 };
 
 /* The following definitions come from lib/ldb/common/ldb.c  */

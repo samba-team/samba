@@ -21,26 +21,17 @@
    License along with this library; if not, see <http://www.gnu.org/licenses/>.
 */
 
-#if (_SAMBA_BUILD_ >= 4)
-#include "includes.h"
-#include "lib/cmdline/popt_common.h"
-#include "auth/gensec/gensec.h"
-#include "auth/auth.h"
-#include "param/param.h"
-#include "dsdb/samdb/samdb.h"
-#include "ldb_wrap.h"
-#else
 #include "ldb_includes.h"
+#include "ldb_private.h"
 #include "ldb.h"
-#endif
-
+#include "ldb_module.h"
 #include "tools/cmdline.h"
 
 static struct ldb_cmdline options; /* needs to be static for older compilers */
 
 enum ldb_cmdline_options { CMDLINE_RELAX=1 };
 
-static struct poptOption popt_options[] = {
+static struct poptOption builtin_popt_options[] = {
 	POPT_AUTOHELP
 	{ "url",       'H', POPT_ARG_STRING, &options.url, 0, "database URL", "URL" },
 	{ "basedn",    'b', POPT_ARG_STRING, &options.basedn, 0, "base DN", "DN" },
@@ -67,19 +58,13 @@ static struct poptOption popt_options[] = {
 	{ "relax", 0, POPT_ARG_NONE, NULL, CMDLINE_RELAX, "pass relax control", NULL },
 	{ "cross-ncs", 0, POPT_ARG_NONE, NULL, 'N', "search across NC boundaries", NULL },
 	{ "extended-dn", 0, POPT_ARG_NONE, NULL, 'E', "show extended DNs", NULL },
-#if (_SAMBA_BUILD_ >= 4)
-	POPT_COMMON_SAMBA
-	POPT_COMMON_CREDENTIALS
-	POPT_COMMON_CONNECTION
-	POPT_COMMON_VERSION
-#endif
 	{ NULL }
 };
 
-void ldb_cmdline_help(const char *cmdname, FILE *f)
+void ldb_cmdline_help(struct ldb_context *ldb, const char *cmdname, FILE *f)
 {
 	poptContext pc;
-	pc = poptGetContext(cmdname, 0, NULL, popt_options, 
+	pc = poptGetContext(cmdname, 0, NULL, ldb->popt_options,
 			    POPT_CONTEXT_KEEP_FIRST);
 	poptPrintHelp(pc, f, 0);
 }
@@ -108,24 +93,14 @@ static bool add_control(TALLOC_CTX *mem_ctx, const char *control)
 */
 struct ldb_cmdline *ldb_cmdline_process(struct ldb_context *ldb, 
 					int argc, const char **argv,
-					void (*usage)(void))
+					void (*usage)(struct ldb_context *))
 {
 	struct ldb_cmdline *ret=NULL;
 	poptContext pc;
-#if (_SAMBA_BUILD_ >= 4)
-	int r;
-#endif
 	int num_options = 0;
 	int opt;
 	int flags = 0;
-
-#if (_SAMBA_BUILD_ >= 4)
-	r = ldb_register_samba_handlers(ldb);
-	if (r != LDB_SUCCESS) {
-		goto failed;
-	}
-
-#endif
+	int rc;
 
 	/* make the ldb utilities line buffered */
 	setlinebuf(stdout);
@@ -152,7 +127,15 @@ struct ldb_cmdline *ldb_cmdline_process(struct ldb_context *ldb,
 
 	options.scope = LDB_SCOPE_DEFAULT;
 
-	pc = poptGetContext(argv[0], argc, argv, popt_options, 
+	ldb->popt_options = builtin_popt_options;
+
+	rc = ldb_modules_hook(ldb, LDB_MODULE_HOOK_CMDLINE_OPTIONS);
+	if (rc != LDB_SUCCESS) {
+		fprintf(stderr, "ldb: failed to run command line hooks : %s\n", ldb_strerror(rc));
+		goto failed;
+	}
+
+	pc = poptGetContext(argv[0], argc, argv, ldb->popt_options,
 			    POPT_CONTEXT_KEEP_FIRST);
 
 	while((opt = poptGetNextOpt(pc)) != -1) {
@@ -262,7 +245,7 @@ struct ldb_cmdline *ldb_cmdline_process(struct ldb_context *ldb,
 		default:
 			fprintf(stderr, "Invalid option %s: %s\n", 
 				poptBadOption(pc, 0), poptStrerror(opt));
-			if (usage) usage();
+			if (usage) usage(ldb);
 			goto failed;
 		}
 	}
@@ -279,7 +262,7 @@ struct ldb_cmdline *ldb_cmdline_process(struct ldb_context *ldb,
 	/* all utils need some option */
 	if (ret->url == NULL) {
 		fprintf(stderr, "You must supply a url with -H or with $LDB_URL\n");
-		if (usage) usage();
+		if (usage) usage(ldb);
 		goto failed;
 	}
 
@@ -299,25 +282,14 @@ struct ldb_cmdline *ldb_cmdline_process(struct ldb_context *ldb,
 		flags |= LDB_FLG_ENABLE_TRACING;
 	}
 
-#if (_SAMBA_BUILD_ >= 4)
-	/* Must be after we have processed command line options */
-	gensec_init(cmdline_lp_ctx); 
-	
-	if (ldb_set_opaque(ldb, "sessionInfo", system_session(cmdline_lp_ctx))) {
-		goto failed;
-	}
-	if (ldb_set_opaque(ldb, "credentials", cmdline_credentials)) {
-		goto failed;
-	}
-	if (ldb_set_opaque(ldb, "loadparm", cmdline_lp_ctx)) {
-		goto failed;
-	}
-
-	ldb_set_utf8_fns(ldb, NULL, wrap_casefold);
-#endif
-
 	if (options.modules_path != NULL) {
 		ldb_set_modules_dir(ldb, options.modules_path);
+	}
+
+	rc = ldb_modules_hook(ldb, LDB_MODULE_HOOK_CMDLINE_PRECONNECT);
+	if (rc != LDB_SUCCESS) {
+		fprintf(stderr, "ldb: failed to run preconnect hooks : %s\n", ldb_strerror(rc));
+		goto failed;
 	}
 
 	/* now connect to the ldb */
@@ -327,10 +299,11 @@ struct ldb_cmdline *ldb_cmdline_process(struct ldb_context *ldb,
 		goto failed;
 	}
 
-#if (_SAMBA_BUILD_ >= 4)
-	/* get the domain SID into the cache for SDDL processing */
-	samdb_domain_sid(ldb);
-#endif
+	rc = ldb_modules_hook(ldb, LDB_MODULE_HOOK_CMDLINE_POSTCONNECT);
+	if (rc != LDB_SUCCESS) {
+		fprintf(stderr, "ldb: failed to run post connect hooks : %s\n", ldb_strerror(rc));
+		goto failed;
+	}
 
 	return ret;
 

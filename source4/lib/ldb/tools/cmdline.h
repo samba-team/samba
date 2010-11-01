@@ -47,9 +47,9 @@ struct ldb_cmdline {
 };
 
 struct ldb_cmdline *ldb_cmdline_process(struct ldb_context *ldb, int argc, const char **argv,
-					void (*usage)(void));
+					void (*usage)(struct ldb_context *));
 
 
 int handle_controls_reply(struct ldb_control **reply, struct ldb_control **request);
-void ldb_cmdline_help(const char *cmdname, FILE *f);
+void ldb_cmdline_help(struct ldb_context *ldb, const char *cmdname, FILE *f);
 
