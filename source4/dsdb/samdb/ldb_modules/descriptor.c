@@ -598,15 +598,23 @@ static int descriptor_do_mod(struct descriptor_context *ac)
 
 	ldb = ldb_module_get_ctx(ac->module);
 	schema = dsdb_get_schema(ldb, ac);
-	msg = ldb_msg_copy_shallow(ac, ac->req->op.mod.message);
-	objectclass_element = ldb_msg_find_element(ac->search_oc_res->message, "objectClass");
-	objectclass = get_last_structural_class(schema, objectclass_element);
 
-	if (!objectclass) {
-		ldb_asprintf_errstring(ldb, "No last structural objectclass found on %s",
-				       ldb_dn_get_linearized(ac->search_oc_res->message->dn));
-		return LDB_ERR_OPERATIONS_ERROR;
+	msg = ldb_msg_copy_shallow(ac, ac->req->op.mod.message);
+	if (msg == NULL) {
+		return ldb_module_oom(ac->module);
 	}
+
+	objectclass_element = ldb_msg_find_element(ac->search_oc_res->message,
+						   "objectClass");
+	if (objectclass_element == NULL) {
+		return ldb_operr(ldb);
+	}
+
+	objectclass = get_last_structural_class(schema, objectclass_element);
+	if (objectclass == NULL) {
+		return ldb_operr(ldb);
+	}
+
 	sd_control = ldb_request_get_control(ac->req, LDB_CONTROL_SD_FLAGS_OID);
 	sd_control2 = ldb_request_get_control(ac->req, LDB_CONTROL_RECALCULATE_SD_OID);
 	if (sd_control) {
@@ -675,23 +683,35 @@ static int descriptor_do_add(struct descriptor_context *ac)
 
 	ldb = ldb_module_get_ctx(ac->module);
 	schema = dsdb_get_schema(ldb, ac);
+
 	mem_ctx = talloc_new(ac);
 	if (mem_ctx == NULL) {
-		return ldb_oom(ldb);
+		return ldb_module_oom(ac->module);
 	}
+
 	switch (ac->req->operation) {
 	case LDB_ADD:
 		msg = ldb_msg_copy_shallow(ac, ac->req->op.add.message);
-		objectclass_element = ldb_msg_find_element(msg, "objectClass");
-		objectclass = get_last_structural_class(schema, objectclass_element);
+		if (msg == NULL) {
+			return ldb_module_oom(ac->module);
+		}
 
-		if (!objectclass) {
-			ldb_asprintf_errstring(ldb, "No last structural objectclass found on %s", ldb_dn_get_linearized(msg->dn));
-			return LDB_ERR_OPERATIONS_ERROR;
+		objectclass_element = ldb_msg_find_element(msg, "objectClass");
+		if (objectclass_element == NULL) {
+			return ldb_operr(ldb);
+		}
+
+		objectclass = get_last_structural_class(schema,
+							objectclass_element);
+		if (objectclass == NULL) {
+			return ldb_operr(ldb);
 		}
 		break;
 	case LDB_MODIFY:
 		msg = ldb_msg_copy_shallow(ac, ac->req->op.mod.message);
+		if (msg == NULL) {
+			return ldb_module_oom(ac->module);
+		}
 		break;
 	default:
 		return ldb_operr(ldb);
@@ -717,8 +737,9 @@ static int descriptor_do_add(struct descriptor_context *ac)
 	}
 
 	if (ac->req->operation == LDB_ADD) {
-	/* get the parent descriptor and the one provided. If not provided, get the default.*/
-	/* convert to security descriptor and calculate */
+		/* Get the parent descriptor and the one provided. If not
+		 * provided, get the default. Convert it to a security
+		 * descriptor and calculate the permissions. */
 		sd = get_new_descriptor(ac->module, msg->dn, mem_ctx, objectclass,
 					ac->parentsd_val, ac->sd_val, NULL, 0);
 		if (ac->sd_val) {
