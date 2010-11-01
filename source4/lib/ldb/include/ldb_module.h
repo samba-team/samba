@@ -185,7 +185,7 @@ struct ldb_backend_ops {
 
 const char *ldb_default_modules_dir(void);
 
-int ldb_register_backend(const char *url_prefix, ldb_connect_fn);
+int ldb_register_backend(const char *url_prefix, ldb_connect_fn, bool);
 
 struct ldb_handle *ldb_handle_new(TALLOC_CTX *mem_ctx, struct ldb_context *ldb);
 
@@ -232,5 +232,24 @@ int ldb_modules_load(const char *modules_path, const char *version);
 
 /* init functions prototype */
 typedef int (*ldb_module_init_fn)(const char *);
+
+/*
+  general ldb hook function
+ */
+enum ldb_module_hook_type { LDB_MODULE_HOOK_CMDLINE_OPTIONS     = 1,
+			    LDB_MODULE_HOOK_CMDLINE_PRECONNECT  = 2,
+			    LDB_MODULE_HOOK_CMDLINE_POSTCONNECT = 3 };
+
+typedef int (*ldb_hook_fn)(struct ldb_context *, enum ldb_module_hook_type );
+
+/*
+  register a ldb hook function
+ */
+int ldb_register_hook(ldb_hook_fn hook_fn);
+
+/*
+  call ldb hooks of a given type
+ */
+int ldb_modules_hook(struct ldb_context *ldb, enum ldb_module_hook_type t);
 
 #endif

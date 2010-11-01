@@ -131,13 +131,12 @@ static struct ops_list_entry {
 	struct ops_list_entry *next;
 } *registered_modules = NULL;
 
-static backends_list_entry *ldb_find_backend(const char *url)
+static struct backends_list_entry *ldb_find_backend(const char *url_prefix)
 {
 	struct backends_list_entry *backend;
 
 	for (backend = ldb_backends; backend; backend = backend->next) {
-		if (strncmp(backend->ops->name, url,
-			    strlen(backend->ops->name)) == 0) {
+		if (strcmp(backend->ops->name, url_prefix) == 0) {
 			return backend;
 		}
 	}
@@ -152,7 +151,6 @@ static backends_list_entry *ldb_find_backend(const char *url)
 */
 int ldb_register_backend(const char *url_prefix, ldb_connect_fn connectfn, bool override)
 {
-	struct ldb_backend_ops *backend;
 	struct backends_list_entry *be;
 
 	be = ldb_find_backend(url_prefix);
@@ -161,16 +159,16 @@ int ldb_register_backend(const char *url_prefix, ldb_connect_fn connectfn, bool 
 			return LDB_SUCCESS;
 		}
 	} else {
-		be = talloc(ldb_backends, struct backends_list_entry);
+		be = talloc_zero(ldb_backends, struct backends_list_entry);
 		if (!be) {
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
-		be->ops = talloc(be, struct ldb_backend_ops);
-		if (!backend) {
+		be->ops = talloc_zero(be, struct ldb_backend_ops);
+		if (!be->ops) {
 			talloc_free(be);
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
-		DLIST_ADD_END(ldb_backends, entry, struct backends_list_entry);
+		DLIST_ADD_END(ldb_backends, be, struct backends_list_entry);
 	}
 
 	be->ops->name = url_prefix;
@@ -228,6 +226,42 @@ int ldb_connect_backend(struct ldb_context *ldb,
 	}
 	return ret;
 }
+
+static struct ldb_hooks {
+	struct ldb_hooks *next, *prev;
+	ldb_hook_fn hook_fn;
+} *ldb_hooks;
+
+/*
+  register a ldb hook function
+ */
+int ldb_register_hook(ldb_hook_fn hook_fn)
+{
+	struct ldb_hooks *lc;
+	lc = talloc_zero(ldb_hooks, struct ldb_hooks);
+	if (lc == NULL) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	lc->hook_fn = hook_fn;
+	DLIST_ADD_END(ldb_hooks, lc, struct ldb_hooks);
+	return LDB_SUCCESS;
+}
+
+/*
+  call ldb hooks of a given type
+ */
+int ldb_modules_hook(struct ldb_context *ldb, enum ldb_module_hook_type t)
+{
+	struct ldb_hooks *lc;
+	for (lc = ldb_hooks; lc; lc=lc->next) {
+		int ret = lc->hook_fn(ldb, t);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+	}
+	return LDB_SUCCESS;
+}
+
 
 static const struct ldb_module_ops *ldb_find_module_ops(const char *name)
 {
@@ -855,7 +889,7 @@ static int ldb_modules_load_one(const char *path, const char *version)
 
 	handle = dlopen(path, RTLD_NOW);
 	if (handle == NULL) {
-		fprintf(stderr, "ldb: unable to dlopen %s : %s", path, dlerror());
+		fprintf(stderr, "ldb: unable to dlopen %s : %s\n", path, dlerror());
 		return LDB_SUCCESS;
 	}
 
@@ -932,7 +966,7 @@ static int ldb_modules_load_dir(const char *modules_dir, const char *version)
 	for (i=0; i<num_modules; i++) {
 		int ret = ldb_modules_load_one(modlist[i], version);
 		if (ret != LDB_SUCCESS) {
-			fprintf(stderr, "ldb: failed to initialise module %s : %s",
+			fprintf(stderr, "ldb: failed to initialise module %s : %s\n",
 				modlist[i], ldb_strerror(ret));
 			talloc_free(tmp_ctx);
 			return ret;
@@ -987,7 +1021,7 @@ int ldb_modules_load(const char *modules_path, const char *version)
 
 	path = talloc_strdup(NULL, modules_path);
 	if (path == NULL) {
-		fprintf(stderr, "ldb: failed to allocate modules_path");
+		fprintf(stderr, "ldb: failed to allocate modules_path\n");
 		return LDB_ERR_UNAVAILABLE;
 	}
 
