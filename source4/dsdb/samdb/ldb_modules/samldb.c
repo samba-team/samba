@@ -835,9 +835,8 @@ static int samldb_objectclass_trigger(struct samldb_ctx *ac)
 	sid = samdb_result_dom_sid(ac, ac->msg, "objectSid");
 	if ((sid != NULL) && (!dsdb_module_am_system(ac->module)) &&
 	    (ldb_request_get_control(ac->req, LDB_CONTROL_RELAX_OID) == NULL)) {
-		ldb_asprintf_errstring(ldb,
-				       "samldb: no SID may be specified in user/group modifications for %s",
-				       ldb_dn_get_linearized(ac->msg->dn));
+		ldb_set_errstring(ldb,
+				  "samldb: objectSid must not be specified!");
 		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
 
