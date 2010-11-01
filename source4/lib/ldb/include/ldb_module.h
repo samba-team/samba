@@ -230,4 +230,7 @@ bool ldb_req_is_untrusted(struct ldb_request *req);
 /* load all modules from the given directory */
 int ldb_modules_load(const char *modules_path, const char *version);
 
+/* init functions prototype */
+typedef int (*ldb_module_init_fn)(const char *);
+
 #endif

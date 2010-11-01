@@ -35,12 +35,6 @@
 #include "dlinklist.h"
 #include "system/dir.h"
 
-#define LDB_MODULE_PREFIX	"modules:"
-#define LDB_MODULE_PREFIX_LEN	8
-
-static void *ldb_dso_load_symbol(struct ldb_context *ldb, const char *name,
-				 const char *symbol);
-
 void ldb_set_modules_dir(struct ldb_context *ldb, const char *path)
 {
 	talloc_free(ldb->modules_dir);
@@ -137,24 +131,9 @@ static struct ops_list_entry {
 	struct ops_list_entry *next;
 } *registered_modules = NULL;
 
-static const struct ldb_builtins {
-	const struct ldb_backend_ops *backend_ops;
-	const struct ldb_module_ops *module_ops;
-} builtins[];
-
 static ldb_connect_fn ldb_find_backend(const char *url)
 {
 	struct backends_list_entry *backend;
-	unsigned int i;
-
-	for (i = 0; builtins[i].backend_ops || builtins[i].module_ops; i++) {
-		if (builtins[i].backend_ops == NULL) continue;
-
-		if (strncmp(builtins[i].backend_ops->name, url,
-			    strlen(builtins[i].backend_ops->name)) == 0) {
-			return builtins[i].backend_ops->connect_fn;
-		}
-	}
 
 	for (backend = ldb_backends; backend; backend = backend->next) {
 		if (strncmp(backend->ops->name, url,
@@ -229,19 +208,6 @@ int ldb_connect_backend(struct ldb_context *ldb,
 
 	fn = ldb_find_backend(backend);
 
-	if (fn == NULL) {
-		struct ldb_backend_ops *ops;
-		char *symbol_name = talloc_asprintf(ldb, "ldb_%s_backend_ops", backend);
-		if (symbol_name == NULL) {
-			return LDB_ERR_OPERATIONS_ERROR;
-		}
-		ops = ldb_dso_load_symbol(ldb, backend, symbol_name);
-		if (ops != NULL) {
-			fn = ops->connect_fn;
-		}
-		talloc_free(symbol_name);
-	}
-
 	talloc_free(backend);
 
 	if (fn == NULL) {
@@ -263,14 +229,6 @@ int ldb_connect_backend(struct ldb_context *ldb,
 static const struct ldb_module_ops *ldb_find_module_ops(const char *name)
 {
 	struct ops_list_entry *e;
-	unsigned int i;
-
-	for (i = 0; builtins[i].backend_ops || builtins[i].module_ops; i++) {
-		if (builtins[i].module_ops == NULL) continue;
-
-		if (strcmp(builtins[i].module_ops->name, name) == 0)
-			return builtins[i].module_ops;
-	}
 
 	for (e = registered_modules; e; e = e->next) {
  		if (strcmp(e->ops->name, name) == 0)
@@ -298,38 +256,6 @@ int ldb_register_module(const struct ldb_module_ops *ops)
 	return 0;
 }
 
-static void *ldb_dso_load_symbol(struct ldb_context *ldb, const char *name,
-				 const char *symbol)
-{
-	char *path;
-	void *handle;
-	void *sym;
-
-	if (ldb->modules_dir == NULL)
-		return NULL;
-
-	path = talloc_asprintf(ldb, "%s/%s.%s", ldb->modules_dir, name,
-			       SHLIBEXT);
-
-	ldb_debug(ldb, LDB_DEBUG_TRACE, "trying to load %s from %s", name, path);
-
-	handle = dlopen(path, RTLD_NOW);
-	if (handle == NULL) {
-		ldb_debug(ldb, LDB_DEBUG_WARNING, "unable to load %s from %s: %s", name, path, dlerror());
-		return NULL;
-	}
-
-	sym = dlsym(handle, symbol);
-	if (sym == NULL) {
-		ldb_debug(ldb, LDB_DEBUG_ERROR, "no symbol `%s' found in %s: %s", symbol, path, dlerror());
-		dlclose(handle);
-		return NULL;
-	}
-
-	talloc_free(path);
-
-	return sym;
-}
 
 int ldb_load_modules_list(struct ldb_context *ldb, const char **module_list, struct ldb_module *backend, struct ldb_module **out)
 {
@@ -347,15 +273,6 @@ int ldb_load_modules_list(struct ldb_context *ldb, const char **module_list, str
 		}
 
 		ops = ldb_find_module_ops(module_list[i]);
-		if (ops == NULL) {
-			char *symbol_name = talloc_asprintf(ldb, "ldb_%s_module_ops",
-												module_list[i]);
-			if (symbol_name == NULL) {
-				return LDB_ERR_OPERATIONS_ERROR;
-			}
-			ops = ldb_dso_load_symbol(ldb, module_list[i], symbol_name);
-			talloc_free(symbol_name);
-		}
 
 		if (ops == NULL) {
 			ldb_debug(ldb, LDB_DEBUG_WARNING, "WARNING: Module [%s] not found",
@@ -1020,6 +937,31 @@ static int ldb_modules_load_dir(const char *modules_dir, const char *version)
 }
 
 /*
+  load all modules static (builtin) modules
+ */
+static int ldb_modules_load_static(const char *version)
+{
+	static bool initialised;
+#define _MODULE_PROTO(init) extern int init(const char *);
+	STATIC_ldb_MODULES_PROTO;
+	const ldb_module_init_fn static_init_functions[] = { STATIC_ldb_MODULES };
+	unsigned i;
+
+	if (initialised) {
+		return LDB_SUCCESS;
+	}
+	initialised = true;
+
+	for (i=0; static_init_functions[i]; i++) {
+		int ret = static_init_functions[i](version);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+	}
+	return LDB_SUCCESS;
+}
+
+/*
   load all modules from the given ldb modules path, colon
   separated.
 
@@ -1028,6 +970,12 @@ static int ldb_modules_load_dir(const char *modules_dir, const char *version)
 int ldb_modules_load(const char *modules_path, const char *version)
 {
 	char *tok, *path, *tok_ptr=NULL;
+	int ret;
+
+	ret = ldb_modules_load_static(version);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
 
 	path = talloc_strdup(NULL, modules_path);
 	if (path == NULL) {
@@ -1038,8 +986,6 @@ int ldb_modules_load(const char *modules_path, const char *version)
 	for (tok=strtok_r(path, ":", &tok_ptr);
 	     tok;
 	     tok=strtok_r(NULL, ":", &tok_ptr)) {
-		int ret;
-
 		ret = ldb_modules_load_dir(tok, version);
 		if (ret != LDB_SUCCESS) {
 			talloc_free(path);
@@ -1050,76 +996,3 @@ int ldb_modules_load(const char *modules_path, const char *version)
 
 	return LDB_SUCCESS;
 }
-
-
-#ifdef STATIC_ldb_MODULES
-#define STATIC_LIBLDB_MODULES STATIC_ldb_MODULES
-#endif
-
-#ifndef STATIC_LIBLDB_MODULES
-
-#ifdef HAVE_LDB_LDAP
-#define LDAP_BACKEND LDB_BACKEND(ldap), LDB_BACKEND(ldapi), LDB_BACKEND(ldaps),
-#else
-#define LDAP_BACKEND
-#endif
-
-#ifdef HAVE_LDB_SQLITE3
-#define SQLITE3_BACKEND LDB_BACKEND(sqlite3),
-#else
-#define SQLITE3_BACKEND
-#endif
-
-#define STATIC_LIBLDB_MODULES \
-	LDB_BACKEND(tdb),	\
-	LDAP_BACKEND	\
-	SQLITE3_BACKEND	\
-	LDB_MODULE(rdn_name),	\
-	LDB_MODULE(paged_results),	\
-	LDB_MODULE(server_sort),		\
-	LDB_MODULE(asq), \
-	NULL
-#endif
-
-/*
- * this is a bit hacked, as STATIC_LIBLDB_MODULES contains ','
- * between the elements and we want to autogenerate the
- * extern struct declarations, so we do some hacks and let the
- * ',' appear in an unused function prototype.
- */
-#undef NULL
-#define NULL LDB_MODULE(NULL),
-
-#define LDB_BACKEND(name) \
-	int); \
-	extern const struct ldb_backend_ops ldb_ ## name ## _backend_ops;\
-	extern void ldb_noop ## name (int
-#define LDB_MODULE(name) \
-	int); \
-	extern const struct ldb_module_ops ldb_ ## name ## _module_ops;\
-	extern void ldb_noop ## name (int
-
-extern void ldb_start_noop(int,
-STATIC_LIBLDB_MODULES
-int);
-
-#undef NULL
-#define NULL { \
-	.backend_ops = (void *)0, \
-	.module_ops = (void *)0 \
-}
-
-#undef LDB_BACKEND
-#define LDB_BACKEND(name) { \
-	.backend_ops = &ldb_ ## name ## _backend_ops, \
-	.module_ops = (void *)0 \
-}
-#undef LDB_MODULE
-#define LDB_MODULE(name) { \
-	.backend_ops = (void *)0, \
-	.module_ops = &ldb_ ## name ## _module_ops \
-}
-
-static const struct ldb_builtins builtins[] = {
-	STATIC_LIBLDB_MODULES
-};
