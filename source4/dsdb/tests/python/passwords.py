@@ -83,7 +83,7 @@ class PasswordTests(samba.tests.TestCase):
         self.delete_force(self.ldb, "cn=testuser,cn=users," + self.base_dn)
         self.ldb.add({
              "dn": "cn=testuser,cn=users," + self.base_dn,
-             "objectclass": ["user", "person"],
+             "objectclass": "user",
              "sAMAccountName": "testuser"})
 
         # Tests a password change when we don't have any password yet with a
@@ -637,14 +637,14 @@ userPassword: thatsAcomplPASS4
         self.delete_force(self.ldb, "cn=testuser2,cn=users," + self.base_dn)
         self.ldb.add({
              "dn": "cn=testuser2,cn=users," + self.base_dn,
-             "objectclass": ["user", "person"],
+             "objectclass": "user",
              "userPassword": ["thatsAcomplPASS1", "thatsAcomplPASS2"] })
 
         # This surprisingly should work
         self.delete_force(self.ldb, "cn=testuser2,cn=users," + self.base_dn)
         self.ldb.add({
              "dn": "cn=testuser2,cn=users," + self.base_dn,
-             "objectclass": ["user", "person"],
+             "objectclass": "user",
              "userPassword": ["thatsAcomplPASS1", "thatsAcomplPASS1"] })
 
     def tearDown(self):

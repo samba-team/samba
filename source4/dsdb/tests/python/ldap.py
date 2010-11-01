@@ -1636,7 +1636,7 @@ servicePrincipalName: host/ldaptest2computer29
         self.delete_force(self.ldb, "cn=ldaptestuser2,cn=users," + self.base_dn)
         ldb.add({
             "dn": "cn=ldaptestuser2,cn=useRs," + self.base_dn,
-            "objectClass": ["person", "user"],
+            "objectClass": "user",
             "cn": "LDAPtestUSER2",
             "givenname": "testy",
             "sn": "ldap user2"})
@@ -1782,7 +1782,7 @@ servicePrincipalName: host/ldaptest2computer29
         # ensure we cannot add it again
         try:
             ldb.add({"dn": "cn=ldaptestuser3,cn=userS," + self.base_dn,
-                      "objectClass": ["person", "user"],
+                      "objectClass": "user",
                       "cn": "LDAPtestUSER3"})
             self.fail()
         except LdbError, (num, _):
@@ -1801,7 +1801,7 @@ servicePrincipalName: host/ldaptest2computer29
 
         # ensure can now use that name
         ldb.add({"dn": "cn=ldaptestuser3,cn=users," + self.base_dn,
-                      "objectClass": ["person", "user"],
+                      "objectClass": "user",
                       "cn": "LDAPtestUSER3"})
 
         # ensure we now cannot rename
@@ -1830,7 +1830,7 @@ servicePrincipalName: host/ldaptest2computer29
                  "objectClass": "container"})
 
         ldb.add({"dn": "CN=ldaptestuser4,CN=ldaptestcontainer," + self.base_dn,
-                 "objectClass": ["person", "user"],
+                 "objectClass": "user",
                  "cn": "LDAPtestUSER4"})
 
         ldb.modify_ldif("""
