@@ -38,11 +38,11 @@
 static int failures;
 static struct ldb_cmdline *options;
 
-static void usage(void)
+static void usage(struct ldb_context *ldb)
 {
 	printf("Usage: ldbmodify <options> <ldif...>\n");
 	printf("Modifies a ldb based upon ldif change records\n\n");
-	ldb_cmdline_help("ldbmodify", stdout);
+	ldb_cmdline_help(ldb, "ldbmodify", stdout);
 	exit(1);
 }
 

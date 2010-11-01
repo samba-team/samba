@@ -38,11 +38,11 @@
 static unsigned int failures;
 static struct ldb_cmdline *options;
 
-static void usage(void)
+static void usage(struct ldb_context *ldb)
 {
 	printf("Usage: ldbadd <options> <ldif...>\n");
 	printf("Adds records to a ldb, reading ldif the specified list of files\n\n");
-	ldb_cmdline_help("ldbadd", stdout);
+	ldb_cmdline_help(ldb, "ldbadd", stdout);
 	exit(1);
 }
 

@@ -73,11 +73,11 @@ static int ldb_delete_recursive(struct ldb_context *ldb, struct ldb_dn *dn,struc
 	return 0;
 }
 
-static void usage(void)
+static void usage(struct ldb_context *ldb)
 {
 	printf("Usage: ldbdel <options> <DN...>\n");
 	printf("Deletes records from a ldb\n\n");
-	ldb_cmdline_help("ldbdel", stdout);
+	ldb_cmdline_help(ldb, "ldbdel", stdout);
 	exit(1);
 }
 
@@ -94,7 +94,7 @@ int main(int argc, const char **argv)
 	options = ldb_cmdline_process(ldb, argc, argv, usage);
 
 	if (options->argc < 1) {
-		usage();
+		usage(ldb);
 		exit(1);
 	}
 

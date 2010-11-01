@@ -36,11 +36,11 @@
 #include "ldb.h"
 #include "tools/cmdline.h"
 
-static void usage(void)
+static void usage(struct ldb_context *ldb)
 {
 	printf("Usage: ldbrename [<options>] <olddn> <newdn>\n");
 	printf("Renames records in a ldb\n\n");
-	ldb_cmdline_help("ldbmodify", stdout);
+	ldb_cmdline_help(ldb, "ldbmodify", stdout);
 	exit(1);
 }
 
@@ -58,7 +58,7 @@ int main(int argc, const char **argv)
 	options = ldb_cmdline_process(ldb, argc, argv, usage);
 
 	if (options->argc < 2) {
-		usage();
+		usage(ldb);
 	}
 
 	dn1 = ldb_dn_new(ldb, ldb, options->argv[0]);

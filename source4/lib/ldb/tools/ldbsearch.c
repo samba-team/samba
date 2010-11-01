@@ -31,20 +31,14 @@
  *  Author: Andrew Tridgell
  */
 
-#ifdef _SAMBA_BUILD_
-#include "includes.h"
-#include <ldb.h>
-#else
 #include "ldb_includes.h"
 #include "ldb.h"
-#endif
-
 #include "tools/cmdline.h"
 
-static void usage(void)
+static void usage(struct ldb_context *ldb)
 {
 	printf("Usage: ldbsearch <options> <expression> <attrs...>\n");
-	ldb_cmdline_help("ldbsearch", stdout);
+	ldb_cmdline_help(ldb, "ldbsearch", stdout);
 	exit(1);
 }
 

@@ -31,13 +31,8 @@
  *  Author: Andrew Tridgell
  */
 
-#ifdef _SAMBA_BUILD_
-#include "includes.h"
-#include <system/filesys.h>
-#else
 #include "ldb_includes.h"
-#endif
-
+#include "system/filesys.h"
 #include "ldb.h"
 #include "tools/cmdline.h"
 #include "tools/ldbutil.h"
@@ -287,10 +282,10 @@ static int do_edit(struct ldb_context *ldb, struct ldb_message **msgs1,
 	return merge_edits(ldb, msgs1, count1, msgs2, count2);
 }
 
-static void usage(void)
+static void usage(struct ldb_context *ldb)
 {
 	printf("Usage: ldbedit <options> <expression> <attributes ...>\n");
-	ldb_cmdline_help("ldbedit", stdout);
+	ldb_cmdline_help(ldb, "ldbedit", stdout);
 	exit(1);
 }
 
