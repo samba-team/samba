@@ -210,6 +210,8 @@ def add_init_functions(self):
 
     if modules == []:
         cflags.append('-DSTATIC_%s_MODULES=%s' % (sname.replace('-','_'), sentinal))
+        if sentinal == 'NULL':
+            cflags.append('-DSTATIC_%s_MODULES_PROTO' % sname.replace('-','_'))
         self.ccflags = cflags
         return
 
@@ -222,8 +224,14 @@ def add_init_functions(self):
                 init_fn_list.append(d['INIT_FUNCTION'])
         if init_fn_list == []:
             cflags.append('-DSTATIC_%s_MODULES=%s' % (m, sentinal))
+            if sentinal == 'NULL':
+                cflags.append('-DSTATIC_%s_MODULES_PROTO' % m)
         else:
             cflags.append('-DSTATIC_%s_MODULES=%s' % (m, ','.join(init_fn_list) + ',' + sentinal))
+            proto=''
+            for f in init_fn_list:
+                proto = proto + '_MODULE_PROTO(%s)' % f
+            cflags.append('-DSTATIC_%s_MODULES_PROTO=%s' % (m, proto))
     self.ccflags = cflags
 
 
