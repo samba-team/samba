@@ -1449,5 +1449,6 @@ static int ltdb_connect(struct ldb_context *ldb, const char *url,
 
 int ldb_tdb_init(const char *version)
 {
+	LDB_MODULE_CHECK_VERSION(version);
 	return ldb_register_backend("tdb", ltdb_connect, false);
 }

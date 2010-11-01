@@ -1932,7 +1932,8 @@ failed:
 	return LDB_ERR_OPERATIONS_ERROR;
 }
 
-const struct ldb_backend_ops ldb_sqlite3_backend_ops = {
-	.name = "sqlite3",
-	.connect_fn = lsqlite3_connect
-};
+int ldb_sqlite3_init(const char *version)
+{
+	LDB_MODULE_CHECK_VERSION(version);
+	return ldb_register_backend("sqlite3", lsqlite3_connect, false);
+}

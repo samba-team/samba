@@ -32,6 +32,7 @@
  *  Author: Simo Sorce
  */
 
+#include "ldb_includes.h"
 #include "ldb_module.h"
 
 struct asq_context {
@@ -406,7 +407,8 @@ static const struct ldb_module_ops ldb_asq_module_ops = {
 	.init_context	   = asq_init
 };
 
-int ldb_asq_init(const char *ldb_version)
+int ldb_asq_init(const char *version)
 {
+	LDB_MODULE_CHECK_VERSION(version);
 	return ldb_register_module(&ldb_asq_module_ops);
 }

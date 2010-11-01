@@ -31,6 +31,7 @@
  *  Author: Simo Sorce
  */
 
+#include "ldb_includes.h"
 #include "ldb_module.h"
 
 struct opaque {
@@ -352,5 +353,6 @@ static const struct ldb_module_ops ldb_server_sort_module_ops = {
 
 int ldb_server_sort_init(const char *version)
 {
+	LDB_MODULE_CHECK_VERSION(version);
 	return ldb_register_module(&ldb_server_sort_module_ops);
 }

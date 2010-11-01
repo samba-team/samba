@@ -957,10 +957,11 @@ failed:
 /*
   initialise the module
  */
-int ldb_ldap_init(const char *ldb_version)
+int ldb_ldap_init(const char *version)
 {
 	int ret, i;
 	const char *names[] = { "ldap", "ldaps", "ldapi", NULL };
+	LDB_MODULE_CHECK_VERSION(version);
 	for (i=0; names[i]; i++) {
 		ret = ldb_register_backend(names[i], lldb_connect, false);
 		if (ret != LDB_SUCCESS) {
