@@ -1510,15 +1510,16 @@ static int samldb_member_check(struct samldb_ctx *ac)
 }
 
 /* This trigger adapts the "servicePrincipalName" attributes if the
- * "dNSHostName" attribute changes */
+ * "dNSHostName" and/or "sAMAccountName" attribute change(s) */
 static int samldb_service_principal_names_change(struct samldb_ctx *ac)
 {
 	struct ldb_context *ldb = ldb_module_get_ctx(ac->module);
-	struct ldb_message_element *el = NULL;
+	struct ldb_message_element *el = NULL, *el2 = NULL;
 	struct ldb_message *msg;
 	const char *attrs[] = { "servicePrincipalName", NULL };
 	struct ldb_result *res;
-	const char *dns_hostname, *old_dns_hostname;
+	const char *dns_hostname = NULL, *old_dns_hostname = NULL,
+		   *sam_accountname = NULL, *old_sam_accountname = NULL;
 	unsigned int i;
 	int ret;
 
@@ -1530,40 +1531,98 @@ static int samldb_service_principal_names_change(struct samldb_ctx *ac)
 	 *   write protected
 	 */
 	for (i = 0; i < ac->msg->num_elements; i++) {
-		if (ldb_attr_cmp(ac->msg->elements[i].name,
-				 "dNSHostName") != 0) {
-			continue;
-		}
-
-		if (LDB_FLAG_MOD_TYPE(ac->msg->elements[i].flags)
-		    != LDB_FLAG_MOD_DELETE) {
+		if ((ldb_attr_cmp(ac->msg->elements[i].name,
+				  "dNSHostName") == 0) &&
+		    (LDB_FLAG_MOD_TYPE(ac->msg->elements[i].flags)
+				       != LDB_FLAG_MOD_DELETE)) {
 			el = &ac->msg->elements[i];
 		}
+		if ((ldb_attr_cmp(ac->msg->elements[i].name,
+				  "sAMAccountName") == 0) &&
+		    (LDB_FLAG_MOD_TYPE(ac->msg->elements[i].flags)
+				       != LDB_FLAG_MOD_DELETE)) {
+			el2 = &ac->msg->elements[i];
+		}
 	}
-	if (el == NULL) {
+	if ((el == NULL) && (el2 == NULL)) {
 		/* we are not affected */
 		return LDB_SUCCESS;
 	}
 
 	/* Create a temporary message for fetching the "dNSHostName" */
-	msg = ldb_msg_new(ac->msg);
-	if (msg == NULL) {
-		return ldb_module_oom(ac->module);
-	}
-	ret = ldb_msg_add(msg, el, 0);
-	if (ret != LDB_SUCCESS) {
-		return ret;
-	}
-	dns_hostname = ldb_msg_find_attr_as_string(msg, "dNSHostName", "");
-	talloc_free(msg);
+	if (el != NULL) {
+		msg = ldb_msg_new(ac->msg);
+		if (msg == NULL) {
+			return ldb_module_oom(ac->module);
+		}
+		ret = ldb_msg_add(msg, el, 0);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+		dns_hostname = talloc_steal(ac,
+					    ldb_msg_find_attr_as_string(msg, "dNSHostName", NULL));
+		talloc_free(msg);
 
-	old_dns_hostname = samdb_search_string(ldb, ac, ac->msg->dn,
-					       "dNSHostName", NULL);
-	if ((old_dns_hostname == NULL) || (strcasecmp(old_dns_hostname,
-						      dns_hostname) == 0)) {
-		/* Well, if there's no old DNS hostname then we cannot do this.
-		 * And if old and new DNS name do match we are also finished
-		 * here. */
+		old_dns_hostname = samdb_search_string(ldb, ac, ac->msg->dn,
+						       "dNSHostName", NULL);
+	}
+
+	/* Create a temporary message for fetching the "sAMAccountName" */
+	if (el2 != NULL) {
+		char *tempstr, *tempstr2;
+
+		msg = ldb_msg_new(ac->msg);
+		if (msg == NULL) {
+			return ldb_module_oom(ac->module);
+		}
+		ret = ldb_msg_add(msg, el2, 0);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+		tempstr = talloc_strdup(ac,
+					ldb_msg_find_attr_as_string(msg, "sAMAccountName", NULL));
+		talloc_free(msg);
+
+		tempstr2 = talloc_strdup(ac,
+					 samdb_search_string(ldb, ac, ac->msg->dn, "sAMAccountName", NULL));
+
+		/* The "sAMAccountName" needs some additional trimming: we need
+		 * to remove the trailing "$"s if they exist. */
+		if ((tempstr != NULL) && (tempstr[0] != '\0') &&
+		    (tempstr[strlen(tempstr) - 1] == '$')) {
+			tempstr[strlen(tempstr) - 1] = '\0';
+		}
+		if ((tempstr2 != NULL) && (tempstr2[0] != '\0') &&
+		    (tempstr2[strlen(tempstr2) - 1] == '$')) {
+			tempstr2[strlen(tempstr2) - 1] = '\0';
+		}
+		sam_accountname = tempstr;
+		old_sam_accountname = tempstr2;
+	}
+
+	if (old_dns_hostname == NULL) {
+		/* we cannot change when the old name is unknown */
+		dns_hostname = NULL;
+	}
+	if ((old_dns_hostname != NULL) && (dns_hostname != NULL) &&
+	    (strcasecmp(old_dns_hostname, dns_hostname) == 0)) {
+		/* The "dNSHostName" didn't change */
+		dns_hostname = NULL;
+	}
+
+	if (old_sam_accountname == NULL) {
+		/* we cannot change when the old name is unknown */
+		sam_accountname = NULL;
+	}
+	if ((old_sam_accountname != NULL) && (sam_accountname != NULL) &&
+	    (strcasecmp(old_sam_accountname, sam_accountname) == 0)) {
+		/* The "sAMAccountName" didn't change */
+		sam_accountname = NULL;
+	}
+
+	if ((dns_hostname == NULL) && (sam_accountname == NULL)) {
+		/* Well, there are informations missing (old name(s)) or the
+		 * names didn't change. We've nothing to do and can exit here */
 		return LDB_SUCCESS;
 	}
 
@@ -1610,7 +1669,8 @@ static int samldb_service_principal_names_change(struct samldb_ctx *ac)
 	if (res->msgs[0]->num_elements == 1) {
 		/* Yes, we do have "servicePrincipalName"s. First we update them
 		 * locally, that means we do always substitute the current
-		 * "dNSHostName" with the new one and then we append this to the
+		 * "dNSHostName" with the new one and/or "sAMAccountName"
+		 * without "$" with the new one and then we append this to the
 		 * modification request (Windows behaviour). */
 
 		for (i = 0; i < res->msgs[0]->elements[0].num_values; i++) {
@@ -1627,8 +1687,13 @@ static int samldb_service_principal_names_change(struct samldb_ctx *ac)
 			}
 
 			while ((tok = strtok_r(NULL, "/", &pos)) != NULL) {
-				if (strcasecmp(tok, old_dns_hostname) == 0) {
+				if ((dns_hostname != NULL) &&
+				    (strcasecmp(tok, old_dns_hostname) == 0)) {
 					tok = dns_hostname;
+				}
+				if ((sam_accountname != NULL) &&
+				    (strcasecmp(tok, old_sam_accountname) == 0)) {
+					tok = sam_accountname;
 				}
 
 				new_str = talloc_asprintf(ac->msg, "%s/%s",
@@ -1756,7 +1821,7 @@ static int samldb_modify(struct ldb_module *module, struct ldb_request *req)
 {
 	struct ldb_context *ldb;
 	struct samldb_ctx *ac;
-	struct ldb_message_element *el;
+	struct ldb_message_element *el, *el2;
 	bool modified = false;
 	int ret;
 
@@ -1857,7 +1922,8 @@ static int samldb_modify(struct ldb_module *module, struct ldb_request *req)
 	}
 
 	el = ldb_msg_find_element(ac->msg, "dNSHostName");
-	if (el != NULL) {
+	el2 = ldb_msg_find_element(ac->msg, "sAMAccountName");
+	if ((el != NULL) || (el2 != NULL)) {
 		modified = true;
 		ret = samldb_service_principal_names_change(ac);
 		if (ret != LDB_SUCCESS) {
