@@ -74,5 +74,6 @@ static const struct ldb_module_ops ldb_simple_dn_module_ops = {
 
 int ldb_simple_dn_module_init(const char *version)
 {
+	LDB_MODULE_CHECK_VERSION(version);
 	return ldb_register_module(&ldb_simple_dn_module_ops);
 }

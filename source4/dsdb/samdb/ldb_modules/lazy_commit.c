@@ -27,6 +27,7 @@
  *  Author: Andrew Bartlett
  */
 
+#include "includes.h"
 #include "ldb_module.h"
 #include "dsdb/samdb/ldb_modules/util.h"
 
@@ -122,5 +123,6 @@ static const struct ldb_module_ops ldb_lazy_commit_module_ops = {
 
 int ldb_lazy_commit_module_init(const char *version)
 {
+	LDB_MODULE_CHECK_VERSION(version);
 	return ldb_register_module(&ldb_lazy_commit_module_ops);
 }

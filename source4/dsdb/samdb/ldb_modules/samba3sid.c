@@ -200,5 +200,6 @@ static const struct ldb_module_ops ldb_samba3sid_module_ops = {
 
 int ldb_samba3sid_module_init(const char *version)
 {
+	LDB_MODULE_CHECK_VERSION(version);
 	return ldb_register_module(&ldb_samba3sid_module_ops);
 }
