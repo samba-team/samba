@@ -614,6 +614,11 @@ static void debug_close_fd(int fd)
 	}
 }
 
+bool debug_get_output_is_stderr(void)
+{
+	return (state.logtype == DEBUG_DEFAULT_STDERR) || (state.logtype == DEBUG_STDERR);
+}
+
 /**************************************************************************
  reopen the log files
  note that we now do this unconditionally

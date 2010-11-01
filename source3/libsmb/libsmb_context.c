@@ -557,9 +557,11 @@ smbc_init_context(SMBCCTX *context)
         
         if (context->internal->debug_stderr) {
             /*
-             * Hmmm... Do we want a unique dbf per-thread? For now, we'll just
-             * leave it up to the user. If any one context spefies debug to
-             * stderr then all will be.
+             * We do not have a unique per-thread debug state? For
+             * now, we'll just leave it up to the user. If any one
+             * context spefies debug to stderr then all will be (and
+             * will stay that way, as it is unsafe to flip back if
+             * stdout is in use for other things)
              */
 	    setup_logging("libsmbclient", DEBUG_STDERR);
         }

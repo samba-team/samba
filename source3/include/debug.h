@@ -274,6 +274,7 @@ void check_log_size( void );
 void dbgflush( void );
 bool dbghdrclass(int level, int cls, const char *location, const char *func);
 bool dbghdr(int level, const char *location, const char *func);
+bool debug_get_output_is_stderr(void);
 
 #endif
 
