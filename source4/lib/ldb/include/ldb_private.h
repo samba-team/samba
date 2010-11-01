@@ -118,8 +118,6 @@ struct ldb_context {
 
 	unsigned int create_perms;
 
-	char *modules_dir;
-
 	struct tevent_context *ev_ctx;
 
 	bool prepare_commit_done;

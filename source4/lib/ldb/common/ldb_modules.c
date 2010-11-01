@@ -35,12 +35,6 @@
 #include "dlinklist.h"
 #include "system/dir.h"
 
-void ldb_set_modules_dir(struct ldb_context *ldb, const char *path)
-{
-	talloc_free(ldb->modules_dir);
-	ldb->modules_dir = talloc_strdup(ldb, path);
-}
-
 static char *ldb_modules_strdup_no_spaces(TALLOC_CTX *mem_ctx, const char *string)
 {
 	size_t i, len;
@@ -977,6 +971,18 @@ static int ldb_modules_load_dir(const char *modules_dir, const char *version)
 
 	return LDB_SUCCESS;
 }
+
+/* 
+   load any additional modules from the given directory 
+*/
+void ldb_set_modules_dir(struct ldb_context *ldb, const char *path)
+{
+	int ret = ldb_modules_load_dir(path, LDB_VERSION);
+	if (ret != LDB_SUCCESS) {
+		ldb_asprintf_errstring(ldb, "Failed to load modules from: %s\n", path);
+	}
+}
+
 
 /*
   load all modules static (builtin) modules
