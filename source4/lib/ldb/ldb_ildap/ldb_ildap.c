@@ -862,18 +862,18 @@ failed:
 	return LDB_ERR_OPERATIONS_ERROR;
 }
 
-_PUBLIC_ const struct ldb_backend_ops ldb_ldap_backend_ops = {
-	.name = "ldap",
-	.connect_fn = ildb_connect
-};
-
-_PUBLIC_ const struct ldb_backend_ops ldb_ldapi_backend_ops = {
-	.name = "ldapi",
-	.connect_fn = ildb_connect
-};
-
-_PUBLIC_ const struct ldb_backend_ops ldb_ldaps_backend_ops = {
-	.name = "ldaps",
-	.connect_fn = ildb_connect
-};
-
+/*
+  initialise the module
+ */
+_PUBLIC_ int ldb_ildap_init(const char *ldb_version)
+{
+	int ret, i;
+	const char *names[] = { "ldap", "ldaps", "ldapi", NULL };
+	for (i=0; names[i]; i++) {
+		ret = ldb_register_backend(names[i], ildb_connect);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+	}
+	return LDB_SUCCESS;
+}
