@@ -1819,19 +1819,21 @@ codepoint_t next_codepoint_ext(const char *str, charset_t src_charset,
 	size_t olen;
 	char *outbuf;
 
+	/* fastpath if the character is ASCII */
 	if ((str[0] & 0x80) == 0) {
 		*size = 1;
 		return (codepoint_t)str[0];
 	}
 
-	/* We assume that no multi-byte character can take
-	   more than 5 bytes. This is OK as we only
-	   support codepoints up to 1M */
+	/*
+	 * We assume that no multi-byte character can take more than
+	 * 5 bytes. This is OK as we only support codepoints up to 1M
+	 */
 
 	ilen_orig = strnlen(str, 5);
 	ilen = ilen_orig;
 
-        lazy_initialize_conv();
+	lazy_initialize_conv();
 
 	descriptor = conv_handles[src_charset][CH_UTF16LE];
 	if (descriptor == (smb_iconv_t)-1 || descriptor == (smb_iconv_t)0) {
@@ -1839,15 +1841,18 @@ codepoint_t next_codepoint_ext(const char *str, charset_t src_charset,
 		return INVALID_CODEPOINT;
 	}
 
-	/* This looks a little strange, but it is needed to cope
-	   with codepoints above 64k which are encoded as per RFC2781. */
+	/*
+	 * This looks a little strange, but it is needed to cope
+	 * with codepoints above 64k which are encoded as per RFC2781.
+	 */
 	olen = 2;
 	outbuf = (char *)buf;
 	smb_iconv(descriptor, &str, &ilen, &outbuf, &olen);
 	if (olen == 2) {
-		/* We failed to convert to a 2 byte character.
-		   See if we can convert to a 4 UTF16-LE byte char encoding.
-		*/
+		/*
+		 * We failed to convert to a 2 byte character.
+		 * See if we can convert to a 4 UTF16-LE byte char encoding.
+		 */
 		olen = 4;
 		outbuf = (char *)buf;
 		smb_iconv(descriptor,  &str, &ilen, &outbuf, &olen);
@@ -1868,9 +1873,10 @@ codepoint_t next_codepoint_ext(const char *str, charset_t src_charset,
 		return (codepoint_t)SVAL(buf, 0);
 	}
 	if (olen == 4) {
-		/* Decode a 4 byte UTF16-LE character manually.
-		   See RFC2871 for the encoding machanism.
-		*/
+		/*
+		 * Decode a 4 byte UTF16-LE character manually.
+		 * See RFC2871 for the encoding machanism.
+		 */
 		codepoint_t w1 = SVAL(buf,0) & ~0xD800;
 		codepoint_t w2 = SVAL(buf,2) & ~0xDC00;
 
