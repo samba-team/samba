@@ -67,7 +67,12 @@ static int simple_dn_search(struct ldb_module *module, struct ldb_request *req)
 	return ldb_next_request(module, down_req);
 }
 
-_PUBLIC_ const struct ldb_module_ops ldb_simple_dn_module_ops = {
+static const struct ldb_module_ops ldb_simple_dn_module_ops = {
 	.name		   = "simple_dn",
 	.search = simple_dn_search
 };
+
+int ldb_simple_dn_module_init(const char *version)
+{
+	return ldb_register_module(&ldb_simple_dn_module_ops);
+}

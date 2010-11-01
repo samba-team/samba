@@ -1508,7 +1508,7 @@ static int objectclass_init(struct ldb_module *module)
 	return ret;
 }
 
-_PUBLIC_ const struct ldb_module_ops ldb_objectclass_module_ops = {
+static const struct ldb_module_ops ldb_objectclass_module_ops = {
 	.name		= "objectclass",
 	.add		= objectclass_add,
 	.modify		= objectclass_modify,
@@ -1516,3 +1516,8 @@ _PUBLIC_ const struct ldb_module_ops ldb_objectclass_module_ops = {
 	.del		= objectclass_delete,
 	.init_context	= objectclass_init
 };
+
+int ldb_objectclass_module_init(const char *version)
+{
+	return ldb_register_module(&ldb_objectclass_module_ops);
+}

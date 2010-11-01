@@ -4195,7 +4195,7 @@ static int replmd_del_transaction(struct ldb_module *module)
 }
 
 
-_PUBLIC_ const struct ldb_module_ops ldb_repl_meta_data_module_ops = {
+static const struct ldb_module_ops ldb_repl_meta_data_module_ops = {
 	.name          = "repl_meta_data",
 	.init_context	   = replmd_init,
 	.add               = replmd_add,
@@ -4207,3 +4207,8 @@ _PUBLIC_ const struct ldb_module_ops ldb_repl_meta_data_module_ops = {
 	.prepare_commit    = replmd_prepare_commit,
 	.del_transaction   = replmd_del_transaction,
 };
+
+int ldb_repl_meta_data_module_init(const char *version)
+{
+	return ldb_register_module(&ldb_repl_meta_data_module_ops);
+}

@@ -354,7 +354,7 @@ static int schema_load_extended(struct ldb_module *module, struct ldb_request *r
 }
 
 
-_PUBLIC_ const struct ldb_module_ops ldb_schema_load_module_ops = {
+static const struct ldb_module_ops ldb_schema_load_module_ops = {
 	.name		= "schema_load",
 	.init_context	= schema_load_init,
 	.extended	= schema_load_extended,
@@ -362,3 +362,8 @@ _PUBLIC_ const struct ldb_module_ops ldb_schema_load_module_ops = {
 	.prepare_commit    = schema_load_prepare_commit,
 	.del_transaction   = schema_load_del_transaction,
 };
+
+int ldb_schema_load_module_init(const char *version)
+{
+	return ldb_register_module(&ldb_schema_load_module_ops);
+}

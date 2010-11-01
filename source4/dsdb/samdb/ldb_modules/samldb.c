@@ -1983,7 +1983,7 @@ static int samldb_extended(struct ldb_module *module, struct ldb_request *req)
 }
 
 
-_PUBLIC_ const struct ldb_module_ops ldb_samldb_module_ops = {
+static const struct ldb_module_ops ldb_samldb_module_ops = {
 	.name          = "samldb",
 	.add           = samldb_add,
 	.modify        = samldb_modify,
@@ -1991,3 +1991,8 @@ _PUBLIC_ const struct ldb_module_ops ldb_samldb_module_ops = {
 	.extended      = samldb_extended
 };
 
+
+int ldb_samldb_module_init(const char *version)
+{
+	return ldb_register_module(&ldb_samldb_module_ops);
+}

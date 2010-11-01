@@ -2817,8 +2817,13 @@ static int password_hash_mod_do_mod(struct ph_context *ac)
 	return ldb_next_request(ac->module, mod_req);
 }
 
-_PUBLIC_ const struct ldb_module_ops ldb_password_hash_module_ops = {
+static const struct ldb_module_ops ldb_password_hash_module_ops = {
 	.name          = "password_hash",
 	.add           = password_hash_add,
 	.modify        = password_hash_modify
 };
+
+int ldb_password_hash_module_init(const char *version)
+{
+	return ldb_register_module(&ldb_password_hash_module_ops);
+}

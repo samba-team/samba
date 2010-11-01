@@ -109,7 +109,7 @@ static int unlazy_op(struct ldb_module *module, struct ldb_request *req)
 	return ldb_next_request(module, new_req);
 }
 
-const struct ldb_module_ops ldb_lazy_commit_module_ops = {
+static const struct ldb_module_ops ldb_lazy_commit_module_ops = {
 	.name		   = "lazy_commit",
 	.search            = unlazy_op,
 	.add               = unlazy_op,
@@ -119,3 +119,8 @@ const struct ldb_module_ops ldb_lazy_commit_module_ops = {
 	.request      	   = unlazy_op,
 	.extended          = unlazy_op,
 };
+
+int ldb_lazy_commit_module_init(const char *version)
+{
+	return ldb_register_module(&ldb_lazy_commit_module_ops);
+}

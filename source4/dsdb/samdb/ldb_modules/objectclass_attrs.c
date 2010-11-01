@@ -466,8 +466,13 @@ static int objectclass_attrs_modify(struct ldb_module *module,
 	return attr_handler(ac);
 }
 
-_PUBLIC_ const struct ldb_module_ops ldb_objectclass_attrs_module_ops = {
+static const struct ldb_module_ops ldb_objectclass_attrs_module_ops = {
 	.name		   = "objectclass_attrs",
 	.add               = objectclass_attrs_add,
 	.modify            = objectclass_attrs_modify
 };
+
+int ldb_objectclass_attrs_module_init(const char *version)
+{
+	return ldb_register_module(&ldb_objectclass_attrs_module_ops);
+}

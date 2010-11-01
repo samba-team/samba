@@ -937,7 +937,7 @@ static const struct ldb_module_ops ldb_nsuniqueid_module_ops = {
 /*
   initialise the module
  */
-_PUBLIC_ int ldb_simple_ldap_map_init(const char *ldb_version)
+_PUBLIC_ int ldb_simple_ldap_map_module_init(const char *ldb_version)
 {
 	int ret;
 	ret = ldb_register_module(&ldb_entryuuid_module_ops);

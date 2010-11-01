@@ -394,7 +394,12 @@ static int proxy_request(struct ldb_module *module, struct ldb_request *req)
 	}
 }
 
-_PUBLIC_ const struct ldb_module_ops ldb_proxy_module_ops = {
+static const struct ldb_module_ops ldb_proxy_module_ops = {
 	.name		= "proxy",
 	.request	= proxy_request
 };
+
+int ldb_proxy_module_init(const char *version)
+{
+	return ldb_register_module(&ldb_proxy_module_ops);
+}

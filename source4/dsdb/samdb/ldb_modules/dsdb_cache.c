@@ -36,7 +36,12 @@ static int dsdb_cache_init(struct ldb_module *module)
 	return ldb_next_init(module);
 }
 
-_PUBLIC_ const struct ldb_module_ops ldb_dsdb_cache_module_ops = {
+static const struct ldb_module_ops ldb_dsdb_cache_module_ops = {
 	.name		= "dsdb_cache",
 	.init_context	= dsdb_cache_init
 };
+
+int ldb_dsdb_cache_module_init(const char *version)
+{
+	return ldb_register_module(&ldb_dsdb_cache_module_ops);
+}

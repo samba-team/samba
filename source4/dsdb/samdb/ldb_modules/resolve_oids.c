@@ -691,10 +691,15 @@ static int resolve_oids_modify(struct ldb_module *module, struct ldb_request *re
 	return ldb_next_request(module, down_req);
 }
 
-_PUBLIC_ const struct ldb_module_ops ldb_resolve_oids_module_ops = {
+static const struct ldb_module_ops ldb_resolve_oids_module_ops = {
 	.name		= "resolve_oids",
 	.search		= resolve_oids_search,
 	.add		= resolve_oids_add,
 	.modify		= resolve_oids_modify,
 };
 
+
+int ldb_resolve_oids_module_init(const char *version)
+{
+	return ldb_register_module(&ldb_resolve_oids_module_ops);
+}

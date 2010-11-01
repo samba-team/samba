@@ -880,7 +880,7 @@ static const struct ldb_module_ops ldb_extended_dn_out_fds_module_ops = {
 /*
   initialise the module
  */
-_PUBLIC_ int ldb_extended_dn_out_init(const char *ldb_version)
+_PUBLIC_ int ldb_extended_dn_out_module_init(const char *ldb_version)
 {
 	int ret;
 	ret = ldb_register_module(&ldb_extended_dn_out_ldb_module_ops);

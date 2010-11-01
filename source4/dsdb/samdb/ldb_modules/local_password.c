@@ -1098,10 +1098,15 @@ static int local_password_search(struct ldb_module *module, struct ldb_request *
 	return ldb_next_request(module, remote_req);
 }
 
-_PUBLIC_ const struct ldb_module_ops ldb_local_password_module_ops = {
+static const struct ldb_module_ops ldb_local_password_module_ops = {
 	.name          = "local_password",
 	.add           = local_password_add,
 	.modify        = local_password_modify,
 	.del           = local_password_delete,
 	.search        = local_password_search
 };
+
+int ldb_local_password_module_init(const char *version)
+{
+	return ldb_register_module(&ldb_local_password_module_ops);
+}

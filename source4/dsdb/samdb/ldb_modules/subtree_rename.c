@@ -444,7 +444,12 @@ static int subtree_rename(struct ldb_module *module, struct ldb_request *req)
 	return ldb_next_request(module, search_req);
 }
 
-_PUBLIC_ const struct ldb_module_ops ldb_subtree_rename_module_ops = {
+static const struct ldb_module_ops ldb_subtree_rename_module_ops = {
 	.name		   = "subtree_rename",
 	.rename            = subtree_rename
 };
+
+int ldb_subtree_rename_module_init(const char *version)
+{
+	return ldb_register_module(&ldb_subtree_rename_module_ops);
+}

@@ -96,7 +96,12 @@ static int naming_fsmo_init(struct ldb_module *module)
 	return ldb_next_init(module);
 }
 
-_PUBLIC_ const struct ldb_module_ops ldb_naming_fsmo_module_ops = {
+static const struct ldb_module_ops ldb_naming_fsmo_module_ops = {
 	.name		= "naming_fsmo",
 	.init_context	= naming_fsmo_init
 };
+
+int ldb_naming_fsmo_module_init(const char *version)
+{
+	return ldb_register_module(&ldb_naming_fsmo_module_ops);
+}

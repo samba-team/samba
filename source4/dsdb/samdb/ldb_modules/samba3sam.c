@@ -923,8 +923,13 @@ static int samba3sam_init(struct ldb_module *module)
 	return ldb_next_init(module);
 }
 
-_PUBLIC_ const struct ldb_module_ops ldb_samba3sam_module_ops = {
+static const struct ldb_module_ops ldb_samba3sam_module_ops = {
 	LDB_MAP_OPS
 	.name		   = "samba3sam",
 	.init_context	   = samba3sam_init,
 };
+
+int ldb_samba3sam_module_init(const char *version)
+{
+	return ldb_register_module(&ldb_samba3sam_module_ops);
+}

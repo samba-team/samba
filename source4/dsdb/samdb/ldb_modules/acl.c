@@ -1171,7 +1171,7 @@ static int acl_extended(struct ldb_module *module, struct ldb_request *req)
 	}
 }
 
-_PUBLIC_ const struct ldb_module_ops ldb_acl_module_ops = {
+static const struct ldb_module_ops ldb_acl_module_ops = {
 	.name		   = "acl",
 	.search            = acl_search,
 	.add               = acl_add,
@@ -1181,3 +1181,8 @@ _PUBLIC_ const struct ldb_module_ops ldb_acl_module_ops = {
 	.extended          = acl_extended,
 	.init_context	   = acl_module_init
 };
+
+int ldb_acl_module_init(const char *version)
+{
+	return ldb_register_module(&ldb_acl_module_ops);
+}

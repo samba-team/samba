@@ -433,7 +433,7 @@ static int update_kt_init(struct ldb_module *module)
 	return ldb_next_init(module);
 }
 
-_PUBLIC_ const struct ldb_module_ops ldb_update_keytab_module_ops = {
+static const struct ldb_module_ops ldb_update_keytab_module_ops = {
 	.name		   = "update_keytab",
 	.init_context	   = update_kt_init,
 	.add               = update_kt_add,
@@ -443,3 +443,8 @@ _PUBLIC_ const struct ldb_module_ops ldb_update_keytab_module_ops = {
 	.prepare_commit    = update_kt_prepare_commit,
 	.del_transaction   = update_kt_del_trans,
 };
+
+int ldb_update_keytab_module_init(const char *version)
+{
+	return ldb_register_module(&ldb_update_keytab_module_ops);
+}

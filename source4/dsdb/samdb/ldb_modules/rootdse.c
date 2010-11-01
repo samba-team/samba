@@ -1226,7 +1226,7 @@ static int rootdse_delete(struct ldb_module *module, struct ldb_request *req)
 	return LDB_ERR_NO_SUCH_OBJECT;
 }
 
-_PUBLIC_ const struct ldb_module_ops ldb_rootdse_module_ops = {
+static const struct ldb_module_ops ldb_rootdse_module_ops = {
 	.name		= "rootdse",
 	.init_context   = rootdse_init,
 	.search         = rootdse_search,
@@ -1235,3 +1235,8 @@ _PUBLIC_ const struct ldb_module_ops ldb_rootdse_module_ops = {
 	.modify         = rootdse_modify,
 	.del		= rootdse_delete
 };
+
+int ldb_rootdse_module_init(const char *version)
+{
+	return ldb_register_module(&ldb_rootdse_module_ops);
+}

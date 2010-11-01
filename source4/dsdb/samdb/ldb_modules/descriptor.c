@@ -894,7 +894,7 @@ static int descriptor_init(struct ldb_module *module)
 }
 
 
-_PUBLIC_ const struct ldb_module_ops ldb_descriptor_module_ops = {
+static const struct ldb_module_ops ldb_descriptor_module_ops = {
 	.name	       = "descriptor",
 	.search        = descriptor_search,
 	.add           = descriptor_change,
@@ -902,3 +902,8 @@ _PUBLIC_ const struct ldb_module_ops ldb_descriptor_module_ops = {
 	.rename        = descriptor_rename,
 	.init_context  = descriptor_init
 };
+
+int ldb_descriptor_module_init(const char *version)
+{
+	return ldb_register_module(&ldb_descriptor_module_ops);
+}

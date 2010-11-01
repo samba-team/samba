@@ -404,10 +404,15 @@ static int extended_dn_in_rename(struct ldb_module *module, struct ldb_request *
 	return extended_dn_in_fix(module, req, req->op.rename.olddn);
 }
 
-_PUBLIC_ const struct ldb_module_ops ldb_extended_dn_in_module_ops = {
+static const struct ldb_module_ops ldb_extended_dn_in_module_ops = {
 	.name		   = "extended_dn_in",
 	.search            = extended_dn_in_search,
 	.modify            = extended_dn_in_modify,
 	.del               = extended_dn_in_del,
 	.rename            = extended_dn_in_rename,
 };
+
+int ldb_extended_dn_in_module_init(const char *version)
+{
+	return ldb_register_module(&ldb_extended_dn_in_module_ops);
+}

@@ -1078,7 +1078,7 @@ static int linked_attributes_del_transaction(struct ldb_module *module)
 }
 
 
-_PUBLIC_ const struct ldb_module_ops ldb_linked_attributes_module_ops = {
+static const struct ldb_module_ops ldb_linked_attributes_module_ops = {
 	.name		   = "linked_attributes",
 	.add               = linked_attributes_add,
 	.modify            = linked_attributes_modify,
@@ -1087,3 +1087,8 @@ _PUBLIC_ const struct ldb_module_ops ldb_linked_attributes_module_ops = {
 	.prepare_commit    = linked_attributes_prepare_commit,
 	.del_transaction   = linked_attributes_del_transaction,
 };
+
+int ldb_linked_attributes_module_init(const char *version)
+{
+	return ldb_register_module(&ldb_linked_attributes_module_ops);
+}

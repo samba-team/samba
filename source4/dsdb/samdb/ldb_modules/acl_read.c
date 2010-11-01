@@ -300,8 +300,13 @@ static int aclread_init(struct ldb_module *module)
 	return ldb_next_init(module);
 }
 
-_PUBLIC_ const struct ldb_module_ops ldb_aclread_module_ops = {
+static const struct ldb_module_ops ldb_aclread_module_ops = {
 	.name		   = "aclread",
 	.search            = aclread_search,
 	.init_context      = aclread_init
 };
+
+int ldb_aclread_module_init(const char *version)
+{
+	return ldb_register_module(&ldb_aclread_module_ops);
+}

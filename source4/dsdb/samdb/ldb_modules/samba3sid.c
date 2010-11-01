@@ -192,8 +192,13 @@ static int samba3sid_add(struct ldb_module *module, struct ldb_request *req)
 	return ldb_next_request(module, new_req);
 }
 
-_PUBLIC_ const struct ldb_module_ops ldb_samba3sid_module_ops = {
+static const struct ldb_module_ops ldb_samba3sid_module_ops = {
 	.name          = "samba3sid",
 	.add           = samba3sid_add,
 };
 
+
+int ldb_samba3sid_module_init(const char *version)
+{
+	return ldb_register_module(&ldb_samba3sid_module_ops);
+}

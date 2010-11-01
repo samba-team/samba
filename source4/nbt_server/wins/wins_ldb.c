@@ -113,9 +113,14 @@ failed:
 	return LDB_ERR_OTHER;
 }
 
-_PUBLIC_ const struct ldb_module_ops ldb_wins_ldb_module_ops = {
+const struct ldb_module_ops ldb_wins_ldb_module_ops = {
 	.name          = "wins_ldb",
 	.add           = wins_ldb_verify,
 	.modify        = wins_ldb_verify,
 	.init_context  = wins_ldb_init
 };
+
+int ldb_wins_ldb_module_init(const char *version)
+{
+	return ldb_register_module(&ldb_wins_ldb_module_ops);
+}

@@ -92,7 +92,12 @@ static int samba_secrets_init(struct ldb_module *module)
 	return ldb_next_init(module);
 }
 
-_PUBLIC_ const struct ldb_module_ops ldb_samba_secrets_module_ops = {
+static const struct ldb_module_ops ldb_samba_secrets_module_ops = {
 	.name		   = "samba_secrets",
 	.init_context	   = samba_secrets_init,
 };
+
+int ldb_samba_secrets_module_init(const char *version)
+{
+	return ldb_register_module(&ldb_samba_secrets_module_ops);
+}

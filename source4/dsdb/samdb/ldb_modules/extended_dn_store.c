@@ -448,8 +448,13 @@ static int extended_dn_modify(struct ldb_module *module, struct ldb_request *req
 	return ldb_next_request(module, ac->ops->search_req);
 }
 
-_PUBLIC_ const struct ldb_module_ops ldb_extended_dn_store_module_ops = {
+static const struct ldb_module_ops ldb_extended_dn_store_module_ops = {
 	.name		   = "extended_dn_store",
 	.add               = extended_dn_add,
 	.modify            = extended_dn_modify,
 };
+
+int ldb_extended_dn_store_module_init(const char *version)
+{
+	return ldb_register_module(&ldb_extended_dn_store_module_ops);
+}

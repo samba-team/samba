@@ -476,9 +476,14 @@ static int schema_data_search(struct ldb_module *module, struct ldb_request *req
 }
 
 
-_PUBLIC_ const struct ldb_module_ops ldb_schema_data_module_ops = {
+static const struct ldb_module_ops ldb_schema_data_module_ops = {
 	.name		= "schema_data",
 	.init_context	= schema_data_init,
 	.add		= schema_data_add,
 	.search         = schema_data_search
 };
+
+int ldb_schema_data_module_init(const char *version)
+{
+	return ldb_register_module(&ldb_schema_data_module_ops);
+}

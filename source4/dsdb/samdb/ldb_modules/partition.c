@@ -1195,7 +1195,7 @@ static int partition_extended(struct ldb_module *module, struct ldb_request *req
 	return partition_send_all(module, ac, req);
 }
 
-_PUBLIC_ const struct ldb_module_ops ldb_partition_module_ops = {
+static const struct ldb_module_ops ldb_partition_module_ops = {
 	.name		   = "partition",
 	.init_context	   = partition_init,
 	.search            = partition_search,
@@ -1209,3 +1209,8 @@ _PUBLIC_ const struct ldb_module_ops ldb_partition_module_ops = {
 	.end_transaction   = partition_end_trans,
 	.del_transaction   = partition_del_trans,
 };
+
+int ldb_partition_module_init(const char *version)
+{
+	return ldb_register_module(&ldb_partition_module_ops);
+}

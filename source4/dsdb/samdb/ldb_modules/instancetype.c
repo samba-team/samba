@@ -196,8 +196,13 @@ static int instancetype_mod(struct ldb_module *module, struct ldb_request *req)
 	return ldb_next_request(module, req);
 }
 
-_PUBLIC_ const struct ldb_module_ops ldb_instancetype_module_ops = {
+static const struct ldb_module_ops ldb_instancetype_module_ops = {
 	.name          = "instancetype",
 	.add           = instancetype_add,
 	.modify        = instancetype_mod
 };
+
+int ldb_instancetype_module_init(const char *version)
+{
+	return ldb_register_module(&ldb_instancetype_module_ops);
+}

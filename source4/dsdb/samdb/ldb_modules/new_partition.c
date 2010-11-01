@@ -195,7 +195,12 @@ static int new_partition_add(struct ldb_module *module, struct ldb_request *req)
 	return ldb_next_request(module, req);
 }
 
-_PUBLIC_ const struct ldb_module_ops ldb_new_partition_module_ops = {
+static const struct ldb_module_ops ldb_new_partition_module_ops = {
 	.name          = "new_partition",
 	.add           = new_partition_add,
 };
+
+int ldb_new_partition_module_init(const char *version)
+{
+	return ldb_register_module(&ldb_new_partition_module_ops);
+}
