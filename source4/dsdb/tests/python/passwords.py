@@ -28,7 +28,7 @@ from ldb import ERR_UNWILLING_TO_PERFORM, ERR_INSUFFICIENT_ACCESS_RIGHTS
 from ldb import ERR_NO_SUCH_ATTRIBUTE
 from ldb import ERR_CONSTRAINT_VIOLATION
 from ldb import Message, MessageElement, Dn
-from ldb import FLAG_MOD_REPLACE, FLAG_MOD_DELETE
+from ldb import FLAG_MOD_ADD, FLAG_MOD_REPLACE, FLAG_MOD_DELETE
 from samba import gensec
 from samba.samdb import SamDB
 import samba.tests
@@ -667,6 +667,159 @@ userPassword: thatsAcomplPASS4
              "dn": "cn=testuser2,cn=users," + self.base_dn,
              "objectclass": "user",
              "userPassword": ["thatsAcomplPASS1", "thatsAcomplPASS1"] })
+
+    def test_empty_passwords(self):
+        print "Performs some empty passwords testing"
+
+        try:
+            self.ldb.add({
+                 "dn": "cn=testuser2,cn=users," + self.base_dn,
+                 "objectclass": "user",
+                 "unicodePwd": [] })
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
+
+        try:
+            self.ldb.add({
+                 "dn": "cn=testuser2,cn=users," + self.base_dn,
+                 "objectclass": "user",
+                 "dBCSPwd": [] })
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
+
+        try:
+            self.ldb.add({
+                 "dn": "cn=testuser2,cn=users," + self.base_dn,
+                 "objectclass": "user",
+                 "userPassword": [] })
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
+
+        try:
+            self.ldb.add({
+                 "dn": "cn=testuser2,cn=users," + self.base_dn,
+                 "objectclass": "user",
+                 "clearTextPassword": [] })
+            self.fail()
+        except LdbError, (num, _):
+            self.assertTrue(num == ERR_CONSTRAINT_VIOLATION or
+                            num == ERR_NO_SUCH_ATTRIBUTE) # for Windows
+
+        self.delete_force(self.ldb, "cn=testuser2,cn=users," + self.base_dn)
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=testuser,cn=users," + self.base_dn)
+        m["unicodePwd"] = MessageElement([], FLAG_MOD_ADD, "unicodePwd")
+        try:
+            ldb.modify(m)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=testuser,cn=users," + self.base_dn)
+        m["dBCSPwd"] = MessageElement([], FLAG_MOD_ADD, "dBCSPwd")
+        try:
+            ldb.modify(m)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=testuser,cn=users," + self.base_dn)
+        m["userPassword"] = MessageElement([], FLAG_MOD_ADD, "userPassword")
+        try:
+            ldb.modify(m)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=testuser,cn=users," + self.base_dn)
+        m["clearTextPassword"] = MessageElement([], FLAG_MOD_ADD, "clearTextPassword")
+        try:
+            ldb.modify(m)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertTrue(num == ERR_CONSTRAINT_VIOLATION or
+                            num == ERR_NO_SUCH_ATTRIBUTE) # for Windows
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=testuser,cn=users," + self.base_dn)
+        m["unicodePwd"] = MessageElement([], FLAG_MOD_REPLACE, "unicodePwd")
+        try:
+            ldb.modify(m)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=testuser,cn=users," + self.base_dn)
+        m["dBCSPwd"] = MessageElement([], FLAG_MOD_REPLACE, "dBCSPwd")
+        try:
+            ldb.modify(m)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=testuser,cn=users," + self.base_dn)
+        m["userPassword"] = MessageElement([], FLAG_MOD_REPLACE, "userPassword")
+        try:
+            ldb.modify(m)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=testuser,cn=users," + self.base_dn)
+        m["clearTextPassword"] = MessageElement([], FLAG_MOD_REPLACE, "clearTextPassword")
+        try:
+            ldb.modify(m)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertTrue(num == ERR_UNWILLING_TO_PERFORM or
+                            num == ERR_NO_SUCH_ATTRIBUTE) # for Windows
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=testuser,cn=users," + self.base_dn)
+        m["unicodePwd"] = MessageElement([], FLAG_MOD_DELETE, "unicodePwd")
+        try:
+            ldb.modify(m)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=testuser,cn=users," + self.base_dn)
+        m["dBCSPwd"] = MessageElement([], FLAG_MOD_DELETE, "dBCSPwd")
+        try:
+            ldb.modify(m)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=testuser,cn=users," + self.base_dn)
+        m["userPassword"] = MessageElement([], FLAG_MOD_DELETE, "userPassword")
+        try:
+            ldb.modify(m)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=testuser,cn=users," + self.base_dn)
+        m["clearTextPassword"] = MessageElement([], FLAG_MOD_DELETE, "clearTextPassword")
+        try:
+            ldb.modify(m)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertTrue(num == ERR_CONSTRAINT_VIOLATION or
+                            num == ERR_NO_SUCH_ATTRIBUTE) # for Windows
 
     def tearDown(self):
         super(PasswordTests, self).tearDown()
