@@ -111,6 +111,7 @@ def build(bld):
             pyext=True,
             vnum=VERSION,
             )
+        bld.INSTALL_FILES('${INCLUDEDIR}', 'pytalloc.h')
 
     if not getattr(bld.env, '_SAMBA_BUILD_', 0) == 4:
         # s4 already has the talloc testsuite builtin to smbtorture
