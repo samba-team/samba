@@ -962,7 +962,7 @@ int ldb_ldap_init(const char *ldb_version)
 	int ret, i;
 	const char *names[] = { "ldap", "ldaps", "ldapi", NULL };
 	for (i=0; names[i]; i++) {
-		ret = ldb_register_backend(names[i], lldb_connect);
+		ret = ldb_register_backend(names[i], lldb_connect, false);
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}

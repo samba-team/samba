@@ -870,7 +870,7 @@ _PUBLIC_ int ldb_ildap_init(const char *ldb_version)
 	int ret, i;
 	const char *names[] = { "ldap", "ldaps", "ldapi", NULL };
 	for (i=0; names[i]; i++) {
-		ret = ldb_register_backend(names[i], ildb_connect);
+		ret = ldb_register_backend(names[i], ildb_connect, true);
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}

@@ -131,14 +131,14 @@ static struct ops_list_entry {
 	struct ops_list_entry *next;
 } *registered_modules = NULL;
 
-static ldb_connect_fn ldb_find_backend(const char *url)
+static backends_list_entry *ldb_find_backend(const char *url)
 {
 	struct backends_list_entry *backend;
 
 	for (backend = ldb_backends; backend; backend = backend->next) {
 		if (strncmp(backend->ops->name, url,
 			    strlen(backend->ops->name)) == 0) {
-			return backend->ops->connect_fn;
+			return backend;
 		}
 	}
 
@@ -146,32 +146,35 @@ static ldb_connect_fn ldb_find_backend(const char *url)
 }
 
 /*
- register a new ldb backend
+  register a new ldb backend
+
+  if override is true, then override any existing backend for this prefix
 */
-int ldb_register_backend(const char *url_prefix, ldb_connect_fn connectfn)
+int ldb_register_backend(const char *url_prefix, ldb_connect_fn connectfn, bool override)
 {
 	struct ldb_backend_ops *backend;
-	struct backends_list_entry *entry;
+	struct backends_list_entry *be;
 
-	backend = talloc(talloc_autofree_context(), struct ldb_backend_ops);
-	if (!backend) return LDB_ERR_OPERATIONS_ERROR;
-
-	entry = talloc(talloc_autofree_context(), struct backends_list_entry);
-	if (!entry) {
-		talloc_free(backend);
-		return LDB_ERR_OPERATIONS_ERROR;
+	be = ldb_find_backend(url_prefix);
+	if (be) {
+		if (!override) {
+			return LDB_SUCCESS;
+		}
+	} else {
+		be = talloc(ldb_backends, struct backends_list_entry);
+		if (!be) {
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+		be->ops = talloc(be, struct ldb_backend_ops);
+		if (!backend) {
+			talloc_free(be);
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+		DLIST_ADD_END(ldb_backends, entry, struct backends_list_entry);
 	}
 
-	if (ldb_find_backend(url_prefix)) {
-		return LDB_SUCCESS;
-	}
-
-	/* Maybe check for duplicity here later on? */
-
-	backend->name = talloc_strdup(backend, url_prefix);
-	backend->connect_fn = connectfn;
-	entry->ops = backend;
-	DLIST_ADD(ldb_backends, entry);
+	be->ops->name = url_prefix;
+	be->ops->connect_fn = connectfn;
 
 	return LDB_SUCCESS;
 }
@@ -197,7 +200,7 @@ int ldb_connect_backend(struct ldb_context *ldb,
 {
 	int ret;
 	char *backend;
-	ldb_connect_fn fn;
+	struct backends_list_entry *be;
 
 	if (strchr(url, ':') != NULL) {
 		backend = talloc_strndup(ldb, url, strchr(url, ':')-url);
@@ -206,21 +209,21 @@ int ldb_connect_backend(struct ldb_context *ldb,
 		backend = talloc_strdup(ldb, "tdb");
 	}
 
-	fn = ldb_find_backend(backend);
+	be = ldb_find_backend(backend);
 
 	talloc_free(backend);
 
-	if (fn == NULL) {
+	if (be == NULL) {
 		ldb_debug(ldb, LDB_DEBUG_FATAL,
 			  "Unable to find backend for '%s'", url);
 		return LDB_ERR_OTHER;
 	}
 
-	ret = fn(ldb, url, ldb->flags, options, backend_module);
+	ret = be->ops->connect_fn(ldb, url, ldb->flags, options, backend_module);
 
 	if (ret != LDB_SUCCESS) {
 		ldb_debug(ldb, LDB_DEBUG_ERROR,
-			  "Failed to connect to '%s'", url);
+			  "Failed to connect to '%s' with backend '%s'", url, be->ops->name);
 		return ret;
 	}
 	return ret;
