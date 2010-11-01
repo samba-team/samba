@@ -252,4 +252,11 @@ int ldb_register_hook(ldb_hook_fn hook_fn);
  */
 int ldb_modules_hook(struct ldb_context *ldb, enum ldb_module_hook_type t);
 
+#define LDB_MODULE_CHECK_VERSION(version) do { \
+ if (strcmp(version, LDB_VERSION) != 0) { \
+	fprintf(stderr, "ldb: module version mismatch in %s : ldb_version=%s module_version=%s\n", \
+			__FILE__, version, LDB_VERSION); \
+        return LDB_ERR_UNAVAILABLE; \
+ }} while (0)
+
 #endif
