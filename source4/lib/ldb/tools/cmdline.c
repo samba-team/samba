@@ -318,8 +318,6 @@ struct ldb_cmdline *ldb_cmdline_process(struct ldb_context *ldb,
 
 	if (options.modules_path != NULL) {
 		ldb_set_modules_dir(ldb, options.modules_path);
-	} else if (getenv("LDB_MODULES_PATH") != NULL) {
-		ldb_set_modules_dir(ldb, getenv("LDB_MODULES_PATH"));
 	}
 
 	/* now connect to the ldb */

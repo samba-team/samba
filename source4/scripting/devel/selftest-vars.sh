@@ -42,6 +42,5 @@ export DC_SERVER=localdc1
 export DC_PASSWORD=locDCpass1
 export PYTHONPATH=$PWD/bin/python
 export PASSWORD=locDCpass1
-export LDB_MODULES_PATH=$PWD/bin/modules/ldb
 export NETBIOSALIAS=localdc
 export SMB_CONF_PATH=$PWD/st/dc/etc/smb.conf

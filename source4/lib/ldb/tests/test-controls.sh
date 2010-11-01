@@ -11,8 +11,6 @@ PATH=bin:$PATH
 export PATH
 
 rm -f $LDB_URL*
-LDB_MODULES_PATH=`dirname $0`/../../../bin/modules/testldb
-echo $LDB_MODULES_PATH
 
 echo "LDB_URL: $LDB_URL"
 cat <<EOF | $VALGRIND ldbadd || exit 1
