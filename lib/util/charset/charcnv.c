@@ -391,7 +391,7 @@ _PUBLIC_ bool convert_string_talloc_convenience(TALLOC_CTX *ctx,
 _PUBLIC_ codepoint_t next_codepoint_convenience_ext(
 			struct smb_iconv_convenience *ic,
 			const char *str, charset_t src_charset,
-			size_t *size)
+			size_t *bytes_consumed)
 {
 	/* it cannot occupy more than 4 bytes in UTF16 format */
 	uint8_t buf[4];
@@ -402,7 +402,7 @@ _PUBLIC_ codepoint_t next_codepoint_convenience_ext(
 	char *outbuf;
 
 	if ((str[0] & 0x80) == 0) {
-		*size = 1;
+		*bytes_consumed = 1;
 		return (codepoint_t)str[0];
 	}
 
@@ -414,7 +414,7 @@ _PUBLIC_ codepoint_t next_codepoint_convenience_ext(
 
 	descriptor = get_conv_handle(ic, src_charset, CH_UTF16);
 	if (descriptor == (smb_iconv_t)-1) {
-		*size = 1;
+		*bytes_consumed = 1;
 		return INVALID_CODEPOINT;
 	}
 
@@ -429,7 +429,7 @@ _PUBLIC_ codepoint_t next_codepoint_convenience_ext(
 		smb_iconv(descriptor,  &str, &ilen, &outbuf, &olen);
 		if (olen == 4) {
 			/* we didn't convert any bytes */
-			*size = 1;
+			*bytes_consumed = 1;
 			return INVALID_CODEPOINT;
 		}
 		olen = 4 - olen;
@@ -437,7 +437,7 @@ _PUBLIC_ codepoint_t next_codepoint_convenience_ext(
 		olen = 2 - olen;
 	}
 
-	*size = ilen_orig - ilen;
+	*bytes_consumed = ilen_orig - ilen;
 
 	if (olen == 2) {
 		return (codepoint_t)SVAL(buf, 0);
