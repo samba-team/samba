@@ -1394,23 +1394,14 @@ bool gensec_setting_bool(struct gensec_settings *settings, const char *mechanism
 	return lpcfg_parm_bool(settings->lp_ctx, NULL, mechanism, name, default_value);
 }
 
-#ifndef STATIC_gensec_MODULES
-#define STATIC_gensec_MODULES NULL
-#endif
-
 /*
   initialise the GENSEC subsystem
 */
 _PUBLIC_ NTSTATUS gensec_init(struct loadparm_context *lp_ctx)
 {
 	static bool initialized = false;
-	extern NTSTATUS gensec_sasl_init(void);
-	extern NTSTATUS gensec_krb5_init(void);
-	extern NTSTATUS gensec_schannel_init(void);
-	extern NTSTATUS gensec_spnego_init(void);
-	extern NTSTATUS gensec_gssapi_init(void);
-	extern NTSTATUS gensec_ntlmssp_init(void);
-
+#define _MODULE_PROTO(init) extern NTSTATUS init(void);
+	STATIC_gensec_MODULES_PROTO;
 	init_module_fn static_init[] = { STATIC_gensec_MODULES };
 	init_module_fn *shared_init;
 

@@ -632,13 +632,8 @@ const struct auth_critical_sizes *auth_interface_version(void)
 _PUBLIC_ NTSTATUS auth_init(void)
 {
 	static bool initialized = false;
-	extern NTSTATUS auth_developer_init(void);
-	extern NTSTATUS auth_winbind_init(void);
-	extern NTSTATUS auth_anonymous_init(void);
-	extern NTSTATUS auth_unix_init(void);
-	extern NTSTATUS auth_sam_init(void);
-	extern NTSTATUS auth_server_init(void);
-
+#define _MODULE_PROTO(init) extern NTSTATUS init(void);
+	STATIC_auth_MODULES_PROTO;
 	init_module_fn static_init[] = { STATIC_auth_MODULES };
 	
 	if (initialized) return NT_STATUS_OK;

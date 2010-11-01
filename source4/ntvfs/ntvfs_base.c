@@ -203,15 +203,8 @@ NTSTATUS ntvfs_init_connection(TALLOC_CTX *mem_ctx, struct share_config *scfg, e
 NTSTATUS ntvfs_init(struct loadparm_context *lp_ctx)
 {
 	static bool initialized = false;
-	extern NTSTATUS ntvfs_posix_init(void);
-	extern NTSTATUS ntvfs_cifs_init(void);
-	extern NTSTATUS ntvfs_smb2_init(void);
-	extern NTSTATUS ntvfs_nbench_init(void);
-	extern NTSTATUS ntvfs_unixuid_init(void);
-	extern NTSTATUS ntvfs_ipc_init(void);
-	extern NTSTATUS ntvfs_print_init(void);
-	extern NTSTATUS ntvfs_simple_init(void);
-	extern NTSTATUS ntvfs_cifs_posix_init(void);
+#define _MODULE_PROTO(init) extern NTSTATUS init(void);
+	STATIC_ntvfs_MODULES_PROTO;
 	init_module_fn static_init[] = { STATIC_ntvfs_MODULES };
 	init_module_fn *shared_init;
 

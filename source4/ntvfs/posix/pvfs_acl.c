@@ -92,8 +92,8 @@ const struct pvfs_acl_ops *pvfs_acl_backend_byname(const char *name)
 NTSTATUS pvfs_acl_init(struct loadparm_context *lp_ctx)
 {
 	static bool initialized = false;
-	extern NTSTATUS pvfs_acl_nfs4_init(void);
-	extern NTSTATUS pvfs_acl_xattr_init(void);
+#define _MODULE_PROTO(init) extern NTSTATUS init(void);
+	STATIC_pvfs_acl_MODULES_PROTO;
 	init_module_fn static_init[] = { STATIC_pvfs_acl_MODULES };
 	init_module_fn *shared_init;
 
