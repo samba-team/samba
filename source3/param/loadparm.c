@@ -4983,8 +4983,9 @@ static struct lp_stored_option *stored_options;
  */
 static bool store_lp_set_cmdline(const char *pszParmName, const char *pszParmValue)
 {
-	struct lp_stored_option *entry = NULL;
-	for (entry = stored_options; entry != NULL; entry = entry->next) {
+	struct lp_stored_option *entry, *entry_next;
+	for (entry = stored_options; entry != NULL; entry = entry_next) {
+		entry_next = entry->next;
 		if (strcmp(pszParmName, entry->label) == 0) {
 			DLIST_REMOVE(stored_options, entry);
 			talloc_free(entry);
@@ -7887,14 +7888,18 @@ static bool lp_set_cmdline_helper(const char *pszParmName, const char *pszParmVa
 		}
 		parm_table[parmnum].flags |= FLAG_CMDLINE;
 
-		store_lp_set_cmdline(pszParmName, pszParmValue);
+		if (store_values) {
+			store_lp_set_cmdline(pszParmName, pszParmValue);
+		}
 		return true;
 	}
 
 	/* it might be parametric */
 	if (strchr(pszParmName, ':') != NULL) {
 		set_param_opt(&Globals.param_opt, pszParmName, pszParmValue, FLAG_CMDLINE);
-		store_lp_set_cmdline(pszParmName, pszParmValue);
+		if (store_values) {
+			store_lp_set_cmdline(pszParmName, pszParmValue);
+		}
 		return true;
 	}
 
