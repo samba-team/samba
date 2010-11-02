@@ -92,6 +92,7 @@ _PUBLIC_ NTSTATUS register_process_model(const void *_ops)
 
 	models[num_models].ops = smb_xmemdup(ops, sizeof(*ops));
 	models[num_models].ops->name = smb_xstrdup(ops->name);
+	models[num_models].initialised = false;
 
 	num_models++;
 
