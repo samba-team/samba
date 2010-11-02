@@ -30,7 +30,8 @@ def run_named_build_task(cmd):
 						t.position= [0,0]
 						print(t.display())
 						run_task(t, k)
-						return
+						found = True
+
 
 	if not found:
 		raise Utils.WafError("Unable to find build target matching %s" % cmd)
