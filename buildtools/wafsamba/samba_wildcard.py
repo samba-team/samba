@@ -5,6 +5,7 @@
 import os, datetime
 import Scripting, Utils, Options, Logs, Environment, fnmatch
 from Constants import *
+from samba_utils import *
 
 def run_task(t, k):
 	'''run a single build task'''
@@ -19,15 +20,27 @@ def run_named_build_task(cmd):
 	bld = fake_build_environment()
 	found = False
 	cwd_node = bld.root.find_dir(os.getcwd())
+	top_node = bld.root.find_dir(bld.srcnode.abspath())
+
 	cmd = os.path.normpath(cmd)
+
+	# cope with builds of bin/*/*
+	if os.path.islink(cmd):
+		cmd = os_path_relpath(os.readlink(cmd), os.getcwd())
+
+	if cmd[0:12] == "bin/default/":
+		cmd = cmd[12:]
+
 	for g in bld.task_manager.groups:
 		for attr in ['outputs', 'inputs']:
 			for t in g.tasks:
 				s = getattr(t, attr, [])
 				for k in s:
-					relpath = k.relpath_gen(cwd_node)
-					if fnmatch.fnmatch(relpath, cmd):
-						t.position= [0,0]
+					relpath1 = k.relpath_gen(cwd_node)
+					relpath2 = k.relpath_gen(top_node)
+					if (fnmatch.fnmatch(relpath1, cmd) or
+					    fnmatch.fnmatch(relpath2, cmd)):
+						t.position = [0,0]
 						print(t.display())
 						run_task(t, k)
 						found = True
