@@ -118,6 +118,12 @@ def configure(conf):
     # resolution of symbols
     conf.ADD_LDFLAGS('-Wl,-no-undefined', testflags=True)
 
+    # gentoo always adds this. We want our normal build to be as
+    # strict as the strictest OS we support, so adding this here
+    # allows us to find problems on our development hosts faster.
+    # It also results in faster load time.
+    conf.ADD_LDFLAGS('-Wl,--as-needed', testflags=True)
+
     # we don't want PYTHONDIR in config.h, as otherwise changing
     # --prefix causes a complete rebuild
     del(conf.env.defines['PYTHONDIR'])
