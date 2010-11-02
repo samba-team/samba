@@ -412,7 +412,6 @@ verify_checksum(krb5_context context,
 		void *ptr, size_t len,
 		const krb5_keyblock *key)
 {
-    krb5_crypto crypto = NULL;
     krb5_storage *sp = NULL;
     uint32_t type;
     krb5_error_code ret;
@@ -452,14 +451,40 @@ verify_checksum(krb5_context context,
 	goto out;
     }
 
-    ret = krb5_crypto_init(context, key, 0, &crypto);
-    if (ret)
-	goto out;
+    /* If the checksum is HMAC-MD5, the checksum type is not tied to
+     * the key type, instead the HMAC-MD5 checksum is applied blindly
+     * on whatever key is used for this connection, avoiding issues
+     * with unkeyed checksums on des-cbc-md5 and des-cbc-crc.  See
+     * http://comments.gmane.org/gmane.comp.encryption.kerberos.devel/8743
+     * for the same issue in MIT, and
+     * http://blogs.msdn.com/b/openspecification/archive/2010/01/01/verifying-the-server-signature-in-kerberos-privilege-account-certificate.aspx
+     * for Microsoft's explaination */
+    if (cksum.cksumtype == CKSUMTYPE_HMAC_MD5) {
+	Checksum local_checksum;
 
-    ret = krb5_verify_checksum(context, crypto, KRB5_KU_OTHER_CKSUM,
-			       ptr, len, &cksum);
+	ret = HMAC_MD5_any_checksum(context, key, ptr, len, KRB5_KU_OTHER_CKSUM, &local_checksum);
+
+	if(local_checksum.checksum.length != cksum.checksum.length ||
+	   ct_memcmp(local_checksum.checksum.data, cksum.checksum.data, local_checksum.checksum.length)) {
+	    ret = KRB5KRB_AP_ERR_BAD_INTEGRITY;
+	    krb5_set_error_message(context, ret,
+				   N_("PAC integrity check failed for hmac-md5 checksum", ""));
+	} else {
+		ret = 0;
+	}
+	krb5_data_free(&local_checksum.checksum);
+   } else {
+	krb5_crypto crypto = NULL;
+
+	ret = krb5_crypto_init(context, key, 0, &crypto);
+	if (ret)
+		goto out;
+
+	ret = krb5_verify_checksum(context, crypto, KRB5_KU_OTHER_CKSUM,
+				   ptr, len, &cksum);
+	krb5_crypto_destroy(context, crypto);
+    }
     free(cksum.checksum.data);
-    krb5_crypto_destroy(context, crypto);
     krb5_storage_free(sp);
 
     return ret;
@@ -469,14 +494,13 @@ out:
 	free(cksum.checksum.data);
     if (sp)
 	krb5_storage_free(sp);
-    if (crypto)
-	krb5_crypto_destroy(context, crypto);
     return ret;
 }
 
 static krb5_error_code
 create_checksum(krb5_context context,
 		const krb5_keyblock *key,
+		uint32_t cksumtype,
 		void *data, size_t datalen,
 		void *sig, size_t siglen)
 {
@@ -484,16 +508,27 @@ create_checksum(krb5_context context,
     krb5_error_code ret;
     Checksum cksum;
 
-    ret = krb5_crypto_init(context, key, 0, &crypto);
-    if (ret)
-	return ret;
+    /* If the checksum is HMAC-MD5, the checksum type is not tied to
+     * the key type, instead the HMAC-MD5 checksum is applied blindly
+     * on whatever key is used for this connection, avoiding issues
+     * with unkeyed checksums on des-cbc-md5 and des-cbc-crc.  See
+     * http://comments.gmane.org/gmane.comp.encryption.kerberos.devel/8743
+     * for the same issue in MIT, and
+     * http://blogs.msdn.com/b/openspecification/archive/2010/01/01/verifying-the-server-signature-in-kerberos-privilege-account-certificate.aspx
+     * for Microsoft's explaination */
+    if (cksumtype == CKSUMTYPE_HMAC_MD5) {
+	ret = HMAC_MD5_any_checksum(context, key, data, datalen, KRB5_KU_OTHER_CKSUM, &cksum);
+    } else {
+	ret = krb5_crypto_init(context, key, 0, &crypto);
+	if (ret)
+	    return ret;
 
-    ret = krb5_create_checksum(context, crypto, KRB5_KU_OTHER_CKSUM, 0,
-			       data, datalen, &cksum);
-    krb5_crypto_destroy(context, crypto);
-    if (ret)
-	return ret;
-
+	ret = krb5_create_checksum(context, crypto, KRB5_KU_OTHER_CKSUM, 0,
+				   data, datalen, &cksum);
+	krb5_crypto_destroy(context, crypto);
+	if (ret)
+	    return ret;
+    }
     if (cksum.checksum.length != siglen) {
 	krb5_set_error_message(context, EINVAL, "pac checksum wrong length");
 	free_Checksum(&cksum);
@@ -845,8 +880,8 @@ pac_checksum(krb5_context context,
 	return ret;
 
     if (krb5_checksum_is_keyed(context, cktype) == FALSE) {
-	krb5_set_error_message(context, EINVAL, "PAC checksum type is not keyed");
-	return EINVAL;
+	*cksumtype = CKSUMTYPE_HMAC_MD5;
+	*cksumsize = 16;
     }
 
     ret = krb5_checksumsize(context, cktype, cksumsize);
@@ -1026,16 +1061,14 @@ _krb5_pac_sign(krb5_context context,
     }
 
     /* sign */
-
-    ret = create_checksum(context, server_key,
+    ret = create_checksum(context, server_key, server_cksumtype,
 			  d.data, d.length,
 			  (char *)d.data + server_offset, server_size);
     if (ret) {
 	krb5_data_free(&d);
 	goto out;
     }
-
-    ret = create_checksum(context, priv_key,
+    ret = create_checksum(context, priv_key, priv_cksumtype,
 			  (char *)d.data + server_offset, server_size,
 			  (char *)d.data + priv_offset, priv_size);
     if (ret) {
