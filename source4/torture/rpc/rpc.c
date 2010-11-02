@@ -352,6 +352,19 @@ static bool torture_rpc_wrap_test_creds(struct torture_context *tctx,
 	return fn(tctx, tcase_data->pipe, tcase_data->credentials);
 }
 
+static bool torture_rpc_wrap_test_join(struct torture_context *tctx,
+				       struct torture_tcase *tcase,
+				       struct torture_test *test)
+{
+	bool (*fn) (struct torture_context *, struct dcerpc_pipe *, struct cli_credentials *, struct test_join *);
+	struct torture_rpc_tcase_data *tcase_data =
+		(struct torture_rpc_tcase_data *)tcase->data;
+
+	fn = test->fn;
+
+	return fn(tctx, tcase_data->pipe, tcase_data->credentials, tcase_data->join_ctx);
+}
+
 _PUBLIC_ struct torture_test *torture_rpc_tcase_add_test(
 					struct torture_rpc_tcase *tcase, 
 					const char *name, 
@@ -385,6 +398,28 @@ _PUBLIC_ struct torture_test *torture_rpc_tcase_add_test_creds(
 	test->name = talloc_strdup(test, name);
 	test->description = NULL;
 	test->run = torture_rpc_wrap_test_creds;
+	test->dangerous = false;
+	test->data = NULL;
+	test->fn = fn;
+
+	DLIST_ADD(tcase->tcase.tests, test);
+
+	return test;
+}
+
+_PUBLIC_ struct torture_test *torture_rpc_tcase_add_test_join(
+					struct torture_rpc_tcase *tcase,
+					const char *name,
+					bool (*fn) (struct torture_context *, struct dcerpc_pipe *,
+						    struct cli_credentials *, struct test_join *))
+{
+	struct torture_test *test;
+
+	test = talloc(tcase, struct torture_test);
+
+	test->name = talloc_strdup(test, name);
+	test->description = NULL;
+	test->run = torture_rpc_wrap_test_join;
 	test->dangerous = false;
 	test->data = NULL;
 	test->fn = fn;

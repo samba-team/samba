@@ -64,6 +64,12 @@ struct torture_rpc_tcase *torture_suite_add_anon_rpc_iface_tcase(struct torture_
 								const char *name,
 								const struct ndr_interface_table *table);
 
+struct torture_test *torture_rpc_tcase_add_test_join(
+	struct torture_rpc_tcase *tcase,
+	const char *name,
+	bool (*fn) (struct torture_context *, struct dcerpc_pipe *,
+		    struct cli_credentials *, struct test_join *));
+
 struct torture_test *torture_rpc_tcase_add_test_ex(
 					struct torture_rpc_tcase *tcase, 
 					const char *name, 

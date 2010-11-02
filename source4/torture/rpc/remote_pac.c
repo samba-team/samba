@@ -23,15 +23,21 @@
 #include "auth/auth.h"
 #include "auth/auth_sam_reply.h"
 #include "auth/gensec/gensec.h"
+#include "system/kerberos.h"
+#include "auth/kerberos/kerberos.h"
+#include "auth/credentials/credentials.h"
+#include "auth/credentials/credentials_krb5.h"
 #include "lib/cmdline/popt_common.h"
 #include "torture/rpc/torture_rpc.h"
 #include "libcli/auth/libcli_auth.h"
 #include "libcli/security/security.h"
 #include "librpc/gen_ndr/ndr_netlogon_c.h"
+#include "librpc/gen_ndr/ndr_samr_c.h"
 #include "param/param.h"
 
 #define TEST_MACHINE_NAME_BDC "torturepacbdc"
 #define TEST_MACHINE_NAME_WKSTA "torturepacwksta"
+#define TEST_MACHINE_NAME_WKSTA_DES "torturepacwkdes"
 #define TEST_MACHINE_NAME_S2U4SELF_BDC "tests2u4selfbdc"
 #define TEST_MACHINE_NAME_S2U4SELF_WKSTA "tests2u4selfwk"
 
@@ -57,7 +63,6 @@ static bool test_PACVerify(struct torture_context *tctx,
 	struct netr_GenericInfo generic;
 	struct netr_Authenticator auth, auth2;
 	
-
 	struct netlogon_creds_CredentialState *creds;
 	struct gensec_security *gensec_client_context;
 	struct gensec_security *gensec_server_context;
@@ -71,9 +76,7 @@ static bool test_PACVerify(struct torture_context *tctx,
 
 	char *tmp_dir;
 	struct dcerpc_binding_handle *b = p->binding_handle;
-
 	TALLOC_CTX *tmp_ctx = talloc_new(tctx);
-	
 	torture_assert(tctx, tmp_ctx != NULL, "talloc_new() failed");
 
 	if (!test_SetupCredentials2(p, tctx, NETLOGON_NEG_AUTH2_ADS_FLAGS, 
@@ -345,6 +348,38 @@ static bool test_PACVerify_workstation(struct torture_context *tctx,
 				  struct cli_credentials *credentials)
 {
 	return test_PACVerify(tctx, p, credentials, SEC_CHAN_WKSTA, TEST_MACHINE_NAME_WKSTA);
+}
+
+static bool test_PACVerify_workstation_des(struct torture_context *tctx,
+					   struct dcerpc_pipe *p, struct cli_credentials *credentials, struct test_join *join_ctx)
+{
+	struct samr_SetUserInfo r;
+	union samr_UserInfo user_info;
+	struct dcerpc_pipe *samr_pipe = torture_join_samr_pipe(join_ctx);
+	struct smb_krb5_context *smb_krb5_context;
+	krb5_error_code ret;
+
+	ret = cli_credentials_get_krb5_context(cmdline_credentials, tctx->lp_ctx, &smb_krb5_context);
+	torture_assert_int_equal(tctx, ret, 0, "cli_credentials_get_krb5_context() failed");
+
+	if (krb5_config_get_bool_default(smb_krb5_context->krb5_context, NULL, FALSE,
+					 "libdefaults",
+					 "allow_weak_crypto", NULL) == FALSE) {
+		torture_skip(tctx, "Cannot test DES without [libdefaults] allow_weak_crypto = yes");
+	}
+
+	/* Mark this workstation with DES-only */
+	user_info.info16.acct_flags = ACB_USE_DES_KEY_ONLY | ACB_WSTRUST;
+	r.in.user_handle = torture_join_samr_user_policy(join_ctx);
+	r.in.level = 16;
+	r.in.info = &user_info;
+
+	torture_assert_ntstatus_ok(tctx, dcerpc_samr_SetUserInfo_r(samr_pipe->binding_handle, tctx, &r),
+		"failed to set DES info account flags");
+	torture_assert_ntstatus_ok(tctx, r.out.result,
+		"failed to set DES into account flags");
+
+	return test_PACVerify(tctx, p, credentials, SEC_CHAN_WKSTA, TEST_MACHINE_NAME_WKSTA_DES);
 }
 
 
@@ -624,6 +659,10 @@ struct torture_suite *torture_rpc_remote_pac(TALLOC_CTX *mem_ctx)
 	tcase = torture_suite_add_machine_workstation_rpc_iface_tcase(suite, "netlogon-member",
 								      &ndr_table_netlogon, TEST_MACHINE_NAME_WKSTA);
 	torture_rpc_tcase_add_test_creds(tcase, "verify-sig", test_PACVerify_workstation);
+
+	tcase = torture_suite_add_machine_workstation_rpc_iface_tcase(suite, "netlogon-member-des",
+								      &ndr_table_netlogon, TEST_MACHINE_NAME_WKSTA_DES);
+	torture_rpc_tcase_add_test_join(tcase, "verify-sig", test_PACVerify_workstation_des);
 
 	tcase = torture_suite_add_machine_bdc_rpc_iface_tcase(suite, "netlogon-bdc",
 							      &ndr_table_netlogon, TEST_MACHINE_NAME_S2U4SELF_BDC);
