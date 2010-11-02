@@ -46,8 +46,8 @@ static struct {
 
 /* state variables for the debug system */
 static struct {
-	int fd;
-	enum debug_logtype logtype;
+	int fd;   /* The log file handle */
+	enum debug_logtype logtype; /* The type of logging we are doing: eg stdout, file, stderr */
 	const char *prog_name;
 	bool reopening_logs;
 } state;
