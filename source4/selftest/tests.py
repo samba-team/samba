@@ -207,7 +207,7 @@ ncacn_ip_tcp_tests = ["RPC-SCHANNEL", "RPC-JOIN", "RPC-LSA", "RPC-DSSETUP", "RPC
 slow_ncacn_np_tests = ["RPC-SAMLOGON", "RPC-SAMR-USERS", "RPC-SAMR-LARGE-DC", "RPC-SAMR-USERS-PRIVILEGES", "RPC-SAMR-PASSWORDS", "RPC-SAMR-PASSWORDS-PWDLASTSET"]
 slow_ncacn_ip_tcp_tests = ["RPC-SAMR", "RPC-CRACKNAMES"]
 
-all_rpc_tests = ncalrpc_tests + ncacn_np_tests + ncacn_ip_tcp_tests + slow_ncacn_np_tests + slow_ncacn_ip_tcp_tests + ["RPC-LSA-SECRETS", "RPC-SAMBA3-SHARESEC", "RPC-COUNTCALLS"]
+all_rpc_tests = ncalrpc_tests + ncacn_np_tests + ncacn_ip_tcp_tests + slow_ncacn_np_tests + slow_ncacn_ip_tcp_tests + ["RPC-LSA-SECRETS", "RPC-PAC", "RPC-SAMBA3-SHARESEC", "RPC-COUNTCALLS"]
 
 # Make sure all tests get run
 rpc_tests = smb4torture_testsuites("RPC-")
@@ -276,6 +276,8 @@ transports = ["ncacn_np", "ncacn_ip_tcp"]
 
 #Kerberos varies between functional levels, so it is important to check this on all of them
 for env in ["dc", "fl2000dc", "fl2003dc", "fl2008r2dc"]:
+    transport = "ncacn_np"
+    plantestsuite_loadlist("samba4.rpc.pac on %s" % (transport,), env, [smb4torture, "%s:$SERVER[]" % (transport, ), '-U$USERNAME%$PASSWORD', '-W', '$DOMAIN', 'RPC-PAC'])
     for transport in transports:
         plantestsuite_loadlist("samba4.rpc.lsa.secrets on %s with Kerberos" % (transport,), env, [smb4torture, "%s:$SERVER[]" % (transport, ), '-k', 'yes', '-U$USERNAME%$PASSWORD', '-W', '$DOMAIN', '--option=gensec:target_hostname=$NETBIOSNAME', 'RPC-LSA-SECRETS'])
         plantestsuite_loadlist("samba4.rpc.lsa.secrets on %s with Kerberos - use target principal" % (transport,), env, [smb4torture, "%s:$SERVER[]" % (transport, ), '-k', 'yes', '-U$USERNAME%$PASSWORD', '-W', '$DOMAIN', "--option=clientusespnegoprincipal=yes", '--option=gensec:target_hostname=$NETBIOSNAME', 'RPC-LSA-SECRETS'])
