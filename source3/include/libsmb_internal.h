@@ -138,11 +138,6 @@ struct SMBC_internal_data {
 	SMBCFILE *                              files;
 
         /*
-         * Log to standard error instead of the more typical standard output
-         */
-        bool                                    debug_stderr;
-
-        /*
          * Support "Create Time" in get/set with the *xattr() functions, if
          * true.  This replaces the dos attribute strings C_TIME, A_TIME and
          * M_TIME with CHANGE_TIME, ACCESS_TIME and WRITE_TIME, and adds
