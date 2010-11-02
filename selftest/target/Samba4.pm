@@ -639,6 +639,7 @@ sub provision_raw_step1($$)
  dns_lookup_kdc = false
  ticket_lifetime = 24h
  forwardable = yes
+ allow_weak_crypto = yes
 
 [realms]
  $ctx->{realm} = {
