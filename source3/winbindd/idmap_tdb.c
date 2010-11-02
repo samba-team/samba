@@ -197,7 +197,7 @@ static bool idmap_tdb_upgrade(struct idmap_domain *dom, struct db_context *db)
 	}
 
 	if (dbwrap_store_int32(db, "IDMAP_VERSION", IDMAP_VERSION) == -1) {
-		DEBUG(0, ("Unable to store idmap version in databse\n"));
+		DEBUG(0, ("Unable to store idmap version in database\n"));
 		return False;
 	}
 
