@@ -10,6 +10,32 @@ channel.
 
 =======================================================================
 
+directory: lib/tevent/
+maintainers:
+         Stefan Metzmacher <metze@samba.org>
+policy:
+         All commits require review by the maintainer.
+
+         If no maintainer is available for longer than a week
+         discussion on the samba-technical list and review by 2
+         Samba-Team members is needed (e.g. Andrew Tridgell <tridge@samba.org
+         and Volker Lendecke <vl@samba.org>).
+
+         Larger changes need also discussion on the samba-technical list
+         and review by all maintainers.
+
+directory: lib/tsocket/
+maintainers:
+         Stefan Metzmacher <metze@samba.org>
+policy:
+         All commits require review by the maintainer.
+
+         If no maintainer is available for longer than a week
+         discussion on the samba-technical list and review by 2
+         Samba-Team members is needed.
+
+         Larger changes need also discussion on the samba-technical list
+         and review by all maintainers.
 
 
 
