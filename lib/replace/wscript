@@ -75,6 +75,7 @@ def configure(conf):
     conf.CHECK_TYPE('_Bool', define='HAVE__Bool')
 
     conf.CHECK_TYPE('int8_t', 'char')
+    conf.CHECK_TYPE('uint8_t', 'unsigned char')
     conf.CHECK_TYPE('int16_t', 'short')
     conf.CHECK_TYPE('uint16_t', 'unsigned short')
     conf.CHECK_TYPE('int32_t', 'int')
