@@ -90,7 +90,12 @@ def build_dependencies(self):
 
     if self.samba_type in ['SUBSYSTEM']:
         # this is needed for the ccflags of libs that come from pkg_config
-        self.uselib = list(self.direct_syslibs)
+        self.uselib = list(self.final_syslibs)
+        self.uselib.extend(list(self.direct_syslibs))
+        for lib in self.final_libs:
+            t = self.bld.name_to_obj(lib, self.bld.env)
+            self.uselib.extend(list(t.final_syslibs))
+        self.uselib = unique_list(self.uselib)
 
     if getattr(self, 'uselib', None):
         up_list = []
@@ -352,10 +357,10 @@ def show_final_deps(bld, tgt_list):
     targets = LOCAL_CACHE(bld, 'TARGET_TYPE')
 
     for t in tgt_list:
-        if not targets[t.sname] in ['LIBRARY', 'BINARY', 'PYTHON']:
+        if not targets[t.sname] in ['LIBRARY', 'BINARY', 'PYTHON', 'SUBSYSTEM']:
             continue
         debug('deps: final dependencies for target %s: uselib=%s uselib_local=%s add_objects=%s',
-              t.sname, t.uselib, t.uselib_local, t.add_objects)
+              t.sname, t.uselib, getattr(t, 'uselib_local', []), getattr(t, 'add_objects', []))
 
 
 def add_samba_attributes(bld, tgt_list):
@@ -860,7 +865,7 @@ def calculate_final_deps(bld, tgt_list, loops):
 
     # add in any syslib dependencies
     for t in tgt_list:
-        if not t.samba_type in ['BINARY','PYTHON','LIBRARY']:
+        if not t.samba_type in ['BINARY','PYTHON','LIBRARY','SUBSYSTEM']:
             continue
         syslibs = set()
         for d in t.final_objects:
