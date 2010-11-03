@@ -240,6 +240,10 @@ static int attr_handler2(struct oc_context *ac)
 	struct ldb_message_element *oc_element;
 	struct ldb_message *msg;
 	const char **must_contain, **may_contain, **found_must_contain;
+	/* There exists a hardcoded delete-protected attributes list in AD */
+	const char *del_prot_attributes[] = { "nTSecurityDescriptor",
+		"objectSid", "sAMAccountType", "sAMAccountName", "groupType",
+		"primaryGroupID", "userAccountControl", NULL }, **l;
 	const struct dsdb_attribute *attr;
 	unsigned int i;
 	bool found;
@@ -268,9 +272,23 @@ static int attr_handler2(struct oc_context *ac)
 		return ldb_operr(ldb);
 	}
 
+	/* Check the delete-protected attributes list */
+	msg = ac->search_res->message;
+	for (l = del_prot_attributes; *l != NULL; l++) {
+		found = str_list_check_ci(must_contain, *l);
+		if (!found) {
+			found = str_list_check_ci(may_contain, *l);
+		}
+		if (found && (ldb_msg_find_element(msg, *l) == NULL)) {
+			ldb_asprintf_errstring(ldb, "objectclass_attrs: delete protected attribute '%s' on entry '%s' missing!",
+					       *l,
+					       ldb_dn_get_linearized(msg->dn));
+			return LDB_ERR_UNWILLING_TO_PERFORM;
+		}
+	}
+
 	/* Check if all specified attributes are valid in the given
 	 * objectclasses and if they meet additional schema restrictions. */
-	msg = ac->search_res->message;
 	for (i = 0; i < msg->num_elements; i++) {
 		attr = dsdb_attribute_by_lDAPDisplayName(ac->schema,
 							 msg->elements[i].name);
