@@ -41,9 +41,21 @@ import ldb
 
 from samba.auth import system_session, admin_session
 import samba
-from samba import version, Ldb, substitute_var, valid_netbios_name
-from samba import check_all_substituted, read_and_sub_file, setup_file
-from samba.dsdb import DS_DOMAIN_FUNCTION_2003, DS_DOMAIN_FUNCTION_2008_R2, ENC_ALL_TYPES
+from samba import (
+    Ldb,
+    check_all_substituted,
+    in_source_tree,
+    read_and_sub_file,
+    setup_file,
+    substitute_var,
+    valid_netbios_name,
+    version,
+    )
+from samba.dsdb import (
+    DS_DOMAIN_FUNCTION_2003,
+    DS_DOMAIN_FUNCTION_2008_R2,
+    ENC_ALL_TYPES,
+    )
 from samba.dcerpc import security
 from samba.dcerpc.misc import SEC_CHAN_BDC, SEC_CHAN_WKSTA
 from samba.idmap import IDmapDB
@@ -68,19 +80,19 @@ DEFAULT_DC_POLICY_GUID = "6AC1786C-016F-11D2-945F-00C04fB984F9"
 
 def find_setup_dir():
     """Find the setup directory used by provision."""
-    import sys
-    for prefix in [sys.prefix,
-            os.path.join(os.path.dirname(__file__), "../../../..")]:
-        for suffix in ["share/setup", "share/samba/setup", "setup"]:
-            ret = os.path.join(prefix, suffix)
-            if os.path.isdir(ret):
-                return ret
-    # In source tree
-    dirname = os.path.dirname(__file__)
-    ret = os.path.join(dirname, "../../../setup")
-    if os.path.isdir(ret):
-        return ret
-    raise Exception("Unable to find setup directory.")
+    if in_source_tree():
+        # In source tree
+        dirname = os.path.dirname(__file__)
+        return os.path.join(dirname, "../../../setup")
+    else:
+        import sys
+        for prefix in [sys.prefix,
+                os.path.join(os.path.dirname(__file__), "../../../..")]:
+            for suffix in ["share/setup", "share/samba/setup", "setup"]:
+                ret = os.path.join(prefix, suffix)
+                if os.path.isdir(ret):
+                    return ret
+        raise Exception("Unable to find setup directory.")
 
 # Descriptors of naming contexts and other important objects
 
