@@ -24,7 +24,7 @@
 
 /* the list of currently registered process models */
 static struct process_model {
-	struct model_ops *ops;
+	const struct model_ops *ops;
 	bool initialised;
 } *models = NULL;
 static int num_models;
@@ -74,10 +74,8 @@ _PUBLIC_ const struct model_ops *process_model_startup(const char *model)
   The 'name' can be later used by other backends to find the operations
   structure for this backend.  
 */
-_PUBLIC_ NTSTATUS register_process_model(const void *_ops)
+_PUBLIC_ NTSTATUS register_process_model(const struct model_ops *ops)
 {
-	const struct model_ops *ops = _ops;
-
 	if (process_model_byname(ops->name) != NULL) {
 		/* its already registered! */
 		DEBUG(0,("PROCESS_MODEL '%s' already registered\n", 
@@ -85,19 +83,17 @@ _PUBLIC_ NTSTATUS register_process_model(const void *_ops)
 		return NT_STATUS_OBJECT_NAME_COLLISION;
 	}
 
-	models = realloc_p(models, struct process_model, num_models+1);
+	models = talloc_realloc(NULL, models, struct process_model, num_models+1);
 	if (!models) {
 		smb_panic("out of memory in register_process_model");
 	}
 
-	models[num_models].ops = smb_xmemdup(ops, sizeof(*ops));
-	models[num_models].ops->name = smb_xstrdup(ops->name);
+	models[num_models].ops = ops;
 	models[num_models].initialised = false;
 
 	num_models++;
 
-	DEBUG(3,("PROCESS_MODEL '%s' registered\n", 
-		 ops->name));
+	DEBUG(3,("PROCESS_MODEL '%s' registered\n", ops->name));
 
 	return NT_STATUS_OK;
 }

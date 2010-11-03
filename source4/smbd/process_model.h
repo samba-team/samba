@@ -80,7 +80,7 @@ struct process_model_critical_sizes {
 extern const struct model_ops single_ops;
 
 const struct model_ops *process_model_startup(const char *model);
-NTSTATUS register_process_model(const void *_ops);
+NTSTATUS register_process_model(const struct model_ops *ops);
 NTSTATUS process_model_init(struct loadparm_context *lp_ctx);
 
 #endif /* __PROCESS_MODEL_H__ */
