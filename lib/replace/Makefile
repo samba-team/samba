@@ -1,8 +1,6 @@
 # simple makefile wrapper to run waf
 
-WAFPATH:=$(shell PATH=../../buildtools/bin:buildtools/bin:$(PATH) which waf)
-
-WAF=WAF_MAKE=1 $(WAFPATH)
+WAF=WAF_MAKE=1 PATH=buildtools/bin:../../buildtools/bin:$$PATH waf
 
 all:
 	$(WAF) build
