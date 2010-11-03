@@ -531,6 +531,22 @@ class SamTests(unittest.TestCase):
         except LdbError, (num, _):
             self.assertEquals(num, ERR_ENTRY_ALREADY_EXISTS)
 
+        # Already added, but as <SID=...>
+        res1 = ldb.search("cn=ldaptestuser,cn=users," + self.base_dn,
+                          scope=SCOPE_BASE, attrs=["objectSid"])
+        self.assertTrue(len(res1) == 1)
+        sid_bin = res1[0]["objectSid"][0]
+        sid_str = ("<SID=" + ldb.schema_format_value("objectSid", sid_bin) + ">").upper()
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestgroup2,cn=users," + self.base_dn)
+        m["member"] = MessageElement(sid_str, FLAG_MOD_ADD, "member")
+        try:
+            ldb.modify(m)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_ENTRY_ALREADY_EXISTS)
+
         # Invalid member
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestgroup2,cn=users," + self.base_dn)
