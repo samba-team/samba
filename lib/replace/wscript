@@ -74,6 +74,7 @@ def configure(conf):
     conf.CHECK_TYPES('"long long" intptr_t uintptr_t ptrdiff_t comparison_fn_t')
     conf.CHECK_TYPE('_Bool', define='HAVE__Bool')
 
+    conf.CHECK_TYPE('bool', 'int')
     conf.CHECK_TYPE('int8_t', 'char')
     conf.CHECK_TYPE('uint8_t', 'unsigned char')
     conf.CHECK_TYPE('int16_t', 'short')
@@ -86,7 +87,6 @@ def configure(conf):
     conf.CHECK_TYPE('ssize_t', 'int')
     conf.CHECK_TYPE('ino_t', 'unsigned')
     conf.CHECK_TYPE('loff_t', 'off_t')
-    conf.CHECK_TYPE('bool', 'off_t')
     conf.CHECK_TYPE('offset_t', 'loff_t')
     conf.CHECK_TYPE('volatile int', define='HAVE_VOLATILE')
     conf.CHECK_TYPE('uint_t', 'unsigned int')
