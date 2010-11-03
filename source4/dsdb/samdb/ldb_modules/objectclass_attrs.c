@@ -200,14 +200,15 @@ static int attr_handler(struct oc_context *ac)
 				talloc_free(res);
 			}
 		}
-/* dSHeuristics syntax check */
-		if ((ac->req->operation == LDB_ADD || ac->req->operation == LDB_MODIFY) &&
-		    (ldb_attr_cmp(attr->lDAPDisplayName, "dSHeuristics") == 0)) {
+
+		/* "dSHeuristics" syntax check */
+		if (ldb_attr_cmp(attr->lDAPDisplayName, "dSHeuristics") == 0) {
 			ret = oc_validate_dsheuristics(&(msg->elements[i]));
 			if (ret != LDB_SUCCESS) {
 				return ret;
 			}
 		}
+
 		/* Substitute the attribute name to match in case */
 		msg->elements[i].name = attr->lDAPDisplayName;
 	}
