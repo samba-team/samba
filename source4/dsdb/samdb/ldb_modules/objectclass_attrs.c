@@ -70,6 +70,25 @@ static struct oc_context *oc_init_context(struct ldb_module *module,
 
 static int oc_op_callback(struct ldb_request *req, struct ldb_reply *ares);
 
+/* checks correctness of dSHeuristics attribute
+ * as described in MS-ADTS 7.1.1.2.4.1.2 dSHeuristics */
+
+static int oc_validate_dsheuristics(struct ldb_message_element *el)
+{
+	if (LDB_FLAG_MOD_TYPE(el->flags) == LDB_FLAG_MOD_DELETE ||
+	    el->num_values < 1) {
+		return LDB_SUCCESS;
+	}
+	if (el->values[0].length > DS_HR_LDAP_BYPASS_UPPER_LIMIT_BOUNDS) {
+		return LDB_ERR_CONSTRAINT_VIOLATION;
+	} else if (el->values[0].length >= DS_HR_TENTH_CHAR
+		   && el->values[0].data[DS_HR_TENTH_CHAR-1] != '1') {
+		return LDB_ERR_CONSTRAINT_VIOLATION;
+	} else {
+		return LDB_SUCCESS;
+	}
+}
+
 static int attr_handler(struct oc_context *ac)
 {
 	struct ldb_context *ldb;
@@ -181,7 +200,14 @@ static int attr_handler(struct oc_context *ac)
 				talloc_free(res);
 			}
 		}
-
+/* dSHeuristics syntax check */
+		if ((ac->req->operation == LDB_ADD || ac->req->operation == LDB_MODIFY) &&
+		    (ldb_attr_cmp(attr->lDAPDisplayName, "dSHeuristics") == 0)) {
+			ret = oc_validate_dsheuristics(&(msg->elements[i]));
+			if (ret != LDB_SUCCESS) {
+				return ret;
+			}
+		}
 		/* Substitute the attribute name to match in case */
 		msg->elements[i].name = attr->lDAPDisplayName;
 	}
