@@ -219,7 +219,7 @@ def build(bld):
                          manpages='man/%s.1' % t)
 
     # ldbtest doesn't get installed
-    bld.SAMBA_BINARY('ldbtest', 'tools/ldbtest.c', deps='ldb-cmdline',
+    bld.SAMBA_BINARY('ldbtest', 'tools/ldbtest.c', deps='ldb-cmdline ldb',
                      install=False)
 
 
