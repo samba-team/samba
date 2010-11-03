@@ -357,7 +357,7 @@ planperltestsuite("selftest.samba4", os.path.normpath(os.path.join(samba4srcdir,
 # work correctly.
 
 planpythontestsuite("none", "samba.tests.blackbox.ndrdump")
-plantestsuite("samba4.blackbox.samba_tool(dc:local)", "dc:local", [os.path.join(samba4srcdir, "utils/tests/test_net.sh"),  '$SERVER', "$USERNAME", "$PASSWORD", "$DOMAIN"])
+plantestsuite("samba4.blackbox.samba_tool(dc:local)", "dc:local", [os.path.join(samba4srcdir, "utils/tests/test_samba_tool.sh"),  '$SERVER', "$USERNAME", "$PASSWORD", "$DOMAIN"])
 plantestsuite("samba4.blackbox.pkinit(dc:local)", "dc:local", [os.path.join(bbdir, "test_pkinit.sh"), '$SERVER', '$USERNAME', '$PASSWORD', '$REALM', '$DOMAIN', '$PREFIX', "aes256-cts-hmac-sha1-96", configuration])
 plantestsuite("samba4.blackbox.kinit(dc:local)", "dc:local", [os.path.join(bbdir, "test_kinit.sh"), '$SERVER', '$USERNAME', '$PASSWORD', '$REALM', '$DOMAIN', '$PREFIX', "aes256-cts-hmac-sha1-96", configuration])
 plantestsuite("samba4.blackbox.kinit(fl2000dc:local)", "fl2000dc:local", [os.path.join(bbdir, "test_kinit.sh"), '$SERVER', '$USERNAME', '$PASSWORD', '$REALM', '$DOMAIN', '$PREFIX', "arcfour-hmac-md5", configuration])
@@ -485,7 +485,7 @@ planpythontestsuite("dc:local", "samba.tests.upgradeprovisionneeddc")
 planpythontestsuite("none", "samba.tests.upgradeprovision")
 planpythontestsuite("none", "samba.tests.xattr")
 planpythontestsuite("none", "samba.tests.ntacls")
-plantestsuite("samba4.deletetest.python(dc)", "dc", ['PYTHONPATH="$PYTHONPATH:../lib/subunit/python:../lib/testtools', python, os.path.join(samba4srcdir, "dsdb/tests/python/deletetest.py"), '$SERVER', '-U"$USERNAME%$PASSWORD','-W', '$DOMAIN'])
+plantestsuite("samba4.deletetest.python(dc)", "dc", ['PYTHONPATH="$PYTHONPATH:../lib/subunit/python:../lib/testtools', python, os.path.join(samba4srcdir, "dsdb/tests/python/deletetest.py"), '$SERVER', '-U"$USERNAME%$PASSWORD"', '-W', '$DOMAIN'])
 plantestsuite("samba4.policy.python", "none", ['PYTHONPATH="$PYTHONPATH:lib/policy/tests/python"', subunitrun, 'bindings'])
 plantestsuite("samba4.blackbox.samba3dump", "none", [python, os.path.join(samba4srcdir, "scripting/bin/samba3dump"), os.path.join(samba4srcdir, "../testdata/samba3")])
 plantestsuite("samba4.blackbox.upgrade", "none", ["rm -rf $PREFIX/upgrade;", python, os.path.join(samba4srcdir, "setup/upgrade_from_s3"), "--targetdir=$PREFIX/upgrade", os.path.normpath(os.path.join(samba4srcdir, "../testdata/samba3")), os.path.normpath(os.path.join(samba4srcdir, "../testdata/samba3/smb.conf"))])
