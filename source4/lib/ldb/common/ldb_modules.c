@@ -906,6 +906,11 @@ static int ldb_modules_load_one(const char *path, const char *version)
 	return ret;
 }
 
+static int qsort_string(const char **s1, const char **s2)
+{
+	return strcmp(*s1, *s2);
+}
+
 
 /*
   load all modules from the given ldb modules directory. This is run once
@@ -961,7 +966,7 @@ static int ldb_modules_load_dir(const char *modules_dir, const char *version)
 	closedir(dir);
 
 	/* sort the directory, so we get consistent load ordering */
-	qsort(modlist, num_modules, sizeof(modlist[0]), QSORT_CAST strcmp);
+	TYPESAFE_QSORT(modlist, num_modules, qsort_string);
 
 	for (i=0; i<num_modules; i++) {
 		int ret = ldb_modules_load_one(modlist[i], version);
