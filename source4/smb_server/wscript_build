@@ -13,7 +13,8 @@ bld.SAMBA_MODULE('SERVICE_SMB',
 bld.SAMBA_MODULE('SERVICE_SAMBA3_SMB',
 	source='smb_samba3.c',
 	subsystem='service',
-	init_function='server_service_samba3_smb_init'
+	init_function='server_service_samba3_smb_init',
+	deps='talloc'
 	)
 
 

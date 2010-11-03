@@ -19,6 +19,7 @@ bld.SAMBA_SUBSYSTEM('DCOM',
 
 bld.SAMBA_MODULE('com_simple',
 	source='classes/simple.c',
+	deps='talloc',
 	subsystem='COM',
 	init_function='com_simple_init'
 	)

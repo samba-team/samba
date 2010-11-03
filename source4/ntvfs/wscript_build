@@ -25,7 +25,8 @@ bld.SAMBA_MODULE('ntvfs_simple',
 	source='simple/vfs_simple.c simple/svfs_util.c',
 	autoproto='simple/proto.h',
 	subsystem='ntvfs',
-	init_function='ntvfs_simple_init'
+	init_function='ntvfs_simple_init',
+	deps='talloc'
 	)
 
 
@@ -33,14 +34,16 @@ bld.SAMBA_MODULE('ntvfs_cifsposix',
 	source='cifs_posix_cli/vfs_cifs_posix.c cifs_posix_cli/svfs_util.c',
 	autoproto='cifs_posix_cli/proto.h',
 	subsystem='ntvfs',
-	init_function='ntvfs_cifs_posix_init'
+	init_function='ntvfs_cifs_posix_init',
+	deps='talloc'
 	)
 
 
 bld.SAMBA_MODULE('ntvfs_print',
 	source='print/vfs_print.c',
 	subsystem='ntvfs',
-	init_function='ntvfs_print_init'
+	init_function='ntvfs_print_init',
+	deps='talloc'
 	)
 
 
@@ -56,7 +59,8 @@ bld.SAMBA_MODULE('ntvfs_ipc',
 bld.SAMBA_MODULE('ntvfs_nbench',
 	source='nbench/vfs_nbench.c',
 	subsystem='ntvfs',
-	init_function='ntvfs_nbench_init'
+	init_function='ntvfs_nbench_init',
+	deps='talloc'
 	)
 
 

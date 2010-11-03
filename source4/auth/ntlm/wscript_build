@@ -11,7 +11,8 @@ bld.SAMBA_MODULE('auth_sam_module',
 bld.SAMBA_MODULE('auth_anonymous',
 	source='auth_anonymous.c',
 	subsystem='auth',
-	init_function='auth_anonymous_init'
+	init_function='auth_anonymous_init',
+	deps='talloc'
 	)
 
 
@@ -34,7 +35,8 @@ bld.SAMBA_MODULE('auth_winbind',
 bld.SAMBA_MODULE('auth_developer',
 	source='auth_developer.c',
 	subsystem='auth',
-	init_function='auth_developer_init'
+	init_function='auth_developer_init',
+	deps='talloc'
 	)
 
 
