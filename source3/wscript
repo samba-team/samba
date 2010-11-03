@@ -461,6 +461,7 @@ return acl_get_perm_np(permset_d, perm);
                        package="", uselib_store="cups")
         conf.CHECK_HEADERS('cups/cups.h cups/language.h', lib='cups')
         conf.CHECK_LIB('cups')
+        conf.CHECK_FUNCS_IN('httpConnect httpConnectEncrypt', 'cups')
     else:
         # define an empty subsystem for cups, to allow it to be used as an empty dependency
         conf.SET_TARGET_TYPE('cups', 'EMPTY')
