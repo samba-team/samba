@@ -79,7 +79,11 @@ extern int DEBUGLEVEL;
  * for example.  This makes it easy to override for debug to stderr on
  * the command line, as the smb.conf cannot reset it back to
  * file-based logging */
-enum debug_logtype {DEBUG_DEFAULT_STDERR = 0, DEBUG_STDOUT = 1, DEBUG_FILE = 2, DEBUG_STDERR = 3};
+enum debug_logtype {DEBUG_DEFAULT_STDOUT = 0, 
+		    DEBUG_DEFAULT_STDERR, 
+		    DEBUG_STDOUT, 
+		    DEBUG_FILE, 
+		    DEBUG_STDERR};
 
 /**
   the backend for debug messages. Note that the DEBUG() macro has already

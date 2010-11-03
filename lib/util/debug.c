@@ -141,10 +141,12 @@ _PUBLIC_ void reopen_logs(void)
 
 	switch (state.logtype) {
 	case DEBUG_STDOUT:
+	case DEBUG_DEFAULT_STDOUT:
 		state.fd = 1;
 		break;
 
 	case DEBUG_STDERR:
+	case DEBUG_DEFAULT_STDERR:
 		state.fd = 2;
 		break;
 
