@@ -7,12 +7,12 @@
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 3 of the License, or
 # (at your option) any later version.
-#   
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-#   
+#
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
@@ -26,7 +26,6 @@ import sys
 # Find right directory when running from source tree
 sys.path.insert(0, "bin/python")
 
-import samba
 from samba import getopt as options, Ldb
 import ldb
 
@@ -99,7 +98,7 @@ def possible_inferiors_search(db, oc):
 # !objectClassCategory=2
 # !objectClassCategory=3
 
-def SUPCLASSES(classinfo, oc):
+def supclasses(classinfo, oc):
     list = []
     if oc == "top":
         return list
@@ -108,11 +107,11 @@ def SUPCLASSES(classinfo, oc):
     res = classinfo[oc]["subClassOf"];
     for r in res:
         list.append(r)
-        list.extend(SUPCLASSES(classinfo,r))
+        list.extend(supclasses(classinfo,r))
     classinfo[oc]["SUPCLASSES"] = list
     return list
 
-def AUXCLASSES(classinfo, oclist):
+def auxclasses(classinfo, oclist):
     list = []
     if oclist == []:
         return list
@@ -122,21 +121,21 @@ def AUXCLASSES(classinfo, oclist):
         else:
             list2 = []
             list2.extend(classinfo[oc]["systemAuxiliaryClass"])
-            list2.extend(AUXCLASSES(classinfo, classinfo[oc]["systemAuxiliaryClass"]))
+            list2.extend(auxclasses(classinfo, classinfo[oc]["systemAuxiliaryClass"]))
             list2.extend(classinfo[oc]["auxiliaryClass"])
-            list2.extend(AUXCLASSES(classinfo, classinfo[oc]["auxiliaryClass"]))
-            list2.extend(AUXCLASSES(classinfo, SUPCLASSES(classinfo, oc)))
+            list2.extend(auxclasses(classinfo, classinfo[oc]["auxiliaryClass"]))
+            list2.extend(auxclasses(classinfo, supclasses(classinfo, oc)))
             classinfo[oc]["AUXCLASSES"] = list2
             list.extend(list2)
     return list
 
-def SUBCLASSES(classinfo, oclist):
+def subclasses(classinfo, oclist):
     list = []
     for oc in oclist:
         list.extend(classinfo[oc]["SUBCLASSES"])
     return list
 
-def POSSSUPERIORS(classinfo, oclist):
+def posssuperiors(classinfo, oclist):
     list = []
     for oc in oclist:
         if classinfo[oc].get("POSSSUPERIORS") is not None:
@@ -145,13 +144,13 @@ def POSSSUPERIORS(classinfo, oclist):
             list2 = []
             list2.extend(classinfo[oc]["systemPossSuperiors"])
             list2.extend(classinfo[oc]["possSuperiors"])
-            list2.extend(POSSSUPERIORS(classinfo, SUPCLASSES(classinfo, oc)))
+            list2.extend(posssuperiors(classinfo, supclasses(classinfo, oc)))
             if opts.wspp:
                 # the WSPP docs suggest we should do this:
-                list2.extend(POSSSUPERIORS(classinfo, AUXCLASSES(classinfo, [oc])))
+                list2.extend(posssuperiors(classinfo, auxclasses(classinfo, [oc])))
             else:
                 # but testing against w2k3 and w2k8 shows that we need to do this instead
-                list2.extend(SUBCLASSES(classinfo, list2))
+                list2.extend(subclasses(classinfo, list2))
             classinfo[oc]["POSSSUPERIORS"] = list2
             list.extend(list2)
     return list
@@ -211,7 +210,7 @@ def is_in_list(list, c):
 def possible_inferiors_constructed(db, classinfo, c):
     list = []
     for oc in classinfo:
-        superiors = POSSSUPERIORS(classinfo, [oc])
+        superiors = posssuperiors(classinfo, [oc])
         if (is_in_list(superiors, c) and
             classinfo[oc]["systemOnly"] == False and
             classinfo[oc]["objectClassCategory"] != 2 and
