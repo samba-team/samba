@@ -53,6 +53,9 @@ def PKG_CONFIG_FILES(bld, pc_files, vnum=None):
                                 rule=subst_at_vars,
                                 source=f+'.in',
                                 target=f)
+        t.vars = []
+        for v in [ 'PREFIX', 'EXEC_PREFIX' ]:
+            t.vars.append(t.env[v])
         if vnum:
             t.env.PACKAGE_VERSION = vnum
         bld.INSTALL_FILES(dest, f, flat=True, destname=base)
