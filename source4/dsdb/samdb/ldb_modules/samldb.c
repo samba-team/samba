@@ -1368,13 +1368,33 @@ static int samldb_sam_accountname_check(struct samldb_ctx *ac)
 
 static int samldb_member_check(struct samldb_ctx *ac)
 {
+	static const char * const attrs[] = { "objectSid", "member", NULL };
 	struct ldb_context *ldb = ldb_module_get_ctx(ac->module);
 	struct ldb_message_element *el;
-	struct ldb_dn *member_dn, *group_dn;
+	struct ldb_dn *member_dn;
 	uint32_t prim_group_rid;
 	struct dom_sid *sid;
+	struct ldb_result *res;
+	struct dom_sid *group_sid;
 	unsigned int i, j;
 	int cnt;
+	int ret;
+
+	/* Fetch informations from the existing object */
+
+	ret = ldb_search(ldb, ac, &res, ac->msg->dn, LDB_SCOPE_BASE, attrs,
+			 NULL);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+	if (res->count != 1) {
+		return ldb_operr(ldb);
+	}
+
+	group_sid = samdb_result_dom_sid(res, res->msgs[0], "objectSid");
+	if (group_sid == NULL) {
+		return ldb_operr(ldb);
+	}
 
 	/* We've to walk over all modification entries and consider the "member"
 	 * ones. */
@@ -1385,6 +1405,8 @@ static int samldb_member_check(struct samldb_ctx *ac)
 
 		el = &ac->msg->elements[i];
 		for (j = 0; j < el->num_values; j++) {
+			struct ldb_message_element *mo;
+
 			member_dn = ldb_dn_from_ldb_val(ac, ldb,
 							&el->values[j]);
 			if (!ldb_dn_validate(member_dn)) {
@@ -1404,12 +1426,14 @@ static int samldb_member_check(struct samldb_ctx *ac)
 			 *   ERR_NO_SUCH_ATTRIBUTE!)
 			 * - primary group check
 			 */
-			cnt = samdb_search_count(ldb, ac, ac->msg->dn,
-						 "(member=%s)",
-						 ldb_dn_get_linearized(member_dn));
-			if (cnt < 0) {
-				return ldb_operr(ldb);
+			mo = samdb_find_attribute(ldb, res->msgs[0], "member",
+						  ldb_dn_get_linearized(member_dn));
+			if (mo == NULL) {
+				cnt = 0;
+			} else {
+				cnt = 1;
 			}
+
 			if ((cnt > 0) && (LDB_FLAG_MOD_TYPE(el->flags)
 			    == LDB_FLAG_MOD_ADD)) {
 				return LDB_ERR_ENTRY_ALREADY_EXISTS;
@@ -1440,14 +1464,7 @@ static int samldb_member_check(struct samldb_ctx *ac)
 				return ldb_operr(ldb);
 			}
 
-			group_dn = samdb_search_dn(ldb, ac, NULL,
-						   "(objectSid=%s)",
-						   ldap_encode_ndr_dom_sid(ac, sid));
-			if (group_dn == NULL) {
-				return ldb_operr(ldb);
-			}
-
-			if (ldb_dn_compare(group_dn, ac->msg->dn) == 0) {
+			if (dom_sid_equal(group_sid, sid)) {
 				return LDB_ERR_ENTRY_ALREADY_EXISTS;
 			}
 		}
