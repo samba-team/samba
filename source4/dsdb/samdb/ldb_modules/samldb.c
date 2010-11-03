@@ -1004,8 +1004,8 @@ static int samldb_prim_group_change(struct samldb_ctx *ac)
 	struct ldb_result *res;
 	struct ldb_message_element *el;
 	struct ldb_message *msg;
-	uint32_t rid;
-	struct dom_sid *sid;
+	uint32_t prev_rid, new_rid;
+	struct dom_sid *prev_sid, *new_sid;
 	struct ldb_dn *prev_prim_group_dn, *new_prim_group_dn;
 	int ret;
 
@@ -1028,22 +1028,17 @@ static int samldb_prim_group_change(struct samldb_ctx *ac)
 
 	/* Finds out the DN of the old primary group */
 
-	rid = ldb_msg_find_attr_as_uint(res->msgs[0], "primaryGroupID", (uint32_t) -1);
-	if (rid == (uint32_t) -1) {
+	prev_rid = ldb_msg_find_attr_as_uint(res->msgs[0], "primaryGroupID",
+					     (uint32_t) -1);
+	if (prev_rid == (uint32_t) -1) {
 		/* User objects do always have a mandatory "primaryGroupID"
 		 * attribute. If this doesn't exist then the object is of the
 		 * wrong type. This is the exact Windows error code */
 		return LDB_ERR_OBJECT_CLASS_VIOLATION;
 	}
 
-	sid = dom_sid_add_rid(ac, samdb_domain_sid(ldb), rid);
-	if (sid == NULL) {
-		return ldb_operr(ldb);
-	}
-
-	prev_prim_group_dn = samdb_search_dn(ldb, ac, NULL, "(objectSid=%s)",
-					     ldap_encode_ndr_dom_sid(ac, sid));
-	if (prev_prim_group_dn == NULL) {
+	prev_sid = dom_sid_add_rid(ac, samdb_domain_sid(ldb), prev_rid);
+	if (prev_sid == NULL) {
 		return ldb_operr(ldb);
 	}
 
@@ -1059,76 +1054,81 @@ static int samldb_prim_group_change(struct samldb_ctx *ac)
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
-	rid = ldb_msg_find_attr_as_uint(msg, "primaryGroupID", (uint32_t) -1);
+	new_rid = ldb_msg_find_attr_as_uint(msg, "primaryGroupID", (uint32_t) -1);
 	talloc_free(msg);
-	if (rid == (uint32_t) -1) {
+	if (new_rid == (uint32_t) -1) {
 		/* we aren't affected of any primary group change */
 		return LDB_SUCCESS;
 	}
 
-	sid = dom_sid_add_rid(ac, samdb_domain_sid(ldb), rid);
-	if (sid == NULL) {
+	if (prev_rid == new_rid) {
+		return LDB_SUCCESS;
+	}
+
+	prev_prim_group_dn = samdb_search_dn(ldb, ac, NULL, "(objectSid=%s)",
+					     ldap_encode_ndr_dom_sid(ac, prev_sid));
+	if (prev_prim_group_dn == NULL) {
+		return ldb_operr(ldb);
+	}
+
+	new_sid = dom_sid_add_rid(ac, samdb_domain_sid(ldb), new_rid);
+	if (new_sid == NULL) {
 		return ldb_operr(ldb);
 	}
 
 	new_prim_group_dn = samdb_search_dn(ldb, ac, NULL, "(objectSid=%s)",
-					    ldap_encode_ndr_dom_sid(ac, sid));
+					    ldap_encode_ndr_dom_sid(ac, new_sid));
 	if (new_prim_group_dn == NULL) {
 		/* Here we know if the specified new primary group candidate is
 		 * valid or not. */
 		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
 
-	/* Only update the "member" attributes when we really do have a change */
-	if (ldb_dn_compare(new_prim_group_dn, prev_prim_group_dn) != 0) {
-		/* We need to be already a normal member of the new primary
-		 * group in order to be successful. */
-		el = samdb_find_attribute(ldb, res->msgs[0], "memberOf",
-					  ldb_dn_get_linearized(new_prim_group_dn));
-		if (el == NULL) {
-			return LDB_ERR_UNWILLING_TO_PERFORM;
-		}
-
-		/* Remove the "member" attribute on the new primary group */
-		msg = ldb_msg_new(ac->msg);
-		if (msg == NULL) {
-			return ldb_module_oom(ac->module);
-		}
-		msg->dn = new_prim_group_dn;
-
-		ret = samdb_msg_add_delval(ldb, msg, msg, "member",
-					   ldb_dn_get_linearized(ac->msg->dn));
-		if (ret != LDB_SUCCESS) {
-			return ret;
-		}
-
-		ret = dsdb_module_modify(ac->module, msg, DSDB_FLAG_NEXT_MODULE);
-		if (ret != LDB_SUCCESS) {
-			return ret;
-		}
-		talloc_free(msg);
-
-		/* Add a "member" attribute for the previous primary group */
-		msg = ldb_msg_new(ac->msg);
-		if (msg == NULL) {
-			return ldb_module_oom(ac->module);
-		}
-		msg->dn = prev_prim_group_dn;
-
-		ret = samdb_msg_add_addval(ldb, msg, msg, "member",
-					   ldb_dn_get_linearized(ac->msg->dn));
-		if (ret != LDB_SUCCESS) {
-			return ret;
-		}
-
-		ret = dsdb_module_modify(ac->module, msg, DSDB_FLAG_NEXT_MODULE);
-		if (ret != LDB_SUCCESS) {
-			return ret;
-		}
-		talloc_free(msg);
+	/* We need to be already a normal member of the new primary
+	 * group in order to be successful. */
+	el = samdb_find_attribute(ldb, res->msgs[0], "memberOf",
+				  ldb_dn_get_linearized(new_prim_group_dn));
+	if (el == NULL) {
+		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
 
-	talloc_free(res);
+	/* Remove the "member" attribute on the new primary group */
+	msg = ldb_msg_new(ac->msg);
+	if (msg == NULL) {
+		return ldb_module_oom(ac->module);
+	}
+	msg->dn = new_prim_group_dn;
+
+	ret = samdb_msg_add_delval(ldb, msg, msg, "member",
+				   ldb_dn_get_linearized(ac->msg->dn));
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	ret = dsdb_module_modify(ac->module, msg, DSDB_FLAG_NEXT_MODULE);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+	talloc_free(msg);
+
+	/* Add a "member" attribute for the previous primary group */
+	msg = ldb_msg_new(ac->msg);
+	if (msg == NULL) {
+		return ldb_module_oom(ac->module);
+	}
+	msg->dn = prev_prim_group_dn;
+
+	ret = samdb_msg_add_addval(ldb, msg, msg, "member",
+				   ldb_dn_get_linearized(ac->msg->dn));
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	ret = dsdb_module_modify(ac->module, msg, DSDB_FLAG_NEXT_MODULE);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+	talloc_free(msg);
 
 	return LDB_SUCCESS;
 }
