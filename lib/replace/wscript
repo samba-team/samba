@@ -91,6 +91,10 @@ def configure(conf):
     conf.CHECK_TYPE('volatile int', define='HAVE_VOLATILE')
     conf.CHECK_TYPE('uint_t', 'unsigned int')
 
+    conf.CHECK_SIZEOF('bool char int "long long" long short size_t ssize_t')
+    conf.CHECK_SIZEOF('void*', define='SIZEOF_VOID_P')
+    conf.CHECK_SIZEOF('off_t dev_t ino_t time_t')
+
     conf.CHECK_TYPES('socklen_t', headers='sys/socket.h')
     conf.CHECK_TYPE_IN('struct ifaddrs', 'ifaddrs.h')
     conf.CHECK_TYPE_IN('struct addrinfo', 'netdb.h')
@@ -218,10 +222,6 @@ def configure(conf):
     conf.CHECK_DECLS('errno', headers='errno.h', reverse=True)
     conf.CHECK_DECLS('environ getgrent_r getpwent_r', reverse=True, headers='pwd.h grp.h')
     conf.CHECK_DECLS('pread pwrite setenv setresgid setresuid', reverse=True)
-
-    conf.CHECK_SIZEOF('char int "long long" long off_t short size_t ssize_t')
-    conf.CHECK_SIZEOF('dev_t ino_t time_t')
-    conf.CHECK_SIZEOF('void*', define='SIZEOF_VOID_P')
 
     if conf.CONFIG_SET('HAVE_EPOLL_CREATE') and conf.CONFIG_SET('HAVE_SYS_EPOLL_H'):
         conf.DEFINE('HAVE_EPOLL', 1)
