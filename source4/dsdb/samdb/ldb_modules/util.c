@@ -1108,3 +1108,33 @@ void dsdb_req_chain_debug(struct ldb_request *req, int level)
 	DEBUG(level, ("%s\n", s));
 	talloc_free(s);
 }
+
+/*
+ * Gets back a single-valued attribute by the rules of the DSDB triggers when
+ * performing a modify operation.
+ *
+ * In order that the constraint checking by the "objectclass_attrs" LDB module
+ * does work properly, the change request should remain similar or only be
+ * enhanced (no other modifications as deletions, variations).
+ */
+struct ldb_message_element *dsdb_get_single_valued_attr(struct ldb_message *msg,
+							const char *attr_name)
+{
+	struct ldb_message_element *el = NULL;
+	unsigned int i;
+
+	/* We've to walk over all modification entries and consider the last
+	 * non-delete one which belongs to "attr_name".
+	 *
+	 * If "el" is NULL afterwards then that means there was no interesting
+	 * change entry. */
+	for (i = 0; i < msg->num_elements; i++) {
+		if ((ldb_attr_cmp(msg->elements[i].name, attr_name) == 0) &&
+		    (LDB_FLAG_MOD_TYPE(msg->elements[i].flags)
+						!= LDB_FLAG_MOD_DELETE)) {
+			el = &msg->elements[i];
+		}
+	}
+
+	return el;
+}

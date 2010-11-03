@@ -757,53 +757,6 @@ static int samldb_schema_info_update(struct samldb_ctx *ac)
 }
 
 /*
- * Gets back a single-valued attribute by the rules of the SAM triggers when
- * performing a modify operation
- */
-static int samldb_get_single_valued_attr(struct samldb_ctx *ac,
-					 const char *attr_name,
-					 struct ldb_message_element **attr)
-{
-	struct ldb_context *ldb = ldb_module_get_ctx(ac->module);
-	struct ldb_message_element *el = NULL;
-	unsigned int i;
-
-	/* We've to walk over all modification entries and consider the
-	 * "attr_name" ones.
-	 *
-	 * 1.) Add operations aren't allowed and there is returned
-	 *     "ATTRIBUTE_OR_VALUE_EXISTS".
-	 * 2.) Replace operations are allowed but the last one is taken
-	 * 3.) Delete operations are also not allowed and there is returned
-	 *     "UNWILLING_TO_PERFORM".
-	 *
-	 * If "el" is afterwards NULL then that means we've nothing to do here.
-	 */
-	for (i = 0; i < ac->msg->num_elements; i++) {
-		if (ldb_attr_cmp(ac->msg->elements[i].name, attr_name) != 0) {
-			continue;
-		}
-
-		el = &ac->msg->elements[i];
-		if (LDB_FLAG_MOD_TYPE(el->flags) == LDB_FLAG_MOD_ADD) {
-			ldb_asprintf_errstring(ldb,
-					       "samldb: attribute '%s' already exists!",
-					       attr_name);
-			return LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS;
-		}
-		if (LDB_FLAG_MOD_TYPE(el->flags) == LDB_FLAG_MOD_DELETE) {
-			ldb_asprintf_errstring(ldb,
-					       "samldb: attribute '%s' cannot be deleted!",
-					       attr_name);
-			return LDB_ERR_UNWILLING_TO_PERFORM;
-		}
-	}
-
-	*attr = el;
-	return LDB_SUCCESS;
-}
-
-/*
  * "Objectclass" trigger (MS-SAMR 3.1.1.8.1)
  *
  * Has to be invoked on "add" and "modify" operations on "user", "computer" and
@@ -1056,10 +1009,7 @@ static int samldb_prim_group_change(struct samldb_ctx *ac)
 	struct ldb_dn *prev_prim_group_dn, *new_prim_group_dn;
 	int ret;
 
-	ret = samldb_get_single_valued_attr(ac, "primaryGroupID", &el);
-	if (ret != LDB_SUCCESS) {
-		return ret;
-	}
+	el = dsdb_get_single_valued_attr(ac->msg, "primaryGroupID");
 	if (el == NULL) {
 		/* we are not affected */
 		return LDB_SUCCESS;
@@ -1204,10 +1154,7 @@ static int samldb_user_account_control_change(struct samldb_ctx *ac)
 	struct ldb_message *tmp_msg;
 	int ret;
 
-	ret = samldb_get_single_valued_attr(ac, "userAccountControl", &el);
-	if (ret != LDB_SUCCESS) {
-		return ret;
-	}
+	el = dsdb_get_single_valued_attr(ac->msg, "userAccountControl");
 	if (el == NULL) {
 		/* we are not affected */
 		return LDB_SUCCESS;
@@ -1280,10 +1227,7 @@ static int samldb_group_type_change(struct samldb_ctx *ac)
 	struct ldb_message *tmp_msg;
 	int ret;
 
-	ret = samldb_get_single_valued_attr(ac, "groupType", &el);
-	if (ret != LDB_SUCCESS) {
-		return ret;
-	}
+	el = dsdb_get_single_valued_attr(ac->msg, "groupType");
 	if (el == NULL) {
 		/* we are not affected */
 		return LDB_SUCCESS;
@@ -1369,10 +1313,7 @@ static int samldb_sam_accountname_check(struct samldb_ctx *ac)
 	struct ldb_message *tmp_msg;
 	int ret;
 
-	ret = samldb_get_single_valued_attr(ac, "sAMAccountName", &el);
-	if (ret != LDB_SUCCESS) {
-		return ret;
-	}
+	el = dsdb_get_single_valued_attr(ac->msg, "sAMAccountName");
 	if (el == NULL) {
 		/* we are not affected */
 		return LDB_SUCCESS;
@@ -1529,27 +1470,8 @@ static int samldb_service_principal_names_change(struct samldb_ctx *ac)
 	unsigned int i;
 	int ret;
 
-	/* Here it's not the same logic as with "samldb_get_single_valued_attr".
-	 * We need to:
-	 *
-	 * - consider "add" and "replace" operations - the last value we take
-	 * - ignore "delete" operations - obviously this attribute isn't
-	 *   write protected
-	 */
-	for (i = 0; i < ac->msg->num_elements; i++) {
-		if ((ldb_attr_cmp(ac->msg->elements[i].name,
-				  "dNSHostName") == 0) &&
-		    (LDB_FLAG_MOD_TYPE(ac->msg->elements[i].flags)
-				       != LDB_FLAG_MOD_DELETE)) {
-			el = &ac->msg->elements[i];
-		}
-		if ((ldb_attr_cmp(ac->msg->elements[i].name,
-				  "sAMAccountName") == 0) &&
-		    (LDB_FLAG_MOD_TYPE(ac->msg->elements[i].flags)
-				       != LDB_FLAG_MOD_DELETE)) {
-			el2 = &ac->msg->elements[i];
-		}
-	}
+	el = dsdb_get_single_valued_attr(ac->msg, "dNSHostName");
+	el2 = dsdb_get_single_valued_attr(ac->msg, "sAMAccountName");
 	if ((el == NULL) && (el2 == NULL)) {
 		/* we are not affected */
 		return LDB_SUCCESS;
