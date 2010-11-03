@@ -247,6 +247,7 @@ class FilterOps(testtools.testresult.TestResult):
             self.output+=msg
 
     def startTest(self, test):
+        self.seen_output = True
         test = self._add_prefix(test)
         if self.strip_ok_output:
            self.output = ""
@@ -269,6 +270,7 @@ class FilterOps(testtools.testresult.TestResult):
             raise ImmediateFail()
 
     def addSkip(self, test, details=None):
+        self.seen_output = True
         test = self._add_prefix(test)
         self._ops.addSkip(test, details)
         self.output = None
@@ -341,6 +343,7 @@ class FilterOps(testtools.testresult.TestResult):
     def __init__(self, out, prefix=None, expected_failures=None,
                  strip_ok_output=False, fail_immediately=False):
         self._ops = out
+        self.seen_output = False
         self.output = None
         self.prefix = prefix
         if expected_failures is not None:

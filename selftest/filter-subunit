@@ -21,10 +21,10 @@ parser.add_option("--strip-passed-output", action="store_true",
     help="Whether to strip output from tests that passed")
 parser.add_option("--fail-immediately", action="store_true", 
     help="Whether to stop on the first error", default=False)
-
 parser.add_option("--prefix", type="string",
 	help="Add prefix to all test names")
-
+parser.add_option("--fail-on-empty", default=False,
+	action="store_true", help="Fail if there was no subunit output")
 opts, args = parser.parse_args()
 
 if opts.expected_failures:
@@ -51,7 +51,12 @@ msg_ops = subunithelper.FilterOps(out, opts.prefix, expected_failures,
 				  fail_immediately=opts.fail_immediately)
 
 try:
-	sys.exit(subunithelper.parse_results(msg_ops, statistics, sys.stdin))
+	ret = subunithelper.parse_results(msg_ops, statistics, sys.stdin)
 except subunithelper.ImmediateFail:
 	sys.stdout.flush()
 	sys.exit(1)
+
+if opts.fail_on_empty and not msg_ops.seen_output:
+	sys.exit(1)
+else:
+	sys.exit(ret)
