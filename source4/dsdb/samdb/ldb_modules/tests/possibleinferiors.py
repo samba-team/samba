@@ -87,7 +87,7 @@ def possible_inferiors_search(db, oc):
         poss.append(str(item))
     poss = uniq_list(poss)
     poss.sort()
-    return poss;
+    return poss
 
 
 
@@ -104,7 +104,7 @@ def supclasses(classinfo, oc):
         return list
     if classinfo[oc].get("SUPCLASSES") is not None:
         return classinfo[oc]["SUPCLASSES"]
-    res = classinfo[oc]["subClassOf"];
+    res = classinfo[oc]["subClassOf"]
     for r in res:
         list.append(r)
         list.extend(supclasses(classinfo,r))
@@ -222,16 +222,20 @@ def possible_inferiors_constructed(db, classinfo, c):
 
 def test_class(db, classinfo, oc):
     """test to see if one objectclass returns the correct possibleInferiors"""
-    print "Testing objectClass %s" % oc
+    print "test: objectClass.%s" % oc
     poss1 = possible_inferiors_search(db, oc)
     poss2 = possible_inferiors_constructed(db, classinfo, oc)
     if poss1 != poss2:
+        print "failure: objectClass.%s [" % oc
         print "Returned incorrect list for objectclass %s" % oc
         print "search:      %s" % poss1
         print "constructed: %s" % poss2
         for i in range(0,min(len(poss1),len(poss2))):
             print "%30s %30s" % (poss1[i], poss2[i])
-        exit(1)
+        print "]"
+        sys.exit(1)
+    else:
+        print "success: objectClass.%s" % oc
 
 def get_object_classes(db):
     """return a list of all object classes"""
