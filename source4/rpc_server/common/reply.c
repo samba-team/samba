@@ -206,7 +206,8 @@ _PUBLIC_ NTSTATUS dcesrv_reply(struct dcesrv_call_state *call)
 		length = MIN(chunk_size, stub.length);
 
 		/* form the dcerpc response packet */
-		dcesrv_init_hdr(&pkt, lpcfg_rpc_big_endian(call->conn->dce_ctx->lp_ctx));
+		dcesrv_init_hdr(&pkt,
+				lpcfg_rpc_big_endian(call->conn->dce_ctx->lp_ctx));
 		pkt.auth_length = 0;
 		pkt.call_id = call->pkt.call_id;
 		pkt.ptype = DCERPC_PKT_RESPONSE;

@@ -395,8 +395,8 @@ bool dcesrv_auth_response(struct dcesrv_call_state *call,
 
 	case DCERPC_AUTH_LEVEL_CONNECT:
 		/*
-		 * TODO: let the gensec mech decide if it wants to generate a signature
-		 *       that might be needed for schannel...
+		 * TODO: let the gensec mech decide if it wants to generate a
+		 *       signature that might be needed for schannel...
 		 */
 		status = ncacn_push_auth(blob, call, pkt, NULL);
 		return NT_STATUS_IS_OK(status);
@@ -430,7 +430,8 @@ bool dcesrv_auth_response(struct dcesrv_call_state *call,
 	   of the stub */
 	dce_conn->auth_state.auth_info->auth_pad_length =
 		(16 - (pkt->u.response.stub_and_verifier.length & 15)) & 15;
-	ndr_err = ndr_push_zero(ndr, dce_conn->auth_state.auth_info->auth_pad_length);
+	ndr_err = ndr_push_zero(ndr,
+				dce_conn->auth_state.auth_info->auth_pad_length);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		return false;
 	}
@@ -443,7 +444,7 @@ bool dcesrv_auth_response(struct dcesrv_call_state *call,
 
 	/* add the auth verifier */
 	ndr_err = ndr_push_dcerpc_auth(ndr, NDR_SCALARS|NDR_BUFFERS,
-				      dce_conn->auth_state.auth_info);
+				       dce_conn->auth_state.auth_info);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		return false;
 	}

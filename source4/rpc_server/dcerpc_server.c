@@ -1046,8 +1046,8 @@ NTSTATUS dcesrv_process_ncacn_packet(struct dcesrv_connection *dce_conn,
 			return dcesrv_fault(call2, DCERPC_FAULT_OTHER);
 		}
 
-		/* this is a continuation of an existing call - find the call then
-		   tack it on the end */
+		/* this is a continuation of an existing call - find the call
+		   then tack it on the end */
 		call = dcesrv_find_fragmented_call(dce_conn, call2->pkt.call_id);
 		if (!call) {
 			return dcesrv_fault(call2, DCERPC_FAULT_OTHER);
