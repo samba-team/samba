@@ -27,13 +27,13 @@ __docformat__ = "restructuredText"
 import os
 import sys
 
-def _in_source_tree():
+def in_source_tree():
     """Check whether the script is being run from the source dir. """
     return os.path.exists("%s/../../../selftest/skip" % os.path.dirname(__file__))
 
 
 # When running, in-tree, make sure bin/python is in the PYTHONPATH
-if _in_source_tree():
+if in_source_tree():
     srcdir = "%s/../../.." % os.path.dirname(__file__)
     sys.path.append("%s/bin/python" % srcdir)
     default_ldb_modules_dir = "%s/bin/modules/ldb" % srcdir
@@ -312,7 +312,7 @@ def ensure_external_module(modulename, location):
     try:
         __import__(modulename)
     except ImportError:
-        if _in_source_tree():
+        if in_source_tree():
             sys.path.insert(0, 
                 os.path.join(os.path.dirname(__file__),
                              "../../../../lib", location))
