@@ -592,7 +592,7 @@ class SamTests(unittest.TestCase):
 
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
-        m["groupType"] = MessageElement("0", FLAG_MOD_ADD,
+        m["groupType"] = MessageElement(str(GTYPE_SECURITY_GLOBAL_GROUP), FLAG_MOD_ADD,
           "groupType")
         try:
             ldb.modify(m)
@@ -612,7 +612,7 @@ class SamTests(unittest.TestCase):
 
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
-        m["primaryGroupID"] = MessageElement("0", FLAG_MOD_ADD,
+        m["primaryGroupID"] = MessageElement("513", FLAG_MOD_ADD,
           "primaryGroupID")
         try:
             ldb.modify(m)
@@ -632,7 +632,7 @@ class SamTests(unittest.TestCase):
 
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
-        m["userAccountControl"] = MessageElement("0", FLAG_MOD_ADD,
+        m["userAccountControl"] = MessageElement(str(UF_NORMAL_ACCOUNT | UF_PASSWD_NOTREQD), FLAG_MOD_ADD,
           "userAccountControl")
         try:
             ldb.modify(m)
