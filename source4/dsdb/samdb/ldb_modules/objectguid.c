@@ -35,19 +35,6 @@
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "param/param.h"
 
-static struct ldb_message_element *objectguid_find_attribute(const struct ldb_message *msg, const char *name)
-{
-	unsigned int i;
-
-	for (i = 0; i < msg->num_elements; i++) {
-		if (ldb_attr_cmp(name, msg->elements[i].name) == 0) {
-			return &msg->elements[i];
-		}
-	}
-
-	return NULL;
-}
-
 /*
   add a time element to a record
 */
@@ -140,7 +127,6 @@ static int objectguid_add(struct ldb_module *module, struct ldb_request *req)
 {
 	struct ldb_context *ldb;
 	struct ldb_request *down_req;
-	struct ldb_message_element *attribute;
 	struct ldb_message *msg;
 	struct GUID guid;
 	uint64_t seq_num;
@@ -157,7 +143,7 @@ static int objectguid_add(struct ldb_module *module, struct ldb_request *req)
 		return ldb_next_request(module, req);
 	}
 
-	if ((attribute = objectguid_find_attribute(req->op.add.message, "objectGUID")) != NULL ) {
+	if (ldb_msg_find_element(req->op.add.message, "objectGUID") != NULL) {
 		return ldb_next_request(module, req);
 	}
 
@@ -189,8 +175,6 @@ static int objectguid_add(struct ldb_module *module, struct ldb_request *req)
 	}
 
 	/* Get a sequence number from the backend */
-	/* FIXME: ldb_sequence_number is a semi-async call,
-	 * make sure this function is split and a callback is used */
 	ret = ldb_sequence_number(ldb, LDB_SEQ_NEXT, &seq_num);
 	if (ret == LDB_SUCCESS) {
 		if (add_uint64_element(ldb, msg, "uSNCreated",
