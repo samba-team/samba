@@ -132,3 +132,8 @@ def test(ctx):
 def dist():
     '''makes a tarball for distribution'''
     samba_dist.dist()
+
+def reconfigure(ctx):
+    '''reconfigure if config scripts have changed'''
+    import samba_utils
+    samba_utils.reconfigure(ctx)
