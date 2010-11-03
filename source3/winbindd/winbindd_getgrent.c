@@ -187,6 +187,7 @@ NTSTATUS winbindd_getgrent_recv(struct tevent_req *req,
 	if (result == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
+	state->groups = (struct winbindd_gr *)result;
 
 	for (i=0; i<state->num_groups; i++) {
 		memcpy(result + base_memberofs + state->groups[i].gr_mem_ofs,
