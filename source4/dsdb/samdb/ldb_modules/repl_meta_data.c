@@ -4090,7 +4090,9 @@ linked_attributes[0]:
 		return ret;
 	}
 
-	ret = dsdb_module_modify(module, msg, DSDB_FLAG_NEXT_MODULE | DSDB_MODIFY_RELAX);
+	old_el->flags |= LDB_FLAG_INTERNAL_DISABLE_SINGLE_VALUE_CHECK;
+
+	ret = dsdb_module_modify(module, msg, DSDB_FLAG_NEXT_MODULE);
 	if (ret != LDB_SUCCESS) {
 		ldb_debug(ldb, LDB_DEBUG_WARNING, "Failed to apply linked attribute change '%s'\n%s\n",
 			  ldb_errstring(ldb),

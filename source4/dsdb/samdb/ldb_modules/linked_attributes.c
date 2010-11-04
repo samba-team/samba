@@ -681,7 +681,11 @@ static int linked_attributes_fix_links(struct ldb_module *module,
 			return ret;
 		}
 
-		ret = dsdb_module_modify(module, msg, DSDB_FLAG_NEXT_MODULE | DSDB_MODIFY_RELAX);
+		/* we may be putting multiple values in an attribute -
+		   disable checking for this attribute */
+		el2->flags |= LDB_FLAG_INTERNAL_DISABLE_SINGLE_VALUE_CHECK;
+
+		ret = dsdb_module_modify(module, msg, DSDB_FLAG_NEXT_MODULE);
 		if (ret != LDB_SUCCESS) {
 			ldb_asprintf_errstring(ldb, "Linked attribute %s->%s between %s and %s - update failed - %s",
 					       el->name, target->lDAPDisplayName,
