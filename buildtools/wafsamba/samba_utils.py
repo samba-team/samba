@@ -67,7 +67,7 @@ def install_rpath(bld):
     '''the rpath value for installation'''
     bld.env['RPATH'] = []
     if bld.env.RPATH_ON_INSTALL:
-        return ['%s/lib' % bld.env.PREFIX]
+        return [bld.env.LIBDIR]
     return []
 
 
