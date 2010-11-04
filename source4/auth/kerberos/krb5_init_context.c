@@ -527,9 +527,7 @@ krb5_error_code smb_krb5_context_set_event_ctx(struct smb_krb5_context *smb_krb5
 		return EINVAL;
 	}
 
-	if (smb_krb5_context->current_ev) {
-		*previous_ev = smb_krb5_context->current_ev;
-	}
+	*previous_ev = smb_krb5_context->current_ev;
 
 	smb_krb5_context->current_ev = talloc_reference(smb_krb5_context, ev);
 	if (!smb_krb5_context->current_ev) {
