@@ -80,6 +80,7 @@ ssize_t lzxpress_compress(const uint8_t *uncompressed,
 
 	uncompressed_pos = 0;
 	indic = 0;
+	*(uint32_t *)compressed = 0;
 	compressed_pos = sizeof(uint32_t);
 	indic_pos = &compressed[0];
 
@@ -223,6 +224,7 @@ ssize_t lzxpress_compress(const uint8_t *uncompressed,
 		for (; (indic_bit % 32) != 0; indic_bit++)
 			indic |= 0 << (32 - ((indic_bit % 32) + 1));
 
+		*(uint32_t *)&compressed[compressed_pos] = 0;
 		*(uint32_t *)indic_pos = indic;
 		compressed_pos += sizeof(uint32_t);
 	}
