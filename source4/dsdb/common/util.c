@@ -1383,7 +1383,7 @@ struct ldb_dn *samdb_ntds_settings_dn(struct ldb_context *ldb)
 	settings_dn = ldb_msg_find_attr_as_dn(ldb, tmp_ctx, root_res->msgs[0], "dsServiceName");
 
 	/* cache the domain_sid in the ldb */
-	if (ldb_set_opaque(ldb, "cache.settings_dn", settings_dn) != LDB_SUCCESS) {
+	if (ldb_set_opaque(ldb, "cache.ntds_settings_dn", settings_dn) != LDB_SUCCESS) {
 		goto failed;
 	}
 
