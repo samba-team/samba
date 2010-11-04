@@ -2158,12 +2158,12 @@ NTSTATUS cli_get_fs_attr_info_recv(struct tevent_req *req, uint32_t *fs_attr);
 NTSTATUS cli_get_fs_attr_info(struct cli_state *cli, uint32_t *fs_attr);
 NTSTATUS cli_get_fs_volume_info(struct cli_state *cli, fstring volume_name,
 				uint32 *pserial_number, time_t *pdate);
-bool cli_get_fs_full_size_info(struct cli_state *cli,
-                               uint64_t *total_allocation_units,
-                               uint64_t *caller_allocation_units,
-                               uint64_t *actual_allocation_units,
-                               uint64_t *sectors_per_allocation_unit,
-                               uint64_t *bytes_per_sector);
+NTSTATUS cli_get_fs_full_size_info(struct cli_state *cli,
+				   uint64_t *total_allocation_units,
+				   uint64_t *caller_allocation_units,
+				   uint64_t *actual_allocation_units,
+				   uint64_t *sectors_per_allocation_unit,
+				   uint64_t *bytes_per_sector);
 bool cli_get_posix_fs_info(struct cli_state *cli,
                            uint32 *optimal_transfer_size,
                            uint32 *block_size,

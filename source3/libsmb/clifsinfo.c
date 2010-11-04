@@ -405,47 +405,33 @@ NTSTATUS cli_get_fs_volume_info(struct cli_state *cli, fstring volume_name,
 	return NT_STATUS_OK;
 }
 
-bool cli_get_fs_full_size_info(struct cli_state *cli,
-                               uint64_t *total_allocation_units,
-                               uint64_t *caller_allocation_units,
-                               uint64_t *actual_allocation_units,
-                               uint64_t *sectors_per_allocation_unit,
-                               uint64_t *bytes_per_sector)
+NTSTATUS cli_get_fs_full_size_info(struct cli_state *cli,
+				   uint64_t *total_allocation_units,
+				   uint64_t *caller_allocation_units,
+				   uint64_t *actual_allocation_units,
+				   uint64_t *sectors_per_allocation_unit,
+				   uint64_t *bytes_per_sector)
 {
-	bool ret = False;
-	uint16 setup;
-	char param[2];
-	char *rparam=NULL, *rdata=NULL;
-	unsigned int rparam_count=0, rdata_count=0;
+	uint16 setup[1];
+	uint8_t param[2];
+	uint8_t *rdata = NULL;
+	uint32_t rdata_count;
+	NTSTATUS status;
 
-	setup = TRANSACT2_QFSINFO;
+	SSVAL(setup, 0, TRANSACT2_QFSINFO);
+	SSVAL(param, 0, SMB_FS_FULL_SIZE_INFORMATION);
 
-	SSVAL(param,0,SMB_FS_FULL_SIZE_INFORMATION);
-
-	if (!cli_send_trans(cli, SMBtrans2,
-		    NULL,
-		    0, 0,
-		    &setup, 1, 0,
-		    param, 2, 0,
-		    NULL, 0, 560)) {
-		goto cleanup;
-	}
-
-	if (!cli_receive_trans(cli, SMBtrans2,
-                              &rparam, &rparam_count,
-                              &rdata, &rdata_count)) {
-		goto cleanup;
-	}
-
-	if (cli_is_error(cli)) {
-		ret = False;
-		goto cleanup;
-	} else {
-		ret = True;
-	}
-
-	if (rdata_count != 32) {
-		goto cleanup;
+	status = cli_trans(talloc_tos(), cli, SMBtrans2,
+			   NULL, 0, 0, 0,
+			   setup, 1, 0, /* setup */
+			   param, 2, 0,	 /* param */
+			   NULL, 0, 560, /* data */
+			   NULL,
+			   NULL, 0, NULL, /* rsetup */
+			   NULL, 0, NULL, /* rparam */
+			   &rdata, 32, &rdata_count);  /* rdata */
+	if (!NT_STATUS_IS_OK(status)) {
+		goto fail;
 	}
 
 	if (total_allocation_units) {
@@ -464,11 +450,9 @@ bool cli_get_fs_full_size_info(struct cli_state *cli,
 		*bytes_per_sector = IVAL(rdata,28);
 	}
 
-cleanup:
-	SAFE_FREE(rparam);
-	SAFE_FREE(rdata);
-
-	return ret;
+fail:
+	TALLOC_FREE(rdata);
+	return status;
 }
 
 bool cli_get_posix_fs_info(struct cli_state *cli,

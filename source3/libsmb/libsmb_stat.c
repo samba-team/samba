@@ -377,14 +377,16 @@ SMBC_fstatvfs_ctx(SMBCCTX *context,
                 uint64_t actual_allocation_units;
                 uint64_t sectors_per_allocation_unit;
                 uint64_t bytes_per_sector;
+		NTSTATUS status;
 
                 /* Nope. If size data is available... */
-                if (cli_get_fs_full_size_info(cli,
-                                              &total_allocation_units,
-                                              &caller_allocation_units,
-                                              &actual_allocation_units,
-                                              &sectors_per_allocation_unit,
-                                              &bytes_per_sector)) {
+		status = cli_get_fs_full_size_info(cli,
+						   &total_allocation_units,
+						   &caller_allocation_units,
+						   &actual_allocation_units,
+						   &sectors_per_allocation_unit,
+						   &bytes_per_sector);
+		if (NT_STATUS_IS_OK(status)) {
 
                         /* ... then provide it */
                         st->f_bsize =
