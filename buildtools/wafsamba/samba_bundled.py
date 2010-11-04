@@ -4,11 +4,14 @@ from Configure import conf
 import Logs
 from samba_utils import *
 
-def PRIVATE_NAME(bld, name, bundled_extension, private_library):
+def PRIVATE_NAME(bld, name, private_extension, private_library):
     '''possibly rename a library to include a bundled extension'''
-    if bld.env.DISABLE_SHARED or not bundled_extension:
+    if bld.env.DISABLE_SHARED or not private_extension:
         return name
     if name in bld.env.PRIVATE_EXTENSION_EXCEPTION and not private_library:
+        return name
+    if private_library and bld.EXPAND_VARIABLES(bld.env.LIBDIR) != bld.EXPAND_VARIABLES(bld.env.PRIVATELIBDIR):
+        # Private libraries already have their own namespace in another way
         return name
     extension = getattr(bld.env, 'PRIVATE_EXTENSION', '')
     if extension:
