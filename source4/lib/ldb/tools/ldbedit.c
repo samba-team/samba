@@ -300,6 +300,7 @@ int main(int argc, const char **argv)
 	const char *expression = "(|(objectClass=*)(distinguishedName=*))";
 	const char * const * attrs = NULL;
 	TALLOC_CTX *mem_ctx = talloc_new(NULL);
+	struct ldb_control **req_ctrls;
 
 	ldb = ldb_init(mem_ctx, NULL);
 
@@ -325,7 +326,13 @@ int main(int argc, const char **argv)
 		}
 	}
 
-	ret = ldb_search(ldb, ldb, &result, basedn, options->scope, attrs, "%s", expression);
+	req_ctrls = ldb_parse_control_strings(ldb, ldb, (const char **)options->controls);
+	if (options->controls != NULL &&  req_ctrls== NULL) {
+		printf("parsing controls failed: %s\n", ldb_errstring(ldb));
+		return -1;
+	}
+
+	ret = ldb_search_ctrl(ldb, ldb, &result, basedn, options->scope, attrs, req_ctrls, "%s", expression);
 	if (ret != LDB_SUCCESS) {
 		printf("search failed - %s\n", ldb_errstring(ldb));
 		exit(1);
