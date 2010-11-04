@@ -2612,7 +2612,7 @@ static int replmd_delete(struct ldb_module *module, struct ldb_request *req)
 			talloc_free(tmp_ctx);
 			return ret;
 		}
-		msg->elements[el_count++].flags = LDB_FLAG_MOD_ADD;
+		msg->elements[el_count++].flags = LDB_FLAG_MOD_REPLACE;
 	}
 
 	/*
