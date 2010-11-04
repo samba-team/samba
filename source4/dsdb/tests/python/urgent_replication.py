@@ -17,6 +17,7 @@ from ldb import (SCOPE_BASE, LdbError, ERR_NO_SUCH_OBJECT, Message,
     MessageElement, Dn, FLAG_MOD_REPLACE)
 from samba.samdb import SamDB
 import samba.tests
+import samba.dsdb as dsdb
 
 from subunit.run import SubunitTestRunner
 import unittest
@@ -315,7 +316,7 @@ rIDAvailablePool: 133001-1073741823""", ["relax:0"])
             "dn": "cn=user UrgAttr test,cn=users," + self.base_dn,
             "objectclass":"user",
             "samaccountname":"user UrgAttr test",
-            "userAccountControl":"1",
+            "userAccountControl":str(dsdb.UF_NORMAL_ACCOUNT),
             "lockoutTime":"0",
             "pwdLastSet":"0",
             "description":"urgent attributes test description"})
@@ -327,7 +328,7 @@ rIDAvailablePool: 133001-1073741823""", ["relax:0"])
         # urgent replication should be enabled when modifying userAccountControl 
         m = Message()
         m.dn = Dn(ldb, "cn=user UrgAttr test,cn=users," + self.base_dn)
-        m["userAccountControl"] = MessageElement("0", FLAG_MOD_REPLACE,
+        m["userAccountControl"] = MessageElement(str(dsdb.UF_NORMAL_ACCOUNT+dsdb.UF_SMARTCARD_REQUIRED), FLAG_MOD_REPLACE,
           "userAccountControl")
         ldb.modify(m)
         res = self.ldb.load_partition_usn(self.base_dn)
