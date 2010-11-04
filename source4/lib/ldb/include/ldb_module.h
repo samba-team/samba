@@ -43,6 +43,9 @@ struct ldb_module;
  */
 #define LDB_FLAG_INTERNAL_DISABLE_VALIDATION 0x10
 
+/* disable any single value checking on this attribute */
+#define LDB_FLAG_INTERNAL_DISABLE_SINGLE_VALUE_CHECK 0x20
+
 
 /*
    these function pointers define the operations that a ldb module can intercept

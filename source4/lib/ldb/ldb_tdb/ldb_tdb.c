@@ -301,7 +301,8 @@ static int ltdb_add_internal(struct ldb_module *module,
 					       el->name, ldb_dn_get_linearized(msg->dn));
 			return LDB_ERR_CONSTRAINT_VIOLATION;
 		}
-		if (a && a->flags & LDB_ATTR_FLAG_SINGLE_VALUE) {
+		if (a && (a->flags & LDB_ATTR_FLAG_SINGLE_VALUE) &&
+		    !(el->flags & LDB_FLAG_INTERNAL_DISABLE_SINGLE_VALUE_CHECK)) {
 			if (el->num_values > 1) {
 				ldb_asprintf_errstring(ldb, "SINGLE-VALUE attribute %s on %s specified more than once",
 						       el->name, ldb_dn_get_linearized(msg->dn));
@@ -695,7 +696,8 @@ int ltdb_modify_internal(struct ldb_module *module,
 				}
 			}
 
-			if (a && a->flags & LDB_ATTR_FLAG_SINGLE_VALUE) {
+			if (a && (a->flags & LDB_ATTR_FLAG_SINGLE_VALUE) &&
+			    !(el->flags & LDB_FLAG_INTERNAL_DISABLE_SINGLE_VALUE_CHECK)) {
 				if (el->num_values > 1) {
 					ldb_asprintf_errstring(ldb, "SINGLE-VALUE attribute %s on %s specified more than once",
 						               el->name, ldb_dn_get_linearized(msg2->dn));
@@ -722,7 +724,8 @@ int ltdb_modify_internal(struct ldb_module *module,
 
 				/* We cannot add another value on a existing one
 				   if the attribute is single-valued */
-				if (a && a->flags & LDB_ATTR_FLAG_SINGLE_VALUE) {
+				if (a && (a->flags & LDB_ATTR_FLAG_SINGLE_VALUE) &&
+				    !(el->flags & LDB_FLAG_INTERNAL_DISABLE_SINGLE_VALUE_CHECK)) {
 					ldb_asprintf_errstring(ldb, "SINGLE-VALUE attribute %s on %s specified more than once",
 						               el->name, ldb_dn_get_linearized(msg2->dn));
 					ret = LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS;
@@ -788,16 +791,9 @@ int ltdb_modify_internal(struct ldb_module *module,
 
 		case LDB_FLAG_MOD_REPLACE:
 
-			if (a && a->flags & LDB_ATTR_FLAG_SINGLE_VALUE) {
-				/* the RELAX control overrides this
-				   check for replace. This is needed as
-				   DRS replication can produce multiple
-				   values here for a single valued
-				   attribute when the values are deleted
-				   links
-				*/
-				if (el->num_values > 1 &&
-				    (!req || !ldb_request_get_control(req, LDB_CONTROL_RELAX_OID))) {
+			if (a && (a->flags & LDB_ATTR_FLAG_SINGLE_VALUE) &&
+			    !(el->flags & LDB_FLAG_INTERNAL_DISABLE_SINGLE_VALUE_CHECK)) {
+				if (el->num_values > 1) {
 					ldb_asprintf_errstring(ldb, "SINGLE-VALUE attribute %s on %s specified more than once",
 						               el->name, ldb_dn_get_linearized(msg2->dn));
 					ret = LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS;
