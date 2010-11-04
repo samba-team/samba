@@ -68,9 +68,9 @@ def install_rpath(bld):
     bld.env['RPATH'] = []
     ret = set()
     if bld.env.RPATH_ON_INSTALL:
-        ret.add(bld.env.LIBDIR)
+        ret.add(bld.EXPAND_VARIABLES(bld.env.LIBDIR))
     if bld.env.RPATH_ON_INSTALL_PRIVATE:
-        ret.add(bld.env.PRIVATELIBDIR)
+        ret.add(bld.EXPAND_VARIABLES(bld.env.PRIVATELIBDIR))
     return list(ret)
 
 
