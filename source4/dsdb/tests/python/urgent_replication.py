@@ -139,7 +139,7 @@ systemFlags: 33554432""", ["relax:0"])
                       "nCName": self.base_dn,
                       "showInAdvancedViewOnly": "TRUE",
                       "name": "test crossRef",
-                      "systemFlags": "1", ["relax:0"]})
+                      "systemFlags": "1"}, ["relax:0"])
 
         # urgent replication should be enabled when creating
         res = self.ldb.load_partition_usn("cn=Configuration," + self.base_dn)
