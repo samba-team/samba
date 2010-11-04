@@ -34,23 +34,6 @@ struct deferred_open_record {
         struct file_id id;
 };
 
-static NTSTATUS create_file_unixpath(connection_struct *conn,
-				     struct smb_request *req,
-				     struct smb_filename *smb_fname,
-				     uint32_t access_mask,
-				     uint32_t share_access,
-				     uint32_t create_disposition,
-				     uint32_t create_options,
-				     uint32_t file_attributes,
-				     uint32_t oplock_request,
-				     uint64_t allocation_size,
-				     uint32_t private_flags,
-				     struct security_descriptor *sd,
-				     struct ea_list *ea_list,
-
-				     files_struct **result,
-				     int *pinfo);
-
 /****************************************************************************
  SMB1 file varient of se_access_check. Never test FILE_READ_ATTRIBUTES.
 ****************************************************************************/
