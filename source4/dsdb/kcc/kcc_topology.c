@@ -1731,6 +1731,7 @@ static NTSTATUS kcctpl_copy_output_edges(struct kccsrv_service *service,
 	}
 
 	talloc_steal(mem_ctx, copy.data);
+	talloc_free(tmp_ctx);
 	*_copy = copy;
 	return NT_STATUS_OK;
 }
