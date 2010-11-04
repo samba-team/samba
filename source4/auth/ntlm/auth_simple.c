@@ -35,6 +35,7 @@ _PUBLIC_ NTSTATUS authenticate_username_pw(TALLOC_CTX *mem_ctx,
 					   const char *nt4_domain,
 					   const char *nt4_username,
 					   const char *password,
+					   const uint32_t logon_parameters,
 					   struct auth_session_info **session_info) 
 {
 	struct auth_context *auth_context;
@@ -78,7 +79,9 @@ _PUBLIC_ NTSTATUS authenticate_username_pw(TALLOC_CTX *mem_ctx,
 	user_info->flags = USER_INFO_CASE_INSENSITIVE_USERNAME |
 		USER_INFO_DONT_CHECK_UNIX_ACCOUNT;
 
-	user_info->logon_parameters = 0;
+	user_info->logon_parameters = logon_parameters |
+		MSV1_0_CLEARTEXT_PASSWORD_ALLOWED |
+		MSV1_0_CLEARTEXT_PASSWORD_SUPPLIED;
 
 	nt_status = auth_check_password(auth_context, tmp_ctx, user_info, &server_info);
 	if (!NT_STATUS_IS_OK(nt_status)) {

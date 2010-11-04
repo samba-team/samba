@@ -53,6 +53,8 @@ static NTSTATUS ldapsrv_BindSimple(struct ldapsrv_call *call)
 						  call->conn->lp_ctx,
 						  nt4_domain, nt4_account, 
 						  req->creds.password,
+						  MSV1_0_ALLOW_SERVER_TRUST_ACCOUNT |
+						  MSV1_0_ALLOW_WORKSTATION_TRUST_ACCOUNT,
 						  &session_info);
 	}
 

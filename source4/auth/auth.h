@@ -248,13 +248,14 @@ NTSTATUS auth_init(void);
 NTSTATUS auth_register(const struct auth_operations *ops);
 NTSTATUS server_service_auth_init(void);
 NTSTATUS authenticate_username_pw(TALLOC_CTX *mem_ctx,
-					   struct tevent_context *ev,
-					   struct messaging_context *msg,
-					   struct loadparm_context *lp_ctx,
-					   const char *nt4_domain,
-					   const char *nt4_username,
-					   const char *password,
-					   struct auth_session_info **session_info);
+				  struct tevent_context *ev,
+				  struct messaging_context *msg,
+				  struct loadparm_context *lp_ctx,
+				  const char *nt4_domain,
+				  const char *nt4_username,
+				  const char *password,
+				  const uint32_t logon_parameters,
+				  struct auth_session_info **session_info);
 
 struct tevent_req *auth_check_password_send(TALLOC_CTX *mem_ctx,
 					    struct tevent_context *ev,
