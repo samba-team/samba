@@ -48,7 +48,7 @@ def valgrindify(cmdline):
     return valgrind + " " + cmdline
 
 
-def plantestsuite(name, env, cmdline):
+def plantestsuite(name, env, cmdline, allow_empty_output=False):
     """Plan a test suite.
 
     :param name: Testsuite name
@@ -60,7 +60,12 @@ def plantestsuite(name, env, cmdline):
     print env
     if isinstance(cmdline, list):
         cmdline = " ".join(cmdline)
-    print "%s 2>&1 | ../selftest/filter-subunit --prefix=\"%s.\"" % (cmdline, name)
+    filter_subunit_args = []
+    if not allow_empty_output:
+        filter_subunit_args.append("--fail-on-empty")
+    print "%s 2>&1 | ../selftest/filter-subunit %s --prefix=\"%s.\"" % (cmdline, " ".join(filter_subunit_args), name)
+    if allow_empty_output:
+        print "WARNING: allowing empty subunit output from %s" % name
 
 
 def plantestsuite_loadlist(name, env, cmdline):
@@ -73,7 +78,7 @@ def plantestsuite_loadlist(name, env, cmdline):
     print env
     if isinstance(cmdline, list):
         cmdline = " ".join(cmdline)
-    print "%s $LOADLIST 2>&1 | ../selftest/filter-subunit --prefix=\"%s.\"" % (cmdline, fullname)
+    print "%s $LOADLIST 2>&1 | ../selftest/filter-subunit --fail-on-empty --prefix=\"%s.\"" % (cmdline, fullname)
 
 
 def plantestsuite_idlist(name, env, cmdline):
@@ -192,7 +197,7 @@ for t in smb4torture_testsuites("LDAP-"):
 ldbdir = os.path.join(samba4srcdir, "lib/ldb")
 # Don't run LDB tests when using system ldb, as we won't have ldbtest installed
 if os.path.exists(os.path.join(samba4bindir, "ldbtest")):
-    plantestsuite("ldb.base", "none", "TEST_DATA_PREFIX=$PREFIX %s/tests/test-tdb.sh" % ldbdir)
+    plantestsuite("ldb.base", "none", "TEST_DATA_PREFIX=$PREFIX %s/tests/test-tdb.sh" % ldbdir, allow_empty_output=True)
 else:
     skiptestsuite("ldb.base", "Using system LDB, ldbtest not available")
 
@@ -474,7 +479,7 @@ plantestsuite_idlist("samba.tests.dcerpc.registry", "dc:local", [subunitrun, '-U
 plantestsuite("samba4.ldap.python(dc)", "dc", [python, os.path.join(samba4srcdir, "dsdb/tests/python/ldap.py"), '$SERVER', '-U"$USERNAME%$PASSWORD"', '-W', '$DOMAIN'])
 plantestsuite("samba4.sam.python(dc)", "dc", [python, os.path.join(samba4srcdir, "dsdb/tests/python/sam.py"), '$SERVER', '-U"$USERNAME%$PASSWORD"', '-W', '$DOMAIN'])
 plantestsuite("samba4.schemaInfo.python(dc)", "dc", ['PYTHONPATH="$PYTHONPATH:%s"' % os.path.join(samba4srcdir, 'dsdb/tests/python'), subunitrun, 'dsdb_schema_info', '-U"$DOMAIN/$DC_USERNAME%$DC_PASSWORD"'])
-plantestsuite("samba4.urgent_replication.python(dc)", "dc", [python, os.path.join(samba4srcdir, "dsdb/tests/python/urgent_replication.py"), '$PREFIX_ABS/dc/private/sam.ldb'])
+plantestsuite("samba4.urgent_replication.python(dc)", "dc", [python, os.path.join(samba4srcdir, "dsdb/tests/python/urgent_replication.py"), '$PREFIX_ABS/dc/private/sam.ldb'], allow_empty_output=True)
 for env in ["dc", "fl2000dc", "fl2003dc", "fl2008r2dc"]:
     plantestsuite("samba4.ldap_schema.python(%s)" % env, env, [python, os.path.join(samba4srcdir, "dsdb/tests/python/ldap_schema.py"), '$SERVER', '-U"$USERNAME%$PASSWORD"', '-W', '$DOMAIN'])
     plantestsuite("samba4.ldap.possibleInferiors.python(%s)" % env, env, [python, os.path.join(samba4srcdir, "dsdb/samdb/ldb_modules/tests/possibleinferiors.py"), "ldap://$SERVER", '-U"$USERNAME%$PASSWORD"', "-W", "$DOMAIN"])
@@ -487,8 +492,8 @@ planpythontestsuite("none", "samba.tests.xattr")
 planpythontestsuite("none", "samba.tests.ntacls")
 plantestsuite("samba4.deletetest.python(dc)", "dc", ['PYTHONPATH="$PYTHONPATH:../lib/subunit/python:../lib/testtools"', python, os.path.join(samba4srcdir, "dsdb/tests/python/deletetest.py"), '$SERVER', '-U"$USERNAME%$PASSWORD"', '-W', '$DOMAIN'])
 plantestsuite("samba4.policy.python", "none", ['PYTHONPATH="$PYTHONPATH:lib/policy/tests/python"', subunitrun, 'bindings'])
-plantestsuite("samba4.blackbox.samba3dump", "none", [python, os.path.join(samba4srcdir, "scripting/bin/samba3dump"), os.path.join(samba4srcdir, "../testdata/samba3")])
-plantestsuite("samba4.blackbox.upgrade", "none", ["rm -rf $PREFIX/upgrade;", python, os.path.join(samba4srcdir, "setup/upgrade_from_s3"), "--targetdir=$PREFIX/upgrade", os.path.normpath(os.path.join(samba4srcdir, "../testdata/samba3")), os.path.normpath(os.path.join(samba4srcdir, "../testdata/samba3/smb.conf"))])
+plantestsuite("samba4.blackbox.samba3dump", "none", [python, os.path.join(samba4srcdir, "scripting/bin/samba3dump"), os.path.join(samba4srcdir, "../testdata/samba3")], allow_empty_output=True)
+plantestsuite("samba4.blackbox.upgrade", "none", ["rm -rf $PREFIX/upgrade;", python, os.path.join(samba4srcdir, "setup/upgrade_from_s3"), "--targetdir=$PREFIX/upgrade", os.path.normpath(os.path.join(samba4srcdir, "../testdata/samba3")), os.path.normpath(os.path.join(samba4srcdir, "../testdata/samba3/smb.conf"))], allow_empty_output=True)
 plantestsuite("samba4.blackbox.provision.py", "none", ["PYTHON=%s" % python, os.path.join(samba4srcdir, "setup/tests/blackbox_provision.sh"), '$PREFIX/provision'])
 plantestsuite("samba4.blackbox.upgradeprovision.py", "none", ["PYTHON=%s" % python, os.path.join(samba4srcdir, "setup/tests/blackbox_upgradeprovision.sh"), '$PREFIX/provision'])
 plantestsuite("samba4.blackbox.setpassword.py", "none", ["PYTHON=%s" % python, os.path.join(samba4srcdir, "setup/tests/blackbox_setpassword.sh"), '$PREFIX/provision'])
