@@ -63,9 +63,6 @@ static void ldapsrv_terminate_connection(struct ldapsrv_connection *conn,
 
 	conn->limits.endtime = timeval_current_ofs(0, 500);
 
-	DEBUG(2,("ldapsrv_terminate_connection: %s - disconnecting\n",
-		 reason));
-
 	tevent_queue_stop(conn->sockets.send_queue);
 	if (conn->active_call) {
 		tevent_req_cancel(conn->active_call);
