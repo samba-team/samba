@@ -64,7 +64,12 @@ def install_library(self):
         return
 
     # setup the install path, expanding variables
-    install_path = getattr(self, 'samba_inst_path', None) or '${LIBDIR}'
+    install_path = getattr(self, 'samba_inst_path', None)
+    if install_path is None:
+        if getattr(self, 'private_library', False):
+            install_path = '${PRIVATELIBDIR}'
+        else:
+            install_path = '${LIBDIR}'
     install_path = bld.EXPAND_VARIABLES(install_path)
 
     if install_ldflags != build_ldflags:

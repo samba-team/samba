@@ -63,6 +63,10 @@ def set_options(opt):
                    help=("modules directory [PREFIX/modules]"),
                    action="store", dest='MODULESDIR', default='${PREFIX}/modules')
 
+    opt.add_option('--with-privatelibdir',
+                   help=("private library directory [PREFIX/lib/samba4]"),
+                   action="store", dest='PRIVATELIBDIR', default='${PREFIX}/lib/samba4')
+
     gr = opt.option_group('developer options')
 
     gr.add_option('-C',
@@ -201,6 +205,7 @@ def configure(conf):
     conf.env.BINDIR = Options.options.BINDIR or '${PREFIX}/bin'
     conf.env.SBINDIR = Options.options.SBINDIR or '${PREFIX}/sbin'
     conf.env.MODULESDIR = Options.options.MODULESDIR
+    conf.env.PRIVATELIBDIR = Options.options.PRIVATELIBDIR
     conf.env.BUNDLED_LIBS = Options.options.BUNDLED_LIBS.split(',')
     conf.env.BUILTIN_LIBRARIES = Options.options.BUILTIN_LIBRARIES.split(',')
     conf.env.DISABLE_SHARED = Options.options.disable_shared
