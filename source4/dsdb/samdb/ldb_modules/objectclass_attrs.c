@@ -43,6 +43,8 @@ struct oc_context {
 	struct ldb_request *req;
 	const struct dsdb_schema *schema;
 
+	struct ldb_message *msg;
+
 	struct ldb_reply *search_res;
 	struct ldb_reply *mod_ares;
 };
@@ -107,6 +109,7 @@ static int attr_handler(struct oc_context *ac)
 	if (msg == NULL) {
 		return ldb_oom(ldb);
 	}
+	ac->msg = msg;
 
 	/* initialize syntax checking context */
 	dsdb_syntax_ctx_init(&syntax_ctx, ldb, ac->schema);
@@ -275,6 +278,17 @@ static int attr_handler2(struct oc_context *ac)
 	/* Check the delete-protected attributes list */
 	msg = ac->search_res->message;
 	for (l = del_prot_attributes; *l != NULL; l++) {
+		struct ldb_message_element *el;
+
+		el = ldb_msg_find_element(ac->msg, *l);
+		if (el == NULL) {
+			/*
+			 * It was not specified in the add or modify,
+			 * so it doesn't need to be in the stored record
+			 */
+			continue;
+		}
+
 		found = str_list_check_ci(must_contain, *l);
 		if (!found) {
 			found = str_list_check_ci(may_contain, *l);
