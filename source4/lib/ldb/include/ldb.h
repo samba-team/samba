@@ -683,7 +683,16 @@ typedef int (*ldb_qsort_cmp_fn_t) (void *v1, void *v2, void *opaque);
 */
 #define LDB_CONTROL_RELAX_OID "1.3.6.1.4.1.4203.666.5.12"
 
-/*
+/* Extended operations */
+
+/**
+   OID for LDAP Extended Operation SEQUENCE_NUMBER
+
+   This extended operation is used to retrieve the extended sequence number.
+*/
+#define LDB_EXTENDED_SEQUENCE_NUMBER	"1.3.6.1.4.1.7165.4.4.3"
+
+/**
    OID for LDAP Extended Operation PASSWORD_CHANGE.
 
    This Extended operation is used to allow user password changes by the user
@@ -691,7 +700,6 @@ typedef int (*ldb_qsort_cmp_fn_t) (void *v1, void *v2, void *opaque);
 */
 #define LDB_EXTENDED_PASSWORD_CHANGE_OID	"1.3.6.1.4.1.4203.1.11.1"
 
-/* Extended operations */
 
 /**
    OID for LDAP Extended Operation FAST_BIND
@@ -848,8 +856,6 @@ struct ldb_extended {
 	const char *oid;
 	void *data; /* NULL or a valid talloc pointer! talloc_get_type() will be used on it */
 };
-
-#define LDB_EXTENDED_SEQUENCE_NUMBER	"1.3.6.1.4.1.7165.4.4.3"
 
 enum ldb_sequence_type {
 	LDB_SEQ_HIGHEST_SEQ,
