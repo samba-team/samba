@@ -66,9 +66,12 @@ def ADD_LD_LIBRARY_PATH(path):
 def install_rpath(bld):
     '''the rpath value for installation'''
     bld.env['RPATH'] = []
+    ret = set()
     if bld.env.RPATH_ON_INSTALL:
-        return [bld.env.LIBDIR]
-    return []
+        ret.add(bld.env.LIBDIR)
+    if bld.env.RPATH_ON_INSTALL_PRIVATE:
+        ret.add(bld.env.PRIVATELIBDIR)
+    return list(ret)
 
 
 def build_rpath(bld):
