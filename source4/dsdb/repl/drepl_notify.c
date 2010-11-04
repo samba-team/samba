@@ -305,6 +305,28 @@ static WERROR dreplsrv_schedule_notify_sync(struct dreplsrv_service *service,
 		return WERR_DS_UNAVAILABLE;
 	}
 
+	/* first try to find an existing notify operation */
+	for (op = service->ops.notifies; op; op = op->next) {
+		if (op->source_dsa != s) {
+			continue;
+		}
+
+		if (op->is_urgent != is_urgent) {
+			continue;
+		}
+
+		if (op->replica_flags != replica_flags) {
+			continue;
+		}
+
+		if (op->uSN < uSN) {
+			op->uSN = uSN;
+		}
+
+		/* reuse the notify operation, as it's not yet started */
+		return WERR_OK;
+	}
+
 	op = talloc_zero(mem_ctx, struct dreplsrv_notify_operation);
 	W_ERROR_HAVE_NO_MEMORY(op);
 
