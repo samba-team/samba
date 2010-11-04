@@ -844,7 +844,7 @@ static int ldb_modules_load_dir(const char *modules_dir, const char *version);
   from the first ldb_init() is just a convenient way to ensure it is
   called early enough.
  */
-static int ldb_modules_load_one(const char *path, const char *version)
+static int ldb_modules_load_path(const char *path, const char *version)
 {
 	void *handle;
 	int (*init_fn)(const char *);
@@ -969,7 +969,7 @@ static int ldb_modules_load_dir(const char *modules_dir, const char *version)
 	TYPESAFE_QSORT(modlist, num_modules, qsort_string);
 
 	for (i=0; i<num_modules; i++) {
-		int ret = ldb_modules_load_one(modlist[i], version);
+		int ret = ldb_modules_load_path(modlist[i], version);
 		if (ret != LDB_SUCCESS) {
 			fprintf(stderr, "ldb: failed to initialise module %s : %s\n",
 				modlist[i], ldb_strerror(ret));
@@ -988,7 +988,7 @@ static int ldb_modules_load_dir(const char *modules_dir, const char *version)
 */
 void ldb_set_modules_dir(struct ldb_context *ldb, const char *path)
 {
-	int ret = ldb_modules_load_dir(path, LDB_VERSION);
+	int ret = ldb_modules_load_path(path, LDB_VERSION);
 	if (ret != LDB_SUCCESS) {
 		ldb_asprintf_errstring(ldb, "Failed to load modules from: %s\n", path);
 	}
@@ -1045,7 +1045,7 @@ int ldb_modules_load(const char *modules_path, const char *version)
 	for (tok=strtok_r(path, ":", &tok_ptr);
 	     tok;
 	     tok=strtok_r(NULL, ":", &tok_ptr)) {
-		ret = ldb_modules_load_dir(tok, version);
+		ret = ldb_modules_load_path(tok, version);
 		if (ret != LDB_SUCCESS) {
 			talloc_free(path);
 			return ret;
