@@ -76,11 +76,12 @@ def install_rpath(bld):
 
 def build_rpath(bld):
     '''the rpath value for build'''
-    rpath = os.path.normpath('%s/%s' % (bld.env.BUILD_DIRECTORY, LIB_PATH))
+    rpaths = [os.path.normpath('%s/%s' % (bld.env.BUILD_DIRECTORY, d)) for d in ("shared", "shared/private")]
     bld.env['RPATH'] = []
     if bld.env.RPATH_ON_BUILD:
-        return [rpath]
-    ADD_LD_LIBRARY_PATH(rpath)
+        return rpaths
+    for rpath in rpaths:
+        ADD_LD_LIBRARY_PATH(rpath)
     return []
 
 

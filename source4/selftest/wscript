@@ -140,6 +140,7 @@ def cmd_testonly(opt):
 
     # this is needed for systems without rpath, or with rpath disabled
     ADD_LD_LIBRARY_PATH('bin/shared')
+    ADD_LD_LIBRARY_PATH('bin/shared/private')
 
     # if we are using a system version of ldb then we need to tell it to
     # load modules from our modules path

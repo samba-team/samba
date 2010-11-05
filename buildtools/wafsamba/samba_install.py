@@ -160,7 +160,11 @@ def symlink_lib(self):
 
     link_target = getattr(self, 'link_name', '')
     if link_target == '':
-        link_target = '%s/%s' % (LIB_PATH, self.bld.make_libname(self.target, version=soext))
+        basename = self.bld.make_libname(self.target, version=soext)
+        if getattr(self, "private_library", False):
+            link_target = '%s/private/%s' % (LIB_PATH, basename)
+        else:
+            link_target = '%s/%s' % (LIB_PATH, basename)
 
     link_target = os.path.join(blddir, link_target)
 

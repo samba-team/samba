@@ -156,7 +156,7 @@ def build(bld):
 
 def pydoctor(ctx):
     '''build python apidocs'''
-    cmd='LD_LIBRARY_PATH=bin/shared PYTHONPATH=bin/python pydoctor --project-name=Samba --project-url=http://www.samba.org --make-html --docformat=restructuredtext --add-package bin/python/samba'
+    cmd='PYTHONPATH=bin/python pydoctor --project-name=Samba --project-url=http://www.samba.org --make-html --docformat=restructuredtext --add-package bin/python/samba'
     print("Running: %s" % cmd)
     os.system(cmd)
 
@@ -166,7 +166,7 @@ def wafdocs(ctx):
     os.system('pwd')
     list = recursive_dirlist('../buildtools/wafsamba', '.', pattern='*.py')
 
-    cmd='LD_LIBRARY_PATH=bin/shared PYTHONPATH=bin/python pydoctor --project-name=wafsamba --project-url=http://www.samba.org --make-html --docformat=restructuredtext'
+    cmd='PYTHONPATH=bin/python pydoctor --project-name=wafsamba --project-url=http://www.samba.org --make-html --docformat=restructuredtext'
     print(list)
     for f in list:
         cmd += ' --add-module %s' % f

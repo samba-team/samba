@@ -56,6 +56,7 @@ def SAMBA_BUILD_ENV(conf):
     '''create the samba build environment'''
     conf.env.BUILD_DIRECTORY = conf.blddir
     mkdir_p(os.path.join(conf.blddir, LIB_PATH))
+    mkdir_p(os.path.join(conf.blddir, LIB_PATH, "private"))
     mkdir_p(os.path.join(conf.blddir, "modules"))
     mkdir_p(os.path.join(conf.blddir, 'python/samba/dcerpc'))
     # this allows all of the bin/shared and bin/python targets
