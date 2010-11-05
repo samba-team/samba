@@ -374,6 +374,7 @@ struct global {
 	char *szSMBPerfcountModule;
 	bool bMapUntrustedToDomain;
 	bool bAsyncSMBEchoHandler;
+	bool bMulticastDnsRegister;
 	int ismb2_max_read;
 	int ismb2_max_write;
 	int ismb2_max_trans;
@@ -4409,6 +4410,15 @@ static struct parm_struct parm_table[] = {
 		.flags		= FLAG_ADVANCED | FLAG_GLOBAL,
 	},
 	{
+		.label		= "multicast dns register",
+		.type		= P_BOOL,
+		.p_class	= P_GLOBAL,
+		.ptr		= &Globals.bMulticastDnsRegister,
+		.special	= NULL,
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED | FLAG_GLOBAL,
+	},
+	{
 		.label		= "panic action",
 		.type		= P_STRING,
 		.p_class	= P_GLOBAL,
@@ -5372,6 +5382,7 @@ static void init_globals(bool reinit_globals)
 	Globals.iminreceivefile = 0;
 
 	Globals.bMapUntrustedToDomain = false;
+	Globals.bMulticastDnsRegister = true;
 
 	Globals.ismb2_max_read = 1024*1024;
 	Globals.ismb2_max_write = 1024*1024;
@@ -5857,6 +5868,7 @@ FN_LOCAL_BOOL(lp_dos_filetimes, bDosFiletimes)
 FN_LOCAL_BOOL(lp_dos_filetime_resolution, bDosFiletimeResolution)
 FN_LOCAL_BOOL(lp_fake_dir_create_times, bFakeDirCreateTimes)
 FN_GLOBAL_BOOL(lp_async_smb_echo_handler, &Globals.bAsyncSMBEchoHandler)
+FN_GLOBAL_BOOL(lp_multicast_dns_register, &Globals.bMulticastDnsRegister)
 FN_LOCAL_BOOL(lp_blocking_locks, bBlockingLocks)
 FN_LOCAL_BOOL(lp_inherit_perms, bInheritPerms)
 FN_LOCAL_BOOL(lp_inherit_acls, bInheritACLS)
