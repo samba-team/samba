@@ -24,10 +24,10 @@
 /* print a talloc tree report for a talloc python object */
 static PyObject *py_talloc_report_full(PyObject *self, PyObject *args)
 {
-	PyObject *py_obj;
+	PyObject *py_obj = Py_None;
 	PyTypeObject *type;
 
-	if (!PyArg_ParseTuple(args, "O", &py_obj))
+	if (!PyArg_ParseTuple(args, "|O", &py_obj))
 		return NULL;
 
 	if (py_obj == Py_None) {
@@ -40,7 +40,7 @@ static PyObject *py_talloc_report_full(PyObject *self, PyObject *args)
 }
 
 /* enable null tracking */
-static PyObject *py_talloc_enable_null_tracking(PyObject *self, PyObject *args)
+static PyObject *py_talloc_enable_null_tracking(PyObject *self)
 {
 	talloc_enable_null_tracking();
 	return Py_None;
@@ -49,10 +49,10 @@ static PyObject *py_talloc_enable_null_tracking(PyObject *self, PyObject *args)
 /* return the number of talloc blocks */
 static PyObject *py_talloc_total_blocks(PyObject *self, PyObject *args)
 {
-	PyObject *py_obj;
+	PyObject *py_obj = Py_None;
 	PyTypeObject *type;
 
-	if (!PyArg_ParseTuple(args, "O", &py_obj))
+	if (!PyArg_ParseTuple(args, "|O", &py_obj))
 		return NULL;
 
 	if (py_obj == Py_None) {
@@ -67,7 +67,7 @@ static PyObject *py_talloc_total_blocks(PyObject *self, PyObject *args)
 static PyMethodDef talloc_methods[] = {
 	{ "report_full", (PyCFunction)py_talloc_report_full, METH_VARARGS,
 		"show a talloc tree for an object"},
-	{ "enable_null_tracking", (PyCFunction)py_talloc_enable_null_tracking, METH_VARARGS,
+	{ "enable_null_tracking", (PyCFunction)py_talloc_enable_null_tracking, METH_NOARGS,
 		"enable tracking of the NULL object"},
 	{ "total_blocks", (PyCFunction)py_talloc_total_blocks, METH_VARARGS,
 		"return talloc block count"},
