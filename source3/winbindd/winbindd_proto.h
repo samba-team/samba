@@ -23,22 +23,6 @@
 #ifndef _WINBINDD_PROTO_H_
 #define _WINBINDD_PROTO_H_
 
-
-/* The following definitions come from auth/token_util.c  */
-
-bool nt_token_check_sid ( const struct dom_sid *sid, const struct security_token *token );
-bool nt_token_check_domain_rid( struct security_token *token, uint32 rid );
-struct security_token *get_root_nt_token( void );
-NTSTATUS add_aliases(const struct dom_sid *domain_sid,
-		     struct security_token *token);
-struct security_token *create_local_nt_token(TALLOC_CTX *mem_ctx,
-					    const struct dom_sid *user_sid,
-					    bool is_guest,
-					    int num_groupsids,
-					    const struct dom_sid *groupsids);
-void debug_unix_user_token(int dbg_class, int dbg_lev, uid_t uid, gid_t gid,
-			   int n_groups, gid_t *groups);
-
 /* The following definitions come from winbindd/winbindd.c  */
 struct messaging_context *winbind_messaging_context(void);
 void request_error(struct winbindd_cli_state *state);
