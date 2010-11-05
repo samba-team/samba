@@ -26,6 +26,8 @@
 #include "librpc/ndr/libndr.h"
 #include "system/kerberos.h"
 #include "auth/kerberos/kerberos.h"
+#include "librpc/rpc/pyrpc_util.h"
+
 /* FIXME: These should be in a header file somewhere, once we finish moving
  * away from SWIG .. */
 #define PyErr_LDB_OR_RAISE(py_ldb, ldb) \
@@ -300,6 +302,77 @@ static PyObject *py_dsdb_get_attid_from_lDAPDisplayName(PyObject *self, PyObject
 	attid = dsdb_attribute_get_attid(a, schema_nc);
 
 	return PyLong_FromUnsignedLong(attid);
+}
+
+/*
+  convert a python string to a DRSUAPI drsuapi_DsReplicaAttribute attribute
+ */
+static PyObject *py_dsdb_DsReplicaAttribute(PyObject *self, PyObject *args)
+{
+	PyObject *py_ldb, *el_list, *ret;
+	struct ldb_context *ldb;
+	char *ldap_display_name;
+	const struct dsdb_attribute *a;
+	struct dsdb_schema *schema;
+	struct dsdb_syntax_ctx syntax_ctx;
+	struct ldb_message_element *el;
+	struct drsuapi_DsReplicaAttribute *attr;
+	TALLOC_CTX *tmp_ctx;
+	WERROR werr;
+	int i;
+
+	if (!PyArg_ParseTuple(args, "OsO", &py_ldb, &ldap_display_name, &el_list)) {
+		return NULL;
+	}
+
+	PyErr_LDB_OR_RAISE(py_ldb, ldb);
+
+	if (!PyList_Check(el_list)) {
+		PyErr_Format(PyExc_TypeError, "ldif_elements must be a list");
+		return NULL;
+	}
+
+	schema = dsdb_get_schema(ldb, NULL);
+	if (!schema) {
+		PyErr_SetString(PyExc_RuntimeError, "Failed to find a schema from ldb");
+		return NULL;
+	}
+
+	a = dsdb_attribute_by_lDAPDisplayName(schema, ldap_display_name);
+	if (a == NULL) {
+		PyErr_Format(PyExc_RuntimeError, "Failed to find attribute '%s'", ldap_display_name);
+		return NULL;
+	}
+
+	dsdb_syntax_ctx_init(&syntax_ctx, ldb, schema);
+	syntax_ctx.is_schema_nc = false;
+
+	tmp_ctx = talloc_new(ldb);
+
+	el = talloc_zero(tmp_ctx, struct ldb_message_element);
+	el->name = ldap_display_name;
+	el->num_values = PyList_Size(el_list);
+	el->values = talloc_array(el, struct ldb_val, el->num_values);
+	for (i = 0; i < el->num_values; i++) {
+		PyObject *item = PyList_GetItem(el_list, i);
+		if (!PyString_Check(item)) {
+			PyErr_Format(PyExc_TypeError, "ldif_elements should be strings");
+			return NULL;
+		}
+		el->values[i].data = (uint8_t *)PyString_AsString(item);
+		el->values[i].length = PyString_Size(item);
+	}
+
+	attr = talloc_zero(tmp_ctx, struct drsuapi_DsReplicaAttribute);
+
+	werr = a->syntax->ldb_to_drsuapi(&syntax_ctx, a, el, attr, attr);
+	PyErr_WERROR_IS_ERR_RAISE(werr);
+
+	ret = py_return_ndr_struct("samba.dcerpc.drsuapi", "DsReplicaAttribute", attr, attr);
+
+	talloc_unlink(ldb, tmp_ctx);
+
+	return ret;
 }
 
 static PyObject *py_dsdb_set_ntds_invocation_id(PyObject *self, PyObject *args)
@@ -607,6 +680,7 @@ static PyMethodDef py_dsdb_methods[] = {
 	{ "_dsdb_write_prefixes_from_schema_to_ldb", (PyCFunction)py_dsdb_write_prefixes_from_schema_to_ldb, METH_VARARGS,
 		NULL },
 	{ "_dsdb_get_partitions_dn", (PyCFunction)py_dsdb_get_partitions_dn, METH_VARARGS, NULL },
+	{ "_dsdb_DsReplicaAttribute", (PyCFunction)py_dsdb_DsReplicaAttribute, METH_VARARGS, NULL },
 	{ NULL }
 };
 

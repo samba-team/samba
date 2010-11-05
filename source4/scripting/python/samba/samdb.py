@@ -483,6 +483,9 @@ accountExpires: %u
     def set_schema_from_ldb(self, ldb_conn):
         dsdb._dsdb_set_schema_from_ldb(self, ldb_conn)
 
+    def dsdb_DsReplicaAttribute(self, ldb, ldap_display_name, ldif_elements):
+        return dsdb._dsdb_DsReplicaAttribute(ldb, ldap_display_name, ldif_elements)
+
     def get_attribute_from_attid(self, attid):
         """ Get from an attid the associated attribute
 
