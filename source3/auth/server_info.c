@@ -240,7 +240,7 @@ static NTSTATUS append_netr_SidAttr(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
-/* Fils the samr_RidWithAttributeArray with the provided sids.
+/* Fills the samr_RidWithAttributeArray with the provided sids.
  * If it happens that we have additional groups that do not belong
  * to the domain, add their sids as extra sids */
 static NTSTATUS group_sids_to_info3(struct netr_SamInfo3 *info3,
