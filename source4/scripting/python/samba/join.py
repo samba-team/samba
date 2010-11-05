@@ -205,7 +205,7 @@ class dc_join:
 
     def drsuapi_connect(ctx):
         '''make a DRSUAPI connection to the server'''
-        binding_string = "ncacn_ip_tcp:%s[seal,print]" % ctx.server
+        binding_string = "ncacn_ip_tcp:%s[seal]" % ctx.server
         ctx.drsuapi = drsuapi.drsuapi(binding_string, ctx.lp, ctx.creds)
         ctx.drsuapi_handle = drs_utils.drs_DsBind(ctx.drsuapi)
 
