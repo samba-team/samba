@@ -26,6 +26,7 @@ from samba.netcmd import (
     Command,
     Option,
     SuperCommand,
+    CommandError
     )
 
 class cmd_vampire(Command):
@@ -40,11 +41,14 @@ class cmd_vampire(Command):
 
     takes_options = [
         Option("--target-dir", help="Target directory.", type=str),
+        Option("--force", help="force run", action='store_true', default=False),
         ]
 
     takes_args = ["domain"]
 
-    def run(self, domain, target_dir=None, credopts=None, sambaopts=None, versionopts=None):
+    def run(self, domain, target_dir=None, credopts=None, sambaopts=None, versionopts=None, force=False):
+        if not force:
+            raise CommandError("samba-tool vampire is deprecated, please use samba-tool join. Use --force to override")
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp)
         net = Net(creds, lp, server=credopts.ipaddress)
