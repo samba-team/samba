@@ -703,7 +703,7 @@ static bool open_sockets_smbd(struct smbd_parent_context *parent,
 			   MSG_SMB_INJECT_FAULT, msg_inject_fault);
 #endif
 
-	if (dns_port != 0) {
+	if (lp_multicast_dns_register() && (dns_port != 0)) {
 #ifdef WITH_DNSSD_SUPPORT
 		smbd_setup_mdns_registration(smbd_event_context(),
 					     parent, dns_port);
