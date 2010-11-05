@@ -432,7 +432,7 @@ class dc_join:
                             netbiosname=ctx.myname,
                             domainsid=security.dom_sid(ctx.domsid),
                             machinepass=ctx.acct_pass,
-                            secure_channel_type=misc.SEC_CHAN_RODC,
+                            secure_channel_type=ctx.secure_channel_type,
                             key_version_number=ctx.key_version_number)
 
     def do_join(ctx):
@@ -474,6 +474,7 @@ def join_RODC(server=None, creds=None, lp=None, site=None, netbios_name=None,
                       "RestrictedKrbHost/%s" % ctx.dnshostname ])
 
     ctx.connection_dn = "CN=RODC Connection (FRS),%s" % ctx.ntds_dn
+    ctx.secure_channel_type = misc.SEC_CHAN_RODC
     ctx.RODC = True
     ctx.do_join()
     print "Joined domain %s (SID %s) as an RODC" % (ctx.domain_name, ctx.domsid)
@@ -487,6 +488,7 @@ def join_DC(server=None, creds=None, lp=None, site=None, netbios_name=None,
     ctx.userAccountControl = samba.dsdb.UF_SERVER_TRUST_ACCOUNT | samba.dsdb.UF_TRUSTED_FOR_DELEGATION
 
     ctx.SPNs.append('E3514235-4B06-11D1-AB04-00C04FC2DCD2/$NTDSGUID/%s' % ctx.dnsdomain)
+    ctx.secure_channel_type = misc.SEC_CHAN_BDC
 
     ctx.do_join()
     print "Joined domain %s (SID %s) as an DC" % (ctx.domain_name, ctx.domsid)
