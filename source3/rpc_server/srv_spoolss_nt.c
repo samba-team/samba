@@ -9222,7 +9222,7 @@ WERROR _spoolss_GetPrinterDataEx(struct pipes_struct *p,
 	}
 
  done:
-	*r->out.type    = SPOOLSS_BUFFER_OK(*r->out.type, REG_NONE);
+	/* retain type when returning WERR_MORE_DATA */
 	r->out.data     = SPOOLSS_BUFFER_OK(r->out.data, r->out.data);
 
 	return SPOOLSS_BUFFER_OK(WERR_OK, WERR_MORE_DATA);
