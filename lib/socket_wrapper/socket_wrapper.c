@@ -584,10 +584,14 @@ static struct socket_info *find_socket_info(int fd)
 static int sockaddr_convert_to_un(struct socket_info *si, const struct sockaddr *in_addr, socklen_t in_len, 
 				  struct sockaddr_un *out_addr, int alloc_sock, int *bcast)
 {
+	struct sockaddr *out = (struct sockaddr *)(void *)out_addr;
 	if (!out_addr)
 		return 0;
 
-	out_addr->sun_family = AF_UNIX;
+	out->sa_family = AF_UNIX;
+#ifdef HAVE_STRUCT_SOCKADDR_SA_LEN
+	out->sa_len = sizeof(*out_addr);
+#endif
 
 	switch (in_addr->sa_family) {
 	case AF_INET:
@@ -622,6 +626,8 @@ static int sockaddr_convert_from_un(const struct socket_info *si,
 				    struct sockaddr *out_addr,
 				    socklen_t *out_addrlen)
 {
+	int ret;
+
 	if (out_addr == NULL || out_addrlen == NULL) 
 		return 0;
 
@@ -643,7 +649,11 @@ static int sockaddr_convert_from_un(const struct socket_info *si,
 			errno = ESOCKTNOSUPPORT;
 			return -1;
 		}
-		return convert_un_in(in_addr, out_addr, out_addrlen);
+		ret = convert_un_in(in_addr, out_addr, out_addrlen);
+#ifdef HAVE_STRUCT_SOCKADDR_SA_LEN
+		out_addr->sa_len = *out_addrlen;
+#endif
+		return ret;
 	default:
 		break;
 	}
