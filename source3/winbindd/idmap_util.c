@@ -25,6 +25,23 @@
 #define DBGC_CLASS DBGC_IDMAP
 
 /*****************************************************************
+ Returns true if the request was for a specific domain, or
+ for a sid we are authoritative for - BUILTIN, or our own domain.
+*****************************************************************/
+
+static bool is_specific_domain_request(const char *dom_name, DOM_SID *sid)
+{
+	if (dom_name && dom_name[0] != '\0') {
+		return true;
+	}
+	if (sid_check_is_in_builtin(sid) ||
+			sid_check_is_in_our_domain(sid)) {
+		return true;
+	}
+	return false;
+}
+
+/*****************************************************************
  Returns the SID mapped to the given UID.
  If mapping is not possible returns an error.
 *****************************************************************/  
@@ -194,10 +211,11 @@ backend:
 		goto done;
 	}
 
-	if (dom_name[0] != '\0') {
+	if (is_specific_domain_request(dom_name, sid)) {
 		/*
-		 * We had the task to go to a specific domain which
-		 * could not answer our request. Fail.
+		 * We had the task to go to a specific domain or
+		 * a domain for which we are authoritative for and
+		 * it could not answer our request. Fail.
 		 */
 		if (winbindd_use_idmap_cache()) {
 			idmap_cache_set_sid2uid(sid, -1);
@@ -275,10 +293,11 @@ backend:
 		goto done;
 	}
 
-	if (domname[0] != '\0') {
+	if (is_specific_domain_request(domname, sid)) {
 		/*
-		 * We had the task to go to a specific domain which
-		 * could not answer our request. Fail.
+		 * We had the task to go to a specific domain or
+		 * a domain for which we are authoritative for and
+		 * it could not answer our request. Fail.
 		 */
 		if (winbindd_use_idmap_cache()) {
 			idmap_cache_set_sid2uid(sid, -1);
