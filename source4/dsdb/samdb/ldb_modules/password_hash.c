@@ -1300,11 +1300,11 @@ static int setup_given_passwords(struct setup_password_fields_io *io,
 			return ldb_oom(ldb);
 		}
 		if (!convert_string_talloc(io->ac,
-						       CH_UTF8, CH_UTF16,
-						       g->cleartext_utf8->data,
-						       g->cleartext_utf8->length,
-						       (void *)&cleartext_utf16_str,
-						       &converted_pw_len, false)) {
+					   CH_UTF8, CH_UTF16,
+					   g->cleartext_utf8->data,
+					   g->cleartext_utf8->length,
+					   (void *)&cleartext_utf16_str,
+					   &converted_pw_len, false)) {
 			ldb_asprintf_errstring(ldb,
 				"setup_password_fields: "
 				"failed to generate UTF16 password from cleartext UTF8 password");
@@ -1323,11 +1323,11 @@ static int setup_given_passwords(struct setup_password_fields_io *io,
 			return ldb_oom(ldb);
 		}
 		if (!convert_string_talloc(io->ac,
-						       CH_UTF16MUNGED, CH_UTF8,
-						       g->cleartext_utf16->data,
-						       g->cleartext_utf16->length,
-						       (void *)&cleartext_utf8_str,
-						       &converted_pw_len, false)) {
+					   CH_UTF16MUNGED, CH_UTF8,
+					   g->cleartext_utf16->data,
+					   g->cleartext_utf16->length,
+					   (void *)&cleartext_utf8_str,
+					   &converted_pw_len, false)) {
 			/* We can't bail out entirely, as these unconvertable passwords are frustratingly valid */
 			talloc_free(cleartext_utf8_blob);
 		} else {
