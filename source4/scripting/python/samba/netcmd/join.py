@@ -23,12 +23,12 @@ import samba.getopt as options
 from samba.net import Net, LIBNET_JOIN_AUTOMATIC
 from samba.netcmd import Command, CommandError, Option
 from samba.dcerpc.misc import SEC_CHAN_WKSTA, SEC_CHAN_BDC
-from samba.join import join_rodc
+from samba.join import join_RODC, join_DC
 
 class cmd_join(Command):
     """Joins domain as either member or backup domain controller [server connection needed]"""
 
-    synopsis = "%prog join <dnsdomain> [BDC | MEMBER | RODC] [options]"
+    synopsis = "%prog join <dnsdomain> [DC | RODC | MEMBER] [options]"
 
     takes_optiongroups = {
         "sambaopts": options.SambaOptions,
@@ -57,14 +57,14 @@ class cmd_join(Command):
         if not role is None:
             role = role.upper()
 
-        if role is None:
+        if role is None or role == "MEMBER":
             secure_channel_type = SEC_CHAN_WKSTA
-        elif role == "BDC":
-            secure_channel_type = SEC_CHAN_BDC
-        elif role == "MEMBER":
-            secure_channel_type = SEC_CHAN_WKSTA
+        elif role == "DC":
+            join_DC(server=server, creds=creds, lp=lp, domain=domain,
+                    site=site, netbios_name=netbios_name)
+            return
         elif role == "RODC":
-            join_rodc(server=server, creds=creds, lp=lp, domain=domain,
+            join_RODC(server=server, creds=creds, lp=lp, domain=domain,
                       site=site, netbios_name=netbios_name)
             return
         else:
