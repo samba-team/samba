@@ -325,11 +325,16 @@ static void finddcs_cldap_srv_resolved(struct composite_context *ctx)
 	struct finddcs_cldap_state *state =
 		talloc_get_type(ctx->async.private_data, struct finddcs_cldap_state);
 	NTSTATUS status;
+	unsigned i;
 
 	status = resolve_name_multiple_recv(ctx, state, &state->srv_addresses);
 	if (tevent_req_nterror(state->req, status)) {
 		DEBUG(2,("finddcs: Failed to find SRV record for %s\n", state->srv_name));
 		return;
+	}
+
+	for (i=0; state->srv_addresses[i]; i++) {
+		DEBUG(4,("finddcs: DNS server %u at '%s'\n", i, state->srv_addresses[i]));
 	}
 
 	state->srv_address_index = 0;
