@@ -329,6 +329,8 @@ int ltdb_filter_attrs(struct ldb_message *msg, const char * const *attrs)
 {
 	unsigned int i;
 	int keep_all = 0;
+	struct ldb_message_element *el2;
+	uint32_t num_elements;
 
 	if (attrs) {
 		/* check for special attrs */
@@ -355,6 +357,12 @@ int ltdb_filter_attrs(struct ldb_message *msg, const char * const *attrs)
 		return 0;
 	}
 
+	el2 = talloc_array(msg, struct ldb_message_element, msg->num_elements);
+	if (el2 == NULL) {
+		return -1;
+	}
+	num_elements = 0;
+
 	for (i = 0; i < msg->num_elements; i++) {
 		unsigned int j;
 		int found = 0;
@@ -366,11 +374,20 @@ int ltdb_filter_attrs(struct ldb_message *msg, const char * const *attrs)
 			}
 		}
 
-		if (!found) {
-			ldb_msg_remove_attr(msg, msg->elements[i].name);
-			i--;
+		if (found) {
+			el2[num_elements] = msg->elements[i];
+			talloc_steal(el2, el2[num_elements].name);
+			talloc_steal(el2, el2[num_elements].values);
+			num_elements++;
 		}
 	}
+
+	talloc_free(msg->elements);
+	msg->elements = talloc_realloc(msg, el2, struct ldb_message_element, msg->num_elements);
+	if (msg->elements == NULL) {
+		return -1;
+	}
+	msg->num_elements = num_elements;
 
 	return 0;
 }
