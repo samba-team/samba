@@ -17,15 +17,16 @@ sys.path.insert(0, "bin/python")
 import samba
 import samba.tests
 from samba.dcerpc import drsuapi
+import talloc
 
-samba.talloc_enable_null_tracking()
+talloc.enable_null_tracking()
 
 class TallocTests(samba.tests.TestCase):
     '''test talloc behaviour of pidl generated python code'''
 
     def check_blocks(self, object, num_expected):
         '''check that the number of allocated blocks is correct'''
-        nblocks = samba.talloc_total_blocks(object)
+        nblocks = talloc.total_blocks(object)
         if object is None:
             nblocks -= self.initial_blocks
         self.assertEquals(nblocks, num_expected)
@@ -61,7 +62,7 @@ class TallocTests(samba.tests.TestCase):
         self.check_blocks(None, 6)
 
     def test_run(self):
-        self.initial_blocks = samba.talloc_total_blocks(None)
+        self.initial_blocks = talloc.total_blocks(None)
         self.check_blocks(None, 0)
         self.pas_test()
         self.check_blocks(None, 0)

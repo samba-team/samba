@@ -166,50 +166,6 @@ static PyObject *py_interface_ips(PyObject *self, PyObject *args)
 	return pylist;
 }
 
-/* print a talloc tree report for a talloc python object */
-static PyObject *py_talloc_report_full(PyObject *self, PyObject *args)
-{
-	PyObject *py_obj;
-	PyTypeObject *type;
-
-	if (!PyArg_ParseTuple(args, "O", &py_obj))
-		return NULL;
-
-	if (py_obj == Py_None) {
-		talloc_report_full(NULL, stdout);
-	} else {
-		type = (PyTypeObject*)PyObject_Type(py_obj);
-		talloc_report_full(py_talloc_get_mem_ctx(py_obj), stdout);
-	}
-	return Py_None;
-}
-
-/* enable null tracking */
-static PyObject *py_talloc_enable_null_tracking(PyObject *self, PyObject *args)
-{
-	talloc_enable_null_tracking();
-	return Py_None;
-}
-
-/* return the number of talloc blocks */
-static PyObject *py_talloc_total_blocks(PyObject *self, PyObject *args)
-{
-	PyObject *py_obj;
-	PyTypeObject *type;
-
-	if (!PyArg_ParseTuple(args, "O", &py_obj))
-		return NULL;
-
-	if (py_obj == Py_None) {
-		return PyLong_FromLong(talloc_total_blocks(NULL));
-	}
-
-	type = (PyTypeObject*)PyObject_Type(py_obj);
-
-	return PyLong_FromLong(talloc_total_blocks(py_talloc_get_mem_ctx(py_obj)));
-}
-
-
 static PyMethodDef py_misc_methods[] = {
 	{ "generate_random_str", (PyCFunction)py_generate_random_str, METH_VARARGS,
 		"generate_random_str(len) -> string\n"
@@ -227,12 +183,6 @@ static PyMethodDef py_misc_methods[] = {
 		"set debug level" },
 	{ "interface_ips", (PyCFunction)py_interface_ips, METH_VARARGS,
 		"get interface IP address list"},
-	{ "talloc_report_full", (PyCFunction)py_talloc_report_full, METH_VARARGS,
-		"show a talloc tree for an object"},
-	{ "talloc_enable_null_tracking", (PyCFunction)py_talloc_enable_null_tracking, METH_VARARGS,
-		"enable tracking of the NULL object"},
-	{ "talloc_total_blocks", (PyCFunction)py_talloc_total_blocks, METH_VARARGS,
-		"return talloc block count"},
 	{ NULL }
 };
 

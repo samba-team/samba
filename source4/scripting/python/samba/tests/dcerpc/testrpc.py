@@ -10,15 +10,16 @@ sys.path.insert(0, "bin/python")
 import samba
 import samba.tests
 from samba.dcerpc import drsuapi
+import talloc
 
-samba.talloc_enable_null_tracking()
+talloc.enable_null_tracking()
 
 class RpcTests(object):
     '''test type behaviour of pidl generated python RPC code'''
 
     def check_blocks(self, object, num_expected):
         '''check that the number of allocated blocks is correct'''
-        nblocks = samba.talloc_total_blocks(object)
+        nblocks = talloc.total_blocks(object)
         if object is None:
             nblocks -= self.initial_blocks
         leaked_blocks = (nblocks - num_expected)
@@ -89,7 +90,7 @@ class RpcTests(object):
                 pass
             elif isinstance(value, type):
                 try:
-                    initial_blocks = samba.talloc_total_blocks(None)
+                    initial_blocks = talloc.total_blocks(None)
                     self.check_type(interface, n, value)
                     self.check_blocks(None, initial_blocks)
                 except Exception, e:
@@ -110,12 +111,12 @@ class RpcTests(object):
                 continue
             print "Checking interface %s" % iname
             iface = getattr(samba.dcerpc, iname)
-            initial_blocks = samba.talloc_total_blocks(None)
+            initial_blocks = talloc.total_blocks(None)
             self.check_interface(iface, iname)
             self.check_blocks(None, initial_blocks)
 
     def run(self):
-        self.initial_blocks = samba.talloc_total_blocks(None)
+        self.initial_blocks = talloc.total_blocks(None)
         self.errcount = 0
         self.check_all_interfaces()
         return self.errcount

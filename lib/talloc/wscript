@@ -32,7 +32,7 @@ def set_options(opt):
                    action="store_true", dest='TALLOC_COMPAT1', default=False)
     if opt.IN_LAUNCH_DIR():
         opt.add_option('--disable-python',
-                       help=("disable the pytevent module"),
+                       help=("disable the pytalloc module"),
                        action="store_true", dest='disable_python', default=False)
 
 
@@ -112,6 +112,11 @@ def build(bld):
             vnum=VERSION,
             )
         bld.INSTALL_FILES('${INCLUDEDIR}', 'pytalloc.h')
+        bld.SAMBA_PYTHON('pytalloc',
+                         'pytalloc.c',
+                         deps='talloc pytalloc-util',
+                         enabled=True,
+                         realname='talloc.so')
 
     if not getattr(bld.env, '_SAMBA_BUILD_', 0) == 4:
         # s4 already has the talloc testsuite builtin to smbtorture

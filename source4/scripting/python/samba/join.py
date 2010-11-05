@@ -32,9 +32,10 @@ from samba.net import Net
 import logging
 from samba.drs_utils import drs_Replicate
 from samba.dsdb import DS_DOMAIN_FUNCTION_2008_R2
+import talloc
 
 # this makes debugging easier
-samba.talloc_enable_null_tracking()
+talloc.enable_null_tracking()
 
 class join_ctx:
     '''hold join context variables'''
