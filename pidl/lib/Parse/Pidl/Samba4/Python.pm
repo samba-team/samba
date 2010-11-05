@@ -824,7 +824,8 @@ sub assign($$$)
 	if ($dest =~ /^\&/ and $src eq "NULL") {
 		$self->pidl("memset($dest, 0, sizeof(" . get_value_of($dest) . "));");
 	} elsif ($dest =~ /^\&/) {
-		$self->pidl("memmove($dest, $src, sizeof(" . get_value_of($dest) . "));");
+		my $destvar = get_value_of($dest);
+		$self->pidl("$destvar = *$src;");
 	} else {
 		$self->pidl("$dest = $src;");
 	}
@@ -1047,7 +1048,8 @@ sub ConvertObjectFromPythonLevel($$$$$$$$)
 		my $switch_ptr = "$e->{NAME}_switch_$l->{LEVEL_INDEX}";
 		$self->pidl("{");
 		$self->indent;
-		$self->pidl("void *$switch_ptr;");
+		my $union_type = mapTypeName(GetNextLevel($e, $l)->{DATA_TYPE});
+		$self->pidl("$union_type *$switch_ptr;");
 		$self->pidl("$switch_ptr = py_export_" . GetNextLevel($e, $l)->{DATA_TYPE} . "($mem_ctx, $switch, $py_var);");
 		$self->pidl("if ($switch_ptr == NULL) { $fail }");
 		$self->assign($var_name, "$switch_ptr");
