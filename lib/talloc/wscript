@@ -106,7 +106,7 @@ def build(bld):
     if not bld.CONFIG_SET('USING_SYSTEM_PYTALLOC_UTIL') and not bld.env.disable_python:
 
         bld.SAMBA_LIBRARY('pytalloc-util',
-            source='pytalloc.c',
+            source='pytalloc_util.c',
             public_deps='talloc',
             pyext=True,
             vnum=VERSION,
