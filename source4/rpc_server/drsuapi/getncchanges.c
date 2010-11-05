@@ -1042,7 +1042,8 @@ static WERROR getncchanges_change_master(struct drsuapi_bind_state *b_state,
 
 /* state of a partially completed getncchanges call */
 struct drsuapi_getncchanges_state {
-	struct ldb_result *site_res;
+	struct GUID *guids;
+	uint32_t num_records;
 	uint32_t num_sent;
 	struct ldb_dn *ncRoot_dn;
 	bool is_schema_nc;
@@ -1178,15 +1179,8 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 	struct drsuapi_DsReplicaObjectListItemEx **currentObject;
 	NTSTATUS status;
 	DATA_BLOB session_key;
-	const char *attrs[] = { "*", "distinguishedName",
-				"nTSecurityDescriptor",
-				"parentGUID",
-				"replPropertyMetaData",
-				"unicodePwd",
-				"dBCSPwd",
-				"ntPwdHistory",
-				"lmPwdHistory",
-				"supplementalCredentials",
+	const char *attrs[] = { "uSNChanged",
+				"objectGUID" ,
 				NULL };
 	WERROR werr;
 	struct dcesrv_handle *h;
@@ -1398,10 +1392,11 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 	   TODO: MS-DRSR section 4.1.10.1.1
 	   Work out if this is the start of a new cycle */
 
-	if (getnc_state->site_res == NULL) {
+	if (getnc_state->guids == NULL) {
 		char* search_filter;
 		enum ldb_scope scope = LDB_SCOPE_SUBTREE;
 		const char *extra_filter;
+		struct ldb_result *search_res;
 
 		if (req10->extended_op == DRSUAPI_EXOP_REPL_OBJ ||
 		    req10->extended_op == DRSUAPI_EXOP_REPL_SECRET) {
@@ -1437,7 +1432,7 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 
 		DEBUG(2,(__location__ ": getncchanges on %s using filter %s\n",
 			 ldb_dn_get_linearized(getnc_state->ncRoot_dn), search_filter));
-		ret = drsuapi_search_with_extended_dn(sam_ctx, getnc_state, &getnc_state->site_res,
+		ret = drsuapi_search_with_extended_dn(sam_ctx, getnc_state, &search_res,
 						      search_dn, scope, attrs,
 						      search_filter);
 		if (ret != LDB_SUCCESS) {
@@ -1445,14 +1440,30 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 		}
 
 		if (req10->replica_flags & DRSUAPI_DRS_GET_ANC) {
-			TYPESAFE_QSORT(getnc_state->site_res->msgs,
-				       getnc_state->site_res->count,
+			TYPESAFE_QSORT(search_res->msgs,
+				       search_res->count,
 				       site_res_cmp_parent_order);
 		} else {
-			TYPESAFE_QSORT(getnc_state->site_res->msgs,
-				       getnc_state->site_res->count,
+			TYPESAFE_QSORT(search_res->msgs,
+				       search_res->count,
 				       site_res_cmp_usn_order);
 		}
+
+		/* extract out the GUIDs list */
+		getnc_state->num_records = search_res->count;
+		getnc_state->guids = talloc_array(getnc_state, struct GUID, getnc_state->num_records);
+		W_ERROR_HAVE_NO_MEMORY(getnc_state->guids);
+
+		for (i=0; i<getnc_state->num_records; i++) {
+			getnc_state->guids[i] = samdb_result_guid(search_res->msgs[i], "objectGUID");
+			if (GUID_all_zero(&getnc_state->guids[i])) {
+				DEBUG(2,("getncchanges: bad objectGUID from %s\n", ldb_dn_get_linearized(search_res->msgs[i]->dn)));
+				return WERR_DS_DRA_INTERNAL_ERROR;
+			}
+		}
+
+
+		talloc_free(search_res);
 
 		getnc_state->uptodateness_vector = talloc_steal(getnc_state, req10->uptodateness_vector);
 		if (getnc_state->uptodateness_vector) {
@@ -1508,15 +1519,49 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 	max_links = lpcfg_parm_int(dce_call->conn->dce_ctx->lp_ctx, NULL, "drs", "max link sync", 1500);
 
 	for (i=getnc_state->num_sent;
-	     i<getnc_state->site_res->count &&
+	     i<getnc_state->num_records &&
 		     !null_scope &&
 		     (r->out.ctr->ctr6.object_count < max_objects);
 	    i++) {
 		int uSN;
 		struct drsuapi_DsReplicaObjectListItemEx *obj;
-		struct ldb_message *msg = getnc_state->site_res->msgs[i];
+		struct ldb_message *msg;
+		const char *msg_attrs[] = { "*", "distinguishedName",
+					    "nTSecurityDescriptor",
+					    "parentGUID",
+					    "replPropertyMetaData",
+					    "unicodePwd",
+					    "dBCSPwd",
+					    "ntPwdHistory",
+					    "lmPwdHistory",
+					    "supplementalCredentials",
+					    NULL };
+		struct ldb_result *msg_res;
+		struct ldb_dn *msg_dn;
 
 		obj = talloc_zero(mem_ctx, struct drsuapi_DsReplicaObjectListItemEx);
+		W_ERROR_HAVE_NO_MEMORY(obj);
+
+		msg_dn = ldb_dn_new_fmt(obj, sam_ctx, "<GUID=%s>", GUID_string(obj, &getnc_state->guids[i]));
+		W_ERROR_HAVE_NO_MEMORY(msg_dn);
+
+
+		/* by re-searching here we avoid having a lot of full
+		 * records in memory between calls to getncchanges
+		 */
+		ret = drsuapi_search_with_extended_dn(sam_ctx, obj, &msg_res,
+						      msg_dn,
+						      LDB_SCOPE_BASE, msg_attrs, NULL);
+		if (ret != LDB_SUCCESS) {
+			if (ret != LDB_ERR_NO_SUCH_OBJECT) {
+				DEBUG(1,("getncchanges: failed to fetch DN %s - %s\n",
+					 ldb_dn_get_extended_linearized(obj, msg_dn, 1), ldb_errstring(sam_ctx)));
+			}
+			talloc_free(obj);
+			continue;
+		}
+
+		msg = msg_res->msgs[0];
 
 		werr = get_nc_changes_build_object(obj, msg,
 						   sam_ctx, getnc_state->ncRoot_dn,
@@ -1567,11 +1612,14 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 		getnc_state->last_dn = ldb_dn_copy(getnc_state, msg->dn);
 
 		DEBUG(8,(__location__ ": replicating object %s\n", ldb_dn_get_linearized(msg->dn)));
+
+		talloc_free(msg_res);
+		talloc_free(msg_dn);
 	}
 
 	getnc_state->num_sent += r->out.ctr->ctr6.object_count;
 
-	r->out.ctr->ctr6.nc_object_count = getnc_state->site_res->count;
+	r->out.ctr->ctr6.nc_object_count = getnc_state->num_records;
 
 	/* the client can us to call UpdateRefs on its behalf to
 	   re-establish monitoring of the NC */
@@ -1618,7 +1666,7 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 
 	link_total = getnc_state->la_count;
 
-	if (i < getnc_state->site_res->count) {
+	if (i < getnc_state->num_records) {
 		r->out.ctr->ctr6.more_data = true;
 	} else {
 		/* sort the whole array the first time */
@@ -1670,7 +1718,7 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 	       (unsigned long long)(req10->highwatermark.highest_usn+1),
 	       req10->replica_flags, drs_ObjectIdentifier_to_string(mem_ctx, ncRoot),
 	       r->out.ctr->ctr6.object_count,
-	       i, r->out.ctr->ctr6.more_data?getnc_state->site_res->count:i,
+	       i, r->out.ctr->ctr6.more_data?getnc_state->num_records:i,
 	       r->out.ctr->ctr6.linked_attributes_count,
 	       link_given, link_total,
 	       dom_sid_string(mem_ctx, user_sid)));
