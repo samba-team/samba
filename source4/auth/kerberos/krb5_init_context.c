@@ -29,6 +29,7 @@
 #include "system/network.h"
 #include "param/param.h"
 #include "libcli/resolve/resolve.h"
+#include "../lib/tsocket/tsocket.h"
 
 /*
   context structure for operations on cldap packets
@@ -367,7 +368,15 @@ krb5_error_code smb_krb5_send_and_recv_func(krb5_context context,
 		}
 
 		if (!NT_STATUS_IS_OK(smb_krb5->status)) {
-			DEBUG(2,("Error reading smb_krb5 reply packet: %s\n", nt_errstr(smb_krb5->status)));
+			struct tsocket_address *addr = socket_address_to_tsocket_address(smb_krb5, remote_addr);
+			const char *addr_string = NULL;
+			if (addr) {
+				addr_string = tsocket_address_inet_addr_string(addr, smb_krb5);
+			} else {
+				addr_string = NULL;
+			}
+			DEBUG(2,("Error reading smb_krb5 reply packet: %s from %s\n", nt_errstr(smb_krb5->status),
+				 addr_string));
 			talloc_free(smb_krb5);
 			continue;
 		}
