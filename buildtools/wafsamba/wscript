@@ -67,7 +67,7 @@ def set_options(opt):
                    action="store", dest='MODULESDIR', default='${PREFIX}/modules')
 
     opt.add_option('--with-privatelibdir',
-                   help=("private library directory [PREFIX/lib/samba4]"),
+                   help=("private library directory [PREFIX/lib/%s]" % Utils.g_module.APPNAME),
                    action="store", dest='PRIVATELIBDIR', default=None)
 
     gr = opt.option_group('developer options')
@@ -268,7 +268,7 @@ def configure(conf):
         conf.env.RPATH_ON_INSTALL = (conf.env.RPATH_ON_BUILD and
                                      not Options.options.disable_rpath_install)
         if not conf.env.PRIVATELIBDIR:
-            conf.env.PRIVATELIBDIR = '${PREFIX}/lib/samba4'
+            conf.env.PRIVATELIBDIR = '${PREFIX}/lib/%s' % Utils.g_module.APPNAME
         conf.env.RPATH_ON_INSTALL_PRIVATE = (
             not Options.options.disable_rpath_private_install)
     else:
