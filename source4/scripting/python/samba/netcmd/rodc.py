@@ -105,7 +105,7 @@ class cmd_rodc_preload(Command):
         repl = drs_Replicate("ncacn_ip_tcp:%s[seal,print]" % server, lp, creds, local_samdb)
         try:
             repl.replicate(dn, source_dsa_invocation_id, destination_dsa_guid,
-                           exop=drsuapi.DRSUAPI_EXOP_REPL_SECRET)
+                           exop=drsuapi.DRSUAPI_EXOP_REPL_SECRET, rodc=True)
         except RuntimeError, (ecode, estring):
             if estring == 'WERR_DS_DRA_ACCESS_DENIED':
                 local_samdb.transaction_cancel()

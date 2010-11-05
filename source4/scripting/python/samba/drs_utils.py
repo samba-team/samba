@@ -111,7 +111,7 @@ class drs_Replicate:
 
 
     def replicate(self, dn, source_dsa_invocation_id, destination_dsa_guid,
-                  schema=False, exop=drsuapi.DRSUAPI_EXOP_NONE):
+                  schema=False, exop=drsuapi.DRSUAPI_EXOP_NONE, rodc=False):
         '''replicate a single DN'''
 
         # setup for a GetNCChanges call
@@ -132,8 +132,9 @@ class drs_Replicate:
             req8.replica_flags		    =  (drsuapi.DRSUAPI_DRS_INIT_SYNC |
                                                 drsuapi.DRSUAPI_DRS_PER_SYNC |
                                                 drsuapi.DRSUAPI_DRS_GET_ANC |
-                                                drsuapi.DRSUAPI_DRS_NEVER_SYNCED |
-                                                drsuapi.DRSUAPI_DRS_SPECIAL_SECRET_PROCESSING)
+                                                drsuapi.DRSUAPI_DRS_NEVER_SYNCED)
+            if rodc:
+                req8.replica_flags |= drsuapi.DRSUAPI_DRS_SPECIAL_SECRET_PROCESSING
         req8.max_object_count		     = 402
         req8.max_ndr_size		     = 402116
         req8.extended_op		     = exop
@@ -143,7 +144,7 @@ class drs_Replicate:
         req8.mapping_ctr.num_mappings	     = 0
         req8.mapping_ctr.mappings	     = None
 
-        if not schema:
+        if not schema and rodc:
             req8.partial_attribute_set = self.drs_get_rodc_partial_attribute_set()
 
         while True:
