@@ -672,7 +672,6 @@ static int descriptor_do_add(struct descriptor_context *ac)
 	struct ldb_request *add_req;
 	struct ldb_message_element *objectclass_element, *sd_element = NULL;
 	struct ldb_message *msg;
-	TALLOC_CTX *mem_ctx;
 	int ret;
 	DATA_BLOB *sd;
 	const struct dsdb_class *objectclass;
@@ -681,11 +680,6 @@ static int descriptor_do_add(struct descriptor_context *ac)
 
 	ldb = ldb_module_get_ctx(ac->module);
 	schema = dsdb_get_schema(ldb, ac);
-
-	mem_ctx = talloc_new(ac);
-	if (mem_ctx == NULL) {
-		return ldb_module_oom(ac->module);
-	}
 
 	switch (ac->req->operation) {
 	case LDB_ADD:
@@ -738,7 +732,7 @@ static int descriptor_do_add(struct descriptor_context *ac)
 		/* Get the parent descriptor and the one provided. If not
 		 * provided, get the default. Convert it to a security
 		 * descriptor and calculate the permissions. */
-		sd = get_new_descriptor(ac->module, msg->dn, mem_ctx, objectclass,
+		sd = get_new_descriptor(ac->module, msg->dn, ac, objectclass,
 					ac->parentsd_val, ac->sd_val, NULL, 0);
 		if (ac->sd_val) {
 			ldb_msg_remove_attr(msg, "nTSecurityDescriptor");
@@ -750,8 +744,6 @@ static int descriptor_do_add(struct descriptor_context *ac)
 				return ret;
 			}
 		}
-
-		talloc_free(mem_ctx);
 
 		ret = ldb_build_add_req(&add_req, ldb, ac,
 					msg,
