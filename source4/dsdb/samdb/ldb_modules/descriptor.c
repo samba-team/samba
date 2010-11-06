@@ -51,6 +51,7 @@ struct descriptor_data {
 struct descriptor_context {
 	struct ldb_module *module;
 	struct ldb_request *req;
+	struct ldb_message *msg;
 	struct ldb_reply *search_res;
 	struct ldb_reply *search_oc_res;
 	struct ldb_val *parentsd_val;
@@ -557,7 +558,6 @@ static int descriptor_do_mod(struct descriptor_context *ac)
 	int ret;
 	DATA_BLOB *sd;
 	const struct dsdb_class *objectclass;
-	struct ldb_message *msg;
 	struct ldb_control *sd_control;
 	struct ldb_control *sd_control2;
 	int flags = 0;
@@ -565,11 +565,6 @@ static int descriptor_do_mod(struct descriptor_context *ac)
 
 	ldb = ldb_module_get_ctx(ac->module);
 	schema = dsdb_get_schema(ldb, ac);
-
-	msg = ldb_msg_copy_shallow(ac, ac->req->op.mod.message);
-	if (msg == NULL) {
-		return ldb_module_oom(ac->module);
-	}
 
 	objectclass_element = ldb_msg_find_element(ac->search_oc_res->message,
 						   "objectClass");
@@ -596,20 +591,23 @@ static int descriptor_do_mod(struct descriptor_context *ac)
 			oldsd_val = oldsd_el->values;
 		}
 	}
-	sd = get_new_descriptor(ac->module, msg->dn, ac, objectclass,
+	sd = get_new_descriptor(ac->module, ac->msg->dn, ac, objectclass,
 				ac->parentsd_val, ac->sd_val, oldsd_val, sd_flags);
 	if (ac->sd_val) {
-		tmp_element = ldb_msg_find_element(msg, "ntSecurityDescriptor");
+		tmp_element = ldb_msg_find_element(ac->msg,
+						   "nTSecurityDescriptor");
 		flags = tmp_element->flags;
-		ldb_msg_remove_attr(msg, "nTSecurityDescriptor");
+		ldb_msg_remove_attr(ac->msg, "nTSecurityDescriptor");
 	}
 
 	if (sd) {
-		ret = ldb_msg_add_steal_value(msg, "nTSecurityDescriptor", sd);
+		ret = ldb_msg_add_steal_value(ac->msg,
+					      "nTSecurityDescriptor", sd);
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
-		tmp_element = ldb_msg_find_element(msg, "ntSecurityDescriptor");
+		tmp_element = ldb_msg_find_element(ac->msg,
+						   "nTSecurityDescriptor");
 		if (sd_control2) {
 			tmp_element->flags = LDB_FLAG_MOD_REPLACE;
 		} else {
@@ -617,7 +615,7 @@ static int descriptor_do_mod(struct descriptor_context *ac)
 		}
 	}
 	ret = ldb_build_mod_req(&mod_req, ldb, ac,
-				msg,
+				ac->msg,
 				ac->req->controls,
 				ac->req, dsdb_next_callback,
 				ac->req);
@@ -640,7 +638,6 @@ static int descriptor_do_add(struct descriptor_context *ac)
 	const struct dsdb_schema *schema;
 	struct ldb_request *add_req;
 	struct ldb_message_element *objectclass_element, *sd_element = NULL;
-	struct ldb_message *msg;
 	int ret;
 	DATA_BLOB *sd;
 	const struct dsdb_class *objectclass;
@@ -652,12 +649,13 @@ static int descriptor_do_add(struct descriptor_context *ac)
 
 	switch (ac->req->operation) {
 	case LDB_ADD:
-		msg = ldb_msg_copy_shallow(ac, ac->req->op.add.message);
-		if (msg == NULL) {
+		ac->msg = ldb_msg_copy_shallow(ac, ac->req->op.add.message);
+		if (ac->msg == NULL) {
 			return ldb_module_oom(ac->module);
 		}
 
-		objectclass_element = ldb_msg_find_element(msg, "objectClass");
+		objectclass_element = ldb_msg_find_element(ac->msg,
+							   "objectClass");
 		if (objectclass_element == NULL) {
 			return ldb_operr(ldb);
 		}
@@ -669,8 +667,8 @@ static int descriptor_do_add(struct descriptor_context *ac)
 		}
 		break;
 	case LDB_MODIFY:
-		msg = ldb_msg_copy_shallow(ac, ac->req->op.mod.message);
-		if (msg == NULL) {
+		ac->msg = ldb_msg_copy_shallow(ac, ac->req->op.mod.message);
+		if (ac->msg == NULL) {
 			return ldb_module_oom(ac->module);
 		}
 		break;
@@ -680,15 +678,15 @@ static int descriptor_do_add(struct descriptor_context *ac)
 
 
 	/* get the security descriptor values*/
-	sd_element = ldb_msg_find_element(msg, "nTSecurityDescriptor");
+	sd_element = ldb_msg_find_element(ac->msg, "nTSecurityDescriptor");
 	if (sd_element) {
 		ac->sd_val = talloc_memdup(ac, &sd_element->values[0], sizeof(struct ldb_val));
 	}
 	/* NC's have no parent */
 	/* FIXME: this has to be made dynamic at some point */
-	if ((ldb_dn_compare(msg->dn, (ldb_get_schema_basedn(ldb))) == 0) ||
-	    (ldb_dn_compare(msg->dn, (ldb_get_config_basedn(ldb))) == 0) ||
-	    (ldb_dn_compare(msg->dn, (ldb_get_default_basedn(ldb))) == 0)) {
+	if ((ldb_dn_compare(ac->msg->dn, (ldb_get_schema_basedn(ldb))) == 0) ||
+	    (ldb_dn_compare(ac->msg->dn, (ldb_get_config_basedn(ldb))) == 0) ||
+	    (ldb_dn_compare(ac->msg->dn, (ldb_get_default_basedn(ldb))) == 0)) {
 		ac->parentsd_val = NULL;
 	} else if (ac->search_res != NULL) {
 		struct ldb_message_element *parent_element = ldb_msg_find_element(ac->search_res->message, "nTSecurityDescriptor");
@@ -701,21 +699,23 @@ static int descriptor_do_add(struct descriptor_context *ac)
 		/* Get the parent descriptor and the one provided. If not
 		 * provided, get the default. Convert it to a security
 		 * descriptor and calculate the permissions. */
-		sd = get_new_descriptor(ac->module, msg->dn, ac, objectclass,
-					ac->parentsd_val, ac->sd_val, NULL, 0);
+		sd = get_new_descriptor(ac->module, ac->msg->dn, ac,
+					objectclass, ac->parentsd_val,
+					ac->sd_val, NULL, 0);
 		if (ac->sd_val) {
-			ldb_msg_remove_attr(msg, "nTSecurityDescriptor");
+			ldb_msg_remove_attr(ac->msg, "nTSecurityDescriptor");
 		}
 
 		if (sd) {
-			ret = ldb_msg_add_steal_value(msg, "nTSecurityDescriptor", sd);
+			ret = ldb_msg_add_steal_value(ac->msg,
+						      "nTSecurityDescriptor", sd);
 			if (ret != LDB_SUCCESS) {
 				return ret;
 			}
 		}
 
 		ret = ldb_build_add_req(&add_req, ldb, ac,
-					msg,
+					ac->msg,
 					ac->req->controls,
 					ac->req, dsdb_next_callback,
 					ac->req);
@@ -725,12 +725,12 @@ static int descriptor_do_add(struct descriptor_context *ac)
 		}
 		return ldb_next_request(ac->module, add_req);
 	} else {
-		ret = ldb_build_search_req(&search_req, ldb,
-				   ac, msg->dn, LDB_SCOPE_BASE,
-				   "(objectClass=*)", attrs,
-				   NULL,
-				   ac, get_search_oc_callback,
-				   ac->req);
+		ret = ldb_build_search_req(&search_req, ldb, ac,
+					   ac->msg->dn, LDB_SCOPE_BASE,
+					   "(objectClass=*)", attrs,
+					   NULL,
+					   ac, get_search_oc_callback,
+					   ac->req);
 		LDB_REQ_SET_LOCATION(search_req);
 		if (ret != LDB_SUCCESS) {
 			return ret;
