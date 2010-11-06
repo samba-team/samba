@@ -539,8 +539,8 @@ static const struct {
 } search_sub[] = {
 	{ "createTimestamp", "whenCreated", NULL , NULL },
 	{ "modifyTimestamp", "whenChanged", NULL , NULL },
-	{ "structuralObjectClass", "objectClass", NULL , NULL },
-	{ "canonicalName", "distinguishedName", NULL , construct_canonical_name },
+	{ "structuralObjectClass", NULL, NULL , NULL },
+	{ "canonicalName", NULL, NULL , construct_canonical_name },
 	{ "primaryGroupToken", "objectClass", "objectSid", construct_primary_group_token },
 	{ "tokenGroups", "objectClass", NULL, construct_token_groups },
 	{ "parentGUID", NULL, NULL, construct_parent_guid },
