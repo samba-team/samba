@@ -1688,8 +1688,9 @@ PyTypeObject PyLdbModule = {
  * @return New ldb_message_element, allocated as child of mem_ctx
  */
 struct ldb_message_element *PyObject_AsMessageElement(TALLOC_CTX *mem_ctx,
-											   PyObject *set_obj, int flags,
-											   const char *attr_name)
+						      PyObject *set_obj,
+						      int flags,
+						      const char *attr_name)
 {
 	struct ldb_message_element *me;
 
