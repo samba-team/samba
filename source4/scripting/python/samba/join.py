@@ -85,7 +85,7 @@ class dc_join:
 
         ctx.dnsdomain = ldb.Dn(ctx.samdb, ctx.base_dn).canonical_str().split('/')[0]
         ctx.realm = ctx.dnsdomain
-        ctx.dnshostname = "%s.%s" % (ctx.myname, ctx.dnsdomain)
+        ctx.dnshostname = "%s.%s" % (ctx.myname.lower(), ctx.dnsdomain)
 
         ctx.acct_dn = "CN=%s,OU=Domain Controllers,%s" % (ctx.myname, ctx.base_dn)
 
@@ -93,7 +93,8 @@ class dc_join:
         ctx.tmp_samdb = None
 
         ctx.SPNs = [ "HOST/%s" % ctx.myname,
-                     "HOST/%s" % ctx.dnshostname ]
+                     "HOST/%s" % ctx.dnshostname,
+                     "GC/%s/%s" % (ctx.dnshostname, ctx.dnsdomain) ]
 
         # these elements are optional
         ctx.never_reveal_sid = None
@@ -319,7 +320,7 @@ class dc_join:
             rec["HasMasterNCs"]      = [ ctx.base_dn, ctx.config_dn, ctx.schema_dn ]
             rec["msDS-HasMasterNCs"] = [ ctx.base_dn, ctx.config_dn, ctx.schema_dn ]
             rec["options"] = "1"
-            rec["invocationId"] = str(uuid.uuid4())
+            rec["invocationId"] = ndr_pack(misc.GUID(str(uuid.uuid4())))
             ctx.DsAddEntry(rec)
 
         # find the GUID of our NTDS DN
