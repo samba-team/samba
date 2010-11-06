@@ -175,7 +175,7 @@ failed:
   currently only @ATTRIBUTES is checked
 */
 static int ltdb_check_special_dn(struct ldb_module *module,
-			  const struct ldb_message *msg)
+				 const struct ldb_message *msg)
 {
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	unsigned int i, j;
