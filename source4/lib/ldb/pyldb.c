@@ -1425,13 +1425,14 @@ static int py_ldb_contains(PyLdbObject *self, PyObject *obj)
 	struct ldb_context *ldb_ctx = PyLdb_AsLdbContext(self);
 	struct ldb_dn *dn;
 	struct ldb_result *result;
+	unsigned int count;
 	int ret;
-	int count;
 
 	if (!PyObject_AsDn(ldb_ctx, obj, ldb_ctx, &dn))
 		return -1;
 
-	ret = ldb_search(ldb_ctx, ldb_ctx, &result, dn, LDB_SCOPE_BASE, NULL, NULL);
+	ret = ldb_search(ldb_ctx, ldb_ctx, &result, dn, LDB_SCOPE_BASE, NULL,
+			 NULL);
 	if (ret != LDB_SUCCESS) {
 		PyErr_SetLdbError(PyExc_LdbError, ret, ldb_ctx);
 		return -1;
@@ -1441,7 +1442,13 @@ static int py_ldb_contains(PyLdbObject *self, PyObject *obj)
 
 	talloc_free(result);
 
-	return count;
+	if (count == 1) {
+		return 1;
+	} else if (count == 0) {
+		return 0;
+	}
+
+	return -1;
 }
 
 static PySequenceMethods py_ldb_seq = {
