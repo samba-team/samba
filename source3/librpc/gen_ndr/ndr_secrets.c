@@ -24,7 +24,6 @@ _PUBLIC_ enum ndr_err_code ndr_push_TRUSTED_DOM_PASS(struct ndr_push *ndr, int n
 			NDR_CHECK(ndr_push_trailer_align(ndr, 4));
 		}
 		if (ndr_flags & NDR_BUFFERS) {
-			NDR_CHECK(ndr_push_dom_sid(ndr, NDR_BUFFERS, &r->domain_sid));
 		}
 		ndr->flags = _flags_save_STRUCT;
 	}
@@ -52,7 +51,6 @@ _PUBLIC_ enum ndr_err_code ndr_pull_TRUSTED_DOM_PASS(struct ndr_pull *ndr, int n
 			NDR_CHECK(ndr_pull_trailer_align(ndr, 4));
 		}
 		if (ndr_flags & NDR_BUFFERS) {
-			NDR_CHECK(ndr_pull_dom_sid(ndr, NDR_BUFFERS, &r->domain_sid));
 		}
 		ndr->flags = _flags_save_STRUCT;
 	}

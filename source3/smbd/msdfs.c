@@ -795,6 +795,7 @@ static NTSTATUS self_ref(TALLOC_CTX *ctx,
 **********************************************************************/
 
 NTSTATUS get_referred_path(TALLOC_CTX *ctx,
+			struct auth_serversupplied_info *server_info,
 			const char *dfs_path,
 			struct junction_map *jucn,
 			int *consumedcntp,
@@ -916,7 +917,7 @@ NTSTATUS get_referred_path(TALLOC_CTX *ctx,
 	}
 
 	status = create_conn_struct(ctx, &conn, snum, lp_pathname(snum),
-				    NULL, &oldpath);
+				    server_info, &oldpath);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(pdp);
 		return status;
@@ -1221,8 +1222,9 @@ int setup_dfs_referral(connection_struct *orig_conn,
 	}
 
 	/* The following call can change cwd. */
-	*pstatus = get_referred_path(ctx, pathnamep, junction,
-			&consumedcnt, &self_referral);
+	*pstatus = get_referred_path(ctx, orig_conn->server_info,
+				     pathnamep, junction,
+				     &consumedcnt, &self_referral);
 	if (!NT_STATUS_IS_OK(*pstatus)) {
 		vfs_ChDir(orig_conn,orig_conn->connectpath);
 		talloc_destroy(ctx);

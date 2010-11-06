@@ -6465,6 +6465,7 @@ bool is_msdfs_link(connection_struct *conn,
 		const char *path,
 		SMB_STRUCT_STAT *sbufp);
 NTSTATUS get_referred_path(TALLOC_CTX *ctx,
+			struct auth_serversupplied_info *server_info,
 			const char *dfs_path,
 			struct junction_map *jucn,
 			int *consumedcntp,
