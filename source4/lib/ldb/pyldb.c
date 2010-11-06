@@ -2587,14 +2587,14 @@ static PyObject *py_register_module(PyObject *module, PyObject *args)
 
 static PyObject *py_timestring(PyObject *module, PyObject *args)
 {
-	time_t t;
-	unsigned long val;
+	/* most times "time_t" is a signed integer type with 32 or 64 bit:
+	 * http://stackoverflow.com/questions/471248/what-is-ultimately-a-time-t-typedef-to */
+	long int t_val;
 	char *tresult;
 	PyObject *ret;
-	if (!PyArg_ParseTuple(args, "l", &val))
+	if (!PyArg_ParseTuple(args, "l", &t_val))
 		return NULL;
-	t = (time_t)val;
-	tresult = ldb_timestring(NULL, t);
+	tresult = ldb_timestring(NULL, (time_t) t_val);
 	ret = PyString_FromString(tresult);
 	talloc_free(tresult);
 	return ret;
