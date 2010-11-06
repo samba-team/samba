@@ -1765,10 +1765,10 @@ static PyObject *ldb_msg_element_to_set(struct ldb_context *ldb_ctx,
 
 static PyObject *py_ldb_msg_element_get(PyLdbMessageElementObject *self, PyObject *args)
 {
-	int i;
-	if (!PyArg_ParseTuple(args, "i", &i))
+	unsigned int i;
+	if (!PyArg_ParseTuple(args, "I", &i))
 		return NULL;
-	if (i < 0 || i >= PyLdbMessageElement_AsMessageElement(self)->num_values)
+	if (i >= PyLdbMessageElement_AsMessageElement(self)->num_values)
 		Py_RETURN_NONE;
 
 	return PyObject_FromLdbValue(NULL, PyLdbMessageElement_AsMessageElement(self), 
