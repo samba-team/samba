@@ -965,6 +965,18 @@ class BasicTests(unittest.TestCase):
         """Tests the 'distinguishedName' attribute"""
         print "Tests the 'distinguishedName' attribute"""
 
+        # The "dn" shortcut isn't supported
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+        m["objectClass"] = MessageElement("group", 0, "objectClass")
+        m["dn"] = MessageElement("cn=ldaptestgroup,cn=users," + self.base_dn, 0,
+          "dn")
+        try:
+            ldb.add(m)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_NO_SUCH_ATTRIBUTE)
+
         # a wrong "distinguishedName" attribute is obviously tolerated
         self.ldb.add({
               "dn": "cn=ldaptestgroup,cn=users," + self.base_dn,
@@ -978,6 +990,18 @@ class BasicTests(unittest.TestCase):
         self.assertTrue("distinguishedName" in res[0])
         self.assertTrue(Dn(ldb, res[0]["distinguishedName"][0])
            == Dn(ldb, "cn=ldaptestgroup, cn=users," + self.base_dn))
+
+        # The "dn" shortcut isn't supported
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+        m["dn"] = MessageElement(
+          "cn=ldaptestgroup,cn=users," + self.base_dn, FLAG_MOD_REPLACE,
+          "dn")
+        try:
+            ldb.modify(m)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_NO_SUCH_ATTRIBUTE)
 
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
