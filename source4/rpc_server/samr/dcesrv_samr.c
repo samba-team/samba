@@ -3890,14 +3890,15 @@ static NTSTATUS dcesrv_samr_GetUserPwInfo(struct dcesrv_call_state *dce_call, TA
 /*
   samr_RemoveMemberFromForeignDomain
 */
-static NTSTATUS dcesrv_samr_RemoveMemberFromForeignDomain(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct samr_RemoveMemberFromForeignDomain *r)
+static NTSTATUS dcesrv_samr_RemoveMemberFromForeignDomain(struct dcesrv_call_state *dce_call,
+							  TALLOC_CTX *mem_ctx,
+							  struct samr_RemoveMemberFromForeignDomain *r)
 {
 	struct dcesrv_handle *h;
 	struct samr_domain_state *d_state;
 	const char *memberdn;
 	struct ldb_message **res;
-	const char * const attrs[3] = { "distinguishedName", "objectSid", NULL };
+	const char *no_attrs[] = { NULL };
 	int i, count;
 
 	DCESRV_PULL_HANDLE(h, r->in.domain_handle, SAMR_HANDLE_DOMAIN);
@@ -3912,11 +3913,8 @@ static NTSTATUS dcesrv_samr_RemoveMemberFromForeignDomain(struct dcesrv_call_sta
 		return NT_STATUS_OK;
 	}
 
-	/* TODO: Does this call only remove alias members, or does it do this
-	 * for domain groups as well? */
-
 	count = samdb_search_domain(d_state->sam_ctx, mem_ctx,
-				    d_state->domain_dn, &res, attrs,
+				    d_state->domain_dn, &res, no_attrs,
 				    d_state->domain_sid,
 				    "(&(member=%s)(objectClass=group)"
 				    "(|(groupType=%d)(groupType=%d)))",
@@ -3935,11 +3933,7 @@ static NTSTATUS dcesrv_samr_RemoveMemberFromForeignDomain(struct dcesrv_call_sta
 			return NT_STATUS_NO_MEMORY;
 		}
 
-		mod->dn = samdb_result_dn(d_state->sam_ctx, mod, res[i], "distinguishedName", NULL);
-		if (mod->dn == NULL) {
-			talloc_free(mod);
-			continue;
-		}
+		mod->dn = res[i]->dn;
 
 		if (samdb_msg_add_delval(d_state->sam_ctx, mem_ctx, mod,
 					 "member", memberdn) != LDB_SUCCESS)
