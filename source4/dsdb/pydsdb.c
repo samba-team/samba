@@ -330,7 +330,7 @@ static PyObject *py_dsdb_DsReplicaAttribute(PyObject *self, PyObject *args)
 	struct drsuapi_DsReplicaAttribute *attr;
 	TALLOC_CTX *tmp_ctx;
 	WERROR werr;
-	int i;
+	Py_ssize_t i;
 
 	if (!PyArg_ParseTuple(args, "OsO", &py_ldb, &ldap_display_name, &el_list)) {
 		return NULL;
