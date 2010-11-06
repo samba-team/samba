@@ -566,17 +566,15 @@ static int descriptor_search_callback(struct ldb_request *req, struct ldb_reply 
 		return ldb_module_send_entry(ac->req, ares->message, ares->controls);
 
 	case LDB_REPLY_REFERRAL:
-		/* ignore referrals */
-		break;
+		return ldb_module_send_referral(ac->req, ares->referral);
 
 	case LDB_REPLY_DONE:
 		return ldb_module_done(ac->req, ares->controls,
 					ares->response, ares->error);
 	}
 
-	talloc_free(ares);
-	return LDB_SUCCESS;
 fail:
+	talloc_free(ares);
 	return ldb_module_done(ac->req, NULL, NULL, ret);
 }
 
