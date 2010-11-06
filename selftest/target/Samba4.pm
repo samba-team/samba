@@ -1377,11 +1377,11 @@ sub setup_rpc_proxy($$$)
 	my $env = $self->provision_rpc_proxy($path, $dc_vars);
 
 	if (defined $env) {
-	$self->check_or_start($env, ($ENV{SMBD_MAXTIME} or 7500));
+	        $self->check_or_start($env, ($ENV{SMBD_MAXTIME} or 7500));
 
-	$self->wait_for_start($env);
+		$self->wait_for_start($env);
 
-	$self->{vars}->{rpc_proxy} = $env;
+		$self->{vars}->{rpc_proxy} = $env;
 	}
 	return $env;
 }
