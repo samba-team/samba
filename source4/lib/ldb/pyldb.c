@@ -1721,7 +1721,7 @@ struct ldb_message_element *PyObject_AsMessageElement(TALLOC_CTX *mem_ctx,
 			PyObject *obj = PySequence_GetItem(set_obj, i);
 			if (!PyString_Check(obj)) {
 				PyErr_Format(PyExc_TypeError,
-					     "Expected string as element %d in list", i);
+					     "Expected string as element %zd in list", i);
 				talloc_free(me);
 				return NULL;
 			}
@@ -1881,8 +1881,7 @@ static PyObject *py_ldb_msg_element_new(PyTypeObject *type, PyObject *args, PyOb
 				PyObject *item = PySequence_GetItem(py_elements, i);
 				if (!PyString_Check(item)) {
 					PyErr_Format(PyExc_TypeError, 
-							"Expected string as element %d in list", 
-							i);
+						     "Expected string as element %zd in list", i);
 					talloc_free(mem_ctx);
 					return NULL;
 				}
