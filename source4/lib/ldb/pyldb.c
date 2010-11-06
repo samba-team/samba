@@ -89,7 +89,7 @@ static PyObject *PyObject_FromLdbValue(struct ldb_context *ldb_ctx,
 static PyObject *PyLdbResult_FromResult(struct ldb_result *result)
 {
 	PyObject *ret;
-	int i;
+	Py_ssize_t i;
 	if (result == NULL) {
 		Py_RETURN_NONE;
 	} 
@@ -113,7 +113,7 @@ static struct ldb_result *PyLdbResult_AsResult(TALLOC_CTX *mem_ctx,
 											   PyObject *obj)
 {
 	struct ldb_result *res;
-	int i;
+	Py_ssize_t i;
 
 	if (obj == Py_None)
 		return NULL;
@@ -493,7 +493,7 @@ static const char **PyList_AsStringList(TALLOC_CTX *mem_ctx, PyObject *list,
 										const char *paramname)
 {
 	const char **ret;
-	int i;
+	Py_ssize_t i;
 	if (!PyList_Check(list)) {
 		PyErr_Format(PyExc_TypeError, "%s is not a list", paramname);
 		return NULL;
@@ -1714,7 +1714,7 @@ struct ldb_message_element *PyObject_AsMessageElement(TALLOC_CTX *mem_ctx,
 		me->values[0].data = talloc_memdup(me, 
 			(uint8_t *)PyString_AsString(set_obj), me->values[0].length+1);
 	} else if (PySequence_Check(set_obj)) {
-		int i;
+		Py_ssize_t i;
 		me->num_values = PySequence_Size(set_obj);
 		me->values = talloc_array(me, struct ldb_val, me->num_values);
 		for (i = 0; i < me->num_values; i++) {
@@ -1739,10 +1739,10 @@ struct ldb_message_element *PyObject_AsMessageElement(TALLOC_CTX *mem_ctx,
 }
 
 
-static PyObject *ldb_msg_element_to_set(struct ldb_context *ldb_ctx, 
-								 struct ldb_message_element *me)
+static PyObject *ldb_msg_element_to_set(struct ldb_context *ldb_ctx,
+					struct ldb_message_element *me)
 {
-	int i;
+	Py_ssize_t i;
 	PyObject *result;
 
 	/* Python << 2.5 doesn't have PySet_New and PySet_Add. */
@@ -1867,7 +1867,7 @@ static PyObject *py_ldb_msg_element_new(PyTypeObject *type, PyObject *args, PyOb
 	el = talloc_zero(mem_ctx, struct ldb_message_element);
 
 	if (py_elements != NULL) {
-		int i;
+		Py_ssize_t i;
 		if (PyString_Check(py_elements)) {
 			el->num_values = 1;
 			el->values = talloc_array(el, struct ldb_val, 1);
@@ -1916,7 +1916,7 @@ static PyObject *py_ldb_msg_element_new(PyTypeObject *type, PyObject *args, PyOb
 static PyObject *py_ldb_msg_element_repr(PyLdbMessageElementObject *self)
 {
 	char *element_str = NULL;
-	int i;
+	Py_ssize_t i;
 	struct ldb_message_element *el = PyLdbMessageElement_AsMessageElement(self);
 	PyObject *ret;
 
@@ -1982,7 +1982,7 @@ static PyObject *py_ldb_msg_remove_attr(PyLdbMessageObject *self, PyObject *args
 static PyObject *py_ldb_msg_keys(PyLdbMessageObject *self)
 {
 	struct ldb_message *msg = PyLdbMessage_AsMessage(self);
-	int i, j = 0;
+	Py_ssize_t i, j = 0;
 	PyObject *obj = PyList_New(msg->num_elements+(msg->dn != NULL?1:0));
 	if (msg->dn != NULL) {
 		PyList_SetItem(obj, j, PyString_FromString("dn"));
@@ -2042,9 +2042,8 @@ static PyObject *py_ldb_msg_get(PyLdbMessageObject *self, PyObject *args)
 static PyObject *py_ldb_msg_items(PyLdbMessageObject *self)
 {
 	struct ldb_message *msg = PyLdbMessage_AsMessage(self);
-	int i, j;
+	Py_ssize_t i, j = 0;
 	PyObject *l = PyList_New(msg->num_elements + (msg->dn == NULL?0:1));
-	j = 0;
 	if (msg->dn != NULL) {
 		PyList_SetItem(l, 0, Py_BuildValue("(sO)", "dn", PyLdbDn_FromDn(msg->dn)));
 		j++;
