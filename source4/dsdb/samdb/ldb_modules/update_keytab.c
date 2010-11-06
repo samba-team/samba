@@ -237,7 +237,7 @@ static int ukt_search_modified_callback(struct ldb_request *req,
 static int ukt_search_modified(struct update_kt_ctx *ac)
 {
 	struct ldb_context *ldb;
-	static const char * const attrs[] = { "distinguishedName", NULL };
+	static const char * const no_attrs[] = { NULL };
 	struct ldb_request *search_req;
 	int ret;
 
@@ -246,7 +246,7 @@ static int ukt_search_modified(struct update_kt_ctx *ac)
 	ret = ldb_build_search_req(&search_req, ldb, ac,
 				   ac->dn, LDB_SCOPE_BASE,
 				   "(&(objectClass=kerberosSecret)"
-				     "(privateKeytab=*))", attrs,
+				     "(privateKeytab=*))", no_attrs,
 				   NULL,
 				   ac, ukt_search_modified_callback,
 				   ac->req);
