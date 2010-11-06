@@ -752,13 +752,6 @@ static int descriptor_do_add(struct descriptor_context *ac)
 		}
 
 		talloc_free(mem_ctx);
-		ret = ldb_msg_sanity_check(ldb, msg);
-
-		if (ret != LDB_SUCCESS) {
-			ldb_asprintf_errstring(ldb, "No last structural objectclass found on %s",
-					       ldb_dn_get_linearized(msg->dn));
-			return ret;
-		}
 
 		ret = ldb_build_add_req(&add_req, ldb, ac,
 					msg,
