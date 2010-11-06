@@ -534,8 +534,6 @@ static bool test_analyse_objects(struct torture_context *tctx,
 		for (i=0; i < cur->object.attribute_ctr.num_attributes; i++) {
 			WERROR werr;
 			const char *name = NULL;
-			bool rcrypt = false;
-			DATA_BLOB *enc_data = NULL;
 			DATA_BLOB plain_data;
 			struct drsuapi_DsReplicaAttribute *attr;
 			ndr_pull_flags_fn_t pull_fn = NULL;
@@ -546,19 +544,15 @@ static bool test_analyse_objects(struct torture_context *tctx,
 			switch (attr->attid) {
 			case DRSUAPI_ATTID_dBCSPwd:
 				name	= "dBCSPwd";
-				rcrypt	= true;
 				break;
 			case DRSUAPI_ATTID_unicodePwd:
 				name	= "unicodePwd";
-				rcrypt	= true;
 				break;
 			case DRSUAPI_ATTID_ntPwdHistory:
 				name	= "ntPwdHistory";
-				rcrypt	= true;
 				break;
 			case DRSUAPI_ATTID_lmPwdHistory:
 				name	= "lmPwdHistory";
-				rcrypt	= true;
 				break;
 			case DRSUAPI_ATTID_supplementalCredentials:
 				name	= "supplementalCredentials";
@@ -598,23 +592,15 @@ static bool test_analyse_objects(struct torture_context *tctx,
 
 			if (!attr->value_ctr.values[0].blob) continue;
 
-			enc_data = attr->value_ctr.values[0].blob;
-			ZERO_STRUCT(plain_data);
+			plain_data = *attr->value_ctr.values[0].blob;
 
-			werr = drsuapi_decrypt_attribute_value(ctx, gensec_skey, rcrypt,
-							       rid,
-							       enc_data, &plain_data);
-			if (!W_ERROR_IS_OK(werr)) {
-				DEBUG(0, ("Failed to decrypt %s\n", name));
-				continue;
-			}
 			if (!dn_printed) {
 				object_id++;
 				DEBUG(0,("DN[%u] %s\n", object_id, dn));
 				dn_printed = true;
 			}
-			DEBUGADD(0,("ATTR: %s enc.length=%lu plain.length=%lu\n",
-				    name, (long)enc_data->length, (long)plain_data.length));
+			DEBUGADD(0,("ATTR: %s plain.length=%lu\n",
+				    name, (long)plain_data.length));
 			if (plain_data.length) {
 				enum ndr_err_code ndr_err;
 				dump_data(0, plain_data.data, plain_data.length);
@@ -643,8 +629,6 @@ static bool test_analyse_objects(struct torture_context *tctx,
 						DEBUG(0, ("Failed to decode %s\n", name));
 					}
 				}
-			} else {
-				dump_data(0, enc_data->data, enc_data->length);
 			}
 			talloc_free(ptr);
 		}
