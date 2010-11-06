@@ -283,15 +283,6 @@ static int ltdb_add_internal(struct ldb_module *module,
 	int ret = LDB_SUCCESS;
 	unsigned int i;
 
-	ret = ltdb_check_special_dn(module, msg);
-	if (ret != LDB_SUCCESS) {
-		return ret;
-	}
-
-	if (ltdb_cache_load(module) != 0) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
 	for (i=0;i<msg->num_elements;i++) {
 		struct ldb_message_element *el = &msg->elements[i];
 		const struct ldb_schema_attribute *a = ldb_schema_attribute_by_name(ldb, el->name);
@@ -339,6 +330,11 @@ static int ltdb_add(struct ltdb_context *ctx)
 	struct ldb_module *module = ctx->module;
 	struct ldb_request *req = ctx->req;
 	int ret = LDB_SUCCESS;
+
+	ret = ltdb_check_special_dn(module, req->op.add.message);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
 
 	ldb_request_set_state(req, LDB_ASYNC_PENDING);
 
