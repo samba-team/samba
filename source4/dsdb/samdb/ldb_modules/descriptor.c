@@ -477,37 +477,6 @@ static int get_search_oc_callback(struct ldb_request *req, struct ldb_reply *are
 	return LDB_SUCCESS;
 }
 
-
-static int descriptor_op_callback(struct ldb_request *req, struct ldb_reply *ares)
-{
-	struct descriptor_context *ac;
-
-	ac = talloc_get_type(req->context, struct descriptor_context);
-
-	if (!ares) {
-		return ldb_module_done(ac->req, NULL, NULL,
-					LDB_ERR_OPERATIONS_ERROR);
-	}
-
-	if (ares->type == LDB_REPLY_REFERRAL) {
-		return ldb_module_send_referral(ac->req, ares->referral);
-	}
-
-	if (ares->error != LDB_SUCCESS) {
-		return ldb_module_done(ac->req, ares->controls,
-					ares->response, ares->error);
-	}
-
-	if (ares->type != LDB_REPLY_DONE) {
-		talloc_free(ares);
-		return ldb_module_done(ac->req, NULL, NULL,
-					LDB_ERR_OPERATIONS_ERROR);
-	}
-
-	return ldb_module_done(ac->req, ares->controls,
-				ares->response, ares->error);
-}
-
 static int descriptor_search_callback(struct ldb_request *req, struct ldb_reply *ares)
 {
 	struct descriptor_context *ac;
@@ -650,7 +619,7 @@ static int descriptor_do_mod(struct descriptor_context *ac)
 	ret = ldb_build_mod_req(&mod_req, ldb, ac,
 				msg,
 				ac->req->controls,
-				ac, descriptor_op_callback,
+				ac->req, dsdb_next_callback,
 				ac->req);
 	LDB_REQ_SET_LOCATION(mod_req);
 	if (ret != LDB_SUCCESS) {
@@ -748,7 +717,7 @@ static int descriptor_do_add(struct descriptor_context *ac)
 		ret = ldb_build_add_req(&add_req, ldb, ac,
 					msg,
 					ac->req->controls,
-					ac, descriptor_op_callback,
+					ac->req, dsdb_next_callback,
 					ac->req);
 		LDB_REQ_SET_LOCATION(add_req);
 		if (ret != LDB_SUCCESS) {
