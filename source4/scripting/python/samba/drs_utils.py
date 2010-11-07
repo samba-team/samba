@@ -167,6 +167,8 @@ class drs_Replicate:
 
         while True:
             (level, ctr) = self.drs.DsGetNCChanges(self.drs_handle, req_level, req)
+            if ctr.first_object == None and ctr.object_count != 0:
+                raise RuntimeError("DsGetNCChanges: NULL first_object with object_count=%u" % (ctr.object_count))
             self.net.replicate_chunk(self.replication_state, level, ctr, schema=schema)
             if ctr.more_data == 0:
                 break
