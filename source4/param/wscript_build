@@ -37,7 +37,7 @@ bld.SAMBA_MODULE('share_ldb',
 	source='share_ldb.c',
 	subsystem='share',
 	init_function='share_ldb_init',
-	deps='LDBSAMBA auth_system_session'
+	deps='ldbsamba auth_system_session'
 	)
 
 

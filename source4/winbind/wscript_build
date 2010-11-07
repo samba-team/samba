@@ -20,6 +20,6 @@ bld.SAMBA_SUBSYSTEM('WB_HELPER',
 bld.SAMBA_SUBSYSTEM('IDMAP',
 	source='idmap.c',
 	autoproto='idmap_proto.h',
-	public_deps='samdb-common LDBSAMBA'
+	public_deps='samdb-common ldbsamba'
 	)
 

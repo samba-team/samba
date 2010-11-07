@@ -4,7 +4,7 @@ bld.SAMBA_MODULE('samba_tool_drs',
 	source='drs/drs.c drs/drs_bind.c drs/drs_kcc.c drs/drs_replicate.c drs/drs_showrepl.c',
 	autoproto='drs/drs_proto.h',
 	subsystem='samba-tool',
-	deps='LIBCLI_DRSUAPI ldb LDBSAMBA',
+	deps='LIBCLI_DRSUAPI ldb ldbsamba',
 	internal_module=True
 	)
 
