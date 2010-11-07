@@ -450,7 +450,7 @@ static int dsdb_schema_setup_ldb_schema_attribute(struct ldb_context *ldb,
 	const struct ldb_val *get_string_val = ldb_msg_find_ldb_val(msg, attr); \
 	if (get_string_val == NULL) { \
 		if (strict) {					  \
-			d_printf("%s: %s == NULL\n", __location__, attr); \
+			d_printf("%s: %s == NULL in %s\n", __location__, attr, ldb_dn_get_linearized(msg->dn)); \
 			return WERR_INVALID_PARAM;			\
 		} else {						\
 			(p)->elem = NULL;				\
