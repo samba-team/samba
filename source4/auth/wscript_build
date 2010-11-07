@@ -12,7 +12,7 @@ bld.SAMBA_SUBSYSTEM('auth_session',
 	public_deps='CREDENTIALS',
 	public_headers='session.h',
 	header_path='samba',
-	deps='SAMDB auth_sam'
+	deps='samdb auth_sam'
 	)
 
 
@@ -33,7 +33,7 @@ bld.SAMBA_SUBSYSTEM('auth_system_session',
 bld.SAMBA_SUBSYSTEM('auth_sam',
 	source='sam.c',
 	autoproto='auth_sam.h',
-	public_deps='SAMDB security ldb tevent',
+	public_deps='samdb security ldb tevent',
 	deps=''
 	)
 
@@ -48,7 +48,7 @@ bld.SAMBA_SUBSYSTEM('auth_sam_reply',
 bld.SAMBA_PYTHON('pyauth',
 	source='pyauth.c',
 	public_deps='auth_system_session',
-	deps='SAMDB pytalloc-util pyparam_util',
+	deps='samdb pytalloc-util pyparam_util',
 	realname='samba/auth.so'
 	)
 

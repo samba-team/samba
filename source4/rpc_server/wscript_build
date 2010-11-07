@@ -60,7 +60,7 @@ bld.SAMBA_MODULE('dcerpc_unixinfo',
 	source='unixinfo/dcesrv_unixinfo.c',
 	subsystem='dcerpc_server',
 	init_function='dcerpc_server_unixinfo_init',
-	deps='DCERPC_COMMON SAMDB NDR_UNIXINFO LIBWBCLIENT_OLD'
+	deps='DCERPC_COMMON samdb NDR_UNIXINFO LIBWBCLIENT_OLD'
 	)
 
 
@@ -69,7 +69,7 @@ bld.SAMBA_MODULE('dcesrv_samr',
 	autoproto='samr/proto.h',
 	subsystem='dcerpc_server',
 	init_function='dcerpc_server_samr_init',
-	deps='SAMDB DCERPC_COMMON ndr-standard'
+	deps='samdb DCERPC_COMMON ndr-standard'
 	)
 
 
@@ -95,7 +95,7 @@ bld.SAMBA_MODULE('dcerpc_lsarpc',
 	autoproto='lsa/proto.h',
 	subsystem='dcerpc_server',
 	init_function='dcerpc_server_lsa_init',
-	deps='SAMDB DCERPC_COMMON ndr-standard LIBCLI_AUTH NDR_DSSETUP com_err security-session'
+	deps='samdb DCERPC_COMMON ndr-standard LIBCLI_AUTH NDR_DSSETUP com_err security-session'
 	)
 
 
@@ -112,7 +112,7 @@ bld.SAMBA_MODULE('dcerpc_drsuapi',
 	source='drsuapi/dcesrv_drsuapi.c drsuapi/updaterefs.c drsuapi/getncchanges.c drsuapi/addentry.c drsuapi/writespn.c drsuapi/drsutil.c',
 	subsystem='dcerpc_server',
 	init_function='dcerpc_server_drsuapi_init',
-	deps='SAMDB DCERPC_COMMON NDR_DRSUAPI security-session'
+	deps='samdb DCERPC_COMMON NDR_DRSUAPI security-session'
 	)
 
 

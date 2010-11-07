@@ -18,7 +18,7 @@ bld.SAMBA_MODULE('pvfs_acl_nfs4',
 	source='pvfs_acl_nfs4.c',
 	subsystem='pvfs_acl',
 	init_function='pvfs_acl_nfs4_init',
-	deps='NDR_NFS4ACL SAMDB'
+	deps='NDR_NFS4ACL samdb'
 	)
 
 
@@ -41,7 +41,7 @@ bld.SAMBA_MODULE('ntvfs_posix',
 
 bld.SAMBA_PYTHON('python_xattr_native',
 	source='python/pyxattr_native.c',
-	deps='ndr ldb SAMDB CREDENTIALS pyparam_util wrap_xattr attr',
+	deps='ndr ldb samdb CREDENTIALS pyparam_util wrap_xattr attr',
 	realname='samba/xattr_native.so'
 	)
 

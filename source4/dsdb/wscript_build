@@ -2,7 +2,7 @@
 
 bld.RECURSE('samdb/ldb_modules')
 
-bld.SAMBA_LIBRARY('SAMDB',
+bld.SAMBA_LIBRARY('samdb',
 	source='samdb/samdb.c samdb/samdb_privilege.c samdb/cracknames.c repl/replicated_objects.c',
 	autoproto='samdb/samdb_proto.h',
 	private_library=True,
@@ -31,7 +31,7 @@ bld.SAMBA_MODULE('DREPL_SRV',
 	autoproto='repl/drepl_service_proto.h',
 	subsystem='service',
 	init_function='server_service_drepl_init',
-	deps='SAMDB process_model RPC_NDR_DRSUAPI'
+	deps='samdb process_model RPC_NDR_DRSUAPI'
 	)
 
 
@@ -40,23 +40,23 @@ bld.SAMBA_MODULE('KCC_SRV',
 	autoproto='kcc/kcc_service_proto.h',
 	subsystem='service',
 	init_function='server_service_kcc_init',
-	deps='SAMDB process_model RPC_NDR_IRPC RPC_NDR_DRSUAPI'
+	deps='samdb process_model RPC_NDR_IRPC RPC_NDR_DRSUAPI'
 	)
 
 
 bld.SAMBA_MODULE('DNS_UPDATE_SRV',
-                 source='dns/dns_update.c',
-                 subsystem='service',
-                 init_function='server_service_dnsupdate_init',
-                 deps='SAMDB UTIL_RUNCMD samba-util ldb samdb-common errors talloc auth_system_session samba-hostconfig',
-                 internal_module=False
-                 )
+	source='dns/dns_update.c',
+	subsystem='service',
+	init_function='server_service_dnsupdate_init',
+	deps='samdb UTIL_RUNCMD samba-util ldb samdb-common errors talloc auth_system_session samba-hostconfig',
+	internal_module=False
+	)
 
 bld.SAMBA_PYTHON('python_dsdb',
-                 source='pydsdb.c',
-				 # the dependency on dcerpc here is because gensec
-				 # depends on dcerpc but the waf circular dependency finder
-				 # removes it so we end up with unresolved symbols.
-                 deps='SAMDB pyldb-util dcerpc com_err pyrpc_util',
-                 realname='samba/dsdb.so'
-                 )
+	source='pydsdb.c',
+	# the dependency on dcerpc here is because gensec
+	# depends on dcerpc but the waf circular dependency finder
+	# removes it so we end up with unresolved symbols.
+	deps='samdb pyldb-util dcerpc com_err pyrpc_util',
+	realname='samba/dsdb.so'
+	)

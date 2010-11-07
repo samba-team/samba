@@ -11,6 +11,6 @@ bld.SAMBA_BINARY('ntlm_auth',
 bld.SAMBA_BINARY('oLschema2ldif',
 	source='oLschema2ldif.c',
 	manpages='man/oLschema2ldif.1',
-	deps='ldb-cmdline SAMDB POPT_SAMBA'
+	deps='ldb-cmdline samdb POPT_SAMBA'
 	)
 
