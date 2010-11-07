@@ -709,12 +709,13 @@ struct ldb_message_element *samdb_find_attribute(struct ldb_context *ldb,
  * for entries). The latter (old value) has always specified
  * LDB_FLAG_MOD_DELETE.
  *
- * Returns LDB_ERR_NO_SUCH_ATTRIBUTE if the attribute which should be deleted
- * doesn't contain only one value (this is the Windows Server behaviour)
- * otherwise LDB_SUCCESS.
+ * Returns LDB_ERR_CONSTRAINT_VIOLATION and LDB_ERR_UNWILLING_TO_PERFORM if
+ * matching message elements are malformed in respect to the set/change rules.
+ * Otherwise it returns LDB_SUCCESS.
  */
 int samdb_msg_find_old_and_new_ldb_val(const struct ldb_message *msg,
 				       const char *name,
+				       enum ldb_request_type operation,
 				       const struct ldb_val **new_val,
 				       const struct ldb_val **old_val)
 {
@@ -728,11 +729,31 @@ int samdb_msg_find_old_and_new_ldb_val(const struct ldb_message *msg,
 	}
 
 	for (i = 0; i < msg->num_elements; i++) {
-		if (ldb_attr_cmp(msg->elements[i].name, name) == 0) {
-			if (LDB_FLAG_MOD_TYPE(msg->elements[i].flags) == LDB_FLAG_MOD_DELETE) {
+		if (ldb_attr_cmp(msg->elements[i].name, name) != 0) {
+			continue;
+		}
+
+		if ((operation == LDB_MODIFY) &&
+		    (LDB_FLAG_MOD_TYPE(msg->elements[i].flags) == LDB_FLAG_MOD_DELETE)) {
+			/* 0 values are allowed */
+			if (msg->elements[i].num_values == 1) {
 				*old_val = &msg->elements[i].values[0];
+			} else if (msg->elements[i].num_values > 1) {
+				return LDB_ERR_CONSTRAINT_VIOLATION;
+			}
+		} else if ((operation == LDB_MODIFY) &&
+			   (LDB_FLAG_MOD_TYPE(msg->elements[i].flags) == LDB_FLAG_MOD_REPLACE)) {
+			if (msg->elements[i].num_values > 0) {
+				*new_val = &msg->elements[i].values[msg->elements[i].num_values - 1];
 			} else {
-				*new_val = &msg->elements[i].values[0];
+				return LDB_ERR_UNWILLING_TO_PERFORM;
+			}
+		} else {
+			/* Add operations and LDB_FLAG_MOD_ADD */
+			if (msg->elements[i].num_values > 0) {
+				*new_val = &msg->elements[i].values[msg->elements[i].num_values - 1];
+			} else {
+				return LDB_ERR_CONSTRAINT_VIOLATION;
 			}
 		}
 	}

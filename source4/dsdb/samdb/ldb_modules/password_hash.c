@@ -1687,7 +1687,9 @@ static int setup_io(struct ph_context *ac,
 	}
 
 	ret = samdb_msg_find_old_and_new_ldb_val(orig_msg, "userPassword",
-		&io->n.cleartext_utf8, &io->og.cleartext_utf8);
+						 ac->req->operation,
+						 &io->n.cleartext_utf8,
+						 &io->og.cleartext_utf8);
 	if (ret != LDB_SUCCESS) {
 		ldb_asprintf_errstring(ldb,
 			"setup_io: "
@@ -1696,7 +1698,9 @@ static int setup_io(struct ph_context *ac,
 	}
 
 	ret = samdb_msg_find_old_and_new_ldb_val(orig_msg, "clearTextPassword",
-		&io->n.cleartext_utf16, &io->og.cleartext_utf16);
+						 ac->req->operation,
+						 &io->n.cleartext_utf16,
+						 &io->og.cleartext_utf16);
 	if (ret != LDB_SUCCESS) {
 		ldb_asprintf_errstring(ldb,
 			"setup_io: "
@@ -1718,7 +1722,9 @@ static int setup_io(struct ph_context *ac,
 	   a nthash */
 
 	ret = samdb_msg_find_old_and_new_ldb_val(orig_msg, "unicodePwd",
-		&quoted_utf16, &old_quoted_utf16);
+						 ac->req->operation,
+						 &quoted_utf16,
+						 &old_quoted_utf16);
 	if (ret != LDB_SUCCESS) {
 		ldb_asprintf_errstring(ldb,
 			"setup_io: "
@@ -1833,7 +1839,8 @@ static int setup_io(struct ph_context *ac,
 	/* Handles the "dBCSPwd" attribute (LM hash) */
 	io->n.lm_hash = NULL; io->og.lm_hash = NULL;
 	ret = samdb_msg_find_old_and_new_ldb_val(orig_msg, "dBCSPwd",
-		&lm_hash, &old_lm_hash);
+						 ac->req->operation,
+						 &lm_hash, &old_lm_hash);
 	if (ret != LDB_SUCCESS) {
 		ldb_asprintf_errstring(ldb,
 			"setup_io: "
