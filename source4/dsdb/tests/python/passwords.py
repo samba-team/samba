@@ -402,6 +402,27 @@ userPassword: thatsAcomplPASS1
 dn: cn=testuser,cn=users,""" + self.base_dn + """
 changetype: modify
 delete: userPassword
+userPassword: thatsAcomplPASS1
+""")
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
+
+        try:
+            ldb.modify_ldif("""
+dn: cn=testuser,cn=users,""" + self.base_dn + """
+changetype: modify
+delete: userPassword
+""")
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
+
+        try:
+            self.ldb2.modify_ldif("""
+dn: cn=testuser,cn=users,""" + self.base_dn + """
+changetype: modify
+delete: userPassword
 """)
             self.fail()
         except LdbError, (num, _):
