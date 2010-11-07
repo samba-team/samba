@@ -409,17 +409,17 @@ static NTSTATUS libnet_vampire_cb_apply_schema(struct libnet_vampire_cb_state *s
 	s->self_made_schema = NULL;
 
 	/* Now convert the schema elements again, using the schema we finalised, ready to actually import */
-	status = dsdb_extended_replicated_objects_convert(s->ldb,
-							  c->partition->nc.dn,
-							  mapping_ctr,
-							  object_count,
-							  first_object,
-							  linked_attributes_count,
-							  linked_attributes,
-							  s_dsa,
-							  uptodateness_vector,
-							  c->gensec_skey,
-							  s, &schema_objs);
+	status = dsdb_replicated_objects_convert(s->ldb,
+						 c->partition->nc.dn,
+						 mapping_ctr,
+						 object_count,
+						 first_object,
+						 linked_attributes_count,
+						 linked_attributes,
+						 s_dsa,
+						 uptodateness_vector,
+						 c->gensec_skey,
+						 s, &schema_objs);
 	if (!W_ERROR_IS_OK(status)) {
 		DEBUG(0,("Failed to convert objects when trying to import over DRS (2nd pass, to store remote schema): %s\n", win_errstr(status)));
 		return werror_to_ntstatus(status);
@@ -676,17 +676,17 @@ NTSTATUS libnet_vampire_cb_store_chunk(void *private_data,
 	}
 
 
-	status = dsdb_extended_replicated_objects_convert(s->ldb,
-							  c->partition->nc.dn,
-							  mapping_ctr,
-							  object_count,
-							  first_object,
-							  linked_attributes_count,
-							  linked_attributes,
-							  s_dsa,
-							  uptodateness_vector,
-							  c->gensec_skey,
-							  s, &objs);
+	status = dsdb_replicated_objects_convert(s->ldb,
+						 c->partition->nc.dn,
+						 mapping_ctr,
+						 object_count,
+						 first_object,
+						 linked_attributes_count,
+						 linked_attributes,
+						 s_dsa,
+						 uptodateness_vector,
+						 c->gensec_skey,
+						 s, &objs);
 	if (!W_ERROR_IS_OK(status)) {
 		DEBUG(0,("Failed to convert objects: %s\n", win_errstr(status)));
 		return werror_to_ntstatus(status);

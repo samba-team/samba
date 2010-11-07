@@ -340,15 +340,15 @@ static bool test_analyse_objects(struct torture_context *tctx,
 		       "drs_util_dsdb_schema_load_ldb() failed");
 	ldap_schema = dsdb_get_schema(ldb, NULL);
 
-	status = dsdb_extended_replicated_objects_convert(ldb,
-							  partition,
-							  mapping_ctr,
-							  object_count,
-							  first_object,
-							  0, NULL,
-							  NULL, NULL,
-							  gensec_skey,
-							  ctx, &objs);
+	status = dsdb_replicated_objects_convert(ldb,
+						 partition,
+						 mapping_ctr,
+						 object_count,
+						 first_object,
+						 0, NULL,
+						 NULL, NULL,
+						 gensec_skey,
+						 ctx, &objs);
 	torture_assert_werr_ok(tctx, status, "dsdb_extended_replicated_objects_convert() failed!");
 
 	extended_dn_ctrl = talloc(objs, struct ldb_extended_dn_control);

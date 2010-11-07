@@ -580,17 +580,17 @@ static void dreplsrv_op_pull_source_apply_changes_trigger(struct tevent_req *req
 		return;
 	}
 
-	status = dsdb_extended_replicated_objects_convert(service->samdb,
-							  partition->nc.dn,
-							  mapping_ctr,
-							  object_count,
-							  first_object,
-							  linked_attributes_count,
-							  linked_attributes,
-							  &rf1,
-							  uptodateness_vector,
-							  &drsuapi->gensec_skey,
-							  state, &objects);
+	status = dsdb_replicated_objects_convert(service->samdb,
+						 partition->nc.dn,
+						 mapping_ctr,
+						 object_count,
+						 first_object,
+						 linked_attributes_count,
+						 linked_attributes,
+						 &rf1,
+						 uptodateness_vector,
+						 &drsuapi->gensec_skey,
+						 state, &objects);
 	if (!W_ERROR_IS_OK(status)) {
 		nt_status = werror_to_ntstatus(WERR_BAD_NET_RESP);
 		DEBUG(0,("Failed to convert objects: %s/%s\n",

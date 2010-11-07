@@ -196,18 +196,18 @@ WERROR dsdb_convert_object_ex(struct ldb_context *ldb,
 	return WERR_OK;
 }
 
-WERROR dsdb_extended_replicated_objects_convert(struct ldb_context *ldb,
-						const char *partition_dn_str,
-						const struct drsuapi_DsReplicaOIDMapping_Ctr *mapping_ctr,
-						uint32_t object_count,
-						const struct drsuapi_DsReplicaObjectListItemEx *first_object,
-						uint32_t linked_attributes_count,
-						const struct drsuapi_DsReplicaLinkedAttribute *linked_attributes,
-						const struct repsFromTo1 *source_dsa,
-						const struct drsuapi_DsReplicaCursor2CtrEx *uptodateness_vector,
-						const DATA_BLOB *gensec_skey,
-						TALLOC_CTX *mem_ctx,
-						struct dsdb_extended_replicated_objects **objects)
+WERROR dsdb_replicated_objects_convert(struct ldb_context *ldb,
+				       const char *partition_dn_str,
+				       const struct drsuapi_DsReplicaOIDMapping_Ctr *mapping_ctr,
+				       uint32_t object_count,
+				       const struct drsuapi_DsReplicaObjectListItemEx *first_object,
+				       uint32_t linked_attributes_count,
+				       const struct drsuapi_DsReplicaLinkedAttribute *linked_attributes,
+				       const struct repsFromTo1 *source_dsa,
+				       const struct drsuapi_DsReplicaCursor2CtrEx *uptodateness_vector,
+				       const DATA_BLOB *gensec_skey,
+				       TALLOC_CTX *mem_ctx,
+				       struct dsdb_extended_replicated_objects **objects)
 {
 	WERROR status;
 	struct ldb_dn *partition_dn;
