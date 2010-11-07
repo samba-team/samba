@@ -599,9 +599,9 @@ static void dreplsrv_op_pull_source_apply_changes_trigger(struct tevent_req *req
 		return;
 	}
 
-	status = dsdb_extended_replicated_objects_commit(service->samdb,
-							 objects, 
-							 &state->op->source_dsa->notify_uSN);
+	status = dsdb_replicated_objects_commit(service->samdb,
+						objects,
+						&state->op->source_dsa->notify_uSN);
 	talloc_free(objects);
 	if (!W_ERROR_IS_OK(status)) {
 		nt_status = werror_to_ntstatus(WERR_BAD_NET_RESP);

@@ -286,9 +286,9 @@ WERROR dsdb_extended_replicated_objects_convert(struct ldb_context *ldb,
 	return WERR_OK;
 }
 
-WERROR dsdb_extended_replicated_objects_commit(struct ldb_context *ldb,
-					       struct dsdb_extended_replicated_objects *objects,
-					       uint64_t *notify_uSN)
+WERROR dsdb_replicated_objects_commit(struct ldb_context *ldb,
+				      struct dsdb_extended_replicated_objects *objects,
+				      uint64_t *notify_uSN)
 {
 	struct ldb_result *ext_res;
 	int ret;

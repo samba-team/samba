@@ -436,7 +436,7 @@ static NTSTATUS libnet_vampire_cb_apply_schema(struct libnet_vampire_cb_state *s
 		}
 	}
 
-	status = dsdb_extended_replicated_objects_commit(s->ldb, schema_objs, &seq_num);
+	status = dsdb_replicated_objects_commit(s->ldb, schema_objs, &seq_num);
 	if (!W_ERROR_IS_OK(status)) {
 		DEBUG(0,("Failed to commit objects: %s\n", win_errstr(status)));
 		return werror_to_ntstatus(status);
@@ -702,8 +702,7 @@ NTSTATUS libnet_vampire_cb_store_chunk(void *private_data,
 			NDR_PRINT_DEBUG(replPropertyMetaDataBlob, objs->objects[i].meta_data);
 		}
 	}
-	status = dsdb_extended_replicated_objects_commit(s->ldb,
-							 objs, &seq_num);
+	status = dsdb_replicated_objects_commit(s->ldb, objs, &seq_num);
 	if (!W_ERROR_IS_OK(status)) {
 		DEBUG(0,("Failed to commit objects: %s\n", win_errstr(status)));
 		return werror_to_ntstatus(status);
