@@ -25,6 +25,7 @@ from ldb import ERR_OBJECT_CLASS_VIOLATION, ERR_NOT_ALLOWED_ON_RDN
 from ldb import ERR_NAMING_VIOLATION, ERR_CONSTRAINT_VIOLATION
 from ldb import Message, MessageElement, Dn
 from ldb import FLAG_MOD_ADD, FLAG_MOD_REPLACE, FLAG_MOD_DELETE
+from ldb import timestring
 from samba import Ldb
 from samba.dsdb import (UF_NORMAL_ACCOUNT,
     UF_WORKSTATION_TRUST_ACCOUNT,
@@ -1250,11 +1251,84 @@ objectClass: container
         self.assertEquals(len(res), 1, "Wrong number of hits for (&(cn=ldaptestuser5)(objectclass=user))")
         self.delete_force(self.ldb, "cn=ldaptestuser5,cn=users," + self.base_dn)
 
+    def test_objectGUID(self):
+        """Test objectGUID behaviour"""
+        print "Testing objectGUID behaviour\n"
+
+        # The objectGUID cannot directly be set
+        try:
+            self.ldb.add_ldif("""
+dn: cn=ldaptestcontainer,""" + self.base_dn + """
+objectClass: container
+objectGUID: bd3480c9-58af-4cd8-92df-bc4a18b6e44d
+""")
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
+
+        self.ldb.add({
+            "dn": "cn=ldaptestcontainer," + self.base_dn,
+            "objectClass": "container" })
+
+        res = ldb.search("cn=ldaptestcontainer," + self.base_dn,
+                         scope=SCOPE_BASE,
+                         attrs=["objectGUID", "uSNCreated", "uSNChanged", "whenCreated", "whenChanged"])
+        self.assertTrue(len(res) == 1)
+        self.assertTrue("objectGUID" in res[0])
+        self.assertTrue("uSNCreated" in res[0])
+        self.assertTrue("uSNChanged" in res[0])
+        self.assertTrue("whenCreated" in res[0])
+        self.assertTrue("whenChanged" in res[0])
+
+        self.delete_force(self.ldb, "cn=ldaptestcontainer," + self.base_dn)
+
+        # All the following attributes are specificable on add operations
+        self.ldb.add({
+            "dn": "cn=ldaptestcontainer," + self.base_dn,
+            "objectClass": "container",
+            "uSNCreated" : "1",
+            "uSNChanged" : "1",
+            "whenCreated": timestring(long(time.time())),
+            "whenChanged": timestring(long(time.time())) })
+
+        res = ldb.search("cn=ldaptestcontainer," + self.base_dn,
+                         scope=SCOPE_BASE,
+                         attrs=["objectGUID", "uSNCreated", "uSNChanged", "whenCreated", "whenChanged"])
+        self.assertTrue(len(res) == 1)
+        self.assertTrue("objectGUID" in res[0])
+        self.assertTrue("uSNCreated" in res[0])
+        self.assertFalse(res[0]["uSNCreated"][0] == "1") # these are corrected
+        self.assertTrue("uSNChanged" in res[0])
+        self.assertFalse(res[0]["uSNChanged"][0] == "1") # these are corrected
+
+        self.delete_force(self.ldb, "cn=ldaptestcontainer," + self.base_dn)
+
+        # All this attributes are specificable on add operations
+        self.ldb.add({
+            "dn": "cn=ldaptestcontainer," + self.base_dn,
+            "objectclass": "container",
+            "uSNCreated" : "1",
+            "uSNChanged" : "1",
+            "whenCreated": timestring(long(time.time())),
+            "whenChanged": timestring(long(time.time())) })
+
+        res = ldb.search("cn=ldaptestcontainer," + self.base_dn,
+                         scope=SCOPE_BASE,
+                         attrs=["objectGUID", "uSNCreated", "uSNChanged", "whenCreated", "whenChanged"])
+        self.assertTrue(len(res) == 1)
+        self.assertTrue("objectGUID" in res[0])
+        self.assertTrue("uSNCreated" in res[0])
+        self.assertFalse(res[0]["uSNCreated"][0] == "1") # these are corrected
+        self.assertTrue("uSNChanged" in res[0])
+        self.assertFalse(res[0]["uSNChanged"][0] == "1") # these are corrected
+        self.assertTrue("whenCreated" in res[0])
+        self.assertTrue("whenChanged" in res[0])
+
+        self.delete_force(self.ldb, "cn=ldaptestcontainer," + self.base_dn)
+
     def test_parentGUID(self):
         """Test parentGUID behaviour"""
         print "Testing parentGUID behaviour\n"
-
-        # TODO: This seems to fail on Windows Server. Hidden attribute?
 
         self.ldb.add({
             "dn": "cn=parentguidtest,cn=users," + self.base_dn,
