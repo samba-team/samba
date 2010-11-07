@@ -49,7 +49,7 @@ def _drs_fetch_pfm(server, samdb, creds, lp):
     binding_str = "ncacn_ip_tcp:%s[print,seal]" % server
 
     drs = drsuapi.drsuapi(binding_str, lp, creds)
-    drs_handle = drs_DsBind(drs)
+    (drs_handle, supported_extensions) = drs_DsBind(drs)
     print "DRS Handle: %s" % drs_handle
 
     req8 = drsuapi.DsGetNCChangesRequest8()

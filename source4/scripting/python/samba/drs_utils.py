@@ -58,14 +58,15 @@ def drs_DsBind(drs):
     bind_info.info.supported_extensions	|= drsuapi.DRSUAPI_SUPPORTED_EXTENSION_GETCHGREPLY_V7
     bind_info.info.supported_extensions	|= drsuapi.DRSUAPI_SUPPORTED_EXTENSION_VERIFY_OBJECT
     (info, handle) = drs.DsBind(misc.GUID(drsuapi.DRSUAPI_DS_BIND_GUID), bind_info)
-    return handle
+
+    return (handle, info.info.supported_extensions)
 
 class drs_Replicate:
     '''DRS replication calls'''
 
     def __init__(self, binding_string, lp, creds, samdb):
         self.drs = drsuapi.drsuapi(binding_string, lp, creds)
-        self.drs_handle = drs_DsBind(self.drs)
+        (self.drs_handle, self.supported_extensions) = drs_DsBind(self.drs)
         self.net = Net(creds=creds, lp=lp)
         self.samdb = samdb
         self.replication_state = self.net.replicate_init(self.samdb, lp, self.drs)
@@ -152,9 +153,21 @@ class drs_Replicate:
         if not schema and rodc:
             req8.partial_attribute_set = self.drs_get_rodc_partial_attribute_set()
 
+        if self.supported_extensions & drsuapi.DRSUAPI_SUPPORTED_EXTENSION_GETCHGREQ_V8:
+            req_level = 8
+            req = req8
+        else:
+            req_level = 5
+            req5 = drsuapi.DsGetNCChangesRequest5()
+            for a in dir(req5):
+                if a[0] != '_':
+                    setattr(req5, a, getattr(req8, a))
+            req = req5
+
+
         while True:
-            (level, ctr) = self.drs.DsGetNCChanges(self.drs_handle, 8, req8)
+            (level, ctr) = self.drs.DsGetNCChanges(self.drs_handle, req_level, req)
             self.net.replicate_chunk(self.replication_state, level, ctr, schema=schema)
             if ctr.more_data == 0:
                 break
-            req8.highwatermark.tmp_highest_usn = ctr.new_highwatermark.tmp_highest_usn
+            req.highwatermark.tmp_highest_usn = ctr.new_highwatermark.tmp_highest_usn

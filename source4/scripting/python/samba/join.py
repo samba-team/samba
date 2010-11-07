@@ -21,7 +21,7 @@
 import samba.getopt as options
 from samba.auth import system_session
 from samba.samdb import SamDB
-from samba import gensec, Ldb, drs_utils
+from samba import gensec, Ldb, drs_utils, dsdb
 import ldb, samba, sys, os, uuid
 from samba.ndr import ndr_pack, ndr_unpack, ndr_print
 from samba.dcerpc import security, drsuapi, misc, netlogon, nbt
@@ -30,7 +30,6 @@ from samba.provision import secretsdb_self_join, provision, FILL_DRS, find_setup
 from samba.schema import Schema
 from samba.net import Net
 import logging
-from samba.dsdb import DS_DOMAIN_FUNCTION_2008_R2
 import talloc
 
 # this makes debugging easier
@@ -70,21 +69,31 @@ class dc_join:
         ctx.domsid = ctx.samdb.get_domain_sid()
         ctx.domain_name = ctx.get_domain_name()
 
-        lp.set("realm", ctx.domain_name)
+        lp.set("workgroup", ctx.domain_name)
+        print("workgroup is %s" % ctx.domain_name)
 
         ctx.dc_ntds_dn = ctx.get_dsServiceName()
         ctx.dc_dnsHostName = ctx.get_dnsHostName()
+        ctx.behavior_version = ctx.get_behavior_version()
+
         ctx.acct_pass = samba.generate_random_password(12, 32)
-        ctx.mysid = ctx.get_mysid()
 
         # work out the DNs of all the objects we will be adding
-        ctx.admin_dn = "<SID=%s>" % ctx.mysid
         ctx.server_dn = "CN=%s,CN=Servers,CN=%s,CN=Sites,%s" % (ctx.myname, ctx.site, ctx.config_dn)
         ctx.ntds_dn = "CN=NTDS Settings,%s" % ctx.server_dn
-        ctx.topology_dn = "CN=%s,CN=Topology,CN=Domain System Volume,CN=DFSR-GlobalSettings,CN=System,%s" % (ctx.myname, ctx.base_dn)
+        topology_base = "CN=Topology,CN=Domain System Volume,CN=DFSR-GlobalSettings,CN=System,%s" % ctx.base_dn
+        if ctx.dn_exists(topology_base):
+            ctx.topology_dn = "CN=%s,%s" % (ctx.myname, topology_base)
+        else:
+            ctx.topology_dn = None
 
         ctx.dnsdomain = ldb.Dn(ctx.samdb, ctx.base_dn).canonical_str().split('/')[0]
+
         ctx.realm = ctx.dnsdomain
+        lp.set("realm", ctx.realm)
+
+        print("realm is %s" % ctx.realm)
+
         ctx.dnshostname = "%s.%s" % (ctx.myname.lower(), ctx.dnsdomain)
 
         ctx.acct_dn = "CN=%s,OU=Domain Controllers,%s" % (ctx.myname, ctx.base_dn)
@@ -136,7 +145,8 @@ class dc_join:
                 ctx.del_noerror(ctx.krbtgt_dn)
             ctx.del_noerror(ctx.ntds_dn)
             ctx.del_noerror(ctx.server_dn, recursive=True)
-            ctx.del_noerror(ctx.topology_dn)
+            if ctx.topology_dn:
+                ctx.del_noerror(ctx.topology_dn)
             if res:
                 ctx.new_krbtgt_dn = res[0]["msDS-Krbtgtlink"][0]
                 ctx.del_noerror(ctx.new_krbtgt_dn)
@@ -159,6 +169,13 @@ class dc_join:
         res = ctx.samdb.search(base="", scope=ldb.SCOPE_BASE, attrs=["dsServiceName"])
         return res[0]["dsServiceName"][0]
 
+    def get_behavior_version(ctx):
+        res = ctx.samdb.search(base=ctx.base_dn, scope=ldb.SCOPE_BASE, attrs=["msDS-Behavior-Version"])
+        if "msDS-Behavior-Version" in res[0]:
+            return int(res[0]["msDS-Behavior-Version"][0])
+        else:
+            return samba.dsdb.DS_DOMAIN_FUNCTION_2000
+
     def get_dnsHostName(ctx):
         res = ctx.samdb.search(base="", scope=ldb.SCOPE_BASE, attrs=["dnsHostName"])
         return res[0]["dnsHostName"][0]
@@ -171,9 +188,19 @@ class dc_join:
         return res[0]["nETBIOSName"][0]
 
     def get_mysid(ctx):
+        '''get the SID of the connected user. Only works with w2k8 and later,
+           so only used for RODC join'''
         res = ctx.samdb.search(base="", scope=ldb.SCOPE_BASE, attrs=["tokenGroups"])
         binsid = res[0]["tokenGroups"][0]
         return ctx.samdb.schema_format_value("objectSID", binsid)
+
+    def dn_exists(ctx, dn):
+        '''check if a DN exists'''
+        try:
+            res = ctx.samdb.search(base=dn, scope=ldb.SCOPE_BASE, attrs=[])
+        except ldb.LdbError, (ERR_NO_SUCH_OBJECT, _):
+            return False
+        return True
 
     def add_krbtgt_account(ctx):
         '''RODCs need a special krbtgt account'''
@@ -208,7 +235,7 @@ class dc_join:
         '''make a DRSUAPI connection to the server'''
         binding_string = "ncacn_ip_tcp:%s[seal]" % ctx.server
         ctx.drsuapi = drsuapi.drsuapi(binding_string, ctx.lp, ctx.creds)
-        ctx.drsuapi_handle = drs_utils.drs_DsBind(ctx.drsuapi)
+        (ctx.drsuapi_handle, ctx.bind_supported_extensions) = drs_utils.drs_DsBind(ctx.drsuapi)
 
     def create_tmp_samdb(ctx):
         '''create a temporary samdb object for schema queries'''
@@ -263,7 +290,6 @@ class dc_join:
         req2 = drsuapi.DsAddEntryRequest2()
         req2.first_object = first_object
 
-        # this dies
         (level, ctr) = ctx.drsuapi.DsAddEntry(ctx.drsuapi_handle, 2, req2)
 
 
@@ -276,8 +302,9 @@ class dc_join:
             "displayname": ctx.samname,
             "samaccountname" : ctx.samname,
             "userAccountControl" : str(ctx.userAccountControl),
-            "dnshostname" : ctx.dnshostname,
-            "msDS-SupportedEncryptionTypes" : str(samba.dsdb.ENC_ALL_TYPES)}
+            "dnshostname" : ctx.dnshostname}
+        if ctx.behavior_version >= samba.dsdb.DS_DOMAIN_FUNCTION_2003:
+            rec['msDS-SupportedEncryptionTypes'] = str(samba.dsdb.ENC_ALL_TYPES)
         if ctx.managedby:
             rec["managedby"] = ctx.managedby
         if ctx.never_reveal_sid:
@@ -306,9 +333,11 @@ class dc_join:
             "dn" : ctx.ntds_dn,
             "objectclass" : "nTDSDSA",
             "systemFlags" : str(samba.dsdb.SYSTEM_FLAG_DISALLOW_MOVE_ON_DELETE),
-            "dMDLocation" : ctx.schema_dn,
-            "msDS-Behavior-Version" : str(DS_DOMAIN_FUNCTION_2008_R2),
-            "msDS-HasDomainNCs" : ctx.base_dn }
+            "dMDLocation" : ctx.schema_dn}
+
+        if ctx.behavior_version >= samba.dsdb.DS_DOMAIN_FUNCTION_2003:
+            rec["msDS-Behavior-Version"] = str(ctx.behavior_version)
+            rec["msDS-HasDomainNCs"] = ctx.base_dn
 
         if ctx.RODC:
             rec["objectCategory"] = "CN=NTDS-DSA-RO,%s" % ctx.schema_dn
@@ -318,7 +347,8 @@ class dc_join:
         else:
             rec["objectCategory"] = "CN=NTDS-DSA,%s" % ctx.schema_dn
             rec["HasMasterNCs"]      = [ ctx.base_dn, ctx.config_dn, ctx.schema_dn ]
-            rec["msDS-HasMasterNCs"] = [ ctx.base_dn, ctx.config_dn, ctx.schema_dn ]
+            if ctx.behavior_version >= samba.dsdb.DS_DOMAIN_FUNCTION_2003:
+                rec["msDS-HasMasterNCs"] = [ ctx.base_dn, ctx.config_dn, ctx.schema_dn ]
             rec["options"] = "1"
             rec["invocationId"] = ndr_pack(misc.GUID(str(uuid.uuid4())))
             ctx.DsAddEntry(rec)
@@ -337,13 +367,14 @@ class dc_join:
                 "fromServer" : ctx.dc_ntds_dn}
             ctx.samdb.add(rec)
 
-        print "Adding %s" % ctx.topology_dn
-        rec = {
-            "dn" : ctx.topology_dn,
-            "objectclass" : "msDFSR-Member",
-            "msDFSR-ComputerReference" : ctx.acct_dn,
-            "serverReference" : ctx.ntds_dn}
-        ctx.samdb.add(rec)
+        if ctx.topology_dn:
+            print "Adding %s" % ctx.topology_dn
+            rec = {
+                "dn" : ctx.topology_dn,
+                "objectclass" : "msDFSR-Member",
+                "msDFSR-ComputerReference" : ctx.acct_dn,
+                "serverReference" : ctx.ntds_dn}
+            ctx.samdb.add(rec)
 
         print "Adding SPNs to %s" % ctx.acct_dn
         m = ldb.Message()
@@ -361,7 +392,7 @@ class dc_join:
                               force_change_at_next_login=False,
                               username=ctx.samname)
         res = ctx.samdb.search(base=ctx.acct_dn, scope=ldb.SCOPE_BASE, attrs=["msDS-keyVersionNumber"])
-        ctx.key_version_number = res[0]["msDS-keyVersionNumber"]
+        ctx.key_version_number = int(res[0]["msDS-keyVersionNumber"][0])
 
 
     def join_provision(ctx):
@@ -379,7 +410,7 @@ class dc_join:
                             schemadn=ctx.schema_dn,
                             configdn=ctx.config_dn,
                             serverdn=ctx.server_dn, domain=ctx.domain_name,
-                            hostname=ctx.myname, hostip="127.0.0.1", domainsid=ctx.domsid,
+                            hostname=ctx.myname, domainsid=ctx.domsid,
                             machinepass=ctx.acct_pass, serverrole="domain controller",
                             sitename=ctx.site)
         print "Provision OK for domain DN %s" % presult.domaindn
@@ -395,21 +426,31 @@ class dc_join:
         ctx.local_samdb.transaction_start()
 
         source_dsa_invocation_id = misc.GUID(ctx.samdb.get_invocation_id())
+        destination_dsa_guid = ctx.ntds_guid
 
-        acct_creds = Credentials()
-        acct_creds.guess(ctx.lp)
-        acct_creds.set_kerberos_state(DONT_USE_KERBEROS)
-        acct_creds.set_username(ctx.samname)
-        acct_creds.set_password(ctx.acct_pass)
-
-        repl = drs_utils.drs_Replicate("ncacn_ip_tcp:%s[seal]" % ctx.server, ctx.lp, acct_creds, ctx.local_samdb)
-
-        repl.replicate(ctx.schema_dn, source_dsa_invocation_id, ctx.ntds_guid, schema=True, rodc=ctx.RODC)
-        repl.replicate(ctx.config_dn, source_dsa_invocation_id, ctx.ntds_guid, rodc=ctx.RODC)
-        repl.replicate(ctx.base_dn, source_dsa_invocation_id, ctx.ntds_guid, rodc=ctx.RODC)
         if ctx.RODC:
-            repl.replicate(ctx.acct_dn, source_dsa_invocation_id, ctx.ntds_guid, exop=drsuapi.DRSUAPI_EXOP_REPL_SECRET, rodc=True)
-            repl.replicate(ctx.new_krbtgt_dn, source_dsa_invocation_id, ctx.ntds_guid, exop=drsuapi.DRSUAPI_EXOP_REPL_SECRET, rodc=True)
+            repl_creds = Credentials()
+            repl_creds.guess(ctx.lp)
+            repl_creds.set_kerberos_state(DONT_USE_KERBEROS)
+            repl_creds.set_username(ctx.samname)
+            repl_creds.set_password(ctx.acct_pass)
+        else:
+            repl_creds = ctx.creds
+
+        repl = drs_utils.drs_Replicate("ncacn_ip_tcp:%s[seal]" % ctx.server, ctx.lp, repl_creds, ctx.local_samdb)
+
+        repl.replicate(ctx.schema_dn, source_dsa_invocation_id, destination_dsa_guid,
+                       schema=True, rodc=ctx.RODC,
+                       replica_flags=ctx.replica_flags)
+        repl.replicate(ctx.config_dn, source_dsa_invocation_id, destination_dsa_guid,
+                       rodc=ctx.RODC, replica_flags=ctx.replica_flags)
+        repl.replicate(ctx.base_dn, source_dsa_invocation_id, destination_dsa_guid,
+                       rodc=ctx.RODC, replica_flags=ctx.replica_flags)
+        if ctx.RODC:
+            repl.replicate(ctx.acct_dn, source_dsa_invocation_id, destination_dsa_guid,
+                           exop=drsuapi.DRSUAPI_EXOP_REPL_SECRET, rodc=True)
+            repl.replicate(ctx.new_krbtgt_dn, source_dsa_invocation_id, destination_dsa_guid,
+                           exop=drsuapi.DRSUAPI_EXOP_REPL_SECRET, rodc=True)
 
         print "Committing SAM database"
         ctx.local_samdb.transaction_commit()
@@ -465,7 +506,9 @@ def join_RODC(server=None, creds=None, lp=None, site=None, netbios_name=None,
                              "<SID=%s>" % security.SID_BUILTIN_ACCOUNT_OPERATORS ]
     ctx.reveal_sid = "<SID=%s-%s>" % (ctx.domsid, security.DOMAIN_RID_RODC_ALLOW)
 
-    ctx.managedby = ctx.admin_dn
+    mysid = ctx.get_mysid()
+    admin_dn = "<SID=%s>" % mysid
+    ctx.managedby = admin_dn
 
     ctx.userAccountControl = (samba.dsdb.UF_WORKSTATION_TRUST_ACCOUNT |
                               samba.dsdb.UF_TRUSTED_TO_AUTHENTICATE_FOR_DELEGATION |
@@ -477,7 +520,14 @@ def join_RODC(server=None, creds=None, lp=None, site=None, netbios_name=None,
     ctx.connection_dn = "CN=RODC Connection (FRS),%s" % ctx.ntds_dn
     ctx.secure_channel_type = misc.SEC_CHAN_RODC
     ctx.RODC = True
+    ctx.replica_flags  =  (drsuapi.DRSUAPI_DRS_INIT_SYNC |
+                           drsuapi.DRSUAPI_DRS_PER_SYNC |
+                           drsuapi.DRSUAPI_DRS_GET_ANC |
+                           drsuapi.DRSUAPI_DRS_NEVER_SYNCED |
+                           drsuapi.DRSUAPI_DRS_SPECIAL_SECRET_PROCESSING)
     ctx.do_join()
+
+
     print "Joined domain %s (SID %s) as an RODC" % (ctx.domain_name, ctx.domsid)
 
 
@@ -491,5 +541,11 @@ def join_DC(server=None, creds=None, lp=None, site=None, netbios_name=None,
     ctx.SPNs.append('E3514235-4B06-11D1-AB04-00C04FC2DCD2/$NTDSGUID/%s' % ctx.dnsdomain)
     ctx.secure_channel_type = misc.SEC_CHAN_BDC
 
+    ctx.replica_flags = (drsuapi.DRSUAPI_DRS_WRIT_REP |
+                         drsuapi.DRSUAPI_DRS_INIT_SYNC |
+                         drsuapi.DRSUAPI_DRS_PER_SYNC |
+                         drsuapi.DRSUAPI_DRS_FULL_SYNC_IN_PROGRESS |
+                         drsuapi.DRSUAPI_DRS_NEVER_SYNCED)
+
     ctx.do_join()
-    print "Joined domain %s (SID %s) as an DC" % (ctx.domain_name, ctx.domsid)
+    print "Joined domain %s (SID %s) as a DC" % (ctx.domain_name, ctx.domsid)

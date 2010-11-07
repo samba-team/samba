@@ -196,7 +196,7 @@ def call_rodc_update(d):
     server = cldap_ret.pdc_dns_name
     try:
         drs = drsuapi.drsuapi('ncacn_ip_tcp:%s[seal,print]' % server, lp, creds)
-        drs_handle = drs_utils.drs_DsBind(drs)
+        (drs_handle, supported_extensions) = drs_utils.drs_DsBind(drs)
     except Exception, reason:
         print("Unable to connect to DC '%s' for domain '%s' : %s" % (server, domain, reason))
         sys.exit(1)
