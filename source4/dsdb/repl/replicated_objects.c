@@ -356,11 +356,11 @@ WERROR dsdb_extended_replicated_objects_commit(struct ldb_context *ldb,
 	return WERR_OK;
 }
 
-static WERROR dsdb_convert_object(struct ldb_context *ldb,
-				  const struct dsdb_schema *schema,
-				  const struct drsuapi_DsReplicaObjectListItem *in,
-				  TALLOC_CTX *mem_ctx,
-				  struct ldb_message **_msg)
+static WERROR dsdb_origin_object_convert(struct ldb_context *ldb,
+					 const struct dsdb_schema *schema,
+					 const struct drsuapi_DsReplicaObjectListItem *in,
+					 TALLOC_CTX *mem_ctx,
+					 struct ldb_message **_msg)
 {
 	WERROR status;
 	unsigned int i;
@@ -449,8 +449,8 @@ WERROR dsdb_origin_objects_commit(struct ldb_context *ldb,
 	}
 
 	for (i=0, cur = first_object; cur; cur = cur->next_object, i++) {
-		status = dsdb_convert_object(ldb, schema,
-					     cur, objects, &objects[i]);
+		status = dsdb_origin_object_convert(ldb, schema, cur,
+						    objects, &objects[i]);
 		if (!W_ERROR_IS_OK(status)) {
 			goto cancel;
 		}
