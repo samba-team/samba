@@ -532,7 +532,6 @@ static bool test_analyse_objects(struct torture_context *tctx,
 		}
 
 		for (i=0; i < cur->object.attribute_ctr.num_attributes; i++) {
-			WERROR werr;
 			const char *name = NULL;
 			DATA_BLOB plain_data;
 			struct drsuapi_DsReplicaAttribute *attr;
