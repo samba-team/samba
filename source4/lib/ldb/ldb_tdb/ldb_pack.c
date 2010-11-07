@@ -59,8 +59,6 @@ static int attribute_storable_values(const struct ldb_message_element *el)
 {
 	if (el->num_values == 0) return 0;
 
-	if (ldb_attr_cmp(el->name, "dn") == 0) return 0;
-
 	if (ldb_attr_cmp(el->name, "distinguishedName") == 0) return 0;
 
 	return el->num_values;
