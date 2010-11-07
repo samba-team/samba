@@ -272,11 +272,12 @@ static const struct ldb_module_ops *ldb_find_module_ops(const char *name)
 
 int ldb_register_module(const struct ldb_module_ops *ops)
 {
-	struct ops_list_entry *entry = talloc(talloc_autofree_context(), struct ops_list_entry);
+	struct ops_list_entry *entry;
 
 	if (ldb_find_module_ops(ops->name) != NULL)
-		return -1;
+		return LDB_ERR_ENTRY_ALREADY_EXISTS;
 
+	entry = talloc(talloc_autofree_context(), struct ops_list_entry);
 	if (entry == NULL)
 		return -1;
 
