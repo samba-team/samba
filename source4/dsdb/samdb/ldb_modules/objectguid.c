@@ -128,6 +128,7 @@ static int objectguid_add(struct ldb_module *module, struct ldb_request *req)
 	struct ldb_context *ldb;
 	struct ldb_request *down_req;
 	struct ldb_message *msg;
+	struct ldb_message_element *el;
 	struct GUID guid;
 	uint64_t seq_num;
 	int ret;
@@ -143,8 +144,11 @@ static int objectguid_add(struct ldb_module *module, struct ldb_request *req)
 		return ldb_next_request(module, req);
 	}
 
-	if (ldb_msg_find_element(req->op.add.message, "objectGUID") != NULL) {
-		return ldb_next_request(module, req);
+	el = ldb_msg_find_element(req->op.add.message, "objectGUID");
+	if (el != NULL) {
+		ldb_set_errstring(ldb,
+				  "objectguid: objectGUID must not be specified!");
+		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
 
 	ac = talloc(req, struct og_context);
