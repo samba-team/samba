@@ -14,7 +14,7 @@ bld.SAMBA_MODULE('gensec_krb5',
 	source='gensec_krb5.c',
 	subsystem='gensec',
 	init_function='gensec_krb5_init',
-	deps='CREDENTIALS authkrb5 auth_session com_err',
+	deps='credentials authkrb5 auth_session com_err',
 	internal_module=False,
 	)
 
@@ -23,7 +23,7 @@ bld.SAMBA_MODULE('gensec_gssapi',
 	source='gensec_gssapi.c',
 	subsystem='gensec',
 	init_function='gensec_gssapi_init',
-	deps='gssapi CREDENTIALS authkrb5 com_err'
+	deps='gssapi credentials authkrb5 com_err'
 	)
 
 
@@ -31,7 +31,7 @@ bld.SAMBA_MODULE('cyrus_sasl',
 	source='cyrus_sasl.c',
 	subsystem='gensec',
 	init_function='gensec_sasl_init',
-	deps='CREDENTIALS sasl2',
+	deps='credentials sasl2',
 	enabled=bld.CONFIG_SET('HAVE_SASL')
 	)
 
@@ -41,14 +41,14 @@ bld.SAMBA_MODULE('gensec_spnego',
 	autoproto='spnego_proto.h',
 	subsystem='gensec',
 	init_function='gensec_spnego_init',
-	deps='ASN1_UTIL CREDENTIALS'
+	deps='ASN1_UTIL credentials'
 	)
 
 
 bld.SAMBA_MODULE('gensec_schannel',
 	source='schannel.c ../../../libcli/auth/schannel_sign.c',
 	subsystem='gensec',
-	deps='COMMON_SCHANNELDB NDR_SCHANNEL CREDENTIALS ndr auth_session',
+	deps='COMMON_SCHANNELDB NDR_SCHANNEL credentials ndr auth_session',
 	internal_module=True,
 	autoproto='schannel_proto.h',
 	init_function='gensec_schannel_init'
