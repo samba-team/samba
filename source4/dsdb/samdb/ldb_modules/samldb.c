@@ -1009,7 +1009,8 @@ static int samldb_prim_group_change(struct samldb_ctx *ac)
 	struct ldb_dn *prev_prim_group_dn, *new_prim_group_dn;
 	int ret;
 
-	el = dsdb_get_single_valued_attr(ac->msg, "primaryGroupID");
+	el = dsdb_get_single_valued_attr(ac->msg, "primaryGroupID",
+					 ac->req->operation);
 	if (el == NULL) {
 		/* we are not affected */
 		return LDB_SUCCESS;
@@ -1154,7 +1155,8 @@ static int samldb_user_account_control_change(struct samldb_ctx *ac)
 	struct ldb_message *tmp_msg;
 	int ret;
 
-	el = dsdb_get_single_valued_attr(ac->msg, "userAccountControl");
+	el = dsdb_get_single_valued_attr(ac->msg, "userAccountControl",
+					 ac->req->operation);
 	if (el == NULL) {
 		/* we are not affected */
 		return LDB_SUCCESS;
@@ -1227,7 +1229,8 @@ static int samldb_group_type_change(struct samldb_ctx *ac)
 	struct ldb_message *tmp_msg;
 	int ret;
 
-	el = dsdb_get_single_valued_attr(ac->msg, "groupType");
+	el = dsdb_get_single_valued_attr(ac->msg, "groupType",
+					 ac->req->operation);
 	if (el == NULL) {
 		/* we are not affected */
 		return LDB_SUCCESS;
@@ -1313,7 +1316,8 @@ static int samldb_sam_accountname_check(struct samldb_ctx *ac)
 	struct ldb_message *tmp_msg;
 	int ret;
 
-	el = dsdb_get_single_valued_attr(ac->msg, "sAMAccountName");
+	el = dsdb_get_single_valued_attr(ac->msg, "sAMAccountName",
+					 ac->req->operation);
 	if (el == NULL) {
 		/* we are not affected */
 		return LDB_SUCCESS;
@@ -1487,8 +1491,10 @@ static int samldb_service_principal_names_change(struct samldb_ctx *ac)
 	unsigned int i;
 	int ret;
 
-	el = dsdb_get_single_valued_attr(ac->msg, "dNSHostName");
-	el2 = dsdb_get_single_valued_attr(ac->msg, "sAMAccountName");
+	el = dsdb_get_single_valued_attr(ac->msg, "dNSHostName",
+					 ac->req->operation);
+	el2 = dsdb_get_single_valued_attr(ac->msg, "sAMAccountName",
+					  ac->req->operation);
 	if ((el == NULL) && (el2 == NULL)) {
 		/* we are not affected */
 		return LDB_SUCCESS;

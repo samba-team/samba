@@ -1118,7 +1118,8 @@ void dsdb_req_chain_debug(struct ldb_request *req, int level)
  * enhanced (no other modifications as deletions, variations).
  */
 struct ldb_message_element *dsdb_get_single_valued_attr(struct ldb_message *msg,
-							const char *attr_name)
+							const char *attr_name,
+							enum ldb_request_type operation)
 {
 	struct ldb_message_element *el = NULL;
 	unsigned int i;
@@ -1129,9 +1130,12 @@ struct ldb_message_element *dsdb_get_single_valued_attr(struct ldb_message *msg,
 	 * If "el" is NULL afterwards then that means there was no interesting
 	 * change entry. */
 	for (i = 0; i < msg->num_elements; i++) {
-		if ((ldb_attr_cmp(msg->elements[i].name, attr_name) == 0) &&
-		    (LDB_FLAG_MOD_TYPE(msg->elements[i].flags)
-						!= LDB_FLAG_MOD_DELETE)) {
+		if (ldb_attr_cmp(msg->elements[i].name, attr_name) == 0) {
+			if ((operation == LDB_MODIFY) &&
+			    (LDB_FLAG_MOD_TYPE(msg->elements[i].flags)
+						== LDB_FLAG_MOD_DELETE)) {
+				continue;
+			}
 			el = &msg->elements[i];
 		}
 	}
