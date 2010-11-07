@@ -570,9 +570,10 @@ static int acl_check_password_rights(TALLOC_CTX *mem_ctx,
 			ldb_msg_remove_element(msg, el);
 		}
 	}
-	/* a single delete will be handled by password hash
-	   later in the stack, so we let it though here */
-	if (del_attr_cnt > 0 && add_attr_cnt == 0) {
+
+	/* single deletes will be handled by the "password_hash" LDB module
+	 * later in the stack, so we let it though here */
+	if ((del_attr_cnt > 0) && (add_attr_cnt == 0) && (rep_attr_cnt == 0)) {
 		talloc_free(tmp_ctx);
 		return LDB_SUCCESS;
 	}
