@@ -1749,7 +1749,7 @@ if __name__ == '__main__':
                                   scope=SCOPE_SUBTREE, attrs=["dn"])
             update_dns_account_password(ldbs.sam, ldbs.secrets, names)
             message(SIMPLE, "IMPORTANT !!! "
-                            "If you were using Dynmaic DNS before you need"
+                            "If you were using Dynamic DNS before you need"
                             " to update your configuration, so that the "
                             "tkey-gssapi-credential has the following value:"
                             "DNS/%s.%s" % (names.netbiosname.lower(), names.realm.lower()))
