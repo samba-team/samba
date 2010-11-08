@@ -460,6 +460,7 @@ default_shared_modules="$default_shared_modules vfs_scannedonly"
 default_shared_modules="$default_shared_modules vfs_crossrename"
 default_shared_modules="$default_shared_modules vfs_linux_xfs_sgid"
 default_shared_modules="$default_shared_modules vfs_time_audit"
+default_shared_modules="$default_shared_modules idmap_autorid"
 
 if test "x$developer" = xyes; then
    default_static_modules="$default_static_modules rpc_rpcecho pdb_ads"
