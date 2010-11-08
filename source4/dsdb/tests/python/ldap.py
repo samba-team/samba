@@ -1324,6 +1324,18 @@ objectGUID: bd3480c9-58af-4cd8-92df-bc4a18b6e44d
         self.assertTrue("whenCreated" in res[0])
         self.assertTrue("whenChanged" in res[0])
 
+        # The objectGUID cannot directly be changed
+        try:
+            self.ldb.modify_ldif("""
+dn: cn=ldaptestcontainer,""" + self.base_dn + """
+changetype: modify
+replace: objectGUID
+objectGUID: bd3480c9-58af-4cd8-92df-bc4a18b6e44d
+""")
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
+
         self.delete_force(self.ldb, "cn=ldaptestcontainer," + self.base_dn)
 
     def test_parentGUID(self):

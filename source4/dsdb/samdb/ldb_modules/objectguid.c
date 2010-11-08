@@ -185,6 +185,7 @@ static int objectguid_modify(struct ldb_module *module, struct ldb_request *req)
 	struct ldb_context *ldb;
 	struct ldb_request *down_req;
 	struct ldb_message *msg;
+	struct ldb_message_element *el;
 	int ret;
 	time_t t = time(NULL);
 	uint64_t seq_num;
@@ -197,6 +198,13 @@ static int objectguid_modify(struct ldb_module *module, struct ldb_request *req)
 	/* do not manipulate our control entries */
 	if (ldb_dn_is_special(req->op.add.message->dn)) {
 		return ldb_next_request(module, req);
+	}
+
+	el = ldb_msg_find_element(req->op.mod.message, "objectGUID");
+	if (el != NULL) {
+		ldb_set_errstring(ldb,
+				  "objectguid: objectGUID must not be specified!");
+		return LDB_ERR_CONSTRAINT_VIOLATION;
 	}
 
 	ac = talloc(req, struct og_context);

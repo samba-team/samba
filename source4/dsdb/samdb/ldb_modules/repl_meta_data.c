@@ -2147,6 +2147,7 @@ static int replmd_modify(struct ldb_module *module, struct ldb_request *req)
 	struct loadparm_context *lp_ctx;
 	char *referral;
 	unsigned int functional_level;
+	const DATA_BLOB *guid_blob;
 
 	/* do not manipulate our control entries */
 	if (ldb_dn_is_special(req->op.mod.message->dn)) {
@@ -2164,6 +2165,14 @@ static int replmd_modify(struct ldb_module *module, struct ldb_request *req)
 	ac = replmd_ctx_init(module, req);
 	if (!ac) {
 		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	guid_blob = ldb_msg_find_ldb_val(req->op.mod.message, "objectGUID");
+	if ( guid_blob != NULL ) {
+		ldb_debug_set(ldb, LDB_DEBUG_ERROR,
+			      "replmd_modify: it's not allowed to change the objectGUID\n");
+		talloc_free(ac);
+		return LDB_ERR_CONSTRAINT_VIOLATION;
 	}
 
 	/* we have to copy the message as the caller might have it as a const */
