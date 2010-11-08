@@ -1442,13 +1442,11 @@ static int py_ldb_contains(PyLdbObject *self, PyObject *obj)
 
 	talloc_free(result);
 
-	if (count == 1) {
-		return 1;
-	} else if (count == 0) {
+	if (count == 0) {
 		return 0;
 	}
 
-	return -1;
+	return 1;
 }
 
 static PySequenceMethods py_ldb_seq = {
