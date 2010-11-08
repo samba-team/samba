@@ -255,7 +255,7 @@ def check_duplicate_sources(bld, tgt_list):
     for t in tgt_list:
         source_list = TO_LIST(getattr(t, 'source', ''))
         tpath = os.path.normpath(os_path_relpath(t.path.abspath(bld.env), t.env.BUILD_DIRECTORY + '/default'))
-	obj_sources = set()
+        obj_sources = set()
         for s in source_list:
             p = os.path.normpath(os.path.join(tpath, s))
             if p in obj_sources:

@@ -154,12 +154,12 @@ def suncc_wrap(cls):
 	which have empty libs'''
 	if getattr(cls, 'solaris_wrap', False):
 		return
-        cls.solaris_wrap = True
-        oldrun = cls.run
-        def run(self):
+	cls.solaris_wrap = True
+	oldrun = cls.run
+	def run(self):
 		if self.env.CC_NAME == "sun" and not self.inputs:
 			self.env = self.env.copy()
 			self.env.append_value('LINKFLAGS', '-')
 		return oldrun(self)
-        cls.run = run
+	cls.run = run
 suncc_wrap(Task.TaskBase.classes['cc_link'])
