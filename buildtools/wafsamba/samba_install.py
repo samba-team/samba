@@ -83,7 +83,7 @@ def install_library(self):
         # install link. That stops us from overwriting the existing build
         # target, which has different ldflags
         self.done_install_library = True
-        t = self
+        t = self.clone('default')
         t.posted = False
         t.target += '.inst'
         self.env.RPATH = build_ldflags
