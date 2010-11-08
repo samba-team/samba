@@ -141,6 +141,14 @@ NTSTATUS dreplsrv_get_target_principal(struct dreplsrv_service *s,
 		return NT_STATUS_OK;
 	}
 
+	/* All DCs have the GC/hostname/realm name, but if some of the
+	 * preconditions are not satisfied, then we will fall back to
+	 * the
+	 * E3514235-4B06-11D1-AB04-00C04FC2DCD2/${NTDSGUID}/${DNSDOMAIN}
+	 * name.  This means that if a AD server has a dnsHostName set
+	 * on it's record, it must also have GC/hostname/realm
+	 * servicePrincipalName */
+
 	*target_principal = talloc_asprintf(mem_ctx, "GC/%s/%s",
 					    hostname,
 					    lpcfg_dnsdomain(s->task->lp_ctx));
