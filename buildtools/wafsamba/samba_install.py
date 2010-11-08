@@ -18,7 +18,7 @@ def install_binary(self):
     install_ldflags = install_rpath(bld)
     build_ldflags   = build_rpath(bld)
 
-    if not Options.is_install or not self.samba_install:
+    if not Options.is_install:
         # just need to set rpath if we are not installing
         self.env.RPATH = build_ldflags
         return
@@ -37,6 +37,10 @@ def install_binary(self):
 
     # setup the right rpath link flags for the install
     self.env.RPATH = install_ldflags
+
+    if not self.samba_install:
+        # this binary is marked not to be installed
+        return
 
     # tell waf to install the right binary
     bld.install_as(os.path.join(install_path, orig_target),
@@ -77,7 +81,7 @@ def install_library(self):
         # install link. That stops us from overwriting the existing build
         # target, which has different ldflags
         self.done_install_library = True
-        t = self.clone('default')
+        t = self
         t.posted = False
         t.target += '.inst'
         self.env.RPATH = build_ldflags
