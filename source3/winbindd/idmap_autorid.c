@@ -69,6 +69,7 @@ static NTSTATUS idmap_autorid_get_domainrange(struct db_context *db,
 		if (!dbwrap_fetch_uint32(db, HWM, &hwm)) {
 			DEBUG(1, ("Fatal error while fetching current "
 				  "HWM value!\n"));
+			ret = NT_STATUS_INTERNAL_ERROR;
 			goto error;
 		}
 
