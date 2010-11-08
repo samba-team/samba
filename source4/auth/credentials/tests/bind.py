@@ -7,6 +7,8 @@ import sys
 import base64
 import re
 import os
+import copy
+import time
 
 sys.path.append("bin/python")
 import samba
@@ -44,37 +46,44 @@ host = args[0]
 lp = sambaopts.get_loadparm()
 creds = credopts.get_credentials(lp)
 creds.set_gensec_features(creds.get_gensec_features() | gensec.FEATURE_SEAL)
-creds_machine = creds
+creds_machine = copy.deepcopy(creds)
+creds_user1 = copy.deepcopy(creds)
+creds_user2 = copy.deepcopy(creds)
+creds_user3 = copy.deepcopy(creds)
 
 class BindTests(samba.tests.TestCase):
+
+    info_dc = None
+
+    def setUp(self):
+        super(BindTests, self).setUp()
+        # fetch rootDSEs
+        if self.info_dc is None:
+            res = ldb.search(base="", expression="", scope=SCOPE_BASE, attrs=["*"])
+            self.assertEquals(len(res), 1)
+            BindTests.info_dc = res[0]
+        # cache some of RootDSE props
+        self.schema_dn = self.info_dc["schemaNamingContext"][0]
+        self.domain_dn = self.info_dc["defaultNamingContext"][0]
+        self.config_dn = self.info_dc["configurationNamingContext"][0]
+        self.computer_dn = "CN=centos53,CN=Computers,%s" % self.domain_dn
+        self.password = "P@ssw0rd"
+        self.username = "BindTestUser_" + time.strftime("%s", time.gmtime())
+
     def delete_force(self, ldb, dn):
         try:
             ldb.delete(dn)
         except LdbError, (num, _):
             self.assertEquals(num, ERR_NO_SUCH_OBJECT)
 
-    def find_basedn(self, ldb):
-        res = ldb.search(base="", expression="", scope=SCOPE_BASE,
-                         attrs=["defaultNamingContext"])
-        self.assertEquals(len(res), 1)
-        return res[0]["defaultNamingContext"][0]
-
-    def setUp(self):
-        super(BindTests, self).setUp()
-        self.base_dn = self.find_basedn(ldb)
-
     def tearDown(self):
         super(BindTests, self).tearDown()
 
     def test_computer_account_bind(self):
         # create a computer acocount for the test
-        self.user_dn = "CN=centos53,CN=Computers,%s" % self.base_dn
-        self.password = "P@ssw0rd"
-        self.acc_name = "centos53$"
-
-        self.delete_force(ldb, self.user_dn)
+        self.delete_force(ldb, self.computer_dn)
         ldb.add_ldif("""
-dn: """ + self.user_dn + """
+dn: """ + self.computer_dn + """
 cn: CENTOS53
 displayName: CENTOS53$
 name: CENTOS53
@@ -92,17 +101,48 @@ operatingSystemVersion: 5.2 (3790)
 operatingSystem: Windows Server 2003
 """)
         ldb.modify_ldif("""
-dn: """ + self.user_dn + """
+dn: """ + self.computer_dn + """
 changetype: modify
 replace: unicodePwd
 unicodePwd:: """ + base64.b64encode("\"P@ssw0rd\"".encode('utf-16-le')) + """
 """)
 
         # do a simple bind and search with the machine account
-        creds_machine.set_bind_dn(self.user_dn)
+        creds_machine.set_bind_dn(self.computer_dn)
         creds_machine.set_password(self.password)
+        print "BindTest with: " + creds_machine.get_bind_dn()
         ldb_machine = SamDB(host, credentials=creds_machine, session_info=system_session(), lp=lp)
-        self.find_basedn(ldb_machine)
+        res = ldb_machine.search(base="", expression="", scope=SCOPE_BASE, attrs=["*"])
+
+    def test_user_account_bind(self):
+        # create user
+        ldb.newuser(username=self.username, password=self.password)
+        ldb_res = ldb.search(base=self.domain_dn,
+                                      scope=SCOPE_SUBTREE,
+                                      expression="(samAccountName=%s)" % self.username)
+        self.assertEquals(len(ldb_res), 1)
+        user_dn = ldb_res[0]["dn"]
+
+        # do a simple bind and search with the user account in format user@realm
+        creds_user1.set_bind_dn(self.username + "@" + creds.get_realm())
+        creds_user1.set_password(self.password)
+        print "BindTest with: " + creds_user1.get_bind_dn()
+        ldb_user1 = SamDB(host, credentials=creds_user1, session_info=system_session(), lp=lp)
+        res = ldb_user1.search(base="", expression="", scope=SCOPE_BASE, attrs=["*"])
+
+        # do a simple bind and search with the user account in format domain\user
+        creds_user2.set_bind_dn(creds.get_domain() + "\\" + self.username)
+        creds_user2.set_password(self.password)
+        print "BindTest with: " + creds_user2.get_bind_dn()
+        ldb_user2 = SamDB(host, credentials=creds_user2, lp=lp)
+        res = ldb_user2.search(base="", expression="", scope=SCOPE_BASE, attrs=["*"])
+
+        # do a simple bind and search with the user account DN
+        creds_user3.set_bind_dn(str(user_dn))
+        creds_user3.set_password(self.password)
+        print "BindTest with: " + creds_user3.get_bind_dn()
+        ldb_user3 = SamDB(host, credentials=creds_user3, session_info=system_session(), lp=lp)
+        res = ldb_user3.search(base="", expression="", scope=SCOPE_BASE, attrs=["*"])
 
 if not "://" in host:
     host = "ldap://%s" % host
