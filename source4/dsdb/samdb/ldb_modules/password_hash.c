@@ -98,9 +98,9 @@ struct ph_context {
 	struct dsdb_control_password_change *change;
 
 	bool pwd_reset;
-
 	bool change_status;
 	bool hash_values;
+	bool userPassword;
 };
 
 
@@ -1686,15 +1686,18 @@ static int setup_io(struct ph_context *ac,
 		io->u.restrictions = 0;
 	}
 
-	ret = samdb_msg_find_old_and_new_ldb_val(orig_msg, "userPassword",
-						 ac->req->operation,
-						 &io->n.cleartext_utf8,
-						 &io->og.cleartext_utf8);
-	if (ret != LDB_SUCCESS) {
-		ldb_asprintf_errstring(ldb,
-			"setup_io: "
-			"it's only allowed to set the old password once!");
-		return ret;
+	if (ac->userPassword) {
+		ret = samdb_msg_find_old_and_new_ldb_val(orig_msg,
+							 "userPassword",
+							 ac->req->operation,
+							 &io->n.cleartext_utf8,
+							 &io->og.cleartext_utf8);
+		if (ret != LDB_SUCCESS) {
+			ldb_asprintf_errstring(ldb,
+				"setup_io: "
+				"it's only allowed to set the old password once!");
+			return ret;
+		}
 	}
 
 	ret = samdb_msg_find_old_and_new_ldb_val(orig_msg, "clearTextPassword",
@@ -1967,7 +1970,8 @@ static int setup_io(struct ph_context *ac,
 }
 
 static struct ph_context *ph_init_context(struct ldb_module *module,
-					  struct ldb_request *req)
+					  struct ldb_request *req,
+					  bool userPassword)
 {
 	struct ldb_context *ldb;
 	struct ph_context *ac;
@@ -1982,6 +1986,7 @@ static struct ph_context *ph_init_context(struct ldb_module *module,
 
 	ac->module = module;
 	ac->req = req;
+	ac->userPassword = userPassword;
 
 	return ac;
 }
@@ -2227,6 +2232,7 @@ static int password_hash_add(struct ldb_module *module, struct ldb_request *req)
 		*ntAttr, *lmAttr;
 	int ret;
 	struct ldb_control *bypass = NULL;
+	bool userPassword = true;
 
 	ldb = ldb_module_get_ctx(module);
 
@@ -2265,7 +2271,11 @@ static int password_hash_add(struct ldb_module *module, struct ldb_request *req)
 	/* If no part of this touches the 'userPassword' OR 'clearTextPassword'
 	 * OR 'unicodePwd' OR 'dBCSPwd' we don't need to make any changes. */
 
-	userPasswordAttr = ldb_msg_find_element(req->op.add.message, "userPassword");
+	userPasswordAttr = NULL;
+	if (userPassword) {
+		userPasswordAttr = ldb_msg_find_element(req->op.add.message,
+							"userPassword");
+	}
 	clearTextPasswordAttr = ldb_msg_find_element(req->op.add.message, "clearTextPassword");
 	ntAttr = ldb_msg_find_element(req->op.add.message, "unicodePwd");
 	lmAttr = ldb_msg_find_element(req->op.add.message, "dBCSPwd");
@@ -2289,7 +2299,7 @@ static int password_hash_add(struct ldb_module *module, struct ldb_request *req)
 		return ldb_next_request(module, req);
 	}
 
-	ac = ph_init_context(module, req);
+	ac = ph_init_context(module, req, userPassword);
 	if (ac == NULL) {
 		DEBUG(0,(__location__ ": %s\n", ldb_errstring(ldb)));
 		return ldb_operr(ldb);
@@ -2327,7 +2337,9 @@ static int password_hash_add_do_add(struct ph_context *ac)
 	}
 
 	/* remove attributes that we just read into 'io' */
-	ldb_msg_remove_attr(msg, "userPassword");
+	if (ac->userPassword) {
+		ldb_msg_remove_attr(msg, "userPassword");
+	}
 	ldb_msg_remove_attr(msg, "clearTextPassword");
 	ldb_msg_remove_attr(msg, "unicodePwd");
 	ldb_msg_remove_attr(msg, "dBCSPwd");
@@ -2414,6 +2426,7 @@ static int password_hash_modify(struct ldb_module *module, struct ldb_request *r
 	struct ldb_request *down_req;
 	int ret;
 	struct ldb_control *bypass = NULL;
+	bool userPassword = true;
 
 	ldb = ldb_module_get_ctx(module);
 
@@ -2455,6 +2468,10 @@ static int password_hash_modify(struct ldb_module *module, struct ldb_request *r
 	 * on these attributes. */
 	attr_cnt = 0;
 	for (l = passwordAttrs; *l != NULL; l++) {
+		if ((!userPassword) && (ldb_attr_cmp(*l, "userPassword") == 0)) {
+			continue;
+		}
+
 		if (ldb_msg_find_element(req->op.mod.message, *l) != NULL) {
 			++attr_cnt;
 		}
@@ -2463,7 +2480,7 @@ static int password_hash_modify(struct ldb_module *module, struct ldb_request *r
 		return ldb_next_request(module, req);
 	}
 
-	ac = ph_init_context(module, req);
+	ac = ph_init_context(module, req, userPassword);
 	if (!ac) {
 		DEBUG(0,(__location__ ": %s\n", ldb_errstring(ldb)));
 		return ldb_operr(ldb);
@@ -2491,6 +2508,11 @@ static int password_hash_modify(struct ldb_module *module, struct ldb_request *r
 	add_attr_cnt = 0;
 	rep_attr_cnt = 0;
 	for (l = passwordAttrs; *l != NULL; l++) {
+		if ((!ac->userPassword) &&
+		    (ldb_attr_cmp(*l, "userPassword") == 0)) {
+			continue;
+		}
+
 		while ((passwordAttr = ldb_msg_find_element(msg, *l)) != NULL) {
 			if (LDB_FLAG_MOD_TYPE(passwordAttr->flags) == LDB_FLAG_MOD_DELETE) {
 				++del_attr_cnt;
