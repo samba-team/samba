@@ -75,14 +75,14 @@ config_fgets(char *str, size_t len, struct fileptr *ptr)
 
 static krb5_error_code parse_section(char *p, krb5_config_section **s,
 				     krb5_config_section **res,
-				     const char **error_message);
+				     const char **err_message);
 static krb5_error_code parse_binding(struct fileptr *f, unsigned *lineno, char *p,
 				     krb5_config_binding **b,
 				     krb5_config_binding **parent,
-				     const char **error_message);
+				     const char **err_message);
 static krb5_error_code parse_list(struct fileptr *f, unsigned *lineno,
 				  krb5_config_binding **parent,
-				  const char **error_message);
+				  const char **err_message);
 
 static krb5_config_section *
 get_entry(krb5_config_section **parent, const char *name, int type)
@@ -119,25 +119,25 @@ get_entry(krb5_config_section **parent, const char *name, int type)
  *
  * starting at the line in `p', storing the resulting structure in
  * `s' and hooking it into `parent'.
- * Store the error message in `error_message'.
+ * Store the error message in `err_message'.
  */
 
 static krb5_error_code
 parse_section(char *p, krb5_config_section **s, krb5_config_section **parent,
-	      const char **error_message)
+	      const char **err_message)
 {
     char *p1;
     krb5_config_section *tmp;
 
     p1 = strchr (p + 1, ']');
     if (p1 == NULL) {
-	*error_message = "missing ]";
+	*err_message = "missing ]";
 	return KRB5_CONFIG_BADFORMAT;
     }
     *p1 = '\0';
     tmp = get_entry(parent, p + 1, krb5_config_list);
     if(tmp == NULL) {
-	*error_message = "out of memory";
+	*err_message = "out of memory";
 	return KRB5_CONFIG_BADFORMAT;
     }
     *s = tmp;
@@ -147,12 +147,12 @@ parse_section(char *p, krb5_config_section **s, krb5_config_section **parent,
 /*
  * Parse a brace-enclosed list from `f', hooking in the structure at
  * `parent'.
- * Store the error message in `error_message'.
+ * Store the error message in `err_message'.
  */
 
 static krb5_error_code
 parse_list(struct fileptr *f, unsigned *lineno, krb5_config_binding **parent,
-	   const char **error_message)
+	   const char **err_message)
 {
     char buf[BUFSIZ];
     krb5_error_code ret;
@@ -175,12 +175,12 @@ parse_list(struct fileptr *f, unsigned *lineno, krb5_config_binding **parent,
 	    return 0;
 	if (*p == '\0')
 	    continue;
-	ret = parse_binding (f, lineno, p, &b, parent, error_message);
+	ret = parse_binding (f, lineno, p, &b, parent, err_message);
 	if (ret)
 	    return ret;
     }
     *lineno = beg_lineno;
-    *error_message = "unclosed {";
+    *err_message = "unclosed {";
     return KRB5_CONFIG_BADFORMAT;
 }
 
@@ -191,7 +191,7 @@ parse_list(struct fileptr *f, unsigned *lineno, krb5_config_binding **parent,
 static krb5_error_code
 parse_binding(struct fileptr *f, unsigned *lineno, char *p,
 	      krb5_config_binding **b, krb5_config_binding **parent,
-	      const char **error_message)
+	      const char **err_message)
 {
     krb5_config_binding *tmp;
     char *p1, *p2;
@@ -201,14 +201,14 @@ parse_binding(struct fileptr *f, unsigned *lineno, char *p,
     while (*p && *p != '=' && !isspace((unsigned char)*p))
 	++p;
     if (*p == '\0') {
-	*error_message = "missing =";
+	*err_message = "missing =";
 	return KRB5_CONFIG_BADFORMAT;
     }
     p2 = p;
     while (isspace((unsigned char)*p))
 	++p;
     if (*p != '=') {
-	*error_message = "missing =";
+	*err_message = "missing =";
 	return KRB5_CONFIG_BADFORMAT;
     }
     ++p;
@@ -218,14 +218,14 @@ parse_binding(struct fileptr *f, unsigned *lineno, char *p,
     if (*p == '{') {
 	tmp = get_entry(parent, p1, krb5_config_list);
 	if (tmp == NULL) {
-	    *error_message = "out of memory";
+	    *err_message = "out of memory";
 	    return KRB5_CONFIG_BADFORMAT;
 	}
-	ret = parse_list (f, lineno, &tmp->u.list, error_message);
+	ret = parse_list (f, lineno, &tmp->u.list, err_message);
     } else {
 	tmp = get_entry(parent, p1, krb5_config_string);
 	if (tmp == NULL) {
-	    *error_message = "out of memory";
+	    *err_message = "out of memory";
 	    return KRB5_CONFIG_BADFORMAT;
 	}
 	p1 = p;
@@ -341,14 +341,14 @@ parse_plist_config(krb5_context context, const char *path, krb5_config_section *
 
 /*
  * Parse the config file `fname', generating the structures into `res'
- * returning error messages in `error_message'
+ * returning error messages in `err_message'
  */
 
 static krb5_error_code
 krb5_config_parse_debug (struct fileptr *f,
 			 krb5_config_section **res,
 			 unsigned *lineno,
-			 const char **error_message)
+			 const char **err_message)
 {
     krb5_config_section *s = NULL;
     krb5_config_binding *b = NULL;
@@ -366,19 +366,19 @@ krb5_config_parse_debug (struct fileptr *f,
 	if (*p == '#' || *p == ';')
 	    continue;
 	if (*p == '[') {
-	    ret = parse_section(p, &s, res, error_message);
+	    ret = parse_section(p, &s, res, err_message);
 	    if (ret)
 		return ret;
 	    b = NULL;
 	} else if (*p == '}') {
-	    *error_message = "unmatched }";
+	    *err_message = "unmatched }";
 	    return EINVAL;	/* XXX */
 	} else if(*p != '\0') {
 	    if (s == NULL) {
-		*error_message = "binding before section";
+		*err_message = "binding before section";
 		return EINVAL;
 	    }
-	    ret = parse_binding(f, lineno, p, &b, &s->u.list, error_message);
+	    ret = parse_binding(f, lineno, p, &b, &s->u.list, err_message);
 	    if (ret)
 		return ret;
 	}
