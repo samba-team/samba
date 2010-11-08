@@ -428,7 +428,7 @@ WERROR kccsrv_periodic_schedule(struct kccsrv_service *service, uint32_t next_in
 	W_ERROR_HAVE_NO_MEMORY(new_te);
 
 	tmp_mem = talloc_new(service);
-	DEBUG(2,("kccsrv_periodic_schedule(%u) %sscheduled for: %s\n",
+	DEBUG(4,("kccsrv_periodic_schedule(%u) %sscheduled for: %s\n",
 		next_interval,
 		(service->periodic.te?"re":""),
 		nt_time_string(tmp_mem, timeval_to_nttime(&next_time))));
@@ -445,7 +445,7 @@ static void kccsrv_periodic_run(struct kccsrv_service *service)
 	TALLOC_CTX *mem_ctx;
 	NTSTATUS status;
 
-	DEBUG(2,("kccsrv_periodic_run(): simple update\n"));
+	DEBUG(4,("kccsrv_periodic_run(): simple update\n"));
 
 	mem_ctx = talloc_new(service);
 	status = kccsrv_simple_update(service, mem_ctx);

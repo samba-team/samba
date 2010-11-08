@@ -64,7 +64,7 @@ void nbtd_mailslot_browse_handler(struct dgram_mailslot_handler *dgmslot,
 	status = dgram_mailslot_browse_parse(dgmslot, browse, packet, browse);
 	if (!NT_STATUS_IS_OK(status)) goto failed;
 
-	DEBUG(2,("Browse %s (Op %d) on '%s' '%s' from %s:%d\n", 
+	DEBUG(4,("Browse %s (Op %d) on '%s' '%s' from %s:%d\n", 
 		nbt_browse_opcode_string(browse->opcode), browse->opcode,
 		nbt_name_string(browse, name), dgmslot->mailslot_name,
 		src->addr, src->port));

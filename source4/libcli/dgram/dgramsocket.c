@@ -61,7 +61,7 @@ static void dgm_socket_recv(struct nbt_dgram_socket *dgmsock)
 	}
 	blob.length = nread;
 
-	DEBUG(2,("Received dgram packet of length %d from %s:%d\n", 
+	DEBUG(5,("Received dgram packet of length %d from %s:%d\n", 
 		 (int)blob.length, src->addr, src->port));
 
 	packet = talloc(tmp_ctx, struct nbt_dgram_packet);
