@@ -76,6 +76,8 @@ def install_library(self):
             install_path = '${LIBDIR}'
     install_path = bld.EXPAND_VARIABLES(install_path)
 
+    target_name = self.target
+
     if install_ldflags != build_ldflags:
         # we will be creating a new target name, and using that for the
         # install link. That stops us from overwriting the existing build
@@ -92,6 +94,12 @@ def install_library(self):
 
     dev_link     = None
 
+    # in the following the names are:
+    # - inst_name is the name with .inst. in it, in the build
+    #   directory
+    # - install_name is the name in the install directory
+    # - install_link is a symlink in the install directory, to install_name
+
     if getattr(self, 'samba_realname', None):
         install_name = self.samba_realname
         install_link = None
@@ -101,18 +109,18 @@ def install_library(self):
             inst_name    = bld.make_libname(t.target)
     elif self.vnum:
         vnum_base    = self.vnum.split('.')[0]
-        install_name = bld.make_libname(self.target, version=self.vnum)
-        install_link = bld.make_libname(self.target, version=vnum_base)
+        install_name = bld.make_libname(target_name, version=self.vnum)
+        install_link = bld.make_libname(target_name, version=vnum_base)
         inst_name    = bld.make_libname(t.target)
         if not self.private_library:
             # only generate the dev link for non-bundled libs
-            dev_link     = bld.make_libname(self.target)
+            dev_link     = bld.make_libname(target_name)
     elif getattr(self, 'soname', ''):
-        install_name = bld.make_libname(self.target)
+        install_name = bld.make_libname(target_name)
         install_link = self.soname
         inst_name    = bld.make_libname(t.target)
     else:
-        install_name = bld.make_libname(self.target)
+        install_name = bld.make_libname(target_name)
         install_link = None
         inst_name    = bld.make_libname(t.target)
 
