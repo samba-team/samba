@@ -134,6 +134,7 @@ static PyObject *py_samdb_set_domain_sid(PyLdbObject *self, PyObject *args)
 	sid = dom_sid_parse_talloc(NULL, PyString_AsString(py_sid));
 
 	ret = samdb_set_domain_sid(ldb, sid);
+	talloc_free(sid);
 	if (!ret) {
 		PyErr_SetString(PyExc_RuntimeError, "set_domain_sid failed");
 		return NULL;
