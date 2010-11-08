@@ -905,6 +905,13 @@ static int ldb_modules_load_path(const char *path, const char *version)
 	}
 
 	ret = init_fn(version);
+	if (ret == LDB_ERR_ENTRY_ALREADY_EXISTS) {
+		/* the module is already registered - ignore this, as
+		 * it can happen if LDB_MODULES_PATH points at both
+		 * the build and install directory
+		 */
+		ret = LDB_SUCCESS;
+	}
 	return ret;
 }
 
