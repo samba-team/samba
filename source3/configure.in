@@ -836,7 +836,7 @@ if test x$enable_cups != xno; then
 			# dendencies including thread libraries - use cups-config only if really
 			# required. 
 			AC_CHECK_LIB_EXT(cups, ac_save_PRINT_LIBS , httpConnect,
-				[PRINT_LIBS"$ac_save_PRINT_LIBS -lcups"],
+				[PRINT_LIBS="$ac_save_PRINT_LIBS -lcups"],
 				[AC_MSG_WARN([your cups library doesn't link with -lcups alone, it might be underlinked.]) ;
 				 PRINT_LIBS="$ac_save_PRINT_LIBS `$CUPS_CONFIG --libs`"])
 
