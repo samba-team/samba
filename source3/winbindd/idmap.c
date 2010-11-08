@@ -643,7 +643,9 @@ NTSTATUS idmap_backends_sid_to_unixid(const char *domain, struct id_map *id)
 			return status;
 		}
 
-		DEBUG(10, ("passdb could not map, asking backends...\n"));
+		DEBUG(10, ("passdb could not map.\n"));
+
+		return NT_STATUS_NONE_MAPPED;
 	}
 
 	dom = idmap_find_domain(domain);
