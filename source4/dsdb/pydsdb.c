@@ -414,18 +414,17 @@ static PyObject *py_samdb_ntds_objectGUID(PyObject *self, PyObject *args)
 	TALLOC_CTX *mem_ctx;
 	const struct GUID *guid;
 
+	if (!PyArg_ParseTuple(args, "O", &py_ldb)) {
+		return NULL;
+	}
+
+	PyErr_LDB_OR_RAISE(py_ldb, ldb);
+
 	mem_ctx = talloc_new(NULL);
 	if (mem_ctx == NULL) {
 		PyErr_NoMemory();
 		return NULL;
 	}
-
-	if (!PyArg_ParseTuple(args, "O", &py_ldb)) {
-		talloc_free(mem_ctx);
-		return NULL;
-	}
-
-	PyErr_LDB_OR_RAISE(py_ldb, ldb);
 
 	guid = samdb_ntds_objectGUID(ldb);
 	if (guid == NULL) {
