@@ -25,6 +25,106 @@
 #include "dsdb/samdb/samdb.h"
 #include "dsdb/common/util.h"
 #include "rpc_server/drsuapi/dcesrv_drsuapi.h"
+#include "system/kerberos.h"
+#include "auth/kerberos/kerberos.h"
+#include "libcli/security/session.h"
+#include "libcli/security/security.h"
+#include "auth/session.h"
+
+/*
+  check that the SPN update should be allowed as an override
+  via sam_ctx_system
+
+  This is only called if the client is not a domain controller or
+  administrator
+ */
+static bool writespn_check_spn(struct drsuapi_bind_state *b_state,
+			       struct dcesrv_call_state *dce_call,
+			       struct ldb_dn *dn,
+			       const char *spn)
+{
+	/*
+	  we only allow SPN updates if:
+
+            1) they are on the clients own account object
+	    2) they are of the form SERVICE/dnshostname
+	 */
+	struct dom_sid *user_sid, *sid;
+	TALLOC_CTX *tmp_ctx = talloc_new(dce_call);
+	struct ldb_result *res;
+	const char *attrs[] = { "objectSID", "dnsHostName", NULL };
+	int ret;
+	krb5_context krb_ctx;
+	krb5_error_code kerr;
+	krb5_principal principal;
+	const char *dns_name, *dnsHostName;
+
+	/*
+	  get the objectSid of the DN that is being modified, and
+	  check it matches the user_sid in their token
+	 */
+
+	ret = dsdb_search_dn(b_state->sam_ctx, tmp_ctx, &res, dn, attrs, DSDB_SEARCH_ONE_ONLY);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(tmp_ctx);
+		return false;
+	}
+
+	user_sid = &dce_call->conn->auth_state.session_info->security_token->sids[PRIMARY_USER_SID_INDEX];
+	sid = samdb_result_dom_sid(tmp_ctx, res->msgs[0], "objectSid");
+	if (sid == NULL) {
+		talloc_free(tmp_ctx);
+		return false;
+	}
+
+	dnsHostName = ldb_msg_find_attr_as_string(res->msgs[0], "dnsHostName", NULL);
+	if (dnsHostName == NULL) {
+		talloc_free(tmp_ctx);
+		return false;
+	}
+
+	if (!dom_sid_equal(sid, user_sid)) {
+		talloc_free(tmp_ctx);
+		return false;
+	}
+
+	kerr = smb_krb5_init_context_basic(tmp_ctx, dce_call->conn->dce_ctx->lp_ctx, &krb_ctx);
+	if (kerr != 0) {
+		talloc_free(tmp_ctx);
+		return false;
+	}
+
+	ret = krb5_parse_name_flags(krb_ctx, spn, KRB5_PRINCIPAL_PARSE_NO_REALM, &principal);
+	if (kerr != 0) {
+		krb5_free_context(krb_ctx);
+		talloc_free(tmp_ctx);
+		return false;
+	}
+
+	if (principal->name.name_string.len != 2) {
+		krb5_free_principal(krb_ctx, principal);
+		krb5_free_context(krb_ctx);
+		talloc_free(tmp_ctx);
+		return false;
+	}
+
+	dns_name = principal->name.name_string.val[1];
+
+	if (strcasecmp(dns_name, dnsHostName) != 0) {
+		krb5_free_principal(krb_ctx, principal);
+		krb5_free_context(krb_ctx);
+		talloc_free(tmp_ctx);
+		return false;
+	}
+
+	/* its a simple update on their own account - allow it with
+	 * permissions override */
+	krb5_free_principal(krb_ctx, principal);
+	krb5_free_context(krb_ctx);
+	talloc_free(tmp_ctx);
+
+	return true;
+}
 
 /*
   drsuapi_DsWriteAccountSpn
@@ -34,6 +134,7 @@ WERROR dcesrv_drsuapi_DsWriteAccountSpn(struct dcesrv_call_state *dce_call, TALL
 {
 	struct drsuapi_bind_state *b_state;
 	struct dcesrv_handle *h;
+	enum security_user_level level;
 
 	*r->out.level_out = r->in.level;
 
@@ -43,6 +144,8 @@ WERROR dcesrv_drsuapi_DsWriteAccountSpn(struct dcesrv_call_state *dce_call, TALL
 	r->out.res = talloc(mem_ctx, union drsuapi_DsWriteAccountSpnResult);
 	W_ERROR_HAVE_NO_MEMORY(r->out.res);
 
+	level = security_session_user_level(dce_call->conn->auth_state.session_info, NULL);
+
 	switch (r->in.level) {
 		case 1: {
 			struct drsuapi_DsWriteAccountSpnRequest1 *req;
@@ -51,6 +154,7 @@ WERROR dcesrv_drsuapi_DsWriteAccountSpn(struct dcesrv_call_state *dce_call, TALL
 			unsigned int i;
 			int ret;
 			unsigned spn_count=0;
+			bool passed_checks = true;
 
 			req = &r->in.req->req1;
 			count = req->count;
@@ -68,6 +172,12 @@ WERROR dcesrv_drsuapi_DsWriteAccountSpn(struct dcesrv_call_state *dce_call, TALL
 
 			/* construct mods */
 			for (i = 0; i < count; i++) {
+				if (!writespn_check_spn(b_state,
+						       dce_call,
+						       msg->dn,
+						       req->spn_names[i].str)) {
+					passed_checks = false;
+				}
 				ret = samdb_msg_add_string(b_state->sam_ctx,
 							   msg, msg, "servicePrincipalName",
 							   req->spn_names[i].str);
@@ -98,7 +208,7 @@ WERROR dcesrv_drsuapi_DsWriteAccountSpn(struct dcesrv_call_state *dce_call, TALL
 			}
 
 			/* Apply to database */
-			ret = dsdb_modify(b_state->sam_ctx, msg,
+			ret = dsdb_modify(passed_checks?b_state->sam_ctx_system:b_state->sam_ctx, msg,
 					  DSDB_MODIFY_PERMISSIVE);
 			if (ret != LDB_SUCCESS) {
 				DEBUG(0,("Failed to modify SPNs on %s: %s\n",
