@@ -64,5 +64,7 @@ struct gensec_gssapi_state {
 	size_t max_wrap_buf_size;
 	int gss_exchange_count;
 	size_t sig_size;
+
+	const char *target_principal;
 };
 

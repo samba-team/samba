@@ -495,6 +495,8 @@ static NTSTATUS gensec_spnego_parse_negTokenInit(struct gensec_security *gensec_
 			 * of this mech */
 			if (spnego_state->state_position != SPNEGO_SERVER_START) {
 				if (NT_STATUS_EQUAL(nt_status, NT_STATUS_INVALID_PARAMETER) || 
+				    NT_STATUS_EQUAL(nt_status, NT_STATUS_NO_LOGON_SERVERS) ||
+				    NT_STATUS_EQUAL(nt_status, NT_STATUS_TIME_DIFFERENCE_AT_DC) ||
 				    NT_STATUS_EQUAL(nt_status, NT_STATUS_CANT_ACCESS_DOMAIN_INFO)) {
 					/* Pretend we never started it (lets the first run find some incompatible demand) */
 					

@@ -315,7 +315,6 @@ static NTSTATUS gensec_gssapi_client_start(struct gensec_security *gensec_securi
 	gss_OID name_type;
 	OM_uint32 maj_stat, min_stat;
 	const char *hostname = gensec_get_target_hostname(gensec_security);
-	const char *principal;
 	struct gssapi_creds_container *gcc;
 	const char *error_string;
 
@@ -339,18 +338,18 @@ static NTSTATUS gensec_gssapi_client_start(struct gensec_security *gensec_securi
 
 	gensec_gssapi_state = talloc_get_type(gensec_security->private_data, struct gensec_gssapi_state);
 
-	principal = gensec_get_target_principal(gensec_security);
-	if (principal) {
+	gensec_gssapi_state->target_principal = gensec_get_target_principal(gensec_security);
+	if (gensec_gssapi_state->target_principal) {
 		name_type = GSS_C_NULL_OID;
 	} else {
-		principal = talloc_asprintf(gensec_gssapi_state, "%s/%s@%s",
+		gensec_gssapi_state->target_principal = talloc_asprintf(gensec_gssapi_state, "%s/%s@%s",
 					    gensec_get_target_service(gensec_security), 
 					    hostname, lpcfg_realm(gensec_security->settings->lp_ctx));
 
 		name_type = GSS_C_NT_USER_NAME;
 	}
-	name_token.value  = discard_const_p(uint8_t, principal);
-	name_token.length = strlen(principal);
+	name_token.value  = discard_const_p(uint8_t, gensec_gssapi_state->target_principal);
+	name_token.length = strlen(gensec_gssapi_state->target_principal);
 
 
 	maj_stat = gss_import_name (&min_stat,
@@ -373,12 +372,12 @@ static NTSTATUS gensec_gssapi_client_start(struct gensec_security *gensec_securi
 	case KRB5KDC_ERR_PREAUTH_FAILED:
 		return NT_STATUS_LOGON_FAILURE;
 	case KRB5_KDC_UNREACH:
-		DEBUG(3, ("Cannot reach a KDC we require to contact %s : %s\n", principal, error_string));
-		return NT_STATUS_INVALID_PARAMETER; /* Make SPNEGO ignore us, we can't go any further here */
+		DEBUG(3, ("Cannot reach a KDC we require to contact %s : %s\n", gensec_gssapi_state->target_principal, error_string));
+		return NT_STATUS_NO_LOGON_SERVERS;
 	case KRB5_CC_NOTFOUND:
 	case KRB5_CC_END:
-		DEBUG(3, ("Error preparing credentials we require to contact %s : %s\n", principal, error_string));
-		return NT_STATUS_INVALID_PARAMETER; /* Make SPNEGO ignore us, we can't go any further here */
+		DEBUG(2, ("Error obtaining ticket we require to contact %s: (possibly due to clock skew between us and the KDC) %s\n", gensec_gssapi_state->target_principal, error_string));
+		return NT_STATUS_TIME_DIFFERENCE_AT_DC;
 	default:
 		DEBUG(1, ("Aquiring initiator credentials failed: %s\n", error_string));
 		return NT_STATUS_UNSUCCESSFUL;
@@ -569,12 +568,24 @@ static NTSTATUS gensec_gssapi_update(struct gensec_security *gensec_security,
 			return NT_STATUS_MORE_PROCESSING_REQUIRED;
 		} else if (gss_oid_equal(gensec_gssapi_state->gss_oid, gss_mech_krb5)) {
 			switch (min_stat) {
-			case KRB5_KDC_UNREACH:
-				DEBUG(3, ("Cannot reach a KDC we require: %s\n",
-					  gssapi_error_string(gensec_gssapi_state, maj_stat, min_stat, gensec_gssapi_state->gss_oid)));
+			case KRB5KRB_AP_ERR_TKT_NYV:
+				DEBUG(1, ("Error with ticket to contact %s: possible clock skew between us and the KDC or target server: %s\n",
+					  gensec_gssapi_state->target_principal,
+					  gssapi_error_string(out_mem_ctx, maj_stat, min_stat, gensec_gssapi_state->gss_oid)));
+				return NT_STATUS_TIME_DIFFERENCE_AT_DC; /* Make SPNEGO ignore us, we can't go any further here */
+			case KRB5KRB_AP_ERR_TKT_EXPIRED:
+				DEBUG(1, ("Error with ticket to contact %s: ticket is expired, possible clock skew between us and the KDC or target server: %s\n",
+					  gensec_gssapi_state->target_principal,
+					  gssapi_error_string(out_mem_ctx, maj_stat, min_stat, gensec_gssapi_state->gss_oid)));
 				return NT_STATUS_INVALID_PARAMETER; /* Make SPNEGO ignore us, we can't go any further here */
+			case KRB5_KDC_UNREACH:
+				DEBUG(3, ("Cannot reach a KDC we require in order to obtain a ticetk to %s: %s\n",
+					  gensec_gssapi_state->target_principal,
+					  gssapi_error_string(gensec_gssapi_state, maj_stat, min_stat, gensec_gssapi_state->gss_oid)));
+				return NT_STATUS_NO_LOGON_SERVERS; /* Make SPNEGO ignore us, we can't go any further here */
 			case KRB5KDC_ERR_S_PRINCIPAL_UNKNOWN:
-				DEBUG(3, ("Server is not registered with our KDC: %s\n", 
+				DEBUG(3, ("Server %s is not registered with our KDC: %s\n",
+					  gensec_gssapi_state->target_principal,
 					  gssapi_error_string(gensec_gssapi_state, maj_stat, min_stat, gensec_gssapi_state->gss_oid)));
 				return NT_STATUS_INVALID_PARAMETER; /* Make SPNEGO ignore us, we can't go any further here */
 			case KRB5KRB_AP_ERR_MSG_TYPE:
