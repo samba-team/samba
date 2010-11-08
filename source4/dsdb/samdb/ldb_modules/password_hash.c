@@ -1908,7 +1908,7 @@ static int setup_io(struct ph_context *ac,
 	    && (!io->n.nt_hash) && (!io->n.lm_hash)) {
 		ldb_asprintf_errstring(ldb,
 			"setup_io: "
-			"The password change/set operations performed using the LAN Manager hash alone are deactivated!");
+			"It' not possible to delete the password (changes using the LAN Manager hash alone could be deactivated)!");
 		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
 
