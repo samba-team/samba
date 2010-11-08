@@ -81,7 +81,7 @@ WERROR dreplsrv_periodic_schedule(struct dreplsrv_service *service, uint32_t nex
 	W_ERROR_HAVE_NO_MEMORY(new_te);
 
 	tmp_mem = talloc_new(service);
-	DEBUG(2,("dreplsrv_periodic_schedule(%u) %sscheduled for: %s\n",
+	DEBUG(4,("dreplsrv_periodic_schedule(%u) %sscheduled for: %s\n",
 		next_interval,
 		(service->periodic.te?"re":""),
 		nt_time_string(tmp_mem, timeval_to_nttime(&next_time))));
@@ -97,7 +97,7 @@ static void dreplsrv_periodic_run(struct dreplsrv_service *service)
 {
 	TALLOC_CTX *mem_ctx;
 
-	DEBUG(2,("dreplsrv_periodic_run(): schedule pull replication\n"));
+	DEBUG(4,("dreplsrv_periodic_run(): schedule pull replication\n"));
 
 	/*
 	 * KCC or some administrative tool
@@ -110,7 +110,7 @@ static void dreplsrv_periodic_run(struct dreplsrv_service *service)
 	dreplsrv_schedule_pull_replication(service, mem_ctx);
 	talloc_free(mem_ctx);
 
-	DEBUG(2,("dreplsrv_periodic_run(): run pending_ops memory=%u\n", 
+	DEBUG(4,("dreplsrv_periodic_run(): run pending_ops memory=%u\n", 
 		 (unsigned)talloc_total_blocks(service)));
 
 	dreplsrv_ridalloc_check_rid_pool(service);

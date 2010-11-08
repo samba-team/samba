@@ -346,7 +346,7 @@ static WERROR dreplsrv_refresh_partition(struct dreplsrv_service *s,
 		NULL
 	};
 
-	DEBUG(2, ("dreplsrv_refresh_partition(%s)\n",
+	DEBUG(4, ("dreplsrv_refresh_partition(%s)\n",
 		ldb_dn_get_linearized(p->dn)));
 
 	ret = ldb_search(s->samdb, mem_ctx, &r, p->dn, LDB_SCOPE_BASE, attrs,
