@@ -448,7 +448,7 @@ sub provision($$$$$$)
 
 	my ($max_uid, $max_gid);
 	my ($uid_nobody, $uid_root);
-	my ($gid_nobody, $gid_nogroup, $gid_root);
+	my ($gid_nobody, $gid_nogroup, $gid_root, $gid_domusers);
 
 	if ($unix_uid < 0xffff - 2) {
 		$max_uid = 0xffff;
@@ -468,6 +468,7 @@ sub provision($$$$$$)
 	$gid_nobody = $max_gid - 1;
 	$gid_nogroup = $max_gid - 2;
 	$gid_root = $max_gid - 3;
+	$gid_domusers = $max_gid - 4;
 
 	##
 	## create conffile
@@ -608,6 +609,7 @@ $unix_name:x:$unix_uid:$unix_gids[0]:$unix_name gecos:$prefix_abs:/bin/false
 	print GROUP "nobody:x:$gid_nobody:
 nogroup:x:$gid_nogroup:nobody
 $unix_name-group:x:$unix_gids[0]:
+domusers:X:$gid_domusers:
 ";
 	if ($unix_gids[0] != 0) {
 		print GROUP "root:x:$gid_root:";
@@ -674,6 +676,9 @@ sub wait_for_start($$)
 	print "wait for smbd\n";
 	system($self->binpath("smbclient") ." $envvars->{CONFIGURATION} -L $envvars->{SERVER_IP} -U% -p 139 | head -2");
 	system($self->binpath("smbclient") ." $envvars->{CONFIGURATION} -L $envvars->{SERVER_IP} -U% -p 139 | head -2");
+
+	# Ensure we have domain users mapped.
+	system($self->binpath("net") ." $envvars->{CONFIGURATION} groupmap add rid=513 unixgroup=domusers type=domain");
 
 	print $self->getlog_env($envvars);
 }
