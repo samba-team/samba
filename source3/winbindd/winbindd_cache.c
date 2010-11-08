@@ -96,7 +96,7 @@ struct winbind_cache {
 struct cache_entry {
 	NTSTATUS status;
 	uint32 sequence_number;
-	uint64 timeout;
+	uint64_t timeout;
 	uint8 *data;
 	uint32 len, ofs;
 };
@@ -206,14 +206,14 @@ static bool centry_check_bytes(struct cache_entry *centry, size_t nbytes)
 }
 
 /*
-  pull a uint64 from a cache entry
+  pull a uint64_t from a cache entry
 */
-static uint64 centry_uint64(struct cache_entry *centry)
+static uint64_t centry_uint64_t(struct cache_entry *centry)
 {
-	uint64 ret;
+	uint64_t ret;
 
 	if (!centry_check_bytes(centry, 8)) {
-		smb_panic_fn("centry_uint64");
+		smb_panic_fn("centry_uint64_t");
 	}
 	ret = BVAL(centry->data, centry->ofs);
 	centry->ofs += 8;
@@ -274,7 +274,7 @@ static NTTIME centry_nttime(struct cache_entry *centry)
 	}
 	ret = IVAL(centry->data, centry->ofs);
 	centry->ofs += 4;
-	ret += (uint64_t)IVAL(centry->data, centry->ofs) << 32;
+	ret += (uint64)IVAL(centry->data, centry->ofs) << 32;
 	centry->ofs += 4;
 	return ret;
 }
@@ -656,7 +656,7 @@ static struct cache_entry *wcache_fetch_raw(char *kstr)
 
 	centry->status = centry_ntstatus(centry);
 	centry->sequence_number = centry_uint32(centry);
-	centry->timeout = centry_uint64(centry);
+	centry->timeout = centry_uint64_t(centry);
 
 	return centry;
 }
@@ -765,9 +765,9 @@ static void centry_expand(struct cache_entry *centry, uint32 len)
 }
 
 /*
-  push a uint64 into a centry
+  push a uint64_t into a centry
 */
-static void centry_put_uint64(struct cache_entry *centry, uint64 v)
+static void centry_put_uint64_t(struct cache_entry *centry, uint64_t v)
 {
 	centry_expand(centry, 8);
 	SBVAL(centry->data, centry->ofs, v);
@@ -898,7 +898,7 @@ struct cache_entry *centry_start(struct winbindd_domain *domain, NTSTATUS status
 	centry->timeout = lp_winbind_cache_time() + time(NULL);
 	centry_put_ntstatus(centry, status);
 	centry_put_uint32(centry, centry->sequence_number);
-	centry_put_uint64(centry, centry->timeout);
+	centry_put_uint64_t(centry, centry->timeout);
 	return centry;
 }
 
@@ -3527,7 +3527,7 @@ static struct cache_entry *create_centry_validate(const char *kstr, TDB_DATA dat
 
 	centry->status = NT_STATUS(centry_uint32(centry));
 	centry->sequence_number = centry_uint32(centry);
-	centry->timeout = centry_uint64(centry);
+	centry->timeout = centry_uint64_t(centry);
 	return centry;
 }
 
