@@ -364,7 +364,7 @@ static int objectclass_add(struct ldb_module *module, struct ldb_request *req)
 	const struct ldb_val *val;
 	char *value;
 	int ret;
-	static const char * const parent_attrs[] = { "objectGUID", "objectClass", NULL };
+	static const char * const parent_attrs[] = { "objectClass", NULL };
 
 	ldb = ldb_module_get_ctx(module);
 
