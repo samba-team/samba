@@ -1428,8 +1428,9 @@ static int py_ldb_contains(PyLdbObject *self, PyObject *obj)
 	unsigned int count;
 	int ret;
 
-	if (!PyObject_AsDn(ldb_ctx, obj, ldb_ctx, &dn))
+	if (!PyObject_AsDn(ldb_ctx, obj, ldb_ctx, &dn)) {
 		return -1;
+	}
 
 	ret = ldb_search(ldb_ctx, ldb_ctx, &result, dn, LDB_SCOPE_BASE, NULL,
 			 NULL);
@@ -1442,11 +1443,15 @@ static int py_ldb_contains(PyLdbObject *self, PyObject *obj)
 
 	talloc_free(result);
 
-	if (count == 0) {
-		return 0;
+	if (count > 1) {
+		PyErr_Format(PyExc_RuntimeError,
+			     "Searching for [%s] dn gave %u results!",
+			     ldb_dn_get_linearized(dn),
+			     count);
+		return -1;
 	}
 
-	return 1;
+	return count;
 }
 
 static PySequenceMethods py_ldb_seq = {
