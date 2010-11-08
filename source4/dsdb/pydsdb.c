@@ -636,7 +636,7 @@ static PyObject *py_dsdb_am_rodc(PyObject *self, PyObject *args)
 	PyErr_LDB_OR_RAISE(py_ldb, ldb);
 
 	ret = samdb_rodc(ldb, &am_rodc);
-	if (samdb_rodc(ldb, &am_rodc) != LDB_SUCCESS) {
+	if (ret != LDB_SUCCESS) {
 		PyErr_SetString(PyExc_RuntimeError, ldb_errstring(ldb));
 		return NULL;
 	}
