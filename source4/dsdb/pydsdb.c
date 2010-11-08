@@ -483,8 +483,10 @@ static PyObject *py_dsdb_load_partition_usn(PyObject *self, PyObject *args)
 
 	ret = dsdb_load_partition_usn(ldb, dn, &highest_uSN, &urgent_uSN);
 	if (ret != LDB_SUCCESS) {
-	   char *errstr = talloc_asprintf(mem_ctx, "Failed to load partition uSN - %s", ldb_errstring(ldb));
-	   PyErr_SetString(PyExc_RuntimeError, errstr);
+	   PyErr_Format(PyExc_RuntimeError,
+			"Failed to load partition [%s] uSN - %s",
+			ldb_dn_get_linearized(dn),
+			ldb_errstring(ldb));
 	   talloc_free(mem_ctx);
 	   return NULL;
 	}
