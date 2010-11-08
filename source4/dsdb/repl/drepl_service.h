@@ -103,6 +103,12 @@ struct dreplsrv_partition {
 	 */
 	struct dreplsrv_partition_source_dsa *sources;
 
+	/*
+	 * a linked list of all source dsa's we will notify,
+	 * that are not also in sources
+	 */
+	struct dreplsrv_partition_source_dsa *notifies;
+
 	bool incoming_only;
 };
 

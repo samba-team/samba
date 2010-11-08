@@ -270,12 +270,20 @@ void dreplsrv_notify_run_ops(struct dreplsrv_service *s)
 /*
   find a source_dsa for a given guid
  */
-static struct dreplsrv_partition_source_dsa *dreplsrv_find_source_dsa(struct dreplsrv_partition *p,
+static struct dreplsrv_partition_source_dsa *dreplsrv_find_notify_dsa(struct dreplsrv_partition *p,
 								      struct GUID *guid)
 {
 	struct dreplsrv_partition_source_dsa *s;
 
+	/* first check the sources list */
 	for (s=p->sources; s; s=s->next) {
+		if (GUID_compare(&s->repsFrom1->source_dsa_obj_guid, guid) == 0) {
+			return s;
+		}
+	}
+
+	/* then the notifies list */
+	for (s=p->notifies; s; s=s->next) {
 		if (GUID_compare(&s->repsFrom1->source_dsa_obj_guid, guid) == 0) {
 			return s;
 		}
@@ -298,7 +306,7 @@ static WERROR dreplsrv_schedule_notify_sync(struct dreplsrv_service *service,
 	struct dreplsrv_notify_operation *op;
 	struct dreplsrv_partition_source_dsa *s;
 
-	s = dreplsrv_find_source_dsa(p, &reps->ctr.ctr1.source_dsa_obj_guid);
+	s = dreplsrv_find_notify_dsa(p, &reps->ctr.ctr1.source_dsa_obj_guid);
 	if (s == NULL) {
 		DEBUG(0,(__location__ ": Unable to find source_dsa for %s\n",
 			 GUID_string(mem_ctx, &reps->ctr.ctr1.source_dsa_obj_guid)));
@@ -375,7 +383,7 @@ static WERROR dreplsrv_notify_check(struct dreplsrv_service *s,
 	for (i=0; i<count; i++) {
 		struct dreplsrv_partition_source_dsa *sdsa;
 		uint32_t replica_flags;
-		sdsa = dreplsrv_find_source_dsa(p, &reps[i].ctr.ctr1.source_dsa_obj_guid);
+		sdsa = dreplsrv_find_notify_dsa(p, &reps[i].ctr.ctr1.source_dsa_obj_guid);
 		replica_flags = reps[i].ctr.ctr1.replica_flags;
 		if (sdsa == NULL) continue;
 		if (sdsa->notify_uSN < uSNHighest) {

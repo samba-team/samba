@@ -209,8 +209,27 @@ WERROR dreplsrv_out_connection_attach(struct dreplsrv_service *s,
 	return WERR_OK;
 }
 
+/*
+  find an existing source dsa in a list
+ */
+static struct dreplsrv_partition_source_dsa *dreplsrv_find_source_dsa(struct dreplsrv_partition_source_dsa *list,
+								      struct GUID *guid)
+{
+	struct dreplsrv_partition_source_dsa *s;
+	for (s=list; s; s=s->next) {
+		if (GUID_compare(&s->repsFrom1->source_dsa_obj_guid, guid) == 0) {
+			return s;
+		}
+	}
+	return NULL;	
+}
+
+
+
 static WERROR dreplsrv_partition_add_source_dsa(struct dreplsrv_service *s,
 						struct dreplsrv_partition *p,
+						struct dreplsrv_partition_source_dsa **listp,
+						struct dreplsrv_partition_source_dsa *check_list,
 						const struct ldb_val *val)
 {
 	WERROR status;
@@ -240,8 +259,15 @@ static WERROR dreplsrv_partition_add_source_dsa(struct dreplsrv_service *s,
 	status = dreplsrv_out_connection_attach(s, source->repsFrom1, &source->conn);
 	W_ERROR_NOT_OK_RETURN(status);
 
-	/* remove any existing source with the same GUID */
-	for (s2=p->sources; s2; s2=s2->next) {
+	if (check_list && 
+	    dreplsrv_find_source_dsa(check_list, &source->repsFrom1->source_dsa_obj_guid)) {
+		/* its in the check list, don't add it again */
+		talloc_free(source);
+		return WERR_OK;
+	}
+
+	/* re-use an existing source if found */
+	for (s2=*listp; s2; s2=s2->next) {
 		if (GUID_compare(&s2->repsFrom1->source_dsa_obj_guid, 
 				 &source->repsFrom1->source_dsa_obj_guid) == 0) {
 			talloc_free(s2->repsFrom1->other_info);
@@ -252,7 +278,7 @@ static WERROR dreplsrv_partition_add_source_dsa(struct dreplsrv_service *s,
 		}
 	}
 
-	DLIST_ADD_END(p->sources, source, struct dreplsrv_partition_source_dsa *);
+	DLIST_ADD_END(*listp, source, struct dreplsrv_partition_source_dsa *);
 	return WERR_OK;
 }
 
@@ -343,6 +369,7 @@ static WERROR dreplsrv_refresh_partition(struct dreplsrv_service *s,
 		"objectSid",
 		"objectGUID",
 		"repsFrom",
+		"repsTo",
 		NULL
 	};
 
@@ -380,7 +407,17 @@ static WERROR dreplsrv_refresh_partition(struct dreplsrv_service *s,
 	orf_el = ldb_msg_find_element(r->msgs[0], "repsFrom");
 	if (orf_el) {
 		for (i=0; i < orf_el->num_values; i++) {
-			status = dreplsrv_partition_add_source_dsa(s, p, &orf_el->values[i]);
+			status = dreplsrv_partition_add_source_dsa(s, p, &p->sources, 
+								   NULL, &orf_el->values[i]);
+			W_ERROR_NOT_OK_RETURN(status);	
+		}
+	}
+
+	orf_el = ldb_msg_find_element(r->msgs[0], "repsTo");
+	if (orf_el) {
+		for (i=0; i < orf_el->num_values; i++) {
+			status = dreplsrv_partition_add_source_dsa(s, p, &p->notifies, 
+								   p->sources, &orf_el->values[i]);
 			W_ERROR_NOT_OK_RETURN(status);	
 		}
 	}
