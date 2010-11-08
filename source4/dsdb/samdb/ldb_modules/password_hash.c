@@ -1916,6 +1916,12 @@ static int setup_io(struct ph_context *ac,
 		ldb_asprintf_errstring(ldb,
 			"setup_io: "
 			"It' not possible to delete the password (changes using the LAN Manager hash alone could be deactivated)!");
+		/* on "userPassword" and "clearTextPassword" we've to return
+		 * something different, since these are virtual attributes */
+		if ((ldb_msg_find_element(orig_msg, "userPassword") != NULL) ||
+		    (ldb_msg_find_element(orig_msg, "clearTextPassword") != NULL)) {
+			return LDB_ERR_CONSTRAINT_VIOLATION;
+		}
 		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
 
@@ -2513,12 +2519,6 @@ static int password_hash_modify(struct ldb_module *module, struct ldb_request *r
 			}
 			ldb_msg_remove_element(msg, passwordAttr);
 		}
-	}
-	if ((del_attr_cnt > 0) && (add_attr_cnt == 0)) {
-		talloc_free(ac);
-		ldb_set_errstring(ldb,
-				  "Only the delete action for a password change specified!");
-		return LDB_ERR_CONSTRAINT_VIOLATION;
 	}
 	if ((del_attr_cnt == 0) && (add_attr_cnt > 0)) {
 		talloc_free(ac);
