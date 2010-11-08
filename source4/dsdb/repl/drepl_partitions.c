@@ -208,9 +208,9 @@ WERROR dreplsrv_out_connection_attach(struct dreplsrv_service *s,
 
 		DLIST_ADD_END(s->connections, conn, struct dreplsrv_out_connection *);
 
-		DEBUG(2,("dreplsrv_out_connection_attach(%s): create\n", conn->binding->host));
+		DEBUG(4,("dreplsrv_out_connection_attach(%s): create\n", conn->binding->host));
 	} else {
-		DEBUG(2,("dreplsrv_out_connection_attach(%s): attach\n", conn->binding->host));
+		DEBUG(4,("dreplsrv_out_connection_attach(%s): attach\n", conn->binding->host));
 	}
 
 	*_conn = conn;
