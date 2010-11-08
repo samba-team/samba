@@ -111,7 +111,7 @@ static void dnsupdate_rebuild(struct dnsupdate_service *service)
 	TALLOC_FREE(service->confupdate.subreq);
 
 	ret = ldb_search(service->samdb, tmp_ctx, &res, NULL, LDB_SCOPE_SUBTREE,
-			 attrs, "(&(primaryGroupID=%u)(objectClass=computer))",
+			 attrs, "(|(samaccountname=administrator)(&(primaryGroupID=%u)(objectClass=computer)))",
 			 DOMAIN_RID_DCS);
 	if (ret != LDB_SUCCESS) {
 		DEBUG(0,(__location__ ": Unable to find DCs list - %s", ldb_errstring(service->samdb)));
@@ -154,7 +154,6 @@ static void dnsupdate_rebuild(struct dnsupdate_service *service)
 		dprintf(fd, "/* End of static entries */\n");
 	}
 	dprintf(fd, "\tgrant %s ms-self * A AAAA;\n", realm);
-	dprintf(fd, "\tgrant administrator@%s wildcard * A AAAA SRV CNAME TXT;\n", realm);
 
 	for (i=0; i<res->count; i++) {
 		const char *acctname;
