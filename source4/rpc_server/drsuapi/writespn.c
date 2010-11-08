@@ -44,15 +44,15 @@ static bool writespn_check_spn(struct drsuapi_bind_state *b_state,
 			       const char *spn)
 {
 	/*
-	  we only allow SPN updates if:
-
-            1) they are on the clients own account object
-	    2) they are of the form SERVICE/dnshostname
+	 * we only allow SPN updates if:
+	 *
+	 * 1) they are on the clients own account object
+	 * 2) they are of the form SERVICE/dnshostname
 	 */
 	struct dom_sid *user_sid, *sid;
 	TALLOC_CTX *tmp_ctx = talloc_new(dce_call);
 	struct ldb_result *res;
-	const char *attrs[] = { "objectSID", "dnsHostName", NULL };
+	const char *attrs[] = { "objectSID", "dNSHostName", NULL };
 	int ret;
 	krb5_context krb_ctx;
 	krb5_error_code kerr;
@@ -64,7 +64,8 @@ static bool writespn_check_spn(struct drsuapi_bind_state *b_state,
 	  check it matches the user_sid in their token
 	 */
 
-	ret = dsdb_search_dn(b_state->sam_ctx, tmp_ctx, &res, dn, attrs, DSDB_SEARCH_ONE_ONLY);
+	ret = dsdb_search_dn(b_state->sam_ctx, tmp_ctx, &res, dn, attrs,
+			     DSDB_SEARCH_ONE_ONLY);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
 		return false;
@@ -77,7 +78,8 @@ static bool writespn_check_spn(struct drsuapi_bind_state *b_state,
 		return false;
 	}
 
-	dnsHostName = ldb_msg_find_attr_as_string(res->msgs[0], "dnsHostName", NULL);
+	dnsHostName = ldb_msg_find_attr_as_string(res->msgs[0], "dNSHostName",
+						  NULL);
 	if (dnsHostName == NULL) {
 		talloc_free(tmp_ctx);
 		return false;
@@ -88,13 +90,16 @@ static bool writespn_check_spn(struct drsuapi_bind_state *b_state,
 		return false;
 	}
 
-	kerr = smb_krb5_init_context_basic(tmp_ctx, dce_call->conn->dce_ctx->lp_ctx, &krb_ctx);
+	kerr = smb_krb5_init_context_basic(tmp_ctx,
+					   dce_call->conn->dce_ctx->lp_ctx,
+					   &krb_ctx);
 	if (kerr != 0) {
 		talloc_free(tmp_ctx);
 		return false;
 	}
 
-	ret = krb5_parse_name_flags(krb_ctx, spn, KRB5_PRINCIPAL_PARSE_NO_REALM, &principal);
+	ret = krb5_parse_name_flags(krb_ctx, spn, KRB5_PRINCIPAL_PARSE_NO_REALM,
+				    &principal);
 	if (kerr != 0) {
 		krb5_free_context(krb_ctx);
 		talloc_free(tmp_ctx);
@@ -164,7 +169,8 @@ WERROR dcesrv_drsuapi_DsWriteAccountSpn(struct dcesrv_call_state *dce_call, TALL
 				return WERR_NOMEM;
 			}
 
-			msg->dn = ldb_dn_new(msg, b_state->sam_ctx, req->object_dn);
+			msg->dn = ldb_dn_new(msg, b_state->sam_ctx,
+					     req->object_dn);
 			if ( ! ldb_dn_validate(msg->dn)) {
 				r->out.res->res1.status = WERR_OK;
 				return WERR_OK;
@@ -179,7 +185,8 @@ WERROR dcesrv_drsuapi_DsWriteAccountSpn(struct dcesrv_call_state *dce_call, TALL
 					passed_checks = false;
 				}
 				ret = samdb_msg_add_string(b_state->sam_ctx,
-							   msg, msg, "servicePrincipalName",
+							   msg, msg,
+							   "servicePrincipalName",
 							   req->spn_names[i].str);
 				if (ret != LDB_SUCCESS) {
 					return WERR_NOMEM;
@@ -188,7 +195,8 @@ WERROR dcesrv_drsuapi_DsWriteAccountSpn(struct dcesrv_call_state *dce_call, TALL
 			}
 
 			if (msg->num_elements == 0) {
-				DEBUG(2,("No SPNs need changing on %s\n", ldb_dn_get_linearized(msg->dn)));
+				DEBUG(2,("No SPNs need changing on %s\n",
+					 ldb_dn_get_linearized(msg->dn)));
 				r->out.res->res1.status = WERR_OK;
 				return WERR_OK;
 			}
@@ -208,15 +216,16 @@ WERROR dcesrv_drsuapi_DsWriteAccountSpn(struct dcesrv_call_state *dce_call, TALL
 			}
 
 			/* Apply to database */
-			ret = dsdb_modify(passed_checks?b_state->sam_ctx_system:b_state->sam_ctx, msg,
-					  DSDB_MODIFY_PERMISSIVE);
+			ret = dsdb_modify(passed_checks?b_state->sam_ctx_system:b_state->sam_ctx,
+					  msg, DSDB_MODIFY_PERMISSIVE);
 			if (ret != LDB_SUCCESS) {
 				DEBUG(0,("Failed to modify SPNs on %s: %s\n",
 					 ldb_dn_get_linearized(msg->dn),
 					 ldb_errstring(b_state->sam_ctx)));
 				r->out.res->res1.status = WERR_ACCESS_DENIED;
 			} else {
-				DEBUG(2,("Modified %u SPNs on %s\n", spn_count, ldb_dn_get_linearized(msg->dn)));
+				DEBUG(2,("Modified %u SPNs on %s\n", spn_count,
+					 ldb_dn_get_linearized(msg->dn)));
 				r->out.res->res1.status = WERR_OK;
 			}
 
