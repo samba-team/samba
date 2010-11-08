@@ -245,13 +245,13 @@ static PyObject *py_dsdb_get_oid_from_attid(PyObject *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "Oi", &py_ldb, &attid))
 		return NULL;
 
+	PyErr_LDB_OR_RAISE(py_ldb, ldb);
+
 	mem_ctx = talloc_new(NULL);
 	if (mem_ctx == NULL) {
 	   PyErr_NoMemory();
 	   return NULL;
 	}
-
-	PyErr_LDB_OR_RAISE(py_ldb, ldb);
 
 	schema = dsdb_get_schema(ldb, NULL);
 
