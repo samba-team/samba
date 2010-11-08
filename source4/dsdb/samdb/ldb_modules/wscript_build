@@ -50,7 +50,7 @@ bld.SAMBA_MODULE('ldb_objectguid',
 	init_function='ldb_objectguid_module_init',
 	module_init_name='ldb_init_module',
 	internal_module=False,
-	deps='samdb talloc events ndr'
+	deps='samdb talloc events ndr DSDB_MODULE_HELPERS'
 	)
 
 

@@ -32,6 +32,7 @@
 #include "includes.h"
 #include "ldb_module.h"
 #include "dsdb/samdb/samdb.h"
+#include "dsdb/samdb/ldb_modules/util.h"
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "param/param.h"
 
@@ -97,32 +98,7 @@ struct og_context {
 	struct ldb_request *req;
 };
 
-static int og_op_callback(struct ldb_request *req, struct ldb_reply *ares)
-{
-	struct og_context *ac;
-
-	ac = talloc_get_type(req->context, struct og_context);
-
-	if (!ares) {
-		return ldb_module_done(ac->req, NULL, NULL,
-					LDB_ERR_OPERATIONS_ERROR);
-	}
-	if (ares->error != LDB_SUCCESS) {
-		return ldb_module_done(ac->req, ares->controls,
-					ares->response, ares->error);
-	}
-
-	if (ares->type != LDB_REPLY_DONE) {
-		talloc_free(ares);
-		return ldb_module_done(ac->req, NULL, NULL,
-					LDB_ERR_OPERATIONS_ERROR);
-	}
-
-	return ldb_module_done(ac->req, ares->controls,
-				ares->response, ares->error);
-}
-
-/* add_record: add objectGUID attribute */
+/* add_record: add objectGUID and timestamp attributes */
 static int objectguid_add(struct ldb_module *module, struct ldb_request *req)
 {
 	struct ldb_context *ldb;
@@ -192,7 +168,7 @@ static int objectguid_add(struct ldb_module *module, struct ldb_request *req)
 	ret = ldb_build_add_req(&down_req, ldb, ac,
 				msg,
 				req->controls,
-				ac, og_op_callback,
+				req, dsdb_next_callback,
 				req);
 	LDB_REQ_SET_LOCATION(down_req);
 	if (ret != LDB_SUCCESS) {
@@ -252,7 +228,7 @@ static int objectguid_modify(struct ldb_module *module, struct ldb_request *req)
 	ret = ldb_build_mod_req(&down_req, ldb, ac,
 				msg,
 				req->controls,
-				ac, og_op_callback,
+				req, dsdb_next_callback,
 				req);
 	LDB_REQ_SET_LOCATION(down_req);
 	if (ret != LDB_SUCCESS) {
@@ -266,7 +242,7 @@ static int objectguid_modify(struct ldb_module *module, struct ldb_request *req)
 static const struct ldb_module_ops ldb_objectguid_module_ops = {
 	.name          = "objectguid",
 	.add           = objectguid_add,
-	.modify        = objectguid_modify,
+	.modify        = objectguid_modify
 };
 
 int ldb_objectguid_module_init(const char *version)
