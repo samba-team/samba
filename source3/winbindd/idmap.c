@@ -448,6 +448,16 @@ static struct idmap_domain *idmap_init_passdb_domain(TALLOC_CTX *mem_ctx)
 {
 	idmap_init();
 
+	/*
+	 * Always init the default domain, we can't go without one
+	 */
+	if (default_idmap_domain == NULL) {
+		default_idmap_domain = idmap_init_default_domain(NULL);
+	}
+	if (default_idmap_domain == NULL) {
+		return NULL;
+	}
+
 	if (passdb_idmap_domain != NULL) {
 		return passdb_idmap_domain;
 	}
