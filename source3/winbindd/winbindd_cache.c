@@ -614,8 +614,8 @@ static bool centry_expired(struct winbindd_domain *domain, const char *keystr, s
 	/* if the server is down or the cache entry is not older than the
 	   current sequence number or it did not timeout then it is OK */
 	if (wcache_server_down(domain)
-	    || (centry->sequence_number == domain->sequence_number
-		&& centry->timeout > time(NULL))) {
+	    || ((centry->sequence_number == domain->sequence_number)
+		&& (centry->timeout > time(NULL)))) {
 		DEBUG(10,("centry_expired: Key %s for domain %s is good.\n",
 			keystr, domain->name ));
 		return false;
