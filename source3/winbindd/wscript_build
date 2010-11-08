@@ -17,6 +17,7 @@ IDMAP_ADEX_SRC = '''idmap_adex/idmap_adex.c
                     idmap_adex/provider_unified.c
                     idmap_adex/gc_util.c
                     idmap_adex/domain_util.c'''
+IDMAP_AUTORID_SRC = '''idmap_autorid.c'''
 
 IDMAP_RW_SRC = 'idmap_rw.c'
 IDMAP_SRC = 'idmap.c idmap_util.c ${IDMAP_RW_SRC}'
@@ -87,6 +88,14 @@ bld.SAMBA_MODULE('idmap_adex',
                  init_function='',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('IDMAP_ADEX'),
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('IDMAP_ADEX'))
+
+bld.SAMBA_MODULE('idmap_autorid',
+                 subsystem='idmap',
+                 source=IDMAP_AUTORID_SRC,
+                 init_function='',
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('IDMAP_AUTORID'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('IDMAP_AUTORID'))
+
 
 NSS_INFO_TEMPLATE_SRC = 'nss_info_template.c'
 NSS_INFO_SRC = 'nss_info.c'
