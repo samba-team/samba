@@ -64,7 +64,7 @@ const struct dsdb_attribute *dsdb_attribute_by_attributeID_id(const struct dsdb_
 	if (id == 0xFFFFFFFF) return NULL;
 
 	/* check for msDS-IntId type attribute */
-	if (dsdb_pfm_get_attid_type(id) == dsdb_attid_type_intid) {
+	if (dsdb_pfm_get_attid_type(id) == DSDB_ATTID_TYPE_INTID) {
 		BINARY_ARRAY_SEARCH_P(schema->attributes_by_msDS_IntId,
 				      schema->num_int_id_attr, msDS_IntId, id, uint32_cmp, c);
 		return c;

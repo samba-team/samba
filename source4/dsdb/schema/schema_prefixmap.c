@@ -32,16 +32,16 @@
 enum dsdb_attid_type dsdb_pfm_get_attid_type(uint32_t attid)
 {
 	if (attid <= 0x7FFFFFFF) {
-		return dsdb_attid_type_pfm;
+		return DSDB_ATTID_TYPE_PFM;
 	}
 	else if (attid <= 0xBFFFFFFF) {
-		return dsdb_attid_type_intid;
+		return DSDB_ATTID_TYPE_INTID;
 	}
 	else if (attid <= 0xFFFEFFFF) {
-		return dsdb_attid_type_reserved;
+		return DSDB_ATTID_TYPE_RESERVED;
 	}
 	else {
-		return dsdb_attid_type_internal;
+		return DSDB_ATTID_TYPE_INTERNAL;
 	}
 }
 
@@ -361,7 +361,7 @@ WERROR dsdb_schema_pfm_oid_from_attid(struct dsdb_schema_prefixmap *pfm, uint32_
 	WERROR werr = WERR_OK;
 
 	/* sanity check for attid requested */
-	if (dsdb_pfm_get_attid_type(attid) != dsdb_attid_type_pfm) {
+	if (dsdb_pfm_get_attid_type(attid) != DSDB_ATTID_TYPE_PFM) {
 		return WERR_INVALID_PARAMETER;
 	}
 
