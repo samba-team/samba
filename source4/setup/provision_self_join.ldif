@@ -19,7 +19,7 @@ sAMAccountName: ${NETBIOSNAME}$
 # script
 userAccountControl: 532480
 clearTextPassword:: ${MACHINEPASS_B64}
-objectSID: ${DOMAINSID}-${DCRID}
+objectSid: ${DOMAINSID}-${DCRID}
 
 # Here are missing the objects for the NTFRS subscription since we don't
 # support this technique yet.
