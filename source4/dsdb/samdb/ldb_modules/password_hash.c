@@ -1633,6 +1633,68 @@ static int check_password_restrictions(struct setup_password_fields_io *io)
 	return LDB_SUCCESS;
 }
 
+/*
+ * This is intended for use by the "password_hash" module since there
+ * password changes can be specified through one message element with the
+ * new password (to set) and another one with the old password (to unset).
+ *
+ * The first which sets a password (new value) can have flags
+ * (LDB_FLAG_MOD_ADD, LDB_FLAG_MOD_REPLACE) but also none (on "add" operations
+ * for entries). The latter (old value) has always specified
+ * LDB_FLAG_MOD_DELETE.
+ *
+ * Returns LDB_ERR_CONSTRAINT_VIOLATION and LDB_ERR_UNWILLING_TO_PERFORM if
+ * matching message elements are malformed in respect to the set/change rules.
+ * Otherwise it returns LDB_SUCCESS.
+ */
+static int msg_find_old_and_new_pwd_val(const struct ldb_message *msg,
+					const char *name,
+					enum ldb_request_type operation,
+					const struct ldb_val **new_val,
+					const struct ldb_val **old_val)
+{
+	unsigned int i;
+
+	*new_val = NULL;
+	*old_val = NULL;
+
+	if (msg == NULL) {
+		return LDB_SUCCESS;
+	}
+
+	for (i = 0; i < msg->num_elements; i++) {
+		if (ldb_attr_cmp(msg->elements[i].name, name) != 0) {
+			continue;
+		}
+
+		if ((operation == LDB_MODIFY) &&
+		    (LDB_FLAG_MOD_TYPE(msg->elements[i].flags) == LDB_FLAG_MOD_DELETE)) {
+			/* 0 values are allowed */
+			if (msg->elements[i].num_values == 1) {
+				*old_val = &msg->elements[i].values[0];
+			} else if (msg->elements[i].num_values > 1) {
+				return LDB_ERR_CONSTRAINT_VIOLATION;
+			}
+		} else if ((operation == LDB_MODIFY) &&
+			   (LDB_FLAG_MOD_TYPE(msg->elements[i].flags) == LDB_FLAG_MOD_REPLACE)) {
+			if (msg->elements[i].num_values > 0) {
+				*new_val = &msg->elements[i].values[msg->elements[i].num_values - 1];
+			} else {
+				return LDB_ERR_UNWILLING_TO_PERFORM;
+			}
+		} else {
+			/* Add operations and LDB_FLAG_MOD_ADD */
+			if (msg->elements[i].num_values > 0) {
+				*new_val = &msg->elements[i].values[msg->elements[i].num_values - 1];
+			} else {
+				return LDB_ERR_CONSTRAINT_VIOLATION;
+			}
+		}
+	}
+
+	return LDB_SUCCESS;
+}
+
 static int setup_io(struct ph_context *ac, 
 		    const struct ldb_message *orig_msg,
 		    const struct ldb_message *searched_msg, 
@@ -1687,11 +1749,10 @@ static int setup_io(struct ph_context *ac,
 	}
 
 	if (ac->userPassword) {
-		ret = samdb_msg_find_old_and_new_ldb_val(orig_msg,
-							 "userPassword",
-							 ac->req->operation,
-							 &io->n.cleartext_utf8,
-							 &io->og.cleartext_utf8);
+		ret = msg_find_old_and_new_pwd_val(orig_msg, "userPassword",
+						   ac->req->operation,
+						   &io->n.cleartext_utf8,
+						   &io->og.cleartext_utf8);
 		if (ret != LDB_SUCCESS) {
 			ldb_asprintf_errstring(ldb,
 				"setup_io: "
@@ -1700,10 +1761,10 @@ static int setup_io(struct ph_context *ac,
 		}
 	}
 
-	ret = samdb_msg_find_old_and_new_ldb_val(orig_msg, "clearTextPassword",
-						 ac->req->operation,
-						 &io->n.cleartext_utf16,
-						 &io->og.cleartext_utf16);
+	ret = msg_find_old_and_new_pwd_val(orig_msg, "clearTextPassword",
+					   ac->req->operation,
+					   &io->n.cleartext_utf16,
+					   &io->og.cleartext_utf16);
 	if (ret != LDB_SUCCESS) {
 		ldb_asprintf_errstring(ldb,
 			"setup_io: "
@@ -1724,10 +1785,10 @@ static int setup_io(struct ph_context *ac,
 	   that would then be treated as a UTF16 password rather than
 	   a nthash */
 
-	ret = samdb_msg_find_old_and_new_ldb_val(orig_msg, "unicodePwd",
-						 ac->req->operation,
-						 &quoted_utf16,
-						 &old_quoted_utf16);
+	ret = msg_find_old_and_new_pwd_val(orig_msg, "unicodePwd",
+					   ac->req->operation,
+					   &quoted_utf16,
+					   &old_quoted_utf16);
 	if (ret != LDB_SUCCESS) {
 		ldb_asprintf_errstring(ldb,
 			"setup_io: "
@@ -1841,9 +1902,9 @@ static int setup_io(struct ph_context *ac,
 
 	/* Handles the "dBCSPwd" attribute (LM hash) */
 	io->n.lm_hash = NULL; io->og.lm_hash = NULL;
-	ret = samdb_msg_find_old_and_new_ldb_val(orig_msg, "dBCSPwd",
-						 ac->req->operation,
-						 &lm_hash, &old_lm_hash);
+	ret = msg_find_old_and_new_pwd_val(orig_msg, "dBCSPwd",
+					   ac->req->operation,
+					   &lm_hash, &old_lm_hash);
 	if (ret != LDB_SUCCESS) {
 		ldb_asprintf_errstring(ldb,
 			"setup_io: "
