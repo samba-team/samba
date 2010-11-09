@@ -11,6 +11,7 @@
 import optparse
 import sys
 import base64
+import time
 import os
 
 sys.path.append("bin/python")
@@ -821,6 +822,101 @@ userPassword: thatsAcomplPASS4
             self.assertTrue(num == ERR_CONSTRAINT_VIOLATION or
                             num == ERR_NO_SUCH_ATTRIBUTE) # for Windows
 
+    def test_plain_userPassword(self):
+        print "Performs testing about the standard 'userPassword' behaviour"
+
+        # Delete the "dSHeuristics"
+        m = Message()
+        m.dn = Dn(ldb, "CN=Directory Service, CN=Windows NT, CN=Services, "
+          + configuration_dn)
+        m["dSHeuristics"] = MessageElement([], FLAG_MOD_DELETE, "dsHeuristics")
+        ldb.modify(m)
+
+        time.sleep(1) # This switching time is strictly needed!
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=testuser,cn=users," + self.base_dn)
+        m["userPassword"] = MessageElement("myPassword", FLAG_MOD_ADD,
+          "userPassword")
+        ldb.modify(m)
+
+        res = ldb.search("cn=testuser,cn=users," + self.base_dn,
+                         scope=SCOPE_BASE, attrs=["userPassword"])
+        self.assertTrue(len(res) == 1)
+        self.assertTrue("userPassword" in res[0])
+        self.assertEquals(res[0]["userPassword"][0], "myPassword")
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=testuser,cn=users," + self.base_dn)
+        m["userPassword"] = MessageElement("myPassword2", FLAG_MOD_REPLACE,
+          "userPassword")
+        ldb.modify(m)
+
+        res = ldb.search("cn=testuser,cn=users," + self.base_dn,
+                         scope=SCOPE_BASE, attrs=["userPassword"])
+        self.assertTrue(len(res) == 1)
+        self.assertTrue("userPassword" in res[0])
+        self.assertEquals(res[0]["userPassword"][0], "myPassword2")
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=testuser,cn=users," + self.base_dn)
+        m["userPassword"] = MessageElement([], FLAG_MOD_DELETE,
+          "userPassword")
+        ldb.modify(m)
+
+        res = ldb.search("cn=testuser,cn=users," + self.base_dn,
+                         scope=SCOPE_BASE, attrs=["userPassword"])
+        self.assertTrue(len(res) == 1)
+        self.assertFalse("userPassword" in res[0])
+
+        # Set the test "dSHeuristics" to deactivate "userPassword" pwd changes
+        m = Message()
+        m.dn = Dn(ldb, "CN=Directory Service, CN=Windows NT, CN=Services, "
+          + configuration_dn)
+        m["dSHeuristics"] = MessageElement("000000000", FLAG_MOD_REPLACE,
+          "dSHeuristics")
+        ldb.modify(m)
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=testuser,cn=users," + self.base_dn)
+        m["userPassword"] = MessageElement("myPassword3", FLAG_MOD_REPLACE,
+          "userPassword")
+        ldb.modify(m)
+
+        res = ldb.search("cn=testuser,cn=users," + self.base_dn,
+                         scope=SCOPE_BASE, attrs=["userPassword"])
+        self.assertTrue(len(res) == 1)
+        self.assertTrue("userPassword" in res[0])
+        self.assertEquals(res[0]["userPassword"][0], "myPassword3")
+
+        # Set the test "dSHeuristics" to deactivate "userPassword" pwd changes
+        m = Message()
+        m.dn = Dn(ldb, "CN=Directory Service, CN=Windows NT, CN=Services, "
+          + configuration_dn)
+        m["dSHeuristics"] = MessageElement("000000002", FLAG_MOD_REPLACE,
+          "dSHeuristics")
+        ldb.modify(m)
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=testuser,cn=users," + self.base_dn)
+        m["userPassword"] = MessageElement("myPassword4", FLAG_MOD_REPLACE,
+          "userPassword")
+        ldb.modify(m)
+
+        res = ldb.search("cn=testuser,cn=users," + self.base_dn,
+                         scope=SCOPE_BASE, attrs=["userPassword"])
+        self.assertTrue(len(res) == 1)
+        self.assertTrue("userPassword" in res[0])
+        self.assertEquals(res[0]["userPassword"][0], "myPassword4")
+
+        # Reset the test "dSHeuristics" (reactivate "userPassword" pwd changes)
+        m = Message()
+        m.dn = Dn(ldb, "CN=Directory Service, CN=Windows NT, CN=Services, "
+          + configuration_dn)
+        m["dSHeuristics"] = MessageElement("000000001", FLAG_MOD_REPLACE,
+          "dSHeuristics")
+        ldb.modify(m)
+
     def tearDown(self):
         super(PasswordTests, self).tearDown()
         self.delete_force(self.ldb, "cn=testuser,cn=users," + self.base_dn)
@@ -854,7 +950,7 @@ if "dSHeuristics" in res[0]:
 else:
   dsheuristics = None
 
-# Set the "dSHeuristics" to have the tests run against Windows Server
+# Set the "dSHeuristics" to activate the correct "userPassword" behaviour
 m = Message()
 m.dn = Dn(ldb, "CN=Directory Service, CN=Windows NT, CN=Services, "
   + configuration_dn)
