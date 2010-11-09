@@ -37,3 +37,16 @@
 #define DSDB_PROVISION			      0x0800
 
 bool is_attr_in_list(const char * const * attrs, const char *attr);
+
+#define DSDB_SECRET_ATTRIBUTES \
+	"currentValue", \
+	"dBCSPwd", \
+	"initialAuthIncoming", \
+	"initialAuthOutgoing", \
+	"lmPwdHistory", \
+	"ntPwdHistory", \
+	"priorValue", \
+	"supplementalCredentials", \
+	"trustAuthIncoming", \
+	"trustAuthOutgoing", \
+	"unicodePwd"

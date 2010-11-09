@@ -4070,18 +4070,8 @@ int dsdb_validate_dsa_guid(struct ldb_context *ldb,
 	return LDB_SUCCESS;
 }
 
-static const char *secret_attributes[] = {
-	"currentValue",
-	"dBCSPwd",
-	"initialAuthIncoming",
-	"initialAuthOutgoing",
-	"lmPwdHistory",
-	"ntPwdHistory",
-	"priorValue",
-	"supplementalCredentials",
-	"trustAuthIncoming",
-	"trustAuthOutgoing",
-	"unicodePwd",
+static const char * const secret_attributes[] = {
+	DSDB_SECRET_ATTRIBUTES,
 	NULL
 };
 
