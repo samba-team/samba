@@ -24,7 +24,9 @@
 #include "../lib/tsocket/tsocket_internal.h"
 #include "../librpc/gen_ndr/ndr_named_pipe_auth.h"
 #include "../libcli/named_pipe_auth/npa_tstream.h"
+#if _SAMBA_BUILD_ == 4
 #include "libcli/raw/smb.h"
+#endif
 
 static const struct tstream_context_ops tstream_npa_ops;
 
