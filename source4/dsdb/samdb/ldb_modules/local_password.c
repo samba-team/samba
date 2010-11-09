@@ -39,13 +39,15 @@
 
 #define PASSWORD_GUID_ATTR "masterGUID"
 
-/* This module maintains a local password database, seperate from the main LDAP server.
+/* This module maintains a local password database, separate from the main LDAP
+   server.
 
-   This allows the password database to be syncronised in a multi-master
+   This allows the password database to be synchronised in a multi-master
    fashion, seperate to the more difficult concerns of the main
-   database.  (With passwords, the last writer always wins)
+   database. (With passwords, the last writer always wins)
 
-   Each incoming add/modify is split into a remote, and a local request, done in that order.
+   Each incoming add/modify is split into a remote, and a local request, done
+   in that order.
 
    We maintain a list of attributes that are kept locally - perhaps
    this should use the @KLUDGE_ACL list of passwordAttribute
@@ -171,14 +173,6 @@ static int local_password_add(struct ldb_module *module, struct ldb_request *req
 	/* It didn't match any of our password attributes, go on */
 	if (i == ARRAY_SIZE(password_attrs)) {
 		return ldb_next_request(module, req);
-	}
-
-	/* TODO: remove this when userPassword will be in schema */
-	if (!ldb_msg_check_string_attribute(req->op.add.message, "objectClass", "person")) {
-		ldb_asprintf_errstring(ldb,
-					"Cannot relocate a password on entry: %s, does not have objectClass 'person'",
-					ldb_dn_get_linearized(req->op.add.message->dn));
-		return LDB_ERR_OBJECT_CLASS_VIOLATION;
 	}
 
 	/* From here, we assume we have password attributes to split off */
