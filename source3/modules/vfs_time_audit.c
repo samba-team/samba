@@ -44,16 +44,17 @@ static int smb_time_audit_connect(vfs_handle_struct *handle,
 				  const char *svc, const char *user)
 {
 	int result;
-	struct timeval tv;
+	struct timespec ts1,ts2;
 	double timediff;
 
 	if (!handle) {
 		return -1;
 	}
 
-	GetTimeOfDay(&tv);
+	clock_gettime_mono(&ts1);
 	result = SMB_VFS_NEXT_CONNECT(handle, svc, user);
-	timediff = timeval_elapsed(&tv);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 	if (timediff > audit_timeout) {
 		smb_time_audit_log("connect", timediff);
 	}
@@ -62,12 +63,13 @@ static int smb_time_audit_connect(vfs_handle_struct *handle,
 
 static void smb_time_audit_disconnect(vfs_handle_struct *handle)
 {
-	struct timeval tv;
+	struct timespec ts1,ts2;
 	double timediff;
 
-	GetTimeOfDay(&tv);
+	clock_gettime_mono(&ts1);
 	SMB_VFS_NEXT_DISCONNECT(handle);
-	timediff = timeval_elapsed(&tv);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
 		smb_time_audit_log("disconnect", timediff);
@@ -82,13 +84,14 @@ static uint64_t smb_time_audit_disk_free(vfs_handle_struct *handle,
 					 uint64_t *dfree, uint64_t *dsize)
 {
 	uint64_t result;
-	struct timeval tv;
+	struct timespec ts1,ts2;
 	double timediff;
 
-	GetTimeOfDay(&tv);
+	clock_gettime_mono(&ts1);
 	result = SMB_VFS_NEXT_DISK_FREE(handle, path, small_query, bsize,
 					dfree, dsize);
-	timediff = timeval_elapsed(&tv);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	/* Don't have a reasonable notion of failure here */
 	if (timediff > audit_timeout) {
@@ -103,12 +106,13 @@ static int smb_time_audit_get_quota(struct vfs_handle_struct *handle,
 				    SMB_DISK_QUOTA *qt)
 {
 	int result;
-	struct timeval tv;
+	struct timespec ts1,ts2;
 	double timediff;
 
-	GetTimeOfDay(&tv);
+	clock_gettime_mono(&ts1);
 	result = SMB_VFS_NEXT_GET_QUOTA(handle, qtype, id, qt);
-	timediff = timeval_elapsed(&tv);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
 		smb_time_audit_log("get_quota", timediff);
@@ -121,12 +125,13 @@ static int smb_time_audit_set_quota(struct vfs_handle_struct *handle,
 				    SMB_DISK_QUOTA *qt)
 {
 	int result;
-	struct timeval tv;
+	struct timespec ts1,ts2;
 	double timediff;
 
-	GetTimeOfDay(&tv);
+	clock_gettime_mono(&ts1);
 	result = SMB_VFS_NEXT_SET_QUOTA(handle, qtype, id, qt);
-	timediff = timeval_elapsed(&tv);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
 		smb_time_audit_log("set_quota", timediff);
@@ -141,13 +146,14 @@ static int smb_time_audit_get_shadow_copy_data(struct vfs_handle_struct *handle,
 					       bool labels)
 {
 	int result;
-	struct timeval tv;
+	struct timespec ts1,ts2;
 	double timediff;
 
-	GetTimeOfDay(&tv);
+	clock_gettime_mono(&ts1);
 	result = SMB_VFS_NEXT_GET_SHADOW_COPY_DATA(handle, fsp,
 						   shadow_copy_data, labels);
-	timediff = timeval_elapsed(&tv);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
 		smb_time_audit_log("get_shadow_copy_data", timediff);
@@ -161,12 +167,13 @@ static int smb_time_audit_statvfs(struct vfs_handle_struct *handle,
 				  struct vfs_statvfs_struct *statbuf)
 {
 	int result;
-	struct timeval tv;
+	struct timespec ts1,ts2;
 	double timediff;
 
-	GetTimeOfDay(&tv);
+	clock_gettime_mono(&ts1);
 	result = SMB_VFS_NEXT_STATVFS(handle, path, statbuf);
-	timediff = timeval_elapsed(&tv);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
 		smb_time_audit_log("statvfs", timediff);
@@ -179,12 +186,13 @@ static uint32_t smb_time_audit_fs_capabilities(struct vfs_handle_struct *handle,
 					       enum timestamp_set_resolution *p_ts_res)
 {
 	uint32_t result;
-	struct timeval tv;
+	struct timespec ts1,ts2;
 	double timediff;
 
-	GetTimeOfDay(&tv);
+	clock_gettime_mono(&ts1);
 	result = SMB_VFS_NEXT_FS_CAPABILITIES(handle, p_ts_res);
-	timediff = timeval_elapsed(&tv);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
 		smb_time_audit_log("fs_capabilities", timediff);
@@ -198,12 +206,13 @@ static SMB_STRUCT_DIR *smb_time_audit_opendir(vfs_handle_struct *handle,
 					      const char *mask, uint32 attr)
 {
 	SMB_STRUCT_DIR *result;
-	struct timeval tv;
+	struct timespec ts1,ts2;
 	double timediff;
 
-	GetTimeOfDay(&tv);
+	clock_gettime_mono(&ts1);
 	result = SMB_VFS_NEXT_OPENDIR(handle, fname, mask, attr);
-	timediff = timeval_elapsed(&tv);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
 		smb_time_audit_log("opendir", timediff);
@@ -217,12 +226,13 @@ static SMB_STRUCT_DIRENT *smb_time_audit_readdir(vfs_handle_struct *handle,
 						 SMB_STRUCT_STAT *sbuf)
 {
 	SMB_STRUCT_DIRENT *result;
-	struct timeval tv;
+	struct timespec ts1,ts2;
 	double timediff;
 
-	GetTimeOfDay(&tv);
+	clock_gettime_mono(&ts1);
 	result = SMB_VFS_NEXT_READDIR(handle, dirp, sbuf);
-	timediff = timeval_elapsed(&tv);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
 		smb_time_audit_log("readdir", timediff);
@@ -234,12 +244,13 @@ static SMB_STRUCT_DIRENT *smb_time_audit_readdir(vfs_handle_struct *handle,
 static void smb_time_audit_seekdir(vfs_handle_struct *handle,
 				   SMB_STRUCT_DIR *dirp, long offset)
 {
-	struct timeval tv;
+	struct timespec ts1,ts2;
 	double timediff;
 
-	GetTimeOfDay(&tv);
+	clock_gettime_mono(&ts1);
 	SMB_VFS_NEXT_SEEKDIR(handle, dirp, offset);
-	timediff = timeval_elapsed(&tv);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
 		smb_time_audit_log("seekdir", timediff);
@@ -252,12 +263,13 @@ static long smb_time_audit_telldir(vfs_handle_struct *handle,
 				   SMB_STRUCT_DIR *dirp)
 {
 	long result;
-	struct timeval tv;
+	struct timespec ts1,ts2;
 	double timediff;
 
-	GetTimeOfDay(&tv);
+	clock_gettime_mono(&ts1);
 	result = SMB_VFS_NEXT_TELLDIR(handle, dirp);
-	timediff = timeval_elapsed(&tv);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
 		smb_time_audit_log("telldir", timediff);
@@ -269,12 +281,13 @@ static long smb_time_audit_telldir(vfs_handle_struct *handle,
 static void smb_time_audit_rewinddir(vfs_handle_struct *handle,
 				     SMB_STRUCT_DIR *dirp)
 {
-	struct timeval tv;
+	struct timespec ts1,ts2;
 	double timediff;
 
-	GetTimeOfDay(&tv);
+	clock_gettime_mono(&ts1);
 	SMB_VFS_NEXT_REWINDDIR(handle, dirp);
-	timediff = timeval_elapsed(&tv);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
 		smb_time_audit_log("rewinddir", timediff);
@@ -287,12 +300,13 @@ static int smb_time_audit_mkdir(vfs_handle_struct *handle,
 				const char *path, mode_t mode)
 {
 	int result;
-	struct timeval tv;
+	struct timespec ts1,ts2;
 	double timediff;
 
-	GetTimeOfDay(&tv);
+	clock_gettime_mono(&ts1);
 	result = SMB_VFS_NEXT_MKDIR(handle, path, mode);
-	timediff = timeval_elapsed(&tv);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
 		smb_time_audit_log("mkdir", timediff);
@@ -305,12 +319,13 @@ static int smb_time_audit_rmdir(vfs_handle_struct *handle,
 				const char *path)
 {
 	int result;
-	struct timeval tv;
+	struct timespec ts1,ts2;
 	double timediff;
 
-	GetTimeOfDay(&tv);
+	clock_gettime_mono(&ts1);
 	result = SMB_VFS_NEXT_RMDIR(handle, path);
-	timediff = timeval_elapsed(&tv);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
 		smb_time_audit_log("rmdir", timediff);
@@ -323,12 +338,13 @@ static int smb_time_audit_closedir(vfs_handle_struct *handle,
 				   SMB_STRUCT_DIR *dirp)
 {
 	int result;
-	struct timeval tv;
+	struct timespec ts1,ts2;
 	double timediff;
 
-	GetTimeOfDay(&tv);
+	clock_gettime_mono(&ts1);
 	result = SMB_VFS_NEXT_CLOSEDIR(handle, dirp);
-	timediff = timeval_elapsed(&tv);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
 		smb_time_audit_log("closedir", timediff);
@@ -340,12 +356,13 @@ static int smb_time_audit_closedir(vfs_handle_struct *handle,
 static void smb_time_audit_init_search_op(vfs_handle_struct *handle,
 					  SMB_STRUCT_DIR *dirp)
 {
-	struct timeval tv;
+	struct timespec ts1,ts2;
 	double timediff;
 
-	GetTimeOfDay(&tv);
+	clock_gettime_mono(&ts1);
 	SMB_VFS_NEXT_INIT_SEARCH_OP(handle, dirp);
-	timediff = timeval_elapsed(&tv);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
 		smb_time_audit_log("init_search_op", timediff);
@@ -359,12 +376,13 @@ static int smb_time_audit_open(vfs_handle_struct *handle,
 			       int flags, mode_t mode)
 {
 	int result;
-	struct timeval tv;
+	struct timespec ts1,ts2;
 	double timediff;
 
-	GetTimeOfDay(&tv);
+	clock_gettime_mono(&ts1);
 	result = SMB_VFS_NEXT_OPEN(handle, fname, fsp, flags, mode);
-	timediff = timeval_elapsed(&tv);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
 		smb_time_audit_log("open", timediff);
@@ -391,10 +409,10 @@ static NTSTATUS smb_time_audit_create_file(vfs_handle_struct *handle,
 					   int *pinfo)
 {
 	NTSTATUS result;
-	struct timeval tv;
+	struct timespec ts1,ts2;
 	double timediff;
 
-	GetTimeOfDay(&tv);
+	clock_gettime_mono(&ts1);
 	result = SMB_VFS_NEXT_CREATE_FILE(
 		handle,					/* handle */
 		req,					/* req */
@@ -412,7 +430,8 @@ static NTSTATUS smb_time_audit_create_file(vfs_handle_struct *handle,
 		ea_list,				/* ea_list */
 		result_fsp,				/* result */
 		pinfo);
-	timediff = timeval_elapsed(&tv);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
 		smb_time_audit_log("create_file", timediff);
@@ -424,12 +443,13 @@ static NTSTATUS smb_time_audit_create_file(vfs_handle_struct *handle,
 static int smb_time_audit_close(vfs_handle_struct *handle, files_struct *fsp)
 {
 	int result;
-	struct timeval tv;
+	struct timespec ts1,ts2;
 	double timediff;
 
-	GetTimeOfDay(&tv);
+	clock_gettime_mono(&ts1);
 	result = SMB_VFS_NEXT_CLOSE(handle, fsp);
-	timediff = timeval_elapsed(&tv);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
 		smb_time_audit_log("close", timediff);
@@ -442,12 +462,13 @@ static ssize_t smb_time_audit_read(vfs_handle_struct *handle,
 				   files_struct *fsp, void *data, size_t n)
 {
 	ssize_t result;
-	struct timeval tv;
+	struct timespec ts1,ts2;
 	double timediff;
 
-	GetTimeOfDay(&tv);
+	clock_gettime_mono(&ts1);
 	result = SMB_VFS_NEXT_READ(handle, fsp, data, n);
-	timediff = timeval_elapsed(&tv);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
 		smb_time_audit_log("read", timediff);
@@ -461,12 +482,13 @@ static ssize_t smb_time_audit_pread(vfs_handle_struct *handle,
 				    void *data, size_t n, SMB_OFF_T offset)
 {
 	ssize_t result;
-	struct timeval tv;
+	struct timespec ts1,ts2;
 	double timediff;
 
-	GetTimeOfDay(&tv);
+	clock_gettime_mono(&ts1);
 	result = SMB_VFS_NEXT_PREAD(handle, fsp, data, n, offset);
-	timediff = timeval_elapsed(&tv);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
 		smb_time_audit_log("pread", timediff);
@@ -480,12 +502,13 @@ static ssize_t smb_time_audit_write(vfs_handle_struct *handle,
 				    const void *data, size_t n)
 {
 	ssize_t result;
-	struct timeval tv;
+	struct timespec ts1,ts2;
 	double timediff;
 
-	GetTimeOfDay(&tv);
+	clock_gettime_mono(&ts1);
 	result = SMB_VFS_NEXT_WRITE(handle, fsp, data, n);
-	timediff = timeval_elapsed(&tv);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
 		smb_time_audit_log("write", timediff);
@@ -500,12 +523,13 @@ static ssize_t smb_time_audit_pwrite(vfs_handle_struct *handle,
 				     SMB_OFF_T offset)
 {
 	ssize_t result;
-	struct timeval tv;
+	struct timespec ts1,ts2;
 	double timediff;
 
-	GetTimeOfDay(&tv);
+	clock_gettime_mono(&ts1);
 	result = SMB_VFS_NEXT_PWRITE(handle, fsp, data, n, offset);
-	timediff = timeval_elapsed(&tv);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
 		smb_time_audit_log("pwrite", timediff);
@@ -519,12 +543,13 @@ static SMB_OFF_T smb_time_audit_lseek(vfs_handle_struct *handle,
 				      SMB_OFF_T offset, int whence)
 {
 	ssize_t result;
-	struct timeval tv;
+	struct timespec ts1,ts2;
 	double timediff;
 
-	GetTimeOfDay(&tv);
+	clock_gettime_mono(&ts1);
 	result = SMB_VFS_NEXT_LSEEK(handle, fsp, offset, whence);
-	timediff = timeval_elapsed(&tv);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
 		smb_time_audit_log("lseek", timediff);
@@ -539,12 +564,13 @@ static ssize_t smb_time_audit_sendfile(vfs_handle_struct *handle, int tofd,
 				       size_t n)
 {
 	ssize_t result;
-	struct timeval tv;
+	struct timespec ts1,ts2;
 	double timediff;
 
-	GetTimeOfDay(&tv);
+	clock_gettime_mono(&ts1);
 	result = SMB_VFS_NEXT_SENDFILE(handle, tofd, fromfsp, hdr, offset, n);
-	timediff = timeval_elapsed(&tv);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
 		smb_time_audit_log("sendfile", timediff);
@@ -559,12 +585,13 @@ static ssize_t smb_time_audit_recvfile(vfs_handle_struct *handle, int fromfd,
 				       size_t n)
 {
 	ssize_t result;
-	struct timeval tv;
+	struct timespec ts1,ts2;
 	double timediff;
 
-	GetTimeOfDay(&tv);
+	clock_gettime_mono(&ts1);
 	result = SMB_VFS_NEXT_RECVFILE(handle, fromfd, tofsp, offset, n);
-	timediff = timeval_elapsed(&tv);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
 		smb_time_audit_log("recvfile", timediff);
@@ -578,12 +605,13 @@ static int smb_time_audit_rename(vfs_handle_struct *handle,
 				 const struct smb_filename *newname)
 {
 	int result;
-	struct timeval tv;
+	struct timespec ts1,ts2;
 	double timediff;
 
-	GetTimeOfDay(&tv);
+	clock_gettime_mono(&ts1);
 	result = SMB_VFS_NEXT_RENAME(handle, oldname, newname);
-	timediff = timeval_elapsed(&tv);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
 		smb_time_audit_log("rename", timediff);
@@ -595,12 +623,13 @@ static int smb_time_audit_rename(vfs_handle_struct *handle,
 static int smb_time_audit_fsync(vfs_handle_struct *handle, files_struct *fsp)
 {
 	int result;
-	struct timeval tv;
+	struct timespec ts1,ts2;
 	double timediff;
 
-	GetTimeOfDay(&tv);
+	clock_gettime_mono(&ts1);
 	result = SMB_VFS_NEXT_FSYNC(handle, fsp);
-	timediff = timeval_elapsed(&tv);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
 		smb_time_audit_log("fsync", timediff);
@@ -613,12 +642,13 @@ static int smb_time_audit_stat(vfs_handle_struct *handle,
 			       struct smb_filename *fname)
 {
 	int result;
-	struct timeval tv;
+	struct timespec ts1,ts2;
 	double timediff;
 
-	GetTimeOfDay(&tv);
+	clock_gettime_mono(&ts1);
 	result = SMB_VFS_NEXT_STAT(handle, fname);
-	timediff = timeval_elapsed(&tv);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
 		smb_time_audit_log("stat", timediff);
@@ -631,12 +661,13 @@ static int smb_time_audit_fstat(vfs_handle_struct *handle, files_struct *fsp,
 				SMB_STRUCT_STAT *sbuf)
 {
 	int result;
-	struct timeval tv;
+	struct timespec ts1,ts2;
 	double timediff;
 
-	GetTimeOfDay(&tv);
+	clock_gettime_mono(&ts1);
 	result = SMB_VFS_NEXT_FSTAT(handle, fsp, sbuf);
-	timediff = timeval_elapsed(&tv);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
 		smb_time_audit_log("fstat", timediff);
@@ -649,12 +680,13 @@ static int smb_time_audit_lstat(vfs_handle_struct *handle,
 				struct smb_filename *path)
 {
 	int result;
-	struct timeval tv;
+	struct timespec ts1,ts2;
 	double timediff;
 
-	GetTimeOfDay(&tv);
+	clock_gettime_mono(&ts1);
 	result = SMB_VFS_NEXT_LSTAT(handle, path);
-	timediff = timeval_elapsed(&tv);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
 		smb_time_audit_log("lstat", timediff);
@@ -668,12 +700,13 @@ static uint64_t smb_time_audit_get_alloc_size(vfs_handle_struct *handle,
 					      const SMB_STRUCT_STAT *sbuf)
 {
 	int result;
-	struct timeval tv;
+	struct timespec ts1,ts2;
 	double timediff;
 
-	GetTimeOfDay(&tv);
+	clock_gettime_mono(&ts1);
 	result = SMB_VFS_NEXT_GET_ALLOC_SIZE(handle, fsp, sbuf);
-	timediff = timeval_elapsed(&tv);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
 		smb_time_audit_log("get_alloc_size", timediff);
@@ -686,12 +719,13 @@ static int smb_time_audit_unlink(vfs_handle_struct *handle,
 				 const struct smb_filename *path)
 {
 	int result;
-	struct timeval tv;
+	struct timespec ts1,ts2;
 	double timediff;
 
-	GetTimeOfDay(&tv);
+	clock_gettime_mono(&ts1);
 	result = SMB_VFS_NEXT_UNLINK(handle, path);
-	timediff = timeval_elapsed(&tv);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
 		smb_time_audit_log("unlink", timediff);
@@ -704,12 +738,13 @@ static int smb_time_audit_chmod(vfs_handle_struct *handle,
 				const char *path, mode_t mode)
 {
 	int result;
-	struct timeval tv;
+	struct timespec ts1,ts2;
 	double timediff;
 
-	GetTimeOfDay(&tv);
+	clock_gettime_mono(&ts1);
 	result = SMB_VFS_NEXT_CHMOD(handle, path, mode);
-	timediff = timeval_elapsed(&tv);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
 		smb_time_audit_log("chmod", timediff);
@@ -722,12 +757,13 @@ static int smb_time_audit_fchmod(vfs_handle_struct *handle, files_struct *fsp,
 				 mode_t mode)
 {
 	int result;
-	struct timeval tv;
+	struct timespec ts1,ts2;
 	double timediff;
 
-	GetTimeOfDay(&tv);
+	clock_gettime_mono(&ts1);
 	result = SMB_VFS_NEXT_FCHMOD(handle, fsp, mode);
-	timediff = timeval_elapsed(&tv);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
 		smb_time_audit_log("fchmod", timediff);
@@ -740,12 +776,13 @@ static int smb_time_audit_chown(vfs_handle_struct *handle,
 				const char *path, uid_t uid, gid_t gid)
 {
 	int result;
-	struct timeval tv;
+	struct timespec ts1,ts2;
 	double timediff;
 
-	GetTimeOfDay(&tv);
+	clock_gettime_mono(&ts1);
 	result = SMB_VFS_NEXT_CHOWN(handle, path, uid, gid);
-	timediff = timeval_elapsed(&tv);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
 		smb_time_audit_log("chown", timediff);
@@ -758,12 +795,13 @@ static int smb_time_audit_fchown(vfs_handle_struct *handle, files_struct *fsp,
 				 uid_t uid, gid_t gid)
 {
 	int result;
-	struct timeval tv;
+	struct timespec ts1,ts2;
 	double timediff;
 
-	GetTimeOfDay(&tv);
+	clock_gettime_mono(&ts1);
 	result = SMB_VFS_NEXT_FCHOWN(handle, fsp, uid, gid);
-	timediff = timeval_elapsed(&tv);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
 		smb_time_audit_log("fchown", timediff);
@@ -776,12 +814,13 @@ static int smb_time_audit_lchown(vfs_handle_struct *handle,
 				 const char *path, uid_t uid, gid_t gid)
 {
 	int result;
-	struct timeval tv;
+	struct timespec ts1,ts2;
 	double timediff;
 
-	GetTimeOfDay(&tv);
+	clock_gettime_mono(&ts1);
 	result = SMB_VFS_NEXT_LCHOWN(handle, path, uid, gid);
-	timediff = timeval_elapsed(&tv);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
 		smb_time_audit_log("lchown", timediff);
@@ -793,12 +832,13 @@ static int smb_time_audit_lchown(vfs_handle_struct *handle,
 static int smb_time_audit_chdir(vfs_handle_struct *handle, const char *path)
 {
 	int result;
-	struct timeval tv;
+	struct timespec ts1,ts2;
 	double timediff;
 
-	GetTimeOfDay(&tv);
+	clock_gettime_mono(&ts1);
 	result = SMB_VFS_NEXT_CHDIR(handle, path);
-	timediff = timeval_elapsed(&tv);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
 		smb_time_audit_log("chdir", timediff);
@@ -810,12 +850,13 @@ static int smb_time_audit_chdir(vfs_handle_struct *handle, const char *path)
 static char *smb_time_audit_getwd(vfs_handle_struct *handle, char *path)
 {
 	char *result;
-	struct timeval tv;
+	struct timespec ts1,ts2;
 	double timediff;
 
-	GetTimeOfDay(&tv);
+	clock_gettime_mono(&ts1);
 	result = SMB_VFS_NEXT_GETWD(handle, path);
-	timediff = timeval_elapsed(&tv);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
 		smb_time_audit_log("getwd", timediff);
@@ -829,12 +870,13 @@ static int smb_time_audit_ntimes(vfs_handle_struct *handle,
 				 struct smb_file_time *ft)
 {
 	int result;
-	struct timeval tv;
+	struct timespec ts1,ts2;
 	double timediff;
 
-	GetTimeOfDay(&tv);
+	clock_gettime_mono(&ts1);
 	result = SMB_VFS_NEXT_NTIMES(handle, path, ft);
-	timediff = timeval_elapsed(&tv);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
 		smb_time_audit_log("ntimes", timediff);
@@ -848,12 +890,13 @@ static int smb_time_audit_ftruncate(vfs_handle_struct *handle,
 				    SMB_OFF_T len)
 {
 	int result;
-	struct timeval tv;
+	struct timespec ts1,ts2;
 	double timediff;
 
-	GetTimeOfDay(&tv);
+	clock_gettime_mono(&ts1);
 	result = SMB_VFS_NEXT_FTRUNCATE(handle, fsp, len);
-	timediff = timeval_elapsed(&tv);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
 		smb_time_audit_log("ftruncate", timediff);
@@ -867,12 +910,13 @@ static bool smb_time_audit_lock(vfs_handle_struct *handle, files_struct *fsp,
 				int type)
 {
 	bool result;
-	struct timeval tv;
+	struct timespec ts1,ts2;
 	double timediff;
 
-	GetTimeOfDay(&tv);
+	clock_gettime_mono(&ts1);
 	result = SMB_VFS_NEXT_LOCK(handle, fsp, op, offset, count, type);
-	timediff = timeval_elapsed(&tv);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
 		smb_time_audit_log("lock", timediff);
@@ -886,13 +930,14 @@ static int smb_time_audit_kernel_flock(struct vfs_handle_struct *handle,
 				       uint32 share_mode, uint32 access_mask)
 {
 	int result;
-	struct timeval tv;
+	struct timespec ts1,ts2;
 	double timediff;
 
-	GetTimeOfDay(&tv);
+	clock_gettime_mono(&ts1);
 	result = SMB_VFS_NEXT_KERNEL_FLOCK(handle, fsp, share_mode,
 					   access_mask);
-	timediff = timeval_elapsed(&tv);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
 		smb_time_audit_log("kernel_flock", timediff);
@@ -906,12 +951,13 @@ static int smb_time_audit_linux_setlease(vfs_handle_struct *handle,
 					 int leasetype)
 {
 	int result;
-	struct timeval tv;
+	struct timespec ts1,ts2;
 	double timediff;
 
-	GetTimeOfDay(&tv);
+	clock_gettime_mono(&ts1);
 	result = SMB_VFS_NEXT_LINUX_SETLEASE(handle, fsp, leasetype);
-	timediff = timeval_elapsed(&tv);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
 		smb_time_audit_log("linux_setlease", timediff);
@@ -926,13 +972,14 @@ static bool smb_time_audit_getlock(vfs_handle_struct *handle,
 				   int *ptype, pid_t *ppid)
 {
 	bool result;
-	struct timeval tv;
+	struct timespec ts1,ts2;
 	double timediff;
 
-	GetTimeOfDay(&tv);
+	clock_gettime_mono(&ts1);
 	result = SMB_VFS_NEXT_GETLOCK(handle, fsp, poffset, pcount, ptype,
 				      ppid);
-	timediff = timeval_elapsed(&tv);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
 		smb_time_audit_log("getlock", timediff);
@@ -945,12 +992,13 @@ static int smb_time_audit_symlink(vfs_handle_struct *handle,
 				  const char *oldpath, const char *newpath)
 {
 	int result;
-	struct timeval tv;
+	struct timespec ts1,ts2;
 	double timediff;
 
-	GetTimeOfDay(&tv);
+	clock_gettime_mono(&ts1);
 	result = SMB_VFS_NEXT_SYMLINK(handle, oldpath, newpath);
-	timediff = timeval_elapsed(&tv);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
 		smb_time_audit_log("symlink", timediff);
@@ -963,12 +1011,13 @@ static int smb_time_audit_readlink(vfs_handle_struct *handle,
 			  const char *path, char *buf, size_t bufsiz)
 {
 	int result;
-	struct timeval tv;
+	struct timespec ts1,ts2;
 	double timediff;
 
-	GetTimeOfDay(&tv);
+	clock_gettime_mono(&ts1);
 	result = SMB_VFS_NEXT_READLINK(handle, path, buf, bufsiz);
-	timediff = timeval_elapsed(&tv);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
 		smb_time_audit_log("readlink", timediff);
@@ -981,12 +1030,13 @@ static int smb_time_audit_link(vfs_handle_struct *handle,
 			       const char *oldpath, const char *newpath)
 {
 	int result;
-	struct timeval tv;
+	struct timespec ts1,ts2;
 	double timediff;
 
-	GetTimeOfDay(&tv);
+	clock_gettime_mono(&ts1);
 	result = SMB_VFS_NEXT_LINK(handle, oldpath, newpath);
-	timediff = timeval_elapsed(&tv);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
 		smb_time_audit_log("link", timediff);
@@ -1000,12 +1050,13 @@ static int smb_time_audit_mknod(vfs_handle_struct *handle,
 				SMB_DEV_T dev)
 {
 	int result;
-	struct timeval tv;
+	struct timespec ts1,ts2;
 	double timediff;
 
-	GetTimeOfDay(&tv);
+	clock_gettime_mono(&ts1);
 	result = SMB_VFS_NEXT_MKNOD(handle, pathname, mode, dev);
-	timediff = timeval_elapsed(&tv);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
 		smb_time_audit_log("mknod", timediff);
@@ -1018,12 +1069,13 @@ static char *smb_time_audit_realpath(vfs_handle_struct *handle,
 				     const char *path, char *resolved_path)
 {
 	char *result;
-	struct timeval tv;
+	struct timespec ts1,ts2;
 	double timediff;
 
-	GetTimeOfDay(&tv);
+	clock_gettime_mono(&ts1);
 	result = SMB_VFS_NEXT_REALPATH(handle, path, resolved_path);
-	timediff = timeval_elapsed(&tv);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
 		smb_time_audit_log("realpath", timediff);
@@ -1041,13 +1093,14 @@ static NTSTATUS smb_time_audit_notify_watch(struct vfs_handle_struct *handle,
 			void *private_data, void *handle_p)
 {
 	NTSTATUS result;
-	struct timeval tv;
+	struct timespec ts1,ts2;
 	double timediff;
 
-	GetTimeOfDay(&tv);
+	clock_gettime_mono(&ts1);
 	result = SMB_VFS_NEXT_NOTIFY_WATCH(handle, ctx, e, callback,
 					   private_data, handle_p);
-	timediff = timeval_elapsed(&tv);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
 		smb_time_audit_log("notify_watch", timediff);
@@ -1060,12 +1113,13 @@ static int smb_time_audit_chflags(vfs_handle_struct *handle,
 				  const char *path, unsigned int flags)
 {
 	int result;
-	struct timeval tv;
+	struct timespec ts1,ts2;
 	double timediff;
 
-	GetTimeOfDay(&tv);
+	clock_gettime_mono(&ts1);
 	result = SMB_VFS_NEXT_CHFLAGS(handle, path, flags);
-	timediff = timeval_elapsed(&tv);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
 		smb_time_audit_log("chflags", timediff);
@@ -1079,14 +1133,15 @@ static struct file_id smb_time_audit_file_id_create(struct vfs_handle_struct *ha
 {
 	struct file_id id_zero;
 	struct file_id result;
-	struct timeval tv;
+	struct timespec ts1,ts2;
 	double timediff;
 
 	ZERO_STRUCT(id_zero);
 
-	GetTimeOfDay(&tv);
+	clock_gettime_mono(&ts1);
 	result = SMB_VFS_NEXT_FILE_ID_CREATE(handle, sbuf);
-	timediff = timeval_elapsed(&tv);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
 		smb_time_audit_log("file_id_create", timediff);
@@ -1103,13 +1158,14 @@ static NTSTATUS smb_time_audit_streaminfo(vfs_handle_struct *handle,
 					  struct stream_struct **pstreams)
 {
 	NTSTATUS result;
-	struct timeval tv;
+	struct timespec ts1,ts2;
 	double timediff;
 
-	GetTimeOfDay(&tv);
+	clock_gettime_mono(&ts1);
 	result = SMB_VFS_NEXT_STREAMINFO(handle, fsp, fname, mem_ctx,
 					 pnum_streams, pstreams);
-	timediff = timeval_elapsed(&tv);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
 		smb_time_audit_log("streaminfo", timediff);
@@ -1125,13 +1181,14 @@ static int smb_time_audit_get_real_filename(struct vfs_handle_struct *handle,
 					    char **found_name)
 {
 	int result;
-	struct timeval tv;
+	struct timespec ts1,ts2;
 	double timediff;
 
-	GetTimeOfDay(&tv);
+	clock_gettime_mono(&ts1);
 	result = SMB_VFS_NEXT_GET_REAL_FILENAME(handle, path, name, mem_ctx,
 						found_name);
-	timediff = timeval_elapsed(&tv);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
 		smb_time_audit_log("get_real_filename", timediff);
@@ -1144,12 +1201,13 @@ static const char *smb_time_audit_connectpath(vfs_handle_struct *handle,
 					      const char *fname)
 {
 	const char *result;
-	struct timeval tv;
+	struct timespec ts1,ts2;
 	double timediff;
 
-	GetTimeOfDay(&tv);
+	clock_gettime_mono(&ts1);
 	result = SMB_VFS_NEXT_CONNECTPATH(handle, fname);
-	timediff = timeval_elapsed(&tv);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
 		smb_time_audit_log("connectpath", timediff);
@@ -1165,13 +1223,14 @@ static NTSTATUS smb_time_audit_brl_lock_windows(struct vfs_handle_struct *handle
 						struct blocking_lock_record *blr)
 {
 	NTSTATUS result;
-	struct timeval tv;
+	struct timespec ts1,ts2;
 	double timediff;
 
-	GetTimeOfDay(&tv);
+	clock_gettime_mono(&ts1);
 	result = SMB_VFS_NEXT_BRL_LOCK_WINDOWS(handle, br_lck, plock,
 					       blocking_lock, blr);
-	timediff = timeval_elapsed(&tv);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
 		smb_time_audit_log("brl_lock_windows", timediff);
@@ -1186,13 +1245,14 @@ static bool smb_time_audit_brl_unlock_windows(struct vfs_handle_struct *handle,
 					      const struct lock_struct *plock)
 {
 	bool result;
-	struct timeval tv;
+	struct timespec ts1,ts2;
 	double timediff;
 
-	GetTimeOfDay(&tv);
+	clock_gettime_mono(&ts1);
 	result = SMB_VFS_NEXT_BRL_UNLOCK_WINDOWS(handle, msg_ctx, br_lck,
 						 plock);
-	timediff = timeval_elapsed(&tv);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
 		smb_time_audit_log("brl_unlock_windows", timediff);
@@ -1207,12 +1267,13 @@ static bool smb_time_audit_brl_cancel_windows(struct vfs_handle_struct *handle,
 					      struct blocking_lock_record *blr)
 {
 	bool result;
-	struct timeval tv;
+	struct timespec ts1,ts2;
 	double timediff;
 
-	GetTimeOfDay(&tv);
+	clock_gettime_mono(&ts1);
 	result = SMB_VFS_NEXT_BRL_CANCEL_WINDOWS(handle, br_lck, plock, blr);
-	timediff = timeval_elapsed(&tv);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
 		smb_time_audit_log("brl_cancel_windows", timediff);
@@ -1226,12 +1287,13 @@ static bool smb_time_audit_strict_lock(struct vfs_handle_struct *handle,
 				       struct lock_struct *plock)
 {
 	bool result;
-	struct timeval tv;
+	struct timespec ts1,ts2;
 	double timediff;
 
-	GetTimeOfDay(&tv);
+	clock_gettime_mono(&ts1);
 	result = SMB_VFS_NEXT_STRICT_LOCK(handle, fsp, plock);
-	timediff = timeval_elapsed(&tv);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
 		smb_time_audit_log("strict_lock", timediff);
@@ -1244,12 +1306,13 @@ static void smb_time_audit_strict_unlock(struct vfs_handle_struct *handle,
 					 struct files_struct *fsp,
 					 struct lock_struct *plock)
 {
-	struct timeval tv;
+	struct timespec ts1,ts2;
 	double timediff;
 
-	GetTimeOfDay(&tv);
+	clock_gettime_mono(&ts1);
 	SMB_VFS_NEXT_STRICT_UNLOCK(handle, fsp, plock);
-	timediff = timeval_elapsed(&tv);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
 		smb_time_audit_log("strict_unlock", timediff);
@@ -1265,13 +1328,14 @@ static NTSTATUS smb_time_audit_translate_name(struct vfs_handle_struct *handle,
 					      char **mapped_name)
 {
 	NTSTATUS result;
-	struct timeval tv;
+	struct timespec ts1,ts2;
 	double timediff;
 
-	GetTimeOfDay(&tv);
+	clock_gettime_mono(&ts1);
 	result = SMB_VFS_NEXT_TRANSLATE_NAME(handle, name, direction, mem_ctx,
 					     mapped_name);
-	timediff = timeval_elapsed(&tv);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
 		smb_time_audit_log("translate_name", timediff);
@@ -1286,12 +1350,13 @@ static NTSTATUS smb_time_audit_fget_nt_acl(vfs_handle_struct *handle,
 					   struct security_descriptor **ppdesc)
 {
 	NTSTATUS result;
-	struct timeval tv;
+	struct timespec ts1,ts2;
 	double timediff;
 
-	GetTimeOfDay(&tv);
+	clock_gettime_mono(&ts1);
 	result = SMB_VFS_NEXT_FGET_NT_ACL(handle, fsp, security_info, ppdesc);
-	timediff = timeval_elapsed(&tv);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
 		smb_time_audit_log("fget_nt_acl", timediff);
@@ -1306,12 +1371,13 @@ static NTSTATUS smb_time_audit_get_nt_acl(vfs_handle_struct *handle,
 					  struct security_descriptor **ppdesc)
 {
 	NTSTATUS result;
-	struct timeval tv;
+	struct timespec ts1,ts2;
 	double timediff;
 
-	GetTimeOfDay(&tv);
+	clock_gettime_mono(&ts1);
 	result = SMB_VFS_NEXT_GET_NT_ACL(handle, name, security_info, ppdesc);
-	timediff = timeval_elapsed(&tv);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
 		smb_time_audit_log("get_nt_acl", timediff);
@@ -1326,13 +1392,14 @@ static NTSTATUS smb_time_audit_fset_nt_acl(vfs_handle_struct *handle,
 					   const struct security_descriptor *psd)
 {
 	NTSTATUS result;
-	struct timeval tv;
+	struct timespec ts1,ts2;
 	double timediff;
 
-	GetTimeOfDay(&tv);
+	clock_gettime_mono(&ts1);
 	result = SMB_VFS_NEXT_FSET_NT_ACL(handle, fsp, security_info_sent,
 					  psd);
-	timediff = timeval_elapsed(&tv);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
 		smb_time_audit_log("fset_nt_acl", timediff);
@@ -1345,12 +1412,13 @@ static int smb_time_audit_chmod_acl(vfs_handle_struct *handle,
 				    const char *path, mode_t mode)
 {
 	int result;
-	struct timeval tv;
+	struct timespec ts1,ts2;
 	double timediff;
 
-	GetTimeOfDay(&tv);
+	clock_gettime_mono(&ts1);
 	result = SMB_VFS_NEXT_CHMOD_ACL(handle, path, mode);
-	timediff = timeval_elapsed(&tv);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
 		smb_time_audit_log("chmod_acl", timediff);
@@ -1363,12 +1431,13 @@ static int smb_time_audit_fchmod_acl(vfs_handle_struct *handle,
 				     files_struct *fsp, mode_t mode)
 {
 	int result;
-	struct timeval tv;
+	struct timespec ts1,ts2;
 	double timediff;
 
-	GetTimeOfDay(&tv);
+	clock_gettime_mono(&ts1);
 	result = SMB_VFS_NEXT_FCHMOD_ACL(handle, fsp, mode);
-	timediff = timeval_elapsed(&tv);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
 		smb_time_audit_log("fchmod_acl", timediff);
@@ -1382,13 +1451,14 @@ static int smb_time_audit_sys_acl_get_entry(vfs_handle_struct *handle,
 					    SMB_ACL_ENTRY_T *entry_p)
 {
 	int result;
-	struct timeval tv;
+	struct timespec ts1,ts2;
 	double timediff;
 
-	GetTimeOfDay(&tv);
+	clock_gettime_mono(&ts1);
 	result = SMB_VFS_NEXT_SYS_ACL_GET_ENTRY(handle, theacl, entry_id,
 						entry_p);
-	timediff = timeval_elapsed(&tv);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
 		smb_time_audit_log("sys_acl_get_entry", timediff);
@@ -1402,13 +1472,14 @@ static int smb_time_audit_sys_acl_get_tag_type(vfs_handle_struct *handle,
 					       SMB_ACL_TAG_T *tag_type_p)
 {
 	int result;
-	struct timeval tv;
+	struct timespec ts1,ts2;
 	double timediff;
 
-	GetTimeOfDay(&tv);
+	clock_gettime_mono(&ts1);
 	result = SMB_VFS_NEXT_SYS_ACL_GET_TAG_TYPE(handle, entry_d,
 						   tag_type_p);
-	timediff = timeval_elapsed(&tv);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
 		smb_time_audit_log("sys_acl_get_tag_type", timediff);
@@ -1422,13 +1493,14 @@ static int smb_time_audit_sys_acl_get_permset(vfs_handle_struct *handle,
 					      SMB_ACL_PERMSET_T *permset_p)
 {
 	int result;
-	struct timeval tv;
+	struct timespec ts1,ts2;
 	double timediff;
 
-	GetTimeOfDay(&tv);
+	clock_gettime_mono(&ts1);
 	result = SMB_VFS_NEXT_SYS_ACL_GET_PERMSET(handle, entry_d,
 						  permset_p);
-	timediff = timeval_elapsed(&tv);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
 		smb_time_audit_log("sys_acl_get_permset", timediff);
@@ -1441,12 +1513,13 @@ static void * smb_time_audit_sys_acl_get_qualifier(vfs_handle_struct *handle,
 						   SMB_ACL_ENTRY_T entry_d)
 {
 	void *result;
-	struct timeval tv;
+	struct timespec ts1,ts2;
 	double timediff;
 
-	GetTimeOfDay(&tv);
+	clock_gettime_mono(&ts1);
 	result = SMB_VFS_NEXT_SYS_ACL_GET_QUALIFIER(handle, entry_d);
-	timediff = timeval_elapsed(&tv);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
 		smb_time_audit_log("sys_acl_get_qualifier", timediff);
@@ -1460,12 +1533,13 @@ static SMB_ACL_T smb_time_audit_sys_acl_get_file(vfs_handle_struct *handle,
 						 SMB_ACL_TYPE_T type)
 {
 	SMB_ACL_T result;
-	struct timeval tv;
+	struct timespec ts1,ts2;
 	double timediff;
 
-	GetTimeOfDay(&tv);
+	clock_gettime_mono(&ts1);
 	result = SMB_VFS_NEXT_SYS_ACL_GET_FILE(handle, path_p, type);
-	timediff = timeval_elapsed(&tv);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
 		smb_time_audit_log("sys_acl_get_file", timediff);
@@ -1478,12 +1552,13 @@ static SMB_ACL_T smb_time_audit_sys_acl_get_fd(vfs_handle_struct *handle,
 					       files_struct *fsp)
 {
 	SMB_ACL_T result;
-	struct timeval tv;
+	struct timespec ts1,ts2;
 	double timediff;
 
-	GetTimeOfDay(&tv);
+	clock_gettime_mono(&ts1);
 	result = SMB_VFS_NEXT_SYS_ACL_GET_FD(handle, fsp);
-	timediff = timeval_elapsed(&tv);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
 		smb_time_audit_log("sys_acl_get_fd", timediff);
@@ -1496,12 +1571,13 @@ static int smb_time_audit_sys_acl_clear_perms(vfs_handle_struct *handle,
 					      SMB_ACL_PERMSET_T permset)
 {
 	int result;
-	struct timeval tv;
+	struct timespec ts1,ts2;
 	double timediff;
 
-	GetTimeOfDay(&tv);
+	clock_gettime_mono(&ts1);
 	result = SMB_VFS_NEXT_SYS_ACL_CLEAR_PERMS(handle, permset);
-	timediff = timeval_elapsed(&tv);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
 		smb_time_audit_log("sys_acl_clear_perms", timediff);
@@ -1515,12 +1591,13 @@ static int smb_time_audit_sys_acl_add_perm(vfs_handle_struct *handle,
 					   SMB_ACL_PERM_T perm)
 {
 	int result;
-	struct timeval tv;
+	struct timespec ts1,ts2;
 	double timediff;
 
-	GetTimeOfDay(&tv);
+	clock_gettime_mono(&ts1);
 	result = SMB_VFS_NEXT_SYS_ACL_ADD_PERM(handle, permset, perm);
-	timediff = timeval_elapsed(&tv);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
 		smb_time_audit_log("sys_acl_add_perm", timediff);
@@ -1534,12 +1611,13 @@ static char * smb_time_audit_sys_acl_to_text(vfs_handle_struct *handle,
 					     ssize_t *plen)
 {
 	char * result;
-	struct timeval tv;
+	struct timespec ts1,ts2;
 	double timediff;
 
-	GetTimeOfDay(&tv);
+	clock_gettime_mono(&ts1);
 	result = SMB_VFS_NEXT_SYS_ACL_TO_TEXT(handle, theacl, plen);
-	timediff = timeval_elapsed(&tv);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
 		smb_time_audit_log("sys_acl_to_text", timediff);
@@ -1552,12 +1630,13 @@ static SMB_ACL_T smb_time_audit_sys_acl_init(vfs_handle_struct *handle,
 					     int count)
 {
 	SMB_ACL_T result;
-	struct timeval tv;
+	struct timespec ts1,ts2;
 	double timediff;
 
-	GetTimeOfDay(&tv);
+	clock_gettime_mono(&ts1);
 	result = SMB_VFS_NEXT_SYS_ACL_INIT(handle, count);
-	timediff = timeval_elapsed(&tv);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
 		smb_time_audit_log("sys_acl_init", timediff);
@@ -1571,12 +1650,13 @@ static int smb_time_audit_sys_acl_create_entry(vfs_handle_struct *handle,
 					       SMB_ACL_ENTRY_T *pentry)
 {
 	int result;
-	struct timeval tv;
+	struct timespec ts1,ts2;
 	double timediff;
 
-	GetTimeOfDay(&tv);
+	clock_gettime_mono(&ts1);
 	result = SMB_VFS_NEXT_SYS_ACL_CREATE_ENTRY(handle, pacl, pentry);
-	timediff = timeval_elapsed(&tv);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
 		smb_time_audit_log("sys_acl_create_entry", timediff);
@@ -1590,13 +1670,14 @@ static int smb_time_audit_sys_acl_set_tag_type(vfs_handle_struct *handle,
 					       SMB_ACL_TAG_T tagtype)
 {
 	int result;
-	struct timeval tv;
+	struct timespec ts1,ts2;
 	double timediff;
 
-	GetTimeOfDay(&tv);
+	clock_gettime_mono(&ts1);
 	result = SMB_VFS_NEXT_SYS_ACL_SET_TAG_TYPE(handle, entry,
 						   tagtype);
-	timediff = timeval_elapsed(&tv);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
 		smb_time_audit_log("sys_acl_set_tag_type", timediff);
@@ -1610,12 +1691,13 @@ static int smb_time_audit_sys_acl_set_qualifier(vfs_handle_struct *handle,
 						void *qual)
 {
 	int result;
-	struct timeval tv;
+	struct timespec ts1,ts2;
 	double timediff;
 
-	GetTimeOfDay(&tv);
+	clock_gettime_mono(&ts1);
 	result = SMB_VFS_NEXT_SYS_ACL_SET_QUALIFIER(handle, entry, qual);
-	timediff = timeval_elapsed(&tv);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
 		smb_time_audit_log("sys_acl_set_qualifier", timediff);
@@ -1629,12 +1711,13 @@ static int smb_time_audit_sys_acl_set_permset(vfs_handle_struct *handle,
 					      SMB_ACL_PERMSET_T permset)
 {
 	int result;
-	struct timeval tv;
+	struct timespec ts1,ts2;
 	double timediff;
 
-	GetTimeOfDay(&tv);
+	clock_gettime_mono(&ts1);
 	result = SMB_VFS_NEXT_SYS_ACL_SET_PERMSET(handle, entry, permset);
-	timediff = timeval_elapsed(&tv);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
 		smb_time_audit_log("sys_acl_set_permset", timediff);
@@ -1647,12 +1730,13 @@ static int smb_time_audit_sys_acl_valid(vfs_handle_struct *handle,
 					SMB_ACL_T theacl)
 {
 	int result;
-	struct timeval tv;
+	struct timespec ts1,ts2;
 	double timediff;
 
-	GetTimeOfDay(&tv);
+	clock_gettime_mono(&ts1);
 	result = SMB_VFS_NEXT_SYS_ACL_VALID(handle, theacl);
-	timediff = timeval_elapsed(&tv);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
 		smb_time_audit_log("sys_acl_valid", timediff);
@@ -1667,13 +1751,14 @@ static int smb_time_audit_sys_acl_set_file(vfs_handle_struct *handle,
 					   SMB_ACL_T theacl)
 {
 	int result;
-	struct timeval tv;
+	struct timespec ts1,ts2;
 	double timediff;
 
-	GetTimeOfDay(&tv);
+	clock_gettime_mono(&ts1);
 	result = SMB_VFS_NEXT_SYS_ACL_SET_FILE(handle, name, acltype,
 					       theacl);
-	timediff = timeval_elapsed(&tv);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
 		smb_time_audit_log("sys_acl_set_file", timediff);
@@ -1687,12 +1772,13 @@ static int smb_time_audit_sys_acl_set_fd(vfs_handle_struct *handle,
 					 SMB_ACL_T theacl)
 {
 	int result;
-	struct timeval tv;
+	struct timespec ts1,ts2;
 	double timediff;
 
-	GetTimeOfDay(&tv);
+	clock_gettime_mono(&ts1);
 	result = SMB_VFS_NEXT_SYS_ACL_SET_FD(handle, fsp, theacl);
-	timediff = timeval_elapsed(&tv);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
 		smb_time_audit_log("sys_acl_set_fd", timediff);
@@ -1705,12 +1791,13 @@ static int smb_time_audit_sys_acl_delete_def_file(vfs_handle_struct *handle,
 						  const char *path)
 {
 	int result;
-	struct timeval tv;
+	struct timespec ts1,ts2;
 	double timediff;
 
-	GetTimeOfDay(&tv);
+	clock_gettime_mono(&ts1);
 	result = SMB_VFS_NEXT_SYS_ACL_DELETE_DEF_FILE(handle, path);
-	timediff = timeval_elapsed(&tv);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
 		smb_time_audit_log("sys_acl_delete_def_file", timediff);
@@ -1724,12 +1811,13 @@ static int smb_time_audit_sys_acl_get_perm(vfs_handle_struct *handle,
 					   SMB_ACL_PERM_T perm)
 {
 	int result;
-	struct timeval tv;
+	struct timespec ts1,ts2;
 	double timediff;
 
-	GetTimeOfDay(&tv);
+	clock_gettime_mono(&ts1);
 	result = SMB_VFS_NEXT_SYS_ACL_GET_PERM(handle, permset, perm);
-	timediff = timeval_elapsed(&tv);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
 		smb_time_audit_log("sys_acl_get_perm", timediff);
@@ -1742,12 +1830,13 @@ static int smb_time_audit_sys_acl_free_text(vfs_handle_struct *handle,
 					    char *text)
 {
 	int result;
-	struct timeval tv;
+	struct timespec ts1,ts2;
 	double timediff;
 
-	GetTimeOfDay(&tv);
+	clock_gettime_mono(&ts1);
 	result = SMB_VFS_NEXT_SYS_ACL_FREE_TEXT(handle, text);
-	timediff = timeval_elapsed(&tv);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
 		smb_time_audit_log("sys_acl_free_text", timediff);
@@ -1760,12 +1849,13 @@ static int smb_time_audit_sys_acl_free_acl(vfs_handle_struct *handle,
 					   SMB_ACL_T posix_acl)
 {
 	int result;
-	struct timeval tv;
+	struct timespec ts1,ts2;
 	double timediff;
 
-	GetTimeOfDay(&tv);
+	clock_gettime_mono(&ts1);
 	result = SMB_VFS_NEXT_SYS_ACL_FREE_ACL(handle, posix_acl);
-	timediff = timeval_elapsed(&tv);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
 		smb_time_audit_log("sys_acl_free_acl", timediff);
@@ -1779,13 +1869,14 @@ static int smb_time_audit_sys_acl_free_qualifier(vfs_handle_struct *handle,
 						 SMB_ACL_TAG_T tagtype)
 {
 	int result;
-	struct timeval tv;
+	struct timespec ts1,ts2;
 	double timediff;
 
-	GetTimeOfDay(&tv);
+	clock_gettime_mono(&ts1);
 	result = SMB_VFS_NEXT_SYS_ACL_FREE_QUALIFIER(handle, qualifier,
 						     tagtype);
-	timediff = timeval_elapsed(&tv);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
 		smb_time_audit_log("sys_acl_free_qualifier", timediff);
@@ -1799,12 +1890,13 @@ static ssize_t smb_time_audit_getxattr(struct vfs_handle_struct *handle,
 				       void *value, size_t size)
 {
 	ssize_t result;
-	struct timeval tv;
+	struct timespec ts1,ts2;
 	double timediff;
 
-	GetTimeOfDay(&tv);
+	clock_gettime_mono(&ts1);
 	result = SMB_VFS_NEXT_GETXATTR(handle, path, name, value, size);
-	timediff = timeval_elapsed(&tv);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
 		smb_time_audit_log("getxattr", timediff);
@@ -1818,12 +1910,13 @@ static ssize_t smb_time_audit_lgetxattr(struct vfs_handle_struct *handle,
 					void *value, size_t size)
 {
 	ssize_t result;
-	struct timeval tv;
+	struct timespec ts1,ts2;
 	double timediff;
 
-	GetTimeOfDay(&tv);
+	clock_gettime_mono(&ts1);
 	result = SMB_VFS_NEXT_LGETXATTR(handle, path, name, value, size);
-	timediff = timeval_elapsed(&tv);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
 		smb_time_audit_log("lgetxattr", timediff);
@@ -1838,12 +1931,13 @@ static ssize_t smb_time_audit_fgetxattr(struct vfs_handle_struct *handle,
 					size_t size)
 {
 	ssize_t result;
-	struct timeval tv;
+	struct timespec ts1,ts2;
 	double timediff;
 
-	GetTimeOfDay(&tv);
+	clock_gettime_mono(&ts1);
 	result = SMB_VFS_NEXT_FGETXATTR(handle, fsp, name, value, size);
-	timediff = timeval_elapsed(&tv);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
 		smb_time_audit_log("fgetxattr", timediff);
@@ -1857,12 +1951,13 @@ static ssize_t smb_time_audit_listxattr(struct vfs_handle_struct *handle,
 					size_t size)
 {
 	ssize_t result;
-	struct timeval tv;
+	struct timespec ts1,ts2;
 	double timediff;
 
-	GetTimeOfDay(&tv);
+	clock_gettime_mono(&ts1);
 	result = SMB_VFS_NEXT_LISTXATTR(handle, path, list, size);
-	timediff = timeval_elapsed(&tv);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
 		smb_time_audit_log("listxattr", timediff);
@@ -1876,12 +1971,13 @@ static ssize_t smb_time_audit_llistxattr(struct vfs_handle_struct *handle,
 					 size_t size)
 {
 	ssize_t result;
-	struct timeval tv;
+	struct timespec ts1,ts2;
 	double timediff;
 
-	GetTimeOfDay(&tv);
+	clock_gettime_mono(&ts1);
 	result = SMB_VFS_NEXT_LLISTXATTR(handle, path, list, size);
-	timediff = timeval_elapsed(&tv);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
 		smb_time_audit_log("llistxattr", timediff);
@@ -1895,12 +1991,13 @@ static ssize_t smb_time_audit_flistxattr(struct vfs_handle_struct *handle,
 					 size_t size)
 {
 	ssize_t result;
-	struct timeval tv;
+	struct timespec ts1,ts2;
 	double timediff;
 
-	GetTimeOfDay(&tv);
+	clock_gettime_mono(&ts1);
 	result = SMB_VFS_NEXT_FLISTXATTR(handle, fsp, list, size);
-	timediff = timeval_elapsed(&tv);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
 		smb_time_audit_log("flistxattr", timediff);
@@ -1913,12 +2010,13 @@ static int smb_time_audit_removexattr(struct vfs_handle_struct *handle,
 				      const char *path, const char *name)
 {
 	int result;
-	struct timeval tv;
+	struct timespec ts1,ts2;
 	double timediff;
 
-	GetTimeOfDay(&tv);
+	clock_gettime_mono(&ts1);
 	result = SMB_VFS_NEXT_REMOVEXATTR(handle, path, name);
-	timediff = timeval_elapsed(&tv);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
 		smb_time_audit_log("removexattr", timediff);
@@ -1931,12 +2029,13 @@ static int smb_time_audit_lremovexattr(struct vfs_handle_struct *handle,
 				       const char *path, const char *name)
 {
 	int result;
-	struct timeval tv;
+	struct timespec ts1,ts2;
 	double timediff;
 
-	GetTimeOfDay(&tv);
+	clock_gettime_mono(&ts1);
 	result = SMB_VFS_NEXT_LREMOVEXATTR(handle, path, name);
-	timediff = timeval_elapsed(&tv);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
 		smb_time_audit_log("lremovexattr", timediff);
@@ -1950,12 +2049,13 @@ static int smb_time_audit_fremovexattr(struct vfs_handle_struct *handle,
 				       const char *name)
 {
 	int result;
-	struct timeval tv;
+	struct timespec ts1,ts2;
 	double timediff;
 
-	GetTimeOfDay(&tv);
+	clock_gettime_mono(&ts1);
 	result = SMB_VFS_NEXT_FREMOVEXATTR(handle, fsp, name);
-	timediff = timeval_elapsed(&tv);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
 		smb_time_audit_log("fremovexattr", timediff);
@@ -1970,13 +2070,14 @@ static int smb_time_audit_setxattr(struct vfs_handle_struct *handle,
 				   int flags)
 {
 	int result;
-	struct timeval tv;
+	struct timespec ts1,ts2;
 	double timediff;
 
-	GetTimeOfDay(&tv);
+	clock_gettime_mono(&ts1);
 	result = SMB_VFS_NEXT_SETXATTR(handle, path, name, value, size,
 				       flags);
-	timediff = timeval_elapsed(&tv);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
 		smb_time_audit_log("setxattr", timediff);
@@ -1991,13 +2092,14 @@ static int smb_time_audit_lsetxattr(struct vfs_handle_struct *handle,
 				    int flags)
 {
 	int result;
-	struct timeval tv;
+	struct timespec ts1,ts2;
 	double timediff;
 
-	GetTimeOfDay(&tv);
+	clock_gettime_mono(&ts1);
 	result = SMB_VFS_NEXT_LSETXATTR(handle, path, name, value, size,
 					flags);
-	timediff = timeval_elapsed(&tv);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
 		smb_time_audit_log("lsetxattr", timediff);
@@ -2011,12 +2113,13 @@ static int smb_time_audit_fsetxattr(struct vfs_handle_struct *handle,
 				    const void *value, size_t size, int flags)
 {
 	int result;
-	struct timeval tv;
+	struct timespec ts1,ts2;
 	double timediff;
 
-	GetTimeOfDay(&tv);
+	clock_gettime_mono(&ts1);
 	result = SMB_VFS_NEXT_FSETXATTR(handle, fsp, name, value, size, flags);
-	timediff = timeval_elapsed(&tv);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
 		smb_time_audit_log("fsetxattr", timediff);
@@ -2030,12 +2133,13 @@ static int smb_time_audit_aio_read(struct vfs_handle_struct *handle,
 				   SMB_STRUCT_AIOCB *aiocb)
 {
 	int result;
-	struct timeval tv;
+	struct timespec ts1,ts2;
 	double timediff;
 
-	GetTimeOfDay(&tv);
+	clock_gettime_mono(&ts1);
 	result = SMB_VFS_NEXT_AIO_READ(handle, fsp, aiocb);
-	timediff = timeval_elapsed(&tv);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
 		smb_time_audit_log("aio_read", timediff);
@@ -2049,12 +2153,13 @@ static int smb_time_audit_aio_write(struct vfs_handle_struct *handle,
 				    SMB_STRUCT_AIOCB *aiocb)
 {
 	int result;
-	struct timeval tv;
+	struct timespec ts1,ts2;
 	double timediff;
 
-	GetTimeOfDay(&tv);
+	clock_gettime_mono(&ts1);
 	result = SMB_VFS_NEXT_AIO_WRITE(handle, fsp, aiocb);
-	timediff = timeval_elapsed(&tv);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
 		smb_time_audit_log("aio_write", timediff);
@@ -2068,12 +2173,13 @@ static ssize_t smb_time_audit_aio_return(struct vfs_handle_struct *handle,
 					 SMB_STRUCT_AIOCB *aiocb)
 {
 	int result;
-	struct timeval tv;
+	struct timespec ts1,ts2;
 	double timediff;
 
-	GetTimeOfDay(&tv);
+	clock_gettime_mono(&ts1);
 	result = SMB_VFS_NEXT_AIO_RETURN(handle, fsp, aiocb);
-	timediff = timeval_elapsed(&tv);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
 		smb_time_audit_log("aio_return", timediff);
@@ -2087,12 +2193,13 @@ static int smb_time_audit_aio_cancel(struct vfs_handle_struct *handle,
 				     SMB_STRUCT_AIOCB *aiocb)
 {
 	int result;
-	struct timeval tv;
+	struct timespec ts1,ts2;
 	double timediff;
 
-	GetTimeOfDay(&tv);
+	clock_gettime_mono(&ts1);
 	result = SMB_VFS_NEXT_AIO_CANCEL(handle, fsp, aiocb);
-	timediff = timeval_elapsed(&tv);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
 		smb_time_audit_log("aio_cancel", timediff);
@@ -2106,12 +2213,13 @@ static int smb_time_audit_aio_error(struct vfs_handle_struct *handle,
 				    SMB_STRUCT_AIOCB *aiocb)
 {
 	int result;
-	struct timeval tv;
+	struct timespec ts1,ts2;
 	double timediff;
 
-	GetTimeOfDay(&tv);
+	clock_gettime_mono(&ts1);
 	result = SMB_VFS_NEXT_AIO_ERROR(handle, fsp, aiocb);
-	timediff = timeval_elapsed(&tv);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
 		smb_time_audit_log("aio_error", timediff);
@@ -2125,12 +2233,13 @@ static int smb_time_audit_aio_fsync(struct vfs_handle_struct *handle,
 				    SMB_STRUCT_AIOCB *aiocb)
 {
 	int result;
-	struct timeval tv;
+	struct timespec ts1,ts2;
 	double timediff;
 
-	GetTimeOfDay(&tv);
+	clock_gettime_mono(&ts1);
 	result = SMB_VFS_NEXT_AIO_FSYNC(handle, fsp, op, aiocb);
-	timediff = timeval_elapsed(&tv);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
 		smb_time_audit_log("aio_fsync", timediff);
@@ -2145,12 +2254,13 @@ static int smb_time_audit_aio_suspend(struct vfs_handle_struct *handle,
 				      int n, const struct timespec *ts)
 {
 	int result;
-	struct timeval tv;
+	struct timespec ts1,ts2;
 	double timediff;
 
-	GetTimeOfDay(&tv);
+	clock_gettime_mono(&ts1);
 	result = SMB_VFS_NEXT_AIO_SUSPEND(handle, fsp, aiocb, n, ts);
-	timediff = timeval_elapsed(&tv);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
 		smb_time_audit_log("aio_suspend", timediff);
@@ -2163,12 +2273,13 @@ static bool smb_time_audit_aio_force(struct vfs_handle_struct *handle,
 				     struct files_struct *fsp)
 {
 	bool result;
-	struct timeval tv;
+	struct timespec ts1,ts2;
 	double timediff;
 
-	GetTimeOfDay(&tv);
+	clock_gettime_mono(&ts1);
 	result = SMB_VFS_NEXT_AIO_FORCE(handle, fsp);
-	timediff = timeval_elapsed(&tv);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
 		smb_time_audit_log("aio_force", timediff);
