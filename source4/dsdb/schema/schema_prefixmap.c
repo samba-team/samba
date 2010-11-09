@@ -351,7 +351,8 @@ WERROR dsdb_schema_pfm_attid_from_oid(struct dsdb_schema_prefixmap *pfm,
  * Make OID for given ATTID.
  * Reference: [MS-DRSR] section 5.12.2
  */
-WERROR dsdb_schema_pfm_oid_from_attid(struct dsdb_schema_prefixmap *pfm, uint32_t attid,
+WERROR dsdb_schema_pfm_oid_from_attid(const struct dsdb_schema_prefixmap *pfm,
+				      uint32_t attid,
 				      TALLOC_CTX *mem_ctx, const char **_oid)
 {
 	uint32_t i;
