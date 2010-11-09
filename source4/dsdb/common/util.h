@@ -38,15 +38,18 @@
 
 bool is_attr_in_list(const char * const * attrs, const char *attr);
 
-#define DSDB_SECRET_ATTRIBUTES \
-	"currentValue", \
-	"dBCSPwd", \
-	"initialAuthIncoming", \
-	"initialAuthOutgoing", \
-	"lmPwdHistory", \
-	"ntPwdHistory", \
-	"priorValue", \
-	"supplementalCredentials", \
-	"trustAuthIncoming", \
-	"trustAuthOutgoing", \
+#define DSDB_SECRET_ATTRIBUTES_EX(sep) \
+	"currentValue" sep \
+	"dBCSPwd" sep \
+	"initialAuthIncoming" sep \
+	"initialAuthOutgoing" sep \
+	"lmPwdHistory" sep \
+	"ntPwdHistory" sep \
+	"priorValue" sep \
+	"supplementalCredentials" sep \
+	"trustAuthIncoming" sep \
+	"trustAuthOutgoing" sep \
 	"unicodePwd"
+
+#define DSDB_SECRET_ATTRIBUTES_COMMA ,
+#define DSDB_SECRET_ATTRIBUTES DSDB_SECRET_ATTRIBUTES_EX(DSDB_SECRET_ATTRIBUTES_COMMA)
