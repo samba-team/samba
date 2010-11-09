@@ -9620,17 +9620,11 @@ struct share_params *get_share_params(TALLOC_CTX *mem_ctx,
 				      const char *sharename)
 {
 	struct share_params *result;
-	char *sname;
+	char *sname = NULL;
 	int snum;
 
-	if (!(sname = SMB_STRDUP(sharename))) {
-		return NULL;
-	}
-
-	snum = find_service(sname);
-	SAFE_FREE(sname);
-
-	if (snum < 0) {
+	snum = find_service(mem_ctx, sharename, &sname);
+	if (snum < 0 || sname == NULL) {
 		return NULL;
 	}
 

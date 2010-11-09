@@ -9629,7 +9629,7 @@ WERROR _spoolss_GetPrintProcessorDirectory(struct pipes_struct *p,
 					   struct spoolss_GetPrintProcessorDirectory *r)
 {
 	WERROR result;
-	fstring prnproc_share;
+	char *prnproc_share = NULL;
 	bool prnproc_share_exists = false;
 	int snum;
 
@@ -9650,9 +9650,10 @@ WERROR _spoolss_GetPrintProcessorDirectory(struct pipes_struct *p,
 	 * users are not forced to have a [prnproc$] share on the Samba spoolss
 	 * server, if users decide to do so, lets announce it though - Guenther */
 
-	fstrcpy(prnproc_share, "prnproc$");
-
-	snum = find_service(prnproc_share);
+	snum = find_service(talloc_tos(), "prnproc$", &prnproc_share);
+	if (!prnproc_share) {
+		return WERR_NOMEM;
+	}
 	if (snum != -1) {
 		prnproc_share_exists = true;
 	}

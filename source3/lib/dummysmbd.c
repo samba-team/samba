@@ -23,7 +23,7 @@
 
 #include "includes.h"
 
-int find_service(fstring service)
+int find_service(TALLOC_CTX *ctx, const char *service_in, char **p_service_out)
 {
 	return -1;
 }

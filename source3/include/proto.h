@@ -5356,7 +5356,7 @@ bool set_conn_connectpath(connection_struct *conn, const char *connectpath);
 bool set_current_service(connection_struct *conn, uint16 flags, bool do_chdir);
 void load_registry_shares(void);
 int add_home_service(const char *service, const char *username, const char *homedir);
-int find_service(fstring service);
+int find_service(TALLOC_CTX *ctx, const char *service, char **p_service_out);
 connection_struct *make_connection_snum(struct smbd_server_connection *sconn,
 					int snum, user_struct *vuser,
 					DATA_BLOB password,

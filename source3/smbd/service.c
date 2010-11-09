@@ -305,39 +305,47 @@ int add_home_service(const char *service, const char *username, const char *home
  * @param service is modified (to canonical form??)
  **/
 
-int find_service(fstring service)
+int find_service(TALLOC_CTX *ctx, const char *service_in, char **p_service_out)
 {
 	int iService;
 
-	all_string_sub(service,"\\","/",0);
+	if (!service_in) {
+		return -1;
+	}
 
-	iService = lp_servicenumber(service);
+	/* First make a copy. */
+	*p_service_out = talloc_strdup(ctx, service_in);
+	if (!*p_service_out) {
+		return -1;
+	}
+
+	all_string_sub(*p_service_out,"\\","/",0);
+
+	iService = lp_servicenumber(*p_service_out);
 
 	/* now handle the special case of a home directory */
 	if (iService < 0) {
-		char *phome_dir = get_user_home_dir(talloc_tos(), service);
+		char *phome_dir = get_user_home_dir(ctx, *p_service_out);
 
 		if(!phome_dir) {
-			char *service_out = NULL;
 			/*
 			 * Try mapping the servicename, it may
 			 * be a Windows to unix mapped user name.
 			 */
-			if(map_username(talloc_tos(), service, &service_out)) {
-				if (service_out == NULL) {
+			if(map_username(ctx, *p_service_out, p_service_out)) {
+				if (*p_service_out == NULL) {
 					/* Out of memory. */
 					return -1;
 				}
-				fstrcpy(service, service_out);
 				phome_dir = get_user_home_dir(
-					talloc_tos(), service);
+						ctx, *p_service_out);
 			}
 		}
 
-		DEBUG(3,("checking for home directory %s gave %s\n",service,
+		DEBUG(3,("checking for home directory %s gave %s\n",*p_service_out,
 			phome_dir?phome_dir:"(NULL)"));
 
-		iService = add_home_service(service,service /* 'username' */, phome_dir);
+		iService = add_home_service(*p_service_out,*p_service_out /* 'username' */, phome_dir);
 	}
 
 	/* If we still don't have a service, attempt to add it as a printer. */
@@ -348,17 +356,22 @@ int find_service(fstring service)
 			iPrinterService = load_registry_service(PRINTERS_NAME);
 		}
 		if (iPrinterService >= 0) {
-			DEBUG(3,("checking whether %s is a valid printer name...\n", service));
-			if (pcap_printername_ok(service)) {
-				DEBUG(3,("%s is a valid printer name\n", service));
-				DEBUG(3,("adding %s as a printer service\n", service));
-				lp_add_printer(service, iPrinterService);
-				iService = lp_servicenumber(service);
+			DEBUG(3,("checking whether %s is a valid printer name...\n",
+				*p_service_out));
+			if (pcap_printername_ok(*p_service_out)) {
+				DEBUG(3,("%s is a valid printer name\n",
+					*p_service_out));
+				DEBUG(3,("adding %s as a printer service\n",
+					*p_service_out));
+				lp_add_printer(*p_service_out, iPrinterService);
+				iService = lp_servicenumber(*p_service_out);
 				if (iService < 0) {
-					DEBUG(0,("failed to add %s as a printer service!\n", service));
+					DEBUG(0,("failed to add %s as a printer service!\n",
+						*p_service_out));
 				}
 			} else {
-				DEBUG(3,("%s is not a valid printer name\n", service));
+				DEBUG(3,("%s is not a valid printer name\n",
+					*p_service_out));
 			}
 		}
 	}
@@ -368,27 +381,30 @@ int find_service(fstring service)
 	}
 
 	if (iService < 0) {
-		iService = load_registry_service(service);
+		iService = load_registry_service(*p_service_out);
 	}
 
 	/* Is it a usershare service ? */
 	if (iService < 0 && *lp_usershare_path()) {
 		/* Ensure the name is canonicalized. */
-		strlower_m(service);
-		iService = load_usershare_service(service);
+		strlower_m(*p_service_out);
+		iService = load_usershare_service(*p_service_out);
 	}
 
 	/* just possibly it's a default service? */
 	if (iService < 0) {
 		char *pdefservice = lp_defaultservice();
-		if (pdefservice && *pdefservice && !strequal(pdefservice,service) && !strstr_m(service,"..")) {
+		if (pdefservice &&
+				*pdefservice &&
+				!strequal(pdefservice, *p_service_out)
+				&& !strstr_m(*p_service_out,"..")) {
 			/*
 			 * We need to do a local copy here as lp_defaultservice() 
 			 * returns one of the rotating lp_string buffers that
 			 * could get overwritten by the recursive find_service() call
 			 * below. Fix from Josef Hinteregger <joehtg@joehtg.co.at>.
 			 */
-			char *defservice = SMB_STRDUP(pdefservice);
+			char *defservice = talloc_strdup(ctx, pdefservice);
 
 			if (!defservice) {
 				goto fail;
@@ -398,30 +414,38 @@ int find_service(fstring service)
 			if (strequal(defservice,HOMES_NAME) ||
 					strequal(defservice, PRINTERS_NAME) ||
 					strequal(defservice, "IPC$")) {
-				SAFE_FREE(defservice);
+				TALLOC_FREE(defservice);
 				goto fail;
 			}
 
-			iService = find_service(defservice);
-			if (iService >= 0) {
-				all_string_sub(service, "_","/",0);
-				iService = lp_add_service(service, iService);
+			iService = find_service(ctx, defservice, p_service_out);
+			if (!*p_service_out) {
+				TALLOC_FREE(defservice);
+				iService = -1;
+				goto fail;
 			}
-			SAFE_FREE(defservice);
+			if (iService >= 0) {
+				all_string_sub(*p_service_out, "_","/",0);
+				iService = lp_add_service(*p_service_out, iService);
+			}
+			TALLOC_FREE(defservice);
 		}
 	}
 
 	if (iService >= 0) {
 		if (!VALID_SNUM(iService)) {
-			DEBUG(0,("Invalid snum %d for %s\n",iService, service));
+			DEBUG(0,("Invalid snum %d for %s\n",iService,
+				*p_service_out));
 			iService = -1;
 		}
 	}
 
   fail:
 
-	if (iService < 0)
-		DEBUG(3,("find_service() failed to find service %s\n", service));
+	if (iService < 0) {
+		DEBUG(3,("find_service() failed to find service %s\n",
+			*p_service_out));
+	}
 
 	return (iService);
 }
@@ -1101,7 +1125,7 @@ connection_struct *make_connection(struct smbd_server_connection *sconn,
 {
 	uid_t euid;
 	user_struct *vuser = NULL;
-	fstring service;
+	char *service = NULL;
 	fstring dev;
 	int snum = -1;
 
@@ -1164,7 +1188,13 @@ connection_struct *make_connection(struct smbd_server_connection *sconn,
 				(void)map_username(talloc_tos(),
 						current_user_info.smb_name,
 						&unix_username);
-				snum = find_service(unix_username);
+				snum = find_service(talloc_tos(),
+						unix_username,
+						&unix_username);
+				if (!unix_username) {
+					*status = NT_STATUS_NO_MEMORY;
+				}
+				return NULL;
 			}
 			if (snum != -1) {
 				DEBUG(5, ("making a connection to 'homes' "
@@ -1188,11 +1218,19 @@ connection_struct *make_connection(struct smbd_server_connection *sconn,
 					    dev, status);
 	}
 
-	fstrcpy(service, service_in);
+	service = talloc_strdup(talloc_tos(), service_in);
+	if (!service) {
+		*status = NT_STATUS_NO_MEMORY;
+		return NULL;
+	}
 
 	strlower_m(service);
 
-	snum = find_service(service);
+	snum = find_service(talloc_tos(), service, &service);
+	if (!service) {
+		*status = NT_STATUS_NO_MEMORY;
+		return NULL;
+	}
 
 	if (snum < 0) {
 		if (strequal(service,"IPC$") ||

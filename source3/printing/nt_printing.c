@@ -587,7 +587,7 @@ static uint32 get_correct_cversion(struct pipes_struct *p,
 	connection_struct *conn = NULL;
 	NTSTATUS status;
 	char *oldcwd;
-	fstring printdollar;
+	char *printdollar = NULL;
 	int printdollar_snum;
 
 	*perr = WERR_INVALID_PARAM;
@@ -606,9 +606,11 @@ static uint32 get_correct_cversion(struct pipes_struct *p,
 		return 3;
 	}
 
-	fstrcpy(printdollar, "print$");
-
-	printdollar_snum = find_service(printdollar);
+	printdollar_snum = find_service(talloc_tos(), "print$", &printdollar);
+	if (!printdollar) {
+		*perr = WERR_NOMEM;
+		return -1;
+	}
 	if (printdollar_snum == -1) {
 		*perr = WERR_NO_SUCH_SHARE;
 		return -1;
@@ -946,7 +948,7 @@ WERROR move_driver_to_download_area(struct pipes_struct *p,
 	TALLOC_CTX *ctx = talloc_tos();
 	int ver = 0;
 	char *oldcwd;
-	fstring printdollar;
+	char *printdollar = NULL;
 	int printdollar_snum;
 
 	*perr = WERR_OK;
@@ -969,9 +971,11 @@ WERROR move_driver_to_download_area(struct pipes_struct *p,
 		return WERR_UNKNOWN_PRINTER_DRIVER;
 	}
 
-	fstrcpy(printdollar, "print$");
-
-	printdollar_snum = find_service(printdollar);
+	printdollar_snum = find_service(ctx, "print$", &printdollar);
+	if (!printdollar) {
+		*perr = WERR_NOMEM;
+		return WERR_NOMEM;
+	}
 	if (printdollar_snum == -1) {
 		*perr = WERR_NO_SUCH_SHARE;
 		return WERR_NO_SUCH_SHARE;
@@ -1885,7 +1889,7 @@ bool delete_driver_files(const struct auth_serversupplied_info *server_info,
 	connection_struct *conn;
 	NTSTATUS nt_status;
 	char *oldcwd;
-	fstring printdollar;
+	char *printdollar = NULL;
 	int printdollar_snum;
 	bool ret = false;
 
@@ -1896,9 +1900,10 @@ bool delete_driver_files(const struct auth_serversupplied_info *server_info,
 	DEBUG(6,("delete_driver_files: deleting driver [%s] - version [%d]\n",
 		r->driver_name, r->version));
 
-	fstrcpy(printdollar, "print$");
-
-	printdollar_snum = find_service(printdollar);
+	printdollar_snum = find_service(talloc_tos(), "print$", &printdollar);
+	if (!printdollar) {
+		return false;
+	}
 	if (printdollar_snum == -1) {
 		return false;
 	}

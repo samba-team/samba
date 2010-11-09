@@ -151,7 +151,7 @@ static NTSTATUS smbd_smb2_tree_connect(struct smbd_smb2_request *req,
 				       uint32_t *out_tree_id)
 {
 	const char *share = in_path;
-	fstring service;
+	char *service = NULL;
 	int snum = -1;
 	struct smbd_smb2_tcon *tcon;
 	connection_struct *compat_conn = NULL;
@@ -169,7 +169,10 @@ static NTSTATUS smbd_smb2_tree_connect(struct smbd_smb2_request *req,
 	DEBUG(10,("smbd_smb2_tree_connect: path[%s] share[%s]\n",
 		  in_path, share));
 
-	fstrcpy(service, share);
+	service = talloc_strdup(talloc_tos(), share);
+	if(!service) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	strlower_m(service);
 
@@ -189,7 +192,10 @@ static NTSTATUS smbd_smb2_tree_connect(struct smbd_smb2_request *req,
 			lp_servicename(compat_vuser->homes_snum))) {
 		snum = compat_vuser->homes_snum;
 	} else {
-		snum = find_service(service);
+		snum = find_service(talloc_tos(), service, &service);
+		if (!service) {
+			return NT_STATUS_NO_MEMORY;
+		}
 	}
 
 	if (snum < 0) {

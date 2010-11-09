@@ -833,10 +833,12 @@ NTSTATUS get_referred_path(TALLOC_CTX *ctx,
 	/* Verify the share is a dfs root */
 	snum = lp_servicenumber(jucn->service_name);
 	if(snum < 0) {
-		fstring service_name;
-		fstrcpy(service_name, jucn->service_name);
-		if ((snum = find_service(service_name)) < 0) {
+		char *service_name = NULL;
+		if ((snum = find_service(ctx, jucn->service_name, &service_name)) < 0) {
 			return NT_STATUS_NOT_FOUND;
+		}
+		if (!service_name) {
+			return NT_STATUS_NO_MEMORY;
 		}
 		TALLOC_FREE(jucn->service_name);
 		jucn->service_name = talloc_strdup(ctx, service_name);
