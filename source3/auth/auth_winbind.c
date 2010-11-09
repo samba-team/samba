@@ -98,9 +98,7 @@ static NTSTATUS check_winbind_security(const struct auth_context *auth_context,
 		if ( auth_method )
 			return auth_method->auth(auth_context, auth_method->private_data, 
 				mem_ctx, user_info, server_info);
-		else
-			/* log an error since this should not happen */
-			DEBUG(0,("check_winbind_security: ERROR!  my_private_data == NULL!\n"));
+		return NT_STATUS_LOGON_FAILURE;
 	}
 
 	if (wbc_status == WBC_ERR_AUTH_ERROR) {
