@@ -1528,7 +1528,6 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 		struct ldb_message *msg;
 		static const char * const msg_attrs[] = {
 					    "*",
-					    "distinguishedName",
 					    "nTSecurityDescriptor",
 					    "parentGUID",
 					    "replPropertyMetaData",
