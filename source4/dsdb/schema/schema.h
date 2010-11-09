@@ -35,6 +35,9 @@ struct dsdb_syntax_ctx {
 
 	/* set when converting objects under Schema NC */
 	bool is_schema_nc;
+
+	/* remote prefixMap to be used for drsuapi_to_ldb conversions */
+	const struct dsdb_schema_prefixmap *pfm_remote;
 };
 
 

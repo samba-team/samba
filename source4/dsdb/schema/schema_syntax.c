@@ -48,6 +48,8 @@ void dsdb_syntax_ctx_init(struct dsdb_syntax_ctx *ctx,
 	 * i.e. attributeID_id will be returned by default
 	 */
 	ctx->is_schema_nc = true;
+
+	ctx->pfm_remote = NULL;
 }
 
 
