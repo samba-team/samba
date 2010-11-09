@@ -815,7 +815,9 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork, bool use_syslog)
 	tevent_fd_set_auto_close(fde);
 
 	/* release any IPs we hold from previous runs of the daemon */
-	ctdb_release_all_ips(ctdb);
+	if (ctdb->tunable.disable_ip_failover == 0) {
+		ctdb_release_all_ips(ctdb);
+	}
 
 	/* start the transport going */
 	ctdb_start_transport(ctdb);

@@ -1238,6 +1238,13 @@ int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap)
 	struct ctdb_client_control_state *state;
 	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
 
+	/*
+	 * ip failover is completely disabled, just send out the 
+	 * ipreallocated event.
+	 */
+	if (ctdb->tunable.disable_ip_failover != 0) {
+		goto ipreallocated;
+	}
 
 	ZERO_STRUCT(ip);
 
@@ -1540,6 +1547,7 @@ finished:
 		return -1;
 	}
 
+ipreallocated:
 	/* tell all nodes to update natwg */
 	/* send the flags update natgw on all connected nodes */
 	data.dptr  = discard_const("ipreallocated");

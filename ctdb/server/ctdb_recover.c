@@ -640,6 +640,22 @@ ctdb_drop_all_ips_event(struct event_context *ev, struct timed_event *te,
 }
 
 /*
+ * Set up an event to drop all public ips if we remain in recovery for too
+ * long
+ */
+int ctdb_deferred_drop_all_ips(struct ctdb_context *ctdb)
+{
+	if (ctdb->release_ips_ctx != NULL) {
+		talloc_free(ctdb->release_ips_ctx);
+	}
+	ctdb->release_ips_ctx = talloc_new(ctdb);
+	CTDB_NO_MEMORY(ctdb, ctdb->release_ips_ctx);
+
+	event_add_timed(ctdb->ev, ctdb->release_ips_ctx, timeval_current_ofs(ctdb->tunable.recovery_drop_all_ips, 0), ctdb_drop_all_ips_event, ctdb);
+	return 0;
+}
+
+/*
   set the recovery mode
  */
 int32_t ctdb_control_set_recmode(struct ctdb_context *ctdb, 
@@ -659,11 +675,9 @@ int32_t ctdb_control_set_recmode(struct ctdb_context *ctdb,
 		talloc_free(ctdb->release_ips_ctx);
 		ctdb->release_ips_ctx = NULL;
 	} else {
-		talloc_free(ctdb->release_ips_ctx);
-		ctdb->release_ips_ctx = talloc_new(ctdb);
-		CTDB_NO_MEMORY(ctdb, ctdb->release_ips_ctx);
-
-		event_add_timed(ctdb->ev, ctdb->release_ips_ctx, timeval_current_ofs(ctdb->tunable.recovery_drop_all_ips, 0), ctdb_drop_all_ips_event, ctdb);
+		if (ctdb_deferred_drop_all_ips(ctdb) != 0) {
+			DEBUG(DEBUG_ERR,("Failed to set up deferred drop all ips\n"));
+		}
 	}
 
 	if (recmode != ctdb->recovery_mode) {

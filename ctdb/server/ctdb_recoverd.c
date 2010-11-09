@@ -3114,7 +3114,7 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 	/* verify that we have all ip addresses we should have and we dont
 	 * have addresses we shouldnt have.
 	 */ 
-	if (ctdb->do_checkpublicip) {
+	if (ctdb->tunable.disable_ip_failover != 0) {
 		if (rec->ip_check_disable_ctx == NULL) {
 			if (verify_local_ip_allocation(ctdb, rec, pnn) != 0) {
 				DEBUG(DEBUG_ERR, (__location__ " Public IPs were inconsistent.\n"));

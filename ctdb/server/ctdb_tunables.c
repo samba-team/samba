@@ -49,6 +49,7 @@ static const struct {
 	{ "DeterministicIPs",     1,  offsetof(struct ctdb_tunable, deterministic_public_ips) },
 	{ "ReclockPingPeriod",   60,  offsetof(struct ctdb_tunable,  reclock_ping_period) },
 	{ "NoIPFailback",         0,  offsetof(struct ctdb_tunable, no_ip_failback) },
+	{ "DisableIPFailover",    0,  offsetof(struct ctdb_tunable, disable_ip_failover) },
 	{ "VerboseMemoryNames",   0,  offsetof(struct ctdb_tunable, verbose_memory_names) },
 	{ "RecdPingTimeout",	 60,  offsetof(struct ctdb_tunable, recd_ping_timeout) },
 	{ "RecdFailCount",	 10,  offsetof(struct ctdb_tunable, recd_ping_failcount) },

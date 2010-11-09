@@ -101,6 +101,7 @@ struct ctdb_tunable {
 	uint32_t deterministic_public_ips;
 	uint32_t reclock_ping_period;
 	uint32_t no_ip_failback;
+	uint32_t disable_ip_failover;
 	uint32_t verbose_memory_names;
 	uint32_t recd_ping_timeout;
 	uint32_t recd_ping_failcount;
@@ -454,7 +455,6 @@ struct ctdb_context {
 	uint32_t recovery_master;
 	struct ctdb_call_state *pending_calls;
 	struct ctdb_client_ip *client_ip_list;
-	bool do_checkpublicip;
 	struct trbt_tree *server_ids;	
 	const char *event_script_dir;
 	const char *notification_script;
@@ -1372,5 +1372,7 @@ int ctdb_statistics_init(struct ctdb_context *ctdb);
 int32_t ctdb_control_get_stat_history(struct ctdb_context *ctdb,
 				      struct ctdb_req_control *c,
 				      TDB_DATA *outdata);
+
+int ctdb_deferred_drop_all_ips(struct ctdb_context *ctdb);
 
 #endif
