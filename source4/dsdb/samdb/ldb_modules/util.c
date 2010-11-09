@@ -1058,7 +1058,7 @@ const struct ldb_val *dsdb_module_find_dsheuristics(struct ldb_module *module,
 	int ret;
 	struct ldb_dn *new_dn;
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
-	static const char *attrs[] = { "dsHeuristics", NULL };
+	static const char *attrs[] = { "dSHeuristics", NULL };
 	struct ldb_result *res;
 
 	new_dn = ldb_dn_copy(mem_ctx, ldb_get_config_basedn(ldb));
@@ -1074,7 +1074,7 @@ const struct ldb_val *dsdb_module_find_dsheuristics(struct ldb_module *module,
 	if (ret == LDB_SUCCESS && res->count == 1) {
 		talloc_free(new_dn);
 		return ldb_msg_find_ldb_val(res->msgs[0],
-					    "dsHeuristics");
+					    "dSHeuristics");
 	}
 	talloc_free(new_dn);
 	return NULL;
