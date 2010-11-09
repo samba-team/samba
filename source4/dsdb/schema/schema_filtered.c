@@ -25,7 +25,8 @@
 #include "../lib/util/dlinklist.h"
 #include "param/param.h"
 
-const char *never_in_filtered_attrs[] = { "accountExpires",
+static const char * const never_in_filtered_attrs[] = {
+				     "accountExpires",
 				     "codePage",
 				     "creationTime",
 				     "dNSHostName",
