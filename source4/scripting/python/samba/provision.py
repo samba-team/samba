@@ -818,7 +818,7 @@ def secretsdb_setup_dns(secretsdb, setup_path, names, private_dir,
             "REALM": realm,
             "DNSDOMAIN": dnsdomain,
             "DNS_KEYTAB": dns_keytab_path,
-            "DNSPASS_B64": b64encode(dnspass),
+            "DNSPASS_B64": b64encode(dnspass.encode('utf-16-le')),
             "HOSTNAME": names.hostname,
             "DNSNAME" : '%s.%s' % (names.netbiosname.lower(), names.dnsdomain.lower())
             })
@@ -967,7 +967,7 @@ def setup_self_join(samdb, names,
               "INVOCATIONID": invocationid,
               "NETBIOSNAME": names.netbiosname,
               "DNSNAME": "%s.%s" % (names.hostname, names.dnsdomain),
-              "MACHINEPASS_B64": b64encode(machinepass),
+              "MACHINEPASS_B64": b64encode(machinepass.encode('utf-16-le')),
               "DOMAINSID": str(domainsid),
               "DCRID": str(next_rid),
               "SAMBA_VERSION_STRING": version,
@@ -1250,8 +1250,8 @@ def setup_samdb(path, setup_path, session_info, provision_backend, lp, names,
                 "DOMAINDN": names.domaindn,
                 "DOMAINSID": str(domainsid),
                 "CONFIGDN": names.configdn,
-                "ADMINPASS_B64": b64encode(adminpass),
-                "KRBTGTPASS_B64": b64encode(krbtgtpass),
+                "ADMINPASS_B64": b64encode(adminpass.encode('utf-16-le')),
+                "KRBTGTPASS_B64": b64encode(krbtgtpass.encode('utf-16-le'))
                 })
 
             logger.info("Setting up self join")

@@ -102,6 +102,6 @@ accountExpires: 9223372036854775807
 sAMAccountName: dns-${HOSTNAME}
 servicePrincipalName: DNS/${DNSNAME}
 servicePrincipalName: DNS/${DNSDOMAIN}
-userPassword:: ${DNSPASS_B64}
+clearTextPassword:: ${DNSPASS_B64}
 isCriticalSystemObject: TRUE
 

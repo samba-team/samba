@@ -45,7 +45,7 @@ objectSid: ${DOMAINSID}-500
 adminCount: 1
 accountExpires: 9223372036854775807
 sAMAccountName: Administrator
-userPassword:: ${ADMINPASS_B64}
+clearTextPassword:: ${ADMINPASS_B64}
 isCriticalSystemObject: TRUE
 
 dn: CN=Guest,CN=Users,${DOMAINDN}
@@ -70,7 +70,7 @@ adminCount: 1
 accountExpires: 9223372036854775807
 sAMAccountName: krbtgt
 servicePrincipalName: kadmin/changepw
-userPassword:: ${KRBTGTPASS_B64}
+clearTextPassword:: ${KRBTGTPASS_B64}
 isCriticalSystemObject: TRUE
 
 # Add other groups

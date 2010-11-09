@@ -18,7 +18,7 @@ sAMAccountName: ${NETBIOSNAME}$
 # The "servicePrincipalName" updates are now handled by the "samba_spnupdate"
 # script
 userAccountControl: 532480
-userPassword:: ${MACHINEPASS_B64}
+clearTextPassword:: ${MACHINEPASS_B64}
 objectSID: ${DOMAINSID}-${DCRID}
 
 # Here are missing the objects for the NTFRS subscription since we don't
