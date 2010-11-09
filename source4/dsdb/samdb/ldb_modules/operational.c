@@ -571,11 +571,8 @@ static const struct {
 	{ "msDS-KeyVersionNumber",   OPERATIONAL_REMOVE_UNLESS_CONTROL  },
 	{ "parentGUID",              OPERATIONAL_REMOVE_ALWAYS  },
 	{ "replPropertyMetaData",    OPERATIONAL_REMOVE_UNASKED },
-	{ "unicodePwd",              OPERATIONAL_REMOVE_UNASKED },
-	{ "dBCSPwd",                 OPERATIONAL_REMOVE_UNASKED },
-	{ "ntPwdHistory",            OPERATIONAL_REMOVE_UNASKED },
-	{ "lmPwdHistory",            OPERATIONAL_REMOVE_UNASKED },
-	{ "supplementalCredentials", OPERATIONAL_REMOVE_UNASKED }
+#define _SEP ,OPERATIONAL_REMOVE_UNASKED},{
+	{ DSDB_SECRET_ATTRIBUTES_EX(_SEP), OPERATIONAL_REMOVE_UNASKED }
 };
 
 
