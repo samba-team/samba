@@ -205,6 +205,62 @@ name: """ + object_name + """
         # Delete the object
         self.delete_force(self.ldb, "cn=%s,cn=Users,%s" % (object_name, self.base_dn))
 
+    def test_subClassOf(self):
+        """ Testing usage of custom child schamaClass
+        """
+
+        class_name = "my-Class" + time.strftime("%s", time.gmtime())
+        class_ldap_display_name = class_name.replace("-", "")
+
+        ldif = """
+dn: CN=%s,%s""" % (class_name, self.schema_dn) + """
+objectClass: top
+objectClass: classSchema
+adminDescription: """ + class_name + """
+adminDisplayName: """ + class_name + """
+cn: """ + class_name + """
+governsId: 1.2.840.""" + str(random.randint(1,100000)) + """.1.5.9939
+instanceType: 4
+objectClassCategory: 1
+subClassOf: organizationalUnit
+systemFlags: 16
+systemOnly: FALSE
+"""
+        self.ldb.add_ldif(ldif)
+
+        # Search for created objectclass
+        res = []
+        res = self.ldb.search("cn=%s,%s" % (class_name, self.schema_dn), scope=SCOPE_BASE, attrs=["*"])
+        self.assertEquals(len(res), 1)
+        self.assertEquals(res[0]["lDAPDisplayName"][0], class_ldap_display_name)
+        self.assertEquals(res[0]["defaultObjectCategory"][0], res[0]["distinguishedName"][0])
+        self.assertTrue("schemaIDGUID" in res[0])
+
+        ldif = """
+dn:
+changetype: modify
+add: schemaUpdateNow
+schemaUpdateNow: 1
+"""
+        self.ldb.modify_ldif(ldif)
+
+        object_name = "org" + time.strftime("%s", time.gmtime())
+
+        ldif = """
+dn: OU=%s,%s""" % (object_name, self.base_dn) + """
+objectClass: """ + class_ldap_display_name + """
+ou: """ + object_name + """
+instanceType: 4
+"""
+        self.ldb.add_ldif(ldif)
+
+        # Search for created object
+        res = []
+        res = self.ldb.search("ou=%s,%s" % (object_name, self.base_dn), scope=SCOPE_BASE, attrs=["*"])
+        self.assertEquals(len(res), 1)
+        # Delete the object
+        self.delete_force(self.ldb, "ou=%s,%s" % (object_name, self.base_dn))
+
 
 class SchemaTests_msDS_IntId(unittest.TestCase):
 
