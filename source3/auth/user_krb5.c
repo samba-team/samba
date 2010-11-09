@@ -40,8 +40,8 @@ NTSTATUS get_user_from_kerberos_info(TALLOC_CTX *mem_ctx,
 	char *realm = NULL;
 	char *user = NULL;
 	char *p;
-	fstring fuser;
-	fstring unixuser;
+	char *fuser = NULL;
+	char *unixuser = NULL;
 	struct passwd *pw = NULL;
 
 	DEBUG(3, ("Kerberos ticket principal name is [%s]\n", princ_name));
@@ -109,13 +109,25 @@ NTSTATUS get_user_from_kerberos_info(TALLOC_CTX *mem_ctx,
 		DEBUG(10, ("Domain is [%s] (using Winbind)\n", domain));
 	}
 
-	/* We have to use fstring for this - map_username requires it. */
-	fstr_sprintf(fuser, "%s%c%s", domain, *lp_winbind_separator(), user);
+	fuser = talloc_asprintf(mem_ctx,
+				"%s%c%s",
+				domain,
+				*lp_winbind_separator(),
+				user);
+	if (!fuser) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
-	*is_mapped = map_username(fuser);
+	*is_mapped = map_username(mem_ctx, fuser, &fuser);
+	if (!fuser) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
-	pw = smb_getpwnam(mem_ctx, fuser, unixuser, true);
+	pw = smb_getpwnam(mem_ctx, fuser, &unixuser, true);
 	if (pw) {
+		if (!unixuser) {
+			return NT_STATUS_NO_MEMORY;
+		}
 		/* if a real user check pam account restrictions */
 		/* only really perfomed if "obey pam restriction" is true */
 		/* do this before an eventual mapping to guest occurs */
@@ -134,8 +146,11 @@ NTSTATUS get_user_from_kerberos_info(TALLOC_CTX *mem_ctx,
 
 		if (lp_map_to_guest() == MAP_TO_GUEST_ON_BAD_UID) {
 			*mapped_to_guest = true;
-			fstrcpy(fuser, lp_guestaccount());
-			pw = smb_getpwnam(mem_ctx, fuser, unixuser, true);
+			fuser = talloc_strdup(mem_ctx, lp_guestaccount());
+			if (!fuser) {
+				return NT_STATUS_NO_MEMORY;
+			}
+			pw = smb_getpwnam(mem_ctx, fuser, &unixuser, true);
 		}
 
 		/* extra sanity check that the guest account is valid */
@@ -144,6 +159,10 @@ NTSTATUS get_user_from_kerberos_info(TALLOC_CTX *mem_ctx,
 				  fuser));
 			return NT_STATUS_LOGON_FAILURE;
 		}
+	}
+
+	if (!unixuser) {
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	*username = talloc_strdup(mem_ctx, unixuser);

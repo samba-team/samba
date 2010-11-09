@@ -318,13 +318,20 @@ int find_service(fstring service)
 		char *phome_dir = get_user_home_dir(talloc_tos(), service);
 
 		if(!phome_dir) {
+			char *service_out = NULL;
 			/*
 			 * Try mapping the servicename, it may
 			 * be a Windows to unix mapped user name.
 			 */
-			if(map_username(service))
+			if(map_username(talloc_tos(), service, &service_out)) {
+				if (service_out == NULL) {
+					/* Out of memory. */
+					return -1;
+				}
+				fstrcpy(service, service_out);
 				phome_dir = get_user_home_dir(
 					talloc_tos(), service);
+			}
 		}
 
 		DEBUG(3,("checking for home directory %s gave %s\n",service,
@@ -1153,12 +1160,12 @@ connection_struct *make_connection(struct smbd_server_connection *sconn,
 			/* Security = share. Try with
 			 * current_user_info.smb_name as the username.  */
 			if (*current_user_info.smb_name) {
-				fstring unix_username;
-				fstrcpy(unix_username,
-					current_user_info.smb_name);
-				map_username(unix_username);
+				char *unix_username = NULL;
+				(void)map_username(talloc_tos(),
+						current_user_info.smb_name,
+						&unix_username);
 				snum = find_service(unix_username);
-			} 
+			}
 			if (snum != -1) {
 				DEBUG(5, ("making a connection to 'homes' "
 					  "service %s based on "

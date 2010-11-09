@@ -1546,13 +1546,20 @@ void reply_sesssetup_and_X(struct smb_request *req)
 	reload_services(sconn->msg_ctx, sconn->sock, True);
 
 	if (lp_security() == SEC_SHARE) {
+		char *sub_user_mapped = NULL;
 		/* In share level we should ignore any passwords */
 
 		data_blob_free(&lm_resp);
 		data_blob_free(&nt_resp);
 		data_blob_clear_free(&plaintext_password);
 
-		map_username(sub_user);
+		(void)map_username(talloc_tos(), sub_user, &sub_user_mapped);
+		if (!sub_user_mapped) {
+			reply_nterror(req, NT_STATUS_NO_MEMORY);
+			END_PROFILE(SMBsesssetupX);
+			return;
+		}
+		fstrcpy(sub_user, sub_user_mapped);
 		add_session_user(sconn, sub_user);
 		add_session_workgroup(sconn, domain);
 		/* Then force it to null for the benfit of the code below */

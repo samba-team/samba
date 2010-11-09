@@ -78,7 +78,9 @@ static char *skip_space(char *s)
 	return s;
 }
 
-static bool fetch_map_from_gencache(fstring user)
+static bool fetch_map_from_gencache(TALLOC_CTX *ctx,
+			const char *user_in,
+			char **p_user_out)
 {
 	char *key, *value;
 	bool found;
@@ -87,8 +89,8 @@ static bool fetch_map_from_gencache(fstring user)
 		return false;
 	}
 
-	key = talloc_asprintf_strupper_m(talloc_tos(), "USERNAME_MAP/%s",
-					 user);
+	key = talloc_asprintf_strupper_m(ctx, "USERNAME_MAP/%s",
+					 user_in);
 	if (key == NULL) {
 		return false;
 	}
@@ -97,12 +99,15 @@ static bool fetch_map_from_gencache(fstring user)
 	if (!found) {
 		return false;
 	}
-	fstrcpy(user, value);
-	SAFE_FREE(value);
+	TALLOC_FREE(*p_user_out);
+	*p_user_out = talloc_strdup(ctx, value);
+	if (!*p_user_out) {
+		return false;
+	}
 	return true;
 }
 
-static void store_map_in_gencache(const char *from, const char *to)
+static void store_map_in_gencache(TALLOC_CTX *ctx, const char *from, const char *to)
 {
 	char *key;
 	int cache_time = lp_username_map_cache_time();
@@ -111,7 +116,7 @@ static void store_map_in_gencache(const char *from, const char *to)
 		return;
 	}
 
-	key = talloc_asprintf_strupper_m(talloc_tos(), "USERNAME_MAP/%s",
+	key = talloc_asprintf_strupper_m(ctx, "USERNAME_MAP/%s",
 					 from);
         if (key == NULL) {
                 return;
@@ -125,11 +130,11 @@ static void store_map_in_gencache(const char *from, const char *to)
  try lower case.
 ****************************************************************************/
 
-bool user_in_netgroup(const char *user, const char *ngname)
+bool user_in_netgroup(TALLOC_CTX *ctx, const char *user, const char *ngname)
 {
 #ifdef HAVE_NETGROUP
 	static char *my_yp_domain = NULL;
-	fstring lowercase_user;
+	char *lowercase_user = NULL;
 
 	if (my_yp_domain == NULL) {
 		yp_get_default_domain(&my_yp_domain);
@@ -152,7 +157,10 @@ bool user_in_netgroup(const char *user, const char *ngname)
 	 * Ok, innetgr is case sensitive. Try once more with lowercase
 	 * just in case. Attempt to fix #703. JRA.
 	 */
-	fstrcpy(lowercase_user, user);
+	lowercase_user = talloc_strdup(ctx, user);
+	if (!lowercase_user) {
+		return false;
+	}
 	strlower_m(lowercase_user);
 
 	if (strcmp(user,lowercase_user) == 0) {
@@ -176,7 +184,7 @@ bool user_in_netgroup(const char *user, const char *ngname)
  and netgroup lists.
 ****************************************************************************/
 
-bool user_in_list(const char *user,const char **list)
+bool user_in_list(TALLOC_CTX *ctx, const char *user,const char **list)
 {
 	if (!list || !*list)
 		return False;
@@ -204,7 +212,7 @@ bool user_in_list(const char *user,const char **list)
 			 * Old behaviour. Check netgroup list
 			 * followed by UNIX list.
 			 */
-			if(user_in_netgroup(user, *list +1))
+			if(user_in_netgroup(ctx, user, *list +1))
 				return True;
 			if(user_in_group(user, *list +1))
 				return True;
@@ -216,7 +224,7 @@ bool user_in_list(const char *user,const char **list)
 				 */
 				if(user_in_group(user, *list +2))
 					return True;
-				if(user_in_netgroup(user, *list +2))
+				if(user_in_netgroup(ctx, user, *list +2))
 					return True;
 
 			} else {
@@ -235,7 +243,7 @@ bool user_in_list(const char *user,const char **list)
 				/*
 				 * Search netgroup list followed by UNIX list.
 				 */
-				if(user_in_netgroup(user, *list +2))
+				if(user_in_netgroup(ctx, user, *list +2))
 					return True;
 				if(user_in_group(user, *list +2))
 					return True;
@@ -243,7 +251,7 @@ bool user_in_list(const char *user,const char **list)
 				/*
 				 * Just search netgroup list.
 				 */
-				if(user_in_netgroup(user, *list +1))
+				if(user_in_netgroup(ctx, user, *list +1))
 					return True;
 			}
 		}
@@ -253,7 +261,7 @@ bool user_in_list(const char *user,const char **list)
 	return(False);
 }
 
-bool map_username(fstring user)
+bool map_username(TALLOC_CTX *ctx, const char *user_in, char **p_user_out)
 {
 	XFILE *f;
 	char *mapfile = lp_username_map();
@@ -262,19 +270,28 @@ bool map_username(fstring user)
 	bool mapped_user = False;
 	char *cmd = lp_username_map_script();
 
-	if (!*user)
+	*p_user_out = NULL;
+
+	if (!user_in)
 		return false;
 
-	if (strequal(user,get_last_to()))
+	/* Initially make a copy of the incoming name. */
+	*p_user_out = talloc_strdup(ctx, user_in);
+	if (!*p_user_out) {
+		return false;
+	}
+
+	if (strequal(user_in,get_last_to()))
 		return false;
 
-	if (strequal(user,get_last_from())) {
-		DEBUG(3,("Mapped user %s to %s\n",user,get_last_to()));
-		fstrcpy(user,get_last_to());
+	if (strequal(user_in,get_last_from())) {
+		DEBUG(3,("Mapped user %s to %s\n",user_in,get_last_to()));
+		TALLOC_FREE(*p_user_out);
+		*p_user_out = talloc_strdup(ctx, get_last_to());
 		return true;
 	}
 
-	if (fetch_map_from_gencache(user)) {
+	if (fetch_map_from_gencache(ctx, user_in, p_user_out)) {
 		return true;
 	}
 
@@ -285,10 +302,10 @@ bool map_username(fstring user)
 		char *command = NULL;
 		int numlines, ret, fd;
 
-		command = talloc_asprintf(talloc_tos(),
+		command = talloc_asprintf(ctx,
 					"%s \"%s\"",
 					cmd,
-					user);
+					user_in);
 		if (!command) {
 			return false;
 		}
@@ -306,17 +323,21 @@ bool map_username(fstring user)
 		}
 
 		numlines = 0;
-		qlines = fd_lines_load(fd, &numlines, 0, talloc_tos());
+		qlines = fd_lines_load(fd, &numlines, 0, ctx);
 		DEBUGADD(10,("Lines returned = [%d]\n", numlines));
 		close(fd);
 
 		/* should be either no lines or a single line with the mapped username */
 
 		if (numlines && qlines) {
-			DEBUG(3,("Mapped user %s to %s\n", user, qlines[0] ));
-			set_last_from_to(user, qlines[0]);
-			store_map_in_gencache(user, qlines[0]);
-			fstrcpy( user, qlines[0] );
+			DEBUG(3,("Mapped user %s to %s\n", user_in, qlines[0] ));
+			set_last_from_to(user_in, qlines[0]);
+			store_map_in_gencache(ctx, user_in, qlines[0]);
+			TALLOC_FREE(*p_user_out);
+			*p_user_out = talloc_strdup(ctx, qlines[0]);
+			if (!*p_user_out) {
+				return false;
+			}
 		}
 
 		TALLOC_FREE(qlines);
@@ -367,20 +388,26 @@ bool map_username(fstring user)
 
 		/* skip lines like 'user = ' */
 
-		dosuserlist = str_list_make_v3(talloc_tos(), dosname, NULL);
+		dosuserlist = str_list_make_v3(ctx, dosname, NULL);
 		if (!dosuserlist) {
 			DEBUG(0,("Bad username map entry.  Unable to build user list.  Ignoring.\n"));
 			continue;
 		}
 
 		if (strchr_m(dosname,'*') ||
-		    user_in_list(user, (const char **)dosuserlist)) {
-			DEBUG(3,("Mapped user %s to %s\n",user,unixname));
+		    user_in_list(ctx, user_in, (const char **)dosuserlist)) {
+			DEBUG(3,("Mapped user %s to %s\n",user_in,unixname));
 			mapped_user = True;
 
-			set_last_from_to(user, unixname);
-			store_map_in_gencache(user, unixname);
-			fstrcpy( user, unixname );
+			set_last_from_to(user_in, unixname);
+			store_map_in_gencache(ctx, user_in, unixname);
+			TALLOC_FREE(*p_user_out);
+			*p_user_out = talloc_strdup(ctx, unixname);
+			if (!*p_user_out) {
+				TALLOC_FREE(dosuserlist);
+				x_fclose(f);
+				return false;
+			}
 
 			if ( return_if_mapped ) {
 				TALLOC_FREE(dosuserlist);
@@ -399,8 +426,8 @@ bool map_username(fstring user)
 	 * that we don't scan the file again for the same user.
 	 */
 
-	set_last_from_to(user, user);
-	store_map_in_gencache(user, user);
+	set_last_from_to(user_in, user_in);
+	store_map_in_gencache(ctx, user_in, user_in);
 
 	return mapped_user;
 }

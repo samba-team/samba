@@ -429,14 +429,15 @@ use this machine as the password server.\n"));
 	cli_ulogoff(cli);
 
 	if (NT_STATUS_IS_OK(nt_status)) {
-		fstring real_username;
-		struct passwd *pass;
+		char *real_username = NULL;
+		struct passwd *pass = NULL;
 
-		if ( (pass = smb_getpwnam( NULL, user_info->mapped.account_name,
-			real_username, True )) != NULL ) 
+		if ( (pass = smb_getpwnam(talloc_tos(), user_info->mapped.account_name,
+			&real_username, True )) != NULL )
 		{
 			nt_status = make_server_info_pw(server_info, pass->pw_name, pass);
 			TALLOC_FREE(pass);
+			TALLOC_FREE(real_username);
 		}
 		else
 		{

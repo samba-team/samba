@@ -153,7 +153,7 @@ NTSTATUS make_server_info_system(TALLOC_CTX *mem_ctx,
 const struct auth_serversupplied_info *get_server_info_system(void);
 bool copy_current_user(struct current_user *dst, struct current_user *src);
 struct passwd *smb_getpwnam( TALLOC_CTX *mem_ctx, const char *domuser,
-			     fstring save_username, bool create );
+			     char **p_save_username, bool create );
 NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx, 
 				const char *sent_nt_username,
 				const char *domain,
@@ -4777,7 +4777,7 @@ const struct mangle_fns *posix_mangle_init(void);
 
 /* The following definitions come from auth/user_util.c  */
 
-bool map_username(fstring user);
+bool map_username(TALLOC_CTX *ctx, const char *user_in, char **p_user_out);
 
 /* The following definitions come from auth/user_krb5.c  */
 struct PAC_LOGON_INFO;
@@ -5081,8 +5081,8 @@ void add_session_user(struct smbd_server_connection *sconn, const char *user);
 void add_session_workgroup(struct smbd_server_connection *sconn,
 			   const char *workgroup);
 const char *get_session_workgroup(struct smbd_server_connection *sconn);
-bool user_in_netgroup(const char *user, const char *ngname);
-bool user_in_list(const char *user,const char **list);
+bool user_in_netgroup(TALLOC_CTX *ctx, const char *user, const char *ngname);
+bool user_in_list(TALLOC_CTX *ctx, const char *user,const char **list);
 bool authorise_login(struct smbd_server_connection *sconn,
 		     int snum, fstring user, DATA_BLOB password,
 		     bool *guest);

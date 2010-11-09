@@ -96,9 +96,12 @@ NTSTATUS make_user_info_map(struct auth_usersupplied_info **user_info,
 	const char *domain;
 	NTSTATUS result;
 	bool was_mapped;
-	fstring internal_username;
-	fstrcpy(internal_username, smb_name);
-	was_mapped = map_username(internal_username);
+	char *internal_username = NULL;
+
+	was_mapped = map_username(talloc_tos(), smb_name, &internal_username);
+	if (!internal_username) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	DEBUG(5, ("Mapping user [%s]\\[%s] from workstation [%s]\n",
 		 client_domain, smb_name, workstation_name));
@@ -974,25 +977,43 @@ static NTSTATUS check_account(TALLOC_CTX *mem_ctx, const char *domain,
 			      struct passwd **pwd,
 			      bool *username_was_mapped)
 {
-	fstring dom_user, lower_username;
-	fstring real_username;
+	char *orig_dom_user = NULL;
+	char *dom_user = NULL;
+	char *lower_username = NULL;
+	char *real_username = NULL;
 	struct passwd *passwd;
 
-	fstrcpy( lower_username, username );
+	lower_username = talloc_strdup(mem_ctx, username);
+	if (!lower_username) {
+		return NT_STATUS_NO_MEMORY;
+	}
 	strlower_m( lower_username );
 
-	fstr_sprintf(dom_user, "%s%c%s", domain, *lp_winbind_separator(), 
-		lower_username);
+	orig_dom_user = talloc_asprintf(mem_ctx,
+				"%s%c%s",
+				domain,
+				*lp_winbind_separator(),
+				lower_username);
+	if (!orig_dom_user) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	/* Get the passwd struct.  Try to create the account if necessary. */
 
-	*username_was_mapped = map_username(dom_user);
+	*username_was_mapped = map_username(mem_ctx, orig_dom_user, &dom_user);
+	if (!dom_user) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
-	passwd = smb_getpwnam( NULL, dom_user, real_username, True );
+	passwd = smb_getpwnam(mem_ctx, dom_user, &real_username, True );
 	if (!passwd) {
 		DEBUG(3, ("Failed to find authenticated user %s via "
 			  "getpwnam(), denying access.\n", dom_user));
 		return NT_STATUS_NO_SUCH_USER;
+	}
+
+	if (!real_username) {
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	*pwd = passwd;
@@ -1015,31 +1036,31 @@ static NTSTATUS check_account(TALLOC_CTX *mem_ctx, const char *domain,
  ****************************************************************************/
 
 struct passwd *smb_getpwnam( TALLOC_CTX *mem_ctx, const char *domuser,
-			     fstring save_username, bool create )
+			     char **p_save_username, bool create )
 {
 	struct passwd *pw = NULL;
-	char *p;
-	fstring username;
+	char *p = NULL;
+	char *username = NULL;
 
 	/* we only save a copy of the username it has been mangled 
 	   by winbindd use default domain */
-
-	save_username[0] = '\0';
+	*p_save_username = NULL;
 
 	/* don't call map_username() here since it has to be done higher 
 	   up the stack so we don't call it multiple times */
 
-	fstrcpy( username, domuser );
+	username = talloc_strdup(mem_ctx, domuser);
+	if (!username) {
+		return NULL;
+	}
 
 	p = strchr_m( username, *lp_winbind_separator() );
 
 	/* code for a DOMAIN\user string */
 
 	if ( p ) {
-		fstring strip_username;
-
 		pw = Get_Pwnam_alloc( mem_ctx, domuser );
-		if ( pw ) {	
+		if ( pw ) {
 			/* make sure we get the case of the username correct */
 			/* work around 'winbind use default domain = yes' */
 
@@ -1050,12 +1071,20 @@ struct passwd *smb_getpwnam( TALLOC_CTX *mem_ctx, const char *domuser,
 				*p = '\0';
 				domain = username;
 
-				fstr_sprintf(save_username, "%s%c%s", domain, *lp_winbind_separator(), pw->pw_name);
+				*p_save_username = talloc_asprintf(mem_ctx,
+								"%s%c%s",
+								domain,
+								*lp_winbind_separator(),
+								pw->pw_name);
+				if (!*p_save_username) {
+					TALLOC_FREE(pw);
+					return NULL;
+				}
+			} else {
+				*p_save_username = talloc_strdup(mem_ctx, pw->pw_name);
 			}
-			else
-				fstrcpy( save_username, pw->pw_name );
 
-			/* whew -- done! */		
+			/* whew -- done! */
 			return pw;
 		}
 
@@ -1063,8 +1092,10 @@ struct passwd *smb_getpwnam( TALLOC_CTX *mem_ctx, const char *domuser,
 		/* remember that p and username are overlapping memory */
 
 		p++;
-		fstrcpy( strip_username, p );
-		fstrcpy( username, strip_username );
+		username = talloc_strdup(mem_ctx, p);
+		if (!username) {
+			return NULL;
+		}
 	}
 
 	/* just lookup a plain username */
@@ -1087,9 +1118,9 @@ struct passwd *smb_getpwnam( TALLOC_CTX *mem_ctx, const char *domuser,
 
 	/* one last check for a valid passwd struct */
 
-	if ( pw )
-		fstrcpy( save_username, pw->pw_name );
-
+	if (pw) {
+		*p_save_username = talloc_strdup(mem_ctx, pw->pw_name);
+	}
 	return pw;
 }
 
