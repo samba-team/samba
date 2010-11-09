@@ -76,7 +76,7 @@ class dc_join:
         ctx.dc_dnsHostName = ctx.get_dnsHostName()
         ctx.behavior_version = ctx.get_behavior_version()
 
-        ctx.acct_pass = samba.generate_random_password(12, 32)
+        ctx.acct_pass = samba.generate_random_password(32, 40)
 
         # work out the DNs of all the objects we will be adding
         ctx.server_dn = "CN=%s,CN=Servers,CN=%s,CN=Sites,%s" % (ctx.myname, ctx.site, ctx.config_dn)
