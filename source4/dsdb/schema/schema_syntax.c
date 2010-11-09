@@ -904,7 +904,9 @@ static WERROR _dsdb_syntax_auto_OID_drsuapi_to_ldb(const struct dsdb_syntax_ctx 
 			str = talloc_strdup(out->values, a->lDAPDisplayName);
 		} else {
 			WERROR werr;
-			werr = dsdb_schema_pfm_oid_from_attid(ctx->schema->prefixmap, v, out->values, &str);
+			SMB_ASSERT(ctx->pfm_remote);
+			werr = dsdb_schema_pfm_oid_from_attid(ctx->pfm_remote, v,
+							      out->values, &str);
 			W_ERROR_NOT_OK_RETURN(werr);
 		}
 		W_ERROR_HAVE_NO_MEMORY(str);
@@ -1016,6 +1018,8 @@ static WERROR _dsdb_syntax_OID_oid_drsuapi_to_ldb(const struct dsdb_syntax_ctx *
 {
 	unsigned int i;
 
+	SMB_ASSERT(ctx->pfm_remote);
+
 	out->flags	= 0;
 	out->name	= talloc_strdup(mem_ctx, attr->lDAPDisplayName);
 	W_ERROR_HAVE_NO_MEMORY(out->name);
@@ -1039,7 +1043,8 @@ static WERROR _dsdb_syntax_OID_oid_drsuapi_to_ldb(const struct dsdb_syntax_ctx *
 
 		attid = IVAL(in->value_ctr.values[i].blob->data, 0);
 
-		status = dsdb_schema_pfm_oid_from_attid(ctx->schema->prefixmap, attid, out->values, &oid);
+		status = dsdb_schema_pfm_oid_from_attid(ctx->pfm_remote, attid,
+							out->values, &oid);
 		W_ERROR_NOT_OK_RETURN(status);
 
 		out->values[i] = data_blob_string_const(oid);
