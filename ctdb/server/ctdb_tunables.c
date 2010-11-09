@@ -54,7 +54,7 @@ static const struct {
 	{ "RecdFailCount",	 10,  offsetof(struct ctdb_tunable, recd_ping_failcount) },
 	{ "LogLatencyMs",         0,  offsetof(struct ctdb_tunable, log_latency_ms) },
 	{ "RecLockLatencyMs",  1000,  offsetof(struct ctdb_tunable, reclock_latency_ms) },
-	{ "RecoveryDropAllIPs",  60,  offsetof(struct ctdb_tunable, recovery_drop_all_ips) },
+	{ "RecoveryDropAllIPs", 120,  offsetof(struct ctdb_tunable, recovery_drop_all_ips) },
 	{ "VerifyRecoveryLock",   1,  offsetof(struct ctdb_tunable, verify_recovery_lock) },
 	{ "VacuumDefaultInterval", 300,  offsetof(struct ctdb_tunable, vacuum_default_interval) },
 	{ "VacuumMaxRunTime",     30,  offsetof(struct ctdb_tunable, vacuum_max_run_time) },
