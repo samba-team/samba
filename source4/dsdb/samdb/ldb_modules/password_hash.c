@@ -33,19 +33,16 @@
  */
 
 #include "includes.h"
-#include "libcli/ldap/ldap_ndr.h"
 #include "ldb_module.h"
-#include "librpc/gen_ndr/misc.h"
-#include "librpc/gen_ndr/samr.h"
+#include "auth/session.h"
 #include "libcli/auth/libcli_auth.h"
 #include "libcli/security/security.h"
+#include "libcli/security/session.h"
 #include "system/kerberos.h"
 #include "auth/kerberos/kerberos.h"
-#include "system/time.h"
 #include "dsdb/samdb/samdb.h"
-#include "../libds/common/flags.h"
+#include "dsdb/samdb/ldb_modules/util.h"
 #include "dsdb/samdb/ldb_modules/password_modules.h"
-#include "librpc/ndr/libndr.h"
 #include "librpc/gen_ndr/ndr_drsblobs.h"
 #include "../lib/crypto/crypto.h"
 #include "param/param.h"
@@ -2293,7 +2290,7 @@ static int password_hash_add(struct ldb_module *module, struct ldb_request *req)
 		*ntAttr, *lmAttr;
 	int ret;
 	struct ldb_control *bypass = NULL;
-	bool userPassword = true;
+	bool userPassword = dsdb_user_password_support(module, req);
 
 	ldb = ldb_module_get_ctx(module);
 
@@ -2336,6 +2333,11 @@ static int password_hash_add(struct ldb_module *module, struct ldb_request *req)
 	if (userPassword) {
 		userPasswordAttr = ldb_msg_find_element(req->op.add.message,
 							"userPassword");
+		/* MS-ADTS 3.1.1.3.1.5.2 */
+		if ((userPasswordAttr != NULL) &&
+		    (dsdb_functional_level(ldb) < DS_DOMAIN_FUNCTION_2003)) {
+			return LDB_ERR_CONSTRAINT_VIOLATION;
+		}
 	}
 	clearTextPasswordAttr = ldb_msg_find_element(req->op.add.message, "clearTextPassword");
 	ntAttr = ldb_msg_find_element(req->op.add.message, "unicodePwd");
@@ -2487,7 +2489,7 @@ static int password_hash_modify(struct ldb_module *module, struct ldb_request *r
 	struct ldb_request *down_req;
 	int ret;
 	struct ldb_control *bypass = NULL;
-	bool userPassword = true;
+	bool userPassword = dsdb_user_password_support(module, req);
 
 	ldb = ldb_module_get_ctx(module);
 
@@ -2534,6 +2536,12 @@ static int password_hash_modify(struct ldb_module *module, struct ldb_request *r
 		}
 
 		if (ldb_msg_find_element(req->op.mod.message, *l) != NULL) {
+			/* MS-ADTS 3.1.1.3.1.5.2 */
+			if ((ldb_attr_cmp(*l, "userPassword") == 0) &&
+			    (dsdb_functional_level(ldb) < DS_DOMAIN_FUNCTION_2003)) {
+				return LDB_ERR_CONSTRAINT_VIOLATION;
+			}
+
 			++attr_cnt;
 		}
 	}

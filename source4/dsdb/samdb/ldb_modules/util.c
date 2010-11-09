@@ -1099,6 +1099,26 @@ bool dsdb_block_anonymous_ops(struct ldb_module *module,
 	return result;
 }
 
+bool dsdb_user_password_support(struct ldb_module *module,
+				TALLOC_CTX *mem_ctx)
+{
+	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
+	bool result;
+	const struct ldb_val *hr_val = dsdb_module_find_dsheuristics(module,
+								     tmp_ctx);
+	if (hr_val == NULL || hr_val->length < DS_HR_USER_PASSWORD_SUPPORT) {
+		result = false;
+	} else if ((hr_val->data[DS_HR_USER_PASSWORD_SUPPORT -1] == '2') ||
+		   (hr_val->data[DS_HR_USER_PASSWORD_SUPPORT -1] == '0')) {
+		result = false;
+	} else {
+		result = true;
+	}
+
+	talloc_free(tmp_ctx);
+	return result;
+}
+
 /*
   show the chain of requests, useful for debugging async requests
  */

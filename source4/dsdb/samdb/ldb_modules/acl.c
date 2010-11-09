@@ -61,6 +61,7 @@ struct acl_context {
 	bool allowedChildClasses;
 	bool allowedChildClassesEffective;
 	bool sDRightsEffective;
+	bool userPassword;
 	const char * const *attrs;
 	struct dsdb_schema *schema;
 };
@@ -542,7 +543,8 @@ static int acl_check_password_rights(TALLOC_CTX *mem_ctx,
 				     struct ldb_request *req,
 				     struct security_descriptor *sd,
 				     struct dom_sid *sid,
-				     const struct GUID *oc_guid)
+				     const struct GUID *oc_guid,
+				     bool userPassword)
 {
 	int ret = LDB_SUCCESS;
 	unsigned int del_attr_cnt = 0, add_attr_cnt = 0, rep_attr_cnt = 0;
@@ -557,6 +559,10 @@ static int acl_check_password_rights(TALLOC_CTX *mem_ctx,
 		return ldb_module_oom(module);
 	}
 	for (l = passwordAttrs; *l != NULL; l++) {
+		if ((!userPassword) && (ldb_attr_cmp(*l, "userPassword") == 0)) {
+			continue;
+		}
+
 		while ((el = ldb_msg_find_element(msg, *l)) != NULL) {
 			if (LDB_FLAG_MOD_TYPE(el->flags) == LDB_FLAG_MOD_DELETE) {
 				++del_attr_cnt;
@@ -632,6 +638,7 @@ static int acl_modify(struct ldb_module *module, struct ldb_request *req)
 	struct security_descriptor *sd;
 	struct dom_sid *sid = NULL;
 	struct ldb_control *as_system = ldb_request_get_control(req, LDB_CONTROL_AS_SYSTEM_OID);
+	bool userPassword = dsdb_user_password_support(module, req);
 	TALLOC_CTX *tmp_ctx = talloc_new(req);
 	static const char *acl_attrs[] = {
 		"nTSecurityDescriptor",
@@ -732,14 +739,15 @@ static int acl_modify(struct ldb_module *module, struct ldb_request *req)
 			continue;
 		}
 		else if (ldb_attr_cmp("unicodePwd", req->op.mod.message->elements[i].name) == 0 ||
-			 ldb_attr_cmp("userPassword", req->op.mod.message->elements[i].name) == 0 ||
+			 (userPassword && ldb_attr_cmp("userPassword", req->op.mod.message->elements[i].name) == 0) ||
 			 ldb_attr_cmp("clearTextPassword", req->op.mod.message->elements[i].name) == 0) {
 			ret = acl_check_password_rights(tmp_ctx,
 							module,
 							req,
 							sd,
 							sid,
-							guid);
+							guid,
+							userPassword);
 			if (ret != LDB_SUCCESS) {
 				goto fail;
 			}
@@ -1074,6 +1082,11 @@ static int acl_search_callback(struct ldb_request *req, struct ldb_reply *ares)
 		if (data && data->password_attrs) {
 			if (!ac->am_system) {
 				for (i = 0; data->password_attrs[i]; i++) {
+					if ((!ac->userPassword) &&
+					    (ldb_attr_cmp(data->password_attrs[i],
+							  "userPassword") == 0))
+						continue;
+
 					ldb_msg_remove_attr(ares->message, data->password_attrs[i]);
 				}
 			}
@@ -1115,6 +1128,7 @@ static int acl_search(struct ldb_module *module, struct ldb_request *req)
 	ac->allowedChildClasses = ldb_attr_in_list(req->op.search.attrs, "allowedChildClasses");
 	ac->allowedChildClassesEffective = ldb_attr_in_list(req->op.search.attrs, "allowedChildClassesEffective");
 	ac->sDRightsEffective = ldb_attr_in_list(req->op.search.attrs, "sDRightsEffective");
+	ac->userPassword = dsdb_user_password_support(module, ac);
 	ac->schema = dsdb_get_schema(ldb, ac);
 
 	/* replace any attributes in the parse tree that are private,
@@ -1125,6 +1139,11 @@ static int acl_search(struct ldb_module *module, struct ldb_request *req)
 		/* remove password attributes */
 		if (data && data->password_attrs) {
 			for (i = 0; data->password_attrs[i]; i++) {
+				if ((!ac->userPassword) &&
+				    (ldb_attr_cmp(data->password_attrs[i],
+						  "userPassword") == 0))
+						continue;
+
 				ldb_parse_tree_attr_replace(req->op.search.tree,
 							    data->password_attrs[i],
 							    "kludgeACLredactedattribute");

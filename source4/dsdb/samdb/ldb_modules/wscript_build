@@ -160,7 +160,7 @@ bld.SAMBA_MODULE('ldb_password_hash',
 	init_function='ldb_password_hash_module_init',
 	module_init_name='ldb_init_module',
 	internal_module=False,
-	deps='talloc events samdb LIBCLI_AUTH NDR_DRSBLOBS authkrb5 hdb krb5 com_err'
+	deps='talloc events samdb LIBCLI_AUTH NDR_DRSBLOBS authkrb5 krb5 DSDB_MODULE_HELPERS'
 	)
 
 
