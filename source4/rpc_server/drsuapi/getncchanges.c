@@ -1526,7 +1526,9 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 		int uSN;
 		struct drsuapi_DsReplicaObjectListItemEx *obj;
 		struct ldb_message *msg;
-		const char *msg_attrs[] = { "*", "distinguishedName",
+		static const char * const msg_attrs[] = {
+					    "*",
+					    "distinguishedName",
 					    "nTSecurityDescriptor",
 					    "parentGUID",
 					    "replPropertyMetaData",
