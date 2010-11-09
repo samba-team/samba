@@ -35,6 +35,7 @@
 #include "librpc/ndr/libndr.h"
 #include "dsdb/samdb/ldb_modules/password_modules.h"
 #include "dsdb/samdb/ldb_modules/util.h"
+#include "dsdb/common/util.h"
 
 #define PASSWORD_GUID_ATTR "masterGUID"
 
@@ -51,13 +52,8 @@
  */
 
 static const char * const password_attrs[] = {
-	"supplementalCredentials",
-	"unicodePwd",
-	"dBCSPwd",
-	"lmPwdHistory", 
-	"ntPwdHistory", 
-	"msDS-KeyVersionNumber",
-	"pwdLastSet"
+	"pwdLastSet",
+	DSDB_SECRET_ATTRIBUTES
 };
 
 /* And we merge them back into search requests when asked to do so */
