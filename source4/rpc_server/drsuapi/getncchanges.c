@@ -1530,11 +1530,7 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 					    "nTSecurityDescriptor",
 					    "parentGUID",
 					    "replPropertyMetaData",
-					    "unicodePwd",
-					    "dBCSPwd",
-					    "ntPwdHistory",
-					    "lmPwdHistory",
-					    "supplementalCredentials",
+					    DSDB_SECRET_ATTRIBUTES,
 					    NULL };
 		struct ldb_result *msg_res;
 		struct ldb_dn *msg_dn;
