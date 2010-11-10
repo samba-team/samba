@@ -1143,39 +1143,6 @@ bool lpcfg_add_home(struct loadparm_context *lp_ctx,
 }
 
 /**
- * Add the IPC service.
- */
-
-static bool lpcfg_add_hidden(struct loadparm_context *lp_ctx, const char *name,
-			     const char *fstype)
-{
-	struct loadparm_service *service = lpcfg_add_service(lp_ctx, lp_ctx->sDefault, name);
-
-	if (service == NULL)
-		return false;
-
-	string_set(service, &service->szPath, tmpdir());
-
-	service->comment = talloc_asprintf(service, "%s Service (%s)",
-				fstype, lp_ctx->globals->szServerString);
-	string_set(service, &service->fstype, fstype);
-	service->iMaxConnections = -1;
-	service->bAvailable = true;
-	service->bRead_only = true;
-	service->bPrint_ok = false;
-	service->bBrowseable = false;
-
-	if (strcasecmp(fstype, "IPC") == 0) {
-		lpcfg_do_service_parameter(lp_ctx, service, "ntvfs handler",
-					"default");
-	}
-
-	DEBUG(3, ("adding hidden service %s\n", name));
-
-	return true;
-}
-
-/**
  * Add a new printer service, with defaults coming from service iFrom.
  */
 
@@ -2500,9 +2467,6 @@ const char *lp_default_path(void)
 static bool lpcfg_update(struct loadparm_context *lp_ctx)
 {
 	lpcfg_add_auto_services(lp_ctx, lpcfg_auto_services(lp_ctx));
-
-	lpcfg_add_hidden(lp_ctx, "IPC$", "IPC");
-	lpcfg_add_hidden(lp_ctx, "ADMIN$", "DISK");
 
 	if (!lp_ctx->globals->szWINSservers && lp_ctx->globals->bWINSsupport) {
 		lpcfg_do_global_parameter(lp_ctx, "wins server", "127.0.0.1");
