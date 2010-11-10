@@ -426,8 +426,8 @@ static bool scannedonly_allow_access(vfs_handle_struct * handle,
 		retval = SMB_VFS_NEXT_STAT(handle, cache_smb_fname);
 	}
 	if (retval == 0 && VALID_STAT(cache_smb_fname->st)) {
-		if (timespec_is_newer(&smb_fname->st.st_ex_mtime,
-				      &cache_smb_fname->st.st_ex_mtime)) {
+		if (timespec_is_newer(&smb_fname->st.st_ex_ctime,
+				      &cache_smb_fname->st.st_ex_ctime)) {
 			talloc_free(cache_smb_fname);
 			return true;
 		}
@@ -489,8 +489,8 @@ static bool scannedonly_allow_access(vfs_handle_struct * handle,
 	}
 	/* still no cachefile, or still too old, return 0 */
 	if (retval != 0
-	    || !timespec_is_newer(&smb_fname->st.st_ex_mtime,
-				  &cache_smb_fname->st.st_ex_mtime)) {
+	    || !timespec_is_newer(&smb_fname->st.st_ex_ctime,
+				  &cache_smb_fname->st.st_ex_ctime)) {
 		DEBUG(SCANNEDONLY_DEBUG,
 		      ("retval=%d, return 0\n",retval));
 		return false;
