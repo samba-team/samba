@@ -25,6 +25,7 @@
 import optparse
 import sys
 import time
+import base64
 from decimal import Decimal
 
 sys.path.append("bin/python")
@@ -104,7 +105,7 @@ class SpeedTest(samba.tests.TestCase):
 dn: """ + user_dn + """
 sAMAccountName: """ + user_dn.split(",")[0][3:] + """
 objectClass: user
-userPassword: """ + self.user_pass + """
+unicodePwd:: """ + base64.b64encode(("\"%s\"" % self.user_pass).encode('utf-16-le')) + """
 url: www.example.com
 """
         self.ldb_admin.add_ldif(ldif)
