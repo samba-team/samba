@@ -7,9 +7,13 @@ if grep -q '^Autobuild.User' "$1"; then
 fi
 
 fullname=$(getent passwd $USER | cut -d: -f5| cut -d',' -f1)
+mailaddr=$(git config user.email)
+if test -z "$mailaddr" ; then
+	mailaddr="$USER@samba.org"
+fi
 cat <<EOF >> "$1"
 
-Autobuild-User: $fullname <$USER@samba.org>
+Autobuild-User: $fullname <$mailaddr>
 Autobuild-Date: $(date) on $(hostname)
 EOF
 exit 0
