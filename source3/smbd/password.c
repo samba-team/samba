@@ -435,7 +435,7 @@ static bool user_ok(const char *user, int snum)
 			 * around to pass to str_list_sub_basic() */
 
 			if ( invalid && str_list_sub_basic(invalid, "", "") ) {
-				ret = !user_in_list(user,
+				ret = !user_in_list(talloc_tos(), user,
 						    (const char **)invalid);
 			}
 		}
@@ -452,7 +452,7 @@ static bool user_ok(const char *user, int snum)
 			 * around to pass to str_list_sub_basic() */
 
 			if ( valid && str_list_sub_basic(valid, "", "") ) {
-				ret = user_in_list(user,
+				ret = user_in_list(talloc_tos(), user,
 						   (const char **)valid);
 			}
 		}
@@ -465,7 +465,7 @@ static bool user_ok(const char *user, int snum)
 		if (user_list &&
 		    str_list_substitute(user_list, "%S",
 					lp_servicename(snum))) {
-			ret = user_in_list(user,
+			ret = user_in_list(talloc_tos(), user,
 					   (const char **)user_list);
 		}
 		TALLOC_FREE(user_list);

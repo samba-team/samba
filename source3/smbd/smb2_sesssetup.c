@@ -188,8 +188,8 @@ static NTSTATUS smbd_smb2_session_setup_krb5(struct smbd_smb2_session *session,
 	char *domain = NULL;
 	struct passwd *pw = NULL;
 	NTSTATUS status;
-	fstring user;
-	fstring real_username;
+	char *user = NULL;
+	char *real_username = NULL;
 	fstring tmp;
 	bool username_was_mapped = false;
 	bool map_domainuser_to_guest = false;
@@ -283,13 +283,21 @@ static NTSTATUS smbd_smb2_session_setup_krb5(struct smbd_smb2_session *session,
 	}
 
 	/* We have to use fstring for this - map_username requires it. */
-	fstr_sprintf(user, "%s%c%s", domain, *lp_winbind_separator(), client);
+	user = talloc_asprintf(talloc_tos(), "%s%c%s", domain, *lp_winbind_separator(), client);
+	if (!user) {
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
+	}
 
 	/* lookup the passwd struct, create a new user if necessary */
 
-	username_was_mapped = map_username(user);
+	username_was_mapped = map_username(talloc_tos(), user, &user);
+	if (!user) {
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
+	}
 
-	pw = smb_getpwnam(talloc_tos(), user, real_username, true );
+	pw = smb_getpwnam(talloc_tos(), user, &real_username, true );
 	if (pw) {
 		/* if a real user check pam account restrictions */
 		/* only really perfomed if "obey pam restriction" is true */
@@ -310,8 +318,12 @@ static NTSTATUS smbd_smb2_session_setup_krb5(struct smbd_smb2_session *session,
 
 		if (lp_map_to_guest() == MAP_TO_GUEST_ON_BAD_UID){
 			map_domainuser_to_guest = true;
-			fstrcpy(user,lp_guestaccount());
-			pw = smb_getpwnam(talloc_tos(), user, real_username, true );
+			user = talloc_strdup(talloc_tos(), lp_guestaccount());
+			if (!user) {
+				status = NT_STATUS_NO_MEMORY;
+				goto fail;
+			}
+			pw = smb_getpwnam(talloc_tos(), user, &real_username, true );
 		}
 
 		/* extra sanity check that the guest account is valid */
@@ -322,6 +334,11 @@ static NTSTATUS smbd_smb2_session_setup_krb5(struct smbd_smb2_session *session,
 			status = NT_STATUS_LOGON_FAILURE;
 			goto fail;
 		}
+	}
+
+	if (!real_username) {
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
 	}
 
 	/* setup the string used by %U */

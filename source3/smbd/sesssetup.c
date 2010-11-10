@@ -246,7 +246,7 @@ static void reply_spnego_kerberos(struct smb_request *req,
 	char *client, *p, *domain;
 	fstring netbios_domain_name;
 	struct passwd *pw;
-	fstring user;
+	char *user = NULL;
 	int sess_vuid = req->vuid;
 	NTSTATUS ret = NT_STATUS_OK;
 	DATA_BLOB ap_rep, ap_rep_wrapped, response;
@@ -254,7 +254,7 @@ static void reply_spnego_kerberos(struct smb_request *req,
 	DATA_BLOB session_key = data_blob_null;
 	uint8 tok_id[2];
 	DATA_BLOB nullblob = data_blob_null;
-	fstring real_username;
+	char *real_username = NULL;
 	bool map_domainuser_to_guest = False;
 	bool username_was_mapped;
 	struct PAC_LOGON_INFO *logon_info = NULL;
@@ -415,13 +415,25 @@ static void reply_spnego_kerberos(struct smb_request *req,
 		}
 	}
 
-	fstr_sprintf(user, "%s%c%s", domain, *lp_winbind_separator(), client);
+	user = talloc_asprintf(mem_ctx, "%s%c%s", domain, *lp_winbind_separator(), client);
+	if (!user) {
+		TALLOC_FREE(mem_ctx);
+		reply_nterror(req, NT_STATUS_NO_MEMORY);
+		return;
+	}
 
 	/* lookup the passwd struct, create a new user if necessary */
 
-	username_was_mapped = map_username(user);
+	username_was_mapped = map_username(mem_ctx, user, &user);
+	if (!user) {
+		data_blob_free(&ap_rep);
+		data_blob_free(&session_key);
+		TALLOC_FREE(mem_ctx);
+		reply_nterror(req, NT_STATUS_NO_MEMORY);
+		return;
+	}
 
-	pw = smb_getpwnam( mem_ctx, user, real_username, True );
+	pw = smb_getpwnam( mem_ctx, user, &real_username, True );
 
 	if (pw) {
 		/* if a real user check pam account restrictions */
@@ -447,8 +459,15 @@ static void reply_spnego_kerberos(struct smb_request *req,
 
 		if (lp_map_to_guest() == MAP_TO_GUEST_ON_BAD_UID){
 			map_domainuser_to_guest = True;
-			fstrcpy(user,lp_guestaccount());
-			pw = smb_getpwnam( mem_ctx, user, real_username, True );
+			user = talloc_strdup(mem_ctx, lp_guestaccount());
+			if (!user) {
+				data_blob_free(&ap_rep);
+				data_blob_free(&session_key);
+				TALLOC_FREE(mem_ctx);
+				reply_nterror(req, NT_STATUS_NO_MEMORY);
+				return;
+			}
+			pw = smb_getpwnam( mem_ctx, user, &real_username, True );
 		}
 
 		/* extra sanity check that the guest account is valid */
@@ -463,6 +482,14 @@ static void reply_spnego_kerberos(struct smb_request *req,
 					      NT_STATUS_LOGON_FAILURE));
 			return;
 		}
+	}
+
+	if (!real_username) {
+		data_blob_free(&ap_rep);
+		data_blob_free(&session_key);
+		TALLOC_FREE(mem_ctx);
+		reply_nterror(req, NT_STATUS_NO_MEMORY);
+		return;
 	}
 
 	/* setup the string used by %U */
@@ -1699,13 +1726,20 @@ void reply_sesssetup_and_X(struct smb_request *req)
 	reload_services(True);
 
 	if (lp_security() == SEC_SHARE) {
+		char *sub_user_mapped = NULL;
 		/* In share level we should ignore any passwords */
 
 		data_blob_free(&lm_resp);
 		data_blob_free(&nt_resp);
 		data_blob_clear_free(&plaintext_password);
 
-		map_username(sub_user);
+		(void)map_username(talloc_tos(), sub_user, &sub_user_mapped);
+		if (!sub_user_mapped) {
+			reply_nterror(req, NT_STATUS_NO_MEMORY);
+			END_PROFILE(SMBsesssetupX);
+			return;
+		}
+		fstrcpy(sub_user, sub_user_mapped);
 		add_session_user(sconn, sub_user);
 		add_session_workgroup(sconn, domain);
 		/* Then force it to null for the benfit of the code below */

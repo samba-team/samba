@@ -424,12 +424,17 @@ use this machine as the password server.\n"));
 	cli_ulogoff(cli);
 
 	if (NT_STATUS_IS_OK(nt_status)) {
-		fstring real_username;
-		struct passwd *pass;
+		char *real_username = NULL;
+		struct passwd *pass = NULL;
 
-		if ( (pass = smb_getpwnam( NULL, user_info->mapped.account_name,
-			real_username, True )) != NULL ) 
+		if ( (pass = smb_getpwnam( talloc_tos(), user_info->mapped.account_name,
+			&real_username, True )) != NULL ) 
 		{
+			if (!real_username) {
+				nt_status = NT_STATUS_NO_MEMORY;
+				goto out;
+			}
+
 			/* if a real user check pam account restrictions */
 			/* only really perfomed if "obey pam restriction" is true */
 			nt_status = smb_pam_accountcheck(pass->pw_name);
@@ -440,12 +445,15 @@ use this machine as the password server.\n"));
 				nt_status = make_server_info_pw(server_info, pass->pw_name, pass);
 			}
 			TALLOC_FREE(pass);
+			TALLOC_FREE(real_username);
 		}
 		else
 		{
 			nt_status = NT_STATUS_NO_SUCH_USER;
 		}
 	}
+
+  out:
 
 	if (locally_made_cli) {
 		cli_shutdown(cli);

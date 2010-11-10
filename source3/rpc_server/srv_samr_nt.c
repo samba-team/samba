@@ -1925,12 +1925,14 @@ NTSTATUS _samr_ChangePasswordUser2(struct pipes_struct *p,
 				   struct samr_ChangePasswordUser2 *r)
 {
 	NTSTATUS status;
-	fstring user_name;
+	char *user_name = NULL;
 	fstring wks;
 
 	DEBUG(5,("_samr_ChangePasswordUser2: %d\n", __LINE__));
 
-	fstrcpy(user_name, r->in.account->string);
+	if (!r->in.account->string) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
 	fstrcpy(wks, r->in.server->string);
 
 	DEBUG(5,("_samr_ChangePasswordUser2: user: %s wks: %s\n", user_name, wks));
@@ -1940,7 +1942,10 @@ NTSTATUS _samr_ChangePasswordUser2(struct pipes_struct *p,
 	 * function.
 	 */
 
-	(void)map_username(user_name);
+	(void)map_username(talloc_tos(), r->in.account->string, &user_name);
+	if (!user_name) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	/*
 	 * UNIX username case mangling not required, pass_oem_change
@@ -1971,12 +1976,14 @@ NTSTATUS _samr_OemChangePasswordUser2(struct pipes_struct *p,
 				      struct samr_OemChangePasswordUser2 *r)
 {
 	NTSTATUS status;
-	fstring user_name;
+	char *user_name = NULL;
 	const char *wks = NULL;
 
 	DEBUG(5,("_samr_OemChangePasswordUser2: %d\n", __LINE__));
 
-	fstrcpy(user_name, r->in.account->string);
+	if (!r->in.account->string) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
 	if (r->in.server && r->in.server->string) {
 		wks = r->in.server->string;
 	}
@@ -1988,7 +1995,10 @@ NTSTATUS _samr_OemChangePasswordUser2(struct pipes_struct *p,
 	 * function.
 	 */
 
-	(void)map_username(user_name);
+	(void)map_username(talloc_tos(), r->in.account->string, &user_name);
+	if (!user_name) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	/*
 	 * UNIX username case mangling not required, pass_oem_change
@@ -2023,7 +2033,7 @@ NTSTATUS _samr_ChangePasswordUser3(struct pipes_struct *p,
 				   struct samr_ChangePasswordUser3 *r)
 {
 	NTSTATUS status;
-	fstring user_name;
+	char *user_name = NULL;
 	const char *wks = NULL;
 	enum samPwdChangeReason reject_reason;
 	struct samr_DomInfo1 *dominfo = NULL;
@@ -2032,7 +2042,9 @@ NTSTATUS _samr_ChangePasswordUser3(struct pipes_struct *p,
 
 	DEBUG(5,("_samr_ChangePasswordUser3: %d\n", __LINE__));
 
-	fstrcpy(user_name, r->in.account->string);
+	if (!r->in.account->string) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
 	if (r->in.server && r->in.server->string) {
 		wks = r->in.server->string;
 	}
@@ -2044,7 +2056,10 @@ NTSTATUS _samr_ChangePasswordUser3(struct pipes_struct *p,
 	 * function.
 	 */
 
-	(void)map_username(user_name);
+	(void)map_username(talloc_tos(), r->in.account->string, &user_name);
+	if (!user_name) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	/*
 	 * UNIX username case mangling not required, pass_oem_change
