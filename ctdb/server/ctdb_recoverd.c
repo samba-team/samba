@@ -2588,18 +2588,20 @@ static int verify_local_ip_allocation(struct ctdb_context *ctdb, struct ctdb_rec
 	   active on the local node and wait for the recmaster
 	   to do a full blown recovery
 	*/
-	for (j=0; j<ips->num; j++) {
-		if (ips->ips[j].pnn == pnn) {
-			if (!ctdb_sys_have_ip(&ips->ips[j].addr)) {
-				DEBUG(DEBUG_CRIT,("Public address '%s' is missing and we should serve this ip\n",
-					ctdb_addr_to_str(&ips->ips[j].addr)));
-				need_takeover_run = true;
-			}
-		} else {
-			if (ctdb_sys_have_ip(&ips->ips[j].addr)) {
-				DEBUG(DEBUG_CRIT,("We are still serving a public address '%s' that we should not be serving.\n", 
-					ctdb_addr_to_str(&ips->ips[j].addr)));
-				need_takeover_run = true;
+	if (ctdb->tunable.disable_ip_failover == 0) {
+		for (j=0; j<ips->num; j++) {
+			if (ips->ips[j].pnn == pnn) {
+				if (!ctdb_sys_have_ip(&ips->ips[j].addr)) {
+					DEBUG(DEBUG_CRIT,("Public address '%s' is missing and we should serve this ip\n",
+						ctdb_addr_to_str(&ips->ips[j].addr)));
+					need_takeover_run = true;
+				}
+			} else {
+				if (ctdb_sys_have_ip(&ips->ips[j].addr)) {
+					DEBUG(DEBUG_CRIT,("We are still serving a public address '%s' that we should not be serving.\n", 
+						ctdb_addr_to_str(&ips->ips[j].addr)));
+					need_takeover_run = true;
+				}
 			}
 		}
 	}
@@ -3114,7 +3116,7 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 	/* verify that we have all ip addresses we should have and we dont
 	 * have addresses we shouldnt have.
 	 */ 
-	if (ctdb->tunable.disable_ip_failover != 0) {
+	if (ctdb->tunable.disable_ip_failover == 0) {
 		if (rec->ip_check_disable_ctx == NULL) {
 			if (verify_local_ip_allocation(ctdb, rec, pnn) != 0) {
 				DEBUG(DEBUG_ERR, (__location__ " Public IPs were inconsistent.\n"));
