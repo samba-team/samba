@@ -27,6 +27,7 @@ import string
 import re
 import shutil
 import samba
+import base64
 
 from samba import Ldb, version, ntacls
 from samba.dsdb import DS_DOMAIN_FUNCTION_2000
@@ -827,12 +828,14 @@ def update_machine_account_password(samdb, secrets_ldb, names):
         res = samdb.search(expression=expression, attrs=[])
         assert(len(res) == 1)
 
-        msg = ldb.Message(res[0].dn)
         machinepass = samba.generate_random_password(128, 255)
-        msg["userPassword"] = ldb.MessageElement(machinepass,
-                                                ldb.FLAG_MOD_REPLACE,
-                                                "userPassword")
-        samdb.modify(msg)
+
+        samdb.modify_ldif("""
+dn: """ + str(res[0].dn) + """
+changetype: modify
+replace: clearTextPassword
+clearTextPassword:: """ + base64.b64encode(machinepass.encode('utf-16-le')) + """
+""")
 
         res = samdb.search(expression=("samAccountName=%s$" % names.netbiosname),
                      attrs=["msDs-keyVersionNumber"])
