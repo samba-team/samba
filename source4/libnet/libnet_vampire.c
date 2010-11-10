@@ -225,6 +225,7 @@ static NTSTATUS libnet_vampire_cb_apply_schema(struct libnet_vampire_cb_state *s
 	};
 
 	WERROR status;
+	struct dsdb_schema_prefixmap *pfm_remote;
 	const struct drsuapi_DsReplicaOIDMapping_Ctr *mapping_ctr;
 	struct schema_list *schema_list = NULL, *schema_list_item, *schema_list_next_item;
 	struct dsdb_schema *working_schema;
@@ -278,6 +279,14 @@ static NTSTATUS libnet_vampire_cb_apply_schema(struct libnet_vampire_cb_state *s
 		break;
 	default:
 		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	status = dsdb_schema_pfm_from_drsuapi_pfm(mapping_ctr, true,
+						  s, &pfm_remote, NULL);
+	if (!W_ERROR_IS_OK(status)) {
+		DEBUG(0,(__location__ ": Failed to decode remote prefixMap: %s",
+			 win_errstr(status)));
+		return werror_to_ntstatus(status);
 	}
 
 	s_dsa->replica_flags		= DRSUAPI_DRS_WRIT_REP
@@ -338,7 +347,7 @@ static NTSTATUS libnet_vampire_cb_apply_schema(struct libnet_vampire_cb_state *s
 			 * schema we have so far. It's ok if we fail to convert
 			 * an object. We should convert more objects on next pass.
 			 */
-			status = dsdb_convert_object_ex(s->ldb, working_schema,
+			status = dsdb_convert_object_ex(s->ldb, working_schema, pfm_remote,
 							cur, c->gensec_skey,
 							tmp_ctx, &object);
 			if (!W_ERROR_IS_OK(status)) {

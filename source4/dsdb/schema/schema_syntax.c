@@ -2586,6 +2586,7 @@ const struct dsdb_syntax *dsdb_syntax_for_attribute(const struct dsdb_attribute 
 
 WERROR dsdb_attribute_drsuapi_to_ldb(struct ldb_context *ldb,
 				     const struct dsdb_schema *schema,
+				     const struct dsdb_schema_prefixmap *pfm_remote,
 				     const struct drsuapi_DsReplicaAttribute *in,
 				     TALLOC_CTX *mem_ctx,
 				     struct ldb_message_element *out)
@@ -2601,6 +2602,7 @@ WERROR dsdb_attribute_drsuapi_to_ldb(struct ldb_context *ldb,
 
 	/* use default syntax conversion context */
 	dsdb_syntax_ctx_init(&syntax_ctx, ldb, schema);
+	syntax_ctx.pfm_remote = pfm_remote;
 
 	return sa->syntax->drsuapi_to_ldb(&syntax_ctx, sa, in, mem_ctx, out);
 }

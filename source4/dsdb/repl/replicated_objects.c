@@ -33,6 +33,7 @@
 
 WERROR dsdb_convert_object_ex(struct ldb_context *ldb,
 			      const struct dsdb_schema *schema,
+			      const struct dsdb_schema_prefixmap *pfm_remote,
 			      const struct drsuapi_DsReplicaObjectListItemEx *in,
 			      const DATA_BLOB *gensec_skey,
 			      TALLOC_CTX *mem_ctx,
@@ -127,7 +128,8 @@ WERROR dsdb_convert_object_ex(struct ldb_context *ldb,
 			W_ERROR_NOT_OK_RETURN(status);
 		}
 
-		status = dsdb_attribute_drsuapi_to_ldb(ldb, schema, a, msg->elements, e);
+		status = dsdb_attribute_drsuapi_to_ldb(ldb, schema, pfm_remote,
+						       a, msg->elements, e);
 		W_ERROR_NOT_OK_RETURN(status);
 
 		m->attid			= a->attid;
@@ -212,6 +214,7 @@ WERROR dsdb_replicated_objects_convert(struct ldb_context *ldb,
 	WERROR status;
 	struct ldb_dn *partition_dn;
 	const struct dsdb_schema *schema;
+	struct dsdb_schema_prefixmap *pfm_remote;
 	struct dsdb_extended_replicated_objects *out;
 	const struct drsuapi_DsReplicaObjectListItemEx *cur;
 	uint32_t i;
@@ -229,6 +232,15 @@ WERROR dsdb_replicated_objects_convert(struct ldb_context *ldb,
 
 	partition_dn = ldb_dn_new(out, ldb, partition_dn_str);
 	W_ERROR_HAVE_NO_MEMORY_AND_FREE(partition_dn, out);
+
+	status = dsdb_schema_pfm_from_drsuapi_pfm(mapping_ctr, true,
+						  out, &pfm_remote, NULL);
+	if (!W_ERROR_IS_OK(status)) {
+		DEBUG(0,(__location__ ": Failed to decode remote prefixMap: %s",
+			 win_errstr(status)));
+		talloc_free(out);
+		return status;
+	}
 
 	if (ldb_dn_compare(partition_dn, ldb_get_schema_basedn(ldb)) != 0) {
 		/*
@@ -266,7 +278,7 @@ WERROR dsdb_replicated_objects_convert(struct ldb_context *ldb,
 			return WERR_FOOBAR;
 		}
 
-		status = dsdb_convert_object_ex(ldb, schema,
+		status = dsdb_convert_object_ex(ldb, schema, pfm_remote,
 						cur, gensec_skey,
 						out->objects, &out->objects[i]);
 		if (!W_ERROR_IS_OK(status)) {
@@ -281,6 +293,9 @@ WERROR dsdb_replicated_objects_convert(struct ldb_context *ldb,
 		talloc_free(out);
 		return WERR_FOOBAR;
 	}
+
+	/* free pfm_remote, we won't need it anymore */
+	talloc_free(pfm_remote);
 
 	*objects = out;
 	return WERR_OK;
@@ -392,7 +407,8 @@ static WERROR dsdb_origin_object_convert(struct ldb_context *ldb,
 		a = &in->object.attribute_ctr.attributes[i];
 		e = &msg->elements[i];
 
-		status = dsdb_attribute_drsuapi_to_ldb(ldb, schema, a, msg->elements, e);
+		status = dsdb_attribute_drsuapi_to_ldb(ldb, schema, schema->prefixmap,
+						       a, msg->elements, e);
 		W_ERROR_NOT_OK_RETURN(status);
 	}
 
