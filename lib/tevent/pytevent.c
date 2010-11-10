@@ -629,7 +629,7 @@ static void py_tevent_context_dealloc(TeventContext_Object *self)
 
 static PyObject *py_tevent_context_new(PyTypeObject *type, PyObject *args, PyObject *kwargs)
 {
-	const char *kwnames[] = { "name", NULL };
+	const char * const kwnames[] = { "name", NULL };
 	char *name = NULL;
 	struct tevent_context *ev;
 	TeventContext_Object *ret;
