@@ -389,6 +389,8 @@ static int lldb_rename(struct lldb_context *lldb_ac)
 	struct lldb_private *lldb = lldb_ac->lldb;
 	struct ldb_module *module = lldb_ac->module;
 	struct ldb_request *req = lldb_ac->req;
+	const char *rdn_name;
+	const struct ldb_val *rdn_val;
 	char *old_dn;
 	char *newrdn;
 	char *parentdn;
@@ -403,9 +405,15 @@ static int lldb_rename(struct lldb_context *lldb_ac)
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	newrdn = talloc_asprintf(lldb_ac, "%s=%s",
-				 ldb_dn_get_rdn_name(req->op.rename.newdn),
-				 ldb_dn_escape_value(lldb, *(ldb_dn_get_rdn_val(req->op.rename.newdn))));
+	rdn_name = ldb_dn_get_rdn_name(req->op.rename.newdn);
+	rdn_val = ldb_dn_get_rdn_val(req->op.rename.newdn);
+
+	if ((rdn_name != NULL) && (rdn_val != NULL)) {
+		newrdn = talloc_asprintf(lldb_ac, "%s=%s", rdn_name,
+					 ldb_dn_escape_value(lldb, *rdn_val));
+	} else {
+		newrdn = talloc_strdup(lldb_ac, "");
+	}
 	if (!newrdn) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
