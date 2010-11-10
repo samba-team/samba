@@ -838,10 +838,10 @@ static int smb_time_audit_chdir(vfs_handle_struct *handle, const char *path)
 	clock_gettime_mono(&ts1);
 	result = SMB_VFS_NEXT_CHDIR(handle, path);
 	clock_gettime_mono(&ts2);
-	timediff = nsec_time_diff(&ts2,&ts1);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 
 	if (timediff > audit_timeout) {
-		smb_time_audit_log("chdir", timediff*1.0e-9);
+		smb_time_audit_log("chdir", timediff);
 	}
 
 	return result;
