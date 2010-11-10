@@ -244,11 +244,8 @@ case "$1" in
 	iptables -D INPUT -i $oiface -d $ip -j DROP 2> /dev/null
 	iptables -I INPUT -i $oiface -d $ip -j DROP
 
-	delete_ip_from_iface $oiface $ip $maskbits || {
-		delete_ip_from_iface $niface $ip $maskbits
-		iptables -D INPUT -i $oiface -d $ip -j DROP 2> /dev/null
-		exit 1;
-	}
+	delete_ip_from_iface $oiface $ip $maskbits 2>/dev/null
+	delete_ip_from_iface $niface $ip $maskbits 2>/dev/null
 
 	add_ip_to_iface $niface $ip $maskbits || {
 		iptables -D INPUT -i $oiface -d $ip -j DROP 2> /dev/null
