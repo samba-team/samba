@@ -83,13 +83,13 @@ def find_setup_dir():
     if in_source_tree():
         # In source tree
         dirname = os.path.dirname(__file__)
-        return os.path.join(dirname, "../../../setup")
+        return os.path.normpath(os.path.join(dirname, "../../../setup"))
     else:
         import sys
         for prefix in [sys.prefix,
                 os.path.join(os.path.dirname(__file__), "../../../..")]:
             for suffix in ["share/setup", "share/samba/setup", "setup"]:
-                ret = os.path.join(prefix, suffix)
+                ret = os.path.normpath(os.path.join(prefix, suffix))
                 if os.path.isdir(ret):
                     return ret
         raise Exception("Unable to find setup directory.")
@@ -548,7 +548,7 @@ def guess_names(lp=None, hostname=None, domain=None, dnsdomain=None,
 
 
 def make_smbconf(smbconf, setup_path, hostname, domain, realm, serverrole,
-                 targetdir, sid_generator="internal", eadb=False):
+                 targetdir, sid_generator="internal", eadb=False, default_lp=None):
     """Create a new smb.conf file based on a couple of basic settings.
     """
     assert smbconf is not None
@@ -585,7 +585,8 @@ def make_smbconf(smbconf, setup_path, hostname, domain, realm, serverrole,
     assert realm is not None
     realm = realm.upper()
 
-    default_lp = samba.param.LoadParm()
+    if default_lp is None:
+        default_lp = samba.param.LoadParm()
     #Load non-existant file
     if os.path.exists(smbconf):
         default_lp.load(smbconf)
@@ -1374,7 +1375,8 @@ def provision(setup_dir, logger, session_info,
               sitename=None,
               ol_mmr_urls=None, ol_olc=None,
               setup_ds_path=None, slapd_path=None, nosync=False,
-              ldap_dryrun_mode=False, useeadb=False, am_rodc=False):
+              ldap_dryrun_mode=False, useeadb=False, am_rodc=False,
+              lp=None):
     """Provision samba4
 
     :note: caution, this wipes all existing data!
@@ -1446,12 +1448,14 @@ def provision(setup_dir, logger, session_info,
         data = data.lstrip()
         if data is None or data == "":
             make_smbconf(smbconf, setup_path, hostname, domain, realm,
-                         serverrole, targetdir, sid_generator, useeadb)
+                         serverrole, targetdir, sid_generator, useeadb,
+                         default_lp=lp)
     else:
         make_smbconf(smbconf, setup_path, hostname, domain, realm, serverrole,
-                     targetdir, sid_generator, useeadb)
+                     targetdir, sid_generator, useeadb, default_lp=lp)
 
-    lp = samba.param.LoadParm()
+    if lp is None:
+        lp = samba.param.LoadParm()
     lp.load(smbconf)
     names = guess_names(lp=lp, hostname=hostname, domain=domain,
                         dnsdomain=realm, serverrole=serverrole,
