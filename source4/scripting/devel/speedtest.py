@@ -114,8 +114,6 @@ url: www.example.com
 dn: """ + group_dn + """
 objectClass: group
 sAMAccountName: """ + group_dn.split(",")[0][3:] + """
-objectClass: group
-sAMAccountName: """ + group_dn.split(",")[0][3:] + """
 groupType: 4
 url: www.example.com
 """
