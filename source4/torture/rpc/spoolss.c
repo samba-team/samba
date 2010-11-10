@@ -4784,7 +4784,7 @@ static bool test_SetPrinterData_matrix(struct torture_context *tctx,
 
 	for (i=0; i < ARRAY_SIZE(values); i++) {
 
-		enum winreg_Type type;
+		enum winreg_Type type, expected_type = REG_SZ;
 		DATA_BLOB blob;
 		uint8_t *data;
 		uint32_t needed;
@@ -4797,7 +4797,7 @@ static bool test_SetPrinterData_matrix(struct torture_context *tctx,
 			"SetPrinterData failed");
 
 		torture_assert(tctx,
-			test_GetPrinterData(tctx, b, handle, values[i], &type, &data, &needed),
+			test_GetPrinterData_checktype(tctx, b, handle, values[i], &expected_type, &type, &data, &needed),
 			"GetPrinterData failed");
 
 		torture_assert_int_equal(tctx, type, REG_SZ, "type mismatch");
@@ -5120,7 +5120,7 @@ static bool test_SetPrinterDataEx_matrix(struct torture_context *tctx,
 			"failed to call SetPrinterDataEx");
 
 		torture_assert(tctx,
-			test_GetPrinterDataEx(tctx, p, handle, key_name, value_name, &type, &data_out, &needed),
+			test_GetPrinterDataEx_checktype(tctx, p, handle, key_name, value_name, &types[t], &type, &data_out, &needed),
 			"failed to call GetPrinterDataEx");
 
 		torture_assert(tctx,
