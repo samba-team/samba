@@ -2595,6 +2595,7 @@ WERROR dsdb_attribute_drsuapi_to_ldb(struct ldb_context *ldb,
 
 	sa = dsdb_attribute_by_attributeID_id(schema, in->attid);
 	if (!sa) {
+		DEBUG(1,(__location__ ": Unknown attributeID_id 0x%08X\n", in->attid));
 		return WERR_FOOBAR;
 	}
 
