@@ -1053,6 +1053,10 @@ struct loadparm_service *lpcfg_add_service(struct loadparm_context *lp_ctx,
 	int num_to_alloc = lp_ctx->iNumServices + 1;
 	struct parmlist_entry *data, *pdata;
 
+	if (pservice == NULL) {
+		pservice = lp_ctx->sDefault;
+	}
+
 	tservice = *pservice;
 
 	/* it might already exist */
@@ -1326,7 +1330,7 @@ static void copy_service(struct loadparm_service *pserviceDest,
 			pdata = pdata->next;
 		}
 		if (not_added) {
-			paramo = talloc(pserviceDest, struct parmlist_entry);
+			paramo = talloc_zero(pserviceDest, struct parmlist_entry);
 			if (paramo == NULL)
 				smb_panic("OOM");
 			paramo->key = talloc_reference(paramo, data->key);
@@ -1599,7 +1603,7 @@ static bool lp_do_parameter_parametric(struct loadparm_context *lp_ctx,
 		}
 	}
 
-	paramo = talloc(mem_ctx, struct parmlist_entry);
+	paramo = talloc_zero(mem_ctx, struct parmlist_entry);
 	if (!paramo)
 		smb_panic("OOM");
 	paramo->key = talloc_strdup(paramo, name);
@@ -1618,7 +1622,7 @@ static bool lp_do_parameter_parametric(struct loadparm_context *lp_ctx,
 
 static bool set_variable(TALLOC_CTX *mem_ctx, int parmnum, void *parm_ptr,
 			 const char *pszParmName, const char *pszParmValue,
-			 struct loadparm_context *lp_ctx)
+			 struct loadparm_context *lp_ctx, bool on_globals)
 {
 	int i;
 	/* if it is a special case then go ahead */
@@ -1697,7 +1701,7 @@ static bool set_variable(TALLOC_CTX *mem_ctx, int parmnum, void *parm_ptr,
 			break;
 	}
 
-	if (lp_ctx->flags[parmnum] & FLAG_DEFAULT) {
+	if (on_globals && (lp_ctx->flags[parmnum] & FLAG_DEFAULT)) {
 		lp_ctx->flags[parmnum] &= ~FLAG_DEFAULT;
 		/* we have to also unset FLAG_DEFAULT on aliases */
 		for (i=parmnum-1;i>=0 && parm_table[i].offset == parm_table[parmnum].offset;i--) {
@@ -1733,8 +1737,8 @@ bool lpcfg_do_global_parameter(struct loadparm_context *lp_ctx,
 
 	parm_ptr = lpcfg_parm_ptr(lp_ctx, NULL, &parm_table[parmnum]);
 
-	return set_variable(lp_ctx, parmnum, parm_ptr,
-			    pszParmName, pszParmValue, lp_ctx);
+	return set_variable(lp_ctx->globals, parmnum, parm_ptr,
+			    pszParmName, pszParmValue, lp_ctx, true);
 }
 
 bool lpcfg_do_service_parameter(struct loadparm_context *lp_ctx,
@@ -1778,7 +1782,7 @@ bool lpcfg_do_service_parameter(struct loadparm_context *lp_ctx,
 			service->copymap[i] = false;
 
 	return set_variable(service, parmnum, parm_ptr, pszParmName,
-			    pszParmValue, lp_ctx);
+			    pszParmValue, lp_ctx, false);
 }
 
 /**
@@ -2081,6 +2085,9 @@ static void dump_globals(struct loadparm_context *lp_ctx, FILE *f,
 	if (lp_ctx->globals->param_opt != NULL) {
 		for (data = lp_ctx->globals->param_opt; data;
 		     data = data->next) {
+			if (!show_defaults && (data->priority & FLAG_DEFAULT)) {
+				continue;
+			}
 			fprintf(f, "\t%s = %s\n", data->key, data->value);
 		}
         }
@@ -2091,7 +2098,8 @@ static void dump_globals(struct loadparm_context *lp_ctx, FILE *f,
  * Display the contents of a single services record.
  */
 
-static void dump_a_service(struct loadparm_service * pService, struct loadparm_service *sDefault, FILE * f)
+static void dump_a_service(struct loadparm_service * pService, struct loadparm_service *sDefault, FILE * f,
+			   unsigned int *flags)
 {
 	int i;
 	struct parmlist_entry *data;
@@ -2106,8 +2114,14 @@ static void dump_a_service(struct loadparm_service * pService, struct loadparm_s
 		    (i == 0 || (parm_table[i].offset != parm_table[i - 1].offset)))
 		{
 			if (pService == sDefault) {
-				if (defaults_saved && is_default(sDefault, i))
+				if (flags && (flags[i] & FLAG_DEFAULT)) {
 					continue;
+				}
+				if (defaults_saved) {
+					if (is_default(sDefault, i)) {
+						continue;
+					}
+				}
 			} else {
 				if (equal_parameter(parm_table[i].type,
 						    ((char *)pService) +
@@ -2257,6 +2271,7 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 	int i;
 	char *myname;
 	struct loadparm_context *lp_ctx;
+	struct parmlist_entry *parm;
 
 	lp_ctx = talloc_zero(mem_ctx, struct loadparm_context);
 	if (lp_ctx == NULL)
@@ -2444,6 +2459,12 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 		}
 	}
 
+	for (parm=lp_ctx->globals->param_opt; parm; parm=parm->next) {
+		if (!(parm->priority & FLAG_CMDLINE)) {
+			parm->priority |= FLAG_DEFAULT;
+		}
+	}
+
 	return lp_ctx;
 }
 
@@ -2577,12 +2598,11 @@ void lpcfg_dump(struct loadparm_context *lp_ctx, FILE *f, bool show_defaults,
 {
 	int iService;
 
-	if (show_defaults)
-		defaults_saved = false;
+	defaults_saved = !show_defaults;
 
 	dump_globals(lp_ctx, f, show_defaults);
 
-	dump_a_service(lp_ctx->sDefault, lp_ctx->sDefault, f);
+	dump_a_service(lp_ctx->sDefault, lp_ctx->sDefault, f, lp_ctx->flags);
 
 	for (iService = 0; iService < maxtoprint; iService++)
 		lpcfg_dump_one(f, show_defaults, lp_ctx->services[iService], lp_ctx->sDefault);
@@ -2596,7 +2616,7 @@ void lpcfg_dump_one(FILE *f, bool show_defaults, struct loadparm_service *servic
 	if (service != NULL) {
 		if (service->szService[0] == '\0')
 			return;
-		dump_a_service(service, sDefault, f);
+		dump_a_service(service, sDefault, f, NULL);
 	}
 }
 
