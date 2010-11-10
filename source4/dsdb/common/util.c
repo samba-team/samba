@@ -1595,7 +1595,12 @@ int samdb_find_site_for_computer(struct ldb_context *ldb,
 		talloc_free(dn);
 		return LDB_ERR_INVALID_DN_SYNTAX;
 	}
+
 	rdn_val = ldb_dn_get_rdn_val(dn);
+	if (rdn_val == NULL) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
 	(*site_name) = talloc_strndup(mem_ctx, (const char *)rdn_val->data, rdn_val->length);
 	talloc_free(dn);
 	if (!*site_name) {

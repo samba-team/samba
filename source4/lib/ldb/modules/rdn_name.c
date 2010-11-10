@@ -87,6 +87,7 @@ static int rdn_name_add(struct ldb_module *module, struct ldb_request *req)
 	struct ldb_message_element *attribute;
 	const struct ldb_schema_attribute *a;
 	const char *rdn_name;
+	const struct ldb_val *rdn_val_p;
 	struct ldb_val rdn_val;
 	unsigned int i;
 	int ret;
@@ -116,7 +117,11 @@ static int rdn_name_add(struct ldb_module *module, struct ldb_request *req)
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 	
-	rdn_val = ldb_val_dup(msg, ldb_dn_get_rdn_val(msg->dn));
+	rdn_val_p = ldb_dn_get_rdn_val(msg->dn);
+	if (rdn_val_p == NULL) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	rdn_val = ldb_val_dup(msg, rdn_val_p);
 	
 	/* Perhaps someone above us tried to set this? Then ignore it */
 	ldb_msg_remove_attr(msg, "name");
@@ -233,6 +238,7 @@ static int rdn_rename_callback(struct ldb_request *req, struct ldb_reply *ares)
 	struct rename_context *ac;
 	struct ldb_request *mod_req;
 	const char *rdn_name;
+	const struct ldb_val *rdn_val_p;
 	struct ldb_val rdn_val;
 	struct ldb_message *msg;
 	int ret;
@@ -273,8 +279,11 @@ static int rdn_rename_callback(struct ldb_request *req, struct ldb_reply *ares)
 	if (rdn_name == NULL) {
 		goto error;
 	}
-	
-	rdn_val = ldb_val_dup(msg, ldb_dn_get_rdn_val(ac->req->op.rename.newdn));
+	rdn_val_p = ldb_dn_get_rdn_val(msg->dn);
+	if (rdn_val_p == NULL) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	rdn_val = ldb_val_dup(msg, rdn_val_p);
 	
 	if (ldb_msg_add_empty(msg, rdn_name, LDB_FLAG_MOD_REPLACE, NULL) != 0) {
 		goto error;

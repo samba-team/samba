@@ -334,8 +334,10 @@ static int fix_dn(struct ldb_context *ldb,
 		return ldb_operr(ldb);
 	}
 
-
 	rdn_val = ldb_dn_get_rdn_val(newdn);
+	if (rdn_val == NULL) {
+		return ldb_operr(ldb);
+	}
 
 #if 0
 	/* the rules for rDN length constraints are more complex than

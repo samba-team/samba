@@ -2561,6 +2561,10 @@ static int replmd_delete(struct ldb_module *module, struct ldb_request *req)
 
 	rdn_name = ldb_dn_get_rdn_name(old_dn);
 	rdn_value = ldb_dn_get_rdn_val(old_dn);
+	if ((rdn_name == NULL) || (rdn_value == NULL)) {
+		talloc_free(tmp_ctx);
+		return ldb_operr(ldb);
+	}
 
 	msg = ldb_msg_new(tmp_ctx);
 	if (msg == NULL) {
@@ -2753,6 +2757,10 @@ static int replmd_delete(struct ldb_module *module, struct ldb_request *req)
 		/* work out what the new rdn value is, for updating the
 		   rDN and name fields */
 		new_rdn_value = ldb_dn_get_rdn_val(new_dn);
+		if (new_rdn_value == NULL) {
+			talloc_free(tmp_ctx);
+			return ldb_operr(ldb);
+		}
 
 		sa = dsdb_attribute_by_lDAPDisplayName(schema, rdn_name);
 		if (!sa) {

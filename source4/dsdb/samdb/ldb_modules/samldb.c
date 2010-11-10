@@ -575,6 +575,9 @@ static int samldb_fill_object(struct samldb_ctx *ac)
 		}
 
 		rdn_value = ldb_dn_get_rdn_val(ac->msg->dn);
+		if (rdn_value == NULL) {
+			return ldb_operr(ldb);
+		}
 		if (!ldb_msg_find_element(ac->msg, "lDAPDisplayName")) {
 			/* the RDN has prefix "CN" */
 			ret = ldb_msg_add_string(ac->msg, "lDAPDisplayName",
@@ -638,6 +641,9 @@ static int samldb_fill_object(struct samldb_ctx *ac)
 	} else if (strcmp(ac->type, "attributeSchema") == 0) {
 		const struct ldb_val *rdn_value;
 		rdn_value = ldb_dn_get_rdn_val(ac->msg->dn);
+		if (rdn_value == NULL) {
+			return ldb_operr(ldb);
+		}
 		if (!ldb_msg_find_element(ac->msg, "lDAPDisplayName")) {
 			/* the RDN has prefix "CN" */
 			ret = ldb_msg_add_string(ac->msg, "lDAPDisplayName",
@@ -692,6 +698,7 @@ static int samldb_fill_object(struct samldb_ctx *ac)
 static int samldb_fill_foreignSecurityPrincipal_object(struct samldb_ctx *ac)
 {
 	struct ldb_context *ldb;
+	const struct ldb_val *rdn_value;
 	struct dom_sid *sid;
 	int ret;
 
@@ -699,8 +706,12 @@ static int samldb_fill_foreignSecurityPrincipal_object(struct samldb_ctx *ac)
 
 	sid = samdb_result_dom_sid(ac->msg, ac->msg, "objectSid");
 	if (sid == NULL) {
+		rdn_value = ldb_dn_get_rdn_val(ac->msg->dn);
+		if (rdn_value == NULL) {
+			return ldb_operr(ldb);
+		}
 		sid = dom_sid_parse_talloc(ac->msg,
-					   (const char *)ldb_dn_get_rdn_val(ac->msg->dn)->data);
+					   (const char *)rdn_value->data);
 		if (sid == NULL) {
 			ldb_set_errstring(ldb,
 					  "samldb: No valid SID found in ForeignSecurityPrincipal CN!");
