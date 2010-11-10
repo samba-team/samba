@@ -512,9 +512,9 @@ plantestsuite("samba4.blackbox.spn.py(dc:local)", "dc:local", ["PYTHON=%s" % pyt
 plantestsuite("samba4.ldap.bind(dc)", "dc", [python, os.path.join(samba4srcdir, "auth/credentials/tests/bind.py"), '$SERVER', '-U"$USERNAME%$PASSWORD"'])
 
 # DRS python tests
-plantestsuite("samba4.drs_delete_object.python(vampire_dc)", "vampire_dc", ['PYTHONPATH="$PYTHONPATH:%s"' % os.path.join(samba4srcdir, 'torture/drs/python'), 'DC1=$DC_SERVER', 'DC2=$VAMPIRE_DC_SERVER', subunitrun, 'delete_object', '-U$DOMAIN/$DC_USERNAME%$DC_PASSWORD'])
-plantestsuite("samba4.drs_fsmo.python(vampire_dc)", "vampire_dc", ['PYTHONPATH="$PYTHONPATH:%s"' % os.path.join(samba4srcdir, 'torture/drs/python'), 'DC1=$DC_SERVER', 'DC2=$VAMPIRE_DC_SERVER', subunitrun, 'fsmo', '-U$DOMAIN/$DC_USERNAME%$DC_PASSWORD'])
-plantestsuite("samba4.drs_repl_schema.python(vampire_dc)", "vampire_dc", ['PYTHONPATH="$PYTHONPATH:%s"' % os.path.join(samba4srcdir, 'torture/drs/python'), 'DC1=$DC_SERVER', 'DC2=$VAMPIRE_DC_SERVER', subunitrun, 'repl_schema', '-U$DOMAIN/$DC_USERNAME%$DC_PASSWORD'])
+plantestsuite("samba4.drs.delete_object.python(vampire_dc)", "vampire_dc", ['PYTHONPATH="$PYTHONPATH:%s"' % os.path.join(samba4srcdir, 'torture/drs/python'), 'DC1=$DC_SERVER', 'DC2=$VAMPIRE_DC_SERVER', subunitrun, 'delete_object', '-U$DOMAIN/$DC_USERNAME%$DC_PASSWORD'])
+plantestsuite("samba4.drs.fsmo.python(vampire_dc)", "vampire_dc", ['PYTHONPATH="$PYTHONPATH:%s"' % os.path.join(samba4srcdir, 'torture/drs/python'), 'DC1=$DC_SERVER', 'DC2=$VAMPIRE_DC_SERVER', subunitrun, 'fsmo', '-U$DOMAIN/$DC_USERNAME%$DC_PASSWORD'])
+plantestsuite("samba4.drs.repl_schema.python(vampire_dc)", "vampire_dc", ['PYTHONPATH="$PYTHONPATH:%s"' % os.path.join(samba4srcdir, 'torture/drs/python'), 'DC1=$DC_SERVER', 'DC2=$VAMPIRE_DC_SERVER', subunitrun, 'repl_schema', '-U$DOMAIN/$DC_USERNAME%$DC_PASSWORD'])
 
 # This makes sure we test the rid allocation code
 t = "RPC-SAMR-LARGE-DC"
