@@ -29,8 +29,8 @@ from decimal import Decimal
 
 sys.path.append("bin/python")
 import samba
-samba.ensure_external_module("subunit", "subunit/python")
 samba.ensure_external_module("testtools", "testtools")
+samba.ensure_external_module("subunit", "subunit/python")
 
 import samba.getopt as options
 
@@ -48,7 +48,7 @@ import samba.tests
 from subunit.run import SubunitTestRunner
 import unittest
 
-parser = optparse.OptionParser("speedtest [options] <host>")
+parser = optparse.OptionParser("speedtest.py [options] <host>")
 sambaopts = options.SambaOptions(parser)
 parser.add_option_group(sambaopts)
 parser.add_option_group(options.VersionOptions(parser))
