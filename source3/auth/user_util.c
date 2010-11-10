@@ -101,6 +101,7 @@ static bool fetch_map_from_gencache(TALLOC_CTX *ctx,
 	}
 	TALLOC_FREE(*p_user_out);
 	*p_user_out = talloc_strdup(ctx, value);
+	SAFE_FREE(value);
 	if (!*p_user_out) {
 		return false;
 	}
