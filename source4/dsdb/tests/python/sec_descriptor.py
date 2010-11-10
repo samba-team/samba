@@ -33,7 +33,7 @@ from subunit.run import SubunitTestRunner
 import samba.tests
 import unittest
 
-parser = optparse.OptionParser("sec_descriptor [options] <host>")
+parser = optparse.OptionParser("sec_descriptor.py [options] <host>")
 sambaopts = options.SambaOptions(parser)
 parser.add_option_group(sambaopts)
 parser.add_option_group(options.VersionOptions(parser))

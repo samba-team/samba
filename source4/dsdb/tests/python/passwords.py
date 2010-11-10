@@ -35,7 +35,7 @@ import samba.tests
 from subunit.run import SubunitTestRunner
 import unittest
 
-parser = optparse.OptionParser("passwords [options] <host>")
+parser = optparse.OptionParser("passwords.py [options] <host>")
 sambaopts = options.SambaOptions(parser)
 parser.add_option_group(sambaopts)
 parser.add_option_group(options.VersionOptions(parser))

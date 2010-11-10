@@ -22,7 +22,7 @@ import samba.dsdb as dsdb
 from subunit.run import SubunitTestRunner
 import unittest
 
-parser = optparse.OptionParser("urgent_replication [options] <host>")
+parser = optparse.OptionParser("urgent_replication.py [options] <host>")
 sambaopts = options.SambaOptions(parser)
 parser.add_option_group(sambaopts)
 parser.add_option_group(options.VersionOptions(parser))

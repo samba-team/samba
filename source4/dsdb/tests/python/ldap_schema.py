@@ -28,7 +28,7 @@ from samba.dsdb import DS_DOMAIN_FUNCTION_2003
 from subunit.run import SubunitTestRunner
 import unittest
 
-parser = optparse.OptionParser("ldap [options] <host>")
+parser = optparse.OptionParser("ldap_schema.py [options] <host>")
 sambaopts = options.SambaOptions(parser)
 parser.add_option_group(sambaopts)
 parser.add_option_group(options.VersionOptions(parser))
