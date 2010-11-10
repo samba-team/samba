@@ -468,6 +468,8 @@ static int objectclass_do_add(struct oc_context *ac)
 	const struct dsdb_class *objectclass;
 	struct ldb_dn *objectcategory;
 	int32_t systemFlags = 0;
+	unsigned int i, j;
+	bool found;
 	int ret;
 
 	ldb = ldb_module_get_ctx(ac->module);
@@ -561,6 +563,7 @@ static int objectclass_do_add(struct oc_context *ac)
 				talloc_free(mem_ctx);
 				return ldb_oom(ldb);
 			}
+
 			ret = ldb_msg_add_string(msg, "objectClass", value);
 			if (ret != LDB_SUCCESS) {
 				ldb_set_errstring(ldb,
@@ -587,11 +590,25 @@ static int objectclass_do_add(struct oc_context *ac)
 		}
 
 		rdn_name = ldb_dn_get_rdn_name(msg->dn);
-		if (objectclass->rDNAttID
-			&& ldb_attr_cmp(rdn_name, objectclass->rDNAttID) != 0) {
+		if (rdn_name == NULL) {
+			return ldb_operr(ldb);
+		}
+		found = false;
+		for (i = 0; (!found) && (i < objectclass_element->num_values);
+		     i++) {
+			const struct dsdb_class *tmp_class =
+				dsdb_class_by_lDAPDisplayName_ldb_val(ac->schema,
+								      &objectclass_element->values[i]);
+
+			if (tmp_class == NULL) continue;
+
+			if (ldb_attr_cmp(rdn_name, tmp_class->rDNAttID) == 0)
+				found = true;
+		}
+		if (!found) {
 			ldb_asprintf_errstring(ldb,
-						"RDN %s is not correct for most specific structural objectclass %s, should be %s",
-						rdn_name, objectclass->lDAPDisplayName, objectclass->rDNAttID);
+					       "objectclass: Invalid RDN '%s' for objectclass '%s'!",
+					       rdn_name, objectclass->lDAPDisplayName);
 			return LDB_ERR_NAMING_VIOLATION;
 		}
 
@@ -616,7 +633,6 @@ static int objectclass_do_add(struct oc_context *ac)
 				= ldb_msg_find_element(ac->search_res->message, "objectClass");
 
 			bool allowed_class = false;
-			unsigned int i, j;
 			for (i=0; allowed_class == false && oc_el && i < oc_el->num_values; i++) {
 				const struct dsdb_class *sclass;
 
@@ -1256,6 +1272,7 @@ static int objectclass_do_rename2(struct oc_context *ac)
 		const char *rdn_name;
 		bool allowed_class = false;
 		unsigned int i, j;
+		bool found;
 
 		oc_el_entry = ldb_msg_find_element(ac->search_res->message,
 						   "objectClass");
@@ -1270,13 +1287,24 @@ static int objectclass_do_rename2(struct oc_context *ac)
 		}
 
 		rdn_name = ldb_dn_get_rdn_name(ac->req->op.rename.newdn);
-		if ((objectclass->rDNAttID != NULL) &&
-		    (ldb_attr_cmp(rdn_name, objectclass->rDNAttID) != 0)) {
+		if (rdn_name == NULL) {
+			return ldb_operr(ldb);
+		}
+		found = false;
+		for (i = 0; (!found) && (i < oc_el_entry->num_values); i++) {
+			const struct dsdb_class *tmp_class =
+				dsdb_class_by_lDAPDisplayName_ldb_val(ac->schema,
+								      &oc_el_entry->values[i]);
+
+			if (tmp_class == NULL) continue;
+
+			if (ldb_attr_cmp(rdn_name, tmp_class->rDNAttID) == 0)
+				found = true;
+		}
+		if (!found) {
 			ldb_asprintf_errstring(ldb,
-					       "objectclass: RDN %s is not correct for most specific structural objectclass %s, should be %s",
-					       rdn_name,
-					       objectclass->lDAPDisplayName,
-					       objectclass->rDNAttID);
+					       "objectclass: Invalid RDN '%s' for objectclass '%s'!",
+					       rdn_name, objectclass->lDAPDisplayName);
 			return LDB_ERR_UNWILLING_TO_PERFORM;
 		}
 
