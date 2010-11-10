@@ -300,14 +300,6 @@ int main(int argc, const char *argv[])
 		}
 	}
 
-	if (options.public_address_list) {
-		ret = ctdb_set_public_addresses(ctdb, options.public_address_list);
-		if (ret == -1) {
-			DEBUG(DEBUG_ALERT,("Unable to setup public address list\n"));
-			exit(1);
-		}
-	}
-
 	ret = ctdb_set_event_script_dir(ctdb, options.event_script_dir);
 	if (ret == -1) {
 		DEBUG(DEBUG_ALERT,("Unable to setup event script directory\n"));
@@ -337,5 +329,5 @@ int main(int argc, const char *argv[])
 	}
 
 	/* start the protocol running (as a child) */
-	return ctdb_start_daemon(ctdb, interactive?False:True, options.use_syslog);
+	return ctdb_start_daemon(ctdb, interactive?False:True, options.use_syslog, options.public_address_list);
 }

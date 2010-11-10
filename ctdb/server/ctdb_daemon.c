@@ -704,7 +704,7 @@ static void ctdb_setup_event_callback(struct ctdb_context *ctdb, int status,
 /*
   start the protocol going as a daemon
 */
-int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork, bool use_syslog)
+int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork, bool use_syslog, const char *public_address_list)
 {
 	int res, ret = -1;
 	struct fd_event *fde;
@@ -791,6 +791,14 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork, bool use_syslog)
 	if (ctdb->methods->initialise(ctdb) != 0) {
 		ctdb_fatal(ctdb, "transport failed to initialise");
 	}
+	if (public_address_list) {
+		ret = ctdb_set_public_addresses(ctdb, public_address_list);
+		if (ret == -1) {
+			DEBUG(DEBUG_ALERT,("Unable to setup public address list\n"));
+			exit(1);
+		}
+	}
+
 
 	/* attach to existing databases */
 	if (ctdb_attach_databases(ctdb) != 0) {
