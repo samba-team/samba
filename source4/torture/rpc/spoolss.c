@@ -3474,13 +3474,14 @@ static bool test_ResumePrinter(struct torture_context *tctx,
 	return true;
 }
 
-static bool test_GetPrinterData(struct torture_context *tctx,
-				struct dcerpc_binding_handle *b,
-				struct policy_handle *handle,
-				const char *value_name,
-				enum winreg_Type *type_p,
-				uint8_t **data_p,
-				uint32_t *needed_p)
+static bool test_GetPrinterData_checktype(struct torture_context *tctx,
+					  struct dcerpc_binding_handle *b,
+					  struct policy_handle *handle,
+					  const char *value_name,
+					  enum winreg_Type *expected_type,
+					  enum winreg_Type *type_p,
+					  uint8_t **data_p,
+					  uint32_t *needed_p)
 {
 	NTSTATUS status;
 	struct spoolss_GetPrinterData r;
@@ -3501,6 +3502,9 @@ static bool test_GetPrinterData(struct torture_context *tctx,
 	torture_assert_ntstatus_ok(tctx, status, "GetPrinterData failed");
 
 	if (W_ERROR_EQUAL(r.out.result, WERR_MORE_DATA)) {
+		if (expected_type) {
+			torture_assert_int_equal(tctx, type, *expected_type, "unexpected type");
+		}
 		r.in.offered = needed;
 		r.out.data = talloc_zero_array(tctx, uint8_t, r.in.offered);
 		status = dcerpc_spoolss_GetPrinterData_r(b, tctx, &r);
@@ -3527,14 +3531,27 @@ static bool test_GetPrinterData(struct torture_context *tctx,
 	return true;
 }
 
-static bool test_GetPrinterDataEx(struct torture_context *tctx,
-				  struct dcerpc_pipe *p,
-				  struct policy_handle *handle,
-				  const char *key_name,
-				  const char *value_name,
-				  enum winreg_Type *type_p,
-				  uint8_t **data_p,
-				  uint32_t *needed_p)
+static bool test_GetPrinterData(struct torture_context *tctx,
+				struct dcerpc_binding_handle *b,
+				struct policy_handle *handle,
+				const char *value_name,
+				enum winreg_Type *type_p,
+				uint8_t **data_p,
+				uint32_t *needed_p)
+{
+	return test_GetPrinterData_checktype(tctx, b, handle, value_name,
+					     NULL, type_p, data_p, needed_p);
+}
+
+static bool test_GetPrinterDataEx_checktype(struct torture_context *tctx,
+					    struct dcerpc_pipe *p,
+					    struct policy_handle *handle,
+					    const char *key_name,
+					    const char *value_name,
+					    enum winreg_Type *expected_type,
+					    enum winreg_Type *type_p,
+					    uint8_t **data_p,
+					    uint32_t *needed_p)
 {
 	NTSTATUS status;
 	struct spoolss_GetPrinterDataEx r;
@@ -3563,6 +3580,9 @@ static bool test_GetPrinterDataEx(struct torture_context *tctx,
 	}
 
 	if (W_ERROR_EQUAL(r.out.result, WERR_MORE_DATA)) {
+		if (expected_type) {
+			torture_assert_int_equal(tctx, type, *expected_type, "unexpected type");
+		}
 		r.in.offered = needed;
 		r.out.data = talloc_zero_array(tctx, uint8_t, r.in.offered);
 		status = dcerpc_spoolss_GetPrinterDataEx_r(b, tctx, &r);
@@ -3587,6 +3607,19 @@ static bool test_GetPrinterDataEx(struct torture_context *tctx,
 	}
 
 	return true;
+}
+
+static bool test_GetPrinterDataEx(struct torture_context *tctx,
+				  struct dcerpc_pipe *p,
+				  struct policy_handle *handle,
+				  const char *key_name,
+				  const char *value_name,
+				  enum winreg_Type *type_p,
+				  uint8_t **data_p,
+				  uint32_t *needed_p)
+{
+	return test_GetPrinterDataEx_checktype(tctx, p, handle, key_name, value_name,
+					       NULL, type_p, data_p, needed_p);
 }
 
 static bool test_get_environment(struct torture_context *tctx,
