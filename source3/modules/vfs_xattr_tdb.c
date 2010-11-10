@@ -723,7 +723,7 @@ static void close_xattr_db(void **data)
 static int xattr_tdb_connect(vfs_handle_struct *handle, const char *service,
 			  const char *user)
 {
-	fstring sname;
+	char *sname = NULL;
 	int res, snum;
 	struct db_context *db;
 
@@ -732,9 +732,8 @@ static int xattr_tdb_connect(vfs_handle_struct *handle, const char *service,
 		return res;
 	}
 
-	fstrcpy(sname, service);
-	snum = find_service(sname);
-	if (snum == -1) {
+	snum = find_service(talloc_tos(), service, &sname);
+	if (snum == -1 || sname == NULL) {
 		/*
 		 * Should not happen, but we should not fail just *here*.
 		 */

@@ -28,7 +28,7 @@ int get_client_fd(void)
 	return -1;
 }
 
-int find_service(fstring service)
+int find_service(TALLOC_CTX *ctx, const char *service_in, char **p_service_out)
 {
 	return -1;
 }

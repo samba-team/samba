@@ -1982,7 +1982,8 @@ static bool api_RNetShareGetInfo(struct smbd_server_connection *sconn,
 {
 	char *str1 = get_safe_str_ptr(param,tpscnt,param,2);
 	char *str2 = skip_string(param,tpscnt,str1);
-	char *netname = skip_string(param,tpscnt,str2);
+	char *netname_in = skip_string(param,tpscnt,str2);
+	char *netname = NULL;
 	char *p = skip_string(param,tpscnt,netname);
 	int uLevel = get_safe_SVAL(param,tpscnt,p,0,-1);
 	int snum;
@@ -1991,8 +1992,8 @@ static bool api_RNetShareGetInfo(struct smbd_server_connection *sconn,
 		return False;
 	}
 
-	snum = find_service(netname);
-	if (snum < 0) {
+	snum = find_service(talloc_tos(), netname_in, &netname);
+	if (snum < 0 || !netname) {
 		return False;
 	}
 
