@@ -490,15 +490,6 @@ static int32_t ctdb_do_updateip(struct ctdb_context *ctdb,
 		return -1;
 	}
 
-	if (vnn->iface == old) {
-		DEBUG(DEBUG_ERR,("update of IP %s/%u trying to "
-				 "assin a same interface '%s'\n",
-				 ctdb_addr_to_str(&vnn->public_address),
-				 vnn->public_netmask_bits,
-				 old->name));
-		return -1;
-	}
-
 	state = talloc(vnn, struct ctdb_do_updateip_state);
 	CTDB_NO_MEMORY(ctdb, state);
 
@@ -610,7 +601,7 @@ int32_t ctdb_control_takeover_ip(struct ctdb_context *ctdb,
 		return -1;
 	}
 
-	if (vnn->pnn != ctdb->pnn && have_ip) {
+	if (vnn->pnn != ctdb->pnn && have_ip && vnn->pnn != -1) {
 		DEBUG(DEBUG_CRIT,(__location__ " takeoverip of IP %s is known to the kernel, "
 				  "and we have it on iface[%s], but it was assigned to node %d"
 				  "and we are node %d, banning ourself\n",
@@ -896,7 +887,7 @@ static int ctdb_add_public_address(struct ctdb_context *ctdb,
 	vnn->public_netmask_bits = mask;
 	vnn->pnn                 = -1;
 	if (ctdb_sys_have_ip(addr)) {
-		DEBUG(DEBUG_ERR,("We are already hosting public address '%s'\n", ctdb_addr_to_str(addr)));
+		DEBUG(DEBUG_ERR,("We are already hosting public address '%s'. setting PNN to ourself:%d\n", ctdb_addr_to_str(addr), ctdb->pnn));
 		vnn->pnn = ctdb->pnn;
 	}
 
@@ -1166,6 +1157,16 @@ static uint32_t *ip_key(ctdb_sock_addr *ip)
 
 static void *add_ip_callback(void *parm, void *data)
 {
+	struct ctdb_public_ip_list *this_ip = parm; 
+	struct ctdb_public_ip_list *prev_ip = data; 
+
+	if (prev_ip == NULL) {
+		return parm;
+	}
+	if (this_ip->pnn == -1) {
+		this_ip->pnn = prev_ip->pnn;
+	}
+
 	return parm;
 }
 
