@@ -450,7 +450,7 @@ void cli_cm_set_credentials(struct user_auth_info *auth_info)
  split a dfs path into the server, share name, and extrapath components
 **********************************************************************/
 
-static void split_dfs_path(TALLOC_CTX *ctx,
+static bool split_dfs_path(TALLOC_CTX *ctx,
 				const char *nodepath,
 				char **pp_server,
 				char **pp_share,
@@ -465,16 +465,16 @@ static void split_dfs_path(TALLOC_CTX *ctx,
 
 	path = talloc_strdup(ctx, nodepath);
 	if (!path) {
-		return;
+		goto fail;
 	}
 
 	if ( path[0] != '\\' ) {
-		return;
+		goto fail;
 	}
 
 	p = strchr_m( path + 1, '\\' );
 	if ( !p ) {
-		return;
+		goto fail;
 	}
 
 	*p = '\0';
@@ -489,9 +489,28 @@ static void split_dfs_path(TALLOC_CTX *ctx,
 	} else {
 		*pp_extrapath = talloc_strdup(ctx, "");
 	}
+	if (*pp_extrapath == NULL) {
+		goto fail;
+	}
 
 	*pp_share = talloc_strdup(ctx, p);
+	if (*pp_share == NULL) {
+		goto fail;
+	}
+
 	*pp_server = talloc_strdup(ctx, &path[1]);
+	if (*pp_server == NULL) {
+		goto fail;
+	}
+
+	TALLOC_FREE(path);
+	return true;
+
+fail:
+	TALLOC_FREE(*pp_share);
+	TALLOC_FREE(*pp_extrapath);
+	TALLOC_FREE(path);
+	return false;
 }
 
 /****************************************************************************
@@ -855,9 +874,8 @@ bool cli_resolve_path(TALLOC_CTX *ctx,
 	if (!refs[0].dfspath) {
 		return false;
 	}
-	split_dfs_path(ctx, refs[0].dfspath, &server, &share, &extrapath );
-
-	if (!server || !share) {
+	if (!split_dfs_path(ctx, refs[0].dfspath, &server, &share,
+			    &extrapath)) {
 		return false;
 	}
 
@@ -1050,10 +1068,8 @@ bool cli_check_msdfs_proxy(TALLOC_CTX *ctx,
 		return false;
 	}
 
-	split_dfs_path(ctx, refs[0].dfspath, pp_newserver,
-			pp_newshare, &newextrapath );
-
-	if ((*pp_newserver == NULL) || (*pp_newshare == NULL)) {
+	if (!split_dfs_path(ctx, refs[0].dfspath, pp_newserver,
+			    pp_newshare, &newextrapath)) {
 		return false;
 	}
 
