@@ -5209,8 +5209,10 @@ static bool run_eatest(int dummy)
 
 		slprintf(ea_name, sizeof(ea_name), "EA_%d", i);
 		memset(ea_val, (char)i+1, i+1);
-		if (!cli_set_ea_fnum(cli, fnum, ea_name, ea_val, i+1)) {
-			printf("ea_set of name %s failed - %s\n", ea_name, cli_errstr(cli));
+		status = cli_set_ea_fnum(cli, fnum, ea_name, ea_val, i+1);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("ea_set of name %s failed - %s\n", ea_name,
+			       nt_errstr(status));
 			talloc_destroy(mem_ctx);
 			return False;
 		}
