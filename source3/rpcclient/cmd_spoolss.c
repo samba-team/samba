@@ -2857,6 +2857,15 @@ static WERROR cmd_spoolss_enum_data(struct rpc_pipe_client *cli,
 						&data_needed,
 						&result);
 
+	if (!NT_STATUS_IS_OK(status)) {
+		result = ntstatus_to_werror(status);
+		goto done;
+	}
+
+	if (!W_ERROR_IS_OK(result)) {
+		goto done;
+	}
+
 	data_offered	= data_needed;
 	value_offered	= value_needed;
 	data		= talloc_zero_array(mem_ctx, uint8_t, data_needed);
