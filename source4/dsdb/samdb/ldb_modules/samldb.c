@@ -271,6 +271,7 @@ static int samldb_rodc_add(struct samldb_ctx *ac)
 	uint32_t krbtgt_number, i_start, i;
 	int ret;
 	char *newpass;
+	struct ldb_val newpass_utf16;
 
 	/* find a unused msDC-SecondaryKrbTgtNumber */
 	i_start = generate_random() & 0xFFFF;
@@ -320,7 +321,17 @@ found:
 		return ldb_operr(ldb);
 	}
 
-	ret = ldb_msg_add_steal_string(ac->msg, "clearTextPassword", newpass);
+	if (!convert_string_talloc(ac,
+				   CH_UNIX, CH_UTF16,
+				   newpass, strlen(newpass),
+				   (void *)&newpass_utf16.data,
+				   &newpass_utf16.length, false)) {
+		ldb_asprintf_errstring(ldb,
+				       "samldb_rodc_add: "
+				       "failed to generate UTF16 password from random password");
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	ret = ldb_msg_add_steal_value(ac->msg, "clearTextPassword", &newpass_utf16);
 	if (ret != LDB_SUCCESS) {
 		return ldb_operr(ldb);
 	}
