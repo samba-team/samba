@@ -1627,9 +1627,13 @@ static bool set_variable(TALLOC_CTX *mem_ctx, int parmnum, void *parm_ptr,
 	int i;
 	/* if it is a special case then go ahead */
 	if (parm_table[parmnum].special) {
-		parm_table[parmnum].special(lp_ctx, pszParmValue,
-					    (char **)parm_ptr);
-		return true;
+		bool ret;
+		ret = parm_table[parmnum].special(lp_ctx, pszParmValue,
+						  (char **)parm_ptr);
+		if (!ret) {
+			return false;
+		}
+		goto mark_non_default;
 	}
 
 	/* now switch on the type of variable it is */
@@ -1701,6 +1705,7 @@ static bool set_variable(TALLOC_CTX *mem_ctx, int parmnum, void *parm_ptr,
 			break;
 	}
 
+mark_non_default:
 	if (on_globals && (lp_ctx->flags[parmnum] & FLAG_DEFAULT)) {
 		lp_ctx->flags[parmnum] &= ~FLAG_DEFAULT;
 		/* we have to also unset FLAG_DEFAULT on aliases */
