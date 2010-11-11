@@ -485,7 +485,11 @@ for env in ["dc", "fl2000dc", "fl2003dc", "fl2008r2dc"]:
     plantestsuite("samba4.ldap.possibleInferiors.python(%s)" % env, env, [python, os.path.join(samba4srcdir, "dsdb/samdb/ldb_modules/tests/possibleinferiors.py"), "ldap://$SERVER", '-U"$USERNAME%$PASSWORD"', "-W", "$DOMAIN"])
     plantestsuite("samba4.ldap.secdesc.python(%s)" % env, env, [python, os.path.join(samba4srcdir, "dsdb/tests/python/sec_descriptor.py"), '$SERVER', '-U"$USERNAME%$PASSWORD"', '-W', '$DOMAIN'])
     plantestsuite("samba4.ldap.acl.python(%s)" % env, env, [python, os.path.join(samba4srcdir, "dsdb/tests/python/acl.py"), '$SERVER', '-U"$USERNAME%$PASSWORD"', '-W', '$DOMAIN'])
-    plantestsuite("samba4.ldap.passwords.python(%s)" % env, env, [python, os.path.join(samba4srcdir, "dsdb/tests/python/passwords.py"), "$SERVER", '-U"$USERNAME%$PASSWORD"', "-W", "$DOMAIN"])
+    if env != "fl2000dc":
+        # This test makes excessively use of the "userPassword" attribute which
+        # isn't available on DCs with Windows 2000 domain function level -
+        # therefore skip it in that configuration
+        plantestsuite("samba4.ldap.passwords.python(%s)" % env, env, [python, os.path.join(samba4srcdir, "dsdb/tests/python/passwords.py"), "$SERVER", '-U"$USERNAME%$PASSWORD"', "-W", "$DOMAIN"])
 planpythontestsuite("dc:local", "samba.tests.upgradeprovisionneeddc")
 planpythontestsuite("none", "samba.tests.upgradeprovision")
 planpythontestsuite("none", "samba.tests.xattr")
