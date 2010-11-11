@@ -39,7 +39,7 @@
 #include "librpc/gen_ndr/ndr_krb5pac.h"
 #include "lib/socket/netif.h"
 #include "param/param.h"
-#include "kdc/kdc.h"
+#include "kdc/kdc-glue.h"
 #include "librpc/gen_ndr/ndr_misc.h"
 
 

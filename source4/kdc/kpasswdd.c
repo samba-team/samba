@@ -38,7 +38,7 @@
 #include "rpc_server/samr/proto.h"
 #include "libcli/security/security.h"
 #include "param/param.h"
-#include "kdc/kdc.h"
+#include "kdc/kdc-glue.h"
 
 /* TODO: remove all SAMBA4_INTERNAL_HEIMDAL stuff from this file */
 #ifdef SAMBA4_INTERNAL_HEIMDAL

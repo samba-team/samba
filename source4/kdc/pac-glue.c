@@ -29,7 +29,7 @@
 #include "auth/auth.h"
 #include "auth/auth_sam.h"
 #include "auth/auth_sam_reply.h"
-#include "kdc/kdc.h"
+#include "kdc/kdc-glue.h"
 #include "param/param.h"
 
 static

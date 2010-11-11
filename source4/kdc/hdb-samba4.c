@@ -37,7 +37,7 @@
 #include "auth/credentials/credentials.h"
 #include "dsdb/samdb/samdb.h"
 #include "param/param.h"
-#include "kdc/kdc.h"
+#include "kdc/kdc-glue.h"
 #include "kdc/db-glue.h"
 
 static krb5_error_code hdb_samba4_open(krb5_context context, HDB *db, int flags, mode_t mode)
