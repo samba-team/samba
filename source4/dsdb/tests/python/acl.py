@@ -1493,10 +1493,13 @@ userPassword: thatsAcomplPASS1
 add: userPassword
 userPassword: thatsAcomplPASS2
 """)
+            # This fails on Windows 2000 domain level with constraint violation
         except LdbError, (num, _):
-            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
+            self.assertTrue(num == ERR_CONSTRAINT_VIOLATION or
+                            num == ERR_UNWILLING_TO_PERFORM)
         else:
             self.fail()
+
 
     def test_change_password7(self):
         """Try a password change operation without any CARs given"""
@@ -1560,12 +1563,16 @@ userPassword: thatsAcomplPASS1
             self.fail()
         mod = "(OA;;CR;00299570-246d-11d0-a768-00aa006e0529;;PS)"
         self.dacl_add_ace(self.get_user_dn(self.user_with_wp), mod)
-        self.ldb_user.modify_ldif("""
+        try:
+            self.ldb_user.modify_ldif("""
 dn: """ + self.get_user_dn(self.user_with_wp) + """
 changetype: modify
 replace: userPassword
 userPassword: thatsAcomplPASS1
 """)
+            # This fails on Windows 2000 domain level with constraint violation
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
 
     def test_reset_password3(self):
         """Grant WP and see what happens (unicodePwd)"""
@@ -1614,12 +1621,16 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS1\"".encode('utf-16-le')) 
         """Explicitly deny WP but grant CAR (userPassword)"""
         mod = "(D;;WP;;;PS)(OA;;CR;00299570-246d-11d0-a768-00aa006e0529;;PS)"
         self.dacl_add_ace(self.get_user_dn(self.user_with_wp), mod)
-        self.ldb_user.modify_ldif("""
+        try:
+            self.ldb_user.modify_ldif("""
 dn: """ + self.get_user_dn(self.user_with_wp) + """
 changetype: modify
 replace: userPassword
 userPassword: thatsAcomplPASS1
 """)
+            # This fails on Windows 2000 domain level with constraint violation
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
 
 class AclExtendedTests(AclTests):
 
