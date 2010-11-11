@@ -548,7 +548,7 @@ def guess_names(lp=None, hostname=None, domain=None, dnsdomain=None,
 
 
 def make_smbconf(smbconf, setup_path, hostname, domain, realm, serverrole,
-                 targetdir, sid_generator="internal", eadb=False, default_lp=None):
+                 targetdir, sid_generator="internal", eadb=False, lp=None):
     """Create a new smb.conf file based on a couple of basic settings.
     """
     assert smbconf is not None
@@ -585,16 +585,16 @@ def make_smbconf(smbconf, setup_path, hostname, domain, realm, serverrole,
     assert realm is not None
     realm = realm.upper()
 
-    if default_lp is None:
-        default_lp = samba.param.LoadParm()
+    if lp is None:
+        lp = samba.param.LoadParm()
     #Load non-existant file
     if os.path.exists(smbconf):
-        default_lp.load(smbconf)
+        lp.load(smbconf)
     if eadb:
         if targetdir is not None:
             privdir = os.path.join(targetdir, "private")
         else:
-            privdir = default_lp.get("private dir")
+            privdir = lp.get("private dir")
         posixeadb_line = "posix:eadb = " + os.path.abspath(os.path.join(privdir, "eadb.tdb"))
     else:
         posixeadb_line = ""
@@ -603,7 +603,7 @@ def make_smbconf(smbconf, setup_path, hostname, domain, realm, serverrole,
         privatedir_line = "private dir = " + os.path.abspath(os.path.join(targetdir, "private"))
         lockdir_line = "lock dir = " + os.path.abspath(targetdir)
 
-        default_lp.set("lock dir", os.path.abspath(targetdir))
+        lp.set("lock dir", os.path.abspath(targetdir))
     else:
         privatedir_line = ""
         lockdir_line = ""
@@ -614,13 +614,13 @@ def make_smbconf(smbconf, setup_path, hostname, domain, realm, serverrole,
         sid_generator_line = "sid generator = " + sid_generator
 
     used_setup_dir = setup_path("")
-    default_setup_dir = default_lp.get("setup directory")
+    default_setup_dir = lp.get("setup directory")
     setupdir_line = ""
     if used_setup_dir != default_setup_dir:
         setupdir_line = "setup directory = %s" % used_setup_dir
-        default_lp.set("setup directory", used_setup_dir)
+        lp.set("setup directory", used_setup_dir)
 
-    sysvol = os.path.join(default_lp.get("lock dir"), "sysvol")
+    sysvol = os.path.join(lp.get("lock dir"), "sysvol")
     netlogon = os.path.join(sysvol, realm.lower(), "scripts")
 
     setup_file(setup_path("provision.smb.conf.%s" % smbconfsuffix),
@@ -637,6 +637,17 @@ def make_smbconf(smbconf, setup_path, hostname, domain, realm, serverrole,
             "LOCKDIR_LINE": lockdir_line,
             "POSIXEADB_LINE": posixeadb_line
             })
+
+    # reload the smb.conf
+    lp.load(smbconf)
+
+    # and dump it without any values that are the default
+    # this ensures that any smb.conf parameters that were set
+    # on the provision/join command line are set in the resulting smb.conf
+    f = open(smbconf, mode='w')
+    lp.dump(f, False)
+    f.close()
+
 
 
 def setup_name_mappings(samdb, idmap, sid, domaindn, root_uid, nobody_uid,
@@ -1449,10 +1460,10 @@ def provision(setup_dir, logger, session_info,
         if data is None or data == "":
             make_smbconf(smbconf, setup_path, hostname, domain, realm,
                          serverrole, targetdir, sid_generator, useeadb,
-                         default_lp=lp)
+                         lp=lp)
     else:
         make_smbconf(smbconf, setup_path, hostname, domain, realm, serverrole,
-                     targetdir, sid_generator, useeadb, default_lp=lp)
+                     targetdir, sid_generator, useeadb, lp=lp)
 
     if lp is None:
         lp = samba.param.LoadParm()
