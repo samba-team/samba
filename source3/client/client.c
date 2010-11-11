@@ -3346,6 +3346,7 @@ static int cmd_setea(void)
 	char *eavalue = NULL;
 	char *targetname = NULL;
 	struct cli_state *targetcli;
+	NTSTATUS status;
 
 	if (!next_token_talloc(ctx, &cmd_ptr, &name, NULL)
 	    || !next_token_talloc(ctx, &cmd_ptr, &eaname, NULL)) {
@@ -3369,9 +3370,10 @@ static int cmd_setea(void)
 		return 1;
 	}
 
-	if (!cli_set_ea_path(targetcli, targetname, eaname, eavalue,
-			     strlen(eavalue))) {
-		d_printf("set_ea %s: %s\n", src, cli_errstr(cli));
+	status =  cli_set_ea_path(targetcli, targetname, eaname, eavalue,
+				  strlen(eavalue));
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("set_ea %s: %s\n", src, nt_errstr(status));
 		return 1;
 	}
 

@@ -5222,8 +5222,10 @@ static bool run_eatest(int dummy)
 
 		slprintf(ea_name, sizeof(ea_name), "EA_%d", i+10);
 		memset(ea_val, (char)i+1, i+1);
-		if (!cli_set_ea_path(cli, fname, ea_name, ea_val, i+1)) {
-			printf("ea_set of name %s failed - %s\n", ea_name, cli_errstr(cli));
+		status = cli_set_ea_path(cli, fname, ea_name, ea_val, i+1);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("ea_set of name %s failed - %s\n", ea_name,
+			       nt_errstr(status));
 			talloc_destroy(mem_ctx);
 			return False;
 		}
@@ -5257,8 +5259,10 @@ static bool run_eatest(int dummy)
 	for (i = 0; i < 20; i++) {
 		fstring ea_name;
 		slprintf(ea_name, sizeof(ea_name), "ea_%d", i);
-		if (!cli_set_ea_path(cli, fname, ea_name, "", 0)) {
-			printf("ea_set of name %s failed - %s\n", ea_name, cli_errstr(cli));
+		status = cli_set_ea_path(cli, fname, ea_name, "", 0);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("ea_set of name %s failed - %s\n", ea_name,
+			       nt_errstr(status));
 			talloc_destroy(mem_ctx);
 			return False;
 		}
@@ -5284,8 +5288,10 @@ static bool run_eatest(int dummy)
 	}
 
 	/* Try and delete a non existant EA. */
-	if (!cli_set_ea_path(cli, fname, "foo", "", 0)) {
-		printf("deleting non-existant EA 'foo' should succeed. %s\n", cli_errstr(cli));
+	status = cli_set_ea_path(cli, fname, "foo", "", 0);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("deleting non-existant EA 'foo' should succeed. %s\n",
+		       nt_errstr(status));
 		correct = False;
 	}
 
