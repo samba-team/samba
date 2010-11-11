@@ -1945,7 +1945,7 @@ verify_checksum(krb5_context context,
 	krb5_set_error_message(context, ret,
 			       N_("Decrypt integrity check failed for checksum "
 				  "type %s, key type %s", ""),
-			       ct->name, crypto->et->name);
+			       ct->name, crypto ? crypto->et->name : "(unkeyed)");
     } else {
 	ret = 0;
     }
