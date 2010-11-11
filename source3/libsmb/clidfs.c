@@ -130,9 +130,6 @@ static struct cli_state *do_connect(TALLOC_CTX *ctx,
 	c = cli_initialise_ex(get_cmdline_auth_info_signing_state(auth_info));
 	if (c == NULL) {
 		d_printf("Connection to %s failed\n", server_n);
-		if (c) {
-			cli_shutdown(c);
-		}
 		return NULL;
 	}
 	if (port) {
