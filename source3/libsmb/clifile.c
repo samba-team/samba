@@ -4122,7 +4122,6 @@ static NTSTATUS cli_set_ea(struct cli_state *cli, uint16_t setup_val,
 
 bool cli_set_ea_path(struct cli_state *cli, const char *path, const char *ea_name, const char *ea_val, size_t ea_len)
 {
-	uint16_t setup = TRANSACT2_SETPATHINFO;
 	unsigned int param_len = 0;
 	uint8_t *param;
 	size_t srclen = 2*(strlen(path)+1);
@@ -4140,8 +4139,8 @@ bool cli_set_ea_path(struct cli_state *cli, const char *path, const char *ea_nam
 	p += clistr_push(cli, p, path, srclen, STR_TERMINATE);
 	param_len = PTR_DIFF(p, param);
 
-	status = cli_set_ea(cli, setup, param, param_len, ea_name,
-			    ea_val, ea_len);
+	status = cli_set_ea(cli, TRANSACT2_SETPATHINFO, param, param_len,
+			    ea_name, ea_val, ea_len);
 	SAFE_FREE(param);
 	return NT_STATUS_IS_OK(status);
 }
@@ -4153,14 +4152,14 @@ bool cli_set_ea_path(struct cli_state *cli, const char *path, const char *ea_nam
 bool cli_set_ea_fnum(struct cli_state *cli, uint16_t fnum, const char *ea_name, const char *ea_val, size_t ea_len)
 {
 	uint8_t param[6];
-	uint16_t setup = TRANSACT2_SETFILEINFO;
 	NTSTATUS status;
 
 	memset(param, 0, 6);
 	SSVAL(param,0,fnum);
 	SSVAL(param,2,SMB_INFO_SET_EA);
 
-	status = cli_set_ea(cli, setup, param, 6, ea_name, ea_val, ea_len);
+	status = cli_set_ea(cli, TRANSACT2_SETFILEINFO, param, 6,
+			    ea_name, ea_val, ea_len);
 	return NT_STATUS_IS_OK(status);
 }
 
