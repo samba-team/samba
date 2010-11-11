@@ -597,19 +597,20 @@ static char *cli_dfs_make_full_path(TALLOC_CTX *ctx,
  check for dfs referral
 ********************************************************************/
 
-static bool cli_dfs_check_error( struct cli_state *cli, NTSTATUS status )
+static bool cli_dfs_check_error(struct cli_state *cli, NTSTATUS expected,
+				NTSTATUS status)
 {
-	uint32 flgs2 = SVAL(cli->inbuf,smb_flg2);
-
 	/* only deal with DS when we negotiated NT_STATUS codes and UNICODE */
 
-	if (!((flgs2&FLAGS2_32_BIT_ERROR_CODES) &&
-				(flgs2&FLAGS2_UNICODE_STRINGS)))
+	if (!(cli->capabilities & CAP_UNICODE)) {
 		return false;
-
-	if (NT_STATUS_EQUAL(status, NT_STATUS(IVAL(cli->inbuf,smb_rcls))))
+	}
+	if (!(cli->capabilities & CAP_STATUS32)) {
+		return false;
+	}
+	if (NT_STATUS_EQUAL(status, expected)) {
 		return true;
-
+	}
 	return false;
 }
 
@@ -834,7 +835,8 @@ bool cli_resolve_path(TALLOC_CTX *ctx,
 
 	/* Special case where client asked for a path that does not exist */
 
-	if (cli_dfs_check_error(rootcli, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
+	if (cli_dfs_check_error(rootcli, NT_STATUS_OBJECT_NAME_NOT_FOUND,
+				status)) {
 		*targetcli = rootcli;
 		*pp_targetpath = talloc_strdup(ctx, path);
 		if (!*pp_targetpath) {
@@ -845,7 +847,8 @@ bool cli_resolve_path(TALLOC_CTX *ctx,
 
 	/* We got an error, check for DFS referral. */
 
-	if (!cli_dfs_check_error(rootcli, NT_STATUS_PATH_NOT_COVERED)) {
+	if (!cli_dfs_check_error(rootcli, NT_STATUS_PATH_NOT_COVERED,
+				 status)) {
 		return false;
 	}
 
