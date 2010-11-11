@@ -35,6 +35,7 @@ import os
 sys.path.append("bin/python")
 
 from samba.auth import system_session
+from ldb import LdbError, ERR_NO_SUCH_OBJECT
 from ldb import SCOPE_BASE, SCOPE_SUBTREE
 from samba.samdb import SamDB
 
