@@ -703,8 +703,7 @@ static bool cli_issue_write(struct cli_state *cli,
 				off_t offset,
 				uint16 mode,
 				const char *buf,
-				size_t size,
-				int i)
+				size_t size)
 {
 	char *p;
 	bool large_writex = false;
@@ -778,8 +777,6 @@ static bool cli_issue_write(struct cli_state *cli,
 		cli_setup_bcc(cli, p+size);
 	}
 
-	SSVAL(cli->outbuf,smb_mid,cli->mid + i);
-
 	show_msg(cli->outbuf);
 	if (direct_writes) {
 		/* For direct writes we now need to write the data
@@ -828,7 +825,7 @@ ssize_t cli_write(struct cli_state *cli,
 			if (!cli_issue_write(cli, fnum, offset + bsent,
 			                write_mode,
 			                buf + bsent,
-					size1, issued))
+					size1))
 				return -1;
 			issued++;
 		}
