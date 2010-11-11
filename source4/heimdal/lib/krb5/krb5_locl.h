@@ -120,6 +120,8 @@ struct sockaddr_dl;
 
 #include <com_err.h>
 
+#include <heimbase.h>
+
 #define HEIMDAL_TEXTDOMAIN "heimdal_krb5"
 
 #ifdef LIBINTL
@@ -176,6 +178,9 @@ struct _krb5_krb_auth_data;
 #ifdef PKINIT
 #include <hx509.h>
 #endif
+
+#include "crypto.h"
+
 #include <krb5-private.h>
 
 #include "heim_threads.h"

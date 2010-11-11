@@ -56,15 +56,17 @@
  * Speed for RSA in seconds
  *   no key blinding
  *   1000 iteration, 
- *   same rsa key
+ *   same rsa keys (1024 and 2048)
  *   operation performed each eteration sign, verify, encrypt, decrypt on a random bit pattern
  *
- * gmp: 	 0.733615
- * tfm: 	 2.450173
- * ltm:		 3.79 (default in hcrypto)
- * openssl:	 4.04
- * cdsa:	15.89
- * imath: 	40.62
+ * name		1024	2048	4098
+ * =================================
+ * gmp: 	 0.73	  6.60	 44.80
+ * tfm: 	 2.45	    --	    --
+ * ltm:		 3.79	 20.74	105.41	(default in hcrypto)
+ * openssl:	 4.04	 11.90	 82.59
+ * cdsa:	15.89	102.89	721.40
+ * imath: 	40.62	    --	    --
  *
  * See the library functions here: @ref hcrypto_rsa
  */
@@ -516,7 +518,6 @@ RSA_null_method(void)
 }
 
 extern const RSA_METHOD hc_rsa_gmp_method;
-extern const RSA_METHOD hc_rsa_imath_method;
 extern const RSA_METHOD hc_rsa_tfm_method;
 extern const RSA_METHOD hc_rsa_ltm_method;
 static const RSA_METHOD *default_rsa_method = &hc_rsa_ltm_method;

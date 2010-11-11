@@ -532,6 +532,7 @@ out:
  * @param flags flags to control the behavior.
  *    - HX509_CMS_EV_NO_KU_CHECK - Dont check KU on certificate
  *    - HX509_CMS_EV_ALLOW_WEAK - Allow weak crytpo
+ *    - HX509_CMS_EV_ID_NAME - prefer issuer name and serial number
  * @param cert Certificate to encrypt the EnvelopedData encryption key
  * with.
  * @param data pointer the data to encrypt.
@@ -559,9 +560,9 @@ hx509_cms_envelope_1(hx509_context context,
     heim_octet_string ivec;
     heim_octet_string key;
     hx509_crypto crypto = NULL;
+    int ret, cmsidflag;
     EnvelopedData ed;
     size_t size;
-    int ret;
 
     memset(&ivec, 0, sizeof(ivec));
     memset(&key, 0, sizeof(key));
@@ -648,8 +649,15 @@ hx509_cms_envelope_1(hx509_context context,
 
     ri = &ed.recipientInfos.val[0];
 
-    ri->version = 0;
-    ret = fill_CMSIdentifier(cert, CMS_ID_SKI, &ri->rid);
+    if (flags & HX509_CMS_EV_ID_NAME) {
+	ri->version = 0;
+	cmsidflag = CMS_ID_NAME;
+    } else {
+	ri->version = 2;
+	cmsidflag = CMS_ID_SKI;
+    }
+
+    ret = fill_CMSIdentifier(cert, cmsidflag, &ri->rid);
     if (ret) {
 	hx509_set_error_string(context, 0, ret,
 			       "Failed to set CMS identifier info "

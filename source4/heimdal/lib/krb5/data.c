@@ -207,3 +207,22 @@ krb5_data_cmp(const krb5_data *data1, const krb5_data *data2)
 	return data1->length - data2->length;
     return memcmp(data1->data, data2->data, data1->length);
 }
+
+/**
+ * Compare to data not exposing timing information from the checksum data
+ *
+ * @param data1 krb5_data to compare
+ * @param data2 krb5_data to compare
+ *
+ * @return returns zero for same data, otherwise non zero.
+ *
+ * @ingroup krb5
+ */
+
+KRB5_LIB_FUNCTION int KRB5_LIB_CALL
+krb5_data_ct_cmp(const krb5_data *data1, const krb5_data *data2)
+{
+    if (data1->length != data2->length)
+	return data1->length - data2->length;
+    return ct_memcmp(data1->data, data2->data, data1->length);
+}

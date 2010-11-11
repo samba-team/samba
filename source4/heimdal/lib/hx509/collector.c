@@ -145,6 +145,7 @@ _hx509_collector_private_key_add(hx509_context context,
     } else {
 	ret = _hx509_parse_private_key(context, alg,
 				       key_data->data, key_data->length,
+				       HX509_KEY_FORMAT_DER,
 				       &key->private_key);
 	if (ret)
 	    goto out;

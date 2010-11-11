@@ -53,9 +53,11 @@ struct hx509_private_key_ops {
 		    SubjectPublicKeyInfo *);
     int (*export)(hx509_context context,
 		  const hx509_private_key,
+		  hx509_key_format_t,
 		  heim_octet_string *);
     int (*import)(hx509_context, const AlgorithmIdentifier *,
-		  const void *, size_t, hx509_private_key);
+		  const void *, size_t, hx509_key_format_t,
+		  hx509_private_key);
     int (*generate_private_key)(hx509_context,
 				struct hx509_generate_private_context *,
 				hx509_private_key);
@@ -750,18 +752,27 @@ rsa_private_key_import(hx509_context context,
 		       const AlgorithmIdentifier *keyai,
 		       const void *data,
 		       size_t len,
+		       hx509_key_format_t format,
 		       hx509_private_key private_key)
 {
-    const unsigned char *p = data;
+    switch (format) {
+    case HX509_KEY_FORMAT_DER: {
+	const unsigned char *p = data;
 
-    private_key->private_key.rsa =
-	d2i_RSAPrivateKey(NULL, &p, len);
-    if (private_key->private_key.rsa == NULL) {
-	hx509_set_error_string(context, 0, HX509_PARSING_KEY_FAILED,
-			       "Failed to parse RSA key");
-	return HX509_PARSING_KEY_FAILED;
+	private_key->private_key.rsa =
+	    d2i_RSAPrivateKey(NULL, &p, len);
+	if (private_key->private_key.rsa == NULL) {
+	    hx509_set_error_string(context, 0, HX509_PARSING_KEY_FAILED,
+				   "Failed to parse RSA key");
+	    return HX509_PARSING_KEY_FAILED;
+	}
+	private_key->signature_alg = ASN1_OID_ID_PKCS1_SHA1WITHRSAENCRYPTION;
+	break;
+
     }
-    private_key->signature_alg = ASN1_OID_ID_PKCS1_SHA1WITHRSAENCRYPTION;
+    default:
+	return HX509_CRYPTO_KEY_FORMAT_UNSUPPORTED;
+    }
 
     return 0;
 }
@@ -812,7 +823,7 @@ rsa_generate_private_key(hx509_context context,
     unsigned long bits;
 
     static const int default_rsa_e = 65537;
-    static const int default_rsa_bits = 1024;
+    static const int default_rsa_bits = 2048;
 
     private_key->private_key.rsa = RSA_new();
     if (private_key->private_key.rsa == NULL) {
@@ -828,8 +839,6 @@ rsa_generate_private_key(hx509_context context,
 
     if (ctx->num_bits)
 	bits = ctx->num_bits;
-    else if (ctx->isCA)
-	bits *= 2;
 
     ret = RSA_generate_key_ex(private_key->private_key.rsa, bits, e, NULL);
     BN_free(e);
@@ -846,6 +855,7 @@ rsa_generate_private_key(hx509_context context,
 static int
 rsa_private_key_export(hx509_context context,
 		       const hx509_private_key key,
+		       hx509_key_format_t format,
 		       heim_octet_string *data)
 {
     int ret;
@@ -853,25 +863,32 @@ rsa_private_key_export(hx509_context context,
     data->data = NULL;
     data->length = 0;
 
-    ret = i2d_RSAPrivateKey(key->private_key.rsa, NULL);
-    if (ret <= 0) {
-	ret = EINVAL;
-	hx509_set_error_string(context, 0, ret,
+    switch (format) {
+    case HX509_KEY_FORMAT_DER:
+
+	ret = i2d_RSAPrivateKey(key->private_key.rsa, NULL);
+	if (ret <= 0) {
+	    ret = EINVAL;
+	    hx509_set_error_string(context, 0, ret,
 			       "Private key is not exportable");
-	return ret;
-    }
+	    return ret;
+	}
 
-    data->data = malloc(ret);
-    if (data->data == NULL) {
-	ret = ENOMEM;
-	hx509_set_error_string(context, 0, ret, "malloc out of memory");
-	return ret;
-    }
-    data->length = ret;
+	data->data = malloc(ret);
+	if (data->data == NULL) {
+	    ret = ENOMEM;
+	    hx509_set_error_string(context, 0, ret, "malloc out of memory");
+	    return ret;
+	}
+	data->length = ret;
 
-    {
-	unsigned char *p = data->data;
-	i2d_RSAPrivateKey(key->private_key.rsa, &p);
+	{
+	    unsigned char *p = data->data;
+	    i2d_RSAPrivateKey(key->private_key.rsa, &p);
+	}
+	break;
+    default:
+	return HX509_CRYPTO_KEY_FORMAT_UNSUPPORTED;
     }
 
     return 0;
@@ -917,9 +934,10 @@ ecdsa_private_key2SPKI(hx509_context context,
 static int
 ecdsa_private_key_export(hx509_context context,
 			 const hx509_private_key key,
+			 hx509_key_format_t format,
 			 heim_octet_string *data)
 {
-    return ENOMEM;
+    return HX509_CRYPTO_KEY_FORMAT_UNSUPPORTED;
 }
 
 static int
@@ -927,6 +945,7 @@ ecdsa_private_key_import(hx509_context context,
 			 const AlgorithmIdentifier *keyai,
 			 const void *data,
 			 size_t len,
+			 hx509_key_format_t format,
 			 hx509_private_key private_key)
 {
     const unsigned char *p = data;
@@ -961,13 +980,21 @@ ecdsa_private_key_import(hx509_context context,
 	pkey = &key;
     }
 
-    private_key->private_key.ecdsa = d2i_ECPrivateKey(pkey, &p, len);
-    if (private_key->private_key.ecdsa == NULL) {
-	hx509_set_error_string(context, 0, HX509_PARSING_KEY_FAILED,
-			       "Failed to parse EC private key");
-	return HX509_PARSING_KEY_FAILED;
+    switch (format) {
+    case HX509_KEY_FORMAT_DER:
+
+	private_key->private_key.ecdsa = d2i_ECPrivateKey(pkey, &p, len);
+	if (private_key->private_key.ecdsa == NULL) {
+	    hx509_set_error_string(context, 0, HX509_PARSING_KEY_FAILED,
+				   "Failed to parse EC private key");
+	    return HX509_PARSING_KEY_FAILED;
+	}
+	private_key->signature_alg = ASN1_OID_ID_ECDSA_WITH_SHA256;
+	break;
+
+    default:
+	return HX509_CRYPTO_KEY_FORMAT_UNSUPPORTED;
     }
-    private_key->signature_alg = ASN1_OID_ID_ECDSA_WITH_SHA256;
 
     return 0;
 }
@@ -1735,6 +1762,7 @@ _hx509_parse_private_key(hx509_context context,
 			 const AlgorithmIdentifier *keyai,
 			 const void *data,
 			 size_t len,
+			 hx509_key_format_t format,
 			 hx509_private_key *private_key)
 {
     struct hx509_private_key_ops *ops;
@@ -1754,7 +1782,7 @@ _hx509_parse_private_key(hx509_context context,
 	return ret;
     }
 
-    ret = (*ops->import)(context, keyai, data, len, *private_key);
+    ret = (*ops->import)(context, keyai, data, len, format, *private_key);
     if (ret)
 	_hx509_private_key_free(private_key);
 
@@ -2047,13 +2075,14 @@ _hx509_private_key_get_internal(hx509_context context,
 int
 _hx509_private_key_export(hx509_context context,
 			  const hx509_private_key key,
+			  hx509_key_format_t format,
 			  heim_octet_string *data)
 {
     if (key->ops->export == NULL) {
 	hx509_clear_error_string(context);
 	return HX509_UNIMPLEMENTED_OPERATION;
     }
-    return (*key->ops->export)(context, key, data);
+    return (*key->ops->export)(context, key, format, data);
 }
 
 /*

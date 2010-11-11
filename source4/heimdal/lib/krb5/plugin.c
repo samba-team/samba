@@ -336,3 +336,260 @@ _krb5_plugin_free(struct krb5_plugin *list)
 	list = next;
     }
 }
+/*
+ * module - dict of {
+ *      ModuleName = [
+ *          plugin = object{
+ *              array = { ptr, ctx }
+ *          }
+ *      ]
+ * }
+ */
+
+static heim_dict_t modules;
+
+struct plugin2 {
+    heim_string_t path;
+    void *dsohandle;
+    heim_dict_t names;
+};
+
+static void
+plug_dealloc(void *ptr)
+{
+    struct plugin2 *p = ptr;
+    heim_release(p->path);
+    heim_release(p->names);
+    if (p->dsohandle)
+	dlclose(p->dsohandle);
+}
+
+
+void
+_krb5_load_plugins(krb5_context context, const char *name, const char **paths)
+{
+#ifdef HAVE_DLOPEN
+    heim_string_t s = heim_string_create(name);
+    heim_dict_t module;
+    struct dirent *entry;
+    krb5_error_code ret;
+    const char **di;
+    DIR *d;
+
+    HEIMDAL_MUTEX_lock(&plugin_mutex);
+
+    if (modules == NULL) {
+	modules = heim_dict_create(11);
+	if (modules == NULL) {
+	    HEIMDAL_MUTEX_unlock(&plugin_mutex);
+	    return;
+	}
+    }
+
+    module = heim_dict_copy_value(modules, s);
+    if (module == NULL) {
+	module = heim_dict_create(11);
+	if (module == NULL) {
+	    HEIMDAL_MUTEX_unlock(&plugin_mutex);
+	    heim_release(s);
+	    return;
+	}
+	heim_dict_add_value(modules, s, module);
+    }
+    heim_release(s);
+
+    for (di = paths; *di != NULL; di++) {
+	d = opendir(*di);
+	if (d == NULL)
+	    continue;
+	rk_cloexec_dir(d);
+
+	while ((entry = readdir(d)) != NULL) {
+	    char *n = entry->d_name;
+	    char *path = NULL;
+	    heim_string_t spath;
+	    struct plugin2 *p;
+
+	    /* skip . and .. */
+	    if (n[0] == '.' && (n[1] == '\0' || (n[1] == '.' && n[2] == '\0')))
+		continue;
+
+	    ret = 0;
+#ifdef __APPLE__
+	    { /* support loading bundles on MacOS */
+		size_t len = strlen(n);
+		if (len > 7 && strcmp(&n[len - 7],  ".bundle") == 0)
+		    ret = asprintf(&path, "%s/%s/Contents/MacOS/%.*s", *di, n, (int)(len - 7), n);
+	    }
+#endif
+	    if (ret < 0 || path == NULL)
+		ret = asprintf(&path, "%s/%s", *di, n);
+
+	    if (ret < 0 || path == NULL)
+		continue;
+
+	    spath = heim_string_create(n);
+	    if (spath == NULL) {
+		free(path);
+		continue;
+	    }
+
+	    /* check if already cached */
+	    p = heim_dict_copy_value(module, spath);
+	    if (p == NULL) {
+		p = heim_alloc(sizeof(*p), "krb5-plugin", plug_dealloc);
+		if (p)
+		    p->dsohandle = dlopen(path, RTLD_LOCAL|RTLD_LAZY);
+
+		if (p->dsohandle) {
+		    p->path = heim_retain(spath);
+		    p->names = heim_dict_create(11);
+		    heim_dict_add_value(module, spath, p);
+		}
+	    }
+	    heim_release(spath);
+	    heim_release(p);
+	    free(path);
+	}
+	closedir(d);
+    }
+    heim_release(module);
+    HEIMDAL_MUTEX_unlock(&plugin_mutex);
+#endif /* HAVE_DLOPEN */
+}
+
+void
+_krb5_unload_plugins(krb5_context context, const char *name)
+{
+    HEIMDAL_MUTEX_lock(&plugin_mutex);
+    heim_release(modules);
+    modules = NULL;
+    HEIMDAL_MUTEX_unlock(&plugin_mutex);
+}
+
+/*
+ *
+ */
+
+struct common_plugin_method {
+    int			version;
+    krb5_error_code	(*init)(krb5_context, void **);
+    void		(*fini)(void *);
+};
+
+struct plug {
+    void *dataptr;
+    void *ctx;
+};
+
+static void
+plug_free(void *ptr)
+{
+    struct plug *pl = ptr;
+    if (pl->dataptr) {
+	struct common_plugin_method *cpm = pl->dataptr;
+	cpm->fini(pl->ctx);
+    }
+}
+
+struct iter_ctx {
+    krb5_context context;
+    heim_string_t n;
+    const char *name;
+    int min_version;
+    heim_array_t result;
+    krb5_error_code (*func)(krb5_context, const void *, void *, void *);
+    void *userctx;
+    krb5_error_code ret;
+};
+
+static void
+search_modules(void *ctx, heim_object_t key, heim_object_t value)
+{
+    struct iter_ctx *s = ctx;
+    struct plugin2 *p = value;
+    struct plug *pl = heim_dict_copy_value(p->names, s->n);
+    struct common_plugin_method *cpm;
+
+    if (pl == NULL) {
+	if (p->dsohandle == NULL)
+	    return;
+
+	pl = heim_alloc(sizeof(*pl), "struct-plug", plug_free);
+
+	cpm = pl->dataptr = dlsym(p->dsohandle, s->name);
+	if (cpm) {
+	    int ret;
+
+	    ret = cpm->init(s->context, &pl->ctx);
+	    if (ret)
+		cpm = pl->dataptr = NULL;
+	}
+	heim_dict_add_value(p->names, s->n, pl);
+    } else {
+	cpm = pl->dataptr;
+    }
+
+    if (cpm && cpm->version >= s->min_version)
+	heim_array_append_value(s->result, pl);
+
+    heim_release(pl);
+}
+
+static void
+eval_results(heim_object_t value, void *ctx)
+{
+    struct plug *pl = value;
+    struct iter_ctx *s = ctx;
+
+    if (s->ret != KRB5_PLUGIN_NO_HANDLE)
+	return;
+
+    s->ret = s->func(s->context, pl->dataptr, pl->ctx, s->userctx);
+}
+
+krb5_error_code
+_krb5_plugin_run_f(krb5_context context,
+		   const char *module,
+		   const char *name,
+		   int min_version,
+		   int flags,
+		   void *userctx,
+		   krb5_error_code (*func)(krb5_context, const void *, void *, void *))
+{
+    heim_string_t m = heim_string_create(module);
+    heim_dict_t dict;
+    struct iter_ctx s;
+
+    HEIMDAL_MUTEX_lock(&plugin_mutex);
+
+    dict = heim_dict_copy_value(modules, m);
+    heim_release(m);
+    if (dict == NULL) {
+	HEIMDAL_MUTEX_unlock(&plugin_mutex);
+	return KRB5_PLUGIN_NO_HANDLE;
+    }
+
+    s.context = context;
+    s.name = name;
+    s.n = heim_string_create(name);
+    s.min_version = min_version;
+    s.result = heim_array_create();
+    s.func = func;
+    s.userctx = userctx;
+
+    heim_dict_iterate_f(dict, search_modules, &s);
+
+    heim_release(dict);
+
+    HEIMDAL_MUTEX_unlock(&plugin_mutex);
+
+    s.ret = KRB5_PLUGIN_NO_HANDLE;
+
+    heim_array_iterate_f(s.result, eval_results, &s);
+
+    heim_release(s.result);
+    heim_release(s.n);
+
+    return s.ret;
+}

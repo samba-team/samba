@@ -768,22 +768,21 @@ repl_mutual
 	/* There is no OID wrapping. */
 	indata.length	= input_token->length;
 	indata.data	= input_token->value;
-	kret = krb5_rd_rep (context,
-			    ctx->auth_context,
-			    &indata,
-			    &repl);
-	if (kret >= ASN1_BAD_TIMEFORMAT && kret <= ASN1_INDEF_EXTRA_DATA) {
-	    ret = _gsskrb5_decapsulate (minor_status,
-					input_token,
-					&indata,
-					"\x03\x00",
-					GSS_KRB5_MECHANISM);
+	kret = krb5_rd_rep(context,
+			   ctx->auth_context,
+			   &indata,
+			   &repl);
+	if (kret) {
+	    ret = _gsskrb5_decapsulate(minor_status,
+				       input_token,
+				       &indata,
+				       "\x03\x00",
+				       GSS_KRB5_MECHANISM);
 	    if (ret == GSS_S_COMPLETE) {
-		    *minor_status = handle_error_packet(context, ctx, indata);
-		    return GSS_S_FAILURE;
+		*minor_status = handle_error_packet(context, ctx, indata);
+	    } else {
+		*minor_status = kret;
 	    }
-	} else if (kret) {
-	    *minor_status = kret;
 	    return GSS_S_FAILURE;
 	}
     } else {

@@ -222,30 +222,6 @@ krb5_storage_get_eof_code(krb5_storage *sp)
     return sp->eof_code;
 }
 
-KRB5_LIB_FUNCTION krb5_ssize_t KRB5_LIB_CALL
-_krb5_put_int(void *buffer, unsigned long value, size_t size)
-{
-    unsigned char *p = buffer;
-    int i;
-    for (i = size - 1; i >= 0; i--) {
-	p[i] = value & 0xff;
-	value >>= 8;
-    }
-    return size;
-}
-
-KRB5_LIB_FUNCTION krb5_ssize_t KRB5_LIB_CALL
-_krb5_get_int(void *buffer, unsigned long *value, size_t size)
-{
-    unsigned char *p = buffer;
-    unsigned long v = 0;
-    int i;
-    for (i = 0; i < size; i++)
-	v = (v << 8) + p[i];
-    *value = v;
-    return size;
-}
-
 /**
  * Free a krb5 storage.
  *

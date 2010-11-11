@@ -40,7 +40,6 @@
 
 /* symbol renaming */
 #define DH_null_method hc_DH_null_method
-#define DH_imath_method hc_DH_imath_method
 #define DH_tfm_method hc_DH_tfm_method
 #define DH_ltm_method hc_DH_ltm_method
 #define DH_new hc_DH_new
@@ -119,7 +118,6 @@ struct DH {
 const DH_METHOD *DH_null_method(void);
 const DH_METHOD *DH_tfm_method(void);
 const DH_METHOD *DH_ltm_method(void);
-const DH_METHOD *DH_imath_method(void);
 
 DH *	DH_new(void);
 DH *	DH_new_method(ENGINE *);

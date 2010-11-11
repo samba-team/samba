@@ -304,7 +304,7 @@ DH_check_pubkey(const DH *dh, const BIGNUM *pub_key, int *codes)
     if (!BN_set_word(bn, 2))
 	goto out;
 
-    if (BN_cmp(bn, pub_key) == 0) {
+    if (BN_cmp(bn, dh->g) == 0) {
 	unsigned i, n = BN_num_bits(pub_key);
 	unsigned bits = 0;
 
@@ -312,7 +312,7 @@ DH_check_pubkey(const DH *dh, const BIGNUM *pub_key, int *codes)
 	    if (BN_is_bit_set(pub_key, i))
 		bits++;
 
-	if (bits > 1) {
+	if (bits < 2) {
 	    *codes |= DH_CHECK_PUBKEY_TOO_SMALL;
 	    goto out;
 	}
@@ -445,8 +445,8 @@ static const DH_METHOD dh_null_method = {
     dh_null_generate_params
 };
 
-extern const DH_METHOD _hc_dh_imath_method;
-static const DH_METHOD *dh_default_method = &_hc_dh_imath_method;
+extern const DH_METHOD _hc_dh_ltm_method;
+static const DH_METHOD *dh_default_method = &_hc_dh_ltm_method;
 
 /**
  * Return the dummy DH implementation.

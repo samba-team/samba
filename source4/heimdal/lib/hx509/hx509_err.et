@@ -66,6 +66,7 @@ error_code RSA_PRIVATE_ENCRYPT, "RSA private encyption failed"
 error_code RSA_PUBLIC_DECRYPT, "RSA public decryption failed"
 error_code RSA_PRIVATE_DECRYPT, "RSA private decryption failed"
 error_code ALGORITHM_BEST_BEFORE, "Algorithm has passed its best before date"
+error_code KEY_FORMAT_UNSUPPORTED, "Key format is unsupported"
 
 # revoke related errors
 index 96

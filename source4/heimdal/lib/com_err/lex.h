@@ -33,7 +33,7 @@
 
 /* $Id$ */
 
-void lex_err_message (const char *, ...)
+void error_message (const char *, ...)
 __attribute__ ((format (printf, 1, 2)));
 
 int yylex(void);

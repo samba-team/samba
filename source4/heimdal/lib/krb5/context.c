@@ -317,6 +317,26 @@ kt_ops_copy(krb5_context context, const krb5_context src_context)
     return 0;
 }
 
+static const char *sysplugin_dirs[] =  {
+    LIBDIR "/plugin/krb5",
+#ifdef __APPLE__
+    "/Library/KerberosPlugins/KerberosFrameworkPlugins",
+    "/System/Library/KerberosPlugins/KerberosFrameworkPlugins",
+#endif
+    NULL
+};
+
+static void
+init_context_once(void *ctx)
+{
+    krb5_context context = ctx;
+
+    _krb5_load_plugins(context, "krb5", sysplugin_dirs);
+
+    bindtextdomain(HEIMDAL_TEXTDOMAIN, HEIMDAL_LOCALEDIR);
+}
+
+
 /**
  * Initializes the context structure and reads the configuration file
  * /etc/krb5.conf. The structure should be freed by calling
@@ -335,14 +355,12 @@ kt_ops_copy(krb5_context context, const krb5_context src_context)
 KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_init_context(krb5_context *context)
 {
+    static heim_base_once_t init_context = HEIM_BASE_ONCE_INIT;
     krb5_context p;
     krb5_error_code ret;
     char **files;
 
     *context = NULL;
-
-    /* should have a run_once */
-    bindtextdomain(HEIMDAL_TEXTDOMAIN, HEIMDAL_LOCALEDIR);
 
     p = calloc(1, sizeof(*p));
     if(!p)
@@ -382,6 +400,8 @@ out:
     if(ret) {
 	krb5_free_context(p);
 	p = NULL;
+    } else {
+	heim_base_once_f(&init_context, p, init_context_once);
     }
     *context = p;
     return ret;

@@ -94,7 +94,7 @@ getstring(void)
 	    continue;
 	}
 	if(c == '\n'){
-	    lex_err_message("unterminated string");
+	    error_message("unterminated string");
 	    lineno++;
 	    break;
 	}
@@ -114,7 +114,7 @@ getstring(void)
 }
 
 void
-lex_err_message (const char *format, ...)
+error_message (const char *format, ...)
 {
      va_list args;
 

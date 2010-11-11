@@ -43,6 +43,12 @@
 #define SHA256_Init hc_SHA256_Init
 #define SHA256_Update hc_SHA256_Update
 #define SHA256_Final hc_SHA256_Final
+#define SHA384_Init hc_SHA384_Init
+#define SHA384_Update hc_SHA384_Update
+#define SHA384_Final hc_SHA384_Final
+#define SHA512_Init hc_SHA512_Init
+#define SHA512_Update hc_SHA512_Update
+#define SHA512_Final hc_SHA512_Final
 
 /*
  * SHA-1

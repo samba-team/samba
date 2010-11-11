@@ -93,7 +93,7 @@ checkfunc(void *ptr, void *arg)
 {
     Symbol *s = ptr;
     if (s->stype == SUndefined) {
-	lex_err_message("%s is still undefined\n", s->name);
+	lex_error_message("%s is still undefined\n", s->name);
 	*(int *) arg = 1;
     }
     return 0;

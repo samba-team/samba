@@ -76,6 +76,13 @@ enum {
     HX509_CRYPTO_PADDING_NONE = 1
 };
 
+enum {
+    HX509_KEY_FORMAT_GUESS = 0,
+    HX509_KEY_FORMAT_DER = 1,
+    HX509_KEY_FORMAT_WIN_BACKUPKEY = 2
+};
+typedef uint32_t hx509_key_format_t;
+
 struct hx509_cert_attribute_data {
     heim_oid oid;
     heim_octet_string data;
@@ -135,6 +142,7 @@ typedef enum {
 /* flags to hx509_cms_envelope_1 */
 #define HX509_CMS_EV_NO_KU_CHECK			0x01
 #define HX509_CMS_EV_ALLOW_WEAK				0x02
+#define HX509_CMS_EV_ID_NAME				0x04
 
 /* flags to hx509_cms_verify_signed */
 #define HX509_CMS_VS_ALLOW_DATA_OID_MISMATCH		0x01
