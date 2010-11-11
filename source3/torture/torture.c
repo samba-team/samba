@@ -49,6 +49,7 @@ static fstring multishare_conn_fname;
 static bool use_multishare_conn = False;
 static bool do_encrypt;
 static const char *local_path = NULL;
+static int signing_state = Undefined;
 
 bool torture_showall = False;
 
@@ -175,7 +176,7 @@ static struct cli_state *open_nbt_connection(void)
 
         zero_sockaddr(&ss);
 
-	if (!(c = cli_initialise())) {
+	if (!(c = cli_initialise_ex(signing_state))) {
 		printf("Failed initialize cli_struct to connect with %s\n", host);
 		return NULL;
 	}
@@ -308,7 +309,7 @@ static struct cli_state *open_bad_nbt_connection(void)
 
         zero_sockaddr(&ss);
 
-	if (!(c = cli_initialise())) {
+	if (!(c = cli_initialise_ex(signing_state))) {
 		printf("Failed initialize cli_struct to connect with %s\n", host);
 		return NULL;
 	}
@@ -409,7 +410,7 @@ static bool torture_open_connection_share(struct cli_state **c,
 				     hostname, NULL, port_to_use, 
 				     sharename, "?????", 
 				     username, workgroup, 
-				     password, flags, Undefined, &retry);
+				     password, flags, signing_state, &retry);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("failed to open share connection: //%s/%s port:%d - %s\n",
 			hostname, sharename, port_to_use, nt_errstr(status));
@@ -884,7 +885,7 @@ static bool run_readwritemulti(int dummy)
 	return test;
 }
 
-static bool run_readwritelarge(int dummy)
+static bool run_readwritelarge_internal(int max_xmit_k)
 {
 	static struct cli_state *cli1;
 	uint16_t fnum1;
@@ -899,9 +900,17 @@ static bool run_readwritelarge(int dummy)
 	cli_sockopt(cli1, sockops);
 	memset(buf,'\0',sizeof(buf));
 
-	cli1->max_xmit = 128*1024;
+	cli1->max_xmit = max_xmit_k*1024;
 
-	printf("starting readwritelarge\n");
+	if (signing_state == Required) {
+		/* Horrible cheat to force
+		   multiple signed outstanding
+		   packets against a Samba server.
+		*/
+		cli1->is_samba = false;
+	}
+
+	printf("starting readwritelarge_internal\n");
 
 	cli_unlink(cli1, lockfname, aSYSTEM | aHIDDEN);
 
@@ -918,10 +927,10 @@ static bool run_readwritelarge(int dummy)
 	}
 
 	if (fsize == sizeof(buf))
-		printf("readwritelarge test 1 succeeded (size = %lx)\n", 
+		printf("readwritelarge_internal test 1 succeeded (size = %lx)\n",
 		       (unsigned long)fsize);
 	else {
-		printf("readwritelarge test 1 failed (size = %lx)\n", 
+		printf("readwritelarge_internal test 1 failed (size = %lx)\n",
 		       (unsigned long)fsize);
 		correct = False;
 	}
@@ -951,10 +960,10 @@ static bool run_readwritelarge(int dummy)
 	}
 
 	if (fsize == sizeof(buf))
-		printf("readwritelarge test 2 succeeded (size = %lx)\n", 
+		printf("readwritelarge_internal test 2 succeeded (size = %lx)\n",
 		       (unsigned long)fsize);
 	else {
-		printf("readwritelarge test 2 failed (size = %lx)\n", 
+		printf("readwritelarge_internal test 2 failed (size = %lx)\n",
 		       (unsigned long)fsize);
 		correct = False;
 	}
@@ -982,6 +991,20 @@ static bool run_readwritelarge(int dummy)
 		correct = False;
 	}
 	return correct;
+}
+
+static bool run_readwritelarge(int dummy)
+{
+	return run_readwritelarge_internal(128);
+}
+
+static bool run_readwritelarge_signtest(int dummy)
+{
+	bool ret;
+	signing_state = Required;
+	ret = run_readwritelarge_internal(2);
+	signing_state = Undefined;
+	return ret;
 }
 
 int line_count = 0;
@@ -1432,7 +1455,7 @@ static bool run_tcon_devtype_test(int dummy)
 				     host, NULL, port_to_use,
 				     NULL, NULL,
 				     username, workgroup,
-				     password, flags, Undefined, &retry);
+				     password, flags, signing_state, &retry);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("could not open connection\n");
@@ -7759,6 +7782,7 @@ static struct {
 	{"RW1",  run_readwritetest, 0},
 	{"RW2",  run_readwritemulti, FLAG_MULTIPROC},
 	{"RW3",  run_readwritelarge, 0},
+	{"RW-SIGNING",  run_readwritelarge_signtest, 0},
 	{"OPEN", run_opentest, 0},
 	{"POSIX", run_simple_posix_open_test, 0},
 	{"POSIX-APPEND", run_posix_append, 0},

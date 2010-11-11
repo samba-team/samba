@@ -528,6 +528,8 @@ sub provision($$$$$$)
 #	min receivefile size = 4000
 
 	read only = no
+	server signing = auto
+
 	smbd:sharedelay = 100000
 #	smbd:writetimeupdatedelay = 500000
 	map hidden = no
