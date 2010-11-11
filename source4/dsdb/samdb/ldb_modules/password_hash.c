@@ -1288,9 +1288,7 @@ static int setup_given_passwords(struct setup_password_fields_io *io,
 	ldb = ldb_module_get_ctx(io->ac->module);
 
 	if (g->cleartext_utf8) {
-		char **cleartext_utf16_str;
 		struct ldb_val *cleartext_utf16_blob;
-		size_t converted_pw_len;
 
 		cleartext_utf16_blob = talloc(io->ac, struct ldb_val);
 		if (!cleartext_utf16_blob) {
@@ -1300,15 +1298,14 @@ static int setup_given_passwords(struct setup_password_fields_io *io,
 					   CH_UTF8, CH_UTF16,
 					   g->cleartext_utf8->data,
 					   g->cleartext_utf8->length,
-					   (void *)&cleartext_utf16_str,
-					   &converted_pw_len, false)) {
+					   (void *)&cleartext_utf16_blob->data,
+					   &cleartext_utf16_blob->length,
+					   false)) {
 			ldb_asprintf_errstring(ldb,
 				"setup_password_fields: "
 				"failed to generate UTF16 password from cleartext UTF8 password");
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
-		*cleartext_utf16_blob = data_blob_const(cleartext_utf16_str,
-							converted_pw_len);
 		g->cleartext_utf16 = cleartext_utf16_blob;
 	} else if (g->cleartext_utf16) {
 		char *cleartext_utf8_str;
