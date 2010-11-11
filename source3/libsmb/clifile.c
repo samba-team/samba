@@ -4066,30 +4066,35 @@ NTSTATUS cli_raw_ioctl(struct cli_state *cli, uint16_t fnum, uint32_t code, DATA
  Set an extended attribute utility fn.
 *********************************************************/
 
-static bool cli_set_ea(struct cli_state *cli, uint16_t setup, char *param, unsigned int param_len,
-			const char *ea_name, const char *ea_val, size_t ea_len)
+static NTSTATUS cli_set_ea(struct cli_state *cli, uint16_t setup_val,
+			   uint8_t *param, unsigned int param_len,
+			   const char *ea_name,
+			   const char *ea_val, size_t ea_len)
 {
+	uint16_t setup[0];
 	unsigned int data_len = 0;
-	char *data = NULL;
-	char *rparam=NULL, *rdata=NULL;
+	uint8_t *data = NULL;
 	char *p;
 	size_t ea_namelen = strlen(ea_name);
+	NTSTATUS status;
+
+	SSVAL(setup, 0, setup_val);
 
 	if (ea_namelen == 0 && ea_len == 0) {
 		data_len = 4;
-		data = (char *)SMB_MALLOC(data_len);
+		data = (uint8_t *)SMB_MALLOC(data_len);
 		if (!data) {
-			return False;
+			return NT_STATUS_NO_MEMORY;
 		}
-		p = data;
+		p = (char *)data;
 		SIVAL(p,0,data_len);
 	} else {
 		data_len = 4 + 4 + ea_namelen + 1 + ea_len;
-		data = (char *)SMB_MALLOC(data_len);
+		data = (uint8_t *)SMB_MALLOC(data_len);
 		if (!data) {
-			return False;
+			return NT_STATUS_NO_MEMORY;
 		}
-		p = data;
+		p = (char *)data;
 		SIVAL(p,0,data_len);
 		p += 4;
 		SCVAL(p, 0, 0); /* EA flags. */
@@ -4099,29 +4104,16 @@ static bool cli_set_ea(struct cli_state *cli, uint16_t setup, char *param, unsig
 		memcpy(p+4+ea_namelen+1, ea_val, ea_len);
 	}
 
-	if (!cli_send_trans(cli, SMBtrans2,
-			NULL,                        /* name */
-			-1, 0,                          /* fid, flags */
-			&setup, 1, 0,                   /* setup, length, max */
-			param, param_len, 2,            /* param, length, max */
-			data,  data_len, cli->max_xmit /* data, length, max */
-			)) {
-		SAFE_FREE(data);
-		return False;
-	}
-
-	if (!cli_receive_trans(cli, SMBtrans2,
-			&rparam, &param_len,
-			&rdata, &data_len)) {
-			SAFE_FREE(data);
-		return false;
-	}
-
+	status = cli_trans(talloc_tos(), cli, SMBtrans2, NULL, -1, 0, 0,
+			   setup, 1, 0,
+			   param, param_len, 2,
+			   data,  data_len, cli->max_xmit,
+			   NULL,
+			   NULL, 0, NULL, /* rsetup */
+			   NULL, 0, NULL, /* rparam */
+			   NULL, 0, NULL); /* rdata */
 	SAFE_FREE(data);
-	SAFE_FREE(rdata);
-	SAFE_FREE(rparam);
-
-	return True;
+	return status;
 }
 
 /*********************************************************
@@ -4132,25 +4124,26 @@ bool cli_set_ea_path(struct cli_state *cli, const char *path, const char *ea_nam
 {
 	uint16_t setup = TRANSACT2_SETPATHINFO;
 	unsigned int param_len = 0;
-	char *param;
+	uint8_t *param;
 	size_t srclen = 2*(strlen(path)+1);
 	char *p;
-	bool ret;
+	NTSTATUS status;
 
-	param = SMB_MALLOC_ARRAY(char, 6+srclen+2);
+	param = SMB_MALLOC_ARRAY(uint8_t, 6+srclen+2);
 	if (!param) {
 		return false;
 	}
 	memset(param, '\0', 6);
 	SSVAL(param,0,SMB_INFO_SET_EA);
-	p = &param[6];
+	p = (char *)(&param[6]);
 
 	p += clistr_push(cli, p, path, srclen, STR_TERMINATE);
 	param_len = PTR_DIFF(p, param);
 
-	ret = cli_set_ea(cli, setup, param, param_len, ea_name, ea_val, ea_len);
+	status = cli_set_ea(cli, setup, param, param_len, ea_name,
+			    ea_val, ea_len);
 	SAFE_FREE(param);
-	return ret;
+	return NT_STATUS_IS_OK(status);
 }
 
 /*********************************************************
@@ -4159,14 +4152,16 @@ bool cli_set_ea_path(struct cli_state *cli, const char *path, const char *ea_nam
 
 bool cli_set_ea_fnum(struct cli_state *cli, uint16_t fnum, const char *ea_name, const char *ea_val, size_t ea_len)
 {
-	char param[6];
+	uint8_t param[6];
 	uint16_t setup = TRANSACT2_SETFILEINFO;
+	NTSTATUS status;
 
 	memset(param, 0, 6);
 	SSVAL(param,0,fnum);
 	SSVAL(param,2,SMB_INFO_SET_EA);
 
-	return cli_set_ea(cli, setup, param, 6, ea_name, ea_val, ea_len);
+	status = cli_set_ea(cli, setup, param, 6, ea_name, ea_val, ea_len);
+	return NT_STATUS_IS_OK(status);
 }
 
 /*********************************************************
