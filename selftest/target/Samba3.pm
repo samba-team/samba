@@ -525,6 +525,8 @@ sub provision($$$$$$)
 
 	max protocol = SMB2
 	read only = no
+	server signing = auto
+
 	smbd:sharedelay = 100000
 #	smbd:writetimeupdatedelay = 500000
 	map hidden = no
