@@ -411,17 +411,19 @@ SMBC_fstatvfs_ctx(SMBCCTX *context,
                 uint64_t total_file_nodes;
                 uint64_t free_file_nodes;
                 uint64_t fs_identifier;
+		NTSTATUS status;
 
                 /* Has UNIXCIFS. If POSIX filesystem info is available... */
-                if (cli_get_posix_fs_info(cli,
-                                          &optimal_transfer_size,
-                                          &block_size,
-                                          &total_blocks,
-                                          &blocks_available,
-                                          &user_blocks_available,
-                                          &total_file_nodes,
-                                          &free_file_nodes,
-                                          &fs_identifier)) {
+		status = cli_get_posix_fs_info(cli,
+					       &optimal_transfer_size,
+					       &block_size,
+					       &total_blocks,
+					       &blocks_available,
+					       &user_blocks_available,
+					       &total_file_nodes,
+					       &free_file_nodes,
+					       &fs_identifier);
+		if (NT_STATUS_IS_OK(status)) {
 
                         /* ... then what's provided here takes precedence. */
                         st->f_bsize =

@@ -455,50 +455,34 @@ fail:
 	return status;
 }
 
-bool cli_get_posix_fs_info(struct cli_state *cli,
-                           uint32 *optimal_transfer_size,
-                           uint32 *block_size,
-                           uint64_t *total_blocks,
-                           uint64_t *blocks_available,
-                           uint64_t *user_blocks_available,
-                           uint64_t *total_file_nodes,
-                           uint64_t *free_file_nodes,
-                           uint64_t *fs_identifier)
+NTSTATUS cli_get_posix_fs_info(struct cli_state *cli,
+			       uint32 *optimal_transfer_size,
+			       uint32 *block_size,
+			       uint64_t *total_blocks,
+			       uint64_t *blocks_available,
+			       uint64_t *user_blocks_available,
+			       uint64_t *total_file_nodes,
+			       uint64_t *free_file_nodes,
+			       uint64_t *fs_identifier)
 {
-	bool ret = False;
-	uint16 setup;
-	char param[2];
-	char *rparam=NULL, *rdata=NULL;
-	unsigned int rparam_count=0, rdata_count=0;
+	uint16 setup[1];
+	uint8_t param[2];
+	uint8_t *rdata = NULL;
+	NTSTATUS status;
 
-	setup = TRANSACT2_QFSINFO;
-
+	SSVAL(setup, 0, TRANSACT2_QFSINFO);
 	SSVAL(param,0,SMB_QUERY_POSIX_FS_INFO);
 
-	if (!cli_send_trans(cli, SMBtrans2,
-		    NULL,
-		    0, 0,
-		    &setup, 1, 0,
-		    param, 2, 0,
-		    NULL, 0, 560)) {
-		goto cleanup;
-	}
-
-	if (!cli_receive_trans(cli, SMBtrans2,
-                              &rparam, &rparam_count,
-                              &rdata, &rdata_count)) {
-		goto cleanup;
-	}
-
-	if (cli_is_error(cli)) {
-		ret = False;
-		goto cleanup;
-	} else {
-		ret = True;
-	}
-
-	if (rdata_count != 56) {
-		goto cleanup;
+	status = cli_trans(talloc_tos(), cli, SMBtrans2, NULL, 0, 0, 0,
+			   setup, 1, 0,
+			   param, 2, 0,
+			   NULL, 0, 560,
+			   NULL,
+			   NULL, 0, NULL, /* rsetup */
+			   NULL, 0, NULL, /* rparam */
+			   &rdata, 56, NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
 	if (optimal_transfer_size) {
@@ -525,12 +509,7 @@ bool cli_get_posix_fs_info(struct cli_state *cli,
 	if (fs_identifier) {
 		*fs_identifier = BIG_UINT(rdata,48);
 	}
-
-cleanup:
-	SAFE_FREE(rparam);
-	SAFE_FREE(rdata);
-
-	return ret;
+	return NT_STATUS_OK;
 }
 
 
