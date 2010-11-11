@@ -318,6 +318,16 @@ static int schema_load_start_transaction(struct ldb_module *module)
 	return ldb_next_start_trans(module);
 }
 
+static int schema_load_end_transaction(struct ldb_module *module)
+{
+	struct schema_load_private_data *private_data =
+		talloc_get_type(ldb_module_get_private(module), struct schema_load_private_data);
+
+	private_data->in_transaction = false;
+
+	return ldb_next_end_trans(module);
+}
+
 static int schema_load_del_transaction(struct ldb_module *module)
 {
 	struct schema_load_private_data *private_data =
@@ -326,17 +336,6 @@ static int schema_load_del_transaction(struct ldb_module *module)
 	private_data->in_transaction = false;
 
 	return ldb_next_del_trans(module);
-}
-
-static int schema_load_prepare_commit(struct ldb_module *module)
-{
-	int ret;
-	struct schema_load_private_data *private_data =
-		talloc_get_type(ldb_module_get_private(module), struct schema_load_private_data);
-
-	ret = ldb_next_prepare_commit(module);
-	private_data->in_transaction = false;
-	return ret;
 }
 
 static int schema_load_extended(struct ldb_module *module, struct ldb_request *req)
@@ -359,7 +358,7 @@ static const struct ldb_module_ops ldb_schema_load_module_ops = {
 	.init_context	= schema_load_init,
 	.extended	= schema_load_extended,
 	.start_transaction = schema_load_start_transaction,
-	.prepare_commit    = schema_load_prepare_commit,
+	.end_transaction   = schema_load_end_transaction,
 	.del_transaction   = schema_load_del_transaction,
 };
 
