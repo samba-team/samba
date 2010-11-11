@@ -121,8 +121,13 @@ static int rdn_name_add(struct ldb_module *module, struct ldb_request *req)
 	if (rdn_val_p == NULL) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
+	if (rdn_val_p->length == 0) {
+		ldb_asprintf_errstring(ldb, "Empty RDN value on %s not permitted!",
+				       ldb_dn_get_linearized(req->op.add.message->dn));
+		return LDB_ERR_INVALID_DN_SYNTAX;
+	}
 	rdn_val = ldb_val_dup(msg, rdn_val_p);
-	
+
 	/* Perhaps someone above us tried to set this? Then ignore it */
 	ldb_msg_remove_attr(msg, "name");
 
@@ -275,16 +280,24 @@ static int rdn_rename_callback(struct ldb_request *req, struct ldb_reply *ares)
 	if (msg->dn == NULL) {
 		goto error;
 	}
+
 	rdn_name = ldb_dn_get_rdn_name(ac->req->op.rename.newdn);
 	if (rdn_name == NULL) {
 		goto error;
 	}
+
 	rdn_val_p = ldb_dn_get_rdn_val(msg->dn);
 	if (rdn_val_p == NULL) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		goto error;
+	}
+	if (rdn_val_p->length == 0) {
+		ldb_asprintf_errstring(ldb, "Empty RDN value on %s not permitted!",
+				       ldb_dn_get_linearized(req->op.rename.olddn));
+		return ldb_module_done(ac->req, NULL, NULL,
+				       LDB_ERR_NAMING_VIOLATION);
 	}
 	rdn_val = ldb_val_dup(msg, rdn_val_p);
-	
+
 	if (ldb_msg_add_empty(msg, rdn_name, LDB_FLAG_MOD_REPLACE, NULL) != 0) {
 		goto error;
 	}
@@ -311,8 +324,7 @@ static int rdn_rename_callback(struct ldb_request *req, struct ldb_reply *ares)
 	return ldb_next_request(ac->module, mod_req);
 
 error:
-	return ldb_module_done(ac->req, NULL, NULL,
-						 LDB_ERR_OPERATIONS_ERROR);
+	return ldb_module_done(ac->req, NULL, NULL, LDB_ERR_OPERATIONS_ERROR);
 }
 
 static int rdn_name_rename(struct ldb_module *module, struct ldb_request *req)

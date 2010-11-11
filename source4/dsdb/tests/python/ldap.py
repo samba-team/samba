@@ -887,6 +887,34 @@ objectClass: bootableDevice
         """Tests the RDN"""
         print "Tests the RDN"""
 
+        # empty RDN
+        try:
+            self.ldb.add({
+                 "dn": "=,cn=users," + self.base_dn,
+                 "objectclass": "group"})
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_INVALID_DN_SYNTAX)
+
+        # empty RDN name
+        try:
+            self.ldb.add({
+                 "dn": "=ldaptestgroup,cn=users," + self.base_dn,
+                 "objectclass": "group"})
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_INVALID_DN_SYNTAX)
+
+        # empty RDN value
+        try:
+            self.ldb.add({
+                 "dn": "cn=,cn=users," + self.base_dn,
+                 "objectclass": "group"})
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_INVALID_DN_SYNTAX)
+
+        # a wrong RDN candidate
         try:
             self.ldb.add({
                  "dn": "description=xyz,cn=users," + self.base_dn,
@@ -909,6 +937,30 @@ objectClass: bootableDevice
         self.assertTrue(len(res) == 1)
         self.assertTrue("name" in res[0])
         self.assertTrue(res[0]["name"][0] == "ldaptestgroup")
+
+        # new empty RDN
+        try:
+            self.ldb.rename("cn=ldaptestgroup,cn=users," + self.base_dn,
+                            "=,cn=users," + self.base_dn)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_INVALID_DN_SYNTAX)
+
+        # new empty RDN name
+        try:
+            self.ldb.rename("cn=ldaptestgroup,cn=users," + self.base_dn,
+                            "=ldaptestgroup,cn=users," + self.base_dn)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_INVALID_DN_SYNTAX)
+
+        # new empty RDN value
+        try:
+            self.ldb.rename("cn=ldaptestgroup,cn=users," + self.base_dn,
+                            "cn=,cn=users," + self.base_dn)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_NAMING_VIOLATION)
 
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
