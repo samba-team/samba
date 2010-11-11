@@ -1689,7 +1689,7 @@ struct cli_state *cli_cm_open(TALLOC_CTX *ctx,
 				int port,
 				int name_type);
 void cli_cm_display(const struct cli_state *c);
-bool cli_dfs_get_referral(TALLOC_CTX *ctx,
+NTSTATUS cli_dfs_get_referral(TALLOC_CTX *ctx,
 			struct cli_state *cli,
 			const char *path,
 			struct client_dfs_referral **refs,
