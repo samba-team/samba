@@ -46,13 +46,13 @@
 extern struct krb5plugin_windc_ftable windc_plugin_table;
 extern struct hdb_method hdb_samba4;
 
-typedef bool (*kdc_process_fn_t)(struct kdc_server *kdc,
-				 TALLOC_CTX *mem_ctx,
-				 DATA_BLOB *input,
-				 DATA_BLOB *reply,
-				 struct tsocket_address *peer_addr,
-				 struct tsocket_address *my_addr,
-				 int datagram);
+typedef enum kdc_process_ret (*kdc_process_fn_t)(struct kdc_server *kdc,
+						 TALLOC_CTX *mem_ctx,
+						 DATA_BLOB *input,
+						 DATA_BLOB *reply,
+						 struct tsocket_address *peer_addr,
+						 struct tsocket_address *my_addr,
+						 int datagram);
 
 /* hold information about one kdc socket */
 struct kdc_socket {
@@ -102,13 +102,13 @@ static void kdc_tcp_send(struct stream_connection *conn, uint16_t flags)
    calling conventions
 */
 
-static bool kdc_process(struct kdc_server *kdc,
-			TALLOC_CTX *mem_ctx,
-			DATA_BLOB *input,
-			DATA_BLOB *reply,
-			struct tsocket_address *peer_addr,
-			struct tsocket_address *my_addr,
-			int datagram_reply)
+static enum kdc_process_ret kdc_process(struct kdc_server *kdc,
+					TALLOC_CTX *mem_ctx,
+					DATA_BLOB *input,
+					DATA_BLOB *reply,
+					struct tsocket_address *peer_addr,
+					struct tsocket_address *my_addr,
+					int datagram_reply)
 {
 	int ret;
 	char *pa;
@@ -121,11 +121,11 @@ static bool kdc_process(struct kdc_server *kdc,
 	ret = tsocket_address_bsd_sockaddr(peer_addr, (struct sockaddr *) &ss,
 				sizeof(struct sockaddr_storage));
 	if (ret < 0) {
-		return false;
+		return KDC_PROCESS_FAILED;
 	}
 	pa = tsocket_address_string(peer_addr, mem_ctx);
 	if (pa == NULL) {
-		return false;
+		return KDC_PROCESS_FAILED;
 	}
 
 	DEBUG(10,("Received KDC packet of length %lu from %s\n",
@@ -140,7 +140,7 @@ static bool kdc_process(struct kdc_server *kdc,
 					    datagram_reply);
 	if (ret == -1) {
 		*reply = data_blob(NULL, 0);
-		return false;
+		return KDC_PROCESS_FAILED;
 	}
 	if (k5_reply.length) {
 		*reply = data_blob_talloc(mem_ctx, k5_reply.data, k5_reply.length);
@@ -148,7 +148,7 @@ static bool kdc_process(struct kdc_server *kdc,
 	} else {
 		*reply = data_blob(NULL, 0);
 	}
-	return true;
+	return KDC_PROCESS_OK;
 }
 
 struct kdc_tcp_call {
@@ -167,7 +167,7 @@ static void kdc_tcp_call_loop(struct tevent_req *subreq)
 				      struct kdc_tcp_connection);
 	struct kdc_tcp_call *call;
 	NTSTATUS status;
-	bool ok;
+	enum kdc_process_ret ret;
 
 	call = talloc(kdc_conn, struct kdc_tcp_call);
 	if (call == NULL) {
@@ -204,14 +204,14 @@ static void kdc_tcp_call_loop(struct tevent_req *subreq)
 	call->in.length -= 4;
 
 	/* Call krb5 */
-	ok = kdc_conn->kdc_socket->process(kdc_conn->kdc_socket->kdc,
+	ret = kdc_conn->kdc_socket->process(kdc_conn->kdc_socket->kdc,
 					   call,
 					   &call->in,
 					   &call->out,
 					   kdc_conn->conn->remote_address,
 					   kdc_conn->conn->local_address,
 					   0 /* Stream */);
-	if (!ok) {
+	if (ret == KDC_PROCESS_FAILED) {
 		kdc_tcp_terminate_connection(kdc_conn,
 				"kdc_tcp_call_loop: process function failed");
 		return;
@@ -372,7 +372,7 @@ static void kdc_udp_call_loop(struct tevent_req *subreq)
 	uint8_t *buf;
 	ssize_t len;
 	int sys_errno;
-	bool ok;
+	enum kdc_process_ret ret;
 
 	call = talloc(sock, struct kdc_udp_call);
 	if (call == NULL) {
@@ -396,14 +396,14 @@ static void kdc_udp_call_loop(struct tevent_req *subreq)
 		 tsocket_address_string(call->src, call)));
 
 	/* Call krb5 */
-	ok = sock->kdc_socket->process(sock->kdc_socket->kdc,
+	ret = sock->kdc_socket->process(sock->kdc_socket->kdc,
 				       call,
 				       &call->in,
 				       &call->out,
 				       call->src,
 				       sock->kdc_socket->local_address,
 				       1 /* Datagram */);
-	if (!ok) {
+	if (ret == KDC_PROCESS_FAILED) {
 		talloc_free(call);
 		goto done;
 	}

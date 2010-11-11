@@ -449,13 +449,13 @@ static bool kpasswd_process_request(struct kdc_server *kdc,
 	}
 }
 
-bool kpasswdd_process(struct kdc_server *kdc,
-		      TALLOC_CTX *mem_ctx,
-		      DATA_BLOB *input,
-		      DATA_BLOB *reply,
-		      struct tsocket_address *peer_addr,
-		      struct tsocket_address *my_addr,
-		      int datagram_reply)
+enum kdc_process_ret kpasswdd_process(struct kdc_server *kdc,
+				      TALLOC_CTX *mem_ctx,
+				      DATA_BLOB *input,
+				      DATA_BLOB *reply,
+				      struct tsocket_address *peer_addr,
+				      struct tsocket_address *my_addr,
+				      int datagram_reply)
 {
 	bool ret;
 	const uint16_t header_len = 6;
@@ -475,20 +475,20 @@ bool kpasswdd_process(struct kdc_server *kdc,
 	char *keytab_name;
 
 	if (!tmp_ctx) {
-		return false;
+		return KDC_PROCESS_FAILED;
 	}
 
 	/* Be parinoid.  We need to ensure we don't just let the
 	 * caller lead us into a buffer overflow */
 	if (input->length <= header_len) {
 		talloc_free(tmp_ctx);
-		return false;
+		return KDC_PROCESS_FAILED;
 	}
 
 	len = RSVAL(input->data, 0);
 	if (input->length != len) {
 		talloc_free(tmp_ctx);
-		return false;
+		return KDC_PROCESS_FAILED;
 	}
 
 	/* There are two different versions of this protocol so far,
@@ -498,7 +498,7 @@ bool kpasswdd_process(struct kdc_server *kdc,
 	ap_req_len = RSVAL(input->data, 4);
 	if ((ap_req_len >= len) || (ap_req_len + header_len) >= len) {
 		talloc_free(tmp_ctx);
-		return false;
+		return KDC_PROCESS_FAILED;
 	}
 
 	krb_priv_len = len - ap_req_len;
@@ -508,7 +508,7 @@ bool kpasswdd_process(struct kdc_server *kdc,
 	server_credentials = cli_credentials_init(tmp_ctx);
 	if (!server_credentials) {
 		DEBUG(1, ("Failed to init server credentials\n"));
-		return false;
+		return KDC_PROCESS_FAILED;
 	}
 
 	/* We want the credentials subsystem to use the krb5 context
@@ -547,7 +547,7 @@ bool kpasswdd_process(struct kdc_server *kdc,
 					      &gensec_security);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(tmp_ctx);
-		return false;
+		return KDC_PROCESS_FAILED;
 	}
 
 	/* The kerberos PRIV packets include these addresses.  MIT
@@ -561,14 +561,14 @@ bool kpasswdd_process(struct kdc_server *kdc,
 	nt_status = gensec_set_local_address(gensec_security, peer_addr);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(tmp_ctx);
-		return false;
+		return KDC_PROCESS_FAILED;
 	}
 #endif
 
 	nt_status = gensec_set_local_address(gensec_security, my_addr);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(tmp_ctx);
-		return false;
+		return KDC_PROCESS_FAILED;
 	}
 
 	/* We want the GENSEC wrap calls to generate PRIV tokens */
@@ -577,7 +577,7 @@ bool kpasswdd_process(struct kdc_server *kdc,
 	nt_status = gensec_start_mech_by_name(gensec_security, "krb5");
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(tmp_ctx);
-		return false;
+		return KDC_PROCESS_FAILED;
 	}
 
 	/* Accept the AP-REQ and generate teh AP-REP we need for the reply */
@@ -595,7 +595,7 @@ bool kpasswdd_process(struct kdc_server *kdc,
 			goto reply;
 		}
 		talloc_free(tmp_ctx);
-		return ret;
+		return KDC_PROCESS_FAILED;
 	}
 
 	/* Extract the data from the KRB-PRIV half of the message */
@@ -612,7 +612,7 @@ bool kpasswdd_process(struct kdc_server *kdc,
 			goto reply;
 		}
 		talloc_free(tmp_ctx);
-		return ret;
+		return KDC_PROCESS_FAILED;
 	}
 
 	/* Figure out something to do with it (probably changing a password...) */
@@ -622,7 +622,7 @@ bool kpasswdd_process(struct kdc_server *kdc,
 				      &kpasswd_req, &kpasswd_rep);
 	if (!ret) {
 		/* Argh! */
-		return false;
+		return KDC_PROCESS_FAILED;
 	}
 
 	/* And wrap up the reply: This ensures that the error message
@@ -641,13 +641,13 @@ bool kpasswdd_process(struct kdc_server *kdc,
 			goto reply;
 		}
 		talloc_free(tmp_ctx);
-		return ret;
+		return KDC_PROCESS_FAILED;
 	}
 
 reply:
 	*reply = data_blob_talloc(mem_ctx, NULL, krb_priv_rep.length + ap_rep.length + header_len);
 	if (!reply->data) {
-		return false;
+		return KDC_PROCESS_FAILED;
 	}
 
 	RSSVAL(reply->data, 0, reply->length);
@@ -661,6 +661,6 @@ reply:
 	       krb_priv_rep.length);
 
 	talloc_free(tmp_ctx);
-	return ret;
+	return KDC_PROCESS_OK;
 }
 

@@ -42,13 +42,19 @@ struct kdc_server {
 	struct samba_kdc_base_context *base_ctx;
 };
 
-bool kpasswdd_process(struct kdc_server *kdc,
-		      TALLOC_CTX *mem_ctx,
-		      DATA_BLOB *input,
-		      DATA_BLOB *reply,
-		      struct tsocket_address *peer_addr,
-		      struct tsocket_address *my_addr,
-		      int datagram_reply);
+enum kdc_process_ret {
+	KDC_PROCESS_OK=0,
+	KDC_PROCESS_FAILED,
+	KDC_PROCESS_PROXY};
+
+
+enum kdc_process_ret kpasswdd_process(struct kdc_server *kdc,
+				      TALLOC_CTX *mem_ctx,
+				      DATA_BLOB *input,
+				      DATA_BLOB *reply,
+				      struct tsocket_address *peer_addr,
+				      struct tsocket_address *my_addr,
+				      int datagram_reply);
 
 /* from hdb-samba4.c */
 NTSTATUS hdb_samba4_create_kdc(struct samba_kdc_base_context *base_ctx,
