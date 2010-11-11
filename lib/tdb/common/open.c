@@ -197,6 +197,32 @@ _PUBLIC_ struct tdb_context *tdb_open_ex(const char *name, int hash_size, int td
 		tdb->log.log_private = NULL;
 	}
 
+	if (name == NULL && (tdb_flags & TDB_INTERNAL)) {
+		name = "__TDB_INTERNAL__";
+	}
+
+	if (name == NULL) {
+		tdb->name = "__NULL__";
+		TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_open_ex: called with name == NULL\n"));
+		tdb->name = NULL;
+		errno = EINVAL;
+		goto fail;
+	}
+
+	/* now make a copy of the name, as the caller memory might went away */
+	if (!(tdb->name = (char *)strdup(name))) {
+		/*
+		 * set the name as the given string, so that tdb_name() will
+		 * work in case of an error.
+		 */
+		tdb->name = name;
+		TDB_LOG((tdb, TDB_DEBUG_ERROR, "tdb_open_ex: can't strdup(%s)\n",
+			 name));
+		tdb->name = NULL;
+		errno = ENOMEM;
+		goto fail;
+	}
+
 	if (hash_fn) {
 		tdb->hash_fn = hash_fn;
 		hash_alg = "the user defined";
@@ -359,11 +385,6 @@ _PUBLIC_ struct tdb_context *tdb_open_ex(const char *name, int hash_size, int td
 		goto fail;
 	}
 
-	if (!(tdb->name = (char *)strdup(name))) {
-		errno = ENOMEM;
-		goto fail;
-	}
-
 	tdb->map_size = st.st_size;
 	tdb->device = st.st_dev;
 	tdb->inode = st.st_ino;
@@ -436,11 +457,11 @@ _PUBLIC_ struct tdb_context *tdb_open_ex(const char *name, int hash_size, int td
 		else
 			tdb_munmap(tdb);
 	}
-	SAFE_FREE(tdb->name);
 	if (tdb->fd != -1)
 		if (close(tdb->fd) != 0)
 			TDB_LOG((tdb, TDB_DEBUG_ERROR, "tdb_open_ex: failed to close tdb->fd on error!\n"));
 	SAFE_FREE(tdb->lockrecs);
+	SAFE_FREE(tdb->name);
 	SAFE_FREE(tdb);
 	errno = save_errno;
 	return NULL;
