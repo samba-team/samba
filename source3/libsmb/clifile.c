@@ -4071,7 +4071,7 @@ static NTSTATUS cli_set_ea(struct cli_state *cli, uint16_t setup_val,
 			   const char *ea_name,
 			   const char *ea_val, size_t ea_len)
 {
-	uint16_t setup[0];
+	uint16_t setup[1];
 	unsigned int data_len = 0;
 	uint8_t *data = NULL;
 	char *p;
