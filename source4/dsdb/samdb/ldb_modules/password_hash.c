@@ -1325,8 +1325,12 @@ static int setup_given_passwords(struct setup_password_fields_io *io,
 					   g->cleartext_utf16->length,
 					   (void *)&cleartext_utf8_str,
 					   &converted_pw_len, false)) {
-			/* We can't bail out entirely, as these unconvertable passwords are frustratingly valid */
+			/* We must bail out here, the input wasn't even a multiple of 2 bytes */
 			talloc_free(cleartext_utf8_blob);
+			ldb_asprintf_errstring(ldb,
+					       "setup_password_fields: "
+					       "UTF16 password for user %s had odd length (length must be a multiple of 2)", io->u.sAMAccountName);
+			return LDB_ERR_OPERATIONS_ERROR;
 		} else {
 			*cleartext_utf8_blob = data_blob_const(cleartext_utf8_str,
 							       converted_pw_len);
