@@ -45,7 +45,7 @@ _kdc_db_fetch(krb5_context context,
 	      hdb_entry_ex **h)
 {
     hdb_entry_ex *ent;
-    krb5_error_code ret;
+    krb5_error_code ret = HDB_ERR_NOENTRY;
     int i;
     unsigned kvno = 0;
 
@@ -118,9 +118,9 @@ _kdc_db_fetch(krb5_context context,
 	}
     }
     free(ent);
-    krb5_set_error_message(context, HDB_ERR_NOENTRY,
+    krb5_set_error_message(context, ret,
 			   "no such entry found in hdb");
-    return HDB_ERR_NOENTRY;
+    return ret;
 }
 
 void

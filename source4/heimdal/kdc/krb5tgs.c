@@ -1170,7 +1170,17 @@ tgs_parse_request(krb5_context context,
 
     ret = _kdc_db_fetch(context, config, princ, HDB_F_GET_KRBTGT, ap_req.ticket.enc_part.kvno, NULL, krbtgt);
 
-    if(ret) {
+    if(ret == HDB_ERR_NOT_FOUND_HERE) {
+	char *p;
+	ret = krb5_unparse_name(context, princ, &p);
+	if (ret != 0)
+	    p = "<unparse_name failed>";
+	krb5_free_principal(context, princ);
+	kdc_log(context, config, 5, "Ticket-granting ticket account %s does not have secrets at this KDC, need to proxy", p);
+	if (ret == 0)
+	    free(p);
+	goto out;
+    } else if(ret){
 	const char *msg = krb5_get_error_message(context, ret);
 	char *p;
 	ret = krb5_unparse_name(context, princ, &p);
@@ -1565,7 +1575,10 @@ server_lookup:
     ret = _kdc_db_fetch(context, config, sp, HDB_F_GET_SERVER | HDB_F_CANON,
 			NULL, NULL, &server);
 
-    if(ret){
+    if(ret == HDB_ERR_NOT_FOUND_HERE) {
+	kdc_log(context, config, 5, "target %s does not have secrets at this KDC, need to proxy", sp);
+	goto out;
+    } else if(ret){
 	const char *new_rlm, *msg;
 	Realm req_rlm;
 	krb5_realm *realms;
@@ -1625,7 +1638,10 @@ server_lookup:
 
     ret = _kdc_db_fetch(context, config, cp, HDB_F_GET_CLIENT | HDB_F_CANON,
 			NULL, &clientdb, &client);
-    if(ret) {
+    if(ret == HDB_ERR_NOT_FOUND_HERE) {
+	kdc_log(context, config, 5, "client %s does not have secrets at this KDC, need to proxy", cp);
+	goto out;
+    } else if(ret){
 	const char *krbtgt_realm, *msg;
 
 	/*
@@ -2230,7 +2246,7 @@ _kdc_tgs_rep(krb5_context context,
 out:
     if (replykey)
 	krb5_free_keyblock(context, replykey);
-    if(ret && data->data == NULL){
+    if(ret && ret != HDB_ERR_NOT_FOUND_HERE && data->data == NULL){
 	krb5_mk_error(context,
 		      ret,
 		      NULL,
@@ -2240,6 +2256,7 @@ out:
 		      csec,
 		      cusec,
 		      data);
+	ret = 0;
     }
     free(csec);
     free(cusec);
@@ -2253,5 +2270,5 @@ out:
 	free(auth_data);
     }
 
-    return 0;
+    return ret;
 }

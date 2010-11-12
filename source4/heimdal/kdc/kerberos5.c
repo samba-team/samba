@@ -990,7 +990,10 @@ _kdc_as_rep(krb5_context context,
     ret = _kdc_db_fetch(context, config, client_princ,
 			HDB_F_GET_CLIENT | flags, NULL,
 			&clientdb, &client);
-    if(ret){
+    if(ret == HDB_ERR_NOT_FOUND_HERE) {
+	kdc_log(context, config, 5, "client %s does not have secrets at this KDC, need to proxy", client_name);
+	goto out;
+    } else if(ret){
 	const char *msg = krb5_get_error_message(context, ret);
 	kdc_log(context, config, 0, "UNKNOWN -- %s: %s", client_name, msg);
 	krb5_free_error_message(context, msg);
@@ -1001,7 +1004,10 @@ _kdc_as_rep(krb5_context context,
     ret = _kdc_db_fetch(context, config, server_princ,
 			HDB_F_GET_SERVER|HDB_F_GET_KRBTGT,
 			NULL, NULL, &server);
-    if(ret){
+    if(ret == HDB_ERR_NOT_FOUND_HERE) {
+	kdc_log(context, config, 5, "target %s does not have secrets at this KDC, need to proxy", server_name);
+	goto out;
+    } else if(ret){
 	const char *msg = krb5_get_error_message(context, ret);
 	kdc_log(context, config, 0, "UNKNOWN -- %s: %s", server_name, msg);
 	krb5_free_error_message(context, msg);
@@ -1778,7 +1784,7 @@ _kdc_as_rep(krb5_context context,
 
 out:
     free_AS_REP(&rep);
-    if(ret){
+    if(ret != 0 && ret != HDB_ERR_NOT_FOUND_HERE){
 	krb5_mk_error(context,
 		      ret,
 		      e_text,
