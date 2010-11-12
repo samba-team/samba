@@ -44,7 +44,7 @@ bld.SAMBA_MODULE('KCC_SRV',
 	)
 
 
-bld.SAMBA_MODULE('DNS_UPDATE_SRV',
+bld.SAMBA_MODULE('dns_update_srv',
 	source='dns/dns_update.c',
 	subsystem='service',
 	init_function='server_service_dnsupdate_init',
