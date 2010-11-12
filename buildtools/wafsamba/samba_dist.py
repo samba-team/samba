@@ -103,11 +103,17 @@ def dist(appname='',version=''):
         else:
             destdir = '.'
         absdir = os.path.join(srcdir, dir)
-        git_cmd = [ 'git', 'ls-files', '--full-name', absdir ]
+        if os.path.isdir(os.path.join(absdir, ".git")):
+            ls_files_cmd = [ 'git', 'ls-files', '--full-name', absdir ]
+        elif os.path.isdir(os.path.join(absdir, ".bzr")):
+            ls_files_cmd = [ 'bzr', 'ls', '--from-root', '--recursive', '-d', absdir ]
+        else:
+            Logs.error('unknown or no vcs for %s' % absdir)
+            sys.exit(1)
         try:
-            files = Utils.cmd_output(git_cmd).split()
+            files = Utils.cmd_output(ls_files_cmd).split()
         except:
-            Logs.error('git command failed: %s' % ' '.join(git_cmd))
+            Logs.error('command failed: %s' % ' '.join(ls_files_cmd))
             sys.exit(1)
         for f in files:
             abspath = os.path.join(srcdir, f)
@@ -123,6 +129,8 @@ def dist(appname='',version=''):
                 if f.startswith(d):
                     blacklisted = True
             if blacklisted:
+                continue
+            if os.path.isdir(abspath):
                 continue
             if destdir != '.':
                 f = destdir + '/' + f
