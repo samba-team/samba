@@ -1,5 +1,31 @@
 import Utils
 
+def git_version_summary(have_git):
+    # Get version from GIT
+    if not have_git:
+        return ("GIT-UNKNOWN", {})
+
+    git = Utils.cmd_output('git show --pretty=format:"%h%n%ct%n%H%n%cd" --stat HEAD')
+
+    lines = git.splitlines()
+    fields = {
+            "GIT_COMMIT_ABBREV": lines[0],
+            "GIT_COMMIT_TIME": lines[1],
+            "GIT_COMMIT_FULLREV": lines[2],
+            "GIT_COMMIT_DATE": lines[3],
+            }
+
+    ret = "GIT-" + fields["GIT_COMMIT_ABBREV"]
+
+    clean = Utils.cmd_output('git diff HEAD | wc -l', silent=True)
+    if clean == "0\n":
+        fields["GIT_COMMIT_IS_CLEAN"] = "1"
+    else:
+        fields["GIT_COMMIT_IS_CLEAN"] = "0"
+        ret += "+"
+    return (ret, fields)
+
+
 class samba_version(object):
 
     def __init__(self, version_dict, have_git=False):
@@ -64,29 +90,10 @@ also accepted as dictionary entries here
             SAMBA_VERSION_STRING += ("rc%u" % self.RC_RELEASE)
 
         if self.IS_SNAPSHOT:
-            # Get version from GIT
-            if have_git:
-                git = Utils.cmd_output('git show --pretty=format:"%h%n%ct%n%H%n%cd" --stat HEAD', silent=True)
-            else:
-                git = ''
-
-            if git == '':
-                SAMBA_VERSION_STRING += "-GIT-UNKNOWN"
-            else:
-                lines = git.splitlines()
-                self.GIT_COMMIT_ABBREV = lines[0]
-                self.GIT_COMMIT_TIME = lines[1]
-                self.GIT_COMMIT_FULLREV = lines[2]
-                self.GIT_COMMIT_DATE = lines[3]
-
-                SAMBA_VERSION_STRING += ("-GIT-" + self.GIT_COMMIT_ABBREV)
-
-                clean = Utils.cmd_output('git diff HEAD | wc -l', silent=True)
-                if clean == "0\n":
-                    self.GIT_COMMIT_IS_CLEAN = True
-                else:
-                    self.GIT_COMMIT_IS_CLEAN = False
-                    SAMBA_VERSION_STRING += "+"
+            suffix, self.vcs_fields = git_version_summary(have_git)
+            SAMBA_VERSION_STRING += "-" + suffix
+        else:
+            self.vcs_fields = {}
 
         self.OFFICIAL_STRING = SAMBA_VERSION_STRING
 
@@ -126,15 +133,8 @@ also accepted as dictionary entries here
         if self.RC_RELEASE is not None:
             string+="#define SAMBA_VERSION_RC_RELEASE %u\n" % self.RC_RELEASE
 
-        try:
-            string+="#define SAMBA_VERSION_GIT_COMMIT_ABBREV \"" + self.GIT_COMMIT_ABBREV + "\"\n"
-            string+="#define SAMBA_VERSION_GIT_COMMIT_FULLREV \"" + self.GIT_COMMIT_FULLREV + "\"\n"
-            string+="#define SAMBA_VERSION_GIT_COMMIT_DATE \"" + self.GIT_COMMIT_DATE + "\"\n"
-            string+="#define SAMBA_VERSION_GIT_COMMIT_TIME " + self.GIT_COMMIT_TIME + "\n"
-            if self.GIT_COMMIT_IS_CLEAN:
-                string+="#define SAMBA_VERSION_GIT_COMMIT_IS_CLEAN 1\n"
-        except AttributeError:
-            pass
+        for name, value in self.vcs_fields.iteritems():
+            string+="#define SAMBA_VERSION_%s \"%s\"\n" % (name, value)
 
         string+="#define SAMBA_VERSION_OFFICIAL_STRING \"" + self.OFFICIAL_STRING + "\"\n"
 
