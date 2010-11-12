@@ -41,40 +41,11 @@
 #include "param/param.h"
 #include "kdc/kdc-glue.h"
 #include "librpc/gen_ndr/ndr_misc.h"
-
+#include "dsdb/samdb/samdb.h"
+#include "auth/session.h"
 
 extern struct krb5plugin_windc_ftable windc_plugin_table;
 extern struct hdb_method hdb_samba4;
-
-typedef enum kdc_process_ret (*kdc_process_fn_t)(struct kdc_server *kdc,
-						 TALLOC_CTX *mem_ctx,
-						 DATA_BLOB *input,
-						 DATA_BLOB *reply,
-						 struct tsocket_address *peer_addr,
-						 struct tsocket_address *my_addr,
-						 int datagram);
-
-/* hold information about one kdc socket */
-struct kdc_socket {
-	struct kdc_server *kdc;
-	struct tsocket_address *local_address;
-	kdc_process_fn_t process;
-};
-
-/*
-  state of an open tcp connection
-*/
-struct kdc_tcp_connection {
-	/* stream connection we belong to */
-	struct stream_connection *conn;
-
-	/* the kdc_server the connection belongs to */
-	struct kdc_socket *kdc_socket;
-
-	struct tstream_context *tstream;
-
-	struct tevent_queue *send_queue;
-};
 
 static void kdc_tcp_terminate_connection(struct kdc_tcp_connection *kdcconn, const char *reason)
 {
@@ -142,6 +113,12 @@ static enum kdc_process_ret kdc_process(struct kdc_server *kdc,
 		*reply = data_blob(NULL, 0);
 		return KDC_PROCESS_FAILED;
 	}
+
+	if (ret == HDB_ERR_NOT_FOUND_HERE) {
+		*reply = data_blob(NULL, 0);
+		return KDC_PROCESS_PROXY;
+	}
+
 	if (k5_reply.length) {
 		*reply = data_blob_talloc(mem_ctx, k5_reply.data, k5_reply.length);
 		krb5_data_free(&k5_reply);
@@ -150,14 +127,6 @@ static enum kdc_process_ret kdc_process(struct kdc_server *kdc,
 	}
 	return KDC_PROCESS_OK;
 }
-
-struct kdc_tcp_call {
-	struct kdc_tcp_connection *kdc_conn;
-	DATA_BLOB in;
-	DATA_BLOB out;
-	uint8_t out_hdr[4];
-	struct iovec out_iov[2];
-};
 
 static void kdc_tcp_call_writev_done(struct tevent_req *subreq);
 
@@ -217,6 +186,17 @@ static void kdc_tcp_call_loop(struct tevent_req *subreq)
 		return;
 	}
 
+	if (ret == KDC_PROCESS_PROXY) {
+		if (!kdc_conn->kdc_socket->kdc->am_rodc) {
+			kdc_tcp_terminate_connection(kdc_conn,
+						     "kdc_tcp_call_loop: proxying requested when not RODC");
+			return;
+		}
+		kdc_tcp_proxy(kdc_conn->kdc_socket->kdc, kdc_conn, call,
+			      tsocket_address_inet_port(kdc_conn->conn->local_address));
+		goto done;
+	}
+
 	/* First add the length of the out buffer */
 	RSIVAL(call->out_hdr, 0, call->out.length);
 	call->out_iov[0].iov_base = (char *) call->out_hdr;
@@ -237,6 +217,7 @@ static void kdc_tcp_call_loop(struct tevent_req *subreq)
 	}
 	tevent_req_set_callback(subreq, kdc_tcp_call_writev_done, call);
 
+done:
 	/*
 	 * The krb5 tcp pdu's has the length as 4 byte (initial_read_size),
 	 * packet_full_request_u32 provides the pdu length then.
@@ -349,19 +330,6 @@ static const struct stream_server_ops kdc_tcp_stream_ops = {
 	.send_handler		= kdc_tcp_send
 };
 
-/* hold information about one kdc/kpasswd udp socket */
-struct kdc_udp_socket {
-	struct kdc_socket *kdc_socket;
-	struct tdgram_context *dgram;
-	struct tevent_queue *send_queue;
-};
-
-struct kdc_udp_call {
-	struct tsocket_address *src;
-	DATA_BLOB in;
-	DATA_BLOB out;
-};
-
 static void kdc_udp_call_sendto_done(struct tevent_req *subreq);
 
 static void kdc_udp_call_loop(struct tevent_req *subreq)
@@ -405,6 +373,17 @@ static void kdc_udp_call_loop(struct tevent_req *subreq)
 				       1 /* Datagram */);
 	if (ret == KDC_PROCESS_FAILED) {
 		talloc_free(call);
+		goto done;
+	}
+
+	if (ret == KDC_PROCESS_PROXY) {
+		if (!sock->kdc_socket->kdc->am_rodc) {
+			DEBUG(0,("kdc_udp_call_loop: proxying requested when not RODC"));
+			talloc_free(call);
+			goto done;
+		}
+		kdc_udp_proxy(sock->kdc_socket->kdc, sock, call,
+			      tsocket_address_inet_port(sock->kdc_socket->local_address));
 		goto done;
 	}
 
@@ -677,6 +656,7 @@ static void kdc_task_init(struct task_server *task)
 	NTSTATUS status;
 	krb5_error_code ret;
 	struct interface *ifaces;
+	int ldb_ret;
 
 	switch (lpcfg_server_role(task->lp_ctx)) {
 	case ROLE_STANDALONE:
@@ -699,13 +679,33 @@ static void kdc_task_init(struct task_server *task)
 
 	task_server_set_title(task, "task[kdc]");
 
-	kdc = talloc(task, struct kdc_server);
+	kdc = talloc_zero(task, struct kdc_server);
 	if (kdc == NULL) {
 		task_server_terminate(task, "kdc: out of memory", true);
 		return;
 	}
 
 	kdc->task = task;
+
+
+	/* get a samdb connection */
+	kdc->samdb = samdb_connect(kdc, kdc->task->event_ctx, kdc->task->lp_ctx,
+				   system_session(kdc->task->lp_ctx), 0);
+	if (!kdc->samdb) {
+		DEBUG(1,("kdc_task_init: unable to connect to samdb\n"));
+		task_server_terminate(task, "kdc: krb5_init_context samdb connect failed", true);
+		return;
+	}
+
+	ldb_ret = samdb_rodc(kdc->samdb, &kdc->am_rodc);
+	if (ldb_ret != LDB_SUCCESS) {
+		DEBUG(1, ("kdc_task_init: Cannot determine if we are an RODC: %s\n",
+			  ldb_errstring(kdc->samdb)));
+		task_server_terminate(task, "kdc: krb5_init_context samdb RODC connect failed", true);
+		return;
+	}
+
+	kdc->proxy_timeout = lpcfg_parm_int(kdc->task->lp_ctx, NULL, "kdc", "proxy timeout", 5);
 
 	initialize_krb5_error_table();
 

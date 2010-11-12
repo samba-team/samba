@@ -40,12 +40,67 @@ struct kdc_server {
 	krb5_kdc_configuration *config;
 	struct smb_krb5_context *smb_krb5_context;
 	struct samba_kdc_base_context *base_ctx;
+	struct ldb_context *samdb;
+	bool am_rodc;
+	uint32_t proxy_timeout;
 };
 
 enum kdc_process_ret {
 	KDC_PROCESS_OK=0,
 	KDC_PROCESS_FAILED,
 	KDC_PROCESS_PROXY};
+
+struct kdc_udp_call {
+	struct tsocket_address *src;
+	DATA_BLOB in;
+	DATA_BLOB out;
+};
+
+/* hold information about one kdc/kpasswd udp socket */
+struct kdc_udp_socket {
+	struct kdc_socket *kdc_socket;
+	struct tdgram_context *dgram;
+	struct tevent_queue *send_queue;
+};
+
+struct kdc_tcp_call {
+	struct kdc_tcp_connection *kdc_conn;
+	DATA_BLOB in;
+	DATA_BLOB out;
+	uint8_t out_hdr[4];
+	struct iovec out_iov[2];
+};
+
+typedef enum kdc_process_ret (*kdc_process_fn_t)(struct kdc_server *kdc,
+						 TALLOC_CTX *mem_ctx,
+						 DATA_BLOB *input,
+						 DATA_BLOB *reply,
+						 struct tsocket_address *peer_addr,
+						 struct tsocket_address *my_addr,
+						 int datagram);
+
+
+/* hold information about one kdc socket */
+struct kdc_socket {
+	struct kdc_server *kdc;
+	struct tsocket_address *local_address;
+	kdc_process_fn_t process;
+};
+
+/*
+  state of an open tcp connection
+*/
+struct kdc_tcp_connection {
+	/* stream connection we belong to */
+	struct stream_connection *conn;
+
+	/* the kdc_server the connection belongs to */
+	struct kdc_socket *kdc_socket;
+
+	struct tstream_context *tstream;
+
+	struct tevent_queue *send_queue;
+};
 
 
 enum kdc_process_ret kpasswdd_process(struct kdc_server *kdc,
@@ -59,5 +114,12 @@ enum kdc_process_ret kpasswdd_process(struct kdc_server *kdc,
 /* from hdb-samba4.c */
 NTSTATUS hdb_samba4_create_kdc(struct samba_kdc_base_context *base_ctx,
 			       krb5_context context, struct HDB **db);
+
+/* from proxy.c */
+void kdc_udp_proxy(struct kdc_server *kdc, struct kdc_udp_socket *sock,
+		   struct kdc_udp_call *call, uint16_t port);
+
+void kdc_tcp_proxy(struct kdc_server *kdc, struct kdc_tcp_connection *kdc_conn,
+		   struct kdc_tcp_call *call, uint16_t port);
 
 #endif

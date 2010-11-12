@@ -177,22 +177,11 @@ static bool kpasswdd_change_password(struct kdc_server *kdc,
 	struct ldb_message **res;
 	int ret;
 
-	/* Connect to a SAMDB with system privileges for fetching the old pw
-	 * hashes. */
-	samdb = samdb_connect(mem_ctx, kdc->task->event_ctx, kdc->task->lp_ctx,
-			      system_session(kdc->task->lp_ctx), 0);
-	if (!samdb) {
-		return kpasswdd_make_error_reply(kdc, mem_ctx,
-						KRB5_KPASSWD_HARDERROR,
-						"Failed to open samdb",
-						reply);
-	}
-
 	/* Fetch the old hashes to get the old password in order to perform
 	 * the password change operation. Naturally it would be much better to
 	 * have a password hash from an authentication around but this doesn't
 	 * seem to be the case here. */
-	ret = gendb_search(samdb, mem_ctx, NULL, &res, attrs,
+	ret = gendb_search(kdc->samdb, mem_ctx, NULL, &res, attrs,
 			   "(&(objectClass=user)(sAMAccountName=%s))",
 			   session_info->server_info->account_name);
 	if (ret != 1) {
@@ -478,6 +467,11 @@ enum kdc_process_ret kpasswdd_process(struct kdc_server *kdc,
 		return KDC_PROCESS_FAILED;
 	}
 
+	if (kdc->am_rodc) {
+		talloc_free(tmp_ctx);
+		return KDC_PROCESS_PROXY;
+	}
+
 	/* Be parinoid.  We need to ensure we don't just let the
 	 * caller lead us into a buffer overflow */
 	if (input->length <= header_len) {
@@ -508,6 +502,7 @@ enum kdc_process_ret kpasswdd_process(struct kdc_server *kdc,
 	server_credentials = cli_credentials_init(tmp_ctx);
 	if (!server_credentials) {
 		DEBUG(1, ("Failed to init server credentials\n"));
+		talloc_free(tmp_ctx);
 		return KDC_PROCESS_FAILED;
 	}
 
@@ -622,6 +617,7 @@ enum kdc_process_ret kpasswdd_process(struct kdc_server *kdc,
 				      &kpasswd_req, &kpasswd_rep);
 	if (!ret) {
 		/* Argh! */
+		talloc_free(tmp_ctx);
 		return KDC_PROCESS_FAILED;
 	}
 
@@ -647,6 +643,7 @@ enum kdc_process_ret kpasswdd_process(struct kdc_server *kdc,
 reply:
 	*reply = data_blob_talloc(mem_ctx, NULL, krb_priv_rep.length + ap_rep.length + header_len);
 	if (!reply->data) {
+		talloc_free(tmp_ctx);
 		return KDC_PROCESS_FAILED;
 	}
 
