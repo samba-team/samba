@@ -192,6 +192,7 @@ static void samba_kdc_free_entry(krb5_context context, hdb_entry_ex *entry_ex)
 }
 
 static krb5_error_code samba_kdc_message2entry_keys(krb5_context context,
+						    struct samba_kdc_db_context *kdc_db_ctx,
 						    TALLOC_CTX *mem_ctx,
 						    struct ldb_message *msg,
 						    uint32_t rid,
@@ -376,6 +377,11 @@ static krb5_error_code samba_kdc_message2entry_keys(krb5_context context,
 	}
 
 	if (allocated_keys == 0) {
+		if (kdc_db_ctx->rodc) {
+			/* We are on an RODC, but don't have keys for this account.  Signal this to the caller */
+			return HDB_ERR_NOT_FOUND_HERE;
+		}
+
 		/* oh, no password.  Apparently (comment in
 		 * hdb-ldap.c) this violates the ASN.1, but this
 		 * allows an entry with no keys (yet). */
@@ -768,7 +774,7 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 	entry_ex->entry.generation = NULL;
 
 	/* Get keys from the db */
-	ret = samba_kdc_message2entry_keys(context, p, msg, 
+	ret = samba_kdc_message2entry_keys(context, kdc_db_ctx, p, msg,
 					   rid, is_rodc, userAccountControl,
 					   ent_type, entry_ex);
 	if (ret) {
