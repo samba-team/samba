@@ -3,7 +3,7 @@ import Utils
 
 def bzr_version_summary(path):
     try:
-        from bzrlib import branch, osutils
+        from bzrlib import branch, osutils, workingtree
     except ImportError:
         return ("BZR-UNKNOWN", {})
 
@@ -36,12 +36,11 @@ def bzr_version_summary(path):
         fields["GIT_COMMIT_FULLREV"] = full_rev
         ret = "GIT-" + fields["GIT_COMMIT_ABBREV"]
 
-    clean = Utils.cmd_output('bzr diff | wc -l', silent=True)
-    if clean == "0\n":
-        fields["COMMIT_IS_CLEAN"] = "1"
-    else:
+    if workingtree.WorkingTree.open(path).has_changes():
         fields["COMMIT_IS_CLEAN"] = "0"
         ret += "+"
+    else:
+        fields["COMMIT_IS_CLEAN"] = "1"
     return (ret, fields)
 
 
