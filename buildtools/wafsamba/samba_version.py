@@ -37,10 +37,10 @@ def bzr_version_summary(path):
         ret = "GIT-" + fields["GIT_COMMIT_ABBREV"]
 
     if workingtree.WorkingTree.open(path).has_changes():
-        fields["COMMIT_IS_CLEAN"] = "0"
+        fields["COMMIT_IS_CLEAN"] = 0
         ret += "+"
     else:
-        fields["COMMIT_IS_CLEAN"] = "1"
+        fields["COMMIT_IS_CLEAN"] = 1
     return (ret, fields)
 
 
@@ -63,9 +63,9 @@ def git_version_summary(path, have_git):
 
     clean = Utils.cmd_output('git diff HEAD | wc -l', silent=True)
     if clean == "0\n":
-        fields["COMMIT_IS_CLEAN"] = "1"
+        fields["COMMIT_IS_CLEAN"] = 1
     else:
-        fields["COMMIT_IS_CLEAN"] = "0"
+        fields["COMMIT_IS_CLEAN"] = 0
         ret += "+"
     return (ret, fields)
 
