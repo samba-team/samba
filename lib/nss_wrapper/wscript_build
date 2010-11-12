@@ -4,6 +4,7 @@
 bld.SAMBA_LIBRARY('nss_wrapper',
                   source='nss_wrapper.c',
                   deps='replace',
-                  private_library=True
+                  private_library=True,
+                  enabled=bld.CONFIG_SET("NSS_WRAPPER"),
                   )
 
