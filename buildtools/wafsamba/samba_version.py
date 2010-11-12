@@ -1,6 +1,27 @@
 import os
 import Utils
 
+def bzr_version_summary():
+    vi = dict([l.split(":", 1) for l in Utils.cmd_output("bzr version-info").splitlines()])
+
+    ret = "BZR-%d" % (vi["revno"])
+
+    fields = {
+        "BZR_REVISION_ID": vi["revision-id"],
+        "BZR_REVNO": vi["revno"],
+        "BZR_DATE": vi["date"],
+        "BZR_BRANCH": vi["branch-nick"],
+        }
+
+    clean = Utils.cmd_output('bzr diff | wc -l', silent=True)
+    if clean == "0\n":
+        fields["BZR_COMMIT_IS_CLEAN"] = "1"
+    else:
+        fields["BZR_COMMIT_IS_CLEAN"] = "0"
+        ret += "+"
+    return (ret, fields)
+
+
 def git_version_summary(have_git):
     # Get version from GIT
     if not have_git:
@@ -93,6 +114,8 @@ also accepted as dictionary entries here
         if self.IS_SNAPSHOT:
             if os.path.exists(".git"):
                 suffix, self.vcs_fields = git_version_summary(have_git)
+            elif os.path.exists(".bzr"):
+                suffix, self.vcs_fields = bzr_version_summary()
             else:
                 suffix = "UNKNOWN"
                 self.vcs_fields = {}
