@@ -1,6 +1,6 @@
 #include "config.h"
 
-#line 3 "heimdal/lib/com_err/lex.c"
+#line 3 ""
 
 #define  YY_INT_ALIGNED short int
 
@@ -527,7 +527,7 @@ static int getstring(void);
 
 #undef ECHO
 
-#line 530 "heimdal/lib/com_err/lex.c"
+#line 530 ""
 
 #define INITIAL 0
 
@@ -711,7 +711,7 @@ YY_DECL
     
 #line 57 "lex.l"
 
-#line 714 "heimdal/lib/com_err/lex.c"
+#line 714 ""
 
 	if ( !(yy_init) )
 		{
@@ -875,7 +875,7 @@ YY_RULE_SETUP
 #line 73 "lex.l"
 ECHO;
 	YY_BREAK
-#line 878 "heimdal/lib/com_err/lex.c"
+#line 878 ""
 case YY_STATE_EOF(INITIAL):
 	yyterminate();
 
@@ -1899,7 +1899,7 @@ getstring(void)
 	    continue;
 	}
 	if(c == '\n'){
-	    lex_err_message("unterminated string");
+	    error_message("unterminated string");
 	    lineno++;
 	    break;
 	}
@@ -1919,7 +1919,7 @@ getstring(void)
 }
 
 void
-lex_err_message (const char *format, ...)
+error_message (const char *format, ...)
 {
      va_list args;
 

@@ -1,6 +1,6 @@
 #include "config.h"
 
-#line 3 "heimdal/lib/hx509/sel-lex.c"
+#line 3 ""
 
 #define  YY_INT_ALIGNED short int
 
@@ -535,7 +535,7 @@ struct hx_expr_input _hx509_expr_input;
 
 #undef ECHO
 
-#line 538 "heimdal/lib/hx509/sel-lex.c"
+#line 538 ""
 
 #define INITIAL 0
 
@@ -720,7 +720,7 @@ YY_DECL
 #line 68 "sel-lex.l"
 
 
-#line 723 "heimdal/lib/hx509/sel-lex.c"
+#line 723 ""
 
 	if ( !(yy_init) )
 		{
@@ -867,7 +867,7 @@ YY_RULE_SETUP
 #line 85 "sel-lex.l"
 ECHO;
 	YY_BREAK
-#line 870 "heimdal/lib/hx509/sel-lex.c"
+#line 870 ""
 case YY_STATE_EOF(INITIAL):
 	yyterminate();
 

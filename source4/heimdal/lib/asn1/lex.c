@@ -1,6 +1,6 @@
 #include "config.h"
 
-#line 3 "heimdal/lib/asn1/lex.c"
+#line 3 ""
 
 #define  YY_INT_ALIGNED short int
 
@@ -848,7 +848,7 @@ static unsigned lineno = 1;
 static void unterminated(const char *, unsigned);
 
 /* This is for broken old lexes (solaris 10 and hpux) */
-#line 851 "heimdal/lib/asn1/lex.c"
+#line 851 ""
 
 #define INITIAL 0
 
@@ -1032,7 +1032,7 @@ YY_DECL
     
 #line 68 "lex.l"
 
-#line 1035 "heimdal/lib/asn1/lex.c"
+#line 1035 ""
 
 	if ( !(yy_init) )
 		{
@@ -1657,7 +1657,7 @@ YY_RULE_SETUP
 			  yylval.constant = strtol((const char *)yytext,
 						   &e, 0);
 			  if(e == y)
-			    lex_err_message("malformed constant (%s)", yytext);
+			    lex_error_message("malformed constant (%s)", yytext);
 			  else
 			    return NUMBER;
 			}
@@ -1694,14 +1694,14 @@ YY_RULE_SETUP
 case 94:
 YY_RULE_SETUP
 #line 273 "lex.l"
-{ lex_err_message("Ignoring char(%c)\n", *yytext); }
+{ lex_error_message("Ignoring char(%c)\n", *yytext); }
 	YY_BREAK
 case 95:
 YY_RULE_SETUP
 #line 274 "lex.l"
 ECHO;
 	YY_BREAK
-#line 1704 "heimdal/lib/asn1/lex.c"
+#line 1704 ""
 case YY_STATE_EOF(INITIAL):
 	yyterminate();
 
@@ -2712,7 +2712,7 @@ yywrap ()
 #endif
 
 void
-lex_err_message (const char *format, ...)
+lex_error_message (const char *format, ...)
 {
     va_list args;
 
@@ -2726,6 +2726,6 @@ lex_err_message (const char *format, ...)
 static void
 unterminated(const char *type, unsigned start_lineno)
 {
-    lex_err_message("unterminated %s, possibly started on line %d\n", type, start_lineno);
+    lex_error_message("unterminated %s, possibly started on line %d\n", type, start_lineno);
 }
 
