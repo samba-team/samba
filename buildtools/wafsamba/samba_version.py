@@ -16,7 +16,7 @@ def bzr_version_summary(path):
 
     fields = {
         "BZR_REVISION_ID": revid,
-        "BZR_REVNO": str(revno),
+        "BZR_REVNO": revno,
         "COMMIT_DATE": osutils.format_date_with_offset_in_original_timezone(rev.timestamp,
             rev.timezone or 0),
         "COMMIT_TIME": int(rev.timestamp),
@@ -56,7 +56,7 @@ def git_version_summary(path, have_git):
     fields = {
             "GIT_COMMIT_ABBREV": lines[0],
             "GIT_COMMIT_FULLREV": lines[2],
-            "COMMIT_TIME": lines[1],
+            "COMMIT_TIME": int(lines[1]),
             "COMMIT_DATE": lines[3],
             }
 
@@ -184,8 +184,16 @@ also accepted as dictionary entries here
         if self.RC_RELEASE is not None:
             string+="#define SAMBA_VERSION_RC_RELEASE %u\n" % self.RC_RELEASE
 
-        for name, value in self.vcs_fields.iteritems():
-            string+="#define SAMBA_VERSION_%s \"%s\"\n" % (name, value)
+        for name in sorted(self.vcs_fields.keys()):
+            string+="#define SAMBA_VERSION_%s " % name
+            value = self.vcs_fields[name]
+            if isinstance(value, basestring):
+                string += "\"%s\"" % value
+            elif type(value) is int:
+                string += "%d" % value
+            else:
+                raise Exception("Unknown type for %s: %r" % (name, value))
+            string += "\n"
 
         string+="#define SAMBA_VERSION_OFFICIAL_STRING \"" + self.OFFICIAL_STRING + "\"\n"
 
