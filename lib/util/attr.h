@@ -81,4 +81,16 @@
 #endif
 #endif
 
+#ifndef FORMAT_ATTRIBUTE
+#if __GNUC__ > 3 || (__GNUC__ == 3 && __GNUC_MINOR__ >= 1)
+/** Use gcc attribute to check printf fns.  a1 is argument to format()
+ * in the above macro.  This is needed to support Heimdal's printf
+ * decorations. Note that some gcc 2.x versions don't handle this
+ * properly, and as such I've used the same minimum from heimdal: GCC 3.1 **/
+#define FORMAT_ATTRIBUTE(a) __attribute__ ((format a))
+#else
+#define FORMAT_ATTRIBUTE(a)
+#endif
+#endif
+
 #endif /* __UTIL_ATTR_H__ */

@@ -8,7 +8,9 @@
 
 #include "include/config.h"
 #include "../replace/replace.h"
-
+#include "../lib/util/attr.h"
+#define HEIMDAL_NORETURN_ATTRIBUTE _NORETURN_
+#define HEIMDAL_PRINTF_ATTRIBUTE(x) FORMAT_ATTRIBUTE(x)
 #define VERSIONLIST {"Lorikeet-Heimdal, Modified for Samba4"}
 
 #define VERSION "Samba"
