@@ -49,7 +49,7 @@ def git_version_summary(path, have_git):
     if not have_git:
         return ("GIT-UNKNOWN", {})
 
-    git = Utils.cmd_output('GIT_DIR=%s/.git git show --pretty=format:"%h%n%ct%n%H%n%cd" --stat HEAD' % path)
+    git = Utils.cmd_output(env={"GIT_DIR": "%s/.git" % path}, cmd=["git", "show", '--pretty=format:%h%n%ct%n%H%n%cd', "--stat", "HEAD"])
 
     lines = git.splitlines()
     fields = {
