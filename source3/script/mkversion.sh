@@ -76,9 +76,9 @@ if test x"${SAMBA_VERSION_IS_GIT_SNAPSHOT}" = x"yes";then
 	HAVEGIT=no
 	GIT_INFO=`git show --pretty=format:"%h%n%ct%n%H%n%cd" --stat HEAD 2>/dev/null`
 	GIT_COMMIT_ABBREV=`printf "%s" "${GIT_INFO}" | sed -n 1p`
-	GIT_COMMIT_TIME=`printf "%s" "${GIT_INFO}" | sed -n 2p`
+	COMMIT_TIME=`printf "%s" "${GIT_INFO}" | sed -n 2p`
 	GIT_COMMIT_FULLREV=`printf "%s" "${GIT_INFO}" | sed -n 3p`
-	GIT_COMMIT_DATE=`printf "%s" "${GIT_INFO}" | sed -n 4p`
+	COMMIT_DATE=`printf "%s" "${GIT_INFO}" | sed -n 4p`
 	if test -n "${GIT_COMMIT_ABBREV}";then
 	    HAVEGIT=yes
             HAVEVER=yes
@@ -89,9 +89,9 @@ if test x"${SAMBA_VERSION_IS_GIT_SNAPSHOT}" = x"yes";then
 	SAMBA_VERSION_STRING="${SAMBA_VERSION_STRING}-GIT-${GIT_COMMIT_ABBREV}"
 
 	echo "#define SAMBA_VERSION_GIT_COMMIT_ABBREV \"${GIT_COMMIT_ABBREV}\"" >> $OUTPUT_FILE
-	echo "#define SAMBA_VERSION_GIT_COMMIT_TIME ${GIT_COMMIT_TIME}" >> $OUTPUT_FILE
+	echo "#define SAMBA_VERSION_COMMIT_TIME ${COMMIT_TIME}" >> $OUTPUT_FILE
 	echo "#define SAMBA_VERSION_GIT_COMMIT_FULLREV \"${GIT_COMMIT_FULLREV}\"" >> $OUTPUT_FILE
-	echo "#define SAMBA_VERSION_GIT_COMMIT_DATE \"${GIT_COMMIT_DATE}\"" >> $OUTPUT_FILE
+	echo "#define SAMBA_VERSION_COMMIT_DATE \"${COMMIT_DATE}\"" >> $OUTPUT_FILE
     else
 	SAMBA_VERSION_STRING="${SAMBA_VERSION_STRING}-GIT-UNKNOWN"
     fi

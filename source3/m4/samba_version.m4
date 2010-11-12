@@ -15,15 +15,15 @@ SAMBA_VERSION_GIT_COMMIT_FULLREV=`cat $srcdir/include/version.h | grep 'SAMBA_VE
 if test -n "${SAMBA_VERSION_GIT_COMMIT_FULLREV}";then
 	echo "BUILD COMMIT REVISION: ${SAMBA_VERSION_GIT_COMMIT_FULLREV}"
 fi
-SAMBA_VERSION_GIT_COMMIT_DATE=`cat $srcdir/include/version.h | grep 'SAMBA_VERSION_GIT_COMMIT_DATE' | cut -d ' ' -f3-`
-if test -n "${SAMBA_VERSION_GIT_COMMIT_DATE}";then
-	echo "BUILD COMMIT DATE: ${SAMBA_VERSION_GIT_COMMIT_DATE}"
+SAMBA_VERSION_COMMIT_DATE=`cat $srcdir/include/version.h | grep 'SAMBA_VERSION_COMMIT_DATE' | cut -d ' ' -f3-`
+if test -n "${SAMBA_VERSION_COMMIT_DATE}";then
+	echo "BUILD COMMIT DATE: ${SAMBA_VERSION_COMMIT_DATE}"
 fi
-SAMBA_VERSION_GIT_COMMIT_TIME=`cat $srcdir/include/version.h | grep 'SAMBA_VERSION_GIT_COMMIT_TIME' | cut -d ' ' -f3-`
-if test -n "${SAMBA_VERSION_GIT_COMMIT_TIME}";then
-	echo "BUILD COMMIT TIME: ${SAMBA_VERSION_GIT_COMMIT_TIME}"
+SAMBA_VERSION_COMMIT_TIME=`cat $srcdir/include/version.h | grep 'SAMBA_VERSION_COMMIT_TIME' | cut -d ' ' -f3-`
+if test -n "${SAMBA_VERSION_COMMIT_TIME}";then
+	echo "BUILD COMMIT TIME: ${SAMBA_VERSION_COMMIT_TIME}"
 
 	# just to keep the build-farm gui happy for now...
-	echo "BUILD REVISION: ${SAMBA_VERSION_GIT_COMMIT_TIME}"
+	echo "BUILD REVISION: ${SAMBA_VERSION_COMMIT_TIME}"
 fi
 
