@@ -18,7 +18,7 @@ def load_version(have_git=False):
     if not have_git:
         env = samba_utils.LOAD_ENVIRONMENT()
         have_git = 'GIT' in env
-    version = wafsamba.samba_version_file("./VERSION", have_git=have_git)
+    version = wafsamba.samba_version_file("./VERSION", "..", have_git=have_git)
     Utils.g_module.VERSION = version.STRING
     return version
 
