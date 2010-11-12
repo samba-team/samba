@@ -1,3 +1,4 @@
+import os
 import Utils
 
 def git_version_summary(have_git):
@@ -90,7 +91,11 @@ also accepted as dictionary entries here
             SAMBA_VERSION_STRING += ("rc%u" % self.RC_RELEASE)
 
         if self.IS_SNAPSHOT:
-            suffix, self.vcs_fields = git_version_summary(have_git)
+            if os.path.exists(".git"):
+                suffix, self.vcs_fields = git_version_summary(have_git)
+            else:
+                suffix = "UNKNOWN"
+                self.vcs_fields = {}
             SAMBA_VERSION_STRING += "-" + suffix
         else:
             self.vcs_fields = {}
