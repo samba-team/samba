@@ -1281,35 +1281,40 @@ static int samldb_group_type_change(struct samldb_ctx *ac)
 	 * On each step also the group type itself
 	 * (security/distribution) is variable. */
 
-	switch (group_type) {
-	case GTYPE_SECURITY_GLOBAL_GROUP:
-	case GTYPE_DISTRIBUTION_GLOBAL_GROUP:
-		/* change to "universal" allowed */
-		if ((old_group_type == GTYPE_SECURITY_DOMAIN_LOCAL_GROUP) ||
-		    (old_group_type == GTYPE_DISTRIBUTION_DOMAIN_LOCAL_GROUP)) {
+	if (ldb_request_get_control(ac->req, LDB_CONTROL_PROVISION_OID) == NULL) {
+		switch (group_type) {
+		case GTYPE_SECURITY_GLOBAL_GROUP:
+		case GTYPE_DISTRIBUTION_GLOBAL_GROUP:
+			/* change to "universal" allowed */
+			if ((old_group_type == GTYPE_SECURITY_DOMAIN_LOCAL_GROUP) ||
+			(old_group_type == GTYPE_DISTRIBUTION_DOMAIN_LOCAL_GROUP)) {
+				ldb_set_errstring(ldb,
+					"samldb: Change from security/distribution local group forbidden!");
+				return LDB_ERR_UNWILLING_TO_PERFORM;
+			}
+		break;
+
+		case GTYPE_SECURITY_UNIVERSAL_GROUP:
+		case GTYPE_DISTRIBUTION_UNIVERSAL_GROUP:
+			/* each change allowed */
+		break;
+		case GTYPE_SECURITY_DOMAIN_LOCAL_GROUP:
+		case GTYPE_DISTRIBUTION_DOMAIN_LOCAL_GROUP:
+			/* change to "universal" allowed */
+			if ((old_group_type == GTYPE_SECURITY_GLOBAL_GROUP) ||
+			(old_group_type == GTYPE_DISTRIBUTION_GLOBAL_GROUP)) {
+				ldb_set_errstring(ldb,
+					"samldb: Change from security/distribution global group forbidden!");
+				return LDB_ERR_UNWILLING_TO_PERFORM;
+			}
+		break;
+
+		case GTYPE_SECURITY_BUILTIN_LOCAL_GROUP:
+		default:
+			/* we don't allow this "groupType" values */
 			return LDB_ERR_UNWILLING_TO_PERFORM;
+		break;
 		}
-	break;
-
-	case GTYPE_SECURITY_UNIVERSAL_GROUP:
-	case GTYPE_DISTRIBUTION_UNIVERSAL_GROUP:
-		/* each change allowed */
-	break;
-
-	case GTYPE_SECURITY_DOMAIN_LOCAL_GROUP:
-	case GTYPE_DISTRIBUTION_DOMAIN_LOCAL_GROUP:
-		/* change to "universal" allowed */
-		if ((old_group_type == GTYPE_SECURITY_GLOBAL_GROUP) ||
-		    (old_group_type == GTYPE_DISTRIBUTION_GLOBAL_GROUP)) {
-			return LDB_ERR_UNWILLING_TO_PERFORM;
-		}
-	break;
-
-	case GTYPE_SECURITY_BUILTIN_LOCAL_GROUP:
-	default:
-		/* we don't allow this "groupType" values */
-		return LDB_ERR_UNWILLING_TO_PERFORM;
-	break;
 	}
 
 	account_type =  ds_gtype2atype(group_type);
