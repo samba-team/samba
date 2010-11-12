@@ -40,11 +40,6 @@
 #include "param/param.h"
 #include "kdc/kdc-glue.h"
 
-/* TODO: remove all SAMBA4_INTERNAL_HEIMDAL stuff from this file */
-#ifdef SAMBA4_INTERNAL_HEIMDAL
-#include "heimdal_build/kpasswdd-glue.h"
-#endif
-
 /* Return true if there is a valid error packet formed in the error_blob */
 static bool kpasswdd_make_error_reply(struct kdc_server *kdc,
 				     TALLOC_CTX *mem_ctx,
@@ -311,23 +306,15 @@ static bool kpasswd_process_request(struct kdc_server *kdc,
 							reply);
 		}
 		if (chpw.targname && chpw.targrealm) {
-#ifdef SAMBA4_INTERNAL_HEIMDAL
-			if (_krb5_principalname2krb5_principal(kdc->smb_krb5_context->krb5_context,
-							       &principal, *chpw.targname,
-							       *chpw.targrealm) != 0) {
+			krb5_build_principal_ext(kdc->smb_krb5_context->krb5_context,
+						 &principal, strlen(*chpw.targrealm), *chpw.targrealm, 0);
+			if (copy_PrincipalName(chpw.targname, &principal->name)) {
 				free_ChangePasswdDataMS(&chpw);
 				return kpasswdd_make_error_reply(kdc, mem_ctx,
 								KRB5_KPASSWD_MALFORMED,
 								"failed to extract principal to set",
 								reply);
-
 			}
-#else /* SAMBA4_INTERNAL_HEIMDAL */
-				return kpasswdd_make_error_reply(kdc, mem_ctx,
-								KRB5_KPASSWD_BAD_VERSION,
-								"Operation Not Implemented",
-								reply);
-#endif /* SAMBA4_INTERNAL_HEIMDAL */
 		} else {
 			free_ChangePasswdDataMS(&chpw);
 			return kpasswdd_change_password(kdc, mem_ctx, session_info,
