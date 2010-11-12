@@ -20,6 +20,7 @@ bld.SAMBA_SUBSYSTEM('ASN1_UTIL',
 bld.SAMBA_SUBSYSTEM('UNIX_PRIVS',
 	source='unix_privs.c',
 	autoproto='unix_privs.h',
+	deps='replace',
 	local_include=False,
 	)
 
