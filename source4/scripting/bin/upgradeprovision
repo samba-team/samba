@@ -654,7 +654,9 @@ def add_deletedobj_containers(ref_samdb, samdb, names):
             delta.dn = Dn(samdb, str(reference[0]["dn"]))
             for att in hashAttrNotCopied.keys():
                 delta.remove(att)
-            samdb.add(delta)
+
+            modcontrols = ["relax:0", "local_oid:1.3.6.1.4.1.7165.4.3.16:0"]
+            samdb.add(delta, modcontrols)
 
             listwko = []
             res = samdb.search(expression="(objectClass=*)", base=part,
