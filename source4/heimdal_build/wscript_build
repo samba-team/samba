@@ -830,7 +830,7 @@ HEIMDAL_SUBSYSTEM('HEIMDAL_VERS_HOSTCC',
 HEIMDAL_SUBSYSTEM('HEIMDAL_VERS',
        'lib/vers/print_version.c ../heimdal_build/version.c',
         group='build_compilers',
-        deps='roken')
+        deps='roken replace')
 
 # here is the asn1 compiler build rule
 HEIMDAL_BINARY('asn1_compile',
