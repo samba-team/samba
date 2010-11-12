@@ -835,14 +835,13 @@ def update_machine_account_password(samdb, secrets_ldb, names):
         res = samdb.search(expression=expression, attrs=[])
         assert(len(res) == 1)
 
+        msg = ldb.Message(res[0].dn)
         machinepass = samba.generate_random_password(128, 255)
-
-        samdb.modify_ldif("""
-dn: """ + str(res[0].dn) + """
-changetype: modify
-replace: clearTextPassword
-clearTextPassword:: """ + base64.b64encode(machinepass.encode('utf-16-le')) + """
-""")
+        mputf16 = machinepass.encode('utf-16-le')
+        msg["clearTextPassword"] = ldb.MessageElement(mputf16,
+                                                ldb.FLAG_MOD_REPLACE,
+                                                "clearTextPassword")
+        samdb.modify(msg)
 
         res = samdb.search(expression=("samAccountName=%s$" % names.netbiosname),
                      attrs=["msDs-keyVersionNumber"])
