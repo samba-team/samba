@@ -310,6 +310,19 @@ class BasicTests(unittest.TestCase):
         except LdbError, (num, _):
             self.assertEquals(num, ERR_OBJECT_CLASS_VIOLATION)
 
+        # More than one change operation is not allowed
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+        m["objectClass"] = MessageElement("bootableDevice", FLAG_MOD_DELETE,
+          "objectClass")
+        m["objectClass"] = MessageElement("bootableDevice", FLAG_MOD_ADD,
+          "objectClass")
+        try:
+            ldb.modify(m)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_ATTRIBUTE_OR_VALUE_EXISTS)
+
         # We cannot remove all object classes by an empty replace
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)

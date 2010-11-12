@@ -1082,12 +1082,26 @@ static int objectclass_do_mod(struct oc_context *ac)
 		break;
 	}
 
+	/* Only one "objectclass" attribute change element per modify request
+	 * allowed! */
+	for (i = 0; i < ac->req->op.mod.message->num_elements; i++) {
+		if (ldb_attr_cmp(ac->req->op.mod.message->elements[i].name,
+				 "objectClass") != 0) continue;
+
+		if (ldb_msg_element_compare(&ac->req->op.mod.message->elements[i],
+					    oc_el_change) != 0) {
+			ldb_set_errstring(ldb,
+					  "objectclass: only one 'objectClass' attribute change per modify request allowed!");
+			talloc_free(mem_ctx);
+			return LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS;
+		}
+	}
+
 	ret = ldb_msg_add_empty(msg, "objectClass",
 				LDB_FLAG_MOD_REPLACE, &oc_el_change);
 	if (ret != LDB_SUCCESS) {
-		ldb_oom(ldb);
 		talloc_free(mem_ctx);
-		return ret;
+		return ldb_oom(ldb);
 	}
 
 	/* Move from the linked list back into an ldb msg */
