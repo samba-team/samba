@@ -770,8 +770,8 @@ static int replmd_add(struct ldb_module *module, struct ldb_request *req)
         guid_blob = ldb_msg_find_ldb_val(req->op.add.message, "objectGUID");
 	if ( guid_blob != NULL ) {
 		if( !allow_add_guid ) {
-			ldb_debug_set(ldb, LDB_DEBUG_ERROR,
-			      "replmd_add: it's not allowed to add an object with objectGUID\n");
+			ldb_set_errstring(ldb,
+					  "replmd_add: it's not allowed to add an object with objectGUID!");
 			talloc_free(ac);
 			return LDB_ERR_UNWILLING_TO_PERFORM;
 		} else {
@@ -2169,8 +2169,8 @@ static int replmd_modify(struct ldb_module *module, struct ldb_request *req)
 
 	guid_blob = ldb_msg_find_ldb_val(req->op.mod.message, "objectGUID");
 	if ( guid_blob != NULL ) {
-		ldb_debug_set(ldb, LDB_DEBUG_ERROR,
-			      "replmd_modify: it's not allowed to change the objectGUID\n");
+		ldb_set_errstring(ldb,
+				  "replmd_modify: it's not allowed to change the objectGUID!");
 		talloc_free(ac);
 		return LDB_ERR_CONSTRAINT_VIOLATION;
 	}
