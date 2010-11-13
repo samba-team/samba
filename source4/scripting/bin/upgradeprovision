@@ -490,7 +490,7 @@ def handle_special_add(samdb, dn, names):
         if len(res) > 0 and len(res2) == 0:
             message(CHANGE, "Existing object %s must be replaced by %s,"
                             "Renaming old object" % (str(oldDn), str(dn)))
-            samdb.rename(oldDn, objDn, ["relax:0", "local_oid:1.3.6.1.4.1.7165.4.3.16:0"])
+            samdb.rename(oldDn, objDn, ["relax:0", "provision:0"])
 
         return 0
 
@@ -602,7 +602,7 @@ def add_missing_object(ref_samdb, samdb, dn, names, basedn, hash, index):
         delta.dn = dn
         if not skip:
             message(CHANGE,"Object %s will be added" % dn)
-            samdb.add(delta, ["relax:0", "local_oid:1.3.6.1.4.1.7165.4.3.16:0"])
+            samdb.add(delta, ["relax:0", "provision:0"])
         else:
             message(CHANGE,"Object %s was skipped" % dn)
 
@@ -655,7 +655,7 @@ def add_deletedobj_containers(ref_samdb, samdb, names):
             for att in hashAttrNotCopied.keys():
                 delta.remove(att)
 
-            modcontrols = ["relax:0", "local_oid:1.3.6.1.4.1.7165.4.3.16:0"]
+            modcontrols = ["relax:0", "provision:0"]
             samdb.add(delta, modcontrols)
 
             listwko = []
@@ -992,7 +992,7 @@ def update_present(ref_samdb, samdb, basedn, listPresent, usns, invocationid):
             #for checkedatt in relaxedatt:
             for attr in delta.keys():
                 if attr.lower() in relaxedatt:
-                    modcontrols = ["relax:0", "local_oid:1.3.6.1.4.1.7165.4.3.16:0"]
+                    modcontrols = ["relax:0", "provision:0"]
             message(CHANGE, "%s is different from the reference one, changed"
                             " attributes: %s\n" % (dn, attributes))
             changed += 1
