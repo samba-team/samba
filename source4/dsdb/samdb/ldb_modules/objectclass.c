@@ -921,7 +921,7 @@ static int objectclass_do_mod(struct oc_context *ac)
 	TALLOC_CTX *mem_ctx;
 	struct class_list *sorted, *current;
 	const struct dsdb_class *objectclass;
-	unsigned int i, j;
+	unsigned int i, j, k;
 	bool found, replace = false;
 	int ret;
 
@@ -939,13 +939,6 @@ static int objectclass_do_mod(struct oc_context *ac)
 		return ldb_operr(ldb);
 	}
 
-	oc_el_change = ldb_msg_find_element(ac->req->op.mod.message,
-					    "objectClass");
-	if (oc_el_change == NULL) {
-		/* we should have an objectclass change operation */
-		return ldb_operr(ldb);
-	}
-
 	/* use a new message structure */
 	msg = ldb_msg_new(ac);
 	if (msg == NULL) {
@@ -959,195 +952,210 @@ static int objectclass_do_mod(struct oc_context *ac)
 		return ldb_oom(ldb);
 	}
 
-	switch (oc_el_change->flags & LDB_FLAG_MOD_MASK) {
-	case LDB_FLAG_MOD_ADD:
-		/* Merge the two message elements */
-		for (i = 0; i < oc_el_change->num_values; i++) {
-			for (j = 0; j < oc_el_entry->num_values; j++) {
-				if (strcasecmp((char *)oc_el_change->values[i].data,
-					       (char *)oc_el_entry->values[j].data) == 0) {
-					/* we cannot add an already existing object class */
+	/* We've to walk over all "objectClass" message elements */
+	for (k = 0; k < ac->req->op.mod.message->num_elements; k++) {
+		if (ldb_attr_cmp(ac->req->op.mod.message->elements[k].name,
+				 "objectClass") != 0) {
+			continue;
+		}
+
+		oc_el_change = &ac->req->op.mod.message->elements[k];
+
+		switch (oc_el_change->flags & LDB_FLAG_MOD_MASK) {
+		case LDB_FLAG_MOD_ADD:
+			/* Merge the two message elements */
+			for (i = 0; i < oc_el_change->num_values; i++) {
+				for (j = 0; j < oc_el_entry->num_values; j++) {
+					if (ldb_attr_cmp((char *)oc_el_change->values[i].data,
+							 (char *)oc_el_entry->values[j].data) == 0) {
+						ldb_asprintf_errstring(ldb,
+								       "objectclass: cannot re-add an existing objectclass: '%.*s'!",
+								       (int)oc_el_change->values[i].length,
+								       (const char *)oc_el_change->values[i].data);
+						talloc_free(mem_ctx);
+						return LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS;
+					}
+				}
+				/* append the new object class value - code was
+				 * copied from "ldb_msg_add_value" */
+				vals = talloc_realloc(oc_el_entry, oc_el_entry->values,
+						      struct ldb_val,
+						      oc_el_entry->num_values + 1);
+				if (vals == NULL) {
 					talloc_free(mem_ctx);
-					return LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS;
+					return ldb_oom(ldb);
+				}
+				oc_el_entry->values = vals;
+				oc_el_entry->values[oc_el_entry->num_values] =
+							oc_el_change->values[i];
+				++(oc_el_entry->num_values);
+			}
+
+			objectclass = get_last_structural_class(ac->schema,
+								oc_el_change);
+			if (objectclass != NULL) {
+				ldb_asprintf_errstring(ldb,
+						       "objectclass: cannot add a new top-most structural objectclass '%s'!",
+						       objectclass->lDAPDisplayName);
+				talloc_free(mem_ctx);
+				return LDB_ERR_OBJECT_CLASS_VIOLATION;
+			}
+
+			/* Now do the sorting */
+			ret = objectclass_sort(ac->module, ac->schema, mem_ctx,
+					       oc_el_entry, &sorted);
+			if (ret != LDB_SUCCESS) {
+				talloc_free(mem_ctx);
+				return ret;
+			}
+
+			break;
+
+		case LDB_FLAG_MOD_REPLACE:
+			/* Do the sorting for the change message element */
+			ret = objectclass_sort(ac->module, ac->schema, mem_ctx,
+					       oc_el_change, &sorted);
+			if (ret != LDB_SUCCESS) {
+				talloc_free(mem_ctx);
+				return ret;
+			}
+
+			/* this is a replace */
+			replace = true;
+
+			break;
+
+		case LDB_FLAG_MOD_DELETE:
+			/* get the actual top-most structural objectclass */
+			objectclass = get_last_structural_class(ac->schema,
+								oc_el_entry);
+			if (objectclass == NULL) {
+				talloc_free(mem_ctx);
+				return ldb_operr(ldb);
+			}
+
+			/* Merge the two message elements */
+			for (i = 0; i < oc_el_change->num_values; i++) {
+				found = false;
+				for (j = 0; j < oc_el_entry->num_values; j++) {
+					if (ldb_attr_cmp((char *)oc_el_change->values[i].data,
+							 (char *)oc_el_entry->values[j].data) == 0) {
+						found = true;
+						/* delete the object class value
+						 * - code was copied from
+						 * "ldb_msg_remove_element" */
+						if (j != oc_el_entry->num_values - 1) {
+							memmove(&oc_el_entry->values[j],
+								&oc_el_entry->values[j+1],
+								((oc_el_entry->num_values-1) - j)*sizeof(struct ldb_val));
+						}
+						--(oc_el_entry->num_values);
+						break;
+					}
+				}
+				if (!found) {
+					/* we cannot delete a not existing
+					 * object class */
+					ldb_asprintf_errstring(ldb,
+							       "objectclass: cannot delete this objectclass: '%.*s'!",
+							       (int)oc_el_change->values[i].length,
+							       (const char *)oc_el_change->values[i].data);
+					talloc_free(mem_ctx);
+					return LDB_ERR_NO_SUCH_ATTRIBUTE;
 				}
 			}
-			/* append the new object class value - code was copied
-			 * from "ldb_msg_add_value" */
-			vals = talloc_realloc(oc_el_entry, oc_el_entry->values,
-					      struct ldb_val,
-					      oc_el_entry->num_values + 1);
-			if (vals == NULL) {
-				talloc_free(mem_ctx);
-				return ldb_oom(ldb);
-			}
-			oc_el_entry->values = vals;
-			oc_el_entry->values[oc_el_entry->num_values] =
-				oc_el_change->values[i];
-			++(oc_el_entry->num_values);
-		}
 
-		objectclass = get_last_structural_class(ac->schema,
-							oc_el_change);
-		if (objectclass != NULL) {
-			/* we cannot add a new structural object class */
-			talloc_free(mem_ctx);
-			return LDB_ERR_OBJECT_CLASS_VIOLATION;
-		}
-
-		/* Now do the sorting */
-		ret = objectclass_sort(ac->module, ac->schema, mem_ctx,
-				       oc_el_entry, &sorted);
-		if (ret != LDB_SUCCESS) {
-			talloc_free(mem_ctx);
-			return ret;
-		}
-
-		break;
-
-	case LDB_FLAG_MOD_REPLACE:
-		/* Do the sorting for the change message element */
-		ret = objectclass_sort(ac->module, ac->schema, mem_ctx,
-				       oc_el_change, &sorted);
-		if (ret != LDB_SUCCESS) {
-			talloc_free(mem_ctx);
-			return ret;
-		}
-
-		/* this is a replace */
-		replace = true;
-
-		break;
-
-	case LDB_FLAG_MOD_DELETE:
-		/* get the actual top-most structural objectclass */
-		objectclass = get_last_structural_class(ac->schema,
-							oc_el_entry);
-		if (objectclass == NULL) {
-			talloc_free(mem_ctx);
-			return ldb_operr(ldb);
-		}
-
-		/* Merge the two message elements */
-		for (i = 0; i < oc_el_change->num_values; i++) {
+			/* Make sure that the top-most structural object class
+			 * hasn't been deleted */
 			found = false;
-			for (j = 0; j < oc_el_entry->num_values; j++) {
-				if (strcasecmp((char *)oc_el_change->values[i].data,
-					       (char *)oc_el_entry->values[j].data) == 0) {
+			for (i = 0; i < oc_el_entry->num_values; i++) {
+				if (ldb_attr_cmp(objectclass->lDAPDisplayName,
+						 (char *)oc_el_entry->values[i].data) == 0) {
 					found = true;
-					/* delete the object class value -
-					 * code was copied from
-					 * "ldb_msg_remove_element" */
-					if (j != oc_el_entry->num_values - 1) {
-						memmove(&oc_el_entry->values[j],
-							&oc_el_entry->values[j+1],
-							((oc_el_entry->num_values-1) - j)*sizeof(struct ldb_val));
-					}
-					--(oc_el_entry->num_values);
 					break;
 				}
 			}
 			if (!found) {
-				/* we cannot delete a not existing object class */
-				ldb_asprintf_errstring(ldb, "Cannot delete this %.*s ",
-					       (int)oc_el_change->values[i].length, (const char *)oc_el_change->values[i].data);
-
+				ldb_asprintf_errstring(ldb,
+						       "objectclass: cannot delete the top-most structural objectclass '%s'!",
+						       objectclass->lDAPDisplayName);
 				talloc_free(mem_ctx);
-				return LDB_ERR_NO_SUCH_ATTRIBUTE;
+				return LDB_ERR_OBJECT_CLASS_VIOLATION;
 			}
-		}
 
-		/* Make sure that the top-most structural objectclass wasn't
-		 * deleted */
-		found = false;
-		for (i = 0; i < oc_el_entry->num_values; i++) {
-			if (strcasecmp(objectclass->lDAPDisplayName,
-			    (char *)oc_el_entry->values[i].data) == 0) {
-				found = true; break;
+			/* Now do the sorting */
+			ret = objectclass_sort(ac->module, ac->schema, mem_ctx,
+					       oc_el_entry, &sorted);
+			if (ret != LDB_SUCCESS) {
+				talloc_free(mem_ctx);
+				return ret;
 			}
-		}
-		if (!found) {
-			talloc_free(mem_ctx);
-			return LDB_ERR_OBJECT_CLASS_VIOLATION;
+
+			break;
 		}
 
-
-		/* Now do the sorting */
-		ret = objectclass_sort(ac->module, ac->schema, mem_ctx,
-				       oc_el_entry, &sorted);
+		/* (Re)-add an empty "objectClass" attribute on the object
+		 * classes change message "msg". */
+		ldb_msg_remove_attr(msg, "objectClass");
+		ret = ldb_msg_add_empty(msg, "objectClass",
+					LDB_FLAG_MOD_REPLACE, &oc_el_change);
 		if (ret != LDB_SUCCESS) {
-			talloc_free(mem_ctx);
-			return ret;
-		}
-
-		break;
-	}
-
-	/* Only one "objectclass" attribute change element per modify request
-	 * allowed! */
-	for (i = 0; i < ac->req->op.mod.message->num_elements; i++) {
-		if (ldb_attr_cmp(ac->req->op.mod.message->elements[i].name,
-				 "objectClass") != 0) continue;
-
-		if (ldb_msg_element_compare(&ac->req->op.mod.message->elements[i],
-					    oc_el_change) != 0) {
-			ldb_set_errstring(ldb,
-					  "objectclass: only one 'objectClass' attribute change per modify request allowed!");
-			talloc_free(mem_ctx);
-			return LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS;
-		}
-	}
-
-	ret = ldb_msg_add_empty(msg, "objectClass",
-				LDB_FLAG_MOD_REPLACE, &oc_el_change);
-	if (ret != LDB_SUCCESS) {
-		talloc_free(mem_ctx);
-		return ldb_oom(ldb);
-	}
-
-	/* Move from the linked list back into an ldb msg */
-	for (current = sorted; current; current = current->next) {
-		value = talloc_strdup(msg,
-				      current->objectclass->lDAPDisplayName);
-		if (value == NULL) {
 			talloc_free(mem_ctx);
 			return ldb_oom(ldb);
 		}
-		ret = ldb_msg_add_string(msg, "objectClass", value);
-		if (ret != LDB_SUCCESS) {
-			ldb_set_errstring(ldb, "objectclass: could not re-add sorted objectclass to modify msg");
-			talloc_free(mem_ctx);
-			return ret;
+
+		/* Move from the linked list back into an ldb msg */
+		for (current = sorted; current; current = current->next) {
+			value = talloc_strdup(msg,
+					      current->objectclass->lDAPDisplayName);
+			if (value == NULL) {
+				talloc_free(mem_ctx);
+				return ldb_oom(ldb);
+			}
+			ret = ldb_msg_add_string(msg, "objectClass", value);
+			if (ret != LDB_SUCCESS) {
+				ldb_set_errstring(ldb,
+						  "objectclass: could not re-add sorted objectclasses!");
+				talloc_free(mem_ctx);
+				return ret;
+			}
 		}
+
+		if (replace) {
+			/* Well, on replace we are nearly done: we have to test
+			 * if the change and entry message element are identical
+			 * ly. We can use "ldb_msg_element_compare" since now
+			 * the specified objectclasses match for sure in case.
+			 */
+			ret = ldb_msg_element_compare(oc_el_entry,
+						      oc_el_change);
+			if (ret == 0) {
+				ret = ldb_msg_element_compare(oc_el_change,
+							      oc_el_entry);
+			}
+			if (ret == 0) {
+				/* they are the same so we are done in this
+				 * case */
+				talloc_free(mem_ctx);
+				return ldb_module_done(ac->req, NULL, NULL,
+						       LDB_SUCCESS);
+			} else {
+				ldb_set_errstring(ldb,
+						  "objectclass: the specified objectclasses are not exactly the same as on the entry!");
+				talloc_free(mem_ctx);
+				return LDB_ERR_OBJECT_CLASS_VIOLATION;
+			}
+		}
+
+		/* Now we've applied all changes from "oc_el_change" to
+		 * "oc_el_entry" therefore the new "oc_el_entry" will be
+		 * "oc_el_change". */
+		oc_el_entry = oc_el_change;
 	}
 
 	talloc_free(mem_ctx);
 
-	if (replace) {
-		/* Well, on replace we are nearly done: we have to test if
-		 * the change and entry message element are identically. We
-		 * can use "ldb_msg_element_compare" since now the specified
-		 * objectclasses match for sure in case. */
-		ret = ldb_msg_element_compare(oc_el_entry, oc_el_change);
-		if (ret == 0) {
-			ret = ldb_msg_element_compare(oc_el_change,
-						      oc_el_entry);
-		}
-		if (ret == 0) {
-			/* they are the same so we are done in this case */
-			return ldb_module_done(ac->req, NULL, NULL,
-					       LDB_SUCCESS);
-		} else {
-			/* they're not exactly the same */
-			return LDB_ERR_OBJECT_CLASS_VIOLATION;
-		}
-	}
-
-	/* in the other cases we have the real change left to do */
-
-	ret = ldb_msg_sanity_check(ldb, msg);
-	if (ret != LDB_SUCCESS) {
-		return ret;
-	}
+	/* Now we have the real and definitive change left to do */
 
 	ret = ldb_build_mod_req(&mod_req, ldb, ac,
 				msg,
