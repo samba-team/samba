@@ -160,6 +160,7 @@ WERROR dcesrv_drsuapi_DsWriteAccountSpn(struct dcesrv_call_state *dce_call, TALL
 			int ret;
 			unsigned spn_count=0;
 			bool passed_checks = true;
+			struct ldb_context *sam_ctx;
 
 			req = &r->in.req->req1;
 			count = req->count;
@@ -215,9 +216,14 @@ WERROR dcesrv_drsuapi_DsWriteAccountSpn(struct dcesrv_call_state *dce_call, TALL
 				}
 			}
 
+			if (passed_checks && b_state->sam_ctx_system) {
+				sam_ctx = b_state->sam_ctx_system;
+			} else {
+				sam_ctx = b_state->sam_ctx;
+			}
+
 			/* Apply to database */
-			ret = dsdb_modify(passed_checks?b_state->sam_ctx_system:b_state->sam_ctx,
-					  msg, DSDB_MODIFY_PERMISSIVE);
+			ret = dsdb_modify(sam_ctx, msg, DSDB_MODIFY_PERMISSIVE);
 			if (ret != LDB_SUCCESS) {
 				DEBUG(0,("Failed to modify SPNs on %s: %s\n",
 					 ldb_dn_get_linearized(msg->dn),
