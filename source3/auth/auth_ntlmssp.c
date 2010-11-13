@@ -126,12 +126,13 @@ static NTSTATUS auth_ntlmssp_check_password(struct ntlmssp_state *ntlmssp_state,
 
 	auth_ntlmssp_state->server_info->nss_token |= username_was_mapped;
 
-	nt_status = create_local_token(auth_ntlmssp_state->server_info);
-
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		DEBUG(10, ("create_local_token failed: %s\n",
-			nt_errstr(nt_status)));
-		return nt_status;
+	if (auth_ntlmssp_state->server_info->ptok == NULL) {
+		nt_status = create_local_token(auth_ntlmssp_state->server_info);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			DEBUG(10, ("create_local_token failed: %s\n",
+				   nt_errstr(nt_status)));
+			return nt_status;
+		}
 	}
 
 	if (auth_ntlmssp_state->server_info->user_session_key.length) {
