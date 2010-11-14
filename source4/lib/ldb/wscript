@@ -208,11 +208,6 @@ def build(bld):
                             includes='include',
                             cflags='-DLDB_MODULESDIR=\"%s\"' % modules_dir)
 
-        bld.SAMBA_LIBRARY('ldb-cmdline',
-                          source='tools/ldbutil.c tools/cmdline.c',
-                          deps='ldb dl popt',
-                          private_library=True)
-
         LDB_TOOLS='ldbadd ldbsearch ldbdel ldbmodify ldbedit ldbrename'
         for t in LDB_TOOLS.split():
             bld.SAMBA_BINARY(t, 'tools/%s.c' % t, deps='ldb-cmdline ldb',
@@ -221,6 +216,11 @@ def build(bld):
         # ldbtest doesn't get installed
         bld.SAMBA_BINARY('ldbtest', 'tools/ldbtest.c', deps='ldb-cmdline ldb',
                          install=False)
+
+    bld.SAMBA_LIBRARY('ldb-cmdline',
+                      source='tools/ldbutil.c tools/cmdline.c',
+                      deps='ldb dl popt',
+                      private_library=True)
 
 
 def test(ctx):
