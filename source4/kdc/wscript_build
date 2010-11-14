@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-bld.SAMBA_MODULE('KDC',
+bld.SAMBA_MODULE('service_kdc',
 	source='kdc.c kpasswdd.c proxy.c',
 	subsystem='service',
 	init_function='server_service_kdc_init',
