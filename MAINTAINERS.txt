@@ -38,8 +38,15 @@ policy:
          and review by all maintainers.
 
 
+files: lib/tevent/py*, lib/talloc/py*, source4/lib/ldb/py*, lib/tdb/py*
+maintainers:
+         Jelmer Vernooij <jelmer@samba.org>
+policy:
+         Larger commits require pre-push review by the maintainer or
+         one of the maintainers of the containing subsystem.
 
-
+         Other non-trivial (typo, etc) commits require pre- or post-push review by the
+         maintainer or one of the maintainers of the containing subsystem.
 
 
 =======================================================================
