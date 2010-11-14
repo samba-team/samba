@@ -207,7 +207,6 @@ krb5_error_code smb_krb5_send_and_recv_func(krb5_context context,
 {
 	krb5_error_code ret;
 	NTSTATUS status;
-	struct socket_address *remote_addr;
 	const char *name;
 	struct addrinfo *ai, *a;
 	struct smb_krb5_socket *smb_krb5;
@@ -240,6 +239,7 @@ krb5_error_code smb_krb5_send_and_recv_func(krb5_context context,
 	}
 
 	for (a = ai; a; a = ai->ai_next) {
+		struct socket_address *remote_addr;
 		smb_krb5 = talloc(tmp_ctx, struct smb_krb5_socket);
 		if (!smb_krb5) {
 			talloc_free(tmp_ctx);
@@ -291,7 +291,6 @@ krb5_error_code smb_krb5_send_and_recv_func(krb5_context context,
 			talloc_free(smb_krb5);
 			continue;
 		}
-		talloc_free(remote_addr);
 
 		/* Setup the FDE, start listening for read events
 		 * from the start (otherwise we may miss a socket
