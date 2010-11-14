@@ -3066,7 +3066,7 @@ msgstr "\t-e oder --encrypt\t\t\tSMB Übertragung verschlüsseln  (nur UNIX erwe
 
 #: ../../utils/net_help_common.c:54
 msgid "\t-k or --kerberos\t\tUse kerberos (active directory) authentication\n"
-msgstr "\t-k oder --kerberos\t\tKerberos benutzen (active directory) authentication\n"
+msgstr "\t-k oder --kerberos\t\tKerberos Authentifizierung benutzen (Active Directory)\n"y
 
 #: ../../utils/net_idmap.c:26
 msgid "Out of memory!\n"
@@ -6161,12 +6161,12 @@ msgstr "\t[%s:%s]: REG_SZ: %s\n"
 #: ../../utils/net_rpc_printer.c:96
 #, c-format
 msgid "\t[%s:%s]: REG_BINARY: unknown length value not displayed\n"
-msgstr ""
+msgstr "\t[%s:%s]: REG_BINARY: unbekannte Länge, Daten werden nicht angezeigt\n"
 
 #: ../../utils/net_rpc_printer.c:120
 #, c-format
 msgid "\t%s: unknown type %d\n"
-msgstr ""
+msgstr "\t%s: unbekannter Typ %d\n"
 
 #: ../../utils/net_rpc_printer.c:254
 #, c-format
@@ -6544,7 +6544,7 @@ msgstr ""
 #: ../../utils/net_rpc_registry.c:1173 ../../utils/net_rpc_registry.c:1179
 #, c-format
 msgid "Closing %s..."
-msgstr ""
+msgstr "Schließe %s..."
 
 #: ../../utils/net_rpc_registry.c:1214
 msgid "net rpc registry getsd <path> <secinfo>\n"
