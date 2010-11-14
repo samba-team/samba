@@ -10,10 +10,9 @@ bld.SAMBA_SUBSYSTEM('WEB_WSGI',
 
 bld.SAMBA_MODULE('WEB',
 		source='web_server.c',
-		autoproto='proto.h',
-		autoproto_extra_source='wsgi.c',
 		subsystem='service',
 		init_function='server_service_web_init',
 		deps='LIBTLS process_model LIBPYTHON WEB_WSGI',
 		pyembed=True,
+		internal_module=False,
 		)

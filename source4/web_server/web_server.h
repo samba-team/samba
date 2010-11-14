@@ -17,6 +17,9 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#ifndef __WEB_SERVER_H__
+#define __WEB_SERVER_H__
+
 #include "smbd/process_model.h"
 
 struct websrv_context;
@@ -60,6 +63,10 @@ struct websrv_context {
 	struct session_data *session;
 };
 
+bool wsgi_initialize(struct web_server_data *wdata);
+void http_error(struct websrv_context *web, const char *status, const char *info);
+void websrv_output_headers(struct websrv_context *web, const char *status, struct http_header *headers);
+void websrv_output(struct websrv_context *web, void *data, size_t length);
+NTSTATUS http_parse_header(struct websrv_context *web, const char *line);
 
-#include "web_server/proto.h"
-
+#endif /* __WEB_SERVER_H__ */
