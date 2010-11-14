@@ -238,7 +238,7 @@ krb5_error_code smb_krb5_send_and_recv_func(krb5_context context,
 		return ret;
 	}
 
-	for (a = ai; a; a = ai->ai_next) {
+	for (a = ai; a; a = a->ai_next) {
 		struct socket_address *remote_addr;
 		smb_krb5 = talloc(tmp_ctx, struct smb_krb5_socket);
 		if (!smb_krb5) {
