@@ -26,21 +26,23 @@ bld.SAMBA_SUBSYSTEM('SAMDB_SCHEMA',
 	)
 
 
-bld.SAMBA_MODULE('DREPL_SRV',
+bld.SAMBA_MODULE('service_drepl',
 	source='repl/drepl_service.c repl/drepl_periodic.c repl/drepl_partitions.c repl/drepl_out_pull.c repl/drepl_out_helpers.c repl/drepl_notify.c repl/drepl_ridalloc.c repl/drepl_extended.c repl/drepl_fsmo.c repl/drepl_secret.c repl/drepl_replica.c',
 	autoproto='repl/drepl_service_proto.h',
 	subsystem='service',
 	init_function='server_service_drepl_init',
-	deps='samdb process_model RPC_NDR_DRSUAPI'
+	deps='samdb process_model RPC_NDR_DRSUAPI',
+	internal_module=False,
 	)
 
 
-bld.SAMBA_MODULE('KCC_SRV',
+bld.SAMBA_MODULE('service_kcc',
 	source='kcc/kcc_service.c kcc/kcc_connection.c kcc/kcc_topology.c kcc/kcc_deleted.c kcc/kcc_periodic.c kcc/kcc_drs_replica_info.c',
 	autoproto='kcc/kcc_service_proto.h',
 	subsystem='service',
 	init_function='server_service_kcc_init',
-	deps='samdb process_model RPC_NDR_IRPC RPC_NDR_DRSUAPI'
+	deps='samdb process_model RPC_NDR_IRPC RPC_NDR_DRSUAPI',
+	internal_module=False,
 	)
 
 
