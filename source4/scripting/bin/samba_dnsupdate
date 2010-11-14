@@ -360,7 +360,7 @@ for d in dns_list:
     if d.type == 'A' and d.ip == "$IP":
         d.ip = IPs[0]
         for i in range(len(IPs)-1):
-            d2 = d
+            d2 = dnsobj(str(d))
             d2.ip = IPs[i+1]
             dns_list.append(d2)
 
