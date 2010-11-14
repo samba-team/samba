@@ -435,7 +435,8 @@ static NTSTATUS kdc_add_socket(struct kdc_server *kdc,
 			       const char *name,
 			       const char *address,
 			       uint16_t port,
-			       kdc_process_fn_t process)
+			       kdc_process_fn_t process,
+			       bool udp_only)
 {
 	struct kdc_socket *kdc_socket;
 	struct kdc_udp_socket *kdc_udp_socket;
@@ -457,18 +458,21 @@ static NTSTATUS kdc_add_socket(struct kdc_server *kdc,
 		return status;
 	}
 
-	status = stream_setup_socket(kdc->task->event_ctx,
-				     kdc->task->lp_ctx,
-				     model_ops,
-				     &kdc_tcp_stream_ops,
-				     "ip", address, &port,
-				     lpcfg_socket_options(kdc->task->lp_ctx),
-				     kdc_socket);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("Failed to bind to %s:%u TCP - %s\n",
-			 address, port, nt_errstr(status)));
-		talloc_free(kdc_socket);
-		return status;
+	if (!udp_only) {
+		status = stream_setup_socket(kdc->task,
+					     kdc->task->event_ctx,
+					     kdc->task->lp_ctx,
+					     model_ops,
+					     &kdc_tcp_stream_ops,
+					     "ip", address, &port,
+					     lpcfg_socket_options(kdc->task->lp_ctx),
+					     kdc_socket);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0,("Failed to bind to %s:%u TCP - %s\n",
+				 address, port, nt_errstr(status)));
+			talloc_free(kdc_socket);
+			return status;
+		}
 	}
 
 	kdc_udp_socket = talloc(kdc_socket, struct kdc_udp_socket);
@@ -512,6 +516,9 @@ static NTSTATUS kdc_startup_interfaces(struct kdc_server *kdc, struct loadparm_c
 	TALLOC_CTX *tmp_ctx = talloc_new(kdc);
 	NTSTATUS status;
 	int i;
+	uint16_t kdc_port = lpcfg_krb5_port(lp_ctx);
+	uint16_t kpasswd_port = lpcfg_kpasswd_port(lp_ctx);
+	bool done_wildcard = false;
 
 	/* within the kdc task we want to be a single process, so
 	   ask for the single process model ops and pass these to the
@@ -524,22 +531,39 @@ static NTSTATUS kdc_startup_interfaces(struct kdc_server *kdc, struct loadparm_c
 
 	num_interfaces = iface_count(ifaces);
 
-	for (i=0; i<num_interfaces; i++) {
-		const char *address = talloc_strdup(tmp_ctx, iface_n_ip(ifaces, i));
-		uint16_t kdc_port = lpcfg_krb5_port(lp_ctx);
-		uint16_t kpasswd_port = lpcfg_kpasswd_port(lp_ctx);
-
+	/* if we are allowing incoming packets from any address, then
+	   we need to bind to the wildcard address */
+	if (!lpcfg_bind_interfaces_only(lp_ctx)) {
 		if (kdc_port) {
 			status = kdc_add_socket(kdc, model_ops,
-					"kdc", address, kdc_port,
-					kdc_process);
+						"kdc", "0.0.0.0", kdc_port,
+						kdc_process, false);
 			NT_STATUS_NOT_OK_RETURN(status);
 		}
 
 		if (kpasswd_port) {
 			status = kdc_add_socket(kdc, model_ops,
-					"kpasswd", address, kpasswd_port,
-					kpasswdd_process);
+						"kpasswd", "0.0.0.0", kpasswd_port,
+						kpasswdd_process, false);
+			NT_STATUS_NOT_OK_RETURN(status);
+		}
+		done_wildcard = true;
+	}
+
+	for (i=0; i<num_interfaces; i++) {
+		const char *address = talloc_strdup(tmp_ctx, iface_n_ip(ifaces, i));
+
+		if (kdc_port) {
+			status = kdc_add_socket(kdc, model_ops,
+						"kdc", address, kdc_port,
+						kdc_process, done_wildcard);
+			NT_STATUS_NOT_OK_RETURN(status);
+		}
+
+		if (kpasswd_port) {
+			status = kdc_add_socket(kdc, model_ops,
+						"kpasswd", address, kpasswd_port,
+						kpasswdd_process, done_wildcard);
 			NT_STATUS_NOT_OK_RETURN(status);
 		}
 	}
@@ -788,7 +812,7 @@ static void kdc_task_init(struct task_server *task)
 	status = IRPC_REGISTER(task->msg_ctx, irpc, KDC_CHECK_GENERIC_KERBEROS,
 			       kdc_check_generic_kerberos, kdc);
 	if (!NT_STATUS_IS_OK(status)) {
-		task_server_terminate(task, "nbtd failed to setup monitoring", true);
+		task_server_terminate(task, "kdc failed to setup monitoring", true);
 		return;
 	}
 
