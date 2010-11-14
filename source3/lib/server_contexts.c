@@ -57,9 +57,6 @@ struct messaging_context *server_messaging_context(void)
 					        procid_self(),
 					        server_event_context());
 	}
-	if (server_msg_ctx == NULL) {
-		DEBUG(0, ("Could not init server's messaging context.\n"));
-	}
 	return server_msg_ctx;
 }
 

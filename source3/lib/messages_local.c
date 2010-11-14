@@ -108,7 +108,7 @@ NTSTATUS messaging_tdb_init(struct messaging_context *msg_ctx,
 
 	if (!ctx->tdb) {
 		NTSTATUS status = map_nt_error_from_unix(errno);
-		DEBUG(0, ("ERROR: Failed to initialise messages database: "
+		DEBUG(2, ("ERROR: Failed to initialise messages database: "
 			  "%s\n", strerror(errno)));
 		TALLOC_FREE(result);
 		return status;
