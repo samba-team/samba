@@ -2907,6 +2907,8 @@ NTSTATUS change_trust_account_password( const char *domain, const char *remote_m
 
 /* The following definitions come from libsmb/unexpected.c  */
 
+bool is_requested_send_packet(struct packet_struct *p);
+bool store_outstanding_send_packet(struct packet_struct *p);
 void unexpected_packet(struct packet_struct *p);
 void clear_unexpected(time_t t);
 struct packet_struct *receive_unexpected(enum packet_type packet_type, int id,

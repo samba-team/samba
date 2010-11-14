@@ -1909,6 +1909,7 @@ bool listen_for_packets(bool run_election)
 		const char *packet_name;
 		int client_fd;
 		int client_port;
+		bool is_requested_send_reply = false;
 
 		if (sock_array[i] == -1) {
 			continue;
@@ -1937,6 +1938,8 @@ bool listen_for_packets(bool run_election)
 			continue;
 		}
 
+		is_requested_send_reply = is_requested_send_packet(packet);
+
 		/*
 		 * If we got a packet on the broadcast socket and interfaces
 		 * only is set then check it came from one of our local nets.
@@ -1950,7 +1953,8 @@ bool listen_for_packets(bool run_election)
 			continue;
 		}
 
-		if ((is_loopback_ip_v4(packet->ip) || ismyip_v4(packet->ip)) &&
+		if (!is_requested_send_reply &&
+		    (is_loopback_ip_v4(packet->ip) || ismyip_v4(packet->ip)) &&
 		    packet->port == client_port)
 		{
 			if (client_port == DGRAM_PORT) {
@@ -1967,7 +1971,6 @@ bool listen_for_packets(bool run_election)
 				continue;
 			}
 		}
-
 
 		if (is_processed_packet(processed_packet_list, packet)) {
 			DEBUG(7,("discarding duplicate packet from %s:%d\n",

@@ -460,7 +460,9 @@ static void msg_nmbd_send_packet(struct messaging_context *msg,
 		p->packet.dgram.header.source_port = 138;
 	}
 
-	send_packet(p);
+	if (store_outstanding_send_packet(p)) {
+		send_packet(p);
+	}
 }
 
 /**************************************************************************** **

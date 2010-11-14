@@ -33,7 +33,8 @@ static bool cli_send_mailslot(struct messaging_context *msg_ctx,
 		       char *buf, int len,
 		       const char *srcname, int src_type,
 		       const char *dstname, int dest_type,
-		       const struct sockaddr_storage *dest_ss)
+		       const struct sockaddr_storage *dest_ss,
+		       int dgm_id)
 {
 	struct packet_struct p;
 	struct dgram_packet *dgram = &p.packet.dgram;
@@ -63,8 +64,7 @@ static bool cli_send_mailslot(struct messaging_context *msg_ctx,
 	dgram->header.flags.node_type = M_NODE;
 	dgram->header.flags.first = True;
 	dgram->header.flags.more = False;
-	dgram->header.dgm_id = ((unsigned)time(NULL)%(unsigned)0x7FFF) +
-		((unsigned)sys_getpid()%(unsigned)100);
+	dgram->header.dgm_id = dgm_id;
 	/* source ip is filled by nmbd */
 	dgram->header.dgm_length = 0; /* Let build_dgram() handle this. */
 	dgram->header.packet_offset = 0;
@@ -133,7 +133,8 @@ bool send_getdc_request(TALLOC_CTX *mem_ctx,
 			struct sockaddr_storage *dc_ss,
 			const char *domain_name,
 			const struct dom_sid *sid,
-			uint32_t nt_version)
+			uint32_t nt_version,
+			int dgm_id)
 {
 	struct in_addr dc_ip;
 	const char *my_acct_name = NULL;
@@ -193,12 +194,13 @@ bool send_getdc_request(TALLOC_CTX *mem_ctx,
 				 false, NBT_MAILSLOT_NTLOGON, 0,
 				 (char *)blob.data, blob.length,
 				 global_myname(), 0, domain_name, 0x1c,
-				 dc_ss);
+				 dc_ss, dgm_id);
 }
 
 bool receive_getdc_response(TALLOC_CTX *mem_ctx,
 			    struct sockaddr_storage *dc_ss,
 			    const char *domain_name,
+			    int dgm_id,
 			    uint32_t *nt_version,
 			    const char **dc_name,
 			    struct netlogon_samlogon_response **samlogon_response)
@@ -226,7 +228,7 @@ bool receive_getdc_response(TALLOC_CTX *mem_ctx,
 		return false;
 	}
 
-	packet = receive_unexpected(DGRAM_PACKET, 0, my_mailslot);
+	packet = receive_unexpected(DGRAM_PACKET, dgm_id, my_mailslot);
 
 	if (packet == NULL) {
 		DEBUG(5, ("Did not receive packet for %s\n", my_mailslot));

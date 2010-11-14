@@ -937,6 +937,11 @@ static NTSTATUS process_dc_netbios(TALLOC_CTX *mem_ctx,
 	DEBUG(10,("process_dc_netbios\n"));
 
 	for (i=0; i<num_dcs; i++) {
+		uint16_t val;
+		int dgm_id;
+
+		generate_random_buffer((uint8_t *)&val, 2);
+		dgm_id = val;
 
 		ip_list.ss = dclist[i].ss;
 		ip_list.port = 0;
@@ -947,7 +952,7 @@ static NTSTATUS process_dc_netbios(TALLOC_CTX *mem_ctx,
 
 		if (send_getdc_request(mem_ctx, msg_ctx,
 				       &dclist[i].ss, domain_name,
-				       NULL, nt_version))
+				       NULL, nt_version, dgm_id))
 		{
 			int k;
 			smb_msleep(300);
@@ -955,6 +960,7 @@ static NTSTATUS process_dc_netbios(TALLOC_CTX *mem_ctx,
 				if (receive_getdc_response(mem_ctx,
 							   &dclist[i].ss,
 							   domain_name,
+							   dgm_id,
 							   &nt_version,
 							   &dc_name,
 							   &r)) {
