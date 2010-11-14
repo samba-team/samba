@@ -29,6 +29,117 @@ struct unexpected_key {
 	int count;
 };
 
+struct pending_unexpected {
+	struct pending_unexpected *prev, *next;
+	enum packet_type packet_type;
+	int id;
+	time_t timeout;
+};
+
+static struct pending_unexpected *pu_list;
+
+/****************************************************************************
+ This function is called when nmbd has received an unexpected packet.
+ It checks against the list of outstanding packet transaction id's
+ to see if it should be stored in the unexpected.tdb.
+**************************************************************************/
+
+static struct pending_unexpected *find_unexpected_packet(struct packet_struct *p)
+{
+	struct pending_unexpected *pu;
+
+	if (!p) {
+		return NULL;
+	}
+
+	for (pu = pu_list; pu; pu = pu->next) {
+		if (pu->packet_type == p->packet_type) {
+			int id = (p->packet_type == DGRAM_PACKET) ?
+				p->packet.dgram.header.dgm_id :
+				p->packet.nmb.header.name_trn_id;
+			if (id == pu->id) {
+				DEBUG(10,("find_unexpected_packet: found packet "
+					"with id = %d\n", pu->id ));
+				return pu;
+			}
+		}
+	}
+
+	return NULL;
+}
+
+
+/****************************************************************************
+ This function is called when nmbd has been given a packet to send out.
+ It stores a list of outstanding packet transaction id's and the timeout
+ when they should be removed.
+**************************************************************************/
+
+bool store_outstanding_send_packet(struct packet_struct *p)
+{
+	struct pending_unexpected *pu = NULL;
+
+	if (!p) {
+		return false;
+	}
+
+	pu = find_unexpected_packet(p);
+	if (pu) {
+		/* This is a resend, and we haven't received a
+		   reply yet ! Ignore it. */
+		return false;
+	}
+
+	pu = SMB_MALLOC_P(struct pending_unexpected);
+	if (!pu || !p) {
+		return false;
+	}
+
+	ZERO_STRUCTP(pu);
+	pu->packet_type = p->packet_type;
+	pu->id = (p->packet_type == DGRAM_PACKET) ?
+			p->packet.dgram.header.dgm_id :
+			p->packet.nmb.header.name_trn_id;
+	pu->timeout = time(NULL) + 15;
+
+	DLIST_ADD_END(pu_list, pu, struct pending_unexpected *);
+
+	DEBUG(10,("store_outstanding_unexpected_packet: storing packet "
+		"with id = %d\n", pu->id ));
+
+	return true;
+}
+
+/****************************************************************************
+ Return true if this is a reply to a packet we were requested to send.
+**************************************************************************/
+
+bool is_requested_send_packet(struct packet_struct *p)
+{
+	return (find_unexpected_packet(p) != NULL);
+}
+
+/****************************************************************************
+ This function is called when nmbd has received an unexpected packet.
+ It checks against the list of outstanding packet transaction id's
+ to see if it should be stored in the unexpected.tdb. Don't store if
+ not found.
+**************************************************************************/
+
+static bool should_store_unexpected_packet(struct packet_struct *p)
+{
+	struct pending_unexpected *pu = find_unexpected_packet(p);
+
+	if (!pu) {
+		return false;
+	}
+
+	/* Remove the outstanding entry. */
+	DLIST_REMOVE(pu_list, pu);
+	SAFE_FREE(pu);
+	return true;
+}
+
 /****************************************************************************
  All unexpected packets are passed in here, to be stored in a unexpected
  packet database. This allows nmblookup and other tools to receive packets
@@ -43,6 +154,13 @@ void unexpected_packet(struct packet_struct *p)
 	char buf[1024];
 	int len=0;
 	uint32_t enc_ip;
+
+	if (!should_store_unexpected_packet(p)) {
+		DEBUG(10,("Not storing unexpected packet\n"));
+		return;
+	}
+
+	DEBUG(10,("unexpected_packet: storing packet\n"));
 
 	if (!tdbd) {
 		tdbd = tdb_wrap_open(talloc_autofree_context(),
@@ -109,6 +227,15 @@ static int traverse_fn(TDB_CONTEXT *ttdb, TDB_DATA kbuf, TDB_DATA dbuf, void *st
 
 void clear_unexpected(time_t t)
 {
+	struct pending_unexpected *pu, *pu_next;
+
+	for (pu = pu_list; pu; pu = pu_next) {
+		pu_next = pu->next;
+		if (pu->timeout < t) {
+			DLIST_REMOVE(pu_list, pu);
+		}
+	}
+
 	if (!tdbd) return;
 
 	if ((lastt != 0) && (t < lastt + NMBD_UNEXPECTED_TIMEOUT))
@@ -169,8 +296,10 @@ static int traverse_match(TDB_CONTEXT *ttdb, TDB_DATA kbuf, TDB_DATA dbuf,
 	if ((state->match_type == NMB_PACKET &&
 	     p->packet.nmb.header.name_trn_id == state->match_id) ||
 	    (state->match_type == DGRAM_PACKET &&
-	     match_mailslot_name(p, state->match_name))) {
+	     match_mailslot_name(p, state->match_name) &&
+	     p->packet.dgram.header.dgm_id == state->match_id)) {
 		state->matched_packet = p;
+		tdb_delete(ttdb, kbuf);
 		return -1;
 	}
 
@@ -189,8 +318,8 @@ struct packet_struct *receive_unexpected(enum packet_type packet_type, int id,
 	struct tdb_wrap *tdb2;
 	struct receive_unexpected_state state;
 
-	tdb2 = tdb_wrap_open(talloc_autofree_context(),
-			     lock_path("unexpected.tdb"), 0, 0, O_RDONLY, 0);
+	tdb2 = tdb_wrap_open(talloc_tos(), lock_path("unexpected.tdb"), 0, 0,
+			     O_RDWR, 0);
 	if (!tdb2) return NULL;
 
 	state.matched_packet = NULL;

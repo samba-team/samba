@@ -1120,6 +1120,8 @@ static bool dcip_to_name(TALLOC_CTX *mem_ctx,
 {
 	struct ip_service ip_list;
 	uint32_t nt_version = NETLOGON_NT_VERSION_1;
+	int dgm_id;
+	uint16_t val;
 
 	ip_list.ss = *pss;
 	ip_list.port = 0;
@@ -1185,15 +1187,18 @@ static bool dcip_to_name(TALLOC_CTX *mem_ctx,
 #endif
 
 	/* try GETDC requests next */
+	generate_random_buffer((uint8_t *)&val, 2);
+	dgm_id = val;
 
 	if (send_getdc_request(mem_ctx, winbind_messaging_context(),
 			       pss, domain->name, &domain->sid,
-			       nt_version)) {
+			       nt_version, dgm_id)) {
 		const char *dc_name = NULL;
 		int i;
 		smb_msleep(100);
 		for (i=0; i<5; i++) {
 			if (receive_getdc_response(mem_ctx, pss, domain->name,
+						   dgm_id,
 						   &nt_version,
 						   &dc_name, NULL)) {
 				fstrcpy(name, dc_name);

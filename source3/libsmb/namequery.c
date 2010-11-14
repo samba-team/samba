@@ -22,6 +22,7 @@
 #include "libads/sitename_cache.h"
 #include "libads/dns.h"
 #include "../libcli/netlogon.h"
+#include "librpc/gen_ndr/messaging.h"
 
 /* nmbd.c sets this to True. */
 bool global_in_nmbd = False;
@@ -246,6 +247,31 @@ static NODE_STATUS_STRUCT *parse_node_status(char *p,
 	return ret;
 }
 
+/****************************************************************************
+ Try and send a request to nmbd to send a packet_struct packet first.
+ If this fails, use send_packet().
+**************************************************************************/
+
+static bool send_packet_request(struct packet_struct *p)
+{
+	struct messaging_context *msg_ctx = server_messaging_context();
+	if (msg_ctx) {
+		pid_t nmbd_pid = pidfile_pid("nmbd");
+
+		if (nmbd_pid) {
+			/* Try nmbd. */
+			if (NT_STATUS_IS_OK(messaging_send_buf(msg_ctx,
+					pid_to_procid(nmbd_pid),
+					MSG_SEND_PACKET,
+					(uint8_t *)p,
+					sizeof(struct packet_struct)))) {
+				return true;
+			}
+		}
+	}
+
+	return send_packet(p);
+}
 
 /****************************************************************************
  Do a NBT node status query on an open socket and return an array of
@@ -299,7 +325,7 @@ NODE_STATUS_STRUCT *node_status_query(int fd,
 
 	clock_gettime_mono(&tp);
 
-	if (!send_packet(&p))
+	if (!send_packet_request(&p))
 		return NULL;
 
 	retries--;
@@ -310,7 +336,7 @@ NODE_STATUS_STRUCT *node_status_query(int fd,
 		if (nsec_time_diff(&tp2,&tp)/1000000 > retry_time) {
 			if (!retries)
 				break;
-			if (!found && !send_packet(&p))
+			if (!found && !send_packet_request(&p))
 				return NULL;
 			clock_gettime_mono(&tp);
 			retries--;
@@ -707,7 +733,7 @@ struct sockaddr_storage *name_query(int fd,
 
 	clock_gettime_mono(&tp);
 
-	if (!send_packet(&p))
+	if (!send_packet_request(&p))
 		return NULL;
 
 	retries--;
@@ -719,12 +745,11 @@ struct sockaddr_storage *name_query(int fd,
 		if (nsec_time_diff(&tp2,&tp)/1000000 > retry_time) {
 			if (!retries)
 				break;
-			if (!found && !send_packet(&p))
+			if (!found && !send_packet_request(&p))
 				return NULL;
 			clock_gettime_mono(&tp);
 			retries--;
 		}
-
 		if ((p2=receive_nmb_packet(fd,90,nmb->header.name_trn_id))) {
 			struct nmb_packet *nmb2 = &p2->packet.nmb;
 			debug_nmb_packet(p2);
