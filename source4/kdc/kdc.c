@@ -800,7 +800,19 @@ static void kdc_task_init(struct task_server *task)
 		return;
 	}
 
-	krb5_kdc_windc_init(kdc->smb_krb5_context->krb5_context);
+	ret = krb5_kdc_windc_init(kdc->smb_krb5_context->krb5_context);
+
+	if(ret) {
+		task_server_terminate(task, "kdc: failed to init windc plugin", true);
+		return;
+	}
+
+	ret = krb5_kdc_pkinit_config(kdc->smb_krb5_context->krb5_context, kdc->config);
+
+	if(ret) {
+		task_server_terminate(task, "kdc: failed to init kdc pkinit subsystem", true);
+		return;
+	}
 
 	/* start listening on the configured network interfaces */
 	status = kdc_startup_interfaces(kdc, task->lp_ctx, ifaces);
