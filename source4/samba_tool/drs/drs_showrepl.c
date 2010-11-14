@@ -46,7 +46,9 @@ static bool net_drs_parse_ntds_dn(struct ldb_dn *ntds_dn,
 	NET_DRS_NOMEM_GOTO(dn, failed);
 
 	/* remove NTDS Settings component */
-	ldb_dn_remove_child_components(dn, 1);
+	if (!ldb_dn_remove_child_components(dn, 1)) {
+		return false;
+	}
 	if (_dc_name) {
 		val = ldb_dn_get_rdn_val(dn);
 		*_dc_name = talloc_strdup(mem_ctx, (const char *)val->data);
@@ -82,11 +84,15 @@ failed:
 	return false;
 }
 
-static char * net_drs_dc_canonical_string(struct ldb_dn *ntds_dn, TALLOC_CTX *mem_ctx)
+static const char * net_drs_dc_canonical_string(struct ldb_dn *ntds_dn, TALLOC_CTX *mem_ctx)
 {
 	const char *dc_name;
 	const char *site_name;
 	char *canonical_name;
+
+	if (ldb_dn_is_null(ntds_dn)) {
+		return "(NULL DN)";
+	}
 
 	if (!net_drs_parse_ntds_dn(ntds_dn, mem_ctx, &dc_name, &site_name, NULL)) {
 		return NULL;
@@ -248,7 +254,7 @@ net_drs_transport_type_str(struct net_drs_context *drs_ctx, const char *transpor
  * Prints most of the info we got about
  * a replication partner
  */
-static bool net_drs_showrepl_print_heighbor(struct net_drs_context *drs_ctx,
+static bool net_drs_showrepl_print_neighbor(struct net_drs_context *drs_ctx,
 					    struct drsuapi_DsReplicaNeighbour *neighbor)
 {
 	struct ldb_dn *ntds_dn;
@@ -309,7 +315,7 @@ static bool net_drs_showrepl_print_inbound_neihbors(struct net_drs_context *drs_
 
 	for (i = 0; i < reps_from->count; i++) {
 		d_printf("\n");
-		net_drs_showrepl_print_heighbor(drs_ctx, &reps_from->array[i]);
+		net_drs_showrepl_print_neighbor(drs_ctx, &reps_from->array[i]);
 	}
 
 	return true;
@@ -338,7 +344,7 @@ static bool net_drs_showrepl_print_outbound_neihbors(struct net_drs_context *drs
 
 	for (i = 0; i < reps_to->count; i++) {
 		d_printf("\n");
-		net_drs_showrepl_print_heighbor(drs_ctx, &reps_to->array[i]);
+		net_drs_showrepl_print_neighbor(drs_ctx, &reps_to->array[i]);
 	}
 
 	return true;
