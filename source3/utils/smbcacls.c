@@ -200,8 +200,8 @@ static bool StringToSid(struct cli_state *cli, struct dom_sid *sid, const char *
 {
 	enum lsa_SidType type;
 
-	if (strncmp(str, "S-", 2) == 0) {
-		return string_to_sid(sid, str);
+	if (string_to_sid(sid, str)) {
+		return true;
 	}
 
 	return NT_STATUS_IS_OK(cli_lsa_lookup_name(cli, str, &type, sid));

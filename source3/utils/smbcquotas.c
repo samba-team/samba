@@ -117,8 +117,8 @@ static bool StringToSid(struct dom_sid *sid, const char *str)
 	struct dom_sid *sids = NULL;
 	bool result = True;
 
-	if (strncmp(str, "S-", 2) == 0) {
-		return string_to_sid(sid, str);
+	if (string_to_sid(sid, str)) {
+		return true;
 	}
 
 	if (!cli_open_policy_hnd() ||
