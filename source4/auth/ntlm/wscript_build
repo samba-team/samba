@@ -61,7 +61,7 @@ bld.SAMBA_LIBRARY('auth',
 	private_library=True
 	)
 
-bld.SAMBA_MODULE('auth_server_service',
+bld.SAMBA_MODULE('service_auth',
 	source='auth_server_service.c',
 	subsystem='service',
 	init_function='server_service_auth_init',
