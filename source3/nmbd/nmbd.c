@@ -43,26 +43,17 @@ time_t StartupTime = 0;
 
 struct event_context *nmbd_event_context(void)
 {
-	static struct event_context *ctx;
-
-	if (!ctx && !(ctx = event_context_init(NULL))) {
-		smb_panic("Could not init nmbd event context");
-	}
-	return ctx;
+	return server_event_context();
 }
 
 struct messaging_context *nmbd_messaging_context(void)
 {
-	static struct messaging_context *ctx;
-
-	if (ctx == NULL) {
-		ctx = messaging_init(NULL, procid_self(),
-				     nmbd_event_context());
+	struct messaging_context *msg_ctx = server_messaging_context();
+	if (likely(msg_ctx != NULL)) {
+		return msg_ctx;
 	}
-	if (ctx == NULL) {
-		DEBUG(0, ("Could not init nmbd messaging context.\n"));
-	}
-	return ctx;
+	smb_panic("Could not init nmbd's messaging context.\n");
+	return NULL;
 }
 
 /**************************************************************************** **

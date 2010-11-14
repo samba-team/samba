@@ -193,7 +193,7 @@ struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx,
 	status = messaging_tdb_init(ctx, ctx, &ctx->local);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("messaging_tdb_init failed: %s\n",
+		DEBUG(2, ("messaging_tdb_init failed: %s\n",
 			  nt_errstr(status)));
 		TALLOC_FREE(ctx);
 		return NULL;
@@ -204,7 +204,7 @@ struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx,
 		status = messaging_ctdbd_init(ctx, ctx, &ctx->remote);
 
 		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(1, ("messaging_ctdb_init failed: %s\n",
+			DEBUG(2, ("messaging_ctdb_init failed: %s\n",
 				  nt_errstr(status)));
 			TALLOC_FREE(ctx);
 			return NULL;

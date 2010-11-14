@@ -44,6 +44,16 @@ static bool interactive = False;
 
 extern bool override_logfile;
 
+struct messaging_context *winbind_messaging_context(void)
+{
+	struct messaging_context *msg_ctx = server_messaging_context();
+	if (likely(msg_ctx != NULL)) {
+		return msg_ctx;
+	}
+	smb_panic("Could not init winbindd's messaging context.\n");
+	return NULL;
+}
+
 /* Reload configuration */
 
 static bool reload_services_file(const char *lfile)

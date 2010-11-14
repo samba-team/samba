@@ -386,6 +386,5 @@ struct WINBINDD_CCACHE_ENTRY {
 #define DOM_SEQUENCE_NONE ((uint32)-1)
 
 #define winbind_event_context server_event_context
-#define winbind_messaging_context server_messaging_context
 
 #endif /* _WINBINDD_H */
