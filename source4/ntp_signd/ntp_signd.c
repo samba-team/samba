@@ -528,7 +528,8 @@ static void ntp_signd_task_init(struct task_server *task)
 
 	address = talloc_asprintf(ntp_signd, "%s/socket", lpcfg_ntp_signd_socket_directory(task->lp_ctx));
 
-	status = stream_setup_socket(ntp_signd->task->event_ctx, 
+	status = stream_setup_socket(ntp_signd->task,
+				     ntp_signd->task->event_ctx,
 				     ntp_signd->task->lp_ctx,
 				     model_ops, 
 				     &ntp_signd_stream_ops, 

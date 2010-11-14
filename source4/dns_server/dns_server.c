@@ -492,7 +492,8 @@ static NTSTATUS dns_add_socket(struct dns_server *dns,
 		return status;
 	}
 
-	status = stream_setup_socket(dns->task->event_ctx,
+	status = stream_setup_socket(dns->task,
+				     dns->task->event_ctx,
 				     dns->task->lp_ctx,
 				     model_ops,
 				     &dns_tcp_stream_ops,

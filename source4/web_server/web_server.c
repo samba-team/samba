@@ -320,7 +320,8 @@ static void websrv_task_init(struct task_server *task)
 		num_interfaces = iface_count(ifaces);
 		for(i = 0; i < num_interfaces; i++) {
 			const char *address = iface_n_ip(ifaces, i);
-			status = stream_setup_socket(task->event_ctx, 
+			status = stream_setup_socket(task,
+						     task->event_ctx,
 						     task->lp_ctx, model_ops,
 						     &web_stream_ops, 
 						     "ipv4", address, 
@@ -331,7 +332,7 @@ static void websrv_task_init(struct task_server *task)
 
 		talloc_free(ifaces);
 	} else {
-		status = stream_setup_socket(task->event_ctx, task->lp_ctx,
+		status = stream_setup_socket(task, task->event_ctx, task->lp_ctx,
 					     model_ops, &web_stream_ops, 
 					     "ipv4", lpcfg_socket_address(task->lp_ctx),
 					     &port, lpcfg_socket_options(task->lp_ctx), task);

@@ -86,7 +86,8 @@ static const struct stream_server_ops samba3_smb_stream_ops = {
 /*
   setup a listening socket on all the SMB ports for a particular address
 */
-static NTSTATUS samba3_add_socket(struct tevent_context *event_context,
+static NTSTATUS samba3_add_socket(struct task_server *task,
+				  struct tevent_context *event_context,
 				  struct loadparm_context *lp_ctx,
 				  const struct model_ops *model_ops,
 				  const char *address)
@@ -98,7 +99,7 @@ static NTSTATUS samba3_add_socket(struct tevent_context *event_context,
 	for (i=0;ports[i];i++) {
 		uint16_t port = atoi(ports[i]);
 		if (port == 0) continue;
-		status = stream_setup_socket(event_context, lp_ctx,
+		status = stream_setup_socket(task, event_context, lp_ctx,
 					     model_ops, &samba3_smb_stream_ops,
 					     "ip", address, &port,
 					     lpcfg_socket_options(lp_ctx),
@@ -142,14 +143,16 @@ static void samba3_smb_task_init(struct task_server *task)
 		*/
 		for(i = 0; i < num_interfaces; i++) {
 			const char *address = iface_n_ip(ifaces, i);
-			status = samba3_add_socket(task->event_ctx,
+			status = samba3_add_socket(task,
+						   task->event_ctx,
 						   task->lp_ctx,
 						   model_ops, address);
 			if (!NT_STATUS_IS_OK(status)) goto failed;
 		}
 	} else {
 		/* Just bind to lpcfg_socket_address() (usually 0.0.0.0) */
-		status = samba3_add_socket(task->event_ctx, task->lp_ctx,
+		status = samba3_add_socket(task,
+					   task->event_ctx, task->lp_ctx,
 					   model_ops,
 					   lpcfg_socket_address(task->lp_ctx));
 		if (!NT_STATUS_IS_OK(status)) goto failed;

@@ -289,7 +289,8 @@ static const struct stream_server_ops named_pipe_stream_ops = {
 	.send_handler		= named_pipe_send,
 };
 
-NTSTATUS tstream_setup_named_pipe(struct tevent_context *event_context,
+NTSTATUS tstream_setup_named_pipe(TALLOC_CTX *mem_ctx,
+				  struct tevent_context *event_context,
 				  struct loadparm_context *lp_ctx,
 				  const struct model_ops *model_ops,
 				  const struct stream_server_ops *stream_ops,
@@ -300,7 +301,7 @@ NTSTATUS tstream_setup_named_pipe(struct tevent_context *event_context,
 	struct named_pipe_socket *pipe_sock;
 	NTSTATUS status = NT_STATUS_NO_MEMORY;;
 
-	pipe_sock = talloc(event_context, struct named_pipe_socket);
+	pipe_sock = talloc(mem_ctx, struct named_pipe_socket);
 	if (pipe_sock == NULL) {
 		goto fail;
 	}
@@ -338,7 +339,8 @@ NTSTATUS tstream_setup_named_pipe(struct tevent_context *event_context,
 	pipe_sock->ops = stream_ops;
 	pipe_sock->private_data	= private_data;
 
-	status = stream_setup_socket(event_context,
+	status = stream_setup_socket(pipe_sock,
+				     event_context,
 				     lp_ctx,
 				     model_ops,
 				     &named_pipe_stream_ops,

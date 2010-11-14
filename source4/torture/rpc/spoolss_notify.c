@@ -464,7 +464,7 @@ static bool test_start_dcerpc_server(struct torture_context *tctx,
 	torture_assert_ntstatus_ok(tctx, status,
 				   "unable to initialize process models");
 
-	status = smbsrv_add_socket(event_ctx, tctx->lp_ctx, process_model_startup("single"), address);
+	status = smbsrv_add_socket(tctx, event_ctx, tctx->lp_ctx, process_model_startup("single"), address);
 	torture_assert_ntstatus_ok(tctx, status, "starting smb server");
 
 	status = dcesrv_init_context(tctx, tctx->lp_ctx, endpoints, &dce_ctx);

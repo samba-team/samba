@@ -797,10 +797,12 @@ static const struct stream_server_ops ldap_stream_priv_ops = {
 };
 
 #endif
+
+
 /*
   add a socket address to the list of events, one event per port
 */
-static NTSTATUS add_socket(struct tevent_context *event_context,
+static NTSTATUS add_socket(struct task_server *task,
 			   struct loadparm_context *lp_ctx,
 			   const struct model_ops *model_ops,
 			   const char *address, struct ldapsrv_service *ldap_service)
@@ -809,7 +811,7 @@ static NTSTATUS add_socket(struct tevent_context *event_context,
 	NTSTATUS status;
 	struct ldb_context *ldb;
 
-	status = stream_setup_socket(event_context, lp_ctx,
+	status = stream_setup_socket(task, task->event_ctx, lp_ctx,
 				     model_ops, &ldap_stream_nonpriv_ops,
 				     "ipv4", address, &port, 
 				     lpcfg_socket_options(lp_ctx),
@@ -823,7 +825,7 @@ static NTSTATUS add_socket(struct tevent_context *event_context,
 	if (tstream_tls_params_enabled(ldap_service->tls_params)) {
 		/* add ldaps server */
 		port = 636;
-		status = stream_setup_socket(event_context, lp_ctx,
+		status = stream_setup_socket(task, task->event_ctx, lp_ctx,
 					     model_ops,
 					     &ldap_stream_nonpriv_ops,
 					     "ipv4", address, &port, 
@@ -845,7 +847,7 @@ static NTSTATUS add_socket(struct tevent_context *event_context,
 
 	if (samdb_is_gc(ldb)) {
 		port = 3268;
-		status = stream_setup_socket(event_context, lp_ctx,
+		status = stream_setup_socket(task, task->event_ctx, lp_ctx,
 					     model_ops,
 					     &ldap_stream_nonpriv_ops,
 					     "ipv4", address, &port, 
@@ -941,11 +943,11 @@ static void ldapsrv_task_init(struct task_server *task)
 		*/
 		for(i = 0; i < num_interfaces; i++) {
 			const char *address = iface_n_ip(ifaces, i);
-			status = add_socket(task->event_ctx, task->lp_ctx, model_ops, address, ldap_service);
+			status = add_socket(task, task->lp_ctx, model_ops, address, ldap_service);
 			if (!NT_STATUS_IS_OK(status)) goto failed;
 		}
 	} else {
-		status = add_socket(task->event_ctx, task->lp_ctx, model_ops,
+		status = add_socket(task, task->lp_ctx, model_ops,
 				    lpcfg_socket_address(task->lp_ctx), ldap_service);
 		if (!NT_STATUS_IS_OK(status)) goto failed;
 	}
@@ -955,7 +957,7 @@ static void ldapsrv_task_init(struct task_server *task)
 		goto failed;
 	}
 
-	status = stream_setup_socket(task->event_ctx, task->lp_ctx,
+	status = stream_setup_socket(task, task->event_ctx, task->lp_ctx,
 				     model_ops, &ldap_stream_nonpriv_ops,
 				     "unix", ldapi_path, NULL, 
 				     lpcfg_socket_options(task->lp_ctx),
@@ -986,7 +988,7 @@ static void ldapsrv_task_init(struct task_server *task)
 		goto failed;
 	}
 
-	status = stream_setup_socket(task->event_ctx, task->lp_ctx,
+	status = stream_setup_socket(task, task->event_ctx, task->lp_ctx,
 				     model_ops, &ldap_stream_priv_ops,
 				     "unix", ldapi_path, NULL,
 				     lpcfg_socket_options(task->lp_ctx),

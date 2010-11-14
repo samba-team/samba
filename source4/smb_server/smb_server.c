@@ -175,10 +175,11 @@ static const struct stream_server_ops smb_stream_ops = {
 /*
   setup a listening socket on all the SMB ports for a particular address
 */
-_PUBLIC_ NTSTATUS smbsrv_add_socket(struct tevent_context *event_context,
+_PUBLIC_ NTSTATUS smbsrv_add_socket(TALLOC_CTX *mem_ctx,
+				    struct tevent_context *event_context,
 				    struct loadparm_context *lp_ctx,
-			       const struct model_ops *model_ops,
-			       const char *address)
+				    const struct model_ops *model_ops,
+				    const char *address)
 {
 	const char **ports = lpcfg_smb_ports(lp_ctx);
 	int i;
@@ -187,7 +188,7 @@ _PUBLIC_ NTSTATUS smbsrv_add_socket(struct tevent_context *event_context,
 	for (i=0;ports[i];i++) {
 		uint16_t port = atoi(ports[i]);
 		if (port == 0) continue;
-		status = stream_setup_socket(event_context, lp_ctx,
+		status = stream_setup_socket(mem_ctx, event_context, lp_ctx,
 					     model_ops, &smb_stream_ops, 
 					     "ipv4", address, &port, 
 					     lpcfg_socket_options(lp_ctx),

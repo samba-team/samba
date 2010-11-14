@@ -299,7 +299,7 @@ static void winbind_task_init(struct task_server *task)
 	if (!listen_socket->socket_path) goto nomem;
 	listen_socket->service		= service;
 	listen_socket->privileged	= false;
-	status = stream_setup_socket(task->event_ctx, task->lp_ctx, model_ops,
+	status = stream_setup_socket(task, task->event_ctx, task->lp_ctx, model_ops,
 				     &wbsrv_ops, "unix",
 				     listen_socket->socket_path, &port,
 				     lpcfg_socket_options(task->lp_ctx),
@@ -316,7 +316,7 @@ static void winbind_task_init(struct task_server *task)
 	if (!listen_socket->socket_path) goto nomem;
 	listen_socket->service		= service;
 	listen_socket->privileged	= true;
-	status = stream_setup_socket(task->event_ctx, task->lp_ctx, model_ops,
+	status = stream_setup_socket(task, task->event_ctx, task->lp_ctx, model_ops,
 				     &wbsrv_ops, "unix",
 				     listen_socket->socket_path, &port,
 				     lpcfg_socket_options(task->lp_ctx),

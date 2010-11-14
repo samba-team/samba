@@ -58,12 +58,12 @@ static void smbsrv_task_init(struct task_server *task)
 		*/
 		for(i = 0; i < num_interfaces; i++) {
 			const char *address = iface_n_ip(ifaces, i);
-			status = smbsrv_add_socket(task->event_ctx, task->lp_ctx, task->model_ops, address);
+			status = smbsrv_add_socket(task, task->event_ctx, task->lp_ctx, task->model_ops, address);
 			if (!NT_STATUS_IS_OK(status)) goto failed;
 		}
 	} else {
 		/* Just bind to lpcfg_socket_address() (usually 0.0.0.0) */
-		status = smbsrv_add_socket(task->event_ctx, task->lp_ctx, task->model_ops,
+		status = smbsrv_add_socket(task, task->event_ctx, task->lp_ctx, task->model_ops,
 					   lpcfg_socket_address(task->lp_ctx));
 		if (!NT_STATUS_IS_OK(status)) goto failed;
 	}

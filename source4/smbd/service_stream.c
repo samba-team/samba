@@ -255,7 +255,8 @@ static void stream_accept_handler(struct tevent_context *ev, struct tevent_fd *f
   	 a string for the port. Should leave allocating a port nr 
          to the socket implementation - JRV20070903
  */
-NTSTATUS stream_setup_socket(struct tevent_context *event_context,
+NTSTATUS stream_setup_socket(TALLOC_CTX *mem_ctx,
+			     struct tevent_context *event_context,
 			     struct loadparm_context *lp_ctx,
 			     const struct model_ops *model_ops,
 			     const struct stream_server_ops *stream_ops,
@@ -271,7 +272,7 @@ NTSTATUS stream_setup_socket(struct tevent_context *event_context,
 	struct tevent_fd *fde;
 	int i;
 
-	stream_socket = talloc_zero(event_context, struct stream_socket);
+	stream_socket = talloc_zero(mem_ctx, struct stream_socket);
 	NT_STATUS_HAVE_NO_MEMORY(stream_socket);
 
 	status = socket_create(family, SOCKET_TYPE_STREAM, &stream_socket->sock, 0);
