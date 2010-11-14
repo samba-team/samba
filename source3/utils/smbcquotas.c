@@ -238,11 +238,14 @@ static int do_quota(struct cli_state *cli,
 	uint16_t quota_fnum = 0;
 	SMB_NTQUOTA_LIST *qtl = NULL;
 	SMB_NTQUOTA_STRUCT qt;
+	NTSTATUS status;
+
 	ZERO_STRUCT(qt);
 
-	if (!NT_STATUS_IS_OK(cli_get_fs_attr_info(cli, &fs_attrs))) {
+	status = cli_get_fs_attr_info(cli, &fs_attrs);
+	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("Failed to get the filesystem attributes %s.\n",
-			cli_errstr(cli));
+			 nt_errstr(status));
 		return -1;
 	}
 
@@ -251,10 +254,12 @@ static int do_quota(struct cli_state *cli,
 		return 0;
 	}
 
-	if (!NT_STATUS_IS_OK(cli_get_quota_handle(cli, &quota_fnum))) {
+	status = cli_get_quota_handle(cli, &quota_fnum);
+	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("Quotas are not enabled on this share.\n");
 		d_printf("Failed to open %s  %s.\n",
-			FAKE_FILE_NAME_QUOTA_WIN32,cli_errstr(cli));
+			 FAKE_FILE_NAME_QUOTA_WIN32,
+			 nt_errstr(status));
 		return -1;
 	}
 
