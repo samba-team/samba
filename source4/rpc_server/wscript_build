@@ -140,7 +140,7 @@ bld.SAMBA_LIBRARY('dcerpc_server',
 	vnum='0.0.1'
 	)
 
-bld.SAMBA_MODULE('dcesrv',
+bld.SAMBA_MODULE('service_dcerpc',
 	source='service_rpc.c',
 	autoproto='service_rpc.h',
 	subsystem='service',
