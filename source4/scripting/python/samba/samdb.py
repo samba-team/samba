@@ -68,12 +68,7 @@ class SamDB(samba.Ldb):
         return dsdb._am_rodc(self)
 
     def domain_dn(self):
-        res = self.search(base="",
-                          scope=ldb.SCOPE_BASE,
-                          expression="(defaultNamingContext=*)",
-                          attrs=["defaultNamingContext"])
-        assert(len(res) == 1 and res[0]["defaultNamingContext"] is not None)
-        return res[0]["defaultNamingContext"][0]
+        return str(self.get_default_basedn())
 
     def enable_account(self, search_filter):
         """Enables an account
