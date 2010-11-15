@@ -48,8 +48,8 @@ static void PyErr_SetLdbError(PyObject *error, int ret, struct ldb_context *ldb_
 		return; /* Python exception should already be set, just keep that */
 
 	PyErr_SetObject(error, 
-					Py_BuildValue(discard_const_p(char, "(i,s)"), ret, 
-				  ldb_ctx == NULL?ldb_strerror(ret):ldb_errstring(ldb_ctx)));
+			Py_BuildValue(discard_const_p(char, "(i,s)"), ret,
+				      ldb_ctx == NULL?ldb_strerror(ret):ldb_errstring(ldb_ctx)));
 }
 
 static PyObject *PyExc_LdbError;
@@ -64,8 +64,8 @@ PyAPI_DATA(PyTypeObject) PyLdbTree;
 static PyObject *PyLdb_FromLdbContext(struct ldb_context *ldb_ctx);
 
 static PyObject *PyObject_FromLdbValue(struct ldb_context *ldb_ctx, 
-							   struct ldb_message_element *el, 
-							   struct ldb_val *val)
+				       struct ldb_message_element *el,
+				       struct ldb_val *val)
 {
 	struct ldb_val new_val;
 	TALLOC_CTX *mem_ctx = talloc_new(NULL);
@@ -95,8 +95,7 @@ static PyObject *PyLdbResult_FromResult(struct ldb_result *result)
 	} 
 	ret = PyList_New(result->count);
 	for (i = 0; i < result->count; i++) {
-		PyList_SetItem(ret, i, PyLdbMessage_FromMessage(result->msgs[i])
-		);
+		PyList_SetItem(ret, i, PyLdbMessage_FromMessage(result->msgs[i]));
 	}
 	return ret;
 }
@@ -110,7 +109,7 @@ static PyObject *PyLdbResult_FromResult(struct ldb_result *result)
  * @return a ldb_result, or NULL if the conversion failed
  */
 static struct ldb_result *PyLdbResult_AsResult(TALLOC_CTX *mem_ctx, 
-											   PyObject *obj)
+					       PyObject *obj)
 {
 	struct ldb_result *res;
 	Py_ssize_t i;
@@ -490,7 +489,7 @@ static PyObject *py_ldb_get_default_basedn(PyLdbObject *self)
 }
 
 static const char **PyList_AsStringList(TALLOC_CTX *mem_ctx, PyObject *list, 
-										const char *paramname)
+					const char *paramname)
 {
 	const char **ret;
 	Py_ssize_t i;
@@ -506,7 +505,7 @@ static const char **PyList_AsStringList(TALLOC_CTX *mem_ctx, PyObject *list,
 			return NULL;
 		}
 		ret[i] = talloc_strndup(ret, PyString_AsString(item),
-							   PyString_Size(item));
+					PyString_Size(item));
 	}
 	ret[i] = NULL;
 	return ret;
