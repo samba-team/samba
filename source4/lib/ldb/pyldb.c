@@ -994,7 +994,7 @@ static PyObject *ldb_ldif_to_pyobject(struct ldb_ldif *ldif)
 }
 
 
-static PyObject *py_ldb_write_ldif(PyLdbMessageObject *self, PyObject *args)
+static PyObject *py_ldb_write_ldif(PyLdbObject *self, PyObject *args)
 {
 	int changetype;
 	PyObject *py_msg;
