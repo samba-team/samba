@@ -844,23 +844,19 @@ static int objectclass_modify(struct ldb_module *module, struct ldb_request *req
 	 * only on application NCs - not on the standard DCs */
 	if (oc_changes &&
 	    (dsdb_forest_functional_level(ldb) < DS_DOMAIN_FUNCTION_2003)) {
-		int cnt = samdb_search_count(ldb, ac,
-					     ldb_get_default_basedn(ldb),
-					     "(distinguishedName=%s)",
-					     ldb_dn_get_linearized(req->op.mod.message->dn));
-		if (cnt == 0) {
-			cnt = samdb_search_count(ldb, ac,
-						 ldb_get_config_basedn(ldb),
-						 "(distinguishedName=%s)",
-						 ldb_dn_get_linearized(req->op.mod.message->dn));
+		struct ldb_dn *nc_root;
+
+		ret = dsdb_find_nc_root(ldb, ac, req->op.mod.message->dn,
+					&nc_root);
+		if (ret != LDB_SUCCESS) {
+			return ret;
 		}
-		if (cnt == 0) {
-			cnt = samdb_search_count(ldb, ac,
-						 ldb_get_schema_basedn(ldb),
-						 "(distinguishedName=%s)",
-						 ldb_dn_get_linearized(req->op.mod.message->dn));
-		}
-		if (cnt != 0) {
+
+		if ((ldb_dn_compare(nc_root, ldb_get_default_basedn(ldb)) == 0) ||
+		    (ldb_dn_compare(nc_root, ldb_get_config_basedn(ldb)) == 0) ||
+		    (ldb_dn_compare(nc_root, ldb_get_schema_basedn(ldb)) == 0)) {
+			ldb_set_errstring(ldb,
+					  "objectclass: object class changes on objects under the standard name contexts not allowed!");
 			return LDB_ERR_UNWILLING_TO_PERFORM;
 		}
 	}
