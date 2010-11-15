@@ -54,6 +54,7 @@ typedef struct {
 	TALLOC_CTX *mem_ctx;
 	struct ldb_message *msg;
 } PyLdbMessageObject;
+PyObject *PyLdbMessage_FromMessage(struct ldb_message *message);
 #define PyLdbMessage_Check(ob) PyObject_TypeCheck(ob, &PyLdbMessage)
 #define PyLdbMessage_AsMessage(pyobj) ((PyLdbMessageObject *)pyobj)->msg
 
@@ -62,7 +63,6 @@ typedef struct {
 	TALLOC_CTX *mem_ctx;
 	struct ldb_module *mod;
 } PyLdbModuleObject;
-PyObject *PyLdbMessage_FromMessage(struct ldb_message *message);
 PyObject *PyLdbModule_FromModule(struct ldb_module *mod);
 #define PyLdbModule_AsModule(pyobj) ((PyLdbModuleObject *)pyobj)->mod
 
