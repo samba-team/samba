@@ -345,6 +345,8 @@ for t in smb4torture_testsuites("RAP-"):
 for t in base + raw:
     plantestsuite_loadlist("samba4.ntvfs.cifs.%s" % normalize_testname(t), "dc", [valgrindify(smb4torture), '//$NETBIOSNAME/cifs', '-U$USERNAME%$PASSWORD'] + ntvfsargs + [t])
 
+plansmbtorturetestsuite('ECHO-UDP', 'dc:local', '//$SERVER/whatever')
+
 # Local tests
 for t in smb4torture_testsuites("LOCAL-"):
     plansmbtorturetestsuite(t, "none", "ncalrpc:")
