@@ -84,6 +84,9 @@ static krb5_error_code samba_wdc_reget_pac(void *priv, krb5_context context,
 	 * RODC, then we need to regenerate the PAC - we can't trust
 	 * it */
 	if (samba_krbtgt_was_untrusted_rodc(krbtgt)) {
+		if (client == NULL) {
+			return KRB5KDC_ERR_C_PRINCIPAL_UNKNOWN;
+		}
 		nt_status = samba_kdc_get_pac_blob(mem_ctx, client, &pac_blob);
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			talloc_free(mem_ctx);
