@@ -840,6 +840,31 @@ static int objectclass_modify(struct ldb_module *module, struct ldb_request *req
 		oc_changes = true;
 	}
 
+	/* MS-ADTS 3.1.1.5.3.5 - on a forest level < 2003 we do allow updates
+	 * only on application NCs - not on the standard DCs */
+	if (oc_changes &&
+	    (dsdb_forest_functional_level(ldb) < DS_DOMAIN_FUNCTION_2003)) {
+		int cnt = samdb_search_count(ldb, ac,
+					     ldb_get_default_basedn(ldb),
+					     "(distinguishedName=%s)",
+					     ldb_dn_get_linearized(req->op.mod.message->dn));
+		if (cnt == 0) {
+			cnt = samdb_search_count(ldb, ac,
+						 ldb_get_config_basedn(ldb),
+						 "(distinguishedName=%s)",
+						 ldb_dn_get_linearized(req->op.mod.message->dn));
+		}
+		if (cnt == 0) {
+			cnt = samdb_search_count(ldb, ac,
+						 ldb_get_schema_basedn(ldb),
+						 "(distinguishedName=%s)",
+						 ldb_dn_get_linearized(req->op.mod.message->dn));
+		}
+		if (cnt != 0) {
+			return LDB_ERR_UNWILLING_TO_PERFORM;
+		}
+	}
+
 	ret = ldb_build_mod_req(&down_req, ldb, ac,
 				msg,
 				req->controls, ac,
