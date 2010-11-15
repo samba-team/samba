@@ -11,7 +11,7 @@ bld.SAMBA_SUBSYSTEM('DCERPC_COMMON',
 	autoproto='common/proto.h',
 	public_headers='common/common.h',
 	header_path='dcerpc_server',
-	deps='ldb DCERPC_SHARE'
+	deps='ldb DCERPC_SHARE samba_server_gensec'
 	)
 
 
