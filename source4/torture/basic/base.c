@@ -1777,7 +1777,8 @@ static bool run_birthtimetest(struct torture_context *tctx,
 			smbcli_errstr(cli->tree));
 		correct = false;
 	} else {
-		fprintf(stdout,"c_time = %d, c_time1 = %d\n",c_time,c_time1);
+		fprintf(stdout, "c_time = %li, c_time1 = %li\n",
+			(long) c_time, (long) c_time1);
 		if (c_time1 != c_time) {
 			torture_comment(tctx, "This system updated file \
 					birth times! Not expected!\n");
@@ -1820,7 +1821,8 @@ static bool run_birthtimetest(struct torture_context *tctx,
 				smbcli_errstr(cli->tree));
 		correct = false;
 	} else {
-		fprintf(stdout,"c_time = %d, c_time1 = %d\n",c_time,c_time1);
+		fprintf(stdout, "c_time = %li, c_time1 = %li\n",
+			(long) c_time, (long) c_time1);
 		if (c_time1 != c_time) {
 			torture_comment(tctx, "This system  updated directory \
 					birth times! Not Expected!\n");
