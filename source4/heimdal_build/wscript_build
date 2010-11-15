@@ -685,7 +685,7 @@ HEIMDAL_SUBSYSTEM('HEIMDAL_HCRYPTO',
 HEIMDAL_SUBSYSTEM('HEIMDAL_BASE',
     'base/array.c base/bool.c base/dict.c base/heimbase.c base/string.c base/number.c base/null.c',
     includes='../heimdal/base',
-    deps='roken'
+    deps='roken replace'
     )
 
 
