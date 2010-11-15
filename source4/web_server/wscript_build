@@ -8,7 +8,7 @@ bld.SAMBA_SUBSYSTEM('WEB_WSGI',
 		)
 
 
-bld.SAMBA_MODULE('WEB',
+bld.SAMBA_MODULE('service_web',
 		source='web_server.c',
 		subsystem='service',
 		init_function='server_service_web_init',
