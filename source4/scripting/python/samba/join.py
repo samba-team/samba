@@ -303,7 +303,7 @@ class dc_join:
             "samaccountname" : ctx.samname,
             "userAccountControl" : str(ctx.userAccountControl),
             "dnshostname" : ctx.dnshostname}
-        if ctx.behavior_version >= samba.dsdb.DS_DOMAIN_FUNCTION_2003:
+        if ctx.behavior_version >= samba.dsdb.DS_DOMAIN_FUNCTION_2008:
             rec['msDS-SupportedEncryptionTypes'] = str(samba.dsdb.ENC_ALL_TYPES)
         if ctx.managedby:
             rec["managedby"] = ctx.managedby
@@ -335,8 +335,10 @@ class dc_join:
             "systemFlags" : str(samba.dsdb.SYSTEM_FLAG_DISALLOW_MOVE_ON_DELETE),
             "dMDLocation" : ctx.schema_dn}
 
-        if ctx.behavior_version >= samba.dsdb.DS_DOMAIN_FUNCTION_2003:
+        if ctx.behavior_version >= samba.dsdb.DS_DOMAIN_FUNCTION_2008:
             rec["msDS-Behavior-Version"] = str(ctx.behavior_version)
+
+        if ctx.behavior_version >= samba.dsdb.DS_DOMAIN_FUNCTION_2003:
             rec["msDS-HasDomainNCs"] = ctx.base_dn
 
         if ctx.RODC:
