@@ -553,7 +553,6 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 	unsigned int i;
 	krb5_error_code ret = 0;
 	krb5_boolean is_computer = FALSE;
-	char *realm = strupper_talloc(mem_ctx, lpcfg_realm(lp_ctx));
 
 	struct samba_kdc_entry *p;
 	NTTIME acct_expiry;
@@ -585,12 +584,6 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 
 	memset(entry_ex, 0, sizeof(*entry_ex));
 
-	if (!realm) {
-		ret = ENOMEM;
-		krb5_set_error_message(context, ret, "talloc_strdup: out of memory");
-		goto out;
-	}
-
 	p = talloc(mem_ctx, struct samba_kdc_entry);
 	if (!p) {
 		ret = ENOMEM;
@@ -618,7 +611,7 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 
 	entry_ex->entry.principal = malloc(sizeof(*(entry_ex->entry.principal)));
 	if (ent_type == SAMBA_KDC_ENT_TYPE_ANY && principal == NULL) {
-		krb5_make_principal(context, &entry_ex->entry.principal, realm, samAccountName, NULL);
+		krb5_make_principal(context, &entry_ex->entry.principal, lpcfg_realm(lp_ctx), samAccountName, NULL);
 	} else {
 		ret = copy_Principal(principal, entry_ex->entry.principal);
 		if (ret) {
@@ -633,7 +626,7 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 		 * we determine from our records */
 
 		/* this has to be with malloc() */
-		krb5_principal_set_realm(context, entry_ex->entry.principal, realm);
+		krb5_principal_set_realm(context, entry_ex->entry.principal, lpcfg_realm(lp_ctx));
 	}
 
 	/* First try and figure out the flags based on the userAccountControl */
@@ -662,7 +655,7 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 		/* use 'kadmin' for now (needed by mit_samba) */
 		krb5_make_principal(context,
 				    &entry_ex->entry.created_by.principal,
-				    realm, "kadmin", NULL);
+				    lpcfg_realm(lp_ctx), "kadmin", NULL);
 
 		entry_ex->entry.modified_by = (Event *) malloc(sizeof(Event));
 		if (entry_ex->entry.modified_by == NULL) {
@@ -676,7 +669,7 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 		/* use 'kadmin' for now (needed by mit_samba) */
 		krb5_make_principal(context,
 				    &entry_ex->entry.modified_by->principal,
-				    realm, "kadmin", NULL);
+				    lpcfg_realm(lp_ctx), "kadmin", NULL);
 	}
 
 
@@ -826,7 +819,7 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 {
 	struct loadparm_context *lp_ctx = kdc_db_ctx->lp_ctx;
 	const char *dnsdomain;
-	char *realm = strupper_talloc(mem_ctx, lpcfg_realm(lp_ctx));
+	const char *realm = lpcfg_realm(lp_ctx);
 	DATA_BLOB password_utf16;
 	struct samr_Password password_hash;
 	const struct ldb_val *password_val;
@@ -872,7 +865,6 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 	} else { /* OUTBOUND */
 		dnsdomain = ldb_msg_find_attr_as_string(msg, "trustPartner", NULL);
 		/* replace realm */
-		talloc_free(realm);
 		realm = strupper_talloc(mem_ctx, dnsdomain);
 		password_val = ldb_msg_find_ldb_val(msg, "trustAuthOutgoing");
 	}
@@ -1100,7 +1092,6 @@ static krb5_error_code samba_kdc_fetch_krbtgt(krb5_context context,
 	struct ldb_message *msg = NULL;
 	struct ldb_dn *realm_dn = ldb_get_default_basedn(kdc_db_ctx->samdb);
 
-	krb5_principal alloc_principal = NULL;
 	if (principal->name.name_string.len != 2
 	    || (strcmp(principal->name.name_string.val[0], KRB5_TGS_NAME) != 0)) {
 		/* Not a krbtgt */
@@ -1117,7 +1108,6 @@ static krb5_error_code samba_kdc_fetch_krbtgt(krb5_context context,
  		 * krbtgt */
 
 		int lret;
-		char *realm_fixed;
 
 		if (krbtgt_number == kdc_db_ctx->my_krbtgt_number) {
 			lret = dsdb_search_one(kdc_db_ctx->samdb, mem_ctx,
@@ -1150,28 +1140,6 @@ static krb5_error_code samba_kdc_fetch_krbtgt(krb5_context context,
 					       (unsigned)(krbtgt_number));
 			return HDB_ERR_NOENTRY;
 		}
-
-		realm_fixed = strupper_talloc(mem_ctx, lpcfg_realm(lp_ctx));
- 		if (!realm_fixed) {
-			ret = ENOMEM;
- 			krb5_set_error_message(context, ret, "strupper_talloc: out of memory");
- 			return ret;
- 		}
-
- 		ret = krb5_copy_principal(context, principal, &alloc_principal);
- 		if (ret) {
- 			return ret;
- 		}
-
- 		free(alloc_principal->name.name_string.val[1]);
-		alloc_principal->name.name_string.val[1] = strdup(realm_fixed);
- 		talloc_free(realm_fixed);
- 		if (!alloc_principal->name.name_string.val[1]) {
-			ret = ENOMEM;
- 			krb5_set_error_message(context, ret, "samba_kdc_fetch: strdup() failed!");
- 			return ret;
- 		}
- 		principal = alloc_principal;
 
 		ret = samba_kdc_message2entry(context, kdc_db_ctx, mem_ctx,
 					principal, SAMBA_KDC_ENT_TYPE_KRBTGT,
@@ -1235,7 +1203,6 @@ static krb5_error_code samba_kdc_lookup_server(krb5_context context,
 						struct ldb_message **msg)
 {
 	krb5_error_code ret;
-	const char *realm;
 	if (principal->name.name_string.len >= 2) {
 		/* 'normal server' case */
 		int ldb_ret;
@@ -1274,6 +1241,7 @@ static krb5_error_code samba_kdc_lookup_server(krb5_context context,
 		int lret;
 		char *filter = NULL;
 		char *short_princ;
+		const char *realm;
 		/* server as client principal case, but we must not lookup userPrincipalNames */
 		*realm_dn = ldb_get_default_basedn(kdc_db_ctx->samdb);
 		realm = krb5_principal_get_realm(context, principal);
