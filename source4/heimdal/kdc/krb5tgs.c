@@ -1465,6 +1465,7 @@ tgs_build_reply(krb5_context context,
     krb5_error_code ret;
     krb5_principal cp = NULL, sp = NULL;
     krb5_principal client_principal = NULL;
+    krb5_principal krbtgt_principal = NULL;
     char *spn = NULL, *cpn = NULL;
     hdb_entry_ex *server = NULL, *client = NULL, *s4u2self_impersonated_client = NULL;
     HDB *clientdb, *s4u2self_impersonated_clientdb;
@@ -1715,21 +1716,6 @@ server_lookup:
      * backward.
      */
 
-    if (strcmp(krb5_principal_get_realm(context, server->entry.principal),
-	       krb5_principal_get_comp_string(context,
-					      krbtgt->entry.principal,
-					      1)) != 0) {
-	char *tpn;
-	ret = krb5_unparse_name(context, krbtgt->entry.principal, &tpn);
-	kdc_log(context, config, 0,
-		"Request with wrong krbtgt: %s",
-		(ret == 0) ? tpn : "<unknown>");
-	if(ret == 0)
-	    free(tpn);
-	ret = KRB5KRB_AP_ERR_NOT_US;
-	goto out;
-    }
-
     /*
      * Validate authoriation data
      */
@@ -1742,12 +1728,56 @@ server_lookup:
 	goto out;
     }
 
-    /* Now refetch the krbtgt, but get the current kvno (the sign check may have been on an old kvno) */
-    ret = _kdc_db_fetch(context, config, krbtgt->entry.principal, HDB_F_GET_KRBTGT, NULL, NULL, &krbtgt_out);
-    if (ret) {
+    /* Now refetch the primary krbtgt, and get the current kvno (the
+     * sign check may have been on an old kvno, and the server may
+     * have been an incoming trust) */
+    ret = krb5_make_principal(context, &krbtgt_principal, 
+			      krb5_principal_get_comp_string(context,
+							     krbtgt->entry.principal,
+							     1),
+			      KRB5_TGS_NAME, 
+			      krb5_principal_get_comp_string(context,
+							     krbtgt->entry.principal,
+							     1), NULL);
+    if(ret) {
 	kdc_log(context, config, 0,
-		    "Failed to find krbtgt in DB for krbtgt PAC signature");
+		    "Failed to generate krbtgt principal");
 	goto out;
+    }
+
+    ret = _kdc_db_fetch(context, config, krbtgt_principal, HDB_F_GET_KRBTGT, NULL, NULL, &krbtgt_out);
+    krb5_free_principal(context, krbtgt_principal);
+    if (ret) {
+	krb5_error_code ret2;
+	char *tpn, *tpn2;
+	ret = krb5_unparse_name(context, krbtgt->entry.principal, &tpn);
+	ret2 = krb5_unparse_name(context, krbtgt->entry.principal, &tpn2);
+	kdc_log(context, config, 0,
+		"Request with wrong krbtgt: %s, %s not found in our database",
+		(ret == 0) ? tpn : "<unknown>", (ret2 == 0) ? tpn2 : "<unknown>");
+	if(ret == 0)
+	    free(tpn);
+	if(ret2 == 0)
+	    free(tpn2);
+	ret = KRB5KRB_AP_ERR_NOT_US;
+	goto out;
+    }
+
+    /* The first realm is the realm of the service, the second is
+     * krbtgt/<this>/@REALM component of the krbtgt DN the request was
+     * encrypted to.  The redirection via the krbtgt_out entry allows
+     * the DB to possibly correct the case of the realm (Samba4 does
+     * this) before the strcmp() */
+    if (strcmp(krb5_principal_get_realm(context, server->entry.principal),
+	       krb5_principal_get_realm(context, krbtgt_out->entry.principal)) != 0) {
+	char *tpn;
+	ret = krb5_unparse_name(context, krbtgt_out->entry.principal, &tpn);
+	kdc_log(context, config, 0,
+		"Request with wrong krbtgt: %s",
+		(ret == 0) ? tpn : "<unknown>");
+	if(ret == 0)
+	    free(tpn);
+	ret = KRB5KRB_AP_ERR_NOT_US;
     }
 
     ret = hdb_enctype2key(context, &krbtgt_out->entry,
