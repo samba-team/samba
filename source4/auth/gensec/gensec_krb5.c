@@ -285,6 +285,7 @@ static NTSTATUS gensec_krb5_common_client_start(struct gensec_security *gensec_s
 	case 0:
 		break;
 	case KRB5KDC_ERR_PREAUTH_FAILED:
+	case KRB5KDC_ERR_C_PRINCIPAL_UNKNOWN:
 		return NT_STATUS_LOGON_FAILURE;
 	case KRB5_KDC_UNREACH:
 		DEBUG(3, ("Cannot reach a KDC we require to contact %s: %s\n", principal, error_string));

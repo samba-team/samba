@@ -370,6 +370,8 @@ static NTSTATUS gensec_gssapi_client_start(struct gensec_security *gensec_securi
 	case 0:
 		break;
 	case KRB5KDC_ERR_PREAUTH_FAILED:
+	case KRB5KDC_ERR_C_PRINCIPAL_UNKNOWN:
+		DEBUG(1, ("Wrong username or password: %s\n", error_string));
 		return NT_STATUS_LOGON_FAILURE;
 	case KRB5_KDC_UNREACH:
 		DEBUG(3, ("Cannot reach a KDC we require to contact %s : %s\n", gensec_gssapi_state->target_principal, error_string));
