@@ -42,6 +42,7 @@ static void ctdb_statistics_update(struct event_context *ev, struct timed_event 
 int ctdb_statistics_init(struct ctdb_context *ctdb)
 {
 	bzero(&ctdb->statistics, sizeof(struct ctdb_statistics));
+	ctdb->statistics.statistics_start_time = timeval_current();
 
 	bzero(&ctdb->statistics_current, sizeof(struct ctdb_statistics));
 	ctdb->statistics_current.statistics_start_time = timeval_current();
