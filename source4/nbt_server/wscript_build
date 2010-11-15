@@ -42,6 +42,7 @@ bld.SAMBA_MODULE('service_nbtd',
 	source='nbt_server.c',
 	subsystem='service',
 	init_function='server_service_nbtd_init',
-	deps='NBT_SERVER process_model'
+	deps='NBT_SERVER process_model',
+	internal_module=False,
 	)
 
