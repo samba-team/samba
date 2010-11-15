@@ -1637,37 +1637,6 @@ server_lookup:
 	goto out;
     }
 
-    ret = _kdc_db_fetch(context, config, cp, HDB_F_GET_CLIENT | HDB_F_CANON,
-			NULL, &clientdb, &client);
-    if(ret == HDB_ERR_NOT_FOUND_HERE) {
-	kdc_log(context, config, 5, "client %s does not have secrets at this KDC, need to proxy", cp);
-	goto out;
-    } else if(ret){
-	const char *krbtgt_realm, *msg;
-
-	/*
-	 * If the client belongs to the same realm as our krbtgt, it
-	 * should exist in the local database.
-	 *
-	 */
-
-	krbtgt_realm =
-	    krb5_principal_get_comp_string(context,
-					   krbtgt->entry.principal, 1);
-
-	if(strcmp(krb5_principal_get_realm(context, cp), krbtgt_realm) == 0) {
-	    if (ret == HDB_ERR_NOENTRY)
-		ret = KRB5KDC_ERR_C_PRINCIPAL_UNKNOWN;
-	    kdc_log(context, config, 1, "Client no longer in database: %s",
-		    cpn);
-	    goto out;
-	}
-	
-	msg = krb5_get_error_message(context, ret);
-	kdc_log(context, config, 1, "Client not found in database: %s", msg);
-	krb5_free_error_message(context, msg);
-    }
-
     /*
      * Select enctype, return key and kvno.
      */
@@ -1786,6 +1755,36 @@ server_lookup:
 	kdc_log(context, config, 0,
 		    "Failed to find key for krbtgt PAC signature");
 	goto out;
+    }
+
+    ret = _kdc_db_fetch(context, config, cp, HDB_F_GET_CLIENT | HDB_F_CANON,
+			NULL, &clientdb, &client);
+    if(ret == HDB_ERR_NOT_FOUND_HERE) {
+	/* This is OK, we are just trying to find out if they have
+	 * been disabled or deleted in the meantime, missing secrets
+	 * is OK */
+    } else if(ret){
+	const char *krbtgt_realm, *msg;
+
+	/*
+	 * If the client belongs to the same realm as our krbtgt, it
+	 * should exist in the local database.
+	 *
+	 */
+
+	krbtgt_realm = krb5_principal_get_realm(context, krbtgt_out->entry.principal);
+
+	if(strcmp(krb5_principal_get_realm(context, cp), krbtgt_realm) == 0) {
+	    if (ret == HDB_ERR_NOENTRY)
+		ret = KRB5KDC_ERR_C_PRINCIPAL_UNKNOWN;
+	    kdc_log(context, config, 1, "Client no longer in database: %s",
+		    cpn);
+	    goto out;
+	}
+
+	msg = krb5_get_error_message(context, ret);
+	kdc_log(context, config, 1, "Client not found in database: %s", msg);
+	krb5_free_error_message(context, msg);
     }
 
     ret = check_PAC(context, config, cp,
