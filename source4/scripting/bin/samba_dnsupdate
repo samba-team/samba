@@ -22,6 +22,7 @@ import os
 import fcntl
 import sys
 import tempfile
+import subprocess
 
 # ensure we get messages out immediately, so they get in the samba logs,
 # and don't get swallowed by a timeout
@@ -49,6 +50,7 @@ import dns.resolver as resolver
 
 default_ttl = 900
 am_rodc = False
+error_count = 0
 
 parser = optparse.OptionParser("samba_dnsupdate")
 sambaopts = options.SambaOptions(parser)
@@ -59,6 +61,7 @@ parser.add_option("--all-names", action="store_true")
 parser.add_option("--all-interfaces", action="store_true")
 parser.add_option("--use-file", type="string", help="Use a file, rather than real DNS calls")
 parser.add_option("--update-list", type="string", help="Add DNS names from the given file")
+parser.add_option("--fail-immediately", action='store_true', help="Exit on first failure")
 
 creds = None
 ccachename = None
@@ -253,7 +256,14 @@ def call_nsupdate(d):
     f.close()
 
     os.putenv("KRB5CCNAME", ccachename)
-    os.system("%s %s" % (nsupdate_cmd, tmpfile))
+    try:
+        cmd = "%s %s" % (nsupdate_cmd, tmpfile)
+        subprocess.check_call(cmd, shell=True)
+    except subprocess.CalledProcessError:
+        global error_count
+        if opts.fail_immediately:
+            sys.exit(1)
+        error_count = error_count + 1
     os.unlink(tmpfile)
 
 
@@ -392,3 +402,5 @@ for d in update_list:
 # delete the ccache if we created it
 if ccachename is not None:
     os.unlink(ccachename)
+
+sys.exit(error_count)
