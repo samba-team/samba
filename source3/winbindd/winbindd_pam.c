@@ -176,7 +176,7 @@ static NTSTATUS append_unix_username(TALLOC_CTX *mem_ctx,
 }
 
 static NTSTATUS append_afs_token(TALLOC_CTX *mem_ctx,
-				 struct winbindd_cli_state *state,
+				 struct winbindd_response *resp,
 				 const struct netr_SamInfo3 *info3,
 				 const char *name_domain,
 				 const char *name_user)
@@ -230,13 +230,11 @@ static NTSTATUS append_afs_token(TALLOC_CTX *mem_ctx,
 	if (token == NULL) {
 		return NT_STATUS_OK;
 	}
-	state->response->extra_data.data = talloc_strdup(state->mem_ctx,
-							 token);
-	if (state->response->extra_data.data == NULL) {
+	resp->extra_data.data = talloc_strdup(mem_ctx, token);
+	if (resp->extra_data.data == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	state->response->length +=
-		strlen((const char *)state->response->extra_data.data)+1;
+	resp->length += strlen((const char *)resp->extra_data.data)+1;
 
 	return NT_STATUS_OK;
 }
@@ -797,8 +795,8 @@ static NTSTATUS append_auth_data(struct winbindd_cli_state *state,
 	}
 
 	if (request_flags & WBFLAG_PAM_AFS_TOKEN) {
-		result = append_afs_token(state->mem_ctx, state, info3,
-					  name_domain, name_user);
+		result = append_afs_token(state->mem_ctx, state->response,
+					  info3, name_domain, name_user);
 		if (!NT_STATUS_IS_OK(result)) {
 			DEBUG(10,("Failed to append AFS token: %s\n",
 				nt_errstr(result)));
