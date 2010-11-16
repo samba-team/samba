@@ -27,45 +27,6 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
 
-bool parse_sidlist(TALLOC_CTX *mem_ctx, const char *sidstr,
-		   struct dom_sid **sids, uint32_t *num_sids)
-{
-	const char *p, *q;
-
-	p = sidstr;
-	if (p == NULL)
-		return False;
-
-	while (p[0] != '\0') {
-		fstring tmp;
-		size_t sidlen;
-		struct dom_sid sid;
-		q = strchr(p, '\n');
-		if (q == NULL) {
-			DEBUG(0, ("Got invalid sidstr: %s\n", p));
-			return False;
-		}
-		sidlen = PTR_DIFF(q, p);
-		if (sidlen >= sizeof(tmp)-1) {
-			return false;
-		}
-		memcpy(tmp, p, sidlen);
-		tmp[sidlen] = '\0';
-		q += 1;
-		if (!string_to_sid(&sid, tmp)) {
-			DEBUG(0, ("Could not parse sid %s\n", p));
-			return False;
-		}
-		if (!NT_STATUS_IS_OK(add_sid_to_array(mem_ctx, &sid, sids,
-						      num_sids)))
-		{
-			return False;
-		}
-		p = q;
-	}
-	return True;
-}
-
 enum winbindd_result winbindd_dual_ping(struct winbindd_domain *domain,
 					struct winbindd_cli_state *state)
 {
