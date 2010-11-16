@@ -785,6 +785,7 @@ static int descriptor_change(struct ldb_module *module, struct ldb_request *req)
 	}
 	ldb_debug(ldb, LDB_DEBUG_TRACE,"descriptor_change: %s\n", ldb_dn_get_linearized(dn));
 
+	/* do not manipulate our control entries */
 	if (ldb_dn_is_special(dn)) {
 		return ldb_next_request(module, req);
 	}
@@ -865,6 +866,12 @@ static int descriptor_rename(struct ldb_module *module, struct ldb_request *req)
 {
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	ldb_debug(ldb, LDB_DEBUG_TRACE,"descriptor_rename: %s\n", ldb_dn_get_linearized(req->op.rename.olddn));
+
+	/* do not manipulate our control entries */
+	if (ldb_dn_is_special(req->op.rename.olddn)) {
+		return ldb_next_request(module, req);
+	}
+
 	return ldb_next_request(module, req);
 }
 
