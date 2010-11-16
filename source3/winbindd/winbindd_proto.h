@@ -74,8 +74,6 @@ NTSTATUS winbindd_lookup_names(TALLOC_CTX *mem_ctx,
 
 /* The following definitions come from winbindd/winbindd_async.c  */
 
-bool print_sidlist(TALLOC_CTX *mem_ctx, const struct dom_sid *sids,
-		   size_t num_sids, char **result, ssize_t *len);
 bool parse_sidlist(TALLOC_CTX *mem_ctx, const char *sidstr,
 		   struct dom_sid **sids, size_t *num_sids);
 
