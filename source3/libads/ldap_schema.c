@@ -157,47 +157,6 @@ const char *ads_get_attrname_by_guid(ADS_STRUCT *ads,
 	
 }
 
-const char *ads_get_attrname_by_oid(ADS_STRUCT *ads, const char *schema_path, TALLOC_CTX *mem_ctx, const char * OID)
-{
-	ADS_STATUS rc;
-	int count = 0;
-	LDAPMessage *res = NULL;
-	char *expr = NULL;
-	const char *attrs[] = { "lDAPDisplayName", NULL };
-	char *result;
-
-	if (ads == NULL || mem_ctx == NULL || OID == NULL) {
-		goto failed;
-	}
-
-	expr = talloc_asprintf(mem_ctx, "(attributeId=%s)", OID);
-	if (expr == NULL) {
-		goto failed;
-	}
-
-	rc = ads_do_search_retry(ads, schema_path, LDAP_SCOPE_SUBTREE, 
-		expr, attrs, &res);
-	if (!ADS_ERR_OK(rc)) {
-		goto failed;
-	}
-
-	count = ads_count_replies(ads, res);
-	if (count == 0 || !res) {
-		goto failed;
-	}
-
-	result = ads_pull_string(ads, mem_ctx, res, "lDAPDisplayName");
-	ads_msgfree(ads, res);
-
-	return result;
-	
-failed:
-	DEBUG(0,("ads_get_attrname_by_oid: failed to retrieve name for oid: %s\n", 
-		OID));
-	
-	ads_msgfree(ads, res);
-	return NULL;
-}
 /*********************************************************************
 *********************************************************************/
 
