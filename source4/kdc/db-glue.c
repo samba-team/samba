@@ -541,12 +541,13 @@ out:
  * Construct an hdb_entry from a directory entry.
  */
 static krb5_error_code samba_kdc_message2entry(krb5_context context,
-					 struct samba_kdc_db_context *kdc_db_ctx,
-					 TALLOC_CTX *mem_ctx, krb5_const_principal principal,
-					 enum samba_kdc_ent_type ent_type,
-					 struct ldb_dn *realm_dn,
-					 struct ldb_message *msg,
-					 hdb_entry_ex *entry_ex)
+					       struct samba_kdc_db_context *kdc_db_ctx,
+					       TALLOC_CTX *mem_ctx, krb5_const_principal principal,
+					       enum samba_kdc_ent_type ent_type,
+					       unsigned flags,
+					       struct ldb_dn *realm_dn,
+					       struct ldb_message *msg,
+					       hdb_entry_ex *entry_ex)
 {
 	struct loadparm_context *lp_ctx = kdc_db_ctx->lp_ctx;
 	uint32_t userAccountControl;
@@ -644,7 +645,7 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 		}
 	}
 
-	{
+	if (flags & HDB_F_ADMIN_DATA) {
 		/* These (created_by, modified_by) parts of the entry are not relevant for Samba4's use
 		 * of the Heimdal KDC.  They are stored in a the traditional
 		 * DB for audit purposes, and still form part of the structure
@@ -1076,8 +1077,9 @@ static krb5_error_code samba_kdc_fetch_client(krb5_context context,
 	}
 
 	ret = samba_kdc_message2entry(context, kdc_db_ctx, mem_ctx,
-				       principal, SAMBA_KDC_ENT_TYPE_CLIENT,
-				       realm_dn, msg, entry_ex);
+				      principal, SAMBA_KDC_ENT_TYPE_CLIENT,
+				      flags,
+				      realm_dn, msg, entry_ex);
 	return ret;
 }
 
@@ -1168,8 +1170,8 @@ static krb5_error_code samba_kdc_fetch_krbtgt(krb5_context context,
 		principal = alloc_principal;
 
 		ret = samba_kdc_message2entry(context, kdc_db_ctx, mem_ctx,
-					principal, SAMBA_KDC_ENT_TYPE_KRBTGT,
-					realm_dn, msg, entry_ex);
+					      principal, SAMBA_KDC_ENT_TYPE_KRBTGT,
+					      flags, realm_dn, msg, entry_ex);
 		if (ret != 0) {
 			krb5_warnx(context, "samba_kdc_fetch: self krbtgt message2entry failed");
 		}
@@ -1321,8 +1323,9 @@ static krb5_error_code samba_kdc_fetch_server(krb5_context context,
 	}
 
 	ret = samba_kdc_message2entry(context, kdc_db_ctx, mem_ctx,
-				principal, SAMBA_KDC_ENT_TYPE_SERVER,
-				realm_dn, msg, entry_ex);
+				      principal, SAMBA_KDC_ENT_TYPE_SERVER,
+				      flags,
+				      realm_dn, msg, entry_ex);
 	if (ret != 0) {
 		krb5_warnx(context, "samba_kdc_fetch: message2entry failed");
 	}
@@ -1412,8 +1415,9 @@ static krb5_error_code samba_kdc_seq(krb5_context context,
 
 	if (priv->index < priv->count) {
 		ret = samba_kdc_message2entry(context, kdc_db_ctx, mem_ctx,
-					NULL, SAMBA_KDC_ENT_TYPE_ANY,
-					priv->realm_dn, priv->msgs[priv->index++], entry);
+					      NULL, SAMBA_KDC_ENT_TYPE_ANY,
+					      HDB_F_ADMIN_DATA|HDB_F_GET_ANY,
+					      priv->realm_dn, priv->msgs[priv->index++], entry);
 	} else {
 		ret = HDB_ERR_NOENTRY;
 	}
