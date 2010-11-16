@@ -236,8 +236,7 @@ struct tevent_req *wb_domain_request_send(TALLOC_CTX *mem_ctx,
 		/* The primary domain has to find the DC name itself */
 		state->init_req->cmd = WINBINDD_INIT_CONNECTION;
 		fstrcpy(state->init_req->domain_name, domain->name);
-		state->init_req->data.init_conn.is_primary =
-			domain->primary ? true : false;
+		state->init_req->data.init_conn.is_primary = domain->primary;
 		fstrcpy(state->init_req->data.init_conn.dcname, "");
 
 		subreq = wb_child_request_send(state, ev, &domain->child,
