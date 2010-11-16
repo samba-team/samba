@@ -66,19 +66,21 @@ struct dom_sid *get_default_ag(TALLOC_CTX *mem_ctx,
 			       struct ldb_context *ldb)
 {
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
-	struct ldb_dn *default_base_dn = ldb_get_default_basedn(ldb);
-	struct ldb_dn *schema_base_dn = ldb_get_schema_basedn(ldb);
-	struct ldb_dn *config_base_dn = ldb_get_config_basedn(ldb);
 	const struct dom_sid *domain_sid = samdb_domain_sid(ldb);
 	struct dom_sid *da_sid = dom_sid_add_rid(tmp_ctx, domain_sid, DOMAIN_RID_ADMINS);
 	struct dom_sid *ea_sid = dom_sid_add_rid(tmp_ctx, domain_sid, DOMAIN_RID_ENTERPRISE_ADMINS);
 	struct dom_sid *sa_sid = dom_sid_add_rid(tmp_ctx, domain_sid, DOMAIN_RID_SCHEMA_ADMINS);
 	struct dom_sid *dag_sid;
+	struct ldb_dn *nc_root;
+	int ret;
 
-	/* FIXME: this has to be fixed regarding the forest DN (root DN) and
-	 * the domain DN (default DN) - they aren't always the same. */
+	ret = dsdb_find_nc_root(ldb, tmp_ctx, dn, &nc_root);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(tmp_ctx);
+		return NULL;
+	}
 
-	if (ldb_dn_compare_base(schema_base_dn, dn) == 0){
+	if (ldb_dn_compare(nc_root, ldb_get_schema_basedn(ldb)) == 0) {
 		if (security_token_has_sid(token, sa_sid))
 			dag_sid = dom_sid_dup(mem_ctx, sa_sid);
 		else if (security_token_has_sid(token, ea_sid))
@@ -87,25 +89,23 @@ struct dom_sid *get_default_ag(TALLOC_CTX *mem_ctx,
 			dag_sid = dom_sid_dup(mem_ctx, da_sid);
 		else
 			dag_sid = NULL;
-	}
-	else if (ldb_dn_compare_base(config_base_dn, dn) == 0){
+	} else if (ldb_dn_compare(nc_root, ldb_get_config_basedn(ldb)) == 0) {
 		if (security_token_has_sid(token, ea_sid))
 			dag_sid = dom_sid_dup(mem_ctx, ea_sid);
 		else if (security_token_has_sid(token, da_sid))
 			dag_sid = dom_sid_dup(mem_ctx, da_sid);
 		else
 			dag_sid = NULL;
-	}
-	else if (ldb_dn_compare_base(default_base_dn, dn) == 0){
+	} else if (ldb_dn_compare(nc_root, ldb_get_default_basedn(ldb)) == 0) {
 		if (security_token_has_sid(token, da_sid))
 			dag_sid = dom_sid_dup(mem_ctx, da_sid);
 		else if (security_token_has_sid(token, ea_sid))
 				dag_sid = dom_sid_dup(mem_ctx, ea_sid);
 		else
 			dag_sid = NULL;
-	}
-	else
+	} else {
 		dag_sid = NULL;
+	}
 
 	talloc_free(tmp_ctx);
 	return dag_sid;
