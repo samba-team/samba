@@ -2142,7 +2142,7 @@ server_lookup:
 			 kvno,
 			 *auth_data,
 			 server,
-			 sp,
+			 server->entry.principal,
 			 spn,
 			 client,
 			 cp,
