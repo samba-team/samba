@@ -5,17 +5,17 @@
 
    Copyright (C) Andrew Tridgell 2001
    Copyright (C) Guenther Deschner 2006,2007
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -72,13 +72,13 @@ static ADS_STATUS ads_do_search_retry_internal(ADS_STRUCT *ads, const char *bind
 		if (*res) 
 			ads_msgfree(ads, *res);
 		*res = NULL;
-		
+
 		DEBUG(3,("Reopening ads connection to realm '%s' after error %s\n", 
 			 ads->config.realm, ads_errstr(status)));
-			 
+
 		ads_disconnect(ads);
 		status = ads_connect(ads);
-		
+
 		if (!ADS_ERR_OK(status)) {
 			DEBUG(1,("ads_search_retry: failed to reconnect (%s)\n",
 				 ads_errstr(status)));
@@ -190,7 +190,7 @@ static ADS_STATUS ads_do_search_retry_args(ADS_STRUCT *ads, const char *bind_pat
 {
 	char *dn, *sid_string;
 	ADS_STATUS status;
-	
+
 	sid_string = sid_binstring_hex(sid);
 	if (sid_string == NULL) {
 		return ADS_ERROR(LDAP_NO_MEMORY);
@@ -293,7 +293,7 @@ ADS_STATUS ads_ranged_search_internal(ADS_STRUCT *ads,
 			 ads_errstr(status)));
 		return status;
 	}
-	
+
 	if (!res) {
 		return ADS_ERROR(LDAP_NO_MEMORY);
 	}
