@@ -27,7 +27,7 @@ import ldb
 
 from samba.auth import system_session
 from samba.samdb import SamDB
-from samba.dcerpc.samr import DOMAIN_PASSWORD_COMPLEX
+from samba.dcerpc.samr import DOMAIN_PASSWORD_COMPLEX, DOMAIN_PASSWORD_STORE_CLEARTEXT
 from samba.netcmd import Command, CommandError, Option
 
 class cmd_pwsettings(Command):
@@ -50,6 +50,8 @@ class cmd_pwsettings(Command):
         Option("--quiet", help="Be quiet", action="store_true"),
         Option("--complexity", type="choice", choices=["on","off","default"],
           help="The password complexity (on | off | default). Default is 'on'"),
+        Option("--store-plaintext", type="choice", choices=["on","off","default"],
+          help="Store plaintext passwords where account have 'store passwords with reversible encryption' set (on | off | default). Default is 'off'"),
         Option("--history-length",
           help="The password history length (<integer> | default).  Default is 24.", type=str),
         Option("--min-pwd-length",
@@ -63,7 +65,7 @@ class cmd_pwsettings(Command):
     takes_args = ["subcommand"]
 
     def run(self, subcommand, H=None, min_pwd_age=None, max_pwd_age=None,
-            quiet=False, complexity=None, history_length=None,
+            quiet=False, complexity=None, store_plaintext=None, history_length=None,
             min_pwd_length=None, credopts=None, sambaopts=None,
             versionopts=None):
         lp = sambaopts.get_loadparm()
@@ -94,6 +96,10 @@ class cmd_pwsettings(Command):
                 self.message("Password complexity: on")
             else:
                 self.message("Password complexity: off")
+            if pwd_props & DOMAIN_PASSWORD_STORE_CLEARTEXT != 0:
+                self.message("Store plaintext passwords: on")
+            else:
+                self.message("Store plaintext passwords: off")
             self.message("Password history length: %d" % pwd_hist_len)
             self.message("Minimum password length: %d" % cur_min_pwd_len)
             self.message("Minimum password age (days): %d" % cur_min_pwd_age)
@@ -111,6 +117,15 @@ class cmd_pwsettings(Command):
                     pwd_props = pwd_props & (~DOMAIN_PASSWORD_COMPLEX)
                     msgs.append("Password complexity deactivated!")
 
+            if store_plaintext is not None:
+                if store_plaintext == "on" or store_plaintext == "default":
+                    pwd_props = pwd_props | DOMAIN_PASSWORD_STORE_CLEARTEXT
+                    msgs.append("Plaintext password storage for changed passwords activated!")
+                elif store_plaintext == "off":
+                    pwd_props = pwd_props & (~DOMAIN_PASSWORD_STORE_CLEARTEXT)
+                    msgs.append("Plaintext password storage for changed passwords deactivated!")
+
+            if complexity is not None or store_plaintext is not None:
                 m["pwdProperties"] = ldb.MessageElement(str(pwd_props),
                   ldb.FLAG_MOD_REPLACE, "pwdProperties")
 
