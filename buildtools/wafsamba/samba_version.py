@@ -44,14 +44,18 @@ def bzr_version_summary(path):
     return (ret, fields)
 
 
-def git_version_summary(path, have_git):
+def git_version_summary(path, env=None):
     # Get version from GIT
-    if not have_git:
+    if not 'GIT' in env:
         return ("GIT-UNKNOWN", {})
 
-    git = Utils.cmd_output('git show --pretty=format:"%h%n%ct%n%H%n%cd" --stat HEAD', silent=True)
+    os.putenv('GIT_DIR', '%s/.git' % path)
+    git = Utils.cmd_output(env.GIT + ' show --pretty=format:"%h%n%ct%n%H%n%cd" --stat HEAD', silent=True)
 
     lines = git.splitlines()
+    if not lines or len(lines) < 4:
+        return ("GIT-UNKNOWN", {})
+
     fields = {
             "GIT_COMMIT_ABBREV": lines[0],
             "GIT_COMMIT_FULLREV": lines[2],
@@ -61,18 +65,20 @@ def git_version_summary(path, have_git):
 
     ret = "GIT-" + fields["GIT_COMMIT_ABBREV"]
 
-    clean = Utils.cmd_output('git diff HEAD | wc -l', silent=True)
-    if clean == "0\n":
-        fields["COMMIT_IS_CLEAN"] = 1
-    else:
-        fields["COMMIT_IS_CLEAN"] = 0
-        ret += "+"
+    if env.GIT_LOCAL_CHANGES:
+        clean = Utils.cmd_output('git diff HEAD | wc -l', silent=True).strip()
+        if clean == "0":
+            fields["COMMIT_IS_CLEAN"] = 1
+        else:
+            fields["COMMIT_IS_CLEAN"] = 0
+            ret += "+"
+
     return (ret, fields)
 
 
 class SambaVersion(object):
 
-    def __init__(self, version_dict, path, have_git=False):
+    def __init__(self, version_dict, path, env=None):
         '''Determine the version number of samba
 
 See VERSION for the format.  Entries on that file are 
@@ -135,7 +141,7 @@ also accepted as dictionary entries here
 
         if self.IS_SNAPSHOT:
             if os.path.exists(os.path.join(path, ".git")):
-                suffix, self.vcs_fields = git_version_summary(path, have_git)
+                suffix, self.vcs_fields = git_version_summary(path, env=env)
             elif os.path.exists(os.path.join(path, ".bzr")):
                 suffix, self.vcs_fields = bzr_version_summary(path)
             else:
@@ -217,7 +223,7 @@ also accepted as dictionary entries here
         return string
 
 
-def samba_version_file(version_file, path, have_git=False):
+def samba_version_file(version_file, path, env=None):
     '''Parse the version information from a VERSION file'''
 
     f = open(version_file, 'r')
@@ -237,4 +243,4 @@ def samba_version_file(version_file, path, have_git=False):
             print("Failed to parse line %s from %s" % (line, version_file))
             raise
 
-    return SambaVersion(version_dict, path, have_git=have_git)
+    return SambaVersion(version_dict, path, env=env)

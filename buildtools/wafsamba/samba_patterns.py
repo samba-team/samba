@@ -10,9 +10,7 @@ def write_version_header(task):
     src = task.inputs[0].srcpath(task.env)
     tgt = task.outputs[0].bldpath(task.env)
 
-    have_git = 'GIT' in task.env
-
-    version = samba_version_file(src, task.env.srcdir, have_git=have_git)
+    version = samba_version_file(src, task.env.srcdir, env=task.env)
     string = str(version)
 
     f = open(tgt, 'w')

@@ -96,6 +96,9 @@ def set_options(opt):
     gr.add_option('--pedantic',
 		   help=("Enable even more compiler warnings"),
 		   action='store_true', dest='pedantic', default=False)
+    gr.add_option('--git-local-changes',
+		   help=("mark version with + if local git changes"),
+		   action='store_true', dest='GIT_LOCAL_CHANGES', default=False)
 
     gr.add_option('--abi-check',
 		   help=("Check ABI signatures for libraries"),
@@ -243,6 +246,8 @@ def configure(conf):
         conf.find_program('gdb', mandatory=True)
     except:
         conf.env.ABI_CHECK = False
+
+    conf.env.GIT_LOCAL_CHANGES = Options.options.GIT_LOCAL_CHANGES
 
     conf.CHECK_COMMAND(['uname', '-a'],
                        msg='Checking build system',
