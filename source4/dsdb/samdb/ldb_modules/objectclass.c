@@ -1209,7 +1209,7 @@ static int objectclass_rename(struct ldb_module *module, struct ldb_request *req
 	ldb_debug(ldb, LDB_DEBUG_TRACE, "objectclass_rename\n");
 
 	/* do not manipulate our control entries */
-	if (ldb_dn_is_special(req->op.rename.newdn)) {
+	if (ldb_dn_is_special(req->op.rename.olddn)) {
 		return ldb_next_request(module, req);
 	}
 
