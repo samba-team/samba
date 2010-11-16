@@ -163,6 +163,10 @@ test_smbclient "Test login with user kerberos ccache" 'ls' -k yes || failed=`exp
 KRB5CCNAME="$PREFIX/tmpccache"
 export KRB5CCNAME
 
+lowerrealm=$(echo $REALM | tr '[A-Z]' '[a-z]')
+test_smbclient "Test login with user kerberos lowercase realm" 'ls' -k yes -Unettestuser@$lowerrealm%$NEWUSERPASS || failed=`expr $failed + 1`
+test_smbclient "Test login with user kerberos lowercase realm 2" 'ls' -k yes -Unettestuser@$REALM%$NEWUSERPASS --realm=$lowerrealm || failed=`expr $failed + 1`
+
 testit "del user with kerberos ccache" $VALGRIND $samba_tool user delete nettestuser $CONFIGURATION -k yes $@ || failed=`expr $failed + 1`
 
 rm -f $KRB5CCNAME
