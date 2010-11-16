@@ -23,6 +23,6 @@ testit "setpassword" $samba_tool setpassword --configfile=$PREFIX/simple-dc/etc/
 
 testit "setpassword" $samba_tool setpassword --configfile=$PREFIX/simple-dc/etc/smb.conf testuser --newpassword=testp@ssw0Rd --must-change-at-next-login
 
-testit "pwsettings" $samba_tool pwsettings --quiet set --configfile=$PREFIX/simple-dc/etc/smb.conf --complexity=default --history-length=default --min-pwd-length=default --min-pwd-age=default --max-pwd-age=default
+testit "pwsettings" $samba_tool pwsettings --quiet set --configfile=$PREFIX/simple-dc/etc/smb.conf --complexity=default --history-length=default --min-pwd-length=default --min-pwd-age=default --max-pwd-age=default --store-plaintext=on
 
 exit $failed
