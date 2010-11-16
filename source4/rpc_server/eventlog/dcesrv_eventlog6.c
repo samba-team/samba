@@ -81,10 +81,18 @@ static WERROR dcesrv_eventlog6_EvtRpcRegisterControllableOperation(struct dcesrv
 static WERROR dcesrv_eventlog6_EvtRpcRegisterLogQuery(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct eventlog6_EvtRpcRegisterLogQuery *r)
 {
-	r->out.handle = dcesrv_handle_new(dce_call->context, 0);
-	W_ERROR_HAVE_NO_MEMORY(r->out.handle);
-	r->out.opControl = dcesrv_handle_new(dce_call->context, 0);
-	W_ERROR_HAVE_NO_MEMORY(r->out.opControl);
+	struct dcesrv_handle *handle;
+
+	handle = dcesrv_handle_new(dce_call->context, 0);
+	W_ERROR_HAVE_NO_MEMORY(handle);
+
+	r->out.handle = &handle->wire_handle;
+
+	handle = dcesrv_handle_new(dce_call->context, 0);
+	W_ERROR_HAVE_NO_MEMORY(handle);
+
+	r->out.opControl = &handle->wire_handle;
+
 	return WERR_OK;
 }
 
