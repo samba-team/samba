@@ -214,35 +214,34 @@ static krb5_error_code samba_kdc_message2entry_keys(krb5_context context,
 	uint16_t i;
 	uint16_t allocated_keys = 0;
 	int rodc_krbtgt_number = 0;
-	uint32_t supported_enctypes;
+	uint32_t supported_enctypes
+		= ldb_msg_find_attr_as_uint(msg,
+					    "msDS-SupportedEncryptionTypes",
+					    0);
 
 	if (rid == DOMAIN_RID_KRBTGT || is_rodc) {
-		/* KDCs (and KDCs on RODCs) use AES, but not DES */
-		supported_enctypes = ENC_ALL_TYPES;
-		supported_enctypes &= ~(ENC_CRC32|ENC_RSA_MD5);
+		/* KDCs (and KDCs on RODCs) use AES */
+		supported_enctypes |= ENC_HMAC_SHA1_96_AES128 | ENC_HMAC_SHA1_96_AES256;
 	} else if (userAccountControl & (UF_PARTIAL_SECRETS_ACCOUNT|UF_SERVER_TRUST_ACCOUNT)) {
 		/* DCs and RODCs comptuer accounts use AES */
-		supported_enctypes = ENC_ALL_TYPES;
+		supported_enctypes |= ENC_HMAC_SHA1_96_AES128 | ENC_HMAC_SHA1_96_AES256;
 	} else if (ent_type == SAMBA_KDC_ENT_TYPE_CLIENT ||
 		   (ent_type == SAMBA_KDC_ENT_TYPE_ANY)) {
 		/* for AS-REQ the client chooses the enc types it
 		 * supports, and this will vary between computers a
-		 * user logs in from.  However, some accounts may be
-		 * banned from using DES, so allow the default to be
-		 * overridden
+		 * user logs in from.
 		 *
 		 * likewise for 'any' return as much as is supported,
 		 * to export into a keytab */
-		supported_enctypes = ldb_msg_find_attr_as_uint(msg, "msDS-SupportedEncryptionTypes",
-							       ENC_ALL_TYPES);
+		supported_enctypes = ENC_ALL_TYPES;
+	}
+
+	/* If UF_USE_DES_KEY_ONLY has been set, then don't allow use of the newer enc types */
+	if (userAccountControl & UF_USE_DES_KEY_ONLY) {
+		supported_enctypes = ENC_CRC32|ENC_RSA_MD5;
 	} else {
-		/* However, if this is a TGS-REQ, then lock it down to
-		 * a reasonable guess as to what the server can decode
-		 * - we must use whatever is in
-		 * "msDS-SupportedEncryptionTypes", or the 'old' set
-		 * of keys (ie, what Windows 2000 supported) */
-		supported_enctypes = ldb_msg_find_attr_as_uint(msg, "msDS-SupportedEncryptionTypes",
-							       ENC_CRC32 | ENC_RSA_MD5 | ENC_RC4_HMAC_MD5);
+		/* Otherwise, add in the default enc types */
+		supported_enctypes |= ENC_CRC32 | ENC_RSA_MD5 | ENC_RC4_HMAC_MD5;
 	}
 
 	/* Is this the krbtgt or a RODC krbtgt */
@@ -254,26 +253,6 @@ static krb5_error_code samba_kdc_message2entry_keys(krb5_context context,
 		}
 	}
 
-
-	/* If UF_USE_DES_KEY_ONLY has been set, then don't allow use of the newer enc types */
-	if (userAccountControl & UF_USE_DES_KEY_ONLY) {
-		/* However, this still won't allow use of DES, if we
-		 * were told not to by msDS-SupportedEncTypes */
-		supported_enctypes &= ENC_CRC32|ENC_RSA_MD5;
-	} else {
-		switch (ent_type) {
-		case SAMBA_KDC_ENT_TYPE_KRBTGT:
-		case SAMBA_KDC_ENT_TYPE_TRUST:
-			/* Unless a very special effort it made,
-			 * disallow trust tickets to be DES encrypted,
-			 * it's just too dangerous */
-			supported_enctypes &= ~(ENC_CRC32|ENC_RSA_MD5);
-			break;
-		default:
-			break;
-			/* No further restrictions */
-		}
-	}
 
 	entry_ex->entry.keys.val = NULL;
 	entry_ex->entry.keys.len = 0;
