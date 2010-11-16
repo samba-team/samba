@@ -27,27 +27,6 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
 
-bool print_sidlist(TALLOC_CTX *mem_ctx, const struct dom_sid *sids,
-		   uint32_t num_sids, char **result, ssize_t *len)
-{
-	size_t i;
-	size_t buflen = 0;
-
-	*len = 0;
-	*result = NULL;
-	for (i=0; i<num_sids; i++) {
-		fstring tmp;
-		sprintf_append(mem_ctx, result, len, &buflen,
-			       "%s\n", sid_to_fstring(tmp, &sids[i]));
-	}
-
-	if ((num_sids != 0) && (*result == NULL)) {
-		return False;
-	}
-
-	return True;
-}
-
 bool parse_sidlist(TALLOC_CTX *mem_ctx, const char *sidstr,
 		   struct dom_sid **sids, uint32_t *num_sids)
 {
