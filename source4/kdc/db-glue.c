@@ -1062,6 +1062,7 @@ static krb5_error_code samba_kdc_fetch_client(krb5_context context,
 					       struct samba_kdc_db_context *kdc_db_ctx,
 					       TALLOC_CTX *mem_ctx,
 					       krb5_const_principal principal,
+					       unsigned flags,
 					       hdb_entry_ex *entry_ex) {
 	struct ldb_dn *realm_dn;
 	krb5_error_code ret;
@@ -1084,6 +1085,7 @@ static krb5_error_code samba_kdc_fetch_krbtgt(krb5_context context,
 					      struct samba_kdc_db_context *kdc_db_ctx,
 					      TALLOC_CTX *mem_ctx,
 					      krb5_const_principal principal,
+					      unsigned flags,
 					      uint32_t krbtgt_number,
 					      hdb_entry_ex *entry_ex)
 {
@@ -1092,6 +1094,7 @@ static krb5_error_code samba_kdc_fetch_krbtgt(krb5_context context,
 	struct ldb_message *msg = NULL;
 	struct ldb_dn *realm_dn = ldb_get_default_basedn(kdc_db_ctx->samdb);
 
+	krb5_principal alloc_principal = NULL;
 	if (principal->name.name_string.len != 2
 	    || (strcmp(principal->name.name_string.val[0], KRB5_TGS_NAME) != 0)) {
 		/* Not a krbtgt */
@@ -1108,6 +1111,7 @@ static krb5_error_code samba_kdc_fetch_krbtgt(krb5_context context,
  		 * krbtgt */
 
 		int lret;
+		char *realm_fixed;
 
 		if (krbtgt_number == kdc_db_ctx->my_krbtgt_number) {
 			lret = dsdb_search_one(kdc_db_ctx->samdb, mem_ctx,
@@ -1140,6 +1144,28 @@ static krb5_error_code samba_kdc_fetch_krbtgt(krb5_context context,
 					       (unsigned)(krbtgt_number));
 			return HDB_ERR_NOENTRY;
 		}
+
+		realm_fixed = strupper_talloc(mem_ctx, lpcfg_realm(lp_ctx));
+		if (!realm_fixed) {
+			ret = ENOMEM;
+			krb5_set_error_message(context, ret, "strupper_talloc: out of memory");
+			return ret;
+		}
+
+		ret = krb5_copy_principal(context, principal, &alloc_principal);
+		if (ret) {
+			return ret;
+		}
+
+		free(alloc_principal->name.name_string.val[1]);
+		alloc_principal->name.name_string.val[1] = strdup(realm_fixed);
+		talloc_free(realm_fixed);
+		if (!alloc_principal->name.name_string.val[1]) {
+			ret = ENOMEM;
+			krb5_set_error_message(context, ret, "samba_kdc_fetch: strdup() failed!");
+			return ret;
+		}
+		principal = alloc_principal;
 
 		ret = samba_kdc_message2entry(context, kdc_db_ctx, mem_ctx,
 					principal, SAMBA_KDC_ENT_TYPE_KRBTGT,
@@ -1278,10 +1304,11 @@ static krb5_error_code samba_kdc_lookup_server(krb5_context context,
 }
 
 static krb5_error_code samba_kdc_fetch_server(krb5_context context,
-					       struct samba_kdc_db_context *kdc_db_ctx,
-					       TALLOC_CTX *mem_ctx,
-					       krb5_const_principal principal,
-					       hdb_entry_ex *entry_ex)
+					      struct samba_kdc_db_context *kdc_db_ctx,
+					      TALLOC_CTX *mem_ctx,
+					      krb5_const_principal principal,
+					      unsigned flags,
+					      hdb_entry_ex *entry_ex)
 {
 	krb5_error_code ret;
 	struct ldb_dn *realm_dn;
@@ -1332,20 +1359,20 @@ krb5_error_code samba_kdc_fetch(krb5_context context,
 	}
 
 	if (flags & HDB_F_GET_CLIENT) {
-		ret = samba_kdc_fetch_client(context, kdc_db_ctx, mem_ctx, principal, entry_ex);
+		ret = samba_kdc_fetch_client(context, kdc_db_ctx, mem_ctx, principal, flags, entry_ex);
 		if (ret != HDB_ERR_NOENTRY) goto done;
 	}
 	if (flags & HDB_F_GET_SERVER) {
 		/* krbtgt fits into this situation for trusted realms, and for resolving different versions of our own realm name */
-		ret = samba_kdc_fetch_krbtgt(context, kdc_db_ctx, mem_ctx, principal, krbtgt_number, entry_ex);
+		ret = samba_kdc_fetch_krbtgt(context, kdc_db_ctx, mem_ctx, principal, flags, krbtgt_number, entry_ex);
 		if (ret != HDB_ERR_NOENTRY) goto done;
 
 		/* We return 'no entry' if it does not start with krbtgt/, so move to the common case quickly */
-		ret = samba_kdc_fetch_server(context, kdc_db_ctx, mem_ctx, principal, entry_ex);
+		ret = samba_kdc_fetch_server(context, kdc_db_ctx, mem_ctx, principal, flags, entry_ex);
 		if (ret != HDB_ERR_NOENTRY) goto done;
 	}
 	if (flags & HDB_F_GET_KRBTGT) {
-		ret = samba_kdc_fetch_krbtgt(context, kdc_db_ctx, mem_ctx, principal, krbtgt_number, entry_ex);
+		ret = samba_kdc_fetch_krbtgt(context, kdc_db_ctx, mem_ctx, principal, flags, krbtgt_number, entry_ex);
 		if (ret != HDB_ERR_NOENTRY) goto done;
 	}
 
