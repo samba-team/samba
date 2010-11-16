@@ -3334,8 +3334,8 @@ static bool test_DoPrintTest_check_jobs(struct torture_context *tctx,
 
 		if (strequal(ginfo.info1.document_name, document_name)) {
 			torture_warning(tctx,
-				talloc_asprintf(tctx, "document_name did *NOT* change from '%s' to '%s'\n",
-					document_name, new_document_name));
+					"document_name did *NOT* change from '%s' to '%s'\n",
+					document_name, new_document_name);
 		}
 	}
 
