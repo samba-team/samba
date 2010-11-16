@@ -43,4 +43,7 @@
 #define LIBINTL
 #endif
 
+/* heimdal now wants some atomic ops - ask for the non-atomic ones for Samba */
+#define HEIM_BASE_NON_ATOMIC 1
+
 #endif
