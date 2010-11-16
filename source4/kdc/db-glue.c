@@ -1113,7 +1113,6 @@ static krb5_error_code samba_kdc_fetch_krbtgt(krb5_context context,
  		 * krbtgt */
 
 		int lret;
-		char *realm_fixed;
 
 		if (krbtgt_number == kdc_db_ctx->my_krbtgt_number) {
 			lret = dsdb_search_one(kdc_db_ctx->samdb, mem_ctx,
@@ -1147,31 +1146,32 @@ static krb5_error_code samba_kdc_fetch_krbtgt(krb5_context context,
 			return HDB_ERR_NOENTRY;
 		}
 
-		realm_fixed = strupper_talloc(mem_ctx, lpcfg_realm(lp_ctx));
-		if (!realm_fixed) {
-			ret = ENOMEM;
-			krb5_set_error_message(context, ret, "strupper_talloc: out of memory");
-			return ret;
-		}
+		if (flags & HDB_F_CANON) {
+			ret = krb5_copy_principal(context, principal, &alloc_principal);
+			if (ret) {
+				return ret;
+			}
 
-		ret = krb5_copy_principal(context, principal, &alloc_principal);
-		if (ret) {
-			return ret;
+			/* When requested to do so, ensure that the
+			 * both realm values in the principal are set
+			 * to the upper case, canonical realm */
+			free(alloc_principal->name.name_string.val[1]);
+			alloc_principal->name.name_string.val[1] = strdup(lpcfg_realm(lp_ctx));
+			if (!alloc_principal->name.name_string.val[1]) {
+				ret = ENOMEM;
+				krb5_set_error_message(context, ret, "samba_kdc_fetch: strdup() failed!");
+				return ret;
+			}
+			principal = alloc_principal;
 		}
-
-		free(alloc_principal->name.name_string.val[1]);
-		alloc_principal->name.name_string.val[1] = strdup(realm_fixed);
-		talloc_free(realm_fixed);
-		if (!alloc_principal->name.name_string.val[1]) {
-			ret = ENOMEM;
-			krb5_set_error_message(context, ret, "samba_kdc_fetch: strdup() failed!");
-			return ret;
-		}
-		principal = alloc_principal;
 
 		ret = samba_kdc_message2entry(context, kdc_db_ctx, mem_ctx,
 					      principal, SAMBA_KDC_ENT_TYPE_KRBTGT,
 					      flags, realm_dn, msg, entry_ex);
+		if (flags & HDB_F_CANON) {
+			/* This is again copied in the message2entry call */
+			krb5_free_principal(context, alloc_principal);
+		}
 		if (ret != 0) {
 			krb5_warnx(context, "samba_kdc_fetch: self krbtgt message2entry failed");
 		}
