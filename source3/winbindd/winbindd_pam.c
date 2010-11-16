@@ -122,7 +122,7 @@ static NTSTATUS append_info3_as_txt(TALLOC_CTX *mem_ctx,
 }
 
 static NTSTATUS append_info3_as_ndr(TALLOC_CTX *mem_ctx,
-				    struct winbindd_cli_state *state,
+				    struct winbindd_response *resp,
 				    struct netr_SamInfo3 *info3)
 {
 	DATA_BLOB blob;
@@ -135,8 +135,8 @@ static NTSTATUS append_info3_as_ndr(TALLOC_CTX *mem_ctx,
 		return ndr_map_error2ntstatus(ndr_err);
 	}
 
-	state->response->extra_data.data = blob.data;
-	state->response->length += blob.length;
+	resp->extra_data.data = blob.data;
+	resp->length += blob.length;
 
 	return NT_STATUS_OK;
 }
@@ -778,7 +778,8 @@ static NTSTATUS append_auth_data(struct winbindd_cli_state *state,
 	/* currently, anything from here on potentially overwrites extra_data. */
 
 	if (request_flags & WBFLAG_PAM_INFO3_NDR) {
-		result = append_info3_as_ndr(state->mem_ctx, state, info3);
+		result = append_info3_as_ndr(state->mem_ctx, state->response,
+					     info3);
 		if (!NT_STATUS_IS_OK(result)) {
 			DEBUG(10,("Failed to append INFO3 (NDR): %s\n",
 				nt_errstr(result)));
