@@ -27,7 +27,6 @@
 #include "libads/dns.h"
 #include "libsmb/clidgram.h"
 
-#define DSGETDCNAME_FMT	"DSGETDCNAME/DOMAIN/%s"
 /* 15 minutes */
 #define DSGETDCNAME_CACHE_TTL	60*15
 
@@ -127,7 +126,8 @@ static char *dsgetdcname_cache_key(TALLOC_CTX *mem_ctx, const char *domain)
 		return NULL;
 	}
 
-	return talloc_asprintf_strupper_m(mem_ctx, DSGETDCNAME_FMT, domain);
+	return talloc_asprintf_strupper_m(mem_ctx, "DSGETDCNAME/DOMAIN/%s",
+					  domain);
 }
 
 /****************************************************************
