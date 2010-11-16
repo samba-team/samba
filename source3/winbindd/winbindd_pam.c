@@ -142,7 +142,7 @@ static NTSTATUS append_info3_as_ndr(TALLOC_CTX *mem_ctx,
 }
 
 static NTSTATUS append_unix_username(TALLOC_CTX *mem_ctx,
-				     struct winbindd_cli_state *state,
+				     struct winbindd_response *resp,
 				     const struct netr_SamInfo3 *info3,
 				     const char *name_domain,
 				     const char *name_user)
@@ -166,11 +166,11 @@ static NTSTATUS append_unix_username(TALLOC_CTX *mem_ctx,
 		nt_username = name_user;
 	}
 
-	fill_domain_username(state->response->data.auth.unix_username,
+	fill_domain_username(resp->data.auth.unix_username,
 			     nt_domain, nt_username, true);
 
-	DEBUG(5,("Setting unix username to [%s]\n",
-		state->response->data.auth.unix_username));
+	DEBUG(5, ("Setting unix username to [%s]\n",
+		  resp->data.auth.unix_username));
 
 	return NT_STATUS_OK;
 }
@@ -766,8 +766,8 @@ static NTSTATUS append_auth_data(struct winbindd_cli_state *state,
 	}
 
 	if (request_flags & WBFLAG_PAM_UNIX_NAME) {
-		result = append_unix_username(state->mem_ctx, state, info3,
-					      name_domain, name_user);
+		result = append_unix_username(state->mem_ctx, state->response,
+					      info3, name_domain, name_user);
 		if (!NT_STATUS_IS_OK(result)) {
 			DEBUG(10,("Failed to append Unix Username: %s\n",
 				nt_errstr(result)));
