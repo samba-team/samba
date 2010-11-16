@@ -130,8 +130,7 @@ case "$1" in
 	# clients need notifications
 	LAST_UPDATE=`stat --printf="%Y" $CTDB_VARDIR/state/statd/update-trigger`
 	CURRENT_TIME=`date +"%s"`
-	expr "$CURRENT_TIME" ">" "(" "$LAST_UPDATE" "+" "60" ")" >/dev/null 2>/dev/null
-	[ $? = "0" ] && {
+	[ $CURRENT_TIME -ge $(($LAST_UPDATE + 60)) ] && {
 	    mkdir -p $CTDB_VARDIR/state/statd
 	    touch $CTDB_VARDIR/state/statd/update-trigger
 	    $CTDB_BASE/statd-callout updatelocal &
