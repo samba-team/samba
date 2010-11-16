@@ -144,10 +144,14 @@ ctdb_check_rpc() {
     progname="$1"
     prognum="$2"
     version="$3"
-    rpcinfo -u localhost $prognum $version > /dev/null || {
-	    echo "ERROR: $progname not responding to rpc requests"
-	    exit 1
-    }
+
+    ctdb_check_rpc_out=$(rpcinfo -u localhost $prognum $version 2>&1)
+    if [ $? -ne 0 ] ; then
+	ctdb_check_rpc_out="ERROR: $progname failed RPC check:
+$ctdb_check_rpc_out"
+	echo "$ctdb_check_rpc_out"
+	return 1
+    fi
 }
 
 ######################################################
