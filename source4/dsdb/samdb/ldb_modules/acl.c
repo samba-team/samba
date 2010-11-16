@@ -438,6 +438,7 @@ static int acl_add(struct ldb_module *module, struct ldb_request *req)
 	const struct dsdb_schema *schema;
 	struct ldb_message_element *oc_el;
 	const struct GUID *guid;
+	struct ldb_dn *nc_root;
 	struct ldb_control *as_system = ldb_request_get_control(req, LDB_CONTROL_AS_SYSTEM_OID);
 
 	if (as_system != NULL) {
@@ -447,19 +448,24 @@ static int acl_add(struct ldb_module *module, struct ldb_request *req)
 	if (dsdb_module_am_system(module) || as_system) {
 		return ldb_next_request(module, req);
 	}
-
 	if (ldb_dn_is_special(req->op.add.message->dn)) {
 		return ldb_next_request(module, req);
 	}
+
 	ldb = ldb_module_get_ctx(module);
+
 	/* Creating an NC. There is probably something we should do here,
 	 * but we will establish that later */
-	/* FIXME: this has to be made dynamic at some point */
-	if ((ldb_dn_compare(req->op.add.message->dn, (ldb_get_schema_basedn(ldb))) == 0) ||
-	    (ldb_dn_compare(req->op.add.message->dn, (ldb_get_config_basedn(ldb))) == 0) ||
-	    (ldb_dn_compare(req->op.add.message->dn, (ldb_get_default_basedn(ldb))) == 0)) {
+
+	ret = dsdb_find_nc_root(ldb, req, req->op.add.message->dn, &nc_root);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+	if (ldb_dn_compare(nc_root, req->op.add.message->dn) == 0) {
+		talloc_free(nc_root);
 		return ldb_next_request(module, req);
 	}
+	talloc_free(nc_root);
 
 	schema = dsdb_get_schema(ldb, req);
 	if (!schema) {
@@ -812,12 +818,13 @@ fail:
 }
 
 /* similar to the modify for the time being.
- * We need to concider the special delete tree case, though - TODO */
+ * We need to consider the special delete tree case, though - TODO */
 static int acl_delete(struct ldb_module *module, struct ldb_request *req)
 {
 	int ret;
 	struct ldb_dn *parent = ldb_dn_get_parent(req, req->op.del.dn);
 	struct ldb_context *ldb;
+	struct ldb_dn *nc_root;
 	struct ldb_control *as_system = ldb_request_get_control(req, LDB_CONTROL_AS_SYSTEM_OID);
 
 	if (as_system != NULL) {
@@ -828,31 +835,42 @@ static int acl_delete(struct ldb_module *module, struct ldb_request *req)
 	if (dsdb_module_am_system(module) || as_system) {
 		return ldb_next_request(module, req);
 	}
-
 	if (ldb_dn_is_special(req->op.del.dn)) {
 		return ldb_next_request(module, req);
 	}
+
 	ldb = ldb_module_get_ctx(module);
-	/* first check if we have delete object right */
-	ret = dsdb_module_check_access_on_dn(module, req, req->op.del.dn, SEC_STD_DELETE, NULL);
+
+	/* Make sure we aren't deleting a NC */
+
+	ret = dsdb_find_nc_root(ldb, req, req->op.del.dn, &nc_root);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+	if (ldb_dn_compare(nc_root, req->op.del.dn) == 0) {
+		talloc_free(nc_root);
+		DEBUG(10,("acl:deleting a NC\n"));
+		/* Windows returns "ERR_UNWILLING_TO_PERFORM */
+		return ldb_module_done(req, NULL, NULL,
+				       LDB_ERR_UNWILLING_TO_PERFORM);
+	}
+	talloc_free(nc_root);
+
+	/* First check if we have delete object right */
+	ret = dsdb_module_check_access_on_dn(module, req, req->op.del.dn,
+					     SEC_STD_DELETE, NULL);
 	if (ret == LDB_SUCCESS) {
 		return ldb_next_request(module, req);
 	}
 
-	/* Nope, we don't have delete object. Lets check if we have delete child on the parent */
-	/* No parent, so check fails */
-	/* FIXME: this has to be made dynamic at some point */
-	if ((ldb_dn_compare(req->op.del.dn, (ldb_get_schema_basedn(ldb))) == 0) ||
-	    (ldb_dn_compare(req->op.del.dn, (ldb_get_config_basedn(ldb))) == 0) ||
-	    (ldb_dn_compare(req->op.del.dn, (ldb_get_default_basedn(ldb))) == 0)) {
-		DEBUG(10,("acl:deleting an NC\n"));
-		return ldb_module_done(req, NULL, NULL, LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS);
-	}
-
-	ret = dsdb_module_check_access_on_dn(module, req, parent, SEC_ADS_DELETE_CHILD, NULL);
+	/* Nope, we don't have delete object. Lets check if we have delete
+	 * child on the parent */
+	ret = dsdb_module_check_access_on_dn(module, req, parent,
+					     SEC_ADS_DELETE_CHILD, NULL);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
+
 	return ldb_next_request(module, req);
 }
 
@@ -867,6 +885,7 @@ static int acl_rename(struct ldb_module *module, struct ldb_request *req)
 	struct dom_sid *sid = NULL;
 	struct ldb_result *acl_res;
 	const struct GUID *guid;
+	struct ldb_dn *nc_root;
 	struct object_tree *root = NULL;
 	struct object_tree *new_node = NULL;
 	struct ldb_control *as_system = ldb_request_get_control(req, LDB_CONTROL_AS_SYSTEM_OID);
@@ -892,7 +911,25 @@ static int acl_rename(struct ldb_module *module, struct ldb_request *req)
 	if (ldb_dn_is_special(req->op.rename.olddn)) {
 		return ldb_next_request(module, req);
 	}
+
 	ldb = ldb_module_get_ctx(module);
+
+	/* Make sure we aren't renaming/moving a NC */
+
+	ret = dsdb_find_nc_root(ldb, req, req->op.rename.olddn, &nc_root);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+	if (ldb_dn_compare(nc_root, req->op.rename.olddn) == 0) {
+		talloc_free(nc_root);
+		DEBUG(10,("acl:renaming/moving a NC\n"));
+		/* Windows returns "ERR_UNWILLING_TO_PERFORM */
+		return ldb_module_done(req, NULL, NULL,
+				       LDB_ERR_UNWILLING_TO_PERFORM);
+	}
+	talloc_free(nc_root);
+
+	/* Look for the parent */
 
 	ret = dsdb_module_search_dn(module, req, &acl_res, req->op.rename.olddn,
 				    acl_attrs,
@@ -967,14 +1004,6 @@ static int acl_rename(struct ldb_module *module, struct ldb_request *req)
 		return ldb_next_request(module, req);
 	}
 
-	/* What exactly to do in this case? It would fail anyway.. */
-	/* FIXME: this has to be made dynamic at some point */
-	if ((ldb_dn_compare(req->op.rename.newdn, (ldb_get_schema_basedn(ldb))) == 0) ||
-	    (ldb_dn_compare(req->op.rename.newdn, (ldb_get_config_basedn(ldb))) == 0) ||
-	    (ldb_dn_compare(req->op.rename.newdn, (ldb_get_default_basedn(ldb))) == 0)) {
-		DEBUG(10,("acl:moving as an NC\n"));
-		return LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS;
-	}
 	/* new parent should have create child */
 	talloc_free(tmp_ctx);
 	tmp_ctx = talloc_new(req);
