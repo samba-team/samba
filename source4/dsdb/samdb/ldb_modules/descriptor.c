@@ -692,16 +692,28 @@ static int descriptor_do_add(struct descriptor_context *ac)
 					   sizeof(struct ldb_val));
 	}
 
-	/* NC's have no parent */
-	/* FIXME: this has to be made dynamic at some point */
-	if ((ldb_dn_compare(ac->msg->dn, (ldb_get_schema_basedn(ldb))) == 0) ||
-	    (ldb_dn_compare(ac->msg->dn, (ldb_get_config_basedn(ldb))) == 0) ||
-	    (ldb_dn_compare(ac->msg->dn, (ldb_get_default_basedn(ldb))) == 0)) {
-		ac->parentsd_val = NULL;
-	} else if (ac->search_res != NULL) {
-		struct ldb_message_element *parent_element = ldb_msg_find_element(ac->search_res->message, "nTSecurityDescriptor");
-		if (parent_element) {
-			ac->parentsd_val = talloc_memdup(ac, &parent_element->values[0], sizeof(struct ldb_val));
+	/* If we do have a parent, then please fetch it's security descriptor.
+	 * But have in mind: NCs don't have any parents! That means
+	 * "CN=Configuration,DC=example,DC=com" has no parent
+	 * "DC=example,DC=com" since this is located under another NC! */
+	if (ac->search_res != NULL) {
+		struct ldb_message_element *parent_element = NULL;
+		struct ldb_dn *nc_root;
+
+		ret = dsdb_find_nc_root(ldb, ac, ac->msg->dn, &nc_root);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+
+		if (ldb_dn_compare(ac->msg->dn, nc_root) != 0) {
+			/* we aren't any NC */
+			parent_element = ldb_msg_find_element(ac->search_res->message,
+							      "nTSecurityDescriptor");
+			if (parent_element != NULL) {
+				ac->parentsd_val = talloc_memdup(ac,
+								 &parent_element->values[0],
+								 sizeof(struct ldb_val));
+			}
 		}
 	}
 
