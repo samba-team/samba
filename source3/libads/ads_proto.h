@@ -130,19 +130,6 @@ ADS_STATUS ads_ranged_search(ADS_STRUCT *ads,
 			     const char *range_attr,
 			     char ***strings,
 			     size_t *num_strings);
-ADS_STATUS ads_ranged_search_internal(ADS_STRUCT *ads,
-				      TALLOC_CTX *mem_ctx,
-				      int scope,
-				      const char *base,
-				      const char *filter,
-				      const char **attrs,
-				      void *args,
-				      const char *range_attr,
-				      char ***strings,
-				      size_t *num_strings,
-				      uint32 *first_usn,
-				      int *num_retries,
-				      bool *more_values);
 
 /* The following definitions come from libads/ndr.c  */
 
