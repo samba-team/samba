@@ -3282,15 +3282,41 @@ int dsdb_find_nc_root(struct ldb_context *samdb, TALLOC_CTX *mem_ctx, struct ldb
 		DEBUG(1,("Searching for namingContexts in rootDSE failed: %s\n", ldb_errstring(samdb)));
 		talloc_free(tmp_ctx);
 		return ret;
-       }
+	}
 
-       el = ldb_msg_find_element(root_res->msgs[0], "namingContexts");
-       if (!el) {
-               DEBUG(1,("Finding namingContexts element in root_res failed: %s\n",
-			ldb_errstring(samdb)));
-	       talloc_free(tmp_ctx);
-	       return LDB_ERR_NO_SUCH_ATTRIBUTE;
-       }
+	el = ldb_msg_find_element(root_res->msgs[0], "namingContexts");
+	if (!el) {
+		struct ldb_message *tmp_msg;
+
+		DEBUG(5,("Finding namingContexts element in root_res failed. Using a temporary list."));
+
+		/* This generates a temporary list of NCs in order to let the
+		 * provisioning work. */
+		tmp_msg = ldb_msg_new(tmp_ctx);
+		if (tmp_msg == NULL) {
+			talloc_free(tmp_ctx);
+			return ldb_oom(samdb);
+		}
+		ret = ldb_msg_add_steal_string(tmp_msg, "namingContexts",
+					       ldb_dn_alloc_linearized(tmp_msg, ldb_get_schema_basedn(samdb)));
+		if (ret != LDB_SUCCESS) {
+			talloc_free(tmp_ctx);
+			return ret;
+		}
+		ret = ldb_msg_add_steal_string(tmp_msg, "namingContexts",
+					       ldb_dn_alloc_linearized(tmp_msg, ldb_get_config_basedn(samdb)));
+		if (ret != LDB_SUCCESS) {
+			talloc_free(tmp_ctx);
+			return ret;
+		}
+		ret = ldb_msg_add_steal_string(tmp_msg, "namingContexts",
+					       ldb_dn_alloc_linearized(tmp_msg, ldb_get_default_basedn(samdb)));
+		if (ret != LDB_SUCCESS) {
+			talloc_free(tmp_ctx);
+			return ret;
+		}
+		el = &tmp_msg->elements[0];
+	}
 
        nc_dns = talloc_array(tmp_ctx, struct ldb_dn *, el->num_values);
        if (!nc_dns) {
