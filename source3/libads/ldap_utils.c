@@ -145,21 +145,6 @@ static ADS_STATUS ads_do_search_retry_args(ADS_STRUCT *ads, const char *bind_pat
 				   "(objectclass=*)", attrs, res);
 }
 
- ADS_STATUS ads_search_retry_extended_dn(ADS_STRUCT *ads, LDAPMessage **res, 
-					 const char *dn, 
-					 const char **attrs,
-					 enum ads_extended_dn_flags flags)
-{
-	ads_control args;
-
-	args.control = ADS_EXTENDED_DN_OID;
-	args.val = flags;
-	args.critical = True;
-
-	return ads_do_search_retry_args(ads, dn, LDAP_SCOPE_BASE,
-					"(objectclass=*)", attrs, &args, res);
-}
-
  ADS_STATUS ads_search_retry_dn_sd_flags(ADS_STRUCT *ads, LDAPMessage **res, 
 					 uint32 sd_flags,
 					 const char *dn, 
