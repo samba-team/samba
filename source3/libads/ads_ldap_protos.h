@@ -63,10 +63,6 @@ ADS_STATUS ads_do_search_retry(ADS_STRUCT *ads, const char *bind_path,
 			       int scope,
 			       const char *expr,
 			       const char **attrs, LDAPMessage **res);
-ADS_STATUS ads_do_search_retry_args(ADS_STRUCT *ads, const char *bind_path,
-				    int scope, const char *expr,
-				    const char **attrs, void *args,
-				    LDAPMessage **res);
 ADS_STATUS ads_search_retry(ADS_STRUCT *ads, LDAPMessage **res,
 			    const char *expr, const char **attrs);
 ADS_STATUS ads_search_retry_dn(ADS_STRUCT *ads, LDAPMessage **res,

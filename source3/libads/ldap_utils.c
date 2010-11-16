@@ -121,10 +121,10 @@ static ADS_STATUS ads_do_search_retry_internal(ADS_STRUCT *ads, const char *bind
 	return ads_do_search_retry_internal(ads, bind_path, scope, expr, attrs, NULL, res);
 }
 
- ADS_STATUS ads_do_search_retry_args(ADS_STRUCT *ads, const char *bind_path,
-				     int scope, const char *expr,
-				     const char **attrs, void *args,
-				     LDAPMessage **res)
+static ADS_STATUS ads_do_search_retry_args(ADS_STRUCT *ads, const char *bind_path,
+					   int scope, const char *expr,
+					   const char **attrs, void *args,
+					   LDAPMessage **res)
 {
 	return ads_do_search_retry_internal(ads, bind_path, scope, expr, attrs, args, res);
 }
