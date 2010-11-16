@@ -25,10 +25,13 @@
 
 #ifdef HAVE_LDAP
 
-ADS_STATUS ads_get_attrnames_by_oids(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx,
-				     const char *schema_path,
-				     const char **OIDs, size_t num_OIDs, 
-				     char ***OIDs_out, char ***names, size_t *count)
+static ADS_STATUS ads_get_attrnames_by_oids(ADS_STRUCT *ads,
+					    TALLOC_CTX *mem_ctx,
+					    const char *schema_path,
+					    const char **OIDs,
+					    size_t num_OIDs,
+					    char ***OIDs_out, char ***names,
+					    size_t *count)
 {
 	ADS_STATUS status;
 	LDAPMessage *res = NULL;
