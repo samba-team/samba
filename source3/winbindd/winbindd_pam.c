@@ -713,7 +713,8 @@ bool check_request_flags(uint32_t flags)
 /****************************************************************
 ****************************************************************/
 
-static NTSTATUS append_auth_data(struct winbindd_cli_state *state,
+static NTSTATUS append_auth_data(TALLOC_CTX *mem_ctx,
+				 struct winbindd_response *resp,
 				 uint32_t request_flags,
 				 struct netr_SamInfo3 *info3,
 				 const char *name_domain,
@@ -722,21 +723,21 @@ static NTSTATUS append_auth_data(struct winbindd_cli_state *state,
 	NTSTATUS result;
 
 	if (request_flags & WBFLAG_PAM_USER_SESSION_KEY) {
-		memcpy(state->response->data.auth.user_session_key,
+		memcpy(resp->data.auth.user_session_key,
 		       info3->base.key.key,
-		       sizeof(state->response->data.auth.user_session_key)
+		       sizeof(resp->data.auth.user_session_key)
 		       /* 16 */);
 	}
 
 	if (request_flags & WBFLAG_PAM_LMKEY) {
-		memcpy(state->response->data.auth.first_8_lm_hash,
+		memcpy(resp->data.auth.first_8_lm_hash,
 		       info3->base.LMSessKey.key,
-		       sizeof(state->response->data.auth.first_8_lm_hash)
+		       sizeof(resp->data.auth.first_8_lm_hash)
 		       /* 8 */);
 	}
 
 	if (request_flags & WBFLAG_PAM_UNIX_NAME) {
-		result = append_unix_username(state->mem_ctx, state->response,
+		result = append_unix_username(mem_ctx, resp,
 					      info3, name_domain, name_user);
 		if (!NT_STATUS_IS_OK(result)) {
 			DEBUG(10,("Failed to append Unix Username: %s\n",
@@ -748,8 +749,7 @@ static NTSTATUS append_auth_data(struct winbindd_cli_state *state,
 	/* currently, anything from here on potentially overwrites extra_data. */
 
 	if (request_flags & WBFLAG_PAM_INFO3_NDR) {
-		result = append_info3_as_ndr(state->mem_ctx, state->response,
-					     info3);
+		result = append_info3_as_ndr(mem_ctx, resp, info3);
 		if (!NT_STATUS_IS_OK(result)) {
 			DEBUG(10,("Failed to append INFO3 (NDR): %s\n",
 				nt_errstr(result)));
@@ -758,8 +758,7 @@ static NTSTATUS append_auth_data(struct winbindd_cli_state *state,
 	}
 
 	if (request_flags & WBFLAG_PAM_INFO3_TEXT) {
-		result = append_info3_as_txt(state->mem_ctx, state->response,
-					     info3);
+		result = append_info3_as_txt(mem_ctx, resp, info3);
 		if (!NT_STATUS_IS_OK(result)) {
 			DEBUG(10,("Failed to append INFO3 (TXT): %s\n",
 				nt_errstr(result)));
@@ -768,7 +767,7 @@ static NTSTATUS append_auth_data(struct winbindd_cli_state *state,
 	}
 
 	if (request_flags & WBFLAG_PAM_AFS_TOKEN) {
-		result = append_afs_token(state->mem_ctx, state->response,
+		result = append_afs_token(mem_ctx, resp,
 					  info3, name_domain, name_user);
 		if (!NT_STATUS_IS_OK(result)) {
 			DEBUG(10,("Failed to append AFS token: %s\n",
@@ -1574,7 +1573,8 @@ process_result:
 			goto done;
 		}
 
-		result = append_auth_data(state, state->request->flags, info3,
+		result = append_auth_data(state->mem_ctx, state->response,
+					  state->request->flags, info3,
 					  name_domain, name_user);
 		if (!NT_STATUS_IS_OK(result)) {
 			goto done;
@@ -1781,7 +1781,8 @@ process_result:
 			goto done;
 		}
 
-		result = append_auth_data(state, state->request->flags, info3,
+		result = append_auth_data(state->mem_ctx, state->response,
+					  state->request->flags, info3,
 					  name_domain, name_user);
 		if (!NT_STATUS_IS_OK(result)) {
 			goto done;
