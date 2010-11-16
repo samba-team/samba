@@ -859,6 +859,8 @@ static int objectclass_modify(struct ldb_module *module, struct ldb_request *req
 					  "objectclass: object class changes on objects under the standard name contexts not allowed!");
 			return LDB_ERR_UNWILLING_TO_PERFORM;
 		}
+
+		talloc_free(nc_root);
 	}
 
 	ret = ldb_build_mod_req(&down_req, ldb, ac,
