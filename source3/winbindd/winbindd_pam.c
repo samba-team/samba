@@ -41,57 +41,57 @@
 #define LOGON_KRB5_FAIL_CLOCK_SKEW	0x02000000
 
 static NTSTATUS append_info3_as_txt(TALLOC_CTX *mem_ctx,
-				    struct winbindd_cli_state *state,
+				    struct winbindd_response *resp,
 				    struct netr_SamInfo3 *info3)
 {
 	char *ex;
 	uint32_t i;
 
-	state->response->data.auth.info3.logon_time =
+	resp->data.auth.info3.logon_time =
 		nt_time_to_unix(info3->base.last_logon);
-	state->response->data.auth.info3.logoff_time =
+	resp->data.auth.info3.logoff_time =
 		nt_time_to_unix(info3->base.last_logoff);
-	state->response->data.auth.info3.kickoff_time =
+	resp->data.auth.info3.kickoff_time =
 		nt_time_to_unix(info3->base.acct_expiry);
-	state->response->data.auth.info3.pass_last_set_time =
+	resp->data.auth.info3.pass_last_set_time =
 		nt_time_to_unix(info3->base.last_password_change);
-	state->response->data.auth.info3.pass_can_change_time =
+	resp->data.auth.info3.pass_can_change_time =
 		nt_time_to_unix(info3->base.allow_password_change);
-	state->response->data.auth.info3.pass_must_change_time =
+	resp->data.auth.info3.pass_must_change_time =
 		nt_time_to_unix(info3->base.force_password_change);
 
-	state->response->data.auth.info3.logon_count = info3->base.logon_count;
-	state->response->data.auth.info3.bad_pw_count = info3->base.bad_password_count;
+	resp->data.auth.info3.logon_count = info3->base.logon_count;
+	resp->data.auth.info3.bad_pw_count = info3->base.bad_password_count;
 
-	state->response->data.auth.info3.user_rid = info3->base.rid;
-	state->response->data.auth.info3.group_rid = info3->base.primary_gid;
-	sid_to_fstring(state->response->data.auth.info3.dom_sid, info3->base.domain_sid);
+	resp->data.auth.info3.user_rid = info3->base.rid;
+	resp->data.auth.info3.group_rid = info3->base.primary_gid;
+	sid_to_fstring(resp->data.auth.info3.dom_sid, info3->base.domain_sid);
 
-	state->response->data.auth.info3.num_groups = info3->base.groups.count;
-	state->response->data.auth.info3.user_flgs = info3->base.user_flags;
+	resp->data.auth.info3.num_groups = info3->base.groups.count;
+	resp->data.auth.info3.user_flgs = info3->base.user_flags;
 
-	state->response->data.auth.info3.acct_flags = info3->base.acct_flags;
-	state->response->data.auth.info3.num_other_sids = info3->sidcount;
+	resp->data.auth.info3.acct_flags = info3->base.acct_flags;
+	resp->data.auth.info3.num_other_sids = info3->sidcount;
 
-	fstrcpy(state->response->data.auth.info3.user_name,
+	fstrcpy(resp->data.auth.info3.user_name,
 		info3->base.account_name.string);
-	fstrcpy(state->response->data.auth.info3.full_name,
+	fstrcpy(resp->data.auth.info3.full_name,
 		info3->base.full_name.string);
-	fstrcpy(state->response->data.auth.info3.logon_script,
+	fstrcpy(resp->data.auth.info3.logon_script,
 		info3->base.logon_script.string);
-	fstrcpy(state->response->data.auth.info3.profile_path,
+	fstrcpy(resp->data.auth.info3.profile_path,
 		info3->base.profile_path.string);
-	fstrcpy(state->response->data.auth.info3.home_dir,
+	fstrcpy(resp->data.auth.info3.home_dir,
 		info3->base.home_directory.string);
-	fstrcpy(state->response->data.auth.info3.dir_drive,
+	fstrcpy(resp->data.auth.info3.dir_drive,
 		info3->base.home_drive.string);
 
-	fstrcpy(state->response->data.auth.info3.logon_srv,
+	fstrcpy(resp->data.auth.info3.logon_srv,
 		info3->base.logon_server.string);
-	fstrcpy(state->response->data.auth.info3.logon_dom,
+	fstrcpy(resp->data.auth.info3.logon_dom,
 		info3->base.domain.string);
 
-	ex = talloc_strdup(state->mem_ctx, "");
+	ex = talloc_strdup(mem_ctx, "");
 	NT_STATUS_HAVE_NO_MEMORY(ex);
 
 	for (i=0; i < info3->base.groups.count; i++) {
@@ -115,8 +115,8 @@ static NTSTATUS append_info3_as_txt(TALLOC_CTX *mem_ctx,
 		talloc_free(sid);
 	}
 
-	state->response->extra_data.data = ex;
-	state->response->length += talloc_get_size(ex);
+	resp->extra_data.data = ex;
+	resp->length += talloc_get_size(ex);
 
 	return NT_STATUS_OK;
 }
@@ -786,7 +786,8 @@ static NTSTATUS append_auth_data(struct winbindd_cli_state *state,
 	}
 
 	if (request_flags & WBFLAG_PAM_INFO3_TEXT) {
-		result = append_info3_as_txt(state->mem_ctx, state, info3);
+		result = append_info3_as_txt(state->mem_ctx, state->response,
+					     info3);
 		if (!NT_STATUS_IS_OK(result)) {
 			DEBUG(10,("Failed to append INFO3 (TXT): %s\n",
 				nt_errstr(result)));
