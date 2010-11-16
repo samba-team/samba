@@ -50,7 +50,14 @@
 #include <dispatch/dispatch.h>
 #endif
 
-#ifdef __GNUC__
+#if HEIM_BASE_NON_ATOMIC
+/* non-atomic varients */
+#define heim_base_atomic_inc(x) ++(*(x))
+#define heim_base_atomic_dec(x) --(*(x))
+#define heim_base_atomic_type	unsigned int
+#define heim_base_atomic_max    UINT_MAX
+
+#elif defined(__GNUC__)
 #define heim_base_atomic_inc(x) __sync_add_and_fetch((x), 1)
 #define heim_base_atomic_dec(x) __sync_sub_and_fetch((x), 1)
 #define heim_base_atomic_type	unsigned int
