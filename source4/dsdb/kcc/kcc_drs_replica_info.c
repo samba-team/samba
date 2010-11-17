@@ -494,6 +494,7 @@ static WERROR copy_repsfrom_1_to_2(TALLOC_CTX *mem_ctx,
 	reps->consecutive_sync_failures = reps1->consecutive_sync_failures;
 	reps->last_attempt = reps1->last_attempt;
 	reps->last_success = reps1->last_success;
+	reps->result_last_attempt = reps1->result_last_attempt;
 	reps->other_info = talloc_zero(mem_ctx, struct repsFromTo2OtherInfo);
 	W_ERROR_HAVE_NO_MEMORY(reps->other_info);
 	reps->other_info->dns_name1 = reps1->other_info->dns_name;
