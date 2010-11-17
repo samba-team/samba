@@ -1527,6 +1527,10 @@ static bool handle_debuglevel(struct loadparm_context *lp_ctx,
 {
 	DEBUGLEVEL = atoi(pszParmValue);
 
+	/* also set in the loadparm table, so querying debug level
+	   works */
+	*(int *)ptr = DEBUGLEVEL;
+
 	return true;
 }
 
@@ -1537,6 +1541,7 @@ static bool handle_logfile(struct loadparm_context *lp_ctx,
 		free(discard_const_p(char, logfile));
 	}
 	logfile = strdup(pszParmValue);
+	string_set(lp_ctx, ptr, pszParmValue);
 	return true;
 }
 
