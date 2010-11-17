@@ -729,8 +729,11 @@ static bool ldb_dn_explode(struct ldb_dn *dn)
 	return true;
 
 failed:
+	LDB_FREE(dn->components);
 	dn->comp_num = 0;
-	talloc_free(dn->components);
+	LDB_FREE(dn->ext_components);
+	dn->ext_comp_num = 0;
+
 	return false;
 }
 
