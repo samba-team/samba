@@ -924,8 +924,6 @@ struct tevent_req *tevent_req_post(struct tevent_req *req,
  *
  * It is typically used by sync wrapper functions.
  *
- * This function destroys the attached private data.
- *
  * @param[in]  req      The request to poll.
  *
  * @return              The boolean form of "is in progress".
