@@ -28,6 +28,7 @@ class XattrBackendError(Exception):
 
 
 def checkset_backend(lp, backend, eadbfile):
+    # if posix:eadb is set, then force the backend
     if backend is not None:
         if backend == "native":
             lp.set("posix:eadb", "")
