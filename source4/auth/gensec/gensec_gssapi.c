@@ -149,7 +149,7 @@ static NTSTATUS gensec_gssapi_start(struct gensec_security *gensec_security)
 	krb5_error_code ret;
 	const char *realm;
 
-	gensec_gssapi_state = talloc(gensec_security, struct gensec_gssapi_state);
+	gensec_gssapi_state = talloc_zero(gensec_security, struct gensec_gssapi_state);
 	if (!gensec_gssapi_state) {
 		return NT_STATUS_NO_MEMORY;
 	}
