@@ -80,17 +80,21 @@ def cmd_output(cmd):
     cmd = substitute(cmd)
     return run_cmd(cmd, output=True)
 
-def cmd_contains(cmd, contains, nomatch=False):
+def cmd_contains(cmd, contains, nomatch=False, ordered=False):
     '''check that command output contains the listed strings'''
     out = cmd_output(cmd)
     print out
     for c in substitute(contains):
+        ofs = out.find(c)
         if nomatch:
-            if out.find(c) != -1:
+            if ofs != -1:
                 raise Exception("Expected to not see %s in %s" % (c, cmd))
         else:
-            if out.find(c) == -1:
+            if ofs == -1:
                 raise Exception("Expected to see %s in %s" % (c, cmd))
+        if ordered and ofs != -1:
+            ofs += len(c)
+            out = out[ofs:]
 
 def retry_cmd(cmd, contains, retries=30, delay=2, wait_for_fail=False):
     '''retry a command a number of times'''
@@ -155,6 +159,26 @@ def port_wait(hostname, port, retries=100, delay=2, wait_for_fail=False):
     retry_cmd("nc -v -z -w 1 %s %u" % (hostname, port), ['succeeded'],
               retries=retries, delay=delay, wait_for_fail=wait_for_fail)
 
+def open_telnet(hostname, username, password, retries=30, delay=3, set_time=False):
+    '''open a telnet connection to a windows server, return the pexpect child'''
+    while retries > 0:
+        child = pexpect_spawn("telnet " + hostname + " -l '" + username + "'")
+        i = child.expect(["Welcome to Microsoft Telnet Service",
+                          "No more connections are allowed to telnet server"])
+        if i != 0:
+            time.sleep(delay)
+            retries -= 1
+            continue
+        child.expect("password:")
+        child.sendline(password)
+        child.expect("C:")
+        if set_time:
+            child.sendline("net time \\\\${HOSTNAME} /set")
+            child.expect("Do you want to set the local computer")
+            child.sendline("Y")
+            child.expect("The command completed successfully")
+        return child
+
 
 def check_prerequesites():
     print("Checking prerequesites")
@@ -178,7 +202,7 @@ def provision_s4():
     print('Provisioning s4')
     chdir('${PREFIX}')
     run_cmd("rm -rf etc private")
-    run_cmd('sbin/provision --realm=${LCREALM} --domain=${DOMAIN} --adminpass=${PASSWORD1} --server-role="domain controller" --function-level=2008')
+    run_cmd('sbin/provision --realm=${LCREALM} --domain=${DOMAIN} --adminpass=${PASSWORD1} --server-role="domain controller" --function-level=2008 -d${DEBUGLEVEL}')
     run_cmd('bin/samba-tool newuser testallowed ${PASSWORD1}')
     run_cmd('bin/samba-tool newuser testdenied ${PASSWORD1}')
     run_cmd('bin/samba-tool group addmembers "Allowed RODC Password Replication Group" testallowed')
@@ -196,7 +220,7 @@ def test_smbclient():
     print('Testing smbclient')
     chdir('${PREFIX}')
     cmd_contains("bin/smbclient --version", ["Version 4.0"])
-    cmd_contains('bin/smbclient -L localhost -U%', ["netlogon", "sysvol", "IPC Service"])
+    retry_cmd('bin/smbclient -L localhost -U%', ["netlogon", "sysvol", "IPC Service"])
     child = pexpect_spawn('bin/smbclient //localhost/netlogon -Uadministrator%${PASSWORD1}')
     child.expect("smb:")
     child.sendline("dir")
@@ -246,14 +270,26 @@ def test_dns():
     cmd_contains("host -t A ${HOSTNAME}.${LCREALM}",
                  ['${HOSTNAME}.${LCREALM} has address'])
 
+def do_kinit(username, password):
+    '''use kinit to setup a credentials cache'''
+    run_cmd("kdestroy")
+    putenv('KRB5CCNAME', "${PREFIX}/ccache.test")
+    username = substitute(username)
+    s = username.split('@')
+    if len(s) > 0:
+        s[1] = s[1].upper()
+    username = '@'.join(s)
+    child = pexpect_spawn('kinit -V ' + username)
+    child.expect("Password for")
+    child.sendline(password)
+    child.expect("Authenticated to Kerberos")
+
 def test_kerberos():
     print("Testing kerberos")
     run_cmd("kdestroy")
-    child = pexpect_spawn('kinit -V administrator@${REALM}')
-    child.expect("Password for")
-    child.sendline("${PASSWORD1}")
-    child.expect("Authenticated to Kerberos")
+    do_kinit("administrator@${REALM}", "${PASSWORD1}")
     cmd_contains("klist -e", ["Ticket cache", "Default principal", "Valid starting"])
+
 
 def test_dyndns():
     chdir('${PREFIX}')
@@ -267,11 +303,7 @@ def join_win7():
     vm_restore("${WINDOWS7_VM}", "${WINDOWS7_SNAPSHOT}")
     ping_wait("${WINDOWS7}")
     port_wait("${WINDOWS7}", 23)
-    child = pexpect_spawn("telnet ${WINDOWS7} -l administrator")
-    child.expect("Welcome to Microsoft Telnet Service")
-    child.expect("password:")
-    child.sendline("${PASSWORD1}")
-    child.expect("C:")
+    child = open_telnet("${WINDOWS7}", "administrator", "${PASSWORD1}")
     child.sendline("netdom join ${WINDOWS7} /Domain:${LCREALM} /PasswordD:${PASSWORD1} /UserD:administrator")
     child.expect("The computer needs to be restarted in order to complete the operation")
     child.expect("The command completed successfully")
@@ -290,11 +322,7 @@ def test_win7():
     cmd_contains('bin/smbclient -L ${WINDOWS7}.${LCREALM} -k no -Utestallowed@${LCREALM}%${PASSWORD1}', ["C$", "IPC$", "Sharename"])
     cmd_contains('bin/smbclient -L ${WINDOWS7}.${LCREALM} -k yes -Utestallowed@${LCREALM}%${PASSWORD1}', ["C$", "IPC$", "Sharename"])
     port_wait("${WINDOWS7}", 23)
-    child = pexpect_spawn("telnet ${WINDOWS7} -l '${DOMAIN}\\administrator'")
-    child.expect("Welcome to Microsoft Telnet Service")
-    child.expect("password:")
-    child.sendline("${PASSWORD1}")
-    child.expect("C:")
+    child = open_telnet("${WINDOWS7}", "${DOMAIN}\\administrator", "${PASSWORD1}")
     child.sendline("net use t: \\\\${HOSTNAME}.${LCREALM}\\test")
     child.expect("The command completed successfully")
     vm_poweroff("${WINDOWS7_VM}")
@@ -306,11 +334,7 @@ def join_w2k8():
     vm_restore("${WINDOWS_DC1_VM}", "${WINDOWS_DC1_SNAPSHOT}")
     ping_wait("${WINDOWS_DC1}")
     port_wait("${WINDOWS_DC1}", 23)
-    child = pexpect_spawn("telnet ${WINDOWS_DC1} -l administrator")
-    child.expect("Welcome to Microsoft Telnet Service")
-    child.expect("password:")
-    child.sendline("${WINDOWS_DC1_PASS}")
-    child.expect("C:")
+    child = open_telnet("${WINDOWS_DC1}", "administrator", "${WINDOWS_DC1_PASS}")
     child.sendline("copy /Y con answers.txt")
     child.sendline('''
 [DCInstall]
@@ -348,13 +372,45 @@ def test_w2k8():
     cmd_contains("host -t A ${WINDOWS_DC1}.${LCREALM}.", ['has address'])
     cmd_contains('bin/smbclient -L ${WINDOWS_DC1}.${LCREALM} -Utestallowed@${LCREALM}%${PASSWORD1}', ["C$", "IPC$", "Sharename"])
     port_wait("${WINDOWS_DC1}", 23)
-    child = pexpect_spawn("telnet ${WINDOWS_DC1} -l '${DOMAIN}\\administrator'")
-    child.expect("Welcome to Microsoft Telnet Service")
-    child.expect("password:")
-    child.sendline("${PASSWORD1}")
-    child.expect("C:")
+
+    cmd_contains("bin/samba-tool drs kcc ${HOSTNAME} -Uadministrator@${LCREALM}%${PASSWORD1}", ['Consistency check', 'successful'])
+    cmd_contains("bin/samba-tool drs kcc ${WINDOWS_DC1} -Uadministrator@${LCREALM}%${PASSWORD1}", ['Consistency check', 'successful'])
+
+    do_kinit("administrator@${REALM}", "${PASSWORD1}")
+    for nc in [ '${BASEDN}', 'CN=Configuration,${BASEDN}', 'CN=Schema,CN=Configuration,${BASEDN}' ]:
+        cmd_contains("bin/samba-tool drs replicate ${HOSTNAME} ${WINDOWS_DC1} %s -k yes" % nc, ["was successful"])
+        cmd_contains("bin/samba-tool drs replicate ${WINDOWS_DC1} ${HOSTNAME} %s -k yes" % nc, ["was successful"])
+
+    cmd_contains("bin/samba-tool drs showrepl ${HOSTNAME} -k yes",
+                 [ "INBOUND NEIGHBORS",
+                   "${BASEDN}",
+                   "Last attempt", "was successful",
+                   "CN=Schema,CN=Configuration,${BASEDN}",
+                   "Last attempt", "was successful",
+                   "OUTBOUND NEIGHBORS",
+                   "${BASEDN}",
+                   "Last success",
+                   "CN=Configuration,${BASEDN}",
+                   "Last success"],
+                 ordered=True)
+
+    cmd_contains("bin/samba-tool drs showrepl ${WINDOWS_DC1} -k yes",
+                 [ "INBOUND NEIGHBORS",
+                   "${BASEDN}",
+                   "Last attempt", "was successful",
+                   "CN=Schema,CN=Configuration,${BASEDN}",
+                   "Last attempt", "was successful",
+                   "OUTBOUND NEIGHBORS",
+                   "${BASEDN}",
+                   "Last success",
+                   "CN=Schema,CN=Configuration,${BASEDN}",
+                   "Last success" ],
+                 ordered=True)
+
+    child = open_telnet("${WINDOWS_DC1}", "${DOMAIN}\\administrator", "${PASSWORD1}", set_time=True)
     child.sendline("net use t: \\\\${HOSTNAME}.${LCREALM}\\test")
     child.expect("The command completed successfully")
+
 
     print("Checking if showrepl is happy")
     child.sendline("repadmin /showrepl")
@@ -389,8 +445,8 @@ def test_w2k8():
 
     retry_cmd("bin/smbclient -L ${WINDOWS_DC1} -Utest2%${PASSWORD2} -k no", ['LOGON_FAILURE'])
     retry_cmd("bin/smbclient -L ${HOSTNAME} -Utest3%${PASSWORD3} -k no", ['LOGON_FAILURE'])
-    retry_cmd("bin/smbclient -L ${WINDOWS_DC1} -Utest2%${PASSWORD2} -k yes", ['NT_STATUS_UNSUCCESSFUL'])
-    retry_cmd("bin/smbclient -L ${HOSTNAME} -Utest3%${PASSWORD3} -k yes", ['NT_STATUS_UNSUCCESSFUL'])
+    retry_cmd("bin/smbclient -L ${WINDOWS_DC1} -Utest2%${PASSWORD2} -k yes", ['LOGON_FAILURE'])
+    retry_cmd("bin/smbclient -L ${HOSTNAME} -Utest3%${PASSWORD3} -k yes", ['LOGON_FAILURE'])
     vm_poweroff("${WINDOWS_DC1_VM}")
 
 
@@ -400,11 +456,7 @@ def join_w2k8_rodc():
     vm_restore("${WINDOWS_DC2_VM}", "${WINDOWS_DC2_SNAPSHOT}")
     ping_wait("${WINDOWS_DC2}")
     port_wait("${WINDOWS_DC2}", 23)
-    child = pexpect_spawn("telnet ${WINDOWS_DC2} -l administrator")
-    child.expect("Welcome to Microsoft Telnet Service")
-    child.expect("password:")
-    child.sendline("${WINDOWS_DC2_PASS}")
-    child.expect("C:")
+    child = open_telnet("${WINDOWS_DC2}", "administrator", "${WINDOWS_DC2_PASS}")
     child.sendline("copy /Y con answers.txt")
     child.sendline('''
 [DCInstall]
@@ -450,11 +502,7 @@ def test_w2k8_rodc():
     cmd_contains("host -t A ${WINDOWS_DC2}.${LCREALM}.", ['has address'])
     cmd_contains('bin/smbclient -L ${WINDOWS_DC2}.${LCREALM} -Utestallowed@${LCREALM}%${PASSWORD1}', ["C$", "IPC$", "Sharename"])
     port_wait("${WINDOWS_DC2}", 23)
-    child = pexpect_spawn("telnet ${WINDOWS_DC2} -l '${DOMAIN}\\administrator'")
-    child.expect("Welcome to Microsoft Telnet Service")
-    child.expect("password:")
-    child.sendline("${PASSWORD1}")
-    child.expect("C:")
+    child = open_telnet("${WINDOWS_DC2}", "${DOMAIN}\\administrator", "${PASSWORD1}", set_time=True)
     child.sendline("net use t: \\\\${HOSTNAME}.${LCREALM}\\test")
     child.expect("The command completed successfully")
 
@@ -485,7 +533,7 @@ def vampire_w2k8():
     run_cmd('${RNDC} flush')
     run_cmd("rm -rf etc private")
     retry_cmd("bin/samba-tool drs showrepl ${WINDOWS_DC3} -Uadministrator%${WINDOWS_DC3_PASS}", ['INBOUND NEIGHBORS'] )
-    run_cmd('bin/samba-tool join ${WINDOWS_DC3_REALM} DC -Uadministrator%${WINDOWS_DC3_PASS}')
+    run_cmd('bin/samba-tool join ${WINDOWS_DC3_REALM} DC -Uadministrator%${WINDOWS_DC3_PASS} -d${DEBUGLEVEL}')
     run_cmd('bin/samba-tool drs kcc ${WINDOWS_DC3} -Uadministrator@${WINDOWS_DC3_REALM}%${WINDOWS_DC3_PASS}')
 
 
@@ -495,11 +543,17 @@ def test_vampire():
     retry_cmd('bin/smbclient -L ${HOSTNAME}.${WINDOWS_DC3_REALM} -Uadministrator@${WINDOWS_DC3_REALM}%${WINDOWS_DC3_PASS}', ["C$", "IPC$", "Sharename"])
     cmd_contains("host -t A ${HOSTNAME}.${WINDOWS_DC3_REALM}.", ['has address'])
     port_wait("${WINDOWS_DC3}", 23)
-    child = pexpect_spawn("telnet ${WINDOWS_DC3} -l '${WINDOWS_DC3_DOMAIN}\\administrator'")
-    child.expect("Welcome to Microsoft Telnet Service")
-    child.expect("password:")
-    child.sendline("${WINDOWS_DC3_PASS}")
-    child.expect("C:")
+    child = open_telnet("${WINDOWS_DC3}", "${WINDOWS_DC3_DOMAIN}\\administrator", "${WINDOWS_DC3_PASS}", set_time=True)
+
+    print("Forcing kcc runs, and replication")
+    run_cmd('bin/samba-tool drs kcc ${WINDOWS_DC3} -Uadministrator@${WINDOWS_DC3_REALM}%${WINDOWS_DC3_PASS}')
+    run_cmd('bin/samba-tool drs kcc ${HOSTNAME} -Uadministrator@${WINDOWS_DC3_REALM}%${WINDOWS_DC3_PASS}')
+
+    do_kinit("administrator@${WINDOWS_DC3_REALM}", "${WINDOWS_DC3_PASS}")
+    for nc in [ '${WINDOWS_DC3_BASEDN}', 'CN=Configuration,${WINDOWS_DC3_BASEDN}', 'CN=Schema,CN=Configuration,${WINDOWS_DC3_BASEDN}' ]:
+        cmd_contains("bin/samba-tool drs replicate ${HOSTNAME} ${WINDOWS_DC3} %s -k yes" % nc, ["was successful"])
+        cmd_contains("bin/samba-tool drs replicate ${WINDOWS_DC3} ${HOSTNAME} %s -k yes" % nc, ["was successful"])
+
     child.sendline("net use t: \\\\${HOSTNAME}.${WINDOWS_DC3_REALM}\\test")
     child.expect("The command completed successfully")
 
@@ -528,10 +582,10 @@ def test_vampire():
     child.sendline("net user test3 /del")
     child.expect("The command completed successfully")
 
-    retry_cmd("bin/smbclient -L ${WINDOWS_DC1} -Utest2%${PASSWORD2} -k no", ['LOGON_FAILURE'])
+    retry_cmd("bin/smbclient -L ${WINDOWS_DC3} -Utest2%${PASSWORD2} -k no", ['LOGON_FAILURE'])
     retry_cmd("bin/smbclient -L ${HOSTNAME} -Utest2%${PASSWORD2} -k no", ['LOGON_FAILURE'])
-    retry_cmd("bin/smbclient -L ${WINDOWS_DC1} -Utest2%${PASSWORD2} -k yes", ['NT_STATUS_UNSUCCESSFUL'])
-    retry_cmd("bin/smbclient -L ${HOSTNAME} -Utest2%${PASSWORD2} -k yes", ['NT_STATUS_UNSUCCESSFUL'])
+    retry_cmd("bin/smbclient -L ${WINDOWS_DC3} -Utest2%${PASSWORD2} -k yes", ['LOGON_FAILURE'])
+    retry_cmd("bin/smbclient -L ${HOSTNAME} -Utest2%${PASSWORD2} -k yes", ['LOGON_FAILURE'])
     vm_poweroff("${WINDOWS_DC3_VM}")
 
 
@@ -544,7 +598,7 @@ def vampire_w2k3():
     run_cmd('${RNDC} flush')
     run_cmd("rm -rf etc private")
     retry_cmd("bin/samba-tool drs showrepl ${WINDOWS_DC4} -Uadministrator%${WINDOWS_DC4_PASS}", ['INBOUND NEIGHBORS'] )
-    run_cmd('bin/samba-tool join ${WINDOWS_DC4_REALM} DC -Uadministrator%${WINDOWS_DC4_PASS} -d1')
+    run_cmd('bin/samba-tool join ${WINDOWS_DC4_REALM} DC -Uadministrator%${WINDOWS_DC4_PASS} -d${DEBUGLEVEL}')
     run_cmd('bin/samba-tool drs kcc ${WINDOWS_DC4} -Uadministrator@${WINDOWS_DC4_REALM}%${WINDOWS_DC4_PASS}')
 
 
@@ -554,11 +608,17 @@ def test_vampire_w2k3():
     retry_cmd('bin/smbclient -L ${HOSTNAME}.${WINDOWS_DC4_REALM} -Uadministrator@${WINDOWS_DC4_REALM}%${WINDOWS_DC4_PASS}', ["C$", "IPC$", "Sharename"])
     cmd_contains("host -t A ${HOSTNAME}.${WINDOWS_DC4_REALM}.", ['has address'])
     port_wait("${WINDOWS_DC4}", 23)
-    child = pexpect_spawn("telnet ${WINDOWS_DC4} -l '${WINDOWS_DC4_DOMAIN}\\administrator'")
-    child.expect("Welcome to Microsoft Telnet Service")
-    child.expect("password:")
-    child.sendline("${WINDOWS_DC4_PASS}")
-    child.expect("C:")
+    child = open_telnet("${WINDOWS_DC4}", "${WINDOWS_DC4_DOMAIN}\\administrator", "${WINDOWS_DC4_PASS}", set_time=True)
+
+    print("Forcing kcc runs, and replication")
+    run_cmd('bin/samba-tool drs kcc ${WINDOWS_DC4} -Uadministrator@${WINDOWS_DC4_REALM}%${WINDOWS_DC4_PASS}')
+    run_cmd('bin/samba-tool drs kcc ${HOSTNAME} -Uadministrator@${WINDOWS_DC4_REALM}%${WINDOWS_DC4_PASS}')
+
+    do_kinit("administrator@${WINDOWS_DC4_REALM}", "${WINDOWS_DC4_PASS}")
+    for nc in [ '${WINDOWS_DC4_BASEDN}', 'CN=Configuration,${WINDOWS_DC4_BASEDN}', 'CN=Schema,CN=Configuration,${WINDOWS_DC4_BASEDN}' ]:
+        cmd_contains("bin/samba-tool drs replicate ${HOSTNAME} ${WINDOWS_DC4} %s -k yes" % nc, ["was successful"])
+        cmd_contains("bin/samba-tool drs replicate ${WINDOWS_DC4} ${HOSTNAME} %s -k yes" % nc, ["was successful"])
+
     child.sendline("net use t: \\\\${HOSTNAME}.${WINDOWS_DC4_REALM}\\test")
     child.expect("The command completed successfully")
 
@@ -587,10 +647,10 @@ def test_vampire_w2k3():
     child.sendline("net user test3 /del")
     child.expect("The command completed successfully")
 
-    retry_cmd("bin/smbclient -L ${WINDOWS_DC1} -Utest2%${PASSWORD2} -k no", ['LOGON_FAILURE'])
+    retry_cmd("bin/smbclient -L ${WINDOWS_DC4} -Utest2%${PASSWORD2} -k no", ['LOGON_FAILURE'])
     retry_cmd("bin/smbclient -L ${HOSTNAME} -Utest2%${PASSWORD2} -k no", ['LOGON_FAILURE'])
-    retry_cmd("bin/smbclient -L ${WINDOWS_DC1} -Utest2%${PASSWORD2} -k yes", ['NT_STATUS_UNSUCCESSFUL'])
-    retry_cmd("bin/smbclient -L ${HOSTNAME} -Utest2%${PASSWORD2} -k yes", ['NT_STATUS_UNSUCCESSFUL'])
+    retry_cmd("bin/smbclient -L ${WINDOWS_DC4} -Utest2%${PASSWORD2} -k yes", ['LOGON_FAILURE'])
+    retry_cmd("bin/smbclient -L ${HOSTNAME} -Utest2%${PASSWORD2} -k yes", ['LOGON_FAILURE'])
     vm_poweroff("${WINDOWS_DC4_VM}")
 
 
