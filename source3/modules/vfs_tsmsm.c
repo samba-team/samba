@@ -161,7 +161,7 @@ static bool tsmsm_is_offline(struct vfs_handle_struct *handle,
 
         /* if the file has more than FILE_IS_ONLINE_RATIO of blocks available,
 	   then assume it is not offline (it may not be 100%, as it could be sparse) */
-	if (512 * (off_t)stbuf->st_ex_blocks >=
+	if (512 * stbuf->st_ex_blocks >=
 	    stbuf->st_ex_size * tsmd->online_ratio) {
 		DEBUG(10,("%s not offline: st_blocks=%llu st_size=%llu "
 			  "online_ratio=%.2f\n", path,
@@ -266,7 +266,7 @@ static bool tsmsm_aio_force(struct vfs_handle_struct *handle, struct files_struc
 		DEBUG(10,("tsmsm_aio_force st_blocks=%llu st_size=%llu "
 			  "online_ratio=%.2f\n", (unsigned long long)sbuf.st_ex_blocks,
 			  (unsigned long long)sbuf.st_ex_size, tsmd->online_ratio));
-		return !(512 * (off_t)sbuf.st_ex_blocks >=
+		return !(512 * sbuf.st_ex_blocks >=
 			 sbuf.st_ex_size * tsmd->online_ratio);
 	}
 	return false;
