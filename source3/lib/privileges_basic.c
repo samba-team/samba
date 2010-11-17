@@ -195,6 +195,15 @@ bool se_priv_equal( const SE_PRIV *mask1, const SE_PRIV *mask2 )
 }
 
 /***************************************************************************
+ check if 2 LUID's are equal.
+****************************************************************************/
+
+static bool luid_equal( const LUID *luid1, const LUID *luid2 )
+{
+	return ( luid1->low == luid2->low && luid1->high == luid2->high);
+}
+
+/***************************************************************************
  check if a SE_PRIV has any assigned privileges
 ****************************************************************************/
 
@@ -409,11 +418,8 @@ const char *luid_to_privilege_name(const LUID *set)
 {
 	int i;
 
-	if (set->high != 0)
-		return NULL;
-
 	for ( i=0; !se_priv_equal(&privs[i].se_priv, &se_priv_end); i++ ) {
-		if ( set->low == privs[i].luid.low ) {
+		if (luid_equal(set, &privs[i].luid)) {
 			return privs[i].name;
 		}
 	}
@@ -480,9 +486,13 @@ static bool luid_to_se_priv( struct lsa_LUID *luid, SE_PRIV *mask )
 {
 	int i;
 	uint32 num_privs = count_all_privileges();
+	LUID local_luid;
+
+	local_luid.low = luid->low;
+	local_luid.high = luid->high;
 
 	for ( i=0; i<num_privs; i++ ) {
-		if ( luid->low == privs[i].luid.low ) {
+		if (luid_equal(&local_luid, &privs[i].luid)) {
 			se_priv_copy( mask, &privs[i].se_priv );
 			return True;
 		}
@@ -502,12 +512,6 @@ bool privilege_set_to_se_priv( SE_PRIV *mask, struct lsa_PrivilegeSet *privset )
 
 	for ( i=0; i<privset->count; i++ ) {
 		SE_PRIV r;
-
-		/* sanity check for invalid privilege.  we really
-		   only care about the low 32 bits */
-
-		if ( privset->set[i].luid.high != 0 )
-			return False;
 
 		if ( luid_to_se_priv( &privset->set[i].luid, &r ) )
 			se_priv_add( mask, &r );
