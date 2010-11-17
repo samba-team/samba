@@ -230,8 +230,6 @@ struct dreplsrv_service {
 
 	bool rid_alloc_in_progress;
 
-	bool syncall_workaround;
-
 	bool am_rodc;
 };
 

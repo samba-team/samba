@@ -195,10 +195,6 @@ static void dreplsrv_notify_op_callback(struct tevent_req *subreq)
 			 op->source_dsa->repsFrom1->other_info->dns_name,
 			 ldb_dn_get_linearized(op->source_dsa->partition->dn),
 			 nt_errstr(status), win_errstr(werr)));
-		if (W_ERROR_EQUAL(werr, WERR_DS_DRA_NO_REPLICA)) {
-			DEBUG(0,("Enabling SYNC_ALL workaround\n"));
-			op->service->syncall_workaround = true;
-		}
 	} else {
 		DEBUG(2,("dreplsrv_notify: DsReplicaSync OK for %s\n",
 			 op->source_dsa->repsFrom1->other_info->dns_name));
