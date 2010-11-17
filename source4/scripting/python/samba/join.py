@@ -294,7 +294,12 @@ class dc_join:
         req2.first_object = first_object
 
         (level, ctr) = ctx.drsuapi.DsAddEntry(ctx.drsuapi_handle, 2, req2)
-
+        if ctr.err_ver != 1:
+            raise RuntimeError("expected err_ver 1, got %u" % ctr.err_ver)
+        if ctr.err_data.status != (0, 'WERR_OK'):
+            print("DsAddEntry failed with status %s info %s" % (ctr.err_data.status,
+                                                                ctr.err_data.info.extended_err))
+            raise RuntimeError("DsAddEntry failed")
 
     def join_add_objects(ctx):
         '''add the various objects needed for the join'''
