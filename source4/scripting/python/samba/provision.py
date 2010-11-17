@@ -1477,6 +1477,7 @@ def provision(setup_dir, logger, session_info,
     paths.bind_gid = bind_gid
 
     if hostip is None:
+        logger.info("Looking up IPv4 addresses")
         hostips = samba.interface_ips(lp, False)
         if len(hostips) == 0:
             logger.warning("No external IPv4 address has been found. Using loopback.")
@@ -1488,6 +1489,7 @@ def provision(setup_dir, logger, session_info,
 
     if hostip6 is None:
         try:
+            logger.info("Looking up IPv6 address for %s" % names.hostname)
             for ip in socket.getaddrinfo(names.hostname, None, socket.AF_INET6, socket.AI_CANONNAME, socket.IPPROTO_IP):
                 if hostip6 is None:
                     hostip6 = ip[-1][0]
