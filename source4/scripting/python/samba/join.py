@@ -343,7 +343,7 @@ class dc_join:
             "systemFlags" : str(samba.dsdb.SYSTEM_FLAG_DISALLOW_MOVE_ON_DELETE),
             "dMDLocation" : ctx.schema_dn}
 
-        if ctx.behavior_version >= samba.dsdb.DS_DOMAIN_FUNCTION_2008:
+        if ctx.behavior_version >= samba.dsdb.DS_DOMAIN_FUNCTION_2003:
             rec["msDS-Behavior-Version"] = str(ctx.behavior_version)
 
         if ctx.behavior_version >= samba.dsdb.DS_DOMAIN_FUNCTION_2003:
