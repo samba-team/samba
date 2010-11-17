@@ -263,6 +263,10 @@ send_error_token(OM_uint32 *minor_status,
     krb5_principal ap_req_server = NULL;
     krb5_error_code ret;
     krb5_data outbuf;
+    /* this e_data value encodes KERB_AP_ERR_TYPE_SKEW_RECOVERY which
+       tells windows to try again with the corrected timestamp. See
+       [MS-KILE] 2.2.1 KERB-ERROR-DATA */
+    krb5_data e_data = { 7, rk_UNCONST("\x30\x05\xa1\x03\x02\x01\x02") };
 
     /* build server from request if the acceptor had not selected one */
     if (server == NULL) {
@@ -285,7 +289,7 @@ send_error_token(OM_uint32 *minor_status,
 	server = ap_req_server;
     }
 
-    ret = krb5_mk_error(context, kret, NULL, NULL, NULL,
+    ret = krb5_mk_error(context, kret, NULL, &e_data, NULL,
 			server, NULL, NULL, &outbuf);
     if (ap_req_server)
 	krb5_free_principal(context, ap_req_server);
