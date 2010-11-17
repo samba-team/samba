@@ -1458,6 +1458,9 @@ static bool handle_realm(struct loadparm_context *lp_ctx,
 {
 	string_set(lp_ctx, ptr, pszParmValue);
 
+	talloc_free(lp_ctx->globals->szRealm_upper);
+	talloc_free(lp_ctx->globals->szRealm_lower);
+
 	lp_ctx->globals->szRealm_upper = strupper_talloc(lp_ctx, pszParmValue);
 	lp_ctx->globals->szRealm_lower = strlower_talloc(lp_ctx, pszParmValue);
 
