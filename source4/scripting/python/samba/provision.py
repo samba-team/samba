@@ -595,9 +595,7 @@ def make_smbconf(smbconf, setup_path, hostname, domain, realm, serverrole,
             privdir = os.path.join(targetdir, "private")
         else:
             privdir = lp.get("private dir")
-        posixeadb_line = "posix:eadb = " + os.path.abspath(os.path.join(privdir, "eadb.tdb"))
-    else:
-        posixeadb_line = ""
+        lp.set("posix:eadb", os.path.abspath(os.path.join(privdir, "eadb.tdb")))
 
     if targetdir is not None:
         privatedir_line = "private dir = " + os.path.abspath(os.path.join(targetdir, "private"))
@@ -634,8 +632,7 @@ def make_smbconf(smbconf, setup_path, hostname, domain, realm, serverrole,
             "SETUPDIRECTORY_LINE": setupdir_line,
             "SIDGENERATOR_LINE": sid_generator_line,
             "PRIVATEDIR_LINE": privatedir_line,
-            "LOCKDIR_LINE": lockdir_line,
-            "POSIXEADB_LINE": posixeadb_line
+            "LOCKDIR_LINE": lockdir_line
             })
 
     # reload the smb.conf
