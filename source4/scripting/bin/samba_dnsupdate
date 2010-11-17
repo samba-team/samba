@@ -259,11 +259,13 @@ def call_nsupdate(d):
     try:
         cmd = "%s %s" % (nsupdate_cmd, tmpfile)
         subprocess.check_call(cmd, shell=True)
-    except subprocess.CalledProcessError:
+    except Exception, estr:
         global error_count
         if opts.fail_immediately:
             sys.exit(1)
         error_count = error_count + 1
+        if opts.verbose:
+            print("Failed nsupdate: %s : %s" % (str(d), estr))
     os.unlink(tmpfile)
 
 
@@ -403,4 +405,6 @@ for d in update_list:
 if ccachename is not None:
     os.unlink(ccachename)
 
+if error_count != 0:
+    print("Failed update of %u entries" % error_count)
 sys.exit(error_count)
