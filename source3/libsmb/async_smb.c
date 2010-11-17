@@ -848,6 +848,8 @@ static NTSTATUS validate_smb_crypto(struct cli_state *cli, char *pdu)
 
 	if (!cli_check_sign_mac(cli, pdu)) {
 		DEBUG(10, ("cli_check_sign_mac failed\n"));
+		close(cli->fd);
+		cli->fd = -1;
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
