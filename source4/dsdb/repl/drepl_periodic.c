@@ -116,5 +116,21 @@ static void dreplsrv_periodic_run(struct dreplsrv_service *service)
 	dreplsrv_ridalloc_check_rid_pool(service);
 
 	dreplsrv_run_pending_ops(service);
-	dreplsrv_notify_run_ops(service);
+}
+
+/*
+  run the next pending op, either a notify or a pull
+ */
+void dreplsrv_run_pending_ops(struct dreplsrv_service *s)
+{
+	if (!s->ops.notifies && !s->ops.pending) {
+		return;
+	}
+	if (!s->ops.notifies ||
+	    (s->ops.pending &&
+	     s->ops.notifies->schedule_time > s->ops.pending->schedule_time)) {
+		dreplsrv_run_pull_ops(s);
+	} else {
+		dreplsrv_notify_run_ops(s);
+	}
 }

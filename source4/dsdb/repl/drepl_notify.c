@@ -228,7 +228,7 @@ static void dreplsrv_notify_op_callback(struct tevent_req *subreq)
 
 	talloc_free(op);
 	s->ops.n_current = NULL;
-	dreplsrv_notify_run_ops(s);
+	dreplsrv_run_pending_ops(s);
 }
 
 /*
@@ -343,6 +343,7 @@ static WERROR dreplsrv_schedule_notify_sync(struct dreplsrv_service *service,
 	op->uSN           = uSN;
 	op->is_urgent	  = is_urgent;
 	op->replica_flags = replica_flags;
+	op->schedule_time = time(NULL);
 
 	DLIST_ADD_END(service->ops.notifies, op, struct dreplsrv_notify_operation *);
 	talloc_steal(service, op);
@@ -499,5 +500,4 @@ static void dreplsrv_notify_run(struct dreplsrv_service *service)
 	talloc_free(mem_ctx);
 
 	dreplsrv_run_pending_ops(service);
-	dreplsrv_notify_run_ops(service);
 }

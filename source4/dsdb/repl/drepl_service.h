@@ -119,6 +119,7 @@ typedef void (*dreplsrv_extended_callback_t)(struct dreplsrv_service *,
 
 struct dreplsrv_out_operation {
 	struct dreplsrv_out_operation *prev, *next;
+	time_t schedule_time;
 
 	struct dreplsrv_service *service;
 
@@ -133,6 +134,7 @@ struct dreplsrv_out_operation {
 
 struct dreplsrv_notify_operation {
 	struct dreplsrv_notify_operation *prev, *next;
+	time_t schedule_time;
 
 	struct dreplsrv_service *service;
 	uint64_t uSN;

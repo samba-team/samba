@@ -52,6 +52,7 @@ WERROR dreplsrv_schedule_partition_pull_source(struct dreplsrv_service *s,
 	op->fsmo_info   = fsmo_info;
 	op->callback    = callback;
 	op->cb_data	= cb_data;
+	op->schedule_time = time(NULL);
 
 	DLIST_ADD_END(s->ops.pending, op, struct dreplsrv_out_operation *);
 
@@ -126,17 +127,16 @@ done:
 	talloc_free(op);
 	s->ops.current = NULL;
 	dreplsrv_run_pending_ops(s);
-	dreplsrv_notify_run_ops(s);
 }
 
-void dreplsrv_run_pending_ops(struct dreplsrv_service *s)
+void dreplsrv_run_pull_ops(struct dreplsrv_service *s)
 {
 	struct dreplsrv_out_operation *op;
 	time_t t;
 	NTTIME now;
 	struct tevent_req *subreq;
 
-	if (s->ops.current || s->ops.n_current) {
+	if (s->ops.current) {
 		/* if there's still one running, we're done */
 		return;
 	}
