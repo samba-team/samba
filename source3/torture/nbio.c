@@ -290,7 +290,9 @@ static NTSTATUS delete_fn(const char *mnt, struct file_info *finfo,
 {
 	NTSTATUS status;
 	char *s, *n;
-	if (finfo->name[0] == '.') return;
+	if (finfo->name[0] == '.') {
+		return NT_STATUS_OK;
+	}
 
 	n = SMB_STRDUP(name);
 	n[strlen(n)-1] = 0;
