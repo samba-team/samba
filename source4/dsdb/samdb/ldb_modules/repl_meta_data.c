@@ -3547,11 +3547,6 @@ static int replmd_replicated_uptodate_modify(struct replmd_replicated_request *a
 	ZERO_STRUCT(nrf);
 	nrf.version					= 1;
 	nrf.ctr.ctr1					= *ar->objs->source_dsa;
-	/* and fix some values... */
-	nrf.ctr.ctr1.consecutive_sync_failures		= 0;
-	nrf.ctr.ctr1.last_success			= now;
-	nrf.ctr.ctr1.last_attempt			= now;
-	nrf.ctr.ctr1.result_last_attempt		= WERR_OK;
 	nrf.ctr.ctr1.highwatermark.highest_usn		= nrf.ctr.ctr1.highwatermark.tmp_highest_usn;
 
 	/*

@@ -34,6 +34,60 @@
 #include "libcli/composite/composite.h"
 #include "libcli/security/security.h"
 
+/*
+  update repsFrom/repsTo error information
+ */
+void drepl_reps_update(struct dreplsrv_service *s, const char *reps_attr,
+		       struct ldb_dn *dn,
+		       struct GUID *source_dsa_obj_guid, WERROR status)
+{
+	struct repsFromToBlob *reps;
+	uint32_t count, i;
+	WERROR werr;
+	TALLOC_CTX *tmp_ctx = talloc_new(s);
+	time_t t;
+	NTTIME now;
+
+	t = time(NULL);
+	unix_to_nt_time(&now, t);
+
+	werr = dsdb_loadreps(s->samdb, tmp_ctx, dn, reps_attr, &reps, &count);
+	if (!W_ERROR_IS_OK(werr)) {
+		talloc_free(tmp_ctx);
+		return;
+	}
+
+	for (i=0; i<count; i++) {
+		if (GUID_compare(source_dsa_obj_guid,
+				 &reps[i].ctr.ctr1.source_dsa_obj_guid) == 0) {
+			break;
+		}
+	}
+
+	if (i == count) {
+		/* no record to update */
+		talloc_free(tmp_ctx);
+		return;
+	}
+
+	/* only update the status fields */
+	reps[i].ctr.ctr1.last_attempt = now;
+	reps[i].ctr.ctr1.result_last_attempt = status;
+	if (W_ERROR_IS_OK(status)) {
+		reps[i].ctr.ctr1.last_success = now;
+		reps[i].ctr.ctr1.consecutive_sync_failures = 0;
+	} else {
+		reps[i].ctr.ctr1.consecutive_sync_failures++;
+	}
+
+	werr = dsdb_savereps(s->samdb, tmp_ctx, dn, reps_attr, reps, count);
+	if (!W_ERROR_IS_OK(werr)) {
+		DEBUG(2,("drepl_reps_update: Failed to save %s for %s: %s\n",
+			 reps_attr, ldb_dn_get_linearized(dn), win_errstr(werr)));
+	}
+	talloc_free(tmp_ctx);
+}
+
 WERROR dreplsrv_schedule_partition_pull_source(struct dreplsrv_service *s,
 					       struct dreplsrv_partition_source_dsa *source,
 					       enum drsuapi_DsExtendedOperation extended_op,
@@ -96,33 +150,21 @@ static void dreplsrv_pending_op_callback(struct tevent_req *subreq)
 					    struct dreplsrv_out_operation);
 	struct repsFromTo1 *rf = op->source_dsa->repsFrom1;
 	struct dreplsrv_service *s = op->service;
-	time_t t;
-	NTTIME now;
+	WERROR werr;
 
-	t = time(NULL);
-	unix_to_nt_time(&now, t);
-
-	rf->result_last_attempt = dreplsrv_op_pull_source_recv(subreq);
+	werr = dreplsrv_op_pull_source_recv(subreq);
 	TALLOC_FREE(subreq);
-	if (W_ERROR_IS_OK(rf->result_last_attempt)) {
-		rf->consecutive_sync_failures	= 0;
-		rf->last_success		= now;
-		DEBUG(3,("dreplsrv_op_pull_source(%s)\n",
-			win_errstr(rf->result_last_attempt)));
-		goto done;
+
+	DEBUG(4,("dreplsrv_op_pull_source(%s) for %s\n", win_errstr(werr),
+		 ldb_dn_get_linearized(op->source_dsa->partition->dn)));
+
+	if (op->extended_op == DRSUAPI_EXOP_NONE) {
+		drepl_reps_update(s, "repsFrom", op->source_dsa->partition->dn,
+				  &rf->source_dsa_obj_guid, werr);
 	}
 
-	rf->consecutive_sync_failures++;
-
-	DEBUG(1,("dreplsrv_op_pull_source(%s/%s) for %s failures[%u]\n",
-		 win_errstr(rf->result_last_attempt),
-		 nt_errstr(werror_to_ntstatus(rf->result_last_attempt)),
-		 ldb_dn_get_linearized(op->source_dsa->partition->dn),
-		 rf->consecutive_sync_failures));
-
-done:
 	if (op->callback) {
-		op->callback(s, rf->result_last_attempt, op->extended_ret, op->cb_data);
+		op->callback(s, werr, op->extended_ret, op->cb_data);
 	}
 	talloc_free(op);
 	s->ops.current = NULL;
@@ -159,8 +201,10 @@ void dreplsrv_run_pull_ops(struct dreplsrv_service *s)
 	if (!subreq) {
 		struct repsFromTo1 *rf = op->source_dsa->repsFrom1;
 
-		rf->result_last_attempt = WERR_NOMEM;
-		rf->consecutive_sync_failures++;
+		if (op->extended_op == DRSUAPI_EXOP_NONE) {
+			drepl_reps_update(s, "repsFrom", op->source_dsa->partition->dn,
+					  &rf->source_dsa_obj_guid, WERR_NOMEM);
+		}
 		s->ops.current = NULL;
 
 		/*
@@ -168,13 +212,8 @@ void dreplsrv_run_pull_ops(struct dreplsrv_service *s)
 		 * to do its job just like in any other failure situation
 		 */
 		if (op->callback) {
-			op->callback(s, rf->result_last_attempt, op->extended_ret, op->cb_data);
+			op->callback(s, WERR_NOMEM, op->extended_ret, op->cb_data);
 		}
-
-		DEBUG(1,("dreplsrv_op_pull_source(%s/%s) failures[%u]\n",
-			win_errstr(rf->result_last_attempt),
-			nt_errstr(werror_to_ntstatus(rf->result_last_attempt)),
-			rf->consecutive_sync_failures));
 		return;
 	}
 	tevent_req_set_callback(subreq, dreplsrv_pending_op_callback, op);

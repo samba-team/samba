@@ -120,10 +120,6 @@ static void dreplsrv_op_notify_replica_sync_trigger(struct tevent_req *req)
 		DRSUAPI_DRS_ASYNC_OP |
 		DRSUAPI_DRS_UPDATE_NOTIFICATION |
 		DRSUAPI_DRS_WRIT_REP;
-	if (state->op->service->syncall_workaround) {
-		DEBUG(3,("sending DsReplicaSync with SYNC_ALL workaround\n"));
-		r->in.req->req1.options |= DRSUAPI_DRS_SYNC_ALL;
-	}
 
 	if (state->op->is_urgent) {
 		r->in.req->req1.options |= DRSUAPI_DRS_SYNC_URGENT;
@@ -189,30 +185,13 @@ static void dreplsrv_notify_op_callback(struct tevent_req *subreq)
 		struct dreplsrv_notify_operation);
 	NTSTATUS status;
 	struct dreplsrv_service *s = op->service;
+	WERROR werr;
 
 	status = dreplsrv_op_notify_recv(subreq);
+	werr = ntstatus_to_werror(status);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
-		WERROR werr;
-		unsigned int msg_debug_level = 0;
-		werr = ntstatus_to_werror(status);
-		if (W_ERROR_EQUAL(werr, WERR_BADFILE)) {
-			/*
-			 * TODO:
-			 *
-			 * we should better fix the bug regarding
-			 * non-linked attribute handling, instead
-			 * of just hiding the failures.
-			 *
-			 * we should also remove the dc from our repsTo
-			 * if it failed to often, instead of retrying
-			 * every few seconds
-			 */
-			msg_debug_level = 2;
-		}
-
-		DEBUG(msg_debug_level,
-			("dreplsrv_notify: Failed to send DsReplicaSync to %s for %s - %s : %s\n",
+		DEBUG(4,("dreplsrv_notify: Failed to send DsReplicaSync to %s for %s - %s : %s\n",
 			 op->source_dsa->repsFrom1->other_info->dns_name,
 			 ldb_dn_get_linearized(op->source_dsa->partition->dn),
 			 nt_errstr(status), win_errstr(werr)));
@@ -225,6 +204,10 @@ static void dreplsrv_notify_op_callback(struct tevent_req *subreq)
 			 op->source_dsa->repsFrom1->other_info->dns_name));
 		op->source_dsa->notify_uSN = op->uSN;
 	}
+
+	drepl_reps_update(s, "repsTo", op->source_dsa->partition->dn,
+			  &op->source_dsa->repsFrom1->source_dsa_obj_guid,
+			  werr);
 
 	talloc_free(op);
 	s->ops.n_current = NULL;
