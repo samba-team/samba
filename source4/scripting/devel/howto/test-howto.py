@@ -107,6 +107,7 @@ def pexpect_spawn(cmd, timeout=60):
     '''wrapper around pexpect spawn'''
 
     cmd = substitute(cmd)
+    print("$ " + cmd)
     ret = pexpect.spawn(cmd, logfile=sys.stdout, timeout=timeout)
 
     def sendline_sub(line):
@@ -296,11 +297,13 @@ def test_win7():
     child.expect("C:")
     child.sendline("net use t: \\\\${HOSTNAME}.${LCREALM}\\test")
     child.expect("The command completed successfully")
+    vm_poweroff("${WINDOWS7_VM}")
+
 
 def join_w2k8():
     print("Joining a w2k8 box to the domain as a DC")
-    vm_poweroff("${WINDOWS_DC1}", checkfail=False)
-    vm_restore("${WINDOWS_DC1}", "${WINDOWS_DC1_SNAPSHOT}")
+    vm_poweroff("${WINDOWS_DC1_VM}", checkfail=False)
+    vm_restore("${WINDOWS_DC1_VM}", "${WINDOWS_DC1_SNAPSHOT}")
     ping_wait("${WINDOWS_DC1}")
     port_wait("${WINDOWS_DC1}", 23)
     child = pexpect_spawn("telnet ${WINDOWS_DC1} -l administrator")
@@ -380,7 +383,7 @@ def test_w2k8():
     retry_cmd("bin/smbclient -L ${HOSTNAME} -Utest3%${PASSWORD3} -k yes", ['Sharename', 'IPC'])
 
     print("Checking propogation of user deletion")
-    run_cmd('bin/samba-tool user delete test2')
+    run_cmd('bin/samba-tool user delete test2 -Uadministrator@${LCREALM}%${PASSWORD1}')
     child.sendline("net user test3 /del")
     child.expect("The command completed successfully")
 
@@ -388,12 +391,13 @@ def test_w2k8():
     retry_cmd("bin/smbclient -L ${HOSTNAME} -Utest3%${PASSWORD3} -k no", ['LOGON_FAILURE'])
     retry_cmd("bin/smbclient -L ${WINDOWS_DC1} -Utest2%${PASSWORD2} -k yes", ['NT_STATUS_UNSUCCESSFUL'])
     retry_cmd("bin/smbclient -L ${HOSTNAME} -Utest3%${PASSWORD3} -k yes", ['NT_STATUS_UNSUCCESSFUL'])
+    vm_poweroff("${WINDOWS_DC1_VM}")
 
 
 def join_w2k8_rodc():
     print("Joining a w2k8 box to the domain as a RODC")
-    vm_poweroff("${WINDOWS_DC2}", checkfail=False)
-    vm_restore("${WINDOWS_DC2}", "${WINDOWS_DC2_SNAPSHOT}")
+    vm_poweroff("${WINDOWS_DC2_VM}", checkfail=False)
+    vm_restore("${WINDOWS_DC2_VM}", "${WINDOWS_DC2_SNAPSHOT}")
     ping_wait("${WINDOWS_DC2}")
     port_wait("${WINDOWS_DC2}", 23)
     child = pexpect_spawn("telnet ${WINDOWS_DC2} -l administrator")
@@ -467,42 +471,45 @@ def test_w2k8_rodc():
     run_cmd('bin/samba-tool newuser test2 ${PASSWORD2}')
     retry_cmd("bin/smbclient -L ${WINDOWS_DC2} -Utest2%${PASSWORD2} -k no", ['Sharename', 'Remote IPC'])
     retry_cmd("bin/smbclient -L ${WINDOWS_DC2} -Utest2%${PASSWORD2} -k yes", ['Sharename', 'Remote IPC'])
-    run_cmd('bin/samba-tool user delete test2')
+    run_cmd('bin/samba-tool user delete test2 -Uadministrator@${LCREALM}%${PASSWORD1}')
     retry_cmd("bin/smbclient -L ${WINDOWS_DC2} -Utest2%${PASSWORD2}", ['LOGON_FAILURE'])
+    vm_poweroff("${WINDOWS_DC2_VM}")
+
 
 def vampire_w2k8():
     print("Joining w2k8 as a second DC")
     chdir('${PREFIX}')
-    vm_poweroff("${WINDOWS_DC3}", checkfail=False)
-    vm_restore("${WINDOWS_DC3}", "${WINDOWS_DC3_SNAPSHOT}")
+    run_cmd('killall -9 -q samba smbd nmbd winbindd', checkfail=False)
+    vm_poweroff("${WINDOWS_DC3_VM}", checkfail=False)
+    vm_restore("${WINDOWS_DC3_VM}", "${WINDOWS_DC3_SNAPSHOT}")
     run_cmd('${RNDC} flush')
     run_cmd("rm -rf etc private")
-    retry_cmd("bin/samba-tool drs showrepl ${WINDOWS_DC3} -Uadministrator%${WINDOWS_DC3_PASS}", )
-    run_cmd('bin/samba-tool join ${LCREALM_WINDOWS} DC -Uadministrator%${WINDOWS_DC3_PASS}')
-    run_cmd('bin/samba-tool drs kcc ${WINDOWS_DC3} -Uadministrator@${LCREALM_WINDOWS}%${WINDOWS_DC3_PASS}')
+    retry_cmd("bin/samba-tool drs showrepl ${WINDOWS_DC3} -Uadministrator%${WINDOWS_DC3_PASS}", ['INBOUND NEIGHBORS'] )
+    run_cmd('bin/samba-tool join ${WINDOWS_DC3_REALM} DC -Uadministrator%${WINDOWS_DC3_PASS}')
+    run_cmd('bin/samba-tool drs kcc ${WINDOWS_DC3} -Uadministrator@${WINDOWS_DC3_REALM}%${WINDOWS_DC3_PASS}')
 
 
 def test_vampire():
     print("Checking the DC join is OK")
     chdir('${PREFIX}')
-    retry_cmd('bin/smbclient -L blu.${LCREALM_WINDOWS} -Uadministrator@${LCREALM_WINDOWS}%${WINDOWS_DC3_PASS}', ["C$", "IPC$", "Sharename"])
-    cmd_contains("host -t A blu.${LCREALM_WINDOWS}.", ['has address'])
+    retry_cmd('bin/smbclient -L ${HOSTNAME}.${WINDOWS_DC3_REALM} -Uadministrator@${WINDOWS_DC3_REALM}%${WINDOWS_DC3_PASS}', ["C$", "IPC$", "Sharename"])
+    cmd_contains("host -t A ${HOSTNAME}.${WINDOWS_DC3_REALM}.", ['has address'])
     port_wait("${WINDOWS_DC3}", 23)
-    child = pexpect_spawn("telnet ${WINDOWS_DC3} -l 'v2\\administrator'")
+    child = pexpect_spawn("telnet ${WINDOWS_DC3} -l '${WINDOWS_DC3_DOMAIN}\\administrator'")
     child.expect("Welcome to Microsoft Telnet Service")
     child.expect("password:")
     child.sendline("${WINDOWS_DC3_PASS}")
     child.expect("C:")
-    child.sendline("net use t: \\\\${HOSTNAME}.${LCREALM_WINDOWS}\\test")
+    child.sendline("net use t: \\\\${HOSTNAME}.${WINDOWS_DC3_REALM}\\test")
     child.expect("The command completed successfully")
 
     print("Checking if showrepl is happy")
     child.sendline("repadmin /showrepl")
-    child.expect("DC=v2,DC=tridgell,DC=net")
+    child.expect("${WINDOWS_DC3_BASEDN}")
     child.expect("was successful")
-    child.expect("CN=Configuration,DC=v2,DC=tridgell,DC=net")
+    child.expect("CN=Configuration,${WINDOWS_DC3_BASEDN}")
     child.expect("was successful")
-    child.expect("CN=Schema,CN=Configuration,DC=v2,DC=tridgell,DC=net")
+    child.expect("CN=Schema,CN=Configuration,${WINDOWS_DC3_BASEDN}")
     child.expect("was successful")
 
     print("Checking if new users propogate to windows")
@@ -517,7 +524,7 @@ def test_vampire():
     retry_cmd("bin/smbclient -L ${HOSTNAME} -Utest2%${PASSWORD2} -k yes", ['Sharename', 'IPC'])
 
     print("Checking propogation of user deletion")
-    run_cmd('bin/samba-tool user delete test2')
+    run_cmd('bin/samba-tool user delete test2 -Uadministrator@${WINDOWS_DC3_REALM}%${WINDOWS_DC3_PASS}')
     child.sendline("net user test3 /del")
     child.expect("The command completed successfully")
 
@@ -525,6 +532,66 @@ def test_vampire():
     retry_cmd("bin/smbclient -L ${HOSTNAME} -Utest2%${PASSWORD2} -k no", ['LOGON_FAILURE'])
     retry_cmd("bin/smbclient -L ${WINDOWS_DC1} -Utest2%${PASSWORD2} -k yes", ['NT_STATUS_UNSUCCESSFUL'])
     retry_cmd("bin/smbclient -L ${HOSTNAME} -Utest2%${PASSWORD2} -k yes", ['NT_STATUS_UNSUCCESSFUL'])
+    vm_poweroff("${WINDOWS_DC3_VM}")
+
+
+def vampire_w2k3():
+    print("Joining w2k3 as a second DC")
+    chdir('${PREFIX}')
+    run_cmd('killall -9 -q samba smbd nmbd winbindd', checkfail=False)
+    vm_poweroff("${WINDOWS_DC4_VM}", checkfail=False)
+    vm_restore("${WINDOWS_DC4_VM}", "${WINDOWS_DC4_SNAPSHOT}")
+    run_cmd('${RNDC} flush')
+    run_cmd("rm -rf etc private")
+    retry_cmd("bin/samba-tool drs showrepl ${WINDOWS_DC4} -Uadministrator%${WINDOWS_DC4_PASS}", ['INBOUND NEIGHBORS'] )
+    run_cmd('bin/samba-tool join ${WINDOWS_DC4_REALM} DC -Uadministrator%${WINDOWS_DC4_PASS} -d1')
+    run_cmd('bin/samba-tool drs kcc ${WINDOWS_DC4} -Uadministrator@${WINDOWS_DC4_REALM}%${WINDOWS_DC4_PASS}')
+
+
+def test_vampire_w2k3():
+    print("Checking the DC join is OK")
+    chdir('${PREFIX}')
+    retry_cmd('bin/smbclient -L ${HOSTNAME}.${WINDOWS_DC4_REALM} -Uadministrator@${WINDOWS_DC4_REALM}%${WINDOWS_DC4_PASS}', ["C$", "IPC$", "Sharename"])
+    cmd_contains("host -t A ${HOSTNAME}.${WINDOWS_DC4_REALM}.", ['has address'])
+    port_wait("${WINDOWS_DC4}", 23)
+    child = pexpect_spawn("telnet ${WINDOWS_DC4} -l '${WINDOWS_DC4_DOMAIN}\\administrator'")
+    child.expect("Welcome to Microsoft Telnet Service")
+    child.expect("password:")
+    child.sendline("${WINDOWS_DC4_PASS}")
+    child.expect("C:")
+    child.sendline("net use t: \\\\${HOSTNAME}.${WINDOWS_DC4_REALM}\\test")
+    child.expect("The command completed successfully")
+
+    print("Checking if showrepl is happy")
+    child.sendline("repadmin /showrepl")
+    child.expect("${WINDOWS_DC4_BASEDN}")
+    child.expect("was successful")
+    child.expect("CN=Configuration,${WINDOWS_DC4_BASEDN}")
+    child.expect("was successful")
+    child.expect("CN=Schema,CN=Configuration,${WINDOWS_DC4_BASEDN}")
+    child.expect("was successful")
+
+    print("Checking if new users propogate to windows")
+    run_cmd('bin/samba-tool newuser test2 ${PASSWORD2}')
+    retry_cmd("bin/smbclient -L ${WINDOWS_DC4} -Utest2%${PASSWORD2} -k no", ['Sharename', 'Remote IPC'])
+    retry_cmd("bin/smbclient -L ${WINDOWS_DC4} -Utest2%${PASSWORD2} -k yes", ['Sharename', 'Remote IPC'])
+
+    print("Checking if new users on windows propogate to samba")
+    child.sendline("net user test3 ${PASSWORD3} /add")
+    child.expect("The command completed successfully")
+    retry_cmd("bin/smbclient -L ${HOSTNAME} -Utest2%${PASSWORD2} -k no", ['Sharename', 'IPC'])
+    retry_cmd("bin/smbclient -L ${HOSTNAME} -Utest2%${PASSWORD2} -k yes", ['Sharename', 'IPC'])
+
+    print("Checking propogation of user deletion")
+    run_cmd('bin/samba-tool user delete test2 -Uadministrator@${WINDOWS_DC4_REALM}%${WINDOWS_DC4_PASS}')
+    child.sendline("net user test3 /del")
+    child.expect("The command completed successfully")
+
+    retry_cmd("bin/smbclient -L ${WINDOWS_DC1} -Utest2%${PASSWORD2} -k no", ['LOGON_FAILURE'])
+    retry_cmd("bin/smbclient -L ${HOSTNAME} -Utest2%${PASSWORD2} -k no", ['LOGON_FAILURE'])
+    retry_cmd("bin/smbclient -L ${WINDOWS_DC1} -Utest2%${PASSWORD2} -k yes", ['NT_STATUS_UNSUCCESSFUL'])
+    retry_cmd("bin/smbclient -L ${HOSTNAME} -Utest2%${PASSWORD2} -k yes", ['NT_STATUS_UNSUCCESSFUL'])
+    vm_poweroff("${WINDOWS_DC4_VM}")
 
 
 
@@ -548,10 +615,13 @@ restart_bind()
 test_dns()
 test_kerberos()
 test_dyndns()
+
 join_win7()
 test_win7()
+
 join_w2k8_rodc()
 test_w2k8_rodc()
+
 join_w2k8()
 test_w2k8()
 
@@ -560,5 +630,11 @@ create_shares()
 start_s4('${PREFIX}', interfaces='${INTERFACES}')
 test_dyndns()
 test_vampire()
+
+vampire_w2k3()
+create_shares()
+start_s4('${PREFIX}', interfaces='${INTERFACES}')
+test_dyndns()
+test_vampire_w2k3()
 
 print("All OK")
