@@ -27,6 +27,7 @@ from ldb import Message, MessageElement, Dn
 from ldb import FLAG_MOD_ADD, FLAG_MOD_REPLACE, FLAG_MOD_DELETE
 from ldb import timestring
 from samba import Ldb
+from samba.samdb import SamDB
 from samba.dsdb import (UF_NORMAL_ACCOUNT,
     UF_WORKSTATION_TRUST_ACCOUNT,
     UF_PASSWD_NOTREQD, UF_ACCOUNTDISABLE, ATYPE_NORMAL_ACCOUNT,
@@ -66,12 +67,6 @@ class BasicTests(unittest.TestCase):
         except LdbError, (num, _):
             self.assertEquals(num, ERR_NO_SUCH_OBJECT)
 
-    def find_basedn(self, ldb):
-        res = ldb.search(base="", expression="", scope=SCOPE_BASE,
-                         attrs=["defaultNamingContext"])
-        self.assertEquals(len(res), 1)
-        return res[0]["defaultNamingContext"][0]
-
     def find_configurationdn(self, ldb):
         res = ldb.search(base="", expression="", scope=SCOPE_BASE, attrs=["configurationNamingContext"])
         self.assertEquals(len(res), 1)
@@ -101,7 +96,7 @@ class BasicTests(unittest.TestCase):
         super(BasicTests, self).setUp()
         self.ldb = ldb
         self.gc_ldb = gc_ldb
-        self.base_dn = self.find_basedn(ldb)
+        self.base_dn = ldb.domain_dn()
         self.configuration_dn = self.find_configurationdn(ldb)
         self.schema_dn = self.find_schemadn(ldb)
         self.domain_sid = self.find_domain_sid()
@@ -2638,7 +2633,7 @@ if not "://" in host:
     else:
         host = "ldap://%s" % host
 
-ldb = Ldb(host, credentials=creds, session_info=system_session(), lp=lp)
+ldb = SamDB(host, credentials=creds, session_info=system_session(), lp=lp)
 if not "tdb://" in host:
     gc_ldb = Ldb("%s:3268" % host, credentials=creds,
                  session_info=system_session(), lp=lp)

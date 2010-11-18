@@ -16,7 +16,7 @@ from samba.auth import system_session
 from ldb import SCOPE_BASE, LdbError
 from ldb import ERR_NO_SUCH_OBJECT, ERR_NOT_ALLOWED_ON_NON_LEAF
 from ldb import ERR_UNWILLING_TO_PERFORM
-from samba import Ldb
+from samba.samdb import SamDB
 
 from subunit.run import SubunitTestRunner
 import unittest
@@ -50,12 +50,6 @@ class BasicDeleteTests(unittest.TestCase):
     def GUID_string(self, guid):
         return self.ldb.schema_format_value("objectGUID", guid)
 
-    def find_basedn(self, ldb):
-        res = ldb.search(base="", expression="", scope=SCOPE_BASE,
-                         attrs=["defaultNamingContext"])
-        self.assertEquals(len(res), 1)
-        return res[0]["defaultNamingContext"][0]
-
     def find_configurationdn(self, ldb):
         res = ldb.search(base="", expression="", scope=SCOPE_BASE,
                          attrs=["configurationNamingContext"])
@@ -64,7 +58,7 @@ class BasicDeleteTests(unittest.TestCase):
 
     def setUp(self):
         self.ldb = ldb
-        self.base_dn = self.find_basedn(ldb)
+        self.base_dn = ldb.domain_dn()
         self.configuration_dn = self.find_configurationdn(ldb)
 
     def search_guid(self, guid):
@@ -395,7 +389,7 @@ if not "://" in host:
     else:
         host = "ldap://%s" % host
 
-ldb = Ldb(host, credentials=creds, session_info=system_session(), lp=lp)
+ldb = SamDB(host, credentials=creds, session_info=system_session(), lp=lp)
 
 runner = SubunitTestRunner()
 rc = 0

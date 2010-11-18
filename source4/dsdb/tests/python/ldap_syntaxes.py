@@ -61,12 +61,6 @@ class SyntaxTests(unittest.TestCase):
         self.assertEquals(len(res), 1)
         return res[0]["schemaNamingContext"][0]
 
-    def find_basedn(self, ldb):
-        res = ldb.search(base="", expression="", scope=SCOPE_BASE,
-                         attrs=["defaultNamingContext"])
-        self.assertEquals(len(res), 1)
-        return res[0]["defaultNamingContext"][0]
-
     def _find_domain_sid(self):
         res = self.ldb.search(base=self.base_dn, expression="(objectClass=*)", scope=SCOPE_BASE)
         return ndr_unpack( security.dom_sid,res[0]["objectSid"][0])
@@ -74,8 +68,8 @@ class SyntaxTests(unittest.TestCase):
     def setUp(self):
         super(SyntaxTests, self).setUp()
         self.ldb = ldb
+        self.base_dn = ldb.domain_dn()
         self.schema_dn = self.find_schemadn(ldb)
-        self.base_dn = self.find_basedn(ldb)
         self._setup_dn_string_test()
         self._setup_dn_binary_test()
         self.domain_sid = self._find_domain_sid()

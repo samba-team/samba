@@ -23,7 +23,7 @@ from ldb import ERR_CONSTRAINT_VIOLATION
 from ldb import ERR_UNDEFINED_ATTRIBUTE_TYPE
 from ldb import Message, MessageElement, Dn
 from ldb import FLAG_MOD_ADD, FLAG_MOD_REPLACE, FLAG_MOD_DELETE
-from samba import Ldb
+from samba.samdb import SamDB
 from samba.dsdb import (UF_NORMAL_ACCOUNT,
     UF_WORKSTATION_TRUST_ACCOUNT, UF_SERVER_TRUST_ACCOUNT,
     UF_PARTIAL_SECRETS_ACCOUNT, UF_TEMP_DUPLICATE_ACCOUNT,
@@ -71,12 +71,6 @@ class SamTests(unittest.TestCase):
         except LdbError, (num, _):
             self.assertEquals(num, ERR_NO_SUCH_OBJECT)
 
-    def find_basedn(self, ldb):
-        res = ldb.search(base="", expression="", scope=SCOPE_BASE,
-                         attrs=["defaultNamingContext"])
-        self.assertEquals(len(res), 1)
-        return res[0]["defaultNamingContext"][0]
-
     def find_domain_sid(self):
         res = self.ldb.search(base=self.base_dn, expression="(objectClass=*)", scope=SCOPE_BASE)
         return ndr_unpack( security.dom_sid,res[0]["objectSid"][0])
@@ -84,8 +78,7 @@ class SamTests(unittest.TestCase):
     def setUp(self):
         super(SamTests, self).setUp()
         self.ldb = ldb
-        self.gc_ldb = gc_ldb
-        self.base_dn = self.find_basedn(ldb)
+        self.base_dn = ldb.domain_dn()
         self.domain_sid = self.find_domain_sid()
 
         print "baseDN: %s\n" % self.base_dn
@@ -2419,12 +2412,7 @@ if not "://" in host:
     else:
         host = "ldap://%s" % host
 
-ldb = Ldb(host, credentials=creds, session_info=system_session(), lp=lp)
-if not "tdb://" in host:
-    gc_ldb = Ldb("%s:3268" % host, credentials=creds,
-                 session_info=system_session(), lp=lp)
-else:
-    gc_ldb = None
+ldb = SamDB(host, credentials=creds, session_info=system_session(), lp=lp)
 
 runner = SubunitTestRunner()
 rc = 0

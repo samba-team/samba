@@ -48,16 +48,10 @@ class UrgentReplicationTests(samba.tests.TestCase):
         except LdbError, (num, _):
             self.assertEquals(num, ERR_NO_SUCH_OBJECT)
 
-    def find_basedn(self, ldb):
-        res = ldb.search(base="", expression="", scope=SCOPE_BASE,
-                         attrs=["defaultNamingContext"])
-        self.assertEquals(len(res), 1)
-        return res[0]["defaultNamingContext"][0]
-
     def setUp(self):
         super(UrgentReplicationTests, self).setUp()
         self.ldb = ldb
-        self.base_dn = self.find_basedn(ldb)
+        self.base_dn = ldb.domain_dn()
 
         print "baseDN: %s\n" % self.base_dn
 

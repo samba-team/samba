@@ -22,7 +22,7 @@ from ldb import ERR_UNWILLING_TO_PERFORM
 from ldb import ERR_CONSTRAINT_VIOLATION
 from ldb import Message, MessageElement, Dn
 from ldb import FLAG_MOD_REPLACE
-from samba import Ldb
+from samba.samdb import SamDB
 from samba.dsdb import DS_DOMAIN_FUNCTION_2003
 
 from subunit.run import SubunitTestRunner
@@ -60,17 +60,11 @@ class SchemaTests(unittest.TestCase):
         self.assertEquals(len(res), 1)
         return res[0]["schemaNamingContext"][0]
 
-    def find_basedn(self, ldb):
-        res = ldb.search(base="", expression="", scope=SCOPE_BASE,
-                         attrs=["defaultNamingContext"])
-        self.assertEquals(len(res), 1)
-        return res[0]["defaultNamingContext"][0]
-
     def setUp(self):
         super(SchemaTests, self).setUp()
         self.ldb = ldb
+        self.base_dn = ldb.domain_dn()
         self.schema_dn = self.find_schemadn(ldb)
-        self.base_dn = self.find_basedn(ldb)
 
     def test_generated_schema(self):
         """Testing we can read the generated schema via LDAP"""
@@ -583,7 +577,7 @@ if host.startswith("ldap://"):
     # user 'paged_search' module when connecting remotely
     ldb_options = ["modules:paged_searches"]
 
-ldb = Ldb(host, credentials=creds, session_info=system_session(), lp=lp, options=ldb_options)
+ldb = SamDB(host, credentials=creds, session_info=system_session(), lp=lp, options=ldb_options)
 
 runner = SubunitTestRunner()
 rc = 0

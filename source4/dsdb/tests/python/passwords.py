@@ -69,16 +69,10 @@ class PasswordTests(samba.tests.TestCase):
         except LdbError, (num, _):
             self.assertEquals(num, ERR_NO_SUCH_OBJECT)
 
-    def find_basedn(self, ldb):
-        res = ldb.search(base="", expression="", scope=SCOPE_BASE,
-                         attrs=["defaultNamingContext"])
-        self.assertEquals(len(res), 1)
-        return res[0]["defaultNamingContext"][0]
-
     def setUp(self):
         super(PasswordTests, self).setUp()
         self.ldb = ldb
-        self.base_dn = self.find_basedn(ldb)
+        self.base_dn = ldb.domain_dn()
 
         # (Re)adds the test user "testuser" with no password atm
         self.delete_force(self.ldb, "cn=testuser,cn=users," + self.base_dn)
