@@ -301,12 +301,19 @@ def rodc_dns_update(d, t):
     dns_names.names = [ name ]
     site_name = sub_vars['SITE'].decode('utf-8')
 
+    global error_count
+
     try:
         ret_names = w.DsrUpdateReadOnlyServerDnsRecords(site_name, default_ttl, dns_names)
         if ret_names.names[0].status != 0:
             print("Failed to set DNS entry: %s (status %u)" % (d, ret_names.names[0].status))
+            error_count = error_count + 1
     except RuntimeError, reason:
         print("Error setting DNS entry of type %u: %s: %s" % (t, d, reason))
+        error_count = error_count + 1
+
+    if error_count != 0 and opts.fail_immediately:
+        sys.exit(1)
 
 
 def call_rodc_update(d):
