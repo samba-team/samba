@@ -50,7 +50,7 @@ struct tstream_tls {
 	struct tevent_immediate *retry_im;
 
 	struct {
-		uint8_t buffer[1024];
+		uint8_t buffer[4096];
 		off_t ofs;
 		struct iovec iov;
 		struct tevent_req *subreq;
