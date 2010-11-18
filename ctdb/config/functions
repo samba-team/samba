@@ -669,8 +669,8 @@ ctdb_service_reconfigure ()
 
 ctdb_compat_managed_service ()
 {
-    if [ "$1" = "yes" ] ; then
-	t="$t $2 "
+    if [ "$1" = "yes" -a "$2" = "$_service_name" ] ; then
+	CTDB_MANAGED_SERVICES="$CTDB_MANAGED_SERVICES $2"
     fi
 }
 
@@ -678,8 +678,17 @@ is_ctdb_managed_service ()
 {
     _service_name="${1:-${service_name}}"
 
+    # $t is used just for readability and to allow better accurate
+    # matching via leading/trailing spaces
     t=" $CTDB_MANAGED_SERVICES "
 
+    # Return 0 if "<space>$_service_name<space>" appears in $t
+    if [ "${t#* ${_service_name} }" != "${t}" ] ; then
+	return 0
+    fi
+
+    # If above didn't match then update $CTDB_MANAGED_SERVICES for
+    # backward compatibility and try again.
     ctdb_compat_managed_service "$CTDB_MANAGES_VSFTPD"   "vsftpd"
     ctdb_compat_managed_service "$CTDB_MANAGES_SAMBA"    "samba"
     ctdb_compat_managed_service "$CTDB_MANAGES_SCP"      "scp"
@@ -690,7 +699,9 @@ is_ctdb_managed_service ()
     ctdb_compat_managed_service "$CTDB_MANAGES_NFS"      "nfs"
     ctdb_compat_managed_service "$CTDB_MANAGES_NFS"      "nfs-ganesha-gpfs"
 
-    # Returns 0 if "<space>$_service_name<space>" appears in $t
+    t=" $CTDB_MANAGED_SERVICES "
+
+    # Return 0 if "<space>$_service_name<space>" appears in $t
     [ "${t#* ${_service_name} }" != "${t}" ]
 }
 
