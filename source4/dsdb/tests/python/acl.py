@@ -64,12 +64,6 @@ class AclTests(samba.tests.TestCase):
         except LdbError, (num, _):
             self.assertEquals(num, ERR_NO_SUCH_OBJECT)
 
-    def find_basedn(self, ldb):
-        res = ldb.search(base="", expression="", scope=SCOPE_BASE,
-                         attrs=["defaultNamingContext"])
-        self.assertEquals(len(res), 1)
-        return res[0]["defaultNamingContext"][0]
-
     def find_domain_sid(self, ldb):
         res = ldb.search(base=self.base_dn, expression="(objectClass=*)", scope=SCOPE_BASE)
         return ndr_unpack(security.dom_sid,res[0]["objectSid"][0])
@@ -77,7 +71,7 @@ class AclTests(samba.tests.TestCase):
     def setUp(self):
         super(AclTests, self).setUp()
         self.ldb_admin = ldb
-        self.base_dn = self.find_basedn(self.ldb_admin)
+        self.base_dn = ldb.domain_dn()
         self.domain_sid = self.find_domain_sid(self.ldb_admin)
         self.user_pass = "samba123@"
         res = self.ldb_admin.search(base="", expression="", scope=SCOPE_BASE,
