@@ -9,7 +9,12 @@ import ldb
 
 
 def filename():
-    return os.tempnam()
+    import tempfile
+    try:
+        dir_prefix = os.path.join(os.environ["SELFTEST_PREFIX"], "tmp")
+    except KeyError:
+        dir_prefix = None
+    return tempfile.mktemp(dir=dir_prefix)
 
 class NoContextTests(unittest.TestCase):
 
