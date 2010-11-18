@@ -970,7 +970,7 @@ static int gpfs_set_xattr(struct vfs_handle_struct *handle,  const char *path,
 	dosmode = dosattrib.info.info3.attrib;
 
         attrs.winAttrs = 0;
-        /*Just map RD_ONLY, ARCHIVE, SYSTEM and HIDDEN. Ignore the others*/
+        /*Just map RD_ONLY, ARCHIVE, SYSTEM HIDDEN and SPARSE. Ignore the others*/
         if (dosmode & FILE_ATTRIBUTE_ARCHIVE){
                 attrs.winAttrs |= GPFS_WINATTR_ARCHIVE;
         }
@@ -983,6 +983,9 @@ static int gpfs_set_xattr(struct vfs_handle_struct *handle,  const char *path,
         if (dosmode & FILE_ATTRIBUTE_READONLY){
                         attrs.winAttrs |= GPFS_WINATTR_READONLY;
         }
+        if (dosmode & FILE_ATTRIBUTE_SPARSE) {
+		attrs.winAttrs |= GPFS_WINATTR_SPARSE_FILE;
+	}
 
 
         ret = set_gpfs_winattrs(CONST_DISCARD(char *, path),
@@ -1019,7 +1022,7 @@ static ssize_t gpfs_get_xattr(struct vfs_handle_struct *handle,  const char *pat
 
         DEBUG(10, ("gpfs_get_xattr:Got attributes: 0x%x\n",attrs.winAttrs));
 
-        /*Just map RD_ONLY, ARCHIVE, SYSTEM and HIDDEN. Ignore the others*/
+        /*Just map RD_ONLY, ARCHIVE, SYSTEM, HIDDEN and SPARSE. Ignore the others*/
         if (attrs.winAttrs & GPFS_WINATTR_ARCHIVE){
                 dosmode |= FILE_ATTRIBUTE_ARCHIVE;
         }
@@ -1032,6 +1035,9 @@ static ssize_t gpfs_get_xattr(struct vfs_handle_struct *handle,  const char *pat
         if (attrs.winAttrs & GPFS_WINATTR_READONLY){
                 dosmode |= FILE_ATTRIBUTE_READONLY;
         }
+        if (attrs.winAttrs & GPFS_WINATTR_SPARSE_FILE) {
+		dosmode |= FILE_ATTRIBUTE_SPARSE;
+	}
 
         snprintf(attrstr, size, "0x%2.2x", dosmode & SAMBA_ATTRIBUTES_MASK);
         DEBUG(10, ("gpfs_get_xattr: returning %s\n",attrstr));
