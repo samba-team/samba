@@ -3203,6 +3203,7 @@ static bool test_GetDomainInfo(struct torture_context *tctx,
 		info.domain_info->dns_hostname.string,
 		query.workstation_info->dns_hostname,
 		"In/Out 'DNS hostnames' don't match!");
+	old_dnsname = info.domain_info->dns_hostname.string;
 
 	/* Checks "workstation flags" */
 	torture_assert(tctx,
@@ -3246,12 +3247,29 @@ static bool test_GetDomainInfo(struct torture_context *tctx,
 		"Trusted domains have been requested!");
 
 
+	torture_comment(tctx, "Testing netr_LogonGetDomainInfo 6th call (no DNS hostname)\n");
+	netlogon_creds_client_authenticator(creds, &a);
+
+	query.workstation_info->dns_hostname = NULL;
+
+	torture_assert_ntstatus_ok(tctx, dcerpc_netr_LogonGetDomainInfo_r(b, tctx, &r),
+		"LogonGetDomainInfo failed");
+	torture_assert_ntstatus_ok(tctx, r.out.result, "LogonGetDomainInfo failed");
+	torture_assert(tctx, netlogon_creds_client_check(creds, &a.cred), "Credential chaining failed");
+
+	/* The old DNS hostname should stick */
+	torture_assert_str_equal(tctx,
+		info.domain_info->dns_hostname.string,
+		old_dnsname,
+		"'DNS hostname' changed!");
+
+
 	if (!torture_setting_bool(tctx, "dangerous", false)) {
-		torture_comment(tctx, "Not testing netr_LogonGetDomainInfo 6th call (no workstation info) - enable dangerous tests in order to do so\n");
+		torture_comment(tctx, "Not testing netr_LogonGetDomainInfo 7th call (no workstation info) - enable dangerous tests in order to do so\n");
 	} else {
 		/* Try a call without the workstation information structure */
 
-		torture_comment(tctx, "Testing netr_LogonGetDomainInfo 6th call (no workstation info)\n");
+		torture_comment(tctx, "Testing netr_LogonGetDomainInfo 7th call (no workstation info)\n");
 		netlogon_creds_client_authenticator(creds, &a);
 
 		query.workstation_info = NULL;

@@ -5,7 +5,7 @@
 
    Copyright (C) Andrew Bartlett <abartlet@samba.org> 2004-2008
    Copyright (C) Stefan Metzmacher <metze@samba.org>  2005
-   Copyright (C) Matthias Dieter Wallnöfer            2009
+   Copyright (C) Matthias Dieter Wallnöfer            2009-2010
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -1296,10 +1296,9 @@ static NTSTATUS dcesrv_netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_cal
 	struct netlogon_creds_CredentialState *creds;
 	const char * const attrs[] = { "objectSid", "objectGUID", "flatName",
 		"securityIdentifier", "trustPartner", NULL };
-	const char * const attrs2[] = { "dNSHostName",
+	const char * const attrs2[] = { "sAMAccountName", "dNSHostName",
 		"msDS-SupportedEncryptionTypes", NULL };
-	const char *temp_str, *temp_str2;
-	const char *old_dns_hostname;
+	const char *sam_account_name, *old_dns_hostname, *prefix1, *prefix2;
 	struct ldb_context *sam_ctx;
 	struct ldb_message **res1, **res2, **res3, *new_msg;
 	struct ldb_dn *workstation_dn;
@@ -1336,33 +1335,46 @@ static NTSTATUS dcesrv_netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_cal
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 
-		/*
-		 * Checks that the computer name parameter without possible "$"
-		 * matches as prefix with the DNS hostname in the workstation
-		 * info structure.
-		 */
-		temp_str = talloc_strndup(mem_ctx,
-					  r->in.computer_name,
-					  strcspn(r->in.computer_name, "$"));
-		NT_STATUS_HAVE_NO_MEMORY(temp_str);
-		temp_str2 = talloc_strndup(mem_ctx,
-					   r->in.query->workstation_info->dns_hostname,
-					   strcspn(r->in.query->workstation_info->dns_hostname, "."));
-		NT_STATUS_HAVE_NO_MEMORY(temp_str2);
-		if (strcasecmp(temp_str, temp_str2) != 0) {
-			update_dns_hostname = false;
-		}
-
-		/* Prepare the workstation DN */
+		/* Prepares the workstation DN */
 		workstation_dn = ldb_dn_new_fmt(mem_ctx, sam_ctx, "<SID=%s>",
-			dom_sid_string(mem_ctx, creds->sid));
+						dom_sid_string(mem_ctx, creds->sid));
 		NT_STATUS_HAVE_NO_MEMORY(workstation_dn);
 
 		/* Lookup for attributes in workstation object */
-		ret = gendb_search_dn(sam_ctx, mem_ctx, workstation_dn,
-			&res1, attrs2);
+		ret = gendb_search_dn(sam_ctx, mem_ctx, workstation_dn, &res1,
+				      attrs2);
 		if (ret != 1) {
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		}
+
+		/* Gets the sam account name which is checked against the DNS
+		 * hostname parameter. */
+		sam_account_name = ldb_msg_find_attr_as_string(res1[0],
+							       "sAMAccountName",
+							       NULL);
+		if (sam_account_name == NULL) {
+			return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		}
+
+		/*
+		 * Checks that the sam account name without a possible "$"
+		 * matches as prefix with the DNS hostname in the workstation
+		 * info structure.
+		 */
+		prefix1 = talloc_strndup(mem_ctx, sam_account_name,
+					 strcspn(sam_account_name, "$"));
+		NT_STATUS_HAVE_NO_MEMORY(prefix1);
+		if (r->in.query->workstation_info->dns_hostname != NULL) {
+			prefix2 = talloc_strndup(mem_ctx,
+						 r->in.query->workstation_info->dns_hostname,
+						 strcspn(r->in.query->workstation_info->dns_hostname, "."));
+			NT_STATUS_HAVE_NO_MEMORY(prefix2);
+
+			if (strcasecmp(prefix1, prefix2) != 0) {
+				update_dns_hostname = false;
+			}
+		} else {
+			update_dns_hostname = false;
 		}
 
 		/* Gets the old DNS hostname */
