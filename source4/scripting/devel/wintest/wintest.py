@@ -10,11 +10,26 @@ class wintest():
 
     def __init__(self):
         self.vars = {}
+        self.list_mode = False
         os.putenv('PYTHONUNBUFFERED', '1')
 
     def setvar(self, varname, value):
         '''set a substitution variable'''
         self.vars[varname] = value
+
+    def setwinvars(self, vm, prefix='WIN'):
+        '''setup WIN_XX vars based on a vm name'''
+        for v in ['VM', 'HOSTNAME', 'USER', 'PASS', 'SNAPSHOT', 'BASEDN', 'REALM', 'DOMAIN']:
+            vname = '%s_%s' % (vm, v)
+            if vname in self.vars:
+                self.setvar("%s_%s" % (prefix,v), self.substitute("${%s}" % vname))
+            else:
+                self.vars.pop("%s_%s" % (prefix,v), None)
+
+    def info(self, msg):
+        '''print some information'''
+        if not self.list_mode:
+            print(self.substitute(msg))
 
     def load_config(self, fname):
         '''load the config file'''
@@ -29,6 +44,21 @@ class wintest():
             varname = line[0:colon].strip()
             value   = line[colon+1:].strip()
             self.setvar(varname, value)
+
+    def list_steps_mode(self):
+        '''put wintest in step listing mode'''
+        self.list_mode = True
+
+    def set_skip(self, skiplist):
+        '''set a list of tests to skip'''
+        self.skiplist = skiplist.split(',')
+
+    def skip(self, step):
+        '''return True if we should skip a step'''
+        if self.list_mode:
+            print("\t%s" % step)
+            return True
+        return step in self.skiplist
 
     def substitute(self, text):
         """Substitute strings of the form ${NAME} in text, replacing
@@ -65,9 +95,9 @@ class wintest():
     def run_cmd(self, cmd, dir=".", show=None, output=False, checkfail=True):
         cmd = self.substitute(cmd)
         if isinstance(cmd, list):
-            print('$ ' + " ".join(cmd))
+            self.info('$ ' + " ".join(cmd))
         else:
-            print('$ ' + cmd)
+            self.info('$ ' + cmd)
         if output:
             return subprocess.Popen([cmd], shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, cwd=dir).communicate()[0]
         if isinstance(cmd, list):
@@ -88,7 +118,7 @@ class wintest():
     def cmd_contains(self, cmd, contains, nomatch=False, ordered=False):
         '''check that command output contains the listed strings'''
         out = self.cmd_output(cmd)
-        print out
+        self.info(out)
         for c in self.substitute(contains):
             ofs = out.find(c)
             if nomatch:
@@ -115,7 +145,7 @@ class wintest():
     def pexpect_spawn(self, cmd, timeout=60):
         '''wrapper around pexpect spawn'''
         cmd = self.substitute(cmd)
-        print("$ " + cmd)
+        self.info("$ " + cmd)
         ret = pexpect.spawn(cmd, logfile=sys.stdout, timeout=timeout)
 
         def sendline_sub(line):
@@ -156,9 +186,9 @@ class wintest():
                 loops = loops - 1
         if loops == 0:
             raise RuntimeError("Failed to ping %s" % hostname)
-        print("Host %s is up" % hostname)
+        self.info("Host %s is up" % hostname)
 
-    def port_wait(self, hostname, port, retries=100, delay=2, wait_for_fail=False):
+    def port_wait(self, hostname, port, retries=200, delay=3, wait_for_fail=False):
         '''wait for a host to come up on the network'''
         self.retry_cmd("nc -v -z -w 1 %s %u" % (hostname, port), ['succeeded'],
                        retries=retries, delay=delay, wait_for_fail=wait_for_fail)
