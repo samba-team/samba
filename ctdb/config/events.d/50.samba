@@ -35,7 +35,7 @@ start_samba() {
 	mkdir -p $CTDB_VARDIR/state/samba
 
 	# make sure samba is not already started
-	[ "$CTDB_MANAGES_SAMBA" = "yes" ] && {
+	is_ctdb_managed_service "samba" && {
 		service "$CTDB_SERVICE_SMB" stop > /dev/null 2>&1
 		service "$CTDB_SERVICE_NMB" stop > /dev/null 2>&1
 		killall -0 -q smbd && {
@@ -75,7 +75,7 @@ start_samba() {
 	# start Samba service. Start it reniced, as under very heavy load 
 	# the number of smbd processes will mean that it leaves few cycles for
 	# anything else
-	[ "$CTDB_MANAGES_SAMBA" = "yes" ] && {
+	is_ctdb_managed_service "samba" && {
 		net serverid wipe
 
 		nice_service "$CTDB_SERVICE_NMB" start || {
@@ -93,7 +93,7 @@ start_samba() {
 
 stop_samba() {
 	# shutdown Samba when ctdb goes down
-	[ "$CTDB_MANAGES_SAMBA" = "yes" ] && {
+	is_ctdb_managed_service "samba" && {
 		service "$CTDB_SERVICE_SMB" stop
 		service "$CTDB_SERVICE_NMB" stop
 	}
@@ -245,7 +245,7 @@ case "$1" in
 		touch $CTDB_VARDIR/state/samba/periodic_cleanup
 	}
 
-	[ "$CTDB_MANAGES_SAMBA" = "yes" ] && {
+	is_ctdb_managed_service "samba" && {
 		[ "$CTDB_SAMBA_SKIP_SHARE_CHECK" = "yes" ] || {
 			testparm_background_update
 
