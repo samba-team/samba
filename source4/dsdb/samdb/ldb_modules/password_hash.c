@@ -34,10 +34,7 @@
 
 #include "includes.h"
 #include "ldb_module.h"
-#include "auth/session.h"
 #include "libcli/auth/libcli_auth.h"
-#include "libcli/security/security.h"
-#include "libcli/security/session.h"
 #include "system/kerberos.h"
 #include "auth/kerberos/kerberos.h"
 #include "dsdb/samdb/samdb.h"
