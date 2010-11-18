@@ -706,9 +706,9 @@ ctdb_start_stop_service ()
 ctdb_service_start ()
 {
     if [ -n "$service_start" ] ; then
-	eval $service_start
+	eval $service_start || return $?
     else
-	service "$service_name" start
+	service "$service_name" start || return $?
     fi
     ctdb_counter_init
 }
