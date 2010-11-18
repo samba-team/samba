@@ -74,9 +74,7 @@ class AclTests(samba.tests.TestCase):
         self.base_dn = ldb.domain_dn()
         self.domain_sid = self.find_domain_sid(self.ldb_admin)
         self.user_pass = "samba123@"
-        res = self.ldb_admin.search(base="", expression="", scope=SCOPE_BASE,
-                 attrs=["configurationNamingContext"])
-        self.configuration_dn = res[0]["configurationNamingContext"][0]
+        self.configuration_dn = self.ldb_admin.get_config_basedn().get_linearized()
         print "baseDN: %s" % self.base_dn
 
     def get_user_dn(self, name):
