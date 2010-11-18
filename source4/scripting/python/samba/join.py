@@ -309,7 +309,7 @@ class dc_join:
             "objectClass": "computer",
             "displayname": ctx.samname,
             "samaccountname" : ctx.samname,
-            "userAccountControl" : str(ctx.userAccountControl),
+            "userAccountControl" : str(ctx.userAccountControl | samba.dsdb.UF_ACCOUNTDISABLE),
             "dnshostname" : ctx.dnshostname}
         if ctx.behavior_version >= samba.dsdb.DS_DOMAIN_FUNCTION_2008:
             rec['msDS-SupportedEncryptionTypes'] = str(samba.dsdb.ENC_ALL_TYPES)
@@ -404,6 +404,13 @@ class dc_join:
         res = ctx.samdb.search(base=ctx.acct_dn, scope=ldb.SCOPE_BASE, attrs=["msDS-keyVersionNumber"])
         ctx.key_version_number = int(res[0]["msDS-keyVersionNumber"][0])
 
+        print("Enabling account")
+        m = ldb.Message()
+        m.dn = ldb.Dn(ctx.samdb, ctx.acct_dn)
+        m["userAccountControl"] = ldb.MessageElement(str(ctx.userAccountControl),
+                                                     ldb.FLAG_MOD_REPLACE,
+                                                     "userAccountControl")
+        ctx.samdb.modify(m)
 
     def join_provision(ctx):
         '''provision the local SAM'''
