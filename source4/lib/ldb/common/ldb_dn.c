@@ -729,7 +729,7 @@ static bool ldb_dn_explode(struct ldb_dn *dn)
 	return true;
 
 failed:
-	LDB_FREE(dn->components);
+	LDB_FREE(dn->components); /* "data" is implicitly free'd */
 	dn->comp_num = 0;
 	LDB_FREE(dn->ext_components);
 	dn->ext_comp_num = 0;
