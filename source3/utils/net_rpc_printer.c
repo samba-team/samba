@@ -976,8 +976,14 @@ static bool net_spoolss_enumprinterdrivers (struct rpc_pipe_client *pipe_hnd,
 						   count,
 						   info);
 	if (!W_ERROR_IS_OK(result)) {
-		printf(_("cannot enum drivers: %s\n"), win_errstr(result));
-		return false;
+		if (W_ERROR_V(result) != W_ERROR_V(WERR_INVALID_ENVIRONMENT)) {
+			printf(_("cannot enum drivers for environment %s: %s\n"), env,
+				win_errstr(result));
+			return false;
+		} else {
+			printf(_("Server does not support environment [%s]\n"),
+				env);
+		}
 	}
 
 	return true;
