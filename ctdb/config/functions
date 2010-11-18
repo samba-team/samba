@@ -669,7 +669,7 @@ is_ctdb_managed_service ()
     ctdb_compat_managed_service "$CTDB_MANAGES_VSFTPD"   "vsftpd"
     ctdb_compat_managed_service "$CTDB_MANAGES_SAMBA"    "samba"
     ctdb_compat_managed_service "$CTDB_MANAGES_SCP"      "scp"
-    ctdb_compat_managed_service "$CTDB_MANAGES_WINDBIND" "windbind"
+    ctdb_compat_managed_service "$CTDB_MANAGES_WINBIND"  "winbind"
     ctdb_compat_managed_service "$CTDB_MANAGES_HTTPD"    "httpd"
     ctdb_compat_managed_service "$CTDB_MANAGES_ISCSI"    "iscsi"
     ctdb_compat_managed_service "$CTDB_MANAGES_CLAMD"    "clamd"
@@ -684,8 +684,7 @@ ctdb_start_stop_service ()
     _service_name="${1:-${service_name}}"
 
     _active="$ctdb_active_dir/$_service_name"
-
-    if is_ctdb_managed_service ; then
+    if is_ctdb_managed_service "$_service_name"; then
 	if ! [ -e "$_active" ] ; then
 	    echo "Starting service $_service_name"
 	    ctdb_service_start || exit $?
@@ -693,13 +692,13 @@ ctdb_start_stop_service ()
 	    touch "$_active"
 	    exit 0
 	fi
-    elif ! is_ctdb_managed_service ; then
+    else
 	if [ -e "$_active" ] ; then
 	    echo "Stopping service $_service_name"
 	    ctdb_service_stop || exit $?
 	    rm -f "$_active"
+	    exit 0
 	fi
-	exit 0
     fi
 }
 

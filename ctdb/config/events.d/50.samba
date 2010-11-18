@@ -77,6 +77,7 @@ start_samba() {
 		nice_service "$CTDB_SERVICE_NMB" start
 		nice_service "$CTDB_SERVICE_SMB" start
 	}
+	return 0
 }
 
 stop_samba() {
@@ -91,6 +92,8 @@ stop_samba() {
 	[ "$CTDB_MANAGES_WINBIND" = "yes" ] && {
 		service "$CTDB_SERVICE_WINBIND" stop
 	}
+
+	return 0
 }
 
 # set default samba cleanup period - in minutes
@@ -204,7 +207,7 @@ periodic_cleanup() {
 ###########################
 
 ctdb_start_stop_service
-ctdb_start_stop_service "windbind"
+ctdb_start_stop_service "winbind"
 
 is_ctdb_managed_service || is_ctdb_managed_service "winbind" || exit 0
 
