@@ -97,17 +97,6 @@ replace: nTSecurityDescriptor
         elif isinstance(desc, security.descriptor):
             mod += "nTSecurityDescriptor:: %s" % base64.b64encode(ndr_pack(desc))
         self.ldb_admin.modify_ldif(mod)
-
-    def add_group_member(self, _ldb, group_dn, member_dn):
-        """ Modify user to ge member of a group 
-            e.g. User to be 'Doamin Admin' group member
-        """
-        ldif = """
-dn: """ + group_dn + """
-changetype: modify
-add: member
-member: """ + member_dn
-        _ldb.modify_ldif(ldif)
     
     def create_ou(self, _ldb, ou_dn, desc=None):
         ldif = """
@@ -267,10 +256,10 @@ class AclAddTests(AclTests):
         self.create_enable_user(self.regular_user)
 
         # add admins to the Domain Admins group
-        self.add_group_member(self.ldb_admin, "CN=Domain Admins,CN=Users," + self.base_dn, \
-                self.get_user_dn(self.usr_admin_owner))
-        self.add_group_member(self.ldb_admin, "CN=Domain Admins,CN=Users," + self.base_dn, \
-                self.get_user_dn(self.usr_admin_not_owner))
+        self.ldb_admin.add_remove_group_members("Domain Admins", self.usr_admin_owner,
+                       add_members_operation=True)
+        self.ldb_admin.add_remove_group_members("Domain Admins", self.usr_admin_not_owner,
+                       add_members_operation=True)
 
         self.ldb_owner = self.get_ldb_connection(self.usr_admin_owner, self.user_pass)
         self.ldb_notowner = self.get_ldb_connection(self.usr_admin_not_owner, self.user_pass)
@@ -727,8 +716,8 @@ class AclSearchTests(AclTests):
         self.create_enable_user(self.u2)
         self.create_enable_user(self.u3)
         self.create_security_group(self.ldb_admin, self.get_user_dn(self.group1))
-        self.add_group_member(self.ldb_admin, self.get_user_dn(self.group1), \
-                self.get_user_dn(self.u2))
+        self.ldb_admin.add_remove_group_members(self.group1, self.u2,
+                                                add_members_operation=True)
         self.ldb_user = self.get_ldb_connection(self.u1, self.user_pass)
         self.ldb_user2 = self.get_ldb_connection(self.u2, self.user_pass)
         self.ldb_user3 = self.get_ldb_connection(self.u3, self.user_pass)
@@ -1639,8 +1628,8 @@ class AclExtendedTests(AclTests):
         self.create_enable_user(self.u1)
         self.create_enable_user(self.u2)
         self.create_enable_user(self.u3)
-        self.add_group_member(self.ldb_admin, "CN=Domain Admins,CN=Users," + self.base_dn,
-                              self.get_user_dn(self.u3))
+        self.ldb_admin.add_remove_group_members("Domain Admins", self.u3,
+                                                add_members_operation=True)
         self.ldb_user1 = self.get_ldb_connection(self.u1, self.user_pass)
         self.ldb_user2 = self.get_ldb_connection(self.u2, self.user_pass)
         self.ldb_user3 = self.get_ldb_connection(self.u3, self.user_pass)
