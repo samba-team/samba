@@ -312,7 +312,7 @@ int ldb_module_load_list(struct ldb_context *ldb, const char **module_list,
 		if (ops == NULL) {
 			ldb_debug(ldb, LDB_DEBUG_FATAL, "WARNING: Module [%s] not found - do you need to set LDB_MODULES_PATH?",
 				  module_list[i]);
-			continue;
+			return LDB_ERR_OPERATIONS_ERROR;
 		}
 
 		current = talloc_zero(ldb, struct ldb_module);
