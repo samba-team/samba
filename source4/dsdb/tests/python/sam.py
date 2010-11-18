@@ -92,6 +92,7 @@ class SamTests(unittest.TestCase):
 
         self.delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
         self.delete_force(self.ldb, "cn=ldaptestuser2,cn=users," + self.base_dn)
+        self.delete_force(self.ldb, "cn=ldaptest\,specialuser,cn=users," + self.base_dn)
         self.delete_force(self.ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
         self.delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
         self.delete_force(self.ldb, "cn=ldaptestgroup2,cn=users," + self.base_dn)
@@ -594,6 +595,12 @@ class SamTests(unittest.TestCase):
         self.delete_force(self.ldb, "cn=ldaptestuser2,cn=users," + self.base_dn)
         self.delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
         self.delete_force(self.ldb, "cn=ldaptestgroup2,cn=users," + self.base_dn)
+
+        # Make also a small test for accounts with special DNs ("," in this case)
+        ldb.add({
+            "dn": "cn=ldaptest\,specialuser,cn=users," + self.base_dn,
+            "objectclass": "user"})
+        self.delete_force(self.ldb, "cn=ldaptest\,specialuser,cn=users," + self.base_dn)
 
     def test_sam_attributes(self):
         """Test the behaviour of special attributes of SAM objects"""

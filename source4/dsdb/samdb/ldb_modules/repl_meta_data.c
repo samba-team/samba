@@ -2609,7 +2609,7 @@ static int replmd_delete(struct ldb_module *module, struct ldb_request *req)
 		/* Add a formatted child */
 		retb = ldb_dn_add_child_fmt(new_dn, "%s=%s\\0ADEL:%s",
 						rdn_name,
-						rdn_value->data,
+						ldb_dn_escape_value(tmp_ctx, *rdn_value),
 						GUID_string(tmp_ctx, &guid));
 		if (!retb) {
 			DEBUG(0,(__location__ ": Unable to add a formatted child to dn: %s",
