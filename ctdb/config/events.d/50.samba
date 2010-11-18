@@ -52,8 +52,7 @@ start_samba() {
 	}
 
 	# make sure winbind is not already started
-	check_ctdb_manages_winbind
-	[ "$CTDB_MANAGES_WINBIND" = "yes" ] && {
+	check_ctdb_manages_winbind && {
 		service "$CTDB_SERVICE_WINBIND" stop > /dev/null 2>&1
 		killall -0 -q winbindd && {
 		    sleep 1
@@ -64,7 +63,7 @@ start_samba() {
 	}
 
 	# start the winbind service
-	[ "$CTDB_MANAGES_WINBIND" = "yes" ] && {
+	check_ctdb_manages_winbind && {
 		service "$CTDB_SERVICE_WINBIND" start || {
 			echo failed to start winbind
 			exit 1
@@ -99,8 +98,7 @@ stop_samba() {
 	}
 
 	# stop the winbind service
-	check_ctdb_manages_winbind
-	[ "$CTDB_MANAGES_WINBIND" = "yes" ] && {
+	check_ctdb_manages_winbind && {
 		service "$CTDB_SERVICE_WINBIND" stop
 	}
 
@@ -183,19 +181,27 @@ testparm_cat() {
     testparm -s "$smbconf_cache" "$@" 2>/dev/null
 }
 
-# function to see if ctdb manages winbind
+# function to see if ctdb manages winbind - this overrides with extra
+# logic if $CTDB_MANAGES_WINBIND is not set or null.
 check_ctdb_manages_winbind() {
-  [ -z "$CTDB_MANAGES_WINBIND" ] && {
-    secmode=`testparm_cat --parameter-name=security`
-    case $secmode in
-	ADS|DOMAIN)
-	    CTDB_MANAGES_WINBIND="yes";
-	    ;;
-	*)
-	    CTDB_MANAGES_WINBIND="no";
-	    ;;
-    esac
-  }
+    if is_ctdb_managed_service "winbind" ; then
+	return 0
+    elif [ -n "$CTDB_MANAGES_WINBIND" ] ; then
+	# If this variable is set we want to respect it.  We return
+	# false here because we know it is not set to "yes" - if it
+	# were then the 1st "if" above would have succeeded.
+	return 1
+    else
+	_secmode=`testparm_cat --parameter-name=security`
+	case "$_secmode" in
+	    ADS|DOMAIN)
+		return 0
+		;;
+	    *)
+		return 1
+		;;
+	esac
+    fi
 }
 
 list_samba_shares ()
@@ -273,8 +279,7 @@ case "$1" in
 	}
 
 	# check winbind is OK
-	check_ctdb_manages_winbind
-	[ "$CTDB_MANAGES_WINBIND" = "yes" ] && {
+	check_ctdb_manages_winbind && {
 		ctdb_check_command "winbind" "wbinfo -p"
 	}
 	;;
