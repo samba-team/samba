@@ -344,71 +344,39 @@ class DnTests(unittest.TestCase):
         self.assertEquals(x, y)
         y = ldb.Dn(self.ldb, "dc=foo11,bar=blie")
         self.assertNotEquals(x, y)
-        x = ldb.Dn(self.ldb, "")
-        y = ldb.Dn(self.ldb, "")
-        self.assertEquals(x, y)
-        x = ldb.Dn(self.ldb, "cn=foo\, bar\, bar,dc=test,dc=bloe")
-        y = ldb.Dn(self.ldb, "cn=foo\, bar\, bar,dc=test,dc=bloe")
-        self.assertEquals(x, y)
 
     def test_str(self):
         x = ldb.Dn(self.ldb, "dc=foo12,bar=bloe")
         self.assertEquals(x.__str__(), "dc=foo12,bar=bloe")
-        x = ldb.Dn(self.ldb, "")
-        self.assertEquals(x.__str__(), "")
-        x = ldb.Dn(self.ldb, "cn=foo\, bar\, bar,dc=test,dc=bloe")
-        self.assertEquals(x.__str__(), "cn=foo\, bar\, bar,dc=test,dc=bloe")
 
     def test_repr(self):
         x = ldb.Dn(self.ldb, "dc=foo13,bla=blie")
         self.assertEquals(x.__repr__(), "Dn('dc=foo13,bla=blie')")
-        x = ldb.Dn(self.ldb, "")
-        self.assertEquals(x.__repr__(), "Dn('')")
-        x = ldb.Dn(self.ldb, "cn=foo\, bar\, bar,dc=test,dc=bloe")
-        self.assertEquals(x.__repr__(), "Dn('cn=foo\\\\, bar\\\\, bar,dc=test,dc=bloe')")
 
     def test_get_casefold(self):
         x = ldb.Dn(self.ldb, "dc=foo14,bar=bloe")
         self.assertEquals(x.get_casefold(), "DC=FOO14,BAR=bloe")
-        x = ldb.Dn(self.ldb, "")
-        self.assertEquals(x.get_casefold(), "")
-        x = ldb.Dn(self.ldb, "cn=foo\, bar\, bar,dc=test,dc=bloe")
-        self.assertEquals(x.get_casefold(), "CN=FOO\, BAR\, BAR,DC=TEST,DC=BLOE")
 
     def test_validate(self):
         x = ldb.Dn(self.ldb, "dc=foo15,bar=bloe")
-        self.assertTrue(x.validate())
-        x = ldb.Dn(self.ldb, "")
-        self.assertTrue(x.validate()) # the empty DN is valid (rootDSE)
-        x = ldb.Dn(self.ldb, "cn=foo\, bar\, bar,dc=test,dc=bloe")
         self.assertTrue(x.validate())
 
     def test_parent(self):
         x = ldb.Dn(self.ldb, "dc=foo16,bar=bloe")
         self.assertEquals("bar=bloe", x.parent().__str__())
-        x = ldb.Dn(self.ldb, "cn=foo\, bar\, bar,dc=test,dc=bloe")
-        self.assertEquals("dc=test,dc=bloe", x.parent().__str__())
 
     def test_parent_nonexistant(self):
         x = ldb.Dn(self.ldb, "@BLA")
-        self.assertEquals(None, x.parent())
-        x = ldb.Dn(self.ldb, "")
         self.assertEquals(None, x.parent())
 
     def test_is_valid(self):
         x = ldb.Dn(self.ldb, "dc=foo18,dc=bloe")
         self.assertTrue(x.is_valid())
         x = ldb.Dn(self.ldb, "")
-        self.assertTrue(x.is_valid()) # the empty DN is valid (rootDSE)
-        x = ldb.Dn(self.ldb, "cn=foo\, bar\, bar,dc=test,dc=bloe")
         self.assertTrue(x.is_valid())
 
     def test_is_special(self):
         x = ldb.Dn(self.ldb, "dc=foo19,bar=bloe")
-        self.assertFalse(x.is_special())
-        x = ldb.Dn(self.ldb, "")
-        self.assertFalse(x.is_special())
-        x = ldb.Dn(self.ldb, "cn=foo\, bar\, bar,dc=test,dc=bloe")
         self.assertFalse(x.is_special())
         x = ldb.Dn(self.ldb, "@FOOBAR")
         self.assertTrue(x.is_special())
@@ -424,10 +392,6 @@ class DnTests(unittest.TestCase):
         self.assertEquals(2, len(x))
         x = ldb.Dn(self.ldb, "dc=foo21")
         self.assertEquals(1, len(x))
-        x = ldb.Dn(self.ldb, "")
-        self.assertEquals(0, len(x)) # the empty DN has length 0
-        x = ldb.Dn(self.ldb, "cn=foo\, bar\, bar,dc=test,dc=bloe")
-        self.assertEquals(3, len(x))
 
     def test_add_child(self):
         x = ldb.Dn(self.ldb, "dc=foo22,bar=bloe")
@@ -463,18 +427,11 @@ class DnTests(unittest.TestCase):
     def test_canonical_string(self):
         x = ldb.Dn(self.ldb, "dc=foo25,bar=bloe")
         self.assertEquals("/bloe/foo25", x.canonical_str())
-        x = ldb.Dn(self.ldb, "")
-        self.assertEquals("/", x.canonical_str())
-        x = ldb.Dn(self.ldb, "cn=foo\, bar\, bar,dc=test,dc=bloe")
-        self.assertEquals("test.bloe/foo\, bar\, bar", x.canonical_str())
 
     def test_canonical_ex_string(self):
         x = ldb.Dn(self.ldb, "dc=foo26,bar=bloe")
         self.assertEquals("/bloe\nfoo26", x.canonical_ex_str())
-        x = ldb.Dn(self.ldb, "")
-        self.assertEquals("\n", x.canonical_ex_str())
-        x = ldb.Dn(self.ldb, "cn=foo\, bar\, bar,dc=test,dc=bloe")
-        self.assertEquals("test.bloe\nfoo\, bar\, bar", x.canonical_ex_str())
+
 
 class LdbMsgTests(unittest.TestCase):
 
