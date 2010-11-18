@@ -1618,6 +1618,7 @@ WERROR _spoolss_OpenPrinterEx(struct pipes_struct *p,
 			if ((p->server_info->utok.uid != sec_initial_uid()) &&
 			    !user_has_privileges(p->server_info->ptok,
 						 &se_printop ) &&
+			    !nt_token_check_sid(&global_sid_Builtin_Print_Operators, p->server_info->ptok) &&
 			    !token_contains_name_in_list(
 				    uidtoname(p->server_info->utok.uid),
 				    p->server_info->info3->base.domain.string,
@@ -1627,7 +1628,8 @@ WERROR _spoolss_OpenPrinterEx(struct pipes_struct *p,
 				close_printer_handle(p, r->out.handle);
 				ZERO_STRUCTP(r->out.handle);
 				DEBUG(3,("access DENIED as user is not root, "
-					"has no printoperator privilege and "
+					"has no printoperator privilege, "
+					"not a member of the printoperater builtin group and "
 					"is not in printer admin list"));
 				return WERR_ACCESS_DENIED;
 			}
