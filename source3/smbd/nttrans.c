@@ -2107,14 +2107,52 @@ static void call_nt_transact_ioctl(connection_struct *conn,
 
 	switch (function) {
 	case FSCTL_SET_SPARSE:
-		/* pretend this succeeded - tho strictly we should
-		   mark the file sparse (if the local fs supports it)
-		   so we can know if we need to pre-allocate or not */
+	{
+		bool set_sparse = true;
+		NTSTATUS status;
 
-		DEBUG(10,("FSCTL_SET_SPARSE: called on FID[0x%04X](but not implemented)\n", fidnum));
+		if (data_count >= 1 && pdata[0] == 0) {
+			set_sparse = false;
+		}
+
+		DEBUG(10,("FSCTL_SET_SPARSE: called on FID[0x%04X]set[%u]\n",
+			 fidnum, set_sparse));
+
+		if (!check_fsp_open(conn, req, fsp)) {
+			return;
+		}
+
+		if (!CAN_WRITE(conn)) {
+			DEBUG(9,("FSCTL_SET_SPARSE: fname[%s] set[%u] "
+				 "on readonly share[%s]\n",
+				 smb_fname_str_dbg(fsp->fsp_name), set_sparse,
+				 lp_servicename(SNUM(conn))));
+			reply_nterror(req, NT_STATUS_MEDIA_WRITE_PROTECTED);
+			return;
+		}
+
+		if (!(fsp->access_mask & FILE_WRITE_DATA) &&
+		    !(fsp->access_mask & FILE_WRITE_ATTRIBUTES)) {
+			DEBUG(9,("FSCTL_SET_SPARSE: fname[%s] set[%u] "
+				 "access_mask[0x%08X] - access denied\n",
+				 smb_fname_str_dbg(fsp->fsp_name), set_sparse, fsp->access_mask));
+			reply_nterror(req, NT_STATUS_ACCESS_DENIED);
+			return;
+		}
+
+		status = file_set_sparse(conn, fsp->fsp_name, set_sparse);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(9,("FSCTL_SET_SPARSE: fname[%s] set[%u] - %s\n",
+				 smb_fname_str_dbg(fsp->fsp_name), set_sparse, nt_errstr(status)));
+			reply_nterror(req, status);
+			return;
+		}
+
+		DEBUG(10,("FSCTL_SET_SPARSE: fname[%s] set[%u] - %s\n",
+			 smb_fname_str_dbg(fsp->fsp_name), set_sparse, nt_errstr(status)));
 		send_nt_replies(conn, req, NT_STATUS_OK, NULL, 0, NULL, 0);
 		return;
-
+	}
 	case FSCTL_CREATE_OR_GET_OBJECT_ID:
 	{
 		unsigned char objid[16];
