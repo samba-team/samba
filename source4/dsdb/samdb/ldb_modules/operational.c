@@ -642,8 +642,8 @@ static int operational_search_post_process(struct ldb_module *module,
 					goto failed;
 				}
 			} else if (ldb_msg_copy_attr(msg,
-						     search_sub[i].replace,
-						     search_sub[i].attr) != LDB_SUCCESS) {
+						     search_sub[i].attr,
+						     search_sub[i].replace) != LDB_SUCCESS) {
 				goto failed;
 			}
 		}
