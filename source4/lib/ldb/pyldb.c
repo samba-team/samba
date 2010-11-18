@@ -681,21 +681,75 @@ static PyObject *py_ldb_modify(PyLdbObject *self, PyObject *args)
 }
 
 
+/**
+ * Obtain a ldb message from a Python Dictionary object.
+ *
+ * @param mem_ctx Memory context
+ * @param py_obj Python Dictionary object
+ * @param ldb_ctx LDB context
+ * @param mod_flags Flags to be set on every message element
+ * @return ldb_message on success or NULL on failure
+ */
+static struct ldb_message *PyDict_AsMessage(TALLOC_CTX *mem_ctx,
+					    PyObject *py_obj,
+					    struct ldb_context *ldb_ctx,
+					    unsigned int mod_flags)
+{
+	struct ldb_message *msg;
+	unsigned int msg_pos = 0;
+	Py_ssize_t dict_pos = 0;
+	PyObject *key, *value;
+	struct ldb_message_element *msg_el;
+	PyObject *dn_value = PyDict_GetItemString(py_obj, "dn");
+
+	msg = ldb_msg_new(mem_ctx);
+	msg->elements = talloc_zero_array(msg, struct ldb_message_element, PyDict_Size(py_obj));
+
+	if (dn_value) {
+		if (!PyObject_AsDn(msg, dn_value, ldb_ctx, &msg->dn)) {
+			PyErr_SetString(PyExc_TypeError, "unable to import dn object");
+			return NULL;
+		}
+		if (msg->dn == NULL) {
+			PyErr_SetString(PyExc_TypeError, "dn set but not found");
+			return NULL;
+		}
+	} else {
+		PyErr_SetString(PyExc_TypeError, "no dn set");
+		return NULL;
+	}
+
+	while (PyDict_Next(py_obj, &dict_pos, &key, &value)) {
+		char *key_str = PyString_AsString(key);
+		if (strcmp(key_str, "dn") != 0) {
+			msg_el = PyObject_AsMessageElement(msg->elements, value,
+							   mod_flags, key_str);
+			if (msg_el == NULL) {
+				PyErr_SetString(PyExc_TypeError, "unable to import element");
+				return NULL;
+			}
+			memcpy(&msg->elements[msg_pos], msg_el, sizeof(*msg_el));
+			msg_pos++;
+		}
+	}
+
+	msg->num_elements = msg_pos;
+
+	return msg;
+}
+
 static PyObject *py_ldb_add(PyLdbObject *self, PyObject *args)
 {
-	PyObject *py_msg;
+	PyObject *py_obj;
 	int ret;
-	Py_ssize_t dict_pos, msg_pos;
-	struct ldb_message_element *msgel;
-	struct ldb_message *msg;
 	struct ldb_context *ldb_ctx;
 	struct ldb_request *req;
-	PyObject *key, *value;
+	struct ldb_message *msg = NULL;
 	PyObject *py_controls = Py_None;
 	TALLOC_CTX *mem_ctx;
 	struct ldb_control **parsed_controls;
 
-	if (!PyArg_ParseTuple(args, "O|O", &py_msg, &py_controls ))
+	if (!PyArg_ParseTuple(args, "O|O", &py_obj, &py_controls ))
 		return NULL;
 
 	mem_ctx = talloc_new(NULL);
@@ -712,49 +766,22 @@ static PyObject *py_ldb_add(PyLdbObject *self, PyObject *args)
 		parsed_controls = ldb_parse_control_strings(ldb_ctx, mem_ctx, controls);
 		talloc_free(controls);
 	}
-	if (PyDict_Check(py_msg)) {
-		PyObject *dn_value = PyDict_GetItemString(py_msg, "dn");
-		msg = ldb_msg_new(mem_ctx);
-		msg->elements = talloc_zero_array(msg, struct ldb_message_element, PyDict_Size(py_msg));
-		msg_pos = dict_pos = 0;
-		if (dn_value) {
-		   	if (!PyObject_AsDn(msg, dn_value, ldb_ctx, &msg->dn)) {
-		   		PyErr_SetString(PyExc_TypeError, "unable to import dn object");
-				talloc_free(mem_ctx);
-				return NULL;
-			}
-			if (msg->dn == NULL) {
-				PyErr_SetString(PyExc_TypeError, "dn set but not found");
-				talloc_free(mem_ctx);
-				return NULL;
-			}
-		}
 
-		while (PyDict_Next(py_msg, &dict_pos, &key, &value)) {
-			char *key_str = PyString_AsString(key);
-			if (strcmp(key_str, "dn") != 0) {
-				msgel = PyObject_AsMessageElement(msg->elements, value, 0, key_str);
-				if (msgel == NULL) {
-					PyErr_SetString(PyExc_TypeError, "unable to import element");
-					talloc_free(mem_ctx);
-					return NULL;
-				}
-				memcpy(&msg->elements[msg_pos], msgel, sizeof(*msgel));
-				msg_pos++;
-			}
-		}
-
-		if (msg->dn == NULL) {
-			PyErr_SetString(PyExc_TypeError, "no dn set");
-			talloc_free(mem_ctx);
-			return NULL;
-		}
-
-		msg->num_elements = msg_pos;
+	if (PyLdbMessage_Check(py_obj)) {
+		msg = PyLdbMessage_AsMessage(py_obj);
+	} else if (PyDict_Check(py_obj)) {
+		msg = PyDict_AsMessage(mem_ctx, py_obj, ldb_ctx, LDB_FLAG_MOD_ADD);
 	} else {
-		msg = PyLdbMessage_AsMessage(py_msg);
+		PyErr_SetString(PyExc_TypeError,
+				"Dictionary or LdbMessage object expected!");
 	}
-        
+
+	if (!msg) {
+		/* we should have a PyErr already set */
+		talloc_free(mem_ctx);
+		return NULL;
+	}
+
 	ret = ldb_msg_sanity_check(ldb_ctx, msg);
         if (ret != LDB_SUCCESS) {
 		PyErr_LDB_ERROR_IS_ERR_RAISE(PyExc_LdbError, ret, ldb_ctx);
