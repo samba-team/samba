@@ -33,16 +33,6 @@ static uint32_t filter_mode_by_protocol(uint32_t mode)
 	return mode;
 }
 
-static int set_sparse_flag(const SMB_STRUCT_STAT * const sbuf)
-{
-#if defined (HAVE_STAT_ST_BLOCKS) && defined(STAT_ST_BLOCKSIZE)
-	if (sbuf->st_ex_size > sbuf->st_ex_blocks * (SMB_OFF_T)STAT_ST_BLOCKSIZE) {
-		return FILE_ATTRIBUTE_SPARSE;
-	}
-#endif
-	return 0;
-}
-
 static int set_link_read_only_flag(const SMB_STRUCT_STAT *const sbuf)
 {
 #ifdef S_ISLNK
@@ -201,7 +191,6 @@ static uint32 dos_mode_from_sbuf(connection_struct *conn,
 	if (S_ISDIR(smb_fname->st.st_ex_mode))
 		result = aDIR | (result & aRONLY);
 
-	result |= set_sparse_flag(&smb_fname->st);
 	result |= set_link_read_only_flag(&smb_fname->st);
 
 	DEBUG(8,("dos_mode_from_sbuf returning "));
@@ -560,7 +549,6 @@ static bool get_stat_dos_flags(connection_struct *conn,
 	if (S_ISDIR(smb_fname->st.st_ex_mode))
 		*dosmode |= aDIR;
 
-	*dosmode |= set_sparse_flag(&smb_fname->st);
 	*dosmode |= set_link_read_only_flag(&smb_fname->st);
 
 	return true;
@@ -653,9 +641,7 @@ uint32 dos_mode(connection_struct *conn, struct smb_filename *smb_fname)
 #endif
 	if (!used_stat_dos_flags) {
 		/* Get the DOS attributes from an EA by preference. */
-		if (get_ea_dos_attribute(conn, smb_fname, &result)) {
-			result |= set_sparse_flag(&smb_fname->st);
-		} else {
+		if (!get_ea_dos_attribute(conn, smb_fname, &result)) {
 			result |= dos_mode_from_sbuf(conn, smb_fname);
 		}
 	}
