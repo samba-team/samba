@@ -119,7 +119,7 @@ static struct winbind_cache *get_cache(struct winbindd_domain *domain)
 	}
 
 	if (strequal(domain->name, get_global_sam_name()) &&
-	    sid_equal(&domain->sid, get_global_sam_sid())) {
+	    sid_check_is_domain(&domain->sid)) {
 		domain->backend = &sam_passdb_methods;
 		domain->initialized = True;
 	}
