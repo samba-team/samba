@@ -408,11 +408,8 @@ const char *luid_to_privilege_name(const struct lsa_LUID *set)
 {
 	int i;
 
-	if (set->high != 0)
-		return NULL;
-
 	for ( i=0; !se_priv_equal(&privs[i].se_priv, &se_priv_end); i++ ) {
-		if ( set->low == privs[i].luid.low ) {
+		if (memcmp(set, &privs[i].luid, sizeof(struct lsa_LUID)) == 0) {
 			return privs[i].name;
 		}
 	}
@@ -437,9 +434,7 @@ static bool privilege_set_add(PRIVILEGE_SET *priv_set, struct lsa_LUIDAttribute 
 		return False;
 	}
 
-	new_set[priv_set->count].luid.high = set.luid.high;
-	new_set[priv_set->count].luid.low = set.luid.low;
-	new_set[priv_set->count].attribute = set.attribute;
+	new_set[priv_set->count] = set;
 
 	priv_set->count++;
 	priv_set->set = new_set;
@@ -456,8 +451,7 @@ bool se_priv_to_privilege_set( PRIVILEGE_SET *set, SE_PRIV *mask )
 	uint32 num_privs = count_all_privileges();
 	struct lsa_LUIDAttribute luid;
 
-	luid.attribute = 0;
-	luid.luid.high = 0;
+	ZERO_STRUCT(luid);
 
 	for ( i=0; i<num_privs; i++ ) {
 		if ( !is_privilege_assigned(mask, &privs[i].se_priv) )
@@ -481,7 +475,7 @@ static bool luid_to_se_priv( struct lsa_LUID *luid, SE_PRIV *mask )
 	uint32 num_privs = count_all_privileges();
 
 	for ( i=0; i<num_privs; i++ ) {
-		if ( luid->low == privs[i].luid.low ) {
+		if (memcmp(luid, &privs[i].luid, sizeof(struct lsa_LUID)) == 0) {
 			se_priv_copy( mask, &privs[i].se_priv );
 			return True;
 		}
@@ -501,12 +495,6 @@ bool privilege_set_to_se_priv( SE_PRIV *mask, struct lsa_PrivilegeSet *privset )
 
 	for ( i=0; i<privset->count; i++ ) {
 		SE_PRIV r;
-
-		/* sanity check for invalid privilege.  we really
-		   only care about the low 32 bits */
-
-		if ( privset->set[i].luid.high != 0 )
-			return False;
 
 		if ( luid_to_se_priv( &privset->set[i].luid, &r ) )
 			se_priv_add( mask, &r );
