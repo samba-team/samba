@@ -555,6 +555,8 @@ static bool get_stat_dos_flags(connection_struct *conn,
 		*dosmode |= aSYSTEM;
 	if (smb_fname->st.st_ex_flags & UF_DOS_NOINDEX)
 		*dosmode |= FILE_ATTRIBUTE_NONINDEXED;
+	if (smb_fname->st.st_ex_flags & FILE_ATTRIBUTE_SPARSE)
+		*dosmode |= FILE_ATTRIBUTE_SPARSE;
 	if (S_ISDIR(smb_fname->st.st_ex_mode))
 		*dosmode |= aDIR;
 
