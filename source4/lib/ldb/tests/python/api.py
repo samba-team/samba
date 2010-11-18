@@ -532,6 +532,23 @@ class LdbMsgTests(unittest.TestCase):
         self.assertNotEquals(msg1, msg2)
         msg2['foo'] = 'blie'
 
+    def test_from_dict(self):
+        rec = {"dn": "dc=fromdict",
+               "a1": ["a1-val1", "a1-val1"]}
+        l = ldb.Ldb()
+        # check different types of input Flags
+        for flags in [ldb.FLAG_MOD_ADD, ldb.FLAG_MOD_REPLACE, ldb.FLAG_MOD_DELETE]:
+            m = ldb.Message.from_dict(l, rec, flags)
+            self.assertEquals(rec["a1"], list(m["a1"]))
+            self.assertEquals(flags, m["a1"].flags())
+        # check input params
+        self.assertRaises(TypeError, ldb.Message.from_dict, dict(), rec, ldb.FLAG_MOD_REPLACE)
+        self.assertRaises(TypeError, ldb.Message.from_dict, l, list(), ldb.FLAG_MOD_REPLACE)
+        self.assertRaises(ValueError, ldb.Message.from_dict, l, rec, 0)
+        # Message.from_dict expects dictionary with 'dn'
+        err_rec = {"a1": ["a1-val1", "a1-val1"]}
+        self.assertRaises(TypeError, ldb.Message.from_dict, l, err_rec, ldb.FLAG_MOD_REPLACE)
+
 
 
 class MessageElementTests(unittest.TestCase):
