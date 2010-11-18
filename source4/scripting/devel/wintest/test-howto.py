@@ -31,6 +31,7 @@ def provision_s4(t):
     t.info('Provisioning s4')
     t.chdir('${PREFIX}')
     t.run_cmd("rm -rf etc private")
+    t.run_cmd("find var -type f | xargs rm -f")
     t.run_cmd('sbin/provision --realm=${LCREALM} --domain=${DOMAIN} --adminpass=${PASSWORD1} --server-role="domain controller" --function-level=2008 -d${DEBUGLEVEL}')
     t.run_cmd('bin/samba-tool newuser testallowed ${PASSWORD1}')
     t.run_cmd('bin/samba-tool newuser testdenied ${PASSWORD1}')
