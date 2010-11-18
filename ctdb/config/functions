@@ -662,6 +662,8 @@ ctdb_compat_managed_service ()
 
 is_ctdb_managed_service ()
 {
+    _service_name="${1:-${service_name}}"
+
     t=" $CTDB_MANAGED_SERVICES "
 
     ctdb_compat_managed_service "$CTDB_MANAGES_VSFTPD"   "vsftpd"
@@ -673,17 +675,19 @@ is_ctdb_managed_service ()
     ctdb_compat_managed_service "$CTDB_MANAGES_CLAMD"    "clamd"
     ctdb_compat_managed_service "$CTDB_MANAGES_NFS"      "nfs"
 
-    # Returns 0 if "<space>$service_name<space>" appears in $t
-    [ "${t#* ${service_name} }" != "${t}" ]
+    # Returns 0 if "<space>$_service_name<space>" appears in $t
+    [ "${t#* ${_service_name} }" != "${t}" ]
 }
 
 ctdb_start_stop_service ()
 {
-    _active="$ctdb_active_dir/$service_name"
+    _service_name="${1:-${service_name}}"
+
+    _active="$ctdb_active_dir/$_service_name"
 
     if is_ctdb_managed_service ; then
 	if ! [ -e "$_active" ] ; then
-	    echo "Starting service $service_name"
+	    echo "Starting service $_service_name"
 	    ctdb_service_start || exit $?
 	    mkdir -p "$ctdb_active_dir"
 	    touch "$_active"
@@ -691,7 +695,7 @@ ctdb_start_stop_service ()
 	fi
     elif ! is_ctdb_managed_service ; then
 	if [ -e "$_active" ] ; then
-	    echo "Stopping service $service_name"
+	    echo "Stopping service $_service_name"
 	    ctdb_service_stop || exit $?
 	    rm -f "$_active"
 	fi

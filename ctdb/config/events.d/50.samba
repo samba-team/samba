@@ -30,8 +30,6 @@ service_stop="stop_samba"
 
 loadconfig
 
-[ "$CTDB_MANAGES_SAMBA" = "yes" ] || [ "$CTDB_MANAGES_WINBIND" = "yes" ] || exit 0
-
 start_samba() {
 	# create the state directory for samba
 	/bin/mkdir -p $CTDB_VARDIR/state/samba
@@ -202,6 +200,15 @@ periodic_cleanup() {
     # echo "Running periodic cleanup of samba databases"
     smbstatus -np > /dev/null 2>&1 &
 }
+
+###########################
+
+ctdb_start_stop_service
+ctdb_start_stop_service "windbind"
+
+is_ctdb_managed_service || is_ctdb_managed_service "winbind" || exit 0
+
+###########################
 
 case "$1" in 
      startup)
