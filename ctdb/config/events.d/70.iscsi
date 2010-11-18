@@ -7,6 +7,8 @@ service_name="iscsi"
 
 ctdb_start_stop_service
 
+is_ctdb_managed_service || exit 0
+
 [ -z "$CTDB_START_ISCSI_SCRIPTS" ] && {
 	echo "No iscsi start script directory found"
 	exit 0
