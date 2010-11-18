@@ -65,12 +65,6 @@ class DescriptorTests(samba.tests.TestCase):
         except LdbError, (num, _):
             self.assertEquals(num, ERR_NO_SUCH_OBJECT)
 
-    def find_basedn(self, ldb):
-        res = ldb.search(base="", expression="", scope=SCOPE_BASE,
-                         attrs=["defaultNamingContext"])
-        self.assertEquals(len(res), 1)
-        return res[0]["defaultNamingContext"][0]
-
     def find_configurationdn(self, ldb):
         res = ldb.search(base="", expression="", scope=SCOPE_BASE, attrs=["configurationNamingContext"])
         self.assertEquals(len(res), 1)
@@ -276,7 +270,7 @@ member: """ + self.get_users_domain_dn(username)
     def setUp(self):
         super(DescriptorTests, self).setUp()
         self.ldb_admin = ldb
-        self.base_dn = self.find_basedn(self.ldb_admin)
+        self.base_dn = ldb.domain_dn()
         self.configuration_dn = self.find_configurationdn(self.ldb_admin)
         self.schema_dn = self.find_schemadn(self.ldb_admin)
         self.domain_sid = self.find_domain_sid(self.ldb_admin)
