@@ -19,19 +19,17 @@ import samba.getopt as options
 from samba.auth import system_session
 from ldb import SCOPE_ONELEVEL, SCOPE_BASE, SCOPE_SUBTREE, LdbError
 from ldb import ERR_NO_SUCH_OBJECT
-from ldb import ERR_UNWILLING_TO_PERFORM
 from ldb import ERR_CONSTRAINT_VIOLATION
 from ldb import ERR_INVALID_ATTRIBUTE_SYNTAX
 from ldb import ERR_ENTRY_ALREADY_EXISTS
-from ldb import Message, MessageElement, Dn
-from ldb import FLAG_MOD_REPLACE
-from samba import Ldb
 
 from samba.ndr import ndr_pack, ndr_unpack
 from samba.dcerpc import security
 
 from subunit.run import SubunitTestRunner
 import unittest
+
+import samba.tests
 
 parser = optparse.OptionParser("ldap [options] <host>")
 sambaopts = options.SambaOptions(parser)
@@ -399,19 +397,7 @@ name: """ + object_name + """
             self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
         pass
 
-if not "://" in host:
-    if os.path.isfile(host):
-        host = "tdb://%s" % host
-    else:
-        host = "ldap://%s" % host
-
-ldb_options = []
-if host.startswith("ldap://"):
-    # user 'paged_search' module when connecting remotely
-    ldb_options = ["modules:paged_searches"]
-
-ldb = Ldb(host, credentials=creds, session_info=system_session(), lp=lp, options=ldb_options)
-
+ldb = samba.tests.connect_samdb(host, credentials=creds, session_info=system_session(), lp=lp)
 runner = SubunitTestRunner()
 rc = 0
 if not runner.run(unittest.makeSuite(SyntaxTests)).wasSuccessful():
