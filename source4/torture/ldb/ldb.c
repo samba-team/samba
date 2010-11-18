@@ -685,6 +685,12 @@ static bool torture_ldb_dn(struct torture_context *torture)
 				"should have failed to validate a DN with 0xA in it");
 	}
 
+	/* Escaped comma */
+	torture_assert(torture,
+		       dn = ldb_dn_new(mem_ctx, ldb, "CN=A\\,comma,DC=SAMBA,DC=org"),
+		       "Failed to create a DN with an escaped comma in it");
+
+
 	val = data_blob_const("CN=Zer\0,DC=SAMBA,DC=org", 23);
 	torture_assert(torture,
 		       NULL == ldb_dn_from_ldb_val(mem_ctx, ldb, &val),
