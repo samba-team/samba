@@ -221,14 +221,6 @@ url: www.example.com
 """
         _ldb.add_ldif(ldif)
 
-    def add_user_to_group(self, _ldb, username, groupname):
-        ldif = """
-dn: """ +  self.get_users_domain_dn(groupname) + """
-changetype: modify
-add: member
-member: """ + self.get_users_domain_dn(username)
-        _ldb.modify_ldif(ldif)
-
     def get_ldb_connection(self, target_username, target_password):
         creds_tmp = Credentials()
         creds_tmp.set_username(target_username)
@@ -307,35 +299,33 @@ class OwnerGroupDescriptorTests(DescriptorTests):
     def setUp(self):
         super(OwnerGroupDescriptorTests, self).setUp()
         self.deleteAll()
-            ### Create users
-            # User 1
+        ### Create users
+        # User 1 - Enterprise Admins
         self.create_enable_user("testuser1")
-        self.add_user_to_group(self.ldb_admin, "testuser1", "Enterprise Admins")
-            # User 2
+        # User 2 - Domain Admins
         self.create_enable_user("testuser2")
-        self.add_user_to_group(self.ldb_admin, "testuser2", "Domain Admins")
-            # User 3
+        # User 3 - Schema Admins
         self.create_enable_user("testuser3")
-        self.add_user_to_group(self.ldb_admin, "testuser3", "Schema Admins")
-            # User 4
+        # User 4 - regular user
         self.create_enable_user("testuser4")
-            # User 5
+        # User 5 - Enterprise Admins and Domain Admins
         self.create_enable_user("testuser5")
-        self.add_user_to_group(self.ldb_admin, "testuser5", "Enterprise Admins")
-        self.add_user_to_group(self.ldb_admin, "testuser5", "Domain Admins")
-            # User 6
+        # User 6 - Enterprise Admins, Domain Admins, Schema Admins
         self.create_enable_user("testuser6")
-        self.add_user_to_group(self.ldb_admin, "testuser6", "Enterprise Admins")
-        self.add_user_to_group(self.ldb_admin, "testuser6", "Domain Admins")
-        self.add_user_to_group(self.ldb_admin, "testuser6", "Schema Admins")
-            # User 7
+        # User 7 - Domain Admins and Schema Admins
         self.create_enable_user("testuser7")
-        self.add_user_to_group(self.ldb_admin, "testuser7", "Domain Admins")
-        self.add_user_to_group(self.ldb_admin, "testuser7", "Schema Admins")
-            # User 8
+        # User 5 - Enterprise Admins and Schema Admins
         self.create_enable_user("testuser8")
-        self.add_user_to_group(self.ldb_admin, "testuser8", "Enterprise Admins")
-        self.add_user_to_group(self.ldb_admin, "testuser8", "Schema Admins")
+
+        self.ldb_admin.add_remove_group_members("Enterprise Admins",
+                                                "testuser1,testuser5,testuser6,testuser8",
+                                                add_members_operation=True)
+        self.ldb_admin.add_remove_group_members("Domain Admins",
+                                                "testuser2,testuser5,testuser6,testuser7",
+                                                add_members_operation=True)
+        self.ldb_admin.add_remove_group_members("Schema Admins",
+                                                "testuser3,testuser6,testuser7,testuser8",
+                                                add_members_operation=True)
 
         self.results = {
             # msDS-Behavior-Version < DS_DOMAIN_FUNCTION_2008
@@ -1853,12 +1843,14 @@ class RightsAttributesTests(DescriptorTests):
     def setUp(self):
         super(RightsAttributesTests, self).setUp()
         self.deleteAll()
-            ### Create users
-            # User 1
+        ### Create users
+        # User 1
         self.create_enable_user("testuser_attr")
         # User 2, Domain Admins
         self.create_enable_user("testuser_attr2")
-        self.add_user_to_group(self.ldb_admin, "testuser_attr2", "Domain Admins")
+        self.ldb_admin.add_remove_group_members("Domain Admins",
+                                                "testuser_attr2",
+                                                add_members_operation=True)
 
     def test_sDRightsEffective(self):
         object_dn = "OU=test_domain_ou1," + self.base_dn
