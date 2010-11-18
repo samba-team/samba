@@ -108,9 +108,9 @@ def test_kerberos(t):
 
 def test_dyndns(t):
     t.chdir('${PREFIX}')
-    t.cmd_contains("sbin/samba_dnsupdate", [])
+    t.run_cmd("sbin/samba_dnsupdate --fail-immediately")
     t.run_cmd("${RNDC} flush")
-    t.cmd_contains("sbin/samba_dnsupdate --verbose", ["No DNS updates needed"])
+
 
 def run_winjoin(t, vm):
     t.setwinvars(vm)
