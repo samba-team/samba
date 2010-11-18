@@ -3,7 +3,7 @@
 '''automated testing library for testing Samba against windows'''
 
 import pexpect, subprocess
-import sys, os, time
+import sys, os, time, re
 
 class wintest():
     '''testing of Samba against windows VMs'''
@@ -83,6 +83,11 @@ class wintest():
             text = text.replace("${%s}" % var_name, self.vars[var_name])
         return text
 
+    def have_var(self, varname):
+        '''see if a variable has been set'''
+        return varname in self.vars
+
+
     def putenv(self, key, value):
         '''putenv with substitution'''
         os.putenv(key, self.substitute(value))
@@ -115,27 +120,38 @@ class wintest():
         cmd = self.substitute(cmd)
         return self.run_cmd(cmd, output=True)
 
-    def cmd_contains(self, cmd, contains, nomatch=False, ordered=False):
+    def cmd_contains(self, cmd, contains, nomatch=False, ordered=False, regex=False):
         '''check that command output contains the listed strings'''
         out = self.cmd_output(cmd)
         self.info(out)
         for c in self.substitute(contains):
-            ofs = out.find(c)
+            if regex:
+                m = re.search(c, out)
+                if m is None:
+                    start = -1
+                    end = -1
+                else:
+                    start = m.start()
+                    end = m.end()
+            else:
+                start = out.find(c)
+                end = start + len(c)
             if nomatch:
-                if ofs != -1:
+                if start != -1:
                     raise RuntimeError("Expected to not see %s in %s" % (c, cmd))
             else:
-                if ofs == -1:
+                if start == -1:
                     raise RuntimeError("Expected to see %s in %s" % (c, cmd))
-            if ordered and ofs != -1:
-                ofs += len(c)
-                out = out[ofs:]
+            if ordered and start != -1:
+                out = out[end:]
 
-    def retry_cmd(self, cmd, contains, retries=30, delay=2, wait_for_fail=False):
+    def retry_cmd(self, cmd, contains, retries=30, delay=2, wait_for_fail=False,
+                  ordered=False, regex=False):
         '''retry a command a number of times'''
         while retries > 0:
             try:
-                self.cmd_contains(cmd, contains, nomatch=wait_for_fail)
+                self.cmd_contains(cmd, contains, nomatch=wait_for_fail,
+                                  ordered=ordered, regex=regex)
                 return
             except:
                 time.sleep(delay)
@@ -214,7 +230,7 @@ class wintest():
         child.expect("C:")
 
 
-    def open_telnet(self, hostname, username, password, retries=30, delay=3, set_time=False):
+    def open_telnet(self, hostname, username, password, retries=60, delay=5, set_time=False):
         '''open a telnet connection to a windows server, return the pexpect child'''
         while retries > 0:
             child = self.pexpect_spawn("telnet " + hostname + " -l '" + username + "'")
