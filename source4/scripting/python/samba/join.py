@@ -545,7 +545,8 @@ def join_RODC(server=None, creds=None, lp=None, site=None, netbios_name=None,
                            drsuapi.DRSUAPI_DRS_PER_SYNC |
                            drsuapi.DRSUAPI_DRS_GET_ANC |
                            drsuapi.DRSUAPI_DRS_NEVER_SYNCED |
-                           drsuapi.DRSUAPI_DRS_SPECIAL_SECRET_PROCESSING)
+                           drsuapi.DRSUAPI_DRS_SPECIAL_SECRET_PROCESSING |
+                           drsuapi.DRSUAPI_DRS_GET_ALL_GROUP_MEMBERSHIP)
     ctx.do_join()
 
 
