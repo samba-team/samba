@@ -156,7 +156,7 @@ case "$1" in
 
 	# once every 60 seconds, update the statd state database for which
 	# clients need notifications
-	LAST_UPDATE=`stat --printf="%Y" $CTDB_VARDIR/state/statd/update-trigger`
+	LAST_UPDATE=`stat --printf="%Y" $CTDB_VARDIR/state/statd/update-trigger 2>/dev/null`
 	CURRENT_TIME=`date +"%s"`
 	[ $CURRENT_TIME -ge $(($LAST_UPDATE + 60)) ] && {
 	    mkdir -p $CTDB_VARDIR/state/statd
