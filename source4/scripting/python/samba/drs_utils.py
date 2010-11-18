@@ -81,7 +81,7 @@ class drs_Replicate:
         attids = []
 
         # the exact list of attids we send is quite critical. Note that
-        # we do ask for the secret attributes, but set set SPECIAL_SECRET_PROCESSING
+        # we do ask for the secret attributes, but set SPECIAL_SECRET_PROCESSING
         # to zero them out
         schema_dn = self.samdb.get_schema_basedn()
         res = self.samdb.search(base=schema_dn, scope=ldb.SCOPE_SUBTREE,
