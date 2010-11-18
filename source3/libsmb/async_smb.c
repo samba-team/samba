@@ -700,6 +700,8 @@ static void cli_smb_received(struct tevent_req *subreq)
 		DEBUG(10, ("cli_check_sign_mac failed\n"));
 		TALLOC_FREE(inbuf);
 		status = NT_STATUS_ACCESS_DENIED;
+		close(cli->fd);
+		cli->fd = -1;
 		goto fail;
 	}
 
