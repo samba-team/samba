@@ -560,6 +560,8 @@ if __name__ == '__main__':
     parser.add_option("--conf", type='string', default='', help='config file')
     parser.add_option("--skip", type='string', default='', help='list of steps to skip (comma separated)')
     parser.add_option("--list", action='store_true', default=False, help='list the available steps')
+    parser.add_option("--rebase", action='store_true', default=False, help='do a git pull --rebase')
+    parser.add_option("--clean", action='store_true', default=False, help='clean the tree')
 
     opts, args = parser.parse_args()
 
@@ -572,5 +574,15 @@ if __name__ == '__main__':
     t.set_skip(opts.skip)
     if opts.list:
         t.list_steps_mode()
-    test_howto(t)
 
+    if opts.rebase:
+        t.info('rebasing')
+        t.chdir('${SOURCETREE}')
+        t.run_cmd('git pull --rebase')
+
+    if opts.clean:
+        t.info('rebasing')
+        t.chdir('${SOURCETREE}/source4')
+        t.run_cmd('rm -rf bin')
+
+    test_howto(t)
