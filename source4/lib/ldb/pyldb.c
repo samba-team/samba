@@ -2003,6 +2003,45 @@ PyTypeObject PyLdbMessageElement = {
 	.tp_flags = Py_TPFLAGS_DEFAULT,
 };
 
+
+static PyObject *py_ldb_msg_from_dict(PyTypeObject *type, PyObject *args)
+{
+	PyObject *py_ldb;
+	PyObject *py_dict;
+	PyObject *py_ret;
+	struct ldb_message *msg;
+	struct ldb_context *ldb_ctx;
+	unsigned int mod_flags = LDB_FLAG_MOD_REPLACE;
+
+	if (!PyArg_ParseTuple(args, "O!O!|I",
+			      &PyLdb, &py_ldb, &PyDict_Type, &py_dict,
+			      &mod_flags)) {
+		return NULL;
+	}
+
+	/* mask only flags we are going to use */
+	mod_flags = LDB_FLAG_MOD_TYPE(mod_flags);
+	if (!mod_flags) {
+		PyErr_SetString(PyExc_ValueError,
+				"FLAG_MOD_ADD, FLAG_MOD_REPLACE or FLAG_MOD_DELETE"
+				" expected as mod_flag value");
+		return NULL;
+	}
+
+	ldb_ctx = PyLdb_AsLdbContext(py_ldb);
+
+	msg = PyDict_AsMessage(ldb_ctx, py_dict, ldb_ctx, mod_flags);
+	if (!msg) {
+		return NULL;
+	}
+
+	py_ret = PyLdbMessage_FromMessage(msg);
+
+	talloc_unlink(ldb_ctx, msg);
+
+	return py_ret;
+}
+
 static PyObject *py_ldb_msg_remove_attr(PyLdbMessageObject *self, PyObject *args)
 {
 	char *name;
@@ -2090,6 +2129,11 @@ static PyObject *py_ldb_msg_items(PyLdbMessageObject *self)
 }
 
 static PyMethodDef py_ldb_msg_methods[] = { 
+	{ "from_dict", (PyCFunction)py_ldb_msg_from_dict, METH_CLASS | METH_VARARGS,
+		"Message.from_dict(ldb, dict, mod_flag) -> ldb.Message\n"
+		"Class method to create ldb.Message object from Dictionary.\n"
+		"mod_flag is one of FLAG_MOD_ADD, FLAG_MOD_REPLACE or FLAG_MOD_DELETE.\n"
+		"mod_flag defaults to FLAG_MOD_REPLACE"},
 	{ "keys", (PyCFunction)py_ldb_msg_keys, METH_NOARGS, NULL },
 	{ "remove", (PyCFunction)py_ldb_msg_remove_attr, METH_VARARGS, NULL },
 	{ "get", (PyCFunction)py_ldb_msg_get, METH_VARARGS, NULL },
