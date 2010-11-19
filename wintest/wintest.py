@@ -96,6 +96,16 @@ class wintest():
         '''chdir with substitution'''
         os.chdir(self.substitute(dir))
 
+    def del_files(self, dirs):
+        '''delete all files in the given directory'''
+        for d in dirs:
+            self.run_cmd("find %s -type f | xargs rm -f" % d)
+
+    def write_file(self, filename, text, mode='w'):
+        '''write to a file'''
+        f = open(self.substitute(filename), mode=mode)
+        f.write(self.substitute(text))
+        f.close()
 
     def run_cmd(self, cmd, dir=".", show=None, output=False, checkfail=True):
         cmd = self.substitute(cmd)
@@ -120,8 +130,13 @@ class wintest():
         cmd = self.substitute(cmd)
         return self.run_cmd(cmd, output=True)
 
-    def cmd_contains(self, cmd, contains, nomatch=False, ordered=False, regex=False):
+    def cmd_contains(self, cmd, contains, nomatch=False, ordered=False, regex=False,
+                     casefold=False):
         '''check that command output contains the listed strings'''
+
+        if isinstance(contains, str):
+            contains = [contains]
+
         out = self.cmd_output(cmd)
         self.info(out)
         for c in self.substitute(contains):
@@ -133,6 +148,9 @@ class wintest():
                 else:
                     start = m.start()
                     end = m.end()
+            elif casefold:
+                start = out.upper().find(c.upper())
+                end = start + len(c)
             else:
                 start = out.find(c)
                 end = start + len(c)
@@ -146,12 +164,12 @@ class wintest():
                 out = out[end:]
 
     def retry_cmd(self, cmd, contains, retries=30, delay=2, wait_for_fail=False,
-                  ordered=False, regex=False):
+                  ordered=False, regex=False, casefold=False):
         '''retry a command a number of times'''
         while retries > 0:
             try:
                 self.cmd_contains(cmd, contains, nomatch=wait_for_fail,
-                                  ordered=ordered, regex=regex)
+                                  ordered=ordered, regex=regex, casefold=casefold)
                 return
             except:
                 time.sleep(delay)

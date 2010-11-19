@@ -6,8 +6,6 @@ import sys, os
 import optparse
 import wintest
 
-vars = {}
-
 def check_prerequesites(t):
     t.info("Checking prerequesites")
     t.setvar('HOSTNAME', t.cmd_output("hostname -s").strip())
@@ -30,8 +28,7 @@ def provision_s4(t, func_level="2008", interfaces=None):
     '''provision s4 as a DC'''
     t.info('Provisioning s4')
     t.chdir('${PREFIX}')
-    t.run_cmd("rm -rf etc private")
-    t.run_cmd("find var -type f | xargs rm -f")
+    t.del_files(["var", "etc", "private"])
     options=' --function-level=%s -d${DEBUGLEVEL}' % func_level
     if interfaces:
         options += ' --option=interfaces=%s' % interfaces
@@ -68,16 +65,15 @@ def test_smbclient(t):
 def create_shares(t):
     t.info("Adding test shares")
     t.chdir('${PREFIX}')
-    f = open("etc/smb.conf", mode='a')
-    f.write(t.substitute('''
+    t.write_file("etc/smb.conf", '''
 [test]
        path = ${PREFIX}/test
        read only = no
 [profiles]
        path = ${PREFIX}/var/profiles
        read only = no
-    '''))
-    f.close()
+    ''',
+                 mode='a')
     t.run_cmd("mkdir -p test")
     t.run_cmd("mkdir -p var/profiles")
 
@@ -592,18 +588,27 @@ if __name__ == '__main__':
     parser.add_option("--list", action='store_true', default=False, help='list the available steps')
     parser.add_option("--rebase", action='store_true', default=False, help='do a git pull --rebase')
     parser.add_option("--clean", action='store_true', default=False, help='clean the tree')
+    parser.add_option("--prefix", type='string', default=None, help='override install prefix')
+    parser.add_option("--sourcetree", type='string', default=None, help='override sourcetree location')
 
     opts, args = parser.parse_args()
 
     if not opts.conf:
-        t.info("Please specify a config file with --conf")
+        print("Please specify a config file with --conf")
         sys.exit(1)
 
     t = wintest.wintest()
     t.load_config(opts.conf)
     t.set_skip(opts.skip)
+
     if opts.list:
         t.list_steps_mode()
+
+    if opts.prefix:
+        t.setvar('PREFIX', opts.prefix)
+
+    if opts.sourcetree:
+        t.setvar('SOURCETREE', opts.sourcetree)
 
     if opts.rebase:
         t.info('rebasing')
