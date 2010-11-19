@@ -183,10 +183,6 @@ PARAM_WITHOUT_REG_SRC = '''param/loadparm.c param/util.c param/loadparm_server_r
 
 KRBCLIENT_SRC = '''libads/kerberos.c libads/ads_status.c'''
 
-LIBADDNS_SRC0 = '''libaddns/dnsrecord.c libaddns/dnsutils.c  libaddns/dnssock.c
-               libaddns/dnsgss.c libaddns/dnsmarshall.c'''
-LIBADDNS_SRC = '''${LIBADDNS_SRC0}'''
-
 LIBGPO_SRC0 = '''../libgpo/gpo_ldap.c ../libgpo/gpo_ini.c ../libgpo/gpo_util.c
               ../libgpo/gpo_fetch.c libgpo/gpo_filesync.c ../libgpo/gpo_sec.c
               libgpo/gpo_reg.c'''
@@ -927,12 +923,6 @@ bld.SAMBA_LIBRARY('smbsharemodes',
                     private_library=True,
                     vars=locals())
 
-bld.SAMBA_LIBRARY('libaddns',
-                    source=LIBADDNS_SRC,
-                    public_deps='talloc krb5 k5crypto com_err gssapi gssapi_krb5',
-                    private_library=True,
-                    vars=locals())
-
 bld.SAMBA_SUBSYSTEM('LIBMSRPC',
                     source='${LIBMSRPC_SRC}',
                     deps='ndr NDR_SECURITY NDR_DCERPC NDR_SCHANNEL',
@@ -1510,6 +1500,7 @@ bld.RECURSE('winbindd')
 bld.RECURSE('libgpo/gpext')
 bld.RECURSE('pam_smbpass')
 bld.RECURSE('rpc_server')
+bld.RECURSE('libaddns')
 
 bld.ENFORCE_GROUP_ORDERING()
 bld.CHECK_PROJECT_RULES()
