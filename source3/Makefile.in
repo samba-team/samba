@@ -497,7 +497,7 @@ PARAM_OBJ = $(PARAM_WITHOUT_REG_OBJ) $(PARAM_REG_ADD_OBJ)
 KRBCLIENT_OBJ = libads/kerberos.o libads/ads_status.o
 
 LIBADDNS_OBJ0 = libaddns/dnsrecord.o libaddns/dnsutils.o  libaddns/dnssock.o \
-	       libaddns/dnsgss.o libaddns/dnsmarshall.o
+	       libaddns/dnsgss.o libaddns/dnsmarshall.o libaddns/error.o
 LIBADDNS_OBJ = $(LIBADDNS_OBJ0) $(SOCKET_WRAPPER_OBJ)
 
 GPEXT_OBJ = ../libgpo/gpext/gpext.o @GPEXT_STATIC@
