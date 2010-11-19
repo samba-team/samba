@@ -643,49 +643,6 @@ bool init_domain_list(void)
 	return True;
 }
 
-void check_domain_trusted( const char *name, const struct dom_sid *user_sid )
-{
-	struct winbindd_domain *domain;
-	struct dom_sid dom_sid;
-	uint32 rid;
-
-	/* Check if we even care */
-
-	if (!lp_allow_trusted_domains())
-		return;
-
-	domain = find_domain_from_name_noinit( name );
-	if ( domain )
-		return;
-
-	sid_copy( &dom_sid, user_sid );
-	if ( !sid_split_rid( &dom_sid, &rid ) )
-		return;
-
-	/* add the newly discovered trusted domain */
-
-	domain = add_trusted_domain( name, NULL, &cache_methods,
-				     &dom_sid);
-
-	if ( !domain )
-		return;
-
-	/* assume this is a trust from a one-way transitive
-	   forest trust */
-
-	domain->active_directory = True;
-	domain->domain_flags = NETR_TRUST_FLAG_OUTBOUND;
-	domain->domain_type  = NETR_TRUST_TYPE_UPLEVEL;
-	domain->internal = False;
-	domain->online = True;
-
-	setup_domain_child(domain);
-
-	wcache_tdc_add_domain( domain );
-
-	return;
-}
-
 /**
  * Given a domain name, return the struct winbindd domain info for it
  *

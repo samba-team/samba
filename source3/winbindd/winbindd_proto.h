@@ -369,7 +369,6 @@ void rescan_trusted_domains(struct tevent_context *ev, struct tevent_timer *te,
 enum winbindd_result winbindd_dual_init_connection(struct winbindd_domain *domain,
 						   struct winbindd_cli_state *state);
 bool init_domain_list(void);
-void check_domain_trusted( const char *name, const struct dom_sid *user_sid );
 struct winbindd_domain *find_domain_from_name_noinit(const char *domain_name);
 struct winbindd_domain *find_domain_from_name(const char *domain_name);
 struct winbindd_domain *find_domain_from_sid_noinit(const struct dom_sid *sid);
