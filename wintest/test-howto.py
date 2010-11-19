@@ -150,7 +150,7 @@ def test_winjoin(t, vm):
 def run_dcpromo(t, vm):
     '''run a dcpromo on windows'''
     t.setwinvars(vm)
-    
+
     t.info("Joining a windows VM ${WIN_VM} to the domain as a DC using dcpromo")
     t.vm_poweroff("${WIN_VM}", checkfail=False)
     t.vm_restore("${WIN_VM}", "${WIN_SNAPSHOT}")
@@ -523,7 +523,7 @@ def test_howto(t):
         test_kerberos(t)
     if not t.skip("dyndns"):
         test_dyndns(t)
-    
+
     if t.have_var('WINDOWS7_VM') and not t.skip("windows7"):
         run_winjoin(t, "WINDOWS7")
         test_winjoin(t, "WINDOWS7")
@@ -531,7 +531,7 @@ def test_howto(t):
     if t.have_var('WINXP_VM') and not t.skip("winxp"):
         run_winjoin(t, "WINXP")
         test_winjoin(t, "WINXP")
-    
+
     if t.have_var('W2K8R2C_VM') and not t.skip("dcpromo_rodc"):
         t.info("Testing w2k8r2 RODC dcpromo")
         run_dcpromo_rodc(t, "W2K8R2C")
@@ -560,7 +560,7 @@ def test_howto(t):
         test_dyndns(t)
         run_dcpromo(t, "W2K3B")
         test_dcpromo(t, "W2K3B")
-    
+
     if t.have_var('W2K8R2A_VM') and not t.skip("join_w2k8r2"):
         join_as_dc(t, "W2K8R2A")
         create_shares(t)
@@ -574,7 +574,7 @@ def test_howto(t):
         start_s4(t, interfaces='${INTERFACES}')
         test_dyndns(t)
         test_join_as_rodc(t, "W2K8R2A")
-    
+
     if t.have_var('W2K3A_VM') and not t.skip("join_w2k3"):
         join_as_dc(t, "W2K3A")
         create_shares(t)
