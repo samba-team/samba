@@ -1198,6 +1198,8 @@ static NTSTATUS net_update_dns_internal(TALLOC_CTX *ctx, ADS_STRUCT *ads,
 
 	dns_err = DoDNSUpdate(dns_server, dnsdomain, machine_name, addrs, num_addrs);
 	if (!ERR_DNS_IS_OK(dns_err)) {
+		d_printf(_("DNS Update for %s failed: %s\n"),
+			machine_name, dns_errstr(dns_err));
 		status = NT_STATUS_UNSUCCESSFUL;
 	}
 
@@ -1511,7 +1513,8 @@ static int net_ads_dns_gethostbyname(struct net_context *c, int argc, const char
 
 	err = do_gethostbyname(argv[0], argv[1]);
 
-	d_printf(_("do_gethostbyname returned %d\n"), ERROR_DNS_V(err));
+	d_printf(_("do_gethostbyname returned %s (%d)\n"),
+		dns_errstr(err), ERROR_DNS_V(err));
 #endif
 	return 0;
 }
