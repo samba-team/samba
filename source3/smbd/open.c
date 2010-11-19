@@ -22,6 +22,7 @@
 #include "includes.h"
 #include "smbd/globals.h"
 
+extern struct current_user current_user;
 extern const struct generic_mapping file_generic_mapping;
 
 struct deferred_open_record {
@@ -2476,8 +2477,8 @@ static NTSTATUS open_directory(connection_struct *conn,
 		return status;
 	}
 
-	/* We need to support SeSecurityPrivilege for this. */
-	if (access_mask & SEC_FLAG_SYSTEM_SECURITY) {
+	if ((access_mask & SEC_FLAG_SYSTEM_SECURITY) &&
+			!user_has_privileges(current_user.nt_user_token, &se_security)) {
 		DEBUG(10, ("open_directory: open on %s "
 			"failed - SEC_FLAG_SYSTEM_SECURITY denied.\n",
 			smb_fname_str_dbg(smb_dname)));
@@ -2986,29 +2987,14 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 		goto fail;
 	}
 
-#if 0
-	/* We need to support SeSecurityPrivilege for this. */
 	if ((access_mask & SEC_FLAG_SYSTEM_SECURITY) &&
-	    !user_has_privileges(current_user.nt_user_token,
-				 &se_security)) {
+			!user_has_privileges(current_user.nt_user_token, &se_security)) {
+		DEBUG(10, ("create_file_unixpath:: open on %s "
+			"failed - SEC_FLAG_SYSTEM_SECURITY denied.\n",
+			smb_fname_str_dbg(smb_fname)));
 		status = NT_STATUS_PRIVILEGE_NOT_HELD;
 		goto fail;
 	}
-#else
-	/* We need to support SeSecurityPrivilege for this. */
-	if (access_mask & SEC_FLAG_SYSTEM_SECURITY) {
-		status = NT_STATUS_PRIVILEGE_NOT_HELD;
-		goto fail;
-	}
-	/* Don't allow a SACL set from an NTtrans create until we
-	 * support SeSecurityPrivilege. */
-	if (!VALID_STAT(smb_fname->st) &&
-			lp_nt_acl_support(SNUM(conn)) &&
-			sd && (sd->sacl != NULL)) {
-		status = NT_STATUS_PRIVILEGE_NOT_HELD;
-		goto fail;
-	}
-#endif
 
 	if ((conn->fs_capabilities & FILE_NAMED_STREAMS)
 	    && is_ntfs_stream_smb_fname(smb_fname)

@@ -1837,6 +1837,18 @@ static void call_nt_transact_query_security_desc(connection_struct *conn,
 	 * Get the permissions to return.
 	 */
 
+	if ((security_info_wanted & SECINFO_SACL) &&
+			!(fsp->access_mask & SEC_FLAG_SYSTEM_SECURITY)) {
+		reply_nterror(req,  NT_STATUS_ACCESS_DENIED);
+		return;
+	}
+
+	if ((security_info_wanted & (SECINFO_DACL|SECINFO_OWNER|SECINFO_GROUP)) &&
+			!(fsp->access_mask & SEC_STD_READ_CONTROL)) {
+		reply_nterror(req, NT_STATUS_ACCESS_DENIED);
+		return;
+	}
+
 	if (!lp_nt_acl_support(SNUM(conn))) {
 		status = get_null_nt_acl(talloc_tos(), &psd);
 	} else {
