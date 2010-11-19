@@ -633,7 +633,7 @@ static int ildb_rename(struct ildb_context *ac)
 	if ((rdn_name != NULL) && (rdn_val != NULL)) {
 		msg->r.ModifyDNRequest.newrdn =
 			talloc_asprintf(msg, "%s=%s", rdn_name,
-				ldb_dn_escape_value(msg, *rdn_val));
+					rdn_val->length > 0 ? ldb_dn_escape_value(msg, *rdn_val) : "");
 	} else {
 		msg->r.ModifyDNRequest.newrdn = talloc_strdup(msg, "");
 	}
