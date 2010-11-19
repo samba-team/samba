@@ -56,11 +56,6 @@ class SyntaxTests(unittest.TestCase):
         except LdbError, (num, _):
             self.assertEquals(num, ERR_NO_SUCH_OBJECT)
 
-    def find_schemadn(self, ldb):
-        res = ldb.search(base="", expression="", scope=SCOPE_BASE, attrs=["schemaNamingContext"])
-        self.assertEquals(len(res), 1)
-        return res[0]["schemaNamingContext"][0]
-
     def _find_domain_sid(self):
         res = self.ldb.search(base=self.base_dn, expression="(objectClass=*)", scope=SCOPE_BASE)
         return ndr_unpack( security.dom_sid,res[0]["objectSid"][0])
@@ -69,7 +64,7 @@ class SyntaxTests(unittest.TestCase):
         super(SyntaxTests, self).setUp()
         self.ldb = ldb
         self.base_dn = ldb.domain_dn()
-        self.schema_dn = self.find_schemadn(ldb)
+        self.schema_dn = ldb.get_schema_basedn().get_linearized()
         self._setup_dn_string_test()
         self._setup_dn_binary_test()
         self.domain_sid = self._find_domain_sid()

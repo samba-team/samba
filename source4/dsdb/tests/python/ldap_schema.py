@@ -55,16 +55,11 @@ class SchemaTests(unittest.TestCase):
         except LdbError, (num, _):
             self.assertEquals(num, ERR_NO_SUCH_OBJECT)
 
-    def find_schemadn(self, ldb):
-        res = ldb.search(base="", expression="", scope=SCOPE_BASE, attrs=["schemaNamingContext"])
-        self.assertEquals(len(res), 1)
-        return res[0]["schemaNamingContext"][0]
-
     def setUp(self):
         super(SchemaTests, self).setUp()
         self.ldb = ldb
         self.base_dn = ldb.domain_dn()
-        self.schema_dn = self.find_schemadn(ldb)
+        self.schema_dn = ldb.get_schema_basedn().get_linearized()
 
     def test_generated_schema(self):
         """Testing we can read the generated schema via LDAP"""

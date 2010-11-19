@@ -50,16 +50,10 @@ class BasicDeleteTests(unittest.TestCase):
     def GUID_string(self, guid):
         return self.ldb.schema_format_value("objectGUID", guid)
 
-    def find_configurationdn(self, ldb):
-        res = ldb.search(base="", expression="", scope=SCOPE_BASE,
-                         attrs=["configurationNamingContext"])
-        self.assertEquals(len(res), 1)
-        return res[0]["configurationNamingContext"][0]
-
     def setUp(self):
         self.ldb = ldb
         self.base_dn = ldb.domain_dn()
-        self.configuration_dn = self.find_configurationdn(ldb)
+        self.configuration_dn = ldb.get_config_basedn().get_linearized()
 
     def search_guid(self, guid):
         print "SEARCH by GUID %s" % self.GUID_string(guid)

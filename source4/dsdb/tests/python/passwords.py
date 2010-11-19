@@ -926,15 +926,10 @@ if not "://" in host:
 
 ldb = SamDB(url=host, session_info=system_session(), credentials=creds, lp=lp)
 
-# Gets back the configuration basedn
-res = ldb.search(base="", expression="", scope=SCOPE_BASE,
-                 attrs=["configurationNamingContext"])
-configuration_dn = res[0]["configurationNamingContext"][0]
-
 # Gets back the basedn
-res = ldb.search(base="", expression="", scope=SCOPE_BASE,
-                 attrs=["defaultNamingContext"])
-base_dn = res[0]["defaultNamingContext"][0]
+base_dn = ldb.domain_dn()
+# Gets back the configuration basedn
+configuration_dn = ldb.get_config_basedn().get_linearized()
 
 # Get the old "dSHeuristics" if it was set
 res = ldb.search("CN=Directory Service, CN=Windows NT, CN=Services, "
