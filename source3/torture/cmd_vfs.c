@@ -1128,14 +1128,12 @@ static NTSTATUS cmd_mknod(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, 
 
 static NTSTATUS cmd_realpath(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, const char **argv)
 {
-	char respath[PATH_MAX];
-	
 	if (argc != 2) {
 		printf("Usage: realpath <path>\n");
 		return NT_STATUS_OK;
 	}
 
-	if (SMB_VFS_REALPATH(vfs->conn, argv[1], respath) == NULL) {
+	if (SMB_VFS_REALPATH(vfs->conn, argv[1]) == NULL) {
 		printf("realpath: error=%d (%s)\n", errno, strerror(errno));
 		return NT_STATUS_UNSUCCESSFUL;
 	}

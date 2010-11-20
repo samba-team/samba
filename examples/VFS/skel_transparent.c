@@ -332,9 +332,9 @@ static int skel_mknod(vfs_handle_struct *handle,  const char *path, mode_t mode,
 	return SMB_VFS_NEXT_MKNOD(handle, path, mode, dev);
 }
 
-static char *skel_realpath(vfs_handle_struct *handle,  const char *path, char *resolved_path)
+static char *skel_realpath(vfs_handle_struct *handle,  const char *path)
 {
-	return SMB_VFS_NEXT_REALPATH(handle, path, resolved_path);
+	return SMB_VFS_NEXT_REALPATH(handle, path);
 }
 
 static NTSTATUS skel_notify_watch(struct vfs_handle_struct *handle,

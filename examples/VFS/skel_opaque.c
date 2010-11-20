@@ -356,7 +356,7 @@ static int skel_mknod(vfs_handle_struct *handle,  const char *path, mode_t mode,
 	return -1;
 }
 
-static char *skel_realpath(vfs_handle_struct *handle,  const char *path, char *resolved_path)
+static char *skel_realpath(vfs_handle_struct *handle,  const char *path)
 {
 	errno = ENOSYS;
 	return NULL;

@@ -653,7 +653,7 @@ static int shadow_copy2_mknod(vfs_handle_struct *handle,
 }
 
 static char *shadow_copy2_realpath(vfs_handle_struct *handle,
-			    const char *fname, char *resolved_path)
+			    const char *fname)
 {
 	const char *gmt;
 
@@ -671,10 +671,10 @@ static char *shadow_copy2_realpath(vfs_handle_struct *handle,
 		copy[gmt - fname + 1] = '\0';
 
 		DEBUG(10, ("calling NEXT_REALPATH with %s\n", copy));
-		SHADOW2_NEXT(REALPATH, (handle, name, resolved_path), char *,
+		SHADOW2_NEXT(REALPATH, (handle, copy), char *,
 			     NULL);
 	}
-        SHADOW2_NEXT(REALPATH, (handle, name, resolved_path), char *, NULL);
+        SHADOW2_NEXT(REALPATH, (handle, name), char *, NULL);
 }
 
 static const char *shadow_copy2_connectpath(struct vfs_handle_struct *handle,

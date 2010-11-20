@@ -289,10 +289,10 @@
 #define SMB_VFS_NEXT_MKNOD(handle, path, mode, dev) \
 	smb_vfs_call_mknod((handle)->next, (path), (mode), (dev))
 
-#define SMB_VFS_REALPATH(conn, path, resolved_path) \
-	smb_vfs_call_realpath((conn)->vfs_handles, (path), (resolved_path))
-#define SMB_VFS_NEXT_REALPATH(handle, path, resolved_path) \
-	smb_vfs_call_realpath((handle)->next, (path), (resolved_path))
+#define SMB_VFS_REALPATH(conn, path) \
+	smb_vfs_call_realpath((conn)->vfs_handles, (path))
+#define SMB_VFS_NEXT_REALPATH(handle, path) \
+	smb_vfs_call_realpath((handle)->next, (path))
 
 #define SMB_VFS_NOTIFY_WATCH(conn, ctx, e, callback, private_data, handle_p) \
 	smb_vfs_call_notify_watch((conn)->vfs_handles, (ctx), (e), (callback), (private_data), (handle_p))

@@ -26,23 +26,14 @@ extern userdom_struct current_user_info;
 
 static bool canonicalize_connect_path(connection_struct *conn)
 {
-#ifdef REALPATH_TAKES_NULL
 	bool ret;
-	char *resolved_name = SMB_VFS_REALPATH(conn,conn->connectpath,NULL);
+	char *resolved_name = SMB_VFS_REALPATH(conn,conn->connectpath);
 	if (!resolved_name) {
 		return false;
 	}
 	ret = set_conn_connectpath(conn,resolved_name);
 	SAFE_FREE(resolved_name);
 	return ret;
-#else
-        char resolved_name_buf[PATH_MAX+1];
-	char *resolved_name = SMB_VFS_REALPATH(conn,conn->connectpath,resolved_name_buf);
-	if (!resolved_name) {
-		return false;
-	}
-	return set_conn_connectpath(conn,resolved_name);
-#endif /* REALPATH_TAKES_NULL */
 }
 
 /****************************************************************************
