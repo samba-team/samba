@@ -126,6 +126,8 @@
 /* Leave at 27 - not yet released. Add translate_name VFS call to convert
 		 UNIX names to Windows supported names -- asrinivasan. */
 /* Changed to version 28 - Add private_flags uint32_t to CREATE call. */
+/* Leave at 28 - not yet released. Change realpath to assume NULL and return a
+		 malloc'ed path. JRA. */
 #define SMB_VFS_INTERFACE_VERSION 28
 
 
@@ -257,7 +259,7 @@ struct vfs_fn_pointers {
 	int (*vfs_readlink)(struct vfs_handle_struct *handle, const char *path, char *buf, size_t bufsiz);
 	int (*link)(struct vfs_handle_struct *handle, const char *oldpath, const char *newpath);
 	int (*mknod)(struct vfs_handle_struct *handle, const char *path, mode_t mode, SMB_DEV_T dev);
-	char *(*realpath)(struct vfs_handle_struct *handle, const char *path, char *resolved_path);
+	char *(*realpath)(struct vfs_handle_struct *handle, const char *path);
 	NTSTATUS (*notify_watch)(struct vfs_handle_struct *handle,
 				 struct sys_notify_context *ctx,
 				 struct notify_entry *e,
@@ -619,8 +621,7 @@ int smb_vfs_call_link(struct vfs_handle_struct *handle, const char *oldpath,
 		      const char *newpath);
 int smb_vfs_call_mknod(struct vfs_handle_struct *handle, const char *path,
 		       mode_t mode, SMB_DEV_T dev);
-char *smb_vfs_call_realpath(struct vfs_handle_struct *handle,
-			    const char *path, char *resolved_path);
+char *smb_vfs_call_realpath(struct vfs_handle_struct *handle, const char *path);
 NTSTATUS smb_vfs_call_notify_watch(struct vfs_handle_struct *handle,
 				   struct sys_notify_context *ctx,
 				   struct notify_entry *e,

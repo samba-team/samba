@@ -471,11 +471,10 @@ onefs_shadow_copy_mknod(vfs_handle_struct *handle, const char *path,
 }
 
 static char *
-onefs_shadow_copy_realpath(vfs_handle_struct *handle, const char *path,
-			   char *resolved_path)
+onefs_shadow_copy_realpath(vfs_handle_struct *handle, const char *path)
 {
 	SHADOW_NEXT(REALPATH,
-		    (handle, cpath ?: path, resolved_path),
+		    (handle, cpath ?: path),
 		    char *);
 }
 

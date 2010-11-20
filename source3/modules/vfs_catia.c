@@ -634,8 +634,7 @@ static int catia_ntimes(vfs_handle_struct *handle,
 }
 
 static char *
-catia_realpath(vfs_handle_struct *handle, const char *path,
-	       char *resolved_path)
+catia_realpath(vfs_handle_struct *handle, const char *path)
 {
 	char *mapped_name = NULL;
 	NTSTATUS status;
@@ -648,7 +647,7 @@ catia_realpath(vfs_handle_struct *handle, const char *path,
 		return NULL;
 	}
 
-	ret = SMB_VFS_NEXT_REALPATH(handle, mapped_name, resolved_path);
+	ret = SMB_VFS_NEXT_REALPATH(handle, mapped_name);
 	TALLOC_FREE(mapped_name);
 
 	return ret;

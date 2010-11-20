@@ -1324,11 +1324,11 @@ static int smb_full_audit_mknod(vfs_handle_struct *handle,
 }
 
 static char *smb_full_audit_realpath(vfs_handle_struct *handle,
-			    const char *path, char *resolved_path)
+			    const char *path)
 {
 	char *result;
 
-	result = SMB_VFS_NEXT_REALPATH(handle, path, resolved_path);
+	result = SMB_VFS_NEXT_REALPATH(handle, path);
 
 	do_log(SMB_VFS_OP_REALPATH, (result != NULL), handle, "%s", path);
 

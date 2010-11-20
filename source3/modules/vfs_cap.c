@@ -384,7 +384,7 @@ static int cap_mknod(vfs_handle_struct *handle, const char *path, mode_t mode, S
 	return SMB_VFS_NEXT_MKNOD(handle, cappath, mode, dev);
 }
 
-static char *cap_realpath(vfs_handle_struct *handle, const char *path, char *resolved_path)
+static char *cap_realpath(vfs_handle_struct *handle, const char *path)
 {
         /* monyo need capencode'ed and capdecode'ed? */
 	char *cappath = capencode(talloc_tos(), path);
@@ -393,7 +393,7 @@ static char *cap_realpath(vfs_handle_struct *handle, const char *path, char *res
 		errno = ENOMEM;
 		return NULL;
 	}
-	return SMB_VFS_NEXT_REALPATH(handle, path, resolved_path);
+	return SMB_VFS_NEXT_REALPATH(handle, cappath);
 }
 
 static int cap_chmod_acl(vfs_handle_struct *handle, const char *path, mode_t mode)

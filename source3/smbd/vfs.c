@@ -841,22 +841,12 @@ char *vfs_GetWd(TALLOC_CTX *ctx, connection_struct *conn)
 
 NTSTATUS check_reduced_name(connection_struct *conn, const char *fname)
 {
-#ifdef REALPATH_TAKES_NULL
-	bool free_resolved_name = True;
-#else
-        char resolved_name_buf[PATH_MAX+1];
-	bool free_resolved_name = False;
-#endif
 	char *resolved_name = NULL;
 	char *p = NULL;
 
 	DEBUG(3,("check_reduced_name [%s] [%s]\n", fname, conn->connectpath));
 
-#ifdef REALPATH_TAKES_NULL
-	resolved_name = SMB_VFS_REALPATH(conn,fname,NULL);
-#else
-	resolved_name = SMB_VFS_REALPATH(conn,fname,resolved_name_buf);
-#endif
+	resolved_name = SMB_VFS_REALPATH(conn,fname);
 
 	if (!resolved_name) {
 		switch (errno) {
@@ -889,11 +879,7 @@ NTSTATUS check_reduced_name(connection_struct *conn, const char *fname)
 					}
 				}
 
-#ifdef REALPATH_TAKES_NULL
-				resolved_name = SMB_VFS_REALPATH(conn,tmp_fname,NULL);
-#else
-				resolved_name = SMB_VFS_REALPATH(conn,tmp_fname,resolved_name_buf);
-#endif
+				resolved_name = SMB_VFS_REALPATH(conn,tmp_fname);
 				if (!resolved_name) {
 					NTSTATUS status = map_nt_error_from_unix(errno);
 
@@ -915,7 +901,6 @@ NTSTATUS check_reduced_name(connection_struct *conn, const char *fname)
 				if (!tmp_fname) {
 					return NT_STATUS_NO_MEMORY;
 				}
-#ifdef REALPATH_TAKES_NULL
 				SAFE_FREE(resolved_name);
 				resolved_name = SMB_STRDUP(tmp_fname);
 				if (!resolved_name) {
@@ -923,10 +908,6 @@ NTSTATUS check_reduced_name(connection_struct *conn, const char *fname)
 						  "fail for %s\n", tmp_fname));
 					return NT_STATUS_NO_MEMORY;
 				}
-#else
-				safe_strcpy(resolved_name_buf, tmp_fname, PATH_MAX);
-				resolved_name = resolved_name_buf;
-#endif
 				break;
 			}
 			default:
@@ -942,9 +923,7 @@ NTSTATUS check_reduced_name(connection_struct *conn, const char *fname)
 	if (*resolved_name != '/') {
 		DEBUG(0,("check_reduced_name: realpath doesn't return "
 			 "absolute paths !\n"));
-		if (free_resolved_name) {
-			SAFE_FREE(resolved_name);
-		}
+		SAFE_FREE(resolved_name);
 		return NT_STATUS_OBJECT_NAME_INVALID;
 	}
 
@@ -956,9 +935,7 @@ NTSTATUS check_reduced_name(connection_struct *conn, const char *fname)
 		    if (conn_rootdir == NULL) {
 			    DEBUG(2, ("check_reduced_name: Could not get "
 				      "conn_rootdir\n"));
-			    if (free_resolved_name) {
-				    SAFE_FREE(resolved_name);
-			    }
+			    SAFE_FREE(resolved_name);
 			    return NT_STATUS_ACCESS_DENIED;
 		    }
 
@@ -967,9 +944,7 @@ NTSTATUS check_reduced_name(connection_struct *conn, const char *fname)
 			    DEBUG(2, ("check_reduced_name: Bad access "
 				      "attempt: %s is a symlink outside the "
 				      "share path\n", fname));
-			    if (free_resolved_name) {
-				    SAFE_FREE(resolved_name);
-			    }
+			    SAFE_FREE(resolved_name);
 			    return NT_STATUS_ACCESS_DENIED;
 		    }
 	}
@@ -986,17 +961,13 @@ NTSTATUS check_reduced_name(connection_struct *conn, const char *fname)
 		status = create_synthetic_smb_fname(talloc_tos(), fname, NULL,
 						    NULL, &smb_fname);
 		if (!NT_STATUS_IS_OK(status)) {
-			if (free_resolved_name) {
-				SAFE_FREE(resolved_name);
-			}
+			SAFE_FREE(resolved_name);
                         return status;
 		}
 
 		if ( (SMB_VFS_LSTAT(conn, smb_fname) != -1) &&
                                 (S_ISLNK(smb_fname->st.st_ex_mode)) ) {
-			if (free_resolved_name) {
-				SAFE_FREE(resolved_name);
-			}
+			SAFE_FREE(resolved_name);
                         DEBUG(3,("check_reduced_name: denied: file path name "
 				 "%s is a symlink\n",resolved_name));
 			TALLOC_FREE(smb_fname);
@@ -1008,9 +979,7 @@ NTSTATUS check_reduced_name(connection_struct *conn, const char *fname)
 
 	DEBUG(3,("check_reduced_name: %s reduced to %s\n", fname,
 		 resolved_name));
-	if (free_resolved_name) {
-		SAFE_FREE(resolved_name);
-	}
+	SAFE_FREE(resolved_name);
 	return NT_STATUS_OK;
 }
 
@@ -1486,11 +1455,10 @@ int smb_vfs_call_mknod(struct vfs_handle_struct *handle, const char *path,
 	return handle->fns->mknod(handle, path, mode, dev);
 }
 
-char *smb_vfs_call_realpath(struct vfs_handle_struct *handle,
-			    const char *path, char *resolved_path)
+char *smb_vfs_call_realpath(struct vfs_handle_struct *handle, const char *path)
 {
 	VFS_FIND(realpath);
-	return handle->fns->realpath(handle, path, resolved_path);
+	return handle->fns->realpath(handle, path);
 }
 
 NTSTATUS smb_vfs_call_notify_watch(struct vfs_handle_struct *handle,
