@@ -829,10 +829,11 @@ static int samldb_objectclass_trigger(struct samldb_ctx *ac)
 
 	if (strcmp(ac->type, "user") == 0) {
 		/* Step 1.2: Default values */
-		tempstr = talloc_asprintf(ac->msg, "%d", UF_NORMAL_ACCOUNT);
-		if (tempstr == NULL) return ldb_operr(ldb);
 		ret = samdb_find_or_add_attribute(ldb, ac->msg,
-			"userAccountControl", tempstr);
+			"accountExpires", "9223372036854775807");
+		if (ret != LDB_SUCCESS) return ret;
+		ret = samdb_find_or_add_attribute(ldb, ac->msg,
+			"badPasswordTime", "0");
 		if (ret != LDB_SUCCESS) return ret;
 		ret = samdb_find_or_add_attribute(ldb, ac->msg,
 			"badPwdCount", "0");
@@ -844,22 +845,22 @@ static int samldb_objectclass_trigger(struct samldb_ctx *ac)
 			"countryCode", "0");
 		if (ret != LDB_SUCCESS) return ret;
 		ret = samdb_find_or_add_attribute(ldb, ac->msg,
-			"badPasswordTime", "0");
-		if (ret != LDB_SUCCESS) return ret;
-		ret = samdb_find_or_add_attribute(ldb, ac->msg,
 			"lastLogoff", "0");
 		if (ret != LDB_SUCCESS) return ret;
 		ret = samdb_find_or_add_attribute(ldb, ac->msg,
 			"lastLogon", "0");
 		if (ret != LDB_SUCCESS) return ret;
 		ret = samdb_find_or_add_attribute(ldb, ac->msg,
+			"logonCount", "0");
+		if (ret != LDB_SUCCESS) return ret;
+		ret = samdb_find_or_add_attribute(ldb, ac->msg,
 			"pwdLastSet", "0");
 		if (ret != LDB_SUCCESS) return ret;
+
+		tempstr = talloc_asprintf(ac->msg, "%d", UF_NORMAL_ACCOUNT);
+		if (tempstr == NULL) return ldb_operr(ldb);
 		ret = samdb_find_or_add_attribute(ldb, ac->msg,
-			"accountExpires", "9223372036854775807");
-		if (ret != LDB_SUCCESS) return ret;
-		ret = samdb_find_or_add_attribute(ldb, ac->msg,
-			"logonCount", "0");
+			"userAccountControl", tempstr);
 		if (ret != LDB_SUCCESS) return ret;
 
 		el = ldb_msg_find_element(ac->msg, "userAccountControl");
