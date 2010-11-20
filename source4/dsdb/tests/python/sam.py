@@ -616,15 +616,28 @@ class SamTests(unittest.TestCase):
         except LdbError, (num, _):
             self.assertEquals(num, ERR_ATTRIBUTE_OR_VALUE_EXISTS)
 
-        m = Message()
-        m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
-        m["groupType"] = MessageElement([], FLAG_MOD_DELETE,
-          "groupType")
-        try:
-            ldb.modify(m)
-            self.fail()
-        except LdbError, (num, _):
-            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
+        # Delete protection tests
+
+        for attr in ["nTSecurityDescriptor", "objectSid", "sAMAccountType",
+                     "sAMAccountName", "groupType"]:
+
+            m = Message()
+            m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+            m[attr] = MessageElement([], FLAG_MOD_REPLACE, attr)
+            try:
+                ldb.modify(m)
+                self.fail()
+            except LdbError, (num, _):
+                self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
+
+            m = Message()
+            m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+            m[attr] = MessageElement([], FLAG_MOD_DELETE, attr)
+            try:
+                ldb.modify(m)
+                self.fail()
+            except LdbError, (num, _):
+                self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
 
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
@@ -638,16 +651,6 @@ class SamTests(unittest.TestCase):
 
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
-        m["primaryGroupID"] = MessageElement([], FLAG_MOD_DELETE,
-          "primaryGroupID")
-        try:
-            ldb.modify(m)
-            self.fail()
-        except LdbError, (num, _):
-            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
-
-        m = Message()
-        m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
         m["userAccountControl"] = MessageElement(str(UF_NORMAL_ACCOUNT | UF_PASSWD_NOTREQD), FLAG_MOD_ADD,
           "userAccountControl")
         try:
@@ -658,36 +661,8 @@ class SamTests(unittest.TestCase):
 
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
-        m["userAccountControl"] = MessageElement([], FLAG_MOD_DELETE,
-          "userAccountControl")
-        try:
-            ldb.modify(m)
-            self.fail()
-        except LdbError, (num, _):
-            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
-
-        m = Message()
-        m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
         m["objectSid"] = MessageElement("xxxxxxxxxxxxxxxx", FLAG_MOD_ADD,
           "objectSid")
-        try:
-            ldb.modify(m)
-            self.fail()
-        except LdbError, (num, _):
-            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
-
-        m = Message()
-        m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
-        m["objectSid"] = MessageElement([], FLAG_MOD_REPLACE, "objectSid")
-        try:
-            ldb.modify(m)
-            self.fail()
-        except LdbError, (num, _):
-            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
-
-        m = Message()
-        m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
-        m["objectSid"] = MessageElement([], FLAG_MOD_DELETE, "objectSid")
         try:
             ldb.modify(m)
             self.fail()
@@ -706,26 +681,6 @@ class SamTests(unittest.TestCase):
 
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
-        m["sAMAccountType"] = MessageElement([], FLAG_MOD_REPLACE,
-          "sAMAccountType")
-        try:
-            ldb.modify(m)
-            self.fail()
-        except LdbError, (num, _):
-            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
-
-        m = Message()
-        m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
-        m["sAMAccountType"] = MessageElement([], FLAG_MOD_DELETE,
-          "sAMAccountType")
-        try:
-            ldb.modify(m)
-            self.fail()
-        except LdbError, (num, _):
-            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
-
-        m = Message()
-        m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
         m["sAMAccountName"] = MessageElement("test", FLAG_MOD_ADD,
           "sAMAccountName")
         try:
@@ -734,25 +689,31 @@ class SamTests(unittest.TestCase):
         except LdbError, (num, _):
             self.assertEquals(num, ERR_ATTRIBUTE_OR_VALUE_EXISTS)
 
-        m = Message()
-        m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
-        m["sAMAccountName"] = MessageElement([], FLAG_MOD_REPLACE,
-          "sAMAccountName")
-        try:
-            ldb.modify(m)
-            self.fail()
-        except LdbError, (num, _):
-            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
+        # Delete protection tests
 
-        m = Message()
-        m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
-        m["sAMAccountName"] = MessageElement([], FLAG_MOD_DELETE,
-          "sAMAccountName")
-        try:
-            ldb.modify(m)
-            self.fail()
-        except LdbError, (num, _):
-            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
+        for attr in ["nTSecurityDescriptor", "objectSid", "sAMAccountType",
+                     "sAMAccountName", "primaryGroupID", "userAccountControl",
+                     "accountExpires", "badPasswordTime", "badPwdCount",
+                     "codePage", "countryCode", "lastLogoff", "lastLogon",
+                     "logonCount", "pwdLastSet"]:
+
+            m = Message()
+            m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+            m[attr] = MessageElement([], FLAG_MOD_REPLACE, attr)
+            try:
+                ldb.modify(m)
+                self.fail()
+            except LdbError, (num, _):
+                self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
+
+            m = Message()
+            m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+            m[attr] = MessageElement([], FLAG_MOD_DELETE, attr)
+            try:
+                ldb.modify(m)
+                self.fail()
+            except LdbError, (num, _):
+                self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
 
         self.delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
         self.delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)

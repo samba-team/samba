@@ -203,7 +203,10 @@ static int attr_handler2(struct oc_context *ac)
 	/* There exists a hardcoded delete-protected attributes list in AD */
 	const char *del_prot_attributes[] = { "nTSecurityDescriptor",
 		"objectSid", "sAMAccountType", "sAMAccountName", "groupType",
-		"primaryGroupID", "userAccountControl", NULL }, **l;
+		"primaryGroupID", "userAccountControl", "accountExpires",
+		"badPasswordTime", "badPwdCount", "codePage", "countryCode",
+		"lastLogoff", "lastLogon", "logonCount", "pwdLastSet", NULL },
+		**l;
 	const struct dsdb_attribute *attr;
 	unsigned int i;
 	bool found;
