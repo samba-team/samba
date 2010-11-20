@@ -1329,13 +1329,15 @@ static int parsed_dn_compare(struct parsed_dn *pdn1, struct parsed_dn *pdn2)
 	return GUID_compare(pdn1->guid, pdn2->guid);
 }
 
-static struct parsed_dn *parsed_dn_find(struct parsed_dn *pdn, int count, struct GUID *guid, struct ldb_dn *dn)
+static struct parsed_dn *parsed_dn_find(struct parsed_dn *pdn,
+					unsigned int count, struct GUID *guid,
+					struct ldb_dn *dn)
 {
 	struct parsed_dn *ret;
+	unsigned int i;
 	if (dn && GUID_all_zero(guid)) {
 		/* when updating a link using DRS, we sometimes get a
 		   NULL GUID. We then need to try and match by DN */
-		int i;
 		for (i=0; i<count; i++) {
 			if (ldb_dn_compare(pdn[i].dsdb_dn->dn, dn) == 0) {
 				dsdb_get_extended_dn_guid(pdn[i].dsdb_dn->dn, guid, "GUID");
