@@ -56,7 +56,6 @@ def HEIMDAL_ASN1(name, source,
     asn1_rule = cd_rule + ' && ${BLDBIN}/asn1_compile ${OPTION_FILE} ${ASN1OPTIONS} --one-code-file ${SRC[0].abspath(env)} ${ASN1NAME}'
 
     source = to_list(source)
-    source.append('asn1_compile')
 
     if option_file is not None:
         source.append(option_file)
@@ -68,6 +67,7 @@ def HEIMDAL_ASN1(name, source,
             shell = True,
             source = source,
             target = out_files,
+            depends_on = 'asn1_compile',
             name=name + '_ASN1')
 
     t.env.ASN1NAME     = asn1name
@@ -144,8 +144,9 @@ def HEIMDAL_ERRTABLE(name, source):
 
     sources = [source, 'et_compile_wrapper.sh']
 
+    deps = ''
     if not bld.CONFIG_SET('USING_SYSTEM_COMPILE_ET'):
-        sources.append('compile_et')
+        deps = 'compile_et'
 
     t = bld(rule='${SRC[1].abspath(env)} ${TGT[0].parent.abspath(env)} ${COMPILE_ET} ${SRC[0].abspath(env)} ${TGT[0].bldpath(env)}',
             ext_out = '.c',
@@ -154,6 +155,7 @@ def HEIMDAL_ERRTABLE(name, source):
             shell   = True,
             source  = sources,
             target  = out_files,
+            depends_on = deps,
             name    = name)
 
 def HEIMDAL_AUTOPROTO(header, source, options=None, group='prototypes'):
@@ -824,7 +826,7 @@ if not bld.CONFIG_SET('USING_SYSTEM_COM_ERR'):
     HEIMDAL_LIBRARY('com_err',
         'lib/com_err/com_err.c lib/com_err/error.c',
         includes='../heimdal/lib/com_err',
-        deps='roken',
+        deps='roken intl',
         vnum='0.25',
         )
 
