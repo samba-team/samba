@@ -112,11 +112,6 @@ bld.SAMBA_SUBSYSTEM('NDR_MGMT',
 	public_deps='ndr'
 	)
 
-bld.SAMBA_SUBSYSTEM('NDR_PROTECTED_STORAGE',
-	source='../librpc/gen_ndr/ndr_protected_storage.c',
-	public_deps='ndr'
-	)
-
 bld.SAMBA_SUBSYSTEM('NDR_ORPC',
 	source='../librpc/ndr/ndr_orpc.c ../librpc/gen_ndr/ndr_orpc.c',
 	public_deps='ndr'
@@ -431,11 +426,6 @@ bld.SAMBA_SUBSYSTEM('RPC_NDR_INITSHUTDOWN',
 bld.SAMBA_SUBSYSTEM('RPC_NDR_MGMT',
 	source='../librpc/gen_ndr/ndr_mgmt_c.c',
 	deps='tevent NDR_MGMT'
-	)
-
-bld.SAMBA_SUBSYSTEM('RPC_NDR_PROTECTED_STORAGE',
-	source='../librpc/gen_ndr/ndr_protected_storage_c.c',
-	public_deps='dcerpc NDR_PROTECTED_STORAGE'
 	)
 
 bld.SAMBA_SUBSYSTEM('RPC_NDR_OXIDRESOLVER',
