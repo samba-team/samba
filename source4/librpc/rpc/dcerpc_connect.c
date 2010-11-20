@@ -516,7 +516,7 @@ static void continue_map_binding(struct composite_context *ctx)
 	c->status = dcerpc_epm_map_binding_recv(ctx);
 	if (!composite_is_ok(c)) return;
 
-	DEBUG(2,("Mapped to DCERPC endpoint %s\n", s->binding->endpoint));
+	DEBUG(4,("Mapped to DCERPC endpoint %s\n", s->binding->endpoint));
 	
 	continue_connect(c, s);
 }
