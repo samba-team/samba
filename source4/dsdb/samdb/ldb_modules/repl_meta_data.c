@@ -758,38 +758,37 @@ static int replmd_add(struct ldb_module *module, struct ldb_request *req)
 
 	ldb = ldb_module_get_ctx(module);
 
-	functional_level = dsdb_functional_level(ldb);
-
 	ldb_debug(ldb, LDB_DEBUG_TRACE, "replmd_add\n");
 
-	ac = replmd_ctx_init(module, req);
-	if (!ac) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-        guid_blob = ldb_msg_find_ldb_val(req->op.add.message, "objectGUID");
-	if ( guid_blob != NULL ) {
-		if( !allow_add_guid ) {
+	guid_blob = ldb_msg_find_ldb_val(req->op.add.message, "objectGUID");
+	if (guid_blob != NULL) {
+		if (!allow_add_guid) {
 			ldb_set_errstring(ldb,
 					  "replmd_add: it's not allowed to add an object with objectGUID!");
-			talloc_free(ac);
 			return LDB_ERR_UNWILLING_TO_PERFORM;
 		} else {
 			NTSTATUS status = GUID_from_data_blob(guid_blob,&guid);
-		        if ( !NT_STATUS_IS_OK(status)) {
-       				ldb_debug_set(ldb, LDB_DEBUG_ERROR,
-				      "replmd_add: Unable to parse as a GUID the attribute objectGUID\n");
-				talloc_free(ac);
+			if (!NT_STATUS_IS_OK(status)) {
+				ldb_set_errstring(ldb,
+						  "replmd_add: Unable to parse the 'objectGUID' as a GUID!");
 				return LDB_ERR_UNWILLING_TO_PERFORM;
 			}
-			/* we remove this attribute as it can be a string and will not be treated
-			correctly and then we will readd it latter on in the good format*/
+			/* we remove this attribute as it can be a string and
+			 * will not be treated correctly and then we will re-add
+			 * it later on in the good format */
 			remove_current_guid = true;
 		}
 	} else {
 		/* a new GUID */
 		guid = GUID_random();
 	}
+
+	ac = replmd_ctx_init(module, req);
+	if (ac == NULL) {
+		return ldb_module_oom(module);
+	}
+
+	functional_level = dsdb_functional_level(ldb);
 
 	/* Get a sequence number from the backend */
 	ret = ldb_sequence_number(ldb, LDB_SEQ_NEXT, &ac->seq_num);
@@ -2155,25 +2154,25 @@ static int replmd_modify(struct ldb_module *module, struct ldb_request *req)
 	}
 
 	ldb = ldb_module_get_ctx(module);
-	functional_level = dsdb_functional_level(ldb);
-
-	lp_ctx = talloc_get_type(ldb_get_opaque(ldb, "loadparm"),
-				 struct loadparm_context);
 
 	ldb_debug(ldb, LDB_DEBUG_TRACE, "replmd_modify\n");
-
-	ac = replmd_ctx_init(module, req);
-	if (!ac) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
 
 	guid_blob = ldb_msg_find_ldb_val(req->op.mod.message, "objectGUID");
 	if ( guid_blob != NULL ) {
 		ldb_set_errstring(ldb,
 				  "replmd_modify: it's not allowed to change the objectGUID!");
-		talloc_free(ac);
 		return LDB_ERR_CONSTRAINT_VIOLATION;
 	}
+
+	ac = replmd_ctx_init(module, req);
+	if (ac == NULL) {
+		return ldb_module_oom(module);
+	}
+
+	functional_level = dsdb_functional_level(ldb);
+
+	lp_ctx = talloc_get_type(ldb_get_opaque(ldb, "loadparm"),
+				 struct loadparm_context);
 
 	/* we have to copy the message as the caller might have it as a const */
 	msg = ldb_msg_copy_shallow(ac, req->op.mod.message);
@@ -2283,9 +2282,10 @@ static int replmd_rename(struct ldb_module *module, struct ldb_request *req)
 	ldb_debug(ldb, LDB_DEBUG_TRACE, "replmd_rename\n");
 
 	ac = replmd_ctx_init(module, req);
-	if (!ac) {
-		return LDB_ERR_OPERATIONS_ERROR;
+	if (ac == NULL) {
+		return ldb_module_oom(module);
 	}
+
 	ret = ldb_build_rename_req(&down_req, ldb, ac,
 				   ac->req->op.rename.olddn,
 				   ac->req->op.rename.newdn,
