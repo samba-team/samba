@@ -212,6 +212,11 @@ bld.SAMBA_PYTHON('python_dcerpc',
 	realname='samba/dcerpc/base.so'
 	)
 
+bld.SAMBA_PYTHON('python_srvsvc',
+    source='../../librpc/gen_ndr/py_srvsvc.c',
+    deps='RPC_NDR_SRVSVC pytalloc-util pyrpc_util',
+    realname='samba/dcerpc/srvsvc.so'
+    )
 
 bld.SAMBA_PYTHON('python_echo',
 	source='../../librpc/gen_ndr/py_echo.c',
