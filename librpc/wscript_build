@@ -286,6 +286,11 @@ bld.SAMBA_SUBSYSTEM('NDR_NBT',
         header_path='gen_ndr'
 	)
 
+bld.SAMBA_SUBSYSTEM('NDR_BACKUPKEY',
+	source='../librpc/ndr/ndr_backupkey.c ../librpc/gen_ndr/ndr_backupkey.c',
+	public_deps='ndr'
+	)
+
 bld.SAMBA_SUBSYSTEM('RPC_NDR_XATTR',
 	source='../librpc/gen_ndr/ndr_xattr_c.c',
 	public_deps='NDR_XATTR dcerpc'
@@ -476,6 +481,11 @@ bld.SAMBA_SUBSYSTEM('RPC_NDR_TRKWKS',
 bld.SAMBA_SUBSYSTEM('RPC_NDR_KEYSVC',
 	source='../librpc/gen_ndr/ndr_keysvc_c.c',
 	public_deps='dcerpc NDR_KEYSVC'
+	)
+
+bld.SAMBA_SUBSYSTEM('RPC_NDR_BACKUPKEY',
+	source='../librpc/gen_ndr/ndr_backupkey_c.c',
+	public_deps='dcerpc NDR_BACKUPKEY'
 	)
 
 # a grouping library for NDR subsystems that may be used by more than one target
