@@ -70,7 +70,8 @@ static int acl_module_init(struct ldb_module *module)
 {
 	struct ldb_context *ldb;
 	struct acl_private *data;
-	int ret, i;
+	int ret;
+	unsigned int i;
 	TALLOC_CTX *mem_ctx;
 	static const char *attrs[] = { "passwordAttribute", NULL };
 	struct ldb_result *res;
@@ -1052,7 +1053,8 @@ static int acl_search_callback(struct ldb_request *req, struct ldb_reply *ares)
 		"objectSid",
 		NULL
 	};
-	int ret, i;
+	int ret;
+	unsigned int i;
 
 	ac = talloc_get_type(req->context, struct acl_context);
 	data = talloc_get_type(ldb_module_get_private(ac->module), struct acl_private);
@@ -1139,7 +1141,8 @@ static int acl_search(struct ldb_module *module, struct ldb_request *req)
 	struct acl_context *ac;
 	struct ldb_request *down_req;
 	struct acl_private *data;
-	int ret, i;
+	int ret;
+	unsigned int i;
 
 	ldb = ldb_module_get_ctx(module);
 
