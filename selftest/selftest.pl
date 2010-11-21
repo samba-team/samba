@@ -952,7 +952,6 @@ $envvarstr
 			Subunit::start_testsuite($name);
 			Subunit::end_testsuite($name, "error",
 				"unable to set up environment $envname - exiting");
-			exit(1);
 			next;
 		}
 
