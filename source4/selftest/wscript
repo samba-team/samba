@@ -161,6 +161,8 @@ def cmd_testonly(opt):
     cmd = '(${PERL} %s/../selftest/selftest.pl --prefix=${SELFTEST_PREFIX} --builddir=. --srcdir=. --exclude=./selftest/skip --testlist="${PYTHON} ./selftest/tests.py|" ${OPTIONS} --socket-wrapper ${TESTS} && touch ${SELFTEST_PREFIX}/st_done) | ${FILTER_OPTIONS} | tee ${SELFTEST_PREFIX}/subunit' % (os.getcwd())
     if os.environ.get('RUN_FROM_BUILD_FARM') is None and not Options.options.FILTERED_SUBUNIT:
         cmd += ' | ${FORMAT_TEST_OUTPUT}'
+    else:
+        cmd += ' | ${PYTHON} -u ../selftest/filter-subunit'
     cmd = EXPAND_VARIABLES(opt, cmd)
 
     print("test: running %s" % cmd)
