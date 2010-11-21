@@ -25,11 +25,6 @@
 
 #include "librpc/rpc/pyrpc.h"
 
-/* This macro is only provided by Python >= 2.3 */
-#ifndef PyAPI_DATA
-#   define PyAPI_DATA(RTYPE) extern RTYPE
-#endif
-
 #define PyErr_FromNdrError(err) Py_BuildValue("(is)", err, ndr_map_error2string(err))
 
 #define PyErr_SetNdrError(err) \

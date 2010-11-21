@@ -33,7 +33,7 @@
 #include "librpc/rpc/dcerpc.h"
 #include "librpc/gen_ndr/server_id.h"
 
-PyAPI_DATA(PyTypeObject) messaging_Type;
+extern PyTypeObject messaging_Type;
 
 static bool server_id_from_py(PyObject *object, struct server_id *server_id)
 {

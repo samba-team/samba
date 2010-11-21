@@ -32,8 +32,8 @@ typedef inquiry lenfunc;
 #define PyLoadparmContext_AsLoadparmContext(obj) py_talloc_get_type(obj, struct loadparm_context)
 #define PyLoadparmService_AsLoadparmService(obj) py_talloc_get_type(obj, struct loadparm_service)
 
-PyAPI_DATA(PyTypeObject) PyLoadparmContext;
-PyAPI_DATA(PyTypeObject) PyLoadparmService;
+extern PyTypeObject PyLoadparmContext;
+extern PyTypeObject PyLoadparmService;
 
 PyObject *PyLoadparmService_FromService(struct loadparm_service *service)
 {

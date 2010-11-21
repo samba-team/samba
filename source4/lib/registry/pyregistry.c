@@ -27,9 +27,9 @@
 #include "auth/credentials/pycredentials.h"
 #include "param/pyparam.h"
 
-PyAPI_DATA(PyTypeObject) PyRegistryKey;
-PyAPI_DATA(PyTypeObject) PyRegistry;
-PyAPI_DATA(PyTypeObject) PyHiveKey;
+extern PyTypeObject PyRegistryKey;
+extern PyTypeObject PyRegistry;
+extern PyTypeObject PyHiveKey;
 
 /*#define PyRegistryKey_AsRegistryKey(obj) py_talloc_get_type(obj, struct registry_key)*/
 #define PyRegistry_AsRegistryContext(obj) ((struct registry_context *)py_talloc_get_ptr(obj))

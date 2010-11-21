@@ -28,7 +28,7 @@
 #define Py_RETURN_NONE return Py_INCREF(Py_None), Py_None
 #endif
 
-PyAPI_DATA(PyTypeObject) nbt_node_Type;
+extern PyTypeObject nbt_node_Type;
 
 typedef struct {
 	PyObject_HEAD

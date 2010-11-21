@@ -22,8 +22,8 @@
 #include "auth/credentials/credentials.h"
 #include "lib/talloc/pytalloc.h"
 
-PyAPI_DATA(PyTypeObject) PyCredentials;
-PyAPI_DATA(PyTypeObject) PyCredentialCacheContainer;
+extern PyTypeObject PyCredentials;
+extern PyTypeObject PyCredentialCacheContainer;
 typedef struct {
 	PyObject_HEAD
 	TALLOC_CTX *mem_ctx;

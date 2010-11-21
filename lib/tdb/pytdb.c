@@ -41,7 +41,7 @@ typedef struct {
 	bool closed;
 } PyTdbObject;
 
-PyAPI_DATA(PyTypeObject) PyTdb;
+extern PyTypeObject PyTdb;
 
 static void PyErr_SetTDBError(TDB_CONTEXT *tdb)
 {

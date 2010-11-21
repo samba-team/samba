@@ -54,12 +54,12 @@ static void PyErr_SetLdbError(PyObject *error, int ret, struct ldb_context *ldb_
 
 static PyObject *PyExc_LdbError;
 
-PyAPI_DATA(PyTypeObject) PyLdbMessage;
-PyAPI_DATA(PyTypeObject) PyLdbModule;
-PyAPI_DATA(PyTypeObject) PyLdbDn;
-PyAPI_DATA(PyTypeObject) PyLdb;
-PyAPI_DATA(PyTypeObject) PyLdbMessageElement;
-PyAPI_DATA(PyTypeObject) PyLdbTree;
+extern PyTypeObject PyLdbMessage;
+extern PyTypeObject PyLdbModule;
+extern PyTypeObject PyLdbDn;
+extern PyTypeObject PyLdb;
+extern PyTypeObject PyLdbMessageElement;
+extern PyTypeObject PyLdbTree;
 
 static PyObject *PyLdb_FromLdbContext(struct ldb_context *ldb_ctx);
 
