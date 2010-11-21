@@ -146,7 +146,7 @@ def connect_samdb(samdb_url, lp=None, session_info=None,
     if not lp:
         lp=env_loadparm()
     if not session_info:
-        session_info=samba.auth.system_session()
+        session_info=samba.auth.system_session(lp)
     if not credentials:
         credentials=cmdline_credentials
 
