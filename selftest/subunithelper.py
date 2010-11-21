@@ -32,6 +32,7 @@ class TestsuiteEnabledTestResult(testtools.testresult.TestResult):
 
 
 def parse_results(msg_ops, statistics, fh):
+    exitcode = 0
     expected_fail = 0
     open_tests = {}
 
@@ -95,6 +96,7 @@ def parse_results(msg_ops, statistics, fh):
                     test = open_tests.pop(testname)
                 except KeyError:
                     statistics['TESTS_ERROR']+=1
+                    exitcode = 1
                     msg_ops.addError(subunit.RemotedTestCase(testname), subunit.RemoteError(u"Test was never started"))
                 else:
                     statistics['TESTS_EXPECTED_OK']+=1
@@ -104,6 +106,7 @@ def parse_results(msg_ops, statistics, fh):
                     test = open_tests.pop(testname)
                 except KeyError:
                     statistics['TESTS_ERROR']+=1
+                    exitcode = 1
                     msg_ops.addError(subunit.RemotedTestCase(testname), subunit.RemoteError(u"Test was never started"))
                 else:
                     statistics['TESTS_EXPECTED_FAIL']+=1
@@ -114,9 +117,11 @@ def parse_results(msg_ops, statistics, fh):
                     test = open_tests.pop(testname)
                 except KeyError:
                     statistics['TESTS_ERROR']+=1
+                    exitcode = 1
                     msg_ops.addError(subunit.RemotedTestCase(testname), subunit.RemoteError(u"Test was never started"))
                 else:
                     statistics['TESTS_UNEXPECTED_FAIL']+=1
+                    exitcode = 1
                     msg_ops.addFailure(test, remote_error)
             elif result == "skip":
                 statistics['TESTS_SKIP']+=1
@@ -128,6 +133,7 @@ def parse_results(msg_ops, statistics, fh):
                 msg_ops.addSkip(test, reason)
             elif result == "error":
                 statistics['TESTS_ERROR']+=1
+                exitcode = 1
                 try:
                     test = open_tests.pop(testname)
                 except KeyError:
@@ -139,10 +145,12 @@ def parse_results(msg_ops, statistics, fh):
                 msg_ops.end_testsuite(testname, "success", reason)
             elif result == "testsuite-failure":
                 msg_ops.end_testsuite(testname, "failure", reason)
+                exitcode = 1
             elif result == "testsuite-xfail":
                 msg_ops.end_testsuite(testname, "xfail", reason)
             elif result == "testsuite-error":
                 msg_ops.end_testsuite(testname, "error", reason)
+                exitcode = 1
             else:
                 raise AssertionError("Recognized but unhandled result %r" %
                     result)
@@ -165,12 +173,9 @@ def parse_results(msg_ops, statistics, fh):
         test = subunit.RemotedTestCase(open_tests.popitem()[1])
         msg_ops.addError(test, subunit.RemoteError(u"was started but never finished!"))
         statistics['TESTS_ERROR']+=1
+        exitcode = 1
 
-    if statistics['TESTS_ERROR'] > 0:
-        return 1
-    if statistics['TESTS_UNEXPECTED_FAIL'] > 0:
-        return 1
-    return 0
+    return exitcode
 
 
 class SubunitOps(subunit.TestProtocolClient,TestsuiteEnabledTestResult):
