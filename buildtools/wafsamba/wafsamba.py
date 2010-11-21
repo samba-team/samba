@@ -566,7 +566,7 @@ def ENABLE_TIMESTAMP_DEPENDENCIES(conf):
 
 
 
-t = Task.simple_task_type('copy_script', 'rm -f ${LINK_TARGET} && ln -s ${SRC[0].abspath(env)} ${LINK_TARGET}',
+t = Task.simple_task_type('copy_script', 'rm -f "${LINK_TARGET}" && ln -s "${SRC[0].abspath(env)}" ${LINK_TARGET}',
                           shell=True, color='PINK', ext_in='.bin')
 t.quiet = True
 

@@ -58,7 +58,7 @@ def SAMBA_PIDL(bld, pname, source,
         pidl_src_nodes = bld.pidl_files_cache
 
     # the cd .. is needed because pidl currently is sensitive to the directory it is run in
-    t = bld(rule='cd .. && ${PERL} ${PIDL} --quiet ${OPTIONS} --outputdir ${OUTPUTDIR} -- ${SRC[0].abspath(env)}',
+    t = bld(rule='cd .. && ${PERL} "${PIDL}" --quiet ${OPTIONS} --outputdir ${OUTPUTDIR} -- "${SRC[0].abspath(env)}"',
             ext_out    = '.c',
             before     = 'cc',
             on_results = True,

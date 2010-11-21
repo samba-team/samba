@@ -356,8 +356,10 @@ def CHECK_CODE(conf, code, define,
     if msg is None:
         msg="Checking for %s" % define
 
+    cflags = TO_LIST(cflags)
+
     if local_include:
-        cflags += ' -I%s' % conf.curdir
+        cflags.append('-I%s' % conf.curdir)
 
     if not link:
         type='nolink'
@@ -368,7 +370,6 @@ def CHECK_CODE(conf, code, define,
 
     (ccflags, ldflags) = library_flags(conf, uselib)
 
-    cflags = TO_LIST(cflags)
     cflags.extend(ccflags)
 
     if on_target:
