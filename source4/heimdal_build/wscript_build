@@ -52,8 +52,8 @@ def HEIMDAL_ASN1(name, source,
     # SRC[0].abspath(env) gives the absolute path to the source directory for the first
     # source file. Note that in the case of a option_file, we have more than
     # one source file
-    cd_rule = 'cd ${TGT[0].parent.abspath(env)}'
-    asn1_rule = cd_rule + ' && ${BLDBIN}/asn1_compile ${OPTION_FILE} ${ASN1OPTIONS} --one-code-file ${SRC[0].abspath(env)} ${ASN1NAME}'
+    cd_rule = 'cd "${TGT[0].parent.abspath(env)}"'
+    asn1_rule = cd_rule + ' && "${BLDBIN}/asn1_compile" ${OPTION_FILE} ${ASN1OPTIONS} --one-code-file "${SRC[0].abspath(env)}" ${ASN1NAME}'
 
     source = to_list(source)
 
@@ -74,7 +74,7 @@ def HEIMDAL_ASN1(name, source,
     t.env.ASN1OPTIONS  = options
     t.env.BLDBIN       = os.path.normpath(os.path.join(bld.srcnode.abspath(bld.env), '..'))
     if option_file is not None:
-        t.env.OPTION_FILE = "--option-file=%s" % os.path.normpath(os.path.join(bld.curdir, option_file))
+        t.env.OPTION_FILE = "--option-file='%s'" % os.path.normpath(os.path.join(bld.curdir, option_file))
 
     cfile = out_files[0][0:-2] + '.c'
     hfile = out_files[1][0:-3] + '.h'
@@ -148,7 +148,7 @@ def HEIMDAL_ERRTABLE(name, source):
     if not bld.CONFIG_SET('USING_SYSTEM_COMPILE_ET'):
         deps = 'compile_et'
 
-    t = bld(rule='${SRC[1].abspath(env)} ${TGT[0].parent.abspath(env)} ${COMPILE_ET} ${SRC[0].abspath(env)} ${TGT[0].bldpath(env)}',
+    t = bld(rule='"${SRC[1].abspath(env)}" "${TGT[0].parent.abspath(env)}" "${COMPILE_ET}" "${SRC[0].abspath(env)}" ${TGT[0].bldpath(env)}',
             ext_out = '.c',
             before  = 'cc',
             on_results = True,
@@ -166,7 +166,7 @@ def HEIMDAL_AUTOPROTO(header, source, options=None, group='prototypes'):
         options='-q -P comment -o'
     SET_TARGET_TYPE(bld, header, 'PROTOTYPE')
     source = heimdal_paths(source)
-    t = bld(rule='${PERL} ${HEIMDAL}/cf/make-proto.pl ${OPTIONS} ${TGT[0].abspath(env)} ${SRC}',
+    t = bld(rule='${PERL} "${HEIMDAL}/cf/make-proto.pl" ${OPTIONS} "${TGT[0].abspath(env)}" ${SRC}',
             source=source,
             target=header,
             on_results=True,
@@ -780,7 +780,7 @@ if not bld.CONFIG_SET('USING_SYSTEM_WIND'):
 
     HEIMDAL_GENERATOR(
         name="HEIMDAL_ERRORLIST",
-        rule="${PYTHON} ${SRC[0].abspath()} ${SRC[1].abspath()} ${SRC[1].parent.abspath(env)}",
+        rule="${PYTHON} '${SRC[0].abspath()}' '${SRC[1].abspath()}' '${SRC[1].parent.abspath(env)}'",
         source = '../heimdal/lib/wind/gen-errorlist.py ../heimdal/lib/wind/rfc3454.txt ../heimdal/lib/wind/stringprep.py',
         target = '../heimdal/lib/wind/errorlist_table.c ../heimdal/lib/wind/errorlist_table.h'
         )
@@ -788,21 +788,21 @@ if not bld.CONFIG_SET('USING_SYSTEM_WIND'):
 
     HEIMDAL_GENERATOR(
         name = 'HEIMDAL_NORMALIZE_TABLE',
-        rule="${PYTHON} ${SRC[0].abspath()} ${SRC[1].abspath()} ${SRC[2].abspath()} ${SRC[1].parent.abspath(env)}",
+        rule="${PYTHON} '${SRC[0].abspath()}' '${SRC[1].abspath()}' '${SRC[2].abspath()}' '${SRC[1].parent.abspath(env)}'",
         source = '../heimdal/lib/wind/gen-normalize.py ../heimdal/lib/wind/UnicodeData.txt ../heimdal/lib/wind/CompositionExclusions-3.2.0.txt',
         target = '../heimdal/lib/wind/normalize_table.h ../heimdal/lib/wind/normalize_table.c'
     )
 
     HEIMDAL_GENERATOR(
         name = 'HEIMDAL_COMBINING_TABLE',
-        rule="${PYTHON} ${SRC[0].abspath()} ${SRC[1].abspath()} ${SRC[1].parent.abspath(env)}",
+        rule="${PYTHON} '${SRC[0].abspath()}' '${SRC[1].abspath()}' '${SRC[1].parent.abspath(env)}'",
         source = '../heimdal/lib/wind/gen-combining.py ../heimdal/lib/wind/UnicodeData.txt',
         target = '../heimdal/lib/wind/combining_table.h ../heimdal/lib/wind/combining_table.c'
     )
 
     HEIMDAL_GENERATOR(
         name = 'HEIMDAL_BIDI_TABLE',
-        rule="${PYTHON} ${SRC[0].abspath()} ${SRC[1].abspath()} ${SRC[1].parent.abspath(env)}",
+        rule="${PYTHON} '${SRC[0].abspath()}' '${SRC[1].abspath()}' '${SRC[1].parent.abspath(env)}'",
         source = '../heimdal/lib/wind/gen-bidi.py ../heimdal/lib/wind/rfc3454.txt',
         target = '../heimdal/lib/wind/bidi_table.h ../heimdal/lib/wind/bidi_table.c'
     )
@@ -810,7 +810,7 @@ if not bld.CONFIG_SET('USING_SYSTEM_WIND'):
 
     HEIMDAL_GENERATOR(
         name = 'HEIMDAL_MAP_TABLE',
-        rule="${PYTHON} ${SRC[0].abspath()} ${SRC[2].abspath()} ${SRC[2].parent.abspath(env)}",
+        rule="${PYTHON} '${SRC[0].abspath()}' '${SRC[2].abspath()}' '${SRC[2].parent.abspath(env)}'",
         source = '../heimdal/lib/wind/gen-map.py ../heimdal/lib/wind/stringprep.py ../heimdal/lib/wind/rfc3454.txt',
         target = '../heimdal/lib/wind/map_table.h ../heimdal/lib/wind/map_table.c'
     )
