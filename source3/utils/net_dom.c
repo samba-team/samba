@@ -22,6 +22,7 @@
 #include "../librpc/gen_ndr/cli_initshutdown.h"
 #include "../librpc/gen_ndr/ndr_winreg.h"
 #include "lib/netapi/netapi.h"
+#include "lib/netapi/netapi_net.h"
 
 int net_dom_usage(struct net_context *c, int argc, const char **argv)
 {
@@ -372,7 +373,7 @@ int net_dom(struct net_context *c, int argc, const char **argv)
 		{NULL, NULL, 0, NULL, NULL}
 	};
 
-	status = libnetapi_init(&c->netapi_ctx);
+	status = libnetapi_net_init(&c->netapi_ctx);
 	if (status != 0) {
 		return -1;
 	}

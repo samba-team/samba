@@ -49,14 +49,14 @@ static NET_API_STATUS libnetapi_init_private_context(struct libnetapi_ctx *ctx)
 }
 
 /****************************************************************
+Create a libnetapi context, for use in non-Samba applications.  This
+loads the smb.conf file and sets the debug level to 0, so that
+applications are not flooded with debug logs at level 10, when they
+were not expecting it.
 ****************************************************************/
 
 NET_API_STATUS libnetapi_init(struct libnetapi_ctx **context)
 {
-	NET_API_STATUS status;
-	struct libnetapi_ctx *ctx = NULL;
-	char *krb5_cc_env = NULL;
-
 	if (stat_ctx && libnetapi_initialized) {
 		*context = stat_ctx;
 		return NET_API_STATUS_SUCCESS;
@@ -67,15 +67,10 @@ NET_API_STATUS libnetapi_init(struct libnetapi_ctx **context)
 #endif
 	frame = talloc_stackframe();
 
-	ctx = talloc_zero(frame, struct libnetapi_ctx);
-	if (!ctx) {
-		TALLOC_FREE(frame);
-		return W_ERROR_V(WERR_NOMEM);
-	}
-
+	/* When libnetapi is invoked from an application, it does not
+	 * want to be swamped with level 10 debug messages, even if
+	 * this has been set for the server in smb.conf */
 	lp_set_cmdline("log level", "0");
-
-	/* prevent setup_logging() from closing x_stderr... */
 	setup_logging("libnetapi", DEBUG_STDERR);
 
 	load_case_tables();
@@ -89,6 +84,33 @@ NET_API_STATUS libnetapi_init(struct libnetapi_ctx **context)
 	init_names();
 	load_interfaces();
 	reopen_logs();
+
+	BlockSignals(True, SIGPIPE);
+
+	return libnetapi_net_init(context);
+}
+
+/****************************************************************
+Create a libnetapi context, for use inside the 'net' binary.
+
+As we know net has already loaded the smb.conf file, and set the debug
+level etc, this avoids doing so again (which causes trouble with -d on
+the command line).
+****************************************************************/
+
+NET_API_STATUS libnetapi_net_init(struct libnetapi_ctx **context)
+{
+	NET_API_STATUS status;
+	struct libnetapi_ctx *ctx = NULL;
+	char *krb5_cc_env = NULL;
+
+	frame = talloc_stackframe();
+
+	ctx = talloc_zero(frame, struct libnetapi_ctx);
+	if (!ctx) {
+		TALLOC_FREE(frame);
+		return W_ERROR_V(WERR_NOMEM);
+	}
 
 	BlockSignals(True, SIGPIPE);
 

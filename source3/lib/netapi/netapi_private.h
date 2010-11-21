@@ -20,6 +20,8 @@
 #ifndef __LIB_NETAPI_PRIVATE_H__
 #define __LIB_NETAPI_PRIVATE_H__
 
+#include "lib/netapi/netapi_net.h"
+
 #define LIBNETAPI_REDIRECT_TO_LOCALHOST(ctx, r, fn) \
 	DEBUG(10,("redirecting call %s to localhost\n", #fn)); \
 	if (!r->in.server_name) { \
