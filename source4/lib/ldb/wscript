@@ -206,7 +206,7 @@ def build(bld):
                             'common/ldb.c',
                             deps='tevent',
                             includes='include',
-                            cflags='-DLDB_MODULESDIR=\"%s\"' % modules_dir)
+                            cflags=['-DLDB_MODULESDIR=\"%s\"' % modules_dir])
 
         LDB_TOOLS='ldbadd ldbsearch ldbdel ldbmodify ldbedit ldbrename'
         for t in LDB_TOOLS.split():
