@@ -110,7 +110,7 @@ def _pfm_verify(drs_pfm, ldb_pfm):
 ########### main code ###########
 if __name__ == "__main__":
     # command line parsing
-    parser = OptionParser("getncchanges [options] server")
+    parser = OptionParser("pfm_verify.py [options] server")
     sambaopts = options.SambaOptions(parser)
     parser.add_option_group(sambaopts)
     credopts = options.CredentialsOptionsDouble(parser)
