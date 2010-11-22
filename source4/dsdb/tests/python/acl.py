@@ -232,12 +232,6 @@ url: www.example.com
             m["dSHeuristics"] = MessageElement([], FLAG_MOD_DELETE, "dsHeuristics")
         self.ldb_admin.modify(m)
 
-    def set_minPwdAge(self, value):
-        m = Message()
-        m.dn = Dn(self.ldb_admin, self.base_dn)
-        m["minPwdAge"] = MessageElement(value, FLAG_MOD_REPLACE, "minPwdAge")
-        self.ldb_admin.modify(m)
-
 #tests on ldap add operations
 class AclAddTests(AclTests):
 
@@ -1341,19 +1335,18 @@ class AclCARTests(AclTests):
         else:
             self.dsheuristics = None
 
-        res = self.ldb_admin.search(self.base_dn, scope=SCOPE_BASE, attrs=["minPwdAge"])
-        self.minPwdAge = res[0]["minPwdAge"][0]
+        self.minPwdAge = self.ldb_admin.get_minPwdAge()
 
         # Set the "dSHeuristics" to have the tests run against Windows Server
         self.set_dsheuristics("000000001")
 # Set minPwdAge to 0
-        self.set_minPwdAge("0")
+        self.ldb_admin.set_minPwdAge("0")
 
     def tearDown(self):
         super(AclCARTests, self).tearDown()
         #restore original values
         self.set_dsheuristics(self.dsheuristics)
-        self.set_minPwdAge(self.minPwdAge)
+        self.ldb_admin.set_minPwdAge(self.minPwdAge)
         self.delete_force(self.ldb_admin, self.get_user_dn(self.user_with_wp))
         self.delete_force(self.ldb_admin, self.get_user_dn(self.user_with_pc))
 
