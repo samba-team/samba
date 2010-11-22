@@ -44,21 +44,19 @@ import samba.tests
 
 class DrsReplSchemaTestCase(samba.tests.TestCase):
 
-    # RootDSE msg for DC1
-    info_dc1 = None
-    ldb_dc1 = None
-    # RootDSE msg for DC1
-    info_dc2 = None
-    ldb_dc2 = None
     # prefix for all objects created
     obj_prefix = None
 
     def setUp(self):
         super(DrsReplSchemaTestCase, self).setUp()
 
-        # connect to DCs singleton
-        self._dc_connect("dc1", "DC1", ldap_only=True)
-        self._dc_connect("dc2", "DC2", ldap_only=True)
+        # connect to DCs
+        url_dc = samba.tests.env_get_var_value("DC1")
+        (self.ldb_dc1, self.info_dc1) = samba.tests.connect_samdb_ex(url_dc, 
+                                                                     ldap_only=True)
+        url_dc = samba.tests.env_get_var_value("DC2")
+        (self.ldb_dc2, self.info_dc2) = samba.tests.connect_samdb_ex(url_dc, 
+                                                                     ldap_only=True)
 
         # initialize objects prefix if not done yet
         if self.obj_prefix is None:
@@ -77,22 +75,6 @@ class DrsReplSchemaTestCase(samba.tests.TestCase):
 
     def tearDown(self):
         super(DrsReplSchemaTestCase, self).tearDown()
-
-    @classmethod
-    def _dc_connect(cls, attr_name, env_var, ldap_only=True):
-        ldb_dc = None
-        attr_name_ldb = "ldb_" + attr_name
-        if hasattr(cls, attr_name_ldb):
-            ldb_dc = getattr(cls, attr_name_ldb)
-        if ldb_dc is None:
-            url_dc = samba.tests.env_get_var_value(env_var)
-            ldb_dc = samba.tests.connect_samdb(url_dc, ldap_only=ldap_only)
-            res = ldb_dc.search(base="", expression="", scope=SCOPE_BASE, attrs=["*"])
-            info_dc = res[0]
-            setattr(cls, "ldb_" + attr_name, ldb_dc)
-            setattr(cls, "url_" + attr_name, url_dc)
-            setattr(cls, "info_" + attr_name, info_dc)
-        return ldb_dc
 
     def _net_drs_replicate(self, DC, fromDC, nc_dn):
         """Triggers replication cycle on 'DC' to
