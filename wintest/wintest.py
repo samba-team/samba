@@ -240,22 +240,73 @@ class wintest():
             time_tuple = time.localtime()
         child.sendline("date")
         child.expect("Enter the new date:")
-        child.sendline(time.strftime("%m-%d-%y", time_tuple))
+        i = child.expect(["dd-mm-yy", "mm-dd-yy"])
+        if i == 0:
+            child.sendline(time.strftime("%d-%m-%y", time_tuple))
+        else:
+            child.sendline(time.strftime("%m-%d-%y", time_tuple))
         child.expect("C:")
         child.sendline("time")
         child.expect("Enter the new time:")
         child.sendline(time.strftime("%H:%M:%S", time_tuple))
         child.expect("C:")
 
+    def get_ipconfig(self, child):
+        '''get the IP configuration of the child'''
+        child.sendline("ipconfig")
+        child.expect('Ethernet adapter ')
+        child.expect("[\w\s]+")
+        self.setvar("WIN_NIC", child.after)
+        child.expect(['IPv4 Address', 'IP Address'])
+        child.expect('\d+.\d+.\d+.\d+')
+        self.setvar('WIN_IPV4_ADDRESS', child.after)
+        child.expect('Subnet Mask')
+        child.expect('\d+.\d+.\d+.\d+')
+        self.setvar('WIN_SUBNET_MASK', child.after)
+        child.expect('Default Gateway')
+        child.expect('\d+.\d+.\d+.\d+')
+        self.setvar('WIN_DEFAULT_GATEWAY', child.after)
 
-    def open_telnet(self, hostname, username, password, retries=60, delay=5, set_time=False):
+    def disable_firewall(self, child):
+        '''remove the annoying firewall'''
+        child.sendline('netsh advfirewall set allprofiles state off')
+        i = child.expect(["Ok", "The following command was not found: advfirewall set allprofiles state off"])
+        child.expect("C:")
+        if i == 1:
+            child.sendline('netsh firewall set opmode mode = DISABLE profile = ALL')
+            child.expect("Ok")
+            child.expect("C:")
+ 
+    def set_ip(self, child):
+        '''fix the IP address to the same value it had when we
+        connected, but don't use DHCP, and force the DNS server to our
+        DNS server.  This allows DNS updates to run'''
+        self.get_ipconfig(child)
+        child.sendline('netsh')
+        child.sendline('offline')
+        child.sendline('interface ip set dns "${WIN_NIC}" static ${DNSSERVER} primary')
+        child.sendline('interface ip set address "${WIN_NIC}" static ${WIN_IPV4_ADDRESS} ${WIN_SUBNET_MASK} ${WIN_DEFAULT_GATEWAY} 1 store=persistent')
+        i = child.expect(["The syntax supplied for this command is not valid. Check help for the correct syntax", pexpect.EOF, pexpect.TIMEOUT], timeout=5)
+        if i == 0:
+            child.sendline('interface ip set address "${WIN_NIC}" static ${WIN_IPV4_ADDRESS} ${WIN_SUBNET_MASK} ${WIN_DEFAULT_GATEWAY} 1')
+        child.sendline('routing ip add persistentroute dest=0.0.0.0 mask=0.0.0.0 name="${WIN_NIC}" nhop=${WIN_DEFAULT_GATEWAY}')
+        child.sendline('online')
+        child.sendline('commit')
+        child.sendline('exit')
+
+        child.expect([pexpect.EOF, pexpect.TIMEOUT], timeout=5)
+
+    def open_telnet(self, hostname, username, password, retries=60, delay=5, set_time=False, set_ip=False, disable_firewall=True):
         '''open a telnet connection to a windows server, return the pexpect child'''
+        set_route = False
         while retries > 0:
             child = self.pexpect_spawn("telnet " + hostname + " -l '" + username + "'")
             i = child.expect(["Welcome to Microsoft Telnet Service",
+                              "Denying new connections due to the limit on number of connections",
                               "No more connections are allowed to telnet server",
                               "Unable to connect to remote host",
-                              "No route to host"])
+                              "No route to host",
+                              "Connection refused"])
             if i != 0:
                 child.close()
                 time.sleep(delay)
@@ -264,8 +315,19 @@ class wintest():
             child.expect("password:")
             child.sendline(password)
             child.expect("C:")
+            if set_route:
+                child.sendline('route add 0.0.0.0 mask 0.0.0.0 ${WIN_DEFAULT_GATEWAY}')
+                child.expect("C:")
             if set_time:
                 self.run_date_time(child, None)
+            if disable_firewall:
+                self.disable_firewall(child)
+            if set_ip:
+                self.set_ip(child)
+                set_ip = False
+                set_time = False
+                set_route = True
+                continue
             return child
         raise RuntimeError("Failed to connect with telnet")
 
