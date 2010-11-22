@@ -948,14 +948,9 @@ m["dSHeuristics"] = MessageElement("000000001", FLAG_MOD_REPLACE,
 ldb.modify(m)
 
 # Get the old "minPwdAge"
-res = ldb.search(base_dn, scope=SCOPE_BASE, attrs=["minPwdAge"])
-minPwdAge = res[0]["minPwdAge"][0]
-
+minPwdAge = ldb.get_minPwdAge()
 # Set it temporarely to "0"
-m = Message()
-m.dn = Dn(ldb, base_dn)
-m["minPwdAge"] = MessageElement("0", FLAG_MOD_REPLACE, "minPwdAge")
-ldb.modify(m)
+ldb.set_minPwdAge("0")
 
 runner = SubunitTestRunner()
 rc = 0
@@ -974,9 +969,6 @@ else:
 ldb.modify(m)
 
 # Reset the "minPwdAge" as it was before
-m = Message()
-m.dn = Dn(ldb, base_dn)
-m["minPwdAge"] = MessageElement(minPwdAge, FLAG_MOD_REPLACE, "minPwdAge")
-ldb.modify(m)
+ldb.set_minPwdAge(minPwdAge)
 
 sys.exit(rc)
