@@ -157,3 +157,21 @@ def connect_samdb(samdb_url, lp=None, session_info=None,
                  credentials=credentials,
                  flags=flags,
                  options=ldb_options)
+
+def connect_samdb_ex(samdb_url, lp=None, session_info=None,
+                     credentials=None, flags=0, ldb_options=None, ldap_only=False):
+    """Connects to samdb_url database
+
+    :param samdb_url: Url for database to connect to.
+    :param lp: Optional loadparm object
+    :param session_info: Optional session information
+    :param credentials: Optional credentials, defaults to anonymous.
+    :param flags: Optional LDB flags
+    :param ldap_only: If set, only remote LDAP connection will be created.
+    :return: (sam_db_connection, rootDse_record) tuple
+    """
+    sam_db = connect_samdb(samdb_url, lp, session_info, credentials, 
+                           flags, ldb_options, ldap_only)
+    # fetch RootDse
+    res = sam_db.search(base="", expression="", scope=ldb.SCOPE_BASE, attrs=["*"])
+    return (sam_db, res[0])
