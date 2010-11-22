@@ -12,7 +12,7 @@ def check_prerequesites(t):
     if os.getuid() != 0:
         raise Exception("You must run this script as root")
     t.cmd_contains("grep 127.0.0.1 /etc/resolv.conf", ["nameserver 127.0.0.1"])
-
+    t.putenv("KRB5_CONFIG", '${PREFIX}/private/krb5.conf')
 
 def build_s4(t):
     '''build samba4'''
