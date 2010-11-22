@@ -12,6 +12,10 @@
 	domain. While this does not benefit Windows users, it makes SSH, FTP and
 	e-mail function in a way much closer to the way they
 	would in a native unix system.</para>
+	<para>This option should be avoided if possible. It can cause confusion
+	about responsibilities for a user or group. In many situations it is
+	not clear whether winbind or /etc/passwd should be seen as authoritative
+	for a user, likewise for groups.</para>
 </description>
 
 <value type="default">no</value>
