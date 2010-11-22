@@ -70,6 +70,9 @@ class wintest():
                 ret[i] = self.substitute(ret[i])
             return ret
 
+        """We may have objects such as pexpect.EOF that are not strings"""
+        if not isinstance(text, str):
+            return text
         while True:
             var_start = text.find("${")
             if var_start == -1:
