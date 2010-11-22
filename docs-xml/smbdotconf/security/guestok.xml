@@ -9,7 +9,7 @@
     a service, then no password is required to connect to the service. 
     Privileges will be those of the <smbconfoption name="guest account"/>.</para>
 
-    <para>This paramater nullifies the benifits of setting
+    <para>This parameter nullifies the benefits of setting
     <smbconfoption name="restrict anonymous">2</smbconfoption>
 	</para>
 

@@ -9,7 +9,7 @@
 	<manvolnum>8</manvolnum></citerefentry> daemon should operate on users  
 	without domain component in their username. Users without a domain
 	component are treated as is part of the winbindd server's own
-	domain. While this does not benifit Windows users, it makes SSH, FTP and
+	domain. While this does not benefit Windows users, it makes SSH, FTP and
 	e-mail function in a way much closer to the way they
 	would in a native unix system.</para>
 </description>
