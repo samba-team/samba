@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-bld.SAMBA_MODULE('SERVICE_SMB',
+bld.SAMBA_MODULE('service_smb',
 	source='service_smb.c',
 	autoproto='service_smb_proto.h',
 	subsystem='service',
