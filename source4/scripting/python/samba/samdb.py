@@ -602,3 +602,18 @@ accountExpires: %u
 
     def get_partitions_dn(self):
         return dsdb._dsdb_get_partitions_dn(self)
+
+    def set_minPwdAge(self, value):
+        m = ldb.Message()
+        m.dn = ldb.Dn(self, self.domain_dn())
+        m["minPwdAge"] = ldb.MessageElement(value, ldb.FLAG_MOD_REPLACE, "minPwdAge")
+        self.modify(m)
+
+    def get_minPwdAge(self):
+        res = self.search(self.domain_dn(), scope=ldb.SCOPE_BASE, attrs=["minPwdAge"])
+        if len(res) == 0:
+            return None
+        elif not "minPwdAge" in res[0]:
+            return None
+        else:
+            return res[0]["minPwdAge"][0]
