@@ -664,7 +664,7 @@ static struct cache_entry *wcache_fetch_raw(char *kstr)
 static bool is_my_own_sam_domain(struct winbindd_domain *domain)
 {
 	if (strequal(domain->name, get_global_sam_name()) &&
-	     dom_sid_equal(&domain->sid, get_global_sam_sid())) {
+	    sid_check_is_domain(&domain->sid)) {
 		return true;
 	}
 
@@ -674,7 +674,7 @@ static bool is_my_own_sam_domain(struct winbindd_domain *domain)
 static bool is_builtin_domain(struct winbindd_domain *domain)
 {
 	if (strequal(domain->name, "BUILTIN") &&
-	    dom_sid_equal(&domain->sid, &global_sid_Builtin)) {
+	    sid_check_is_builtin(&domain->sid)) {
 		return true;
 	}
 
