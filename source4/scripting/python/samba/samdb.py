@@ -617,3 +617,27 @@ accountExpires: %u
             return None
         else:
             return res[0]["minPwdAge"][0]
+
+    def set_dsheuristics(self, dsheuristics):
+        m = ldb.Message()
+        m.dn = ldb.Dn(self, "CN=Directory Service,CN=Windows NT,CN=Services,%s"
+                      % self.get_config_basedn().get_linearized())
+        if dsheuristics is not None:
+            m["dSHeuristics"] = ldb.MessageElement(dsheuristics, ldb.FLAG_MOD_REPLACE,
+                                               "dSHeuristics")
+        else:
+            m["dSHeuristics"] = ldb.MessageElement([], ldb.FLAG_MOD_DELETE, "dSHeuristics")
+        self.modify(m)
+
+    def get_dsheuristics(self):
+        res = self.search("CN=Directory Service,CN=Windows NT,CN=Services,%s"
+                          % self.get_config_basedn().get_linearized(),
+                          scope=ldb.SCOPE_BASE, attrs=["dSHeuristics"])
+        if len(res) == 0:
+            dsheuristics = None
+        elif "dSHeuristics" in res[0]:
+            dsheuristics = res[0]["dSHeuristics"][0]
+        else:
+            dsheuristics = None
+
+        return dsheuristics
