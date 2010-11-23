@@ -134,7 +134,7 @@ if __name__ == "__main__":
     server = args[0]
 
     samdb = SamDB(url="ldap://%s" % server,
-                  session_info=system_session(),
+                  session_info=system_session(lp),
                   credentials=creds, lp=lp)
 
     drs_pfm = _drs_fetch_pfm(server, samdb, creds, lp)
