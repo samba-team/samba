@@ -2039,6 +2039,31 @@ if test x"$samba_cv_SIZEOF_TIME_T" = x"yes"; then
     AC_DEFINE(SIZEOF_TIME_T,8,[The size of the 'time_t' type])
 fi
 
+AC_CACHE_CHECK([for TIME_T_MAX],samba_cv_TIME_T_MAX,[
+AC_TRY_RUN([#include <time.h>
+main() {
+	struct tm *tm;
+	if (sizeof(time_t) == 8) {
+		time_t max_time = 0x7fffffffffffffffll;
+		tm = gmtime(&max_time);
+		/* This should fail with 32-bit tm_year. */
+		if (tm == NULL) {
+			/* Max time_t that works with 32-bit int tm_year in struct tm. */
+			max_time = 67768036191676799ll;
+			tm = gmtime(&max_time);
+			if (tm) {
+				exit(0);
+			}
+		}
+	}
+	exit(1);
+}],
+samba_cv_TIME_T_MAX=yes,samba_cv_TIME_T_MAX=no,samba_cv_TIME_T_MAX=cross)])
+if test x"$samba_cv_TIME_T_MAX" = x"yes"; then
+    AC_DEFINE(TIME_T_MAX,67768036191676799ll,[The maximum value of the 'time_t' type])
+fi
+
+
 AC_CACHE_CHECK([for 64 bit off_t],samba_cv_SIZEOF_OFF_T,[
 AC_TRY_RUN([#include <stdio.h>
 #include <sys/stat.h>
