@@ -85,21 +85,6 @@ replace: nTSecurityDescriptor
             mod += "nTSecurityDescriptor:: %s" % base64.b64encode(ndr_pack(desc))
         _ldb.modify_ldif(mod, controls)
 
-    def create_domain_ou(self, _ldb, ou_dn, desc=None, controls=None):
-        ldif = """
-dn: """ + ou_dn + """
-ou: """ + ou_dn.split(",")[0][3:] + """
-objectClass: organizationalUnit
-url: www.example.com
-"""
-        if desc:
-            assert(isinstance(desc, str) or isinstance(desc, security.descriptor))
-            if isinstance(desc, str):
-                ldif += "nTSecurityDescriptor: %s" % desc
-            elif isinstance(desc, security.descriptor):
-                ldif += "nTSecurityDescriptor:: %s" % base64.b64encode(ndr_pack(desc))
-        _ldb.add_ldif(ldif, controls)
-
     def create_domain_user(self, _ldb, user_dn, desc=None):
         ldif = """
 dn: """ + user_dn + """
@@ -506,7 +491,7 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         _ldb = self.get_ldb_connection(user_name, "samba123@")
         object_dn = "OU=test_domain_ou1," + self.base_dn
         self.delete_force(self.ldb_admin, object_dn)
-        self.create_domain_ou(self.ldb_admin, object_dn)
+        self.ldb_admin.create_ou(object_dn)
         user_sid = self.get_object_sid( self.get_users_domain_dn(user_name) )
         mod = "(A;CI;WPWDCC;;;%s)" % str(user_sid)
         self.dacl_add_ace(object_dn, mod)
@@ -529,7 +514,7 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         _ldb = self.get_ldb_connection(user_name, "samba123@")
         object_dn = "OU=test_domain_ou1," + self.base_dn
         self.delete_force(self.ldb_admin, object_dn)
-        self.create_domain_ou(self.ldb_admin, object_dn)
+        self.ldb_admin.create_ou(object_dn)
         user_sid = self.get_object_sid( self.get_users_domain_dn(user_name) )
         mod = "(A;CI;WPWDCC;;;%s)" % str(user_sid)
         self.dacl_add_ace(object_dn, mod)
@@ -646,7 +631,7 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         _ldb = self.get_ldb_connection(user_name, "samba123@")
         object_dn = "OU=test_domain_ou1," + self.base_dn
         self.delete_force(self.ldb_admin, object_dn)
-        self.create_domain_ou(self.ldb_admin, object_dn)
+        self.ldb_admin.create_ou(object_dn)
         user_sid = self.get_object_sid( self.get_users_domain_dn(user_name) )
         mod = "(A;CI;WOWDCC;;;%s)" % str(user_sid)
         self.dacl_add_ace(object_dn, mod)
@@ -671,7 +656,7 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         _ldb = self.get_ldb_connection(user_name, "samba123@")
         object_dn = "OU=test_domain_ou1," + self.base_dn
         self.delete_force(self.ldb_admin, object_dn)
-        self.create_domain_ou(self.ldb_admin, object_dn)
+        self.ldb_admin.create_ou(object_dn)
         user_sid = self.get_object_sid( self.get_users_domain_dn(user_name) )
         mod = "(A;CI;WOWDCC;;;%s)" % str(user_sid)
         self.dacl_add_ace(object_dn, mod)
@@ -755,7 +740,7 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         user_name = "Administrator"
         object_dn = "OU=test_domain_ou1," + self.base_dn
         self.delete_force(self.ldb_admin, object_dn)
-        self.create_domain_ou(self.ldb_admin, object_dn)
+        self.ldb_admin.create_ou(object_dn)
         user_sid = self.get_object_sid( self.get_users_domain_dn(user_name) )
         mod = "(D;CI;WP;;;S-1-3-0)"
         #mod = ""
@@ -764,7 +749,7 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         # Create additional object into the first one
         object_dn = "OU=test_domain_ou2," + object_dn
         self.delete_force(self.ldb_admin, object_dn)
-        self.create_domain_ou(self.ldb_admin, object_dn)
+        self.ldb_admin.create_ou(object_dn)
         desc_sddl = self.get_desc_sddl(object_dn)
 
     ## Tests for SCHEMA
@@ -1352,7 +1337,7 @@ class DaclDescriptorTests(DescriptorTests):
                 expression="distinguishedName=%s" % object_dn)
         # Make sure top testing OU has been deleted before starting the test
         self.assertEqual(res, [])
-        self.create_domain_ou(self.ldb_admin, object_dn)
+        self.ldb_admin.create_ou(object_dn)
         desc_sddl = self.get_desc_sddl(object_dn)
         # Make sure there are inheritable ACEs initially
         self.assertTrue("CI" in desc_sddl or "OI" in desc_sddl)
@@ -1681,7 +1666,7 @@ class SdFlagsDescriptorTests(DescriptorTests):
             See that only the owner has been changed.
         """
         ou_dn = "OU=test_sdflags_ou," + self.base_dn
-        self.create_domain_ou(self.ldb_admin, ou_dn)
+        self.ldb_admin.create_ou(ou_dn)
         self.modify_desc(self.ldb_admin, ou_dn, self.test_descr, controls=["sd_flags:1:%d" % (SECINFO_OWNER)])
         desc_sddl = self.get_desc_sddl(ou_dn)
         # make sure we have modified the owner
@@ -1696,7 +1681,7 @@ class SdFlagsDescriptorTests(DescriptorTests):
             See that only the owner has been changed.
         """
         ou_dn = "OU=test_sdflags_ou," + self.base_dn
-        self.create_domain_ou(self.ldb_admin, ou_dn)
+        self.ldb_admin.create_ou(ou_dn)
         self.modify_desc(self.ldb_admin, ou_dn, self.test_descr, controls=["sd_flags:1:%d" % (SECINFO_GROUP)])
         desc_sddl = self.get_desc_sddl(ou_dn)
         # make sure we have modified the group
@@ -1711,7 +1696,7 @@ class SdFlagsDescriptorTests(DescriptorTests):
             See that only the owner has been changed.
         """
         ou_dn = "OU=test_sdflags_ou," + self.base_dn
-        self.create_domain_ou(self.ldb_admin, ou_dn)
+        self.ldb_admin.create_ou(ou_dn)
         self.modify_desc(self.ldb_admin, ou_dn, self.test_descr, controls=["sd_flags:1:%d" % (SECINFO_DACL)])
         desc_sddl = self.get_desc_sddl(ou_dn)
         # make sure we have modified the DACL
@@ -1726,7 +1711,7 @@ class SdFlagsDescriptorTests(DescriptorTests):
             See that only the owner has been changed.
         """
         ou_dn = "OU=test_sdflags_ou," + self.base_dn
-        self.create_domain_ou(self.ldb_admin, ou_dn)
+        self.ldb_admin.create_ou(ou_dn)
         self.modify_desc(self.ldb_admin, ou_dn, self.test_descr, controls=["sd_flags:1:%d" % (SECINFO_SACL)])
         desc_sddl = self.get_desc_sddl(ou_dn)
         # make sure we have modified the DACL
@@ -1742,7 +1727,7 @@ class SdFlagsDescriptorTests(DescriptorTests):
             which is the same as 0xF
         """
         ou_dn = "OU=test_sdflags_ou," + self.base_dn
-        self.create_domain_ou(self.ldb_admin, ou_dn)
+        self.ldb_admin.create_ou(ou_dn)
         self.modify_desc(self.ldb_admin, ou_dn, self.test_descr, controls=["sd_flags:1:0"])
         desc_sddl = self.get_desc_sddl(ou_dn)
         # make sure we have modified the DACL
@@ -1756,7 +1741,7 @@ class SdFlagsDescriptorTests(DescriptorTests):
         """ Modify a descriptor with 0xF set.
         """
         ou_dn = "OU=test_sdflags_ou," + self.base_dn
-        self.create_domain_ou(self.ldb_admin, ou_dn)
+        self.ldb_admin.create_ou(ou_dn)
         self.modify_desc(self.ldb_admin, ou_dn, self.test_descr, controls=["sd_flags:1:15"])
         desc_sddl = self.get_desc_sddl(ou_dn)
         # make sure we have modified the DACL
@@ -1771,7 +1756,7 @@ class SdFlagsDescriptorTests(DescriptorTests):
             Only the owner part should be returned.
         """
         ou_dn = "OU=test_sdflags_ou," + self.base_dn
-        self.create_domain_ou(self.ldb_admin, ou_dn)
+        self.ldb_admin.create_ou(ou_dn)
         desc_sddl = self.get_desc_sddl(ou_dn, controls=["sd_flags:1:%d" % (SECINFO_OWNER)])
         # make sure we have read the owner
         self.assertTrue("O:" in desc_sddl)
@@ -1785,7 +1770,7 @@ class SdFlagsDescriptorTests(DescriptorTests):
             Only the group part should be returned.
         """
         ou_dn = "OU=test_sdflags_ou," + self.base_dn
-        self.create_domain_ou(self.ldb_admin, ou_dn)
+        self.ldb_admin.create_ou(ou_dn)
         desc_sddl = self.get_desc_sddl(ou_dn, controls=["sd_flags:1:%d" % (SECINFO_GROUP)])
         # make sure we have read the owner
         self.assertTrue("G:" in desc_sddl)
@@ -1799,7 +1784,7 @@ class SdFlagsDescriptorTests(DescriptorTests):
             Only the sacl part should be returned.
         """
         ou_dn = "OU=test_sdflags_ou," + self.base_dn
-        self.create_domain_ou(self.ldb_admin, ou_dn)
+        self.ldb_admin.create_ou(ou_dn)
         desc_sddl = self.get_desc_sddl(ou_dn, controls=["sd_flags:1:%d" % (SECINFO_SACL)])
         # make sure we have read the owner
         self.assertTrue("S:" in desc_sddl)
@@ -1813,7 +1798,7 @@ class SdFlagsDescriptorTests(DescriptorTests):
             Only the dacl part should be returned.
         """
         ou_dn = "OU=test_sdflags_ou," + self.base_dn
-        self.create_domain_ou(self.ldb_admin, ou_dn)
+        self.ldb_admin.create_ou(ou_dn)
         desc_sddl = self.get_desc_sddl(ou_dn, controls=["sd_flags:1:%d" % (SECINFO_DACL)])
         # make sure we have read the owner
         self.assertTrue("D:" in desc_sddl)
@@ -1845,7 +1830,7 @@ class RightsAttributesTests(DescriptorTests):
     def test_sDRightsEffective(self):
         object_dn = "OU=test_domain_ou1," + self.base_dn
         self.delete_force(self.ldb_admin, object_dn)
-        self.create_domain_ou(self.ldb_admin, object_dn)
+        self.ldb_admin.create_ou(object_dn)
         print self.get_users_domain_dn("testuser_attr")
         user_sid = self.get_object_sid(self.get_users_domain_dn("testuser_attr"))
         #give testuser1 read access so attributes can be retrieved
@@ -1885,7 +1870,7 @@ class RightsAttributesTests(DescriptorTests):
     def test_allowedChildClassesEffective(self):
         object_dn = "OU=test_domain_ou1," + self.base_dn
         self.delete_force(self.ldb_admin, object_dn)
-        self.create_domain_ou(self.ldb_admin, object_dn)
+        self.ldb_admin.create_ou(object_dn)
         user_sid = self.get_object_sid(self.get_users_domain_dn("testuser_attr"))
         #give testuser1 read access so attributes can be retrieved
         mod = "(A;CI;RP;;;%s)" % str(user_sid)
@@ -1909,7 +1894,7 @@ class RightsAttributesTests(DescriptorTests):
     def test_allowedAttributesEffective(self):
         object_dn = "OU=test_domain_ou1," + self.base_dn
         self.delete_force(self.ldb_admin, object_dn)
-        self.create_domain_ou(self.ldb_admin, object_dn)
+        self.ldb_admin.create_ou(object_dn)
         user_sid = self.get_object_sid(self.get_users_domain_dn("testuser_attr"))
         #give testuser1 read access so attributes can be retrieved
         mod = "(A;CI;RP;;;%s)" % str(user_sid)
