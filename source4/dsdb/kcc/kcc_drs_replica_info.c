@@ -780,7 +780,9 @@ NTSTATUS kccdrs_replica_get_info(struct irpc_message *msg,
 	mem_ctx = talloc_new(msg);
 	NT_STATUS_HAVE_NO_MEMORY(mem_ctx);
 
+#if 0
 	NDR_PRINT_IN_DEBUG(drsuapi_DsReplicaGetInfo, req);
+#endif
 
 	/* check request version */
 	if (req->in.level != DRSUAPI_DS_REPLICA_GET_INFO &&
@@ -885,6 +887,8 @@ NTSTATUS kccdrs_replica_get_info(struct irpc_message *msg,
 done:
 	/* put the status on the result field of the reply */
 	req->out.result = status;
+#if 0
 	NDR_PRINT_OUT_DEBUG(drsuapi_DsReplicaGetInfo, req);
+#endif
 	return NT_STATUS_OK;
 }
