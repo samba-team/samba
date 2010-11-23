@@ -127,6 +127,21 @@ class wintest():
         else:
             return subprocess.call(cmd, shell=shell, cwd=dir)
 
+    def run_child(self, cmd, dir="."):
+        cwd = os.getcwd()
+        cmd = self.substitute(cmd)
+        if isinstance(cmd, list):
+            self.info('$ ' + " ".join(cmd))
+        else:
+            self.info('$ ' + cmd)
+        if isinstance(cmd, list):
+            shell=False
+        else:
+            shell=True
+        os.chdir(dir)
+        ret = subprocess.Popen(cmd, shell=shell)
+        os.chdir(cwd)
+        return ret
 
     def cmd_output(self, cmd):
         '''return output from and command'''
@@ -199,6 +214,13 @@ class wintest():
         ret.expect = expect_sub
 
         return ret
+
+    def get_nameserver(self):
+        '''Get the current nameserver from /etc/resolv.conf'''
+        child = self.pexpect_spawn('cat /etc/resolv.conf')
+        child.expect('nameserver')
+        child.expect('\d+.\d+.\d+.\d+')
+        return child.after
 
     def vm_poweroff(self, vmname, checkfail=True):
         '''power off a VM'''
@@ -294,7 +316,7 @@ class wintest():
             child.expect("C:")
  
     def set_dns(self, child):
-        child.sendline('netsh interface ip set dns "${WIN_NIC}" static ${DNSSERVER} primary')
+        child.sendline('netsh interface ip set dns "${WIN_NIC}" static ${INTERFACE_IP} primary')
         i = child.expect(['C:', pexpect.EOF, pexpect.TIMEOUT], timeout=5)
         if i > 0:
             return True
