@@ -679,7 +679,7 @@ struct ldb_parse_tree *ldb_parse_tree(TALLOC_CTX *mem_ctx, const char *s)
 /*
   construct a ldap parse filter given a parse tree
 */
-char *ldb_filter_from_tree(TALLOC_CTX *mem_ctx, struct ldb_parse_tree *tree)
+char *ldb_filter_from_tree(TALLOC_CTX *mem_ctx, const struct ldb_parse_tree *tree)
 {
 	char *s, *s2, *ret;
 	unsigned int i;

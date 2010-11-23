@@ -1463,6 +1463,10 @@ static int ltdb_connect(struct ldb_context *ldb, const char *url,
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
+	if (getenv("LDB_WARN_UNINDEXED")) {
+		ltdb->warn_unindexed = true;
+	}
+
 	ltdb->sequence_number = 0;
 
 	module = ldb_module_new(ldb, ldb, "ldb_tdb backend", &ltdb_ops);

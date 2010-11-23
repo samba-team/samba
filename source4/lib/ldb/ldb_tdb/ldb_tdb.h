@@ -34,6 +34,8 @@ struct ltdb_private {
 	struct ltdb_idxptr *idxptr;
 	bool prepared_commit;
 	int read_lock_count;
+
+	bool warn_unindexed;
 };
 
 /*
