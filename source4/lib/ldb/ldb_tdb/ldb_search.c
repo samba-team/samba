@@ -582,7 +582,13 @@ int ltdb_search(struct ltdb_context *ctx)
 				/* useful for debugging when slow performance
 				 * is caused by unindexed searches */
 				char *expression = ldb_filter_from_tree(ctx, ctx->tree);
-				ldb_debug(ldb, LDB_DEBUG_WARNING, "ldb FULL SEARCH: %s\n", expression);
+				ldb_debug(ldb, LDB_DEBUG_WARNING, "ldb FULL SEARCH: %s SCOPE: %s DN: %s\n",
+							expression,
+							req->op.search.scope==LDB_SCOPE_BASE?"base":
+							req->op.search.scope==LDB_SCOPE_ONELEVEL?"one":
+							req->op.search.scope==LDB_SCOPE_SUBTREE?"sub":"UNKNOWN",
+							ldb_dn_get_linearized(req->op.search.base));
+
 				talloc_free(expression);
 			}
 			if (match_count != 0) {
