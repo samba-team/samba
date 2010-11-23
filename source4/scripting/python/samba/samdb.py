@@ -337,7 +337,7 @@ member: %s
 
             # Sets the password for it
             if setpassword:
-                self.setpassword("(dn=" + user_dn + ")", password,
+                self.setpassword("(samAccountName=%s)" % username, password,
                                  force_password_change_at_next_login_req)
         except:
             self.transaction_cancel()
@@ -362,7 +362,6 @@ member: %s
                 raise Exception('Unable to find user "%s"' % (username or search_filter))
             assert(len(res) == 1)
             user_dn = res[0].dn
-
             setpw = """
 dn: %s
 changetype: modify
