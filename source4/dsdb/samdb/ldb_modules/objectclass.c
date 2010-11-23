@@ -463,10 +463,12 @@ static bool check_rodc_ntdsdsa_add(struct oc_context *ac,
 
 static int objectclass_do_add(struct oc_context *ac)
 {
-	struct ldb_context *ldb;
+	struct ldb_context *ldb = ldb_module_get_ctx(ac->module);
 	struct ldb_request *add_req;
 	struct ldb_message_element *objectclass_element, *el;
 	struct ldb_message *msg;
+	struct ldb_control *as_system = ldb_request_get_control(ac->req,
+								LDB_CONTROL_AS_SYSTEM_OID);
 	TALLOC_CTX *mem_ctx;
 	struct class_list *sorted, *current;
 	const char *rdn_name = NULL;
@@ -478,7 +480,9 @@ static int objectclass_do_add(struct oc_context *ac)
 	bool found;
 	int ret;
 
-	ldb = ldb_module_get_ctx(ac->module);
+	if (as_system != NULL) {
+		as_system->critical = 0;
+	}
 
 	msg = ldb_msg_copy_shallow(ac, ac->req->op.add.message);
 	if (msg == NULL) {
@@ -577,7 +581,7 @@ static int objectclass_do_add(struct oc_context *ac)
 			/* LSA-specific objectclasses per default not allowed */
 			if (((strcmp(value, "secret") == 0) ||
 			     (strcmp(value, "trustedDomain") == 0)) &&
-			    !ldb_request_get_control(ac->req, LDB_CONTROL_RELAX_OID)) {
+			    !(dsdb_module_am_system(ac->module) || as_system)) {
 				ldb_asprintf_errstring(ldb,
 						       "objectclass: object class '%s' is LSA-specific, rejecting creation of '%s'!",
 						       value,
