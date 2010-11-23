@@ -227,7 +227,7 @@ member: %s
                 profilepath=None, scriptpath=None, homedrive=None, homedirectory=None,
                 jobtitle=None, department=None, company=None, description=None,
                 mailaddress=None, internetaddress=None, telephonenumber=None,
-                physicaldeliveryoffice=None):
+                physicaldeliveryoffice=None, sd=None, setpassword=True):
         """Adds a new user with additional parameters
 
         :param username: Name of the new user
@@ -250,6 +250,8 @@ member: %s
         :param internetaddress: Home page of the new user
         :param telephonenumber: Phone number of the new user
         :param physicaldeliveryoffice: Office location of the new user
+        :param sd: security descriptor of the object
+        :param setpassword: optionally disable password reset
         """
 
         displayname = ""
@@ -326,13 +328,17 @@ member: %s
         if physicaldeliveryoffice is not None:
             ldbmessage["physicalDeliveryOfficeName"] = physicaldeliveryoffice
 
+        if sd is not None:
+            ldbmessage["nTSecurityDescriptor"] = ndr_pack(sd)
+
         self.transaction_start()
         try:
             self.add(ldbmessage)
 
             # Sets the password for it
-            self.setpassword("(dn=" + user_dn + ")", password,
-              force_password_change_at_next_login_req)
+            if setpassword:
+                self.setpassword("(dn=" + user_dn + ")", password,
+                                 force_password_change_at_next_login_req)
         except:
             self.transaction_cancel()
             raise
