@@ -96,38 +96,6 @@ replace: nTSecurityDescriptor
             mod += "nTSecurityDescriptor:: %s" % base64.b64encode(ndr_pack(desc))
         self.ldb_admin.modify_ldif(mod)
 
-    def create_group(self, _ldb, group_dn, desc=None):
-        ldif = """
-dn: """ + group_dn + """
-objectClass: group
-sAMAccountName: """ + group_dn.split(",")[0][3:] + """
-groupType: 4
-url: www.example.com
-"""
-        if desc:
-            assert(isinstance(desc, str) or isinstance(desc, security.descriptor))
-            if isinstance(desc, str):
-                ldif += "nTSecurityDescriptor: %s" % desc
-            elif isinstance(desc, security.descriptor):
-                ldif += "nTSecurityDescriptor:: %s" % base64.b64encode(ndr_pack(desc))
-        _ldb.add_ldif(ldif)
-
-    def create_security_group(self, _ldb, group_dn, desc=None):
-        ldif = """
-dn: """ + group_dn + """
-objectClass: group
-sAMAccountName: """ + group_dn.split(",")[0][3:] + """
-groupType: -2147483646
-url: www.example.com
-"""
-        if desc:
-            assert(isinstance(desc, str) or isinstance(desc, security.descriptor))
-            if isinstance(desc, str):
-                ldif += "nTSecurityDescriptor: %s" % desc
-            elif isinstance(desc, security.descriptor):
-                ldif += "nTSecurityDescriptor:: %s" % base64.b64encode(ndr_pack(desc))
-        _ldb.add_ldif(ldif)
-
     def read_desc(self, object_dn):
         res = self.ldb_admin.search(object_dn, SCOPE_BASE, None, ["nTSecurityDescriptor"])
         desc = res[0]["nTSecurityDescriptor"][0]
@@ -235,7 +203,8 @@ class AclAddTests(AclTests):
         self.dacl_add_ace("OU=test_add_ou1," + self.base_dn, mod)
         # Test user and group creation with another domain admin's credentials
         self.ldb_notowner.newuser(self.test_user1, self.user_pass, userou=self.ou2)
-        self.create_group(self.ldb_notowner, "CN=test_add_group1,OU=test_add_ou2,OU=test_add_ou1," + self.base_dn)
+        self.ldb_notowner.newgroup("test_add_group1", groupou="OU=test_add_ou2,OU=test_add_ou1",
+                                   grouptype=4)
         # Make sure we HAVE created the two objects -- user and group
         # !!! We should not be able to do that, but however beacuse of ACE ordering our inherited Deny ACE
         # !!! comes after explicit (A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA) that comes from somewhere
@@ -253,7 +222,8 @@ class AclAddTests(AclTests):
         # Test user and group creation with regular user credentials
         try:
             self.ldb_user.newuser(self.test_user1, self.user_pass, userou=self.ou2)
-            self.create_group(self.ldb_user, "CN=test_add_group1,OU=test_add_ou2,OU=test_add_ou1," + self.base_dn)
+            self.ldb_user.newgroup("test_add_group1", groupou="OU=test_add_ou2,OU=test_add_ou1",
+                                   grouptype=4)
         except LdbError, (num, _):
             self.assertEquals(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
         else:
@@ -276,7 +246,8 @@ class AclAddTests(AclTests):
         # Test user and group creation with granted user only to one of the objects
         self.ldb_user.newuser(self.test_user1, self.user_pass, userou=self.ou2, setpassword=False)
         try:
-            self.create_group(self.ldb_user, "CN=test_add_group1,OU=test_add_ou2,OU=test_add_ou1," + self.base_dn)
+            self.ldb_user.newgroup("test_add_group1", groupou="OU=test_add_ou2,OU=test_add_ou1",
+                                   grouptype=4)
         except LdbError, (num, _):
             self.assertEquals(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
         else:
@@ -299,7 +270,8 @@ class AclAddTests(AclTests):
         self.ldb_owner.create_ou("OU=test_add_ou1," + self.base_dn)
         self.ldb_owner.create_ou("OU=test_add_ou2,OU=test_add_ou1," + self.base_dn)
         self.ldb_owner.newuser(self.test_user1, self.user_pass, userou=self.ou2)
-        self.create_group(self.ldb_owner, "CN=test_add_group1,OU=test_add_ou2,OU=test_add_ou1," + self.base_dn)
+        self.ldb_owner.newgroup("test_add_group1", groupou="OU=test_add_ou2,OU=test_add_ou1",
+                                 grouptype=4)
         # Make sure we have successfully created the two objects -- user and group
         res = self.ldb_admin.search(self.base_dn, expression="(distinguishedName=%s,%s)" % ("CN=test_add_user1,OU=test_add_ou2,OU=test_add_ou1", self.base_dn))
         self.assertTrue(len(res) > 0)
@@ -322,8 +294,8 @@ class AclModifyTests(AclTests):
         self.ldb_user2 = self.get_ldb_connection(self.user_with_sm, self.user_pass)
         self.ldb_user3 = self.get_ldb_connection(self.user_with_group_sm, self.user_pass)
         self.user_sid = self.get_object_sid( self.get_user_dn(self.user_with_wp))
-        self.create_group(self.ldb_admin, "CN=test_modify_group2,CN=Users," + self.base_dn)
-        self.create_group(self.ldb_admin, "CN=test_modify_group3,CN=Users," + self.base_dn)
+        self.ldb_admin.newgroup("test_modify_group2", grouptype=4)
+        self.ldb_admin.newgroup("test_modify_group3", grouptype=4)
         self.ldb_admin.newuser("test_modify_user2", self.user_pass)
 
     def tearDown(self):
@@ -356,7 +328,7 @@ displayName: test_changed"""
         self.assertEqual(res[0]["displayName"][0], "test_changed")
         # Second test object -- Group
         print "Testing modify on Group object"
-        self.create_group(self.ldb_admin, "CN=test_modify_group1,CN=Users," + self.base_dn)
+        self.ldb_admin.newgroup("test_modify_group1", grouptype=4)
         self.dacl_add_ace("CN=test_modify_group1,CN=Users," + self.base_dn, mod)
         ldif = """
 dn: CN=test_modify_group1,CN=Users,""" + self.base_dn + """
@@ -414,7 +386,7 @@ url: www.samba.org"""
             self.fail()
         # Second test object -- Group
         print "Testing modify on Group object"
-        self.create_group(self.ldb_admin, "CN=test_modify_group1,CN=Users," + self.base_dn)
+        self.ldb_admin.newgroup("test_modify_group1", grouptype=4)
         self.dacl_add_ace("CN=test_modify_group1,CN=Users," + self.base_dn, mod)
         ldif = """
 dn: CN=test_modify_group1,CN=Users,""" + self.base_dn + """
@@ -488,7 +460,7 @@ url: www.samba.org"""
 
         # Second test object -- Group
         print "Testing modify on Group object"
-        self.create_group(self.ldb_admin, "CN=test_modify_group1,CN=Users," + self.base_dn)
+        self.ldb_admin.newgroup("test_modify_group1", grouptype=4)
         # Modify on attribute you do not have rights for granted
         ldif = """
 dn: CN=test_modify_group1,CN=Users,""" + self.base_dn + """
@@ -652,7 +624,7 @@ class AclSearchTests(AclTests):
         self.ldb_admin.newuser(self.u1, self.user_pass)
         self.ldb_admin.newuser(self.u2, self.user_pass)
         self.ldb_admin.newuser(self.u3, self.user_pass)
-        self.create_security_group(self.ldb_admin, self.get_user_dn(self.group1))
+        self.ldb_admin.newgroup(self.group1, grouptype=-2147483646)
         self.ldb_admin.add_remove_group_members(self.group1, self.u2,
                                                 add_members_operation=True)
         self.ldb_user = self.get_ldb_connection(self.u1, self.user_pass)
@@ -1596,7 +1568,7 @@ class AclExtendedTests(AclTests):
         mod = "(A;;LC;;;%s)" % str(self.user_sid2)
         self.dacl_add_ace("OU=ext_ou1," + self.base_dn, mod)
         #create a group under that, grant RP to u2
-        self.create_group(self.ldb_user1, "CN=ext_group1,OU=ext_ou1," + self.base_dn)
+        self.ldb_user1.newgroup("ext_group1", groupou="OU=ext_ou1", grouptype=4)
         mod = "(A;;RP;;;%s)" % str(self.user_sid2)
         self.dacl_add_ace("CN=ext_group1,OU=ext_ou1," + self.base_dn, mod)
         #u2 must not read the descriptor
