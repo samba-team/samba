@@ -288,6 +288,8 @@ static NTSTATUS rpccli_lsa_lookup_sids_generic(struct rpc_pipe_client *cli,
 	char **domains = NULL;
 	char **names = NULL;
 	enum lsa_SidType *types = NULL;
+	bool have_mapped = false;
+	bool have_unmapped = false;
 
 	if (num_sids) {
 		if (!(domains = TALLOC_ARRAY(mem_ctx, char *, num_sids))) {
@@ -347,14 +349,21 @@ static NTSTATUS rpccli_lsa_lookup_sids_generic(struct rpc_pipe_client *cli,
 			goto fail;
 		}
 
-		/* adapt overall result */
-		if (( NT_STATUS_IS_OK(result) &&
-		     !NT_STATUS_IS_OK(hunk_result))
-		    ||
-		    ( NT_STATUS_EQUAL(result, NT_STATUS_NONE_MAPPED) &&
-		     !NT_STATUS_EQUAL(hunk_result, NT_STATUS_NONE_MAPPED)))
-		{
-			result = STATUS_SOME_UNMAPPED;
+		if (NT_STATUS_IS_OK(hunk_result)) {
+			have_mapped = true;
+		}
+		if (NT_STATUS_EQUAL(hunk_result, NT_STATUS_NONE_MAPPED)) {
+			have_unmapped = true;
+		}
+		if (NT_STATUS_EQUAL(hunk_result, STATUS_SOME_UNMAPPED)) {
+			int i;
+			for (i=0; i<hunk_num_sids; i++) {
+				if (hunk_types[i] == SID_NAME_UNKNOWN) {
+					have_unmapped = true;
+				} else {
+					have_mapped = true;
+				}
+			}
 		}
 
 		sids_left -= hunk_num_sids;
@@ -368,7 +377,14 @@ static NTSTATUS rpccli_lsa_lookup_sids_generic(struct rpc_pipe_client *cli,
 	*pdomains = domains;
 	*pnames = names;
 	*ptypes = types;
-	return result;
+
+	if (!have_mapped) {
+		return NT_STATUS_NONE_MAPPED;
+	}
+	if (have_unmapped) {
+		return STATUS_SOME_UNMAPPED;
+	}
+	return NT_STATUS_OK;
 
 fail:
 	TALLOC_FREE(domains);
