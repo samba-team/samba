@@ -723,6 +723,10 @@ static NTSTATUS fset_nt_acl_common(vfs_handle_struct *handle, files_struct *fsp,
 		return status;
 	}
 
+	psd->revision = orig_psd->revision;
+	/* All our SD's are self relative. */
+	psd->type = orig_psd->type | SEC_DESC_SELF_RELATIVE;
+
 	if ((security_info_sent & SECINFO_OWNER) && (orig_psd->owner_sid != NULL)) {
 		psd->owner_sid = orig_psd->owner_sid;
 	}
@@ -731,9 +735,11 @@ static NTSTATUS fset_nt_acl_common(vfs_handle_struct *handle, files_struct *fsp,
 	}
 	if (security_info_sent & SECINFO_DACL) {
 		psd->dacl = orig_psd->dacl;
+		psd->type |= SEC_DESC_DACL_PRESENT;
 	}
 	if (security_info_sent & SECINFO_SACL) {
 		psd->sacl = orig_psd->sacl;
+		psd->type |= SEC_DESC_SACL_PRESENT;
 	}
 
 	status = SMB_VFS_NEXT_FSET_NT_ACL(handle, fsp, security_info_sent, psd);
