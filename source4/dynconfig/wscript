@@ -17,6 +17,7 @@ dir_options = {
 dyn_cflags = {
     'BINDIR'                         : '${BINDIR}',
     'SBINDIR'                        : '${SBINDIR}',
+    'SCRIPTSBINDIR'                  : '${SBINDIR}',
     'CONFIGDIR'                      : '${SYSCONFDIR}',
     'CONFIGFILE'                     : '${SYSCONFDIR}/smb.conf',
     'LMHOSTSFILE'                    : '${SYSCONFDIR}/lmhosts',
@@ -47,6 +48,7 @@ dyn_cflags = {
 dyn_cflags_fhs = {
     'BINDIR'                         : '${BINDIR}',
     'SBINDIR'                        : '${SBINDIR}',
+    'SCRIPTSBINDIR'                  : '${SBINDIR}',
     'CONFIGDIR'                      : '${SYSCONFDIR}/samba',
     'CONFIGFILE'                     : '${SYSCONFDIR}/samba/smb.conf',
     'LMHOSTSFILE'                    : '${SYSCONFDIR}/samba/lmhosts',
@@ -119,15 +121,18 @@ def configure(conf):
 def dynconfig_cflags(bld, list=None):
     '''work out the extra CFLAGS for dynconfig.c'''
     cflags = []
+    # override some paths when running from the build directory
+    override = { 'MODULESDIR'    : 'bin/modules',
+                 'SCRIPTSBINDIR' : 'scripting/bin',
+                 'SETUPDIR'      : 'setup' }
     for f in dyn_cflags.keys():
         if list and not f in list:
             continue
-        if not Options.is_install and f == 'MODULESDIR':
-            # we want binaries run from the source dir to use the current
-            # modules, not the installed ones
-            cflags.append('-DMODULESDIR="%s"' % os.path.join(os.getcwd(), 'bin/modules'))
-        else:
-            cflags.append('-D%s="%s"' % (f, bld.env[f]))
+        value = bld.env[f]
+        if not Options.is_install:
+            if f in override:
+                value = os.path.join(os.getcwd(), override[f])
+        cflags.append('-D%s="%s"' % (f, value))
     return cflags
 Build.BuildContext.dynconfig_cflags = dynconfig_cflags
 

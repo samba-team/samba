@@ -66,6 +66,7 @@ const char *dyn_##name = name; \
 
 /* these are in common with s3 */
 DEFINE_DYN_CONFIG_PARAM(SBINDIR)
+DEFINE_DYN_CONFIG_PARAM(SCRIPTSBINDIR)
 DEFINE_DYN_CONFIG_PARAM(BINDIR)
 DEFINE_DYN_CONFIG_PARAM(SWATDIR)
 DEFINE_DYN_CONFIG_PARAM(CONFIGFILE) /**< Location of smb.conf file. **/
