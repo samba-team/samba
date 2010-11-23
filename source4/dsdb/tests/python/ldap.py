@@ -71,17 +71,6 @@ class BasicTests(unittest.TestCase):
         res = self.ldb.search(base=self.base_dn, expression="(objectClass=*)", scope=SCOPE_BASE)
         return ndr_unpack( security.dom_sid,res[0]["objectSid"][0])
 
-    def set_dsheuristics(self, dsheuristics):
-        m = Message()
-        m.dn = Dn(self.ldb, "CN=Directory Service, CN=Windows NT, CN=Services, "
-                  + self.configuration_dn)
-        if dsheuristics is not None:
-            m["dSHeuristics"] = MessageElement(dsheuristics, FLAG_MOD_REPLACE,
-                                               "dSHeuristics")
-        else:
-            m["dSHeuristics"] = MessageElement([], FLAG_MOD_DELETE, "dsHeuristics")
-        self.ldb.modify(m)
-
     def setUp(self):
         super(BasicTests, self).setUp()
         self.ldb = ldb
@@ -2565,30 +2554,22 @@ nTSecurityDescriptor:: """ + desc_base64
         print "Tests the 'dSHeuristics' attribute"""
 
         # Get the current value to restore it later
-        res = self.ldb.search("CN=Directory Service, CN=Windows NT, CN=Services, "
-                              + self.configuration_dn, scope=SCOPE_BASE, attrs=["dSHeuristics"])
-        if "dSHeuristics" in res[0]:
-            dsheuristics = res[0]["dSHeuristics"][0]
-        else:
-            dsheuristics = None
+        dsheuristics = self.ldb.get_dsheuristics()
         # Should not be longer than 18 chars?
         try:
-            self.set_dsheuristics("123ABC-+!1asdfg@#^12")
+            self.ldb.set_dsheuristics("123ABC-+!1asdfg@#^12")
         except LdbError, (num, _):
             self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
         # If it is >= 10 chars, tenthChar should be 1
         try:
-            self.set_dsheuristics("00020000000002")
+            self.ldb.set_dsheuristics("00020000000002")
         except LdbError, (num, _):
             self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
         # apart from the above, all char values are accepted
-        self.set_dsheuristics("123ABC-+!1asdfg@#^")
-        res = self.ldb.search("CN=Directory Service, CN=Windows NT, CN=Services, "
-                              + self.configuration_dn, scope=SCOPE_BASE, attrs=["dSHeuristics"])
-        self.assertTrue("dSHeuristics" in res[0])
-        self.assertEquals(res[0]["dSHeuristics"][0], "123ABC-+!1asdfg@#^")
+        self.ldb.set_dsheuristics("123ABC-+!1asdfg@#^")
+        self.assertEquals(self.ldb.get_dsheuristics(), "123ABC-+!1asdfg@#^")
         # restore old value
-        self.set_dsheuristics(dsheuristics)
+        self.ldb.set_dsheuristics(dsheuristics)
 
 
 class BaseDnTests(unittest.TestCase):
