@@ -220,7 +220,7 @@ class SimpleLdb(unittest.TestCase):
             l.modify(m)
             rm = l.search(m.dn)[0]
             self.assertEquals(1, len(rm))
-            rm = l.search(m.dn, attrs=["bla"])[0]
+            rm = l.search(m.dn, attrs=["bla"])
             self.assertEquals(0, len(rm))
         finally:
             l.delete(ldb.Dn(l, "dc=modifydelete"))

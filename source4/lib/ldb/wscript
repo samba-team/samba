@@ -229,6 +229,7 @@ def test(ctx):
     cmd = 'tests/test-tdb.sh'
     ret = samba_utils.RUN_COMMAND(cmd)
     print("testsuite returned %d" % ret)
+    # FIXME: Run python testsuite
     sys.exit(ret)
 
 def dist():
