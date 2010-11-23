@@ -256,10 +256,16 @@ class wintest():
 
     def get_ipconfig(self, child):
         '''get the IP configuration of the child'''
-        child.sendline("ipconfig")
+        child.sendline("ipconfig /all")
         child.expect('Ethernet adapter ')
         child.expect("[\w\s]+")
         self.setvar("WIN_NIC", child.after)
+        child.expect(['DHCP Enabled', 'Dhcp Enabled'])
+        i = child.expect(['Yes', 'No'])
+        if i == 0:
+            self.setvar("WIN_DHCP", True)
+        else:
+            self.setvar("WIN_DHCP", False)
         child.expect(['IPv4 Address', 'IP Address'])
         child.expect('\d+.\d+.\d+.\d+')
         self.setvar('WIN_IPV4_ADDRESS', child.after)
@@ -269,6 +275,13 @@ class wintest():
         child.expect('Default Gateway')
         child.expect('\d+.\d+.\d+.\d+')
         self.setvar('WIN_DEFAULT_GATEWAY', child.after)
+        child.expect("C:")
+
+    def run_tlntadmn(self, child):
+        '''remove the annoying telnet restrictions'''
+        child.sendline('tlntadmn config maxconn=1024')
+        child.expect("The settings were successfully updated")
+        child.expect("C:")
 
     def disable_firewall(self, child):
         '''remove the annoying firewall'''
@@ -280,28 +293,43 @@ class wintest():
             child.expect("Ok")
             child.expect("C:")
  
+    def set_dns(self, child):
+        child.sendline('netsh interface ip set dns "${WIN_NIC}" static ${DNSSERVER} primary')
+        i = child.expect(['C:', pexpect.EOF, pexpect.TIMEOUT], timeout=5)
+        if i > 0:
+            return True
+        else:
+            return False
+
     def set_ip(self, child):
         '''fix the IP address to the same value it had when we
         connected, but don't use DHCP, and force the DNS server to our
         DNS server.  This allows DNS updates to run'''
         self.get_ipconfig(child)
+        if self.vars['WIN_DHCP'] is False:
+            return False
         child.sendline('netsh')
+        child.expect('netsh>')
         child.sendline('offline')
-        child.sendline('interface ip set dns "${WIN_NIC}" static ${DNSSERVER} primary')
+        child.expect('netsh>')
+        child.sendline('routing ip add persistentroute dest=0.0.0.0 mask=0.0.0.0 name="${WIN_NIC}" nhop=${WIN_DEFAULT_GATEWAY}')
+        child.expect('netsh>')
         child.sendline('interface ip set address "${WIN_NIC}" static ${WIN_IPV4_ADDRESS} ${WIN_SUBNET_MASK} ${WIN_DEFAULT_GATEWAY} 1 store=persistent')
-        i = child.expect(["The syntax supplied for this command is not valid. Check help for the correct syntax", pexpect.EOF, pexpect.TIMEOUT], timeout=5)
+        i = child.expect(['The syntax supplied for this command is not valid. Check help for the correct syntax', 'netsh>', pexpect.EOF, pexpect.TIMEOUT], timeout=5)
         if i == 0:
             child.sendline('interface ip set address "${WIN_NIC}" static ${WIN_IPV4_ADDRESS} ${WIN_SUBNET_MASK} ${WIN_DEFAULT_GATEWAY} 1')
-        child.sendline('routing ip add persistentroute dest=0.0.0.0 mask=0.0.0.0 name="${WIN_NIC}" nhop=${WIN_DEFAULT_GATEWAY}')
-        child.sendline('online')
+            child.expect('netsh>')
         child.sendline('commit')
+        child.sendline('online')
         child.sendline('exit')
 
         child.expect([pexpect.EOF, pexpect.TIMEOUT], timeout=5)
-
-    def open_telnet(self, hostname, username, password, retries=60, delay=5, set_time=False, set_ip=False, disable_firewall=True):
+        return True
+        
+    def open_telnet(self, hostname, username, password, retries=60, delay=5, set_time=False, set_ip=False, disable_firewall=True, run_tlntadmn=True):
         '''open a telnet connection to a windows server, return the pexpect child'''
         set_route = False
+        set_dns = False
         while retries > 0:
             child = self.pexpect_spawn("telnet " + hostname + " -l '" + username + "'")
             i = child.expect(["Welcome to Microsoft Telnet Service",
@@ -309,7 +337,8 @@ class wintest():
                               "No more connections are allowed to telnet server",
                               "Unable to connect to remote host",
                               "No route to host",
-                              "Connection refused"])
+                              "Connection refused",
+                              pexpect.EOF])
             if i != 0:
                 child.close()
                 time.sleep(delay)
@@ -317,19 +346,40 @@ class wintest():
                 continue
             child.expect("password:")
             child.sendline(password)
-            child.expect("C:")
+            i = child.expect(["C:",
+                              "Denying new connections due to the limit on number of connections",
+                              "No more connections are allowed to telnet server",
+                              "Unable to connect to remote host",
+                              "No route to host",
+                              "Connection refused",
+                              pexpect.EOF])
+            if i != 0:
+                child.close()
+                time.sleep(delay)
+                retries -= 1
+                continue
+            if set_dns:
+                set_dns = False
+                if self.set_dns(child):
+                    continue;
             if set_route:
                 child.sendline('route add 0.0.0.0 mask 0.0.0.0 ${WIN_DEFAULT_GATEWAY}')
                 child.expect("C:")
+                set_route = False
             if set_time:
                 self.run_date_time(child, None)
+                set_time = False
+            if run_tlntadmn:
+                self.run_tlntadmn(child)
+                run_tlntadmn = False
             if disable_firewall:
                 self.disable_firewall(child)
+                disable_firewall = False
             if set_ip:
-                self.set_ip(child)
                 set_ip = False
-                set_time = False
-                set_route = True
+                if self.set_ip(child):
+                    set_route = True
+                    set_dns = True
                 continue
             return child
         raise RuntimeError("Failed to connect with telnet")

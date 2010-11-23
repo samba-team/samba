@@ -127,7 +127,6 @@ def run_winjoin(t, vm):
     t.port_wait("${WIN_HOSTNAME}", 139, wait_for_fail=True)
     t.port_wait("${WIN_HOSTNAME}", 139)
     child = t.open_telnet("${WIN_HOSTNAME}", "${WIN_USER}", "${WIN_PASS}", set_time=True, set_ip=True)
-    child.expect("C:")
     child.sendline("ipconfig /registerdns")
     child.expect("Registration of the DNS resource records for all adapters of this computer has been initiated. Any errors will be reported in the Event Viewer")
     child.expect("C:")
