@@ -221,17 +221,6 @@ url: www.example.com
         self.create_active_user(self.ldb_admin, self.get_user_dn(username))
         self.ldb_admin.enable_account("(sAMAccountName=" + username + ")")
 
-    def set_dsheuristics(self, dsheuristics):
-        m = Message()
-        m.dn = Dn(self.ldb_admin, "CN=Directory Service, CN=Windows NT, CN=Services, "
-                  + self.configuration_dn)
-        if dsheuristics is not None:
-            m["dSHeuristics"] = MessageElement(dsheuristics, FLAG_MOD_REPLACE,
-                                               "dSHeuristics")
-        else:
-            m["dSHeuristics"] = MessageElement([], FLAG_MOD_DELETE, "dsHeuristics")
-        self.ldb_admin.modify(m)
-
 #tests on ldap add operations
 class AclAddTests(AclTests):
 
@@ -697,13 +686,8 @@ class AclSearchTests(AclTests):
         self.creds_tmp.set_domain(creds.get_domain())
         self.creds_tmp.set_realm(creds.get_realm())
         self.creds_tmp.set_workstation(creds.get_workstation())
-        self.anonymous = SamDB(url=host, credentials=self.creds_tmp, lp=lp);
-        res = self.ldb_admin.search("CN=Directory Service, CN=Windows NT, CN=Services, "
-                 + self.configuration_dn, scope=SCOPE_BASE, attrs=["dSHeuristics"])
-        if "dSHeuristics" in res[0]:
-            self.dsheuristics = res[0]["dSHeuristics"][0]
-        else:
-            self.dsheuristics = None
+        self.anonymous = SamDB(url=host, credentials=self.creds_tmp, lp=lp)
+        self.dsheuristics = self.ldb_admin.get_dsheuristics()
         self.create_enable_user(self.u1)
         self.create_enable_user(self.u2)
         self.create_enable_user(self.u3)
@@ -801,7 +785,7 @@ class AclSearchTests(AclTests):
 
     def test_search_anonymous3(self):
         """Set dsHeuristics and repeat"""
-        self.set_dsheuristics("0000002")
+        self.ldb_admin.set_dsheuristics("0000002")
         self.create_ou(self.ldb_admin, "OU=test_search_ou1," + self.base_dn)
         mod = "(A;CI;LC;;;AN)"
         self.dacl_add_ace("OU=test_search_ou1," + self.base_dn, mod)
@@ -817,7 +801,7 @@ class AclSearchTests(AclTests):
         self.assertEquals(len(res), 1)
         self.assertTrue("dn" in res[0])
         self.assertTrue(res[0]["dn"] == Dn(self.ldb_admin, self.configuration_dn))
-        self.set_dsheuristics(self.dsheuristics)
+        self.ldb_admin.set_dsheuristics(self.dsheuristics)
 
     def test_search1(self):
         """Make sure users can see us if given LC to user and group"""
@@ -1338,14 +1322,14 @@ class AclCARTests(AclTests):
         self.minPwdAge = self.ldb_admin.get_minPwdAge()
 
         # Set the "dSHeuristics" to have the tests run against Windows Server
-        self.set_dsheuristics("000000001")
-# Set minPwdAge to 0
+        self.ldb_admin.set_dsheuristics("000000001")
+        # Set minPwdAge to 0
         self.ldb_admin.set_minPwdAge("0")
 
     def tearDown(self):
         super(AclCARTests, self).tearDown()
         #restore original values
-        self.set_dsheuristics(self.dsheuristics)
+        self.ldb_admin.set_dsheuristics(self.dsheuristics)
         self.ldb_admin.set_minPwdAge(self.minPwdAge)
         self.delete_force(self.ldb_admin, self.get_user_dn(self.user_with_wp))
         self.delete_force(self.ldb_admin, self.get_user_dn(self.user_with_pc))
