@@ -85,22 +85,6 @@ replace: nTSecurityDescriptor
             mod += "nTSecurityDescriptor:: %s" % base64.b64encode(ndr_pack(desc))
         _ldb.modify_ldif(mod, controls)
 
-    def create_domain_user(self, _ldb, user_dn, desc=None):
-        ldif = """
-dn: """ + user_dn + """
-sAMAccountName: """ + user_dn.split(",")[0][3:] + """
-objectClass: user
-userPassword: samba123@
-url: www.example.com
-"""
-        if desc:
-            assert(isinstance(desc, str) or isinstance(desc, security.descriptor))
-            if isinstance(desc, str):
-                ldif += "nTSecurityDescriptor: %s" % desc
-            elif isinstance(desc, security.descriptor):
-                ldif += "nTSecurityDescriptor:: %s" % base64.b64encode(ndr_pack(desc))
-        _ldb.add_ldif(ldif)
-
     def create_domain_group(self, _ldb, group_dn, desc=None):
         ldif = """
 dn: """ + group_dn + """
@@ -186,16 +170,6 @@ showInAdvancedViewOnly: TRUE
         desc = res[0]["nTSecurityDescriptor"][0]
         return ndr_unpack(security.descriptor, desc)
 
-    def create_active_user(self, _ldb, user_dn):
-        ldif = """
-dn: """ + user_dn + """
-sAMAccountName: """ + user_dn.split(",")[0][3:] + """
-objectClass: user
-unicodePwd:: """ + base64.b64encode("\"samba123@\"".encode('utf-16-le')) + """
-url: www.example.com
-"""
-        _ldb.add_ldif(ldif)
-
     def get_ldb_connection(self, target_username, target_password):
         creds_tmp = Credentials()
         creds_tmp.set_username(target_username)
@@ -228,11 +202,6 @@ url: www.example.com
         """
         desc = self.read_desc(object_dn, controls)
         return desc.as_sddl(self.domain_sid)
-
-    def create_enable_user(self, username):
-        user_dn = self.get_users_domain_dn(username)
-        self.create_active_user(self.ldb_admin, user_dn)
-        self.ldb_admin.enable_account("(sAMAccountName=" + username + ")")
 
     def setUp(self):
         super(DescriptorTests, self).setUp()
@@ -276,21 +245,21 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         self.deleteAll()
         ### Create users
         # User 1 - Enterprise Admins
-        self.create_enable_user("testuser1")
+        self.ldb_admin.newuser("testuser1", "samba123@")
         # User 2 - Domain Admins
-        self.create_enable_user("testuser2")
+        self.ldb_admin.newuser("testuser2", "samba123@")
         # User 3 - Schema Admins
-        self.create_enable_user("testuser3")
+        self.ldb_admin.newuser("testuser3", "samba123@")
         # User 4 - regular user
-        self.create_enable_user("testuser4")
+        self.ldb_admin.newuser("testuser4", "samba123@")
         # User 5 - Enterprise Admins and Domain Admins
-        self.create_enable_user("testuser5")
+        self.ldb_admin.newuser("testuser5", "samba123@")
         # User 6 - Enterprise Admins, Domain Admins, Schema Admins
-        self.create_enable_user("testuser6")
+        self.ldb_admin.newuser("testuser6", "samba123@")
         # User 7 - Domain Admins and Schema Admins
-        self.create_enable_user("testuser7")
+        self.ldb_admin.newuser("testuser7", "samba123@")
         # User 5 - Enterprise Admins and Schema Admins
-        self.create_enable_user("testuser8")
+        self.ldb_admin.newuser("testuser8", "samba123@")
 
         self.ldb_admin.add_remove_group_members("Enterprise Admins",
                                                 "testuser1,testuser5,testuser6,testuser8",
@@ -498,7 +467,8 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         # Create additional object into the first one
         object_dn = "CN=test_domain_user1," + object_dn
         self.delete_force(self.ldb_admin, object_dn)
-        self.create_domain_user(_ldb, object_dn)
+        _ldb.newuser("test_domain_user1", "samba123@",
+                     userou="OU=test_domain_ou1", setpassword=False)
         desc_sddl = self.get_desc_sddl(object_dn)
         res = re.search("(O:.*G:.*?)D:", desc_sddl).group(1)
         self.assertEqual(self.results[self.DS_BEHAVIOR][self._testMethodName[5:]] % str(user_sid), res)
@@ -521,7 +491,8 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         # Create additional object into the first one
         object_dn = "CN=test_domain_user1," + object_dn
         self.delete_force(self.ldb_admin, object_dn)
-        self.create_domain_user(_ldb, object_dn)
+        _ldb.newuser("test_domain_user1", "samba123@",
+                     userou="OU=test_domain_ou1", setpassword=False)
         desc_sddl = self.get_desc_sddl(object_dn)
         res = re.search("(O:.*G:.*?)D:", desc_sddl).group(1)
         self.assertEqual(self.results[self.DS_BEHAVIOR][self._testMethodName[5:]] % str(user_sid), res)
@@ -637,11 +608,13 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         self.dacl_add_ace(object_dn, mod)
         # Create a custom security descriptor
         # NB! Problematic owner part won't accept DA only <User Sid> !!!
-        desc_sddl = "O:%sG:DAD:(A;;RP;;;DU)" % str(user_sid)
+        sddl = "O:%sG:DAD:(A;;RP;;;DU)" % str(user_sid)
+        tmp_desc = security.descriptor.from_sddl(sddl, self.domain_sid)
         # Create additional object into the first one
         object_dn = "CN=test_domain_user1," + object_dn
         self.delete_force(self.ldb_admin, object_dn)
-        self.create_domain_user(_ldb, object_dn, desc_sddl)
+        _ldb.newuser("test_domain_user1", "samba123@",
+                     userou="OU=test_domain_ou1", sd=tmp_desc, setpassword=False)
         desc = self.read_desc(object_dn)
         desc_sddl = self.get_desc_sddl(object_dn)
         res = re.search("(O:.*G:.*?)D:", desc_sddl).group(1)
@@ -662,11 +635,13 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         self.dacl_add_ace(object_dn, mod)
         # Create a custom security descriptor
         # NB! Problematic owner part won't accept DA only <User Sid> !!!
-        desc_sddl = "O:%sG:DAD:(A;;RP;;;DU)" % str(user_sid)
+        sddl = "O:%sG:DAD:(A;;RP;;;DU)" % str(user_sid)
+        tmp_desc = security.descriptor.from_sddl(sddl, self.domain_sid)
         # Create additional object into the first one
         object_dn = "CN=test_domain_user1," + object_dn
         self.delete_force(self.ldb_admin, object_dn)
-        self.create_domain_user(_ldb, object_dn, desc_sddl)
+        _ldb.newuser("test_domain_user1", "samba123@",
+                     userou="OU=test_domain_ou1", sd=tmp_desc, setpassword=False)
         desc = self.read_desc(object_dn)
         desc_sddl = self.get_desc_sddl(object_dn)
         res = re.search("(O:.*G:.*?)D:", desc_sddl).group(1)
@@ -1820,9 +1795,9 @@ class RightsAttributesTests(DescriptorTests):
         self.deleteAll()
         ### Create users
         # User 1
-        self.create_enable_user("testuser_attr")
+        self.ldb_admin.newuser("testuser_attr", "samba123@")
         # User 2, Domain Admins
-        self.create_enable_user("testuser_attr2")
+        self.ldb_admin.newuser("testuser_attr2", "samba123@")
         self.ldb_admin.add_remove_group_members("Domain Admins",
                                                 "testuser_attr2",
                                                 add_members_operation=True)
