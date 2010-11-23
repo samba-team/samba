@@ -2042,7 +2042,8 @@ static NTSTATUS rids_to_names(struct winbindd_domain *domain,
 
 			(*names)[i] = centry_string(centry, *names);
 
-		} else if (NT_STATUS_EQUAL(centry->status, NT_STATUS_NONE_MAPPED)) {
+		} else if (NT_STATUS_EQUAL(centry->status, NT_STATUS_NONE_MAPPED)
+			   || NT_STATUS_EQUAL(centry->status, STATUS_SOME_UNMAPPED)) {
 			have_unmapped = true;
 
 		} else {
