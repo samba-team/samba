@@ -820,11 +820,7 @@ userPassword: thatsAcomplPASS4
         print "Performs testing about the standard 'userPassword' behaviour"
 
         # Delete the "dSHeuristics"
-        m = Message()
-        m.dn = Dn(ldb, "CN=Directory Service, CN=Windows NT, CN=Services, "
-          + configuration_dn)
-        m["dSHeuristics"] = MessageElement([], FLAG_MOD_DELETE, "dsHeuristics")
-        ldb.modify(m)
+        ldb.set_dsheuristics(None)
 
         time.sleep(1) # This switching time is strictly needed!
 
@@ -864,12 +860,7 @@ userPassword: thatsAcomplPASS4
         self.assertFalse("userPassword" in res[0])
 
         # Set the test "dSHeuristics" to deactivate "userPassword" pwd changes
-        m = Message()
-        m.dn = Dn(ldb, "CN=Directory Service, CN=Windows NT, CN=Services, "
-          + configuration_dn)
-        m["dSHeuristics"] = MessageElement("000000000", FLAG_MOD_REPLACE,
-          "dSHeuristics")
-        ldb.modify(m)
+        ldb.set_dsheuristics("000000000")
 
         m = Message()
         m.dn = Dn(ldb, "cn=testuser,cn=users," + self.base_dn)
@@ -884,12 +875,7 @@ userPassword: thatsAcomplPASS4
         self.assertEquals(res[0]["userPassword"][0], "myPassword3")
 
         # Set the test "dSHeuristics" to deactivate "userPassword" pwd changes
-        m = Message()
-        m.dn = Dn(ldb, "CN=Directory Service, CN=Windows NT, CN=Services, "
-          + configuration_dn)
-        m["dSHeuristics"] = MessageElement("000000002", FLAG_MOD_REPLACE,
-          "dSHeuristics")
-        ldb.modify(m)
+        ldb.set_dsheuristics("000000002")
 
         m = Message()
         m.dn = Dn(ldb, "cn=testuser,cn=users," + self.base_dn)
@@ -904,12 +890,7 @@ userPassword: thatsAcomplPASS4
         self.assertEquals(res[0]["userPassword"][0], "myPassword4")
 
         # Reset the test "dSHeuristics" (reactivate "userPassword" pwd changes)
-        m = Message()
-        m.dn = Dn(ldb, "CN=Directory Service, CN=Windows NT, CN=Services, "
-          + configuration_dn)
-        m["dSHeuristics"] = MessageElement("000000001", FLAG_MOD_REPLACE,
-          "dSHeuristics")
-        ldb.modify(m)
+        ldb.set_dsheuristics("000000001")
 
     def tearDown(self):
         super(PasswordTests, self).tearDown()
@@ -928,27 +909,19 @@ ldb = SamDB(url=host, session_info=system_session(), credentials=creds, lp=lp)
 
 # Gets back the basedn
 base_dn = ldb.domain_dn()
+
 # Gets back the configuration basedn
 configuration_dn = ldb.get_config_basedn().get_linearized()
 
 # Get the old "dSHeuristics" if it was set
-res = ldb.search("CN=Directory Service, CN=Windows NT, CN=Services, "
-                 + configuration_dn, scope=SCOPE_BASE, attrs=["dSHeuristics"])
-if "dSHeuristics" in res[0]:
-  dsheuristics = res[0]["dSHeuristics"][0]
-else:
-  dsheuristics = None
+dsheuristics = ldb.get_dsheuristics()
 
 # Set the "dSHeuristics" to activate the correct "userPassword" behaviour
-m = Message()
-m.dn = Dn(ldb, "CN=Directory Service, CN=Windows NT, CN=Services, "
-  + configuration_dn)
-m["dSHeuristics"] = MessageElement("000000001", FLAG_MOD_REPLACE,
-  "dSHeuristics")
-ldb.modify(m)
+ldb.set_dsheuristics("000000001")
 
 # Get the old "minPwdAge"
 minPwdAge = ldb.get_minPwdAge()
+
 # Set it temporarely to "0"
 ldb.set_minPwdAge("0")
 
@@ -958,15 +931,7 @@ if not runner.run(unittest.makeSuite(PasswordTests)).wasSuccessful():
     rc = 1
 
 # Reset the "dSHeuristics" as they were before
-m = Message()
-m.dn = Dn(ldb, "CN=Directory Service, CN=Windows NT, CN=Services, "
-  + configuration_dn)
-if dsheuristics is not None:
-    m["dSHeuristics"] = MessageElement(dsheuristics, FLAG_MOD_REPLACE,
-      "dSHeuristics")
-else:
-    m["dSHeuristics"] = MessageElement([], FLAG_MOD_DELETE, "dsHeuristics")
-ldb.modify(m)
+ldb.set_dsheuristics(dsheuristics)
 
 # Reset the "minPwdAge" as it was before
 ldb.set_minPwdAge(minPwdAge)
