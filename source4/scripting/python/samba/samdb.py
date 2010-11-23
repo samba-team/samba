@@ -29,7 +29,7 @@ import time
 import base64
 from samba import dsdb
 from samba.ndr import ndr_unpack, ndr_pack
-from samba.dcerpc import drsblobs, misc
+from samba.dcerpc import drsblobs, misc, security
 
 __docformat__ = "restructuredText"
 
@@ -641,3 +641,31 @@ accountExpires: %u
             dsheuristics = None
 
         return dsheuristics
+
+    def create_ou(self, ou_dn, description=None, name=None, sd=None):
+        """Creates an organizationalUnit object
+        :param ou_dn: dn of the new object
+        :param description: description attribute
+        :param name: name atttribute
+        :param sd: security descriptor of the object, can be
+        an SDDL string or security.descriptor type
+        """
+        m = ldb.Message()
+        m.dn = ldb.Dn(self, ou_dn)
+        m["ou"] = ou_dn.split(",")[0][3:]
+        m["objectClass"] = "organizationalUnit"
+
+        if description:
+             m["description"] = description
+        if name:
+             m["description"] = name
+
+        if sd:
+            assert(isinstance(sd, str) or isinstance(sd, security.descriptor))
+            if isinstance(sd, str):
+                sid = security.dom_sid(self.get_domain_sid())
+                tmp_desc = security.descriptor.from_sddl(sd, sid)
+                m["nTSecurityDescriptor"] = ndr_pack(tmp_desc)
+            elif isinstance(sd, security.descriptor):
+                m["nTSecurityDescriptor"] = ndr_pack(sd)
+        self.add(m)
