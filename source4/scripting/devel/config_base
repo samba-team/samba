@@ -8,8 +8,6 @@
 import sys, os
 
 vars = {
-    "dns update command" : "${PREFIX}/bin/samba_dnsupdate",
-    "spn update command" : "${PREFIX}/bin/samba_spnupdate",
     "ncalrpc dir" : "${PREFIX}/var/ncalrpc",
     "private dir" : "${PREFIX}/private",
     "lock dir" : "${PREFIX}/var/locks",
