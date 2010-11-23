@@ -567,10 +567,22 @@ static int objectclass_do_add(struct oc_context *ac)
 
 		/* Move from the linked list back into an ldb msg */
 		for (current = sorted; current; current = current->next) {
-			value = talloc_strdup(msg, current->objectclass->lDAPDisplayName);
+			value = talloc_strdup(msg,
+					      current->objectclass->lDAPDisplayName);
 			if (value == NULL) {
 				talloc_free(mem_ctx);
 				return ldb_module_oom(ac->module);
+			}
+
+			/* LSA-specific objectclasses per default not allowed */
+			if (((strcmp(value, "secret") == 0) ||
+			     (strcmp(value, "trustedDomain") == 0)) &&
+			    !ldb_request_get_control(ac->req, LDB_CONTROL_RELAX_OID)) {
+				ldb_asprintf_errstring(ldb,
+						       "objectclass: object class '%s' is LSA-specific, rejecting creation of '%s'!",
+						       value,
+						       ldb_dn_get_linearized(msg->dn));
+				return LDB_ERR_UNWILLING_TO_PERFORM;
 			}
 
 			ret = ldb_msg_add_string(msg, "objectClass", value);
@@ -624,16 +636,10 @@ static int objectclass_do_add(struct oc_context *ac)
 		if (objectclass->systemOnly &&
 		    !ldb_request_get_control(ac->req, LDB_CONTROL_RELAX_OID) &&
 		    !check_rodc_ntdsdsa_add(ac, objectclass)) {
-			ldb_asprintf_errstring(ldb, "objectClass %s is systemOnly, rejecting creation of %s",
-						objectclass->lDAPDisplayName, ldb_dn_get_linearized(msg->dn));
-			return LDB_ERR_UNWILLING_TO_PERFORM;
-		}
-
-		if (((strcmp(objectclass->lDAPDisplayName, "secret") == 0) ||
-		     (strcmp(objectclass->lDAPDisplayName, "trustedDomain") == 0)) &&
-                    !ldb_request_get_control(ac->req, LDB_CONTROL_RELAX_OID)) {
-			ldb_asprintf_errstring(ldb, "objectClass %s is LSA-specific, rejecting creation of %s",
-						objectclass->lDAPDisplayName, ldb_dn_get_linearized(msg->dn));
+			ldb_asprintf_errstring(ldb,
+					       "objectclass: object class '%s' is system-only, rejecting creation of '%s'!",
+					       objectclass->lDAPDisplayName,
+					       ldb_dn_get_linearized(msg->dn));
 			return LDB_ERR_UNWILLING_TO_PERFORM;
 		}
 
