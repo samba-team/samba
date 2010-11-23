@@ -1388,7 +1388,8 @@ static NTSTATUS copy_internals(TALLOC_CTX *ctx,
 		req,					/* req */
 		0,					/* root_dir_fid */
 		smb_fname_src,				/* fname */
-		FILE_READ_DATA,				/* access_mask */
+		FILE_READ_DATA|FILE_READ_ATTRIBUTES|
+			FILE_READ_EA,			/* access_mask */
 		(FILE_SHARE_READ | FILE_SHARE_WRITE |	/* share_access */
 		    FILE_SHARE_DELETE),
 		FILE_OPEN,				/* create_disposition*/
@@ -1411,7 +1412,8 @@ static NTSTATUS copy_internals(TALLOC_CTX *ctx,
 		req,					/* req */
 		0,					/* root_dir_fid */
 		smb_fname_dst,				/* fname */
-		FILE_WRITE_DATA,			/* access_mask */
+		FILE_WRITE_DATA|FILE_WRITE_ATTRIBUTES|
+			FILE_WRITE_EA,			/* access_mask */
 		(FILE_SHARE_READ | FILE_SHARE_WRITE |	/* share_access */
 		    FILE_SHARE_DELETE),
 		FILE_CREATE,				/* create_disposition*/

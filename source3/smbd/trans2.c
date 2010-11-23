@@ -503,6 +503,10 @@ NTSTATUS set_ea(connection_struct *conn, files_struct *fsp,
 		return NT_STATUS_EAS_NOT_SUPPORTED;
 	}
 
+	if (fsp && !(fsp->access_mask & FILE_WRITE_EA)) {
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
 	/* For now setting EAs on streams isn't supported. */
 	fname = smb_fname->base_name;
 
@@ -5445,6 +5449,10 @@ NTSTATUS smb_set_file_time(connection_struct *conn,
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
+	if (fsp && !(fsp->access_mask & FILE_WRITE_ATTRIBUTES)) {
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
 	/* get some defaults (no modifications) if any info is zero or -1. */
 	if (null_timespec(ft->create_time)) {
 		action &= ~FILE_NOTIFY_CHANGE_CREATION;
@@ -5598,6 +5606,10 @@ static NTSTATUS smb_set_file_size(connection_struct *conn,
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
+	if (fsp && !(fsp->access_mask & FILE_WRITE_DATA)) {
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
 	DEBUG(6,("smb_set_file_size: size: %.0f ", (double)size));
 
 	if (size == get_file_size_stat(psbuf)) {
@@ -5704,6 +5716,11 @@ static NTSTATUS smb_info_set_ea(connection_struct *conn,
 	if (!ea_list) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
+
+	if (fsp && !(fsp->access_mask & FILE_WRITE_EA)) {
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
 	status = set_ea(conn, fsp, smb_fname, ea_list);
 
 	return status;
@@ -5746,6 +5763,11 @@ static NTSTATUS smb_set_file_full_ea_info(connection_struct *conn,
 	if (!ea_list) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
+
+	if (fsp && !(fsp->access_mask & FILE_WRITE_EA)) {
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
 	status = set_ea(conn, fsp, fsp->fsp_name, ea_list);
 
 	DEBUG(10, ("smb_set_file_full_ea_info on file %s returned %s\n",
@@ -6484,6 +6506,10 @@ static NTSTATUS smb_set_file_basic_info(connection_struct *conn,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
+	if (fsp && !(fsp->access_mask & FILE_WRITE_ATTRIBUTES)) {
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
 	/* Set the attributes */
 	dosmode = IVAL(pdata,32);
 	status = smb_set_file_dosmode(conn, smb_fname, dosmode);
@@ -6526,6 +6552,10 @@ static NTSTATUS smb_set_info_standard(connection_struct *conn,
 
 	if (total_data < 12) {
 		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if (fsp && !(fsp->access_mask & FILE_WRITE_ATTRIBUTES)) {
+		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	/* create time */
@@ -6584,6 +6614,10 @@ static NTSTATUS smb_set_file_allocation_info(connection_struct *conn,
 
 	if (allocation_size) {
 		allocation_size = smb_roundup(conn, allocation_size);
+	}
+
+	if (fsp && !(fsp->access_mask & FILE_WRITE_DATA)) {
+		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	DEBUG(10,("smb_set_file_allocation_info: file %s : setting new "
@@ -6682,6 +6716,10 @@ static NTSTATUS smb_set_file_end_of_file_info(connection_struct *conn,
 	DEBUG(10,("smb_set_file_end_of_file_info: Set end of file info for "
 		  "file %s to %.0f\n", smb_fname_str_dbg(smb_fname),
 		  (double)size));
+
+	if (fsp && !(fsp->access_mask & FILE_WRITE_DATA)) {
+		return NT_STATUS_ACCESS_DENIED;
+	}
 
 	return smb_set_file_size(conn, req,
 				fsp,
