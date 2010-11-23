@@ -17,6 +17,10 @@ class wintest():
         '''set a substitution variable'''
         self.vars[varname] = value
 
+    def getvar(self, varname):
+        '''return a substitution variable'''
+        return self.vars[varname]
+
     def setwinvars(self, vm, prefix='WIN'):
         '''setup WIN_XX vars based on a vm name'''
         for v in ['VM', 'HOSTNAME', 'USER', 'PASS', 'SNAPSHOT', 'BASEDN', 'REALM', 'DOMAIN']:
@@ -282,12 +286,6 @@ class wintest():
         child.expect('Ethernet adapter ')
         child.expect("[\w\s]+")
         self.setvar("WIN_NIC", child.after)
-        child.expect(['DHCP Enabled', 'Dhcp Enabled'])
-        i = child.expect(['Yes', 'No'])
-        if i == 0:
-            self.setvar("WIN_DHCP", True)
-        else:
-            self.setvar("WIN_DHCP", False)
         child.expect(['IPv4 Address', 'IP Address'])
         child.expect('\d+.\d+.\d+.\d+')
         self.setvar('WIN_IPV4_ADDRESS', child.after)
@@ -324,12 +322,10 @@ class wintest():
             return False
 
     def set_ip(self, child):
-        '''fix the IP address to the same value it had when we
+        """fix the IP address to the same value it had when we
         connected, but don't use DHCP, and force the DNS server to our
-        DNS server.  This allows DNS updates to run'''
+        DNS server.  This allows DNS updates to run"""
         self.get_ipconfig(child)
-        if self.vars['WIN_DHCP'] is False:
-            return False
         child.sendline('netsh')
         child.expect('netsh>')
         child.sendline('offline')

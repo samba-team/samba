@@ -14,6 +14,7 @@ def check_prerequesites(t):
     t.putenv("KRB5_CONFIG", '${PREFIX}/private/krb5.conf')
     t.run_cmd('ifconfig ${INTERFACE} ${INTERFACE_IP} up')
 
+
 def build_s4(t):
     '''build samba4'''
     t.info('Building s4')
@@ -23,6 +24,7 @@ def build_s4(t):
     t.run_cmd('make -j')
     t.run_cmd('rm -rf ${PREFIX}')
     t.run_cmd('make -j install')
+
 
 def provision_s4(t, func_level="2008", interface=None):
     '''provision s4 as a DC'''
@@ -38,7 +40,9 @@ def provision_s4(t, func_level="2008", interface=None):
     t.run_cmd('bin/samba-tool newuser testdenied ${PASSWORD1}')
     t.run_cmd('bin/samba-tool group addmembers "Allowed RODC Password Replication Group" testallowed')
 
+
 def start_s4(t, interface=None):
+    '''startup samba4'''
     t.info('Starting Samba4')
     t.chdir("${PREFIX}")
     t.run_cmd('killall -9 -q samba smbd nmbd winbindd', checkfail=False)
@@ -47,7 +51,9 @@ def start_s4(t, interface=None):
              '--option', 'interfaces=%s' % interface])
     t.port_wait("localhost", 139)
 
+
 def test_smbclient(t):
+    '''test smbclient'''
     t.info('Testing smbclient')
     t.chdir('${PREFIX}')
     t.cmd_contains("bin/smbclient --version", ["Version 4.0"])
@@ -63,7 +69,9 @@ def test_smbclient(t):
     child.sendline("cd ..")
     child.sendline("rmdir testdir")
 
+
 def create_shares(t):
+    '''create some test shares'''
     t.info("Adding test shares")
     t.chdir('${PREFIX}')
     t.write_file("etc/smb.conf", '''
@@ -80,6 +88,7 @@ def create_shares(t):
 
 
 def restart_bind(t):
+    '''restart the test environment version of bind'''
     t.info("Restarting bind9")
     t.putenv('KEYTAB_FILE', '${PREFIX}/private/dns.keytab')
     t.putenv('KRB5_KTNAME', '${PREFIX}/private/dns.keytab')
@@ -88,7 +97,7 @@ def restart_bind(t):
     t.run_cmd("chown -R ${BIND_USER} var/named")
 
     nameserver = t.get_nameserver()
-    if nameserver == t.vars['INTERFACE_IP']:
+    if nameserver == t.getvar('INTERFACE_IP'):
         raise RuntimeError("old /etc/resolv.conf must not contain %s as a nameserver, this will create loops with the generated dns configuration")
     t.setvar('DNSSERVER', nameserver)
 
@@ -138,10 +147,10 @@ options {
 	default-port 953;
 };
 ''')
-   
+
     t.run_cmd("${RNDC} -c ${PREFIX}/etc/rndc.conf stop", checkfail=False)
     t.port_wait("${INTERFACE_IP}", 53, wait_for_fail=True)
-    t.bind_child = t.run_child("${BIND9} -u ${BIND_USER} -c ${PREFIX}/etc/named.conf -g")
+    t.bind_child = t.run_child("${BIND9} -u ${BIND_USER} -n 1 -c ${PREFIX}/etc/named.conf -g")
 
     t.run_cmd("mv -f /etc/resolv.conf /etc/resolv.conf.wintest-bak")
     t.write_file("/etc/resolv.conf", '''
@@ -162,11 +171,15 @@ nameserver ${INTERFACE_IP}
     t.run_cmd("${RNDC} -c ${PREFIX}/etc/rndc.conf freeze")
     t.run_cmd("${RNDC} -c ${PREFIX}/etc/rndc.conf thaw")
 
+
 def restore_resolv_conf(t):
+    '''restore the /etc/resolv.conf after testing is complete'''
     if getattr(t, 'resolv_conf_backup', False):
         t.run_cmd("mv -f %s /etc/resolv.conf" % t.resolv_conf_backup)
 
+
 def test_dns(t):
+    '''test that DNS is OK'''
     t.info("Testing DNS")
     t.cmd_contains("host -t SRV _ldap._tcp.${LCREALM}.",
                  ['_ldap._tcp.${LCREALM} has SRV record 0 100 389 ${HOSTNAME}.${LCREALM}'])
@@ -176,6 +189,7 @@ def test_dns(t):
                  ['${HOSTNAME}.${LCREALM} has address'])
 
 def test_kerberos(t):
+    '''test that kerberos is OK'''
     t.info("Testing kerberos")
     t.run_cmd("kdestroy")
     t.kinit("administrator@${REALM}", "${PASSWORD1}")
@@ -183,12 +197,14 @@ def test_kerberos(t):
 
 
 def test_dyndns(t):
+    '''test that dynamic DNS is working'''
     t.chdir('${PREFIX}')
     t.run_cmd("sbin/samba_dnsupdate --fail-immediately")
     t.run_cmd("${RNDC} -c ${PREFIX}/etc/rndc.conf flush")
 
 
 def run_winjoin(t, vm):
+    '''join a windows box to our domain'''
     t.setwinvars(vm)
 
     t.info("Joining a windows box to the domain")
@@ -264,6 +280,7 @@ SafeModeAdminPassword=${PASSWORD1}
 
 
 def test_dcpromo(t, vm):
+    '''test that dcpromo worked'''
     t.setwinvars(vm)
     t.info("Checking the dcpromo join is OK")
     t.chdir('${PREFIX}')
@@ -361,6 +378,7 @@ def test_dcpromo(t, vm):
 
 
 def run_dcpromo_rodc(t, vm):
+    '''run a RODC dcpromo to join a windows DC to the samba domain'''
     t.setwinvars(vm)
     t.info("Joining a w2k8 box to the domain as a RODC")
     t.vm_poweroff("${WIN_VM}", checkfail=False)
@@ -405,6 +423,7 @@ RebootOnCompletion=No
 
 
 def test_dcpromo_rodc(t, vm):
+    '''test the RODC dcpromo worked'''
     t.setwinvars(vm)
     t.info("Checking the w2k8 RODC join is OK")
     t.chdir('${PREFIX}')
@@ -427,14 +446,18 @@ def test_dcpromo_rodc(t, vm):
 
     t.info("Checking if new users are available on windows")
     t.run_cmd('bin/samba-tool newuser test2 ${PASSWORD2}')
-    t.retry_cmd("bin/smbclient -L ${WIN_HOSTNAME} -Utest2%${PASSWORD2} -k no", ['Sharename', 'Remote IPC'])
     t.retry_cmd("bin/smbclient -L ${WIN_HOSTNAME} -Utest2%${PASSWORD2} -k yes", ['Sharename', 'Remote IPC'])
+    t.retry_cmd("bin/smbclient -L ${WIN_HOSTNAME} -Utest2%${PASSWORD2} -k no", ['LOGON_FAILURE'])
+    t.retry_cmd("bin/samba-tool drs replicate ${WIN_HOSTNAME} ${HOSTNAME} ${BASEDN} -k yes", ["was successful"])
+    t.retry_cmd("bin/smbclient -L ${WIN_HOSTNAME} -Utest2%${PASSWORD2} -k no", ['Sharename', 'Remote IPC'])
     t.run_cmd('bin/samba-tool user delete test2 -Uadministrator@${LCREALM}%${PASSWORD1}')
-    t.retry_cmd("bin/smbclient -L ${WIN_HOSTNAME} -Utest2%${PASSWORD2}", ['LOGON_FAILURE'])
+    t.retry_cmd("bin/smbclient -L ${WIN_HOSTNAME} -Utest2%${PASSWORD2} -k yes", ['LOGON_FAILURE'])
+    t.retry_cmd("bin/smbclient -L ${WIN_HOSTNAME} -Utest2%${PASSWORD2} -k no", ['LOGON_FAILURE'])
     t.vm_poweroff("${WIN_VM}")
 
 
 def join_as_dc(t, vm):
+    '''join a windows domain as a DC'''
     t.setwinvars(vm)
     t.info("Joining ${WIN_VM} as a second DC using samba-tool join DC")
     t.chdir('${PREFIX}')
@@ -450,6 +473,7 @@ def join_as_dc(t, vm):
 
 
 def test_join_as_dc(t, vm):
+    '''test the join of a windows domain as a DC'''
     t.setwinvars(vm)
     t.info("Checking the DC join is OK")
     t.chdir('${PREFIX}')
@@ -502,6 +526,7 @@ def test_join_as_dc(t, vm):
 
 
 def join_as_rodc(t, vm):
+    '''join a windows domain as a RODC'''
     t.setwinvars(vm)
     t.info("Joining ${WIN_VM} as a RODC using samba-tool join DC")
     t.chdir('${PREFIX}')
@@ -517,6 +542,7 @@ def join_as_rodc(t, vm):
 
 
 def test_join_as_rodc(t, vm):
+    '''test a windows domain RODC join'''
     t.setwinvars(vm)
     t.info("Checking the RODC join is OK")
     t.chdir('${PREFIX}')
@@ -661,6 +687,13 @@ def test_howto(t):
     t.info("Howto test: All OK")
 
 
+def test_cleanup(t):
+    '''cleanup after tests'''
+    restore_resolv_conf(t)
+    if getattr(t, 'bind_child', False):
+        t.bind_child.kill()
+
+
 if __name__ == '__main__':
     parser = optparse.OptionParser("test-howto.py")
     parser.add_option("--conf", type='string', default='', help='config file')
@@ -670,6 +703,7 @@ if __name__ == '__main__':
     parser.add_option("--clean", action='store_true', default=False, help='clean the tree')
     parser.add_option("--prefix", type='string', default=None, help='override install prefix')
     parser.add_option("--sourcetree", type='string', default=None, help='override sourcetree location')
+    parser.add_option("--nocleanup", action='store_true', default=False, help='disable cleanup code')
 
     opts, args = parser.parse_args()
 
@@ -703,7 +737,10 @@ if __name__ == '__main__':
     try:
         test_howto(t)
     except Exception, str:
-        restore_resolv_conf(t)
-        if getattr(t, 'bind_child', False):
-            t.bind_child.kill()
+        if not opts.nocleanup:
+            test_cleanup(t)
         raise
+
+    if not opts.nocleanup:
+        test_cleanup(t)
+    t.info("S4 howto test: All OK")
