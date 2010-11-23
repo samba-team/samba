@@ -95,33 +95,6 @@ replace: nTSecurityDescriptor
         elif isinstance(desc, security.descriptor):
             mod += "nTSecurityDescriptor:: %s" % base64.b64encode(ndr_pack(desc))
         self.ldb_admin.modify_ldif(mod)
-    
-
-    def create_active_user(self, _ldb, user_dn):
-        ldif = """
-dn: """ + user_dn + """
-sAMAccountName: """ + user_dn.split(",")[0][3:] + """
-objectClass: user
-unicodePwd:: """ + base64.b64encode("\"samba123@\"".encode('utf-16-le')) + """
-url: www.example.com
-"""
-        _ldb.add_ldif(ldif)
-
-    def create_test_user(self, _ldb, user_dn, desc=None):
-        ldif = """
-dn: """ + user_dn + """
-sAMAccountName: """ + user_dn.split(",")[0][3:] + """
-objectClass: user
-userPassword: """ + self.user_pass + """
-url: www.example.com
-"""
-        if desc:
-            assert(isinstance(desc, str) or isinstance(desc, security.descriptor))
-            if isinstance(desc, str):
-                ldif += "nTSecurityDescriptor: %s" % desc
-            elif isinstance(desc, security.descriptor):
-                ldif += "nTSecurityDescriptor:: %s" % base64.b64encode(ndr_pack(desc))
-        _ldb.add_ldif(ldif)
 
     def create_group(self, _ldb, group_dn, desc=None):
         ldif = """
@@ -202,10 +175,6 @@ url: www.example.com
             pass
         else:
             self.fail()
-    
-    def create_enable_user(self, username):
-        self.create_active_user(self.ldb_admin, self.get_user_dn(username))
-        self.ldb_admin.enable_account("(sAMAccountName=" + username + ")")
 
 #tests on ldap add operations
 class AclAddTests(AclTests):
@@ -218,9 +187,13 @@ class AclAddTests(AclTests):
         self.usr_admin_not_owner = "acl_add_user2"
         # Regular user
         self.regular_user = "acl_add_user3"
-        self.create_enable_user(self.usr_admin_owner)
-        self.create_enable_user(self.usr_admin_not_owner)
-        self.create_enable_user(self.regular_user)
+        self.test_user1 = "test_add_user1"
+        self.test_group1 = "test_add_group1"
+        self.ou1 = "OU=test_add_ou1"
+        self.ou2 = "OU=test_add_ou2,%s" % self.ou1
+        self.ldb_admin.newuser(self.usr_admin_owner, self.user_pass)
+        self.ldb_admin.newuser(self.usr_admin_not_owner, self.user_pass)
+        self.ldb_admin.newuser(self.regular_user, self.user_pass)
 
         # add admins to the Domain Admins group
         self.ldb_admin.add_remove_group_members("Domain Admins", self.usr_admin_owner,
@@ -234,10 +207,12 @@ class AclAddTests(AclTests):
 
     def tearDown(self):
         super(AclAddTests, self).tearDown()
-        self.delete_force(self.ldb_admin, "CN=test_add_user1,OU=test_add_ou2,OU=test_add_ou1," + self.base_dn)
-        self.delete_force(self.ldb_admin, "CN=test_add_group1,OU=test_add_ou2,OU=test_add_ou1," + self.base_dn)
-        self.delete_force(self.ldb_admin, "OU=test_add_ou2,OU=test_add_ou1," + self.base_dn)
-        self.delete_force(self.ldb_admin, "OU=test_add_ou1," + self.base_dn)
+        self.delete_force(self.ldb_admin, "CN=%s,%s,%s" %
+                          (self.test_user1, self.ou2, self.base_dn))
+        self.delete_force(self.ldb_admin, "CN=%s,%s,%s" %
+                          (self.test_group1, self.ou2, self.base_dn))
+        self.delete_force(self.ldb_admin, "%s,%s" % (self.ou2, self.base_dn))
+        self.delete_force(self.ldb_admin, "%s,%s" % (self.ou1, self.base_dn))
         self.delete_force(self.ldb_admin, self.get_user_dn(self.usr_admin_owner))
         self.delete_force(self.ldb_admin, self.get_user_dn(self.usr_admin_not_owner))
         self.delete_force(self.ldb_admin, self.get_user_dn(self.regular_user))
@@ -259,7 +234,7 @@ class AclAddTests(AclTests):
         mod = "(D;CI;WPCC;;;%s)" % str(user_sid)
         self.dacl_add_ace("OU=test_add_ou1," + self.base_dn, mod)
         # Test user and group creation with another domain admin's credentials
-        self.create_test_user(self.ldb_notowner, "CN=test_add_user1,OU=test_add_ou2,OU=test_add_ou1," + self.base_dn)
+        self.ldb_notowner.newuser(self.test_user1, self.user_pass, userou=self.ou2)
         self.create_group(self.ldb_notowner, "CN=test_add_group1,OU=test_add_ou2,OU=test_add_ou1," + self.base_dn)
         # Make sure we HAVE created the two objects -- user and group
         # !!! We should not be able to do that, but however beacuse of ACE ordering our inherited Deny ACE
@@ -277,7 +252,7 @@ class AclAddTests(AclTests):
         self.ldb_owner.create_ou("OU=test_add_ou2,OU=test_add_ou1," + self.base_dn)
         # Test user and group creation with regular user credentials
         try:
-            self.create_test_user(self.ldb_user, "CN=test_add_user1,OU=test_add_ou2,OU=test_add_ou1," + self.base_dn)
+            self.ldb_user.newuser(self.test_user1, self.user_pass, userou=self.ou2)
             self.create_group(self.ldb_user, "CN=test_add_group1,OU=test_add_ou2,OU=test_add_ou1," + self.base_dn)
         except LdbError, (num, _):
             self.assertEquals(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
@@ -299,7 +274,7 @@ class AclAddTests(AclTests):
         self.dacl_add_ace("OU=test_add_ou1," + self.base_dn, mod)
         self.ldb_owner.create_ou("OU=test_add_ou2,OU=test_add_ou1," + self.base_dn)
         # Test user and group creation with granted user only to one of the objects
-        self.create_test_user(self.ldb_user, "CN=test_add_user1,OU=test_add_ou2,OU=test_add_ou1," + self.base_dn)
+        self.ldb_user.newuser(self.test_user1, self.user_pass, userou=self.ou2, setpassword=False)
         try:
             self.create_group(self.ldb_user, "CN=test_add_group1,OU=test_add_ou2,OU=test_add_ou1," + self.base_dn)
         except LdbError, (num, _):
@@ -323,7 +298,7 @@ class AclAddTests(AclTests):
         self.assert_top_ou_deleted()
         self.ldb_owner.create_ou("OU=test_add_ou1," + self.base_dn)
         self.ldb_owner.create_ou("OU=test_add_ou2,OU=test_add_ou1," + self.base_dn)
-        self.create_test_user(self.ldb_owner, "CN=test_add_user1,OU=test_add_ou2,OU=test_add_ou1," + self.base_dn)
+        self.ldb_owner.newuser(self.test_user1, self.user_pass, userou=self.ou2)
         self.create_group(self.ldb_owner, "CN=test_add_group1,OU=test_add_ou2,OU=test_add_ou1," + self.base_dn)
         # Make sure we have successfully created the two objects -- user and group
         res = self.ldb_admin.search(self.base_dn, expression="(distinguishedName=%s,%s)" % ("CN=test_add_user1,OU=test_add_ou2,OU=test_add_ou1", self.base_dn))
@@ -340,16 +315,16 @@ class AclModifyTests(AclTests):
         self.user_with_wp = "acl_mod_user1"
         self.user_with_sm = "acl_mod_user2"
         self.user_with_group_sm = "acl_mod_user3"
-        self.create_enable_user(self.user_with_wp)
-        self.create_enable_user(self.user_with_sm)
-        self.create_enable_user(self.user_with_group_sm)
+        self.ldb_admin.newuser(self.user_with_wp, self.user_pass)
+        self.ldb_admin.newuser(self.user_with_sm, self.user_pass)
+        self.ldb_admin.newuser(self.user_with_group_sm, self.user_pass)
         self.ldb_user = self.get_ldb_connection(self.user_with_wp, self.user_pass)
         self.ldb_user2 = self.get_ldb_connection(self.user_with_sm, self.user_pass)
         self.ldb_user3 = self.get_ldb_connection(self.user_with_group_sm, self.user_pass)
         self.user_sid = self.get_object_sid( self.get_user_dn(self.user_with_wp))
         self.create_group(self.ldb_admin, "CN=test_modify_group2,CN=Users," + self.base_dn)
         self.create_group(self.ldb_admin, "CN=test_modify_group3,CN=Users," + self.base_dn)
-        self.create_test_user(self.ldb_admin, self.get_user_dn("test_modify_user2"))
+        self.ldb_admin.newuser("test_modify_user2", self.user_pass)
 
     def tearDown(self):
         super(AclModifyTests, self).tearDown()
@@ -368,7 +343,7 @@ class AclModifyTests(AclTests):
         mod = "(OA;;WP;bf967953-0de6-11d0-a285-00aa003049e2;;%s)" % str(self.user_sid)
         # First test object -- User
         print "Testing modify on User object"
-        self.create_test_user(self.ldb_admin, self.get_user_dn("test_modify_user1"))
+        self.ldb_admin.newuser("test_modify_user1", self.user_pass)
         self.dacl_add_ace(self.get_user_dn("test_modify_user1"), mod)
         ldif = """
 dn: """ + self.get_user_dn("test_modify_user1") + """
@@ -411,7 +386,7 @@ displayName: test_changed"""
         # First test object -- User
         print "Testing modify on User object"
         #self.delete_force(self.ldb_admin, self.get_user_dn("test_modify_user1"))
-        self.create_test_user(self.ldb_admin, self.get_user_dn("test_modify_user1"))
+        self.ldb_admin.newuser("test_modify_user1", self.user_pass)
         self.dacl_add_ace(self.get_user_dn("test_modify_user1"), mod)
         # Modify on attribute you have rights for
         ldif = """
@@ -496,7 +471,7 @@ url: www.samba.org"""
         """7 Modify one attribute as you have no what so ever rights granted"""
         # First test object -- User
         print "Testing modify on User object"
-        self.create_test_user(self.ldb_admin, self.get_user_dn("test_modify_user1"))
+        self.ldb_admin.newuser("test_modify_user1", self.user_pass)
         # Modify on attribute you do not have rights for granted
         ldif = """
 dn: """ + self.get_user_dn("test_modify_user1") + """
@@ -674,9 +649,9 @@ class AclSearchTests(AclTests):
         self.creds_tmp.set_workstation(creds.get_workstation())
         self.anonymous = SamDB(url=host, credentials=self.creds_tmp, lp=lp)
         self.dsheuristics = self.ldb_admin.get_dsheuristics()
-        self.create_enable_user(self.u1)
-        self.create_enable_user(self.u2)
-        self.create_enable_user(self.u3)
+        self.ldb_admin.newuser(self.u1, self.user_pass)
+        self.ldb_admin.newuser(self.u2, self.user_pass)
+        self.ldb_admin.newuser(self.u3, self.user_pass)
         self.create_security_group(self.ldb_admin, self.get_user_dn(self.group1))
         self.ldb_admin.add_remove_group_members(self.group1, self.u2,
                                                 add_members_operation=True)
@@ -1029,8 +1004,8 @@ class AclDeleteTests(AclTests):
     def setUp(self):
         super(AclDeleteTests, self).setUp()
         self.regular_user = "acl_delete_user1"
-            # Create regular user
-        self.create_enable_user(self.regular_user)
+        # Create regular user
+        self.ldb_admin.newuser(self.regular_user, self.user_pass)
         self.ldb_user = self.get_ldb_connection(self.regular_user, self.user_pass)
 
     def tearDown(self):
@@ -1041,7 +1016,7 @@ class AclDeleteTests(AclTests):
     def test_delete_u1(self):
         """User is prohibited by default to delete another User object"""
         # Create user that we try to delete
-        self.create_test_user(self.ldb_admin, self.get_user_dn("test_delete_user1"))
+        self.ldb_admin.newuser("test_delete_user1", self.user_pass)
         # Here delete User object should ALWAYS through exception
         try:
             self.ldb_user.delete(self.get_user_dn("test_delete_user1"))
@@ -1054,7 +1029,7 @@ class AclDeleteTests(AclTests):
         """User's group has RIGHT_DELETE to another User object"""
         user_dn = self.get_user_dn("test_delete_user1")
         # Create user that we try to delete
-        self.create_test_user(self.ldb_admin, user_dn)
+        self.ldb_admin.newuser("test_delete_user1", self.user_pass)
         mod = "(A;;SD;;;AU)"
         self.dacl_add_ace(user_dn, mod)
         # Try to delete User object
@@ -1067,7 +1042,7 @@ class AclDeleteTests(AclTests):
         """User indentified by SID has RIGHT_DELETE to another User object"""
         user_dn = self.get_user_dn("test_delete_user1")
         # Create user that we try to delete
-        self.create_test_user(self.ldb_admin, user_dn)
+        self.ldb_admin.newuser("test_delete_user1", self.user_pass)
         mod = "(A;;SD;;;%s)" % self.get_object_sid(self.get_user_dn(self.regular_user))
         self.dacl_add_ace(user_dn, mod)
         # Try to delete User object
@@ -1082,39 +1057,46 @@ class AclRenameTests(AclTests):
     def setUp(self):
         super(AclRenameTests, self).setUp()
         self.regular_user = "acl_rename_user1"
-
+        self.ou1 = "OU=test_rename_ou1"
+        self.ou2 = "OU=test_rename_ou2"
+        self.ou3 = "OU=test_rename_ou3,%s" % self.ou2
+        self.testuser1 = "test_rename_user1"
+        self.testuser2 = "test_rename_user2"
+        self.testuser3 = "test_rename_user3"
+        self.testuser4 = "test_rename_user4"
+        self.testuser5 = "test_rename_user5"
         # Create regular user
-        self.create_enable_user(self.regular_user)
+        self.ldb_admin.newuser(self.regular_user, self.user_pass)
         self.ldb_user = self.get_ldb_connection(self.regular_user, self.user_pass)
 
     def tearDown(self):
         super(AclRenameTests, self).tearDown()
         # Rename OU3
-        self.delete_force(self.ldb_admin, "CN=test_rename_user1,OU=test_rename_ou3,OU=test_rename_ou2," + self.base_dn)
-        self.delete_force(self.ldb_admin, "CN=test_rename_user2,OU=test_rename_ou3,OU=test_rename_ou2," + self.base_dn)
-        self.delete_force(self.ldb_admin, "CN=test_rename_user5,OU=test_rename_ou3,OU=test_rename_ou2," + self.base_dn)
-        self.delete_force(self.ldb_admin, "OU=test_rename_ou3,OU=test_rename_ou2," + self.base_dn)
+        self.delete_force(self.ldb_admin, "CN=%s,%s,%s" % (self.testuser1, self.ou3, self.base_dn))
+        self.delete_force(self.ldb_admin, "CN=%s,%s,%s" % (self.testuser2, self.ou3, self.base_dn))
+        self.delete_force(self.ldb_admin, "CN=%s,%s,%s" % (self.testuser5, self.ou3, self.base_dn))
+        self.delete_force(self.ldb_admin, "%s,%s" % (self.ou3, self.base_dn))
         # Rename OU2
-        self.delete_force(self.ldb_admin, "CN=test_rename_user1,OU=test_rename_ou2," + self.base_dn)
-        self.delete_force(self.ldb_admin, "CN=test_rename_user2,OU=test_rename_ou2," + self.base_dn)
-        self.delete_force(self.ldb_admin, "CN=test_rename_user5,OU=test_rename_ou2," + self.base_dn)
-        self.delete_force(self.ldb_admin, "OU=test_rename_ou2," + self.base_dn)
+        self.delete_force(self.ldb_admin, "CN=%s,%s,%s" % (self.testuser1, self.ou2, self.base_dn))
+        self.delete_force(self.ldb_admin, "CN=%s,%s,%s" % (self.testuser2, self.ou2, self.base_dn))
+        self.delete_force(self.ldb_admin, "CN=%s,%s,%s" % (self.testuser5, self.ou2, self.base_dn))
+        self.delete_force(self.ldb_admin, "%s,%s" % (self.ou2, self.base_dn))
         # Rename OU1
-        self.delete_force(self.ldb_admin, "CN=test_rename_user1,OU=test_rename_ou1," + self.base_dn)
-        self.delete_force(self.ldb_admin, "CN=test_rename_user2,OU=test_rename_ou1," + self.base_dn)
-        self.delete_force(self.ldb_admin, "CN=test_rename_user5,OU=test_rename_ou1," + self.base_dn)
-        self.delete_force(self.ldb_admin, "OU=test_rename_ou3,OU=test_rename_ou1," + self.base_dn)
-        self.delete_force(self.ldb_admin, "OU=test_rename_ou1," + self.base_dn)
+        self.delete_force(self.ldb_admin, "CN=%s,%s,%s" % (self.testuser1, self.ou1, self.base_dn))
+        self.delete_force(self.ldb_admin, "CN=%s,%s,%s" % (self.testuser2, self.ou1, self.base_dn))
+        self.delete_force(self.ldb_admin, "CN=%s,%s,%s" % (self.testuser5, self.ou1, self.base_dn))
+        self.delete_force(self.ldb_admin, "OU=test_rename_ou3,%s,%s" % (self.ou1, self.base_dn))
+        self.delete_force(self.ldb_admin, "%s,%s" % (self.ou1, self.base_dn))
         self.delete_force(self.ldb_admin, self.get_user_dn(self.regular_user))
 
     def test_rename_u1(self):
         """Regular user fails to rename 'User object' within single OU"""
         # Create OU structure
         self.ldb_admin.create_ou("OU=test_rename_ou1," + self.base_dn)
-        self.create_test_user(self.ldb_admin, "CN=test_rename_user1,OU=test_rename_ou1," + self.base_dn)
+        self.ldb_admin.newuser(self.testuser1, self.user_pass, userou=self.ou1)
         try:
-            self.ldb_user.rename("CN=test_rename_user1,OU=test_rename_ou1," + self.base_dn, \
-                    "CN=test_rename_user5,OU=test_rename_ou1," + self.base_dn)
+            self.ldb_user.rename("CN=%s,%s,%s" % (self.testuser1, self.ou1, self.base_dn), \
+                                     "CN=%s,%s,%s" % (self.testuser5, self.ou1, self.base_dn))
         except LdbError, (num, _):
             self.assertEquals(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
         else:
@@ -1127,7 +1109,7 @@ class AclRenameTests(AclTests):
         rename_user_dn = "CN=test_rename_user5," + ou_dn
         # Create OU structure
         self.ldb_admin.create_ou(ou_dn)
-        self.create_test_user(self.ldb_admin, user_dn)
+        self.ldb_admin.newuser(self.testuser1, self.user_pass, userou=self.ou1)
         mod = "(A;;WP;;;AU)"
         self.dacl_add_ace(user_dn, mod)
         # Rename 'User object' having WP to AU
@@ -1146,7 +1128,7 @@ class AclRenameTests(AclTests):
         rename_user_dn = "CN=test_rename_user5," + ou_dn
         # Create OU structure
         self.ldb_admin.create_ou(ou_dn)
-        self.create_test_user(self.ldb_admin, user_dn)
+        self.ldb_admin.newuser(self.testuser1, self.user_pass, userou=self.ou1)
         sid = self.get_object_sid(self.get_user_dn(self.regular_user))
         mod = "(A;;WP;;;%s)" % str(sid)
         self.dacl_add_ace(user_dn, mod)
@@ -1168,7 +1150,7 @@ class AclRenameTests(AclTests):
         # Create OU structure
         self.ldb_admin.create_ou(ou1_dn)
         self.ldb_admin.create_ou(ou2_dn)
-        self.create_test_user(self.ldb_admin, user_dn)
+        self.ldb_admin.newuser(self.testuser2, self.user_pass, userou=self.ou1)
         mod = "(A;;WPSD;;;AU)"
         self.dacl_add_ace(user_dn, mod)
         mod = "(A;;CC;;;AU)"
@@ -1191,7 +1173,7 @@ class AclRenameTests(AclTests):
         # Create OU structure
         self.ldb_admin.create_ou(ou1_dn)
         self.ldb_admin.create_ou(ou2_dn)
-        self.create_test_user(self.ldb_admin, user_dn)
+        self.ldb_admin.newuser(self.testuser2, self.user_pass, userou=self.ou1)
         sid = self.get_object_sid(self.get_user_dn(self.regular_user))
         mod = "(A;;WPSD;;;%s)" % str(sid)
         self.dacl_add_ace(user_dn, mod)
@@ -1220,7 +1202,7 @@ class AclRenameTests(AclTests):
         self.dacl_add_ace(ou1_dn, mod)
         mod = "(A;;CC;;;AU)"
         self.dacl_add_ace(ou2_dn, mod)
-        self.create_test_user(self.ldb_admin, user_dn)
+        self.ldb_admin.newuser(self.testuser2, self.user_pass, userou=self.ou1)
         mod = "(A;;WP;;;AU)"
         self.dacl_add_ace(user_dn, mod)
         # Rename 'User object' having SD and CC to AU
@@ -1247,7 +1229,7 @@ class AclRenameTests(AclTests):
         self.dacl_add_ace(ou1_dn, mod)
         mod = "(A;;CC;;;AU)"
         self.dacl_add_ace(ou3_dn, mod)
-        self.create_test_user(self.ldb_admin, user_dn)
+        self.ldb_admin.newuser(self.testuser2, self.user_pass, userou=self.ou1)
         # Rename 'User object' having SD and CC to AU
         self.ldb_user.rename(user_dn, rename_user_dn)
         res = self.ldb_admin.search(self.base_dn,
@@ -1293,8 +1275,8 @@ class AclCARTests(AclTests):
         super(AclCARTests, self).setUp()
         self.user_with_wp = "acl_car_user1"
         self.user_with_pc = "acl_car_user2"
-        self.create_enable_user(self.user_with_wp)
-        self.create_enable_user(self.user_with_pc)
+        self.ldb_admin.newuser(self.user_with_wp, self.user_pass)
+        self.ldb_admin.newuser(self.user_with_pc, self.user_pass)
         self.ldb_user = self.get_ldb_connection(self.user_with_wp, self.user_pass)
         self.ldb_user2 = self.get_ldb_connection(self.user_with_pc, self.user_pass)
 
@@ -1586,9 +1568,9 @@ class AclExtendedTests(AclTests):
         self.u2 = "ext_u2"
         #admin user
         self.u3 = "ext_u3"
-        self.create_enable_user(self.u1)
-        self.create_enable_user(self.u2)
-        self.create_enable_user(self.u3)
+        self.ldb_admin.newuser(self.u1, self.user_pass)
+        self.ldb_admin.newuser(self.u2, self.user_pass)
+        self.ldb_admin.newuser(self.u3, self.user_pass)
         self.ldb_admin.add_remove_group_members("Domain Admins", self.u3,
                                                 add_members_operation=True)
         self.ldb_user1 = self.get_ldb_connection(self.u1, self.user_pass)
