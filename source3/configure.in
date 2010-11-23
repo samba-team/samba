@@ -197,7 +197,7 @@ AC_ARG_WITH(profiling-data,
 )
 
 dnl Checks for programs.
-merged_build_possible=yes
+smbtorture4_possible=yes
 
 AC_PROG_INSTALL
 AC_PROG_AWK
@@ -207,11 +207,11 @@ AC_SAMBA_GNU_MAKE([true], [true])
 
 # Check for perl
 m4_include(../m4/check_perl.m4)
-AC_SAMBA_PERL([true], [merged_build_possible=no])
+AC_SAMBA_PERL([true], [smbtorture4_possible=no])
 
 # Check for python
 m4_include(../m4/check_python.m4)
-AC_SAMBA_PYTHON_DEVEL([true], [merged_build_possible=no])
+AC_SAMBA_PYTHON_DEVEL([true], [smbtorture4_possible=no])
 
 AC_CHECK_TOOL(AR, ar)
 
@@ -1986,7 +1986,7 @@ if test x"$BLDSHARED" != x"true"; then
 	SHLD="shared-libraries-disabled"
 	PICFLAG="${PIE_CFLAGS}"
 	SHLIBEXT="shared_libraries_disabled"
-	merged_build_possible=no
+	smbtorture4_possible=no
 fi
 
 AC_MSG_CHECKING([used PICFLAG])
@@ -4408,7 +4408,7 @@ LIBS="$ac_save_LIBS"
 fi
 
 if test x"$use_ads" != xyes; then
-	merged_build_possible=no
+	smbtorture4_possible=no
 fi
 
 AC_CHECK_LIB_EXT(nscd, NSCD_LIBS, nscd_flush_cache)
@@ -6896,30 +6896,9 @@ MSG
 
 fi
 
-AC_ARG_ENABLE(merged-build, 
-[AS_HELP_STRING([--enable-merged-build], [Build Samba 4 as well])], 
-[ enable_merged_build=$enableval ], [ enable_merged_build=auto ])
-
-if test x"$enable_merged_build" = x"yes" -a \
-	x"$merged_build_possible" = x"no" ; then
-	AC_MSG_ERROR(Merged build required but not possible)
-fi
-
 m4_include(../lib/zlib/zlib.m4)
 
-if test x$enable_merged_build = xauto; then
-
-	AC_MSG_CHECKING([whether it would be possible to do a merged build])
-	AC_MSG_RESULT([$merged_build_possible])
-
-	# Enable merged build automatically if possible, when in developer mode
-	if test "x$developer" = xyes; then
-		enable_merged_build=$merged_build_possible
-	fi
-fi
-
-if test x$enable_merged_build = xyes; then
-	MERGED_BUILD=1
+if test x$smbtorture4_possible = xyes; then
 	saved_USESHARED="$USESHARED"
 	USESHARED="false"
 	smbtorture4_path="bin/smbtorture4"
