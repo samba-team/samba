@@ -96,20 +96,6 @@ replace: nTSecurityDescriptor
             mod += "nTSecurityDescriptor:: %s" % base64.b64encode(ndr_pack(desc))
         self.ldb_admin.modify_ldif(mod)
     
-    def create_ou(self, _ldb, ou_dn, desc=None):
-        ldif = """
-dn: """ + ou_dn + """
-ou: """ + ou_dn.split(",")[0][3:] + """
-objectClass: organizationalUnit
-url: www.example.com
-"""
-        if desc:
-            assert(isinstance(desc, str) or isinstance(desc, security.descriptor))
-            if isinstance(desc, str):
-                ldif += "nTSecurityDescriptor: %s" % desc
-            elif isinstance(desc, security.descriptor):
-                ldif += "nTSecurityDescriptor:: %s" % base64.b64encode(ndr_pack(desc))
-        _ldb.add_ldif(ldif)
 
     def create_active_user(self, _ldb, user_dn):
         ldif = """
@@ -267,8 +253,8 @@ class AclAddTests(AclTests):
         """Testing OU with the rights of Doman Admin not creator of the OU """
         self.assert_top_ou_deleted()
         # Change descriptor for top level OU
-        self.create_ou(self.ldb_owner, "OU=test_add_ou1," + self.base_dn)
-        self.create_ou(self.ldb_owner, "OU=test_add_ou2,OU=test_add_ou1," + self.base_dn)
+        self.ldb_owner.create_ou("OU=test_add_ou1," + self.base_dn)
+        self.ldb_owner.create_ou("OU=test_add_ou2,OU=test_add_ou1," + self.base_dn)
         user_sid = self.get_object_sid(self.get_user_dn(self.usr_admin_not_owner))
         mod = "(D;CI;WPCC;;;%s)" % str(user_sid)
         self.dacl_add_ace("OU=test_add_ou1," + self.base_dn, mod)
@@ -287,8 +273,8 @@ class AclAddTests(AclTests):
         """Testing OU with the regular user that has no rights granted over the OU """
         self.assert_top_ou_deleted()
         # Create a parent-child OU structure with domain admin credentials
-        self.create_ou(self.ldb_owner, "OU=test_add_ou1," + self.base_dn)
-        self.create_ou(self.ldb_owner, "OU=test_add_ou2,OU=test_add_ou1," + self.base_dn)
+        self.ldb_owner.create_ou("OU=test_add_ou1," + self.base_dn)
+        self.ldb_owner.create_ou("OU=test_add_ou2,OU=test_add_ou1," + self.base_dn)
         # Test user and group creation with regular user credentials
         try:
             self.create_test_user(self.ldb_user, "CN=test_add_user1,OU=test_add_ou2,OU=test_add_ou1," + self.base_dn)
@@ -307,11 +293,11 @@ class AclAddTests(AclTests):
         """Testing OU with the rights of regular user granted the right 'Create User child objects' """
         self.assert_top_ou_deleted()
         # Change descriptor for top level OU
-        self.create_ou(self.ldb_owner, "OU=test_add_ou1," + self.base_dn)
+        self.ldb_owner.create_ou("OU=test_add_ou1," + self.base_dn)
         user_sid = self.get_object_sid(self.get_user_dn(self.regular_user))
         mod = "(OA;CI;CC;bf967aba-0de6-11d0-a285-00aa003049e2;;%s)" % str(user_sid)
         self.dacl_add_ace("OU=test_add_ou1," + self.base_dn, mod)
-        self.create_ou(self.ldb_owner, "OU=test_add_ou2,OU=test_add_ou1," + self.base_dn)
+        self.ldb_owner.create_ou("OU=test_add_ou2,OU=test_add_ou1," + self.base_dn)
         # Test user and group creation with granted user only to one of the objects
         self.create_test_user(self.ldb_user, "CN=test_add_user1,OU=test_add_ou2,OU=test_add_ou1," + self.base_dn)
         try:
@@ -335,8 +321,8 @@ class AclAddTests(AclTests):
     def test_add_u4(self):
         """ 4 Testing OU with the rights of Doman Admin creator of the OU"""
         self.assert_top_ou_deleted()
-        self.create_ou(self.ldb_owner, "OU=test_add_ou1," + self.base_dn)
-        self.create_ou(self.ldb_owner, "OU=test_add_ou2,OU=test_add_ou1," + self.base_dn)
+        self.ldb_owner.create_ou("OU=test_add_ou1," + self.base_dn)
+        self.ldb_owner.create_ou("OU=test_add_ou2,OU=test_add_ou1," + self.base_dn)
         self.create_test_user(self.ldb_owner, "CN=test_add_user1,OU=test_add_ou2,OU=test_add_ou1," + self.base_dn)
         self.create_group(self.ldb_owner, "CN=test_add_group1,OU=test_add_ou2,OU=test_add_ou1," + self.base_dn)
         # Make sure we have successfully created the two objects -- user and group
@@ -408,7 +394,7 @@ displayName: test_changed"""
         # Third test object -- Organizational Unit
         print "Testing modify on OU object"
         #self.delete_force(self.ldb_admin, "OU=test_modify_ou1," + self.base_dn)
-        self.create_ou(self.ldb_admin, "OU=test_modify_ou1," + self.base_dn)
+        self.ldb_admin.create_ou("OU=test_modify_ou1," + self.base_dn)
         self.dacl_add_ace("OU=test_modify_ou1," + self.base_dn, mod)
         ldif = """
 dn: OU=test_modify_ou1,""" + self.base_dn + """
@@ -480,7 +466,7 @@ url: www.samba.org"""
             self.fail()
         # Second test object -- Organizational Unit
         print "Testing modify on OU object"
-        self.create_ou(self.ldb_admin, "OU=test_modify_ou1," + self.base_dn)
+        self.ldb_admin.create_ou("OU=test_modify_ou1," + self.base_dn)
         self.dacl_add_ace("OU=test_modify_ou1," + self.base_dn, mod)
         ldif = """
 dn: OU=test_modify_ou1,""" + self.base_dn + """
@@ -545,7 +531,7 @@ url: www.samba.org"""
         # Second test object -- Organizational Unit
         print "Testing modify on OU object"
         #self.delete_force(self.ldb_admin, "OU=test_modify_ou1," + self.base_dn)
-        self.create_ou(self.ldb_admin, "OU=test_modify_ou1," + self.base_dn)
+        self.ldb_admin.create_ou("OU=test_modify_ou1," + self.base_dn)
         # Modify on attribute you do not have rights for granted
         ldif = """
 dn: OU=test_modify_ou1,""" + self.base_dn + """
@@ -712,7 +698,7 @@ class AclSearchTests(AclTests):
                 expression="distinguishedName=%s" % object_dn)
         # Make sure top testing OU has been deleted before starting the test
         self.assertEqual(res, [])
-        self.create_ou(self.ldb_admin, object_dn)
+        self.ldb_admin.create_ou(object_dn)
         desc_sddl = self.get_desc_sddl(object_dn)
         # Make sure there are inheritable ACEs initially
         self.assertTrue("CI" in desc_sddl or "OI" in desc_sddl)
@@ -786,10 +772,10 @@ class AclSearchTests(AclTests):
     def test_search_anonymous3(self):
         """Set dsHeuristics and repeat"""
         self.ldb_admin.set_dsheuristics("0000002")
-        self.create_ou(self.ldb_admin, "OU=test_search_ou1," + self.base_dn)
+        self.ldb_admin.create_ou("OU=test_search_ou1," + self.base_dn)
         mod = "(A;CI;LC;;;AN)"
         self.dacl_add_ace("OU=test_search_ou1," + self.base_dn, mod)
-        self.create_ou(self.ldb_admin, "OU=test_search_ou2,OU=test_search_ou1," + self.base_dn)
+        self.ldb_admin.create_ou("OU=test_search_ou2,OU=test_search_ou1," + self.base_dn)
         res = self.anonymous.search("OU=test_search_ou2,OU=test_search_ou1," + self.base_dn,
                                     expression="(objectClass=*)", scope=SCOPE_SUBTREE)
         self.assertEquals(len(res), 1)
@@ -808,16 +794,16 @@ class AclSearchTests(AclTests):
         self.create_clean_ou("OU=ou1," + self.base_dn)
         mod = "(A;;LC;;;%s)(A;;LC;;;%s)" % (str(self.user_sid), str(self.group_sid))
         self.dacl_add_ace("OU=ou1," + self.base_dn, mod)
-        self.create_ou(self.ldb_admin, "OU=ou2,OU=ou1," + self.base_dn,
-                       "D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)" + mod)
-        self.create_ou(self.ldb_admin, "OU=ou3,OU=ou2,OU=ou1," + self.base_dn,
-                       "D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)" + mod)
-        self.create_ou(self.ldb_admin, "OU=ou4,OU=ou2,OU=ou1," + self.base_dn,
-                       "D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)" + mod)
-        self.create_ou(self.ldb_admin, "OU=ou5,OU=ou3,OU=ou2,OU=ou1," + self.base_dn,
-                       "D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)" + mod)
-        self.create_ou(self.ldb_admin, "OU=ou6,OU=ou4,OU=ou2,OU=ou1," + self.base_dn,
-                       "D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)" + mod)
+        self.ldb_admin.create_ou("OU=ou2,OU=ou1," + self.base_dn,
+                                 "D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)" + mod)
+        self.ldb_admin.create_ou("OU=ou3,OU=ou2,OU=ou1," + self.base_dn,
+                                 "D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)" + mod)
+        self.ldb_admin.create_ou("OU=ou4,OU=ou2,OU=ou1," + self.base_dn,
+                                 "D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)" + mod)
+        self.ldb_admin.create_ou("OU=ou5,OU=ou3,OU=ou2,OU=ou1," + self.base_dn,
+                                 "D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)" + mod)
+        self.ldb_admin.create_ou("OU=ou6,OU=ou4,OU=ou2,OU=ou1," + self.base_dn,
+                                 "D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)" + mod)
 
         #regular users must see only ou1 and ou2
         res = self.ldb_user3.search("OU=ou1," + self.base_dn, expression="(objectClass=*)",
@@ -845,11 +831,11 @@ class AclSearchTests(AclTests):
     def test_search2(self):
         """Make sure users can't see us if access is explicitly denied"""
         self.create_clean_ou("OU=ou1," + self.base_dn)
-        self.create_ou(self.ldb_admin, "OU=ou2,OU=ou1," + self.base_dn)
-        self.create_ou(self.ldb_admin, "OU=ou3,OU=ou2,OU=ou1," + self.base_dn)
-        self.create_ou(self.ldb_admin, "OU=ou4,OU=ou2,OU=ou1," + self.base_dn)
-        self.create_ou(self.ldb_admin, "OU=ou5,OU=ou3,OU=ou2,OU=ou1," + self.base_dn)
-        self.create_ou(self.ldb_admin, "OU=ou6,OU=ou4,OU=ou2,OU=ou1," + self.base_dn)
+        self.ldb_admin.create_ou("OU=ou2,OU=ou1," + self.base_dn)
+        self.ldb_admin.create_ou("OU=ou3,OU=ou2,OU=ou1," + self.base_dn)
+        self.ldb_admin.create_ou("OU=ou4,OU=ou2,OU=ou1," + self.base_dn)
+        self.ldb_admin.create_ou("OU=ou5,OU=ou3,OU=ou2,OU=ou1," + self.base_dn)
+        self.ldb_admin.create_ou("OU=ou6,OU=ou4,OU=ou2,OU=ou1," + self.base_dn)
         mod = "(D;;LC;;;%s)(D;;LC;;;%s)" % (str(self.user_sid), str(self.group_sid)) 
         self.dacl_add_ace("OU=ou2,OU=ou1," + self.base_dn, mod)
         res = self.ldb_user3.search("OU=ou1," + self.base_dn, expression="(objectClass=*)",
@@ -879,16 +865,16 @@ class AclSearchTests(AclTests):
         self.create_clean_ou("OU=ou1," + self.base_dn)
         mod = "(A;CI;LC;;;%s)(A;CI;LC;;;%s)" % (str(self.user_sid), str(self.group_sid))
         self.dacl_add_ace("OU=ou1," + self.base_dn, mod)
-        self.create_ou(self.ldb_admin, "OU=ou2,OU=ou1," + self.base_dn,
-                       "D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)")
-        self.create_ou(self.ldb_admin, "OU=ou3,OU=ou2,OU=ou1," + self.base_dn,
-                       "D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)")
-        self.create_ou(self.ldb_admin, "OU=ou4,OU=ou2,OU=ou1," + self.base_dn,
-                       "D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)")
-        self.create_ou(self.ldb_admin, "OU=ou5,OU=ou3,OU=ou2,OU=ou1," + self.base_dn,
-                       "D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)")
-        self.create_ou(self.ldb_admin, "OU=ou6,OU=ou4,OU=ou2,OU=ou1," + self.base_dn,
-                       "D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)")
+        self.ldb_admin.create_ou("OU=ou2,OU=ou1," + self.base_dn,
+                                 "D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)")
+        self.ldb_admin.create_ou("OU=ou3,OU=ou2,OU=ou1," + self.base_dn,
+                                 "D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)")
+        self.ldb_admin.create_ou("OU=ou4,OU=ou2,OU=ou1," + self.base_dn,
+                                 "D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)")
+        self.ldb_admin.create_ou("OU=ou5,OU=ou3,OU=ou2,OU=ou1," + self.base_dn,
+                                 "D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)")
+        self.ldb_admin.create_ou("OU=ou6,OU=ou4,OU=ou2,OU=ou1," + self.base_dn,
+                                 "D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)")
 
         print "Testing correct behavior on nonaccessible search base"
         try:
@@ -933,16 +919,16 @@ class AclSearchTests(AclTests):
         self.create_clean_ou("OU=ou1," + self.base_dn)
         mod = "(A;CI;CC;;;%s)" % (str(self.user_sid))
         self.dacl_add_ace("OU=ou1," + self.base_dn, mod)
-        self.create_ou(self.ldb_user, "OU=ou2,OU=ou1," + self.base_dn,
-                       "D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)")
-        self.create_ou(self.ldb_user, "OU=ou3,OU=ou2,OU=ou1," + self.base_dn,
-                       "D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)")
-        self.create_ou(self.ldb_user, "OU=ou4,OU=ou2,OU=ou1," + self.base_dn,
-                       "D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)")
-        self.create_ou(self.ldb_user, "OU=ou5,OU=ou3,OU=ou2,OU=ou1," + self.base_dn,
-                       "D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)")
-        self.create_ou(self.ldb_user, "OU=ou6,OU=ou4,OU=ou2,OU=ou1," + self.base_dn,
-                       "D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)")
+        self.ldb_user.create_ou("OU=ou2,OU=ou1," + self.base_dn,
+                                "D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)")
+        self.ldb_user.create_ou("OU=ou3,OU=ou2,OU=ou1," + self.base_dn,
+                                "D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)")
+        self.ldb_user.create_ou("OU=ou4,OU=ou2,OU=ou1," + self.base_dn,
+                                "D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)")
+        self.ldb_user.create_ou("OU=ou5,OU=ou3,OU=ou2,OU=ou1," + self.base_dn,
+                                "D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)")
+        self.ldb_user.create_ou("OU=ou6,OU=ou4,OU=ou2,OU=ou1," + self.base_dn,
+                                "D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)")
 
         ok_list = [Dn(self.ldb_admin,  "OU=ou2,OU=ou1," + self.base_dn),
                    Dn(self.ldb_admin,  "OU=ou1," + self.base_dn)]
@@ -963,8 +949,8 @@ class AclSearchTests(AclTests):
         self.create_clean_ou("OU=ou1," + self.base_dn)
         mod = "(A;CI;LC;;;%s)" % (str(self.user_sid))
         self.dacl_add_ace("OU=ou1," + self.base_dn, mod)
-        self.create_ou(self.ldb_admin, "OU=ou2,OU=ou1," + self.base_dn,
-                       "D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)" + mod)
+        self.ldb_admin.create_ou("OU=ou2,OU=ou1," + self.base_dn,
+                                 "D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)" + mod)
         # assert user can only see dn
         res = self.ldb_user.search("OU=ou2,OU=ou1," + self.base_dn, expression="(objectClass=*)",
                                     scope=SCOPE_SUBTREE)
@@ -1007,10 +993,10 @@ class AclSearchTests(AclTests):
         self.create_clean_ou("OU=ou1," + self.base_dn)
         mod = "(A;CI;LCCC;;;%s)" % (str(self.user_sid))
         self.dacl_add_ace("OU=ou1," + self.base_dn, mod)
-        self.create_ou(self.ldb_admin, "OU=ou2,OU=ou1," + self.base_dn,
-                       "D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)" + mod)
-        self.create_ou(self.ldb_user, "OU=ou3,OU=ou2,OU=ou1," + self.base_dn,
-                       "D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)")
+        self.ldb_admin.create_ou("OU=ou2,OU=ou1," + self.base_dn,
+                                 "D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)" + mod)
+        self.ldb_user.create_ou("OU=ou3,OU=ou2,OU=ou1," + self.base_dn,
+                                "D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)")
 
         res = self.ldb_user.search("OU=ou1," + self.base_dn, expression="(ou=ou3)",
                                     scope=SCOPE_SUBTREE)
@@ -1124,7 +1110,7 @@ class AclRenameTests(AclTests):
     def test_rename_u1(self):
         """Regular user fails to rename 'User object' within single OU"""
         # Create OU structure
-        self.create_ou(self.ldb_admin, "OU=test_rename_ou1," + self.base_dn)
+        self.ldb_admin.create_ou("OU=test_rename_ou1," + self.base_dn)
         self.create_test_user(self.ldb_admin, "CN=test_rename_user1,OU=test_rename_ou1," + self.base_dn)
         try:
             self.ldb_user.rename("CN=test_rename_user1,OU=test_rename_ou1," + self.base_dn, \
@@ -1140,7 +1126,7 @@ class AclRenameTests(AclTests):
         user_dn = "CN=test_rename_user1," + ou_dn
         rename_user_dn = "CN=test_rename_user5," + ou_dn
         # Create OU structure
-        self.create_ou(self.ldb_admin, ou_dn)
+        self.ldb_admin.create_ou(ou_dn)
         self.create_test_user(self.ldb_admin, user_dn)
         mod = "(A;;WP;;;AU)"
         self.dacl_add_ace(user_dn, mod)
@@ -1159,7 +1145,7 @@ class AclRenameTests(AclTests):
         user_dn = "CN=test_rename_user1," + ou_dn
         rename_user_dn = "CN=test_rename_user5," + ou_dn
         # Create OU structure
-        self.create_ou(self.ldb_admin, ou_dn)
+        self.ldb_admin.create_ou(ou_dn)
         self.create_test_user(self.ldb_admin, user_dn)
         sid = self.get_object_sid(self.get_user_dn(self.regular_user))
         mod = "(A;;WP;;;%s)" % str(sid)
@@ -1180,8 +1166,8 @@ class AclRenameTests(AclTests):
         user_dn = "CN=test_rename_user2," + ou1_dn
         rename_user_dn = "CN=test_rename_user5," + ou2_dn
         # Create OU structure
-        self.create_ou(self.ldb_admin, ou1_dn)
-        self.create_ou(self.ldb_admin, ou2_dn)
+        self.ldb_admin.create_ou(ou1_dn)
+        self.ldb_admin.create_ou(ou2_dn)
         self.create_test_user(self.ldb_admin, user_dn)
         mod = "(A;;WPSD;;;AU)"
         self.dacl_add_ace(user_dn, mod)
@@ -1203,8 +1189,8 @@ class AclRenameTests(AclTests):
         user_dn = "CN=test_rename_user2," + ou1_dn
         rename_user_dn = "CN=test_rename_user5," + ou2_dn
         # Create OU structure
-        self.create_ou(self.ldb_admin, ou1_dn)
-        self.create_ou(self.ldb_admin, ou2_dn)
+        self.ldb_admin.create_ou(ou1_dn)
+        self.ldb_admin.create_ou(ou2_dn)
         self.create_test_user(self.ldb_admin, user_dn)
         sid = self.get_object_sid(self.get_user_dn(self.regular_user))
         mod = "(A;;WPSD;;;%s)" % str(sid)
@@ -1227,8 +1213,8 @@ class AclRenameTests(AclTests):
         user_dn = "CN=test_rename_user2," + ou1_dn
         rename_user_dn = "CN=test_rename_user2," + ou2_dn
         # Create OU structure
-        self.create_ou(self.ldb_admin, ou1_dn)
-        self.create_ou(self.ldb_admin, ou2_dn)
+        self.ldb_admin.create_ou(ou1_dn)
+        self.ldb_admin.create_ou(ou2_dn)
         #mod = "(A;CI;DCWP;;;AU)"
         mod = "(A;;DC;;;AU)"
         self.dacl_add_ace(ou1_dn, mod)
@@ -1254,9 +1240,9 @@ class AclRenameTests(AclTests):
         user_dn = "CN=test_rename_user2," + ou1_dn
         rename_user_dn = "CN=test_rename_user5," + ou3_dn
         # Create OU structure
-        self.create_ou(self.ldb_admin, ou1_dn)
-        self.create_ou(self.ldb_admin, ou2_dn)
-        self.create_ou(self.ldb_admin, ou3_dn)
+        self.ldb_admin.create_ou(ou1_dn)
+        self.ldb_admin.create_ou(ou2_dn)
+        self.ldb_admin.create_ou(ou3_dn)
         mod = "(A;CI;WPDC;;;AU)"
         self.dacl_add_ace(ou1_dn, mod)
         mod = "(A;;CC;;;AU)"
@@ -1277,8 +1263,8 @@ class AclRenameTests(AclTests):
         ou2_dn = "OU=test_rename_ou2," + ou1_dn
         ou3_dn = "OU=test_rename_ou3," + ou1_dn
         # Create OU structure
-        self.create_ou(self.ldb_admin, ou1_dn)
-        self.create_ou(self.ldb_admin, ou2_dn)
+        self.ldb_admin.create_ou(ou1_dn)
+        self.ldb_admin.create_ou(ou2_dn)
         sid = self.get_object_sid(self.get_user_dn(self.regular_user))
         mod = "(OA;;WP;bf967a0e-0de6-11d0-a285-00aa003049e2;;%s)" % str(sid)
         self.dacl_add_ace(ou2_dn, mod)
@@ -1621,7 +1607,7 @@ class AclExtendedTests(AclTests):
 
     def test_ntSecurityDescriptor(self):
         #create empty ou
-        self.create_ou(self.ldb_admin, "ou=ext_ou1," + self.base_dn)
+        self.ldb_admin.create_ou("ou=ext_ou1," + self.base_dn)
         #give u1 Create children access
         mod = "(A;;CC;;;%s)" % str(self.user_sid1)
         self.dacl_add_ace("OU=ext_ou1," + self.base_dn, mod)
