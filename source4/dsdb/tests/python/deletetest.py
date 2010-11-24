@@ -17,6 +17,7 @@ from ldb import SCOPE_BASE, LdbError
 from ldb import ERR_NO_SUCH_OBJECT, ERR_NOT_ALLOWED_ON_NON_LEAF
 from ldb import ERR_UNWILLING_TO_PERFORM
 from samba.samdb import SamDB
+from samba.tests import delete_force
 
 from subunit.run import SubunitTestRunner
 import unittest
@@ -41,11 +42,6 @@ creds = credopts.get_credentials(lp)
 
 class BasicDeleteTests(unittest.TestCase):
 
-    def delete_force(self, ldb, dn):
-        try:
-            ldb.delete(dn)
-        except LdbError, (num, _):
-            self.assertEquals(num, ERR_NO_SUCH_OBJECT)
 
     def GUID_string(self, guid):
         return self.ldb.schema_format_value("objectGUID", guid)
@@ -118,9 +114,9 @@ class BasicDeleteTests(unittest.TestCase):
 
         print self.base_dn
 
-        self.delete_force(self.ldb, "cn=entry1,cn=ldaptestcontainer," + self.base_dn)
-        self.delete_force(self.ldb, "cn=entry2,cn=ldaptestcontainer," + self.base_dn)
-        self.delete_force(self.ldb, "cn=ldaptestcontainer," + self.base_dn)
+        delete_force(self.ldb, "cn=entry1,cn=ldaptestcontainer," + self.base_dn)
+        delete_force(self.ldb, "cn=entry2,cn=ldaptestcontainer," + self.base_dn)
+        delete_force(self.ldb, "cn=ldaptestcontainer," + self.base_dn)
 
         ldb.add({
             "dn": "cn=ldaptestcontainer," + self.base_dn,
@@ -159,9 +155,9 @@ class BasicDeleteTests(unittest.TestCase):
         except LdbError, (num, _):
             self.assertEquals(num, ERR_NO_SUCH_OBJECT)
 
-        self.delete_force(self.ldb, "cn=entry1,cn=ldaptestcontainer," + self.base_dn)
-        self.delete_force(self.ldb, "cn=entry2,cn=ldaptestcontainer," + self.base_dn)
-        self.delete_force(self.ldb, "cn=ldaptestcontainer," + self.base_dn)
+        delete_force(self.ldb, "cn=entry1,cn=ldaptestcontainer," + self.base_dn)
+        delete_force(self.ldb, "cn=entry2,cn=ldaptestcontainer," + self.base_dn)
+        delete_force(self.ldb, "cn=ldaptestcontainer," + self.base_dn)
 
         # Performs some protected object delete testing
 
@@ -258,13 +254,13 @@ class BasicDeleteTests(unittest.TestCase):
         srv1="cn=Servers,cn=testsite1,cn=sites," + self.configuration_dn
         srv2="cn=TESTSRV,cn=Servers,cn=testsite1,cn=sites," + self.configuration_dn
 
-        self.delete_force(self.ldb, usr1)
-        self.delete_force(self.ldb, usr2)
-        self.delete_force(self.ldb, grp1)
-        self.delete_force(self.ldb, ss1)
-        self.delete_force(self.ldb, srv2)
-        self.delete_force(self.ldb, srv1)
-        self.delete_force(self.ldb, sit1)
+        delete_force(self.ldb, usr1)
+        delete_force(self.ldb, usr2)
+        delete_force(self.ldb, grp1)
+        delete_force(self.ldb, ss1)
+        delete_force(self.ldb, srv2)
+        delete_force(self.ldb, srv1)
+        delete_force(self.ldb, sit1)
 
         ldb.add({
             "dn": usr1,
