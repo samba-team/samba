@@ -113,7 +113,7 @@ pwdLastSet: 0
         self.modify_ldif(mod)
 
     def newgroup(self, groupname, groupou=None, grouptype=None,
-                 description=None, mailaddress=None, notes=None):
+                 description=None, mailaddress=None, notes=None, sd=None):
         """Adds a new group with additional parameters
 
         :param groupname: Name of the new group
@@ -121,6 +121,7 @@ pwdLastSet: 0
         :param description: Description of the new group
         :param mailaddress: Email address of the new group
         :param notes: Notes of the new group
+        :param sd: security descriptor of the object
         """
 
         group_dn = "CN=%s,%s,%s" % (groupname, (groupou or "CN=Users"), self.domain_dn())
@@ -142,6 +143,9 @@ pwdLastSet: 0
 
         if notes is not None:
             ldbmessage["info"] = notes
+
+        if sd is not None:
+            ldbmessage["nTSecurityDescriptor"] = ndr_pack(sd)
 
         self.add(ldbmessage)
 
