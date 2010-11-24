@@ -132,7 +132,7 @@ backend:
 		if (winbindd_use_idmap_cache()) {
 			struct dom_sid null_sid;
 			ZERO_STRUCT(null_sid);
-			idmap_cache_set_sid2uid(&null_sid, gid);
+			idmap_cache_set_sid2gid(&null_sid, gid);
 		}
 		DEBUG(10, ("gid [%lu] not mapped\n", (unsigned long)gid));
 		return NT_STATUS_NONE_MAPPED;
@@ -258,7 +258,7 @@ backend:
 		DEBUG(10, ("idmap_backends_sid_to_unixid failed: %s\n",
 			   nt_errstr(ret)));
 		if (winbindd_use_idmap_cache()) {
-			idmap_cache_set_sid2uid(sid, -1);
+			idmap_cache_set_sid2gid(sid, -1);
 		}
 		return ret;
 	}
@@ -266,7 +266,7 @@ backend:
 	if (map.status != ID_MAPPED) {
 		DEBUG(10, ("sid [%s] is not mapped\n", sid_string_dbg(sid)));
 		if (winbindd_use_idmap_cache()) {
-			idmap_cache_set_sid2uid(sid, -1);
+			idmap_cache_set_sid2gid(sid, -1);
 		}
 		return NT_STATUS_NONE_MAPPED;
 	}
