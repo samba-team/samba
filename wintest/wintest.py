@@ -19,11 +19,13 @@ class wintest():
 
     def getvar(self, varname):
         '''return a substitution variable'''
+        if not varname in self.vars:
+            return None
         return self.vars[varname]
 
     def setwinvars(self, vm, prefix='WIN'):
         '''setup WIN_XX vars based on a vm name'''
-        for v in ['VM', 'HOSTNAME', 'USER', 'PASS', 'SNAPSHOT', 'BASEDN', 'REALM', 'DOMAIN']:
+        for v in ['VM', 'HOSTNAME', 'USER', 'PASS', 'SNAPSHOT', 'BASEDN', 'REALM', 'DOMAIN', 'IP']:
             vname = '%s_%s' % (vm, v)
             if vname in self.vars:
                 self.setvar("%s_%s" % (prefix,v), self.substitute("${%s}" % vname))
@@ -343,13 +345,32 @@ class wintest():
 
         child.expect([pexpect.EOF, pexpect.TIMEOUT], timeout=5)
         return True
-        
-    def open_telnet(self, hostname, username, password, retries=60, delay=5, set_time=False, set_ip=False, disable_firewall=True, run_tlntadmn=True):
+
+
+    def resolve_ip(self, hostname, retries=60, delay=5):
+        '''resolve an IP given a hostname, assuming NBT'''
+        while retries > 0:
+            child = self.pexpect_spawn("bin/nmblookup %s" % hostname)
+            i = child.expect(['\d+.\d+.\d+.\d+', "Lookup failed"])
+            if i == 0:
+                return child.after
+            retries -= 1
+            time.sleep(delay)
+        raise RuntimeError("Failed to resolve IP of %s" % hostname)
+
+
+    def open_telnet(self, hostname, username, password, retries=60, delay=5, set_time=False, set_ip=False,
+                    disable_firewall=True, run_tlntadmn=True):
         '''open a telnet connection to a windows server, return the pexpect child'''
         set_route = False
         set_dns = False
+        if self.getvar('WIN_IP'):
+            ip = self.getvar('WIN_IP')
+        else:
+            ip = self.resolve_ip(hostname)
+            self.setvar('WIN_IP', ip)
         while retries > 0:
-            child = self.pexpect_spawn("telnet " + hostname + " -l '" + username + "'")
+            child = self.pexpect_spawn("telnet " + ip + " -l '" + username + "'")
             i = child.expect(["Welcome to Microsoft Telnet Service",
                               "Denying new connections due to the limit on number of connections",
                               "No more connections are allowed to telnet server",
@@ -415,3 +436,14 @@ class wintest():
         child.expect("Password for")
         child.sendline(password)
         child.expect("Authenticated to Kerberos")
+
+
+    def get_domains(self):
+        '''return a dictionary of DNS domains and IPs for named.conf'''
+        ret = {}
+        for v in self.vars:
+            if v[-6:] == "_REALM":
+                base = v[:-6]
+                if base + '_IP' in self.vars:
+                    ret[self.vars[base + '_REALM']] = self.vars[base + '_IP']
+        return ret
