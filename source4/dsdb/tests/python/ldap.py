@@ -40,6 +40,7 @@ import unittest
 
 from samba.ndr import ndr_pack, ndr_unpack
 from samba.dcerpc import security
+from samba.tests import delete_force
 
 parser = optparse.OptionParser("ldap.py [options] <host>")
 sambaopts = options.SambaOptions(parser)
@@ -61,12 +62,6 @@ creds = credopts.get_credentials(lp)
 
 class BasicTests(unittest.TestCase):
 
-    def delete_force(self, ldb, dn):
-        try:
-            ldb.delete(dn)
-        except LdbError, (num, _):
-            self.assertEquals(num, ERR_NO_SUCH_OBJECT)
-
     def find_domain_sid(self):
         res = self.ldb.search(base=self.base_dn, expression="(objectClass=*)", scope=SCOPE_BASE)
         return ndr_unpack( security.dom_sid,res[0]["objectSid"][0])
@@ -82,29 +77,29 @@ class BasicTests(unittest.TestCase):
 
         print "baseDN: %s\n" % self.base_dn
 
-        self.delete_force(self.ldb, "cn=posixuser,cn=users," + self.base_dn)
-        self.delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
-        self.delete_force(self.ldb, "cn=ldaptestuser2,cn=users," + self.base_dn)
-        self.delete_force(self.ldb, "cn=ldaptestuser3,cn=users," + self.base_dn)
-        self.delete_force(self.ldb, "cn=ldaptestuser4,cn=ldaptestcontainer," + self.base_dn)
-        self.delete_force(self.ldb, "cn=ldaptestuser4,cn=ldaptestcontainer2," + self.base_dn)
-        self.delete_force(self.ldb, "cn=ldaptestuser5,cn=users," + self.base_dn)
-        self.delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
-        self.delete_force(self.ldb, "cn=ldaptestgroup2,cn=users," + self.base_dn)
-        self.delete_force(self.ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
-        self.delete_force(self.ldb, "cn=ldaptest2computer,cn=computers," + self.base_dn)
-        self.delete_force(self.ldb, "cn=ldaptestcomputer3,cn=computers," + self.base_dn)
-        self.delete_force(self.ldb, "cn=ldaptestutf8user èùéìòà,cn=users," + self.base_dn)
-        self.delete_force(self.ldb, "cn=ldaptestutf8user2  èùéìòà,cn=users," + self.base_dn)
-        self.delete_force(self.ldb, "cn=ldaptestcontainer," + self.base_dn)
-        self.delete_force(self.ldb, "cn=ldaptestcontainer2," + self.base_dn)
-        self.delete_force(self.ldb, "cn=parentguidtest,cn=users," + self.base_dn)
-        self.delete_force(self.ldb, "cn=parentguidtest,cn=testotherusers," + self.base_dn)
-        self.delete_force(self.ldb, "cn=testotherusers," + self.base_dn)
-        self.delete_force(self.ldb, "cn=ldaptestobject," + self.base_dn)
-        self.delete_force(self.ldb, "description=xyz,cn=users," + self.base_dn)
-        self.delete_force(self.ldb, "ou=testou,cn=users," + self.base_dn)
-        self.delete_force(self.ldb, "cn=testsecret,cn=system," + self.base_dn)
+        delete_force(self.ldb, "cn=posixuser,cn=users," + self.base_dn)
+        delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+        delete_force(self.ldb, "cn=ldaptestuser2,cn=users," + self.base_dn)
+        delete_force(self.ldb, "cn=ldaptestuser3,cn=users," + self.base_dn)
+        delete_force(self.ldb, "cn=ldaptestuser4,cn=ldaptestcontainer," + self.base_dn)
+        delete_force(self.ldb, "cn=ldaptestuser4,cn=ldaptestcontainer2," + self.base_dn)
+        delete_force(self.ldb, "cn=ldaptestuser5,cn=users," + self.base_dn)
+        delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+        delete_force(self.ldb, "cn=ldaptestgroup2,cn=users," + self.base_dn)
+        delete_force(self.ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
+        delete_force(self.ldb, "cn=ldaptest2computer,cn=computers," + self.base_dn)
+        delete_force(self.ldb, "cn=ldaptestcomputer3,cn=computers," + self.base_dn)
+        delete_force(self.ldb, "cn=ldaptestutf8user èùéìòà,cn=users," + self.base_dn)
+        delete_force(self.ldb, "cn=ldaptestutf8user2  èùéìòà,cn=users," + self.base_dn)
+        delete_force(self.ldb, "cn=ldaptestcontainer," + self.base_dn)
+        delete_force(self.ldb, "cn=ldaptestcontainer2," + self.base_dn)
+        delete_force(self.ldb, "cn=parentguidtest,cn=users," + self.base_dn)
+        delete_force(self.ldb, "cn=parentguidtest,cn=testotherusers," + self.base_dn)
+        delete_force(self.ldb, "cn=testotherusers," + self.base_dn)
+        delete_force(self.ldb, "cn=ldaptestobject," + self.base_dn)
+        delete_force(self.ldb, "description=xyz,cn=users," + self.base_dn)
+        delete_force(self.ldb, "ou=testou,cn=users," + self.base_dn)
+        delete_force(self.ldb, "cn=testsecret,cn=system," + self.base_dn)
 
     def test_objectclasses(self):
         """Test objectClass behaviour"""
@@ -177,7 +172,7 @@ class BasicTests(unittest.TestCase):
         self.assertTrue(len(res) == 1)
         self.assertEquals(res[0]["systemFlags"][0], "0")
 
-        self.delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+        delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
 
         self.ldb.add({
              "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
@@ -365,7 +360,7 @@ objectClass: bootableDevice
           "objectClass")
         ldb.modify(m)
 
-        self.delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+        delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
 
     def test_system_only(self):
         """Test systemOnly objects"""
@@ -387,8 +382,8 @@ objectClass: bootableDevice
         except LdbError, (num, _):
             self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
 
-        self.delete_force(self.ldb, "cn=ldaptestobject," + self.base_dn)
-        self.delete_force(self.ldb, "cn=testsecret,cn=system," + self.base_dn)
+        delete_force(self.ldb, "cn=ldaptestobject," + self.base_dn)
+        delete_force(self.ldb, "cn=testsecret,cn=system," + self.base_dn)
 
         try:
             self.ldb.add({
@@ -413,7 +408,7 @@ objectClass: bootableDevice
         except LdbError, (num, _):
             self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
 
-        self.delete_force(self.ldb, "cn=ldaptestcontainer," + self.base_dn)
+        delete_force(self.ldb, "cn=ldaptestcontainer," + self.base_dn)
 
         # Proof if DC SAM object has "isCriticalSystemObject" set
         res = self.ldb.search("", scope=SCOPE_BASE, attrs=["serverName"])
@@ -442,7 +437,7 @@ objectClass: bootableDevice
         except LdbError, (num, _):
             self.assertEquals(num, ERR_NO_SUCH_OBJECT)
 
-        self.delete_force(self.ldb, "cn=ldaptestgroup,cn=thisdoesnotexist123,"
+        delete_force(self.ldb, "cn=ldaptestgroup,cn=thisdoesnotexist123,"
           + self.base_dn)
 
         try:
@@ -453,7 +448,7 @@ objectClass: bootableDevice
         except LdbError, (num, _):
             self.assertEquals(num, ERR_NAMING_VIOLATION)
 
-        self.delete_force(self.ldb, "ou=testou,cn=users," + self.base_dn)
+        delete_force(self.ldb, "ou=testou,cn=users," + self.base_dn)
 
     def test_invalid_attribute(self):
         """Test invalid attributes on schema/objectclasses"""
@@ -488,7 +483,7 @@ objectClass: bootableDevice
         except LdbError, (num, _):
             self.assertEquals(num, ERR_NO_SUCH_ATTRIBUTE)
 
-        self.delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+        delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
 
         # attributes not in objectclasses and mandatory attributes missing test
         # Use here a non-SAM entry since it doesn't have special triggers
@@ -555,7 +550,7 @@ objectClass: bootableDevice
         except LdbError, (num, _):
             self.assertEquals(num, ERR_OBJECT_CLASS_VIOLATION)
 
-        self.delete_force(self.ldb, "cn=ldaptestobject," + self.base_dn)
+        delete_force(self.ldb, "cn=ldaptestobject," + self.base_dn)
 
     def test_single_valued_attributes(self):
         """Test single-valued attributes"""
@@ -600,7 +595,7 @@ objectClass: bootableDevice
         except LdbError, (num, _):
             self.assertEquals(num, ERR_ATTRIBUTE_OR_VALUE_EXISTS)
 
-        self.delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+        delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
 
     def test_attribute_ranges(self):
         """Test attribute ranges"""
@@ -655,7 +650,7 @@ objectClass: bootableDevice
         m["sn"] = MessageElement("x", FLAG_MOD_REPLACE, "sn")
         ldb.modify(m)
 
-        self.delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+        delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
 
     def test_empty_messages(self):
         """Test empty messages"""
@@ -676,7 +671,7 @@ objectClass: bootableDevice
         except LdbError, (num, _):
             self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
 
-        self.delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+        delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
 
     def test_empty_attributes(self):
         """Test empty attributes"""
@@ -721,7 +716,7 @@ objectClass: bootableDevice
         except LdbError, (num, _):
             self.assertEquals(num, ERR_NO_SUCH_ATTRIBUTE)
 
-        self.delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+        delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
 
     def test_instanceType(self):
         """Tests the 'instanceType' attribute"""
@@ -790,7 +785,7 @@ objectClass: bootableDevice
         except LdbError, (num, _):
             self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
 
-        self.delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+        delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
 
     def test_distinguished_name(self):
         """Tests the 'distinguishedName' attribute"""
@@ -870,7 +865,7 @@ objectClass: bootableDevice
         except LdbError, (num, _):
             self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
 
-        self.delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+        delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
 
     def test_rdn_name(self):
         """Tests the RDN"""
@@ -912,7 +907,7 @@ objectClass: bootableDevice
         except LdbError, (num, _):
             self.assertEquals(num, ERR_NAMING_VIOLATION)
 
-        self.delete_force(self.ldb, "description=xyz,cn=users," + self.base_dn)
+        delete_force(self.ldb, "description=xyz,cn=users," + self.base_dn)
 
         # a wrong "name" attribute is obviously tolerated
         self.ldb.add({
@@ -971,7 +966,7 @@ objectClass: bootableDevice
         except LdbError, (num, _):
             self.assertEquals(num, ERR_NOT_ALLOWED_ON_RDN)
 
-        self.delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+        delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
 
 
         # this test needs to be disabled until we really understand
@@ -979,16 +974,16 @@ objectClass: bootableDevice
     def DISABLED_test_largeRDN(self):
         """Testing large rDN (limit 64 characters)"""
         rdn = "CN=a012345678901234567890123456789012345678901234567890123456789012";
-        self.delete_force(self.ldb, "%s,%s" % (rdn, self.base_dn))
+        delete_force(self.ldb, "%s,%s" % (rdn, self.base_dn))
         ldif = """
 dn: %s,%s""" % (rdn,self.base_dn) + """
 objectClass: container
 """
         self.ldb.add_ldif(ldif)
-        self.delete_force(self.ldb, "%s,%s" % (rdn, self.base_dn))
+        delete_force(self.ldb, "%s,%s" % (rdn, self.base_dn))
 
         rdn = "CN=a0123456789012345678901234567890123456789012345678901234567890120";
-        self.delete_force(self.ldb, "%s,%s" % (rdn, self.base_dn))
+        delete_force(self.ldb, "%s,%s" % (rdn, self.base_dn))
         try:
             ldif = """
 dn: %s,%s""" % (rdn,self.base_dn) + """
@@ -998,7 +993,7 @@ objectClass: container
             self.fail()
         except LdbError, (num, _):
             self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
-        self.delete_force(self.ldb, "%s,%s" % (rdn, self.base_dn))
+        delete_force(self.ldb, "%s,%s" % (rdn, self.base_dn))
 
     def test_rename(self):
         """Tests the rename operation"""
@@ -1054,7 +1049,7 @@ objectClass: container
         except LdbError, (num, _):
             self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
 
-        self.delete_force(self.ldb, "cn=ldaptestuser3,cn=users," + self.base_dn)
+        delete_force(self.ldb, "cn=ldaptestuser3,cn=users," + self.base_dn)
 
         # Performs some "systemFlags" testing
 
@@ -1120,7 +1115,7 @@ objectClass: container
              "objectclass": "user" })
 
         ldb.rename("cn=ldaptestuser5,cn=users," + self.base_dn, "cn=ldaptestUSER5,cn=users," + self.base_dn)
-        self.delete_force(self.ldb, "cn=ldaptestuser5,cn=users," + self.base_dn)
+        delete_force(self.ldb, "cn=ldaptestuser5,cn=users," + self.base_dn)
         self.ldb.add({
              "dn": "cn=ldaptestuser5,cn=users," + self.base_dn,
              "objectclass": "user" })
@@ -1131,7 +1126,7 @@ objectClass: container
         res = ldb.search(expression="(&(cn=ldaptestuser5)(objectclass=user))")
         print "Found %u records" % len(res)
         self.assertEquals(len(res), 1, "Wrong number of hits for (&(cn=ldaptestuser5)(objectclass=user))")
-        self.delete_force(self.ldb, "cn=ldaptestuser5,cn=users," + self.base_dn)
+        delete_force(self.ldb, "cn=ldaptestuser5,cn=users," + self.base_dn)
 
     def test_objectGUID(self):
         """Test objectGUID behaviour"""
@@ -1162,7 +1157,7 @@ objectGUID: bd3480c9-58af-4cd8-92df-bc4a18b6e44d
         self.assertTrue("whenCreated" in res[0])
         self.assertTrue("whenChanged" in res[0])
 
-        self.delete_force(self.ldb, "cn=ldaptestcontainer," + self.base_dn)
+        delete_force(self.ldb, "cn=ldaptestcontainer," + self.base_dn)
 
         # All the following attributes are specificable on add operations
         self.ldb.add({
@@ -1183,7 +1178,7 @@ objectGUID: bd3480c9-58af-4cd8-92df-bc4a18b6e44d
         self.assertTrue("uSNChanged" in res[0])
         self.assertFalse(res[0]["uSNChanged"][0] == "1") # these are corrected
 
-        self.delete_force(self.ldb, "cn=ldaptestcontainer," + self.base_dn)
+        delete_force(self.ldb, "cn=ldaptestcontainer," + self.base_dn)
 
         # All this attributes are specificable on add operations
         self.ldb.add({
@@ -1218,7 +1213,7 @@ objectGUID: bd3480c9-58af-4cd8-92df-bc4a18b6e44d
         except LdbError, (num, _):
             self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
 
-        self.delete_force(self.ldb, "cn=ldaptestcontainer," + self.base_dn)
+        delete_force(self.ldb, "cn=ldaptestcontainer," + self.base_dn)
 
     def test_parentGUID(self):
         """Test parentGUID behaviour"""
@@ -1291,8 +1286,8 @@ objectGUID: bd3480c9-58af-4cd8-92df-bc4a18b6e44d
                           attrs=["parentGUID"]);
         self.assertEquals(res1[0]["objectGUID"], res2[0]["parentGUID"]);
 
-        self.delete_force(self.ldb, "cn=parentguidtest,cn=testotherusers," + self.base_dn)
-        self.delete_force(self.ldb, "cn=testotherusers," + self.base_dn)
+        delete_force(self.ldb, "cn=parentguidtest,cn=testotherusers," + self.base_dn)
+        delete_force(self.ldb, "cn=testotherusers," + self.base_dn)
 
     def test_groupType_int32(self):
         """Test groupType (int32) behaviour (should appear to be casted to a 32 bit signed integer before comparsion)"""
@@ -1381,14 +1376,14 @@ objectGUID: bd3480c9-58af-4cd8-92df-bc4a18b6e44d
                           attrs=[])
         self.assertTrue(len(res1) == 0)
 
-        self.delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+        delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
 
         ldb.add({
             "dn": "cn=ldaptestgroup,cn=users," + self.base_dn,
             "objectclass": "group",
             "member": "cn=ldaptestuser,cn=users," + self.base_dn})
 
-        self.delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+        delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
 
         # Make sure that the "member" attribute for "ldaptestuser" has been
         # removed
@@ -1397,7 +1392,7 @@ objectGUID: bd3480c9-58af-4cd8-92df-bc4a18b6e44d
         self.assertTrue(len(res) == 1)
         self.assertFalse("member" in res[0])
 
-        self.delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+        delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
 
     def test_wkguid(self):
         """Test Well known GUID behaviours (including DN+Binary)"""
@@ -1499,7 +1494,7 @@ objectGUID: bd3480c9-58af-4cd8-92df-bc4a18b6e44d
         self.assertEquals(int(res[0]["sAMAccountType"][0]), ATYPE_NORMAL_ACCOUNT);
         self.assertEquals(int(res[0]["userAccountControl"][0]), UF_NORMAL_ACCOUNT | UF_PASSWD_NOTREQD | UF_ACCOUNTDISABLE);
 
-        self.delete_force(self.ldb, "cn=ldaptestcomputer3,cn=computers," + self.base_dn)
+        delete_force(self.ldb, "cn=ldaptestcomputer3,cn=computers," + self.base_dn)
 
         print "Testing attribute or value exists behaviour"
         try:
@@ -1625,7 +1620,7 @@ servicePrincipalName: host/ldaptest2computer29
         self.assertEquals(len(res[0]["servicePrincipalName"]), 30)
             # self.assertEquals(res[0]["servicePrincipalName"][18], pos_11)
 
-        self.delete_force(self.ldb, "cn=ldaptestuser2,cn=users," + self.base_dn)
+        delete_force(self.ldb, "cn=ldaptestuser2,cn=users," + self.base_dn)
         ldb.add({
             "dn": "cn=ldaptestuser2,cn=useRs," + self.base_dn,
             "objectClass": "user",
@@ -1812,7 +1807,7 @@ servicePrincipalName: host/ldaptest2computer29
 
         ldb.delete("cn=ldaptestuser5,cn=users," + self.base_dn)
 
-        self.delete_force(ldb, "cn=ldaptestgroup2,cn=users," + self.base_dn)
+        delete_force(ldb, "cn=ldaptestgroup2,cn=users," + self.base_dn)
 
         ldb.rename("cn=ldaptestgroup,cn=users," + self.base_dn, "cn=ldaptestgroup2,cn=users," + self.base_dn)
 
@@ -2298,22 +2293,22 @@ changetype: modify
 add: objectClass
 objectClass: posixAccount"""% (self.base_dn))
 
-        self.delete_force(self.ldb, "cn=posixuser,cn=users," + self.base_dn)
-        self.delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
-        self.delete_force(self.ldb, "cn=ldaptestuser2,cn=users," + self.base_dn)
-        self.delete_force(self.ldb, "cn=ldaptestuser3,cn=users," + self.base_dn)
-        self.delete_force(self.ldb, "cn=ldaptestuser4,cn=ldaptestcontainer," + self.base_dn)
-        self.delete_force(self.ldb, "cn=ldaptestuser4,cn=ldaptestcontainer2," + self.base_dn)
-        self.delete_force(self.ldb, "cn=ldaptestuser5,cn=users," + self.base_dn)
-        self.delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
-        self.delete_force(self.ldb, "cn=ldaptestgroup2,cn=users," + self.base_dn)
-        self.delete_force(self.ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
-        self.delete_force(self.ldb, "cn=ldaptest2computer,cn=computers," + self.base_dn)
-        self.delete_force(self.ldb, "cn=ldaptestcomputer3,cn=computers," + self.base_dn)
-        self.delete_force(self.ldb, "cn=ldaptestutf8user èùéìòà,cn=users," + self.base_dn)
-        self.delete_force(self.ldb, "cn=ldaptestutf8user2  èùéìòà,cn=users," + self.base_dn)
-        self.delete_force(self.ldb, "cn=ldaptestcontainer," + self.base_dn)
-        self.delete_force(self.ldb, "cn=ldaptestcontainer2," + self.base_dn)
+        delete_force(self.ldb, "cn=posixuser,cn=users," + self.base_dn)
+        delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+        delete_force(self.ldb, "cn=ldaptestuser2,cn=users," + self.base_dn)
+        delete_force(self.ldb, "cn=ldaptestuser3,cn=users," + self.base_dn)
+        delete_force(self.ldb, "cn=ldaptestuser4,cn=ldaptestcontainer," + self.base_dn)
+        delete_force(self.ldb, "cn=ldaptestuser4,cn=ldaptestcontainer2," + self.base_dn)
+        delete_force(self.ldb, "cn=ldaptestuser5,cn=users," + self.base_dn)
+        delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+        delete_force(self.ldb, "cn=ldaptestgroup2,cn=users," + self.base_dn)
+        delete_force(self.ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
+        delete_force(self.ldb, "cn=ldaptest2computer,cn=computers," + self.base_dn)
+        delete_force(self.ldb, "cn=ldaptestcomputer3,cn=computers," + self.base_dn)
+        delete_force(self.ldb, "cn=ldaptestutf8user èùéìòà,cn=users," + self.base_dn)
+        delete_force(self.ldb, "cn=ldaptestutf8user2  èùéìòà,cn=users," + self.base_dn)
+        delete_force(self.ldb, "cn=ldaptestcontainer," + self.base_dn)
+        delete_force(self.ldb, "cn=ldaptestcontainer2," + self.base_dn)
 
     def test_security_descriptor_add(self):
         """ Testing ldb.add_ldif() for nTSecurityDescriptor """
@@ -2322,7 +2317,7 @@ objectClass: posixAccount"""% (self.base_dn))
         #
         # Test an empty security descriptor (naturally this shouldn't work)
         #
-        self.delete_force(self.ldb, user_dn)
+        delete_force(self.ldb, user_dn)
         try:
             self.ldb.add({ "dn": user_dn,
                            "objectClass": "user",
@@ -2332,7 +2327,7 @@ objectClass: posixAccount"""% (self.base_dn))
         except LdbError, (num, _):
             self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
         finally:
-            self.delete_force(self.ldb, user_dn)
+            delete_force(self.ldb, user_dn)
         #
         # Test add_ldif() with SDDL security descriptor input
         #
@@ -2349,7 +2344,7 @@ nTSecurityDescriptor: """ + sddl)
             desc_sddl = desc.as_sddl( self.domain_sid )
             self.assertEqual(desc_sddl, sddl)
         finally:
-            self.delete_force(self.ldb, user_dn)
+            delete_force(self.ldb, user_dn)
         #
         # Test add_ldif() with BASE64 security descriptor
         #
@@ -2369,7 +2364,7 @@ nTSecurityDescriptor:: """ + desc_base64)
             desc_sddl = desc.as_sddl(self.domain_sid)
             self.assertEqual(desc_sddl, sddl)
         finally:
-            self.delete_force(self.ldb, user_dn)
+            delete_force(self.ldb, user_dn)
 
     def test_security_descriptor_add_neg(self):
         """Test add_ldif() with BASE64 security descriptor input using WRONG domain SID
@@ -2377,7 +2372,7 @@ nTSecurityDescriptor:: """ + desc_base64)
         """
         user_name = "testdescriptoruser1"
         user_dn = "CN=%s,CN=Users,%s" % (user_name, self.base_dn)
-        self.delete_force(self.ldb, user_dn)
+        delete_force(self.ldb, user_dn)
         try:
             sddl = "O:DUG:DUD:PAI(A;;RPWP;;;AU)S:PAI"
             desc = security.descriptor.from_sddl(sddl, security.dom_sid('S-1-5-21'))
@@ -2390,7 +2385,7 @@ nTSecurityDescriptor:: """ + desc_base64)
             res = self.ldb.search(base=user_dn, attrs=["nTSecurityDescriptor"])
             self.assertTrue("nTSecurityDescriptor" in res[0])
         finally:
-            self.delete_force(self.ldb, user_dn)
+            delete_force(self.ldb, user_dn)
 
     def test_security_descriptor_modify(self):
         """ Testing ldb.modify_ldif() for nTSecurityDescriptor """
@@ -2399,7 +2394,7 @@ nTSecurityDescriptor:: """ + desc_base64)
         #
         # Test an empty security descriptor (naturally this shouldn't work)
         #
-        self.delete_force(self.ldb, user_dn)
+        delete_force(self.ldb, user_dn)
         self.ldb.add({ "dn": user_dn,
                        "objectClass": "user",
                        "sAMAccountName": user_name })
@@ -2434,7 +2429,7 @@ nTSecurityDescriptor:: """ + desc_base64)
         except LdbError, (num, _):
             self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
 
-        self.delete_force(self.ldb, user_dn)
+        delete_force(self.ldb, user_dn)
         #
         # Test modify_ldif() with SDDL security descriptor input
         # Add ACE to the original descriptor test
@@ -2463,7 +2458,7 @@ nTSecurityDescriptor: """ + sddl
             desc_sddl = desc.as_sddl(self.domain_sid)
             self.assertEqual(desc_sddl, sddl)
         finally:
-            self.delete_force(self.ldb, user_dn)
+            delete_force(self.ldb, user_dn)
         #
         # Test modify_ldif() with SDDL security descriptor input
         # New desctiptor test
@@ -2488,7 +2483,7 @@ nTSecurityDescriptor: """ + sddl
             desc_sddl = desc.as_sddl(self.domain_sid)
             self.assertEqual(desc_sddl, sddl)
         finally:
-            self.delete_force(self.ldb, user_dn)
+            delete_force(self.ldb, user_dn)
         #
         # Test modify_ldif() with BASE64 security descriptor input
         # Add ACE to the original descriptor test
@@ -2519,13 +2514,13 @@ nTSecurityDescriptor:: """ + desc_base64
             desc_sddl = desc.as_sddl(self.domain_sid)
             self.assertEqual(desc_sddl, sddl)
         finally:
-            self.delete_force(self.ldb, user_dn)
+            delete_force(self.ldb, user_dn)
         #
         # Test modify_ldif() with BASE64 security descriptor input
         # New descriptor test
         #
         try:
-            self.delete_force(self.ldb, user_dn)
+            delete_force(self.ldb, user_dn)
             self.ldb.add_ldif("""
 dn: """ + user_dn + """
 objectclass: user
@@ -2547,7 +2542,7 @@ nTSecurityDescriptor:: """ + desc_base64
             desc_sddl = desc.as_sddl(self.domain_sid)
             self.assertEqual(desc_sddl, sddl)
         finally:
-            self.delete_force(self.ldb, user_dn)
+            delete_force(self.ldb, user_dn)
 
     def test_dsheuristics(self):
         """Tests the 'dSHeuristics' attribute"""
