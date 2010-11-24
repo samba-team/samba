@@ -145,6 +145,7 @@ NET_API_STATUS libnetapi_net_init(struct libnetapi_ctx **context)
 }
 
 /****************************************************************
+ Return the static libnetapi context
 ****************************************************************/
 
 NET_API_STATUS libnetapi_getctx(struct libnetapi_ctx **ctx)
@@ -158,6 +159,7 @@ NET_API_STATUS libnetapi_getctx(struct libnetapi_ctx **ctx)
 }
 
 /****************************************************************
+ Free the static libnetapi context
 ****************************************************************/
 
 NET_API_STATUS libnetapi_free(struct libnetapi_ctx *ctx)
@@ -194,6 +196,7 @@ NET_API_STATUS libnetapi_free(struct libnetapi_ctx *ctx)
 }
 
 /****************************************************************
+ Override the current log level for libnetapi
 ****************************************************************/
 
 NET_API_STATUS libnetapi_set_debuglevel(struct libnetapi_ctx *ctx,
