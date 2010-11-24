@@ -328,6 +328,9 @@ class wintest():
         connected, but don't use DHCP, and force the DNS server to our
         DNS server.  This allows DNS updates to run"""
         self.get_ipconfig(child)
+        if self.getvar("WIN_IPV4_ADDRESS") != self.getvar("WIN_IP"):
+            raise RuntimeError("ipconfig address %s != nmblookup address %s" % (self.getvar("WIN_IPV4_ADDRESS"),
+                                                                                self.getvar("WIN_IP")))
         child.sendline('netsh')
         child.expect('netsh>')
         child.sendline('offline')

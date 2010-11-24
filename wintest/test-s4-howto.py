@@ -30,7 +30,8 @@ def provision_s4(t, func_level="2008"):
     '''provision s4 as a DC'''
     t.info('Provisioning s4')
     t.chdir('${PREFIX}')
-    t.del_files(["var", "etc", "private"])
+    t.del_files(["var", "private"])
+    t.run_cmd("rm -f etc/smb.conf")
     options=' --function-level=%s -d${DEBUGLEVEL}' % func_level
     options += ' --option=interfaces=${INTERFACE}'
     options += ' --host-ip=${INTERFACE_IP} --host-ip6="::"'
@@ -242,7 +243,6 @@ def run_winjoin(t, vm):
     child.expect("C:")
 
 def test_winjoin(t, vm):
-    t.setwinvars(vm)
     t.info("Checking the windows join is OK")
     t.chdir('${PREFIX}')
     t.port_wait("${WIN_IP}", 139)
@@ -298,7 +298,6 @@ SafeModeAdminPassword=${PASSWORD1}
 
 def test_dcpromo(t, vm):
     '''test that dcpromo worked'''
-    t.setwinvars(vm)
     t.info("Checking the dcpromo join is OK")
     t.chdir('${PREFIX}')
     t.port_wait("${WIN_IP}", 139)
@@ -307,12 +306,12 @@ def test_dcpromo(t, vm):
     t.cmd_contains('bin/smbclient -L ${WIN_HOSTNAME}.${LCREALM} -Utestallowed@${LCREALM}%${PASSWORD1}', ["C$", "IPC$", "Sharename"])
 
     t.cmd_contains("bin/samba-tool drs kcc ${HOSTNAME} -Uadministrator@${LCREALM}%${PASSWORD1}", ['Consistency check', 'successful'])
-    t.cmd_contains("bin/samba-tool drs kcc ${WIN_HOSTNAME} -Uadministrator@${LCREALM}%${PASSWORD1}", ['Consistency check', 'successful'])
+    t.cmd_contains("bin/samba-tool drs kcc ${WIN_HOSTNAME}.${LCREALM} -Uadministrator@${LCREALM}%${PASSWORD1}", ['Consistency check', 'successful'])
 
     t.kinit("administrator@${REALM}", "${PASSWORD1}")
     for nc in [ '${BASEDN}', 'CN=Configuration,${BASEDN}', 'CN=Schema,CN=Configuration,${BASEDN}' ]:
-        t.cmd_contains("bin/samba-tool drs replicate ${HOSTNAME} ${WIN_HOSTNAME} %s -k yes" % nc, ["was successful"])
-        t.cmd_contains("bin/samba-tool drs replicate ${WIN_HOSTNAME} ${HOSTNAME} %s -k yes" % nc, ["was successful"])
+        t.cmd_contains("bin/samba-tool drs replicate ${HOSTNAME} ${WIN_HOSTNAME}.${LCREALM} %s -k yes" % nc, ["was successful"])
+        t.cmd_contains("bin/samba-tool drs replicate ${WIN_HOSTNAME}.${LCREALM} ${HOSTNAME} %s -k yes" % nc, ["was successful"])
 
     t.cmd_contains("bin/samba-tool drs showrepl ${HOSTNAME} -k yes",
                  [ "INBOUND NEIGHBORS",
@@ -332,7 +331,7 @@ def test_dcpromo(t, vm):
                    ordered=True,
                    regex=True)
 
-    t.cmd_contains("bin/samba-tool drs showrepl ${WIN_HOSTNAME} -k yes",
+    t.cmd_contains("bin/samba-tool drs showrepl ${WIN_HOSTNAME}.${LCREALM} -k yes",
                  [ "INBOUND NEIGHBORS",
                    "${BASEDN}",
                    "Last attempt .* was successful",
@@ -367,8 +366,8 @@ def test_dcpromo(t, vm):
 
     t.info("Checking if new users propogate to windows")
     t.run_cmd('bin/samba-tool newuser test2 ${PASSWORD2}')
-    t.retry_cmd("bin/smbclient -L ${WIN_HOSTNAME} -Utest2%${PASSWORD2} -k no", ['Sharename', 'Remote IPC'])
-    t.retry_cmd("bin/smbclient -L ${WIN_HOSTNAME} -Utest2%${PASSWORD2} -k yes", ['Sharename', 'Remote IPC'])
+    t.retry_cmd("bin/smbclient -L ${WIN_HOSTNAME}.${LCREALM} -Utest2%${PASSWORD2} -k no", ['Sharename', 'Remote IPC'])
+    t.retry_cmd("bin/smbclient -L ${WIN_HOSTNAME}.${LCREALM} -Utest2%${PASSWORD2} -k yes", ['Sharename', 'Remote IPC'])
 
     t.info("Checking if new users on windows propogate to samba")
     child.sendline("net user test3 ${PASSWORD3} /add")
@@ -387,9 +386,9 @@ def test_dcpromo(t, vm):
     child.sendline("net user test3 /del")
     child.expect("The command completed successfully")
 
-    t.retry_cmd("bin/smbclient -L ${WIN_HOSTNAME} -Utest2%${PASSWORD2} -k no", ['LOGON_FAILURE'])
+    t.retry_cmd("bin/smbclient -L ${WIN_HOSTNAME}.${LCREALM} -Utest2%${PASSWORD2} -k no", ['LOGON_FAILURE'])
     t.retry_cmd("bin/smbclient -L ${HOSTNAME} -Utest3%${PASSWORD3} -k no", ['LOGON_FAILURE'])
-    t.retry_cmd("bin/smbclient -L ${WIN_HOSTNAME} -Utest2%${PASSWORD2} -k yes", ['LOGON_FAILURE'])
+    t.retry_cmd("bin/smbclient -L ${WIN_HOSTNAME}.${LCREALM} -Utest2%${PASSWORD2} -k yes", ['LOGON_FAILURE'])
     t.retry_cmd("bin/smbclient -L ${HOSTNAME} -Utest3%${PASSWORD3} -k yes", ['LOGON_FAILURE'])
     t.vm_poweroff("${WIN_VM}")
 
@@ -440,7 +439,6 @@ RebootOnCompletion=No
 
 def test_dcpromo_rodc(t, vm):
     '''test the RODC dcpromo worked'''
-    t.setwinvars(vm)
     t.info("Checking the w2k8 RODC join is OK")
     t.chdir('${PREFIX}')
     t.port_wait("${WIN_IP}", 139)
@@ -462,13 +460,13 @@ def test_dcpromo_rodc(t, vm):
 
     t.info("Checking if new users are available on windows")
     t.run_cmd('bin/samba-tool newuser test2 ${PASSWORD2}')
-    t.retry_cmd("bin/smbclient -L ${WIN_HOSTNAME} -Utest2%${PASSWORD2} -k yes", ['Sharename', 'Remote IPC'])
-    t.retry_cmd("bin/smbclient -L ${WIN_HOSTNAME} -Utest2%${PASSWORD2} -k no", ['LOGON_FAILURE'])
-    t.retry_cmd("bin/samba-tool drs replicate ${WIN_HOSTNAME} ${HOSTNAME} ${BASEDN} -k yes", ["was successful"])
-    t.retry_cmd("bin/smbclient -L ${WIN_HOSTNAME} -Utest2%${PASSWORD2} -k no", ['Sharename', 'Remote IPC'])
+    t.retry_cmd("bin/smbclient -L ${WIN_HOSTNAME}.${LCREALM} -Utest2%${PASSWORD2} -k yes", ['Sharename', 'Remote IPC'])
+    t.retry_cmd("bin/smbclient -L ${WIN_HOSTNAME}.${LCREALM} -Utest2%${PASSWORD2} -k no", ['LOGON_FAILURE'])
+    t.retry_cmd("bin/samba-tool drs replicate ${WIN_HOSTNAME}.${LCREALM} ${HOSTNAME} ${BASEDN} -k yes", ["was successful"])
+    t.retry_cmd("bin/smbclient -L ${WIN_HOSTNAME}.${LCREALM} -Utest2%${PASSWORD2} -k no", ['Sharename', 'Remote IPC'])
     t.run_cmd('bin/samba-tool user delete test2 -Uadministrator@${LCREALM}%${PASSWORD1}')
-    t.retry_cmd("bin/smbclient -L ${WIN_HOSTNAME} -Utest2%${PASSWORD2} -k yes", ['LOGON_FAILURE'])
-    t.retry_cmd("bin/smbclient -L ${WIN_HOSTNAME} -Utest2%${PASSWORD2} -k no", ['LOGON_FAILURE'])
+    t.retry_cmd("bin/smbclient -L ${WIN_HOSTNAME}.${LCREALM} -Utest2%${PASSWORD2} -k yes", ['LOGON_FAILURE'])
+    t.retry_cmd("bin/smbclient -L ${WIN_HOSTNAME}.${LCREALM} -Utest2%${PASSWORD2} -k no", ['LOGON_FAILURE'])
     t.vm_poweroff("${WIN_VM}")
 
 
@@ -481,17 +479,16 @@ def join_as_dc(t, vm):
     t.vm_poweroff("${WIN_VM}", checkfail=False)
     t.vm_restore("${WIN_VM}", "${WIN_SNAPSHOT}")
     rndc_cmd(t, 'flush')
-    t.run_cmd("rm -rf etc private")
+    t.run_cmd("rm -rf etc/smb.conf private")
     child = t.open_telnet("${WIN_HOSTNAME}", "${WIN_DOMAIN}\\administrator", "${WIN_PASS}", set_time=True)
     t.get_ipconfig(child)
-    t.retry_cmd("bin/samba-tool drs showrepl ${WIN_HOSTNAME} -Uadministrator%${WIN_PASS}", ['INBOUND NEIGHBORS'] )
+    t.retry_cmd("bin/samba-tool drs showrepl ${WIN_HOSTNAME}.${WIN_REALM} -Uadministrator%${WIN_PASS}", ['INBOUND NEIGHBORS'] )
     t.run_cmd('bin/samba-tool join ${WIN_REALM} DC -Uadministrator%${WIN_PASS} -d${DEBUGLEVEL} --option=interfaces=${INTERFACE}')
-    t.run_cmd('bin/samba-tool drs kcc ${WIN_HOSTNAME} -Uadministrator@${WIN_REALM}%${WIN_PASS}')
+    t.run_cmd('bin/samba-tool drs kcc ${WIN_HOSTNAME}.${WIN_REALM} -Uadministrator@${WIN_REALM}%${WIN_PASS}')
 
 
 def test_join_as_dc(t, vm):
     '''test the join of a windows domain as a DC'''
-    t.setwinvars(vm)
     t.info("Checking the DC join is OK")
     t.chdir('${PREFIX}')
     t.retry_cmd('bin/smbclient -L ${HOSTNAME}.${WIN_REALM} -Uadministrator@${WIN_REALM}%${WIN_PASS}', ["C$", "IPC$", "Sharename"])
@@ -499,13 +496,13 @@ def test_join_as_dc(t, vm):
     child = t.open_telnet("${WIN_HOSTNAME}", "${WIN_DOMAIN}\\administrator", "${WIN_PASS}", set_time=True)
 
     t.info("Forcing kcc runs, and replication")
-    t.run_cmd('bin/samba-tool drs kcc ${WIN_HOSTNAME} -Uadministrator@${WIN_REALM}%${WIN_PASS}')
+    t.run_cmd('bin/samba-tool drs kcc ${WIN_HOSTNAME}.${WIN_REALM} -Uadministrator@${WIN_REALM}%${WIN_PASS}')
     t.run_cmd('bin/samba-tool drs kcc ${HOSTNAME} -Uadministrator@${WIN_REALM}%${WIN_PASS}')
 
     t.kinit("administrator@${WIN_REALM}", "${WIN_PASS}")
     for nc in [ '${WIN_BASEDN}', 'CN=Configuration,${WIN_BASEDN}', 'CN=Schema,CN=Configuration,${WIN_BASEDN}' ]:
-        t.cmd_contains("bin/samba-tool drs replicate ${HOSTNAME} ${WIN_HOSTNAME} %s -k yes" % nc, ["was successful"])
-        t.cmd_contains("bin/samba-tool drs replicate ${WIN_HOSTNAME} ${HOSTNAME} %s -k yes" % nc, ["was successful"])
+        t.cmd_contains("bin/samba-tool drs replicate ${HOSTNAME} ${WIN_HOSTNAME}.${WIN_REALM} %s -k yes" % nc, ["was successful"])
+        t.cmd_contains("bin/samba-tool drs replicate ${WIN_HOSTNAME}.${WIN_REALM} ${HOSTNAME} %s -k yes" % nc, ["was successful"])
 
     child.sendline("net use t: \\\\${HOSTNAME}.${WIN_REALM}\\test")
     child.expect("The command completed successfully")
@@ -521,8 +518,8 @@ def test_join_as_dc(t, vm):
 
     t.info("Checking if new users propogate to windows")
     t.run_cmd('bin/samba-tool newuser test2 ${PASSWORD2}')
-    t.retry_cmd("bin/smbclient -L ${WIN_HOSTNAME} -Utest2%${PASSWORD2} -k no", ['Sharename', 'Remote IPC'])
-    t.retry_cmd("bin/smbclient -L ${WIN_HOSTNAME} -Utest2%${PASSWORD2} -k yes", ['Sharename', 'Remote IPC'])
+    t.retry_cmd("bin/smbclient -L ${WIN_HOSTNAME}.${WIN_REALM} -Utest2%${PASSWORD2} -k no", ['Sharename', 'Remote IPC'])
+    t.retry_cmd("bin/smbclient -L ${WIN_HOSTNAME}.${WIN_REALM} -Utest2%${PASSWORD2} -k yes", ['Sharename', 'Remote IPC'])
 
     t.info("Checking if new users on windows propogate to samba")
     child.sendline("net user test3 ${PASSWORD3} /add")
@@ -535,9 +532,9 @@ def test_join_as_dc(t, vm):
     child.sendline("net user test3 /del")
     child.expect("The command completed successfully")
 
-    t.retry_cmd("bin/smbclient -L ${WIN_HOSTNAME} -Utest2%${PASSWORD2} -k no", ['LOGON_FAILURE'])
+    t.retry_cmd("bin/smbclient -L ${WIN_HOSTNAME}.${WIN_REALM} -Utest2%${PASSWORD2} -k no", ['LOGON_FAILURE'])
     t.retry_cmd("bin/smbclient -L ${HOSTNAME} -Utest3%${PASSWORD3} -k no", ['LOGON_FAILURE'])
-    t.retry_cmd("bin/smbclient -L ${WIN_HOSTNAME} -Utest2%${PASSWORD2} -k yes", ['LOGON_FAILURE'])
+    t.retry_cmd("bin/smbclient -L ${WIN_HOSTNAME}.${WIN_REALM} -Utest2%${PASSWORD2} -k yes", ['LOGON_FAILURE'])
     t.retry_cmd("bin/smbclient -L ${HOSTNAME} -Utest3%${PASSWORD3} -k yes", ['LOGON_FAILURE'])
     t.vm_poweroff("${WIN_VM}")
 
@@ -551,17 +548,16 @@ def join_as_rodc(t, vm):
     t.vm_poweroff("${WIN_VM}", checkfail=False)
     t.vm_restore("${WIN_VM}", "${WIN_SNAPSHOT}")
     rndc_cmd(t, 'flush')
-    t.run_cmd("rm -rf etc private")
+    t.run_cmd("rm -rf etc/smb.conf private")
     child = t.open_telnet("${WIN_HOSTNAME}", "${WIN_DOMAIN}\\administrator", "${WIN_PASS}", set_time=True)
     t.get_ipconfig(child)
-    t.retry_cmd("bin/samba-tool drs showrepl ${WIN_HOSTNAME} -Uadministrator%${WIN_PASS}", ['INBOUND NEIGHBORS'] )
+    t.retry_cmd("bin/samba-tool drs showrepl ${WIN_HOSTNAME}.${WIN_REALM} -Uadministrator%${WIN_PASS}", ['INBOUND NEIGHBORS'] )
     t.run_cmd('bin/samba-tool join ${WIN_REALM} RODC -Uadministrator%${WIN_PASS} -d${DEBUGLEVEL} --option=interfaces=${INTERFACE}')
-    t.run_cmd('bin/samba-tool drs kcc ${WIN_HOSTNAME} -Uadministrator@${WIN_REALM}%${WIN_PASS}')
+    t.run_cmd('bin/samba-tool drs kcc ${WIN_HOSTNAME}.${WIN_REALM} -Uadministrator@${WIN_REALM}%${WIN_PASS}')
 
 
 def test_join_as_rodc(t, vm):
     '''test a windows domain RODC join'''
-    t.setwinvars(vm)
     t.info("Checking the RODC join is OK")
     t.chdir('${PREFIX}')
     t.retry_cmd('bin/smbclient -L ${HOSTNAME}.${WIN_REALM} -Uadministrator@${WIN_REALM}%${WIN_PASS}', ["C$", "IPC$", "Sharename"])
@@ -570,11 +566,11 @@ def test_join_as_rodc(t, vm):
 
     t.info("Forcing kcc runs, and replication")
     t.run_cmd('bin/samba-tool drs kcc ${HOSTNAME} -Uadministrator@${WIN_REALM}%${WIN_PASS}')
-    t.run_cmd('bin/samba-tool drs kcc ${WIN_HOSTNAME} -Uadministrator@${WIN_REALM}%${WIN_PASS}')
+    t.run_cmd('bin/samba-tool drs kcc ${WIN_HOSTNAME}.${WIN_REALM} -Uadministrator@${WIN_REALM}%${WIN_PASS}')
 
     t.kinit("administrator@${WIN_REALM}", "${WIN_PASS}")
     for nc in [ '${WIN_BASEDN}', 'CN=Configuration,${WIN_BASEDN}', 'CN=Schema,CN=Configuration,${WIN_BASEDN}' ]:
-        t.cmd_contains("bin/samba-tool drs replicate ${HOSTNAME} ${WIN_HOSTNAME} %s -k yes" % nc, ["was successful"])
+        t.cmd_contains("bin/samba-tool drs replicate ${HOSTNAME} ${WIN_HOSTNAME}.${WIN_REALM} %s -k yes" % nc, ["was successful"])
 
     child.sendline("net use t: \\\\${HOSTNAME}.${WIN_REALM}\\test")
     child.expect("The command completed successfully")
