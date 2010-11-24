@@ -24,6 +24,7 @@ from ldb import Message, MessageElement, Dn
 from ldb import FLAG_MOD_REPLACE
 from samba.samdb import SamDB
 from samba.dsdb import DS_DOMAIN_FUNCTION_2003
+from samba.tests import delete_force
 
 from subunit.run import SubunitTestRunner
 import unittest
@@ -48,12 +49,6 @@ creds = credopts.get_credentials(lp)
 
 
 class SchemaTests(unittest.TestCase):
-
-    def delete_force(self, ldb, dn):
-        try:
-            ldb.delete(dn)
-        except LdbError, (num, _):
-            self.assertEquals(num, ERR_NO_SUCH_OBJECT)
 
     def setUp(self):
         super(SchemaTests, self).setUp()
@@ -192,7 +187,7 @@ name: """ + object_name + """
         res = self.ldb.search("cn=%s,cn=Users,%s" % (object_name, self.base_dn), scope=SCOPE_BASE, attrs=["*"])
         self.assertEquals(len(res), 1)
         # Delete the object
-        self.delete_force(self.ldb, "cn=%s,cn=Users,%s" % (object_name, self.base_dn))
+        delete_force(self.ldb, "cn=%s,cn=Users,%s" % (object_name, self.base_dn))
 
     def test_subClassOf(self):
         """ Testing usage of custom child schamaClass
@@ -248,7 +243,7 @@ instanceType: 4
         res = self.ldb.search("ou=%s,%s" % (object_name, self.base_dn), scope=SCOPE_BASE, attrs=["*"])
         self.assertEquals(len(res), 1)
         # Delete the object
-        self.delete_force(self.ldb, "ou=%s,%s" % (object_name, self.base_dn))
+        delete_force(self.ldb, "ou=%s,%s" % (object_name, self.base_dn))
 
 
 class SchemaTests_msDS_IntId(unittest.TestCase):
