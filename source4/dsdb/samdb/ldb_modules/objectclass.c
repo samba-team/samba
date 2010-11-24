@@ -319,14 +319,18 @@ static int fix_dn(struct ldb_context *ldb,
 	char *upper_rdn_attr;
 	const struct ldb_val *rdn_val;
 
-	/* Fix up the DN to be in the standard form, taking particular care to match the parent DN */
+	/* Fix up the DN to be in the standard form, taking particular care to
+	 * match the parent DN */
 	*fixed_dn = ldb_dn_copy(mem_ctx, parent_dn);
+	if (*fixed_dn == NULL) {
+		return ldb_oom(ldb);
+	}
 
 	/* We need the attribute name in upper case */
 	upper_rdn_attr = strupper_talloc(*fixed_dn, 
 					 ldb_dn_get_rdn_name(newdn));
-	if (!upper_rdn_attr) {
-		return ldb_operr(ldb);
+	if (upper_rdn_attr == NULL) {
+		return ldb_oom(ldb);
 	}
 
 	/* Create a new child */
@@ -397,7 +401,7 @@ static int objectclass_add(struct ldb_module *module, struct ldb_request *req)
 			value = talloc_asprintf(req, "ldap://%s/%s", val->data,
 						ldb_dn_get_linearized(req->op.add.message->dn));
 			if (value == NULL) {
-				return ldb_oom(ldb);
+				return ldb_module_oom(module);
 			}
 
 			return ldb_module_send_referral(req, value);
@@ -417,7 +421,7 @@ static int objectclass_add(struct ldb_module *module, struct ldb_request *req)
 	/* get copy of parent DN */
 	parent_dn = ldb_dn_get_parent(ac, ac->req->op.add.message->dn);
 	if (parent_dn == NULL) {
-		return ldb_oom(ldb);
+		return ldb_operr(ldb);
 	}
 
 	ret = ldb_build_search_req(&search_req, ldb,
@@ -477,6 +481,9 @@ static int objectclass_do_add(struct oc_context *ac)
 	ldb = ldb_module_get_ctx(ac->module);
 
 	msg = ldb_msg_copy_shallow(ac, ac->req->op.add.message);
+	if (msg == NULL) {
+		return ldb_module_oom(ac->module);
+	}
 
 	/* Check if we have a valid parent - this check is needed since
 	 * we don't get a LDB_ERR_NO_SUCH_OBJECT error. */
@@ -511,7 +518,7 @@ static int objectclass_do_add(struct oc_context *ac)
 
 	mem_ctx = talloc_new(ac);
 	if (mem_ctx == NULL) {
-		return ldb_oom(ldb);
+		return ldb_module_oom(ac->module);
 	}
 
 	if (ac->schema != NULL) {
@@ -563,7 +570,7 @@ static int objectclass_do_add(struct oc_context *ac)
 			value = talloc_strdup(msg, current->objectclass->lDAPDisplayName);
 			if (value == NULL) {
 				talloc_free(mem_ctx);
-				return ldb_oom(ldb);
+				return ldb_module_oom(ac->module);
 			}
 
 			ret = ldb_msg_add_string(msg, "objectClass", value);
@@ -676,7 +683,7 @@ static int objectclass_do_add(struct oc_context *ac)
 						      objectclass->defaultObjectCategory);
 			}
 			if (value == NULL) {
-				return ldb_oom(ldb);
+				return ldb_module_oom(ac->module);
 			}
 
 			ret = ldb_msg_add_string(msg, "objectCategory", value);
@@ -829,7 +836,7 @@ static int objectclass_modify(struct ldb_module *module, struct ldb_request *req
 
 	msg = ldb_msg_copy_shallow(ac, req->op.mod.message);
 	if (msg == NULL) {
-		return ldb_operr(ldb);
+		return ldb_module_oom(ac->module);
 	}
 
 	/* For now change everything except the objectclasses */
@@ -965,14 +972,14 @@ static int objectclass_do_mod(struct oc_context *ac)
 	/* use a new message structure */
 	msg = ldb_msg_new(ac);
 	if (msg == NULL) {
-		return ldb_oom(ldb);
+		return ldb_module_oom(ac->module);
 	}
 
 	msg->dn = ac->req->op.mod.message->dn;
 
 	mem_ctx = talloc_new(ac);
 	if (mem_ctx == NULL) {
-		return ldb_oom(ldb);
+		return ldb_module_oom(ac->module);
 	}
 
 	/* We've to walk over all "objectClass" message elements */
@@ -1006,7 +1013,7 @@ static int objectclass_do_mod(struct oc_context *ac)
 						      oc_el_entry->num_values + 1);
 				if (vals == NULL) {
 					talloc_free(mem_ctx);
-					return ldb_oom(ldb);
+					return ldb_module_oom(ac->module);
 				}
 				oc_el_entry->values = vals;
 				oc_el_entry->values[oc_el_entry->num_values] =
@@ -1053,6 +1060,7 @@ static int objectclass_do_mod(struct oc_context *ac)
 			objectclass = get_last_structural_class(ac->schema,
 								oc_el_entry);
 			if (objectclass == NULL) {
+				/* no structural objectclass? */
 				talloc_free(mem_ctx);
 				return ldb_operr(ldb);
 			}
@@ -1124,7 +1132,7 @@ static int objectclass_do_mod(struct oc_context *ac)
 					LDB_FLAG_MOD_REPLACE, &oc_el_change);
 		if (ret != LDB_SUCCESS) {
 			talloc_free(mem_ctx);
-			return ldb_oom(ldb);
+			return ret;
 		}
 
 		/* Move from the linked list back into an ldb msg */
@@ -1133,7 +1141,7 @@ static int objectclass_do_mod(struct oc_context *ac)
 					      current->objectclass->lDAPDisplayName);
 			if (value == NULL) {
 				talloc_free(mem_ctx);
-				return ldb_oom(ldb);
+				return ldb_module_oom(ac->module);
 			}
 			ret = ldb_msg_add_string(msg, "objectClass", value);
 			if (ret != LDB_SUCCESS) {
