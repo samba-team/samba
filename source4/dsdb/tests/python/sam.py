@@ -44,6 +44,7 @@ import unittest
 
 from samba.ndr import ndr_unpack
 from samba.dcerpc import security
+from samba.tests import delete_force
 
 parser = optparse.OptionParser("sam.py [options] <host>")
 sambaopts = options.SambaOptions(parser)
@@ -65,12 +66,6 @@ creds = credopts.get_credentials(lp)
 
 class SamTests(unittest.TestCase):
 
-    def delete_force(self, ldb, dn):
-        try:
-            ldb.delete(dn)
-        except LdbError, (num, _):
-            self.assertEquals(num, ERR_NO_SUCH_OBJECT)
-
     def find_domain_sid(self):
         res = self.ldb.search(base=self.base_dn, expression="(objectClass=*)", scope=SCOPE_BASE)
         return ndr_unpack( security.dom_sid,res[0]["objectSid"][0])
@@ -83,12 +78,12 @@ class SamTests(unittest.TestCase):
 
         print "baseDN: %s\n" % self.base_dn
 
-        self.delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
-        self.delete_force(self.ldb, "cn=ldaptestuser2,cn=users," + self.base_dn)
-        self.delete_force(self.ldb, "cn=ldaptest\,specialuser,cn=users," + self.base_dn)
-        self.delete_force(self.ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
-        self.delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
-        self.delete_force(self.ldb, "cn=ldaptestgroup2,cn=users," + self.base_dn)
+        delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+        delete_force(self.ldb, "cn=ldaptestuser2,cn=users," + self.base_dn)
+        delete_force(self.ldb, "cn=ldaptest\,specialuser,cn=users," + self.base_dn)
+        delete_force(self.ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
+        delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+        delete_force(self.ldb, "cn=ldaptestgroup2,cn=users," + self.base_dn)
 
     def test_users_groups(self):
         """This tests the SAM users and groups behaviour"""
@@ -123,7 +118,7 @@ class SamTests(unittest.TestCase):
             self.fail()
         except LdbError, (num, _):
             self.assertEquals(num, ERR_ENTRY_ALREADY_EXISTS)
-        self.delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+        delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
 
         # Try to create a user with an invalid account name
         try:
@@ -134,7 +129,7 @@ class SamTests(unittest.TestCase):
             self.fail()
         except LdbError, (num, _):
             self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
-        self.delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+        delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
 
         # Try to create a user with an invalid primary group
         try:
@@ -145,7 +140,7 @@ class SamTests(unittest.TestCase):
             self.fail()
         except LdbError, (num, _):
             self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
-        self.delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+        delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
 
         # Try to Create a user with a valid primary group
         try:
@@ -156,7 +151,7 @@ class SamTests(unittest.TestCase):
             self.fail()
         except LdbError, (num, _):
             self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
-        self.delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+        delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
 
         # Test to see how we should behave when the user account doesn't
         # exist
@@ -192,7 +187,7 @@ class SamTests(unittest.TestCase):
         self.assertTrue(len(res1) == 1)
         self.assertEquals(res1[0]["primaryGroupID"][0], str(DOMAIN_RID_USERS))
 
-        self.delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+        delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
 
         ldb.add({
             "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
@@ -204,7 +199,7 @@ class SamTests(unittest.TestCase):
         self.assertTrue(len(res1) == 1)
         self.assertEquals(res1[0]["primaryGroupID"][0], str(DOMAIN_RID_USERS))
 
-        self.delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+        delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
 
         # unfortunately the INTERDOMAIN_TRUST_ACCOUNT case cannot be tested
         # since such accounts aren't directly creatable (ACCESS_DENIED)
@@ -219,7 +214,7 @@ class SamTests(unittest.TestCase):
         self.assertTrue(len(res1) == 1)
         self.assertEquals(res1[0]["primaryGroupID"][0], str(DOMAIN_RID_DOMAIN_MEMBERS))
 
-        self.delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+        delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
 
         ldb.add({
             "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
@@ -231,7 +226,7 @@ class SamTests(unittest.TestCase):
         self.assertTrue(len(res1) == 1)
         self.assertEquals(res1[0]["primaryGroupID"][0], str(DOMAIN_RID_DCS))
 
-        self.delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+        delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
 
         # Read-only DC accounts are only creatable by
         # UF_WORKSTATION_TRUST_ACCOUNT and work only on DCs >= 2008 (therefore
@@ -247,7 +242,7 @@ class SamTests(unittest.TestCase):
         self.assertTrue(res1[0]["primaryGroupID"][0] == str(DOMAIN_RID_READONLY_DCS) or
                         res1[0]["primaryGroupID"][0] == str(DOMAIN_RID_DOMAIN_MEMBERS))
 
-        self.delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+        delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
 
         # Test default primary groups on modify operations
 
@@ -269,7 +264,7 @@ class SamTests(unittest.TestCase):
         # unfortunately the INTERDOMAIN_TRUST_ACCOUNT case cannot be tested
         # since such accounts aren't directly creatable (ACCESS_DENIED)
 
-        self.delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+        delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
 
         ldb.add({
             "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
@@ -317,7 +312,7 @@ class SamTests(unittest.TestCase):
         self.assertTrue(res1[0]["primaryGroupID"][0] == str(DOMAIN_RID_READONLY_DCS) or
                         res1[0]["primaryGroupID"][0] == str(DOMAIN_RID_DOMAIN_MEMBERS))
 
-        self.delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+        delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
 
         # Recreate account for further tests
 
@@ -498,7 +493,7 @@ class SamTests(unittest.TestCase):
 
         # Recreate user accounts
 
-        self.delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+        delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
 
         ldb.add({
             "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
@@ -584,16 +579,16 @@ class SamTests(unittest.TestCase):
                                      FLAG_MOD_REPLACE, "member")
         ldb.modify(m)
 
-        self.delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
-        self.delete_force(self.ldb, "cn=ldaptestuser2,cn=users," + self.base_dn)
-        self.delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
-        self.delete_force(self.ldb, "cn=ldaptestgroup2,cn=users," + self.base_dn)
+        delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+        delete_force(self.ldb, "cn=ldaptestuser2,cn=users," + self.base_dn)
+        delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+        delete_force(self.ldb, "cn=ldaptestgroup2,cn=users," + self.base_dn)
 
         # Make also a small test for accounts with special DNs ("," in this case)
         ldb.add({
             "dn": "cn=ldaptest\,specialuser,cn=users," + self.base_dn,
             "objectclass": "user"})
-        self.delete_force(self.ldb, "cn=ldaptest\,specialuser,cn=users," + self.base_dn)
+        delete_force(self.ldb, "cn=ldaptest\,specialuser,cn=users," + self.base_dn)
 
     def test_sam_attributes(self):
         """Test the behaviour of special attributes of SAM objects"""
@@ -715,8 +710,8 @@ class SamTests(unittest.TestCase):
             except LdbError, (num, _):
                 self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
 
-        self.delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
-        self.delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+        delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+        delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
 
     def test_primary_group_token_constructed(self):
         """Test the primary group token behaviour (hidden-generated-readonly attribute on groups) and some other constructed attributes"""
@@ -730,7 +725,7 @@ class SamTests(unittest.TestCase):
             self.fail()
         except LdbError, (num, _):
             self.assertEquals(num, ERR_UNDEFINED_ATTRIBUTE_TYPE)
-        self.delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+        delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
 
         ldb.add({
             "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
@@ -789,8 +784,8 @@ class SamTests(unittest.TestCase):
         except LdbError, (num, _):
             self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
 
-        self.delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
-        self.delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+        delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+        delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
 
     def test_tokenGroups(self):
         """Test the tokenGroups behaviour (hidden-generated-readonly attribute on SAM objects)"""
@@ -834,7 +829,7 @@ class SamTests(unittest.TestCase):
         self.assertTrue(domain_users_group_found)
         self.assertTrue(users_group_found)
 
-        self.delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+        delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
 
     def test_groupType(self):
         """Test the groupType behaviour"""
@@ -854,7 +849,7 @@ class SamTests(unittest.TestCase):
             self.fail()
         except LdbError, (num, _):
             self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
-        self.delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+        delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
 
         try:
             ldb.add({
@@ -864,7 +859,7 @@ class SamTests(unittest.TestCase):
             self.fail()
         except LdbError, (num, _):
             self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
-        self.delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+        delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
 
         ldb.add({
             "dn": "cn=ldaptestgroup,cn=users," + self.base_dn,
@@ -876,7 +871,7 @@ class SamTests(unittest.TestCase):
         self.assertTrue(len(res1) == 1)
         self.assertEquals(int(res1[0]["sAMAccountType"][0]),
           ATYPE_SECURITY_GLOBAL_GROUP)
-        self.delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+        delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
 
         ldb.add({
             "dn": "cn=ldaptestgroup,cn=users," + self.base_dn,
@@ -888,7 +883,7 @@ class SamTests(unittest.TestCase):
         self.assertTrue(len(res1) == 1)
         self.assertEquals(int(res1[0]["sAMAccountType"][0]),
           ATYPE_SECURITY_UNIVERSAL_GROUP)
-        self.delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+        delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
 
         ldb.add({
             "dn": "cn=ldaptestgroup,cn=users," + self.base_dn,
@@ -900,7 +895,7 @@ class SamTests(unittest.TestCase):
         self.assertTrue(len(res1) == 1)
         self.assertEquals(int(res1[0]["sAMAccountType"][0]),
           ATYPE_SECURITY_LOCAL_GROUP)
-        self.delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+        delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
 
         ldb.add({
             "dn": "cn=ldaptestgroup,cn=users," + self.base_dn,
@@ -912,7 +907,7 @@ class SamTests(unittest.TestCase):
         self.assertTrue(len(res1) == 1)
         self.assertEquals(int(res1[0]["sAMAccountType"][0]),
           ATYPE_DISTRIBUTION_GLOBAL_GROUP)
-        self.delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+        delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
 
         ldb.add({
             "dn": "cn=ldaptestgroup,cn=users," + self.base_dn,
@@ -924,7 +919,7 @@ class SamTests(unittest.TestCase):
         self.assertTrue(len(res1) == 1)
         self.assertEquals(int(res1[0]["sAMAccountType"][0]),
           ATYPE_DISTRIBUTION_UNIVERSAL_GROUP)
-        self.delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+        delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
 
         ldb.add({
             "dn": "cn=ldaptestgroup,cn=users," + self.base_dn,
@@ -936,7 +931,7 @@ class SamTests(unittest.TestCase):
         self.assertTrue(len(res1) == 1)
         self.assertEquals(int(res1[0]["sAMAccountType"][0]),
           ATYPE_DISTRIBUTION_LOCAL_GROUP)
-        self.delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+        delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
 
         # Modify operation
 
@@ -1421,7 +1416,7 @@ class SamTests(unittest.TestCase):
         self.assertEquals(int(res1[0]["sAMAccountType"][0]),
           ATYPE_SECURITY_GLOBAL_GROUP)
 
-        self.delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+        delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
 
     def test_userAccountControl(self):
         """Test the userAccountControl behaviour"""
@@ -1445,7 +1440,7 @@ class SamTests(unittest.TestCase):
             self.fail()
         except LdbError, (num, _):
             self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
-        self.delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+        delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
 
 # This has to wait until s4 supports it (needs a password module change)
 #        try:
@@ -1456,7 +1451,7 @@ class SamTests(unittest.TestCase):
 #            self.fail()
 #        except LdbError, (num, _):
 #            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
-#        self.delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+#        delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
 
         ldb.add({
             "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
@@ -1468,7 +1463,7 @@ class SamTests(unittest.TestCase):
         self.assertTrue(len(res1) == 1)
         self.assertEquals(int(res1[0]["sAMAccountType"][0]),
           ATYPE_NORMAL_ACCOUNT)
-        self.delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+        delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
 
         try:
             ldb.add({
@@ -1478,7 +1473,7 @@ class SamTests(unittest.TestCase):
             self.fail()
         except LdbError, (num, _):
             self.assertEquals(num, ERR_OTHER)
-        self.delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+        delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
 
 # This isn't supported yet in s4
 #        try:
@@ -1489,7 +1484,7 @@ class SamTests(unittest.TestCase):
 #            self.fail()
 #        except LdbError, (num, _):
 #            self.assertEquals(num, ERR_OBJECT_CLASS_VIOLATION)
-#        self.delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+#        delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
 #
 #        try:
 #            ldb.add({
@@ -1498,7 +1493,7 @@ class SamTests(unittest.TestCase):
 #                "userAccountControl": str(UF_WORKSTATION_TRUST_ACCOUNT)})
 #        except LdbError, (num, _):
 #            self.assertEquals(num, ERR_OBJECT_CLASS_VIOLATION)
-#        self.delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+#        delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
 
 # This isn't supported yet in s4 - needs ACL module adaption
 #        try:
@@ -1509,7 +1504,7 @@ class SamTests(unittest.TestCase):
 #            self.fail()
 #        except LdbError, (num, _):
 #            self.assertEquals(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
-#        self.delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+#        delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
 
         # Modify operation
 
@@ -1643,7 +1638,7 @@ class SamTests(unittest.TestCase):
             self.fail()
         except LdbError, (num, _):
             self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
-        self.delete_force(self.ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
+        delete_force(self.ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
 
 # This has to wait until s4 supports it (needs a password module change)
 #        try:
@@ -1654,7 +1649,7 @@ class SamTests(unittest.TestCase):
 #            self.fail()
 #        except LdbError, (num, _):
 #            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
-#        self.delete_force(self.ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
+#        delete_force(self.ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
 
         ldb.add({
             "dn": "cn=ldaptestcomputer,cn=computers," + self.base_dn,
@@ -1666,7 +1661,7 @@ class SamTests(unittest.TestCase):
         self.assertTrue(len(res1) == 1)
         self.assertEquals(int(res1[0]["sAMAccountType"][0]),
           ATYPE_NORMAL_ACCOUNT)
-        self.delete_force(self.ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
+        delete_force(self.ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
 
         try:
             ldb.add({
@@ -1676,7 +1671,7 @@ class SamTests(unittest.TestCase):
             self.fail()
         except LdbError, (num, _):
             self.assertEquals(num, ERR_OTHER)
-        self.delete_force(self.ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
+        delete_force(self.ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
 
         ldb.add({
             "dn": "cn=ldaptestcomputer,cn=computers," + self.base_dn,
@@ -1688,7 +1683,7 @@ class SamTests(unittest.TestCase):
         self.assertTrue(len(res1) == 1)
         self.assertEquals(int(res1[0]["sAMAccountType"][0]),
           ATYPE_WORKSTATION_TRUST)
-        self.delete_force(self.ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
+        delete_force(self.ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
 
         try:
             ldb.add({
@@ -1697,7 +1692,7 @@ class SamTests(unittest.TestCase):
                 "userAccountControl": str(UF_WORKSTATION_TRUST_ACCOUNT)})
         except LdbError, (num, _):
             self.assertEquals(num, ERR_OBJECT_CLASS_VIOLATION)
-        self.delete_force(self.ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
+        delete_force(self.ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
 
 # This isn't supported yet in s4 - needs ACL module adaption
 #        try:
@@ -1708,7 +1703,7 @@ class SamTests(unittest.TestCase):
 #            self.fail()
 #        except LdbError, (num, _):
 #            self.assertEquals(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
-#        self.delete_force(self.ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
+#        delete_force(self.ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
 
         # Modify operation
 
@@ -1865,8 +1860,8 @@ class SamTests(unittest.TestCase):
 #        except LdbError, (num, _):
 #            self.assertEquals(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
 
-        self.delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
-        self.delete_force(self.ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
+        delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+        delete_force(self.ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
 
     def test_service_principal_name_updates(self):
         """Test the servicePrincipalNames update behaviour"""
@@ -1882,7 +1877,7 @@ class SamTests(unittest.TestCase):
         self.assertTrue(len(res) == 1)
         self.assertFalse("servicePrincipalName" in res[0])
 
-        self.delete_force(self.ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
+        delete_force(self.ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
 
         ldb.add({
             "dn": "cn=ldaptestcomputer,cn=computers," + self.base_dn,
@@ -1894,7 +1889,7 @@ class SamTests(unittest.TestCase):
         self.assertTrue(len(res) == 1)
         self.assertFalse("dNSHostName" in res[0])
 
-        self.delete_force(self.ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
+        delete_force(self.ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
 
         ldb.add({
             "dn": "cn=ldaptestcomputer,cn=computers," + self.base_dn,
@@ -2015,7 +2010,7 @@ class SamTests(unittest.TestCase):
         self.assertTrue(len(res) == 1)
         self.assertFalse("servicePrincipalName" in res[0])
 
-        self.delete_force(self.ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
+        delete_force(self.ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
 
         ldb.add({
             "dn": "cn=ldaptestcomputer,cn=computers," + self.base_dn,
@@ -2027,7 +2022,7 @@ class SamTests(unittest.TestCase):
         self.assertTrue(len(res) == 1)
         self.assertFalse("servicePrincipalName" in res[0])
 
-        self.delete_force(self.ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
+        delete_force(self.ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
 
         ldb.add({
             "dn": "cn=ldaptestcomputer,cn=computers," + self.base_dn,
@@ -2039,7 +2034,7 @@ class SamTests(unittest.TestCase):
         self.assertTrue(len(res) == 1)
         self.assertTrue("sAMAccountName" in res[0])
 
-        self.delete_force(self.ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
+        delete_force(self.ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
 
         ldb.add({
             "dn": "cn=ldaptestcomputer,cn=computers," + self.base_dn,
@@ -2154,7 +2149,7 @@ class SamTests(unittest.TestCase):
         self.assertTrue(len(res) == 1)
         self.assertFalse("servicePrincipalName" in res[0])
 
-        self.delete_force(self.ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
+        delete_force(self.ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
 
         ldb.add({
             "dn": "cn=ldaptestcomputer,cn=computers," + self.base_dn,
@@ -2182,7 +2177,7 @@ class SamTests(unittest.TestCase):
         self.assertTrue(res[0]["servicePrincipalName"][0] == "HOST/testname2.testdom" or
                         res[0]["servicePrincipalName"][1] == "HOST/testname2.testdom")
 
-        self.delete_force(self.ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
+        delete_force(self.ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
 
         ldb.add({
             "dn": "cn=ldaptestcomputer,cn=computers," + self.base_dn,
@@ -2210,7 +2205,7 @@ class SamTests(unittest.TestCase):
         self.assertTrue(res[0]["servicePrincipalName"][0] == "HOST/testname2.testdom" or
                         res[0]["servicePrincipalName"][1] == "HOST/testname2.testdom")
 
-        self.delete_force(self.ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
+        delete_force(self.ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
 
     def test_sam_description_attribute(self):
         """Test SAM description attribute"""
@@ -2229,7 +2224,7 @@ class SamTests(unittest.TestCase):
         self.assertTrue(len(res[0]["description"]) == 1)
         self.assertEquals(res[0]["description"][0], "desc1")
 
-        self.delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+        delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
 
         self.ldb.add({
             "dn": "cn=ldaptestgroup,cn=users," + self.base_dn,
@@ -2262,7 +2257,7 @@ class SamTests(unittest.TestCase):
           "description")
         ldb.modify(m)
 
-        self.delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+        delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
 
         self.ldb.add({
             "dn": "cn=ldaptestgroup,cn=users," + self.base_dn,
@@ -2281,7 +2276,7 @@ class SamTests(unittest.TestCase):
         self.assertTrue(len(res[0]["description"]) == 1)
         self.assertEquals(res[0]["description"][0], "desc1")
 
-        self.delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+        delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
 
         self.ldb.add({
             "dn": "cn=ldaptestgroup,cn=users," + self.base_dn,
@@ -2364,7 +2359,7 @@ class SamTests(unittest.TestCase):
         self.assertTrue(len(res[0]["description"]) == 1)
         self.assertEquals(res[0]["description"][0], "desc1")
 
-        self.delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+        delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
 
 
 if not "://" in host:
