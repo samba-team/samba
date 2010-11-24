@@ -33,6 +33,7 @@ from ldb import FLAG_MOD_ADD, FLAG_MOD_REPLACE, FLAG_MOD_DELETE
 from samba import gensec
 from samba.samdb import SamDB
 import samba.tests
+from samba.tests import delete_force
 from subunit.run import SubunitTestRunner
 import unittest
 
@@ -63,19 +64,13 @@ creds.set_gensec_features(creds.get_gensec_features() | gensec.FEATURE_SEAL)
 
 class PasswordTests(samba.tests.TestCase):
 
-    def delete_force(self, ldb, dn):
-        try:
-            ldb.delete(dn)
-        except LdbError, (num, _):
-            self.assertEquals(num, ERR_NO_SUCH_OBJECT)
-
     def setUp(self):
         super(PasswordTests, self).setUp()
         self.ldb = ldb
         self.base_dn = ldb.domain_dn()
 
         # (Re)adds the test user "testuser" with no password atm
-        self.delete_force(self.ldb, "cn=testuser,cn=users," + self.base_dn)
+        delete_force(self.ldb, "cn=testuser,cn=users," + self.base_dn)
         self.ldb.add({
              "dn": "cn=testuser,cn=users," + self.base_dn,
              "objectclass": "user",
@@ -650,14 +645,14 @@ userPassword: thatsAcomplPASS4
 """)
 
         # This surprisingly should work
-        self.delete_force(self.ldb, "cn=testuser2,cn=users," + self.base_dn)
+        delete_force(self.ldb, "cn=testuser2,cn=users," + self.base_dn)
         self.ldb.add({
              "dn": "cn=testuser2,cn=users," + self.base_dn,
              "objectclass": "user",
              "userPassword": ["thatsAcomplPASS1", "thatsAcomplPASS2"] })
 
         # This surprisingly should work
-        self.delete_force(self.ldb, "cn=testuser2,cn=users," + self.base_dn)
+        delete_force(self.ldb, "cn=testuser2,cn=users," + self.base_dn)
         self.ldb.add({
              "dn": "cn=testuser2,cn=users," + self.base_dn,
              "objectclass": "user",
@@ -703,7 +698,7 @@ userPassword: thatsAcomplPASS4
             self.assertTrue(num == ERR_CONSTRAINT_VIOLATION or
                             num == ERR_NO_SUCH_ATTRIBUTE) # for Windows
 
-        self.delete_force(self.ldb, "cn=testuser2,cn=users," + self.base_dn)
+        delete_force(self.ldb, "cn=testuser2,cn=users," + self.base_dn)
 
         m = Message()
         m.dn = Dn(ldb, "cn=testuser,cn=users," + self.base_dn)
@@ -894,8 +889,8 @@ userPassword: thatsAcomplPASS4
 
     def tearDown(self):
         super(PasswordTests, self).tearDown()
-        self.delete_force(self.ldb, "cn=testuser,cn=users," + self.base_dn)
-        self.delete_force(self.ldb, "cn=testuser2,cn=users," + self.base_dn)
+        delete_force(self.ldb, "cn=testuser,cn=users," + self.base_dn)
+        delete_force(self.ldb, "cn=testuser2,cn=users," + self.base_dn)
         # Close the second LDB connection (with the user credentials)
         self.ldb2 = None
 
