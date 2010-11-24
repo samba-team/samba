@@ -26,6 +26,7 @@ from samba import gensec
 from samba.samdb import SamDB
 from samba.credentials import Credentials
 import samba.tests
+from samba.tests import delete_force
 from subunit.run import SubunitTestRunner
 import unittest
 
@@ -70,18 +71,12 @@ class BindTests(samba.tests.TestCase):
         self.password = "P@ssw0rd"
         self.username = "BindTestUser_" + time.strftime("%s", time.gmtime())
 
-    def delete_force(self, ldb, dn):
-        try:
-            ldb.delete(dn)
-        except LdbError, (num, _):
-            self.assertEquals(num, ERR_NO_SUCH_OBJECT)
-
     def tearDown(self):
         super(BindTests, self).tearDown()
 
     def test_computer_account_bind(self):
         # create a computer acocount for the test
-        self.delete_force(ldb, self.computer_dn)
+        delete_force(ldb, self.computer_dn)
         ldb.add_ldif("""
 dn: """ + self.computer_dn + """
 cn: CENTOS53
