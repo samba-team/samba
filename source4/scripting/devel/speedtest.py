@@ -46,6 +46,7 @@ from samba import gensec
 from samba.samdb import SamDB
 from samba.credentials import Credentials
 import samba.tests
+from samba.tests import delete_force
 from subunit.run import SubunitTestRunner
 import unittest
 
@@ -75,12 +76,6 @@ creds.set_gensec_features(creds.get_gensec_features() | gensec.FEATURE_SEAL)
 #
 
 class SpeedTest(samba.tests.TestCase):
-
-    def delete_force(self, ldb, dn):
-        try:
-            ldb.delete(dn)
-        except LdbError, (num, _):
-            self.assertEquals(num, ERR_NO_SUCH_OBJECT)
 
     def find_basedn(self, ldb):
         res = ldb.search(base="", expression="", scope=SCOPE_BASE,
@@ -126,13 +121,13 @@ url: www.example.com
 
     def remove_bundle(self, count):
         for i in range(count):
-            self.delete_force(self.ldb_admin, "cn=speedtestuser%d,cn=Users,%s" % (i+1, self.base_dn))
+            delete_force(self.ldb_admin, "cn=speedtestuser%d,cn=Users,%s" % (i+1, self.base_dn))
 
     def remove_test_users(self):
         res = ldb.search(base="cn=Users,%s" % self.base_dn, expression="(objectClass=user)", scope=SCOPE_SUBTREE)
         dn_list = [item.dn for item in res if "speedtestuser" in str(item.dn)]
         for dn in dn_list:
-            self.delete_force(self.ldb_admin, dn)
+            delete_force(self.ldb_admin, dn)
 
     def run_bundle(self, num):
         print "\n=== Test ADD/DEL %s user objects ===\n" % num
