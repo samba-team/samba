@@ -104,6 +104,7 @@ nameserver %s
 def restore_resolv_conf(t):
     '''restore the /etc/resolv.conf after testing is complete'''
     if getattr(t, 'resolv_conf_backup', False):
+        t.info("restoring /etc/resolv.conf")
         t.run_cmd("mv -f %s /etc/resolv.conf" % t.resolv_conf_backup)
 
 def rndc_cmd(t, cmd, checkfail=True):
@@ -703,6 +704,7 @@ def test_howto(t):
 
 def test_cleanup(t):
     '''cleanup after tests'''
+    t.info("Cleaning up ...")
     restore_resolv_conf(t)
     if getattr(t, 'bind_child', False):
         t.bind_child.kill()
@@ -750,7 +752,7 @@ if __name__ == '__main__':
 
     try:
         test_howto(t)
-    except Exception, str:
+    except:
         if not opts.nocleanup:
             test_cleanup(t)
         raise
