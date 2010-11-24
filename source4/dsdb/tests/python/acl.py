@@ -29,6 +29,7 @@ from samba import gensec
 from samba.samdb import SamDB
 from samba.credentials import Credentials
 import samba.tests
+from samba.tests import delete_force
 from subunit.run import SubunitTestRunner
 import unittest
 
@@ -57,12 +58,6 @@ creds.set_gensec_features(creds.get_gensec_features() | gensec.FEATURE_SEAL)
 #
 
 class AclTests(samba.tests.TestCase):
-
-    def delete_force(self, ldb, dn):
-        try:
-            ldb.delete(dn)
-        except LdbError, (num, _):
-            self.assertEquals(num, ERR_NO_SUCH_OBJECT)
 
     def find_domain_sid(self, ldb):
         res = ldb.search(base=self.base_dn, expression="(objectClass=*)", scope=SCOPE_BASE)
@@ -175,15 +170,15 @@ class AclAddTests(AclTests):
 
     def tearDown(self):
         super(AclAddTests, self).tearDown()
-        self.delete_force(self.ldb_admin, "CN=%s,%s,%s" %
+        delete_force(self.ldb_admin, "CN=%s,%s,%s" %
                           (self.test_user1, self.ou2, self.base_dn))
-        self.delete_force(self.ldb_admin, "CN=%s,%s,%s" %
+        delete_force(self.ldb_admin, "CN=%s,%s,%s" %
                           (self.test_group1, self.ou2, self.base_dn))
-        self.delete_force(self.ldb_admin, "%s,%s" % (self.ou2, self.base_dn))
-        self.delete_force(self.ldb_admin, "%s,%s" % (self.ou1, self.base_dn))
-        self.delete_force(self.ldb_admin, self.get_user_dn(self.usr_admin_owner))
-        self.delete_force(self.ldb_admin, self.get_user_dn(self.usr_admin_not_owner))
-        self.delete_force(self.ldb_admin, self.get_user_dn(self.regular_user))
+        delete_force(self.ldb_admin, "%s,%s" % (self.ou2, self.base_dn))
+        delete_force(self.ldb_admin, "%s,%s" % (self.ou1, self.base_dn))
+        delete_force(self.ldb_admin, self.get_user_dn(self.usr_admin_owner))
+        delete_force(self.ldb_admin, self.get_user_dn(self.usr_admin_not_owner))
+        delete_force(self.ldb_admin, self.get_user_dn(self.regular_user))
 
     # Make sure top OU is deleted (and so everything under it)
     def assert_top_ou_deleted(self):
@@ -300,15 +295,15 @@ class AclModifyTests(AclTests):
 
     def tearDown(self):
         super(AclModifyTests, self).tearDown()
-        self.delete_force(self.ldb_admin, self.get_user_dn("test_modify_user1"))
-        self.delete_force(self.ldb_admin, "CN=test_modify_group1,CN=Users," + self.base_dn)
-        self.delete_force(self.ldb_admin, "CN=test_modify_group2,CN=Users," + self.base_dn)
-        self.delete_force(self.ldb_admin, "CN=test_modify_group3,CN=Users," + self.base_dn)
-        self.delete_force(self.ldb_admin, "OU=test_modify_ou1," + self.base_dn)
-        self.delete_force(self.ldb_admin, self.get_user_dn(self.user_with_wp))
-        self.delete_force(self.ldb_admin, self.get_user_dn(self.user_with_sm))
-        self.delete_force(self.ldb_admin, self.get_user_dn(self.user_with_group_sm))
-        self.delete_force(self.ldb_admin, self.get_user_dn("test_modify_user2"))
+        delete_force(self.ldb_admin, self.get_user_dn("test_modify_user1"))
+        delete_force(self.ldb_admin, "CN=test_modify_group1,CN=Users," + self.base_dn)
+        delete_force(self.ldb_admin, "CN=test_modify_group2,CN=Users," + self.base_dn)
+        delete_force(self.ldb_admin, "CN=test_modify_group3,CN=Users," + self.base_dn)
+        delete_force(self.ldb_admin, "OU=test_modify_ou1," + self.base_dn)
+        delete_force(self.ldb_admin, self.get_user_dn(self.user_with_wp))
+        delete_force(self.ldb_admin, self.get_user_dn(self.user_with_sm))
+        delete_force(self.ldb_admin, self.get_user_dn(self.user_with_group_sm))
+        delete_force(self.ldb_admin, self.get_user_dn("test_modify_user2"))
 
     def test_modify_u1(self):
         """5 Modify one attribute if you have DS_WRITE_PROPERTY for it"""
@@ -340,7 +335,7 @@ displayName: test_changed"""
         self.assertEqual(res[0]["displayName"][0], "test_changed")
         # Third test object -- Organizational Unit
         print "Testing modify on OU object"
-        #self.delete_force(self.ldb_admin, "OU=test_modify_ou1," + self.base_dn)
+        #delete_force(self.ldb_admin, "OU=test_modify_ou1," + self.base_dn)
         self.ldb_admin.create_ou("OU=test_modify_ou1," + self.base_dn)
         self.dacl_add_ace("OU=test_modify_ou1," + self.base_dn, mod)
         ldif = """
@@ -357,7 +352,7 @@ displayName: test_changed"""
         mod = "(OA;;WP;bf967953-0de6-11d0-a285-00aa003049e2;;%s)" % str(self.user_sid)
         # First test object -- User
         print "Testing modify on User object"
-        #self.delete_force(self.ldb_admin, self.get_user_dn("test_modify_user1"))
+        #delete_force(self.ldb_admin, self.get_user_dn("test_modify_user1"))
         self.ldb_admin.newuser("test_modify_user1", self.user_pass)
         self.dacl_add_ace(self.get_user_dn("test_modify_user1"), mod)
         # Modify on attribute you have rights for
@@ -477,7 +472,7 @@ url: www.samba.org"""
 
         # Second test object -- Organizational Unit
         print "Testing modify on OU object"
-        #self.delete_force(self.ldb_admin, "OU=test_modify_ou1," + self.base_dn)
+        #delete_force(self.ldb_admin, "OU=test_modify_ou1," + self.base_dn)
         self.ldb_admin.create_ou("OU=test_modify_ou1," + self.base_dn)
         # Modify on attribute you do not have rights for granted
         ldif = """
@@ -666,18 +661,18 @@ class AclSearchTests(AclTests):
 
     def tearDown(self):
         super(AclSearchTests, self).tearDown()
-        self.delete_force(self.ldb_admin, "OU=test_search_ou2,OU=test_search_ou1," + self.base_dn)
-        self.delete_force(self.ldb_admin, "OU=test_search_ou1," + self.base_dn)
-        self.delete_force(self.ldb_admin, "OU=ou6,OU=ou4,OU=ou2,OU=ou1," + self.base_dn)
-        self.delete_force(self.ldb_admin, "OU=ou5,OU=ou3,OU=ou2,OU=ou1," + self.base_dn)
-        self.delete_force(self.ldb_admin, "OU=ou4,OU=ou2,OU=ou1," + self.base_dn)
-        self.delete_force(self.ldb_admin, "OU=ou3,OU=ou2,OU=ou1," + self.base_dn)
-        self.delete_force(self.ldb_admin, "OU=ou2,OU=ou1," + self.base_dn)
-        self.delete_force(self.ldb_admin, "OU=ou1," + self.base_dn)
-        self.delete_force(self.ldb_admin, self.get_user_dn("search_u1"))
-        self.delete_force(self.ldb_admin, self.get_user_dn("search_u2"))
-        self.delete_force(self.ldb_admin, self.get_user_dn("search_u3"))
-        self.delete_force(self.ldb_admin, self.get_user_dn("group1"))
+        delete_force(self.ldb_admin, "OU=test_search_ou2,OU=test_search_ou1," + self.base_dn)
+        delete_force(self.ldb_admin, "OU=test_search_ou1," + self.base_dn)
+        delete_force(self.ldb_admin, "OU=ou6,OU=ou4,OU=ou2,OU=ou1," + self.base_dn)
+        delete_force(self.ldb_admin, "OU=ou5,OU=ou3,OU=ou2,OU=ou1," + self.base_dn)
+        delete_force(self.ldb_admin, "OU=ou4,OU=ou2,OU=ou1," + self.base_dn)
+        delete_force(self.ldb_admin, "OU=ou3,OU=ou2,OU=ou1," + self.base_dn)
+        delete_force(self.ldb_admin, "OU=ou2,OU=ou1," + self.base_dn)
+        delete_force(self.ldb_admin, "OU=ou1," + self.base_dn)
+        delete_force(self.ldb_admin, self.get_user_dn("search_u1"))
+        delete_force(self.ldb_admin, self.get_user_dn("search_u2"))
+        delete_force(self.ldb_admin, self.get_user_dn("search_u3"))
+        delete_force(self.ldb_admin, self.get_user_dn("group1"))
 
     def test_search_anonymous1(self):
         """Verify access of rootDSE with the correct request"""
@@ -982,8 +977,8 @@ class AclDeleteTests(AclTests):
 
     def tearDown(self):
         super(AclDeleteTests, self).tearDown()
-        self.delete_force(self.ldb_admin, self.get_user_dn("test_delete_user1"))
-        self.delete_force(self.ldb_admin, self.get_user_dn(self.regular_user))
+        delete_force(self.ldb_admin, self.get_user_dn("test_delete_user1"))
+        delete_force(self.ldb_admin, self.get_user_dn(self.regular_user))
 
     def test_delete_u1(self):
         """User is prohibited by default to delete another User object"""
@@ -1044,22 +1039,22 @@ class AclRenameTests(AclTests):
     def tearDown(self):
         super(AclRenameTests, self).tearDown()
         # Rename OU3
-        self.delete_force(self.ldb_admin, "CN=%s,%s,%s" % (self.testuser1, self.ou3, self.base_dn))
-        self.delete_force(self.ldb_admin, "CN=%s,%s,%s" % (self.testuser2, self.ou3, self.base_dn))
-        self.delete_force(self.ldb_admin, "CN=%s,%s,%s" % (self.testuser5, self.ou3, self.base_dn))
-        self.delete_force(self.ldb_admin, "%s,%s" % (self.ou3, self.base_dn))
+        delete_force(self.ldb_admin, "CN=%s,%s,%s" % (self.testuser1, self.ou3, self.base_dn))
+        delete_force(self.ldb_admin, "CN=%s,%s,%s" % (self.testuser2, self.ou3, self.base_dn))
+        delete_force(self.ldb_admin, "CN=%s,%s,%s" % (self.testuser5, self.ou3, self.base_dn))
+        delete_force(self.ldb_admin, "%s,%s" % (self.ou3, self.base_dn))
         # Rename OU2
-        self.delete_force(self.ldb_admin, "CN=%s,%s,%s" % (self.testuser1, self.ou2, self.base_dn))
-        self.delete_force(self.ldb_admin, "CN=%s,%s,%s" % (self.testuser2, self.ou2, self.base_dn))
-        self.delete_force(self.ldb_admin, "CN=%s,%s,%s" % (self.testuser5, self.ou2, self.base_dn))
-        self.delete_force(self.ldb_admin, "%s,%s" % (self.ou2, self.base_dn))
+        delete_force(self.ldb_admin, "CN=%s,%s,%s" % (self.testuser1, self.ou2, self.base_dn))
+        delete_force(self.ldb_admin, "CN=%s,%s,%s" % (self.testuser2, self.ou2, self.base_dn))
+        delete_force(self.ldb_admin, "CN=%s,%s,%s" % (self.testuser5, self.ou2, self.base_dn))
+        delete_force(self.ldb_admin, "%s,%s" % (self.ou2, self.base_dn))
         # Rename OU1
-        self.delete_force(self.ldb_admin, "CN=%s,%s,%s" % (self.testuser1, self.ou1, self.base_dn))
-        self.delete_force(self.ldb_admin, "CN=%s,%s,%s" % (self.testuser2, self.ou1, self.base_dn))
-        self.delete_force(self.ldb_admin, "CN=%s,%s,%s" % (self.testuser5, self.ou1, self.base_dn))
-        self.delete_force(self.ldb_admin, "OU=test_rename_ou3,%s,%s" % (self.ou1, self.base_dn))
-        self.delete_force(self.ldb_admin, "%s,%s" % (self.ou1, self.base_dn))
-        self.delete_force(self.ldb_admin, self.get_user_dn(self.regular_user))
+        delete_force(self.ldb_admin, "CN=%s,%s,%s" % (self.testuser1, self.ou1, self.base_dn))
+        delete_force(self.ldb_admin, "CN=%s,%s,%s" % (self.testuser2, self.ou1, self.base_dn))
+        delete_force(self.ldb_admin, "CN=%s,%s,%s" % (self.testuser5, self.ou1, self.base_dn))
+        delete_force(self.ldb_admin, "OU=test_rename_ou3,%s,%s" % (self.ou1, self.base_dn))
+        delete_force(self.ldb_admin, "%s,%s" % (self.ou1, self.base_dn))
+        delete_force(self.ldb_admin, self.get_user_dn(self.regular_user))
 
     def test_rename_u1(self):
         """Regular user fails to rename 'User object' within single OU"""
@@ -1271,8 +1266,8 @@ class AclCARTests(AclTests):
         #restore original values
         self.ldb_admin.set_dsheuristics(self.dsheuristics)
         self.ldb_admin.set_minPwdAge(self.minPwdAge)
-        self.delete_force(self.ldb_admin, self.get_user_dn(self.user_with_wp))
-        self.delete_force(self.ldb_admin, self.get_user_dn(self.user_with_pc))
+        delete_force(self.ldb_admin, self.get_user_dn(self.user_with_wp))
+        delete_force(self.ldb_admin, self.get_user_dn(self.user_with_pc))
 
     def test_change_password1(self):
         """Try a password change operation without any CARs given"""
@@ -1553,11 +1548,11 @@ class AclExtendedTests(AclTests):
 
     def tearDown(self):
         super(AclExtendedTests, self).tearDown()
-        self.delete_force(self.ldb_admin, self.get_user_dn(self.u1))
-        self.delete_force(self.ldb_admin, self.get_user_dn(self.u2))
-        self.delete_force(self.ldb_admin, self.get_user_dn(self.u3))
-        self.delete_force(self.ldb_admin, "CN=ext_group1,OU=ext_ou1," + self.base_dn)
-        self.delete_force(self.ldb_admin, "ou=ext_ou1," + self.base_dn)
+        delete_force(self.ldb_admin, self.get_user_dn(self.u1))
+        delete_force(self.ldb_admin, self.get_user_dn(self.u2))
+        delete_force(self.ldb_admin, self.get_user_dn(self.u3))
+        delete_force(self.ldb_admin, "CN=ext_group1,OU=ext_ou1," + self.base_dn)
+        delete_force(self.ldb_admin, "ou=ext_ou1," + self.base_dn)
 
     def test_ntSecurityDescriptor(self):
         #create empty ou
