@@ -399,7 +399,7 @@ static bool test_EnumPrinters_findone(struct torture_context *tctx,
 	*printername = NULL;
 
 	r.in.flags = PRINTER_ENUM_LOCAL;
-	r.in.server = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
+	r.in.server = NULL;
 	r.in.level = 1;
 	r.in.buffer = NULL;
 	r.in.offered = 0;
@@ -425,6 +425,13 @@ static bool test_EnumPrinters_findone(struct torture_context *tctx,
 		"failed to enum printers");
 
 	for (i=0; i < count; i++) {
+
+		if (count > 1 && strequal(info[i].info1.name, "Microsoft XPS Document Writer")) {
+			continue;
+		}
+
+		torture_comment(tctx, "testing printer: %s\n",
+			info[i].info1.name);
 
 		*printername = talloc_strdup(tctx, info[i].info1.name);
 
