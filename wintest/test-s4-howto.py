@@ -35,6 +35,7 @@ def provision_s4(t, func_level="2008"):
     options=' --function-level=%s -d${DEBUGLEVEL}' % func_level
     options += ' --option=interfaces=${INTERFACE}'
     options += ' --host-ip=${INTERFACE_IP} --host-ip6="::"'
+    options += ' --option=bindinterfacesonly=yes'
     t.run_cmd('sbin/provision --realm=${LCREALM} --domain=${DOMAIN} --adminpass=${PASSWORD1} --server-role="domain controller"' + options)
     t.run_cmd('bin/samba-tool newuser testallowed ${PASSWORD1}')
     t.run_cmd('bin/samba-tool newuser testdenied ${PASSWORD1}')
@@ -48,16 +49,15 @@ def start_s4(t):
     t.run_cmd('killall -9 -q samba smbd nmbd winbindd', checkfail=False)
     t.run_cmd(['sbin/samba',
              '--option', 'panic action=gnome-terminal -e "gdb --pid %PID%"'])
-    t.port_wait("localhost", 139)
-
+    t.port_wait("${INTERFACE_IP}", 139)
 
 def test_smbclient(t):
     '''test smbclient'''
     t.info('Testing smbclient')
     t.chdir('${PREFIX}')
     t.cmd_contains("bin/smbclient --version", ["Version 4.0"])
-    t.retry_cmd('bin/smbclient -L localhost -U%', ["netlogon", "sysvol", "IPC Service"])
-    child = t.pexpect_spawn('bin/smbclient //localhost/netlogon -Uadministrator%${PASSWORD1}')
+    t.retry_cmd('bin/smbclient -L ${INTERFACE_IP} -U%', ["netlogon", "sysvol", "IPC Service"])
+    child = t.pexpect_spawn('bin/smbclient //${INTERFACE_IP}/netlogon -Uadministrator%${PASSWORD1}')
     child.expect("smb:")
     child.sendline("dir")
     child.expect("blocks available")
@@ -306,15 +306,15 @@ def test_dcpromo(t, vm):
     t.cmd_contains("host -t A ${WIN_HOSTNAME}.${LCREALM}.", ['has address'])
     t.cmd_contains('bin/smbclient -L ${WIN_HOSTNAME}.${LCREALM} -Utestallowed@${LCREALM}%${PASSWORD1}', ["C$", "IPC$", "Sharename"])
 
-    t.cmd_contains("bin/samba-tool drs kcc ${HOSTNAME} -Uadministrator@${LCREALM}%${PASSWORD1}", ['Consistency check', 'successful'])
+    t.cmd_contains("bin/samba-tool drs kcc ${HOSTNAME}.${LCREALM} -Uadministrator@${LCREALM}%${PASSWORD1}", ['Consistency check', 'successful'])
     t.cmd_contains("bin/samba-tool drs kcc ${WIN_HOSTNAME}.${LCREALM} -Uadministrator@${LCREALM}%${PASSWORD1}", ['Consistency check', 'successful'])
 
     t.kinit("administrator@${REALM}", "${PASSWORD1}")
     for nc in [ '${BASEDN}', 'CN=Configuration,${BASEDN}', 'CN=Schema,CN=Configuration,${BASEDN}' ]:
-        t.cmd_contains("bin/samba-tool drs replicate ${HOSTNAME} ${WIN_HOSTNAME}.${LCREALM} %s -k yes" % nc, ["was successful"])
-        t.cmd_contains("bin/samba-tool drs replicate ${WIN_HOSTNAME}.${LCREALM} ${HOSTNAME} %s -k yes" % nc, ["was successful"])
+        t.cmd_contains("bin/samba-tool drs replicate ${HOSTNAME}.${LCREALM} ${WIN_HOSTNAME}.${LCREALM} %s -k yes" % nc, ["was successful"])
+        t.cmd_contains("bin/samba-tool drs replicate ${WIN_HOSTNAME}.${LCREALM} ${HOSTNAME}.${LCREALM} %s -k yes" % nc, ["was successful"])
 
-    t.cmd_contains("bin/samba-tool drs showrepl ${HOSTNAME} -k yes",
+    t.cmd_contains("bin/samba-tool drs showrepl ${HOSTNAME}.${LCREALM} -k yes",
                  [ "INBOUND NEIGHBORS",
                    "${BASEDN}",
                    "Last attempt .* was successful",
@@ -379,8 +379,8 @@ def test_dcpromo(t, vm):
             break
         time.sleep(2)
 
-    t.retry_cmd("bin/smbclient -L ${HOSTNAME} -Utest3%${PASSWORD3} -k no", ['Sharename', 'IPC'])
-    t.retry_cmd("bin/smbclient -L ${HOSTNAME} -Utest3%${PASSWORD3} -k yes", ['Sharename', 'IPC'])
+    t.retry_cmd("bin/smbclient -L ${HOSTNAME}.${LCREALM} -Utest3%${PASSWORD3} -k no", ['Sharename', 'IPC'])
+    t.retry_cmd("bin/smbclient -L ${HOSTNAME}.${LCREALM} -Utest3%${PASSWORD3} -k yes", ['Sharename', 'IPC'])
 
     t.info("Checking propogation of user deletion")
     t.run_cmd('bin/samba-tool user delete test2 -Uadministrator@${LCREALM}%${PASSWORD1}')
@@ -388,9 +388,9 @@ def test_dcpromo(t, vm):
     child.expect("The command completed successfully")
 
     t.retry_cmd("bin/smbclient -L ${WIN_HOSTNAME}.${LCREALM} -Utest2%${PASSWORD2} -k no", ['LOGON_FAILURE'])
-    t.retry_cmd("bin/smbclient -L ${HOSTNAME} -Utest3%${PASSWORD3} -k no", ['LOGON_FAILURE'])
+    t.retry_cmd("bin/smbclient -L ${HOSTNAME}.${LCREALM} -Utest3%${PASSWORD3} -k no", ['LOGON_FAILURE'])
     t.retry_cmd("bin/smbclient -L ${WIN_HOSTNAME}.${LCREALM} -Utest2%${PASSWORD2} -k yes", ['LOGON_FAILURE'])
-    t.retry_cmd("bin/smbclient -L ${HOSTNAME} -Utest3%${PASSWORD3} -k yes", ['LOGON_FAILURE'])
+    t.retry_cmd("bin/smbclient -L ${HOSTNAME}.${LCREALM} -Utest3%${PASSWORD3} -k yes", ['LOGON_FAILURE'])
     t.vm_poweroff("${WIN_VM}")
 
 
@@ -463,7 +463,7 @@ def test_dcpromo_rodc(t, vm):
     t.run_cmd('bin/samba-tool newuser test2 ${PASSWORD2}')
     t.retry_cmd("bin/smbclient -L ${WIN_HOSTNAME}.${LCREALM} -Utest2%${PASSWORD2} -k yes", ['Sharename', 'Remote IPC'])
     t.retry_cmd("bin/smbclient -L ${WIN_HOSTNAME}.${LCREALM} -Utest2%${PASSWORD2} -k no", ['LOGON_FAILURE'])
-    t.retry_cmd("bin/samba-tool drs replicate ${WIN_HOSTNAME}.${LCREALM} ${HOSTNAME} ${BASEDN} -k yes", ["was successful"])
+    t.retry_cmd("bin/samba-tool drs replicate ${WIN_HOSTNAME}.${LCREALM} ${HOSTNAME}.${LCREALM} ${BASEDN} -k yes", ["was successful"])
     t.retry_cmd("bin/smbclient -L ${WIN_HOSTNAME}.${LCREALM} -Utest2%${PASSWORD2} -k no", ['Sharename', 'Remote IPC'])
     t.run_cmd('bin/samba-tool user delete test2 -Uadministrator@${LCREALM}%${PASSWORD1}')
     t.retry_cmd("bin/smbclient -L ${WIN_HOSTNAME}.${LCREALM} -Utest2%${PASSWORD2} -k yes", ['LOGON_FAILURE'])
