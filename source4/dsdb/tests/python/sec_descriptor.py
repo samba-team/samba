@@ -31,6 +31,7 @@ from samba.dcerpc.security import (
     SECINFO_OWNER, SECINFO_GROUP, SECINFO_DACL, SECINFO_SACL)
 from subunit.run import SubunitTestRunner
 import samba.tests
+from samba.tests import delete_force
 import unittest
 
 parser = optparse.OptionParser("sec_descriptor.py [options] <host>")
@@ -58,12 +59,6 @@ creds.set_gensec_features(creds.get_gensec_features() | gensec.FEATURE_SEAL)
 #
 
 class DescriptorTests(samba.tests.TestCase):
-
-    def delete_force(self, ldb, dn):
-        try:
-            ldb.delete(dn)
-        except LdbError, (num, _):
-            self.assertEquals(num, ERR_NO_SUCH_OBJECT)
 
     def find_domain_sid(self, ldb):
         res = ldb.search(base=self.base_dn, expression="(objectClass=*)", scope=SCOPE_BASE)
@@ -205,24 +200,24 @@ showInAdvancedViewOnly: TRUE
 class OwnerGroupDescriptorTests(DescriptorTests):
 
     def deleteAll(self):
-        self.delete_force(self.ldb_admin, self.get_users_domain_dn("testuser1"))
-        self.delete_force(self.ldb_admin, self.get_users_domain_dn("testuser2"))
-        self.delete_force(self.ldb_admin, self.get_users_domain_dn("testuser3"))
-        self.delete_force(self.ldb_admin, self.get_users_domain_dn("testuser4"))
-        self.delete_force(self.ldb_admin, self.get_users_domain_dn("testuser5"))
-        self.delete_force(self.ldb_admin, self.get_users_domain_dn("testuser6"))
-        self.delete_force(self.ldb_admin, self.get_users_domain_dn("testuser7"))
-        self.delete_force(self.ldb_admin, self.get_users_domain_dn("testuser8"))
+        delete_force(self.ldb_admin, self.get_users_domain_dn("testuser1"))
+        delete_force(self.ldb_admin, self.get_users_domain_dn("testuser2"))
+        delete_force(self.ldb_admin, self.get_users_domain_dn("testuser3"))
+        delete_force(self.ldb_admin, self.get_users_domain_dn("testuser4"))
+        delete_force(self.ldb_admin, self.get_users_domain_dn("testuser5"))
+        delete_force(self.ldb_admin, self.get_users_domain_dn("testuser6"))
+        delete_force(self.ldb_admin, self.get_users_domain_dn("testuser7"))
+        delete_force(self.ldb_admin, self.get_users_domain_dn("testuser8"))
         # DOMAIN
-        self.delete_force(self.ldb_admin, self.get_users_domain_dn("test_domain_group1"))
-        self.delete_force(self.ldb_admin, "CN=test_domain_user1,OU=test_domain_ou1," + self.base_dn)
-        self.delete_force(self.ldb_admin, "OU=test_domain_ou2,OU=test_domain_ou1," + self.base_dn)
-        self.delete_force(self.ldb_admin, "OU=test_domain_ou1," + self.base_dn)
+        delete_force(self.ldb_admin, self.get_users_domain_dn("test_domain_group1"))
+        delete_force(self.ldb_admin, "CN=test_domain_user1,OU=test_domain_ou1," + self.base_dn)
+        delete_force(self.ldb_admin, "OU=test_domain_ou2,OU=test_domain_ou1," + self.base_dn)
+        delete_force(self.ldb_admin, "OU=test_domain_ou1," + self.base_dn)
         # SCHEMA
         # CONFIGURATION
-        self.delete_force(self.ldb_admin, "CN=test-specifier1,CN=test-container1,CN=DisplaySpecifiers," \
+        delete_force(self.ldb_admin, "CN=test-specifier1,CN=test-container1,CN=DisplaySpecifiers," \
                 + self.configuration_dn)
-        self.delete_force(self.ldb_admin, "CN=test-container1,CN=DisplaySpecifiers," + self.configuration_dn)
+        delete_force(self.ldb_admin, "CN=test-container1,CN=DisplaySpecifiers," + self.configuration_dn)
 
     def setUp(self):
         super(OwnerGroupDescriptorTests, self).setUp()
@@ -413,7 +408,7 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         # Open Ldb connection with the tested user
         _ldb = self.get_ldb_connection(user_name, "samba123@")
         object_dn = "CN=test_domain_group1,CN=Users," + self.base_dn
-        self.delete_force(self.ldb_admin, object_dn)
+        delete_force(self.ldb_admin, object_dn)
         _ldb.newgroup("test_domain_group1", grouptype=4)
         desc_sddl = self.get_desc_sddl(object_dn)
         res = re.search("(O:.*G:.*?)D:", desc_sddl).group(1)
@@ -428,7 +423,7 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         # Open Ldb connection with the tested user
         _ldb = self.get_ldb_connection(user_name, "samba123@")
         object_dn = "CN=test_domain_group1,CN=Users," + self.base_dn
-        self.delete_force(self.ldb_admin, object_dn)
+        delete_force(self.ldb_admin, object_dn)
         _ldb.newgroup("test_domain_group1", grouptype=4)
         desc_sddl = self.get_desc_sddl(object_dn)
         res = re.search("(O:.*G:.*?)D:", desc_sddl).group(1)
@@ -443,14 +438,14 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         # Open Ldb connection with the tested user
         _ldb = self.get_ldb_connection(user_name, "samba123@")
         object_dn = "OU=test_domain_ou1," + self.base_dn
-        self.delete_force(self.ldb_admin, object_dn)
+        delete_force(self.ldb_admin, object_dn)
         self.ldb_admin.create_ou(object_dn)
         user_sid = self.get_object_sid( self.get_users_domain_dn(user_name) )
         mod = "(A;CI;WPWDCC;;;%s)" % str(user_sid)
         self.dacl_add_ace(object_dn, mod)
         # Create additional object into the first one
         object_dn = "CN=test_domain_user1," + object_dn
-        self.delete_force(self.ldb_admin, object_dn)
+        delete_force(self.ldb_admin, object_dn)
         _ldb.newuser("test_domain_user1", "samba123@",
                      userou="OU=test_domain_ou1", setpassword=False)
         desc_sddl = self.get_desc_sddl(object_dn)
@@ -467,14 +462,14 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         # Open Ldb connection with the tested user
         _ldb = self.get_ldb_connection(user_name, "samba123@")
         object_dn = "OU=test_domain_ou1," + self.base_dn
-        self.delete_force(self.ldb_admin, object_dn)
+        delete_force(self.ldb_admin, object_dn)
         self.ldb_admin.create_ou(object_dn)
         user_sid = self.get_object_sid( self.get_users_domain_dn(user_name) )
         mod = "(A;CI;WPWDCC;;;%s)" % str(user_sid)
         self.dacl_add_ace(object_dn, mod)
         # Create additional object into the first one
         object_dn = "CN=test_domain_user1," + object_dn
-        self.delete_force(self.ldb_admin, object_dn)
+        delete_force(self.ldb_admin, object_dn)
         _ldb.newuser("test_domain_user1", "samba123@",
                      userou="OU=test_domain_ou1", setpassword=False)
         desc_sddl = self.get_desc_sddl(object_dn)
@@ -491,7 +486,7 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         # Open Ldb connection with the tested user
         _ldb = self.get_ldb_connection(user_name, "samba123@")
         object_dn = "CN=test_domain_group1,CN=Users," + self.base_dn
-        self.delete_force(self.ldb_admin, object_dn)
+        delete_force(self.ldb_admin, object_dn)
         _ldb.newgroup("test_domain_group1", grouptype=4)
         desc_sddl = self.get_desc_sddl(object_dn)
         res = re.search("(O:.*G:.*?)D:", desc_sddl).group(1)
@@ -506,7 +501,7 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         # Open Ldb connection with the tested user
         _ldb = self.get_ldb_connection(user_name, "samba123@")
         object_dn = "CN=test_domain_group1,CN=Users," + self.base_dn
-        self.delete_force(self.ldb_admin, object_dn)
+        delete_force(self.ldb_admin, object_dn)
         _ldb.newgroup("test_domain_group1", grouptype=4)
         desc_sddl = self.get_desc_sddl(object_dn)
         res = re.search("(O:.*G:.*?)D:", desc_sddl).group(1)
@@ -521,7 +516,7 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         # Open Ldb connection with the tested user
         _ldb = self.get_ldb_connection(user_name, "samba123@")
         object_dn = "CN=test_domain_group1,CN=Users," + self.base_dn
-        self.delete_force(self.ldb_admin, object_dn)
+        delete_force(self.ldb_admin, object_dn)
         _ldb.newgroup("test_domain_group1", grouptype=4)
         desc_sddl = self.get_desc_sddl(object_dn)
         res = re.search("(O:.*G:.*?)D:", desc_sddl).group(1)
@@ -536,7 +531,7 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         # Open Ldb connection with the tested user
         _ldb = self.get_ldb_connection(user_name, "samba123@")
         object_dn = "CN=test_domain_group1,CN=Users," + self.base_dn
-        self.delete_force(self.ldb_admin, object_dn)
+        delete_force(self.ldb_admin, object_dn)
         _ldb.newgroup("test_domain_group1", grouptype=4)
         desc_sddl = self.get_desc_sddl(object_dn)
         res = re.search("(O:.*G:.*?)D:", desc_sddl).group(1)
@@ -553,7 +548,7 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         # Open Ldb connection with the tested user
         _ldb = self.get_ldb_connection(user_name, "samba123@")
         object_dn = "CN=test_domain_group1,CN=Users," + self.base_dn
-        self.delete_force(self.ldb_admin, object_dn)
+        delete_force(self.ldb_admin, object_dn)
         # Create a custom security descriptor
         sddl = "O:DAG:DAD:(A;;RP;;;DU)"
         tmp_desc = security.descriptor.from_sddl(sddl, self.domain_sid)
@@ -570,7 +565,7 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         # Open Ldb connection with the tested user
         _ldb = self.get_ldb_connection(user_name, "samba123@")
         object_dn = "CN=test_domain_group1,CN=Users," + self.base_dn
-        self.delete_force(self.ldb_admin, object_dn)
+        delete_force(self.ldb_admin, object_dn)
         # Create a custom security descriptor
         sddl = "O:DAG:DAD:(A;;RP;;;DU)"
         tmp_desc = security.descriptor.from_sddl(sddl, self.domain_sid)
@@ -587,7 +582,7 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         # Open Ldb connection with the tested user
         _ldb = self.get_ldb_connection(user_name, "samba123@")
         object_dn = "OU=test_domain_ou1," + self.base_dn
-        self.delete_force(self.ldb_admin, object_dn)
+        delete_force(self.ldb_admin, object_dn)
         self.ldb_admin.create_ou(object_dn)
         user_sid = self.get_object_sid( self.get_users_domain_dn(user_name) )
         mod = "(A;CI;WOWDCC;;;%s)" % str(user_sid)
@@ -598,7 +593,7 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         tmp_desc = security.descriptor.from_sddl(sddl, self.domain_sid)
         # Create additional object into the first one
         object_dn = "CN=test_domain_user1," + object_dn
-        self.delete_force(self.ldb_admin, object_dn)
+        delete_force(self.ldb_admin, object_dn)
         _ldb.newuser("test_domain_user1", "samba123@",
                      userou="OU=test_domain_ou1", sd=tmp_desc, setpassword=False)
         desc = self.read_desc(object_dn)
@@ -614,7 +609,7 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         # Open Ldb connection with the tested user
         _ldb = self.get_ldb_connection(user_name, "samba123@")
         object_dn = "OU=test_domain_ou1," + self.base_dn
-        self.delete_force(self.ldb_admin, object_dn)
+        delete_force(self.ldb_admin, object_dn)
         self.ldb_admin.create_ou(object_dn)
         user_sid = self.get_object_sid( self.get_users_domain_dn(user_name) )
         mod = "(A;CI;WOWDCC;;;%s)" % str(user_sid)
@@ -625,7 +620,7 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         tmp_desc = security.descriptor.from_sddl(sddl, self.domain_sid)
         # Create additional object into the first one
         object_dn = "CN=test_domain_user1," + object_dn
-        self.delete_force(self.ldb_admin, object_dn)
+        delete_force(self.ldb_admin, object_dn)
         _ldb.newuser("test_domain_user1", "samba123@",
                      userou="OU=test_domain_ou1", sd=tmp_desc, setpassword=False)
         desc = self.read_desc(object_dn)
@@ -641,7 +636,7 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         # Open Ldb connection with the tested user
         _ldb = self.get_ldb_connection(user_name, "samba123@")
         object_dn = "CN=test_domain_group1,CN=Users," + self.base_dn
-        self.delete_force(self.ldb_admin, object_dn)
+        delete_force(self.ldb_admin, object_dn)
         # Create a custom security descriptor
         sddl = "O:DAG:DAD:(A;;RP;;;DU)"
         tmp_desc = security.descriptor.from_sddl(sddl, self.domain_sid)
@@ -658,7 +653,7 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         # Open Ldb connection with the tested user
         _ldb = self.get_ldb_connection(user_name, "samba123@")
         object_dn = "CN=test_domain_group1,CN=Users," + self.base_dn
-        self.delete_force(self.ldb_admin, object_dn)
+        delete_force(self.ldb_admin, object_dn)
         # Create a custom security descriptor
         sddl = "O:DAG:DAD:(A;;RP;;;DU)"
         tmp_desc = security.descriptor.from_sddl(sddl, self.domain_sid)
@@ -675,7 +670,7 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         # Open Ldb connection with the tested user
         _ldb = self.get_ldb_connection(user_name, "samba123@")
         object_dn = "CN=test_domain_group1,CN=Users," + self.base_dn
-        self.delete_force(self.ldb_admin, object_dn)
+        delete_force(self.ldb_admin, object_dn)
         # Create a custom security descriptor
         sddl = "O:DAG:DAD:(A;;RP;;;DU)"
         tmp_desc = security.descriptor.from_sddl(sddl, self.domain_sid)
@@ -692,7 +687,7 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         # Open Ldb connection with the tested user
         _ldb = self.get_ldb_connection(user_name, "samba123@")
         object_dn = "CN=test_domain_group1,CN=Users," + self.base_dn
-        self.delete_force(self.ldb_admin, object_dn)
+        delete_force(self.ldb_admin, object_dn)
         # Create a custom security descriptor
         sddl = "O:DAG:DAD:(A;;RP;;;DU)"
         tmp_desc = security.descriptor.from_sddl(sddl, self.domain_sid)
@@ -704,7 +699,7 @@ class OwnerGroupDescriptorTests(DescriptorTests):
     def test_999(self):
         user_name = "Administrator"
         object_dn = "OU=test_domain_ou1," + self.base_dn
-        self.delete_force(self.ldb_admin, object_dn)
+        delete_force(self.ldb_admin, object_dn)
         self.ldb_admin.create_ou(object_dn)
         user_sid = self.get_object_sid( self.get_users_domain_dn(user_name) )
         mod = "(D;CI;WP;;;S-1-3-0)"
@@ -713,7 +708,7 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         desc_sddl = self.get_desc_sddl(object_dn)
         # Create additional object into the first one
         object_dn = "OU=test_domain_ou2," + object_dn
-        self.delete_force(self.ldb_admin, object_dn)
+        delete_force(self.ldb_admin, object_dn)
         self.ldb_admin.create_ou(object_dn)
         desc_sddl = self.get_desc_sddl(object_dn)
 
@@ -1015,7 +1010,7 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         # Create example Configuration container
         container_name = "test-container1"
         object_dn = "CN=%s,CN=DisplaySpecifiers,%s" % (container_name, self.configuration_dn)
-        self.delete_force(self.ldb_admin, object_dn)
+        delete_force(self.ldb_admin, object_dn)
         self.create_configuration_container(_ldb, object_dn, )
         desc_sddl = self.get_desc_sddl(object_dn)
         res = re.search("(O:.*G:.*?)D:", desc_sddl).group(1)
@@ -1030,7 +1025,7 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         # Create example Configuration container
         container_name = "test-container1"
         object_dn = "CN=%s,CN=DisplaySpecifiers,%s" % (container_name, self.configuration_dn)
-        self.delete_force(self.ldb_admin, object_dn)
+        delete_force(self.ldb_admin, object_dn)
         self.create_configuration_container(_ldb, object_dn, )
         desc_sddl = self.get_desc_sddl(object_dn)
         res = re.search("(O:.*G:.*?)D:", desc_sddl).group(1)
@@ -1044,14 +1039,14 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         _ldb = self.get_ldb_connection(user_name, "samba123@")
         # Create example Configuration container
         object_dn = "CN=test-container1,CN=DisplaySpecifiers," + self.configuration_dn
-        self.delete_force(self.ldb_admin, object_dn)
+        delete_force(self.ldb_admin, object_dn)
         self.create_configuration_container(self.ldb_admin, object_dn, )
         user_sid = self.get_object_sid( self.get_users_domain_dn(user_name) )
         mod = "(A;;WDCC;;;AU)"
         self.dacl_add_ace(object_dn, mod)
         # Create child object with user's credentials
         object_dn = "CN=test-specifier1," + object_dn
-        self.delete_force(self.ldb_admin, object_dn)
+        delete_force(self.ldb_admin, object_dn)
         self.create_configuration_specifier(_ldb, object_dn)
         desc_sddl = self.get_desc_sddl(object_dn)
         res = re.search("(O:.*G:.*?)D:", desc_sddl).group(1)
@@ -1065,14 +1060,14 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         _ldb = self.get_ldb_connection(user_name, "samba123@")
         # Create example Configuration container
         object_dn = "CN=test-container1,CN=DisplaySpecifiers," + self.configuration_dn
-        self.delete_force(self.ldb_admin, object_dn)
+        delete_force(self.ldb_admin, object_dn)
         self.create_configuration_container(self.ldb_admin, object_dn, )
         user_sid = self.get_object_sid( self.get_users_domain_dn(user_name) )
         mod = "(A;CI;WDCC;;;AU)"
         self.dacl_add_ace(object_dn, mod)
         # Create child object with user's credentials
         object_dn = "CN=test-specifier1," + object_dn
-        self.delete_force(self.ldb_admin, object_dn)
+        delete_force(self.ldb_admin, object_dn)
         self.create_configuration_specifier(_ldb, object_dn)
         desc_sddl = self.get_desc_sddl(object_dn)
         res = re.search("(O:.*G:.*?)D:", desc_sddl).group(1)
@@ -1087,7 +1082,7 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         # Create example Configuration container
         container_name = "test-container1"
         object_dn = "CN=%s,CN=DisplaySpecifiers,%s" % (container_name, self.configuration_dn)
-        self.delete_force(self.ldb_admin, object_dn)
+        delete_force(self.ldb_admin, object_dn)
         self.create_configuration_container(_ldb, object_dn, )
         desc_sddl = self.get_desc_sddl(object_dn)
         res = re.search("(O:.*G:.*?)D:", desc_sddl).group(1)
@@ -1102,7 +1097,7 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         # Create example Configuration container
         container_name = "test-container1"
         object_dn = "CN=%s,CN=DisplaySpecifiers,%s" % (container_name, self.configuration_dn)
-        self.delete_force(self.ldb_admin, object_dn)
+        delete_force(self.ldb_admin, object_dn)
         self.create_configuration_container(_ldb, object_dn, )
         desc_sddl = self.get_desc_sddl(object_dn)
         res = re.search("(O:.*G:.*?)D:", desc_sddl).group(1)
@@ -1117,7 +1112,7 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         # Create example Configuration container
         container_name = "test-container1"
         object_dn = "CN=%s,CN=DisplaySpecifiers,%s" % (container_name, self.configuration_dn)
-        self.delete_force(self.ldb_admin, object_dn)
+        delete_force(self.ldb_admin, object_dn)
         self.create_configuration_container(_ldb, object_dn, )
         desc_sddl = self.get_desc_sddl(object_dn)
         res = re.search("(O:.*G:.*?)D:", desc_sddl).group(1)
@@ -1132,7 +1127,7 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         # Create example Configuration container
         container_name = "test-container1"
         object_dn = "CN=%s,CN=DisplaySpecifiers,%s" % (container_name, self.configuration_dn)
-        self.delete_force(self.ldb_admin, object_dn)
+        delete_force(self.ldb_admin, object_dn)
         self.create_configuration_container(_ldb, object_dn, )
         desc_sddl = self.get_desc_sddl(object_dn)
         res = re.search("(O:.*G:.*?)D:", desc_sddl).group(1)
@@ -1149,7 +1144,7 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         # Create example Configuration container
         container_name = "test-container1"
         object_dn = "CN=%s,CN=DisplaySpecifiers,%s" % (container_name, self.configuration_dn)
-        self.delete_force(self.ldb_admin, object_dn)
+        delete_force(self.ldb_admin, object_dn)
         # Create a custom security descriptor
         desc_sddl = "O:DAG:DAD:(A;;RP;;;DU)"
         self.create_configuration_container(_ldb, object_dn, desc_sddl)
@@ -1165,7 +1160,7 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         # Create example Configuration container
         container_name = "test-container1"
         object_dn = "CN=%s,CN=DisplaySpecifiers,%s" % (container_name, self.configuration_dn)
-        self.delete_force(self.ldb_admin, object_dn)
+        delete_force(self.ldb_admin, object_dn)
         # Create a custom security descriptor
         desc_sddl = "O:DAG:DAD:(A;;RP;;;DU)"
         self.create_configuration_container(_ldb, object_dn, desc_sddl)
@@ -1180,14 +1175,14 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         _ldb = self.get_ldb_connection(user_name, "samba123@")
         # Create example Configuration container
         object_dn = "CN=test-container1,CN=DisplaySpecifiers," + self.configuration_dn
-        self.delete_force(self.ldb_admin, object_dn)
+        delete_force(self.ldb_admin, object_dn)
         self.create_configuration_container(self.ldb_admin, object_dn, )
         user_sid = self.get_object_sid( self.get_users_domain_dn(user_name) )
         mod = "(A;;CC;;;AU)"
         self.dacl_add_ace(object_dn, mod)
         # Create child object with user's credentials
         object_dn = "CN=test-specifier1," + object_dn
-        self.delete_force(self.ldb_admin, object_dn)
+        delete_force(self.ldb_admin, object_dn)
         # Create a custom security descriptor
         # NB! Problematic owner part won't accept DA only <User Sid> !!!
         desc_sddl = "O:%sG:DAD:(A;;RP;;;DU)" % str(user_sid)
@@ -1203,14 +1198,14 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         _ldb = self.get_ldb_connection(user_name, "samba123@")
         # Create example Configuration container
         object_dn = "CN=test-container1,CN=DisplaySpecifiers," + self.configuration_dn
-        self.delete_force(self.ldb_admin, object_dn)
+        delete_force(self.ldb_admin, object_dn)
         self.create_configuration_container(self.ldb_admin, object_dn, )
         user_sid = self.get_object_sid( self.get_users_domain_dn(user_name) )
         mod = "(A;;CC;;;AU)"
         self.dacl_add_ace(object_dn, mod)
         # Create child object with user's credentials
         object_dn = "CN=test-specifier1," + object_dn
-        self.delete_force(self.ldb_admin, object_dn)
+        delete_force(self.ldb_admin, object_dn)
         # Create a custom security descriptor
         # NB! Problematic owner part won't accept DA only <User Sid> !!!
         desc_sddl = "O:%sG:DAD:(A;;RP;;;DU)" % str(user_sid)
@@ -1227,7 +1222,7 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         # Create example Configuration container
         container_name = "test-container1"
         object_dn = "CN=%s,CN=DisplaySpecifiers,%s" % (container_name, self.configuration_dn)
-        self.delete_force(self.ldb_admin, object_dn)
+        delete_force(self.ldb_admin, object_dn)
         # Create a custom security descriptor
         desc_sddl = "O:DAG:DAD:(A;;RP;;;DU)"
         self.create_configuration_container(_ldb, object_dn, desc_sddl)
@@ -1243,7 +1238,7 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         # Create example Configuration container
         container_name = "test-container1"
         object_dn = "CN=%s,CN=DisplaySpecifiers,%s" % (container_name, self.configuration_dn)
-        self.delete_force(self.ldb_admin, object_dn)
+        delete_force(self.ldb_admin, object_dn)
         # Create a custom security descriptor
         desc_sddl = "O:DAG:DAD:(A;;RP;;;DU)"
         self.create_configuration_container(_ldb, object_dn, desc_sddl)
@@ -1259,7 +1254,7 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         # Create example Configuration container
         container_name = "test-container1"
         object_dn = "CN=%s,CN=DisplaySpecifiers,%s" % (container_name, self.configuration_dn)
-        self.delete_force(self.ldb_admin, object_dn)
+        delete_force(self.ldb_admin, object_dn)
         # Create a custom security descriptor
         desc_sddl = "O:DAG:DAD:(A;;RP;;;DU)"
         self.create_configuration_container(_ldb, object_dn, desc_sddl)
@@ -1275,7 +1270,7 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         # Create example Configuration container
         container_name = "test-container1"
         object_dn = "CN=%s,CN=DisplaySpecifiers,%s" % (container_name, self.configuration_dn)
-        self.delete_force(self.ldb_admin, object_dn)
+        delete_force(self.ldb_admin, object_dn)
         # Create a custom security descriptor
         desc_sddl = "O:DAG:DAD:(A;;RP;;;DU)"
         self.create_configuration_container(_ldb, object_dn, desc_sddl)
@@ -1289,8 +1284,8 @@ class OwnerGroupDescriptorTests(DescriptorTests):
 class DaclDescriptorTests(DescriptorTests):
 
     def deleteAll(self):
-        self.delete_force(self.ldb_admin, "CN=test_inherit_group,OU=test_inherit_ou," + self.base_dn)
-        self.delete_force(self.ldb_admin, "OU=test_inherit_ou," + self.base_dn)
+        delete_force(self.ldb_admin, "CN=test_inherit_group,OU=test_inherit_ou," + self.base_dn)
+        delete_force(self.ldb_admin, "OU=test_inherit_ou," + self.base_dn)
 
     def setUp(self):
         super(DaclDescriptorTests, self).setUp()
@@ -1631,7 +1626,7 @@ class DaclDescriptorTests(DescriptorTests):
 
 class SdFlagsDescriptorTests(DescriptorTests):
     def deleteAll(self):
-        self.delete_force(self.ldb_admin, "OU=test_sdflags_ou," + self.base_dn)
+        delete_force(self.ldb_admin, "OU=test_sdflags_ou," + self.base_dn)
 
     def setUp(self):
         super(SdFlagsDescriptorTests, self).setUp()
@@ -1788,9 +1783,9 @@ class SdFlagsDescriptorTests(DescriptorTests):
 class RightsAttributesTests(DescriptorTests):
 
     def deleteAll(self):
-        self.delete_force(self.ldb_admin, self.get_users_domain_dn("testuser_attr"))
-        self.delete_force(self.ldb_admin, self.get_users_domain_dn("testuser_attr2"))
-        self.delete_force(self.ldb_admin, "OU=test_domain_ou1," + self.base_dn)
+        delete_force(self.ldb_admin, self.get_users_domain_dn("testuser_attr"))
+        delete_force(self.ldb_admin, self.get_users_domain_dn("testuser_attr2"))
+        delete_force(self.ldb_admin, "OU=test_domain_ou1," + self.base_dn)
 
     def setUp(self):
         super(RightsAttributesTests, self).setUp()
@@ -1806,7 +1801,7 @@ class RightsAttributesTests(DescriptorTests):
 
     def test_sDRightsEffective(self):
         object_dn = "OU=test_domain_ou1," + self.base_dn
-        self.delete_force(self.ldb_admin, object_dn)
+        delete_force(self.ldb_admin, object_dn)
         self.ldb_admin.create_ou(object_dn)
         print self.get_users_domain_dn("testuser_attr")
         user_sid = self.get_object_sid(self.get_users_domain_dn("testuser_attr"))
@@ -1846,7 +1841,7 @@ class RightsAttributesTests(DescriptorTests):
 
     def test_allowedChildClassesEffective(self):
         object_dn = "OU=test_domain_ou1," + self.base_dn
-        self.delete_force(self.ldb_admin, object_dn)
+        delete_force(self.ldb_admin, object_dn)
         self.ldb_admin.create_ou(object_dn)
         user_sid = self.get_object_sid(self.get_users_domain_dn("testuser_attr"))
         #give testuser1 read access so attributes can be retrieved
@@ -1870,7 +1865,7 @@ class RightsAttributesTests(DescriptorTests):
 
     def test_allowedAttributesEffective(self):
         object_dn = "OU=test_domain_ou1," + self.base_dn
-        self.delete_force(self.ldb_admin, object_dn)
+        delete_force(self.ldb_admin, object_dn)
         self.ldb_admin.create_ou(object_dn)
         user_sid = self.get_object_sid(self.get_users_domain_dn("testuser_attr"))
         #give testuser1 read access so attributes can be retrieved
