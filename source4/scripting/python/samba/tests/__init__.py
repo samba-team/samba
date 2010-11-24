@@ -175,3 +175,9 @@ def connect_samdb_ex(samdb_url, lp=None, session_info=None,
     # fetch RootDse
     res = sam_db.search(base="", expression="", scope=ldb.SCOPE_BASE, attrs=["*"])
     return (sam_db, res[0])
+
+def delete_force(samdb, dn):
+    try:
+        samdb.delete(dn)
+    except ldb.LdbError, (num, _):
+        assert(num == ldb.ERR_NO_SUCH_OBJECT)
