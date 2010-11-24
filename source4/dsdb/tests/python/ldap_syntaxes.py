@@ -50,11 +50,6 @@ creds = credopts.get_credentials(lp)
 
 
 class SyntaxTests(unittest.TestCase):
-    def delete_force(self, ldb, dn):
-        try:
-            ldb.delete(dn)
-        except LdbError, (num, _):
-            self.assertEquals(num, ERR_NO_SUCH_OBJECT)
 
     def _find_domain_sid(self):
         res = self.ldb.search(base=self.base_dn, expression="(objectClass=*)", scope=SCOPE_BASE)
