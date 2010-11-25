@@ -659,10 +659,8 @@ accountExpires: %u
         :param sd: security descriptor of the object, can be
         an SDDL string or security.descriptor type
         """
-        m = ldb.Message()
-        m.dn = ldb.Dn(self, ou_dn)
-        m["ou"] = ou_dn.split(",")[0][3:]
-        m["objectClass"] = "organizationalUnit"
+        m = {"dn": ou_dn,
+             "objectClass": "organizationalUnit"}
 
         if description:
              m["description"] = description
