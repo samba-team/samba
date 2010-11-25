@@ -736,16 +736,13 @@ class AclSearchTests(AclTests):
         self.create_clean_ou("OU=ou1," + self.base_dn)
         mod = "(A;;LC;;;%s)(A;;LC;;;%s)" % (str(self.user_sid), str(self.group_sid))
         self.dacl_add_ace("OU=ou1," + self.base_dn, mod)
-        self.ldb_admin.create_ou("OU=ou2,OU=ou1," + self.base_dn,
-                                 "D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)" + mod)
-        self.ldb_admin.create_ou("OU=ou3,OU=ou2,OU=ou1," + self.base_dn,
-                                 "D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)" + mod)
-        self.ldb_admin.create_ou("OU=ou4,OU=ou2,OU=ou1," + self.base_dn,
-                                 "D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)" + mod)
-        self.ldb_admin.create_ou("OU=ou5,OU=ou3,OU=ou2,OU=ou1," + self.base_dn,
-                                 "D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)" + mod)
-        self.ldb_admin.create_ou("OU=ou6,OU=ou4,OU=ou2,OU=ou1," + self.base_dn,
-                                 "D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)" + mod)
+        tmp_desc = security.descriptor.from_sddl("D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)" + mod,
+                                                 self.domain_sid)
+        self.ldb_admin.create_ou("OU=ou2,OU=ou1," + self.base_dn, sd=tmp_desc)
+        self.ldb_admin.create_ou("OU=ou3,OU=ou2,OU=ou1," + self.base_dn, sd=tmp_desc)
+        self.ldb_admin.create_ou("OU=ou4,OU=ou2,OU=ou1," + self.base_dn, sd=tmp_desc)
+        self.ldb_admin.create_ou("OU=ou5,OU=ou3,OU=ou2,OU=ou1," + self.base_dn, sd=tmp_desc)
+        self.ldb_admin.create_ou("OU=ou6,OU=ou4,OU=ou2,OU=ou1," + self.base_dn, sd=tmp_desc)
 
         #regular users must see only ou1 and ou2
         res = self.ldb_user3.search("OU=ou1," + self.base_dn, expression="(objectClass=*)",
@@ -807,16 +804,13 @@ class AclSearchTests(AclTests):
         self.create_clean_ou("OU=ou1," + self.base_dn)
         mod = "(A;CI;LC;;;%s)(A;CI;LC;;;%s)" % (str(self.user_sid), str(self.group_sid))
         self.dacl_add_ace("OU=ou1," + self.base_dn, mod)
-        self.ldb_admin.create_ou("OU=ou2,OU=ou1," + self.base_dn,
-                                 "D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)")
-        self.ldb_admin.create_ou("OU=ou3,OU=ou2,OU=ou1," + self.base_dn,
-                                 "D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)")
-        self.ldb_admin.create_ou("OU=ou4,OU=ou2,OU=ou1," + self.base_dn,
-                                 "D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)")
-        self.ldb_admin.create_ou("OU=ou5,OU=ou3,OU=ou2,OU=ou1," + self.base_dn,
-                                 "D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)")
-        self.ldb_admin.create_ou("OU=ou6,OU=ou4,OU=ou2,OU=ou1," + self.base_dn,
-                                 "D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)")
+        tmp_desc = security.descriptor.from_sddl("D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)" + mod,
+                                                 self.domain_sid)
+        self.ldb_admin.create_ou("OU=ou2,OU=ou1," + self.base_dn, sd=tmp_desc)
+        self.ldb_admin.create_ou("OU=ou3,OU=ou2,OU=ou1," + self.base_dn, sd=tmp_desc)
+        self.ldb_admin.create_ou("OU=ou4,OU=ou2,OU=ou1," + self.base_dn, sd=tmp_desc)
+        self.ldb_admin.create_ou("OU=ou5,OU=ou3,OU=ou2,OU=ou1," + self.base_dn, sd=tmp_desc)
+        self.ldb_admin.create_ou("OU=ou6,OU=ou4,OU=ou2,OU=ou1," + self.base_dn, sd=tmp_desc)
 
         print "Testing correct behavior on nonaccessible search base"
         try:
@@ -861,16 +855,13 @@ class AclSearchTests(AclTests):
         self.create_clean_ou("OU=ou1," + self.base_dn)
         mod = "(A;CI;CC;;;%s)" % (str(self.user_sid))
         self.dacl_add_ace("OU=ou1," + self.base_dn, mod)
-        self.ldb_user.create_ou("OU=ou2,OU=ou1," + self.base_dn,
-                                "D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)")
-        self.ldb_user.create_ou("OU=ou3,OU=ou2,OU=ou1," + self.base_dn,
-                                "D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)")
-        self.ldb_user.create_ou("OU=ou4,OU=ou2,OU=ou1," + self.base_dn,
-                                "D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)")
-        self.ldb_user.create_ou("OU=ou5,OU=ou3,OU=ou2,OU=ou1," + self.base_dn,
-                                "D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)")
-        self.ldb_user.create_ou("OU=ou6,OU=ou4,OU=ou2,OU=ou1," + self.base_dn,
-                                "D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)")
+        tmp_desc = security.descriptor.from_sddl("D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)" + mod,
+                                                 self.domain_sid)
+        self.ldb_user.create_ou("OU=ou2,OU=ou1," + self.base_dn, sd=tmp_desc)
+        self.ldb_user.create_ou("OU=ou3,OU=ou2,OU=ou1," + self.base_dn, sd=tmp_desc)
+        self.ldb_user.create_ou("OU=ou4,OU=ou2,OU=ou1," + self.base_dn, sd=tmp_desc)
+        self.ldb_user.create_ou("OU=ou5,OU=ou3,OU=ou2,OU=ou1," + self.base_dn, sd=tmp_desc)
+        self.ldb_user.create_ou("OU=ou6,OU=ou4,OU=ou2,OU=ou1," + self.base_dn, sd=tmp_desc)
 
         ok_list = [Dn(self.ldb_admin,  "OU=ou2,OU=ou1," + self.base_dn),
                    Dn(self.ldb_admin,  "OU=ou1," + self.base_dn)]
@@ -891,8 +882,9 @@ class AclSearchTests(AclTests):
         self.create_clean_ou("OU=ou1," + self.base_dn)
         mod = "(A;CI;LC;;;%s)" % (str(self.user_sid))
         self.dacl_add_ace("OU=ou1," + self.base_dn, mod)
-        self.ldb_admin.create_ou("OU=ou2,OU=ou1," + self.base_dn,
-                                 "D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)" + mod)
+        tmp_desc = security.descriptor.from_sddl("D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)" + mod,
+                                                 self.domain_sid)
+        self.ldb_admin.create_ou("OU=ou2,OU=ou1," + self.base_dn, sd=tmp_desc)
         # assert user can only see dn
         res = self.ldb_user.search("OU=ou2,OU=ou1," + self.base_dn, expression="(objectClass=*)",
                                     scope=SCOPE_SUBTREE)
@@ -935,10 +927,10 @@ class AclSearchTests(AclTests):
         self.create_clean_ou("OU=ou1," + self.base_dn)
         mod = "(A;CI;LCCC;;;%s)" % (str(self.user_sid))
         self.dacl_add_ace("OU=ou1," + self.base_dn, mod)
-        self.ldb_admin.create_ou("OU=ou2,OU=ou1," + self.base_dn,
-                                 "D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)" + mod)
-        self.ldb_user.create_ou("OU=ou3,OU=ou2,OU=ou1," + self.base_dn,
-                                "D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)")
+        tmp_desc = security.descriptor.from_sddl("D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)" + mod,
+                                                 self.domain_sid)
+        self.ldb_admin.create_ou("OU=ou2,OU=ou1," + self.base_dn, sd=tmp_desc)
+        self.ldb_user.create_ou("OU=ou3,OU=ou2,OU=ou1," + self.base_dn, sd=tmp_desc)
 
         res = self.ldb_user.search("OU=ou1," + self.base_dn, expression="(ou=ou3)",
                                     scope=SCOPE_SUBTREE)

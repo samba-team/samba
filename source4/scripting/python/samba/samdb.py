@@ -663,16 +663,10 @@ accountExpires: %u
              "objectClass": "organizationalUnit"}
 
         if description:
-             m["description"] = description
+            m["description"] = description
         if name:
-             m["name"] = name
+            m["name"] = name
 
         if sd:
-            assert(isinstance(sd, str) or isinstance(sd, security.descriptor))
-            if isinstance(sd, str):
-                sid = security.dom_sid(self.get_domain_sid())
-                tmp_desc = security.descriptor.from_sddl(sd, sid)
-                m["nTSecurityDescriptor"] = ndr_pack(tmp_desc)
-            elif isinstance(sd, security.descriptor):
-                m["nTSecurityDescriptor"] = ndr_pack(sd)
+            m["nTSecurityDescriptor"] = ndr_pack(sd)
         self.add(m)
