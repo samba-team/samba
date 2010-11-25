@@ -1056,7 +1056,7 @@ static NTSTATUS dcesrv_lsa_CreateTrustedDomain_base(struct dcesrv_call_state *dc
 	trusted_domain_state->trusted_domain_dn = talloc_reference(trusted_domain_state, msg->dn);
 
 	/* create the trusted_domain */
-	ret = dsdb_add(sam_ldb, msg, DSDB_FLAG_AS_SYSTEM);
+	ret = ldb_add(sam_ldb, msg);
 	switch (ret) {
 	case  LDB_SUCCESS:
 		break;
@@ -2949,7 +2949,7 @@ static NTSTATUS dcesrv_lsa_CreateSecret(struct dcesrv_call_state *dce_call, TALL
 	secret_state->secret_dn = talloc_reference(secret_state, msg->dn);
 
 	/* create the secret */
-	ret = dsdb_add(secret_state->sam_ldb, msg, DSDB_FLAG_AS_SYSTEM);
+	ret = ldb_add(secret_state->sam_ldb, msg);
 	if (ret != LDB_SUCCESS) {
 		DEBUG(0,("Failed to create secret record %s: %s\n",
 			 ldb_dn_get_linearized(msg->dn), 
