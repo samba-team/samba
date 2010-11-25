@@ -191,11 +191,9 @@ static int aclread_search(struct ldb_module *module, struct ldb_request *req)
 {
 	struct ldb_context *ldb;
 	int ret;
-	bool block_anonymous;
 	struct aclread_context *ac;
 	struct ldb_request *down_req;
 	struct ldb_control *as_system = ldb_request_get_control(req, LDB_CONTROL_AS_SYSTEM_OID);
-	struct auth_session_info *session_info;
 	struct ldb_result *res;
 	struct ldb_message_element *parent;
 	struct aclread_private *p;
@@ -218,19 +216,6 @@ static int aclread_search(struct ldb_module *module, struct ldb_request *req)
 	/* no checks on special dn */
 	if (ldb_dn_is_special(req->op.search.base)) {
 		return ldb_next_request(module, req);
-	}
-	/* allow all access to rootDSE */
-	if (req->op.search.scope == LDB_SCOPE_BASE && ldb_dn_is_null(req->op.search.base)) {
-		return ldb_next_request(module, req);
-	}
-
-	session_info = (struct auth_session_info *)ldb_get_opaque(ldb, "sessionInfo");
-	if (session_info && security_token_is_anonymous(session_info->security_token)) {
-		block_anonymous = dsdb_block_anonymous_ops(module);
-		if (block_anonymous) {
-			return ldb_error(ldb, LDB_ERR_OPERATIONS_ERROR,
-					 "This request is not allowed to an anonymous connection.");
-		}
 	}
 
 	/* check accessibility of base */
