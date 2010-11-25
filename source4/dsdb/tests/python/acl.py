@@ -614,8 +614,6 @@ class AclSearchTests(AclTests):
         self.creds_tmp.set_domain(creds.get_domain())
         self.creds_tmp.set_realm(creds.get_realm())
         self.creds_tmp.set_workstation(creds.get_workstation())
-        self.anonymous = SamDB(url=host, credentials=self.creds_tmp, lp=lp)
-        self.dsheuristics = self.ldb_admin.get_dsheuristics()
         self.ldb_admin.newuser(self.u1, self.user_pass)
         self.ldb_admin.newuser(self.u2, self.user_pass)
         self.ldb_admin.newuser(self.u3, self.user_pass)
@@ -676,7 +674,8 @@ class AclSearchTests(AclTests):
 
     def test_search_anonymous1(self):
         """Verify access of rootDSE with the correct request"""
-        res = self.anonymous.search("", expression="(objectClass=*)", scope=SCOPE_BASE)
+        anonymous = SamDB(url=host, credentials=self.creds_tmp, lp=lp)
+        res = anonymous.search("", expression="(objectClass=*)", scope=SCOPE_BASE)
         self.assertEquals(len(res), 1)
         #verify some of the attributes
         #dont care about values
@@ -691,20 +690,21 @@ class AclSearchTests(AclTests):
 
     def test_search_anonymous2(self):
         """Make sure we cannot access anything else"""
+        anonymous = SamDB(url=host, credentials=self.creds_tmp, lp=lp)
         try:
-            res = self.anonymous.search("", expression="(objectClass=*)", scope=SCOPE_SUBTREE)
+            res = anonymous.search("", expression="(objectClass=*)", scope=SCOPE_SUBTREE)
         except LdbError, (num, _):
             self.assertEquals(num, ERR_OPERATIONS_ERROR)
         else:
             self.fail()
         try:
-            res = self.anonymous.search(self.base_dn, expression="(objectClass=*)", scope=SCOPE_SUBTREE)
+            res = anonymous.search(self.base_dn, expression="(objectClass=*)", scope=SCOPE_SUBTREE)
         except LdbError, (num, _):
             self.assertEquals(num, ERR_OPERATIONS_ERROR)
         else:
             self.fail()
         try:
-            res = self.anonymous.search("CN=Configuration," + self.base_dn, expression="(objectClass=*)",
+            res = anonymous.search("CN=Configuration," + self.base_dn, expression="(objectClass=*)",
                                         scope=SCOPE_SUBTREE)
         except LdbError, (num, _):
             self.assertEquals(num, ERR_OPERATIONS_ERROR)
@@ -718,18 +718,18 @@ class AclSearchTests(AclTests):
         mod = "(A;CI;LC;;;AN)"
         self.dacl_add_ace("OU=test_search_ou1," + self.base_dn, mod)
         self.ldb_admin.create_ou("OU=test_search_ou2,OU=test_search_ou1," + self.base_dn)
-        res = self.anonymous.search("OU=test_search_ou2,OU=test_search_ou1," + self.base_dn,
-                                    expression="(objectClass=*)", scope=SCOPE_SUBTREE)
+        anonymous = SamDB(url=host, credentials=self.creds_tmp, lp=lp)
+        res = anonymous.search("OU=test_search_ou2,OU=test_search_ou1," + self.base_dn,
+                               expression="(objectClass=*)", scope=SCOPE_SUBTREE)
         self.assertEquals(len(res), 1)
         self.assertTrue("dn" in res[0])
         self.assertTrue(res[0]["dn"] == Dn(self.ldb_admin,
                                            "OU=test_search_ou2,OU=test_search_ou1," + self.base_dn))
-        res = self.anonymous.search("CN=Configuration," + self.base_dn, expression="(objectClass=*)",
-                                    scope=SCOPE_SUBTREE)
+        res = anonymous.search("CN=Configuration," + self.base_dn, expression="(objectClass=*)",
+                               scope=SCOPE_SUBTREE)
         self.assertEquals(len(res), 1)
         self.assertTrue("dn" in res[0])
         self.assertTrue(res[0]["dn"] == Dn(self.ldb_admin, self.configuration_dn))
-        self.ldb_admin.set_dsheuristics(self.dsheuristics)
 
     def test_search1(self):
         """Make sure users can see us if given LC to user and group"""
@@ -1239,25 +1239,8 @@ class AclCARTests(AclTests):
         self.ldb_user = self.get_ldb_connection(self.user_with_wp, self.user_pass)
         self.ldb_user2 = self.get_ldb_connection(self.user_with_pc, self.user_pass)
 
-        res = self.ldb_admin.search("CN=Directory Service, CN=Windows NT, CN=Services, "
-                 + self.configuration_dn, scope=SCOPE_BASE, attrs=["dSHeuristics"])
-        if "dSHeuristics" in res[0]:
-            self.dsheuristics = res[0]["dSHeuristics"][0]
-        else:
-            self.dsheuristics = None
-
-        self.minPwdAge = self.ldb_admin.get_minPwdAge()
-
-        # Set the "dSHeuristics" to have the tests run against Windows Server
-        self.ldb_admin.set_dsheuristics("000000001")
-        # Set minPwdAge to 0
-        self.ldb_admin.set_minPwdAge("0")
-
     def tearDown(self):
         super(AclCARTests, self).tearDown()
-        #restore original values
-        self.ldb_admin.set_dsheuristics(self.dsheuristics)
-        self.ldb_admin.set_minPwdAge(self.minPwdAge)
         delete_force(self.ldb_admin, self.get_user_dn(self.user_with_wp))
         delete_force(self.ldb_admin, self.get_user_dn(self.user_with_pc))
 
@@ -1592,10 +1575,24 @@ if not runner.run(unittest.makeSuite(AclDeleteTests)).wasSuccessful():
     rc = 1
 if not runner.run(unittest.makeSuite(AclRenameTests)).wasSuccessful():
     rc = 1
+
+# Get the old "dSHeuristics" if it was set
+dsheuristics = ldb.get_dsheuristics()
+# Set the "dSHeuristics" to activate the correct "userPassword" behaviour
+ldb.set_dsheuristics("000000001")
+# Get the old "minPwdAge"
+minPwdAge = ldb.get_minPwdAge()
+# Set it temporarely to "0"
+ldb.set_minPwdAge("0")
 if not runner.run(unittest.makeSuite(AclCARTests)).wasSuccessful():
     rc = 1
 if not runner.run(unittest.makeSuite(AclSearchTests)).wasSuccessful():
     rc = 1
+# Reset the "dSHeuristics" as they were before
+ldb.set_dsheuristics(dsheuristics)
+# Reset the "minPwdAge" as it was before
+ldb.set_minPwdAge(minPwdAge)
+
 if not runner.run(unittest.makeSuite(AclExtendedTests)).wasSuccessful():
     rc = 1
 
