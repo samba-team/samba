@@ -667,7 +667,7 @@ accountExpires: %u
         if description:
              m["description"] = description
         if name:
-             m["description"] = name
+             m["name"] = name
 
         if sd:
             assert(isinstance(sd, str) or isinstance(sd, security.descriptor))
