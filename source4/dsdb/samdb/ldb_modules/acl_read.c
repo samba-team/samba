@@ -226,7 +226,7 @@ static int aclread_search(struct ldb_module *module, struct ldb_request *req)
 
 	session_info = (struct auth_session_info *)ldb_get_opaque(ldb, "sessionInfo");
 	if (session_info && security_token_is_anonymous(session_info->security_token)) {
-		block_anonymous = dsdb_block_anonymous_ops(module, req);
+		block_anonymous = dsdb_block_anonymous_ops(module);
 		if (block_anonymous) {
 			return ldb_error(ldb, LDB_ERR_OPERATIONS_ERROR,
 					 "This request is not allowed to an anonymous connection.");

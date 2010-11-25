@@ -1080,10 +1080,9 @@ const struct ldb_val *dsdb_module_find_dsheuristics(struct ldb_module *module,
 	return NULL;
 }
 
-bool dsdb_block_anonymous_ops(struct ldb_module *module,
-			      TALLOC_CTX *mem_ctx)
+bool dsdb_block_anonymous_ops(struct ldb_module *module)
 {
-	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
+	TALLOC_CTX *tmp_ctx = talloc_new(module);
 	bool result;
 	const struct ldb_val *hr_val = dsdb_module_find_dsheuristics(module,
 								     tmp_ctx);
