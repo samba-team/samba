@@ -40,6 +40,7 @@ struct private_data {
 	char **controls;
 	unsigned int num_partitions;
 	struct ldb_dn **partitions;
+	bool block_anonymous;
 };
 
 /*
@@ -613,6 +614,35 @@ static int rootdse_filter_controls(struct ldb_module *module, struct ldb_request
 	return LDB_SUCCESS;
 }
 
+/* Ensure that anonymous users are not allowed to make anything other than rootDSE search operations */
+
+static int rootdse_filter_operations(struct ldb_module *module, struct ldb_request *req)
+{
+	struct auth_session_info *session_info;
+	struct private_data *priv = talloc_get_type(ldb_module_get_private(module), struct private_data);
+	bool is_untrusted = ldb_req_is_untrusted(req);
+	bool is_anonymous = true;
+	if (is_untrusted == false) {
+		return LDB_SUCCESS;
+	}
+
+	session_info = (struct auth_session_info *)ldb_get_opaque(ldb_module_get_ctx(module), "sessionInfo");
+	if (session_info) {
+		is_anonymous = security_token_is_anonymous(session_info->security_token);
+	}
+	
+	if (is_anonymous == false || (priv && priv->block_anonymous == false)) {
+		return LDB_SUCCESS;
+	}
+	
+	if (req->operation == LDB_SEARCH) {
+		if (req->op.search.scope == LDB_SCOPE_BASE && ldb_dn_is_null(req->op.search.base)) {
+			return LDB_SUCCESS;
+		}
+	}
+	ldb_set_errstring(ldb_module_get_ctx(module), "Operation unavailable without authentication");
+	return LDB_ERR_STRONG_AUTH_REQUIRED;
+}
 
 static int rootdse_search(struct ldb_module *module, struct ldb_request *req)
 {
@@ -620,6 +650,11 @@ static int rootdse_search(struct ldb_module *module, struct ldb_request *req)
 	struct rootdse_context *ac;
 	struct ldb_request *down_req;
 	int ret;
+
+	ret = rootdse_filter_operations(module, req);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
 
 	ret = rootdse_filter_controls(module, req);
 	if (ret != LDB_SUCCESS) {
@@ -735,6 +770,8 @@ static int rootdse_init(struct ldb_module *module)
 	data->controls = NULL;
 	data->num_partitions = 0;
 	data->partitions = NULL;
+	data->block_anonymous = true;
+
 	ldb_module_set_private(module, data);
 
 	ldb_set_default_dns(ldb);
@@ -832,6 +869,8 @@ static int rootdse_init(struct ldb_module *module)
 			}
 		}
 	}
+
+	data->block_anonymous = dsdb_block_anonymous_ops(module);
 
 	talloc_free(mem_ctx);
 
@@ -1092,6 +1131,11 @@ static int rootdse_add(struct ldb_module *module, struct ldb_request *req)
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	int ret;
 
+	ret = rootdse_filter_operations(module, req);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
 	ret = rootdse_filter_controls(module, req);
 	if (ret != LDB_SUCCESS) {
 		return ret;
@@ -1163,6 +1207,11 @@ static int rootdse_modify(struct ldb_module *module, struct ldb_request *req)
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	int ret;
 
+	ret = rootdse_filter_operations(module, req);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
 	ret = rootdse_filter_controls(module, req);
 	if (ret != LDB_SUCCESS) {
 		return ret;
@@ -1205,10 +1254,41 @@ static int rootdse_modify(struct ldb_module *module, struct ldb_request *req)
 	return LDB_ERR_UNWILLING_TO_PERFORM;
 }
 
+static int rootdse_rename(struct ldb_module *module, struct ldb_request *req)
+{
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
+	int ret;
+
+	ret = rootdse_filter_operations(module, req);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	ret = rootdse_filter_controls(module, req);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	/*
+		If dn is not "" we should let it pass through
+	*/
+	if (!ldb_dn_is_null(req->op.rename.olddn)) {
+		return ldb_next_request(module, req);
+	}
+
+	ldb_set_errstring(ldb, "rootdse_remove: you cannot rename the rootdse entry!");
+	return LDB_ERR_NO_SUCH_OBJECT;
+}
+
 static int rootdse_delete(struct ldb_module *module, struct ldb_request *req)
 {
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	int ret;
+
+	ret = rootdse_filter_operations(module, req);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
 
 	ret = rootdse_filter_controls(module, req);
 	if (ret != LDB_SUCCESS) {
@@ -1226,6 +1306,24 @@ static int rootdse_delete(struct ldb_module *module, struct ldb_request *req)
 	return LDB_ERR_NO_SUCH_OBJECT;
 }
 
+static int rootdse_extended(struct ldb_module *module, struct ldb_request *req)
+{
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
+	int ret;
+
+	ret = rootdse_filter_operations(module, req);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	ret = rootdse_filter_controls(module, req);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	return ldb_next_request(module, req);
+}
+
 static const struct ldb_module_ops ldb_rootdse_module_ops = {
 	.name		= "rootdse",
 	.init_context   = rootdse_init,
@@ -1233,6 +1331,8 @@ static const struct ldb_module_ops ldb_rootdse_module_ops = {
 	.request	= rootdse_request,
 	.add		= rootdse_add,
 	.modify         = rootdse_modify,
+	.rename         = rootdse_rename,
+	.extended       = rootdse_extended,
 	.del		= rootdse_delete
 };
 
