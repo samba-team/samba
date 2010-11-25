@@ -389,6 +389,7 @@ static int objectclass_add(struct ldb_module *module, struct ldb_request *req)
 		instanceType = ldb_msg_find_attr_as_uint(req->op.add.message,
 							 "instanceType", 0);
 		if (!(instanceType & INSTANCE_TYPE_IS_NC_HEAD)) {
+			char *referral_uri;
 			/* When we are trying to readd the root basedn then
 			 * this is denied, but with an interesting mechanism:
 			 * there is generated a referral with the last
@@ -398,13 +399,13 @@ static int objectclass_add(struct ldb_module *module, struct ldb_request *req)
 			if (val == NULL) {
 				return ldb_operr(ldb);
 			}
-			value = talloc_asprintf(req, "ldap://%s/%s", val->data,
-						ldb_dn_get_linearized(req->op.add.message->dn));
-			if (value == NULL) {
+			referral_uri = talloc_asprintf(req, "ldap://%s/%s", val->data,
+						       ldb_dn_get_linearized(req->op.add.message->dn));
+			if (referral_uri == NULL) {
 				return ldb_module_oom(module);
 			}
 
-			return ldb_module_send_referral(req, value);
+			return ldb_module_send_referral(req, referral_uri);
 		}
 	}
 
