@@ -7891,7 +7891,7 @@ FLAG_CMDLINE won't be overridden by loads from smb.conf.
 
 static bool lp_set_cmdline_helper(const char *pszParmName, const char *pszParmValue, bool store_values)
 {
-	int parmnum;
+	int parmnum, i;
 	parmnum = map_parameter(pszParmName);
 	if (parmnum >= 0) {
 		parm_table[parmnum].flags &= ~FLAG_CMDLINE;
@@ -7899,6 +7899,16 @@ static bool lp_set_cmdline_helper(const char *pszParmName, const char *pszParmVa
 			return false;
 		}
 		parm_table[parmnum].flags |= FLAG_CMDLINE;
+
+		/* we have to also set FLAG_CMDLINE on aliases.  Aliases must
+		 * be grouped in the table, so we don't have to search the
+		 * whole table */
+		for (i=parmnum-1;i>=0 && parm_table[i].ptr == parm_table[parmnum].ptr;i--) {
+			parm_table[i].flags |= FLAG_CMDLINE;
+		}
+		for (i=parmnum+1;i<NUMPARAMETERS && parm_table[i].ptr == parm_table[parmnum].ptr;i++) {
+			parm_table[i].flags |= FLAG_CMDLINE;
+		}
 
 		if (store_values) {
 			store_lp_set_cmdline(pszParmName, pszParmValue);
