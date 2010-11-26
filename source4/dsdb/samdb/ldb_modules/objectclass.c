@@ -514,24 +514,22 @@ static int objectclass_do_add(struct oc_context *ac)
 		}
 	}
 
-	mem_ctx = talloc_new(ac);
-	if (mem_ctx == NULL) {
-		return ldb_module_oom(ac->module);
-	}
-
 	if (ac->schema != NULL) {
 		objectclass_element = ldb_msg_find_element(msg, "objectClass");
 		if (!objectclass_element) {
 			ldb_asprintf_errstring(ldb, "objectclass: Cannot add %s, no objectclass specified!",
 					       ldb_dn_get_linearized(msg->dn));
-			talloc_free(mem_ctx);
 			return LDB_ERR_OBJECT_CLASS_VIOLATION;
 		}
 		if (objectclass_element->num_values == 0) {
 			ldb_asprintf_errstring(ldb, "objectclass: Cannot add %s, at least one (structural) objectclass has to be specified!",
 					       ldb_dn_get_linearized(msg->dn));
-			talloc_free(mem_ctx);
 			return LDB_ERR_CONSTRAINT_VIOLATION;
+		}
+
+		mem_ctx = talloc_new(ac);
+		if (mem_ctx == NULL) {
+			return ldb_module_oom(ac->module);
 		}
 
 		/* Here we do now get the "objectClass" list from the
@@ -594,6 +592,7 @@ static int objectclass_do_add(struct oc_context *ac)
 						       "objectclass: object class '%s' is LSA-specific, rejecting creation of '%s' over LDAP!",
 						       objectclass_name,
 						       ldb_dn_get_linearized(msg->dn));
+				talloc_free(mem_ctx);
 				return LDB_ERR_UNWILLING_TO_PERFORM;
 			}
 
