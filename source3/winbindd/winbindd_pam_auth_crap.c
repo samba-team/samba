@@ -35,7 +35,6 @@ struct tevent_req *winbindd_pam_auth_crap_send(
 	struct tevent_req *req, *subreq;
 	struct winbindd_pam_auth_crap_state *state;
 	struct winbindd_domain *domain;
-	const char *domain_name;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct winbindd_pam_auth_crap_state);
@@ -61,26 +60,18 @@ struct tevent_req *winbindd_pam_auth_crap_send(
 		return tevent_req_post(req, ev);
 	}
 
-	domain_name = NULL;
-
-	if (request->data.auth_crap.domain[0] != '\0') {
-		domain_name = request->data.auth_crap.domain;
-	} else if (lp_winbind_use_default_domain()) {
-		domain_name = lp_workgroup();
+	if ((request->data.auth_crap.domain[0] == '\0')
+	    && lp_winbind_use_default_domain()) {
+		fstrcpy(request->data.auth_crap.domain,
+			lp_workgroup());
 	}
 
-	domain = NULL;
-
-	if (domain_name != NULL) {
-		domain = find_auth_domain(request->flags, domain_name);
-	}
-
+	domain = find_auth_domain(
+		request->flags, request->data.auth_crap.domain);
 	if (domain == NULL) {
 		tevent_req_nterror(req, NT_STATUS_NO_SUCH_USER);
 		return tevent_req_post(req, ev);
 	}
-
-	fstrcpy(request->data.auth_crap.domain, domain->name);
 
 	if (request->data.auth_crap.workstation[0] == '\0') {
 		fstrcpy(request->data.auth_crap.workstation, global_myname());
