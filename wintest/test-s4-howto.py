@@ -105,13 +105,12 @@ def set_nameserver(t, nameserver):
 nameserver %s
 
 # your original resolv.conf appears below:
-
 ''' % t.substitute(nameserver))
     child = t.pexpect_spawn("cat /etc/resolv.conf", crlf=False)
     i = child.expect(['your original resolv.conf appears below:', pexpect.EOF])
     if i == 0:
         child.expect(pexpect.EOF)
-    contents = child.before.replace('\r', '')
+    contents = child.before.lstrip().replace('\r', '')
     t.write_file('/etc/resolv.conf.wintest', contents, mode='a')
     t.write_file('/etc/resolv.conf.wintest-bak', contents)
     t.run_cmd("mv -f /etc/resolv.conf.wintest /etc/resolv.conf")
