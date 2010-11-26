@@ -35,11 +35,20 @@ def provision_s4(t, func_level="2008"):
     t.chdir('${PREFIX}')
     t.del_files(["var", "private"])
     t.run_cmd("rm -f etc/smb.conf")
-    options=' --function-level=%s -d${DEBUGLEVEL}' % func_level
-    options += ' --option=interfaces="${INTERFACE} ${INTERFACE_IPV6}"'
-    options += ' --host-ip=${INTERFACE_IP} --host-ip6=${INTERFACE_IPV6}'
-    options += ' --option=bindinterfacesonly=yes'
-    t.run_cmd('sbin/provision --realm=${LCREALM} --domain=${DOMAIN} --adminpass=${PASSWORD1} --server-role="domain controller"' + options)
+    provision=['sbin/provision',
+               '--realm=${LCREALM}',
+               '--domain=${DOMAIN}',
+               '--adminpass=${PASSWORD1}',
+               '--server-role=domain controller',
+               '--function-level=%s' % func_level,
+               '-d${DEBUGLEVEL}',
+               '--option=interfaces=${INTERFACE}',
+               '--host-ip=${INTERFACE_IP}',
+               '--option=bind interfaces only=yes',
+               '--option=rndc command=${RNDC} -c${PREFIX}/etc/rndc.conf']
+    if t.getvar('INTERFACE_IPV6'):
+        provision.append('--host-ip6=${INTERFACE_IPV6}')
+    t.run_cmd(provision)
     t.run_cmd('bin/samba-tool newuser testallowed ${PASSWORD1}')
     t.run_cmd('bin/samba-tool newuser testdenied ${PASSWORD1}')
     t.run_cmd('bin/samba-tool group addmembers "Allowed RODC Password Replication Group" testallowed')
