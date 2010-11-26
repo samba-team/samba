@@ -336,6 +336,10 @@ def test_dcpromo(t, vm):
     t.cmd_contains("bin/samba-tool drs kcc ${WIN_HOSTNAME}.${LCREALM} -Uadministrator@${LCREALM}%${PASSWORD1}", ['Consistency check', 'successful'])
 
     t.kinit("administrator@${REALM}", "${PASSWORD1}")
+
+    # the first replication will transfer the dnsHostname attribute
+    t.cmd_contains("bin/samba-tool drs replicate ${HOSTNAME}.${LCREALM} ${WIN_HOSTNAME} CN=Configuration,${BASEDN} -k yes", ["was successful"])
+
     for nc in [ '${BASEDN}', 'CN=Configuration,${BASEDN}', 'CN=Schema,CN=Configuration,${BASEDN}' ]:
         t.cmd_contains("bin/samba-tool drs replicate ${HOSTNAME}.${LCREALM} ${WIN_HOSTNAME}.${LCREALM} %s -k yes" % nc, ["was successful"])
         t.cmd_contains("bin/samba-tool drs replicate ${WIN_HOSTNAME}.${LCREALM} ${HOSTNAME}.${LCREALM} %s -k yes" % nc, ["was successful"])
