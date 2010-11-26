@@ -1736,7 +1736,9 @@ DSO_EXPORTS=""
 			BLDSHARED="true"
 			LDSHFLAGS="-shared"
 			SONAMEFLAG="-Wl,-soname,"
-			PICFLAG="-fPIC"
+			if test "${GCC}" = "yes"; then
+				PICFLAG="-fPIC"
+			fi
 			AC_DEFINE(STAT_ST_BLOCKSIZE,512)
 			AC_DEFINE(BROKEN_GETGRNAM,1,[Does getgrnam work correctly])
 			for flags in "-expect_unresolved '*'" "-Wl,-expect_unresolved,'*'" ; do
