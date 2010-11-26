@@ -541,6 +541,7 @@ static void dreplsrv_op_pull_source_apply_changes_trigger(struct tevent_req *req
 	struct dreplsrv_service *service = state->op->service;
 	struct dreplsrv_partition *partition = state->op->source_dsa->partition;
 	struct dreplsrv_drsuapi_connection *drsuapi = state->op->source_dsa->conn->drsuapi;
+	struct dsdb_schema *schema;
 	const struct drsuapi_DsReplicaOIDMapping_Ctr *mapping_ctr;
 	uint32_t object_count;
 	struct drsuapi_DsReplicaObjectListItemEx *first_object;
@@ -579,7 +580,16 @@ static void dreplsrv_op_pull_source_apply_changes_trigger(struct tevent_req *req
 		return;
 	}
 
+	schema = dsdb_get_schema(service->samdb, NULL);
+	if (!schema) {
+		DEBUG(0,(__location__ ": Schema is not loaded yet!\n"));
+		tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
+		return;
+	}
+	/* TODO (kim): Create working dsdb_schema in case we replicate Schema NC */
+
 	status = dsdb_replicated_objects_convert(service->samdb,
+						 schema,
 						 partition->nc.dn,
 						 mapping_ctr,
 						 object_count,

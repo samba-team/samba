@@ -199,6 +199,7 @@ WERROR dsdb_convert_object_ex(struct ldb_context *ldb,
 }
 
 WERROR dsdb_replicated_objects_convert(struct ldb_context *ldb,
+				       const struct dsdb_schema *schema,
 				       const char *partition_dn_str,
 				       const struct drsuapi_DsReplicaOIDMapping_Ctr *mapping_ctr,
 				       uint32_t object_count,
@@ -213,7 +214,6 @@ WERROR dsdb_replicated_objects_convert(struct ldb_context *ldb,
 {
 	WERROR status;
 	struct ldb_dn *partition_dn;
-	const struct dsdb_schema *schema;
 	struct dsdb_schema_prefixmap *pfm_remote;
 	struct dsdb_extended_replicated_objects *out;
 	const struct drsuapi_DsReplicaObjectListItemEx *cur;
@@ -223,12 +223,11 @@ WERROR dsdb_replicated_objects_convert(struct ldb_context *ldb,
 	W_ERROR_HAVE_NO_MEMORY(out);
 	out->version		= DSDB_EXTENDED_REPLICATED_OBJECTS_VERSION;
 
-	/* Get the schema, and ensure it's kept valid for as long as 'out' which may contain pointers to it */
-	schema = dsdb_get_schema(ldb, out);
-	if (!schema) {
-		talloc_free(out);
-		return WERR_DS_SCHEMA_NOT_LOADED;
-	}
+	/*
+	 * Ensure schema is kept valid for as long as 'out'
+	 * which may contain pointers to it
+	 */
+	talloc_reference(out, schema);
 
 	partition_dn = ldb_dn_new(out, ldb, partition_dn_str);
 	W_ERROR_HAVE_NO_MEMORY_AND_FREE(partition_dn, out);

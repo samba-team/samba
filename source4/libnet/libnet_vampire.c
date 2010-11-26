@@ -419,6 +419,7 @@ static NTSTATUS libnet_vampire_cb_apply_schema(struct libnet_vampire_cb_state *s
 
 	/* Now convert the schema elements again, using the schema we finalised, ready to actually import */
 	status = dsdb_replicated_objects_convert(s->ldb,
+						 s->schema,
 						 c->partition->nc.dn,
 						 mapping_ctr,
 						 object_count,
@@ -606,6 +607,7 @@ NTSTATUS libnet_vampire_cb_store_chunk(void *private_data,
 {
 	struct libnet_vampire_cb_state *s = talloc_get_type(private_data, struct libnet_vampire_cb_state);
 	WERROR status;
+	struct dsdb_schema *schema;
 	const struct drsuapi_DsReplicaOIDMapping_Ctr *mapping_ctr;
 	uint32_t nc_object_count;
 	uint32_t object_count;
@@ -685,7 +687,14 @@ NTSTATUS libnet_vampire_cb_store_chunk(void *private_data,
 	}
 
 
+	schema = dsdb_get_schema(s->ldb, NULL);
+	if (!schema) {
+		DEBUG(0,(__location__ ": Schema is not loaded yet!\n"));
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
 	status = dsdb_replicated_objects_convert(s->ldb,
+						 schema,
 						 c->partition->nc.dn,
 						 mapping_ctr,
 						 object_count,

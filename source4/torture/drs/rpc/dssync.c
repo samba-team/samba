@@ -341,6 +341,7 @@ static bool test_analyse_objects(struct torture_context *tctx,
 	ldap_schema = dsdb_get_schema(ldb, NULL);
 
 	status = dsdb_replicated_objects_convert(ldb,
+						 ldap_schema,
 						 partition,
 						 mapping_ctr,
 						 object_count,
