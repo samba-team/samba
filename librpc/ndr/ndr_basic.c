@@ -848,6 +848,7 @@ _PUBLIC_ void ndr_print_ipv4address(struct ndr_print *ndr, const char *name,
 	ndr->print(ndr, "%-25s: %s", name, address);
 }
 
+#ifdef AF_INET6
 /*
   pull a ipv6address
 */
@@ -903,6 +904,7 @@ _PUBLIC_ void ndr_print_ipv6address(struct ndr_print *ndr, const char *name,
 	ndr->print(ndr, "%-25s: %s", name, address);
 }
 #undef IPV6_BYTES
+#endif
 
 _PUBLIC_ void ndr_print_struct(struct ndr_print *ndr, const char *name, const char *type)
 {
