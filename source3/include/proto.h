@@ -595,6 +595,10 @@ void pull_file_id_24(char *buf, struct file_id *id);
 bool gencache_set(const char *keystr, const char *value, time_t timeout);
 bool gencache_del(const char *keystr);
 bool gencache_get(const char *keystr, char **valstr, time_t *timeout);
+bool gencache_parse(const char *keystr,
+		    void (*parser)(time_t timeout, DATA_BLOB blob,
+				   void *private_data),
+		    void *private_data);
 bool gencache_get_data_blob(const char *keystr, DATA_BLOB *blob,
 			    time_t *timeout, bool *was_expired);
 bool gencache_stabilize(void);
