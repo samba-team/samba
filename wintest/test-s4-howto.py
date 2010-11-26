@@ -13,8 +13,9 @@ def check_prerequesites(t):
         raise Exception("You must run this script as root")
     t.putenv("KRB5_CONFIG", '${PREFIX}/private/krb5.conf')
     t.run_cmd('ifconfig ${INTERFACE} ${INTERFACE_NET} up')
-    t.run_cmd('ifconfig ${INTERFACE} inet6 del ${INTERFACE_IPV6}/64', checkfail=False)
-    t.run_cmd('ifconfig ${INTERFACE} inet6 add ${INTERFACE_IPV6}/64 up')
+    if t.getvar('INTERFACE_IPV6'):
+        t.run_cmd('ifconfig ${INTERFACE} inet6 del ${INTERFACE_IPV6}/64', checkfail=False)
+        t.run_cmd('ifconfig ${INTERFACE} inet6 add ${INTERFACE_IPV6}/64 up')
 
 
 def build_s4(t):
@@ -133,10 +134,16 @@ def restart_bind(t):
         raise RuntimeError("old /etc/resolv.conf must not contain %s as a nameserver, this will create loops with the generated dns configuration" % nameserver)
     t.setvar('DNSSERVER', nameserver)
 
+    if t.getvar('INTERFACE_IPV6'):
+        ipv6_listen = 'listen-on-v6 port 53 { ${INTERFACE_IPV6}; };'
+    else:
+        ipv6_listen = ''
+    t.setvar('BIND_LISTEN_IPV6', ipv6_listen)
+
     t.write_file("etc/named.conf", '''
 options {
 	listen-on port 53 { ${INTERFACE_IP};  };
-	listen-on-v6 port 53 { ${INTERFACE_IPV6}; };
+	${BIND_LISTEN_IPV6}
 	directory 	"${PREFIX}/var/named";
 	dump-file 	"${PREFIX}/var/named/data/cache_dump.db";
 	pid-file 	"${PREFIX}/var/named/named.pid";
@@ -494,7 +501,7 @@ def join_as_dc(t, vm):
     child = t.open_telnet("${WIN_HOSTNAME}", "${WIN_DOMAIN}\\administrator", "${WIN_PASS}", set_time=True)
     t.get_ipconfig(child)
     t.retry_cmd("bin/samba-tool drs showrepl ${WIN_HOSTNAME}.${WIN_REALM} -Uadministrator%${WIN_PASS}", ['INBOUND NEIGHBORS'] )
-    t.run_cmd('bin/samba-tool join ${WIN_REALM} DC -Uadministrator%${WIN_PASS} -d${DEBUGLEVEL} --option=interfaces="${INTERFACE} ${INTERFACE_IPV6"')
+    t.run_cmd('bin/samba-tool join ${WIN_REALM} DC -Uadministrator%${WIN_PASS} -d${DEBUGLEVEL} --option=interfaces=${INTERFACE}')
     t.run_cmd('bin/samba-tool drs kcc ${WIN_HOSTNAME}.${WIN_REALM} -Uadministrator@${WIN_REALM}%${WIN_PASS}')
 
 
@@ -563,7 +570,7 @@ def join_as_rodc(t, vm):
     child = t.open_telnet("${WIN_HOSTNAME}", "${WIN_DOMAIN}\\administrator", "${WIN_PASS}", set_time=True)
     t.get_ipconfig(child)
     t.retry_cmd("bin/samba-tool drs showrepl ${WIN_HOSTNAME}.${WIN_REALM} -Uadministrator%${WIN_PASS}", ['INBOUND NEIGHBORS'] )
-    t.run_cmd('bin/samba-tool join ${WIN_REALM} RODC -Uadministrator%${WIN_PASS} -d${DEBUGLEVEL} --option=interfaces="${INTERFACE} ${INTERFACE_IPV6}"')
+    t.run_cmd('bin/samba-tool join ${WIN_REALM} RODC -Uadministrator%${WIN_PASS} -d${DEBUGLEVEL} --option=interfaces=${INTERFACE}')
     t.run_cmd('bin/samba-tool drs kcc ${WIN_HOSTNAME}.${WIN_REALM} -Uadministrator@${WIN_REALM}%${WIN_PASS}')
 
 
