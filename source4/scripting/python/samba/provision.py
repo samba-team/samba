@@ -590,7 +590,7 @@ def make_smbconf(smbconf, setup_path, hostname, domain, realm, serverrole,
     #Load non-existant file
     if os.path.exists(smbconf):
         lp.load(smbconf)
-    if eadb:
+    if eadb and not lp.get("posix:eadb"):
         if targetdir is not None:
             privdir = os.path.join(targetdir, "private")
         else:
