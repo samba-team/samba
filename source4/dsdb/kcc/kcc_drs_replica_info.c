@@ -418,13 +418,9 @@ static WERROR get_master_ncs(TALLOC_CTX *mem_ctx, struct ldb_context *samdb,
 		}
 
 		for (k = 0; k < msg_elem->num_values; k++) {
-			int len = msg_elem->values[k].length;
-
 			/* copy the string on msg_elem->values[k]->data to nc_str */
-			nc_str = talloc_array(mem_ctx, char, len);
+			nc_str = talloc_strndup(mem_ctx, (char *)msg_elem->values[k].data, msg_elem->values[k].length);
 			W_ERROR_HAVE_NO_MEMORY(nc_str);
-			memcpy(nc_str, msg_elem->values[k].data, len);
-			nc_str[len] = '\0';
 
 			nc_list_elem = talloc_zero(mem_ctx, struct ncList);
 			W_ERROR_HAVE_NO_MEMORY(nc_list_elem);
@@ -584,7 +580,6 @@ static WERROR kccdrs_replica_get_info_neighbours(TALLOC_CTX *mem_ctx,
 	struct repsFromTo2 *reps_from = NULL;
 	uint32_t c_reps_from;
 	uint32_t i_rep;
-	struct drsuapi_DsReplicaNeighbour neigh;
 	struct ncList *nc_list = NULL;
 
 	status = get_ncs_list(mem_ctx, samdb, service, object_dn_str, &nc_list);
@@ -624,6 +619,8 @@ static WERROR kccdrs_replica_get_info_neighbours(TALLOC_CTX *mem_ctx,
 			{
 
 				if (i >= base_index) {
+					struct drsuapi_DsReplicaNeighbour neigh;
+					ZERO_STRUCT(neigh);
 					status = fill_neighbor_from_repsFrom(mem_ctx, samdb,
 									     nc_dn, &neigh,
 									     reps_from);
@@ -702,7 +699,6 @@ static WERROR kccdrs_replica_get_info_repsto(TALLOC_CTX *mem_ctx,
 	struct repsFromTo2 *reps_to;
 	uint32_t c_reps_to;
 	uint32_t i_rep;
-	struct drsuapi_DsReplicaNeighbour neigh;
 	struct ncList *nc_list = NULL;
 
 	status = get_ncs_list(mem_ctx, samdb, service, object_dn_str, &nc_list);
@@ -726,6 +722,8 @@ static WERROR kccdrs_replica_get_info_repsto(TALLOC_CTX *mem_ctx,
 
 		/* foreach r in nc!repsTo */
 		for (i_rep = 0; i_rep < c_reps_to; i_rep++) {
+			struct drsuapi_DsReplicaNeighbour neigh;
+			ZERO_STRUCT(neigh);
 
 			/* put all info on reps_to */
 			if (reps_to_blob[i_rep].version == 1) {
