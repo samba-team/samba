@@ -289,6 +289,65 @@ static bool gencache_pull_timeout(char *val, time_t *pres, char **pendptr)
 	return true;
 }
 
+struct gencache_parse_state {
+	void (*parser)(time_t timeout, DATA_BLOB blob, void *private_data);
+	void *private_data;
+};
+
+static int gencache_parse_fn(TDB_DATA key, TDB_DATA data, void *private_data)
+{
+	struct gencache_parse_state *state;
+	DATA_BLOB blob;
+	time_t t;
+	char *endptr;
+	bool ret;
+
+	if (data.dptr == NULL) {
+		return -1;
+	}
+	ret = gencache_pull_timeout((char *)data.dptr, &t, &endptr);
+	if (!ret) {
+		return -1;
+	}
+	state = (struct gencache_parse_state *)private_data;
+	blob = data_blob_const(
+		endptr+1, data.dsize - PTR_DIFF(endptr+1, data.dptr));
+	state->parser(t, blob, state->private_data);
+	return 0;
+}
+
+bool gencache_parse(const char *keystr,
+		    void (*parser)(time_t timeout, DATA_BLOB blob,
+				   void *private_data),
+		    void *private_data)
+{
+	struct gencache_parse_state state;
+	TDB_DATA key;
+	int ret;
+
+	if (keystr == NULL) {
+		return false;
+	}
+	if (tdb_data_cmp(string_term_tdb_data(keystr),
+			 last_stabilize_key()) == 0) {
+		return false;
+	}
+	if (!gencache_init()) {
+		return false;
+	}
+
+	key = string_term_tdb_data(keystr);
+	state.parser = parser;
+	state.private_data = private_data;
+
+	ret = tdb_parse_record(cache_notrans, key, gencache_parse_fn, &state);
+	if (ret != -1) {
+		return true;
+	}
+	ret = tdb_parse_record(cache, key, gencache_parse_fn, &state);
+	return (ret != -1);
+}
+
 /**
  * Get existing entry from the cache file.
  *
