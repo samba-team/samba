@@ -1308,7 +1308,6 @@ static int rootdse_delete(struct ldb_module *module, struct ldb_request *req)
 
 static int rootdse_extended(struct ldb_module *module, struct ldb_request *req)
 {
-	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	int ret;
 
 	ret = rootdse_filter_operations(module, req);
