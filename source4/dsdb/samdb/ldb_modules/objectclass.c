@@ -490,8 +490,8 @@ static int objectclass_do_add(struct oc_context *ac)
 
 		/* An add operation on partition DNs without "NC-add" operation
 		 * isn't allowed. */
-		instanceType = ldb_msg_find_attr_as_uint(ac->req->op.add.message,
-							 "instanceType", 0);
+		instanceType = ldb_msg_find_attr_as_uint(msg, "instanceType",
+							 0);
 		if (!(instanceType & INSTANCE_TYPE_IS_NC_HEAD)) {
 			ldb_asprintf_errstring(ldb, "objectclass: Cannot add %s, parent does not exist!", 
 					       ldb_dn_get_linearized(msg->dn));
