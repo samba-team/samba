@@ -319,7 +319,9 @@ class wintest():
         child.expect("C:")
         if i == 1:
             child.sendline('netsh firewall set opmode mode = DISABLE profile = ALL')
-            child.expect("Ok")
+            i = child.expect(["Ok", "The following command was not found"])
+            if i != 0:
+                self.info("Firewall disable failed - ignoring")
             child.expect("C:")
  
     def set_dns(self, child):
