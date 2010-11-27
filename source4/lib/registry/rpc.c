@@ -473,7 +473,6 @@ static struct registry_operations reg_backend_rpc = {
 	.create_key = rpc_add_key,
 	.delete_key = rpc_del_key,
 	.get_key_info = rpc_get_info,
-	.get_predefined_key = rpc_get_predefined_key,
 };
 
 _PUBLIC_ WERROR reg_open_remote(struct registry_context **ctx,
