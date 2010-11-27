@@ -202,7 +202,7 @@ _PUBLIC_ struct tdb_context *tdb_open_ex(const char *name, int hash_size, int td
 	}
 
 	if (name == NULL) {
-		tdb->name = "__NULL__";
+		tdb->name = discard_const_p(char, "__NULL__");
 		TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_open_ex: called with name == NULL\n"));
 		tdb->name = NULL;
 		errno = EINVAL;
@@ -215,7 +215,7 @@ _PUBLIC_ struct tdb_context *tdb_open_ex(const char *name, int hash_size, int td
 		 * set the name as the given string, so that tdb_name() will
 		 * work in case of an error.
 		 */
-		tdb->name = name;
+		tdb->name = discard_const_p(char, name);
 		TDB_LOG((tdb, TDB_DEBUG_ERROR, "tdb_open_ex: can't strdup(%s)\n",
 			 name));
 		tdb->name = NULL;
