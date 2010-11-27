@@ -20,7 +20,7 @@
 */
 
 #include "includes.h"
-#include "librpc/gen_ndr/ndr_srvsvc.h"
+#include "librpc/gen_ndr/srvsvc.h"
 #include "rpc_server/dcerpc_server.h"
 #include "dsdb/samdb/samdb.h"
 #include "auth/auth.h"
