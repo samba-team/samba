@@ -25,10 +25,10 @@
 #include "dsdb/samdb/samdb.h"
 #include "dsdb/common/util.h"
 #include "param/param.h"
-#include "rpc_server/drsuapi/dcesrv_drsuapi.h"
-#include "librpc/gen_ndr/ndr_drsuapi.h"
 #include "libcli/security/security.h"
 #include "libcli/security/session.h"
+#include "rpc_server/drsuapi/dcesrv_drsuapi.h"
+#include "librpc/gen_ndr/ndr_drsuapi.h"
 
 /*
   add special SPNs needed for DRS replication to machine accounts when
