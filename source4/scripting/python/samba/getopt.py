@@ -135,10 +135,12 @@ class CredentialsOptions(optparse.OptionGroup):
         self.ipaddress = arg
 
     def _set_kerberos(self, option, opt_str, arg, parser):
-        if bool(arg) or arg.lower() == "yes":
+        if arg.lower() in ["yes", 'true', '1']:
             self.creds.set_kerberos_state(MUST_USE_KERBEROS)
-        else:
+        elif arg.lower() in ["no", 'false', '0']:
             self.creds.set_kerberos_state(DONT_USE_KERBEROS)
+        else:
+            raise optparse.BadOptionErr("invalid kerberos option: %s" % arg)
 
     def _set_simple_bind_dn(self, option, opt_str, arg, parser):
         self.creds.set_bind_dn(arg)
