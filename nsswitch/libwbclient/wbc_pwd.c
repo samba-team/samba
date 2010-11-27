@@ -605,7 +605,7 @@ wbcErr wbcGetGroups(const char *account,
 	BAIL_ON_WBC_ERROR(wbc_status);
 
 	groups = (gid_t *)wbcAllocateMemory(
-		sizeof(gid_t), response.data.num_entries, NULL);
+		response.data.num_entries, sizeof(gid_t), NULL);
 	BAIL_ON_PTR_ERROR(groups, wbc_status);
 
 	for (i = 0; i < response.data.num_entries; i++) {
