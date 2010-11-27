@@ -841,7 +841,6 @@ sub provision($$$$$$$$$)
 
 	my $ret = $self->provision_raw_step1($ctx);
 	unless (defined $ret) {
-		print "coin coin\n";
 		return undef;
 	}
 
