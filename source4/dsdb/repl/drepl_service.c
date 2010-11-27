@@ -308,7 +308,7 @@ static NTSTATUS drepl_replica_sync(struct irpc_message *msg,
 		}
 		if (!W_ERROR_IS_OK(werr)) {
 			REPLICA_SYNC_FAIL("Failed to locate source DSA for given NC",
-					  WERR_DS_DRA_NO_REPLICA);
+					  werr);
 		}
 
 		/* schedule replication item */
