@@ -7229,6 +7229,7 @@ static bool test_EnumDomainUsers(struct dcerpc_binding_handle *b,
 			torture_assert_ntstatus_ok(tctx, r.out.result,
 				"failed to enumerate users");
 		}
+		status = r.out.result;
 
 		total_num_entries += num_entries;
 	} while (NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES));
@@ -7269,6 +7270,7 @@ static bool test_EnumDomainGroups(struct dcerpc_binding_handle *b,
 			torture_assert_ntstatus_ok(tctx, r.out.result,
 				"failed to enumerate groups");
 		}
+		status = r.out.result;
 
 		total_num_entries += num_entries;
 	} while (NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES));
@@ -7309,6 +7311,7 @@ static bool test_EnumDomainAliases(struct dcerpc_binding_handle *b,
 			torture_assert_ntstatus_ok(tctx, r.out.result,
 				"failed to enumerate aliases");
 		}
+		status = r.out.result;
 
 		total_num_entries += num_entries;
 	} while (NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES));
@@ -7353,6 +7356,7 @@ static bool test_QueryDisplayInfo_level(struct dcerpc_binding_handle *b,
 			torture_assert_ntstatus_ok(tctx, r.out.result,
 				"failed to query displayinfo");
 		}
+		status = r.out.result;
 
 		if (*r.out.returned_size == 0) {
 			break;
