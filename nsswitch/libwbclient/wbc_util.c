@@ -74,7 +74,7 @@ wbcErr wbcInterfaceDetails(struct wbcInterfaceDetails **_details)
 	ZERO_STRUCT(response);
 
 	info = (struct wbcInterfaceDetails *)wbcAllocateMemory(
-		sizeof(struct wbcInterfaceDetails), 1,
+		1, sizeof(struct wbcInterfaceDetails),
 		wbcInterfaceDetailsDestructor);
 	BAIL_ON_PTR_ERROR(info, wbc_status);
 
@@ -173,7 +173,7 @@ wbcErr wbcDomainInfo(const char *domain, struct wbcDomainInfo **dinfo)
 	BAIL_ON_WBC_ERROR(wbc_status);
 
 	info = (struct wbcDomainInfo *)wbcAllocateMemory(
-		sizeof(struct wbcDomainInfo), 1, wbcDomainInfoDestructor);
+		1, sizeof(struct wbcDomainInfo), wbcDomainInfoDestructor);
 	BAIL_ON_PTR_ERROR(info, wbc_status);
 
 	info->short_name = strdup(response.data.domain_info.name);
@@ -442,7 +442,7 @@ wbcErr wbcListTrusts(struct wbcDomainInfo **domains, size_t *num_domains)
 	}
 
 	d_list = (struct wbcDomainInfo *)wbcAllocateMemory(
-		sizeof(struct wbcDomainInfo), response.data.num_entries + 1,
+		response.data.num_entries + 1,sizeof(struct wbcDomainInfo),
 		wbcDomainInfoListDestructor);
 	BAIL_ON_PTR_ERROR(d_list, wbc_status);
 
@@ -511,7 +511,7 @@ wbcErr wbcLookupDomainController(const char *domain,
 	request.flags = flags;
 
 	dc = (struct wbcDomainControllerInfo *)wbcAllocateMemory(
-		sizeof(struct wbcDomainControllerInfo), 1,
+		 1, sizeof(struct wbcDomainControllerInfo),
 		wbcDomainControllerInfoDestructor);
 	BAIL_ON_PTR_ERROR(dc, wbc_status);
 
@@ -554,7 +554,7 @@ static wbcErr wbc_create_domain_controller_info_ex(const struct winbindd_respons
 	struct wbcGuid guid;
 
 	i = (struct wbcDomainControllerInfoEx *)wbcAllocateMemory(
-		sizeof(struct wbcDomainControllerInfoEx), 1,
+		1, sizeof(struct wbcDomainControllerInfoEx),
 		wbcDomainControllerInfoExDestructor);
 	BAIL_ON_PTR_ERROR(i, wbc_status);
 
@@ -698,7 +698,7 @@ wbcErr wbcAddNamedBlob(size_t *num_blobs,
 	 * wbcNamedBlobDestructor
 	 */
 	blobs = (struct wbcNamedBlob *)wbcAllocateMemory(
-		sizeof(struct wbcNamedBlob), *num_blobs + 2,
+		*num_blobs + 2, sizeof(struct wbcNamedBlob),
 		wbcNamedBlobDestructor);
 
 	if (*pblobs != NULL) {
