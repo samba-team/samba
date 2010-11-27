@@ -200,7 +200,8 @@ class wintest():
                 return
             except:
                 time.sleep(delay)
-                retries = retries - 1
+                retries -= 1
+                self.info("retrying (retries=%u delay=%u)" % (retries, delay))
         raise RuntimeError("Failed to find %s" % contains)
 
     def pexpect_spawn(self, cmd, timeout=60, crlf=True):
@@ -239,6 +240,11 @@ class wintest():
         '''power off a VM'''
         self.setvar('VMNAME', vmname)
         self.run_cmd("${VM_POWEROFF}", checkfail=checkfail)
+
+    def vm_reset(self, vmname):
+        '''reset a VM'''
+        self.setvar('VMNAME', vmname)
+        self.run_cmd("${VM_RESET}")
 
     def vm_restore(self, vmname, snapshot):
         '''restore a VM'''
@@ -368,6 +374,7 @@ class wintest():
                 return child.after
             retries -= 1
             time.sleep(delay)
+            self.info("retrying (retries=%u delay=%u)" % (retries, delay))
         raise RuntimeError("Failed to resolve IP of %s" % hostname)
 
 
@@ -394,6 +401,7 @@ class wintest():
                 child.close()
                 time.sleep(delay)
                 retries -= 1
+                self.info("retrying (retries=%u delay=%u)" % (retries, delay))
                 continue
             child.expect("password:")
             child.sendline(password)
@@ -408,6 +416,7 @@ class wintest():
                 child.close()
                 time.sleep(delay)
                 retries -= 1
+                self.info("retrying (retries=%u delay=%u)" % (retries, delay))
                 continue
             if set_dns:
                 set_dns = False
@@ -459,3 +468,21 @@ class wintest():
                 if base + '_IP' in self.vars:
                     ret[self.vars[base + '_REALM']] = self.vars[base + '_IP']
         return ret
+
+    def wait_reboot(self, retries=3):
+        '''wait for a VM to reboot'''
+
+        # first wait for it to shutdown
+        self.port_wait("${WIN_IP}", 139, wait_for_fail=True, delay=6)
+
+        # now wait for it to come back. If it fails to come back
+        # then try resetting it
+        while retries > 0:
+            try:
+                self.port_wait("${WIN_IP}", 139)
+                return
+            except:
+                retries -= 1
+                self.vm_reset("${WIN_VM}")
+                self.info("retrying reboot (retries=%u)" % retries)
+        raise RuntimeError(self.substitute("VM ${WIN_VM} failed to reboot"))

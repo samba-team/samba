@@ -261,8 +261,7 @@ def run_winjoin(t, vm):
     child.expect("The command completed successfully")
     child.expect("C:")
     child.sendline("shutdown /r -t 0")
-    t.port_wait("${WIN_IP}", 139, wait_for_fail=True)
-    t.port_wait("${WIN_IP}", 139)
+    t.wait_reboot()
     child = t.open_telnet("${WIN_HOSTNAME}", "${WIN_USER}", "${WIN_PASS}", set_time=True, set_ip=True)
     child.sendline("ipconfig /registerdns")
     child.expect("Registration of the DNS resource records for all adapters of this computer has been initiated. Any errors will be reported in the Event Viewer")
@@ -318,8 +317,7 @@ SafeModeAdminPassword=${PASSWORD1}
     i = child.expect(["You must restart this computer", "failed", "Active Directory Domain Services was not installed", "C:"], timeout=120)
     if i == 1 or i == 2:
         raise Exception("dcpromo failed")
-    t.port_wait("${WIN_IP}", 139, wait_for_fail=True)
-    t.port_wait("${WIN_IP}", 139)
+    t.wait_reboot()
 
 
 def test_dcpromo(t, vm):
@@ -462,8 +460,7 @@ RebootOnCompletion=No
     if i != 0:
         raise Exception("dcpromo failed")
     child.sendline("shutdown -r -t 0")
-    t.port_wait("${WIN_IP}", 139, wait_for_fail=True)
-    t.port_wait("${WIN_IP}", 139)
+    t.wait_reboot()
 
 
 
