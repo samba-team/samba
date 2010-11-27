@@ -39,24 +39,22 @@ static void print_cache_entry(const char* keystr, const char* datastr,
 	char *timeout_str;
 	char *alloc_str = NULL;
 	time_t now_t = time(NULL);
-	struct tm timeout_tm, *now_tm;
-	/* localtime returns statically allocated pointer, so timeout_tm
-	   has to be copied somewhere else */
+	struct tm timeout_tm, now_tm;
+	struct tm *ptimeout_tm, *pnow_tm;
 
-	now_tm = localtime(&timeout);
-	if (!now_tm) {
+	ptimeout_tm = localtime_r(&timeout, &timeout_tm);
+	if (ptimeout_tm == NULL) {
 		return;
 	}
-	memcpy(&timeout_tm, now_tm, sizeof(struct tm));
-	now_tm = localtime(&now_t);
-	if (!now_tm) {
+	pnow_tm = localtime_r(&now_t, &now_tm);
+	if (pnow_tm == NULL) {
 		return;
 	}
 
 	/* form up timeout string depending whether it's today's date or not */
-	if (timeout_tm.tm_year != now_tm->tm_year ||
-			timeout_tm.tm_mon != now_tm->tm_mon ||
-			timeout_tm.tm_mday != now_tm->tm_mday) {
+	if (timeout_tm.tm_year != now_tm.tm_year ||
+			timeout_tm.tm_mon != now_tm.tm_mon ||
+			timeout_tm.tm_mday != now_tm.tm_mday) {
 
 		timeout_str = asctime(&timeout_tm);
 		if (!timeout_str) {
