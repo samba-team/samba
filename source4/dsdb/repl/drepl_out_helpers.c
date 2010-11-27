@@ -361,7 +361,7 @@ static void dreplsrv_op_pull_source_get_changes_trigger(struct tevent_req *req)
 		werr = udv_convert(partition, &partition->uptodatevector, &partition->uptodatevector_ex);
 		if (!W_ERROR_IS_OK(werr)) {
 			DEBUG(0,(__location__ ": Failed to convert UDV for %s : %s\n",
-				 ldb_dn_get_linearized(partition->dn), nt_errstr(status)));
+				 ldb_dn_get_linearized(partition->dn), win_errstr(werr)));
 		}
 	}
 
