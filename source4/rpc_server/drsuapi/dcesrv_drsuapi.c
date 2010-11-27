@@ -826,7 +826,7 @@ static WERROR dcesrv_drsuapi_DsReplicaGetInfo(struct dcesrv_call_state *dce_call
 	if (!lpcfg_parm_bool(dce_call->conn->dce_ctx->lp_ctx, NULL,
 			 "drs", "disable_sec_check", false)) {
 		level = security_session_user_level(dce_call->conn->auth_state.session_info, NULL);
-		if (level < SECURITY_ADMINISTRATOR) {
+		if (level < SECURITY_DOMAIN_CONTROLLER) {
 			DEBUG(1,(__location__ ": Administrator access required for DsReplicaGetInfo\n"));
 			security_token_debug(0, 2, dce_call->conn->auth_state.session_info->security_token);
 			return WERR_DS_DRA_ACCESS_DENIED;
