@@ -39,7 +39,7 @@ static int read_linehead(FILE *f)
 		if (c == EOF) {
 			return -1;
 		}
-		if (c == '\(') {
+		if (c == '(') {
 			break;
 		}
 	}
