@@ -37,8 +37,8 @@ struct tevent_context;
 #include "librpc/gen_ndr/drsblobs.h"
 #include "dsdb/schema/schema.h"
 #include "dsdb/samdb/samdb_proto.h"
-#include "dsdb/common/proto.h"
 #include "dsdb/common/dsdb_dn.h"
+#include "dsdb/common/proto.h"
 #include "../libds/common/flags.h"
 
 #define DSDB_CONTROL_CURRENT_PARTITION_OID "1.3.6.1.4.1.7165.4.3.2"
