@@ -274,6 +274,10 @@ static bool gencache_pull_timeout(char *val, time_t *pres, char **pendptr)
 	time_t res;
 	char *endptr;
 
+	if (val == NULL) {
+		return false;
+	}
+
 	res = strtol(val, &endptr, 10);
 
 	if ((endptr == NULL) || (*endptr != '/')) {
@@ -631,6 +635,84 @@ bool gencache_set(const char *keystr, const char *value, time_t timeout)
 	return gencache_set_data_blob(keystr, &blob, timeout);
 }
 
+struct gencache_iterate_blobs_state {
+	void (*fn)(const char *key, DATA_BLOB value,
+		   time_t timeout, void *private_data);
+	const char *pattern;
+	void *private_data;
+	bool in_persistent;
+};
+
+static int gencache_iterate_blobs_fn(struct tdb_context *tdb, TDB_DATA key,
+				     TDB_DATA data, void *priv)
+{
+	struct gencache_iterate_blobs_state *state =
+		(struct gencache_iterate_blobs_state *)priv;
+	char *keystr;
+	char *free_key = NULL;
+	time_t timeout;
+	char *endptr;
+
+	if (tdb_data_cmp(key, last_stabilize_key()) == 0) {
+		return 0;
+	}
+	if (state->in_persistent && tdb_exists(cache_notrans, key)) {
+		return 0;
+	}
+
+	if (key.dptr[key.dsize-1] == '\0') {
+		keystr = (char *)key.dptr;
+	} else {
+		/* ensure 0-termination */
+		keystr = SMB_STRNDUP((char *)key.dptr, key.dsize);
+		free_key = keystr;
+	}
+
+	if (!gencache_pull_timeout((char *)data.dptr, &timeout, &endptr)) {
+		goto done;
+	}
+	endptr += 1;
+
+	if (fnmatch(state->pattern, keystr, 0) != 0) {
+		goto done;
+	}
+
+	DEBUG(10, ("Calling function with arguments (key=%s, timeout=%s)\n",
+		   keystr, ctime(&timeout)));
+
+	state->fn(keystr,
+		  data_blob_const(endptr,
+				  data.dsize - PTR_DIFF(endptr, data.dptr)),
+		  timeout, state->private_data);
+
+ done:
+	SAFE_FREE(free_key);
+	return 0;
+}
+
+void gencache_iterate_blobs(void (*fn)(const char *key, DATA_BLOB value,
+				       time_t timeout, void *private_data),
+			    void *private_data, const char *pattern)
+{
+	struct gencache_iterate_blobs_state state;
+
+	if ((fn == NULL) || (pattern == NULL) || !gencache_init()) {
+		return;
+	}
+
+	DEBUG(5, ("Searching cache keys with pattern %s\n", pattern));
+
+	state.fn = fn;
+	state.pattern = pattern;
+	state.private_data = private_data;
+
+	state.in_persistent = false;
+	tdb_traverse(cache_notrans, gencache_iterate_blobs_fn, &state);
+
+	state.in_persistent = true;
+	tdb_traverse(cache, gencache_iterate_blobs_fn, &state);
+}
+
 /**
  * Iterate through all entries which key matches to specified pattern
  *
@@ -645,96 +727,44 @@ bool gencache_set(const char *keystr, const char *value, time_t timeout)
 struct gencache_iterate_state {
 	void (*fn)(const char *key, const char *value, time_t timeout,
 		   void *priv);
-	const char *pattern;
-	void *priv;
-	bool in_persistent;
+	void *private_data;
 };
 
-static int gencache_iterate_fn(struct tdb_context *tdb, TDB_DATA key,
-			       TDB_DATA value, void *priv)
+static void gencache_iterate_fn(const char *key, DATA_BLOB value,
+				time_t timeout, void *private_data)
 {
 	struct gencache_iterate_state *state =
-		(struct gencache_iterate_state *)priv;
-	char *keystr;
-	char *free_key = NULL;
+		(struct gencache_iterate_state *)private_data;
 	char *valstr;
 	char *free_val = NULL;
-	unsigned long u;
-	time_t timeout;
-	char *timeout_endp;
 
-	if (tdb_data_cmp(key, last_stabilize_key()) == 0) {
-		return 0;
-	}
-
-	if (state->in_persistent && tdb_exists(cache_notrans, key)) {
-		return 0;
-	}
-
-	if (key.dptr[key.dsize-1] == '\0') {
-		keystr = (char *)key.dptr;
+	if (value.data[value.length-1] == '\0') {
+		valstr = (char *)value.data;
 	} else {
 		/* ensure 0-termination */
-		keystr = SMB_STRNDUP((char *)key.dptr, key.dsize);
-		free_key = keystr;
-	}
-
-	if ((value.dptr == NULL) || (value.dsize <= TIMEOUT_LEN)) {
-		goto done;
-	}
-
-	if (fnmatch(state->pattern, keystr, 0) != 0) {
-		goto done;
-	}
-
-	if (value.dptr[value.dsize-1] == '\0') {
-		valstr = (char *)value.dptr;
-	} else {
-		/* ensure 0-termination */
-		valstr = SMB_STRNDUP((char *)value.dptr, value.dsize);
+		valstr = SMB_STRNDUP((char *)value.data, value.length);
 		free_val = valstr;
 	}
 
-	u = strtoul(valstr, &timeout_endp, 10);
-
-	if ((*timeout_endp != '/') || ((timeout_endp-valstr) != TIMEOUT_LEN)) {
-		goto done;
-	}
-
-	timeout = u;
-	timeout_endp += 1;
-
 	DEBUG(10, ("Calling function with arguments "
 		   "(key = %s, value = %s, timeout = %s)\n",
-		   keystr, timeout_endp, ctime(&timeout)));
-	state->fn(keystr, timeout_endp, timeout, state->priv);
+		   key, valstr, ctime(&timeout)));
 
- done:
-	SAFE_FREE(free_key);
+	state->fn(key, valstr, timeout, state->private_data);
+
 	SAFE_FREE(free_val);
-	return 0;
 }
 
-void gencache_iterate(void (*fn)(const char* key, const char *value, time_t timeout, void* dptr),
-                      void* data, const char* keystr_pattern)
+void gencache_iterate(void (*fn)(const char *key, const char *value,
+				 time_t timeout, void *dptr),
+                      void *private_data, const char *pattern)
 {
 	struct gencache_iterate_state state;
 
-	if ((fn == NULL) || (keystr_pattern == NULL)) {
+	if (fn == NULL) {
 		return;
 	}
-
-	if (!gencache_init()) return;
-
-	DEBUG(5, ("Searching cache keys with pattern %s\n", keystr_pattern));
-
 	state.fn = fn;
-	state.pattern = keystr_pattern;
-	state.priv = data;
-
-	state.in_persistent = false;
-	tdb_traverse(cache_notrans, gencache_iterate_fn, &state);
-
-	state.in_persistent = true;
-	tdb_traverse(cache, gencache_iterate_fn, &state);
+	state.private_data = private_data;
+	gencache_iterate_blobs(gencache_iterate_fn, &state, pattern);
 }
