@@ -151,7 +151,9 @@ static struct ldb_val lookup_gid(struct ldb_module *module, TALLOC_CTX *ctx, con
 		return *talloc_zero(ctx, struct ldb_val);
 	}
 
-	retval.data = (uint8_t *)talloc_asprintf(ctx, "%ld", (unsigned long)pwd->pw_gid);
+	/* "pw_gid" is per POSIX definition "unsigned".
+	 * But write it out as "signed" for LDAP compliance. */
+	retval.data = (uint8_t *)talloc_asprintf(ctx, "%d", (int) pwd->pw_gid);
 	retval.length = strlen((char *)retval.data);
 
 	return retval;
@@ -168,7 +170,9 @@ static struct ldb_val lookup_uid(struct ldb_module *module, TALLOC_CTX *ctx, con
 		return *talloc_zero(ctx, struct ldb_val);
 	}
 
-	retval.data = (uint8_t *)talloc_asprintf(ctx, "%ld", (unsigned long)pwd->pw_uid);
+	/* "pw_uid" is per POSIX definition "unsigned".
+	 * But write it out as "signed" for LDAP compliance. */
+	retval.data = (uint8_t *)talloc_asprintf(ctx, "%d", (int) pwd->pw_uid);
 	retval.length = strlen((char *)retval.data);
 
 	return retval;
