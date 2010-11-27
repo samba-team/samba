@@ -19,8 +19,6 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "libcli/security/session_proto.h"
-
 enum security_user_level {
 	SECURITY_ANONYMOUS            = 0,
 	SECURITY_USER                 = 10,
@@ -29,5 +27,7 @@ enum security_user_level {
 	SECURITY_ADMINISTRATOR        = 40,
 	SECURITY_SYSTEM               = 50
 };
+
+#include "libcli/security/session_proto.h"
 
 struct auth_session_info;
