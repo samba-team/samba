@@ -38,9 +38,10 @@
  */
 struct loadparm_context;
 struct tevent_context;
-enum netr_SchannelType;
 struct ldb_message;
 struct ldb_context;
+
+#include "librpc/gen_ndr/misc.h"
 
 struct tdb_wrap *secrets_init(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx);
 struct ldb_context *secrets_db_connect(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx);

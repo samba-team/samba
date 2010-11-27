@@ -24,7 +24,6 @@
 #include "librpc/gen_ndr/ndr_drsuapi_c.h"
 #include "lib/ldb/include/ldb.h"
 #include "lib/ldb/include/ldb_errors.h"
-#include "param/secrets.h"
 #include "dsdb/samdb/samdb.h"
 #include "ldb_wrap.h"
 #include "libcli/security/security.h"

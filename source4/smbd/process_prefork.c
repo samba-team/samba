@@ -27,7 +27,6 @@
 #include "lib/events/events.h"
 #include "lib/socket/socket.h"
 #include "smbd/process_model.h"
-#include "param/secrets.h"
 #include "system/filesys.h"
 #include "cluster/cluster.h"
 #include "param/param.h"
