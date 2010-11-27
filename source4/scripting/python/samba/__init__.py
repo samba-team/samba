@@ -326,4 +326,7 @@ version = _glue.version
 interface_ips = _glue.interface_ips
 set_debug_level = _glue.set_debug_level
 unix2nttime = _glue.unix2nttime
+nttime2string = _glue.nttime2string
+nttime2unix = _glue.nttime2unix
+unix2nttime = _glue.unix2nttime
 generate_random_password = _glue.generate_random_password
