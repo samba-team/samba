@@ -106,7 +106,8 @@ static void generate_sambaPrimaryGroupSID(struct ldb_module *module, const char 
 
 	sidstring = dom_sid_string(remote_mp, sid);
 	talloc_free(sid);
-	ldb_msg_add_fmt(remote_mp, "sambaPrimaryGroupSID", "%s-%d", sidstring, ldb_msg_find_attr_as_uint(local, "primaryGroupID", 0));
+	ldb_msg_add_fmt(remote_mp, "sambaPrimaryGroupSID", "%s-%u", sidstring,
+			ldb_msg_find_attr_as_uint(local, "primaryGroupID", 0));
 	talloc_free(sidstring);
 }
 
