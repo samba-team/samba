@@ -101,7 +101,7 @@ class DrsFsmoTestCase(samba.tests.TestCase):
         cmd_line = "%s fsmo transfer --role=%s --host=ldap://%s:389 %s" % (net_cmd, role, DC,
                                                                            cmd_line_auth)
         ret = os.system(cmd_line)
-        self.assertEquals(ret, 0, "Transferring schema to %s has failed!" % (DC))
+        self.assertEquals(ret, 0, "Transferring role %s to %s has failed!" % (role, DC))
         pass
 
     def _wait_for_role_transfer(self, ldb_dc, role_dn, master):
@@ -128,7 +128,7 @@ class DrsFsmoTestCase(samba.tests.TestCase):
     def _role_transfer(self, role, role_dn):
         """Triggers transfer of role from DC1 to DC2
            and vice versa so the role goes back to the original dc"""
-        # dc2 gets the schema master role from dc1
+        # dc2 gets the role from dc1
         print "Testing for %s role transfer from %s to %s" % (role, self.dnsname_dc1, self.dnsname_dc2)
 
         self._net_fsmo_role_transfer(DC=self.dnsname_dc2, role=role)
@@ -139,7 +139,7 @@ class DrsFsmoTestCase(samba.tests.TestCase):
         self.assertTrue(res,
                         "Transferring %s role to %s has failed, master is: %s!"%(role, self.dsServiceName_dc2, master))
 
-        # dc1 gets back the schema master role from dc2
+        # dc1 gets back the role from dc2
         print "Testing for %s role transfer from %s to %s" % (role, self.dnsname_dc2, self.dnsname_dc1)
         self._net_fsmo_role_transfer(DC=self.dnsname_dc1, role=role)
         # check if the role is transfered
