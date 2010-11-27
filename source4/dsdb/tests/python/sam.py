@@ -66,15 +66,10 @@ creds = credopts.get_credentials(lp)
 
 class SamTests(unittest.TestCase):
 
-    def find_domain_sid(self):
-        res = self.ldb.search(base=self.base_dn, expression="(objectClass=*)", scope=SCOPE_BASE)
-        return ndr_unpack( security.dom_sid,res[0]["objectSid"][0])
-
     def setUp(self):
         super(SamTests, self).setUp()
         self.ldb = ldb
         self.base_dn = ldb.domain_dn()
-        self.domain_sid = self.find_domain_sid()
 
         print "baseDN: %s\n" % self.base_dn
 
