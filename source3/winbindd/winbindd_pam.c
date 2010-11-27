@@ -1118,8 +1118,9 @@ static NTSTATUS winbindd_dual_auth_passdb(TALLOC_CTX *mem_ctx,
 	status = check_sam_security_info3(challenge, talloc_tos(), user_info,
 					  pinfo3);
 	free_user_info(&user_info);
-	DEBUG(10, ("Authenticated user %s\\%s successfully\n", domain, user));
-	return NT_STATUS_OK;
+	DEBUG(10, ("Authenticaticating user %s\\%s returned %s\n", domain,
+		   user, nt_errstr(status)));
+	return status;
 }
 
 typedef	NTSTATUS (*netlogon_fn_t)(struct rpc_pipe_client *cli,
