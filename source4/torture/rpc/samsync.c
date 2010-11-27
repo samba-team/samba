@@ -509,17 +509,10 @@ static bool samsync_handle_user(struct torture_context *tctx, TALLOC_CTX *mem_ct
 		"GetGroupsForUser failed");
 
 	if (!test_samr_handle_Close(samsync_state->b_samr, tctx, &user_handle)) {
-		torture_comment(tctx, "samr_handle_Close failed - %s\n",
-		       nt_errstr(nt_status));
+		torture_comment(tctx, "samr_handle_Close failed\n");
 		ret = false;
 	}
 	if (!ret) {
-		return false;
-	}
-
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		torture_comment(tctx, "QueryUserInfo level %u failed - %s\n",
-		       q.in.level, nt_errstr(nt_status));
 		return false;
 	}
 
