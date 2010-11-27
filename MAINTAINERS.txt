@@ -18,7 +18,7 @@ policy:
 
          If no maintainer is available for longer than a week
          discussion on the samba-technical list and review by 2
-         Samba-Team members is needed (e.g. Andrew Tridgell <tridge@samba.org
+         Samba-Team members is needed (e.g. Andrew Tridgell <tridge@samba.org>
          and Volker Lendecke <vl@samba.org>).
 
          Larger changes need also discussion on the samba-technical list
