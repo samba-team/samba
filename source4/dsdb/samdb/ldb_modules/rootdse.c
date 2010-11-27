@@ -1154,7 +1154,7 @@ static int rootdse_add(struct ldb_module *module, struct ldb_request *req)
 
 static int rootdse_become_master(struct ldb_module *module,
 				 struct ldb_request *req,
-				 uint32_t role)
+				 enum drepl_role_master role)
 {
 	struct drepl_takeFSMORole r;
 	struct messaging_context *msg;

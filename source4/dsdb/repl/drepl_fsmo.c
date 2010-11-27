@@ -30,8 +30,7 @@
 #include "smbd/service.h"
 #include "dsdb/repl/drepl_service.h"
 #include "param/param.h"
-#include "lib/messaging/irpc.h"
-#include "librpc/gen_ndr/ndr_irpc.h"
+#include "librpc/gen_ndr/irpc.h"
 
 static void drepl_role_callback(struct dreplsrv_service *service,
 				WERROR werr,
@@ -59,7 +58,7 @@ static bool fsmo_master_cmp(struct ldb_dn *ntds_dn, struct ldb_dn *role_owner_dn
   see which role is we are asked to assume, initialize data and send request
  */
 WERROR dreplsrv_fsmo_role_check(struct dreplsrv_service *service,
-				uint32_t role)
+				enum drepl_role_master role)
 {
 	struct ldb_dn *role_owner_dn, *fsmo_role_dn, *ntds_dn;
 	TALLOC_CTX *tmp_ctx = talloc_new(service);

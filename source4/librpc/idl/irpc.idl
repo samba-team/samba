@@ -176,7 +176,7 @@ import "misc.idl", "security.idl", "nbt.idl", "netlogon.idl";
 	} drepl_role_master;
 
 	WERROR drepl_takeFSMORole(
-		[in] uint32 role
+		[in] drepl_role_master role
 		);
 
 	/*
