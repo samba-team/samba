@@ -112,14 +112,14 @@ class SuperCommand(Command):
     subcommands = {}
 
     def _run(self, myname, subcommand=None, *args):
-        if subcommand is None:
-            print "Available subcommands:"
-            for subcommand in self.subcommands:
-                print "\t%s" % subcommand
+        if subcommand in self.subcommands:
+            return self.subcommands[subcommand]._run(subcommand, *args)
+        print "Available subcommands:"
+        for cmd in self.subcommands:
+            print "\t%-20s - %s" % (cmd, self.subcommands[cmd].description)
+        if subcommand in [None, 'help', '-h', '--help' ]:
             return 0
-        if not subcommand in self.subcommands:
-            raise CommandError("No such subcommand '%s'" % subcommand)
-        return self.subcommands[subcommand]._run(subcommand, *args)
+        raise CommandError("No such subcommand '%s'" % subcommand)
 
     def usage(self, myname, subcommand=None, *args):
         if subcommand is None or not subcommand in self.subcommands:
