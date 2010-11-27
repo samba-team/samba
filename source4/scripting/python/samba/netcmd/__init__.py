@@ -168,3 +168,5 @@ from samba.netcmd.join import cmd_join
 commands["join"] = cmd_join()
 from samba.netcmd.rodc import cmd_rodc
 commands["rodc"] = cmd_rodc()
+from samba.netcmd.drs import cmd_drs
+commands["drs"] = cmd_drs()
