@@ -195,7 +195,12 @@ struct tevent_req *libnet_LookupDCs_send(struct libnet_context *ctx,
 	struct finddcs finddcs_io;
 
 	ZERO_STRUCT(finddcs_io);
-	finddcs_io.in.domain_name = io->in.domain_name;
+
+	if (strcasecmp_m(io->in.domain_name, lpcfg_workgroup(ctx->lp_ctx)) == 0) {
+		finddcs_io.in.domain_name = lpcfg_dnsdomain(ctx->lp_ctx);
+	} else {
+		finddcs_io.in.domain_name = io->in.domain_name;
+	}
 	finddcs_io.in.minimum_dc_flags = NBT_SERVER_LDAP | NBT_SERVER_DS | NBT_SERVER_WRITABLE;
 	finddcs_io.in.server_address = ctx->server_address;
 
