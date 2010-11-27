@@ -9,6 +9,7 @@ use strict;
 use Cwd qw(abs_path);
 use FindBin qw($RealBin);
 use POSIX;
+use SocketWrapper;
 
 sub new($$$$$) {
 	my ($classname, $bindir, $ldap, $setupdir, $exeext) = @_;
@@ -27,7 +28,10 @@ sub new($$$$$) {
 sub bindir_path($$) {
 	my ($self, $path) = @_;
 
-	return "$self->{bindir}/$path$self->{exeext}";
+	my $valpath = "$self->{bindir}/$path$self->{exeext}";
+
+	return $valpath if (-f $valpath);
+	return $path;
 }
 
 sub openldap_start($$$) {
