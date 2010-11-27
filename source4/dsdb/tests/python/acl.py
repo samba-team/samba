@@ -59,15 +59,11 @@ creds.set_gensec_features(creds.get_gensec_features() | gensec.FEATURE_SEAL)
 
 class AclTests(samba.tests.TestCase):
 
-    def find_domain_sid(self, ldb):
-        res = ldb.search(base=self.base_dn, expression="(objectClass=*)", scope=SCOPE_BASE)
-        return ndr_unpack(security.dom_sid,res[0]["objectSid"][0])
-
     def setUp(self):
         super(AclTests, self).setUp()
         self.ldb_admin = ldb
         self.base_dn = ldb.domain_dn()
-        self.domain_sid = self.find_domain_sid(self.ldb_admin)
+        self.domain_sid = security.dom_sid(ldb.get_domain_sid())
         self.user_pass = "samba123@"
         self.configuration_dn = self.ldb_admin.get_config_basedn().get_linearized()
         print "baseDN: %s" % self.base_dn

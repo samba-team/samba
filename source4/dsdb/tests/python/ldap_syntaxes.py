@@ -51,10 +51,6 @@ creds = credopts.get_credentials(lp)
 
 class SyntaxTests(unittest.TestCase):
 
-    def _find_domain_sid(self):
-        res = self.ldb.search(base=self.base_dn, expression="(objectClass=*)", scope=SCOPE_BASE)
-        return ndr_unpack( security.dom_sid,res[0]["objectSid"][0])
-
     def setUp(self):
         super(SyntaxTests, self).setUp()
         self.ldb = ldb
@@ -62,7 +58,6 @@ class SyntaxTests(unittest.TestCase):
         self.schema_dn = ldb.get_schema_basedn().get_linearized()
         self._setup_dn_string_test()
         self._setup_dn_binary_test()
-        self.domain_sid = self._find_domain_sid()
 
     def _setup_dn_string_test(self):
         """Testing DN+String syntax"""
@@ -279,7 +274,7 @@ name: """ + object_name + """
         # add object with SID instead of DN
         object_name4 = "obj-DN-String4" + time.strftime("%s", time.gmtime())
         ldif = self._get_object_ldif(object_name4, self.dn_string_class_name, self.dn_string_class_ldap_display_name,
-                               self.dn_string_attribute, ": S:5:ABCDE:<SID=%s>" % self.domain_sid)
+                               self.dn_string_attribute, ": S:5:ABCDE:<SID=%s>" % self.ldb.get_domain_sid())
         try:
             self.ldb.add_ldif(ldif)
         except LdbError, (num, _):
@@ -365,7 +360,7 @@ name: """ + object_name + """
         # add object with SID instead of DN
         object_name4 = "obj-DN-Binary4" + time.strftime("%s", time.gmtime())
         ldif = self._get_object_ldif(object_name4, self.dn_binary_class_name, self.dn_binary_class_ldap_display_name,
-                               self.dn_binary_attribute, ": B:4:1234:<SID=%s>" % self.domain_sid)
+                               self.dn_binary_attribute, ": B:4:1234:<SID=%s>" % self.ldb.get_domain_sid())
         try:
             self.ldb.add_ldif(ldif)
         except LdbError, (num, _):

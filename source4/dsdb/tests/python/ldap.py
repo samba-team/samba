@@ -62,10 +62,6 @@ creds = credopts.get_credentials(lp)
 
 class BasicTests(unittest.TestCase):
 
-    def find_domain_sid(self):
-        res = self.ldb.search(base=self.base_dn, expression="(objectClass=*)", scope=SCOPE_BASE)
-        return ndr_unpack( security.dom_sid,res[0]["objectSid"][0])
-
     def setUp(self):
         super(BasicTests, self).setUp()
         self.ldb = ldb
@@ -73,7 +69,7 @@ class BasicTests(unittest.TestCase):
         self.base_dn = ldb.domain_dn()
         self.configuration_dn = ldb.get_config_basedn().get_linearized()
         self.schema_dn = ldb.get_schema_basedn().get_linearized()
-        self.domain_sid = self.find_domain_sid()
+        self.domain_sid = security.dom_sid(ldb.get_domain_sid())
 
         print "baseDN: %s\n" % self.base_dn
 

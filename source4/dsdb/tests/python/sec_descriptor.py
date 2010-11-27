@@ -60,10 +60,6 @@ creds.set_gensec_features(creds.get_gensec_features() | gensec.FEATURE_SEAL)
 
 class DescriptorTests(samba.tests.TestCase):
 
-    def find_domain_sid(self, ldb):
-        res = ldb.search(base=self.base_dn, expression="(objectClass=*)", scope=SCOPE_BASE)
-        return ndr_unpack( security.dom_sid,res[0]["objectSid"][0])
-
     def get_users_domain_dn(self, name):
         return "CN=%s,CN=Users,%s" % (name, self.base_dn)
 
@@ -188,7 +184,7 @@ showInAdvancedViewOnly: TRUE
         self.base_dn = ldb.domain_dn()
         self.configuration_dn = self.ldb_admin.get_config_basedn().get_linearized()
         self.schema_dn = self.ldb_admin.get_schema_basedn().get_linearized()
-        self.domain_sid = self.find_domain_sid(self.ldb_admin)
+        self.domain_sid = security.dom_sid(self.ldb_admin.get_domain_sid())
         print "baseDN: %s" % self.base_dn
 
     ################################################################################################
