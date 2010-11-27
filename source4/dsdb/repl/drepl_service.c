@@ -226,7 +226,7 @@ static NTSTATUS drepl_replica_sync(struct irpc_message *msg,
 							   struct dreplsrv_service);
 
 #define REPLICA_SYNC_FAIL(_msg, _werr) do {\
-		if (!W_ERROR_IS_OK(werr)) { \
+		if (!W_ERROR_IS_OK(_werr)) { \
 			DEBUG(0,(__location__ ": Failure - %s. werr = %s\n", \
 				 _msg, win_errstr(_werr))); \
 			NDR_PRINT_IN_DEBUG(drsuapi_DsReplicaSync, r); \
