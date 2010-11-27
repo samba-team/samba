@@ -348,6 +348,37 @@ bool gencache_parse(const char *keystr,
 	return (ret != -1);
 }
 
+struct gencache_get_data_blob_state {
+	DATA_BLOB *blob;
+	time_t timeout;
+	bool result;
+};
+
+static void gencache_get_data_blob_parser(time_t timeout, DATA_BLOB blob,
+					  void *private_data)
+{
+	struct gencache_get_data_blob_state *state =
+		(struct gencache_get_data_blob_state *)private_data;
+
+	if (timeout == 0) {
+		state->result = false;
+		return;
+	}
+	state->timeout = timeout;
+
+	if (state->blob == NULL) {
+		state->result = true;
+		return;
+	}
+
+	*state->blob = data_blob(blob.data, blob.length);
+	if (state->blob->data == NULL) {
+		state->result = false;
+		return;
+	}
+	state->result = true;
+}
+
 /**
  * Get existing entry from the cache file.
  *
@@ -363,54 +394,19 @@ bool gencache_parse(const char *keystr,
 bool gencache_get_data_blob(const char *keystr, DATA_BLOB *blob,
 			    time_t *timeout, bool *was_expired)
 {
-	TDB_DATA databuf;
-	time_t t;
-	char *endptr;
+	struct gencache_get_data_blob_state state;
 	bool expired = false;
 
-	if (keystr == NULL) {
+	state.result = false;
+	state.blob = blob;
+
+	if (!gencache_parse(keystr, gencache_get_data_blob_parser, &state)) {
 		goto fail;
 	}
-
-	if (tdb_data_cmp(string_term_tdb_data(keystr),
-			 last_stabilize_key()) == 0) {
-		DEBUG(10, ("Can't get %s as a key\n", keystr));
+	if (!state.result) {
 		goto fail;
 	}
-
-	if (!gencache_init()) {
-		goto fail;
-	}
-
-	databuf = tdb_fetch_bystring(cache_notrans, keystr);
-
-	if (databuf.dptr == NULL) {
-		databuf = tdb_fetch_bystring(cache, keystr);
-	}
-
-	if (databuf.dptr == NULL) {
-		DEBUG(10, ("Cache entry with key = %s couldn't be found \n",
-			   keystr));
-		goto fail;
-	}
-
-	if (!gencache_pull_timeout((char *)databuf.dptr, &t, &endptr)) {
-		SAFE_FREE(databuf.dptr);
-		goto fail;
-	}
-
-	DEBUG(10, ("Returning %s cache entry: key = %s, value = %s, "
-		   "timeout = %s", t > time(NULL) ? "valid" :
-		   "expired", keystr, endptr+1, ctime(&t)));
-
-	if (t == 0) {
-		/* Deleted */
-		SAFE_FREE(databuf.dptr);
-		goto fail;
-	}
-
-	if (t <= time(NULL)) {
-
+	if (state.timeout <= time(NULL)) {
 		/*
 		 * We're expired, delete the entry. We can't use gencache_del
 		 * here, because that uses gencache_get_data_blob for checking
@@ -418,28 +414,11 @@ bool gencache_get_data_blob(const char *keystr, DATA_BLOB *blob,
 		 * directly store an empty value with 0 timeout.
 		 */
 		gencache_set(keystr, "", 0);
-
-		SAFE_FREE(databuf.dptr);
-
 		expired = true;
 		goto fail;
 	}
-
-	if (blob != NULL) {
-		*blob = data_blob(
-			endptr+1,
-			databuf.dsize - PTR_DIFF(endptr+1, databuf.dptr));
-		if (blob->data == NULL) {
-			SAFE_FREE(databuf.dptr);
-			DEBUG(0, ("memdup failed\n"));
-			goto fail;
-		}
-	}
-
-	SAFE_FREE(databuf.dptr);
-
 	if (timeout) {
-		*timeout = t;
+		*timeout = state.timeout;
 	}
 
 	return True;
