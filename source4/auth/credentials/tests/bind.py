@@ -106,7 +106,8 @@ unicodePwd:: """ + base64.b64encode("\"P@ssw0rd\"".encode('utf-16-le')) + """
         creds_machine.set_bind_dn(self.computer_dn)
         creds_machine.set_password(self.password)
         print "BindTest with: " + creds_machine.get_bind_dn()
-        ldb_machine = SamDB(host, credentials=creds_machine, session_info=system_session(), lp=lp)
+        ldb_machine = samba.tests.connect_samdb(host, credentials=creds_machine,
+                                                lp=lp, ldap_only=True)
         res = ldb_machine.search(base="", expression="", scope=SCOPE_BASE, attrs=["*"])
 
     def test_user_account_bind(self):
@@ -122,26 +123,28 @@ unicodePwd:: """ + base64.b64encode("\"P@ssw0rd\"".encode('utf-16-le')) + """
         creds_user1.set_bind_dn(self.username + "@" + creds.get_realm())
         creds_user1.set_password(self.password)
         print "BindTest with: " + creds_user1.get_bind_dn()
-        ldb_user1 = SamDB(host, credentials=creds_user1, session_info=system_session(), lp=lp)
+        ldb_user1 = samba.tests.connect_samdb(host, credentials=creds_user1,
+                                              lp=lp, ldap_only=True)
         res = ldb_user1.search(base="", expression="", scope=SCOPE_BASE, attrs=["*"])
 
         # do a simple bind and search with the user account in format domain\user
         creds_user2.set_bind_dn(creds.get_domain() + "\\" + self.username)
         creds_user2.set_password(self.password)
         print "BindTest with: " + creds_user2.get_bind_dn()
-        ldb_user2 = SamDB(host, credentials=creds_user2, lp=lp)
+        ldb_user2 = samba.tests.connect_samdb(host, credentials=creds_user2,
+                                              lp=lp, ldap_only=True)
         res = ldb_user2.search(base="", expression="", scope=SCOPE_BASE, attrs=["*"])
 
         # do a simple bind and search with the user account DN
         creds_user3.set_bind_dn(str(user_dn))
         creds_user3.set_password(self.password)
         print "BindTest with: " + creds_user3.get_bind_dn()
-        ldb_user3 = SamDB(host, credentials=creds_user3, session_info=system_session(), lp=lp)
+        ldb_user3 = samba.tests.connect_samdb(host, credentials=creds_user3,
+                                              lp=lp, ldap_only=True)
         res = ldb_user3.search(base="", expression="", scope=SCOPE_BASE, attrs=["*"])
 
-if not "://" in host:
-    host = "ldap://%s" % host
-ldb = SamDB(host, credentials=creds, session_info=system_session(), lp=lp)
+
+ldb = samba.tests.connect_samdb(host, credentials=creds, lp=lp, ldap_only=True)
 
 runner = SubunitTestRunner()
 rc = 0
