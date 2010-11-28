@@ -19,17 +19,23 @@
 
 """Support for parsing Samba-related command-line options."""
 
-import optparse, os
-from credentials import Credentials, DONT_USE_KERBEROS, MUST_USE_KERBEROS
-from hostconfig import Hostconfig
-import samba
-
 __docformat__ = "restructuredText"
+
+import optparse, os
+from samba.credentials import (
+    Credentials,
+    DONT_USE_KERBEROS,
+    MUST_USE_KERBEROS,
+    )
+from samba.hostconfig import Hostconfig
+import sys
+
 
 class SambaOptions(optparse.OptionGroup):
     """General Samba-related command line options."""
+
     def __init__(self, parser):
-        import os, param
+        from samba.param import LoadParm
         optparse.OptionGroup.__init__(self, parser, "Samba Common Options")
         self.add_option("-s", "--configfile", action="callback",
                         type=str, metavar="FILE", help="Configuration file",
@@ -44,7 +50,7 @@ class SambaOptions(optparse.OptionGroup):
                         type=str, metavar="REALM", help="set the realm name",
                         callback=self._set_realm)
         self._configfile = None
-        self._lp = param.LoadParm()
+        self._lp = LoadParm()
 
     def get_loadparm_path(self):
         """Return the path to the smb.conf file specified on the command line.  """
@@ -85,11 +91,11 @@ class VersionOptions(optparse.OptionGroup):
     def __init__(self, parser):
         optparse.OptionGroup.__init__(self, parser, "Version Options")
         self.add_option("--version", action="callback",
-                callback=self._display_version, 
+                callback=self._display_version,
                 help="Display version number")
 
     def _display_version(self, option, opt_str, arg, parser):
-        import samba, sys
+        import samba
         print samba.version
         sys.exit(0)
 
