@@ -27,7 +27,6 @@ import string
 import re
 import shutil
 import samba
-import base64
 
 from samba import Ldb, version, ntacls
 from samba.dsdb import DS_DOMAIN_FUNCTION_2000
@@ -42,9 +41,10 @@ from samba.dcerpc.misc import SEC_CHAN_BDC
 from samba.ndr import ndr_unpack
 from samba.samdb import SamDB
 
-# All the ldb related to registry are commented because the path for them is relative
-# in the provisionPath object
-# And so opening them create a file in the current directory which is not what we want
+# All the ldb related to registry are commented because the path for them is
+# relative in the provisionPath object
+# And so opening them create a file in the current directory which is not what
+# we want
 # I still keep them commented because I plan soon to make more cleaner
 ERROR =     -1
 SIMPLE =     0x00
@@ -54,19 +54,15 @@ GUESS =     0x04
 PROVISION =    0x08
 CHANGEALL =    0xff
 
-hashAttrNotCopied = {   "dn": 1, "whenCreated": 1, "whenChanged": 1,
-                        "objectGUID": 1, "uSNCreated": 1,
-                        "replPropertyMetaData": 1, "uSNChanged": 1,
-                        "parentGUID": 1, "objectCategory": 1,
-                        "distinguishedName": 1, "nTMixedDomain": 1,
-                        "showInAdvancedViewOnly": 1, "instanceType": 1,
-                        "msDS-Behavior-Version":1, "nextRid":1, "cn": 1,
-                        "versionNumber":1, "lmPwdHistory":1, "pwdLastSet": 1,
-                        "ntPwdHistory":1, "unicodePwd":1,"dBCSPwd":1,
-                        "supplementalCredentials":1, "gPCUserExtensionNames":1,
-                        "gPCMachineExtensionNames":1,"maxPwdAge":1, "secret":1,
-                        "possibleInferiors":1, "privilege":1,
-                        "sAMAccountType":1 }
+hashAttrNotCopied = set(["dn", "whenCreated", "whenChanged", "objectGUID",
+    "uSNCreated", "replPropertyMetaData", "uSNChanged", "parentGUID",
+    "objectCategory", "distinguishedName", "nTMixedDomain",
+    "showInAdvancedViewOnly", "instanceType", "msDS-Behavior-Version",
+    "nextRid", "cn", "versionNumber", "lmPwdHistory", "pwdLastSet",
+    "ntPwdHistory", "unicodePwd","dBCSPwd", "supplementalCredentials",
+    "gPCUserExtensionNames", "gPCMachineExtensionNames","maxPwdAge", "secret",
+    "possibleInferiors", "privilege", "sAMAccountType"])
+
 
 class ProvisionLDB(object):
 
@@ -140,7 +136,7 @@ class ProvisionLDB(object):
             self.privilege.transaction_commit()
         except:
             return self.groupedRollback()
-        
+
 # TO BE DONE
 #        self.hkcr.transaction_commit()
 #        self.hkcu.transaction_commit()
@@ -591,7 +587,7 @@ def update_secrets(newsecrets_ldb, secrets_ldb, messagefunc):
         current = secrets_ldb.search(expression="dn=%s" % entry,
                                             base="", scope=SCOPE_SUBTREE)
         delta = secrets_ldb.msg_diff(empty, reference[0])
-        for att in hashAttrNotCopied.keys():
+        for att in hashAttrNotCopied:
             delta.remove(att)
         messagefunc(CHANGE, "Entry %s is missing from secrets.ldb" %
                     reference[0].dn)
@@ -606,7 +602,7 @@ def update_secrets(newsecrets_ldb, secrets_ldb, messagefunc):
         current = secrets_ldb.search(expression="dn=%s" % entry, base="",
                                             scope=SCOPE_SUBTREE)
         delta = secrets_ldb.msg_diff(current[0], reference[0])
-        for att in hashAttrNotCopied.keys():
+        for att in hashAttrNotCopied:
             delta.remove(att)
         for att in delta:
             if att == "name":
@@ -622,7 +618,7 @@ def update_secrets(newsecrets_ldb, secrets_ldb, messagefunc):
         current = secrets_ldb.search(expression="dn=%s" % entry, base="",
                                             scope=SCOPE_SUBTREE)
         delta = secrets_ldb.msg_diff(current[0], reference[0])
-        for att in hashAttrNotCopied.keys():
+        for att in hashAttrNotCopied:
             delta.remove(att)
         for att in delta:
             if att == "msDS-KeyVersionNumber":
