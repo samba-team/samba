@@ -666,8 +666,6 @@ static bool test_owner_bits(struct torture_context *tctx, struct smb2_tree *tree
 	union smb_setfileinfo set;
 	struct security_descriptor *sd, *sd_orig;
 	const char *owner_sid;
-	bool has_restore_privilege = false;
-	bool has_take_ownership_privilege = false;
 	uint32_t expected_bits;
 
 	if (!smb2_util_setup_dir(tctx, tree, BASEDIR))
