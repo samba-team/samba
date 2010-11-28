@@ -260,7 +260,7 @@ class cmd_drs_replicate(Command):
 
         # we need to find the NTDS GUID of the source DC
         msg = self.samdb.search(base=self.samdb.get_config_basedn(),
-                                expression="(&(objectClass=server)(|(name=%s)(dNSHostName=%s)))" % (SOURCE_DC,
+                                expression="(&(objectCategory=server)(|(name=%s)(dNSHostName=%s)))" % (SOURCE_DC,
                                                                                                        SOURCE_DC),
                                 attrs=[])
         if len(msg) == 0:
@@ -268,7 +268,7 @@ class cmd_drs_replicate(Command):
         server_dn = msg[0]['dn']
 
         msg = self.samdb.search(base=server_dn, scope=ldb.SCOPE_ONELEVEL,
-                                expression="(objectClass=nTDSDSA)",
+                                expression="(|(objectCategory=nTDSDSA)(objectCategory=nTDSDSARO))",
                                 attrs=['objectGUID', 'options'])
         if len(msg) == 0:
             raise CommandError("Failed to find source NTDS DN %s" % SOURCE_DC)
