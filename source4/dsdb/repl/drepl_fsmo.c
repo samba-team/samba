@@ -30,7 +30,6 @@
 #include "smbd/service.h"
 #include "dsdb/repl/drepl_service.h"
 #include "param/param.h"
-#include "librpc/gen_ndr/irpc.h"
 
 static void drepl_role_callback(struct dreplsrv_service *service,
 				WERROR werr,

@@ -233,8 +233,7 @@ struct dreplsrv_service {
 	bool am_rodc;
 };
 
-enum drepl_role_master;
-
+#include "lib/messaging/irpc.h"
 #include "dsdb/repl/drepl_out_helpers.h"
 #include "dsdb/repl/drepl_service_proto.h"
 
