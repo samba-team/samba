@@ -27,6 +27,7 @@
 #include "system/kerberos.h"
 #include "auth/kerberos/kerberos.h"
 #include "librpc/rpc/pyrpc_util.h"
+#include "lib/policy/policy.h"
 
 /* There's no Py_ssize_t in 2.4, apparently */
 #if PY_MAJOR_VERSION == 2 && PY_MINOR_VERSION < 5
@@ -825,4 +826,10 @@ void initdsdb(void)
 	ADD_DSDB_FLAG(NTDSCONN_KCC_SERVER_FAILOVER_TOPOLOGY);
 	ADD_DSDB_FLAG(NTDSCONN_KCC_SITE_FAILOVER_TOPOLOGY);
 	ADD_DSDB_FLAG(NTDSCONN_KCC_REDUNDANT_SERVER_TOPOLOGY);
+
+	/* GPO policy flags */
+	ADD_DSDB_FLAG(GPLINK_OPT_DISABLE);
+	ADD_DSDB_FLAG(GPLINK_OPT_ENFORCE);
+	ADD_DSDB_FLAG(GPO_FLAG_USER_DISABLE);
+	ADD_DSDB_FLAG(GPO_FLAG_MACHINE_DISABLE);
 }
