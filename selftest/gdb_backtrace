@@ -37,6 +37,13 @@ case "${UNAME}" in
 	SunOS)
 		DB_LIST="dbx ${DB_LIST}"
 	;;
+	#
+	# FreeBSD comes with a flavor that works gdb66 and one that don't gdb
+	# (gdb 6.1) let's try it first the one that works !
+	#
+	FreeBSD)
+		DB_LIST="gdb66 ${DB_LIST}"
+	;;
 esac
 
 for DB in ${DB_LIST}; do
@@ -82,6 +89,16 @@ where
 quit
 EOF
 	${DB_BIN} -c "${BATCHFILE_MAIN}" -i "${BATCHFILE_PRE}" -pid "${PID}" "${BINARY}"
+	;;
+	gdb66)
+cat << EOF  > ${BATCHFILE_MAIN}
+set height 1000
+bt full
+info locals
+kill
+quit
+EOF
+	${DB_BIN} -x "${BATCHFILE_MAIN}" "${BINARY}" "${PID}"
 	;;
 	gdb)
 cat << EOF  > ${BATCHFILE_MAIN}
