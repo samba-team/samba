@@ -18,6 +18,9 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+"""NT Acls."""
+
+
 import os
 import samba.xattr_native, samba.xattr_tdb
 from samba.dcerpc import security, xattr

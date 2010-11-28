@@ -128,7 +128,7 @@ class Ldb(_Ldb):
 
     def erase_users_computers(self, dn):
         """Erases user and computer objects from our AD.
-        
+
         This is needed since the 'samldb' module denies the deletion of primary
         groups. Therefore all groups shouldn't be primary somewhere anymore.
         """
@@ -153,7 +153,7 @@ class Ldb(_Ldb):
 
     def erase_except_schema_controlled(self):
         """Erase this ldb.
-        
+
         :note: Removes all records, except those that are controlled by
             Samba4's schema.
         """
@@ -246,7 +246,8 @@ def substitute_var(text, values):
 
 
 def check_all_substituted(text):
-    """Make sure that all substitution variables in a string have been replaced.
+    """Check that all substitution variables in a string have been replaced.
+
     If not, raise an exception.
 
     :param text: The text to search for substitution variables
@@ -257,7 +258,8 @@ def check_all_substituted(text):
     var_start = text.find("${")
     var_end = text.find("}", var_start)
 
-    raise Exception("Not all variables substituted: %s" % text[var_start:var_end+1])
+    raise Exception("Not all variables substituted: %s" %
+        text[var_start:var_end+1])
 
 
 def read_and_sub_file(file_name, subst_vars):
@@ -306,14 +308,14 @@ def ensure_external_module(modulename, location):
     """Add a location to sys.path if an external dependency can't be found.
 
     :param modulename: Module name to import
-    :param location: Location to add to sys.path (can be relative to 
-        ${srcdir}/lib
+    :param location: Location to add to sys.path (can be relative to
+        ${srcdir}/lib)
     """
     try:
         __import__(modulename)
     except ImportError:
         if in_source_tree():
-            sys.path.insert(0, 
+            sys.path.insert(0,
                 os.path.join(os.path.dirname(__file__),
                              "../../../../lib", location))
             __import__(modulename)

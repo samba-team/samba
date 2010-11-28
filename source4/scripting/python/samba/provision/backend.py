@@ -319,7 +319,8 @@ class OpenLDAPBackend(LDAPBackend):
         """Setup a Berkeley database.
 
         :param setup_path: Setup path function.
-        :param dbdir: Database directory."""
+        :param dbdir: Database directory.
+        """
         if not os.path.isdir(os.path.join(dbdir, "bdb-logs")):
             os.makedirs(os.path.join(dbdir, "bdb-logs"), 0700)
             if not os.path.isdir(os.path.join(dbdir, "tmp")):

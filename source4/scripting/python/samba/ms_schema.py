@@ -1,9 +1,10 @@
-#!/usr/bin/env python
 #
 # create schema.ldif (as a string) from WSPP documentation
 #
 # based on minschema.py and minschema_wspp
 #
+
+"""Generate LDIF from WSPP documentation."""
 
 import re
 import base64
@@ -276,5 +277,3 @@ if __name__ == '__main__':
         sys.exit(1)
         
     print read_ms_schema(attr_file, classes_file)
-
-        

@@ -53,17 +53,20 @@ from samba import (
     valid_netbios_name,
     version,
     )
+from samba.dcerpc import security
+from samba.dcerpc.misc import (
+    SEC_CHAN_BDC,
+    SEC_CHAN_WKSTA,
+    )
 from samba.dsdb import (
     DS_DOMAIN_FUNCTION_2003,
     DS_DOMAIN_FUNCTION_2008_R2,
     ENC_ALL_TYPES,
     )
-from samba.dcerpc import security
-from samba.dcerpc.misc import SEC_CHAN_BDC, SEC_CHAN_WKSTA
 from samba.idmap import IDmapDB
 from samba.ms_display_specifiers import read_ms_ldif
 from samba.ntacls import setntacl, dsacl2fsacl
-from samba.ndr import ndr_pack,ndr_unpack
+from samba.ndr import ndr_pack, ndr_unpack
 from samba.provision.backend import (
     ExistingBackend,
     FDSBackend,

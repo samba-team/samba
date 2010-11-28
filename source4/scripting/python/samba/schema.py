@@ -76,7 +76,8 @@ class Schema(object):
         """
 
         self.schemadn = schemadn
-        # We need to have the am_rodc=False just to keep some warnings quiet - this isn't a real SAM, so it's meaningless.
+        # We need to have the am_rodc=False just to keep some warnings quiet -
+        # this isn't a real SAM, so it's meaningless.
         self.ldb = SamDB(global_schema=False, am_rodc=False)
         if invocationid is not None:
             self.ldb.set_invocation_id(invocationid)

@@ -1,8 +1,18 @@
-#!/usr/bin/env python
+# backend code for upgrading from Samba3
+# Copyright Jelmer Vernooij 2005-2007
 #
-#    backend code for upgrading from Samba3
-#    Copyright Jelmer Vernooij 2005-2007
-#    Released under the GNU GPL v3 or later
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
 """Support code for upgrading from Samba 3 to Samba 4."""
@@ -34,7 +44,7 @@ samba3UserMustLogonToChangePassword: %d
 samba3BadLockoutMinutes: %d
 samba3DisconnectTime: %d
 
-""" % (dn, policy.min_password_length, 
+""" % (dn, policy.min_password_length,
     policy.password_history, policy.minimum_password_age,
     policy.maximum_password_age, policy.lockout_duration,
     policy.reset_count_minutes, policy.user_must_logon_to_change_password,
@@ -43,7 +53,7 @@ samba3DisconnectTime: %d
 
 def import_sam_account(samldb,acc,domaindn,domainsid):
     """Import a Samba 3 SAM account.
-    
+
     :param samldb: Samba 4 SAM Database handle
     :param acc: Samba 3 account
     :param domaindn: Domain DN
@@ -59,7 +69,7 @@ def import_sam_account(samldb,acc,domaindn,domainsid):
 
     if acc.fullname is None:
         acc.fullname = acc.username
-    
+
     assert acc.fullname is not None
     assert acc.nt_username is not None
 
@@ -78,8 +88,8 @@ def import_sam_account(samldb,acc,domaindn,domainsid):
         "samba3Domain": acc.domain,
         "samba3DirDrive": acc.dir_drive,
         "samba3MungedDial": acc.munged_dial,
-        "samba3Homedir": acc.homedir, 
-        "samba3LogonScript": acc.logon_script, 
+        "samba3Homedir": acc.homedir,
+        "samba3LogonScript": acc.logon_script,
         "samba3ProfilePath": acc.profile_path,
         "samba3Workstations": acc.workstations,
         "samba3KickOffTime": str(acc.kickoff_time),
@@ -95,7 +105,7 @@ def import_sam_account(samldb,acc,domaindn,domainsid):
 
 def import_sam_group(samldb, sid, gid, sid_name_use, nt_name, comment, domaindn):
     """Upgrade a SAM group.
-    
+
     :param samldb: SAM database.
     :param gid: Group GID
     :param sid_name_use: SID name use
@@ -109,7 +119,7 @@ def import_sam_group(samldb, sid, gid, sid_name_use, nt_name, comment, domaindn)
 
     if nt_name in ("Domain Guests", "Domain Users", "Domain Admins"):
         return None
-    
+
     if gid == -1:
         gr = grp.getgrnam(nt_name)
     else:
@@ -121,12 +131,12 @@ def import_sam_group(samldb, sid, gid, sid_name_use, nt_name, comment, domaindn)
         unixname = gr.gr_name
 
     assert unixname is not None
-    
+
     samldb.add({
         "dn": "cn=%s,%s" % (nt_name, domaindn),
         "objectClass": ["top", "group"],
         "description": comment,
-        "cn": nt_name, 
+        "cn": nt_name,
         "objectSid": sid,
         "unixName": unixname,
         "samba3SidNameUse": str(sid_name_use)
@@ -160,7 +170,7 @@ def import_idmap(samdb,samba3_idmap,domaindn):
 
 def import_wins(samba4_winsdb, samba3_winsdb):
     """Import settings from a Samba3 WINS database.
-    
+
     :param samba4_winsdb: WINS database to import to
     :param samba3_winsdb: WINS database to import from
     """
@@ -225,7 +235,7 @@ replace: @LIST
 
 
 smbconf_keep = [
-    "dos charset", 
+    "dos charset",
     "unix charset",
     "display charset",
     "comment",
@@ -322,7 +332,7 @@ def upgrade_smbconf(oldconf,mark):
     """Remove configuration variables not present in Samba4
 
     :param oldconf: Old configuration structure
-    :param mark: Whether removed configuration variables should be 
+    :param mark: Whether removed configuration variables should be
         kept in the new configuration as "samba3:<name>"
     """
     data = oldconf.data()
@@ -384,12 +394,12 @@ def upgrade_provision(samba3, setup_dir, logger, credentials, session_info,
     netbiosname = oldconf.get("netbios name")
 
     secrets_db = samba3.get_secrets_db()
-    
+
     if domainname is None:
         domainname = secrets_db.domains()[0]
         logger.warning("No domain specified in smb.conf file, assuming '%s'",
                 domainname)
-    
+
     if realm is None:
         if oldconf.get("domain logons") == "True":
             logger.warning("No realm specified in smb.conf file and being a DC. That upgrade path doesn't work! Please add a 'realm' directive to your old smb.conf to let us know which one you want to use (generally it's the upcased DNS domainname).")
@@ -404,7 +414,7 @@ def upgrade_provision(samba3, setup_dir, logger, credentials, session_info,
     if domainsid is None:
         logger.warning("Can't find domain secrets for '%s'; using random SID",
             domainname)
-    
+
     if netbiosname is not None:
         machinepass = secrets_db.get_machine_password(netbiosname)
     else:
@@ -422,7 +432,7 @@ def upgrade_provision(samba3, setup_dir, logger, credentials, session_info,
     # FIXME: import_registry(registry.Registry(), samba3.get_registry())
 
     # FIXME: import_idmap(samdb,samba3.get_idmap_db(),domaindn)
-    
+
     groupdb = samba3.get_groupmapping_db()
     for sid in groupdb.groupsids():
         (gid, sid_name_use, nt_name, comment) = groupdb.get_group(sid)

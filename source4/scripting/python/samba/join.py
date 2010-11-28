@@ -18,13 +18,14 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import samba.getopt as options
+"""Joining a domain."""
+
 from samba.auth import system_session
 from samba.samdb import SamDB
-from samba import gensec, Ldb, drs_utils, dsdb
+from samba import gensec, Ldb, drs_utils
 import ldb, samba, sys, os, uuid
-from samba.ndr import ndr_pack, ndr_unpack, ndr_print
-from samba.dcerpc import security, drsuapi, misc, netlogon, nbt
+from samba.ndr import ndr_pack
+from samba.dcerpc import security, drsuapi, misc, nbt
 from samba.credentials import Credentials, DONT_USE_KERBEROS
 from samba.provision import secretsdb_self_join, provision, FILL_DRS, find_setup_dir
 from samba.schema import Schema

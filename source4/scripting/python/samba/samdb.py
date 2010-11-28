@@ -83,10 +83,12 @@ class SamDB(samba.Ldb):
         user_dn = res[0].dn
 
         userAccountControl = int(res[0]["userAccountControl"][0])
-        if (userAccountControl & 0x2):
-            userAccountControl = userAccountControl & ~0x2 # remove disabled bit
-        if (userAccountControl & 0x20):
-            userAccountControl = userAccountControl & ~0x20 # remove 'no password required' bit
+        if userAccountControl & 0x2:
+            # remove disabled bit
+            userAccountControl = userAccountControl & ~0x2
+        if userAccountControl & 0x20:
+             # remove 'no password required' bit
+            userAccountControl = userAccountControl & ~0x20
 
         mod = """
 dn: %s
@@ -179,7 +181,8 @@ pwdLastSet: 0
 
         :param groupname: Name of the target group
         :param listofmembers: Comma-separated list of group members
-        :param add_members_operation: Defines if its an add or remove operation
+        :param add_members_operation: Defines if its an add or remove
+            operation
         """
 
         groupfilter = "(&(sAMAccountName=%s)(objectCategory=%s,%s))" % (groupname, "CN=Group,CN=Schema,CN=Configuration", self.domain_dn())
@@ -444,12 +447,22 @@ accountExpires: %u
         """Read the domain SID used by this LDB. """
         return dsdb._samdb_get_domain_sid(self)
 
+    domain_sid = property(get_domain_sid, set_domain_sid,
+        "SID for the domain")
+
     def set_invocation_id(self, invocation_id):
         """Set the invocation id for this SamDB handle.
 
         :param invocation_id: GUID of the invocation id.
         """
         dsdb._dsdb_set_ntds_invocation_id(self, invocation_id)
+
+    def get_invocation_id(self):
+        """Get the invocation_id id"""
+        return dsdb._samdb_ntds_invocation_id(self)
+
+    invocation_id = property(get_invocation_id, set_invocation_id,
+        "Invocation ID GUID")
 
     def get_oid_from_attid(self, attid):
         return dsdb._dsdb_get_oid_from_attid(self, attid)
@@ -458,10 +471,6 @@ accountExpires: %u
             is_schema_nc=False):
         return dsdb._dsdb_get_attid_from_lDAPDisplayName(self,
             ldap_display_name, is_schema_nc)
-
-    def get_invocation_id(self):
-        """Get the invocation_id id"""
-        return dsdb._samdb_ntds_invocation_id(self)
 
     def set_ntds_settings_dn(self, ntds_settings_dn):
         """Set the NTDS Settings DN, as would be returned on the dsServiceName
@@ -472,10 +481,6 @@ accountExpires: %u
         :param ntds_settings_dn: The new DN to use
         """
         dsdb._samdb_set_ntds_settings_dn(self, ntds_settings_dn)
-
-    invocation_id = property(get_invocation_id, set_invocation_id)
-
-    domain_sid = property(get_domain_sid, set_domain_sid)
 
     def get_ntds_GUID(self):
         """Get the NTDS objectGUID"""
