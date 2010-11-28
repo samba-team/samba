@@ -170,3 +170,5 @@ from samba.netcmd.rodc import cmd_rodc
 commands["rodc"] = cmd_rodc()
 from samba.netcmd.drs import cmd_drs
 commands["drs"] = cmd_drs()
+from samba.netcmd.gpo import cmd_gpo
+commands["gpo2"] = cmd_gpo()
