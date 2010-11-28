@@ -17,6 +17,9 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+__docformat__ = "restructuredText"
+
+
 import optparse
 import sys
 # Allow to run from s4 source directory (without installing samba)
@@ -30,10 +33,7 @@ from samba.upgradehelpers import (get_paths,
                                  find_provision_key_parameters, get_ldbs,
                                  update_machine_account_password)
 
-__docformat__ = "restructuredText"
-
-
-parser = optparse.OptionParser("provision [options]")
+parser = optparse.OptionParser("chgtdcpass [options]")
 sambaopts = options.SambaOptions(parser)
 parser.add_option_group(sambaopts)
 parser.add_option_group(options.VersionOptions(parser))
@@ -41,7 +41,6 @@ credopts = options.CredentialsOptions(parser)
 parser.add_option_group(credopts)
 
 opts = parser.parse_args()[0]
-
 
 lp = sambaopts.get_loadparm()
 smbconf = lp.configfile
