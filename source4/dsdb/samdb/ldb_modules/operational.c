@@ -672,8 +672,8 @@ static int operational_search_post_process(struct ldb_module *module,
 
 failed:
 	ldb_debug_set(ldb, LDB_DEBUG_WARNING,
-		      "operational_search_post_process failed for attribute '%s'",
-		      attrs_from_user[a]);
+		      "operational_search_post_process failed for attribute '%s' - %s",
+		      attrs_from_user[a], ldb_errstring(ldb));
 	return -1;
 }
 
