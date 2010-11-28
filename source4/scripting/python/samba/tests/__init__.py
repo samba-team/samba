@@ -1,18 +1,18 @@
 #!/usr/bin/env python
 
 # Unix SMB/CIFS implementation.
-# Copyright (C) Jelmer Vernooij <jelmer@samba.org> 2007-2008
-#   
+# Copyright (C) Jelmer Vernooij <jelmer@samba.org> 2007-2010
+#
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 3 of the License, or
 # (at your option) any later version.
-#   
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-#   
+#
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
@@ -24,6 +24,7 @@ import ldb
 import samba
 import samba.auth
 from samba import param
+from samba.samdb import SamDB
 import subprocess
 import tempfile
 
@@ -114,9 +115,9 @@ class BlackboxTestCase(TestCase):
         subprocess.check_call(line, shell=True)
 
 
-def connect_samdb(samdb_url, lp=None, session_info=None,
-                  credentials=None, flags=0, ldb_options=None, ldap_only=False):
-    """Creates SamDB instance and connects to samdb_url database.
+def connect_samdb(samdb_url, lp=None, session_info=None, credentials=None,
+                  flags=0, ldb_options=None, ldap_only=False):
+    """Create SamDB instance and connects to samdb_url database.
 
     :param samdb_url: Url for database to connect to.
     :param lp: Optional loadparm object
@@ -138,19 +139,18 @@ def connect_samdb(samdb_url, lp=None, session_info=None,
     # use 'paged_search' module when connecting remotely
     if samdb_url.startswith("ldap://"):
         ldb_options = ["modules:paged_searches"]
-    else:
-        assert not ldap_only, \
-               "Trying to connect to %s while remote connection is required" % samdb_url
+    elif ldap_only:
+        raise AssertionError("Trying to connect to %s while remote "
+                             "connection is required" % samdb_url)
 
     # set defaults for test environment
-    if not lp:
-        lp=env_loadparm()
-    if not session_info:
-        session_info=samba.auth.system_session(lp)
-    if not credentials:
-        credentials=cmdline_credentials
+    if lp is None:
+        lp = env_loadparm()
+    if session_info is None:
+        session_info = samba.auth.system_session(lp)
+    if credentials is None:
+        credentials = cmdline_credentials
 
-    from samba.samdb import SamDB
     return SamDB(url=samdb_url,
                  lp=lp,
                  session_info=session_info,
@@ -158,8 +158,9 @@ def connect_samdb(samdb_url, lp=None, session_info=None,
                  flags=flags,
                  options=ldb_options)
 
-def connect_samdb_ex(samdb_url, lp=None, session_info=None,
-                     credentials=None, flags=0, ldb_options=None, ldap_only=False):
+
+def connect_samdb_ex(samdb_url, lp=None, session_info=None, credentials=None,
+                     flags=0, ldb_options=None, ldap_only=False):
     """Connects to samdb_url database
 
     :param samdb_url: Url for database to connect to.
@@ -170,11 +171,13 @@ def connect_samdb_ex(samdb_url, lp=None, session_info=None,
     :param ldap_only: If set, only remote LDAP connection will be created.
     :return: (sam_db_connection, rootDse_record) tuple
     """
-    sam_db = connect_samdb(samdb_url, lp, session_info, credentials, 
+    sam_db = connect_samdb(samdb_url, lp, session_info, credentials,
                            flags, ldb_options, ldap_only)
     # fetch RootDse
-    res = sam_db.search(base="", expression="", scope=ldb.SCOPE_BASE, attrs=["*"])
+    res = sam_db.search(base="", expression="", scope=ldb.SCOPE_BASE,
+                        attrs=["*"])
     return (sam_db, res[0])
+
 
 def delete_force(samdb, dn):
     try:
