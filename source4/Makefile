@@ -63,3 +63,6 @@ ctags:
 bin/%:: FORCE
 	$(WAF) --targets=`basename $@`
 FORCE:
+
+pydoctor:
+	$(WAF) pydoctor
