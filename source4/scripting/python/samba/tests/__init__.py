@@ -69,6 +69,7 @@ def env_loadparm():
         raise Exception("SMB_CONF_PATH not set")
     return lp
 
+
 def env_get_var_value(var_name):
     """Returns value for variable in os.environ
 

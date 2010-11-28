@@ -95,11 +95,3 @@ class SamDBTestCase(TestCaseInTempDir):
                   'users.ldb', 'samdb.ldb', 'smb.conf']:
             os.remove(os.path.join(self.tempdir, f))
         super(SamDBTestCase, self).tearDown()
-
-
-# disable this test till andrew works it out ...
-class SamDBTests(SamDBTestCase):
-    """Tests for the SamDB implementation."""
-
-    print "samdb add_foreign disabled for now"
-#    def test_add_foreign(self):

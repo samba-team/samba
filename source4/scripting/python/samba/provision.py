@@ -241,7 +241,7 @@ def update_provision_usn(samdb, low, high, replace=False):
 
     tab = []
     if not replace:
-        entry = samdb.search(expression="(&(dn=@PROVISION)(%s=*))" % \
+        entry = samdb.search(expression="(&(dn=@PROVISION)(%s=*))" %
                                 LAST_PROVISION_USN_ATTRIBUTE, base="",
                                 scope=ldb.SCOPE_SUBTREE,
                                 attrs=[LAST_PROVISION_USN_ATTRIBUTE, "dn"])
@@ -296,10 +296,10 @@ def get_last_provision_usn(sam):
     """Get the lastest USN modified by a provision or an upgradeprovision
 
     :param sam: An LDB object pointing to the sam.ldb
-    :return an integer corresponding to the highest USN modified by
-            (upgrade)provision, 0 is this value is unknown"""
-
-    entry = sam.search(expression="(&(dn=@PROVISION)(%s=*))" % \
+    :return: an integer corresponding to the highest USN modified by
+        (upgrade)provision, 0 is this value is unknown
+    """
+    entry = sam.search(expression="(&(dn=@PROVISION)(%s=*))" %
                         LAST_PROVISION_USN_ATTRIBUTE,
                         base="", scope=ldb.SCOPE_SUBTREE,
                         attrs=[LAST_PROVISION_USN_ATTRIBUTE])
@@ -837,7 +837,7 @@ def setup_secretsdb(paths, setup_path, session_info, backend_credentials, lp):
     """Setup the secrets database.
 
    :note: This function does not handle exceptions and transaction on purpose,
-   it's up to the caller to do this job.
+       it's up to the caller to do this job.
 
     :param path: Path to the secrets database.
     :param setup_path: Get the path to a setup file.

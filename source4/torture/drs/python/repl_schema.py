@@ -37,10 +37,12 @@ import samba
 samba.ensure_external_module("testtools", "testtools")
 samba.ensure_external_module("subunit", "subunit/python")
 
-from ldb import LdbError, ERR_NO_SUCH_OBJECT
-from ldb import SCOPE_BASE
-from ldb import Message
-from ldb import FLAG_MOD_REPLACE
+from ldb import (
+    LdbError,
+    SCOPE_BASE,
+    Message,
+    FLAG_MOD_REPLACE,
+    )
 
 import samba.tests
 

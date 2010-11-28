@@ -6,17 +6,17 @@
 #
 # Based on the original in EJS:
 # Copyright (C) Andrew Tridgell <tridge@samba.org> 2005
-#   
+#
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 3 of the License, or
 # (at your option) any later version.
-#   
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-#   
+#
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
@@ -29,9 +29,10 @@ import time
 import base64
 from samba import dsdb
 from samba.ndr import ndr_unpack, ndr_pack
-from samba.dcerpc import drsblobs, misc, security
+from samba.dcerpc import drsblobs, misc
 
 __docformat__ = "restructuredText"
+
 
 class SamDB(samba.Ldb):
     """The SAM database."""
@@ -48,8 +49,8 @@ class SamDB(samba.Ldb):
             url = lp.get("sam database")
 
         super(SamDB, self).__init__(url=url, lp=lp, modules_dir=modules_dir,
-                session_info=session_info, credentials=credentials, flags=flags,
-                options=options)
+            session_info=session_info, credentials=credentials, flags=flags,
+            options=options)
 
         if global_schema:
             dsdb._dsdb_set_global_schema(self)
@@ -72,8 +73,9 @@ class SamDB(samba.Ldb):
 
     def enable_account(self, search_filter):
         """Enables an account
-        
-        :param search_filter: LDAP filter to find the user (eg samccountname=name)
+
+        :param search_filter: LDAP filter to find the user (eg
+            samccountname=name)
         """
         res = self.search(base=self.domain_dn(), scope=ldb.SCOPE_SUBTREE,
                           expression=search_filter, attrs=["userAccountControl"])
@@ -93,11 +95,12 @@ replace: userAccountControl
 userAccountControl: %u
 """ % (user_dn, userAccountControl)
         self.modify_ldif(mod)
-        
+
     def force_password_change_at_next_login(self, search_filter):
         """Forces a password change at next login
-        
-        :param search_filter: LDAP filter to find the user (eg samccountname=name)
+
+        :param search_filter: LDAP filter to find the user (eg
+            samccountname=name)
         """
         res = self.search(base=self.domain_dn(), scope=ldb.SCOPE_SUBTREE,
                           expression=search_filter, attrs=[])
@@ -226,18 +229,20 @@ member: %s
             self.transaction_commit()
 
     def newuser(self, username, password,
-                force_password_change_at_next_login_req=False,
-                useusernameascn=False, userou=None, surname=None, givenname=None, initials=None,
-                profilepath=None, scriptpath=None, homedrive=None, homedirectory=None,
-                jobtitle=None, department=None, company=None, description=None,
-                mailaddress=None, internetaddress=None, telephonenumber=None,
-                physicaldeliveryoffice=None, sd=None, setpassword=True):
+            force_password_change_at_next_login_req=False,
+            useusernameascn=False, userou=None, surname=None, givenname=None,
+            initials=None, profilepath=None, scriptpath=None, homedrive=None,
+            homedirectory=None, jobtitle=None, department=None, company=None,
+            description=None, mailaddress=None, internetaddress=None,
+            telephonenumber=None, physicaldeliveryoffice=None, sd=None,
+            setpassword=True):
         """Adds a new user with additional parameters
 
         :param username: Name of the new user
         :param password: Password for the new user
         :param force_password_change_at_next_login_req: Force password change
-        :param useusernameascn: Use username as cn rather that firstname + initials + lastname
+        :param useusernameascn: Use username as cn rather that firstname +
+            initials + lastname
         :param userou: Object container (without domainDN postfix) for new user
         :param surname: Surname of the new user
         :param givenname: First name of the new user
@@ -350,11 +355,11 @@ member: %s
             self.transaction_commit()
 
     def setpassword(self, search_filter, password,
-                    force_change_at_next_login=False,
-                    username=None):
+            force_change_at_next_login=False, username=None):
         """Sets the password for a user
-        
-        :param search_filter: LDAP filter to find the user (eg samccountname=name)
+
+        :param search_filter: LDAP filter to find the user (eg
+            samccountname=name)
         :param password: Password for the user
         :param force_change_at_next_login: Force password change
         """
@@ -389,8 +394,9 @@ unicodePwd:: %s
 
     def setexpiry(self, search_filter, expiry_seconds, no_expiry_req=False):
         """Sets the account expiry for a user
-        
-        :param search_filter: LDAP filter to find the user (eg samccountname=name)
+
+        :param search_filter: LDAP filter to find the user (eg
+            samaccountname=name)
         :param expiry_seconds: expiry time from now in seconds
         :param no_expiry_req: if set, then don't expire password
         """
@@ -435,9 +441,7 @@ accountExpires: %u
         dsdb._samdb_set_domain_sid(self, sid)
 
     def get_domain_sid(self):
-        """Read the domain SID used by this LDB.
-
-        """
+        """Read the domain SID used by this LDB. """
         return dsdb._samdb_get_domain_sid(self)
 
     def set_invocation_id(self, invocation_id):
@@ -450,15 +454,18 @@ accountExpires: %u
     def get_oid_from_attid(self, attid):
         return dsdb._dsdb_get_oid_from_attid(self, attid)
 
-    def get_attid_from_lDAPDisplayName(self, ldap_display_name, is_schema_nc=False):
-        return dsdb._dsdb_get_attid_from_lDAPDisplayName(self, ldap_display_name, is_schema_nc)
+    def get_attid_from_lDAPDisplayName(self, ldap_display_name,
+            is_schema_nc=False):
+        return dsdb._dsdb_get_attid_from_lDAPDisplayName(self,
+            ldap_display_name, is_schema_nc)
 
     def get_invocation_id(self):
-        "Get the invocation_id id"
+        """Get the invocation_id id"""
         return dsdb._samdb_ntds_invocation_id(self)
 
     def set_ntds_settings_dn(self, ntds_settings_dn):
-        """Set the NTDS Settings DN, as would be returned on the dsServiceName rootDSE attribute
+        """Set the NTDS Settings DN, as would be returned on the dsServiceName
+        rootDSE attribute.
 
         This allows the DN to be set before the database fully exists
 
@@ -471,11 +478,11 @@ accountExpires: %u
     domain_sid = property(get_domain_sid, set_domain_sid)
 
     def get_ntds_GUID(self):
-        "Get the NTDS objectGUID"
+        """Get the NTDS objectGUID"""
         return dsdb._samdb_ntds_objectGUID(self)
 
     def server_site_name(self):
-        "Get the server site name"
+        """Get the server site name"""
         return dsdb._samdb_server_site_name(self)
 
     def load_partition_usn(self, base_dn):
@@ -493,8 +500,8 @@ accountExpires: %u
     def get_attribute_from_attid(self, attid):
         """ Get from an attid the associated attribute
 
-           :param attid: The attribute id for searched attribute
-           :return: The name of the attribute associated with this id
+        :param attid: The attribute id for searched attribute
+        :return: The name of the attribute associated with this id
         """
         if len(self.hash_oid_name.keys()) == 0:
             self._populate_oid_attid()
@@ -503,12 +510,11 @@ accountExpires: %u
         else:
             return None
 
-
     def _populate_oid_attid(self):
-        """Populate the hash hash_oid_name
+        """Populate the hash hash_oid_name.
 
-           This hash contains the oid of the attribute as a key and
-           its display name as a value
+        This hash contains the oid of the attribute as a key and
+        its display name as a value
         """
         self.hash_oid_name = {}
         res = self.search(expression="objectClass=attributeSchema",
@@ -520,15 +526,14 @@ accountExpires: %u
                 strDisplay = str(e.get("lDAPDisplayName"))
                 self.hash_oid_name[str(e.get("attributeID"))] = strDisplay
 
-
     def get_attribute_replmetadata_version(self, dn, att):
-        """ Get the version field trom the replPropertyMetaData for
-            the given field
+        """Get the version field trom the replPropertyMetaData for
+        the given field
 
-           :param dn: The on which we want to get the version
-           :param att: The name of the attribute
-           :return: The value of the version field in the replPropertyMetaData
-             for the given attribute. None if the attribute is not replicated
+        :param dn: The on which we want to get the version
+        :param att: The name of the attribute
+        :return: The value of the version field in the replPropertyMetaData
+            for the given attribute. None if the attribute is not replicated
         """
 
         res = self.search(expression="dn=%s" % dn,
@@ -551,8 +556,8 @@ accountExpires: %u
                 return o.version
         return None
 
-
-    def set_attribute_replmetadata_version(self, dn, att, value, addifnotexist=False):
+    def set_attribute_replmetadata_version(self, dn, att, value,
+            addifnotexist=False):
         res = self.search(expression="dn=%s" % dn,
                             scope=ldb.SCOPE_SUBTREE,
                             controls=["search_options:1:2"],
@@ -605,7 +610,6 @@ accountExpires: %u
                                                 "replPropertyMetaData")
             self.modify(msg, ["local_oid:1.3.6.1.4.1.7165.4.3.14:0"])
 
-
     def write_prefixes_from_schema(self):
         dsdb._dsdb_write_prefixes_from_schema_to_ldb(self)
 
@@ -632,10 +636,11 @@ accountExpires: %u
         m.dn = ldb.Dn(self, "CN=Directory Service,CN=Windows NT,CN=Services,%s"
                       % self.get_config_basedn().get_linearized())
         if dsheuristics is not None:
-            m["dSHeuristics"] = ldb.MessageElement(dsheuristics, ldb.FLAG_MOD_REPLACE,
-                                               "dSHeuristics")
+            m["dSHeuristics"] = ldb.MessageElement(dsheuristics,
+                ldb.FLAG_MOD_REPLACE, "dSHeuristics")
         else:
-            m["dSHeuristics"] = ldb.MessageElement([], ldb.FLAG_MOD_DELETE, "dSHeuristics")
+            m["dSHeuristics"] = ldb.MessageElement([], ldb.FLAG_MOD_DELETE,
+                "dSHeuristics")
         self.modify(m)
 
     def get_dsheuristics(self):

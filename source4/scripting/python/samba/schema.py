@@ -10,12 +10,12 @@
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 3 of the License, or
 # (at your option) any later version.
-#   
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-#   
+#
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
@@ -59,18 +59,20 @@ def get_schema_descriptor(domain_sid):
     sec = security.descriptor.from_sddl(sddl, domain_sid)
     return ndr_pack(sec)
 
-   
+
 class Schema(object):
 
     def __init__(self, setup_path, domain_sid, invocationid=None, schemadn=None,
                  files=None, override_prefixmap=None, additional_prefixmap=None):
-        """Load schema for the SamDB from the AD schema files and samba4_schema.ldif
-        
+        """Load schema for the SamDB from the AD schema files and
+        samba4_schema.ldif
+
         :param samdb: Load a schema into a SamDB.
         :param setup_path: Setup path function.
         :param schemadn: DN of the schema
-        
-        Returns the schema data loaded, to avoid double-parsing when then needing to add it to the db
+
+        Returns the schema data loaded, to avoid double-parsing when then
+        needing to add it to the db
         """
 
         self.schemadn = schemadn
@@ -139,7 +141,8 @@ dn: @INDEXLIST
         else:
             self.ldb.transaction_commit()
 
-    # Return a hash with the forward attribute as a key and the back as the value 
+    # Return a hash with the forward attribute as a key and the back as the
+    # value
     def linked_attributes(self):
         return get_linked_attributes(self.schemadn, self.ldb)
 
@@ -163,7 +166,7 @@ def get_linked_attributes(schemadn,schemaldb):
                                      scope=SCOPE_SUBTREE)
         if target is not None:
             attributes[str(res[i]["lDAPDisplayName"])]=str(target)
-            
+
     return attributes
 
 
@@ -183,16 +186,16 @@ def ldb_with_schema(setup_dir=None,
         domainsid=None,
         override_prefixmap=None):
     """Load schema for the SamDB from the AD schema files and samba4_schema.ldif
-    
+
     :param setup_dir: Setup path
     :param schemadn: DN of the schema
     :param serverdn: DN of the server
-    
+
     Returns the schema data loaded as an object, with .ldb being a
     new ldb with the schema loaded.  This allows certain tests to
     operate without a remote or local schema.
     """
-    
+
     def setup_path(file):
         return os.path.join(setup_dir, file)
 
@@ -200,4 +203,5 @@ def ldb_with_schema(setup_dir=None,
         domainsid = security.random_sid()
     else:
         domainsid = security.dom_sid(domainsid)
-    return Schema(setup_path, domainsid, schemadn=schemadn, override_prefixmap=override_prefixmap)
+    return Schema(setup_path, domainsid, schemadn=schemadn,
+        override_prefixmap=override_prefixmap)
