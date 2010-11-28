@@ -66,6 +66,20 @@ def flags_string(flags, value):
     return ret.rstrip()
 
 
+def parse_gplink(gplink):
+    '''parse a gPLink into an array of dn and options'''
+    ret = []
+    a = gplink.split(']')
+    for g in a:
+        if not g:
+            continue
+        d = g.split(';')
+        if len(d) != 2 or not d[0].startswith("[LDAP://"):
+            raise RuntimeError("Badly formed gPLink '%s'" % g)
+        ret.append({ 'dn' : d[0][8:], 'options' : int(d[1])})
+    return ret
+
+
 class cmd_listall(Command):
     """list all GPOs"""
 
@@ -113,8 +127,93 @@ class cmd_listall(Command):
             print("")
 
 
+class cmd_list(Command):
+    """list GPOs for a user"""
+
+    synopsis = "%prog gpo list <username>"
+
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "versionopts": options.VersionOptions,
+        "credopts": options.CredentialsOptions,
+    }
+
+    takes_args = [ 'username' ]
+
+    takes_options = [
+        Option("-H", help="LDB URL for database or target server", type=str)
+        ]
+
+    def run(self, username, H=None, sambaopts=None,
+            credopts=None, versionopts=None, server=None):
+
+        self.url = H
+        self.lp = sambaopts.get_loadparm()
+
+        self.creds = credopts.get_credentials(self.lp)
+        if not self.creds.authentication_requested():
+            self.creds.set_machine_account(self.lp)
+
+        samdb_connect(self)
+
+        try:
+            user_dn = self.samdb.search(expression='(&(samAccountName=%s)(objectclass=User))' % username)[0].dn
+        except Exception, estr:
+            raise CommandError("Failed to find user %s - %s" % (username, estr))
+
+        # check if its a computer account
+        try:
+            msg = self.samdb.search(base=user_dn, scope=ldb.SCOPE_BASE, attrs=['objectClass'])[0]
+            is_computer = 'computer' in msg['objectClass']
+        except Exception, estr:
+            raise CommandError("Failed to find objectClass for user %s - %s" % (username, estr))
+
+        print("TODO: get user token")
+        # token = self.samdb.get_user_token(username)
+
+        gpos = []
+
+        inherit = True
+        dn = ldb.Dn(self.samdb, str(user_dn)).parent()
+        while True:
+            msg = self.samdb.search(base=dn, scope=ldb.SCOPE_BASE, attrs=['gPLink', 'gPOptions'])[0]
+            if 'gPLink' in msg:
+                glist = parse_gplink(msg['gPLink'][0])
+                for g in glist:
+                    if not inherit and not (g['options'] & dsdb.GPLINK_OPT_ENFORCE):
+                        continue
+                    if g['options'] & dsdb.GPLINK_OPT_DISABLE:
+                        continue
+
+                    print("TODO: access checking")
+                    #if not samdb.access_check(secdesc, token, security.SEC_RIGHTS_FILE_READ):
+                    #    continue
+
+                    # check the flags on the GPO
+                    flags = int(attr_default(self.samdb.search(base=g['dn'], scope=ldb.SCOPE_BASE, attrs=['flags'])[0], 'flags', 0))
+                    if is_computer and (flags & dsdb.GPO_FLAG_MACHINE_DISABLE):
+                        continue
+                    if not is_computer and (flags & dsdb.GPO_FLAG_USER_DISABLE):
+                        continue
+                    gpos.append(g)
+
+            # check if this blocks inheritance
+            gpoptions = int(attr_default(msg, 'gPOptions', 0))
+            if gpoptions & dsdb.GPO_BLOCK_INHERITANCE:
+                inherit = False
+
+            if dn == self.samdb.get_default_basedn():
+                break
+            dn = dn.parent()
+
+        print("GPO's for user %s" % username)
+        for g in gpos:
+            print("\t%s" % g['dn'])
+
+
 class cmd_gpo(SuperCommand):
     """GPO commands"""
 
     subcommands = {}
     subcommands["listall"] = cmd_listall()
+    subcommands["list"] = cmd_list()
