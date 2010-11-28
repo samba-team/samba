@@ -61,7 +61,7 @@ void wins_hook(struct winsdb_handle *h, const struct winsdb_record *rec,
 			      wins_hook_action_string(action),
 			      rec->name->name,
 			      rec->name->type,
-			      rec->expire_time);
+			      (long int) rec->expire_time);
 	if (!cmd) goto failed;
 
 	for (i=0; rec->addresses[i]; i++) {

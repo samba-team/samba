@@ -1171,7 +1171,7 @@ static bool test_SetUserPass_level_ex(struct dcerpc_pipe *p,
 	}
 
 	if (fields_present & SAMR_FIELD_COMMENT) {
-		comment = talloc_asprintf(tctx, "comment: %ld\n", time(NULL));
+		comment = talloc_asprintf(tctx, "comment: %ld\n", (long int) time(NULL));
 	}
 
 	ZERO_STRUCT(u);
