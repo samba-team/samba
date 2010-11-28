@@ -150,7 +150,7 @@ if sub.returncode != 0:
     tap2subunit = "PYTHONPATH=%s/../lib/subunit/python:%s/../lib/testtools %s %s/../lib/subunit/filters/tap2subunit" % (samba4srcdir, samba4srcdir, python, samba4srcdir)
 else:
     cmd = "echo -ne \"1..1\nok 1 # skip doesn't seem to work yet\n\" | tap2subunit 2> /dev/null | grep skip"
-    sub = subprocess.Popen(cmd, stdout=subprocess.PIPE, stdin=subprocess.PIPE, shell=True)
+    sub = subprocess.Popen(cmd, stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
     if sub.returncode == 0:
         tap2subunit = "tap2subunit"
     else:
