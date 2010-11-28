@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-from samba.shares import SharesContainer
+from samba.hostconfig import SharesContainer
 from samba.tests import TestCase
 
 
