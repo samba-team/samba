@@ -30,6 +30,12 @@ case "${UNAME}" in
 	OSF1)
 		DB_LIST="ladebug ${DB_LIST}"
 	;;
+	#
+	# On solaris dbx is working way more better than gdb
+	# let's try it first
+	#
+	SunOS)
+		DB_LIST="dbx ${DB_LIST}"
 esac
 
 for DB in ${DB_LIST}; do
@@ -45,12 +51,13 @@ test x"${DB_BIN}" = x"" && {
 }
 
 #
-# we first try to use /proc/${PID}/exe
+# we first try to use /proc/${PID}/exe or /proc/{$PID}/path for solaris
 # then fallback to the binary from the commandline
 # then we search for the commandline argument with
 # 'which'
 #
 test -f "/proc/${PID}/exe" && BINARY="/proc/${PID}/exe"
+test -f "/proc/${PID}/path/a.out" && BINARY=`ls -l /proc/${PID}/path/a.out |sed 's/.*-> //'`
 test x"${BINARY}" = x"" && BINARY="/proc/${PID}/exe"
 test -f "${BINARY}" || BINARY=`which ${BINARY}`
 
@@ -83,6 +90,9 @@ info locals
 quit
 EOF
 	${DB_BIN} -x "${BATCHFILE_MAIN}" "${BINARY}" "${PID}"
+	;;
+dbx)
+	${DB_BIN} "where;dump;kill;quit" "${BINARY}" "${PID}"
 	;;
 esac
 /bin/rm -f ${BATCHFILE_PRE} ${BATCHFILE_MAIN}
