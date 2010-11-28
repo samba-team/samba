@@ -87,11 +87,11 @@ def find_setup_dir():
     if in_source_tree():
         # In source tree
         dirname = os.path.dirname(__file__)
-        return os.path.normpath(os.path.join(dirname, "../../../setup"))
+        return os.path.normpath(os.path.join(dirname, "../../../../setup"))
     else:
         import sys
         for prefix in [sys.prefix,
-                os.path.join(os.path.dirname(__file__), "../../../..")]:
+                os.path.join(os.path.dirname(__file__), "../../../../..")]:
             for suffix in ["share/setup", "share/samba/setup", "setup"]:
                 ret = os.path.normpath(os.path.join(prefix, suffix))
                 if os.path.isdir(ret):
@@ -469,7 +469,7 @@ def guess_names(lp=None, hostname=None, domain=None, dnsdomain=None,
         for x in netbiosname:
             if x.isalnum() or x in VALID_NETBIOS_CHARS:
                 newnbname = "%s%c" % (newnbname, x)
-        #force the length to be <16
+        # force the length to be <16
         netbiosname = newnbname[0:15]
     assert netbiosname is not None
     netbiosname = netbiosname.upper()
@@ -751,11 +751,11 @@ def secretsdb_self_join(secretsdb, domain,
            "privateKeytab"]
 
     if realm is not None:
-      if dnsdomain is None:
-          dnsdomain = realm.lower()
-      dnsname = '%s.%s' % (netbiosname.lower(), dnsdomain.lower())
+        if dnsdomain is None:
+            dnsdomain = realm.lower()
+        dnsname = '%s.%s' % (netbiosname.lower(), dnsdomain.lower())
     else:
-      dnsname = None
+        dnsname = None
     shortname = netbiosname.lower()
 
     # We don't need to set msg["flatname"] here, because rdn_name will handle
@@ -764,11 +764,11 @@ def secretsdb_self_join(secretsdb, domain,
     msg["secureChannelType"] = [str(secure_channel_type)]
     msg["objectClass"] = ["top", "primaryDomain"]
     if dnsname is not None:
-      msg["objectClass"] = ["top", "primaryDomain", "kerberosSecret"]
-      msg["realm"] = [realm]
-      msg["saltPrincipal"] = ["host/%s@%s" % (dnsname, realm.upper())]
-      msg["msDS-KeyVersionNumber"] = [str(key_version_number)]
-      msg["privateKeytab"] = ["secrets.keytab"]
+        msg["objectClass"] = ["top", "primaryDomain", "kerberosSecret"]
+        msg["realm"] = [realm]
+        msg["saltPrincipal"] = ["host/%s@%s" % (dnsname, realm.upper())]
+        msg["msDS-KeyVersionNumber"] = [str(key_version_number)]
+        msg["privateKeytab"] = ["secrets.keytab"]
 
     msg["secret"] = [machinepass]
     msg["samAccountName"] = ["%s$" % netbiosname]
@@ -780,10 +780,9 @@ def secretsdb_self_join(secretsdb, domain,
     # than one record for this SID, realm or netbios domain at a time,
     # but we don't delete the old record that we are about to modify,
     # because that would delete the keytab and previous password.
-    res = secretsdb.search(base="cn=Primary Domains",
-                           attrs=attrs,
-                           expression=("(&(|(flatname=%s)(realm=%s)(objectSid=%s))(objectclass=primaryDomain)(!(dn=%s)))" % (domain, realm, str(domainsid), str(msg.dn))),
-                           scope=ldb.SCOPE_ONELEVEL)
+    res = secretsdb.search(base="cn=Primary Domains", attrs=attrs,
+        expression=("(&(|(flatname=%s)(realm=%s)(objectSid=%s))(objectclass=primaryDomain)(!(dn=%s)))" % (domain, realm, str(domainsid), str(msg.dn))),
+        scope=ldb.SCOPE_ONELEVEL)
 
     for del_msg in res:
         secretsdb.delete(del_msg.dn)
@@ -929,8 +928,7 @@ def setup_registry(path, setup_path, session_info, lp):
     :param lp: Loadparm context
     """
     reg = samba.registry.Registry()
-    hive = samba.registry.open_ldb(path, session_info=session_info,
-                         lp_ctx=lp)
+    hive = samba.registry.open_ldb(path, session_info=session_info, lp_ctx=lp)
     reg.mount_hive(hive, samba.registry.HKEY_LOCAL_MACHINE)
     provision_reg = setup_path("provision.reg")
     assert os.path.exists(provision_reg)
@@ -970,8 +968,7 @@ def setup_samdb_rootdse(samdb, setup_path, names):
         })
 
 
-def setup_self_join(samdb, names,
-                    machinepass, dnspass,
+def setup_self_join(samdb, names, machinepass, dnspass,
                     domainsid, next_rid, invocationid, setup_path,
                     policyguid, policyguid_dc, domainControllerFunctionality,
                     ntdsguid):
@@ -1315,6 +1312,7 @@ FILL_NT4SYNC = "NT4SYNC"
 FILL_DRS = "DRS"
 SYSVOL_ACL = "O:LAG:BAD:P(A;OICI;0x001f01ff;;;BA)(A;OICI;0x001200a9;;;SO)(A;OICI;0x001f01ff;;;SY)(A;OICI;0x001200a9;;;AU)"
 POLICIES_ACL = "O:LAG:BAD:P(A;OICI;0x001f01ff;;;BA)(A;OICI;0x001200a9;;;SO)(A;OICI;0x001f01ff;;;SY)(A;OICI;0x001200a9;;;AU)(A;OICI;0x001301bf;;;PA)"
+
 
 def set_dir_acl(path, acl, lp, domsid):
     setntacl(lp, path, acl, domsid)

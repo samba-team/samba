@@ -13,7 +13,7 @@
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 3 of the License, or
 # (at your option) any later version.
-#   
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -113,7 +113,7 @@ class ExistingBackend(ProvisionBackend):
         super(ExistingBackend, self).__init__(backend_type=backend_type,
                 paths=paths, setup_path=setup_path, lp=lp,
                 credentials=credentials, names=names, logger=logger,
-                ldap_backend_forced_uri=ldap_backend_forced_uri)
+                ldap_backend_forced_uri=ldapi_uri)
 
     def init(self):
         # Check to see that this 'existing' LDAP backend in fact exists
@@ -134,8 +134,8 @@ class LDAPBackend(ProvisionBackend):
 
     def __init__(self, backend_type, paths=None, setup_path=None, lp=None,
                  credentials=None, names=None, logger=None, domainsid=None,
-                 schema=None, hostname=None, ldapadminpass=None, slapd_path=None,
-                 ldap_backend_extra_port=None,
+                 schema=None, hostname=None, ldapadminpass=None,
+                 slapd_path=None, ldap_backend_extra_port=None,
                  ldap_backend_forced_uri=None, ldap_dryrun_mode=False):
 
         super(LDAPBackend, self).__init__(backend_type=backend_type,
@@ -250,8 +250,9 @@ class LDAPBackend(ProvisionBackend):
             try:
                 ldapi_db = Ldb(self.ldap_uri, lp=self.lp, credentials=self.credentials)
                 ldapi_db.search(base="", scope=SCOPE_BASE,
-                                                    expression="(objectClass=OpenLDAProotDSE)")
-                # If we have got here, then we must have a valid connection to the LDAP server!
+                    expression="(objectClass=OpenLDAProotDSE)")
+                # If we have got here, then we must have a valid connection to
+                # the LDAP server!
                 return
             except LdbError:
                 time.sleep(1)
@@ -269,7 +270,7 @@ class LDAPBackend(ProvisionBackend):
         # and check its proper termination
         if self.slapd.poll() is None:
             # Kill the slapd
-            if hasattr(self.slapd, "terminate"):
+            if getattr(self.slapd, "terminate", None) is not None:
                 self.slapd.terminate()
             else:
                 # Older python versions don't have .terminate()
@@ -332,7 +333,8 @@ class OpenLDAPBackend(LDAPBackend):
         # Wipe the directories so we can start
         shutil.rmtree(os.path.join(self.ldapdir, "db"), True)
 
-        #Allow the test scripts to turn off fsync() for OpenLDAP as for TDB and LDB
+        # Allow the test scripts to turn off fsync() for OpenLDAP as for TDB
+        # and LDB
         nosync_config = ""
         if self.nosync:
             nosync_config = "dbnosync"
@@ -586,16 +588,19 @@ class FDSBackend(LDAPBackend):
         self.sambadn = "CN=Samba"
 
         self.fedoradsinf = os.path.join(self.ldapdir, "fedorads.inf")
-        self.partitions_ldif = os.path.join(self.ldapdir, "fedorads-partitions.ldif")
+        self.partitions_ldif = os.path.join(self.ldapdir,
+            "fedorads-partitions.ldif")
         self.sasl_ldif = os.path.join(self.ldapdir, "fedorads-sasl.ldif")
         self.dna_ldif = os.path.join(self.ldapdir, "fedorads-dna.ldif")
         self.pam_ldif = os.path.join(self.ldapdir, "fedorads-pam.ldif")
         self.refint_ldif = os.path.join(self.ldapdir, "fedorads-refint.ldif")
-        self.linked_attrs_ldif = os.path.join(self.ldapdir, "fedorads-linked-attributes.ldif")
+        self.linked_attrs_ldif = os.path.join(self.ldapdir,
+            "fedorads-linked-attributes.ldif")
         self.index_ldif = os.path.join(self.ldapdir, "fedorads-index.ldif")
         self.samba_ldif = os.path.join(self.ldapdir, "fedorads-samba.ldif")
 
-        self.samba3_schema = self.setup_path("../../examples/LDAP/samba.schema")
+        self.samba3_schema = self.setup_path(
+            "../../examples/LDAP/samba.schema")
         self.samba3_ldif = os.path.join(self.ldapdir, "samba3.ldif")
 
         self.retcode = subprocess.call(["bin/oLschema2ldif",
