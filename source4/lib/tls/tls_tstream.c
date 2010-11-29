@@ -50,7 +50,7 @@ struct tstream_tls {
 	struct tevent_immediate *retry_im;
 
 	struct {
-		uint8_t buffer[4096];
+		uint8_t *buf;
 		off_t ofs;
 		struct iovec iov;
 		struct tevent_req *subreq;
@@ -153,6 +153,7 @@ static ssize_t tstream_tls_push_function(gnutls_transport_ptr ptr,
 	struct tstream_tls *tlss =
 		tstream_context_data(stream,
 		struct tstream_tls);
+	uint8_t *nbuf;
 	size_t len;
 
 	if (tlss->error != 0) {
@@ -165,13 +166,26 @@ static ssize_t tstream_tls_push_function(gnutls_transport_ptr ptr,
 		return -1;
 	}
 
-	if (tlss->push.ofs == sizeof(tlss->push.buffer)) {
+	len = MIN(size, UINT16_MAX - tlss->push.ofs);
+
+	if (len == 0) {
 		errno = EAGAIN;
 		return -1;
 	}
 
-	len = MIN(size, sizeof(tlss->push.buffer) - tlss->push.ofs);
-	memcpy(tlss->push.buffer + tlss->push.ofs, buf, len);
+	nbuf = talloc_realloc(tlss, tlss->push.buf,
+			      uint8_t, tlss->push.ofs + len);
+	if (nbuf == NULL) {
+		if (tlss->push.buf) {
+			errno = EAGAIN;
+			return -1;
+		}
+
+		return -1;
+	}
+	tlss->push.buf = nbuf;
+
+	memcpy(tlss->push.buf + tlss->push.ofs, buf, len);
 
 	if (tlss->push.im == NULL) {
 		tlss->push.im = tevent_create_immediate(tlss);
@@ -187,7 +201,7 @@ static ssize_t tstream_tls_push_function(gnutls_transport_ptr ptr,
 		 * in the next event cycle.
 		 *
 		 * This way we can batch all push requests,
-		 * if they fit into the buffer.
+		 * if they fit into a UINT16_MAX buffer.
 		 *
 		 * This is important as gnutls_handshake()
 		 * had a bug in some versions e.g. 2.4.1
@@ -223,7 +237,7 @@ static void tstream_tls_push_trigger_write(struct tevent_context *ev,
 		return;
 	}
 
-	tlss->push.iov.iov_base = (char *)tlss->push.buffer;
+	tlss->push.iov.iov_base = (char *)tlss->push.buf;
 	tlss->push.iov.iov_len = tlss->push.ofs;
 
 	subreq = tstream_writev_send(tlss,
@@ -253,6 +267,7 @@ static void tstream_tls_push_done(struct tevent_req *subreq)
 
 	tlss->push.subreq = NULL;
 	ZERO_STRUCT(tlss->push.iov);
+	TALLOC_FREE(tlss->push.buf);
 	tlss->push.ofs = 0;
 
 	ret = tstream_writev_recv(subreq, &sys_errno);
