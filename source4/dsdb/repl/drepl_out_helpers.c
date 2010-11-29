@@ -542,6 +542,7 @@ static void dreplsrv_op_pull_source_apply_changes_trigger(struct tevent_req *req
 	struct dreplsrv_partition *partition = state->op->source_dsa->partition;
 	struct dreplsrv_drsuapi_connection *drsuapi = state->op->source_dsa->conn->drsuapi;
 	struct dsdb_schema *schema;
+	struct dsdb_schema *working_schema;
 	const struct drsuapi_DsReplicaOIDMapping_Ctr *mapping_ctr;
 	uint32_t object_count;
 	struct drsuapi_DsReplicaObjectListItemEx *first_object;
@@ -586,10 +587,29 @@ static void dreplsrv_op_pull_source_apply_changes_trigger(struct tevent_req *req
 		tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
 		return;
 	}
-	/* TODO (kim): Create working dsdb_schema in case we replicate Schema NC */
+
+	/* Decide what working schema to use for object conversion */
+	if (ldb_dn_compare(partition->dn, ldb_get_schema_basedn(service->samdb)) == 0) {
+		/* create working schema to convert objects with */
+		status = dsdb_repl_make_working_schema(service->samdb,
+						       schema,
+						       mapping_ctr,
+						       object_count,
+						       first_object,
+						       &drsuapi->gensec_skey,
+						       state, &working_schema);
+		if (!W_ERROR_IS_OK(status)) {
+			DEBUG(0,("Failed to create working schema: %s",
+				 win_errstr(status)));
+			tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
+			return;
+		}
+	} else {
+		working_schema = schema;
+	}
 
 	status = dsdb_replicated_objects_convert(service->samdb,
-						 schema,
+						 working_schema,
 						 partition->nc.dn,
 						 mapping_ctr,
 						 object_count,
