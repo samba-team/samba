@@ -64,7 +64,6 @@ static WERROR check_prerequsites(struct dns_server *dns,
 				/* TODO: Check if RR exists of the specified type */
 				return DNS_ERR(NXRRSET);
 			}
-			continue;
 		}
 		if (r->rr_class == DNS_QCLASS_NONE) {
 			if (r->length != 0) {
@@ -77,7 +76,6 @@ static WERROR check_prerequsites(struct dns_server *dns,
 				/* TODO: Return error if there's an RRset of this type in the zone */
 				return DNS_ERR(YXRRSET);
 			}
-			continue;
 		}
 		if (r->rr_class == zone->question_class) {
 			/* Check if there's a RR with this */
