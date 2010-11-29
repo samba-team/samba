@@ -967,8 +967,6 @@ static NTSTATUS wreplsrv_push_notify_wait_connect(struct wreplsrv_push_notify_st
 	default:
 		return NT_STATUS_INTERNAL_ERROR;
 	}
-
-	return NT_STATUS_INTERNAL_ERROR;
 }
 
 static NTSTATUS wreplsrv_push_notify_wait_update(struct wreplsrv_push_notify_state *state)
