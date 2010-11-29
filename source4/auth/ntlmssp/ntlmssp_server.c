@@ -75,7 +75,7 @@ NTSTATUS gensec_ntlmssp_server_auth(struct gensec_security *gensec_security,
 				      struct gensec_ntlmssp_context);
 	struct ntlmssp_state *ntlmssp_state = gensec_ntlmssp->ntlmssp_state;
 	return ntlmssp_server_auth(ntlmssp_state, out_mem_ctx, in, out);
-};
+}
 
 /**
  * Return the challenge as determined by the authentication subsystem 
