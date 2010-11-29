@@ -31,6 +31,138 @@
 #include "libcli/auth/libcli_auth.h"
 #include "param/param.h"
 
+/**
+ * Multi-pass working schema creation
+ * Function will:
+ *  - shallow copy initial schema supplied
+ *  - create a working schema in multiple passes
+ *    until all objects are resolved
+ * Working schema is a schema with Attributes, Classes
+ * and indexes, but w/o subClassOf, possibleSupperiors etc.
+ * It is to be used just us cache for converting attribute values.
+ */
+WERROR dsdb_repl_make_working_schema(struct ldb_context *ldb,
+				     const struct dsdb_schema *initial_schema,
+				     const struct drsuapi_DsReplicaOIDMapping_Ctr *mapping_ctr,
+				     uint32_t object_count,
+				     const struct drsuapi_DsReplicaObjectListItemEx *first_object,
+				     const DATA_BLOB *gensec_skey,
+				     TALLOC_CTX *mem_ctx,
+				     struct dsdb_schema **_schema_out)
+{
+	struct schema_list {
+		struct schema_list *next, *prev;
+		const struct drsuapi_DsReplicaObjectListItemEx *obj;
+	};
+
+	WERROR werr;
+	struct dsdb_schema_prefixmap *pfm_remote;
+	struct schema_list *schema_list = NULL, *schema_list_item, *schema_list_next_item;
+	struct dsdb_schema *working_schema;
+	const struct drsuapi_DsReplicaObjectListItemEx *cur;
+	int ret, pass_no;
+
+	/* make a copy of the iniatial_scheam so we don't mess with it */
+	working_schema = dsdb_schema_copy_shallow(mem_ctx, ldb, initial_schema);
+	if (!working_schema) {
+		DEBUG(0,(__location__ ": schema copy failed!\n"));
+		return WERR_NOMEM;
+	}
+
+	/* we are going to need remote prefixMap for decoding */
+	werr = dsdb_schema_pfm_from_drsuapi_pfm(mapping_ctr, true,
+						mem_ctx, &pfm_remote, NULL);
+	if (!W_ERROR_IS_OK(werr)) {
+		DEBUG(0,(__location__ ": Failed to decode remote prefixMap: %s",
+			 win_errstr(werr)));
+		return werr;
+	}
+
+	/* create a list of objects yet to be converted */
+	for (cur = first_object; cur; cur = cur->next_object) {
+		schema_list_item = talloc(mem_ctx, struct schema_list);
+		schema_list_item->obj = cur;
+		DLIST_ADD_END(schema_list, schema_list_item, struct schema_list);
+	}
+
+	/* resolve objects until all are resolved and in local schema */
+	pass_no = 1;
+
+	while (schema_list) {
+		uint32_t converted_obj_count = 0;
+		uint32_t failed_obj_count = 0;
+		TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
+		W_ERROR_HAVE_NO_MEMORY(tmp_ctx);
+
+		for (schema_list_item = schema_list; schema_list_item; schema_list_item=schema_list_next_item) {
+			struct dsdb_extended_replicated_object object;
+
+			cur = schema_list_item->obj;
+
+			/* Save the next item, now we have saved out
+			 * the current one, so we can DLIST_REMOVE it
+			 * safely */
+			schema_list_next_item = schema_list_item->next;
+
+			/*
+			 * Convert the objects into LDB messages using the
+			 * schema we have so far. It's ok if we fail to convert
+			 * an object. We should convert more objects on next pass.
+			 */
+			werr = dsdb_convert_object_ex(ldb, working_schema, pfm_remote,
+						      cur, gensec_skey,
+						      tmp_ctx, &object);
+			if (!W_ERROR_IS_OK(werr)) {
+				DEBUG(1,("Warning: Failed to convert schema object %s into ldb msg\n",
+					 cur->object.identifier->dn));
+
+				failed_obj_count++;
+			} else {
+				/*
+				 * Convert the schema from ldb_message format
+				 * (OIDs as OID strings) into schema, using
+				 * the remote prefixMap
+				 */
+				werr = dsdb_schema_set_el_from_ldb_msg(ldb,
+								       working_schema,
+								       object.msg);
+				if (!W_ERROR_IS_OK(werr)) {
+					DEBUG(1,("Warning: failed to convert object %s into a schema element: %s\n",
+						 ldb_dn_get_linearized(object.msg->dn),
+						 win_errstr(werr)));
+					failed_obj_count++;
+				} else {
+					DLIST_REMOVE(schema_list, schema_list_item);
+					talloc_free(schema_list_item);
+					converted_obj_count++;
+				}
+			}
+		}
+		talloc_free(tmp_ctx);
+
+		DEBUG(4,("Schema load pass %d: %d/%d of %d objects left to be converted.\n",
+			 pass_no, failed_obj_count, converted_obj_count, object_count));
+		pass_no++;
+
+		/* check if we converted any objects in this pass */
+		if (converted_obj_count == 0) {
+			DEBUG(0,("Can't continue Schema load: didn't manage to convert any objects: all %d remaining of %d objects failed to convert\n", failed_obj_count, object_count));
+			return WERR_INTERNAL_ERROR;
+		}
+
+		/* rebuild indexes */
+		ret = dsdb_setup_sorted_accessors(ldb, working_schema);
+		if (LDB_SUCCESS != ret) {
+			DEBUG(0,("Failed to create schema-cache indexes!\n"));
+			return WERR_INTERNAL_ERROR;
+		}
+	};
+
+	*_schema_out = working_schema;
+
+	return WERR_OK;
+}
+
 WERROR dsdb_convert_object_ex(struct ldb_context *ldb,
 			      const struct dsdb_schema *schema,
 			      const struct dsdb_schema_prefixmap *pfm_remote,
