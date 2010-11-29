@@ -82,7 +82,6 @@ struct ctdb_tunable {
 	uint32_t traverse_timeout;
 	uint32_t keepalive_interval;
 	uint32_t keepalive_limit;
-	uint32_t max_lacount;
 	uint32_t recover_timeout;
 	uint32_t recover_interval;
 	uint32_t election_timeout;
@@ -776,8 +775,8 @@ struct ctdb_call_state *ctdb_daemon_call_send_remote(struct ctdb_db_context *ctd
 						     struct ctdb_ltdb_header *header);
 
 int ctdb_call_local(struct ctdb_db_context *ctdb_db, struct ctdb_call *call,
-		    struct ctdb_ltdb_header *header, TALLOC_CTX *mem_ctx, TDB_DATA *data,
-		    uint32_t caller);
+		    struct ctdb_ltdb_header *header, TALLOC_CTX *mem_ctx,
+		    TDB_DATA *data);
 
 #define ctdb_reqid_find(ctdb, reqid, type)	(type *)_ctdb_reqid_find(ctdb, reqid, #type, __location__)
 

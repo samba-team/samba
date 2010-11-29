@@ -479,8 +479,8 @@ enum ctdb_trans2_commit_error {
 struct ctdb_ltdb_header {
 	uint64_t rsn;
 	uint32_t dmaster;
-	uint32_t laccessor;
-	uint32_t lacount;
+	uint32_t reserved1;
+	uint32_t reserved2;
 };
 
 
