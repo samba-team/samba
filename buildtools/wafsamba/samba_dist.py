@@ -71,6 +71,32 @@ def add_tarfile(tar, fname, abspath, basedir):
     fh.close()
 
 
+def vcs_dir_contents(path):
+    """Return the versioned files under a path.
+
+    :return: List of paths relative to path
+    """
+    repo = path
+    while repo != "/":
+        if os.path.isdir(os.path.join(repo, ".git")):
+            ls_files_cmd = [ 'git', 'ls-files', '--full-name',
+                             os.path.relpath(path, repo) ]
+            cwd = None
+            env = dict(os.environ)
+            env["GIT_DIR"] = os.path.join(repo, ".git")
+            break
+        elif os.path.isdir(os.path.join(repo, ".bzr")):
+            ls_files_cmd = [ 'bzr', 'ls', '--recursive',
+                             os.path.relpath(path, repo)]
+            cwd = repo
+            env = None
+            break
+        repo = os.path.dirname(repo)
+    if repo == "/":
+        raise Exception("unsupported or no vcs for %s" % path)
+    return Utils.cmd_output(ls_files_cmd, cwd=cwd, env=env).split()
+
+
 def dist(appname='',version=''):
     if not isinstance(appname, str) or not appname:
         # this copes with a mismatch in the calling arguments for dist()
@@ -103,20 +129,14 @@ def dist(appname='',version=''):
         else:
             destdir = '.'
         absdir = os.path.join(srcdir, dir)
-        if os.path.isdir(os.path.join(absdir, ".git")):
-            ls_files_cmd = [ 'git', 'ls-files', '--full-name', absdir ]
-        elif os.path.isdir(os.path.join(absdir, ".bzr")):
-            ls_files_cmd = [ 'bzr', 'ls', '--from-root', '--recursive', '-d', absdir ]
-        else:
-            Logs.error('unknown or no vcs for %s' % absdir)
-            sys.exit(1)
         try:
-            files = Utils.cmd_output(ls_files_cmd).split()
-        except:
-            Logs.error('command failed: %s' % ' '.join(ls_files_cmd))
+            files = vcs_dir_contents(absdir)
+        except Exception, e:
+            Logs.error('unable to get contents of %s: %s' % (absdir, e))
             sys.exit(1)
         for f in files:
             abspath = os.path.join(srcdir, f)
+
             if dir != '.':
                 f = f[len(dir)+1:]
 
