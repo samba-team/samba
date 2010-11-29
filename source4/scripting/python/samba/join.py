@@ -120,14 +120,14 @@ class dc_join:
         if recursive:
             try:
                 res = ctx.samdb.search(base=dn, scope=ldb.SCOPE_ONELEVEL, attrs=["dn"])
-            except:
+            except Exception:
                 return
             for r in res:
                 ctx.del_noerror(r.dn, recursive=True)
         try:
             ctx.samdb.delete(dn)
             print "Deleted %s" % dn
-        except:
+        except Exception:
             pass
 
     def cleanup_old_join(ctx):
@@ -151,16 +151,15 @@ class dc_join:
             if res:
                 ctx.new_krbtgt_dn = res[0]["msDS-Krbtgtlink"][0]
                 ctx.del_noerror(ctx.new_krbtgt_dn)
-        except:
+        except Exception:
             pass
 
     def find_dc(ctx, domain):
         '''find a writeable DC for the given domain'''
         try:
             ctx.cldap_ret = ctx.net.finddc(domain, nbt.NBT_SERVER_LDAP | nbt.NBT_SERVER_DS | nbt.NBT_SERVER_WRITABLE)
-        except Exception, reason:
-            print("Failed to find a writeable DC for domain '%s': %s" % (domain, reason))
-            sys.exit(1)
+        except Exception:
+            raise Exception("Failed to find a writeable DC for domain '%s'" % domain)
         if ctx.cldap_ret.client_site is not None and ctx.cldap_ret.client_site != "":
             ctx.site = ctx.cldap_ret.client_site
         return ctx.cldap_ret.pdc_dns_name
@@ -199,8 +198,10 @@ class dc_join:
         '''check if a DN exists'''
         try:
             res = ctx.samdb.search(base=dn, scope=ldb.SCOPE_BASE, attrs=[])
-        except ldb.LdbError, (ERR_NO_SUCH_OBJECT, _):
-            return False
+        except ldb.LdbError, (enum, estr):
+            if enum == ldb.ERR_NO_SUCH_OBJECT:
+                return False
+            raise
         return True
 
     def add_krbtgt_account(ctx):
@@ -506,7 +507,7 @@ class dc_join:
             ctx.join_provision()
             ctx.join_replicate()
             ctx.join_finalise()
-        except:
+        except Exception:
             print "Join failed - cleaning up"
             ctx.cleanup_old_join()
             raise
