@@ -372,7 +372,8 @@ member: %s
                               expression=search_filter, attrs=[])
             if len(res) == 0:
                 raise Exception('Unable to find user "%s"' % (username or search_filter))
-            assert(len(res) == 1)
+            if len(res) > 1:
+                raise Exception('Matched %u multiple users with filter "%s"' % (len(res), search_filter))
             user_dn = res[0].dn
             setpw = """
 dn: %s
