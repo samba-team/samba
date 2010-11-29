@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 # Unix SMB/CIFS implementation.
-# A script to compare differences of objects and attributes between
+# A command to compare differences of objects and attributes between
 # two LDAP servers both running at the same time. It generally compares
 # one of the three pratitions DOMAIN, CONFIGURATION or SCHEMA. Users
 # that have to be provided sheould be able to read objects in any of the
@@ -26,9 +26,6 @@
 import os
 import re
 import sys
-from optparse import OptionParser
-
-sys.path.insert(0, "bin/python")
 
 import samba
 import samba.getopt as options
@@ -36,20 +33,28 @@ from samba import Ldb
 from samba.ndr import ndr_pack, ndr_unpack
 from samba.dcerpc import security
 from ldb import SCOPE_SUBTREE, SCOPE_ONELEVEL, SCOPE_BASE, ERR_NO_SUCH_OBJECT, LdbError
+from samba.netcmd import (
+    Command,
+    CommandError,
+    Option,
+    SuperCommand,
+    )
 
 global summary
 summary = {}
 
 class LDAPBase(object):
 
-    def __init__(self, host, cmd_opts, creds, lp):
+    def __init__(self, host, creds, lp,
+                 two=False, quiet=False, descriptor=False, verbose=False,
+                 view="section"):
         ldb_options = []
         samdb_url = host
         if not "://" in host:
             if os.path.isfile(host):
                 samdb_url = "tdb://%s" % host
             else:
-                samdb_url = "ldap://%s:389" % host
+                samdb_url = "ldap://%s" % host
         # use 'paged_search' module when connecting remotely
         if samdb_url.lower().startswith("ldap://"):
             ldb_options = ["modules:paged_searches"]
@@ -57,11 +62,11 @@ class LDAPBase(object):
                        credentials=creds,
                        lp=lp,
                        options=ldb_options)
-        self.two_domains = cmd_opts.two
-        self.quiet = cmd_opts.quiet
-        self.descriptor = cmd_opts.descriptor
-        self.view = cmd_opts.view
-        self.verbose = cmd_opts.verbose
+        self.two_domains = two
+        self.quiet = quiet
+        self.descriptor = descriptor
+        self.view = view
+        self.verbose = verbose
         self.host = host
         self.base_dn = self.find_basedn()
         self.domain_netbios = self.find_netbios()
@@ -735,84 +740,91 @@ class LDAPBundel(object):
             self.log( "".join([str("\n" + 4*" " + x) for x in self.summary["df_value_attrs"]]) )
             self.summary["df_value_attrs"] = []
 
-###
+class cmd_ldapcmp(Command):
+    """compare two ldap databases"""
+    synopsis = "ldapcmp URL1 URL2 <domain|configuration|schema> [options]"
 
-if __name__ == "__main__":
-    parser = OptionParser("ldapcmp [options] domain|configuration|schema")
-    sambaopts = options.SambaOptions(parser)
-    parser.add_option_group(sambaopts)
-    credopts = options.CredentialsOptionsDouble(parser)
-    parser.add_option_group(credopts)
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "versionopts": options.VersionOptions,
+        "credopts": options.CredentialsOptionsDouble,
+    }
 
-    parser.add_option("", "--host", dest="host",
-                              help="IP of the first LDAP server",)
-    parser.add_option("", "--host2", dest="host2",
-                              help="IP of the second LDAP server",)
-    parser.add_option("-w", "--two", dest="two", action="store_true", default=False,
-                              help="Hosts are in two different domains",)
-    parser.add_option("-q", "--quiet", dest="quiet", action="store_true", default=False,
-                              help="Do not print anything but relay on just exit code",)
-    parser.add_option("-v", "--verbose", dest="verbose", action="store_true", default=False,
-                              help="Print all DN pairs that have been compared",)
-    parser.add_option("", "--sd", dest="descriptor", action="store_true", default=False,
-                              help="Compare nTSecurityDescriptor attibutes only",)
-    parser.add_option("", "--view", dest="view", default="section",
-            help="Display mode for nTSecurityDescriptor results. Possible values: section or collision.",)
-    (opts, args) = parser.parse_args()
+    takes_args = ["URL1", "URL2", "context1?", "context2?", "context3?"]
 
-    lp = sambaopts.get_loadparm()
-    creds = credopts.get_credentials(lp)
-    creds2 = credopts.get_credentials2(lp, False)
-    if creds2.is_anonymous():
-        creds2 = creds
+    takes_options = [
+        Option("-w", "--two", dest="two", action="store_true", default=False,
+               help="Hosts are in two different domains"),
+        Option("-q", "--quiet", dest="quiet", action="store_true", default=False,
+               help="Do not print anything but relay on just exit code"),
+        Option("-v", "--verbose", dest="verbose", action="store_true", default=False,
+               help="Print all DN pairs that have been compared"),
+        Option("--sd", dest="descriptor", action="store_true", default=False,
+                help="Compare nTSecurityDescriptor attibutes only"),
+        Option("--view", dest="view", default="section",
+               help="Display mode for nTSecurityDescriptor results. Possible values: section or collision.")
+        ]
 
-    if creds.is_anonymous():
-        parser.error("You must supply at least one username/password pair")
+    def run(self, URL1, URL2,
+            context1=None, context2=None, context3=None,
+            two=False, quiet=False, verbose=False, descriptor=False, view="section",
+            credopts=None, sambaopts=None, versionopts=None):
+        lp = sambaopts.get_loadparm()
+        creds = credopts.get_credentials(lp)
+        creds2 = credopts.get_credentials2(lp, False)
+        if creds2.is_anonymous():
+            creds2 = creds
+        if not creds.authentication_requested():
+            raise CommandError("You must supply at least one username/password pair")
 
-    # make a list of contexts to compare in
-    contexts = []
-    if len(args) == 0:
-        # if no argument given, we compare all contexts
-        contexts = ["DOMAIN", "CONFIGURATION", "SCHEMA"]
-    else:
-        for context in args:
-            if not context.upper() in ["DOMAIN", "CONFIGURATION", "SCHEMA"]:
-                parser.error("Incorrect argument: %s" % context)
-            contexts.append(context.upper())
-
-    if opts.verbose and opts.quiet:
-        parser.error("You cannot set --verbose and --quiet together")
-    if opts.descriptor and opts.view.upper() not in ["SECTION", "COLLISION"]:
-        parser.error("Unknown --view option value. Choose from: section or collision.")
-
-    con1 = LDAPBase(opts.host, opts, creds, lp)
-    assert len(con1.base_dn) > 0
-
-    con2 = LDAPBase(opts.host2, opts, creds2, lp)
-    assert len(con2.base_dn) > 0
-
-    status = 0
-    for context in contexts:
-        if not opts.quiet:
-            print "\n* Comparing [%s] context..." % context
-
-        b1 = LDAPBundel(con1, context=context)
-        b2 = LDAPBundel(con2, context=context)
-
-        if b1 == b2:
-            if not opts.quiet:
-                print "\n* Result for [%s]: SUCCESS" % context
+        # make a list of contexts to compare in
+        contexts = []
+        if context1 is None:
+            # if no argument given, we compare all contexts
+            contexts = ["DOMAIN", "CONFIGURATION", "SCHEMA"]
         else:
-            if not opts.quiet:
-                print "\n* Result for [%s]: FAILURE" % context
-                if not opts.descriptor:
-                    assert len(b1.summary["df_value_attrs"]) == len(b2.summary["df_value_attrs"])
-                    b2.summary["df_value_attrs"] = []
-                    print "\nSUMMARY"
-                    print "---------"
-                    b1.print_summary()
-                    b2.print_summary()
-            # mark exit status as FAILURE if a least one comparison failed
-            status = -1
+            for c in [context1, context2, context3]:
+                if c is None:
+                    continue
+                if not c.upper() in ["DOMAIN", "CONFIGURATION", "SCHEMA"]:
+                    raise CommandError("Incorrect argument: %s" % c)
+                contexts.append(c.upper())
 
-    sys.exit(status)
+        if verbose and quiet:
+            raise CommandError("You cannot set --verbose and --quiet together")
+        if descriptor and view.upper() not in ["SECTION", "COLLISION"]:
+            raise CommandError("Unknown --view option value. Choose from: section or collision.")
+
+        con1 = LDAPBase(URL1, creds, lp,
+                        two=two, quiet=quiet, descriptor=descriptor, verbose=verbose, view=view)
+        assert len(con1.base_dn) > 0
+
+        con2 = LDAPBase(URL2, creds2, lp,
+                        two=two, quiet=quiet, descriptor=descriptor, verbose=verbose, view=view)
+        assert len(con2.base_dn) > 0
+
+        status = 0
+        for context in contexts:
+            if not quiet:
+                print "\n* Comparing [%s] context..." % context
+
+            b1 = LDAPBundel(con1, context=context)
+            b2 = LDAPBundel(con2, context=context)
+
+            if b1 == b2:
+                if not quiet:
+                    print "\n* Result for [%s]: SUCCESS" % context
+            else:
+                if not quiet:
+                    print "\n* Result for [%s]: FAILURE" % context
+                    if not descriptor:
+                        assert len(b1.summary["df_value_attrs"]) == len(b2.summary["df_value_attrs"])
+                        b2.summary["df_value_attrs"] = []
+                        print "\nSUMMARY"
+                        print "---------"
+                        b1.print_summary()
+                        b2.print_summary()
+                # mark exit status as FAILURE if a least one comparison failed
+                status = -1
+        if status != 0:
+            raise CommandError("Compare failed: %d" % status)
