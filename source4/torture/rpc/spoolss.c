@@ -8887,60 +8887,80 @@ static bool test_add_driver_arg(struct torture_context *tctx,
 }
 
 static bool test_add_driver_ex_64(struct torture_context *tctx,
-				  struct dcerpc_pipe *p,
-				  void *private_data)
+				  struct dcerpc_pipe *p)
 {
-	struct torture_driver_context *d =
-		(struct torture_driver_context *)talloc_get_type_abort(private_data, struct torture_driver_context);
+	struct torture_driver_context *d;
 
+	d = talloc_zero(tctx, struct torture_driver_context);
+
+	d->info8.version		= SPOOLSS_DRIVER_VERSION_200X;
+	d->info8.driver_name		= TORTURE_DRIVER_EX;
+	d->info8.architecture		= NULL;
+	d->info8.driver_path		= talloc_strdup(d, "pscript5.dll");
+	d->info8.data_file		= talloc_strdup(d, "cups6.ppd");
+	d->info8.config_file		= talloc_strdup(d, "cupsui6.dll");
 	d->local.environment		= talloc_strdup(d, "Windows x64");
 	d->local.driver_directory	= talloc_strdup(d, "/usr/share/cups/drivers/x64");
-	d->info8.driver_name		= TORTURE_DRIVER_EX;
 	d->ex				= true;
 
 	return test_add_driver_arg(tctx, p, d);
 }
 
 static bool test_add_driver_ex_32(struct torture_context *tctx,
-				  struct dcerpc_pipe *p,
-				  void *private_data)
+				  struct dcerpc_pipe *p)
 {
-	struct torture_driver_context *d =
-		(struct torture_driver_context *)talloc_get_type_abort(private_data, struct torture_driver_context);
+	struct torture_driver_context *d;
 
+	d = talloc_zero(tctx, struct torture_driver_context);
+
+	d->info8.version		= SPOOLSS_DRIVER_VERSION_200X;
+	d->info8.driver_name		= TORTURE_DRIVER_EX;
+	d->info8.architecture		= NULL;
+	d->info8.driver_path		= talloc_strdup(d, "pscript5.dll");
+	d->info8.data_file		= talloc_strdup(d, "cups6.ppd");
+	d->info8.config_file		= talloc_strdup(d, "cupsui6.dll");
 	d->local.environment		= talloc_strdup(d, "Windows NT x86");
 	d->local.driver_directory	= talloc_strdup(d, "/usr/share/cups/drivers/i386");
-	d->info8.driver_name		= TORTURE_DRIVER_EX;
 	d->ex				= true;
 
 	return test_add_driver_arg(tctx, p, d);
 }
 
 static bool test_add_driver_64(struct torture_context *tctx,
-			       struct dcerpc_pipe *p,
-			       void *private_data)
+			       struct dcerpc_pipe *p)
 {
-	struct torture_driver_context *d =
-		(struct torture_driver_context *)talloc_get_type_abort(private_data, struct torture_driver_context);
+	struct torture_driver_context *d;
 
+	d = talloc_zero(tctx, struct torture_driver_context);
+
+	d->info8.version		= SPOOLSS_DRIVER_VERSION_200X;
+	d->info8.driver_name		= TORTURE_DRIVER;
+	d->info8.architecture		= NULL;
+	d->info8.driver_path		= talloc_strdup(d, "pscript5.dll");
+	d->info8.data_file		= talloc_strdup(d, "cups6.ppd");
+	d->info8.config_file		= talloc_strdup(d, "cupsui6.dll");
 	d->local.environment		= talloc_strdup(d, "Windows x64");
 	d->local.driver_directory	= talloc_strdup(d, "/usr/share/cups/drivers/x64");
-	d->info8.driver_name		= TORTURE_DRIVER;
 	d->ex				= false;
 
 	return test_add_driver_arg(tctx, p, d);
 }
 
 static bool test_add_driver_32(struct torture_context *tctx,
-			       struct dcerpc_pipe *p,
-			       void *private_data)
+			       struct dcerpc_pipe *p)
 {
-	struct torture_driver_context *d =
-		(struct torture_driver_context *)talloc_get_type_abort(private_data, struct torture_driver_context);
+	struct torture_driver_context *d;
 
+	d = talloc_zero(tctx, struct torture_driver_context);
+
+	d->info8.version		= SPOOLSS_DRIVER_VERSION_200X;
+	d->info8.driver_name		= TORTURE_DRIVER;
+	d->info8.architecture		= NULL;
+	d->info8.driver_path		= talloc_strdup(d, "pscript5.dll");
+	d->info8.data_file		= talloc_strdup(d, "cups6.ppd");
+	d->info8.config_file		= talloc_strdup(d, "cupsui6.dll");
 	d->local.environment		= talloc_strdup(d, "Windows NT x86");
 	d->local.driver_directory	= talloc_strdup(d, "/usr/share/cups/drivers/i386");
-	d->info8.driver_name		= TORTURE_DRIVER;
 	d->ex				= false;
 
 	return test_add_driver_arg(tctx, p, d);
@@ -8952,22 +8972,11 @@ struct torture_suite *torture_rpc_spoolss_driver(TALLOC_CTX *mem_ctx)
 
 	struct torture_rpc_tcase *tcase = torture_suite_add_rpc_iface_tcase(suite,
 							"driver", &ndr_table_spoolss);
-	struct torture_driver_context *t;
+	torture_rpc_tcase_add_test(tcase, "add_driver_64", test_add_driver_64);
+	torture_rpc_tcase_add_test(tcase, "add_driver_ex_64", test_add_driver_ex_64);
 
-	t = talloc_zero(mem_ctx, struct torture_driver_context);
-
-	t->info8.version	= SPOOLSS_DRIVER_VERSION_200X;
-	t->info8.driver_name	= NULL;
-	t->info8.architecture	= NULL;
-	t->info8.driver_path	= talloc_strdup(t, "pscript5.dll");
-	t->info8.data_file	= talloc_strdup(t, "cups6.ppd");
-	t->info8.config_file	= talloc_strdup(t, "cupsui6.dll");
-
-	torture_rpc_tcase_add_test_ex(tcase, "add_driver_64", test_add_driver_64, t);
-	torture_rpc_tcase_add_test_ex(tcase, "add_driver_ex_64", test_add_driver_ex_64, t);
-
-	torture_rpc_tcase_add_test_ex(tcase, "add_driver_32", test_add_driver_32, t);
-	torture_rpc_tcase_add_test_ex(tcase, "add_driver_ex_32", test_add_driver_ex_32, t);
+	torture_rpc_tcase_add_test(tcase, "add_driver_32", test_add_driver_32);
+	torture_rpc_tcase_add_test(tcase, "add_driver_ex_32", test_add_driver_ex_32);
 
 	return suite;
 }
