@@ -83,7 +83,6 @@ bool insert_in_object_tree(TALLOC_CTX *mem_ctx,
 		(*root)->num_of_children++;
 		return true;
 	}
-	return true;
 }
 
 /* search by GUID */
