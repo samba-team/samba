@@ -47,6 +47,7 @@
 #define TORTURE_DRIVER_EX		"torture_driver_ex"
 #define TORTURE_DRIVER_ADOBE		"torture_driver_adobe"
 #define TORTURE_DRIVER_EX_ADOBE		"torture_driver_ex_adobe"
+#define TORTURE_DRIVER_ADOBE_CUPSADDSMB	"torture_driver_adobe_cupsaddsmb"
 
 #define TOP_LEVEL_PRINT_KEY "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Print"
 #define TOP_LEVEL_PRINT_PRINTERS_KEY TOP_LEVEL_PRINT_KEY "\\Printers"
@@ -8996,6 +8997,41 @@ static bool test_add_driver_adobe(struct torture_context *tctx,
 	return test_add_driver_arg(tctx, p, d);
 }
 
+static bool test_add_driver_adobe_cupsaddsmb(struct torture_context *tctx,
+					     struct dcerpc_pipe *p)
+{
+	struct torture_driver_context *d;
+	struct spoolss_StringArray *a;
+
+	d = talloc_zero(tctx, struct torture_driver_context);
+
+	d->info8.version		= SPOOLSS_DRIVER_VERSION_9X;
+	d->info8.driver_name		= TORTURE_DRIVER_ADOBE_CUPSADDSMB;
+	d->info8.architecture		= NULL;
+	d->info8.driver_path		= talloc_strdup(d, "ADOBEPS4.DRV");
+	d->info8.data_file		= talloc_strdup(d, "DEFPRTR2.PPD");
+	d->info8.config_file		= NULL;
+	d->info8.help_file		= talloc_strdup(d, "ADOBEPS4.HLP");
+	d->info8.monitor_name		= talloc_strdup(d, "PSMON.DLL");
+	d->info8.default_datatype	= talloc_strdup(d, "RAW");
+
+	a				= talloc_zero(d, struct spoolss_StringArray);
+	a->string			= talloc_zero_array(a, const char *, 7);
+	a->string[0]			= talloc_strdup(a->string, "ADOBEPS4.DRV");
+	a->string[1]			= talloc_strdup(a->string, "DEFPRTR2.PPD");
+	a->string[2]			= talloc_strdup(a->string, "ADOBEPS4.HLP");
+	a->string[3]			= talloc_strdup(a->string, "PSMON.DLL");
+	a->string[4]			= talloc_strdup(a->string, "ADFONTS.MFM");
+	a->string[5]			= talloc_strdup(a->string, "ICONLIB.DLL");
+
+	d->info8.dependent_files	= a;
+	d->local.environment		= talloc_strdup(d, "Windows 4.0");
+	d->local.driver_directory	= talloc_strdup(d, "/usr/share/cups/drivers/adobe/");
+	d->ex				= false;
+
+	return test_add_driver_arg(tctx, p, d);
+}
+
 struct torture_suite *torture_rpc_spoolss_driver(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *suite = torture_suite_create(mem_ctx, "SPOOLSS-DRIVER");
@@ -9009,6 +9045,8 @@ struct torture_suite *torture_rpc_spoolss_driver(TALLOC_CTX *mem_ctx)
 	torture_rpc_tcase_add_test(tcase, "add_driver_ex_32", test_add_driver_ex_32);
 
 	torture_rpc_tcase_add_test(tcase, "add_driver_adobe", test_add_driver_adobe);
+
+	torture_rpc_tcase_add_test(tcase, "add_driver_adobe_cupsaddsmb", test_add_driver_adobe_cupsaddsmb);
 
 	return suite;
 }
