@@ -51,7 +51,7 @@ def getntacl(lp, file, backend=None, eadbfile=None):
         try:
             attribute = samba.xattr_tdb.wrap_getxattr(eadbname, file, 
                 xattr.XATTR_NTACL_NAME)
-        except:
+        except Exception:
             # FIXME: Don't catch all exceptions, just those related to opening 
             # xattrdb
             print "Fail to open %s" % eadbname
@@ -75,7 +75,7 @@ def setntacl(lp, file, sddl, domsid, backend=None, eadbfile=None):
         try:
             samba.xattr_tdb.wrap_setxattr(eadbname,
                 file, xattr.XATTR_NTACL_NAME, ndr_pack(ntacl))
-        except:
+        except Exception:
             # FIXME: Don't catch all exceptions, just those related to opening 
             # xattrdb
             print "Fail to open %s" % eadbname

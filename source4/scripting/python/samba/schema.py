@@ -136,7 +136,7 @@ dn: @INDEXLIST
             self.ldb.add_ldif(self.schema_dn_add)
             self.ldb.modify_ldif(self.schema_dn_modify)
             self.ldb.add_ldif(self.schema_data)
-        except:
+        except Exception:
             self.ldb.transaction_cancel()
             raise
         else:

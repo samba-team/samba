@@ -91,22 +91,22 @@ class ProvisionLDB(object):
         ok = True
         try:
             self.sam.transaction_cancel()
-        except:
+        except Exception:
             ok = False
 
         try:
             self.secrets.transaction_cancel()
-        except:
+        except Exception:
             ok = False
 
         try:
             self.idmap.transaction_cancel()
-        except:
+        except Exception:
             ok = False
 
         try:
             self.privilege.transaction_cancel()
-        except:
+        except Exception:
             ok = False
 
         return ok
@@ -122,7 +122,7 @@ class ProvisionLDB(object):
             self.secrets.transaction_prepare_commit()
             self.idmap.transaction_prepare_commit()
             self.privilege.transaction_prepare_commit()
-        except:
+        except Exception:
             return self.groupedRollback()
 # TO BE DONE
 #        self.hkcr.transaction_prepare_commit()
@@ -134,7 +134,7 @@ class ProvisionLDB(object):
             self.secrets.transaction_commit()
             self.idmap.transaction_commit()
             self.privilege.transaction_commit()
-        except:
+        except Exception:
             return self.groupedRollback()
 
 # TO BE DONE
@@ -688,13 +688,13 @@ def update_gpo(paths, samdb, names, lp, message, force=0):
             try:
                 attribute = samba.xattr_tdb.wrap_getxattr(eadbname,
                                 paths.sysvol, xattr.XATTR_NTACL_NAME)
-            except:
+            except Exception:
                 attribute = samba.xattr_native.wrap_getxattr(paths.sysvol,
                                 xattr.XATTR_NTACL_NAME)
         else:
             attribute = samba.xattr_native.wrap_getxattr(paths.sysvol,
                                 xattr.XATTR_NTACL_NAME)
-    except:
+    except Exception:
        resetacls = True
 
     if force:

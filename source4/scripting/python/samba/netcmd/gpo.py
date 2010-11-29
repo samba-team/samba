@@ -41,8 +41,8 @@ def samdb_connect(ctx):
         ctx.samdb = SamDB(url=ctx.url,
                           session_info=system_session(),
                           credentials=ctx.creds, lp=ctx.lp)
-    except Exception, estr:
-        raise CommandError("LDAP connection to %s failed - %s" % (ctx.url, estr))
+    except Exception, e:
+        raise CommandError("LDAP connection to %s failed " % ctx.url, e)
 
 
 def attr_default(msg, attrname, default):
@@ -114,9 +114,12 @@ class cmd_listall(Command):
             ("GPO_FLAG_USER_DISABLE", dsdb.GPO_FLAG_USER_DISABLE ),
             ( "GPO_FLAG_MACHINE_DISABLE", dsdb.GPO_FLAG_MACHINE_DISABLE ) ]
 
-        msg = self.samdb.search(base=policies_dn, scope=ldb.SCOPE_ONELEVEL,
-                                expression="(objectClass=groupPolicyContainer)",
-                                attrs=['nTSecurityDescriptor', 'versionNumber', 'flags', 'name', 'displayName', 'gPCFileSysPath'])
+        try:
+            msg = self.samdb.search(base=policies_dn, scope=ldb.SCOPE_ONELEVEL,
+                                    expression="(objectClass=groupPolicyContainer)",
+                                    attrs=['nTSecurityDescriptor', 'versionNumber', 'flags', 'name', 'displayName', 'gPCFileSysPath'])
+        except Exception, e:
+            raise CommandError("Failed to list policies in %s" % policies_dn, e)
         for m in msg:
             print("GPO          : %s" % m['name'][0])
             print("display name : %s" % m['displayName'][0])
@@ -158,15 +161,15 @@ class cmd_list(Command):
 
         try:
             user_dn = self.samdb.search(expression='(&(samAccountName=%s)(objectclass=User))' % username)[0].dn
-        except Exception, estr:
-            raise CommandError("Failed to find user %s - %s" % (username, estr))
+        except Exception, e:
+            raise CommandError("Failed to find user %s" % username, e)
 
         # check if its a computer account
         try:
             msg = self.samdb.search(base=user_dn, scope=ldb.SCOPE_BASE, attrs=['objectClass'])[0]
             is_computer = 'computer' in msg['objectClass']
-        except Exception, estr:
-            raise CommandError("Failed to find objectClass for user %s - %s" % (username, estr))
+        except Exception, e:
+            raise CommandError("Failed to find objectClass for user %s" % username, e)
 
         print("TODO: get user token")
         # token = self.samdb.get_user_token(username)

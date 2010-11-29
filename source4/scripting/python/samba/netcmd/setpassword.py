@@ -75,7 +75,6 @@ class cmd_setpassword(Command):
             samdb.setpassword(filter, password,
                               force_change_at_next_login=must_change_at_next_login,
                               username=username)
-        except ldb.LdbError, (num, msg):
-            raise CommandError('Failed to set password for user "%s" - %s' %
-                               (username, msg))
+        except Exception, e:
+            raise CommandError('Failed to set password for user "%s"' % username, e)
         print "Changed password OK"

@@ -169,7 +169,7 @@ pwdLastSet: 0
                 raise Exception('Unable to find group "%s"' % groupname)
             assert(len(targetgroup) == 1)
             self.delete(targetgroup[0].dn)
-        except:
+        except Exception:
             self.transaction_cancel()
             raise
         else:
@@ -225,7 +225,7 @@ member: %s
             if modified is True:
                 self.modify_ldif(addtargettogroup)
 
-        except:
+        except Exception:
             self.transaction_cancel()
             raise
         else:
@@ -351,7 +351,7 @@ member: %s
             if setpassword:
                 self.setpassword("(samAccountName=%s)" % username, password,
                                  force_password_change_at_next_login_req)
-        except:
+        except Exception:
             self.transaction_cancel()
             raise
         else:
@@ -389,7 +389,7 @@ unicodePwd:: %s
 
             #  modify the userAccountControl to remove the disabled bit
             self.enable_account(search_filter)
-        except:
+        except Exception:
             self.transaction_cancel()
             raise
         else:
@@ -430,7 +430,7 @@ accountExpires: %u
 """ % (user_dn, userAccountControl, accountExpires)
 
             self.modify_ldif(setexp)
-        except:
+        except Exception:
             self.transaction_cancel()
             raise
         else:

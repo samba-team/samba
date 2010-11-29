@@ -86,8 +86,8 @@ class cmd_pwsettings(Command):
             # ticks -> days
             cur_min_pwd_age = int(abs(int(res[0]["minPwdAge"][0])) / (1e7 * 60 * 60 * 24))
             cur_max_pwd_age = int(abs(int(res[0]["maxPwdAge"][0])) / (1e7 * 60 * 60 * 24))
-        except KeyError:
-            raise CommandError("Could not retrieve password properties!")
+        except Exception, e:
+            raise CommandError("Could not retrieve password properties!", e)
 
         if subcommand == "show":
             self.message("Password informations for domain '%s'" % domain_dn)

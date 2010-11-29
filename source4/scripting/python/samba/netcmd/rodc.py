@@ -106,12 +106,8 @@ class cmd_rodc_preload(Command):
         try:
             repl.replicate(dn, source_dsa_invocation_id, destination_dsa_guid,
                            exop=drsuapi.DRSUAPI_EXOP_REPL_SECRET, rodc=True)
-        except RuntimeError, (ecode, estring):
-            if estring == 'WERR_DS_DRA_ACCESS_DENIED':
-                local_samdb.transaction_cancel()
-                raise CommandError("Access denied replicating DN %s" % dn)
-            else:
-                raise
+        except Exception, e:
+            raise CommandError("Error replicating DN %s" % dn, e)
         local_samdb.transaction_commit()
 
 

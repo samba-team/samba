@@ -404,7 +404,7 @@ def setup_ldb(ldb, ldif_path, subst_vars):
     ldb.transaction_start()
     try:
         setup_add_ldif(ldb, ldif_path, subst_vars)
-    except:
+    except Exception:
         ldb.transaction_cancel()
         raise
     else:
@@ -728,7 +728,7 @@ def setup_samdb_partitions(samdb_path, setup_path, logger, lp, session_info,
 
         logger.info("Setting up sam.ldb rootDSE")
         setup_samdb_rootdse(samdb, setup_path, names)
-    except:
+    except Exception:
         samdb.transaction_cancel()
         raise
     else:
@@ -899,7 +899,7 @@ def setup_secretsdb(paths, setup_path, session_info, backend_credentials, lp):
                         })
 
         return secrets_ldb
-    except:
+    except Exception:
         secrets_ldb.transaction_cancel()
         raise
 
@@ -1200,7 +1200,7 @@ def setup_samdb(path, setup_path, session_info, provision_backend, lp, names,
                        {"SCHEMADN": names.schemadn})
 
         logger.info("Reopening sam.ldb with new schema")
-    except:
+    except Exception:
         samdb.transaction_cancel()
         raise
     else:
@@ -1302,7 +1302,7 @@ def setup_samdb(path, setup_path, session_info, provision_backend, lp, names,
             names.ntdsguid = samdb.searchone(basedn=ntds_dn,
                 attribute="objectGUID", expression="", scope=ldb.SCOPE_BASE)
             assert isinstance(names.ntdsguid, str)
-    except:
+    except Exception:
         samdb.transaction_cancel()
         raise
     else:
@@ -1369,7 +1369,7 @@ def setsysvolacl(samdb, netlogon, sysvol, gid, domainsid, dnsdomain, domaindn,
 
     try:
         os.chown(sysvol, -1, gid)
-    except:
+    except OSError:
         canchown = False
     else:
         canchown = True
@@ -1641,9 +1641,11 @@ def provision(setup_dir, logger, session_info, credentials, smbconf=None,
                     elements=kerberos_enctypes, flags=ldb.FLAG_MOD_REPLACE,
                     name="msDS-SupportedEncryptionTypes")
                 samdb.modify(msg)
-            except ldb.LdbError, (ldb.ERR_NO_SUCH_ATTRIBUTE, _):
-                # It might be that this attribute does not exist in this schema
-                pass
+            except ldb.LdbError, (enum, estr):
+                if enum == ldb.ERR_NO_SUCH_ATTRIBUTE:
+                    # It might be that this attribute does not exist in this schema
+                    pass
+                raise
 
             if serverrole == "domain controller":
                 secretsdb_setup_dns(secrets_ldb, setup_path, names,
@@ -1694,7 +1696,7 @@ def provision(setup_dir, logger, session_info, credentials, smbconf=None,
 
         create_phpldapadmin_config(paths.phpldapadminconfig, setup_path,
                                    ldapi_url)
-    except:
+    except Exception:
         secrets_ldb.transaction_cancel()
         raise
 

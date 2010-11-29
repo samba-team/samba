@@ -91,7 +91,6 @@ class cmd_newuser(Command):
                           jobtitle=job_title, department=department, company=company, description=description,
                           mailaddress=mail_address, internetaddress=internet_address,
                           telephonenumber=telephone_number, physicaldeliveryoffice=physical_delivery_office)
-        except ldb.LdbError, (num, msg):
-            raise CommandError('Failed to create user "%s" : %s' % (
-                username, msg))
+        except Exception, e:
+            raise CommandError('Failed to create user "%s"' % username, e)
 

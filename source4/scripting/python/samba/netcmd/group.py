@@ -83,9 +83,8 @@ class cmd_group_add(Command):
                           credentials=creds, lp=lp)
             samdb.newgroup(groupname, groupou=groupou, grouptype = gtype,
                           description=description, mailaddress=mail_address, notes=notes)
-        except ldb.LdbError, (num, msg):
-            raise CommandError('Failed to create group "%s" : %s' % (
-                groupname, msg))
+        except Exception, e:
+            raise CommandError('Failed to create group "%s"' % groupname, e)
 
 
 class cmd_group_delete(Command):
@@ -114,9 +113,8 @@ class cmd_group_delete(Command):
             samdb = SamDB(url=H, session_info=system_session(),
                           credentials=creds, lp=lp)
             samdb.deletegroup(groupname)
-        except ldb.LdbError, (num, msg):
-            raise CommandError('Failed to remove group "%s": %s' % (
-                groupname , msg))
+        except Exception, e:
+            raise CommandError('Failed to remove group "%s"' % groupname, e)
 
 
 class cmd_group_add_members(Command):
@@ -146,9 +144,8 @@ class cmd_group_add_members(Command):
             samdb = SamDB(url=H, session_info=system_session(),
                           credentials=creds, lp=lp)
             samdb.add_remove_group_members(groupname, listofmembers, add_members_operation=True)
-        except ldb.LdbError, (num, msg):
-            raise CommandError('Failed to add members "%s" to group "%s": %s' % (
-                listofmembers, groupname , msg))
+        except Exception, e:
+            raise CommandError('Failed to add members "%s" to group "%s"' % (listofmembers, groupname), e)
 
 
 class cmd_group_remove_members(Command):
@@ -178,9 +175,8 @@ class cmd_group_remove_members(Command):
             samdb = SamDB(url=H, session_info=system_session(),
                           credentials=creds, lp=lp)
             samdb.add_remove_group_members(groupname, listofmembers, add_members_operation=False)
-        except ldb.LdbError, (num, msg):
-            raise CommandError('Failed to remove members "%s" from group "%s": %s' % (
-                listofmembers, groupname , msg))
+        except Exception, e:
+            raise CommandError('Failed to remove members "%s" from group "%s"' % (listofmembers, groupname), e)
 
 
 class cmd_group(SuperCommand):

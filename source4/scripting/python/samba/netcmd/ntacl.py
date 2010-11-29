@@ -65,9 +65,8 @@ class cmd_acl_set(Command):
         try:
             ldb = Ldb(path, session_info=system_session(), credentials=creds,
                       lp=lp)
-        except:
-            # XXX: Should catch a particular exception type
-            raise CommandError("Unable to read domain SID from configuration files")
+        except Exception, e:
+            raise CommandError("Unable to read domain SID from configuration files", e)
         attrs = ["objectSid"]
         print lp.get("realm")
         res = ldb.search(expression="(objectClass=*)",

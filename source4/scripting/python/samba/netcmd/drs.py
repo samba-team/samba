@@ -44,8 +44,8 @@ def drsuapi_connect(ctx):
     try:
         ctx.drsuapi = drsuapi.drsuapi(binding_string, ctx.lp, ctx.creds)
         (ctx.drsuapi_handle, ctx.bind_supported_extensions) = drs_utils.drs_DsBind(ctx.drsuapi)
-    except Exception, estr:
-        raise CommandError("DRS connection to %s failed - %s" % (ctx.server, estr))
+    except Exception, e:
+        raise CommandError("DRS connection to %s failed" % ctx.server, e)
 
 
 def samdb_connect(ctx):
@@ -54,8 +54,8 @@ def samdb_connect(ctx):
         ctx.samdb = SamDB(url="ldap://%s" % ctx.server,
                           session_info=system_session(),
                           credentials=ctx.creds, lp=ctx.lp)
-    except Exception, estr:
-        raise CommandError("LDAP connection to %s failed - %s" % (ctx.server, estr))
+    except Exception, e:
+        raise CommandError("LDAP connection to %s failed" % ctx.server, e)
 
 
 def drs_errmsg(werr):
@@ -119,8 +119,8 @@ class cmd_drs_showrepl(Command):
         req1.info_type = info_type
         try:
             (info_type, info) = ctx.drsuapi.DsReplicaGetInfo(ctx.drsuapi_handle, 1, req1)
-        except Exception, estr:
-            raise CommandError("DsReplicaGetInfo failed : %s" % estr)
+        except Exception, e:
+            raise CommandError("DsReplicaGetInfo of type %u failed" % info_type, e)
         return (info_type, info)
 
 
@@ -221,8 +221,8 @@ class cmd_drs_kcc(Command):
         req1 = drsuapi.DsExecuteKCC1()
         try:
             self.drsuapi.DsExecuteKCC(self.drsuapi_handle, 1, req1)
-        except Exception, (ecode, estr):
-            raise CommandError("DsExecuteKCC failed - %s" % estr)
+        except Exception, e:
+            raise CommandError("DsExecuteKCC failed", e)
         print("Consistency check on %s successful." % DC)
 
 
@@ -289,8 +289,8 @@ class cmd_drs_replicate(Command):
 
         try:
             self.drsuapi.DsReplicaSync(self.drsuapi_handle, 1, req1)
-        except Exception, (ecode, estr):
-            raise CommandError("DsReplicaSync failed - %s" % estr)
+        except Exception, e:
+            raise CommandError("DsReplicaSync failed", estr)
 	print("Replicate from %s to %s was successful." % (SOURCE_DC, DEST_DC))
 
 
