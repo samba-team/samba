@@ -9003,6 +9003,10 @@ static bool test_add_driver_adobe_cupsaddsmb(struct torture_context *tctx,
 	struct torture_driver_context *d;
 	struct spoolss_StringArray *a;
 
+	if (!torture_setting_bool(tctx, "samba3", false)) {
+		torture_skip(tctx, "skipping cupsaddsmb test which only works against samba3");
+	}
+
 	d = talloc_zero(tctx, struct torture_driver_context);
 
 	d->info8.version		= SPOOLSS_DRIVER_VERSION_9X;
