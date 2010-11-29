@@ -110,6 +110,11 @@ static PyObject *py_set_debug_level(PyObject *self, PyObject *args)
 	Py_RETURN_NONE;
 }
 
+static PyObject *py_get_debug_level(PyObject *self)
+{
+	return PyInt_FromLong(DEBUGLEVEL);
+}
+
 /*
   return the list of interface IPs we have configured
   takes an loadparm context, returns a list of IPs in string form
@@ -181,6 +186,8 @@ static PyMethodDef py_misc_methods[] = {
 		"nttime2string(nttime) -> string" },
 	{ "set_debug_level", (PyCFunction)py_set_debug_level, METH_VARARGS,
 		"set debug level" },
+	{ "get_debug_level", (PyCFunction)py_get_debug_level, METH_NOARGS,
+		"get debug level" },
 	{ "interface_ips", (PyCFunction)py_interface_ips, METH_VARARGS,
 		"get interface IP address list"},
 	{ NULL }

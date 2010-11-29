@@ -327,6 +327,7 @@ from samba import _glue
 version = _glue.version
 interface_ips = _glue.interface_ips
 set_debug_level = _glue.set_debug_level
+get_debug_level = _glue.get_debug_level
 unix2nttime = _glue.unix2nttime
 nttime2string = _glue.nttime2string
 nttime2unix = _glue.nttime2unix
