@@ -1633,8 +1633,11 @@ static int do_allinfo(const char *name)
 	uint16_t mode;
 	SMB_INO_T ino;
 	NTTIME tmp;
+	uint16_t fnum;
 	unsigned int num_streams;
 	struct stream_struct *streams;
+	int num_snapshots;
+	char **snapshots;
 	unsigned int i;
 	NTSTATUS status;
 
@@ -1680,6 +1683,49 @@ static int do_allinfo(const char *name)
 		d_printf("stream: [%s], %lld bytes\n", streams[i].name,
 			 (unsigned long long)streams[i].size);
 	}
+
+	status = cli_open(cli, name, O_RDONLY, DENY_NONE, &fnum);
+	if (!NT_STATUS_IS_OK(status)) {
+		/*
+		 * Ignore failure, it does not hurt if we can't list
+		 * snapshots
+		 */
+		return 0;
+	}
+	status = cli_shadow_copy_data(talloc_tos(), cli, fnum,
+				      true, &snapshots, &num_snapshots);
+	if (!NT_STATUS_IS_OK(status)) {
+		cli_close(cli, fnum);
+		return 0;
+	}
+
+	for (i=0; i<num_snapshots; i++) {
+		char *snap_name;
+
+		d_printf("%s\n", snapshots[i]);
+		snap_name = talloc_asprintf(talloc_tos(), "%s%s",
+					    snapshots[i], name);
+		status = cli_qpathinfo2(cli, snap_name, &b_time, &a_time,
+					&m_time, &c_time, &size,
+					NULL, NULL);
+		if (!NT_STATUS_IS_OK(status)) {
+			d_fprintf(stderr, "pathinfo(%s) failed: %s\n",
+				  snap_name, nt_errstr(status));
+			TALLOC_FREE(snap_name);
+			continue;
+		}
+		unix_timespec_to_nt_time(&tmp, b_time);
+		d_printf("create_time:    %s\n", nt_time_string(talloc_tos(), tmp));
+		unix_timespec_to_nt_time(&tmp, a_time);
+		d_printf("access_time:    %s\n", nt_time_string(talloc_tos(), tmp));
+		unix_timespec_to_nt_time(&tmp, m_time);
+		d_printf("write_time:     %s\n", nt_time_string(talloc_tos(), tmp));
+		unix_timespec_to_nt_time(&tmp, c_time);
+		d_printf("change_time:    %s\n", nt_time_string(talloc_tos(), tmp));
+		d_printf("size: %d\n", (int)size);
+	}
+
+	TALLOC_FREE(snapshots);
 
 	return 0;
 }
