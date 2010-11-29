@@ -455,7 +455,6 @@ static WERROR dcesrv_drsuapi_DsCrackNames(struct dcesrv_call_state *dce_call, TA
 				return dcesrv_drsuapi_CrackNamesByNameFormat(b_state->sam_ctx, mem_ctx,
 									     &r->in.req->req1, &r->out.ctr->ctr1);
 			}
-			return WERR_OK;
 		}
 	}
 	return WERR_UNKNOWN_LEVEL;
