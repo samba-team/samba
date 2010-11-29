@@ -1625,7 +1625,11 @@ static WERROR clean_up_driver_struct_level(TALLOC_CTX *mem_ctx,
 	WERROR err;
 	char *_p;
 
-	if (!*driver_path || !*data_file || !*config_file) {
+	if (!*driver_path || !*data_file) {
+		return WERR_INVALID_PARAM;
+	}
+
+	if (!strequal(architecture, SPOOLSS_ARCHITECTURE_4_0) && !*config_file) {
 		return WERR_INVALID_PARAM;
 	}
 
@@ -1637,7 +1641,9 @@ static WERROR clean_up_driver_struct_level(TALLOC_CTX *mem_ctx,
 
 	strip_driver_path(mem_ctx, *driver_path);
 	strip_driver_path(mem_ctx, *data_file);
-	strip_driver_path(mem_ctx, *config_file);
+	if (*config_file) {
+		strip_driver_path(mem_ctx, *config_file);
+	}
 	if (help_file) {
 		strip_driver_path(mem_ctx, *help_file);
 	}
