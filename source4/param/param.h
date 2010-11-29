@@ -175,6 +175,7 @@ void lpcfg_killunused(struct loadparm_context *lp_ctx,
  * Initialise the global parameter structure.
  */
 struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx);
+struct loadparm_context *loadparm_init_global(bool load_default);
 const char *lpcfg_configfile(struct loadparm_context *lp_ctx);
 bool lpcfg_load_default(struct loadparm_context *lp_ctx);
 const char *lp_default_path(void);

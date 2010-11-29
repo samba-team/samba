@@ -531,6 +531,8 @@ struct loadparm_context {
 		time_t modtime;
 	} *file_lists;
 	unsigned int flags[NUMPARAMETERS];
+	bool loaded;
+	bool refuse_free;
 };
 
 
@@ -2263,6 +2265,13 @@ static int lp_destructor(struct loadparm_context *lp_ctx)
 {
 	struct parmlist_entry *data;
 
+	if (lp_ctx->refuse_free) {
+		/* someone is trying to free the
+		   global_loadparm_context.
+		   We can't allow that. */
+		return -1;
+	}
+
 	if (lp_ctx->globals->param_opt != NULL) {
 		struct parmlist_entry *next;
 		for (data = lp_ctx->globals->param_opt; data; data=next) {
@@ -2278,6 +2287,8 @@ static int lp_destructor(struct loadparm_context *lp_ctx)
 
 /**
  * Initialise the global parameter structure.
+ *
+ * Note that most callers should use loadparm_init_global() instead
  */
 struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 {
@@ -2481,6 +2492,21 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 	return lp_ctx;
 }
 
+/**
+ * Initialise the global parameter structure.
+ */
+struct loadparm_context *loadparm_init_global(bool load_default)
+{
+	if (global_loadparm_context == NULL) {
+		global_loadparm_context = loadparm_init(NULL);
+	}
+	if (load_default && !global_loadparm_context->loaded) {
+		lpcfg_load_default(global_loadparm_context);
+	}
+	global_loadparm_context->refuse_free = true;
+	return global_loadparm_context;
+}
+
 const char *lpcfg_configfile(struct loadparm_context *lp_ctx)
 {
 	return lp_ctx->szConfigFile;
@@ -2588,6 +2614,7 @@ bool lpcfg_load(struct loadparm_context *lp_ctx, const char *filename)
 		/* set the context used by the lp_*() function
 		   varients */
 		global_loadparm_context = lp_ctx;
+		lp_ctx->loaded = true;
 	}
 
 	return bRetval;
