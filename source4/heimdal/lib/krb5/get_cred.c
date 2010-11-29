@@ -323,10 +323,11 @@ static krb5_error_code KRB5_CALLCONV
 decrypt_tkt_with_subkey (krb5_context context,
 			 krb5_keyblock *key,
 			 krb5_key_usage usage,
-			 krb5_const_pointer subkey,
+			 krb5_const_pointer skey,
 			 krb5_kdc_rep *dec_rep)
 {
-    krb5_error_code ret;
+    const krb5_keyblock *subkey = skey;
+    krb5_error_code ret = 0;
     krb5_data data;
     size_t size;
     krb5_crypto crypto;
@@ -345,6 +346,17 @@ decrypt_tkt_with_subkey (krb5_context context,
 					  KRB5_KU_TGS_REP_ENC_PART_SUB_KEY,
 					  &dec_rep->kdc_rep.enc_part,
 					  &data);
+	/*
+	 * If the is Windows 2000 DC, we need to retry with key usage
+	 * 8 when doing ARCFOUR.
+	 */
+	if (ret && subkey->keytype == ETYPE_ARCFOUR_HMAC_MD5) {
+	    ret = krb5_decrypt_EncryptedData(context,
+					     crypto,
+					     8,
+					     &dec_rep->kdc_rep.enc_part,
+					     &data);
+	}
 	krb5_crypto_destroy(context, crypto);
     }
     if (subkey == NULL || ret) {
