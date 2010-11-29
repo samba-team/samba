@@ -192,7 +192,7 @@ static void tstream_gensec_readv_wrapped_next(struct tevent_req *req)
 		memcpy(base, tgss->read.unwrapped.data + tgss->read.ofs, len);
 
 		base += len;
-		state->vector[0].iov_base = base;
+		state->vector[0].iov_base = (char *) base;
 		state->vector[0].iov_len -= len;
 
 		tgss->read.ofs += len;
@@ -457,7 +457,7 @@ static void tstream_gensec_writev_wrapped_next(struct tevent_req *req)
 		memcpy(state->unwrapped.blob.data + state->unwrapped.ofs, base, len);
 
 		base += len;
-		state->vector[0].iov_base = base;
+		state->vector[0].iov_base = (char *) base;
 		state->vector[0].iov_len -= len;
 
 		state->unwrapped.ofs += len;
