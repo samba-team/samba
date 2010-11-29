@@ -2381,6 +2381,17 @@ struct tevent_req *cli_flush_send(TALLOC_CTX *mem_ctx,
 NTSTATUS cli_flush_recv(struct tevent_req *req);
 NTSTATUS cli_flush(TALLOC_CTX *mem_ctx, struct cli_state *cli, uint16_t fnum);
 
+struct tevent_req *cli_shadow_copy_data_send(TALLOC_CTX *mem_ctx,
+					     struct tevent_context *ev,
+					     struct cli_state *cli,
+					     uint16_t fnum,
+					     bool get_names);
+NTSTATUS cli_shadow_copy_data_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
+				   char ***pnames, int *pnum_names);
+NTSTATUS cli_shadow_copy_data(TALLOC_CTX *mem_ctx, struct cli_state *cli,
+			      uint16_t fnum, bool get_names,
+			      char ***pnames, int *pnum_names);
+
 /* The following definitions come from libsmb/clirap2.c  */
 struct rap_group_info_1;
 struct rap_user_info_1;
