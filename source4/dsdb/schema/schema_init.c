@@ -43,6 +43,63 @@ struct dsdb_schema *dsdb_new_schema(TALLOC_CTX *mem_ctx)
 	return schema;
 }
 
+struct dsdb_schema *dsdb_schema_copy_shallow(TALLOC_CTX *mem_ctx,
+					     struct ldb_context *ldb,
+					     const struct dsdb_schema *schema)
+{
+	int ret;
+	struct dsdb_class *cls;
+	struct dsdb_attribute *attr;
+	struct dsdb_schema *schema_copy;
+
+	schema_copy = dsdb_new_schema(mem_ctx);
+	if (!schema_copy) {
+		return NULL;
+	}
+
+	/* copy prexiMap & schemaInfo */
+	schema_copy->prefixmap = dsdb_schema_pfm_copy_shallow(schema_copy,
+							      schema->prefixmap);
+	if (!schema_copy->prefixmap) {
+		return NULL;
+	}
+
+	schema_copy->schema_info = talloc_strdup(schema_copy, schema->schema_info);
+
+	/* copy classes and attributes*/
+	for (cls = schema->classes; cls; cls = cls->next) {
+		struct dsdb_class *class_copy = talloc_memdup(schema_copy,
+							      cls, sizeof(*cls));
+		if (!class_copy) {
+			goto failed;
+		}
+		DLIST_ADD(schema_copy->classes, class_copy);
+	}
+	schema_copy->num_classes = schema->num_classes;
+
+	for (attr = schema->attributes; attr; attr = attr->next) {
+		struct dsdb_attribute *a_copy = talloc_memdup(schema_copy,
+							      attr, sizeof(*attr));
+		if (!a_copy) {
+			goto failed;
+		}
+		DLIST_ADD(schema_copy->attributes, a_copy);
+	}
+	schema_copy->num_attributes = schema->num_attributes;
+
+	/* rebuild indexes */
+	ret = dsdb_setup_sorted_accessors(ldb, schema_copy);
+	if (ret != LDB_SUCCESS) {
+		goto failed;
+	}
+
+	return schema_copy;
+
+failed:
+	talloc_free(schema_copy);
+	return NULL;
+}
+
 
 WERROR dsdb_load_prefixmap_from_drsuapi(struct dsdb_schema *schema,
 					const struct drsuapi_DsReplicaOIDMapping_Ctr *ctr)
