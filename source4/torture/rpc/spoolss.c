@@ -8601,7 +8601,7 @@ static bool upload_printer_driver_file(struct torture_context *tctx,
 	const char *local_name = talloc_asprintf(tctx, "%s/%s", d->local.driver_directory, file_name);
 	const char *remote_name = talloc_asprintf(tctx, "%s\\%s", remote_dir, file_name);
 
-	if (!file_name) {
+	if (!file_name || strlen(file_name) == 0) {
 		return true;
 	}
 
@@ -8733,7 +8733,7 @@ static bool remove_printer_driver_file(struct torture_context *tctx,
 	const char *remote_name;
 	const char *remote_dir =  driver_directory_dir(d->remote.driver_directory);
 
-	if (!file_name) {
+	if (!file_name || strlen(file_name) == 0) {
 		return true;
 	}
 
