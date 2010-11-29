@@ -241,7 +241,7 @@ static void wreplsrv_call_loop(struct tevent_req *subreq)
 		goto noreply;
 	}
 
-	call->out_iov[0].iov_base = call->out.data;
+	call->out_iov[0].iov_base = (char *) call->out.data;
 	call->out_iov[0].iov_len = call->out.length;
 
 	subreq = tstream_writev_queue_send(call,
