@@ -8767,9 +8767,11 @@ static bool remove_printer_driver(struct torture_context *tctx,
 	torture_assert(tctx,
 		remove_printer_driver_file(tctx, cli, d, d->info8.data_file),
 		"failed to remove data_file");
-	torture_assert(tctx,
-		remove_printer_driver_file(tctx, cli, d, d->info8.config_file),
-		"failed to remove config_file");
+	if (!strequal(d->info8.config_file, d->info8.driver_path)) {
+		torture_assert(tctx,
+			remove_printer_driver_file(tctx, cli, d, d->info8.config_file),
+			"failed to remove config_file");
+	}
 	torture_assert(tctx,
 		remove_printer_driver_file(tctx, cli, d, d->info8.help_file),
 		"failed to remove help_file");
