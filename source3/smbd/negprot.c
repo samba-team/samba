@@ -265,7 +265,6 @@ static void reply_nt1(struct smb_request *req, uint16 choice)
 		CAP_LEVEL_II_OPLOCKS;
 
 	int secword=0;
-	char *p, *q;
 	bool negotiate_spnego = False;
 	struct timespec ts;
 	ssize_t ret;
@@ -363,7 +362,6 @@ static void reply_nt1(struct smb_request *req, uint16 choice)
 	put_long_date_timespec(TIMESTAMP_SET_NT_OR_BETTER,(char *)req->outbuf+smb_vwv11+1,ts);
 	SSVALS(req->outbuf,smb_vwv15+1,set_server_zone_offset(ts.tv_sec)/60);
 	
-	p = q = smb_buf(req->outbuf);
 	if (!negotiate_spnego) {
 		/* Create a token value and add it to the outgoing packet. */
 		if (sconn->smb1.negprot.encrypted_passwords) {
@@ -379,13 +377,12 @@ static void reply_nt1(struct smb_request *req, uint16 choice)
 				return;
 			}
 			SCVAL(req->outbuf, smb_vwv16+1, ret);
-			p += ret;
 		}
 		ret = message_push_string(&req->outbuf, lp_workgroup(),
 					  STR_UNICODE|STR_TERMINATE
 					  |STR_NOALIGN);
 		if (ret == -1) {
-			DEBUG(0, ("Could not push challenge\n"));
+			DEBUG(0, ("Could not push workgroup string\n"));
 			reply_nterror(req, NT_STATUS_NO_MEMORY);
 			return;
 		}
@@ -404,15 +401,11 @@ static void reply_nt1(struct smb_request *req, uint16 choice)
 			reply_nterror(req, NT_STATUS_NO_MEMORY);
 			return;
 		}
-		p += ret;
 		data_blob_free(&spnego_blob);
 
 		SCVAL(req->outbuf,smb_vwv16+1, 0);
 		DEBUG(3,("using SPNEGO\n"));
 	}
-	
-	SSVAL(req->outbuf,smb_vwv17, p - q); /* length of challenge+domain
-					      * strings */
 
 	return;
 }
