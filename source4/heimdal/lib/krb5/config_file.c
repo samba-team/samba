@@ -84,8 +84,8 @@ static krb5_error_code parse_list(struct fileptr *f, unsigned *lineno,
 				  krb5_config_binding **parent,
 				  const char **err_message);
 
-static krb5_config_section *
-get_entry(krb5_config_section **parent, const char *name, int type)
+krb5_config_section *
+_krb5_config_get_entry(krb5_config_section **parent, const char *name, int type)
 {
     krb5_config_section **q;
 
@@ -135,7 +135,7 @@ parse_section(char *p, krb5_config_section **s, krb5_config_section **parent,
 	return KRB5_CONFIG_BADFORMAT;
     }
     *p1 = '\0';
-    tmp = get_entry(parent, p + 1, krb5_config_list);
+    tmp = _krb5_config_get_entry(parent, p + 1, krb5_config_list);
     if(tmp == NULL) {
 	*err_message = "out of memory";
 	return KRB5_CONFIG_BADFORMAT;
@@ -154,7 +154,7 @@ static krb5_error_code
 parse_list(struct fileptr *f, unsigned *lineno, krb5_config_binding **parent,
 	   const char **err_message)
 {
-    char buf[BUFSIZ];
+    char buf[KRB5_BUFSIZ];
     krb5_error_code ret;
     krb5_config_binding *b = NULL;
     unsigned beg_lineno = *lineno;
@@ -216,14 +216,14 @@ parse_binding(struct fileptr *f, unsigned *lineno, char *p,
 	++p;
     *p2 = '\0';
     if (*p == '{') {
-	tmp = get_entry(parent, p1, krb5_config_list);
+	tmp = _krb5_config_get_entry(parent, p1, krb5_config_list);
 	if (tmp == NULL) {
 	    *err_message = "out of memory";
 	    return KRB5_CONFIG_BADFORMAT;
 	}
 	ret = parse_list (f, lineno, &tmp->u.list, err_message);
     } else {
-	tmp = get_entry(parent, p1, krb5_config_string);
+	tmp = _krb5_config_get_entry(parent, p1, krb5_config_string);
 	if (tmp == NULL) {
 	    *err_message = "out of memory";
 	    return KRB5_CONFIG_BADFORMAT;
@@ -282,10 +282,10 @@ convert_content(const void *key, const void *value, void *context)
 	return;
 
     if (CFGetTypeID(value) == CFStringGetTypeID()) {
-	tmp = get_entry(parent, k, krb5_config_string);
+	tmp = _krb5_config_get_entry(parent, k, krb5_config_string);
 	tmp->u.string = cfstring2cstring(value);
     } else if (CFGetTypeID(value) == CFDictionaryGetTypeID()) {
-	tmp = get_entry(parent, k, krb5_config_list);
+	tmp = _krb5_config_get_entry(parent, k, krb5_config_list);
 	CFDictionaryApplyFunction(value, convert_content, &tmp->u.list);
     } else {
 	/* log */
@@ -352,7 +352,7 @@ krb5_config_parse_debug (struct fileptr *f,
 {
     krb5_config_section *s = NULL;
     krb5_config_binding *b = NULL;
-    char buf[BUFSIZ];
+    char buf[KRB5_BUFSIZ];
     krb5_error_code ret;
 
     while (config_fgets(buf, sizeof(buf), f) != NULL) {
@@ -864,6 +864,55 @@ krb5_config_get_string_default (krb5_context context,
     return ret;
 }
 
+static char *
+next_component_string(char * begin, char * delims, char **state)
+{
+    char * end;
+
+    if (begin == NULL)
+        begin = *state;
+
+    if (*begin == '\0')
+        return NULL;
+
+    end = begin;
+    while (*end == '"') {
+        char * t;
+        while ((t = strchr(end + 1, '"')) != NULL && *(t - 1) == '\\') {
+            --t;
+            memmove(t, t + 1, strlen(t));
+            end = t;
+        }
+
+        if (t)
+            end = ++t;
+        else
+            end += strlen(end);
+    }
+
+    if (*end != '\0') {
+        size_t pos;
+
+        pos = strcspn(end, delims);
+        end = end + pos;
+    }
+
+    if (*end != '\0') {
+        *end = '\0';
+        *state = end + 1;
+        if (*begin == '"' && *(end - 1) == '"' && begin + 1 < end) {
+            begin++; *(end - 1) = '\0';
+        }
+        return begin;
+    }
+
+    *state = end;
+    if (*begin == '"' && *(end - 1) == '"' && begin + 1 < end) {
+        begin++; *(end - 1) = '\0';
+    }
+    return begin;
+}
+
 /**
  * Get a list of configuration strings, free the result with
  * krb5_config_free_strings().
@@ -894,7 +943,7 @@ krb5_config_vget_strings(krb5_context context,
 	char *s;
 	if(tmp == NULL)
 	    goto cleanup;
-	s = strtok_r(tmp, " \t", &pos);
+	s = next_component_string(tmp, " \t", &pos);
 	while(s){
 	    char **tmp2 = realloc(strings, (nstr + 1) * sizeof(*strings));
 	    if(tmp2 == NULL)
@@ -904,7 +953,7 @@ krb5_config_vget_strings(krb5_context context,
 	    nstr++;
 	    if(strings[nstr-1] == NULL)
 		goto cleanup;
-	    s = strtok_r(NULL, " \t", &pos);
+	    s = next_component_string(NULL, " \t", &pos);
 	}
 	free(tmp);
     }
@@ -1259,7 +1308,7 @@ krb5_config_get_int (krb5_context context,
  */
 
 KRB5_DEPRECATED
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_config_parse_string_multi(krb5_context context,
 			       const char *string,
 			       krb5_config_section **res)

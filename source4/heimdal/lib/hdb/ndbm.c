@@ -370,7 +370,7 @@ hdb_ndbm_create(krb5_context context, HDB **db,
     (*db)->hdb_capability_flags = HDB_CAP_F_HANDLE_ENTERPRISE_PRINCIPAL;
     (*db)->hdb_open = NDBM_open;
     (*db)->hdb_close = NDBM_close;
-    (*db)->hdb_fetch = _hdb_fetch;
+    (*db)->hdb_fetch_kvno = _hdb_fetch_kvno;
     (*db)->hdb_store = _hdb_store;
     (*db)->hdb_remove = _hdb_remove;
     (*db)->hdb_firstkey = NDBM_firstkey;

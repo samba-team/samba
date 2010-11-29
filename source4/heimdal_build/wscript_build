@@ -448,6 +448,7 @@ if not bld.CONFIG_SET('USING_SYSTEM_ROKEN'):
         lib/roken/simple_exec.c
         lib/roken/strcollect.c
         lib/roken/rtbl.c
+        lib/roken/rand.c
         lib/roken/cloexec.c
         lib/roken/xfree.c
         ../heimdal_build/replace.c
@@ -492,7 +493,7 @@ if not bld.CONFIG_SET('USING_SYSTEM_ROKEN'):
             install=False
         )
 
-KDC_SOURCE='kdc/default_config.c kdc/kerberos5.c kdc/krb5tgs.c kdc/pkinit.c kdc/log.c kdc/misc.c kdc/kaserver.c kdc/digest.c kdc/process.c kdc/windc.c kdc/kx509.c'
+KDC_SOURCE='kdc/default_config.c kdc/kerberos5.c kdc/krb5tgs.c kdc/pkinit.c kdc/log.c kdc/misc.c kdc/digest.c kdc/process.c kdc/windc.c kdc/kx509.c'
 
 HEIMDAL_LIBRARY('kdc', source=KDC_SOURCE,
                     includes='../heimdal/kdc',
@@ -571,7 +572,8 @@ lib/gssapi/mech/gss_set_sec_context_option.c lib/gssapi/mech/gss_export_name.c l
 lib/gssapi/mech/gss_acquire_cred.c lib/gssapi/mech/gss_unseal.c lib/gssapi/mech/gss_verify_mic.c
 lib/gssapi/mech/gss_accept_sec_context.c lib/gssapi/mech/gss_inquire_cred_by_mech.c lib/gssapi/mech/gss_indicate_mechs.c
 lib/gssapi/mech/gss_delete_sec_context.c lib/gssapi/mech/gss_sign.c lib/gssapi/mech/gss_utils.c
-lib/gssapi/mech/gss_init_sec_context.c lib/gssapi/mech/gss_oid_equal.c lib/gssapi/mech/gss_oid_to_str.c
+lib/gssapi/mech/gss_init_sec_context.c lib/gssapi/mech/gss_oid_equal.c lib/gssapi/mech/gss_oid.c
+lib/gssapi/mech/gss_oid_to_str.c lib/gssapi/mech/gss_mo.c
 lib/gssapi/mech/gss_context_time.c lib/gssapi/mech/gss_encapsulate_token.c lib/gssapi/mech/gss_get_mic.c
 lib/gssapi/mech/gss_import_sec_context.c lib/gssapi/mech/gss_inquire_cred.c lib/gssapi/mech/gss_wrap.c
 lib/gssapi/mech/gss_import_name.c lib/gssapi/mech/gss_duplicate_name.c lib/gssapi/mech/gss_unwrap.c
@@ -624,7 +626,7 @@ KRB5_SOURCE = [os.path.join('lib/krb5/', x) for x in to_list(
                                send_to_kdc.c set_default_realm.c
                                store.c store-int.c store_emem.c store_fd.c
                                store_mem.c ticket.c time.c transited.c
-                               v4_glue.c version.c warn.c krb5_err.c
+                               version.c warn.c krb5_err.c
                                heim_err.c k524_err.c krb_err.c''')]  + ["../heimdal_build/krb5-glue.c"]
 
 HEIMDAL_LIBRARY('krb5', KRB5_SOURCE,

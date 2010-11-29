@@ -84,6 +84,8 @@
 #endif
 #include "crypto-headers.h" /* for UI_UTIL_read_pw_string */
 
+#include <rtbl.h>
+
 #ifdef HAVE_LOCALE_H
 #include <locale.h>
 #endif
@@ -101,5 +103,6 @@
 #define textdomain(package)
 #endif
 
+extern krb5_context kcc_context;
 
 #endif /* __KUSER_LOCL_H__ */

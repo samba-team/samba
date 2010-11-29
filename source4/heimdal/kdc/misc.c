@@ -91,21 +91,12 @@ _kdc_db_fetch(krb5_context context,
 	    continue;
 	}
 
-	if (config->db[i]->hdb_fetch_kvno) {
-		ret = config->db[i]->hdb_fetch_kvno(context,
-						    config->db[i],
-						    principal,
-						    flags | HDB_F_DECRYPT,
-						    kvno,
-						    ent);
-	} else {
-		flags &= ~HDB_F_KVNO_SPECIFIED;
-		ret = config->db[i]->hdb_fetch(context,
-					       config->db[i],
-					       principal,
-					       flags | HDB_F_DECRYPT,
-					       ent);
-	}
+	ret = config->db[i]->hdb_fetch_kvno(context,
+					    config->db[i],
+					    principal,
+					    flags | HDB_F_DECRYPT,
+					    kvno,
+					    ent);
 
 	krb5_free_principal(context, enterprise_principal);
 

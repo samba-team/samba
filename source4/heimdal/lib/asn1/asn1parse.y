@@ -62,6 +62,10 @@ struct string_list {
     struct string_list *next;
 };
 
+/* Declarations for Bison */
+#define YYMALLOC malloc
+#define YYFREE   free
+
 %}
 
 %union {

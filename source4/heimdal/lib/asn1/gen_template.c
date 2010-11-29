@@ -58,8 +58,10 @@ integer_symbol(const char *basename, const Type *t)
 	return "unsigned";
     else if (t->range->min == 0 && t->range->max == INT_MAX)
 	return "unsigned";
-    else
+    else {
 	abort();
+        UNREACHABLE(return NULL);
+    }
 }
 
 static const char *

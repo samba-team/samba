@@ -90,29 +90,35 @@ typedef uint32_t gss_uint32;
 
 struct gss_name_t_desc_struct;
 typedef struct gss_name_t_desc_struct *gss_name_t;
+typedef const struct gss_name_t_desc_struct *gss_const_name_t;
 
 struct gss_ctx_id_t_desc_struct;
 typedef struct gss_ctx_id_t_desc_struct *gss_ctx_id_t;
+typedef const struct gss_ctx_id_t_desc_struct gss_const_ctx_id_t;
 
 typedef struct gss_OID_desc_struct {
       OM_uint32 length;
       void      *elements;
 } gss_OID_desc, *gss_OID;
+typedef const gss_OID_desc * gss_const_OID;
 
 typedef struct gss_OID_set_desc_struct  {
       size_t     count;
       gss_OID    elements;
 } gss_OID_set_desc, *gss_OID_set;
+typedef const gss_OID_set_desc * gss_const_OID_set;
 
 typedef int gss_cred_usage_t;
 
 struct gss_cred_id_t_desc_struct;
 typedef struct gss_cred_id_t_desc_struct *gss_cred_id_t;
+typedef const struct gss_cred_id_t_desc_struct *gss_const_cred_id_t;
 
 typedef struct gss_buffer_desc_struct {
       size_t length;
       void *value;
 } gss_buffer_desc, *gss_buffer_t;
+typedef const gss_buffer_desc * gss_const_buffer_t;
 
 typedef struct gss_channel_bindings_struct {
       OM_uint32 initiator_addrtype;
@@ -121,6 +127,7 @@ typedef struct gss_channel_bindings_struct {
       gss_buffer_desc acceptor_address;
       gss_buffer_desc application_data;
 } *gss_channel_bindings_t;
+typedef const struct gss_channel_bindings_struct *gss_const_channel_bindings_t;
 
 /* GGF extension data types */
 typedef struct gss_buffer_set_desc_struct {
@@ -137,6 +144,8 @@ typedef struct gss_iov_buffer_desc_struct {
  * For now, define a QOP-type as an OM_uint32
  */
 typedef OM_uint32 gss_qop_t;
+
+
 
 /*
  * Flag bits for context-level services.
@@ -261,6 +270,8 @@ typedef OM_uint32 gss_qop_t;
 
 GSSAPI_CPP_START
 
+#include <gssapi/gssapi_oid.h>
+
 /*
  * The implementation must reserve static storage for a
  * gss_OID_desc object containing the value
@@ -363,14 +374,6 @@ extern GSSAPI_LIB_VARIABLE gss_OID_desc __gss_c_nt_anonymous_oid_desc;
 extern GSSAPI_LIB_VARIABLE gss_OID_desc __gss_c_nt_export_name_oid_desc;
 #define GSS_C_NT_EXPORT_NAME (&__gss_c_nt_export_name_oid_desc) 
 
-/*
- * Digest mechanism
- */
-
-extern gss_OID_desc GSSAPI_LIB_VARIABLE __gss_sasl_digest_md5_mechanism_oid_desc;
-#define GSS_SASL_DIGEST_MD5_MECHANISM (&__gss_sasl_digest_md5_mechanism_oid_desc)
-
-
 /* Major status codes */
 
 #define GSS_S_COMPLETE 0
@@ -438,6 +441,7 @@ extern gss_OID_desc GSSAPI_LIB_VARIABLE __gss_sasl_digest_md5_mechanism_oid_desc
 #define GSS_S_UNAVAILABLE (16ul << GSS_C_ROUTINE_ERROR_OFFSET)
 #define GSS_S_DUPLICATE_ELEMENT (17ul << GSS_C_ROUTINE_ERROR_OFFSET)
 #define GSS_S_NAME_NOT_MN (18ul << GSS_C_ROUTINE_ERROR_OFFSET)
+#define GSS_S_BAD_MECH_ATTR (19ul << GSS_C_ROUTINE_ERROR_OFFSET)
 
 /*
  * Supplementary info bits:
@@ -756,7 +760,7 @@ gss_set_cred_option (OM_uint32 *minor_status,
 		     const gss_buffer_t value);
 
 GSSAPI_LIB_FUNCTION int GSSAPI_LIB_CALL
-gss_oid_equal(const gss_OID a, const gss_OID b);
+gss_oid_equal(gss_const_OID a, gss_const_OID b);
 
 GSSAPI_LIB_FUNCTION OM_uint32 GSSAPI_LIB_CALL
 gss_create_empty_buffer_set
@@ -929,6 +933,69 @@ gss_import_cred(OM_uint32 * /* minor_status */,
 		gss_buffer_t /* cred_token */,
 		gss_cred_id_t * /* cred_handle */);
 
+/*
+ * mech option
+ */
+
+GSSAPI_LIB_FUNCTION int GSSAPI_LIB_CALL
+gss_mo_set(gss_const_OID mech, gss_const_OID option,
+	   int enable, gss_buffer_t value);
+
+GSSAPI_LIB_FUNCTION int GSSAPI_LIB_CALL
+gss_mo_get(gss_const_OID mech, gss_const_OID option, gss_buffer_t value);
+
+GSSAPI_LIB_FUNCTION void GSSAPI_LIB_CALL
+gss_mo_list(gss_const_OID mech, gss_OID_set *options);
+
+GSSAPI_LIB_FUNCTION OM_uint32 GSSAPI_LIB_CALL
+gss_mo_name(gss_const_OID mech, gss_const_OID options, gss_buffer_t name);
+
+/*
+ * SASL glue functions and mech inquire
+ */
+
+GSSAPI_LIB_FUNCTION OM_uint32 GSSAPI_LIB_CALL
+gss_inquire_saslname_for_mech(OM_uint32 *minor_status,
+			      const gss_OID desired_mech,
+			      gss_buffer_t sasl_mech_name,
+			      gss_buffer_t mech_name,
+			      gss_buffer_t mech_description);
+
+GSSAPI_LIB_FUNCTION OM_uint32 GSSAPI_LIB_CALL
+gss_inquire_mech_for_saslname(OM_uint32 *minor_status,
+			      const gss_buffer_t sasl_mech_name,
+			      gss_OID *mech_type);
+
+GSSAPI_LIB_FUNCTION OM_uint32 GSSAPI_LIB_CALL
+gss_indicate_mechs_by_attrs(OM_uint32 * minor_status,
+			    gss_const_OID_set desired_mech_attrs,
+			    gss_const_OID_set except_mech_attrs,
+			    gss_const_OID_set critical_mech_attrs,
+			    gss_OID_set *mechs);
+
+GSSAPI_LIB_FUNCTION OM_uint32 GSSAPI_LIB_CALL
+gss_inquire_attrs_for_mech(OM_uint32 * minor_status,
+			   gss_const_OID mech,
+			   gss_OID_set *mech_attr,
+			   gss_OID_set *known_mech_attrs);
+
+GSSAPI_LIB_FUNCTION OM_uint32 GSSAPI_LIB_CALL
+gss_display_mech_attr(OM_uint32 * minor_status,
+		      gss_const_OID mech_attr,
+		      gss_buffer_t name,
+		      gss_buffer_t short_desc,
+		      gss_buffer_t long_desc);
+
+
+/*
+ *
+ */
+
+GSSAPI_LIB_FUNCTION const char * GSSAPI_LIB_CALL
+gss_oid_to_name(gss_const_OID oid);
+
+GSSAPI_LIB_FUNCTION gss_OID GSSAPI_LIB_CALL
+gss_name_to_oid(const char *name);
 
 GSSAPI_CPP_END
 

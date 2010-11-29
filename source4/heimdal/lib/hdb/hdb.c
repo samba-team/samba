@@ -318,7 +318,7 @@ find_dynamic_method (krb5_context context,
     if (asprintf(&symbol, "hdb_%s_interface", prefix) == -1)
 	krb5_errx(context, 1, "out of memory");
 	
-    mso = dlsym(dl, symbol);
+    mso = (struct hdb_so_method *) dlsym(dl, symbol);
     if (mso == NULL) {
 	krb5_warnx(context, "error finding symbol %s in %s: %s\n",
 		   symbol, path, dlerror());

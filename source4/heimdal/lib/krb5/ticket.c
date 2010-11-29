@@ -177,7 +177,7 @@ krb5_ticket_get_endtime(krb5_context context,
  *
  * @ingroup krb5_ticket
  */
-unsigned long
+KRB5_LIB_FUNCTION unsigned long KRB5_LIB_CALL
 krb5_ticket_get_flags(krb5_context context,
 		      const krb5_ticket *ticket)
 {

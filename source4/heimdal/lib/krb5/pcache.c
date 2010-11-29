@@ -54,7 +54,7 @@ _krb5_load_ccache_plugins(krb5_context context)
 
         ccops = _krb5_plugin_get_symbol(p);
         if (ccops != NULL && ccops->version == KRB5_CC_OPS_VERSION) {
-            c_load = krb5_cc_register(context, ccops, FALSE);
+            c_load = krb5_cc_register(context, ccops, TRUE);
             if (c_load != 0)
                 code = c_load;
         }

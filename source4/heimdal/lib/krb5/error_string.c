@@ -122,7 +122,7 @@ krb5_vset_error_message (krb5_context context, krb5_error_code ret,
  * @ingroup krb5_error
  */
 
-void KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION void KRB5_LIB_CALL
 krb5_prepend_error_message(krb5_context context, krb5_error_code ret,
 			   const char *fmt, ...)
     __attribute__ ((format (printf, 3, 4)))
@@ -145,7 +145,7 @@ krb5_prepend_error_message(krb5_context context, krb5_error_code ret,
  * @ingroup krb5_error
  */
 
-void KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION void KRB5_LIB_CALL
 krb5_vprepend_error_message(krb5_context context, krb5_error_code ret,
 			    const char *fmt, va_list args)
     __attribute__ ((format (printf, 3, 0)))

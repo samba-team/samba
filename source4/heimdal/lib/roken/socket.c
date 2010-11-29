@@ -119,8 +119,7 @@ socket_addr_size (const struct sockaddr *sa)
 	return sizeof(struct in6_addr);
 #endif
     default :
-	errx (1, "unknown address family %d", sa->sa_family);
-	UNREACHABLE(return 0);
+	return 0;
     }
 }
 
@@ -138,9 +137,8 @@ socket_sockaddr_size (const struct sockaddr *sa)
     case AF_INET6 :
 	return sizeof(struct sockaddr_in6);
 #endif
-    default :
-	errx (1, "unknown address family %d", sa->sa_family);
-	UNREACHABLE(return 0);
+    default:
+	return 0;
     }
 }
 
@@ -162,9 +160,8 @@ socket_get_address (const struct sockaddr *sa)
 	return rk_UNCONST(&sin6->sin6_addr);
     }
 #endif
-    default :
-	errx (1, "unknown address family %d", sa->sa_family);
-	UNREACHABLE(return NULL);
+    default:
+	return NULL;
     }
 }
 
@@ -187,8 +184,7 @@ socket_get_port (const struct sockaddr *sa)
     }
 #endif
     default :
-	errx (1, "unknown address family %d", sa->sa_family);
-	UNREACHABLE(return 0);
+	return 0;
     }
 }
 
@@ -227,18 +223,13 @@ socket_set_portrange (rk_socket_t sock, int restr, int af)
 #if defined(IP_PORTRANGE)
 	if (af == AF_INET) {
 		int on = restr ? IP_PORTRANGE_HIGH : IP_PORTRANGE_DEFAULT;
-		if (setsockopt (sock, IPPROTO_IP, IP_PORTRANGE, &on,
-		    sizeof(on)) < 0)
-			warn ("setsockopt IP_PORTRANGE (ignored)");
+		setsockopt (sock, IPPROTO_IP, IP_PORTRANGE, &on, sizeof(on));
 	}
 #endif
 #if defined(IPV6_PORTRANGE)
 	if (af == AF_INET6) {
-		int on = restr ? IPV6_PORTRANGE_HIGH :
-		    IPV6_PORTRANGE_DEFAULT;
-		if (setsockopt (sock, IPPROTO_IPV6, IPV6_PORTRANGE, &on,
-		    sizeof(on)) < 0)
-			warn ("setsockopt IPV6_PORTRANGE (ignored)");
+		int on = restr ? IPV6_PORTRANGE_HIGH : IPV6_PORTRANGE_DEFAULT;
+		setsockopt (sock, IPPROTO_IPV6, IPV6_PORTRANGE, &on, sizeof(on));
 	}
 #endif
 }
@@ -252,9 +243,7 @@ socket_set_debug (rk_socket_t sock)
 {
 #if defined(SO_DEBUG) && defined(HAVE_SETSOCKOPT)
     int on = 1;
-
-    if (setsockopt (sock, SOL_SOCKET, SO_DEBUG, (void *) &on, sizeof (on)) < 0)
-	warn ("setsockopt SO_DEBUG (ignored)");
+    setsockopt (sock, SOL_SOCKET, SO_DEBUG, (void *) &on, sizeof (on));
 #endif
 }
 
@@ -266,9 +255,7 @@ ROKEN_LIB_FUNCTION void ROKEN_LIB_CALL
 socket_set_tos (rk_socket_t sock, int tos)
 {
 #if defined(IP_TOS) && defined(HAVE_SETSOCKOPT)
-    if (setsockopt (sock, IPPROTO_IP, IP_TOS, (void *) &tos, sizeof (int)) < 0)
-	if (errno != EINVAL)
-	    warn ("setsockopt TOS (ignored)");
+    setsockopt (sock, IPPROTO_IP, IP_TOS, (void *) &tos, sizeof(int));
 #endif
 }
 
@@ -280,9 +267,7 @@ ROKEN_LIB_FUNCTION void ROKEN_LIB_CALL
 socket_set_reuseaddr (rk_socket_t sock, int val)
 {
 #if defined(SO_REUSEADDR) && defined(HAVE_SETSOCKOPT)
-    if(setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (void *)&val,
-		  sizeof(val)) < 0)
-	err (1, "setsockopt SO_REUSEADDR");
+    setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (void *)&val, sizeof(val));
 #endif
 }
 

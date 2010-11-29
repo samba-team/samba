@@ -619,10 +619,6 @@ compare_srv(const void *a, const void *b)
     return ((*aa)->u.srv->priority - (*bb)->u.srv->priority);
 }
 
-#ifndef HAVE_RANDOM
-#define random() rand()
-#endif
-
 /* try to rearrange the srv-records by the algorithm in RFC2782 */
 ROKEN_LIB_FUNCTION void ROKEN_LIB_CALL
 rk_dns_srv_order(struct rk_dns_reply *r)
@@ -635,6 +631,8 @@ rk_dns_srv_order(struct rk_dns_reply *r)
     int state[256 / sizeof(int)];
     char *oldstate;
 #endif
+
+    rk_random_init();
 
     for(rr = r->head; rr; rr = rr->next)
 	if(rr->type == rk_ns_t_srv)
@@ -682,7 +680,7 @@ rk_dns_srv_order(struct rk_dns_reply *r)
 	/* ss is now the first record of this priority and ee is the
            first of the next */
 	while(ss < ee) {
-	    rnd = random() % (sum + 1);
+	    rnd = rk_random() % (sum + 1);
 	    for(count = 0, tt = ss; ; tt++) {
 		if(*tt == NULL)
 		    continue;

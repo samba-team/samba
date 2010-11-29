@@ -135,7 +135,7 @@ loadlib(krb5_context context, char *path)
  * @ingroup krb5_support
  */
 
-krb5_error_code
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_plugin_register(krb5_context context,
 		     enum krb5_plugin_type type,
 		     const char *name,
@@ -179,6 +179,43 @@ krb5_plugin_register(krb5_context context,
     return 0;
 }
 
+static int
+is_valid_plugin_filename(const char * n)
+{
+    if (n[0] == '.' && (n[1] == '\0' || (n[1] == '.' && n[2] == '\0')))
+        return 0;
+
+#ifdef _WIN32
+    /* On Windows, we only attempt to load .dll files as plug-ins. */
+    {
+        const char * ext;
+
+        ext = strrchr(n, '.');
+        if (ext == NULL)
+            return 0;
+
+        return !stricmp(ext, ".dll");
+    }
+#endif
+
+    return 1;
+}
+
+static void
+trim_trailing_slash(char * path)
+{
+    size_t l;
+
+    l = strlen(path);
+    while (l > 0 && (path[l - 1] == '/'
+#ifdef BACKSLASH_PATH_DELIM
+                     || path[l - 1] == '\\'
+#endif
+               )) {
+        path[--l] = '\0';
+    }
+}
+
 static krb5_error_code
 load_plugins(krb5_context context)
 {
@@ -201,28 +238,27 @@ load_plugins(krb5_context context)
 	dirs = rk_UNCONST(sysplugin_dirs);
 
     for (di = dirs; *di != NULL; di++) {
+        char * dir = *di;
+
 #ifdef KRB5_USE_PATH_TOKENS
-	{
-	    char * dir = NULL;
-
-	    if (_krb5_expand_path_tokens(context, *di, &dir))
-		continue;
-	    d = opendir(dir);
-
-	    free(dir);
-	}
-#else
-	d = opendir(*di);
+        if (_krb5_expand_path_tokens(context, *di, &dir))
+            goto next_dir;
 #endif
+
+        trim_trailing_slash(dir);
+
+        d = opendir(dir);
+
 	if (d == NULL)
-	    continue;
+	    goto next_dir;
+
 	rk_cloexec_dir(d);
 
 	while ((entry = readdir(d)) != NULL) {
 	    char *n = entry->d_name;
 
 	    /* skip . and .. */
-	    if (n[0] == '.' && (n[1] == '\0' || (n[1] == '.' && n[2] == '\0')))
+            if (!is_valid_plugin_filename(n))
 		continue;
 
 	    path = NULL;
@@ -231,11 +267,11 @@ load_plugins(krb5_context context)
 	    { /* support loading bundles on MacOS */
 		size_t len = strlen(n);
 		if (len > 7 && strcmp(&n[len - 7],  ".bundle") == 0)
-		    ret = asprintf(&path, "%s/%s/Contents/MacOS/%.*s", *di, n, (int)(len - 7), n);
+		    ret = asprintf(&path, "%s/%s/Contents/MacOS/%.*s", dir, n, (int)(len - 7), n);
 	    }
 #endif
 	    if (ret < 0 || path == NULL)
-		ret = asprintf(&path, "%s/%s", *di, n);
+		ret = asprintf(&path, "%s/%s", dir, n);
 
 	    if (ret < 0 || path == NULL) {
 		ret = ENOMEM;
@@ -254,6 +290,10 @@ load_plugins(krb5_context context)
 	    }
 	}
 	closedir(d);
+
+    next_dir:
+        if (dir != *di)
+            free(dir);
     }
     if (dirs != rk_UNCONST(sysplugin_dirs))
 	krb5_config_free_strings(dirs);

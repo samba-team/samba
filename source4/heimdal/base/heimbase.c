@@ -60,6 +60,10 @@ struct heim_base_mem {
 #define PTR2BASE(ptr) (((struct heim_base *)ptr) - 1)
 #define BASE2PTR(ptr) ((void *)(((struct heim_base *)ptr) + 1))
 
+#ifdef HEIM_BASE_NEED_ATOMIC_MUTEX
+HEIMDAL_MUTEX _heim_base_mutex = HEIMDAL_MUTEX_INITIALIZER;
+#endif
+
 /*
  * Auto release structure
  */
@@ -334,6 +338,8 @@ heim_base_once_f(heim_base_once_t *once, void *ctx, void (*func)(void *))
     } else {
 	HEIMDAL_MUTEX_unlock(&mutex);
 	while (1) {
+	    struct timeval tv = { 0, 1000 };
+	    select(0, NULL, NULL, NULL, &tv);
 	    HEIMDAL_MUTEX_lock(&mutex);
 	    if (*once == 2)
 		break;
@@ -364,13 +370,10 @@ heim_abort(const char *fmt, ...)
 void
 heim_abortv(const char *fmt, va_list ap)
 {
-    char *str = NULL;
-    int ret;
+    static char str[1024];
 
-    ret = vasprintf(&str, fmt, ap);
-    if (ret > 0 && str) {
-	syslog(LOG_ERR, "heim_abort: %s", str);
-    }
+    vsnprintf(str, sizeof(str), fmt, ap);
+    syslog(LOG_ERR, "heim_abort: %s", str);
     abort();
 }
 

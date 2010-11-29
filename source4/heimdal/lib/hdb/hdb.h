@@ -71,6 +71,13 @@ enum hdb_lockop{ HDB_RLOCK, HDB_WLOCK };
 
 typedef struct hdb_master_key_data *hdb_master_key;
 
+/**
+ * hdb_entry_ex is a wrapper structure around the hdb_entry structure
+ * that allows backends to keep a pointer to the backing store, ie in
+ * ->hdb_fetch_kvno(), so that we the kadmin/kpasswd backend gets around to
+ * ->hdb_store(), the backend doesn't need to lookup the entry again.
+ */
+
 typedef struct hdb_entry_ex {
     void *ctx;
     hdb_entry entry;
@@ -121,19 +128,10 @@ typedef struct HDB{
      *
      * Fetch an entry from the backend, flags are what type of entry
      * should be fetch: client, server, krbtgt.
-     */
-    krb5_error_code (*hdb_fetch)(krb5_context, struct HDB*,
-				 krb5_const_principal, unsigned, 
-				 hdb_entry_ex*);
-    /**
-     * Fetch an entry from the backend
-     *
-     * Fetch an entry from the backend, flags are what type of entry
-     * should be fetch: client, server, krbtgt.
      * knvo (if specified and flags HDB_F_KVNO_SPECIFIED set) is the kvno to get
      */
     krb5_error_code (*hdb_fetch_kvno)(krb5_context, struct HDB*,
-				      krb5_const_principal, unsigned, unsigned,
+				      krb5_const_principal, unsigned, krb5_kvno,
 				      hdb_entry_ex*);
     /**
      * Store an entry to database
@@ -222,7 +220,7 @@ typedef struct HDB{
      * all other operations, increasing the kvno, and update
      * modification timestamp.
      * 
-     * The backen need to call _kadm5_set_keys() and perform password
+     * The backend needs to call _kadm5_set_keys() and perform password
      * quality checks.
      */
     krb5_error_code (*hdb_password)(krb5_context, struct HDB*, hdb_entry_ex*, const char *, int);
@@ -238,7 +236,7 @@ typedef struct HDB{
      */
     krb5_error_code (*hdb_auth_status)(krb5_context, struct HDB *, hdb_entry_ex *, int);
     /**
-     * Check is delegation is allowed.
+     * Check if delegation is allowed.
      */
     krb5_error_code (*hdb_check_constrained_delegation)(krb5_context, struct HDB *, hdb_entry_ex *, krb5_const_principal);
 

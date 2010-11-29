@@ -455,7 +455,7 @@ heim_ntlm_decode_targetinfo(const struct ntlm_buf *data,
 {
     uint16_t type, len;
     krb5_storage *in;
-    int ret, done = 0;
+    int ret = 0, done = 0;
 
     memset(ti, 0, sizeof(*ti));
 
@@ -855,23 +855,23 @@ heim_ntlm_decode_type3(const struct ntlm_buf *buf,
     CHECK(type, 3);
     CHECK(ret_sec_buffer(in, &lm), 0);
     if (lm.allocated)
-	min_offset = MIN(min_offset, lm.offset);
+	min_offset = min(min_offset, lm.offset);
     CHECK(ret_sec_buffer(in, &ntlm), 0);
     if (ntlm.allocated)
-	min_offset = MIN(min_offset, ntlm.offset);
+	min_offset = min(min_offset, ntlm.offset);
     CHECK(ret_sec_buffer(in, &target), 0);
     if (target.allocated)
-	min_offset = MIN(min_offset, target.offset);
+	min_offset = min(min_offset, target.offset);
     CHECK(ret_sec_buffer(in, &username), 0);
     if (username.allocated)
-	min_offset = MIN(min_offset, username.offset);
+	min_offset = min(min_offset, username.offset);
     CHECK(ret_sec_buffer(in, &ws), 0);
     if (ws.allocated)
-	min_offset = MIN(min_offset, ws.offset);
+	min_offset = min(min_offset, ws.offset);
 
     if (min_offset > 52) {
 	CHECK(ret_sec_buffer(in, &sessionkey), 0);
-	min_offset = MAX(min_offset, sessionkey.offset);
+	min_offset = max(min_offset, sessionkey.offset);
 	CHECK(krb5_ret_uint32(in, &type3->flags), 0);
     }
     if (min_offset > 52 + 8 + 4 + 8) {
@@ -1290,8 +1290,7 @@ heim_ntlm_build_ntlm2_master(void *key, size_t len,
 /**
  * Given a key and encrypted session, unwrap the session key
  *
- * @param key the sessionBaseKey
- * @param len length of key
+ * @param baseKey the sessionBaseKey
  * @param encryptedSession encrypted session, type3.session field.
  * @param session generated session nonce, should be freed with heim_ntlm_free_buf().
  *
@@ -1413,7 +1412,6 @@ nt2unixtime(uint64_t t)
  * @param username name of the user, as sent in the message, assumed to be in UTF8.
  * @param target the name of the target, assumed to be in UTF8.
  * @param serverchallenge challenge as sent by the server in the type2 message.
- * @param infotarget infotarget as sent by the server in the type2 message.
  * @param ntlmv2 calculated session key
  * @param answer ntlm response answer, should be freed with heim_ntlm_free_buf().
  *

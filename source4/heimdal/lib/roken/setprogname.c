@@ -40,19 +40,52 @@ extern const char *__progname;
 #endif
 
 #ifndef HAVE_SETPROGNAME
+
 ROKEN_LIB_FUNCTION void ROKEN_LIB_CALL
 setprogname(const char *argv0)
 {
+
 #ifndef HAVE___PROGNAME
+
     const char *p;
     if(argv0 == NULL)
 	return;
     p = strrchr(argv0, '/');
+
+#ifdef BACKSLASH_PATH_DELIM
+    {
+        const char * pb;
+
+        pb = strrchr((p != NULL)? p : argv0, '\\');
+        if (pb != NULL)
+            p = pb;
+    }
+#endif
+
     if(p == NULL)
 	p = argv0;
     else
 	p++;
+
+#ifdef _WIN32
+    {
+        char * fn = strdup(p);
+        char * ext;
+
+        strlwr(fn);
+        ext = strrchr(fn, '.');
+        if (ext != NULL && !strcmp(ext, ".exe"))
+            *ext = '\0';
+
+        __progname = fn;
+    }
+#else
+
     __progname = p;
+
 #endif
+
+#endif  /* HAVE___PROGNAME */
 }
+
 #endif /* HAVE_SETPROGNAME */

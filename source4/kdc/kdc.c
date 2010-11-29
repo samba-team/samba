@@ -631,11 +631,12 @@ static NTSTATUS kdc_check_generic_kerberos(struct irpc_message *msg,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	ret = kdc->config->db[0]->hdb_fetch(kdc->smb_krb5_context->krb5_context,
-					    kdc->config->db[0],
-					    principal,
-					    HDB_F_GET_KRBTGT | HDB_F_DECRYPT,
-					    &ent);
+	ret = kdc->config->db[0]->hdb_fetch_kvno(kdc->smb_krb5_context->krb5_context,
+						 kdc->config->db[0],
+						 principal,
+						 HDB_F_GET_KRBTGT | HDB_F_DECRYPT,
+						 0,
+						 &ent);
 	
 	if (ret != 0) {
 		hdb_free_entry(kdc->smb_krb5_context->krb5_context, &ent);

@@ -96,21 +96,6 @@ static krb5_error_code hdb_samba4_fetch_kvno(krb5_context context, HDB *db,
 	return samba_kdc_fetch(context, kdc_db_ctx, principal, flags, kvno, entry_ex);
 }
 
-static krb5_error_code hdb_samba4_fetch(krb5_context context, HDB *db,
-					krb5_const_principal principal,
-					unsigned flags,
-					hdb_entry_ex *entry_ex)
-{
-	struct samba_kdc_db_context *kdc_db_ctx;
-
-	flags &= ~HDB_F_KVNO_SPECIFIED;
-
-	kdc_db_ctx = talloc_get_type_abort(db->hdb_db,
-					   struct samba_kdc_db_context);
-
-	return samba_kdc_fetch(context, kdc_db_ctx, principal, flags, 0, entry_ex);
-}
-
 static krb5_error_code hdb_samba4_firstkey(krb5_context context, HDB *db, unsigned flags,
 					hdb_entry_ex *entry)
 {
@@ -200,7 +185,6 @@ NTSTATUS hdb_samba4_create_kdc(struct samba_kdc_base_context *base_ctx,
 	(*db)->hdb_dbc = NULL;
 	(*db)->hdb_open = hdb_samba4_open;
 	(*db)->hdb_close = hdb_samba4_close;
-	(*db)->hdb_fetch = hdb_samba4_fetch;
 	(*db)->hdb_fetch_kvno = hdb_samba4_fetch_kvno;
 	(*db)->hdb_store = hdb_samba4_store;
 	(*db)->hdb_remove = hdb_samba4_remove;

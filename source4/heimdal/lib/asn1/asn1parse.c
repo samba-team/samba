@@ -8,17 +8,29 @@ static const char yysccsid[] = "@(#)yaccpar	1.9 (Berkeley) 02/21/93";
 #define YYBYACC 1
 #define YYMAJOR 1
 #define YYMINOR 9
-#define YYPATCH 20070509
+#define YYPATCH 20100216
 
-#define YYEMPTY (-1)
-#define yyclearin    (yychar = YYEMPTY)
-#define yyerrok      (yyerrflag = 0)
-#define YYRECOVERING (yyerrflag != 0)
+#define YYEMPTY        (-1)
+#define yyclearin      (yychar = YYEMPTY)
+#define yyerrok        (yyerrflag = 0)
+#define YYRECOVERING() (yyerrflag != 0)
 
-extern int yyparse(void);
-
-static int yygrowstack(void);
 #define YYPREFIX "yy"
+
+/* compatibility with bison */
+#ifdef YYPARSE_PARAM
+/* compatibility with FreeBSD */
+#ifdef YYPARSE_PARAM_TYPE
+#define YYPARSE_DECL() yyparse(YYPARSE_PARAM_TYPE YYPARSE_PARAM)
+#else
+#define YYPARSE_DECL() yyparse(void *YYPARSE_PARAM)
+#endif
+#else
+#define YYPARSE_DECL() yyparse(void)
+#endif /* YYPARSE_PARAM */
+
+extern int YYPARSE_DECL();
+
 #line 39 ""
 
 #include <config.h>
@@ -46,7 +58,11 @@ struct string_list {
     struct string_list *next;
 };
 
-#line 67 ""
+/* Declarations for Bison */
+#define YYMALLOC malloc
+#define YYFREE   free
+
+#line 71 ""
 typedef union {
     int constant;
     struct value *value;
@@ -61,7 +77,7 @@ typedef union {
     struct memhead *members;
     struct constraint_spec *constraint_spec;
 } YYSTYPE;
-#line 65 ""
+#line 80 ""
 #define kw_ABSENT 257
 #define kw_ABSTRACT_SYNTAX 258
 #define kw_ALL 259
@@ -150,7 +166,7 @@ typedef union {
 #define STRING 342
 #define NUMBER 343
 #define YYERRCODE 256
-short yylhs[] = {                                        -1,
+static const short yylhs[] = {                           -1,
     0,   56,   56,   56,   56,   57,   57,   58,   58,   60,
    60,   62,   62,   63,   63,   64,   59,   59,   59,   61,
    61,   65,   65,   50,   50,   66,   14,   14,   14,   15,
@@ -166,7 +182,7 @@ short yylhs[] = {                                        -1,
    46,   46,    4,    4,    5,    5,    5,    5,    5,   12,
    11,   13,    9,    7,    7,    6,    1,   10,    8,
 };
-short yylen[] = {                                         2,
+static const short yylen[] = {                            2,
     9,    2,    2,    2,    0,    2,    0,    3,    0,    3,
     0,    1,    0,    1,    2,    4,    3,    2,    0,    1,
     2,    1,    1,    3,    1,    3,    1,    1,    1,    1,
@@ -182,7 +198,7 @@ short yylen[] = {                                         2,
     1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
     1,    1,    1,    1,    1,    1,    1,    1,    1,
 };
-short yydefred[] = {                                      0,
+static const short yydefred[] = {                         0,
     0,    0,    0,  115,    0,    0,  122,    0,    0,    0,
     0,  117,  119,    0,    0,    0,    0,    0,    4,    2,
     3,    0,    0,  120,    6,    0,    0,    0,    0,    0,
@@ -206,7 +222,7 @@ short yydefred[] = {                                      0,
    54,   53,    0,    0,    0,    0,    0,   83,    0,  113,
    55,   47,   46,   45,   85,    0,  114,   84,
 };
-short yydgoto[] = {                                       2,
+static const short yydgoto[] = {                          2,
   140,  116,  122,  141,  142,  143,  144,  145,  146,  147,
   148,  149,  150,   75,   76,   77,   78,   79,   80,   81,
    82,   83,   84,   85,   86,   87,   88,   89,   90,   91,
@@ -215,7 +231,7 @@ short yydgoto[] = {                                       2,
   119,  166,  167,  168,  169,   17,   23,   29,   30,   36,
    44,   40,   41,   42,   45,   46,   47,
 };
-short yysindex[] = {                                   -295,
+static const short yysindex[] = {                      -295,
   -74,    0, -289,    0, -216,   23,    0,  -61, -289, -221,
  -277,    0,    0, -259, -257, -256, -214,   31,    0,    0,
     0, -220, -264,    0,    0, -187, -206, -232, -201, -213,
@@ -239,7 +255,7 @@ short yysindex[] = {                                   -295,
     0,    0,  105,  106,  107,   24, -115,    0,  109,    0,
     0,    0,    0,    0,    0,   -4,    0,    0,
 };
-short yyrindex[] = {                                      0,
+static const short yyrindex[] = {                         0,
  -123,    0,   28,    0,    0, -110,    0,    0,   28, -245,
     0,    0,    0,    0,    0,    0, -183,    0,    0,    0,
     0,    0,    0,    0,    0,    0, -248,    0,    0, -182,
@@ -263,7 +279,7 @@ short yyrindex[] = {                                      0,
     0,    0,    0,    0,    0,    0,    0,    0,    0,    0,
     0,    0,    0,    0,    0,    0,    0,    0,
 };
-short yygindex[] = {                                      0,
+static const short yygindex[] = {                         0,
   -14,    0,    0,  -95,    0,    0,    0,    0,    0,    0,
     0,    0,    0,  -31,    0,    0,    0,    0,    0,    0,
     0,    0,    0,    0,    0,    0,    0,    0,    0,    0,
@@ -273,7 +289,7 @@ short yygindex[] = {                                      0,
   128,    0,    0,  133,    0,    0,    0,
 };
 #define YYTABLESIZE 509
-short yytable[] = {                                      58,
+static const short yytable[] = {                         58,
    58,  108,  118,   58,   63,   63,    3,  184,   63,  116,
    49,  111,  118,   49,  121,   70,  108,   25,   70,  155,
    86,  162,    4,   86,  159,   67,   31,  102,   67,    9,
@@ -326,7 +342,7 @@ short yytable[] = {                                      58,
     0,    0,    0,    0,    0,   92,    0,    0,    0,   92,
    92,   92,    0,   92,    0,    0,    0,    0,   92,
 };
-short yycheck[] = {                                      40,
+static const short yycheck[] = {                         40,
    41,   44,   40,   44,   40,   41,  123,   41,   44,   59,
    41,  123,   40,   44,  125,   41,  123,   59,   44,  125,
    41,  117,    1,   44,  125,   41,  259,   40,   44,  278,
@@ -385,7 +401,8 @@ short yycheck[] = {                                      40,
 #endif
 #define YYMAXTOKEN 343
 #if YYDEBUG
-char *yyname[] = {
+static const char *yyname[] = {
+
 "end-of-file",0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 0,0,0,0,0,0,"'('","')'",0,0,"','",0,0,0,0,0,0,0,0,0,0,0,0,0,0,"';'",0,0,0,0,0,0,
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,"'['",0,"']'",0,0,0,0,0,0,0,0,
@@ -411,7 +428,7 @@ char *yyname[] = {
 "kw_VideotexString","kw_VisibleString","kw_WITH","RANGE","EEQUAL","ELLIPSIS",
 "IDENTIFIER","referencename","STRING","NUMBER",
 };
-char *yyrule[] = {
+static const char *yyrule[] = {
 "$accept : ModuleDefinition",
 "ModuleDefinition : IDENTIFIER objid_opt kw_DEFINITIONS TagDefault ExtensionDefault EEQUAL kw_BEGIN ModuleBody kw_END",
 "TagDefault : kw_EXPLICIT kw_TAGS",
@@ -552,6 +569,7 @@ char *yyrule[] = {
 "SignedNumber : NUMBER",
 "NullValue : kw_NULL",
 "ObjectIdentifierValue : objid",
+
 };
 #endif
 #if YYDEBUG
@@ -575,19 +593,26 @@ char *yyrule[] = {
 
 int      yydebug;
 int      yynerrs;
+
+typedef struct {
+    unsigned stacksize;
+    short    *s_base;
+    short    *s_mark;
+    short    *s_last;
+    YYSTYPE  *l_base;
+    YYSTYPE  *l_mark;
+} YYSTACKDATA;
+
+#define YYPURE 0
+
 int      yyerrflag;
 int      yychar;
-short   *yyssp;
-YYSTYPE *yyvsp;
 YYSTYPE  yyval;
 YYSTYPE  yylval;
 
 /* variables for the parser stack */
-static short   *yyss;
-static short   *yysslim;
-static YYSTYPE *yyvs;
-static int      yystacksize;
-#line 941 ""
+static YYSTACKDATA yystack;
+#line 945 ""
 
 void
 yyerror (const char *s)
@@ -681,53 +706,68 @@ fix_labels(Symbol *s)
     fix_labels2(s->type, p);
     free(p);
 }
-#line 685 ""
+#line 709 ""
 /* allocate initial stack or double stack size, up to YYMAXDEPTH */
-static int yygrowstack(void)
+static int yygrowstack(YYSTACKDATA *data)
 {
-    int newsize, i;
+    int i;
+    unsigned newsize;
     short *newss;
     YYSTYPE *newvs;
 
-    if ((newsize = yystacksize) == 0)
+    if ((newsize = data->stacksize) == 0)
         newsize = YYINITSTACKSIZE;
     else if (newsize >= YYMAXDEPTH)
         return -1;
     else if ((newsize *= 2) > YYMAXDEPTH)
         newsize = YYMAXDEPTH;
 
-    i = yyssp - yyss;
-    newss = (yyss != 0)
-          ? (short *)realloc(yyss, newsize * sizeof(*newss))
+    i = data->s_mark - data->s_base;
+    newss = (data->s_base != 0)
+          ? (short *)realloc(data->s_base, newsize * sizeof(*newss))
           : (short *)malloc(newsize * sizeof(*newss));
     if (newss == 0)
         return -1;
 
-    yyss  = newss;
-    yyssp = newss + i;
-    newvs = (yyvs != 0)
-          ? (YYSTYPE *)realloc(yyvs, newsize * sizeof(*newvs))
+    data->s_base  = newss;
+    data->s_mark = newss + i;
+
+    newvs = (data->l_base != 0)
+          ? (YYSTYPE *)realloc(data->l_base, newsize * sizeof(*newvs))
           : (YYSTYPE *)malloc(newsize * sizeof(*newvs));
     if (newvs == 0)
         return -1;
 
-    yyvs = newvs;
-    yyvsp = newvs + i;
-    yystacksize = newsize;
-    yysslim = yyss + newsize - 1;
+    data->l_base = newvs;
+    data->l_mark = newvs + i;
+
+    data->stacksize = newsize;
+    data->s_last = data->s_base + newsize - 1;
     return 0;
 }
 
-#define YYABORT goto yyabort
+#if YYPURE || defined(YY_NO_LEAKS)
+static void yyfreestack(YYSTACKDATA *data)
+{
+    free(data->s_base);
+    free(data->l_base);
+    memset(data, 0, sizeof(*data));
+}
+#else
+#define yyfreestack(data) /* nothing */
+#endif
+
+#define YYABORT  goto yyabort
 #define YYREJECT goto yyabort
 #define YYACCEPT goto yyaccept
-#define YYERROR goto yyerrlab
+#define YYERROR  goto yyerrlab
+
 int
-yyparse(void)
+YYPARSE_DECL()
 {
-    register int yym, yyn, yystate;
+    int yym, yyn, yystate;
 #if YYDEBUG
-    register const char *yys;
+    const char *yys;
 
     if ((yys = getenv("YYDEBUG")) != 0)
     {
@@ -740,11 +780,17 @@ yyparse(void)
     yynerrs = 0;
     yyerrflag = 0;
     yychar = YYEMPTY;
+    yystate = 0;
 
-    if (yyss == NULL && yygrowstack()) goto yyoverflow;
-    yyssp = yyss;
-    yyvsp = yyvs;
-    *yyssp = yystate = 0;
+#if YYPURE
+    memset(&yystack, 0, sizeof(yystack));
+#endif
+
+    if (yystack.s_base == NULL && yygrowstack(&yystack)) goto yyoverflow;
+    yystack.s_mark = yystack.s_base;
+    yystack.l_mark = yystack.l_base;
+    yystate = 0;
+    *yystack.s_mark = 0;
 
 yyloop:
     if ((yyn = yydefred[yystate]) != 0) goto yyreduce;
@@ -770,12 +816,13 @@ yyloop:
             printf("%sdebug: state %d, shifting to state %d\n",
                     YYPREFIX, yystate, yytable[yyn]);
 #endif
-        if (yyssp >= yysslim && yygrowstack())
+        if (yystack.s_mark >= yystack.s_last && yygrowstack(&yystack))
         {
             goto yyoverflow;
         }
-        *++yyssp = yystate = yytable[yyn];
-        *++yyvsp = yylval;
+        yystate = yytable[yyn];
+        *++yystack.s_mark = yytable[yyn];
+        *++yystack.l_mark = yylval;
         yychar = YYEMPTY;
         if (yyerrflag > 0)  --yyerrflag;
         goto yyloop;
@@ -790,9 +837,7 @@ yyloop:
 
     yyerror("syntax error");
 
-#ifdef lint
     goto yyerrlab;
-#endif
 
 yyerrlab:
     ++yynerrs;
@@ -803,20 +848,21 @@ yyinrecovery:
         yyerrflag = 3;
         for (;;)
         {
-            if ((yyn = yysindex[*yyssp]) && (yyn += YYERRCODE) >= 0 &&
+            if ((yyn = yysindex[*yystack.s_mark]) && (yyn += YYERRCODE) >= 0 &&
                     yyn <= YYTABLESIZE && yycheck[yyn] == YYERRCODE)
             {
 #if YYDEBUG
                 if (yydebug)
                     printf("%sdebug: state %d, error recovery shifting\
- to state %d\n", YYPREFIX, *yyssp, yytable[yyn]);
+ to state %d\n", YYPREFIX, *yystack.s_mark, yytable[yyn]);
 #endif
-                if (yyssp >= yysslim && yygrowstack())
+                if (yystack.s_mark >= yystack.s_last && yygrowstack(&yystack))
                 {
                     goto yyoverflow;
                 }
-                *++yyssp = yystate = yytable[yyn];
-                *++yyvsp = yylval;
+                yystate = yytable[yyn];
+                *++yystack.s_mark = yytable[yyn];
+                *++yystack.l_mark = yylval;
                 goto yyloop;
             }
             else
@@ -824,11 +870,11 @@ yyinrecovery:
 #if YYDEBUG
                 if (yydebug)
                     printf("%sdebug: error recovery discarding state %d\n",
-                            YYPREFIX, *yyssp);
+                            YYPREFIX, *yystack.s_mark);
 #endif
-                if (yyssp <= yyss) goto yyabort;
-                --yyssp;
-                --yyvsp;
+                if (yystack.s_mark <= yystack.s_base) goto yyabort;
+                --yystack.s_mark;
+                --yystack.l_mark;
             }
         }
     }
@@ -857,190 +903,190 @@ yyreduce:
 #endif
     yym = yylen[yyn];
     if (yym)
-        yyval = yyvsp[1-yym];
+        yyval = yystack.l_mark[1-yym];
     else
         memset(&yyval, 0, sizeof yyval);
     switch (yyn)
     {
 case 1:
-#line 237 ""
-{
+#line 241 ""
+	{
 			checkundefined();
 		}
 break;
 case 3:
-#line 244 ""
-{ lex_error_message("implicit tagging is not supported"); }
+#line 248 ""
+	{ lex_error_message("implicit tagging is not supported"); }
 break;
 case 4:
-#line 246 ""
-{ lex_error_message("automatic tagging is not supported"); }
+#line 250 ""
+	{ lex_error_message("automatic tagging is not supported"); }
 break;
 case 6:
-#line 251 ""
-{ lex_error_message("no extensibility options supported"); }
+#line 255 ""
+	{ lex_error_message("no extensibility options supported"); }
 break;
 case 16:
-#line 272 ""
-{
+#line 276 ""
+	{
 		    struct string_list *sl;
-		    for(sl = yyvsp[-3].sl; sl != NULL; sl = sl->next) {
+		    for(sl = yystack.l_mark[-3].sl; sl != NULL; sl = sl->next) {
 			Symbol *s = addsym(sl->string);
 			s->stype = Stype;
 			gen_template_import(s);
 		    }
-		    add_import(yyvsp[-1].name);
+		    add_import(yystack.l_mark[-1].name);
 		}
 break;
 case 17:
-#line 284 ""
-{
+#line 288 ""
+	{
 		    struct string_list *sl;
-		    for(sl = yyvsp[-1].sl; sl != NULL; sl = sl->next)
+		    for(sl = yystack.l_mark[-1].sl; sl != NULL; sl = sl->next)
 			add_export(sl->string);
 		}
 break;
 case 24:
-#line 302 ""
-{
+#line 306 ""
+	{
 		    yyval.sl = emalloc(sizeof(*yyval.sl));
-		    yyval.sl->string = yyvsp[-2].name;
-		    yyval.sl->next = yyvsp[0].sl;
+		    yyval.sl->string = yystack.l_mark[-2].name;
+		    yyval.sl->next = yystack.l_mark[0].sl;
 		}
 break;
 case 25:
-#line 308 ""
-{
+#line 312 ""
+	{
 		    yyval.sl = emalloc(sizeof(*yyval.sl));
-		    yyval.sl->string = yyvsp[0].name;
+		    yyval.sl->string = yystack.l_mark[0].name;
 		    yyval.sl->next = NULL;
 		}
 break;
 case 26:
-#line 316 ""
-{
-		    Symbol *s = addsym (yyvsp[-2].name);
+#line 320 ""
+	{
+		    Symbol *s = addsym (yystack.l_mark[-2].name);
 		    s->stype = Stype;
-		    s->type = yyvsp[0].type;
+		    s->type = yystack.l_mark[0].type;
 		    fix_labels(s);
 		    generate_type (s);
 		}
 break;
 case 44:
-#line 347 ""
-{
+#line 351 ""
+	{
 			yyval.type = new_tag(ASN1_C_UNIV, UT_Boolean,
 				     TE_EXPLICIT, new_type(TBoolean));
 		}
 break;
 case 45:
-#line 354 ""
-{
-		    if(yyvsp[-3].value->type != integervalue)
+#line 358 ""
+	{
+		    if(yystack.l_mark[-3].value->type != integervalue)
 			lex_error_message("Non-integer used in first part of range");
-		    if(yyvsp[-3].value->type != integervalue)
+		    if(yystack.l_mark[-3].value->type != integervalue)
 			lex_error_message("Non-integer in second part of range");
 		    yyval.range = ecalloc(1, sizeof(*yyval.range));
-		    yyval.range->min = yyvsp[-3].value->u.integervalue;
-		    yyval.range->max = yyvsp[-1].value->u.integervalue;
+		    yyval.range->min = yystack.l_mark[-3].value->u.integervalue;
+		    yyval.range->max = yystack.l_mark[-1].value->u.integervalue;
 		}
 break;
 case 46:
-#line 364 ""
-{
-		    if(yyvsp[-3].value->type != integervalue)
+#line 368 ""
+	{
+		    if(yystack.l_mark[-3].value->type != integervalue)
 			lex_error_message("Non-integer in first part of range");
 		    yyval.range = ecalloc(1, sizeof(*yyval.range));
-		    yyval.range->min = yyvsp[-3].value->u.integervalue;
-		    yyval.range->max = yyvsp[-3].value->u.integervalue - 1;
+		    yyval.range->min = yystack.l_mark[-3].value->u.integervalue;
+		    yyval.range->max = yystack.l_mark[-3].value->u.integervalue - 1;
 		}
 break;
 case 47:
-#line 372 ""
-{
-		    if(yyvsp[-1].value->type != integervalue)
+#line 376 ""
+	{
+		    if(yystack.l_mark[-1].value->type != integervalue)
 			lex_error_message("Non-integer in second part of range");
 		    yyval.range = ecalloc(1, sizeof(*yyval.range));
-		    yyval.range->min = yyvsp[-1].value->u.integervalue + 2;
-		    yyval.range->max = yyvsp[-1].value->u.integervalue;
+		    yyval.range->min = yystack.l_mark[-1].value->u.integervalue + 2;
+		    yyval.range->max = yystack.l_mark[-1].value->u.integervalue;
 		}
 break;
 case 48:
-#line 380 ""
-{
-		    if(yyvsp[-1].value->type != integervalue)
+#line 384 ""
+	{
+		    if(yystack.l_mark[-1].value->type != integervalue)
 			lex_error_message("Non-integer used in limit");
 		    yyval.range = ecalloc(1, sizeof(*yyval.range));
-		    yyval.range->min = yyvsp[-1].value->u.integervalue;
-		    yyval.range->max = yyvsp[-1].value->u.integervalue;
+		    yyval.range->min = yystack.l_mark[-1].value->u.integervalue;
+		    yyval.range->max = yystack.l_mark[-1].value->u.integervalue;
 		}
 break;
 case 49:
-#line 391 ""
-{
+#line 395 ""
+	{
 			yyval.type = new_tag(ASN1_C_UNIV, UT_Integer,
 				     TE_EXPLICIT, new_type(TInteger));
 		}
 break;
 case 50:
-#line 396 ""
-{
+#line 400 ""
+	{
 			yyval.type = new_type(TInteger);
-			yyval.type->range = yyvsp[0].range;
+			yyval.type->range = yystack.l_mark[0].range;
 			yyval.type = new_tag(ASN1_C_UNIV, UT_Integer, TE_EXPLICIT, yyval.type);
 		}
 break;
 case 51:
-#line 402 ""
-{
+#line 406 ""
+	{
 		  yyval.type = new_type(TInteger);
-		  yyval.type->members = yyvsp[-1].members;
+		  yyval.type->members = yystack.l_mark[-1].members;
 		  yyval.type = new_tag(ASN1_C_UNIV, UT_Integer, TE_EXPLICIT, yyval.type);
 		}
 break;
 case 52:
-#line 410 ""
-{
+#line 414 ""
+	{
 			yyval.members = emalloc(sizeof(*yyval.members));
 			ASN1_TAILQ_INIT(yyval.members);
-			ASN1_TAILQ_INSERT_HEAD(yyval.members, yyvsp[0].member, members);
+			ASN1_TAILQ_INSERT_HEAD(yyval.members, yystack.l_mark[0].member, members);
 		}
 break;
 case 53:
-#line 416 ""
-{
-			ASN1_TAILQ_INSERT_TAIL(yyvsp[-2].members, yyvsp[0].member, members);
-			yyval.members = yyvsp[-2].members;
+#line 420 ""
+	{
+			ASN1_TAILQ_INSERT_TAIL(yystack.l_mark[-2].members, yystack.l_mark[0].member, members);
+			yyval.members = yystack.l_mark[-2].members;
 		}
 break;
 case 54:
-#line 421 ""
-{ yyval.members = yyvsp[-2].members; }
+#line 425 ""
+	{ yyval.members = yystack.l_mark[-2].members; }
 break;
 case 55:
-#line 425 ""
-{
+#line 429 ""
+	{
 			yyval.member = emalloc(sizeof(*yyval.member));
-			yyval.member->name = yyvsp[-3].name;
-			yyval.member->gen_name = estrdup(yyvsp[-3].name);
+			yyval.member->name = yystack.l_mark[-3].name;
+			yyval.member->gen_name = estrdup(yystack.l_mark[-3].name);
 			output_name (yyval.member->gen_name);
-			yyval.member->val = yyvsp[-1].constant;
+			yyval.member->val = yystack.l_mark[-1].constant;
 			yyval.member->optional = 0;
 			yyval.member->ellipsis = 0;
 			yyval.member->type = NULL;
 		}
 break;
 case 56:
-#line 438 ""
-{
+#line 442 ""
+	{
 		  yyval.type = new_type(TInteger);
-		  yyval.type->members = yyvsp[-1].members;
+		  yyval.type->members = yystack.l_mark[-1].members;
 		  yyval.type = new_tag(ASN1_C_UNIV, UT_Enumerated, TE_EXPLICIT, yyval.type);
 		}
 break;
 case 58:
-#line 449 ""
-{
+#line 453 ""
+	{
 		  yyval.type = new_type(TBitString);
 		  yyval.type->members = emalloc(sizeof(*yyval.type->members));
 		  ASN1_TAILQ_INIT(yyval.type->members);
@@ -1048,128 +1094,128 @@ case 58:
 		}
 break;
 case 59:
-#line 456 ""
-{
+#line 460 ""
+	{
 		  yyval.type = new_type(TBitString);
-		  yyval.type->members = yyvsp[-1].members;
+		  yyval.type->members = yystack.l_mark[-1].members;
 		  yyval.type = new_tag(ASN1_C_UNIV, UT_BitString, TE_EXPLICIT, yyval.type);
 		}
 break;
 case 60:
-#line 464 ""
-{
+#line 468 ""
+	{
 			yyval.type = new_tag(ASN1_C_UNIV, UT_OID,
 				     TE_EXPLICIT, new_type(TOID));
 		}
 break;
 case 61:
-#line 470 ""
-{
+#line 474 ""
+	{
 		    Type *t = new_type(TOctetString);
-		    t->range = yyvsp[0].range;
+		    t->range = yystack.l_mark[0].range;
 		    yyval.type = new_tag(ASN1_C_UNIV, UT_OctetString,
 				 TE_EXPLICIT, t);
 		}
 break;
 case 62:
-#line 479 ""
-{
+#line 483 ""
+	{
 			yyval.type = new_tag(ASN1_C_UNIV, UT_Null,
 				     TE_EXPLICIT, new_type(TNull));
 		}
 break;
 case 63:
-#line 486 ""
-{ yyval.range = NULL; }
+#line 490 ""
+	{ yyval.range = NULL; }
 break;
 case 64:
-#line 488 ""
-{ yyval.range = yyvsp[0].range; }
+#line 492 ""
+	{ yyval.range = yystack.l_mark[0].range; }
 break;
 case 65:
-#line 493 ""
-{
+#line 497 ""
+	{
 		  yyval.type = new_type(TSequence);
-		  yyval.type->members = yyvsp[-1].members;
+		  yyval.type->members = yystack.l_mark[-1].members;
 		  yyval.type = new_tag(ASN1_C_UNIV, UT_Sequence, TE_EXPLICIT, yyval.type);
 		}
 break;
 case 66:
-#line 499 ""
-{
+#line 503 ""
+	{
 		  yyval.type = new_type(TSequence);
 		  yyval.type->members = NULL;
 		  yyval.type = new_tag(ASN1_C_UNIV, UT_Sequence, TE_EXPLICIT, yyval.type);
 		}
 break;
 case 67:
-#line 507 ""
-{
+#line 511 ""
+	{
 		  yyval.type = new_type(TSequenceOf);
-		  yyval.type->range = yyvsp[-2].range;
-		  yyval.type->subtype = yyvsp[0].type;
+		  yyval.type->range = yystack.l_mark[-2].range;
+		  yyval.type->subtype = yystack.l_mark[0].type;
 		  yyval.type = new_tag(ASN1_C_UNIV, UT_Sequence, TE_EXPLICIT, yyval.type);
 		}
 break;
 case 68:
-#line 516 ""
-{
+#line 520 ""
+	{
 		  yyval.type = new_type(TSet);
-		  yyval.type->members = yyvsp[-1].members;
+		  yyval.type->members = yystack.l_mark[-1].members;
 		  yyval.type = new_tag(ASN1_C_UNIV, UT_Set, TE_EXPLICIT, yyval.type);
 		}
 break;
 case 69:
-#line 522 ""
-{
+#line 526 ""
+	{
 		  yyval.type = new_type(TSet);
 		  yyval.type->members = NULL;
 		  yyval.type = new_tag(ASN1_C_UNIV, UT_Set, TE_EXPLICIT, yyval.type);
 		}
 break;
 case 70:
-#line 530 ""
-{
+#line 534 ""
+	{
 		  yyval.type = new_type(TSetOf);
-		  yyval.type->subtype = yyvsp[0].type;
+		  yyval.type->subtype = yystack.l_mark[0].type;
 		  yyval.type = new_tag(ASN1_C_UNIV, UT_Set, TE_EXPLICIT, yyval.type);
 		}
 break;
 case 71:
-#line 538 ""
-{
+#line 542 ""
+	{
 		  yyval.type = new_type(TChoice);
-		  yyval.type->members = yyvsp[-1].members;
+		  yyval.type->members = yystack.l_mark[-1].members;
 		}
 break;
 case 74:
-#line 549 ""
-{
-		  Symbol *s = addsym(yyvsp[0].name);
+#line 553 ""
+	{
+		  Symbol *s = addsym(yystack.l_mark[0].name);
 		  yyval.type = new_type(TType);
 		  if(s->stype != Stype && s->stype != SUndefined)
-		    lex_error_message ("%s is not a type\n", yyvsp[0].name);
+		    lex_error_message ("%s is not a type\n", yystack.l_mark[0].name);
 		  else
 		    yyval.type->symbol = s;
 		}
 break;
 case 75:
-#line 560 ""
-{
+#line 564 ""
+	{
 			yyval.type = new_tag(ASN1_C_UNIV, UT_GeneralizedTime,
 				     TE_EXPLICIT, new_type(TGeneralizedTime));
 		}
 break;
 case 76:
-#line 565 ""
-{
+#line 569 ""
+	{
 			yyval.type = new_tag(ASN1_C_UNIV, UT_UTCTime,
 				     TE_EXPLICIT, new_type(TUTCTime));
 		}
 break;
 case 77:
-#line 572 ""
-{
+#line 576 ""
+	{
 		    /* if (Constraint.type == contentConstrant) {
 		       assert(Constraint.u.constraint.type == octetstring|bitstring-w/o-NamedBitList); // remember to check type reference too
 		       if (Constraint.u.constraint.type) {
@@ -1183,301 +1229,301 @@ case 77:
 		}
 break;
 case 78:
-#line 588 ""
-{
-		    yyval.constraint_spec = yyvsp[-1].constraint_spec;
+#line 592 ""
+	{
+		    yyval.constraint_spec = yystack.l_mark[-1].constraint_spec;
 		}
 break;
 case 82:
-#line 601 ""
-{
+#line 605 ""
+	{
 		    yyval.constraint_spec = new_constraint_spec(CT_CONTENTS);
-		    yyval.constraint_spec->u.content.type = yyvsp[0].type;
+		    yyval.constraint_spec->u.content.type = yystack.l_mark[0].type;
 		    yyval.constraint_spec->u.content.encoding = NULL;
 		}
 break;
 case 83:
-#line 607 ""
-{
-		    if (yyvsp[0].value->type != objectidentifiervalue)
+#line 611 ""
+	{
+		    if (yystack.l_mark[0].value->type != objectidentifiervalue)
 			lex_error_message("Non-OID used in ENCODED BY constraint");
 		    yyval.constraint_spec = new_constraint_spec(CT_CONTENTS);
 		    yyval.constraint_spec->u.content.type = NULL;
-		    yyval.constraint_spec->u.content.encoding = yyvsp[0].value;
+		    yyval.constraint_spec->u.content.encoding = yystack.l_mark[0].value;
 		}
 break;
 case 84:
-#line 615 ""
-{
-		    if (yyvsp[0].value->type != objectidentifiervalue)
+#line 619 ""
+	{
+		    if (yystack.l_mark[0].value->type != objectidentifiervalue)
 			lex_error_message("Non-OID used in ENCODED BY constraint");
 		    yyval.constraint_spec = new_constraint_spec(CT_CONTENTS);
-		    yyval.constraint_spec->u.content.type = yyvsp[-3].type;
-		    yyval.constraint_spec->u.content.encoding = yyvsp[0].value;
+		    yyval.constraint_spec->u.content.type = yystack.l_mark[-3].type;
+		    yyval.constraint_spec->u.content.encoding = yystack.l_mark[0].value;
 		}
 break;
 case 85:
-#line 625 ""
-{
+#line 629 ""
+	{
 		    yyval.constraint_spec = new_constraint_spec(CT_USER);
 		}
 break;
 case 86:
-#line 631 ""
-{
+#line 635 ""
+	{
 			yyval.type = new_type(TTag);
-			yyval.type->tag = yyvsp[-2].tag;
-			yyval.type->tag.tagenv = yyvsp[-1].constant;
-			if(yyvsp[0].type->type == TTag && yyvsp[-1].constant == TE_IMPLICIT) {
-				yyval.type->subtype = yyvsp[0].type->subtype;
-				free(yyvsp[0].type);
+			yyval.type->tag = yystack.l_mark[-2].tag;
+			yyval.type->tag.tagenv = yystack.l_mark[-1].constant;
+			if(yystack.l_mark[0].type->type == TTag && yystack.l_mark[-1].constant == TE_IMPLICIT) {
+				yyval.type->subtype = yystack.l_mark[0].type->subtype;
+				free(yystack.l_mark[0].type);
 			} else
-				yyval.type->subtype = yyvsp[0].type;
+				yyval.type->subtype = yystack.l_mark[0].type;
 		}
 break;
 case 87:
-#line 644 ""
-{
-			yyval.tag.tagclass = yyvsp[-2].constant;
-			yyval.tag.tagvalue = yyvsp[-1].constant;
+#line 648 ""
+	{
+			yyval.tag.tagclass = yystack.l_mark[-2].constant;
+			yyval.tag.tagvalue = yystack.l_mark[-1].constant;
 			yyval.tag.tagenv = TE_EXPLICIT;
 		}
 break;
 case 88:
-#line 652 ""
-{
+#line 656 ""
+	{
 			yyval.constant = ASN1_C_CONTEXT;
 		}
 break;
 case 89:
-#line 656 ""
-{
+#line 660 ""
+	{
 			yyval.constant = ASN1_C_UNIV;
 		}
 break;
 case 90:
-#line 660 ""
-{
+#line 664 ""
+	{
 			yyval.constant = ASN1_C_APPL;
 		}
 break;
 case 91:
-#line 664 ""
-{
+#line 668 ""
+	{
 			yyval.constant = ASN1_C_PRIVATE;
 		}
 break;
 case 92:
-#line 670 ""
-{
+#line 674 ""
+	{
 			yyval.constant = TE_EXPLICIT;
 		}
 break;
 case 93:
-#line 674 ""
-{
+#line 678 ""
+	{
 			yyval.constant = TE_EXPLICIT;
 		}
 break;
 case 94:
-#line 678 ""
-{
+#line 682 ""
+	{
 			yyval.constant = TE_IMPLICIT;
 		}
 break;
 case 95:
-#line 685 ""
-{
+#line 689 ""
+	{
 			Symbol *s;
-			s = addsym (yyvsp[-3].name);
+			s = addsym (yystack.l_mark[-3].name);
 
 			s->stype = SValue;
-			s->value = yyvsp[0].value;
+			s->value = yystack.l_mark[0].value;
 			generate_constant (s);
 		}
 break;
 case 97:
-#line 699 ""
-{
+#line 703 ""
+	{
 			yyval.type = new_tag(ASN1_C_UNIV, UT_GeneralString,
 				     TE_EXPLICIT, new_type(TGeneralString));
 		}
 break;
 case 98:
-#line 704 ""
-{
+#line 708 ""
+	{
 			yyval.type = new_tag(ASN1_C_UNIV, UT_TeletexString,
 				     TE_EXPLICIT, new_type(TTeletexString));
 		}
 break;
 case 99:
-#line 709 ""
-{
+#line 713 ""
+	{
 			yyval.type = new_tag(ASN1_C_UNIV, UT_UTF8String,
 				     TE_EXPLICIT, new_type(TUTF8String));
 		}
 break;
 case 100:
-#line 714 ""
-{
+#line 718 ""
+	{
 			yyval.type = new_tag(ASN1_C_UNIV, UT_PrintableString,
 				     TE_EXPLICIT, new_type(TPrintableString));
 		}
 break;
 case 101:
-#line 719 ""
-{
+#line 723 ""
+	{
 			yyval.type = new_tag(ASN1_C_UNIV, UT_VisibleString,
 				     TE_EXPLICIT, new_type(TVisibleString));
 		}
 break;
 case 102:
-#line 724 ""
-{
+#line 728 ""
+	{
 			yyval.type = new_tag(ASN1_C_UNIV, UT_IA5String,
 				     TE_EXPLICIT, new_type(TIA5String));
 		}
 break;
 case 103:
-#line 729 ""
-{
+#line 733 ""
+	{
 			yyval.type = new_tag(ASN1_C_UNIV, UT_BMPString,
 				     TE_EXPLICIT, new_type(TBMPString));
 		}
 break;
 case 104:
-#line 734 ""
-{
+#line 738 ""
+	{
 			yyval.type = new_tag(ASN1_C_UNIV, UT_UniversalString,
 				     TE_EXPLICIT, new_type(TUniversalString));
 		}
 break;
 case 105:
-#line 742 ""
-{
+#line 746 ""
+	{
 			yyval.members = emalloc(sizeof(*yyval.members));
 			ASN1_TAILQ_INIT(yyval.members);
-			ASN1_TAILQ_INSERT_HEAD(yyval.members, yyvsp[0].member, members);
+			ASN1_TAILQ_INSERT_HEAD(yyval.members, yystack.l_mark[0].member, members);
 		}
 break;
 case 106:
-#line 748 ""
-{
-			ASN1_TAILQ_INSERT_TAIL(yyvsp[-2].members, yyvsp[0].member, members);
-			yyval.members = yyvsp[-2].members;
+#line 752 ""
+	{
+			ASN1_TAILQ_INSERT_TAIL(yystack.l_mark[-2].members, yystack.l_mark[0].member, members);
+			yyval.members = yystack.l_mark[-2].members;
 		}
 break;
 case 107:
-#line 753 ""
-{
+#line 757 ""
+	{
 		        struct member *m = ecalloc(1, sizeof(*m));
 			m->name = estrdup("...");
 			m->gen_name = estrdup("asn1_ellipsis");
 			m->ellipsis = 1;
-			ASN1_TAILQ_INSERT_TAIL(yyvsp[-2].members, m, members);
-			yyval.members = yyvsp[-2].members;
+			ASN1_TAILQ_INSERT_TAIL(yystack.l_mark[-2].members, m, members);
+			yyval.members = yystack.l_mark[-2].members;
 		}
 break;
 case 108:
-#line 764 ""
-{
+#line 768 ""
+	{
 		  yyval.member = emalloc(sizeof(*yyval.member));
-		  yyval.member->name = yyvsp[-1].name;
-		  yyval.member->gen_name = estrdup(yyvsp[-1].name);
+		  yyval.member->name = yystack.l_mark[-1].name;
+		  yyval.member->gen_name = estrdup(yystack.l_mark[-1].name);
 		  output_name (yyval.member->gen_name);
-		  yyval.member->type = yyvsp[0].type;
+		  yyval.member->type = yystack.l_mark[0].type;
 		  yyval.member->ellipsis = 0;
 		}
 break;
 case 109:
-#line 775 ""
-{
-			yyval.member = yyvsp[0].member;
+#line 779 ""
+	{
+			yyval.member = yystack.l_mark[0].member;
 			yyval.member->optional = 0;
 			yyval.member->defval = NULL;
 		}
 break;
 case 110:
-#line 781 ""
-{
-			yyval.member = yyvsp[-1].member;
+#line 785 ""
+	{
+			yyval.member = yystack.l_mark[-1].member;
 			yyval.member->optional = 1;
 			yyval.member->defval = NULL;
 		}
 break;
 case 111:
-#line 787 ""
-{
-			yyval.member = yyvsp[-2].member;
+#line 791 ""
+	{
+			yyval.member = yystack.l_mark[-2].member;
 			yyval.member->optional = 0;
-			yyval.member->defval = yyvsp[0].value;
+			yyval.member->defval = yystack.l_mark[0].value;
 		}
 break;
 case 112:
-#line 795 ""
-{
+#line 799 ""
+	{
 			yyval.members = emalloc(sizeof(*yyval.members));
 			ASN1_TAILQ_INIT(yyval.members);
-			ASN1_TAILQ_INSERT_HEAD(yyval.members, yyvsp[0].member, members);
+			ASN1_TAILQ_INSERT_HEAD(yyval.members, yystack.l_mark[0].member, members);
 		}
 break;
 case 113:
-#line 801 ""
-{
-			ASN1_TAILQ_INSERT_TAIL(yyvsp[-2].members, yyvsp[0].member, members);
-			yyval.members = yyvsp[-2].members;
+#line 805 ""
+	{
+			ASN1_TAILQ_INSERT_TAIL(yystack.l_mark[-2].members, yystack.l_mark[0].member, members);
+			yyval.members = yystack.l_mark[-2].members;
 		}
 break;
 case 114:
-#line 808 ""
-{
+#line 812 ""
+	{
 		  yyval.member = emalloc(sizeof(*yyval.member));
-		  yyval.member->name = yyvsp[-3].name;
-		  yyval.member->gen_name = estrdup(yyvsp[-3].name);
+		  yyval.member->name = yystack.l_mark[-3].name;
+		  yyval.member->gen_name = estrdup(yystack.l_mark[-3].name);
 		  output_name (yyval.member->gen_name);
-		  yyval.member->val = yyvsp[-1].constant;
+		  yyval.member->val = yystack.l_mark[-1].constant;
 		  yyval.member->optional = 0;
 		  yyval.member->ellipsis = 0;
 		  yyval.member->type = NULL;
 		}
 break;
 case 116:
-#line 821 ""
-{ yyval.objid = NULL; }
+#line 825 ""
+	{ yyval.objid = NULL; }
 break;
 case 117:
-#line 825 ""
-{
-			yyval.objid = yyvsp[-1].objid;
+#line 829 ""
+	{
+			yyval.objid = yystack.l_mark[-1].objid;
 		}
 break;
 case 118:
-#line 831 ""
-{
+#line 835 ""
+	{
 			yyval.objid = NULL;
 		}
 break;
 case 119:
-#line 835 ""
-{
-		        if (yyvsp[0].objid) {
-				yyval.objid = yyvsp[0].objid;
-				add_oid_to_tail(yyvsp[0].objid, yyvsp[-1].objid);
+#line 839 ""
+	{
+		        if (yystack.l_mark[0].objid) {
+				yyval.objid = yystack.l_mark[0].objid;
+				add_oid_to_tail(yystack.l_mark[0].objid, yystack.l_mark[-1].objid);
 			} else {
-				yyval.objid = yyvsp[-1].objid;
+				yyval.objid = yystack.l_mark[-1].objid;
 			}
 		}
 break;
 case 120:
-#line 846 ""
-{
-			yyval.objid = new_objid(yyvsp[-3].name, yyvsp[-1].constant);
+#line 850 ""
+	{
+			yyval.objid = new_objid(yystack.l_mark[-3].name, yystack.l_mark[-1].constant);
 		}
 break;
 case 121:
-#line 850 ""
-{
-		    Symbol *s = addsym(yyvsp[0].name);
+#line 854 ""
+	{
+		    Symbol *s = addsym(yystack.l_mark[0].name);
 		    if(s->stype != SValue ||
 		       s->value->type != objectidentifiervalue) {
 			lex_error_message("%s is not an object identifier\n",
@@ -1488,15 +1534,15 @@ case 121:
 		}
 break;
 case 122:
-#line 861 ""
-{
-		    yyval.objid = new_objid(NULL, yyvsp[0].constant);
+#line 865 ""
+	{
+		    yyval.objid = new_objid(NULL, yystack.l_mark[0].constant);
 		}
 break;
 case 132:
-#line 884 ""
-{
-			Symbol *s = addsym(yyvsp[0].name);
+#line 888 ""
+	{
+			Symbol *s = addsym(yystack.l_mark[0].name);
 			if(s->stype != SValue)
 				lex_error_message ("%s is not a value\n",
 						s->name);
@@ -1505,55 +1551,55 @@ case 132:
 		}
 break;
 case 133:
-#line 895 ""
-{
+#line 899 ""
+	{
 			yyval.value = emalloc(sizeof(*yyval.value));
 			yyval.value->type = stringvalue;
-			yyval.value->u.stringvalue = yyvsp[0].name;
+			yyval.value->u.stringvalue = yystack.l_mark[0].name;
 		}
 break;
 case 134:
-#line 903 ""
-{
+#line 907 ""
+	{
 			yyval.value = emalloc(sizeof(*yyval.value));
 			yyval.value->type = booleanvalue;
 			yyval.value->u.booleanvalue = 0;
 		}
 break;
 case 135:
-#line 909 ""
-{
+#line 913 ""
+	{
 			yyval.value = emalloc(sizeof(*yyval.value));
 			yyval.value->type = booleanvalue;
 			yyval.value->u.booleanvalue = 0;
 		}
 break;
 case 136:
-#line 917 ""
-{
+#line 921 ""
+	{
 			yyval.value = emalloc(sizeof(*yyval.value));
 			yyval.value->type = integervalue;
-			yyval.value->u.integervalue = yyvsp[0].constant;
+			yyval.value->u.integervalue = yystack.l_mark[0].constant;
 		}
 break;
 case 138:
-#line 928 ""
-{
+#line 932 ""
+	{
 		}
 break;
 case 139:
-#line 933 ""
-{
+#line 937 ""
+	{
 			yyval.value = emalloc(sizeof(*yyval.value));
 			yyval.value->type = objectidentifiervalue;
-			yyval.value->u.objectidentifiervalue = yyvsp[0].objid;
+			yyval.value->u.objectidentifiervalue = yystack.l_mark[0].objid;
 		}
 break;
-#line 1553 ""
+#line 1598 ""
     }
-    yyssp -= yym;
-    yystate = *yyssp;
-    yyvsp -= yym;
+    yystack.s_mark -= yym;
+    yystate = *yystack.s_mark;
+    yystack.l_mark -= yym;
     yym = yylhs[yyn];
     if (yystate == 0 && yym == 0)
     {
@@ -1563,8 +1609,8 @@ break;
  state %d\n", YYPREFIX, YYFINAL);
 #endif
         yystate = YYFINAL;
-        *++yyssp = YYFINAL;
-        *++yyvsp = yyval;
+        *++yystack.s_mark = YYFINAL;
+        *++yystack.l_mark = yyval;
         if (yychar < 0)
         {
             if ((yychar = yylex()) < 0) yychar = 0;
@@ -1590,22 +1636,24 @@ break;
 #if YYDEBUG
     if (yydebug)
         printf("%sdebug: after reduction, shifting from state %d \
-to state %d\n", YYPREFIX, *yyssp, yystate);
+to state %d\n", YYPREFIX, *yystack.s_mark, yystate);
 #endif
-    if (yyssp >= yysslim && yygrowstack())
+    if (yystack.s_mark >= yystack.s_last && yygrowstack(&yystack))
     {
         goto yyoverflow;
     }
-    *++yyssp = yystate;
-    *++yyvsp = yyval;
+    *++yystack.s_mark = (short) yystate;
+    *++yystack.l_mark = yyval;
     goto yyloop;
 
 yyoverflow:
     yyerror("yacc stack overflow");
 
 yyabort:
+    yyfreestack(&yystack);
     return (1);
 
 yyaccept:
+    yyfreestack(&yystack);
     return (0);
 }

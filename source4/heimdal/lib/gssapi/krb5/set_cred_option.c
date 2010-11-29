@@ -32,15 +32,6 @@
 
 #include "gsskrb5_locl.h"
 
-/* 1.2.752.43.13.17 */
-gss_OID_desc GSSAPI_LIB_VARIABLE __gss_krb5_cred_no_ci_flags_x_oid_desc =
-{6, rk_UNCONST("\x2a\x85\x70\x2b\x0d\x11")};
-
-/* 1.2.752.43.13.18 */
-gss_OID_desc GSSAPI_LIB_VARIABLE __gss_krb5_import_cred_x_oid_desc =
-{6, rk_UNCONST("\x2a\x85\x70\x2b\x0d\x12")};
-
-
 static OM_uint32
 import_cred(OM_uint32 *minor_status,
 	    krb5_context context,

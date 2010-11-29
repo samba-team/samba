@@ -296,7 +296,6 @@ krb5_kdc_pkinit_config(krb5_context context, krb5_kdc_configuration *config)
 
     }
 
-#endif /* PKINIT */
-
     return 0;
+#endif /* PKINIT */
 }

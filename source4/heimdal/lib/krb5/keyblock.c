@@ -155,7 +155,7 @@ krb5_copy_keyblock (krb5_context context,
  * @ingroup krb5_crypto
  */
 
-krb5_enctype
+KRB5_LIB_FUNCTION krb5_enctype KRB5_LIB_CALL
 krb5_keyblock_get_enctype(const krb5_keyblock *block)
 {
     return block->keytype;

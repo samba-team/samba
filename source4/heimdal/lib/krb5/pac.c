@@ -116,7 +116,7 @@ HMAC_MD5_any_checksum(krb5_context context,
  *
  */
 
-krb5_error_code
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_pac_parse(krb5_context context, const void *ptr, size_t len,
 	       krb5_pac *pac)
 {
@@ -127,13 +127,13 @@ krb5_pac_parse(krb5_context context, const void *ptr, size_t len,
 
     p = calloc(1, sizeof(*p));
     if (p == NULL) {
-	ret = _krb5_enomem(context);
+	ret = krb5_enomem(context);
 	goto out;
     }
 
     sp = krb5_storage_from_readonly_mem(ptr, len);
     if (sp == NULL) {
-	ret = _krb5_enomem(context);
+	ret = krb5_enomem(context);
 	goto out;
     }
     krb5_storage_set_flags(sp, KRB5_STORAGE_BYTEORDER_LE);
@@ -156,7 +156,7 @@ krb5_pac_parse(krb5_context context, const void *ptr, size_t len,
     p->pac = calloc(1,
 		    sizeof(*p->pac) + (sizeof(p->pac->buffers[0]) * (tmp - 1)));
     if (p->pac == NULL) {
-	ret = _krb5_enomem(context);
+	ret = krb5_enomem(context);
 	goto out;
     }
 
@@ -258,7 +258,7 @@ out:
     return ret;
 }
 
-krb5_error_code
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_pac_init(krb5_context context, krb5_pac *pac)
 {
     krb5_error_code ret;
@@ -266,27 +266,27 @@ krb5_pac_init(krb5_context context, krb5_pac *pac)
 
     p = calloc(1, sizeof(*p));
     if (p == NULL) {
-	return _krb5_enomem(context);
+	return krb5_enomem(context);
     }
 
     p->pac = calloc(1, sizeof(*p->pac));
     if (p->pac == NULL) {
 	free(p);
-	return _krb5_enomem(context);
+	return krb5_enomem(context);
     }
 
     ret = krb5_data_alloc(&p->data, PACTYPE_SIZE);
     if (ret) {
 	free (p->pac);
 	free(p);
-	return _krb5_enomem(context);
+	return krb5_enomem(context);
     }
 
     *pac = p;
     return 0;
 }
 
-krb5_error_code
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_pac_add_buffer(krb5_context context, krb5_pac p,
 		    uint32_t type, const krb5_data *data)
 {
@@ -300,7 +300,7 @@ krb5_pac_add_buffer(krb5_context context, krb5_pac p,
     ptr = realloc(p->pac,
 		  sizeof(*p->pac) + (sizeof(p->pac->buffers[0]) * len));
     if (ptr == NULL)
-	return _krb5_enomem(context);
+	return krb5_enomem(context);
 
     p->pac = ptr;
 
@@ -367,7 +367,7 @@ krb5_pac_add_buffer(krb5_context context, krb5_pac p,
  * @ingroup krb5_pac
  */
 
-krb5_error_code
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_pac_get_buffer(krb5_context context, krb5_pac p,
 		    uint32_t type, krb5_data *data)
 {
@@ -397,7 +397,7 @@ krb5_pac_get_buffer(krb5_context context, krb5_pac p,
  *
  */
 
-krb5_error_code
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_pac_get_types(krb5_context context,
 		   krb5_pac p,
 		   size_t *len,
@@ -408,7 +408,7 @@ krb5_pac_get_types(krb5_context context,
     *types = calloc(p->pac->numbuffers, sizeof(*types));
     if (*types == NULL) {
 	*len = 0;
-	return _krb5_enomem(context);
+	return krb5_enomem(context);
     }
     for (i = 0; i < p->pac->numbuffers; i++)
 	(*types)[i] = p->pac->buffers[i].type;
@@ -421,7 +421,7 @@ krb5_pac_get_types(krb5_context context,
  *
  */
 
-void
+KRB5_LIB_FUNCTION void KRB5_LIB_CALL
 krb5_pac_free(krb5_context context, krb5_pac pac)
 {
     krb5_data_free(&pac->data);
@@ -450,7 +450,7 @@ verify_checksum(krb5_context context,
     sp = krb5_storage_from_mem((char *)data->data + sig->offset_lo,
 			       sig->buffersize);
     if (sp == NULL)
-	return _krb5_enomem(context);
+	return krb5_enomem(context);
 
     krb5_storage_set_flags(sp, KRB5_STORAGE_BYTEORDER_LE);
 
@@ -460,7 +460,7 @@ verify_checksum(krb5_context context,
 	sig->buffersize - krb5_storage_seek(sp, 0, SEEK_CUR);
     cksum.checksum.data = malloc(cksum.checksum.length);
     if (cksum.checksum.data == NULL) {
-	ret = _krb5_enomem(context);
+	ret = krb5_enomem(context);
 	goto out;
     }
     ret = krb5_storage_read(sp, cksum.checksum.data, cksum.checksum.length);
@@ -604,7 +604,7 @@ verify_logonname(krb5_context context,
     sp = krb5_storage_from_readonly_mem((const char *)data->data + logon_name->offset_lo,
 					logon_name->buffersize);
     if (sp == NULL)
-	return _krb5_enomem(context);
+	return krb5_enomem(context);
 
     krb5_storage_set_flags(sp, KRB5_STORAGE_BYTEORDER_LE);
 
@@ -631,7 +631,7 @@ verify_logonname(krb5_context context,
     s = malloc(len);
     if (s == NULL) {
 	krb5_storage_free(sp);
-	return _krb5_enomem(context);
+	return krb5_enomem(context);
     }
     ret = krb5_storage_read(sp, s, len);
     if (ret != len) {
@@ -648,7 +648,7 @@ verify_logonname(krb5_context context,
 
 	ucs2 = malloc(sizeof(ucs2[0]) * ucs2len);
 	if (ucs2 == NULL)
-	    return _krb5_enomem(context);
+	    return krb5_enomem(context);
 
 	ret = wind_ucs2read(s, len, &flags, ucs2, &ucs2len);
 	free(s);
@@ -667,7 +667,7 @@ verify_logonname(krb5_context context,
 	s = malloc(u8len);
 	if (s == NULL) {
 	    free(ucs2);
-	    return _krb5_enomem(context);
+	    return krb5_enomem(context);
 	}
 	ret = wind_ucs2utf8(ucs2, ucs2len, s, &u8len);
 	free(ucs2);
@@ -714,7 +714,7 @@ build_logon_name(krb5_context context,
 
     sp = krb5_storage_emem();
     if (sp == NULL)
-	return _krb5_enomem(context);
+	return krb5_enomem(context);
 
     krb5_storage_set_flags(sp, KRB5_STORAGE_BYTEORDER_LE);
 
@@ -733,7 +733,7 @@ build_logon_name(krb5_context context,
 #if 1 /* cheat for now */
     s2 = malloc(len * 2);
     if (s2 == NULL) {
-	ret = _krb5_enomem(context);
+	ret = krb5_enomem(context);
 	free(s);
 	goto out;
     }
@@ -749,7 +749,7 @@ build_logon_name(krb5_context context,
     ret = krb5_storage_write(sp, s2, len * 2);
     free(s2);
     if (ret != len * 2) {
-	ret = _krb5_enomem(context);
+	ret = krb5_enomem(context);
 	goto out;
     }
     ret = krb5_storage_to_data(sp, logon);
@@ -780,7 +780,7 @@ out:
  * @ingroup krb5_pac
  */
 
-krb5_error_code
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_pac_verify(krb5_context context,
 		const krb5_pac pac,
 		time_t authtime,
@@ -877,7 +877,7 @@ fill_zeros(krb5_context context, krb5_storage *sp, size_t len)
 	    l = sizeof(zeros);
 	sret = krb5_storage_write(sp, zeros, l);
 	if (sret <= 0)
-	    return _krb5_enomem(context);
+	    return krb5_enomem(context);
 
 	len -= sret;
     }
@@ -949,7 +949,7 @@ _krb5_pac_sign(krb5_context context,
 
 	ptr = realloc(p->pac, sizeof(*p->pac) + (sizeof(p->pac->buffers[0]) * (p->pac->numbuffers + num - 1)));
 	if (ptr == NULL)
-	    return _krb5_enomem(context);
+	    return krb5_enomem(context);
 
 	p->pac = ptr;
 
@@ -986,14 +986,14 @@ _krb5_pac_sign(krb5_context context,
     /* Encode PAC */
     sp = krb5_storage_emem();
     if (sp == NULL)
-	return _krb5_enomem(context);
+	return krb5_enomem(context);
 
     krb5_storage_set_flags(sp, KRB5_STORAGE_BYTEORDER_LE);
 
     spdata = krb5_storage_emem();
     if (spdata == NULL) {
 	krb5_storage_free(sp);
-	return _krb5_enomem(context);
+	return krb5_enomem(context);
     }
     krb5_storage_set_flags(spdata, KRB5_STORAGE_BYTEORDER_LE);
 
@@ -1031,7 +1031,7 @@ _krb5_pac_sign(krb5_context context,
 
 	    sret = krb5_storage_write(spdata, ptr, len);
 	    if (sret != len) {
-		ret = _krb5_enomem(context);
+		ret = krb5_enomem(context);
 		goto out;
 	    }
 	    /* XXX if not aligned, fill_zeros */
@@ -1068,14 +1068,14 @@ _krb5_pac_sign(krb5_context context,
     ret = krb5_storage_write(sp, d.data, d.length);
     if (ret != d.length) {
 	krb5_data_free(&d);
-	ret = _krb5_enomem(context);
+	ret = krb5_enomem(context);
 	goto out;
     }
     krb5_data_free(&d);
 
     ret = krb5_storage_to_data(sp, &d);
     if (ret) {
-	ret = _krb5_enomem(context);
+	ret = krb5_enomem(context);
 	goto out;
     }
 

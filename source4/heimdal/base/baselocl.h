@@ -33,13 +33,17 @@
  * SUCH DAMAGE.
  */
 
+#include "config.h"
+
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <errno.h>
 #include <limits.h>
-#include <unistd.h>
 
-#include "config.h"
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
 
 #include "heimqueue.h"
 #include "heim_threads.h"
@@ -50,14 +54,8 @@
 #include <dispatch/dispatch.h>
 #endif
 
-#if HEIM_BASE_NON_ATOMIC
-/* non-atomic varients */
-#define heim_base_atomic_inc(x) ++(*(x))
-#define heim_base_atomic_dec(x) --(*(x))
-#define heim_base_atomic_type	unsigned int
-#define heim_base_atomic_max    UINT_MAX
+#if defined(__GNUC__) && defined(HAVE___SYNC_ADD_AND_FETCH)
 
-#elif defined(__GNUC__)
 #define heim_base_atomic_inc(x) __sync_add_and_fetch((x), 1)
 #define heim_base_atomic_dec(x) __sync_sub_and_fetch((x), 1)
 #define heim_base_atomic_type	unsigned int
@@ -65,12 +63,44 @@
 
 #define heim_base_exchange_pointer(t,v) __sync_lock_test_and_set((t), (v))
 
-#elif 0 /* windows */
+#elif defined(_WIN32)
+
+#define heim_base_atomic_inc(x) InterlockedIncrement(x)
+#define heim_base_atomic_dec(x) InterlockedDecrement(x)
+#define heim_base_atomic_type	LONG
+#define heim_base_atomic_max    MAXLONG
 
 #define heim_base_exchange_pointer(t,v) InterlockedExchangePointer((t),(v))
 
 #else
-#error "provide atomic integer operations for your compiler"
+
+#define HEIM_BASE_NEED_ATOMIC_MUTEX 1
+extern HEIMDAL_MUTEX _heim_base_mutex;
+
+#define heim_base_atomic_type	unsigned int
+
+static inline heim_base_atomic_type
+heim_base_atomic_inc(heim_base_atomic_type *x)
+{
+    heim_base_atomic_type t;
+    HEIMDAL_MUTEX_lock(&_heim_base_mutex);
+    t = ++(*x);
+    HEIMDAL_MUTEX_unlock(&_heim_base_mutex);
+    return t;
+}
+
+static inline heim_base_atomic_type
+heim_base_atomic_dec(heim_base_atomic_type *x)
+{
+    heim_base_atomic_type t;
+    HEIMDAL_MUTEX_lock(&_heim_base_mutex);
+    t = --(*x);
+    HEIMDAL_MUTEX_unlock(&_heim_base_mutex);
+    return t;
+}
+
+#define heim_base_atomic_max    UINT_MAX
+
 #endif
 
 /* tagged strings/object/XXX */

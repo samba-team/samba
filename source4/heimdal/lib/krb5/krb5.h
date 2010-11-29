@@ -80,7 +80,7 @@ typedef int krb5_boolean;
 
 typedef int32_t krb5_error_code;
 
-typedef int krb5_kvno;
+typedef int32_t krb5_kvno;
 
 typedef uint32_t krb5_flags;
 
@@ -846,6 +846,8 @@ typedef krb5_error_code
 /*
  *
  */
+
+struct hx509_certs_data;
 
 #include <krb5-protos.h>
 

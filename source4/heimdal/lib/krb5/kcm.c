@@ -97,7 +97,7 @@ kcm_send_request(krb5_context context,
     return ret;
 }
 
-krb5_error_code
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_kcm_storage_request(krb5_context context,
 			 uint16_t opcode,
 			 krb5_storage **storage_p)
@@ -164,7 +164,7 @@ kcm_alloc(krb5_context context, const char *name, krb5_ccache *id)
     return 0;
 }
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_kcm_call(krb5_context context,
 	      krb5_storage *request,
 	      krb5_storage **response_p,

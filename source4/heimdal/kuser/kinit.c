@@ -39,12 +39,6 @@
 #include <Security/Security.h>
 #endif
 
-struct krb5_dh_moduli;
-struct AlgorithmIdentifier;
-struct _krb5_krb_auth_data;
-struct hx509_certs_data;
-#include <krb5-private.h>
-
 #ifndef NO_NTLM
 #include "heimntlm.h"
 #endif
@@ -457,7 +451,7 @@ get_new_tickets(krb5_context context,
 	if (ret)
 	    krb5_err(context, 1, ret, "krb5_get_init_creds_opt_set_pkinit");
 	if (ent_user_id)
-	    _krb5_get_init_creds_opt_set_pkinit_user_certs(context, opt, ent_user_id);
+	    krb5_get_init_creds_opt_set_pkinit_user_certs(context, opt, ent_user_id);
     }
 
     if (addrs_flag != -1)
@@ -768,9 +762,9 @@ main (int argc, char **argv)
 	parseflags |= KRB5_PRINCIPAL_PARSE_ENTERPRISE;
 
     if (pk_enterprise_flag) {
-	ret = _krb5_pk_enterprise_cert(context, pk_user_id,
-				       argv[0], &principal,
-				       &ent_user_id);
+	ret = krb5_pk_enterprise_cert(context, pk_user_id,
+				      argv[0], &principal,
+				      &ent_user_id);
 	if (ret)
 	    krb5_err(context, 1, ret, "krb5_pk_enterprise_certs");
 

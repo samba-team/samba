@@ -4,6 +4,8 @@
 #ifndef _ROKEN_H_
 #define _ROKEN_H_
 
+#include "config.h"
+
 /* Support 'weak' keys for now, it can't be worse than NTLM and we don't want to hard-code the behaviour at this point */
 #define HEIM_WEAK_CRYPTO 1
 
@@ -23,6 +25,7 @@
 
 #define ROKEN_LIB_FUNCTION
 #define ROKEN_LIB_CALL
+#define ROKEN_LIB_VARIABLE
 #define GETHOSTBYADDR_PROTO_COMPATIBLE
 #define GETSERVBYNAME_PROTO_COMPATIBLE
 #define OPENLOG_PROTO_COMPATIBLE

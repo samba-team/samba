@@ -31,16 +31,12 @@
  * SUCH DAMAGE.
  */
 
+#define KRB5_DEPRECATED
+
 #include "krb5_locl.h"
 #include "krb5-v4compat.h"
 
 #ifndef HEIMDAL_SMALLER
-
-static krb5_error_code
-check_ticket_flags(TicketFlags f)
-{
-    return 0; /* maybe add some more tests here? */
-}
 
 /**
  * Convert the v5 credentials in in_cred to v4-dito in v4creds.  This
@@ -58,91 +54,16 @@ check_ticket_flags(TicketFlags f)
  * @ingroup krb5_v4compat
  */
 
+KRB5_DEPRECATED
 KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb524_convert_creds_kdc(krb5_context context,
 			 krb5_creds *in_cred,
 			 struct credentials *v4creds)
 {
-    krb5_error_code ret;
-    krb5_data reply;
-    krb5_storage *sp;
-    int32_t tmp;
-    krb5_data ticket;
-    char realm[REALM_SZ];
-    krb5_creds *v5_creds = in_cred;
-
-    ret = check_ticket_flags(v5_creds->flags.b);
-    if(ret)
-	goto out2;
-
-    {
-	krb5_krbhst_handle handle;
-
-	ret = krb5_krbhst_init(context,
-			       krb5_principal_get_realm(context,
-							v5_creds->server),
-			       KRB5_KRBHST_KRB524,
-			       &handle);
-	if (ret)
-	    goto out2;
-
-	ret = krb5_sendto (context,
-			   &v5_creds->ticket,
-			   handle,
-			   &reply);
-	krb5_krbhst_free(context, handle);
-	if (ret)
-	    goto out2;
-    }
-    sp = krb5_storage_from_mem(reply.data, reply.length);
-    if(sp == NULL) {
-	ret = ENOMEM;
-	krb5_set_error_message (context, ENOMEM, N_("malloc: out of memory", ""));
-	goto out2;
-    }
-    krb5_ret_int32(sp, &tmp);
-    ret = tmp;
-    if(ret == 0) {
-	memset(v4creds, 0, sizeof(*v4creds));
-	ret = krb5_ret_int32(sp, &tmp);
-	if(ret)
-	    goto out;
-	v4creds->kvno = tmp;
-	ret = krb5_ret_data(sp, &ticket);
-	if(ret)
-	    goto out;
-	v4creds->ticket_st.length = ticket.length;
-	memcpy(v4creds->ticket_st.dat, ticket.data, ticket.length);
-	krb5_data_free(&ticket);
-	ret = krb5_524_conv_principal(context,
-				      v5_creds->server,
-				      v4creds->service,
-				      v4creds->instance,
-				      v4creds->realm);
-	if(ret)
-	    goto out;
-	v4creds->issue_date = v5_creds->times.starttime;
-	v4creds->lifetime = _krb5_krb_time_to_life(v4creds->issue_date,
-						   v5_creds->times.endtime);
-	ret = krb5_524_conv_principal(context, v5_creds->client,
-				      v4creds->pname,
-				      v4creds->pinst,
-				      realm);
-	if(ret)
-	    goto out;
-	memcpy(v4creds->session, v5_creds->session.keyvalue.data, 8);
-    } else {
-	krb5_prepend_error_message(context, ret,
-				   N_("converting credentials",
-				      "already localized"));
-    }
-out:
-    krb5_storage_free(sp);
-    krb5_data_free(&reply);
-out2:
-    if (v5_creds != in_cred)
-	krb5_free_creds (context, v5_creds);
-    return ret;
+    memset(v4creds, 0, sizeof(*v4creds));
+    krb5_set_error_message(context, EINVAL,
+			   N_("krb524_convert_creds_kdc not supported", ""));
+    return EINVAL;
 }
 
 /**
@@ -160,48 +81,17 @@ out2:
  * @ingroup krb5_v4compat
  */
 
+KRB5_DEPRECATED
 KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb524_convert_creds_kdc_ccache(krb5_context context,
 				krb5_ccache ccache,
 				krb5_creds *in_cred,
 				struct credentials *v4creds)
 {
-    krb5_error_code ret;
-    krb5_creds *v5_creds = in_cred;
-    krb5_keytype keytype;
-
-    keytype = v5_creds->session.keytype;
-
-    if (keytype != ENCTYPE_DES_CBC_CRC) {
-	/* MIT krb524d doesn't like nothing but des-cbc-crc tickets,
-           so go get one */
-	krb5_creds template;
-
-	memset (&template, 0, sizeof(template));
-	template.session.keytype = ENCTYPE_DES_CBC_CRC;
-	ret = krb5_copy_principal (context, in_cred->client, &template.client);
-	if (ret) {
-	    krb5_free_cred_contents (context, &template);
-	    return ret;
-	}
-	ret = krb5_copy_principal (context, in_cred->server, &template.server);
-	if (ret) {
-	    krb5_free_cred_contents (context, &template);
-	    return ret;
-	}
-
-	ret = krb5_get_credentials (context, 0, ccache,
-				    &template, &v5_creds);
-	krb5_free_cred_contents (context, &template);
-	if (ret)
-	    return ret;
-    }
-
-    ret = krb524_convert_creds_kdc(context, v5_creds, v4creds);
-
-    if (v5_creds != in_cred)
-	krb5_free_creds (context, v5_creds);
-    return ret;
+    memset(v4creds, 0, sizeof(*v4creds));
+    krb5_set_error_message(context, EINVAL,
+			   N_("krb524_convert_creds_kdc_ccache not supported", ""));
+    return EINVAL;
 }
 
 #endif

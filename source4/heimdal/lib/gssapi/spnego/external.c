@@ -40,6 +40,41 @@
  *  iso.org.dod.internet.security.mechanism.snego (1.3.6.1.5.5.2).
  */
 
+static gss_mo_desc spnego_mo[] = {
+    {
+	GSS_C_MA_SASL_MECH_NAME,
+	GSS_MO_MA,
+	"SASL mech name",
+	"SPNEGO",
+	_gss_mo_get_ctx_as_string,
+	NULL
+    },
+    {
+	GSS_C_MA_MECH_NAME,
+	GSS_MO_MA,
+	"Mechanism name",
+	"SPNEGO",
+	_gss_mo_get_ctx_as_string,
+	NULL
+    },
+    {
+	GSS_C_MA_MECH_DESCRIPTION,
+	GSS_MO_MA,
+	"Mechanism description",
+	"Heimdal SPNEGO Mechanism",
+	_gss_mo_get_ctx_as_string,
+	NULL
+    },
+    {
+	GSS_C_MA_MECH_NEGO,
+	GSS_MO_MA
+    },
+    {
+	GSS_C_MA_MECH_PSEUDO,
+	GSS_MO_MA
+    }
+};
+
 static gssapi_mech_interface_desc spnego_mech = {
     GMI_VERSION,
     "spnego",
@@ -84,7 +119,16 @@ static gssapi_mech_interface_desc spnego_mech = {
     _gss_spnego_wrap_iov_length,
     NULL,
     _gss_spnego_export_cred,
-    _gss_spnego_import_cred
+    _gss_spnego_import_cred,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    spnego_mo,
+    sizeof(spnego_mo) / sizeof(spnego_mo[0])
 };
 
 gssapi_mech_interface
@@ -92,6 +136,3 @@ __gss_spnego_initialize(void)
 {
 	return &spnego_mech;
 }
-
-gss_OID_desc GSSAPI_LIB_VARIABLE __gss_spnego_mechanism_oid_desc =
-    {6, (void *)"\x2b\x06\x01\x05\x05\x02"};

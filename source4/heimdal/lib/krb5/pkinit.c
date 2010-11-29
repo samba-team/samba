@@ -2455,9 +2455,9 @@ krb5_get_init_creds_opt_set_pkinit(krb5_context context,
 }
 
 krb5_error_code KRB5_LIB_FUNCTION
-_krb5_get_init_creds_opt_set_pkinit_user_certs(krb5_context context,
-					       krb5_get_init_creds_opt *opt,
-					       struct hx509_certs_data *certs)
+krb5_get_init_creds_opt_set_pkinit_user_certs(krb5_context context,
+					      krb5_get_init_creds_opt *opt,
+					      struct hx509_certs_data *certs)
 {
 #ifdef PKINIT
     if (opt->opt_private == NULL) {
@@ -2529,11 +2529,11 @@ find_ms_san(hx509_context context, hx509_cert cert, void *ctx)
  */
 
 KRB5_LIB_FUNCTION krb5_error_code  KRB5_LIB_CALL
-_krb5_pk_enterprise_cert(krb5_context context,
-			 const char *user_id,
-			 krb5_const_realm realm,
-			 krb5_principal *principal,
-			 struct hx509_certs_data **res)
+krb5_pk_enterprise_cert(krb5_context context,
+			const char *user_id,
+			krb5_const_realm realm,
+			krb5_principal *principal,
+			struct hx509_certs_data **res)
 {
 #ifdef PKINIT
     krb5_error_code ret;

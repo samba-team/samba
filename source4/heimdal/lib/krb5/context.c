@@ -269,7 +269,7 @@ cc_ops_copy(krb5_context context, const krb5_context src_context)
 	return KRB5_CC_NOMEM;
     }
 
-    memcpy(cc_ops, src_context->cc_ops,
+    memcpy(rk_UNCONST(cc_ops), src_context->cc_ops,
 	   sizeof(cc_ops[0]) * src_context->num_cc_ops);
     context->cc_ops = cc_ops;
     context->num_cc_ops = src_context->num_cc_ops;
@@ -559,7 +559,7 @@ krb5_free_context(krb5_context context)
     krb5_free_host_realm (context, context->default_realms);
     krb5_config_file_free (context, context->cf);
     free_error_table (context->et_list);
-    free(context->cc_ops);
+    free(rk_UNCONST(context->cc_ops));
     free(context->kt_types);
     krb5_clear_error_message(context);
     if(context->warn_dest != NULL)
@@ -616,6 +616,11 @@ krb5_set_config_files(krb5_context context, char **filenames)
     if(tmp == NULL)
 	return ENXIO;
 #endif
+
+#ifdef _WIN32
+    _krb5_load_config_from_registry(context, &tmp);
+#endif
+
     krb5_config_file_free(context, context->cf);
     context->cf = tmp;
     ret = init_context_from_config_file(context);
@@ -668,7 +673,7 @@ krb5_prepend_config_files(const char *filelist, char **pq, char ***ret_pp)
     while(1) {
 	ssize_t l;
 	q = p;
-	l = strsep_copy(&q, ":", NULL, 0);
+	l = strsep_copy(&q, PATH_SEP, NULL, 0);
 	if(l == -1)
 	    break;
 	fn = malloc(l + 1);
@@ -676,7 +681,7 @@ krb5_prepend_config_files(const char *filelist, char **pq, char ***ret_pp)
 	    krb5_free_config_files(pp);
 	    return ENOMEM;
 	}
-	(void)strsep_copy(&p, ":", fn, l + 1);
+	(void)strsep_copy(&p, PATH_SEP, fn, l + 1);
 	ret = add_file(&pp, &len, fn);
 	if (ret) {
 	    krb5_free_config_files(pp);
@@ -736,6 +741,45 @@ krb5_prepend_config_files_default(const char *filelist, char ***pfilenames)
     return 0;
 }
 
+#ifdef _WIN32
+
+/**
+ * Checks the registry for configuration file location
+ *
+ * Kerberos for Windows and other legacy Kerberos applications expect
+ * to find the configuration file location in the
+ * SOFTWARE\MIT\Kerberos registry key under the value "config".
+ */
+char *
+_krb5_get_default_config_config_files_from_registry()
+{
+    static const char * KeyName = "Software\\MIT\\Kerberos";
+    char *config_file = NULL;
+    LONG rcode;
+    HKEY key;
+
+    rcode = RegOpenKeyEx(HKEY_CURRENT_USER, KeyName, 0, KEY_READ, &key);
+    if (rcode == ERROR_SUCCESS) {
+        config_file = _krb5_parse_reg_value_as_multi_string(NULL, key, "config",
+                                                            REG_NONE, 0, PATH_SEP);
+        RegCloseKey(key);
+    }
+
+    if (config_file)
+        return config_file;
+
+    rcode = RegOpenKeyEx(HKEY_LOCAL_MACHINE, KeyName, 0, KEY_READ, &key);
+    if (rcode == ERROR_SUCCESS) {
+        config_file = _krb5_parse_reg_value_as_multi_string(NULL, key, "config",
+                                                            REG_NONE, 0, PATH_SEP);
+        RegCloseKey(key);
+    }
+
+    return config_file;
+}
+
+#endif
+
 /**
  * Get the global configuration list.
  *
@@ -756,6 +800,22 @@ krb5_get_default_config_files(char ***pfilenames)
         return EINVAL;
     if(!issuid())
 	files = getenv("KRB5_CONFIG");
+
+#ifdef _WIN32
+    if (files == NULL) {
+        char * reg_files;
+        reg_files = _krb5_get_default_config_config_files_from_registry();
+        if (reg_files != NULL) {
+            krb5_error_code code;
+
+            code = krb5_prepend_config_files(reg_files, NULL, pfilenames);
+            free(reg_files);
+
+            return code;
+        }
+    }
+#endif
+
     if (files == NULL)
 	files = krb5_config_file;
 
@@ -1425,7 +1485,7 @@ _krb5_homedir_access(krb5_context context)
  * @ingroup krb5
  */
 
-krb5_boolean
+KRB5_LIB_FUNCTION krb5_boolean KRB5_LIB_CALL
 krb5_set_home_dir_access(krb5_context context, krb5_boolean allow)
 {
     krb5_boolean old;

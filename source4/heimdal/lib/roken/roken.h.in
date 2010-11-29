@@ -43,18 +43,26 @@
 
 #ifndef ROKEN_LIB_FUNCTION
 #ifdef _WIN32
-#define ROKEN_LIB_FUNCTION
-#define ROKEN_LIB_CALL     __cdecl
+#  define ROKEN_LIB_CALL     __cdecl
+#  ifdef ROKEN_LIB_DYNAMIC
+#    define ROKEN_LIB_FUNCTION __declspec(dllimport)
+#    define ROKEN_LIB_VARIABLE __declspec(dllimport)
+#  else
+#    define ROKEN_LIB_FUNCTION
+#    define ROKEN_LIB_VARIABLE
+#  endif
 #else
 #define ROKEN_LIB_FUNCTION
 #define ROKEN_LIB_CALL
+#define ROKEN_LIB_VARIABLE
 #endif
 #endif
 
 #ifdef HAVE_WINSOCK
 /* Declarations for Microsoft Windows */
 
-#include<ws2tcpip.h>
+#include <winsock2.h>
+#include <ws2tcpip.h>
 
 /*
  * error codes for inet_ntop/inet_pton 
@@ -239,10 +247,6 @@ struct sockaddr_dl;
 #include <sys/time.h>
 #else
 #include <time.h>
-#endif
-
-#ifdef HAVE_WS2TCPIP_H
-#include <ws2tcpip.h>
 #endif
 
 #ifdef HAVE_PATHS_H
@@ -536,7 +540,6 @@ int ROKEN_LIB_FUNCTION rk_strerror_r(int, char *, size_t);
 #endif
 /* This causes a fatal error under Psoriasis */
 #ifndef SunOS
-const char * ROKEN_LIB_FUNCTION hstrerror(int);
 ROKEN_LIB_FUNCTION const char * ROKEN_LIB_CALL hstrerror(int);
 #endif
 #endif
@@ -757,14 +760,23 @@ ROKEN_LIB_FUNCTION int ROKEN_LIB_CALL get_window_size(int fd, struct winsize *);
 ROKEN_LIB_FUNCTION void ROKEN_LIB_CALL vsyslog(int, const char *, va_list);
 #endif
 
+#ifndef HAVE_GETOPT
+#define getopt rk_getopt
+#define optarg rk_optarg
+#define optind rk_optind
+#define opterr rk_opterr
+ROKEN_LIB_FUNCTION int ROKEN_LIB_CALL
+getopt(int nargc, char * const *nargv, const char *ostr);
+#endif
+
 #if !HAVE_DECL_OPTARG
-extern char *optarg;
+ROKEN_LIB_VARIABLE extern char *optarg;
 #endif
 #if !HAVE_DECL_OPTIND
-extern int optind;
+ROKEN_LIB_VARIABLE extern int optind;
 #endif
 #if !HAVE_DECL_OPTERR
-extern int opterr;
+ROKEN_LIB_VARIABLE extern int opterr;
 #endif
 
 #ifndef HAVE_GETIPNODEBYNAME
@@ -1071,6 +1083,15 @@ rk_timegm(struct tm *tm);
 void
 rk_qsort(void *, size_t, size_t, int (*)(const void *, const void *));
 #endif
+
+#if defined(HAVE_ARC4RANDOM)
+#define rk_random() arc4random()
+#elif defined(HAVE_RANDOM)
+#define rk_random() random()
+#else
+#define rk_random() rand()
+#endif
+
 
 #if defined(__linux__) && defined(SOCK_CLOEXEC) && !defined(SOCKET_WRAPPER_REPLACE) && !defined(__SOCKET_WRAPPER_H__)
 #undef socket

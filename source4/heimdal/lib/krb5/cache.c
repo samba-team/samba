@@ -134,7 +134,7 @@ krb5_cc_register(krb5_context context,
 	}
     }
     if(i == context->num_cc_ops) {
-	const krb5_cc_ops **o = realloc(context->cc_ops,
+	const krb5_cc_ops **o = realloc(rk_UNCONST(context->cc_ops),
 					(context->num_cc_ops + 1) *
 					sizeof(context->cc_ops[0]));
 	if(o == NULL) {
@@ -397,7 +397,7 @@ krb5_cc_get_full_name(krb5_context context,
  */
 
 
-const krb5_cc_ops *
+KRB5_LIB_FUNCTION const krb5_cc_ops * KRB5_LIB_CALL
 krb5_cc_get_ops(krb5_context context, krb5_ccache id)
 {
     return id->ops;
@@ -461,7 +461,7 @@ environment_changed(krb5_context context)
  * @ingroup krb5_ccache
  */
 
-krb5_error_code KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_cc_switch(krb5_context context, krb5_ccache id)
 {
 
@@ -477,7 +477,7 @@ krb5_cc_switch(krb5_context context, krb5_ccache id)
  * @ingroup krb5_ccache
  */
 
-krb5_boolean KRB5_LIB_FUNCTION
+KRB5_LIB_FUNCTION krb5_boolean KRB5_LIB_CALL
 krb5_cc_support_switch(krb5_context context, const char *type)
 {
     const krb5_cc_ops *ops;
@@ -512,6 +512,12 @@ krb5_cc_set_default_name(krb5_context context, const char *name)
 		context->default_cc_name_env = strdup(e);
 	    }
 	}
+
+#ifdef _WIN32
+        if (e == NULL) {
+            e = p = _krb5_get_default_cc_name_from_registry();
+        }
+#endif
 	if (e == NULL) {
 	    e = krb5_config_get_string(context, NULL, "libdefaults",
 				       "default_cc_name", NULL);
@@ -967,7 +973,7 @@ krb5_cc_clear_mcred(krb5_creds *mcred)
  */
 
 
-const krb5_cc_ops *
+KRB5_LIB_FUNCTION const krb5_cc_ops * KRB5_LIB_CALL
 krb5_cc_get_prefix_ops(krb5_context context, const char *prefix)
 {
     char *p, *p1;
@@ -1183,7 +1189,7 @@ krb5_cc_cache_match (krb5_context context,
  * @ingroup krb5_ccache
  */
 
-krb5_error_code
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_cc_move(krb5_context context, krb5_ccache from, krb5_ccache to)
 {
     krb5_error_code ret;
@@ -1658,7 +1664,7 @@ krb5_cc_get_lifetime(krb5_context context, krb5_ccache id, time_t *t)
  * @ingroup krb5_ccache
  */
 
-krb5_error_code
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_cc_set_kdc_offset(krb5_context context, krb5_ccache id, krb5_deltat offset)
 {
     if (id->ops->set_kdc_offset == NULL) {
@@ -1683,7 +1689,7 @@ krb5_cc_set_kdc_offset(krb5_context context, krb5_ccache id, krb5_deltat offset)
  * @ingroup krb5_ccache
  */
 
-krb5_error_code
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_cc_get_kdc_offset(krb5_context context, krb5_ccache id, krb5_deltat *offset)
 {
     if (id->ops->get_kdc_offset == NULL) {
@@ -1692,3 +1698,30 @@ krb5_cc_get_kdc_offset(krb5_context context, krb5_ccache id, krb5_deltat *offset
     }
     return (*id->ops->get_kdc_offset)(context, id, offset);
 }
+
+
+#ifdef _WIN32
+
+char *
+_krb5_get_default_cc_name_from_registry()
+{
+    HKEY hk_k5 = 0;
+    LONG code;
+    char * ccname = NULL;
+
+    code = RegOpenKeyEx(HKEY_CURRENT_USER,
+                        "Software\\MIT\\Kerberos5",
+                        0, KEY_READ, &hk_k5);
+
+    if (code != ERROR_SUCCESS)
+        return NULL;
+
+    ccname = _krb5_parse_reg_value_as_string(NULL, hk_k5, "ccname",
+                                             REG_NONE, 0);
+
+    RegCloseKey(hk_k5);
+
+    return ccname;
+}
+
+#endif

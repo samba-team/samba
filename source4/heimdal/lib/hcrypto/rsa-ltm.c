@@ -385,8 +385,7 @@ ltm_rsa_private_decrypt(int flen, const unsigned char* from,
 			unsigned char* to, RSA* rsa, int padding)
 {
     unsigned char *ptr;
-    int res;
-    size_t size;
+    int res, size;
     mp_int in, out, n, e, b, bi;
     int blinding = (rsa->flags & RSA_FLAG_NO_BLINDING) == 0;
     int do_unblind = 0;

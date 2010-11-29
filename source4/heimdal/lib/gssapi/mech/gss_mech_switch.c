@@ -353,7 +353,7 @@ _gss_load_mech(void)
 }
 
 gssapi_mech_interface
-__gss_get_mechanism(gss_OID mech)
+__gss_get_mechanism(gss_const_OID mech)
 {
         struct _gss_mech_switch	*m;
 

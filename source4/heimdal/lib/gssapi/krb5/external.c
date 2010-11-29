@@ -153,47 +153,6 @@ gss_OID_desc GSSAPI_LIB_VARIABLE __gss_krb5_nt_principal_name_oid_desc =
     {10, rk_UNCONST("\x2a\x86\x48\x86\xf7\x12\x01\x02\x02\x01") };
 
 /*
- *   This name form shall be represented by the Object Identifier {iso(1)
- *   member-body(2) United States(840) mit(113554) infosys(1) gssapi(2)
- *   generic(1) user_name(1)}.  The recommended symbolic name for this
- *   type is "GSS_KRB5_NT_USER_NAME".
- */
-
-/*
- *   This name form shall be represented by the Object Identifier {iso(1)
- *   member-body(2) United States(840) mit(113554) infosys(1) gssapi(2)
- *   generic(1) machine_uid_name(2)}.  The recommended symbolic name for
- *   this type is "GSS_KRB5_NT_MACHINE_UID_NAME".
- */
-
-/*
- *   This name form shall be represented by the Object Identifier {iso(1)
- *   member-body(2) United States(840) mit(113554) infosys(1) gssapi(2)
- *   generic(1) string_uid_name(3)}.  The recommended symbolic name for
- *   this type is "GSS_KRB5_NT_STRING_UID_NAME".
- */
-
-/*
- *   To support ongoing experimentation, testing, and evolution of the
- *   specification, the Kerberos V5 GSS-API mechanism as defined in this
- *   and any successor memos will be identified with the following Object
- *   Identifier, as defined in RFC-1510, until the specification is
- *   advanced to the level of Proposed Standard RFC:
- *
- *   {iso(1), org(3), dod(5), internet(1), security(5), kerberosv5(2)}
- *
- *   Upon advancement to the level of Proposed Standard RFC, the Kerberos
- *   V5 GSS-API mechanism will be identified by an Object Identifier
- *   having the value:
- *
- *   {iso(1) member-body(2) United States(840) mit(113554) infosys(1)
- *   gssapi(2) krb5(2)}
- */
-
-gss_OID_desc GSSAPI_LIB_VARIABLE __gss_krb5_mechanism_oid_desc =
-    {9, rk_UNCONST("\x2a\x86\x48\x86\xf7\x12\x01\x02\x02") };
-
-/*
  * draft-ietf-cat-iakerb-09, IAKERB:
  *   The mechanism ID for IAKERB proxy GSS-API Kerberos, in accordance
  *   with the mechanism proposed by SPNEGO [7] for negotiating protocol
@@ -213,103 +172,99 @@ gss_OID_desc GSSAPI_LIB_VARIABLE __gss_iakerb_min_msg_mechanism_oid_desc =
     {7, rk_UNCONST("\x2b\x06\x01\x05\x05\x0a\x02") };
 
 /*
- *
- */
-
-gss_OID_desc GSSAPI_LIB_VARIABLE __gss_c_peer_has_updated_spnego_oid_desc =
-    {9, (void *)"\x2b\x06\x01\x04\x01\xa9\x4a\x13\x05"};
-
-/*
- * 1.2.752.43.13 Heimdal GSS-API Extentions
- */
-
-/* 1.2.752.43.13.1 */
-gss_OID_desc GSSAPI_LIB_VARIABLE __gss_krb5_copy_ccache_x_oid_desc =
-    {6, rk_UNCONST("\x2a\x85\x70\x2b\x0d\x01")};
-
-/* 1.2.752.43.13.2 */
-gss_OID_desc GSSAPI_LIB_VARIABLE __gss_krb5_get_tkt_flags_x_oid_desc =
-    {6, rk_UNCONST("\x2a\x85\x70\x2b\x0d\x02")};
-
-/* 1.2.752.43.13.3 */
-gss_OID_desc GSSAPI_LIB_VARIABLE __gss_krb5_extract_authz_data_from_sec_context_x_oid_desc =
-    {6, rk_UNCONST("\x2a\x85\x70\x2b\x0d\x03")};
-
-/* 1.2.752.43.13.4 */
-gss_OID_desc GSSAPI_LIB_VARIABLE __gss_krb5_compat_des3_mic_x_oid_desc =
-    {6, rk_UNCONST("\x2a\x85\x70\x2b\x0d\x04")};
-
-/* 1.2.752.43.13.5 */
-gss_OID_desc GSSAPI_LIB_VARIABLE __gss_krb5_register_acceptor_identity_x_oid_desc =
-    {6, rk_UNCONST("\x2a\x85\x70\x2b\x0d\x05")};
-
-/* 1.2.752.43.13.6 */
-gss_OID_desc GSSAPI_LIB_VARIABLE __gss_krb5_export_lucid_context_x_oid_desc =
-    {6, rk_UNCONST("\x2a\x85\x70\x2b\x0d\x06")};
-
-/* 1.2.752.43.13.6.1 */
-gss_OID_desc GSSAPI_LIB_VARIABLE __gss_krb5_export_lucid_context_v1_x_oid_desc =
-    {7, rk_UNCONST("\x2a\x85\x70\x2b\x0d\x06\x01")};
-
-/* 1.2.752.43.13.7 */
-gss_OID_desc GSSAPI_LIB_VARIABLE __gss_krb5_set_dns_canonicalize_x_oid_desc =
-    {6, rk_UNCONST("\x2a\x85\x70\x2b\x0d\x07")};
-
-/* 1.2.752.43.13.8 */
-gss_OID_desc GSSAPI_LIB_VARIABLE __gss_krb5_get_subkey_x_oid_desc =
-    {6, rk_UNCONST("\x2a\x85\x70\x2b\x0d\x08")};
-
-/* 1.2.752.43.13.9 */
-gss_OID_desc GSSAPI_LIB_VARIABLE __gss_krb5_get_initiator_subkey_x_oid_desc =
-    {6, rk_UNCONST("\x2a\x85\x70\x2b\x0d\x09")};
-
-/* 1.2.752.43.13.10 */
-gss_OID_desc GSSAPI_LIB_VARIABLE __gss_krb5_get_acceptor_subkey_x_oid_desc =
-    {6, rk_UNCONST("\x2a\x85\x70\x2b\x0d\x0a")};
-
-/* 1.2.752.43.13.11 */
-gss_OID_desc GSSAPI_LIB_VARIABLE __gss_krb5_send_to_kdc_x_oid_desc =
-    {6, rk_UNCONST("\x2a\x85\x70\x2b\x0d\x0b")};
-
-/* 1.2.752.43.13.12 */
-gss_OID_desc GSSAPI_LIB_VARIABLE __gss_krb5_get_authtime_x_oid_desc =
-    {6, rk_UNCONST("\x2a\x85\x70\x2b\x0d\x0c")};
-
-/* 1.2.752.43.13.13 */
-gss_OID_desc GSSAPI_LIB_VARIABLE __gss_krb5_get_service_keyblock_x_oid_desc =
-    {6, rk_UNCONST("\x2a\x85\x70\x2b\x0d\x0d")};
-
-/* 1.2.752.43.13.14 */
-gss_OID_desc GSSAPI_LIB_VARIABLE __gss_krb5_set_allowable_enctypes_x_oid_desc =
-    {6, rk_UNCONST("\x2a\x85\x70\x2b\x0d\x0e")};
-
-/* 1.2.752.43.13.15 */
-gss_OID_desc GSSAPI_LIB_VARIABLE __gss_krb5_set_default_realm_x_oid_desc =
-    {6, rk_UNCONST("\x2a\x85\x70\x2b\x0d\x0f")};
-
-/* 1.2.752.43.13.16 */
-gss_OID_desc GSSAPI_LIB_VARIABLE __gss_krb5_ccache_name_x_oid_desc =
-    {6, rk_UNCONST("\x2a\x85\x70\x2b\x0d\x10")};
-
-/* 1.2.752.43.13.17 */
-gss_OID_desc GSSAPI_LIB_VARIABLE __gss_krb5_set_time_offset_x_oid_desc =
-    {6, rk_UNCONST("\x2a\x85\x70\x2b\x0d\x11")};
-
-/* 1.2.752.43.13.18 */
-gss_OID_desc GSSAPI_LIB_VARIABLE __gss_krb5_get_time_offset_x_oid_desc =
-    {6, rk_UNCONST("\x2a\x85\x70\x2b\x0d\x12")};
-
-/* 1.2.752.43.13.19 */
-gss_OID_desc GSSAPI_LIB_VARIABLE __gss_krb5_plugin_register_x_oid_desc =
-    {6, rk_UNCONST("\x2a\x85\x70\x2b\x0d\x13")};
-
-/* 1.2.752.43.14.1 */
-gss_OID_desc GSSAPI_LIB_VARIABLE __gss_sasl_digest_md5_mechanism_oid_desc =
-    {6, rk_UNCONST("\x2a\x85\x70\x2b\x0e\x01") };
-
-/*
  * Context for krb5 calls.
  */
+
+static gss_mo_desc krb5_mo[] = {
+    {
+	GSS_C_MA_SASL_MECH_NAME,
+	GSS_MO_MA,
+	"SASL mech name",
+	"GS2-KRB5",
+	_gss_mo_get_ctx_as_string,
+	NULL
+    },
+    {
+	GSS_C_MA_MECH_NAME,
+	GSS_MO_MA,
+	"Mechanism name",
+	"KRB5",
+	_gss_mo_get_ctx_as_string,
+	NULL
+    },
+    {
+	GSS_C_MA_MECH_DESCRIPTION,
+	GSS_MO_MA,
+	"Mechanism description",
+	"Heimdal Kerberos 5 mech",
+	_gss_mo_get_ctx_as_string,
+	NULL
+    },
+    {
+	GSS_C_MA_MECH_CONCRETE,
+	GSS_MO_MA
+    },
+    {
+	GSS_C_MA_ITOK_FRAMED,
+	GSS_MO_MA
+    },
+    {
+	GSS_C_MA_AUTH_INIT,
+	GSS_MO_MA
+    },
+    {
+	GSS_C_MA_AUTH_TARG,
+	GSS_MO_MA
+    },
+    {
+	GSS_C_MA_AUTH_INIT_ANON,
+	GSS_MO_MA
+    },
+    {
+	GSS_C_MA_DELEG_CRED,
+	GSS_MO_MA
+    },
+    {
+	GSS_C_MA_INTEG_PROT,
+	GSS_MO_MA
+    },
+    {
+	GSS_C_MA_CONF_PROT,
+	GSS_MO_MA
+    },
+    {
+	GSS_C_MA_MIC,
+	GSS_MO_MA
+    },
+    {
+	GSS_C_MA_WRAP,
+	GSS_MO_MA
+    },
+    {
+	GSS_C_MA_PROT_READY,
+	GSS_MO_MA
+    },
+    {
+	GSS_C_MA_REPLAY_DET,
+	GSS_MO_MA
+    },
+    {
+	GSS_C_MA_OOS_DET,
+	GSS_MO_MA
+    },
+    {
+	GSS_C_MA_CBINDINGS,
+	GSS_MO_MA
+    },
+    {
+	GSS_C_MA_PFS,
+	GSS_MO_MA
+    },
+    {
+	GSS_C_MA_CTX_TRANS,
+	GSS_MO_MA
+    }
+};
 
 /*
  *
@@ -359,7 +314,16 @@ static gssapi_mech_interface_desc krb5_mech = {
     _gk_wrap_iov_length,
     _gsskrb5_store_cred,
     _gsskrb5_export_cred,
-    _gsskrb5_import_cred
+    _gsskrb5_import_cred,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    krb5_mo,
+    sizeof(krb5_mo) / sizeof(krb5_mo[0])
 };
 
 gssapi_mech_interface
