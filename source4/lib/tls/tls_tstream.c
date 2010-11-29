@@ -460,7 +460,7 @@ static void tstream_tls_readv_crypt_next(struct tevent_req *req)
 		memcpy(base, tlss->read.buffer + tlss->read.ofs, len);
 
 		base += len;
-		state->vector[0].iov_base = base;
+		state->vector[0].iov_base = (char *) base;
 		state->vector[0].iov_len -= len;
 
 		tlss->read.ofs += len;
@@ -631,7 +631,7 @@ static void tstream_tls_writev_crypt_next(struct tevent_req *req)
 		memcpy(tlss->write.buffer + tlss->write.ofs, base, len);
 
 		base += len;
-		state->vector[0].iov_base = base;
+		state->vector[0].iov_base = (char *) base;
 		state->vector[0].iov_len -= len;
 
 		tlss->write.ofs += len;
