@@ -583,12 +583,12 @@ static NTSTATUS gensec_gssapi_update(struct gensec_security *gensec_security,
 			case KRB5_KDC_UNREACH:
 				DEBUG(3, ("Cannot reach a KDC we require in order to obtain a ticetk to %s: %s\n",
 					  gensec_gssapi_state->target_principal,
-					  gssapi_error_string(gensec_gssapi_state, maj_stat, min_stat, gensec_gssapi_state->gss_oid)));
+					  gssapi_error_string(out_mem_ctx, maj_stat, min_stat, gensec_gssapi_state->gss_oid)));
 				return NT_STATUS_NO_LOGON_SERVERS; /* Make SPNEGO ignore us, we can't go any further here */
 			case KRB5KDC_ERR_S_PRINCIPAL_UNKNOWN:
 				DEBUG(3, ("Server %s is not registered with our KDC: %s\n",
 					  gensec_gssapi_state->target_principal,
-					  gssapi_error_string(gensec_gssapi_state, maj_stat, min_stat, gensec_gssapi_state->gss_oid)));
+					  gssapi_error_string(out_mem_ctx, maj_stat, min_stat, gensec_gssapi_state->gss_oid)));
 				return NT_STATUS_INVALID_PARAMETER; /* Make SPNEGO ignore us, we can't go any further here */
 			case KRB5KRB_AP_ERR_MSG_TYPE:
 				/* garbage input, possibly from the auto-mech detection */
