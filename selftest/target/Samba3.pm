@@ -387,6 +387,9 @@ sub provision($$$$$$)
 	my $driver64dir="$shrdir/x64";
 	push(@dirs,$driver64dir);
 
+	my $driver40dir="$shrdir/WIN40";
+	push(@dirs,$driver40dir);
+
 	my $ro_shrdir="$shrdir/root-tmp";
 	push(@dirs,$ro_shrdir);
 
