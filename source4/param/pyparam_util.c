@@ -22,7 +22,6 @@
 #include "param/param.h"
 #include "param/loadparm.h"
 #include "lib/talloc/pytalloc.h"
-#include "lib/cmdline/popt_common.h"
 
 #define PyLoadparmContext_AsLoadparmContext(obj) py_talloc_get_type(obj, struct loadparm_context)
 
