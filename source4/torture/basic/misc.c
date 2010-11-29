@@ -289,8 +289,6 @@ bool torture_holdopen(struct torture_context *tctx,
 		fflush(stdout);
 		sleep(15);
 	}
-
-	return true;
 }
 
 /*

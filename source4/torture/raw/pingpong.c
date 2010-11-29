@@ -243,8 +243,5 @@ bool torture_ping_pong(struct torture_context *torture)
 		}
 		loops++;
 	}
-
-	talloc_free(mem_ctx);
-	return true;
 }
 

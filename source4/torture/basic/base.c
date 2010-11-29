@@ -1360,8 +1360,6 @@ static bool run_iometer(struct torture_context *tctx,
 				       smbcli_errstr(cli->tree)));
 		}
 	}
-
-	return true;
 }
 
 /**

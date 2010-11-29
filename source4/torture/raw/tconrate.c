@@ -135,9 +135,6 @@ static bool children_remain(void)
 			return errno == ECHILD ? false : true;
 		}
 	}
-
-	/* notreached */
-	return false;
 }
 
 static double rate_convert_secs(unsigned count,
