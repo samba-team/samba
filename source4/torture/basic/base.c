@@ -1340,7 +1340,7 @@ static bool run_iometer(struct torture_context *tctx,
 		for (i=0; i<num_reads; i++) {
 			ssize_t res;
 			if (ops++ > torture_numops) {
-				return true;
+				break;
 			}
 			res = smbcli_read(cli->tree, fnum, buf,
 					  random() % filesize, sizeof(buf));
@@ -1351,7 +1351,7 @@ static bool run_iometer(struct torture_context *tctx,
 		for (i=0; i<num_writes; i++) {
 			ssize_t res;
 			if (ops++ > torture_numops) {
-				return true;
+				break;
 			}
 			res = smbcli_write(cli->tree, fnum, 0, buf,
 					  random() % filesize, sizeof(buf));
@@ -1360,6 +1360,8 @@ static bool run_iometer(struct torture_context *tctx,
 				       smbcli_errstr(cli->tree)));
 		}
 	}
+
+	return true;
 }
 
 /**
