@@ -164,8 +164,10 @@ class DrsReplSchemaTestCase(samba.tests.TestCase):
             res_dc2 = self.ldb_dc2.search(base=obj_dn,
                                           scope=SCOPE_BASE,
                                           attrs=["*"])
-        except LdbError, (ERR_NO_SUCH_OBJECT, _):
-            self.fail("%s doesn't exists on %s" % (obj_dn, self.dnsname_dc2))
+        except LdbError, (enum, estr):
+            if enum == ERR_NO_SUCH_OBJECT:
+                self.fail("%s doesn't exists on %s" % (obj_dn, self.dnsname_dc2))
+            raise
         self.assertEquals(len(res_dc2), 1,
                           "%s doesn't exists on %s" % (obj_dn, self.dnsname_dc2))
 
