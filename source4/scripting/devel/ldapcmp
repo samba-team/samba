@@ -112,18 +112,12 @@ class LDAPBase(object):
     def object_exists(self, object_dn):
         res = None
         try:
-            res = self.ldb.search(base=object_dn, scope=SCOPE_BASE, expression="(objectClass=*)")
-        except LdbError, (ERR_NO_SUCH_OBJECT, _):
-            return False
+            res = self.ldb.search(base=object_dn, scope=SCOPE_BASE)
+        except LdbError, (enum, estr):
+            if enum == ERR_NO_SUCH_OBJECT:
+                return False
+            raise
         return len(res) == 1
-
-    def get_object_sid(self, object_dn):
-        try:
-            res = self.ldb.search(base=object_dn, expression="(objectClass=*)", scope=SCOPE_BASE, attrs=["objectSid"])
-        except LdbError, (ERR_NO_SUCH_OBJECT, _):
-            raise Exception("DN sintax is wrong or object does't exist: " + object_dn)
-        assert len(res) == 1
-        return res[0]["objectSid"][0]
 
     def delete_force(self, object_dn):
         try:
@@ -669,18 +663,22 @@ class LDAPBundel(object):
             skip = False
             try:
                 object1 = LDAPObject(connection=self.con,
-                        dn=self.dn_list[index],
-                        summary=self.summary)
-            except LdbError, (ERR_NO_SUCH_OBJECT, _):
-                self.log( "\n!!! Object not found: %s" % self.dn_list[index] )
-                skip = True
+                                     dn=self.dn_list[index],
+                                     summary=self.summary)
+            except LdbError, (enum, estr):
+                if enum == ERR_NO_SUCH_OBJECT:
+                    self.log( "\n!!! Object not found: %s" % self.dn_list[index] )
+                    skip = True
+                raise
             try:
                 object2 = LDAPObject(connection=other.con,
                         dn=other.dn_list[index],
                         summary=other.summary)
-            except LdbError, (ERR_NO_SUCH_OBJECT, _):
-                self.log( "\n!!! Object not found: %s" % other.dn_list[index] )
-                skip = True
+            except LdbError, (enum, estr):
+                if enum == ERR_NO_SUCH_OBJECT:
+                    self.log( "\n!!! Object not found: %s" % other.dn_list[index] )
+                    skip = True
+                raise
             if skip:
                 index += 1
                 continue
