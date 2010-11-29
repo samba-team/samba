@@ -8857,7 +8857,9 @@ static bool test_add_driver_arg(struct torture_context *tctx,
 
 	info8.driver_path	= talloc_asprintf(tctx, "%s\\%s", d->remote.driver_directory, d->info8.driver_path);
 	info8.data_file		= talloc_asprintf(tctx, "%s\\%s", d->remote.driver_directory, d->info8.data_file);
-	info8.config_file	= talloc_asprintf(tctx, "%s\\%s", d->remote.driver_directory, d->info8.config_file);
+	if (d->info8.config_file) {
+		info8.config_file	= talloc_asprintf(tctx, "%s\\%s", d->remote.driver_directory, d->info8.config_file);
+	}
 
 	for (i=0; i < ARRAY_SIZE(levels); i++) {
 
