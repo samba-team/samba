@@ -190,6 +190,7 @@ export LOCAL_PATH
 ##
 mkdir $SHRDIR/W32X86
 mkdir $SHRDIR/x64
+mkdir $SHRDIR/WIN40
 
 ##
 ## Create a read-only directory.
