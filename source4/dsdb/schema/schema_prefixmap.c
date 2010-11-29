@@ -121,6 +121,23 @@ WERROR dsdb_schema_pfm_new(TALLOC_CTX *mem_ctx, struct dsdb_schema_prefixmap **_
 }
 
 
+struct dsdb_schema_prefixmap *dsdb_schema_pfm_copy_shallow(TALLOC_CTX *mem_ctx,
+							   const struct dsdb_schema_prefixmap *pfm)
+{
+	uint32_t i;
+	struct dsdb_schema_prefixmap *pfm_copy;
+
+	pfm_copy = _dsdb_schema_prefixmap_talloc(mem_ctx, pfm->length);
+	if (!pfm_copy) {
+		return NULL;
+	}
+	for (i = 0; i < pfm_copy->length; i++) {
+		pfm_copy->prefixes[i] = pfm->prefixes[i];
+	}
+
+	return pfm_copy;
+}
+
 /**
  * Adds oid to prefix map.
  * On success returns ID for newly added index
