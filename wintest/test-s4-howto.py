@@ -239,7 +239,8 @@ def test_kerberos(t):
     t.info("Testing kerberos")
     t.run_cmd("kdestroy")
     t.kinit("administrator@${REALM}", "${PASSWORD1}")
-    t.cmd_contains("klist -e", ["Ticket cache", "Default principal", "Valid starting"])
+    # this copes with the differences between MIT and Heimdal klist
+    t.cmd_contains("klist", ["rincipal", "administrator@${REALM}"])
 
 
 def test_dyndns(t):

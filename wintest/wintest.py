@@ -453,11 +453,13 @@ class wintest():
         if len(s) > 0:
             s[1] = s[1].upper()
         username = '@'.join(s)
-        child = self.pexpect_spawn('kinit -V ' + username)
-        child.expect("Password for")
+        child = self.pexpect_spawn('kinit ' + username)
+        child.expect("Password")
         child.sendline(password)
-        child.expect("Authenticated to Kerberos")
-
+        child.expect(pexpect.EOF)
+        child.close()
+        if child.exitstatus != 0:
+            raise RuntimeError("kinit failed with status %d" % child.exitstatus)
 
     def get_domains(self):
         '''return a dictionary of DNS domains and IPs for named.conf'''
