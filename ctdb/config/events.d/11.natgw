@@ -91,8 +91,10 @@ case "$1" in
 		# We do this so that the ip address will exist on a
 		# non-loopback interface so that samba may send it along in the
 		# KDC requests.
-		ip addr add $CTDB_NATGW_PUBLIC_IP_HOST dev lo scope host
 		ip route add 0.0.0.0/0 via $NATGWIP metric 10
+		# Make sure winbindd does not stay bound to this address
+		# if we are no longer natgwmaster
+		smbcontrol winbindd ip-dropped $CTDB_NATGW_PUBLIC_IP >/dev/null 2>/dev/null
 	fi
 
 	# flush our route cache
