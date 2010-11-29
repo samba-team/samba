@@ -501,10 +501,10 @@ def test_dcpromo_rodc(t, vm):
     t.vm_poweroff("${WIN_VM}")
 
 
-def join_as_dc(t, vm):
-    '''join a windows domain as a DC'''
+def prep_join_as_dc(t, vm):
+    '''start VM and shutdown Samba in preperation to join a windows domain as a DC'''
     t.setwinvars(vm)
-    t.info("Joining ${WIN_VM} as a second DC using samba-tool join DC")
+    t.info("Starting VMs for joining ${WIN_VM} as a second DC using samba-tool join DC")
     t.chdir('${PREFIX}')
     t.run_cmd('killall -9 -q samba smbd nmbd winbindd', checkfail=False)
     t.vm_poweroff("${WIN_VM}", checkfail=False)
@@ -513,6 +513,11 @@ def join_as_dc(t, vm):
     t.run_cmd("rm -rf etc/smb.conf private")
     child = t.open_telnet("${WIN_HOSTNAME}", "${WIN_DOMAIN}\\administrator", "${WIN_PASS}", set_time=True)
     t.get_ipconfig(child)
+
+def join_as_dc(t, vm):
+    '''join a windows domain as a DC'''
+    t.setwinvars(vm)
+    t.info("Joining ${WIN_VM} as a second DC using samba-tool join DC")
     t.retry_cmd("bin/samba-tool drs showrepl ${WIN_HOSTNAME}.${WIN_REALM} -Uadministrator%${WIN_PASS}", ['INBOUND NEIGHBORS'] )
     t.run_cmd('bin/samba-tool join ${WIN_REALM} DC -Uadministrator%${WIN_PASS} -d${DEBUGLEVEL} --option=interfaces=${INTERFACE}')
     t.run_cmd('bin/samba-tool drs kcc ${WIN_HOSTNAME}.${WIN_REALM} -Uadministrator@${WIN_REALM}%${WIN_PASS}')
@@ -641,6 +646,58 @@ def test_join_as_rodc(t, vm):
     t.vm_poweroff("${WIN_VM}")
 
 
+def run_dcpromo_as_first_dc(t, vm, func_level=None):
+    t.setwinvars(vm)
+    t.info("Configuring a windows VM ${WIN_VM} at the first DC in the domain using dcpromo")
+    child = t.open_telnet("${WIN_HOSTNAME}", "administrator", "${WIN_PASS}", set_time=True)
+    child.sendline("dcdiag");
+    if t.get_is_dc(child):
+        return
+
+    if func_level == '2008r2':
+        t.setvar("FUNCTION_LEVEL_INT", str(4))
+    elif func_level == '2003':
+        t.setvar("FUNCTION_LEVEL_INT", str(1))
+    else:
+        t.setvar("FUNCTION_LEVEL_INT", str(0))
+
+    child = t.open_telnet("${WIN_HOSTNAME}", "administrator", "${WIN_PASS}", set_ip=True)
+    child.sendline("dcdiag");
+
+    """This server must therefore not yet be a directory server, so we must promote it"""
+    child.sendline("copy /Y con answers.txt")
+    child.sendline('''
+[DCInstall]
+; New forest promotion
+ReplicaOrNewDomain=Domain
+NewDomain=Forest
+NewDomainDNSName=${WIN_REALM}
+ForestLevel=${FUNCTION_LEVEL_INT}
+DomainNetbiosName=${WIN_DOMAIN}
+DomainLevel=${FUNCTION_LEVEL_INT}
+InstallDNS=Yes
+ConfirmGc=Yes
+CreateDNSDelegation=No
+DatabasePath="C:\Windows\NTDS"
+LogPath="C:\Windows\NTDS"
+SYSVOLPath="C:\Windows\SYSVOL"
+; Set SafeModeAdminPassword to the correct value prior to using the unattend file
+SafeModeAdminPassword=${WIN_PASS}
+; Run-time flags (optional)
+RebootOnCompletion=No
+
+''')
+    child.expect("copied.")
+    child.expect("C:")
+    child.expect("C:")
+    child.sendline("dcpromo /answer:answers.txt")
+    i = child.expect(["You must restart this computer", "failed", "Active Directory Domain Services was not installed", "C:"], timeout=120)
+    if i == 1 or i == 2:
+        raise Exception("dcpromo failed")
+    child.sendline("shutdown -r -t 0")
+    t.port_wait("${WIN_IP}", 139, wait_for_fail=True)
+    t.port_wait("${WIN_IP}", 139)
+
 def test_howto(t):
     '''test the Samba4 howto'''
 
@@ -709,6 +766,8 @@ def test_howto(t):
         test_dcpromo(t, "W2K3B")
 
     if t.have_vm('W2K8R2A') and not t.skip("join_w2k8r2"):
+        prep_join_as_dc(t, "W2K8R2A")
+        run_dcpromo_as_first_dc(t, "W2K8R2A", func_level='2008r2')
         join_as_dc(t, "W2K8R2A")
         create_shares(t)
         start_s4(t)
@@ -716,6 +775,8 @@ def test_howto(t):
         test_join_as_dc(t, "W2K8R2A")
 
     if t.have_vm('W2K8R2A') and not t.skip("join_rodc"):
+        prep_join_as_rodc(t, "W2K8R2A")
+        run_dcpromo_as_first_dc(t, "W2K8R2A", func_level='2008r2')
         join_as_rodc(t, "W2K8R2A")
         create_shares(t)
         start_s4(t)
@@ -723,6 +784,8 @@ def test_howto(t):
         test_join_as_rodc(t, "W2K8R2A")
 
     if t.have_vm('W2K3A') and not t.skip("join_w2k3"):
+        prep_join_as_dc(t, "W2K3A")
+        run_dcpromo_as_first_dc(t, "W2K3A", func_level='2003')
         join_as_dc(t, "W2K3A")
         create_shares(t)
         start_s4(t)

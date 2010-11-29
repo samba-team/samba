@@ -332,6 +332,16 @@ class wintest():
         self.setvar('WIN_DEFAULT_GATEWAY', child.after)
         child.expect("C:")
 
+    def get_is_dc(self, child):
+        child.sendline("dcdiag")
+        i = child.expect(["is not a Directory Server", "Home Server = "])
+        if i == 0:
+            return False
+        child.expect('[\S]+')
+        hostname = child.after
+        if hostname.upper() == self.getvar("WIN_HOSTNAME").upper:
+            return True
+
     def run_tlntadmn(self, child):
         '''remove the annoying telnet restrictions'''
         child.sendline('tlntadmn config maxconn=1024')
