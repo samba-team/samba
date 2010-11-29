@@ -70,7 +70,7 @@ static int mit_samba_context_init(struct mit_samba_context **_ctx)
 		ret = ENOMEM;
 		goto done;
 	}
-	base_ctx.lp_ctx = loadparm_init(ctx);
+	base_ctx.lp_ctx = loadparm_init_global(false);
 	if (!base_ctx.lp_ctx) {
 		ret = ENOMEM;
 		goto done;

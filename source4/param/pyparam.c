@@ -330,7 +330,7 @@ static PyObject *py_lp_ctx_new(PyTypeObject *type, PyObject *args, PyObject *kwa
 		PyErr_NoMemory();
 		return NULL;
 	}
-	ret->ptr = loadparm_init(ret->talloc_ctx);
+	ret->ptr = loadparm_init_global(false);
 	return (PyObject *)ret;
 }
 
