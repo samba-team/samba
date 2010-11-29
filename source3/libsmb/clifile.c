@@ -5338,3 +5338,152 @@ NTSTATUS cli_flush(TALLOC_CTX *mem_ctx, struct cli_state *cli, uint16_t fnum)
 	}
 	return status;
 }
+
+struct cli_shadow_copy_data_state {
+	uint16_t setup[4];
+	uint8_t *data;
+	uint32_t num_data;
+	bool get_names;
+};
+
+static void cli_shadow_copy_data_done(struct tevent_req *subreq);
+
+struct tevent_req *cli_shadow_copy_data_send(TALLOC_CTX *mem_ctx,
+					     struct tevent_context *ev,
+					     struct cli_state *cli,
+					     uint16_t fnum,
+					     bool get_names)
+{
+	struct tevent_req *req, *subreq;
+	struct cli_shadow_copy_data_state *state;
+	uint32_t ret_size;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct cli_shadow_copy_data_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->get_names = get_names;
+	ret_size = get_names ? cli->max_xmit : 16;
+
+	SIVAL(state->setup + 0, 0, FSCTL_GET_SHADOW_COPY_DATA);
+	SSVAL(state->setup + 2, 0, fnum);
+	SCVAL(state->setup + 3, 0, 0); /* isFsctl */
+	SCVAL(state->setup + 3, 1, 0); /* compfilter, isFlags (WSSP) */
+
+	subreq = cli_trans_send(
+		state, ev, cli, SMBnttrans, NULL, 0, NT_TRANSACT_IOCTL, 0,
+		state->setup, ARRAY_SIZE(state->setup), 0,
+		NULL, 0, 0,
+		NULL, 0, ret_size);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, cli_shadow_copy_data_done, req);
+	return req;
+}
+
+static void cli_shadow_copy_data_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct cli_shadow_copy_data_state *state = tevent_req_data(
+		req, struct cli_shadow_copy_data_state);
+	NTSTATUS status;
+
+	status = cli_trans_recv(subreq, state, NULL,
+				NULL, 0, NULL, /* setup */
+				NULL, 0, NULL, /* param */
+				&state->data, 12, &state->num_data);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return;
+	}
+	tevent_req_done(req);
+}
+
+NTSTATUS cli_shadow_copy_data_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
+				   char ***pnames, int *pnum_names)
+{
+	struct cli_shadow_copy_data_state *state = tevent_req_data(
+		req, struct cli_shadow_copy_data_state);
+	char **names;
+	int i, num_names;
+	uint32_t dlength;
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		return status;
+	}
+	num_names = IVAL(state->data, 4);
+	dlength = IVAL(state->data, 8);
+
+	if (!state->get_names) {
+		*pnum_names = num_names;
+		return NT_STATUS_OK;
+	}
+
+	if (dlength+12 > state->num_data) {
+		return NT_STATUS_INVALID_NETWORK_RESPONSE;
+	}
+	names = talloc_array(mem_ctx, char *, num_names);
+	if (names == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	for (i=0; i<num_names; i++) {
+		bool ret;
+		uint8_t *src;
+		size_t converted_size;
+
+		src = state->data + 12 + i * 2 * sizeof(SHADOW_COPY_LABEL);
+		ret = convert_string_talloc(
+			names, CH_UTF16LE, CH_UNIX,
+			src, 2 * sizeof(SHADOW_COPY_LABEL),
+			&names[i], &converted_size, True);
+		if (!ret) {
+			TALLOC_FREE(names);
+			return NT_STATUS_INVALID_NETWORK_RESPONSE;
+		}
+	}
+	*pnum_names = num_names;
+	*pnames = names;
+	return NT_STATUS_OK;
+}
+
+NTSTATUS cli_shadow_copy_data(TALLOC_CTX *mem_ctx, struct cli_state *cli,
+			      uint16_t fnum, bool get_names,
+			      char ***pnames, int *pnum_names)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct event_context *ev;
+	struct tevent_req *req;
+	NTSTATUS status = NT_STATUS_NO_MEMORY;
+
+	if (cli_has_async_calls(cli)) {
+		/*
+		 * Can't use sync call while an async call is in flight
+		 */
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto fail;
+	}
+	ev = event_context_init(frame);
+	if (ev == NULL) {
+		goto fail;
+	}
+	req = cli_shadow_copy_data_send(frame, ev, cli, fnum, get_names);
+	if (req == NULL) {
+		goto fail;
+	}
+	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
+		goto fail;
+	}
+	status = cli_shadow_copy_data_recv(req, mem_ctx, pnames, pnum_names);
+ fail:
+	TALLOC_FREE(frame);
+	if (!NT_STATUS_IS_OK(status)) {
+		cli_set_error(cli, status);
+	}
+	return status;
+}
