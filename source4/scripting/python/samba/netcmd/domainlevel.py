@@ -195,8 +195,8 @@ class cmd_domainlevel(Command):
                       ldb.FLAG_MOD_REPLACE, "nTMixedDomain")
                     try:
                         samdb.modify(m)
-                    except LdbError, (num, _):
-                        if num != ldb.ERR_UNWILLING_TO_PERFORM:
+                    except ldb.LdbError, (enum, emsg):
+                        if enum != ldb.ERR_UNWILLING_TO_PERFORM:
                             raise
 
                 # Directly on the base DN
@@ -215,8 +215,8 @@ class cmd_domainlevel(Command):
                           "msDS-Behavior-Version")
                 try:
                     samdb.modify(m)
-                except LdbError, (num, _):
-                    if num != ldb.ERR_UNWILLING_TO_PERFORM:
+                except ldb.LdbError, (enum, emsg):
+                    if enum != ldb.ERR_UNWILLING_TO_PERFORM:
                         raise
 
                 level_domain = new_level_domain
