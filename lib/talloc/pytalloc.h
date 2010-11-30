@@ -32,6 +32,7 @@ typedef struct {
 /* Deallocate a py_talloc_Object */
 void py_talloc_dealloc(PyObject* self);
 
+PyTypeObject *PyTalloc_GetObjectType(void);
 int PyTalloc_Check(PyObject *);
 
 /* Retrieve the pointer for a py_talloc_object. Like talloc_get_type() 

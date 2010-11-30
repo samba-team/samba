@@ -23,7 +23,7 @@
 #include "pytalloc.h"
 #include <assert.h>
 
-static PyTypeObject *Get_TallocType(void)
+PyTypeObject *PyTalloc_GetObjectType(void)
 {
 	static PyTypeObject *type = NULL;
 	PyObject *mod;
@@ -156,7 +156,7 @@ PyObject *PyString_FromString_check_null(const char *ptr)
 
 int PyTalloc_Check(PyObject *obj)
 {
-	PyTypeObject *tp = Get_TallocType();
+	PyTypeObject *tp = PyTalloc_GetObjectType();
 
 	return PyObject_TypeCheck(obj, tp);
 }
