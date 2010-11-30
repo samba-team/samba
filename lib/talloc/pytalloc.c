@@ -74,6 +74,18 @@ static PyMethodDef talloc_methods[] = {
 	{ NULL }
 };
 
+/**
+ * Default (but only slightly more useful than the default) implementation of Repr().
+ */
+static PyObject *py_talloc_default_repr(PyObject *obj)
+{
+	py_talloc_Object *talloc_obj = (py_talloc_Object *)obj;
+	PyTypeObject *type = (PyTypeObject*)PyObject_Type(obj);
+
+	return PyString_FromFormat("<%s talloc object at 0x%p>", 
+				   type->tp_name, talloc_obj->ptr);
+}
+
 static PyTypeObject TallocObject_Type = {
 	.tp_name = "talloc.Object",
 	.tp_basicsize = sizeof(py_talloc_Object),

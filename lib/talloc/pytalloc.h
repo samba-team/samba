@@ -50,9 +50,6 @@ PyObject *py_talloc_steal(PyTypeObject *py_type, void *ptr);
 PyObject *py_talloc_reference_ex(PyTypeObject *py_type, TALLOC_CTX *mem_ctx, void *ptr);
 #define py_talloc_reference(py_type, talloc_ptr) py_talloc_reference_ex(py_type, talloc_ptr, talloc_ptr)
 
-/* Sane default implementation of reprfunc. */
-PyObject *py_talloc_default_repr(PyObject *py_obj);
-
 #define py_talloc_new(type, typeobj) py_talloc_steal(typeobj, talloc_zero(NULL, type))
 
 PyObject *PyCObject_FromTallocPtr(void *);

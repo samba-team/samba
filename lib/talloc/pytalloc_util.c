@@ -109,18 +109,6 @@ PyObject *py_talloc_reference_ex(PyTypeObject *py_type, TALLOC_CTX *mem_ctx, voi
 }
 
 /**
- * Default (but only slightly more useful than the default) implementation of Repr().
- */
-PyObject *py_talloc_default_repr(PyObject *obj)
-{
-	py_talloc_Object *talloc_obj = (py_talloc_Object *)obj;
-	PyTypeObject *type = (PyTypeObject*)PyObject_Type(obj);
-
-	return PyString_FromFormat("<%s talloc object at 0x%p>", 
-				   type->tp_name, talloc_obj->ptr);
-}
-
-/**
  * Default (but only slightly more useful than the default) implementation of cmp.
  */
 int py_talloc_default_cmp(PyObject *_obj1, PyObject *_obj2)
