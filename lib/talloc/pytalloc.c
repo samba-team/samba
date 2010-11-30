@@ -74,11 +74,26 @@ static PyMethodDef talloc_methods[] = {
 	{ NULL }
 };
 
+static PyTypeObject TallocObject_Type = {
+	.tp_name = "talloc.Object",
+	.tp_basicsize = sizeof(py_talloc_Object),
+	.tp_dealloc = (destructor)py_talloc_dealloc,
+	.tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+	.tp_repr = py_talloc_default_repr,
+	.tp_compare = py_talloc_default_cmp,
+};
+
 void inittalloc(void)
 {
 	PyObject *m;
 
+	if (PyType_Ready(&TallocObject_Type) < 0)
+		return;
+
 	m = Py_InitModule3("talloc", talloc_methods, "Debug utilities for talloc-wrapped objects.");
 	if (m == NULL)
 		return;
+
+	Py_INCREF(&TallocObject_Type);
+	PyModule_AddObject(m, "Object", (PyObject *)&TallocObject_Type);
 }
