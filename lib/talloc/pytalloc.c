@@ -86,6 +86,17 @@ static PyObject *py_talloc_default_repr(PyObject *obj)
 				   type->tp_name, talloc_obj->ptr);
 }
 
+/**
+ * Simple dealloc for talloc-wrapping PyObjects
+ */
+static void py_talloc_dealloc(PyObject* self)
+{
+	py_talloc_Object *obj = (py_talloc_Object *)self;
+	assert(talloc_unlink(NULL, obj->talloc_ctx) != -1);
+	obj->talloc_ctx = NULL;
+	self->ob_type->tp_free(self);
+}
+
 static PyTypeObject TallocObject_Type = {
 	.tp_name = "talloc.Object",
 	.tp_basicsize = sizeof(py_talloc_Object),

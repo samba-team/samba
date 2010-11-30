@@ -29,9 +29,6 @@ typedef struct {
 	void *ptr;
 } py_talloc_Object;
 
-/* Deallocate a py_talloc_Object */
-void py_talloc_dealloc(PyObject* self);
-
 PyTypeObject *PyTalloc_GetObjectType(void);
 int PyTalloc_Check(PyObject *);
 
