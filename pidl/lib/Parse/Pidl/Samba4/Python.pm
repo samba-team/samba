@@ -64,7 +64,10 @@ sub PrettifyTypeName($$)
 {
 	my ($name, $basename) = @_;
 
+	$basename =~ s/^.*\.([^.]+)$/\1/;
+
 	$name =~ s/^$basename\_//;
+
 
 	return $name;
 }
@@ -77,7 +80,7 @@ sub Import
 		$_ = unmake_str($_);
 		s/\.idl$//;
 		$self->pidl_hdr("#include \"librpc/gen_ndr/$_\.h\"\n");
-		$self->register_module_import($_);
+		$self->register_module_import("samba.dcerpc.$_");
 	}
 }
 
@@ -720,7 +723,7 @@ sub Interface($$$)
 		$self->pidl("");
 
 		$self->register_module_typeobject($interface->{NAME}, "&$if_typename");
-		my $dcerpc_typename = $self->import_type_variable("base", "ClientConnection");
+		my $dcerpc_typename = $self->import_type_variable("samba.dcerpc.base", "ClientConnection");
 		$self->register_module_prereadycode(["$if_typename.tp_base = $dcerpc_typename;", ""]);
 		$self->register_module_postreadycode(["if (!PyInterface_AddNdrRpcMethods(&$if_typename, py_ndr_$interface->{NAME}\_methods))", "\treturn;", ""]);
 	}
@@ -754,9 +757,15 @@ sub check_ready_type($$)
 
 sub register_module_import($$)
 {
-	my ($self, $basename) = @_;
+	my ($self, $module_path) = @_;
 
-	$self->{module_imports}->{"dep_$basename"} = "samba.dcerpc.$basename";
+	my $var_name = $module_path;
+	$var_name =~ s/\./_/g;
+	$var_name = "dep_$var_name";
+
+	$self->{module_imports}->{$var_name} = $module_path;
+
+	return $var_name;
 }
 
 sub import_type_variable($$$)
@@ -784,7 +793,7 @@ sub use_type_variable($$)
 	}
 	# If this is an external type, make sure we do the right imports.
 	if (($ctype->{BASEFILE} ne $self->{BASENAME})) {
-		return $self->import_type_variable($ctype->{BASEFILE}, $ctype->{NAME});
+		return $self->import_type_variable("samba.dcerpc.$ctype->{BASEFILE}", $ctype->{NAME});
 	}
 	return "&$ctype->{NAME}_Type";
 }
@@ -1309,11 +1318,14 @@ sub Parse($$$$$)
 	}
 
 	foreach (keys %{$self->{type_imports}}) {
-		my $basefile = $self->{type_imports}->{$_};
-		$self->pidl_hdr("static PyTypeObject *$_\_Type;\n");
-		my $pretty_name = PrettifyTypeName($_, $basefile);
-		$self->pidl("$_\_Type = (PyTypeObject *)PyObject_GetAttrString(dep_$basefile, \"$pretty_name\");");
-		$self->pidl("if ($_\_Type == NULL)");
+		my $type_var = "$_\_Type";
+		my $module_path = $self->{type_imports}->{$_};
+		$self->pidl_hdr("static PyTypeObject *$type_var;\n");
+		my $pretty_name = PrettifyTypeName($_, $module_path);
+		my $module_var = "dep_$module_path";
+		$module_var =~ s/\./_/g;
+		$self->pidl("$type_var = (PyTypeObject *)PyObject_GetAttrString($module_var, \"$pretty_name\");");
+		$self->pidl("if ($type_var == NULL)");
 		$self->pidl("\treturn;");
 		$self->pidl("");
 	}
