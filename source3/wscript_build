@@ -29,12 +29,9 @@ SERVER_MUTEX_SRC = 'lib/server_mutex.c'
 
 PASSCHANGE_SRC = '''libsmb/passchange.c'''
 
-LIBNDR_DRSUAPI_SRC = '../librpc/ndr/ndr_compression.c'
-
 COMPRESSION_SRC = '../lib/compression/mszip.c'
 
-DRSUAPI_SRC = '''${LIBNDR_DRSUAPI_SRC}
-              ${COMPRESSION_SRC}'''
+DRSUAPI_SRC = '''${COMPRESSION_SRC}'''
 
 LIBNDR_SRC = '''../librpc/ndr/ndr_basic.c
              ../librpc/ndr/ndr.c
