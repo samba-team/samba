@@ -15,7 +15,7 @@ def install_binary(self):
     bld = self.bld
 
     # get the ldflags we will use for install and build
-    install_ldflags = install_rpath(bld)
+    install_ldflags = install_rpath(self)
     build_ldflags   = build_rpath(bld)
 
     if not Options.is_install:
@@ -59,7 +59,7 @@ def install_library(self):
 
     bld = self.bld
 
-    install_ldflags = install_rpath(bld)
+    install_ldflags = install_rpath(self)
     build_ldflags   = build_rpath(bld)
 
     if not Options.is_install or not getattr(self, 'samba_install', True):
