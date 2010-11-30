@@ -29,11 +29,7 @@ SERVER_MUTEX_SRC = 'lib/server_mutex.c'
 
 PASSCHANGE_SRC = '''libsmb/passchange.c'''
 
-LIBNDR_DRSUAPI_SRC = '''../librpc/ndr/ndr_drsuapi.c
-                     ../librpc/ndr/ndr_compression.c
-                     ../librpc/gen_ndr/ndr_drsuapi.c
-                     ../librpc/ndr/ndr_drsblobs.c
-                     ../librpc/gen_ndr/ndr_drsblobs.c'''
+LIBNDR_DRSUAPI_SRC = '../librpc/ndr/ndr_compression.c'
 
 COMPRESSION_SRC = '../lib/compression/mszip.c'
 
@@ -206,8 +202,7 @@ LIBSMB_SRC = '''libsmb/clientgen.c libsmb/cliconnect.c libsmb/clifile.c
              libsmb/clistr.c libsmb/cliquota.c libsmb/clifsinfo.c libsmb/clidfs.c
              libsmb/clioplock.c libsmb/clirap2.c
              libsmb/smb_seal.c libsmb/async_smb.c
-             ${LIBNBT_SRC}
-             ${DRSUAPI_SRC}'''
+             ${LIBNBT_SRC}'''
 
 LIBMSRPC_SRC = '''
                ${SCHANNEL_SRC}
@@ -934,7 +929,12 @@ bld.SAMBA_SUBSYSTEM('LIBSAMBA',
 
 bld.SAMBA_SUBSYSTEM('LIBSMB',
                     source=LIBSMB_SRC,
-                    deps='LIBSAMBA z LZXPRESS CLDAP LIBNMB NDR_SVCCTL NDR_NBT',
+                    deps='LIBSAMBA CLDAP LIBNMB LIBDRSUAPI',
+                    vars=locals())
+
+bld.SAMBA_SUBSYSTEM('LIBDRSUAPI',
+                    source=DRSUAPI_SRC,
+                    deps='z LZXPRESS NDR_SVCCTL NDR_NBT NDR_DRSUAPI NDR_DRSBLOBS',
                     vars=locals())
 
 bld.SAMBA_SUBSYSTEM('CLDAP',
