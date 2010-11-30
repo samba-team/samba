@@ -415,7 +415,6 @@ WINBINDD_SRC1 = '''winbindd/winbindd.c
 WINBINDD_SRC = '''${WINBINDD_SRC1}
                   ${RPC_NCACN_NP}
                   ${TDB_VALIDATE_SRC}
-                  rpc_client/init_netlogon.c
                   rpc_server/srv_lsa_nt.c ../librpc/gen_ndr/srv_lsa.c
                   rpc_server/srv_samr_nt.c ../librpc/gen_ndr/srv_samr.c
                   rpc_server/srv_samr_util.c
@@ -476,7 +475,6 @@ SMBD_SRC_BASE = '''${SMBD_SRC_SRV}
                 ${RPC_SERVER_SRC}
                 ${OPLOCK_SRC} ${NOTIFY_SRC}
                 ${BUILDOPT_SRC}
-                rpc_client/init_netlogon.c
                 rpc_client/init_samr.c'''
 
 PRINTING_SRC = '''printing/pcap.c printing/print_svid.c printing/print_aix.c
@@ -545,7 +543,6 @@ RPCCLIENT_SRC1 = '''rpcclient/rpcclient.c rpcclient/cmd_lsarpc.c
                     rpcclient/cmd_winreg.c'''
 
 RPCCLIENT_SRC = '''${RPCCLIENT_SRC1}
-                   rpc_client/init_netlogon.c
                    rpc_client/init_samr.c'''
 
 PAM_WINBIND_SRC = '../nsswitch/pam_winbind.c ${WBCOMMON_SRC} ${LIBREPLACE_SRC}'
@@ -591,7 +588,6 @@ LIBNETAPI_SRC0 = '''lib/netapi/netapi.c
                     lib/netapi/netlogon.c'''
 
 LIBNETAPI_SRC = '''${LIBNETAPI_SRC0}
-                   rpc_client/init_netlogon.c
                    rpc_client/init_samr.c'''
 
 # FIXME:  bigballofmud
@@ -639,7 +635,6 @@ NET_SRC1 = '''utils/net.c utils/net_ads.c utils/net_help.c
               utils/net_serverid.c
               utils/net_eventlog.c
               utils/net_printing.c
-              rpc_client/init_netlogon.c
               rpc_client/init_samr.c
               registry/reg_parse.c registry/reg_format.c
               registry/reg_parse_internal.c registry/reg_import.c
@@ -782,7 +777,8 @@ bld.SAMBA_LIBRARY('libnetapi',
                     LIBMSRPC_GEN LIBMSRPC LIBADS LIBNET DCUTIL NDR_LIBNETAPI
                     RPC_CLIENT_SCHANNEL LIBSMBCONF REG_SMBCONF TOKEN_UTIL
                     LIBCLI_SAMR LIBCLI_LSA LIBCLI_NETLOGON
-                    RPCCLI_SRVSVC RPCCLI_WKSSVC RPCCLI_INITSHUTDOWN''',
+                    RPCCLI_SRVSVC RPCCLI_WKSSVC RPCCLI_INITSHUTDOWN
+                    INIT_NETLOGON''',
                     public_headers='lib/netapi/netapi.h',
                     private_library=True,
                     vars=locals())
@@ -976,7 +972,7 @@ bld.SAMBA_SUBSYSTEM('SMBD_BASE',
                     PRINTING PRINTBACKEND NDR_XATTR NDR_NOTIFY REGFIO
                     LIBSMBCONF REG_FULL FNAME_UTIL
                     LIBCLI_SAMR LIBCLI_LSA LIBCLI_NETLOGON LIBCLI_SPOOLSS
-                    RPCCLI_SRVSVC NPA_TSTREAM
+                    RPCCLI_SRVSVC NPA_TSTREAM INIT_NETLOGON
                     ''',
                     vars=locals())
 
@@ -1192,6 +1188,9 @@ bld.SAMBA_SUBSYSTEM('NPA_TSTREAM',
 bld.SAMBA_SUBSYSTEM('INIT_LSA',
                     source='rpc_client/init_lsa.c')
 
+bld.SAMBA_SUBSYSTEM('INIT_NETLOGON',
+                    source='rpc_client/init_netlogon.c')
+
 ########################## BINARIES #################################
 
 bld.SAMBA_BINARY('smbd/smbd',
@@ -1217,7 +1216,7 @@ bld.SAMBA_BINARY('winbindd/winbindd',
                  LIBAFS_SETTOKEN PROFILE SLCACHE DCUTIL idmap nss_info
                  TOKEN_UTIL
                  LIBCLI_SAMR LIBCLI_LSA LIBCLI_NETLOGON
-                 RPCCLI_DSSETUP NPA_TSTREAM
+                 RPCCLI_DSSETUP NPA_TSTREAM INIT_NETLOGON
                  ''',
                  enabled=bld.env.build_winbind,
                  install_path='${SBINDIR}',
@@ -1241,7 +1240,7 @@ bld.SAMBA_BINARY('rpcclient/rpcclient',
                  RPC_CLIENT_SCHANNEL
                  LIBCLI_SAMR LIBCLI_LSA LIBCLI_NETLOGON LIBCLI_SPOOLSS
                  RPCCLI_SRVSVC RPCCLI_WKSSVC RPCCLI_DSSETUP RPCCLI_DFS
-                 RPCCLI_DRSUAPI RPCCLI_NTSVCS RPCCLI_EVENTLOG
+                 RPCCLI_DRSUAPI RPCCLI_NTSVCS RPCCLI_EVENTLOG INIT_NETLOGON
                  ''',
                  vars=locals())
 
@@ -1262,7 +1261,7 @@ bld.SAMBA_BINARY('net',
                  RPC_CLIENT_SCHANNEL TOKEN_UTIL
                  LIBCLI_SAMR LIBCLI_LSA LIBCLI_NETLOGON LIBCLI_SPOOLSS
                  RPCCLI_SRVSVC RPCCLI_WKSSVC RPCCLI_SVCCTL RPCCLI_DSSETUP
-                 RPCCLI_INITSHUTDOWN RPCCLI_DRSUAPI
+                 RPCCLI_INITSHUTDOWN RPCCLI_DRSUAPI INIT_NETLOGON
 		 ''',
                  vars=locals())
 
