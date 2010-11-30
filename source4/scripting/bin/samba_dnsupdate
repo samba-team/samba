@@ -46,7 +46,8 @@ from samba.samdb import SamDB
 from samba.dcerpc import netlogon, winbind
 
 samba.ensure_external_module("dns", "dnspython")
-import dns.resolver as resolver
+import dns.resolver
+import dns.exception
 
 default_ttl = 900
 am_rodc = False
@@ -172,8 +173,10 @@ def check_dns_name(d):
         return False
 
     try:
-        ans = resolver.query(normalised_name, d.type)
-    except resolver.NXDOMAIN:
+        ans = dns.resolver.query(normalised_name, d.type)
+    except dns.exception.DNSException:
+        if opts.verbose:
+            print "Failed to find DNS entry %s" % d
         return False
     if d.type == 'A':
         # we need to be sure that our IP is there
@@ -194,8 +197,9 @@ def check_dns_name(d):
                 else:
                     d.existing_port     = str(rdata.port)
                     d.existing_weight = str(rdata.weight)
+
     if opts.verbose:
-        print "Failed to find DNS entry %s" % d
+        print "Failed to find matching DNS entry %s" % d
 
     return False
 
