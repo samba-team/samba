@@ -86,10 +86,6 @@ LIBCLI_WKSSVC_SRC = '''
                     ../librpc/gen_ndr/cli_wkssvc.c
                     ../librpc/gen_ndr/ndr_wkssvc_c.c'''
 
-LIBCLI_SRVSVC_SRC = '''
-                    ../librpc/gen_ndr/cli_srvsvc.c
-                    ../librpc/gen_ndr/ndr_srvsvc_c.c'''
-
 LIBCLI_LSA_SRC = '''rpc_client/cli_lsarpc.c
                  rpc_client/init_lsa.c'''
 
@@ -540,7 +536,6 @@ SMBD_SRC_BASE = '''${SMBD_SRC_SRV}
                 ${OPLOCK_SRC} ${NOTIFY_SRC}
                 ${BUILDOPT_SRC}
                 ${LIBCLI_SPOOLSS_SRC}
-                ${LIBCLI_SRVSVC_SRC}
                 rpc_client/init_netlogon.c
                 rpc_client/init_samr.c'''
 
@@ -584,8 +579,7 @@ STATUS_SRC = '''utils/status.c utils/status_profile.c'''
 
 SMBCONTROL_SRC = '''utils/smbcontrol.c'''
 
-SMBTREE_SRC = '''utils/smbtree.c
-             ${LIBCLI_SRVSVC_SRC}'''
+SMBTREE_SRC = '''utils/smbtree.c'''
 
 TESTPARM_SRC = 'utils/testparm.c'
 
@@ -620,7 +614,6 @@ RPCCLIENT_SRC = '''${RPCCLIENT_SRC1}
                    ${LIBCLI_DFS_SRC}
                    ${LIBCLI_DSSETUP_SRC}
                    ${LIBCLI_WKSSVC_SRC}
-                   ${LIBCLI_SRVSVC_SRC}
                    rpc_client/init_netlogon.c
                    rpc_client/init_samr.c'''
 
@@ -642,8 +635,7 @@ LIBSMBCLIENT_SRC0 = '''libsmb/libsmb_cache.c
                     libsmb/libsmb_xattr.c
                     libsmb/libsmb_setget.c'''
 
-LIBSMBCLIENT_SRC1 = '''${LIBSMBCLIENT_SRC0}
-                    ${LIBCLI_SRVSVC_SRC}'''
+LIBSMBCLIENT_SRC1 = '''${LIBSMBCLIENT_SRC0}'''
 
 LIBSMBCLIENT_SRC = '${LIBSMBCLIENT_SRC1}'
 
@@ -670,7 +662,6 @@ LIBNETAPI_SRC0 = '''lib/netapi/netapi.c
 LIBNETAPI_SRC = '''${LIBNETAPI_SRC0}
                    ${LIBCLI_INITSHUTDOWN_SRC}
                    ${LIBCLI_WKSSVC_SRC}
-                   ${LIBCLI_SRVSVC_SRC}
                    rpc_client/init_netlogon.c
                    rpc_client/init_samr.c'''
 
@@ -680,7 +671,6 @@ CLIENT_SRC1 = '''client/client.c client/clitar.c
                  client/dnsbrowse.c'''
 
 CLIENT_SRC = '''${CLIENT_SRC1}
-                ${LIBCLI_SRVSVC_SRC}
                 rpc_client/init_lsa.c'''
 
 LIBSMBCONF_SRC = '''../lib/smbconf/smbconf.c ../lib/smbconf/smbconf_util.c
@@ -727,7 +717,6 @@ NET_SRC1 = '''utils/net.c utils/net_ads.c utils/net_help.c
               ${LIBCLI_DSSETUP_SRC}
               ${LIBCLI_SVCCTL_SRC}
               ${LIBCLI_WKSSVC_SRC}
-              ${LIBCLI_SRVSVC_SRC}
               rpc_client/init_netlogon.c
               rpc_client/init_samr.c
               registry/reg_parse.c registry/reg_format.c
@@ -871,7 +860,8 @@ bld.SAMBA_LIBRARY('libnetapi',
                     PASSDB SMBLDAP GROUPDB PARAM_WITHOUT_REG DYNCONFIG
                     LIBMSRPC_GEN LIBMSRPC LIBADS LIBNET DCUTIL NDR_LIBNETAPI
                     RPC_CLIENT_SCHANNEL LIBSMBCONF REG_SMBCONF TOKEN_UTIL
-                    LIBCLI_SAMR LIBCLI_LSA LIBCLI_NETLOGON''',
+                    LIBCLI_SAMR LIBCLI_LSA LIBCLI_NETLOGON
+                    RPCCLI_SRVSVC''',
                     public_headers='lib/netapi/netapi.h',
                     private_library=True,
                     vars=locals())
@@ -879,7 +869,7 @@ bld.SAMBA_LIBRARY('libnetapi',
 bld.SAMBA_LIBRARY('libsmbclient',
                     source=LIBSMBCLIENT_SRC,
                     public_deps='''talloc tdb libwbclient cap PARAM LIB_NONSMBD LIBSMB KRBCLIENT PASSDB SMBLDAP GROUPDB
-                    LIBMSRPC_GEN LIBMSRPC LIBCLI_LSA''',
+                    LIBMSRPC_GEN LIBMSRPC LIBCLI_LSA RPCCLI_SRVSVC''',
                     public_headers='include/libsmbclient.h',
                     private_library=True,
                     vars=locals())
@@ -1059,6 +1049,7 @@ bld.SAMBA_SUBSYSTEM('SMBD_BASE',
                     PRINTING PRINTBACKEND NDR_XATTR REGFIO
                     LIBSMBCONF REG_FULL FNAME_UTIL
                     LIBCLI_SAMR LIBCLI_LSA LIBCLI_NETLOGON
+                    RPCCLI_SRVSVC
                     ''',
                     vars=locals())
 
@@ -1194,6 +1185,10 @@ bld.SAMBA_SUBSYSTEM('RPCCLI_NETLOGON',
 	source='../librpc/gen_ndr/cli_netlogon.c',
 	public_deps='RPC_NDR_NETLOGON')
 
+bld.SAMBA_SUBSYSTEM('RPCCLI_SRVSVC',
+	source='../librpc/gen_ndr/cli_srvsvc.c',
+	public_deps='RPC_NDR_SRVSVC')
+
 bld.SAMBA_SUBSYSTEM('LIBCLI_SAMR',
                     source=LIBCLI_SAMR_SRC,
                     deps='RPCCLI_SAMR')
@@ -1257,14 +1252,16 @@ bld.SAMBA_BINARY('rpcclient/rpcclient',
                  PARAM_WITHOUT_REG libwbclient PARAM KRBCLIENT LIBMSRPC_GEN LIBMSRPC
                  LIBADS SMBREADLINE DCUTIL RPCCLI_WINREG RPCCLI_ECHO
                  RPC_CLIENT_SCHANNEL
-                 LIBCLI_SAMR LIBCLI_LSA LIBCLI_NETLOGON''',
+                 LIBCLI_SAMR LIBCLI_LSA LIBCLI_NETLOGON
+                 RPCCLI_SRVSVC
+                 ''',
                  vars=locals())
 
 bld.SAMBA_BINARY('smbclient',
                  source=CLIENT_SRC,
                  deps='''talloc tdb cap resolv POPT_SAMBA PASSDB LIBSMB LIB_NONSMBD
                  PARAM_WITHOUT_REG libwbclient PARAM KRBCLIENT LIBMSRPC_GEN
-                 LIBMSRPC SMBREADLINE libsmbclient''',
+                 LIBMSRPC SMBREADLINE libsmbclient RPCCLI_SRVSVC''',
                  vars=locals())
 
 bld.SAMBA_BINARY('net',
@@ -1275,7 +1272,9 @@ bld.SAMBA_BINARY('net',
                  LIBNET_DSSYNC LIBNET_SAMSYNC LIBEVENTLOG DCUTIL
                  REGFIO NDR_NTPRINTING RPCCLI_WINREG
                  RPC_CLIENT_SCHANNEL TOKEN_UTIL
-                 LIBCLI_SAMR LIBCLI_LSA LIBCLI_NETLOGON''',
+                 LIBCLI_SAMR LIBCLI_LSA LIBCLI_NETLOGON
+                 RPCCLI_SRVSVC
+		 ''',
                  vars=locals())
 
 bld.SAMBA_BINARY('profiles',
@@ -1316,7 +1315,8 @@ bld.SAMBA_BINARY('smbcontrol',
 bld.SAMBA_BINARY('smbtree',
                  source=SMBTREE_SRC,
                  deps='''talloc tdb tevent cap resolv libwbclient PARAM LIB_NONSMBD
-                 LIBSMB LIBSMB_ERR POPT_SAMBA KRBCLIENT PASSDB SMBLDAP GROUPDB LIBMSRPC_GEN LIBMSRPC PROFILE''',
+                 LIBSMB LIBSMB_ERR POPT_SAMBA KRBCLIENT PASSDB SMBLDAP GROUPDB LIBMSRPC_GEN LIBMSRPC PROFILE
+                 RPCCLI_SRVSVC''',
                  vars=locals())
 
 bld.SAMBA_BINARY('smbpasswd',
