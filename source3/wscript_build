@@ -925,7 +925,7 @@ bld.SAMBA_SUBSYSTEM('LIBSMB',
 
 bld.SAMBA_SUBSYSTEM('LIBDRSUAPI',
                     source=DRSUAPI_SRC,
-                    deps='z LZXPRESS NDR_SVCCTL NDR_NBT NDR_DRSUAPI NDR_DRSBLOBS',
+                    deps='z LZXPRESS NDR_DRSUAPI NDR_DRSBLOBS',
                     vars=locals())
 
 bld.SAMBA_SUBSYSTEM('CLDAP',
@@ -1040,7 +1040,7 @@ bld.SAMBA_SUBSYSTEM('LIBNMB',
 
 bld.SAMBA_SUBSYSTEM('LIBNBT',
                     source=LIBNBT_SRC,
-                    deps='NDR_NBT_BUF LIBCLI_NDR_NETLOGON',
+                    deps='NDR_SVCCTL NDR_NBT NDR_NBT_BUF LIBCLI_NDR_NETLOGON',
                     vars=locals())
 
 bld.SAMBA_SUBSYSTEM('SERVICES',
