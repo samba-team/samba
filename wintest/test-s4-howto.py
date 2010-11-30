@@ -141,8 +141,6 @@ def restart_bind(t):
     t.putenv('KEYTAB_FILE', '${PREFIX}/private/dns.keytab')
     t.putenv('KRB5_KTNAME', '${PREFIX}/private/dns.keytab')
     t.chdir('${PREFIX}')
-    t.run_cmd("mkdir -p var/named/data")
-    t.run_cmd("chown -R ${BIND_USER} var/named")
 
     nameserver = t.get_nameserver()
     if nameserver == t.getvar('INTERFACE_IP'):
@@ -225,6 +223,11 @@ options {
 
     rndc_cmd(t, "stop", checkfail=False)
     t.port_wait("${INTERFACE_IP}", 53, wait_for_fail=True)
+
+    t.run_cmd("rm -rf var/named")
+    t.run_cmd("mkdir -p var/named/data")
+    t.run_cmd("chown -R ${BIND_USER} var/named")
+
     t.bind_child = t.run_child("${BIND9} -u ${BIND_USER} -n 1 -c ${PREFIX}/etc/named.conf -g")
 
     t.port_wait("${INTERFACE_IP}", 53)
