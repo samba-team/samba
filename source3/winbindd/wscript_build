@@ -34,9 +34,14 @@ bld.SAMBA_SUBSYSTEM('IDMAP_HASH',
                     source=IDMAP_HASH_SRC,
                     vars=locals())
 
+bld.SAMBA_SUBSYSTEM('IDMAP_AD',
+                    source=IDMAP_AD_SRC,
+                    vars=locals())
+
 bld.SAMBA_MODULE('idmap_ad',
                  subsystem='idmap',
-                 source=IDMAP_AD_SRC,
+                 source='',
+                 deps='IDMAP_AD',
                  init_function='',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('IDMAP_AD'),
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('IDMAP_AD'))
@@ -139,21 +144,24 @@ bld.SAMBA_MODULE('nss_info_hash',
 
 bld.SAMBA_MODULE('nss_info_rfc2307',
                  subsystem='nss_info',
-                 source=IDMAP_AD_SRC,
+                 source='',
+                 deps='IDMAP_AD',
                  init_function='',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('IDMAP_AD'),
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('IDMAP_AD'))
 
 bld.SAMBA_MODULE('nss_info_sfu20',
                  subsystem='nss_info',
-                 source=IDMAP_AD_SRC,
+                 source='',
+                 deps='IDMAP_AD',
                  init_function='',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('IDMAP_AD'),
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('IDMAP_AD'))
 
 bld.SAMBA_MODULE('nss_info_sfu',
                  subsystem='nss_info',
-                 source=IDMAP_AD_SRC,
+                 source='',
+                 deps='IDMAP_AD',
                  init_function='',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('IDMAP_AD'),
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('IDMAP_AD'))
