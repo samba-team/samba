@@ -157,9 +157,7 @@ SECRETS_SRC = '''passdb/secrets.c passdb/machine_account_secrets.c
 LIBNBT_SRC = '''../libcli/nbt/nbtname.c
              ../libcli/netlogon.c
              ../libcli/ndr_netlogon.c
-             ../librpc/gen_ndr/ndr_nbt.c
-             ../librpc/gen_ndr/ndr_svcctl.c
-             ../librpc/ndr/ndr_svcctl.c'''
+             ../librpc/gen_ndr/ndr_nbt.c'''
 
 LIBNMB_SRC = '''libsmb/unexpected.c libsmb/namecache.c libsmb/nmblib.c
              libsmb/namequery.c ../libcli/nbt/lmhosts.c libsmb/conncache.c
@@ -938,7 +936,7 @@ bld.SAMBA_SUBSYSTEM('LIBSAMBA',
 
 bld.SAMBA_SUBSYSTEM('LIBSMB',
                     source=LIBSMB_SRC,
-                    deps='LIBSAMBA z LZXPRESS CLDAP LIBNMB',
+                    deps='LIBSAMBA z LZXPRESS CLDAP LIBNMB NDR_SVCCTL',
                     vars=locals())
 
 bld.SAMBA_SUBSYSTEM('CLDAP',
