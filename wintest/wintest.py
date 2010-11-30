@@ -26,12 +26,18 @@ class wintest():
 
     def setwinvars(self, vm, prefix='WIN'):
         '''setup WIN_XX vars based on a vm name'''
-        for v in ['VM', 'HOSTNAME', 'USER', 'PASS', 'SNAPSHOT', 'BASEDN', 'REALM', 'DOMAIN', 'IP']:
+        for v in ['VM', 'HOSTNAME', 'USER', 'PASS', 'SNAPSHOT', 'REALM', 'DOMAIN', 'IP']:
             vname = '%s_%s' % (vm, v)
             if vname in self.vars:
                 self.setvar("%s_%s" % (prefix,v), self.substitute("${%s}" % vname))
             else:
                 self.vars.pop("%s_%s" % (prefix,v), None)
+
+        if self.getvar("WIN_REALM"):
+            self.setvar("WIN_REALM", self.getvar("WIN_REALM").upper())
+            self.setvar("WIN_LCREALM", self.getvar("WIN_REALM").lower())
+            dnsdomain = self.getvar("WIN_REALM")
+            self.setvar("WIN_BASEDN", "DC=" + dnsdomain.replace(".", ",DC="))
 
     def info(self, msg):
         '''print some information'''
