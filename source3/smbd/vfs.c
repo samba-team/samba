@@ -997,6 +997,8 @@ NTSTATUS check_reduced_name(connection_struct *conn, const char *fname)
 			    DEBUG(2, ("check_reduced_name: Bad access "
 				      "attempt: %s is a symlink outside the "
 				      "share path\n", fname));
+			    DEBUGADD(2, ("conn_rootdir =%s\n", conn_rootdir));
+			    DEBUGADD(2, ("resolved_name=%s\n", resolved_name));
 			    SAFE_FREE(resolved_name);
 			    return NT_STATUS_ACCESS_DENIED;
 		    }
