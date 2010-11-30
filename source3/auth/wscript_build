@@ -10,7 +10,7 @@ AUTH_WBC_SRC = 'auth_wbc.c'
 AUTH_SCRIPT_SRC = 'auth_script.c'
 AUTH_NETLOGOND_SRC = 'auth_netlogond.c'
 
-AUTH_SRC = '''auth.c auth_util.c token_util.c
+AUTH_SRC = '''auth.c auth_util.c
            server_info.c
            server_info_sam.c
            user_info.c
@@ -18,9 +18,13 @@ AUTH_SRC = '''auth.c auth_util.c token_util.c
            user_krb5.c
            auth_compat.c auth_ntlmssp.c'''
 
+bld.SAMBA_SUBSYSTEM('TOKEN_UTIL',
+                    source='token_util.c',
+                    vars=locals())
+
 bld.SAMBA_SUBSYSTEM('auth',
                     source=AUTH_SRC,
-                    deps='''PLAINTEXT_AUTH SLCACHE DCUTIL''',
+                    deps='''PLAINTEXT_AUTH SLCACHE DCUTIL TOKEN_UTIL''',
                     vars=locals())
 
 bld.SAMBA_MODULE('auth_sam',
