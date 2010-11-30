@@ -2,7 +2,7 @@
 
 RPC_LSARPC_SRC = '''srv_lsa_nt.c ../../librpc/gen_ndr/srv_lsa.c'''
 RPC_NETLOGON_SRC = '''srv_netlog_nt.c ../../librpc/gen_ndr/srv_netlogon.c'''
-RPC_SAMR_SRC = '''srv_samr_nt.c ../../librpc/gen_ndr/srv_samr.c
+RPC_SAMR_SRC = '''srv_samr_nt.c
                srv_samr_util.c
                srv_samr_chgpasswd.c'''
 RPC_INITSHUTDOWN_SRC = '''srv_initshutdown_nt.c ../../librpc/gen_ndr/srv_initshutdown.c'''
@@ -22,6 +22,10 @@ bld.SAMBA_SUBSYSTEM('rpc',
                     source='srv_pipe_register.c',
                     vars=locals())
 
+bld.SAMBA_SUBSYSTEM('RPC_SAMR',
+                    source=RPC_SAMR_SRC,
+                    vars=locals())
+
 bld.SAMBA_MODULE('rpc_lsarpc',
                  subsystem='rpc',
                  source=RPC_LSARPC_SRC,
@@ -31,7 +35,8 @@ bld.SAMBA_MODULE('rpc_lsarpc',
 
 bld.SAMBA_MODULE('rpc_samr',
                  subsystem='rpc',
-                 source=RPC_SAMR_SRC,
+                 source='../../librpc/gen_ndr/srv_samr.c',
+                 deps='RPC_SAMR',
                  init_function='',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('RPC_SAMR'),
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('RPC_SAMR'))
