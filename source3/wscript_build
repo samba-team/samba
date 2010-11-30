@@ -416,9 +416,7 @@ WINBINDD_SRC = '''${WINBINDD_SRC1}
                   ${RPC_NCACN_NP}
                   ${TDB_VALIDATE_SRC}
                   rpc_server/srv_lsa_nt.c ../librpc/gen_ndr/srv_lsa.c
-                  rpc_server/srv_samr_nt.c ../librpc/gen_ndr/srv_samr.c
-                  rpc_server/srv_samr_util.c
-                  rpc_server/srv_samr_chgpasswd.c
+                  ../librpc/gen_ndr/srv_samr.c
                   rpc_server/srv_pipe_register.c'''
 
 MANGLE_SRC = '''smbd/mangle.c smbd/mangle_hash.c smbd/mangle_hash2.c'''
@@ -1216,6 +1214,7 @@ bld.SAMBA_BINARY('winbindd/winbindd',
                  TOKEN_UTIL
                  LIBCLI_SAMR LIBCLI_LSA LIBCLI_NETLOGON
                  RPCCLI_DSSETUP NPA_TSTREAM INIT_NETLOGON
+                 RPC_SAMR
                  ''',
                  enabled=bld.env.build_winbind,
                  install_path='${SBINDIR}',
