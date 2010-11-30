@@ -24,7 +24,7 @@ sub new($) {
 	my ($class) = @_;
 	my $self = { res => "", res_hdr => "", tabs => "", constants => {},
 	             module_methods => [], module_objects => [], ready_types => [],
-				 module_imports => [], type_imports => {},
+				 module_imports => {}, type_imports => {},
 				 patch_type_calls => [], prereadycode => [],
 			 	 postreadycode => []};
 	bless($self, $class);
@@ -756,7 +756,7 @@ sub register_module_import($$)
 {
 	my ($self, $basename) = @_;
 
-	push (@{$self->{module_imports}}, $basename) unless (grep(/^$basename$/,@{$self->{module_imports}}));
+	$self->{module_imports}->{"dep_$basename"} = "samba.dcerpc.$basename";
 }
 
 sub import_type_variable($$$)
@@ -1294,14 +1294,16 @@ sub Parse($$$$$)
 	$self->pidl("{");
 	$self->indent;
 	$self->pidl("PyObject *m;");
-	foreach (@{$self->{module_imports}}) {
-		$self->pidl("PyObject *dep_$_;");
+	foreach (keys %{$self->{module_imports}}) {
+		$self->pidl("PyObject *$_;");
 	}
 	$self->pidl("");
 
-	foreach (@{$self->{module_imports}}) {
-		$self->pidl("dep_$_ = PyImport_ImportModule(\"samba.dcerpc.$_\");");
-		$self->pidl("if (dep_$_ == NULL)");
+	foreach (keys %{$self->{module_imports}}) {
+		my $var_name = $_;
+		my $module_path = $self->{module_imports}->{$var_name};
+		$self->pidl("$var_name = PyImport_ImportModule(\"$module_path\");");
+		$self->pidl("if ($var_name == NULL)");
 		$self->pidl("\treturn;");
 		$self->pidl("");
 	}
