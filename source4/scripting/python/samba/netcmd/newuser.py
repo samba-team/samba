@@ -94,3 +94,4 @@ class cmd_newuser(Command):
         except Exception, e:
             raise CommandError('Failed to create user "%s"' % username, e)
 
+        print("User %s created successfully" % username)
