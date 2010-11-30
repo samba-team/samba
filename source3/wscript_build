@@ -82,10 +82,6 @@ LIBCLI_SVCCTL_SRC = '''
                     ../librpc/gen_ndr/cli_svcctl.c
                     ../librpc/gen_ndr/ndr_svcctl_c.c'''
 
-LIBCLI_WKSSVC_SRC = '''
-                    ../librpc/gen_ndr/cli_wkssvc.c
-                    ../librpc/gen_ndr/ndr_wkssvc_c.c'''
-
 LIBCLI_LSA_SRC = '''rpc_client/cli_lsarpc.c
                  rpc_client/init_lsa.c'''
 
@@ -613,7 +609,6 @@ RPCCLIENT_SRC = '''${RPCCLIENT_SRC1}
                    ${LIBCLI_DRSUAPI_SRC}
                    ${LIBCLI_DFS_SRC}
                    ${LIBCLI_DSSETUP_SRC}
-                   ${LIBCLI_WKSSVC_SRC}
                    rpc_client/init_netlogon.c
                    rpc_client/init_samr.c'''
 
@@ -661,7 +656,6 @@ LIBNETAPI_SRC0 = '''lib/netapi/netapi.c
 
 LIBNETAPI_SRC = '''${LIBNETAPI_SRC0}
                    ${LIBCLI_INITSHUTDOWN_SRC}
-                   ${LIBCLI_WKSSVC_SRC}
                    rpc_client/init_netlogon.c
                    rpc_client/init_samr.c'''
 
@@ -716,7 +710,6 @@ NET_SRC1 = '''utils/net.c utils/net_ads.c utils/net_help.c
               ${LIBCLI_INITSHUTDOWN_SRC}
               ${LIBCLI_DSSETUP_SRC}
               ${LIBCLI_SVCCTL_SRC}
-              ${LIBCLI_WKSSVC_SRC}
               rpc_client/init_netlogon.c
               rpc_client/init_samr.c
               registry/reg_parse.c registry/reg_format.c
@@ -861,7 +854,7 @@ bld.SAMBA_LIBRARY('libnetapi',
                     LIBMSRPC_GEN LIBMSRPC LIBADS LIBNET DCUTIL NDR_LIBNETAPI
                     RPC_CLIENT_SCHANNEL LIBSMBCONF REG_SMBCONF TOKEN_UTIL
                     LIBCLI_SAMR LIBCLI_LSA LIBCLI_NETLOGON
-                    RPCCLI_SRVSVC''',
+                    RPCCLI_SRVSVC RPCCLI_WKSSVC''',
                     public_headers='lib/netapi/netapi.h',
                     private_library=True,
                     vars=locals())
@@ -1189,6 +1182,10 @@ bld.SAMBA_SUBSYSTEM('RPCCLI_SRVSVC',
 	source='../librpc/gen_ndr/cli_srvsvc.c',
 	public_deps='RPC_NDR_SRVSVC')
 
+bld.SAMBA_SUBSYSTEM('RPCCLI_WKSSVC',
+	source='../librpc/gen_ndr/cli_wkssvc.c',
+	public_deps='RPC_NDR_WKSSVC')
+
 bld.SAMBA_SUBSYSTEM('LIBCLI_SAMR',
                     source=LIBCLI_SAMR_SRC,
                     deps='RPCCLI_SAMR')
@@ -1253,7 +1250,7 @@ bld.SAMBA_BINARY('rpcclient/rpcclient',
                  LIBADS SMBREADLINE DCUTIL RPCCLI_WINREG RPCCLI_ECHO
                  RPC_CLIENT_SCHANNEL
                  LIBCLI_SAMR LIBCLI_LSA LIBCLI_NETLOGON
-                 RPCCLI_SRVSVC
+                 RPCCLI_SRVSVC RPCCLI_WKSSVC
                  ''',
                  vars=locals())
 
@@ -1273,7 +1270,7 @@ bld.SAMBA_BINARY('net',
                  REGFIO NDR_NTPRINTING RPCCLI_WINREG
                  RPC_CLIENT_SCHANNEL TOKEN_UTIL
                  LIBCLI_SAMR LIBCLI_LSA LIBCLI_NETLOGON
-                 RPCCLI_SRVSVC
+                 RPCCLI_SRVSVC RPCCLI_WKSSVC
 		 ''',
                  vars=locals())
 
