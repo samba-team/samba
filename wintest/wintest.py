@@ -11,6 +11,7 @@ class wintest():
     def __init__(self):
         self.vars = {}
         self.list_mode = False
+        self.vms = None
         os.putenv('PYTHONUNBUFFERED', '1')
 
     def setvar(self, varname, value):
@@ -59,6 +60,10 @@ class wintest():
         '''set a list of tests to skip'''
         self.skiplist = skiplist.split(',')
 
+    def set_vms(self, vms):
+        '''set a list of VMs to test'''
+        self.vms = vms.split(',')
+
     def skip(self, step):
         '''return True if we should skip a step'''
         if self.list_mode:
@@ -96,6 +101,13 @@ class wintest():
         '''see if a variable has been set'''
         return varname in self.vars
 
+    def have_vm(self, vmname):
+        '''see if a VM should be used'''
+        if not self.have_var(vmname + '_VM'):
+            return False
+        if self.vms is None:
+            return True
+        return vmname in self.vms
 
     def putenv(self, key, value):
         '''putenv with substitution'''

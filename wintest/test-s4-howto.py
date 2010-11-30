@@ -668,30 +668,30 @@ def test_howto(t):
     if not t.skip("dyndns"):
         test_dyndns(t)
 
-    if t.have_var('WINDOWS7_VM') and not t.skip("windows7"):
+    if t.have_vm('WINDOWS7') and not t.skip("windows7"):
         run_winjoin(t, "WINDOWS7")
         test_winjoin(t, "WINDOWS7")
 
-    if t.have_var('WINXP_VM') and not t.skip("winxp"):
+    if t.have_vm('WINXP') and not t.skip("winxp"):
         run_winjoin(t, "WINXP")
         test_winjoin(t, "WINXP")
 
-    if t.have_var('W2K8R2C_VM') and not t.skip("dcpromo_rodc"):
+    if t.have_vm('W2K8R2C') and not t.skip("dcpromo_rodc"):
         t.info("Testing w2k8r2 RODC dcpromo")
         run_dcpromo_rodc(t, "W2K8R2C")
         test_dcpromo_rodc(t, "W2K8R2C")
 
-    if t.have_var('W2K8R2B_VM') and not t.skip("dcpromo_w2k8r2"):
+    if t.have_vm('W2K8R2B') and not t.skip("dcpromo_w2k8r2"):
         t.info("Testing w2k8r2 dcpromo")
         run_dcpromo(t, "W2K8R2B")
         test_dcpromo(t, "W2K8R2B")
 
-    if t.have_var('W2K8B_VM') and not t.skip("dcpromo_w2k8"):
+    if t.have_vm('W2K8B') and not t.skip("dcpromo_w2k8"):
         t.info("Testing w2k8 dcpromo")
         run_dcpromo(t, "W2K8B")
         test_dcpromo(t, "W2K8B")
 
-    if t.have_var('W2K3B_VM') and not t.skip("dcpromo_w2k3"):
+    if t.have_vm('W2K3B') and not t.skip("dcpromo_w2k3"):
         t.info("Testing w2k3 dcpromo")
         t.info("Changing to 2003 functional level")
         provision_s4(t, func_level='2003')
@@ -705,21 +705,21 @@ def test_howto(t):
         run_dcpromo(t, "W2K3B")
         test_dcpromo(t, "W2K3B")
 
-    if t.have_var('W2K8R2A_VM') and not t.skip("join_w2k8r2"):
+    if t.have_vm('W2K8R2A') and not t.skip("join_w2k8r2"):
         join_as_dc(t, "W2K8R2A")
         create_shares(t)
         start_s4(t)
         test_dyndns(t)
         test_join_as_dc(t, "W2K8R2A")
 
-    if t.have_var('W2K8R2A_VM') and not t.skip("join_rodc"):
+    if t.have_vm('W2K8R2A') and not t.skip("join_rodc"):
         join_as_rodc(t, "W2K8R2A")
         create_shares(t)
         start_s4(t)
         test_dyndns(t)
         test_join_as_rodc(t, "W2K8R2A")
 
-    if t.have_var('W2K3A_VM') and not t.skip("join_w2k3"):
+    if t.have_vm('W2K3A') and not t.skip("join_w2k3"):
         join_as_dc(t, "W2K3A")
         create_shares(t)
         start_s4(t)
@@ -741,6 +741,7 @@ if __name__ == '__main__':
     parser = optparse.OptionParser("test-howto.py")
     parser.add_option("--conf", type='string', default='', help='config file')
     parser.add_option("--skip", type='string', default='', help='list of steps to skip (comma separated)')
+    parser.add_option("--vms", type='string', default='', help='list of VMs to use (comma separated)')
     parser.add_option("--list", action='store_true', default=False, help='list the available steps')
     parser.add_option("--rebase", action='store_true', default=False, help='do a git pull --rebase')
     parser.add_option("--clean", action='store_true', default=False, help='clean the tree')
@@ -756,7 +757,9 @@ if __name__ == '__main__':
 
     t = wintest.wintest()
     t.load_config(opts.conf)
+
     t.set_skip(opts.skip)
+    t.set_vms(opts.vms)
 
     if opts.list:
         t.list_steps_mode()
