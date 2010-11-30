@@ -97,6 +97,21 @@ static void py_talloc_dealloc(PyObject* self)
 	self->ob_type->tp_free(self);
 }
 
+/**
+ * Default (but only slightly more useful than the default) implementation of cmp.
+ */
+static int py_talloc_default_cmp(PyObject *_obj1, PyObject *_obj2)
+{
+	py_talloc_Object *obj1 = (py_talloc_Object *)_obj1,
+					 *obj2 = (py_talloc_Object *)_obj2;
+	if (obj1->ob_type != obj2->ob_type)
+		return (obj1->ob_type - obj2->ob_type);
+
+	return ((char *)py_talloc_get_ptr(obj1) - (char *)py_talloc_get_ptr(obj2));
+}
+
+
+
 static PyTypeObject TallocObject_Type = {
 	.tp_name = "talloc.Object",
 	.tp_basicsize = sizeof(py_talloc_Object),

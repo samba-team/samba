@@ -52,6 +52,5 @@ PyObject *py_talloc_reference_ex(PyTypeObject *py_type, TALLOC_CTX *mem_ctx, voi
 PyObject *PyCObject_FromTallocPtr(void *);
 
 PyObject *PyString_FromString_check_null(const char *ptr);
-int py_talloc_default_cmp(PyObject *obj1, PyObject *obj2);
 
 #endif /* _PY_TALLOC_H_ */
