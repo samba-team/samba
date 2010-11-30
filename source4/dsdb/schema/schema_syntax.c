@@ -70,6 +70,41 @@ uint32_t dsdb_attribute_get_attid(const struct dsdb_attribute *attr,
 	return attr->attributeID_id;
 }
 
+/**
+ * Map an ATTID from remote DC to a local ATTID
+ * using remote prefixMap
+ */
+static bool dsdb_syntax_attid_from_remote_attid(const struct dsdb_syntax_ctx *ctx,
+						TALLOC_CTX *mem_ctx,
+						uint32_t id_remote,
+						uint32_t *id_local)
+{
+	WERROR werr;
+	const char *oid;
+
+	/*
+	 * map remote ATTID to local directly in case
+	 * of no remote prefixMap (during provision for instance)
+	 */
+	if (!ctx->pfm_remote) {
+		*id_local = id_remote;
+		return true;
+	}
+
+	werr = dsdb_schema_pfm_oid_from_attid(ctx->pfm_remote, id_remote, mem_ctx, &oid);
+	if (!W_ERROR_IS_OK(werr)) {
+		DEBUG(0,("ATTID->OID failed (%s) for: 0x%08X\n", win_errstr(werr), id_remote));
+		return false;
+	}
+
+	werr = dsdb_schema_pfm_attid_from_oid(ctx->schema->prefixmap, oid, id_local);
+	if (!W_ERROR_IS_OK(werr)) {
+		DEBUG(0,("OID->ATTID failed (%s) for: %s\n", win_errstr(werr), oid));
+		return false;
+	}
+
+	return true;
+}
 
 static WERROR dsdb_syntax_FOOBAR_drsuapi_to_ldb(const struct dsdb_syntax_ctx *ctx,
 						const struct dsdb_attribute *attr,
