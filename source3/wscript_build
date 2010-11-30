@@ -61,10 +61,6 @@ LIBCLI_SAMR_SRC = 'rpc_client/cli_samr.c'
 
 LIBCLI_NETLOGON_SRC = 'rpc_client/cli_netlogon.c'
 
-LIBCLI_EPMAPPER_SRC = '''
-                      ../librpc/gen_ndr/cli_epmapper.c
-                      ../librpc/gen_ndr/ndr_epmapper_c.c'''
-
 # this includes only the low level parse code, not stuff
 # that requires knowledge of security contexts
 REG_PARSE_PRS_SRC = '''registry/reg_parse_prs.c'''
@@ -232,8 +228,7 @@ LIBMSRPC_SRC = '''
                ../librpc/rpc/binding.c
                ../librpc/rpc/dcerpc_util.c
                librpc/rpc/dcerpc_helpers.c
-               ../librpc/rpc/binding_handle.c
-               ${LIBCLI_EPMAPPER_SRC}'''
+               ../librpc/rpc/binding_handle.c'''
 
 #
 # registry-related objects
@@ -837,7 +832,8 @@ bld.SAMBA_LIBRARY('smbsharemodes',
 
 bld.SAMBA_SUBSYSTEM('LIBMSRPC',
                     source='${LIBMSRPC_SRC}',
-                    deps='ndr NDR_SECURITY NDR_DCERPC NDR_SCHANNEL',
+                    deps='''ndr NDR_SECURITY NDR_DCERPC NDR_SCHANNEL
+                    RPCCLI_EPMAPPER''',
                     vars=locals())
 
 bld.SAMBA_SUBSYSTEM('LIBMSRPC_GEN',
@@ -1174,6 +1170,10 @@ bld.SAMBA_SUBSYSTEM('RPCCLI_NTSVCS',
 bld.SAMBA_SUBSYSTEM('RPCCLI_EVENTLOG',
 	source='../librpc/gen_ndr/cli_eventlog.c',
 	public_deps='RPC_NDR_EVENTLOG')
+
+bld.SAMBA_SUBSYSTEM('RPCCLI_EPMAPPER',
+	source='../librpc/gen_ndr/cli_epmapper.c',
+	public_deps='RPC_NDR_EPMAPPER')
 
 bld.SAMBA_SUBSYSTEM('LIBCLI_SAMR',
                     source=LIBCLI_SAMR_SRC,
