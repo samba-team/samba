@@ -26,6 +26,10 @@ bld.SAMBA_SUBSYSTEM('idmap',
                     source=IDMAP_SRC,
                     vars=locals())
 
+bld.SAMBA_SUBSYSTEM('IDMAP_ADEX',
+                    source=IDMAP_ADEX_SRC,
+                    vars=locals())
+
 bld.SAMBA_MODULE('idmap_ad',
                  subsystem='idmap',
                  source=IDMAP_AD_SRC,
@@ -84,7 +88,8 @@ bld.SAMBA_MODULE('idmap_hash',
 
 bld.SAMBA_MODULE('idmap_adex',
                  subsystem='idmap',
-                 source=IDMAP_ADEX_SRC,
+                 source='',
+                 deps='IDMAP_ADEX',
                  init_function='',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('IDMAP_ADEX'),
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('IDMAP_ADEX'))
@@ -113,7 +118,8 @@ bld.SAMBA_MODULE('nss_info_template',
 
 bld.SAMBA_MODULE('nss_info_adex',
                  subsystem='nss_info',
-                 source=IDMAP_ADEX_SRC,
+                 source='',
+                 deps='IDMAP_ADEX',
                  init_function='',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('IDMAP_ADEX'),
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('IDMAP_ADEX'))
