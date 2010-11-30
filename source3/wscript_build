@@ -178,7 +178,9 @@ LIB_NONSMBD_SRC = '''${LIB_DUMMY_SRC}'''
 
 POPT_LIB_SRC = '''lib/popt_common.c'''
 
-PARAM_WITHOUT_REG_SRC = '''param/loadparm.c param/util.c param/loadparm_server_role.c
+PARAM_UTIL_SRC = '''param/util.c'''
+
+PARAM_WITHOUT_REG_SRC = '''param/loadparm.c param/loadparm_server_role.c
                            lib/sharesec.c lib/ldap_debug_handler.c'''
 
 KRBCLIENT_SRC = '''libads/kerberos.c libads/ads_status.c'''
@@ -835,8 +837,7 @@ NTLM_AUTH_SRC = '''${NTLM_AUTH_SRC1}
 
 VLP_SRC = '''printing/tests/vlp.c
           ../lib/util/util_tdb.c
-          ${LIBSAMBAUTIL_SRC}
-          param/util.c'''
+          ${LIBSAMBAUTIL_SRC}'''
 
 RPC_OPEN_TCP_SRC = 'torture/rpc_open_tcp.c'
 
@@ -961,8 +962,13 @@ bld.SAMBA_SUBSYSTEM('PASSDB',
                     deps='''GROUPDB TLDAP SECRETS SMBLDAP pdb''',
                     vars=locals())
 
+bld.SAMBA_SUBSYSTEM('PARAM_UTIL',
+                    source=PARAM_UTIL_SRC)
+
 bld.SAMBA_SUBSYSTEM('PARAM_WITHOUT_REG',
-                    source=PARAM_WITHOUT_REG_SRC)
+                    source=PARAM_WITHOUT_REG_SRC,
+                    deps='''PARAM_UTIL''',
+                    vars=locals())
 
 bld.SAMBA_SUBSYSTEM('PARAM',
                     source='',
@@ -1483,7 +1489,7 @@ bld.SAMBA_BINARY('split_tokens',
 
 bld.SAMBA_BINARY('vlp',
                  source=VLP_SRC,
-                 deps='''talloc tdb''',
+                 deps='''talloc tdb PARAM_UTIL''',
                  vars=locals())
 
 swat_files=recursive_dirlist('../swat', '../swat', '*')
