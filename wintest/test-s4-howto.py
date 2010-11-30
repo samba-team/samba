@@ -404,7 +404,7 @@ def test_dcpromo(t, vm):
     child.expect("was successful")
 
     t.info("Checking if new users propogate to windows")
-    t.run_cmd('bin/samba-tool newuser test2 ${PASSWORD2}')
+    t.retry_cmd('bin/samba-tool newuser test2 ${PASSWORD2}', ["created successfully"])
     t.retry_cmd("bin/smbclient -L ${WIN_HOSTNAME}.${LCREALM} -Utest2%${PASSWORD2} -k no", ['Sharename', 'Remote IPC'])
     t.retry_cmd("bin/smbclient -L ${WIN_HOSTNAME}.${LCREALM} -Utest2%${PASSWORD2} -k yes", ['Sharename', 'Remote IPC'])
 
