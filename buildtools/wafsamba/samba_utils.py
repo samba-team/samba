@@ -69,7 +69,7 @@ def needs_private_lib(bld, target):
         t = bld.name_to_obj(lib, bld.env)
         if t and getattr(t, 'private_library', False):
             return True
-        return False
+    return False
 
 
 def install_rpath(target):
