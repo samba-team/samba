@@ -150,9 +150,7 @@ LIBADS_PRINTER_SRC = '''libads/ldap_printer.c'''
 SECRETS_SRC = '''passdb/secrets.c passdb/machine_account_secrets.c
                  passdb/machine_sid.c'''
 
-LIBNBT_SRC = '''../libcli/nbt/nbtname.c
-             ../libcli/netlogon.c
-             ../libcli/ndr_netlogon.c'''
+LIBNBT_SRC = '''../libcli/netlogon.c'''
 
 LIBNMB_SRC = '''libsmb/unexpected.c libsmb/namecache.c libsmb/nmblib.c
              libsmb/namequery.c ../libcli/nbt/lmhosts.c libsmb/conncache.c
@@ -1045,7 +1043,7 @@ bld.SAMBA_SUBSYSTEM('LIBNMB',
 
 bld.SAMBA_SUBSYSTEM('LIBNBT',
                     source=LIBNBT_SRC,
-                    deps='NDR_NBT_BUF',
+                    deps='NDR_NBT_BUF LIBCLI_NDR_NETLOGON',
                     vars=locals())
 
 bld.SAMBA_SUBSYSTEM('SERVICES',
