@@ -1078,7 +1078,7 @@ static char *vfswrap_realpath(vfs_handle_struct *handle,  const char *path)
 		if (!resolved_path) {
 			SAFE_FREE(result);
 		} else {
-			/* SMB_ASSERT(result == resovled_path) ? */
+			/* SMB_ASSERT(result == resolved_path) ? */
 			result = resolved_path;
 		}
 	}
