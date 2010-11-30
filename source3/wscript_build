@@ -259,7 +259,6 @@ LIBSMB_SRC = '''libsmb/clientgen.c libsmb/cliconnect.c libsmb/clifile.c
              libsmb/clistr.c libsmb/cliquota.c libsmb/clifsinfo.c libsmb/clidfs.c
              libsmb/clioplock.c libsmb/clirap2.c
              libsmb/smb_seal.c libsmb/async_smb.c
-             ${LIBNMB_SRC}
              ${LIBNBT_SRC}
              ${DRSUAPI_SRC}'''
 
@@ -768,7 +767,7 @@ NET_SRC = '''${NET_SRC1}
 
 CUPS_SRC = '''client/smbspool.c'''
 
-NMBLOOKUP_SRC = '''utils/nmblookup.c ${LIBNMB_SRC}'''
+NMBLOOKUP_SRC = '''utils/nmblookup.c'''
 
 SMBTORTURE_SRC1 = '''torture/torture.c torture/nbio.c torture/scanner.c torture/utable.c
                 torture/denytest.c torture/mangle_test.c
@@ -817,7 +816,7 @@ DEBUG2HTML_SRC = '''utils/debug2html.c utils/debugparse.c'''
 SMBFILTER_SRC = '''utils/smbfilter.c'''
 
 WINBIND_WINS_NSS_SRC = '''../nsswitch/wins.c ${PARAM_SRC}
-        ${LIB_NONSMBD_SRC} ${LIBSMB_ERR_SRC} ${LIBNMB_SRC}'''
+        ${LIB_NONSMBD_SRC} ${LIBSMB_ERR_SRC}'''
 
 WBINFO_SRC = '''../nsswitch/wbinfo.c'''
 
@@ -833,8 +832,7 @@ NTLM_AUTH_SRC1 = '''utils/ntlm_auth.c utils/ntlm_auth_diagnostics.c'''
 
 NTLM_AUTH_SRC = '''${NTLM_AUTH_SRC1}
                 ../libcli/auth/spnego_parse.c libsmb/clikrb5.c libads/kerberos.c
-                libsmb/samlogon_cache.c
-                ${LIBNMB_SRC}'''
+                libsmb/samlogon_cache.c'''
 
 
 VLP_SRC = '''printing/tests/vlp.c
@@ -1026,7 +1024,7 @@ bld.SAMBA_SUBSYSTEM('LIBSAMBA',
 
 bld.SAMBA_SUBSYSTEM('LIBSMB',
                     source=LIBSMB_SRC,
-                    deps='LIBSAMBA z LZXPRESS CLDAP',
+                    deps='LIBSAMBA z LZXPRESS CLDAP LIBNMB',
                     vars=locals())
 
 bld.SAMBA_SUBSYSTEM('CLDAP',
@@ -1131,6 +1129,10 @@ bld.SAMBA_SUBSYSTEM('LIBNET_SAMSYNC',
 bld.SAMBA_SUBSYSTEM('LIBEVENTLOG',
                     source=LIB_EVENTLOG_SRC,
                     deps='NDR_EVENTLOG',
+                    vars=locals())
+
+bld.SAMBA_SUBSYSTEM('LIBNMB',
+                    source=LIBNMB_SRC,
                     vars=locals())
 
 bld.SAMBA_SUBSYSTEM('SERVICES',
@@ -1327,7 +1329,7 @@ bld.SAMBA_BINARY('smbget',
 
 bld.SAMBA_BINARY('nmblookup',
                  source=NMBLOOKUP_SRC,
-                 deps='''talloc tdb tevent cap resolv PARAM LIB_NONSMBD POPT_SAMBA LIBSMB_ERR''',
+                 deps='''talloc tdb tevent cap resolv PARAM LIB_NONSMBD POPT_SAMBA LIBSMB_ERR LIBNMB''',
                  vars=locals())
 
 bld.SAMBA_BINARY('smbtorture',
@@ -1441,7 +1443,7 @@ bld.SAMBA_BINARY('ntlm_auth',
                  deps='''tdb talloc cap resolv krb5 k5crypto com_err libwbclient PARAM LIB_NONSMBD
                  LIBS LIBSAMBA POPT_SAMBA ASN1_UTIL LIBTSOCKET
                  PASSDB GROUPDB SMBLDAP WBCOMMON LIBINIPARSER LIBADS_SERVER
-                 NDR_SAMR NDR_LSA NDR_NETLOGON LIBCLI_LDAP_NDR''',
+                 NDR_SAMR NDR_LSA NDR_NETLOGON LIBCLI_LDAP_NDR LIBNMB''',
                  vars=locals())
 
 bld.SAMBA_BINARY('timelimit',
