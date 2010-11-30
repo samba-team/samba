@@ -415,7 +415,7 @@ WINBINDD_SRC1 = '''winbindd/winbindd.c
 WINBINDD_SRC = '''${WINBINDD_SRC1}
                   ${RPC_NCACN_NP}
                   ${TDB_VALIDATE_SRC}
-                  rpc_server/srv_lsa_nt.c ../librpc/gen_ndr/srv_lsa.c
+                  ../librpc/gen_ndr/srv_lsa.c
                   ../librpc/gen_ndr/srv_samr.c
                   rpc_server/srv_pipe_register.c'''
 
@@ -1214,7 +1214,7 @@ bld.SAMBA_BINARY('winbindd/winbindd',
                  TOKEN_UTIL
                  LIBCLI_SAMR LIBCLI_LSA LIBCLI_NETLOGON
                  RPCCLI_DSSETUP NPA_TSTREAM INIT_NETLOGON
-                 RPC_SAMR
+                 RPC_SAMR RPC_LSARPC
                  ''',
                  enabled=bld.env.build_winbind,
                  install_path='${SBINDIR}',

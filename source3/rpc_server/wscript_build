@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-RPC_LSARPC_SRC = '''srv_lsa_nt.c ../../librpc/gen_ndr/srv_lsa.c'''
+RPC_LSARPC_SRC = '''srv_lsa_nt.c'''
 RPC_NETLOGON_SRC = '''srv_netlog_nt.c ../../librpc/gen_ndr/srv_netlogon.c'''
 RPC_SAMR_SRC = '''srv_samr_nt.c
                srv_samr_util.c
@@ -26,9 +26,14 @@ bld.SAMBA_SUBSYSTEM('RPC_SAMR',
                     source=RPC_SAMR_SRC,
                     vars=locals())
 
+bld.SAMBA_SUBSYSTEM('RPC_LSARPC',
+                    source=RPC_LSARPC_SRC,
+                    vars=locals())
+
 bld.SAMBA_MODULE('rpc_lsarpc',
                  subsystem='rpc',
-                 source=RPC_LSARPC_SRC,
+                 source='../../librpc/gen_ndr/srv_lsa.c',
+                 deps='RPC_LSARPC',
                  init_function='',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('RPC_LSARPC'),
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('RPC_LSARPC'))
