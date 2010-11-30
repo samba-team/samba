@@ -95,10 +95,7 @@ LIBCLI_LSA_SRC = '''rpc_client/cli_lsarpc.c
 
 LIBCLI_SAMR_SRC = 'rpc_client/cli_samr.c'
 
-LIBCLI_NETLOGON_SRC = '''
-                      ../librpc/gen_ndr/cli_netlogon.c
-                      ../librpc/gen_ndr/ndr_netlogon_c.c
-                      rpc_client/cli_netlogon.c'''
+LIBCLI_NETLOGON_SRC = 'rpc_client/cli_netlogon.c'
 
 LIBCLI_EPMAPPER_SRC = '''
                       ../librpc/gen_ndr/cli_epmapper.c
@@ -481,7 +478,6 @@ WINBINDD_SRC = '''${WINBINDD_SRC1}
                   ${RPC_NCACN_NP} ${NPA_TSTREAM_SRC}
                   ${TDB_VALIDATE_SRC}
                   ${LIBCLI_DSSETUP_SRC}
-                  ${LIBCLI_NETLOGON_SRC}
                   rpc_client/init_netlogon.c
                   rpc_server/srv_lsa_nt.c ../librpc/gen_ndr/srv_lsa.c
                   rpc_server/srv_samr_nt.c ../librpc/gen_ndr/srv_samr.c
@@ -545,7 +541,6 @@ SMBD_SRC_BASE = '''${SMBD_SRC_SRV}
                 ${BUILDOPT_SRC}
                 ${LIBCLI_SPOOLSS_SRC}
                 ${LIBCLI_SRVSVC_SRC}
-                ${LIBCLI_NETLOGON_SRC}
                 rpc_client/init_netlogon.c
                 rpc_client/init_samr.c'''
 
@@ -626,7 +621,6 @@ RPCCLIENT_SRC = '''${RPCCLIENT_SRC1}
                    ${LIBCLI_DSSETUP_SRC}
                    ${LIBCLI_WKSSVC_SRC}
                    ${LIBCLI_SRVSVC_SRC}
-                   ${LIBCLI_NETLOGON_SRC}
                    rpc_client/init_netlogon.c
                    rpc_client/init_samr.c'''
 
@@ -677,7 +671,6 @@ LIBNETAPI_SRC = '''${LIBNETAPI_SRC0}
                    ${LIBCLI_INITSHUTDOWN_SRC}
                    ${LIBCLI_WKSSVC_SRC}
                    ${LIBCLI_SRVSVC_SRC}
-                   ${LIBCLI_NETLOGON_SRC}
                    rpc_client/init_netlogon.c
                    rpc_client/init_samr.c'''
 
@@ -735,7 +728,6 @@ NET_SRC1 = '''utils/net.c utils/net_ads.c utils/net_help.c
               ${LIBCLI_SVCCTL_SRC}
               ${LIBCLI_WKSSVC_SRC}
               ${LIBCLI_SRVSVC_SRC}
-              ${LIBCLI_NETLOGON_SRC}
               rpc_client/init_netlogon.c
               rpc_client/init_samr.c
               registry/reg_parse.c registry/reg_format.c
@@ -879,7 +871,7 @@ bld.SAMBA_LIBRARY('libnetapi',
                     PASSDB SMBLDAP GROUPDB PARAM_WITHOUT_REG DYNCONFIG
                     LIBMSRPC_GEN LIBMSRPC LIBADS LIBNET DCUTIL NDR_LIBNETAPI
                     RPC_CLIENT_SCHANNEL LIBSMBCONF REG_SMBCONF TOKEN_UTIL
-                    LIBCLI_SAMR LIBCLI_LSA''',
+                    LIBCLI_SAMR LIBCLI_LSA LIBCLI_NETLOGON''',
                     public_headers='lib/netapi/netapi.h',
                     private_library=True,
                     vars=locals())
@@ -1066,7 +1058,7 @@ bld.SAMBA_SUBSYSTEM('SMBD_BASE',
                     vfs vfs_default vfs_posixacl auth rpc LOCKING LIBAFS LIBAFS_SETTOKEN PROFILE
                     PRINTING PRINTBACKEND NDR_XATTR REGFIO
                     LIBSMBCONF REG_FULL FNAME_UTIL
-                    LIBCLI_SAMR LIBCLI_LSA
+                    LIBCLI_SAMR LIBCLI_LSA LIBCLI_NETLOGON
                     ''',
                     vars=locals())
 
@@ -1198,6 +1190,10 @@ bld.SAMBA_SUBSYSTEM('RPCCLI_LSA',
 	source='../librpc/gen_ndr/cli_lsa.c',
 	public_deps='RPC_NDR_LSA')
 
+bld.SAMBA_SUBSYSTEM('RPCCLI_NETLOGON',
+	source='../librpc/gen_ndr/cli_netlogon.c',
+	public_deps='RPC_NDR_NETLOGON')
+
 bld.SAMBA_SUBSYSTEM('LIBCLI_SAMR',
                     source=LIBCLI_SAMR_SRC,
                     deps='RPCCLI_SAMR')
@@ -1205,6 +1201,10 @@ bld.SAMBA_SUBSYSTEM('LIBCLI_SAMR',
 bld.SAMBA_SUBSYSTEM('LIBCLI_LSA',
                     source=LIBCLI_LSA_SRC,
                     deps='RPCCLI_LSA')
+
+bld.SAMBA_SUBSYSTEM('LIBCLI_NETLOGON',
+                    source=LIBCLI_NETLOGON_SRC,
+                    deps='RPCCLI_NETLOGON')
 
 bld.SAMBA_SUBSYSTEM('RPC_CLIENT_SCHANNEL',
 	source=RPC_CLIENT_SCHANNEL_SRC,
@@ -1235,7 +1235,7 @@ bld.SAMBA_BINARY('winbindd/winbindd',
                  SRV_NDR_WBINT RPCCLI_NDR_WBINT LIBAFS
                  LIBAFS_SETTOKEN PROFILE SLCACHE DCUTIL idmap nss_info
                  TOKEN_UTIL
-                 LIBCLI_SAMR LIBCLI_LSA
+                 LIBCLI_SAMR LIBCLI_LSA LIBCLI_NETLOGON
                  ''',
                  enabled=bld.env.build_winbind,
                  install_path='${SBINDIR}',
@@ -1257,7 +1257,7 @@ bld.SAMBA_BINARY('rpcclient/rpcclient',
                  PARAM_WITHOUT_REG libwbclient PARAM KRBCLIENT LIBMSRPC_GEN LIBMSRPC
                  LIBADS SMBREADLINE DCUTIL RPCCLI_WINREG RPCCLI_ECHO
                  RPC_CLIENT_SCHANNEL
-                 LIBCLI_SAMR LIBCLI_LSA''',
+                 LIBCLI_SAMR LIBCLI_LSA LIBCLI_NETLOGON''',
                  vars=locals())
 
 bld.SAMBA_BINARY('smbclient',
@@ -1275,7 +1275,7 @@ bld.SAMBA_BINARY('net',
                  LIBNET_DSSYNC LIBNET_SAMSYNC LIBEVENTLOG DCUTIL
                  REGFIO NDR_NTPRINTING RPCCLI_WINREG
                  RPC_CLIENT_SCHANNEL TOKEN_UTIL
-                 LIBCLI_SAMR LIBCLI_LSA''',
+                 LIBCLI_SAMR LIBCLI_LSA LIBCLI_NETLOGON''',
                  vars=locals())
 
 bld.SAMBA_BINARY('profiles',
