@@ -66,10 +66,6 @@ LIBCLI_DRSUAPI_SRC = '''
                      ../librpc/gen_ndr/cli_drsuapi.c
                      ../librpc/gen_ndr/ndr_drsuapi_c.c'''
 
-LIBCLI_DFS_SRC = '''
-                 ../librpc/gen_ndr/cli_dfs.c
-                 ../librpc/gen_ndr/ndr_dfs_c.c'''
-
 LIBCLI_LSA_SRC = '''rpc_client/cli_lsarpc.c
                  rpc_client/init_lsa.c'''
 
@@ -594,7 +590,6 @@ RPCCLIENT_SRC = '''${RPCCLIENT_SRC1}
                    ${LIBCLI_EVENTLOG_SRC}
                    ${LIBCLI_NTSVCS_SRC}
                    ${LIBCLI_DRSUAPI_SRC}
-                   ${LIBCLI_DFS_SRC}
                    rpc_client/init_netlogon.c
                    rpc_client/init_samr.c'''
 
@@ -1180,6 +1175,10 @@ bld.SAMBA_SUBSYSTEM('RPCCLI_DSSETUP',
 	source='../librpc/gen_ndr/cli_dssetup.c',
 	public_deps='RPC_NDR_DSSETUP')
 
+bld.SAMBA_SUBSYSTEM('RPCCLI_DFS',
+	source='../librpc/gen_ndr/cli_dfs.c',
+	public_deps='RPC_NDR_DFS')
+
 bld.SAMBA_SUBSYSTEM('LIBCLI_SAMR',
                     source=LIBCLI_SAMR_SRC,
                     deps='RPCCLI_SAMR')
@@ -1245,7 +1244,7 @@ bld.SAMBA_BINARY('rpcclient/rpcclient',
                  LIBADS SMBREADLINE DCUTIL RPCCLI_WINREG RPCCLI_ECHO
                  RPC_CLIENT_SCHANNEL
                  LIBCLI_SAMR LIBCLI_LSA LIBCLI_NETLOGON
-                 RPCCLI_SRVSVC RPCCLI_WKSSVC RPCCLI_DSSETUP
+                 RPCCLI_SRVSVC RPCCLI_WKSSVC RPCCLI_DSSETUP RPCCLI_DFS
                  ''',
                  vars=locals())
 
