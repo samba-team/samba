@@ -341,12 +341,25 @@ class wintest():
 
     def get_is_dc(self, child):
         child.sendline("dcdiag")
-        i = child.expect(["is not a Directory Server", "Home Server = "])
+        i = child.expect(["is not a Directory Server", "is not recognized as an internal or external command", "Home Server = "])
         if i == 0:
             return False
+        if i == 1:
+            child.expect("C:")
+            child.sendline("net config Workstation")
+            child.expect("Workstation domain")
+            child.expect('[\S]+')
+            domain = child.after
+            i = child.expect(["Workstation Domain DNS Name", "Logon domain"])
+            '''If we get the Logon domain first, we are not in an AD domain'''
+            if i == 1:
+                return False
+            if domain.upper() == self.getvar("WIN_DOMAIN").upper():
+                return True
+
         child.expect('[\S]+')
         hostname = child.after
-        if hostname.upper() == self.getvar("WIN_HOSTNAME").upper:
+        if hostname.upper() == self.getvar("WIN_HOSTNAME").upper():
             return True
 
     def run_tlntadmn(self, child):
