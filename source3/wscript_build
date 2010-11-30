@@ -70,10 +70,6 @@ LIBCLI_DFS_SRC = '''
                  ../librpc/gen_ndr/cli_dfs.c
                  ../librpc/gen_ndr/ndr_dfs_c.c'''
 
-LIBCLI_INITSHUTDOWN_SRC = '''
-                          ../librpc/gen_ndr/cli_initshutdown.c
-                          ../librpc/gen_ndr/ndr_initshutdown_c.c'''
-
 LIBCLI_LSA_SRC = '''rpc_client/cli_lsarpc.c
                  rpc_client/init_lsa.c'''
 
@@ -645,7 +641,6 @@ LIBNETAPI_SRC0 = '''lib/netapi/netapi.c
                     lib/netapi/netlogon.c'''
 
 LIBNETAPI_SRC = '''${LIBNETAPI_SRC0}
-                   ${LIBCLI_INITSHUTDOWN_SRC}
                    rpc_client/init_netlogon.c
                    rpc_client/init_samr.c'''
 
@@ -697,7 +692,6 @@ NET_SRC1 = '''utils/net.c utils/net_ads.c utils/net_help.c
               utils/net_printing.c
               ${LIBCLI_SPOOLSS_SRC}
               ${LIBCLI_DRSUAPI_SRC}
-              ${LIBCLI_INITSHUTDOWN_SRC}
               rpc_client/init_netlogon.c
               rpc_client/init_samr.c
               registry/reg_parse.c registry/reg_format.c
@@ -842,7 +836,7 @@ bld.SAMBA_LIBRARY('libnetapi',
                     LIBMSRPC_GEN LIBMSRPC LIBADS LIBNET DCUTIL NDR_LIBNETAPI
                     RPC_CLIENT_SCHANNEL LIBSMBCONF REG_SMBCONF TOKEN_UTIL
                     LIBCLI_SAMR LIBCLI_LSA LIBCLI_NETLOGON
-                    RPCCLI_SRVSVC RPCCLI_WKSSVC''',
+                    RPCCLI_SRVSVC RPCCLI_WKSSVC RPCCLI_INITSHUTDOWN''',
                     public_headers='lib/netapi/netapi.h',
                     private_library=True,
                     vars=locals())
@@ -1170,6 +1164,10 @@ bld.SAMBA_SUBSYSTEM('RPCCLI_SRVSVC',
 	source='../librpc/gen_ndr/cli_srvsvc.c',
 	public_deps='RPC_NDR_SRVSVC')
 
+bld.SAMBA_SUBSYSTEM('RPCCLI_INITSHUTDOWN',
+	source='../librpc/gen_ndr/cli_initshutdown.c',
+	public_deps='RPC_NDR_INITSHUTDOWN')
+
 bld.SAMBA_SUBSYSTEM('RPCCLI_WKSSVC',
 	source='../librpc/gen_ndr/cli_wkssvc.c',
 	public_deps='RPC_NDR_WKSSVC')
@@ -1268,6 +1266,7 @@ bld.SAMBA_BINARY('net',
                  RPC_CLIENT_SCHANNEL TOKEN_UTIL
                  LIBCLI_SAMR LIBCLI_LSA LIBCLI_NETLOGON
                  RPCCLI_SRVSVC RPCCLI_WKSSVC RPCCLI_SVCCTL RPCCLI_DSSETUP
+                 RPCCLI_INITSHUTDOWN
 		 ''',
                  vars=locals())
 
