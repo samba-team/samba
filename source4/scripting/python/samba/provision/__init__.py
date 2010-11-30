@@ -1642,10 +1642,9 @@ def provision(setup_dir, logger, session_info, credentials, smbconf=None,
                     name="msDS-SupportedEncryptionTypes")
                 samdb.modify(msg)
             except ldb.LdbError, (enum, estr):
-                if enum == ldb.ERR_NO_SUCH_ATTRIBUTE:
+                if enum != ldb.ERR_NO_SUCH_ATTRIBUTE:
                     # It might be that this attribute does not exist in this schema
-                    pass
-                raise
+                    raise
 
             if serverrole == "domain controller":
                 secretsdb_setup_dns(secrets_ldb, setup_path, names,
