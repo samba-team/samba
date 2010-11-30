@@ -4,7 +4,7 @@
 
 import sys, os
 import optparse
-import wintest, pexpect
+import wintest, pexpect, time
 
 def check_prerequesites(t):
     t.info("Checking prerequesites")
@@ -390,7 +390,15 @@ def test_dcpromo(t, vm):
 
     child = t.open_telnet("${WIN_HOSTNAME}", "${DOMAIN}\\administrator", "${PASSWORD1}", set_time=True)
     child.sendline("net use t: \\\\${HOSTNAME}.${LCREALM}\\test")
-    child.expect("The command completed successfully")
+
+    retries = 10
+    i = child.expect(["The command completed successfully", "The network path was not found"])
+    while i == 1 and retries > 0:
+        child.expect("C:")
+        time.sleep(2)
+        child.sendline("net use t: \\\\${HOSTNAME}.${LCREALM}\\test")
+        i = child.expect(["The command completed successfully", "The network path was not found"])
+        retries -=1
 
     t.run_net_time(child)
 
@@ -525,6 +533,9 @@ def join_as_dc(t, vm):
     '''join a windows domain as a DC'''
     t.setwinvars(vm)
     t.info("Joining ${WIN_VM} as a second DC using samba-tool join DC")
+    t.port_wait("${WIN_IP}", 389)
+    t.retry_cmd("host -t SRV _ldap._tcp.${WIN_REALM} ${WIN_IP}", ['has SRV record'] )
+
     t.retry_cmd("bin/samba-tool drs showrepl ${WIN_HOSTNAME}.${WIN_REALM} -Uadministrator%${WIN_PASS}", ['INBOUND NEIGHBORS'] )
     t.run_cmd('bin/samba-tool join ${WIN_REALM} DC -Uadministrator%${WIN_PASS} -d${DEBUGLEVEL} --option=interfaces=${INTERFACE}')
     t.run_cmd('bin/samba-tool drs kcc ${WIN_HOSTNAME}.${WIN_REALM} -Uadministrator@${WIN_REALM}%${WIN_PASS}')
@@ -547,8 +558,15 @@ def test_join_as_dc(t, vm):
         t.cmd_contains("bin/samba-tool drs replicate ${HOSTNAME}.${WIN_REALM} ${WIN_HOSTNAME}.${WIN_REALM} %s -k yes" % nc, ["was successful"])
         t.cmd_contains("bin/samba-tool drs replicate ${WIN_HOSTNAME}.${WIN_REALM} ${HOSTNAME}.${WIN_REALM} %s -k yes" % nc, ["was successful"])
 
-    child.sendline("net use t: \\\\${HOSTNAME}.${WIN_REALM}\\test")
-    child.expect("The command completed successfully")
+    retries = 10
+    i = 1
+    while i == 1 and retries > 0:
+        child.sendline("net use t: \\\\${HOSTNAME}.${WIN_REALM}\\test")
+        i = child.expect(["The command completed successfully", "The network path was not found"])
+        child.expect("C:")
+        if i == 1:
+            time.sleep(2)
+        retries -=1
 
     t.info("Checking if showrepl is happy")
     child.sendline("repadmin /showrepl")
@@ -560,7 +578,7 @@ def test_join_as_dc(t, vm):
     child.expect("was successful")
 
     t.info("Checking if new users propogate to windows")
-    t.run_cmd('bin/samba-tool newuser test2 ${PASSWORD2}')
+    t.retry_cmd('bin/samba-tool newuser test2 ${PASSWORD2}', ["created successfully"])
     t.retry_cmd("bin/smbclient -L ${WIN_HOSTNAME}.${WIN_REALM} -Utest2%${PASSWORD2} -k no", ['Sharename', 'Remote IPC'])
     t.retry_cmd("bin/smbclient -L ${WIN_HOSTNAME}.${WIN_REALM} -Utest2%${PASSWORD2} -k yes", ['Sharename', 'Remote IPC'])
 
@@ -586,14 +604,8 @@ def join_as_rodc(t, vm):
     '''join a windows domain as a RODC'''
     t.setwinvars(vm)
     t.info("Joining ${WIN_VM} as a RODC using samba-tool join DC")
-    t.chdir('${PREFIX}')
-    t.run_cmd('killall -9 -q samba smbd nmbd winbindd', checkfail=False)
-    t.vm_poweroff("${WIN_VM}", checkfail=False)
-    t.vm_restore("${WIN_VM}", "${WIN_SNAPSHOT}")
-    rndc_cmd(t, 'flush')
-    t.run_cmd("rm -rf etc/smb.conf private")
-    child = t.open_telnet("${WIN_HOSTNAME}", "${WIN_DOMAIN}\\administrator", "${WIN_PASS}", set_time=True)
-    t.get_ipconfig(child)
+    t.port_wait("${WIN_IP}", 389)
+    t.retry_cmd("host -t SRV _ldap._tcp.${WIN_REALM} ${WIN_IP}", ['has SRV record'] )
     t.retry_cmd("bin/samba-tool drs showrepl ${WIN_HOSTNAME}.${WIN_REALM} -Uadministrator%${WIN_PASS}", ['INBOUND NEIGHBORS'] )
     t.run_cmd('bin/samba-tool join ${WIN_REALM} RODC -Uadministrator%${WIN_PASS} -d${DEBUGLEVEL} --option=interfaces=${INTERFACE}')
     t.run_cmd('bin/samba-tool drs kcc ${WIN_HOSTNAME}.${WIN_REALM} -Uadministrator@${WIN_REALM}%${WIN_PASS}')
@@ -615,8 +627,15 @@ def test_join_as_rodc(t, vm):
     for nc in [ '${WIN_BASEDN}', 'CN=Configuration,${WIN_BASEDN}', 'CN=Schema,CN=Configuration,${WIN_BASEDN}' ]:
         t.cmd_contains("bin/samba-tool drs replicate ${HOSTNAME}.${WIN_REALM} ${WIN_HOSTNAME}.${WIN_REALM} %s -k yes" % nc, ["was successful"])
 
-    child.sendline("net use t: \\\\${HOSTNAME}.${WIN_REALM}\\test")
-    child.expect("The command completed successfully")
+    retries = 10
+    i = 1
+    while i == 1 and retries > 0:
+        child.sendline("net use t: \\\\${HOSTNAME}.${WIN_REALM}\\test")
+        i = child.expect(["The command completed successfully", "The network path was not found"])
+        child.expect("C:")
+        if i == 1:
+            time.sleep(2)
+        retries -=1
 
     t.info("Checking if showrepl is happy")
     child.sendline("repadmin /showrepl")
@@ -784,7 +803,7 @@ def test_howto(t):
         test_join_as_dc(t, "W2K8R2A")
 
     if t.have_vm('W2K8R2A') and not t.skip("join_rodc"):
-        prep_join_as_rodc(t, "W2K8R2A")
+        prep_join_as_dc(t, "W2K8R2A")
         run_dcpromo_as_first_dc(t, "W2K8R2A", func_level='2008r2')
         join_as_rodc(t, "W2K8R2A")
         create_shares(t)
