@@ -278,8 +278,7 @@ SERVICES_SRC = '''services/svc_spoolss.c
 
 LIB_EVENTLOG_SRC = '''lib/eventlog/eventlog.c'''
 
-NPA_TSTREAM_SRC = '''../libcli/named_pipe_auth/npa_tstream.c
-                     ../librpc/gen_ndr/ndr_named_pipe_auth.c'''
+NPA_TSTREAM_SRC = '''../libcli/named_pipe_auth/npa_tstream.c'''
 
 RPC_NCACN_NP = '''rpc_server/rpc_ncacn_np.c
                   rpc_server/rpc_handles.c'''
@@ -293,7 +292,7 @@ RPC_CRYPTO = '''rpc_server/dcesrv_ntlmssp.c
 RPC_PIPE_SRC = '''rpc_server/srv_pipe_hnd.c rpc_server/srv_pipe.c
                ${RPC_NCACN_NP} ${RPC_SERVICE} ${RPC_CRYPTO}'''
 
-RPC_SERVER_SRC = '''${RPC_PIPE_SRC} ${NPA_TSTREAM_SRC}'''
+RPC_SERVER_SRC = '''${RPC_PIPE_SRC}'''
 
 RPC_CLIENT_SCHANNEL_SRC = '''rpc_client/cli_pipe_schannel.c'''
 
@@ -422,7 +421,7 @@ WINBINDD_SRC1 = '''winbindd/winbindd.c
                    ../nsswitch/libwbclient/wb_reqtrans.c'''
 
 WINBINDD_SRC = '''${WINBINDD_SRC1}
-                  ${RPC_NCACN_NP} ${NPA_TSTREAM_SRC}
+                  ${RPC_NCACN_NP}
                   ${TDB_VALIDATE_SRC}
                   rpc_client/init_netlogon.c
                   rpc_server/srv_lsa_nt.c ../librpc/gen_ndr/srv_lsa.c
@@ -989,7 +988,7 @@ bld.SAMBA_SUBSYSTEM('SMBD_BASE',
                     PRINTING PRINTBACKEND NDR_XATTR NDR_NOTIFY REGFIO
                     LIBSMBCONF REG_FULL FNAME_UTIL
                     LIBCLI_SAMR LIBCLI_LSA LIBCLI_NETLOGON LIBCLI_SPOOLSS
-                    RPCCLI_SRVSVC
+                    RPCCLI_SRVSVC NPA_TSTREAM
                     ''',
                     vars=locals())
 
@@ -1189,6 +1188,10 @@ bld.SAMBA_SUBSYSTEM('RPC_CLIENT_SCHANNEL',
 	source=RPC_CLIENT_SCHANNEL_SRC,
 	vars=locals())
 
+bld.SAMBA_SUBSYSTEM('NPA_TSTREAM',
+                    source=NPA_TSTREAM_SRC,
+                    deps='NDR_NAMED_PIPE_AUTH')
+
 
 ########################## BINARIES #################################
 
@@ -1215,7 +1218,7 @@ bld.SAMBA_BINARY('winbindd/winbindd',
                  LIBAFS_SETTOKEN PROFILE SLCACHE DCUTIL idmap nss_info
                  TOKEN_UTIL
                  LIBCLI_SAMR LIBCLI_LSA LIBCLI_NETLOGON
-                 RPCCLI_DSSETUP
+                 RPCCLI_DSSETUP NPA_TSTREAM
                  ''',
                  enabled=bld.env.build_winbind,
                  install_path='${SBINDIR}',
