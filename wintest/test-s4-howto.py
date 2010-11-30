@@ -63,6 +63,13 @@ def start_s4(t):
              '--option', 'panic action=gnome-terminal -e "gdb --pid %PID%"'])
     t.port_wait("${INTERFACE_IP}", 139)
 
+def stop_vms(t):
+    '''Shut down any existing alive VMs, so they don't collide with what we are doing'''
+    t.info('Shutting down any of our VMs already running')
+    vms = t.get_vms()
+    for v in vms:
+        t.vm_poweroff(v, checkfail=False)
+
 def test_smbclient(t):
     '''test smbclient'''
     t.info('Testing smbclient')
@@ -717,6 +724,8 @@ def test_howto(t):
 
     if not t.skip("starts4"):
         start_s4(t)
+    if not t.skip("stop_vms"):
+        stop_vms(t)
     if not t.skip("smbclient"):
         test_smbclient(t)
     if not t.skip("startbind"):

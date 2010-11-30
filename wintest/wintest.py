@@ -518,3 +518,11 @@ class wintest():
                 self.vm_reset("${WIN_VM}")
                 self.info("retrying reboot (retries=%u)" % retries)
         raise RuntimeError(self.substitute("VM ${WIN_VM} failed to reboot"))
+
+    def get_vms(self):
+        '''return a dictionary of all the configured VM names'''
+        ret = []
+        for v in self.vars:
+            if v[-3:] == "_VM":
+                ret.append(self.vars[v])
+        return ret
