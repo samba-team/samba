@@ -61,16 +61,24 @@ static PyObject *py_GUID_repr(PyObject *py_self)
 
 static int py_GUID_init(PyObject *self, PyObject *args, PyObject *kwargs)
 {
-	char *str = NULL;
+	PyObject *str = NULL;
 	NTSTATUS status;
 	struct GUID *guid = py_talloc_get_ptr(self);
 	const char *kwnames[] = { "str", NULL };
 
-	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|s", discard_const_p(char *, kwnames), &str))
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|O", discard_const_p(char *, kwnames), &str))
 		return -1;
 
 	if (str != NULL) {
-		status = GUID_from_string(str, guid);
+		DATA_BLOB guid_val;
+
+		if (!PyString_Check(str)) {
+			PyErr_SetString(PyExc_TypeError, "Expected a string argument to GUID()");
+			return -1;
+		}
+		guid_val.data = (uint8_t *)PyString_AsString(str);
+		guid_val.length = PyString_Size(str);
+		status = GUID_from_data_blob(&guid_val, guid);
 		if (!NT_STATUS_IS_OK(status)) {
 			PyErr_SetNTSTATUS(status);
 			return -1;
