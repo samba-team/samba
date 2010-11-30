@@ -816,7 +816,7 @@ if __name__ == '__main__':
     parser = optparse.OptionParser("test-howto.py")
     parser.add_option("--conf", type='string', default='', help='config file')
     parser.add_option("--skip", type='string', default='', help='list of steps to skip (comma separated)')
-    parser.add_option("--vms", type='string', default='', help='list of VMs to use (comma separated)')
+    parser.add_option("--vms", type='string', default=None, help='list of VMs to use (comma separated)')
     parser.add_option("--list", action='store_true', default=False, help='list the available steps')
     parser.add_option("--rebase", action='store_true', default=False, help='do a git pull --rebase')
     parser.add_option("--clean", action='store_true', default=False, help='clean the tree')
