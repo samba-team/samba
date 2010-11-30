@@ -420,7 +420,6 @@ static PyMethodDef py_creds_methods[] = {
 PyTypeObject PyCredentials = {
 	.tp_name = "Credentials",
 	.tp_basicsize = sizeof(py_talloc_Object),
-	.tp_dealloc = py_talloc_dealloc,
 	.tp_new = py_creds_new,
 	.tp_flags = Py_TPFLAGS_DEFAULT,
 	.tp_methods = py_creds_methods,
@@ -430,13 +429,17 @@ PyTypeObject PyCredentials = {
 PyTypeObject PyCredentialCacheContainer = {
 	.tp_name = "CredentialCacheContainer",
 	.tp_basicsize = sizeof(py_talloc_Object),
-	.tp_dealloc = py_talloc_dealloc,
 	.tp_flags = Py_TPFLAGS_DEFAULT,
 };
 
 void initcredentials(void)
 {
 	PyObject *m;
+	PyTypeObject *talloc_type = PyTalloc_GetObjectType();
+	if (talloc_type == NULL)
+		return;
+
+	PyCredentials.tp_base = PyCredentialCacheContainer.tp_base = talloc_type;
 
 	if (PyType_Ready(&PyCredentials) < 0)
 		return;
