@@ -321,21 +321,21 @@ sub PythonStruct($$$$$$)
 	$self->indent;
 	$self->pidl("PyObject_HEAD_INIT(NULL) 0,");
 	$self->pidl(".tp_name = \"$modulename.$prettyname\",");
-	$self->pidl(".tp_basicsize = sizeof(py_talloc_Object),");
-	$self->pidl(".tp_dealloc = py_talloc_dealloc,");
 	$self->pidl(".tp_getset = $getsetters,");
-	$self->pidl(".tp_repr = py_talloc_default_repr,");
-	$self->pidl(".tp_compare = py_talloc_default_cmp,");
 	if ($docstring) {
 		$self->pidl(".tp_doc = $docstring,");
 	}
 	$self->pidl(".tp_methods = $py_methods,");
 	$self->pidl(".tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,");
+	$self->pidl(".tp_basicsize = sizeof(py_talloc_Object),");
 	$self->pidl(".tp_new = py_$name\_new,");
 	$self->deindent;
 	$self->pidl("};");
 
 	$self->pidl("");
+
+	my $talloc_typename = $self->import_type_variable("talloc", "Object");
+	$self->register_module_prereadycode(["$name\_Type.tp_base = $talloc_typename;", ""]);
 
 	return "&$typeobject";
 }
