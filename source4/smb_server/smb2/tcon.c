@@ -345,7 +345,7 @@ static NTSTATUS smb2srv_tcon_backend(struct smb2srv_request *req, union smb_tcon
 	/* Invoke NTVFS connection hook */
 	status = ntvfs_connect(req->ntvfs, io);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("smb2srv_tcon_backend: NTVFS ntvfs_connect() failed!\n"));
+		DEBUG(0,("smb2srv_tcon_backend: NTVFS ntvfs_connect() failed: %s!\n", nt_errstr(status)));
 		goto failed;
 	}
 
