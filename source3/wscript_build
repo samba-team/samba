@@ -200,8 +200,7 @@ LIBSMB_SRC = '''libsmb/clientgen.c libsmb/cliconnect.c libsmb/clifile.c
              libsmb/clitrans.c libsmb/clisecdesc.c libsmb/clidgram.c
              libsmb/clistr.c libsmb/cliquota.c libsmb/clifsinfo.c libsmb/clidfs.c
              libsmb/clioplock.c libsmb/clirap2.c
-             libsmb/smb_seal.c libsmb/async_smb.c
-             ${LIBNBT_SRC}'''
+             libsmb/smb_seal.c libsmb/async_smb.c'''
 
 LIBMSRPC_SRC = '''
                ${SCHANNEL_SRC}
@@ -926,7 +925,7 @@ bld.SAMBA_SUBSYSTEM('LIBSAMBA',
 
 bld.SAMBA_SUBSYSTEM('LIBSMB',
                     source=LIBSMB_SRC,
-                    deps='LIBSAMBA CLDAP LIBNMB LIBDRSUAPI SPNEGO_PARSE',
+                    deps='LIBSAMBA CLDAP LIBNMB LIBNBT LIBDRSUAPI SPNEGO_PARSE',
                     vars=locals())
 
 bld.SAMBA_SUBSYSTEM('LIBDRSUAPI',
@@ -1042,6 +1041,11 @@ bld.SAMBA_SUBSYSTEM('LIBEVENTLOG',
 
 bld.SAMBA_SUBSYSTEM('LIBNMB',
                     source=LIBNMB_SRC,
+                    vars=locals())
+
+bld.SAMBA_SUBSYSTEM('LIBNBT',
+                    source=LIBNBT_SRC,
+                    deps='NDR_NBT_BUF',
                     vars=locals())
 
 bld.SAMBA_SUBSYSTEM('SERVICES',
