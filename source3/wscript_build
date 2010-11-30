@@ -321,10 +321,11 @@ REG_SMBCONF_SRC = '''
                   registry/reg_util_token.c
                   registry/reg_api_util.c'''
 
+REG_EVENTLOG_SRC = '''registry/reg_eventlog.c'''
+
 REG_FULL_SRC = '''
                ${REG_BACKENDS_EXTRA_SRC}
                ${REG_INIT_FULL_SRC}
-               registry/reg_eventlog.c
                registry/reg_perfcount.c'''
 
 SERVICES_SRC = '''services/svc_spoolss.c
@@ -805,8 +806,7 @@ SMBCQUOTAS_SRC = '''utils/smbcquotas.c
 
 EVTLOGADM_SRC0 = 'utils/eventlogadm.c'
 
-EVTLOGADM_SRC = '''${EVTLOGADM_SRC0}
-                registry/reg_eventlog.c'''
+EVTLOGADM_SRC = '''${EVTLOGADM_SRC0}'''
 
 SHARESEC_SRC0 = 'utils/sharesec.c'
 SHARESEC_SRC  = '''${SHARESEC_SRC0}'''
@@ -990,7 +990,11 @@ bld.SAMBA_SUBSYSTEM('REG_SMBCONF',
 
 bld.SAMBA_SUBSYSTEM('REG_FULL',
                     source=REG_FULL_SRC,
-                    deps='REG_SMBCONF',
+                    deps='REG_SMBCONF REG_EVENTLOG',
+                    vars=locals())
+
+bld.SAMBA_SUBSYSTEM('REG_EVENTLOG',
+                    source=REG_EVENTLOG_SRC,
                     vars=locals())
 
 bld.SAMBA_SUBSYSTEM('POPT_SAMBA',
@@ -1370,7 +1374,7 @@ bld.SAMBA_BINARY('smbcquotas',
 bld.SAMBA_BINARY('eventlogadm',
                  source=EVTLOGADM_SRC,
                  deps='''talloc tevent cap POPT_SAMBA LIBS PARAM
-                 LIB_NONSMBD LIBSMB_ERR PASSDB libwbclient LIBEVENTLOG''',
+                 LIB_NONSMBD LIBSMB_ERR PASSDB libwbclient LIBEVENTLOG REG_EVENTLOG''',
                  vars=locals())
 
 bld.SAMBA_BINARY('sharesec',
