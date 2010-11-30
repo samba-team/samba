@@ -1,6 +1,7 @@
 # simple makefile wrapper to run waf
 
-WAF=WAF_MAKE=1 BUILDTOOLS/bin/waf
+WAF_BINARY=BUILDTOOLS/bin/waf
+WAF=WAF_MAKE=1 $(WAF_BINARY)
 
 all:
 	$(WAF) build
@@ -13,6 +14,10 @@ uninstall:
 
 test:
 	$(WAF) test $(TEST_OPTIONS)
+
+help:
+	@echo NOTE: to run extended waf options use $(WAF_BINARY) or modify your PATH
+	$(WAF) --help
 
 testenv:
 	$(WAF) test --testenv $(TEST_OPTIONS)
