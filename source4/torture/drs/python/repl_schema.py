@@ -41,6 +41,7 @@ from ldb import (
     LdbError,
     SCOPE_BASE,
     Message,
+    FLAG_MOD_ADD,
     FLAG_MOD_REPLACE,
     )
 
@@ -176,10 +177,17 @@ class DrsReplSchemaTestCase(samba.tests.TestCase):
            and attributeSchema objects, replicate Schema NC
            and then check all objects are replicated correctly"""
 
-        # add new attributeSchema object
-        (a_ldn, a_dn) = self._schema_new_attr(self.ldb_dc1, "attr-A")
         # add new classSchema object
         (c_ldn, c_dn) = self._schema_new_class(self.ldb_dc1, "cls-A")
+        # add new attributeSchema object
+        (a_ldn, a_dn) = self._schema_new_attr(self.ldb_dc1, "attr-A")
+
+        # add attribute to the class we have
+        m = Message.from_dict(self.ldb_dc1,
+                              {"dn": c_dn,
+                               "mayContain": a_ldn},
+                              FLAG_MOD_ADD)
+        self.ldb_dc1.modify(m)
 
         # force replication from DC1 to DC2
         self._net_drs_replicate(DC=self.dnsname_dc2, fromDC=self.dnsname_dc1, nc_dn=self.schema_dn)
