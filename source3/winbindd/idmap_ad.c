@@ -859,6 +859,7 @@ static NTSTATUS nss_ad_get_info( struct nss_domain_entry *e,
 
 	/* See if we can use the ADS connection struct swe were given */
 
+#if 0
 	if (ads) {
 		DEBUG(10, ("nss_ad_get_info: using given ads connection and "
 			   "LDAP message (%p)\n", msg));
@@ -875,6 +876,7 @@ static NTSTATUS nss_ad_get_info( struct nss_domain_entry *e,
 		nt_status = NT_STATUS_OK;
 		goto done;
 	}
+#endif
 
 	/* Have to do our own query */
 
