@@ -23,6 +23,26 @@
 #include "pytalloc.h"
 #include <assert.h>
 
+static PyTypeObject *Get_TallocType(void)
+{
+	static PyTypeObject *type = NULL;
+	PyObject *mod;
+
+	if (type != NULL) {
+		return type;
+	}
+
+	mod = PyImport_ImportModule("talloc");
+	if (mod == NULL) {
+		return NULL;
+	}
+
+	type = (PyTypeObject *)PyObject_GetAttrString(mod, "Object");
+	Py_DECREF(mod);
+
+	return type;
+}
+
 /**
  * Simple dealloc for talloc-wrapping PyObjects
  */
@@ -132,4 +152,11 @@ PyObject *PyString_FromString_check_null(const char *ptr)
 		Py_RETURN_NONE;
 	}
 	return PyString_FromString(ptr);
+}
+
+int PyTalloc_Check(PyObject *obj)
+{
+	PyTypeObject *tp = Get_TallocType();
+
+	return PyObject_TypeCheck(obj, tp);
 }
