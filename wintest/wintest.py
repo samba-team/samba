@@ -216,23 +216,26 @@ class wintest():
                 self.info("retrying (retries=%u delay=%u)" % (retries, delay))
         raise RuntimeError("Failed to find %s" % contains)
 
-    def pexpect_spawn(self, cmd, timeout=60, crlf=True):
+    def pexpect_spawn(self, cmd, timeout=60, crlf=True, casefold=True):
         '''wrapper around pexpect spawn'''
         cmd = self.substitute(cmd)
         self.info("$ " + cmd)
         ret = pexpect.spawn(cmd, logfile=sys.stdout, timeout=timeout)
 
         def sendline_sub(line):
-            line = self.substitute(line).replace('\n', '\r\n')
-            return ret.old_sendline(line + '\r')
-
-        def expect_sub(line, timeout=ret.timeout):
             line = self.substitute(line)
+            if crlf:
+                line = line.replace('\n', '\r\n') + '\r'
+            return ret.old_sendline(line)
+
+        def expect_sub(line, timeout=ret.timeout, casefold=casefold):
+            line = self.substitute(line)
+            if casefold:
+                line = "(?i)" + line
             return ret.old_expect(line, timeout=timeout)
 
-        if crlf:
-            ret.old_sendline = ret.sendline
-            ret.sendline = sendline_sub
+        ret.old_sendline = ret.sendline
+        ret.sendline = sendline_sub
         ret.old_expect = ret.expect
         ret.expect = expect_sub
 
