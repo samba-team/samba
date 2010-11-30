@@ -25,12 +25,10 @@
 #include "libcli/security/security.h"
 
 
-PyTypeObject PyAuthSession = {
+static PyTypeObject PyAuthSession = {
 	.tp_name = "AuthSession",
 	.tp_basicsize = sizeof(py_talloc_Object),
-	.tp_dealloc = py_talloc_dealloc,
 	.tp_flags = Py_TPFLAGS_DEFAULT,
-	.tp_repr = py_talloc_default_repr,
 };
 
 PyObject *PyAuthSession_FromSession(struct auth_session_info *session)
@@ -113,6 +111,10 @@ static PyMethodDef py_auth_methods[] = {
 void initauth(void)
 {
 	PyObject *m;
+
+	PyAuthSession.tp_base = PyTalloc_GetObjectType();
+	if (PyAuthSession.tp_base == NULL)
+		return;
 
 	if (PyType_Ready(&PyAuthSession) < 0)
 		return;
