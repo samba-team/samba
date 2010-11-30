@@ -203,12 +203,15 @@ static PyTypeObject Py_Security = {
 	.tp_flags = Py_TPFLAGS_DEFAULT,
 	.tp_methods = py_gensec_security_methods,
 	.tp_basicsize = sizeof(py_talloc_Object),
-	.tp_dealloc = py_talloc_dealloc,
 };
 
 void initgensec(void)
 {
 	PyObject *m;
+
+	Py_Security.tp_base = PyTalloc_GetObjectType();
+	if (Py_Security.tp_base != NULL)
+		return;
 
 	if (PyType_Ready(&Py_Security) < 0)
 		return;
