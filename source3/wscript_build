@@ -44,8 +44,7 @@ LIBNDR_SRC = '''../librpc/ndr/ndr_basic.c
 LIBCLI_SPOOLSS_SRC = '''rpc_client/cli_spoolss.c
                      rpc_client/init_spoolss.c'''
 
-LIBCLI_LSA_SRC = '''rpc_client/cli_lsarpc.c
-                 rpc_client/init_lsa.c'''
+LIBCLI_LSA_SRC = '''rpc_client/cli_lsarpc.c'''
 
 LIBCLI_SAMR_SRC = 'rpc_client/cli_samr.c'
 
@@ -513,8 +512,7 @@ SWAT_SRC1 = '''web/cgi.c web/diagnose.c web/startstop.c web/statuspage.c
                web/swat.c web/neg_lang.c'''
 
 SWAT_SRC = '''${SWAT_SRC1}
-           ${PASSCHANGE_SRC}
-           rpc_client/init_lsa.c'''
+           ${PASSCHANGE_SRC}'''
 
 STATUS_SRC = '''utils/status.c utils/status_profile.c'''
 
@@ -530,8 +528,7 @@ TEST_LP_LOAD_SRC = '''param/test_lp_load.c'''
 
 PASSWD_UTIL_SRC = 'utils/passwd_util.c'
 
-SMBPASSWD_SRC = '''utils/smbpasswd.c ${PASSCHANGE_SRC}
-                rpc_client/init_lsa.c'''
+SMBPASSWD_SRC = '''utils/smbpasswd.c ${PASSCHANGE_SRC}'''
 
 PDBEDIT_SRC = '''utils/pdbedit.c'''
 
@@ -602,8 +599,7 @@ LIBNETAPI_SRC = '''${LIBNETAPI_SRC0}
 CLIENT_SRC1 = '''client/client.c client/clitar.c
                  client/dnsbrowse.c'''
 
-CLIENT_SRC = '''${CLIENT_SRC1}
-                rpc_client/init_lsa.c'''
+CLIENT_SRC = '''${CLIENT_SRC1}'''
 
 LIBSMBCONF_SRC = '''../lib/smbconf/smbconf.c ../lib/smbconf/smbconf_util.c
                     ../lib/smbconf/smbconf_txt.c lib/smbconf/smbconf_reg.c
@@ -1175,7 +1171,7 @@ bld.SAMBA_SUBSYSTEM('LIBCLI_SAMR',
 
 bld.SAMBA_SUBSYSTEM('LIBCLI_LSA',
                     source=LIBCLI_LSA_SRC,
-                    deps='RPCCLI_LSA')
+                    deps='RPCCLI_LSA INIT_LSA')
 
 bld.SAMBA_SUBSYSTEM('LIBCLI_NETLOGON',
                     source=LIBCLI_NETLOGON_SRC,
@@ -1193,6 +1189,8 @@ bld.SAMBA_SUBSYSTEM('NPA_TSTREAM',
                     source=NPA_TSTREAM_SRC,
                     deps='NDR_NAMED_PIPE_AUTH')
 
+bld.SAMBA_SUBSYSTEM('INIT_LSA',
+                    source='rpc_client/init_lsa.c')
 
 ########################## BINARIES #################################
 
@@ -1230,7 +1228,7 @@ bld.SAMBA_BINARY('web/swat',
                  deps='''talloc tevent cap LIBS LIBSMB libwbclient PARAM
                  LIB_NONSMBD resolv PASSDB POPT_SAMBA KRBCLIENT cups
                  LIBMSRPC_GEN LIBMSRPC LOCKING PLAINTEXT_AUTH PRINTBASE PRINTING FNAME_UTIL
-                 LIBCLI_SAMR''',
+                 LIBCLI_SAMR INIT_LSA''',
                  enabled=bld.env.build_swat,
                  install_path='${SBINDIR}',
                  vars=locals())
@@ -1251,7 +1249,7 @@ bld.SAMBA_BINARY('smbclient',
                  source=CLIENT_SRC,
                  deps='''talloc tdb cap resolv POPT_SAMBA PASSDB LIBSMB LIB_NONSMBD
                  PARAM_WITHOUT_REG libwbclient PARAM KRBCLIENT LIBMSRPC_GEN
-                 LIBMSRPC SMBREADLINE libsmbclient RPCCLI_SRVSVC''',
+                 LIBMSRPC SMBREADLINE libsmbclient RPCCLI_SRVSVC INIT_LSA''',
                  vars=locals())
 
 bld.SAMBA_BINARY('net',
@@ -1314,7 +1312,7 @@ bld.SAMBA_BINARY('smbpasswd',
                  source=SMBPASSWD_SRC,
                  deps='''talloc tdb tevent cap resolv libwbclient PARAM LIB_NONSMBD
                  LIBSMB LIBSMB_ERR POPT_SAMBA KRBCLIENT PASSDB SMBLDAP GROUPDB LIBMSRPC_GEN LIBMSRPC PASSWD_UTIL
-                 LIBCLI_SAMR''',
+                 LIBCLI_SAMR INIT_LSA''',
                  vars=locals())
 
 bld.SAMBA_BINARY('pdbedit',
