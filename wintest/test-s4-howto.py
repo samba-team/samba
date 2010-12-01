@@ -64,7 +64,7 @@ def start_s4(t):
     t.port_wait("${INTERFACE_IP}", 139)
 
 def stop_vms(t):
-    '''Shut down any existing alive VMs, so they don't collide with what we are doing'''
+    '''Shut down any existing alive VMs, so they do not collide with what we are doing'''
     t.info('Shutting down any of our VMs already running')
     vms = t.get_vms()
     for v in vms:
