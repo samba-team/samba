@@ -318,6 +318,8 @@ return acl_get_perm_np(permset_d, perm);
         conf.SET_TARGET_TYPE('acl', 'EMPTY')
         conf.SET_TARGET_TYPE('attr', 'EMPTY')
 
+    if conf.CHECK_FUNCS('dirfd'):
+        conf.DEFINE('HAVE_DIRFD_DECL', 1)
 
     default_static_modules=TO_LIST('''pdb_smbpasswd pdb_tdbsam pdb_wbc_sam pdb_ldap rpc_lsarpc rpc_samr
                                       rpc_winreg rpc_initshutdown rpc_dssetup rpc_wkssvc rpc_svcctl
@@ -342,6 +344,9 @@ return acl_get_perm_np(permset_d, perm);
 
     if Options.options.with_acl_support:
         default_static_modules.extend(TO_LIST('vfs_posixacl'))
+
+    if conf.CONFIG_SET('HAVE_DIRFD_DECL'):
+	default_shared_modules.extend(TO_LIST('vfs_syncops vfs_dirsort'))
 
     explicit_shared_modules = TO_LIST(Options.options.shared_modules, delimiter=',')
     explicit_static_modules = TO_LIST(Options.options.static_modules, delimiter=',')
