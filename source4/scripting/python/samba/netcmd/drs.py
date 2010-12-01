@@ -146,7 +146,7 @@ class cmd_drs_showrepl(Command):
         conn = self.samdb.search(base=ntds_dn, expression="(objectClass=nTDSConnection)")
 
         print("%s\\%s" % (site, server))
-        print("DSA Options: 0x%08x" % int(ntds[0]["options"][0]))
+        print("DSA Options: 0x%08x" % int(attr_default(ntds[0], "options", 0)))
         print("DSA object GUID: %s" % self.samdb.schema_format_value("objectGUID", ntds[0]["objectGUID"][0]))
         print("DSA invocationId: %s\n" % self.samdb.schema_format_value("objectGUID", ntds[0]["invocationId"][0]))
 
