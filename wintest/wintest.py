@@ -343,11 +343,15 @@ class wintest():
         child.expect("C:")
 
     def get_is_dc(self, child):
+        '''check if a windows machine is a domain controller'''
         child.sendline("dcdiag")
-        i = child.expect(["is not a Directory Server", "is not recognized as an internal or external command", "Home Server = "])
+        i = child.expect(["is not a Directory Server",
+                          "is not recognized as an internal or external command",
+                          "Home Server = ",
+                          "passed test Replications"])
         if i == 0:
             return False
-        if i == 1:
+        if i == 1 or i == 3:
             child.expect("C:")
             child.sendline("net config Workstation")
             child.expect("Workstation domain")

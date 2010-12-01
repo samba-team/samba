@@ -692,7 +692,6 @@ def run_dcpromo_as_first_dc(t, vm, func_level=None):
     t.setwinvars(vm)
     t.info("Configuring a windows VM ${WIN_VM} at the first DC in the domain using dcpromo")
     child = t.open_telnet("${WIN_HOSTNAME}", "administrator", "${WIN_PASS}", set_time=True)
-    child.sendline("dcdiag");
     if t.get_is_dc(child):
         return
 
@@ -704,7 +703,6 @@ def run_dcpromo_as_first_dc(t, vm, func_level=None):
         t.setvar("FUNCTION_LEVEL_INT", str(0))
 
     child = t.open_telnet("${WIN_HOSTNAME}", "administrator", "${WIN_PASS}", set_ip=True)
-    child.sendline("dcdiag");
 
     """This server must therefore not yet be a directory server, so we must promote it"""
     child.sendline("copy /Y con answers.txt")
