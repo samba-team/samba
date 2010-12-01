@@ -1380,6 +1380,23 @@ int net_ads_join(struct net_context *c, int argc, const char **argv)
 	}
 
 #if defined(WITH_DNS_UPDATES)
+	/*
+	 * In a clustered environment, don't do dynamic dns updates:
+	 * Registering the set of ip addresses that are assigned to
+	 * the interfaces of the node that performs the join does usually
+	 * not have the desired effect, since the local interfaces do not
+	 * carry the complete set of the cluster's public IP addresses.
+	 * And it can also contain internal addresses that should not
+	 * be visible to the outside at all.
+	 * In order to do dns updates in a clustererd setup, use
+	 * net ads dns register.
+	 */
+	if (lp_clustering()) {
+		d_fprintf(stderr, _("Not doing automatic DNS update in a"
+				    "clustered setup.\n"));
+		goto done;
+	}
+
 	if (r->out.domain_is_ad) {
 		/* We enter this block with user creds */
 		ADS_STRUCT *ads_dns = NULL;
@@ -1406,6 +1423,8 @@ int net_ads_join(struct net_context *c, int argc, const char **argv)
 		ads_destroy(&ads_dns);
 	}
 #endif
+
+done:
 	TALLOC_FREE(r);
 	TALLOC_FREE( ctx );
 
