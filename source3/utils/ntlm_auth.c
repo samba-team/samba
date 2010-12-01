@@ -76,6 +76,8 @@ struct ntlm_auth_state {
 	struct ntlmssp_state *ntlmssp_state;
 	uint32_t neg_flags;
 	char *want_feature_list;
+	char *spnego_mech;
+	char *spnego_mech_oid;
 	bool have_session_key;
 	DATA_BLOB session_key;
 	DATA_BLOB initial_message;
@@ -1161,11 +1163,12 @@ static void offer_gss_spnego_mechs(void) {
 
 	/* Server negTokenInit (mech offerings) */
 	spnego.type = SPNEGO_NEG_TOKEN_INIT;
-	spnego.negTokenInit.mechTypes = talloc_array(ctx, const char *, 3);
+	spnego.negTokenInit.mechTypes = talloc_array(ctx, const char *, 4);
 #ifdef HAVE_KRB5
 	spnego.negTokenInit.mechTypes[0] = talloc_strdup(ctx, OID_KERBEROS5_OLD);
-	spnego.negTokenInit.mechTypes[1] = talloc_strdup(ctx, OID_NTLMSSP);
-	spnego.negTokenInit.mechTypes[2] = NULL;
+	spnego.negTokenInit.mechTypes[1] = talloc_strdup(ctx, OID_KERBEROS5);
+	spnego.negTokenInit.mechTypes[2] = talloc_strdup(ctx, OID_NTLMSSP);
+	spnego.negTokenInit.mechTypes[3] = NULL;
 #else
 	spnego.negTokenInit.mechTypes[0] = talloc_strdup(ctx, OID_NTLMSSP);
 	spnego.negTokenInit.mechTypes[1] = NULL;
@@ -1235,9 +1238,10 @@ static bool _spnego_parse_krb5_wrap(TALLOC_CTX *ctx, DATA_BLOB blob, DATA_BLOB *
 static void manage_gss_spnego_request(struct ntlm_auth_state *state,
 					char *buf, int length)
 {
-	static NTLMSSP_STATE *ntlmssp_state = NULL;
 	struct spnego_data request, response;
 	DATA_BLOB token;
+	DATA_BLOB raw_in_token = data_blob_null;
+	DATA_BLOB raw_out_token = data_blob_null;
 	NTSTATUS status;
 	ssize_t len;
 	TALLOC_CTX *ctx = talloc_tos();
@@ -1248,6 +1252,7 @@ static void manage_gss_spnego_request(struct ntlm_auth_state *state,
 	const char *reply_code;
 	char       *reply_base64;
 	char *reply_argument = NULL;
+	char *supportedMech = NULL;
 
 	if (strlen(buf) < 2) {
 		DEBUG(1, ("SPENGO query [%s] invalid\n", buf));
@@ -1256,8 +1261,10 @@ static void manage_gss_spnego_request(struct ntlm_auth_state *state,
 	}
 
 	if (strncmp(buf, "YR", 2) == 0) {
-		if (ntlmssp_state)
-			ntlmssp_end(&ntlmssp_state);
+		if (state->ntlmssp_state)
+			ntlmssp_end(&state->ntlmssp_state);
+		TALLOC_FREE(state->spnego_mech);
+		TALLOC_FREE(state->spnego_mech_oid);
 	} else if (strncmp(buf, "KK", 2) == 0) {
 		;
 	} else {
@@ -1311,6 +1318,7 @@ static void manage_gss_spnego_request(struct ntlm_auth_state *state,
 		return;
 	}
 
+	ZERO_STRUCT(request);
 	len = spnego_read_data(ctx, token, &request);
 	data_blob_free(&token);
 
@@ -1321,6 +1329,20 @@ static void manage_gss_spnego_request(struct ntlm_auth_state *state,
 	}
 
 	if (request.type == SPNEGO_NEG_TOKEN_INIT) {
+#ifdef HAVE_KRB5
+		int krb5_idx = -1;
+#endif
+		int ntlm_idx = -1;
+		int used_idx = -1;
+		int i;
+
+		if (state->spnego_mech) {
+			DEBUG(1, ("Client restarted SPNEGO with NegTokenInit "
+				  "while mech[%s] was already negotiated\n",
+				  state->spnego_mech));
+			x_fprintf(x_stdout, "BH Client send NegTokenInit twice\n");
+			return;
+		}
 
 		/* Second request from Client. This is where the
 		   client offers its mechanism to use. */
@@ -1334,156 +1356,204 @@ static void manage_gss_spnego_request(struct ntlm_auth_state *state,
 		}
 
 		status = NT_STATUS_UNSUCCESSFUL;
-		if (strcmp(request.negTokenInit.mechTypes[0], OID_NTLMSSP) == 0) {
+		for (i = 0; request.negTokenInit.mechTypes[i] != NULL; i++) {
+			DEBUG(10,("got mech[%d][%s]\n",
+				i, request.negTokenInit.mechTypes[i]));
+#ifdef HAVE_KRB5
+			if (strcmp(request.negTokenInit.mechTypes[i], OID_KERBEROS5_OLD) == 0) {
+				krb5_idx = i;
+				break;
+			}
+			if (strcmp(request.negTokenInit.mechTypes[i], OID_KERBEROS5) == 0) {
+				krb5_idx = i;
+				break;
+			}
+#endif
+			if (strcmp(request.negTokenInit.mechTypes[i], OID_NTLMSSP) == 0) {
+				ntlm_idx = i;
+				break;
+			}
+		}
 
-			if ( request.negTokenInit.mechToken.data == NULL ) {
-				DEBUG(1, ("Client did not provide NTLMSSP data\n"));
-				x_fprintf(x_stdout, "BH Client did not provide "
-						    "NTLMSSP data\n");
+		used_idx = ntlm_idx;
+#ifdef HAVE_KRB5
+		if (krb5_idx != -1) {
+			ntlm_idx = -1;
+			used_idx = krb5_idx;
+		}
+#endif
+		if (ntlm_idx > -1) {
+			state->spnego_mech = talloc_strdup(state, "ntlmssp");
+			if (state->spnego_mech == NULL) {
+				x_fprintf(x_stdout, "BH Out of memory\n");
 				return;
 			}
 
-			if ( ntlmssp_state != NULL ) {
+			if (state->ntlmssp_state) {
 				DEBUG(1, ("Client wants a new NTLMSSP challenge, but "
 					  "already got one\n"));
 				x_fprintf(x_stdout, "BH Client wants a new "
 						    "NTLMSSP challenge, but "
 						    "already got one\n");
-				ntlmssp_end(&ntlmssp_state);
+				ntlmssp_end(&state->ntlmssp_state);
 				return;
 			}
 
-			if (!NT_STATUS_IS_OK(status = ntlm_auth_start_ntlmssp_server(&ntlmssp_state))) {
+			status = ntlm_auth_start_ntlmssp_server(&state->ntlmssp_state);
+			if (!NT_STATUS_IS_OK(status)) {
 				x_fprintf(x_stdout, "BH %s\n", nt_errstr(status));
 				return;
 			}
-
-			DEBUG(10, ("got NTLMSSP packet:\n"));
-			dump_data(10, request.negTokenInit.mechToken.data,
-				  request.negTokenInit.mechToken.length);
-
-			response.type = SPNEGO_NEG_TOKEN_TARG;
-			response.negTokenTarg.supportedMech = talloc_strdup(ctx, OID_NTLMSSP);
-			response.negTokenTarg.mechListMIC = data_blob_talloc(ctx, NULL, 0);
-
-			status = ntlmssp_update(ntlmssp_state,
-						       request.negTokenInit.mechToken,
-						       &response.negTokenTarg.responseToken);
 		}
 
 #ifdef HAVE_KRB5
-		if (strcmp(request.negTokenInit.mechTypes[0], OID_KERBEROS5_OLD) == 0) {
-
-			TALLOC_CTX *mem_ctx = talloc_init("manage_gss_spnego_request");
-			char *principal;
-			DATA_BLOB ap_rep;
-			DATA_BLOB session_key = data_blob_null;
-			struct PAC_DATA *pac_data = NULL;
-			DATA_BLOB ticket;
-			uint8_t tok_id[2];
-
-			if ( request.negTokenInit.mechToken.data == NULL ) {
-				DEBUG(1, ("Client did not provide Kerberos data\n"));
-				x_fprintf(x_stdout, "BH Client did not provide "
-						    "Kerberos data\n");
+		if (krb5_idx > -1) {
+			state->spnego_mech = talloc_strdup(state, "krb5");
+			if (state->spnego_mech == NULL) {
+				x_fprintf(x_stdout, "BH Out of memory\n");
 				return;
 			}
-
-			dump_data(10, request.negTokenInit.mechToken.data,
-				  request.negTokenInit.mechToken.length);
-
-			if (!_spnego_parse_krb5_wrap(ctx, request.negTokenInit.mechToken,
-						    &ticket, tok_id)) {
-				DEBUG(1, ("spnego_parse_krb5_wrap failed\n"));
-				x_fprintf(x_stdout, "BH spnego_parse_krb5_wrap failed\n");
-				return;
-			}
-
-			response.type = SPNEGO_NEG_TOKEN_TARG;
-			response.negTokenTarg.supportedMech = talloc_strdup(ctx, OID_KERBEROS5_OLD);
-			response.negTokenTarg.mechListMIC = data_blob_talloc(ctx, NULL, 0);
-			response.negTokenTarg.responseToken = data_blob_talloc(ctx, NULL, 0);
-
-			status = ads_verify_ticket(mem_ctx, lp_realm(), 0,
-						   &ticket,
-						   &principal, &pac_data, &ap_rep,
-						   &session_key, True);
-
-			/* Now in "principal" we have the name we are
-                           authenticated as. */
-
-			if (NT_STATUS_IS_OK(status)) {
-
-				domain = strchr_m(principal, '@');
-
-				if (domain == NULL) {
-					DEBUG(1, ("Did not get a valid principal "
-						  "from ads_verify_ticket\n"));
-					x_fprintf(x_stdout, "BH Did not get a "
-						  "valid principal from "
-						  "ads_verify_ticket\n");
-					return;
-				}
-
-				*domain++ = '\0';
-				domain = SMB_STRDUP(domain);
-				user = SMB_STRDUP(principal);
-
-				data_blob_free(&ap_rep);
-				data_blob_free(&session_key);
-			}
-
-			TALLOC_FREE(mem_ctx);
 		}
 #endif
+		if (used_idx > -1) {
+			state->spnego_mech_oid = talloc_strdup(state,
+				request.negTokenInit.mechTypes[used_idx]);
+			if (state->spnego_mech_oid == NULL) {
+				x_fprintf(x_stdout, "BH Out of memory\n");
+				return;
+			}
+			supportedMech = talloc_strdup(ctx, state->spnego_mech_oid);
+			if (supportedMech == NULL) {
+				x_fprintf(x_stdout, "BH Out of memory\n");
+				return;
+			}
 
+			status = NT_STATUS_MORE_PROCESSING_REQUIRED;
+		} else {
+			status = NT_STATUS_NOT_SUPPORTED;
+		}
+		if (used_idx == 0) {
+			status = NT_STATUS_OK;
+			raw_in_token = request.negTokenInit.mechToken;
+		}
 	} else {
-
-		if ( (request.negTokenTarg.supportedMech == NULL) ||
-		     ( strcmp(request.negTokenTarg.supportedMech, OID_NTLMSSP) != 0 ) ) {
-			/* Kerberos should never send a negTokenTarg, OID_NTLMSSP
-			   is the only one we support that sends this stuff */
-			DEBUG(1, ("Got a negTokenTarg for something non-NTLMSSP: %s\n",
-				  request.negTokenTarg.supportedMech));
-			x_fprintf(x_stdout, "BH Got a negTokenTarg for "
-					    "something non-NTLMSSP\n");
+		if (state->spnego_mech == NULL) {
+			DEBUG(1,("Got netTokenTarg without negTokenInit\n"));
+			x_fprintf(x_stdout, "BH Got a negTokenTarg without "
+					    "negTokenInit\n");
 			return;
 		}
 
-		if (request.negTokenTarg.responseToken.data == NULL) {
-			DEBUG(1, ("Got a negTokenTarg without a responseToken!\n"));
-			x_fprintf(x_stdout, "BH Got a negTokenTarg without a "
-					    "responseToken!\n");
+		if ((request.negTokenTarg.supportedMech != NULL) &&
+		     (strcmp(request.negTokenTarg.supportedMech, state->spnego_mech_oid) != 0 ) ) {
+			DEBUG(1, ("Got a negTokenTarg with mech[%s] while [%s] was already negotiated\n",
+				  request.negTokenTarg.supportedMech,
+				  state->spnego_mech_oid));
+			x_fprintf(x_stdout, "BH Got a negTokenTarg with speficied mech\n");
 			return;
 		}
 
-		status = ntlmssp_update(ntlmssp_state,
-					       request.negTokenTarg.responseToken,
-					       &response.negTokenTarg.responseToken);
+		status = NT_STATUS_OK;
+		raw_in_token = request.negTokenTarg.responseToken;
+	}
 
-		response.type = SPNEGO_NEG_TOKEN_TARG;
-		response.negTokenTarg.supportedMech = talloc_strdup(ctx, OID_NTLMSSP);
-		response.negTokenTarg.mechListMIC = data_blob_talloc(ctx, NULL, 0);
+	if (!NT_STATUS_IS_OK(status)) {
+		/* error or more processing */
+	} else if (strcmp(state->spnego_mech, "ntlmssp") == 0) {
+
+		DEBUG(10, ("got NTLMSSP packet:\n"));
+		dump_data(10, raw_in_token.data, raw_in_token.length);
+
+		status = ntlmssp_update(state->ntlmssp_state,
+					raw_in_token,
+					&raw_out_token);
+		if (NT_STATUS_IS_OK(status)) {
+			user = talloc_strdup(ctx, state->ntlmssp_state->user);
+			domain = talloc_strdup(ctx, state->ntlmssp_state->domain);
+		}
+		if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+			ntlmssp_end(&state->ntlmssp_state);
+		}
+#ifdef HAVE_KRB5
+	} else if (strcmp(state->spnego_mech, "krb5") == 0) {
+		char *principal;
+		DATA_BLOB ap_rep;
+		DATA_BLOB session_key;
+		struct PAC_DATA *pac_data = NULL;
+		DATA_BLOB ticket;
+		uint8_t tok_id[2];
+
+		if (!_spnego_parse_krb5_wrap(ctx, raw_in_token,
+					     &ticket, tok_id)) {
+			DEBUG(1, ("spnego_parse_krb5_wrap failed\n"));
+			x_fprintf(x_stdout, "BH spnego_parse_krb5_wrap failed\n");
+			return;
+		}
+
+		status = ads_verify_ticket(ctx, lp_realm(), 0,
+					   &ticket,
+					   &principal, &pac_data, &ap_rep,
+					   &session_key, True);
+
+		/* Now in "principal" we have the name we are authenticated as. */
 
 		if (NT_STATUS_IS_OK(status)) {
-			user = SMB_STRDUP(ntlmssp_state->user);
-			domain = SMB_STRDUP(ntlmssp_state->domain);
-			ntlmssp_end(&ntlmssp_state);
+
+			domain = strchr_m(principal, '@');
+
+			if (domain == NULL) {
+				DEBUG(1, ("Did not get a valid principal "
+					  "from ads_verify_ticket\n"));
+				x_fprintf(x_stdout, "BH Did not get a "
+					  "valid principal from "
+					  "ads_verify_ticket\n");
+				return;
+			}
+
+			*domain++ = '\0';
+			domain = talloc_strdup(ctx, domain);
+			user = talloc_strdup(ctx, principal);
+
+			if (pac_data) {
+				struct PAC_LOGON_INFO *logon_info;
+				logon_info = get_logon_info_from_pac(
+					pac_data);
+				if (logon_info) {
+					netsamlogon_cache_store(
+						user,
+						&logon_info->info3);
+				}
+			}
+
+			data_blob_free(&ap_rep);
+			data_blob_free(&session_key);
 		}
+		data_blob_free(&ticket);
+#endif
 	}
 
 	spnego_free_data(&request);
+	ZERO_STRUCT(response);
+	response.type = SPNEGO_NEG_TOKEN_TARG;
 
 	if (NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(state->spnego_mech);
+		TALLOC_FREE(state->spnego_mech_oid);
 		response.negTokenTarg.negResult = SPNEGO_ACCEPT_COMPLETED;
+		response.negTokenTarg.responseToken = raw_out_token;
 		reply_code = "AF";
 		reply_argument = talloc_asprintf(ctx, "%s\\%s", domain, user);
 	} else if (NT_STATUS_EQUAL(status,
 				   NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+		response.negTokenTarg.supportedMech = supportedMech;
+		response.negTokenTarg.responseToken = raw_out_token;
 		response.negTokenTarg.negResult = SPNEGO_ACCEPT_INCOMPLETE;
 		reply_code = "TT";
 		reply_argument = talloc_strdup(ctx, "*");
 	} else {
+		TALLOC_FREE(state->spnego_mech);
+		TALLOC_FREE(state->spnego_mech_oid);
+		data_blob_free(&raw_out_token);
 		response.negTokenTarg.negResult = SPNEGO_REJECT;
 		reply_code = "NA";
 		reply_argument = talloc_strdup(ctx, nt_errstr(status));
@@ -1492,11 +1562,9 @@ static void manage_gss_spnego_request(struct ntlm_auth_state *state,
 	if (!reply_argument) {
 		DEBUG(1, ("Could not write SPNEGO data blob\n"));
 		x_fprintf(x_stdout, "BH Could not write SPNEGO data blob\n");
+		spnego_free_data(&response);
 		return;
 	}
-
-	SAFE_FREE(user);
-	SAFE_FREE(domain);
 
 	len = spnego_write_data(ctx, &token, &response);
 	spnego_free_data(&response);
