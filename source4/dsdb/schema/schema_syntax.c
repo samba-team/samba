@@ -986,6 +986,7 @@ static WERROR _dsdb_syntax_OID_obj_drsuapi_to_ldb(const struct dsdb_syntax_ctx *
 
 		c = dsdb_class_by_governsID_id(ctx->schema, v);
 		if (!c) {
+			DEBUG(1,(__location__ ": Unknown governsID 0x%08X\n", v));
 			return WERR_FOOBAR;
 		}
 
@@ -1032,12 +1033,13 @@ static WERROR _dsdb_syntax_OID_attr_drsuapi_to_ldb(const struct dsdb_syntax_ctx 
 
 		/* convert remote ATTID to local ATTID */
 		if (!dsdb_syntax_attid_from_remote_attid(ctx, mem_ctx, v, &v)) {
-			DEBUG(0,(__location__ "Failed to map remote ATTID to local ATTID!\n"));
+			DEBUG(1,(__location__ ": Failed to map remote ATTID to local ATTID!\n"));
 			return WERR_FOOBAR;
 		}
 
 		a = dsdb_attribute_by_attributeID_id(ctx->schema, v);
 		if (!a) {
+			DEBUG(1,(__location__ ": Unknown attributeID_id 0x%08X\n", v));
 			return WERR_FOOBAR;
 		}
 
