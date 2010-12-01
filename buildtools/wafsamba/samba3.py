@@ -25,14 +25,14 @@ Options.Handler.SAMBA3_ADD_OPTION = SAMBA3_ADD_OPTION
 
 def SAMBA3_IS_STATIC_MODULE(bld, module):
     '''Check whether module is in static list'''
-    if module.lower() in bld.env['static_modules']:
+    if module in bld.env['static_modules']:
         return True
     return False
 Build.BuildContext.SAMBA3_IS_STATIC_MODULE = SAMBA3_IS_STATIC_MODULE
 
 def SAMBA3_IS_SHARED_MODULE(bld, module):
     '''Check whether module is in shared list'''
-    if module.lower() in bld.env['shared_modules']:
+    if module in bld.env['shared_modules']:
         return True
     return False
 Build.BuildContext.SAMBA3_IS_SHARED_MODULE = SAMBA3_IS_SHARED_MODULE

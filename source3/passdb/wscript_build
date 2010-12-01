@@ -15,34 +15,34 @@ bld.SAMBA_MODULE('pdb_tdbsam',
                  subsystem='pdb',
                  source=PDB_TDBSAM_SRC,
                  init_function='',
-                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('PDB_TDBSAM'),
-                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('PDB_TDBSAM'))
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('pdb_tdbsam'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('pdb_tdbsam'))
 
 bld.SAMBA_MODULE('pdb_ldap',
                  subsystem='pdb',
                  source=PDB_LDAP_SRC,
                  init_function='',
-                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('PDB_LDAP'),
-                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('PDB_LDAP'))
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('pdb_ldap'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('pdb_ldap'))
 
 bld.SAMBA_MODULE('pdb_ads',
                  subsystem='pdb',
                  source=PDB_ADS_SRC,
                  deps='LIBCLI_LDAP_NDR',
                  init_function='',
-                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('PDB_ADS'),
-                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('PDB_ADS'))
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('pdb_ads'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('pdb_ads'))
 
 bld.SAMBA_MODULE('pdb_smbpasswd',
                  subsystem='pdb',
                  source=PDB_SMBPASSWD_SRC,
                  init_function='',
-                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('PDB_SMBPASSWD'),
-                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('PDB_SMBPASSWD'))
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('pdb_smbpasswd'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('pdb_smbpasswd'))
 
 bld.SAMBA_MODULE('pdb_wbc_sam',
                  subsystem='pdb',
                  source=PDB_WBC_SAM_SRC,
                  init_function='',
-                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('PDB_WBC_SAM'),
-                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('PDB_WBC_SAM'))
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('pdb_wbc_sam'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('pdb_wbc_sam'))

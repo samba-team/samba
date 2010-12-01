@@ -390,14 +390,14 @@ return acl_get_perm_np(permset_d, perm);
             if p == "rpc":
                 for entry in static_list[p]:
                     decl_list += "extern NTSTATUS %s_init(const struct rpc_srv_callbacks *rpc_srv_cb); " % entry
-                    conf.env[static_env].append('%s' % entry.upper())
+                    conf.env[static_env].append('%s' % entry)
                 decl_list = decl_list.rstrip()
                 conf.DEFINE('static_decl_%s' % p, decl_list)
                 conf.DEFINE('static_init_%s' % p, '{ %s_init(NULL); }' % '_init(NULL);  '.join(static_list[p]))
             else:
                 for entry in static_list[p]:
                     decl_list += "extern NTSTATUS %s_init(void); " % entry
-                    conf.env[static_env].append('%s' % entry.upper())
+                    conf.env[static_env].append('%s' % entry)
                 decl_list = decl_list.rstrip()
                 conf.DEFINE('static_decl_%s' % p, decl_list)
                 conf.DEFINE('static_init_%s' % p, '{ %s_init(); }' % '_init();  '.join(static_list[p]))
@@ -407,7 +407,7 @@ return acl_get_perm_np(permset_d, perm);
         if p in shared_list:
             for entry in shared_list[p]:
                 conf.DEFINE('%s_init' % entry, 'init_samba_module')
-                conf.env[shared_env].append('%s' % entry.upper())
+                conf.env[shared_env].append('%s' % entry)
 
     if Options.options.with_winbind:
         conf.env.build_winbind = True
