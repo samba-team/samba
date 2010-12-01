@@ -31,9 +31,7 @@ import os
 
 sys.path.append("bin/python")
 
-from samba.auth import system_session
 from ldb import SCOPE_BASE
-from samba.samdb import SamDB
 
 import samba.tests
 
