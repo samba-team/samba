@@ -157,7 +157,9 @@ static int rr_search_callback(struct ldb_request *req, struct ldb_reply *ares)
 			
 			el->num_values = 0;
 			
-			el->values = talloc_array(ares->message->elements, struct ldb_val, (end - start) + 1);
+			el->values = talloc_array(ares->message->elements,
+						  struct ldb_val,
+						  (end - start) + 1);
 			if (!el->values) {
 				ldb_oom(ldb);
 				return ldb_module_done(ac->req, NULL, NULL,
