@@ -1407,7 +1407,7 @@ static void manage_gss_spnego_request(struct ntlm_auth_state *state,
 			TALLOC_CTX *mem_ctx = talloc_init("manage_gss_spnego_request");
 			char *principal;
 			DATA_BLOB ap_rep;
-			DATA_BLOB session_key;
+			DATA_BLOB session_key = data_blob_null;
 			struct PAC_LOGON_INFO *logon_info = NULL;
 			DATA_BLOB ticket;
 			uint8_t tok_id[2];
@@ -1463,6 +1463,7 @@ static void manage_gss_spnego_request(struct ntlm_auth_state *state,
 					user, &logon_info->info3);
 
 				data_blob_free(&ap_rep);
+				data_blob_free(&session_key);
 			}
 
 			TALLOC_FREE(mem_ctx);
