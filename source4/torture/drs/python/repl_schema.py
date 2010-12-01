@@ -172,6 +172,24 @@ class DrsReplSchemaTestCase(samba.tests.TestCase):
         self.assertEquals(len(res_dc2), 1,
                           "%s doesn't exists on %s" % (obj_dn, self.dnsname_dc2))
 
+    def test_class(self):
+        """Simple test for classSchema replication"""
+        # add new classSchema object
+        (c_ldn, c_dn) = self._schema_new_class(self.ldb_dc1, "cls-S")
+        # force replication from DC1 to DC2
+        self._net_drs_replicate(DC=self.dnsname_dc2, fromDC=self.dnsname_dc1, nc_dn=self.schema_dn)
+        # check object is replicated
+        self._check_object(c_dn)
+
+    def test_attribute(self):
+        """Simple test for attributeSchema replication"""
+        # add new attributeSchema object
+        (a_ldn, a_dn) = self._schema_new_attr(self.ldb_dc1, "attr-S")
+        # force replication from DC1 to DC2
+        self._net_drs_replicate(DC=self.dnsname_dc2, fromDC=self.dnsname_dc1, nc_dn=self.schema_dn)
+        # check objects is replicated
+        self._check_object(a_dn)
+
     def test_all(self):
         """Basic plan is to create bunch of classSchema
            and attributeSchema objects, replicate Schema NC
