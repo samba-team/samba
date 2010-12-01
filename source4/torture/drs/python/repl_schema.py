@@ -38,6 +38,7 @@ samba.ensure_external_module("testtools", "testtools")
 samba.ensure_external_module("subunit", "subunit/python")
 
 from ldb import (
+    ERR_NO_SUCH_OBJECT,
     LdbError,
     SCOPE_BASE,
     Message,
