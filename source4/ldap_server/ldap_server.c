@@ -261,7 +261,8 @@ static void ldapsrv_accept_tls_done(struct tevent_req *subreq);
   for reading from that socket
 */
 static void ldapsrv_accept(struct stream_connection *c,
-			   struct auth_session_info *session_info)
+			   struct auth_session_info *session_info,
+			   bool is_privileged)
 {
 	struct ldapsrv_service *ldapsrv_service = 
 		talloc_get_type(c->private_data, struct ldapsrv_service);
@@ -279,6 +280,7 @@ static void ldapsrv_accept(struct stream_connection *c,
 		stream_terminate_connection(c, "ldapsrv_accept: out of memory");
 		return;
 	}
+	conn->is_privileged = is_privileged;
 
 	conn->sockets.send_queue = tevent_queue_create(conn, "ldapsev send queue");
 	if (conn->sockets.send_queue == NULL) {
@@ -758,7 +760,7 @@ static void ldapsrv_accept_nonpriv(struct stream_connection *c)
 					    "session info");
 		return;
 	}
-	ldapsrv_accept(c, session_info);
+	ldapsrv_accept(c, session_info, false);
 }
 
 static const struct stream_server_ops ldap_stream_nonpriv_ops = {
@@ -786,7 +788,7 @@ static void ldapsrv_accept_priv(struct stream_connection *c)
 					    "session info");
 		return;
 	}
-	ldapsrv_accept(c, session_info);
+	ldapsrv_accept(c, session_info, true);
 }
 
 static const struct stream_server_ops ldap_stream_priv_ops = {

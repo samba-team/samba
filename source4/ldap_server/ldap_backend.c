@@ -321,7 +321,9 @@ static int ldapsrv_add_with_controls(struct ldapsrv_call *call,
 		return ret;
 	}
 
-	ldb_req_mark_untrusted(req);
+	if (!call->conn->is_privileged) {
+		ldb_req_mark_untrusted(req);
+	}
 
 	LDB_REQ_SET_LOCATION(req);
 
@@ -372,7 +374,9 @@ static int ldapsrv_mod_with_controls(struct ldapsrv_call *call,
 		return ret;
 	}
 
-	ldb_req_mark_untrusted(req);
+	if (!call->conn->is_privileged) {
+		ldb_req_mark_untrusted(req);
+	}
 
 	LDB_REQ_SET_LOCATION(req);
 
@@ -416,7 +420,9 @@ static int ldapsrv_del_with_controls(struct ldapsrv_call *call,
 		return ret;
 	}
 
-	ldb_req_mark_untrusted(req);
+	if (!call->conn->is_privileged) {
+		ldb_req_mark_untrusted(req);
+	}
 
 	LDB_REQ_SET_LOCATION(req);
 
@@ -461,7 +467,9 @@ static int ldapsrv_rename_with_controls(struct ldapsrv_call *call,
 		return ret;
 	}
 
-	ldb_req_mark_untrusted(req);
+	if (!call->conn->is_privileged) {
+		ldb_req_mark_untrusted(req);
+	}
 
 	LDB_REQ_SET_LOCATION(req);
 
@@ -600,7 +608,9 @@ static NTSTATUS ldapsrv_SearchRequest(struct ldapsrv_call *call)
 
 	ldb_set_timeout(samdb, lreq, req->timelimit);
 
-	ldb_req_mark_untrusted(lreq);
+	if (!call->conn->is_privileged) {
+		ldb_req_mark_untrusted(lreq);
+	}
 
 	LDB_REQ_SET_LOCATION(lreq);
 

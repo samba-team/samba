@@ -41,6 +41,7 @@ struct ldapsrv_connection {
 	} sockets;
 
 	bool global_catalog;
+	bool is_privileged;
 
 	struct {
 		int initial_timeout;
