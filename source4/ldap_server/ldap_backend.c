@@ -293,11 +293,12 @@ static NTSTATUS ldapsrv_unwilling(struct ldapsrv_call *call, int error)
 	return NT_STATUS_OK;
 }
 
-static int ldb_add_with_controls(struct ldb_context *ldb,
-				 const struct ldb_message *message,
-				 struct ldb_control **controls,
-				 void *context)
+static int ldapsrv_add_with_controls(struct ldapsrv_call *call,
+				     const struct ldb_message *message,
+				     struct ldb_control **controls,
+				     void *context)
 {
+	struct ldb_context *ldb = call->conn->ldb;
 	struct ldb_request *req;
 	int ret;
 
@@ -341,11 +342,12 @@ static int ldb_add_with_controls(struct ldb_context *ldb,
 }
 
 /* create and execute a modify request */
-static int ldb_mod_req_with_controls(struct ldb_context *ldb,
+static int ldapsrv_mod_with_controls(struct ldapsrv_call *call,
 				     const struct ldb_message *message,
 				     struct ldb_control **controls,
 				     void *context)
 {
+	struct ldb_context *ldb = call->conn->ldb;
 	struct ldb_request *req;
 	int ret;
 
@@ -391,11 +393,12 @@ static int ldb_mod_req_with_controls(struct ldb_context *ldb,
 }
 
 /* create and execute a delete request */
-static int ldb_del_req_with_controls(struct ldb_context *ldb,
+static int ldapsrv_del_with_controls(struct ldapsrv_call *call,
 				     struct ldb_dn *dn,
 				     struct ldb_control **controls,
 				     void *context)
 {
+	struct ldb_context *ldb = call->conn->ldb;
 	struct ldb_request *req;
 	int ret;
 
@@ -433,12 +436,13 @@ static int ldb_del_req_with_controls(struct ldb_context *ldb,
 	return ret;
 }
 
-int ldb_rename_with_controls(struct ldb_context *ldb,
-			     struct ldb_dn *olddn,
-			     struct ldb_dn *newdn,
-			     struct ldb_control **controls,
-			     void *context)
+static int ldapsrv_rename_with_controls(struct ldapsrv_call *call,
+					struct ldb_dn *olddn,
+					struct ldb_dn *newdn,
+					struct ldb_control **controls,
+					void *context)
 {
+	struct ldb_context *ldb = call->conn->ldb;
 	struct ldb_request *req;
 	int ret;
 
@@ -782,7 +786,7 @@ reply:
 	if (result == LDAP_SUCCESS) {
 		res = talloc_zero(local_ctx, struct ldb_result);
 		NT_STATUS_HAVE_NO_MEMORY(res);
-		ldb_ret = ldb_mod_req_with_controls(samdb, msg, call->request->controls, res);
+		ldb_ret = ldapsrv_mod_with_controls(call, msg, call->request->controls, res);
 		result = map_ldb_error(local_ctx, ldb_ret, ldb_errstring(samdb),
 				       &errstr);
 	}
@@ -872,7 +876,7 @@ reply:
 	if (result == LDAP_SUCCESS) {
 		res = talloc_zero(local_ctx, struct ldb_result);
 		NT_STATUS_HAVE_NO_MEMORY(res);
-		ldb_ret = ldb_add_with_controls(samdb, msg, call->request->controls, res);
+		ldb_ret = ldapsrv_add_with_controls(call, msg, call->request->controls, res);
 		result = map_ldb_error(local_ctx, ldb_ret, ldb_errstring(samdb),
 				       &errstr);
 	}
@@ -928,7 +932,7 @@ reply:
 	if (result == LDAP_SUCCESS) {
 		res = talloc_zero(local_ctx, struct ldb_result);
 		NT_STATUS_HAVE_NO_MEMORY(res);
-		ldb_ret = ldb_del_req_with_controls(samdb, dn, call->request->controls, res);
+		ldb_ret = ldapsrv_del_with_controls(call, dn, call->request->controls, res);
 		result = map_ldb_error(local_ctx, ldb_ret, ldb_errstring(samdb),
 				       &errstr);
 	}
@@ -1036,7 +1040,7 @@ reply:
 	if (result == LDAP_SUCCESS) {
 		res = talloc_zero(local_ctx, struct ldb_result);
 		NT_STATUS_HAVE_NO_MEMORY(res);
-		ldb_ret = ldb_rename_with_controls(samdb, olddn, newdn, call->request->controls, res);
+		ldb_ret = ldapsrv_rename_with_controls(call, olddn, newdn, call->request->controls, res);
 		result = map_ldb_error(local_ctx, ldb_ret, ldb_errstring(samdb),
 				       &errstr);
 	}
