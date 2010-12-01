@@ -59,6 +59,7 @@ static int rr_search_callback(struct ldb_request *req, struct ldb_reply *ares)
 	struct ldb_context *ldb;
 	struct rr_context *ac;
 	unsigned int i, j;
+	TALLOC_CTX *temp_ctx;
 
 	ac = talloc_get_type(req->context, struct rr_context);
 	ldb = ldb_module_get_ctx(ac->module);
@@ -83,6 +84,13 @@ static int rr_search_callback(struct ldb_request *req, struct ldb_reply *ares)
 
 	/* LDB_REPLY_ENTRY */
 
+	temp_ctx = talloc_new(ac->req);
+	if (!temp_ctx) {
+		ldb_module_oom(ac->module);
+		return ldb_module_done(ac->req, NULL, NULL,
+				       LDB_ERR_OPERATIONS_ERROR);
+	}
+
 	/* Find those that are range requests from the attribute list */
 	for (i = 0; ac->req->op.search.attrs[i]; i++) {
 		char *p, *new_attr;
@@ -90,6 +98,7 @@ static int rr_search_callback(struct ldb_request *req, struct ldb_reply *ares)
 		unsigned int start, end, orig_num_values;
 		struct ldb_message_element *el;
 		struct ldb_val *orig_values;
+
 		p = strchr(ac->req->op.search.attrs[i], ';');
 		if (!p) {
 			continue;
@@ -104,7 +113,7 @@ static int rr_search_callback(struct ldb_request *req, struct ldb_reply *ares)
 				continue;
 			}
 		}
-		new_attr = talloc_strndup(ac->req,
+		new_attr = talloc_strndup(temp_ctx,
 					  ac->req->op.search.attrs[i],
 					  (size_t)(p - ac->req->op.search.attrs[i]));
 
@@ -124,7 +133,7 @@ static int rr_search_callback(struct ldb_request *req, struct ldb_reply *ares)
 			end_str = "*";
 			end = el->num_values - 1;
 		} else {
-			end_str = talloc_asprintf(el, "%u", end);
+			end_str = talloc_asprintf(temp_ctx, "%u", end);
 			if (!end_str) {
 				ldb_oom(ldb);
 				return ldb_module_done(ac->req, NULL, NULL,
@@ -148,7 +157,7 @@ static int rr_search_callback(struct ldb_request *req, struct ldb_reply *ares)
 			
 			el->num_values = 0;
 			
-			el->values = talloc_array(el, struct ldb_val, (end - start) + 1);
+			el->values = talloc_array(ares->message->elements, struct ldb_val, (end - start) + 1);
 			if (!el->values) {
 				ldb_oom(ldb);
 				return ldb_module_done(ac->req, NULL, NULL,
@@ -159,13 +168,15 @@ static int rr_search_callback(struct ldb_request *req, struct ldb_reply *ares)
 				el->num_values++;
 			}
 		}
-		el->name = talloc_asprintf(el, "%s;range=%u-%s", el->name, start, end_str);
+		el->name = talloc_asprintf(el->values, "%s;range=%u-%s", el->name, start, end_str);
 		if (!el->name) {
 			ldb_oom(ldb);
 			return ldb_module_done(ac->req, NULL, NULL,
 						LDB_ERR_OPERATIONS_ERROR);
 		}
 	}
+
+	talloc_free(temp_ctx);
 
 	return ldb_module_send_entry(ac->req, ares->message, ares->controls);
 }
