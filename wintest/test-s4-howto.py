@@ -334,7 +334,7 @@ def test_dcpromo(t, vm):
     t.cmd_contains('bin/smbclient -L ${WIN_HOSTNAME}.${LCREALM} -Utestallowed@${LCREALM}%${PASSWORD1}', ["C$", "IPC$", "Sharename"])
 
     t.cmd_contains("bin/samba-tool drs kcc ${HOSTNAME}.${LCREALM} -Uadministrator@${LCREALM}%${PASSWORD1}", ['Consistency check', 'successful'])
-    t.cmd_contains("bin/samba-tool drs kcc ${WIN_HOSTNAME}.${LCREALM} -Uadministrator@${LCREALM}%${PASSWORD1}", ['Consistency check', 'successful'])
+    t.retry_cmd("bin/samba-tool drs kcc ${WIN_HOSTNAME}.${LCREALM} -Uadministrator@${LCREALM}%${PASSWORD1}", ['Consistency check', 'successful'])
 
     t.kinit("administrator@${REALM}", "${PASSWORD1}")
 
