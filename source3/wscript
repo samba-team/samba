@@ -570,12 +570,21 @@ krb5_get_credentials_for_user krb5_get_host_realm krb5_free_host_realm''',
                                     define='HAVE_KRB5_KEYBLOCK_IN_CREDS')
         conf.CHECK_STRUCTURE_MEMBER('krb5_creds', 'session', headers='krb5.h',
                                     define='HAVE_KRB5_SESSION_IN_CREDS')
-        if conf.CHECK_STRUCTURE_MEMBER('krb5_ticket', 'enc_part.enctype', headers='krb5.h') and conf.CHECK_STRUCTURE_MEMBER('krb5_ticket', 'enc_part.kvno', headers='krb5.h'):
-            conf.DEFINE('KRB5_TICKET_HAS_KEYINFO', '1')
         conf.CHECK_STRUCTURE_MEMBER('krb5_ap_req', 'ticket', headers='krb5.h',
                                     define='HAVE_TICKET_POINTER_IN_KRB5_AP_REQ')
 
         conf.CHECK_TYPE('krb5_encrypt_block', headers='krb5.h')
+
+        conf.CHECK_CODE('''
+krb5_ticket ticket;
+krb5_kvno kvno;
+krb5_enctype enctype;
+enctype = ticket.enc_part.enctype;
+kvno = ticket.enc_part.kvno;
+''',
+                        'KRB5_TICKET_HAS_KEYINFO',
+                        headers='krb5.h', link=False,
+                        msg="Checking whether the krb5_ticket structure contains the kvno and enctype")
         conf.CHECK_CODE('''
 krb5_context ctx;
 krb5_get_init_creds_opt *opt = NULL;
