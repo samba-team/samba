@@ -182,13 +182,38 @@ class DrsReplSchemaTestCase(samba.tests.TestCase):
         # check object is replicated
         self._check_object(c_dn)
 
+    def test_classInheritance(self):
+        """Test inheritance through subClassOf
+           I think 5 levels of inheritance is pretty decent for now."""
+        # add 5 levels deep hierarchy
+        c_dn_list = []
+        c_ldn_last = None
+        for i in range(1, 6):
+            base_name = "cls-I-%02d" % i
+            (c_ldn, c_dn) = self._schema_new_class(self.ldb_dc1, base_name)
+            c_dn_list.append(c_dn)
+            if c_ldn_last:
+                # inherit from last class added
+                m = Message.from_dict(self.ldb_dc1,
+                                      {"dn": c_dn,
+                                       "subClassOf": c_ldn_last},
+                                      FLAG_MOD_REPLACE)
+                self.ldb_dc1.modify(m)
+            # store last class ldapDisplayName
+            c_ldn_last = c_ldn
+        # force replication from DC1 to DC2
+        self._net_drs_replicate(DC=self.dnsname_dc2, fromDC=self.dnsname_dc1, nc_dn=self.schema_dn)
+        # check objects are replicated
+        for c_dn in c_dn_list:
+            self._check_object(c_dn)
+
     def test_attribute(self):
         """Simple test for attributeSchema replication"""
         # add new attributeSchema object
         (a_ldn, a_dn) = self._schema_new_attr(self.ldb_dc1, "attr-S")
         # force replication from DC1 to DC2
         self._net_drs_replicate(DC=self.dnsname_dc2, fromDC=self.dnsname_dc1, nc_dn=self.schema_dn)
-        # check objects is replicated
+        # check object is replicated
         self._check_object(a_dn)
 
     def test_all(self):
