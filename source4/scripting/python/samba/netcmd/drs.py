@@ -98,9 +98,12 @@ class cmd_drs_showrepl(Command):
 
     def print_neighbour(self, n):
         '''print one set of neighbour information'''
-        (site, server) = drs_parse_ntds_dn(n.source_dsa_obj_dn)
         print("%s" % n.naming_context_dn)
-        print("\t%s\%s via RPC" % (site, server))
+        try:
+            (site, server) = drs_parse_ntds_dn(n.source_dsa_obj_dn)
+            print("\t%s\%s via RPC" % (site, server))
+        except RuntimeError:
+            print("\tNTDS DN: %s" % n.source_dsa_obj_dn)
         print("\t\tDSA object GUID: %s" % n.source_dsa_obj_guid)
         print("\t\tLast attempt @ %s %s" % (nttime2string(n.last_attempt), drs_errmsg(n.result_last_attempt)))
         print("\t\t%u consecutive failure(s)." % n.consecutive_sync_failures)
