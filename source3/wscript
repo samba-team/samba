@@ -674,6 +674,16 @@ enctype = ENCTYPE_ARCFOUR_HMAC;
             headers='krb5.h', lib='krb5',
             msg="Checking whether the ENCTYPE_ARCFOUR_HMAC key type definition is available");
 
+	conf.CHECK_CODE('''
+krb5_context context;
+krb5_keytab keytab;
+krb5_init_context(&context);
+return krb5_kt_resolve(context, "WRFILE:api", &keytab);
+''',
+            'HAVE_WRFILE_KEYTAB',
+            headers='krb5.h', lib='krb5', execute=True,
+            msg="Checking whether the WRFILE:-keytab is supported");
+
         conf.DEFINE('HAVE_KRB5', '1')
 
     else:
