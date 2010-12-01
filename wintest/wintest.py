@@ -231,7 +231,12 @@ class wintest():
         def expect_sub(line, timeout=ret.timeout, casefold=casefold):
             line = self.substitute(line)
             if casefold:
-                line = "(?i)" + line
+                if isinstance(line, list):
+                    for i in range(len(line)):
+                        if isinstance(line[i], str):
+                            line[i] = '(?i)' + line[i]
+                elif isinstance(line, str):
+                    line = '(?i)' + line
             return ret.old_expect(line, timeout=timeout)
 
         ret.old_sendline = ret.sendline
