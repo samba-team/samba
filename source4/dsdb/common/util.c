@@ -808,7 +808,7 @@ int samdb_msg_add_addval(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	vals = talloc_realloc(msg, el->values, struct ldb_val,
+	vals = talloc_realloc(msg->elements, el->values, struct ldb_val,
 			      el->num_values + 1);
 	if (vals == NULL) {
 		return ldb_oom(sam_ldb);
@@ -864,7 +864,7 @@ int samdb_msg_add_delval(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	vals = talloc_realloc(msg, el->values, struct ldb_val,
+	vals = talloc_realloc(msg->elements, el->values, struct ldb_val,
 			      el->num_values + 1);
 	if (vals == NULL) {
 		return ldb_oom(sam_ldb);
