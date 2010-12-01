@@ -1,3 +1,5 @@
+# Hey Emacs, this is a -*- shell-script -*- !!!
+
 # utility functions for ctdb event scripts
 
 PATH=/bin:/usr/bin:/usr/sbin:/sbin:$PATH
