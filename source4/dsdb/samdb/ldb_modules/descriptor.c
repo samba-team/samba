@@ -601,7 +601,7 @@ static int descriptor_do_mod(struct descriptor_context *ac)
 		if (ac->sd_val != NULL) {
 			ac->sd_element->values[0] = *sd;
 		} else if (sd_control2 != NULL) {
-			/* In this branche we really do force the recalculation
+			/* In this branch we really do force the recalculation
 			 * of the SD */
 			ldb_msg_remove_attr(ac->msg, "nTSecurityDescriptor");
 
