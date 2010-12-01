@@ -3066,7 +3066,7 @@ msgstr "\t-e oder --encrypt\t\t\tSMB Übertragung verschlüsseln  (nur UNIX erwe
 
 #: ../../utils/net_help_common.c:54
 msgid "\t-k or --kerberos\t\tUse kerberos (active directory) authentication\n"
-msgstr "\t-k oder --kerberos\t\tKerberos Authentifizierung benutzen (Active Directory)\n"y
+msgstr "\t-k oder --kerberos\t\tKerberos Authentifizierung benutzen (Active Directory)\n"
 
 #: ../../utils/net_idmap.c:26
 msgid "Out of memory!\n"
