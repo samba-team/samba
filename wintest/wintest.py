@@ -177,7 +177,7 @@ class wintest():
         return self.run_cmd(cmd, output=True)
 
     def cmd_contains(self, cmd, contains, nomatch=False, ordered=False, regex=False,
-                     casefold=False):
+                     casefold=True):
         '''check that command output contains the listed strings'''
 
         if isinstance(contains, str):
@@ -187,6 +187,9 @@ class wintest():
         self.info(out)
         for c in self.substitute(contains):
             if regex:
+                if casefold:
+                    c = c.upper()
+                    out = out.upper()
                 m = re.search(c, out)
                 if m is None:
                     start = -1
@@ -210,7 +213,7 @@ class wintest():
                 out = out[end:]
 
     def retry_cmd(self, cmd, contains, retries=30, delay=2, wait_for_fail=False,
-                  ordered=False, regex=False, casefold=False):
+                  ordered=False, regex=False, casefold=True):
         '''retry a command a number of times'''
         while retries > 0:
             try:
