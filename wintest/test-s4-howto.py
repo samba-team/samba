@@ -17,7 +17,6 @@ def check_prerequesites(t):
         t.run_cmd('ifconfig ${INTERFACE} inet6 del ${INTERFACE_IPV6}/64', checkfail=False)
         t.run_cmd('ifconfig ${INTERFACE} inet6 add ${INTERFACE_IPV6}/64 up')
 
-
 def build_s4(t):
     '''build samba4'''
     t.info('Building s4')
@@ -130,16 +129,12 @@ def restore_resolv_conf(t):
         t.info("restoring /etc/resolv.conf")
         t.run_cmd("mv -f %s /etc/resolv.conf" % t.resolv_conf_backup)
 
+
 def rndc_cmd(t, cmd, checkfail=True):
     '''run a rndc command'''
     t.run_cmd("${RNDC} -c ${PREFIX}/etc/rndc.conf %s" % cmd, checkfail=checkfail)
 
-
-def restart_bind(t):
-    '''restart the test environment version of bind'''
-    t.info("Restarting bind9")
-    t.putenv('KEYTAB_FILE', '${PREFIX}/private/dns.keytab')
-    t.putenv('KRB5_KTNAME', '${PREFIX}/private/dns.keytab')
+def configure_bind(t):
     t.chdir('${PREFIX}')
 
     nameserver = t.get_nameserver()
@@ -221,10 +216,24 @@ options {
 
     set_nameserver(t, t.getvar('INTERFACE_IP'))
 
+
+def stop_bind(t):
+    '''Stop our private BIND from listening and operating'''
     rndc_cmd(t, "stop", checkfail=False)
     t.port_wait("${INTERFACE_IP}", 53, wait_for_fail=True)
 
     t.run_cmd("rm -rf var/named")
+
+
+def start_bind(t):
+    '''restart the test environment version of bind'''
+    t.info("Restarting bind9")
+    t.putenv('KEYTAB_FILE', '${PREFIX}/private/dns.keytab')
+    t.putenv('KRB5_KTNAME', '${PREFIX}/private/dns.keytab')
+    t.chdir('${PREFIX}')
+
+    set_nameserver(t, t.getvar('INTERFACE_IP'))
+
     t.run_cmd("mkdir -p var/named/data")
     t.run_cmd("chown -R ${BIND_USER} var/named")
 
@@ -233,6 +242,10 @@ options {
     t.port_wait("${INTERFACE_IP}", 53)
     rndc_cmd(t, "flush")
 
+def restart_bind(t):
+    configure_bind(t)
+    stop_bind(t)
+    start_bind(t)
 
 def test_dns(t):
     '''test that DNS is OK'''
@@ -735,6 +748,13 @@ def test_howto(t):
     # we don't need fsync safety in these tests
     t.putenv('TDB_NO_FSYNC', '1')
 
+    if not t.skip("configure_bind"):
+        configure_bind(t)
+    if not t.skip("stop_bind"):
+        stop_bind(t)
+    if not t.skip("stop_vms"):
+        stop_vms(t)
+
     if not t.skip("build"):
         build_s4(t)
 
@@ -746,12 +766,12 @@ def test_howto(t):
 
     if not t.skip("starts4"):
         start_s4(t)
-    if not t.skip("stop_vms"):
-        stop_vms(t)
     if not t.skip("smbclient"):
         test_smbclient(t)
-    if not t.skip("startbind"):
-        restart_bind(t)
+    if not t.skip("configure_bind2"):
+        configure_bind(t)
+    if not t.skip("start_bind"):
+        start_bind(t)
     if not t.skip("dns"):
         test_dns(t)
     if not t.skip("kerberos"):
