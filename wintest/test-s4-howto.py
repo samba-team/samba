@@ -326,6 +326,9 @@ def test_dcpromo(t, vm):
     t.info("Checking the dcpromo join is OK")
     t.chdir('${PREFIX}')
     t.port_wait("${WIN_IP}", 139)
+    t.retry_cmd("host -t A ${WIN_HOSTNAME}.${LCREALM}. ${INTERFACE_IP}",
+                ['${WIN_HOSTNAME}.${LCREALM} has address'],
+                retries=30, delay=10, casefold=True)
     t.retry_cmd('bin/smbclient -L ${WIN_HOSTNAME}.${LCREALM} -Uadministrator@${LCREALM}%${PASSWORD1}', ["C$", "IPC$", "Sharename"])
     t.cmd_contains("host -t A ${WIN_HOSTNAME}.${LCREALM}.", ['has address'])
     t.cmd_contains('bin/smbclient -L ${WIN_HOSTNAME}.${LCREALM} -Utestallowed@${LCREALM}%${PASSWORD1}', ["C$", "IPC$", "Sharename"])
