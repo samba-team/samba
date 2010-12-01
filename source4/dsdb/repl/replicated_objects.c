@@ -359,7 +359,8 @@ WERROR dsdb_replicated_objects_convert(struct ldb_context *ldb,
 	 * Ensure schema is kept valid for as long as 'out'
 	 * which may contain pointers to it
 	 */
-	talloc_reference(out, schema);
+	schema = talloc_reference(out, schema);
+	W_ERROR_HAVE_NO_MEMORY(schema);
 
 	partition_dn = ldb_dn_new(out, ldb, partition_dn_str);
 	W_ERROR_HAVE_NO_MEMORY_AND_FREE(partition_dn, out);
