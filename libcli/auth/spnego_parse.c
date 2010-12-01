@@ -380,6 +380,10 @@ bool spnego_write_mech_types(TALLOC_CTX *mem_ctx,
 {
 	struct asn1_data *asn1 = asn1_init(mem_ctx);
 
+	if (asn1 == NULL) {
+		return false;
+	}
+
 	/* Write mechTypes */
 	if (mech_types && *mech_types) {
 		int i;
