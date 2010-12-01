@@ -146,7 +146,7 @@ def build_syslib_sets(bld, tgt_list):
     for lib in syslibs:
         path = find_syslib_path(bld, lib, syslibs[lib])
         if path is None:
-            Logs.warn("Unable to find syslib path for %s used by %s" % (lib, syslibs[lib]))
+            Logs.warn("Unable to find syslib path for %s" % lib)
         if path is not None:
             syslib_paths.append(path)
             objmap[path] = lib.lower()
