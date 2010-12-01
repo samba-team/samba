@@ -226,7 +226,8 @@ int ldb_msg_add_value(struct ldb_message *msg,
 		}
 	}
 
-	vals = talloc_realloc(msg, el->values, struct ldb_val, el->num_values+1);
+	vals = talloc_realloc(msg->elements, el->values, struct ldb_val,
+			      el->num_values+1);
 	if (!vals) {
 		errno = ENOMEM;
 		return LDB_ERR_OPERATIONS_ERROR;
