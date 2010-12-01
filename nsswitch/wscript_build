@@ -28,7 +28,7 @@ bld.SAMBA_LIBRARY('nss_winbind',
 if bld.CONFIG_SET('HAVE_PAM_START'):
 	bld.SAMBA_LIBRARY('pamwinbind',
 		source='../nsswitch/pam_winbind.c',
-		deps='talloc wbclient winbind-client LIBINIPARSER pam',
+		deps='talloc wbclient winbind-client LIBINIPARSER pam intl',
 		cflags='-DLOCALEDIR=\"%s/locale\"' % bld.env.DATADIR,
 		realname='pam_winbind.so',
 		)
