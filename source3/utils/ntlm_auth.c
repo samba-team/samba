@@ -1319,6 +1319,8 @@ static void manage_gss_spnego_request(struct ntlm_auth_state *state,
 	    && (strncmp((char *)token.data, "NTLMSSP", 7) == 0)) {
 		char *reply;
 
+		data_blob_free(&token);
+
 		DEBUG(10, ("Could not parse GSS-SPNEGO, trying raw "
 			   "ntlmssp\n"));
 
