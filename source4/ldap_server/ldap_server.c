@@ -330,7 +330,7 @@ static void ldapsrv_accept(struct stream_connection *c,
 	}
 	conn->server_credentials = server_credentials;
 
-	conn->session_info = talloc_move(conn, &session_info);
+	conn->session_info = session_info;
 
 	if (!NT_STATUS_IS_OK(ldapsrv_backend_Init(conn))) {
 		ldapsrv_terminate_connection(conn, "backend Init failed");
