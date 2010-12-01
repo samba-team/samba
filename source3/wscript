@@ -511,7 +511,7 @@ return acl_get_perm_np(permset_d, perm);
         conf.check_cfg(path="krb5-config", args="--cflags --libs",
                        package="gssapi", uselib_store="krb5")
         conf.CHECK_HEADERS('krb5.h krb5/locate_plugin.h', lib='krb5')
-        conf.CHECK_HEADERS('gssapi.h gssapi/gssapi_generic.h gssapi/gssapi.h com_err.h', lib='krb5')
+        conf.CHECK_HEADERS('gssapi.h gssapi/gssapi_generic.h gssapi/gssapi.h gssapi/gssapi_ext.h com_err.h', lib='krb5')
 
         if conf.CONFIG_SET('HAVE_KRB5_LOCATE_PLUGIN_H'):
             conf.env['WINBIND_KRB5_LOCATOR'] = 'bin/winbind_krb5_locator.so'
@@ -523,6 +523,7 @@ return acl_get_perm_np(permset_d, perm);
         conf.CHECK_FUNCS_IN('roken_getaddrinfo_hostspec', 'roken')
         if conf.CHECK_FUNCS_IN('gss_display_status', 'gssapi gssapi_krb5'):
             conf.DEFINE('HAVE_GSSAPI', '1')
+        conf.CHECK_FUNCS_IN('gss_wrap_iov', 'gssapi gssapi_krb5 krb5')
         conf.CHECK_FUNCS_IN('krb5_mk_req_extended krb5_kt_compare', 'krb5')
         conf.CHECK_FUNCS('''
 krb5_set_real_time krb5_set_default_in_tkt_etypes krb5_set_default_tgs_enctypes
