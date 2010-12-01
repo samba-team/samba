@@ -35,102 +35,102 @@ bld.SAMBA_MODULE('rpc_lsarpc',
                  source='../../librpc/gen_ndr/srv_lsa.c',
                  deps='RPC_LSARPC',
                  init_function='',
-                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('RPC_LSARPC'),
-                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('RPC_LSARPC'))
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('rpc_lsarpc'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('rpc_lsarpc'))
 
 bld.SAMBA_MODULE('rpc_samr',
                  subsystem='rpc',
                  source='../../librpc/gen_ndr/srv_samr.c',
                  deps='RPC_SAMR',
                  init_function='',
-                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('RPC_SAMR'),
-                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('RPC_SAMR'))
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('rpc_samr'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('rpc_samr'))
 
 bld.SAMBA_MODULE('rpc_winreg',
                  subsystem='rpc',
                  source=RPC_WINREG_SRC,
                  deps='REGFIO REG_API_REGF NDR_PERFCOUNT',
                  init_function='',
-                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('RPC_WINREG'),
-                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('RPC_WINREG'))
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('rpc_winreg'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('rpc_winreg'))
 
 bld.SAMBA_MODULE('rpc_initshutdown',
                  subsystem='rpc',
                  source=RPC_INITSHUTDOWN_SRC,
                  init_function='',
-                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('RPC_INITSHUTDOWN'),
-                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('RPC_INITSHUTDOWN'))
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('rpc_initshutdown'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('rpc_initshutdown'))
 
 bld.SAMBA_MODULE('rpc_dssetup',
                  subsystem='rpc',
                  source=RPC_DSSETUP_SRC,
                  init_function='',
-                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('RPC_DSSETUP'),
-                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('RPC_DSSETUP'))
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('rpc_dssetup'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('rpc_dssetup'))
 
 bld.SAMBA_MODULE('rpc_wkssvc',
                  subsystem='rpc',
                  source=RPC_WKSSVC_SRC,
                  deps='LIBNET',
                  init_function='',
-                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('RPC_WKSSVC'),
-                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('RPC_WKSSVC'))
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('rpc_wkssvc'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('rpc_wkssvc'))
 
 bld.SAMBA_MODULE('rpc_svcctl',
                  subsystem='rpc',
                  source=RPC_SVCCTL_SRC,
                  deps='SERVICES',
                  init_function='',
-                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('RPC_SVCCTL'),
-                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('RPC_SVCCTL'))
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('rpc_svcctl'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('rpc_svcctl'))
 
 bld.SAMBA_MODULE('rpc_ntsvcs',
                  subsystem='rpc',
                  source=RPC_NTSVCS_SRC,
                  init_function='',
-                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('RPC_NTSVCS'),
-                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('RPC_NTSVCS'))
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('rpc_ntsvcs'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('rpc_ntsvcs'))
 
 bld.SAMBA_MODULE('rpc_netlogon',
                  subsystem='rpc',
                  source=RPC_NETLOGON_SRC,
                  init_function='',
-                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('RPC_NETLOGON'),
-                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('RPC_NETLOGON'))
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('rpc_netlogon'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('rpc_netlogon'))
 
 bld.SAMBA_MODULE('rpc_netdfs',
                  subsystem='rpc',
                  source=RPC_NETDFS_SRC,
                  init_function='',
-                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('RPC_NETDFS'),
-                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('RPC_NETDFS'))
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('rpc_netdfs'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('rpc_netdfs'))
 
 bld.SAMBA_MODULE('rpc_srvsvc',
                  subsystem='rpc',
                  source=RPC_SRVSVC_SRC,
                  init_function='',
-                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('RPC_SRVSVC'),
-                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('RPC_SRVSVC'))
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('rpc_srvsvc'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('rpc_srvsvc'))
 
 bld.SAMBA_MODULE('rpc_spoolss',
                  subsystem='rpc',
                  source=RPC_SPOOLSS_SRC,
                  deps='cups PRINTING PRINTBACKEND RPCCLI_WINREG',
                  init_function='',
-                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('RPC_SPOOLSS'),
-                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('RPC_SPOOLSS'))
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('rpc_spoolss'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('rpc_spoolss'))
 
 bld.SAMBA_MODULE('rpc_eventlog',
                  subsystem='rpc',
                  source=RPC_EVENTLOG_SRC,
                  deps='LIBEVENTLOG',
                  init_function='',
-                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('RPC_EVENTLOG'),
-                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('RPC_EVENTLOG'))
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('rpc_eventlog'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('rpc_eventlog'))
 
 bld.SAMBA_MODULE('rpc_rpcecho',
                  subsystem='rpc',
                  source=RPC_RPCECHO_SRC,
                  init_function='',
-                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('RPC_RPCECHO'),
-                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('RPC_RPCECHO'))
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('rpc_rpcecho'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('rpc_rpcecho'))

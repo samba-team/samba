@@ -43,73 +43,73 @@ bld.SAMBA_MODULE('idmap_ad',
                  source='',
                  deps='IDMAP_AD',
                  init_function='',
-                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('IDMAP_AD'),
-                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('IDMAP_AD'))
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('idmap_ad'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('idmap_ad'))
 
 bld.SAMBA_MODULE('idmap_rid',
                  subsystem='idmap',
                  source=IDMAP_RID_SRC,
                  init_function='',
-                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('IDMAP_RID'),
-                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('IDMAP_RID'))
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('idmap_rid'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('idmap_rid'))
 
 bld.SAMBA_MODULE('idmap_passdb',
                  subsystem='idmap',
                  source=IDMAP_PASSDB_SRC,
                  init_function='',
-                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('IDMAP_PASSDB'),
-                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('IDMAP_PASSDB'))
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('idmap_passdb'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('idmap_passdb'))
 
 bld.SAMBA_MODULE('idmap_ldap',
                  subsystem='idmap',
                  source=IDMAP_LDAP_SRC,
                  init_function='',
-                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('IDMAP_LDAP'),
-                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('IDMAP_LDAP'))
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('idmap_ldap'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('idmap_ldap'))
 
 bld.SAMBA_MODULE('idmap_nss',
                  subsystem='idmap',
                  source=IDMAP_NSS_SRC,
                  init_function='',
-                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('IDMAP_NSS'),
-                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('IDMAP_NSS'))
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('idmap_nss'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('idmap_nss'))
 
 bld.SAMBA_MODULE('idmap_tdb',
                  subsystem='idmap',
                  source=IDMAP_TDB_SRC,
                  init_function='',
-                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('IDMAP_TDB'),
-                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('IDMAP_TDB'))
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('idmap_tdb'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('idmap_tdb'))
 
 bld.SAMBA_MODULE('idmap_tdb2',
                  subsystem='idmap',
                  source=IDMAP_TDB2_SRC,
                  init_function='',
-                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('IDMAP_TDB2'),
-                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('IDMAP_TDB2'))
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('idmap_tdb2'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('idmap_tdb2'))
 
 bld.SAMBA_MODULE('idmap_hash',
                  subsystem='idmap',
                  source='',
                  deps='IDMAP_HASH',
                  init_function='',
-                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('IDMAP_HASH'),
-                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('IDMAP_HASH'))
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('idmap_hash'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('idmap_hash'))
 
 bld.SAMBA_MODULE('idmap_adex',
                  subsystem='idmap',
                  source='',
                  deps='IDMAP_ADEX',
                  init_function='',
-                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('IDMAP_ADEX'),
-                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('IDMAP_ADEX'))
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('idmap_adex'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('idmap_adex'))
 
 bld.SAMBA_MODULE('idmap_autorid',
                  subsystem='idmap',
                  source=IDMAP_AUTORID_SRC,
                  init_function='',
-                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('IDMAP_AUTORID'),
-                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('IDMAP_AUTORID'))
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('idmap_autorid'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('idmap_autorid'))
 
 
 NSS_INFO_TEMPLATE_SRC = 'nss_info_template.c'
@@ -123,45 +123,45 @@ bld.SAMBA_MODULE('nss_info_template',
                  subsystem='nss_info',
                  source=NSS_INFO_TEMPLATE_SRC,
                  init_function='',
-                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('NSS_INFO_TEMPLATE'),
-                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('NSS_INFO_TEMPLATE'))
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('nss_info_template'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('nss_info_template'))
 
 bld.SAMBA_MODULE('nss_info_adex',
                  subsystem='nss_info',
                  source='',
                  deps='IDMAP_ADEX',
                  init_function='',
-                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('IDMAP_ADEX'),
-                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('IDMAP_ADEX'))
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('idmap_adex'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('idmap_adex'))
 
 bld.SAMBA_MODULE('nss_info_hash',
                  subsystem='nss_info',
                  source='',
                  deps='IDMAP_HASH',
                  init_function='',
-                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('IDMAP_HASH'),
-                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('IDMAP_HASH'))
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('idmap_hash'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('idmap_hash'))
 
 bld.SAMBA_MODULE('nss_info_rfc2307',
                  subsystem='nss_info',
                  source='',
                  deps='IDMAP_AD',
                  init_function='',
-                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('IDMAP_AD'),
-                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('IDMAP_AD'))
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('idmap_ad'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('idmap_ad'))
 
 bld.SAMBA_MODULE('nss_info_sfu20',
                  subsystem='nss_info',
                  source='',
                  deps='IDMAP_AD',
                  init_function='',
-                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('IDMAP_AD'),
-                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('IDMAP_AD'))
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('idmap_ad'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('idmap_ad'))
 
 bld.SAMBA_MODULE('nss_info_sfu',
                  subsystem='nss_info',
                  source='',
                  deps='IDMAP_AD',
                  init_function='',
-                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('IDMAP_AD'),
-                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('IDMAP_AD'))
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('idmap_ad'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('idmap_ad'))

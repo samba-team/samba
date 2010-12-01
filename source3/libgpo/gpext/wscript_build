@@ -15,19 +15,19 @@ bld.SAMBA_MODULE('gpext_registry',
                  source=GPEXT_REGISTRY_SRC,
                  deps='NDR_PREG',
                  init_function='',
-                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('GPEXT_REGISTRY'),
-                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('GPEXT_REGISTRY'))
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('gpext_registry'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('gpext_registry'))
 
 bld.SAMBA_MODULE('gpext_scripts',
                  subsystem='gpext',
                  source=GPEXT_SCRIPTS_SRC,
                  init_function='',
-                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('GPEXT_SCRIPTS'),
-                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('GPEXT_SCRIPTS'))
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('gpext_scripts'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('gpext_scripts'))
 
 bld.SAMBA_MODULE('gpext_security',
                  subsystem='gpext',
                  source=GPEXT_SECURITY_SRC,
                  init_function='',
-                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('GPEXT_SECURITY'),
-                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('GPEXT_SECURITY'))
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('gpext_security'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('gpext_security'))
