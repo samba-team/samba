@@ -210,7 +210,7 @@ void initgensec(void)
 	PyObject *m;
 
 	Py_Security.tp_base = PyTalloc_GetObjectType();
-	if (Py_Security.tp_base != NULL)
+	if (Py_Security.tp_base == NULL)
 		return;
 
 	if (PyType_Ready(&Py_Security) < 0)
