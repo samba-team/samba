@@ -168,7 +168,9 @@ static int rr_search_callback(struct ldb_request *req, struct ldb_reply *ares)
 				el->num_values++;
 			}
 		}
-		el->name = talloc_asprintf(el->values, "%s;range=%u-%s", el->name, start, end_str);
+		el->name = talloc_asprintf(ares->message->elements,
+					   "%s;range=%u-%s", el->name, start,
+					   end_str);
 		if (!el->name) {
 			ldb_oom(ldb);
 			return ldb_module_done(ac->req, NULL, NULL,
