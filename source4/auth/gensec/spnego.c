@@ -420,9 +420,9 @@ static NTSTATUS gensec_spnego_parse_negTokenInit(struct gensec_security *gensec_
 	}
 
 	if (spnego_state->state_position == SPNEGO_SERVER_START) {
-		for (i=0; all_sec && all_sec[i].op; i++) {
-			/* optimistic token */
-			if (strcmp(all_sec[i].oid, mechType[0]) == 0) {
+		uint32_t j;
+		for (j=0; mechType && mechType[j]; j++) {
+			for (i=0; all_sec && all_sec[i].op; i++) {
 				nt_status = gensec_subcontext_start(spnego_state,
 								    gensec_security,
 								    &spnego_state->sub_sec_security);
@@ -437,7 +437,15 @@ static NTSTATUS gensec_spnego_parse_negTokenInit(struct gensec_security *gensec_
 					spnego_state->sub_sec_security = NULL;
 					break;
 				}
-				
+
+				if (j > 0) {
+					/* no optimistic token */
+					spnego_state->neg_oid = all_sec[i].oid;
+					*unwrapped_out = data_blob_null;
+					nt_status = NT_STATUS_MORE_PROCESSING_REQUIRED;
+					break;
+				}
+
 				nt_status = gensec_update(spnego_state->sub_sec_security,
 							  out_mem_ctx, 
 							  unwrapped_in,
@@ -456,6 +464,14 @@ static NTSTATUS gensec_spnego_parse_negTokenInit(struct gensec_security *gensec_
 				spnego_state->neg_oid = all_sec[i].oid;
 				break;
 			}
+			if (spnego_state->sub_sec_security) {
+				break;
+			}
+		}
+
+		if (!spnego_state->sub_sec_security) {
+			DEBUG(1, ("SPNEGO: Could not find a suitable mechtype in NEG_TOKEN_INIT\n"));
+			return NT_STATUS_INVALID_PARAMETER;
 		}
 	}
 	
