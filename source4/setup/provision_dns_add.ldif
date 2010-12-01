@@ -97,7 +97,7 @@ objectClass: person
 objectClass: organizationalPerson
 objectClass: user
 description: DNS Service Account for ${HOSTNAME}
-userAccountControl: 514
+userAccountControl: 512
 accountExpires: 9223372036854775807
 sAMAccountName: dns-${HOSTNAME}
 servicePrincipalName: DNS/${DNSNAME}
