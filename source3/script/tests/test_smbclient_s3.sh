@@ -380,7 +380,7 @@ test_ccache_access()
 	-c quit 2>&1
     ret=$?
 
-    if [ $ret == 0 ] ; then
+    if [ $ret -eq 0 ] ; then
 	echo "smbclient succeeded with wrong cached credentials"
 	false
 	return
