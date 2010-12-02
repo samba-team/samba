@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 #  subunit shell bindings.
 #  Copyright (C) 2006  Robert Collins <robertc@robertcollins.net>
 #
@@ -24,7 +24,7 @@
 echo 'test: shell bindings can be sourced'
 # if any output occurs, this has failed to source cleanly
 source_output=$(. ${SHELL_SHARE}subunit.sh 2>&1)
-if [ $? == 0 -a "x$source_output" = "x" ]; then
+if [ $? -eq 0 -a "x$source_output" = "x" ]; then
   echo 'success: shell bindings can be sourced'
 else
   echo 'failure: shell bindings can be sourced ['
@@ -40,7 +40,7 @@ fi
 echo 'test: subunit_start_test exists'
 found_type=$(type -t subunit_start_test)
 status=$?
-if [ $status == 0 -a "x$found_type" = "xfunction" ]; then
+if [ $status -eq 0 -a "x$found_type" = "xfunction" ]; then
   echo 'success: subunit_start_test exists'
 else
   echo 'failure: subunit_start_test exists ['
@@ -54,7 +54,7 @@ fi
 echo 'test: subunit_pass_test exists'
 found_type=$(type -t subunit_pass_test)
 status=$?
-if [ $status == 0 -a "x$found_type" = "xfunction" ]; then
+if [ $status -eq 0 -a "x$found_type" = "xfunction" ]; then
   echo 'success: subunit_pass_test exists'
 else
   echo 'failure: subunit_pass_test exists ['
@@ -68,7 +68,7 @@ fi
 echo 'test: subunit_fail_test exists'
 found_type=$(type -t subunit_fail_test)
 status=$?
-if [ $status == 0 -a "x$found_type" = "xfunction" ]; then
+if [ $status -eq 0 -a "x$found_type" = "xfunction" ]; then
   echo 'success: subunit_fail_test exists'
 else
   echo 'failure: subunit_fail_test exists ['
@@ -82,7 +82,7 @@ fi
 echo 'test: subunit_error_test exists'
 found_type=$(type -t subunit_error_test)
 status=$?
-if [ $status == 0 -a "x$found_type" = "xfunction" ]; then
+if [ $status -eq 0 -a "x$found_type" = "xfunction" ]; then
   echo 'success: subunit_error_test exists'
 else
   echo 'failure: subunit_error_test exists ['
@@ -96,7 +96,7 @@ fi
 echo 'test: subunit_skip_test exists'
 found_type=$(type -t subunit_skip_test)
 status=$?
-if [ $status == 0 -a "x$found_type" = "xfunction" ]; then
+if [ $status -eq 0 -a "x$found_type" = "xfunction" ]; then
   echo 'success: subunit_skip_test exists'
 else
   echo 'failure: subunit_skip_test exists ['
