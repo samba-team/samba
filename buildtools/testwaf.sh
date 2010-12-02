@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 set -e
 set -x
@@ -49,7 +49,7 @@ pushd lib/talloc
 versions="python2.4 python2.5 python2.6 python3.0 python3.1"
 for p in $versions; do
     ret=$(which $p || echo "failed")
-    if [ $ret == "failed" ]; then
+    if [ $ret = "failed" ]; then
         echo "$p not found, skipping"
         continue
     fi

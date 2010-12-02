@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 cat mklist.txt |
 while read line; do
