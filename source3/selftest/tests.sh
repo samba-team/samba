@@ -1,4 +1,5 @@
 #!/bin/bash
+###   ^^^FIXME -> sh ... breaks testing on *BSD etc. ... see FIXME's below
 # This script generates a list of testsuites that should be run as part of 
 # the Samba 3 test suite.
 
@@ -89,6 +90,7 @@ export LOCAL_PATH
 	shift $#
 	testitprefix="smbtorture_s3.plain."
 	testitenv="dc"
+#FIXME: shell sourcing with ARGS is just supported by bash but bash isn't everywhere.
 	. $SCRIPTDIR/test_smbtorture_s3.sh //\$SERVER_IP/tmp \$USERNAME \$PASSWORD "" "" "-l \$LOCAL_PATH"
 )
 
@@ -96,6 +98,7 @@ export LOCAL_PATH
 	shift $#
 	testitprefix="smbtorture_s3.crypt."
 	testitenv="dc"
+#FIXME: shell sourcing with ARGS is just supported by bash but bash isn't everywhere.
 	. $SCRIPTDIR/test_smbtorture_s3.sh //\$SERVER_IP/tmp \$USERNAME \$PASSWORD "" "-e" "-l \$LOCAL_PATH"
 )
 
@@ -103,6 +106,7 @@ export LOCAL_PATH
 	shift $#
 	testitprefix="wbinfo_s3."
 	testitenv="dc:local"
+#FIXME: shell sourcing with ARGS is just supported by bash but bash isn't everywhere.
 	. $SCRIPTDIR/test_wbinfo_s3.sh \$DOMAIN \$SERVER \$USERNAME \$PASSWORD
 )
 
@@ -110,6 +114,7 @@ export LOCAL_PATH
 	shift $#
 	testitprefix="wbinfo_s3."
 	testitenv="dc:local"
+#FIXME: shell sourcing with ARGS is just supported by bash but bash isn't everywhere.
 	. $SCRIPTDIR/test_wbinfo_s3.sh \$DOMAIN \$SERVER \$DOMAIN\\\\\$USERNAME \$PASSWORD
 )
 
@@ -117,6 +122,7 @@ export LOCAL_PATH
 	shift $#
 	testitprefix="wbinfo_s3."
 	testitenv="member:local"
+#FIXME: shell sourcing with ARGS is just supported by bash but bash isn't everywhere.
 	. $SCRIPTDIR/test_wbinfo_s3.sh \$DOMAIN \$SERVER \$DOMAIN\\\\\$USERNAME \$PASSWORD
 )
 
@@ -179,6 +185,7 @@ plantest "blackbox.testparm_s3" dc:local LOCAL_PATH="$LOCAL_PATH" BINDIR="$BINDI
 	if [ -n "$SMBTORTURE4" -a -n "$SMBTORTURE4VERSION" ];then
 		echo "Using SMBTORTURE4: $SMBTORTURE4BINARY"
 		echo "Version: $SMBTORTURE4VERSION"
+#FIXME: shell sourcing with ARGS is just supported by bash but bash isn't everywhere.
 		. $SCRIPTDIR/test_posix_s3.sh //\$SERVER_IP/tmp \$USERNAME \$PASSWORD "" ""
 	else
 		echo "Skip Tests with Samba4's smbtorture"
