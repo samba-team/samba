@@ -81,7 +81,7 @@ if [ "x$password" = "x" ] ; then
 	password="-N"
 fi
 
-if [ "x$username" == "x" ] ; then
+if [ "x$username" = "x" ] ; then
 	username="$server";
 fi
 
@@ -143,7 +143,7 @@ else
 	else
 		set -x; exec >>$debugfile 2>&1
 		debugargs="$debugfile."
-		#[ "x$debugsmb" == "x" ] || debugargs="$debugargs -d $debugsmb"
+		#[ "x$debugsmb" = "x" ] || debugargs="$debugargs -d $debugsmb"
 	fi
 fi
 
