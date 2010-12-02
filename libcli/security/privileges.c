@@ -412,6 +412,10 @@ bool security_token_has_privilege(const struct security_token *token, enum sec_p
 {
 	uint64_t mask;
 
+	if (!token) {
+		return false;
+	}
+
 	mask = sec_privilege_mask(privilege);
 	if (mask == 0) {
 		return false;
