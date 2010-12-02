@@ -984,6 +984,12 @@ static WERROR _dsdb_syntax_OID_obj_drsuapi_to_ldb(const struct dsdb_syntax_ctx *
 
 		v = IVAL(in->value_ctr.values[i].blob->data, 0);
 
+		/* convert remote ATTID to local ATTID */
+		if (!dsdb_syntax_attid_from_remote_attid(ctx, mem_ctx, v, &v)) {
+			DEBUG(1,(__location__ ": Failed to map remote ATTID to local ATTID!\n"));
+			return WERR_FOOBAR;
+		}
+
 		c = dsdb_class_by_governsID_id(ctx->schema, v);
 		if (!c) {
 			DEBUG(1,(__location__ ": Unknown governsID 0x%08X\n", v));
