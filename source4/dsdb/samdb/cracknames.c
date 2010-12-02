@@ -206,6 +206,7 @@ static WERROR DsCrackNameSPNAlias(struct ldb_context *sam_ctx, TALLOC_CTX *mem_c
 	/* This is checked for in callers, but be safe */
 	if (principal->name.name_string.len < 2) {
 		info1->status = DRSUAPI_DS_NAME_STATUS_NOT_FOUND;
+		krb5_free_principal(smb_krb5_context->krb5_context, principal);
 		return WERR_OK;
 	}
 	service = principal->name.name_string.val[0];
@@ -217,13 +218,14 @@ static WERROR DsCrackNameSPNAlias(struct ldb_context *sam_ctx, TALLOC_CTX *mem_c
 					  service, &new_service);
 
 	if (namestatus == DRSUAPI_DS_NAME_STATUS_NOT_FOUND) {
+		wret = WERR_OK;
 		info1->status		= DRSUAPI_DS_NAME_STATUS_DOMAIN_ONLY;
 		info1->dns_domain_name	= talloc_strdup(mem_ctx, dns_name);
 		if (!info1->dns_domain_name) {
-			krb5_free_principal(smb_krb5_context->krb5_context, principal);
-			return WERR_NOMEM;
+			wret = WERR_NOMEM;
 		}
-		return WERR_OK;
+		krb5_free_principal(smb_krb5_context->krb5_context, principal);
+		return wret;
 	} else if (namestatus != DRSUAPI_DS_NAME_STATUS_OK) {
 		info1->status = namestatus;
 		krb5_free_principal(smb_krb5_context->krb5_context, principal);
@@ -293,7 +295,8 @@ static WERROR DsCrackNameUPN(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 		return WERR_OK;
 	}
 
-	realm = krb5_principal_get_realm(smb_krb5_context->krb5_context, principal);
+	realm = krb5_principal_get_realm(smb_krb5_context->krb5_context,
+					 principal);
 
 	ldb_ret = ldb_search(sam_ctx, mem_ctx, &domain_res,
 				     samdb_partitions_dn(sam_ctx, mem_ctx), 
@@ -306,6 +309,7 @@ static WERROR DsCrackNameUPN(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 	if (ldb_ret != LDB_SUCCESS) {
 		DEBUG(2, ("DsCrackNameUPN domain ref search failed: %s", ldb_errstring(sam_ctx)));
 		info1->status = DRSUAPI_DS_NAME_STATUS_RESOLVE_ERROR;
+		krb5_free_principal(smb_krb5_context->krb5_context, principal);
 		return WERR_OK;
 	}
 
@@ -313,10 +317,12 @@ static WERROR DsCrackNameUPN(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 	case 1:
 		break;
 	case 0:
+		krb5_free_principal(smb_krb5_context->krb5_context, principal);
 		return dns_domain_from_principal(mem_ctx, smb_krb5_context, 
 						 name, info1);
 	default:
 		info1->status = DRSUAPI_DS_NAME_STATUS_NOT_UNIQUE;
+		krb5_free_principal(smb_krb5_context->krb5_context, principal);
 		return WERR_OK;
 	}
 
@@ -616,12 +622,12 @@ WERROR DsCrackNameOneName(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 			info1->status = DRSUAPI_DS_NAME_STATUS_NOT_FOUND;
 			krb5_free_principal(smb_krb5_context->krb5_context, principal);
 			return WERR_OK;
+		} else if (ret == 0) {
+			krb5_free_principal(smb_krb5_context->krb5_context, principal);
 		}
 		ret = krb5_parse_name_flags(smb_krb5_context->krb5_context, name, 
 					    KRB5_PRINCIPAL_PARSE_NO_REALM, &principal);
 		if (ret) {
-			krb5_free_principal(smb_krb5_context->krb5_context, principal);
-
 			return dns_domain_from_principal(mem_ctx, smb_krb5_context,
 							 name, info1);
 		}
@@ -642,6 +648,7 @@ WERROR DsCrackNameOneName(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 			computer_name = talloc_strndup(mem_ctx, principal->name.name_string.val[1], 
 						      strcspn(principal->name.name_string.val[1], "."));
 			if (computer_name == NULL) {
+				krb5_free_principal(smb_krb5_context->krb5_context, principal);
 				return WERR_NOMEM;
 			}
 
@@ -662,7 +669,6 @@ WERROR DsCrackNameOneName(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 		info1->status = DRSUAPI_DS_NAME_STATUS_NOT_FOUND;
 		return WERR_OK;
 	}
-
 	}
 
 	if (format_flags & DRSUAPI_DS_NAME_FLAG_SYNTACTICAL_ONLY) {
