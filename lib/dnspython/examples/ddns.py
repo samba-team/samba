@@ -16,7 +16,7 @@
 #
 #	DEVICE=$1
 #
-#	if [ "X${DEVICE}" == "Xeth0" ]; then
+#	if [ "X${DEVICE}" = "Xeth0" ]; then
 #        	IPADDR=`LANG= LC_ALL= ifconfig ${DEVICE} | grep 'inet addr' |
 #                	awk -F: '{ print $2 } ' | awk '{ print $1 }'`
 #		/usr/local/sbin/ddns.py $IPADDR
