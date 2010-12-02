@@ -50,6 +50,7 @@ def git_version_summary(path, env=None):
         return ("GIT-UNKNOWN", {})
 
     os.putenv('GIT_DIR', '%s/.git' % path)
+    os.putenv('GIT_WORK_TREE', path)
     git = Utils.cmd_output(env.GIT + ' show --pretty=format:"%h%n%ct%n%H%n%cd" --stat HEAD', silent=True)
 
     lines = git.splitlines()
