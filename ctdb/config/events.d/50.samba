@@ -206,8 +206,10 @@ periodic_cleanup() {
 
 ###########################
 
+[ "$1" = "init" ] || {
 ctdb_start_stop_service
 ctdb_start_stop_service "winbind"
+}
 
 is_ctdb_managed_service || is_ctdb_managed_service "winbind" || exit 0
 
