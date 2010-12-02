@@ -19,12 +19,12 @@ $VALGRIND bin/ldbmodify $LDBDIR/tests/schema-tests/schema-mod-test-1.ldif || exi
 $VALGRIND bin/ldbmodify $LDBDIR/tests/schema-tests/schema-mod-test-2.ldif || exit 1
 $VALGRIND bin/ldbmodify $LDBDIR/tests/schema-tests/schema-mod-test-3.ldif || exit 1
 $VALGRIND bin/ldbmodify $LDBDIR/tests/schema-tests/schema-mod-test-4.ldif
-if [ "$?" == "0" ]; then
+if [ "$?" = "0" ]; then
 	echo "test failed!"
 	exit 1
 fi
 $VALGRIND bin/ldbmodify $LDBDIR/tests/schema-tests/schema-mod-test-5.ldif
-if [ "$?" == "0" ]; then
+if [ "$?" = "0" ]; then
 	echo "test failed!"
 	exit 1
 fi
