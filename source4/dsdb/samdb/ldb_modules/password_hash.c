@@ -1298,18 +1298,22 @@ static int setup_given_passwords(struct setup_password_fields_io *io,
 					   (void *)&cleartext_utf16_blob->data,
 					   &cleartext_utf16_blob->length,
 					   false)) {
-			talloc_free(cleartext_utf16_blob);
-			ldb_asprintf_errstring(ldb,
-					       "setup_password_fields: "
-					       "failed to generate UTF16 password from cleartext UTF8 password for user %s", io->u.sAMAccountName);
-			return LDB_ERR_CONSTRAINT_VIOLATION;
-		} else {
-			g->cleartext_utf16 = cleartext_utf16_blob;
+			if (g->cleartext_utf8->length != 0) {
+				talloc_free(cleartext_utf16_blob);
+				ldb_asprintf_errstring(ldb,
+						       "setup_password_fields: "
+						       "failed to generate UTF16 password from cleartext UTF8 one for user '%s'!",
+						       io->u.sAMAccountName);
+				return LDB_ERR_CONSTRAINT_VIOLATION;
+			} else {
+				/* passwords with length "0" are valid! */
+				cleartext_utf16_blob->data = NULL;
+				cleartext_utf16_blob->length = 0;
+			}
 		}
+		g->cleartext_utf16 = cleartext_utf16_blob;
 	} else if (g->cleartext_utf16) {
-		char *cleartext_utf8_str;
 		struct ldb_val *cleartext_utf8_blob;
-		size_t converted_pw_len;
 
 		cleartext_utf8_blob = talloc(io->ac, struct ldb_val);
 		if (!cleartext_utf8_blob) {
@@ -1319,20 +1323,25 @@ static int setup_given_passwords(struct setup_password_fields_io *io,
 					   CH_UTF16MUNGED, CH_UTF8,
 					   g->cleartext_utf16->data,
 					   g->cleartext_utf16->length,
-					   (void *)&cleartext_utf8_str,
-					   &converted_pw_len, false)) {
-			/* We must bail out here, the input wasn't even a
-			 * multiple of 2 bytes */
-			talloc_free(cleartext_utf8_blob);
-			ldb_asprintf_errstring(ldb,
-					       "setup_password_fields: "
-					       "UTF16 password for user %s had odd length (length must be a multiple of 2)", io->u.sAMAccountName);
-			return LDB_ERR_CONSTRAINT_VIOLATION;
-		} else {
-			*cleartext_utf8_blob = data_blob_const(cleartext_utf8_str,
-							       converted_pw_len);
-			g->cleartext_utf8 = cleartext_utf8_blob;
+					   (void *)&cleartext_utf8_blob->data,
+					   &cleartext_utf8_blob->length,
+					   false)) {
+			if (g->cleartext_utf16->length != 0) {
+				/* We must bail out here, the input wasn't even
+				 * a multiple of 2 bytes */
+				talloc_free(cleartext_utf8_blob);
+				ldb_asprintf_errstring(ldb,
+						       "setup_password_fields: "
+						       "failed to generate UTF8 password from cleartext UTF 16 one for user '%s' - the latter had odd length (length must be a multiple of 2)!",
+						       io->u.sAMAccountName);
+				return LDB_ERR_CONSTRAINT_VIOLATION;
+			} else {
+				/* passwords with length "0" are valid! */
+				cleartext_utf8_blob->data = NULL;
+				cleartext_utf8_blob->length = 0;
+			}
 		}
+		g->cleartext_utf8 = cleartext_utf8_blob;
 	}
 
 	if (g->cleartext_utf16) {

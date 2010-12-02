@@ -637,6 +637,36 @@ accountExpires: %u
         else:
             return res[0]["minPwdAge"][0]
 
+    def set_minPwdLength(self, value):
+        m = ldb.Message()
+        m.dn = ldb.Dn(self, self.domain_dn())
+        m["minPwdLength"] = ldb.MessageElement(value, ldb.FLAG_MOD_REPLACE, "minPwdLength")
+        self.modify(m)
+
+    def get_minPwdLength(self):
+        res = self.search(self.domain_dn(), scope=ldb.SCOPE_BASE, attrs=["minPwdLength"])
+        if len(res) == 0:
+            return None
+        elif not "minPwdLength" in res[0]:
+            return None
+        else:
+            return res[0]["minPwdLength"][0]
+
+    def set_pwdProperties(self, value):
+        m = ldb.Message()
+        m.dn = ldb.Dn(self, self.domain_dn())
+        m["pwdProperties"] = ldb.MessageElement(value, ldb.FLAG_MOD_REPLACE, "pwdProperties")
+        self.modify(m)
+
+    def get_pwdProperties(self):
+        res = self.search(self.domain_dn(), scope=ldb.SCOPE_BASE, attrs=["pwdProperties"])
+        if len(res) == 0:
+            return None
+        elif not "pwdProperties" in res[0]:
+            return None
+        else:
+            return res[0]["pwdProperties"][0]
+
     def set_dsheuristics(self, dsheuristics):
         m = ldb.Message()
         m.dn = ldb.Dn(self, "CN=Directory Service,CN=Windows NT,CN=Services,%s"

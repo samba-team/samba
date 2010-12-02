@@ -887,6 +887,25 @@ userPassword: thatsAcomplPASS4
         # Reset the test "dSHeuristics" (reactivate "userPassword" pwd changes)
         ldb.set_dsheuristics("000000001")
 
+    def test_zero_length(self):
+        # Get the old "minPwdLength"
+        minPwdLength = ldb.get_minPwdLength()
+        # Set it temporarely to "0"
+        ldb.set_minPwdLength("0")
+
+        # Get the old "pwdProperties"
+        pwdProperties = ldb.get_pwdProperties()
+        # Set them temporarely to "0" (to deactivate eventually the complexity)
+        ldb.set_pwdProperties("0")
+
+        ldb.setpassword("(sAMAccountName=testuser)", "")
+
+        # Reset the "pwdProperties" as they were before
+        ldb.set_pwdProperties(pwdProperties)
+
+        # Reset the "minPwdLength" as it was before
+        ldb.set_minPwdLength(minPwdLength)
+
     def tearDown(self):
         super(PasswordTests, self).tearDown()
         delete_force(self.ldb, "cn=testuser,cn=users," + self.base_dn)
