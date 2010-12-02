@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 prefix1="$1"
 prefix2="$2"

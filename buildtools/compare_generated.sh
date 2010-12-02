@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 # compare the generated files from a waf
 
