@@ -326,11 +326,11 @@ NTSTATUS authsam_expand_nested_groups(struct ldb_context *sam_ctx,
 
 	status = dsdb_get_extended_dn_sid(dn, &sid, "SID");
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, (__location__ ": when parsing DN %s we failed to find our SID component, so we cannot calculate the group token: %s\n",
-			  ldb_dn_get_extended_linearized(tmp_ctx, dn, 1), 
-			  nt_errstr(status)));
+		/* If we fail finding a SID then this is no error since it could
+		 * be a non SAM object - e.g. a group with object class
+		 * "groupOfNames" */
 		talloc_free(tmp_ctx);
-		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		return NT_STATUS_OK;
 	}
 
 	if (!sam_ctx) {
