@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/sh
 # vim: expandtab
 #
 # Copyright (C) Matthieu Patou <mat@matws.net>  2010
@@ -23,7 +23,7 @@ TEMP=`getopt -o h --long princ:,pass:,out:,host:,ptype:,enc:,path-to-ldbsearch: 
      -n "$name" -- "$@"`
 eval set -- "$TEMP"
 
-function usage {
+usage () {
   echo -ne "$name --out <keytabfile> --princ <principal> --pass <password>|*\n"
   echo -ne "      [--host hostname] [--enc <encryption>]\n"
   echo -ne "      [--ptype <type>] [--path-to-ldbsearch <path>]\n"
@@ -68,7 +68,7 @@ if [ -z $host ]; then
 fi
 
 kvno=`${path}ldbsearch -H ldap://$host "(|(samaccountname=$princ)(serviceprincipalname=$princ)(userprincipalname=$princ))" msds-keyversionnumber  -k 1 -N 2>/dev/null| grep -i msds-keyversionnumber`
-if [ "$kvno" == "" ]; then
+if [ x"$kvno" = x"" ]; then
   echo -ne "Unable to find kvno for principal $princ\n"
   echo -ne " check that you are authentified with kerberos\n"
   exit 1
@@ -76,7 +76,7 @@ else
   kvno=`echo $kvno | sed 's/^.*: //'`
 fi
 
-if [ "$pass" == "*" ]; then
+if [ "$pass" = "*" ]; then
   echo -n "Enter password for $princ: "
   stty -echo
   read pass
