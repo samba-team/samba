@@ -2489,7 +2489,7 @@ static NTSTATUS open_directory(connection_struct *conn,
 		return status;
 	}
 
-	if ((access_mask & SEC_FLAG_SYSTEM_SECURITY) &
+	if ((access_mask & SEC_FLAG_SYSTEM_SECURITY) &&
 			!security_token_has_privilege(get_current_nttok(conn),
 					SEC_PRIV_SECURITY)) {
 		DEBUG(10, ("open_directory: open on %s "
