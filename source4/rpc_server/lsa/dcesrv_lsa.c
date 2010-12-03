@@ -3705,6 +3705,7 @@ static NTSTATUS dcesrv_lsa_QueryDomainInformationPolicy(struct dcesrv_call_state
 		k->user_tkt_lifetime = 0;    /* Need to find somewhere to store this, and query in KDC too */
 		k->user_tkt_renewaltime = 0; /* Need to find somewhere to store this, and query in KDC too */
 		k->clock_skew = krb5_get_max_time_skew(smb_krb5_context->krb5_context);
+		k->reserved = 0;
 		talloc_free(smb_krb5_context);
 		*r->out.info = info;
 		return NT_STATUS_OK;
