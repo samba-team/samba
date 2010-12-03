@@ -2869,9 +2869,7 @@ static NTSTATUS dcesrv_lsa_CreateSecret(struct dcesrv_call_state *dce_call, TALL
 	}
 	
 	secret_state = talloc(mem_ctx, struct lsa_secret_state);
-	if (!secret_state) {
-		return NT_STATUS_NO_MEMORY;
-	}
+	NT_STATUS_HAVE_NO_MEMORY(secret_state);
 	secret_state->policy = policy_state;
 
 	msg = ldb_msg_new(mem_ctx);
@@ -2881,17 +2879,25 @@ static NTSTATUS dcesrv_lsa_CreateSecret(struct dcesrv_call_state *dce_call, TALL
 
 	if (strncmp("G$", r->in.name.string, 2) == 0) {
 		const char *name2;
-		name = &r->in.name.string[2];
-			/* We need to connect to the database as system, as this is one of the rare RPC calls that must read the secrets (and this is denied otherwise) */
-		secret_state->sam_ldb = talloc_reference(secret_state, 
-							 samdb_connect(mem_ctx, dce_call->event_ctx, dce_call->conn->dce_ctx->lp_ctx, system_session(dce_call->conn->dce_ctx->lp_ctx), 0));
+
 		secret_state->global = true;
 
-		if (strlen(name) < 1) {
+		name = &r->in.name.string[2];
+		if (strlen(name) == 0) {
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 
-		name2 = talloc_asprintf(mem_ctx, "%s Secret", ldb_binary_encode_string(mem_ctx, name));
+		name2 = talloc_asprintf(mem_ctx, "%s Secret",
+					ldb_binary_encode_string(mem_ctx, name));
+		NT_STATUS_HAVE_NO_MEMORY(name2);
+
+		/* We need to connect to the database as system, as this is one
+		 * of the rare RPC calls that must read the secrets (and this
+		 * is denied otherwise) */
+		secret_state->sam_ldb = talloc_reference(secret_state,
+							 samdb_connect(mem_ctx, dce_call->event_ctx, dce_call->conn->dce_ctx->lp_ctx, system_session(dce_call->conn->dce_ctx->lp_ctx), 0));
+		NT_STATUS_HAVE_NO_MEMORY(secret_state->sam_ldb);
+
 		/* search for the secret record */
 		ret = gendb_search(secret_state->sam_ldb,
 				   mem_ctx, policy_state->system_dn, &msgs, attrs,
@@ -2908,22 +2914,25 @@ static NTSTATUS dcesrv_lsa_CreateSecret(struct dcesrv_call_state *dce_call, TALL
 		}
 
 		msg->dn = ldb_dn_copy(mem_ctx, policy_state->system_dn);
-		if (!name2 || ! ldb_dn_add_child_fmt(msg->dn, "cn=%s", name2)) {
+		NT_STATUS_HAVE_NO_MEMORY(msg->dn);
+		if (!ldb_dn_add_child_fmt(msg->dn, "cn=%s", name2)) {
 			return NT_STATUS_NO_MEMORY;
 		}
-		
-		samdb_msg_add_string(secret_state->sam_ldb, mem_ctx, msg, "cn", name2);
-	
+
+		ret = ldb_msg_add_string(msg, "cn", name2);
+		if (ret != LDB_SUCCESS) return NT_STATUS_NO_MEMORY;
 	} else {
 		secret_state->global = false;
 
 		name = r->in.name.string;
-		if (strlen(name) < 1) {
+		if (strlen(name) == 0) {
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 
 		secret_state->sam_ldb = talloc_reference(secret_state, 
 							 secrets_db_connect(mem_ctx, dce_call->conn->dce_ctx->lp_ctx));
+		NT_STATUS_HAVE_NO_MEMORY(secret_state->sam_ldb);
+
 		/* search for the secret record */
 		ret = gendb_search(secret_state->sam_ldb, mem_ctx,
 				   ldb_dn_new(mem_ctx, secret_state->sam_ldb, "cn=LSA Secrets"),
@@ -2940,13 +2949,19 @@ static NTSTATUS dcesrv_lsa_CreateSecret(struct dcesrv_call_state *dce_call, TALL
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
 		}
 
-		msg->dn = ldb_dn_new_fmt(mem_ctx, secret_state->sam_ldb, "cn=%s,cn=LSA Secrets", name);
-		samdb_msg_add_string(secret_state->sam_ldb, mem_ctx, msg, "cn", name);
+		msg->dn = ldb_dn_new_fmt(mem_ctx, secret_state->sam_ldb,
+					 "cn=%s,cn=LSA Secrets", name);
+		NT_STATUS_HAVE_NO_MEMORY(msg->dn);
+		ret = ldb_msg_add_string(msg, "cn", name);
+		if (ret != LDB_SUCCESS) return NT_STATUS_NO_MEMORY;
 	} 
 
-	samdb_msg_add_string(secret_state->sam_ldb, mem_ctx, msg, "objectClass", "secret");
+	ret = samdb_msg_add_string(secret_state->sam_ldb, mem_ctx, msg,
+				   "objectClass", "secret");
+	if (ret != LDB_SUCCESS) return NT_STATUS_NO_MEMORY;
 	
 	secret_state->secret_dn = talloc_reference(secret_state, msg->dn);
+	NT_STATUS_HAVE_NO_MEMORY(secret_state->secret_dn);
 
 	/* create the secret */
 	ret = ldb_add(secret_state->sam_ldb, msg);
@@ -2958,14 +2973,13 @@ static NTSTATUS dcesrv_lsa_CreateSecret(struct dcesrv_call_state *dce_call, TALL
 	}
 
 	handle = dcesrv_handle_new(dce_call->context, LSA_HANDLE_SECRET);
-	if (!handle) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	
+	NT_STATUS_HAVE_NO_MEMORY(handle);
+
 	handle->data = talloc_steal(handle, secret_state);
 	
 	secret_state->access_mask = r->in.access_mask;
 	secret_state->policy = talloc_reference(secret_state, policy_state);
+	NT_STATUS_HAVE_NO_MEMORY(secret_state->policy);
 	
 	*r->out.sec_handle = handle->wire_handle;
 	
