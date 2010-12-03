@@ -1672,6 +1672,7 @@ static struct vfs_fn_pointers vfs_default_fns = {
 	.getwd = vfswrap_getwd,
 	.ntimes = vfswrap_ntimes,
 	.ftruncate = vfswrap_ftruncate,
+	.posix_fallocate = vfswrap_posix_fallocate,
 	.lock = vfswrap_lock,
 	.kernel_flock = vfswrap_kernel_flock,
 	.linux_setlease = vfswrap_linux_setlease,
