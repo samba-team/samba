@@ -26,7 +26,7 @@ def build_s3(t):
     t.run_cmd('rm -rf ${PREFIX}')
     t.run_cmd('make install')
 
-def start_s3(t, interfaces=None):
+def start_s3(t):
     t.info('Starting Samba3')
     t.chdir("${PREFIX}")
     t.run_cmd('killall -9 -q samba smbd nmbd winbindd', checkfail=False)
@@ -35,6 +35,7 @@ def start_s3(t, interfaces=None):
     t.run_cmd(['sbin/winbindd', "-D"])
     t.run_cmd(['sbin/smbd', "-D"])
     t.port_wait("localhost", 139)
+
 
 def test_wbinfo(t):
     t.info('Testing wbinfo')
@@ -115,7 +116,7 @@ def join_as_member(t, vm):
         realm = ${WIN_REALM}
         workgroup = ${WIN_DOMAIN}
         security = ADS
-        interfaces = ${INTERFACES}
+        interfaces = ${INTERFACE}
         winbind separator = /
         idmap uid = 1000000-2000000
         idmap gid = 1000000-2000000
@@ -136,7 +137,7 @@ def test_join_as_member(t, vm):
     t.setwinvars(vm)
     t.info('Testing join as member')
     t.chdir('${PREFIX}')
-    t.cmd_contains('bin/net ads user add root -Uadministrator%${WIN_PASS}')
+    t.run_cmd('bin/net ads user add root -Uadministrator%${WIN_PASS}')
     test_wbinfo(t)
     test_smbclient(t)
 
@@ -146,57 +147,21 @@ def test_s3(t):
 
     check_prerequesites(t)
 
-    # we don't need fsync safety in these tests
-    t.putenv('TDB_NO_FSYNC', '1')
-
     if not t.skip("build"):
         build_s3(t)
 
     if t.have_var('W2K8R2A_VM') and not t.skip("join_w2k8r2"):
         join_as_member(t, "W2K8R2A")
         create_shares(t)
-        start_s3(t, interfaces='${INTERFACES}')
+        start_s3(t)
         test_join_as_member(t, "W2K8R2A")
 
     t.info("S3 test: All OK")
 
+
 if __name__ == '__main__':
-    parser = optparse.OptionParser("test-howto.py")
-    parser.add_option("--conf", type='string', default='', help='config file')
-    parser.add_option("--skip", type='string', default='', help='list of steps to skip (comma separated)')
-    parser.add_option("--list", action='store_true', default=False, help='list the available steps')
-    parser.add_option("--rebase", action='store_true', default=False, help='do a git pull --rebase')
-    parser.add_option("--clean", action='store_true', default=False, help='clean the tree')
-    parser.add_option("--prefix", type='string', default=None, help='override install prefix')
-    parser.add_option("--sourcetree", type='string', default=None, help='override sourcetree location')
-
-    opts, args = parser.parse_args()
-
-    if not opts.conf:
-        print("Please specify a config file with --conf")
-        sys.exit(1)
-
     t = wintest.wintest()
-    t.load_config(opts.conf)
-    t.set_skip(opts.skip)
 
-    if opts.list:
-        t.list_steps_mode()
-
-    if opts.prefix:
-        t.setvar('PREFIX', opts.prefix)
-
-    if opts.sourcetree:
-        t.setvar('SOURCETREE', opts.sourcetree)
-
-    if opts.rebase:
-        t.info('rebasing')
-        t.chdir('${SOURCETREE}')
-        t.run_cmd('git pull --rebase')
-
-    if opts.clean:
-        t.info('rebasing')
-        t.chdir('${SOURCETREE}/source3')
-        t.run_cmd('make clean')
+    t.setup("test-s3.py", "source3")
 
     test_s3(t)

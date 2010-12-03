@@ -3,6 +3,7 @@
 '''automated testing library for testing Samba against windows'''
 
 import pexpect, subprocess
+import optparse
 import sys, os, time, re
 
 class wintest():
@@ -13,6 +14,7 @@ class wintest():
         self.list_mode = False
         self.vms = None
         os.putenv('PYTHONUNBUFFERED', '1')
+        self.parser = optparse.OptionParser("wintest")
 
     def setvar(self, varname, value):
         '''set a substitution variable'''
@@ -553,3 +555,48 @@ class wintest():
             if v[-3:] == "_VM":
                 ret.append(self.vars[v])
         return ret
+
+    def setup(self, testname, subdir):
+        '''setup for main tests, parsing command line'''
+        self.parser.add_option("--conf", type='string', default='', help='config file')
+        self.parser.add_option("--skip", type='string', default='', help='list of steps to skip (comma separated)')
+        self.parser.add_option("--vms", type='string', default=None, help='list of VMs to use (comma separated)')
+        self.parser.add_option("--list", action='store_true', default=False, help='list the available steps')
+        self.parser.add_option("--rebase", action='store_true', default=False, help='do a git pull --rebase')
+        self.parser.add_option("--clean", action='store_true', default=False, help='clean the tree')
+        self.parser.add_option("--prefix", type='string', default=None, help='override install prefix')
+        self.parser.add_option("--sourcetree", type='string', default=None, help='override sourcetree location')
+        self.parser.add_option("--nocleanup", action='store_true', default=False, help='disable cleanup code')
+
+        self.opts, self.args = self.parser.parse_args()
+
+        if not self.opts.conf:
+            print("Please specify a config file with --conf")
+            sys.exit(1)
+
+        # we don't need fsync safety in these tests
+        self.putenv('TDB_NO_FSYNC', '1')
+
+        self.load_config(self.opts.conf)
+
+        self.set_skip(self.opts.skip)
+        self.set_vms(self.opts.vms)
+
+        if self.opts.list:
+            self.list_steps_mode()
+
+        if self.opts.prefix:
+            self.setvar('PREFIX', self.opts.prefix)
+
+        if self.opts.sourcetree:
+            self.setvar('SOURCETREE', self.opts.sourcetree)
+
+        if self.opts.rebase:
+            self.info('rebasing')
+            self.chdir('${SOURCETREE}')
+            self.run_cmd('git pull --rebase')
+
+        if self.opts.clean:
+            self.info('cleaning')
+            self.chdir('${SOURCETREE}/' + subdir)
+            self.run_cmd('make clean')

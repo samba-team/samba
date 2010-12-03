@@ -3,7 +3,6 @@
 '''automated testing of the steps of the Samba4 HOWTO'''
 
 import sys, os
-import optparse
 import wintest, pexpect, time
 
 def check_prerequesites(t):
@@ -134,6 +133,7 @@ def rndc_cmd(t, cmd, checkfail=True):
     '''run a rndc command'''
     t.run_cmd("${RNDC} -c ${PREFIX}/etc/rndc.conf %s" % cmd, checkfail=checkfail)
 
+
 def configure_bind(t):
     t.chdir('${PREFIX}')
 
@@ -159,8 +159,7 @@ options {
         memstatistics-file "${PREFIX}/var/named/data/named_mem_stats.txt";
 	allow-query     { any; };
 	recursion yes;
-	tkey-gssapi-credential "DNS/${HOSTNAME}.${LCREALM}";
-	tkey-domain "${REALM}";
+	tkey-gssapi-keytab "${PREFIX}/private/dns.keytab";
         max-cache-ttl 10;
         max-ncache-ttl 10;
 
@@ -228,8 +227,6 @@ def stop_bind(t):
 def start_bind(t):
     '''restart the test environment version of bind'''
     t.info("Restarting bind9")
-    t.putenv('KEYTAB_FILE', '${PREFIX}/private/dns.keytab')
-    t.putenv('KRB5_KTNAME', '${PREFIX}/private/dns.keytab')
     t.chdir('${PREFIX}')
 
     set_nameserver(t, t.getvar('INTERFACE_IP'))
@@ -738,6 +735,7 @@ RebootOnCompletion=No
     t.port_wait("${WIN_IP}", 139, wait_for_fail=True)
     t.port_wait("${WIN_IP}", 139)
 
+
 def test_howto(t):
     '''test the Samba4 howto'''
 
@@ -853,55 +851,17 @@ def test_cleanup(t):
 
 
 if __name__ == '__main__':
-    parser = optparse.OptionParser("test-howto.py")
-    parser.add_option("--conf", type='string', default='', help='config file')
-    parser.add_option("--skip", type='string', default='', help='list of steps to skip (comma separated)')
-    parser.add_option("--vms", type='string', default=None, help='list of VMs to use (comma separated)')
-    parser.add_option("--list", action='store_true', default=False, help='list the available steps')
-    parser.add_option("--rebase", action='store_true', default=False, help='do a git pull --rebase')
-    parser.add_option("--clean", action='store_true', default=False, help='clean the tree')
-    parser.add_option("--prefix", type='string', default=None, help='override install prefix')
-    parser.add_option("--sourcetree", type='string', default=None, help='override sourcetree location')
-    parser.add_option("--nocleanup", action='store_true', default=False, help='disable cleanup code')
-
-    opts, args = parser.parse_args()
-
-    if not opts.conf:
-        print("Please specify a config file with --conf")
-        sys.exit(1)
-
     t = wintest.wintest()
-    t.load_config(opts.conf)
 
-    t.set_skip(opts.skip)
-    t.set_vms(opts.vms)
-
-    if opts.list:
-        t.list_steps_mode()
-
-    if opts.prefix:
-        t.setvar('PREFIX', opts.prefix)
-
-    if opts.sourcetree:
-        t.setvar('SOURCETREE', opts.sourcetree)
-
-    if opts.rebase:
-        t.info('rebasing')
-        t.chdir('${SOURCETREE}')
-        t.run_cmd('git pull --rebase')
-
-    if opts.clean:
-        t.info('rebasing')
-        t.chdir('${SOURCETREE}/source4')
-        t.run_cmd('rm -rf bin')
+    t.setup("test-s4-howto.py", "source4")
 
     try:
         test_howto(t)
     except:
-        if not opts.nocleanup:
+        if not t.opts.nocleanup:
             test_cleanup(t)
         raise
 
-    if not opts.nocleanup:
+    if not t.opts.nocleanup:
         test_cleanup(t)
     t.info("S4 howto test: All OK")
