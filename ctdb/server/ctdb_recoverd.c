@@ -2497,7 +2497,7 @@ static enum monitor_result verify_recmaster(struct ctdb_recoverd *rec, struct ct
 
 /* called to check that the local allocation of public ip addresses is ok.
 */
-static int verify_local_ip_allocation(struct ctdb_context *ctdb, struct ctdb_recoverd *rec, uint32_t pnn)
+static int verify_local_ip_allocation(struct ctdb_context *ctdb, struct ctdb_recoverd *rec, uint32_t pnn, struct ctdb_node_map *nodemap)
 {
 	TALLOC_CTX *mem_ctx = talloc_new(NULL);
 	struct ctdb_control_get_ifaces *ifaces = NULL;
@@ -2588,11 +2588,17 @@ static int verify_local_ip_allocation(struct ctdb_context *ctdb, struct ctdb_rec
 	   and we dont have ones we shouldnt have.
 	   if we find an inconsistency we set recmode to
 	   active on the local node and wait for the recmaster
-	   to do a full blown recovery
+	   to do a full blown recovery.
+	   also if the pnn is -1 and we are healthy and can host the ip
+	   we also request a ip reallocation.
 	*/
 	if (ctdb->tunable.disable_ip_failover == 0) {
 		for (j=0; j<ips->num; j++) {
-			if (ips->ips[j].pnn == pnn) {
+			if (ips->ips[j].pnn == -1 && nodemap->nodes[pnn].flags == 0) {
+				DEBUG(DEBUG_CRIT,("Public address '%s' is not assigned and we could serve this ip\n",
+						ctdb_addr_to_str(&ips->ips[j].addr)));
+				need_takeover_run = true;
+			} else if (ips->ips[j].pnn == pnn) {
 				if (!ctdb_sys_have_ip(&ips->ips[j].addr)) {
 					DEBUG(DEBUG_CRIT,("Public address '%s' is missing and we should serve this ip\n",
 						ctdb_addr_to_str(&ips->ips[j].addr)));
@@ -3120,7 +3126,7 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 	 */ 
 	if (ctdb->tunable.disable_ip_failover == 0) {
 		if (rec->ip_check_disable_ctx == NULL) {
-			if (verify_local_ip_allocation(ctdb, rec, pnn) != 0) {
+			if (verify_local_ip_allocation(ctdb, rec, pnn, nodemap) != 0) {
 				DEBUG(DEBUG_ERR, (__location__ " Public IPs were inconsistent.\n"));
 			}
 		}

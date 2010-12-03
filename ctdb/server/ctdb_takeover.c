@@ -611,6 +611,15 @@ int32_t ctdb_control_takeover_ip(struct ctdb_context *ctdb,
 		return -1;
 	}
 
+	if (vnn->pnn == -1 && have_ip) {
+		vnn->pnn = ctdb->pnn;
+		DEBUG(DEBUG_CRIT,(__location__ " takeoverip of IP %s is known to the kernel, "
+				  "and we already have it on iface[%s], update local daemon\n",
+				 ctdb_addr_to_str(&vnn->public_address),
+				  ctdb_vnn_iface_string(vnn)));
+		return 0;
+	}
+
 	if (vnn->iface) {
 		if (vnn->iface->link_up) {
 			/* only move when the rebalance gains something */
