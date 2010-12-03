@@ -66,6 +66,8 @@ static int ctdb_ltdb_store_server(struct ctdb_db_context *ctdb_db,
 	TDB_DATA rec;
 	int ret;
 	bool seqnum_suppressed = false;
+	bool keep = false;
+	uint32_t lmaster = ctdb_lmaster(ctdb_db->ctdb, &key);
 
 	if (ctdb->flags & CTDB_FLAG_TORTURE) {
 		struct ctdb_ltdb_header *h2;
@@ -76,6 +78,23 @@ static int ctdb_ltdb_store_server(struct ctdb_db_context *ctdb_db,
 				 (unsigned long long)h2->rsn, (unsigned long long)header->rsn));
 		}
 		if (rec.dptr) free(rec.dptr);
+	}
+
+	/*
+	 * If we migrate an empty record off to another node
+	 * and the record has not been migrated with data,
+	 * delete the record instead of storing the empty record.
+	 */
+	if (data.dsize != 0) {
+		keep = true;
+	} else if (ctdb_db->persistent) {
+		keep = true;
+	} else if (ctdb_db->ctdb->pnn == lmaster) {
+		keep = true;
+	} else if (ctdb_db->ctdb->pnn == header->dmaster) {
+		keep = true;
+	} else if (header->flags & CTDB_REC_FLAG_MIGRATED_WITH_DATA) {
+		keep = true;
 	}
 
 	rec.dsize = sizeof(*header) + data.dsize;
@@ -100,7 +119,18 @@ static int ctdb_ltdb_store_server(struct ctdb_db_context *ctdb_db,
 		}
 		if (old.dptr) free(old.dptr);
 	}
-	ret = tdb_store(ctdb_db->ltdb->tdb, key, rec, TDB_REPLACE);
+
+	DEBUG(DEBUG_DEBUG, (__location__ " db[%s]: %s record: hash[0x%08x]\n",
+			    ctdb_db->db_name,
+			    keep?"storing":"deleting",
+			    ctdb_hash(&key)));
+
+	if (keep) {
+		ret = tdb_store(ctdb_db->ltdb->tdb, key, rec, TDB_REPLACE);
+	} else {
+		ret = tdb_delete(ctdb_db->ltdb->tdb, key);
+	}
+
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR, (__location__ " Failed to store dynamic data\n"));
 	}
