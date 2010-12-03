@@ -8,6 +8,7 @@ publish*.sh
 push*.sh
 web/packages
 TAGS
+tags
 bin
 Makefile
 config.h
