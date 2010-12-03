@@ -18,6 +18,7 @@ EXTRA_OPTIONS="$1"
 
 RPMSPECDIR=`rpm --eval %_specdir`
 RPMSRCDIR=`rpm --eval %_sourcedir`
+RPMBUILDDIR=`rpm --eval %_builddir`
 
 # At this point the RPMSPECDIR and RPMSRCDIR variables must have a value!
 
@@ -40,6 +41,43 @@ case $RPMVER in
        exit 1
        ;;
 esac
+
+##
+## Delete the old debuginfo remnants:
+##
+## At least on RHEL 5.5, we observed broken debuginfo packages
+## when either old build directories were still present or old
+## debuginfo packages (of samba) were installed.
+##
+## Remove the debuginfo samba RPMs and old RPM build
+## directories, giving the user a 10 second chance to quit.
+##
+
+if rpm -qa | grep -q samba-debuginfo || test -n "$(echo ${RPMBUILDDIR}/samba* | grep -v \*)" ; then
+	echo "Removing debuginfo remnants to fix debuginfo build:"
+	if rpm -qa | grep -q samba-debuginfo ; then
+		echo "Uninstalling the samba-debuginfo RPM"
+		echo -n "Press Control-C if you want to quit (you have 10 seconds)"
+		for count in $(seq 1 10) ; do
+			echo -n "."
+			sleep 1
+		done
+		echo
+		echo "That was your chance... :-)"
+		rpm -e samba-debuginfo
+	fi
+	if test -n "$(echo ${RPMBUILDDIR}/samba* | grep -v \*)" ; then
+		echo "Deleting ${RPMBUILDDIR}/samba*"
+		echo -n "Press Control-C if you want to quit (you have 10 seconds)"
+		for count in $(seq 1 10) ; do
+			echo -n "."
+			sleep 1
+		done
+		echo
+		echo "That was your chance... :-)"
+		rm -rf ${RPMBUILDDIR}/samba*
+	fi
+fi
 
 ##
 ## determine the samba version and create the SPEC file
