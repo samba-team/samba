@@ -391,7 +391,7 @@ static WERROR dcesrv_dssetup_DsRoleGetPrimaryDomainInformation(struct dcesrv_cal
 {
 	union dssetup_DsRoleInfo *info;
 
-	info = talloc(mem_ctx, union dssetup_DsRoleInfo);
+	info = talloc_zero(mem_ctx, union dssetup_DsRoleInfo);
 	W_ERROR_HAVE_NO_MEMORY(info);
 
 	switch (r->in.level) {
@@ -3677,7 +3677,7 @@ static NTSTATUS dcesrv_lsa_QueryDomainInformationPolicy(struct dcesrv_call_state
 {
 	union lsa_DomainInformationPolicy *info;
 
-	info = talloc(r->out.info, union lsa_DomainInformationPolicy);
+	info = talloc_zero(r->out.info, union lsa_DomainInformationPolicy);
 	if (!info) {
 		return NT_STATUS_NO_MEMORY;
 	}
