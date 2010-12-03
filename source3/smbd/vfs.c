@@ -558,22 +558,56 @@ int vfs_set_filelen(files_struct *fsp, SMB_OFF_T len)
 }
 
 /****************************************************************************
+ A slow version of posix_fallocate. Fallback code if SMB_VFS_POSIX_FALLOCATE
+ fails. Needs to be outside of the default version of SMB_VFS_POSIX_FALLOCATE
+ as this is also called from the default SMB_VFS_FTRUNCATE code.
+ Returns 0 on success, errno on failure.
+****************************************************************************/
+
+#define SPARSE_BUF_WRITE_SIZE (32*1024)
+
+int vfs_slow_fallocate(files_struct *fsp, SMB_OFF_T offset, SMB_OFF_T len)
+{
+	ssize_t pwrite_ret;
+	size_t total = 0;
+
+	if (!sparse_buf) {
+		sparse_buf = SMB_CALLOC_ARRAY(char, SPARSE_BUF_WRITE_SIZE);
+		if (!sparse_buf) {
+			errno = ENOMEM;
+			return ENOMEM;
+		}
+	}
+
+	while (total < len) {
+		size_t curr_write_size = MIN(SPARSE_BUF_WRITE_SIZE, (len - total));
+
+		pwrite_ret = SMB_VFS_PWRITE(fsp, sparse_buf, curr_write_size, offset + total);
+		if (pwrite_ret == -1) {
+			DEBUG(10,("vfs_slow_fallocate: SMB_VFS_PWRITE for file "
+				  "%s failed with error %s\n",
+				  fsp_str_dbg(fsp), strerror(errno)));
+			return errno;
+		}
+		total += pwrite_ret;
+	}
+
+	return 0;
+}
+
+/****************************************************************************
  A vfs fill sparse call.
  Writes zeros from the end of file to len, if len is greater than EOF.
  Used only by strict_sync.
  Returns 0 on success, -1 on failure.
 ****************************************************************************/
 
-#define SPARSE_BUF_WRITE_SIZE (32*1024)
-
 int vfs_fill_sparse(files_struct *fsp, SMB_OFF_T len)
 {
 	int ret;
 	SMB_STRUCT_STAT st;
 	SMB_OFF_T offset;
-	size_t total;
 	size_t num_to_write;
-	ssize_t pwrite_ret;
 
 	ret = SMB_VFS_FSTAT(fsp, &st);
 	if (ret == -1) {
@@ -616,47 +650,24 @@ int vfs_fill_sparse(files_struct *fsp, SMB_OFF_T len)
 			goto out;
 		}
 		if (ret == 0) {
-			set_filelen_write_cache(fsp, len);
 			goto out;
 		}
 		DEBUG(10,("vfs_fill_sparse: SMB_VFS_POSIX_FALLOCATE failed with "
 			"error %d. Falling back to slow manual allocation\n", ret));
 	}
 
-	if (!sparse_buf) {
-		sparse_buf = SMB_CALLOC_ARRAY(char, SPARSE_BUF_WRITE_SIZE);
-		if (!sparse_buf) {
-			errno = ENOMEM;
-			ret = -1;
-			goto out;
-		}
+	ret = vfs_slow_fallocate(fsp, offset, num_to_write);
+	if (ret != 0) {
+		errno = ret;
+		ret = -1;
 	}
 
-	total = 0;
-
-	while (total < num_to_write) {
-		size_t curr_write_size = MIN(SPARSE_BUF_WRITE_SIZE, (num_to_write - total));
-
-		pwrite_ret = SMB_VFS_PWRITE(fsp, sparse_buf, curr_write_size, offset + total);
-		if (pwrite_ret == -1) {
-			DEBUG(10,("vfs_fill_sparse: SMB_VFS_PWRITE for file "
-				  "%s failed with error %s\n",
-				  fsp_str_dbg(fsp), strerror(errno)));
-			ret = -1;
-			goto out;
-		}
-		if (pwrite_ret == 0) {
-			ret = 0;
-			goto out;
-		}
-
-		total += pwrite_ret;
-	}
-
-	set_filelen_write_cache(fsp, len);
-
-	ret = 0;
  out:
+
+	if (ret == 0) {
+		set_filelen_write_cache(fsp, len);
+	}
+
 	contend_level2_oplocks_end(fsp, LEVEL2_CONTEND_FILL_SPARSE);
 	return ret;
 }
