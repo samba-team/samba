@@ -1066,6 +1066,7 @@ static int traverse_recdb(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, 
 	hdr = (struct ctdb_ltdb_header *)data.dptr;
 	if (!params->persistent) {
 		hdr->dmaster = params->ctdb->pnn;
+		hdr->flags |= CTDB_REC_FLAG_MIGRATED_WITH_DATA;
 	}
 
 	/* add the record to the blob ready to send to the nodes */
