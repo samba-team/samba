@@ -85,7 +85,7 @@ static krb5_error_code hdb_samba4_remove(krb5_context context, HDB *db, krb5_con
 static krb5_error_code hdb_samba4_fetch_kvno(krb5_context context, HDB *db,
 					     krb5_const_principal principal,
 					     unsigned flags,
-					     unsigned kvno,
+					     krb5_kvno kvno,
 					     hdb_entry_ex *entry_ex)
 {
 	struct samba_kdc_db_context *kdc_db_ctx;
