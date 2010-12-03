@@ -652,6 +652,7 @@ static NTSTATUS samsync_ldb_handle_group_member(TALLOC_CTX *mem_ctx,
 	struct ldb_message **msgs;
 	int ret;
 	const char *attrs[] = { NULL };
+	const char *str_dn;
 	uint32_t i;
 
 	msg = ldb_msg_new(mem_ctx);
@@ -696,7 +697,10 @@ static NTSTATUS samsync_ldb_handle_group_member(TALLOC_CTX *mem_ctx,
 		} else if (ret > 1) {
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
 		} else {
-			samdb_msg_add_string(state->sam_ldb, mem_ctx, msg, "member", ldb_dn_alloc_linearized(mem_ctx, msgs[0]->dn));
+			str_dn = ldb_dn_alloc_linearized(msg, msgs[0]->dn);
+			NT_STATUS_HAVE_NO_MEMORY(str_dn);
+			ret = ldb_msg_add_string(msg, "member", str_dn);
+			if (ret != LDB_SUCCESS) return NT_STATUS_NO_MEMORY;
 		}
 		
 		talloc_free(msgs);
@@ -893,6 +897,7 @@ static NTSTATUS samsync_ldb_handle_alias_member(TALLOC_CTX *mem_ctx,
 
 	for (i=0; i<alias_member->sids.num_sids; i++) {
 		struct ldb_dn *alias_member_dn;
+		const char *str_dn;
 		/* search for members, in the top basedn (normal users are builtin aliases) */
 		ret = gendb_search(state->sam_ldb, mem_ctx, state->base_dn[SAM_DATABASE_DOMAIN], &msgs, attrs,
 				   "(objectSid=%s)", 
@@ -915,7 +920,10 @@ static NTSTATUS samsync_ldb_handle_alias_member(TALLOC_CTX *mem_ctx,
 		} else {
 			alias_member_dn = msgs[0]->dn;
 		}
-		samdb_msg_add_string(state->sam_ldb, mem_ctx, msg, "member", ldb_dn_alloc_linearized(mem_ctx, alias_member_dn));
+		str_dn = ldb_dn_alloc_linearized(msg, alias_member_dn);
+		NT_STATUS_HAVE_NO_MEMORY(str_dn);
+		ret = ldb_msg_add_string(msg, "member", str_dn);
+		if (ret != LDB_SUCCESS) return NT_STATUS_NO_MEMORY;
 	
 		talloc_free(msgs);
 	}
