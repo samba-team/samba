@@ -128,6 +128,8 @@
 /* Changed to version 28 - Add private_flags uint32_t to CREATE call. */
 /* Leave at 28 - not yet released. Change realpath to assume NULL and return a
 		 malloc'ed path. JRA. */
+/* Leave at 28 - not yet released. Move posix_fallocate into the VFS
+		where it belongs. JRA. */
 #define SMB_VFS_INTERFACE_VERSION 28
 
 
@@ -250,6 +252,10 @@ struct vfs_fn_pointers {
 		      const struct smb_filename *smb_fname,
 		      struct smb_file_time *ft);
 	int (*ftruncate)(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_OFF_T offset);
+	int (*posix_fallocate)(struct vfs_handle_struct *handle,
+				struct files_struct *fsp,
+				SMB_OFF_T offset,
+				SMB_OFF_T len);
 	bool (*lock)(struct vfs_handle_struct *handle, struct files_struct *fsp, int op, SMB_OFF_T offset, SMB_OFF_T count, int type);
 	int (*kernel_flock)(struct vfs_handle_struct *handle, struct files_struct *fsp,
 			    uint32 share_mode, uint32_t access_mask);
@@ -602,6 +608,10 @@ int smb_vfs_call_ntimes(struct vfs_handle_struct *handle,
 			struct smb_file_time *ft);
 int smb_vfs_call_ftruncate(struct vfs_handle_struct *handle,
 			   struct files_struct *fsp, SMB_OFF_T offset);
+int smb_vfs_call_posix_fallocate(struct vfs_handle_struct *handle,
+			struct files_struct *fsp,
+			SMB_OFF_T offset,
+			SMB_OFF_T len);
 bool smb_vfs_call_lock(struct vfs_handle_struct *handle,
 		       struct files_struct *fsp, int op, SMB_OFF_T offset,
 		       SMB_OFF_T count, int type);
