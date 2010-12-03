@@ -3,14 +3,13 @@
 '''automated testing of the steps of the Samba4 HOWTO'''
 
 import sys, os
-import wintest, pexpect, time
+import wintest, pexpect, time, subprocess
 
 def check_prerequesites(t):
     t.info("Checking prerequesites")
     t.setvar('HOSTNAME', t.cmd_output("hostname -s").strip())
     if os.getuid() != 0:
         raise Exception("You must run this script as root")
-    t.putenv("KRB5_CONFIG", '${PREFIX}/private/krb5.conf')
     t.run_cmd('ifconfig ${INTERFACE} ${INTERFACE_NET} up')
     if t.getvar('INTERFACE_IPV6'):
         t.run_cmd('ifconfig ${INTERFACE} inet6 del ${INTERFACE_IPV6}/64', checkfail=False)
@@ -133,6 +132,16 @@ def rndc_cmd(t, cmd, checkfail=True):
     '''run a rndc command'''
     t.run_cmd("${RNDC} -c ${PREFIX}/etc/rndc.conf %s" % cmd, checkfail=checkfail)
 
+def named_supports_gssapi_keytab(t):
+    '''see if named supports tkey-gssapi-keytab'''
+    t.write_file("${PREFIX}/named.conf.test",
+                 'options { tkey-gssapi-keytab "test"; };')
+    try:
+        t.run_cmd("${NAMED_CHECKCONF} ${PREFIX}/named.conf.test")
+    except subprocess.CalledProcessError:
+        return False
+    return True
+
 
 def configure_bind(t):
     t.chdir('${PREFIX}')
@@ -148,6 +157,19 @@ def configure_bind(t):
         ipv6_listen = ''
     t.setvar('BIND_LISTEN_IPV6', ipv6_listen)
 
+    if named_supports_gssapi_keytab(t):
+        t.setvar("NAMED_TKEY_OPTION",
+                 'tkey-gssapi-keytab "${PREFIX}/private/dns.keytab";')
+    else:
+        t.info("LCREALM=${LCREALM}")
+        t.setvar("NAMED_TKEY_OPTION",
+                 '''tkey-gssapi-credential "DNS/${LCREALM}";
+                 tkey-domain "${LCREALM}";
+                 ''')
+        t.putenv("KRB5_CONFIG", '${PREFIX}/private/krb5.conf')
+        t.putenv('KEYTAB_FILE', '${PREFIX}/private/dns.keytab')
+        t.putenv('KRB5_KTNAME', '${PREFIX}/private/dns.keytab')
+
     t.write_file("etc/named.conf", '''
 options {
 	listen-on port 53 { ${INTERFACE_IP};  };
@@ -159,7 +181,7 @@ options {
         memstatistics-file "${PREFIX}/var/named/data/named_mem_stats.txt";
 	allow-query     { any; };
 	recursion yes;
-	tkey-gssapi-keytab "${PREFIX}/private/dns.keytab";
+	${NAMED_TKEY_OPTION}
         max-cache-ttl 10;
         max-ncache-ttl 10;
 
