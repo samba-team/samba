@@ -886,7 +886,6 @@ static int vfswrap_ftruncate(vfs_handle_struct *handle, files_struct *fsp, SMB_O
 	int result = -1;
 	SMB_STRUCT_STAT st;
 	char c = 0;
-	SMB_OFF_T currpos;
 
 	START_PROFILE(syscall_ftruncate);
 
@@ -909,10 +908,6 @@ static int vfswrap_ftruncate(vfs_handle_struct *handle, files_struct *fsp, SMB_O
 	/* According to W. R. Stevens advanced UNIX prog. Pure 4.3 BSD cannot
 	   extend a file with ftruncate. Provide alternate implementation
 	   for this */
-	currpos = SMB_VFS_LSEEK(fsp, 0, SEEK_CUR);
-	if (currpos == -1) {
-		goto done;
-	}
 
 	/* Do an fstat to see if the file is longer than the requested
 	   size in which case the ftruncate above should have
@@ -939,15 +934,10 @@ static int vfswrap_ftruncate(vfs_handle_struct *handle, files_struct *fsp, SMB_O
 		goto done;
 	}
 
-	if (SMB_VFS_LSEEK(fsp, len-1, SEEK_SET) != len -1)
+	if (SMB_VFS_PWRITE(fsp, &c, 1, len-1)!=1) {
 		goto done;
+	}
 
-	if (SMB_VFS_WRITE(fsp, &c, 1)!=1)
-		goto done;
-
-	/* Seek to where we were */
-	if (SMB_VFS_LSEEK(fsp, currpos, SEEK_SET) != currpos)
-		goto done;
 	result = 0;
 
   done:
