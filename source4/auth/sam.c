@@ -353,6 +353,7 @@ NTSTATUS authsam_expand_nested_groups(struct ldb_context *sam_ctx,
 		already_there = sids_contains_sid((const struct dom_sid**) *res_sids,
 						  *num_res_sids, &sid);
 		if (already_there) {
+			talloc_free(tmp_ctx);
 			return NT_STATUS_OK;
 		}
 
@@ -396,7 +397,6 @@ NTSTATUS authsam_expand_nested_groups(struct ldb_context *sam_ctx,
 		status = authsam_expand_nested_groups(sam_ctx, &el->values[i],
 						      false, filter, res_sids_ctx, res_sids, num_res_sids);
 		if (!NT_STATUS_IS_OK(status)) {
-			talloc_free(res);
 			talloc_free(tmp_ctx);
 			return status;
 		}
