@@ -201,6 +201,10 @@ static void ctdb_call_send_dmaster(struct ctdb_db_context *ctdb_db,
 		return;
 	}
 
+	if (data->dsize != 0) {
+		header->flags &= CTDB_REC_FLAG_MIGRATED_WITH_DATA;
+	}
+
 	if (lmaster == ctdb->pnn) {
 		ctdb_send_dmaster_reply(ctdb_db, header, *key, *data, 
 					c->hdr.srcnode, c->hdr.reqid);
