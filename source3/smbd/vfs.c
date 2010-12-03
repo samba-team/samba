@@ -609,7 +609,7 @@ int vfs_fill_sparse(files_struct *fsp, SMB_OFF_T len)
 		 * emulation is being done by the libc (like on AIX with JFS1). In that
 		 * case we do our own emulation. posix_fallocate implementations can
 		 * return ENOTSUP or EINVAL in cases like that. */
-		ret = sys_posix_fallocate(fsp->fh->fd, offset, num_to_write);
+		ret = SMB_VFS_POSIX_FALLOCATE(fsp, offset, num_to_write);
 		if (ret == ENOSPC) {
 			errno = ENOSPC;
 			ret = -1;
@@ -619,7 +619,7 @@ int vfs_fill_sparse(files_struct *fsp, SMB_OFF_T len)
 			set_filelen_write_cache(fsp, len);
 			goto out;
 		}
-		DEBUG(10,("vfs_fill_sparse: sys_posix_fallocate failed with "
+		DEBUG(10,("vfs_fill_sparse: SMB_VFS_POSIX_FALLOCATE failed with "
 			"error %d. Falling back to slow manual allocation\n", ret));
 	}
 
@@ -1437,6 +1437,15 @@ int smb_vfs_call_ftruncate(struct vfs_handle_struct *handle,
 {
 	VFS_FIND(ftruncate);
 	return handle->fns->ftruncate(handle, fsp, offset);
+}
+
+int smb_vfs_call_posix_fallocate(struct vfs_handle_struct *handle,
+				struct files_struct *fsp,
+				SMB_OFF_T offset,
+				SMB_OFF_T len)
+{
+	VFS_FIND(posix_fallocate);
+	return handle->fns->posix_fallocate(handle, fsp, offset, len);
 }
 
 int smb_vfs_call_kernel_flock(struct vfs_handle_struct *handle,

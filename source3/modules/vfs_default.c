@@ -854,7 +854,7 @@ static int strict_allocate_ftruncate(vfs_handle_struct *handle, files_struct *fs
 	   emulation is being done by the libc (like on AIX with JFS1). In that
 	   case we do our own emulation. posix_fallocate implementations can
 	   return ENOTSUP or EINVAL in cases like that. */
-	ret = sys_posix_fallocate(fsp->fh->fd, st.st_ex_size, space_to_write);
+	ret = SMB_VFS_POSIX_FALLOCATE(fsp, st.st_ex_size, space_to_write);
 	if (ret == ENOSPC) {
 		errno = ENOSPC;
 		return -1;
@@ -862,7 +862,7 @@ static int strict_allocate_ftruncate(vfs_handle_struct *handle, files_struct *fs
 	if (ret == 0) {
 		return 0;
 	}
-	DEBUG(10,("strict_allocate_ftruncate: sys_posix_fallocate failed with "
+	DEBUG(10,("strict_allocate_ftruncate: SMB_VFS_POSIX_FALLOCATE failed with "
 		"error %d. Falling back to slow manual allocation\n", ret));
 
 	/* available disk space is enough or not? */
@@ -971,6 +971,19 @@ static int vfswrap_ftruncate(vfs_handle_struct *handle, files_struct *fsp, SMB_O
   done:
 
 	END_PROFILE(syscall_ftruncate);
+	return result;
+}
+
+static int vfswrap_posix_fallocate(vfs_handle_struct *handle,
+			files_struct *fsp,
+			SMB_OFF_T offset,
+			SMB_OFF_T len)
+{
+	int result;
+
+	START_PROFILE(syscall_posix_fallocate);
+	result = sys_posix_fallocate(fsp->fh->fd, offset, len);
+	END_PROFILE(syscall_posix_fallocate);
 	return result;
 }
 

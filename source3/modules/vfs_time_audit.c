@@ -905,6 +905,27 @@ static int smb_time_audit_ftruncate(vfs_handle_struct *handle,
 	return result;
 }
 
+static int smb_time_audit_posix_fallocate(vfs_handle_struct *handle,
+				    files_struct *fsp,
+				    SMB_OFF_T offset,
+				    SMB_OFF_T len)
+{
+	int result;
+	struct timespec ts1,ts2;
+	double timediff;
+
+	clock_gettime_mono(&ts1);
+	result = SMB_VFS_NEXT_POSIX_FALLOCATE(handle, fsp, offset, len);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
+
+	if (timediff > audit_timeout) {
+		smb_time_audit_log("posix_fallocate", timediff);
+	}
+
+	return result;
+}
+
 static bool smb_time_audit_lock(vfs_handle_struct *handle, files_struct *fsp,
 				int op, SMB_OFF_T offset, SMB_OFF_T count,
 				int type)
@@ -2336,6 +2357,7 @@ static struct vfs_fn_pointers vfs_time_audit_fns = {
 	.getwd = smb_time_audit_getwd,
 	.ntimes = smb_time_audit_ntimes,
 	.ftruncate = smb_time_audit_ftruncate,
+	.posix_fallocate = smb_time_audit_posix_fallocate,
 	.lock = smb_time_audit_lock,
 	.kernel_flock = smb_time_audit_kernel_flock,
 	.linux_setlease = smb_time_audit_linux_setlease,

@@ -124,6 +124,7 @@ typedef enum _vfs_op_type {
 	SMB_VFS_OP_GETWD,
 	SMB_VFS_OP_NTIMES,
 	SMB_VFS_OP_FTRUNCATE,
+	SMB_VFS_OP_POSIX_FALLOCATE,
 	SMB_VFS_OP_LOCK,
 	SMB_VFS_OP_KERNEL_FLOCK,
 	SMB_VFS_OP_LINUX_SETLEASE,
@@ -262,6 +263,7 @@ static struct {
 	{ SMB_VFS_OP_GETWD,	"getwd" },
 	{ SMB_VFS_OP_NTIMES,	"ntimes" },
 	{ SMB_VFS_OP_FTRUNCATE,	"ftruncate" },
+	{ SMB_VFS_OP_POSIX_FALLOCATE,"posix_fallocate" },
 	{ SMB_VFS_OP_LOCK,	"lock" },
 	{ SMB_VFS_OP_KERNEL_FLOCK,	"kernel_flock" },
 	{ SMB_VFS_OP_LINUX_SETLEASE, "linux_setlease" },
@@ -1217,6 +1219,20 @@ static int smb_full_audit_ftruncate(vfs_handle_struct *handle, files_struct *fsp
 	result = SMB_VFS_NEXT_FTRUNCATE(handle, fsp, len);
 
 	do_log(SMB_VFS_OP_FTRUNCATE, (result >= 0), handle,
+	       "%s", fsp_str_do_log(fsp));
+
+	return result;
+}
+
+static int smb_full_audit_posix_fallocate(vfs_handle_struct *handle, files_struct *fsp,
+			   SMB_OFF_T offset,
+			   SMB_OFF_T len)
+{
+	int result;
+
+	result = SMB_VFS_NEXT_POSIX_FALLOCATE(handle, fsp, offset, len);
+
+	do_log(SMB_VFS_OP_POSIX_FALLOCATE, (result >= 0), handle,
 	       "%s", fsp_str_do_log(fsp));
 
 	return result;
@@ -2218,6 +2234,7 @@ static struct vfs_fn_pointers vfs_full_audit_fns = {
 	.getwd = smb_full_audit_getwd,
 	.ntimes = smb_full_audit_ntimes,
 	.ftruncate = smb_full_audit_ftruncate,
+	.posix_fallocate = smb_full_audit_posix_fallocate,
 	.lock = smb_full_audit_lock,
 	.kernel_flock = smb_full_audit_kernel_flock,
 	.linux_setlease = smb_full_audit_linux_setlease,
