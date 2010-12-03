@@ -324,8 +324,8 @@ NTSTATUS authsam_expand_nested_groups(struct ldb_context *sam_ctx,
 	dn = ldb_dn_from_ldb_val(tmp_ctx, sam_ctx, dn_val);
 	if (dn == NULL) {
 		talloc_free(tmp_ctx);
-		DEBUG(0, (__location__ ": we failed parsing DN %*.*s, so we cannot calculate the group token\n",
-			  (int)dn_val->length, (int)dn_val->length, dn_val->data));
+		DEBUG(0, (__location__ ": we failed parsing DN %.*s, so we cannot calculate the group token\n",
+			  (int)dn_val->length, dn_val->data));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
