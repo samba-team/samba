@@ -314,6 +314,11 @@ NTSTATUS authsam_expand_nested_groups(struct ldb_context *sam_ctx,
 		*num_res_sids = 0;
 	}
 
+	if (!sam_ctx) {
+		DEBUG(0, ("No SAM available, cannot determine local groups\n"));
+		return NT_STATUS_INVALID_SYSTEM_SERVICE;
+	}
+
 	tmp_ctx = talloc_new(res_sids_ctx);
 
 	dn = ldb_dn_from_ldb_val(tmp_ctx, sam_ctx, dn_val);
@@ -337,12 +342,6 @@ NTSTATUS authsam_expand_nested_groups(struct ldb_context *sam_ctx,
 			  nt_errstr(status)));
 		talloc_free(tmp_ctx);
 		return status;
-	}
-
-	if (!sam_ctx) {
-		DEBUG(0, ("No SAM available, cannot determine local groups\n"));
-		talloc_free(tmp_ctx);
-		return NT_STATUS_INVALID_SYSTEM_SERVICE;
 	}
 
 	if (only_childs) {
