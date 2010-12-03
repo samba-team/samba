@@ -822,15 +822,10 @@ static int vfswrap_ntimes(vfs_handle_struct *handle,
 static int strict_allocate_ftruncate(vfs_handle_struct *handle, files_struct *fsp, SMB_OFF_T len)
 {
 	SMB_STRUCT_STAT st;
-	SMB_OFF_T currpos = SMB_VFS_LSEEK(fsp, 0, SEEK_CUR);
-	unsigned char zero_space[4096];
 	SMB_OFF_T space_to_write;
 	uint64_t space_avail;
 	uint64_t bsize,dfree,dsize;
 	int ret;
-
-	if (currpos == -1)
-		return -1;
 
 	if (SMB_VFS_FSTAT(fsp, &st) == -1)
 		return -1;
@@ -877,24 +872,11 @@ static int strict_allocate_ftruncate(vfs_handle_struct *handle, files_struct *fs
 	}
 
 	/* Write out the real space on disk. */
-	if (SMB_VFS_LSEEK(fsp, st.st_ex_size, SEEK_SET) != st.st_ex_size)
-		return -1;
-
-	memset(zero_space, '\0', sizeof(zero_space));
-	while ( space_to_write > 0) {
-		SMB_OFF_T retlen;
-		SMB_OFF_T current_len_to_write = MIN(sizeof(zero_space),space_to_write);
-
-		retlen = SMB_VFS_WRITE(fsp,(char *)zero_space,current_len_to_write);
-		if (retlen <= 0)
-			return -1;
-
-		space_to_write -= retlen;
+	ret = vfs_slow_fallocate(fsp, st.st_ex_size, space_to_write);
+	if (ret != 0) {
+		errno = ret;
+		ret = -1;
 	}
-
-	/* Seek to where we were */
-	if (SMB_VFS_LSEEK(fsp, currpos, SEEK_SET) != currpos)
-		return -1;
 
 	return 0;
 }

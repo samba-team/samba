@@ -5562,6 +5562,7 @@ ssize_t vfs_pwrite_data(struct smb_request *req,
 			SMB_OFF_T offset);
 int vfs_allocate_file_space(files_struct *fsp, uint64_t len);
 int vfs_set_filelen(files_struct *fsp, SMB_OFF_T len);
+int vfs_slow_fallocate(files_struct *fsp, SMB_OFF_T offset, SMB_OFF_T len);
 int vfs_fill_sparse(files_struct *fsp, SMB_OFF_T len);
 SMB_OFF_T vfs_transfer_file(files_struct *in, files_struct *out, SMB_OFF_T n);
 const char *vfs_readdirname(connection_struct *conn, void *p,
