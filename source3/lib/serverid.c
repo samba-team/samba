@@ -234,6 +234,10 @@ bool serverid_exists(const struct server_id *id)
 	struct serverid_key key;
 	TDB_DATA tdbkey;
 
+	if (lp_clustering() && !process_exists(*id)) {
+		return false;
+	}
+
 	db = serverid_db();
 	if (db == NULL) {
 		return false;
