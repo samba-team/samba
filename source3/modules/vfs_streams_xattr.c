@@ -1040,7 +1040,7 @@ static int streams_xattr_posix_fallocate(struct vfs_handle_struct *handle,
 	}
 
 	if (!streams_xattr_recheck(sio)) {
-		return -1;
+		return errno;
 	}
 
 	/* Let the pwrite code path handle it. */
