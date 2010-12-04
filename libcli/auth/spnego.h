@@ -25,6 +25,8 @@
 #define OID_KERBEROS5_OLD "1.2.840.48018.1.2.2"
 #define OID_KERBEROS5 "1.2.840.113554.1.2.2"
 
+#define ADS_IGNORE_PRINCIPAL "not_defined_in_RFC4178@please_ignore"
+
 #define SPNEGO_DELEG_FLAG    0x01
 #define SPNEGO_MUTUAL_FLAG   0x02
 #define SPNEGO_REPLAY_FLAG   0x04
