@@ -93,7 +93,7 @@ krb5_error_code check_pac_checksum(TALLOC_CTX *mem_ctx,
 	DATA_BLOB modified_pac_blob;
 	NTTIME tgs_authtime_nttime;
 	krb5_principal client_principal_pac;
-	int i;
+	uint32_t i;
 
 	krb5_clear_error_message(context);
 
@@ -316,8 +316,11 @@ krb5_error_code check_pac_checksum(TALLOC_CTX *mem_ctx,
 	if (!krb5_principal_compare_any_realm(context, client_principal, client_principal_pac)) {
 		DEBUG(2, ("Name in PAC [%s] does not match principal name in ticket\n",
 			  logon_name->account_name));
+		krb5_free_principal(context, client_principal_pac);
 		return NT_STATUS_ACCESS_DENIED;
 	}
+
+	krb5_free_principal(context, client_principal_pac);
 
 #if 0
 	if (strcasecmp(logon_info->info3.base.account_name.string,
