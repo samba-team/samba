@@ -463,8 +463,8 @@ NTSTATUS dsdb_enum_group_mem(struct ldb_context *ldb,
 			 * it could be a non SAM object - e.g. a contact */
 			continue;
 		} else if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(1, ("When parsing DN %s we failed to parse our SID component, so we cannot fetch the membership: %s\n",
-				  ldb_dn_get_extended_linearized(tmp_ctx, dn, 1),
+			DEBUG(1, ("When parsing DN '%s' we failed to parse it's SID component, so we cannot fetch the membership: %s\n",
+				  ldb_dn_get_extended_linearized(tmp_ctx, member_dn, 1),
 				  nt_errstr(status)));
 			talloc_free(tmp_ctx);
 			return status;
