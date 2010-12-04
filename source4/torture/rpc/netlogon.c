@@ -702,7 +702,7 @@ static bool test_netlogon_ops_args(struct dcerpc_pipe *p, struct torture_context
 		flags |= CLI_CRED_LANMAN_AUTH;
 	}
 
-	if (lpcfg_client_ntlmv2_auth(tctx->lp_ctx)) {
+	if (lpcfg_client_ntlmv2_auth(tctx->lp_ctx) && !null_domain) {
 		flags |= CLI_CRED_NTLMv2_AUTH;
 	}
 

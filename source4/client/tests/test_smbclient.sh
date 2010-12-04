@@ -116,8 +116,8 @@ runcmd "Lookup name" "lookup $DOMAIN\\$USERNAME" || failed=`expr $failed + 1`
 #runcmd "Lookup privs of name" "privileges $DOMAIN\\$USERNAME" || failed=`expr $failed + 1`
 
 # do some simple operations using old protocol versions
-runcmd "List directory with LANMAN1" 'ls' -m LANMAN1 || failed=`expr $failed + 1`
-runcmd "List directory with LANMAN2" 'ls' -m LANMAN2 || failed=`expr $failed + 1`
+runcmd "List directory with LANMAN1" 'ls' -m LANMAN1 --option=clientntlmv2auth=no || failed=`expr $failed + 1`
+runcmd "List directory with LANMAN2" 'ls' -m LANMAN2 --option=clientntlmv2auth=no || failed=`expr $failed + 1`
 
 runcmd "Print current working directory" 'pwd'|| failed=`expr $failed + 1`
 
