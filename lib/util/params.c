@@ -358,7 +358,7 @@ static bool Parameter( myFILE *InFile, bool (*pfunc)(const char *, const char *,
       case EOF:
         InFile->bufr[i] = '\0';
         DEBUG(1,("%s Unexpected end-of-file at: %s\n", func, InFile->bufr ));
-        return( true );
+        return( false );
 
       default:
         if( isspace( c ) )     /* One ' ' per whitespace region.       */
