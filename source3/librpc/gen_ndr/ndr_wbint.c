@@ -2082,6 +2082,16 @@ static enum ndr_err_code ndr_push_wbint_LookupRids(struct ndr_push *ndr, int fla
 		NDR_CHECK(ndr_push_wbint_RidArray(ndr, NDR_SCALARS, r->in.rids));
 	}
 	if (flags & NDR_OUT) {
+		if (r->out.domain_name == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_unique_ptr(ndr, *r->out.domain_name));
+		if (*r->out.domain_name) {
+			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, ndr_charset_length(*r->out.domain_name, CH_UTF8)));
+			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, 0));
+			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, ndr_charset_length(*r->out.domain_name, CH_UTF8)));
+			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, *r->out.domain_name, ndr_charset_length(*r->out.domain_name, CH_UTF8), sizeof(uint8_t), CH_UTF8));
+		}
 		if (r->out.names == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
@@ -2093,7 +2103,10 @@ static enum ndr_err_code ndr_push_wbint_LookupRids(struct ndr_push *ndr, int fla
 
 static enum ndr_err_code ndr_pull_wbint_LookupRids(struct ndr_pull *ndr, int flags, struct wbint_LookupRids *r)
 {
+	uint32_t _ptr_domain_name;
 	TALLOC_CTX *_mem_save_rids_0;
+	TALLOC_CTX *_mem_save_domain_name_0;
+	TALLOC_CTX *_mem_save_domain_name_1;
 	TALLOC_CTX *_mem_save_names_0;
 	if (flags & NDR_IN) {
 		ZERO_STRUCT(r->out);
@@ -2105,10 +2118,36 @@ static enum ndr_err_code ndr_pull_wbint_LookupRids(struct ndr_pull *ndr, int fla
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.rids, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_wbint_RidArray(ndr, NDR_SCALARS, r->in.rids));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_rids_0, LIBNDR_FLAG_REF_ALLOC);
+		NDR_PULL_ALLOC(ndr, r->out.domain_name);
+		ZERO_STRUCTP(r->out.domain_name);
 		NDR_PULL_ALLOC(ndr, r->out.names);
 		ZERO_STRUCTP(r->out.names);
 	}
 	if (flags & NDR_OUT) {
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->out.domain_name);
+		}
+		_mem_save_domain_name_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->out.domain_name, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_domain_name));
+		if (_ptr_domain_name) {
+			NDR_PULL_ALLOC(ndr, *r->out.domain_name);
+		} else {
+			*r->out.domain_name = NULL;
+		}
+		if (*r->out.domain_name) {
+			_mem_save_domain_name_1 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, *r->out.domain_name, 0);
+			NDR_CHECK(ndr_pull_array_size(ndr, r->out.domain_name));
+			NDR_CHECK(ndr_pull_array_length(ndr, r->out.domain_name));
+			if (ndr_get_array_length(ndr, r->out.domain_name) > ndr_get_array_size(ndr, r->out.domain_name)) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, r->out.domain_name), ndr_get_array_length(ndr, r->out.domain_name));
+			}
+			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, r->out.domain_name), sizeof(uint8_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, r->out.domain_name, ndr_get_array_length(ndr, r->out.domain_name), sizeof(uint8_t), CH_UTF8));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_domain_name_1, 0);
+		}
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_domain_name_0, LIBNDR_FLAG_REF_ALLOC);
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
 			NDR_PULL_ALLOC(ndr, r->out.names);
 		}
@@ -2140,6 +2179,15 @@ _PUBLIC_ void ndr_print_wbint_LookupRids(struct ndr_print *ndr, const char *name
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "wbint_LookupRids");
 		ndr->depth++;
+		ndr_print_ptr(ndr, "domain_name", r->out.domain_name);
+		ndr->depth++;
+		ndr_print_ptr(ndr, "domain_name", *r->out.domain_name);
+		ndr->depth++;
+		if (*r->out.domain_name) {
+			ndr_print_string(ndr, "domain_name", *r->out.domain_name);
+		}
+		ndr->depth--;
+		ndr->depth--;
 		ndr_print_ptr(ndr, "names", r->out.names);
 		ndr->depth++;
 		ndr_print_wbint_Principals(ndr, "names", r->out.names);

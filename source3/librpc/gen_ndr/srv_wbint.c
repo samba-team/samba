@@ -1423,6 +1423,12 @@ static bool api_wbint_LookupRids(pipes_struct *p)
 	}
 
 	ZERO_STRUCT(r->out);
+	r->out.domain_name = talloc_zero(r, const char *);
+	if (r->out.domain_name == NULL) {
+		talloc_free(r);
+		return false;
+	}
+
 	r->out.names = talloc_zero(r, struct wbint_Principals);
 	if (r->out.names == NULL) {
 		talloc_free(r);
@@ -2168,6 +2174,11 @@ NTSTATUS rpc_wbint_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, co
 		case NDR_WBINT_LOOKUPRIDS: {
 			struct wbint_LookupRids *r = (struct wbint_LookupRids *)_r;
 			ZERO_STRUCT(r->out);
+			r->out.domain_name = talloc_zero(mem_ctx, const char *);
+			if (r->out.domain_name == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
 			r->out.names = talloc_zero(mem_ctx, struct wbint_Principals);
 			if (r->out.names == NULL) {
 			return NT_STATUS_NO_MEMORY;
