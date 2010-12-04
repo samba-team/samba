@@ -280,6 +280,7 @@ struct wbint_LookupRids {
 	} in;
 
 	struct {
+		const char **domain_name;/* [ref,charset(UTF8)] */
 		struct wbint_Principals *names;/* [ref] */
 		NTSTATUS result;
 	} out;

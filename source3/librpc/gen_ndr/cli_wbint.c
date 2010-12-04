@@ -2509,6 +2509,7 @@ struct tevent_req *rpccli_wbint_LookupRids_send(TALLOC_CTX *mem_ctx,
 						struct tevent_context *ev,
 						struct rpc_pipe_client *cli,
 						struct wbint_RidArray *_rids /* [in] [ref] */,
+						const char **_domain_name /* [out] [ref,charset(UTF8)] */,
 						struct wbint_Principals *_names /* [out] [ref] */)
 {
 	struct tevent_req *req;
@@ -2527,6 +2528,7 @@ struct tevent_req *rpccli_wbint_LookupRids_send(TALLOC_CTX *mem_ctx,
 	state->orig.in.rids = _rids;
 
 	/* Out parameters */
+	state->orig.out.domain_name = _domain_name;
 	state->orig.out.names = _names;
 
 	/* Result */
@@ -2575,6 +2577,7 @@ static void rpccli_wbint_LookupRids_done(struct tevent_req *subreq)
 	}
 
 	/* Copy out parameters */
+	*state->orig.out.domain_name = *state->tmp.out.domain_name;
 	*state->orig.out.names = *state->tmp.out.names;
 
 	/* Copy result */
@@ -2612,6 +2615,7 @@ NTSTATUS rpccli_wbint_LookupRids_recv(struct tevent_req *req,
 NTSTATUS rpccli_wbint_LookupRids(struct rpc_pipe_client *cli,
 				 TALLOC_CTX *mem_ctx,
 				 struct wbint_RidArray *rids /* [in] [ref] */,
+				 const char **domain_name /* [out] [ref,charset(UTF8)] */,
 				 struct wbint_Principals *names /* [out] [ref] */)
 {
 	struct wbint_LookupRids r;
@@ -2635,6 +2639,7 @@ NTSTATUS rpccli_wbint_LookupRids(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
+	*domain_name = *r.out.domain_name;
 	*names = *r.out.names;
 
 	/* Return result */

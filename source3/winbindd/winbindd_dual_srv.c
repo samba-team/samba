@@ -379,6 +379,8 @@ NTSTATUS _wbint_LookupRids(pipes_struct *p, struct wbint_LookupRids *r)
 		return status;
 	}
 
+	*r->out.domain_name = talloc_move(r->out.domain_name, &domain_name);
+
 	result = talloc_array(p->mem_ctx, struct wbint_Principal,
 			      r->in.rids->num_rids);
 	if (result == NULL) {
