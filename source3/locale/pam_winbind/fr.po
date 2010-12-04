@@ -81,19 +81,17 @@ msgid "Access is denied"
 msgstr "Accès refusé"
 
 #: ../../../nsswitch/pam_winbind.c:818
-#, fuzzy
 msgid "Do you want to change your password now?"
-msgstr "Vous devez changer votre mot de passe maintenant."
+msgstr "Voulez-vous changer votre mot de passe maintenant ?"
 
 #: ../../../nsswitch/pam_winbind.c:902
-#, fuzzy
 msgid "Your password expires today.\n"
 msgstr "Votre mot de passe expire aujourd'hui.\n"
 
 #: ../../../nsswitch/pam_winbind.c:932
-#, fuzzy, c-format
+#, c-format
 msgid "Your password will expire in %d %s.\n"
-msgstr "Votre mot de passe expire dans %d %s.\n"
+msgstr "Votre mot de passe expirera dans %d %s.\n"
 
 #: ../../../nsswitch/pam_winbind.c:933
 msgid "days"
@@ -106,7 +104,7 @@ msgstr "jour"
 #: ../../../nsswitch/pam_winbind.c:1169 ../../../nsswitch/pam_winbind.c:1193
 #, c-format
 msgid "Cannot convert group %s to sid, please contact your administrator to see if group %s is valid."
-msgstr ""
+msgstr "Impossible de convertir le groupe %s en sid, veuillez contacter votre administrateur pour voir si le groupe %s est valide."
 
 #: ../../../nsswitch/pam_winbind.c:1387
 msgid "Grace login. Please change your password as soon you're online again"
@@ -121,6 +119,8 @@ msgid ""
 "Failed to establish your Kerberos Ticket cache due time differences\n"
 "with the domain controller.  Please verify the system time.\n"
 msgstr ""
+"Impossible d'établir votre cache Kerberos Ticket en raison d'une différence\n"
+"de temps avec le contrôleur de domaine.  Veuillez vérifier l'heure système.\n"
 
 #: ../../../nsswitch/pam_winbind.c:1490
 msgid "Your password "
@@ -147,7 +147,7 @@ msgstr "Veuillez choisir un autre mot de passe qui satisfasse les différents cr
 #: ../../../nsswitch/pam_winbind.c:1553
 #, c-format
 msgid "Creating directory: %s failed: %s"
-msgstr ""
+msgstr "La création du répertoire %s a échoué : %s"
 
 #: ../../../nsswitch/pam_winbind.c:2018
 msgid "Password does not meet complexity requirements"
@@ -158,7 +158,7 @@ msgstr "Le mot de passe n'est pas suffisamment complexe."
 #.
 #: ../../../nsswitch/pam_winbind.c:2489 ../../../nsswitch/pam_winbind.c:3035
 msgid "Username: "
-msgstr ""
+msgstr "Nom d'utilisateur : "
 
 #: ../../../nsswitch/pam_winbind.c:2665
 msgid "Password: "
@@ -171,7 +171,7 @@ msgstr "Changement du mot de passe pour"
 
 #: ../../../nsswitch/pam_winbind.c:3086
 msgid "(current) NT password: "
-msgstr "mot de passe NT actuel : "
+msgstr "Mot de passe NT actuel : "
 
 #: ../../../nsswitch/pam_winbind.c:3156
 msgid "Enter new NT password: "
@@ -187,375 +187,360 @@ msgstr "Confirmation du nouveau mot de passe NT : "
 #.
 #: ../../../nsswitch/pam_winbind.h:128
 msgid "Sorry, passwords do not match"
-msgstr ""
+msgstr "Désolé, les mots de passe ne correspondent pas."
 
 #: ../../libsmb/nterr.c:559
 msgid "Undetermined error"
-msgstr ""
+msgstr "Erreur indéterminée"
 
 #: ../../libsmb/nterr.c:560
-#, fuzzy
 msgid "Access denied"
 msgstr "Accès refusé"
 
 #: ../../libsmb/nterr.c:561
 msgid "Account locked out"
-msgstr ""
+msgstr "Compte bloqué"
 
 #: ../../libsmb/nterr.c:562
-#, fuzzy
 msgid "Must change password"
-msgstr "Vous devez changer votre mot de passe maintenant."
+msgstr "Doit changer son mot de passe"
 
 #: ../../libsmb/nterr.c:563
-#, fuzzy
 msgid "Password is too short"
 msgstr "Mot de passe trop court"
 
 #: ../../libsmb/nterr.c:564
-#, fuzzy
 msgid "Password is too recent"
-msgstr "Mot de passe trop court"
+msgstr "Mot de passe trop récent"
 
 #: ../../libsmb/nterr.c:565
-#, fuzzy
 msgid "Password history conflict"
-msgstr "Mot de passe trop court"
+msgstr "Mot de passe en conflit avec l'historique"
 
 #: ../../libsmb/nterr.c:567
 msgid "Improperly formed account name"
-msgstr ""
+msgstr "Nom de compte incorrectement formé"
 
 #: ../../libsmb/nterr.c:568
 msgid "User exists"
-msgstr ""
+msgstr "L'utilisateur existe"
 
 #: ../../libsmb/nterr.c:569
 msgid "No such user"
-msgstr ""
+msgstr "Pas de tel utilisateur"
 
 #: ../../libsmb/nterr.c:570
 msgid "Group exists"
-msgstr ""
+msgstr "Le groupe existe"
 
 #: ../../libsmb/nterr.c:571
 msgid "No such group"
-msgstr ""
+msgstr "Pas de tel groupe"
 
 #: ../../libsmb/nterr.c:572
 msgid "Member not in group"
-msgstr ""
+msgstr "Pas membre de ce groupe"
 
 #: ../../libsmb/nterr.c:573
-#, fuzzy
 msgid "Wrong Password"
-msgstr "Mot de passe : "
+msgstr "Mot de passe incorrect"
 
 #: ../../libsmb/nterr.c:574
-#, fuzzy
 msgid "Ill formed password"
-msgstr "Votre mot de passe "
+msgstr "Mot de passe mal formé"
 
 #: ../../libsmb/nterr.c:575
-#, fuzzy
 msgid "Password restriction"
-msgstr "Mot de passe trop court"
+msgstr "Restriction relative au mot de passe"
 
 #: ../../libsmb/nterr.c:576
 msgid "Logon failure"
-msgstr ""
+msgstr "Echec de connexion"
 
 #: ../../libsmb/nterr.c:577
 msgid "Account restriction"
-msgstr ""
+msgstr "Restriction de compte"
 
 #: ../../libsmb/nterr.c:578
 msgid "Invalid logon hours"
-msgstr ""
+msgstr "Heures de connexion non valides"
 
 #: ../../libsmb/nterr.c:579
-#, fuzzy
 msgid "Invalid workstation"
-msgstr "Compte approuvé non valide"
+msgstr "Ordinateur non valide"
 
 #: ../../libsmb/nterr.c:580
-#, fuzzy
 msgid "Password expired"
-msgstr "Votre mot de passe a expiré."
+msgstr "Mot de passe expiré"
 
 #: ../../libsmb/nterr.c:581
 msgid "Account disabled"
-msgstr ""
+msgstr "Compte désactivé"
 
 #: ../../libsmb/nterr.c:582
 msgid "Memory allocation error"
-msgstr ""
+msgstr "Erreur d'allocation mémoire"
 
 #: ../../libsmb/nterr.c:583
-#, fuzzy
 msgid "No domain controllers located"
 msgstr "Aucun contrôleur de domaine trouvé"
 
 #: ../../libsmb/nterr.c:584
 msgid "Named pipe not available"
-msgstr ""
+msgstr "Relais nommé indisponible"
 
 #: ../../libsmb/nterr.c:585
 msgid "Not implemented"
-msgstr ""
+msgstr "Pas implémenté"
 
 #: ../../libsmb/nterr.c:586
 msgid "Invalid information class"
-msgstr ""
+msgstr "Classe d'information non valide"
 
 #: ../../libsmb/nterr.c:587
 msgid "Information length mismatch"
-msgstr ""
+msgstr "Longueur d'information incohérente"
 
 #: ../../libsmb/nterr.c:588
 msgid "Access violation"
-msgstr ""
+msgstr "Violation d'accès"
 
 #: ../../libsmb/nterr.c:589
 msgid "Invalid handle"
-msgstr ""
+msgstr "Référence non valide"
 
 #: ../../libsmb/nterr.c:590
 msgid "Invalid parameter"
-msgstr ""
+msgstr "Paramètre non valide"
 
 #: ../../libsmb/nterr.c:591
 msgid "No memory"
-msgstr ""
+msgstr "Pas de mémoire"
 
 #: ../../libsmb/nterr.c:592
 msgid "Buffer too small"
-msgstr ""
+msgstr "Tampon trop petit"
 
 #: ../../libsmb/nterr.c:593
 msgid "Revision mismatch"
-msgstr ""
+msgstr "Révisions incompatibles"
 
 #: ../../libsmb/nterr.c:594
-#, fuzzy
 msgid "No such logon session"
-msgstr "Aucun serveur d'authentification"
+msgstr "Pas de telle session de connexion"
 
 #: ../../libsmb/nterr.c:595
 msgid "No such privilege"
-msgstr ""
+msgstr "Pas de tel privilège"
 
 #: ../../libsmb/nterr.c:596
 msgid "Procedure not found"
-msgstr ""
+msgstr "Procédure non trouvée"
 
 #: ../../libsmb/nterr.c:597
 msgid "Server disabled"
-msgstr ""
+msgstr "Serveur désactivé"
 
 #: ../../libsmb/nterr.c:598
 msgid "Invalid pipe state"
-msgstr ""
+msgstr "Etat du relais non valide"
 
 #: ../../libsmb/nterr.c:599
 msgid "Named pipe busy"
-msgstr ""
+msgstr "Relais nommé occupé"
 
 #: ../../libsmb/nterr.c:600
 msgid "Illegal function"
-msgstr ""
+msgstr "Fonction illégale"
 
 #: ../../libsmb/nterr.c:601
 msgid "Named pipe disconnected"
-msgstr ""
+msgstr "Relais nommé déconnecté"
 
 #: ../../libsmb/nterr.c:602
 msgid "Named pipe closing"
-msgstr ""
+msgstr "Le relais nommé va fermer"
 
 #: ../../libsmb/nterr.c:603
 msgid "Remote host not listening"
-msgstr ""
+msgstr "Le serveur distant n'écoute pas"
 
 #: ../../libsmb/nterr.c:604
 msgid "Duplicate name on network"
-msgstr ""
+msgstr "Nom en double sur le réseau"
 
 #: ../../libsmb/nterr.c:605
 msgid "Print queue is full"
-msgstr ""
+msgstr "La file d'impression est pleine"
 
 #: ../../libsmb/nterr.c:606
-#, fuzzy
 msgid "No print spool space available"
-msgstr "Aucun contrôleur de domaine principal disponible"
+msgstr "Aucun espace d'impression disponible"
 
 #: ../../libsmb/nterr.c:607
 msgid "The network name cannot be found"
-msgstr ""
+msgstr "Le nom de réseau ne peut être trouvé"
 
 #: ../../libsmb/nterr.c:608
 msgid "The connection was refused"
-msgstr ""
+msgstr "La connexion a été refusée"
 
 #: ../../libsmb/nterr.c:609
 msgid "Too many names"
-msgstr ""
+msgstr "Trop de noms"
 
 #: ../../libsmb/nterr.c:610
 msgid "Too many sessions"
-msgstr ""
+msgstr "Trop de sessions"
 
 #: ../../libsmb/nterr.c:611
 msgid "Invalid server state"
-msgstr ""
+msgstr "Etat du serveur non valide"
 
 #: ../../libsmb/nterr.c:612
 msgid "Invalid domain state"
-msgstr ""
+msgstr "Etat du domaine non valide"
 
 #: ../../libsmb/nterr.c:613
 msgid "Invalid domain role"
-msgstr ""
+msgstr "Rôle du domaine non valide"
 
 #: ../../libsmb/nterr.c:614
 msgid "No such domain"
-msgstr ""
+msgstr "Pas de tel domaine"
 
 #: ../../libsmb/nterr.c:615
 msgid "Domain exists"
-msgstr ""
+msgstr "Le domain existe"
 
 #: ../../libsmb/nterr.c:616
 msgid "Domain limit exceeded"
-msgstr ""
+msgstr "Limite de domaine dépassée"
 
 #: ../../libsmb/nterr.c:617
 msgid "Bad logon session state"
-msgstr ""
+msgstr "Mauvais état de la session de connexion"
 
 #: ../../libsmb/nterr.c:618
 msgid "Logon session collision"
-msgstr ""
+msgstr "Collision de la session de connexion"
 
 #: ../../libsmb/nterr.c:619
 msgid "Invalid logon type"
-msgstr ""
+msgstr "Type de connexion non valide"
 
 #: ../../libsmb/nterr.c:620
 msgid "Cancelled"
-msgstr ""
+msgstr "Annulé"
 
 #: ../../libsmb/nterr.c:621
 msgid "Invalid computer name"
-msgstr ""
+msgstr "Nom d'ordinateur non valide"
 
 #: ../../libsmb/nterr.c:622
 msgid "Logon server conflict"
-msgstr ""
+msgstr "Conflit de serveurs d'authentification"
 
 #: ../../libsmb/nterr.c:623
 msgid "Time difference at domain controller"
-msgstr ""
+msgstr "Différence de temps au niveau du contrôleur de domaine"
 
 #: ../../libsmb/nterr.c:624
 msgid "Pipe broken"
-msgstr ""
+msgstr "Relais brisé"
 
 #: ../../libsmb/nterr.c:625
 msgid "Registry corrupt"
-msgstr ""
+msgstr "Base de registre corrompue"
 
 #: ../../libsmb/nterr.c:626
 msgid "Too many secrets"
-msgstr ""
+msgstr "Trop de secrets"
 
 #: ../../libsmb/nterr.c:627
 msgid "Too many SIDs"
-msgstr ""
+msgstr "Trop de SIDs"
 
 #: ../../libsmb/nterr.c:628
 msgid "Lanmanager cross encryption required"
-msgstr ""
+msgstr "Chiffrement croisé Lanmanager nécessaire"
 
 #: ../../libsmb/nterr.c:629
 msgid "Log file full"
-msgstr ""
+msgstr "Journal plein"
 
 #: ../../libsmb/nterr.c:630
 msgid "No trusted LSA secret"
-msgstr ""
+msgstr "Pas de secret LSA approuvé"
 
 #: ../../libsmb/nterr.c:631
-#, fuzzy
 msgid "No trusted SAM account"
-msgstr "Compte approuvé non valide"
+msgstr "Pas de compte SAM approuvé"
 
 #: ../../libsmb/nterr.c:632
 msgid "Trusted domain failure"
-msgstr ""
+msgstr "Erreur de domaine approuvé"
 
 #: ../../libsmb/nterr.c:633
 msgid "Trust relationship failure"
-msgstr ""
+msgstr "Erreur de relation d'approbation"
 
 #: ../../libsmb/nterr.c:634
 msgid "Trust failure"
-msgstr ""
+msgstr "Erreur d'approbation"
 
 #: ../../libsmb/nterr.c:635
 msgid "Netlogon service not started"
-msgstr ""
+msgstr "Service Netlogon non démarré"
 
 #: ../../libsmb/nterr.c:636
 msgid "Account expired"
-msgstr ""
+msgstr "Compte expiré"
 
 #: ../../libsmb/nterr.c:637
 msgid "Network credential conflict"
-msgstr ""
+msgstr "Conflit d'identifiants réseau"
 
 #: ../../libsmb/nterr.c:638
 msgid "Remote session limit"
-msgstr ""
+msgstr "Limite de sessions distantes"
 
 #: ../../libsmb/nterr.c:639
 msgid "No logon interdomain trust account"
-msgstr ""
+msgstr "Impossible de se connecter avec un compte de confiance inter-domaine"
 
 #: ../../libsmb/nterr.c:640
 msgid "No logon workstation trust account"
-msgstr ""
+msgstr "Impossible de se connecter avec un compte de confiance ordinateur"
 
 #: ../../libsmb/nterr.c:641
-#, fuzzy
 msgid "No logon server trust account"
-msgstr "Aucun serveur d'authentification"
+msgstr "Impossible de se connecter avec un compte de confiance serveur"
 
 #: ../../libsmb/nterr.c:642
 msgid "Domain trust inconsistent"
-msgstr ""
+msgstr "Approbation du domaine incohérente"
 
 #: ../../libsmb/nterr.c:643
 msgid "No user session key available"
-msgstr ""
+msgstr "Pas de clé de session utilisateur disponible"
 
 #: ../../libsmb/nterr.c:644
 msgid "User session deleted"
-msgstr ""
+msgstr "Session utilisateur supprimée"
 
 #: ../../libsmb/nterr.c:645
 msgid "Insufficient server resources"
-msgstr ""
+msgstr "Ressources serveur insuffisantes"
 
 #: ../../libsmb/nterr.c:646
 msgid "Insufficient logon information"
-msgstr ""
+msgstr "Informations de connexion insuffisantes"
 
 #: ../../libsmb/nterr.c:648
 msgid "License quota exceeded"
-msgstr ""
+msgstr "Quota de licenses dépassé"
 
 #: ../../libsmb/nterr.c:649
 msgid "No more files"
-msgstr ""
+msgstr "Plus de fichiers"
