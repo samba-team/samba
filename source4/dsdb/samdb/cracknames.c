@@ -649,6 +649,7 @@ WERROR DsCrackNameOneName(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 						      strcspn(principal->name.name_string.val[1], "."));
 			if (computer_name == NULL) {
 				krb5_free_principal(smb_krb5_context->krb5_context, principal);
+				free(unparsed_name_short);
 				return WERR_NOMEM;
 			}
 
