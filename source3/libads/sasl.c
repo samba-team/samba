@@ -649,10 +649,12 @@ static ADS_STATUS ads_generate_service_principal(ADS_STRUCT *ads,
 	   the principal name back in the first round of
 	   the SASL bind reply.  So we guess based on server
 	   name and realm.  --jerry  */
-	/* Also try best guess when we get the w2k8 ignore
-	   principal back - gd */
+	/* Also try best guess when we get the w2k8 ignore principal
+	   back, or when we are configured to ignore it - gd,
+	   abartlet */
 
-	if (!given_principal ||
+	if (!lp_client_use_spnego_principal() ||
+	    !given_principal ||
 	    strequal(given_principal, ADS_IGNORE_PRINCIPAL)) {
 
 		status = ads_guess_service_principal(ads, &p->string);

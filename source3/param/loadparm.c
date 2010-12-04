@@ -325,6 +325,7 @@ struct global {
 	bool bClientNTLMv2Auth;
 	bool bClientPlaintextAuth;
 	bool bClientUseSpnego;
+	bool client_use_spnego_principal;
 	bool bDebugPrefixTimestamp;
 	bool bDebugHiresTimestamp;
 	bool bDebugPid;
@@ -1390,6 +1391,15 @@ static struct parm_struct parm_table[] = {
 		.type		= P_BOOL,
 		.p_class	= P_GLOBAL,
 		.ptr		= &Globals.bClientPlaintextAuth,
+		.special	= NULL,
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED,
+	},
+	{
+		.label		= "client use spnego principal",
+		.type		= P_BOOL,
+		.p_class	= P_GLOBAL,
+		.ptr		= &Globals.client_use_spnego_principal,
 		.special	= NULL,
 		.enum_list	= NULL,
 		.flags		= FLAG_ADVANCED,
@@ -5537,6 +5547,7 @@ FN_GLOBAL_BOOL(lp_use_mmap, &Globals.bUseMmap)
 FN_GLOBAL_BOOL(lp_unix_extensions, &Globals.bUnixExtensions)
 FN_GLOBAL_BOOL(lp_use_spnego, &Globals.bUseSpnego)
 FN_GLOBAL_BOOL(lp_client_use_spnego, &Globals.bClientUseSpnego)
+FN_GLOBAL_BOOL(lp_client_use_spnego_principal, &Globals.client_use_spnego_principal)
 FN_GLOBAL_BOOL(lp_hostname_lookups, &Globals.bHostnameLookups)
 FN_LOCAL_PARM_BOOL(lp_change_notify, bChangeNotify)
 FN_LOCAL_PARM_BOOL(lp_kernel_change_notify, bKernelChangeNotify)
