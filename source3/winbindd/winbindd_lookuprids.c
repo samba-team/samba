@@ -84,7 +84,8 @@ struct tevent_req *winbindd_lookuprids_send(TALLOC_CTX *mem_ctx,
 	}
 
 	subreq = dcerpc_wbint_LookupRids_send(
-		state, ev, domain->child.binding_handle, &state->rids, &state->names);
+		state, ev, domain->child.binding_handle, &state->rids,
+		&state->domain_name, &state->names);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
