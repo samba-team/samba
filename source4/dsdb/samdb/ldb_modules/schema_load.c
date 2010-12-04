@@ -239,9 +239,7 @@ static int dsdb_schema_from_db(struct ldb_module *module, struct ldb_dn *schema_
 	/* "dsdb_set_schema()" steals schema into the ldb_context */
 	ret = dsdb_set_schema(ldb, (*schema));
 
-	if (*schema != NULL) {
-		(*schema)->refresh_in_progress = false;
-	}
+	(*schema)->refresh_in_progress = false;
 
 	if (ret != LDB_SUCCESS) {
 		ldb_debug_set(ldb, LDB_DEBUG_FATAL,
