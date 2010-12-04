@@ -4172,7 +4172,8 @@ static NTSTATUS dcesrv_samr_SetBootKeyInformation(struct dcesrv_call_state *dce_
 static NTSTATUS dcesrv_samr_GetBootKeyInformation(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct samr_GetBootKeyInformation *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	/* Windows Server 2008 returns this */
+	return NT_STATUS_NOT_SUPPORTED;
 }
 
 
