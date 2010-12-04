@@ -213,6 +213,9 @@ DATA_BLOB negprot_spnego(TALLOC_CTX *ctx, struct smbd_server_connection *sconn)
 		/* Code for standalone WXP client */
 		blob = spnego_gen_negTokenInit(ctx, OIDs_ntlm, NULL, "NONE");
 #endif
+	} else if (!lp_send_spnego_principal()) {
+		/* By default, Windows 2008 and later sends not_defined_in_RFC4178@please_ignore */
+		blob = spnego_gen_negTokenInit(ctx, OIDs_krb5, NULL, ADS_IGNORE_PRINCIPAL);
 	} else {
 		fstring myname;
 		char *host_princ_s = NULL;
