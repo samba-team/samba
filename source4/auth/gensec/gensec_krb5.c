@@ -670,15 +670,10 @@ static NTSTATUS gensec_krb5_session_info(struct gensec_security *gensec_security
 		} else {
 			DEBUG(1, ("Unable to find PAC in ticket from %s, failing to allow access\n",
 				  principal_string));
-			return NT_STATUS_ACCESS_DENIED;
-		}
-
-		krb5_free_principal(context, client_principal);
-		free(principal_string);
-		
-		if (!NT_STATUS_IS_OK(nt_status)) {
+			free(principal_string);
+			krb5_free_principal(context, client_principal);
 			talloc_free(mem_ctx);
-			return nt_status;
+			return NT_STATUS_ACCESS_DENIED;
 		}
 	} else {
 		/* Found pac */
