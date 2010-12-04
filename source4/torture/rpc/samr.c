@@ -5630,7 +5630,7 @@ static bool test_QueryGroupMember(struct dcerpc_binding_handle *b,
 	torture_assert_ntstatus_ok(tctx, dcerpc_samr_QueryGroupMember_r(b, tctx, &r),
 		"QueryGroupMember failed");
 	if (!NT_STATUS_IS_OK(r.out.result)) {
-		torture_warning(tctx, "QueryGroupInfo failed - %s\n", nt_errstr(r.out.result));
+		torture_warning(tctx, "QueryGroupMember failed - %s\n", nt_errstr(r.out.result));
 		ret = false;
 	}
 
