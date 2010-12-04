@@ -1940,7 +1940,6 @@ enum {
 	OPT_VERBOSE,
 	OPT_ONLINESTATUS,
 	OPT_CHANGE_USER_PASSWORD,
-	OPT_PING_DC,
 	OPT_CCACHE_SAVE,
 	OPT_SID_TO_FULLNAME,
 	OPT_NTLMV2,
@@ -1997,7 +1996,7 @@ int main(int argc, char **argv, char **envp)
 		{ "remove-gid-mapping", 0, POPT_ARG_STRING, &string_arg, OPT_REMOVE_GID_MAPPING, "Remove gid to sid mapping in idmap", "GID,SID" },
 		{ "check-secret", 't', POPT_ARG_NONE, 0, 't', "Check shared secret" },
 		{ "change-secret", 'c', POPT_ARG_NONE, 0, 'c', "Change shared secret" },
-		{ "ping-dc", 0, POPT_ARG_NONE, 0, OPT_PING_DC,
+		{ "ping-dc", 'P', POPT_ARG_NONE, 0, 'P',
 		  "Check the NETLOGON connection" },
 		{ "trusted-domains", 'm', POPT_ARG_NONE, 0, 'm', "List trusted domains" },
 		{ "all-domains", 0, POPT_ARG_NONE, 0, OPT_LIST_ALL_DOMAINS, "List all domains (trusted and own domain)" },
@@ -2246,7 +2245,7 @@ int main(int argc, char **argv, char **envp)
 				goto done;
 			}
 			break;
-		case OPT_PING_DC:
+		case 'P':
 			if (!wbinfo_ping_dc()) {
 				d_fprintf(stderr, "Could not ping our DC\n");
 				goto done;
