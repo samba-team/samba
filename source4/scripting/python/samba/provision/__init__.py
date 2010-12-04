@@ -515,6 +515,9 @@ def guess_names(lp=None, hostname=None, domain=None, dnsdomain=None,
 
         if domaindn is None:
             domaindn = "DC=" + dnsdomain.replace(".", ",DC=")
+
+        if domain == netbiosname:
+            raise ProvisioningError("guess_names: Domain '%s' must not be equal to short host name '%s'!" % (domain, netbiosname))
     else:
         domain = netbiosname
         if domaindn is None:
@@ -525,7 +528,7 @@ def guess_names(lp=None, hostname=None, domain=None, dnsdomain=None,
 
     if hostname.upper() == realm:
         raise ProvisioningError("guess_names: Realm '%s' must not be equal to hostname '%s'!" % (realm, hostname))
-    if netbiosname == realm:
+    if netbiosname.upper() == realm:
         raise ProvisioningError("guess_names: Realm '%s' must not be equal to netbios hostname '%s'!" % (realm, netbiosname))
     if domain == realm:
         raise ProvisioningError("guess_names: Realm '%s' must not be equal to short domain name '%s'!" % (realm, domain))
