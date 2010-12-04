@@ -39,6 +39,7 @@
 		<arg choice="opt">-N netbios-name</arg>
 		<arg choice="opt">--own-domain</arg>
 		<arg choice="opt">-p</arg>
+		<arg choice="opt">-P</arg>
 		<arg choice="opt">-r user</arg>
 		<arg choice="opt">--remove-uid-mapping uid,sid</arg>
 		<arg choice="opt">--remove-gid-mapping gid,sid</arg>
@@ -235,6 +236,15 @@
 		<listitem><para>Check whether <citerefentry><refentrytitle>winbindd</refentrytitle>
 		<manvolnum>8</manvolnum></citerefentry> is still alive.
 		Prints out either 'succeeded' or 'failed'.
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>-P|--ping-dc</term>
+		<listitem><para>Issue a no-effect command to our DC. This
+		    checks if our secure channel connection to our domain
+		    controller is still alive. It has much less impact than
+		    wbinfo -t.
 		</para></listitem>
 		</varlistentry>
 
