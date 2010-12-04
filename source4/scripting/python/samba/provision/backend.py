@@ -540,29 +540,29 @@ class OpenLDAPBackend(LDAPBackend):
         # DN and simple bind
         self.credentials.set_username("samba-admin")
 
+        # Wipe the old sam.ldb databases away
+        shutil.rmtree(self.olcdir, True)
+        os.makedirs(self.olcdir, 0770)
+
         # If we were just looking for crashes up to this point, it's a
         # good time to exit before we realise we don't have OpenLDAP on
         # this system
         if self.ldap_dryrun_mode:
             sys.exit(0)
 
-        # Finally, convert the configuration into cn=config style!
-        if not os.path.isdir(self.olcdir):
-            os.makedirs(self.olcdir, 0770)
-
-            slapd_cmd = [self.slapd_path, "-Ttest", "-n", "0", "-f",
+        slapd_cmd = [self.slapd_path, "-Ttest", "-n", "0", "-f",
                          self.slapdconf, "-F", self.olcdir]
-            retcode = subprocess.call(slapd_cmd, close_fds=True, shell=False)
+        retcode = subprocess.call(slapd_cmd, close_fds=True, shell=False)
 
-            if retcode != 0:
-                self.logger.error("conversion from slapd.conf to cn=config failed slapd started with: %s" %  "\'" + "\' \'".join(slapd_cmd) + "\'")
-                raise ProvisioningError("conversion from slapd.conf to cn=config failed")
+        if retcode != 0:
+            self.logger.error("conversion from slapd.conf to cn=config failed slapd started with: %s" %  "\'" + "\' \'".join(slapd_cmd) + "\'")
+            raise ProvisioningError("conversion from slapd.conf to cn=config failed")
 
-            if not os.path.exists(os.path.join(self.olcdir, "cn=config.ldif")):
-                raise ProvisioningError("conversion from slapd.conf to cn=config failed")
+        if not os.path.exists(os.path.join(self.olcdir, "cn=config.ldif")):
+            raise ProvisioningError("conversion from slapd.conf to cn=config failed")
 
-            # Don't confuse the admin by leaving the slapd.conf around
-            os.remove(self.slapdconf)
+        # Don't confuse the admin by leaving the slapd.conf around
+        os.remove(self.slapdconf)
 
 
 class FDSBackend(LDAPBackend):
