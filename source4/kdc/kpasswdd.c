@@ -300,16 +300,27 @@ static bool kpasswd_process_request(struct kdc_server *kdc,
 
 		if ((chpw.targname && !chpw.targrealm)
 		    || (!chpw.targname && chpw.targrealm)) {
+			free_ChangePasswdDataMS(&chpw);
 			return kpasswdd_make_error_reply(kdc, mem_ctx,
 							KRB5_KPASSWD_MALFORMED,
 							"Realm and principal must be both present, or neither present",
 							reply);
 		}
 		if (chpw.targname && chpw.targrealm) {
-			krb5_build_principal_ext(kdc->smb_krb5_context->krb5_context,
-						 &principal, strlen(*chpw.targrealm), *chpw.targrealm, 0);
+			ret = krb5_build_principal_ext(kdc->smb_krb5_context->krb5_context,
+						       &principal,
+						       strlen(*chpw.targrealm),
+						       *chpw.targrealm, 0);
+			if (ret) {
+				free_ChangePasswdDataMS(&chpw);
+				return kpasswdd_make_error_reply(kdc, mem_ctx,
+								KRB5_KPASSWD_MALFORMED,
+								"failed to get principal",
+								reply);
+			}
 			if (copy_PrincipalName(chpw.targname, &principal->name)) {
 				free_ChangePasswdDataMS(&chpw);
+				krb5_free_principal(context, principal);
 				return kpasswdd_make_error_reply(kdc, mem_ctx,
 								KRB5_KPASSWD_MALFORMED,
 								"failed to extract principal to set",
@@ -349,6 +360,7 @@ static bool kpasswd_process_request(struct kdc_server *kdc,
 
 		samdb = samdb_connect(mem_ctx, kdc->task->event_ctx, kdc->task->lp_ctx, session_info, 0);
 		if (!samdb) {
+			free(set_password_on_princ);
 			return kpasswdd_make_error_reply(kdc, mem_ctx,
 							 KRB5_KPASSWD_HARDERROR,
 							 "Unable to open database!",
@@ -362,6 +374,7 @@ static bool kpasswd_process_request(struct kdc_server *kdc,
 			  set_password_on_princ));
 		ret = ldb_transaction_start(samdb);
 		if (ret != LDB_SUCCESS) {
+			free(set_password_on_princ);
 			status = NT_STATUS_TRANSACTION_ABORTED;
 			return kpasswd_make_pwchange_reply(kdc, mem_ctx,
 							   status,
