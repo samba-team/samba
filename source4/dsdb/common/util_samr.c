@@ -409,7 +409,7 @@ NTSTATUS dsdb_enum_group_mem(struct ldb_context *ldb,
 			     unsigned int *pnum_members)
 {
 	struct ldb_message *msg;
-	unsigned int i;
+	unsigned int i, j;
 	int ret;
 	struct dom_sid *members;
 	struct ldb_message_element *member_el;
@@ -443,6 +443,7 @@ NTSTATUS dsdb_enum_group_mem(struct ldb_context *ldb,
 		return NT_STATUS_NO_MEMORY;
 	}
 
+	j = 0;
 	for (i=0; i <member_el->num_values; i++) {
 		struct ldb_dn *member_dn = ldb_dn_from_ldb_val(tmp_ctx, ldb,
 							       &member_el->values[i]);
@@ -455,17 +456,25 @@ NTSTATUS dsdb_enum_group_mem(struct ldb_context *ldb,
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
 		}
 
-		status = dsdb_get_extended_dn_sid(member_dn, &members[i], "SID");
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(1, ("Could find SID attribute on extended DN %s\n",
-				  ldb_dn_get_extended_linearized(tmp_ctx, dn, 1)));
+		status = dsdb_get_extended_dn_sid(member_dn, &members[j],
+						  "SID");
+		if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
+			/* If we fail finding a SID then this is no error since
+			 * it could be a non SAM object - e.g. a contact */
+			continue;
+		} else if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(1, ("When parsing DN %s we failed to parse our SID component, so we cannot fetch the membership: %s\n",
+				  ldb_dn_get_extended_linearized(tmp_ctx, dn, 1),
+				  nt_errstr(status)));
 			talloc_free(tmp_ctx);
-			return NT_STATUS_INTERNAL_DB_CORRUPTION;
+			return status;
 		}
+
+		++j;
 	}
 
 	*members_out = talloc_steal(mem_ctx, members);
-	*pnum_members = member_el->num_values;
+	*pnum_members = j;
 	talloc_free(tmp_ctx);
 	return NT_STATUS_OK;
 }
