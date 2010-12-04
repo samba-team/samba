@@ -1056,10 +1056,9 @@ ADS_STATUS cli_session_setup_spnego(struct cli_state *cli, const char *user,
 			}
 		}
 
-		/* If we get a bad principal, try to guess it if
-		   we have a valid host NetBIOS name.
+		/* We may not be allowed to use the server-supplied SPNEGO principal, or it may not have been supplied to us
 		 */
-		if (strequal(principal, ADS_IGNORE_PRINCIPAL)) {
+		if (!lp_client_use_spnego_principal() || strequal(principal, ADS_IGNORE_PRINCIPAL)) {
 			TALLOC_FREE(principal);
 		}
 
