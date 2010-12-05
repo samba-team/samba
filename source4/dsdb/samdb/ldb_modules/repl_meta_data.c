@@ -2081,7 +2081,8 @@ static int replmd_modify_handle_linked_attribs(struct ldb_module *module,
 			= dsdb_attribute_by_lDAPDisplayName(schema, el->name);
 		if (!schema_attr) {
 			ldb_asprintf_errstring(ldb,
-					       "attribute %s is not a valid attribute in schema", el->name);
+					       "%s: attribute %s is not a valid attribute in schema",
+					       __FUNCTION__, el->name);
 			return LDB_ERR_OBJECT_CLASS_VIOLATION;
 		}
 		if (schema_attr->linkID == 0) {
