@@ -10,6 +10,8 @@
 #
 #    trial samba.tests.dcerpc.rpc_talloc
 
+"""Tests for the talloc handling in the generated Python DCE/RPC bindings."""
+
 import sys
 
 sys.path.insert(0, "bin/python")

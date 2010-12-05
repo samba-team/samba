@@ -18,6 +18,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+"""Tests for samba.dcerpc.sam."""
+
 from samba.dcerpc import samr, security
 from samba.tests import RpcInterfaceTestCase
 

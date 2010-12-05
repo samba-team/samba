@@ -1,8 +1,11 @@
 #!/usr/bin/python
-# Blackbox tests for masktest
-# Copyright (C) 2008 Andrew Tridgell
-# Copyright (C) 2008 Andrew Bartlett
+# Blackbox tests for ndrdump
+# Copyright (C) 2008 Andrew Tridgell <tridge@samba.org>
+# Copyright (C) 2008 Andrew Bartlett <abartlet@samba.org>
+# Copyright (C) 2010 Jelmer Vernooij <jelmer@samba.org>
 # based on test_smbclient.sh
+
+"""Blackbox tests for ndrdump."""
 
 import os
 from samba.tests import BlackboxTestCase

@@ -17,6 +17,9 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+"""Tests for samba.dcerpc.unixinfo."""
+
+
 from samba.dcerpc import unixinfo
 from samba.tests import RpcInterfaceTestCase
 

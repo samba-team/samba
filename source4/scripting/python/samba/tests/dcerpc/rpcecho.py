@@ -17,6 +17,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+"""Tests for samba.dceprc.rpcecho."""
+
 from samba.dcerpc import echo
 from samba.ndr import ndr_pack, ndr_unpack
 from samba.tests import RpcInterfaceTestCase, TestCase
