@@ -106,7 +106,7 @@ static void wb_gettoken_gotgroups(struct tevent_req *subreq)
 	/*
 	 * Expand our domain's aliases
 	 */
-	domain = find_our_domain();
+	domain = find_domain_from_sid_noinit(get_global_sam_sid());
 	if (domain == NULL) {
 		tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
 		return;
@@ -137,7 +137,7 @@ static void wb_gettoken_gotlocalgroups(struct tevent_req *subreq)
 		tevent_req_nterror(req, status);
 		return;
 	}
-	domain = find_our_domain();
+	domain = find_domain_from_sid_noinit(get_global_sam_sid());
 	if (!wb_add_rids_to_sids(state, &state->num_sids, &state->sids,
 				 &domain->sid, num_rids, rids)) {
 		tevent_req_nterror(req, NT_STATUS_NO_MEMORY);
