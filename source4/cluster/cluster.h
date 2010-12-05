@@ -22,6 +22,8 @@
 #ifndef __CLUSTER_H__
 #define __CLUSTER_H__ 
 
+#include "librpc/gen_ndr/server_id.h"
+
 /*
   test for same cluster id
 */
