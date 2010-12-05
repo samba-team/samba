@@ -3329,8 +3329,6 @@ static int replmd_replicated_apply_next(struct replmd_replicated_request *ar)
 		return ret;
 	}
 
-	if (ret != LDB_SUCCESS) return replmd_replicated_request_error(ar, ret);
-
 	return ldb_next_request(ar->module, search_req);
 }
 
