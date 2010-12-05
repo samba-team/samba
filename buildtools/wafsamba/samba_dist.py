@@ -86,7 +86,7 @@ def vcs_dir_contents(path):
             env["GIT_DIR"] = os.path.join(repo, ".git")
             break
         elif os.path.isdir(os.path.join(repo, ".bzr")):
-            ls_files_cmd = [ 'bzr', 'ls', '--recursive',
+            ls_files_cmd = [ 'bzr', 'ls', '--recursive', '--versioned',
                              os.path.relpath(path, repo)]
             cwd = repo
             env = None
