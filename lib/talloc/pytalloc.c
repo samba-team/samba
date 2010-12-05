@@ -114,6 +114,7 @@ static int py_talloc_default_cmp(PyObject *_obj1, PyObject *_obj2)
 
 static PyTypeObject TallocObject_Type = {
 	.tp_name = "talloc.Object",
+	.tp_doc = "Python wrapper for a talloc-maintained object.",
 	.tp_basicsize = sizeof(py_talloc_Object),
 	.tp_dealloc = (destructor)py_talloc_dealloc,
 	.tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
@@ -128,7 +129,8 @@ void inittalloc(void)
 	if (PyType_Ready(&TallocObject_Type) < 0)
 		return;
 
-	m = Py_InitModule3("talloc", talloc_methods, "Debug utilities for talloc-wrapped objects.");
+	m = Py_InitModule3("talloc", talloc_methods,
+					   "Python wrapping of talloc-maintained objects.");
 	if (m == NULL)
 		return;
 
