@@ -223,7 +223,9 @@ static int linked_attributes_add(struct ldb_module *module, struct ldb_request *
 			= dsdb_attribute_by_lDAPDisplayName(ac->schema, el->name);
 		if (!schema_attr) {
 			ldb_asprintf_errstring(ldb,
-					       "attribute %s is not a valid attribute in schema", el->name);
+					       "%s: attribute %s is not a valid attribute in schema",
+					       __FUNCTION__,
+					       el->name);
 			return LDB_ERR_OBJECT_CLASS_VIOLATION;
 		}
 		/* We have a valid attribute, now find out if it is a forward link */
@@ -325,7 +327,8 @@ static int la_mod_search_callback(struct ldb_request *req, struct ldb_reply *are
 			schema_attr = dsdb_attribute_by_lDAPDisplayName(ac->schema, rc->el[i].name);
 			if (!schema_attr) {
 				ldb_asprintf_errstring(ldb,
-					"attribute %s is not a valid attribute in schema",
+					"%s: attribute %s is not a valid attribute in schema",
+					__FUNCTION__,
 					rc->el[i].name);
 				talloc_free(ares);
 				return ldb_module_done(ac->req, NULL, NULL,
@@ -454,7 +457,9 @@ static int linked_attributes_modify(struct ldb_module *module, struct ldb_reques
 			= dsdb_attribute_by_lDAPDisplayName(ac->schema, el->name);
 		if (!schema_attr) {
 			ldb_asprintf_errstring(ldb,
-					       "attribute %s is not a valid attribute in schema", el->name);
+					       "%s: attribute %s is not a valid attribute in schema",
+					       __FUNCTION__,
+					       el->name);
 			return LDB_ERR_OBJECT_CLASS_VIOLATION;
 		}
 		/* We have a valid attribute, now find out if it is a forward link
