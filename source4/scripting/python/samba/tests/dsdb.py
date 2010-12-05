@@ -17,6 +17,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+"""Tests for samba.dsdb."""
+
 from samba.credentials import Credentials
 from samba.samdb import SamDB
 from samba.auth import system_session

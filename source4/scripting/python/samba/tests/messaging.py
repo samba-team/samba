@@ -18,6 +18,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+"""Tests for samba.messaging."""
+
 from samba.messaging import Messaging
 from samba.tests import TestCase
 

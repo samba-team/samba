@@ -17,6 +17,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+"""Tests for samba.xattr_native and samba.xattr_tdb."""
+
 import samba.xattr_native, samba.xattr_tdb
 from samba.dcerpc import xattr
 from samba.ndr import ndr_pack

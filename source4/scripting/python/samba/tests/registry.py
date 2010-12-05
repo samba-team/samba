@@ -17,6 +17,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+"""Tests for samba.registry."""
+
 import os
 from samba import registry
 import samba.tests

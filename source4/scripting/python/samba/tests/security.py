@@ -17,6 +17,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+"""Tests for samba.dcerpc.security."""
+
 import samba.tests
 from samba.dcerpc import security
 

@@ -17,6 +17,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+"""Tests for samba.ntacls."""
+
 from samba.ntacls import setntacl, getntacl, XattrBackendError
 from samba.dcerpc import xattr, security
 from samba.param import LoadParm

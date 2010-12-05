@@ -17,6 +17,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+"""Tests for samba.provision."""
+
 import os
 from samba.provision import setup_secretsdb, findnss, ProvisionPaths
 import samba.tests

@@ -17,6 +17,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+"""Tests for samba.samba3."""
+
 from samba.samba3 import (GroupMappingDatabase, Registry, PolicyDatabase,
         SecretsDatabase, TdbSam)
 from samba.samba3 import (WinsDatabase, SmbpasswdFile, ACB_NORMAL,

@@ -17,6 +17,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+"""Tests for samba.upgradeprovision that need a DC."""
+
 import os
 import re
 import shutil
