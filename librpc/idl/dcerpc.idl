@@ -252,6 +252,156 @@ interface dcerpc
 	typedef [public] struct {
 	} dcerpc_working;
 
+	/* RTS data structures */
+	typedef [public] struct {
+		GUID		Cookie;
+	} RTSCookie;
+
+	typedef [v1_enum,public] enum {
+		RTS_IPV4	= 0,
+		RTS_IPV6	= 1
+	} AddressType;
+
+	typedef [nodiscriminant] union {
+		[case(RTS_IPV4)] ipv4address	ClientAddressIPV4;
+		[case(RTS_IPV6)] ipv6address	ClientAddressIPV6;
+	} ClientAddressType;
+
+	typedef [public] struct {
+		AddressType					AddressType;
+		[switch_is(AddressType)] ClientAddressType	ClientAddress;
+		uint8						Padding[12];
+	} ClientAddress;
+
+	typedef [v1_enum, public] enum {
+		FDClient	= 0,
+		FDInProxy	= 1,
+		FDServer	= 2,
+		FDOutProxy	= 3
+	} ForwardDestination;
+
+	typedef [public] struct {
+		uint32		BytesReceived;
+		uint32		AvailableWindow;
+		RTSCookie	ChannelCookie;
+	} FlowControlAcknowledgment;
+
+	/* RTS commands */
+
+	/* RTS command: 0x0 */
+	typedef [public] struct {
+		[range(0x2000,0x40000)] uint32	ReceiveWindowSize;
+	} dcerpc_rts_cmd_ReceiveWindowSize;
+
+	/* RTS command: 0x1 */
+	typedef [public] struct {
+		FlowControlAcknowledgment	Ack;
+	} dcerpc_rts_cmd_FlowControlAck;
+
+	/* RTS command: 0x2 */
+	typedef [public] struct {
+		[range(0x1D4C0,0xDBBA00)] uint32	ConnectionTimeout;
+	} dcerpc_rts_cmd_ConnectionTimeout;
+
+	/* RTS command: 0x3 */
+	typedef [public] struct {
+		RTSCookie	Cookie;
+	} dcerpc_rts_cmd_Cookie;
+
+	/* RTS command: 0x4 */
+	typedef [public] struct {
+		[range(0x20000,0x800000000)] uint32	ChannelLifetime;
+	} dcerpc_rts_cmd_ChannelLifetime;
+
+	/* RTS command: 0x5 */
+	typedef [public] struct {
+		uint32		ClientKeepalive;
+	} dcerpc_rts_cmd_ClientKeepalive;
+
+	/* RTS command: 0x6 */
+	typedef [public] struct {
+		uint32		Version;
+	} dcerpc_rts_cmd_Version;
+
+	/* RTS command: 0x7 */
+	typedef [public] struct {
+	} dcerpc_rts_cmd_Empty;
+
+	/* RTS command: 0x8 */
+	typedef [public] struct {
+		[range(0x0,0xFFFF)] uint32	ConformanceCount;
+		uint8				Padding[ConformanceCount];
+	} dcerpc_rts_cmd_Padding;
+
+	/* RTS command: 0x9 */
+	typedef [public] struct {
+	} dcerpc_rts_cmd_NegativeANCE;
+
+	/* RTS Command: 0xA */
+	typedef [public] struct {
+	} dcerpc_rts_cmd_ANCE;
+
+	/* RTS command: 0xB */
+	typedef [public] struct {
+		ClientAddress	ClientAddress;
+	} dcerpc_rts_cmd_ClientAddress;
+
+	/* RTS command: 0xC */
+	typedef [public] struct {
+		RTSCookie	AssociationGroupId;
+	} dcerpc_rts_cmd_AssociationGroupId;
+
+	/* RTS command: 0xD */
+	typedef [public] struct {
+		ForwardDestination	ForwardDestination;
+	} dcerpc_rts_cmd_Destination;
+
+	/* RTS command: 0xE */
+	typedef [public] struct {
+		uint32	PingTrafficSent;
+	} dcerpc_rts_cmd_PingTrafficSentNotify;
+
+	typedef [nodiscriminant] union {
+		[case(0x0)] dcerpc_rts_cmd_ReceiveWindowSize		ReceiveWindowSize;
+		[case(0x1)] dcerpc_rts_cmd_FlowControlAck		FlowControlAck;
+		[case(0x2)] dcerpc_rts_cmd_ConnectionTimeout		ConnectionTimeout;
+		[case(0x3)] dcerpc_rts_cmd_Cookie			Cookie;
+		[case(0x4)] dcerpc_rts_cmd_ChannelLifetime		ChannelLifetime;
+		[case(0x5)] dcerpc_rts_cmd_ClientKeepalive		ClientKeepalive;
+		[case(0x6)] dcerpc_rts_cmd_Version			Version;
+		[case(0x7)] dcerpc_rts_cmd_Empty			Empty;
+		[case(0x8)] dcerpc_rts_cmd_Padding			Padding;
+		[case(0x9)] dcerpc_rts_cmd_NegativeANCE			NegativeANCE;
+		[case(0xA)] dcerpc_rts_cmd_ANCE				ANCE;
+		[case(0xB)] dcerpc_rts_cmd_ClientAddress		ClientAddress;
+		[case(0xC)] dcerpc_rts_cmd_AssociationGroupId		AssociationGroupId;
+		[case(0xD)] dcerpc_rts_cmd_Destination			Destination;
+		[case(0xE)] dcerpc_rts_cmd_PingTrafficSentNotify	PingTrafficSentNotify;
+	} dcerpc_rts_cmds;
+
+	typedef [public] struct {
+		uint32						CommandType;
+		[switch_is(CommandType)] dcerpc_rts_cmds	Command;
+	} dcerpc_rts_cmd;
+
+	/* The RTS flags */
+	typedef [public, bitmap16bit] bitmap {
+		RTS_FLAG_NONE			=	0x0000,
+		RTS_FLAG_PING			=	0x0001,
+		RTS_FLAG_OTHER_CMD		=	0x0002,
+		RTS_FLAG_RECYCLE_CHANNEL	=	0x0004,
+		RTS_FLAG_IN_CHANNEL		=	0x0008,
+		RTS_FLAG_OUT_CHANNEL		=	0x0010,
+		RTS_FLAG_EOF			=	0x0020,
+		RTS_FLAG_ECHO			=	0x0040
+	} dcerpc_rts_flags;
+
+	typedef [public] struct {
+		dcerpc_rts_flags	Flags;
+		uint16			NumberOfCommands;
+		dcerpc_rts_cmd		Commands[NumberOfCommands];
+	} dcerpc_rts;
+
 	typedef [enum8bit] enum {
 		DCERPC_PKT_REQUEST     =  0,	/* Ordinary request. */
 		DCERPC_PKT_PING        =  1,	/* Connectionless is server alive ? */
@@ -272,7 +422,8 @@ interface dcerpc
 		DCERPC_PKT_AUTH3       = 16, 	/* not the real name!  this is undocumented! */
 		DCERPC_PKT_SHUTDOWN    = 17,	/* Server to client request to shutdown. */
 		DCERPC_PKT_CO_CANCEL   = 18,	/* Connection-oriented cancel request. */
-		DCERPC_PKT_ORPHANED    = 19	/* Client telling server it's aborting a partially sent request or telling server to stop sending replies. */
+		DCERPC_PKT_ORPHANED    = 19,	/* Client telling server it's aborting a partially sent request or telling server to stop sending replies. */
+		DCERPC_PKT_RTS	       = 20	/* RTS packets used in ncacn_http */
 	} dcerpc_pkt_type;
 
 	typedef [nodiscriminant] union {
@@ -296,6 +447,7 @@ interface dcerpc
 		[case(DCERPC_PKT_CO_CANCEL)]  dcerpc_co_cancel co_cancel;
 		[case(DCERPC_PKT_ORPHANED)]   dcerpc_orphaned orphaned;
 		[case(DCERPC_PKT_AUTH3)]      dcerpc_auth3    auth3;
+		[case(DCERPC_PKT_RTS)]	      dcerpc_rts      rts;
 	} dcerpc_payload;
 
 	/* pfc_flags values */
