@@ -44,7 +44,7 @@ struct dlz_bind9_data {
 /*
   return the version of the API
  */
-_PUBLIC_ int dlz_version(void)
+_PUBLIC_ int dlz_version(unsigned int *flags)
 {
 	return DLZ_DLOPEN_VERSION;
 }

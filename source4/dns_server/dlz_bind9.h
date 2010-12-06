@@ -29,6 +29,9 @@ typedef uint32_t dns_ttl_t;
 
 #define DLZ_DLOPEN_VERSION 1
 
+/* return this in flags to dlz_version() if thread safe */
+#define DNS_SDLZFLAG_THREADSAFE		0x00000001U
+
 /* result codes */
 #define ISC_R_SUCCESS			0
 #define ISC_R_NOMEMORY			1
