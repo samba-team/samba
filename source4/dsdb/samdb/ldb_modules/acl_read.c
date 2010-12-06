@@ -44,6 +44,9 @@ struct aclread_context {
 	struct ldb_request *req;
 	const char * const *attrs;
 	const struct dsdb_schema *schema;
+	bool sd;
+	bool instance_type;
+	bool object_sid;
 };
 
 struct aclread_private {
@@ -59,7 +62,7 @@ static int aclread_callback(struct ldb_request *req, struct ldb_reply *ares)
 	 static const char *acl_attrs[] = {
 		 "nTSecurityDescriptor",
 		 "objectSid",
-		 "parentGUID",
+		 "insyanceType",
 		 NULL
 	 };
 	 int ret;
@@ -67,6 +70,8 @@ static int aclread_callback(struct ldb_request *req, struct ldb_reply *ares)
 	 struct security_descriptor *sd;
 	 struct dom_sid *sid = NULL;
 	 TALLOC_CTX *tmp_ctx;
+	 uint32_t instanceType;
+
 	 ac = talloc_get_type(req->context, struct aclread_context);
 	 ldb = ldb_module_get_ctx(ac->module);
 	 if (!ares) {
@@ -79,60 +84,38 @@ static int aclread_callback(struct ldb_request *req, struct ldb_reply *ares)
 	 tmp_ctx = talloc_new(ac);
 	 switch (ares->type) {
 	 case LDB_REPLY_ENTRY:
-		 ret = dsdb_module_search_dn(ac->module, tmp_ctx, &acl_res, ares->message->dn,
-					     acl_attrs,
-					     DSDB_FLAG_NEXT_MODULE |
-					     DSDB_SEARCH_SHOW_DELETED);
-		 if (ret != LDB_SUCCESS) {
-			 goto fail;
-		 }
-		 ret = dsdb_get_sd_from_ldb_message(ldb, tmp_ctx, acl_res->msgs[0], &sd);
+		 ret = dsdb_get_sd_from_ldb_message(ldb, tmp_ctx, ares->message, &sd);
 		 if (ret != LDB_SUCCESS) {
 			 DEBUG(10, ("acl_read: cannot get descriptor\n"));
 			 ret = LDB_ERR_OPERATIONS_ERROR;
 			 goto fail;
 		 }
-		 sid = samdb_result_dom_sid(tmp_ctx, acl_res->msgs[0], "objectSid");
-		 /* get the parent guid */
-		 parent = ldb_msg_find_element(acl_res->msgs[0], "parentGUID");
-		 if (parent) {
-			 /* the object has a parent, so we have to check for visibility */
-			 struct GUID parent_guid = samdb_result_guid(acl_res->msgs[0], "parentGUID");
-			 ret = dsdb_module_check_access_on_guid(ac->module,
-								tmp_ctx,
-								&parent_guid,
-								SEC_ADS_LIST,
-								NULL);
-			 if (ret == LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS) {
-				 talloc_free(tmp_ctx);
-				 return LDB_SUCCESS;
-			 } else if (ret != LDB_SUCCESS) {
-				 goto fail;
-			 }
+		 sid = samdb_result_dom_sid(tmp_ctx, ares->message, "objectSid");
+		 /* get the object instance type */
+		 instanceType = ldb_msg_find_attr_as_uint(ares->message,
+							 "instanceType", 0);
+		 if (!ldb_dn_is_null(ares->message->dn) && !(instanceType & INSTANCE_TYPE_IS_NC_HEAD))
+		 {
+			/* the object has a parent, so we have to check for visibility */
+			struct ldb_dn *parent_dn = ldb_dn_get_parent(tmp_ctx, ares->message->dn);
+			ret = dsdb_module_check_access_on_dn(ac->module,
+							     tmp_ctx,
+							     parent_dn,
+							     SEC_ADS_LIST,
+							     NULL);
+			if (ret == LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS) {
+				talloc_free(tmp_ctx);
+				return LDB_SUCCESS;
+			} else if (ret != LDB_SUCCESS) {
+				goto fail;
+			}
 		 }
 		 /* for every element in the message check RP */
 		 i = 0;
 		 while (i < ares->message->num_elements) {
-			 char *p, *new_attr;
 			 const struct dsdb_attribute *attr;
-			 p = strchr(ares->message->elements[i].name, ';');
-			 if (!p) {
-				 attr =  dsdb_attribute_by_lDAPDisplayName(ac->schema,
-									   ares->message->elements[i].name);
-			 } else {
-				 new_attr = talloc_strndup(tmp_ctx,
-							   ares->message->elements[i].name,
-							   (size_t)(p -ares->message->elements[i].name));
-				 if (!new_attr) {
-					 ldb_oom(ldb);
-					 ret = LDB_ERR_OPERATIONS_ERROR;
-					 goto fail;
-				 }
-				 attr =  dsdb_attribute_by_lDAPDisplayName(ac->schema,
-									   new_attr);
-				 talloc_free(new_attr);
-			 }
-
+			 attr =  dsdb_attribute_by_lDAPDisplayName(ac->schema,
+								   ares->message->elements[i].name);
 			 if (!attr) {
 				 DEBUG(2, ("acl_read: cannot find attribute %s in schema\n",
 					   ares->message->elements[i].name));
@@ -142,6 +125,10 @@ static int aclread_callback(struct ldb_request *req, struct ldb_reply *ares)
 			 /* nTSecurityDescriptor is a special case */
 			 if (ldb_attr_cmp("nTSecurityDescriptor",
 					  ares->message->elements[i].name) == 0) {
+				 if (ac->sd) {
+					 ldb_msg_remove_attr(ares->message, ares->message->elements[i].name);
+					 ret = LDB_SUCCESS;
+				 }
 				 ret = acl_check_access_on_attribute(ac->module,
 								     tmp_ctx,
 								     sd,
@@ -171,6 +158,12 @@ static int aclread_callback(struct ldb_request *req, struct ldb_reply *ares)
 				 goto fail;
 			 }
 		 }
+		 if (ac->instance_type) {
+			 ldb_msg_remove_attr(ares->message, "instanceType");
+		 }
+		 if (ac->object_sid) {
+			 ldb_msg_remove_attr(ares->message, "objectSid");
+		 }
 		 talloc_free(tmp_ctx);
 		 return ldb_module_send_entry(ac->req, ares->message, ares->controls);
 	 case LDB_REPLY_REFERRAL:
@@ -195,11 +188,12 @@ static int aclread_search(struct ldb_module *module, struct ldb_request *req)
 	struct ldb_request *down_req;
 	struct ldb_control *as_system = ldb_request_get_control(req, LDB_CONTROL_AS_SYSTEM_OID);
 	struct ldb_result *res;
-	struct ldb_message_element *parent;
 	struct aclread_private *p;
 	bool is_untrusted = ldb_req_is_untrusted(req);
+	const char * const *attrs = NULL;
+	uint32_t instanceType;
 	static const char *acl_attrs[] = {
-		 "parentGUID",
+		 "instanceType",
 		 NULL
 	};
 
@@ -226,18 +220,19 @@ static int aclread_search(struct ldb_module *module, struct ldb_request *req)
 					    DSDB_SEARCH_SHOW_DELETED);
 		if (ret != LDB_SUCCESS) {
 			return ldb_error(ldb, ret,
-					 "acl_read: Error retrieving SD for base.");
+					 "acl_read: Error retrieving instanceType for base.");
 		}
-
-		parent = ldb_msg_find_element(res->msgs[0], "parentGUID");
-		if (parent) {
+		instanceType = ldb_msg_find_attr_as_uint(res->msgs[0],
+							 "instanceType", 0);
+		if (instanceType != 0 && !(instanceType & INSTANCE_TYPE_IS_NC_HEAD))
+		{
 			/* the object has a parent, so we have to check for visibility */
-			struct GUID parent_guid = samdb_result_guid(res->msgs[0], "parentGUID");
-			ret = dsdb_module_check_access_on_guid(module,
-							       req,
-							       &parent_guid,
-							       SEC_ADS_LIST,
-							       NULL);
+			struct ldb_dn *parent_dn = ldb_dn_get_parent(req, req->op.search.base);
+			ret = dsdb_module_check_access_on_dn(module,
+							     req,
+							     parent_dn,
+							     SEC_ADS_LIST,
+							     NULL);
 			if (ret == LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS) {
 				return ldb_module_done(req, NULL, NULL, LDB_ERR_NO_SUCH_OBJECT);
 			} else if (ret != LDB_SUCCESS) {
@@ -255,13 +250,35 @@ static int aclread_search(struct ldb_module *module, struct ldb_request *req)
 	if (!ac->schema) {
 		return ldb_operr(ldb);
 	}
+	ac->sd = !(ldb_attr_in_list(req->op.search.attrs, "nTSecurityDescriptor"));
+	if (req->op.search.attrs && !ldb_attr_in_list(req->op.search.attrs, "*")) {
+		if (!ldb_attr_in_list(req->op.search.attrs, "instanceType")) {
+			ac->instance_type = true;
+			attrs = ldb_attr_list_copy_add(ac, req->op.search.attrs, "instanceType");
+		} else {
+			attrs = req->op.search.attrs;
+		}
+		if (!ldb_attr_in_list(req->op.search.attrs, "objectSid")) {
+			ac->object_sid = true;
+			attrs = ldb_attr_list_copy_add(ac, attrs, "objectSid");
+		}
+	}
 
+	if (ac->sd) {
+		/* avoid replacing all attributes with nTSecurityDescriptor
+		 * if attribute list is empty */
+		if (!attrs) {
+			attrs = ldb_attr_list_copy_add(ac, attrs, "*");
+		}
+		attrs = ldb_attr_list_copy_add(ac, attrs, "nTSecurityDescriptor");
+	}
+	ac->attrs = req->op.search.attrs;
 	ret = ldb_build_search_req_ex(&down_req,
 				      ldb, ac,
 				      req->op.search.base,
 				      req->op.search.scope,
 				      req->op.search.tree,
-				      req->op.search.attrs,
+				      attrs,
 				      req->controls,
 				      ac, aclread_callback,
 				      req);
