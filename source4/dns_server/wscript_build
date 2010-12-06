@@ -8,3 +8,10 @@ bld.SAMBA_MODULE('service_dns',
         local_include=False,
         internal_module=False,
         )
+
+# a bind9 dlz module giving access to the Samba DNS SAM
+bld.SAMBA_LIBRARY('dlz_bind9',
+                  source='dlz_bind9.c',
+                  private_library=True,
+                  link_name='modules/bind9/dlz_bind9.so',
+                  deps='samba-hostconfig ldbsamba samba-util')
