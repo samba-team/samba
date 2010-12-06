@@ -125,7 +125,7 @@ _PUBLIC_ _NORETURN_ void smb_panic(const char *why)
 		char pidstr[20];
 		char cmdstring[200];
 		safe_strcpy(cmdstring, panic_action, sizeof(cmdstring));
-		snprintf(pidstr, sizeof(pidstr), "%u", getpid());
+		snprintf(pidstr, sizeof(pidstr), "%d", (int) getpid());
 		all_string_sub(cmdstring, "%PID%", pidstr, sizeof(cmdstring));
 		if (progname) {
 			all_string_sub(cmdstring, "%PROG%", progname, sizeof(cmdstring));
