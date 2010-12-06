@@ -154,7 +154,7 @@ static struct smbcli_state *connect_one(struct tevent_context *ev,
 	}
 
 
-	myname = talloc_asprintf(mem_ctx, "lock-%u-%u", getpid(), snum);
+	myname = talloc_asprintf(mem_ctx, "lock-%d-%d", (int) getpid(), snum);
 	cli_credentials_set_workstation(servers[snum], myname, CRED_SPECIFIED);
 
 	do {
