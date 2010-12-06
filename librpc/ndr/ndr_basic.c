@@ -848,7 +848,6 @@ _PUBLIC_ void ndr_print_ipv4address(struct ndr_print *ndr, const char *name,
 	ndr->print(ndr, "%-25s: %s", name, address);
 }
 
-#ifdef AF_INET6
 /*
   pull a ipv6address
 */
@@ -877,6 +876,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_ipv6address(struct ndr_pull *ndr, int ndr_fl
 */
 _PUBLIC_ enum ndr_err_code ndr_push_ipv6address(struct ndr_push *ndr, int ndr_flags, const char *address)
 {
+#ifdef AF_INET6
 	uint8_t addr[IPV6_BYTES];
 	int ret;
 
@@ -893,6 +893,9 @@ _PUBLIC_ enum ndr_err_code ndr_push_ipv6address(struct ndr_push *ndr, int ndr_fl
 	NDR_CHECK(ndr_push_array_uint8(ndr, ndr_flags, addr, IPV6_BYTES));
 
 	return NDR_ERR_SUCCESS;
+#else
+	return NDR_ERR_IPV6ADDRESS;
+#endif
 }
 
 /*
@@ -904,7 +907,6 @@ _PUBLIC_ void ndr_print_ipv6address(struct ndr_print *ndr, const char *name,
 	ndr->print(ndr, "%-25s: %s", name, address);
 }
 #undef IPV6_BYTES
-#endif
 
 _PUBLIC_ void ndr_print_struct(struct ndr_print *ndr, const char *name, const char *type)
 {
