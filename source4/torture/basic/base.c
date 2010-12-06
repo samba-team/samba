@@ -812,14 +812,16 @@ static bool run_vuidtest(struct torture_context *tctx,
 	}
 	
 	if (NT_STATUS_IS_ERR(smbcli_setatr(cli1->tree, fname, FILE_ATTRIBUTE_READONLY, 0))) {
-		torture_comment(tctx, "smbcli_setatr failed (%s)\n", smbcli_errstr(cli1->tree));
+		torture_result(tctx, TORTURE_FAIL,
+			__location__ ": smbcli_setatr failed (%s)\n", smbcli_errstr(cli1->tree));
 		CHECK_MAX_FAILURES(error_test1);
 		return false;
 	}
 	
 	fnum1 = smbcli_open(cli1->tree, fname, O_RDONLY, DENY_WRITE);
 	if (fnum1 == -1) {
-		torture_comment(tctx, "open of %s failed (%s)\n", fname, smbcli_errstr(cli1->tree));
+		torture_result(tctx, TORTURE_FAIL,
+			__location__ ": open of %s failed (%s)\n", fname, smbcli_errstr(cli1->tree));
 		CHECK_MAX_FAILURES(error_test1);
 		return false;
 	}
@@ -833,6 +835,7 @@ static bool run_vuidtest(struct torture_context *tctx,
 	}
 	
 	torture_comment(tctx, "finished open test 1\n");
+
 error_test1:
 	smbcli_close(cli1->tree, fnum1);
 	
@@ -887,13 +890,15 @@ error_test1:
 	
 	/* Ensure size == 20. */
 	if (NT_STATUS_IS_ERR(smbcli_getatr(cli1->tree, fname, NULL, &fsize, NULL))) {
-		torture_comment(tctx, "(3) getatr failed (%s)\n", smbcli_errstr(cli1->tree));
+		torture_result(tctx, TORTURE_FAIL,
+			__location__ ": (3) getatr failed (%s)\n", smbcli_errstr(cli1->tree));
 		CHECK_MAX_FAILURES(error_test3);
 		return false;
 	}
 	
 	if (fsize != 20) {
-		torture_comment(tctx, "(3) file size != 20\n");
+		torture_result(tctx, TORTURE_FAIL,
+			__location__ ": (3) file size != 20\n");
 		CHECK_MAX_FAILURES(error_test3);
 		return false;
 	}
@@ -902,60 +907,70 @@ error_test1:
 	
 	fnum1 = smbcli_open(cli1->tree, fname, O_RDONLY|O_TRUNC, DENY_NONE);
 	if (fnum1 == -1) {
-		torture_comment(tctx, "(3) open (2) of %s failed (%s)\n", fname, smbcli_errstr(cli1->tree));
+		torture_result(tctx, TORTURE_FAIL,
+			__location__ ": (3) open (2) of %s failed (%s)\n", fname, smbcli_errstr(cli1->tree));
 		CHECK_MAX_FAILURES(error_test3);
 		return false;
 	}
 	
 	if (NT_STATUS_IS_ERR(smbcli_close(cli1->tree, fnum1))) {
-		torture_comment(tctx, "close2 failed (%s)\n", smbcli_errstr(cli1->tree));
+		torture_result(tctx, TORTURE_FAIL,
+			__location__ ": close2 failed (%s)\n", smbcli_errstr(cli1->tree));
 		return false;
 	}
 
 	/* Ensure size == 0. */
 	if (NT_STATUS_IS_ERR(smbcli_getatr(cli1->tree, fname, NULL, &fsize, NULL))) {
-		torture_comment(tctx, "(3) getatr failed (%s)\n", smbcli_errstr(cli1->tree));
+		torture_result(tctx, TORTURE_FAIL,
+			__location__ ": (3) getatr failed (%s)\n", smbcli_errstr(cli1->tree));
 		CHECK_MAX_FAILURES(error_test3);
 		return false;
 	}
 
 	if (fsize != 0) {
-		torture_comment(tctx, "(3) file size != 0\n");
+		torture_result(tctx, TORTURE_FAIL,
+			__location__ ": (3) file size != 0\n");
 		CHECK_MAX_FAILURES(error_test3);
 		return false;
 	}
 	torture_comment(tctx, "finished open test 3\n");
 error_test3:	
+
+	fnum1 = fnum2 = -1;
 	smbcli_unlink(cli1->tree, fname);
 
 
 	torture_comment(tctx, "Testing ctemp\n");
 	fnum1 = smbcli_ctemp(cli1->tree, "\\", &tmp_path);
 	if (fnum1 == -1) {
-		torture_comment(tctx, "ctemp failed (%s)\n", smbcli_errstr(cli1->tree));
+		torture_result(tctx, TORTURE_FAIL,
+			__location__ ": ctemp failed (%s)\n", smbcli_errstr(cli1->tree));
 		CHECK_MAX_FAILURES(error_test4);
 		return false;
 	}
 	torture_comment(tctx, "ctemp gave path %s\n", tmp_path);
+
+error_test4:
 	if (NT_STATUS_IS_ERR(smbcli_close(cli1->tree, fnum1))) {
 		torture_comment(tctx, "close of temp failed (%s)\n", smbcli_errstr(cli1->tree));
 	}
 	if (NT_STATUS_IS_ERR(smbcli_unlink(cli1->tree, tmp_path))) {
 		torture_comment(tctx, "unlink of temp failed (%s)\n", smbcli_errstr(cli1->tree));
 	}
-error_test4:	
+
 	/* Test the non-io opens... */
 
+	torture_comment(tctx, "Test #1 testing 2 non-io opens (no delete)\n");
+	fnum1 = fnum2 = -1;
 	smbcli_setatr(cli2->tree, fname, 0, 0);
 	smbcli_unlink(cli2->tree, fname);
-	
-	torture_comment(tctx, "Test #1 testing 2 non-io opens (no delete)\n");
-	
+
 	fnum1 = smbcli_nt_create_full(cli1->tree, fname, 0, SEC_FILE_READ_ATTRIBUTE, FILE_ATTRIBUTE_NORMAL,
 				   NTCREATEX_SHARE_ACCESS_NONE, NTCREATEX_DISP_OVERWRITE_IF, 0, 0);
 
 	if (fnum1 == -1) {
-		torture_comment(tctx, "Test 1 open 1 of %s failed (%s)\n", fname, smbcli_errstr(cli1->tree));
+		torture_result(tctx, TORTURE_FAIL,
+			__location__ ": Test 1 open 1 of %s failed (%s)\n", fname, smbcli_errstr(cli1->tree));
 		CHECK_MAX_FAILURES(error_test10);
 		return false;
 	}
@@ -963,31 +978,32 @@ error_test4:
 	fnum2 = smbcli_nt_create_full(cli2->tree, fname, 0, SEC_FILE_READ_ATTRIBUTE, FILE_ATTRIBUTE_NORMAL,
 				   NTCREATEX_SHARE_ACCESS_NONE, NTCREATEX_DISP_OPEN_IF, 0, 0);
 	if (fnum2 == -1) {
-		torture_comment(tctx, "Test 1 open 2 of %s failed (%s)\n", fname, smbcli_errstr(cli2->tree));
+		torture_result(tctx, TORTURE_FAIL,
+			__location__ ": Test 1 open 2 of %s failed (%s)\n", fname, smbcli_errstr(cli2->tree));
 		CHECK_MAX_FAILURES(error_test10);
-		return false;
-	}
-
-	if (NT_STATUS_IS_ERR(smbcli_close(cli1->tree, fnum1))) {
-		torture_comment(tctx, "Test 1 close 1 of %s failed (%s)\n", fname, smbcli_errstr(cli1->tree));
-		return false;
-	}
-	if (NT_STATUS_IS_ERR(smbcli_close(cli2->tree, fnum2))) {
-		torture_comment(tctx, "Test 1 close 2 of %s failed (%s)\n", fname, smbcli_errstr(cli2->tree));
 		return false;
 	}
 
 	torture_comment(tctx, "non-io open test #1 passed.\n");
 error_test10:
-	smbcli_unlink(cli1->tree, fname);
+
+	if (NT_STATUS_IS_ERR(smbcli_close(cli1->tree, fnum1))) {
+		torture_comment(tctx, "Test 1 close 1 of %s failed (%s)\n", fname, smbcli_errstr(cli1->tree));
+	}
+	if (NT_STATUS_IS_ERR(smbcli_close(cli2->tree, fnum2))) {
+		torture_comment(tctx, "Test 1 close 2 of %s failed (%s)\n", fname, smbcli_errstr(cli2->tree));
+	}
 
 	torture_comment(tctx, "Test #2 testing 2 non-io opens (first with delete)\n");
-	
+	fnum1 = fnum2 = -1;
+	smbcli_unlink(cli1->tree, fname);
+
 	fnum1 = smbcli_nt_create_full(cli1->tree, fname, 0, SEC_STD_DELETE|SEC_FILE_READ_ATTRIBUTE, FILE_ATTRIBUTE_NORMAL,
 				   NTCREATEX_SHARE_ACCESS_NONE, NTCREATEX_DISP_OVERWRITE_IF, 0, 0);
 
 	if (fnum1 == -1) {
-		torture_comment(tctx, "Test 2 open 1 of %s failed (%s)\n", fname, smbcli_errstr(cli1->tree));
+		torture_result(tctx, TORTURE_FAIL,
+			__location__ ": Test 2 open 1 of %s failed (%s)\n", fname, smbcli_errstr(cli1->tree));
 		CHECK_MAX_FAILURES(error_test20);
 		return false;
 	}
@@ -996,31 +1012,33 @@ error_test10:
 				   NTCREATEX_SHARE_ACCESS_NONE, NTCREATEX_DISP_OPEN_IF, 0, 0);
 
 	if (fnum2 == -1) {
-		torture_comment(tctx, "Test 2 open 2 of %s failed (%s)\n", fname, smbcli_errstr(cli2->tree));
+		torture_result(tctx, TORTURE_FAIL,
+			__location__ ": Test 2 open 2 of %s failed (%s)\n", fname, smbcli_errstr(cli2->tree));
 		CHECK_MAX_FAILURES(error_test20);
-		return false;
-	}
-
-	if (NT_STATUS_IS_ERR(smbcli_close(cli1->tree, fnum1))) {
-		torture_comment(tctx, "Test 1 close 1 of %s failed (%s)\n", fname, smbcli_errstr(cli1->tree));
-		return false;
-	}
-	if (NT_STATUS_IS_ERR(smbcli_close(cli2->tree, fnum2))) {
-		torture_comment(tctx, "Test 1 close 2 of %s failed (%s)\n", fname, smbcli_errstr(cli1->tree));
 		return false;
 	}
 
 	torture_comment(tctx, "non-io open test #2 passed.\n");
 error_test20:
+
+	if (NT_STATUS_IS_ERR(smbcli_close(cli1->tree, fnum1))) {
+		torture_comment(tctx, "Test 1 close 1 of %s failed (%s)\n", fname, smbcli_errstr(cli1->tree));
+	}
+	if (NT_STATUS_IS_ERR(smbcli_close(cli2->tree, fnum2))) {
+		torture_comment(tctx, "Test 1 close 2 of %s failed (%s)\n", fname, smbcli_errstr(cli1->tree));
+	}
+
+	fnum1 = fnum2 = -1;
 	smbcli_unlink(cli1->tree, fname);
 
 	torture_comment(tctx, "Test #3 testing 2 non-io opens (second with delete)\n");
-	
+
 	fnum1 = smbcli_nt_create_full(cli1->tree, fname, 0, SEC_FILE_READ_ATTRIBUTE, FILE_ATTRIBUTE_NORMAL,
 				   NTCREATEX_SHARE_ACCESS_NONE, NTCREATEX_DISP_OVERWRITE_IF, 0, 0);
 
 	if (fnum1 == -1) {
-		torture_comment(tctx, "Test 3 open 1 of %s failed (%s)\n", fname, smbcli_errstr(cli1->tree));
+		torture_result(tctx, TORTURE_FAIL,
+			__location__ ": Test 3 open 1 of %s failed (%s)\n", fname, smbcli_errstr(cli1->tree));
 		CHECK_MAX_FAILURES(error_test30);
 		return false;
 	}
@@ -1029,31 +1047,32 @@ error_test20:
 				   NTCREATEX_SHARE_ACCESS_NONE, NTCREATEX_DISP_OPEN_IF, 0, 0);
 
 	if (fnum2 == -1) {
-		torture_comment(tctx, "Test 3 open 2 of %s failed (%s)\n", fname, smbcli_errstr(cli2->tree));
+		torture_result(tctx, TORTURE_FAIL,
+			__location__ ": Test 3 open 2 of %s failed (%s)\n", fname, smbcli_errstr(cli2->tree));
 		CHECK_MAX_FAILURES(error_test30);
-		return false;
-	}
-
-	if (NT_STATUS_IS_ERR(smbcli_close(cli1->tree, fnum1))) {
-		torture_comment(tctx, "Test 3 close 1 of %s failed (%s)\n", fname, smbcli_errstr(cli1->tree));
-		return false;
-	}
-	if (NT_STATUS_IS_ERR(smbcli_close(cli2->tree, fnum2))) {
-		torture_comment(tctx, "Test 3 close 2 of %s failed (%s)\n", fname, smbcli_errstr(cli2->tree));
 		return false;
 	}
 
 	torture_comment(tctx, "non-io open test #3 passed.\n");
 error_test30:
-	smbcli_unlink(cli1->tree, fname);
+
+	if (NT_STATUS_IS_ERR(smbcli_close(cli1->tree, fnum1))) {
+		torture_comment(tctx, "Test 3 close 1 of %s failed (%s)\n", fname, smbcli_errstr(cli1->tree));
+	}
+	if (NT_STATUS_IS_ERR(smbcli_close(cli2->tree, fnum2))) {
+		torture_comment(tctx, "Test 3 close 2 of %s failed (%s)\n", fname, smbcli_errstr(cli2->tree));
+	}
 
 	torture_comment(tctx, "Test #4 testing 2 non-io opens (both with delete)\n");
-	
+	fnum1 = fnum2 = -1;
+	smbcli_unlink(cli1->tree, fname);
+
 	fnum1 = smbcli_nt_create_full(cli1->tree, fname, 0, SEC_STD_DELETE|SEC_FILE_READ_ATTRIBUTE, FILE_ATTRIBUTE_NORMAL,
 				   NTCREATEX_SHARE_ACCESS_NONE, NTCREATEX_DISP_OVERWRITE_IF, 0, 0);
 
 	if (fnum1 == -1) {
-		torture_comment(tctx, "Test 4 open 1 of %s failed (%s)\n", fname, smbcli_errstr(cli1->tree));
+		torture_result(tctx, TORTURE_FAIL,
+			__location__ ": Test 4 open 1 of %s failed (%s)\n", fname, smbcli_errstr(cli1->tree));
 		CHECK_MAX_FAILURES(error_test40);
 		return false;
 	}
@@ -1062,29 +1081,34 @@ error_test30:
 				   NTCREATEX_SHARE_ACCESS_NONE, NTCREATEX_DISP_OPEN_IF, 0, 0);
 
 	if (fnum2 != -1) {
-		torture_comment(tctx, "Test 4 open 2 of %s SUCCEEDED - should have failed (%s)\n", fname, smbcli_errstr(cli2->tree));
+		torture_result(tctx, TORTURE_FAIL,
+			__location__ ": Test 4 open 2 of %s SUCCEEDED - should have failed (%s)\n", fname, smbcli_errstr(cli2->tree));
 		CHECK_MAX_FAILURES(error_test40);
 		return false;
 	}
 
 	torture_comment(tctx, "Test 4 open 2 of %s gave %s (correct error should be %s)\n", fname, smbcli_errstr(cli2->tree), "sharing violation");
 
-	if (NT_STATUS_IS_ERR(smbcli_close(cli1->tree, fnum1))) {
-		torture_comment(tctx, "Test 4 close 1 of %s failed (%s)\n", fname, smbcli_errstr(cli1->tree));
-		return false;
-	}
-
 	torture_comment(tctx, "non-io open test #4 passed.\n");
 error_test40:
-	smbcli_unlink(cli1->tree, fname);
+
+	if (NT_STATUS_IS_ERR(smbcli_close(cli1->tree, fnum1))) {
+		torture_comment(tctx, "Test 4 close 1 of %s failed (%s)\n", fname, smbcli_errstr(cli1->tree));
+	}
+	if (fnum2 != -1 && NT_STATUS_IS_ERR(smbcli_close(cli2->tree, fnum2))) {
+		torture_comment(tctx, "Test 4 close 2 of %s failed (%s)\n", fname, smbcli_errstr(cli2->tree));
+	}
 
 	torture_comment(tctx, "Test #5 testing 2 non-io opens (both with delete - both with file share delete)\n");
-	
+	fnum1 = fnum2 = -1;
+	smbcli_unlink(cli1->tree, fname);
+
 	fnum1 = smbcli_nt_create_full(cli1->tree, fname, 0, SEC_STD_DELETE|SEC_FILE_READ_ATTRIBUTE, FILE_ATTRIBUTE_NORMAL,
 				   NTCREATEX_SHARE_ACCESS_DELETE, NTCREATEX_DISP_OVERWRITE_IF, 0, 0);
 
 	if (fnum1 == -1) {
-		torture_comment(tctx, "Test 5 open 1 of %s failed (%s)\n", fname, smbcli_errstr(cli1->tree));
+		torture_result(tctx, TORTURE_FAIL,
+			__location__ ": Test 5 open 1 of %s failed (%s)\n", fname, smbcli_errstr(cli1->tree));
 		CHECK_MAX_FAILURES(error_test50);
 		return false;
 	}
@@ -1093,32 +1117,33 @@ error_test40:
 				   NTCREATEX_SHARE_ACCESS_DELETE, NTCREATEX_DISP_OPEN_IF, 0, 0);
 
 	if (fnum2 == -1) {
-		torture_comment(tctx, "Test 5 open 2 of %s failed (%s)\n", fname, smbcli_errstr(cli2->tree));
+		torture_result(tctx, TORTURE_FAIL,
+			__location__ ": Test 5 open 2 of %s failed (%s)\n", fname, smbcli_errstr(cli2->tree));
 		CHECK_MAX_FAILURES(error_test50);
-		return false;
-	}
-
-	if (NT_STATUS_IS_ERR(smbcli_close(cli1->tree, fnum1))) {
-		torture_comment(tctx, "Test 5 close 1 of %s failed (%s)\n", fname, smbcli_errstr(cli1->tree));
-		return false;
-	}
-
-	if (NT_STATUS_IS_ERR(smbcli_close(cli2->tree, fnum2))) {
-		torture_comment(tctx, "Test 5 close 2 of %s failed (%s)\n", fname, smbcli_errstr(cli2->tree));
 		return false;
 	}
 
 	torture_comment(tctx, "non-io open test #5 passed.\n");
 error_test50:
+
+	if (NT_STATUS_IS_ERR(smbcli_close(cli1->tree, fnum1))) {
+		torture_comment(tctx, "Test 5 close 1 of %s failed (%s)\n", fname, smbcli_errstr(cli1->tree));
+	}
+
+	if (NT_STATUS_IS_ERR(smbcli_close(cli2->tree, fnum2))) {
+		torture_comment(tctx, "Test 5 close 2 of %s failed (%s)\n", fname, smbcli_errstr(cli2->tree));
+	}
+
 	torture_comment(tctx, "Test #6 testing 1 non-io open, one io open\n");
-	
+	fnum1 = fnum2 = -1;
 	smbcli_unlink(cli1->tree, fname);
 
 	fnum1 = smbcli_nt_create_full(cli1->tree, fname, 0, SEC_FILE_READ_DATA, FILE_ATTRIBUTE_NORMAL,
 				   NTCREATEX_SHARE_ACCESS_NONE, NTCREATEX_DISP_OVERWRITE_IF, 0, 0);
 
 	if (fnum1 == -1) {
-		torture_comment(tctx, "Test 6 open 1 of %s failed (%s)\n", fname, smbcli_errstr(cli1->tree));
+		torture_result(tctx, TORTURE_FAIL,
+			__location__ ": Test 6 open 1 of %s failed (%s)\n", fname, smbcli_errstr(cli1->tree));
 		CHECK_MAX_FAILURES(error_test60);
 		return false;
 	}
@@ -1127,32 +1152,33 @@ error_test50:
 				   NTCREATEX_SHARE_ACCESS_READ, NTCREATEX_DISP_OPEN_IF, 0, 0);
 
 	if (fnum2 == -1) {
-		torture_comment(tctx, "Test 6 open 2 of %s failed (%s)\n", fname, smbcli_errstr(cli2->tree));
+		torture_result(tctx, TORTURE_FAIL,
+			__location__ ": Test 6 open 2 of %s failed (%s)\n", fname, smbcli_errstr(cli2->tree));
 		CHECK_MAX_FAILURES(error_test60);
-		return false;
-	}
-
-	if (NT_STATUS_IS_ERR(smbcli_close(cli1->tree, fnum1))) {
-		torture_comment(tctx, "Test 6 close 1 of %s failed (%s)\n", fname, smbcli_errstr(cli1->tree));
-		return false;
-	}
-
-	if (NT_STATUS_IS_ERR(smbcli_close(cli2->tree, fnum2))) {
-		torture_comment(tctx, "Test 6 close 2 of %s failed (%s)\n", fname, smbcli_errstr(cli2->tree));
 		return false;
 	}
 
 	torture_comment(tctx, "non-io open test #6 passed.\n");
 error_test60:
-	torture_comment(tctx, "Test #7 testing 1 non-io open, one io open with delete\n");
 
+	if (NT_STATUS_IS_ERR(smbcli_close(cli1->tree, fnum1))) {
+		torture_comment(tctx, "Test 6 close 1 of %s failed (%s)\n", fname, smbcli_errstr(cli1->tree));
+	}
+
+	if (NT_STATUS_IS_ERR(smbcli_close(cli2->tree, fnum2))) {
+		torture_comment(tctx, "Test 6 close 2 of %s failed (%s)\n", fname, smbcli_errstr(cli2->tree));
+	}
+
+	torture_comment(tctx, "Test #7 testing 1 non-io open, one io open with delete\n");
+	fnum1 = fnum2 = -1;
 	smbcli_unlink(cli1->tree, fname);
 
 	fnum1 = smbcli_nt_create_full(cli1->tree, fname, 0, SEC_FILE_READ_DATA, FILE_ATTRIBUTE_NORMAL,
 				   NTCREATEX_SHARE_ACCESS_NONE, NTCREATEX_DISP_OVERWRITE_IF, 0, 0);
 
 	if (fnum1 == -1) {
-		torture_comment(tctx, "Test 7 open 1 of %s failed (%s)\n", fname, smbcli_errstr(cli1->tree));
+		torture_result(tctx, TORTURE_FAIL,
+			__location__ ": Test 7 open 1 of %s failed (%s)\n", fname, smbcli_errstr(cli1->tree));
 		CHECK_MAX_FAILURES(error_test70);
 		return false;
 	}
@@ -1161,24 +1187,26 @@ error_test60:
 				   NTCREATEX_SHARE_ACCESS_READ|NTCREATEX_SHARE_ACCESS_DELETE, NTCREATEX_DISP_OPEN_IF, 0, 0);
 
 	if (fnum2 != -1) {
-		torture_comment(tctx, "Test 7 open 2 of %s SUCCEEDED - should have failed (%s)\n", fname, smbcli_errstr(cli2->tree));
+		torture_result(tctx, TORTURE_FAIL,
+			__location__ ": Test 7 open 2 of %s SUCCEEDED - should have failed (%s)\n", fname, smbcli_errstr(cli2->tree));
 		CHECK_MAX_FAILURES(error_test70);
 		return false;
 	}
 
 	torture_comment(tctx, "Test 7 open 2 of %s gave %s (correct error should be %s)\n", fname, smbcli_errstr(cli2->tree), "sharing violation");
 
-	if (NT_STATUS_IS_ERR(smbcli_close(cli1->tree, fnum1))) {
-		torture_comment(tctx, "Test 7 close 1 of %s failed (%s)\n", fname, smbcli_errstr(cli1->tree));
-		return false;
-	}
-
 	torture_comment(tctx, "non-io open test #7 passed.\n");
-
 error_test70:
 
-	torture_comment(tctx, "Test #8 testing one normal open, followed by lock, followed by open with truncate\n");
+	if (NT_STATUS_IS_ERR(smbcli_close(cli1->tree, fnum1))) {
+		torture_comment(tctx, "Test 7 close 1 of %s failed (%s)\n", fname, smbcli_errstr(cli1->tree));
+	}
+	if (fnum2 != -1 && NT_STATUS_IS_ERR(smbcli_close(cli2->tree, fnum2))) {
+		torture_comment(tctx, "Test 7 close 2 of %s failed (%s)\n", fname, smbcli_errstr(cli2->tree));
+	}
 
+	torture_comment(tctx, "Test #8 testing one normal open, followed by lock, followed by open with truncate\n");
+	fnum1 = fnum2 = -1;
 	smbcli_unlink(cli1->tree, fname);
 
 	fnum1 = smbcli_open(cli1->tree, fname, O_RDWR|O_CREAT, DENY_NONE);
@@ -1198,20 +1226,23 @@ error_test70:
 
 	/* Ensure size == 20. */
 	if (NT_STATUS_IS_ERR(smbcli_getatr(cli1->tree, fname, NULL, &fsize, NULL))) {
-		torture_comment(tctx, "(8) getatr (1) failed (%s)\n", smbcli_errstr(cli1->tree));
+		torture_result(tctx, TORTURE_FAIL,
+			__location__ ": (8) getatr (1) failed (%s)\n", smbcli_errstr(cli1->tree));
 		CHECK_MAX_FAILURES(error_test80);
 		return false;
 	}
 	
 	if (fsize != 20) {
-		torture_comment(tctx, "(8) file size != 20\n");
+		torture_result(tctx, TORTURE_FAIL,
+			__location__ ": (8) file size %lu != 20\n", (unsigned long)fsize);
 		CHECK_MAX_FAILURES(error_test80);
 		return false;
 	}
 
 	/* Get an exclusive lock on the open file. */
 	if (NT_STATUS_IS_ERR(smbcli_lock(cli1->tree, fnum1, 0, 4, 0, WRITE_LOCK))) {
-		torture_comment(tctx, "(8) lock1 failed (%s)\n", smbcli_errstr(cli1->tree));
+		torture_result(tctx, TORTURE_FAIL,
+			__location__ ": (8) lock1 failed (%s)\n", smbcli_errstr(cli1->tree));
 		CHECK_MAX_FAILURES(error_test80);
 		return false;
 	}
@@ -1224,13 +1255,15 @@ error_test70:
 
 	/* Ensure size == 0. */
 	if (NT_STATUS_IS_ERR(smbcli_getatr(cli1->tree, fname, NULL, &fsize, NULL))) {
-		torture_comment(tctx, "(8) getatr (2) failed (%s)\n", smbcli_errstr(cli1->tree));
+		torture_result(tctx, TORTURE_FAIL,
+			__location__ ": (8) getatr (2) failed (%s)\n", smbcli_errstr(cli1->tree));
 		CHECK_MAX_FAILURES(error_test80);
 		return false;
 	}
 	
 	if (fsize != 0) {
-		torture_comment(tctx, "(8) file size != 0\n");
+		torture_result(tctx, TORTURE_FAIL,
+			__location__ ": (8) file size %lu != 0\n", (unsigned long)fsize);
 		CHECK_MAX_FAILURES(error_test80);
 		return false;
 	}
@@ -1251,7 +1284,7 @@ error_test80:
 
 	smbcli_unlink(cli1->tree, fname);
 
-	return correct;
+	return failures > 0 ? false : correct;
 }
 
 /* FIRST_DESIRED_ACCESS   0xf019f */
