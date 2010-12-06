@@ -405,7 +405,7 @@ static int retest(struct smbcli_state *cli[NSERVERS][NCONNECTIONS],
  */
 static int test_locks(struct tevent_context *ev,
 		      struct loadparm_context *lp_ctx,
-			  TALLOC_CTX *mem_ctx,
+		      TALLOC_CTX *mem_ctx,
 		      char *share[NSERVERS])
 {
 	struct smbcli_state *cli[NSERVERS][NCONNECTIONS];
