@@ -180,9 +180,7 @@ static isc_result_t b9_putrr(struct dlz_bind9_data *state,
 		}
 	}
 
-	/* FIXME: why does dlz insist on all TTL values being the same
-	   for the same name? */
-	result = state->putrr(handle, type, /* rec->dwTtlSeconds */ 900, data);
+	result = state->putrr(handle, type, rec->dwTtlSeconds, data);
 	if (result != ISC_R_SUCCESS) {
 		state->log(ISC_LOG_ERROR, "Failed to put rr");
 	}
@@ -211,9 +209,7 @@ static isc_result_t b9_putnamedrr(struct dlz_bind9_data *state,
 		return ISC_R_NOMEMORY;
 	}
 
-	/* FIXME: why does dlz insist on all TTL values being the same
-	   for the same name? */
-	result = state->putnamedrr(handle, name, type, /* rec->dwTtlSeconds */ 900, data);
+	result = state->putnamedrr(handle, name, type, rec->dwTtlSeconds, data);
 	if (result != ISC_R_SUCCESS) {
 		state->log(ISC_LOG_ERROR, "Failed to put named rr '%s'", name);
 	}
