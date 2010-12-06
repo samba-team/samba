@@ -62,7 +62,7 @@ static int aclread_callback(struct ldb_request *req, struct ldb_reply *ares)
 	 static const char *acl_attrs[] = {
 		 "nTSecurityDescriptor",
 		 "objectSid",
-		 "insyanceType",
+		 "instanceType",
 		 NULL
 	 };
 	 int ret;
