@@ -202,8 +202,9 @@ static void ctdb_call_send_dmaster(struct ctdb_db_context *ctdb_db,
 	}
 
 	if (data->dsize != 0) {
-		header->flags &= CTDB_REC_FLAG_MIGRATED_WITH_DATA;
+		header->flags |= CTDB_REC_FLAG_MIGRATED_WITH_DATA;
 	}
+
 
 	if (lmaster == ctdb->pnn) {
 		ctdb_send_dmaster_reply(ctdb_db, header, *key, *data, 
@@ -226,10 +227,19 @@ static void ctdb_call_send_dmaster(struct ctdb_db_context *ctdb_db,
 	memcpy(&r->data[key->dsize], data->dptr, data->dsize);
 
 	header->dmaster = c->hdr.srcnode;
-	if (ctdb_ltdb_store(ctdb_db, *key, header, *data) != 0) {
-		ctdb_fatal(ctdb, "Failed to store record in ctdb_call_send_dmaster");
+
+	if (data->dsize == 0
+	&& lmaster != ctdb->pnn
+	&& (header->flags & CTDB_REC_FLAG_MIGRATED_WITH_DATA) == 0) {
+		if (ctdb_ltdb_delete(ctdb_db, *key) != 0) {
+			ctdb_fatal(ctdb, "Failed to delete empty record when migrating it off the node");
+		}
+	} else {
+		if (ctdb_ltdb_store(ctdb_db, *key, header, *data) != 0) {
+			ctdb_fatal(ctdb, "Failed to store record in ctdb_call_send_dmaster");
+		}
 	}
-	
+
 	ctdb_queue_packet(ctdb, &r->hdr);
 
 	talloc_free(r);
@@ -256,6 +266,10 @@ static void ctdb_become_dmaster(struct ctdb_db_context *ctdb_db,
 	ZERO_STRUCT(header);
 	header.rsn = rsn + 1;
 	header.dmaster = ctdb->pnn;
+
+	if (data.dsize != 0) {
+		header.flags |= CTDB_REC_FLAG_MIGRATED_WITH_DATA;
+	}
 
 	if (ctdb_ltdb_store(ctdb_db, key, &header, data) != 0) {
 		ctdb_fatal(ctdb, "ctdb_reply_dmaster store failed\n");
@@ -353,6 +367,10 @@ void ctdb_request_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr
 	if (ret == -2) {
 		DEBUG(DEBUG_INFO,(__location__ " deferring ctdb_request_dmaster\n"));
 		return;
+	}
+
+	if (data.dsize != 0) {
+		header.flags |= CTDB_REC_FLAG_MIGRATED_WITH_DATA;
 	}
 
 	if (ctdb_lmaster(ctdb, &key) != ctdb->pnn) {
