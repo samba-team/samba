@@ -370,7 +370,7 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 	start = smb_fname->base_name;
 
 	/*
-	 * If we're providing case insentive semantics or
+	 * If we're providing case insensitive semantics or
 	 * the underlying filesystem is case insensitive,
 	 * then a case-normalized hit in the stat-cache is
 	 * authoratitive. JRA.
@@ -388,7 +388,7 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 
 	/*
 	 * Make sure "dirpath" is an allocated string, we use this for
-	 * building the directories with asprintf and free it.
+	 * building the directories with talloc_asprintf and free it.
 	 */
 
 	if ((dirpath == NULL) && (!(dirpath = talloc_strdup(ctx,"")))) {
@@ -454,7 +454,7 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 
 		/*
 		 * A special case - if we don't have any wildcards or mangling chars and are case
-		 * sensitive or the underlying filesystem is case insentive then searching
+		 * sensitive or the underlying filesystem is case insensitive then searching
 		 * won't help.
 		 */
 

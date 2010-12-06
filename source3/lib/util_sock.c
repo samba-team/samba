@@ -159,7 +159,7 @@ int get_socket_port(int fd)
 
 	if (getsockname(fd, (struct sockaddr *)&sa, &length) < 0) {
 		int level = (errno == ENOTCONN) ? 2 : 0;
-		DEBUG(level, ("getpeername failed. Error was %s\n",
+		DEBUG(level, ("getsockname failed. Error was %s\n",
 			       strerror(errno)));
 		return -1;
 	}
