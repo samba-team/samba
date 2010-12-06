@@ -57,14 +57,6 @@ static int aclread_callback(struct ldb_request *req, struct ldb_reply *ares)
 {
 	 struct ldb_context *ldb;
 	 struct aclread_context *ac;
-	 struct ldb_result *acl_res;
-	 struct ldb_message_element *parent;
-	 static const char *acl_attrs[] = {
-		 "nTSecurityDescriptor",
-		 "objectSid",
-		 "instanceType",
-		 NULL
-	 };
 	 int ret;
 	 unsigned int i;
 	 struct security_descriptor *sd;
