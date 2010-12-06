@@ -26,6 +26,7 @@
 #include "dsdb/common/util.h"
 #include "auth/session.h"
 #include "gen_ndr/ndr_dnsp.h"
+#include "lib/cmdline/popt_common.h"
 #include "dlz_bind9.h"
 
 struct dlz_bind9_data {
@@ -222,6 +223,35 @@ static isc_result_t b9_putnamedrr(struct dlz_bind9_data *state,
 
 
 /*
+   parse options
+ */
+static isc_result_t parse_options(struct dlz_bind9_data *state,
+				  unsigned int argc, char *argv[])
+{
+	int opt;
+	poptContext pc;
+	struct poptOption long_options[] = {
+		POPT_COMMON_SAMBA
+		{ NULL }
+	};
+
+	pc = poptGetContext("dlz_bind9", argc, (const char **)argv, long_options,
+			    POPT_CONTEXT_KEEP_FIRST);
+
+	while ((opt = poptGetNextOpt(pc)) != -1) {
+		switch (opt) {
+		default:
+			state->log(ISC_LOG_ERROR, "Invalid option %s: %s",
+				   poptBadOption(pc, 0), poptStrerror(opt));
+			return ISC_R_FAILURE;
+		}
+	}
+
+	return ISC_R_SUCCESS;
+}
+
+
+/*
   called to initialise the driver
  */
 _PUBLIC_ isc_result_t dlz_create(const char *dlzname,
@@ -250,6 +280,11 @@ _PUBLIC_ isc_result_t dlz_create(const char *dlzname,
 		b9_add_helper(state, helper_name, va_arg(ap, void*));
 	}
 	va_end(ap);
+
+	result = parse_options(state, argc, argv);
+	if (result != ISC_R_SUCCESS) {
+		goto failed;
+	}
 
 	state->lp = loadparm_init_global(true);
 	if (state->lp == NULL) {
