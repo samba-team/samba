@@ -2981,6 +2981,107 @@ static int control_catdb(struct ctdb_context *ctdb, int argc, const char **argv)
 	return 0;
 }
 
+/*
+  display the content of a database key
+ */
+static int control_readkey(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	const char *db_name;
+	struct ctdb_db_context *ctdb_db;
+	struct ctdb_record_handle *h;
+	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
+	TDB_DATA key, data;
+
+	if (argc < 2) {
+		usage();
+	}
+
+	db_name = argv[0];
+
+
+	if (db_exists(ctdb, db_name)) {
+		DEBUG(DEBUG_ERR,("Database '%s' does not exist\n", db_name));
+		return -1;
+	}
+
+	ctdb_db = ctdb_attach(ctdb, db_name, false, 0);
+
+	if (ctdb_db == NULL) {
+		DEBUG(DEBUG_ERR,("Unable to attach to database '%s'\n", db_name));
+		return -1;
+	}
+
+	key.dptr  = discard_const(argv[1]);
+	key.dsize = strlen((char *)key.dptr);
+ 
+	h = ctdb_fetch_lock(ctdb_db, tmp_ctx, key, &data);
+	if (h == NULL) {
+		printf("Failed to fetch record '%s' on node %d\n", 
+	       		(const char *)key.dptr, ctdb_get_pnn(ctdb));
+		talloc_free(tmp_ctx);
+		exit(10);
+	}
+
+	printf("Data: size:%d ptr:[%s]\n", (int)data.dsize, data.dptr);
+
+	talloc_free(ctdb_db);
+	talloc_free(tmp_ctx);
+	return 0;
+}
+
+/*
+  display the content of a database key
+ */
+static int control_writekey(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	const char *db_name;
+	struct ctdb_db_context *ctdb_db;
+	struct ctdb_record_handle *h;
+	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
+	TDB_DATA key, data;
+
+	if (argc < 3) {
+		usage();
+	}
+
+	db_name = argv[0];
+
+
+	if (db_exists(ctdb, db_name)) {
+		DEBUG(DEBUG_ERR,("Database '%s' does not exist\n", db_name));
+		return -1;
+	}
+
+	ctdb_db = ctdb_attach(ctdb, db_name, false, 0);
+
+	if (ctdb_db == NULL) {
+		DEBUG(DEBUG_ERR,("Unable to attach to database '%s'\n", db_name));
+		return -1;
+	}
+
+	key.dptr  = discard_const(argv[1]);
+	key.dsize = strlen((char *)key.dptr);
+ 
+	h = ctdb_fetch_lock(ctdb_db, tmp_ctx, key, &data);
+	if (h == NULL) {
+		printf("Failed to fetch record '%s' on node %d\n", 
+	       		(const char *)key.dptr, ctdb_get_pnn(ctdb));
+		talloc_free(tmp_ctx);
+		exit(10);
+	}
+
+	data.dptr  = discard_const(argv[2]);
+	data.dsize = strlen((char *)data.dptr);
+ 
+	if (ctdb_record_store(h, data) != 0) {
+		printf("Failed to store record\n");
+	}
+
+	talloc_free(h);
+	talloc_free(ctdb_db);
+	talloc_free(tmp_ctx);
+	return 0;
+}
 
 /*
   fetch a record from a persistent database
@@ -4833,6 +4934,8 @@ static const struct {
 	{ "pfetch", 	     control_pfetch,      	false,	false,  "fetch a record from a persistent database", "<db> <key> [<file>]" },
 	{ "pstore", 	     control_pstore,      	false,	false,  "write a record to a persistent database", "<db> <key> <file containing record>" },
 	{ "tfetch", 	     control_tfetch,      	false,	true,  "fetch a record from a [c]tdb-file", "<tdb-file> <key> [<file>]" },
+	{ "readkey", 	     control_readkey,      	true,	false,  "read the content off a database key", "<tdb-file> <key>" },
+	{ "writekey", 	     control_writekey,      	true,	false,  "write to a database key", "<tdb-file> <key> <value>" },
 };
 
 /*
