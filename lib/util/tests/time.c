@@ -64,7 +64,7 @@ static bool test_http_timestring(struct torture_context *tctx)
 
 static bool test_timestring(struct torture_context *tctx)
 {
-	const char *start = "Thu Jan  1", *start2 = "Thu Jan 01";
+	const char *start = "Thu Jan  1";
 	char *result;
 	/*
 	 * Correct test for negative UTC offset.  Without the correction, the
@@ -77,10 +77,7 @@ static bool test_timestring(struct torture_context *tctx)
 	time_t utc_offset = mktime(&local) - mktime(&gmt);
 
 	result = timestring(tctx, 42 - (utc_offset < 0 ? utc_offset : 0));
-	torture_assert(tctx,
-		       (strncmp(start, result, strlen(start)) == 0) ||
-		       (strncmp(start2, result, strlen(start2)) == 0),
-		       result);
+	torture_assert(tctx, !strncmp(start, result, strlen(start)), result);
 	return true;
 }
 
