@@ -134,7 +134,7 @@ static void wb_child_request_trigger(struct tevent_req *req,
 		req, struct wb_child_request_state);
 	struct tevent_req *subreq;
 
-	if ((state->child->pid == 0) && (!fork_domain_child(state->child))) {
+	if ((state->child->sock == -1) && (!fork_domain_child(state->child))) {
 		tevent_req_error(req, errno);
 		return;
 	}
@@ -164,6 +164,12 @@ static void wb_child_request_done(struct tevent_req *subreq)
 	ret = wb_simple_trans_recv(subreq, state, &state->response, &err);
 	TALLOC_FREE(subreq);
 	if (ret == -1) {
+		/*
+		 * The basic parent/child communication broke, close
+		 * our socket
+		 */
+		close(state->child->sock);
+		state->child->sock = -1;
 		tevent_req_error(req, err);
 		return;
 	}
@@ -502,6 +508,7 @@ void setup_child(struct winbindd_domain *domain, struct winbindd_child *child,
 			  "logname == NULL");
 	}
 
+	child->sock = -1;
 	child->domain = domain;
 	child->table = table;
 	child->queue = tevent_queue_create(NULL, "winbind_child");
@@ -530,9 +537,6 @@ void winbind_child_died(pid_t pid)
 	/* This will be re-added in fork_domain_child() */
 
 	DLIST_REMOVE(children, child);
-
-	close(child->sock);
-	child->sock = -1;
 	child->pid = 0;
 }
 
