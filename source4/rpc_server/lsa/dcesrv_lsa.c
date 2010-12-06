@@ -4051,7 +4051,7 @@ static NTSTATUS make_ft_info(TALLOC_CTX *mem_ctx,
 }
 
 static NTSTATUS add_collision(struct lsa_ForestTrustCollisionInfo *c_info,
-			      uint32_t index, uint32_t collision_type,
+			      uint32_t idx, uint32_t collision_type,
 			      uint32_t conflict_type, const char *tdo_name);
 
 static NTSTATUS check_ft_info(TALLOC_CTX *mem_ctx,

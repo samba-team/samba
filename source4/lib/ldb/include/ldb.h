@@ -1692,7 +1692,7 @@ char *ldb_dn_alloc_linearized(TALLOC_CTX *mem_ctx, struct ldb_dn *dn);
 char *ldb_dn_get_extended_linearized(TALLOC_CTX *mem_ctx, struct ldb_dn *dn, int mode);
 const struct ldb_val *ldb_dn_get_extended_component(struct ldb_dn *dn, const char *name);
 int ldb_dn_set_extended_component(struct ldb_dn *dn, const char *name, const struct ldb_val *val);
-void ldb_dn_extended_filter(struct ldb_dn *dn, const char * const *accept);
+void ldb_dn_extended_filter(struct ldb_dn *dn, const char * const *accept_list);
 void ldb_dn_remove_extended_components(struct ldb_dn *dn);
 bool ldb_dn_has_extended(struct ldb_dn *dn);
 

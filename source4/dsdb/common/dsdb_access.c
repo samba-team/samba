@@ -87,7 +87,7 @@ int dsdb_check_access_on_dn_internal(struct ldb_context *ldb,
 				     TALLOC_CTX *mem_ctx,
 				     struct security_token *token,
 				     struct ldb_dn *dn,
-				     uint32_t access,
+				     uint32_t access_mask,
 				     const struct GUID *guid)
 {
 	struct security_descriptor *sd = NULL;
@@ -108,12 +108,13 @@ int dsdb_check_access_on_dn_internal(struct ldb_context *ldb,
 	}
 	sid = samdb_result_dom_sid(mem_ctx, acl_res->msgs[0], "objectSid");
 	if (guid) {
-		if (!insert_in_object_tree(mem_ctx, guid, access, &root, &new_node)) {
+		if (!insert_in_object_tree(mem_ctx, guid, access_mask, &root,
+					   &new_node)) {
 			return ldb_operr(ldb);
 		}
 	}
 	status = sec_access_check_ds(sd, token,
-				     access,
+				     access_mask,
 				     &access_granted,
 				     root,
 				     sid);
@@ -137,7 +138,7 @@ int dsdb_check_access_on_dn(struct ldb_context *ldb,
 			    TALLOC_CTX *mem_ctx,
 			    struct ldb_dn *dn,
 			    struct security_token *token,
-			    uint32_t access,
+			    uint32_t access_mask,
 			    const char *ext_right)
 {
 	int ret;
@@ -163,7 +164,7 @@ int dsdb_check_access_on_dn(struct ldb_context *ldb,
 						mem_ctx,
 						token,
 						dn,
-						access,
+						access_mask,
 						&guid);
 }
 
