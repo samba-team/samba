@@ -75,4 +75,4 @@ struct object_tree *get_object_tree_by_GUID(struct object_tree *root,
 
 /* Change the granted access per each ACE */
 void object_tree_modify_access(struct object_tree *root,
-			       uint32_t access);
+			       uint32_t access_mask);

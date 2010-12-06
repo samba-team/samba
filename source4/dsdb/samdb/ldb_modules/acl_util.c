@@ -54,7 +54,7 @@ struct security_token *acl_user_token(struct ldb_module *module)
 int dsdb_module_check_access_on_dn(struct ldb_module *module,
 				   TALLOC_CTX *mem_ctx,
 				   struct ldb_dn *dn,
-				   uint32_t access,
+				   uint32_t access_mask,
 				   const struct GUID *guid)
 {
 	int ret;
@@ -82,14 +82,14 @@ int dsdb_module_check_access_on_dn(struct ldb_module *module,
 						mem_ctx,
 						session_info->security_token,
 						dn,
-						access,
+						access_mask,
 						guid);
 }
 
 int dsdb_module_check_access_on_guid(struct ldb_module *module,
 				     TALLOC_CTX *mem_ctx,
 				     struct GUID *guid,
-				     uint32_t access,
+				     uint32_t access_mask,
 				     const struct GUID *oc_guid)
 {
 	int ret;
@@ -119,7 +119,7 @@ int dsdb_module_check_access_on_guid(struct ldb_module *module,
 						mem_ctx,
 						session_info->security_token,
 						acl_res->msgs[0]->dn,
-						access,
+						access_mask,
 						oc_guid);
 }
 
@@ -127,7 +127,7 @@ int acl_check_access_on_attribute(struct ldb_module *module,
 				  TALLOC_CTX *mem_ctx,
 				  struct security_descriptor *sd,
 				  struct dom_sid *rp_sid,
-				  uint32_t access,
+				  uint32_t access_mask,
 				  const struct dsdb_attribute *attr)
 {
 	int ret;
@@ -140,28 +140,33 @@ int acl_check_access_on_attribute(struct ldb_module *module,
 	if (attr) {
 		if (!GUID_all_zero(&attr->attributeSecurityGUID)) {
 			if (!insert_in_object_tree(tmp_ctx,
-						   &attr->attributeSecurityGUID, access,
-						   &root, &new_node)) {
+						   &attr->attributeSecurityGUID,
+						   access_mask, &root,
+						   &new_node)) {
 				DEBUG(10, ("acl_search: cannot add to object tree securityGUID\n"));
 				goto fail;
 			}
 
 			if (!insert_in_object_tree(tmp_ctx,
-						   &attr->schemaIDGUID, access, &new_node, &new_node)) {
+						   &attr->schemaIDGUID,
+						   access_mask, &new_node,
+						   &new_node)) {
 				DEBUG(10, ("acl_search: cannot add to object tree attributeGUID\n"));
 				goto fail;
 			}
 		}
 		else {
 			if (!insert_in_object_tree(tmp_ctx,
-						   &attr->schemaIDGUID, access, &root, &new_node)) {
+						   &attr->schemaIDGUID,
+						   access_mask, &root,
+						   &new_node)) {
 				DEBUG(10, ("acl_search: cannot add to object tree attributeGUID\n"));
 				goto fail;
 			}
 		}
 	}
 	status = sec_access_check_ds(sd, token,
-				     access,
+				     access_mask,
 				     &access_granted,
 				     root,
 				     rp_sid);
