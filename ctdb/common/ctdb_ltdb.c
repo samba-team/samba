@@ -195,3 +195,22 @@ int ctdb_ltdb_unlock(struct ctdb_db_context *ctdb_db, TDB_DATA key)
 	}
 	return ret;
 }
+
+
+/*
+  delete a record from a normal database
+*/
+int ctdb_ltdb_delete(struct ctdb_db_context *ctdb_db, TDB_DATA key)
+{
+	struct ctdb_context *ctdb = ctdb_db->ctdb;
+
+	if (ctdb_db->persistent != 0) {
+		DEBUG(DEBUG_ERR,("Trying to delete emty record in persistent database\n"));
+		return 0;
+	}
+	if (tdb_delete(ctdb_db->ltdb->tdb, key) != 0) {
+		DEBUG(DEBUG_ERR,("Failed to delete empty record."));
+		return -1;
+	}
+	return 0;
+}
