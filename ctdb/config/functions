@@ -674,6 +674,7 @@ is_ctdb_managed_service ()
     ctdb_compat_managed_service "$CTDB_MANAGES_ISCSI"    "iscsi"
     ctdb_compat_managed_service "$CTDB_MANAGES_CLAMD"    "clamd"
     ctdb_compat_managed_service "$CTDB_MANAGES_NFS"      "nfs"
+    ctdb_compat_managed_service "$CTDB_MANAGES_NFS"      "nfs-ganesha-gpfs"
 
     # Returns 0 if "<space>$_service_name<space>" appears in $t
     [ "${t#* ${_service_name} }" != "${t}" ]
