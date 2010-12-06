@@ -929,7 +929,7 @@ NTSTATUS check_reduced_name(connection_struct *conn, const char *fname)
 						status = NT_STATUS_OBJECT_PATH_NOT_FOUND;
 					}
 
-					DEBUG(3,("check_reduce_named: "
+					DEBUG(3,("check_reduce_name: "
 						 "couldn't get realpath for "
 						 "%s (%s)\n",
 						fname,

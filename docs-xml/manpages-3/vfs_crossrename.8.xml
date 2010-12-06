@@ -31,7 +31,7 @@
 
 	<para>The <command>vfs_crossrename</command> VFS module allows
 	server side rename operations even if source and target are on
-	differen physical devices. A "move" in Explorer is usually a
+	different physical devices. A "move" in Explorer is usually a
 	rename operation if it is inside of a single share or device.
 	Usually such a rename operation returns
 	NT_STATUS_NOT_SAME_DEVICE and the client has to move the file by

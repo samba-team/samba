@@ -114,7 +114,7 @@ static NTSTATUS be_init(struct idmap_domain *dom,
 	size_t num_domains = 0;
 	int i;
 
-	/* If the domain SID hash talbe has been initialized, assume
+	/* If the domain SID hash table has been initialized, assume
 	   that we completed this function previously */
 
 	if ( hashed_domains ) {
