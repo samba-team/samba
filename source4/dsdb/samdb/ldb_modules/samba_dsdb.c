@@ -162,7 +162,6 @@ static int samba_dsdb_init(struct ldb_module *module)
 	*/
 	static const char *modules_list[] = {"resolve_oids",
 					     "rootdse",
-					     "aclread",
 					     "lazy_commit",
 					     "paged_results",
 					     "ranged_results",
@@ -174,6 +173,7 @@ static int samba_dsdb_init(struct ldb_module *module)
 					     "objectclass",
 					     "descriptor",
 					     "acl",
+					     "aclread",
 					     "samldb",
 					     "password_hash",
 					     "operational",
