@@ -289,7 +289,7 @@ static int net_idmap_set(struct net_context *c, int argc, const char **argv)
 	d_printf("%s\n", _("Not implemented yet"));
 	return -1;
 }
-bool idmap_store_secret(const char *backend, bool alloc,
+bool idmap_store_secret(const char *backend,
 			const char *domain, const char *identity,
 			const char *secret)
 {
@@ -297,11 +297,7 @@ bool idmap_store_secret(const char *backend, bool alloc,
 	int r;
 	bool ret;
 
-	if (alloc) {
-		r = asprintf(&tmp, "IDMAP_ALLOC_%s", backend);
-	} else {
-		r = asprintf(&tmp, "IDMAP_%s_%s", backend, domain);
-	}
+	r = asprintf(&tmp, "IDMAP_%s_%s", backend, domain);
 
 	if (r < 0) return false;
 
@@ -363,7 +359,7 @@ static int net_idmap_secret(struct net_context *c, int argc, const char **argv)
 		return -1;
 	}
 
-	ret = idmap_store_secret("ldap", false, domain, dn, secret);
+	ret = idmap_store_secret("ldap", domain, dn, secret);
 
 	if ( ! ret) {
 		d_fprintf(stderr, _("Failed to store secret\n"));
