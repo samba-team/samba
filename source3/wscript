@@ -121,6 +121,18 @@ def configure(conf):
     #FIXME: for some reason this one still fails
     conf.CHECK_FUNCS_IN('yp_get_default_domain', 'nsl')
     conf.CHECK_FUNCS_IN('dn_expand _dn_expand __dn_expand', 'resolv')
+    conf.CHECK_DECLS('fdatasync', reverse=True)
+    conf.CHECK_DECLS('readahead', reverse=True, headers='fcntl.h')
+
+    if conf.CHECK_CODE('''
+#if defined(HAVE_UNISTD_H)
+#include <unistd.h>
+#endif
+long ret = splice(0,0,1,0,400,0);
+''',
+        'HAVE_LINUX_SPLICE',
+        headers='fcntl.h'):
+        conf.CHECK_DECLS('splice', reverse=True, headers='fcntl.h')
 
     # Check for inotify support
     conf.CHECK_HEADERS('linux/inotify.h asm/unistd.h sys/inotify.h')
