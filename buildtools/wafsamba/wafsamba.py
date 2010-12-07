@@ -23,6 +23,7 @@ import samba_conftests
 import samba_abi
 import tru64cc
 import irixcc
+import hpuxcc
 import generic_cc
 import samba_dist
 import samba_wildcard
