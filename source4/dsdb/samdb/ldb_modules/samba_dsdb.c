@@ -218,6 +218,12 @@ static int samba_dsdb_init(struct ldb_module *module)
 		return ldb_oom(ldb);
 	}
 
+	ret = ldb_register_samba_handlers(ldb);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
 	samba_dsdb_dn = ldb_dn_new(tmp_ctx, ldb, "@SAMBA_DSDB");
 	if (!samba_dsdb_dn) {
 		talloc_free(tmp_ctx);
