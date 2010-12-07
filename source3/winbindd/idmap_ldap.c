@@ -61,13 +61,6 @@ static char *idmap_fetch_secret(const char *backend, bool alloc,
 	return ret;
 }
 
-struct idmap_ldap_alloc_context {
-	struct smbldap_state *smbldap_state;
-	char *url;
-	char *suffix;
-	char *user_dn;
-};
-
 struct idmap_ldap_context {
 	struct smbldap_state *smbldap_state;
 	char *url;
