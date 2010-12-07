@@ -322,6 +322,12 @@ return acl_get_perm_np(permset_d, perm);
     if conf.CHECK_FUNCS('dirfd'):
         conf.DEFINE('HAVE_DIRFD_DECL', 1)
 
+    conf.CHECK_CODE('struct statfs fsd; fsid_t fsid = fsd.f_fsid; return statfs(".", &fsd);',
+                    'HAVE_STATFS_F_FSID',
+                    msg="vfs_fileid: checking for statfs() and struct statfs.f_fsid",
+                    headers='sys/types.h sys/statfs.h',
+                    execute=True)
+
     default_static_modules=TO_LIST('''pdb_smbpasswd pdb_tdbsam pdb_wbc_sam pdb_ldap rpc_lsarpc rpc_samr
                                       rpc_winreg rpc_initshutdown rpc_dssetup rpc_wkssvc rpc_svcctl
                                       rpc_ntsvcs rpc_netlogon rpc_netdfs rpc_srvsvc rpc_spoolss
@@ -348,6 +354,9 @@ return acl_get_perm_np(permset_d, perm);
 
     if conf.CONFIG_SET('HAVE_DIRFD_DECL'):
 	default_shared_modules.extend(TO_LIST('vfs_syncops vfs_dirsort'))
+
+    if conf.CONFIG_SET('HAVE_STATFS_F_FSID'):
+	default_shared_modules.extend(TO_LIST('vfs_fileid'))
 
     explicit_shared_modules = TO_LIST(Options.options.shared_modules, delimiter=',')
     explicit_static_modules = TO_LIST(Options.options.static_modules, delimiter=',')
