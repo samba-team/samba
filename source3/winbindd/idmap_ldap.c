@@ -38,17 +38,13 @@
 
 #include "smbldap.h"
 
-static char *idmap_fetch_secret(const char *backend, bool alloc,
+static char *idmap_fetch_secret(const char *backend,
 				const char *domain, const char *identity)
 {
 	char *tmp, *ret;
 	int r;
 
-	if (alloc) {
-		r = asprintf(&tmp, "IDMAP_ALLOC_%s", backend);
-	} else {
-		r = asprintf(&tmp, "IDMAP_%s_%s", backend, domain);
-	}
+	r = asprintf(&tmp, "IDMAP_%s_%s", backend, domain);
 
 	if (r < 0)
 		return NULL;
@@ -102,12 +98,13 @@ static NTSTATUS get_credentials( TALLOC_CTX *mem_ctx,
 
 	if ( tmp ) {
 		if (!dom) {
-			/* only the alloc backend can pass in a NULL dom */
-			secret = idmap_fetch_secret("ldap", True,
-						    NULL, tmp);
+			DEBUG(0, ("get_credentials: Invalid domain 'NULL' "
+				  "encountered for user DN %s\n",
+				  tmp));
+			ret = NT_STATUS_UNSUCCESSFUL;
+			goto done;
 		} else {
-			secret = idmap_fetch_secret("ldap", False,
-						    dom->name, tmp);
+			secret = idmap_fetch_secret("ldap", dom->name, tmp);
 		}
 
 		if (!secret) {
