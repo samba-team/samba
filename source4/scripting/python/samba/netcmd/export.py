@@ -44,8 +44,7 @@ class cmd_export_keytab(Command):
 
     def run(self, keytab, credopts=None, sambaopts=None, versionopts=None):
         lp = sambaopts.get_loadparm()
-        creds = credopts.get_credentials(lp)
-        net = Net(creds, lp, server=credopts.ipaddress)
+        net = Net(None, lp, server=credopts.ipaddress)
         net.export_keytab(keytab=keytab)
 
 
