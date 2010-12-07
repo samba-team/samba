@@ -1386,7 +1386,7 @@ bld.SAMBA_BINARY('locktest',
 
 bld.SAMBA_BINARY('nsstest',
                  source=NSSTEST_SRC,
-                 deps='',
+                 deps='dl',
                  vars=locals())
 
 bld.SAMBA_BINARY('pdbtest',
