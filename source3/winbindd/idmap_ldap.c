@@ -168,11 +168,7 @@ static NTSTATUS verify_idpool(struct idmap_domain *dom)
 
 	ctx = talloc_get_type(dom->private_data, struct idmap_ldap_context);
 
-	if (!ctx->alloc) {
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-	mem_ctx = talloc_new(ctx->alloc);
+	mem_ctx = talloc_new(ctx);
 	if (mem_ctx == NULL) {
 		DEBUG(0, ("Out of memory!\n"));
 		return NT_STATUS_NO_MEMORY;
@@ -184,8 +180,8 @@ static NTSTATUS verify_idpool(struct idmap_domain *dom)
 	attr_list = get_attr_list(mem_ctx, idpool_attr_list);
 	CHECK_ALLOC_DONE(attr_list);
 
-	rc = smbldap_search(ctx->alloc->smbldap_state,
-				ctx->alloc->suffix,
+	rc = smbldap_search(ctx->smbldap_state,
+				ctx->suffix,
 				LDAP_SCOPE_SUBTREE,
 				filter,
 				attr_list,
@@ -198,14 +194,13 @@ static NTSTATUS verify_idpool(struct idmap_domain *dom)
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	count = ldap_count_entries(ctx->alloc->smbldap_state->ldap_struct,
-				   result);
+	count = ldap_count_entries(ctx->smbldap_state->ldap_struct, result);
 
 	ldap_msgfree(result);
 
 	if ( count > 1 ) {
 		DEBUG(0,("Multiple entries returned from %s (base == %s)\n",
-			filter, ctx->alloc->suffix));
+			filter, ctx->suffix));
 		ret = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
@@ -228,8 +223,8 @@ static NTSTATUS verify_idpool(struct idmap_domain *dom)
 						    LDAP_ATTR_GIDNUMBER),
 				gid_str);
 		if (mods) {
-			rc = smbldap_modify(ctx->alloc->smbldap_state,
-						ctx->alloc->suffix,
+			rc = smbldap_modify(ctx->smbldap_state,
+						ctx->suffix,
 						mods);
 			ldap_mods_free(mods, True);
 		} else {
