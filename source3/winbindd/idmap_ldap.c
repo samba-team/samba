@@ -631,10 +631,10 @@ static NTSTATUS idmap_ldap_db_init(struct idmap_domain *dom,
 
 	dom->private_data = ctx;
 
-	ret = idmap_ldap_alloc_init(dom, params);
+	ret = verify_idpool(dom);
 	if (!NT_STATUS_IS_OK(ret)) {
-		DEBUG(1, ("idmap_ldap_db_init: Failed to initialize alloc "
-			  "subsystem: %s\n", nt_errstr(ret)));
+		DEBUG(1, ("idmap_ldap_db_init: failed to verify ID pool (%s)\n",
+			 nt_errstr(ret)));
 		goto done;
 	}
 
