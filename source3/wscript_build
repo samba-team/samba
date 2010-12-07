@@ -1035,6 +1035,7 @@ bld.SAMBA_SUBSYSTEM('SERVICES',
 
 bld.SAMBA_SUBSYSTEM('PLAINTEXT_AUTH',
                     source=PLAINTEXT_AUTH_SRC,
+                    deps='pam',
                     vars=locals())
 
 bld.SAMBA_SUBSYSTEM('SLCACHE',
