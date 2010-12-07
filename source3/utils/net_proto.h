@@ -86,9 +86,6 @@ int net_help(struct net_context *c, int argc, const char **argv);
 
 /* The following definitions come from utils/net_idmap.c  */
 
-bool idmap_store_secret(const char *backend,
-			const char *domain, const char *identity,
-			const char *secret);
 int net_help_idmap(struct net_context *c, int argc, const char **argv);
 int net_idmap(struct net_context *c, int argc, const char **argv);
 
