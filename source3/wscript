@@ -62,6 +62,7 @@ def set_options(opt):
     opt.SAMBA3_ADD_OPTION('avahi', with_name="enable", without_name="disable")
     opt.SAMBA3_ADD_OPTION('iconv')
     opt.SAMBA3_ADD_OPTION('acl-support')
+    opt.SAMBA3_ADD_OPTION('dnsupdate')
 
 
 def configure(conf):
@@ -855,7 +856,15 @@ int i; i = PAM_RADIO_TYPE;
 				execute=True,
 				mandatory=True,
 				msg="Checking whether setuidx is available")
-
+    if Options.options.with_dnsupdate:
+        conf.CHECK_HEADERS('uuid/uuid.h')
+        conf.CHECK_FUNCS_IN('uuid_generate', 'uuid')
+        if not conf.CONFIG_SET('HAVE_UUID_UUID_H') and not conf.CONFIG_SET('HAVE_UUID_GENERATE'):
+            print "--with-dnsupdate=yes but uuid support not sufficient"
+            sys.exit(1)
+        conf.DEFINE('WITH_DNS_UPDATES', 1)
+    else:
+        conf.SET_TARGET_TYPE('uuid', 'EMPTY')
 
     conf.SAMBA_CONFIG_H('include/config.h')
 
