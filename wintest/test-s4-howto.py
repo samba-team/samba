@@ -523,10 +523,11 @@ def test_dcpromo_rodc(t, vm):
     t.info("Checking the w2k8 RODC join is OK")
     t.chdir('${PREFIX}')
     t.port_wait("${WIN_IP}", 139)
+    child = t.open_telnet("${WIN_HOSTNAME}", "${DOMAIN}\\administrator", "${PASSWORD1}", set_time=True)
+    child.sendline("ipconfig /registerdns")
     t.retry_cmd('bin/smbclient -L ${WIN_HOSTNAME}.${LCREALM} -Uadministrator@${LCREALM}%${PASSWORD1}', ["C$", "IPC$", "Sharename"])
     t.cmd_contains("host -t A ${WIN_HOSTNAME}.${LCREALM}.", ['has address'])
     t.cmd_contains('bin/smbclient -L ${WIN_HOSTNAME}.${LCREALM} -Utestallowed@${LCREALM}%${PASSWORD1}', ["C$", "IPC$", "Sharename"])
-    child = t.open_telnet("${WIN_HOSTNAME}", "${DOMAIN}\\administrator", "${PASSWORD1}", set_time=True)
     child.sendline("net use t: \\\\${HOSTNAME}.${LCREALM}\\test")
     child.expect("The command completed successfully")
 
@@ -539,11 +540,25 @@ def test_dcpromo_rodc(t, vm):
     child.expect("CN=Configuration,${BASEDN}")
     child.expect("was successful")
 
+    for nc in [ '${BASEDN}', 'CN=Configuration,${BASEDN}', 'CN=Schema,CN=Configuration,${BASEDN}' ]:
+        t.cmd_contains("bin/samba-tool drs replicate --add-ref ${WIN_HOSTNAME}.${LCREALM} ${HOSTNAME}.${LCREALM} %s" % nc, ["was successful"])
+
+    t.cmd_contains("bin/samba-tool drs showrepl ${HOSTNAME}.${LCREALM}",
+                 [ "INBOUND NEIGHBORS",
+                   "OUTBOUND NEIGHBORS",
+                   "${BASEDN}",
+                   "Last attempt.*was successful",
+                   "CN=Configuration,${BASEDN}",
+                   "Last attempt.*was successful",
+                   "CN=Configuration,${BASEDN}",
+                   "Last attempt.*was successful" ],
+                   ordered=True,
+                   regex=True)
+
     t.info("Checking if new users are available on windows")
     t.run_cmd('bin/samba-tool newuser test2 ${PASSWORD2}')
     t.retry_cmd("bin/smbclient -L ${WIN_HOSTNAME}.${LCREALM} -Utest2%${PASSWORD2} -k yes", ['Sharename', 'Remote IPC'])
-    t.retry_cmd("bin/smbclient -L ${WIN_HOSTNAME}.${LCREALM} -Utest2%${PASSWORD2} -k no", ['LOGON_FAILURE'])
-    t.retry_cmd("bin/samba-tool drs replicate ${WIN_HOSTNAME}.${LCREALM} ${HOSTNAME}.${LCREALM} ${BASEDN} -k yes", ["was successful"])
+    t.retry_cmd("bin/samba-tool drs replicate ${WIN_HOSTNAME}.${LCREALM} ${HOSTNAME}.${LCREALM} ${BASEDN}", ["was successful"])
     t.retry_cmd("bin/smbclient -L ${WIN_HOSTNAME}.${LCREALM} -Utest2%${PASSWORD2} -k no", ['Sharename', 'Remote IPC'])
     t.run_cmd('bin/samba-tool user delete test2 -Uadministrator@${LCREALM}%${PASSWORD1}')
     t.retry_cmd("bin/smbclient -L ${WIN_HOSTNAME}.${LCREALM} -Utest2%${PASSWORD2} -k yes", ['LOGON_FAILURE'])
