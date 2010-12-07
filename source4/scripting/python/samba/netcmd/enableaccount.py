@@ -53,7 +53,7 @@ class cmd_enableaccount(Command):
             filter = "(&(objectClass=user)(sAMAccountName=%s))" % (username)
 
         lp = sambaopts.get_loadparm()
-        creds = credopts.get_credentials(lp)
+        creds = credopts.get_credentials(lp, fallback_machine=True)
 
         samdb = SamDB(url=H, session_info=system_session(),
             credentials=creds, lp=lp)

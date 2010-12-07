@@ -19,7 +19,7 @@
 #
 
 import samba.getopt as options
-
+import common
 from samba.net import Net
 
 from samba.netcmd import (
@@ -36,10 +36,12 @@ class cmd_time(Command):
         "versionopts": options.VersionOptions,
         }
 
-    takes_args = ["server_name"]
+    takes_args = ["server_name?"]
 
-    def run(self, server_name, credopts=None, sambaopts=None, versionopts=None):
+    def run(self, server_name=None, credopts=None, sambaopts=None, versionopts=None):
         lp = sambaopts.get_loadparm()
-        creds = credopts.get_credentials(lp)
+        creds = credopts.get_credentials(lp, fallback_machine=True)
         net = Net(creds, lp, server=credopts.ipaddress)
+        if server_name is None:
+            server_name = common.netcmd_dnsname(lp)
         print net.time(server_name)

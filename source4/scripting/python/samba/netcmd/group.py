@@ -76,7 +76,7 @@ class cmd_group_add(Command):
               gtype = distribution_group.get(group_scope, GTYPE_DISTRIBUTION_GLOBAL_GROUP)
 
         lp = sambaopts.get_loadparm()
-        creds = credopts.get_credentials(lp)
+        creds = credopts.get_credentials(lp, fallback_machine=True)
 
         try:
             samdb = SamDB(url=H, session_info=system_session(),
@@ -107,7 +107,7 @@ class cmd_group_delete(Command):
     def run(self, groupname, credopts=None, sambaopts=None, versionopts=None, H=None):
 
         lp = sambaopts.get_loadparm()
-        creds = credopts.get_credentials(lp)
+        creds = credopts.get_credentials(lp, fallback_machine=True)
 
         try:
             samdb = SamDB(url=H, session_info=system_session(),
@@ -138,7 +138,7 @@ class cmd_group_add_members(Command):
             versionopts=None, H=None):
 
         lp = sambaopts.get_loadparm()
-        creds = credopts.get_credentials(lp)
+        creds = credopts.get_credentials(lp, fallback_machine=True)
 
         try:
             samdb = SamDB(url=H, session_info=system_session(),
@@ -169,7 +169,7 @@ class cmd_group_remove_members(Command):
             versionopts=None, H=None):
 
         lp = sambaopts.get_loadparm()
-        creds = credopts.get_credentials(lp)
+        creds = credopts.get_credentials(lp, fallback_machine=True)
 
         try:
             samdb = SamDB(url=H, session_info=system_session(),

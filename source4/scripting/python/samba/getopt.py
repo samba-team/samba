@@ -151,7 +151,7 @@ class CredentialsOptions(optparse.OptionGroup):
     def _set_simple_bind_dn(self, option, opt_str, arg, parser):
         self.creds.set_bind_dn(arg)
 
-    def get_credentials(self, lp):
+    def get_credentials(self, lp, fallback_machine=False):
         """Obtain the credentials set on the command-line.
 
         :param lp: Loadparm object to use.
@@ -160,6 +160,15 @@ class CredentialsOptions(optparse.OptionGroup):
         self.creds.guess(lp)
         if self.no_pass:
             self.creds.set_cmdline_callbacks()
+
+        # possibly fallback to using the machine account, if we have
+        # access to the secrets db
+        if fallback_machine and not self.creds.authentication_requested():
+            try:
+                self.creds.set_machine_account(lp)
+            except Exception:
+                pass
+
         return self.creds
 
 class CredentialsOptionsDouble(CredentialsOptions):

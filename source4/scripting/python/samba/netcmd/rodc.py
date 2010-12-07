@@ -77,11 +77,7 @@ class cmd_rodc_preload(Command):
 
         lp = sambaopts.get_loadparm()
 
-        creds = credopts.get_credentials(lp)
-        if not creds.authentication_requested():
-            print "Using machine account"
-            creds.set_machine_account(lp)
-
+        creds = credopts.get_credentials(lp, fallback_machine=True)
 
         # connect to the remote and local SAMs
         samdb = SamDB(url="ldap://%s" % server,

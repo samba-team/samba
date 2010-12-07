@@ -133,7 +133,7 @@ all=all of the above"""),
     def run(self, subcommand, force=None, host=None, role=None,
             credopts=None, sambaopts=None, versionopts=None):
         lp = sambaopts.get_loadparm()
-        creds = credopts.get_credentials(lp)
+        creds = credopts.get_credentials(lp, fallback_machine=True)
 
         samdb = SamDB(url=host, session_info=system_session(),
             credentials=creds, lp=lp)

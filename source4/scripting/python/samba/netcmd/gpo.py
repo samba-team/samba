@@ -101,9 +101,7 @@ class cmd_listall(Command):
         self.url = H
         self.lp = sambaopts.get_loadparm()
 
-        self.creds = credopts.get_credentials(self.lp)
-        if not self.creds.authentication_requested():
-            self.creds.set_machine_account(self.lp)
+        self.creds = credopts.get_credentials(self.lp, fallback_machine=True)
 
         samdb_connect(self)
 
@@ -153,9 +151,7 @@ class cmd_list(Command):
         self.url = H
         self.lp = sambaopts.get_loadparm()
 
-        self.creds = credopts.get_credentials(self.lp)
-        if not self.creds.authentication_requested():
-            self.creds.set_machine_account(self.lp)
+        self.creds = credopts.get_credentials(self.lp, fallback_machine=True)
 
         samdb_connect(self)
 

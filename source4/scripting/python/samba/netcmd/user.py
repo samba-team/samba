@@ -41,7 +41,7 @@ class cmd_user_add(Command):
 
     def run(self, name, password=None, credopts=None, sambaopts=None, versionopts=None):
         lp = sambaopts.get_loadparm()
-        creds = credopts.get_credentials(lp)
+        creds = credopts.get_credentials(lp )
         net = Net(creds, lp, server=credopts.ipaddress)
         net.create_user(name)
         if password is not None:
@@ -62,7 +62,7 @@ class cmd_user_delete(Command):
 
     def run(self, name, credopts=None, sambaopts=None, versionopts=None):
         lp = sambaopts.get_loadparm()
-        creds = credopts.get_credentials(lp)
+        creds = credopts.get_credentials(lp, fallback_machine=True)
         net = Net(creds, lp, server=credopts.ipaddress)
         net.delete_user(name)
 

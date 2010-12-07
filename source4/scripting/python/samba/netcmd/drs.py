@@ -33,7 +33,7 @@ from samba.netcmd import (
 from samba.samdb import SamDB
 from samba import drs_utils, nttime2string, dsdb
 from samba.dcerpc import drsuapi, misc
-
+import common
 
 def drsuapi_connect(ctx):
     '''make a DRSUAPI connection to the server'''
@@ -94,7 +94,7 @@ class cmd_drs_showrepl(Command):
         "credopts": options.CredentialsOptions,
     }
 
-    takes_args = ["DC"]
+    takes_args = ["DC?"]
 
     def print_neighbour(self, n):
         '''print one set of neighbour information'''
@@ -127,15 +127,14 @@ class cmd_drs_showrepl(Command):
         return (info_type, info)
 
 
-    def run(self, DC, sambaopts=None,
+    def run(self, DC=None, sambaopts=None,
             credopts=None, versionopts=None, server=None):
 
-        self.server = DC
         self.lp = sambaopts.get_loadparm()
-
-        self.creds = credopts.get_credentials(self.lp)
-        if not self.creds.authentication_requested():
-            self.creds.set_machine_account(self.lp)
+        if DC is None:
+            DC = common.netcmd_dnsname(self.lp)
+        self.server = DC
+        self.creds = credopts.get_credentials(self.lp, fallback_machine=True)
 
         drsuapi_connect(self)
         samdb_connect(self)
@@ -145,7 +144,10 @@ class cmd_drs_showrepl(Command):
         server_dns = self.samdb.search(base="", scope=ldb.SCOPE_BASE, attrs=["dnsHostName"])[0]['dnsHostName'][0]
 
         (site, server) = drs_parse_ntds_dn(ntds_dn)
-        ntds = self.samdb.search(base=ntds_dn, scope=ldb.SCOPE_BASE, attrs=['options', 'objectGUID', 'invocationId'])
+        try:
+            ntds = self.samdb.search(base=ntds_dn, scope=ldb.SCOPE_BASE, attrs=['options', 'objectGUID', 'invocationId'])
+        except Exception, e:
+            raise CommandError("Failed to search NTDS DN %s" % ntds_dn)
         conn = self.samdb.search(base=ntds_dn, expression="(objectClass=nTDSConnection)")
 
         print("%s\\%s" % (site, server))
@@ -207,17 +209,17 @@ class cmd_drs_kcc(Command):
         "credopts": options.CredentialsOptions,
     }
 
-    takes_args = ["DC"]
+    takes_args = ["DC?"]
 
-    def run(self, DC, sambaopts=None,
+    def run(self, DC=None, sambaopts=None,
             credopts=None, versionopts=None, server=None):
 
-        self.server = DC
         self.lp = sambaopts.get_loadparm()
+        if DC is None:
+            DC = common.netcmd_dnsname(self.lp)
+        self.server = DC
 
-        self.creds = credopts.get_credentials(self.lp)
-        if not self.creds.authentication_requested():
-            self.creds.set_machine_account(self.lp)
+        self.creds = credopts.get_credentials(self.lp, fallback_machine=True)
 
         drsuapi_connect(self)
 
@@ -254,9 +256,7 @@ class cmd_drs_replicate(Command):
         self.server = DEST_DC
         self.lp = sambaopts.get_loadparm()
 
-        self.creds = credopts.get_credentials(self.lp)
-        if not self.creds.authentication_requested():
-            self.creds.set_machine_account(self.lp)
+        self.creds = credopts.get_credentials(self.lp, fallback_machine=True)
 
         drsuapi_connect(self)
         samdb_connect(self)
@@ -292,7 +292,7 @@ class cmd_drs_replicate(Command):
 
         try:
             self.drsuapi.DsReplicaSync(self.drsuapi_handle, 1, req1)
-        except Exception, e:
+        except Exception, estr:
             raise CommandError("DsReplicaSync failed", estr)
 	print("Replicate from %s to %s was successful." % (SOURCE_DC, DEST_DC))
 
@@ -309,17 +309,16 @@ class cmd_drs_bind(Command):
         "credopts": options.CredentialsOptions,
     }
 
-    takes_args = ["DC"]
+    takes_args = ["DC?"]
 
-    def run(self, DC, sambaopts=None,
+    def run(self, DC=None, sambaopts=None,
             credopts=None, versionopts=None, server=None):
 
-        self.server = DC
         self.lp = sambaopts.get_loadparm()
-
-        self.creds = credopts.get_credentials(self.lp)
-        if not self.creds.authentication_requested():
-            self.creds.set_machine_account(self.lp)
+        if DC is None:
+            DC = common.netcmd_dnsname(self.lp)
+        self.server = DC
+        self.creds = credopts.get_credentials(self.lp, fallback_machine=True)
 
         drsuapi_connect(self)
         samdb_connect(self)

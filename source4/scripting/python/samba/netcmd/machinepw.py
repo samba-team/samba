@@ -39,7 +39,7 @@ class cmd_machinepw(Command):
 
     def run(self, secret, sambaopts=None, credopts=None, versionopts=None):
         lp = sambaopts.get_loadparm()
-        creds = credopts.get_credentials(lp)
+        creds = credopts.get_credentials(lp, fallback_machine=True)
         url = lp.get("secrets database")
         secretsdb = Ldb(url=url, session_info=system_session(),
             credentials=creds, lp=lp)
