@@ -151,6 +151,399 @@ struct setup_password_fields_io {
 	} g;
 };
 
+static int password_hash_bypass(struct ldb_module *module, struct ldb_request *request)
+{
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
+	const struct ldb_message *msg;
+	struct ldb_message_element *nte;
+	struct ldb_message_element *lme;
+	struct ldb_message_element *nthe;
+	struct ldb_message_element *lmhe;
+	struct ldb_message_element *sce;
+
+	switch (request->operation) {
+	case LDB_ADD:
+		msg = request->op.add.message;
+		break;
+	case LDB_MODIFY:
+		msg = request->op.mod.message;
+		break;
+	default:
+		return ldb_next_request(module, request);
+	}
+
+	/* nobody must touch password histories and 'supplementalCredentials' */
+	nte = dsdb_get_single_valued_attr(msg, "unicodePwd",
+					  request->operation);
+	lme = dsdb_get_single_valued_attr(msg, "dBCSPwd",
+					  request->operation);
+	nthe = dsdb_get_single_valued_attr(msg, "ntPwdHistory",
+					   request->operation);
+	lmhe = dsdb_get_single_valued_attr(msg, "lmPwdHistory",
+					   request->operation);
+	sce = dsdb_get_single_valued_attr(msg, "supplementalCredentials",
+					  request->operation);
+
+#define CHECK_HASH_ELEMENT(e, min, max) do {\
+	if (e && e->num_values) { \
+		unsigned int _count; \
+		if (e->num_values != 1) { \
+			return ldb_error(ldb, LDB_ERR_CONSTRAINT_VIOLATION, \
+					 "num_values != 1"); \
+		} \
+		if ((e->values[0].length % 16) != 0) { \
+			return ldb_error(ldb, LDB_ERR_CONSTRAINT_VIOLATION, \
+					 "length % 16 != 0"); \
+		} \
+		_count = e->values[0].length / 16; \
+		if (_count < min) { \
+			return ldb_error(ldb, LDB_ERR_CONSTRAINT_VIOLATION, \
+					 "count < min"); \
+		} \
+		if (_count > max) { \
+			return ldb_error(ldb, LDB_ERR_CONSTRAINT_VIOLATION, \
+					 "count > max"); \
+		} \
+	} \
+} while (0)
+
+	CHECK_HASH_ELEMENT(nte, 1, 1);
+	CHECK_HASH_ELEMENT(lme, 1, 1);
+	CHECK_HASH_ELEMENT(nthe, 1, INT32_MAX);
+	CHECK_HASH_ELEMENT(lmhe, 1, INT32_MAX);
+
+	if (sce && sce->num_values) {
+		enum ndr_err_code ndr_err;
+		struct supplementalCredentialsBlob *scb;
+		struct supplementalCredentialsPackage *scpp = NULL;
+		struct supplementalCredentialsPackage *scpk = NULL;
+		struct supplementalCredentialsPackage *scpkn = NULL;
+		struct supplementalCredentialsPackage *scpct = NULL;
+		DATA_BLOB scpbp = data_blob_null;
+		DATA_BLOB scpbk = data_blob_null;
+		DATA_BLOB scpbkn = data_blob_null;
+		DATA_BLOB scpbct = data_blob_null;
+		DATA_BLOB blob;
+		uint32_t i;
+
+		if (sce->num_values != 1) {
+			return ldb_error(ldb, LDB_ERR_CONSTRAINT_VIOLATION,
+					 "num_values != 1");
+		}
+
+		scb = talloc_zero(request, struct supplementalCredentialsBlob);
+		if (!scb) {
+			return ldb_module_oom(module);
+		}
+
+		ndr_err = ndr_pull_struct_blob_all(&sce->values[0], scb, scb,
+				(ndr_pull_flags_fn_t)ndr_pull_supplementalCredentialsBlob);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			return ldb_error(ldb, LDB_ERR_CONSTRAINT_VIOLATION,
+					 "ndr_pull_struct_blob_all");
+		}
+
+		if (scb->sub.num_packages < 2) {
+			return ldb_error(ldb, LDB_ERR_CONSTRAINT_VIOLATION,
+					 "num_packages < 2");
+		}
+
+		for (i=0; i < scb->sub.num_packages; i++) {
+			DATA_BLOB subblob;
+
+			subblob = strhex_to_data_blob(scb, scb->sub.packages[i].data);
+			if (subblob.data == NULL) {
+				return ldb_module_oom(module);
+			}
+
+			if (strcmp(scb->sub.packages[i].name, "Packages") == 0) {
+				if (scpp) {
+					return ldb_error(ldb,
+							 LDB_ERR_CONSTRAINT_VIOLATION,
+							 "Packages twice");
+				}
+				scpp = &scb->sub.packages[i];
+				scpbp = subblob;
+				continue;
+			}
+			if (strcmp(scb->sub.packages[i].name, "Primary:Kerberos") == 0) {
+				if (scpk) {
+					return ldb_error(ldb,
+							 LDB_ERR_CONSTRAINT_VIOLATION,
+							 "Primary:Kerberos twice");
+				}
+				scpk = &scb->sub.packages[i];
+				scpbk = subblob;
+				continue;
+			}
+			if (strcmp(scb->sub.packages[i].name, "Primary:Kerberos-Newer-Keys") == 0) {
+				if (scpkn) {
+					return ldb_error(ldb,
+							 LDB_ERR_CONSTRAINT_VIOLATION,
+							 "Primary:Kerberos-Newer-Keys twice");
+				}
+				scpkn = &scb->sub.packages[i];
+				scpbkn = subblob;
+				continue;
+			}
+			if (strcmp(scb->sub.packages[i].name, "Primary:CLEARTEXT") == 0) {
+				if (scpct) {
+					return ldb_error(ldb,
+							 LDB_ERR_CONSTRAINT_VIOLATION,
+							 "Primary:CLEARTEXT twice");
+				}
+				scpct = &scb->sub.packages[i];
+				scpbct = subblob;
+				continue;
+			}
+
+			data_blob_free(&subblob);
+		}
+
+		if (scpp) {
+			struct package_PackagesBlob *p;
+			uint32_t n;
+
+			p = talloc_zero(scb, struct package_PackagesBlob);
+			if (p == NULL) {
+				return ldb_module_oom(module);
+			}
+
+			ndr_err = ndr_pull_struct_blob(&scpbp, p, p,
+					(ndr_pull_flags_fn_t)ndr_pull_package_PackagesBlob);
+			if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+				return ldb_error(ldb, LDB_ERR_CONSTRAINT_VIOLATION,
+						 "ndr_pull_struct_blob Packages");
+			}
+
+			if (p->names == NULL) {
+				return ldb_error(ldb, LDB_ERR_CONSTRAINT_VIOLATION,
+						 "Packages names == NULL");
+			}
+
+			for (n = 0; p->names[n]; n++) {
+				/* noop */
+			}
+
+			if (scb->sub.num_packages != (n + 1)) {
+				return ldb_error(ldb, LDB_ERR_CONSTRAINT_VIOLATION,
+						 "Packages num_packages != num_names + 1");
+			}
+
+			talloc_free(p);
+		}
+
+		if (scpk) {
+			struct package_PrimaryKerberosBlob *k;
+
+			k = talloc_zero(scb, struct package_PrimaryKerberosBlob);
+			if (k == NULL) {
+				return ldb_module_oom(module);
+			}
+
+			ndr_err = ndr_pull_struct_blob(&scpbk, k, k,
+					(ndr_pull_flags_fn_t)ndr_pull_package_PrimaryKerberosBlob);
+			if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+				return ldb_error(ldb, LDB_ERR_CONSTRAINT_VIOLATION,
+						 "ndr_pull_struct_blob PrimaryKerberos");
+			}
+
+			if (k->version != 3) {
+				return ldb_error(ldb, LDB_ERR_CONSTRAINT_VIOLATION,
+						 "PrimaryKerberos version != 3");
+			}
+
+			if (k->ctr.ctr3.salt.string == NULL) {
+				return ldb_error(ldb, LDB_ERR_CONSTRAINT_VIOLATION,
+						 "PrimaryKerberos salt == NULL");
+			}
+
+			if (strlen(k->ctr.ctr3.salt.string) == 0) {
+				return ldb_error(ldb, LDB_ERR_CONSTRAINT_VIOLATION,
+						 "PrimaryKerberos strlen(salt) == 0");
+			}
+
+			if (k->ctr.ctr3.num_keys != 2) {
+				return ldb_error(ldb, LDB_ERR_CONSTRAINT_VIOLATION,
+						 "PrimaryKerberos num_keys != 2");
+			}
+
+			if (k->ctr.ctr3.num_old_keys > k->ctr.ctr3.num_keys) {
+				return ldb_error(ldb, LDB_ERR_CONSTRAINT_VIOLATION,
+						 "PrimaryKerberos num_old_keys > num_keys");
+			}
+
+			if (k->ctr.ctr3.keys[0].keytype != ENCTYPE_DES_CBC_MD5) {
+				return ldb_error(ldb, LDB_ERR_CONSTRAINT_VIOLATION,
+						 "PrimaryKerberos key[0] != DES_CBC_MD5");
+			}
+			if (k->ctr.ctr3.keys[1].keytype != ENCTYPE_DES_CBC_CRC) {
+				return ldb_error(ldb, LDB_ERR_CONSTRAINT_VIOLATION,
+						 "PrimaryKerberos key[1] != DES_CBC_CRC");
+			}
+
+			if (k->ctr.ctr3.keys[0].value_len != 8) {
+				return ldb_error(ldb, LDB_ERR_CONSTRAINT_VIOLATION,
+						 "PrimaryKerberos key[0] value_len != 8");
+			}
+			if (k->ctr.ctr3.keys[1].value_len != 8) {
+				return ldb_error(ldb, LDB_ERR_CONSTRAINT_VIOLATION,
+						 "PrimaryKerberos key[1] value_len != 8");
+			}
+
+			for (i = 0; i < k->ctr.ctr3.num_old_keys; i++) {
+				if (k->ctr.ctr3.old_keys[i].keytype ==
+				    k->ctr.ctr3.keys[i].keytype &&
+				    k->ctr.ctr3.old_keys[i].value_len ==
+				    k->ctr.ctr3.keys[i].value_len) {
+					continue;
+				}
+
+				return ldb_error(ldb, LDB_ERR_CONSTRAINT_VIOLATION,
+						 "PrimaryKerberos old_keys type/value_len doesn't match");
+			}
+
+			talloc_free(k);
+		}
+
+		if (scpkn) {
+			struct package_PrimaryKerberosBlob *k;
+
+			k = talloc_zero(scb, struct package_PrimaryKerberosBlob);
+			if (k == NULL) {
+				return ldb_module_oom(module);
+			}
+
+			ndr_err = ndr_pull_struct_blob(&scpbkn, k, k,
+					(ndr_pull_flags_fn_t)ndr_pull_package_PrimaryKerberosBlob);
+			if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+				return ldb_error(ldb, LDB_ERR_CONSTRAINT_VIOLATION,
+						 "ndr_pull_struct_blob PrimaryKerberosNeverKeys");
+			}
+
+			if (k->version != 4) {
+				return ldb_error(ldb, LDB_ERR_CONSTRAINT_VIOLATION,
+						 "KerberosNerverKeys version != 4");
+			}
+
+			if (k->ctr.ctr4.salt.string == NULL) {
+				return ldb_error(ldb, LDB_ERR_CONSTRAINT_VIOLATION,
+						 "KerberosNewerKeys salt == NULL");
+			}
+
+			if (strlen(k->ctr.ctr4.salt.string) == 0) {
+				return ldb_error(ldb, LDB_ERR_CONSTRAINT_VIOLATION,
+						 "KerberosNewerKeys strlen(salt) == 0");
+			}
+
+			if (k->ctr.ctr4.num_keys != 4) {
+				return ldb_error(ldb, LDB_ERR_CONSTRAINT_VIOLATION,
+						 "KerberosNewerKeys num_keys != 2");
+			}
+
+			if (k->ctr.ctr4.num_old_keys > k->ctr.ctr4.num_keys) {
+				return ldb_error(ldb, LDB_ERR_CONSTRAINT_VIOLATION,
+						 "KerberosNewerKeys num_old_keys > num_keys");
+			}
+
+			if (k->ctr.ctr4.num_older_keys > k->ctr.ctr4.num_old_keys) {
+				return ldb_error(ldb, LDB_ERR_CONSTRAINT_VIOLATION,
+						 "KerberosNewerKeys num_older_keys > num_old_keys");
+			}
+
+			if (k->ctr.ctr4.keys[0].keytype != ENCTYPE_AES256_CTS_HMAC_SHA1_96) {
+				return ldb_error(ldb, LDB_ERR_CONSTRAINT_VIOLATION,
+						 "KerberosNewerKeys key[0] != AES256");
+			}
+			if (k->ctr.ctr4.keys[1].keytype != ENCTYPE_AES128_CTS_HMAC_SHA1_96) {
+				return ldb_error(ldb, LDB_ERR_CONSTRAINT_VIOLATION,
+						 "KerberosNewerKeys key[1] != AES128");
+			}
+			if (k->ctr.ctr4.keys[2].keytype != ENCTYPE_DES_CBC_MD5) {
+				return ldb_error(ldb, LDB_ERR_CONSTRAINT_VIOLATION,
+						 "KerberosNewerKeys key[2] != DES_CBC_MD5");
+			}
+			if (k->ctr.ctr4.keys[3].keytype != ENCTYPE_DES_CBC_CRC) {
+				return ldb_error(ldb, LDB_ERR_CONSTRAINT_VIOLATION,
+						 "KerberosNewerKeys key[3] != DES_CBC_CRC");
+			}
+
+			if (k->ctr.ctr4.keys[0].value_len != 32) {
+				return ldb_error(ldb, LDB_ERR_CONSTRAINT_VIOLATION,
+						 "KerberosNewerKeys key[0] value_len != 32");
+			}
+			if (k->ctr.ctr4.keys[1].value_len != 16) {
+				return ldb_error(ldb, LDB_ERR_CONSTRAINT_VIOLATION,
+						 "KerberosNewerKeys key[1] value_len != 16");
+			}
+			if (k->ctr.ctr4.keys[2].value_len != 8) {
+				return ldb_error(ldb, LDB_ERR_CONSTRAINT_VIOLATION,
+						 "KerberosNewerKeys key[2] value_len != 8");
+			}
+			if (k->ctr.ctr4.keys[3].value_len != 8) {
+				return ldb_error(ldb, LDB_ERR_CONSTRAINT_VIOLATION,
+						 "KerberosNewerKeys key[3] value_len != 8");
+			}
+
+			/*
+			 * TODO:
+			 * Maybe we can check old and older keys here.
+			 * But we need to do some tests, if the old keys
+			 * can be taken from the PrimaryKerberos blob
+			 * (with only des keys), when the domain was upgraded
+			 * from w2k3 to w2k8.
+			 */
+
+			talloc_free(k);
+		}
+
+		if (scpct) {
+			struct package_PrimaryCLEARTEXTBlob *ct;
+
+			ct = talloc_zero(scb, struct package_PrimaryCLEARTEXTBlob);
+			if (ct == NULL) {
+				return ldb_module_oom(module);
+			}
+
+			ndr_err = ndr_pull_struct_blob(&scpbct, ct, ct,
+					(ndr_pull_flags_fn_t)ndr_pull_package_PrimaryCLEARTEXTBlob);
+			if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+				return ldb_error(ldb, LDB_ERR_CONSTRAINT_VIOLATION,
+						 "ndr_pull_struct_blob PrimaryCLEARTEXT");
+			}
+
+			if ((ct->cleartext.length % 2) != 0) {
+				return ldb_error(ldb, LDB_ERR_CONSTRAINT_VIOLATION,
+						 "PrimaryCLEARTEXT length % 2 != 0");
+			}
+
+			talloc_free(ct);
+		}
+
+		ndr_err = ndr_push_struct_blob(&blob, scb, scb,
+				(ndr_push_flags_fn_t)ndr_push_supplementalCredentialsBlob);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			return ldb_error(ldb, LDB_ERR_CONSTRAINT_VIOLATION,
+					 "ndr_pull_struct_blob_all");
+		}
+
+		if (sce->values[0].length != blob.length) {
+			return ldb_error(ldb, LDB_ERR_CONSTRAINT_VIOLATION,
+					 "supplementalCredentialsBlob length differ");
+		}
+
+		if (memcmp(sce->values[0].data, blob.data, blob.length) != 0) {
+			return ldb_error(ldb, LDB_ERR_CONSTRAINT_VIOLATION,
+					 "supplementalCredentialsBlob memcmp differ");
+		}
+
+		talloc_free(scb);
+	}
+
+	ldb_debug(ldb, LDB_DEBUG_TRACE, "password_hash_bypass - validated\n");
+	return ldb_next_request(module, request);
+}
+
 /* Get the NT hash, and fill it in as an entry in the password history, 
    and specify it into io->g.nt_hash */
 
@@ -2322,7 +2715,7 @@ static int password_hash_add(struct ldb_module *module, struct ldb_request *req)
 		/* Mark the "bypass" control as uncritical (done) */
 		bypass->critical = false;
 		ldb_debug(ldb, LDB_DEBUG_TRACE, "password_hash_add (bypassing)\n");
-		return ldb_next_request(module, req);
+		return password_hash_bypass(module, req);
 	}
 
 	/* nobody must touch password histories and 'supplementalCredentials' */
@@ -2521,7 +2914,7 @@ static int password_hash_modify(struct ldb_module *module, struct ldb_request *r
 		/* Mark the "bypass" control as uncritical (done) */
 		bypass->critical = false;
 		ldb_debug(ldb, LDB_DEBUG_TRACE, "password_hash_modify (bypassing)\n");
-		return ldb_next_request(module, req);
+		return password_hash_bypass(module, req);
 	}
 
 	/* nobody must touch password histories and 'supplementalCredentials' */
