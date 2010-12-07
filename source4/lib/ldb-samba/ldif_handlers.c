@@ -1374,9 +1374,13 @@ const struct ldb_schema_syntax *ldb_samba_syntax_by_lDAPDisplayName(struct ldb_c
 int ldb_register_samba_handlers(struct ldb_context *ldb)
 {
 	unsigned int i;
+	int ret;
+
+	if (ldb_get_opaque(ldb, "SAMBA_HANDLERS_REGISTERED") != NULL) {
+		return LDB_SUCCESS;
+	}
 
 	for (i=0; i < ARRAY_SIZE(samba_attributes); i++) {
-		int ret;
 		const struct ldb_schema_syntax *s = NULL;
 
 		s = ldb_samba_syntax_by_name(ldb, samba_attributes[i].syntax);
@@ -1396,12 +1400,16 @@ int ldb_register_samba_handlers(struct ldb_context *ldb)
 	}
 
 	for (i=0; i < ARRAY_SIZE(samba_dn_syntax); i++) {
-		int ret;
 		ret = ldb_dn_extended_add_syntax(ldb, LDB_ATTR_FLAG_FIXED, &samba_dn_syntax[i]);
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
 
+	}
+
+	ret = ldb_set_opaque(ldb, "SAMBA_HANDLERS_REGISTERED", (void*)1);
+	if (ret != LDB_SUCCESS) {
+		return ret;
 	}
 
 	return LDB_SUCCESS;
