@@ -858,6 +858,7 @@ static int ldb_modules_load_path(const char *path, const char *version)
 		dev_t st_dev;
 	} *loaded;
 	struct loaded *le;
+	int dlopen_flags;
 
 	ret = stat(path, &st);
 	if (ret != 0) {
@@ -889,7 +890,18 @@ static int ldb_modules_load_path(const char *path, const char *version)
 		return ldb_modules_load_dir(path, version);
 	}
 
-	handle = dlopen(path, RTLD_NOW);
+	dlopen_flags = RTLD_NOW;
+#ifdef RTLD_DEEPBIND
+	/* use deepbind if possible, to avoid issues with different
+	   system library varients, for example ldb modules may be linked
+	   against Heimdal while the application may use MIT kerberos
+
+	   See the dlopen manpage for details
+	*/
+	dlopen_flags |= RTLD_DEEPBIND;
+#endif
+
+	handle = dlopen(path, dlopen_flags);
 	if (handle == NULL) {
 		fprintf(stderr, "ldb: unable to dlopen %s : %s\n", path, dlerror());
 		return LDB_SUCCESS;
