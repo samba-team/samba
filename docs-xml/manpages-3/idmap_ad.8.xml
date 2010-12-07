@@ -25,6 +25,23 @@
 	by the administrator by adding the posixAccount/posixGroup
 	classes and relative attribute/value pairs to the user and
 	group objects in the AD.</para>
+
+	<para>
+	Note that the idmap_ad module has changed considerably since
+	Samba versions 3.0 and 3.2.
+	Currently, the <parameter>ad</parameter> backend
+	does not work as the the default idmap backend, but one has
+	to configure it separately for each domain for which one wants
+	to use it, using disjoint ranges. One usually needs to configure
+	a writeable default idmap range, using for example the
+	<parameter>tdb</parameter> or <parameter>ldap</parameter>)
+	backend, in order to be able to map the BUILTIN sids and
+	possibly other trusted domains. The writeable default config
+	is also needed in order to be able to create group mappings.
+	This catch-all default idmap configuration should have a range
+	that is disjoint from any explicitly configured domain with
+	idmap backend <parameter>ad</parameter>. See the example below.
+	</para>
 </refsynopsisdiv>
 
 <refsect1>
