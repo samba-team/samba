@@ -268,11 +268,7 @@ static NTSTATUS idmap_ldap_allocate_id(struct idmap_domain *dom,
 
 	ctx = talloc_get_type(dom->private_data, struct idmap_ldap_context);
 
-	if (!ctx->alloc) {
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-	mem_ctx = talloc_new(ctx->alloc);
+	mem_ctx = talloc_new(ctx);
 	if (!mem_ctx) {
 		DEBUG(0, ("Out of memory!\n"));
 		return NT_STATUS_NO_MEMORY;
@@ -304,10 +300,10 @@ static NTSTATUS idmap_ldap_allocate_id(struct idmap_domain *dom,
 
 	DEBUG(10, ("Search of the id pool (filter: %s)\n", filter));
 
-	rc = smbldap_search(ctx->alloc->smbldap_state,
-				ctx->alloc->suffix,
-			       LDAP_SCOPE_SUBTREE, filter,
-			       attr_list, 0, &result);
+	rc = smbldap_search(ctx->smbldap_state,
+			   ctx->suffix,
+			   LDAP_SCOPE_SUBTREE, filter,
+			   attr_list, 0, &result);
 
 	if (rc != LDAP_SUCCESS) {
 		DEBUG(0,("%s object not found\n", LDAP_OBJ_IDPOOL));
@@ -316,25 +312,23 @@ static NTSTATUS idmap_ldap_allocate_id(struct idmap_domain *dom,
 
 	talloc_autofree_ldapmsg(mem_ctx, result);
 
-	count = ldap_count_entries(ctx->alloc->smbldap_state->ldap_struct,
-				   result);
+	count = ldap_count_entries(ctx->smbldap_state->ldap_struct, result);
 	if (count != 1) {
 		DEBUG(0,("Single %s object not found\n", LDAP_OBJ_IDPOOL));
 		goto done;
 	}
 
-	entry = ldap_first_entry(ctx->alloc->smbldap_state->ldap_struct,
-				 result);
+	entry = ldap_first_entry(ctx->smbldap_state->ldap_struct, result);
 
 	dn = smbldap_talloc_dn(mem_ctx,
-			       ctx->alloc->smbldap_state->ldap_struct,
+			       ctx->smbldap_state->ldap_struct,
 			       entry);
 	if ( ! dn) {
 		goto done;
 	}
 
 	id_str = smbldap_talloc_single_attribute(
-				ctx->alloc->smbldap_state->ldap_struct,
+				ctx->smbldap_state->ldap_struct,
 				entry, type, mem_ctx);
 	if (id_str == NULL) {
 		DEBUG(0,("%s attribute not found\n", type));
@@ -386,7 +380,7 @@ static NTSTATUS idmap_ldap_allocate_id(struct idmap_domain *dom,
 	DEBUG(10, ("Try to atomically increment the id (%s -> %s)\n",
 		   id_str, new_id_str));
 
-	rc = smbldap_modify(ctx->alloc->smbldap_state, dn, mods);
+	rc = smbldap_modify(ctx->smbldap_state, dn, mods);
 
 	ldap_mods_free(mods, True);
 
