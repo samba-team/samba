@@ -674,7 +674,7 @@ static char *shadow_copy2_realpath(vfs_handle_struct *handle,
 		SHADOW2_NEXT(REALPATH, (handle, fname), char *,
 			     NULL);
 	}
-        SHADOW2_NEXT(REALPATH, (handle, fname), char *, NULL);
+        SHADOW2_NEXT(REALPATH, (handle, name), char *, NULL);
 }
 
 static const char *shadow_copy2_connectpath(struct vfs_handle_struct *handle,
