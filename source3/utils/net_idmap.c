@@ -289,9 +289,10 @@ static int net_idmap_set(struct net_context *c, int argc, const char **argv)
 	d_printf("%s\n", _("Not implemented yet"));
 	return -1;
 }
-bool idmap_store_secret(const char *backend,
-			const char *domain, const char *identity,
-			const char *secret)
+static bool idmap_store_secret(const char *backend,
+			       const char *domain,
+			       const char *identity,
+			       const char *secret)
 {
 	char *tmp;
 	int r;
