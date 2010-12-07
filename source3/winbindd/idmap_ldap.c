@@ -239,18 +239,6 @@ done:
 	return ret;
 }
 
-/*****************************************************************************
- Initialise idmap database.
-*****************************************************************************/
-
-static int idmap_ldap_alloc_close_destructor(struct idmap_ldap_alloc_context *ctx)
-{
-	smbldap_free_struct(&ctx->smbldap_state);
-	DEBUG(5,("The connection to the LDAP server was closed\n"));
-	/* maybe free the results here --metze */
-	return 0;
-}
-
 /********************************
  Allocate a new uid or gid
 ********************************/
