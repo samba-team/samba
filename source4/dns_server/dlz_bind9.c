@@ -30,6 +30,7 @@
 #include "gen_ndr/ndr_dnsp.h"
 #include "lib/cmdline/popt_common.h"
 #include "lib/cmdline/popt_credentials.h"
+#include "ldb_module.h"
 #include "dlz_bind9.h"
 
 struct dlz_bind9_data {
@@ -234,54 +235,36 @@ static isc_result_t parse_options(struct dlz_bind9_data *state,
 	int opt;
 	poptContext pc;
 	struct poptOption long_options[] = {
-		POPT_COMMON_SAMBA
-		POPT_COMMON_CREDENTIALS
 		{ "url",       'H', POPT_ARG_STRING, &options->url, 0, "database URL", "URL" },
 		{ NULL }
 	};
+	struct poptOption **popt_options;
+	int ret;
 
-	pc = poptGetContext("dlz_bind9", argc, (const char **)argv, long_options,
+	popt_options = ldb_module_popt_options(state->samdb);
+	(*popt_options) = long_options;
+
+	ret = ldb_modules_hook(state->samdb, LDB_MODULE_HOOK_CMDLINE_OPTIONS);
+	if (ret != LDB_SUCCESS) {
+		state->log(ISC_LOG_ERROR, "dlz samba: failed cmdline hook");
+		return ISC_R_FAILURE;
+	}
+
+	pc = poptGetContext("dlz_bind9", argc, (const char **)argv, *popt_options,
 			    POPT_CONTEXT_KEEP_FIRST);
 
 	while ((opt = poptGetNextOpt(pc)) != -1) {
 		switch (opt) {
 		default:
-			state->log(ISC_LOG_ERROR, "Invalid option %s: %s",
+			state->log(ISC_LOG_ERROR, "dlz samba: Invalid option %s: %s",
 				   poptBadOption(pc, 0), poptStrerror(opt));
 			return ISC_R_FAILURE;
 		}
 	}
 
-	return ISC_R_SUCCESS;
-}
-
-
-/*
-  setup credentials and handlers for full ldb SAMDB support
- */
-static isc_result_t b9_setup_samba_context(struct dlz_bind9_data *state)
-
-{
-	int ret;
-
-	ret = ldb_register_samba_handlers(state->samdb);
+	ret = ldb_modules_hook(state->samdb, LDB_MODULE_HOOK_CMDLINE_PRECONNECT);
 	if (ret != LDB_SUCCESS) {
-		state->log(ISC_LOG_ERROR, "samba dlz_bind9: Failed to load Samba handlers");
-		return ISC_R_FAILURE;
-	}
-
-	gensec_init(state->lp);
-
-	if (ldb_set_opaque(state->samdb, "sessionInfo", system_session(state->lp))) {
-		state->log(ISC_LOG_ERROR, "samba dlz_bind9: Failed to setup system session");
-		return ISC_R_FAILURE;
-	}
-	if (ldb_set_opaque(state->samdb, "credentials", cmdline_credentials)) {
-		state->log(ISC_LOG_ERROR, "samba dlz_bind9: Failed to setup cmdline credentials");
-		return ISC_R_FAILURE;
-	}
-	if (ldb_set_opaque(state->samdb, "loadparm", state->lp)) {
-		state->log(ISC_LOG_ERROR, "samba dlz_bind9: Failed to setup lp ctx");
+		state->log(ISC_LOG_ERROR, "dlz samba: failed cmdline preconnect");
 		return ISC_R_FAILURE;
 	}
 
@@ -321,17 +304,6 @@ _PUBLIC_ isc_result_t dlz_create(const char *dlzname,
 	}
 	va_end(ap);
 
-	result = parse_options(state, argc, argv, &options);
-	if (result != ISC_R_SUCCESS) {
-		goto failed;
-	}
-
-	state->lp = loadparm_init_global(true);
-	if (state->lp == NULL) {
-		result = ISC_R_NOMEMORY;
-		goto failed;
-	}
-
 	state->ev_ctx = s4_event_context_init(state);
 	if (state->ev_ctx == NULL) {
 		result = ISC_R_NOMEMORY;
@@ -345,6 +317,17 @@ _PUBLIC_ isc_result_t dlz_create(const char *dlzname,
 		goto failed;
 	}
 
+	result = parse_options(state, argc, argv, &options);
+	if (result != ISC_R_SUCCESS) {
+		goto failed;
+	}
+
+	state->lp = loadparm_init_global(true);
+	if (state->lp == NULL) {
+		result = ISC_R_NOMEMORY;
+		goto failed;
+	}
+
 	if (options.url == NULL) {
 		options.url = talloc_asprintf(tmp_ctx, "ldapi://%s",
 					      private_path(tmp_ctx, state->lp, "ldap_priv/ldapi"));
@@ -354,14 +337,17 @@ _PUBLIC_ isc_result_t dlz_create(const char *dlzname,
 		}
 	}
 
-	result = b9_setup_samba_context(state);
-	if (result != ISC_R_SUCCESS) {
-		goto failed;
-	}
-
 	ret = ldb_connect(state->samdb, options.url, 0, NULL);
 	if (ret == -1) {
 		state->log(ISC_LOG_ERROR, "samba dlz_bind9: Failed to connect to %s - %s",
+			   options.url, ldb_errstring(state->samdb));
+		result = ISC_R_FAILURE;
+		goto failed;
+	}
+
+	ret = ldb_modules_hook(state->samdb, LDB_MODULE_HOOK_CMDLINE_POSTCONNECT);
+	if (ret != LDB_SUCCESS) {
+		state->log(ISC_LOG_ERROR, "samba dlz_bind9: Failed postconnect for %s - %s",
 			   options.url, ldb_errstring(state->samdb));
 		result = ISC_R_FAILURE;
 		goto failed;
