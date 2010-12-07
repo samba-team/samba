@@ -74,7 +74,6 @@ struct idmap_ldap_context {
 	char *suffix;
 	char *user_dn;
 	bool anon;
-	struct idmap_ldap_alloc_context *alloc;
 	struct idmap_rw_ops *rw_ops;
 };
 
