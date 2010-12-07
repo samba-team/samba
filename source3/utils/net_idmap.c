@@ -381,9 +381,8 @@ int net_help_idmap(struct net_context *c, int argc, const char **argv)
 
 	/* Deliberately *not* document net idmap delete */
 
-	d_printf(_("net idmap secret <DOMAIN>|alloc <secret>\n"
-		   "    Set the secret for the specified DOMAIN (or the alloc "
-		   "module)\n"));
+	d_printf(_("net idmap secret <DOMAIN> <secret>\n"
+		   "    Set the secret for the specified DOMAIN module)\n"));
 
 	return -1;
 }
@@ -495,8 +494,8 @@ int net_idmap(struct net_context *c, int argc, const char **argv)
 			net_idmap_secret,
 			NET_TRANSPORT_LOCAL,
 			N_("Set secret for specified domain"),
-			N_("net idmap secret {<DOMAIN>|alloc} <secret>\n"
-			   "  Set secret for specified domain or alloc module")
+			N_("net idmap secret <DOMAIN> <secret>\n"
+			   "  Set secret for specified domain")
 		},
 		{
 			"aclmapset",
