@@ -222,9 +222,12 @@ static NTSTATUS samsync_ldb_handle_domain(TALLOC_CTX *mem_ctx,
 	/* TODO: Account lockout, password properties */
 	
 	ret = dsdb_replace(state->sam_ldb, msg, 0);
-
-	if (ret) {
-		return NT_STATUS_INTERNAL_ERROR;
+	if (ret != LDB_SUCCESS) {
+		*error_string = talloc_asprintf(mem_ctx,
+						"Failed to modify domain record %s: %s",
+						ldb_dn_get_linearized(msg->dn),
+						ldb_errstring(state->sam_ldb));
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 	return NT_STATUS_OK;
 }
