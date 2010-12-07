@@ -22,11 +22,14 @@
 #include "includes.h"
 #include "talloc.h"
 #include "param/param.h"
+#include "lib/events/events.h"
 #include "dsdb/samdb/samdb.h"
 #include "dsdb/common/util.h"
 #include "auth/session.h"
+#include "auth/gensec/gensec.h"
 #include "gen_ndr/ndr_dnsp.h"
 #include "lib/cmdline/popt_common.h"
+#include "lib/cmdline/popt_credentials.h"
 #include "dlz_bind9.h"
 
 struct dlz_bind9_data {
@@ -217,17 +220,23 @@ static isc_result_t b9_putnamedrr(struct dlz_bind9_data *state,
 	return result;
 }
 
+struct b9_options {
+	const char *url;
+};
 
 /*
    parse options
  */
 static isc_result_t parse_options(struct dlz_bind9_data *state,
-				  unsigned int argc, char *argv[])
+				  unsigned int argc, char *argv[],
+				  struct b9_options *options)
 {
 	int opt;
 	poptContext pc;
 	struct poptOption long_options[] = {
 		POPT_COMMON_SAMBA
+		POPT_COMMON_CREDENTIALS
+		{ "url",       'H', POPT_ARG_STRING, &options->url, 0, "database URL", "URL" },
 		{ NULL }
 	};
 
@@ -248,6 +257,39 @@ static isc_result_t parse_options(struct dlz_bind9_data *state,
 
 
 /*
+  setup credentials and handlers for full ldb SAMDB support
+ */
+static isc_result_t b9_setup_samba_context(struct dlz_bind9_data *state)
+
+{
+	int ret;
+
+	ret = ldb_register_samba_handlers(state->samdb);
+	if (ret != LDB_SUCCESS) {
+		state->log(ISC_LOG_ERROR, "samba dlz_bind9: Failed to load Samba handlers");
+		return ISC_R_FAILURE;
+	}
+
+	gensec_init(state->lp);
+
+	if (ldb_set_opaque(state->samdb, "sessionInfo", system_session(state->lp))) {
+		state->log(ISC_LOG_ERROR, "samba dlz_bind9: Failed to setup system session");
+		return ISC_R_FAILURE;
+	}
+	if (ldb_set_opaque(state->samdb, "credentials", cmdline_credentials)) {
+		state->log(ISC_LOG_ERROR, "samba dlz_bind9: Failed to setup cmdline credentials");
+		return ISC_R_FAILURE;
+	}
+	if (ldb_set_opaque(state->samdb, "loadparm", state->lp)) {
+		state->log(ISC_LOG_ERROR, "samba dlz_bind9: Failed to setup lp ctx");
+		return ISC_R_FAILURE;
+	}
+
+	return ISC_R_SUCCESS;
+}
+
+
+/*
   called to initialise the driver
  */
 _PUBLIC_ isc_result_t dlz_create(const char *dlzname,
@@ -258,10 +300,12 @@ _PUBLIC_ isc_result_t dlz_create(const char *dlzname,
 	const char *helper_name;
 	va_list ap;
 	isc_result_t result;
-	const char *url;
 	TALLOC_CTX *tmp_ctx;
 	int ret;
 	struct ldb_dn *dn;
+	struct b9_options options;
+
+	ZERO_STRUCT(options);
 
 	state = talloc_zero(NULL, struct dlz_bind9_data);
 	if (state == NULL) {
@@ -277,7 +321,7 @@ _PUBLIC_ isc_result_t dlz_create(const char *dlzname,
 	}
 	va_end(ap);
 
-	result = parse_options(state, argc, argv);
+	result = parse_options(state, argc, argv, &options);
 	if (result != ISC_R_SUCCESS) {
 		goto failed;
 	}
@@ -288,7 +332,7 @@ _PUBLIC_ isc_result_t dlz_create(const char *dlzname,
 		goto failed;
 	}
 
-	state->ev_ctx = tevent_context_init(state);
+	state->ev_ctx = s4_event_context_init(state);
 	if (state->ev_ctx == NULL) {
 		result = ISC_R_NOMEMORY;
 		goto failed;
@@ -301,17 +345,24 @@ _PUBLIC_ isc_result_t dlz_create(const char *dlzname,
 		goto failed;
 	}
 
-	url = talloc_asprintf(tmp_ctx, "ldapi://%s",
-			      private_path(tmp_ctx, state->lp, "ldap_priv/ldapi"));
-	if (url == NULL) {
-		result = ISC_R_NOMEMORY;
+	if (options.url == NULL) {
+		options.url = talloc_asprintf(tmp_ctx, "ldapi://%s",
+					      private_path(tmp_ctx, state->lp, "ldap_priv/ldapi"));
+		if (options.url == NULL) {
+			result = ISC_R_NOMEMORY;
+			goto failed;
+		}
+	}
+
+	result = b9_setup_samba_context(state);
+	if (result != ISC_R_SUCCESS) {
 		goto failed;
 	}
 
-	ret = ldb_connect(state->samdb, url, 0, NULL);
+	ret = ldb_connect(state->samdb, options.url, 0, NULL);
 	if (ret == -1) {
 		state->log(ISC_LOG_ERROR, "samba dlz_bind9: Failed to connect to %s - %s",
-			   url, ldb_errstring(state->samdb));
+			   options.url, ldb_errstring(state->samdb));
 		result = ISC_R_FAILURE;
 		goto failed;
 	}
@@ -319,7 +370,7 @@ _PUBLIC_ isc_result_t dlz_create(const char *dlzname,
 	dn = ldb_get_default_basedn(state->samdb);
 	if (dn == NULL) {
 		state->log(ISC_LOG_ERROR, "samba dlz_bind9: Unable to get basedn for %s - %s",
-			   url, ldb_errstring(state->samdb));
+			   options.url, ldb_errstring(state->samdb));
 		result = ISC_R_FAILURE;
 		goto failed;
 	}
@@ -364,10 +415,10 @@ _PUBLIC_ isc_result_t dlz_findzonedb(void *driverarg, void *dbdata, const char *
 /*
   lookup one record
  */
-_PUBLIC_ isc_result_t dlz_lookup_types(struct dlz_bind9_data *state,
-				       const char *zone, const char *name,
-				       void *driverarg, dns_sdlzlookup_t *lookup,
-				       const char **types)
+static isc_result_t dlz_lookup_types(struct dlz_bind9_data *state,
+				     const char *zone, const char *name,
+				     void *driverarg, dns_sdlzlookup_t *lookup,
+				     const char **types)
 {
 	struct ldb_dn *dn;
 	TALLOC_CTX *tmp_ctx = talloc_new(state);
