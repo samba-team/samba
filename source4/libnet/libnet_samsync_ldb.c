@@ -311,8 +311,7 @@ static NTSTATUS samsync_ldb_handle_user(TALLOC_CTX *mem_ctx,
 			
 			/* Try to put things in the same location as the remote server */
 		} else if (add) {
-			msg->dn = remote_msgs[0]->dn;
-			talloc_steal(msg, remote_msgs[0]->dn);
+			msg->dn = talloc_steal(msg, remote_msgs[0]->dn);
 		}
 	}
 
