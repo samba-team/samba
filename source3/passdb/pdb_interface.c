@@ -476,6 +476,11 @@ static NTSTATUS pdb_default_create_user(struct pdb_methods *methods,
 		flush_pwnam_cache();
 
 		pwd = Get_Pwnam_alloc(tmp_ctx, name);
+
+		if(pwd == NULL) {
+			DEBUG(3, ("Could not find user %s, add script did not work\n", name));
+			return NT_STATUS_NO_SUCH_USER;
+		}
 	}
 
 	/* we have a valid SID coming out of this call */
