@@ -21,6 +21,24 @@
 	<para>The idmap_rid backend provides a way to use an algorithmic
 	mapping scheme to map UIDs/GIDs and SIDs. No database is required
 	in this case as the mapping is deterministic.</para>
+
+	<para>
+	Note that the idmap_rid module has changed considerably since Samba
+	versions 3.0. and 3.2.
+	Currently, there should to be an explicit idmap configuration for each
+	domain that should use the idmap_rid backend, using disjoint ranges.
+	One usually needs to define a writeable default idmap range, using
+	a backent like <parameter>tdb</parameter> or <parameter>ldap</parameter>
+	that can create unix ids, in order to be able to map the BUILTIN sids
+	and other domains, and also in order to be able to create group mappings.
+	See the example below.
+	</para>
+
+	<para>
+	Note that the old syntax
+	<parameter>idmap backend = rid:"DOM1=range DOM2=range2 ..."</parameter>
+	is not supported any more since Samba version 3.0.25.
+	</para>
 </refsynopsisdiv>
 
 <refsect1>
