@@ -19,7 +19,7 @@
 */
 
 #include "includes.h"
-#include "nsswitch/libwbclient/wbc_async.h"
+#include "wbc_async.h"
 #include "torture/proto.h"
 #include "libcli/security/security.h"
 #include "tldap.h"

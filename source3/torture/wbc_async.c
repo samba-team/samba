@@ -29,7 +29,7 @@
 #include "lib/async_req/async_sock.h"
 #include "nsswitch/winbind_struct_protocol.h"
 #include "nsswitch/libwbclient/wbclient.h"
-#include "nsswitch/libwbclient/wbc_async.h"
+#include "wbc_async.h"
 
 wbcErr map_wbc_err_from_errno(int error)
 {
