@@ -53,4 +53,6 @@ PyObject *py_dcerpc_interface_init_helper(PyTypeObject *type, PyObject *args, Py
 PyObject *py_return_ndr_struct(const char *module_name, const char *type_name,
 			       TALLOC_CTX *r_ctx, void *r);
 
+PyObject *PyString_FromStringOrNULL(const char *str);
+
 #endif /* __PYRPC_UTIL_H__ */

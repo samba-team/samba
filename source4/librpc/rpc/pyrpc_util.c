@@ -300,3 +300,11 @@ PyObject *py_return_ndr_struct(const char *module_name, const char *type_name,
 
 	return py_talloc_reference_ex(py_type, r_ctx, r);
 }
+
+PyObject *PyString_FromStringOrNULL(const char *str)
+{
+	if (str == NULL) {
+		Py_RETURN_NONE;
+	}
+	return PyString_FromString(str);
+}
