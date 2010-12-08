@@ -9,7 +9,7 @@ Description: An LDAP-like embedded database
 Version: @PACKAGE_VERSION@
 Requires.private: tdb
 Requires: talloc 
-Libs: -L${libdir} -lldb
+Libs: @LIB_RPATH@ -L${libdir} -lldb
 Libs.private: @LDAP_LIBS@
 Cflags: -I${includedir} 
 Modulesdir: ${modulesdir}
