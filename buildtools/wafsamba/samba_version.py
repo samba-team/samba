@@ -1,5 +1,6 @@
 import os
 import Utils
+import samba_utils
 
 def bzr_version_summary(path):
     try:
@@ -246,3 +247,15 @@ def samba_version_file(version_file, path, env=None):
             raise
 
     return SambaVersion(version_dict, path, env=env)
+
+
+
+def load_version(env=None):
+    '''load samba versions either from ./VERSION or git
+    return a version object for detailed breakdown'''
+    if not env:
+        env = samba_utils.LOAD_ENVIRONMENT()
+
+    version = samba_version_file("./VERSION", "..", env)
+    Utils.g_module.VERSION = version.STRING
+    return version
