@@ -72,6 +72,13 @@ def build(bld):
     bld.RECURSE('lib/popt')
     bld.RECURSE('lib/replace')
 
+    if bld.env.standalone_ldb:
+        private_library = False
+        vnum = VERSION
+    else:
+        private_library = True
+        vnum = None
+
     LDB_MAP_SRC = bld.SUBDIR('ldb_map',
                              'ldb_map.c ldb_map_inbound.c ldb_map_outbound.c')
 
@@ -101,7 +108,8 @@ def build(bld):
                           deps='ldb',
                           source='pyldb_util.c',
                           public_headers='pyldb.h',
-                          vnum=VERSION,
+                          vnum=vnum,
+                          private_library=private_library,
                           pc_files='pyldb-util.pc',
                           pyext=True)
 
@@ -123,10 +131,11 @@ def build(bld):
                           public_headers='include/ldb.h include/ldb_errors.h '\
                           'include/ldb_module.h include/ldb_handlers.h',
                           pc_files='ldb.pc',
-                          vnum=VERSION,
+                          vnum=vnum,
+                          private_library=private_library,
                           manpages='man/ldb.3',
                           abi_file = abi_file,
-                         abi_match = abi_match)
+                          abi_match = abi_match)
 
 
         bld.SAMBA_PYTHON('pyldb', 'pyldb.c',
