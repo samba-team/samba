@@ -520,6 +520,8 @@ def SAMBA_GENERATOR(bld, name, rule, source='', target='',
         on_results=True,
         before='cc',
         ext_out='.c',
+        samba_type='GENERATOR',
+        vars = [rule],
         name=name)
 
     if always:
