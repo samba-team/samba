@@ -33,7 +33,6 @@ def set_options(opt):
     opt.PRIVATE_EXTENSION_DEFAULT('samba4')
     opt.RECURSE('../lib/replace')
     opt.RECURSE('dynconfig')
-    opt.RECURSE('scripting/python')
     opt.RECURSE('lib/ldb')
     opt.RECURSE('selftest')
     opt.RECURSE('lib/tls')
@@ -46,6 +45,9 @@ def set_options(opt):
     gr.add_option('--enable-build-farm',
                    help='enable special build farm options',
                    action='store_true', dest='BUILD_FARM')
+
+    opt.tool_options('python') # options for disabling pyc or pyo compilation
+    # enable options related to building python extensions
 
 
 def configure(conf):
@@ -85,7 +87,6 @@ def configure(conf):
         raise Utils.WafError('Python version 3.x is not supported by Samba yet')
 
     conf.RECURSE('dynconfig')
-    conf.RECURSE('scripting/python')
     conf.RECURSE('lib/ldb')
     conf.RECURSE('heimdal_build')
     conf.RECURSE('lib/tls')
