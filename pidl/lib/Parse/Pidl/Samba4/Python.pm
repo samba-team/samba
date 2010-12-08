@@ -1107,19 +1107,19 @@ sub ConvertScalarToPython($$$)
 	}
 
 	if (($ctypename eq "string" or $ctypename eq "nbt_string" or $ctypename eq "nbt_name" or $ctypename eq "wrepl_nbt_name")) {
-		return "PyString_FromString_check_null($cvar)";
+		return "PyString_FromStringOrNULL($cvar)";
 	}
 
 	if (($ctypename eq "dns_string" or $ctypename eq "dns_name")) {
-		return "PyString_FromString_check_null($cvar)";
+		return "PyString_FromStringOrNULL($cvar)";
 	}
 
 	# Not yet supported
 	if ($ctypename eq "string_array") { return "PyCObject_FromTallocPtr($cvar)"; }
-	if ($ctypename eq "ipv4address") { return "PyString_FromString_check_null($cvar)"; }
-	if ($ctypename eq "ipv6address") { return "PyString_FromString_check_null($cvar)"; }
-	if ($ctypename eq "dnsp_name") { return "PyString_FromString_check_null($cvar)"; }
-	if ($ctypename eq "dnsp_string") { return "PyString_FromString_check_null($cvar)"; }
+	if ($ctypename eq "ipv4address") { return "PyString_FromStringOrNULL($cvar)"; }
+	if ($ctypename eq "ipv6address") { return "PyString_FromStringOrNULL($cvar)"; }
+	if ($ctypename eq "dnsp_name") { return "PyString_FromStringOrNULL($cvar)"; }
+	if ($ctypename eq "dnsp_string") { return "PyString_FromStringOrNULL($cvar)"; }
 	if ($ctypename eq "pointer") {
 		return "PyCObject_FromTallocPtr($cvar)";
 	}
