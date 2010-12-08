@@ -58,7 +58,7 @@ def tru64cc_common_flags(conf):
 
 	# shared library
 #	v['shlib_CCFLAGS']       = ['-Kpic', '-DPIC']
-#	v['shlib_LINKFLAGS']     = ['-G']
+	v['shlib_LINKFLAGS']     = ['-shared']
 	v['shlib_PATTERN']       = 'lib%s.so'
 
 	# static lib
