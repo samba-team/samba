@@ -110,14 +110,6 @@ PyObject *PyCObject_FromTallocPtr(void *ptr)
 	return PyCObject_FromVoidPtr(ptr, py_cobject_talloc_free);
 }
 
-PyObject *PyString_FromString_check_null(const char *ptr)
-{
-	if (ptr == NULL) {
-		Py_RETURN_NONE;
-	}
-	return PyString_FromString(ptr);
-}
-
 int PyTalloc_Check(PyObject *obj)
 {
 	PyTypeObject *tp = PyTalloc_GetObjectType();
