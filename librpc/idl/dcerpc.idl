@@ -310,7 +310,7 @@ interface dcerpc
 
 	/* RTS command: 0x4 */
 	typedef [public] struct {
-		[range(0x20000,0x800000000)] uint32	ChannelLifetime;
+		[range(0x20000,0x80000000)] uint32	ChannelLifetime;
 	} dcerpc_rts_cmd_ChannelLifetime;
 
 	/* RTS command: 0x5 */
