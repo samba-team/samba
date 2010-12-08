@@ -61,6 +61,9 @@ def set_options(opt):
     gr.add_option('--nonshared-binary',
                    help=("Disable use of shared libs for the listed binaries"),
                    action="store", dest='NONSHARED_BINARIES', default='')
+    gr.add_option('--disable-symbol-versions',
+                   help=("Disable use of the --version-script linker option"),
+                   action="store_true", dest='disable_symbol_versions', default=False)
 
     opt.add_option('--with-modulesdir',
                    help=("modules directory [PREFIX/modules]"),
@@ -288,9 +291,11 @@ def configure(conf):
             # the user can of course always override it.
             conf.env.PRIVATELIBDIR = conf.env.LIBDIR
 
-    if not conf.env.DISABLE_SHARED and conf.CHECK_LIBRARY_SUPPORT(rpath=support_rpath,
-                                                                  version_script=True,
-                                                                  msg='-Wl,--version-script support'):
+    if (not conf.env.DISABLE_SHARED and
+        not Options.options.disable_symbol_versions and
+        conf.CHECK_LIBRARY_SUPPORT(rpath=support_rpath,
+                                   version_script=True,
+                                   msg='-Wl,--version-script support')):
         conf.env.HAVE_LD_VERSION_SCRIPT = True
     else:
         conf.env.HAVE_LD_VERSION_SCRIPT = False
