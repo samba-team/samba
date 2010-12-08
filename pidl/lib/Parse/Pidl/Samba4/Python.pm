@@ -979,6 +979,13 @@ sub ConvertObjectFromPythonLevel($$$$$$$$)
 {
 	my ($self, $env, $mem_ctx, $py_var, $e, $l, $var_name, $fail) = @_;
 	my $nl = GetNextLevel($e, $l);
+	if ($nl and $nl->{TYPE} eq "SUBCONTEXT") {
+		$nl = GetNextLevel($e, $nl);
+	}
+	my $pl = GetPrevLevel($e, $l);
+	if ($pl and $pl->{TYPE} eq "SUBCONTEXT") {
+		$pl = GetPrevLevel($e, $pl);
+	}
 
 	if ($l->{TYPE} eq "POINTER") {
 		if ($l->{POINTER_TYPE} ne "ref") {
@@ -1005,7 +1012,6 @@ sub ConvertObjectFromPythonLevel($$$$$$$$)
 			$self->pidl("}");
 		}
 	} elsif ($l->{TYPE} eq "ARRAY") {
-		my $pl = GetPrevLevel($e, $l);
 		if ($pl && $pl->{TYPE} eq "POINTER") {
 			$var_name = get_pointer_to($var_name);
 		}
@@ -1039,7 +1045,7 @@ sub ConvertObjectFromPythonLevel($$$$$$$$)
 			}
 			$self->pidl("for ($counter = 0; $counter < PyList_GET_SIZE($py_var); $counter++) {");
 			$self->indent;
-			$self->ConvertObjectFromPythonLevel($env, $var_name, "PyList_GET_ITEM($py_var, $counter)", $e, GetNextLevel($e, $l), $var_name."[$counter]", $fail);
+			$self->ConvertObjectFromPythonLevel($env, $var_name, "PyList_GET_ITEM($py_var, $counter)", $e, $nl, $var_name."[$counter]", $fail);
 			$self->deindent;
 			$self->pidl("}");
 			$self->deindent;
@@ -1056,15 +1062,15 @@ sub ConvertObjectFromPythonLevel($$$$$$$$)
 		my $switch_ptr = "$e->{NAME}_switch_$l->{LEVEL_INDEX}";
 		$self->pidl("{");
 		$self->indent;
-		my $union_type = mapTypeName(GetNextLevel($e, $l)->{DATA_TYPE});
+		my $union_type = mapTypeName($nl->{DATA_TYPE});
 		$self->pidl("$union_type *$switch_ptr;");
-		$self->pidl("$switch_ptr = py_export_" . GetNextLevel($e, $l)->{DATA_TYPE} . "($mem_ctx, $switch, $py_var);");
+		$self->pidl("$switch_ptr = py_export_" . $nl->{DATA_TYPE} . "($mem_ctx, $switch, $py_var);");
 		$self->pidl("if ($switch_ptr == NULL) { $fail }");
 		$self->assign($var_name, "$switch_ptr");
 		$self->deindent;
 		$self->pidl("}");
 	} elsif ($l->{TYPE} eq "SUBCONTEXT") {
-		$self->ConvertObjectFromPythonLevel($env, $mem_ctx, $py_var, $e, GetNextLevel($e, $l), $var_name, $fail);
+		$self->ConvertObjectFromPythonLevel($env, $mem_ctx, $py_var, $e, $nl, $var_name, $fail);
 	} else {
 		fatal($e->{ORIGINAL}, "unknown level type $l->{TYPE}");
 	}
@@ -1173,6 +1179,13 @@ sub ConvertObjectToPythonLevel($$$$$$)
 {
 	my ($self, $mem_ctx, $env, $e, $l, $var_name, $py_var, $fail) = @_;
 	my $nl = GetNextLevel($e, $l);
+	if ($nl and $nl->{TYPE} eq "SUBCONTEXT") {
+		$nl = GetNextLevel($e, $nl);
+	}
+	my $pl = GetPrevLevel($e, $l);
+	if ($pl and $pl->{TYPE} eq "SUBCONTEXT") {
+		$pl = GetPrevLevel($e, $pl);
+	}
 
 	if ($l->{TYPE} eq "POINTER") {
 		if ($l->{POINTER_TYPE} ne "ref") {
@@ -1194,7 +1207,6 @@ sub ConvertObjectToPythonLevel($$$$$$)
 			$self->pidl("}");
 		}
 	} elsif ($l->{TYPE} eq "ARRAY") {
-		my $pl = GetPrevLevel($e, $l);
 		if ($pl && $pl->{TYPE} eq "POINTER") {
 			$var_name = get_pointer_to($var_name);
 		}
@@ -1229,7 +1241,7 @@ sub ConvertObjectToPythonLevel($$$$$$)
 			$self->indent;
 			my $member_var = "py_$e->{NAME}_$l->{LEVEL_INDEX}";
 			$self->pidl("PyObject *$member_var;");
-			$self->ConvertObjectToPythonLevel($var_name, $env, $e, GetNextLevel($e, $l), $var_name."[$counter]", $member_var, $fail);
+			$self->ConvertObjectToPythonLevel($var_name, $env, $e, $nl, $var_name."[$counter]", $member_var, $fail);
 			$self->pidl("PyList_SetItem($py_var, $counter, $member_var);");
 			$self->deindent;
 			$self->pidl("}");
@@ -1239,7 +1251,7 @@ sub ConvertObjectToPythonLevel($$$$$$)
 	} elsif ($l->{TYPE} eq "SWITCH") {
 		$var_name = get_pointer_to($var_name);
 		my $switch = ParseExpr($l->{SWITCH_IS}, $env, $e);
-		$self->pidl("$py_var = py_import_" . GetNextLevel($e, $l)->{DATA_TYPE} . "($mem_ctx, $switch, $var_name);");
+		$self->pidl("$py_var = py_import_" . $nl->{DATA_TYPE} . "($mem_ctx, $switch, $var_name);");
 		$self->fail_on_null($py_var, $fail);
 
 	} elsif ($l->{TYPE} eq "DATA") {
@@ -1249,7 +1261,7 @@ sub ConvertObjectToPythonLevel($$$$$$)
 		my $conv = $self->ConvertObjectToPythonData($mem_ctx, $l->{DATA_TYPE}, $var_name, $e->{ORIGINAL});
 		$self->pidl("$py_var = $conv;");
 	} elsif ($l->{TYPE} eq "SUBCONTEXT") {
-		$self->ConvertObjectToPythonLevel($mem_ctx, $env, $e, GetNextLevel($e, $l), $var_name, $py_var, $fail);
+		$self->ConvertObjectToPythonLevel($mem_ctx, $env, $e, $nl, $var_name, $py_var, $fail);
 	} else {
 		fatal($e->{ORIGINAL}, "Unknown level type $l->{TYPE} $var_name");
 	}
