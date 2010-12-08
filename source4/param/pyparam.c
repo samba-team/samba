@@ -119,6 +119,7 @@ static PyObject *py_lp_ctx_get_helper(struct loadparm_context *lp_ctx, const cha
 	    }
 	}
 	return NULL;
+    case P_CMDLIST:
     case P_LIST: 
 	{
 	    int j;

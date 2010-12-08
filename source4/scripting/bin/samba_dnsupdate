@@ -261,8 +261,9 @@ def call_nsupdate(d):
 
     os.putenv("KRB5CCNAME", ccachename)
     try:
-        cmd = "%s %s" % (nsupdate_cmd, tmpfile)
-        subprocess.check_call(cmd, shell=True)
+        cmd = nsupdate_cmd[:]
+        cmd.append(tmpfile)
+        subprocess.check_call(cmd, shell=False)
     except Exception, estr:
         global error_count
         if opts.fail_immediately:

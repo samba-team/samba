@@ -188,7 +188,7 @@ struct loadparm_global
 	const char **szRNDCCommand;
 	const char **szDNSUpdateCommand;
 	const char **szSPNUpdateCommand;
-	char *szNSUpdateCommand;
+	const char **szNSUpdateCommand;
 	struct parmlist_entry *param_opt;
 };
 
@@ -505,10 +505,10 @@ static struct parm_struct parm_table[] = {
 	{"idmap trusted only", P_BOOL, P_GLOBAL, GLOBAL_VAR(bIdmapTrustedOnly), NULL, NULL},
 
 	{"ntp signd socket directory", P_STRING, P_GLOBAL, GLOBAL_VAR(szNTPSignDSocketDirectory), NULL, NULL },
-	{"rndc command", P_LIST, P_GLOBAL, GLOBAL_VAR(szRNDCCommand), NULL, NULL },
-	{"dns update command", P_LIST, P_GLOBAL, GLOBAL_VAR(szDNSUpdateCommand), NULL, NULL },
-	{"spn update command", P_LIST, P_GLOBAL, GLOBAL_VAR(szSPNUpdateCommand), NULL, NULL },
-	{"nsupdate command", P_STRING, P_GLOBAL, GLOBAL_VAR(szNSUpdateCommand), NULL, NULL },
+	{"rndc command", P_CMDLIST, P_GLOBAL, GLOBAL_VAR(szRNDCCommand), NULL, NULL },
+	{"dns update command", P_CMDLIST, P_GLOBAL, GLOBAL_VAR(szDNSUpdateCommand), NULL, NULL },
+	{"spn update command", P_CMDLIST, P_GLOBAL, GLOBAL_VAR(szSPNUpdateCommand), NULL, NULL },
+	{"nsupdate command", P_CMDLIST, P_GLOBAL, GLOBAL_VAR(szNSUpdateCommand), NULL, NULL },
 
 	{NULL, P_BOOL, P_NONE, 0, NULL, NULL}
 };
@@ -678,7 +678,7 @@ FN_GLOBAL_STRING(piddir, szPidDir)
 FN_GLOBAL_LIST(rndc_command, szRNDCCommand)
 FN_GLOBAL_LIST(dns_update_command, szDNSUpdateCommand)
 FN_GLOBAL_LIST(spn_update_command, szSPNUpdateCommand)
-FN_GLOBAL_STRING(nsupdate_command, szNSUpdateCommand)
+FN_GLOBAL_LIST(nsupdate_command, szNSUpdateCommand)
 FN_GLOBAL_LIST(dcerpc_endpoint_servers, dcerpc_ep_servers)
 FN_GLOBAL_LIST(server_services, server_services)
 FN_GLOBAL_STRING(ntptr_providor, ntptr_providor)
@@ -1682,11 +1682,40 @@ static bool set_variable(TALLOC_CTX *mem_ctx, int parmnum, void *parm_ptr,
 			return false;
 		}
 
-		case P_LIST:
+		case P_CMDLIST:
 			*(const char ***)parm_ptr = (const char **)str_list_make(mem_ctx,
 								  pszParmValue, NULL);
 			break;
+		case P_LIST:
+		{
+			char **new_list = str_list_make(mem_ctx,
+							pszParmValue, NULL);
+			for (i=0; new_list[i]; i++) {
+				if (new_list[i][0] == '+' && new_list[i][1]) {
+					*(const char ***)parm_ptr = str_list_add(*(const char ***)parm_ptr,
+										 &new_list[i][1]);
+				} else if (new_list[i][0] == '-' && new_list[i][1]) {
+					if (!str_list_check(*(const char ***)parm_ptr,
+							    &new_list[i][1])) {
+						DEBUG(0, ("Unsupported value for: %s = %s, %s is not in the original list\n",
+							  pszParmName, pszParmValue, new_list[i]));
+						return false;
 
+					}
+					str_list_remove(*(const char ***)parm_ptr,
+							&new_list[i][1]);
+				} else {
+					if (i != 0) {
+						DEBUG(0, ("Unsupported list syntax for: %s = %s\n",
+							  pszParmName, pszParmValue));
+						return false;
+					}
+					*(const char ***)parm_ptr = new_list;
+					break;
+				}
+			}
+			break;
+		}
 		case P_STRING:
 			string_set(mem_ctx, (char **)parm_ptr, pszParmValue);
 			break;
@@ -1918,6 +1947,7 @@ bool lpcfg_set_option(struct loadparm_context *lp_ctx, const char *option)
 static void print_parameter(struct parm_struct *p, void *ptr, FILE * f)
 {
 	int i;
+	const char *list_sep = ", "; /* For the seperation of lists values that we print below */
 	switch (p->type)
 	{
 		case P_ENUM:
@@ -1943,13 +1973,20 @@ static void print_parameter(struct parm_struct *p, void *ptr, FILE * f)
 			fprintf(f, "0%o", *(int *)ptr);
 			break;
 
+		case P_CMDLIST:
+			list_sep = " ";
+			/* fall through */
 		case P_LIST:
 			if ((char ***)ptr && *(char ***)ptr) {
 				char **list = *(char ***)ptr;
 
-				for (; *list; list++)
-					fprintf(f, "%s%s", *list,
-						((*(list+1))?", ":""));
+				for (; *list; list++) {
+					if (*(list+1) == NULL) {
+						/* last item, print no extra seperator after */
+						list_sep = "";
+					}
+					fprintf(f, "%s%s", *list, list_sep);
+				}
 			}
 			break;
 
@@ -1978,6 +2015,7 @@ static bool equal_parameter(parm_type type, void *ptr1, void *ptr2)
 		case P_ENUM:
 			return (*((int *)ptr1) == *((int *)ptr2));
 
+		case P_CMDLIST:
 		case P_LIST:
 			return str_list_equal((const char **)(*(char ***)ptr1),
 					      (const char **)(*(char ***)ptr2));
@@ -2055,6 +2093,7 @@ static bool is_default(struct loadparm_service *sDefault, int i)
 	if (!defaults_saved)
 		return false;
 	switch (parm_table[i].type) {
+		case P_CMDLIST:
 		case P_LIST:
 			return str_list_equal((const char **)parm_table[i].def.lvalue, 
 					      (const char **)def_ptr);
