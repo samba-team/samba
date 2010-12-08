@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import os
+import os, Utils, Build
 from samba_utils import SET_TARGET_TYPE
 from samba_autoconf import CURRENT_CFLAGS
 
@@ -181,6 +181,27 @@ def HEIMDAL_AUTOPROTO_PRIVATE(header, source):
     HEIMDAL_AUTOPROTO(header, source, options='-q -P comment -p')
 
 
+def HEIMDAL_GENERATOR(name, rule, source='', target='',
+                      group='generators'):
+    '''A generic source generator target'''
+
+    if not SET_TARGET_TYPE(bld, name, 'GENERATOR'):
+        return
+
+    bld.set_group(group)
+    return bld(
+        rule=rule,
+        source=source,
+        target=target,
+        shell=isinstance(rule, str),
+        on_results=True,
+        before='cc',
+        ext_out='.c',
+        vars=[rule],
+        samba_type='GENERATOR',
+        name=name)
+
+
 def HEIMDAL_LIBRARY(libname, source, deps, vnum,
                   includes='',
                   cflags='',
@@ -206,13 +227,27 @@ def HEIMDAL_LIBRARY(libname, source, deps, vnum,
     deps = to_list(deps)
     deps.append(obj_target)
 
+    ldflags = []
+
     if not private_library:
         # Sanitize the library name
         bundled_name = libname.lower().replace('_', '-')
         while bundled_name.startswith("lib"):
             bundled_name = bundled_name[3:]
+        version = "%s_%s" % (Utils.g_module.APPNAME, Utils.g_module.VERSION.split(".")[0])
     else:
         bundled_name = libname + '-samba4'
+        vnum = Utils.g_module.VERSION[0]
+        version = "%s_%s" % (Utils.g_module.APPNAME, Utils.g_module.VERSION)
+
+    if bld.env.HAVE_LD_VERSION_SCRIPT:
+        vscript = "%s.vscript" % libname
+        HEIMDAL_GENERATOR(vscript,
+                          rule="echo %s \{ global: \*\; \}\; > ${TGT}" % version.replace("-","_").upper(),
+                          group='vscripts',
+                          target=vscript)
+        ldflags.append("-Wl,--version-script=%s/%s" % (bld.path.abspath(bld.env), vscript))
+        deps.append(vscript)
 
     features = 'cc cshlib symlink_lib install_lib'
 
@@ -226,27 +261,10 @@ def HEIMDAL_LIBRARY(libname, source, deps, vnum,
         vnum            = vnum,
         install_path    = None,
         name            = libname,
+        ldflags		= ldflags,
+        vars		= [version],
         private_library = private_library
         )
-
-
-def HEIMDAL_GENERATOR(name, rule, source='', target='',
-        group='generators'):
-    '''A generic source generator target'''
-
-    if not SET_TARGET_TYPE(bld, name, 'GENERATOR'):
-        return
-
-    bld.set_group(group)
-    return bld(
-        rule=rule,
-        source=source,
-        target=target,
-        shell=isinstance(rule, str),
-        on_results=True,
-        before='cc',
-        ext_out='.c',
-        name=name)
 
 
 def HEIMDAL_SUBSYSTEM(modname, source,
