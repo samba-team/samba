@@ -639,6 +639,8 @@ static NTSTATUS gensec_spnego_create_negTokenInit(struct gensec_security *gensec
 			struct cli_credentials *creds = gensec_get_credentials(gensec_security);
 			if (creds) {
 				principal = cli_credentials_get_principal(creds, out_mem_ctx);
+			} else {
+				principal = ADS_IGNORE_PRINCIPAL;
 			}
 		}
 		if (principal) {
