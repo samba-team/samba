@@ -46,6 +46,9 @@ struct ldb_module;
 /* disable any single value checking on this attribute */
 #define LDB_FLAG_INTERNAL_DISABLE_SINGLE_VALUE_CHECK 0x20
 
+/* attribute has failed access check and must not be exposed */
+#define LDB_FLAG_INTERNAL_INACCESSIBLE_ATTRIBUTE 0x30
+
 
 /*
    these function pointers define the operations that a ldb module can intercept
