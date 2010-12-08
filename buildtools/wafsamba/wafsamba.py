@@ -195,7 +195,7 @@ def SAMBA_LIBRARY(bld, libname, source,
         if vnum:
             Logs.error("vnum is invalid for private libraries")
             sys.exit(1)
-        vnum = Utils.g_module.VERSION.split(".")[0]
+        vnum = None
         version = "%s_%s" % (Utils.g_module.APPNAME, Utils.g_module.VERSION)
     else:
         version = "%s_%s" % (Utils.g_module.APPNAME, Utils.g_module.VERSION.split(".")[0])
