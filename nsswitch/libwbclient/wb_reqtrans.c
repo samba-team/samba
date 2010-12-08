@@ -32,7 +32,7 @@
 #include "lib/util/tevent_unix.h"
 #include "nsswitch/winbind_struct_protocol.h"
 #include "nsswitch/libwbclient/wbclient.h"
-#include "nsswitch/libwbclient/wbc_async.h"
+#include "nsswitch/libwbclient/wb_reqtrans.h"
 
 /* can't use DEBUG here... */
 #define DEBUG(a,b)
