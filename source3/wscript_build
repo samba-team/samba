@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 from samba_utils import *
+import samba_version
 
 TDB_LIB_SRC = '''../lib/util/util_tdb.c
           lib/dbwrap.c lib/dbwrap_tdb.c
@@ -701,6 +702,8 @@ t.env.BUILDDIR = bld.path.abspath()
 
 
 bld.SETUP_BUILD_GROUPS()
+
+samba_version.load_version(bld.env)
 
 bld.SAMBA_MKVERSION('include/version.h')
 

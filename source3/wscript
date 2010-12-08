@@ -11,19 +11,8 @@ from optparse import SUPPRESS_HELP
 sys.path.insert(0, srcdir+"/buildtools/wafsamba")
 import wafsamba, Options
 import build.charset
-import samba_utils
+import samba_utils, samba_version
 import samba3
-
-def load_version(env=None):
-    '''load samba versions either from ./VERSION or git
-    return a version object for detailed breakdown'''
-    import samba_utils, Utils
-    if not env:
-        env = samba_utils.LOAD_ENVIRONMENT()
-
-    version = wafsamba.samba_version_file("./VERSION", "..", env=env)
-    Utils.g_module.VERSION = version.STRING
-    return version
 
 def set_options(opt):
     opt.BUILTIN_DEFAULT('NONE')
@@ -68,7 +57,7 @@ def set_options(opt):
 def configure(conf):
     from samba_utils import TO_LIST
 
-    version = load_version(env=conf.env)
+    version = samba_version.load_version(env=conf.env)
 
     conf.DEFINE('CONFIG_H_IS_FROM_SAMBA', 1)
     conf.DEFINE('_SAMBA_BUILD_', version.MAJOR, add_to_cflags=True)
