@@ -26,7 +26,7 @@
 #include "popt_common.h"
 #include "winbindd.h"
 #include "nsswitch/winbind_client.h"
-#include "../../nsswitch/libwbclient/wbc_async.h"
+#include "../../nsswitch/libwbclient/wb_reqtrans.h"
 #include "librpc/gen_ndr/messaging.h"
 #include "../librpc/gen_ndr/srv_lsa.h"
 #include "../librpc/gen_ndr/srv_samr.h"
