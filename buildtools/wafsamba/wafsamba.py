@@ -103,6 +103,7 @@ def SAMBA_LIBRARY(bld, libname, source,
                   vnum=None,
                   soname=None,
                   cflags='',
+                  ldflags='',
                   external_library=False,
                   realname=None,
                   autoproto=None,
@@ -188,11 +189,24 @@ def SAMBA_LIBRARY(bld, libname, source,
     else:
         bundled_name = PRIVATE_NAME(bld, libname, bundled_extension, private_library)
 
+    ldflags = TO_LIST(ldflags)
+
     if private_library:
         if vnum:
             Logs.error("vnum is invalid for private libraries")
             sys.exit(1)
-        vnum = Utils.g_module.VERSION[0]
+        vnum = Utils.g_module.VERSION.split(".")[0]
+        version = "%s_%s" % (Utils.g_module.APPNAME, Utils.g_module.VERSION)
+    else:
+        version = "%s_%s" % (Utils.g_module.APPNAME, Utils.g_module.VERSION.split(".")[0])
+
+    if bld.env.HAVE_LD_VERSION_SCRIPT:
+        vscript = "%s.vscript" % libname
+        bld.SAMBA_GENERATOR(vscript,
+                            rule="echo %s \{ global: \*\; \}\; > ${TGT}" % version.replace("-","_").upper(),
+                            group='vscripts',
+                            target=vscript)
+        ldflags.append("-Wl,--version-script=%s/%s" % (bld.path.abspath(bld.env), vscript))
 
     features = 'cc cshlib symlink_lib install_lib'
     if target_type == 'PYTHON':
@@ -213,6 +227,7 @@ def SAMBA_LIBRARY(bld, libname, source,
         source          = [],
         target          = bundled_name,
         depends_on      = depends_on,
+        ldflags		= ldflags,
         samba_deps      = deps,
         samba_includes  = includes,
         local_include   = local_include,
@@ -525,6 +540,7 @@ def SETUP_BUILD_GROUPS(bld):
     bld.env['USING_BUILD_GROUPS'] = True
     bld.add_group('setup')
     bld.add_group('build_compiler_source')
+    bld.add_group('vscripts')
     bld.add_group('base_libraries')
     bld.add_group('generators')
     bld.add_group('compiler_prototypes')

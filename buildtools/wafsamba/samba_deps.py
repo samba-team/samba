@@ -952,7 +952,8 @@ def show_object_duplicates(bld, tgt_list):
 ######################################################################
 # this provides a way to save our dependency calculations between runs
 savedeps_version = 3
-savedeps_inputs  = ['samba_deps', 'samba_includes', 'local_include', 'local_include_first', 'samba_cflags', 'source', 'grouping_library']
+savedeps_inputs  = ['samba_deps', 'samba_includes', 'local_include', 'local_include_first', 'samba_cflags',
+                    'source', 'grouping_library', 'ldflags']
 savedeps_outputs = ['uselib', 'uselib_local', 'add_objects', 'includes', 'ccflags', 'ldflags', 'samba_deps_extended']
 savedeps_outenv  = ['INC_PATHS']
 savedeps_envvars = ['NONSHARED_BINARIES', 'GLOBAL_DEPENDENCIES', 'EXTRA_CFLAGS', 'EXTRA_LDFLAGS' ]
