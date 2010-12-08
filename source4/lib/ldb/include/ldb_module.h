@@ -47,7 +47,7 @@ struct ldb_module;
 #define LDB_FLAG_INTERNAL_DISABLE_SINGLE_VALUE_CHECK 0x20
 
 /* attribute has failed access check and must not be exposed */
-#define LDB_FLAG_INTERNAL_INACCESSIBLE_ATTRIBUTE 0x30
+#define LDB_FLAG_INTERNAL_INACCESSIBLE_ATTRIBUTE 0x40
 
 
 /*
