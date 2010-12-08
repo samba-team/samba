@@ -54,10 +54,14 @@ def PKG_CONFIG_FILES(bld, pc_files, vnum=None):
                                 source=f+'.in',
                                 target=f)
         t.vars = []
-        for v in [ 'PREFIX', 'EXEC_PREFIX' ]:
-            t.vars.append(t.env[v])
+        if t.env.RPATH_ON_INSTALL:
+            t.env.LIB_RPATH = t.env.RPATH_ST % t.env.LIBDIR
+        else:
+            t.env.LIB_RPATH = ''
         if vnum:
             t.env.PACKAGE_VERSION = vnum
+        for v in [ 'PREFIX', 'EXEC_PREFIX', 'LIB_RPATH' ]:
+            t.vars.append(t.env[v])
         bld.INSTALL_FILES(dest, f, flat=True, destname=base)
 Build.BuildContext.PKG_CONFIG_FILES = PKG_CONFIG_FILES
 
