@@ -269,6 +269,7 @@ def configure(conf):
 
     # check for rpath
     if not conf.env.DISABLE_SHARED and conf.CHECK_LIBRARY_SUPPORT(rpath=True):
+        support_rpath = True
         conf.env.RPATH_ON_BUILD   = not Options.options.disable_rpath_build
         conf.env.RPATH_ON_INSTALL = (conf.env.RPATH_ON_BUILD and
                                      not Options.options.disable_rpath_install)
@@ -277,6 +278,7 @@ def configure(conf):
         conf.env.RPATH_ON_INSTALL_PRIVATE = (
             not Options.options.disable_rpath_private_install)
     else:
+        support_rpath = False
         conf.env.RPATH_ON_INSTALL = False
         conf.env.RPATH_ON_BUILD   = False
         conf.env.RPATH_ON_INSTALL_PRIVATE = False
@@ -285,6 +287,13 @@ def configure(conf):
             # private library directory by default.
             # the user can of course always override it.
             conf.env.PRIVATELIBDIR = conf.env.LIBDIR
+
+    if not conf.env.DISABLE_SHARED and conf.CHECK_LIBRARY_SUPPORT(rpath=support_rpath,
+                                                                  version_script=True,
+                                                                  msg='-Wl,--version-script support'):
+        conf.env.HAVE_LD_VERSION_SCRIPT = True
+    else:
+        conf.env.HAVE_LD_VERSION_SCRIPT = False
 
     # we should use the PIC options in waf instead
     # Some compilo didn't support -fPIC but just print a warning

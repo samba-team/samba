@@ -133,7 +133,7 @@ int foo(int v) {
 # into several parts. I'd quite like to create a set of CHECK_COMPOUND()
 # functions that make writing complex compound tests like this much easier
 @conf
-def CHECK_LIBRARY_SUPPORT(conf, rpath=False, msg=None):
+def CHECK_LIBRARY_SUPPORT(conf, rpath=False, version_script=False, msg=None):
     '''see if the platform supports building libraries'''
 
     if msg is None:
@@ -171,9 +171,17 @@ def CHECK_LIBRARY_SUPPORT(conf, rpath=False, msg=None):
 
     bld.rescan(bld.srcnode)
 
+    ldflags = []
+    if version_script:
+        ldflags.append("-Wl,--version-script=%s/vscript" % bld.path.abspath())
+        dest = open(os.path.join(dir,'vscript'), 'w')
+        dest.write('TEST_1.0A2 { global: *; };\n')
+        dest.close()
+
     bld(features='cc cshlib',
         source='libdir/lib1.c',
         target='libdir/lib1',
+        ldflags=ldflags,
         name='lib1')
 
     o = bld(features='cc cprogram',
