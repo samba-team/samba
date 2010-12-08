@@ -177,8 +177,9 @@ static int aclread_callback(struct ldb_request *req, struct ldb_reply *ares)
 			 }
 		 }
 		 /*create a new message to return*/
-		 ret_msg = ldb_msg_new(req);
+		 ret_msg = ldb_msg_new(ac->req);
 		 ret_msg->dn = msg->dn;
+		 talloc_steal(ret_msg, msg->dn);
 		 ret_msg->num_elements = num_of_attrs;
 		 if (num_of_attrs > 0) {
 			 ret_msg->elements = talloc_array(ret_msg,
@@ -191,11 +192,7 @@ static int aclread_callback(struct ldb_request *req, struct ldb_reply *ares)
 				 bool to_remove = aclread_is_inaccessible(&msg->elements[i]);
 				 if (!to_remove) {
 					 ret_msg->elements[k] = msg->elements[i];
-					 if (!talloc_reference(ret_msg->elements,
-							       msg->elements[i].values)) {
-						 talloc_free(tmp_ctx);
-						 return ldb_operr(ldb);
-					 }
+					 talloc_steal(ret_msg->elements, msg->elements[i].values);
 					 k++;
 				 }
 			 }
