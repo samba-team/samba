@@ -10,9 +10,6 @@ def PRIVATE_NAME(bld, name, private_extension, private_library):
         return name
     if name in bld.env.PRIVATE_EXTENSION_EXCEPTION and not private_library:
         return name
-    if private_library and bld.EXPAND_VARIABLES(bld.env.LIBDIR) != bld.EXPAND_VARIABLES(bld.env.PRIVATELIBDIR):
-        # Private libraries already have their own namespace in another way
-        return name
     extension = getattr(bld.env, 'PRIVATE_EXTENSION', '')
     if extension:
         return name + '-' + extension
