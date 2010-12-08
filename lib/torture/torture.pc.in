@@ -8,5 +8,5 @@ Name: torture
 Description: Samba torture (test) suite
 Requires: talloc
 Version: 0.0.1
-Libs: -L${libdir} -ltorture 
+Libs: @LIB_RPATH@ -L${libdir} -ltorture
 Cflags: -I${includedir}  -DHAVE_IMMEDIATE_STRUCTURES=1

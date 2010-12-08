@@ -7,5 +7,5 @@ Name: samba-util
 Description: Samba utility functions
 Requires: talloc tevent
 Version: 0.0.1
-Libs: -L${libdir} -lsamba-util
+Libs: @LIB_RPATH@ -L${libdir} -lsamba-util
 Cflags: -I${includedir}  -DHAVE_IMMEDIATE_STRUCTURES=1

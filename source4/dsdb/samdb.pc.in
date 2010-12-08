@@ -6,5 +6,5 @@ includedir=@includedir@
 Name: samdb
 Description: Sam Database
 Version: @PACKAGE_VERSION@
-Libs: -L${libdir} -lsamdb
+Libs: @LIB_RPATH@ -L${libdir} -lsamdb
 Cflags: -I${includedir} -DHAVE_IMMEDIATE_STRUCTURES=1
