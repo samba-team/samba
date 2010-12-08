@@ -12,4 +12,8 @@ conf.CHECK_LIB(libs="iconv", shlib=True)
 
 if (conf.CHECK_FUNCS_IN('iconv_open', 'iconv', checklibc=False, headers='iconv.h') or
     conf.CHECK_FUNCS('iconv_open', headers='iconv.h')):
-    conf.DEFINE('HAVE_NATIVE_ICONV', 1)
+    if conf.env['HAVE_LIBICONV']:
+        if conf.CHECK_FUNCS('mbrtowc', headers='wchar.h'):
+            conf.DEFINE('HAVE_NATIVE_ICONV', 1)
+    else:
+        conf.DEFINE('HAVE_NATIVE_ICONV', 1)
