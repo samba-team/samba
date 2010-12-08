@@ -53,12 +53,22 @@ struct aclread_private {
 	bool enabled;
 };
 
+static void aclread_mark_inaccesslible(struct ldb_message_element *el) {
+	 el->flags |= LDB_FLAG_INTERNAL_INACCESSIBLE_ATTRIBUTE;
+}
+
+static bool aclread_is_inaccessible(struct ldb_message_element *el) {
+	return el->flags & LDB_FLAG_INTERNAL_INACCESSIBLE_ATTRIBUTE;
+}
+
 static int aclread_callback(struct ldb_request *req, struct ldb_reply *ares)
 {
 	 struct ldb_context *ldb;
 	 struct aclread_context *ac;
-	 int ret;
-	 unsigned int i;
+	 struct ldb_message *ret_msg;
+	 struct ldb_message *msg;
+	 int ret, num_of_attrs = 0;
+	 unsigned int i, k = 0;
 	 struct security_descriptor *sd;
 	 struct dom_sid *sid = NULL;
 	 TALLOC_CTX *tmp_ctx;
@@ -76,20 +86,21 @@ static int aclread_callback(struct ldb_request *req, struct ldb_reply *ares)
 	 tmp_ctx = talloc_new(ac);
 	 switch (ares->type) {
 	 case LDB_REPLY_ENTRY:
-		 ret = dsdb_get_sd_from_ldb_message(ldb, tmp_ctx, ares->message, &sd);
+		 msg = ares->message;
+		 ret = dsdb_get_sd_from_ldb_message(ldb, tmp_ctx, msg, &sd);
 		 if (ret != LDB_SUCCESS) {
 			 DEBUG(10, ("acl_read: cannot get descriptor\n"));
 			 ret = LDB_ERR_OPERATIONS_ERROR;
 			 goto fail;
 		 }
-		 sid = samdb_result_dom_sid(tmp_ctx, ares->message, "objectSid");
+		 sid = samdb_result_dom_sid(tmp_ctx, msg, "objectSid");
 		 /* get the object instance type */
-		 instanceType = ldb_msg_find_attr_as_uint(ares->message,
+		 instanceType = ldb_msg_find_attr_as_uint(msg,
 							 "instanceType", 0);
-		 if (!ldb_dn_is_null(ares->message->dn) && !(instanceType & INSTANCE_TYPE_IS_NC_HEAD))
+		 if (!ldb_dn_is_null(msg->dn) && !(instanceType & INSTANCE_TYPE_IS_NC_HEAD))
 		 {
 			/* the object has a parent, so we have to check for visibility */
-			struct ldb_dn *parent_dn = ldb_dn_get_parent(tmp_ctx, ares->message->dn);
+			struct ldb_dn *parent_dn = ldb_dn_get_parent(tmp_ctx, msg->dn);
 			ret = dsdb_module_check_access_on_dn(ac->module,
 							     tmp_ctx,
 							     parent_dn,
@@ -103,61 +114,97 @@ static int aclread_callback(struct ldb_request *req, struct ldb_reply *ares)
 			}
 		 }
 		 /* for every element in the message check RP */
-		 i = 0;
-		 while (i < ares->message->num_elements) {
+		 for (i=0; i < msg->num_elements; i++) {
 			 const struct dsdb_attribute *attr;
+			 bool is_sd, is_objectsid, is_instancetype;
+			 uint32_t access_mask;
 			 attr =  dsdb_attribute_by_lDAPDisplayName(ac->schema,
-								   ares->message->elements[i].name);
+								   msg->elements[i].name);
 			 if (!attr) {
 				 DEBUG(2, ("acl_read: cannot find attribute %s in schema\n",
-					   ares->message->elements[i].name));
+					   msg->elements[i].name));
 				 ret = LDB_ERR_OPERATIONS_ERROR;
 				 goto fail;
 			 }
-			 /* nTSecurityDescriptor is a special case */
-			 if (ldb_attr_cmp("nTSecurityDescriptor",
-					  ares->message->elements[i].name) == 0) {
-				 if (ac->sd) {
-					 ldb_msg_remove_attr(ares->message, ares->message->elements[i].name);
-					 ret = LDB_SUCCESS;
-				 }
-				 ret = acl_check_access_on_attribute(ac->module,
-								     tmp_ctx,
-								     sd,
-								     sid,
-								     SEC_FLAG_SYSTEM_SECURITY|SEC_STD_READ_CONTROL,
-								     attr);
-			 } else {
-				 ret = acl_check_access_on_attribute(ac->module,
-								     tmp_ctx,
-								     sd,
-								     sid,
-								     SEC_ADS_READ_PROP,
-								     attr);
+			 is_sd = ldb_attr_cmp("nTSecurityDescriptor",
+					      msg->elements[i].name) == 0;
+			 is_objectsid = ldb_attr_cmp("objectSid",
+						     msg->elements[i].name) == 0;
+			 is_instancetype = ldb_attr_cmp("instanceType",
+							msg->elements[i].name) == 0;
+			 /* these attributes were added to perform access checks and must be removed */
+			 if (is_objectsid && ac->object_sid) {
+				 aclread_mark_inaccesslible(&msg->elements[i]);
+				 continue;
 			 }
-			 if (ret == LDB_SUCCESS) {
-				 i++;
-			 } else if (ret == LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS) {
+			 if (is_instancetype && ac->instance_type) {
+				 aclread_mark_inaccesslible(&msg->elements[i]);
+				 continue;
+			 }
+			 if (is_sd && ac->sd) {
+				 aclread_mark_inaccesslible(&msg->elements[i]);
+				 continue;
+			 }
+			 /* nTSecurityDescriptor is a special case */
+			 if (is_sd) {
+				 access_mask = SEC_FLAG_SYSTEM_SECURITY|SEC_STD_READ_CONTROL;
+			 } else {
+				 access_mask = SEC_ADS_READ_PROP;
+			 }
+			 ret = acl_check_access_on_attribute(ac->module,
+							     tmp_ctx,
+							     sd,
+							     sid,
+							     access_mask,
+							     attr);
+
+			 if (ret == LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS) {
 				 /* do not return this entry if attribute is
-					    part of the search filter */
+				    part of the search filter */
 				 if (dsdb_attr_in_parse_tree(ac->req->op.search.tree,
-							     ares->message->elements[i].name)) {
+							     msg->elements[i].name)) {
 					 talloc_free(tmp_ctx);
 					 return LDB_SUCCESS;
 				 }
-				 ldb_msg_remove_attr(ares->message, ares->message->elements[i].name);
-			 } else {
+				 aclread_mark_inaccesslible(&msg->elements[i]);
+			 } else if (ret != LDB_SUCCESS) {
 				 goto fail;
 			 }
 		 }
-		 if (ac->instance_type) {
-			 ldb_msg_remove_attr(ares->message, "instanceType");
+		 for (i=0; i < msg->num_elements; i++) {
+			 if (!aclread_is_inaccessible(&msg->elements[i])) {
+				 num_of_attrs++;
+			 }
 		 }
-		 if (ac->object_sid) {
-			 ldb_msg_remove_attr(ares->message, "objectSid");
+		 /*create a new message to return*/
+		 ret_msg = ldb_msg_new(req);
+		 ret_msg->dn = msg->dn;
+		 ret_msg->num_elements = num_of_attrs;
+		 if (num_of_attrs > 0) {
+			 ret_msg->elements = talloc_array(ret_msg,
+							  struct ldb_message_element,
+							  num_of_attrs);
+			 if (ret_msg->elements == NULL) {
+				 return ldb_oom(ldb);
+			 }
+			 for (i=0; i < msg->num_elements; i++) {
+				 bool to_remove = aclread_is_inaccessible(&msg->elements[i]);
+				 if (!to_remove) {
+					 ret_msg->elements[k] = msg->elements[i];
+					 if (!talloc_reference(ret_msg->elements,
+							       msg->elements[i].values)) {
+						 talloc_free(tmp_ctx);
+						 return ldb_operr(ldb);
+					 }
+					 k++;
+				 }
+			 }
+		 } else {
+			 ret_msg->elements = NULL;
 		 }
 		 talloc_free(tmp_ctx);
-		 return ldb_module_send_entry(ac->req, ares->message, ares->controls);
+
+		 return ldb_module_send_entry(ac->req, ret_msg, ares->controls);
 	 case LDB_REPLY_REFERRAL:
 		 return ldb_module_send_referral(ac->req, ares->referral);
 	 case LDB_REPLY_DONE:
