@@ -108,8 +108,11 @@ def build(bld):
         bld.SAMBA_LIBRARY('pytalloc-util',
             source='pytalloc_util.c',
             public_deps='talloc',
+            abi_file='ABI/pytalloc-util-%s.sigs' % VERSION,
+            abi_match='py* Py*',
             pyext=True,
-            vnum=VERSION,
+            vnum=vnum,
+            private_library=private_library,
             )
         bld.INSTALL_FILES('${INCLUDEDIR}', 'pytalloc.h')
         bld.SAMBA_PYTHON('pytalloc',
