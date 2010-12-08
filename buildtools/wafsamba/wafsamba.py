@@ -203,7 +203,7 @@ def SAMBA_LIBRARY(bld, libname, source,
     if bld.env.HAVE_LD_VERSION_SCRIPT:
         vscript = "%s.vscript" % libname
         bld.SAMBA_GENERATOR(vscript,
-                            rule="echo %s \{ global: \*\; \}\; > ${TGT}" % version.replace("-","_").upper(),
+                            rule="echo %s \{ global: \*\; \}\; > ${TGT}" % version.replace("-","_").replace("+","_").upper(),
                             group='vscripts',
                             target=vscript)
         ldflags.append("-Wl,--version-script=%s/%s" % (bld.path.abspath(bld.env), vscript))
