@@ -63,8 +63,6 @@ start_samba() {
 
 	}
 
-	/usr/bin/net serverid wipe
-
 	# start the winbind service
 	[ "$CTDB_MANAGES_WINBIND" = "yes" ] && {
 		service "$CTDB_SERVICE_WINBIND" start
@@ -74,6 +72,8 @@ start_samba() {
 	# the number of smbd processes will mean that it leaves few cycles for
 	# anything else
 	[ "$CTDB_MANAGES_SAMBA" = "yes" ] && {
+		/usr/bin/net serverid wipe
+
 		nice_service "$CTDB_SERVICE_NMB" start
 		nice_service "$CTDB_SERVICE_SMB" start
 	}
