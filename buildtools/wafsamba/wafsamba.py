@@ -238,7 +238,7 @@ def SAMBA_LIBRARY(bld, libname, source,
         name            = libname,
         samba_realname  = realname,
         samba_install   = install,
-        abi_directory   = abi_directory,
+        abi_directory   = "%s/%s" % (bld.path.abspath(), abi_directory),
         abi_match       = abi_match,
         private_library = private_library,
         grouping_library=grouping_library
