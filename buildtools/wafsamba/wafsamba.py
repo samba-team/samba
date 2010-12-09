@@ -195,10 +195,6 @@ def SAMBA_LIBRARY(bld, libname, source,
         if vnum:
             Logs.error("vnum is invalid for private libraries")
             sys.exit(1)
-        vnum = None
-        version = "%s_%s" % (Utils.g_module.APPNAME, Utils.g_module.VERSION)
-    else:
-        version = "%s_%s" % (Utils.g_module.APPNAME, Utils.g_module.VERSION.split(".")[0])
 
     features = 'cc cshlib symlink_lib install_lib'
     if target_type == 'PYTHON':
@@ -210,10 +206,15 @@ def SAMBA_LIBRARY(bld, libname, source,
 
     if abi_directory:
         features += ' abi_check'
-        if bld.env.HAVE_LD_VERSION_SCRIPT:
-            vscript = "%s.vscript" % libname
-            bld.ABI_VSCRIPT(libname, abi_directory, vnum, vscript)
-            ldflags.append("-Wl,--version-script=%s/%s" % (bld.path.abspath(bld.env), vscript))
+
+    if bld.env.HAVE_LD_VERSION_SCRIPT:
+        vscript = "%s.vscript" % libname
+        if private_library:
+            version = "%s_%s" % (Utils.g_module.APPNAME, Utils.g_module.VERSION)
+        else:
+            version = "%s_%s" % (libname, vnum)
+        bld.ABI_VSCRIPT(libname, abi_directory, version, vscript)
+        ldflags.append("-Wl,--version-script=%s/%s" % (bld.path.abspath(bld.env), vscript))
 
     bld.SET_BUILD_GROUP(group)
     t = bld(

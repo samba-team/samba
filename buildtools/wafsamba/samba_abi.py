@@ -146,10 +146,8 @@ def abi_process_file(fname, version, symmap):
             symmap[symname] = version
     f.close()
 
-def abi_write_vscript(vscript, libname, vnum, symmap):
+def abi_write_vscript(vscript, libname, version, symmap):
     '''write a vscript file for a library in --version-script format'''
-
-    libname = libname.replace("-", "_").replace("+","_").upper()
 
     invmap = {}
     for s in symmap:
@@ -182,10 +180,10 @@ def abi_build_vscript(task):
         basename = os.path.basename(fname)
         version = basename[len(task.env.LIBNAME)+1:-len(".sigs")]
         abi_process_file(fname, version, symmap)
-    abi_write_vscript(tgt, task.env.LIBNAME, task.env.VNUM, symmap)
+    abi_write_vscript(tgt, task.env.LIBNAME, task.env.VERSION, symmap)
 
 
-def ABI_VSCRIPT(bld, libname, abi_directory, vnum, vscript):
+def ABI_VSCRIPT(bld, libname, abi_directory, version, vscript):
     '''generate a vscript file for our public libraries'''
     if abi_directory:
         source = bld.path.ant_glob('%s/%s-[0-9]*.sigs' % (abi_directory, libname))
@@ -201,7 +199,7 @@ def ABI_VSCRIPT(bld, libname, abi_directory, vnum, vscript):
                             source=source,
                             group='vscripts',
                             target=vscript)
-    t.env.VNUM = vnum
+    t.env.VERSION = version
     t.env.LIBNAME = libname
-    t.vars = [vnum, vscript]
+    t.vars = [libname, version, vscript]
 Build.BuildContext.ABI_VSCRIPT = ABI_VSCRIPT
