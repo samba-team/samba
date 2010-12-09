@@ -861,7 +861,7 @@ int reg_parse_fd(int fd, const struct reg_parse_callback* cb, const char* opts)
 		goto done;
 	}
 
-	DEBUG(0, ("reg_parse_fd: encoding file: %s str: %s\n",
+	DEBUG(10, ("reg_parse_fd: encoding file: %s str: %s\n",
 		  opt.file_enc, opt.str_enc));
 
 
