@@ -22,15 +22,14 @@ import sys
 # Find right directory when running from source tree
 sys.path.insert(0, "bin/python")
 
-from subunit.run import TestProgram
 import optparse
 import samba
 samba.ensure_external_module("testtools", "testtools")
 samba.ensure_external_module("subunit", "subunit/python")
+from subunit.run import SubunitTestRunner, TestProgram
 import samba.getopt as options
 import samba.tests
 
-from subunit.run import SubunitTestRunner
 
 parser = optparse.OptionParser("subunitrun [options] <tests>")
 credopts = options.CredentialsOptions(parser)

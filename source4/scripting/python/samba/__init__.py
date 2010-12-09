@@ -304,6 +304,26 @@ def valid_netbios_name(name):
     return True
 
 
+def import_bundled_package(modulename, location):
+    """Import the bundled version of a package.
+
+    :note: This should only be called if the system version of the package
+        is not adequate.
+
+    :param modulename: Module name to import
+    :param location: Location to add to sys.path (can be relative to
+        ${srcdir}/lib)
+    """
+    if in_source_tree():
+        sys.path.insert(0,
+            os.path.join(os.path.dirname(__file__),
+                         "../../../../lib", location))
+        __import__(modulename)
+    else:
+        sys.modules[modulename] = __import__(
+            "samba.external.%s" % modulename, fromlist=["samba.external"])
+
+
 def ensure_external_module(modulename, location):
     """Add a location to sys.path if an external dependency can't be found.
 
@@ -314,14 +334,8 @@ def ensure_external_module(modulename, location):
     try:
         __import__(modulename)
     except ImportError:
-        if in_source_tree():
-            sys.path.insert(0,
-                os.path.join(os.path.dirname(__file__),
-                             "../../../../lib", location))
-            __import__(modulename)
-        else:
-            sys.modules[modulename] = __import__(
-                "samba.external.%s" % modulename, fromlist=["samba.external"])
+        import_bundled_package(modulename)
+
 
 from samba import _glue
 version = _glue.version
