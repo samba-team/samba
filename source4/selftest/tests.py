@@ -120,9 +120,9 @@ def planperltestsuite(name, path):
 
 def planpythontestsuite(env, module):
     if has_system_subunit_run:
-        plantestsuite_idlist(module, env, [python, "-m", "subunit.run", module])
+        plantestsuite_idlist(module, env, [python, "-m", "subunit.run", "$LISTOPT", module])
     else:
-        plantestsuite_idlist(module, env, "PYTHONPATH=$PYTHONPATH:%s/../lib/subunit/python:%s/../lib/testtools %s -m subunit.run %s" % (samba4srcdir, samba4srcdir, python, module))
+        plantestsuite_idlist(module, env, "PYTHONPATH=$PYTHONPATH:%s/../lib/subunit/python:%s/../lib/testtools %s -m subunit.run $LISTOPT %s" % (samba4srcdir, samba4srcdir, python, module))
 
 
 def plansmbtorturetestsuite(name, env, options):
