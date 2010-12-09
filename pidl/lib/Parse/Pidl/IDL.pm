@@ -2619,11 +2619,17 @@ sub parse_file($$)
 	my $saved_delim = $/;
 	undef $/;
 	my $cpp = $ENV{CPP};
+	my $options = "";
 	if (! defined $cpp) {
-		$cpp = "cpp";
+		if (defined $ENV{CC}) {
+			$cpp = "$ENV{CC}";
+			$options = "-E";
+		} else {
+			$cpp = "cpp";
+		}
 	}
 	my $includes = join('',map { " -I$_" } @$incdirs);
-	my $data = `$cpp -D__PIDL__$includes -xc "$filename"`;
+	my $data = `$cpp $options -D__PIDL__$includes -xc "$filename"`;
 	$/ = $saved_delim;
 
 	return parse_string($data, $filename);
