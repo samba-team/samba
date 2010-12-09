@@ -32,7 +32,7 @@ else:
     has_perl_test_more = False
 
 try:
-    import subunit.run
+    from subunit.run import TestProgram
 except ImportError:
     has_system_subunit_run = False
 else:
