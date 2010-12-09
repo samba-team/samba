@@ -201,5 +201,5 @@ def ABI_VSCRIPT(bld, libname, abi_directory, version, vscript):
                             target=vscript)
     t.env.VERSION = version
     t.env.LIBNAME = libname
-    t.vars = [libname, version, vscript]
+    t.vars = ['LIBNAME', 'VERSION']
 Build.BuildContext.ABI_VSCRIPT = ABI_VSCRIPT

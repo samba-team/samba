@@ -218,6 +218,8 @@ def SAMBA_LIBRARY(bld, libname, source,
         if version:
             bld.ABI_VSCRIPT(libname, abi_directory, version, vscript)
             ldflags.append("-Wl,--version-script=%s/%s" % (bld.path.abspath(bld.env), vscript))
+            fullname = bld.env.shlib_PATTERN % bundled_name
+            bld.add_manual_dependency(bld.path.find_or_declare(fullname), bld.path.find_or_declare(vscript))
 
     bld.SET_BUILD_GROUP(group)
     t = bld(
