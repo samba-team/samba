@@ -324,6 +324,21 @@ def import_bundled_package(modulename, location):
             "samba.external.%s" % modulename, fromlist=["samba.external"])
 
 
+def force_bundled_package(packagename, location):
+    """Forcibly use the bundled package.
+
+    This will first unload the system module and then load the bundled one.
+
+    :param packagename: The package name
+    :param location: Location to add to sys.path (can be relative to
+        ${srcdir}/lib)
+    """
+    for m in sys.modules.keys():
+        if m.startswith("%s." % packagename):
+            del sys.modules[m]
+    import_bundled_package(packagename, location)
+
+
 def ensure_external_module(modulename, location):
     """Add a location to sys.path if an external dependency can't be found.
 
