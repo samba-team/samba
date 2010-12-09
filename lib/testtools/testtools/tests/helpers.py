@@ -12,6 +12,7 @@ __all__ = [
 from testtools import TestResult
 
 
+# GZ 2010-08-12: Don't do this, pointlessly creates an exc_info cycle
 try:
     raise Exception
 except Exception:
@@ -61,6 +62,10 @@ class LoggingResult(TestResult):
     def done(self):
         self._events.append('done')
         super(LoggingResult, self).done()
+
+    def time(self, a_datetime):
+        self._events.append(('time', a_datetime))
+        super(LoggingResult, self).time(a_datetime)
 
 # Note, the following three classes are different to LoggingResult by
 # being fully defined exact matches rather than supersets.

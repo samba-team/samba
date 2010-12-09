@@ -19,10 +19,20 @@ is copyright Steve Purcell and the Python Software Foundation, it is
 distributed under the same license as Python, see LICENSE for details.
 
 
-Dependencies
-------------
+Required Dependencies
+---------------------
 
  * Python 2.4+ or 3.0+
+
+Optional Dependencies
+---------------------
+
+If you would like to use our undocumented, unsupported Twisted support, then
+you will need Twisted.
+
+If you want to use ``fixtures`` then you can either install fixtures (e.g. from
+https://launchpad.net/python-fixtures or http://pypi.python.org/pypi/fixtures)
+or alternatively just make sure your fixture objects obey the same protocol.
 
 
 Bug reports and patches
@@ -56,3 +66,7 @@ Thanks
  * Robert Collins
  * Andrew Bennetts
  * Benjamin Peterson
+ * Jamu Kakar
+ * James Westby
+ * Martin [gz]
+ * Michael Hudson-Doyle

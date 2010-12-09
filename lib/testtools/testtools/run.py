@@ -14,6 +14,7 @@ import sys
 
 from testtools import TextTestResult
 from testtools.compat import classtypes, istext, unicode_output_stream
+from testtools.testsuite import iterate_tests
 
 
 defaultTestLoader = unittest.defaultTestLoader
@@ -34,9 +35,12 @@ else:
 class TestToolsTestRunner(object):
     """ A thunk object to support unittest.TestProgram."""
 
+    def __init__(self, stdout):
+        self.stdout = stdout
+
     def run(self, test):
         "Run the given test case or test suite."
-        result = TextTestResult(unicode_output_stream(sys.stdout))
+        result = TextTestResult(unicode_output_stream(self.stdout))
         result.startTestRun()
         try:
             return test.run(result)
@@ -58,6 +62,12 @@ class TestToolsTestRunner(object):
 #    removed.
 #  - A tweak has been added to detect 'python -m *.run' and use a
 #    better progName in that case.
+#  - self.module is more comprehensively set to None when being invoked from
+#    the commandline - __name__ is used as a sentinel value.
+#  - --list has been added which can list tests (should be upstreamed).
+#  - --load-list has been added which can reduce the tests used (should be
+#    upstreamed).
+#  - The limitation of using getopt is declared to the user.
 
 FAILFAST     = "  -f, --failfast   Stop on first failure\n"
 CATCHBREAK   = "  -c, --catch      Catch control-C and display results\n"
@@ -70,14 +80,17 @@ Options:
   -h, --help       Show this message
   -v, --verbose    Verbose output
   -q, --quiet      Minimal output
+  -l, --list       List tests rather than executing them.
+  --load-list      Specifies a file containing test ids, only tests matching
+                   those ids are executed.
 %(failfast)s%(catchbreak)s%(buffer)s
 Examples:
   %(progName)s test_module               - run tests from test_module
   %(progName)s module.TestClass          - run tests from module.TestClass
   %(progName)s module.Class.test_method  - run specified test method
 
-[tests] can be a list of any number of test modules, classes and test
-methods.
+All options must come before [tests].  [tests] can be a list of any number of
+test modules, classes and test methods.
 
 Alternative Usage: %(progName)s discover [options]
 
@@ -87,6 +100,9 @@ Options:
   -p pattern       Pattern to match test files ('test*.py' default)
   -t directory     Top level directory of project (default to
                    start directory)
+  -l, --list       List tests rather than executing them.
+  --load-list      Specifies a file containing test ids, only tests matching
+                   those ids are executed.
 
 For test discovery all test modules must be importable from the top
 level directory of the project.
@@ -102,11 +118,13 @@ class TestProgram(object):
     # defaults for testing
     failfast = catchbreak = buffer = progName = None
 
-    def __init__(self, module='__main__', defaultTest=None, argv=None,
+    def __init__(self, module=__name__, defaultTest=None, argv=None,
                     testRunner=None, testLoader=defaultTestLoader,
                     exit=True, verbosity=1, failfast=None, catchbreak=None,
-                    buffer=None):
-        if istext(module):
+                    buffer=None, stdout=None):
+        if module == __name__:
+            self.module = None
+        elif istext(module):
             self.module = __import__(module)
             for part in module.split('.')[1:]:
                 self.module = getattr(self.module, part)
@@ -121,6 +139,8 @@ class TestProgram(object):
         self.verbosity = verbosity
         self.buffer = buffer
         self.defaultTest = defaultTest
+        self.listtests = False
+        self.load_list = None
         self.testRunner = testRunner
         self.testLoader = testLoader
         progName = argv[0]
@@ -131,7 +151,27 @@ class TestProgram(object):
             progName = os.path.basename(argv[0])
         self.progName = progName
         self.parseArgs(argv)
-        self.runTests()
+        if self.load_list:
+            # TODO: preserve existing suites (like testresources does in
+            # OptimisingTestSuite.add, but with a standard protocol).
+            # This is needed because the load_tests hook allows arbitrary
+            # suites, even if that is rarely used.
+            source = file(self.load_list, 'rb')
+            try:
+                lines = source.readlines()
+            finally:
+                source.close()
+            test_ids = set(line.strip() for line in lines)
+            filtered = unittest.TestSuite()
+            for test in iterate_tests(self.test):
+                if test.id() in test_ids:
+                    filtered.addTest(test)
+            self.test = filtered
+        if not self.listtests:
+            self.runTests()
+        else:
+            for test in iterate_tests(self.test):
+                stdout.write('%s\n' % test.id())
 
     def usageExit(self, msg=None):
         if msg:
@@ -153,9 +193,10 @@ class TestProgram(object):
             return
 
         import getopt
-        long_opts = ['help', 'verbose', 'quiet', 'failfast', 'catch', 'buffer']
+        long_opts = ['help', 'verbose', 'quiet', 'failfast', 'catch', 'buffer',
+            'list', 'load-list=']
         try:
-            options, args = getopt.getopt(argv[1:], 'hHvqfcb', long_opts)
+            options, args = getopt.getopt(argv[1:], 'hHvqfcbl', long_opts)
             for opt, value in options:
                 if opt in ('-h','-H','--help'):
                     self.usageExit()
@@ -175,21 +216,20 @@ class TestProgram(object):
                     if self.buffer is None:
                         self.buffer = True
                     # Should this raise an exception if -b is not valid?
+                if opt in ('-l', '--list'):
+                    self.listtests = True
+                if opt == '--load-list':
+                    self.load_list = value
             if len(args) == 0 and self.defaultTest is None:
                 # createTests will load tests from self.module
                 self.testNames = None
             elif len(args) > 0:
                 self.testNames = args
-                if __name__ == '__main__':
-                    # to support python -m unittest ...
-                    self.module = None
             else:
                 self.testNames = (self.defaultTest,)
             self.createTests()
         except getopt.error:
-            exc_info = sys.exc_info()
-            msg = exc_info[1]
-            self.usageExit(msg)
+            self.usageExit(sys.exc_info()[1])
 
     def createTests(self):
         if self.testNames is None:
@@ -227,6 +267,10 @@ class TestProgram(object):
                           help="Pattern to match tests ('test*.py' default)")
         parser.add_option('-t', '--top-level-directory', dest='top', default=None,
                           help='Top level directory of project (defaults to start directory)')
+        parser.add_option('-l', '--list', dest='listtests', default=False,
+                          help='List tests rather than running them.')
+        parser.add_option('--load-list', dest='load_list', default=None,
+                          help='Specify a filename containing the test ids to use.')
 
         options, args = parser.parse_args(argv)
         if len(args) > 3:
@@ -243,6 +287,8 @@ class TestProgram(object):
             self.catchbreak = options.catchbreak
         if self.buffer is None:
             self.buffer = options.buffer
+        self.listtests = options.listtests
+        self.load_list = options.load_list
 
         if options.verbose:
             self.verbosity = 2
@@ -276,7 +322,9 @@ class TestProgram(object):
             sys.exit(not self.result.wasSuccessful())
 ################
 
+def main(argv, stdout):
+    runner = TestToolsTestRunner(stdout)
+    program = TestProgram(argv=argv, testRunner=runner, stdout=stdout)
 
 if __name__ == '__main__':
-    runner = TestToolsTestRunner()
-    program = TestProgram(argv=sys.argv, testRunner=runner)
+    main(sys.argv, sys.stdout)

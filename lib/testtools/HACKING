@@ -111,30 +111,24 @@ permanently present at the top of the list.
 Release tasks
 -------------
 
-In no particular order:
-
-* Choose a version number.
-
-* Ensure __init__ has that version.
-
-* Add a version number to NEWS immediately below NEXT.
-
-* Possibly write a blurb into NEWS.
-
-* Replace any additional references to NEXT with the version being released.
-  (should be none).
-
-* Create a source distribution and upload to pypi ('make release').
-
-* Upload to Launchpad as well.
-
-* If a new series has been created (e.g. 0.10.0), make the series on Launchpad.
-
-* Merge or push the release branch to trunk.
-
-* Make a new milestone for the *next release*. We don't really know how we want
-  to handle these yet, so this is a suggestion not actual practice:
-
-  * during release we rename NEXT to $version.
-
-  * we call new milestones NEXT.
+ 1. Choose a version number, say X.Y.Z
+ 1. Branch from trunk to testtools-X.Y.Z
+ 1. In testtools-X.Y.Z, ensure __init__ has version X.Y.Z.
+ 1. Replace NEXT in NEWS with the version number X.Y.Z, adjusting the reST.
+ 1. Possibly write a blurb into NEWS.
+ 1. Replace any additional references to NEXT with the version being
+    released. (should be none).
+ 1. Commit the changes.
+ 1. Tag the release, bzr tag testtools-X.Y.Z
+ 1. Create a source distribution and upload to pypi ('make release').
+ 1. Make sure all "Fix committed" bugs are in the 'next' milestone on
+    Launchpad
+ 1. Rename the 'next' milestone on Launchpad to 'X.Y.Z'
+ 1. Create a release on the newly-renamed 'X.Y.Z' milestone
+ 1. Upload the tarball and asc file to Launchpad
+ 1. Merge the release branch testtools-X.Y.Z into trunk. Before the commit,
+    add a NEXT heading to the top of NEWS. Push trunk to Launchpad.
+ 1. If a new series has been created (e.g. 0.10.0), make the series on Launchpad.
+ 1. Make a new milestone for the *next release*.
+    1. During release we rename NEXT to $version.
+    1. We call new milestones NEXT.

@@ -4,6 +4,7 @@
 """Tests for testtools.monkey."""
 
 from testtools import TestCase
+from testtools.matchers import MatchesException, Raises
 from testtools.monkey import MonkeyPatcher, patch
 
 
@@ -132,13 +133,13 @@ class MonkeyPatcherTest(TestCase):
         def _():
             self.assertEquals(self.test_object.foo, 'haha')
             self.assertEquals(self.test_object.bar, 'blahblah')
-            raise RuntimeError, "Something went wrong!"
+            raise RuntimeError("Something went wrong!")
 
         self.monkey_patcher.add_patch(self.test_object, 'foo', 'haha')
         self.monkey_patcher.add_patch(self.test_object, 'bar', 'blahblah')
 
-        self.assertRaises(
-            RuntimeError, self.monkey_patcher.run_with_patches, _)
+        self.assertThat(lambda:self.monkey_patcher.run_with_patches(_),
+            Raises(MatchesException(RuntimeError("Something went wrong!"))))
         self.assertEquals(self.test_object.foo, self.original_object.foo)
         self.assertEquals(self.test_object.bar, self.original_object.bar)
 

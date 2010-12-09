@@ -1,15 +1,22 @@
-# Copyright (c) 2009 Jonathan M. Lange. See LICENSE for details.
+# Copyright (c) 2009-2010 Jonathan M. Lange. See LICENSE for details.
 
 """Individual test case execution."""
 
-__metaclass__ = type
 __all__ = [
+    'MultipleExceptions',
     'RunTest',
     ]
 
 import sys
 
 from testtools.testresult import ExtendedToOriginalDecorator
+
+
+class MultipleExceptions(Exception):
+    """Represents many exceptions raised from some operation.
+
+    :ivar args: The sys.exc_info() tuples for each exception.
+    """
 
 
 class RunTest(object):
@@ -25,15 +32,15 @@ class RunTest(object):
 
     :ivar case: The test case that is to be run.
     :ivar result: The result object a case is reporting to.
-    :ivar handlers: A list of (ExceptionClass->handler code) for exceptions
-        that should be caught if raised from the user code. Exceptions that
-        are caught are checked against this list in first to last order.
-        There is a catchall of Exception at the end of the list, so to add
-        a new exception to the list, insert it at the front (which ensures that
-        it will be checked before any existing base classes in the list. If you
-        add multiple exceptions some of which are subclasses of each other, add
-        the most specific exceptions last (so they come before their parent
-        classes in the list).
+    :ivar handlers: A list of (ExceptionClass, handler_function) for
+        exceptions that should be caught if raised from the user
+        code. Exceptions that are caught are checked against this list in
+        first to last order.  There is a catch-all of `Exception` at the end
+        of the list, so to add a new exception to the list, insert it at the
+        front (which ensures that it will be checked before any existing base
+        classes in the list. If you add multiple exceptions some of which are
+        subclasses of each other, add the most specific exceptions last (so
+        they come before their parent classes in the list).
     :ivar exception_caught: An object returned when _run_user catches an
         exception.
     :ivar _exceptions: A list of caught exceptions, used to do the single
@@ -108,9 +115,7 @@ class RunTest(object):
         if self.exception_caught == self._run_user(self.case._run_setup,
             self.result):
             # Don't run the test method if we failed getting here.
-            e = self.case._runCleanups(self.result)
-            if e is not None:
-                self._exceptions.append(e)
+            self._run_cleanups(self.result)
             return
         # Run everything from here on in. If any of the methods raise an
         # exception we'll have failed.
@@ -126,30 +131,70 @@ class RunTest(object):
                     failed = True
             finally:
                 try:
-                    e = self._run_user(self.case._runCleanups, self.result)
-                    if e is not None:
-                        self._exceptions.append(e)
+                    if self.exception_caught == self._run_user(
+                        self._run_cleanups, self.result):
                         failed = True
                 finally:
                     if not failed:
                         self.result.addSuccess(self.case,
                             details=self.case.getDetails())
 
-    def _run_user(self, fn, *args):
+    def _run_cleanups(self, result):
+        """Run the cleanups that have been added with addCleanup.
+
+        See the docstring for addCleanup for more information.
+
+        :return: None if all cleanups ran without error,
+            `self.exception_caught` if there was an error.
+        """
+        failing = False
+        while self.case._cleanups:
+            function, arguments, keywordArguments = self.case._cleanups.pop()
+            got_exception = self._run_user(
+                function, *arguments, **keywordArguments)
+            if got_exception == self.exception_caught:
+                failing = True
+        if failing:
+            return self.exception_caught
+
+    def _run_user(self, fn, *args, **kwargs):
         """Run a user supplied function.
 
-        Exceptions are processed by self.handlers.
+        Exceptions are processed by `_got_user_exception`.
+
+        :return: Either whatever 'fn' returns or `self.exception_caught` if
+            'fn' raised an exception.
         """
         try:
-            return fn(*args)
+            return fn(*args, **kwargs)
         except KeyboardInterrupt:
             raise
         except:
-            exc_info = sys.exc_info()
+            return self._got_user_exception(sys.exc_info())
+
+    def _got_user_exception(self, exc_info, tb_label='traceback'):
+        """Called when user code raises an exception.
+
+        If 'exc_info' is a `MultipleExceptions`, then we recurse into it
+        unpacking the errors that it's made up from.
+
+        :param exc_info: A sys.exc_info() tuple for the user error.
+        :param tb_label: An optional string label for the error.  If
+            not specified, will default to 'traceback'.
+        :return: `exception_caught` if we catch one of the exceptions that
+            have handlers in `self.handlers`, otherwise raise the error.
+        """
+        if exc_info[0] is MultipleExceptions:
+            for sub_exc_info in exc_info[1].args:
+                self._got_user_exception(sub_exc_info, tb_label)
+            return self.exception_caught
+        try:
             e = exc_info[1]
-            self.case.onException(exc_info)
-            for exc_class, handler in self.handlers:
-                if isinstance(e, exc_class):
-                    self._exceptions.append(e)
-                    return self.exception_caught
-            raise e
+            self.case.onException(exc_info, tb_label=tb_label)
+        finally:
+            del exc_info
+        for exc_class, handler in self.handlers:
+            if isinstance(e, exc_class):
+                self._exceptions.append(e)
+                return self.exception_caught
+        raise e

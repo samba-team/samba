@@ -1,13 +1,15 @@
-# Copyright (c) 2009 Jonathan M. Lange. See LICENSE for details.
+# Copyright (c) 2009-2010 Jonathan M. Lange. See LICENSE for details.
 
 """Tests for the RunTest single test execution logic."""
 
 from testtools import (
     ExtendedToOriginalDecorator,
+    run_test_with,
     RunTest,
     TestCase,
     TestResult,
     )
+from testtools.matchers import MatchesException, Is, Raises
 from testtools.tests.helpers import ExtendedTestResult
 
 
@@ -62,7 +64,8 @@ class TestRunTest(TestCase):
             raise KeyboardInterrupt("yo")
         run = RunTest(case, None)
         run.result = ExtendedTestResult()
-        self.assertRaises(KeyboardInterrupt, run._run_user, raises)
+        self.assertThat(lambda: run._run_user(raises),
+            Raises(MatchesException(KeyboardInterrupt)))
         self.assertEqual([], run.result._events)
 
     def test__run_user_calls_onException(self):
@@ -107,7 +110,8 @@ class TestRunTest(TestCase):
             log.append((result, err))
         run = RunTest(case, [(ValueError, log_exc)])
         run.result = ExtendedTestResult()
-        self.assertRaises(KeyError, run._run_user, raises)
+        self.assertThat(lambda: run._run_user(raises),
+            Raises(MatchesException(KeyError)))
         self.assertEqual([], run.result._events)
         self.assertEqual([], log)
 
@@ -126,7 +130,8 @@ class TestRunTest(TestCase):
             log.append((result, err))
         run = RunTest(case, [(ValueError, log_exc)])
         run.result = ExtendedTestResult()
-        self.assertRaises(ValueError, run._run_user, raises)
+        self.assertThat(lambda: run._run_user(raises),
+            Raises(MatchesException(ValueError)))
         self.assertEqual([], run.result._events)
         self.assertEqual([], log)
 
@@ -169,11 +174,125 @@ class TestRunTest(TestCase):
             raise Exception("foo")
         run = RunTest(case, lambda x: x)
         run._run_core = inner
-        self.assertRaises(Exception, run.run, result)
+        self.assertThat(lambda: run.run(result),
+            Raises(MatchesException(Exception("foo"))))
         self.assertEqual([
             ('startTest', case),
             ('stopTest', case),
             ], result._events)
+
+
+class CustomRunTest(RunTest):
+
+    marker = object()
+
+    def run(self, result=None):
+        return self.marker
+
+
+class TestTestCaseSupportForRunTest(TestCase):
+
+    def test_pass_custom_run_test(self):
+        class SomeCase(TestCase):
+            def test_foo(self):
+                pass
+        result = TestResult()
+        case = SomeCase('test_foo', runTest=CustomRunTest)
+        from_run_test = case.run(result)
+        self.assertThat(from_run_test, Is(CustomRunTest.marker))
+
+    def test_default_is_runTest_class_variable(self):
+        class SomeCase(TestCase):
+            run_tests_with = CustomRunTest
+            def test_foo(self):
+                pass
+        result = TestResult()
+        case = SomeCase('test_foo')
+        from_run_test = case.run(result)
+        self.assertThat(from_run_test, Is(CustomRunTest.marker))
+
+    def test_constructor_argument_overrides_class_variable(self):
+        # If a 'runTest' argument is passed to the test's constructor, that
+        # overrides the class variable.
+        marker = object()
+        class DifferentRunTest(RunTest):
+            def run(self, result=None):
+                return marker
+        class SomeCase(TestCase):
+            run_tests_with = CustomRunTest
+            def test_foo(self):
+                pass
+        result = TestResult()
+        case = SomeCase('test_foo', runTest=DifferentRunTest)
+        from_run_test = case.run(result)
+        self.assertThat(from_run_test, Is(marker))
+
+    def test_decorator_for_run_test(self):
+        # Individual test methods can be marked as needing a special runner.
+        class SomeCase(TestCase):
+            @run_test_with(CustomRunTest)
+            def test_foo(self):
+                pass
+        result = TestResult()
+        case = SomeCase('test_foo')
+        from_run_test = case.run(result)
+        self.assertThat(from_run_test, Is(CustomRunTest.marker))
+
+    def test_extended_decorator_for_run_test(self):
+        # Individual test methods can be marked as needing a special runner.
+        # Extra arguments can be passed to the decorator which will then be
+        # passed on to the RunTest object.
+        marker = object()
+        class FooRunTest(RunTest):
+            def __init__(self, case, handlers=None, bar=None):
+                super(FooRunTest, self).__init__(case, handlers)
+                self.bar = bar
+            def run(self, result=None):
+                return self.bar
+        class SomeCase(TestCase):
+            @run_test_with(FooRunTest, bar=marker)
+            def test_foo(self):
+                pass
+        result = TestResult()
+        case = SomeCase('test_foo')
+        from_run_test = case.run(result)
+        self.assertThat(from_run_test, Is(marker))
+
+    def test_works_as_inner_decorator(self):
+        # Even if run_test_with is the innermost decorator, it will be
+        # respected.
+        def wrapped(function):
+            """Silly, trivial decorator."""
+            def decorated(*args, **kwargs):
+                return function(*args, **kwargs)
+            decorated.__name__ = function.__name__
+            decorated.__dict__.update(function.__dict__)
+            return decorated
+        class SomeCase(TestCase):
+            @wrapped
+            @run_test_with(CustomRunTest)
+            def test_foo(self):
+                pass
+        result = TestResult()
+        case = SomeCase('test_foo')
+        from_run_test = case.run(result)
+        self.assertThat(from_run_test, Is(CustomRunTest.marker))
+
+    def test_constructor_overrides_decorator(self):
+        # If a 'runTest' argument is passed to the test's constructor, that
+        # overrides the decorator.
+        marker = object()
+        class DifferentRunTest(RunTest):
+            def run(self, result=None):
+                return marker
+        class SomeCase(TestCase):
+            @run_test_with(CustomRunTest)
+            def test_foo(self):
+                pass
+        result = TestResult()
+        case = SomeCase('test_foo', runTest=DifferentRunTest)
+        from_run_test = case.run(result)
+        self.assertThat(from_run_test, Is(marker))
 
 
 def test_suite():

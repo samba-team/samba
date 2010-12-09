@@ -209,38 +209,43 @@ def _format_exc_info(eclass, evalue, tb, limit=None):
         list = []
     if evalue is None:
         # Is a (deprecated) string exception
-        list.append(eclass.decode("ascii", "replace"))
-    elif isinstance(evalue, SyntaxError) and len(evalue.args) > 1:
+        list.append((eclass + "\n").decode("ascii", "replace"))
+        return list
+    if isinstance(evalue, SyntaxError):
         # Avoid duplicating the special formatting for SyntaxError here,
         # instead create a new instance with unicode filename and line
         # Potentially gives duff spacing, but that's a pre-existing issue
-        filename, lineno, offset, line = evalue.args[1]
-        if line:
+        try:
+            msg, (filename, lineno, offset, line) = evalue
+        except (TypeError, ValueError):
+            pass # Strange exception instance, fall through to generic code
+        else:
             # Errors during parsing give the line from buffer encoded as
             # latin-1 or utf-8 or the encoding of the file depending on the
             # coding and whether the patch for issue #1031213 is applied, so
             # give up on trying to decode it and just read the file again
-            bytestr = linecache.getline(filename, lineno)
-            if bytestr:
-                if lineno == 1 and bytestr.startswith("\xef\xbb\xbf"):
-                    bytestr = bytestr[3:]
-                line = bytestr.decode(_get_source_encoding(filename), "replace")
-                del linecache.cache[filename]
-            else:
-                line = line.decode("ascii", "replace")
-        if filename:
-            filename = filename.decode(fs_enc, "replace")
-        evalue = eclass(evalue.args[0], (filename, lineno, offset, line))
-        list.extend(traceback.format_exception_only(eclass, evalue))
+            if line:
+                bytestr = linecache.getline(filename, lineno)
+                if bytestr:
+                    if lineno == 1 and bytestr.startswith("\xef\xbb\xbf"):
+                        bytestr = bytestr[3:]
+                    line = bytestr.decode(
+                        _get_source_encoding(filename), "replace")
+                    del linecache.cache[filename]
+                else:
+                    line = line.decode("ascii", "replace")
+            if filename:
+                filename = filename.decode(fs_enc, "replace")
+            evalue = eclass(msg, (filename, lineno, offset, line))
+            list.extend(traceback.format_exception_only(eclass, evalue))
+            return list
+    sclass = eclass.__name__
+    svalue = _exception_to_text(evalue)
+    if svalue:
+        list.append("%s: %s\n" % (sclass, svalue))
+    elif svalue is None:
+        # GZ 2010-05-24: Not a great fallback message, but keep for the moment
+        list.append("%s: <unprintable %s object>\n" % (sclass, sclass))
     else:
-        sclass = eclass.__name__
-        svalue = _exception_to_text(evalue)
-        if svalue:
-            list.append("%s: %s\n" % (sclass, svalue))
-        elif svalue is None:
-            # GZ 2010-05-24: Not a great fallback message, but keep for the
-            #                the same for compatibility for the moment
-            list.append("%s: <unprintable %s object>\n" % (sclass, sclass))
-        else:
-            list.append("%s\n" % sclass)
+        list.append("%s\n" % sclass)
     return list

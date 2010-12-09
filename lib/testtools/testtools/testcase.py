@@ -5,24 +5,23 @@
 __metaclass__ = type
 __all__ = [
     'clone_test_with_new_id',
-    'MultipleExceptions',
-    'TestCase',
+    'run_test_with',
     'skip',
     'skipIf',
     'skipUnless',
+    'TestCase',
     ]
 
 import copy
-try:
-    from functools import wraps
-except ImportError:
-    wraps = None
 import itertools
 import sys
 import types
 import unittest
 
-from testtools import content
+from testtools import (
+    content,
+    try_import,
+    )
 from testtools.compat import advance_iterator
 from testtools.matchers import (
     Annotate,
@@ -32,40 +31,64 @@ from testtools.monkey import patch
 from testtools.runtest import RunTest
 from testtools.testresult import TestResult
 
+wraps = try_import('functools.wraps')
 
-try:
-    # Try to use the python2.7 SkipTest exception for signalling skips.
-    from unittest.case import SkipTest as TestSkipped
-except ImportError:
-    class TestSkipped(Exception):
-        """Raised within TestCase.run() when a test is skipped."""
+class TestSkipped(Exception):
+    """Raised within TestCase.run() when a test is skipped."""
+TestSkipped = try_import('unittest.case.SkipTest', TestSkipped)
 
 
-try:
-    # Try to use the same exceptions python 2.7 does.
-    from unittest.case import _ExpectedFailure, _UnexpectedSuccess
-except ImportError:
-    # Oops, not available, make our own.
-    class _UnexpectedSuccess(Exception):
-        """An unexpected success was raised.
+class _UnexpectedSuccess(Exception):
+    """An unexpected success was raised.
 
-        Note that this exception is private plumbing in testtools' testcase
-        module.
-        """
-
-    class _ExpectedFailure(Exception):
-        """An expected failure occured.
-
-        Note that this exception is private plumbing in testtools' testcase
-        module.
-        """
-
-
-class MultipleExceptions(Exception):
-    """Represents many exceptions raised from some operation.
-
-    :ivar args: The sys.exc_info() tuples for each exception.
+    Note that this exception is private plumbing in testtools' testcase
+    module.
     """
+_UnexpectedSuccess = try_import(
+    'unittest.case._UnexpectedSuccess', _UnexpectedSuccess)
+
+class _ExpectedFailure(Exception):
+    """An expected failure occured.
+
+    Note that this exception is private plumbing in testtools' testcase
+    module.
+    """
+_ExpectedFailure = try_import(
+    'unittest.case._ExpectedFailure', _ExpectedFailure)
+
+
+def run_test_with(test_runner, **kwargs):
+    """Decorate a test as using a specific `RunTest`.
+
+    e.g.
+      @run_test_with(CustomRunner, timeout=42)
+      def test_foo(self):
+          self.assertTrue(True)
+
+    The returned decorator works by setting an attribute on the decorated
+    function.  `TestCase.__init__` looks for this attribute when deciding
+    on a `RunTest` factory.  If you wish to use multiple decorators on a test
+    method, then you must either make this one the top-most decorator, or
+    you must write your decorators so that they update the wrapping function
+    with the attributes of the wrapped function.  The latter is recommended
+    style anyway.  `functools.wraps`, `functools.wrapper` and
+    `twisted.python.util.mergeFunctionMetadata` can help you do this.
+
+    :param test_runner: A `RunTest` factory that takes a test case and an
+        optional list of exception handlers.  See `RunTest`.
+    :param **kwargs: Keyword arguments to pass on as extra arguments to
+        `test_runner`.
+    :return: A decorator to be used for marking a test as needing a special
+        runner.
+    """
+    def decorator(function):
+        # Set an attribute on 'function' which will inform TestCase how to
+        # make the runner.
+        function._run_test_with = (
+            lambda case, handlers=None:
+                test_runner(case, handlers=handlers, **kwargs))
+        return function
+    return decorator
 
 
 class TestCase(unittest.TestCase):
@@ -74,28 +97,41 @@ class TestCase(unittest.TestCase):
     :ivar exception_handlers: Exceptions to catch from setUp, runTest and
         tearDown. This list is able to be modified at any time and consists of
         (exception_class, handler(case, result, exception_value)) pairs.
+    :cvar run_tests_with: A factory to make the `RunTest` to run tests with.
+        Defaults to `RunTest`.  The factory is expected to take a test case
+        and an optional list of exception handlers.
     """
 
     skipException = TestSkipped
+
+    run_tests_with = RunTest
 
     def __init__(self, *args, **kwargs):
         """Construct a TestCase.
 
         :param testMethod: The name of the method to run.
         :param runTest: Optional class to use to execute the test. If not
-            supplied testtools.runtest.RunTest is used. The instance to be
+            supplied `testtools.runtest.RunTest` is used. The instance to be
             used is created when run() is invoked, so will be fresh each time.
+            Overrides `run_tests_with` if given.
         """
+        runTest = kwargs.pop('runTest', None)
         unittest.TestCase.__init__(self, *args, **kwargs)
         self._cleanups = []
         self._unique_id_gen = itertools.count(1)
-        self._traceback_id_gen = itertools.count(0)
+        # Generators to ensure unique traceback ids.  Maps traceback label to
+        # iterators.
+        self._traceback_id_gens = {}
         self.__setup_called = False
         self.__teardown_called = False
         # __details is lazy-initialized so that a constructed-but-not-run
         # TestCase is safe to use with clone_test_with_new_id.
         self.__details = None
-        self.__RunTest = kwargs.get('runTest', RunTest)
+        test_method = self._get_test_method()
+        if runTest is None:
+            runTest = getattr(
+                test_method, '_run_test_with', self.run_tests_with)
+        self.__RunTest = runTest
         self.__exception_handlers = []
         self.exception_handlers = [
             (self.skipException, self._report_skip),
@@ -179,32 +215,6 @@ class TestCase(unittest.TestCase):
         if className is None:
             className = ', '.join(klass.__name__ for klass in classOrIterable)
         return className
-
-    def _runCleanups(self, result):
-        """Run the cleanups that have been added with addCleanup.
-
-        See the docstring for addCleanup for more information.
-
-        :return: None if all cleanups ran without error, the most recently
-            raised exception from the cleanups otherwise.
-        """
-        last_exception = None
-        while self._cleanups:
-            function, arguments, keywordArguments = self._cleanups.pop()
-            try:
-                function(*arguments, **keywordArguments)
-            except KeyboardInterrupt:
-                raise
-            except:
-                exceptions = [sys.exc_info()]
-                while exceptions:
-                    exc_info = exceptions.pop()
-                    if exc_info[0] is MultipleExceptions:
-                        exceptions.extend(exc_info[1].args)
-                        continue
-                    self._report_traceback(exc_info)
-                    last_exception = exc_info[1]
-        return last_exception
 
     def addCleanup(self, function, *arguments, **keywordArguments):
         """Add a cleanup function to be called after tearDown.
@@ -356,9 +366,14 @@ class TestCase(unittest.TestCase):
         try:
             predicate(*args, **kwargs)
         except self.failureException:
+            # GZ 2010-08-12: Don't know how to avoid exc_info cycle as the new
+            #                unittest _ExpectedFailure wants old traceback
             exc_info = sys.exc_info()
-            self._report_traceback(exc_info)
-            raise _ExpectedFailure(exc_info)
+            try:
+                self._report_traceback(exc_info)
+                raise _ExpectedFailure(exc_info)
+            finally:
+                del exc_info
         else:
             raise _UnexpectedSuccess(reason)
 
@@ -386,14 +401,14 @@ class TestCase(unittest.TestCase):
             prefix = self.id()
         return '%s-%d' % (prefix, self.getUniqueInteger())
 
-    def onException(self, exc_info):
+    def onException(self, exc_info, tb_label='traceback'):
         """Called when an exception propogates from test code.
 
         :seealso addOnException:
         """
         if exc_info[0] not in [
             TestSkipped, _UnexpectedSuccess, _ExpectedFailure]:
-            self._report_traceback(exc_info)
+            self._report_traceback(exc_info, tb_label=tb_label)
         for handler in self.__exception_handlers:
             handler(exc_info)
 
@@ -418,12 +433,12 @@ class TestCase(unittest.TestCase):
         self._add_reason(reason)
         result.addSkip(self, details=self.getDetails())
 
-    def _report_traceback(self, exc_info):
-        tb_id = advance_iterator(self._traceback_id_gen)
+    def _report_traceback(self, exc_info, tb_label='traceback'):
+        id_gen = self._traceback_id_gens.setdefault(
+            tb_label, itertools.count(0))
+        tb_id = advance_iterator(id_gen)
         if tb_id:
-            tb_label = 'traceback-%d' % tb_id
-        else:
-            tb_label = 'traceback'
+            tb_label = '%s-%d' % (tb_label, tb_id)
         self.addDetail(tb_label, content.TracebackContent(exc_info, self))
 
     @staticmethod
@@ -440,13 +455,14 @@ class TestCase(unittest.TestCase):
         :raises ValueError: If the base class setUp is not called, a
             ValueError is raised.
         """
-        self.setUp()
+        ret = self.setUp()
         if not self.__setup_called:
             raise ValueError(
                 "TestCase.setUp was not called. Have you upcalled all the "
                 "way up the hierarchy from your setUp? e.g. Call "
                 "super(%s, self).setUp() from your setUp()."
                 % self.__class__.__name__)
+        return ret
 
     def _run_teardown(self, result):
         """Run the tearDown function for this test.
@@ -455,13 +471,23 @@ class TestCase(unittest.TestCase):
         :raises ValueError: If the base class tearDown is not called, a
             ValueError is raised.
         """
-        self.tearDown()
+        ret = self.tearDown()
         if not self.__teardown_called:
             raise ValueError(
                 "TestCase.tearDown was not called. Have you upcalled all the "
                 "way up the hierarchy from your tearDown? e.g. Call "
                 "super(%s, self).tearDown() from your tearDown()."
                 % self.__class__.__name__)
+        return ret
+
+    def _get_test_method(self):
+        absent_attr = object()
+        # Python 2.5+
+        method_name = getattr(self, '_testMethodName', absent_attr)
+        if method_name is absent_attr:
+            # Python 2.4
+            method_name = getattr(self, '_TestCase__testMethodName')
+        return getattr(self, method_name)
 
     def _run_test_method(self, result):
         """Run the test method for this test.
@@ -469,14 +495,36 @@ class TestCase(unittest.TestCase):
         :param result: A testtools.TestResult to report activity to.
         :return: None.
         """
-        absent_attr = object()
-        # Python 2.5+
-        method_name = getattr(self, '_testMethodName', absent_attr)
-        if method_name is absent_attr:
-            # Python 2.4
-            method_name = getattr(self, '_TestCase__testMethodName')
-        testMethod = getattr(self, method_name)
-        testMethod()
+        return self._get_test_method()()
+
+    def useFixture(self, fixture):
+        """Use fixture in a test case.
+
+        The fixture will be setUp, and self.addCleanup(fixture.cleanUp) called.
+
+        :param fixture: The fixture to use.
+        :return: The fixture, after setting it up and scheduling a cleanup for
+           it.
+        """
+        fixture.setUp()
+        self.addCleanup(fixture.cleanUp)
+        self.addCleanup(self._gather_details, fixture.getDetails)
+        return fixture
+
+    def _gather_details(self, getDetails):
+        """Merge the details from getDetails() into self.getDetails()."""
+        details = getDetails()
+        my_details = self.getDetails()
+        for name, content_object in details.items():
+            new_name = name
+            disambiguator = itertools.count(1)
+            while new_name in my_details:
+                new_name = '%s-%d' % (name, advance_iterator(disambiguator))
+            name = new_name
+            content_bytes = list(content_object.iter_bytes())
+            content_callback = lambda:content_bytes
+            self.addDetail(name,
+                content.Content(content_object.content_type, content_callback))
 
     def setUp(self):
         unittest.TestCase.setUp(self)

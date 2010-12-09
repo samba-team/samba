@@ -11,6 +11,7 @@ __all__ = [
     'MultipleExceptions',
     'MultiTestResult',
     'PlaceHolder',
+    'run_test_with',
     'TestCase',
     'TestResult',
     'TextTestResult',
@@ -19,20 +20,27 @@ __all__ = [
     'skipIf',
     'skipUnless',
     'ThreadsafeForwardingResult',
+    'try_import',
+    'try_imports',
     ]
 
+from testtools.helpers import (
+    try_import,
+    try_imports,
+    )
 from testtools.matchers import (
     Matcher,
     )
 from testtools.runtest import (
+    MultipleExceptions,
     RunTest,
     )
 from testtools.testcase import (
     ErrorHolder,
-    MultipleExceptions,
     PlaceHolder,
     TestCase,
     clone_test_with_new_id,
+    run_test_with,
     skip,
     skipIf,
     skipUnless,
@@ -61,4 +69,4 @@ from testtools.testsuite import (
 # If the releaselevel is 'final', then the tarball will be major.minor.micro.
 # Otherwise it is major.minor.micro~$(revno).
 
-__version__ = (0, 9, 7, 'dev', 0)
+__version__ = (0, 9, 8, 'dev', 0)

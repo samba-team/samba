@@ -16,10 +16,15 @@ clean:
 	rm -f TAGS tags
 	find testtools -name "*.pyc" -exec rm '{}' \;
 
-release:
+prerelease:
 	# An existing MANIFEST breaks distutils sometimes. Avoid that.
 	-rm MANIFEST
+
+release:
 	./setup.py sdist upload --sign
+
+snapshot: prerelease
+	./setup.py sdist
 
 apidocs:
 	pydoctor --make-html --add-package testtools \
@@ -27,4 +32,4 @@ apidocs:
 		--project-url=https://launchpad.net/testtools
 
 
-.PHONY: check clean release apidocs
+.PHONY: check clean prerelease release apidocs

@@ -4,6 +4,92 @@ testtools NEWS
 NEXT
 ~~~~
 
+Changes
+-------
+
+* addUnexpectedSuccess is translated to addFailure for test results that don't
+  know about addUnexpectedSuccess.  Further, it fails the entire result for
+  all testtools TestResults (i.e. wasSuccessful() returns False after
+  addUnexpectedSuccess has been called). Note that when using a delegating
+  result such as ThreadsafeForwardingResult, MultiTestResult or
+  ExtendedToOriginalDecorator then the behaviour of addUnexpectedSuccess is
+  determined by the delegated to result(s).
+  (Jonathan Lange, Robert Collins, #654474, #683332)
+
+* startTestRun will reset any errors on the result.  That is, wasSuccessful()
+  will always return True immediately after startTestRun() is called. This
+  only applies to delegated test results (ThreadsafeForwardingResult,
+  MultiTestResult and ExtendedToOriginalDecorator) if the delegated to result
+  is a testtools test result - we cannot reliably reset the state of unknown
+  test result class instances. (Jonathan Lange, Robert Collins, #683332)
+
+* Responsibility for running test cleanups has been moved to ``RunTest``.
+  This change does not affect public APIs and can be safely ignored by test
+  authors.  (Jonathan Lange, #662647)
+
+Improvements
+------------
+
+* Experimental support for running tests that return Deferreds.
+  (Jonathan Lange, Martin [gz])
+
+* Provide a per-test decorator, run_test_with, to specify which RunTest
+  object to use for a given test.  (Jonathan Lange, #657780)
+
+* Fix the runTest parameter of TestCase to actually work, rather than raising
+  a TypeError.  (Jonathan Lange, #657760)
+
+* New matcher ``EndsWith`` added to complement the existing ``StartsWith``
+  matcher.  (Jonathan Lange, #669165)
+
+* Non-release snapshots of testtools will now work with buildout.
+  (Jonathan Lange, #613734)
+
+* Malformed SyntaxErrors no longer blow up the test suite.  (Martin [gz])
+
+* ``MatchesException`` added to the ``testtools.matchers`` module - matches
+  an exception class and parameters. (Robert Collins)
+
+* New ``KeysEqual`` matcher.  (Jonathan Lange)
+
+* New helpers for conditionally importing modules, ``try_import`` and
+  ``try_imports``.  (Jonathan Lange)
+
+* ``Raises`` added to the ``testtools.matchers`` module - matches if the
+  supplied callable raises, and delegates to an optional matcher for validation
+  of the exception. (Robert Collins)
+
+* ``raises`` added to the ``testtools.matchers`` module - matches if the
+  supplied callable raises and delegates to ``MatchesException`` to validate
+  the exception. (Jonathan Lange)
+
+* ``testools.TestCase.useFixture`` has been added to glue with fixtures nicely.
+  (Robert Collins)
+
+* ``testtools.run`` now supports ``-l`` to list tests rather than executing
+  them. This is useful for integration with external test analysis/processing
+  tools like subunit and testrepository. (Robert Collins)
+
+* ``testtools.run`` now supports ``--load-list``, which takes a file containing
+  test ids, one per line, and intersects those ids with the tests found. This
+  allows fine grained control of what tests are run even when the tests cannot
+  be named as objects to import (e.g. due to test parameterisation via
+  testscenarios). (Robert Collins)
+
+* Update documentation to say how to use testtools.run() on Python 2.4.
+  (Jonathan Lange, #501174)
+
+* ``text_content`` conveniently converts a Python string to a Content object.
+  (Jonathan Lange, James Westby)
+
+
+
+0.9.7
+~~~~~
+
+Lots of little cleanups in this release; many small improvements to make your
+testing life more pleasant.
+
 Improvements
 ------------
 
@@ -15,6 +101,22 @@ Improvements
 
 * In normal circumstances, a TestCase will no longer share details with clones
   of itself. (Andrew Bennetts, bug #637725)
+
+* Less exception object cycles are generated (reduces peak memory use between
+  garbage collection). (Martin [gz])
+
+* New matchers 'DoesNotStartWith' and 'StartsWith' contributed by Canonical
+  from the Launchpad project. Written by James Westby.
+
+* Timestamps as produced by subunit protocol clients are now forwarded in the
+  ThreadsafeForwardingResult so correct test durations can be reported.
+  (Martin [gz], Robert Collins, #625594)
+
+* With unittest from Python 2.7 skipped tests will now show only the reason
+  rather than a serialisation of all details. (Martin [gz], #625583)
+
+* The testtools release process is now a little better documented and a little
+  smoother.  (Jonathan Lange, #623483, #623487)
 
 
 0.9.6

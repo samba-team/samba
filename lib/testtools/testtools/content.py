@@ -5,8 +5,11 @@
 import codecs
 
 from testtools.compat import _b
-from testtools.content_type import ContentType
+from testtools.content_type import ContentType, UTF8_TEXT
 from testtools.testresult import TestResult
+
+
+_join_b = _b("").join
 
 
 class Content(object):
@@ -31,7 +34,7 @@ class Content(object):
 
     def __eq__(self, other):
         return (self.content_type == other.content_type and
-            ''.join(self.iter_bytes()) == ''.join(other.iter_bytes()))
+            _join_b(self.iter_bytes()) == _join_b(other.iter_bytes()))
 
     def iter_bytes(self):
         """Iterate over bytestrings of the serialised content."""
@@ -68,7 +71,7 @@ class Content(object):
 
     def __repr__(self):
         return "<Content type=%r, value=%r>" % (
-            self.content_type, ''.join(self.iter_bytes()))
+            self.content_type, _join_b(self.iter_bytes()))
 
 
 class TracebackContent(Content):
@@ -89,3 +92,11 @@ class TracebackContent(Content):
         value = self._result._exc_info_to_unicode(err, test)
         super(TracebackContent, self).__init__(
             content_type, lambda: [value.encode("utf8")])
+
+
+def text_content(text):
+    """Create a `Content` object from some text.
+
+    This is useful for adding details which are short strings.
+    """
+    return Content(UTF8_TEXT, lambda: [text.encode('utf8')])
