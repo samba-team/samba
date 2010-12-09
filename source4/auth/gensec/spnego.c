@@ -635,17 +635,8 @@ static NTSTATUS gensec_spnego_create_negTokenInit(struct gensec_security *gensec
 		spnego_out.negTokenInit.reqFlagsPadding = 0;
 		
 		if (spnego_state->state_position == SPNEGO_SERVER_START) {
-			/* server credentials */
-			struct cli_credentials *creds = gensec_get_credentials(gensec_security);
-			if (creds) {
-				principal = cli_credentials_get_principal(creds, out_mem_ctx);
-			} else {
-				principal = ADS_IGNORE_PRINCIPAL;
-			}
-		}
-		if (principal) {
 			spnego_out.negTokenInit.mechListMIC
-				= data_blob_string_const(principal);
+				= data_blob_string_const(ADS_IGNORE_PRINCIPAL);
 		} else {
 			spnego_out.negTokenInit.mechListMIC = null_data_blob;
 		}
