@@ -36,6 +36,7 @@ struct samba_kdc_db_context {
 	bool rodc;
 	unsigned int my_krbtgt_number;
 	struct ldb_dn *krbtgt_dn;
+	struct lsa_DomainInfoKerberos policy;
 };
 
 struct samba_kdc_entry {

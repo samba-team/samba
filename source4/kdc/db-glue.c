@@ -43,6 +43,7 @@
 #include <hdb.h>
 #include "kdc/samba_kdc.h"
 #include "kdc/db-glue.h"
+#include "kdc/kdc-policy.h"
 
 enum samba_kdc_ent_type
 { SAMBA_KDC_ENT_TYPE_CLIENT, SAMBA_KDC_ENT_TYPE_SERVER,
@@ -740,9 +741,28 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 
 	entry_ex->entry.valid_start = NULL;
 
-	entry_ex->entry.max_life = NULL;
+	entry_ex->entry.max_life = malloc(sizeof(*entry_ex->entry.max_life));
+	if (entry_ex->entry.max_life == NULL) {
+		ret = ENOMEM;
+		goto out;
+	}
 
-	entry_ex->entry.max_renew = NULL;
+	if (ent_type == SAMBA_KDC_ENT_TYPE_SERVER) {
+		*entry_ex->entry.max_life = nt_time_to_unix(kdc_db_ctx->policy.service_tkt_lifetime);
+	} else if (ent_type == SAMBA_KDC_ENT_TYPE_KRBTGT || ent_type == SAMBA_KDC_ENT_TYPE_CLIENT) {
+		*entry_ex->entry.max_life = nt_time_to_unix(kdc_db_ctx->policy.user_tkt_lifetime);
+	} else {
+		*entry_ex->entry.max_life = MIN(nt_time_to_unix(kdc_db_ctx->policy.service_tkt_lifetime),
+					       nt_time_to_unix(kdc_db_ctx->policy.user_tkt_lifetime));
+	}
+
+	entry_ex->entry.max_renew = malloc(sizeof(*entry_ex->entry.max_life));
+	if (entry_ex->entry.max_renew == NULL) {
+		ret = ENOMEM;
+		goto out;
+	}
+
+	*entry_ex->entry.max_renew = nt_time_to_unix(kdc_db_ctx->policy.user_tkt_renewaltime);
 
 	entry_ex->entry.generation = NULL;
 
@@ -1635,6 +1655,8 @@ NTSTATUS samba_kdc_setup_db_ctx(TALLOC_CTX *mem_ctx, struct samba_kdc_base_conte
 	}
 	kdc_db_ctx->ev_ctx = base_ctx->ev_ctx;
 	kdc_db_ctx->lp_ctx = base_ctx->lp_ctx;
+
+	kdc_get_policy(base_ctx->lp_ctx, NULL, &kdc_db_ctx->policy);
 
 	session_info = system_session(kdc_db_ctx->lp_ctx);
 	if (session_info == NULL) {

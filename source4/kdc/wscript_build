@@ -38,9 +38,16 @@ bld.SAMBA_LIBRARY('pac',
 
 bld.SAMBA_LIBRARY('db-glue',
 	source='db-glue.c',
-	deps='ldb auth_sam auth_sam_reply credentials hdb samba-hostconfig com_err',
+	deps='ldb auth_sam auth_sam_reply credentials hdb samba-hostconfig com_err kdc-policy',
 	private_library=True
 	)
+
+bld.SAMBA_LIBRARY('kdc-policy',
+	source='policy.c',
+	deps='samba-hostconfig authkrb5',
+	private_library=True,
+        autoproto = 'kdc-policy-proto.h'
+        )
 
 
 bld.SAMBA_SUBSYSTEM('MIT_SAMBA',
