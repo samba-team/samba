@@ -96,6 +96,8 @@ def configure(conf):
     conf.RECURSE('../lib/zlib')
     conf.RECURSE('../libcli/smbreadline')
 
+    conf.ADD_LDFLAGS("-Wl,--export-dynamic", testflags=True)
+
     conf.CHECK_HEADERS('execinfo.h libexc.h libunwind.h netdb.h')
 
     conf.CHECK_FUNCS('getcwd fchown chmod fchmod mknod mknod64')
