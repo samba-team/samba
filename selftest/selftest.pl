@@ -325,7 +325,7 @@ Behaviour:
  --quick                    run quick overall test
  --one                      abort when the first test fails
  --verbose                  be verbose
- --analyse-cmd CMD          command to run after each test
+ --testenv                  run a shell in the requested test environment
 ";
 	exit(0);
 }
