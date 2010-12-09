@@ -10,9 +10,9 @@
     response.</para>
 
     <para>If enabled, only an NTLMv2 and LMv2 response (both much more
-    secure than earlier versions) will be sent.  Many servers
+    secure than earlier versions) will be sent.  Older servers
     (including NT4 &lt; SP4, Win9x and Samba 2.2) are not compatible with
-    NTLMv2.  </para>
+    NTLMv2 when not in an NTLMv2 supporting domain</para>
 
     <para>Similarly, if enabled, NTLMv1, <command
     moreinfo="none">client lanman auth</command> and <command
@@ -24,9 +24,10 @@
     will be sent by the client, depending on the value of <command
     moreinfo="none">client lanman auth</command>.  </para>
 
-    <para>Note that some sites (particularly
-    those following 'best practice' security polices) only allow NTLMv2
-	responses, and not the weaker LM or NTLM.</para>
+    <para>Note that Windows Vista and later versions already use
+    NTLMv2 by default, and some sites (particularly those following
+    'best practice' security polices) only allow NTLMv2 responses, and
+    not the weaker LM or NTLM.</para>
 </description>
-<value type="default">no</value>
+<value type="default">yes</value>
 </samba:parameter>
