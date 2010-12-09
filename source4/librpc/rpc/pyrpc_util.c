@@ -31,7 +31,7 @@
 #include "lib/messaging/messaging.h"
 #include "lib/messaging/irpc.h"
 
-bool py_check_dcerpc_type(PyObject *obj, const char *module, const char *typename)
+bool py_check_dcerpc_type(PyObject *obj, const char *module, const char *type_name)
 {
 	PyObject *mod;
 	PyTypeObject *type;
@@ -41,15 +41,15 @@ bool py_check_dcerpc_type(PyObject *obj, const char *module, const char *typenam
 
 	if (mod == NULL) {
 		PyErr_Format(PyExc_RuntimeError, "Unable to import %s to check type %s",
-			module, typename);
+			module, type_name);
 		return NULL;
 	}
 
-	type = (PyTypeObject *)PyObject_GetAttrString(mod, typename);
+	type = (PyTypeObject *)PyObject_GetAttrString(mod, type_name);
 	Py_DECREF(mod);
 	if (type == NULL) {
 		PyErr_Format(PyExc_RuntimeError, "Unable to find type %s in module %s",
-			module, typename);
+			module, type_name);
 		return NULL;
 	}
 
@@ -58,7 +58,7 @@ bool py_check_dcerpc_type(PyObject *obj, const char *module, const char *typenam
 
 	if (!ret)
 		PyErr_Format(PyExc_TypeError, "Expected type %s.%s, got %s",
-			module, typename, Py_TYPE(obj)->tp_name);
+			module, type_name, Py_TYPE(obj)->tp_name);
 
 	return ret;
 }

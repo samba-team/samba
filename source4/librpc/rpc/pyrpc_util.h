@@ -46,7 +46,7 @@ struct PyNdrRpcMethodDef {
 	const struct ndr_interface_table *table;
 };
 
-bool py_check_dcerpc_type(PyObject *obj, const char *module, const char *typename);
+bool py_check_dcerpc_type(PyObject *obj, const char *module, const char *type_name);
 bool PyInterface_AddNdrRpcMethods(PyTypeObject *object, const struct PyNdrRpcMethodDef *mds);
 PyObject *py_dcerpc_interface_init_helper(PyTypeObject *type, PyObject *args, PyObject *kwargs, const struct ndr_interface_table *table);
 
