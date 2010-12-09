@@ -22,7 +22,7 @@ import sys
 # Find right directory when running from source tree
 sys.path.insert(0, "bin/python")
 
-from unittest import TestProgram
+from subunit.run import TestProgram
 import optparse
 import samba
 samba.ensure_external_module("testtools", "testtools")
@@ -35,10 +35,15 @@ from subunit.run import SubunitTestRunner
 parser = optparse.OptionParser("subunitrun [options] <tests>")
 credopts = options.CredentialsOptions(parser)
 parser.add_option_group(credopts)
+parser.add_option('-l', '--list', dest='listtests', default=False,
+                  help='List tests rather than running them.',
+                  action="store_true")
 
-args = parser.parse_args()[1]
+opts, args = parser.parse_args()
 
 samba.tests.cmdline_credentials = credopts.get_credentials(samba.tests.env_loadparm())
+if opts.listtests:
+    args.insert(0, "--list")
 
 runner = SubunitTestRunner()
-program = TestProgram(module=None, argv=[sys.argv[0]] + args, testRunner=runner)
+program = TestProgram(module=None, argv=[sys.argv[0]] + args, testRunner=runner, stdout=sys.stdout)
