@@ -308,7 +308,7 @@ def recursive_dirlist(dir, relbase, pattern=None):
 
 def mkdir_p(dir):
     '''like mkdir -p'''
-    if os.path.isdir(dir):
+    if not dir or os.path.isdir(dir):
         return
     mkdir_p(os.path.dirname(dir))
     os.mkdir(dir)
