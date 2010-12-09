@@ -31,6 +31,7 @@
 #include "lib/util/tsort.h"
 #include "dsdb/common/util.h"
 #include "libcli/security/session.h"
+#include "kdc/kdc-policy.h"
 
 /*
   this type allows us to distinguish handle types
@@ -3700,12 +3701,9 @@ static NTSTATUS dcesrv_lsa_QueryDomainInformationPolicy(struct dcesrv_call_state
 			*r->out.info = NULL;
 			return NT_STATUS_INTERNAL_ERROR;
 		}
-		k->enforce_restrictions = 0; /* FIXME, details missing from MS-LSAD 2.2.53 */
-		k->service_tkt_lifetime = 0; /* Need to find somewhere to store this, and query in KDC too */
-		k->user_tkt_lifetime = 0;    /* Need to find somewhere to store this, and query in KDC too */
-		k->user_tkt_renewaltime = 0; /* Need to find somewhere to store this, and query in KDC too */
-		k->clock_skew = krb5_get_max_time_skew(smb_krb5_context->krb5_context);
-		k->reserved = 0;
+		kdc_get_policy(dce_call->conn->dce_ctx->lp_ctx,
+			       smb_krb5_context,
+			       k);
 		talloc_free(smb_krb5_context);
 		*r->out.info = info;
 		return NT_STATUS_OK;
