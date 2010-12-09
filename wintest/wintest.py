@@ -371,6 +371,12 @@ class wintest():
         if hostname.upper() == self.getvar("WIN_HOSTNAME").upper():
             return True
 
+    def set_noexpire(self, child, username):
+        '''Ensure this user's password does not expire'''
+        child.sendline('wmic useraccount where name="%s" set PasswordExpires=FALSE' % username)
+        child.expect("update successful")
+        child.expect("C:")
+
     def run_tlntadmn(self, child):
         '''remove the annoying telnet restrictions'''
         child.sendline('tlntadmn config maxconn=1024')
@@ -438,7 +444,7 @@ class wintest():
 
 
     def open_telnet(self, hostname, username, password, retries=60, delay=5, set_time=False, set_ip=False,
-                    disable_firewall=True, run_tlntadmn=True):
+                    disable_firewall=True, run_tlntadmn=True, set_noexpire=False):
         '''open a telnet connection to a windows server, return the pexpect child'''
         set_route = False
         set_dns = False
@@ -491,6 +497,9 @@ class wintest():
             if run_tlntadmn:
                 self.run_tlntadmn(child)
                 run_tlntadmn = False
+            if set_noexpire:
+                self.set_noexpire(child, username)
+                set_noexpire = False
             if disable_firewall:
                 self.disable_firewall(child)
                 disable_firewall = False

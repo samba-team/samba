@@ -299,7 +299,7 @@ def run_winjoin(t, vm):
     t.info("Joining a windows box to the domain")
     t.vm_poweroff("${WIN_VM}", checkfail=False)
     t.vm_restore("${WIN_VM}", "${WIN_SNAPSHOT}")
-    child = t.open_telnet("${WIN_HOSTNAME}", "${WIN_USER}", "${WIN_PASS}", set_time=True, set_ip=True)
+    child = t.open_telnet("${WIN_HOSTNAME}", "${WIN_USER}", "${WIN_PASS}", set_time=True, set_ip=True, set_noexpire=True)
     child.sendline("netdom join ${WIN_HOSTNAME} /Domain:${LCREALM} /PasswordD:${PASSWORD1} /UserD:administrator")
     child.expect("The command completed successfully")
     child.expect("C:")
@@ -332,7 +332,7 @@ def run_dcpromo(t, vm):
     t.info("Joining a windows VM ${WIN_VM} to the domain as a DC using dcpromo")
     t.vm_poweroff("${WIN_VM}", checkfail=False)
     t.vm_restore("${WIN_VM}", "${WIN_SNAPSHOT}")
-    child = t.open_telnet("${WIN_HOSTNAME}", "administrator", "${WIN_PASS}", set_ip=True)
+    child = t.open_telnet("${WIN_HOSTNAME}", "administrator", "${WIN_PASS}", set_ip=True, set_noexpire=True)
     child.sendline("copy /Y con answers.txt")
     child.sendline('''
 [DCINSTALL]
@@ -736,7 +736,7 @@ def run_dcpromo_as_first_dc(t, vm, func_level=None):
     else:
         t.setvar("FUNCTION_LEVEL_INT", str(0))
 
-    child = t.open_telnet("${WIN_HOSTNAME}", "administrator", "${WIN_PASS}", set_ip=True)
+    child = t.open_telnet("${WIN_HOSTNAME}", "administrator", "${WIN_PASS}", set_ip=True, set_noexpire=True)
 
     """This server must therefore not yet be a directory server, so we must promote it"""
     child.sendline("copy /Y con answers.txt")
