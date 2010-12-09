@@ -452,6 +452,12 @@ int dsdb_reference_schema(struct ldb_context *ldb, struct dsdb_schema *schema,
 		return ldb_oom(ldb);
 	}
 
+	/* Make this ldb use local schema preferably */
+	ret = ldb_set_opaque(ldb, "dsdb_use_global_schema", NULL);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
 	ret = dsdb_schema_set_attributes(ldb, schema, write_attributes);
 	if (ret != LDB_SUCCESS) {
 		return ret;
