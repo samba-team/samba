@@ -22,8 +22,7 @@ samba_dist.DIST_DIRS('.')
 #core elements of the autotools build system (which is known to
 #produce buggy binaries).
 samba_dist.DIST_BLACKLIST('README Manifest Read-Manifest-Now Roadmap source3/ ' +
-                          'packaging/ docs-xml/ examples/ swat/ WHATSNEW.txt MAINTAINERS ' +
-                          'source4/autogen-autotools.sh source4/Makefile.in source4/configure.ac')
+                          'packaging/ docs-xml/ examples/ swat/ WHATSNEW.txt MAINTAINERS ')
 # install in /usr/local/samba by default
 Options.default_prefix = '/usr/local/samba'
 
