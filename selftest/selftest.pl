@@ -951,12 +951,12 @@ $envvarstr
 		my $name = $$_[0];
 		my $envname = $$_[1];
 
-		unless($cmd =~ /\$LIST/) {
+		unless($cmd =~ /\$LISTOPT/) {
 			warn("Unable to list tests in $name");
 			next;
 		}
 
-		$cmd =~ s/\$LIST/--list/;
+		$cmd =~ s/\$LISTOPT/--list/;
 
 		system($cmd);
 	}
