@@ -1067,23 +1067,11 @@ ADS_STATUS cli_session_setup_spnego(struct cli_state *cli, const char *user,
 			!strequal(STAR_SMBSERVER,
 				cli->desthost)) {
 			char *realm = NULL;
-			char *machine = NULL;
 			char *host = NULL;
-			DEBUG(3,("cli_session_setup_spnego: got a "
-				"bad server principal, trying to guess ...\n"));
+			DEBUG(3,("cli_session_setup_spnego: using target "
+				 "hostname not SPNEGO principal\n"));
 
 			host = strchr_m(cli->desthost, '.');
-			if (host) {
-				/* We had a '.' in the name. */
-				machine = SMB_STRNDUP(cli->desthost,
-					host - cli->desthost);
-			} else {
-				machine = SMB_STRDUP(cli->desthost);
-			}
-			if (machine == NULL) {
-				return ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
-			}
-
 			if (dest_realm) {
 				realm = SMB_STRDUP(dest_realm);
 				strupper_m(realm);
@@ -1098,21 +1086,11 @@ ADS_STATUS cli_session_setup_spnego(struct cli_state *cli, const char *user,
 			}
 
 			if (realm && *realm) {
-				if (host) {
-					/* DNS name. */
-					principal = talloc_asprintf(talloc_tos(),
-							"cifs/%s@%s",
-							cli->desthost,
-							realm);
-				} else {
-					/* NetBIOS name, use machine account. */
-					principal = talloc_asprintf(talloc_tos(),
-							"%s$@%s",
-							machine,
-							realm);
-				}
+				principal = talloc_asprintf(talloc_tos(),
+							    "cifs/%s@%s",
+							    cli->desthost,
+							    realm);
 				if (!principal) {
-					SAFE_FREE(machine);
 					SAFE_FREE(realm);
 					return ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
 				}
@@ -1120,7 +1098,6 @@ ADS_STATUS cli_session_setup_spnego(struct cli_state *cli, const char *user,
 					"server principal=%s\n",
 					principal ? principal : "<null>"));
 			}
-			SAFE_FREE(machine);
 			SAFE_FREE(realm);
 		}
 
