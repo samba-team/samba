@@ -2642,16 +2642,24 @@ WERROR dsdb_attribute_drsuapi_to_ldb(struct ldb_context *ldb,
 {
 	const struct dsdb_attribute *sa;
 	struct dsdb_syntax_ctx syntax_ctx;
-
-	sa = dsdb_attribute_by_attributeID_id(schema, in->attid);
-	if (!sa) {
-		DEBUG(1,(__location__ ": Unknown attributeID_id 0x%08X\n", in->attid));
-		return WERR_FOOBAR;
-	}
+	uint32_t attid_local;
 
 	/* use default syntax conversion context */
 	dsdb_syntax_ctx_init(&syntax_ctx, ldb, schema);
 	syntax_ctx.pfm_remote = pfm_remote;
+
+	/* map remote ATTID to local ATTID */
+	if (!dsdb_syntax_attid_from_remote_attid(&syntax_ctx, mem_ctx, in->attid, &attid_local)) {
+		DEBUG(0,(__location__ "Error: Can't find local ATTID for 0x%08X\n",
+			 in->attid));
+		return WERR_FOOBAR;
+	}
+
+	sa = dsdb_attribute_by_attributeID_id(schema, attid_local);
+	if (!sa) {
+		DEBUG(1,(__location__ ": Unknown attributeID_id 0x%08X\n", in->attid));
+		return WERR_FOOBAR;
+	}
 
 	return sa->syntax->drsuapi_to_ldb(&syntax_ctx, sa, in, mem_ctx, out);
 }
