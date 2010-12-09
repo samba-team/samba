@@ -207,6 +207,30 @@ class DrsReplSchemaTestCase(samba.tests.TestCase):
         for c_dn in c_dn_list:
             self._check_object(c_dn)
 
+    def test_classWithCustomAttribute(self):
+        """Create new Attribute and a Class,
+           that has value for newly created attribute.
+           This should check code path that searches for
+           AttributeID_id in Schema cache"""
+        # add new attributeSchema object
+        (a_ldn, a_dn) = self._schema_new_attr(self.ldb_dc1, "attr-A")
+        # add a base classSchema class so we can use our new
+        # attribute in class definition in a sibling class
+        (c_ldn, c_dn) = self._schema_new_class(self.ldb_dc1, "cls-A",
+                                               {"systemMayContain": a_ldn})
+        # add new classSchema object with value for a_ldb attribute
+        (c_ldn, c_dn) = self._schema_new_class(self.ldb_dc1, "cls-B",
+                                               {"objectClass": ["top", "classSchema", c_ldn],
+                                                a_ldn: "test_classWithCustomAttribute"})
+        #(c_ldn, c_dn) = self._schema_new_class(self.ldb_dc1, "cls-B",
+        #                                       {"systemMayContain": a_ldn,
+        #                                        a_ldn: "test_classWithCustomAttribute"})
+        # force replication from DC1 to DC2
+        self._net_drs_replicate(DC=self.dnsname_dc2, fromDC=self.dnsname_dc1, nc_dn=self.schema_dn)
+        # check objects are replicated
+        self._check_object(c_dn)
+        self._check_object(a_dn)
+
     def test_attribute(self):
         """Simple test for attributeSchema replication"""
         # add new attributeSchema object
