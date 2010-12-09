@@ -118,7 +118,7 @@ def SAMBA_LIBRARY(bld, libname, source,
                   target_type='LIBRARY',
                   bundled_extension=True,
                   link_name=None,
-                  abi_file=None,
+                  abi_directory=None,
                   abi_match=None,
                   hide_symbols=False,
                   manpages=None,
@@ -200,14 +200,6 @@ def SAMBA_LIBRARY(bld, libname, source,
     else:
         version = "%s_%s" % (Utils.g_module.APPNAME, Utils.g_module.VERSION.split(".")[0])
 
-    if bld.env.HAVE_LD_VERSION_SCRIPT:
-        vscript = "%s.vscript" % libname
-        bld.SAMBA_GENERATOR(vscript,
-                            rule="echo %s \{ global: \*\; \}\; > ${TGT}" % version.replace("-","_").replace("+","_").upper(),
-                            group='vscripts',
-                            target=vscript)
-        ldflags.append("-Wl,--version-script=%s/%s" % (bld.path.abspath(bld.env), vscript))
-
     features = 'cc cshlib symlink_lib install_lib'
     if target_type == 'PYTHON':
         features += ' pyext'
@@ -215,11 +207,13 @@ def SAMBA_LIBRARY(bld, libname, source,
         # this is quite strange. we should add pyext feature for pyext
         # but that breaks the build. This may be a bug in the waf python tool
         features += ' pyembed'
-    if abi_file:
-        features += ' abi_check'
 
-    if abi_file:
-        abi_file = os.path.join(bld.curdir, abi_file)
+    if abi_directory:
+        features += ' abi_check'
+        if bld.env.HAVE_LD_VERSION_SCRIPT:
+            vscript = "%s.vscript" % libname
+            bld.ABI_VSCRIPT(libname, abi_directory, vnum, vscript)
+            ldflags.append("-Wl,--version-script=%s/%s" % (bld.path.abspath(bld.env), vscript))
 
     bld.SET_BUILD_GROUP(group)
     t = bld(
@@ -238,7 +232,7 @@ def SAMBA_LIBRARY(bld, libname, source,
         name            = libname,
         samba_realname  = realname,
         samba_install   = install,
-        abi_file        = abi_file,
+        abi_directory   = abi_directory,
         abi_match       = abi_match,
         private_library = private_library,
         grouping_library=grouping_library

@@ -1,6 +1,6 @@
 # functions for handling ABI checking of libraries
 
-import Options, Utils, os, Logs, samba_utils, sys, Task, fnmatch, re
+import Options, Utils, os, Logs, samba_utils, sys, Task, fnmatch, re, Build
 from TaskGen import feature, before, after
 
 # these type maps cope with platform specific names for common types
@@ -117,7 +117,7 @@ if '--abi-check' in sys.argv:
 def abi_check(self):
     '''check that ABI matches saved signatures'''
     env = self.bld.env
-    if not env.ABI_CHECK or self.abi_file is None:
+    if not env.ABI_CHECK or self.abi_directory is None:
         return
 
     # if the platform doesn't support -fvisibility=hidden then the ABI
@@ -128,7 +128,80 @@ def abi_check(self):
     topsrc = self.bld.srcnode.abspath()
     abi_gen = os.path.join(topsrc, 'buildtools/scripts/abi_gen.sh')
 
+    abi_file = "%s/%s-%s.sigs" % (self.abi_directory, self.name, self.vnum)
+
     tsk = self.create_task('abi_check', self.link_task.outputs[0])
-    tsk.ABI_FILE = self.abi_file
+    tsk.ABI_FILE = abi_file
     tsk.ABI_MATCH = self.abi_match
     tsk.ABI_GEN = abi_gen
+
+
+
+def abi_process_file(fname, version, symmap):
+    '''process one ABI file, adding new symbols to the symmap'''
+    f = open(fname, mode='r')
+    for line in f:
+        symname = line.split(":")[0]
+        if not symname in symmap:
+            symmap[symname] = version
+    f.close()
+
+def abi_write_vscript(vscript, libname, vnum, symmap):
+    '''write a vscript file for a library in --version-script format'''
+
+    libname = libname.replace("-", "_").replace("+","_").upper()
+
+    invmap = {}
+    for s in symmap:
+        invmap.setdefault(symmap[s], []).append(s)
+
+    f = open(vscript, mode='w')
+    last_key = ""
+    for k in sorted(invmap):
+        symver = "%s_%s" % (libname, k)
+        if symver == version:
+            break
+        f.write("%s {\n\tglobal: \n" % symver)
+        for s in invmap[k]:
+            f.write("\t\t%s;\n" % s);
+        f.write("}%s;\n\n" % last_key)
+        last_key = " %s" % symver
+    f.write("%s { global: *;};\n" % version)
+    f.close()
+
+
+def abi_build_vscript(task):
+    '''generate a vscript file for our public libraries'''
+
+    tgt = task.outputs[0].bldpath(task.env)
+
+    symmap = {}
+
+    for f in task.inputs:
+        fname = f.abspath(task.env)
+        basename = os.path.basename(fname)
+        version = basename[len(task.env.LIBNAME)+1:-len(".sigs")]
+        abi_process_file(fname, version, symmap)
+    abi_write_vscript(tgt, task.env.LIBNAME, task.env.VNUM, symmap)
+
+
+def ABI_VSCRIPT(bld, libname, abi_directory, vnum, vscript):
+    '''generate a vscript file for our public libraries'''
+    if abi_directory:
+        source = bld.path.ant_glob('%s/%s-[0-9]*.sigs' % (abi_directory, libname))
+        source = sorted(source.split())
+    else:
+        source = ''
+
+    libname = libname.replace("-", "_").replace("+","_").upper()
+    version = version.replace("-", "_").replace("+","_").upper()
+
+    t = bld.SAMBA_GENERATOR(vscript,
+                            rule=abi_build_vscript,
+                            source=source,
+                            group='vscripts',
+                            target=vscript)
+    t.env.VNUM = vnum
+    t.env.LIBNAME = libname
+    t.vars = [vnum, vscript]
+Build.BuildContext.ABI_VSCRIPT = ABI_VSCRIPT

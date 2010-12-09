@@ -339,6 +339,9 @@ def EXPAND_VARIABLES(ctx, varstr, vars=None):
             ret.append(EXPAND_VARIABLES(ctx, s, vars=vars))
         return ret
 
+    if not isinstance(varstr, str):
+        return varstr
+
     import Environment
     env = Environment.Environment()
     ret = varstr

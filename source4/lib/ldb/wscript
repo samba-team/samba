@@ -121,7 +121,6 @@ def build(bld):
             # the current modules, not the installed ones
             modules_dir = os.path.join(os.getcwd(), 'bin/modules/ldb')
 
-        abi_file = 'ABI/ldb-%s.sigs' % VERSION
         abi_match = '!ldb_*module_ops !ldb_*backend_ops ldb_*'
 
         bld.SAMBA_LIBRARY('ldb',
@@ -134,7 +133,7 @@ def build(bld):
                           vnum=vnum,
                           private_library=private_library,
                           manpages='man/ldb.3',
-                          abi_file = abi_file,
+                          abi_directory = 'ABI',
                           abi_match = abi_match)
 
 

@@ -77,7 +77,7 @@ def build(bld):
                           COMMON_SRC,
                           deps='replace',
                           includes='include',
-                          abi_file='ABI/tdb-%s.sigs' % VERSION,
+                          abi_directory='ABI',
                           abi_match='tdb_*',
                           hide_symbols=True,
                           vnum=vnum,
