@@ -124,7 +124,6 @@ def planpythontestsuite(env, module):
     else:
         plantestsuite_idlist(module, env, "PYTHONPATH=$PYTHONPATH:%s/../lib/subunit/python:%s/../lib/testtools %s -m subunit.run $LISTOPT %s" % (samba4srcdir, samba4srcdir, python, module))
 
-
 def plansmbtorturetestsuite(name, env, options):
     modname = "samba4.%s" % normalize_testname(name)
     cmdline = "%s %s %s" % (valgrindify(smb4torture), options, name)
@@ -459,11 +458,20 @@ else:
     skiptestsuite("samba4.nss.test using winbind(member)", "nsstest not available")
 
 subunitrun = valgrindify(python) + " " + os.path.join(samba4srcdir, "scripting/bin/subunitrun")
-plantestsuite("ldb.python", "none", ['PYTHONPATH="$PYTHONPATH:./lib/ldb/tests/python/"', subunitrun, 'api'])
+def plansambapythontestsuite(name, env, path, module, environ={}, extra_args=[]):
+    environ = dict(environ)
+    environ["PYTHONPATH"] = "$PYTHONPATH:" + path
+    args = ["%s=%s" % item for item in environ.iteritems()]
+    args += [subunitrun, "$LISTOPT", module]
+    args += extra_args
+    plantestsuite(name, env, args)
+
+
+plansambapythontestsuite("ldb.python", "none", "./lib/ldb/tests/python/", 'api')
 planpythontestsuite("none", "samba.tests.credentials")
 planpythontestsuite("none", "samba.tests.gensec")
 planpythontestsuite("none", "samba.tests.registry")
-plantestsuite("tdb.python", "none", ['PYTHONPATH="$PYTHONPATH:../lib/tdb/python/tests"', subunitrun, 'simple'])
+plansambapythontestsuite("tdb.python", "none", "../lib/tdb/python/tests", 'simple')
 planpythontestsuite("none", "samba.tests.auth")
 planpythontestsuite("none", "samba.tests.security")
 planpythontestsuite("none", "samba.tests.dcerpc.misc")
@@ -484,10 +492,10 @@ planpythontestsuite("none", "samba.tests.messaging")
 planpythontestsuite("none", "samba.tests.samba3sam")
 planpythontestsuite("none", "subunit")
 planpythontestsuite("dc:local", "samba.tests.dcerpc.rpcecho")
-plantestsuite_idlist("samba.tests.dcerpc.registry", "dc:local", [subunitrun, '-U"$USERNAME%$PASSWORD"', "samba.tests.dcerpc.registry"])
+plantestsuite_idlist("samba.tests.dcerpc.registry", "dc:local", [subunitrun, "$LISTOPT", '-U"$USERNAME%$PASSWORD"', "samba.tests.dcerpc.registry"])
 plantestsuite("samba4.ldap.python(dc)", "dc", [python, os.path.join(samba4srcdir, "dsdb/tests/python/ldap.py"), '$SERVER', '-U"$USERNAME%$PASSWORD"', '-W', '$DOMAIN'])
 plantestsuite("samba4.sam.python(dc)", "dc", [python, os.path.join(samba4srcdir, "dsdb/tests/python/sam.py"), '$SERVER', '-U"$USERNAME%$PASSWORD"', '-W', '$DOMAIN'])
-plantestsuite("samba4.schemaInfo.python(dc)", "dc", ['PYTHONPATH="$PYTHONPATH:%s"' % os.path.join(samba4srcdir, 'dsdb/tests/python'), subunitrun, 'dsdb_schema_info', '-U"$DOMAIN/$DC_USERNAME%$DC_PASSWORD"'])
+plansambapythontestsuite("samba4.schemaInfo.python(dc)", "dc", os.path.join(samba4srcdir, 'dsdb/tests/python'), 'dsdb_schema_info', extra_args=['-U"$DOMAIN/$DC_USERNAME%$DC_PASSWORD"'])
 plantestsuite("samba4.urgent_replication.python(dc)", "dc", [python, os.path.join(samba4srcdir, "dsdb/tests/python/urgent_replication.py"), '$PREFIX_ABS/dc/private/sam.ldb'], allow_empty_output=True)
 for env in ["dc", "fl2000dc", "fl2003dc", "fl2008r2dc"]:
     plantestsuite("samba4.ldap_schema.python(%s)" % env, env, [python, os.path.join(samba4srcdir, "dsdb/tests/python/ldap_schema.py"), '$SERVER', '-U"$USERNAME%$PASSWORD"', '-W', '$DOMAIN'])
@@ -504,7 +512,7 @@ planpythontestsuite("none", "samba.tests.upgradeprovision")
 planpythontestsuite("none", "samba.tests.xattr")
 planpythontestsuite("none", "samba.tests.ntacls")
 plantestsuite("samba4.deletetest.python(dc)", "dc", ['PYTHONPATH="$PYTHONPATH:../lib/subunit/python:../lib/testtools"', python, os.path.join(samba4srcdir, "dsdb/tests/python/deletetest.py"), '$SERVER', '-U"$USERNAME%$PASSWORD"', '-W', '$DOMAIN'])
-plantestsuite("samba4.policy.python", "none", ['PYTHONPATH="$PYTHONPATH:lib/policy/tests/python"', subunitrun, 'bindings'])
+plansambapythontestsuite("samba4.policy.python", "none", "lib/policy/tests/python", 'bindings')
 plantestsuite("samba4.blackbox.samba3dump", "none", [python, os.path.join(samba4srcdir, "scripting/bin/samba3dump"), os.path.join(samba4srcdir, "../testdata/samba3")], allow_empty_output=True)
 plantestsuite("samba4.blackbox.upgrade", "none", ["rm -rf $PREFIX/upgrade;", python, os.path.join(samba4srcdir, "setup/upgrade_from_s3"), "--targetdir=$PREFIX/upgrade", os.path.normpath(os.path.join(samba4srcdir, "../testdata/samba3")), os.path.normpath(os.path.join(samba4srcdir, "../testdata/samba3/smb.conf"))], allow_empty_output=True)
 plantestsuite("samba4.blackbox.provision.py", "none", ["PYTHON=%s" % python, os.path.join(samba4srcdir, "setup/tests/blackbox_provision.sh"), '$PREFIX/provision'])
@@ -516,9 +524,9 @@ plantestsuite("samba4.blackbox.spn.py(dc:local)", "dc:local", ["PYTHON=%s" % pyt
 plantestsuite("samba4.ldap.bind(dc)", "dc", [python, os.path.join(samba4srcdir, "auth/credentials/tests/bind.py"), '$SERVER', '-U"$USERNAME%$PASSWORD"'])
 
 # DRS python tests
-plantestsuite("samba4.drs.delete_object.python(vampire_dc)", "vampire_dc", ['PYTHONPATH="$PYTHONPATH:%s"' % os.path.join(samba4srcdir, 'torture/drs/python'), 'DC1=$DC_SERVER', 'DC2=$VAMPIRE_DC_SERVER', subunitrun, 'delete_object', '-U$DOMAIN/$DC_USERNAME%$DC_PASSWORD'])
-plantestsuite("samba4.drs.fsmo.python(vampire_dc)", "vampire_dc", ['PYTHONPATH="$PYTHONPATH:%s"' % os.path.join(samba4srcdir, 'torture/drs/python'), 'DC1=$DC_SERVER', 'DC2=$VAMPIRE_DC_SERVER', subunitrun, 'fsmo', '-U$DOMAIN/$DC_USERNAME%$DC_PASSWORD'])
-plantestsuite("samba4.drs.repl_schema.python(vampire_dc)", "vampire_dc", ['PYTHONPATH="$PYTHONPATH:%s"' % os.path.join(samba4srcdir, 'torture/drs/python'), 'DC1=$DC_SERVER', 'DC2=$VAMPIRE_DC_SERVER', subunitrun, 'repl_schema', '-U$DOMAIN/$DC_USERNAME%$DC_PASSWORD'])
+plansambapythontestsuite("samba4.drs.delete_object.python(vampire_dc)", "vampire_dc", os.path.join(samba4srcdir, 'torture/drs/python'), "delete_object", environ={'DC1': '$DC_SERVER', 'DC2': '$VAMPIRE_DC_SERVER'}, extra_args=['-U$DOMAIN/$DC_USERNAME%$DC_PASSWORD'])
+plansambapythontestsuite("samba4.drs.fsmo.python(vampire_dc)", "vampire_dc", os.path.join(samba4srcdir, 'torture/drs/python'), "fsmo", environ={'DC1': "$DC_SERVER", 'DC2': "$VAMPIRE_DC_SERVER"}, extra_args=['-U$DOMAIN/$DC_USERNAME%$DC_PASSWORD'])
+plansambapythontestsuite("samba4.drs.repl_schema.python(vampire_dc)", "vampire_dc", os.path.join(samba4srcdir, 'torture/drs/python'), "repl_schema", environ={'DC1': "$DC_SERVER", 'DC2': '$VAMPIRE_DC_SERVER'}, extra_args=['-U$DOMAIN/$DC_USERNAME%$DC_PASSWORD'])
 
 # This makes sure we test the rid allocation code
 t = "RPC-SAMR-LARGE-DC"
