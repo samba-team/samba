@@ -21,6 +21,7 @@ import dns.opcode
 import dns.rdata
 import dns.rdataclass
 import dns.rdataset
+import dns.tsig
 
 class Update(dns.message.Message):
     def __init__(self, zone, rdclass=dns.rdataclass.IN, keyring=None,
@@ -42,7 +43,10 @@ class Update(dns.message.Message):
         they know the keyring contains only one key.
         @type keyname: dns.name.Name or string
         @param keyalgorithm: The TSIG algorithm to use; defaults to
-        dns.tsig.default_algorithm
+        dns.tsig.default_algorithm.  Constants for TSIG algorithms are defined
+        in dns.tsig, and the currently implemented algorithms are
+        HMAC_MD5, HMAC_SHA1, HMAC_SHA224, HMAC_SHA256, HMAC_SHA384, and
+        HMAC_SHA512.
         @type keyalgorithm: string
         """
         super(Update, self).__init__()
@@ -148,7 +152,7 @@ class Update(dns.message.Message):
                     self._add_rr(name, 0, rd, dns.rdataclass.NONE)
             else:
                 rdtype = args.pop(0)
-                if isinstance(rdtype, str):
+                if isinstance(rdtype, (str, unicode)):
                     rdtype = dns.rdatatype.from_text(rdtype)
                 if len(args) == 0:
                     rrset = self.find_rrset(self.authority, name,
@@ -206,7 +210,7 @@ class Update(dns.message.Message):
             self._add(False, self.answer, name, *args)
         else:
             rdtype = args[0]
-            if isinstance(rdtype, str):
+            if isinstance(rdtype, (str, unicode)):
                 rdtype = dns.rdatatype.from_text(rdtype)
             rrset = self.find_rrset(self.answer, name,
                                     dns.rdataclass.ANY, rdtype,
@@ -225,7 +229,7 @@ class Update(dns.message.Message):
                                     dns.rdatatype.NONE, None,
                                     True, True)
         else:
-            if isinstance(rdtype, str):
+            if isinstance(rdtype, (str, unicode)):
                 rdtype = dns.rdatatype.from_text(rdtype)
             rrset = self.find_rrset(self.answer, name,
                                     dns.rdataclass.NONE, rdtype,
