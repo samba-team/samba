@@ -457,6 +457,8 @@ int main(int argc, char *argv[])
 
 	poptFreeContext(pc);
 
+	lp_load_initial_only(get_dyn_CONFIGFILE());
+
 	/* TODO: check output */
 	reload_services(smbd_messaging_context(), -1, False);
 
