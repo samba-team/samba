@@ -9,7 +9,7 @@ except ImportError:
 else:
     extra = {
         'install_requires': [
-            'testtools',
+            'testtools>=0.9.6',
         ]
     }
 

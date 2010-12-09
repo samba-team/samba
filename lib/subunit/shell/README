@@ -38,7 +38,7 @@ a manually written test using the bindings might look like:
 subunit_start_test "test name"
 # determine if test passes or fails
 result=$(something)
-if [ $result -eq 0 ]; then
+if [ $result == 0 ]; then
   subunit_pass_test "test name"
 else
   subunit_fail_test "test name" <<END

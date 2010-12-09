@@ -646,7 +646,13 @@ class TestProtocolClient(testresult.TestResult):
 
     def startTest(self, test):
         """Mark a test as starting its test run."""
+        super(TestProtocolClient, self).startTest(test)
         self._stream.write("test: %s\n" % test.id())
+        self._stream.flush()
+
+    def stopTest(self, test):
+        super(TestProtocolClient, self).stopTest(test)
+        self._stream.flush()
 
     def progress(self, offset, whence):
         """Provide indication about the progress/length of the test run.

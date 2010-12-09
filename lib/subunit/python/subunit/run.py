@@ -69,4 +69,5 @@ class SubunitTestProgram(TestProgram):
 if __name__ == '__main__':
     stream = get_default_formatter()
     runner = SubunitTestRunner(stream)
-    SubunitTestProgram(module=None, argv=sys.argv, testRunner=runner)
+    SubunitTestProgram(module=None, argv=sys.argv, testRunner=runner,
+        stdout=sys.stdout)

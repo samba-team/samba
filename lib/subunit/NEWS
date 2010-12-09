@@ -5,6 +5,19 @@ subunit release notes
 NEXT (In development)
 ---------------------
 
+The Subunit Python test runner ``python -m subunit.run`` can now report the
+test ids and also filter via a test id list file thanks to improvements in
+``testtools.run``. See the testtools manual, or testrepository - a major
+user of such functionality.
+
+IMPROVEMENTS
+~~~~~~~~~~~~
+
+* The ``subunit.run`` Python module supports ``-l`` and ``--load-list`` as
+  per ``testtools.run``. This required a dependency bump due to a small
+  API change in ``testtools``. (Robert Collins)
+
+
 0.0.6
 -----
 
@@ -47,6 +60,10 @@ IMPROVEMENTS
 * Subunit now uses the improved unicode support in testtools when outputting
   non-details based test information; this should consistently UTF8 encode such
   strings.
+
+* The Python TestProtocolClient now flushes output on startTest and stopTest.
+  (Martin [gz]).
+
 
 0.0.5
 -----

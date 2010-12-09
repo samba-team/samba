@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #  subunit shell bindings.
 #  Copyright (C) 2006  Robert Collins <robertc@robertcollins.net>
 #
@@ -29,7 +29,7 @@
 echo 'test: subunit_start_test output'
 func_output=$(subunit_start_test "foo bar")
 func_status=$?
-if [ $func_status -eq 0 -a "x$func_output" = "xtest: foo bar" ]; then
+if [ $func_status == 0 -a "x$func_output" = "xtest: foo bar" ]; then
   echo 'success: subunit_start_test output'
 else
   echo 'failure: subunit_start_test output ['
@@ -42,7 +42,7 @@ fi
 subunit_start_test "subunit_pass_test output"
 func_output=$(subunit_pass_test "foo bar")
 func_status=$?
-if [ $func_status -eq 0 -a "x$func_output" = "xsuccess: foo bar" ]; then
+if [ $func_status == 0 -a "x$func_output" = "xsuccess: foo bar" ]; then
   subunit_pass_test "subunit_pass_test output"
 else
   echo 'failure: subunit_pass_test output ['
@@ -60,7 +60,7 @@ here
 END
 )
 func_status=$?
-if [ $func_status -eq 0 -a "x$func_output" = "xfailure: foo bar [
+if [ $func_status == 0 -a "x$func_output" = "xfailure: foo bar [
 something
   wrong
 here
@@ -82,7 +82,7 @@ here
 END
 )
 func_status=$?
-if [ $func_status -eq 0 -a "x$func_output" = "xerror: foo bar [
+if [ $func_status == 0 -a "x$func_output" = "xerror: foo bar [
 something
   died
 here
