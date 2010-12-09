@@ -215,7 +215,7 @@ static void shell_list(const struct shell_command * command,
 	return;
     }
 
-    torture_print_tests(true);
+    torture_print_testsuites(true);
 }
 
 static void shell_auth(const struct shell_command * command,

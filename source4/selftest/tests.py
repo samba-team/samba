@@ -134,7 +134,7 @@ samba4srcdir = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__f
 builddir = os.getenv("BUILDDIR", samba4srcdir)
 samba4bindir = os.path.normpath(os.path.join(builddir, "bin"))
 smb4torture = binpath("smbtorture")
-smb4torture_testsuite_list = subprocess.Popen([smb4torture, "--list"], stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate("")[0].splitlines()
+smb4torture_testsuite_list = subprocess.Popen([smb4torture, "--list-suites"], stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate("")[0].splitlines()
 validate = os.getenv("VALIDATE", "")
 if validate:
     validate_list = [validate]

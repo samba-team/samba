@@ -190,7 +190,7 @@ static void parse_dns(struct loadparm_context *lp_ctx, const char *dns)
 /* Print the full test list, formatted into separate labelled test
  * groups.
  */
-static void print_structured_test_list(void)
+static void print_structured_testsuite_list(void)
 {
 	struct torture_suite *o;
 	struct torture_suite *s;
@@ -228,7 +228,7 @@ static void print_structured_test_list(void)
 	printf("\nThe default test is ALL.\n");
 }
 
-static void print_test_list(void)
+static void print_testsuite_list(void)
 {
 	struct torture_suite *o;
 	struct torture_suite *s;
@@ -248,12 +248,12 @@ static void print_test_list(void)
 	}
 }
 
-void torture_print_tests(bool structured)
+void torture_print_testsuites(bool structured)
 {
 	if (structured) {
-		print_structured_test_list();
+		print_structured_testsuite_list();
 	} else {
-		print_test_list();
+		print_testsuite_list();
 	}
 }
 
@@ -311,7 +311,7 @@ _NORETURN_ static void usage(poptContext pc)
 
 	printf("Tests are:");
 
-	print_structured_test_list();
+	print_structured_testsuite_list();
 
 	exit(1);
 }
@@ -406,7 +406,7 @@ int main(int argc,char *argv[])
 	const char *basedir = NULL;
 	char *outputdir;
 	const char *extra_module = NULL;
-	static int list_tests = 0;
+	static int list_tests = 0, list_testsuites = 0;
 	int num_extra_users = 0;
 	char **restricted = NULL;
 	int num_restricted = -1;
@@ -425,7 +425,8 @@ int main(int argc,char *argv[])
 		{"num-ops",	  0, POPT_ARG_INT,  &torture_numops, 	0, 	"num ops",	NULL},
 		{"entries",	  0, POPT_ARG_INT,  &torture_entries, 	0,	"entries",	NULL},
 		{"loadfile",	  0, POPT_ARG_STRING,	NULL, 	OPT_LOADFILE,	"NBench load file to use", 	NULL},
-		{"list", 	  0, POPT_ARG_NONE, &list_tests, 0, "List available tests and exit", NULL },
+		{"list-suites", 	  0, POPT_ARG_NONE, &list_testsuites, 0, "List available testsuites and exit", NULL },
+		{"list", 	  0, POPT_ARG_NONE, &list_tests, 0, "List available tests in specified suites and exit", NULL },
 		{"unclist",	  0, POPT_ARG_STRING,	NULL, 	OPT_UNCLIST,	"unclist", 	NULL},
 		{"timelimit",	't', POPT_ARG_INT,	NULL, 	OPT_TIMELIMIT,	"Set time limit (in seconds)", 	NULL},
 		{"failures",	'f', POPT_ARG_INT,  &torture_failures, 	0,	"failures", 	NULL},
@@ -588,8 +589,8 @@ int main(int argc,char *argv[])
 		torture_init();
 	}
 
-	if (list_tests) {
-		print_test_list();
+	if (list_testsuites) {
+		print_testsuite_list();
 		return 0;
 	}
 
