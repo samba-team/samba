@@ -334,7 +334,7 @@ def ensure_external_module(modulename, location):
     try:
         __import__(modulename)
     except ImportError:
-        import_bundled_package(modulename)
+        import_bundled_package(modulename, location)
 
 
 from samba import _glue
