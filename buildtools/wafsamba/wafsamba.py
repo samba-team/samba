@@ -211,10 +211,13 @@ def SAMBA_LIBRARY(bld, libname, source,
         vscript = "%s.vscript" % libname
         if private_library:
             version = "%s_%s" % (Utils.g_module.APPNAME, Utils.g_module.VERSION)
-        else:
+        elif vnum:
             version = "%s_%s" % (libname, vnum)
-        bld.ABI_VSCRIPT(libname, abi_directory, version, vscript)
-        ldflags.append("-Wl,--version-script=%s/%s" % (bld.path.abspath(bld.env), vscript))
+        else:
+            version = None
+        if version:
+            bld.ABI_VSCRIPT(libname, abi_directory, version, vscript)
+            ldflags.append("-Wl,--version-script=%s/%s" % (bld.path.abspath(bld.env), vscript))
 
     bld.SET_BUILD_GROUP(group)
     t = bld(
