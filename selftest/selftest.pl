@@ -153,6 +153,7 @@ my @opt_include = ();
 my $opt_verbose = 0;
 my $opt_image = undef;
 my $opt_testenv = 0;
+my $opt_list = 0;
 my $ldap = undef;
 my $opt_resetup_env = undef;
 my $opt_bindir = undef;
@@ -326,6 +327,7 @@ Behaviour:
  --one                      abort when the first test fails
  --verbose                  be verbose
  --testenv                  run a shell in the requested test environment
+ --list                     list available tests
 ";
 	exit(0);
 }
@@ -346,6 +348,7 @@ my $result = GetOptions (
 		'exeext=s' => \$exeext,
 		'verbose' => \$opt_verbose,
 		'testenv' => \$opt_testenv,
+		'list' => \$opt_list,
 		'ldap:s' => \$ldap,
 		'resetup-environment' => \$opt_resetup_env,
 		'bindir:s' => \$opt_bindir,
@@ -357,6 +360,8 @@ my $result = GetOptions (
 exit(1) if (not $result);
 
 ShowHelp() if ($opt_help);
+
+die("--list and --testenv are mutually exclusive") if ($opt_list and $opt_testenv);
 
 # we want unbuffered output
 $| = 1;
@@ -940,6 +945,21 @@ SMB_CONF_PATH=\$SMB_CONF_PATH
 $envvarstr
 \" && LD_LIBRARY_PATH=$ENV{LD_LIBRARY_PATH} bash'");
 	teardown_env($testenv_name);
+} elsif ($opt_list) {
+	foreach (@todo) {
+		my $cmd = $$_[2];
+		my $name = $$_[0];
+		my $envname = $$_[1];
+
+		unless($cmd =~ /\$LIST/) {
+			warn("Unable to list tests in $name");
+			next;
+		}
+
+		$cmd =~ s/\$LIST/--list/;
+
+		system($cmd);
+	}
 } else {
 	foreach (@todo) {
 		$i++;
