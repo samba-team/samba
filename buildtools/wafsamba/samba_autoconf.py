@@ -448,10 +448,19 @@ def CHECK_LDFLAGS(conf, ldflags):
 
 
 @conf
+def CONFIG_GET(conf, option):
+    '''return True if a configuration option was found'''
+    if (option in conf.env):
+        return conf.env[option]
+    else:
+        return None
+
+@conf
 def CONFIG_SET(conf, option):
     '''return True if a configuration option was found'''
     return (option in conf.env) and (conf.env[option] != ())
 Build.BuildContext.CONFIG_SET = CONFIG_SET
+Build.BuildContext.CONFIG_GET = CONFIG_GET
 
 
 def library_flags(conf, libs):
