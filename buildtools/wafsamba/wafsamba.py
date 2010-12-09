@@ -191,11 +191,6 @@ def SAMBA_LIBRARY(bld, libname, source,
 
     ldflags = TO_LIST(ldflags)
 
-    if private_library:
-        if vnum:
-            Logs.error("vnum is invalid for private libraries")
-            sys.exit(1)
-
     features = 'cc cshlib symlink_lib install_lib'
     if target_type == 'PYTHON':
         features += ' pyext'

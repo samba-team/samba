@@ -66,11 +66,9 @@ def build(bld):
         bld.env.PKGCONFIGDIR = '${LIBDIR}/pkgconfig'
         bld.PKG_CONFIG_FILES('tdb.pc', vnum=VERSION)
         bld.INSTALL_FILES('${INCLUDEDIR}', 'include/tdb.h', flat=True)
-        vnum = VERSION
         private_library = False
     else:
         private_library = True
-        vnum = None
 
     if not bld.CONFIG_SET('USING_SYSTEM_TDB'):
         bld.SAMBA_LIBRARY('tdb',
@@ -80,7 +78,7 @@ def build(bld):
                           abi_directory='ABI',
                           abi_match='tdb_*',
                           hide_symbols=True,
-                          vnum=vnum,
+                          vnum=VERSION,
                           private_library=private_library)
 
         bld.SAMBA_BINARY('tdbtorture',

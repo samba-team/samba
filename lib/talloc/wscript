@@ -76,7 +76,6 @@ def build(bld):
         bld.PKG_CONFIG_FILES('talloc.pc', vnum=VERSION)
         bld.INSTALL_FILES('${INCLUDEDIR}', 'talloc.h')
         private_library = False
-        vnum = VERSION
 
         # should we also install the symlink to libtalloc1.so here?
         bld.SAMBA_LIBRARY('talloc-compat1-%s' % (VERSION),
@@ -89,7 +88,6 @@ def build(bld):
             bld.PKG_CONFIG_FILES('pytalloc-util.pc', vnum=VERSION)
     else:
         private_library = True
-        vnum = None
 
     if not bld.CONFIG_SET('USING_SYSTEM_TALLOC'):
 
@@ -99,7 +97,7 @@ def build(bld):
                           abi_directory='ABI',
                           abi_match='talloc* _talloc*',
                           hide_symbols=True,
-                          vnum=vnum,
+                          vnum=VERSION,
                           private_library=private_library,
                           manpages='talloc.3')
 
@@ -111,7 +109,7 @@ def build(bld):
             abi_directory='ABI',
             abi_match='py* Py*',
             pyext=True,
-            vnum=vnum,
+            vnum=VERSION,
             private_library=private_library,
             )
         bld.INSTALL_FILES('${INCLUDEDIR}', 'pytalloc.h')
