@@ -125,7 +125,7 @@ class DrsReplSchemaTestCase(samba.tests.TestCase):
                "governsId": "1.2.840." + str(random.randint(1,100000)) + ".1.5.13",
                "instanceType": "4",
                "objectClassCategory": "1",
-               "subClassOf": "organizationalPerson",
+               "subClassOf": "top",
                "systemOnly": "FALSE"}
         # allow overriding/adding attributes
         if not attrs is None:
