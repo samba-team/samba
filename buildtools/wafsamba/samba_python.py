@@ -4,6 +4,15 @@ import Build
 from samba_utils import *
 from samba_autoconf import *
 
+from Configure import conf
+@conf
+def SAMBA_CHECK_PYTHON_HEADERS(conf, mandatory=True):
+    if conf.env["python_headers_checked"] == []:
+        conf.check_python_headers(mandatory)
+        conf.env["python_headers_checked"] = "yes"
+    else:
+        conf.msg("python headers", "using cache")
+
 
 def SAMBA_PYTHON(bld, name,
                  source='',

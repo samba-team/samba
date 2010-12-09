@@ -74,7 +74,7 @@ def configure(conf):
     # enable tool to build python extensions
     conf.check_tool('python')
     conf.check_python_version((2,4,2))
-    conf.check_python_headers(mandatory=True)
+    conf.SAMBA_CHECK_PYTHON_HEADERS(mandatory=True)
 
     if sys.platform == 'darwin' and not conf.env['HAVE_ENVIRON_DECL']:
         # Mac OSX needs to have this and it's also needed that the python is compiled with this
