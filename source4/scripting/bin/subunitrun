@@ -30,6 +30,8 @@ try:
     from subunit.run import SubunitTestRunner, TestProgram
 except ImportError:
     del sys.modules["subunit"]
+    if "subunit.run" in sys.modules:
+        del sys.modules["subunit.run"]
     samba.import_bundled_package("subunit", "subunit/python")
     from subunit.run import SubunitTestRunner, TestProgram
 import samba.getopt as options
