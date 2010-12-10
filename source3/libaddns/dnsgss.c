@@ -101,7 +101,7 @@ static DNS_ERROR dns_negotiate_gss_ctx_int( TALLOC_CTX *mem_ctx,
 		major = gss_init_sec_context(
 			&minor, NULL, ctx, target_name, &krb5_oid_desc,
 			GSS_C_REPLAY_FLAG | GSS_C_MUTUAL_FLAG |
-			GSS_C_SEQUENCE_FLAG | GSS_C_CONF_FLAG |
+			GSS_C_CONF_FLAG |
 			GSS_C_INTEG_FLAG | GSS_C_DELEG_FLAG,
 			0, NULL, input_ptr, NULL, &output_desc,
 			&ret_flags, NULL );
