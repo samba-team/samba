@@ -981,10 +981,6 @@ sub ConvertObjectFromPythonLevel($$$$$$$$)
 	my $nl = GetNextLevel($e, $l);
 
 	if ($l->{TYPE} eq "POINTER") {
-		if ($nl->{TYPE} eq "DATA" and Parse::Pidl::Typelist::scalar_is_reference($nl->{DATA_TYPE})) {
-			$self->ConvertObjectFromPythonLevel($env, $mem_ctx, $py_var, $e, $nl, $var_name, $fail);
-			return;
-		}
 		if ($l->{POINTER_TYPE} ne "ref") {
 			$self->pidl("if ($py_var == Py_None) {");
 			$self->indent;
@@ -1000,7 +996,10 @@ sub ConvertObjectFromPythonLevel($$$$$$$$)
 		} else {
 			$self->pidl("$var_name = NULL;");
 		}
-		$self->ConvertObjectFromPythonLevel($env, $mem_ctx, $py_var, $e, $nl, get_value_of($var_name), $fail);
+		unless ($nl->{TYPE} eq "DATA" and Parse::Pidl::Typelist::scalar_is_reference($nl->{DATA_TYPE})) {
+			$var_name = get_value_of($var_name);
+		}
+		$self->ConvertObjectFromPythonLevel($env, $mem_ctx, $py_var, $e, $nl, $var_name, $fail);
 		if ($l->{POINTER_TYPE} ne "ref") {
 			$self->deindent;
 			$self->pidl("}");
@@ -1176,10 +1175,6 @@ sub ConvertObjectToPythonLevel($$$$$$)
 	my $nl = GetNextLevel($e, $l);
 
 	if ($l->{TYPE} eq "POINTER") {
-		if ($nl->{TYPE} eq "DATA" and Parse::Pidl::Typelist::scalar_is_reference($nl->{DATA_TYPE})) {
-			$self->ConvertObjectToPythonLevel($var_name, $env, $e, $nl, $var_name, $py_var, $fail);
-			return;
-		}
 		if ($l->{POINTER_TYPE} ne "ref") {
 			$self->pidl("if ($var_name == NULL) {");
 			$self->indent;
@@ -1189,7 +1184,11 @@ sub ConvertObjectToPythonLevel($$$$$$)
 			$self->pidl("} else {");
 			$self->indent;
 		}
-		$self->ConvertObjectToPythonLevel($var_name, $env, $e, $nl, get_value_of($var_name), $py_var, $fail);
+		my $var_name2 = $var_name;
+		unless ($nl->{TYPE} eq "DATA" and Parse::Pidl::Typelist::scalar_is_reference($nl->{DATA_TYPE})) {
+			$var_name2 = get_value_of($var_name);
+		}
+		$self->ConvertObjectToPythonLevel($var_name, $env, $e, $nl, $var_name2, $py_var, $fail);
 		if ($l->{POINTER_TYPE} ne "ref") {
 			$self->deindent;
 			$self->pidl("}");
