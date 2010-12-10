@@ -25,7 +25,7 @@ from samba.ndr import ndr_pack, ndr_unpack
 from samba.dcerpc import security
 
 from samba.auth import system_session
-from samba import gensec
+from samba import gensec, sd_utils
 from samba.samdb import SamDB
 from samba.credentials import Credentials
 import samba.tests
@@ -66,31 +66,11 @@ class AclTests(samba.tests.TestCase):
         self.domain_sid = security.dom_sid(ldb.get_domain_sid())
         self.user_pass = "samba123@"
         self.configuration_dn = self.ldb_admin.get_config_basedn().get_linearized()
+        self.sd_utils = sd_utils.SDUtils(ldb)
         print "baseDN: %s" % self.base_dn
 
     def get_user_dn(self, name):
         return "CN=%s,CN=Users,%s" % (name, self.base_dn)
-
-    def modify_desc(self, object_dn, desc):
-        """ Modify security descriptor using either SDDL string
-            or security.descriptor object
-        """
-        assert(isinstance(desc, str) or isinstance(desc, security.descriptor))
-        mod = """
-dn: """ + object_dn + """
-changetype: modify
-replace: nTSecurityDescriptor
-"""
-        if isinstance(desc, str):
-            mod += "nTSecurityDescriptor: %s" % desc
-        elif isinstance(desc, security.descriptor):
-            mod += "nTSecurityDescriptor:: %s" % base64.b64encode(ndr_pack(desc))
-        self.ldb_admin.modify_ldif(mod)
-
-    def read_desc(self, object_dn):
-        res = self.ldb_admin.search(object_dn, SCOPE_BASE, None, ["nTSecurityDescriptor"])
-        desc = res[0]["nTSecurityDescriptor"][0]
-        return ndr_unpack(security.descriptor, desc)
 
     def get_ldb_connection(self, target_username, target_password):
         creds_tmp = Credentials()
@@ -103,27 +83,6 @@ replace: nTSecurityDescriptor
                                       | gensec.FEATURE_SEAL)
         ldb_target = SamDB(url=host, credentials=creds_tmp, lp=lp)
         return ldb_target
-
-    def get_object_sid(self, object_dn):
-        res = self.ldb_admin.search(object_dn)
-        return ndr_unpack(security.dom_sid, res[0]["objectSid"][0])
-
-    def dacl_add_ace(self, object_dn, ace):
-        desc = self.read_desc(object_dn)
-        desc_sddl = desc.as_sddl(self.domain_sid)
-        if ace in desc_sddl:
-            return
-        if desc_sddl.find("(") >= 0:
-            desc_sddl = desc_sddl[:desc_sddl.index("(")] + ace + desc_sddl[desc_sddl.index("("):]
-        else:
-            desc_sddl = desc_sddl + ace
-        self.modify_desc(object_dn, desc_sddl)
-
-    def get_desc_sddl(self, object_dn):
-        """ Return object nTSecutiryDescriptor in SDDL format
-        """
-        desc = self.read_desc(object_dn)
-        return desc.as_sddl(self.domain_sid)
 
     # Test if we have any additional groups for users than default ones
     def assert_user_no_group_member(self, username):
@@ -189,9 +148,9 @@ class AclAddTests(AclTests):
         # Change descriptor for top level OU
         self.ldb_owner.create_ou("OU=test_add_ou1," + self.base_dn)
         self.ldb_owner.create_ou("OU=test_add_ou2,OU=test_add_ou1," + self.base_dn)
-        user_sid = self.get_object_sid(self.get_user_dn(self.usr_admin_not_owner))
+        user_sid = self.sd_utils.get_object_sid(self.get_user_dn(self.usr_admin_not_owner))
         mod = "(D;CI;WPCC;;;%s)" % str(user_sid)
-        self.dacl_add_ace("OU=test_add_ou1," + self.base_dn, mod)
+        self.sd_utils.dacl_add_ace("OU=test_add_ou1," + self.base_dn, mod)
         # Test user and group creation with another domain admin's credentials
         self.ldb_notowner.newuser(self.test_user1, self.user_pass, userou=self.ou2)
         self.ldb_notowner.newgroup("test_add_group1", groupou="OU=test_add_ou2,OU=test_add_ou1",
@@ -230,9 +189,9 @@ class AclAddTests(AclTests):
         self.assert_top_ou_deleted()
         # Change descriptor for top level OU
         self.ldb_owner.create_ou("OU=test_add_ou1," + self.base_dn)
-        user_sid = self.get_object_sid(self.get_user_dn(self.regular_user))
+        user_sid = self.sd_utils.get_object_sid(self.get_user_dn(self.regular_user))
         mod = "(OA;CI;CC;bf967aba-0de6-11d0-a285-00aa003049e2;;%s)" % str(user_sid)
-        self.dacl_add_ace("OU=test_add_ou1," + self.base_dn, mod)
+        self.sd_utils.dacl_add_ace("OU=test_add_ou1," + self.base_dn, mod)
         self.ldb_owner.create_ou("OU=test_add_ou2,OU=test_add_ou1," + self.base_dn)
         # Test user and group creation with granted user only to one of the objects
         self.ldb_user.newuser(self.test_user1, self.user_pass, userou=self.ou2, setpassword=False)
@@ -284,7 +243,7 @@ class AclModifyTests(AclTests):
         self.ldb_user = self.get_ldb_connection(self.user_with_wp, self.user_pass)
         self.ldb_user2 = self.get_ldb_connection(self.user_with_sm, self.user_pass)
         self.ldb_user3 = self.get_ldb_connection(self.user_with_group_sm, self.user_pass)
-        self.user_sid = self.get_object_sid( self.get_user_dn(self.user_with_wp))
+        self.user_sid = self.sd_utils.get_object_sid( self.get_user_dn(self.user_with_wp))
         self.ldb_admin.newgroup("test_modify_group2", grouptype=4)
         self.ldb_admin.newgroup("test_modify_group3", grouptype=4)
         self.ldb_admin.newuser("test_modify_user2", self.user_pass)
@@ -307,7 +266,7 @@ class AclModifyTests(AclTests):
         # First test object -- User
         print "Testing modify on User object"
         self.ldb_admin.newuser("test_modify_user1", self.user_pass)
-        self.dacl_add_ace(self.get_user_dn("test_modify_user1"), mod)
+        self.sd_utils.dacl_add_ace(self.get_user_dn("test_modify_user1"), mod)
         ldif = """
 dn: """ + self.get_user_dn("test_modify_user1") + """
 changetype: modify
@@ -320,7 +279,7 @@ displayName: test_changed"""
         # Second test object -- Group
         print "Testing modify on Group object"
         self.ldb_admin.newgroup("test_modify_group1", grouptype=4)
-        self.dacl_add_ace("CN=test_modify_group1,CN=Users," + self.base_dn, mod)
+        self.sd_utils.dacl_add_ace("CN=test_modify_group1,CN=Users," + self.base_dn, mod)
         ldif = """
 dn: CN=test_modify_group1,CN=Users,""" + self.base_dn + """
 changetype: modify
@@ -333,7 +292,7 @@ displayName: test_changed"""
         print "Testing modify on OU object"
         #delete_force(self.ldb_admin, "OU=test_modify_ou1," + self.base_dn)
         self.ldb_admin.create_ou("OU=test_modify_ou1," + self.base_dn)
-        self.dacl_add_ace("OU=test_modify_ou1," + self.base_dn, mod)
+        self.sd_utils.dacl_add_ace("OU=test_modify_ou1," + self.base_dn, mod)
         ldif = """
 dn: OU=test_modify_ou1,""" + self.base_dn + """
 changetype: modify
@@ -350,7 +309,7 @@ displayName: test_changed"""
         print "Testing modify on User object"
         #delete_force(self.ldb_admin, self.get_user_dn("test_modify_user1"))
         self.ldb_admin.newuser("test_modify_user1", self.user_pass)
-        self.dacl_add_ace(self.get_user_dn("test_modify_user1"), mod)
+        self.sd_utils.dacl_add_ace(self.get_user_dn("test_modify_user1"), mod)
         # Modify on attribute you have rights for
         ldif = """
 dn: """ + self.get_user_dn("test_modify_user1") + """
@@ -378,7 +337,7 @@ url: www.samba.org"""
         # Second test object -- Group
         print "Testing modify on Group object"
         self.ldb_admin.newgroup("test_modify_group1", grouptype=4)
-        self.dacl_add_ace("CN=test_modify_group1,CN=Users," + self.base_dn, mod)
+        self.sd_utils.dacl_add_ace("CN=test_modify_group1,CN=Users," + self.base_dn, mod)
         ldif = """
 dn: CN=test_modify_group1,CN=Users,""" + self.base_dn + """
 changetype: modify
@@ -405,7 +364,7 @@ url: www.samba.org"""
         # Second test object -- Organizational Unit
         print "Testing modify on OU object"
         self.ldb_admin.create_ou("OU=test_modify_ou1," + self.base_dn)
-        self.dacl_add_ace("OU=test_modify_ou1," + self.base_dn, mod)
+        self.sd_utils.dacl_add_ace("OU=test_modify_ou1," + self.base_dn, mod)
         ldif = """
 dn: OU=test_modify_ou1,""" + self.base_dn + """
 changetype: modify
@@ -501,7 +460,7 @@ adminDescription: blah blah blah"""
             self.fail()
 
         mod = "(OA;;WP;bf967919-0de6-11d0-a285-00aa003049e2;;PS)"
-        self.dacl_add_ace(self.get_user_dn(self.user_with_wp), mod)
+        self.sd_utils.dacl_add_ace(self.get_user_dn(self.user_with_wp), mod)
         # Modify on attribute you have rights for
         self.ldb_user.modify_ldif(ldif)
         res = self.ldb_admin.search(self.base_dn, expression="(distinguishedName=%s)" \
@@ -525,9 +484,9 @@ Member: """ +  self.get_user_dn(self.user_with_sm)
             self.fail()
 
 #grant self-membership, should be able to add himself
-        user_sid = self.get_object_sid(self.get_user_dn(self.user_with_sm))
+        user_sid = self.sd_utils.get_object_sid(self.get_user_dn(self.user_with_sm))
         mod = "(OA;;SW;bf9679c0-0de6-11d0-a285-00aa003049e2;;%s)" % str(user_sid)
-        self.dacl_add_ace("CN=test_modify_group2,CN=Users," + self.base_dn, mod)
+        self.sd_utils.dacl_add_ace("CN=test_modify_group2,CN=Users," + self.base_dn, mod)
         self.ldb_user2.modify_ldif(ldif)
         res = self.ldb_admin.search( self.base_dn, expression="(distinguishedName=%s)" \
                                     % ("CN=test_modify_group2,CN=Users," + self.base_dn), attrs=["Member"])
@@ -555,9 +514,9 @@ Member: """ +  self.get_user_dn(self.user_with_sm) + """
 Member: CN=test_modify_user2,CN=Users,""" + self.base_dn
 
 #grant self-membership, should be able to add himself  but not others at the same time
-        user_sid = self.get_object_sid(self.get_user_dn(self.user_with_sm))
+        user_sid = self.sd_utils.get_object_sid(self.get_user_dn(self.user_with_sm))
         mod = "(OA;;SW;bf9679c0-0de6-11d0-a285-00aa003049e2;;%s)" % str(user_sid)
-        self.dacl_add_ace("CN=test_modify_group2,CN=Users," + self.base_dn, mod)
+        self.sd_utils.dacl_add_ace("CN=test_modify_group2,CN=Users," + self.base_dn, mod)
         try:
             self.ldb_user2.modify_ldif(ldif)
         except LdbError, (num, _):
@@ -568,9 +527,9 @@ Member: CN=test_modify_user2,CN=Users,""" + self.base_dn
     def test_modify_u7(self):
         """13 User with WP modifying Member"""
 #a second user is given write property permission
-        user_sid = self.get_object_sid(self.get_user_dn(self.user_with_wp))
+        user_sid = self.sd_utils.get_object_sid(self.get_user_dn(self.user_with_wp))
         mod = "(A;;WP;;;%s)" % str(user_sid)
-        self.dacl_add_ace("CN=test_modify_group2,CN=Users," + self.base_dn, mod)
+        self.sd_utils.dacl_add_ace("CN=test_modify_group2,CN=Users," + self.base_dn, mod)
         ldif = """
 dn: CN=test_modify_group2,CN=Users,""" + self.base_dn + """
 changetype: modify
@@ -625,8 +584,8 @@ class AclSearchTests(AclTests):
                           Dn(self.ldb_admin,  "OU=ou4,OU=ou2,OU=ou1," + self.base_dn),
                           Dn(self.ldb_admin,  "OU=ou5,OU=ou3,OU=ou2,OU=ou1," + self.base_dn),
                           Dn(self.ldb_admin,  "OU=ou6,OU=ou4,OU=ou2,OU=ou1," + self.base_dn)]
-        self.user_sid = self.get_object_sid(self.get_user_dn(self.u1))
-        self.group_sid = self.get_object_sid(self.get_user_dn(self.group1))
+        self.user_sid = self.sd_utils.get_object_sid(self.get_user_dn(self.u1))
+        self.group_sid = self.sd_utils.get_object_sid(self.get_user_dn(self.group1))
 
     def create_clean_ou(self, object_dn):
         """ Base repeating setup for unittests to follow """
@@ -635,7 +594,7 @@ class AclSearchTests(AclTests):
         # Make sure top testing OU has been deleted before starting the test
         self.assertEqual(res, [])
         self.ldb_admin.create_ou(object_dn)
-        desc_sddl = self.get_desc_sddl(object_dn)
+        desc_sddl = self.sd_utils.get_sd_as_sddl(object_dn)
         # Make sure there are inheritable ACEs initially
         self.assertTrue("CI" in desc_sddl or "OI" in desc_sddl)
         # Find and remove all inherit ACEs
@@ -647,9 +606,9 @@ class AclSearchTests(AclTests):
         # can propagate from above
         # remove SACL, we are not interested
         desc_sddl = desc_sddl.replace(":AI", ":AIP")
-        self.modify_desc(object_dn, desc_sddl)
+        self.sd_utils.modify_sd_on_dn(object_dn, desc_sddl)
         # Verify all inheritable ACEs are gone
-        desc_sddl = self.get_desc_sddl(object_dn)
+        desc_sddl = self.sd_utils.get_sd_as_sddl(object_dn)
         self.assertFalse("CI" in desc_sddl)
         self.assertFalse("OI" in desc_sddl)
 
@@ -712,7 +671,7 @@ class AclSearchTests(AclTests):
         self.ldb_admin.set_dsheuristics("0000002")
         self.ldb_admin.create_ou("OU=test_search_ou1," + self.base_dn)
         mod = "(A;CI;LC;;;AN)"
-        self.dacl_add_ace("OU=test_search_ou1," + self.base_dn, mod)
+        self.sd_utils.dacl_add_ace("OU=test_search_ou1," + self.base_dn, mod)
         self.ldb_admin.create_ou("OU=test_search_ou2,OU=test_search_ou1," + self.base_dn)
         anonymous = SamDB(url=host, credentials=self.creds_tmp, lp=lp)
         res = anonymous.search("OU=test_search_ou2,OU=test_search_ou1," + self.base_dn,
@@ -731,7 +690,7 @@ class AclSearchTests(AclTests):
         """Make sure users can see us if given LC to user and group"""
         self.create_clean_ou("OU=ou1," + self.base_dn)
         mod = "(A;;LC;;;%s)(A;;LC;;;%s)" % (str(self.user_sid), str(self.group_sid))
-        self.dacl_add_ace("OU=ou1," + self.base_dn, mod)
+        self.sd_utils.dacl_add_ace("OU=ou1," + self.base_dn, mod)
         tmp_desc = security.descriptor.from_sddl("D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)" + mod,
                                                  self.domain_sid)
         self.ldb_admin.create_ou("OU=ou2,OU=ou1," + self.base_dn, sd=tmp_desc)
@@ -772,7 +731,7 @@ class AclSearchTests(AclTests):
         self.ldb_admin.create_ou("OU=ou5,OU=ou3,OU=ou2,OU=ou1," + self.base_dn)
         self.ldb_admin.create_ou("OU=ou6,OU=ou4,OU=ou2,OU=ou1," + self.base_dn)
         mod = "(D;;LC;;;%s)(D;;LC;;;%s)" % (str(self.user_sid), str(self.group_sid)) 
-        self.dacl_add_ace("OU=ou2,OU=ou1," + self.base_dn, mod)
+        self.sd_utils.dacl_add_ace("OU=ou2,OU=ou1," + self.base_dn, mod)
         res = self.ldb_user3.search("OU=ou1," + self.base_dn, expression="(objectClass=*)",
                                     scope=SCOPE_SUBTREE)
         #this user should see all ous
@@ -799,7 +758,7 @@ class AclSearchTests(AclTests):
         """Make sure users can't see ous if access is explicitly denied - 2"""
         self.create_clean_ou("OU=ou1," + self.base_dn)
         mod = "(A;CI;LC;;;%s)(A;CI;LC;;;%s)" % (str(self.user_sid), str(self.group_sid))
-        self.dacl_add_ace("OU=ou1," + self.base_dn, mod)
+        self.sd_utils.dacl_add_ace("OU=ou1," + self.base_dn, mod)
         tmp_desc = security.descriptor.from_sddl("D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)" + mod,
                                                  self.domain_sid)
         self.ldb_admin.create_ou("OU=ou2,OU=ou1," + self.base_dn, sd=tmp_desc)
@@ -818,7 +777,7 @@ class AclSearchTests(AclTests):
             self.fail()
 
         mod = "(D;;LC;;;%s)(D;;LC;;;%s)" % (str(self.user_sid), str(self.group_sid))
-        self.dacl_add_ace("OU=ou2,OU=ou1," + self.base_dn, mod)
+        self.sd_utils.dacl_add_ace("OU=ou2,OU=ou1," + self.base_dn, mod)
 
         ok_list = [Dn(self.ldb_admin,  "OU=ou2,OU=ou1," + self.base_dn),
                    Dn(self.ldb_admin,  "OU=ou1," + self.base_dn)]
@@ -850,7 +809,7 @@ class AclSearchTests(AclTests):
         """There is no difference in visibility if the user is also creator"""
         self.create_clean_ou("OU=ou1," + self.base_dn)
         mod = "(A;CI;CC;;;%s)" % (str(self.user_sid))
-        self.dacl_add_ace("OU=ou1," + self.base_dn, mod)
+        self.sd_utils.dacl_add_ace("OU=ou1," + self.base_dn, mod)
         tmp_desc = security.descriptor.from_sddl("D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)" + mod,
                                                  self.domain_sid)
         self.ldb_user.create_ou("OU=ou2,OU=ou1," + self.base_dn, sd=tmp_desc)
@@ -877,7 +836,7 @@ class AclSearchTests(AclTests):
         """Make sure users can see only attributes they are allowed to see"""
         self.create_clean_ou("OU=ou1," + self.base_dn)
         mod = "(A;CI;LC;;;%s)" % (str(self.user_sid))
-        self.dacl_add_ace("OU=ou1," + self.base_dn, mod)
+        self.sd_utils.dacl_add_ace("OU=ou1," + self.base_dn, mod)
         tmp_desc = security.descriptor.from_sddl("D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)" + mod,
                                                  self.domain_sid)
         self.ldb_admin.create_ou("OU=ou2,OU=ou1," + self.base_dn, sd=tmp_desc)
@@ -898,8 +857,8 @@ class AclSearchTests(AclTests):
 
         #give read property on ou and assert user can only see dn and ou
         mod = "(OA;;RP;bf9679f0-0de6-11d0-a285-00aa003049e2;;%s)" % (str(self.user_sid))
-        self.dacl_add_ace("OU=ou1," + self.base_dn, mod)
-        self.dacl_add_ace("OU=ou2,OU=ou1," + self.base_dn, mod)
+        self.sd_utils.dacl_add_ace("OU=ou1," + self.base_dn, mod)
+        self.sd_utils.dacl_add_ace("OU=ou2,OU=ou1," + self.base_dn, mod)
         res = self.ldb_user.search("OU=ou2,OU=ou1," + self.base_dn, expression="(objectClass=*)",
                                     scope=SCOPE_SUBTREE)
         ok_list = ['dn', 'ou']
@@ -909,8 +868,8 @@ class AclSearchTests(AclTests):
 
         #give read property on Public Information and assert user can see ou and other members
         mod = "(OA;;RP;e48d0154-bcf8-11d1-8702-00c04fb96050;;%s)" % (str(self.user_sid))
-        self.dacl_add_ace("OU=ou1," + self.base_dn, mod)
-        self.dacl_add_ace("OU=ou2,OU=ou1," + self.base_dn, mod)
+        self.sd_utils.dacl_add_ace("OU=ou1," + self.base_dn, mod)
+        self.sd_utils.dacl_add_ace("OU=ou2,OU=ou1," + self.base_dn, mod)
         res = self.ldb_user.search("OU=ou2,OU=ou1," + self.base_dn, expression="(objectClass=*)",
                                     scope=SCOPE_SUBTREE)
 
@@ -922,7 +881,7 @@ class AclSearchTests(AclTests):
         """If an attribute that cannot be read is used in a filter, it is as if the attribute does not exist"""
         self.create_clean_ou("OU=ou1," + self.base_dn)
         mod = "(A;CI;LCCC;;;%s)" % (str(self.user_sid))
-        self.dacl_add_ace("OU=ou1," + self.base_dn, mod)
+        self.sd_utils.dacl_add_ace("OU=ou1," + self.base_dn, mod)
         tmp_desc = security.descriptor.from_sddl("D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)" + mod,
                                                  self.domain_sid)
         self.ldb_admin.create_ou("OU=ou2,OU=ou1," + self.base_dn, sd=tmp_desc)
@@ -935,7 +894,7 @@ class AclSearchTests(AclTests):
 
         #give read property on ou and assert user can only see dn and ou
         mod = "(OA;;RP;bf9679f0-0de6-11d0-a285-00aa003049e2;;%s)" % (str(self.user_sid))
-        self.dacl_add_ace("OU=ou3,OU=ou2,OU=ou1," + self.base_dn, mod)
+        self.sd_utils.dacl_add_ace("OU=ou3,OU=ou2,OU=ou1," + self.base_dn, mod)
         res = self.ldb_user.search("OU=ou1," + self.base_dn, expression="(ou=ou3)",
                                     scope=SCOPE_SUBTREE)
         self.assertEquals(len(res), 1)
@@ -945,7 +904,7 @@ class AclSearchTests(AclTests):
 
         #give read property on Public Information and assert user can see ou and other members
         mod = "(OA;;RP;e48d0154-bcf8-11d1-8702-00c04fb96050;;%s)" % (str(self.user_sid))
-        self.dacl_add_ace("OU=ou2,OU=ou1," + self.base_dn, mod)
+        self.sd_utils.dacl_add_ace("OU=ou2,OU=ou1," + self.base_dn, mod)
         res = self.ldb_user.search("OU=ou1," + self.base_dn, expression="(ou=ou2)",
                                    scope=SCOPE_SUBTREE)
         self.assertEquals(len(res), 1)
@@ -986,7 +945,7 @@ class AclDeleteTests(AclTests):
         # Create user that we try to delete
         self.ldb_admin.newuser("test_delete_user1", self.user_pass)
         mod = "(A;;SD;;;AU)"
-        self.dacl_add_ace(user_dn, mod)
+        self.sd_utils.dacl_add_ace(user_dn, mod)
         # Try to delete User object
         self.ldb_user.delete(user_dn)
         res = self.ldb_admin.search(self.base_dn,
@@ -998,8 +957,8 @@ class AclDeleteTests(AclTests):
         user_dn = self.get_user_dn("test_delete_user1")
         # Create user that we try to delete
         self.ldb_admin.newuser("test_delete_user1", self.user_pass)
-        mod = "(A;;SD;;;%s)" % self.get_object_sid(self.get_user_dn(self.regular_user))
-        self.dacl_add_ace(user_dn, mod)
+        mod = "(A;;SD;;;%s)" % self.sd_utils.get_object_sid(self.get_user_dn(self.regular_user))
+        self.sd_utils.dacl_add_ace(user_dn, mod)
         # Try to delete User object
         self.ldb_user.delete(user_dn)
         res = self.ldb_admin.search(self.base_dn,
@@ -1066,7 +1025,7 @@ class AclRenameTests(AclTests):
         self.ldb_admin.create_ou(ou_dn)
         self.ldb_admin.newuser(self.testuser1, self.user_pass, userou=self.ou1)
         mod = "(A;;WP;;;AU)"
-        self.dacl_add_ace(user_dn, mod)
+        self.sd_utils.dacl_add_ace(user_dn, mod)
         # Rename 'User object' having WP to AU
         self.ldb_user.rename(user_dn, rename_user_dn)
         res = self.ldb_admin.search(self.base_dn,
@@ -1084,9 +1043,9 @@ class AclRenameTests(AclTests):
         # Create OU structure
         self.ldb_admin.create_ou(ou_dn)
         self.ldb_admin.newuser(self.testuser1, self.user_pass, userou=self.ou1)
-        sid = self.get_object_sid(self.get_user_dn(self.regular_user))
+        sid = self.sd_utils.get_object_sid(self.get_user_dn(self.regular_user))
         mod = "(A;;WP;;;%s)" % str(sid)
-        self.dacl_add_ace(user_dn, mod)
+        self.sd_utils.dacl_add_ace(user_dn, mod)
         # Rename 'User object' having WP to AU
         self.ldb_user.rename(user_dn, rename_user_dn)
         res = self.ldb_admin.search(self.base_dn,
@@ -1107,9 +1066,9 @@ class AclRenameTests(AclTests):
         self.ldb_admin.create_ou(ou2_dn)
         self.ldb_admin.newuser(self.testuser2, self.user_pass, userou=self.ou1)
         mod = "(A;;WPSD;;;AU)"
-        self.dacl_add_ace(user_dn, mod)
+        self.sd_utils.dacl_add_ace(user_dn, mod)
         mod = "(A;;CC;;;AU)"
-        self.dacl_add_ace(ou2_dn, mod)
+        self.sd_utils.dacl_add_ace(ou2_dn, mod)
         # Rename 'User object' having SD and CC to AU
         self.ldb_user.rename(user_dn, rename_user_dn)
         res = self.ldb_admin.search(self.base_dn,
@@ -1129,11 +1088,11 @@ class AclRenameTests(AclTests):
         self.ldb_admin.create_ou(ou1_dn)
         self.ldb_admin.create_ou(ou2_dn)
         self.ldb_admin.newuser(self.testuser2, self.user_pass, userou=self.ou1)
-        sid = self.get_object_sid(self.get_user_dn(self.regular_user))
+        sid = self.sd_utils.get_object_sid(self.get_user_dn(self.regular_user))
         mod = "(A;;WPSD;;;%s)" % str(sid)
-        self.dacl_add_ace(user_dn, mod)
+        self.sd_utils.dacl_add_ace(user_dn, mod)
         mod = "(A;;CC;;;%s)" % str(sid)
-        self.dacl_add_ace(ou2_dn, mod)
+        self.sd_utils.dacl_add_ace(ou2_dn, mod)
         # Rename 'User object' having SD and CC to AU
         self.ldb_user.rename(user_dn, rename_user_dn)
         res = self.ldb_admin.search(self.base_dn,
@@ -1154,12 +1113,12 @@ class AclRenameTests(AclTests):
         self.ldb_admin.create_ou(ou2_dn)
         #mod = "(A;CI;DCWP;;;AU)"
         mod = "(A;;DC;;;AU)"
-        self.dacl_add_ace(ou1_dn, mod)
+        self.sd_utils.dacl_add_ace(ou1_dn, mod)
         mod = "(A;;CC;;;AU)"
-        self.dacl_add_ace(ou2_dn, mod)
+        self.sd_utils.dacl_add_ace(ou2_dn, mod)
         self.ldb_admin.newuser(self.testuser2, self.user_pass, userou=self.ou1)
         mod = "(A;;WP;;;AU)"
-        self.dacl_add_ace(user_dn, mod)
+        self.sd_utils.dacl_add_ace(user_dn, mod)
         # Rename 'User object' having SD and CC to AU
         self.ldb_user.rename(user_dn, rename_user_dn)
         res = self.ldb_admin.search(self.base_dn,
@@ -1181,9 +1140,9 @@ class AclRenameTests(AclTests):
         self.ldb_admin.create_ou(ou2_dn)
         self.ldb_admin.create_ou(ou3_dn)
         mod = "(A;CI;WPDC;;;AU)"
-        self.dacl_add_ace(ou1_dn, mod)
+        self.sd_utils.dacl_add_ace(ou1_dn, mod)
         mod = "(A;;CC;;;AU)"
-        self.dacl_add_ace(ou3_dn, mod)
+        self.sd_utils.dacl_add_ace(ou3_dn, mod)
         self.ldb_admin.newuser(self.testuser2, self.user_pass, userou=self.ou1)
         # Rename 'User object' having SD and CC to AU
         self.ldb_user.rename(user_dn, rename_user_dn)
@@ -1202,11 +1161,11 @@ class AclRenameTests(AclTests):
         # Create OU structure
         self.ldb_admin.create_ou(ou1_dn)
         self.ldb_admin.create_ou(ou2_dn)
-        sid = self.get_object_sid(self.get_user_dn(self.regular_user))
+        sid = self.sd_utils.get_object_sid(self.get_user_dn(self.regular_user))
         mod = "(OA;;WP;bf967a0e-0de6-11d0-a285-00aa003049e2;;%s)" % str(sid)
-        self.dacl_add_ace(ou2_dn, mod)
+        self.sd_utils.dacl_add_ace(ou2_dn, mod)
         mod = "(OD;;WP;bf9679f0-0de6-11d0-a285-00aa003049e2;;%s)" % str(sid)
-        self.dacl_add_ace(ou2_dn, mod)
+        self.sd_utils.dacl_add_ace(ou2_dn, mod)
         try:
             self.ldb_user.rename(ou2_dn, ou3_dn)
         except LdbError, (num, _):
@@ -1214,9 +1173,9 @@ class AclRenameTests(AclTests):
         else:
             # This rename operation should always throw ERR_INSUFFICIENT_ACCESS_RIGHTS
             self.fail()
-        sid = self.get_object_sid(self.get_user_dn(self.regular_user))
+        sid = self.sd_utils.get_object_sid(self.get_user_dn(self.regular_user))
         mod = "(A;;WP;bf9679f0-0de6-11d0-a285-00aa003049e2;;%s)" % str(sid)
-        self.dacl_add_ace(ou2_dn, mod)
+        self.sd_utils.dacl_add_ace(ou2_dn, mod)
         self.ldb_user.rename(ou2_dn, ou3_dn)
         res = self.ldb_admin.search(self.base_dn, expression="(distinguishedName=%s)" % ou2_dn)
         self.assertEqual(res, [])
@@ -1243,11 +1202,11 @@ class AclCARTests(AclTests):
     def test_change_password1(self):
         """Try a password change operation without any CARs given"""
         #users have change password by default - remove for negative testing
-        desc = self.read_desc(self.get_user_dn(self.user_with_wp))
+        desc = self.sd_utils.read_sd_on_dn(self.get_user_dn(self.user_with_wp))
         sddl = desc.as_sddl(self.domain_sid)
         sddl = sddl.replace("(OA;;CR;ab721a53-1e2f-11d0-9819-00aa0040529b;;WD)", "")
         sddl = sddl.replace("(OA;;CR;ab721a53-1e2f-11d0-9819-00aa0040529b;;PS)", "")
-        self.modify_desc(self.get_user_dn(self.user_with_wp), sddl)
+        self.sd_utils.modify_sd_on_dn(self.get_user_dn(self.user_with_wp), sddl)
         try:
             self.ldb_user.modify_ldif("""
 dn: """ + self.get_user_dn(self.user_with_wp) + """
@@ -1265,14 +1224,14 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) 
 
     def test_change_password2(self):
         """Make sure WP has no influence"""
-        desc = self.read_desc(self.get_user_dn(self.user_with_wp))
+        desc = self.sd_utils.read_sd_on_dn(self.get_user_dn(self.user_with_wp))
         sddl = desc.as_sddl(self.domain_sid)
         sddl = sddl.replace("(OA;;CR;ab721a53-1e2f-11d0-9819-00aa0040529b;;WD)", "")
         sddl = sddl.replace("(OA;;CR;ab721a53-1e2f-11d0-9819-00aa0040529b;;PS)", "")
-        self.modify_desc(self.get_user_dn(self.user_with_wp), sddl)
+        self.sd_utils.modify_sd_on_dn(self.get_user_dn(self.user_with_wp), sddl)
         mod = "(A;;WP;;;PS)"
-        self.dacl_add_ace(self.get_user_dn(self.user_with_wp), mod)
-        desc = self.read_desc(self.get_user_dn(self.user_with_wp))
+        self.sd_utils.dacl_add_ace(self.get_user_dn(self.user_with_wp), mod)
+        desc = self.sd_utils.read_sd_on_dn(self.get_user_dn(self.user_with_wp))
         sddl = desc.as_sddl(self.domain_sid)
         try:
             self.ldb_user.modify_ldif("""
@@ -1292,8 +1251,8 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) 
     def test_change_password3(self):
         """Make sure WP has no influence"""
         mod = "(D;;WP;;;PS)"
-        self.dacl_add_ace(self.get_user_dn(self.user_with_wp), mod)
-        desc = self.read_desc(self.get_user_dn(self.user_with_wp))
+        self.sd_utils.dacl_add_ace(self.get_user_dn(self.user_with_wp), mod)
+        desc = self.sd_utils.read_sd_on_dn(self.get_user_dn(self.user_with_wp))
         sddl = desc.as_sddl(self.domain_sid)
         self.ldb_user.modify_ldif("""
 dn: """ + self.get_user_dn(self.user_with_wp) + """
@@ -1306,13 +1265,13 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')) 
 
     def test_change_password5(self):
         """Make sure rights have no influence on dBCSPwd"""
-        desc = self.read_desc(self.get_user_dn(self.user_with_wp))
+        desc = self.sd_utils.read_sd_on_dn(self.get_user_dn(self.user_with_wp))
         sddl = desc.as_sddl(self.domain_sid)
         sddl = sddl.replace("(OA;;CR;ab721a53-1e2f-11d0-9819-00aa0040529b;;WD)", "")
         sddl = sddl.replace("(OA;;CR;ab721a53-1e2f-11d0-9819-00aa0040529b;;PS)", "")
-        self.modify_desc(self.get_user_dn(self.user_with_wp), sddl)
+        self.sd_utils.modify_sd_on_dn(self.get_user_dn(self.user_with_wp), sddl)
         mod = "(D;;WP;;;PS)"
-        self.dacl_add_ace(self.get_user_dn(self.user_with_wp), mod)
+        self.sd_utils.dacl_add_ace(self.get_user_dn(self.user_with_wp), mod)
         try:
             self.ldb_user.modify_ldif("""
 dn: """ + self.get_user_dn(self.user_with_wp) + """
@@ -1345,7 +1304,7 @@ userPassword: thatsAcomplPASS2
         else:
             self.fail()
         mod = "(OA;;CR;00299570-246d-11d0-a768-00aa006e0529;;PS)"
-        self.dacl_add_ace(self.get_user_dn(self.user_with_wp), mod)
+        self.sd_utils.dacl_add_ace(self.get_user_dn(self.user_with_wp), mod)
         try:
             self.ldb_user.modify_ldif("""
 dn: """ + self.get_user_dn(self.user_with_wp) + """
@@ -1368,9 +1327,9 @@ userPassword: thatsAcomplPASS2
     def test_change_password7(self):
         """Try a password change operation without any CARs given"""
         #users have change password by default - remove for negative testing
-        desc = self.read_desc(self.get_user_dn(self.user_with_wp))
+        desc = self.sd_utils.read_sd_on_dn(self.get_user_dn(self.user_with_wp))
         sddl = desc.as_sddl(self.domain_sid)
-        self.modify_desc(self.get_user_dn(self.user_with_wp), sddl)
+        self.sd_utils.modify_sd_on_dn(self.get_user_dn(self.user_with_wp), sddl)
         #first change our own password
         self.ldb_user2.modify_ldif("""
 dn: """ + self.get_user_dn(self.user_with_pc) + """
@@ -1404,7 +1363,7 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS1\"".encode('utf-16-le')) 
         else:
             self.fail()
         mod = "(OA;;CR;00299570-246d-11d0-a768-00aa006e0529;;PS)"
-        self.dacl_add_ace(self.get_user_dn(self.user_with_wp), mod)
+        self.sd_utils.dacl_add_ace(self.get_user_dn(self.user_with_wp), mod)
         self.ldb_user.modify_ldif("""
 dn: """ + self.get_user_dn(self.user_with_wp) + """
 changetype: modify
@@ -1426,7 +1385,7 @@ userPassword: thatsAcomplPASS1
         else:
             self.fail()
         mod = "(OA;;CR;00299570-246d-11d0-a768-00aa006e0529;;PS)"
-        self.dacl_add_ace(self.get_user_dn(self.user_with_wp), mod)
+        self.sd_utils.dacl_add_ace(self.get_user_dn(self.user_with_wp), mod)
         try:
             self.ldb_user.modify_ldif("""
 dn: """ + self.get_user_dn(self.user_with_wp) + """
@@ -1441,7 +1400,7 @@ userPassword: thatsAcomplPASS1
     def test_reset_password3(self):
         """Grant WP and see what happens (unicodePwd)"""
         mod = "(A;;WP;;;PS)"
-        self.dacl_add_ace(self.get_user_dn(self.user_with_wp), mod)
+        self.sd_utils.dacl_add_ace(self.get_user_dn(self.user_with_wp), mod)
         try:
             self.ldb_user.modify_ldif("""
 dn: """ + self.get_user_dn(self.user_with_wp) + """
@@ -1457,7 +1416,7 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS1\"".encode('utf-16-le')) 
     def test_reset_password4(self):
         """Grant WP and see what happens (userPassword)"""
         mod = "(A;;WP;;;PS)"
-        self.dacl_add_ace(self.get_user_dn(self.user_with_wp), mod)
+        self.sd_utils.dacl_add_ace(self.get_user_dn(self.user_with_wp), mod)
         try:
             self.ldb_user.modify_ldif("""
 dn: """ + self.get_user_dn(self.user_with_wp) + """
@@ -1473,7 +1432,7 @@ userPassword: thatsAcomplPASS1
     def test_reset_password5(self):
         """Explicitly deny WP but grant CAR (unicodePwd)"""
         mod = "(D;;WP;;;PS)(OA;;CR;00299570-246d-11d0-a768-00aa006e0529;;PS)"
-        self.dacl_add_ace(self.get_user_dn(self.user_with_wp), mod)
+        self.sd_utils.dacl_add_ace(self.get_user_dn(self.user_with_wp), mod)
         self.ldb_user.modify_ldif("""
 dn: """ + self.get_user_dn(self.user_with_wp) + """
 changetype: modify
@@ -1484,7 +1443,7 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS1\"".encode('utf-16-le')) 
     def test_reset_password6(self):
         """Explicitly deny WP but grant CAR (userPassword)"""
         mod = "(D;;WP;;;PS)(OA;;CR;00299570-246d-11d0-a768-00aa006e0529;;PS)"
-        self.dacl_add_ace(self.get_user_dn(self.user_with_wp), mod)
+        self.sd_utils.dacl_add_ace(self.get_user_dn(self.user_with_wp), mod)
         try:
             self.ldb_user.modify_ldif("""
 dn: """ + self.get_user_dn(self.user_with_wp) + """
@@ -1514,8 +1473,8 @@ class AclExtendedTests(AclTests):
         self.ldb_user1 = self.get_ldb_connection(self.u1, self.user_pass)
         self.ldb_user2 = self.get_ldb_connection(self.u2, self.user_pass)
         self.ldb_user3 = self.get_ldb_connection(self.u3, self.user_pass)
-        self.user_sid1 = self.get_object_sid(self.get_user_dn(self.u1))
-        self.user_sid2 = self.get_object_sid(self.get_user_dn(self.u2))
+        self.user_sid1 = self.sd_utils.get_object_sid(self.get_user_dn(self.u1))
+        self.user_sid2 = self.sd_utils.get_object_sid(self.get_user_dn(self.u2))
 
     def tearDown(self):
         super(AclExtendedTests, self).tearDown()
@@ -1530,13 +1489,13 @@ class AclExtendedTests(AclTests):
         self.ldb_admin.create_ou("ou=ext_ou1," + self.base_dn)
         #give u1 Create children access
         mod = "(A;;CC;;;%s)" % str(self.user_sid1)
-        self.dacl_add_ace("OU=ext_ou1," + self.base_dn, mod)
+        self.sd_utils.dacl_add_ace("OU=ext_ou1," + self.base_dn, mod)
         mod = "(A;;LC;;;%s)" % str(self.user_sid2)
-        self.dacl_add_ace("OU=ext_ou1," + self.base_dn, mod)
+        self.sd_utils.dacl_add_ace("OU=ext_ou1," + self.base_dn, mod)
         #create a group under that, grant RP to u2
         self.ldb_user1.newgroup("ext_group1", groupou="OU=ext_ou1", grouptype=4)
         mod = "(A;;RP;;;%s)" % str(self.user_sid2)
-        self.dacl_add_ace("CN=ext_group1,OU=ext_ou1," + self.base_dn, mod)
+        self.sd_utils.dacl_add_ace("CN=ext_group1,OU=ext_ou1," + self.base_dn, mod)
         #u2 must not read the descriptor
         res = self.ldb_user2.search("CN=ext_group1,OU=ext_ou1," + self.base_dn,
                                     SCOPE_BASE, None, ["nTSecurityDescriptor"])
@@ -1544,7 +1503,7 @@ class AclExtendedTests(AclTests):
         self.assertFalse("nTSecurityDescriptor" in res[0].keys())
         #grant RC to u2 - still no access
         mod = "(A;;RC;;;%s)" % str(self.user_sid2)
-        self.dacl_add_ace("CN=ext_group1,OU=ext_ou1," + self.base_dn, mod)
+        self.sd_utils.dacl_add_ace("CN=ext_group1,OU=ext_ou1," + self.base_dn, mod)
         res = self.ldb_user2.search("CN=ext_group1,OU=ext_ou1," + self.base_dn,
                                     SCOPE_BASE, None, ["nTSecurityDescriptor"])
         self.assertNotEqual(res,[])
