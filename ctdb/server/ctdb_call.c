@@ -282,6 +282,20 @@ static void ctdb_become_dmaster(struct ctdb_db_context *ctdb_db,
 	header.dmaster = ctdb->pnn;
 	header.flags = record_flags;
 
+	state = ctdb_reqid_find(ctdb, hdr->reqid, struct ctdb_call_state);
+
+	if (state) {
+		if (state->call->flags & CTDB_CALL_FLAG_VACUUM_MIGRATION) {
+			/*
+			 * We temporarily add the VACUUM_MIGRATED flag to
+			 * the record flags, so that ctdb_ltdb_store can
+			 * decide whether the record should be stored or
+			 * deleted.
+			 */
+			header.flags |= CTDB_REC_FLAG_VACUUM_MIGRATED;
+		}
+	}
+
 	if (ctdb_ltdb_store(ctdb_db, key, &header, data) != 0) {
 		ctdb_fatal(ctdb, "ctdb_reply_dmaster store failed\n");
 
@@ -292,7 +306,6 @@ static void ctdb_become_dmaster(struct ctdb_db_context *ctdb_db,
 		return;
 	}
 
-	state = ctdb_reqid_find(ctdb, hdr->reqid, struct ctdb_call_state);
 
 	if (state == NULL) {
 		DEBUG(DEBUG_ERR,("pnn %u Invalid reqid %u in ctdb_become_dmaster from node %u\n",
