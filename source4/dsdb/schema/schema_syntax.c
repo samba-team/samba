@@ -2652,11 +2652,24 @@ WERROR dsdb_attribute_drsuapi_to_ldb(struct ldb_context *ldb,
 	dsdb_syntax_ctx_init(&syntax_ctx, ldb, schema);
 	syntax_ctx.pfm_remote = pfm_remote;
 
-	/* map remote ATTID to local ATTID */
-	if (!dsdb_syntax_attid_from_remote_attid(&syntax_ctx, mem_ctx, in->attid, &attid_local)) {
-		DEBUG(0,(__location__ "Error: Can't find local ATTID for 0x%08X\n",
+	switch (dsdb_pfm_get_attid_type(in->attid)) {
+	case DSDB_ATTID_TYPE_PFM:
+		/* map remote ATTID to local ATTID */
+		if (!dsdb_syntax_attid_from_remote_attid(&syntax_ctx, mem_ctx, in->attid, &attid_local)) {
+			DEBUG(0,(__location__ ": Can't find local ATTID for 0x%08X\n",
+				 in->attid));
+			return WERR_FOOBAR;
+		}
+		break;
+	case DSDB_ATTID_TYPE_INTID:
+		/* use IntId value directly */
+		attid_local = in->attid;
+		break;
+	default:
+		/* we should never get here */
+		DEBUG(0,(__location__ ": Invalid ATTID type passed for conversion - 0x%08X\n",
 			 in->attid));
-		return WERR_FOOBAR;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	sa = dsdb_attribute_by_attributeID_id(schema, attid_local);
