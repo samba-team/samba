@@ -588,8 +588,11 @@ static void dreplsrv_op_pull_source_apply_changes_trigger(struct tevent_req *req
 		return;
 	}
 
-	/* Decide what working schema to use for object conversion */
-	if (ldb_dn_compare(partition->dn, schema->base_dn) == 0) {
+	/*
+	 * Decide what working schema to use for object conversion.
+	 * We won't need a working schema for empty replicas sent.
+	 */
+	if (first_object && ldb_dn_compare(partition->dn, schema->base_dn) == 0) {
 		/* create working schema to convert objects with */
 		status = dsdb_repl_make_working_schema(service->samdb,
 						       schema,
