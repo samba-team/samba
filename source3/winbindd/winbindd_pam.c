@@ -1145,7 +1145,6 @@ static NTSTATUS winbindd_dual_pam_auth_samlogon(struct winbindd_domain *domain,
 	DATA_BLOB lm_resp;
 	DATA_BLOB nt_resp;
 	int attempts = 0;
-	unsigned char local_lm_response[24];
 	unsigned char local_nt_response[24];
 	fstring name_domain, name_user;
 	bool retry;
@@ -1198,16 +1197,7 @@ static NTSTATUS winbindd_dual_pam_auth_samlogon(struct winbindd_domain *domain,
 		data_blob_free(&nt_response);
 
 	} else {
-		if (lp_client_lanman_auth()
-		    && SMBencrypt(state->request->data.auth.pass,
-				  chal,
-				  local_lm_response)) {
-			lm_resp = data_blob_talloc(state->mem_ctx,
-						   local_lm_response,
-						   sizeof(local_lm_response));
-		} else {
-			lm_resp = data_blob_null;
-		}
+		lm_resp = data_blob_null;
 		SMBNTencrypt(state->request->data.auth.pass,
 			     chal,
 			     local_nt_response);
