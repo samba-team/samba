@@ -148,12 +148,14 @@
 #define MAXPATHLEN (1024+4)
 #endif
 
-#endif	/* !_WIN32 */
+#else/* !_WIN32 */
 
 /* Minimize conflict with WinNT.h */
 #ifdef SLIST_ENTRY
 #undef SLIST_ENTRY
 #endif
+
+#endif	/* _WIN32 */
 
 #ifndef PATH_MAX
 #define PATH_MAX MAX_PATH
