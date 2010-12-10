@@ -3351,6 +3351,7 @@ int lp_config_backend(void);
 int lp_smb2_max_read(void);
 int lp_smb2_max_write(void);
 int lp_smb2_max_trans(void);
+int lp_smb2_max_credits(void);
 char *lp_preexec(int );
 char *lp_postexec(int );
 char *lp_rootpreexec(int );
