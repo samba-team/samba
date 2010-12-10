@@ -26,12 +26,7 @@ import optparse
 import samba
 samba.ensure_external_module("testtools", "testtools")
 samba.ensure_external_module("subunit", "subunit/python")
-try:
-    from subunit.run import SubunitTestRunner, TestProgram
-except ImportError:
-    samba.force_bundled_package("testtools", "testtools")
-    samba.force_bundled_package("subunit", "subunit/python")
-    from subunit.run import SubunitTestRunner, TestProgram
+from subunit.run import SubunitTestRunner
 import samba.getopt as options
 import samba.tests
 
@@ -39,15 +34,20 @@ import samba.tests
 parser = optparse.OptionParser("subunitrun [options] <tests>")
 credopts = options.CredentialsOptions(parser)
 parser.add_option_group(credopts)
-parser.add_option('-l', '--list', dest='listtests', default=False,
-                  help='List tests rather than running them.',
-                  action="store_true")
+try:
+    from subunit.run import TestProgram
+except ImportError:
+    from unittest import TestProgram
+else:
+    parser.add_option('-l', '--list', dest='listtests', default=False,
+                      help='List tests rather than running them.',
+                      action="store_true")
 
 opts, args = parser.parse_args()
 
 samba.tests.cmdline_credentials = credopts.get_credentials(samba.tests.env_loadparm())
-if opts.listtests:
+if getattr(opts, "listtests", False):
     args.insert(0, "--list")
 
 runner = SubunitTestRunner()
-program = TestProgram(module=None, argv=[sys.argv[0]] + args, testRunner=runner, stdout=sys.stdout)
+program = TestProgram(module=None, argv=[sys.argv[0]] + args, testRunner=runner)
