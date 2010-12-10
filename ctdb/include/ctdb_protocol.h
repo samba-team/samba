@@ -483,6 +483,7 @@ struct ctdb_ltdb_header {
 	uint32_t reserved1;
 #define CTDB_REC_FLAG_DEFAULT			0x00000000
 #define CTDB_REC_FLAG_MIGRATED_WITH_DATA	0x00010000
+#define CTDB_REC_FLAG_VACUUM_MIGRATED		0x00020000
 	uint32_t flags;
 };
 
