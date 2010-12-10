@@ -202,7 +202,7 @@ bool ctdb_send_message(struct ctdb_connection *ctdb,
 		return false;
 	}
 
-	io_elem_init_req_header(req->io,
+	io_elem_init_req_header(req->pdu,
 				CTDB_REQ_MESSAGE, pnn, new_reqid(ctdb));
 
 	pkt = req->hdr.message;

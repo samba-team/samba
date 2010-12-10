@@ -32,4 +32,10 @@ int read_io_elem(int fd, struct io_elem *io);
 /* Returns -1 if we hit an error.  Otherwise bytes written. */
 int write_io_elem(int fd, struct io_elem *io);
 
+/* Queues a received io element for later processing */
+void io_elem_queue(struct ctdb_connection *ctdb, struct io_elem *io);
+
+/* Removes an element from the queue */
+void io_elem_dequeue(struct ctdb_connection *ctdb, struct io_elem *io);
+
 #endif /* _LIBCTDB_IO_ELEM_H */

@@ -23,12 +23,15 @@
 #include <unistd.h>
 #include <errno.h>
 #include <stdlib.h>
+#include "libctdb_private.h"
 #include "io_elem.h"
 #include <tdb.h>
 #include <netinet/in.h>
+#include <dlinklist.h>
 #include <ctdb_protocol.h> // For CTDB_DS_ALIGNMENT and ctdb_req_header
 
 struct io_elem {
+	struct io_elem *next, *prev;
 	size_t len, off;
 	char *data;
 };
@@ -55,6 +58,8 @@ struct io_elem *new_io_elem(size_t len)
 	}
 	elem->len = len;
 	elem->off = 0;
+	elem->next = NULL;
+	elem->prev = NULL;
 	return elem;
 }
 
@@ -145,3 +150,14 @@ void io_elem_reset(struct io_elem *io)
 {
 	io->off = 0;
 }
+
+void io_elem_queue(struct ctdb_connection *ctdb, struct io_elem *io)
+{
+	DLIST_ADD_END(ctdb->inqueue, io, struct io_elem);
+}
+
+void io_elem_dequeue(struct ctdb_connection *ctdb, struct io_elem *io)
+{
+	DLIST_REMOVE(ctdb->inqueue, io);
+}
+

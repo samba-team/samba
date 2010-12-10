@@ -59,8 +59,12 @@ struct ctdb_connection {
 	struct ctdb_request *outq;
 	/* Finished outgoings (awaiting response) */
 	struct ctdb_request *doneq;
+
 	/* Current incoming. */
 	struct io_elem *in;
+	/* Queue of received pdus */
+	struct io_elem *inqueue;
+
 	/* Guess at a good reqid to try next. */
 	uint32_t next_id;
 	/* List of messages */
