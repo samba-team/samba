@@ -1197,14 +1197,18 @@ done:
 	return status;
 }
 
-static NTSTATUS net_update_dns(TALLOC_CTX *mem_ctx, ADS_STRUCT *ads)
+static NTSTATUS net_update_dns(TALLOC_CTX *mem_ctx, ADS_STRUCT *ads, const char *hostname)
 {
 	int num_addrs;
 	struct sockaddr_storage *iplist = NULL;
 	fstring machine_name;
 	NTSTATUS status;
 
-	name_to_fqdn( machine_name, global_myname() );
+	if (hostname) {
+		fstrcpy(machine_name, hostname);
+	} else {
+		name_to_fqdn( machine_name, global_myname() );
+	}
 	strlower_m( machine_name );
 
 	/* Get our ip address (not the 127.0.0.x address but a real ip
@@ -1394,7 +1398,7 @@ int net_ads_join(struct net_context *c, int argc, const char **argv)
 			ads_kinit_password( ads_dns );
 		}
 
-		if ( !ads_dns || !NT_STATUS_IS_OK(net_update_dns( ctx, ads_dns )) ) {
+		if ( !ads_dns || !NT_STATUS_IS_OK(net_update_dns( ctx, ads_dns, NULL)) ) {
 			d_fprintf( stderr, _("DNS update failed!\n") );
 		}
 
@@ -1431,9 +1435,9 @@ static int net_ads_dns_register(struct net_context *c, int argc, const char **ar
 	talloc_enable_leak_report();
 #endif
 
-	if (argc > 0 || c->display_usage) {
+	if (argc > 1 || c->display_usage) {
 		d_printf(  "%s\n"
-			   "net ads dns register\n"
+			   "net ads dns register [hostname]\n"
 			   "    %s\n",
 			 _("Usage:"),
 			 _("Register hostname with DNS\n"));
@@ -1452,7 +1456,7 @@ static int net_ads_dns_register(struct net_context *c, int argc, const char **ar
 		return -1;
 	}
 
-	if ( !NT_STATUS_IS_OK(net_update_dns(ctx, ads)) ) {
+	if ( !NT_STATUS_IS_OK(net_update_dns(ctx, ads, argc == 1 ? argv[0] : NULL)) ) {
 		d_fprintf( stderr, _("DNS update failed!\n") );
 		ads_destroy( &ads );
 		TALLOC_FREE( ctx );
