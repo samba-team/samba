@@ -2432,6 +2432,15 @@ static void call_nt_transact_ioctl(connection_struct *conn,
 		}
 		return;
 	}
+	case FSCTL_IS_VOLUME_DIRTY:
+		DEBUG(10,("FSCTL_IS_VOLUME_DIRTY: called on FID[0x%04X] "
+			  "(but not implemented)\n", (int)fidnum));
+		/*
+		 * http://msdn.microsoft.com/en-us/library/cc232128%28PROT.10%29.aspx
+		 * says we have to respond with NT_STATUS_INVALID_PARAMETER
+		 */
+		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		return;
 	default:
 		/* Only print this once... */
 		if (!logged_ioctl_message) {
