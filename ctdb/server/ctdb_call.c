@@ -280,6 +280,7 @@ static void ctdb_become_dmaster(struct ctdb_db_context *ctdb_db,
 	ZERO_STRUCT(header);
 	header.rsn = rsn + 1;
 	header.dmaster = ctdb->pnn;
+	header.flags = record_flags;
 
 	if (ctdb_ltdb_store(ctdb_db, key, &header, data) != 0) {
 		ctdb_fatal(ctdb, "ctdb_reply_dmaster store failed\n");
