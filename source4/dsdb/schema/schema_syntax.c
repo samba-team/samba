@@ -1094,7 +1094,11 @@ static WERROR _dsdb_syntax_OID_oid_drsuapi_to_ldb(const struct dsdb_syntax_ctx *
 
 		status = dsdb_schema_pfm_oid_from_attid(ctx->pfm_remote, attid,
 							out->values, &oid);
-		W_ERROR_NOT_OK_RETURN(status);
+		if (!W_ERROR_IS_OK(status)) {
+			DEBUG(0,(__location__ ": Error: Unknown ATTID 0x%08X\n",
+				 attid));
+			return status;
+		}
 
 		out->values[i] = data_blob_string_const(oid);
 	}
