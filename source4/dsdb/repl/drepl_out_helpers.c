@@ -542,7 +542,7 @@ static void dreplsrv_op_pull_source_apply_changes_trigger(struct tevent_req *req
 	struct dreplsrv_partition *partition = state->op->source_dsa->partition;
 	struct dreplsrv_drsuapi_connection *drsuapi = state->op->source_dsa->conn->drsuapi;
 	struct dsdb_schema *schema;
-	struct dsdb_schema *working_schema;
+	struct dsdb_schema *working_schema = NULL;
 	const struct drsuapi_DsReplicaOIDMapping_Ctr *mapping_ctr;
 	uint32_t object_count;
 	struct drsuapi_DsReplicaObjectListItemEx *first_object;
@@ -589,7 +589,7 @@ static void dreplsrv_op_pull_source_apply_changes_trigger(struct tevent_req *req
 	}
 
 	/* Decide what working schema to use for object conversion */
-	if (ldb_dn_compare(partition->dn, ldb_get_schema_basedn(service->samdb)) == 0) {
+	if (ldb_dn_compare(partition->dn, schema->base_dn) == 0) {
 		/* create working schema to convert objects with */
 		status = dsdb_repl_make_working_schema(service->samdb,
 						       schema,
@@ -604,12 +604,10 @@ static void dreplsrv_op_pull_source_apply_changes_trigger(struct tevent_req *req
 			tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
 			return;
 		}
-	} else {
-		working_schema = schema;
 	}
 
 	status = dsdb_replicated_objects_convert(service->samdb,
-						 working_schema,
+						 working_schema ? working_schema : schema,
 						 partition->nc.dn,
 						 mapping_ctr,
 						 object_count,
@@ -629,7 +627,7 @@ static void dreplsrv_op_pull_source_apply_changes_trigger(struct tevent_req *req
 	}
 
 	status = dsdb_replicated_objects_commit(service->samdb,
-						NULL,
+						working_schema,
 						objects,
 						&state->op->source_dsa->notify_uSN);
 	talloc_free(objects);
