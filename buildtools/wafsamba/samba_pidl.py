@@ -66,7 +66,7 @@ def SAMBA_PIDL(bld, pname, source,
         else:
             cpp = "CPP=%s" % bld.CONFIG_GET("CPP")
 
-    if cpp == "xlr_c":
+    if cpp == "xlc_r":
         cpp = ""
 
 
