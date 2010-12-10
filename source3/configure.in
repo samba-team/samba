@@ -6388,6 +6388,18 @@ if test x"$samba_cv_HAVE_PEERCRED" = x"yes"; then
     AC_DEFINE(HAVE_PEERCRED,1,[Whether we can use SO_PEERCRED to get socket credentials])
 fi
 
+AC_CACHE_CHECK([for getpeereid],samba_cv_HAVE_GETPEEREID,[
+AC_TRY_LINK([#include <sys/types.h>
+#include <unistd.h>],
+[uid_t uid; gid_t gid; int ret;
+ ret = getpeereid(0, &uid, &gid);
+],
+samba_cv_HAVE_GETPEEREID=yes,samba_cv_HAVE_GETPEEREID=no)])
+if test x"$samba_cv_HAVE_GETPEEREID" = xyes; then
+   AC_DEFINE(HAVE_GETPEEREID,1,
+	     [Whether we have getpeereid to get socket credentials])
+fi
+
 
 #################################################
 # Check to see if we should use the included popt
