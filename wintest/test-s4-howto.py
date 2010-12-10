@@ -119,6 +119,8 @@ def run_winjoin(t, vm):
     t.vm_poweroff("${WIN_VM}", checkfail=False)
     t.vm_restore("${WIN_VM}", "${WIN_SNAPSHOT}")
     child = t.open_telnet("${WIN_HOSTNAME}", "${WIN_USER}", "${WIN_PASS}", set_time=True, set_ip=True, set_noexpire=True)
+    child.sendline("ipconfig /flushdns")
+    child.expect("C:")
     child.sendline("netdom join ${WIN_HOSTNAME} /Domain:${LCREALM} /PasswordD:${PASSWORD1} /UserD:administrator")
     child.expect("The command completed successfully")
     child.expect("C:")
