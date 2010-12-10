@@ -89,13 +89,51 @@ static int ctdb_ltdb_store_server(struct ctdb_db_context *ctdb_db,
 		keep = true;
 	} else if (ctdb_db->persistent) {
 		keep = true;
-	} else if (ctdb_db->ctdb->pnn == lmaster) {
-		keep = true;
-	} else if (ctdb_db->ctdb->pnn == header->dmaster) {
-		keep = true;
 	} else if (header->flags & CTDB_REC_FLAG_MIGRATED_WITH_DATA) {
 		keep = true;
+	} else if (ctdb_db->ctdb->pnn == lmaster) {
+		/*
+		 * If we are lmaster, then we usually keep the record.
+		 * But if we retrieve the dmaster role by a VACUUM_MIGRATE
+		 * and the record is empty and has never been migrated
+		 * with data, then we should delete it instead of storing it.
+		 * This is part of the vacuuming process.
+		 *
+		 * The reason that we usually need to store even empty records
+		 * on the lmaster is that a client operating directly on the
+		 * lmaster (== dmaster) expects the local copy of the record to
+		 * exist after successful ctdb migrate call. If the record does
+		 * not exist, the client goes into a migrate loop and eventually
+		 * fails. So storing the empty record makes sure that we do not
+		 * need to change the client code.
+		 */
+		if (!(header->flags & CTDB_REC_FLAG_VACUUM_MIGRATED)) {
+			keep = true;
+		} else if (ctdb_db->ctdb->pnn != header->dmaster) {
+			keep = true;
+		}
+	} else if (ctdb_db->ctdb->pnn == header->dmaster) {
+		keep = true;
 	}
+
+	/*
+	 * The VACUUM_MIGRATED flag is only set temporarily for
+	 * the above logic when the record was retrieved by a
+	 * VACUUM_MIGRATE call and should not be stored in the
+	 * database.
+	 *
+	 * The VACUUM_MIGRATE call is triggered by a vacuum fetch,
+	 * and there are two cases in which the corresponding record
+	 * is stored in the local database:
+	 * 1. The record has been migrated with data in the past
+	 *    (the MIGRATED_WITH_DATA record flag is set).
+	 * 2. The record has been filled with data again since it
+	 *    had been submitted in the VACUUM_FETCH message to the
+	 *    lmaster.
+	 * For such records it is important to not store the
+	 * VACUUM_MIGRATED flag in the database.
+	 */
+	header->flags &= ~CTDB_REC_FLAG_VACUUM_MIGRATED;
 
 	rec.dsize = sizeof(*header) + data.dsize;
 	rec.dptr = talloc_size(ctdb, rec.dsize);
