@@ -3,17 +3,17 @@
    negprot reply code
    Copyright (C) Andrew Tridgell 1992-1998
    Copyright (C) Volker Lendecke 2007
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -140,7 +140,7 @@ static void reply_lanman2(struct smb_request *req, uint16 choice)
 	struct smbd_server_connection *sconn = req->sconn;
 
 	sconn->smb1.negprot.encrypted_passwords = lp_encrypted_passwords();
-  
+
 	if (lp_security()>=SEC_USER) {
 		secword |= NEGOTIATE_SECURITY_USER_LEVEL;
 	}
@@ -291,7 +291,7 @@ static void reply_nt1(struct smb_request *req, uint16 choice)
 
 	/* do spnego in user level security if the client
 	   supports it and we can do encrypted passwords */
-	
+
 	if (sconn->smb1.negprot.encrypted_passwords &&
 	    (lp_security() != SEC_SHARE) &&
 	    lp_use_spnego() &&
@@ -304,28 +304,28 @@ static void reply_nt1(struct smb_request *req, uint16 choice)
 		SSVAL(req->outbuf, smb_flg2,
 		      req->flags2 | FLAGS2_EXTENDED_SECURITY);
 	}
-	
+
 	capabilities |= CAP_NT_SMBS|CAP_RPC_REMOTE_APIS|CAP_UNICODE;
 
 	if (lp_unix_extensions()) {
 		capabilities |= CAP_UNIX;
 	}
-	
+
 	if (lp_large_readwrite() && (SMB_OFF_T_BITS == 64))
 		capabilities |= CAP_LARGE_READX|CAP_LARGE_WRITEX|CAP_W2K_SMBS;
-	
+
 	if (SMB_OFF_T_BITS == 64)
 		capabilities |= CAP_LARGE_FILES;
 
 	if (lp_readraw() && lp_writeraw())
 		capabilities |= CAP_RAW_MODE;
-	
+
 	if (lp_nt_status_support())
 		capabilities |= CAP_STATUS32;
-	
+
 	if (lp_host_msdfs())
 		capabilities |= CAP_DFS;
-	
+
 	if (lp_security() >= SEC_USER) {
 		secword |= NEGOTIATE_SECURITY_USER_LEVEL;
 	}
@@ -351,9 +351,9 @@ static void reply_nt1(struct smb_request *req, uint16 choice)
 
 	SSVAL(req->outbuf,smb_vwv0,choice);
 	SCVAL(req->outbuf,smb_vwv1,secword);
-	
+
 	set_Protocol(PROTOCOL_NT1);
-	
+
 	SSVAL(req->outbuf,smb_vwv1+1,lp_maxmux()); /* maxmpx */
 	SSVAL(req->outbuf,smb_vwv2+1,1); /* num vcs */
 	SIVAL(req->outbuf,smb_vwv3+1,
@@ -364,7 +364,7 @@ static void reply_nt1(struct smb_request *req, uint16 choice)
 	clock_gettime(CLOCK_REALTIME,&ts);
 	put_long_date_timespec(TIMESTAMP_SET_NT_OR_BETTER,(char *)req->outbuf+smb_vwv11+1,ts);
 	SSVALS(req->outbuf,smb_vwv15+1,set_server_zone_offset(ts.tv_sec)/60);
-	
+
 	if (!negotiate_spnego) {
 		/* Create a token value and add it to the outgoing packet. */
 		if (sconn->smb1.negprot.encrypted_passwords) {
@@ -482,7 +482,7 @@ protocol [LANMAN2.1]
   *  tim@fsg.com 09/29/95
   *  Win2K added by matty 17/7/99
   */
-  
+
 #define ARCH_WFWG     0x3      /* This is a fudge because WfWg is like Win95 */
 #define ARCH_WIN95    0x2
 #define ARCH_WINNT    0x4
@@ -491,9 +491,9 @@ protocol [LANMAN2.1]
 #define ARCH_SAMBA    0x20
 #define ARCH_CIFSFS   0x40
 #define ARCH_VISTA    0x8C     /* Vista is like XP/2K */
- 
+
 #define ARCH_ALL      0x7F
- 
+
 /* List of supported protocols, most desired first */
 static const struct {
 	const char *proto_name;
@@ -662,10 +662,10 @@ void reply_negprot(struct smb_request *req)
 			set_remote_arch(RA_UNKNOWN);
 		break;
 	}
- 
+
 	/* possibly reload - change of architecture */
 	reload_services(sconn->msg_ctx, sconn->sock, True);
-	
+
 	/* moved from the netbios session setup code since we don't have that 
 	   when the client connects to port 445.  Of course there is a small
 	   window where we are listening to messages   -- jerry */
@@ -673,7 +673,7 @@ void reply_negprot(struct smb_request *req)
 	serverid_register(sconn_server_id(sconn),
 			  FLAG_MSG_GENERAL|FLAG_MSG_SMBD
 			  |FLAG_MSG_PRINT_GENERAL);
-    
+
 	/* Check for protocols, most desirable first */
 	for (protocol = 0; supported_protocols[protocol].proto_name; protocol++) {
 		i = 0;
@@ -687,7 +687,7 @@ void reply_negprot(struct smb_request *req)
 		if(choice != -1)
 			break;
 	}
-  
+
 	if(choice != -1) {
 		fstrcpy(remote_proto,supported_protocols[protocol].short_name);
 		reload_services(sconn->msg_ctx, sconn->sock, True);
@@ -698,7 +698,7 @@ void reply_negprot(struct smb_request *req)
 		reply_outbuf(req, 1, 0);
 		SSVAL(req->outbuf, smb_vwv0, choice);
 	}
-  
+
 	DEBUG( 5, ( "negprot index=%d\n", choice ) );
 
 	if ((lp_server_signing() == Required) && (get_Protocol() < PROTOCOL_NT1)) {
