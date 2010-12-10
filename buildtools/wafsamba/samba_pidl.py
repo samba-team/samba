@@ -66,6 +66,10 @@ def SAMBA_PIDL(bld, pname, source,
         else:
             cpp = "CPP=%s" % bld.CONFIG_GET("CPP")
 
+    if cpp == "xlr_c":
+        cpp = ""
+
+
     if bld.CONFIG_SET("CC"):
         if isinstance(bld.CONFIG_GET("CC"), list):
             cc = "CC=%s" % bld.CONFIG_GET("CC")[0]
