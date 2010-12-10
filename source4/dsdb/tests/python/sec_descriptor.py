@@ -22,7 +22,7 @@ from ldb import SCOPE_SUBTREE, SCOPE_BASE, LdbError, ERR_NO_SUCH_OBJECT
 from samba.ndr import ndr_pack, ndr_unpack
 from samba.dcerpc import security
 
-from samba import gensec
+from samba import gensec, sd_utils
 from samba.samdb import SamDB
 from samba.credentials import Credentials
 from samba.auth import system_session
@@ -62,19 +62,6 @@ class DescriptorTests(samba.tests.TestCase):
 
     def get_users_domain_dn(self, name):
         return "CN=%s,CN=Users,%s" % (name, self.base_dn)
-
-    def modify_desc(self, _ldb, object_dn, desc, controls=None):
-        assert(isinstance(desc, str) or isinstance(desc, security.descriptor))
-        mod = """
-dn: """ + object_dn + """
-changetype: modify
-replace: nTSecurityDescriptor
-"""
-        if isinstance(desc, str):
-            mod += "nTSecurityDescriptor: %s" % desc
-        elif isinstance(desc, security.descriptor):
-            mod += "nTSecurityDescriptor:: %s" % base64.b64encode(ndr_pack(desc))
-        _ldb.modify_ldif(mod, controls)
 
     def get_unique_schema_class_name(self):
         while True:
@@ -140,11 +127,6 @@ showInAdvancedViewOnly: TRUE
                 ldif += "nTSecurityDescriptor:: %s" % base64.b64encode(ndr_pack(desc))
         _ldb.add_ldif(ldif)
 
-    def read_desc(self, object_dn, controls=None):
-        res = self.ldb_admin.search(base=object_dn, scope=SCOPE_BASE, attrs=["nTSecurityDescriptor"], controls=controls)
-        desc = res[0]["nTSecurityDescriptor"][0]
-        return ndr_unpack(security.descriptor, desc)
-
     def get_ldb_connection(self, target_username, target_password):
         creds_tmp = Credentials()
         creds_tmp.set_username(target_username)
@@ -157,27 +139,6 @@ showInAdvancedViewOnly: TRUE
         ldb_target = SamDB(url=host, credentials=creds_tmp, lp=lp)
         return ldb_target
 
-    def get_object_sid(self, object_dn):
-        res = self.ldb_admin.search(object_dn)
-        return ndr_unpack( security.dom_sid, res[0]["objectSid"][0] )
-
-    def dacl_add_ace(self, object_dn, ace):
-        desc = self.read_desc( object_dn )
-        desc_sddl = desc.as_sddl( self.domain_sid )
-        if ace in desc_sddl:
-            return
-        if desc_sddl.find("(") >= 0:
-            desc_sddl = desc_sddl[:desc_sddl.index("(")] + ace + desc_sddl[desc_sddl.index("("):]
-        else:
-            desc_sddl = desc_sddl + ace
-        self.modify_desc(self.ldb_admin, object_dn, desc_sddl)
-
-    def get_desc_sddl(self, object_dn, controls=None):
-        """ Return object nTSecutiryDescriptor in SDDL format
-        """
-        desc = self.read_desc(object_dn, controls)
-        return desc.as_sddl(self.domain_sid)
-
     def setUp(self):
         super(DescriptorTests, self).setUp()
         self.ldb_admin = ldb
@@ -185,6 +146,7 @@ showInAdvancedViewOnly: TRUE
         self.configuration_dn = self.ldb_admin.get_config_basedn().get_linearized()
         self.schema_dn = self.ldb_admin.get_schema_basedn().get_linearized()
         self.domain_sid = security.dom_sid(self.ldb_admin.get_domain_sid())
+        self.sd_utils = sd_utils.SDUtils(ldb)
         print "baseDN: %s" % self.base_dn
 
     ################################################################################################
@@ -382,13 +344,14 @@ class OwnerGroupDescriptorTests(DescriptorTests):
 
     def check_modify_inheritance(self, _ldb, object_dn, owner_group=""):
         # Modify
+        sd_user_utils = sd_utils.SDUtils(_ldb)
         ace = "(D;;CC;;;LG)" # Deny Create Children to Guest account
         if owner_group != "":
-            self.modify_desc(_ldb, object_dn, owner_group + "D:" + ace)
+            sd_user_utils.modify_sd_on_dn(object_dn, owner_group + "D:" + ace)
         else:
-            self.modify_desc(_ldb, object_dn, "D:" + ace)
+            sd_user_utils.modify_sd_on_dn(object_dn, "D:" + ace)
         # Make sure the modify operation has been applied
-        desc_sddl = self.get_desc_sddl(object_dn)
+        desc_sddl = self.sd_utils.get_sd_as_sddl(object_dn)
         self.assertTrue(ace in desc_sddl)
         # Make sure we have identical result for both "add" and "modify"
         res = re.search("(O:.*G:.*?)D:", desc_sddl).group(1)
@@ -406,7 +369,7 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         object_dn = "CN=test_domain_group1,CN=Users," + self.base_dn
         delete_force(self.ldb_admin, object_dn)
         _ldb.newgroup("test_domain_group1", grouptype=4)
-        desc_sddl = self.get_desc_sddl(object_dn)
+        desc_sddl = self.sd_utils.get_sd_as_sddl(object_dn)
         res = re.search("(O:.*G:.*?)D:", desc_sddl).group(1)
         self.assertEqual(self.results[self.DS_BEHAVIOR][self._testMethodName[5:]], res)
         self.check_modify_inheritance(_ldb, object_dn)
@@ -421,7 +384,7 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         object_dn = "CN=test_domain_group1,CN=Users," + self.base_dn
         delete_force(self.ldb_admin, object_dn)
         _ldb.newgroup("test_domain_group1", grouptype=4)
-        desc_sddl = self.get_desc_sddl(object_dn)
+        desc_sddl = self.sd_utils.get_sd_as_sddl(object_dn)
         res = re.search("(O:.*G:.*?)D:", desc_sddl).group(1)
         self.assertEqual(self.results[self.DS_BEHAVIOR][self._testMethodName[5:]], res)
         self.check_modify_inheritance(_ldb, object_dn)
@@ -436,15 +399,15 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         object_dn = "OU=test_domain_ou1," + self.base_dn
         delete_force(self.ldb_admin, object_dn)
         self.ldb_admin.create_ou(object_dn)
-        user_sid = self.get_object_sid( self.get_users_domain_dn(user_name) )
+        user_sid = self.sd_utils.get_object_sid( self.get_users_domain_dn(user_name) )
         mod = "(A;CI;WPWDCC;;;%s)" % str(user_sid)
-        self.dacl_add_ace(object_dn, mod)
+        self.sd_utils.dacl_add_ace(object_dn, mod)
         # Create additional object into the first one
         object_dn = "CN=test_domain_user1," + object_dn
         delete_force(self.ldb_admin, object_dn)
         _ldb.newuser("test_domain_user1", "samba123@",
                      userou="OU=test_domain_ou1", setpassword=False)
-        desc_sddl = self.get_desc_sddl(object_dn)
+        desc_sddl = self.sd_utils.get_sd_as_sddl(object_dn)
         res = re.search("(O:.*G:.*?)D:", desc_sddl).group(1)
         self.assertEqual(self.results[self.DS_BEHAVIOR][self._testMethodName[5:]] % str(user_sid), res)
         # This fails, research why
@@ -460,15 +423,15 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         object_dn = "OU=test_domain_ou1," + self.base_dn
         delete_force(self.ldb_admin, object_dn)
         self.ldb_admin.create_ou(object_dn)
-        user_sid = self.get_object_sid( self.get_users_domain_dn(user_name) )
+        user_sid = self.sd_utils.get_object_sid( self.get_users_domain_dn(user_name) )
         mod = "(A;CI;WPWDCC;;;%s)" % str(user_sid)
-        self.dacl_add_ace(object_dn, mod)
+        self.sd_utils.dacl_add_ace(object_dn, mod)
         # Create additional object into the first one
         object_dn = "CN=test_domain_user1," + object_dn
         delete_force(self.ldb_admin, object_dn)
         _ldb.newuser("test_domain_user1", "samba123@",
                      userou="OU=test_domain_ou1", setpassword=False)
-        desc_sddl = self.get_desc_sddl(object_dn)
+        desc_sddl = self.sd_utils.get_sd_as_sddl(object_dn)
         res = re.search("(O:.*G:.*?)D:", desc_sddl).group(1)
         self.assertEqual(self.results[self.DS_BEHAVIOR][self._testMethodName[5:]] % str(user_sid), res)
         #this fails, research why
@@ -484,7 +447,7 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         object_dn = "CN=test_domain_group1,CN=Users," + self.base_dn
         delete_force(self.ldb_admin, object_dn)
         _ldb.newgroup("test_domain_group1", grouptype=4)
-        desc_sddl = self.get_desc_sddl(object_dn)
+        desc_sddl = self.sd_utils.get_sd_as_sddl(object_dn)
         res = re.search("(O:.*G:.*?)D:", desc_sddl).group(1)
         self.assertEqual(self.results[self.DS_BEHAVIOR][self._testMethodName[5:]], res)
         self.check_modify_inheritance(_ldb, object_dn)
@@ -499,7 +462,7 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         object_dn = "CN=test_domain_group1,CN=Users," + self.base_dn
         delete_force(self.ldb_admin, object_dn)
         _ldb.newgroup("test_domain_group1", grouptype=4)
-        desc_sddl = self.get_desc_sddl(object_dn)
+        desc_sddl = self.sd_utils.get_sd_as_sddl(object_dn)
         res = re.search("(O:.*G:.*?)D:", desc_sddl).group(1)
         self.assertEqual(self.results[self.DS_BEHAVIOR][self._testMethodName[5:]], res)
         self.check_modify_inheritance(_ldb, object_dn)
@@ -514,7 +477,7 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         object_dn = "CN=test_domain_group1,CN=Users," + self.base_dn
         delete_force(self.ldb_admin, object_dn)
         _ldb.newgroup("test_domain_group1", grouptype=4)
-        desc_sddl = self.get_desc_sddl(object_dn)
+        desc_sddl = self.sd_utils.get_sd_as_sddl(object_dn)
         res = re.search("(O:.*G:.*?)D:", desc_sddl).group(1)
         self.assertEqual(self.results[self.DS_BEHAVIOR][self._testMethodName[5:]], res)
         self.check_modify_inheritance(_ldb, object_dn)
@@ -529,7 +492,7 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         object_dn = "CN=test_domain_group1,CN=Users," + self.base_dn
         delete_force(self.ldb_admin, object_dn)
         _ldb.newgroup("test_domain_group1", grouptype=4)
-        desc_sddl = self.get_desc_sddl(object_dn)
+        desc_sddl = self.sd_utils.get_sd_as_sddl(object_dn)
         res = re.search("(O:.*G:.*?)D:", desc_sddl).group(1)
         self.assertEqual(self.results[self.DS_BEHAVIOR][self._testMethodName[5:]], res)
         self.check_modify_inheritance(_ldb, object_dn)
@@ -549,7 +512,7 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         sddl = "O:DAG:DAD:(A;;RP;;;DU)"
         tmp_desc = security.descriptor.from_sddl(sddl, self.domain_sid)
         _ldb.newgroup("test_domain_group1", grouptype=4, sd=tmp_desc)
-        desc_sddl = self.get_desc_sddl(object_dn)
+        desc_sddl = self.sd_utils.get_sd_as_sddl(object_dn)
         res = re.search("(O:.*G:.*?)D:", desc_sddl).group(1)
         self.assertEqual(self.results[self.DS_BEHAVIOR][self._testMethodName[5:]], res)
 
@@ -566,7 +529,7 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         sddl = "O:DAG:DAD:(A;;RP;;;DU)"
         tmp_desc = security.descriptor.from_sddl(sddl, self.domain_sid)
         _ldb.newgroup("test_domain_group1", grouptype=4, sd=tmp_desc)
-        desc_sddl = self.get_desc_sddl(object_dn)
+        desc_sddl = self.sd_utils.get_sd_as_sddl(object_dn)
         res = re.search("(O:.*G:.*?)D:", desc_sddl).group(1)
         self.assertEqual(self.results[self.DS_BEHAVIOR][self._testMethodName[5:]], res)
 
@@ -580,9 +543,9 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         object_dn = "OU=test_domain_ou1," + self.base_dn
         delete_force(self.ldb_admin, object_dn)
         self.ldb_admin.create_ou(object_dn)
-        user_sid = self.get_object_sid( self.get_users_domain_dn(user_name) )
+        user_sid = self.sd_utils.get_object_sid( self.get_users_domain_dn(user_name) )
         mod = "(A;CI;WOWDCC;;;%s)" % str(user_sid)
-        self.dacl_add_ace(object_dn, mod)
+        self.sd_utils.dacl_add_ace(object_dn, mod)
         # Create a custom security descriptor
         # NB! Problematic owner part won't accept DA only <User Sid> !!!
         sddl = "O:%sG:DAD:(A;;RP;;;DU)" % str(user_sid)
@@ -592,8 +555,8 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         delete_force(self.ldb_admin, object_dn)
         _ldb.newuser("test_domain_user1", "samba123@",
                      userou="OU=test_domain_ou1", sd=tmp_desc, setpassword=False)
-        desc = self.read_desc(object_dn)
-        desc_sddl = self.get_desc_sddl(object_dn)
+        desc = self.sd_utils.read_sd_on_dn(object_dn)
+        desc_sddl = self.sd_utils.get_sd_as_sddl(object_dn)
         res = re.search("(O:.*G:.*?)D:", desc_sddl).group(1)
         self.assertEqual(self.results[self.DS_BEHAVIOR][self._testMethodName[5:]] % str(user_sid), res)
 
@@ -607,9 +570,9 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         object_dn = "OU=test_domain_ou1," + self.base_dn
         delete_force(self.ldb_admin, object_dn)
         self.ldb_admin.create_ou(object_dn)
-        user_sid = self.get_object_sid( self.get_users_domain_dn(user_name) )
+        user_sid = self.sd_utils.get_object_sid( self.get_users_domain_dn(user_name) )
         mod = "(A;CI;WOWDCC;;;%s)" % str(user_sid)
-        self.dacl_add_ace(object_dn, mod)
+        self.sd_utils.dacl_add_ace(object_dn, mod)
         # Create a custom security descriptor
         # NB! Problematic owner part won't accept DA only <User Sid> !!!
         sddl = "O:%sG:DAD:(A;;RP;;;DU)" % str(user_sid)
@@ -619,8 +582,8 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         delete_force(self.ldb_admin, object_dn)
         _ldb.newuser("test_domain_user1", "samba123@",
                      userou="OU=test_domain_ou1", sd=tmp_desc, setpassword=False)
-        desc = self.read_desc(object_dn)
-        desc_sddl = self.get_desc_sddl(object_dn)
+        desc = self.sd_utils.read_sd_on_dn(object_dn)
+        desc_sddl = self.sd_utils.get_sd_as_sddl(object_dn)
         res = re.search("(O:.*G:.*?)D:", desc_sddl).group(1)
         self.assertEqual(self.results[self.DS_BEHAVIOR][self._testMethodName[5:]] % str(user_sid), res)
 
@@ -637,7 +600,7 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         sddl = "O:DAG:DAD:(A;;RP;;;DU)"
         tmp_desc = security.descriptor.from_sddl(sddl, self.domain_sid)
         _ldb.newgroup("test_domain_group1", grouptype=4, sd=tmp_desc)
-        desc_sddl = self.get_desc_sddl(object_dn)
+        desc_sddl = self.sd_utils.get_sd_as_sddl(object_dn)
         res = re.search("(O:.*G:.*?)D:", desc_sddl).group(1)
         self.assertEqual(self.results[self.DS_BEHAVIOR][self._testMethodName[5:]], res)
 
@@ -654,7 +617,7 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         sddl = "O:DAG:DAD:(A;;RP;;;DU)"
         tmp_desc = security.descriptor.from_sddl(sddl, self.domain_sid)
         _ldb.newgroup("test_domain_group1", grouptype=4, sd=tmp_desc)
-        desc_sddl = self.get_desc_sddl(object_dn)
+        desc_sddl = self.sd_utils.get_sd_as_sddl(object_dn)
         res = re.search("(O:.*G:.*?)D:", desc_sddl).group(1)
         self.assertEqual(self.results[self.DS_BEHAVIOR][self._testMethodName[5:]], res)
 
@@ -671,7 +634,7 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         sddl = "O:DAG:DAD:(A;;RP;;;DU)"
         tmp_desc = security.descriptor.from_sddl(sddl, self.domain_sid)
         _ldb.newgroup("test_domain_group1", grouptype=4, sd=tmp_desc)
-        desc_sddl = self.get_desc_sddl(object_dn)
+        desc_sddl = self.sd_utils.get_sd_as_sddl(object_dn)
         res = re.search("(O:.*G:.*?)D:", desc_sddl).group(1)
         self.assertEqual(self.results[self.DS_BEHAVIOR][self._testMethodName[5:]], res)
 
@@ -688,7 +651,7 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         sddl = "O:DAG:DAD:(A;;RP;;;DU)"
         tmp_desc = security.descriptor.from_sddl(sddl, self.domain_sid)
         _ldb.newgroup("test_domain_group1", grouptype=4, sd=tmp_desc)
-        desc_sddl = self.get_desc_sddl(object_dn)
+        desc_sddl = self.sd_utils.get_sd_as_sddl(object_dn)
         res = re.search("(O:.*G:.*?)D:", desc_sddl).group(1)
         self.assertEqual(self.results[self.DS_BEHAVIOR][self._testMethodName[5:]], res)
 
@@ -697,16 +660,16 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         object_dn = "OU=test_domain_ou1," + self.base_dn
         delete_force(self.ldb_admin, object_dn)
         self.ldb_admin.create_ou(object_dn)
-        user_sid = self.get_object_sid( self.get_users_domain_dn(user_name) )
+        user_sid = self.sd_utils.get_object_sid( self.get_users_domain_dn(user_name) )
         mod = "(D;CI;WP;;;S-1-3-0)"
         #mod = ""
-        self.dacl_add_ace(object_dn, mod)
-        desc_sddl = self.get_desc_sddl(object_dn)
+        self.sd_utils.dacl_add_ace(object_dn, mod)
+        desc_sddl = self.sd_utils.get_sd_as_sddl(object_dn)
         # Create additional object into the first one
         object_dn = "OU=test_domain_ou2," + object_dn
         delete_force(self.ldb_admin, object_dn)
         self.ldb_admin.create_ou(object_dn)
-        desc_sddl = self.get_desc_sddl(object_dn)
+        desc_sddl = self.sd_utils.get_sd_as_sddl(object_dn)
 
     ## Tests for SCHEMA
 
@@ -718,14 +681,14 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         # Open Ldb connection with the tested user
         _ldb = self.get_ldb_connection(user_name, "samba123@")
         # Change Schema partition descriptor
-        user_sid = self.get_object_sid( self.get_users_domain_dn(user_name) )
+        user_sid = self.sd_utils.get_object_sid( self.get_users_domain_dn(user_name) )
         mod = "(A;;WDCC;;;AU)"
-        self.dacl_add_ace(self.schema_dn, mod)
+        self.sd_utils.dacl_add_ace(self.schema_dn, mod)
         # Create example Schema class
         class_name = self.get_unique_schema_class_name()
         class_dn = "CN=%s,%s" % (class_name, self.schema_dn)
         self.create_schema_class(_ldb, class_dn)
-        desc_sddl = self.get_desc_sddl(class_dn)
+        desc_sddl = self.sd_utils.get_sd_as_sddl(class_dn)
         res = re.search("(O:.*G:.*?)D:", desc_sddl).group(1)
         self.assertEqual(self.results[self.DS_BEHAVIOR][self._testMethodName[5:]], res)
         self.check_modify_inheritance(_ldb, class_dn)
@@ -737,12 +700,12 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         _ldb = self.get_ldb_connection(user_name, "samba123@")
         # Change Schema partition descriptor
         mod = "(A;CI;WDCC;;;AU)"
-        self.dacl_add_ace(self.schema_dn, mod)
+        self.sd_utils.dacl_add_ace(self.schema_dn, mod)
         # Create example Schema class
         class_name = self.get_unique_schema_class_name()
         class_dn = "CN=%s,%s" % (class_name, self.schema_dn)
         self.create_schema_class(_ldb, class_dn)
-        desc_sddl = self.get_desc_sddl(class_dn)
+        desc_sddl = self.sd_utils.get_sd_as_sddl(class_dn)
         res = re.search("(O:.*G:.*?)D:", desc_sddl).group(1)
         self.assertEqual(self.results[self.DS_BEHAVIOR][self._testMethodName[5:]], res)
         self.check_modify_inheritance(_ldb, class_dn)
@@ -754,12 +717,12 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         _ldb = self.get_ldb_connection(user_name, "samba123@")
         # Change Schema partition descriptor
         mod = "(A;CI;WDCC;;;AU)"
-        self.dacl_add_ace(self.schema_dn, mod)
+        self.sd_utils.dacl_add_ace(self.schema_dn, mod)
         # Create example Schema class
         class_name = self.get_unique_schema_class_name()
         class_dn = "CN=%s,%s" % (class_name, self.schema_dn)
         self.create_schema_class(_ldb, class_dn)
-        desc_sddl = self.get_desc_sddl(class_dn)
+        desc_sddl = self.sd_utils.get_sd_as_sddl(class_dn)
         res = re.search("(O:.*G:.*?)D:", desc_sddl).group(1)
         self.assertEqual(self.results[self.DS_BEHAVIOR][self._testMethodName[5:]], res)
         #self.check_modify_inheritance(_ldb, class_dn)
@@ -770,14 +733,14 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         # Open Ldb connection with the tested user
         _ldb = self.get_ldb_connection(user_name, "samba123@")
         #Change Schema partition descriptor
-        user_sid = self.get_object_sid( self.get_users_domain_dn(user_name) )
+        user_sid = self.sd_utils.get_object_sid( self.get_users_domain_dn(user_name) )
         mod = "(A;CI;WDCC;;;AU)"
-        self.dacl_add_ace(self.schema_dn, mod)
+        self.sd_utils.dacl_add_ace(self.schema_dn, mod)
         # Create example Schema class
         class_name = self.get_unique_schema_class_name()
         class_dn = "CN=%s,%s" % (class_name, self.schema_dn)
         self.create_schema_class(_ldb, class_dn)
-        desc_sddl = self.get_desc_sddl(class_dn)
+        desc_sddl = self.sd_utils.get_sd_as_sddl(class_dn)
         res = re.search("(O:.*G:.*?)D:", desc_sddl).group(1)
         self.assertEqual(self.results[self.DS_BEHAVIOR][self._testMethodName[5:]] % str(user_sid), res)
         #self.check_modify_inheritance(_ldb, class_dn)
@@ -789,12 +752,12 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         _ldb = self.get_ldb_connection(user_name, "samba123@")
         #Change Schema partition descriptor
         mod = "(A;CI;WDCC;;;AU)"
-        self.dacl_add_ace(self.schema_dn, mod)
+        self.sd_utils.dacl_add_ace(self.schema_dn, mod)
         # Create example Schema class
         class_name = self.get_unique_schema_class_name()
         class_dn = "CN=%s,%s" % (class_name, self.schema_dn)
         self.create_schema_class(_ldb, class_dn)
-        desc_sddl = self.get_desc_sddl(class_dn)
+        desc_sddl = self.sd_utils.get_sd_as_sddl(class_dn)
         res = re.search("(O:.*G:.*?)D:", desc_sddl).group(1)
         self.assertEqual(self.results[self.DS_BEHAVIOR][self._testMethodName[5:]], res)
         self.check_modify_inheritance(_ldb, class_dn)
@@ -806,12 +769,12 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         _ldb = self.get_ldb_connection(user_name, "samba123@")
         # Change Schema partition descriptor
         mod = "(A;CI;WDCC;;;AU)"
-        self.dacl_add_ace(self.schema_dn, mod)
+        self.sd_utils.dacl_add_ace(self.schema_dn, mod)
         # Create example Schema class
         class_name = self.get_unique_schema_class_name()
         class_dn = "CN=%s,%s" % (class_name, self.schema_dn)
         self.create_schema_class(_ldb, class_dn)
-        desc_sddl = self.get_desc_sddl(class_dn)
+        desc_sddl = self.sd_utils.get_sd_as_sddl(class_dn)
         res = re.search("(O:.*G:.*?)D:", desc_sddl).group(1)
         self.assertEqual(self.results[self.DS_BEHAVIOR][self._testMethodName[5:]], res)
         self.check_modify_inheritance(_ldb, class_dn)
@@ -823,12 +786,12 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         _ldb = self.get_ldb_connection(user_name, "samba123@")
         # Change Schema partition descriptor
         mod = "(A;CI;WDCC;;;AU)"
-        self.dacl_add_ace(self.schema_dn, mod)
+        self.sd_utils.dacl_add_ace(self.schema_dn, mod)
         # Create example Schema class
         class_name = self.get_unique_schema_class_name()
         class_dn = "CN=%s,%s" % (class_name, self.schema_dn)
         self.create_schema_class(_ldb, class_dn)
-        desc_sddl = self.get_desc_sddl(class_dn)
+        desc_sddl = self.sd_utils.get_sd_as_sddl(class_dn)
         res = re.search("(O:.*G:.*?)D:", desc_sddl).group(1)
         self.assertEqual(self.results[self.DS_BEHAVIOR][self._testMethodName[5:]], res)
         self.check_modify_inheritance(_ldb, class_dn)
@@ -840,12 +803,12 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         _ldb = self.get_ldb_connection(user_name, "samba123@")
         # Change Schema partition descriptor
         mod = "(A;CI;WDCC;;;AU)"
-        self.dacl_add_ace(self.schema_dn, mod)
+        self.sd_utils.dacl_add_ace(self.schema_dn, mod)
         # Create example Schema class
         class_name = self.get_unique_schema_class_name()
         class_dn = "CN=%s,%s" % (class_name, self.schema_dn)
         self.create_schema_class(_ldb, class_dn)
-        desc_sddl = self.get_desc_sddl(class_dn)
+        desc_sddl = self.sd_utils.get_sd_as_sddl(class_dn)
         res = re.search("(O:.*G:.*?)D:", desc_sddl).group(1)
         self.assertEqual(self.results[self.DS_BEHAVIOR][self._testMethodName[5:]], res)
         self.check_modify_inheritance(_ldb, class_dn)
@@ -859,14 +822,14 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         _ldb = self.get_ldb_connection(user_name, "samba123@")
         # Change Schema partition descriptor
         mod = "(A;;CC;;;AU)"
-        self.dacl_add_ace(self.schema_dn, mod)
+        self.sd_utils.dacl_add_ace(self.schema_dn, mod)
         # Create a custom security descriptor
         desc_sddl = "O:DAG:DAD:(A;;RP;;;DU)"
         # Create example Schema class
         class_name = self.get_unique_schema_class_name()
         class_dn = "CN=%s,%s" % (class_name, self.schema_dn)
         self.create_schema_class(_ldb, class_dn, desc_sddl)
-        desc_sddl = self.get_desc_sddl(class_dn)
+        desc_sddl = self.sd_utils.get_sd_as_sddl(class_dn)
         res = re.search("(O:.*G:.*?)D:", desc_sddl).group(1)
         self.assertEqual("O:DAG:DA", res)
 
@@ -877,14 +840,14 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         _ldb = self.get_ldb_connection(user_name, "samba123@")
         # Change Schema partition descriptor
         mod = "(A;;CC;;;AU)"
-        self.dacl_add_ace(self.schema_dn, mod)
+        self.sd_utils.dacl_add_ace(self.schema_dn, mod)
         # Create a custom security descriptor
         desc_sddl = "O:DAG:DAD:(A;;RP;;;DU)"
         # Create example Schema class
         class_name = self.get_unique_schema_class_name()
         class_dn = "CN=%s,%s" % (class_name, self.schema_dn)
         self.create_schema_class(_ldb, class_dn, desc_sddl)
-        desc_sddl = self.get_desc_sddl(class_dn)
+        desc_sddl = self.sd_utils.get_sd_as_sddl(class_dn)
         res = re.search("(O:.*G:.*?)D:", desc_sddl).group(1)
         self.assertEqual("O:DAG:DA", res)
 
@@ -895,13 +858,13 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         _ldb = self.get_ldb_connection(user_name, "samba123@")
         # Create a custom security descriptor
         # NB! Problematic owner part won't accept DA only <User Sid> !!!
-        user_sid = self.get_object_sid( self.get_users_domain_dn(user_name) )
+        user_sid = self.sd_utils.get_object_sid( self.get_users_domain_dn(user_name) )
         desc_sddl = "O:%sG:DAD:(A;;RP;;;DU)" % str(user_sid)
         # Create example Schema class
         class_name = self.get_unique_schema_class_name()
         class_dn = "CN=%s,%s" % (class_name, self.schema_dn)
         self.create_schema_class(_ldb, class_dn, desc_sddl)
-        desc_sddl = self.get_desc_sddl(class_dn)
+        desc_sddl = self.sd_utils.get_sd_as_sddl(class_dn)
         res = re.search("(O:.*G:.*?)D:", desc_sddl).group(1)
         self.assertEqual(self.results[self.DS_BEHAVIOR][self._testMethodName[5:]] % str(user_sid), res)
 
@@ -912,13 +875,13 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         _ldb = self.get_ldb_connection(user_name, "samba123@")
         # Create a custom security descriptor
         # NB! Problematic owner part won't accept DA only <User Sid> !!!
-        user_sid = self.get_object_sid( self.get_users_domain_dn(user_name) )
+        user_sid = self.sd_utils.get_object_sid( self.get_users_domain_dn(user_name) )
         desc_sddl = "O:%sG:DAD:(A;;RP;;;DU)" % str(user_sid)
         # Create example Schema class
         class_name = self.get_unique_schema_class_name()
         class_dn = "CN=%s,%s" % (class_name, self.schema_dn)
         self.create_schema_class(_ldb, class_dn, desc_sddl)
-        desc_sddl = self.get_desc_sddl(class_dn)
+        desc_sddl = self.sd_utils.get_sd_as_sddl(class_dn)
         res = re.search("(O:.*G:.*?)D:", desc_sddl).group(1)
         self.assertEqual(self.results[self.DS_BEHAVIOR][self._testMethodName[5:]] % str(user_sid), res)
 
@@ -929,14 +892,14 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         _ldb = self.get_ldb_connection(user_name, "samba123@")
         # Change Schema partition descriptor
         mod = "(A;;CC;;;AU)"
-        self.dacl_add_ace(self.schema_dn, mod)
+        self.sd_utils.dacl_add_ace(self.schema_dn, mod)
         # Create a custom security descriptor
         desc_sddl = "O:DAG:DAD:(A;;RP;;;DU)"
         # Create example Schema class
         class_name = self.get_unique_schema_class_name()
         class_dn = "CN=%s,%s" % (class_name, self.schema_dn)
         self.create_schema_class(_ldb, class_dn, desc_sddl)
-        desc_sddl = self.get_desc_sddl(class_dn)
+        desc_sddl = self.sd_utils.get_sd_as_sddl(class_dn)
         res = re.search("(O:.*G:.*?)D:", desc_sddl).group(1)
         self.assertEqual("O:DAG:DA", res)
 
@@ -947,14 +910,14 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         _ldb = self.get_ldb_connection(user_name, "samba123@")
         # Change Schema partition descriptor
         mod = "(A;;CC;;;AU)"
-        self.dacl_add_ace(self.schema_dn, mod)
+        self.sd_utils.dacl_add_ace(self.schema_dn, mod)
         # Create a custom security descriptor
         desc_sddl = "O:DAG:DAD:(A;;RP;;;DU)"
         # Create example Schema class
         class_name = self.get_unique_schema_class_name()
         class_dn = "CN=%s,%s" % (class_name, self.schema_dn)
         self.create_schema_class(_ldb, class_dn, desc_sddl)
-        desc_sddl = self.get_desc_sddl(class_dn)
+        desc_sddl = self.sd_utils.get_sd_as_sddl(class_dn)
         res = re.search("(O:.*G:.*?)D:", desc_sddl).group(1)
         self.assertEqual("O:DAG:DA", res)
 
@@ -965,14 +928,14 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         _ldb = self.get_ldb_connection(user_name, "samba123@")
         # Change Schema partition descriptor
         mod = "(A;;CC;;;AU)"
-        self.dacl_add_ace(self.schema_dn, mod)
+        self.sd_utils.dacl_add_ace(self.schema_dn, mod)
         # Create a custom security descriptor
         desc_sddl = "O:DAG:DAD:(A;;RP;;;DU)"
         # Create example Schema class
         class_name = self.get_unique_schema_class_name()
         class_dn = "CN=%s,%s" % (class_name, self.schema_dn)
         self.create_schema_class(_ldb, class_dn, desc_sddl)
-        desc_sddl = self.get_desc_sddl(class_dn)
+        desc_sddl = self.sd_utils.get_sd_as_sddl(class_dn)
         res = re.search("(O:.*G:.*?)D:", desc_sddl).group(1)
         self.assertEqual("O:DAG:DA", res)
 
@@ -983,14 +946,14 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         _ldb = self.get_ldb_connection(user_name, "samba123@")
         # Change Schema partition descriptor
         mod = "(A;;CC;;;AU)"
-        self.dacl_add_ace(self.schema_dn, mod)
+        self.sd_utils.dacl_add_ace(self.schema_dn, mod)
         # Create a custom security descriptor
         desc_sddl = "O:DAG:DAD:(A;;RP;;;DU)"
         # Create example Schema class
         class_name = self.get_unique_schema_class_name()
         class_dn = "CN=%s,%s" % (class_name, self.schema_dn)
         self.create_schema_class(_ldb, class_dn, desc_sddl)
-        desc_sddl = self.get_desc_sddl(class_dn)
+        desc_sddl = self.sd_utils.get_sd_as_sddl(class_dn)
         res = re.search("(O:.*G:.*?)D:", desc_sddl).group(1)
         self.assertEqual("O:DAG:DA", res)
 
@@ -1008,7 +971,7 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         object_dn = "CN=%s,CN=DisplaySpecifiers,%s" % (container_name, self.configuration_dn)
         delete_force(self.ldb_admin, object_dn)
         self.create_configuration_container(_ldb, object_dn, )
-        desc_sddl = self.get_desc_sddl(object_dn)
+        desc_sddl = self.sd_utils.get_sd_as_sddl(object_dn)
         res = re.search("(O:.*G:.*?)D:", desc_sddl).group(1)
         self.assertEqual(self.results[self.DS_BEHAVIOR][self._testMethodName[5:]], res)
         self.check_modify_inheritance(_ldb, object_dn)
@@ -1023,7 +986,7 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         object_dn = "CN=%s,CN=DisplaySpecifiers,%s" % (container_name, self.configuration_dn)
         delete_force(self.ldb_admin, object_dn)
         self.create_configuration_container(_ldb, object_dn, )
-        desc_sddl = self.get_desc_sddl(object_dn)
+        desc_sddl = self.sd_utils.get_sd_as_sddl(object_dn)
         res = re.search("(O:.*G:.*?)D:", desc_sddl).group(1)
         self.assertEqual(self.results[self.DS_BEHAVIOR][self._testMethodName[5:]], res)
         self.check_modify_inheritance(_ldb, object_dn)
@@ -1037,14 +1000,14 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         object_dn = "CN=test-container1,CN=DisplaySpecifiers," + self.configuration_dn
         delete_force(self.ldb_admin, object_dn)
         self.create_configuration_container(self.ldb_admin, object_dn, )
-        user_sid = self.get_object_sid( self.get_users_domain_dn(user_name) )
+        user_sid = self.sd_utils.get_object_sid( self.get_users_domain_dn(user_name) )
         mod = "(A;;WDCC;;;AU)"
-        self.dacl_add_ace(object_dn, mod)
+        self.sd_utils.dacl_add_ace(object_dn, mod)
         # Create child object with user's credentials
         object_dn = "CN=test-specifier1," + object_dn
         delete_force(self.ldb_admin, object_dn)
         self.create_configuration_specifier(_ldb, object_dn)
-        desc_sddl = self.get_desc_sddl(object_dn)
+        desc_sddl = self.sd_utils.get_sd_as_sddl(object_dn)
         res = re.search("(O:.*G:.*?)D:", desc_sddl).group(1)
         self.assertEqual(self.results[self.DS_BEHAVIOR][self._testMethodName[5:]] % str(user_sid), res)
         #self.check_modify_inheritance(_ldb, object_dn)
@@ -1058,14 +1021,14 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         object_dn = "CN=test-container1,CN=DisplaySpecifiers," + self.configuration_dn
         delete_force(self.ldb_admin, object_dn)
         self.create_configuration_container(self.ldb_admin, object_dn, )
-        user_sid = self.get_object_sid( self.get_users_domain_dn(user_name) )
+        user_sid = self.sd_utils.get_object_sid( self.get_users_domain_dn(user_name) )
         mod = "(A;CI;WDCC;;;AU)"
-        self.dacl_add_ace(object_dn, mod)
+        self.sd_utils.dacl_add_ace(object_dn, mod)
         # Create child object with user's credentials
         object_dn = "CN=test-specifier1," + object_dn
         delete_force(self.ldb_admin, object_dn)
         self.create_configuration_specifier(_ldb, object_dn)
-        desc_sddl = self.get_desc_sddl(object_dn)
+        desc_sddl = self.sd_utils.get_sd_as_sddl(object_dn)
         res = re.search("(O:.*G:.*?)D:", desc_sddl).group(1)
         self.assertEqual(self.results[self.DS_BEHAVIOR][self._testMethodName[5:]] % str(user_sid), res)
         #self.check_modify_inheritance(_ldb, object_dn)
@@ -1080,7 +1043,7 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         object_dn = "CN=%s,CN=DisplaySpecifiers,%s" % (container_name, self.configuration_dn)
         delete_force(self.ldb_admin, object_dn)
         self.create_configuration_container(_ldb, object_dn, )
-        desc_sddl = self.get_desc_sddl(object_dn)
+        desc_sddl = self.sd_utils.get_sd_as_sddl(object_dn)
         res = re.search("(O:.*G:.*?)D:", desc_sddl).group(1)
         self.assertEqual(self.results[self.DS_BEHAVIOR][self._testMethodName[5:]], res)
         self.check_modify_inheritance(_ldb, object_dn)
@@ -1095,7 +1058,7 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         object_dn = "CN=%s,CN=DisplaySpecifiers,%s" % (container_name, self.configuration_dn)
         delete_force(self.ldb_admin, object_dn)
         self.create_configuration_container(_ldb, object_dn, )
-        desc_sddl = self.get_desc_sddl(object_dn)
+        desc_sddl = self.sd_utils.get_sd_as_sddl(object_dn)
         res = re.search("(O:.*G:.*?)D:", desc_sddl).group(1)
         self.assertEqual(self.results[self.DS_BEHAVIOR][self._testMethodName[5:]], res)
         self.check_modify_inheritance(_ldb, object_dn)
@@ -1110,7 +1073,7 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         object_dn = "CN=%s,CN=DisplaySpecifiers,%s" % (container_name, self.configuration_dn)
         delete_force(self.ldb_admin, object_dn)
         self.create_configuration_container(_ldb, object_dn, )
-        desc_sddl = self.get_desc_sddl(object_dn)
+        desc_sddl = self.sd_utils.get_sd_as_sddl(object_dn)
         res = re.search("(O:.*G:.*?)D:", desc_sddl).group(1)
         self.assertEqual(self.results[self.DS_BEHAVIOR][self._testMethodName[5:]], res)
         self.check_modify_inheritance(_ldb, object_dn)
@@ -1125,7 +1088,7 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         object_dn = "CN=%s,CN=DisplaySpecifiers,%s" % (container_name, self.configuration_dn)
         delete_force(self.ldb_admin, object_dn)
         self.create_configuration_container(_ldb, object_dn, )
-        desc_sddl = self.get_desc_sddl(object_dn)
+        desc_sddl = self.sd_utils.get_sd_as_sddl(object_dn)
         res = re.search("(O:.*G:.*?)D:", desc_sddl).group(1)
         self.assertEqual(self.results[self.DS_BEHAVIOR][self._testMethodName[5:]], res)
         self.check_modify_inheritance(_ldb, object_dn)
@@ -1144,7 +1107,7 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         # Create a custom security descriptor
         desc_sddl = "O:DAG:DAD:(A;;RP;;;DU)"
         self.create_configuration_container(_ldb, object_dn, desc_sddl)
-        desc_sddl = self.get_desc_sddl(object_dn)
+        desc_sddl = self.sd_utils.get_sd_as_sddl(object_dn)
         res = re.search("(O:.*G:.*?)D:", desc_sddl).group(1)
         self.assertEqual("O:DAG:DA", res)
 
@@ -1160,7 +1123,7 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         # Create a custom security descriptor
         desc_sddl = "O:DAG:DAD:(A;;RP;;;DU)"
         self.create_configuration_container(_ldb, object_dn, desc_sddl)
-        desc_sddl = self.get_desc_sddl(object_dn)
+        desc_sddl = self.sd_utils.get_sd_as_sddl(object_dn)
         res = re.search("(O:.*G:.*?)D:", desc_sddl).group(1)
         self.assertEqual("O:DAG:DA", res)
 
@@ -1173,9 +1136,9 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         object_dn = "CN=test-container1,CN=DisplaySpecifiers," + self.configuration_dn
         delete_force(self.ldb_admin, object_dn)
         self.create_configuration_container(self.ldb_admin, object_dn, )
-        user_sid = self.get_object_sid( self.get_users_domain_dn(user_name) )
+        user_sid = self.sd_utils.get_object_sid( self.get_users_domain_dn(user_name) )
         mod = "(A;;CC;;;AU)"
-        self.dacl_add_ace(object_dn, mod)
+        self.sd_utils.dacl_add_ace(object_dn, mod)
         # Create child object with user's credentials
         object_dn = "CN=test-specifier1," + object_dn
         delete_force(self.ldb_admin, object_dn)
@@ -1183,7 +1146,7 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         # NB! Problematic owner part won't accept DA only <User Sid> !!!
         desc_sddl = "O:%sG:DAD:(A;;RP;;;DU)" % str(user_sid)
         self.create_configuration_specifier(_ldb, object_dn, desc_sddl)
-        desc_sddl = self.get_desc_sddl(object_dn)
+        desc_sddl = self.sd_utils.get_sd_as_sddl(object_dn)
         res = re.search("(O:.*G:.*?)D:", desc_sddl).group(1)
         self.assertEqual(self.results[self.DS_BEHAVIOR][self._testMethodName[5:]] % str(user_sid), res)
 
@@ -1196,9 +1159,9 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         object_dn = "CN=test-container1,CN=DisplaySpecifiers," + self.configuration_dn
         delete_force(self.ldb_admin, object_dn)
         self.create_configuration_container(self.ldb_admin, object_dn, )
-        user_sid = self.get_object_sid( self.get_users_domain_dn(user_name) )
+        user_sid = self.sd_utils.get_object_sid( self.get_users_domain_dn(user_name) )
         mod = "(A;;CC;;;AU)"
-        self.dacl_add_ace(object_dn, mod)
+        self.sd_utils.dacl_add_ace(object_dn, mod)
         # Create child object with user's credentials
         object_dn = "CN=test-specifier1," + object_dn
         delete_force(self.ldb_admin, object_dn)
@@ -1206,7 +1169,7 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         # NB! Problematic owner part won't accept DA only <User Sid> !!!
         desc_sddl = "O:%sG:DAD:(A;;RP;;;DU)" % str(user_sid)
         self.create_configuration_specifier(_ldb, object_dn, desc_sddl)
-        desc_sddl = self.get_desc_sddl(object_dn)
+        desc_sddl = self.sd_utils.get_sd_as_sddl(object_dn)
         res = re.search("(O:.*G:.*?)D:", desc_sddl).group(1)
         self.assertEqual(self.results[self.DS_BEHAVIOR][self._testMethodName[5:]] % str(user_sid), res)
 
@@ -1222,7 +1185,7 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         # Create a custom security descriptor
         desc_sddl = "O:DAG:DAD:(A;;RP;;;DU)"
         self.create_configuration_container(_ldb, object_dn, desc_sddl)
-        desc_sddl = self.get_desc_sddl(object_dn)
+        desc_sddl = self.sd_utils.get_sd_as_sddl(object_dn)
         res = re.search("(O:.*G:.*?)D:", desc_sddl).group(1)
         self.assertEqual("O:DAG:DA", res)
 
@@ -1238,7 +1201,7 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         # Create a custom security descriptor
         desc_sddl = "O:DAG:DAD:(A;;RP;;;DU)"
         self.create_configuration_container(_ldb, object_dn, desc_sddl)
-        desc_sddl = self.get_desc_sddl(object_dn)
+        desc_sddl = self.sd_utils.get_sd_as_sddl(object_dn)
         res = re.search("(O:.*G:.*?)D:", desc_sddl).group(1)
         self.assertEqual("O:DAG:DA", res)
 
@@ -1254,7 +1217,7 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         # Create a custom security descriptor
         desc_sddl = "O:DAG:DAD:(A;;RP;;;DU)"
         self.create_configuration_container(_ldb, object_dn, desc_sddl)
-        desc_sddl = self.get_desc_sddl(object_dn)
+        desc_sddl = self.sd_utils.get_sd_as_sddl(object_dn)
         res = re.search("(O:.*G:.*?)D:", desc_sddl).group(1)
         self.assertEqual("O:DAG:DA", res)
 
@@ -1270,7 +1233,7 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         # Create a custom security descriptor
         desc_sddl = "O:DAG:DAD:(A;;RP;;;DU)"
         self.create_configuration_container(_ldb, object_dn, desc_sddl)
-        desc_sddl = self.get_desc_sddl(object_dn)
+        desc_sddl = self.sd_utils.get_sd_as_sddl(object_dn)
         res = re.search("(O:.*G:.*?)D:", desc_sddl).group(1)
         self.assertEqual("O:DAG:DA", res)
 
@@ -1294,7 +1257,7 @@ class DaclDescriptorTests(DescriptorTests):
         # Make sure top testing OU has been deleted before starting the test
         self.assertEqual(res, [])
         self.ldb_admin.create_ou(object_dn)
-        desc_sddl = self.get_desc_sddl(object_dn)
+        desc_sddl = self.sd_utils.get_sd_as_sddl(object_dn)
         # Make sure there are inheritable ACEs initially
         self.assertTrue("CI" in desc_sddl or "OI" in desc_sddl)
         # Find and remove all inherit ACEs
@@ -1306,9 +1269,9 @@ class DaclDescriptorTests(DescriptorTests):
         # can propagate from above
         # remove SACL, we are not interested
         desc_sddl = desc_sddl.replace(":AI", ":AIP")
-        self.modify_desc(self.ldb_admin, object_dn, desc_sddl)
+        self.sd_utils.modify_sd_on_dn(object_dn, desc_sddl)
         # Verify all inheritable ACEs are gone
-        desc_sddl = self.get_desc_sddl(object_dn)
+        desc_sddl = self.sd_utils.get_sd_as_sddl(object_dn)
         self.assertFalse("CI" in desc_sddl)
         self.assertFalse("OI" in desc_sddl)
 
@@ -1322,7 +1285,7 @@ class DaclDescriptorTests(DescriptorTests):
         # Create group child object
         self.ldb_admin.newgroup("test_inherit_group", groupou="OU=test_inherit_ou", grouptype=4)
         # Make sure created group object contains NO inherit ACEs
-        desc_sddl = self.get_desc_sddl(group_dn)
+        desc_sddl = self.sd_utils.get_sd_as_sddl(group_dn)
         self.assertFalse("ID" in desc_sddl)
 
     def test_201(self):
@@ -1338,11 +1301,11 @@ class DaclDescriptorTests(DescriptorTests):
         tmp_desc = security.descriptor.from_sddl(sddl, self.domain_sid)
         self.ldb_admin.newgroup("test_inherit_group", groupou="OU=test_inherit_ou", grouptype=4, sd=tmp_desc)
         # Make sure created group descriptor has NO additional ACEs
-        desc_sddl = self.get_desc_sddl(group_dn)
+        desc_sddl = self.sd_utils.get_sd_as_sddl(group_dn)
         self.assertEqual(desc_sddl, sddl)
         sddl = "O:AUG:AUD:AI(D;;CC;;;LG)"
-        self.modify_desc(self.ldb_admin, group_dn, sddl)
-        desc_sddl = self.get_desc_sddl(group_dn)
+        self.sd_utils.modify_sd_on_dn(group_dn, sddl)
+        desc_sddl = self.sd_utils.get_sd_as_sddl(group_dn)
         self.assertEqual(desc_sddl, sddl)
 
     def test_202(self):
@@ -1356,19 +1319,19 @@ class DaclDescriptorTests(DescriptorTests):
         # Add some custom non-inheritable ACEs
         mod = "(D;;WP;;;DU)(A;;RP;;;DU)"
         moded = "(D;;CC;;;LG)"
-        self.dacl_add_ace(ou_dn, mod)
+        self.sd_utils.dacl_add_ace(ou_dn, mod)
         # Verify all inheritable ACEs are gone
-        desc_sddl = self.get_desc_sddl(ou_dn)
+        desc_sddl = self.sd_utils.get_sd_as_sddl(ou_dn)
         # Create group child object
         self.ldb_admin.newgroup("test_inherit_group", groupou="OU=test_inherit_ou", grouptype=4)
         # Make sure created group object contains NO inherit ACEs
         # also make sure the added above non-inheritable ACEs are absent too
-        desc_sddl = self.get_desc_sddl(group_dn)
+        desc_sddl = self.sd_utils.get_sd_as_sddl(group_dn)
         self.assertFalse("ID" in desc_sddl)
         for x in re.findall("\(.*?\)", mod):
             self.assertFalse(x in desc_sddl)
-        self.modify_desc(self.ldb_admin, group_dn, "D:" + moded)
-        desc_sddl = self.get_desc_sddl(group_dn)
+        self.sd_utils.modify_sd_on_dn(group_dn, "D:" + moded)
+        desc_sddl = self.sd_utils.get_sd_as_sddl(group_dn)
         self.assertFalse("ID" in desc_sddl)
         for x in re.findall("\(.*?\)", mod):
             self.assertFalse(x in desc_sddl)
@@ -1384,18 +1347,18 @@ class DaclDescriptorTests(DescriptorTests):
         # Add some custom 'CI' ACE
         mod = "(D;CI;WP;;;DU)"
         moded = "(D;;CC;;;LG)"
-        self.dacl_add_ace(ou_dn, mod)
-        desc_sddl = self.get_desc_sddl(ou_dn)
+        self.sd_utils.dacl_add_ace(ou_dn, mod)
+        desc_sddl = self.sd_utils.get_sd_as_sddl(ou_dn)
         # Create group child object
         tmp_desc = security.descriptor.from_sddl("O:AUG:AUD:AI(A;;CC;;;AU)", self.domain_sid)
         self.ldb_admin.newgroup("test_inherit_group", groupou="OU=test_inherit_ou", grouptype=4, sd=tmp_desc)
         # Make sure created group object contains only the above inherited ACE
         # that we've added manually
-        desc_sddl = self.get_desc_sddl(group_dn)
+        desc_sddl = self.sd_utils.get_sd_as_sddl(group_dn)
         mod = mod.replace(";CI;", ";CIID;")
         self.assertTrue(mod in desc_sddl)
-        self.modify_desc(self.ldb_admin, group_dn, "D:" + moded)
-        desc_sddl = self.get_desc_sddl(group_dn)
+        self.sd_utils.modify_sd_on_dn(group_dn, "D:" + moded)
+        desc_sddl = self.sd_utils.get_sd_as_sddl(group_dn)
         self.assertTrue(moded in desc_sddl)
         self.assertTrue(mod in desc_sddl)
 
@@ -1410,18 +1373,18 @@ class DaclDescriptorTests(DescriptorTests):
         # Add some custom 'CI' ACE
         mod = "(D;OI;WP;;;DU)"
         moded = "(D;;CC;;;LG)"
-        self.dacl_add_ace(ou_dn, mod)
-        desc_sddl = self.get_desc_sddl(ou_dn)
+        self.sd_utils.dacl_add_ace(ou_dn, mod)
+        desc_sddl = self.sd_utils.get_sd_as_sddl(ou_dn)
         # Create group child object
         tmp_desc = security.descriptor.from_sddl("O:AUG:AUD:AI(A;;CC;;;AU)", self.domain_sid)
         self.ldb_admin.newgroup("test_inherit_group", groupou="OU=test_inherit_ou", grouptype=4, sd=tmp_desc)
         # Make sure created group object contains only the above inherited ACE
         # that we've added manually
-        desc_sddl = self.get_desc_sddl(group_dn)
+        desc_sddl = self.sd_utils.get_sd_as_sddl(group_dn)
         mod = mod.replace(";OI;", ";OIIOID;") # change it how it's gonna look like
         self.assertTrue(mod in desc_sddl)
-        self.modify_desc(self.ldb_admin, group_dn, "D:" +moded)
-        desc_sddl = self.get_desc_sddl(group_dn)
+        self.sd_utils.modify_sd_on_dn(group_dn, "D:" +moded)
+        desc_sddl = self.sd_utils.get_sd_as_sddl(group_dn)
         self.assertTrue(moded in desc_sddl)
         self.assertTrue(mod in desc_sddl)
 
@@ -1436,18 +1399,18 @@ class DaclDescriptorTests(DescriptorTests):
         # Add some custom 'OA' for 'name' attribute & 'CI' ACE
         mod = "(OA;CI;WP;bf967a0e-0de6-11d0-a285-00aa003049e2;;DU)"
         moded = "(D;;CC;;;LG)"
-        self.dacl_add_ace(ou_dn, mod)
-        desc_sddl = self.get_desc_sddl(ou_dn)
+        self.sd_utils.dacl_add_ace(ou_dn, mod)
+        desc_sddl = self.sd_utils.get_sd_as_sddl(ou_dn)
         # Create group child object
         tmp_desc = security.descriptor.from_sddl("O:AUG:AUD:AI(A;;CC;;;AU)", self.domain_sid)
         self.ldb_admin.newgroup("test_inherit_group", groupou="OU=test_inherit_ou", grouptype=4, sd=tmp_desc)
         # Make sure created group object contains only the above inherited ACE
         # that we've added manually
-        desc_sddl = self.get_desc_sddl(group_dn)
+        desc_sddl = self.sd_utils.get_sd_as_sddl(group_dn)
         mod = mod.replace(";CI;", ";CIID;") # change it how it's gonna look like
         self.assertTrue(mod in desc_sddl)
-        self.modify_desc(self.ldb_admin, group_dn, "D:" + moded)
-        desc_sddl = self.get_desc_sddl(group_dn)
+        self.sd_utils.modify_sd_on_dn(group_dn, "D:" + moded)
+        desc_sddl = self.sd_utils.get_sd_as_sddl(group_dn)
         self.assertTrue(moded in desc_sddl)
         self.assertTrue(mod in desc_sddl)
 
@@ -1462,18 +1425,18 @@ class DaclDescriptorTests(DescriptorTests):
         # Add some custom 'OA' for 'name' attribute & 'OI' ACE
         mod = "(OA;OI;WP;bf967a0e-0de6-11d0-a285-00aa003049e2;;DU)"
         moded = "(D;;CC;;;LG)"
-        self.dacl_add_ace(ou_dn, mod)
-        desc_sddl = self.get_desc_sddl(ou_dn)
+        self.sd_utils.dacl_add_ace(ou_dn, mod)
+        desc_sddl = self.sd_utils.get_sd_as_sddl(ou_dn)
         # Create group child object
         tmp_desc = security.descriptor.from_sddl("O:AUG:AUD:AI(A;;CC;;;AU)", self.domain_sid)
         self.ldb_admin.newgroup("test_inherit_group", groupou="OU=test_inherit_ou", grouptype=4, sd=tmp_desc)
         # Make sure created group object contains only the above inherited ACE
         # that we've added manually
-        desc_sddl = self.get_desc_sddl(group_dn)
+        desc_sddl = self.sd_utils.get_sd_as_sddl(group_dn)
         mod = mod.replace(";OI;", ";OIIOID;") # change it how it's gonna look like
         self.assertTrue(mod in desc_sddl)
-        self.modify_desc(self.ldb_admin, group_dn, "D:" + moded)
-        desc_sddl = self.get_desc_sddl(group_dn)
+        self.sd_utils.modify_sd_on_dn(group_dn, "D:" + moded)
+        desc_sddl = self.sd_utils.get_sd_as_sddl(group_dn)
         self.assertTrue(moded in desc_sddl)
         self.assertTrue(mod in desc_sddl)
 
@@ -1488,18 +1451,18 @@ class DaclDescriptorTests(DescriptorTests):
         # Add some custom 'OA' for 'st' attribute (OU specific) & 'CI' ACE
         mod = "(OA;CI;WP;bf967a39-0de6-11d0-a285-00aa003049e2;;DU)"
         moded = "(D;;CC;;;LG)"
-        self.dacl_add_ace(ou_dn, mod)
-        desc_sddl = self.get_desc_sddl(ou_dn)
+        self.sd_utils.dacl_add_ace(ou_dn, mod)
+        desc_sddl = self.sd_utils.get_sd_as_sddl(ou_dn)
         # Create group child object
         tmp_desc = security.descriptor.from_sddl("O:AUG:AUD:AI(A;;CC;;;AU)", self.domain_sid)
         self.ldb_admin.newgroup("test_inherit_group", groupou="OU=test_inherit_ou", grouptype=4, sd=tmp_desc)
         # Make sure created group object contains only the above inherited ACE
         # that we've added manually
-        desc_sddl = self.get_desc_sddl(group_dn)
+        desc_sddl = self.sd_utils.get_sd_as_sddl(group_dn)
         mod = mod.replace(";CI;", ";CIID;") # change it how it's gonna look like
         self.assertTrue(mod in desc_sddl)
-        self.modify_desc(self.ldb_admin, group_dn, "D:" + moded)
-        desc_sddl = self.get_desc_sddl(group_dn)
+        self.sd_utils.modify_sd_on_dn(group_dn, "D:" + moded)
+        desc_sddl = self.sd_utils.get_sd_as_sddl(group_dn)
         self.assertTrue(moded in desc_sddl)
         self.assertTrue(mod in desc_sddl)
 
@@ -1514,18 +1477,18 @@ class DaclDescriptorTests(DescriptorTests):
         # Add some custom 'OA' for 'st' attribute (OU specific) & 'OI' ACE
         mod = "(OA;OI;WP;bf967a39-0de6-11d0-a285-00aa003049e2;;DU)"
         moded = "(D;;CC;;;LG)"
-        self.dacl_add_ace(ou_dn, mod)
-        desc_sddl = self.get_desc_sddl(ou_dn)
+        self.sd_utils.dacl_add_ace(ou_dn, mod)
+        desc_sddl = self.sd_utils.get_sd_as_sddl(ou_dn)
         # Create group child object
         tmp_desc = security.descriptor.from_sddl("O:AUG:AUD:AI(A;;CC;;;AU)", self.domain_sid)
         self.ldb_admin.newgroup("test_inherit_group", groupou="OU=test_inherit_ou", grouptype=4, sd=tmp_desc)
         # Make sure created group object contains only the above inherited ACE
         # that we've added manually
-        desc_sddl = self.get_desc_sddl(group_dn)
+        desc_sddl = self.sd_utils.get_sd_as_sddl(group_dn)
         mod = mod.replace(";OI;", ";OIIOID;") # change it how it's gonna look like
         self.assertTrue(mod in desc_sddl)
-        self.modify_desc(self.ldb_admin, group_dn, "D:(OA;OI;WP;bf967a39-0de6-11d0-a285-00aa003049e2;;DU)" + moded)
-        desc_sddl = self.get_desc_sddl(group_dn)
+        self.sd_utils.modify_sd_on_dn(group_dn, "D:(OA;OI;WP;bf967a39-0de6-11d0-a285-00aa003049e2;;DU)" + moded)
+        desc_sddl = self.sd_utils.get_sd_as_sddl(group_dn)
         self.assertTrue(moded in desc_sddl)
         self.assertTrue(mod in desc_sddl)
 
@@ -1540,18 +1503,18 @@ class DaclDescriptorTests(DescriptorTests):
         # Add some custom 'CI' ACE
         mod = "(D;CI;WP;;;CO)"
         moded = "(D;;CC;;;LG)"
-        self.dacl_add_ace(ou_dn, mod)
-        desc_sddl = self.get_desc_sddl(ou_dn)
+        self.sd_utils.dacl_add_ace(ou_dn, mod)
+        desc_sddl = self.sd_utils.get_sd_as_sddl(ou_dn)
         # Create group child object
         tmp_desc = security.descriptor.from_sddl("O:AUG:AUD:AI(A;;CC;;;AU)", self.domain_sid)
         self.ldb_admin.newgroup("test_inherit_group", groupou="OU=test_inherit_ou", grouptype=4, sd=tmp_desc)
         # Make sure created group object contains only the above inherited ACE(s)
         # that we've added manually
-        desc_sddl = self.get_desc_sddl(group_dn)
+        desc_sddl = self.sd_utils.get_sd_as_sddl(group_dn)
         self.assertTrue("(D;ID;WP;;;AU)" in desc_sddl)
         self.assertTrue("(D;CIIOID;WP;;;CO)" in desc_sddl)
-        self.modify_desc(self.ldb_admin, group_dn, "D:" + moded)
-        desc_sddl = self.get_desc_sddl(group_dn)
+        self.sd_utils.modify_sd_on_dn(group_dn, "D:" + moded)
+        desc_sddl = self.sd_utils.get_sd_as_sddl(group_dn)
         self.assertTrue(moded in desc_sddl)
         self.assertTrue("(D;ID;WP;;;DA)" in desc_sddl)
         self.assertTrue("(D;CIIOID;WP;;;CO)" in desc_sddl)
@@ -1567,7 +1530,7 @@ class DaclDescriptorTests(DescriptorTests):
         tmp_desc = security.descriptor.from_sddl(mod, self.domain_sid)
         self.ldb_admin.newgroup("test_inherit_group", groupou="OU=test_inherit_ou", grouptype=4, sd=tmp_desc)
         # Make sure created group object does not contain the ID ace
-        desc_sddl = self.get_desc_sddl(group_dn)
+        desc_sddl = self.sd_utils.get_sd_as_sddl(group_dn)
         self.assertFalse("(A;ID;WP;;;AU)" in desc_sddl)
 
     def test_211(self):
@@ -1581,7 +1544,7 @@ class DaclDescriptorTests(DescriptorTests):
         mod = "D:(D;CI;WP;;;CO)"
         tmp_desc = security.descriptor.from_sddl(mod, self.domain_sid)
         self.ldb_admin.newgroup("test_inherit_group", groupou="OU=test_inherit_ou", grouptype=4, sd=tmp_desc)
-        desc_sddl = self.get_desc_sddl(group_dn)
+        desc_sddl = self.sd_utils.get_sd_as_sddl(group_dn)
         self.assertTrue("(D;;WP;;;DA)(D;CIIO;WP;;;CO)" in desc_sddl)
 
     def test_212(self):
@@ -1597,7 +1560,7 @@ class DaclDescriptorTests(DescriptorTests):
         self.ldb_admin.newgroup("test_inherit_group", groupou="OU=test_inherit_ou", grouptype=4, sd=tmp_desc)
         # Make sure created group object contains only the above inherited ACE(s)
         # that we've added manually
-        desc_sddl = self.get_desc_sddl(group_dn)
+        desc_sddl = self.sd_utils.get_sd_as_sddl(group_dn)
         self.assertTrue("(D;CIIO;WP;;;CO)" in desc_sddl)
         self.assertFalse("(D;;WP;;;DA)" in desc_sddl)
         self.assertFalse("(D;CIIO;WP;;;CO)(D;CIIO;WP;;;CO)" in desc_sddl)
@@ -1614,7 +1577,7 @@ class DaclDescriptorTests(DescriptorTests):
         self.ldb_admin.newgroup("test_inherit_group", groupou="OU=test_inherit_ou", grouptype=4, sd=tmp_desc)
         # Make sure created group object contains only the above inherited ACE(s)
         # that we've added manually
-        desc_sddl = self.get_desc_sddl(group_dn)
+        desc_sddl = self.sd_utils.get_sd_as_sddl(group_dn)
         self.assertFalse("(D;IO;WP;;;DA)" in desc_sddl)
 
     ########################################################################################
@@ -1635,8 +1598,8 @@ class SdFlagsDescriptorTests(DescriptorTests):
         """
         ou_dn = "OU=test_sdflags_ou," + self.base_dn
         self.ldb_admin.create_ou(ou_dn)
-        self.modify_desc(self.ldb_admin, ou_dn, self.test_descr, controls=["sd_flags:1:%d" % (SECINFO_OWNER)])
-        desc_sddl = self.get_desc_sddl(ou_dn)
+        self.sd_utils.modify_sd_on_dn(ou_dn, self.test_descr, controls=["sd_flags:1:%d" % (SECINFO_OWNER)])
+        desc_sddl = self.sd_utils.get_sd_as_sddl(ou_dn)
         # make sure we have modified the owner
         self.assertTrue("O:AU" in desc_sddl)
         # make sure nothing else has been modified
@@ -1650,8 +1613,8 @@ class SdFlagsDescriptorTests(DescriptorTests):
         """
         ou_dn = "OU=test_sdflags_ou," + self.base_dn
         self.ldb_admin.create_ou(ou_dn)
-        self.modify_desc(self.ldb_admin, ou_dn, self.test_descr, controls=["sd_flags:1:%d" % (SECINFO_GROUP)])
-        desc_sddl = self.get_desc_sddl(ou_dn)
+        self.sd_utils.modify_sd_on_dn(ou_dn, self.test_descr, controls=["sd_flags:1:%d" % (SECINFO_GROUP)])
+        desc_sddl = self.sd_utils.get_sd_as_sddl(ou_dn)
         # make sure we have modified the group
         self.assertTrue("G:AU" in desc_sddl)
         # make sure nothing else has been modified
@@ -1665,8 +1628,8 @@ class SdFlagsDescriptorTests(DescriptorTests):
         """
         ou_dn = "OU=test_sdflags_ou," + self.base_dn
         self.ldb_admin.create_ou(ou_dn)
-        self.modify_desc(self.ldb_admin, ou_dn, self.test_descr, controls=["sd_flags:1:%d" % (SECINFO_DACL)])
-        desc_sddl = self.get_desc_sddl(ou_dn)
+        self.sd_utils.modify_sd_on_dn(ou_dn, self.test_descr, controls=["sd_flags:1:%d" % (SECINFO_DACL)])
+        desc_sddl = self.sd_utils.get_sd_as_sddl(ou_dn)
         # make sure we have modified the DACL
         self.assertTrue("(D;;CC;;;LG)" in desc_sddl)
         # make sure nothing else has been modified
@@ -1680,8 +1643,8 @@ class SdFlagsDescriptorTests(DescriptorTests):
         """
         ou_dn = "OU=test_sdflags_ou," + self.base_dn
         self.ldb_admin.create_ou(ou_dn)
-        self.modify_desc(self.ldb_admin, ou_dn, self.test_descr, controls=["sd_flags:1:%d" % (SECINFO_SACL)])
-        desc_sddl = self.get_desc_sddl(ou_dn)
+        self.sd_utils.modify_sd_on_dn(ou_dn, self.test_descr, controls=["sd_flags:1:%d" % (SECINFO_SACL)])
+        desc_sddl = self.sd_utils.get_sd_as_sddl(ou_dn)
         # make sure we have modified the DACL
         self.assertTrue("(OU;;WP;;;AU)" in desc_sddl)
         # make sure nothing else has been modified
@@ -1696,8 +1659,8 @@ class SdFlagsDescriptorTests(DescriptorTests):
         """
         ou_dn = "OU=test_sdflags_ou," + self.base_dn
         self.ldb_admin.create_ou(ou_dn)
-        self.modify_desc(self.ldb_admin, ou_dn, self.test_descr, controls=["sd_flags:1:0"])
-        desc_sddl = self.get_desc_sddl(ou_dn)
+        self.sd_utils.modify_sd_on_dn(ou_dn, self.test_descr, controls=["sd_flags:1:0"])
+        desc_sddl = self.sd_utils.get_sd_as_sddl(ou_dn)
         # make sure we have modified the DACL
         self.assertTrue("(OU;;WP;;;AU)" in desc_sddl)
         # make sure nothing else has been modified
@@ -1710,8 +1673,8 @@ class SdFlagsDescriptorTests(DescriptorTests):
         """
         ou_dn = "OU=test_sdflags_ou," + self.base_dn
         self.ldb_admin.create_ou(ou_dn)
-        self.modify_desc(self.ldb_admin, ou_dn, self.test_descr, controls=["sd_flags:1:15"])
-        desc_sddl = self.get_desc_sddl(ou_dn)
+        self.sd_utils.modify_sd_on_dn(ou_dn, self.test_descr, controls=["sd_flags:1:15"])
+        desc_sddl = self.sd_utils.get_sd_as_sddl(ou_dn)
         # make sure we have modified the DACL
         self.assertTrue("(OU;;WP;;;AU)" in desc_sddl)
         # make sure nothing else has been modified
@@ -1725,7 +1688,7 @@ class SdFlagsDescriptorTests(DescriptorTests):
         """
         ou_dn = "OU=test_sdflags_ou," + self.base_dn
         self.ldb_admin.create_ou(ou_dn)
-        desc_sddl = self.get_desc_sddl(ou_dn, controls=["sd_flags:1:%d" % (SECINFO_OWNER)])
+        desc_sddl = self.sd_utils.get_sd_as_sddl(ou_dn, controls=["sd_flags:1:%d" % (SECINFO_OWNER)])
         # make sure we have read the owner
         self.assertTrue("O:" in desc_sddl)
         # make sure we have read nothing else
@@ -1739,7 +1702,7 @@ class SdFlagsDescriptorTests(DescriptorTests):
         """
         ou_dn = "OU=test_sdflags_ou," + self.base_dn
         self.ldb_admin.create_ou(ou_dn)
-        desc_sddl = self.get_desc_sddl(ou_dn, controls=["sd_flags:1:%d" % (SECINFO_GROUP)])
+        desc_sddl = self.sd_utils.get_sd_as_sddl(ou_dn, controls=["sd_flags:1:%d" % (SECINFO_GROUP)])
         # make sure we have read the owner
         self.assertTrue("G:" in desc_sddl)
         # make sure we have read nothing else
@@ -1753,7 +1716,7 @@ class SdFlagsDescriptorTests(DescriptorTests):
         """
         ou_dn = "OU=test_sdflags_ou," + self.base_dn
         self.ldb_admin.create_ou(ou_dn)
-        desc_sddl = self.get_desc_sddl(ou_dn, controls=["sd_flags:1:%d" % (SECINFO_SACL)])
+        desc_sddl = self.sd_utils.get_sd_as_sddl(ou_dn, controls=["sd_flags:1:%d" % (SECINFO_SACL)])
         # make sure we have read the owner
         self.assertTrue("S:" in desc_sddl)
         # make sure we have read nothing else
@@ -1767,7 +1730,7 @@ class SdFlagsDescriptorTests(DescriptorTests):
         """
         ou_dn = "OU=test_sdflags_ou," + self.base_dn
         self.ldb_admin.create_ou(ou_dn)
-        desc_sddl = self.get_desc_sddl(ou_dn, controls=["sd_flags:1:%d" % (SECINFO_DACL)])
+        desc_sddl = self.sd_utils.get_sd_as_sddl(ou_dn, controls=["sd_flags:1:%d" % (SECINFO_DACL)])
         # make sure we have read the owner
         self.assertTrue("D:" in desc_sddl)
         # make sure we have read nothing else
@@ -1800,10 +1763,10 @@ class RightsAttributesTests(DescriptorTests):
         delete_force(self.ldb_admin, object_dn)
         self.ldb_admin.create_ou(object_dn)
         print self.get_users_domain_dn("testuser_attr")
-        user_sid = self.get_object_sid(self.get_users_domain_dn("testuser_attr"))
+        user_sid = self.sd_utils.get_object_sid(self.get_users_domain_dn("testuser_attr"))
         #give testuser1 read access so attributes can be retrieved
         mod = "(A;CI;RP;;;%s)" % str(user_sid)
-        self.dacl_add_ace(object_dn, mod)
+        self.sd_utils.dacl_add_ace(object_dn, mod)
         _ldb = self.get_ldb_connection("testuser_attr", "samba123@")
         res = _ldb.search(base=object_dn, expression="", scope=SCOPE_BASE,
                          attrs=["sDRightsEffective"])
@@ -1812,7 +1775,7 @@ class RightsAttributesTests(DescriptorTests):
         self.assertEquals(res[0]["sDRightsEffective"][0], "0")
         #give the user Write DACL and see what happens
         mod = "(A;CI;WD;;;%s)" % str(user_sid)
-        self.dacl_add_ace(object_dn, mod)
+        self.sd_utils.dacl_add_ace(object_dn, mod)
         res = _ldb.search(base=object_dn, expression="", scope=SCOPE_BASE,
                          attrs=["sDRightsEffective"])
         #user whould have DACL_SECURITY_INFORMATION
@@ -1820,7 +1783,7 @@ class RightsAttributesTests(DescriptorTests):
         self.assertEquals(res[0]["sDRightsEffective"][0], ("%d") % SECINFO_DACL)
         #give the user Write Owners and see what happens
         mod = "(A;CI;WO;;;%s)" % str(user_sid)
-        self.dacl_add_ace(object_dn, mod)
+        self.sd_utils.dacl_add_ace(object_dn, mod)
         res = _ldb.search(base=object_dn, expression="", scope=SCOPE_BASE,
                          attrs=["sDRightsEffective"])
         #user whould have DACL_SECURITY_INFORMATION, OWNER_SECURITY_INFORMATION, GROUP_SECURITY_INFORMATION
@@ -1839,10 +1802,10 @@ class RightsAttributesTests(DescriptorTests):
         object_dn = "OU=test_domain_ou1," + self.base_dn
         delete_force(self.ldb_admin, object_dn)
         self.ldb_admin.create_ou(object_dn)
-        user_sid = self.get_object_sid(self.get_users_domain_dn("testuser_attr"))
+        user_sid = self.sd_utils.get_object_sid(self.get_users_domain_dn("testuser_attr"))
         #give testuser1 read access so attributes can be retrieved
         mod = "(A;CI;RP;;;%s)" % str(user_sid)
-        self.dacl_add_ace(object_dn, mod)
+        self.sd_utils.dacl_add_ace(object_dn, mod)
         _ldb = self.get_ldb_connection("testuser_attr", "samba123@")
         res = _ldb.search(base=object_dn, expression="", scope=SCOPE_BASE,
                          attrs=["allowedChildClassesEffective"])
@@ -1851,7 +1814,7 @@ class RightsAttributesTests(DescriptorTests):
         self.assertFalse("allowedChildClassesEffective" in res[0].keys())
         #give the user the right to create children of type user
         mod = "(OA;CI;CC;bf967aba-0de6-11d0-a285-00aa003049e2;;%s)" % str(user_sid)
-        self.dacl_add_ace(object_dn, mod)
+        self.sd_utils.dacl_add_ace(object_dn, mod)
         res = _ldb.search(base=object_dn, expression="", scope=SCOPE_BASE,
                          attrs=["allowedChildClassesEffective"])
         # allowedChildClassesEffective should only have one value, user
@@ -1863,10 +1826,10 @@ class RightsAttributesTests(DescriptorTests):
         object_dn = "OU=test_domain_ou1," + self.base_dn
         delete_force(self.ldb_admin, object_dn)
         self.ldb_admin.create_ou(object_dn)
-        user_sid = self.get_object_sid(self.get_users_domain_dn("testuser_attr"))
+        user_sid = self.sd_utils.get_object_sid(self.get_users_domain_dn("testuser_attr"))
         #give testuser1 read access so attributes can be retrieved
         mod = "(A;CI;RP;;;%s)" % str(user_sid)
-        self.dacl_add_ace(object_dn, mod)
+        self.sd_utils.dacl_add_ace(object_dn, mod)
         _ldb = self.get_ldb_connection("testuser_attr", "samba123@")
         res = _ldb.search(base=object_dn, expression="", scope=SCOPE_BASE,
                          attrs=["allowedAttributesEffective"])
@@ -1878,7 +1841,7 @@ class RightsAttributesTests(DescriptorTests):
         mod = "(OA;CI;WP;0296c120-40da-11d1-a9c0-0000f80367c1;;%s)" % str(user_sid)
         # also rights to modify an read only attribute, fromEntry
         mod3 = "(OA;CI;WP;9a7ad949-ca53-11d1-bbd0-0080c76670c0;;%s)" % str(user_sid)
-        self.dacl_add_ace(object_dn, mod + mod2 + mod3)
+        self.sd_utils.dacl_add_ace(object_dn, mod + mod2 + mod3)
         res = _ldb.search(base=object_dn, expression="", scope=SCOPE_BASE,
                          attrs=["allowedAttributesEffective"])
         # value should only contain user and managedBy
