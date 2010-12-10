@@ -57,11 +57,17 @@ struct dsdb_schema *dsdb_schema_copy_shallow(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
+	/* schema base_dn */
+	schema_copy->base_dn = ldb_dn_copy(schema_copy, schema->base_dn);
+	if (!schema_copy->base_dn) {
+		goto failed;
+	}
+
 	/* copy prexiMap & schemaInfo */
 	schema_copy->prefixmap = dsdb_schema_pfm_copy_shallow(schema_copy,
 							      schema->prefixmap);
 	if (!schema_copy->prefixmap) {
-		return NULL;
+		goto failed;
 	}
 
 	schema_copy->schema_info = talloc_strdup(schema_copy, schema->schema_info);
