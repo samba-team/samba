@@ -3413,6 +3413,7 @@ test:: all torture timelimit
 		NSS_WRAPPER_WINBIND_SO_PATH="$(srcdir)/../nsswitch/libnss_winbind.so" \
 		SELFTESTDIR="$(selftestdir)" SELFTESTPREFIX="$(selftest_prefix)" \
 		SOURCEDIR="$(srcdir)" \
+		VFSLIBDIR="$(builddir)/bin" \
 		RUN_FROM_BUILD_FARM="$(RUN_FROM_BUILD_FARM)" \
 		SUBUNIT_FORMATTER="$(SUBUNIT_FORMATTER)" \
 		PERL="$(PERL)" PYTHON="$(PYTHON)" \
