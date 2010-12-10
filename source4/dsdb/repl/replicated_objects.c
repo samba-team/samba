@@ -433,11 +433,20 @@ WERROR dsdb_replicated_objects_convert(struct ldb_context *ldb,
 	return WERR_OK;
 }
 
+/**
+ * Commits a list of replicated objects.
+ *
+ * @param working_schema dsdb_schema to be used for resolving
+ * 			 Classes/Attributes during Schema replication. If not NULL,
+ * 			 it will be set on ldb and used while committing replicated objects
+ */
 WERROR dsdb_replicated_objects_commit(struct ldb_context *ldb,
+				      struct dsdb_schema *working_schema,
 				      struct dsdb_extended_replicated_objects *objects,
 				      uint64_t *notify_uSN)
 {
 	struct ldb_result *ext_res;
+	struct dsdb_schema *cur_schema = NULL;
 	int ret;
 	uint64_t seq_num1, seq_num2;
 
@@ -459,8 +468,33 @@ WERROR dsdb_replicated_objects_commit(struct ldb_context *ldb,
 		return WERR_FOOBAR;		
 	}
 
+	/*
+	 * Set working_schema for ldb in case we are replicating from Schema NC.
+	 * Schema won't be reloaded during Replicated Objects commit, as it is
+	 * done in a transaction. So we need some way to search for newly
+	 * added Classes and Attributes
+	 */
+	if (working_schema) {
+		/* store current schema so we can fall back in case of failure */
+		cur_schema = dsdb_get_schema(ldb, objects);
+
+		ret = dsdb_reference_schema(ldb, working_schema, false);
+		if (ret != LDB_SUCCESS) {
+			DEBUG(0,(__location__ "Failed to reference working schema - %s\n",
+				 ldb_strerror(ret)));
+			/* TODO: Map LDB Error to NTSTATUS? */
+			ldb_transaction_cancel(ldb);
+			return WERR_INTERNAL_ERROR;
+		}
+	}
+
 	ret = ldb_extended(ldb, DSDB_EXTENDED_REPLICATED_OBJECTS_OID, objects, &ext_res);
 	if (ret != LDB_SUCCESS) {
+		/* restore previous schema */
+		if (cur_schema ) {
+			dsdb_reference_schema(ldb, cur_schema, false);
+		}
+
 		DEBUG(0,("Failed to apply records: %s: %s\n",
 			 ldb_errstring(ldb), ldb_strerror(ret)));
 		ldb_transaction_cancel(ldb);
@@ -470,6 +504,10 @@ WERROR dsdb_replicated_objects_commit(struct ldb_context *ldb,
 
 	ret = ldb_transaction_prepare_commit(ldb);
 	if (ret != LDB_SUCCESS) {
+		/* restore previous schema */
+		if (cur_schema ) {
+			dsdb_reference_schema(ldb, cur_schema, false);
+		}
 		DEBUG(0,(__location__ " Failed to prepare commit of transaction: %s\n",
 			 ldb_errstring(ldb)));
 		return WERR_FOOBAR;
@@ -477,6 +515,10 @@ WERROR dsdb_replicated_objects_commit(struct ldb_context *ldb,
 
 	ret = dsdb_load_partition_usn(ldb, objects->partition_dn, &seq_num2, NULL);
 	if (ret != LDB_SUCCESS) {
+		/* restore previous schema */
+		if (cur_schema ) {
+			dsdb_reference_schema(ldb, cur_schema, false);
+		}
 		DEBUG(0,(__location__ " Failed to load partition uSN\n"));
 		ldb_transaction_cancel(ldb);
 		return WERR_FOOBAR;		
@@ -491,10 +533,23 @@ WERROR dsdb_replicated_objects_commit(struct ldb_context *ldb,
 
 	ret = ldb_transaction_commit(ldb);
 	if (ret != LDB_SUCCESS) {
+		/* restore previous schema */
+		if (cur_schema ) {
+			dsdb_reference_schema(ldb, cur_schema, false);
+		}
 		DEBUG(0,(__location__ " Failed to commit transaction\n"));
 		return WERR_FOOBAR;
 	}
 
+	/*
+	 * Reset the Schema used by ldb. This will lead to
+	 * a schema cache being refreshed from database.
+	 */
+	if (working_schema) {
+		cur_schema = dsdb_get_schema(ldb, NULL);
+		/* TODO: What we do in case dsdb_get_schema() fail?
+		 *       We can't fallback at this point anymore */
+	}
 
 	DEBUG(2,("Replicated %u objects (%u linked attributes) for %s\n",
 		 objects->num_objects, objects->linked_attributes_count,

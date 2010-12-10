@@ -629,6 +629,7 @@ static void dreplsrv_op_pull_source_apply_changes_trigger(struct tevent_req *req
 	}
 
 	status = dsdb_replicated_objects_commit(service->samdb,
+						NULL,
 						objects,
 						&state->op->source_dsa->notify_uSN);
 	talloc_free(objects);
@@ -639,6 +640,7 @@ static void dreplsrv_op_pull_source_apply_changes_trigger(struct tevent_req *req
 		tevent_req_nterror(req, nt_status);
 		return;
 	}
+
 	if (state->op->extended_op == DRSUAPI_EXOP_NONE) {
 		/* if it applied fine, we need to update the highwatermark */
 		*state->op->source_dsa->repsFrom1 = rf1;
