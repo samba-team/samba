@@ -6,13 +6,8 @@ import sys, os
 import optparse
 import wintest
 
-def check_prerequesites(t):
-    t.info("Checking prerequesites")
-    t.setvar('HOSTNAME', t.cmd_output("hostname -s").strip())
-    if os.getuid() != 0:
-        raise Exception("You must run this script as root")
+def set_libpath(t):
     t.putenv("LD_LIBRARY_PATH", "${PREFIX}/lib")
-
 
 def build_s3(t):
     '''build samba3'''
@@ -98,16 +93,16 @@ def create_shares(t):
     t.run_cmd("mkdir -p test")
 
 
-def join_as_member(t, vm):
-    '''join a windows domain as a member server'''
+def prep_join_as_member(t, vm):
+    '''prepare to join a windows domain as a member server'''
     t.setwinvars(vm)
-    t.info("Joining ${WIN_VM} as a member using net ads join")
+    t.info("Starting VMs for joining ${WIN_VM} as a member using net ads join")
     t.chdir('${PREFIX}')
     t.run_cmd('killall -9 -q samba smbd nmbd winbindd', checkfail=False)
     t.vm_poweroff("${WIN_VM}", checkfail=False)
     t.vm_restore("${WIN_VM}", "${WIN_SNAPSHOT}")
-    t.ping_wait("${WIN_HOSTNAME}")
     child = t.open_telnet("${WIN_HOSTNAME}", "administrator", "${WIN_PASS}", set_time=True)
+    t.get_ipconfig(child)
     t.del_files(["var", "private"])
     t.write_file("lib/smb.conf", '''
 [global]
@@ -128,6 +123,13 @@ def join_as_member(t, vm):
         ea support = yes
         panic action = xterm -e gdb --pid %d
     ''')
+
+def join_as_member(t, vm):
+    '''join a windows domain as a member server'''
+    t.setwinvars(vm)
+    t.info("Joining ${WIN_VM} as a member using net ads join")
+    t.port_wait("${WIN_IP}", 389)
+    t.retry_cmd("host -t SRV _ldap._tcp.${WIN_REALM} ${WIN_IP}", ['has SRV record'] )
     t.cmd_contains("bin/net ads join -Uadministrator%${WIN_PASS}", ["Joined"])
     t.cmd_contains("bin/net ads testjoin", ["Join is OK"])
 
@@ -145,12 +147,27 @@ def test_join_as_member(t, vm):
 def test_s3(t):
     '''basic s3 testing'''
 
-    check_prerequesites(t)
+    t.check_prerequesites()
+    set_libpath(t)
+
+    if not t.skip("configure_bind"):
+        t.configure_bind()
+    if not t.skip("stop_bind"):
+        t.stop_bind()
+    if not t.skip("stop_vms"):
+        t.stop_vms()
 
     if not t.skip("build"):
         build_s3(t)
 
+    if not t.skip("configure_bind2"):
+        t.configure_bind()
+    if not t.skip("start_bind"):
+        t.start_bind()
+
     if t.have_var('W2K8R2A_VM') and not t.skip("join_w2k8r2"):
+        prep_join_as_member(t, "W2K8R2A")
+        t.run_dcpromo_as_first_dc("W2K8R2A", func_level='2008r2')
         join_as_member(t, "W2K8R2A")
         create_shares(t)
         start_s3(t)
@@ -159,9 +176,26 @@ def test_s3(t):
     t.info("S3 test: All OK")
 
 
+def test_cleanup(t):
+    '''cleanup after tests'''
+    t.info("Cleaning up ...")
+    t.restore_resolv_conf()
+    if getattr(t, 'bind_child', False):
+        t.bind_child.kill()
+
+
 if __name__ == '__main__':
     t = wintest.wintest()
 
     t.setup("test-s3.py", "source3")
 
-    test_s3(t)
+    try:
+        test_s3(t)
+    except:
+        if not t.opts.nocleanup:
+            test_cleanup(t)
+        raise
+
+    if not t.opts.nocleanup:
+        test_cleanup(t)
+    t.info("S3 test: All OK")
