@@ -29,7 +29,7 @@ def start_s3(t):
     t.run_cmd(['sbin/nmbd', "-D"])
     t.run_cmd(['sbin/winbindd', "-D"])
     t.run_cmd(['sbin/smbd', "-D"])
-    t.port_wait("localhost", 139)
+    t.port_wait("${INTERFACE_IP}", 139)
 
 
 def test_wbinfo(t):
@@ -58,7 +58,7 @@ def test_wbinfo(t):
                    "S-1-5-.*-513 SID_DOM_GROUP .2",
                    regex=True)
 
-    t.retry_cmd("bin/wbinfo --authenticate=administrator%${WIN_PASS}",
+    t.retry_cmd("bin/wbinfo --authenticate=${WIN_DOMAIN}/administrator%${WIN_PASS}",
                 ["plaintext password authentication succeeded",
                  "challenge/response password authentication succeeded"])
 
@@ -67,9 +67,9 @@ def test_smbclient(t):
     t.info('Testing smbclient')
     t.chdir('${PREFIX}')
     t.cmd_contains("bin/smbclient --version", ["Version 3."])
-    t.cmd_contains('bin/smbclient -L localhost -U%', ["Domain=[${WIN_DOMAIN}]", "test", "IPC$", "Samba 3."],
+    t.cmd_contains('bin/smbclient -L ${INTERFACE_IP} -U%', ["Domain=[${WIN_DOMAIN}]", "test", "IPC$", "Samba 3."],
                    casefold=True)
-    child = t.pexpect_spawn('bin/smbclient //${HOSTNAME}/test -Uadministrator%${WIN_PASS}')
+    child = t.pexpect_spawn('bin/smbclient //${HOSTNAME}.${WIN_REALM}/test -Uroot%${PASSWORD2}')
     child.expect("smb:")
     child.sendline("dir")
     child.expect("blocks available")
@@ -111,6 +111,7 @@ def prep_join_as_member(t, vm):
         realm = ${WIN_REALM}
         workgroup = ${WIN_DOMAIN}
         security = ADS
+        bind interfaces only = yes
         interfaces = ${INTERFACE}
         winbind separator = /
         idmap uid = 1000000-2000000
@@ -132,6 +133,9 @@ def join_as_member(t, vm):
     t.retry_cmd("host -t SRV _ldap._tcp.${WIN_REALM} ${WIN_IP}", ['has SRV record'] )
     t.cmd_contains("bin/net ads join -Uadministrator%${WIN_PASS}", ["Joined"])
     t.cmd_contains("bin/net ads testjoin", ["Join is OK"])
+    t.cmd_contains("bin/net ads dns register ${HOSTNAME}.${WIN_REALM} -P", ["Successfully registered hostname with DNS"])
+    t.cmd_contains("host -t A ${HOSTNAME}.${WIN_REALM}",
+                 ['${HOSTNAME}.${WIN_REALM} has address'])
 
 
 def test_join_as_member(t, vm):
@@ -140,6 +144,15 @@ def test_join_as_member(t, vm):
     t.info('Testing join as member')
     t.chdir('${PREFIX}')
     t.run_cmd('bin/net ads user add root -Uadministrator%${WIN_PASS}')
+    child = t.pexpect_spawn('bin/net ads password root -Uadministrator%${WIN_PASS}')
+    child.expect("Enter new password for root")
+    child.sendline("${PASSWORD2}")
+    child.expect("Password change for ");
+    child.expect(" completed")
+    child = t.pexpect_spawn('bin/net rpc shell -S ${WIN_HOSTNAME}.${WIN_REALM} -Uadministrator%${WIN_PASS}')
+    child.expect("net rpc>")
+    child.sendline("user edit disabled root no")
+    child.expect("Set root's disabled flag")
     test_wbinfo(t)
     test_smbclient(t)
 
