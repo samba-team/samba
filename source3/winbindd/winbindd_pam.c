@@ -1166,36 +1166,25 @@ static NTSTATUS winbindd_dual_pam_auth_samlogon(struct winbindd_domain *domain,
 	if (lp_client_ntlmv2_auth()) {
 		DATA_BLOB server_chal;
 		DATA_BLOB names_blob;
-		DATA_BLOB nt_response;
-		DATA_BLOB lm_response;
-		server_chal = data_blob_talloc(state->mem_ctx, chal, 8);
+		server_chal = data_blob_const(chal, 8);
 
-		/* note that the 'workgroup' here is a best guess - we don't know
-		   the server's domain at this point.  The 'server name' is also
-		   dodgy...
+		/* note that the 'workgroup' here is for the local
+		   machine.  The 'server name' must match the
+		   'workstation' passed to the actual SamLogon call.
 		*/
 		names_blob = NTLMv2_generate_names_blob(state->mem_ctx, global_myname(), lp_workgroup());
 
-		if (!SMBNTLMv2encrypt(NULL, name_user, name_domain,
+		if (!SMBNTLMv2encrypt(state->mem_ctx, name_user, name_domain,
 				      state->request->data.auth.pass,
 				      &server_chal,
 				      &names_blob,
-				      &lm_response, &nt_response, NULL, NULL)) {
+				      &lm_resp, &nt_resp, NULL, NULL)) {
 			data_blob_free(&names_blob);
-			data_blob_free(&server_chal);
 			DEBUG(0, ("winbindd_pam_auth: SMBNTLMv2encrypt() failed!\n"));
 			result = NT_STATUS_NO_MEMORY;
 			goto done;
 		}
 		data_blob_free(&names_blob);
-		data_blob_free(&server_chal);
-		lm_resp = data_blob_talloc(state->mem_ctx, lm_response.data,
-					   lm_response.length);
-		nt_resp = data_blob_talloc(state->mem_ctx, nt_response.data,
-					   nt_response.length);
-		data_blob_free(&lm_response);
-		data_blob_free(&nt_response);
-
 	} else {
 		lm_resp = data_blob_null;
 		SMBNTencrypt(state->request->data.auth.pass,
