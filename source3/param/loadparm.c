@@ -378,6 +378,7 @@ struct global {
 	int ismb2_max_read;
 	int ismb2_max_write;
 	int ismb2_max_trans;
+	int ismb2_max_credits;
 	char *ncalrpc_dir;
 };
 
@@ -2611,6 +2612,15 @@ static struct parm_struct parm_table[] = {
 		.type		= P_INTEGER,
 		.p_class	= P_GLOBAL,
 		.ptr		= &Globals.ismb2_max_trans,
+		.special	= NULL,
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED,
+	},
+	{
+		.label		= "smb2 max credits",
+		.type		= P_INTEGER,
+		.p_class	= P_GLOBAL,
+		.ptr		= &Globals.ismb2_max_credits,
 		.special	= NULL,
 		.enum_list	= NULL,
 		.flags		= FLAG_ADVANCED,
@@ -5384,9 +5394,10 @@ static void init_globals(bool reinit_globals)
 	Globals.bMapUntrustedToDomain = false;
 	Globals.bMulticastDnsRegister = true;
 
-	Globals.ismb2_max_read = 1024*1024;
-	Globals.ismb2_max_write = 1024*1024;
-	Globals.ismb2_max_trans = 1024*1024;
+	Globals.ismb2_max_read = DEFAULT_SMB2_MAX_READ;
+	Globals.ismb2_max_write = DEFAULT_SMB2_MAX_WRITE;
+	Globals.ismb2_max_trans = DEFAULT_SMB2_MAX_TRANSACT;
+	Globals.ismb2_max_credits = DEFAULT_SMB2_MAX_CREDITS;
 
 	string_set(&Globals.ncalrpc_dir, get_dyn_NCALRPCDIR());
 
@@ -5755,7 +5766,13 @@ FN_GLOBAL_INTEGER(lp_config_backend, &Globals.ConfigBackend)
 FN_GLOBAL_INTEGER(lp_smb2_max_read, &Globals.ismb2_max_read)
 FN_GLOBAL_INTEGER(lp_smb2_max_write, &Globals.ismb2_max_write)
 FN_GLOBAL_INTEGER(lp_smb2_max_trans, &Globals.ismb2_max_trans)
-
+int lp_smb2_max_credits(void)
+{
+	if (Globals.ismb2_max_credits == 0) {
+		Globals.ismb2_max_credits = DEFAULT_SMB2_MAX_CREDITS;
+	}
+	return Globals.ismb2_max_credits;
+}
 FN_LOCAL_STRING(lp_preexec, szPreExec)
 FN_LOCAL_STRING(lp_postexec, szPostExec)
 FN_LOCAL_STRING(lp_rootpreexec, szRootPreExec)

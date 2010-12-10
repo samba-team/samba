@@ -110,6 +110,13 @@ static NTSTATUS smbd_initialize_smb2(struct smbd_server_connection *sconn)
 	}
 	sconn->smb2.sessions.limit = 0x0000FFFE;
 	sconn->smb2.sessions.list = NULL;
+	sconn->smb2.seqnum_low = 0;
+	sconn->smb2.credits_granted = 1;
+	sconn->smb2.max_credits = lp_smb2_max_credits();
+	sconn->smb2.credits_bitmap = bitmap_talloc(sconn, 2*sconn->smb2.max_credits);
+	if (sconn->smb2.credits_bitmap == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	ret = tstream_bsd_existing_socket(sconn, sconn->sock,
 					  &sconn->smb2.stream);
@@ -284,14 +291,70 @@ static NTSTATUS smbd_smb2_request_create(struct smbd_server_connection *sconn,
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS smbd_smb2_request_validate(struct smbd_smb2_request *req,
-				uint16_t *p_creds_requested)
+static bool smb2_validate_message_id(struct smbd_server_connection *sconn,
+				const uint8_t *inhdr)
+{
+	uint64_t message_id = BVAL(inhdr, SMB2_HDR_MESSAGE_ID);
+	struct bitmap *credits_bm = sconn->smb2.credits_bitmap;
+	uint16_t opcode = IVAL(inhdr, SMB2_HDR_OPCODE);
+	unsigned int bitmap_offset;
+
+	if (opcode == SMB2_OP_CANCEL) {
+		/* SMB2_CANCEL requests by definition resend messageids. */
+		return true;
+	}
+
+	if (message_id < sconn->smb2.seqnum_low ||
+			message_id > (sconn->smb2.seqnum_low +
+			(2*sconn->smb2.credits_granted))) {
+		DEBUG(0,("smb2_validate_message_id: bad message_id "
+			"%llu (low = %llu, granted = %lu)\n",
+			(unsigned long long)message_id,
+			(unsigned long long)sconn->smb2.seqnum_low,
+			(unsigned long)sconn->smb2.credits_granted ));
+		return false;
+	}
+
+	/* client just used a credit. */
+	SMB_ASSERT(sconn->smb2.credits_granted > 0);
+	sconn->smb2.credits_granted -= 1;
+
+	/* Mark the message_id as seen in the bitmap. */
+	bitmap_offset = (unsigned int)(message_id %
+			(uint64_t)(sconn->smb2.max_credits * 2));
+	if (bitmap_query(credits_bm, bitmap_offset)) {
+		DEBUG(0,("smb2_validate_message_id: duplicate message_id "
+			"%llu (bm offset %u)\n",
+			(unsigned long long)message_id,
+			bitmap_offset));
+		return false;
+	}
+	bitmap_set(credits_bm, bitmap_offset);
+
+	if (message_id == sconn->smb2.seqnum_low + 1) {
+		/* Move the window forward by all the message_id's
+		   already seen. */
+		while (bitmap_query(credits_bm, bitmap_offset)) {
+			DEBUG(10,("smb2_validate_message_id: clearing "
+				"id %llu (position %u) from bitmap\n",
+				(unsigned long long)(sconn->smb2.seqnum_low + 1),
+				bitmap_offset ));
+			bitmap_clear(credits_bm, bitmap_offset);
+			sconn->smb2.seqnum_low += 1;
+			bitmap_offset = (bitmap_offset + 1) %
+				(sconn->smb2.max_credits * 2);
+		}
+	}
+
+	return true;
+}
+
+static NTSTATUS smbd_smb2_request_validate(struct smbd_smb2_request *req)
 {
 	int count;
 	int idx;
 	bool compound_related = false;
 
-	*p_creds_requested = 0;
 	count = req->in.vector_count;
 
 	if (count < 4) {
@@ -300,7 +363,6 @@ static NTSTATUS smbd_smb2_request_validate(struct smbd_smb2_request *req,
 	}
 
 	for (idx=1; idx < count; idx += 3) {
-		uint16_t creds_requested = 0;
 		const uint8_t *inhdr = NULL;
 		uint32_t flags;
 
@@ -314,16 +376,13 @@ static NTSTATUS smbd_smb2_request_validate(struct smbd_smb2_request *req,
 
 		inhdr = (const uint8_t *)req->in.vector[idx].iov_base;
 
-		/* setup the SMB2 header */
+		/* Check the SMB2 header */
 		if (IVAL(inhdr, SMB2_HDR_PROTOCOL_ID) != SMB2_MAGIC) {
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 
-		creds_requested = SVAL(inhdr, SMB2_HDR_CREDIT);
-		if (*p_creds_requested + creds_requested < creds_requested) {
-			*p_creds_requested = 65535;
-		} else {
-			*p_creds_requested += creds_requested;
+		if (!smb2_validate_message_id(req->sconn, inhdr)) {
+			return NT_STATUS_INVALID_PARAMETER;
 		}
 
 		flags = IVAL(inhdr, SMB2_HDR_FLAGS);
@@ -372,6 +431,54 @@ static NTSTATUS smbd_smb2_request_validate(struct smbd_smb2_request *req,
 	}
 
 	return NT_STATUS_OK;
+}
+
+static void smb2_set_operation_credit(struct smbd_server_connection *sconn,
+			const struct iovec *in_vector,
+			struct iovec *out_vector)
+{
+	uint8_t *outhdr = out_vector->iov_base;
+	uint16_t credits_requested = 0;
+	uint16_t credits_granted = 0;
+
+	if (in_vector != NULL) {
+		const uint8_t *inhdr = (const uint8_t *)in_vector->iov_base;
+		credits_requested = SVAL(inhdr, SMB2_HDR_CREDIT);
+	}
+
+	SMB_ASSERT(sconn->smb2.max_credits >= sconn->smb2.credits_granted);
+
+	/* Remember what we gave out. */
+	credits_granted = MIN(credits_requested, (sconn->smb2.max_credits -
+		sconn->smb2.credits_granted));
+
+	if (credits_granted == 0 && sconn->smb2.credits_granted == 0) {
+		/* Ensure the client credits can never drop to zero. */
+		credits_granted = 1;
+	}
+
+	SSVAL(outhdr, SMB2_HDR_CREDIT, credits_granted);
+	sconn->smb2.credits_granted += credits_granted;
+
+	DEBUG(10,("smb2_set_operation_credit: requested %u, "
+		"granted %u, total granted %u\n",
+		(unsigned int)credits_requested,
+		(unsigned int)credits_granted,
+		(unsigned int)sconn->smb2.credits_granted ));
+}
+
+static void smb2_calculate_credits(const struct smbd_smb2_request *inreq,
+				struct smbd_smb2_request *outreq)
+{
+	int count, idx;
+
+	count = outreq->out.vector_count;
+
+	for (idx=1; idx < count; idx += 3) {
+		smb2_set_operation_credit(outreq->sconn,
+			&inreq->in.vector[idx],
+			&outreq->out.vector[idx]);
+	}
 }
 
 static NTSTATUS smbd_smb2_request_setup_out(struct smbd_smb2_request *req, uint16_t creds)
@@ -432,11 +539,6 @@ static NTSTATUS smbd_smb2_request_setup_out(struct smbd_smb2_request *req, uint1
 		      NT_STATUS_V(NT_STATUS_INTERNAL_ERROR));
 		SSVAL(outhdr, SMB2_HDR_OPCODE,
 		      SVAL(inhdr, SMB2_HDR_OPCODE));
-		SSVAL(outhdr, SMB2_HDR_CREDIT,		creds);
-
-		/* Remember what we gave out. */
-		req->sconn->smb2.credits_granted += creds;
-
 		SIVAL(outhdr, SMB2_HDR_FLAGS,
 		      IVAL(inhdr, SMB2_HDR_FLAGS) | SMB2_HDR_FLAG_REDIRECT);
 		SIVAL(outhdr, SMB2_HDR_NEXT_COMMAND,	next_command_ofs);
@@ -623,6 +725,9 @@ static NTSTATUS smb2_send_async_interim_response(const struct smbd_smb2_request 
 	/* And end the chain. */
 	SIVAL(outhdr, SMB2_HDR_NEXT_COMMAND, 0);
 
+	/* Calculate outgoing credits */
+	smb2_calculate_credits(req, nreq);
+
 	/* Re-sign if needed. */
 	if (nreq->do_signing) {
 		NTSTATUS status;
@@ -779,9 +884,6 @@ NTSTATUS smbd_smb2_request_pending_queue(struct smbd_smb2_request *req,
 	SSVAL(hdr, SMB2_HDR_EPOCH, 0);
 	SIVAL(hdr, SMB2_HDR_STATUS, NT_STATUS_V(STATUS_PENDING));
 	SSVAL(hdr, SMB2_HDR_OPCODE, SVAL(reqhdr, SMB2_HDR_OPCODE));
-	SSVAL(hdr, SMB2_HDR_CREDIT, 5);
-
-	req->sconn->smb2.credits_granted += 5;
 
 	SIVAL(hdr, SMB2_HDR_FLAGS, flags | SMB2_HDR_FLAG_ASYNC);
 	SIVAL(hdr, SMB2_HDR_NEXT_COMMAND, 0);
@@ -798,6 +900,11 @@ NTSTATUS smbd_smb2_request_pending_queue(struct smbd_smb2_request *req,
 	SIVAL(body, 0x04, 0);
 	/* Match W2K8R2... */
 	SCVAL(body, 0x08, 0x21);
+
+	/* Ensure we correctly go through crediting. */
+	smb2_set_operation_credit(req->sconn,
+			NULL,
+			&state->vector[1]);
 
 	if (req->do_signing) {
 		status = smb2_signing_sign_pdu(req->session->session_key,
@@ -876,8 +983,6 @@ NTSTATUS smbd_smb2_request_pending_queue(struct smbd_smb2_request *req,
 	reqhdr = (uint8_t *)req->out.vector[1].iov_base;
 	SIVAL(reqhdr, SMB2_HDR_FLAGS, flags | SMB2_HDR_FLAG_ASYNC);
 	SBVAL(reqhdr, SMB2_HDR_PID, async_id);
-	/* Only return credits on the interim response. */
-	SSVAL(reqhdr, SMB2_HDR_CREDIT, 0);
 
 	{
 		const uint8_t *inhdr =
@@ -1331,13 +1436,18 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 static NTSTATUS smbd_smb2_request_reply(struct smbd_smb2_request *req)
 {
 	struct tevent_req *subreq;
+	int i = req->current_idx;
 
 	req->subreq = NULL;
 
 	smb2_setup_nbt_length(req->out.vector, req->out.vector_count);
 
+	/* Set credit for this operation. */
+	smb2_set_operation_credit(req->sconn,
+			&req->in.vector[i],
+			&req->out.vector[i]);
+
 	if (req->do_signing) {
-		int i = req->current_idx;
 		NTSTATUS status;
 		status = smb2_signing_sign_pdu(req->session->session_key,
 					       &req->out.vector[i], 3);
@@ -2091,7 +2201,6 @@ void smbd_smb2_first_negprot(struct smbd_server_connection *sconn,
 
 static void smbd_smb2_request_incoming(struct tevent_req *subreq)
 {
-	uint16_t creds_requested = 0;
 	struct smbd_server_connection *sconn = tevent_req_callback_data(subreq,
 					       struct smbd_server_connection);
 	NTSTATUS status;
@@ -2118,7 +2227,7 @@ static void smbd_smb2_request_incoming(struct tevent_req *subreq)
 	DEBUG(10,("smbd_smb2_request_incoming: idx[%d] of %d vectors\n",
 		 req->current_idx, req->in.vector_count));
 
-	status = smbd_smb2_request_validate(req, &creds_requested);
+	status = smbd_smb2_request_validate(req);
 	if (!NT_STATUS_IS_OK(status)) {
 		smbd_server_connection_terminate(sconn, nt_errstr(status));
 		return;

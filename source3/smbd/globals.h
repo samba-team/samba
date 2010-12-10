@@ -581,7 +581,10 @@ struct smbd_server_connection {
 			bool blocking_lock_unlock_state;
 		} locks;
 		struct smbd_smb2_request *requests;
-		uint64_t credits_granted;
+		uint64_t seqnum_low;
+		uint32_t credits_granted;
+		uint32_t max_credits;
+		struct bitmap *credits_bitmap;
 	} smb2;
 };
 
