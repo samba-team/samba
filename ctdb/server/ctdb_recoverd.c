@@ -714,6 +714,7 @@ static void vacuum_fetch_next(struct vacuum_info *v)
 		ZERO_STRUCT(call);
 		call.call_id = CTDB_NULL_FUNC;
 		call.flags = CTDB_IMMEDIATE_MIGRATION;
+		call.flags |= CTDB_CALL_FLAG_VACUUM_MIGRATION;
 
 		r = v->r;
 		v->r = (struct ctdb_rec_data *)(r->length + (uint8_t *)r);
