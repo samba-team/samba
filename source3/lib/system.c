@@ -2630,6 +2630,10 @@ int sys_getpeereid( int s, uid_t *uid)
 	*uid = cred.uid;
 	return 0;
 #else
+#if defined(HAVE_GETPEEREID)
+	gid_t gid;
+	return getpeereid(s, uid, &gid);
+#endif
 	errno = ENOSYS;
 	return -1;
 #endif
