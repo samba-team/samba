@@ -25,7 +25,17 @@ parser.add_option("--prefix", type="string",
 	help="Add prefix to all test names")
 parser.add_option("--fail-on-empty", default=False,
 	action="store_true", help="Fail if there was no subunit output")
+parser.add_option("--list", default=False,
+	action="store_true", help="Operate in list mode")
 opts, args = parser.parse_args()
+
+if opts.list:
+	prefix = opts.prefix
+	if not prefix:
+		prefix = ""
+	for l in sys.stdin:
+		sys.stdout.write("%s%s\n" % (prefix, l.rstrip()))
+	sys.exit(0)
 
 if opts.expected_failures:
 	expected_failures = subunithelper.read_test_regexes(opts.expected_failures)
