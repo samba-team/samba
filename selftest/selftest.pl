@@ -956,7 +956,7 @@ $envvarstr
 			next;
 		}
 
-		$cmd =~ s/\$LISTOPT/--list/;
+		$cmd =~ s/\$LISTOPT/--list/g;
 
 		system($cmd);
 
