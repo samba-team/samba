@@ -1738,18 +1738,18 @@ done:
 struct torture_suite *torture_smb2_streams_init(void)
 {
 	struct torture_suite *suite =
-		torture_suite_create(talloc_autofree_context(), "STREAMS");
+		torture_suite_create(talloc_autofree_context(), "streams");
 
-	torture_suite_add_1smb2_test(suite, "DIR", test_stream_dir);
-	torture_suite_add_1smb2_test(suite, "IO", test_stream_io);
-	torture_suite_add_1smb2_test(suite, "SHAREMODES", test_stream_sharemodes);
-	torture_suite_add_1smb2_test(suite, "NAMES", test_stream_names);
-	torture_suite_add_1smb2_test(suite, "NAMES2", test_stream_names2);
-	torture_suite_add_1smb2_test(suite, "RENAME", test_stream_rename);
-	torture_suite_add_1smb2_test(suite, "RENAME2", test_stream_rename2);
-	torture_suite_add_1smb2_test(suite, "CREATE-DISPOSITION", test_stream_create_disposition);
-	torture_suite_add_1smb2_test(suite, "ATTRIBUTES", test_stream_attributes);
-	torture_suite_add_1smb2_test(suite, "DELETE", test_stream_delete);
+	torture_suite_add_1smb2_test(suite, "dir", test_stream_dir);
+	torture_suite_add_1smb2_test(suite, "io", test_stream_io);
+	torture_suite_add_1smb2_test(suite, "sharemodes", test_stream_sharemodes);
+	torture_suite_add_1smb2_test(suite, "names", test_stream_names);
+	torture_suite_add_1smb2_test(suite, "names2", test_stream_names2);
+	torture_suite_add_1smb2_test(suite, "rename", test_stream_rename);
+	torture_suite_add_1smb2_test(suite, "rename2", test_stream_rename2);
+	torture_suite_add_1smb2_test(suite, "create-disposition", test_stream_create_disposition);
+	torture_suite_add_1smb2_test(suite, "attributes", test_stream_attributes);
+	torture_suite_add_1smb2_test(suite, "delete", test_stream_delete);
 
 	suite->description = talloc_strdup(suite, "SMB2-STREAM tests");
 

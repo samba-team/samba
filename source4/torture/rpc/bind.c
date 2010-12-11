@@ -86,7 +86,7 @@ static void test_bind_op(struct torture_suite *suite,
 
 struct torture_suite *torture_rpc_bind(TALLOC_CTX *mem_ctx)
 {
-	struct torture_suite *suite = torture_suite_create(mem_ctx, "BIND");
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "bind");
 	struct {
 		const char *test_name;
 		uint32_t flags;

@@ -266,9 +266,9 @@ static bool test_InqObject(struct torture_context *tctx, struct dcerpc_pipe *p)
 
 struct torture_suite *torture_rpc_epmapper(TALLOC_CTX *mem_ctx)
 {
-	struct torture_suite *suite = torture_suite_create(mem_ctx, "EPMAPPER");
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "epmapper");
 	struct torture_rpc_tcase *tcase;
-	
+
 	tcase = torture_suite_add_rpc_iface_tcase(suite, "epmapper", 
 											  &ndr_table_epmapper);
 

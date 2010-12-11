@@ -264,7 +264,7 @@ static bool test_ber_read_partial_OID_String(struct torture_context *tctx)
 /* LOCAL-ASN1 test suite creation */
 struct torture_suite *torture_local_util_asn1(TALLOC_CTX *mem_ctx)
 {
-	struct torture_suite *suite = torture_suite_create(mem_ctx, "ASN1");
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "asn1");
 
 	torture_suite_add_simple_test(suite, "ber_write_OID_String",
 				      test_ber_write_OID_String);

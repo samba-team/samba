@@ -2273,7 +2273,7 @@ done:
 */
 struct torture_suite *torture_raw_lock(TALLOC_CTX *mem_ctx)
 {
-	struct torture_suite *suite = torture_suite_create(mem_ctx, "LOCK");
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "lock");
 
 	torture_suite_add_1smb_test(suite, "lockx", test_lockx);
 	torture_suite_add_1smb_test(suite, "lock", test_lock);
@@ -2286,10 +2286,8 @@ struct torture_suite *torture_raw_lock(TALLOC_CTX *mem_ctx)
 	torture_suite_add_1smb_test(suite, "unlock", test_unlock);
 	torture_suite_add_1smb_test(suite, "multiple_unlock",
 	    test_multiple_unlock);
-	torture_suite_add_1smb_test(suite, "zerobytelocks",
-	    test_zerobytelocks);
-	torture_suite_add_1smb_test(suite, "zerobyteread",
-	    test_zerobyteread);
+	torture_suite_add_1smb_test(suite, "zerobytelocks", test_zerobytelocks);
+	torture_suite_add_1smb_test(suite, "zerobyteread", test_zerobyteread);
 
 	return suite;
 }

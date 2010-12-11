@@ -1586,8 +1586,7 @@ static bool deltest23(struct torture_context *tctx,
 struct torture_suite *torture_test_delete(void)
 {
 	struct torture_suite *suite = torture_suite_create(
-		talloc_autofree_context(),
-		"DELETE");
+		talloc_autofree_context(), "delete");
 
 	torture_suite_add_2smb_test(suite, "deltest1", deltest1);
 	torture_suite_add_2smb_test(suite, "deltest2", deltest2);

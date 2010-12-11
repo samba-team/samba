@@ -7820,7 +7820,7 @@ void torture_tcase_printer(struct torture_tcase *tcase)
 
 struct torture_suite *torture_rpc_spoolss_printer(TALLOC_CTX *mem_ctx)
 {
-	struct torture_suite *suite = torture_suite_create(mem_ctx, "PRINTER");
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "printer");
 	struct torture_tcase *tcase;
 
 	tcase = torture_suite_add_tcase(suite, "addprinter");
@@ -7866,8 +7866,8 @@ struct torture_suite *torture_rpc_spoolss_printer(TALLOC_CTX *mem_ctx)
 
 struct torture_suite *torture_rpc_spoolss(TALLOC_CTX *mem_ctx)
 {
-	struct torture_suite *suite = torture_suite_create(mem_ctx, "SPOOLSS");
-	struct torture_tcase *tcase = torture_suite_add_tcase(suite, "PRINTSERVER");
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "spoolss");
+	struct torture_tcase *tcase = torture_suite_add_tcase(suite, "printserver");
 
 	torture_tcase_set_fixture(tcase,
 				  torture_rpc_spoolss_setup,
@@ -9038,7 +9038,7 @@ static bool test_add_driver_adobe_cupsaddsmb(struct torture_context *tctx,
 
 struct torture_suite *torture_rpc_spoolss_driver(TALLOC_CTX *mem_ctx)
 {
-	struct torture_suite *suite = torture_suite_create(mem_ctx, "SPOOLSS-DRIVER");
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "spoolss.driver");
 
 	struct torture_rpc_tcase *tcase = torture_suite_add_rpc_iface_tcase(suite,
 							"driver", &ndr_table_spoolss);

@@ -945,7 +945,7 @@ static bool test_nwrap_duplicates(struct torture_context *tctx)
 
 struct torture_suite *torture_local_nss_wrapper(TALLOC_CTX *mem_ctx)
 {
-	struct torture_suite *suite = torture_suite_create(mem_ctx, "NSS-WRAPPER");
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "nss-wrapper");
 
 	torture_suite_add_simple_test(suite, "enumeration", test_nwrap_enumeration);
 	torture_suite_add_simple_test(suite, "reentrant enumeration", test_nwrap_reentrant_enumeration);

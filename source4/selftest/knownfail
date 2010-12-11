@@ -41,11 +41,11 @@ samba4.base.charset.*.Testing partial surrogate
 .*net.api.delshare.*				# DelShare isn't implemented yet
 samba4.rap.*netservergetinfo
 samba4.smb2.persistent.handles1
-samba4.winbind.struct.*.SHOW_SEQUENCE     # Not yet working in winbind
-samba4.winbind.struct.*.GETPWENT          # Not yet working in winbind
-samba4.winbind.struct.*.SETPWENT          # Not yet working in winbind
-samba4.winbind.struct.*.LOOKUP_NAME_SID   # Not yet working in winbind
-samba4.winbind.struct.*.LIST_GROUPS
+samba4.winbind.struct.*.show_sequence     # Not yet working in winbind
+samba4.winbind.struct.*.getpwent          # Not yet working in winbind
+samba4.winbind.struct.*.setpwent          # Not yet working in winbind
+samba4.winbind.struct.*.lookup_name_sid   # Not yet working in winbind
+samba4.winbind.struct.*.list_groups
 samba4.*base.delaywrite.*update of write time and SMBwrite truncate$
 samba4.*base.delaywrite.*update of write time and SMBwrite truncate expand$
 samba4.*base.delaywrite.*delayed update of write time 3a$
@@ -60,23 +60,23 @@ samba4.ntvfs.cifs.base.maximum_allowed
 samba4.base.createx_access # this test is broken for non-administrator users
 samba4.smb2.oplock # oplocks in the s4 SMB2 server are a mess
 samba4.raw.lock.*.async # bug 6960
-samba4.smb2.lock.*.MULTIPLE-UNLOCK # bug 6959
-samba4.raw.sfileinfo.*.END-OF-FILE # bug 6962
-samba4.raw.oplock.*.BATCH22 # bug 6963
+samba4.smb2.lock.*.multiple-unlock # bug 6959
+samba4.raw.sfileinfo.*.end-of-file # bug 6962
+samba4.raw.oplock.*.batch22 # bug 6963
 samba4.raw.lock.*.zerobyteread # bug 6974
-samba4.smb2.lock.*.ZEROBYTEREAD # bug 6974
-samba4.raw.streams.*.DELETE
-samba4.raw.streams.*.CREATEDISP
-samba4.raw.streams.*.SUMTAB
-samba4.raw.acls.*.CREATE_DIR
-samba4.raw.acls.*.CREATE_FILE
-samba4.smb2.create.*.ACLDIR
-samba4.smb2.acls.*.GENERIC
-samba4.smb2.acls.*.INHERITFLAGS
-samba4.smb2.acls.*.OWNER
-samba4.smb2.compound.*.RELATED1
-samba4.smb2.compound.*.RELATED2
-samba4.smb2.compound.*.INVALID2
+samba4.smb2.lock.*.zerobyteread # bug 6974
+samba4.raw.streams.*.delete
+samba4.raw.streams.*.createdisp
+samba4.raw.streams.*.sumtab
+samba4.raw.acls.*.create_dir
+samba4.raw.acls.*.create_file
+samba4.smb2.create.*.acldir
+samba4.smb2.acls.*.generic
+samba4.smb2.acls.*.inheritflags
+samba4.smb2.acls.*.owner
+samba4.smb2.compound.*.related1
+samba4.smb2.compound.*.related2
+samba4.smb2.compound.*.invalid2
 samba4.ldap.acl.*.search.* # ACL search behaviour not enabled by default
 samba4.ldap.acl.*.ntSecurityDescriptor.* # ACL extended checks on search not enabled by default
 

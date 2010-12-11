@@ -166,7 +166,7 @@ static bool test_push_charset(struct torture_context *tctx)
 
 struct torture_suite *torture_local_tdr(TALLOC_CTX *mem_ctx)
 {
-	struct torture_suite *suite = torture_suite_create(mem_ctx, "TDR");
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "tdr");
 
 	torture_suite_add_simple_test(suite, "pull_uint8", test_pull_uint8);
 	torture_suite_add_simple_test(suite, "push_uint8", test_push_uint8);

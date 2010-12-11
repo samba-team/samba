@@ -849,10 +849,9 @@ void torture_rpc_drsuapi_tcase(struct torture_suite *suite)
 	typedef bool (*run_func) (struct torture_context *test, void *tcase_data);
 
 	struct torture_test *test;
-	struct torture_tcase *tcase = torture_suite_add_tcase(suite, "DRSUAPI");
+	struct torture_tcase *tcase = torture_suite_add_tcase(suite, "drsuapi");
 
-	torture_tcase_set_fixture(tcase,
-				  torture_drsuapi_tcase_setup,
+	torture_tcase_set_fixture(tcase, torture_drsuapi_tcase_setup,
 				  torture_drsuapi_tcase_teardown);
 
 #if 0

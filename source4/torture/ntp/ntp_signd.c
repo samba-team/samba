@@ -284,11 +284,11 @@ static bool test_ntp_signd(struct torture_context *tctx,
 
 NTSTATUS torture_ntp_init(void)
 {
-	struct torture_suite *suite = torture_suite_create(talloc_autofree_context(), "NTP");
+	struct torture_suite *suite = torture_suite_create(talloc_autofree_context(), "ntp");
 	struct torture_rpc_tcase *tcase;
 
-	tcase = torture_suite_add_machine_workstation_rpc_iface_tcase(suite, "SIGND",
-								      &ndr_table_netlogon, TEST_MACHINE_NAME);
+	tcase = torture_suite_add_machine_workstation_rpc_iface_tcase(suite,
+				  "signd", &ndr_table_netlogon, TEST_MACHINE_NAME);
 
 	torture_rpc_tcase_add_test_creds(tcase, "ntp_signd", test_ntp_signd);
 

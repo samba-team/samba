@@ -795,17 +795,17 @@ static bool torture_ldb_dn_invalid_extended(struct torture_context *torture)
 
 struct torture_suite *torture_ldb(TALLOC_CTX *mem_ctx)
 {
-	struct torture_suite *suite = torture_suite_create(mem_ctx, "LDB");
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "ldb");
 
 	if (suite == NULL) {
 		return NULL;
 	}
 
-	torture_suite_add_simple_test(suite, "ATTRS", torture_ldb_attrs);
-	torture_suite_add_simple_test(suite, "DN-ATTRS", torture_ldb_dn_attrs);
-	torture_suite_add_simple_test(suite, "DN-EXTENDED", torture_ldb_dn_extended);
-	torture_suite_add_simple_test(suite, "DN-INVALID-EXTENDED", torture_ldb_dn_invalid_extended);
-	torture_suite_add_simple_test(suite, "DN", torture_ldb_dn);
+	torture_suite_add_simple_test(suite, "attrs", torture_ldb_attrs);
+	torture_suite_add_simple_test(suite, "dn-attrs", torture_ldb_dn_attrs);
+	torture_suite_add_simple_test(suite, "dn-extended", torture_ldb_dn_extended);
+	torture_suite_add_simple_test(suite, "dn-invalid-extended", torture_ldb_dn_invalid_extended);
+	torture_suite_add_simple_test(suite, "dn", torture_ldb_dn);
 
 	suite->description = talloc_strdup(suite, "LDB (samba-specific behaviour) tests");
 

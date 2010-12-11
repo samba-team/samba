@@ -660,13 +660,13 @@ static bool test_samr_connect(struct torture_context *tctx,
 
 struct torture_suite *torture_rpc_samr_accessmask(TALLOC_CTX *mem_ctx)
 {
-	struct torture_suite *suite = torture_suite_create(mem_ctx, "SAMR-ACCESSMASK");
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "samr.accessmask");
 	struct torture_rpc_tcase *tcase;
 
 	tcase = torture_suite_add_rpc_iface_tcase(suite, "samr",
 						  &ndr_table_samr);
 
-	torture_rpc_tcase_add_test(tcase, "CONNECT", test_samr_connect);
+	torture_rpc_tcase_add_test(tcase, "connect", test_samr_connect);
 
 	/* test which bits in the accessmask to Connect5 will allow
 	 * us to call OpenDomain() */
@@ -1183,7 +1183,7 @@ static bool torture_rpc_samr_workstation_query(struct torture_context *tctx,
 
 struct torture_suite *torture_rpc_samr_workstation_auth(TALLOC_CTX *mem_ctx)
 {
-	struct torture_suite *suite = torture_suite_create(mem_ctx, "SAMR-MACHINE-AUTH");
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "samr.machine.auth");
 	struct torture_rpc_tcase *tcase;
 
 	tcase = torture_suite_add_machine_workstation_rpc_iface_tcase(suite, "samr",

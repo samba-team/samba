@@ -49,7 +49,7 @@ bool torture_nbt_get_name(struct torture_context *tctx,
 NTSTATUS torture_nbt_init(void)
 {
 	struct torture_suite *suite = torture_suite_create(
-		talloc_autofree_context(), "NBT");
+		talloc_autofree_context(), "nbt");
 	/* nbt tests */
 	torture_suite_add_suite(suite, torture_nbt_register(suite));
 	torture_suite_add_suite(suite, torture_nbt_wins(suite));

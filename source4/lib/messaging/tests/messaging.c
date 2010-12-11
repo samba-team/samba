@@ -136,7 +136,7 @@ static bool test_ping_speed(struct torture_context *tctx)
 
 struct torture_suite *torture_local_messaging(TALLOC_CTX *mem_ctx)
 {
-	struct torture_suite *s = torture_suite_create(mem_ctx, "MESSAGING");
+	struct torture_suite *s = torture_suite_create(mem_ctx, "messaging");
 	torture_suite_add_simple_test(s, "ping_speed", test_ping_speed);
 	return s;
 }

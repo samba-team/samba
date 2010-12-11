@@ -100,7 +100,7 @@ static bool test_InitEx(struct torture_context *tctx,
 
 struct torture_suite *torture_rpc_initshutdown(TALLOC_CTX *mem_ctx)
 {
-	struct torture_suite *suite = torture_suite_create(mem_ctx, "INITSHUTDOWN");
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "initshutdown");
 	struct torture_rpc_tcase *tcase;
 	struct torture_test *test;
 

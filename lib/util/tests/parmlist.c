@@ -94,7 +94,7 @@ static bool test_get_string_list(struct torture_context *tctx)
 
 struct torture_suite *torture_local_util_parmlist(TALLOC_CTX *mem_ctx)
 {
-	struct torture_suite *suite = torture_suite_create(mem_ctx, "PARMLIST");
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "parmlist");
 
 	torture_suite_add_simple_test(suite, "get_int", test_get_int);
 	torture_suite_add_simple_test(suite, "get_string", test_get_string);

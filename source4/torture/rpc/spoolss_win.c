@@ -600,7 +600,7 @@ end_testWinXP:
 
 struct torture_suite *torture_rpc_spoolss_win(TALLOC_CTX *mem_ctx)
 {
-	struct torture_suite *suite = torture_suite_create(mem_ctx, "SPOOLSS-WIN");
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "spoolss.win");
 
 	struct torture_rpc_tcase *tcase = torture_suite_add_rpc_iface_tcase(suite, 
 							"win", &ndr_table_spoolss);

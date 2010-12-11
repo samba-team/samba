@@ -55,7 +55,7 @@ bool test_DsRoleGetPrimaryDomainInformation(struct torture_context *tctx,
 
 struct torture_suite *torture_rpc_dssetup(TALLOC_CTX *mem_ctx)
 {
-	struct torture_suite *suite = torture_suite_create(mem_ctx, "DSSETUP");
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "dssetup");
 	struct torture_rpc_tcase *tcase = torture_suite_add_rpc_iface_tcase(suite, "dssetup", &ndr_table_dssetup);
 
 	torture_rpc_tcase_add_test(tcase, "DsRoleGetPrimaryDomainInformation", test_DsRoleGetPrimaryDomainInformation);

@@ -115,7 +115,7 @@ static bool torture_local_idtree_simple(struct torture_context *tctx)
 
 struct torture_suite *torture_local_idtree(TALLOC_CTX *mem_ctx)
 {
-	struct torture_suite *suite = torture_suite_create(mem_ctx, "IDTREE");
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "idtree");
 	torture_suite_add_simple_test(suite, "idtree", torture_local_idtree_simple);
 	return suite;
 }

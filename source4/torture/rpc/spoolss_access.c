@@ -857,7 +857,7 @@ static bool test_openprinter_wrap(struct torture_context *tctx,
 
 struct torture_suite *torture_rpc_spoolss_access(TALLOC_CTX *mem_ctx)
 {
-	struct torture_suite *suite = torture_suite_create(mem_ctx, "SPOOLSS-ACCESS");
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "spoolss.access");
 	struct torture_tcase *tcase;
 	struct torture_rpc_tcase *rpc_tcase;
 

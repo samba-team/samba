@@ -198,7 +198,7 @@ static bool teardown(struct torture_context *tctx, void *data)
 
 struct torture_suite *torture_local_share(TALLOC_CTX *mem_ctx)
 {
-	struct torture_suite *suite = torture_suite_create(mem_ctx, "SHARE");
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "share");
 	struct torture_tcase *tcase;
 
 	share_init();

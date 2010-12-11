@@ -197,7 +197,7 @@ static bool test_widea(struct torture_context *tctx,
 
 struct torture_suite *torture_charset(TALLOC_CTX *mem_ctx)
 {
-	struct torture_suite *suite = torture_suite_create(mem_ctx, "CHARSET");
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "charset");
 
 	torture_suite_add_1smb_test(suite, "Testing composite character (a umlaut)", test_composed); 
 	torture_suite_add_1smb_test(suite, "Testing naked diacritical (umlaut)", test_diacritical);

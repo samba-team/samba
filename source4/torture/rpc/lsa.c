@@ -2966,7 +2966,7 @@ struct torture_suite *torture_rpc_lsa_lookup_names(TALLOC_CTX *mem_ctx)
 	struct torture_suite *suite;
 	struct torture_rpc_tcase *tcase;
 
-	suite = torture_suite_create(mem_ctx, "LSA-LOOKUPNAMES");
+	suite = torture_suite_create(mem_ctx, "lsa.lookupnames");
 
 	tcase = torture_suite_add_rpc_iface_tcase(suite, "lsa",
 						  &ndr_table_lsarpc);
@@ -3029,7 +3029,7 @@ struct torture_suite *torture_rpc_lsa_trusted_domains(TALLOC_CTX *mem_ctx)
 
 	state->num_trusts = 12;
 
-	suite = torture_suite_create(mem_ctx, "LSA-TRUSTED-DOMAINS");
+	suite = torture_suite_create(mem_ctx, "lsa.trusted.domains");
 
 	tcase = torture_suite_add_rpc_iface_tcase(suite, "lsa",
 						  &ndr_table_lsarpc);
@@ -3084,7 +3084,7 @@ struct torture_suite *torture_rpc_lsa_privileges(TALLOC_CTX *mem_ctx)
 	struct torture_suite *suite;
 	struct torture_rpc_tcase *tcase;
 
-	suite = torture_suite_create(mem_ctx, "LSA-PRIVILEGES");
+	suite = torture_suite_create(mem_ctx, "lsa.privileges");
 
 	tcase = torture_suite_add_rpc_iface_tcase(suite, "lsa",
 						  &ndr_table_lsarpc);

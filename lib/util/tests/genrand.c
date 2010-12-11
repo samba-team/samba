@@ -59,7 +59,7 @@ static bool test_generate_random_str(struct torture_context *tctx)
 
 struct torture_suite *torture_local_genrand(TALLOC_CTX *mem_ctx)
 {
-	struct torture_suite *suite = torture_suite_create(mem_ctx, "GENRAND");
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "genrand");
 	torture_suite_add_simple_test(suite, "reseed_callback", test_reseed_callback);
 	torture_suite_add_simple_test(suite, "check_password_quality", test_check_password_quality);
 	torture_suite_add_simple_test(suite, "generate_random_str", test_generate_random_str);

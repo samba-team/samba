@@ -451,7 +451,7 @@ static bool test_string2key(struct torture_context *tctx)
 
 struct torture_suite *torture_local_iconv(TALLOC_CTX *mem_ctx)
 {
-	struct torture_suite *suite = torture_suite_create(mem_ctx, "ICONV");
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "iconv");
 
 	torture_suite_add_simple_test(suite, "string2key",
 				      test_string2key);

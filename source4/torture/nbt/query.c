@@ -108,7 +108,7 @@ static bool bench_namequery(struct torture_context *tctx)
 */
 struct torture_suite *torture_bench_nbt(TALLOC_CTX *mem_ctx)
 {
-	struct torture_suite *suite = torture_suite_create(mem_ctx, "BENCH");
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "bench");
 	torture_suite_add_simple_test(suite, "namequery", bench_namequery);
 
 	return suite;
