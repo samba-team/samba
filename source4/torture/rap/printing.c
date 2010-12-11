@@ -686,7 +686,7 @@ static bool test_rap_print(struct torture_context *tctx,
 
 struct torture_suite *torture_rap_printing(TALLOC_CTX *mem_ctx)
 {
-	struct torture_suite *suite = torture_suite_create(mem_ctx, "PRINTING");
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "printing");
 
 	torture_suite_add_1smb_test(suite, "raw_print", test_raw_print);
 	torture_suite_add_1smb_test(suite, "rap_print", test_rap_print);

@@ -397,7 +397,7 @@ struct torture_suite *torture_rpc_lsa_lookup_sids(TALLOC_CTX *mem_ctx)
 	struct torture_suite *suite;
 	struct torture_rpc_tcase *tcase;
 
-	suite = torture_suite_create(mem_ctx, "LSA-LOOKUPSIDS");
+	suite = torture_suite_create(mem_ctx, "lsa.lookupsids");
 	tcase = torture_suite_add_rpc_iface_tcase(suite, "lsa",
 						  &ndr_table_lsarpc);
 

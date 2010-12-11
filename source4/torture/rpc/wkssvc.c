@@ -1366,7 +1366,7 @@ struct torture_suite *torture_rpc_wkssvc(TALLOC_CTX *mem_ctx)
 	struct torture_rpc_tcase *tcase;
 	struct torture_test *test;
 
-	suite = torture_suite_create(mem_ctx, "WKSSVC");
+	suite = torture_suite_create(mem_ctx, "wkssvc");
 	tcase = torture_suite_add_rpc_iface_tcase(suite, "wkssvc",
 						  &ndr_table_wkssvc);
 

@@ -344,15 +344,15 @@ static bool torture_dsdb_dn_invalid(struct torture_context *torture)
 
 struct torture_suite *torture_dsdb_dn(TALLOC_CTX *mem_ctx)
 {
-	struct torture_suite *suite = torture_suite_create(mem_ctx, "DSDB-DN");
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "dsdb.dn");
 
 	if (suite == NULL) {
 		return NULL;
 	}
 
-	torture_suite_add_simple_test(suite, "VALID", torture_dsdb_dn_valid);
-	torture_suite_add_simple_test(suite, "INVALID", torture_dsdb_dn_invalid);
-	torture_suite_add_simple_test(suite, "ATTRS", torture_dsdb_dn_attrs);
+	torture_suite_add_simple_test(suite, "valid", torture_dsdb_dn_valid);
+	torture_suite_add_simple_test(suite, "invalid", torture_dsdb_dn_invalid);
+	torture_suite_add_simple_test(suite, "attrs", torture_dsdb_dn_attrs);
 
 	suite->description = talloc_strdup(suite, "DSDB DN tests");
 

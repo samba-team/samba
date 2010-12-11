@@ -292,8 +292,7 @@ static bool bench_wins(struct torture_context *tctx)
 */
 struct torture_suite *torture_bench_wins(TALLOC_CTX *mem_ctx)
 {
-	struct torture_suite *suite = torture_suite_create(mem_ctx, 
-							   "BENCH-WINS");
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "bench-wins");
 
 	torture_suite_add_simple_test(suite, "wins", bench_wins);
 

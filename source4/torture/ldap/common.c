@@ -131,14 +131,14 @@ NTSTATUS torture_ldap_close(struct ldap_connection *conn)
 
 NTSTATUS torture_ldap_init(void)
 {
-	struct torture_suite *suite = torture_suite_create(talloc_autofree_context(), "LDAP");
-	torture_suite_add_simple_test(suite, "BENCH-CLDAP", torture_bench_cldap);
-	torture_suite_add_simple_test(suite, "BASIC", torture_ldap_basic);
-	torture_suite_add_simple_test(suite, "SORT", torture_ldap_sort);
-	torture_suite_add_simple_test(suite, "CLDAP", torture_cldap);
-	torture_suite_add_simple_test(suite, "SCHEMA", torture_ldap_schema);
-	torture_suite_add_simple_test(suite, "UPTODATEVECTOR", torture_ldap_uptodatevector);
-	torture_suite_add_simple_test(suite, "NESTED-SEARCH", test_ldap_nested_search);
+	struct torture_suite *suite = torture_suite_create(talloc_autofree_context(), "ldap");
+	torture_suite_add_simple_test(suite, "bench-cldap", torture_bench_cldap);
+	torture_suite_add_simple_test(suite, "basic", torture_ldap_basic);
+	torture_suite_add_simple_test(suite, "sort", torture_ldap_sort);
+	torture_suite_add_simple_test(suite, "cldap", torture_cldap);
+	torture_suite_add_simple_test(suite, "schema", torture_ldap_schema);
+	torture_suite_add_simple_test(suite, "uptodatevector", torture_ldap_uptodatevector);
+	torture_suite_add_simple_test(suite, "nested-search", test_ldap_nested_search);
 
 	suite->description = talloc_strdup(suite, "LDAP and CLDAP tests");
 

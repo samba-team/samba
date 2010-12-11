@@ -1143,18 +1143,17 @@ done:
 
 struct torture_suite *torture_raw_sfileinfo(TALLOC_CTX *mem_ctx)
 {
-	struct torture_suite *suite = torture_suite_create(mem_ctx,
-	    "SFILEINFO");
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "sfileinfo");
 
-	torture_suite_add_1smb_test(suite, "BASE", torture_raw_sfileinfo_base);
-	torture_suite_add_1smb_test(suite, "RENAME",
-				      torture_raw_sfileinfo_rename);
-	torture_suite_add_1smb_test(suite, "BUG", torture_raw_sfileinfo_bug);
-	torture_suite_add_2smb_test(suite, "END-OF-FILE",
+	torture_suite_add_1smb_test(suite, "base", torture_raw_sfileinfo_base);
+	torture_suite_add_1smb_test(suite, "rename", torture_raw_sfileinfo_rename);
+	torture_suite_add_1smb_test(suite, "bug", torture_raw_sfileinfo_bug);
+	torture_suite_add_2smb_test(suite, "end-of-file",
 	    torture_raw_sfileinfo_eof);
-	torture_suite_add_2smb_test(suite, "END-OF-FILE-ACCESS",
+	torture_suite_add_2smb_test(suite, "end-of-file-access",
 	    torture_raw_sfileinfo_eof_access);
-	torture_suite_add_1smb_test(suite, "ARCHIVE", torture_raw_sfileinfo_archive);
+	torture_suite_add_1smb_test(suite, "archive",
+								torture_raw_sfileinfo_archive);
 
 	return suite;
 }

@@ -168,7 +168,7 @@ struct torture_suite *torture_nbt_register(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *suite;
 
-	suite = torture_suite_create(mem_ctx, "REGISTER");
+	suite = torture_suite_create(mem_ctx, "register");
 	torture_suite_add_simple_test(suite, "register_own", nbt_register_own);
 	torture_suite_add_simple_test(suite, "refresh_own", nbt_refresh_own);
 

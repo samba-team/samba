@@ -420,7 +420,7 @@ void torture_drs_rpc_dsgetinfo_tcase(struct torture_suite *suite)
 	typedef bool (*run_func) (struct torture_context *test, void *tcase_data);
 
 	struct torture_test *test;
-	struct torture_tcase *tcase = torture_suite_add_tcase(suite, "DSGETINFO");
+	struct torture_tcase *tcase = torture_suite_add_tcase(suite, "dsgetinfo");
 
 	torture_tcase_set_fixture(tcase,
 				  torture_dsgetinfo_tcase_setup,

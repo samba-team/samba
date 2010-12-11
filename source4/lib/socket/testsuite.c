@@ -188,8 +188,7 @@ static bool test_tcp(struct torture_context *tctx)
 
 struct torture_suite *torture_local_socket(TALLOC_CTX *mem_ctx)
 {
-	struct torture_suite *suite = torture_suite_create(mem_ctx, 
-													   "SOCKET");
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "socket");
 
 	torture_suite_add_simple_test(suite, "udp", test_udp);
 	torture_suite_add_simple_test(suite, "tcp", test_tcp);

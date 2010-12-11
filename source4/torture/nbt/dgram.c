@@ -655,7 +655,7 @@ static bool nbt_test_ntlogon(struct torture_context *tctx)
 */
 struct torture_suite *torture_nbt_dgram(TALLOC_CTX *mem_ctx)
 {
-	struct torture_suite *suite = torture_suite_create(mem_ctx, "DGRAM");
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "dgram");
 
 	torture_suite_add_simple_test(suite, "netlogon", nbt_test_netlogon);
 	torture_suite_add_simple_test(suite, "netlogon2", nbt_test_netlogon2);

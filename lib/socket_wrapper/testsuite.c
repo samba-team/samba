@@ -95,7 +95,7 @@ static bool test_socket_wrapper_default_iface(struct torture_context *tctx)
 struct torture_suite *torture_local_socket_wrapper(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *suite = torture_suite_create(mem_ctx, 
-													   "SOCKET-WRAPPER");
+													   "socket-wrapper");
 
 	torture_suite_add_simple_test(suite, "socket_wrapper_dir", test_socket_wrapper_dir);
 	torture_suite_add_simple_test(suite, "socket", test_swrap_socket);

@@ -832,13 +832,13 @@ static bool test_lease_multibreak(struct torture_context *tctx,
 struct torture_suite *torture_smb2_lease_init(void)
 {
 	struct torture_suite *suite =
-	    torture_suite_create(talloc_autofree_context(), "LEASE");
+	    torture_suite_create(talloc_autofree_context(), "lease");
 
-	torture_suite_add_1smb2_test(suite, "REQUEST", test_lease_request);
-	torture_suite_add_1smb2_test(suite, "UPGRADE", test_lease_upgrade);
-	torture_suite_add_1smb2_test(suite, "BREAK", test_lease_break);
-	torture_suite_add_1smb2_test(suite, "OPLOCK", test_lease_oplock);
-	torture_suite_add_1smb2_test(suite, "MULTIBREAK", test_lease_multibreak);
+	torture_suite_add_1smb2_test(suite, "request", test_lease_request);
+	torture_suite_add_1smb2_test(suite, "upgrade", test_lease_upgrade);
+	torture_suite_add_1smb2_test(suite, "break", test_lease_break);
+	torture_suite_add_1smb2_test(suite, "oplock", test_lease_oplock);
+	torture_suite_add_1smb2_test(suite, "multibreak", test_lease_multibreak);
 
 	suite->description = talloc_strdup(suite, "SMB2-LEASE tests");
 

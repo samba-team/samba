@@ -602,17 +602,16 @@ done:
 
 struct torture_suite *torture_smb2_compound_init(void)
 {
-	struct torture_suite *suite =
-	    torture_suite_create(talloc_autofree_context(), "COMPOUND");
+	struct torture_suite *suite = torture_suite_create(talloc_autofree_context(), "compound");
 
-	torture_suite_add_1smb2_test(suite, "RELATED1", test_compound_related1);
-	torture_suite_add_1smb2_test(suite, "RELATED2", test_compound_related2);
-	torture_suite_add_1smb2_test(suite, "UNRELATED1", test_compound_unrelated1);
-	torture_suite_add_1smb2_test(suite, "INVALID1", test_compound_invalid1);
-	torture_suite_add_1smb2_test(suite, "INVALID2", test_compound_invalid2);
-	torture_suite_add_1smb2_test(suite, "INVALID3", test_compound_invalid3);
-	torture_suite_add_1smb2_test(suite, "INTERIM1",  test_compound_interim1);
-	torture_suite_add_1smb2_test(suite, "INTERIM2",  test_compound_interim2);
+	torture_suite_add_1smb2_test(suite, "related1", test_compound_related1);
+	torture_suite_add_1smb2_test(suite, "related2", test_compound_related2);
+	torture_suite_add_1smb2_test(suite, "unrelated1", test_compound_unrelated1);
+	torture_suite_add_1smb2_test(suite, "invalid1", test_compound_invalid1);
+	torture_suite_add_1smb2_test(suite, "invalid2", test_compound_invalid2);
+	torture_suite_add_1smb2_test(suite, "invalid3", test_compound_invalid3);
+	torture_suite_add_1smb2_test(suite, "interim1",  test_compound_interim1);
+	torture_suite_add_1smb2_test(suite, "interim2",  test_compound_interim2);
 
 	suite->description = talloc_strdup(suite, "SMB2-COMPOUND tests");
 

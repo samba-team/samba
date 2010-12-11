@@ -802,7 +802,7 @@ fail:
 
 struct torture_suite *torture_base_locktest(TALLOC_CTX *mem_ctx)
 {
-	struct torture_suite *suite = torture_suite_create(mem_ctx, "LOCK");
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "lock");
 	torture_suite_add_2smb_test(suite, "LOCK1", torture_locktest1);
 	torture_suite_add_1smb_test(suite, "LOCK2", torture_locktest2);
 	torture_suite_add_2smb_test(suite, "LOCK3", torture_locktest3);

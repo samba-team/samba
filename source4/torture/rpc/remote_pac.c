@@ -648,7 +648,7 @@ static bool test_S2U4Self_workstation(struct torture_context *tctx,
 
 struct torture_suite *torture_rpc_remote_pac(TALLOC_CTX *mem_ctx)
 {
-	struct torture_suite *suite = torture_suite_create(mem_ctx, "PAC");
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "pac");
 	struct torture_rpc_tcase *tcase;
 
 	/* It is important to use different names, so that old entries in our credential cache are not used */

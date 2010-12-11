@@ -3346,21 +3346,21 @@ bool torture_samba3_getaliasmembership_0(struct torture_context *torture)
 
 struct torture_suite *torture_rpc_samba3(TALLOC_CTX *mem_ctx)
 {
-	struct torture_suite *suite = torture_suite_create(mem_ctx, "SAMBA3");
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "samba3");
 
-	torture_suite_add_simple_test(suite, "BIND", torture_bind_samba3);
-	torture_suite_add_simple_test(suite, "NETLOGON", torture_netlogon_samba3);
-	torture_suite_add_simple_test(suite, "SESSIONKEY", torture_samba3_sessionkey);
-	torture_suite_add_simple_test(suite, "SRVSVC", torture_samba3_rpc_srvsvc);
-	torture_suite_add_simple_test(suite, "SHARESEC", torture_samba3_rpc_sharesec);
-	torture_suite_add_simple_test(suite, "GETUSERNAME", torture_samba3_rpc_getusername);
-	torture_suite_add_simple_test(suite, "RANDOMAUTH2", torture_samba3_rpc_randomauth2);
-	torture_suite_add_simple_test(suite, "LSA", torture_samba3_rpc_lsa);
-	torture_suite_add_simple_test(suite, "SPOOLSS", torture_samba3_rpc_spoolss);
-	torture_suite_add_simple_test(suite, "WKSSVC", torture_samba3_rpc_wkssvc);
-	torture_suite_add_simple_test(suite, "WINREG", torture_samba3_rpc_winreg);
-	torture_suite_add_simple_test(suite, "GETALIASMEMBERSHIP-0", torture_samba3_getaliasmembership_0);
-	torture_suite_add_simple_test(suite, "REGCONFIG", torture_samba3_regconfig);
+	torture_suite_add_simple_test(suite, "bind", torture_bind_samba3);
+	torture_suite_add_simple_test(suite, "netlogon", torture_netlogon_samba3);
+	torture_suite_add_simple_test(suite, "sessionkey", torture_samba3_sessionkey);
+	torture_suite_add_simple_test(suite, "srvsvc", torture_samba3_rpc_srvsvc);
+	torture_suite_add_simple_test(suite, "sharesec", torture_samba3_rpc_sharesec);
+	torture_suite_add_simple_test(suite, "getusername", torture_samba3_rpc_getusername);
+	torture_suite_add_simple_test(suite, "randomauth2", torture_samba3_rpc_randomauth2);
+	torture_suite_add_simple_test(suite, "lsa", torture_samba3_rpc_lsa);
+	torture_suite_add_simple_test(suite, "spoolss", torture_samba3_rpc_spoolss);
+	torture_suite_add_simple_test(suite, "wkssvc", torture_samba3_rpc_wkssvc);
+	torture_suite_add_simple_test(suite, "winreg", torture_samba3_rpc_winreg);
+	torture_suite_add_simple_test(suite, "getaliasmembership-0", torture_samba3_getaliasmembership_0);
+	torture_suite_add_simple_test(suite, "regconfig", torture_samba3_regconfig);
 
 	suite->description = talloc_strdup(suite, "samba3 DCERPC interface tests");
 

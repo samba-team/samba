@@ -94,7 +94,7 @@ static bool test_string_sub_talloc_multiple(struct torture_context *tctx)
 
 struct torture_suite *torture_local_util_str(TALLOC_CTX *mem_ctx)
 {
-	struct torture_suite *suite = torture_suite_create(mem_ctx, "STR");
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "str");
 
 	torture_suite_add_simple_test(suite, "string_sub_simple", 
 				      test_string_sub_simple);

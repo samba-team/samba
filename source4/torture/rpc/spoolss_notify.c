@@ -585,7 +585,7 @@ static bool test_ReplyOpenPrinter(struct torture_context *tctx,
 
 struct torture_suite *torture_rpc_spoolss_notify(TALLOC_CTX *mem_ctx)
 {
-	struct torture_suite *suite = torture_suite_create(mem_ctx, "SPOOLSS-NOTIFY");
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "spoolss.notify");
 
 	struct torture_rpc_tcase *tcase = torture_suite_add_rpc_iface_tcase(suite,
 							"notify", &ndr_table_spoolss);

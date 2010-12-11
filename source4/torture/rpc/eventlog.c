@@ -483,7 +483,7 @@ struct torture_suite *torture_rpc_eventlog(TALLOC_CTX *mem_ctx)
 	struct torture_rpc_tcase *tcase;
 	struct torture_test *test;
 
-	suite = torture_suite_create(mem_ctx, "EVENTLOG");
+	suite = torture_suite_create(mem_ctx, "eventlog");
 	tcase = torture_suite_add_rpc_iface_tcase(suite, "eventlog",
 						  &ndr_table_eventlog);
 

@@ -114,7 +114,7 @@ bool test_BrowserrQueryOtherDomains(struct torture_context *tctx,
 
 struct torture_suite *torture_rpc_browser(TALLOC_CTX *mem_ctx)
 {
-	struct torture_suite *suite = torture_suite_create(mem_ctx, "BROWSER");
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "browser");
 	struct torture_rpc_tcase *tcase = torture_suite_add_rpc_iface_tcase(suite, "browser", &ndr_table_browser);
 
 	torture_rpc_tcase_add_test(tcase, "BrowserrQueryOtherDomains", test_BrowserrQueryOtherDomains);

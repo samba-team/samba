@@ -1037,7 +1037,7 @@ void torture_drs_rpc_dssync_tcase(struct torture_suite *suite)
 	typedef bool (*run_func) (struct torture_context *test, void *tcase_data);
 
 	struct torture_test *test;
-	struct torture_tcase *tcase = torture_suite_add_tcase(suite, "DSSYNC");
+	struct torture_tcase *tcase = torture_suite_add_tcase(suite, "dssync");
 
 	torture_tcase_set_fixture(tcase,
 				  torture_dssync_tcase_setup,

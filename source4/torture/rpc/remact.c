@@ -78,7 +78,7 @@ static bool test_RemoteActivation(struct torture_context *tctx,
 
 struct torture_suite *torture_rpc_remact(TALLOC_CTX *mem_ctx)
 {
-	struct torture_suite *suite = torture_suite_create(mem_ctx, "REMACT");
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "remact");
 	struct torture_rpc_tcase *tcase;
 
 	tcase = torture_suite_add_rpc_iface_tcase(suite, "remact", &ndr_table_IRemoteActivation);

@@ -633,7 +633,7 @@ static bool torture_drs_unit_schemainfo_teardown(struct torture_context *tctx,
 
 /**
  * Test case initialization for
- * DRS-UNIT.schemaInfo
+ * drs.unit.schemaInfo
  */
 struct torture_tcase * torture_drs_unit_schemainfo(struct torture_suite *suite)
 {

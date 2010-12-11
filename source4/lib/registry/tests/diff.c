@@ -276,7 +276,7 @@ static bool diff_setup_dotreg_tcase (struct torture_context *tctx, void **data)
 struct torture_suite *torture_registry_diff(TALLOC_CTX *mem_ctx)
 {
 	struct torture_tcase *tcase;
-	struct torture_suite *suite = torture_suite_create(mem_ctx, "DIFF");
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "diff");
 
 	tcase = torture_suite_add_tcase(suite, "PReg");
 	torture_tcase_set_fixture(tcase, diff_setup_preg_tcase, NULL);

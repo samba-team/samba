@@ -255,7 +255,7 @@ static bool test_InfoW(struct torture_context *tctx,
 struct torture_suite *torture_rpc_frsapi(TALLOC_CTX *mem_ctx)
 {
 	struct torture_rpc_tcase *tcase;
-	struct torture_suite *suite = torture_suite_create(mem_ctx, "FRSAPI");
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "frsapi");
 	struct torture_test *test;
 
 	tcase = torture_suite_add_rpc_iface_tcase(suite, "frsapi",

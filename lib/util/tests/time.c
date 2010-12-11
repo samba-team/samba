@@ -101,7 +101,7 @@ static bool test_get_time_zone(struct torture_context *tctx)
 
 struct torture_suite *torture_local_util_time(TALLOC_CTX *mem_ctx)
 {
-	struct torture_suite *suite = torture_suite_create(mem_ctx, "TIME");
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "time");
 
 	torture_suite_add_simple_test(suite, "null_time", test_null_time);
 	torture_suite_add_simple_test(suite, "get_time_zone", test_get_time_zone);

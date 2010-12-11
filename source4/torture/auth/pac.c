@@ -730,7 +730,7 @@ static bool torture_pac_saved_check(struct torture_context *tctx)
 
 struct torture_suite *torture_pac(TALLOC_CTX *mem_ctx)
 {
-	struct torture_suite *suite = torture_suite_create(mem_ctx, "PAC");
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "pac");
 
 	torture_suite_add_simple_test(suite, "self check", 
 				      torture_pac_self_check);

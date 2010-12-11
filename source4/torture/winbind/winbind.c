@@ -23,7 +23,7 @@
 
 NTSTATUS torture_winbind_init(void)
 {
-	struct torture_suite *suite = torture_suite_create(talloc_autofree_context(), "WINBIND");
+	struct torture_suite *suite = torture_suite_create(talloc_autofree_context(), "winbind");
 
 	torture_suite_add_suite(suite, torture_winbind_struct_init());
 	torture_suite_add_suite(suite, torture_wbclient());

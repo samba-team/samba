@@ -9739,15 +9739,14 @@ static bool torture_nbt_winsreplication_owned(struct torture_context *tctx)
 struct torture_suite *torture_nbt_winsreplication(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *suite = torture_suite_create(
-		mem_ctx, "WINSREPLICATION");
+		mem_ctx, "winsreplication");
 	struct torture_tcase *tcase;
 
 	tcase = torture_suite_add_simple_test(suite, "assoc_ctx1", 
 					     test_assoc_ctx1);
 	tcase->tests->dangerous = true;
 
-	torture_suite_add_simple_test(suite, "assoc_ctx2", 
-				      test_assoc_ctx2);
+	torture_suite_add_simple_test(suite, "assoc_ctx2", test_assoc_ctx2);
 	
 	torture_suite_add_simple_test(suite, "wins_replication",
 				      test_wins_replication);

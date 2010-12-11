@@ -1160,7 +1160,7 @@ again:
 
 struct torture_suite *torture_rpc_srvsvc(TALLOC_CTX *mem_ctx)
 {
-	struct torture_suite *suite = torture_suite_create(mem_ctx, "SRVSVC");
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "srvsvc");
 	struct torture_rpc_tcase *tcase;
 	struct torture_test *test;
 

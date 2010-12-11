@@ -126,7 +126,7 @@ static bool test_JobAdd(struct torture_context *tctx, struct dcerpc_pipe *p)
 
 struct torture_suite *torture_rpc_atsvc(TALLOC_CTX *mem_ctx)
 {
-	struct torture_suite *suite = torture_suite_create(mem_ctx, "ATSVC");
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "atsvc");
 	struct torture_rpc_tcase *tcase;
 	
 	tcase = torture_suite_add_rpc_iface_tcase(suite, "atsvc", &ndr_table_atsvc);

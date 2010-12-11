@@ -457,7 +457,7 @@ static bool test_dir_refuses_null_location(struct torture_context *tctx)
 struct torture_suite *torture_registry_hive(TALLOC_CTX *mem_ctx)
 {
 	struct torture_tcase *tcase;
-	struct torture_suite *suite = torture_suite_create(mem_ctx, "HIVE");
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "hive");
 
 	torture_suite_add_simple_test(suite, "dir-refuses-null-location",
 				      test_dir_refuses_null_location);

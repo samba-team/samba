@@ -1896,22 +1896,21 @@ static bool test_stream_summary_tab(struct torture_context *tctx,
 */
 struct torture_suite *torture_raw_streams(TALLOC_CTX *tctx)
 {
-	struct torture_suite *suite = torture_suite_create(tctx, "STREAMS");
+	struct torture_suite *suite = torture_suite_create(tctx, "streams");
 
-	torture_suite_add_1smb_test(suite, "DIR", test_stream_dir);
-	torture_suite_add_1smb_test(suite, "IO", test_stream_io);
-	torture_suite_add_1smb_test(suite, "SHAREMODES",
-	    test_stream_sharemodes);
-	torture_suite_add_1smb_test(suite, "DELETE", test_stream_delete);
-	torture_suite_add_1smb_test(suite, "NAMES", test_stream_names);
-	torture_suite_add_1smb_test(suite, "NAMES2", test_stream_names2);
-	torture_suite_add_1smb_test(suite, "RENAME", test_stream_rename);
-	torture_suite_add_1smb_test(suite, "RENAME2", test_stream_rename2);
-	torture_suite_add_1smb_test(suite, "RENAME3", test_stream_rename3);
-	torture_suite_add_1smb_test(suite, "CREATEDISP",
+	torture_suite_add_1smb_test(suite, "dir", test_stream_dir);
+	torture_suite_add_1smb_test(suite, "io", test_stream_io);
+	torture_suite_add_1smb_test(suite, "sharemodes", test_stream_sharemodes);
+	torture_suite_add_1smb_test(suite, "delete", test_stream_delete);
+	torture_suite_add_1smb_test(suite, "names", test_stream_names);
+	torture_suite_add_1smb_test(suite, "names2", test_stream_names2);
+	torture_suite_add_1smb_test(suite, "rename", test_stream_rename);
+	torture_suite_add_1smb_test(suite, "rename2", test_stream_rename2);
+	torture_suite_add_1smb_test(suite, "rename3", test_stream_rename3);
+	torture_suite_add_1smb_test(suite, "createdisp",
 	    test_stream_create_disposition);
-	torture_suite_add_1smb_test(suite, "ATTR", test_stream_attributes);
-	torture_suite_add_1smb_test(suite, "SUMTAB", test_stream_summary_tab);
+	torture_suite_add_1smb_test(suite, "attr", test_stream_attributes);
+	torture_suite_add_1smb_test(suite, "sumtab", test_stream_summary_tab);
 
 	/* torture_suite_add_1smb_test(suite, "LARGESTREAMINFO", */
 	/*     test_stream_large_streaminfo); */
