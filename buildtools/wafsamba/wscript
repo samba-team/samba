@@ -301,7 +301,9 @@ def configure(conf):
         conf.env.HAVE_LD_VERSION_SCRIPT = False
 
     if sys.platform == "aix5":
-        conf.DEFINE('_XOPEN_SOURCE', 500, add_to_cflags=True)
+        conf.DEFINE('_ALL_SOURCE', 1, add_to_cflags=True)
+        # Might not be needed if ALL_SOURCE is defined
+        # conf.DEFINE('_XOPEN_SOURCE', 600, add_to_cflags=True)
 
     # we should use the PIC options in waf instead
     # Some compilo didn't support -fPIC but just print a warning
