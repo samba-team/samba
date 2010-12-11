@@ -3034,7 +3034,7 @@ void wcache_invalidate_samlogon(struct winbindd_domain *domain,
 	tdb_delete(cache->tdb, string_tdb_data(key_str));
 
 	/* Samba/winbindd never needs this. */
-	netsamlogon_clear_cached_user(info3);
+	netsamlogon_clear_cached_user(&sid);
 }
 
 bool wcache_invalidate_cache(void)
