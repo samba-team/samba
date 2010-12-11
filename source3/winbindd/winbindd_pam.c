@@ -1250,8 +1250,11 @@ static NTSTATUS winbind_samlogon_retry_loop(struct winbindd_domain *domain,
 	return result;
 }
 
-static NTSTATUS winbindd_dual_pam_auth_samlogon(struct winbindd_domain *domain,
-						struct winbindd_cli_state *state,
+static NTSTATUS winbindd_dual_pam_auth_samlogon(TALLOC_CTX *mem_ctx,
+						struct winbindd_domain *domain,
+						const char *user,
+						const char *pass,
+						uint32_t request_flags,
 						struct netr_SamInfo3 **info3)
 {
 
@@ -1269,7 +1272,7 @@ static NTSTATUS winbindd_dual_pam_auth_samlogon(struct winbindd_domain *domain,
 
 	/* Parse domain and username */
 
-	parse_domain_user(state->request->data.auth.user, name_domain, name_user);
+	parse_domain_user(user, name_domain, name_user);
 
 	/* do password magic */
 
@@ -1284,10 +1287,11 @@ static NTSTATUS winbindd_dual_pam_auth_samlogon(struct winbindd_domain *domain,
 		   machine.  The 'server name' must match the
 		   'workstation' passed to the actual SamLogon call.
 		*/
-		names_blob = NTLMv2_generate_names_blob(state->mem_ctx, global_myname(), lp_workgroup());
+		names_blob = NTLMv2_generate_names_blob(
+			mem_ctx, global_myname(), lp_workgroup());
 
-		if (!SMBNTLMv2encrypt(state->mem_ctx, name_user, name_domain,
-				      state->request->data.auth.pass,
+		if (!SMBNTLMv2encrypt(mem_ctx, name_user, name_domain,
+				      pass,
 				      &server_chal,
 				      &names_blob,
 				      &lm_resp, &nt_resp, NULL, NULL)) {
@@ -1299,12 +1303,9 @@ static NTSTATUS winbindd_dual_pam_auth_samlogon(struct winbindd_domain *domain,
 		data_blob_free(&names_blob);
 	} else {
 		lm_resp = data_blob_null;
-		SMBNTencrypt(state->request->data.auth.pass,
-			     chal,
-			     local_nt_response);
+		SMBNTencrypt(pass, chal, local_nt_response);
 
-		nt_resp = data_blob_talloc(state->mem_ctx,
-					   local_nt_response,
+		nt_resp = data_blob_talloc(mem_ctx, local_nt_response,
 					   sizeof(local_nt_response));
 	}
 
@@ -1312,7 +1313,7 @@ static NTSTATUS winbindd_dual_pam_auth_samlogon(struct winbindd_domain *domain,
 		DATA_BLOB chal_blob = data_blob_const(chal, sizeof(chal));
 
 		result = winbindd_dual_auth_passdb(
-			state->mem_ctx, name_domain, name_user,
+			mem_ctx, name_domain, name_user,
 			&chal_blob, &lm_resp, &nt_resp, info3);
 		goto done;
 	}
@@ -1320,7 +1321,7 @@ static NTSTATUS winbindd_dual_pam_auth_samlogon(struct winbindd_domain *domain,
 	/* check authentication loop */
 
 	result = winbind_samlogon_retry_loop(domain,
-					     state->mem_ctx,
+					     mem_ctx,
 					     0,
 					     domain->dcname,
 					     name_user,
@@ -1338,7 +1339,7 @@ static NTSTATUS winbindd_dual_pam_auth_samlogon(struct winbindd_domain *domain,
 	 * the samlogon reply info3. When accurate info3 is required by the
 	 * caller, we look up the account flags ourselve - gd */
 
-	if ((state->request->flags & WBFLAG_PAM_INFO3_TEXT) &&
+	if ((request_flags & WBFLAG_PAM_INFO3_TEXT) &&
 	    NT_STATUS_IS_OK(result) && (my_info3->base.acct_flags == 0)) {
 
 		struct rpc_pipe_client *samr_pipe;
@@ -1347,7 +1348,7 @@ static NTSTATUS winbindd_dual_pam_auth_samlogon(struct winbindd_domain *domain,
 		NTSTATUS status_tmp;
 		uint32 acct_flags;
 
-		status_tmp = cm_connect_sam(domain, state->mem_ctx,
+		status_tmp = cm_connect_sam(domain, mem_ctx,
 					    &samr_pipe, &samr_domain_handle);
 
 		if (!NT_STATUS_IS_OK(status_tmp)) {
@@ -1356,7 +1357,7 @@ static NTSTATUS winbindd_dual_pam_auth_samlogon(struct winbindd_domain *domain,
 			goto done;
 		}
 
-		status_tmp = rpccli_samr_OpenUser(samr_pipe, state->mem_ctx,
+		status_tmp = rpccli_samr_OpenUser(samr_pipe, mem_ctx,
 						  &samr_domain_handle,
 						  MAXIMUM_ALLOWED_ACCESS,
 						  my_info3->base.rid,
@@ -1368,7 +1369,7 @@ static NTSTATUS winbindd_dual_pam_auth_samlogon(struct winbindd_domain *domain,
 			goto done;
 		}
 
-		status_tmp = rpccli_samr_QueryUserInfo(samr_pipe, state->mem_ctx,
+		status_tmp = rpccli_samr_QueryUserInfo(samr_pipe, mem_ctx,
 						       &user_pol,
 						       16,
 						       &info);
@@ -1376,14 +1377,14 @@ static NTSTATUS winbindd_dual_pam_auth_samlogon(struct winbindd_domain *domain,
 		if (!NT_STATUS_IS_OK(status_tmp)) {
 			DEBUG(3, ("could not query user info on SAMR pipe: %s\n",
 				nt_errstr(status_tmp)));
-			rpccli_samr_Close(samr_pipe, state->mem_ctx, &user_pol);
+			rpccli_samr_Close(samr_pipe, mem_ctx, &user_pol);
 			goto done;
 		}
 
 		acct_flags = info->info16.acct_flags;
 
 		if (acct_flags == 0) {
-			rpccli_samr_Close(samr_pipe, state->mem_ctx, &user_pol);
+			rpccli_samr_Close(samr_pipe, mem_ctx, &user_pol);
 			goto done;
 		}
 
@@ -1391,7 +1392,7 @@ static NTSTATUS winbindd_dual_pam_auth_samlogon(struct winbindd_domain *domain,
 
 		DEBUG(10,("successfully retrieved acct_flags 0x%x\n", acct_flags));
 
-		rpccli_samr_Close(samr_pipe, state->mem_ctx, &user_pol);
+		rpccli_samr_Close(samr_pipe, mem_ctx, &user_pol);
 	}
 
 	*info3 = my_info3;
@@ -1512,7 +1513,12 @@ enum winbindd_result winbindd_dual_pam_auth(struct winbindd_domain *domain,
 sam_logon:
 	/* Check for Samlogon authentication */
 	if (domain->online) {
-		result = winbindd_dual_pam_auth_samlogon(domain, state, &info3);
+		result = winbindd_dual_pam_auth_samlogon(
+			state->mem_ctx, domain,
+			state->request->data.auth.user,
+			state->request->data.auth.pass,
+			state->request->flags,
+			&info3);
 
 		if (NT_STATUS_IS_OK(result)) {
 			DEBUG(10,("winbindd_dual_pam_auth_samlogon succeeded\n"));
