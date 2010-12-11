@@ -99,14 +99,9 @@ bool netsamlogon_cache_shutdown(void)
  Clear cache getpwnam and getgroups entries from the winbindd cache
 ***********************************************************************/
 
-void netsamlogon_clear_cached_user(struct netr_SamInfo3 *info3)
+void netsamlogon_clear_cached_user(const struct dom_sid *user_sid)
 {
-	struct dom_sid	user_sid;
 	fstring keystr;
-
-	if (!info3) {
-		return;
-	}
 
 	if (!netsamlogon_cache_init()) {
 		DEBUG(0,("netsamlogon_clear_cached_user: cannot open "
@@ -114,10 +109,9 @@ void netsamlogon_clear_cached_user(struct netr_SamInfo3 *info3)
 			NETSAMLOGON_TDB));
 		return;
 	}
-	sid_compose(&user_sid, info3->base.domain_sid, info3->base.rid);
 
 	/* Prepare key as DOMAIN-SID/USER-RID string */
-	sid_to_fstring(keystr, &user_sid);
+	sid_to_fstring(keystr, user_sid);
 
 	DEBUG(10,("netsamlogon_clear_cached_user: SID [%s]\n", keystr));
 
