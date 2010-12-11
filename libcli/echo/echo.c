@@ -172,7 +172,7 @@ static void echo_request_done(struct tevent_req *subreq)
 		return;
 	}
 
-	state->message[len] = '\0';
+	state->message[len-1] = '\0';
 	/* Once the async function has completed, set tevent_req_done() */
 	tevent_req_done(req);
 }
