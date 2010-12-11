@@ -68,7 +68,7 @@ NTSTATUS wcache_save_creds(struct winbindd_domain *domain,
 			   const struct dom_sid *sid,
 			   const uint8 nt_pass[NT_HASH_LEN]);
 void wcache_invalidate_samlogon(struct winbindd_domain *domain, 
-				struct netr_SamInfo3 *info3);
+				const struct dom_sid *user_sid);
 bool wcache_invalidate_cache(void);
 bool wcache_invalidate_cache_noinit(void);
 bool init_wcache(void);

@@ -2999,9 +2999,8 @@ static int traverse_fn(TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_DATA dbuf,
 /* Invalidate the getpwnam and getgroups entries for a winbindd domain */
 
 void wcache_invalidate_samlogon(struct winbindd_domain *domain, 
-				struct netr_SamInfo3 *info3)
+				const struct dom_sid *sid)
 {
-        struct dom_sid sid;
         fstring key_str, sid_string;
 	struct winbind_cache *cache;
 
@@ -3021,20 +3020,18 @@ void wcache_invalidate_samlogon(struct winbindd_domain *domain,
                 return;
         }
 
-	sid_compose(&sid, info3->base.domain_sid, info3->base.rid);
-
 	/* Clear U/SID cache entry */
-	fstr_sprintf(key_str, "U/%s", sid_to_fstring(sid_string, &sid));
+	fstr_sprintf(key_str, "U/%s", sid_to_fstring(sid_string, sid));
 	DEBUG(10, ("wcache_invalidate_samlogon: clearing %s\n", key_str));
 	tdb_delete(cache->tdb, string_tdb_data(key_str));
 
 	/* Clear UG/SID cache entry */
-	fstr_sprintf(key_str, "UG/%s", sid_to_fstring(sid_string, &sid));
+	fstr_sprintf(key_str, "UG/%s", sid_to_fstring(sid_string, sid));
 	DEBUG(10, ("wcache_invalidate_samlogon: clearing %s\n", key_str));
 	tdb_delete(cache->tdb, string_tdb_data(key_str));
 
 	/* Samba/winbindd never needs this. */
-	netsamlogon_clear_cached_user(&sid);
+	netsamlogon_clear_cached_user(sid);
 }
 
 bool wcache_invalidate_cache(void)
