@@ -1527,7 +1527,11 @@ process_result:
 			goto done;
 		}
 
-		wcache_invalidate_samlogon(find_domain_from_name(name_domain), info3);
+		sid_compose(&user_sid, info3->base.domain_sid,
+			    info3->base.rid);
+
+		wcache_invalidate_samlogon(find_domain_from_name(name_domain),
+					   &user_sid);
 		netsamlogon_cache_store(name_user, info3);
 
 		/* save name_to_sid info as early as possible (only if
@@ -1535,8 +1539,6 @@ process_result:
 		   the cache entry by storing the seq_num for the wrong
 		   domain). */
 		if ( domain->primary ) {
-			sid_compose(&user_sid, info3->base.domain_sid,
-				    info3->base.rid);
 			cache_name2sid(domain, name_domain, name_user,
 				       SID_NAME_USER, &user_sid);
 		}
@@ -1744,8 +1746,12 @@ enum winbindd_result winbindd_dual_pam_auth_crap(struct winbindd_domain *domain,
 process_result:
 
 	if (NT_STATUS_IS_OK(result)) {
+		struct dom_sid user_sid;
 
-		wcache_invalidate_samlogon(find_domain_from_name(name_domain), info3);
+		sid_compose(&user_sid, info3->base.domain_sid,
+			    info3->base.rid);
+		wcache_invalidate_samlogon(find_domain_from_name(name_domain),
+					   &user_sid);
 		netsamlogon_cache_store(name_user, info3);
 
 		/* Check if the user is in the right group */
