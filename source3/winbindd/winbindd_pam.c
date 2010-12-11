@@ -521,9 +521,14 @@ static uid_t get_uid_from_state(struct winbindd_cli_state *state)
  ccache if required
  **********************************************************************/
 
-static NTSTATUS winbindd_raw_kerberos_login(struct winbindd_domain *domain,
-					    struct winbindd_cli_state *state,
-					    struct netr_SamInfo3 **info3)
+static NTSTATUS winbindd_raw_kerberos_login(TALLOC_CTX *mem_ctx,
+					    struct winbindd_domain *domain,
+					    const char *user,
+					    const char *pass,
+					    const char *krb5_cc_type,
+					    uid_t uid,
+					    struct netr_SamInfo3 **info3,
+					    fstring krb5ccname)
 {
 #ifdef HAVE_KRB5
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
@@ -535,7 +540,6 @@ static NTSTATUS winbindd_raw_kerberos_login(struct winbindd_domain *domain,
 	fstring name_domain, name_user;
 	time_t ticket_lifetime = 0;
 	time_t renewal_until = 0;
-	uid_t uid = -1;
 	ADS_STRUCT *ads;
 	time_t time_offset = 0;
 	const char *user_ccache_file;
@@ -546,13 +550,12 @@ static NTSTATUS winbindd_raw_kerberos_login(struct winbindd_domain *domain,
 	/* 1st step:
 	 * prepare a krb5_cc_cache string for the user */
 
-	uid = get_uid_from_state(state);
 	if (uid == -1) {
 		DEBUG(0,("no valid uid\n"));
 	}
 
-	cc = generate_krb5_ccache(state->mem_ctx,
-				  state->request->data.auth.krb5_cc_type,
+	cc = generate_krb5_ccache(mem_ctx,
+				  krb5_cc_type,
 				  uid,
 				  &user_ccache_file);
 	if (cc == NULL) {
@@ -572,17 +575,17 @@ static NTSTATUS winbindd_raw_kerberos_login(struct winbindd_domain *domain,
 	/* 3rd step:
 	 * do kerberos auth and setup ccache as the user */
 
-	parse_domain_user(state->request->data.auth.user, name_domain, name_user);
+	parse_domain_user(user, name_domain, name_user);
 
 	realm = domain->alt_name;
 	strupper_m(realm);
 
-	principal_s = talloc_asprintf(state->mem_ctx, "%s@%s", name_user, realm);
+	principal_s = talloc_asprintf(mem_ctx, "%s@%s", name_user, realm);
 	if (principal_s == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	service = talloc_asprintf(state->mem_ctx, "%s/%s@%s", KRB5_TGS_NAME, realm, realm);
+	service = talloc_asprintf(mem_ctx, "%s/%s@%s", KRB5_TGS_NAME, realm, realm);
 	if (service == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -597,9 +600,9 @@ static NTSTATUS winbindd_raw_kerberos_login(struct winbindd_domain *domain,
 		DEBUG(10,("winbindd_raw_kerberos_login: uid is %d\n", uid));
 	}
 
-	result = kerberos_return_pac(state->mem_ctx,
+	result = kerberos_return_pac(mem_ctx,
 				     principal_s,
-				     state->request->data.auth.pass,
+				     pass,
 				     time_offset,
 				     &ticket_lifetime,
 				     &renewal_until,
@@ -629,13 +632,12 @@ static NTSTATUS winbindd_raw_kerberos_login(struct winbindd_domain *domain,
 
 	if (user_ccache_file != NULL) {
 
-		fstrcpy(state->response->data.auth.krb5ccname,
-			user_ccache_file);
+		fstrcpy(krb5ccname, user_ccache_file);
 
 		result = add_ccache_to_list(principal_s,
 					    cc,
 					    service,
-					    state->request->data.auth.user,
+					    user,
 					    realm,
 					    uid,
 					    time(NULL),
@@ -676,10 +678,10 @@ failed:
 			 "%s\n", error_message(krb5_ret)));
 	}
 
-	if (!NT_STATUS_IS_OK(remove_ccache(state->request->data.auth.user))) {
+	if (!NT_STATUS_IS_OK(remove_ccache(user))) {
 		DEBUG(3,("winbindd_raw_kerberos_login: "
 			  "could not remove ccache for user %s\n",
-			state->request->data.auth.user));
+			user));
 	}
 
 	return result;
@@ -1089,7 +1091,13 @@ static NTSTATUS winbindd_dual_pam_auth_kerberos(struct winbindd_domain *domain,
 		return NT_STATUS_INVALID_LOGON_TYPE;
 	}
 try_login:
-	result = winbindd_raw_kerberos_login(contact_domain, state, info3);
+	result = winbindd_raw_kerberos_login(
+		state->mem_ctx, contact_domain,
+		state->request->data.auth.user,
+		state->request->data.auth.pass,
+		state->request->data.auth.krb5_cc_type,
+		get_uid_from_request(state->request),
+		info3, state->response->data.auth.krb5ccname);
 done:
 	return result;
 }
