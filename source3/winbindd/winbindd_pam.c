@@ -553,7 +553,7 @@ static NTSTATUS winbindd_raw_kerberos_login(struct winbindd_domain *domain,
 
 	cc = generate_krb5_ccache(state->mem_ctx,
 				  state->request->data.auth.krb5_cc_type,
-				  state->request->data.auth.uid,
+				  uid,
 				  &user_ccache_file);
 	if (cc == NULL) {
 		return NT_STATUS_NO_MEMORY;
