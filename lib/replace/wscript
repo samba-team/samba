@@ -210,7 +210,18 @@ def configure(conf):
     conf.CHECK_FUNCS_IN('res_search', 'resolv', checklibc=True,
                         headers='netinet/in.h arpa/nameser.h resolv.h')
 
-    conf.CHECK_FUNCS_IN('gettext', 'intl', checklibc=True, headers='libintl.h')
+
+    if not conf.CHECK_FUNCS_IN('gettext', 'intl', checklibc=True, headers='libintl.h'):
+    # Some hosts need lib iconv for linking with lib intl
+    # So we try with flags just in case it helps.
+        oldflags = conf.env['LDFLAGS_INTL']
+        conf.env['LDFLAGS_INTL'] = "-liconv"
+        if not conf.CHECK_LIB('intl'):
+            conf.env['LDFLAGS_INTL'] = oldflags
+        else:
+            conf.CHECK_FUNCS_IN('gettext', 'intl', checklibc=True, headers='libintl.h')
+
+    conf.CHECK_FUNCS_IN('dgettext gettext', 'intl', headers='libintl.h')
     conf.CHECK_FUNCS_IN('pthread_create', 'pthread', checklibc=True, headers='pthread.h')
 
     conf.CHECK_FUNCS_IN('crypt', 'crypt', checklibc=True)
