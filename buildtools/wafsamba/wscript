@@ -300,6 +300,9 @@ def configure(conf):
     else:
         conf.env.HAVE_LD_VERSION_SCRIPT = False
 
+    if sys.platform == "aix5":
+        conf.DEFINE('_XOPEN_SOURCE', 500, add_to_cflags=True)
+
     # we should use the PIC options in waf instead
     # Some compilo didn't support -fPIC but just print a warning
     if conf.env['COMPILER_CC'] == "suncc":
