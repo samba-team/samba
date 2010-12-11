@@ -633,8 +633,12 @@ int main(int argc,char *argv[])
 	}
 
 	if (list_tests) {
-		for (i=1;i<argc_new;i++) {
-			print_test_list(torture_root, NULL, argv_new[i]);
+		if (argc_new == 1) {
+			print_test_list(torture_root, NULL, "");
+		} else {
+			for (i=1;i<argc_new;i++) {
+				print_test_list(torture_root, NULL, argv_new[i]);
+			}
 		}
 		return 0;
 	}
