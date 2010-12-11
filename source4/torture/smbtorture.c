@@ -37,6 +37,37 @@
 #include <readline/history.h>
 #endif
 
+static char *prefix_name(TALLOC_CTX *mem_ctx, const char *prefix, const char *name)
+{
+	if (prefix == NULL)
+		return talloc_strdup(mem_ctx, name);
+	else
+		return talloc_asprintf(mem_ctx, "%s.%s", prefix, name);
+}
+
+static void print_test_list(const struct torture_suite *suite, const char *prefix, const char *expr)
+{
+	struct torture_suite *o;
+	struct torture_tcase *t;
+	struct torture_test *p;
+
+	for (o = suite->children; o; o = o->next) {
+		char *name = prefix_name(NULL, prefix, o->name);
+		print_test_list(o, name, expr);
+		talloc_free(name);
+	}
+
+	for (t = suite->testcases; t; t = t->next) {
+		for (p = t->tests; p; p = p->next) {
+			char *name = talloc_asprintf(NULL, "%s.%s.%s", prefix, t->name, p->name);
+			if (strncmp(name, expr, strlen(expr)) == 0) {
+				printf("%s\n", name);
+			}
+			talloc_free(name);
+		}
+	}
+}
+
 static bool run_matching(struct torture_context *torture,
 						 const char *prefix, 
 						 const char *expr,
@@ -51,10 +82,7 @@ static bool run_matching(struct torture_context *torture,
 
 	for (o = suite->children; o; o = o->next) {
 		char *name = NULL;
-		if (prefix == NULL)
-			name = talloc_strdup(torture, o->name);
-		else
-			name = talloc_asprintf(torture, "%s.%s", prefix, o->name);
+		name = prefix_name(torture, prefix, o->name);
 		if (gen_fnmatch(expr, name) == 0) {
 			*matched = true;
 			reload_charcnv(torture->lp_ctx);
@@ -594,12 +622,6 @@ int main(int argc,char *argv[])
 		return 0;
 	}
 
-	if (torture_seed == 0) {
-		torture_seed = time(NULL);
-	} 
-	printf("Using seed %d\n", torture_seed);
-	srandom(torture_seed);
-
 	argv_new = discard_const_p(char *, poptGetArgs(pc));
 
 	argc_new = argc;
@@ -609,6 +631,19 @@ int main(int argc,char *argv[])
 			break;
 		}
 	}
+
+	if (list_tests) {
+		for (i=1;i<argc_new;i++) {
+			print_test_list(torture_root, NULL, argv_new[i]);
+		}
+		return 0;
+	}
+
+	if (torture_seed == 0) {
+		torture_seed = time(NULL);
+	} 
+	printf("Using seed %d\n", torture_seed);
+	srandom(torture_seed);
 
 	if (!strcmp(ui_ops_name, "simple")) {
 		ui_ops = &std_ui_ops;
