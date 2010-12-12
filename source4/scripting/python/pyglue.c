@@ -88,6 +88,10 @@ static PyObject *py_nttime2string(PyObject *self, PyObject *args)
 		return NULL;
 
 	tmp_ctx = talloc_new(NULL);
+	if (tmp_ctx == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
 
 	string = nt_time_string(tmp_ctx, nt);
 	ret =  PyString_FromString(string);
