@@ -23,8 +23,6 @@
 #include "include/includes.h"
 #include <tevent.h>
 #include "libcli/resolve/resolve.h"
-#include "lib/messaging/messaging.h"
-#include "libcli/libcli.h"
 #include "libcli/cldap/cldap.h"
 #include "libcli/finddc.h"
 #include "libcli/security/security.h"

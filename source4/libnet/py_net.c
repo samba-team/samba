@@ -18,19 +18,15 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <Python.h>
+#include "lib/ldb/pyldb.h"
 #include "includes.h"
 #include "libnet.h"
 #include "auth/credentials/pycredentials.h"
 #include "libcli/security/security.h"
 #include "lib/events/events.h"
-#include "param/param.h"
 #include "param/pyparam.h"
-#include "lib/ldb/pyldb.h"
 #include "auth/gensec/gensec.h"
-#include "librpc/rpc/pyrpc.h"
 #include "librpc/rpc/pyrpc_util.h"
-#include "lib/messaging/messaging.h"
 #include "libcli/finddc.h"
 #include "libcli/resolve/resolve.h"
 

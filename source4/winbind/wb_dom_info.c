@@ -27,8 +27,6 @@
 #include "winbind/wb_server.h"
 #include "smbd/service_task.h"
 #include "libcli/finddc.h"
-#include "param/param.h"
-#include "libcli/libcli.h"
 
 struct get_dom_info_state {
 	struct composite_context *ctx;

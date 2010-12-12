@@ -19,6 +19,8 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include "lib/messaging/messaging.h"
+#include "libcli/libcli.h"
 #include "libcli/netlogon.h"
 
 struct finddcs {

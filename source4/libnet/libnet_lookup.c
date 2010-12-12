@@ -22,19 +22,13 @@
 */
 
 #include "includes.h"
-#include "lib/events/events.h"
 #include "libnet/libnet.h"
 #include "libcli/composite/composite.h"
 #include "auth/credentials/credentials.h"
-#include "lib/messaging/messaging.h"
-#include "lib/messaging/irpc.h"
 #include "libcli/resolve/resolve.h"
-#include "libcli/libcli.h"
 #include "libcli/finddc.h"
 #include "libcli/security/security.h"
-#include "librpc/gen_ndr/lsa.h"
 #include "librpc/gen_ndr/ndr_lsa_c.h"
-
 #include "param/param.h"
 
 struct lookup_state {
