@@ -21,16 +21,11 @@
 */
 
 #include "includes.h"
-#include "smbd/service_task.h"
-#include "smbd/service_stream.h"
-#include "smbd/service.h"
 #include "web_server/web_server.h"
-#include "lib/events/events.h"
-#include "system/filesys.h"
-#include "system/network.h"
-#include "lib/socket/netif.h"
-#include "lib/tls/tls.h"
 #include "../lib/util/dlinklist.h"
+#include "lib/tls/tls.h"
+#include "lib/events/events.h"
+#include "lib/socket/netif.h"
 #include "param/param.h"
 
 /* don't allow connections to hang around forever */
