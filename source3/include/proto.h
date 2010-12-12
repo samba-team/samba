@@ -7282,6 +7282,17 @@ void *avahi_start_register(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 
 /* Misc protos */
 
+struct tevent_req *smbsock_connect_send(TALLOC_CTX *mem_ctx,
+					struct tevent_context *ev,
+					const struct sockaddr_storage *addr,
+					const char *called_name,
+					const char *calling_name);
+NTSTATUS smbsock_connect_recv(struct tevent_req *req, int *sock,
+			      uint16_t *port);
+NTSTATUS smbsock_connect(const struct sockaddr_storage *addr,
+			 const char *called_name, const char *calling_name,
+			 int *pfd, uint16_t *port);
+
 /* The following definitions come from rpc_server/srv_samr_nt.c */
 NTSTATUS access_check_object( SEC_DESC *psd, NT_USER_TOKEN *token,
 				SE_PRIV *rights, uint32 rights_mask,
