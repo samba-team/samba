@@ -19,10 +19,8 @@
    License along with this library; if not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <Python.h>
-#include "includes.h"
-#include <ldb.h>
 #include "lib/ldb/pyldb.h"
+#include "includes.h"
 #include "param/pyparam.h"
 #include "auth/credentials/pycredentials.h"
 #include "ldb_wrap.h"
