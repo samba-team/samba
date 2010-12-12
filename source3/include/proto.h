@@ -5619,6 +5619,17 @@ struct tevent_req *fncall_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 			       void *private_data);
 int fncall_recv(struct tevent_req *req, int *perr);
 
+struct tevent_req *smbsock_connect_send(TALLOC_CTX *mem_ctx,
+					struct tevent_context *ev,
+					const struct sockaddr_storage *addr,
+					const char *called_name,
+					const char *calling_name);
+NTSTATUS smbsock_connect_recv(struct tevent_req *req, int *sock,
+			      uint16_t *port);
+NTSTATUS smbsock_connect(const struct sockaddr_storage *addr,
+			 const char *called_name, const char *calling_name,
+			 int *pfd, uint16_t *port);
+
 /* The following definitions come from rpc_server/srv_samr_nt.c */
 NTSTATUS access_check_object( struct security_descriptor *psd, struct security_token *token,
 			      enum sec_privilege needed_priv_1, enum sec_privilege needed_priv_2,
