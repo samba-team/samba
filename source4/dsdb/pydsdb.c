@@ -17,11 +17,9 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <Python.h>
-#include "includes.h"
-#include "libcli/util/pyerrors.h"
-#include "dsdb/samdb/samdb.h"
 #include "lib/ldb/pyldb.h"
+#include "includes.h"
+#include "dsdb/samdb/samdb.h"
 #include "libcli/security/security.h"
 #include "librpc/ndr/libndr.h"
 #include "system/kerberos.h"
@@ -81,6 +79,10 @@ static PyObject *py_samdb_server_site_name(PyObject *self, PyObject *args)
 	PyErr_LDB_OR_RAISE(py_ldb, ldb);
 
 	mem_ctx = talloc_new(NULL);
+	if (mem_ctx == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
 
 	site = samdb_server_site_name(ldb, mem_ctx);
 	if (site == NULL) {
@@ -133,6 +135,10 @@ static PyObject *py_samdb_set_domain_sid(PyLdbObject *self, PyObject *args)
 	PyErr_LDB_OR_RAISE(py_ldb, ldb);
 
 	sid = dom_sid_parse_talloc(NULL, PyString_AsString(py_sid));
+	if (sid == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
 
 	ret = samdb_set_domain_sid(ldb, sid);
 	talloc_free(sid);
@@ -153,7 +159,7 @@ static PyObject *py_samdb_set_ntds_settings_dn(PyLdbObject *self, PyObject *args
 
 	if (!PyArg_ParseTuple(args, "OO", &py_ldb, &py_ntds_settings_dn))
 		return NULL;
-	
+
 	PyErr_LDB_OR_RAISE(py_ldb, ldb);
 
 	tmp_ctx = talloc_new(NULL);
@@ -163,6 +169,8 @@ static PyObject *py_samdb_set_ntds_settings_dn(PyLdbObject *self, PyObject *args
 	}
 
 	if (!PyObject_AsDn(tmp_ctx, py_ntds_settings_dn, ldb, &ntds_settings_dn)) {
+		PyErr_NoMemory();
+		talloc_free(tmp_ctx);
 		return NULL;
 	}
 
@@ -185,15 +193,20 @@ static PyObject *py_samdb_get_domain_sid(PyLdbObject *self, PyObject *args)
 
 	if (!PyArg_ParseTuple(args, "O", &py_ldb))
 		return NULL;
-	
+
 	PyErr_LDB_OR_RAISE(py_ldb, ldb);
 
 	sid = samdb_domain_sid(ldb);
 	if (!sid) {
 		PyErr_SetString(PyExc_RuntimeError, "samdb_domain_sid failed");
 		return NULL;
-	} 
+	}
+
 	retstr = dom_sid_string(NULL, sid);
+	if (retstr == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
 	ret = PyString_FromString(retstr);
 	talloc_free(retstr);
 	return ret;
@@ -203,17 +216,10 @@ static PyObject *py_samdb_ntds_invocation_id(PyObject *self, PyObject *args)
 {
 	PyObject *py_ldb, *result;
 	struct ldb_context *ldb;
-	TALLOC_CTX *mem_ctx;
 	const struct GUID *guid;
-
-	mem_ctx = talloc_new(NULL);
-	if (mem_ctx == NULL) {
-		PyErr_NoMemory();
-		return NULL;
-	}
+	char *retstr;
 
 	if (!PyArg_ParseTuple(args, "O", &py_ldb)) {
-		talloc_free(mem_ctx);
 		return NULL;
 	}
 
@@ -223,12 +229,16 @@ static PyObject *py_samdb_ntds_invocation_id(PyObject *self, PyObject *args)
 	if (guid == NULL) {
 		PyErr_SetString(PyExc_RuntimeError,
 						"Failed to find NTDS invocation ID");
-		talloc_free(mem_ctx);
 		return NULL;
 	}
 
-	result = PyString_FromString(GUID_string(mem_ctx, guid));
-	talloc_free(mem_ctx);
+	retstr = GUID_string(NULL, guid);
+	if (retstr == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+	result = PyString_FromString(retstr);
+	talloc_free(retstr);
 	return result;
 }
 
@@ -240,7 +250,6 @@ static PyObject *py_dsdb_get_oid_from_attid(PyObject *self, PyObject *args)
 	struct dsdb_schema *schema;
 	const char *oid;
 	PyObject *ret;
-	TALLOC_CTX *mem_ctx;
 	WERROR status;
 
 	if (!PyArg_ParseTuple(args, "Oi", &py_ldb, &attid))
@@ -248,27 +257,19 @@ static PyObject *py_dsdb_get_oid_from_attid(PyObject *self, PyObject *args)
 
 	PyErr_LDB_OR_RAISE(py_ldb, ldb);
 
-	mem_ctx = talloc_new(NULL);
-	if (mem_ctx == NULL) {
-	   PyErr_NoMemory();
-	   return NULL;
-	}
-
 	schema = dsdb_get_schema(ldb, NULL);
 
 	if (!schema) {
 		PyErr_SetString(PyExc_RuntimeError, "Failed to find a schema from ldb \n");
-		talloc_free(mem_ctx);
 		return NULL;
 	}
 	
 	status = dsdb_schema_pfm_oid_from_attid(schema->prefixmap, attid,
-	                                        mem_ctx, &oid);
+	                                        NULL, &oid);
 	PyErr_WERROR_IS_ERR_RAISE(status);
 
 	ret = PyString_FromString(oid);
-
-	talloc_free(mem_ctx);
+	talloc_free(discard_const_p(char, oid));
 
 	return ret;
 }
@@ -361,11 +362,28 @@ static PyObject *py_dsdb_DsReplicaAttribute(PyObject *self, PyObject *args)
 	syntax_ctx.is_schema_nc = false;
 
 	tmp_ctx = talloc_new(ldb);
+	if (tmp_ctx == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
 
 	el = talloc_zero(tmp_ctx, struct ldb_message_element);
+	if (el == NULL) {
+		PyErr_NoMemory();
+		talloc_free(tmp_ctx);
+		return NULL;
+	}
+
 	el->name = ldap_display_name;
 	el->num_values = PyList_Size(el_list);
+
 	el->values = talloc_array(el, struct ldb_val, el->num_values);
+	if (el->values == NULL) {
+		PyErr_NoMemory();
+		talloc_free(tmp_ctx);
+		return NULL;
+	}
+
 	for (i = 0; i < el->num_values; i++) {
 		PyObject *item = PyList_GetItem(el_list, i);
 		if (!PyString_Check(item)) {
@@ -377,13 +395,18 @@ static PyObject *py_dsdb_DsReplicaAttribute(PyObject *self, PyObject *args)
 	}
 
 	attr = talloc_zero(tmp_ctx, struct drsuapi_DsReplicaAttribute);
+	if (attr == NULL) {
+		PyErr_NoMemory();
+		talloc_free(tmp_ctx);
+		return NULL;
+	}
 
 	werr = a->syntax->ldb_to_drsuapi(&syntax_ctx, a, el, attr, attr);
 	PyErr_WERROR_IS_ERR_RAISE(werr);
 
 	ret = py_return_ndr_struct("samba.dcerpc.drsuapi", "DsReplicaAttribute", attr, attr);
 
-	talloc_unlink(ldb, tmp_ctx);
+	talloc_free(tmp_ctx);
 
 	return ret;
 }
@@ -412,8 +435,8 @@ static PyObject *py_samdb_ntds_objectGUID(PyObject *self, PyObject *args)
 {
 	PyObject *py_ldb, *result;
 	struct ldb_context *ldb;
-	TALLOC_CTX *mem_ctx;
 	const struct GUID *guid;
+	char *retstr;
 
 	if (!PyArg_ParseTuple(args, "O", &py_ldb)) {
 		return NULL;
@@ -421,21 +444,19 @@ static PyObject *py_samdb_ntds_objectGUID(PyObject *self, PyObject *args)
 
 	PyErr_LDB_OR_RAISE(py_ldb, ldb);
 
-	mem_ctx = talloc_new(NULL);
-	if (mem_ctx == NULL) {
-		PyErr_NoMemory();
-		return NULL;
-	}
-
 	guid = samdb_ntds_objectGUID(ldb);
 	if (guid == NULL) {
 		PyErr_SetString(PyExc_RuntimeError, "Failed to find NTDS GUID");
-		talloc_free(mem_ctx);
 		return NULL;
 	}
 
-	result = PyString_FromString(GUID_string(mem_ctx, guid));
-	talloc_free(mem_ctx);
+	retstr = GUID_string(NULL, guid);
+	if (retstr == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+	result = PyString_FromString(retstr);
+	talloc_free(retstr);
 	return result;
 }
 
@@ -464,18 +485,17 @@ static PyObject *py_dsdb_load_partition_usn(PyObject *self, PyObject *args)
 	TALLOC_CTX *mem_ctx;
 	int ret;
 
+	if (!PyArg_ParseTuple(args, "OO", &py_ldb, &py_dn)) {
+		return NULL;
+	}
+
+	PyErr_LDB_OR_RAISE(py_ldb, ldb);
+
 	mem_ctx = talloc_new(NULL);
 	if (mem_ctx == NULL) {
 	   PyErr_NoMemory();
 	   return NULL;
 	}
-
-	if (!PyArg_ParseTuple(args, "OO", &py_ldb, &py_dn)) {
-	   talloc_free(mem_ctx);
-	   return NULL;
-	}
-
-	PyErr_LDB_OR_RAISE(py_ldb, ldb);
 
 	if (!PyObject_AsDn(mem_ctx, py_dn, ldb, &dn)) {
 	   talloc_free(mem_ctx);
@@ -597,7 +617,6 @@ static PyObject *py_dsdb_get_partitions_dn(PyObject *self, PyObject *args)
 	struct ldb_context *ldb;
 	struct ldb_dn *dn;
 	PyObject *py_ldb, *ret;
-	TALLOC_CTX *tmp_ctx;
 	PyObject *mod;
 
 	mod = PyImport_ImportModule("ldb");
@@ -607,16 +626,13 @@ static PyObject *py_dsdb_get_partitions_dn(PyObject *self, PyObject *args)
 
 	PyErr_LDB_OR_RAISE(py_ldb, ldb);
 
-	tmp_ctx = talloc_new(NULL);
-
-	dn = samdb_partitions_dn(ldb, tmp_ctx);
-
+	dn = samdb_partitions_dn(ldb, NULL);
 	if (dn == NULL) {
-		talloc_free(tmp_ctx);
-		Py_RETURN_NONE;
+		PyErr_NoMemory();
+		return NULL;
 	}
 	ret = PyLdbDn_FromDn(dn);
-	talloc_free(tmp_ctx);
+	talloc_free(dn);
 	return ret;
 }
 
