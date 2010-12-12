@@ -1000,6 +1000,7 @@ int ctdb_set_single_public_ip(struct ctdb_context *ctdb,
 			      const char *ip)
 {
 	struct ctdb_vnn *svnn;
+	struct ctdb_iface *cur = NULL;
 	bool ok;
 	int ret;
 
@@ -1027,6 +1028,14 @@ int ctdb_set_single_public_ip(struct ctdb_context *ctdb,
 		talloc_free(svnn);
 		return -1;
 	}
+
+	/* assume the single public ip interface is initially "good" */
+	cur = ctdb_find_iface(ctdb, iface);
+	if (cur == NULL) {
+		DEBUG(DEBUG_CRIT,("Can not find public interface %s used by --single-public-ip", iface));
+		return -1;
+	}
+	cur->link_up = true;
 
 	ret = ctdb_vnn_assign_iface(ctdb, svnn);
 	if (ret != 0) {
