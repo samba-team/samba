@@ -22,27 +22,18 @@
 */
 
 #include "includes.h"
-#include "system/time.h"
-#include "../libds/common/flags.h"
-#include "lib/ldb/include/ldb.h"
-#include "librpc/gen_ndr/netlogon.h"
 #include "libcli/security/security.h"
 #include "auth/auth.h"
-#include "auth/credentials/credentials.h"
 #include "auth/auth_sam.h"
 #include "dsdb/samdb/samdb.h"
 #include "dsdb/common/util.h"
-#include "librpc/ndr/libndr.h"
 #include "librpc/gen_ndr/ndr_drsblobs.h"
-#include "librpc/gen_ndr/lsa.h"
-#include "libcli/auth/libcli_auth.h"
 #include "param/param.h"
 #include "../lib/crypto/md4.h"
 #include "system/kerberos.h"
 #include "auth/kerberos/kerberos.h"
 #include <hdb.h>
 #include "kdc/samba_kdc.h"
-#include "kdc/db-glue.h"
 #include "kdc/kdc-policy.h"
 
 enum samba_kdc_ent_type

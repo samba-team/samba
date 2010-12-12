@@ -20,11 +20,8 @@
 */
 
 #include "includes.h"
-#include "lib/util/util.h"
-#include "kdc/kdc-policy.h"
 #include "system/kerberos.h"
 #include "auth/kerberos/kerberos.h"
-#include "librpc/gen_ndr/lsa.h"
 #include "param/param.h"
 
 void kdc_get_policy(struct loadparm_context *lp_ctx, 

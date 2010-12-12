@@ -20,10 +20,8 @@
 #include "includes.h"
 #include "param/param.h"
 #include "dsdb/samdb/samdb.h"
-#include "auth/auth.h"
-#include "auth/credentials/credentials.h"
 #include "system/kerberos.h"
-#include "hdb.h"
+#include <hdb.h>
 #include "mit_samba_interface.h"
 #include "auth/kerberos/kerberos.h"
 #include "kdc/samba_kdc.h"

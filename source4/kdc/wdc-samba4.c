@@ -22,10 +22,7 @@
 */
 
 #include "includes.h"
-#include "../libds/common/flags.h"
-#include "auth/auth.h"
 #include "kdc/kdc-glue.h"
-#include "param/param.h"
 #include "kdc/pac-glue.h"
 
 /* Given the right private pointer from hdb_samba4, get a PAC from the attached ldb messages */

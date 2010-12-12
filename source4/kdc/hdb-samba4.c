@@ -33,10 +33,6 @@
  */
 
 #include "includes.h"
-#include "auth/auth.h"
-#include "auth/credentials/credentials.h"
-#include "dsdb/samdb/samdb.h"
-#include "param/param.h"
 #include "kdc/kdc-glue.h"
 #include "kdc/db-glue.h"
 
