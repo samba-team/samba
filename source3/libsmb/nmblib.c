@@ -1293,7 +1293,7 @@ static int name_interpret(unsigned char *buf, size_t buf_len,
  Note:  <Out> must be (33 + strlen(scope) + 2) bytes long, at minimum.
 ****************************************************************************/
 
-char *name_mangle(TALLOC_CTX *mem_ctx, char *In, char name_type)
+char *name_mangle(TALLOC_CTX *mem_ctx, const char *In, char name_type)
 {
 	int   i;
 	int   len;
