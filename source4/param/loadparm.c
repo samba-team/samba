@@ -1710,7 +1710,7 @@ static bool set_variable(TALLOC_CTX *mem_ctx, int parmnum, void *parm_ptr,
 							  pszParmName, pszParmValue));
 						return false;
 					}
-					*(const char ***)parm_ptr = new_list;
+					*(const char ***)parm_ptr = (const char **) new_list;
 					break;
 				}
 			}
