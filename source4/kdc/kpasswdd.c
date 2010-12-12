@@ -519,8 +519,7 @@ enum kdc_process_ret kpasswdd_process(struct kdc_server *kdc,
 		ret = kpasswdd_make_unauth_error_reply(kdc, mem_ctx,
 						       KRB5_KPASSWD_HARDERROR,
 						       talloc_asprintf(mem_ctx,
-								       "Failed to obtain server credentials for kadmin/changepw: %s\n",
-								       nt_errstr(nt_status)),
+								       "Failed to obtain server credentials for kadmin/changepw!"),
 						       &krb_priv_rep);
 		ap_rep.length = 0;
 		if (ret) {
