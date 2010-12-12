@@ -111,7 +111,7 @@ static void onefork_new_task(struct tevent_context *ev,
 		smb_panic("Failed to re-initialise tevent after fork");
 	}
 
-	setproctitle("task %s server_id[%d]", service_name, pid);
+	setproctitle("task %s server_id[%d]", service_name, (int)pid);
 
 	onefork_reload_after_fork();
 

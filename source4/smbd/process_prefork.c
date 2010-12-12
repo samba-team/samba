@@ -122,7 +122,7 @@ static void prefork_new_task(struct tevent_context *ev,
 	   is not associated with this new connection */
 	talloc_free(ev);
 
-	setproctitle("task %s server_id[%d]", service_name, pid);
+	setproctitle("task %s server_id[%d]", service_name, (int)pid);
 
 	prefork_reload_after_fork();
 
@@ -151,7 +151,7 @@ static void prefork_new_task(struct tevent_context *ev,
 			return;
 		} else {
 			pid = getpid();
-			setproctitle("task %s server_id[%d]", service_name, pid);
+			setproctitle("task %s server_id[%d]", service_name, (int)pid);
 
 			prefork_reload_after_fork();
 
