@@ -308,7 +308,7 @@ def configure(conf):
                                 headers='sys/stat.h')
     conf.CHECK_STRUCTURE_MEMBER('struct sockaddr_storage', 'ss_family',
                                 headers='sys/socket.h netinet/in.h')
-    conf.CHECK_STRUCTURE_MEMBER('struct sockaddr_storage', '_ss_family',
+    conf.CHECK_STRUCTURE_MEMBER('struct sockaddr_storage', '__ss_family',
                                 headers='sys/socket.h netinet/in.h')
 
 
