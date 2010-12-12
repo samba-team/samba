@@ -18,21 +18,13 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <Python.h>
+#include "lib/ldb/pyldb.h"
 #include "includes.h"
-#include "auth/auth.h"
-#include "ldb/include/ldb.h"
-#include "ldb_errors.h"
-#include "libcli/raw/libcliraw.h"
 #include "librpc/ndr/libndr.h"
-
-#include "param/param.h"
 #include "param/provision.h"
 #include "param/secrets.h"
 #include "lib/talloc/pytalloc.h"
-#include "librpc/rpc/pyrpc.h"
 #include "scripting/python/modules.h"
-#include "lib/ldb/pyldb.h"
 #include "param/pyparam.h"
 #include "dynconfig/dynconfig.h"
 
