@@ -48,7 +48,7 @@ static PyObject *start_response(PyObject *self, PyObject *args, PyObject *kwargs
 {
 	PyObject *response_header, *exc_info = NULL;
 	char *status;
-	int i;
+	Py_ssize_t i;
 	const char *kwnames[] = {
 		"status", "response_header", "exc_info", NULL
 	};
