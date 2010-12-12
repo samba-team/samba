@@ -307,12 +307,12 @@ typedef unsigned short int sa_family_t;
 #define sockaddr_storage sockaddr_in6
 #define ss_family sin6_family
 #define HAVE_SS_FAMILY 1
-#else
+#else /*HAVE_STRUCT_SOCKADDR_IN6*/
 #define sockaddr_storage sockaddr_in
 #define ss_family sin_family
 #define HAVE_SS_FAMILY 1
-#endif
-#endif
+#endif /*HAVE_STRUCT_SOCKADDR_IN6*/
+#endif /*HAVE_STRUCT_SOCKADDR_STORAGE*/
 
 #ifndef HAVE_SS_FAMILY
 #ifdef HAVE___SS_FAMILY
