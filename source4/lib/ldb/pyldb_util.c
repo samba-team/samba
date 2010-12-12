@@ -23,10 +23,7 @@
    License along with this library; if not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <Python.h>
-#include "replace.h"
 #include "pyldb.h"
-#include <ldb.h>
 
 static PyObject *ldb_module = NULL;
 

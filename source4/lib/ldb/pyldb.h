@@ -1,7 +1,7 @@
 /*
    Unix SMB/CIFS implementation.
 
-   Swig interface to ldb.
+   Python interface to ldb.
 
    Copyright (C) 2007-2008 Jelmer Vernooij <jelmer@samba.org>
 
@@ -28,6 +28,7 @@
 
 #include <Python.h>
 #include <talloc.h>
+#include "ldb_private.h"
 
 typedef struct {
 	PyObject_HEAD
