@@ -19,13 +19,9 @@
 
 #include <Python.h>
 #include "includes.h"
-#include "param/param.h"
 #include "version.h"
-#include "libcli/util/pyerrors.h"
 #include "param/pyparam.h"
 #include "lib/socket/netif.h"
-#include "lib/socket/netif_proto.h"
-#include "lib/talloc/pytalloc.h"
 
 static PyObject *py_generate_random_str(PyObject *self, PyObject *args)
 {
