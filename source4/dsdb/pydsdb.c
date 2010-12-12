@@ -167,7 +167,7 @@ static PyObject *py_samdb_set_ntds_settings_dn(PyLdbObject *self, PyObject *args
 	}
 
 	if (!PyObject_AsDn(tmp_ctx, py_ntds_settings_dn, ldb, &ntds_settings_dn)) {
-		PyErr_NoMemory();
+		/* exception thrown by "PyObject_AsDn" */
 		talloc_free(tmp_ctx);
 		return NULL;
 	}
