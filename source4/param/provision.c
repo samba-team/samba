@@ -18,7 +18,9 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "lib/ldb/pyldb.h"
+#include <Python.h>
+#include <ldb.h>
+#include <pyldb.h>
 #include "includes.h"
 #include "librpc/ndr/libndr.h"
 #include "param/provision.h"

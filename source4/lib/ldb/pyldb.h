@@ -26,9 +26,7 @@
 #ifndef _PYLDB_H_
 #define _PYLDB_H_
 
-#include <Python.h>
 #include <talloc.h>
-#include "ldb_private.h"
 
 typedef struct {
 	PyObject_HEAD

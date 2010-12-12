@@ -26,6 +26,8 @@
    License along with this library; if not, see <http://www.gnu.org/licenses/>.
 */
 
+#include <Python.h>
+#include "ldb_private.h"
 #include "pyldb.h"
 
 /* There's no Py_ssize_t in 2.4, apparently */

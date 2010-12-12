@@ -18,8 +18,10 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "lib/ldb/pyldb.h"
+#include <Python.h>
 #include "includes.h"
+#include <ldb.h>
+#include <pyldb.h>
 #include "libnet.h"
 #include "auth/credentials/pycredentials.h"
 #include "libcli/security/security.h"
