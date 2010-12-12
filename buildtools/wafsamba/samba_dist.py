@@ -1,7 +1,7 @@
 # customised version of 'waf dist' for Samba tools
 # uses git ls-files to get file lists
 
-import Utils, os, sys, tarfile, gzip, stat, Scripting, Logs, Options
+import Utils, os, sys, tarfile, stat, Scripting, Logs, Options
 from samba_utils import *
 
 dist_dirs = None
@@ -160,6 +160,7 @@ def dist(appname='',version=''):
     tar.close()
 
     if Options.options.SIGN_RELEASE:
+        import gzip
         try:
             os.unlink(dist_name + '.asc')
         except OSError:
