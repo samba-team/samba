@@ -34,10 +34,6 @@ typedef inquiry lenfunc;
 typedef intargfunc ssizeargfunc;
 #endif
 
-#ifndef Py_RETURN_NONE
-#define Py_RETURN_NONE return Py_INCREF(Py_None), Py_None
-#endif
-
 /* FIXME: These should be in a header file somewhere, once we finish moving
  * away from SWIG .. */
 #define PyErr_LDB_OR_RAISE(py_ldb, ldb) \
