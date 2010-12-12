@@ -149,4 +149,11 @@ NTSTATUS cli_pull_error(char *buf);
 
 void cli_set_error(struct cli_state *cli, NTSTATUS status);
 
+struct tevent_req *cli_session_request_send(TALLOC_CTX *mem_ctx,
+					    struct tevent_context *ev,
+					    int sock,
+					    const struct nmb_name *called,
+					    const struct nmb_name *calling);
+bool cli_session_request_recv(struct tevent_req *req, int *err, uint8_t *resp);
+
 #endif
