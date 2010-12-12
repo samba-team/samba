@@ -55,6 +55,10 @@ static PyObject *py_net_join(py_net_Object *self, PyObject *args, PyObject *kwar
 		return NULL;
 
 	mem_ctx = talloc_new(self->mem_ctx);
+	if (mem_ctx == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
 
 	status = libnet_Join(self->libnet_ctx, mem_ctx, &r);
 	if (NT_STATUS_IS_ERR(status)) {
@@ -95,7 +99,12 @@ static PyObject *py_net_set_password(py_net_Object *self, PyObject *args, PyObje
 	/* FIXME: we really need to get a context from the caller or we may end
 	 * up with 2 event contexts */
 	ev = s4_event_context_init(NULL);
+
 	mem_ctx = talloc_new(ev);
+	if (mem_ctx == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
 
 	status = libnet_SetPassword(self->libnet_ctx, mem_ctx, &r);
 	if (NT_STATUS_IS_ERR(status)) {
@@ -131,6 +140,10 @@ static PyObject *py_net_export_keytab(py_net_Object *self, PyObject *args, PyObj
 	}
 
 	mem_ctx = talloc_new(self->mem_ctx);
+	if (mem_ctx == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
 
 	status = libnet_export_keytab(self->libnet_ctx, mem_ctx, &r);
 	if (NT_STATUS_IS_ERR(status)) {
