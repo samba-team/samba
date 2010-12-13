@@ -1514,6 +1514,143 @@ find_other_host_for_public_ip(struct ctdb_context *ctdb, ctdb_sock_addr *addr)
 	return -1;
 }
 
+static uint32_t ipreallocate_finished;
+
+/*
+  handler for receiving the response to ipreallocate
+*/
+static void ip_reallocate_handler(struct ctdb_context *ctdb, uint64_t srvid, 
+			     TDB_DATA data, void *private_data)
+{
+	ipreallocate_finished = 1;
+}
+
+static void ctdb_every_second(struct event_context *ev, struct timed_event *te, struct timeval t, void *p)
+{
+	struct ctdb_context *ctdb = talloc_get_type(p, struct ctdb_context);
+
+	event_add_timed(ctdb->ev, ctdb, 
+				timeval_current_ofs(1, 0),
+				ctdb_every_second, ctdb);
+}
+
+/*
+  ask the recovery daemon on the recovery master to perform a ip reallocation
+ */
+static int control_ipreallocate(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	int i, ret;
+	TDB_DATA data;
+	struct takeover_run_reply rd;
+	uint32_t recmaster;
+	struct ctdb_node_map *nodemap=NULL;
+	int retries=0;
+	struct timeval tv = timeval_current();
+
+	/* we need some events to trigger so we can timeout and restart
+	   the loop
+	*/
+	event_add_timed(ctdb->ev, ctdb, 
+				timeval_current_ofs(1, 0),
+				ctdb_every_second, ctdb);
+
+	rd.pnn = ctdb_ctrl_getpnn(ctdb, TIMELIMIT(), CTDB_CURRENT_NODE);
+	if (rd.pnn == -1) {
+		DEBUG(DEBUG_ERR, ("Failed to get pnn of local node\n"));
+		return -1;
+	}
+	rd.srvid = getpid();
+
+	/* register a message port for receiveing the reply so that we
+	   can receive the reply
+	*/
+	ctdb_client_set_message_handler(ctdb, rd.srvid, ip_reallocate_handler, NULL);
+
+	data.dptr = (uint8_t *)&rd;
+	data.dsize = sizeof(rd);
+
+again:
+	/* check that there are valid nodes available */
+	if (ctdb_ctrl_getnodemap(ctdb, TIMELIMIT(), options.pnn, ctdb, &nodemap) != 0) {
+		DEBUG(DEBUG_ERR, ("Unable to get nodemap from local node\n"));
+		return -1;
+	}
+	for (i=0; i<nodemap->num;i++) {
+		if ((nodemap->nodes[i].flags & (NODE_FLAGS_DELETED|NODE_FLAGS_BANNED|NODE_FLAGS_STOPPED)) == 0) {
+			break;
+		}
+	}
+	if (i==nodemap->num) {
+		DEBUG(DEBUG_ERR,("No recmaster available, no need to wait for cluster convergence\n"));
+		return 0;
+	}
+
+
+	ret = ctdb_ctrl_getrecmaster(ctdb, ctdb, TIMELIMIT(), options.pnn, &recmaster);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, ("Unable to get recmaster from node %u\n", options.pnn));
+		return ret;
+	}
+
+	/* verify the node exists */
+	if (ctdb_ctrl_getnodemap(ctdb, TIMELIMIT(), recmaster, ctdb, &nodemap) != 0) {
+		DEBUG(DEBUG_ERR, ("Unable to get nodemap from local node\n"));
+		return -1;
+	}
+
+
+	/* check tha there are nodes available that can act as a recmaster */
+	for (i=0; i<nodemap->num; i++) {
+		if (nodemap->nodes[i].flags & (NODE_FLAGS_DELETED|NODE_FLAGS_BANNED|NODE_FLAGS_STOPPED)) {
+			continue;
+		}
+		break;
+	}
+	if (i == nodemap->num) {
+		DEBUG(DEBUG_ERR,("No possible nodes to host addresses.\n"));
+		return 0;
+	}
+
+	/* verify the recovery master is not STOPPED, nor BANNED */
+	if (nodemap->nodes[recmaster].flags & (NODE_FLAGS_DELETED|NODE_FLAGS_BANNED|NODE_FLAGS_STOPPED)) {
+		DEBUG(DEBUG_ERR,("No suitable recmaster found. Try again\n"));
+		retries++;
+		sleep(1);
+		goto again;
+	} 
+	
+	/* verify the recovery master is not STOPPED, nor BANNED */
+	if (nodemap->nodes[recmaster].flags & (NODE_FLAGS_DELETED|NODE_FLAGS_BANNED|NODE_FLAGS_STOPPED)) {
+		DEBUG(DEBUG_ERR,("No suitable recmaster found. Try again\n"));
+		retries++;
+		sleep(1);
+		goto again;
+	} 
+
+	ipreallocate_finished = 0;
+	ret = ctdb_client_send_message(ctdb, recmaster, CTDB_SRVID_TAKEOVER_RUN, data);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR,("Failed to send ip takeover run request message to %u\n", options.pnn));
+		return -1;
+	}
+
+	tv = timeval_current();
+	/* this loop will terminate when we have received the reply */
+	while (timeval_elapsed(&tv) < 5.0 && ipreallocate_finished == 0) {
+		event_loop_once(ctdb->ev);
+	}
+	if (ipreallocate_finished == 1) {
+		return 0;
+	}
+
+	retries++;
+	sleep(1);
+	goto again;
+
+	return 0;
+}
+
+
 /*
   add a public ip address to a node
  */
@@ -1583,6 +1720,12 @@ static int control_addip(struct ctdb_context *ctdb, int argc, const char **argv)
 	if (move_ip(ctdb, &addr, pnn) != 0) {
 		DEBUG(DEBUG_ERR,("Failed to move ip to node %d\n", pnn));
 		return -1;
+	}
+
+	ret = control_ipreallocate(ctdb, argc, argv);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, ("IP Reallocate failed on node %u\n", options.pnn));
+		return ret;
 	}
 
 	talloc_free(tmp_ctx);
@@ -2203,144 +2346,6 @@ static int control_getpid(struct ctdb_context *ctdb, int argc, const char **argv
 
 	return 0;
 }
-
-static uint32_t ipreallocate_finished;
-
-/*
-  handler for receiving the response to ipreallocate
-*/
-static void ip_reallocate_handler(struct ctdb_context *ctdb, uint64_t srvid, 
-			     TDB_DATA data, void *private_data)
-{
-	ipreallocate_finished = 1;
-}
-
-static void ctdb_every_second(struct event_context *ev, struct timed_event *te, struct timeval t, void *p)
-{
-	struct ctdb_context *ctdb = talloc_get_type(p, struct ctdb_context);
-
-	event_add_timed(ctdb->ev, ctdb, 
-				timeval_current_ofs(1, 0),
-				ctdb_every_second, ctdb);
-}
-
-/*
-  ask the recovery daemon on the recovery master to perform a ip reallocation
- */
-static int control_ipreallocate(struct ctdb_context *ctdb, int argc, const char **argv)
-{
-	int i, ret;
-	TDB_DATA data;
-	struct takeover_run_reply rd;
-	uint32_t recmaster;
-	struct ctdb_node_map *nodemap=NULL;
-	int retries=0;
-	struct timeval tv = timeval_current();
-
-	/* we need some events to trigger so we can timeout and restart
-	   the loop
-	*/
-	event_add_timed(ctdb->ev, ctdb, 
-				timeval_current_ofs(1, 0),
-				ctdb_every_second, ctdb);
-
-	rd.pnn = ctdb_ctrl_getpnn(ctdb, TIMELIMIT(), CTDB_CURRENT_NODE);
-	if (rd.pnn == -1) {
-		DEBUG(DEBUG_ERR, ("Failed to get pnn of local node\n"));
-		return -1;
-	}
-	rd.srvid = getpid();
-
-	/* register a message port for receiveing the reply so that we
-	   can receive the reply
-	*/
-	ctdb_client_set_message_handler(ctdb, rd.srvid, ip_reallocate_handler, NULL);
-
-	data.dptr = (uint8_t *)&rd;
-	data.dsize = sizeof(rd);
-
-again:
-	/* check that there are valid nodes available */
-	if (ctdb_ctrl_getnodemap(ctdb, TIMELIMIT(), options.pnn, ctdb, &nodemap) != 0) {
-		DEBUG(DEBUG_ERR, ("Unable to get nodemap from local node\n"));
-		return -1;
-	}
-	for (i=0; i<nodemap->num;i++) {
-		if ((nodemap->nodes[i].flags & (NODE_FLAGS_DELETED|NODE_FLAGS_BANNED|NODE_FLAGS_STOPPED)) == 0) {
-			break;
-		}
-	}
-	if (i==nodemap->num) {
-		DEBUG(DEBUG_ERR,("No recmaster available, no need to wait for cluster convergence\n"));
-		return 0;
-	}
-
-
-	ret = ctdb_ctrl_getrecmaster(ctdb, ctdb, TIMELIMIT(), options.pnn, &recmaster);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR, ("Unable to get recmaster from node %u\n", options.pnn));
-		return ret;
-	}
-
-	/* verify the node exists */
-	if (ctdb_ctrl_getnodemap(ctdb, TIMELIMIT(), recmaster, ctdb, &nodemap) != 0) {
-		DEBUG(DEBUG_ERR, ("Unable to get nodemap from local node\n"));
-		return -1;
-	}
-
-
-	/* check tha there are nodes available that can act as a recmaster */
-	for (i=0; i<nodemap->num; i++) {
-		if (nodemap->nodes[i].flags & (NODE_FLAGS_DELETED|NODE_FLAGS_BANNED|NODE_FLAGS_STOPPED)) {
-			continue;
-		}
-		break;
-	}
-	if (i == nodemap->num) {
-		DEBUG(DEBUG_ERR,("No possible nodes to host addresses.\n"));
-		return 0;
-	}
-
-	/* verify the recovery master is not STOPPED, nor BANNED */
-	if (nodemap->nodes[recmaster].flags & (NODE_FLAGS_DELETED|NODE_FLAGS_BANNED|NODE_FLAGS_STOPPED)) {
-		DEBUG(DEBUG_ERR,("No suitable recmaster found. Try again\n"));
-		retries++;
-		sleep(1);
-		goto again;
-	} 
-
-	
-	/* verify the recovery master is not STOPPED, nor BANNED */
-	if (nodemap->nodes[recmaster].flags & (NODE_FLAGS_DELETED|NODE_FLAGS_BANNED|NODE_FLAGS_STOPPED)) {
-		DEBUG(DEBUG_ERR,("No suitable recmaster found. Try again\n"));
-		retries++;
-		sleep(1);
-		goto again;
-	} 
-
-	ipreallocate_finished = 0;
-	ret = ctdb_client_send_message(ctdb, recmaster, CTDB_SRVID_TAKEOVER_RUN, data);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR,("Failed to send ip takeover run request message to %u\n", options.pnn));
-		return -1;
-	}
-
-	tv = timeval_current();
-	/* this loop will terminate when we have received the reply */
-	while (timeval_elapsed(&tv) < 3.0) {
-		event_loop_once(ctdb->ev);
-	}
-	if (ipreallocate_finished == 1) {
-		return 0;
-	}
-
-	retries++;
-	sleep(1);
-	goto again;
-
-	return 0;
-}
-
 
 /*
   disable a remote node
