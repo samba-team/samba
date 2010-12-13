@@ -62,7 +62,8 @@ def configure(conf):
 
     # we don't want any libraries or modules to rely on runtime
     # resolution of symbols
-    conf.ADD_LDFLAGS('-Wl,-no-undefined', testflags=True)
+    if sys.platform != "openbsd":
+        conf.ADD_LDFLAGS('-Wl,-no-undefined', testflags=True)
 
     conf.SAMBA_CONFIG_H()
 
