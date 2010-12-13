@@ -277,7 +277,9 @@ NTSTATUS smbsock_connect_recv(struct tevent_req *req, int *sock,
 	}
 	*sock = state->sock;
 	state->sock = -1;
-	*port = state->port;
+	if (port != NULL) {
+		*port = state->port;
+	}
 	return NT_STATUS_OK;
 }
 
@@ -302,6 +304,224 @@ NTSTATUS smbsock_connect(const struct sockaddr_storage *addr,
 		goto fail;
 	}
 	status = smbsock_connect_recv(req, pfd, port);
+ fail:
+	TALLOC_FREE(frame);
+	return status;
+}
+
+struct smbsock_any_connect_state {
+	struct tevent_context *ev;
+	const struct sockaddr_storage *addrs;
+	const char **called_names;
+	size_t num_addrs;
+
+	struct tevent_req **requests;
+	size_t num_sent;
+	size_t num_received;
+
+	int fd;
+	uint16_t port;
+	size_t chosen_index;
+};
+
+static bool smbsock_any_connect_send_next(
+	struct tevent_req *req,	struct smbsock_any_connect_state *state);
+static void smbsock_any_connect_trynext(struct tevent_req *subreq);
+static void smbsock_any_connect_connected(struct tevent_req *subreq);
+
+struct tevent_req *smbsock_any_connect_send(TALLOC_CTX *mem_ctx,
+					    struct tevent_context *ev,
+					    const struct sockaddr_storage *addrs,
+					    const char **called_names,
+					    size_t num_addrs)
+{
+	struct tevent_req *req, *subreq;
+	struct smbsock_any_connect_state *state;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct smbsock_any_connect_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->ev = ev;
+	state->addrs = addrs;
+	state->num_addrs = num_addrs;
+	state->called_names = called_names;
+
+	if (num_addrs == 0) {
+		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		return tevent_req_post(req, ev);
+	}
+
+	state->requests = talloc_zero_array(state, struct tevent_req *,
+					    num_addrs);
+	if (tevent_req_nomem(state->requests, req)) {
+		return tevent_req_post(req, ev);
+	}
+	if (!smbsock_any_connect_send_next(req, state)) {
+		return tevent_req_post(req, ev);
+	}
+	if (state->num_sent >= state->num_addrs) {
+		return req;
+	}
+	subreq = tevent_wakeup_send(state, ev, timeval_current_ofs(0, 10000));
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, smbsock_any_connect_trynext, req);
+	return req;
+}
+
+static void smbsock_any_connect_trynext(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct smbsock_any_connect_state *state = tevent_req_data(
+		req, struct smbsock_any_connect_state);
+	bool ret;
+
+	ret = tevent_wakeup_recv(subreq);
+	TALLOC_FREE(subreq);
+	if (!ret) {
+		tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
+		return;
+	}
+	if (!smbsock_any_connect_send_next(req, state)) {
+		return;
+	}
+	if (state->num_sent >= state->num_addrs) {
+		return;
+	}
+	subreq = tevent_wakeup_send(state, state->ev,
+				    tevent_timeval_set(0, 10000));
+	if (tevent_req_nomem(subreq, req)) {
+		return;
+	}
+	tevent_req_set_callback(subreq, smbsock_any_connect_trynext, req);
+}
+
+static bool smbsock_any_connect_send_next(
+	struct tevent_req *req, struct smbsock_any_connect_state *state)
+{
+	struct tevent_req *subreq;
+
+	if (state->num_sent >= state->num_addrs) {
+		tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
+		return false;
+	}
+	subreq = smbsock_connect_send(
+		state->requests, state->ev, &state->addrs[state->num_sent],
+		(state->called_names != NULL)
+		? state->called_names[state->num_sent] : NULL,
+		NULL);
+	if (tevent_req_nomem(subreq, req)) {
+		return false;
+	}
+	tevent_req_set_callback(subreq, smbsock_any_connect_connected, req);
+
+	state->requests[state->num_sent] = subreq;
+	state->num_sent += 1;
+
+	return true;
+}
+
+static void smbsock_any_connect_connected(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct smbsock_any_connect_state *state = tevent_req_data(
+		req, struct smbsock_any_connect_state);
+	NTSTATUS status;
+	int fd;
+	uint16_t port;
+	size_t i;
+	size_t chosen_index = 0;
+
+	for (i=0; i<state->num_sent; i++) {
+		if (state->requests[i] == subreq) {
+			chosen_index = i;
+			break;
+		}
+	}
+	if (i == state->num_sent) {
+		tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
+		return;
+	}
+
+	status = smbsock_connect_recv(subreq, &fd, &port);
+
+	TALLOC_FREE(subreq);
+	state->requests[chosen_index] = NULL;
+
+	if (NT_STATUS_IS_OK(status)) {
+		/*
+		 * This will kill all the other requests
+		 */
+		TALLOC_FREE(state->requests);
+		state->fd = fd;
+		state->port = port;
+		state->chosen_index = chosen_index;
+		tevent_req_done(req);
+		return;
+	}
+
+	state->num_received += 1;
+	if (state->num_received <= state->num_addrs) {
+		/*
+		 * More addrs pending, wait for the others
+		 */
+		return;
+	}
+
+	/*
+	 * This is the last response, none succeeded.
+	 */
+	tevent_req_nterror(req, status);
+	return;
+}
+
+NTSTATUS smbsock_any_connect_recv(struct tevent_req *req, int *pfd,
+				  size_t *chosen_index, uint16_t *port)
+{
+	struct smbsock_any_connect_state *state = tevent_req_data(
+		req, struct smbsock_any_connect_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		return status;
+	}
+	*pfd = state->fd;
+	if (chosen_index != NULL) {
+		*chosen_index = state->chosen_index;
+	}
+	if (port != NULL) {
+		*port = state->port;
+	}
+	return NT_STATUS_OK;
+}
+
+NTSTATUS smbsock_any_connect(const struct sockaddr_storage *addrs,
+			     const char **called_names, size_t num_addrs,
+			     int *pfd, size_t *chosen_index, uint16_t *port)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct event_context *ev;
+	struct tevent_req *req;
+	NTSTATUS status = NT_STATUS_NO_MEMORY;
+
+	ev = event_context_init(frame);
+	if (ev == NULL) {
+		goto fail;
+	}
+	req = smbsock_any_connect_send(frame, ev, addrs, called_names,
+				       num_addrs);
+	if (req == NULL) {
+		goto fail;
+	}
+	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
+		goto fail;
+	}
+	status = smbsock_any_connect_recv(req, pfd, chosen_index, port);
  fail:
 	TALLOC_FREE(frame);
 	return status;
