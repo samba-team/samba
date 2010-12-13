@@ -2864,7 +2864,6 @@ static ssize_t fake_sendfile(files_struct *fsp, SMB_OFF_T startpos,
 	return (ssize_t)nread;
 }
 
-#if defined(WITH_SENDFILE)
 /****************************************************************************
  Deal with the case of sendfile reading less bytes from the file than
  requested. Fill with zeros (all we can do).
@@ -2934,7 +2933,6 @@ static void sendfile_short_send(files_struct *fsp,
 		SAFE_FREE(buf);
 	}
 }
-#endif /* defined WITH_SENDFILE */
 
 /****************************************************************************
  Return a readbraw error (4 bytes of zero).
@@ -2978,7 +2976,6 @@ static void send_file_readbraw(connection_struct *conn,
 	char *outbuf = NULL;
 	ssize_t ret=0;
 
-#if defined(WITH_SENDFILE)
 	/*
 	 * We can only use sendfile on a non-chained packet 
 	 * but we can use on a non-oplocked file. tridge proved this
@@ -3053,7 +3050,6 @@ static void send_file_readbraw(connection_struct *conn,
 	}
 
 normal_readbraw:
-#endif
 
 	outbuf = TALLOC_ARRAY(NULL, char, nread+4);
 	if (!outbuf) {
@@ -3528,7 +3524,6 @@ static void send_file_readX(connection_struct *conn, struct smb_request *req,
 		goto nosendfile_read;
 	}
 
-#if defined(WITH_SENDFILE)
 	/*
 	 * We can only use sendfile on a non-chained packet
 	 * but we can use on a non-oplocked file. tridge proved this
@@ -3620,8 +3615,6 @@ static void send_file_readX(connection_struct *conn, struct smb_request *req,
 	}
 
 normal_read:
-
-#endif
 
 	if ((smb_maxcnt & 0xFF0000) > 0x10000) {
 		uint8 headerbuf[smb_size + 2*12];
