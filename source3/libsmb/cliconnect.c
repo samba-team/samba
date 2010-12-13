@@ -1399,15 +1399,15 @@ NTSTATUS cli_session_setup(struct cli_state *cli,
 
 	if (cli->protocol < PROTOCOL_NT1) {
 		if (!lp_client_lanman_auth() && passlen != 24 && (*pass)) {
-			DEBUG(1, ("Server requested LM password but 'client lanman auth'"
-				  " is disabled\n"));
+			DEBUG(1, ("Server requested LM password but 'client lanman auth = no'"
+				  " or 'client ntlmv2 auth = yes'\n"));
 			return NT_STATUS_ACCESS_DENIED;
 		}
 
 		if ((cli->sec_mode & NEGOTIATE_SECURITY_CHALLENGE_RESPONSE) == 0 &&
 		    !lp_client_plaintext_auth() && (*pass)) {
-			DEBUG(1, ("Server requested plaintext password but "
-				  "'client plaintext auth' is disabled\n"));
+			DEBUG(1, ("Server requested LM password but 'client plaintext auth = no'"
+				  " or 'client ntlmv2 auth = yes'\n"));
 			return NT_STATUS_ACCESS_DENIED;
 		}
 
@@ -1433,8 +1433,8 @@ NTSTATUS cli_session_setup(struct cli_state *cli,
 
 	if ((cli->sec_mode & NEGOTIATE_SECURITY_CHALLENGE_RESPONSE) == 0) {
 		if (!lp_client_plaintext_auth() && (*pass)) {
-			DEBUG(1, ("Server requested plaintext password but "
-				  "'client plaintext auth' is disabled\n"));
+			DEBUG(1, ("Server requested LM password but 'client plaintext auth = no'"
+				  " or 'client ntlmv2 auth = yes'\n"));
 			return NT_STATUS_ACCESS_DENIED;
 		}
 		return cli_session_setup_plaintext(cli, user, pass, workgroup);
@@ -1609,7 +1609,7 @@ struct tevent_req *cli_tcon_andx_create(TALLOC_CTX *mem_ctx,
 		if (!lp_client_lanman_auth()) {
 			DEBUG(1, ("Server requested LANMAN password "
 				  "(share-level security) but "
-				  "'client lanman auth' is disabled\n"));
+				  "'client lanman auth = no' or 'client ntlmv2 auth = yes'\n"));
 			goto access_denied;
 		}
 
@@ -1625,8 +1625,8 @@ struct tevent_req *cli_tcon_andx_create(TALLOC_CTX *mem_ctx,
 		   == 0) {
 			if (!lp_client_plaintext_auth() && (*pass)) {
 				DEBUG(1, ("Server requested plaintext "
-					  "password but 'client plaintext "
-					  "auth' is disabled\n"));
+					  "password but "
+					  "'client lanman auth = no' or 'client ntlmv2 auth = yes'\n"));
 				goto access_denied;
 			}
 
