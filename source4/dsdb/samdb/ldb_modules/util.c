@@ -1136,7 +1136,7 @@ void dsdb_req_chain_debug(struct ldb_request *req, int level)
  * does work properly, the change request should remain similar or only be
  * enhanced (no other modifications as deletions, variations).
  */
-struct ldb_message_element *dsdb_get_single_valued_attr(struct ldb_message *msg,
+struct ldb_message_element *dsdb_get_single_valued_attr(const struct ldb_message *msg,
 							const char *attr_name,
 							enum ldb_request_type operation)
 {
