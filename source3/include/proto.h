@@ -5630,6 +5630,17 @@ NTSTATUS smbsock_connect(const struct sockaddr_storage *addr,
 			 const char *called_name, const char *calling_name,
 			 int *pfd, uint16_t *port);
 
+struct tevent_req *smbsock_any_connect_send(TALLOC_CTX *mem_ctx,
+					    struct tevent_context *ev,
+					    const struct sockaddr_storage *addrs,
+					    const char **called_names,
+					    size_t num_addrs);
+NTSTATUS smbsock_any_connect_recv(struct tevent_req *req, int *pfd,
+				  size_t *chosen_index, uint16_t *port);
+NTSTATUS smbsock_any_connect(const struct sockaddr_storage *addrs,
+			     const char **called_names, size_t num_addrs,
+			     int *pfd, size_t *chosen_index, uint16_t *port);
+
 /* The following definitions come from rpc_server/srv_samr_nt.c */
 NTSTATUS access_check_object( struct security_descriptor *psd, struct security_token *token,
 			      enum sec_privilege needed_priv_1, enum sec_privilege needed_priv_2,
