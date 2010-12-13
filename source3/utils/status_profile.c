@@ -81,11 +81,9 @@ bool status_profile_dump(bool verbose)
 	d_printf("pwrite_count:                   %u\n", profile_p->syscall_pwrite_count);
 	d_printf("pwrite_time:                    %u\n", profile_p->syscall_pwrite_time);
 	d_printf("pwrite_bytes:                   %u\n", profile_p->syscall_pwrite_bytes);
-#ifdef WITH_SENDFILE
 	d_printf("sendfile_count:                 %u\n", profile_p->syscall_sendfile_count);
 	d_printf("sendfile_time:                  %u\n", profile_p->syscall_sendfile_time);
 	d_printf("sendfile_bytes:                 %u\n", profile_p->syscall_sendfile_bytes);
-#endif
 	d_printf("lseek_count:                    %u\n", profile_p->syscall_lseek_count);
 	d_printf("lseek_time:                     %u\n", profile_p->syscall_lseek_time);
 	d_printf("rename_count:                   %u\n", profile_p->syscall_rename_count);
