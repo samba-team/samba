@@ -111,7 +111,7 @@ static NTSTATUS smbd_initialize_smb2(struct smbd_server_connection *sconn)
 	sconn->smb2.sessions.limit = 0x0000FFFE;
 	sconn->smb2.sessions.list = NULL;
 	sconn->smb2.seqnum_low = 0;
-	sconn->smb2.credits_granted = 1;
+	sconn->smb2.credits_granted = 0;
 	sconn->smb2.max_credits = lp_smb2_max_credits();
 	sconn->smb2.credits_bitmap = bitmap_talloc(sconn, 2*sconn->smb2.max_credits);
 	if (sconn->smb2.credits_bitmap == NULL) {
@@ -453,7 +453,8 @@ static void smb2_set_operation_credit(struct smbd_server_connection *sconn,
 		sconn->smb2.credits_granted));
 
 	if (credits_granted == 0 && sconn->smb2.credits_granted == 0) {
-		/* Ensure the client credits can never drop to zero. */
+		/* First negprot packet, or ensure the client credits can
+		   never drop to zero. */
 		credits_granted = 1;
 	}
 
