@@ -481,7 +481,7 @@ static void smb2_calculate_credits(const struct smbd_smb2_request *inreq,
 	}
 }
 
-static NTSTATUS smbd_smb2_request_setup_out(struct smbd_smb2_request *req, uint16_t creds)
+static NTSTATUS smbd_smb2_request_setup_out(struct smbd_smb2_request *req)
 {
 	struct iovec *vector;
 	int count;
@@ -2178,7 +2178,7 @@ void smbd_smb2_first_negprot(struct smbd_server_connection *sconn,
 		return;
 	}
 
-	status = smbd_smb2_request_setup_out(req, 1);
+	status = smbd_smb2_request_setup_out(req);
 	if (!NT_STATUS_IS_OK(status)) {
 		smbd_server_connection_terminate(sconn, nt_errstr(status));
 		return;
@@ -2233,7 +2233,7 @@ static void smbd_smb2_request_incoming(struct tevent_req *subreq)
 		return;
 	}
 
-	status = smbd_smb2_request_setup_out(req, 5);
+	status = smbd_smb2_request_setup_out(req);
 	if (!NT_STATUS_IS_OK(status)) {
 		smbd_server_connection_terminate(sconn, nt_errstr(status));
 		return;
