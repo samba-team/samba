@@ -902,9 +902,11 @@ NTSTATUS smbd_smb2_request_pending_queue(struct smbd_smb2_request *req,
 	/* Match W2K8R2... */
 	SCVAL(body, 0x08, 0x21);
 
-	/* Ensure we correctly go through crediting. */
+	/* Ensure we correctly go through crediting. Grant
+	   the credits now, and zero credits on the final
+	   response. */
 	smb2_set_operation_credit(req->sconn,
-			NULL,
+			&req->in.vector[i],
 			&state->vector[1]);
 
 	if (req->do_signing) {
@@ -1443,9 +1445,10 @@ static NTSTATUS smbd_smb2_request_reply(struct smbd_smb2_request *req)
 
 	smb2_setup_nbt_length(req->out.vector, req->out.vector_count);
 
-	/* Set credit for this operation. */
+	/* Set credit for this operation (zero credits if this
+	   is a final reply for an async operation). */
 	smb2_set_operation_credit(req->sconn,
-			&req->in.vector[i],
+			req->async ? NULL : &req->in.vector[i],
 			&req->out.vector[i]);
 
 	if (req->do_signing) {
