@@ -569,6 +569,7 @@ static bool test_EnumPrinterDrivers_findone(struct torture_context *tctx,
 	uint32_t count;
 	union spoolss_DriverInfo *info;
 	int i;
+	const char *environment_ret = NULL;
 
 	torture_assert(tctx,
 		test_EnumPrinterDrivers_args(tctx, b, server_name, environment, level, &count, &info),
@@ -582,27 +583,36 @@ static bool test_EnumPrinterDrivers_findone(struct torture_context *tctx,
 			break;
 		case 2:
 			driver_name_ret = info[i].info2.driver_name;
+			environment_ret = info[i].info2.architecture;
 			break;
 		case 3:
 			driver_name_ret = info[i].info3.driver_name;
+			environment_ret = info[i].info3.architecture;
 			break;
 		case 4:
 			driver_name_ret = info[i].info4.driver_name;
+			environment_ret = info[i].info4.architecture;
 			break;
 		case 5:
 			driver_name_ret = info[i].info5.driver_name;
+			environment_ret = info[i].info5.architecture;
 			break;
 		case 6:
 			driver_name_ret = info[i].info6.driver_name;
+			environment_ret = info[i].info6.architecture;
 			break;
 		case 7:
 			driver_name_ret = info[i].info7.driver_name;
 			break;
 		case 8:
 			driver_name_ret = info[i].info8.driver_name;
+			environment_ret = info[i].info8.architecture;
 			break;
 		default:
 			break;
+		}
+		if (environment_ret) {
+			torture_assert_str_equal(tctx, environment, environment_ret, "architecture mismatch");
 		}
 		if (strequal(driver_name, driver_name_ret)) {
 			return true;
