@@ -5,6 +5,9 @@
 import sys, os
 import wintest, pexpect, time, subprocess
 
+def set_krb5_conf(t):
+    t.putenv("KRB5_CONFIG", '${PREFIX}/private/krb5.conf')
+
 def build_s4(t):
     '''build samba4'''
     t.info('Building s4')
@@ -51,7 +54,7 @@ def start_s4(t):
     t.port_wait("${INTERFACE_IP}", 139)
 
 def test_smbclient(t):
-    '''test smbclient'''
+    '''test smbclient against localhost'''
     t.info('Testing smbclient')
     t.chdir('${PREFIX}')
     t.cmd_contains("bin/smbclient --version", ["Version 4.0"])
@@ -115,21 +118,7 @@ def run_winjoin(t, vm):
     '''join a windows box to our domain'''
     t.setwinvars(vm)
 
-    t.info("Joining a windows box to the domain")
-    t.vm_poweroff("${WIN_VM}", checkfail=False)
-    t.vm_restore("${WIN_VM}", "${WIN_SNAPSHOT}")
-    child = t.open_telnet("${WIN_HOSTNAME}", "${WIN_USER}", "${WIN_PASS}", set_time=True, set_ip=True, set_noexpire=True)
-    child.sendline("ipconfig /flushdns")
-    child.expect("C:")
-    child.sendline("netdom join ${WIN_HOSTNAME} /Domain:${LCREALM} /PasswordD:${PASSWORD1} /UserD:administrator")
-    child.expect("The command completed successfully")
-    child.expect("C:")
-    child.sendline("shutdown /r -t 0")
-    t.wait_reboot()
-    child = t.open_telnet("${WIN_HOSTNAME}", "${WIN_USER}", "${WIN_PASS}", set_time=True, set_ip=True)
-    child.sendline("ipconfig /registerdns")
-    child.expect("Registration of the DNS resource records for all adapters of this computer has been initiated. Any errors will be reported in the Event Viewer")
-    child.expect("C:")
+    t.run_winjoin(t, "${LCREALM}")
 
 def test_winjoin(t, vm):
     t.info("Checking the windows join is OK")
@@ -143,7 +132,6 @@ def test_winjoin(t, vm):
     child = t.open_telnet("${WIN_HOSTNAME}", "${DOMAIN}\\administrator", "${PASSWORD1}")
     child.sendline("net use t: \\\\${HOSTNAME}.${LCREALM}\\test")
     child.expect("The command completed successfully")
-    t.vm_poweroff("${WIN_VM}")
 
 
 def run_dcpromo(t, vm):
@@ -151,8 +139,6 @@ def run_dcpromo(t, vm):
     t.setwinvars(vm)
 
     t.info("Joining a windows VM ${WIN_VM} to the domain as a DC using dcpromo")
-    t.vm_poweroff("${WIN_VM}", checkfail=False)
-    t.vm_restore("${WIN_VM}", "${WIN_SNAPSHOT}")
     child = t.open_telnet("${WIN_HOSTNAME}", "administrator", "${WIN_PASS}", set_ip=True, set_noexpire=True)
     child.sendline("copy /Y con answers.txt")
     child.sendline('''
@@ -389,12 +375,9 @@ def test_dcpromo_rodc(t, vm):
 
 def prep_join_as_dc(t, vm):
     '''start VM and shutdown Samba in preperation to join a windows domain as a DC'''
-    t.setwinvars(vm)
     t.info("Starting VMs for joining ${WIN_VM} as a second DC using samba-tool join DC")
     t.chdir('${PREFIX}')
     t.run_cmd('killall -9 -q samba smbd nmbd winbindd', checkfail=False)
-    t.vm_poweroff("${WIN_VM}", checkfail=False)
-    t.vm_restore("${WIN_VM}", "${WIN_SNAPSHOT}")
     t.rndc_cmd('flush')
     t.run_cmd("rm -rf etc/smb.conf private")
     child = t.open_telnet("${WIN_HOSTNAME}", "${WIN_DOMAIN}\\administrator", "${WIN_PASS}", set_time=True)
@@ -546,6 +529,7 @@ def test_join_as_rodc(t, vm):
 def test_howto(t):
     '''test the Samba4 howto'''
 
+    t.setvar("SAMBA_VERSION", "Version 4")
     t.check_prerequesites()
 
     # we don't need fsync safety in these tests
@@ -563,6 +547,8 @@ def test_howto(t):
 
     if not t.skip("provision"):
         provision_s4(t)
+
+    set_krb5_conf(t)
 
     if not t.skip("create-shares"):
         create_shares(t)
@@ -583,25 +569,37 @@ def test_howto(t):
         test_dyndns(t)
 
     if t.have_vm('WINDOWS7') and not t.skip("windows7"):
+        t.start_winvm("WINDOWS7")
+        t.test_remote_smbclient("WINDOWS7")
         run_winjoin(t, "WINDOWS7")
         test_winjoin(t, "WINDOWS7")
+        t.vm_poweroff("${WIN_VM}")
 
     if t.have_vm('WINXP') and not t.skip("winxp"):
+        t.start_winvm("WINXP")
         run_winjoin(t, "WINXP")
         test_winjoin(t, "WINXP")
+        t.test_remote_smbclient("WINXP", "administrator", "${PASSWORD1}")
+        t.vm_poweroff("${WIN_VM}")
 
     if t.have_vm('W2K8R2C') and not t.skip("dcpromo_rodc"):
         t.info("Testing w2k8r2 RODC dcpromo")
+        t.start_winvm("W2K8R2C")
+        t.test_remote_smbclient('W2K8R2C')
         run_dcpromo_rodc(t, "W2K8R2C")
         test_dcpromo_rodc(t, "W2K8R2C")
 
     if t.have_vm('W2K8R2B') and not t.skip("dcpromo_w2k8r2"):
         t.info("Testing w2k8r2 dcpromo")
+        t.start_winvm("W2K8R2B")
+        t.test_remote_smbclient('W2K8R2B')
         run_dcpromo(t, "W2K8R2B")
         test_dcpromo(t, "W2K8R2B")
 
     if t.have_vm('W2K8B') and not t.skip("dcpromo_w2k8"):
         t.info("Testing w2k8 dcpromo")
+        t.start_winvm("W2K8B")
+        t.test_remote_smbclient('W2K8B')
         run_dcpromo(t, "W2K8B")
         test_dcpromo(t, "W2K8B")
 
@@ -616,10 +614,13 @@ def test_howto(t):
         test_dns(t)
         test_kerberos(t)
         test_dyndns(t)
+        t.start_winvm("W2K3B")
+        t.test_remote_smbclient('W2K3B')
         run_dcpromo(t, "W2K3B")
         test_dcpromo(t, "W2K3B")
 
     if t.have_vm('W2K8R2A') and not t.skip("join_w2k8r2"):
+        t.start_winvm("W2K8R2A")
         prep_join_as_dc(t, "W2K8R2A")
         t.run_dcpromo_as_first_dc("W2K8R2A", func_level='2008r2')
         join_as_dc(t, "W2K8R2A")
@@ -629,6 +630,7 @@ def test_howto(t):
         test_join_as_dc(t, "W2K8R2A")
 
     if t.have_vm('W2K8R2A') and not t.skip("join_rodc"):
+        t.start_winvm("W2K8R2A")
         prep_join_as_dc(t, "W2K8R2A")
         t.run_dcpromo_as_first_dc("W2K8R2A", func_level='2008r2')
         join_as_rodc(t, "W2K8R2A")

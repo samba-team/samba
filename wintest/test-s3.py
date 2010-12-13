@@ -9,6 +9,15 @@ import wintest
 def set_libpath(t):
     t.putenv("LD_LIBRARY_PATH", "${PREFIX}/lib")
 
+def set_krb5_conf(t):
+    t.run_cmd("mkdir -p ${PREFIX}/etc")
+    t.write_file("${PREFIX}/etc/krb5.conf", 
+                    '''[libdefaults]
+	dns_lookup_realm = false
+	dns_lookup_kdc = true''')
+
+    t.putenv("KRB5_CONFIG", '${PREFIX}/etc/krb5.conf')
+
 def build_s3(t):
     '''build samba3'''
     t.info('Building s3')
@@ -30,7 +39,6 @@ def start_s3(t):
     t.run_cmd(['sbin/winbindd', "-D"])
     t.run_cmd(['sbin/smbd', "-D"])
     t.port_wait("${INTERFACE_IP}", 139)
-
 
 def test_wbinfo(t):
     t.info('Testing wbinfo')
@@ -69,7 +77,18 @@ def test_smbclient(t):
     t.cmd_contains("bin/smbclient --version", ["Version 3."])
     t.cmd_contains('bin/smbclient -L ${INTERFACE_IP} -U%', ["Domain=[${WIN_DOMAIN}]", "test", "IPC$", "Samba 3."],
                    casefold=True)
-    child = t.pexpect_spawn('bin/smbclient //${HOSTNAME}.${WIN_REALM}/test -Uroot%${PASSWORD2}')
+    child = t.pexpect_spawn('bin/smbclient //${HOSTNAME}.${WIN_REALM}/test -Uroot@${WIN_REALM}%${PASSWORD2}')
+    child.expect("smb:")
+    child.sendline("dir")
+    child.expect("blocks available")
+    child.sendline("mkdir testdir")
+    child.expect("smb:")
+    child.sendline("cd testdir")
+    child.expect('testdir')
+    child.sendline("cd ..")
+    child.sendline("rmdir testdir")
+
+    child = t.pexpect_spawn('bin/smbclient //${HOSTNAME}.${WIN_REALM}/test -Uroot@${WIN_REALM}%${PASSWORD2} -k')
     child.expect("smb:")
     child.sendline("dir")
     child.expect("blocks available")
@@ -160,6 +179,7 @@ def test_join_as_member(t, vm):
 def test_s3(t):
     '''basic s3 testing'''
 
+    t.setvar("SAMBA_VERSION", "Version 3")
     t.check_prerequesites()
     set_libpath(t)
 
@@ -173,18 +193,59 @@ def test_s3(t):
     if not t.skip("build"):
         build_s3(t)
 
+    set_krb5_conf(t)
     if not t.skip("configure_bind2"):
         t.configure_bind()
     if not t.skip("start_bind"):
         t.start_bind()
 
+    dc_started = False
     if t.have_var('W2K8R2A_VM') and not t.skip("join_w2k8r2"):
+        t.start_winvm('W2K8R2A')
+        dc_started = True
         prep_join_as_member(t, "W2K8R2A")
         t.run_dcpromo_as_first_dc("W2K8R2A", func_level='2008r2')
         join_as_member(t, "W2K8R2A")
         create_shares(t)
         start_s3(t)
         test_join_as_member(t, "W2K8R2A")
+
+    if t.have_var('WINDOWS7_VM') and t.have_var('W2K8R2A_VM') and not t.skip("join_windows7_2008r2"):
+        if not dc_started:
+            t.start_winvm('W2K8R2A')
+            t.run_dcpromo_as_first_dc("W2K8R2A", func_level='2008r2')
+            dc_started = True
+        else:
+            t.setwinvars('W2K8R2A')
+        realm = t.getvar("WIN_REALM")
+        dom_username = t.getvar("WIN_USER")
+        dom_password = t.getvar("WIN_PASS")
+        dom_realm = t.getvar("WIN_REALM")
+        t.start_winvm('WINDOWS7')
+        t.test_remote_smbclient("WINDOWS7")
+        t.run_winjoin('WINDOWS7', realm, username=dom_username, password=dom_password)
+        t.test_remote_smbclient("WINDOWS7", dom_username, dom_password)
+        t.test_remote_smbclient('WINDOWS7', dom_username, dom_password, args='--option=clientntlmv2auth=no')
+        t.test_remote_smbclient('WINDOWS7', "%s@%s" % (dom_username, dom_realm), dom_password, args="-k")
+        t.test_remote_smbclient('WINDOWS7', "%s@%s" % (dom_username, dom_realm), dom_password, args="-k --option=clientusespnegoprincipal=yes")
+
+    if t.have_var('WINXP_VM') and t.have_var('W2K8R2A_VM') and not t.skip("join_winxp_2008r2"):
+        if not dc_started:
+            t.start_winvm('W2K8R2A')
+            t.run_dcpromo_as_first_dc("W2K8R2A", func_level='2008r2')
+            dc_started = True
+        else:
+            t.setwinvars('W2K8R2A')
+        realm = t.getvar("WIN_REALM")
+        dom_username = t.getvar("WIN_USER")
+        dom_password = t.getvar("WIN_PASS")
+        dom_realm = t.getvar("WIN_REALM")
+        t.start_winvm('WINXP')
+        t.run_winjoin('WINXP', realm, username=dom_username, password=dom_password)
+        t.test_remote_smbclient('WINXP', dom_username, dom_password)
+        t.test_remote_smbclient('WINXP', dom_username, dom_password, args='--option=clientntlmv2auth=no')
+        t.test_remote_smbclient('WINXP', "%s@%s" % (dom_username, dom_realm), dom_password, args="-k")
+        t.test_remote_smbclient('WINXP', "%s@%s" % (dom_username, dom_realm), dom_password, args="-k --clientusespnegoprincipal=yes")
 
     t.info("S3 test: All OK")
 

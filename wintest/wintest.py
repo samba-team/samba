@@ -57,6 +57,8 @@ class wintest():
             self.setvar("WIN_LCREALM", self.getvar("WIN_REALM").lower())
             dnsdomain = self.getvar("WIN_REALM")
             self.setvar("WIN_BASEDN", "DC=" + dnsdomain.replace(".", ",DC="))
+        if self.getvar("WIN_USER") is None:
+            self.setvar("WIN_USER", "administrator")
 
     def info(self, msg):
         '''print some information'''
@@ -343,7 +345,6 @@ nameserver %s
                          '''tkey-gssapi-credential "DNS/${LCREALM}";
                             tkey-domain "${LCREALM}";
                  ''')
-            self.putenv("KRB5_CONFIG", '${PREFIX}/private/krb5.conf')
             self.putenv('KEYTAB_FILE', '${PREFIX}/private/dns.keytab')
             self.putenv('KRB5_KTNAME', '${PREFIX}/private/dns.keytab')
 
@@ -621,8 +622,12 @@ options {
         '''resolve an IP given a hostname, assuming NBT'''
         while retries > 0:
             child = self.pexpect_spawn("bin/nmblookup %s" % hostname)
-            i = child.expect(['\d+.\d+.\d+.\d+', "Lookup failed"])
-            if i == 0:
+            i = 0
+            while i == 0:
+                i = child.expect(["querying", '\d+.\d+.\d+.\d+', hostname, "Lookup failed"])
+                if i == 0:
+                    child.expect("\r")
+            if i == 1:
                 return child.after
             retries -= 1
             time.sleep(delay)
@@ -802,6 +807,40 @@ RebootOnCompletion=No
         child.sendline("shutdown -r -t 0")
         self.port_wait("${WIN_IP}", 139, wait_for_fail=True)
         self.port_wait("${WIN_IP}", 139)
+        self.retry_cmd("host -t SRV _ldap._tcp.${WIN_REALM} ${WIN_IP}", ['has SRV record'] )
+
+
+    def start_winvm(self, vm):
+        '''start a Windows VM'''
+        self.setwinvars(vm)
+        
+        self.info("Joining a windows box to the domain")
+        self.vm_poweroff("${WIN_VM}", checkfail=False)
+        self.vm_restore("${WIN_VM}", "${WIN_SNAPSHOT}")
+
+    def run_winjoin(self, vm, domain, username="administrator", password="${PASSWORD1}"):
+        '''join a windows box to a domain'''
+        child = self.open_telnet("${WIN_HOSTNAME}", "${WIN_USER}", "${WIN_PASS}", set_time=True, set_ip=True, set_noexpire=True)
+        child.sendline("ipconfig /flushdns")
+        child.expect("C:")
+        child.sendline("netdom join ${WIN_HOSTNAME} /Domain:%s /UserD:%s /PasswordD:%s" % (domain, username, password))
+        child.expect("The command completed successfully")
+        child.expect("C:")
+        child.sendline("shutdown /r -t 0")
+        self.wait_reboot()
+        child = self.open_telnet("${WIN_HOSTNAME}", "${WIN_USER}", "${WIN_PASS}", set_time=True, set_ip=True)
+        child.sendline("ipconfig /registerdns")
+        child.expect("Registration of the DNS resource records for all adapters of this computer has been initiated. Any errors will be reported in the Event Viewer")
+        child.expect("C:")
+
+
+    def test_remote_smbclient(self, vm, username="${WIN_USER}", password="${WIN_PASS}", args=""):
+        '''test smbclient against remote server'''
+        self.setwinvars(vm)
+        self.info('Testing smbclient')
+        self.chdir('${PREFIX}')
+        self.cmd_contains("bin/smbclient --version", ["${SAMBA_VERSION}"])
+        self.retry_cmd('bin/smbclient -L ${WIN_HOSTNAME} -U%s%%%s %s' % (username, password, args), ["IPC"])
 
 
     def setup(self, testname, subdir):
