@@ -242,8 +242,9 @@ def HEIMDAL_LIBRARY(libname, source, deps, vnum,
 
     if bld.env.HAVE_LD_VERSION_SCRIPT:
         vscript = "%s.vscript" % libname
+        namespace = version.replace("-","_").replace("+","_").upper(),
         HEIMDAL_GENERATOR(vscript,
-                          rule="echo %s \{ global: \*\; \}\; > ${TGT}" % version.replace("-","_").upper(),
+                          rule="echo %s \{ global: \*\; \}\; > ${TGT}" % namespace,
                           group='vscripts',
                           target=vscript)
         ldflags.append("-Wl,--version-script=%s/%s" % (bld.path.abspath(bld.env), vscript))
