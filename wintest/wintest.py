@@ -445,7 +445,7 @@ options {
         self.rndc_cmd("flush")
 
     def restart_bind(self, kerberos_support=False, include=None):
-        self.configure_bind(keberos_support=kerberos_support, include=include)
+        self.configure_bind(kerberos_support=kerberos_support, include=include)
         self.stop_bind()
         self.start_bind()
 
@@ -582,7 +582,7 @@ options {
             if i != 0:
                 self.info("Firewall disable failed - ignoring")
             child.expect("C:")
- 
+
     def set_dns(self, child):
         child.sendline('netsh interface ip set dns "${WIN_NIC}" static ${INTERFACE_IP} primary')
         i = child.expect(['C:', pexpect.EOF, pexpect.TIMEOUT], timeout=5)

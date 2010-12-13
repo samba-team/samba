@@ -610,7 +610,7 @@ def test_howto(t):
         create_shares(t)
         start_s4(t)
         test_smbclient(t)
-        t.restart_bind(kerberos_support=True, include='{PREFIX}/private/named.conf')
+        t.restart_bind(kerberos_support=True, include='${PREFIX}/private/named.conf')
         test_dns(t)
         test_kerberos(t)
         test_dyndns(t)
