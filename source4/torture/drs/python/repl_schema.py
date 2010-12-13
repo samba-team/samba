@@ -53,6 +53,8 @@ class DrsReplSchemaTestCase(samba.tests.TestCase):
 
     # prefix for all objects created
     obj_prefix = None
+    # current Class or Attribute object id
+    obj_id = 0
 
     def setUp(self):
         super(DrsReplSchemaTestCase, self).setUp()
@@ -68,7 +70,7 @@ class DrsReplSchemaTestCase(samba.tests.TestCase):
         # initialize objects prefix if not done yet
         if self.obj_prefix is None:
             t = time.strftime("%s", time.gmtime())
-            DrsReplSchemaTestCase.obj_prefix = "DrsReplSchema-%s-" % t
+            DrsReplSchemaTestCase.obj_prefix = "DrsReplSchema-%s" % t
 
         # cache some of RootDSE props
         self.schema_dn = self.info_dc1["schemaNamingContext"][0]
@@ -111,7 +113,8 @@ class DrsReplSchemaTestCase(samba.tests.TestCase):
     def _make_obj_names(self, base_name):
         '''Try to create a unique name for an object
            that is to be added to schema'''
-        obj_name = self.obj_prefix + base_name
+        self.obj_id += 1
+        obj_name = "%s-%d-%s" % (self.obj_prefix, self.obj_id, base_name)
         obj_ldn = obj_name.replace("-", "")
         obj_dn = "CN=%s,%s" % (obj_name, self.schema_dn)
         return (obj_dn, obj_name, obj_ldn)
