@@ -328,6 +328,10 @@ return acl_get_perm_np(permset_d, perm);
                         'HAVE_ACL_GET_PERM_NP',
                         headers='sys/types.h sys/acl.h', link=True,
                         msg="Checking whether acl_get_perm_np() is available")
+        else:
+            conf.DEFINE('HAVE_NO_ACLS', 1)
+            conf.SET_TARGET_TYPE('acl', 'EMPTY')
+            conf.SET_TARGET_TYPE('attr', 'EMPTY')
     else:
         conf.DEFINE('HAVE_NO_ACLS', 1)
         conf.SET_TARGET_TYPE('acl', 'EMPTY')
@@ -363,7 +367,7 @@ return acl_get_perm_np(permset_d, perm);
         default_static_modules.extend(TO_LIST('rpc_rpcecho pdb_ads'))
         default_shared_modules.extend(TO_LIST('charset_weird perfcount_test'))
 
-    if Options.options.with_acl_support:
+    if Options.options.with_acl_support and conf.CONFIG_SET('HAVE_POSIX_ACLS'):
         default_static_modules.extend(TO_LIST('vfs_posixacl'))
 
     if conf.CONFIG_SET('HAVE_DIRFD_DECL'):
