@@ -1487,6 +1487,15 @@ static NTSTATUS smbd_smb2_request_reply(struct smbd_smb2_request *req)
 		print_req_vectors(req);
 	}
 
+	/* I am a sick, sick man... :-). Sendfile hack ... JRA. */
+	if (req->out.vector_count == 4 &&
+			req->out.vector[3].iov_base == NULL &&
+			req->out.vector[3].iov_len != 0) {
+		/* Dynamic part is NULL. Chop it off,
+		   We're going to send it via sendfile. */
+		req->out.vector_count -= 1;
+	}
+
 	subreq = tstream_writev_queue_send(req,
 					   req->sconn->smb2.event_ctx,
 					   req->sconn->smb2.stream,

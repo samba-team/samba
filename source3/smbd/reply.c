@@ -2804,8 +2804,7 @@ static void fail_readraw(void)
  Fake (read/write) sendfile. Returns -1 on read or write fail.
 ****************************************************************************/
 
-static ssize_t fake_sendfile(files_struct *fsp, SMB_OFF_T startpos,
-			     size_t nread)
+ssize_t fake_sendfile(files_struct *fsp, SMB_OFF_T startpos, size_t nread)
 {
 	size_t bufsize;
 	size_t tosend = nread;
@@ -2869,7 +2868,7 @@ static ssize_t fake_sendfile(files_struct *fsp, SMB_OFF_T startpos,
  requested. Fill with zeros (all we can do).
 ****************************************************************************/
 
-static void sendfile_short_send(files_struct *fsp,
+void sendfile_short_send(files_struct *fsp,
 				ssize_t nread,
 				size_t headersize,
 				size_t smb_maxcnt)

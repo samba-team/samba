@@ -172,12 +172,146 @@ static void smbd_smb2_request_read_done(struct tevent_req *subreq)
 struct smbd_smb2_read_state {
 	struct smbd_smb2_request *smb2req;
 	files_struct *fsp;
+	uint64_t in_file_id_volatile;
 	uint32_t in_length;
 	uint64_t in_offset;
 	uint32_t in_minimum;
 	DATA_BLOB out_data;
 	uint32_t out_remaining;
 };
+
+/* struct smbd_smb2_read_state destructor. Send the SMB2_READ data. */
+static int smb2_sendfile_send_data(struct smbd_smb2_read_state *state)
+{
+	struct lock_struct lock;
+	uint32_t in_length = state->in_length;
+	uint64_t in_offset = state->in_offset;
+	files_struct *fsp = state->fsp;
+	ssize_t nread;
+
+	nread = SMB_VFS_SENDFILE(fsp->conn->sconn->sock,
+					fsp,
+					NULL,
+					in_offset,
+					in_length);
+	DEBUG(10,("smb2_sendfile_send_data: SMB_VFS_SENDFILE returned %d on file %s\n",
+		(int)nread,
+		fsp_str_dbg(fsp) ));
+
+	if (nread == -1) {
+		if (errno == ENOSYS || errno == EINTR) {
+			/*
+			 * Special hack for broken systems with no working
+			 * sendfile. Fake this up by doing read/write calls.
+			*/
+			set_use_sendfile(SNUM(fsp->conn), false);
+			nread = fake_sendfile(fsp, in_offset, in_length);
+			if (nread == -1) {
+				DEBUG(0,("smb2_sendfile_send_data: "
+					"fake_sendfile failed for "
+					"file %s (%s).\n",
+					fsp_str_dbg(fsp),
+					strerror(errno)));
+				exit_server_cleanly("smb2_sendfile_send_data: "
+					"fake_sendfile failed");
+			}
+			goto out;
+		}
+
+		DEBUG(0,("smb2_sendfile_send_data: sendfile failed for file "
+			"%s (%s). Terminating\n",
+			fsp_str_dbg(fsp),
+			strerror(errno)));
+		exit_server_cleanly("smb2_sendfile_send_data: sendfile failed");
+	} else if (nread == 0) {
+		/*
+		 * Some sendfile implementations return 0 to indicate
+		 * that there was a short read, but nothing was
+		 * actually written to the socket.  In this case,
+		 * fallback to the normal read path so the header gets
+		 * the correct byte count.
+		 */
+		DEBUG(3, ("send_file_readX: sendfile sent zero bytes "
+			"falling back to the normal read: %s\n",
+			fsp_str_dbg(fsp)));
+
+		nread = fake_sendfile(fsp, in_offset, in_length);
+		if (nread == -1) {
+			DEBUG(0,("smb2_sendfile_send_data: "
+				"fake_sendfile failed for file "
+				"%s (%s). Terminating\n",
+				fsp_str_dbg(fsp),
+				strerror(errno)));
+			exit_server_cleanly("smb2_sendfile_send_data: "
+				"fake_sendfile failed");
+		}
+	}
+
+  out:
+
+	if (nread < in_length) {
+		sendfile_short_send(fsp, nread, 0, in_length);
+	}
+
+	init_strict_lock_struct(fsp,
+				state->in_file_id_volatile,
+				in_offset,
+				in_length,
+				READ_LOCK,
+				&lock);
+
+	SMB_VFS_STRICT_UNLOCK(fsp->conn, fsp, &lock);
+	return 0;
+}
+
+static NTSTATUS schedule_smb2_sendfile_read(struct smbd_smb2_request *smb2req,
+					struct smbd_smb2_read_state *state)
+{
+	struct smbd_smb2_read_state *state_copy = NULL;
+	files_struct *fsp = state->fsp;
+
+	/*
+	 * We cannot use sendfile if...
+	 * We were not configured to do so OR
+	 * Signing is active OR
+	 * This is a compound SMB2 operation OR
+	 * fsp is a STREAM file OR
+	 * We're using a write cache OR
+	 * It's not a regular file OR
+	 * Requested offset is greater than file size OR
+	 * there's not enough data in the file.
+	 * Phew :-). Luckily this means most
+	 * reads on most normal files. JRA.
+	*/
+
+	if (!_lp_use_sendfile(SNUM(fsp->conn)) ||
+			smb2req->do_signing ||
+			smb2req->in.vector_count != 4 ||
+			(fsp->base_fsp != NULL) ||
+			(fsp->wcp != NULL) ||
+			(!S_ISREG(fsp->fsp_name->st.st_ex_mode)) ||
+			(state->in_offset >= fsp->fsp_name->st.st_ex_size) ||
+			(fsp->fsp_name->st.st_ex_size < state->in_offset +
+				state->in_length)) {
+		return NT_STATUS_RETRY;
+	}
+
+	/* We've already checked there's this amount of data
+	   to read. */
+	state->out_data.length = state->in_length;
+	state->out_remaining = 0;
+
+	/* Make a copy of state attached to the smb2req. Attach
+	   the destructor here as this will trigger the sendfile
+	   call when the request is destroyed. */
+	state_copy = TALLOC_P(smb2req, struct smbd_smb2_read_state);
+	if (!state_copy) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	*state_copy = *state;
+	talloc_set_destructor(state_copy, smb2_sendfile_send_data);
+	return NT_STATUS_OK;
+}
 
 static void smbd_smb2_read_pipe_done(struct tevent_req *subreq);
 
@@ -291,6 +425,7 @@ static struct tevent_req *smbd_smb2_read_send(TALLOC_CTX *mem_ctx,
 	}
 
 	state->fsp = fsp;
+	state->in_file_id_volatile = in_file_id_volatile;
 
 	if (IS_IPC(smbreq->conn)) {
 		struct tevent_req *subreq = NULL;
@@ -362,6 +497,19 @@ static struct tevent_req *smbd_smb2_read_send(TALLOC_CTX *mem_ctx,
 	if (!SMB_VFS_STRICT_LOCK(conn, fsp, &lock)) {
 		tevent_req_nterror(req, NT_STATUS_FILE_LOCK_CONFLICT);
 		return tevent_req_post(req, ev);
+	}
+
+	/* Try sendfile in preference. */
+	status = schedule_smb2_sendfile_read(smb2req, state);
+	if (NT_STATUS_IS_OK(status)) {
+		tevent_req_done(req);
+		return tevent_req_post(req, ev);
+	} else {
+		if (!NT_STATUS_EQUAL(status, NT_STATUS_RETRY)) {
+			SMB_VFS_STRICT_UNLOCK(conn, fsp, &lock);
+			tevent_req_nterror(req, status);
+			return tevent_req_post(req, ev);
+		}
 	}
 
 	/* Ok, read into memory. Allocate the out buffer. */
