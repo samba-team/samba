@@ -158,14 +158,9 @@ DOSERR_SRC = '../libcli/util/doserr.c'
 ERRORMAP_SRC = 'libsmb/errormap.c'
 DCE_RPC_ERR_SRC = '../librpc/rpc/dcerpc_error.c'
 
-LIBSMB_ERR_SRC0 = '''${NTERR_SRC} ${DOSERR_SRC} ${ERRORMAP_SRC} ${DCE_RPC_ERR_SRC}'''
-
-LIBSMB_ERR_SRC1 = '''../libcli/auth/smbdes.c ../libcli/auth/smbencrypt.c ../libcli/auth/msrpc_parse.c ../libcli/auth/session.c'''
-
-LIBSMB_ERR_SRC = '${LIBSMB_ERR_SRC0} ${LIBSMB_ERR_SRC1}'
+LIBSMB_ERR_SRC = '''${NTERR_SRC} ${DOSERR_SRC} ${ERRORMAP_SRC} ${DCE_RPC_ERR_SRC}'''
 
 LIBSMB_SRC0 = '''
-               ../libcli/auth/ntlm_check.c
                libsmb/ntlmssp.c
                libsmb/ntlmssp_wrap.c
                ../libcli/auth/ntlmssp.c
@@ -184,9 +179,7 @@ CLDAP_SRC = '''libads/cldap.c
 
 TLDAP_SRC = '''lib/tldap.c lib/tldap_util.c lib/util_tsock.c'''
 
-SCHANNEL_SRC = '''../libcli/auth/credentials.c
-               ../libcli/auth/schannel_sign.c
-               ../libcli/auth/schannel_state_tdb.c'''
+SCHANNEL_SRC = '''../libcli/auth/schannel_sign.c'''
 
 LIBSMB_SRC = '''libsmb/clientgen.c libsmb/cliconnect.c libsmb/clifile.c
              libsmb/clikrb5.c libsmb/clispnego.c
@@ -798,7 +791,7 @@ bld.SAMBA_LIBRARY('smbsharemodes',
 bld.SAMBA_SUBSYSTEM('LIBMSRPC',
                     source='${LIBMSRPC_SRC}',
                     deps='''ndr NDR_SECURITY NDR_DCERPC NDR_SCHANNEL
-                    RPCCLI_EPMAPPER''',
+                    RPCCLI_EPMAPPER COMMON_SCHANNELDB LIBCLI_AUTH''',
                     vars=locals())
 
 bld.SAMBA_SUBSYSTEM('LIBMSRPC_GEN',
@@ -899,12 +892,12 @@ bld.SAMBA_SUBSYSTEM('LIB_NONSMBD',
 
 bld.SAMBA_SUBSYSTEM('LIBSMB_ERR',
                     source=LIBSMB_ERR_SRC,
-                    deps='SECRETS ldap lber',
+                    deps='SECRETS ldap lber MSRPC_PARSE LIBCLI_AUTH',
                     vars=locals())
 
 bld.SAMBA_SUBSYSTEM('LIBSAMBA',
                     source=LIBSAMBA_SRC,
-                    deps='LIBSMB_ERR NDR_NTLMSSP',
+                    deps='LIBSMB_ERR NDR_NTLMSSP ntlm_check',
                     vars=locals())
 
 bld.SAMBA_SUBSYSTEM('LIBSMB',
@@ -1515,6 +1508,7 @@ bld.RECURSE('../lib/tsocket')
 bld.RECURSE('../lib/iniparser/src')
 bld.RECURSE('../lib/crypto')
 bld.RECURSE('../lib/async_req')
+bld.RECURSE('../libcli/auth')
 bld.RECURSE('modules')
 bld.RECURSE('auth')
 bld.RECURSE('passdb')
