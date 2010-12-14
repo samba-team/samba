@@ -846,7 +846,7 @@ static bool torture_drs_unit_prefixmap_teardown(struct torture_context *tctx, st
 
 /**
  * Test case initialization for
- * DRS-UNIT.prefixMap
+ * drs.unit.prefixMap
  */
 struct torture_tcase * torture_drs_unit_prefixmap(struct torture_suite *suite)
 {

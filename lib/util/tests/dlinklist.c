@@ -124,7 +124,7 @@ static bool torture_local_dlinklist_simple(struct torture_context *tctx)
 
 struct torture_suite *torture_local_dlinklist(TALLOC_CTX *mem_ctx)
 {
-	struct torture_suite *suite = torture_suite_create(mem_ctx, "DLINKLIST");
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "dlinklist");
 	torture_suite_add_simple_test(suite, "dlinklist", torture_local_dlinklist_simple);
 	return suite;
 }

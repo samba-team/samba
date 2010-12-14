@@ -257,7 +257,7 @@ failed:
 
 struct torture_suite *torture_local_dbspeed(TALLOC_CTX *mem_ctx)
 {
-	struct torture_suite *s = torture_suite_create(mem_ctx, "DBSPEED");
+	struct torture_suite *s = torture_suite_create(mem_ctx, "dbspeed");
 	torture_suite_add_simple_tcase_const(s, "tdb_speed", test_tdb_speed,
 			NULL);
 	torture_suite_add_simple_tcase_const(s, "ldb_speed", test_ldb_speed,

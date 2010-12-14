@@ -2069,25 +2069,25 @@ static bool test_ntcreatexdir(struct torture_context *tctx,
 */
 struct torture_suite *torture_raw_open(TALLOC_CTX *mem_ctx)
 {
-	struct torture_suite *suite = torture_suite_create(mem_ctx, "OPEN");
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "open");
 
-	torture_suite_add_1smb_test(suite, "BRLOCKED", test_ntcreatex_brlocked);
-	torture_suite_add_1smb_test(suite, "OPEN", test_open);
-	torture_suite_add_1smb_test(suite, "OPEN-MULTI", test_raw_open_multi);
-	torture_suite_add_1smb_test(suite, "OPENX", test_openx);
-	torture_suite_add_1smb_test(suite, "NTCREATEX", test_ntcreatex);
-	torture_suite_add_1smb_test(suite, "NTTRANS-CREATE", test_nttrans_create);
-	torture_suite_add_1smb_test(suite, "T2OPEN", test_t2open);
-	torture_suite_add_1smb_test(suite, "MKNEW", test_mknew);
-	torture_suite_add_1smb_test(suite, "CREATE", test_create);
-	torture_suite_add_1smb_test(suite, "CTEMP", test_ctemp);
-	torture_suite_add_1smb_test(suite, "CHAINED-OPENX", test_chained);
-	torture_suite_add_1smb_test(suite, "CHAINED-NTCREATEX", test_chained_ntcreatex_readx);
-	torture_suite_add_1smb_test(suite, "NO-LEADING-SLASH", test_no_leading_slash);
-	torture_suite_add_1smb_test(suite, "OPENX-OVER-DIR", test_openx_over_dir);
-	torture_suite_add_1smb_test(suite, "OPEN-FOR-DELETE", test_open_for_delete);
-	torture_suite_add_1smb_test(suite, "OPENDISP-DIR", test_ntcreatex_opendisp_dir);
-	torture_suite_add_1smb_test(suite, "NTCREATEDIR", test_ntcreatexdir);
+	torture_suite_add_1smb_test(suite, "brlocked", test_ntcreatex_brlocked);
+	torture_suite_add_1smb_test(suite, "open", test_open);
+	torture_suite_add_1smb_test(suite, "open-multi", test_raw_open_multi);
+	torture_suite_add_1smb_test(suite, "openx", test_openx);
+	torture_suite_add_1smb_test(suite, "ntcreatex", test_ntcreatex);
+	torture_suite_add_1smb_test(suite, "nttrans-create", test_nttrans_create);
+	torture_suite_add_1smb_test(suite, "t2open", test_t2open);
+	torture_suite_add_1smb_test(suite, "mknew", test_mknew);
+	torture_suite_add_1smb_test(suite, "create", test_create);
+	torture_suite_add_1smb_test(suite, "ctemp", test_ctemp);
+	torture_suite_add_1smb_test(suite, "chained-openx", test_chained);
+	torture_suite_add_1smb_test(suite, "chained-ntcreatex", test_chained_ntcreatex_readx);
+	torture_suite_add_1smb_test(suite, "no-leading-slash", test_no_leading_slash);
+	torture_suite_add_1smb_test(suite, "openx-over-dir", test_openx_over_dir);
+	torture_suite_add_1smb_test(suite, "open-for-delete", test_open_for_delete);
+	torture_suite_add_1smb_test(suite, "opendisp-dir", test_ntcreatex_opendisp_dir);
+	torture_suite_add_1smb_test(suite, "ntcreatedir", test_ntcreatexdir);
 
 	return suite;
 }

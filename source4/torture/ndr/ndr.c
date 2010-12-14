@@ -339,7 +339,7 @@ static bool test_compare_uuid(struct torture_context *tctx)
 
 struct torture_suite *torture_local_ndr(TALLOC_CTX *mem_ctx)
 {
-	struct torture_suite *suite = torture_suite_create(mem_ctx, "NDR");
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "ndr");
 
 	torture_suite_add_suite(suite, ndr_winreg_suite(suite));
 	torture_suite_add_suite(suite, ndr_atsvc_suite(suite));

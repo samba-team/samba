@@ -135,7 +135,7 @@ struct torture_suite *torture_rpc_unixinfo(TALLOC_CTX *mem_ctx)
 	struct torture_suite *suite;
 	struct torture_rpc_tcase *tcase;
 
-	suite = torture_suite_create(mem_ctx, "UNIXINFO");
+	suite = torture_suite_create(mem_ctx, "unixinfo");
 	tcase = torture_suite_add_rpc_iface_tcase(suite, "unixinfo", 
 						  &ndr_table_unixinfo);
 

@@ -2438,19 +2438,19 @@ done:
 */
 struct torture_suite *torture_raw_acls(TALLOC_CTX *mem_ctx)
 {
-	struct torture_suite *suite = torture_suite_create(mem_ctx, "ACLS");
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "acls");
 
-	torture_suite_add_1smb_test(suite, "SD", test_sd);
-	torture_suite_add_1smb_test(suite, "CREATE_FILE", test_nttrans_create_file);
-	torture_suite_add_1smb_test(suite, "CREATE_DIR", test_nttrans_create_dir);
-	torture_suite_add_1smb_test(suite, "NULLDACL", test_nttrans_create_null_dacl);
-	torture_suite_add_1smb_test(suite, "CREATOR", test_creator_sid);
-	torture_suite_add_1smb_test(suite, "GENERIC", test_generic_bits);
-	torture_suite_add_1smb_test(suite, "OWNER", test_owner_bits);
-	torture_suite_add_1smb_test(suite, "INHERITANCE", test_inheritance);
+	torture_suite_add_1smb_test(suite, "sd", test_sd);
+	torture_suite_add_1smb_test(suite, "create_file", test_nttrans_create_file);
+	torture_suite_add_1smb_test(suite, "create_dir", test_nttrans_create_dir);
+	torture_suite_add_1smb_test(suite, "nulldacl", test_nttrans_create_null_dacl);
+	torture_suite_add_1smb_test(suite, "creator", test_creator_sid);
+	torture_suite_add_1smb_test(suite, "generic", test_generic_bits);
+	torture_suite_add_1smb_test(suite, "owner", test_owner_bits);
+	torture_suite_add_1smb_test(suite, "inheritance", test_inheritance);
 
 	/* torture_suite_add_1smb_test(suite, "INHERITFLAGS", test_inheritance_flags); */
-	torture_suite_add_1smb_test(suite, "DYNAMIC", test_inheritance_dynamic);
+	torture_suite_add_1smb_test(suite, "dynamic", test_inheritance_dynamic);
 	/* XXX This test does not work against XP or Vista.
 	torture_suite_add_1smb_test(suite, "GETSET", test_sd_get_set);
 	*/

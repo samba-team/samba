@@ -93,7 +93,7 @@ static const char *examples[] = {
 /* test a set of example SDDL strings */
 struct torture_suite *torture_local_sddl(TALLOC_CTX *mem_ctx)
 {
-	struct torture_suite *suite = torture_suite_create(mem_ctx, "SDDL");
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "sddl");
 	int i;
 
 	for (i = 0; i < ARRAY_SIZE(examples); i++) {

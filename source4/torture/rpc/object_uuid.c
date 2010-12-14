@@ -77,7 +77,7 @@ static bool test_random_uuid(struct torture_context *torture)
 struct torture_suite *torture_rpc_object_uuid(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *suite;
-	suite = torture_suite_create(mem_ctx, "OBJECTUUID");
+	suite = torture_suite_create(mem_ctx, "objectuuid");
 	torture_suite_add_simple_test(suite, "random-uuid", test_random_uuid);
 	return suite;
 }

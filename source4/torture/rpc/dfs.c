@@ -634,7 +634,7 @@ static bool test_FtRoot(struct torture_context *tctx,
 struct torture_suite *torture_rpc_dfs(TALLOC_CTX *mem_ctx)
 {
 	struct torture_rpc_tcase *tcase;
-	struct torture_suite *suite = torture_suite_create(mem_ctx, "DFS");
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "dfs");
 
 	tcase = torture_suite_add_rpc_iface_tcase(suite, "netdfs",
 						  &ndr_table_netdfs);

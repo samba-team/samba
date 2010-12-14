@@ -1330,16 +1330,16 @@ done:
 struct torture_suite *torture_smb2_dir_init(void)
 {
 	struct torture_suite *suite =
-	    torture_suite_create(talloc_autofree_context(), "DIR");
+	    torture_suite_create(talloc_autofree_context(), "dir");
 
-	torture_suite_add_1smb2_test(suite, "FIND", test_find);
-	torture_suite_add_1smb2_test(suite, "FIXED", test_fixed);
-	torture_suite_add_1smb2_test(suite, "ONE", test_one_file);
-	torture_suite_add_1smb2_test(suite, "MANY", test_many_files);
-	torture_suite_add_1smb2_test(suite, "MODIFY", test_modify_search);
-	torture_suite_add_1smb2_test(suite, "SORTED", test_sorted);
-	torture_suite_add_1smb2_test(suite, "FILE-INDEX", test_file_index);
-	torture_suite_add_1smb2_test(suite, "LARGE-FILES", test_large_files);
+	torture_suite_add_1smb2_test(suite, "find", test_find);
+	torture_suite_add_1smb2_test(suite, "fixed", test_fixed);
+	torture_suite_add_1smb2_test(suite, "one", test_one_file);
+	torture_suite_add_1smb2_test(suite, "many", test_many_files);
+	torture_suite_add_1smb2_test(suite, "modify", test_modify_search);
+	torture_suite_add_1smb2_test(suite, "sorted", test_sorted);
+	torture_suite_add_1smb2_test(suite, "file-index", test_file_index);
+	torture_suite_add_1smb2_test(suite, "large-files", test_large_files);
 	suite->description = talloc_strdup(suite, "SMB2-DIR tests");
 
 	return suite;

@@ -1974,22 +1974,22 @@ done:
 */
 struct torture_suite *torture_smb2_notify_init(void)
 {
-	struct torture_suite *suite = torture_suite_create(talloc_autofree_context(), "NOTIFY");
+	struct torture_suite *suite = torture_suite_create(talloc_autofree_context(), "notify");
 
-	torture_suite_add_1smb2_test(suite, "VALID-REQ", test_valid_request);
-	torture_suite_add_1smb2_test(suite, "TCON", torture_smb2_notify_tcon);
-	torture_suite_add_2smb2_test(suite, "DIR", torture_smb2_notify_dir);
-	torture_suite_add_2smb2_test(suite, "MASK", torture_smb2_notify_mask);
-	torture_suite_add_1smb2_test(suite, "TDIS", torture_smb2_notify_tree_disconnect);
-	torture_suite_add_2smb2_test(suite, "MASK-CHANGE", torture_smb2_notify_mask_change);
-	torture_suite_add_2smb2_test(suite, "LOGOFF", torture_smb2_notify_ulogoff);
-	torture_suite_add_1smb2_test(suite, "TREE", torture_smb2_notify_tree);
-	torture_suite_add_2smb2_test(suite, "BASEDIR", torture_smb2_notify_basedir);
-	torture_suite_add_2smb2_test(suite, "DOUBLE", torture_smb2_notify_double);
-	torture_suite_add_1smb2_test(suite, "FILE", torture_smb2_notify_file);
-	torture_suite_add_1smb2_test(suite, "TCP", torture_smb2_notify_tcp_disconnect);
-	torture_suite_add_2smb2_test(suite, "REC", torture_smb2_notify_recursive);
-	torture_suite_add_1smb2_test(suite, "OVERFLOW", torture_smb2_notify_overflow);
+	torture_suite_add_1smb2_test(suite, "valid-req", test_valid_request);
+	torture_suite_add_1smb2_test(suite, "tcon", torture_smb2_notify_tcon);
+	torture_suite_add_2smb2_test(suite, "dir", torture_smb2_notify_dir);
+	torture_suite_add_2smb2_test(suite, "mask", torture_smb2_notify_mask);
+	torture_suite_add_1smb2_test(suite, "tdis", torture_smb2_notify_tree_disconnect);
+	torture_suite_add_2smb2_test(suite, "mask-change", torture_smb2_notify_mask_change);
+	torture_suite_add_2smb2_test(suite, "logoff", torture_smb2_notify_ulogoff);
+	torture_suite_add_1smb2_test(suite, "tree", torture_smb2_notify_tree);
+	torture_suite_add_2smb2_test(suite, "basedir", torture_smb2_notify_basedir);
+	torture_suite_add_2smb2_test(suite, "double", torture_smb2_notify_double);
+	torture_suite_add_1smb2_test(suite, "file", torture_smb2_notify_file);
+	torture_suite_add_1smb2_test(suite, "tcp", torture_smb2_notify_tcp_disconnect);
+	torture_suite_add_2smb2_test(suite, "rec", torture_smb2_notify_recursive);
+	torture_suite_add_1smb2_test(suite, "overflow", torture_smb2_notify_overflow);
 
 	suite->description = talloc_strdup(suite, "SMB2-NOTIFY tests");
 

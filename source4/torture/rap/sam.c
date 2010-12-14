@@ -238,7 +238,7 @@ static bool test_usergetinfo(struct torture_context *tctx,
 
 struct torture_suite *torture_rap_sam(TALLOC_CTX *mem_ctx)
 {
-	struct torture_suite *suite = torture_suite_create(mem_ctx, "SAM");
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "sam");
 
 	torture_suite_add_1smb_test(suite, "userpasswordset2", test_userpasswordset2);
 	torture_suite_add_1smb_test(suite, "oemchangepassword", test_oemchangepassword);

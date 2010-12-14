@@ -68,12 +68,12 @@ NTSTATUS torture_drs_init(void)
 	TALLOC_CTX *mem_ctx = talloc_autofree_context();
 
 	/* register RPC related test cases */
-	suite = torture_drs_rpc_suite(mem_ctx, "DRS-RPC");
+	suite = torture_drs_rpc_suite(mem_ctx, "drs.rpc");
 	if (!suite) return NT_STATUS_NO_MEMORY;
 	torture_register_suite(suite);
 
 	/* register DRS Unit test cases */
-	suite = torture_drs_unit_suite(mem_ctx, "DRS-UNIT");
+	suite = torture_drs_unit_suite(mem_ctx, "drs.unit");
 	if (!suite) return NT_STATUS_NO_MEMORY;
 	torture_register_suite(suite);
 

@@ -246,7 +246,7 @@ static bool test_count_chars_m(struct torture_context *tctx)
 
 struct torture_suite *torture_local_charset(TALLOC_CTX *mem_ctx)
 {
-	struct torture_suite *suite = torture_suite_create(mem_ctx, "CHARSET");
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "charset");
 
 	torture_suite_add_simple_test(suite, "toupper_m", test_toupper_m);
 	torture_suite_add_simple_test(suite, "tolower_m", test_tolower_m);

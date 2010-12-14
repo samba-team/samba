@@ -221,8 +221,7 @@ static bool test_ServerAlive2(struct torture_context *tctx,
 
 struct torture_suite *torture_rpc_oxidresolve(TALLOC_CTX *mem_ctx)
 {
-	struct torture_suite *suite = torture_suite_create(mem_ctx, 
-							   "OXIDRESOLVE");
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "oxidresolve");
 	struct torture_rpc_tcase *tcase;
 
 	tcase = torture_suite_add_rpc_iface_tcase(suite, "oxidresolver", 

@@ -827,7 +827,7 @@ struct torture_suite *torture_rpc_lsa_forest_trust(TALLOC_CTX *mem_ctx)
 	struct torture_suite *suite;
 	struct torture_rpc_tcase *tcase;
 
-	suite = torture_suite_create(mem_ctx, "LSA-FOREST-TRUST");
+	suite = torture_suite_create(mem_ctx, "lsa.forest.trust");
 
 	tcase = torture_suite_add_rpc_iface_tcase(suite, "lsa-forest-trust",
 						  &ndr_table_lsarpc);

@@ -21,49 +21,49 @@ incdir=`dirname $0`
 . $incdir/test_functions.sh
 }
 
-base="BASE-ATTR BASE-CHARSET BASE-CHKPATH BASE-DEFER_OPEN BASE-DELAYWRITE BASE-DELETE"
-base="$base BASE-DENY1 BASE-DENY2 BASE-DENY3 BASE-DENYDOS BASE-DIR1 BASE-DIR2"
-base="$base BASE-DISCONNECT BASE-FDPASS BASE-LOCK"
-base="$base BASE-MANGLE BASE-NEGNOWAIT BASE-NTDENY1"
-base="$base BASE-NTDENY2 BASE-OPEN BASE-OPENATTR BASE-PROPERTIES BASE-RENAME BASE-RW1"
-base="$base BASE-SECLEAK BASE-TCON BASE-TCONDEV BASE-TRANS2 BASE-UNLINK BASE-VUID"
-base="$base BASE-XCOPY BASE-SAMBA3ERROR"
+base="base.attr base.charset base.chkpath base.defer_open base.delaywrite base.delete"
+base="$base base.deny1 base.deny2 base.deny3 base.denydos base.dir1 base.dir2"
+base="$base base.disconnect base.fdpass base.lock"
+base="$base base.mangle base.negnowait base.ntdeny1"
+base="$base base.ntdeny2 base.open base.openattr base.properties base.rename base.rw1"
+base="$base base.secleak base.tcon base.tcondev base.trans2 base.unlink base.vuid"
+base="$base base.xcopy base.samba3error"
 
-raw="RAW-ACLS RAW-CHKPATH RAW-CLOSE RAW-COMPOSITE RAW-CONTEXT RAW-EAS"
-raw="$raw RAW-IOCTL RAW-LOCK RAW-MKDIR RAW-MUX RAW-NOTIFY RAW-OPEN RAW-OPLOCK"
-raw="$raw RAW-QFILEINFO RAW-QFSINFO RAW-READ RAW-RENAME RAW-SEARCH RAW-SEEK"
-raw="$raw RAW-SFILEINFO-BASE RAW-SFILEINFO-BUG RAW-STREAMS RAW-UNLINK RAW-WRITE"
-raw="$raw RAW-SAMBA3HIDE RAW-SAMBA3BADPATH RAW-SFILEINFO-RENAME"
-raw="$raw RAW-SAMBA3CASEINSENSITIVE RAW-SAMBA3POSIXTIMEDLOCK"
-raw="$raw RAW-SAMBA3ROOTDIRFID RAW-SFILEINFO-END-OF-FILE"
+raw="raw.acls raw.chkpath raw.close raw.composite raw.context raw.eas"
+raw="$raw raw.ioctl raw.lock raw.mkdir raw.mux raw.notify raw.open raw.oplock"
+raw="$raw raw.qfileinfo raw.qfsinfo raw.read raw.rename raw.search raw.seek"
+raw="$raw raw.sfileinfo.base raw.sfileinfo.bug raw.streams raw.unlink raw.write"
+raw="$raw raw.samba3hide raw.samba3badpath raw.sfileinfo.rename"
+raw="$raw raw.samba3caseinsensitive raw.samba3posixtimedlock"
+raw="$raw raw.samba3rootdirfid raw.sfileinfo.end.of.file"
 
-smb2="SMB2-LOCK SMB2-READ SMB2-COMPOUND SMB2-CONNECT SMB2-SCAN SMB2-SCANFIND"
-smb2="$smb2 SMB2-BENCH-OPLOCK"
+smb2="smb2.lock smb2.read smb2.compound smb2.connect smb2.scan smb2.scanfind"
+smb2="$smb2 smb2.bench.oplock"
 
-rpc="RPC-AUTHCONTEXT RPC-SAMBA3-BIND RPC-SAMBA3-SRVSVC RPC-SAMBA3-SHARESEC"
-rpc="$rpc RPC-SAMBA3-SPOOLSS RPC-SAMBA3-WKSSVC RPC-SAMBA3-WINREG"
-rpc="$rpc RPC-SAMBA3-GETALIASMEMBERSHIP-0"
-rpc="$rpc RPC-SAMBA3-NETLOGON RPC-SAMBA3-SESSIONKEY RPC-SAMBA3-GETUSERNAME"
-rpc="$rpc RPC-SVCCTL RPC-NTSVCS RPC-WINREG RPC-EVENTLOG"
-rpc="$rpc RPC-SPOOLSS-PRINTSERVER RPC-SPOOLSS-WIN RPC-SPOOLSS-NOTIFY RPC-SPOOLSS-PRINTER"
-rpc="$rpc RPC-SPOOLSS-DRIVER"
-rpc="$rpc RPC-LSA-GETUSER RPC-LSA-LOOKUPSIDS RPC-LSA-LOOKUPNAMES"
-rpc="$rpc RPC-LSA-PRIVILEGES "
-rpc="$rpc RPC-SAMR RPC-SAMR-USERS RPC-SAMR-USERS-PRIVILEGES RPC-SAMR-PASSWORDS"
-rpc="$rpc RPC-SAMR-PASSWORDS-PWDLASTSET RPC-SAMR-LARGE-DC RPC-SAMR-MACHINE-AUTH"
-rpc="$rpc RPC-NETLOGON-S3 RPC-NETLOGON-ADMIN"
-rpc="$rpc RPC-SCHANNEL RPC-SCHANNEL2 RPC-BENCH-SCHANNEL1 RPC-JOIN RPC-BIND"
+rpc="rpc.authcontext rpc.samba3.bind rpc.samba3.srvsvc rpc.samba3.sharesec"
+rpc="$rpc rpc.samba3.spoolss rpc.samba3.wkssvc rpc.samba3.winreg"
+rpc="$rpc rpc.samba3.getaliasmembership.0"
+rpc="$rpc rpc.samba3.netlogon rpc.samba3.sessionkey rpc.samba3.getusername"
+rpc="$rpc rpc.svcctl rpc.ntsvcs rpc.winreg rpc.eventlog"
+rpc="$rpc rpc.spoolss.printserver rpc.spoolss.win rpc.spoolss.notify rpc.spoolss.printer"
+rpc="$rpc rpc.spoolss.driver"
+rpc="$rpc rpc.lsa.getuser rpc.lsa.lookupsids rpc.lsa.lookupnames"
+rpc="$rpc rpc.lsa.privileges "
+rpc="$rpc rpc.samr rpc.samr.users rpc.samr.users.privileges rpc.samr.passwords"
+rpc="$rpc rpc.samr.passwords.pwdlastset rpc.samr.large.dc rpc.samr.machine.auth"
+rpc="$rpc rpc.netlogon.s3 rpc.netlogon.admin"
+rpc="$rpc rpc.schannel rpc.schannel2 rpc.bench.schannel1 rpc.join rpc.bind"
 
-local="LOCAL-NSS-WRAPPER LOCAL-NDR"
+local="local.nss.wrapper local.ndr"
 
-winbind="WINBIND-STRUCT WINBIND-WBCLIENT"
+winbind="winbind.struct winbind.wbclient"
 
-rap="RAP-BASIC RAP-RPC RAP-PRINTING RAP-SAM"
+rap="rap.basic rap.rpc rap.printing rap.sam"
 
-# NOTE: to enable the UNIX-WHOAMI test, we need to change the default share
-# config to allow guest access. I'm not sure whether this would break other
+# note: to enable the unix-whoami test, we need to change the default share
+# config to allow guest access. i'm not sure whether this would break other
 # tests, so leaving it alone for now -- jpeach
-unix="UNIX-INFO2"
+unix="unix.info2"
 
 tests="$base $raw $smb2 $rpc $unix $local $winbind $rap"
 
@@ -71,11 +71,11 @@ if test "x$POSIX_SUBTESTS" != "x" ; then
 	tests="$POSIX_SUBTESTS"
 fi
 
-skipped="BASE-CHARSET BASE-TCONDEV"
-skipped="$skipped RAW-ACLS RAW-COMPOSITE RAW-CONTEXT"
-skipped="$skipped RAW-IOCTL"
-skipped="$skipped RAW-QFILEINFO RAW-QFSINFO"
-skipped="$skipped RAW-SFILEINFO-BASE"
+skipped="base.charset base.tcondev"
+skipped="$skipped raw.acls raw.composite raw.context"
+skipped="$skipped raw.ioctl"
+skipped="$skipped raw.qfileinfo raw.qfsinfo"
+skipped="$skipped raw.sfileinfo.base"
 
 echo "WARNING: Skipping tests $skipped"
 
@@ -99,12 +99,12 @@ for t in $tests; do
     fi
     start=""
     name="$t"
-    if [ "$t" = "BASE-DELAYWRITE" ]; then
+    if [ "$t" = "base.delaywrite" ]; then
 	    testit "$name" $VALGRIND $SMBTORTURE4 $TORTURE4_OPTIONS --maximum-runtime=900 $ADDARGS $unc -U"$username"%"$password" $t || failed=`expr $failed + 1`
     else
 	    testit "$name" $VALGRIND $SMBTORTURE4 $TORTURE4_OPTIONS $ADDARGS $unc -U"$username"%"$password" $t || failed=`expr $failed + 1`
     fi
-    if [ "$t" = "RAW-CHKPATH" ]; then
+    if [ "$t" = "raw.chkpath" ]; then
 	    echo "Testing with case sensitive"
 	    testit "$name" $VALGRIND $SMBTORTURE4 $TORTURE4_OPTIONS $ADDARGS "$unc"case -U"$username"%"$password" $t || failed=`expr $failed + 1`
     fi

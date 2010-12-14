@@ -1384,18 +1384,18 @@ done:
 */
 struct torture_suite *torture_smb2_create_init(void)
 {
-	struct torture_suite *suite = torture_suite_create(talloc_autofree_context(), "CREATE");
+	struct torture_suite *suite = torture_suite_create(talloc_autofree_context(), "create");
 
-	torture_suite_add_1smb2_test(suite, "GENTEST", test_create_gentest);
-	torture_suite_add_1smb2_test(suite, "BLOB", test_create_blob);
-	torture_suite_add_1smb2_test(suite, "OPEN", test_smb2_open);
-	torture_suite_add_1smb2_test(suite, "BRLOCKED", test_smb2_open_brlocked);
-	torture_suite_add_1smb2_test(suite, "MULTI", test_smb2_open_multi);
-	torture_suite_add_1smb2_test(suite, "DELETE", test_smb2_open_for_delete);
-	torture_suite_add_1smb2_test(suite, "LEADING-SLASH", test_smb2_leading_slash);
-	torture_suite_add_1smb2_test(suite, "ACLFILE", test_create_acl_file);
-	torture_suite_add_1smb2_test(suite, "ACLDIR", test_create_acl_dir);
-	torture_suite_add_1smb2_test(suite, "NULLDACL", test_create_null_dacl);
+	torture_suite_add_1smb2_test(suite, "gentest", test_create_gentest);
+	torture_suite_add_1smb2_test(suite, "blob", test_create_blob);
+	torture_suite_add_1smb2_test(suite, "open", test_smb2_open);
+	torture_suite_add_1smb2_test(suite, "brlocked", test_smb2_open_brlocked);
+	torture_suite_add_1smb2_test(suite, "multi", test_smb2_open_multi);
+	torture_suite_add_1smb2_test(suite, "delete", test_smb2_open_for_delete);
+	torture_suite_add_1smb2_test(suite, "leading-slash", test_smb2_leading_slash);
+	torture_suite_add_1smb2_test(suite, "aclfile", test_create_acl_file);
+	torture_suite_add_1smb2_test(suite, "acldir", test_create_acl_dir);
+	torture_suite_add_1smb2_test(suite, "nulldacl", test_create_null_dacl);
 
 	suite->description = talloc_strdup(suite, "SMB2-CREATE tests");
 

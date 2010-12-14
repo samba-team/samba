@@ -125,14 +125,14 @@ struct torture_test *torture_suite_add_2smb2_test(struct torture_suite *suite,
 
 NTSTATUS torture_smb2_init(void)
 {
-	struct torture_suite *suite = torture_suite_create(talloc_autofree_context(), "SMB2");
-	torture_suite_add_simple_test(suite, "CONNECT", torture_smb2_connect);
-	torture_suite_add_simple_test(suite, "SCAN", torture_smb2_scan);
-	torture_suite_add_simple_test(suite, "SCANGETINFO", torture_smb2_getinfo_scan);
-	torture_suite_add_simple_test(suite, "SCANSETINFO", torture_smb2_setinfo_scan);
-	torture_suite_add_simple_test(suite, "SCANFIND", torture_smb2_find_scan);
-	torture_suite_add_simple_test(suite, "GETINFO", torture_smb2_getinfo);
-	torture_suite_add_simple_test(suite, "SETINFO", torture_smb2_setinfo);
+	struct torture_suite *suite = torture_suite_create(talloc_autofree_context(), "smb2");
+	torture_suite_add_simple_test(suite, "connect", torture_smb2_connect);
+	torture_suite_add_simple_test(suite, "scan", torture_smb2_scan);
+	torture_suite_add_simple_test(suite, "scangetinfo", torture_smb2_getinfo_scan);
+	torture_suite_add_simple_test(suite, "scansetinfo", torture_smb2_setinfo_scan);
+	torture_suite_add_simple_test(suite, "scanfind", torture_smb2_find_scan);
+	torture_suite_add_simple_test(suite, "getinfo", torture_smb2_getinfo);
+	torture_suite_add_simple_test(suite, "setinfo", torture_smb2_setinfo);
 	torture_suite_add_suite(suite, torture_smb2_lock_init());
 	torture_suite_add_suite(suite, torture_smb2_read_init());
 	torture_suite_add_suite(suite, torture_smb2_create_init());
@@ -144,8 +144,8 @@ NTSTATUS torture_smb2_init(void)
 	torture_suite_add_suite(suite, torture_smb2_compound_init());
 	torture_suite_add_suite(suite, torture_smb2_oplocks_init());
 	torture_suite_add_suite(suite, torture_smb2_streams_init());
-	torture_suite_add_1smb2_test(suite, "BENCH-OPLOCK", test_smb2_bench_oplock);
-	torture_suite_add_1smb2_test(suite, "HOLD-OPLOCK", test_smb2_hold_oplock);
+	torture_suite_add_1smb2_test(suite, "bench-oplock", test_smb2_bench_oplock);
+	torture_suite_add_1smb2_test(suite, "hold-oplock", test_smb2_hold_oplock);
 
 	suite->description = talloc_strdup(suite, "SMB2-specific tests");
 

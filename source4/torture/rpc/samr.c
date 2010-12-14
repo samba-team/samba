@@ -8065,7 +8065,7 @@ static bool torture_rpc_samr_pwdlastset(struct torture_context *torture,
 
 struct torture_suite *torture_rpc_samr_passwords_pwdlastset(TALLOC_CTX *mem_ctx)
 {
-	struct torture_suite *suite = torture_suite_create(mem_ctx, "SAMR-PASSWORDS-PWDLASTSET");
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "samr.passwords.pwdlastset");
 	struct torture_rpc_tcase *tcase;
 
 	tcase = torture_suite_add_machine_bdc_rpc_iface_tcase(suite, "samr",
@@ -8110,7 +8110,7 @@ static bool torture_rpc_samr_users_privileges_delete_user(struct torture_context
 
 struct torture_suite *torture_rpc_samr_user_privileges(TALLOC_CTX *mem_ctx)
 {
-	struct torture_suite *suite = torture_suite_create(mem_ctx, "SAMR-USERS-PRIVILEGES");
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "samr.users.privileges");
 	struct torture_rpc_tcase *tcase;
 
 	tcase = torture_suite_add_machine_bdc_rpc_iface_tcase(suite, "samr",
@@ -8215,7 +8215,7 @@ static bool torture_rpc_samr_many_aliases(struct torture_context *torture,
 
 struct torture_suite *torture_rpc_samr_large_dc(TALLOC_CTX *mem_ctx)
 {
-	struct torture_suite *suite = torture_suite_create(mem_ctx, "SAMR-LARGE-DC");
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "samr.large-dc");
 	struct torture_rpc_tcase *tcase;
 	struct torture_samr_context *ctx;
 
@@ -8266,7 +8266,7 @@ static bool torture_rpc_samr_badpwdcount(struct torture_context *torture,
 
 struct torture_suite *torture_rpc_samr_passwords_badpwdcount(TALLOC_CTX *mem_ctx)
 {
-	struct torture_suite *suite = torture_suite_create(mem_ctx, "SAMR-PASSWORDS-BADPWDCOUNT");
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "samr.passwords.badpwdcount");
 	struct torture_rpc_tcase *tcase;
 
 	tcase = torture_suite_add_machine_bdc_rpc_iface_tcase(suite, "samr",
@@ -8311,7 +8311,7 @@ static bool torture_rpc_samr_lockout(struct torture_context *torture,
 
 struct torture_suite *torture_rpc_samr_passwords_lockout(TALLOC_CTX *mem_ctx)
 {
-	struct torture_suite *suite = torture_suite_create(mem_ctx, "SAMR-PASSWORDS-LOCKOUT");
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "samr.passwords.lockout");
 	struct torture_rpc_tcase *tcase;
 
 	tcase = torture_suite_add_machine_bdc_rpc_iface_tcase(suite, "samr",

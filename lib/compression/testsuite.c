@@ -69,7 +69,7 @@ static bool test_lzxpress(struct torture_context *test)
 
 struct torture_suite *torture_local_compression(TALLOC_CTX *mem_ctx)
 {
-	struct torture_suite *suite = torture_suite_create(mem_ctx, "COMPRESSION");
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "compression");
 
 	torture_suite_add_simple_test(suite, "lzxpress", test_lzxpress);
 

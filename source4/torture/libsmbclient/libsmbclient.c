@@ -205,13 +205,13 @@ NTSTATUS torture_libsmbclient_init(void)
 {
 	struct torture_suite *suite;
 
-	suite = torture_suite_create(talloc_autofree_context(), "LIBSMBCLIENT");
+	suite = torture_suite_create(talloc_autofree_context(), "libsmbclient");
 
-	torture_suite_add_simple_test(suite, "VERSION", torture_libsmbclient_version);
-	torture_suite_add_simple_test(suite, "INITIALIZE", torture_libsmbclient_initialize);
-	torture_suite_add_simple_test(suite, "CONFIGURATION", torture_libsmbclient_configuration);
-	torture_suite_add_simple_test(suite, "OPTIONS", torture_libsmbclient_options);
-	torture_suite_add_simple_test(suite, "OPENDIR", torture_libsmbclient_opendir);
+	torture_suite_add_simple_test(suite, "version", torture_libsmbclient_version);
+	torture_suite_add_simple_test(suite, "initialize", torture_libsmbclient_initialize);
+	torture_suite_add_simple_test(suite, "configuration", torture_libsmbclient_configuration);
+	torture_suite_add_simple_test(suite, "options", torture_libsmbclient_options);
+	torture_suite_add_simple_test(suite, "opendir", torture_libsmbclient_opendir);
 
 	suite->description = talloc_strdup(suite, "libsmbclient interface tests");
 

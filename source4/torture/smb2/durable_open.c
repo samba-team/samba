@@ -586,14 +586,14 @@ bool test_durable_open_open(struct torture_context *tctx,
 struct torture_suite *torture_smb2_durable_open_init(void)
 {
 	struct torture_suite *suite =
-	    torture_suite_create(talloc_autofree_context(), "DURABLE-OPEN");
+	    torture_suite_create(talloc_autofree_context(), "durable-open");
 
-	torture_suite_add_2smb2_test(suite, "FILE-POSITION",
+	torture_suite_add_2smb2_test(suite, "file-position",
 	    test_durable_open_file_position);
-	torture_suite_add_2smb2_test(suite, "OPLOCK", test_durable_open_oplock);
-	torture_suite_add_2smb2_test(suite, "LEASE", test_durable_open_lease);
-	torture_suite_add_1smb2_test(suite, "LOCK", test_durable_open_lock);
-	torture_suite_add_2smb2_test(suite, "OPEN", test_durable_open_open);
+	torture_suite_add_2smb2_test(suite, "oplock", test_durable_open_oplock);
+	torture_suite_add_2smb2_test(suite, "lease", test_durable_open_lease);
+	torture_suite_add_1smb2_test(suite, "lock", test_durable_open_lock);
+	torture_suite_add_2smb2_test(suite, "open", test_durable_open_open);
 
 	suite->description = talloc_strdup(suite, "SMB2-DURABLE-OPEN tests");
 

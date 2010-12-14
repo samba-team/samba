@@ -3470,7 +3470,7 @@ static bool test_SetPassword_with_flags(struct torture_context *tctx,
 
 struct torture_suite *torture_rpc_netlogon(TALLOC_CTX *mem_ctx)
 {
-	struct torture_suite *suite = torture_suite_create(mem_ctx, "NETLOGON");
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "netlogon");
 	struct torture_rpc_tcase *tcase;
 	struct torture_test *test;
 
@@ -3513,7 +3513,7 @@ struct torture_suite *torture_rpc_netlogon(TALLOC_CTX *mem_ctx)
 
 struct torture_suite *torture_rpc_netlogon_s3(TALLOC_CTX *mem_ctx)
 {
-	struct torture_suite *suite = torture_suite_create(mem_ctx, "NETLOGON-S3");
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "netlogon-s3");
 	struct torture_rpc_tcase *tcase;
 
 	tcase = torture_suite_add_machine_bdc_rpc_iface_tcase(suite, "netlogon",
@@ -3531,7 +3531,7 @@ struct torture_suite *torture_rpc_netlogon_s3(TALLOC_CTX *mem_ctx)
 
 struct torture_suite *torture_rpc_netlogon_admin(TALLOC_CTX *mem_ctx)
 {
-	struct torture_suite *suite = torture_suite_create(mem_ctx, "NETLOGON-ADMIN");
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "netlogon.admin");
 	struct torture_rpc_tcase *tcase;
 
 	tcase = torture_suite_add_machine_bdc_rpc_iface_tcase(suite, "netlogon",

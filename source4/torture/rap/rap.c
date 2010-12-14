@@ -1550,8 +1550,8 @@ bool torture_rap_scan(struct torture_context *torture, struct smbcli_state *cli)
 
 NTSTATUS torture_rap_init(void)
 {
-	struct torture_suite *suite = torture_suite_create(talloc_autofree_context(), "RAP");
-	struct torture_suite *suite_basic = torture_suite_create(suite, "BASIC");
+	struct torture_suite *suite = torture_suite_create(talloc_autofree_context(), "rap");
+	struct torture_suite *suite_basic = torture_suite_create(suite, "basic");
 
 	torture_suite_add_suite(suite, suite_basic);
 	torture_suite_add_suite(suite, torture_rap_rpc(suite));
@@ -1565,7 +1565,7 @@ NTSTATUS torture_rap_init(void)
 	torture_suite_add_1smb_test(suite_basic, "netservergetinfo",
 				    test_netservergetinfo);
 
-	torture_suite_add_1smb_test(suite, "SCAN", torture_rap_scan);
+	torture_suite_add_1smb_test(suite, "scan", torture_rap_scan);
 
 	suite->description = talloc_strdup(suite, 
 						"Remote Administration Protocol tests");

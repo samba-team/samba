@@ -111,7 +111,7 @@ static NTSTATUS smbd_initialize_smb2(struct smbd_server_connection *sconn)
 	sconn->smb2.sessions.limit = 0x0000FFFE;
 	sconn->smb2.sessions.list = NULL;
 	sconn->smb2.seqnum_low = 0;
-	sconn->smb2.credits_granted = 1;
+	sconn->smb2.credits_granted = 0;
 	sconn->smb2.max_credits = lp_smb2_max_credits();
 	sconn->smb2.credits_bitmap = bitmap_talloc(sconn, 2*sconn->smb2.max_credits);
 	if (sconn->smb2.credits_bitmap == NULL) {
@@ -453,7 +453,8 @@ static void smb2_set_operation_credit(struct smbd_server_connection *sconn,
 		sconn->smb2.credits_granted));
 
 	if (credits_granted == 0 && sconn->smb2.credits_granted == 0) {
-		/* Ensure the client credits can never drop to zero. */
+		/* First negprot packet, or ensure the client credits can
+		   never drop to zero. */
 		credits_granted = 1;
 	}
 
@@ -481,7 +482,7 @@ static void smb2_calculate_credits(const struct smbd_smb2_request *inreq,
 	}
 }
 
-static NTSTATUS smbd_smb2_request_setup_out(struct smbd_smb2_request *req, uint16_t creds)
+static NTSTATUS smbd_smb2_request_setup_out(struct smbd_smb2_request *req)
 {
 	struct iovec *vector;
 	int count;
@@ -901,9 +902,11 @@ NTSTATUS smbd_smb2_request_pending_queue(struct smbd_smb2_request *req,
 	/* Match W2K8R2... */
 	SCVAL(body, 0x08, 0x21);
 
-	/* Ensure we correctly go through crediting. */
+	/* Ensure we correctly go through crediting. Grant
+	   the credits now, and zero credits on the final
+	   response. */
 	smb2_set_operation_credit(req->sconn,
-			NULL,
+			&req->in.vector[i],
 			&state->vector[1]);
 
 	if (req->do_signing) {
@@ -1442,9 +1445,10 @@ static NTSTATUS smbd_smb2_request_reply(struct smbd_smb2_request *req)
 
 	smb2_setup_nbt_length(req->out.vector, req->out.vector_count);
 
-	/* Set credit for this operation. */
+	/* Set credit for this operation (zero credits if this
+	   is a final reply for an async operation). */
 	smb2_set_operation_credit(req->sconn,
-			&req->in.vector[i],
+			req->async ? NULL : &req->in.vector[i],
 			&req->out.vector[i]);
 
 	if (req->do_signing) {
@@ -2178,7 +2182,7 @@ void smbd_smb2_first_negprot(struct smbd_server_connection *sconn,
 		return;
 	}
 
-	status = smbd_smb2_request_setup_out(req, 1);
+	status = smbd_smb2_request_setup_out(req);
 	if (!NT_STATUS_IS_OK(status)) {
 		smbd_server_connection_terminate(sconn, nt_errstr(status));
 		return;
@@ -2233,7 +2237,7 @@ static void smbd_smb2_request_incoming(struct tevent_req *subreq)
 		return;
 	}
 
-	status = smbd_smb2_request_setup_out(req, 5);
+	status = smbd_smb2_request_setup_out(req);
 	if (!NT_STATUS_IS_OK(status)) {
 		smbd_server_connection_terminate(sconn, nt_errstr(status));
 		return;

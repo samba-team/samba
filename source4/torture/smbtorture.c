@@ -54,7 +54,7 @@ static bool run_matching(struct torture_context *torture,
 		if (prefix == NULL)
 			name = talloc_strdup(torture, o->name);
 		else
-			name = talloc_asprintf(torture, "%s-%s", prefix, o->name);
+			name = talloc_asprintf(torture, "%s.%s", prefix, o->name);
 		if (gen_fnmatch(expr, name) == 0) {
 			*matched = true;
 			reload_charcnv(torture->lp_ctx);
@@ -67,14 +67,14 @@ static bool run_matching(struct torture_context *torture,
 	}
 
 	for (t = suite->testcases; t; t = t->next) {
-		char *name = talloc_asprintf(torture, "%s-%s", prefix, t->name);
+		char *name = talloc_asprintf(torture, "%s.%s", prefix, t->name);
 		if (gen_fnmatch(expr, name) == 0) {
 			*matched = true;
 			reload_charcnv(torture->lp_ctx);
 			ret &= torture_run_tcase_restricted(torture, t, restricted);
 		}
 		for (p = t->tests; p; p = p->next) {
-			name = talloc_asprintf(torture, "%s-%s-%s", prefix, t->name, p->name);
+			name = talloc_asprintf(torture, "%s.%s.%s", prefix, t->name, p->name);
 			if (gen_fnmatch(expr, name) == 0) {
 				*matched = true;
 				reload_charcnv(torture->lp_ctx);
@@ -211,7 +211,7 @@ static void print_structured_test_list(void)
 				printf("\n  ");
 				i = 0;
 			}
-			i+=printf("%s-%s ", o->name, s->name);
+			i+=printf("%s.%s ", o->name, s->name);
 		}
 
 		for (t = o->testcases; t; t = t->next) {
@@ -219,7 +219,7 @@ static void print_structured_test_list(void)
 				printf("\n  ");
 				i = 0;
 			}
-			i+=printf("%s-%s ", o->name, t->name);
+			i+=printf("%s.%s ", o->name, t->name);
 		}
 
 		if (i) printf("\n");
@@ -239,11 +239,11 @@ static void print_test_list(void)
 
 	for (o = torture_root->children; o; o = o->next) {
 		for (s = o->children; s; s = s->next) {
-			printf("%s-%s\n", o->name, s->name);
+			printf("%s.%s\n", o->name, s->name);
 		}
 
 		for (t = o->testcases; t; t = t->next) {
-			printf("%s-%s\n", o->name, t->name);
+			printf("%s.%s\n", o->name, t->name);
 		}
 	}
 }

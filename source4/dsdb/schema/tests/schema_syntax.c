@@ -238,7 +238,7 @@ struct torture_suite *torture_dsdb_syntax(TALLOC_CTX *mem_ctx)
 	typedef bool (*pfn_run)(struct torture_context *, void *);
 
 	struct torture_tcase *tc;
-	struct torture_suite *suite = torture_suite_create(mem_ctx, "DSDB-SYNTAX");
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "dsdb.syntax");
 
 	if (suite == NULL) {
 		return NULL;

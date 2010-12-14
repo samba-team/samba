@@ -454,13 +454,13 @@ _PUBLIC_ struct torture_test *torture_rpc_tcase_add_test_ex(
 
 NTSTATUS torture_rpc_init(void)
 {
-	struct torture_suite *suite = torture_suite_create(talloc_autofree_context(), "RPC");
+	struct torture_suite *suite = torture_suite_create(talloc_autofree_context(), "rpc");
 
 	ndr_table_init();
 
-	torture_suite_add_simple_test(suite, "LSA", torture_rpc_lsa);
-	torture_suite_add_simple_test(suite, "LSALOOKUP", torture_rpc_lsa_lookup);
-	torture_suite_add_simple_test(suite, "LSA-GETUSER", torture_rpc_lsa_get_user);
+	torture_suite_add_simple_test(suite, "lsa", torture_rpc_lsa);
+	torture_suite_add_simple_test(suite, "lsalookup", torture_rpc_lsa_lookup);
+	torture_suite_add_simple_test(suite, "lsa-getuser", torture_rpc_lsa_get_user);
 	torture_suite_add_suite(suite, torture_rpc_lsa_lookup_sids(suite));
 	torture_suite_add_suite(suite, torture_rpc_lsa_lookup_names(suite));
 	torture_suite_add_suite(suite, torture_rpc_lsa_secrets(suite));
@@ -482,18 +482,18 @@ NTSTATUS torture_rpc_init(void)
 	torture_suite_add_suite(suite, torture_rpc_spoolss_win(suite));
 	torture_suite_add_suite(suite, torture_rpc_spoolss_driver(suite));
 	torture_suite_add_suite(suite, torture_rpc_spoolss_access(suite));
-	torture_suite_add_simple_test(suite, "SAMR", torture_rpc_samr);
-	torture_suite_add_simple_test(suite, "SAMR-USERS", torture_rpc_samr_users);
-	torture_suite_add_simple_test(suite, "SAMR-PASSWORDS", torture_rpc_samr_passwords);
+	torture_suite_add_simple_test(suite, "samr", torture_rpc_samr);
+	torture_suite_add_simple_test(suite, "samr.users", torture_rpc_samr_users);
+	torture_suite_add_simple_test(suite, "samr.passwords", torture_rpc_samr_passwords);
 	torture_suite_add_suite(suite, torture_rpc_netlogon(suite));
 	torture_suite_add_suite(suite, torture_rpc_netlogon_s3(suite));
 	torture_suite_add_suite(suite, torture_rpc_netlogon_admin(suite));
 	torture_suite_add_suite(suite, torture_rpc_remote_pac(suite));
-	torture_suite_add_simple_test(suite, "SAMLOGON", torture_rpc_samlogon);
-	torture_suite_add_simple_test(suite, "SAMSYNC", torture_rpc_samsync);
-	torture_suite_add_simple_test(suite, "SCHANNEL", torture_rpc_schannel);
-	torture_suite_add_simple_test(suite, "SCHANNEL2", torture_rpc_schannel2);
-	torture_suite_add_simple_test(suite, "BENCH-SCHANNEL1", torture_rpc_schannel_bench1);
+	torture_suite_add_simple_test(suite, "samlogon", torture_rpc_samlogon);
+	torture_suite_add_simple_test(suite, "samsync", torture_rpc_samsync);
+	torture_suite_add_simple_test(suite, "schannel", torture_rpc_schannel);
+	torture_suite_add_simple_test(suite, "schannel2", torture_rpc_schannel2);
+	torture_suite_add_simple_test(suite, "bench-schannel1", torture_rpc_schannel_bench1);
 	torture_suite_add_suite(suite, torture_rpc_srvsvc(suite));
 	torture_suite_add_suite(suite, torture_rpc_svcctl(suite));
 	torture_suite_add_suite(suite, torture_rpc_samr_accessmask(suite));
@@ -507,22 +507,22 @@ NTSTATUS torture_rpc_init(void)
 	torture_suite_add_suite(suite, torture_rpc_initshutdown(suite));
 	torture_suite_add_suite(suite, torture_rpc_oxidresolve(suite));
 	torture_suite_add_suite(suite, torture_rpc_remact(suite));
-	torture_suite_add_simple_test(suite, "MGMT", torture_rpc_mgmt);
-	torture_suite_add_simple_test(suite, "SCANNER", torture_rpc_scanner);
-	torture_suite_add_simple_test(suite, "AUTOIDL", torture_rpc_autoidl);
-	torture_suite_add_simple_test(suite, "COUNTCALLS", torture_rpc_countcalls);
-	torture_suite_add_simple_test(suite, "MULTIBIND", torture_multi_bind);
-	torture_suite_add_simple_test(suite, "AUTHCONTEXT", torture_bind_authcontext);
+	torture_suite_add_simple_test(suite, "mgmt", torture_rpc_mgmt);
+	torture_suite_add_simple_test(suite, "scanner", torture_rpc_scanner);
+	torture_suite_add_simple_test(suite, "autoidl", torture_rpc_autoidl);
+	torture_suite_add_simple_test(suite, "countcalls", torture_rpc_countcalls);
+	torture_suite_add_simple_test(suite, "multibind", torture_multi_bind);
+	torture_suite_add_simple_test(suite, "authcontext", torture_bind_authcontext);
 	torture_suite_add_suite(suite, torture_rpc_samba3(suite));
 	torture_rpc_drsuapi_tcase(suite);
 	torture_rpc_drsuapi_cracknames_tcase(suite);
 	torture_suite_add_suite(suite, torture_rpc_dssetup(suite));
 	torture_suite_add_suite(suite, torture_rpc_browser(suite));
-	torture_suite_add_simple_test(suite, "ALTERCONTEXT", torture_rpc_alter_context);
-	torture_suite_add_simple_test(suite, "JOIN", torture_rpc_join);
+	torture_suite_add_simple_test(suite, "altercontext", torture_rpc_alter_context);
+	torture_suite_add_simple_test(suite, "join", torture_rpc_join);
 	torture_drs_rpc_dsgetinfo_tcase(suite);
-	torture_suite_add_simple_test(suite, "BENCH-RPC", torture_bench_rpc);
-	torture_suite_add_simple_test(suite, "ASYNCBIND", torture_async_bind);
+	torture_suite_add_simple_test(suite, "bench-rpc", torture_bench_rpc);
+	torture_suite_add_simple_test(suite, "asyncbind", torture_async_bind);
 	torture_suite_add_suite(suite, torture_rpc_ntsvcs(suite));
 	torture_suite_add_suite(suite, torture_rpc_bind(suite));
 

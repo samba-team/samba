@@ -147,7 +147,7 @@ static bool test_lp_service(struct torture_context *tctx)
 
 struct torture_suite *torture_local_loadparm(TALLOC_CTX *mem_ctx)
 {
-	struct torture_suite *suite = torture_suite_create(mem_ctx, "LOADPARM");
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "loadparm");
 
 	torture_suite_add_simple_test(suite, "create", test_create);
 	torture_suite_add_simple_test(suite, "set_option", test_set_option);

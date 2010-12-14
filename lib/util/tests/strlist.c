@@ -469,7 +469,7 @@ static bool test_list_append_const(struct torture_context *tctx)
 
 struct torture_suite *torture_local_util_strlist(TALLOC_CTX *mem_ctx)
 {
-	struct torture_suite *suite = torture_suite_create(mem_ctx, "STRLIST");
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "strlist");
 	int i;
 
 	for (i = 0; i < ARRAY_SIZE(test_lists_shell_strings); i++) {

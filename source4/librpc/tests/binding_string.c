@@ -162,7 +162,7 @@ static bool test_no_transport(struct torture_context *tctx)
 struct torture_suite *torture_local_binding_string(TALLOC_CTX *mem_ctx)
 {
 	int i;
-	struct torture_suite *suite = torture_suite_create(mem_ctx, "BINDING");
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "binding");
 
 	for (i = 0; i < ARRAY_SIZE(test_strings); i++) {
 		torture_suite_add_simple_tcase_const(suite, test_strings[i],

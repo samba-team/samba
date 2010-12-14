@@ -39,20 +39,13 @@ plantest() {
 	echo $cmdline "2>&1" "| ../selftest/filter-subunit --prefix \"$fullname.\""
 }
 
-normalize_testname() {
-	name=$1
-	shift 1
-	n=`echo $name | tr "A-Z-" "a-z."`
-	echo "$n $@"
-}
-
 TEST_FUNCTIONS_SH="INCLUDED"
 testit() {
 	name=$1
 	shift 1
 	cmdline="$*"
 
-	plantest "`normalize_testname $testitprefix$name`" $testitenv $cmdline
+	plantest "$testitprefix$name" $testitenv $cmdline
 	return
 }
 

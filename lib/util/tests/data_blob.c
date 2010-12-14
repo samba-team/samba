@@ -85,7 +85,7 @@ static bool test_hex_string(struct torture_context *tctx)
 
 struct torture_suite *torture_local_util_data_blob(TALLOC_CTX *mem_ctx)
 {
-	struct torture_suite *suite = torture_suite_create(mem_ctx, "DATABLOB");
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "datablob");
 
 	torture_suite_add_simple_test(suite, "string", test_string);
 	torture_suite_add_simple_test(suite, "string_null", test_string_null);

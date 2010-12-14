@@ -356,7 +356,7 @@ sub provision($$$$$$)
 
 	my $prefix_abs = abs_path($prefix);
 	my $bindir_abs = abs_path($self->{bindir});
-	my $vfs_modulesdir_abs = $bindir_abs;
+	my $vfs_modulesdir_abs = ($ENV{VFSLIBDIR} or $bindir_abs);
 
 	my @dirs = ();
 

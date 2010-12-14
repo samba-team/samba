@@ -271,7 +271,7 @@ static bool irpc_setup(struct torture_context *tctx, void **_data)
 
 struct torture_suite *torture_local_irpc(TALLOC_CTX *mem_ctx)
 {
-	struct torture_suite *suite = torture_suite_create(mem_ctx, "IRPC");
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "irpc");
 	struct torture_tcase *tcase = torture_suite_add_tcase(suite, "irpc");
 	int i;
 	uint32_t *values = talloc_array(tcase, uint32_t, 5);

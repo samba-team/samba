@@ -106,8 +106,7 @@ static bool test_parse_string(struct torture_context *tctx)
 
 struct torture_suite *torture_local_credentials(TALLOC_CTX *mem_ctx)
 {
-	struct torture_suite *suite = torture_suite_create(mem_ctx, 
-							   "CREDENTIALS");
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "credentials");
 
 	torture_suite_add_simple_test(suite, "init", test_init);
 	torture_suite_add_simple_test(suite, "init anonymous", 

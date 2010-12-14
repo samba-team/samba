@@ -587,7 +587,7 @@ struct torture_suite *torture_rpc_handles(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *suite;
 
-	suite = torture_suite_create(mem_ctx, "HANDLES");
+	suite = torture_suite_create(mem_ctx, "handles");
 	torture_suite_add_simple_test(suite, "lsarpc", test_handles_lsa);
 	torture_suite_add_simple_test(suite, "lsarpc-shared", test_handles_lsa_shared);
 	torture_suite_add_simple_test(suite, "samr", test_handles_samr);
