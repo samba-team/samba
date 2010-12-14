@@ -27,7 +27,7 @@ struct rpc_tstream_state {
 	struct tstream_context *stream;
 	struct tevent_queue *read_queue;
 	struct tevent_queue *write_queue;
-	int timeout;
+	unsigned int timeout;
 };
 
 static void rpc_tstream_disconnect(struct rpc_tstream_state *s)
