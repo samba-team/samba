@@ -103,26 +103,22 @@ int net_time_usage(struct net_context *c, int argc, const char **argv)
 	return -1;
 }
 
-/* try to set the system clock using /bin/date */
+/* try to set the system clock */
 static int net_time_set(struct net_context *c, int argc, const char **argv)
 {
-	time_t t = nettime(c, NULL);
-	char *cmd;
+	struct timeval tv;
 	int result;
 
-	if (t == 0) return -1;
+	tv.tv_sec = nettime(c, NULL);
+	tv.tv_usec=0;
 
-	/* yes, I know this is cheesy. Use "net time system" if you want to
-	   roll your own. I'm putting this in as it works on a large number
-	   of systems and the user has a choice in whether its used or not */
-	if (asprintf(&cmd, "/bin/date %s", systime(t)) == -1) {
-		return -1;
-	}
-	result = system(cmd);
+	if (tv.tv_sec == 0) return -1;
+
+	result = settimeofday(&tv,0);
+
 	if (result)
-		d_fprintf(stderr, _("%s failed.  Error was (%s)\n"),
-			cmd, strerror(errno));
-	free(cmd);
+		d_fprintf(stderr, _("setting system clock failed.  Error was (%s)\n"),
+			strerror(errno));
 
 	return result;
 }
