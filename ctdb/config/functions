@@ -562,6 +562,15 @@ ctdb_check_counter_equal () {
 ctdb_status_dir="$CTDB_VARDIR/status"
 ctdb_fail_dir="$CTDB_VARDIR/failcount"
 
+ctdb_setup_service_state_dir ()
+{
+    service_state_dir="$CTDB_VARDIR/state/${1:-${service_name}}"
+    mkdir -p "$service_state_dir" || {
+	echo "Error creating state dir \"$service_state_dir\""
+	exit 1
+    }
+}
+
 ########################################################
 # Managed status history, for auto-start/stop
 
