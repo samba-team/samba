@@ -35,6 +35,7 @@ struct tstream_cli_np {
 	struct cli_state *cli;
 	const char *npipe;
 	uint16_t fnum;
+	unsigned int default_timeout;
 
 	struct {
 		bool active;
@@ -176,6 +177,7 @@ NTSTATUS _tstream_cli_np_open_recv(struct tevent_req *req,
 	cli_nps->cli = state->cli;
 	cli_nps->npipe = talloc_move(cli_nps, &state->npipe);
 	cli_nps->fnum = state->fnum;
+	cli_nps->default_timeout = state->cli->timeout;
 
 	talloc_set_destructor(cli_nps, tstream_cli_np_destructor);
 
@@ -231,6 +233,19 @@ NTSTATUS tstream_cli_np_use_trans(struct tstream_context *stream)
 	cli_nps->trans.active = true;
 
 	return NT_STATUS_OK;
+}
+
+unsigned int tstream_cli_np_set_timeout(struct tstream_context *stream,
+					unsigned int timeout)
+{
+	struct tstream_cli_np *cli_nps = tstream_context_data(stream,
+					 struct tstream_cli_np);
+
+	if (!cli_state_is_connected(cli_nps->cli)) {
+		return cli_nps->default_timeout;
+	}
+
+	return cli_set_timeout(cli_nps->cli, timeout);
 }
 
 struct tstream_cli_np_writev_state {

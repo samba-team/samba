@@ -48,4 +48,7 @@ bool tstream_is_cli_np(struct tstream_context *stream);
 
 NTSTATUS tstream_cli_np_use_trans(struct tstream_context *stream);
 
+unsigned int tstream_cli_np_set_timeout(struct tstream_context *stream,
+					unsigned int timeout);
+
 #endif /*  _CLI_NP_TSTREAM_H_ */
