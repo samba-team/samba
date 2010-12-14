@@ -2,7 +2,7 @@
 
 from samba_utils import *
 
-TDB_LIB_SRC = '''lib/util_tdb.c ../lib/util/util_tdb.c
+TDB_LIB_SRC = '''../lib/util/util_tdb.c
           lib/dbwrap.c lib/dbwrap_tdb.c
           lib/dbwrap_ctdb.c
           lib/g_lock.c
@@ -886,7 +886,7 @@ bld.SAMBA_SUBSYSTEM('KRBCLIENT',
 
 bld.SAMBA_SUBSYSTEM('LIBS',
                     source=LIB_SRC,
-                    deps='iconv LIBCRYPTO ndr security NDR_SECURITY charset NDR_MESSAGING LIBASYNC_REQ',
+                    deps='iconv LIBCRYPTO ndr security NDR_SECURITY charset NDR_MESSAGING LIBASYNC_REQ tdb-wrap',
                     vars=locals())
 
 bld.SAMBA_SUBSYSTEM('LIB_NONSMBD',
@@ -1054,6 +1054,9 @@ bld.SAMBA_SUBSYSTEM('ndr',
                     source=LIBNDR_SRC,
                     vars=locals())
 
+bld.SAMBA_SUBSYSTEM('tdb-wrap',
+                    source='lib/util_tdb.c',
+                    vars=locals())
 #FIXME
 bld.SAMBA_SUBSYSTEM('ndr-standard',
                     source='',
