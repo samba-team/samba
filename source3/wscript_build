@@ -597,8 +597,7 @@ LIBNET_SRC = 'libnet/libnet_join.c libnet/libnet_keytab.c'
 
 
 LIBNET_DSSYNC_SRC = '''libnet/libnet_dssync.c
-                       libnet/libnet_dssync_keytab.c
-                       ../libcli/drsuapi/repl_decrypt.c'''
+                       libnet/libnet_dssync_keytab.c'''
 
 LIBNET_SAMSYNC_SRC = '''libnet/libnet_samsync.c
                         libnet/libnet_samsync_ldif.c
@@ -1013,7 +1012,7 @@ bld.SAMBA_SUBSYSTEM('LIBNET',
 
 bld.SAMBA_SUBSYSTEM('LIBNET_DSSYNC',
                     source=LIBNET_DSSYNC_SRC,
-                    deps='LIBNET',
+                    deps='LIBNET LIBCLI_DRSUAPI',
                     vars=locals())
 
 bld.SAMBA_SUBSYSTEM('LIBNET_SAMSYNC',
@@ -1519,6 +1518,7 @@ bld.RECURSE('../lib/iniparser/src')
 bld.RECURSE('../lib/crypto')
 bld.RECURSE('../lib/async_req')
 bld.RECURSE('../libcli/auth')
+bld.RECURSE('../libcli/drsuapi')
 bld.RECURSE('modules')
 bld.RECURSE('auth')
 bld.RECURSE('passdb')
