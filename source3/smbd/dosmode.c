@@ -846,6 +846,55 @@ int file_set_dosmode(connection_struct *conn, struct smb_filename *smb_fname,
 	return( ret );
 }
 
+
+NTSTATUS file_set_sparse(connection_struct *conn,
+			 struct smb_filename *smb_fname,
+			 bool sparse)
+{
+	SMB_STRUCT_STAT st;
+	uint32_t old_dosmode;
+	uint32_t new_dosmode;
+
+	DEBUG(10,("file_set_sparse: setting sparse bit %u on file %s\n",
+		  sparse, smb_fname_str_dbg(smb_fname)));
+
+	if (!lp_store_dos_attributes(SNUM(conn))) {
+		return NT_STATUS_INVALID_DEVICE_REQUEST;
+	}
+
+	SET_STAT_INVALID(st);
+
+	if (SMB_VFS_STAT(conn, smb_fname)) {
+		return map_nt_error_from_unix(errno);
+	}
+
+	old_dosmode = dos_mode(conn, smb_fname);
+
+	if (sparse && !(old_dosmode & FILE_ATTRIBUTE_SPARSE)) {
+		new_dosmode = old_dosmode | FILE_ATTRIBUTE_SPARSE;
+	} else if (!sparse && (old_dosmode & FILE_ATTRIBUTE_SPARSE)) {
+		new_dosmode = old_dosmode & ~FILE_ATTRIBUTE_SPARSE;
+	} else {
+		return NT_STATUS_OK;
+	}
+
+	/* Store the DOS attributes in an EA. */
+	if (!set_ea_dos_attribute(conn, smb_fname,
+				  new_dosmode)) {
+		if (errno == 0) {
+			errno = EIO;
+		}
+		return map_nt_error_from_unix(errno);
+	}
+
+	notify_fname(conn, NOTIFY_ACTION_MODIFIED,
+		     FILE_NOTIFY_CHANGE_ATTRIBUTES,
+		     smb_fname->base_name);
+
+	return NT_STATUS_OK;
+}
+
+
 /*******************************************************************
  Wrapper around the VFS ntimes that possibly allows DOS semantics rather
  than POSIX.
