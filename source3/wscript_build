@@ -264,8 +264,6 @@ SERVICES_SRC = '''services/svc_spoolss.c
 
 LIB_EVENTLOG_SRC = '''lib/eventlog/eventlog.c'''
 
-NPA_TSTREAM_SRC = '''../libcli/named_pipe_auth/npa_tstream.c'''
-
 RPC_NCACN_NP = '''rpc_server/rpc_ncacn_np.c
                   rpc_server/rpc_handles.c'''
 
@@ -974,7 +972,7 @@ bld.SAMBA_SUBSYSTEM('SMBD_BASE',
                     PRINTING PRINTBACKEND NDR_XATTR NDR_NOTIFY REGFIO
                     LIBSMBCONF REG_FULL FNAME_UTIL
                     LIBCLI_SAMR LIBCLI_LSA LIBCLI_NETLOGON LIBCLI_SPOOLSS
-                    RPCCLI_SRVSVC NPA_TSTREAM INIT_NETLOGON INIT_SAMR
+                    RPCCLI_SRVSVC NAMED_PIPE_AUTH_TSTREAM INIT_NETLOGON INIT_SAMR
                     ''',
                     vars=locals())
 
@@ -1197,10 +1195,6 @@ bld.SAMBA_SUBSYSTEM('RPC_CLIENT_SCHANNEL',
 	source=RPC_CLIENT_SCHANNEL_SRC,
 	vars=locals())
 
-bld.SAMBA_SUBSYSTEM('NPA_TSTREAM',
-                    source=NPA_TSTREAM_SRC,
-                    deps='NDR_NAMED_PIPE_AUTH')
-
 bld.SAMBA_SUBSYSTEM('INIT_LSA',
                     source='rpc_client/init_lsa.c')
 
@@ -1235,7 +1229,7 @@ bld.SAMBA_BINARY('winbindd/winbindd',
                  LIBAFS_SETTOKEN PROFILE SLCACHE DCUTIL idmap nss_info
                  TOKEN_UTIL
                  LIBCLI_SAMR LIBCLI_LSA LIBCLI_NETLOGON
-                 RPCCLI_DSSETUP NPA_TSTREAM INIT_NETLOGON
+                 RPCCLI_DSSETUP NAMED_PIPE_AUTH_TSTREAM INIT_NETLOGON
                  RPC_SAMR RPC_LSARPC
                  ''',
                  enabled=bld.env.build_winbind,
@@ -1522,6 +1516,7 @@ bld.RECURSE('../lib/crypto')
 bld.RECURSE('../lib/async_req')
 bld.RECURSE('../libcli/auth')
 bld.RECURSE('../libcli/drsuapi')
+bld.RECURSE('../libcli/named_pipe_auth')
 bld.RECURSE('modules')
 bld.RECURSE('auth')
 bld.RECURSE('passdb')
