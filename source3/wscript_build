@@ -745,7 +745,7 @@ bld.SAMBA_LIBRARY('wbclient',
                               ../nsswitch/libwbclient/wbc_util.c''',
                     public_headers='../nsswitch/libwbclient/wbclient.h',
                     private_library=True,
-                    public_deps='talloc WBCOMMON')
+                    public_deps='WBCOMMON')
 
 bld.SAMBA_LIBRARY('netapi',
                     source=LIBNETAPI_SRC,
