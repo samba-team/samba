@@ -455,10 +455,10 @@ ssize_t vfs_pwrite_data(struct smb_request *req,
 int vfs_allocate_file_space(files_struct *fsp, uint64_t len)
 {
 	int ret;
-	SMB_STRUCT_STAT st;
 	connection_struct *conn = fsp->conn;
 	uint64_t space_avail;
 	uint64_t bsize,dfree,dsize;
+	NTSTATUS status;
 
 	/*
 	 * Actually try and commit the space on disk....
@@ -474,19 +474,20 @@ int vfs_allocate_file_space(files_struct *fsp, uint64_t len)
 		return -1;
 	}
 
-	ret = SMB_VFS_FSTAT(fsp, &st);
-	if (ret == -1)
-		return ret;
+	status = vfs_stat_fsp(fsp);
+	if (!NT_STATUS_IS_OK(status)) {
+		return -1;
+	}
 
-	if (len == (uint64_t)st.st_ex_size)
+	if (len == (uint64_t)fsp->fsp_name->st.st_ex_size)
 		return 0;
 
-	if (len < (uint64_t)st.st_ex_size) {
+	if (len < (uint64_t)fsp->fsp_name->st.st_ex_size) {
 		/* Shrink - use ftruncate. */
 
 		DEBUG(10,("vfs_allocate_file_space: file %s, shrink. Current "
 			  "size %.0f\n", fsp_str_dbg(fsp),
-			  (double)st.st_ex_size));
+			  (double)fsp->fsp_name->st.st_ex_size));
 
 		contend_level2_oplocks_begin(fsp, LEVEL2_CONTEND_ALLOC_SHRINK);
 
@@ -508,7 +509,7 @@ int vfs_allocate_file_space(files_struct *fsp, uint64_t len)
 	if (!lp_strict_allocate(SNUM(fsp->conn)))
 		return 0;
 
-	len -= st.st_ex_size;
+	len -= fsp->fsp_name->st.st_ex_size;
 	len /= 1024; /* Len is now number of 1k blocks needed. */
 	space_avail = get_dfree_info(conn, fsp->fsp_name->base_name, false,
 				     &bsize, &dfree, &dsize);
@@ -518,7 +519,7 @@ int vfs_allocate_file_space(files_struct *fsp, uint64_t len)
 
 	DEBUG(10,("vfs_allocate_file_space: file %s, grow. Current size %.0f, "
 		  "needed blocks = %.0f, space avail = %.0f\n",
-		  fsp_str_dbg(fsp), (double)st.st_ex_size, (double)len,
+		  fsp_str_dbg(fsp), (double)fsp->fsp_name->st.st_ex_size, (double)len,
 		  (double)space_avail));
 
 	if (len > space_avail) {
@@ -605,36 +606,36 @@ int vfs_slow_fallocate(files_struct *fsp, SMB_OFF_T offset, SMB_OFF_T len)
 int vfs_fill_sparse(files_struct *fsp, SMB_OFF_T len)
 {
 	int ret;
-	SMB_STRUCT_STAT st;
+	NTSTATUS status;
 	SMB_OFF_T offset;
 	size_t num_to_write;
 
-	ret = SMB_VFS_FSTAT(fsp, &st);
-	if (ret == -1) {
-		return ret;
+	status = vfs_stat_fsp(fsp);
+	if (!NT_STATUS_IS_OK(status)) {
+		return -1;
 	}
 
-	if (len <= st.st_ex_size) {
+	if (len <= fsp->fsp_name->st.st_ex_size) {
 		return 0;
 	}
 
 #ifdef S_ISFIFO
-	if (S_ISFIFO(st.st_ex_mode)) {
+	if (S_ISFIFO(fsp->fsp_name->st.st_ex_mode)) {
 		return 0;
 	}
 #endif
 
 	DEBUG(10,("vfs_fill_sparse: write zeros in file %s from len %.0f to "
 		  "len %.0f (%.0f bytes)\n", fsp_str_dbg(fsp),
-		  (double)st.st_ex_size, (double)len,
-		  (double)(len - st.st_ex_size)));
+		  (double)fsp->fsp_name->st.st_ex_size, (double)len,
+		  (double)(len - fsp->fsp_name->st.st_ex_size)));
 
 	contend_level2_oplocks_begin(fsp, LEVEL2_CONTEND_FILL_SPARSE);
 
 	flush_write_cache(fsp, SIZECHANGE_FLUSH);
 
-	offset = st.st_ex_size;
-	num_to_write = len - st.st_ex_size;
+	offset = fsp->fsp_name->st.st_ex_size;
+	num_to_write = len - fsp->fsp_name->st.st_ex_size;
 
 	/* Only do this on non-stream file handles. */
 	if (fsp->base_fsp == NULL) {
