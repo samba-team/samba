@@ -361,7 +361,7 @@ def SAMBA_MODULE(bld, modname, source,
                  local_include=True,
                  vars=None,
                  enabled=True,
-                 pyembed=True,
+                 pyembed=False,
                  ):
     '''define a Samba module.'''
 
