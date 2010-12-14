@@ -78,7 +78,7 @@ PTHREADPOOL_SRC = ''
 
 LIBREPLACE_SRCS = ''
 
-LIB_SRC = '''${LIBSAMBAUTIL_SRC} ${UTIL_SRC}
+LIB_SRC = '''${LIBSAMBAUTIL_SRC}
           lib/messages.c lib/messages_local.c
           lib/messages_ctdbd.c lib/packet.c lib/ctdbd_conn.c
           lib/interfaces.c lib/memcache.c
@@ -889,7 +889,7 @@ bld.SAMBA_SUBSYSTEM('KRBCLIENT',
 
 bld.SAMBA_SUBSYSTEM('LIBS',
                     source=LIB_SRC,
-                    deps='iconv LIBCRYPTO ndr security NDR_SECURITY charset NDR_MESSAGING LIBASYNC_REQ tdb-wrap',
+                    deps='iconv LIBCRYPTO ndr security NDR_SECURITY charset NDR_MESSAGING LIBASYNC_REQ tdb-wrap samba-util',
                     vars=locals())
 
 bld.SAMBA_SUBSYSTEM('LIB_NONSMBD',
@@ -1059,6 +1059,10 @@ bld.SAMBA_SUBSYSTEM('ndr',
 
 bld.SAMBA_SUBSYSTEM('tdb-wrap',
                     source='lib/util_tdb.c',
+                    vars=locals())
+
+bld.SAMBA_SUBSYSTEM('samba-util',
+                    source=UTIL_SRC,
                     vars=locals())
 #FIXME
 bld.SAMBA_SUBSYSTEM('ndr-standard',
