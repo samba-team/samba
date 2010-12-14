@@ -9,10 +9,6 @@
     export CTDB_BASE="/etc/ctdb"
 }
 
-[ -z "$CTDB_VARDIR" ] && {
-    export CTDB_VARDIR="/var/ctdb"
-}
-
 . $CTDB_BASE/functions
 loadconfig ctdb
 loadconfig nfs
