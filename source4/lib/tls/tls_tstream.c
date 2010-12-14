@@ -58,7 +58,7 @@ struct tstream_tls {
 	} push;
 
 	struct {
-		uint8_t buffer[1024];
+		uint8_t *buf;
 		struct iovec iov;
 		struct tevent_req *subreq;
 	} pull;
@@ -293,6 +293,7 @@ static ssize_t tstream_tls_pull_function(gnutls_transport_ptr ptr,
 		tstream_context_data(stream,
 		struct tstream_tls);
 	struct tevent_req *subreq;
+	size_t len;
 
 	if (tlss->error != 0) {
 		errno = tlss->error;
@@ -318,6 +319,7 @@ static ssize_t tstream_tls_pull_function(gnutls_transport_ptr ptr,
 		tlss->pull.iov.iov_base = (char *)b;
 		if (tlss->pull.iov.iov_len == 0) {
 			tlss->pull.iov.iov_base = NULL;
+			TALLOC_FREE(tlss->pull.buf);
 		}
 
 		return n;
@@ -327,8 +329,15 @@ static ssize_t tstream_tls_pull_function(gnutls_transport_ptr ptr,
 		return 0;
 	}
 
-	tlss->pull.iov.iov_base = tlss->pull.buffer;
-	tlss->pull.iov.iov_len = MIN(size, sizeof(tlss->pull.buffer));
+	len = MIN(size, UINT16_MAX);
+
+	tlss->pull.buf = talloc_array(tlss, uint8_t, len);
+	if (tlss->pull.buf == NULL) {
+		return -1;
+	}
+
+	tlss->pull.iov.iov_base = (char *)tlss->pull.buf;
+	tlss->pull.iov.iov_len = len;
 
 	subreq = tstream_readv_send(tlss,
 				    tlss->current_ev,
