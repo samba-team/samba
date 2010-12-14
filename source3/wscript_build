@@ -670,8 +670,7 @@ DEBUG2HTML_SRC = '''utils/debug2html.c utils/debugparse.c'''
 
 SMBFILTER_SRC = '''utils/smbfilter.c'''
 
-WINBIND_WINS_NSS_SRC = '''../nsswitch/wins.c ${PARAM_SRC}
-        ${LIB_NONSMBD_SRC} ${LIBSMB_ERR_SRC}'''
+WINBIND_WINS_NSS_SRC = '''../nsswitch/wins.c'''
 
 WBINFO_SRC = '''../nsswitch/wbinfo.c'''
 
@@ -780,6 +779,13 @@ bld.SAMBA_LIBRARY('nss_winbind',
                   source='../nsswitch/winbind_nss_linux.c',
                   deps='WBCOMMON',
                   realname='libnss_winbind.so.2',
+                  vnum='2')
+
+bld.SAMBA_LIBRARY('nss_wins',
+                  source=WINBIND_WINS_NSS_SRC,
+                  deps='''WBCOMMON PARAM LIBSMB LIB_NONSMBD LIBTSOCKET KRBCLIENT
+                  cap wbclient''',
+                  realname='libnss_wins.so.2',
                   vnum='2')
 
 if bld.CONFIG_SET('WITH_PAM_MODULES'):
