@@ -225,9 +225,6 @@ class DrsReplSchemaTestCase(samba.tests.TestCase):
         (c_ldn, c_dn) = self._schema_new_class(self.ldb_dc1, "cls-B",
                                                {"objectClass": ["top", "classSchema", c_ldn],
                                                 a_ldn: "test_classWithCustomAttribute"})
-        #(c_ldn, c_dn) = self._schema_new_class(self.ldb_dc1, "cls-B",
-        #                                       {"systemMayContain": a_ldn,
-        #                                        a_ldn: "test_classWithCustomAttribute"})
         # force replication from DC1 to DC2
         self._net_drs_replicate(DC=self.dnsname_dc2, fromDC=self.dnsname_dc1, nc_dn=self.schema_dn)
         # check objects are replicated
