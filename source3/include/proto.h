@@ -5272,6 +5272,11 @@ NTSTATUS unlink_internals(connection_struct *conn, struct smb_request *req,
 			  uint32 dirtype, struct smb_filename *smb_fname,
 			  bool has_wild);
 void reply_unlink(struct smb_request *req);
+ssize_t fake_sendfile(files_struct *fsp, SMB_OFF_T startpos, size_t nread);
+void sendfile_short_send(files_struct *fsp,
+				ssize_t nread,
+				size_t headersize,
+				size_t smb_maxcnt);
 void reply_readbraw(struct smb_request *req);
 void reply_lockread(struct smb_request *req);
 void reply_read(struct smb_request *req);
