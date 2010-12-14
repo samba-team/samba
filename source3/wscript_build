@@ -458,7 +458,6 @@ SMBD_SRC_SRV = '''smbd/server_reload.c smbd/files.c smbd/connection.c
                smbd/smb2_getinfo.c
                smbd/smb2_setinfo.c
                smbd/smb2_break.c
-               ../libcli/smb/smb2_create_blob.c
                ${MANGLE_SRC}'''
 
 SMBD_SRC_BASE = '''${SMBD_SRC_SRV}
@@ -972,6 +971,7 @@ bld.SAMBA_SUBSYSTEM('SMBD_BASE',
                     LIBSMBCONF REG_FULL FNAME_UTIL
                     LIBCLI_SAMR LIBCLI_LSA LIBCLI_NETLOGON LIBCLI_SPOOLSS
                     RPCCLI_SRVSVC NAMED_PIPE_AUTH_TSTREAM INIT_NETLOGON INIT_SAMR
+                    LIBCLI_SMB_COMMON
                     ''',
                     vars=locals())
 
@@ -1517,6 +1517,7 @@ bld.RECURSE('../libcli/auth')
 bld.RECURSE('../libcli/drsuapi')
 bld.RECURSE('../libcli/samsync')
 bld.RECURSE('../libcli/named_pipe_auth')
+bld.RECURSE('../libcli/smb')
 bld.RECURSE('modules')
 bld.RECURSE('auth')
 bld.RECURSE('passdb')
