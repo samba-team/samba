@@ -561,7 +561,39 @@ ctdb_check_counter_equal () {
 
 ctdb_status_dir="$CTDB_VARDIR/status"
 ctdb_fail_dir="$CTDB_VARDIR/failcount"
-ctdb_active_dir="$CTDB_VARDIR/active"
+
+########################################################
+# Managed status history, for auto-start/stop
+
+ctdb_managed_dir="$CTDB_VARDIR/managed_history"
+
+_ctdb_managed_common ()
+{
+    _service_name="${1:-${service_name}}"
+    _ctdb_managed_file="$ctdb_managed_dir/$_service_name"
+}
+
+ctdb_service_managed ()
+{
+    _ctdb_managed_common "$@"
+    mkdir -p "$ctdb_managed_dir"
+    touch "$_ctdb_managed_file"
+}
+
+ctdb_service_unmanaged ()
+{
+    _ctdb_managed_common "$@"
+    rm -f "$_ctdb_managed_file"
+}
+
+is_ctdb_previously_managed_service ()
+{
+    _ctdb_managed_common "$@"
+    [ -f "$_ctdb_managed_file" ]
+}
+
+########################################################
+# Check and set status
 
 log_status_cat ()
 {
@@ -659,20 +691,18 @@ ctdb_start_stop_service ()
 
     [ "$event_name" = "monitor" ] || return 0
 
-    _active="$ctdb_active_dir/$_service_name"
-    if is_ctdb_managed_service "$_service_name"; then
-	if ! [ -e "$_active" ] ; then
+    if is_ctdb_managed_service "$_service_name" ; then
+	if ! is_ctdb_previously_managed_service "$_service_name" ; then
 	    echo "Starting service $_service_name"
 	    ctdb_service_start || exit $?
-	    mkdir -p "$ctdb_active_dir"
-	    touch "$_active"
+	    ctdb_service_managed "$_service_name"
 	    exit 0
 	fi
     else
-	if [ -e "$_active" ] ; then
+	if is_ctdb_previously_managed_service "$_service_name" ; then
 	    echo "Stopping service $_service_name"
 	    ctdb_service_stop || exit $?
-	    rm -f "$_active"
+	    ctdb_service_unmanaged "$_service_name"
 	    exit 0
 	fi
     fi
