@@ -84,7 +84,7 @@ LIB_SRC = '''${LIBSAMBAUTIL_SRC} ${UTIL_SRC}
           lib/talloc_dict.c
           lib/util_sconn.c
           lib/serverid.c
-          lib/util_transfer_file.c ../lib/async_req/async_sock.c
+          lib/util_transfer_file.c
           ${TDB_LIB_SRC}
           ${VERSION_SRC} lib/charcnv.c lib/debug.c lib/fault.c
           lib/interface.c lib/pidfile.c
@@ -886,7 +886,7 @@ bld.SAMBA_SUBSYSTEM('KRBCLIENT',
 
 bld.SAMBA_SUBSYSTEM('LIBS',
                     source=LIB_SRC,
-                    deps='iconv LIBCRYPTO ndr security NDR_SECURITY charset NDR_MESSAGING',
+                    deps='iconv LIBCRYPTO ndr security NDR_SECURITY charset NDR_MESSAGING LIBASYNC_REQ',
                     vars=locals())
 
 bld.SAMBA_SUBSYSTEM('LIB_NONSMBD',
@@ -1498,6 +1498,7 @@ bld.RECURSE('../lib/zlib')
 bld.RECURSE('../lib/tsocket')
 bld.RECURSE('../lib/iniparser/src')
 bld.RECURSE('../lib/crypto')
+bld.RECURSE('../lib/async_req')
 bld.RECURSE('modules')
 bld.RECURSE('auth')
 bld.RECURSE('passdb')
