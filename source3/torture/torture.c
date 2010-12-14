@@ -7849,6 +7849,7 @@ static struct {
 	{ "STREAMERROR", run_streamerror },
 	{ "NOTIFY-BENCH", run_notify_bench },
 	{ "BAD-NBT-SESSION", run_bad_nbt_session },
+	{ "SMB-ANY-CONNECT", run_smb_any_connect },
 	{ "LOCAL-SUBSTITUTE", run_local_substitute, 0},
 	{ "LOCAL-GENCACHE", run_local_gencache, 0},
 	{ "LOCAL-TALLOC-DICT", run_local_talloc_dict, 0},
