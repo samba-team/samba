@@ -123,7 +123,11 @@ ssize_t sys_read(int fd, void *buf, size_t count)
 
 	do {
 		ret = read(fd, buf, count);
-	} while (ret == -1 && errno == EINTR);
+#if defined(EWOULDBLOCK)
+	} while (ret == -1 && (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK));
+#else
+	} while (ret == -1 && (errno == EINTR || errno == EAGAIN));
+#endif
 	return ret;
 }
 
@@ -137,7 +141,11 @@ ssize_t sys_write(int fd, const void *buf, size_t count)
 
 	do {
 		ret = write(fd, buf, count);
-	} while (ret == -1 && errno == EINTR);
+#if defined(EWOULDBLOCK)
+	} while (ret == -1 && (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK));
+#else
+	} while (ret == -1 && (errno == EINTR || errno == EAGAIN));
+#endif
 	return ret;
 }
 
@@ -162,7 +170,11 @@ ssize_t sys_writev(int fd, const struct iovec *iov, int iovcnt)
 
 	do {
 		ret = writev(fd, iov, iovcnt);
-	} while (ret == -1 && errno == EINTR);
+#if defined(EWOULDBLOCK)
+	} while (ret == -1 && (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK));
+#else
+	} while (ret == -1 && (errno == EINTR || errno == EAGAIN));
+#endif
 	return ret;
 }
 
@@ -207,7 +219,7 @@ ssize_t sys_pwrite(int fd, const void *buf, size_t count, SMB_OFF_T off)
 #endif
 
 /*******************************************************************
-A send wrapper that will deal with EINTR.
+A send wrapper that will deal with EINTR or EAGAIN or EWOULDBLOCK.
 ********************************************************************/
 
 ssize_t sys_send(int s, const void *msg, size_t len, int flags)
@@ -216,12 +228,16 @@ ssize_t sys_send(int s, const void *msg, size_t len, int flags)
 
 	do {
 		ret = send(s, msg, len, flags);
-	} while (ret == -1 && errno == EINTR);
+#if defined(EWOULDBLOCK)
+	} while (ret == -1 && (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK));
+#else
+	} while (ret == -1 && (errno == EINTR || errno == EAGAIN));
+#endif
 	return ret;
 }
 
 /*******************************************************************
-A sendto wrapper that will deal with EINTR.
+A sendto wrapper that will deal with EINTR or EAGAIN or EWOULDBLOCK.
 ********************************************************************/
 
 ssize_t sys_sendto(int s,  const void *msg, size_t len, int flags, const struct sockaddr *to, socklen_t tolen)
@@ -230,12 +246,16 @@ ssize_t sys_sendto(int s,  const void *msg, size_t len, int flags, const struct 
 
 	do {
 		ret = sendto(s, msg, len, flags, to, tolen);
-	} while (ret == -1 && errno == EINTR);
+#if defined(EWOULDBLOCK)
+	} while (ret == -1 && (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK));
+#else
+	} while (ret == -1 && (errno == EINTR || errno == EAGAIN));
+#endif
 	return ret;
 }
 
 /*******************************************************************
-A recv wrapper that will deal with EINTR.
+A recv wrapper that will deal with EINTR or EAGAIN or EWOULDBLOCK.
 ********************************************************************/
 
 ssize_t sys_recv(int fd, void *buf, size_t count, int flags)
@@ -244,7 +264,11 @@ ssize_t sys_recv(int fd, void *buf, size_t count, int flags)
 
 	do {
 		ret = recv(fd, buf, count, flags);
-	} while (ret == -1 && errno == EINTR);
+#if defined(EWOULDBLOCK)
+	} while (ret == -1 && (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK));
+#else
+	} while (ret == -1 && (errno == EINTR || errno == EAGAIN));
+#endif
 	return ret;
 }
 
@@ -258,7 +282,11 @@ ssize_t sys_recvfrom(int s, void *buf, size_t len, int flags, struct sockaddr *f
 
 	do {
 		ret = recvfrom(s, buf, len, flags, from, fromlen);
-	} while (ret == -1 && errno == EINTR);
+#if defined(EWOULDBLOCK)
+	} while (ret == -1 && (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK));
+#else
+	} while (ret == -1 && (errno == EINTR || errno == EAGAIN));
+#endif
 	return ret;
 }
 

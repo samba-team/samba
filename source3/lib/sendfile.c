@@ -63,7 +63,11 @@ ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, SMB_OFF_T of
 #else
 			nwritten = sendfile(tofd, fromfd, &offset, total);
 #endif
-		} while (nwritten == -1 && errno == EINTR);
+#if defined(EWOULDBLOCK)
+		} while (nwritten == -1 && (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK));
+#else
+		} while (nwritten == -1 && (errno == EINTR || errno == EAGAIN));
+#endif
 		if (nwritten == -1) {
 			if (errno == ENOSYS || errno == EINVAL) {
 				/* Ok - we're in a world of pain here. We just sent
@@ -145,7 +149,11 @@ ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, SMB_OFF_T of
 		int32 nwritten;
 		do {
 			nwritten = sendfile(tofd, fromfd, &small_offset, small_total);
-		} while (nwritten == -1 && errno == EINTR);
+#if defined(EWOULDBLOCK)
+		} while (nwritten == -1 && (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK));
+#else
+		} while (nwritten == -1 && (errno == EINTR || errno == EAGAIN));
+#endif
 		if (nwritten == -1) {
 			if (errno == ENOSYS || errno == EINVAL) {
 				/* Ok - we're in a world of pain here. We just sent
@@ -226,7 +234,11 @@ ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, SMB_OFF_T of
 #else
 			nwritten = sendfilev(tofd, vec, sfvcnt, &xferred);
 #endif
-		if (nwritten == -1 && errno == EINTR) {
+#if defined(EWOULDBLOCK)
+		if  (nwritten == -1 && (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK)) {
+#else
+		if (nwritten == -1 && (errno == EINTR || errno == EAGAIN)) {
+#endif
 			if (xferred == 0)
 				continue; /* Nothing written yet. */
 			else
@@ -300,7 +312,11 @@ ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, SMB_OFF_T of
 #else
 			nwritten = sendfile(tofd, fromfd, offset, total, &hdtrl[0], 0);
 #endif
-		} while (nwritten == -1 && errno == EINTR);
+#if defined(EWOULDBLOCK)
+		} while (nwritten == -1 && (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK));
+#else
+		} while (nwritten == -1 && (errno == EINTR || errno == EAGAIN));
+#endif
 		if (nwritten == -1)
 			return -1;
 		if (nwritten == 0)
@@ -371,7 +387,11 @@ ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, SMB_OFF_T of
 
 		do {
 			ret = sendfile(fromfd, tofd, offset, total, &hdr, &nwritten, 0);
-		} while (ret == -1 && errno == EINTR);
+#if defined(EWOULDBLOCK)
+		} while (ret == -1 && (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK));
+#else
+		} while (ret == -1 && (errno == EINTR || errno == EAGAIN));
+#endif
 		if (ret == -1)
 			return -1;
 
@@ -449,7 +469,11 @@ ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, SMB_OFF_T of
 		*/
 		do {
 			ret = send_file(&tofd, &hdtrl, 0);
-		} while ( (ret == 1) || (ret == -1 && errno == EINTR) );
+#if defined(EWOULDBLOCK)
+		} while ((ret == 1) || (ret == -1 && (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK)));
+#else
+		} while ((ret == 1) || (ret == -1 && (errno == EINTR || errno == EAGAIN)));
+#endif
 		if ( ret == -1 )
 			return -1;
 	}
