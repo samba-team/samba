@@ -86,7 +86,7 @@ LIB_SRC = '''${LIBSAMBAUTIL_SRC}
           lib/serverid.c
           lib/util_transfer_file.c
           ${TDB_LIB_SRC}
-          ${VERSION_SRC} lib/charcnv.c lib/debug.c lib/fault.c
+          ${VERSION_SRC} lib/debug.c lib/fault.c
           lib/interface.c lib/pidfile.c
           lib/system.c lib/sendfile.c lib/recvfile.c lib/time.c
           lib/username.c
@@ -94,15 +94,15 @@ LIB_SRC = '''${LIBSAMBAUTIL_SRC}
           lib/access.c lib/smbrun.c
           lib/bitmap.c lib/dprintf.c ${UTIL_REG_SRC}
           lib/wins_srv.c
-          lib/util_str.c lib/clobber.c lib/util_sid.c
-          lib/util_unistr.c lib/util_file.c
+          lib/clobber.c lib/util_sid.c
+          lib/util_file.c
           lib/util.c lib/util_names.c
           lib/util_sock.c lib/sock_exec.c lib/util_sec.c
           lib/substitute.c lib/dbwrap_util.c
           lib/ms_fnmatch.c lib/errmap_unix.c
           lib/tallocmsg.c lib/dmallocmsg.c
           libsmb/clisigning.c libsmb/smb_signing.c
-          lib/iconv.c lib/pam_errors.c intl/lang_tdb.c
+          lib/pam_errors.c intl/lang_tdb.c
           lib/conn_tdb.c lib/adt_tree.c lib/gencache.c
           lib/sessionid_tdb.c
           lib/module.c lib/events.c ${LIBTEVENT_SRC0}
@@ -886,7 +886,7 @@ bld.SAMBA_SUBSYSTEM('KRBCLIENT',
 
 bld.SAMBA_SUBSYSTEM('LIBS',
                     source=LIB_SRC,
-                    deps='iconv LIBCRYPTO ndr security NDR_SECURITY charset NDR_MESSAGING LIBASYNC_REQ tdb-wrap samba-util',
+                    deps='LIBCRYPTO ndr security NDR_SECURITY charset NDR_MESSAGING LIBASYNC_REQ tdb-wrap samba-util CHARSET',
                     vars=locals())
 
 bld.SAMBA_SUBSYSTEM('LIB_NONSMBD',
@@ -1058,8 +1058,14 @@ bld.SAMBA_SUBSYSTEM('tdb-wrap',
                     source='lib/util_tdb.c',
                     vars=locals())
 
+bld.SAMBA_SUBSYSTEM('CHARSET',
+                    source='''lib/util_str.c lib/util_unistr.c lib/charcnv.c lib/iconv.c''',
+                    public_deps='iconv',
+                    deps='DYNCONFIG')
+
 bld.SAMBA_SUBSYSTEM('samba-util',
                     source=UTIL_SRC,
+                    deps='talloc CHARSET LIBCRYPTO',
                     vars=locals())
 #FIXME
 bld.SAMBA_SUBSYSTEM('ndr-standard',
