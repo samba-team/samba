@@ -601,8 +601,7 @@ LIBNET_SAMSYNC_SRC = '''libnet/libnet_samsync.c
                         libnet/libnet_samsync_ldif.c
                         libnet/libnet_samsync_passdb.c
                         libnet/libnet_samsync_display.c
-                        libnet/libnet_samsync_keytab.c
-                        ../libcli/samsync/decrypt.c'''
+                        libnet/libnet_samsync_keytab.c'''
 
 NET_SRC1 = '''utils/net.c utils/net_ads.c utils/net_help.c
               utils/net_rap.c utils/net_rpc.c utils/net_rpc_samsync.c
@@ -1015,7 +1014,7 @@ bld.SAMBA_SUBSYSTEM('LIBNET_DSSYNC',
 
 bld.SAMBA_SUBSYSTEM('LIBNET_SAMSYNC',
                     source=LIBNET_SAMSYNC_SRC,
-                    deps='LIBNET',
+                    deps='LIBNET LIBCLI_SAMSYNC',
                     vars=locals())
 
 bld.SAMBA_SUBSYSTEM('LIBEVENTLOG',
@@ -1513,6 +1512,7 @@ bld.RECURSE('../lib/crypto')
 bld.RECURSE('../lib/async_req')
 bld.RECURSE('../libcli/auth')
 bld.RECURSE('../libcli/drsuapi')
+bld.RECURSE('../libcli/samsync')
 bld.RECURSE('../libcli/named_pipe_auth')
 bld.RECURSE('modules')
 bld.RECURSE('auth')
