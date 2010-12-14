@@ -515,22 +515,23 @@ setup_iface_ip_readd_script()
 # ctdb_check_counter_limit succeeds when count >= <limit>
 ########################################################
 _ctdb_counter_common () {
-    _counter_file="$ctdb_fail_dir/$service_name"
+    _service_name="${$1:-${service_name}}"
+    _counter_file="$ctdb_fail_dir/$_service_name"
     mkdir -p "${_counter_file%/*}" # dirname
 }
 ctdb_counter_init () {
-    _ctdb_counter_common
+    _ctdb_counter_common "$@"
 
     >"$_counter_file"
 }
 ctdb_counter_incr () {
-    _ctdb_counter_common
+    _ctdb_counter_common "$@"
 
     # unary counting!
     echo -n 1 >> "$_counter_file"
 }
 ctdb_check_counter_limit () {
-    _ctdb_counter_common
+    _ctdb_counter_common "$@"
 
     _limit="${1:-${service_fail_limit}}"
     _quiet="$2"
@@ -545,7 +546,7 @@ ctdb_check_counter_limit () {
     fi
 }
 ctdb_check_counter_equal () {
-    _ctdb_counter_common
+    _ctdb_counter_common "$@"
 
     _limit=$1
 
