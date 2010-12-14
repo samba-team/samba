@@ -305,12 +305,17 @@ static ssize_t tstream_tls_pull_function(gnutls_transport_ptr ptr,
 	}
 
 	if (tlss->pull.iov.iov_base) {
+		uint8_t *b;
 		size_t n;
 
+		b = (uint8_t *)tlss->pull.iov.iov_base;
+
 		n = MIN(tlss->pull.iov.iov_len, size);
-		memcpy(buf, tlss->pull.iov.iov_base, n);
+		memcpy(buf, b, n);
 
 		tlss->pull.iov.iov_len -= n;
+		b += n;
+		tlss->pull.iov.iov_base = (char *)b;
 		if (tlss->pull.iov.iov_len == 0) {
 			tlss->pull.iov.iov_base = NULL;
 		}
