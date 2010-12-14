@@ -153,12 +153,11 @@ LIBNMB_SRC = '''libsmb/unexpected.c libsmb/namecache.c libsmb/nmblib.c
              libsmb/namequery.c ../libcli/nbt/lmhosts.c libsmb/conncache.c
              libads/dns.c libads/sitename_cache.c'''
 
-NTERR_SRC = '''libsmb/nterr.c libsmb/smberr.c'''
-DOSERR_SRC = '../libcli/util/doserr.c'
+NTERR_SRC = '''libsmb/smberr.c'''
 ERRORMAP_SRC = 'libsmb/errormap.c'
 DCE_RPC_ERR_SRC = '../librpc/rpc/dcerpc_error.c'
 
-LIBSMB_ERR_SRC = '''${NTERR_SRC} ${DOSERR_SRC} ${ERRORMAP_SRC} ${DCE_RPC_ERR_SRC}'''
+LIBSMB_ERR_SRC = '''${NTERR_SRC} ${ERRORMAP_SRC} ${DCE_RPC_ERR_SRC}'''
 
 LIBSMB_SRC0 = '''
                libsmb/ntlmssp.c
@@ -169,9 +168,6 @@ LIBSMB_SRC0 = '''
                ../libcli/auth/ntlmssp_server.c'''
 
 LIBSAMBA_SRC = '${LIBSMB_SRC0}'
-
-LIBCLI_LDAP_MESSAGE_SRC = '''../libcli/ldap/ldap_message.c'''
-LIBCLI_LDAP_NDR_SRC = '''../libcli/ldap/ldap_ndr.c lib/ldb_compat.c'''
 
 CLDAP_SRC = '''libads/cldap.c
         ../libcli/cldap/cldap.c
@@ -817,12 +813,6 @@ bld.SAMBA_SUBSYSTEM('ASN1_UTIL',
                     deps='talloc',
                     local_include=False)
 
-bld.SAMBA_SUBSYSTEM('LIBCLI_LDAP_MESSAGE',
-                    source=LIBCLI_LDAP_MESSAGE_SRC)
-
-bld.SAMBA_SUBSYSTEM('LIBCLI_LDAP_NDR',
-                    source=LIBCLI_LDAP_NDR_SRC)
-
 bld.SAMBA_SUBSYSTEM('AVAHI',
                     source=AVAHI_SRC,
                     deps='avahi-common avahi-client',
@@ -900,7 +890,7 @@ bld.SAMBA_SUBSYSTEM('LIB_NONSMBD',
 
 bld.SAMBA_SUBSYSTEM('LIBSMB_ERR',
                     source=LIBSMB_ERR_SRC,
-                    deps='SECRETS ldap lber MSRPC_PARSE LIBCLI_AUTH',
+                    deps='errors SECRETS ldap lber MSRPC_PARSE LIBCLI_AUTH',
                     vars=locals())
 
 bld.SAMBA_SUBSYSTEM('LIBSAMBA',
@@ -1084,6 +1074,9 @@ bld.SAMBA_SUBSYSTEM('ndr-standard',
 
 #FIXME
 bld.SAMBA_SUBSYSTEM('dcerpc', '')
+
+bld.SAMBA_SUBSYSTEM('ldb',
+                    source='lib/ldb_compat.c')
 
 bld.SAMBA_SUBSYSTEM('LZXPRESS',
 		    deps='replace',
@@ -1518,6 +1511,7 @@ bld.RECURSE('../libcli/drsuapi')
 bld.RECURSE('../libcli/samsync')
 bld.RECURSE('../libcli/named_pipe_auth')
 bld.RECURSE('../libcli/smb')
+bld.RECURSE('../libcli/ldap')
 bld.RECURSE('modules')
 bld.RECURSE('auth')
 bld.RECURSE('passdb')
