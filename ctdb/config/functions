@@ -559,10 +559,9 @@ ctdb_check_counter_equal () {
 
 ########################################################
 
-ctdb_spool_dir="/var/spool/ctdb"
-ctdb_status_dir="$ctdb_spool_dir/status"
-ctdb_fail_dir="$ctdb_spool_dir/failcount"
-ctdb_active_dir="$ctdb_spool_dir/active"
+ctdb_status_dir="$CTDB_VARDIR/status"
+ctdb_fail_dir="$CTDB_VARDIR/failcount"
+ctdb_active_dir="$CTDB_VARDIR/active"
 
 log_status_cat ()
 {
