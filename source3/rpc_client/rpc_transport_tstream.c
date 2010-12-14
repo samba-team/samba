@@ -19,6 +19,7 @@
 
 #include "includes.h"
 #include "lib/tsocket/tsocket.h"
+#include "libsmb/cli_np_tstream.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_CLI
@@ -39,8 +40,18 @@ static bool rpc_tstream_is_connected(void *priv)
 {
 	struct rpc_tstream_state *transp =
 		talloc_get_type_abort(priv, struct rpc_tstream_state);
+	ssize_t ret;
 
 	if (!transp->stream) {
+		return false;
+	}
+
+	if (!tstream_is_cli_np(transp->stream)) {
+		return true;
+	}
+
+	ret = tstream_pending_bytes(transp->stream);
+	if (ret == -1) {
 		return false;
 	}
 
@@ -57,6 +68,11 @@ static unsigned int rpc_tstream_set_timeout(void *priv, unsigned int timeout)
 	ok = rpc_tstream_is_connected(transp);
 	if (!ok) {
 		return 0;
+	}
+
+	if (tstream_is_cli_np(transp->stream)) {
+		transp->timeout = timeout;
+		return tstream_cli_np_set_timeout(transp->stream, timeout);
 	}
 
 	orig_timeout = transp->timeout;
@@ -310,6 +326,180 @@ static NTSTATUS rpc_tstream_write_recv(struct tevent_req *req, ssize_t *sent)
 	return NT_STATUS_OK;
 }
 
+struct rpc_tstream_trans_state {
+	struct tevent_context *ev;
+	struct rpc_tstream_state *transp;
+	struct iovec req;
+	uint32_t max_rdata_len;
+	struct iovec rep;
+};
+
+static void rpc_tstream_trans_writev(struct tevent_req *subreq);
+static void rpc_tstream_trans_readv_pdu(struct tevent_req *subreq);
+
+static int rpc_tstream_trans_next_vector(struct tstream_context *stream,
+					 void *private_data,
+					 TALLOC_CTX *mem_ctx,
+					 struct iovec **_vector,
+					 size_t *count);
+
+static struct tevent_req *rpc_tstream_trans_send(TALLOC_CTX *mem_ctx,
+						 struct tevent_context *ev,
+						 uint8_t *data, size_t data_len,
+						 uint32_t max_rdata_len,
+						 void *priv)
+{
+	struct rpc_tstream_state *transp =
+		talloc_get_type_abort(priv, struct rpc_tstream_state);
+	struct tevent_req *req, *subreq;
+	struct rpc_tstream_trans_state *state;
+	struct timeval endtime;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct rpc_tstream_trans_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	if (!rpc_tstream_is_connected(transp)) {
+		tevent_req_nterror(req, NT_STATUS_CONNECTION_INVALID);
+		return tevent_req_post(req, ev);
+	}
+	state->ev = ev;
+	state->transp = transp;
+	state->req.iov_len = data_len;
+	state->req.iov_base = discard_const_p(void *, data);
+	state->max_rdata_len = max_rdata_len;
+
+	endtime = timeval_current_ofs(0, transp->timeout * 1000);
+
+	subreq = tstream_writev_queue_send(state, ev,
+					   transp->stream,
+					   transp->write_queue,
+					   &state->req, 1);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	if (!tevent_req_set_endtime(subreq, ev, endtime)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, rpc_tstream_trans_writev, req);
+
+	if (tstream_is_cli_np(transp->stream)) {
+		tstream_cli_np_use_trans(transp->stream);
+	}
+
+	subreq = tstream_readv_pdu_queue_send(state, ev,
+					      transp->stream,
+					      transp->read_queue,
+					      rpc_tstream_trans_next_vector,
+					      state);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	if (!tevent_req_set_endtime(subreq, ev, endtime)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, rpc_tstream_trans_readv_pdu, req);
+
+	return req;
+}
+
+static void rpc_tstream_trans_writev(struct tevent_req *subreq)
+{
+	struct tevent_req *req =
+		tevent_req_callback_data(subreq,
+		struct tevent_req);
+	struct rpc_tstream_trans_state *state =
+		tevent_req_data(req,
+		struct rpc_tstream_trans_state);
+	int ret;
+	int err;
+
+	ret = tstream_writev_queue_recv(subreq, &err);
+	TALLOC_FREE(subreq);
+	if (ret == -1) {
+		rpc_tstream_disconnect(state->transp);
+		tevent_req_nterror(req, map_nt_error_from_unix(err));
+		return;
+	}
+}
+
+static int rpc_tstream_trans_next_vector(struct tstream_context *stream,
+					 void *private_data,
+					 TALLOC_CTX *mem_ctx,
+					 struct iovec **_vector,
+					 size_t *count)
+{
+	struct rpc_tstream_trans_state *state =
+		talloc_get_type_abort(private_data,
+		struct rpc_tstream_trans_state);
+	struct iovec *vector;
+
+	if (state->max_rdata_len == state->rep.iov_len) {
+		*_vector = NULL;
+		*count = 0;
+		return 0;
+	}
+
+	state->rep.iov_base = talloc_array(state, uint8_t,
+					   state->max_rdata_len);
+	if (state->rep.iov_base == NULL) {
+		return -1;
+	}
+	state->rep.iov_len = state->max_rdata_len;
+
+	vector = talloc_array(mem_ctx, struct iovec, 1);
+	if (!vector) {
+		return -1;
+	}
+
+	vector[0] = state->rep;
+
+	*_vector = vector;
+	*count = 1;
+	return 0;
+}
+
+static void rpc_tstream_trans_readv_pdu(struct tevent_req *subreq)
+{
+	struct tevent_req *req =
+		tevent_req_callback_data(subreq,
+		struct tevent_req);
+	struct rpc_tstream_trans_state *state =
+		tevent_req_data(req,
+		struct rpc_tstream_trans_state);
+	int ret;
+	int err;
+
+	ret = tstream_readv_pdu_queue_recv(subreq, &err);
+	TALLOC_FREE(subreq);
+	if (ret == -1) {
+		rpc_tstream_disconnect(state->transp);
+		tevent_req_nterror(req, map_nt_error_from_unix(err));
+		return;
+	}
+
+	tevent_req_done(req);
+}
+
+static NTSTATUS rpc_tstream_trans_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
+				       uint8_t **prdata, uint32_t *prdata_len)
+{
+	struct rpc_tstream_trans_state *state =
+		tevent_req_data(req,
+		struct rpc_tstream_trans_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		return status;
+	}
+
+	*prdata = (uint8_t *)talloc_move(mem_ctx, &state->rep.iov_base);
+	*prdata_len = state->rep.iov_len;
+	return NT_STATUS_OK;
+}
+
 /**
 * @brief Initialize a tstream transport facility
 *	 NOTE: this function will talloc_steal, the stream and the queues.
@@ -352,8 +542,13 @@ NTSTATUS rpc_transport_tstream_init(TALLOC_CTX *mem_ctx,
 	state->stream = talloc_move(state, stream);
 	state->timeout = 10000; /* 10 seconds. */
 
-	result->trans_send = NULL;
-	result->trans_recv = NULL;
+	if (tstream_is_cli_np(state->stream)) {
+		result->trans_send = rpc_tstream_trans_send;
+		result->trans_recv = rpc_tstream_trans_recv;
+	} else {
+		result->trans_send = NULL;
+		result->trans_recv = NULL;
+	}
 	result->write_send = rpc_tstream_write_send;
 	result->write_recv = rpc_tstream_write_recv;
 	result->read_send = rpc_tstream_read_send;
