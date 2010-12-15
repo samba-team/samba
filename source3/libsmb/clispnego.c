@@ -125,9 +125,7 @@ bool spnego_parse_negTokenInit(TALLOC_CTX *ctx,
 	asn1_start_tag(data,ASN1_CONTEXT(0));
 	asn1_start_tag(data,ASN1_SEQUENCE(0));
 	for (i=0; asn1_tag_remaining(data) > 0 && i < ASN1_MAX_OIDS-1; i++) {
-		const char *oid_str = NULL;
-		asn1_read_OID(data,ctx,&oid_str);
-		OIDs[i] = CONST_DISCARD(char *, oid_str);
+		asn1_read_OID(data,ctx, &OIDs[i]);
 	}
 	OIDs[i] = NULL;
 	asn1_end_tag(data);

@@ -49,10 +49,12 @@ static bool read_negTokenInit(struct asn1_data *asn1, TALLOC_CTX *mem_ctx,
 			token->mechTypes = talloc(NULL, const char *);
 			for (i = 0; !asn1->has_error &&
 				     0 < asn1_tag_remaining(asn1); i++) {
+				char *oid;
 				token->mechTypes = talloc_realloc(NULL,
 								  token->mechTypes,
 								  const char *, i+2);
-				asn1_read_OID(asn1, token->mechTypes, token->mechTypes + i);
+				asn1_read_OID(asn1, token->mechTypes, &oid);
+				token->mechTypes[i] = oid;
 			}
 			token->mechTypes[i] = NULL;
 
@@ -184,6 +186,7 @@ static bool read_negTokenTarg(struct asn1_data *asn1, TALLOC_CTX *mem_ctx,
 
 	while (!asn1->has_error && 0 < asn1_tag_remaining(asn1)) {
 		uint8_t context;
+		char *oid;
 		if (!asn1_peek_uint8(asn1, &context)) {
 			asn1->has_error = true;
 			break;
@@ -199,7 +202,8 @@ static bool read_negTokenTarg(struct asn1_data *asn1, TALLOC_CTX *mem_ctx,
 			break;
 		case ASN1_CONTEXT(1):
 			asn1_start_tag(asn1, ASN1_CONTEXT(1));
-			asn1_read_OID(asn1, mem_ctx, &token->supportedMech);
+			asn1_read_OID(asn1, mem_ctx, &oid);
+			token->supportedMech = oid;
 			asn1_end_tag(asn1);
 			break;
 		case ASN1_CONTEXT(2):
