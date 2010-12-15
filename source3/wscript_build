@@ -720,18 +720,6 @@ bld.SAMBA_SUBSYSTEM('winbind-client',
                     deps='replace',
                     cflags='-DSOCKET_WRAPPER_DISABLE=1 -DWINBINDD_SOCKET_DIR=\"%s\"' % bld.env.WINBINDD_SOCKET_DIR)
 
-bld.SAMBA_LIBRARY('wbclient',
-                    source='''../nsswitch/libwbclient/wbc_guid.c
-                              ../nsswitch/libwbclient/wbc_idmap.c
-                              ../nsswitch/libwbclient/wbclient.c
-                              ../nsswitch/libwbclient/wbc_pam.c
-                              ../nsswitch/libwbclient/wbc_pwd.c
-                              ../nsswitch/libwbclient/wbc_sid.c
-                              ../nsswitch/libwbclient/wbc_util.c''',
-                    public_headers='../nsswitch/libwbclient/wbclient.h',
-                    private_library=True,
-                    public_deps='winbind-client')
-
 bld.SAMBA_LIBRARY('netapi',
                     source=LIBNETAPI_SRC,
                     public_deps='''talloc tdb cap wbclient LIB_NONSMBD LIBSMB KRBCLIENT
@@ -1506,6 +1494,7 @@ bld.RECURSE('../libcli/samsync')
 bld.RECURSE('../libcli/named_pipe_auth')
 bld.RECURSE('../libcli/smb')
 bld.RECURSE('../libcli/ldap')
+bld.RECURSE('../nsswitch/libwbclient')
 bld.RECURSE('modules')
 bld.RECURSE('auth')
 bld.RECURSE('passdb')
