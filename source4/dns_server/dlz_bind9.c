@@ -31,12 +31,13 @@
 #include "lib/cmdline/popt_common.h"
 #include "lib/cmdline/popt_credentials.h"
 #include "ldb_module.h"
-#include "dlz_bind9.h"
+#include "dlz_minimal.h"
 
 struct dlz_bind9_data {
 	struct ldb_context *samdb;
 	struct tevent_context *ev_ctx;
 	struct loadparm_context *lp;
+	bool transaction_started;
 
 	/* helper functions from the dlz_dlopen driver */
 	void (*log)(int level, const char *fmt, ...);
@@ -44,6 +45,14 @@ struct dlz_bind9_data {
 			      dns_ttl_t ttl, const char *data);
 	isc_result_t (*putnamedrr)(dns_sdlzlookup_t *handle, const char *name,
 				   const char *type, dns_ttl_t ttl, const char *data);
+	isc_result_t (*writeable_zone)(dns_view_t *view, const char *zone_name);
+};
+
+
+static const char *zone_prefixes[] = {
+	"CN=MicrosoftDNS,DC=DomainDnsZones",
+	"CN=MicrosoftDNS,DC=ForestDnsZones",
+	NULL
 };
 
 /*
@@ -67,6 +76,9 @@ static void b9_add_helper(struct dlz_bind9_data *state, const char *helper_name,
 	}
 	if (strcmp(helper_name, "putnamedrr") == 0) {
 		state->putnamedrr = ptr;
+	}
+	if (strcmp(helper_name, "writeable_zone") == 0) {
+		state->writeable_zone = ptr;
 	}
 }
 
@@ -151,6 +163,17 @@ static bool b9_format(struct dlz_bind9_data *state,
 	}
 
 	return true;
+}
+
+/*
+  parse a record from bind9
+ */
+static bool b9_parse(struct dlz_bind9_data *state,
+		     TALLOC_CTX *mem_ctx,
+		     struct dnsp_DnssrvRpcRecord *rec,
+		     const char **type, const char **data)
+{
+	return false;
 }
 
 /*
@@ -277,7 +300,7 @@ static isc_result_t parse_options(struct dlz_bind9_data *state,
  */
 _PUBLIC_ isc_result_t dlz_create(const char *dlzname,
 				 unsigned int argc, char *argv[],
-				 void *driverarg, void **dbdata, ...)
+				 void **dbdata, ...)
 {
 	struct dlz_bind9_data *state;
 	const char *helper_name;
@@ -377,7 +400,7 @@ failed:
 /*
   shutdown the backend
  */
-_PUBLIC_ void dlz_destroy(void *driverarg, void *dbdata)
+_PUBLIC_ void dlz_destroy(void *dbdata)
 {
 	struct dlz_bind9_data *state = talloc_get_type_abort(dbdata, struct dlz_bind9_data);
 	state->log(ISC_LOG_INFO, "samba dlz_bind9: shutting down");
@@ -388,12 +411,38 @@ _PUBLIC_ void dlz_destroy(void *driverarg, void *dbdata)
 /*
   see if we handle a given zone
  */
-_PUBLIC_ isc_result_t dlz_findzonedb(void *driverarg, void *dbdata, const char *name)
+_PUBLIC_ isc_result_t dlz_findzonedb(void *dbdata, const char *name)
 {
 	struct dlz_bind9_data *state = talloc_get_type_abort(dbdata, struct dlz_bind9_data);
-	if (strcasecmp(lpcfg_dnsdomain(state->lp), name) == 0) {
-		return ISC_R_SUCCESS;
+	int ret;
+	TALLOC_CTX *tmp_ctx = talloc_new(state);
+	const char *attrs[] = { NULL };
+	int i;
+
+	for (i=0; zone_prefixes[i]; i++) {
+		struct ldb_dn *dn;
+		struct ldb_result *res;
+
+		dn = ldb_dn_copy(tmp_ctx, ldb_get_default_basedn(state->samdb));
+		if (dn == NULL) {
+			talloc_free(tmp_ctx);
+			return ISC_R_NOMEMORY;
+		}
+
+		if (!ldb_dn_add_child_fmt(dn, "DC=%s,%s", name, zone_prefixes[i])) {
+			talloc_free(tmp_ctx);
+			return ISC_R_NOMEMORY;
+		}
+
+		ret = ldb_search(state->samdb, tmp_ctx, &res, dn, LDB_SCOPE_BASE, attrs, "objectClass=dnsZone");
+		if (ret == LDB_SUCCESS) {
+			talloc_free(tmp_ctx);
+			return ISC_R_SUCCESS;
+		}
+		talloc_free(dn);
 	}
+
+	talloc_free(tmp_ctx);
 	return ISC_R_NOTFOUND;
 }
 
@@ -403,30 +452,34 @@ _PUBLIC_ isc_result_t dlz_findzonedb(void *driverarg, void *dbdata, const char *
  */
 static isc_result_t dlz_lookup_types(struct dlz_bind9_data *state,
 				     const char *zone, const char *name,
-				     void *driverarg, dns_sdlzlookup_t *lookup,
+				     dns_sdlzlookup_t *lookup,
 				     const char **types)
 {
-	struct ldb_dn *dn;
 	TALLOC_CTX *tmp_ctx = talloc_new(state);
 	const char *attrs[] = { "dnsRecord", NULL };
 	int ret, i;
 	struct ldb_result *res;
 	struct ldb_message_element *el;
+	struct ldb_dn *dn;
 
-	dn = ldb_dn_copy(tmp_ctx, ldb_get_default_basedn(state->samdb));
-	if (dn == NULL) {
-		talloc_free(tmp_ctx);
-		return ISC_R_NOMEMORY;
+	for (i=0; zone_prefixes[i]; i++) {
+		dn = ldb_dn_copy(tmp_ctx, ldb_get_default_basedn(state->samdb));
+		if (dn == NULL) {
+			talloc_free(tmp_ctx);
+			return ISC_R_NOMEMORY;
+		}
+
+		if (!ldb_dn_add_child_fmt(dn, "DC=%s,DC=%s,%s", name, zone, zone_prefixes[i])) {
+			talloc_free(tmp_ctx);
+			return ISC_R_NOMEMORY;
+		}
+
+		ret = ldb_search(state->samdb, tmp_ctx, &res, dn, LDB_SCOPE_BASE,
+				 attrs, "objectClass=dnsNode");
+		if (ret == LDB_SUCCESS) {
+			break;
+		}
 	}
-
-	if (!ldb_dn_add_child_fmt(dn, "DC=%s,DC=%s,CN=MicrosoftDNS,DC=DomainDnsZones",
-				  name, zone)) {
-		talloc_free(tmp_ctx);
-		return ISC_R_NOMEMORY;
-	}
-
-	ret = ldb_search(state->samdb, tmp_ctx, &res, dn, LDB_SCOPE_BASE,
-			 attrs, "objectClass=dnsNode");
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
 		return ISC_R_NOTFOUND;
@@ -434,8 +487,6 @@ static isc_result_t dlz_lookup_types(struct dlz_bind9_data *state,
 
 	el = ldb_msg_find_element(res->msgs[0], "dnsRecord");
 	if (el == NULL || el->num_values == 0) {
-		state->log(ISC_LOG_INFO, "failed to find %s",
-			   ldb_dn_get_linearized(dn));
 		talloc_free(tmp_ctx);
 		return ISC_R_NOTFOUND;
 	}
@@ -468,35 +519,27 @@ static isc_result_t dlz_lookup_types(struct dlz_bind9_data *state,
 /*
   lookup one record
  */
-_PUBLIC_ isc_result_t dlz_lookup(const char *zone, const char *name, void *driverarg,
+_PUBLIC_ isc_result_t dlz_lookup(const char *zone, const char *name,
 				 void *dbdata, dns_sdlzlookup_t *lookup)
 {
 	struct dlz_bind9_data *state = talloc_get_type_abort(dbdata, struct dlz_bind9_data);
-	return dlz_lookup_types(state, zone, name, driverarg, lookup, NULL);
+	return dlz_lookup_types(state, zone, name, lookup, NULL);
 }
 
 
 /*
   see if a zone transfer is allowed
  */
-_PUBLIC_ isc_result_t dlz_allowzonexfr(void *driverarg, void *dbdata, const char *name,
-				       const char *client)
+_PUBLIC_ isc_result_t dlz_allowzonexfr(void *dbdata, const char *name, const char *client)
 {
-	struct dlz_bind9_data *state = talloc_get_type_abort(dbdata, struct dlz_bind9_data);
-
-	if (strcasecmp(lpcfg_dnsdomain(state->lp), name) == 0) {
-		/* TODO: check an ACL here? client is the IP of the requester */
-		state->log(ISC_LOG_INFO, "samba dlz_bind9: allowing zone transfer for '%s' by '%s'",
-			   name, client);
-		return ISC_R_SUCCESS;
-	}
-	return ISC_R_NOTFOUND;
+	/* just say yes for all our zones for now */
+	return dlz_findzonedb(dbdata, name);
 }
 
 /*
   perform a zone transfer
  */
-_PUBLIC_ isc_result_t dlz_allnodes(const char *zone, void *driverarg, void *dbdata,
+_PUBLIC_ isc_result_t dlz_allnodes(const char *zone, void *dbdata,
 				   dns_sdlzallnodes_t *allnodes)
 {
 	struct dlz_bind9_data *state = talloc_get_type_abort(dbdata, struct dlz_bind9_data);
@@ -506,20 +549,24 @@ _PUBLIC_ isc_result_t dlz_allnodes(const char *zone, void *driverarg, void *dbda
 	struct ldb_result *res;
 	TALLOC_CTX *tmp_ctx = talloc_new(state);
 
+	for (i=0; zone_prefixes[i]; i++) {
+		dn = ldb_dn_copy(tmp_ctx, ldb_get_default_basedn(state->samdb));
+		if (dn == NULL) {
+			talloc_free(tmp_ctx);
+			return ISC_R_NOMEMORY;
+		}
 
-	dn = ldb_dn_copy(tmp_ctx, ldb_get_default_basedn(state->samdb));
-	if (dn == NULL) {
-		talloc_free(tmp_ctx);
-		return ISC_R_NOMEMORY;
+		if (!ldb_dn_add_child_fmt(dn, "DC=%s,%s", zone, zone_prefixes[i])) {
+			talloc_free(tmp_ctx);
+			return ISC_R_NOMEMORY;
+		}
+
+		ret = ldb_search(state->samdb, tmp_ctx, &res, dn, LDB_SCOPE_SUBTREE,
+				 attrs, "objectClass=dnsNode");
+		if (ret == LDB_SUCCESS) {
+			break;
+		}
 	}
-
-	if (!ldb_dn_add_child_fmt(dn, "DC=%s,CN=MicrosoftDNS,DC=DomainDnsZones", zone)) {
-		talloc_free(tmp_ctx);
-		return ISC_R_NOMEMORY;
-	}
-
-	ret = ldb_search(state->samdb, tmp_ctx, &res, dn, LDB_SCOPE_SUBTREE,
-			 attrs, "objectClass=dnsNode");
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
 		return ISC_R_NOTFOUND;
@@ -586,6 +633,220 @@ _PUBLIC_ isc_result_t dlz_allnodes(const char *zone, void *driverarg, void *dbda
 	}
 
 	talloc_free(tmp_ctx);
+
+	return ISC_R_SUCCESS;
+}
+
+
+/*
+  start a transaction
+ */
+_PUBLIC_ isc_result_t dlz_newversion(const char *zone, void *dbdata, void **versionp)
+{
+	struct dlz_bind9_data *state = talloc_get_type_abort(dbdata, struct dlz_bind9_data);
+
+	state->log(ISC_LOG_INFO, "samba dlz_bind9: starting transaction on zone %s", zone);
+
+	if (state->transaction_started) {
+		state->log(ISC_LOG_INFO, "samba dlz_bind9: transaction already started for zone %s", zone);
+		return ISC_R_FAILURE;
+	}
+
+	state->transaction_started = true;
+
+	*versionp = (void *) &state->transaction_started;
+
+	return ISC_R_SUCCESS;
+}
+
+/*
+  end a transaction
+ */
+_PUBLIC_ void dlz_closeversion(const char *zone, isc_boolean_t commit,
+			       void *dbdata, void **versionp)
+{
+	struct dlz_bind9_data *state = talloc_get_type_abort(dbdata, struct dlz_bind9_data);
+
+	if (!state->transaction_started) {
+		state->log(ISC_LOG_INFO, "samba dlz_bind9: transaction not started for zone %s", zone);
+		*versionp = NULL;
+		return;
+	}
+
+	state->transaction_started = false;
+
+	*versionp = NULL;
+
+	if (commit) {
+		state->log(ISC_LOG_INFO, "samba dlz_bind9: committing transaction on zone %s", zone);
+	} else {
+		state->log(ISC_LOG_INFO, "samba dlz_bind9: cancelling transaction on zone %s", zone);
+	}
+}
+
+
+/*
+  see if there is a SOA record for a zone
+ */
+static bool b9_has_soa(struct dlz_bind9_data *state, struct ldb_dn *dn, const char *zone)
+{
+	const char *attrs[] = { "dnsRecord", NULL };
+	struct ldb_result *res;
+	struct ldb_message_element *el;
+	TALLOC_CTX *tmp_ctx = talloc_new(state);
+	int ret, i;
+
+	if (!ldb_dn_add_child_fmt(dn, "DC=@,DC=%s", zone)) {
+		talloc_free(tmp_ctx);
+		return false;
+	}
+
+	ret = ldb_search(state->samdb, tmp_ctx, &res, dn, LDB_SCOPE_BASE,
+			 attrs, "objectClass=dnsNode");
+	if (ret != LDB_SUCCESS) {
+		talloc_free(tmp_ctx);
+		return false;
+	}
+
+	el = ldb_msg_find_element(res->msgs[0], "dnsRecord");
+	if (el == NULL) {
+		talloc_free(tmp_ctx);
+		return false;
+	}
+	for (i=0; i<el->num_values; i++) {
+		struct dnsp_DnssrvRpcRecord rec;
+		enum ndr_err_code ndr_err;
+
+		ndr_err = ndr_pull_struct_blob(&el->values[i], tmp_ctx, &rec,
+					       (ndr_pull_flags_fn_t)ndr_pull_dnsp_DnssrvRpcRecord);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			continue;
+		}
+		if (rec.wType == DNS_TYPE_SOA) {
+			talloc_free(tmp_ctx);
+			return true;
+		}
+	}
+
+	talloc_free(tmp_ctx);
+	return false;
+}
+
+/*
+  configure a writeable zone
+ */
+_PUBLIC_ isc_result_t dlz_configure(dns_view_t *view, void *dbdata)
+{
+	struct dlz_bind9_data *state = talloc_get_type_abort(dbdata, struct dlz_bind9_data);
+	TALLOC_CTX *tmp_ctx;
+	struct ldb_dn *dn;
+	int i;
+
+	state->log(ISC_LOG_INFO, "samba dlz_bind9: starting configure");
+	if (state->writeable_zone == NULL) {
+		state->log(ISC_LOG_INFO, "samba dlz_bind9: no writeable_zone method available");
+		return ISC_R_FAILURE;
+	}
+
+	tmp_ctx = talloc_new(state);
+
+	for (i=0; zone_prefixes[i]; i++) {
+		const char *attrs[] = { "name", NULL };
+		int j, ret;
+		struct ldb_result *res;
+
+		dn = ldb_dn_copy(tmp_ctx, ldb_get_default_basedn(state->samdb));
+		if (dn == NULL) {
+			talloc_free(tmp_ctx);
+			return ISC_R_NOMEMORY;
+		}
+
+		if (!ldb_dn_add_child_fmt(dn, "%s", zone_prefixes[i])) {
+			talloc_free(tmp_ctx);
+			return ISC_R_NOMEMORY;
+		}
+
+		ret = ldb_search(state->samdb, tmp_ctx, &res, dn, LDB_SCOPE_SUBTREE,
+				 attrs, "objectClass=dnsZone");
+		if (ret != LDB_SUCCESS) {
+			continue;
+		}
+
+		for (j=0; j<res->count; j++) {
+			isc_result_t result;
+			const char *zone = ldb_msg_find_attr_as_string(res->msgs[j], "name", NULL);
+			if (zone == NULL) {
+				continue;
+			}
+			if (!b9_has_soa(state, dn, zone)) {
+				continue;
+			}
+			result = state->writeable_zone(view, zone);
+			if (result != ISC_R_SUCCESS) {
+				state->log(ISC_LOG_ERROR, "samba dlz_bind9: Failed to configure zone '%s'",
+					   zone);
+				talloc_free(tmp_ctx);
+				return result;
+			}
+			state->log(ISC_LOG_INFO, "samba dlz_bind9: configured writeable zone '%s'", zone);
+		}
+	}
+
+	talloc_free(tmp_ctx);
+	return ISC_R_SUCCESS;
+}
+
+/*
+  authorize a zone update
+ */
+_PUBLIC_ isc_boolean_t dlz_ssumatch(const char *signer, const char *name, const char *tcpaddr,
+				    const char *type, const char *key, uint32_t keydatalen, uint8_t *keydata,
+				    void *dbdata)
+{
+	struct dlz_bind9_data *state = talloc_get_type_abort(dbdata, struct dlz_bind9_data);
+
+	state->log(ISC_LOG_INFO, "samba dlz_bind9: allowing update of signer=%s name=%s tcpaddr=%s type=%s key=%s keydatalen=%u",
+		   signer, name, tcpaddr, type, key, keydatalen);
+	return true;
+}
+
+
+_PUBLIC_ isc_result_t dlz_addrdataset(const char *name, const char *rdatastr, void *dbdata, void *version)
+{
+	struct dlz_bind9_data *state = talloc_get_type_abort(dbdata, struct dlz_bind9_data);
+
+	if (version != (void *) &state->transaction_started) {
+		return ISC_R_FAILURE;
+	}
+
+	state->log(ISC_LOG_INFO, "samba dlz_bind9: adding rdataset %s '%s'", name, rdatastr);
+
+	return ISC_R_SUCCESS;
+}
+
+_PUBLIC_ isc_result_t dlz_subrdataset(const char *name, const char *rdatastr, void *dbdata, void *version)
+{
+	struct dlz_bind9_data *state = talloc_get_type_abort(dbdata, struct dlz_bind9_data);
+
+	if (version != (void *) &state->transaction_started) {
+		return ISC_R_FAILURE;
+	}
+
+	state->log(ISC_LOG_INFO, "samba dlz_bind9: subtracting rdataset %s '%s'", name, rdatastr);
+
+	return ISC_R_SUCCESS;
+}
+
+
+_PUBLIC_ isc_result_t dlz_delrdataset(const char *name, void *dbdata, void *version)
+{
+	struct dlz_bind9_data *state = talloc_get_type_abort(dbdata, struct dlz_bind9_data);
+
+	if (version != (void *) &state->transaction_started) {
+		return ISC_R_FAILURE;
+	}
+
+	state->log(ISC_LOG_INFO, "samba dlz_bind9: deleting rdataset %s", name);
 
 	return ISC_R_SUCCESS;
 }
