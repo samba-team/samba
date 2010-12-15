@@ -715,22 +715,23 @@ ctdb_start_stop_service ()
     if is_ctdb_managed_service "$_service_name" ; then
 	if ! is_ctdb_previously_managed_service "$_service_name" ; then
 	    echo "Starting service $_service_name"
-	    ctdb_service_start || exit $?
-	    ctdb_service_managed "$_service_name"
-	    exit 0
+	    ctdb_service_start "$_service_name"
+	    exit $?
 	fi
     else
 	if is_ctdb_previously_managed_service "$_service_name" ; then
 	    echo "Stopping service $_service_name"
-	    ctdb_service_stop || exit $?
-	    ctdb_service_unmanaged "$_service_name"
-	    exit 0
+	    ctdb_service_stop "$_service_name"
+	    exit $?
 	fi
     fi
 }
 
 ctdb_service_start ()
 {
+    # The service is marked managed if we've ever tried to start it.
+    ctdb_service_managed "$@"
+
     # Here we only want $1.  If no argument is passed then
     # service_start needs to know.
     service_start "$@" || return $?
@@ -740,6 +741,7 @@ ctdb_service_start ()
 
 ctdb_service_stop ()
 {
+    ctdb_service_unmanaged "$@"
     service_stop "$@"
 }
 
