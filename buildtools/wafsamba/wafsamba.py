@@ -226,7 +226,7 @@ def SAMBA_LIBRARY(bld, libname, source,
         source          = [],
         target          = bundled_name,
         depends_on      = depends_on,
-        ldflags		= ldflags,
+        samba_ldflags	= ldflags,
         samba_deps      = deps,
         samba_includes  = includes,
         local_include   = local_include,
@@ -338,7 +338,8 @@ def SAMBA_BINARY(bld, binname, source,
         samba_subsystem= subsystem_name,
         install_path   = None,
         samba_inst_path= install_path,
-        samba_install  = install
+        samba_install  = install,
+        samba_ldflags  = TO_LIST(ldflags)
         )
 
     if manpages is not None and 'XSLTPROC_MANPAGES' in bld.env and bld.env['XSLTPROC_MANPAGES']:
