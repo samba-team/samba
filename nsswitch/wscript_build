@@ -10,7 +10,7 @@ bld.SAMBA_LIBRARY('winbind-client',
 
 bld.SAMBA_BINARY('nsstest',
 	source='nsstest.c',
-	deps='samba-util samba-hostconfig'
+	deps='replace'
 	)
 
 
