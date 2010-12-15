@@ -269,7 +269,11 @@ static ssize_t onefs_sys_do_sendfile(int tofd, int fromfd,
 		do {
 			ret = sendfile(fromfd, tofd, offset, total, &hdr,
 				       &nwritten, flags);
-		} while (ret == -1 && errno == EINTR);
+#if defined(EWOULDBLOCK)
+		} while (ret == -1 && (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK));
+#else
+		} while (ret == -1 && (errno == EINTR || errno == EAGAIN));
+#endif
 
 		/* On error we're done. */
 		if (ret == -1) {
