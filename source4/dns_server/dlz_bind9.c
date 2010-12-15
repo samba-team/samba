@@ -37,7 +37,7 @@ struct dlz_bind9_data {
 	struct ldb_context *samdb;
 	struct tevent_context *ev_ctx;
 	struct loadparm_context *lp;
-	bool transaction_started;
+	int *transaction_token;
 
 	/* helper functions from the dlz_dlopen driver */
 	void (*log)(int level, const char *fmt, ...);
@@ -128,8 +128,8 @@ static bool b9_format(struct dlz_bind9_data *state,
 	case DNS_TYPE_MX:
 		*type = "mx";
 		*data = talloc_asprintf(mem_ctx, "%u %s",
-					rec->data.srv.wPriority,
-					rec->data.srv.nameTarget);
+					rec->data.mx.wPriority,
+					rec->data.mx.nameTarget);
 		break;
 
 	case DNS_TYPE_HINFO:
@@ -165,15 +165,164 @@ static bool b9_format(struct dlz_bind9_data *state,
 	return true;
 }
 
+static const struct {
+	enum dns_record_type dns_type;
+	const char *typestr;
+	bool single_valued;
+} dns_typemap[] = {
+	{ DNS_TYPE_A,     "A"     , false},
+	{ DNS_TYPE_AAAA,  "AAAA"  , false},
+	{ DNS_TYPE_CNAME, "CNAME" , true},
+	{ DNS_TYPE_TXT,   "TXT"   , false},
+	{ DNS_TYPE_PTR,   "PTR"   , false},
+	{ DNS_TYPE_SRV,   "SRV"   , false},
+	{ DNS_TYPE_MX,    "MX"    , false},
+	{ DNS_TYPE_HINFO, "HINFO" , false},
+	{ DNS_TYPE_NS,    "NS"    , false},
+	{ DNS_TYPE_SOA,   "SOA"   , true},
+};
+
+
+/*
+  see if a DNS type is single valued
+ */
+static bool b9_single_valued(enum dns_record_type dns_type)
+{
+	int i;
+	for (i=0; i<ARRAY_SIZE(dns_typemap); i++) {
+		if (dns_typemap[i].dns_type == dns_type) {
+			return dns_typemap[i].single_valued;
+		}
+	}
+	return false;
+}
+
+/*
+  see if a DNS type is single valued
+ */
+static enum dns_record_type b9_dns_type(const char *type)
+{
+	int i;
+	for (i=0; i<ARRAY_SIZE(dns_typemap); i++) {
+		if (strcasecmp(dns_typemap[i].typestr, type) == 0) {
+			return dns_typemap[i].dns_type;
+		}
+	}
+	return DNS_TYPE_ZERO;
+}
+
+
+#define DNS_PARSE_STR(ret, str, sep, saveptr) do {	\
+	(ret) = strtok_r(str, sep, &saveptr); \
+	if ((ret) == NULL) return false; \
+	} while (0)
+
+#define DNS_PARSE_UINT(ret, str, sep, saveptr) do {  \
+	char *istr = strtok_r(str, sep, &saveptr); \
+	if ((istr) == NULL) return false; \
+	(ret) = strtoul(istr, NULL, 10); \
+	} while (0)
+
 /*
   parse a record from bind9
  */
 static bool b9_parse(struct dlz_bind9_data *state,
-		     TALLOC_CTX *mem_ctx,
-		     struct dnsp_DnssrvRpcRecord *rec,
-		     const char **type, const char **data)
+		     const char *rdatastr,
+		     struct dnsp_DnssrvRpcRecord *rec)
 {
-	return false;
+	char *full_name, *dclass, *type;
+	char *str, *saveptr=NULL;
+	int i;
+
+	str = talloc_strdup(rec, rdatastr);
+	if (str == NULL) {
+		return false;
+	}
+
+	/* parse the SDLZ string form */
+	DNS_PARSE_STR(full_name, str, "\t", saveptr);
+	DNS_PARSE_UINT(rec->dwTtlSeconds, NULL, "\t", saveptr);
+	DNS_PARSE_STR(dclass, NULL, "\t", saveptr);
+	DNS_PARSE_STR(type, NULL, "\t", saveptr);
+
+	/* construct the record */
+	for (i=0; i<ARRAY_SIZE(dns_typemap); i++) {
+		if (strcasecmp(type, dns_typemap[i].typestr) == 0) {
+			rec->wType = dns_typemap[i].dns_type;
+			break;
+		}
+	}
+	if (i == ARRAY_SIZE(dns_typemap)) {
+		state->log(ISC_LOG_ERROR, "samba_dlz: unsupported record type '%s' for '%s'",
+			   type, full_name);
+		return false;
+	}
+
+	switch (rec->wType) {
+	case DNS_TYPE_A:
+		DNS_PARSE_STR(rec->data.ipv4, NULL, " ", saveptr);
+		break;
+
+	case DNS_TYPE_AAAA:
+		DNS_PARSE_STR(rec->data.ipv6, NULL, " ", saveptr);
+		break;
+
+	case DNS_TYPE_CNAME:
+		DNS_PARSE_STR(rec->data.cname, NULL, " ", saveptr);
+		break;
+
+	case DNS_TYPE_TXT:
+		DNS_PARSE_STR(rec->data.txt, NULL, "\t", saveptr);
+		break;
+
+	case DNS_TYPE_PTR:
+		DNS_PARSE_STR(rec->data.ptr, NULL, " ", saveptr);
+		break;
+
+	case DNS_TYPE_SRV:
+		DNS_PARSE_UINT(rec->data.srv.wPriority, NULL, " ", saveptr);
+		DNS_PARSE_UINT(rec->data.srv.wWeight, NULL, " ", saveptr);
+		DNS_PARSE_UINT(rec->data.srv.wPort, NULL, " ", saveptr);
+		DNS_PARSE_STR(rec->data.srv.nameTarget, NULL, " ", saveptr);
+		break;
+
+	case DNS_TYPE_MX:
+		DNS_PARSE_UINT(rec->data.mx.wPriority, NULL, " ", saveptr);
+		DNS_PARSE_STR(rec->data.mx.nameTarget, NULL, " ", saveptr);
+		break;
+
+	case DNS_TYPE_HINFO:
+		DNS_PARSE_STR(rec->data.hinfo.cpu, NULL, " ", saveptr);
+		DNS_PARSE_STR(rec->data.hinfo.os, NULL, " ", saveptr);
+		break;
+
+	case DNS_TYPE_NS:
+		DNS_PARSE_STR(rec->data.ns, NULL, " ", saveptr);
+		break;
+
+	case DNS_TYPE_SOA:
+		DNS_PARSE_STR(rec->data.soa.mname, NULL, " ", saveptr);
+		DNS_PARSE_STR(rec->data.soa.rname, NULL, " ", saveptr);
+		DNS_PARSE_UINT(rec->data.soa.serial, NULL, " ", saveptr);
+		DNS_PARSE_UINT(rec->data.soa.refresh, NULL, " ", saveptr);
+		DNS_PARSE_UINT(rec->data.soa.retry, NULL, " ", saveptr);
+		DNS_PARSE_UINT(rec->data.soa.expire, NULL, " ", saveptr);
+		DNS_PARSE_UINT(rec->data.soa.minimum, NULL, " ", saveptr);
+		break;
+
+	default:
+		state->log(ISC_LOG_ERROR, "samba b9_parse: unhandled record type %u",
+			   rec->wType);
+		return false;
+	}
+
+	/* we should be at the end of the buffer now */
+	if (strtok_r(NULL, "\t ", &saveptr) != NULL) {
+		state->log(ISC_LOG_ERROR, "samba b9_parse: expected data at end of string for '%s'");
+		return false;
+	}
+
+	return true;
 }
 
 /*
@@ -335,7 +484,7 @@ _PUBLIC_ isc_result_t dlz_create(const char *dlzname,
 
 	state->samdb = ldb_init(state, state->ev_ctx);
 	if (state->samdb == NULL) {
-		state->log(ISC_LOG_ERROR, "samba dlz_bind9: Failed to create ldb");
+		state->log(ISC_LOG_ERROR, "samba_dlz: Failed to create ldb");
 		result = ISC_R_FAILURE;
 		goto failed;
 	}
@@ -362,7 +511,7 @@ _PUBLIC_ isc_result_t dlz_create(const char *dlzname,
 
 	ret = ldb_connect(state->samdb, options.url, 0, NULL);
 	if (ret == -1) {
-		state->log(ISC_LOG_ERROR, "samba dlz_bind9: Failed to connect to %s - %s",
+		state->log(ISC_LOG_ERROR, "samba_dlz: Failed to connect to %s - %s",
 			   options.url, ldb_errstring(state->samdb));
 		result = ISC_R_FAILURE;
 		goto failed;
@@ -370,7 +519,7 @@ _PUBLIC_ isc_result_t dlz_create(const char *dlzname,
 
 	ret = ldb_modules_hook(state->samdb, LDB_MODULE_HOOK_CMDLINE_POSTCONNECT);
 	if (ret != LDB_SUCCESS) {
-		state->log(ISC_LOG_ERROR, "samba dlz_bind9: Failed postconnect for %s - %s",
+		state->log(ISC_LOG_ERROR, "samba_dlz: Failed postconnect for %s - %s",
 			   options.url, ldb_errstring(state->samdb));
 		result = ISC_R_FAILURE;
 		goto failed;
@@ -378,13 +527,13 @@ _PUBLIC_ isc_result_t dlz_create(const char *dlzname,
 
 	dn = ldb_get_default_basedn(state->samdb);
 	if (dn == NULL) {
-		state->log(ISC_LOG_ERROR, "samba dlz_bind9: Unable to get basedn for %s - %s",
+		state->log(ISC_LOG_ERROR, "samba_dlz: Unable to get basedn for %s - %s",
 			   options.url, ldb_errstring(state->samdb));
 		result = ISC_R_FAILURE;
 		goto failed;
 	}
 
-	state->log(ISC_LOG_INFO, "samba dlz_bind9: started for DN %s",
+	state->log(ISC_LOG_INFO, "samba_dlz: started for DN %s",
 		   ldb_dn_get_linearized(dn));
 
 	*dbdata = state;
@@ -403,17 +552,17 @@ failed:
 _PUBLIC_ void dlz_destroy(void *dbdata)
 {
 	struct dlz_bind9_data *state = talloc_get_type_abort(dbdata, struct dlz_bind9_data);
-	state->log(ISC_LOG_INFO, "samba dlz_bind9: shutting down");
+	state->log(ISC_LOG_INFO, "samba_dlz: shutting down");
 	talloc_free(state);
 }
 
 
 /*
-  see if we handle a given zone
+  return the base DN for a zone
  */
-_PUBLIC_ isc_result_t dlz_findzonedb(void *dbdata, const char *name)
+static isc_result_t b9_find_zone_dn(struct dlz_bind9_data *state, const char *zone_name,
+				    TALLOC_CTX *mem_ctx, struct ldb_dn **zone_dn)
 {
-	struct dlz_bind9_data *state = talloc_get_type_abort(dbdata, struct dlz_bind9_data);
 	int ret;
 	TALLOC_CTX *tmp_ctx = talloc_new(state);
 	const char *attrs[] = { NULL };
@@ -429,13 +578,16 @@ _PUBLIC_ isc_result_t dlz_findzonedb(void *dbdata, const char *name)
 			return ISC_R_NOMEMORY;
 		}
 
-		if (!ldb_dn_add_child_fmt(dn, "DC=%s,%s", name, zone_prefixes[i])) {
+		if (!ldb_dn_add_child_fmt(dn, "DC=%s,%s", zone_name, zone_prefixes[i])) {
 			talloc_free(tmp_ctx);
 			return ISC_R_NOMEMORY;
 		}
 
 		ret = ldb_search(state->samdb, tmp_ctx, &res, dn, LDB_SCOPE_BASE, attrs, "objectClass=dnsZone");
 		if (ret == LDB_SUCCESS) {
+			if (zone_dn != NULL) {
+				*zone_dn = talloc_steal(mem_ctx, dn);
+			}
 			talloc_free(tmp_ctx);
 			return ISC_R_SUCCESS;
 		}
@@ -444,6 +596,55 @@ _PUBLIC_ isc_result_t dlz_findzonedb(void *dbdata, const char *name)
 
 	talloc_free(tmp_ctx);
 	return ISC_R_NOTFOUND;
+}
+
+
+/*
+  return the DN for a name. The record does not need to exist, but the
+  zone must exist
+ */
+static isc_result_t b9_find_name_dn(struct dlz_bind9_data *state, const char *name,
+				    TALLOC_CTX *mem_ctx, struct ldb_dn **dn)
+{
+	const char *p;
+
+	/* work through the name piece by piece, until we find a zone */
+	for (p=name; p; ) {
+		isc_result_t result;
+		result = b9_find_zone_dn(state, p, mem_ctx, dn);
+		if (result == ISC_R_SUCCESS) {
+			/* we found a zone, now extend the DN to get
+			 * the full DN
+			 */
+			bool ret;
+			if (p == name) {
+				ret = ldb_dn_add_child_fmt(*dn, "DC=@");
+			} else {
+				ret = ldb_dn_add_child_fmt(*dn, "DC=%.*s", (int)(p-name)-1, name);
+			}
+			if (!ret) {
+				talloc_free(*dn);
+				return ISC_R_NOMEMORY;
+			}
+			return ISC_R_SUCCESS;
+		}
+		p = strchr(p, '.');
+		if (p == NULL) {
+			break;
+		}
+		p++;
+	}
+	return ISC_R_NOTFOUND;
+}
+
+
+/*
+  see if we handle a given zone
+ */
+_PUBLIC_ isc_result_t dlz_findzonedb(void *dbdata, const char *name)
+{
+	struct dlz_bind9_data *state = talloc_get_type_abort(dbdata, struct dlz_bind9_data);
+	return b9_find_zone_dn(state, name, NULL, NULL);
 }
 
 
@@ -499,7 +700,7 @@ static isc_result_t dlz_lookup_types(struct dlz_bind9_data *state,
 		ndr_err = ndr_pull_struct_blob(&el->values[i], tmp_ctx, &rec,
 					       (ndr_pull_flags_fn_t)ndr_pull_dnsp_DnssrvRpcRecord);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-			state->log(ISC_LOG_ERROR, "samba dlz_bind9: failed to parse dnsRecord for %s",
+			state->log(ISC_LOG_ERROR, "samba_dlz: failed to parse dnsRecord for %s",
 				   ldb_dn_get_linearized(dn));
 			talloc_free(tmp_ctx);
 			return ISC_R_FAILURE;
@@ -618,7 +819,7 @@ _PUBLIC_ isc_result_t dlz_allnodes(const char *zone, void *dbdata,
 			ndr_err = ndr_pull_struct_blob(&el->values[j], el_ctx, &rec,
 						       (ndr_pull_flags_fn_t)ndr_pull_dnsp_DnssrvRpcRecord);
 			if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-				state->log(ISC_LOG_ERROR, "samba dlz_bind9: failed to parse dnsRecord for %s",
+				state->log(ISC_LOG_ERROR, "samba_dlz: failed to parse dnsRecord for %s",
 					   ldb_dn_get_linearized(dn));
 				talloc_free(el_ctx);
 				continue;
@@ -645,16 +846,26 @@ _PUBLIC_ isc_result_t dlz_newversion(const char *zone, void *dbdata, void **vers
 {
 	struct dlz_bind9_data *state = talloc_get_type_abort(dbdata, struct dlz_bind9_data);
 
-	state->log(ISC_LOG_INFO, "samba dlz_bind9: starting transaction on zone %s", zone);
+	state->log(ISC_LOG_INFO, "samba_dlz: starting transaction on zone %s", zone);
 
-	if (state->transaction_started) {
-		state->log(ISC_LOG_INFO, "samba dlz_bind9: transaction already started for zone %s", zone);
+	if (state->transaction_token != NULL) {
+		state->log(ISC_LOG_INFO, "samba_dlz: transaction already started for zone %s", zone);
 		return ISC_R_FAILURE;
 	}
 
-	state->transaction_started = true;
+	state->transaction_token = talloc_zero(state, int);
+	if (state->transaction_token == NULL) {
+		return ISC_R_NOMEMORY;
+	}
 
-	*versionp = (void *) &state->transaction_started;
+	if (ldb_transaction_start(state->samdb) != LDB_SUCCESS) {
+		state->log(ISC_LOG_INFO, "samba_dlz: failed to start a transaction for zone %s", zone);
+		talloc_free(state->transaction_token);
+		state->transaction_token = NULL;
+		return ISC_R_FAILURE;
+	}
+
+	*versionp = (void *)state->transaction_token;
 
 	return ISC_R_SUCCESS;
 }
@@ -667,21 +878,28 @@ _PUBLIC_ void dlz_closeversion(const char *zone, isc_boolean_t commit,
 {
 	struct dlz_bind9_data *state = talloc_get_type_abort(dbdata, struct dlz_bind9_data);
 
-	if (!state->transaction_started) {
-		state->log(ISC_LOG_INFO, "samba dlz_bind9: transaction not started for zone %s", zone);
-		*versionp = NULL;
+	if (state->transaction_token != (int *)*versionp) {
+		state->log(ISC_LOG_INFO, "samba_dlz: transaction not started for zone %s", zone);
 		return;
 	}
 
-	state->transaction_started = false;
-
-	*versionp = NULL;
-
 	if (commit) {
-		state->log(ISC_LOG_INFO, "samba dlz_bind9: committing transaction on zone %s", zone);
+		if (ldb_transaction_commit(state->samdb) != LDB_SUCCESS) {
+			state->log(ISC_LOG_INFO, "samba_dlz: failed to commit a transaction for zone %s", zone);
+			return;
+		}
+		state->log(ISC_LOG_INFO, "samba_dlz: committed transaction on zone %s", zone);
 	} else {
-		state->log(ISC_LOG_INFO, "samba dlz_bind9: cancelling transaction on zone %s", zone);
+		if (ldb_transaction_cancel(state->samdb) != LDB_SUCCESS) {
+			state->log(ISC_LOG_INFO, "samba_dlz: failed to cancel a transaction for zone %s", zone);
+			return;
+		}
+		state->log(ISC_LOG_INFO, "samba_dlz: cancelling transaction on zone %s", zone);
 	}
+
+	talloc_free(state->transaction_token);
+	state->transaction_token = NULL;
+	*versionp = NULL;
 }
 
 
@@ -742,9 +960,9 @@ _PUBLIC_ isc_result_t dlz_configure(dns_view_t *view, void *dbdata)
 	struct ldb_dn *dn;
 	int i;
 
-	state->log(ISC_LOG_INFO, "samba dlz_bind9: starting configure");
+	state->log(ISC_LOG_INFO, "samba_dlz: starting configure");
 	if (state->writeable_zone == NULL) {
-		state->log(ISC_LOG_INFO, "samba dlz_bind9: no writeable_zone method available");
+		state->log(ISC_LOG_INFO, "samba_dlz: no writeable_zone method available");
 		return ISC_R_FAILURE;
 	}
 
@@ -783,12 +1001,12 @@ _PUBLIC_ isc_result_t dlz_configure(dns_view_t *view, void *dbdata)
 			}
 			result = state->writeable_zone(view, zone);
 			if (result != ISC_R_SUCCESS) {
-				state->log(ISC_LOG_ERROR, "samba dlz_bind9: Failed to configure zone '%s'",
+				state->log(ISC_LOG_ERROR, "samba_dlz: Failed to configure zone '%s'",
 					   zone);
 				talloc_free(tmp_ctx);
 				return result;
 			}
-			state->log(ISC_LOG_INFO, "samba dlz_bind9: configured writeable zone '%s'", zone);
+			state->log(ISC_LOG_INFO, "samba_dlz: configured writeable zone '%s'", zone);
 		}
 	}
 
@@ -805,48 +1023,424 @@ _PUBLIC_ isc_boolean_t dlz_ssumatch(const char *signer, const char *name, const 
 {
 	struct dlz_bind9_data *state = talloc_get_type_abort(dbdata, struct dlz_bind9_data);
 
-	state->log(ISC_LOG_INFO, "samba dlz_bind9: allowing update of signer=%s name=%s tcpaddr=%s type=%s key=%s keydatalen=%u",
+	state->log(ISC_LOG_INFO, "samba_dlz: allowing update of signer=%s name=%s tcpaddr=%s type=%s key=%s keydatalen=%u",
 		   signer, name, tcpaddr, type, key, keydatalen);
 	return true;
 }
 
 
+/*
+  add a new record
+ */
+static isc_result_t b9_add_record(struct dlz_bind9_data *state, const char *name,
+				  struct ldb_dn *dn,
+				  struct dnsp_DnssrvRpcRecord *rec)
+{
+	struct ldb_message *msg;
+	enum ndr_err_code ndr_err;
+	struct ldb_val v;
+	int ret;
+
+	msg = ldb_msg_new(rec);
+	if (msg == NULL) {
+		return ISC_R_NOMEMORY;
+	}
+	msg->dn = dn;
+	ret = ldb_msg_add_string(msg, "objectClass", "dnsNode");
+	if (ret != LDB_SUCCESS) {
+		return ISC_R_FAILURE;
+	}
+
+	ndr_err = ndr_push_struct_blob(&v, rec, rec, (ndr_push_flags_fn_t)ndr_push_dnsp_DnssrvRpcRecord);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		return ISC_R_FAILURE;
+	}
+	ret = ldb_msg_add_value(msg, "dnsRecord", &v, NULL);
+	if (ret != LDB_SUCCESS) {
+		return ISC_R_FAILURE;
+	}
+
+	ret = ldb_add(state->samdb, msg);
+	if (ret != LDB_SUCCESS) {
+		return ISC_R_FAILURE;
+	}
+
+	return ISC_R_SUCCESS;
+}
+
+
+/*
+  see if two dns records match
+ */
+static bool b9_record_match(struct dlz_bind9_data *state,
+			    struct dnsp_DnssrvRpcRecord *rec1, struct dnsp_DnssrvRpcRecord *rec2)
+{
+	if (rec1->wType != rec2->wType) {
+		return false;
+	}
+	/* see if this type is single valued */
+	if (b9_single_valued(rec1->wType)) {
+		return true;
+	}
+
+	/* see if the data matches */
+	switch (rec1->wType) {
+	case DNS_TYPE_A:
+		return strcmp(rec1->data.ipv4, rec2->data.ipv4) == 0;
+	case DNS_TYPE_AAAA:
+		return strcmp(rec1->data.ipv6, rec2->data.ipv6) == 0;
+	case DNS_TYPE_CNAME:
+		return strcmp(rec1->data.cname, rec2->data.cname) == 0;
+	case DNS_TYPE_TXT:
+		return strcmp(rec1->data.txt, rec2->data.txt) == 0;
+	case DNS_TYPE_PTR:
+		return strcmp(rec1->data.ptr, rec2->data.ptr) == 0;
+	case DNS_TYPE_NS:
+		return strcmp(rec1->data.ns, rec2->data.ns) == 0;
+
+	case DNS_TYPE_SRV:
+		return rec1->data.srv.wPriority == rec2->data.srv.wPriority &&
+			rec1->data.srv.wWeight  == rec2->data.srv.wWeight &&
+			rec1->data.srv.wPort    == rec2->data.srv.wPort &&
+			strcmp(rec1->data.srv.nameTarget, rec2->data.srv.nameTarget) == 0;
+
+	case DNS_TYPE_MX:
+		return rec1->data.mx.wPriority == rec2->data.mx.wPriority &&
+			strcmp(rec1->data.mx.nameTarget, rec2->data.mx.nameTarget) == 0;
+
+	case DNS_TYPE_HINFO:
+		return strcmp(rec1->data.hinfo.cpu, rec2->data.hinfo.cpu) == 0 &&
+			strcmp(rec1->data.hinfo.os, rec2->data.hinfo.os) == 0;
+
+	case DNS_TYPE_SOA:
+		return strcmp(rec1->data.soa.mname, rec2->data.soa.mname) == 0 &&
+			strcmp(rec1->data.soa.rname, rec2->data.soa.rname) == 0 &&
+			rec1->data.soa.serial == rec2->data.soa.serial &&
+			rec1->data.soa.refresh == rec2->data.soa.refresh &&
+			rec1->data.soa.retry == rec2->data.soa.retry &&
+			rec1->data.soa.expire == rec2->data.soa.expire &&
+			rec1->data.soa.minimum == rec2->data.soa.minimum;
+	default:
+		state->log(ISC_LOG_ERROR, "samba b9_putrr: unhandled record type %u",
+			   rec1->wType);
+		break;
+	}
+
+	return false;
+}
+
+
+/*
+  add or modify a rdataset
+ */
 _PUBLIC_ isc_result_t dlz_addrdataset(const char *name, const char *rdatastr, void *dbdata, void *version)
 {
 	struct dlz_bind9_data *state = talloc_get_type_abort(dbdata, struct dlz_bind9_data);
+	struct dnsp_DnssrvRpcRecord *rec;
+	struct ldb_dn *dn;
+	isc_result_t result;
+	struct ldb_result *res;
+	const char *attrs[] = { "dnsRecord", NULL };
+	int ret, i;
+	struct ldb_message_element *el;
+	enum ndr_err_code ndr_err;
 
-	if (version != (void *) &state->transaction_started) {
+	if (state->transaction_token != (void*)version) {
+		state->log(ISC_LOG_INFO, "samba_dlz: bad transaction version");
 		return ISC_R_FAILURE;
 	}
 
-	state->log(ISC_LOG_INFO, "samba dlz_bind9: adding rdataset %s '%s'", name, rdatastr);
+	rec = talloc_zero(state, struct dnsp_DnssrvRpcRecord);
+	if (rec == NULL) {
+		return ISC_R_NOMEMORY;
+	}
 
+	if (!b9_parse(state, rdatastr, rec)) {
+		state->log(ISC_LOG_INFO, "samba_dlz: failed to parse rdataset '%s'", rdatastr);
+		talloc_free(rec);
+		return ISC_R_FAILURE;
+	}
+
+	/* find the DN of the record */
+	result = b9_find_name_dn(state, name, rec, &dn);
+	if (result != ISC_R_SUCCESS) {
+		talloc_free(rec);
+		return result;
+	}
+
+	/* get any existing records */
+	ret = ldb_search(state->samdb, rec, &res, dn, LDB_SCOPE_BASE, attrs, "objectClass=dnsNode");
+	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
+		result = b9_add_record(state, name, dn, rec);
+		talloc_free(rec);
+		if (result == ISC_R_SUCCESS) {
+			state->log(ISC_LOG_ERROR, "samba_dlz: added %s %s", name, rdatastr);
+		}
+		return result;
+	}
+
+	/* there are existing records. We need to see if this will
+	 * replace a record or add to it
+	 */
+	el = ldb_msg_find_element(res->msgs[0], "dnsRecord");
+	if (el == NULL) {
+		state->log(ISC_LOG_ERROR, "samba_dlz: no dnsRecord attribute for %s",
+			   ldb_dn_get_linearized(dn));
+		talloc_free(rec);
+		return ISC_R_FAILURE;
+	}
+
+	for (i=0; i<el->num_values; i++) {
+		struct dnsp_DnssrvRpcRecord rec2;
+
+		ndr_err = ndr_pull_struct_blob(&el->values[i], rec, &rec2,
+					       (ndr_pull_flags_fn_t)ndr_pull_dnsp_DnssrvRpcRecord);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			state->log(ISC_LOG_ERROR, "samba_dlz: failed to parse dnsRecord for %s",
+				   ldb_dn_get_linearized(dn));
+			talloc_free(rec);
+			return ISC_R_FAILURE;
+		}
+
+		if (b9_record_match(state, rec, &rec2)) {
+			break;
+		}
+	}
+	if (i == el->num_values) {
+		/* adding a new value */
+		el->values = talloc_realloc(el, el->values, struct ldb_val, el->num_values+1);
+		if (el->values == NULL) {
+			talloc_free(rec);
+			return ISC_R_NOMEMORY;
+		}
+		el->num_values++;
+	}
+
+	ndr_err = ndr_push_struct_blob(&el->values[i], rec, rec,
+				       (ndr_push_flags_fn_t)ndr_push_dnsp_DnssrvRpcRecord);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		state->log(ISC_LOG_ERROR, "samba_dlz: failed to push dnsRecord for %s",
+			   ldb_dn_get_linearized(dn));
+		talloc_free(rec);
+		return ISC_R_FAILURE;
+	}
+
+	/* modify the record */
+	el->flags = LDB_FLAG_MOD_REPLACE;
+	ret = ldb_modify(state->samdb, res->msgs[0]);
+	if (ret != LDB_SUCCESS) {
+		state->log(ISC_LOG_ERROR, "samba_dlz: failed to modify %s - %s",
+			   ldb_dn_get_linearized(dn), ldb_errstring(state->samdb));
+		talloc_free(rec);
+		return ISC_R_FAILURE;
+	}
+
+	state->log(ISC_LOG_INFO, "samba_dlz: added rdataset %s '%s'", name, rdatastr);
+
+	talloc_free(rec);
 	return ISC_R_SUCCESS;
 }
 
+/*
+  remove a rdataset
+ */
 _PUBLIC_ isc_result_t dlz_subrdataset(const char *name, const char *rdatastr, void *dbdata, void *version)
 {
 	struct dlz_bind9_data *state = talloc_get_type_abort(dbdata, struct dlz_bind9_data);
+	struct dnsp_DnssrvRpcRecord *rec;
+	struct ldb_dn *dn;
+	isc_result_t result;
+	struct ldb_result *res;
+	const char *attrs[] = { "dnsRecord", NULL };
+	int ret, i;
+	struct ldb_message_element *el;
+	enum ndr_err_code ndr_err;
 
-	if (version != (void *) &state->transaction_started) {
+	if (state->transaction_token != (void*)version) {
+		state->log(ISC_LOG_INFO, "samba_dlz: bad transaction version");
 		return ISC_R_FAILURE;
 	}
 
-	state->log(ISC_LOG_INFO, "samba dlz_bind9: subtracting rdataset %s '%s'", name, rdatastr);
+	rec = talloc_zero(state, struct dnsp_DnssrvRpcRecord);
+	if (rec == NULL) {
+		return ISC_R_NOMEMORY;
+	}
 
+	if (!b9_parse(state, rdatastr, rec)) {
+		state->log(ISC_LOG_INFO, "samba_dlz: failed to parse rdataset '%s'", rdatastr);
+		talloc_free(rec);
+		return ISC_R_FAILURE;
+	}
+
+	/* find the DN of the record */
+	result = b9_find_name_dn(state, name, rec, &dn);
+	if (result != ISC_R_SUCCESS) {
+		talloc_free(rec);
+		return result;
+	}
+
+	/* get the existing records */
+	ret = ldb_search(state->samdb, rec, &res, dn, LDB_SCOPE_BASE, attrs, "objectClass=dnsNode");
+	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
+		talloc_free(rec);
+		return ISC_R_NOTFOUND;
+	}
+
+	/* there are existing records. We need to see if any match
+	 */
+	el = ldb_msg_find_element(res->msgs[0], "dnsRecord");
+	if (el == NULL || el->num_values == 0) {
+		state->log(ISC_LOG_ERROR, "samba_dlz: no dnsRecord attribute for %s",
+			   ldb_dn_get_linearized(dn));
+		talloc_free(rec);
+		return ISC_R_FAILURE;
+	}
+
+	for (i=0; i<el->num_values; i++) {
+		struct dnsp_DnssrvRpcRecord rec2;
+
+		ndr_err = ndr_pull_struct_blob(&el->values[i], rec, &rec2,
+					       (ndr_pull_flags_fn_t)ndr_pull_dnsp_DnssrvRpcRecord);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			state->log(ISC_LOG_ERROR, "samba_dlz: failed to parse dnsRecord for %s",
+				   ldb_dn_get_linearized(dn));
+			talloc_free(rec);
+			return ISC_R_FAILURE;
+		}
+
+		if (b9_record_match(state, rec, &rec2)) {
+			break;
+		}
+	}
+	if (i == el->num_values) {
+		talloc_free(rec);
+		return ISC_R_NOTFOUND;
+	}
+
+	if (i < el->num_values-1) {
+		memmove(&el->values[i], &el->values[i+1], sizeof(el->values[0])*((el->num_values-1)-i));
+	}
+	el->num_values--;
+
+	if (el->num_values == 0) {
+		/* delete the record */
+		ret = ldb_delete(state->samdb, dn);
+	} else {
+		/* modify the record */
+		el->flags = LDB_FLAG_MOD_REPLACE;
+		ret = ldb_modify(state->samdb, res->msgs[0]);
+	}
+	if (ret != LDB_SUCCESS) {
+		state->log(ISC_LOG_ERROR, "samba_dlz: failed to modify %s - %s",
+			   ldb_dn_get_linearized(dn), ldb_errstring(state->samdb));
+		talloc_free(rec);
+		return ISC_R_FAILURE;
+	}
+
+	state->log(ISC_LOG_INFO, "samba_dlz: subtracted rdataset %s '%s'", name, rdatastr);
+
+	talloc_free(rec);
 	return ISC_R_SUCCESS;
 }
 
 
-_PUBLIC_ isc_result_t dlz_delrdataset(const char *name, void *dbdata, void *version)
+/*
+  delete all records of the given type
+ */
+_PUBLIC_ isc_result_t dlz_delrdataset(const char *name, const char *type, void *dbdata, void *version)
 {
 	struct dlz_bind9_data *state = talloc_get_type_abort(dbdata, struct dlz_bind9_data);
+	TALLOC_CTX *tmp_ctx;
+	struct ldb_dn *dn;
+	isc_result_t result;
+	struct ldb_result *res;
+	const char *attrs[] = { "dnsRecord", NULL };
+	int ret, i;
+	struct ldb_message_element *el;
+	enum ndr_err_code ndr_err;
+	enum dns_record_type dns_type;
+	bool found = false;
 
-	if (version != (void *) &state->transaction_started) {
+	if (state->transaction_token != (void*)version) {
+		state->log(ISC_LOG_INFO, "samba_dlz: bad transaction version");
 		return ISC_R_FAILURE;
 	}
 
-	state->log(ISC_LOG_INFO, "samba dlz_bind9: deleting rdataset %s", name);
+	dns_type = b9_dns_type(type);
+	if (dns_type == DNS_TYPE_ZERO) {
+		state->log(ISC_LOG_INFO, "samba_dlz: bad dns type %s in delete", type);
+		return ISC_R_FAILURE;
+	}
 
+	tmp_ctx = talloc_new(state);
+
+	/* find the DN of the record */
+	result = b9_find_name_dn(state, name, tmp_ctx, &dn);
+	if (result != ISC_R_SUCCESS) {
+		talloc_free(tmp_ctx);
+		return result;
+	}
+
+	/* get the existing records */
+	ret = ldb_search(state->samdb, tmp_ctx, &res, dn, LDB_SCOPE_BASE, attrs, "objectClass=dnsNode");
+	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
+		talloc_free(tmp_ctx);
+		return ISC_R_NOTFOUND;
+	}
+
+	/* there are existing records. We need to see if any match the type
+	 */
+	el = ldb_msg_find_element(res->msgs[0], "dnsRecord");
+	if (el == NULL || el->num_values == 0) {
+		talloc_free(tmp_ctx);
+		return ISC_R_NOTFOUND;
+	}
+
+	for (i=0; i<el->num_values; i++) {
+		struct dnsp_DnssrvRpcRecord rec2;
+
+		ndr_err = ndr_pull_struct_blob(&el->values[i], tmp_ctx, &rec2,
+					       (ndr_pull_flags_fn_t)ndr_pull_dnsp_DnssrvRpcRecord);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			state->log(ISC_LOG_ERROR, "samba_dlz: failed to parse dnsRecord for %s",
+				   ldb_dn_get_linearized(dn));
+			talloc_free(tmp_ctx);
+			return ISC_R_FAILURE;
+		}
+
+		if (dns_type == rec2.wType) {
+			if (i < el->num_values-1) {
+				memmove(&el->values[i], &el->values[i+1],
+					sizeof(el->values[0])*((el->num_values-1)-i));
+			}
+			el->num_values--;
+			i--;
+			found = true;
+		}
+	}
+
+	if (!found) {
+		talloc_free(tmp_ctx);
+		return ISC_R_FAILURE;
+	}
+
+	if (el->num_values == 0) {
+		/* delete the record */
+		ret = ldb_delete(state->samdb, dn);
+	} else {
+		/* modify the record */
+		el->flags = LDB_FLAG_MOD_REPLACE;
+		ret = ldb_modify(state->samdb, res->msgs[0]);
+	}
+	if (ret != LDB_SUCCESS) {
+		state->log(ISC_LOG_ERROR, "samba_dlz: failed to delete type %s in %s - %s",
+			   type, ldb_dn_get_linearized(dn), ldb_errstring(state->samdb));
+		talloc_free(tmp_ctx);
+		return ISC_R_FAILURE;
+	}
+
+	state->log(ISC_LOG_INFO, "samba_dlz: deleted rdataset %s of type %s", name, type);
+
+	talloc_free(tmp_ctx);
 	return ISC_R_SUCCESS;
 }

@@ -137,4 +137,4 @@ isc_result_t dlz_subrdataset(const char *name, const char *rdatastr, void *dbdat
   dlz_delrdataset() is optional, but must be supplied if you want to
   support dynamic updates
  */
-isc_result_t dlz_delrdataset(const char *name, void *dbdata, void *version);
+isc_result_t dlz_delrdataset(const char *name, const char *type, void *dbdata, void *version);
