@@ -29,10 +29,22 @@ import subprocess
 import tempfile
 
 # Other modules import these two classes from here, for convenience:
-from testtools.testcase import TestCase, TestSkipped
+from testtools.testcase import (
+    TestCase as TesttoolsTestCase,
+    TestSkipped,
+    )
 
 
-class LdbTestCase(TestCase):
+class TestCase(TesttoolsTestCase):
+
+    def get_loadparm(self):
+        return env_loadparm()
+
+    def get_credentials(self):
+        return cmdline_credentials
+
+
+class LdbTestCase(TesttoolsTestCase):
     """Trivial test case for running tests against a LDB."""
 
     def setUp(self):
@@ -84,12 +96,7 @@ def env_get_var_value(var_name):
 cmdline_credentials = None
 
 class RpcInterfaceTestCase(TestCase):
-
-    def get_loadparm(self):
-        return env_loadparm()
-
-    def get_credentials(self):
-        return cmdline_credentials
+    """DCE/RPC Test case."""
 
 
 class ValidNetbiosNameTests(TestCase):
