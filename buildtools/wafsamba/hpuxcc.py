@@ -26,7 +26,7 @@ def gcc_modifier_hpux(conf):
     v['RPATH_ST']='-Wl,-rpath,%s'
     v['CCDEFINES_ST']='-D%s'
     v['SONAME_ST']='-Wl,-h,%s'
-    v['SHLIB_MARKER']=['-Wl,-Bdynamic']
+    v['SHLIB_MARKER']=[]
 #    v['STATICLIB_MARKER']='-Wl,-Bstatic'
     v['FULLSTATIC_MARKER']='-static'
     v['program_PATTERN']='%s'
