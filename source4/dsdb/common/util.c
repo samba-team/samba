@@ -348,6 +348,7 @@ uint32_t samdb_result_rid_from_sid(TALLOC_CTX *mem_ctx, const struct ldb_message
 struct dom_sid *samdb_result_dom_sid(TALLOC_CTX *mem_ctx, const struct ldb_message *msg, 
 				     const char *attr)
 {
+	bool ok;
 	const struct ldb_val *v;
 	struct dom_sid *sid;
 	enum ndr_err_code ndr_err;
@@ -359,9 +360,8 @@ struct dom_sid *samdb_result_dom_sid(TALLOC_CTX *mem_ctx, const struct ldb_messa
 	if (sid == NULL) {
 		return NULL;
 	}
-	ndr_err = ndr_pull_struct_blob(v, sid, sid,
-				       (ndr_pull_flags_fn_t)ndr_pull_dom_sid);
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+	ok = sid_blob_parse(*v, sid);
+	if (!ok) {
 		talloc_free(sid);
 		return NULL;
 	}
