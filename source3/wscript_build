@@ -715,8 +715,10 @@ bld.RECURSE('../libcli/security')
 
 ######################## SUBSYSTEMS #################################
 
-bld.SAMBA_SUBSYSTEM('WBCOMMON',
-                    source=WBCOMMON_SRC)
+bld.SAMBA_SUBSYSTEM('winbind-client',
+                    source=WBCOMMON_SRC,
+                    deps='replace',
+                    cflags='-DSOCKET_WRAPPER_DISABLE=1 -DWINBINDD_SOCKET_DIR=\"%s\"' % bld.env.WINBINDD_SOCKET_DIR)
 
 bld.SAMBA_LIBRARY('wbclient',
                     source='''../nsswitch/libwbclient/wbc_guid.c
@@ -728,7 +730,7 @@ bld.SAMBA_LIBRARY('wbclient',
                               ../nsswitch/libwbclient/wbc_util.c''',
                     public_headers='../nsswitch/libwbclient/wbclient.h',
                     private_library=True,
-                    public_deps='WBCOMMON')
+                    public_deps='winbind-client')
 
 bld.SAMBA_LIBRARY('netapi',
                     source=LIBNETAPI_SRC,
@@ -760,13 +762,13 @@ bld.SAMBA_LIBRARY('smbsharemodes',
 
 bld.SAMBA_LIBRARY('nss_winbind',
                   source='../nsswitch/winbind_nss_linux.c',
-                  deps='WBCOMMON',
+                  deps='winbind-client',
                   realname='libnss_winbind.so.2',
                   vnum='2')
 
 bld.SAMBA_LIBRARY('nss_wins',
                   source=WINBIND_WINS_NSS_SRC,
-                  deps='''WBCOMMON PARAM LIBSMB LIB_NONSMBD LIBTSOCKET KRBCLIENT
+                  deps='''winbind-client PARAM LIBSMB LIB_NONSMBD LIBTSOCKET KRBCLIENT
                   cap wbclient''',
                   realname='libnss_wins.so.2',
                   vnum='2')
@@ -774,7 +776,7 @@ bld.SAMBA_LIBRARY('nss_wins',
 if bld.CONFIG_SET('WITH_PAM_MODULES'):
         bld.SAMBA_LIBRARY('pamwinbind',
                           source=PAM_WINBIND_SRC,
-                          deps='intl talloc wbclient WBCOMMON LIBINIPARSER pam',
+                          deps='intl talloc wbclient winbind-client LIBINIPARSER pam',
                           cflags='-DLOCALEDIR=\"%s/locale\"' % bld.env.DATADIR,
                           realname='pam_winbind.so')
 
@@ -1441,7 +1443,7 @@ bld.SAMBA_BINARY('ntlm_auth',
                  source=NTLM_AUTH_SRC,
                  deps='''tdb talloc cap resolv krb5 k5crypto com_err wbclient PARAM LIB_NONSMBD
                  LIBS LIBSAMBA POPT_SAMBA ASN1_UTIL LIBTSOCKET
-                 PASSDB GROUPDB SMBLDAP WBCOMMON LIBINIPARSER LIBADS_SERVER
+                 PASSDB GROUPDB SMBLDAP winbind-client LIBINIPARSER LIBADS_SERVER
                  NDR_SAMR NDR_LSA NDR_NETLOGON LIBCLI_LDAP_NDR LIBNMB SLCACHE SPNEGO_PARSE''',
                  vars=locals())
 
