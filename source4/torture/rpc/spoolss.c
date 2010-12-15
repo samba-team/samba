@@ -125,7 +125,8 @@ static bool test_AddPrinterDriver_args_level_3(struct torture_context *tctx,
 					       const char *server_name,
 					       struct spoolss_AddDriverInfo8 *r,
 					       uint32_t flags,
-					       bool ex);
+					       bool ex,
+					       const char *remote_driver_dir);
 
 #define COMPARE_STRING(tctx, c,r,e) \
 	torture_assert_str_equal(tctx, c.e, r.e, "invalid value")
@@ -564,7 +565,8 @@ static bool test_EnumPrinterDrivers_findone(struct torture_context *tctx,
 					    const char *server_name,
 					    const char *environment,
 					    uint32_t level,
-					    const char *driver_name)
+					    const char *driver_name,
+					    union spoolss_DriverInfo *info_p)
 {
 	uint32_t count;
 	union spoolss_DriverInfo *info;
@@ -615,6 +617,9 @@ static bool test_EnumPrinterDrivers_findone(struct torture_context *tctx,
 			torture_assert_str_equal(tctx, environment, environment_ret, "architecture mismatch");
 		}
 		if (strequal(driver_name, driver_name_ret)) {
+			if (info_p) {
+				*info_p = info[i];
+			}
 			return true;
 		}
 	}
@@ -7418,7 +7423,7 @@ static bool torture_rpc_spoolss_printer_setup_common(struct torture_context *tct
 					       &t->driver.local.driver_directory),
 		"failed to compose local driver directory");
 
-	if (test_EnumPrinterDrivers_findone(tctx, b, server_name_slash, t->driver.remote.environment, 3, t->info2.drivername)) {
+	if (test_EnumPrinterDrivers_findone(tctx, b, server_name_slash, t->driver.remote.environment, 3, t->info2.drivername, NULL)) {
 		torture_comment(tctx, "driver '%s' (architecture: %s, version: 3) is present on server\n",
 			t->info2.drivername, t->driver.remote.environment);
 		t->have_driver = true;
@@ -7440,7 +7445,7 @@ static bool torture_rpc_spoolss_printer_setup_common(struct torture_context *tct
 		"failed to upload printer driver");
 
 	torture_assert(tctx,
-		test_AddPrinterDriver_args_level_3(tctx, b, server_name_slash, &t->driver.info8, 0, false),
+		test_AddPrinterDriver_args_level_3(tctx, b, server_name_slash, &t->driver.info8, 0, false, NULL),
 		"failed to add driver");
 
 	t->added_driver = true;
@@ -8055,12 +8060,18 @@ static bool test_AddPrinterDriverEx_exp(struct torture_context *tctx,
 	return true;
 }
 
+#define ASSERT_DRIVER_PATH(tctx, path, driver_dir, cmt) \
+	if (path && strlen(path)) {\
+		torture_assert_strn_equal(tctx, path, driver_dir, strlen(driver_dir), cmt); \
+	}
+
 static bool test_AddPrinterDriver_args_level_1(struct torture_context *tctx,
 					       struct dcerpc_binding_handle *b,
 					       const char *server_name,
 					       struct spoolss_AddDriverInfo8 *r,
 					       uint32_t flags,
-					       bool ex)
+					       bool ex,
+					       const char *remote_driver_dir)
 {
 	struct spoolss_AddDriverInfoCtr info_ctr;
 	struct spoolss_AddDriverInfo1 info1;
@@ -8100,10 +8111,12 @@ static bool test_AddPrinterDriver_args_level_2(struct torture_context *tctx,
 					       const char *server_name,
 					       struct spoolss_AddDriverInfo8 *r,
 					       uint32_t flags,
-					       bool ex)
+					       bool ex,
+					       const char *remote_driver_dir)
 {
 	struct spoolss_AddDriverInfoCtr info_ctr;
 	struct spoolss_AddDriverInfo2 info2;
+	union spoolss_DriverInfo info;
 
 	ZERO_STRUCT(info2);
 
@@ -8199,8 +8212,14 @@ static bool test_AddPrinterDriver_args_level_2(struct torture_context *tctx,
 	}
 
 	torture_assert(tctx,
-		test_EnumPrinterDrivers_findone(tctx, b, server_name, r->architecture, 2, r->driver_name),
+		test_EnumPrinterDrivers_findone(tctx, b, server_name, r->architecture, 2, r->driver_name, &info),
 		"failed to find added printer driver");
+
+	if (remote_driver_dir) {
+		ASSERT_DRIVER_PATH(tctx, info.info2.driver_path, remote_driver_dir, "unexpected path");
+		ASSERT_DRIVER_PATH(tctx, info.info2.data_file, remote_driver_dir, "unexpected path");
+		ASSERT_DRIVER_PATH(tctx, info.info2.config_file, remote_driver_dir, "unexpected path");
+	}
 
 	return true;
 }
@@ -8210,10 +8229,12 @@ static bool test_AddPrinterDriver_args_level_3(struct torture_context *tctx,
 					       const char *server_name,
 					       struct spoolss_AddDriverInfo8 *r,
 					       uint32_t flags,
-					       bool ex)
+					       bool ex,
+					       const char *remote_driver_dir)
 {
 	struct spoolss_AddDriverInfoCtr info_ctr;
 	struct spoolss_AddDriverInfo3 info3;
+	union spoolss_DriverInfo info;
 
 	info3.driver_name	= r->driver_name;
 	info3.version		= r->version;
@@ -8241,8 +8262,19 @@ static bool test_AddPrinterDriver_args_level_3(struct torture_context *tctx,
 	}
 
 	torture_assert(tctx,
-		test_EnumPrinterDrivers_findone(tctx, b, server_name, r->architecture, 3, r->driver_name),
+		test_EnumPrinterDrivers_findone(tctx, b, server_name, r->architecture, 3, r->driver_name, &info),
 		"failed to find added printer driver");
+
+	if (remote_driver_dir) {
+		int i;
+		ASSERT_DRIVER_PATH(tctx, info.info3.driver_path, remote_driver_dir, "unexpected path");
+		ASSERT_DRIVER_PATH(tctx, info.info3.data_file, remote_driver_dir, "unexpected path");
+		ASSERT_DRIVER_PATH(tctx, info.info3.config_file, remote_driver_dir, "unexpected path");
+		ASSERT_DRIVER_PATH(tctx, info.info3.help_file, remote_driver_dir, "unexpected path");
+		for (i=0; info.info3.dependent_files && info.info3.dependent_files[i] != NULL; i++) {
+			ASSERT_DRIVER_PATH(tctx, info.info3.dependent_files[i], remote_driver_dir, "unexpected path");
+		}
+	}
 
 	return true;
 }
@@ -8252,10 +8284,12 @@ static bool test_AddPrinterDriver_args_level_4(struct torture_context *tctx,
 					       const char *server_name,
 					       struct spoolss_AddDriverInfo8 *r,
 					       uint32_t flags,
-					       bool ex)
+					       bool ex,
+					       const char *remote_driver_dir)
 {
 	struct spoolss_AddDriverInfoCtr info_ctr;
 	struct spoolss_AddDriverInfo4 info4;
+	union spoolss_DriverInfo info;
 
 	info4.version		= r->version;
 	info4.driver_name	= r->driver_name;
@@ -8285,8 +8319,19 @@ static bool test_AddPrinterDriver_args_level_4(struct torture_context *tctx,
 	}
 
 	torture_assert(tctx,
-		test_EnumPrinterDrivers_findone(tctx, b, server_name, r->architecture, 4, r->driver_name),
+		test_EnumPrinterDrivers_findone(tctx, b, server_name, r->architecture, 4, r->driver_name, &info),
 		"failed to find added printer driver");
+
+	if (remote_driver_dir) {
+		int i;
+		ASSERT_DRIVER_PATH(tctx, info.info4.driver_path, remote_driver_dir, "unexpected path");
+		ASSERT_DRIVER_PATH(tctx, info.info4.data_file, remote_driver_dir, "unexpected path");
+		ASSERT_DRIVER_PATH(tctx, info.info4.config_file, remote_driver_dir, "unexpected path");
+		ASSERT_DRIVER_PATH(tctx, info.info4.help_file, remote_driver_dir, "unexpected path");
+		for (i=0; info.info4.dependent_files && info.info4.dependent_files[i] != NULL; i++) {
+			ASSERT_DRIVER_PATH(tctx, info.info4.dependent_files[i], remote_driver_dir, "unexpected path");
+		}
+	}
 
 	return true;
 }
@@ -8296,10 +8341,12 @@ static bool test_AddPrinterDriver_args_level_6(struct torture_context *tctx,
 					       const char *server_name,
 					       struct spoolss_AddDriverInfo8 *r,
 					       uint32_t flags,
-					       bool ex)
+					       bool ex,
+					       const char *remote_driver_dir)
 {
 	struct spoolss_AddDriverInfoCtr info_ctr;
 	struct spoolss_AddDriverInfo6 info6;
+	union spoolss_DriverInfo info;
 
 	info6.version		= r->version;
 	info6.driver_name	= r->driver_name;
@@ -8341,8 +8388,19 @@ static bool test_AddPrinterDriver_args_level_6(struct torture_context *tctx,
 	}
 
 	torture_assert(tctx,
-		test_EnumPrinterDrivers_findone(tctx, b, server_name, r->architecture, 6, r->driver_name),
+		test_EnumPrinterDrivers_findone(tctx, b, server_name, r->architecture, 6, r->driver_name, &info),
 		"failed to find added printer driver");
+
+	if (remote_driver_dir) {
+		int i;
+		ASSERT_DRIVER_PATH(tctx, info.info6.driver_path, remote_driver_dir, "unexpected path");
+		ASSERT_DRIVER_PATH(tctx, info.info6.data_file, remote_driver_dir, "unexpected path");
+		ASSERT_DRIVER_PATH(tctx, info.info6.config_file, remote_driver_dir, "unexpected path");
+		ASSERT_DRIVER_PATH(tctx, info.info6.help_file, remote_driver_dir, "unexpected path");
+		for (i=0; info.info6.dependent_files && info.info6.dependent_files[i] != NULL; i++) {
+			ASSERT_DRIVER_PATH(tctx, info.info6.dependent_files[i], remote_driver_dir, "unexpected path");
+		}
+	}
 
 	return true;
 }
@@ -8352,9 +8410,11 @@ static bool test_AddPrinterDriver_args_level_8(struct torture_context *tctx,
 					       const char *server_name,
 					       struct spoolss_AddDriverInfo8 *r,
 					       uint32_t flags,
-					       bool ex)
+					       bool ex,
+					       const char *remote_driver_dir)
 {
 	struct spoolss_AddDriverInfoCtr info_ctr;
+	union spoolss_DriverInfo info;
 
 	info_ctr.level = 8;
 	info_ctr.info.info8 = r;
@@ -8376,11 +8436,24 @@ static bool test_AddPrinterDriver_args_level_8(struct torture_context *tctx,
 	}
 
 	torture_assert(tctx,
-		test_EnumPrinterDrivers_findone(tctx, b, server_name, r->architecture, 8, r->driver_name),
+		test_EnumPrinterDrivers_findone(tctx, b, server_name, r->architecture, 8, r->driver_name, &info),
 		"failed to find added printer driver");
+
+	if (remote_driver_dir) {
+		int i;
+		ASSERT_DRIVER_PATH(tctx, info.info8.driver_path, remote_driver_dir, "unexpected path");
+		ASSERT_DRIVER_PATH(tctx, info.info8.data_file, remote_driver_dir, "unexpected path");
+		ASSERT_DRIVER_PATH(tctx, info.info8.config_file, remote_driver_dir, "unexpected path");
+		ASSERT_DRIVER_PATH(tctx, info.info8.help_file, remote_driver_dir, "unexpected path");
+		for (i=0; info.info8.dependent_files && info.info8.dependent_files[i] != NULL; i++) {
+			ASSERT_DRIVER_PATH(tctx, info.info8.dependent_files[i], remote_driver_dir, "unexpected path");
+		}
+	}
 
 	return true;
 }
+
+#undef ASSERT_DRIVER_PATH
 
 static bool test_DeletePrinterDriver_exp(struct torture_context *tctx,
 					 struct dcerpc_binding_handle *b,
@@ -8448,7 +8521,7 @@ static bool test_DeletePrinterDriver(struct torture_context *tctx,
 		test_DeletePrinterDriver_exp(tctx, b, server_name, driver, environment, WERR_OK),
 		"failed to delete driver");
 
-	if (test_EnumPrinterDrivers_findone(tctx, b, server_name, environment, 1, driver)) {
+	if (test_EnumPrinterDrivers_findone(tctx, b, server_name, environment, 1, driver, NULL)) {
 		torture_fail(tctx, "deleted driver still enumerated");
 	}
 
@@ -8475,7 +8548,7 @@ static bool test_DeletePrinterDriverEx(struct torture_context *tctx,
 		test_DeletePrinterDriverEx_exp(tctx, b, server_name, driver, environment, delete_flags, version, WERR_OK),
 		"failed to delete driver");
 
-	if (test_EnumPrinterDrivers_findone(tctx, b, server_name, environment, 1, driver)) {
+	if (test_EnumPrinterDrivers_findone(tctx, b, server_name, environment, 1, driver, NULL)) {
 		torture_fail(tctx, "deleted driver still enumerated");
 	}
 
@@ -8494,28 +8567,29 @@ static bool test_PrinterDriver_args(struct torture_context *tctx,
 				    uint32_t add_flags,
 				    uint32_t delete_flags,
 				    uint32_t delete_version,
-				    bool ex)
+				    bool ex,
+				    const char *remote_driver_dir)
 {
 	bool ret = true;
 
 	switch (level) {
 	case 1:
-		ret = test_AddPrinterDriver_args_level_1(tctx, b, server_name, r, add_flags, ex);
+		ret = test_AddPrinterDriver_args_level_1(tctx, b, server_name, r, add_flags, ex, remote_driver_dir);
 		break;
 	case 2:
-		ret = test_AddPrinterDriver_args_level_2(tctx, b, server_name, r, add_flags, ex);
+		ret = test_AddPrinterDriver_args_level_2(tctx, b, server_name, r, add_flags, ex, remote_driver_dir);
 		break;
 	case 3:
-		ret = test_AddPrinterDriver_args_level_3(tctx, b, server_name, r, add_flags, ex);
+		ret = test_AddPrinterDriver_args_level_3(tctx, b, server_name, r, add_flags, ex, remote_driver_dir);
 		break;
 	case 4:
-		ret = test_AddPrinterDriver_args_level_4(tctx, b, server_name, r, add_flags, ex);
+		ret = test_AddPrinterDriver_args_level_4(tctx, b, server_name, r, add_flags, ex, remote_driver_dir);
 		break;
 	case 6:
-		ret = test_AddPrinterDriver_args_level_6(tctx, b, server_name, r, add_flags, ex);
+		ret = test_AddPrinterDriver_args_level_6(tctx, b, server_name, r, add_flags, ex, remote_driver_dir);
 		break;
 	case 8:
-		ret = test_AddPrinterDriver_args_level_8(tctx, b, server_name, r, add_flags, ex);
+		ret = test_AddPrinterDriver_args_level_8(tctx, b, server_name, r, add_flags, ex, remote_driver_dir);
 		break;
 	default:
 		return false;
@@ -8878,7 +8952,7 @@ static bool test_add_driver_arg(struct torture_context *tctx,
 			"Testing PrinterDriver%s '%s' add & delete level %d\n",
 				d->ex ? "Ex" : "", info8.driver_name, levels[i]);
 
-		ret &= test_PrinterDriver_args(tctx, b, server_name_slash, levels[i], &info8, add_flags, delete_flags, d->info8.version, d->ex);
+		ret &= test_PrinterDriver_args(tctx, b, server_name_slash, levels[i], &info8, add_flags, delete_flags, d->info8.version, d->ex, d->remote.driver_directory);
 	}
 
 	info8.driver_path	= talloc_asprintf(tctx, "%s\\%s", d->remote.driver_directory, d->info8.driver_path);
@@ -8914,7 +8988,7 @@ static bool test_add_driver_arg(struct torture_context *tctx,
 			"Testing PrinterDriver%s '%s' add & delete level %d (full unc paths)\n",
 				d->ex ? "Ex" : "", info8.driver_name, levels[i]);
 
-		ret &= test_PrinterDriver_args(tctx, b, server_name_slash, levels[i], &info8, add_flags, delete_flags, d->info8.version, d->ex);
+		ret &= test_PrinterDriver_args(tctx, b, server_name_slash, levels[i], &info8, add_flags, delete_flags, d->info8.version, d->ex, d->remote.driver_directory);
 	}
 
 	torture_assert(tctx,
