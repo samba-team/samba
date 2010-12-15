@@ -633,7 +633,7 @@ static struct service sDefault = {
 	false,			/* bWidelinks */
 	True,			/* bSymlinks */
 	False,			/* bSyncAlways */
-	False,			/* bStrictAllocate */
+	True,			/* bStrictAllocate */
 	False,			/* bStrictSync */
 	'~',			/* magic char */
 	NULL,			/* copymap */

@@ -10,9 +10,10 @@
     of actually forcing the disk system to allocate real storage blocks
     when a file is created or extended to be a given size. In UNIX
     terminology this means that Samba will stop creating sparse files.
-    This can be slow on some systems. When you work with large files like
-    >100MB or so you may even run into problems with clients running into
-    timeouts.</para>
+    Modern UNIX filesystems now support extents and so in Samba 3.6.0 we
+    have changed this parameter to default to "yes". On older filesystems
+    without extents you might want to turn this parameter to "no".
+    </para>
 
     <para>When you have an extent based filesystem it's likely that we can make
     use of unwritten extents which allows Samba to allocate even large amounts
@@ -28,9 +29,9 @@
     preallocation is probably an expensive operation where you will see reduced
     performance and risk to let clients run into timeouts when creating large
     files. Examples are ext3, ZFS, HFS+ and most others, so be aware if you
-    activate this setting on those filesystems.</para>
+    leave the default setting on those filesystems.</para>
 
 </description>
 
-<value type="default">no</value>
+<value type="default">yes</value>
 </samba:parameter>
