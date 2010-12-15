@@ -148,7 +148,7 @@ static bool test_ber_write_OID_String(struct torture_context *tctx)
 static bool test_ber_read_OID_String(struct torture_context *tctx)
 {
 	int i;
-	const char *oid;
+	char *oid;
 	DATA_BLOB oid_blob;
 	TALLOC_CTX *mem_ctx;
 	const struct oid_data *data = oid_data_ok;
@@ -221,7 +221,7 @@ static bool test_ber_write_partial_OID_String(struct torture_context *tctx)
 static bool test_ber_read_partial_OID_String(struct torture_context *tctx)
 {
 	int i;
-	const char *oid;
+	char *oid;
 	DATA_BLOB oid_blob;
 	TALLOC_CTX *mem_ctx;
 	const struct oid_data *data = oid_data_ok;
