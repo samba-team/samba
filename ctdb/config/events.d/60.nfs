@@ -6,11 +6,10 @@
 service_name="nfs"
 service_start ()
 {
-    mkdir -p $CTDB_VARDIR/state/nfs
-    mkdir -p $CTDB_VARDIR/state/statd/ip
     startstop_nfs stop
     startstop_nfs start
     set_proc "sys/net/ipv4/tcp_tw_recycle" 1
+    touch "$service_state_dir/update-trigger"
 }
 service_stop ()
 {
@@ -22,6 +21,8 @@ loadconfig
 
 [ "$NFS_SERVER_MODE" != "GANESHA" ] || exit 0
 
+ctdb_setup_service_state_dir
+
 ctdb_start_stop_service
 
 is_ctdb_managed_service || exit 0
@@ -32,8 +33,6 @@ case "$1" in
 	;;
      startup)
 	ctdb_service_start
-	mkdir -p $CTDB_VARDIR/state/statd
-	touch $CTDB_VARDIR/state/statd/update-trigger
 	;;
 
      shutdown)
@@ -183,11 +182,10 @@ case "$1" in
 
 	# once every 600 seconds, update the statd state database for which
 	# clients need notifications
-	LAST_UPDATE=`stat --printf="%Y" $CTDB_VARDIR/state/statd/update-trigger 2>/dev/null`
+	LAST_UPDATE=`stat --printf="%Y" "$service_state_dir/update-trigger"`
 	CURRENT_TIME=`date +"%s"`
 	[ $CURRENT_TIME -ge $(($LAST_UPDATE + 600)) ] && {
-	    mkdir -p $CTDB_VARDIR/state/statd
-	    touch $CTDB_VARDIR/state/statd/update-trigger
+	    touch "$service_state_dir/update-trigger"
 	    $CTDB_BASE/statd-callout updatelocal &
 	    $CTDB_BASE/statd-callout updateremote &
 	}
