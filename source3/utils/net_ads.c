@@ -1197,10 +1197,12 @@ done:
 	return status;
 }
 
-static NTSTATUS net_update_dns(TALLOC_CTX *mem_ctx, ADS_STRUCT *ads, const char *hostname)
+static NTSTATUS net_update_dns_ext(TALLOC_CTX *mem_ctx, ADS_STRUCT *ads,
+				   const char *hostname,
+				   struct sockaddr_storage *iplist,
+				   int num_addrs)
 {
-	int num_addrs;
-	struct sockaddr_storage *iplist = NULL;
+	struct sockaddr_storage *iplist_alloc = NULL;
 	fstring machine_name;
 	NTSTATUS status;
 
@@ -1211,19 +1213,32 @@ static NTSTATUS net_update_dns(TALLOC_CTX *mem_ctx, ADS_STRUCT *ads, const char 
 	}
 	strlower_m( machine_name );
 
-	/* Get our ip address (not the 127.0.0.x address but a real ip
-	 * address) */
-
-	num_addrs = get_my_ip_address( &iplist );
-	if ( num_addrs <= 0 ) {
-		DEBUG(4,("net_update_dns: Failed to find my non-loopback IP "
-			 "addresses!\n"));
-		return NT_STATUS_INVALID_PARAMETER;
+	if (num_addrs == 0 || iplist == NULL) {
+		/*
+		 * Get our ip address
+		 * (not the 127.0.0.x address but a real ip address)
+		 */
+		num_addrs = get_my_ip_address(&iplist_alloc);
+		if ( num_addrs <= 0 ) {
+			DEBUG(4, ("net_update_dns_ext: Failed to find my "
+				  "non-loopback IP addresses!\n"));
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+		iplist = iplist_alloc;
 	}
 
 	status = net_update_dns_internal(mem_ctx, ads, machine_name,
 					 iplist, num_addrs);
-	SAFE_FREE( iplist );
+
+	SAFE_FREE(iplist_alloc);
+	return status;
+}
+
+static NTSTATUS net_update_dns(TALLOC_CTX *mem_ctx, ADS_STRUCT *ads, const char *hostname)
+{
+	NTSTATUS status;
+
+	status = net_update_dns_ext(mem_ctx, ads, hostname, NULL, 0);
 	return status;
 }
 #endif
