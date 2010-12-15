@@ -376,7 +376,7 @@ name: """ + object_name + """
             self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
         pass
 
-ldb = samba.tests.connect_samdb(host, credentials=creds, session_info=system_session(), lp=lp)
+ldb = samba.tests.connect_samdb(host, credentials=creds, session_info=system_session(lp), lp=lp)
 runner = SubunitTestRunner()
 rc = 0
 if not runner.run(unittest.makeSuite(SyntaxTests)).wasSuccessful():

@@ -2363,7 +2363,7 @@ if not "://" in host:
     else:
         host = "ldap://%s" % host
 
-ldb = SamDB(host, credentials=creds, session_info=system_session(), lp=lp)
+ldb = SamDB(host, credentials=creds, session_info=system_session(lp), lp=lp)
 
 runner = SubunitTestRunner()
 rc = 0

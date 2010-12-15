@@ -919,7 +919,7 @@ if not "://" in host:
     else:
         host = "ldap://%s" % host
 
-ldb = SamDB(url=host, session_info=system_session(), credentials=creds, lp=lp)
+ldb = SamDB(url=host, session_info=system_session(lp), credentials=creds, lp=lp)
 
 # Gets back the basedn
 base_dn = ldb.domain_dn()

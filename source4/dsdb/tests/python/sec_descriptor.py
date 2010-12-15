@@ -1862,7 +1862,7 @@ if host.lower().startswith("ldap://"):
 
 ldb = SamDB(host,
             credentials=creds,
-            session_info=system_session(),
+            session_info=system_session(lp),
             lp=lp,
             options=ldb_options)
 

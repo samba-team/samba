@@ -567,7 +567,7 @@ if host.startswith("ldap://"):
     # user 'paged_search' module when connecting remotely
     ldb_options = ["modules:paged_searches"]
 
-ldb = SamDB(host, credentials=creds, session_info=system_session(), lp=lp, options=ldb_options)
+ldb = SamDB(host, credentials=creds, session_info=system_session(lp), lp=lp, options=ldb_options)
 
 runner = SubunitTestRunner()
 rc = 0

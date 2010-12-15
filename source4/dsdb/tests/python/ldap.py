@@ -2647,10 +2647,10 @@ if not "://" in host:
     else:
         host = "ldap://%s" % host
 
-ldb = SamDB(host, credentials=creds, session_info=system_session(), lp=lp)
+ldb = SamDB(host, credentials=creds, session_info=system_session(lp), lp=lp)
 if not "tdb://" in host:
     gc_ldb = Ldb("%s:3268" % host, credentials=creds,
-                 session_info=system_session(), lp=lp)
+                 session_info=system_session(lp), lp=lp)
 else:
     gc_ldb = None
 

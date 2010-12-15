@@ -369,7 +369,7 @@ if not "://" in host:
         host = "ldap://%s" % host
 
 
-ldb = SamDB(host, credentials=creds, session_info=system_session(), lp=lp,
+ldb = SamDB(host, credentials=creds, session_info=system_session(lp), lp=lp,
             global_schema=False)
 
 runner = SubunitTestRunner()
