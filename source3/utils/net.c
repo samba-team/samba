@@ -924,11 +924,11 @@ static struct functable net_func[] = {
 		c->opt_password = getenv("PASSWD");
 	}
 
+	/* Failing to init the msg_ctx isn't a fatal error. Only
+	   root-level things (joining/leaving domains etc.) will be denied. */
+
 	c->msg_ctx = messaging_init(c, procid_self(),
 				    event_context_init(c));
-	if (c->msg_ctx == NULL) {
-		exit(1);
-	}
 
 	rc = net_run_function(c, argc_new-1, argv_new+1, "net", net_func);
 
