@@ -660,7 +660,7 @@ int asn1_tag_remaining(struct asn1_data *data)
  * till buffer ends or not valid sub-identifier is found.
  */
 static bool _ber_read_OID_String_impl(TALLOC_CTX *mem_ctx, DATA_BLOB blob,
-					const char **OID, size_t *bytes_eaten)
+				      char **OID, size_t *bytes_eaten)
 {
 	int i;
 	uint8_t *b;
@@ -699,7 +699,7 @@ nomem:
 }
 
 /* read an object ID from a data blob */
-bool ber_read_OID_String(TALLOC_CTX *mem_ctx, DATA_BLOB blob, const char **OID)
+bool ber_read_OID_String(TALLOC_CTX *mem_ctx, DATA_BLOB blob, char **OID)
 {
 	size_t bytes_eaten;
 
@@ -715,14 +715,15 @@ bool ber_read_OID_String(TALLOC_CTX *mem_ctx, DATA_BLOB blob, const char **OID)
  *   1:2.5.6:0x81
  *   1:2.5.6:0x8182
  */
-bool ber_read_partial_OID_String(TALLOC_CTX *mem_ctx, DATA_BLOB blob, const char **partial_oid)
+bool ber_read_partial_OID_String(TALLOC_CTX *mem_ctx, DATA_BLOB blob,
+				 char **partial_oid)
 {
 	size_t bytes_left;
 	size_t bytes_eaten;
 	char *identifier = NULL;
 	char *tmp_oid = NULL;
 
-	if (!_ber_read_OID_String_impl(mem_ctx, blob, (const char **)&tmp_oid, &bytes_eaten))
+	if (!_ber_read_OID_String_impl(mem_ctx, blob, &tmp_oid, &bytes_eaten))
 		return false;
 
 	if (bytes_eaten < blob.length) {
@@ -746,7 +747,7 @@ nomem:
 }
 
 /* read an object ID from a ASN1 buffer */
-bool asn1_read_OID(struct asn1_data *data, TALLOC_CTX *mem_ctx, const char **OID)
+bool asn1_read_OID(struct asn1_data *data, TALLOC_CTX *mem_ctx, char **OID)
 {
 	DATA_BLOB blob;
 	int len;
@@ -785,16 +786,16 @@ bool asn1_read_OID(struct asn1_data *data, TALLOC_CTX *mem_ctx, const char **OID
 /* check that the next object ID is correct */
 bool asn1_check_OID(struct asn1_data *data, const char *OID)
 {
-	const char *id;
+	char *id;
 
 	if (!asn1_read_OID(data, data, &id)) return false;
 
 	if (strcmp(id, OID) != 0) {
-		talloc_free(discard_const(id));
+		talloc_free(id);
 		data->has_error = true;
 		return false;
 	}
-	talloc_free(discard_const(id));
+	talloc_free(id);
 	return true;
 }
 
