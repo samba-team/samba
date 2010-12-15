@@ -311,6 +311,16 @@ void torture_result(struct torture_context *test,
 	} \
 	} while(0)
 
+#define torture_assert_strn_equal(torture_ctx,got,expected,len,cmt)\
+	do { const char *__got = (got), *__expected = (expected); \
+	if (strncmp(__got, __expected, len) != 0) { \
+		torture_result(torture_ctx, TORTURE_FAIL, \
+					   __location__": "#got" %s of len %d did not match "#expected" %s: %s", \
+					   __got, (int)len, __expected, cmt); \
+		return false; \
+	} \
+	} while(0)
+
 #define torture_assert_str_equal_goto(torture_ctx,got,expected,ret,label,cmt)\
 	do { const char *__got = (got), *__expected = (expected); \
 	if (strcmp_safe(__got, __expected) != 0) { \
