@@ -584,7 +584,6 @@ static NTSTATUS gensec_spnego_create_negTokenInit(struct gensec_security *gensec
 	const char **mechTypes = NULL;
 	DATA_BLOB unwrapped_out = data_blob(NULL, 0);
 	const struct gensec_security_ops_wrapper *all_sec;
-	const char *principal = NULL;
 
 	mechTypes = gensec_security_oids(gensec_security, 
 					 out_mem_ctx, GENSEC_OID_SPNEGO);
