@@ -36,7 +36,7 @@ _PUBLIC_ void ndr_print_dnsp_name(struct ndr_print *ndr, const char *name,
 */
 _PUBLIC_ enum ndr_err_code ndr_pull_dnsp_name(struct ndr_pull *ndr, int ndr_flags, const char **name)
 {
-	uint8_t len, count;
+	uint8_t len, count, final;
 	int i;
 	uint32_t total_len;
 	char *ret;
@@ -68,14 +68,15 @@ _PUBLIC_ enum ndr_err_code ndr_pull_dnsp_name(struct ndr_pull *ndr, int ndr_flag
 		ret[newlen-1] = 0;
 		total_len = newlen;
 	}
+	NDR_CHECK(ndr_pull_uint8(ndr, ndr_flags, &final));
 	(*name) = ret;
-	NDR_PULL_ALIGN(ndr, 2);
 	return NDR_ERR_SUCCESS;
 }
 
 enum ndr_err_code ndr_push_dnsp_name(struct ndr_push *ndr, int ndr_flags, const char *name)
 {
 	int count, total_len, i;
+
 	/* count the dots */
 	for (count=i=0; name[i]; i++) {
 		if (name[i] == '.') count++;
@@ -94,7 +95,7 @@ enum ndr_err_code ndr_push_dnsp_name(struct ndr_push *ndr, int ndr_flags, const 
 		NDR_CHECK(ndr_push_bytes(ndr, (const uint8_t *)name, sublen));
 		name += sublen + 1;
 	}
-	NDR_PUSH_ALIGN(ndr, 2);
+	NDR_CHECK(ndr_push_uint8(ndr, ndr_flags, 0));
 
 	return NDR_ERR_SUCCESS;
 }
