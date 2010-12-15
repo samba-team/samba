@@ -145,6 +145,7 @@ def build(bld):
                          'modules/paged_results.c',
                          init_function='ldb_paged_results_init',
                          module_init_name='ldb_init_module',
+                         internal_module=False,
                          deps='ldb',
                          subsystem='ldb')
 
@@ -152,12 +153,14 @@ def build(bld):
                          'modules/asq.c',
                          init_function='ldb_asq_init',
                          module_init_name='ldb_init_module',
+                         internal_module=False,
                          deps='ldb',
                          subsystem='ldb')
 
         bld.SAMBA_MODULE('ldb_server_sort',
                          'modules/sort.c',
                          init_function='ldb_server_sort_init',
+                         internal_module=False,
                          module_init_name='ldb_init_module',
                          deps='ldb',
                          subsystem='ldb')
@@ -165,6 +168,7 @@ def build(bld):
         bld.SAMBA_MODULE('ldb_paged_searches',
                          'modules/paged_searches.c',
                          init_function='ldb_paged_searches_init',
+                         internal_module=False,
                          module_init_name='ldb_init_module',
                          deps='ldb',
                          subsystem='ldb')
@@ -172,6 +176,7 @@ def build(bld):
         bld.SAMBA_MODULE('ldb_rdn_name',
                          'modules/rdn_name.c',
                          init_function='ldb_rdn_name_init',
+                         internal_module=False,
                          module_init_name='ldb_init_module',
                          deps='ldb',
                          subsystem='ldb')
@@ -179,6 +184,7 @@ def build(bld):
         bld.SAMBA_MODULE('ldb_sample',
                          'tests/sample_module.c',
                          init_function='ldb_sample_init',
+                         internal_module=False,
                          module_init_name='ldb_init_module',
                          deps='ldb',
                          subsystem='ldb')
@@ -186,6 +192,7 @@ def build(bld):
         bld.SAMBA_MODULE('ldb_skel',
                          'modules/skel.c',
                          init_function='ldb_skel_init',
+                         internal_module=False,
                          module_init_name='ldb_init_module',
                          deps='ldb',
                          subsystem='ldb')
@@ -193,6 +200,7 @@ def build(bld):
         bld.SAMBA_MODULE('ldb_sqlite3',
                          'sqlite3/ldb_sqlite3.c',
                          init_function='ldb_sqlite3_init',
+                         internal_module=False,
                          module_init_name='ldb_init_module',
                          enabled=False,
                          deps='ldb',
@@ -204,6 +212,7 @@ def build(bld):
                                     ldb_cache.c ldb_tdb_wrap.c'''),
                          init_function='ldb_tdb_init',
                          module_init_name='ldb_init_module',
+                         internal_module=False,
                          deps='tdb ldb',
                          subsystem='ldb')
 
