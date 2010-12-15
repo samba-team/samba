@@ -57,7 +57,7 @@ bool interpret_string_addr_internal(struct addrinfo **ppres,
 	hints.ai_flags = flags;
 
 	/* Linux man page on getaddrinfo() says port will be
-	   uninitialized when service string in NULL */
+	   uninitialized when service string is NULL */
 
 	ret = getaddrinfo(str, NULL,
 			&hints,
