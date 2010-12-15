@@ -639,34 +639,58 @@ ctdb_setstatus ()
     esac
 }
 
+##################################################################
+# Reconfigure a service on demand
+
+_ctdb_service_reconfigure_common ()
+{
+    _d="$ctdb_status_dir/${1:-${service_name}}"
+    mkdir -p "$_d"
+    _ctdb_service_reconfigure_flag="$_d/reconfigure"
+}
+
 ctdb_service_needs_reconfigure ()
 {
-    [ -e "$ctdb_status_dir/$service_name/reconfigure" ]
+    _ctdb_service_reconfigure_common "$@"
+    [ -e "$_ctdb_service_reconfigure_flag" ]
 }
 
 ctdb_service_set_reconfigure ()
 {
-    d="$ctdb_status_dir/$service_name"
-    mkdir -p "$d"
-    >"$d/reconfigure"
+    _ctdb_service_reconfigure_common "$@"
+    >"$_ctdb_service_reconfigure_flag"
 }
 
 ctdb_service_unset_reconfigure ()
 {
-    rm -f "$ctdb_status_dir/$service_name/reconfigure"
+    _ctdb_service_reconfigure_common "$@"
+    rm -f "$_ctdb_service_reconfigure_flag"
 }
 
 ctdb_service_reconfigure ()
 {
     echo "Reconfiguring service \"$service_name\"..."
-    if [ -n "$service_reconfigure" ] ; then
-	eval $service_reconfigure
-    else
-	service "$service_name" restart
-    fi
-    ctdb_service_unset_reconfigure
-    ctdb_counter_init
+    ctdb_service_unset_reconfigure "$@"
+    service_reconfigure "$@" || return $?
+    ctdb_counter_init "$@"
 }
+
+# Default service_reconfigure() function.
+service_reconfigure ()
+{
+    service "${1:-$service_name}" restart
+}
+
+ctdb_service_check_reconfigure ()
+{
+    if ctdb_service_needs_reconfigure "$@" ; then
+	ctdb_service_reconfigure "$@"
+	exit 0
+    fi
+}
+
+##################################################################
+# Does CTDB manage this service? - and associated auto-start/stop
 
 ctdb_compat_managed_service ()
 {
