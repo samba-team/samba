@@ -968,6 +968,12 @@ static int net_ads_leave(struct net_context *c, int argc, const char **argv)
 		use_in_memory_ccache();
 	}
 
+	if (!c->msg_ctx) {
+		d_fprintf(stderr, _("Could not initialise message context. "
+			"Try running as root\n"));
+		return -1;
+	}
+
 	werr = libnet_init_UnjoinCtx(ctx, &r);
 	if (!W_ERROR_IS_OK(werr)) {
 		d_fprintf(stderr, _("Could not initialise unjoin context.\n"));
@@ -1345,6 +1351,13 @@ int net_ads_join(struct net_context *c, int argc, const char **argv)
 	if (!*domain) {
 		d_fprintf(stderr, _("Please supply a valid domain name\n"));
 		werr = WERR_INVALID_PARAM;
+		goto fail;
+	}
+
+	if (!c->msg_ctx) {
+		d_fprintf(stderr, _("Could not initialise message context. "
+			"Try running as root\n"));
+		werr = WERR_ACCESS_DENIED;
 		goto fail;
 	}
 

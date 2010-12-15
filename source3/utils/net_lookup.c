@@ -410,6 +410,12 @@ static int net_lookup_dsgetdcname(struct net_context *c, int argc, const char **
 		site_name = argv[2];
 	}
 
+        if (!c->msg_ctx) {
+		d_fprintf(stderr, _("Could not initialise message context. "
+			"Try running as root\n"));
+		return -1;
+        }
+
 	status = dsgetdcname(mem_ctx, c->msg_ctx, domain_name, NULL, site_name,
 			     flags, &info);
 	if (!NT_STATUS_IS_OK(status)) {
