@@ -39,8 +39,8 @@ talloc.enable_null_tracking()
 class dc_join:
     '''perform a DC join'''
 
-    def __init__(ctx, server=None, creds=None, lp=None, site=None, netbios_name=None,
-                 targetdir=None, domain=None):
+    def __init__(ctx, server=None, creds=None, lp=None, site=None,
+            netbios_name=None, targetdir=None, domain=None):
         ctx.creds = creds
         ctx.lp = lp
         ctx.site = site
@@ -443,40 +443,49 @@ class dc_join:
 
         print "Starting replication"
         ctx.local_samdb.transaction_start()
+        try:
+            source_dsa_invocation_id = misc.GUID(ctx.samdb.get_invocation_id())
+            destination_dsa_guid = ctx.ntds_guid
 
-        source_dsa_invocation_id = misc.GUID(ctx.samdb.get_invocation_id())
-        destination_dsa_guid = ctx.ntds_guid
+            if ctx.RODC:
+                repl_creds = Credentials()
+                repl_creds.guess(ctx.lp)
+                repl_creds.set_kerberos_state(DONT_USE_KERBEROS)
+                repl_creds.set_username(ctx.samname)
+                repl_creds.set_password(ctx.acct_pass)
+            else:
+                repl_creds = ctx.creds
 
-        if ctx.RODC:
-            repl_creds = Credentials()
-            repl_creds.guess(ctx.lp)
-            repl_creds.set_kerberos_state(DONT_USE_KERBEROS)
-            repl_creds.set_username(ctx.samname)
-            repl_creds.set_password(ctx.acct_pass)
+            binding_options = "seal"
+            if ctx.lp.get("debug level") >= 5:
+                binding_options += ",print"
+            repl = drs_utils.drs_Replicate(
+                "ncacn_ip_tcp:%s[%s]" % (ctx.server, binding_options),
+                ctx.lp, repl_creds, ctx.local_samdb)
+
+            repl.replicate(ctx.schema_dn, source_dsa_invocation_id,
+                    destination_dsa_guid, schema=True, rodc=ctx.RODC,
+                    replica_flags=ctx.replica_flags)
+            repl.replicate(ctx.config_dn, source_dsa_invocation_id,
+                    destination_dsa_guid, rodc=ctx.RODC,
+                    replica_flags=ctx.replica_flags)
+            repl.replicate(ctx.base_dn, source_dsa_invocation_id,
+                    destination_dsa_guid, rodc=ctx.RODC,
+                    replica_flags=ctx.replica_flags)
+            if ctx.RODC:
+                repl.replicate(ctx.acct_dn, source_dsa_invocation_id,
+                        destination_dsa_guid,
+                        exop=drsuapi.DRSUAPI_EXOP_REPL_SECRET, rodc=True)
+                repl.replicate(ctx.new_krbtgt_dn, source_dsa_invocation_id,
+                        destination_dsa_guid,
+                        exop=drsuapi.DRSUAPI_EXOP_REPL_SECRET, rodc=True)
+
+            print "Committing SAM database"
+        except:
+            ctx.local_samdb.transaction_cancel()
+            raise
         else:
-            repl_creds = ctx.creds
-
-        binding_options = "seal"
-        if ctx.lp.get("debug level") >= 5:
-            binding_options += ",print"
-        repl = drs_utils.drs_Replicate("ncacn_ip_tcp:%s[%s]" % (ctx.server, binding_options),
-                                       ctx.lp, repl_creds, ctx.local_samdb)
-
-        repl.replicate(ctx.schema_dn, source_dsa_invocation_id, destination_dsa_guid,
-                       schema=True, rodc=ctx.RODC,
-                       replica_flags=ctx.replica_flags)
-        repl.replicate(ctx.config_dn, source_dsa_invocation_id, destination_dsa_guid,
-                       rodc=ctx.RODC, replica_flags=ctx.replica_flags)
-        repl.replicate(ctx.base_dn, source_dsa_invocation_id, destination_dsa_guid,
-                       rodc=ctx.RODC, replica_flags=ctx.replica_flags)
-        if ctx.RODC:
-            repl.replicate(ctx.acct_dn, source_dsa_invocation_id, destination_dsa_guid,
-                           exop=drsuapi.DRSUAPI_EXOP_REPL_SECRET, rodc=True)
-            repl.replicate(ctx.new_krbtgt_dn, source_dsa_invocation_id, destination_dsa_guid,
-                           exop=drsuapi.DRSUAPI_EXOP_REPL_SECRET, rodc=True)
-
-        print "Committing SAM database"
-        ctx.local_samdb.transaction_commit()
+            ctx.local_samdb.transaction_commit()
 
 
     def join_finalise(ctx):
