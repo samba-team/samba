@@ -683,6 +683,8 @@ service_reconfigure ()
 
 ctdb_service_check_reconfigure ()
 {
+    [ "$event_name" = "monitor" ] || return 0
+
     if ctdb_service_needs_reconfigure "$@" ; then
 	ctdb_service_reconfigure "$@"
 	exit 0
