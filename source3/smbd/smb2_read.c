@@ -290,15 +290,15 @@ static struct tevent_req *smbd_smb2_read_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	state->out_data = data_blob_talloc(state, NULL, in_length);
-	if (in_length > 0 && tevent_req_nomem(state->out_data.data, req)) {
-		return tevent_req_post(req, ev);
-	}
-
 	state->fsp = fsp;
 
 	if (IS_IPC(smbreq->conn)) {
 		struct tevent_req *subreq = NULL;
+
+		state->out_data = data_blob_talloc(state, NULL, in_length);
+		if (in_length > 0 && tevent_req_nomem(state->out_data.data, req)) {
+			return tevent_req_post(req, ev);
+		}
 
 		if (!fsp_is_np(fsp)) {
 			tevent_req_nterror(req, NT_STATUS_FILE_CLOSED);
@@ -326,7 +326,8 @@ static struct tevent_req *smbd_smb2_read_send(TALLOC_CTX *mem_ctx,
 	status = schedule_smb2_aio_read(fsp->conn,
 				smbreq,
 				fsp,
-				(char *)state->out_data.data,
+				state,
+				&state->out_data,
 				(SMB_OFF_T)in_offset,
 				(size_t)in_length);
 
@@ -360,6 +361,13 @@ static struct tevent_req *smbd_smb2_read_send(TALLOC_CTX *mem_ctx,
 
 	if (!SMB_VFS_STRICT_LOCK(conn, fsp, &lock)) {
 		tevent_req_nterror(req, NT_STATUS_FILE_LOCK_CONFLICT);
+		return tevent_req_post(req, ev);
+	}
+
+	/* Ok, read into memory. Allocate the out buffer. */
+	state->out_data = data_blob_talloc(state, NULL, in_length);
+	if (in_length > 0 && tevent_req_nomem(state->out_data.data, req)) {
+		SMB_VFS_STRICT_UNLOCK(conn, fsp, &lock);
 		return tevent_req_post(req, ev);
 	}
 
