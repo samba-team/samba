@@ -16,7 +16,9 @@ loadconfig
 	exit 0
 }
 
-MPFAILURE=$CTDB_VARDIR/state/multipathd/failure
+ctdb_setup_service_state_dir
+
+MPFAILURE="$service_state_dir/failure"
 
 multipathd_check_background()
 {
@@ -75,13 +77,6 @@ multipathd_check()
 }
 
 case "$1" in
-    startup)
-	# create a state directory to keep/track the multipath device
-	# state
-	mkdir -p $CTDB_VARDIR/state/multipathd
-	exit 0
-	;;
-
     monitor)
 	multipathd_check
 	[ "$?" = "0" ] || {
