@@ -138,7 +138,7 @@ _PUBLIC_ void ndr_print_drsuapi_MSPrefixMap_Entry(struct ndr_print *ndr, const c
 			char *partial_oid = NULL;
 			DATA_BLOB oid_blob = data_blob_const(r->binary_oid, r->length);
 			char *hex_str = data_blob_hex_string_upper(ndr, &oid_blob);
-			ber_read_partial_OID_String(ndr, oid_blob, (const char **)&partial_oid);
+			ber_read_partial_OID_String(ndr, oid_blob, &partial_oid);
 			ndr->depth++;
 			ndr->print(ndr, "%-25s: 0x%s (%s)", "binary_oid", hex_str, partial_oid);
 			ndr->depth--;
