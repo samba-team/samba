@@ -6,7 +6,6 @@ import optparse
 import sys
 import base64
 import re
-
 sys.path.append("bin/python")
 import samba
 samba.ensure_external_module("testtools", "testtools")
@@ -20,7 +19,7 @@ from ldb import (
 from ldb import ERR_CONSTRAINT_VIOLATION
 from ldb import ERR_OPERATIONS_ERROR
 from ldb import Message, MessageElement, Dn
-from ldb import FLAG_MOD_REPLACE, FLAG_MOD_DELETE
+from ldb import FLAG_MOD_REPLACE, FLAG_MOD_ADD, FLAG_MOD_DELETE
 from samba.ndr import ndr_pack, ndr_unpack
 from samba.dcerpc import security
 
@@ -67,6 +66,13 @@ class AclTests(samba.tests.TestCase):
         self.user_pass = "samba123@"
         self.configuration_dn = self.ldb_admin.get_config_basedn().get_linearized()
         self.sd_utils = sd_utils.SDUtils(ldb)
+        #used for anonymous login
+        self.creds_tmp = Credentials()
+        self.creds_tmp.set_username("")
+        self.creds_tmp.set_password("")
+        self.creds_tmp.set_domain(creds.get_domain())
+        self.creds_tmp.set_realm(creds.get_realm())
+        self.creds_tmp.set_workstation(creds.get_workstation())
         print "baseDN: %s" % self.base_dn
 
     def get_user_dn(self, name):
@@ -134,6 +140,7 @@ class AclAddTests(AclTests):
         delete_force(self.ldb_admin, self.get_user_dn(self.usr_admin_owner))
         delete_force(self.ldb_admin, self.get_user_dn(self.usr_admin_not_owner))
         delete_force(self.ldb_admin, self.get_user_dn(self.regular_user))
+        delete_force(self.ldb_admin, self.get_user_dn("test_add_anonymous"))
 
     # Make sure top OU is deleted (and so everything under it)
     def assert_top_ou_deleted(self):
@@ -229,6 +236,16 @@ class AclAddTests(AclTests):
                 expression="(distinguishedName=%s,%s)" % ("CN=test_add_group1,OU=test_add_ou2,OU=test_add_ou1", self.base_dn))
         self.assertTrue(len(res) > 0)
 
+    def test_add_anonymous(self):
+        """Test add operation with anonymous user"""
+        anonymous = SamDB(url=host, credentials=self.creds_tmp, lp=lp)
+        try:
+            anonymous.newuser("test_add_anonymous", self.user_pass)
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_OPERATIONS_ERROR)
+        else:
+            self.fail()
+
 #tests on ldap modify operations
 class AclModifyTests(AclTests):
 
@@ -259,6 +276,7 @@ class AclModifyTests(AclTests):
         delete_force(self.ldb_admin, self.get_user_dn(self.user_with_sm))
         delete_force(self.ldb_admin, self.get_user_dn(self.user_with_group_sm))
         delete_force(self.ldb_admin, self.get_user_dn("test_modify_user2"))
+        delete_force(self.ldb_admin, self.get_user_dn("test_anonymous"))
 
     def test_modify_u1(self):
         """5 Modify one attribute if you have DS_WRITE_PROPERTY for it"""
@@ -554,6 +572,23 @@ Member: CN=test_modify_user2,CN=Users,""" + self.base_dn
                                     % ("CN=test_modify_group2,CN=Users," + self.base_dn), attrs=["Member"])
         self.assertEqual(res[0]["Member"][0], "CN=test_modify_user2,CN=Users," + self.base_dn)
 
+    def test_modify_anonymous(self):
+        """Test add operation with anonymous user"""
+        anonymous = SamDB(url=host, credentials=self.creds_tmp, lp=lp)
+        self.ldb_admin.newuser("test_anonymous", "samba123@")
+        m = Message()
+        m.dn = Dn(anonymous, self.get_user_dn("test_anonymous"))
+
+        m["description"] = MessageElement("sambauser2",
+                                          FLAG_MOD_ADD,
+                                          "description")
+        try:
+            anonymous.modify(m)
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_OPERATIONS_ERROR)
+        else:
+            self.fail()
+
 #enable these when we have search implemented
 class AclSearchTests(AclTests):
 
@@ -563,12 +598,6 @@ class AclSearchTests(AclTests):
         self.u2 = "search_u2"
         self.u3 = "search_u3"
         self.group1 = "group1"
-        self.creds_tmp = Credentials()
-        self.creds_tmp.set_username("")
-        self.creds_tmp.set_password("")
-        self.creds_tmp.set_domain(creds.get_domain())
-        self.creds_tmp.set_realm(creds.get_realm())
-        self.creds_tmp.set_workstation(creds.get_workstation())
         self.ldb_admin.newuser(self.u1, self.user_pass)
         self.ldb_admin.newuser(self.u2, self.user_pass)
         self.ldb_admin.newuser(self.u3, self.user_pass)
@@ -926,6 +955,7 @@ class AclDeleteTests(AclTests):
         super(AclDeleteTests, self).tearDown()
         delete_force(self.ldb_admin, self.get_user_dn("test_delete_user1"))
         delete_force(self.ldb_admin, self.get_user_dn(self.regular_user))
+        delete_force(self.ldb_admin, self.get_user_dn("test_anonymous"))
 
     def test_delete_u1(self):
         """User is prohibited by default to delete another User object"""
@@ -964,6 +994,18 @@ class AclDeleteTests(AclTests):
         res = self.ldb_admin.search(self.base_dn,
                 expression="(distinguishedName=%s)" % user_dn)
         self.assertEqual(res, [])
+
+    def test_delete_anonymous(self):
+        """Test add operation with anonymous user"""
+        anonymous = SamDB(url=host, credentials=self.creds_tmp, lp=lp)
+        self.ldb_admin.newuser("test_anonymous", "samba123@")
+
+        try:
+            anonymous.delete(self.get_user_dn("test_anonymous"))
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_OPERATIONS_ERROR)
+        else:
+            self.fail()
 
 #tests on ldap rename operations
 class AclRenameTests(AclTests):
