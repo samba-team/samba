@@ -44,6 +44,8 @@ ctdb_start_stop_service
 
 is_ctdb_managed_service || exit 0
 
+ctdb_service_check_reconfigure
+
 case "$1" in
     startup)
 	ctdb_service_start
@@ -54,11 +56,6 @@ case "$1" in
 	;;
 
     monitor)
-	if ctdb_service_needs_reconfigure ; then
-	    ctdb_service_reconfigure
-	    exit 0
-	fi
-
 	if ctdb_check_tcp_ports 80 >/dev/null 2>/dev/null ; then
 	    ctdb_counter_init
 	else
