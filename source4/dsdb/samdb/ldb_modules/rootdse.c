@@ -641,7 +641,7 @@ static int rootdse_filter_operations(struct ldb_module *module, struct ldb_reque
 		}
 	}
 	ldb_set_errstring(ldb_module_get_ctx(module), "Operation unavailable without authentication");
-	return LDB_ERR_STRONG_AUTH_REQUIRED;
+	return LDB_ERR_OPERATIONS_ERROR;
 }
 
 static int rootdse_search(struct ldb_module *module, struct ldb_request *req)
