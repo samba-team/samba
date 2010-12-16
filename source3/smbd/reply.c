@@ -1985,12 +1985,16 @@ void reply_open_and_X(struct smb_request *req)
 			reply_nterror(req, NT_STATUS_DISK_FULL);
 			goto out;
 		}
-		smb_fname->st.st_ex_size =
-		    SMB_VFS_GET_ALLOC_SIZE(conn, fsp, &smb_fname->st);
+		status = vfs_stat_fsp(fsp);
+		if (!NT_STATUS_IS_OK(status)) {
+			close_file(req, fsp, ERROR_CLOSE);
+			reply_nterror(req, status);
+			goto out;
+		}
 	}
 
-	fattr = dos_mode(conn, smb_fname);
-	mtime = convert_timespec_to_time_t(smb_fname->st.st_ex_mtime);
+	fattr = dos_mode(conn, fsp->fsp_name);
+	mtime = convert_timespec_to_time_t(fsp->fsp_name->st.st_ex_mtime);
 	if (fattr & aDIR) {
 		close_file(req, fsp, ERROR_CLOSE);
 		reply_nterror(req, NT_STATUS_ACCESS_DENIED);
@@ -2038,7 +2042,7 @@ void reply_open_and_X(struct smb_request *req)
 	} else {
 		srv_put_dos_date3((char *)req->outbuf,smb_vwv4,mtime);
 	}
-	SIVAL(req->outbuf,smb_vwv6,(uint32)smb_fname->st.st_ex_size);
+	SIVAL(req->outbuf,smb_vwv6,(uint32)fsp->fsp_name->st.st_ex_size);
 	SSVAL(req->outbuf,smb_vwv8,GET_OPENX_MODE(deny_mode));
 	SSVAL(req->outbuf,smb_vwv11,smb_action);
 
