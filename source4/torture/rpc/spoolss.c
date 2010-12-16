@@ -4599,7 +4599,8 @@ static bool test_GetDriverInfo_winreg(struct torture_context *tctx,
 				      const char *environment,
 				      enum spoolss_DriverOSVersion version,
 				      struct dcerpc_binding_handle *winreg_handle,
-				      struct policy_handle *hive_handle)
+				      struct policy_handle *hive_handle,
+				      const char *server_name_slash)
 {
 	WERROR result;
 	union spoolss_DriverInfo info;
@@ -4638,9 +4639,15 @@ static bool test_GetDriverInfo_winreg(struct torture_context *tctx,
 		goto try_level6;
 	}
 
-	torture_assert(tctx,
-		test_GetPrinterDriver2_level(tctx, b, handle, driver_name, environment, 8, version, 0, &info, &result),
-		"failed to get driver info level 8");
+	if (handle) {
+		torture_assert(tctx,
+			test_GetPrinterDriver2_level(tctx, b, handle, driver_name, environment, 8, version, 0, &info, &result),
+			"failed to get driver info level 8");
+	} else {
+		torture_assert(tctx,
+			test_EnumPrinterDrivers_findone(tctx, b, server_name_slash, environment, 8, driver_name, &info),
+			"failed to get driver info level 8");
+	}
 
 	if (W_ERROR_EQUAL(result, WERR_INVALID_LEVEL)) {
 		goto try_level6;
@@ -4686,9 +4693,15 @@ static bool test_GetDriverInfo_winreg(struct torture_context *tctx,
 
  try_level6:
 
-	torture_assert(tctx,
-		test_GetPrinterDriver2_level(tctx, b, handle, driver_name, environment, 6, version, 0, &info, &result),
-		"failed to get driver info level 6");
+	if (handle) {
+		torture_assert(tctx,
+			test_GetPrinterDriver2_level(tctx, b, handle, driver_name, environment, 6, version, 0, &info, &result),
+			"failed to get driver info level 6");
+	} else {
+		torture_assert(tctx,
+			test_EnumPrinterDrivers_findone(tctx, b, server_name_slash, environment, 6, driver_name, &info),
+			"failed to get driver info level 6");
+	}
 
 	driver_path	= strip_path(info.info6.driver_path);
 	data_file	= strip_path(info.info6.data_file);
@@ -4720,9 +4733,15 @@ static bool test_GetDriverInfo_winreg(struct torture_context *tctx,
 
  try_level3:
 
-	torture_assert(tctx,
-		test_GetPrinterDriver2_level(tctx, b, handle, driver_name, environment, 3, version, 0, &info, &result),
-		"failed to get driver info level 3");
+	if (handle) {
+		torture_assert(tctx,
+			test_GetPrinterDriver2_level(tctx, b, handle, driver_name, environment, 3, version, 0, &info, &result),
+			"failed to get driver info level 3");
+	} else {
+		torture_assert(tctx,
+			test_EnumPrinterDrivers_findone(tctx, b, server_name_slash, environment, 3, driver_name, &info),
+			"failed to get driver info level 3");
+	}
 
 	driver_path	= strip_path(info.info3.driver_path);
 	data_file	= strip_path(info.info3.data_file);
@@ -5292,7 +5311,7 @@ static bool test_DriverInfo_winreg(struct torture_context *tctx,
 
 	torture_assert(tctx, test_winreg_OpenHKLM(tctx, b2, &hive_handle), "");
 
-	ret = test_GetDriverInfo_winreg(tctx, b, handle, printer_name, driver_name, environment, version, b2, &hive_handle);
+	ret = test_GetDriverInfo_winreg(tctx, b, handle, printer_name, driver_name, environment, version, b2, &hive_handle, NULL);
 
 	test_winreg_CloseKey(tctx, b2, &hive_handle);
 
