@@ -8858,6 +8858,15 @@ static bool test_add_driver_arg(struct torture_context *tctx,
 				break;
 			}
 		}
+		if (torture_setting_bool(tctx, "w2k3", false)) {
+			switch (levels[i]) {
+			case 8:
+				torture_comment(tctx, "skipping level %d against w2k3\n", levels[i]);
+				continue;
+			default:
+				break;
+			}
+		}
 
 		torture_comment(tctx,
 			"Testing PrinterDriver%s '%s' add & delete level %d\n",
@@ -8885,7 +8894,15 @@ static bool test_add_driver_arg(struct torture_context *tctx,
 				break;
 			}
 		}
-
+		if (torture_setting_bool(tctx, "w2k3", false)) {
+			switch (levels[i]) {
+			case 8:
+				torture_comment(tctx, "skipping level %d against w2k3\n", levels[i]);
+				continue;
+			default:
+				break;
+			}
+		}
 
 		torture_comment(tctx,
 			"Testing PrinterDriver%s '%s' add & delete level %d (full unc paths)\n",
