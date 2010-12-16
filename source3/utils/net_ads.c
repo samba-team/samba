@@ -1490,15 +1490,27 @@ static int net_ads_dns_register(struct net_context *c, int argc, const char **ar
 #if defined(WITH_DNS_UPDATES)
 	ADS_STRUCT *ads;
 	ADS_STATUS status;
+	NTSTATUS ntstatus;
 	TALLOC_CTX *ctx;
+	const char *hostname = NULL;
+	struct sockaddr_storage *addrs = NULL;
+	int num_addrs = 0;
+	int count;
 
 #ifdef DEVELOPER
 	talloc_enable_leak_report();
 #endif
 
-	if (argc > 1 || c->display_usage) {
+	if (argc <= 1 && lp_clustering()) {
+		d_fprintf(stderr, _("Refusing DNS updates with automatic "
+				    "detection of addresses in a clustered "
+				    "setup.\n"));
+		c->display_usage = true;
+	}
+
+	if (c->display_usage) {
 		d_printf(  "%s\n"
-			   "net ads dns register [hostname]\n"
+			   "net ads dns register [hostname [IP [IP...]]]\n"
 			   "    %s\n",
 			 _("Usage:"),
 			 _("Register hostname with DNS\n"));
@@ -1510,6 +1522,30 @@ static int net_ads_dns_register(struct net_context *c, int argc, const char **ar
 		return -1;
 	}
 
+	if (argc >= 1) {
+		hostname = argv[0];
+	}
+
+	if (argc > 1) {
+		num_addrs = argc - 1;
+		addrs = talloc_zero_array(ctx, struct sockaddr_storage, num_addrs);
+		if (addrs == NULL) {
+			d_fprintf(stderr, _("Error allocating memory!\n"));
+			talloc_free(ctx);
+			return -1;
+		}
+	}
+
+	for (count = 0; count < num_addrs; count++) {
+		if (!interpret_string_addr(&addrs[count], argv[count+1], 0)) {
+			d_fprintf(stderr, "%s '%s'.\n",
+					  _("Cannot interpret address"),
+					  argv[count+1]);
+			talloc_free(ctx);
+			return -1;
+		}
+	}
+
 	status = ads_startup(c, true, &ads);
 	if ( !ADS_ERR_OK(status) ) {
 		DEBUG(1, ("error on ads_startup: %s\n", ads_errstr(status)));
@@ -1517,7 +1553,8 @@ static int net_ads_dns_register(struct net_context *c, int argc, const char **ar
 		return -1;
 	}
 
-	if ( !NT_STATUS_IS_OK(net_update_dns(ctx, ads, argc == 1 ? argv[0] : NULL)) ) {
+	ntstatus = net_update_dns_ext(ctx, ads, hostname, addrs, num_addrs);
+	if (!NT_STATUS_IS_OK(ntstatus)) {
 		d_fprintf( stderr, _("DNS update failed!\n") );
 		ads_destroy( &ads );
 		TALLOC_FREE( ctx );
