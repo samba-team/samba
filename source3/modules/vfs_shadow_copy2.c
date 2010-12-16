@@ -535,6 +535,10 @@ static int shadow_copy2_rename(vfs_handle_struct *handle,
 			       const struct smb_filename *smb_fname_src,
 			       const struct smb_filename *smb_fname_dst)
 {
+	if (shadow_copy2_match_name(smb_fname_src->base_name, NULL)) {
+		errno = EXDEV;
+		return -1;
+	}
 	SHADOW2_NEXT2_SMB_FNAME(RENAME,
 				(handle, smb_fname_src, smb_fname_dst));
 }
