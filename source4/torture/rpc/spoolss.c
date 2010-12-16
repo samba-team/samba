@@ -4592,6 +4592,7 @@ static bool test_GetDriverInfo_winreg(struct torture_context *tctx,
 				      const char *printer_name,
 				      const char *driver_name,
 				      const char *environment,
+				      enum spoolss_DriverOSVersion version,
 				      struct dcerpc_binding_handle *winreg_handle,
 				      struct policy_handle *hive_handle)
 {
@@ -4617,7 +4618,7 @@ static bool test_GetDriverInfo_winreg(struct torture_context *tctx,
 	driver_key = talloc_asprintf(tctx, "%s\\%s\\Drivers\\Version-%d\\%s",
 				     TOP_LEVEL_CONTROL_ENVIRONMENTS_KEY,
 				     environment,
-				     3,
+				     version,
 				     driver_name);
 
 	torture_assert(tctx,
@@ -4633,7 +4634,7 @@ static bool test_GetDriverInfo_winreg(struct torture_context *tctx,
 	}
 
 	torture_assert(tctx,
-		test_GetPrinterDriver2_level(tctx, b, handle, driver_name, environment, 8, 3, 0, &info, &result),
+		test_GetPrinterDriver2_level(tctx, b, handle, driver_name, environment, 8, version, 0, &info, &result),
 		"failed to get driver info level 8");
 
 	if (W_ERROR_EQUAL(result, WERR_INVALID_LEVEL)) {
@@ -4681,7 +4682,7 @@ static bool test_GetDriverInfo_winreg(struct torture_context *tctx,
  try_level6:
 
 	torture_assert(tctx,
-		test_GetPrinterDriver2_level(tctx, b, handle, driver_name, environment, 6, 3, 0, &info, &result),
+		test_GetPrinterDriver2_level(tctx, b, handle, driver_name, environment, 6, version, 0, &info, &result),
 		"failed to get driver info level 6");
 
 	driver_path	= strip_path(info.info6.driver_path);
@@ -4715,7 +4716,7 @@ static bool test_GetDriverInfo_winreg(struct torture_context *tctx,
  try_level3:
 
 	torture_assert(tctx,
-		test_GetPrinterDriver2_level(tctx, b, handle, driver_name, environment, 3, 3, 0, &info, &result),
+		test_GetPrinterDriver2_level(tctx, b, handle, driver_name, environment, 3, version, 0, &info, &result),
 		"failed to get driver info level 3");
 
 	driver_path	= strip_path(info.info3.driver_path);
@@ -5270,7 +5271,8 @@ static bool test_DriverInfo_winreg(struct torture_context *tctx,
 				   struct policy_handle *handle,
 				   const char *printer_name,
 				   const char *driver_name,
-				   const char *environment)
+				   const char *environment,
+				   enum spoolss_DriverOSVersion version)
 {
 	struct dcerpc_binding_handle *b = p->binding_handle;
 	struct dcerpc_pipe *p2;
@@ -5285,7 +5287,7 @@ static bool test_DriverInfo_winreg(struct torture_context *tctx,
 
 	torture_assert(tctx, test_winreg_OpenHKLM(tctx, b2, &hive_handle), "");
 
-	ret = test_GetDriverInfo_winreg(tctx, b, handle, printer_name, driver_name, environment, b2, &hive_handle);
+	ret = test_GetDriverInfo_winreg(tctx, b, handle, printer_name, driver_name, environment, version, b2, &hive_handle);
 
 	test_winreg_CloseKey(tctx, b2, &hive_handle);
 
@@ -7804,7 +7806,7 @@ static bool test_driver_info_winreg(struct torture_context *tctx,
 	}
 
 	torture_assert(tctx,
-		test_DriverInfo_winreg(tctx, p, &t->handle, t->info2.printername, driver_name, t->driver.remote.environment),
+		test_DriverInfo_winreg(tctx, p, &t->handle, t->info2.printername, driver_name, t->driver.remote.environment, 3),
 		"failed to test driver info winreg");
 
 	return true;
