@@ -545,6 +545,7 @@ static int descriptor_search_callback(struct ldb_request *req, struct ldb_reply 
 	}
 
 fail:
+	talloc_free(ares);
 	return ldb_module_done(ac->req, NULL, NULL, ret);
 }
 
