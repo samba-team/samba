@@ -4240,7 +4240,7 @@ static bool get_user_sids(const char *domain, const char *user, struct security_
 		return false;
 	}
 
-	if (type != SID_NAME_USER) {
+	if (type != WBC_SID_NAME_USER) {
 		wbcFreeMemory(sid_str);
 		DEBUG(1, ("%s is not a user\n", full_name));
 		return false;
