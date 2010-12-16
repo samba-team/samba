@@ -4628,6 +4628,10 @@ static bool test_GetDriverInfo_winreg(struct torture_context *tctx,
 		goto try_level3;
 	}
 
+	if (torture_setting_bool(tctx, "w2k3", false)) {
+		goto try_level6;
+	}
+
 	torture_assert(tctx,
 		test_GetPrinterDriver2_level(tctx, b, handle, driver_name, environment, 8, 3, 0, &info, &result),
 		"failed to get driver info level 8");
