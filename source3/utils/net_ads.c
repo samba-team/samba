@@ -1466,6 +1466,7 @@ static int net_ads_dns_register(struct net_context *c, int argc, const char **ar
 	NTSTATUS ntstatus;
 	TALLOC_CTX *ctx;
 	const char *hostname = NULL;
+	const char **addrs_list = NULL;
 	struct sockaddr_storage *addrs = NULL;
 	int num_addrs = 0;
 	int count;
@@ -1474,7 +1475,7 @@ static int net_ads_dns_register(struct net_context *c, int argc, const char **ar
 	talloc_enable_leak_report();
 #endif
 
-	if (argc <= 1 && lp_clustering()) {
+	if (argc <= 1 && lp_clustering() && lp_cluster_addresses() == NULL) {
 		d_fprintf(stderr, _("Refusing DNS updates with automatic "
 				    "detection of addresses in a clustered "
 				    "setup.\n"));
@@ -1501,6 +1502,13 @@ static int net_ads_dns_register(struct net_context *c, int argc, const char **ar
 
 	if (argc > 1) {
 		num_addrs = argc - 1;
+		addrs_list = &argv[1];
+	} else if (lp_clustering()) {
+		addrs_list = lp_cluster_addresses();
+		num_addrs = str_list_length(addrs_list);
+	}
+
+	if (num_addrs > 0) {
 		addrs = talloc_zero_array(ctx, struct sockaddr_storage, num_addrs);
 		if (addrs == NULL) {
 			d_fprintf(stderr, _("Error allocating memory!\n"));
@@ -1510,10 +1518,10 @@ static int net_ads_dns_register(struct net_context *c, int argc, const char **ar
 	}
 
 	for (count = 0; count < num_addrs; count++) {
-		if (!interpret_string_addr(&addrs[count], argv[count+1], 0)) {
+		if (!interpret_string_addr(&addrs[count], addrs_list[count], 0)) {
 			d_fprintf(stderr, "%s '%s'.\n",
 					  _("Cannot interpret address"),
-					  argv[count+1]);
+					  addrs_list[count]);
 			talloc_free(ctx);
 			return -1;
 		}
