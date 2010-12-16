@@ -966,7 +966,9 @@ static int ltdb_index_filter(const struct dn_list *dn_list,
 
 		ret = ldb_module_send_entry(ac->req, msg, NULL);
 		if (ret != LDB_SUCCESS) {
-			talloc_free(msg);
+			/* Regardless of success or failure, the msg
+			 * is the callbacks responsiblity, and should
+			 * not be talloc_free()'ed */
 			ac->request_terminated = true;
 			return ret;
 		}
