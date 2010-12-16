@@ -821,35 +821,39 @@ static int vfswrap_ntimes(vfs_handle_struct *handle,
 
 static int strict_allocate_ftruncate(vfs_handle_struct *handle, files_struct *fsp, SMB_OFF_T len)
 {
-	SMB_STRUCT_STAT st;
 	SMB_OFF_T space_to_write;
 	uint64_t space_avail;
 	uint64_t bsize,dfree,dsize;
 	int ret;
+	NTSTATUS status;
+	SMB_STRUCT_STAT *pst;
 
-	if (SMB_VFS_FSTAT(fsp, &st) == -1)
+	status = vfs_stat_fsp(fsp);
+	if (!NT_STATUS_IS_OK(status)) {
 		return -1;
+	}
+	pst = &fsp->fsp_name->st;
 
 #ifdef S_ISFIFO
-	if (S_ISFIFO(st.st_ex_mode))
+	if (S_ISFIFO(pst->st_ex_mode))
 		return 0;
 #endif
 
-	if (st.st_ex_size == len)
+	if (pst->st_ex_size == len)
 		return 0;
 
 	/* Shrink - just ftruncate. */
-	if (st.st_ex_size > len)
+	if (pst->st_ex_size > len)
 		return sys_ftruncate(fsp->fh->fd, len);
 
-	space_to_write = len - st.st_ex_size;
+	space_to_write = len - pst->st_ex_size;
 
 	/* for allocation try posix_fallocate first. This can fail on some
 	   platforms e.g. when the filesystem doesn't support it and no
 	   emulation is being done by the libc (like on AIX with JFS1). In that
 	   case we do our own emulation. posix_fallocate implementations can
 	   return ENOTSUP or EINVAL in cases like that. */
-	ret = SMB_VFS_POSIX_FALLOCATE(fsp, st.st_ex_size, space_to_write);
+	ret = SMB_VFS_POSIX_FALLOCATE(fsp, pst->st_ex_size, space_to_write);
 	if (ret == ENOSPC) {
 		errno = ENOSPC;
 		return -1;
@@ -872,7 +876,7 @@ static int strict_allocate_ftruncate(vfs_handle_struct *handle, files_struct *fs
 	}
 
 	/* Write out the real space on disk. */
-	ret = vfs_slow_fallocate(fsp, st.st_ex_size, space_to_write);
+	ret = vfs_slow_fallocate(fsp, pst->st_ex_size, space_to_write);
 	if (ret != 0) {
 		errno = ret;
 		ret = -1;
@@ -884,7 +888,8 @@ static int strict_allocate_ftruncate(vfs_handle_struct *handle, files_struct *fs
 static int vfswrap_ftruncate(vfs_handle_struct *handle, files_struct *fsp, SMB_OFF_T len)
 {
 	int result = -1;
-	SMB_STRUCT_STAT st;
+	SMB_STRUCT_STAT *pst;
+	NTSTATUS status;
 	char c = 0;
 
 	START_PROFILE(syscall_ftruncate);
@@ -913,23 +918,25 @@ static int vfswrap_ftruncate(vfs_handle_struct *handle, files_struct *fsp, SMB_O
 	   size in which case the ftruncate above should have
 	   succeeded or shorter, in which case seek to len - 1 and
 	   write 1 byte of zero */
-	if (SMB_VFS_FSTAT(fsp, &st) == -1) {
+	status = vfs_stat_fsp(fsp);
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
+	pst = &fsp->fsp_name->st;
 
 #ifdef S_ISFIFO
-	if (S_ISFIFO(st.st_ex_mode)) {
+	if (S_ISFIFO(pst->st_ex_mode)) {
 		result = 0;
 		goto done;
 	}
 #endif
 
-	if (st.st_ex_size == len) {
+	if (pst->st_ex_size == len) {
 		result = 0;
 		goto done;
 	}
 
-	if (st.st_ex_size > len) {
+	if (pst->st_ex_size > len) {
 		/* the sys_ftruncate should have worked */
 		goto done;
 	}
