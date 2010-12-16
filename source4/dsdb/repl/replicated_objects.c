@@ -493,6 +493,7 @@ WERROR dsdb_replicated_objects_commit(struct ldb_context *ldb,
 		/* restore previous schema */
 		if (cur_schema ) {
 			dsdb_reference_schema(ldb, cur_schema, false);
+			dsdb_make_schema_global(ldb, cur_schema);
 		}
 
 		DEBUG(0,("Failed to apply records: %s: %s\n",
@@ -507,6 +508,7 @@ WERROR dsdb_replicated_objects_commit(struct ldb_context *ldb,
 		/* restore previous schema */
 		if (cur_schema ) {
 			dsdb_reference_schema(ldb, cur_schema, false);
+			dsdb_make_schema_global(ldb, cur_schema);
 		}
 		DEBUG(0,(__location__ " Failed to prepare commit of transaction: %s\n",
 			 ldb_errstring(ldb)));
@@ -518,6 +520,7 @@ WERROR dsdb_replicated_objects_commit(struct ldb_context *ldb,
 		/* restore previous schema */
 		if (cur_schema ) {
 			dsdb_reference_schema(ldb, cur_schema, false);
+			dsdb_make_schema_global(ldb, cur_schema);
 		}
 		DEBUG(0,(__location__ " Failed to load partition uSN\n"));
 		ldb_transaction_cancel(ldb);
@@ -536,6 +539,7 @@ WERROR dsdb_replicated_objects_commit(struct ldb_context *ldb,
 		/* restore previous schema */
 		if (cur_schema ) {
 			dsdb_reference_schema(ldb, cur_schema, false);
+			dsdb_make_schema_global(ldb, cur_schema);
 		}
 		DEBUG(0,(__location__ " Failed to commit transaction\n"));
 		return WERR_FOOBAR;
@@ -549,6 +553,9 @@ WERROR dsdb_replicated_objects_commit(struct ldb_context *ldb,
 		cur_schema = dsdb_get_schema(ldb, NULL);
 		/* TODO: What we do in case dsdb_get_schema() fail?
 		 *       We can't fallback at this point anymore */
+		if (cur_schema) {
+			dsdb_make_schema_global(ldb, cur_schema);
+		}
 	}
 
 	DEBUG(2,("Replicated %u objects (%u linked attributes) for %s\n",
