@@ -530,6 +530,7 @@ HEIMDAL_LIBRARY('heimntlm',
                     includes='../heimdal/lib/ntlm',
                     deps='roken HEIMDAL_HCRYPTO krb5',
                     vnum='1.0.1',
+                    version_script='lib/ntlm/version-script.map',
     )
 HEIMDAL_AUTOPROTO('lib/ntlm/heimntlm-protos.h', HEIMNTLM_SOURCE)
 
