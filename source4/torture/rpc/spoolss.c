@@ -8628,6 +8628,25 @@ static bool test_PrinterDriver_args(struct torture_context *tctx,
 		return ret;
 	}
 
+	{
+		struct dcerpc_pipe *p2;
+		struct policy_handle hive_handle;
+		struct dcerpc_binding_handle *b2;
+
+		torture_assert_ntstatus_ok(tctx,
+			torture_rpc_connection(tctx, &p2, &ndr_table_winreg),
+			"could not open winreg pipe");
+		b2 = p2->binding_handle;
+
+		torture_assert(tctx, test_winreg_OpenHKLM(tctx, b2, &hive_handle), "");
+
+		ret = test_GetDriverInfo_winreg(tctx, b, NULL, NULL, r->driver_name, r->architecture, r->version, b2, &hive_handle, server_name);
+
+		test_winreg_CloseKey(tctx, b2, &hive_handle);
+
+		talloc_free(p2);
+	}
+
 	if (ex) {
 		return test_DeletePrinterDriverEx(tctx, b, server_name, r->driver_name, r->architecture, delete_flags, r->version);
 	} else {
