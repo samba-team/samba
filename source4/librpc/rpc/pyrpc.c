@@ -27,6 +27,8 @@
 #include "librpc/rpc/pyrpc_util.h"
 #include "auth/credentials/pycredentials.h"
 
+void initbase(void);
+
 staticforward PyTypeObject dcerpc_InterfaceType;
 
 static bool PyString_AsGUID(PyObject *object, struct GUID *uuid)
