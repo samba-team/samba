@@ -517,7 +517,8 @@ KDC_SOURCE='kdc/default_config.c kdc/kerberos5.c kdc/krb5tgs.c kdc/pkinit.c kdc/
 HEIMDAL_LIBRARY('kdc', source=KDC_SOURCE,
                     includes='../heimdal/kdc',
                     deps='roken krb5 hdb asn1 HEIMDAL_DIGEST_ASN1 HEIMDAL_KX509_ASN1 heimntlm HEIMDAL_HCRYPTO com_err wind HEIMDAL_BASE',
-                    vnum='2.0.0')
+                    vnum='2.0.0',
+                    version_script='kdc/version-script.map')
 HEIMDAL_AUTOPROTO('kdc/kdc-protos.h', KDC_SOURCE)
 HEIMDAL_AUTOPROTO_PRIVATE('kdc/kdc-private.h', KDC_SOURCE)
 
