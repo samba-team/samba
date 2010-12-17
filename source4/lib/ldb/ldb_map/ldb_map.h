@@ -157,17 +157,17 @@ int ldb_map_init(struct ldb_module *module, const struct ldb_map_attribute *attr
 		 const char *add_objectclass,
 		 const char *name);
 
-int map_add(struct ldb_module *module, struct ldb_request *req);
-int map_search(struct ldb_module *module, struct ldb_request *req);
-int map_rename(struct ldb_module *module, struct ldb_request *req);
-int map_delete(struct ldb_module *module, struct ldb_request *req);
-int map_modify(struct ldb_module *module, struct ldb_request *req);
+int ldb_map_add(struct ldb_module *module, struct ldb_request *req);
+int ldb_map_search(struct ldb_module *module, struct ldb_request *req);
+int ldb_map_rename(struct ldb_module *module, struct ldb_request *req);
+int ldb_map_delete(struct ldb_module *module, struct ldb_request *req);
+int ldb_map_modify(struct ldb_module *module, struct ldb_request *req);
 
 #define LDB_MAP_OPS \
-	.add		= map_add, \
-	.modify		= map_modify, \
-	.del		= map_delete, \
-	.rename		= map_rename, \
-	.search		= map_search,
+	.add		= ldb_map_add, \
+	.modify		= ldb_map_modify, \
+	.del		= ldb_map_delete, \
+	.rename		= ldb_map_rename, \
+	.search		= ldb_map_search,
 
 #endif /* __LDB_MAP_H__ */

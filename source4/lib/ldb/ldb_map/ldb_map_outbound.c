@@ -1114,7 +1114,7 @@ int map_return_entry(struct map_context *ac, struct ldb_reply *ares)
 }
 
 /* Search a record. */
-int map_search(struct ldb_module *module, struct ldb_request *req)
+int ldb_map_search(struct ldb_module *module, struct ldb_request *req)
 {
 	struct ldb_parse_tree *remote_tree;
 	struct ldb_parse_tree *local_tree;
