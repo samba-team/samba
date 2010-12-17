@@ -2122,24 +2122,6 @@ static void call_nt_transact_ioctl(connection_struct *conn,
 			return;
 		}
 
-		if (!CAN_WRITE(conn)) {
-			DEBUG(9,("FSCTL_SET_SPARSE: fname[%s] set[%u] "
-				 "on readonly share[%s]\n",
-				 smb_fname_str_dbg(fsp->fsp_name), set_sparse,
-				 lp_servicename(SNUM(conn))));
-			reply_nterror(req, NT_STATUS_MEDIA_WRITE_PROTECTED);
-			return;
-		}
-
-		if (!(fsp->access_mask & FILE_WRITE_DATA) &&
-		    !(fsp->access_mask & FILE_WRITE_ATTRIBUTES)) {
-			DEBUG(9,("FSCTL_SET_SPARSE: fname[%s] set[%u] "
-				 "access_mask[0x%08X] - access denied\n",
-				 smb_fname_str_dbg(fsp->fsp_name), set_sparse, fsp->access_mask));
-			reply_nterror(req, NT_STATUS_ACCESS_DENIED);
-			return;
-		}
-
 		status = file_set_sparse(conn, fsp, set_sparse);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(9,("FSCTL_SET_SPARSE: fname[%s] set[%u] - %s\n",

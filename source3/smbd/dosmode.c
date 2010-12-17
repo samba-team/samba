@@ -20,6 +20,7 @@
 
 #include "includes.h"
 #include "librpc/gen_ndr/ndr_xattr.h"
+#include "../libcli/security/security.h"
 
 static uint32_t filter_mode_by_protocol(uint32_t mode)
 {
@@ -855,6 +856,25 @@ NTSTATUS file_set_sparse(connection_struct *conn,
 	uint32_t new_dosmode;
 	NTSTATUS status;
 
+	if (!CAN_WRITE(conn)) {
+		DEBUG(9,("file_set_sparse: fname[%s] set[%u] "
+			"on readonly share[%s]\n",
+			smb_fname_str_dbg(fsp->fsp_name),
+			sparse,
+			lp_servicename(SNUM(conn))));
+		return NT_STATUS_MEDIA_WRITE_PROTECTED;
+	}
+
+	if (!(fsp->access_mask & FILE_WRITE_DATA) &&
+			!(fsp->access_mask & FILE_WRITE_ATTRIBUTES)) {
+		DEBUG(9,("file_set_sparse: fname[%s] set[%u] "
+			"access_mask[0x%08X] - access denied\n",
+			smb_fname_str_dbg(fsp->fsp_name),
+			sparse,
+			fsp->access_mask));
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
 	DEBUG(10,("file_set_sparse: setting sparse bit %u on file %s\n",
 		  sparse, smb_fname_str_dbg(fsp->fsp_name)));
 
@@ -888,7 +908,7 @@ NTSTATUS file_set_sparse(connection_struct *conn,
 
 	notify_fname(conn, NOTIFY_ACTION_MODIFIED,
 		     FILE_NOTIFY_CHANGE_ATTRIBUTES,
-		     smb_fname->base_name);
+		     fsp->fsp_name->base_name);
 
 	return NT_STATUS_OK;
 }
