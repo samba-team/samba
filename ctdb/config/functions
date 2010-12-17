@@ -545,6 +545,24 @@ ctdb_check_counter_equal () {
     fi
     return 0
 }
+ctdb_check_counter () {
+    _msg="${1:-error}"  # "error"  - anything else is silent on fail
+    _op="${2:--ge}"  # an integer operator supported by test
+    _limit="${3:-${service_fail_limit}}"
+    shift 3
+    _ctdb_counter_common "$1"
+
+    # unary counting!
+    _size=$(stat -c "%s" "$_counter_file" 2>/dev/null || echo 0)
+    if [ $_size $_op $_limit ] ; then
+	if [ "$_msg" = "error" ] ; then
+	    echo "ERROR: $_limit consecutive failures for $_service_name, marking node unhealthy"
+	    exit 1		
+	else
+	    return 1
+	fi
+    fi
+}
 
 ########################################################
 
