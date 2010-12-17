@@ -476,7 +476,7 @@ WERROR dsdb_replicated_objects_commit(struct ldb_context *ldb,
 	 */
 	if (working_schema) {
 		/* store current schema so we can fall back in case of failure */
-		cur_schema = dsdb_get_schema(ldb, objects);
+		cur_schema = dsdb_get_schema(ldb, working_schema);
 
 		ret = dsdb_reference_schema(ldb, working_schema, false);
 		if (ret != LDB_SUCCESS) {
