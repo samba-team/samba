@@ -604,6 +604,7 @@ lib/gssapi/mech/gss_set_cred_option.c  lib/gssapi/mech/gss_pseudo_random.c ../he
     includes='../heimdal/lib/gssapi ../heimdal/lib/gssapi/gssapi ../heimdal/lib/gssapi/spnego ../heimdal/lib/gssapi/krb5 ../heimdal/lib/gssapi/mech',
     deps='HEIMDAL_HCRYPTO asn1 HEIMDAL_SPNEGO_ASN1 HEIMDAL_GSSAPI_ASN1 roken krb5 com_err wind',
     vnum='2.0.0',
+    version_script='lib/gssapi/version-script.map',
     )
 
 # expand_path.c needs some of the install paths
