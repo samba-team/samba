@@ -602,7 +602,7 @@ static void dreplsrv_op_pull_source_apply_changes_trigger(struct tevent_req *req
 						       &drsuapi->gensec_skey,
 						       state, &working_schema);
 		if (!W_ERROR_IS_OK(status)) {
-			DEBUG(0,("Failed to create working schema: %s",
+			DEBUG(0,("Failed to create working schema: %s\n",
 				 win_errstr(status)));
 			tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
 			return;
