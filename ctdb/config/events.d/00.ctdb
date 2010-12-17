@@ -38,7 +38,9 @@ update_config_from_tdb() {
 case "$1" in 
      init)
         # make sure we have a blank state directory for the scripts to work with
-	rm -rf $CTDB_VARDIR/state $ctdb_active_dir/*
+	rm -rf $CTDB_VARDIR/state
+	# Look at the pattern - this should not be -rf!!!
+	rm -f $ctdb_managed_dir/*
 	mkdir -p $CTDB_VARDIR/state || {
 	    ret=$?
 	    echo "mkdir -p $CTDB_VARDIR/state - failed - $ret"
