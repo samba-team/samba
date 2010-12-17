@@ -1850,11 +1850,11 @@ static NTSTATUS get_dc_list(const char *domain,
 	saf_servername = saf_fetch( domain);
 
 	if (strequal(domain, lp_workgroup()) || strequal(domain, lp_realm())) {
-		pserver = talloc_asprintf(NULL, "%s, %s",
+		pserver = talloc_asprintf(ctx, "%s, %s",
 			saf_servername ? saf_servername : "",
 			lp_passwordserver());
 	} else {
-		pserver = talloc_asprintf(NULL, "%s, *",
+		pserver = talloc_asprintf(ctx, "%s, *",
 			saf_servername ? saf_servername : "");
 	}
 
