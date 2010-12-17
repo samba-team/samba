@@ -148,6 +148,18 @@ def apply_soname(self):
         self.env.append_value('LINKFLAGS', self.env.SONAME_ST % self.soname)
         self.env.SONAME_ST = ''
 
+@feature('cshlib')
+@after('apply_implib')
+@before('apply_vnum')
+def apply_vscript(self):
+    '''add version-script arguments to library build'''
+
+    if self.env.HAVE_LD_VERSION_SCRIPT and getattr(self, 'version_script', ''):
+        self.env.append_value('LINKFLAGS', "-Wl,--version-script=%s" %
+            os.path.join(self.path.abspath(self.env), self.version_script))
+        self.version_script = None
+
+
 ##############################
 # handle the creation of links for libraries and binaries in the build tree
 

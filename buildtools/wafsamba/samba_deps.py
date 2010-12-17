@@ -1099,7 +1099,7 @@ def check_project_rules(bld):
     global tstart
     tstart = time.clock()
 
-    bld.new_rules = True    
+    bld.new_rules = True
     Logs.info("Checking project rules ...")
 
     debug('deps: project rules checking started')
