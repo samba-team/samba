@@ -202,8 +202,8 @@ def SAMBA_LIBRARY(bld, libname, source,
     if abi_directory:
         features += ' abi_check'
 
+    vscript = None
     if bld.env.HAVE_LD_VERSION_SCRIPT:
-        vscript = "%s.vscript" % libname
         if private_library:
             version = "%s_%s" % (Utils.g_module.APPNAME, Utils.g_module.VERSION)
         elif vnum:
@@ -211,6 +211,7 @@ def SAMBA_LIBRARY(bld, libname, source,
         else:
             version = None
         if version:
+            vscript = "%s.vscript" % libname
             bld.ABI_VSCRIPT(libname, abi_directory, version, vscript)
             fullname = bld.env.shlib_PATTERN % bundled_name
             bld.add_manual_dependency(bld.path.find_or_declare(fullname), bld.path.find_or_declare(vscript))
@@ -218,8 +219,6 @@ def SAMBA_LIBRARY(bld, libname, source,
                 # also make the .inst file depend on the vscript
                 instname = bld.env.shlib_PATTERN % (bundled_name + '.inst')
                 bld.add_manual_dependency(bld.path.find_or_declare(instname), bld.path.find_or_declare(vscript))
-    else:
-        vscript = None
 
     bld.SET_BUILD_GROUP(group)
     t = bld(
