@@ -493,7 +493,7 @@ static int partition_search(struct ldb_module *module, struct ldb_request *req)
 
 	/* Remove the "domain_scope" control, so we don't confuse a backend
 	 * server */
-	if (domain_scope_control && !save_controls(domain_scope_control, req, &saved_controls)) {
+	if (domain_scope_control && !ldb_save_controls(domain_scope_control, req, &saved_controls)) {
 		return ldb_oom(ldb_module_get_ctx(module));
 	}
 
