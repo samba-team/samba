@@ -156,7 +156,7 @@ def apply_vscript(self):
 
     if self.env.HAVE_LD_VERSION_SCRIPT and getattr(self, 'version_script', ''):
         self.env.append_value('LINKFLAGS', "-Wl,--version-script=%s" %
-            os.path.join(self.path.abspath(self.env), self.version_script))
+            self.version_script)
         self.version_script = None
 
 

@@ -219,6 +219,7 @@ def SAMBA_LIBRARY(bld, libname, source,
                 # also make the .inst file depend on the vscript
                 instname = bld.env.shlib_PATTERN % (bundled_name + '.inst')
                 bld.add_manual_dependency(bld.path.find_or_declare(instname), bld.path.find_or_declare(vscript))
+            vscript = os.path.join(bld.path.abspath(bld.env), vscript)
 
     bld.SET_BUILD_GROUP(group)
     t = bld(
