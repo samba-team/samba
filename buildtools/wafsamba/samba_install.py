@@ -128,19 +128,14 @@ def install_library(self):
         t.env.append_value('LINKFLAGS', t.env.SONAME_ST % install_link)
         t.env.SONAME_ST = ''
 
-    if install_name == install_link:
-        install_link = None
-
     # tell waf to install the library
     bld.install_as(os.path.join(install_path, install_name),
                    os.path.join(self.path.abspath(bld.env), inst_name))
-    if install_link:
+    if install_link and install_link != install_name:
         # and the symlink if needed
-        bld.symlink_as(os.path.join(install_path, install_link),
-                       install_name)
+        bld.symlink_as(os.path.join(install_path, install_link), install_name)
     if dev_link:
-        bld.symlink_as(os.path.join(install_path, dev_link),
-                       install_name)
+        bld.symlink_as(os.path.join(install_path, dev_link), install_name)
 
 
 @feature('cshlib')
