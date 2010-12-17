@@ -4623,7 +4623,7 @@ uint32 dos_mode(connection_struct *conn, struct smb_filename *smb_fname);
 int file_set_dosmode(connection_struct *conn, struct smb_filename *smb_fname,
 		     uint32 dosmode, const char *parent_dir, bool newfile);
 NTSTATUS file_set_sparse(connection_struct *conn,
-			 struct smb_filename *smb_fname,
+			 struct files_struct *fsp,
 			 bool sparse);
 int file_ntimes(connection_struct *conn, const struct smb_filename *smb_fname,
 		struct smb_file_time *ft);
