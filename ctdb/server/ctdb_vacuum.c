@@ -908,6 +908,17 @@ ctdb_vacuum_event(struct event_context *ev, struct timed_event *te,
 	DLIST_ADD(ctdb->vacuumers, child_ctx);
 	talloc_set_destructor(child_ctx, vacuum_child_destructor);
 
+	/*
+	 * Clear the fastpath vacuuming list in the parent.
+	 */
+	talloc_free(ctdb_db->delete_queue);
+	ctdb_db->delete_queue = trbt_create(ctdb_db, 0);
+	if (ctdb_db->delete_queue == NULL) {
+		/* fatal here? ... */
+		ctdb_fatal(ctdb, "Out of memory when re-creating vacuum tree "
+				 "in parent context. Shutting down\n");
+	}
+
 	event_add_timed(ctdb->ev, child_ctx,
 		timeval_current_ofs(ctdb->tunable.vacuum_max_run_time, 0),
 		vacuum_child_timeout, child_ctx);
