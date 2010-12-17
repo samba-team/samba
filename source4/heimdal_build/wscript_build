@@ -549,10 +549,11 @@ HDB_SOURCE = '''lib/hdb/db.c lib/hdb/dbinfo.c lib/hdb/hdb.c
                               ../heimdal_build/hdb-glue.c'''
 
 HEIMDAL_LIBRARY('hdb',
-                    source=HDB_SOURCE,
-                    includes='../heimdal/lib/hdb',
-                    deps='krb5 HEIMDAL_HDB_KEYS roken HEIMDAL_HCRYPTO com_err HEIMDAL_HDB_ASN1 wind',
-                    vnum='11.0.2',
+    version_script='lib/hdb/version-script.map',
+    source=HDB_SOURCE,
+    includes='../heimdal/lib/hdb',
+    deps='krb5 HEIMDAL_HDB_KEYS roken HEIMDAL_HCRYPTO com_err HEIMDAL_HDB_ASN1 wind',
+    vnum='11.0.2',
     )
 HEIMDAL_AUTOPROTO('lib/hdb/hdb-protos.h', HDB_SOURCE)
 HEIMDAL_AUTOPROTO_PRIVATE('lib/hdb/hdb-private.h', HDB_SOURCE)
