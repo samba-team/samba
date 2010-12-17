@@ -431,6 +431,9 @@ fail:
 	if (was_expired != NULL) {
 		*was_expired = expired;
 	}
+	if (state.result && state.blob) {
+		data_blob_free(state.blob);
+	}
 	return false;
 } 
 
