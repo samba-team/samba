@@ -653,6 +653,7 @@ KRB5_SOURCE = [os.path.join('lib/krb5/', x) for x in to_list(
                                heim_err.c k524_err.c krb_err.c''')]  + ["../heimdal_build/krb5-glue.c"]
 
 HEIMDAL_LIBRARY('krb5', KRB5_SOURCE,
+    version_script='lib/krb5/version-script.map',
                     includes='../heimdal/lib/krb5 ../heimdal/lib/asn1 ../heimdal/include',
             deps='roken HEIMDAL_PKINIT_ASN1 wind HEIMDAL_KRB5_ASN1 hx509 HEIMDAL_HCRYPTO samba-hostconfig intl com_err HEIMDAL_CONFIG HEIMDAL_BASE',
             vnum='26.0.0',
