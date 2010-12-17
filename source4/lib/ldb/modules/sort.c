@@ -323,7 +323,7 @@ static int server_sort_search(struct ldb_module *module, struct ldb_request *req
 	/* save it locally and remove it from the list */
 	/* we do not need to replace them later as we
 	 * are keeping the original req intact */
-	if (!save_controls(control, down_req, &saved_controls)) {
+	if (!ldb_save_controls(control, down_req, &saved_controls)) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 

@@ -74,7 +74,7 @@ struct ldb_control *ldb_reply_get_control(struct ldb_reply *rep, const char *oid
 /* saves the current controls list into the "saver" and replace the one in req with a new one excluding
 the "exclude" control */
 /* returns 0 on error */
-int save_controls(struct ldb_control *exclude, struct ldb_request *req, struct ldb_control ***saver)
+int ldb_save_controls(struct ldb_control *exclude, struct ldb_request *req, struct ldb_control ***saver)
 {
 	struct ldb_control **lcs;
 	unsigned int i, j;
@@ -145,7 +145,7 @@ struct ldb_control **controls_except_specified(struct ldb_control **controls_in,
 
 /* check if there's any control marked as critical in the list */
 /* return True if any, False if none */
-int check_critical_controls(struct ldb_control **controls)
+int ldb_check_critical_controls(struct ldb_control **controls)
 {
 	unsigned int i;
 

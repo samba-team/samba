@@ -301,7 +301,7 @@ static int asq_build_multiple_requests(struct asq_context *ac, bool *terminated)
 
 		/* remove the ASQ control itself */
 		control = ldb_request_get_control(ac->req, LDB_CONTROL_ASQ_OID);
-		if (!save_controls(control, ac->reqs[i], &saved_controls)) {
+		if (!ldb_save_controls(control, ac->reqs[i], &saved_controls)) {
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 	}

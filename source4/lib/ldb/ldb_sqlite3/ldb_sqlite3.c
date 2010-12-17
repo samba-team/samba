@@ -1538,7 +1538,7 @@ static int lsql_handle_request(struct ldb_module *module, struct ldb_request *re
 	struct tevent_timer *te;
 	struct timeval tv;
 
-	if (check_critical_controls(req->controls)) {
+	if (ldb_check_critical_controls(req->controls)) {
 		return LDB_ERR_UNSUPPORTED_CRITICAL_EXTENSION;
 	}
 
