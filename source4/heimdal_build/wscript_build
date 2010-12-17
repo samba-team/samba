@@ -368,28 +368,8 @@ HEIMDAL_ASN1('HEIMDAL_GSSAPI_ASN1',
     )
 
 
-HEIMDAL_ASN1('HEIMDAL_KRB5_ASN1',
-    'lib/asn1/krb5.asn1',
-    option_file='lib/asn1/krb5.opt',
-    directory='lib/asn1'
-    )
-
-
 HEIMDAL_ASN1('HEIMDAL_DIGEST_ASN1',
     'lib/asn1/digest.asn1',
-    directory='lib/asn1'
-    )
-
-
-HEIMDAL_ASN1('HEIMDAL_RFC2459_ASN1',
-    'lib/asn1/rfc2459.asn1',
-    options='--preserve-binary=TBSCertificate --preserve-binary=TBSCRLCertList --preserve-binary=Name --sequence=GeneralNames --sequence=Extensions --sequence=CRLDistributionPoints',
-    directory='lib/asn1'
-    )
-
-
-HEIMDAL_ASN1('HEIMDAL_PKINIT_ASN1',
-    'lib/asn1/pkinit.asn1',
     directory='lib/asn1'
     )
 
@@ -516,7 +496,7 @@ KDC_SOURCE='kdc/default_config.c kdc/kerberos5.c kdc/krb5tgs.c kdc/pkinit.c kdc/
 
 HEIMDAL_LIBRARY('kdc', source=KDC_SOURCE,
                     includes='../heimdal/kdc',
-                    deps='roken krb5 hdb asn1 HEIMDAL_DIGEST_ASN1 HEIMDAL_KX509_ASN1 heimntlm HEIMDAL_HCRYPTO com_err wind HEIMDAL_BASE',
+                    deps='roken krb5 hdb asn1 HEIMDAL_DIGEST_ASN1 HEIMDAL_KX509_ASN1 heimntlm hcrypto com_err wind hbase',
                     vnum='2.0.0',
                     version_script='kdc/version-script.map')
 HEIMDAL_AUTOPROTO('kdc/kdc-protos.h', KDC_SOURCE)
@@ -529,7 +509,7 @@ HEIMNTLM_SOURCE = 'lib/ntlm/ntlm.c'
 HEIMDAL_LIBRARY('heimntlm',
                     source=HEIMNTLM_SOURCE,
                     includes='../heimdal/lib/ntlm',
-                    deps='roken HEIMDAL_HCRYPTO krb5',
+                    deps='roken hcrypto krb5',
                     vnum='1.0.1',
                     version_script='lib/ntlm/version-script.map',
     )
@@ -539,7 +519,7 @@ HEIMDAL_AUTOPROTO('lib/ntlm/heimntlm-protos.h', HEIMNTLM_SOURCE)
 HEIMDAL_SUBSYSTEM('HEIMDAL_HDB_KEYS',
     'lib/hdb/keys.c',
     includes='../heimdal/lib/hdb',
-    deps='roken HEIMDAL_HCRYPTO krb5 HEIMDAL_HDB_ASN1'
+    deps='roken hcrypto krb5 HEIMDAL_HDB_ASN1'
     )
 
 
@@ -552,7 +532,7 @@ HEIMDAL_LIBRARY('hdb',
     version_script='lib/hdb/version-script.map',
     source=HDB_SOURCE,
     includes='../heimdal/lib/hdb',
-    deps='krb5 HEIMDAL_HDB_KEYS roken HEIMDAL_HCRYPTO com_err HEIMDAL_HDB_ASN1 wind',
+    deps='krb5 HEIMDAL_HDB_KEYS roken hcrypto com_err HEIMDAL_HDB_ASN1 wind',
     vnum='11.0.2',
     )
 HEIMDAL_AUTOPROTO('lib/hdb/hdb-protos.h', HDB_SOURCE)
@@ -602,7 +582,7 @@ lib/gssapi/mech/gss_import_name.c lib/gssapi/mech/gss_duplicate_name.c lib/gssap
 lib/gssapi/mech/gss_export_sec_context.c lib/gssapi/mech/gss_inquire_context.c lib/gssapi/mech/gss_release_name.c
 lib/gssapi/mech/gss_set_cred_option.c  lib/gssapi/mech/gss_pseudo_random.c ../heimdal_build/gssapi-glue.c''',
     includes='../heimdal/lib/gssapi ../heimdal/lib/gssapi/gssapi ../heimdal/lib/gssapi/spnego ../heimdal/lib/gssapi/krb5 ../heimdal/lib/gssapi/mech',
-    deps='HEIMDAL_HCRYPTO asn1 HEIMDAL_SPNEGO_ASN1 HEIMDAL_GSSAPI_ASN1 roken krb5 com_err wind',
+    deps='hcrypto asn1 HEIMDAL_SPNEGO_ASN1 HEIMDAL_GSSAPI_ASN1 roken krb5 com_err wind',
     vnum='2.0.0',
     version_script='lib/gssapi/version-script.map',
     )
@@ -612,7 +592,7 @@ HEIMDAL_SUBSYSTEM('HEIMDAL_CONFIG',
                   'lib/krb5/expand_path.c lib/krb5/plugin.c lib/krb5/context.c',
                   includes='../heimdal/lib/krb5 ../heimdal/lib/asn1 ../heimdal/include',
                   cflags=bld.dynconfig_cflags('LIBDIR BINDIR LIBEXECDIR SBINDIR'),
-                  deps='HEIMDAL_HCRYPTO HEIMDAL_BASE wind hx509 com_err'
+                  deps='hcrypto hbase wind hx509 com_err'
                   )
 
 KRB5_SOURCE = [os.path.join('lib/krb5/', x) for x in to_list(
@@ -655,7 +635,7 @@ KRB5_SOURCE = [os.path.join('lib/krb5/', x) for x in to_list(
 HEIMDAL_LIBRARY('krb5', KRB5_SOURCE,
     version_script='lib/krb5/version-script.map',
                     includes='../heimdal/lib/krb5 ../heimdal/lib/asn1 ../heimdal/include',
-            deps='roken HEIMDAL_PKINIT_ASN1 wind HEIMDAL_KRB5_ASN1 hx509 HEIMDAL_HCRYPTO samba-hostconfig intl com_err HEIMDAL_CONFIG HEIMDAL_BASE',
+            deps='roken wind asn1 hx509 hcrypto samba-hostconfig intl com_err HEIMDAL_CONFIG hbase',
             vnum='26.0.0',
                     )
 KRB5_PROTO_SOURCE = KRB5_SOURCE + ['lib/krb5/expand_path.c', 'lib/krb5/plugin.c', 'lib/krb5/context.c']
@@ -692,9 +672,32 @@ if not bld.CONFIG_SET("USING_SYSTEM_ASN1"):
         deps='roken com_err'
         )
 
+    HEIMDAL_ASN1('HEIMDAL_RFC2459_ASN1',
+        'lib/asn1/rfc2459.asn1',
+        options='--preserve-binary=TBSCertificate --preserve-binary=TBSCRLCertList --preserve-binary=Name --sequence=GeneralNames --sequence=Extensions --sequence=CRLDistributionPoints',
+        directory='lib/asn1'
+        )
+
+    HEIMDAL_ASN1('HEIMDAL_KRB5_ASN1',
+        'lib/asn1/krb5.asn1',
+        option_file='lib/asn1/krb5.opt',
+        directory='lib/asn1'
+        )
+
+    HEIMDAL_ASN1('HEIMDAL_PKINIT_ASN1',
+        'lib/asn1/pkinit.asn1',
+        directory='lib/asn1'
+        )
+
+    HEIMDAL_ASN1('HEIMDAL_CMS_ASN1',
+        'lib/asn1/cms.asn1',
+        option_file='lib/asn1/cms.opt',
+        directory='lib/asn1'
+        )
+
     HEIMDAL_LIBRARY('asn1',
             version_script='lib/asn1/version-script.map',
-            deps="HEIMDAL_HEIM_ASN1",
+            deps="HEIMDAL_HEIM_ASN1 HEIMDAL_RFC2459_ASN1 HEIMDAL_KRB5_ASN1 HEIMDAL_PKINIT_ASN1 HEIMDAL_CMS_ASN1",
             source='',
             vnum='8.0.0')
 
@@ -705,17 +708,20 @@ if not bld.CONFIG_SET("USING_SYSTEM_TOMMATH"):
             includes='../heimdal/lib/hcrypto/libtommath'
         )
 
-# FIXME: This should be a library:
-HEIMDAL_SUBSYSTEM('HEIMDAL_HCRYPTO',
+HEIMDAL_LIBRARY('hcrypto',
     'lib/hcrypto/aes.c lib/hcrypto/bn.c lib/hcrypto/dh.c lib/hcrypto/dh-ltm.c lib/hcrypto/des.c lib/hcrypto/dsa.c lib/hcrypto/engine.c lib/hcrypto/md2.c lib/hcrypto/md4.c lib/hcrypto/md5.c lib/hcrypto/rsa.c lib/hcrypto/rsa-ltm.c lib/hcrypto/rc2.c lib/hcrypto/rc4.c lib/hcrypto/rijndael-alg-fst.c lib/hcrypto/rnd_keys.c lib/hcrypto/sha.c lib/hcrypto/sha256.c lib/hcrypto/sha512.c lib/hcrypto/ui.c lib/hcrypto/evp.c lib/hcrypto/evp-hcrypto.c lib/hcrypto/pkcs5.c lib/hcrypto/pkcs12.c lib/hcrypto/rand.c lib/hcrypto/rand-egd.c lib/hcrypto/rand-unix.c lib/hcrypto/rand-fortuna.c lib/hcrypto/rand-timer.c lib/hcrypto/hmac.c lib/hcrypto/camellia.c lib/hcrypto/camellia-ntt.c lib/hcrypto/common.c lib/hcrypto/validate.c',
     includes='../heimdal/lib/hcrypto ../heimdal/lib ../heimdal/include',
-    deps='roken asn1 HEIMDAL_RFC2459_ASN1 tommath'
+    deps='roken asn1 tommath',
+    version_script='lib/hcrypto/version-script.map',
+    vnum='5.0.1',
     )
 
-HEIMDAL_SUBSYSTEM('HEIMDAL_BASE',
+HEIMDAL_LIBRARY('hbase',
     'base/array.c base/bool.c base/dict.c base/heimbase.c base/string.c base/number.c base/null.c',
     includes='../heimdal/base ../heimdal/include',
-    deps='roken replace'
+    deps='roken replace',
+    version_script='base/version-script.map',
+    vnum='1.0.0',
     )
 
 
@@ -741,12 +747,6 @@ if not bld.CONFIG_SET("USING_SYSTEM_HX509"):
 
     HEIMDAL_ASN1('HEIMDAL_PKCS12_ASN1',
         'lib/asn1/pkcs12.asn1',
-        directory='lib/asn1'
-        )
-
-    HEIMDAL_ASN1('HEIMDAL_CMS_ASN1',
-        'lib/asn1/cms.asn1',
-        option_file='lib/asn1/cms.opt',
         directory='lib/asn1'
         )
 
@@ -798,8 +798,9 @@ if not bld.CONFIG_SET("USING_SYSTEM_HX509"):
     HEIMDAL_LIBRARY('hx509',
         'lib/hx509/ca.c lib/hx509/cert.c lib/hx509/cms.c lib/hx509/collector.c lib/hx509/crypto.c lib/hx509/error.c lib/hx509/env.c lib/hx509/file.c lib/hx509/keyset.c lib/hx509/ks_dir.c lib/hx509/ks_file.c lib/hx509/ks_keychain.c lib/hx509/ks_mem.c lib/hx509/ks_null.c lib/hx509/ks_p11.c lib/hx509/ks_p12.c lib/hx509/lock.c lib/hx509/name.c lib/hx509/peer.c lib/hx509/print.c lib/hx509/req.c lib/hx509/revoke.c lib/hx509/sel.c lib/hx509/hx509_err.c lib/hx509/sel-lex.c lib/hx509/sel-gram.c',
         includes='../heimdal/lib/hx509',
-        deps='roken com_err asn1 HEIMDAL_HCRYPTO HEIMDAL_CMS_ASN1 HEIMDAL_RFC2459_ASN1 HEIMDAL_OCSP_ASN1 HEIMDAL_PKCS8_ASN1 HEIMDAL_PKCS9_ASN1 HEIMDAL_PKCS12_ASN1 HEIMDAL_PKINIT_ASN1 HEIMDAL_PKCS10_ASN1 wind HEIMDAL_KRB5_ASN1',
+        deps='roken com_err asn1 hcrypto asn1 HEIMDAL_OCSP_ASN1 HEIMDAL_PKCS8_ASN1 HEIMDAL_PKCS9_ASN1 HEIMDAL_PKCS12_ASN1 HEIMDAL_PKCS10_ASN1 wind',
         vnum='5.0.0',
+        version_script='lib/hx509/version-script.map',
         )
 
 if not bld.CONFIG_SET('USING_SYSTEM_WIND'):
