@@ -253,7 +253,6 @@ bool sid_blob_parse(DATA_BLOB in, struct dom_sid *sid)
 
 bool sid_parse(const char *inbuf, size_t len, struct dom_sid *sid)
 {
-	enum ndr_err_code ndr_err;
 	DATA_BLOB in = data_blob_const(inbuf, len);
 	return sid_blob_parse(in, sid);
 }
