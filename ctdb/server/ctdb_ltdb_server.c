@@ -25,6 +25,7 @@
 #include "system/dir.h"
 #include "system/time.h"
 #include "../include/ctdb_private.h"
+#include "../common/rb_tree.h"
 #include "db_wrap.h"
 #include "lib/util/dlinklist.h"
 #include <ctype.h>
@@ -535,6 +536,13 @@ static int ctdb_local_attach(struct ctdb_context *ctdb, const char *db_name,
 	key.dptr  = discard_const(db_name);
 	ctdb_db->db_id = ctdb_hash(&key);
 	ctdb_db->persistent = persistent;
+
+	if (!ctdb_db->persistent) {
+		ctdb_db->delete_queue = trbt_create(ctdb_db, 0);
+		if (ctdb_db->delete_queue == NULL) {
+			CTDB_NO_MEMORY(ctdb, ctdb_db->delete_queue);
+		}
+	}
 
 	/* check for hash collisions */
 	for (tmp_db=ctdb->db_list;tmp_db;tmp_db=tmp_db->next) {
