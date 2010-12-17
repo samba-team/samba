@@ -25,6 +25,7 @@
 #include "../include/ctdb_private.h"
 #include "lib/util/dlinklist.h"
 #include "db_wrap.h"
+#include "../common/rb_tree.h"
 
 static bool later_db(const char *name)
 {
@@ -603,6 +604,16 @@ int32_t ctdb_control_wipe_database(struct ctdb_context *ctdb, TDB_DATA indata)
 		DEBUG(DEBUG_ERR,(__location__ " Failed to wipe database for db '%s'\n",
 			 ctdb_db->db_name));
 		return -1;
+	}
+
+	if (!ctdb_db->persistent) {
+		talloc_free(ctdb_db->delete_queue);
+		ctdb_db->delete_queue = trbt_create(ctdb_db, 0);
+		if (ctdb_db->delete_queue == NULL) {
+			DEBUG(DEBUG_ERR, (__location__ " Failed to re-create "
+					  "the vacuum tree.\n"));
+			return -1;
+		}
 	}
 
 	return 0;
