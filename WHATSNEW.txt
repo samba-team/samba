@@ -13,6 +13,40 @@ system at https://bugzilla.samba.org/.
 Major enhancements in Samba 3.6.0 include:
 
 
+Changed security defaults
+-------------------------
+
+Samba 3.6 has adopted a number of improved security defaults that will
+impact on existing users of Samba.
+
+ client ntlmv2 auth = yes
+ client use spnego principal = no
+ send spnego principal = no
+
+The impact of 'client ntlmv2 auth = yes' is that by default we will not
+use NTLM authentication as a client.  This applies to the Samba client
+tools such as smbclient and winbind, but does not change the separately
+released in-kernel CIFS client.  To re-enable the poorer NTLM encryption
+set '--option=clientusentlmv2auth=no' on your smbclient command line, or
+set 'client ntlmv2 auth = no' in your smb.conf
+
+The impact of 'client use spnego principal = no' is that we may be able
+to use Kerberos to communicate with a server less often in smbclient,
+winbind and other Samba client tools.  We may fall back to NTLMSSP in
+more situations where we would previously rely on the insecure
+indication from the 'NegProt' CIFS packet.  This mostly occursed when
+connecting to a name alias not recorded as a servicePrincipalName for
+the server.  This indication is not available from Windows 2008 or later
+in any case, and is not used by modern Windows clients, so this makes
+Samba's behaviour consistent with other clients and against all servers.
+
+The impact of 'send spnego principal = no' is to match Windows 2008 and
+not to send this principal, making existing clients give more consistent
+behaviour (more likely to fall back to NTLMSSP) between Samba and
+Windows 2008, and between Windows versions that did and no longer use
+this insecure hint.
+
+
 SMB2 support
 ------------
 
