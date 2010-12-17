@@ -125,7 +125,7 @@ int ldb_save_controls(struct ldb_control *exclude, struct ldb_request *req, stru
 /* Returns a list of controls, except the one specified.  Included
  * controls become a child of returned list if they were children of
  * controls_in */
-struct ldb_control **controls_except_specified(struct ldb_control **controls_in, 
+struct ldb_control **ldb_controls_except_specified(struct ldb_control **controls_in, 
 					       TALLOC_CTX *mem_ctx, 
 					       struct ldb_control *exclude);
 int ldb_check_critical_controls(struct ldb_control **controls);
