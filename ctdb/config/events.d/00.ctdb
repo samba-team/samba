@@ -12,22 +12,27 @@
 . $CTDB_BASE/functions
 loadconfig
 
+ctdb_setup_service_state_dir "ctdb"
+
+#
 update_config_from_tdb() {
-	# Pull optional ctdb configuration data out of config.tdb
-	PUBLICADDRESSESKEY='public_addresses:node#'`ctdb -t 1 xpnn|sed -e "s/.*://"`
-	rm -f $CTDB_VARDIR/state/public_addresses
-	ctdb pfetch config.tdb $PUBLICADDRESSESKEY $CTDB_VARDIR/state/public_addresses 2>/dev/null
-	[ "$?" = "0" ] && [ `stat --format="%s" /etc/ctdb/state/public_addresses` != "0" ] && [ ! -z "$CTDB_PUBLIC_ADDRESSES" ] && {
-		diff $CTDB_VARDIR/state/public_addresses $CTDB_PUBLIC_ADDRESSES >/dev/null 2>/dev/null
-		[ $? = "0" ] || {
-			echo CTDB public address configuration had been updated.
-			echo Extracting new configuration from database.
-			diff $CTDB_VARDIR/state/public_addresses $CTDB_PUBLIC_ADDRESSES
-			cp $CTDB_VARDIR/state/public_addresses $CTDB_PUBLIC_ADDRESSES
-			echo Restarting CTDB
-			service ctdb restart &
-		}
-	}
+
+    # Pull optional ctdb configuration data out of config.tdb
+    _key="public_addresses:node#$(ctdb -t 1 xpnn|sed -e 's/.*://')"
+    _t="$service_state_dir/public_addresses"
+    rm -f "$_t"
+
+    if ctdb pfetch config.tdb "$_key" "$_t" 2>/dev/null && \
+	[ -s "$_t" -a -n "$CTDB_PUBLIC_ADDRESSES"] && \
+	! cmp -s "$_t" "$CTDB_PUBLIC_ADDRESSES" ; then
+
+	echo "CTDB public address configuration has changed."
+	echo "Extracting new configuration from database."
+	diff "$_t" "$CTDB_PUBLIC_ADDRESSES"
+	cp "$_t" "$CTDB_PUBLIC_ADDRESSES"
+	echo "Restarting CTDB"
+	service ctdb restart &
+    fi
 }
 
 case "$1" in 
