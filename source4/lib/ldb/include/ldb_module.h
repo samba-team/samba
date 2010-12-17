@@ -313,5 +313,10 @@ int ldb_module_connect_backend(struct ldb_context *ldb,
  */
 int ldb_module_init_chain(struct ldb_context *ldb, struct ldb_module *module);
 
+/*
+ * prototype for the init function defined by dynamically loaded modules
+ */
+int ldb_init_module(const char *version);
+
 
 #endif
