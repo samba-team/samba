@@ -1310,6 +1310,7 @@ sub Parse($$$$$)
 
 	$self->pidl("");
 
+	$self->pidl_hdr("void init$basename(void);");
 	$self->pidl("void init$basename(void)");
 	$self->pidl("{");
 	$self->indent;
