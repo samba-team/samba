@@ -848,27 +848,26 @@ int file_set_dosmode(connection_struct *conn, struct smb_filename *smb_fname,
 
 
 NTSTATUS file_set_sparse(connection_struct *conn,
-			 struct smb_filename *smb_fname,
+			 files_struct *fsp,
 			 bool sparse)
 {
-	SMB_STRUCT_STAT st;
 	uint32_t old_dosmode;
 	uint32_t new_dosmode;
+	NTSTATUS status;
 
 	DEBUG(10,("file_set_sparse: setting sparse bit %u on file %s\n",
-		  sparse, smb_fname_str_dbg(smb_fname)));
+		  sparse, smb_fname_str_dbg(fsp->fsp_name)));
 
 	if (!lp_store_dos_attributes(SNUM(conn))) {
 		return NT_STATUS_INVALID_DEVICE_REQUEST;
 	}
 
-	SET_STAT_INVALID(st);
-
-	if (SMB_VFS_STAT(conn, smb_fname)) {
-		return map_nt_error_from_unix(errno);
+	status = vfs_stat_fsp(fsp);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
-	old_dosmode = dos_mode(conn, smb_fname);
+	old_dosmode = dos_mode(conn, fsp->fsp_name);
 
 	if (sparse && !(old_dosmode & FILE_ATTRIBUTE_SPARSE)) {
 		new_dosmode = old_dosmode | FILE_ATTRIBUTE_SPARSE;
@@ -879,7 +878,7 @@ NTSTATUS file_set_sparse(connection_struct *conn,
 	}
 
 	/* Store the DOS attributes in an EA. */
-	if (!set_ea_dos_attribute(conn, smb_fname,
+	if (!set_ea_dos_attribute(conn, fsp->fsp_name,
 				  new_dosmode)) {
 		if (errno == 0) {
 			errno = EIO;
@@ -893,7 +892,6 @@ NTSTATUS file_set_sparse(connection_struct *conn,
 
 	return NT_STATUS_OK;
 }
-
 
 /*******************************************************************
  Wrapper around the VFS ntimes that possibly allows DOS semantics rather

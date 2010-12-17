@@ -2140,7 +2140,7 @@ static void call_nt_transact_ioctl(connection_struct *conn,
 			return;
 		}
 
-		status = file_set_sparse(conn, fsp->fsp_name, set_sparse);
+		status = file_set_sparse(conn, fsp, set_sparse);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(9,("FSCTL_SET_SPARSE: fname[%s] set[%u] - %s\n",
 				 smb_fname_str_dbg(fsp->fsp_name), set_sparse, nt_errstr(status)));
