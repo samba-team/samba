@@ -114,7 +114,7 @@ static int net_time_set(struct net_context *c, int argc, const char **argv)
 
 	if (tv.tv_sec == 0) return -1;
 
-	result = settimeofday(&tv,0);
+	result = settimeofday(&tv,NULL);
 
 	if (result)
 		d_fprintf(stderr, _("setting system clock failed.  Error was (%s)\n"),
