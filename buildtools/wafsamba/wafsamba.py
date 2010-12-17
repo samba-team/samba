@@ -212,7 +212,8 @@ def SAMBA_LIBRARY(bld, libname, source,
             version = None
         if version:
             vscript = "%s.vscript" % libname
-            bld.ABI_VSCRIPT(libname, abi_directory, version, vscript)
+            bld.ABI_VSCRIPT(libname, abi_directory, version, vscript,
+                            abi_match)
             fullname = bld.env.shlib_PATTERN % bundled_name
             bld.add_manual_dependency(bld.path.find_or_declare(fullname), bld.path.find_or_declare(vscript))
             if Options.is_install:

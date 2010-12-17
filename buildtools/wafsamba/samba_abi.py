@@ -136,7 +136,6 @@ def abi_check(self):
     tsk.ABI_GEN = abi_gen
 
 
-
 def abi_process_file(fname, version, symmap):
     '''process one ABI file, adding new symbols to the symmap'''
     f = open(fname, mode='r')
@@ -146,7 +145,7 @@ def abi_process_file(fname, version, symmap):
             symmap[symname] = version
     f.close()
 
-def abi_write_vscript(vscript, libname, version, symmap):
+def abi_write_vscript(vscript, libname, version, symmap, abi_match):
     '''write a vscript file for a library in --version-script format'''
 
     invmap = {}
@@ -164,7 +163,13 @@ def abi_write_vscript(vscript, libname, version, symmap):
             f.write("\t\t%s;\n" % s);
         f.write("}%s;\n\n" % last_key)
         last_key = " %s" % symver
-    f.write("%s { global: *;};\n" % version)
+    f.write("%s {\n" % version)
+    f.write("\tglobal:\n")
+    for x in abi_match:
+        f.write("\t\t%s;\n" % x)
+    if abi_match != ["*"]:
+        f.write("\tlocal: *;\n")
+    f.write("};\n")
     f.close()
 
 
@@ -180,10 +185,11 @@ def abi_build_vscript(task):
         basename = os.path.basename(fname)
         version = basename[len(task.env.LIBNAME)+1:-len(".sigs")]
         abi_process_file(fname, version, symmap)
-    abi_write_vscript(tgt, task.env.LIBNAME, task.env.VERSION, symmap)
+    abi_write_vscript(tgt, task.env.LIBNAME, task.env.VERSION, symmap,
+                      task.env.ABI_MATCH)
 
 
-def ABI_VSCRIPT(bld, libname, abi_directory, version, vscript):
+def ABI_VSCRIPT(bld, libname, abi_directory, version, vscript, abi_match=None):
     '''generate a vscript file for our public libraries'''
     if abi_directory:
         source = bld.path.ant_glob('%s/%s-[0-9]*.sigs' % (abi_directory, libname))
@@ -199,7 +205,12 @@ def ABI_VSCRIPT(bld, libname, abi_directory, version, vscript):
                             source=source,
                             group='vscripts',
                             target=vscript)
+    if abi_match is None:
+        abi_match = ["*"]
+    else:
+        abi_match = samba_utils.TO_LIST(abi_match)
+    t.env.ABI_MATCH = abi_match
     t.env.VERSION = version
     t.env.LIBNAME = libname
-    t.vars = ['LIBNAME', 'VERSION']
+    t.vars = ['LIBNAME', 'VERSION', 'ABI_MATCH']
 Build.BuildContext.ABI_VSCRIPT = ABI_VSCRIPT
