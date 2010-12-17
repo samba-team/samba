@@ -23,6 +23,8 @@
 #include "param/pyparam.h"
 #include "lib/socket/netif.h"
 
+void init_glue(void);
+
 static PyObject *py_generate_random_str(PyObject *self, PyObject *args)
 {
 	int len;
