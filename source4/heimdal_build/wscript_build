@@ -202,7 +202,8 @@ def HEIMDAL_GENERATOR(name, rule, source='', target='',
         name=name)
 
 
-def HEIMDAL_LIBRARY(libname, source, deps, vnum, includes='', cflags=''):
+def HEIMDAL_LIBRARY(libname, source, deps, vnum, includes='', cflags='',
+                    version_script=None):
     '''define a Heimdal library'''
 
     obj_target = libname + '.objlist'
@@ -236,14 +237,13 @@ def HEIMDAL_LIBRARY(libname, source, deps, vnum, includes='', cflags=''):
     version = "%s_%s" % (Utils.g_module.APPNAME, Utils.g_module.VERSION)
 
     if bld.env.HAVE_LD_VERSION_SCRIPT:
-        vscript = "%s.vscript" % libname
+        version_script = "%s.vscript" % libname
         namespace = version.replace("-","_").replace("+","_").upper(),
-        HEIMDAL_GENERATOR(vscript,
+        HEIMDAL_GENERATOR(version_script,
                           rule="echo %s \{ global: \*\; \}\; > ${TGT}" % namespace,
                           group='vscripts',
-                          target=vscript)
-        ldflags.append("-Wl,--version-script=%s/%s" % (bld.path.abspath(bld.env), vscript))
-        deps.append(vscript)
+                          target=version_script)
+        deps.append(version_script)
 
     features = 'cc cshlib symlink_lib install_lib'
 
@@ -260,6 +260,7 @@ def HEIMDAL_LIBRARY(libname, source, deps, vnum, includes='', cflags=''):
         ldflags         = ldflags,
         vars            = [version],
         private_library = bundled_build,
+        version_script  = version_script,
         )
 
 
