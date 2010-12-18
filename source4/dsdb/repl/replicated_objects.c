@@ -445,6 +445,7 @@ WERROR dsdb_replicated_objects_commit(struct ldb_context *ldb,
 				      struct dsdb_extended_replicated_objects *objects,
 				      uint64_t *notify_uSN)
 {
+	WERROR werr;
 	struct ldb_result *ext_res;
 	struct dsdb_schema *cur_schema = NULL;
 	int ret;
@@ -502,6 +503,23 @@ WERROR dsdb_replicated_objects_commit(struct ldb_context *ldb,
 		return WERR_FOOBAR;
 	}
 	talloc_free(ext_res);
+
+	/* Save our updated prefixMap */
+	if (working_schema) {
+		werr = dsdb_write_prefixes_from_schema_to_ldb(working_schema,
+							      ldb,
+							      working_schema);
+		if (!W_ERROR_IS_OK(werr)) {
+			/* restore previous schema */
+			if (cur_schema ) {
+				dsdb_reference_schema(ldb, cur_schema, false);
+				dsdb_make_schema_global(ldb, cur_schema);
+			}
+			DEBUG(0,("Failed to save updated prefixMap: %s\n",
+				 win_errstr(werr)));
+			return werr;
+		}
+	}
 
 	ret = ldb_transaction_prepare_commit(ldb);
 	if (ret != LDB_SUCCESS) {
