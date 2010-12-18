@@ -2023,7 +2023,7 @@ NTSTATUS make_server_info_wbcAuthUserInfo(TALLOC_CTX *mem_ctx,
 
 	if (!pdb_set_pass_last_set_time(
 		    sam_account,
-		    nt_time_to_unix(info->pass_last_set_time),
+		    info->pass_last_set_time,
 		    PDB_CHANGED)) {
 		TALLOC_FREE(result);
 		return NT_STATUS_NO_MEMORY;
@@ -2031,7 +2031,7 @@ NTSTATUS make_server_info_wbcAuthUserInfo(TALLOC_CTX *mem_ctx,
 
 	if (!pdb_set_pass_can_change_time(
 		    sam_account,
-		    nt_time_to_unix(info->pass_can_change_time),
+		    info->pass_can_change_time,
 		    PDB_CHANGED)) {
 		TALLOC_FREE(result);
 		return NT_STATUS_NO_MEMORY;
@@ -2039,7 +2039,7 @@ NTSTATUS make_server_info_wbcAuthUserInfo(TALLOC_CTX *mem_ctx,
 
 	if (!pdb_set_pass_must_change_time(
 		    sam_account,
-		    nt_time_to_unix(info->pass_must_change_time),
+		    info->pass_must_change_time,
 		    PDB_CHANGED)) {
 		TALLOC_FREE(result);
 		return NT_STATUS_NO_MEMORY;
