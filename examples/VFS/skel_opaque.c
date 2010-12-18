@@ -308,7 +308,8 @@ static int skel_ftruncate(vfs_handle_struct *handle, files_struct *fsp, SMB_OFF_
 	return -1;
 }
 
-static int skel_posix_fallocate(vfs_handle_struct *handle, files_struct *fsp,
+static int skel_fallocate(vfs_handle_struct *handle, files_struct *fsp,
+			enum vfs_fallocate_mode mode,
 			SMB_OFF_T offset, SMB_OFF_T len)
 {
 	errno = ENOSYS;
@@ -820,7 +821,7 @@ struct vfs_fn_pointers skel_transparent_fns = {
 	.getwd = skel_getwd,
 	.ntimes = skel_ntimes,
 	.ftruncate = skel_ftruncate,
-	.posix_fallocate = skel_posix_fallocate,
+	.fallocate = skel_fallocate,
 	.lock = skel_lock,
 	.kernel_flock = skel_kernel_flock,
 	.linux_setlease = skel_linux_setlease,

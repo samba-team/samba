@@ -249,10 +249,10 @@
 #define SMB_VFS_NEXT_FTRUNCATE(handle, fsp, offset) \
 	smb_vfs_call_ftruncate((handle)->next, (fsp), (offset))
 
-#define SMB_VFS_POSIX_FALLOCATE(fsp, offset, len) \
-	smb_vfs_call_posix_fallocate((fsp)->conn->vfs_handles, (fsp), (offset), (len))
-#define SMB_VFS_NEXT_POSIX_FALLOCATE(handle, fsp, offset, len) \
-	smb_vfs_call_posix_fallocate((handle)->next, (fsp), (offset), (len))
+#define SMB_VFS_FALLOCATE(fsp, mode, offset, len) \
+	smb_vfs_call_fallocate((fsp)->conn->vfs_handles, (fsp), (mode), (offset), (len))
+#define SMB_VFS_NEXT_FALLOCATE(handle, fsp, mode, offset, len) \
+	smb_vfs_call_fallocate((handle)->next, (fsp), (mode), (offset), (len))
 
 #define SMB_VFS_LOCK(fsp, op, offset, count, type) \
 	smb_vfs_call_lock((fsp)->conn->vfs_handles, (fsp), (op), (offset), (count), (type))

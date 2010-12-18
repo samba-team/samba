@@ -848,12 +848,13 @@ static int strict_allocate_ftruncate(vfs_handle_struct *handle, files_struct *fs
 
 	space_to_write = len - pst->st_ex_size;
 
-	/* for allocation try posix_fallocate first. This can fail on some
+	/* for allocation try fallocate first. This can fail on some
 	   platforms e.g. when the filesystem doesn't support it and no
 	   emulation is being done by the libc (like on AIX with JFS1). In that
-	   case we do our own emulation. posix_fallocate implementations can
+	   case we do our own emulation. fallocate implementations can
 	   return ENOTSUP or EINVAL in cases like that. */
-	ret = SMB_VFS_POSIX_FALLOCATE(fsp, pst->st_ex_size, space_to_write);
+	ret = SMB_VFS_FALLOCATE(fsp, VFS_FALLOCATE_EXTEND_SIZE,
+				pst->st_ex_size, space_to_write);
 	if (ret == ENOSPC) {
 		errno = ENOSPC;
 		return -1;
@@ -861,7 +862,7 @@ static int strict_allocate_ftruncate(vfs_handle_struct *handle, files_struct *fs
 	if (ret == 0) {
 		return 0;
 	}
-	DEBUG(10,("strict_allocate_ftruncate: SMB_VFS_POSIX_FALLOCATE failed with "
+	DEBUG(10,("strict_allocate_ftruncate: SMB_VFS_FALLOCATE failed with "
 		"error %d. Falling back to slow manual allocation\n", ret));
 
 	/* available disk space is enough or not? */
@@ -953,16 +954,23 @@ static int vfswrap_ftruncate(vfs_handle_struct *handle, files_struct *fsp, SMB_O
 	return result;
 }
 
-static int vfswrap_posix_fallocate(vfs_handle_struct *handle,
+static int vfswrap_fallocate(vfs_handle_struct *handle,
 			files_struct *fsp,
+			enum vfs_fallocate_mode mode,
 			SMB_OFF_T offset,
 			SMB_OFF_T len)
 {
 	int result;
 
-	START_PROFILE(syscall_posix_fallocate);
-	result = sys_posix_fallocate(fsp->fh->fd, offset, len);
-	END_PROFILE(syscall_posix_fallocate);
+	START_PROFILE(syscall_fallocate);
+	if (mode == VFS_FALLOCATE_EXTEND_SIZE) {
+		result = sys_posix_fallocate(fsp->fh->fd, offset, len);
+	} else {
+		/* TODO - implement call into Linux fallocate call. */
+		errno = ENOSYS;
+		result = -1;
+	}
+	END_PROFILE(syscall_fallocate);
 	return result;
 }
 
@@ -1651,7 +1659,7 @@ static struct vfs_fn_pointers vfs_default_fns = {
 	.getwd = vfswrap_getwd,
 	.ntimes = vfswrap_ntimes,
 	.ftruncate = vfswrap_ftruncate,
-	.posix_fallocate = vfswrap_posix_fallocate,
+	.fallocate = vfswrap_fallocate,
 	.lock = vfswrap_lock,
 	.kernel_flock = vfswrap_kernel_flock,
 	.linux_setlease = vfswrap_linux_setlease,

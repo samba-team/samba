@@ -179,9 +179,9 @@ enum profile_stats_values
 #define syscall_ftruncate_count __profile_stats_value(PR_VALUE_SYSCALL_FTRUNCATE, count)
 #define syscall_ftruncate_time __profile_stats_value(PR_VALUE_SYSCALL_FTRUNCATE, time)
 
-	PR_VALUE_SYSCALL_POSIX_FALLOCATE,
-#define syscall_posix_fallocate_count __profile_stats_value(PR_VALUE_SYSCALL_POSIX_FALLOCATE, count)
-#define syscall_posix_fallocate_time __profile_stats_value(PR_VALUE_SYSCALL_POSIX_FALLOCATE, time)
+	PR_VALUE_SYSCALL_FALLOCATE,
+#define syscall_fallocate_count __profile_stats_value(PR_VALUE_SYSCALL_FALLOCATE, count)
+#define syscall_fallocate_time __profile_stats_value(PR_VALUE_SYSCALL_FALLOCATE, time)
 
 	PR_VALUE_SYSCALL_FCNTL_LOCK,
 #define syscall_fcntl_lock_count __profile_stats_value(PR_VALUE_SYSCALL_FCNTL_LOCK, count)
