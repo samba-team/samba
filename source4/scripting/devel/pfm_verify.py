@@ -42,7 +42,14 @@ def _samdb_fetch_pfm(samdb):
     assert len(res) == 1
     pfm = ndr_unpack(drsblobs.prefixMapBlob,
                      str(res[0]['prefixMap']))
-    return pfm.ctr
+    pfm_schi = None
+    if 'schemaInfo' in res[0]:
+        pfm_schi = pfm_schi = ndr_unpack(drsblobs.schemaInfoBlob,
+                                         str(res[0]['schemaInfo']))
+    else:
+        pfm_schi = drsblobs.schemaInfoBlob()
+        pfm_schi.marker = 0xFF;
+    return (pfm.ctr, pfm_schi)
 
 def _drs_fetch_pfm(server, samdb, creds, lp):
     """Fetch prefixMap using DRS interface"""
@@ -82,10 +89,14 @@ def _drs_fetch_pfm(server, samdb, creds, lp):
     pfm_it = pfm.mappings[-1]
     assert pfm_it.id_prefix == 0
     assert pfm_it.oid.length == 21
-    assert pfm_it.oid.binary_oid[0] == 255
+    s = ''
+    for x in pfm_it.oid.binary_oid:
+        s += chr(x)
+    pfm_schi = ndr_unpack(drsblobs.schemaInfoBlob, s)
+    assert pfm_schi.marker == 0xFF
     # remove schemaInfo element
     pfm.num_mappings -= 1
-    return pfm
+    return (pfm, pfm_schi)
 
 def _pfm_verify(drs_pfm, ldb_pfm):
     errors = []
@@ -105,6 +116,21 @@ def _pfm_verify(drs_pfm, ldb_pfm):
             it_err.append("oid.binary_oid")
         if len(it_err):
             errors.append("[%2d] differences in (%s)" % (i, it_err))
+    return errors
+
+def _pfm_schi_verify(drs_schi, ldb_schi):
+    errors = []
+    print drs_schi.revision
+    print drs_schi.invocation_id
+    if drs_schi.marker != ldb_schi.marker:
+        errors.append("Different marker in schemaInfo: drs = %d, ldb = %d"
+                      % (drs_schi.marker, ldb_schi.marker))
+    if drs_schi.revision != ldb_schi.revision:
+        errors.append("Different revision in schemaInfo: drs = %d, ldb = %d"
+                      % (drs_schi.revision, ldb_schi.revision))
+    if drs_schi.invocation_id != ldb_schi.invocation_id:
+        errors.append("Different invocation_id in schemaInfo: drs = %s, ldb = %s"
+                      % (drs_schi.invocation_id, ldb_schi.invocation_id))
     return errors
 
 ########### main code ###########
@@ -137,10 +163,21 @@ if __name__ == "__main__":
                   session_info=system_session(lp),
                   credentials=creds, lp=lp)
 
-    drs_pfm = _drs_fetch_pfm(server, samdb, creds, lp)
-    ldb_pfm = _samdb_fetch_pfm(samdb)
+    exit_code = 0
+    (drs_pfm, drs_schi) = _drs_fetch_pfm(server, samdb, creds, lp)
+    (ldb_pfm, ldb_schi) = _samdb_fetch_pfm(samdb)
+    # verify prefixMaps
     errors = _pfm_verify(drs_pfm, ldb_pfm)
     if len(errors):
         print "prefixMap verification errors:"
         print "%s" % errors
-        sys.exit(1)
+        exit_code = 1
+    # verify schemaInfos
+    errors = _pfm_schi_verify(drs_schi, ldb_schi)
+    if len(errors):
+        print "schemaInfo verification errors:"
+        print "%s" % errors
+        exit_code = 2
+
+    if exit_code != 0:
+        sys.exit(exit_code)
