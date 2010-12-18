@@ -46,6 +46,13 @@ policy:
          pass. Larger commits require discussion on the samba-technical
          list and review by the maintainer
 
+files: lib/tdb
+maintainers:
+         Rusty Russell <rusty@samba.org>
+policy:
+         Mail/CC changes to the maintainer, commit the changes
+         unless the maintainer objects.
+
 files: lib/tevent/py*, lib/talloc/py*, source4/lib/ldb/py*, lib/tdb/py*
 maintainers:
          Jelmer Vernooij <jelmer@samba.org>
