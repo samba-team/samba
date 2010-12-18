@@ -37,6 +37,14 @@ policy:
          Larger changes need also discussion on the samba-technical list
          and review by all maintainers.
 
+files: buildtools/**, source4/**/wscript
+maintainers:
+         Andrew Tridgell <tridge@samba.org>
+         Jelmer Vernooij <jelmer@samba.org>
+policy:
+         small commits to master allowed if all existing tests
+         pass. Larger commits require discussion on the samba-technical
+         list and review by the maintainer
 
 files: lib/tevent/py*, lib/talloc/py*, source4/lib/ldb/py*, lib/tdb/py*
 maintainers:
