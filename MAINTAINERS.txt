@@ -53,6 +53,15 @@ policy:
          Mail/CC changes to the maintainer, commit the changes
          unless the maintainer objects.
 
+files: lib/talloc
+maintainers:
+         Andrew Tridgell <tridge@samba.org>
+         Rusty Russell <rusty@samba.org>
+policy:
+         small commits to master allowed if all existing tests
+         pass. Larger commits require discussion on samba-technical
+         list and review by the maintainer
+
 files: lib/tevent/py*, lib/talloc/py*, source4/lib/ldb/py*, lib/tdb/py*
 maintainers:
          Jelmer Vernooij <jelmer@samba.org>
