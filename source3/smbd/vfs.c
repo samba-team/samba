@@ -559,9 +559,10 @@ int vfs_set_filelen(files_struct *fsp, SMB_OFF_T len)
 }
 
 /****************************************************************************
- A slow version of posix_fallocate. Fallback code if SMB_VFS_POSIX_FALLOCATE
- fails. Needs to be outside of the default version of SMB_VFS_POSIX_FALLOCATE
+ A slow version of fallocate. Fallback code if SMB_VFS_FALLOCATE
+ fails. Needs to be outside of the default version of SMB_VFS_FALLOCATE
  as this is also called from the default SMB_VFS_FTRUNCATE code.
+ Always extends the file size.
  Returns 0 on success, errno on failure.
 ****************************************************************************/
 
@@ -639,12 +640,13 @@ int vfs_fill_sparse(files_struct *fsp, SMB_OFF_T len)
 
 	/* Only do this on non-stream file handles. */
 	if (fsp->base_fsp == NULL) {
-		/* for allocation try posix_fallocate first. This can fail on some
+		/* for allocation try fallocate first. This can fail on some
 		 * platforms e.g. when the filesystem doesn't support it and no
 		 * emulation is being done by the libc (like on AIX with JFS1). In that
-		 * case we do our own emulation. posix_fallocate implementations can
+		 * case we do our own emulation. fallocate implementations can
 		 * return ENOTSUP or EINVAL in cases like that. */
-		ret = SMB_VFS_POSIX_FALLOCATE(fsp, offset, num_to_write);
+		ret = SMB_VFS_FALLOCATE(fsp, VFS_FALLOCATE_EXTEND_SIZE,
+				offset, num_to_write);
 		if (ret == ENOSPC) {
 			errno = ENOSPC;
 			ret = -1;
@@ -653,7 +655,7 @@ int vfs_fill_sparse(files_struct *fsp, SMB_OFF_T len)
 		if (ret == 0) {
 			goto out;
 		}
-		DEBUG(10,("vfs_fill_sparse: SMB_VFS_POSIX_FALLOCATE failed with "
+		DEBUG(10,("vfs_fill_sparse: SMB_VFS_FALLOCATE failed with "
 			"error %d. Falling back to slow manual allocation\n", ret));
 	}
 
@@ -1451,13 +1453,14 @@ int smb_vfs_call_ftruncate(struct vfs_handle_struct *handle,
 	return handle->fns->ftruncate(handle, fsp, offset);
 }
 
-int smb_vfs_call_posix_fallocate(struct vfs_handle_struct *handle,
+int smb_vfs_call_fallocate(struct vfs_handle_struct *handle,
 				struct files_struct *fsp,
+				enum vfs_fallocate_mode mode,
 				SMB_OFF_T offset,
 				SMB_OFF_T len)
 {
-	VFS_FIND(posix_fallocate);
-	return handle->fns->posix_fallocate(handle, fsp, offset, len);
+	VFS_FIND(fallocate);
+	return handle->fns->fallocate(handle, fsp, mode, offset, len);
 }
 
 int smb_vfs_call_kernel_flock(struct vfs_handle_struct *handle,

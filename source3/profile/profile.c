@@ -234,7 +234,7 @@ bool profile_setup(struct messaging_context *msg_ctx, bool rdonly)
 	    "syscall_getwd",		/* PR_VALUE_SYSCALL_GETWD */
 	    "syscall_ntimes",		/* PR_VALUE_SYSCALL_NTIMES */
 	    "syscall_ftruncate",	/* PR_VALUE_SYSCALL_FTRUNCATE */
-	    "syscall_posix_fallocate",	/* PR_VALUE_SYSCALL_POSIX_FALLOCATE */
+	    "syscall_fallocate",	/* PR_VALUE_SYSCALL_FALLOCATE */
 	    "syscall_fcntl_lock",	/* PR_VALUE_SYSCALL_FCNTL_LOCK */
 	    "syscall_kernel_flock",     /* PR_VALUE_SYSCALL_KERNEL_FLOCK */
 	    "syscall_linux_setlease",   /* PR_VALUE_SYSCALL_LINUX_SETLEASE */

@@ -130,6 +130,8 @@
 		 malloc'ed path. JRA. */
 /* Leave at 28 - not yet released. Move posix_fallocate into the VFS
 		where it belongs. JRA. */
+/* Leave at 28 - not yet released. Rename posix_fallocate to fallocate
+		to split out the two possible uses. JRA. */
 #define SMB_VFS_INTERFACE_VERSION 28
 
 
@@ -166,6 +168,11 @@ struct smb_filename;
 enum vfs_translate_direction {
 	vfs_translate_to_unix = 0,
 	vfs_translate_to_windows
+};
+
+enum vfs_fallocate_mode {
+	VFS_FALLOCATE_EXTEND_SIZE = 0,
+	VFS_FALLOCATE_KEEP_SIZE = 1
 };
 
 /*
@@ -252,8 +259,9 @@ struct vfs_fn_pointers {
 		      const struct smb_filename *smb_fname,
 		      struct smb_file_time *ft);
 	int (*ftruncate)(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_OFF_T offset);
-	int (*posix_fallocate)(struct vfs_handle_struct *handle,
+	int (*fallocate)(struct vfs_handle_struct *handle,
 				struct files_struct *fsp,
+				enum vfs_fallocate_mode mode,
 				SMB_OFF_T offset,
 				SMB_OFF_T len);
 	bool (*lock)(struct vfs_handle_struct *handle, struct files_struct *fsp, int op, SMB_OFF_T offset, SMB_OFF_T count, int type);
@@ -608,8 +616,9 @@ int smb_vfs_call_ntimes(struct vfs_handle_struct *handle,
 			struct smb_file_time *ft);
 int smb_vfs_call_ftruncate(struct vfs_handle_struct *handle,
 			   struct files_struct *fsp, SMB_OFF_T offset);
-int smb_vfs_call_posix_fallocate(struct vfs_handle_struct *handle,
+int smb_vfs_call_fallocate(struct vfs_handle_struct *handle,
 			struct files_struct *fsp,
+			enum vfs_fallocate_mode mode,
 			SMB_OFF_T offset,
 			SMB_OFF_T len);
 bool smb_vfs_call_lock(struct vfs_handle_struct *handle,

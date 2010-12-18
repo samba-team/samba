@@ -292,11 +292,12 @@ static int skel_ftruncate(vfs_handle_struct *handle, files_struct *fsp, SMB_OFF_
 	return SMB_VFS_NEXT_FTRUNCATE(handle, fsp, offset);
 }
 
-static int skel_posix_fallocate(vfs_handle_struct *handle, files_struct *fsp,
+static int skel_fallocate(vfs_handle_struct *handle, files_struct *fsp,
+			enum vfs_fallocate_mode,
 			SMB_OFF_T offset,
 			SMB_OFF_T len)
 {
-	return SMB_VFS_NEXT_POSIX_FALLOCATE(handle, fsp, offset, len);
+	return SMB_VFS_NEXT_FALLOCATE(handle, fsp, mode, offset, len);
 }
 
 static bool skel_lock(vfs_handle_struct *handle, files_struct *fsp, int op, SMB_OFF_T offset, SMB_OFF_T count, int type)
@@ -764,7 +765,7 @@ struct vfs_fn_pointers skel_transparent_fns = {
 	.getwd = skel_getwd,
 	.ntimes = skel_ntimes,
 	.ftruncate = skel_ftruncate,
-	.posix_fallocate = skel_posix_fallocate,
+	.fallocate = skel_fallocate,
 	.lock = skel_lock,
 	.kernel_flock = skel_kernel_flock,
 	.linux_setlease = skel_linux_setlease,
