@@ -351,7 +351,6 @@ struct dom_sid *samdb_result_dom_sid(TALLOC_CTX *mem_ctx, const struct ldb_messa
 	bool ok;
 	const struct ldb_val *v;
 	struct dom_sid *sid;
-	enum ndr_err_code ndr_err;
 	v = ldb_msg_find_ldb_val(msg, attr);
 	if (v == NULL) {
 		return NULL;
