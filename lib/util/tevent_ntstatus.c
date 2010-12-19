@@ -20,12 +20,29 @@
 #include "../replace/replace.h"
 #include "tevent_ntstatus.h"
 
+#define TEVENT_NTERROR_MAGIC (0x917b5acd)
+
 bool _tevent_req_nterror(struct tevent_req *req,
 			 NTSTATUS status,
 			 const char *location)
 {
-	return _tevent_req_error(req, NT_STATUS_V(status),
-				 location);
+	uint64_t err;
+
+	if (NT_STATUS_IS_OK(status)) {
+		return false;
+	}
+
+	/*
+	 * I've put this variable here, because I'm not 100% certain
+	 * how to correctly assign a 64-bit constant and left-shift it
+	 * by 32 bits in a single expression. If anyone knows, feel
+	 * free :-)
+	 */
+	err = TEVENT_NTERROR_MAGIC;
+	err <<= 32;
+	err |= NT_STATUS_V(status);
+
+	return _tevent_req_error(req, err, location);
 }
 
 bool tevent_req_is_nterror(struct tevent_req *req, NTSTATUS *status)
@@ -44,7 +61,10 @@ bool tevent_req_is_nterror(struct tevent_req *req, NTSTATUS *status)
 		*status = NT_STATUS_NO_MEMORY;
 		break;
 	case TEVENT_REQ_USER_ERROR:
-		*status = NT_STATUS(err);
+		if ((err >> 32) != TEVENT_NTERROR_MAGIC) {
+			abort();
+		}
+		*status = NT_STATUS(err & 0xffffffff);
 		break;
 	default:
 		*status = NT_STATUS_INTERNAL_ERROR;
