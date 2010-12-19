@@ -2259,7 +2259,8 @@ static void check_reload(struct smbd_server_connection *sconn, time_t t)
 			|| (t-last_printer_reload_time  < 0) ) 
 		{
 			DEBUG( 3,( "Printcap cache time expired.\n"));
-			reload_printers(sconn->msg_ctx);
+			pcap_cache_reload(server_event_context(),
+					  sconn->msg_ctx, &reload_printers);
 			last_printer_reload_time = t;
 		}
 	}

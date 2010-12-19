@@ -1238,7 +1238,8 @@ extern void build_options(bool screen);
 	}
 
 	/* Publish nt printers, this requires a working winreg pipe */
-	reload_printers(smbd_messaging_context());
+	pcap_cache_reload(server_event_context(), smbd_messaging_context(),
+			  &reload_printers);
 
 	/* only start the background queue daemon if we are 
 	   running as a daemon -- bad things will happen if

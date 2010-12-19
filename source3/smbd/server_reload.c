@@ -25,11 +25,13 @@
 #include "smbd/globals.h"
 #include "librpc/gen_ndr/messaging.h"
 #include "nt_printing.h"
+#include "printing/pcap.h"
 
 /****************************************************************************
- Reload printers
+ purge stale printers and reload from pre-populated pcap cache
 **************************************************************************/
-void reload_printers(struct messaging_context *msg_ctx)
+void reload_printers(struct tevent_context *ev,
+		     struct messaging_context *msg_ctx)
 {
 	struct auth_serversupplied_info *server_info = NULL;
 	struct spoolss_PrinterInfo2 *pinfo2 = NULL;
@@ -40,7 +42,8 @@ void reload_printers(struct messaging_context *msg_ctx)
 	NTSTATUS status;
 	bool skip = false;
 
-	pcap_cache_reload(server_event_context(), msg_ctx);
+	SMB_ASSERT(pcap_cache_loaded());
+	DEBUG(10, ("reloading printer services from pcap cache\n"));
 
 	status = make_server_info_system(talloc_tos(), &server_info);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -79,7 +82,7 @@ void reload_printers(struct messaging_context *msg_ctx)
 		}
 	}
 
-	load_printers(server_event_context(), msg_ctx);
+	load_printers(ev, msg_ctx);
 
 	TALLOC_FREE(server_info);
 }
@@ -111,7 +114,7 @@ bool reload_services(struct messaging_context *msg_ctx, int smb_sock,
 
 	ret = lp_load(get_dyn_CONFIGFILE(), False, False, True, True);
 
-	reload_printers(msg_ctx);
+	pcap_cache_reload(server_event_context(), msg_ctx, &reload_printers);
 
 	/* perhaps the config filename is now set */
 	if (!test)
