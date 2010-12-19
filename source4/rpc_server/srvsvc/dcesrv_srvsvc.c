@@ -431,13 +431,13 @@ static WERROR dcesrv_srvsvc_NetShareAdd(struct dcesrv_call_state *dce_call, TALL
 		info[i].name = SHARE_TYPE;
 		info[i].type = SHARE_INFO_STRING;
 		switch (r->in.info->info2->type) {
-		case 0x00:
+		case STYPE_DISKTREE:
 			info[i].value = talloc_strdup(info, "DISK");
 			break;
-		case 0x01:
+		case STYPE_PRINTQ:
 			info[i].value = talloc_strdup(info, "PRINTER");
 			break;
-		case 0x03:
+		case STYPE_IPC:
 			info[i].value = talloc_strdup(info, "IPC");
 			break;
 		default:
