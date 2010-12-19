@@ -666,7 +666,7 @@ static int ldif_write_prefixMap(struct ldb_context *ldb, void *mem_ctx,
 
 	for (i=0; i < blob->ctr.dsdb.num_mappings; i++) {
 		DATA_BLOB oid_blob;
-		const char *partial_oid = NULL;
+		char *partial_oid = NULL;
 
 		if (i > 0) {
 			string = talloc_asprintf_append(string, ";"); 
