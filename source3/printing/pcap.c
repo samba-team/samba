@@ -107,11 +107,14 @@ void pcap_cache_replace(const struct pcap_cache *pcache)
 }
 
 void pcap_cache_reload(struct tevent_context *ev,
-		       struct messaging_context *msg_ctx)
+		       struct messaging_context *msg_ctx,
+		       void (*post_cache_fill_fn)(struct tevent_context *,
+						  struct messaging_context *))
 {
 	const char *pcap_name = lp_printcapname();
 	bool pcap_reloaded = False;
 	NTSTATUS status;
+	bool post_cache_fill_fn_handled = false;
 
 	DEBUG(3, ("reloading printcap cache\n"));
 
@@ -135,7 +138,13 @@ void pcap_cache_reload(struct tevent_context *ev,
 
 #ifdef HAVE_CUPS
 	if (strequal(pcap_name, "cups")) {
-		pcap_reloaded = cups_cache_reload(ev, msg_ctx);
+		pcap_reloaded = cups_cache_reload(ev, msg_ctx,
+						  post_cache_fill_fn);
+		/*
+		 * cups_cache_reload() is async and calls post_cache_fill_fn()
+		 * on successful completion
+		 */
+		post_cache_fill_fn_handled = true;
 		goto done;
 	}
 #endif
@@ -173,6 +182,10 @@ done:
 		status = printer_list_clean_old();
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0, ("Failed to cleanup printer list!\n"));
+		}
+		if ((post_cache_fill_fn_handled == false)
+		 && (post_cache_fill_fn != NULL)) {
+			post_cache_fill_fn(ev, msg_ctx);
 		}
 	}
 

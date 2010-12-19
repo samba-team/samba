@@ -54,14 +54,12 @@ static void add_auto_printers(void)
 }
 
 /***************************************************************************
-load automatic printer services
+load automatic printer services from pre-populated pcap cache
 ***************************************************************************/
 void load_printers(struct tevent_context *ev,
 		   struct messaging_context *msg_ctx)
 {
-	if (!pcap_cache_loaded()) {
-		pcap_cache_reload(ev, msg_ctx);
-	}
+	SMB_ASSERT(pcap_cache_loaded());
 
 	add_auto_printers();
 

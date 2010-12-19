@@ -4062,7 +4062,9 @@ void notify_printer_sepfile(struct tevent_context *ev,
 /* The following definitions come from printing/pcap.c  */
 
 void pcap_cache_reload(struct tevent_context *ev,
-		       struct messaging_context *msg_ctx);
+		       struct messaging_context *msg_ctx,
+		       void (*post_cache_fill_fn)(struct tevent_context *,
+						  struct messaging_context *));
 bool pcap_printername_ok(const char *printername);
 
 /* The following definitions come from printing/printing.c  */
@@ -5399,7 +5401,8 @@ void server_messaging_context_free(void);
 struct event_context *smbd_event_context(void);
 struct messaging_context *smbd_messaging_context(void);
 struct memcache *smbd_memcache(void);
-void reload_printers(struct messaging_context *msg_ctx);
+void reload_printers(struct tevent_context *ev,
+		     struct messaging_context *msg_ctx);
 bool reload_services(struct messaging_context *msg_ctx, int smb_sock,
 		     bool test);
 void exit_server(const char *const explanation);

@@ -491,7 +491,8 @@ static int save_reload(int snum)
                 return 0;
         }
 	iNumNonAutoPrintServices = lp_numservices();
-	load_printers(server_event_context(), server_messaging_context());
+	pcap_cache_reload(server_event_context(), server_messaging_context(),
+			  &load_printers);
 
 	return 1;
 }
@@ -1435,7 +1436,8 @@ const char *lang_msg_rotate(TALLOC_CTX *ctx, const char *msgid)
 	reopen_logs();
 	load_interfaces();
 	iNumNonAutoPrintServices = lp_numservices();
-	load_printers(server_event_context(), server_messaging_context());
+	pcap_cache_reload(server_event_context(), server_messaging_context(),
+			  &load_printers);
 
 	cgi_setup(get_dyn_SWATDIR(), !demo_mode);
 
