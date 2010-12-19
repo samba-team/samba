@@ -125,13 +125,14 @@ void pcap_cache_replace(const struct pcap_cache *pcache)
 	}
 }
 
-void pcap_cache_reload(void)
+void pcap_cache_reload(void (*post_cache_fill_fn)(void))
 {
 	const char *pcap_name = lp_printcapname();
 	bool pcap_reloaded = False;
 	struct pcap_cache *tmp_cache = NULL;
 	XFILE *pcap_file;
 	char *pcap_line;
+	bool post_cache_fill_fn_handled = false;
 
 	DEBUG(3, ("reloading printcap cache\n"));
 
@@ -146,7 +147,12 @@ void pcap_cache_reload(void)
 
 #ifdef HAVE_CUPS
 	if (strequal(pcap_name, "cups")) {
-		pcap_reloaded = cups_cache_reload();
+		pcap_reloaded = cups_cache_reload(post_cache_fill_fn);
+		/*
+		 * cups_cache_reload() is async and calls post_cache_fill_fn()
+		 * on successful completion
+		 */
+		post_cache_fill_fn_handled = true;
 		goto done;
 	}
 #endif
@@ -242,9 +248,13 @@ void pcap_cache_reload(void)
 done:
 	DEBUG(3, ("reload status: %s\n", (pcap_reloaded) ? "ok" : "error"));
 
-	if (pcap_reloaded)
+	if (pcap_reloaded) {
 		pcap_cache_destroy_specific(&tmp_cache);
-	else {
+		if ((post_cache_fill_fn_handled == false)
+		 && (post_cache_fill_fn != NULL)) {
+			post_cache_fill_fn();
+		}
+	} else {
 		pcap_cache_destroy_specific(&pcap_cache);
 		pcap_cache = tmp_cache;
 	}
