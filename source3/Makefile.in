@@ -3311,6 +3311,7 @@ include/build_env.h: script/build_env.sh
 proto::
 
 etags::
+	rm -f TAGS
 	find $(srcdir)/.. -name "*.[ch]" | xargs -n 100 etags --append $(ETAGS_OPTIONS)
 
 ctags::
