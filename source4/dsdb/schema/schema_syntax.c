@@ -1376,7 +1376,7 @@ static WERROR _dsdb_syntax_OID_validate_numericoid(const struct dsdb_syntax_ctx 
 
 	for (i=0; i < in->num_values; i++) {
 		DATA_BLOB blob;
-		const char *oid_out;
+		char *oid_out;
 		const char *oid = (const char*)in->values[i].data;
 
 		if (!ber_write_OID_String(tmp_ctx, &blob, oid)) {

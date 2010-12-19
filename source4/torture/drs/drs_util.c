@@ -41,6 +41,7 @@ bool drs_util_oid_from_attid(struct torture_context *tctx,
 	int i;
 	uint32_t hi_word, lo_word;
 	DATA_BLOB bin_oid = {NULL, 0};
+	char *oid;
 	struct drsuapi_DsReplicaOIDMapping *map_entry = NULL;
 	TALLOC_CTX *mem_ctx = talloc_named(tctx, 0, "util_drsuapi_oid_from_attid");
 
@@ -87,9 +88,11 @@ bool drs_util_oid_from_attid(struct torture_context *tctx,
 	}
 
 	torture_assert(tctx,
-			ber_read_OID_String(tctx, bin_oid, _oid),
+			ber_read_OID_String(tctx, bin_oid, &oid),
 			"Failed to decode binary OID");
 	talloc_free(mem_ctx);
+
+	*_oid = oid;
 
 	return true;
 }

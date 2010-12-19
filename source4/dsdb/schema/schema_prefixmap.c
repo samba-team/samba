@@ -375,6 +375,7 @@ WERROR dsdb_schema_pfm_oid_from_attid(const struct dsdb_schema_prefixmap *pfm,
 	uint32_t i;
 	uint32_t hi_word, lo_word;
 	DATA_BLOB bin_oid = {NULL, 0};
+	char *oid;
 	struct dsdb_schema_prefixmap_oid *pfm_entry;
 	WERROR werr = WERR_OK;
 
@@ -420,7 +421,7 @@ WERROR dsdb_schema_pfm_oid_from_attid(const struct dsdb_schema_prefixmap *pfm,
 		bin_oid.data[bin_oid.length-1] = lo_word & 0x7f;
 	}
 
-	if (!ber_read_OID_String(mem_ctx, bin_oid, _oid)) {
+	if (!ber_read_OID_String(mem_ctx, bin_oid, &oid)) {
 		DEBUG(0,("ber_read_OID_String() failed for %s\n",
 			 hex_encode_talloc(bin_oid.data, bin_oid.data, bin_oid.length)));
 		werr = WERR_INTERNAL_ERROR;
@@ -428,6 +429,8 @@ WERROR dsdb_schema_pfm_oid_from_attid(const struct dsdb_schema_prefixmap *pfm,
 
 	/* free locally allocated memory */
 	talloc_free(bin_oid.data);
+
+	*_oid = oid;
 
 	return werr;
 }
