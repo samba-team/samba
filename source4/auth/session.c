@@ -64,13 +64,6 @@ _PUBLIC_ NTSTATUS auth_generate_session_info(TALLOC_CTX *mem_ctx,
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 	NT_STATUS_HAVE_NO_MEMORY(tmp_ctx);
 
-	/* For now, we don't have trusted domains, so we do a very
-	 * simple check to see that the user's SID is in *this*
-	 * domain, and then trust the user account control.  When we
-	 * get trusted domains, we should check it's a trusted domain
-	 * in this forest.  This elaborate check is to try and avoid a
-	 * nasty security bug if we forget about this later... */
-
 	session_info = talloc(tmp_ctx, struct auth_session_info);
 	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(session_info, tmp_ctx);
 
