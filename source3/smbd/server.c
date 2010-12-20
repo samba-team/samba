@@ -50,8 +50,6 @@
 
 #include "printing/nt_printing_migrate.h"
 
-static_decl_rpc;
-
 #ifdef WITH_DFS
 extern int dcelogin_atmost_once;
 #endif /* WITH_DFS */
@@ -1188,16 +1186,54 @@ extern void build_options(bool screen);
 	spoolss_cb.shutdown = spoolss_shutdown_cb;
 	spoolss_cb.private_data = smbd_server_conn->msg_ctx;
 
-	/* Spoolss depends on a winreg pipe, so start it first. */
+	/*
+	 * TODO: Create a dependency tree, so that all services are started
+	 * in the right order.
+	 */
+	if (!NT_STATUS_IS_OK(rpc_lsarpc_init(NULL))) {
+		exit(1);
+	}
+	if (!NT_STATUS_IS_OK(rpc_samr_init(NULL))) {
+		exit(1);
+	}
+	if (!NT_STATUS_IS_OK(rpc_netlogon_init(NULL))) {
+		exit(1);
+	}
+
 	if (!NT_STATUS_IS_OK(rpc_winreg_init(NULL))) {
+		exit(1);
+	}
+	if (!NT_STATUS_IS_OK(rpc_srvsvc_init(NULL))) {
 		exit(1);
 	}
 
 	if (!NT_STATUS_IS_OK(rpc_spoolss_init(&spoolss_cb))) {
 		exit(1);
 	}
-
-	static_init_rpc;
+	if (!NT_STATUS_IS_OK(rpc_svcctl_init(NULL))) {
+		exit(1);
+	}
+	if (!NT_STATUS_IS_OK(rpc_ntsvcs_init(NULL))) {
+		exit(1);
+	}
+	if (!NT_STATUS_IS_OK(rpc_eventlog_init(NULL))) {
+		exit(1);
+	}
+	if (!NT_STATUS_IS_OK(rpc_initshutdown_init(NULL))) {
+		exit(1);
+	}
+	if (!NT_STATUS_IS_OK(rpc_netdfs_init(NULL))) {
+		exit(1);
+	}
+	if (!NT_STATUS_IS_OK(rpc_rpcecho_init(NULL))) {
+		exit(1);
+	}
+	if (!NT_STATUS_IS_OK(rpc_dssetup_init(NULL))) {
+		exit(1);
+	}
+	if (!NT_STATUS_IS_OK(rpc_wkssvc_init(NULL))) {
+		exit(1);
+	}
 
 	/* Publish nt printers, this requires a working winreg pipe */
 	reload_printers(smbd_messaging_context());
