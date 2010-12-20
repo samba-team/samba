@@ -1088,8 +1088,7 @@ out_free:
 					get_cmdline_auth_info_domain(rpcclient_auth_info),
 					get_cmdline_auth_info_password(rpcclient_auth_info),
 					flags,
-					get_cmdline_auth_info_signing_state(rpcclient_auth_info),
-					NULL);
+					get_cmdline_auth_info_signing_state(rpcclient_auth_info));
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0,("Cannot connect to server.  Error was %s\n", nt_errstr(nt_status)));

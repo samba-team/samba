@@ -3313,7 +3313,7 @@ static WERROR cmd_spoolss_printercmp(struct rpc_pipe_client *cli,
 					lp_workgroup(),
 					get_cmdline_auth_info_password(rpcclient_auth_info),
 					get_cmdline_auth_info_use_kerberos(rpcclient_auth_info) ? CLI_FULL_CONNECTION_USE_KERBEROS : 0,
-					get_cmdline_auth_info_signing_state(rpcclient_auth_info), NULL);
+					get_cmdline_auth_info_signing_state(rpcclient_auth_info));
 
 	if ( !NT_STATUS_IS_OK(nt_status) )
 		return WERR_GENERAL_FAILURE;

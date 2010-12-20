@@ -150,7 +150,7 @@ static NTSTATUS gpo_connect_server(ADS_STRUCT *ads, struct loadparm_context *lp_
 			ads->auth.password,
 			CLI_FULL_CONNECTION_USE_KERBEROS |
 			CLI_FULL_CONNECTION_FALLBACK_AFTER_KERBEROS,
-			Undefined, NULL);
+			Undefined);
 	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(10,("check_refresh_gpo: "
 				"failed to connect: %s\n",

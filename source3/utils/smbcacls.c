@@ -1137,8 +1137,7 @@ static struct cli_state *connect_one(struct user_auth_info *auth_info,
 				lp_workgroup(),
 				get_cmdline_auth_info_password(auth_info),
 				flags,
-				get_cmdline_auth_info_signing_state(auth_info),
-				NULL);
+				get_cmdline_auth_info_signing_state(auth_info));
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0,("cli_full_connection failed! (%s)\n", nt_errstr(nt_status)));
 		return NULL;
