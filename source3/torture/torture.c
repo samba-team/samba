@@ -398,7 +398,6 @@ static bool torture_open_connection_share(struct cli_state **c,
 				   const char *hostname, 
 				   const char *sharename)
 {
-	bool retry;
 	int flags = 0;
 	NTSTATUS status;
 
@@ -413,7 +412,7 @@ static bool torture_open_connection_share(struct cli_state **c,
 				     hostname, NULL, port_to_use, 
 				     sharename, "?????", 
 				     username, workgroup, 
-				     password, flags, signing_state, &retry);
+				     password, flags, signing_state, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("failed to open share connection: //%s/%s port:%d - %s\n",
 			hostname, sharename, port_to_use, nt_errstr(status));
@@ -1454,7 +1453,6 @@ static bool tcon_devtest(struct cli_state *cli,
 static bool run_tcon_devtype_test(int dummy)
 {
 	static struct cli_state *cli1 = NULL;
-	bool retry;
 	int flags = 0;
 	NTSTATUS status;
 	bool ret = True;
@@ -1463,7 +1461,7 @@ static bool run_tcon_devtype_test(int dummy)
 				     host, NULL, port_to_use,
 				     NULL, NULL,
 				     username, workgroup,
-				     password, flags, signing_state, &retry);
+				     password, flags, signing_state, NULL);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("could not open connection\n");
