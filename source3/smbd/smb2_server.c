@@ -1443,23 +1443,6 @@ static NTSTATUS smbd_smb2_request_reply(struct smbd_smb2_request *req)
 
 	req->subreq = NULL;
 
-	smb2_setup_nbt_length(req->out.vector, req->out.vector_count);
-
-	/* Set credit for this operation (zero credits if this
-	   is a final reply for an async operation). */
-	smb2_set_operation_credit(req->sconn,
-			req->async ? NULL : &req->in.vector[i],
-			&req->out.vector[i]);
-
-	if (req->do_signing) {
-		NTSTATUS status;
-		status = smb2_signing_sign_pdu(req->session->session_key,
-					       &req->out.vector[i], 3);
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
-		}
-	}
-
 	req->current_idx += 3;
 
 	if (req->current_idx < req->out.vector_count) {
@@ -1480,6 +1463,23 @@ static NTSTATUS smbd_smb2_request_reply(struct smbd_smb2_request *req)
 					smbd_smb2_request_dispatch_immediate,
 					req);
 		return NT_STATUS_OK;
+	}
+
+	smb2_setup_nbt_length(req->out.vector, req->out.vector_count);
+
+	/* Set credit for this operation (zero credits if this
+	   is a final reply for an async operation). */
+	smb2_set_operation_credit(req->sconn,
+			req->async ? NULL : &req->in.vector[i],
+			&req->out.vector[i]);
+
+	if (req->do_signing) {
+		NTSTATUS status;
+		status = smb2_signing_sign_pdu(req->session->session_key,
+					       &req->out.vector[i], 3);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
 	}
 
 	if (DEBUGLEVEL >= 10) {
