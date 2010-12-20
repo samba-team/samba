@@ -252,6 +252,122 @@ static void delete_traverse(void *param, void *data)
 	memcpy(old_size+(uint8_t *)(recs->records), rec, rec->length);
 }
 
+/**
+ * traverse function for the traversal of the delete_queue,
+ * the fast-path vacuuming list.
+ *
+ *  - If the record has been migrated off the node
+ *    or has been revived (filled with data) on the node,
+ *    then skip the record.
+ *
+ *  - If the current node is the record's lmaster and it is
+ *    a record that has never been migrated with data, then
+ *    delete the record from the local tdb.
+ *
+ *  - If the current node is the record's lmaster and it has
+ *    been migrated with data, then schedule it for the normal
+ *    vacuuming procedure (i.e. add it to the delete_list).
+ *
+ *  - If the current node is NOT the record's lmaster then
+ *    add it to the list of records that are to be sent to
+ *    the lmaster with the VACUUM_FETCH message.
+ */
+static void delete_queue_traverse(void *param, void *data)
+{
+	struct delete_record_data *dd =
+		talloc_get_type(data, struct delete_record_data);
+	struct vacuum_data *vdata = talloc_get_type(param, struct vacuum_data);
+	struct ctdb_db_context *ctdb_db = dd->ctdb_db;
+	struct ctdb_context *ctdb = ctdb_db->ctdb; /* or dd->ctdb ??? */
+	int res;
+	struct ctdb_ltdb_header *header;
+	TDB_DATA tdb_data;
+	uint32_t lmaster;
+
+	res = tdb_chainlock(ctdb_db->ltdb->tdb, dd->key);
+	if (res != 0) {
+		DEBUG(DEBUG_ERR, (__location__ " Error getting chainlock.\n"));
+		return;
+	}
+
+	tdb_data = tdb_fetch(ctdb_db->ltdb->tdb, dd->key);
+	if (tdb_data.dsize < sizeof(struct ctdb_ltdb_header)) {
+		/* Does not exist or not a ctdb record. Skip. */
+		goto done;
+	}
+
+	if (tdb_data.dsize > sizeof(struct ctdb_ltdb_header)) {
+		/* The record has been recycled (filled with data). Skip. */
+		goto done;
+	}
+
+	header = (struct ctdb_ltdb_header *)tdb_data.dptr;
+
+	if (header->dmaster != ctdb->pnn) {
+		/* The record has been migrated off the node. Skip. */
+		goto done;
+	}
+
+
+	if (header->rsn != dd->hdr.rsn) {
+		/*
+		 * The record has been migrated off the node and back again.
+		 * But not requeued for deletion. Skip it.
+		 */
+		goto done;
+	}
+
+	/*
+	 * We are dmaster, and the record has no data, and it has
+	 * not been migrated after it has been queued for deletion.
+	 *
+	 * At this stage, the record could still have been revived locally
+	 * and last been written with empty data. This can only be
+	 * fixed with the addition of an active or delete flag. (TODO)
+	 */
+
+	lmaster = ctdb_lmaster(ctdb_db->ctdb, &dd->key);
+
+	if (lmaster != ctdb->pnn) {
+		res = add_record_to_vacuum_fetch_list(vdata, dd->key);
+
+		if (res != 0) {
+			DEBUG(DEBUG_ERR,
+			      (__location__ " Error adding record to list "
+			       "of records to send to lmaster.\n"));
+		}
+
+		goto done;
+	}
+
+	/* use header->flags or dd->hdr.flags ?? */
+	if (dd->hdr.flags & CTDB_REC_FLAG_MIGRATED_WITH_DATA) {
+		res = add_record_to_delete_tree(vdata, dd->key, &dd->hdr);
+
+		if (res != 0) {
+			DEBUG(DEBUG_ERR,
+			      (__location__ " Error adding record to list "
+			       "of records for deletion on lmaster.\n"));
+		}
+	} else {
+		res = tdb_delete(ctdb_db->ltdb->tdb, dd->key);
+
+		if (res != 0) {
+			DEBUG(DEBUG_ERR,
+			      (__location__ " Error deleting record from local "
+			       "data base.\n"));
+		}
+	}
+
+done:
+	if (tdb_data.dptr != NULL) {
+		free(tdb_data.dptr);
+	}
+	tdb_chainunlock(ctdb_db->ltdb->tdb, dd->key);
+
+	return;
+}
+
 /* 
  * read-only traverse the database in order to find
  * records that can be deleted and try to delete these
