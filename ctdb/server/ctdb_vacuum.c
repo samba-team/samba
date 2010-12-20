@@ -644,7 +644,8 @@ static int update_tuning_db(struct ctdb_db_context *ctdb_db, struct vacuum_data 
  * repack and vaccum a db
  * called from the child context
  */
-static int ctdb_repack_db(struct ctdb_db_context *ctdb_db, TALLOC_CTX *mem_ctx)
+static int ctdb_vacuum_and_repack_db(struct ctdb_db_context *ctdb_db,
+				     TALLOC_CTX *mem_ctx)
 {
 	uint32_t repack_limit = ctdb_db->ctdb->tunable.repack_limit;
 	uint32_t vacuum_limit = ctdb_db->ctdb->tunable.vacuum_limit;
@@ -893,7 +894,7 @@ ctdb_vacuum_event(struct event_context *ev, struct timed_event *te,
 		/* 
 		 * repack the db
 		 */
-		cc = ctdb_repack_db(ctdb_db, child_ctx);
+		cc = ctdb_vacuum_and_repack_db(ctdb_db, child_ctx);
 
 		write(child_ctx->fd[1], &cc, 1);
 		_exit(0);
