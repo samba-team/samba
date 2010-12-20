@@ -45,6 +45,7 @@ from testtools.tests.helpers import (
     ExtendedTestResult,
     an_exc_info
     )
+from testtools.testresult.real import utc
 
 StringIO = try_imports(['StringIO.StringIO', 'io.StringIO'])
 
@@ -305,10 +306,10 @@ class TestTestResult(TestCase):
         self.addCleanup(restore)
         class Module:
             pass
-        now = datetime.datetime.now()
+        now = datetime.datetime.now(utc)
         stubdatetime = Module()
         stubdatetime.datetime = Module()
-        stubdatetime.datetime.now = lambda: now
+        stubdatetime.datetime.now = lambda tz: now
         testresult.real.datetime = stubdatetime
         # Calling _now() looks up the time.
         self.assertEqual(now, result._now())
@@ -323,7 +324,7 @@ class TestTestResult(TestCase):
 
     def test_now_datetime_time(self):
         result = self.makeResult()
-        now = datetime.datetime.now()
+        now = datetime.datetime.now(utc)
         result.time(now)
         self.assertEqual(now, result._now())
 
@@ -424,6 +425,11 @@ class TestMultiTestResult(TestWithFakeExceptions):
         result = multi_result.stopTestRun()
         self.assertEqual(('foo', 'foo'), result)
 
+    def test_time(self):
+        # the time call is dispatched, not eaten by the base class
+        self.multiResult.time('foo')
+        self.assertResultLogsEqual([('time', 'foo')])
+
 
 class TestTextTestResult(TestCase):
     """Tests for `TextTestResult`."""
@@ -501,7 +507,7 @@ class TestTextTestResult(TestCase):
 
     def test_stopTestRun_current_time(self):
         test = self.make_test()
-        now = datetime.datetime.now()
+        now = datetime.datetime.now(utc)
         self.result.time(now)
         self.result.startTestRun()
         self.result.startTest(test)
@@ -1229,6 +1235,8 @@ class TestNonAsciiResults(TestCase):
         exception_class = (
             "class UnprintableError(Exception):\n"
             "    def __str__(self):\n"
+            "        raise RuntimeError\n"
+            "    def __unicode__(self):\n"
             "        raise RuntimeError\n"
             "    def __repr__(self):\n"
             "        raise RuntimeError\n")

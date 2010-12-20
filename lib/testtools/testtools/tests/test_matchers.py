@@ -183,8 +183,7 @@ class TestMatchesExceptionInstanceInterface(TestCase, TestMatchersInterface):
          MatchesException(Exception('foo')))
         ]
     describe_examples = [
-        ("<type 'exceptions.Exception'> is not a "
-         "<type 'exceptions.ValueError'>",
+        ("%r is not a %r" % (Exception, ValueError),
          error_base_foo,
          MatchesException(ValueError("foo"))),
         ("ValueError('bar',) has different arguments to ValueError('foo',).",
@@ -203,12 +202,11 @@ class TestMatchesExceptionTypeInterface(TestCase, TestMatchersInterface):
     matches_mismatches = [error_base_foo]
 
     str_examples = [
-        ("MatchesException(<type 'exceptions.Exception'>)",
+        ("MatchesException(%r)" % Exception,
          MatchesException(Exception))
         ]
     describe_examples = [
-        ("<type 'exceptions.Exception'> is not a "
-         "<type 'exceptions.ValueError'>",
+        ("%r is not a %r" % (Exception, ValueError),
          error_base_foo,
          MatchesException(ValueError)),
         ]
@@ -249,8 +247,7 @@ Expected:
 Got:
     3
 
-]
-""",
+]""",
         "3", MatchesAny(DocTestMatches("1"), DocTestMatches("2")))]
 
 
@@ -266,8 +263,7 @@ class TestMatchesAllInterface(TestCase, TestMatchersInterface):
 
     describe_examples = [("""Differences: [
 1 == 1
-]
-""",
+]""",
                           1, MatchesAll(NotEquals(1), NotEquals(2)))]
 
 
@@ -364,7 +360,12 @@ class TestRaisesBaseTypes(TestCase):
         # Exception, it is propogated.
         match_keyb = Raises(MatchesException(KeyboardInterrupt))
         def raise_keyb_from_match():
-            matcher = Raises(MatchesException(Exception))
+            if sys.version_info > (2, 5):
+                matcher = Raises(MatchesException(Exception))
+            else:
+                # On Python 2.4 KeyboardInterrupt is a StandardError subclass
+                # but should propogate from less generic exception matchers
+                matcher = Raises(MatchesException(EnvironmentError))
             matcher.match(self.raiser)
         self.assertThat(raise_keyb_from_match, match_keyb)
 

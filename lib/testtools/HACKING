@@ -127,7 +127,8 @@ Release tasks
  1. Create a release on the newly-renamed 'X.Y.Z' milestone
  1. Upload the tarball and asc file to Launchpad
  1. Merge the release branch testtools-X.Y.Z into trunk. Before the commit,
-    add a NEXT heading to the top of NEWS. Push trunk to Launchpad.
+    add a NEXT heading to the top of NEWS and bump the version in __init__.py.
+    Push trunk to Launchpad
  1. If a new series has been created (e.g. 0.10.0), make the series on Launchpad.
  1. Make a new milestone for the *next release*.
     1. During release we rename NEXT to $version.

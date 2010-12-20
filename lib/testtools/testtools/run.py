@@ -132,6 +132,8 @@ class TestProgram(object):
             self.module = module
         if argv is None:
             argv = sys.argv
+        if stdout is None:
+            stdout = sys.stdout
 
         self.exit = exit
         self.failfast = failfast

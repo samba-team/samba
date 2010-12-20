@@ -300,10 +300,11 @@ class TestCase(unittest.TestCase):
         self.assertTrue(
             needle not in haystack, '%r in %r' % (needle, haystack))
 
-    def assertIsInstance(self, obj, klass):
-        self.assertTrue(
-            isinstance(obj, klass),
-            '%r is not an instance of %s' % (obj, self._formatTypes(klass)))
+    def assertIsInstance(self, obj, klass, msg=None):
+        if msg is None:
+            msg = '%r is not an instance of %s' % (
+                obj, self._formatTypes(klass))
+        self.assertTrue(isinstance(obj, klass), msg)
 
     def assertRaises(self, excClass, callableObj, *args, **kwargs):
         """Fail unless an exception of class excClass is thrown

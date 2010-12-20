@@ -244,7 +244,14 @@ class TestRunInReactor(NeedsTwistedTestCase):
         timeout = self.make_timeout()
         spinner = self.make_spinner(reactor)
         spinner.run(timeout, reactor.callInThread, time.sleep, timeout / 2.0)
-        self.assertThat(list(threading.enumerate()), Equals(current_threads))
+        # Python before 2.5 has a race condition with thread handling where
+        # join() does not remove threads from enumerate before returning - the
+        # thread being joined does the removal. This was fixed in Python 2.5
+        # but we still support 2.4, so we have to workaround the issue.
+        # http://bugs.python.org/issue1703448.
+        self.assertThat(
+            [thread for thread in threading.enumerate() if thread.isAlive()],
+            Equals(current_threads))
 
     def test_leftover_junk_available(self):
         # If 'run' is given a function that leaves the reactor dirty in some

@@ -232,7 +232,6 @@ class Spinner(object):
             # we aren't going to bother.
             junk.append(selectable)
         if IReactorThreads.providedBy(self._reactor):
-            self._reactor.suggestThreadPoolSize(0)
             if self._reactor.threadpool is not None:
                 self._reactor._stopThreadPool()
         self._junk.extend(junk)

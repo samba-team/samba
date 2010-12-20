@@ -65,6 +65,34 @@ else:
 _u.__doc__ = __u_doc
 
 
+if sys.version_info > (2, 5):
+    all = all
+    _error_repr = BaseException.__repr__
+    def isbaseexception(exception):
+        """Return whether exception inherits from BaseException only"""
+        return (isinstance(exception, BaseException)
+            and not isinstance(exception, Exception))
+else:
+    def all(iterable):
+        """If contents of iterable all evaluate as boolean True"""
+        for obj in iterable:
+            if not obj:
+                return False
+        return True
+    def _error_repr(exception):
+        """Format an exception instance as Python 2.5 and later do"""
+        return exception.__class__.__name__ + repr(exception.args)
+    def isbaseexception(exception):
+        """Return whether exception would inherit from BaseException only
+
+        This approximates the hierarchy in Python 2.5 and later, compare the
+        difference between the diagrams at the bottom of the pages:
+        <http://docs.python.org/release/2.4.4/lib/module-exceptions.html>
+        <http://docs.python.org/release/2.5.4/lib/module-exceptions.html>
+        """
+        return isinstance(exception, (KeyboardInterrupt, SystemExit))
+
+
 def unicode_output_stream(stream):
     """Get wrapper for given stream that writes any unicode without exception
 

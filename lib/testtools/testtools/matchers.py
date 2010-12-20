@@ -32,6 +32,8 @@ import operator
 from pprint import pformat
 import sys
 
+from testtools.compat import classtypes, _error_repr, isbaseexception
+
 
 class Matcher(object):
     """A pattern matcher.
@@ -314,7 +316,7 @@ class MismatchesAll(Mismatch):
         descriptions = ["Differences: ["]
         for mismatch in self.mismatches:
             descriptions.append(mismatch.describe())
-        descriptions.append("]\n")
+        descriptions.append("]")
         return '\n'.join(descriptions)
 
 
@@ -359,25 +361,24 @@ class MatchesException(Matcher):
         """
         Matcher.__init__(self)
         self.expected = exception
-
-    def _expected_type(self):
-        if type(self.expected) is type:
-            return self.expected
-        return type(self.expected)
+        self._is_instance = type(self.expected) not in classtypes()
 
     def match(self, other):
         if type(other) != tuple:
             return Mismatch('%r is not an exc_info tuple' % other)
-        if not issubclass(other[0], self._expected_type()):
-            return Mismatch('%r is not a %r' % (
-                other[0], self._expected_type()))
-        if (type(self.expected) is not type and
-            other[1].args != self.expected.args):
-            return Mismatch('%r has different arguments to %r.' % (
-                other[1], self.expected))
+        expected_class = self.expected
+        if self._is_instance:
+            expected_class = expected_class.__class__
+        if not issubclass(other[0], expected_class):
+            return Mismatch('%r is not a %r' % (other[0], expected_class))
+        if self._is_instance and other[1].args != self.expected.args:
+            return Mismatch('%s has different arguments to %s.' % (
+                _error_repr(other[1]), _error_repr(self.expected)))
 
     def __str__(self):
-        return "MatchesException(%r)" % self.expected
+        if self._is_instance:
+            return "MatchesException(%s)" % _error_repr(self.expected)
+        return "MatchesException(%s)" % repr(self.expected)
 
 
 class StartsWith(Matcher):
@@ -501,7 +502,6 @@ class Raises(Matcher):
         # Catch all exceptions: Raises() should be able to match a
         # KeyboardInterrupt or SystemExit.
         except:
-            exc_info = sys.exc_info()
             if self.exception_matcher:
                 mismatch = self.exception_matcher.match(sys.exc_info())
                 if not mismatch:
@@ -510,9 +510,9 @@ class Raises(Matcher):
                 mismatch = None
             # The exception did not match, or no explicit matching logic was
             # performed. If the exception is a non-user exception (that is, not
-            # a subclass of Exception) then propogate it.
-            if not issubclass(exc_info[0], Exception):
-                raise exc_info[0], exc_info[1], exc_info[2]
+            # a subclass of Exception on Python 2.5+) then propogate it.
+            if isbaseexception(sys.exc_info()[1]):
+                raise
             return mismatch
 
     def __str__(self):
