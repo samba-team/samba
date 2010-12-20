@@ -934,6 +934,9 @@ static int vacuum_child_destructor(struct ctdb_vacuum_child_context *child_ctx)
 
 	if (child_ctx->child_pid != -1) {
 		kill(child_ctx->child_pid, SIGKILL);
+	} else {
+		/* Bump the number of successful fast-path runs. */
+		child_ctx->vacuum_handle->fast_path_count++;
 	}
 
 	DLIST_REMOVE(ctdb->vacuumers, child_ctx);
