@@ -91,6 +91,46 @@ struct delete_records_list {
 	struct ctdb_marshall_buffer *records;
 };
 
+/**
+ * Add a record to the list of records to be sent
+ * to their lmaster with VACUUM_FETCH.
+ */
+static int add_record_to_vacuum_fetch_list(struct vacuum_data *vdata,
+					   TDB_DATA key)
+{
+	struct ctdb_context *ctdb = vdata->ctdb;
+	struct ctdb_rec_data *rec;
+	uint32_t lmaster;
+	size_t old_size;
+
+	lmaster = ctdb_lmaster(ctdb, &key);
+
+	rec = ctdb_marshall_record(vdata->list[lmaster], ctdb->pnn, key, NULL, tdb_null);
+	if (rec == NULL) {
+		DEBUG(DEBUG_ERR,(__location__ " Out of memory\n"));
+		vdata->traverse_error = true;
+		return -1;
+	}
+
+	old_size = talloc_get_size(vdata->list[lmaster]);
+	vdata->list[lmaster] = talloc_realloc_size(NULL, vdata->list[lmaster],
+						   old_size + rec->length);
+	if (vdata->list[lmaster] == NULL) {
+		DEBUG(DEBUG_ERR,(__location__ " Failed to expand\n"));
+		vdata->traverse_error = true;
+		return -1;
+	}
+
+	vdata->list[lmaster]->count++;
+	memcpy(old_size+(uint8_t *)vdata->list[lmaster], rec, rec->length);
+	talloc_free(rec);
+
+	vdata->total++;
+
+	return 0;
+}
+
+
 static void ctdb_vacuum_event(struct event_context *ev, struct timed_event *te, 
 							  struct timeval t, void *private_data);
 
@@ -105,9 +145,8 @@ static int vacuum_traverse(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data,
 	struct ctdb_db_context *ctdb_db = vdata->ctdb_db;
 	uint32_t lmaster;
 	struct ctdb_ltdb_header *hdr;
-	struct ctdb_rec_data *rec;
-	size_t old_size;
-	       
+	int res;
+
 	lmaster = ctdb_lmaster(ctdb, &key);
 	if (lmaster >= ctdb->num_nodes) {
 		DEBUG(DEBUG_CRIT, (__location__
@@ -168,27 +207,9 @@ static int vacuum_traverse(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data,
 	}
 
 	/* add the record to the blob ready to send to the nodes */
-	rec = ctdb_marshall_record(vdata->list[lmaster], ctdb->pnn, key, NULL, tdb_null);
-	if (rec == NULL) {
-		DEBUG(DEBUG_ERR,(__location__ " Out of memory\n"));
-		vdata->traverse_error = true;
-		return -1;
-	}
-	old_size = talloc_get_size(vdata->list[lmaster]);
-	vdata->list[lmaster] = talloc_realloc_size(NULL, vdata->list[lmaster], 
-						   old_size + rec->length);
-	if (vdata->list[lmaster] == NULL) {
-		DEBUG(DEBUG_ERR,(__location__ " Failed to expand\n"));
-		vdata->traverse_error = true;
-		return -1;
-	}
-	vdata->list[lmaster]->count++;
-	memcpy(old_size+(uint8_t *)vdata->list[lmaster], rec, rec->length);
-	talloc_free(rec);
+	res = add_record_to_vacuum_fetch_list(vdata, key);
 
-	vdata->total++;
-
-	return 0;
+	return res;
 }
 
 /*
