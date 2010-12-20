@@ -26,6 +26,21 @@
 #include "smbd/globals.h"
 #include "librpc/gen_ndr/messaging.h"
 
+#include "../librpc/gen_ndr/srv_dfs.h"
+#include "../librpc/gen_ndr/srv_dssetup.h"
+#include "../librpc/gen_ndr/srv_echo.h"
+#include "../librpc/gen_ndr/srv_eventlog.h"
+#include "../librpc/gen_ndr/srv_initshutdown.h"
+#include "../librpc/gen_ndr/srv_lsa.h"
+#include "../librpc/gen_ndr/srv_netlogon.h"
+#include "../librpc/gen_ndr/srv_ntsvcs.h"
+#include "../librpc/gen_ndr/srv_samr.h"
+#include "../librpc/gen_ndr/srv_spoolss.h"
+#include "../librpc/gen_ndr/srv_srvsvc.h"
+#include "../librpc/gen_ndr/srv_svcctl.h"
+#include "../librpc/gen_ndr/srv_winreg.h"
+#include "../librpc/gen_ndr/srv_wkssvc.h"
+
 static struct files_struct *log_writeable_file_fn(
 	struct files_struct *fsp, void *private_data)
 {
@@ -112,6 +127,25 @@ static void exit_server_common(enum server_exit_reason how,
 		}
 	}
 #endif
+
+	if (am_parent) {
+		rpc_wkssvc_shutdown();
+		rpc_dssetup_shutdown();
+		rpc_rpcecho_shutdown();
+		rpc_netdfs_shutdown();
+		rpc_initshutdown_shutdown();
+		rpc_eventlog_shutdown();
+		rpc_ntsvcs_shutdown();
+		rpc_svcctl_shutdown();
+		rpc_spoolss_shutdown();
+
+		rpc_srvsvc_shutdown();
+		rpc_winreg_shutdown();
+
+		rpc_netlogon_shutdown();
+		rpc_samr_shutdown();
+		rpc_lsarpc_shutdown();
+	}
 
 	locking_end();
 	printing_end();
