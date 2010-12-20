@@ -249,13 +249,12 @@ SCRIPTS = $(srcdir)/script/smbtar $(builddir)/script/findsmb
 VFS_MODULES = @VFS_MODULES@
 PERFCOUNT_MODULES = @PERFCOUNT_MODULES@
 PDB_MODULES = @PDB_MODULES@
-RPC_MODULES = @RPC_MODULES@
 IDMAP_MODULES = @IDMAP_MODULES@
 CHARSET_MODULES = @CHARSET_MODULES@
 AUTH_MODULES = @AUTH_MODULES@
 NSS_INFO_MODULES = @NSS_INFO_MODULES@
 GPEXT_MODULES = @GPEXT_MODULES@
-MODULES = $(VFS_MODULES) $(PDB_MODULES) $(RPC_MODULES) $(IDMAP_MODULES) \
+MODULES = $(VFS_MODULES) $(PDB_MODULES) $(IDMAP_MODULES) \
           $(CHARSET_MODULES) $(AUTH_MODULES) $(NSS_INFO_MODULES) \
 	  $(GPEXT_MODULES) $(PERFCOUNT_MODULES)
 
@@ -729,8 +728,13 @@ RPC_PIPE_OBJ = rpc_server/srv_pipe.o rpc_server/srv_pipe_hnd.o \
 
 RPC_RPCECHO_OBJ = rpc_server/srv_echo_nt.o librpc/gen_ndr/srv_echo.o
 
-RPC_SERVER_OBJ = @RPC_STATIC@ $(RPC_PIPE_OBJ) $(NPA_TSTREAM_OBJ) \
-                 $(LIBCLI_SPOOLSS_OBJ) \
+RPC_SERVER_OBJ = $(RPC_LSARPC_OBJ) $(RPC_WINREG_OBJ) $(RPC_INITSHUTDOWN_OBJ) \
+		 $(RPC_DSSETUP_OBJ) $(RPC_WKSSVC_OBJ) $(RPC_SVCCTL_OBJ) \
+		 $(RPC_NTSVCS_OBJ) $(RPC_NETLOGON_OBJ) $(RPC_NETDFS_OBJ) \
+		 $(RPC_SRVSVC_OBJ) $(RPC_SPOOLSS_OBJ) $(RPC_EVENTLOG_OBJ) \
+		 $(RPC_SAMR_OBJ) $(RPC_RPCECHO_OBJ) \
+		 $(RPC_PIPE_OBJ) $(NPA_TSTREAM_OBJ) \
+		 $(LIBCLI_SPOOLSS_OBJ) \
 		 $(LIBCLI_WINREG_OBJ) \
 		 $(LIBCLI_SRVSVC_OBJ) \
 		 $(LIBCLI_LSA_OBJ) \
@@ -3164,7 +3168,6 @@ installbin:: all installdirs
 installmodules:: modules installdirs
 	@$(SHELL) $(srcdir)/script/installmodules.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(prefix) $(VFSLIBDIR) $(VFS_MODULES)
 	@$(SHELL) $(srcdir)/script/installmodules.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(prefix) $(PDBLIBDIR) $(PDB_MODULES)
-	@$(SHELL) $(srcdir)/script/installmodules.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(prefix) $(RPCLIBDIR) $(RPC_MODULES)
 	@$(SHELL) $(srcdir)/script/installmodules.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(prefix) $(IDMAPLIBDIR) $(IDMAP_MODULES)
 	@$(SHELL) $(srcdir)/script/installmodules.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(prefix) $(NSSINFOLIBDIR) $(NSS_INFO_MODULES)
 	@$(SHELL) $(srcdir)/script/installmodules.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(prefix) $(CHARSETLIBDIR) $(CHARSET_MODULES)
@@ -3252,7 +3255,6 @@ uninstallbin::
 uninstallmodules::
 	@$(SHELL) $(srcdir)/script/uninstallmodules.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(prefix) $(VFSLIBDIR) $(VFS_MODULES)
 	@$(SHELL) $(srcdir)/script/uninstallmodules.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(prefix) $(PDBLIBDIR) $(PDB_MODULES)
-	@$(SHELL) $(srcdir)/script/uninstallmodules.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(prefix) $(RPCLIBDIR) $(RPC_MODULES)
 	@$(SHELL) $(srcdir)/script/uninstallmodules.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(prefix) $(IDMAPLIBDIR) $(IDMAP_MODULES)
 	@$(SHELL) $(srcdir)/script/uninstallmodules.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(prefix) $(CHARSETLIBDIR) $(CHARSET_MODULES)
 	@$(SHELL) $(srcdir)/script/uninstallmodules.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(prefix) $(AUTHLIBDIR) $(AUTH_MODULES)
