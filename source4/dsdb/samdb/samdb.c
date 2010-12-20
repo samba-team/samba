@@ -143,7 +143,6 @@ struct ldb_context *samdb_connect(TALLOC_CTX *mem_ctx,
  Create the SID list for this user.
 ****************************************************************************/
 NTSTATUS security_token_create(TALLOC_CTX *mem_ctx, 
-			       struct tevent_context *ev_ctx, 
 			       struct loadparm_context *lp_ctx,
 			       struct dom_sid *user_sid,
 			       struct dom_sid *group_sid, 
@@ -224,7 +223,7 @@ NTSTATUS security_token_create(TALLOC_CTX *mem_ctx,
 	}
 
 	/* setup the privilege mask for this token */
-	status = samdb_privilege_setup(ev_ctx, lp_ctx, ptoken);
+	status = samdb_privilege_setup(lp_ctx, ptoken);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(ptoken);
 		return status;

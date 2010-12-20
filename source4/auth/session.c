@@ -177,7 +177,6 @@ _PUBLIC_ NTSTATUS auth_generate_session_info(TALLOC_CTX *mem_ctx,
 	}
 
 	nt_status = security_token_create(session_info,
-					  auth_context ? auth_context->event_ctx : NULL,
 					  auth_context ? auth_context->lp_ctx : NULL,
 					  server_info->account_sid,
 					  server_info->primary_group_sid,

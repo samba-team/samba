@@ -30,10 +30,9 @@
 
 /* connect to the privilege database */
 struct ldb_context *privilege_connect(TALLOC_CTX *mem_ctx, 
-				      struct tevent_context *ev_ctx,
 				      struct loadparm_context *lp_ctx)
 {
-	return ldb_wrap_connect(mem_ctx, ev_ctx, lp_ctx, "privilege.ldb",
+	return ldb_wrap_connect(mem_ctx, NULL, lp_ctx, "privilege.ldb",
 				NULL, NULL, 0);
 }
 
@@ -88,8 +87,7 @@ static NTSTATUS samdb_privilege_setup_sid(struct ldb_context *pdb, TALLOC_CTX *m
   setup the privilege mask for this security token based on our
   local SAM
 */
-NTSTATUS samdb_privilege_setup(struct tevent_context *ev_ctx, 
-			       struct loadparm_context *lp_ctx, struct security_token *token)
+NTSTATUS samdb_privilege_setup(struct loadparm_context *lp_ctx, struct security_token *token)
 {
 	struct ldb_context *pdb;
 	TALLOC_CTX *mem_ctx;
@@ -113,7 +111,7 @@ NTSTATUS samdb_privilege_setup(struct tevent_context *ev_ctx,
 	}
 
 	mem_ctx = talloc_new(token);
-	pdb = privilege_connect(mem_ctx, ev_ctx, lp_ctx);
+	pdb = privilege_connect(mem_ctx, lp_ctx);
 	if (pdb == NULL) {
 		talloc_free(mem_ctx);
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;

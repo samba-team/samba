@@ -49,7 +49,7 @@ NTSTATUS dcesrv_lsa_get_policy_state(struct dcesrv_call_state *dce_call, TALLOC_
 	}
 
 	/* and the privilege database */
-	state->pdb = privilege_connect(state, dce_call->event_ctx, dce_call->conn->dce_ctx->lp_ctx);
+	state->pdb = privilege_connect(state, dce_call->conn->dce_ctx->lp_ctx);
 	if (state->pdb == NULL) {
 		return NT_STATUS_INVALID_SYSTEM_SERVICE;
 	}
