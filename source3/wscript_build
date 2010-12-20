@@ -388,9 +388,7 @@ WINBINDD_SRC1 = '''winbindd/winbindd.c
                    lib/wb_reqtrans.c'''
 
 WINBINDD_SRC = '''${WINBINDD_SRC1}
-                  ${TDB_VALIDATE_SRC}
-                  ../librpc/gen_ndr/srv_lsa.c
-                  ../librpc/gen_ndr/srv_samr.c'''
+                  ${TDB_VALIDATE_SRC}'''
 
 MANGLE_SRC = '''smbd/mangle.c smbd/mangle_hash.c smbd/mangle_hash2.c'''
 
