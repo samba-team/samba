@@ -1070,7 +1070,9 @@ ctdb_vacuum_event(struct event_context *ev, struct timed_event *te,
 		/* 
 		 * repack the db
 		 */
-		if (vacuum_handle->fast_path_count == 0) {
+		if ((ctdb->tunable.vacuum_fast_path_count > 0) &&
+		    (vacuum_handle->fast_path_count == 0))
+		{
 			full_vacuum_run = true;
 		}
 		cc = ctdb_vacuum_and_repack_db(ctdb_db, child_ctx,
