@@ -113,8 +113,7 @@ static NTSTATUS connect_to_domain_password_server(struct cli_state **cli,
 						const char *domain,
 						const char *dc_name,
 						struct sockaddr_storage *dc_ss, 
-						struct rpc_pipe_client **pipe_ret,
-						bool *retry)
+						struct rpc_pipe_client **pipe_ret)
 {
         NTSTATUS result;
 	struct rpc_pipe_client *netlogon_pipe = NULL;
@@ -143,9 +142,8 @@ static NTSTATUS connect_to_domain_password_server(struct cli_state **cli,
 	}
 
 	/* Attempt connection */
-	*retry = True;
 	result = cli_full_connection(cli, global_myname(), dc_name, dc_ss, 0, 
-		"IPC$", "IPC", "", "", "", 0, Undefined, retry);
+		"IPC$", "IPC", "", "", "", 0, Undefined, NULL);
 
 	if (!NT_STATUS_IS_OK(result)) {
 		/* map to something more useful */
@@ -267,7 +265,6 @@ static NTSTATUS domain_client_validate(TALLOC_CTX *mem_ctx,
 	struct rpc_pipe_client *netlogon_pipe = NULL;
 	NTSTATUS nt_status = NT_STATUS_NO_LOGON_SERVERS;
 	int i;
-	bool retry = True;
 
 	/*
 	 * At this point, smb_apasswd points to the lanman response to
@@ -279,13 +276,12 @@ static NTSTATUS domain_client_validate(TALLOC_CTX *mem_ctx,
 
 	/* rety loop for robustness */
 
-	for (i = 0; !NT_STATUS_IS_OK(nt_status) && retry && (i < 3); i++) {
+	for (i = 0; !NT_STATUS_IS_OK(nt_status) && (i < 3); i++) {
 		nt_status = connect_to_domain_password_server(&cli,
 							domain,
 							dc_name,
 							dc_ss,
-							&netlogon_pipe,
-							&retry);
+							&netlogon_pipe);
 	}
 
 	if ( !NT_STATUS_IS_OK(nt_status) ) {
