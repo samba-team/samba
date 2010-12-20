@@ -194,7 +194,7 @@ NTSTATUS auth_system_session_info(TALLOC_CTX *parent_ctx,
 	}
 
 	/* references the server_info into the session_info */
-	nt_status = auth_generate_session_info(parent_ctx, NULL, server_info, 0, &session_info);
+	nt_status = auth_generate_session_info(parent_ctx, lp_ctx, NULL, server_info, 0, &session_info);
 	talloc_free(mem_ctx);
 
 	NT_STATUS_NOT_OK_RETURN(nt_status);
@@ -445,7 +445,7 @@ _PUBLIC_ NTSTATUS auth_anonymous_session_info(TALLOC_CTX *parent_ctx,
 	}
 
 	/* references the server_info into the session_info */
-	nt_status = auth_generate_session_info(parent_ctx, NULL, server_info, 0, &session_info);
+	nt_status = auth_generate_session_info(parent_ctx, lp_ctx, NULL, server_info, 0, &session_info);
 	talloc_free(mem_ctx);
 
 	NT_STATUS_NOT_OK_RETURN(nt_status);

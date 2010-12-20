@@ -408,6 +408,19 @@ _PUBLIC_ NTSTATUS auth_check_password_recv(struct tevent_req *req,
 	return NT_STATUS_OK;
 }
 
+/* Wrapper because we don't want to expose all callers to needing to
+ * know that session_info is generated from the main ldb */
+static NTSTATUS auth_generate_session_info_wrapper(TALLOC_CTX *mem_ctx,
+						   struct auth_context *auth_context,
+						   struct auth_serversupplied_info *server_info,
+						   uint32_t session_info_flags,
+						   struct auth_session_info **session_info)
+{
+	return auth_generate_session_info(mem_ctx, auth_context->lp_ctx,
+					  auth_context->sam_ctx, server_info,
+					  session_info_flags, session_info);
+}
+
 /***************************************************************************
  Make a auth_info struct for the auth subsystem
  - Allow the caller to specify the methods to use, including optionally the SAM to use
@@ -476,7 +489,7 @@ _PUBLIC_ NTSTATUS auth_context_create_methods(TALLOC_CTX *mem_ctx, const char **
 	ctx->set_challenge = auth_context_set_challenge;
 	ctx->challenge_may_be_modified = auth_challenge_may_be_modified;
 	ctx->get_server_info_principal = auth_get_server_info_principal;
-	ctx->generate_session_info = auth_generate_session_info;
+	ctx->generate_session_info = auth_generate_session_info_wrapper;
 
 	*auth_ctx = ctx;
 

@@ -41,7 +41,8 @@ _PUBLIC_ struct auth_session_info *anonymous_session(TALLOC_CTX *mem_ctx,
 }
 
 _PUBLIC_ NTSTATUS auth_generate_session_info(TALLOC_CTX *mem_ctx,
-					     struct auth_context *auth_context, /* Optional if the domain SID is in the NT AUTHORITY domain */
+					     struct loadparm_context *lp_ctx, /* Optional, if you don't want privilages */
+					     struct ldb_context *sam_ctx, /* Optional, if you don't want local groups */
 					     struct auth_serversupplied_info *server_info,
 					     uint32_t session_info_flags,
 					     struct auth_session_info **_session_info)
@@ -83,7 +84,7 @@ _PUBLIC_ NTSTATUS auth_generate_session_info(TALLOC_CTX *mem_ctx,
 		/* Don't expand nested groups of system, anonymous etc*/
 	} else if (dom_sid_equal(system_sid, server_info->account_sid)) {
 		/* Don't expand nested groups of system, anonymous etc*/
-	} else if (auth_context) {
+	} else if (sam_ctx) {
 		groupSIDs = talloc_array(tmp_ctx, struct dom_sid *, server_info->n_domain_groups);
 		NT_STATUS_HAVE_NO_MEMORY_AND_FREE(groupSIDs, tmp_ctx);
 		if (!groupSIDs) {
@@ -119,7 +120,7 @@ _PUBLIC_ NTSTATUS auth_generate_session_info(TALLOC_CTX *mem_ctx,
 		
 		account_sid_blob = data_blob_string_const(account_sid_dn);
 		
-		nt_status = authsam_expand_nested_groups(auth_context->sam_ctx, &account_sid_blob, true, filter,
+		nt_status = authsam_expand_nested_groups(sam_ctx, &account_sid_blob, true, filter,
 							 tmp_ctx, &groupSIDs, &num_groupSIDs);
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			talloc_free(tmp_ctx);
@@ -143,7 +144,7 @@ _PUBLIC_ NTSTATUS auth_generate_session_info(TALLOC_CTX *mem_ctx,
 		
 		primary_group_blob = data_blob_string_const(primary_group_dn);
 		
-		nt_status = authsam_expand_nested_groups(auth_context->sam_ctx, &primary_group_blob, true, filter,
+		nt_status = authsam_expand_nested_groups(sam_ctx, &primary_group_blob, true, filter,
 							 tmp_ctx, &groupSIDs, &num_groupSIDs);
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			talloc_free(tmp_ctx);
@@ -167,7 +168,7 @@ _PUBLIC_ NTSTATUS auth_generate_session_info(TALLOC_CTX *mem_ctx,
 			/* This function takes in memberOf values and expands
 			 * them, as long as they meet the filter - so only
 			 * builtin groups */
-			nt_status = authsam_expand_nested_groups(auth_context->sam_ctx, &group_blob, true, filter,
+			nt_status = authsam_expand_nested_groups(sam_ctx, &group_blob, true, filter,
 								 tmp_ctx, &groupSIDs, &num_groupSIDs);
 			if (!NT_STATUS_IS_OK(nt_status)) {
 				talloc_free(tmp_ctx);
@@ -177,7 +178,7 @@ _PUBLIC_ NTSTATUS auth_generate_session_info(TALLOC_CTX *mem_ctx,
 	}
 
 	nt_status = security_token_create(session_info,
-					  auth_context ? auth_context->lp_ctx : NULL,
+					  lp_ctx,
 					  server_info->account_sid,
 					  server_info->primary_group_sid,
 					  num_groupSIDs,

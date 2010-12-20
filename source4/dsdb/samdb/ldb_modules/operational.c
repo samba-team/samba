@@ -167,7 +167,7 @@ static int construct_token_groups(struct ldb_module *module,
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	status = auth_generate_session_info(tmp_ctx, auth_context, server_info, 0, &session_info);
+	status = auth_generate_session_info(tmp_ctx, auth_context->lp_ctx, ldb, server_info, 0, &session_info);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_NO_MEMORY)) {
 		talloc_free(tmp_ctx);
 		return ldb_module_oom(module);

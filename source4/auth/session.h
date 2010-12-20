@@ -31,7 +31,6 @@ struct auth_session_info {
 #include "librpc/gen_ndr/netlogon.h"
 
 struct tevent_context;
-struct auth_context;
 /* Create a security token for a session SYSTEM (the most
  * trusted/prvilaged account), including the local machine account as
  * the off-host credentials */
@@ -41,11 +40,11 @@ NTSTATUS auth_anonymous_server_info(TALLOC_CTX *mem_ctx,
 				    const char *netbios_name,
 				    struct auth_serversupplied_info **_server_info) ;
 NTSTATUS auth_generate_session_info(TALLOC_CTX *mem_ctx,
-				    struct auth_context *auth_context,
-				    struct auth_serversupplied_info *server_info, 
+				    struct loadparm_context *lp_ctx, /* Optional, if you don't want privilages */
+				    struct ldb_context *sam_ctx, /* Optional, if you don't want local groups */
+				    struct auth_serversupplied_info *server_info,
 				    uint32_t session_info_flags,
 				    struct auth_session_info **_session_info);
-
 NTSTATUS auth_anonymous_session_info(TALLOC_CTX *parent_ctx, 
 				     struct loadparm_context *lp_ctx,
 				     struct auth_session_info **_session_info);

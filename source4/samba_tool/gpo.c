@@ -215,7 +215,6 @@ static int net_gpo_list(struct net_context *ctx, int argc, const char **argv)
 	NTSTATUS status;
 	int rv;
 	unsigned int i;
-	struct auth_context *auth_context;
 
 	if (argc != 1) {
 		return net_gpo_list_usage(ctx, argc, argv);
@@ -267,16 +266,8 @@ static int net_gpo_list(struct net_context *ctx, int argc, const char **argv)
 		return 1;
 	}
 
-	/* We do now need an auth context to create a session */
-	status = auth_context_create_from_ldb(gp_ctx, gp_ctx->ldb_ctx, &auth_context);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("Failed to get an auth context: %s\n", get_friendly_nt_error_msg(status)));
-		talloc_free(gp_ctx);
-		return 1;
-	}
-
 	/* The session info will contain the security token for this user */
-	status = auth_generate_session_info(gp_ctx, auth_context, server_info, 0, &session_info);
+	status = auth_generate_session_info(gp_ctx, gp_ctx->lp_ctx, gp_ctx->ldb_ctx, server_info, 0, &session_info);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("Failed to generate session information: %s\n", get_friendly_nt_error_msg(status)));
 		talloc_free(gp_ctx);
