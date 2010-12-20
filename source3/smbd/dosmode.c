@@ -318,7 +318,8 @@ static bool get_ea_dos_attribute(connection_struct *conn,
 	if (S_ISDIR(smb_fname->st.st_ex_mode)) {
 		dosattr |= aDIR;
 	}
-	*pattr = (uint32)(dosattr & SAMBA_ATTRIBUTES_MASK);
+	/* FILE_ATTRIBUTE_SPARSE is valid on get but not on set. */
+	*pattr = (uint32)(dosattr & (SAMBA_ATTRIBUTES_MASK|FILE_ATTRIBUTE_SPARSE));
 
 	DEBUG(8,("get_ea_dos_attribute returning (0x%x)", dosattr));
 
