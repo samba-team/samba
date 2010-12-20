@@ -1651,8 +1651,7 @@ NTSTATUS cli_start_connection(struct cli_state **output_cli,
 			      const char *my_name, 
 			      const char *dest_host, 
 			      struct sockaddr_storage *dest_ss, int port,
-			      int signing_state, int flags,
-			      bool *retry) ;
+			      int signing_state, int flags);
 NTSTATUS cli_full_connection(struct cli_state **output_cli, 
 			     const char *my_name, 
 			     const char *dest_host, 
