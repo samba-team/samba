@@ -335,10 +335,8 @@ return acl_get_perm_np(permset_d, perm);
                     headers='sys/types.h sys/statfs.h',
                     execute=True)
 
-    default_static_modules=TO_LIST('''pdb_smbpasswd pdb_tdbsam pdb_wbc_sam pdb_ldap rpc_lsarpc rpc_samr
-                                      rpc_winreg rpc_initshutdown rpc_dssetup rpc_wkssvc rpc_svcctl
-                                      rpc_ntsvcs rpc_netlogon rpc_netdfs rpc_srvsvc rpc_spoolss
-                                      rpc_eventlog auth_sam auth_unix auth_winbind auth_wbc auth_server
+    default_static_modules=TO_LIST('''pdb_smbpasswd pdb_tdbsam pdb_wbc_sam pdb_ldap
+                                      auth_sam auth_unix auth_winbind auth_wbc auth_server
                                       auth_domain auth_builtin auth_netlogond vfs_default
                                       nss_info_template idmap_ldap idmap_tdb idmap_passdb
                                       idmap_nss''')
@@ -353,7 +351,7 @@ return acl_get_perm_np(permset_d, perm);
                                       vfs_time_audit idmap_autorid''')
 
     if Options.options.developer:
-        default_static_modules.extend(TO_LIST('rpc_rpcecho pdb_ads'))
+        default_static_modules.extend(TO_LIST('pdb_ads'))
         default_shared_modules.extend(TO_LIST('charset_weird perfcount_test'))
 
     if Options.options.with_acl_support and conf.CONFIG_SET('HAVE_POSIX_ACLS'):
@@ -388,7 +386,7 @@ return acl_get_perm_np(permset_d, perm);
     static_list = {}
     shared_list = {}
 
-    prefixes = ['vfs', 'pdb', 'rpc', 'auth', 'nss_info', 'charset', 'idmap', 'gpext', 'perfcount']
+    prefixes = ['vfs', 'pdb', 'auth', 'nss_info', 'charset', 'idmap', 'gpext', 'perfcount']
     conf.env['MODULE_PREFIXES'] = prefixes
     for p in prefixes:
         for m in final_static_modules:
@@ -409,20 +407,12 @@ return acl_get_perm_np(permset_d, perm);
         conf.env[shared_env] = []
         if p in static_list:
             decl_list=""
-            if p == "rpc":
-                for entry in static_list[p]:
-                    decl_list += "extern NTSTATUS %s_init(const struct rpc_srv_callbacks *rpc_srv_cb); " % entry
-                    conf.env[static_env].append('%s' % entry)
-                decl_list = decl_list.rstrip()
-                conf.DEFINE('static_decl_%s' % p, decl_list)
-                conf.DEFINE('static_init_%s' % p, '{ %s_init(NULL); }' % '_init(NULL);  '.join(static_list[p]))
-            else:
-                for entry in static_list[p]:
-                    decl_list += "extern NTSTATUS %s_init(void); " % entry
-                    conf.env[static_env].append('%s' % entry)
-                decl_list = decl_list.rstrip()
-                conf.DEFINE('static_decl_%s' % p, decl_list)
-                conf.DEFINE('static_init_%s' % p, '{ %s_init(); }' % '_init();  '.join(static_list[p]))
+            for entry in static_list[p]:
+                decl_list += "extern NTSTATUS %s_init(void); " % entry
+                conf.env[static_env].append('%s' % entry)
+            decl_list = decl_list.rstrip()
+            conf.DEFINE('static_decl_%s' % p, decl_list)
+            conf.DEFINE('static_init_%s' % p, '{ %s_init(); }' % '_init();  '.join(static_list[p]))
         else:
             conf.DEFINE('static_decl_%s' % p, '')
             conf.DEFINE('static_init_%s' % p, '{}')
