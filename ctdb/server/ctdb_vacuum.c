@@ -124,7 +124,7 @@ static int vacuum_traverse(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data,
 		return 0;
 	}
 
-	/* is this a records we could possibly delete? I.e.
+	/* Is this a record we could possibly delete? I.e.
 	   if the record is empty and also we are both lmaster
 	   and dmaster for the record we should be able to delete it
 	*/
