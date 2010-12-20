@@ -2604,7 +2604,6 @@ again:
    @param user Username, unix string
    @param domain User's domain
    @param password User's password, unencrypted unix string.
-   @param retry bool. Did this connection fail with a retryable error ?
 */
 
 NTSTATUS cli_full_connection(struct cli_state **output_cli, 
@@ -2614,8 +2613,7 @@ NTSTATUS cli_full_connection(struct cli_state **output_cli,
 			     const char *service, const char *service_type,
 			     const char *user, const char *domain, 
 			     const char *password, int flags,
-			     int signing_state,
-			     bool *retry) 
+			     int signing_state)
 {
 	NTSTATUS nt_status;
 	struct cli_state *cli = NULL;
@@ -2629,7 +2627,7 @@ NTSTATUS cli_full_connection(struct cli_state **output_cli,
 
 	nt_status = cli_start_connection(&cli, my_name, dest_host,
 					 dest_ss, port, signing_state,
-					 flags, retry);
+					 flags, NULL);
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
@@ -2810,7 +2808,7 @@ struct cli_state *get_ipc_connect(char *server,
 					lp_workgroup(),
 					user_info->password ? user_info->password : "",
 					flags,
-					Undefined, NULL);
+					Undefined);
 
 	if (NT_STATUS_IS_OK(nt_status)) {
 		return cli;

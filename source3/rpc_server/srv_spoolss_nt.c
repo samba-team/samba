@@ -2504,7 +2504,7 @@ static bool spoolss_connect_to_client(struct rpc_pipe_client **pp_pipe,
 		"", /* username */
 		"", /* domain */
 		"", /* password */
-		0, lp_client_signing(), NULL );
+		0, lp_client_signing());
 
 	if ( !NT_STATUS_IS_OK( ret ) ) {
 		DEBUG(2,("spoolss_connect_to_client: connection to [%s] failed!\n",

@@ -166,7 +166,7 @@ bool enumerate_domain_trusts( TALLOC_CTX *mem_ctx, const char *domain,
 	/* setup the anonymous connection */
 
 	result = cli_full_connection( &cli, global_myname(), dc_name, &dc_ss, 0, "IPC$", "IPC",
-		"", "", "", 0, Undefined, NULL);
+		"", "", "", 0, Undefined);
 	if ( !NT_STATUS_IS_OK(result) )
 		goto done;
 
@@ -257,7 +257,7 @@ NTSTATUS change_trust_account_password( const char *domain, const char *remote_m
 					   NULL, 0,
 					   "IPC$", "IPC",
 					   "", "",
-					   "", 0, Undefined, NULL))) {
+					   "", 0, Undefined))) {
 		DEBUG(0,("modify_trust_password: Connection to %s failed!\n", dc_name));
 		nt_status = NT_STATUS_UNSUCCESSFUL;
 		goto failed;
