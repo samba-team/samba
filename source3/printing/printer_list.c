@@ -293,7 +293,7 @@ static NTSTATUS printer_list_traverse(printer_list_trv_fn_t *fn,
 	}
 
 	ret = db->traverse(db, fn, private_data);
-	if (ret != 0) {
+	if (ret < 0) {
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
