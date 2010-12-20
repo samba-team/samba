@@ -91,6 +91,46 @@ struct delete_records_list {
 	struct ctdb_marshall_buffer *records;
 };
 
+
+static int add_record_to_delete_tree(struct vacuum_data *vdata, TDB_DATA key,
+				     struct ctdb_ltdb_header *hdr)
+{
+	struct ctdb_context *ctdb = vdata->ctdb;
+	struct ctdb_db_context *ctdb_db = vdata->ctdb_db;
+	uint32_t hash;
+
+	hash = ctdb_hash(&key);
+
+	if (trbt_lookup32(vdata->delete_tree, hash)) {
+		DEBUG(DEBUG_DEBUG, (__location__ " Hash collission when vacuuming, skipping this record.\n"));
+	} else {
+		struct delete_record_data *dd;
+
+		/* store key and header indexed by the key hash */
+		dd = talloc_zero(vdata->delete_tree, struct delete_record_data);
+		if (dd == NULL) {
+			DEBUG(DEBUG_ERR,(__location__ " Out of memory\n"));
+			return -1;
+		}
+		dd->ctdb      = ctdb;
+		dd->ctdb_db   = ctdb_db;
+		dd->key.dsize = key.dsize;
+		dd->key.dptr  = talloc_memdup(dd, key.dptr, key.dsize);
+		if (dd->key.dptr == NULL) {
+			DEBUG(DEBUG_ERR,(__location__ " Out of memory\n"));
+			return -1;
+		}
+
+		dd->hdr = *hdr;
+
+		trbt_insert32(vdata->delete_tree, hash, dd);
+
+		vdata->delete_count++;
+	}
+
+	return 0;
+}
+
 /**
  * Add a record to the list of records to be sent
  * to their lmaster with VACUUM_FETCH.
@@ -142,7 +182,6 @@ static int vacuum_traverse(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data,
 {
 	struct vacuum_data *vdata = talloc_get_type(private, struct vacuum_data);
 	struct ctdb_context *ctdb = vdata->ctdb;
-	struct ctdb_db_context *ctdb_db = vdata->ctdb_db;
 	uint32_t lmaster;
 	struct ctdb_ltdb_header *hdr;
 	int res = 0;
@@ -169,41 +208,12 @@ static int vacuum_traverse(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data,
 		return 0;
 	}
 
-	/* Is this a record we could possibly delete? I.e.
-	   if the record is empty and also we are both lmaster
-	   and dmaster for the record we should be able to delete it
-	*/
 	if (lmaster == ctdb->pnn) {
-		uint32_t hash;
-
-		hash = ctdb_hash(&key);
-		if (trbt_lookup32(vdata->delete_tree, hash)) {
-			DEBUG(DEBUG_DEBUG, (__location__ " Hash collission when vacuuming, skipping this record.\n"));
-		} 
-		else {
-			struct delete_record_data *dd;
-
-			/* store key and header indexed by the key hash */
-			dd = talloc_zero(vdata->delete_tree, struct delete_record_data);
-			if (dd == NULL) {
-				DEBUG(DEBUG_ERR,(__location__ " Out of memory\n"));
-				return -1;
-			}
-			dd->ctdb      = ctdb;
-			dd->ctdb_db   = ctdb_db;
-			dd->key.dsize = key.dsize;
-			dd->key.dptr  = talloc_memdup(dd, key.dptr, key.dsize);
-			if (dd->key.dptr == NULL) {
-				DEBUG(DEBUG_ERR,(__location__ " Out of memory\n"));
-				return -1;
-			}
-
-			dd->hdr = *hdr;
-	
-			trbt_insert32(vdata->delete_tree, hash, dd);
-
-			vdata->delete_count++;
-		}
+		/*
+		 * We are both lmaster and dmaster, and the record * is empty.
+		 * So we should be able to delete it.
+		 */
+		res = add_record_to_delete_tree(vdata, key, hdr);
 	} else {
 		/*
 		 * We are not lmaster.
