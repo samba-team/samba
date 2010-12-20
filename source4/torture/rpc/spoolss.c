@@ -4369,6 +4369,23 @@ do {\
 		talloc_asprintf(tctx, "%s - %s mismatch", #wname, #iname));\
 } while(0);
 
+#define test_binary(wname, iname) \
+do {\
+	enum winreg_Type w_type;\
+	uint32_t w_size;\
+	uint32_t w_length;\
+	uint8_t *w_data;\
+	torture_assert(tctx,\
+		test_winreg_QueryValue(tctx, winreg_handle, &key_handle, wname,\
+				       &w_type, &w_size, &w_length, &w_data),\
+		"failed to query winreg");\
+	torture_assert_int_equal(tctx, w_type, REG_BINARY, "unexpected type");\
+	torture_assert_int_equal(tctx, w_size, iname.length, "unexpected length");\
+	torture_assert_mem_equal(tctx, w_data, iname.data, w_size, \
+		"binary unequal");\
+} while(0);
+
+
 #define test_dm(wname, iname) \
 do {\
 	DATA_BLOB blob;\
@@ -4717,8 +4734,14 @@ static bool test_GetDriverInfo_winreg(struct torture_context *tctx,
 	test_sz("Data File",			data_file);
 	test_sz("Datatype",			info.info6.default_datatype);
 	test_sz("Driver",			driver_path);
-	test_sz("DriverDate",			driver_date);
-	test_sz("DriverVersion",		driver_version);
+	if (torture_setting_bool(tctx, "w2k3", false)) {
+		DATA_BLOB blob = data_blob_talloc_zero(tctx, 8);
+		test_binary("DriverDate",	blob);
+		test_binary("DriverVersion",	blob);
+	} else {
+		test_sz("DriverDate",		driver_date);
+		test_sz("DriverVersion",	driver_version);
+	}
 	test_sz("HardwareID",			info.info6.hardware_id);
 	test_sz("Help File",			help_file);
 	test_sz("Manufacturer",			info.info6.manufacturer_name);
