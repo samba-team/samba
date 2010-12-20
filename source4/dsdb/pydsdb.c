@@ -249,25 +249,37 @@ static PyObject *py_dsdb_get_oid_from_attid(PyObject *self, PyObject *args)
 	const char *oid;
 	PyObject *ret;
 	WERROR status;
+	TALLOC_CTX *mem_ctx;
 
 	if (!PyArg_ParseTuple(args, "Oi", &py_ldb, &attid))
 		return NULL;
 
 	PyErr_LDB_OR_RAISE(py_ldb, ldb);
 
-	schema = dsdb_get_schema(ldb, NULL);
+	mem_ctx = talloc_new(NULL);
+	if (!mem_ctx) {
+		PyErr_NoMemory();
+		return NULL;
+	}
 
+	schema = dsdb_get_schema(ldb, mem_ctx);
 	if (!schema) {
 		PyErr_SetString(PyExc_RuntimeError, "Failed to find a schema from ldb \n");
+		talloc_free(mem_ctx);
 		return NULL;
 	}
 	
 	status = dsdb_schema_pfm_oid_from_attid(schema->prefixmap, attid,
-	                                        NULL, &oid);
-	PyErr_WERROR_IS_ERR_RAISE(status);
+	                                        mem_ctx, &oid);
+	if (!W_ERROR_IS_OK(status)) {
+		PyErr_SetWERROR(status);
+		talloc_free(mem_ctx);
+		return NULL;
+	}
 
 	ret = PyString_FromString(oid);
-	talloc_free(discard_const_p(char, oid));
+
+	talloc_free(mem_ctx);
 
 	return ret;
 }
