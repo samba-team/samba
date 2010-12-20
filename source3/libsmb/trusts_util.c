@@ -148,7 +148,6 @@ bool enumerate_domain_trusts( TALLOC_CTX *mem_ctx, const char *domain,
 	uint32 		enum_ctx = 0;
 	struct cli_state *cli = NULL;
 	struct rpc_pipe_client *lsa_pipe = NULL;
-	bool 		retry;
 	struct lsa_DomainList dom_list;
 	int i;
 
@@ -167,7 +166,7 @@ bool enumerate_domain_trusts( TALLOC_CTX *mem_ctx, const char *domain,
 	/* setup the anonymous connection */
 
 	result = cli_full_connection( &cli, global_myname(), dc_name, &dc_ss, 0, "IPC$", "IPC",
-		"", "", "", 0, Undefined, &retry);
+		"", "", "", 0, Undefined, NULL);
 	if ( !NT_STATUS_IS_OK(result) )
 		goto done;
 
