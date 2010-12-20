@@ -1029,6 +1029,10 @@ ctdb_vacuum_event(struct event_context *ev, struct timed_event *te,
 		return;
 	}
 
+	if (vacuum_handle->fast_path_count > ctdb->tunable.vacuum_fast_path_count) {
+		vacuum_handle->fast_path_count = 0;
+	}
+
 	child_ctx->child_pid = ctdb_fork(ctdb);
 	if (child_ctx->child_pid == (pid_t)-1) {
 		close(child_ctx->fd[0]);
