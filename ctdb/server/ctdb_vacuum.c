@@ -410,6 +410,12 @@ static int ctdb_vacuum_db(struct ctdb_db_context *ctdb_db, struct vacuum_data *v
 		vdata->list[i]->db_id = ctdb_db->db_id;
 	}
 
+	/*
+	 * Traverse the delete_queue.
+	 * This builds the same lists as the db traverse.
+	 */
+	trbt_traversearray32(ctdb_db->delete_queue, 1, delete_queue_traverse, vdata);
+
 	/* read-only traverse, looking for records that might be able to be vacuumed */
 	if (tdb_traverse_read(ctdb_db->ltdb->tdb, vacuum_traverse, vdata) == -1 ||
 	    vdata->traverse_error) {
