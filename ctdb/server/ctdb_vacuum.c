@@ -375,7 +375,9 @@ done:
  * records on the other nodes
  * this executes in the child context
  */
-static int ctdb_vacuum_db(struct ctdb_db_context *ctdb_db, struct vacuum_data *vdata)
+static int ctdb_vacuum_db(struct ctdb_db_context *ctdb_db,
+			  struct vacuum_data *vdata,
+			  bool full_vacuum_run)
 {
 	struct ctdb_context *ctdb = ctdb_db->ctdb;
 	const char *name = ctdb_db->db_name;
@@ -417,11 +419,19 @@ static int ctdb_vacuum_db(struct ctdb_db_context *ctdb_db, struct vacuum_data *v
 	 */
 	trbt_traversearray32(ctdb_db->delete_queue, 1, delete_queue_traverse, vdata);
 
-	/* read-only traverse, looking for records that might be able to be vacuumed */
-	if (tdb_traverse_read(ctdb_db->ltdb->tdb, vacuum_traverse, vdata) == -1 ||
-	    vdata->traverse_error) {
-		DEBUG(DEBUG_ERR,(__location__ " Traverse error in vacuuming '%s'\n", name));
-		return -1;		
+	/*
+	 * read-only traverse of the database, looking for records that
+	 * might be able to be vacuumed.
+	 *
+	 * This is not done each time but only every tunable
+	 * VacuumFastPathCount times.
+	 */
+	if (full_vacuum_run) {
+		ret = tdb_traverse_read(ctdb_db->ltdb->tdb, vacuum_traverse, vdata);
+		if (ret == -1 || vdata->traverse_error) {
+			DEBUG(DEBUG_ERR,(__location__ " Traverse error in vacuuming '%s'\n", name));
+			return -1;
+		}
 	}
 
 	/*
@@ -802,7 +812,8 @@ static int update_tuning_db(struct ctdb_db_context *ctdb_db, struct vacuum_data 
  * called from the child context
  */
 static int ctdb_vacuum_and_repack_db(struct ctdb_db_context *ctdb_db,
-				     TALLOC_CTX *mem_ctx)
+				     TALLOC_CTX *mem_ctx,
+				     bool full_vacuum_run)
 {
 	uint32_t repack_limit = ctdb_db->ctdb->tunable.repack_limit;
 	uint32_t vacuum_limit = ctdb_db->ctdb->tunable.vacuum_limit;
@@ -838,7 +849,7 @@ static int ctdb_vacuum_and_repack_db(struct ctdb_db_context *ctdb_db,
 	/*
 	 * gather all records that can be deleted in vdata
 	 */
-	if (ctdb_vacuum_db(ctdb_db, vdata) != 0) {
+	if (ctdb_vacuum_db(ctdb_db, vdata, full_vacuum_run) != 0) {
 		DEBUG(DEBUG_ERR,(__location__ " Failed to vacuum '%s'\n", name));
 	}
 
@@ -1046,6 +1057,7 @@ ctdb_vacuum_event(struct event_context *ev, struct timed_event *te,
 
 	if (child_ctx->child_pid == 0) {
 		char cc = 0;
+		bool full_vacuum_run = false;
 		close(child_ctx->fd[0]);
 
 		DEBUG(DEBUG_INFO,("Vacuuming child process %d for db %s started\n", getpid(), ctdb_db->db_name));
@@ -1058,7 +1070,11 @@ ctdb_vacuum_event(struct event_context *ev, struct timed_event *te,
 		/* 
 		 * repack the db
 		 */
-		cc = ctdb_vacuum_and_repack_db(ctdb_db, child_ctx);
+		if (vacuum_handle->fast_path_count == 0) {
+			full_vacuum_run = true;
+		}
+		cc = ctdb_vacuum_and_repack_db(ctdb_db, child_ctx,
+					       full_vacuum_run);
 
 		write(child_ctx->fd[1], &cc, 1);
 		_exit(0);
