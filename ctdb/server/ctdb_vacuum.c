@@ -145,7 +145,7 @@ static int vacuum_traverse(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data,
 	struct ctdb_db_context *ctdb_db = vdata->ctdb_db;
 	uint32_t lmaster;
 	struct ctdb_ltdb_header *hdr;
-	int res;
+	int res = 0;
 
 	lmaster = ctdb_lmaster(ctdb, &key);
 	if (lmaster >= ctdb->num_nodes) {
@@ -204,10 +204,13 @@ static int vacuum_traverse(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data,
 
 			vdata->delete_count++;
 		}
+	} else {
+		/*
+		 * We are not lmaster.
+		 * Add the record to the blob ready to send to the nodes.
+		 */
+		res = add_record_to_vacuum_fetch_list(vdata, key);
 	}
-
-	/* add the record to the blob ready to send to the nodes */
-	res = add_record_to_vacuum_fetch_list(vdata, key);
 
 	return res;
 }
