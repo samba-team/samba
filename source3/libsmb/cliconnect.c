@@ -2498,24 +2498,18 @@ NTSTATUS cli_connect(struct cli_state *cli,
    @param dest_host The netbios name of the remote host
    @param dest_ss (optional) The the destination IP, NULL for name based lookup
    @param port (optional) The destination port (0 for default)
-   @param retry bool. Did this connection fail with a retryable error ?
-
 */
 NTSTATUS cli_start_connection(struct cli_state **output_cli, 
 			      const char *my_name, 
 			      const char *dest_host, 
 			      struct sockaddr_storage *dest_ss, int port,
-			      int signing_state, int flags,
-			      bool *retry) 
+			      int signing_state, int flags)
 {
 	NTSTATUS nt_status;
 	struct nmb_name calling;
 	struct nmb_name called;
 	struct cli_state *cli;
 	struct sockaddr_storage ss;
-
-	if (retry)
-		*retry = False;
 
 	if (!my_name) 
 		my_name = global_myname();
@@ -2549,9 +2543,6 @@ again:
 		cli_shutdown(cli);
 		return nt_status;
 	}
-
-	if (retry)
-		*retry = True;
 
 	if (!cli_session_request(cli, &calling, &called)) {
 		char *p;
@@ -2627,7 +2618,7 @@ NTSTATUS cli_full_connection(struct cli_state **output_cli,
 
 	nt_status = cli_start_connection(&cli, my_name, dest_host,
 					 dest_ss, port, signing_state,
-					 flags, NULL);
+					 flags);
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
