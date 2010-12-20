@@ -48,6 +48,7 @@ struct ctdb_vacuum_child_context {
 struct ctdb_vacuum_handle {
 	struct ctdb_db_context *ctdb_db;
 	struct ctdb_vacuum_child_context *child_ctx;
+	uint32_t fast_path_count;
 };
 
 
