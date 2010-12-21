@@ -92,7 +92,7 @@ interface dnsp
 		dnsp_name       nameTarget;
 	} dnsp_srv;
 
-	typedef [nodiscriminant] union {
+	typedef [nodiscriminant,gensize] union {
 		[case(DNS_TYPE_A)] [flag(NDR_BIG_ENDIAN)]   ipv4address ipv4;
 		[case(DNS_TYPE_NS)]                         dnsp_name ns;
 		[case(DNS_TYPE_CNAME)]                      dnsp_name cname;
@@ -109,7 +109,7 @@ interface dnsp
 	/* this is the format for the dnsRecord attribute in the DNS
 	   partitions in AD */
 	typedef [public] struct {
-		uint16          wDataLength;
+		[value(ndr_size_dnsRecordData(&data,wType,ndr->flags))] uint16 wDataLength;
 		dns_record_type wType;
 		uint32          dwFlags;
 		uint32          dwSerial;
