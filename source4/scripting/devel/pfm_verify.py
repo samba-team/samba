@@ -42,14 +42,22 @@ def _samdb_fetch_pfm(samdb):
     assert len(res) == 1
     pfm = ndr_unpack(drsblobs.prefixMapBlob,
                      str(res[0]['prefixMap']))
-    pfm_schi = None
+
+    pfm_schi = _samdb_fetch_schi(samdb)
+
+    return (pfm.ctr, pfm_schi)
+
+def _samdb_fetch_schi(samdb):
+    """Fetch schemaInfo stored in SamDB using LDB connection"""
+    res = samdb.search(base=samdb.get_schema_basedn(), expression="", scope=SCOPE_BASE, attrs=["*"])
+    assert len(res) == 1
     if 'schemaInfo' in res[0]:
-        pfm_schi = pfm_schi = ndr_unpack(drsblobs.schemaInfoBlob,
-                                         str(res[0]['schemaInfo']))
+        pfm_schi = ndr_unpack(drsblobs.schemaInfoBlob,
+                              str(res[0]['schemaInfo']))
     else:
         pfm_schi = drsblobs.schemaInfoBlob()
         pfm_schi.marker = 0xFF;
-    return (pfm.ctr, pfm_schi)
+    return pfm_schi
 
 def _drs_fetch_pfm(server, samdb, creds, lp):
     """Fetch prefixMap using DRS interface"""
