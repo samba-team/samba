@@ -413,6 +413,8 @@ static isc_result_t parse_options(struct dlz_bind9_data *state,
 	struct poptOption **popt_options;
 	int ret;
 
+	fault_setup_disable();
+
 	popt_options = ldb_module_popt_options(state->samdb);
 	(*popt_options) = long_options;
 
