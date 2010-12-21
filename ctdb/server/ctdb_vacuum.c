@@ -98,35 +98,35 @@ static int add_record_to_delete_tree(struct vacuum_data *vdata, TDB_DATA key,
 	struct ctdb_context *ctdb = vdata->ctdb;
 	struct ctdb_db_context *ctdb_db = vdata->ctdb_db;
 	uint32_t hash;
+	struct delete_record_data *dd;
 
 	hash = ctdb_hash(&key);
 
 	if (trbt_lookup32(vdata->delete_tree, hash)) {
 		DEBUG(DEBUG_DEBUG, (__location__ " Hash collission when vacuuming, skipping this record.\n"));
-	} else {
-		struct delete_record_data *dd;
-
-		/* store key and header indexed by the key hash */
-		dd = talloc_zero(vdata->delete_tree, struct delete_record_data);
-		if (dd == NULL) {
-			DEBUG(DEBUG_ERR,(__location__ " Out of memory\n"));
-			return -1;
-		}
-		dd->ctdb      = ctdb;
-		dd->ctdb_db   = ctdb_db;
-		dd->key.dsize = key.dsize;
-		dd->key.dptr  = talloc_memdup(dd, key.dptr, key.dsize);
-		if (dd->key.dptr == NULL) {
-			DEBUG(DEBUG_ERR,(__location__ " Out of memory\n"));
-			return -1;
-		}
-
-		dd->hdr = *hdr;
-
-		trbt_insert32(vdata->delete_tree, hash, dd);
-
-		vdata->delete_count++;
+		return 0;
 	}
+
+	/* store key and header indexed by the key hash */
+	dd = talloc_zero(vdata->delete_tree, struct delete_record_data);
+	if (dd == NULL) {
+		DEBUG(DEBUG_ERR,(__location__ " Out of memory\n"));
+		return -1;
+	}
+	dd->ctdb      = ctdb;
+	dd->ctdb_db   = ctdb_db;
+	dd->key.dsize = key.dsize;
+	dd->key.dptr  = talloc_memdup(dd, key.dptr, key.dsize);
+	if (dd->key.dptr == NULL) {
+		DEBUG(DEBUG_ERR,(__location__ " Out of memory\n"));
+		return -1;
+	}
+
+	dd->hdr = *hdr;
+
+	trbt_insert32(vdata->delete_tree, hash, dd);
+
+	vdata->delete_count++;
 
 	return 0;
 }
