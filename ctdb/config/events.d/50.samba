@@ -72,7 +72,7 @@ start_samba() {
 	# the number of smbd processes will mean that it leaves few cycles for
 	# anything else
 	[ "$CTDB_MANAGES_SAMBA" = "yes" ] && {
-		/usr/bin/net serverid wipe &
+		/usr/bin/net serverid wipe
 
 		nice_service "$CTDB_SERVICE_NMB" start
 		nice_service "$CTDB_SERVICE_SMB" start
