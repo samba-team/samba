@@ -107,12 +107,29 @@ case "$1" in
 	} || exit $?
 
 	# check that lockd responds to rpc requests
-	ctdb_check_rpc "LOCKD" 100021 1 || {
-		echo "Trying to restart lock manager service"
-		startstop_nfs restart
-		startstop_nfslock restart
-		exit 1
-	}
+	if ctdb_check_rpc "LOCKD" 100021 1 >/dev/null ; then
+		(service_name="lockd"; ctdb_counter_init)
+	else
+		(
+			service_name="lockd"
+			ctdb_counter_incr
+
+			ctdb_check_counter_equal 10 || {
+				echo "Trying to restart NFS lock service"
+				startstop_nfs restart >/dev/null 2>&1 &
+				startstop_nfslock restart  >/dev/null 2>&1 &
+				exit 0
+			}
+
+			ctdb_check_counter_limit 15 quiet >/dev/null
+	) || {
+			echo "$ctdb_check_rpc_out"
+			echo "Trying to restart NFS lock service"
+			startstop_nfs restart
+			startstop_nfslock restart
+			exit 1
+		}
+	fi
 
 	# mount needs special handling since it is sometimes not started
 	# correctly on RHEL5
