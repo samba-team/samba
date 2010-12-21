@@ -31,10 +31,10 @@
  *  Author: Andrew Tridgell
  */
 
+#include "replace.h"
 #include "ldb.h"
 #include "tools/cmdline.h"
 #include "ldbutil.h"
-#include "replace.h"
 
 static int dn_cmp(struct ldb_message **msg1, struct ldb_message **msg2)
 {
