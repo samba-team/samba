@@ -182,7 +182,19 @@ store:
 	}
 
 	if (ret != 0) {
-		DEBUG(DEBUG_ERR, (__location__ " Failed to store dynamic data\n"));
+		int lvl = DEBUG_ERR;
+
+		if (keep == false &&
+		    tdb_error(ctdb_db->ltdb->tdb) == TDB_ERR_NOEXIST)
+		{
+			lvl = DEBUG_DEBUG;
+		}
+
+		DEBUG(lvl, (__location__ " db[%s]: Failed to %s record: "
+			    "%d - %s\n",
+			    ctdb_db->db_name,
+			    keep?"store":"delete", ret,
+			    tdb_errorstr(ctdb_db->ltdb->tdb)));
 	}
 	if (seqnum_suppressed) {
 		tdb_add_flags(ctdb_db->ltdb->tdb, TDB_SEQNUM);
