@@ -23,7 +23,10 @@
 
 struct nb_connect_state {
 	struct tevent_context *ev;
+	const struct sockaddr_storage *addr;
+	const char *called_name;
 	int sock;
+
 	struct nmb_name called;
 	struct nmb_name calling;
 };
@@ -48,9 +51,12 @@ static struct tevent_req *nb_connect_send(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 	state->ev = ev;
+	state->called_name = called_name;
+	state->addr = addr;
+
+	state->sock = -1;
 	make_nmb_name(&state->called, called_name, called_type);
 	make_nmb_name(&state->calling, calling_name, calling_type);
-	state->sock = -1;
 
 	talloc_set_destructor(state, nb_connect_state_destructor);
 
@@ -96,6 +102,8 @@ static void nb_connect_done(struct tevent_req *subreq)
 {
 	struct tevent_req *req = tevent_req_callback_data(
 		subreq, struct tevent_req);
+	struct nb_connect_state *state = tevent_req_data(
+		req, struct nb_connect_state);
 	bool ret;
 	int err;
 	uint8_t resp;
@@ -106,11 +114,48 @@ static void nb_connect_done(struct tevent_req *subreq)
 		tevent_req_nterror(req, map_nt_error_from_unix(err));
 		return;
 	}
+
+	/*
+	 * RFC1002: 0x82 - POSITIVE SESSION RESPONSE
+	 */
+
 	if (resp != 0x82) {
-		tevent_req_nterror(req, NT_STATUS_RESOURCE_NAME_NOT_FOUND);
+		/*
+		 * The server did not like our session request
+		 */
+		close(state->sock);
+		state->sock = -1;
+
+		if (strequal(state->called_name, "*SMBSERVER")) {
+			/*
+			 * Here we could try a name status request and
+			 * use the first 0x20 type name.
+			 */
+			tevent_req_nterror(
+				req, NT_STATUS_RESOURCE_NAME_NOT_FOUND);
+			return;
+		}
+
+		/*
+		 * We could be subtle and distinguish between
+		 * different failure modes, but what we do here
+		 * instead is just retry with *SMBSERVER type 0x20.
+		 */
+		state->called_name = "*SMBSERVER";
+		make_nmb_name(&state->called, state->called_name, 0x20);
+
+		subreq = open_socket_out_send(state, state->ev, state->addr,
+					      139, 5000);
+		if (tevent_req_nomem(subreq, req)) {
+			return;
+		}
+		tevent_req_set_callback(subreq, nb_connect_connected, req);
 		return;
 	}
+
 	tevent_req_done(req);
+	return;
+
 }
 
 static NTSTATUS nb_connect_recv(struct tevent_req *req, int *sock)
