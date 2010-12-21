@@ -92,28 +92,24 @@ struct delete_records_list {
 	struct ctdb_marshall_buffer *records;
 };
 
-
-static int add_record_to_delete_tree(struct vacuum_data *vdata, TDB_DATA key,
-				     struct ctdb_ltdb_header *hdr)
+/**
+ * Store key and header in a tree, indexed by the key hash.
+ */
+static int insert_delete_record_data_into_tree(struct ctdb_context *ctdb,
+					       struct ctdb_db_context *ctdb_db,
+					       trbt_tree_t *tree,
+					       const struct ctdb_ltdb_header *hdr,
+					       TDB_DATA key)
 {
-	struct ctdb_context *ctdb = vdata->ctdb;
-	struct ctdb_db_context *ctdb_db = vdata->ctdb_db;
-	uint32_t hash;
 	struct delete_record_data *dd;
+	uint32_t hash;
 
-	hash = ctdb_hash(&key);
-
-	if (trbt_lookup32(vdata->delete_tree, hash)) {
-		DEBUG(DEBUG_DEBUG, (__location__ " Hash collission when vacuuming, skipping this record.\n"));
-		return 0;
-	}
-
-	/* store key and header indexed by the key hash */
-	dd = talloc_zero(vdata->delete_tree, struct delete_record_data);
+	dd = talloc_zero(tree, struct delete_record_data);
 	if (dd == NULL) {
 		DEBUG(DEBUG_ERR,(__location__ " Out of memory\n"));
 		return -1;
 	}
+
 	dd->ctdb      = ctdb;
 	dd->ctdb_db   = ctdb_db;
 	dd->key.dsize = key.dsize;
@@ -125,7 +121,34 @@ static int add_record_to_delete_tree(struct vacuum_data *vdata, TDB_DATA key,
 
 	dd->hdr = *hdr;
 
-	trbt_insert32(vdata->delete_tree, hash, dd);
+	hash = ctdb_hash(&key);
+
+	trbt_insert32(tree, hash, dd);
+
+	return 0;
+}
+
+static int add_record_to_delete_tree(struct vacuum_data *vdata, TDB_DATA key,
+				     struct ctdb_ltdb_header *hdr)
+{
+	struct ctdb_context *ctdb = vdata->ctdb;
+	struct ctdb_db_context *ctdb_db = vdata->ctdb_db;
+	uint32_t hash;
+	int ret;
+
+	hash = ctdb_hash(&key);
+
+	if (trbt_lookup32(vdata->delete_tree, hash)) {
+		DEBUG(DEBUG_DEBUG, (__location__ " Hash collission when vacuuming, skipping this record.\n"));
+		return 0;
+	}
+
+	ret = insert_delete_record_data_into_tree(ctdb, ctdb_db,
+						  vdata->delete_tree,
+						  hdr, key);
+	if (ret != 0) {
+		return -1;
+	}
 
 	vdata->delete_count++;
 
