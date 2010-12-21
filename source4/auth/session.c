@@ -80,24 +80,24 @@ _PUBLIC_ NTSTATUS auth_generate_session_info(TALLOC_CTX *mem_ctx,
 	system_sid = dom_sid_parse_talloc(tmp_ctx, SID_NT_SYSTEM);
 	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(system_sid, tmp_ctx);
 
+	groupSIDs = talloc_array(tmp_ctx, struct dom_sid *, server_info->n_domain_groups);
+	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(groupSIDs, tmp_ctx);
+	if (!groupSIDs) {
+		talloc_free(tmp_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	num_groupSIDs = server_info->n_domain_groups;
+
+	for (i=0; i < server_info->n_domain_groups; i++) {
+		groupSIDs[i] = server_info->domain_groups[i];
+	}
+
 	if (dom_sid_equal(anonymous_sid, server_info->account_sid)) {
 		/* Don't expand nested groups of system, anonymous etc*/
 	} else if (dom_sid_equal(system_sid, server_info->account_sid)) {
 		/* Don't expand nested groups of system, anonymous etc*/
 	} else if (sam_ctx) {
-		groupSIDs = talloc_array(tmp_ctx, struct dom_sid *, server_info->n_domain_groups);
-		NT_STATUS_HAVE_NO_MEMORY_AND_FREE(groupSIDs, tmp_ctx);
-		if (!groupSIDs) {
-			talloc_free(tmp_ctx);
-			return NT_STATUS_NO_MEMORY;
-		}
-		
-		num_groupSIDs = server_info->n_domain_groups;
-		
-		for (i=0; i < server_info->n_domain_groups; i++) {
-			groupSIDs[i] = server_info->domain_groups[i];
-		}
-		
 		filter = talloc_asprintf(tmp_ctx, "(&(objectClass=group)(groupType:1.2.840.113556.1.4.803:=%u))",
 					 GROUP_TYPE_BUILTIN_LOCAL_GROUP);
 
