@@ -175,7 +175,7 @@ def CHECK_BUNDLED_SYSTEM_PYTHON(conf, libname, modulename, minversion='0.0.0'):
         except AttributeError:
             found = False
         else:
-            found = tuple(minversion.split(".")) >= tuple(version.split("."))
+            found = tuple(version.split(".")) >= tuple(minversion.split("."))
     if not found and not conf.LIB_MAY_BE_BUNDLED(libname):
         Logs.error('ERROR: Python module %s of version %s not found, and bundling disabled' % (libname, minversion))
         sys.exit(1)
