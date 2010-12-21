@@ -39,6 +39,7 @@ struct tstream_cli_np {
 
 	struct {
 		bool active;
+		struct tevent_req *read_req;
 		struct tevent_req *write_req;
 		uint16_t setup[2];
 	} trans;
@@ -182,6 +183,7 @@ NTSTATUS _tstream_cli_np_open_recv(struct tevent_req *req,
 	talloc_set_destructor(cli_nps, tstream_cli_np_destructor);
 
 	cli_nps->trans.active = false;
+	cli_nps->trans.read_req = NULL;
 	cli_nps->trans.write_req = NULL;
 	SSVAL(cli_nps->trans.setup+0, 0, TRANSACT_DCERPCCMD);
 	SSVAL(cli_nps->trans.setup+1, 0, cli_nps->fnum);
@@ -221,6 +223,10 @@ NTSTATUS tstream_cli_np_use_trans(struct tstream_context *stream)
 {
 	struct tstream_cli_np *cli_nps = tstream_context_data(stream,
 					 struct tstream_cli_np);
+
+	if (cli_nps->trans.read_req) {
+		return NT_STATUS_PIPE_BUSY;
+	}
 
 	if (cli_nps->trans.write_req) {
 		return NT_STATUS_PIPE_BUSY;
@@ -329,6 +335,7 @@ static struct tevent_req *tstream_cli_np_writev_send(TALLOC_CTX *mem_ctx,
 	return req;
 }
 
+static void tstream_cli_np_readv_trans_start(struct tevent_req *req);
 static void tstream_cli_np_writev_write_done(struct tevent_req *subreq);
 
 static void tstream_cli_np_writev_write_next(struct tevent_req *req)
@@ -376,6 +383,12 @@ static void tstream_cli_np_writev_write_next(struct tevent_req *req)
 	if (cli_nps->trans.active && state->count == 0) {
 		cli_nps->trans.active = false;
 		cli_nps->trans.write_req = req;
+		return;
+	}
+
+	if (cli_nps->trans.read_req && state->count == 0) {
+		cli_nps->trans.write_req = req;
+		tstream_cli_np_readv_trans_start(cli_nps->trans.read_req);
 		return;
 	}
 
@@ -512,6 +525,17 @@ struct tstream_cli_np_readv_state {
 	} error;
 };
 
+static int tstream_cli_np_readv_state_destructor(struct tstream_cli_np_readv_state *state)
+{
+	struct tstream_cli_np *cli_nps =
+		tstream_context_data(state->stream,
+		struct tstream_cli_np);
+
+	cli_nps->trans.read_req = NULL;
+
+	return 0;
+}
+
 static void tstream_cli_np_readv_read_next(struct tevent_req *req);
 
 static struct tevent_req *tstream_cli_np_readv_send(TALLOC_CTX *mem_ctx,
@@ -533,6 +557,8 @@ static struct tevent_req *tstream_cli_np_readv_send(TALLOC_CTX *mem_ctx,
 	state->stream = stream;
 	state->ev = ev;
 	state->ret = 0;
+
+	talloc_set_destructor(state, tstream_cli_np_readv_state_destructor);
 
 	if (!cli_state_is_connected(cli_nps->cli)) {
 		tevent_req_error(req, ENOTCONN);
@@ -557,7 +583,6 @@ static struct tevent_req *tstream_cli_np_readv_send(TALLOC_CTX *mem_ctx,
 	return req;
 }
 
-static void tstream_cli_np_readv_trans_done(struct tevent_req *subreq);
 static void tstream_cli_np_readv_read_done(struct tevent_req *subreq);
 
 static void tstream_cli_np_readv_read_next(struct tevent_req *req)
@@ -599,29 +624,15 @@ static void tstream_cli_np_readv_read_next(struct tevent_req *req)
 		return;
 	}
 
-	if (cli_nps->trans.write_req) {
-		state->trans.im = tevent_create_immediate(state);
-		if (tevent_req_nomem(state->trans.im, req)) {
-			return;
-		}
+	if (cli_nps->trans.active) {
+		cli_nps->trans.active = false;
+		cli_nps->trans.read_req = req;
+		return;
+	}
 
-		subreq = cli_trans_send(state, state->ev,
-					cli_nps->cli,
-					SMBtrans,
-					"\\PIPE\\",
-					0, 0, 0,
-					cli_nps->trans.setup, 2,
-					0,
-					NULL, 0, 0,
-					cli_nps->write.buf,
-					cli_nps->write.ofs,
-					TSTREAM_CLI_NP_BUF_SIZE);
-		if (tevent_req_nomem(subreq, req)) {
-			return;
-		}
-		tevent_req_set_callback(subreq,
-					tstream_cli_np_readv_trans_done,
-					req);
+	if (cli_nps->trans.write_req) {
+		cli_nps->trans.read_req = req;
+		tstream_cli_np_readv_trans_start(req);
 		return;
 	}
 
@@ -632,6 +643,42 @@ static void tstream_cli_np_readv_read_next(struct tevent_req *req)
 	}
 	tevent_req_set_callback(subreq,
 				tstream_cli_np_readv_read_done,
+				req);
+}
+
+static void tstream_cli_np_readv_trans_done(struct tevent_req *subreq);
+
+static void tstream_cli_np_readv_trans_start(struct tevent_req *req)
+{
+	struct tstream_cli_np_readv_state *state =
+		tevent_req_data(req,
+		struct tstream_cli_np_readv_state);
+	struct tstream_cli_np *cli_nps =
+		tstream_context_data(state->stream,
+		struct tstream_cli_np);
+	struct tevent_req *subreq;
+
+	state->trans.im = tevent_create_immediate(state);
+	if (tevent_req_nomem(state->trans.im, req)) {
+		return;
+	}
+
+	subreq = cli_trans_send(state, state->ev,
+				cli_nps->cli,
+				SMBtrans,
+				"\\PIPE\\",
+				0, 0, 0,
+				cli_nps->trans.setup, 2,
+				0,
+				NULL, 0, 0,
+				cli_nps->write.buf,
+				cli_nps->write.ofs,
+				TSTREAM_CLI_NP_BUF_SIZE);
+	if (tevent_req_nomem(subreq, req)) {
+		return;
+	}
+	tevent_req_set_callback(subreq,
+				tstream_cli_np_readv_trans_done,
 				req);
 }
 
