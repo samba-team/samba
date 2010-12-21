@@ -1085,6 +1085,21 @@ static isc_result_t b9_add_record(struct dlz_bind9_data *state, const char *name
 	return ISC_R_SUCCESS;
 }
 
+/*
+  see if two DNS names are the same
+ */
+static bool dns_name_equal(const char *name1, const char *name2)
+{
+	size_t len1 = strlen(name1);
+	size_t len2 = strlen(name2);
+	if (name1[len1-1] == '.') len1--;
+	if (name2[len2-1] == '.') len2--;
+	if (len1 != len2) {
+		return false;
+	}
+	return strncasecmp_m(name1, name2, len1) == 0;
+}
+
 
 /*
   see if two dns records match
@@ -1107,31 +1122,31 @@ static bool b9_record_match(struct dlz_bind9_data *state,
 	case DNS_TYPE_AAAA:
 		return strcmp(rec1->data.ipv6, rec2->data.ipv6) == 0;
 	case DNS_TYPE_CNAME:
-		return strcmp(rec1->data.cname, rec2->data.cname) == 0;
+		return dns_name_equal(rec1->data.cname, rec2->data.cname);
 	case DNS_TYPE_TXT:
 		return strcmp(rec1->data.txt, rec2->data.txt) == 0;
 	case DNS_TYPE_PTR:
 		return strcmp(rec1->data.ptr, rec2->data.ptr) == 0;
 	case DNS_TYPE_NS:
-		return strcmp(rec1->data.ns, rec2->data.ns) == 0;
+		return dns_name_equal(rec1->data.ns, rec2->data.ns);
 
 	case DNS_TYPE_SRV:
 		return rec1->data.srv.wPriority == rec2->data.srv.wPriority &&
 			rec1->data.srv.wWeight  == rec2->data.srv.wWeight &&
 			rec1->data.srv.wPort    == rec2->data.srv.wPort &&
-			strcmp(rec1->data.srv.nameTarget, rec2->data.srv.nameTarget) == 0;
+			dns_name_equal(rec1->data.srv.nameTarget, rec2->data.srv.nameTarget);
 
 	case DNS_TYPE_MX:
 		return rec1->data.mx.wPriority == rec2->data.mx.wPriority &&
-			strcmp(rec1->data.mx.nameTarget, rec2->data.mx.nameTarget) == 0;
+			dns_name_equal(rec1->data.mx.nameTarget, rec2->data.mx.nameTarget);
 
 	case DNS_TYPE_HINFO:
 		return strcmp(rec1->data.hinfo.cpu, rec2->data.hinfo.cpu) == 0 &&
 			strcmp(rec1->data.hinfo.os, rec2->data.hinfo.os) == 0;
 
 	case DNS_TYPE_SOA:
-		return strcmp(rec1->data.soa.mname, rec2->data.soa.mname) == 0 &&
-			strcmp(rec1->data.soa.rname, rec2->data.soa.rname) == 0 &&
+		return dns_name_equal(rec1->data.soa.mname, rec2->data.soa.mname) &&
+			dns_name_equal(rec1->data.soa.rname, rec2->data.soa.rname) &&
 			rec1->data.soa.serial == rec2->data.soa.serial &&
 			rec1->data.soa.refresh == rec2->data.soa.refresh &&
 			rec1->data.soa.retry == rec2->data.soa.retry &&
