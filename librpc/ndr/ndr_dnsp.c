@@ -95,7 +95,13 @@ enum ndr_err_code ndr_push_dnsp_name(struct ndr_push *ndr, int ndr_flags, const 
 	for (count=i=0; name[i]; i++) {
 		if (name[i] == '.') count++;
 	}
-	total_len = strlen(name) + 1 + 1;
+	total_len = strlen(name) + 1;
+
+	/* cope with names ending in '.' */
+	if (name[strlen(name)-1] != '.') {
+		total_len++;
+		count++;
+	}
 	if (total_len > 255 || count > 255) {
 		return ndr_push_error(ndr, NDR_ERR_BUFSIZE,
 				      "dns_name of length %d larger than 255", total_len);
