@@ -344,6 +344,7 @@ typedef struct files_struct {
 	bool initial_delete_on_close; /* Only set at NTCreateX if file was created. */
 	bool delete_on_close;
 	bool posix_open;
+	bool is_sparse;
 	struct smb_filename *fsp_name;
 
 	struct vfs_fsp_data *vfs_extension;

@@ -895,7 +895,7 @@ static int vfswrap_ftruncate(vfs_handle_struct *handle, files_struct *fsp, SMB_O
 
 	START_PROFILE(syscall_ftruncate);
 
-	if (lp_strict_allocate(SNUM(fsp->conn))) {
+	if (lp_strict_allocate(SNUM(fsp->conn)) && !fsp->is_sparse) {
 		result = strict_allocate_ftruncate(handle, fsp, len);
 		END_PROFILE(syscall_ftruncate);
 		return result;

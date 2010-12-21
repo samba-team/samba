@@ -2221,6 +2221,15 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		}
 	}
 
+	/* Determine sparse flag. */
+	if (posix_open) {
+		/* POSIX opens are sparse by default. */
+		fsp->is_sparse = true;
+	} else {
+		fsp->is_sparse = (file_existed &&
+			(existing_dos_attributes & FILE_ATTRIBUTE_SPARSE));
+	}
+
 	/*
 	 * Take care of inherited ACLs on created files - if default ACL not
 	 * selected.
