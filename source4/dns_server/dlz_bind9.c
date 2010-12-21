@@ -144,10 +144,26 @@ static bool b9_format(struct dlz_bind9_data *state,
 		*data = rec->data.ns;
 		break;
 
-	case DNS_TYPE_SOA:
+	case DNS_TYPE_SOA: {
+		const char *mname;
 		*type = "soa";
+
+		/* we need to fake the authoritative nameserver to
+		 * point at ourselves. This is now AD DNS servers
+		 * force clients to send updates to the right local DC
+		 */
+		mname = talloc_asprintf(mem_ctx, "%s.%s",
+					lpcfg_netbios_name(state->lp), lpcfg_dnsdomain(state->lp));
+		if (mname == NULL) {
+			return false;
+		}
+		mname = strlower_talloc(mem_ctx, mname);
+		if (mname == NULL) {
+			return false;
+		}
+
 		*data = talloc_asprintf(mem_ctx, "%s %s %u %u %u %u %u",
-					rec->data.soa.mname,
+					mname,
 					rec->data.soa.rname,
 					rec->data.soa.serial,
 					rec->data.soa.refresh,
@@ -155,6 +171,7 @@ static bool b9_format(struct dlz_bind9_data *state,
 					rec->data.soa.expire,
 					rec->data.soa.minimum);
 		break;
+	}
 
 	default:
 		state->log(ISC_LOG_ERROR, "samba b9_putrr: unhandled record type %u",
