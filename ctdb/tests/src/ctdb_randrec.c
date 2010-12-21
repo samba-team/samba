@@ -23,6 +23,7 @@
 #include "system/filesys.h"
 #include "popt.h"
 #include "cmdline.h"
+#include "ctdb_private.h"
 
 #include <sys/time.h>
 #include <time.h>
@@ -83,10 +84,50 @@ static void store_records(struct ctdb_context *ctdb, struct event_context *ev)
 		}
 
 		ret = ctdb_record_store(h, data);
-		talloc_free(h);
 		if (ret != 0) {
 			printf("Failed to store record\n");
 		}
+
+		if (data.dptr == NULL && data.dsize == 0) {
+			struct ctdb_control_schedule_for_deletion *dd;
+			TDB_DATA indata;
+			int32_t status;
+
+			indata.dsize = offsetof(struct ctdb_control_schedule_for_deletion, key) + key.dsize;
+			indata.dptr = talloc_zero_array(ctdb, uint8_t, indata.dsize);
+			if (indata.dptr == NULL) {
+				printf("out of memory\n");
+				exit(1);
+			}
+			dd = (struct ctdb_control_schedule_for_deletion *)(void *)indata.dptr;
+			dd->db_id = ctdb_db->db_id;
+			dd->hdr = *ctdb_header_from_record_handle(h);
+			dd->keylen = key.dsize;
+			memcpy(dd->key, key.dptr, key.dsize);
+
+			ret = ctdb_control(ctdb,
+					   CTDB_CURRENT_NODE,
+					   ctdb_db->db_id,
+					   CTDB_CONTROL_SCHEDULE_FOR_DELETION,
+					   0, /* flags */
+					   indata,
+					   NULL, /* mem_ctx */
+					   NULL, /* outdata */
+					   &status,
+					   NULL, /* timeout : NULL == wait forever */
+					   NULL); /* error message */
+
+			talloc_free(indata.dptr);
+
+			if (ret != 0 || status != 0) {
+				DEBUG(DEBUG_ERR, (__location__ " Error sending "
+						  "SCHEDULE_FOR_DELETION "
+						  "control.\n"));
+			}
+		}
+
+		talloc_free(h);
+
 		if (i % 1000 == 0) {
 			printf("%7.0f recs/second   %u total\r", 1000.0 / end_timer(), i);
 			fflush(stdout);
