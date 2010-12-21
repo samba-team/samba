@@ -57,6 +57,11 @@ struct dcesrv_endpoint {
 	struct dcesrv_iface_list *iface_list;
 };
 
+struct rpc_eps {
+	struct dcesrv_ep_iface *e;
+	uint32_t count;
+};
+
 struct dcesrv_endpoint *endpoint_table;
 
 /*
@@ -397,6 +402,7 @@ error_status_t _epm_Lookup(struct pipes_struct *p,
 			   struct epm_Lookup *r)
 {
 	struct policy_handle *entry_handle;
+	struct rpc_eps *eps;
 	TALLOC_CTX *tmp_ctx;
 	error_status_t rc;
 	uint32_t count = 0;
@@ -404,11 +410,6 @@ error_status_t _epm_Lookup(struct pipes_struct *p,
 	uint32_t i;
 	bool match = false;
 	bool ok;
-
-	struct rpc_eps {
-		struct dcesrv_ep_iface *e;
-		uint32_t count;
-	} *eps;
 
 	*r->out.num_ents = 0;
 	r->out.entries = NULL;
@@ -724,74 +725,239 @@ done:
 error_status_t _epm_Map(struct pipes_struct *p,
 			struct epm_Map *r)
 {
+	struct policy_handle *entry_handle;
 	enum dcerpc_transport_t transport;
-	struct ndr_syntax_id ndr_syntax;
-	struct dcesrv_ep_iface *eps;
+	struct ndr_syntax_id ifid;
 	struct epm_floor *floors;
-	uint32_t count, i;
+	struct rpc_eps *eps;
+	TALLOC_CTX *tmp_ctx;
+	error_status_t rc;
+	uint32_t count = 0;
+	uint32_t num_towers = 0;
+	uint32_t num_floors = 0;
+	uint32_t i;
+	bool ok;
 
-	count = build_ep_list(p->mem_ctx, endpoint_table, NULL, &eps);
-
-	ZERO_STRUCT(*r->out.entry_handle);
-	r->out.num_towers = talloc(p->mem_ctx, uint32_t);
-	if (r->out.num_towers == NULL) {
-		return EPMAPPER_STATUS_NO_MEMORY;
-	}
-
-	*r->out.num_towers = 1;
-	r->out.towers = talloc(p->mem_ctx, struct epm_twr_p_t);
-	if (r->out.towers == NULL) {
-		return EPMAPPER_STATUS_NO_MEMORY;
-	}
-
-	r->out.towers->twr = talloc(p->mem_ctx, struct epm_twr_t);
-	if (r->out.towers->twr == NULL) {
-		return EPMAPPER_STATUS_NO_MEMORY;
-	}
+	*r->out.num_towers = 0;
+	r->out.towers = NULL;
 
 	if (r->in.map_tower == NULL || r->in.max_towers == 0 ||
-			r->in.map_tower->tower.num_floors < 3) {
-		goto failed;
+	    r->in.map_tower->tower.num_floors < 3) {
+		return EPMAPPER_STATUS_NO_MORE_ENTRIES;
 	}
 
+	tmp_ctx = talloc_stackframe();
+	if (tmp_ctx == NULL) {
+		return EPMAPPER_STATUS_NO_MEMORY;
+	}
+
+	ZERO_STRUCTP(r->out.entry_handle);
+
+	DEBUG(3, ("_epm_Map: Trying to map max. %u towers.\n",
+		  r->in.max_towers));
+
+	/*
+	 * A tower has normally up to 6 floors
+	 *
+	 * +-----------------------------------------------------------------+
+	 * | Floor 1 | Provides the RPC interface identifier. (e.g. UUID for |
+	 * |         | netlogon)                                             |
+	 * +---------+-------------------------------------------------------+
+	 * | Floor 2 | Transfer syntax (NDR endcoded)                        |
+	 * +---------+-------------------------------------------------------+
+	 * | Floor 3 | RPC protocol identifier (ncacn_tcp_ip, ncacn_np, ...) |
+	 * +---------+-------------------------------------------------------+
+	 * | Floor 4 | Port address (e.g. TCP Port: 49156)                   |
+	 * +---------+-------------------------------------------------------+
+	 * | Floor 5 | Transport (e.g. IP:192.168.51.10)                     |
+	 * +---------+-------------------------------------------------------+
+	 * | Floor 6 | Routing                                               |
+	 * +---------+-------------------------------------------------------+
+	 */
+	num_floors = r->in.map_tower->tower.num_floors;
 	floors = r->in.map_tower->tower.floors;
 
-	dcerpc_floor_get_lhs_data(&r->in.map_tower->tower.floors[1], &ndr_syntax);
+	/* We accept NDR as the transfer syntax */
+	dcerpc_floor_get_lhs_data(&floors[1], &ifid);
 
 	if (floors[1].lhs.protocol != EPM_PROTOCOL_UUID ||
-			!GUID_equal(&ndr_syntax.uuid, &ndr_transfer_syntax.uuid) ||
-			ndr_syntax.if_version != ndr_transfer_syntax.if_version) {
-		goto failed;
+	    !GUID_equal(&ifid.uuid, &ndr_transfer_syntax.uuid) ||
+	    ifid.if_version != ndr_transfer_syntax.if_version) {
+		rc = EPMAPPER_STATUS_NO_MORE_ENTRIES;
+		goto done;
 	}
 
+	/* We only talk to sane transports */
 	transport = dcerpc_transport_by_tower(&r->in.map_tower->tower);
-	if (transport == -1) {
-		DEBUG(2, ("epm_Insert: Client requested unknown transport with levels: "));
+	if (transport == NCA_UNKNOWN) {
+		DEBUG(2, ("epm_Map: Client requested unknown transport with"
+			  "levels: "));
 		for (i = 2; i < r->in.map_tower->tower.num_floors; i++) {
 			DEBUG(2, ("%d, ", r->in.map_tower->tower.floors[i].lhs.protocol));
 		}
 		DEBUG(2, ("\n"));
-		goto failed;
+		rc = EPMAPPER_STATUS_NO_MORE_ENTRIES;
+		goto done;
+	}
+
+	if (r->in.entry_handle == NULL ||
+	    policy_handle_empty(r->in.entry_handle)) {
+		struct GUID *obj;
+
+		DEBUG(5, ("_epm_Map: No entry_handle found, creating it.\n"));
+
+		eps = talloc_zero(tmp_ctx, struct rpc_eps);
+		if (eps == NULL) {
+			rc = EPMAPPER_STATUS_NO_MEMORY;
+			goto done;
+		}
+
+		/*
+		 * *** ATTENTION ***
+		 * CDE 1.1 states:
+		 *
+		 * ept_map()
+		 *     Apply some algorithm (using the fields in the map_tower)
+		 *     to an endpoint map to produce a list of protocol towers.
+		 *
+		 * The following code is the mysterious "some algorithm"!
+		 */
+
+		/* Filter by object id if one was given. */
+		if (r->in.object == NULL || GUID_all_zero(r->in.object)) {
+			obj = NULL;
+		} else {
+			obj = r->in.object;
+		}
+
+		eps->count = build_ep_list(eps,
+					   endpoint_table,
+					   obj,
+					   &eps->e);
+		if (eps->count == 0) {
+			rc = EPMAPPER_STATUS_NO_MORE_ENTRIES;
+			goto done;
+		}
+
+		/* Filter out endpoints which match the interface. */
+		{
+			struct rpc_eps *teps;
+			uint32_t total = 0;
+
+			teps = talloc_zero(tmp_ctx, struct rpc_eps);
+			if (teps == NULL) {
+				rc = EPMAPPER_STATUS_NO_MEMORY;
+				goto done;
+			}
+
+			for (i = 0; i < eps->count; i++) {
+				if (data_blob_cmp(&r->in.map_tower->tower.floors[0].lhs.lhs_data,
+				                  &eps->e[i].ep.floors[0].lhs.lhs_data) != 0 ||
+				    transport != dcerpc_transport_by_tower(&eps->e[i].ep)) {
+					continue;
+				}
+
+				teps->e = talloc_realloc(tmp_ctx,
+							 teps->e,
+							 struct dcesrv_ep_iface,
+							 total + 1);
+				if (teps->e == NULL) {
+					return 0;
+				}
+
+				teps->e[total].ep.floors = talloc_move(teps, &eps->e[i].ep.floors);
+				teps->e[total].ep.num_floors = eps->e[i].ep.num_floors;
+				teps->e[total].name = talloc_move(teps, &eps->e[i].name);
+				teps->e[total].syntax_id = eps->e[i].syntax_id;
+
+				total++;
+			}
+
+			teps->count = total;
+			talloc_free(eps);
+			eps = teps;
+		}
+		/* end of "some algorithm" */
+
+		ok = create_policy_hnd(p, r->out.entry_handle, eps);
+		if (!ok) {
+			rc = EPMAPPER_STATUS_NO_MEMORY;
+			goto done;
+		}
+
+		ok = find_policy_by_hnd(p, r->out.entry_handle, (void **)(void*) &eps);
+		if (!ok) {
+			rc = EPMAPPER_STATUS_NO_MEMORY;
+			goto done;
+		}
+		entry_handle = r->out.entry_handle;
+	} else {
+		DEBUG(5, ("_epm_Map: Trying to find entry_handle.\n"));
+
+		ok = find_policy_by_hnd(p, r->in.entry_handle, (void **)(void*) &eps);
+		if (!ok) {
+			rc = EPMAPPER_STATUS_NO_MEMORY;
+			goto done;
+		}
+		entry_handle = r->in.entry_handle;
+	}
+
+	if (eps == NULL || eps->e == NULL) {
+		rc = EPMAPPER_STATUS_NO_MORE_ENTRIES;
+		goto done;
+	}
+
+	/* return the next N elements */
+	count = r->in.max_towers;
+	if (count > eps->count) {
+		count = eps->count;
+	}
+
+	if (count == 0) {
+		close_policy_hnd(p, entry_handle);
+		ZERO_STRUCTP(r->out.entry_handle);
+
+		rc = EPMAPPER_STATUS_NO_MORE_ENTRIES;
+		goto done;
+	}
+
+	r->out.towers = talloc_array(p->mem_ctx, struct epm_twr_p_t, count);
+	if (r->out.towers == NULL) {
+		rc = EPMAPPER_STATUS_NO_MEMORY;
+		goto done;
 	}
 
 	for (i = 0; i < count; i++) {
-		if (data_blob_cmp(&r->in.map_tower->tower.floors[0].lhs.lhs_data,
-					&eps[i].ep.floors[0].lhs.lhs_data) != 0 ||
-				transport != dcerpc_transport_by_tower(&eps[i].ep)) {
-			continue;
+		DEBUG(5, ("_epm_Map: Map tower for '%s'\n",
+			   eps->e[i].name));
+
+		r->out.towers[num_towers].twr = talloc(r->out.towers,
+						       struct epm_twr_t);
+		if (r->out.towers[num_towers].twr == NULL) {
+			rc = EPMAPPER_STATUS_NO_MEMORY;
+			goto done;
 		}
+		r->out.towers[num_towers].twr->tower.floors = talloc_move(r->out.towers[num_towers].twr, &eps->e[i].ep.floors);
+		r->out.towers[num_towers].twr->tower.num_floors = eps->e[i].ep.num_floors;
+		r->out.towers[num_towers].twr->tower_length = 0;
 
-		r->out.towers->twr->tower = eps[i].ep;
-		r->out.towers->twr->tower_length = 0;
-
-		return EPMAPPER_STATUS_OK;
+		num_towers++;
 	}
 
-failed:
-	*r->out.num_towers = 0;
-	r->out.towers->twr = NULL;
+	*r->out.num_towers = num_towers;
 
-	return EPMAPPER_STATUS_NO_MORE_ENTRIES;
+	eps->count -= count;
+	eps->e += count;
+	if (eps->count == 0) {
+		close_policy_hnd(p, entry_handle);
+		ZERO_STRUCTP(r->out.entry_handle);
+	}
+
+	rc = EPMAPPER_STATUS_OK;
+done:
+	talloc_free(tmp_ctx);
+
+	return rc;
 }
 
 /*
