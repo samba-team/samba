@@ -38,6 +38,7 @@ struct dlz_bind9_data {
 	struct tevent_context *ev_ctx;
 	struct loadparm_context *lp;
 	int *transaction_token;
+	uint32_t soa_serial;
 
 	/* helper functions from the dlz_dlopen driver */
 	void (*log)(int level, const char *fmt, ...);
@@ -161,6 +162,8 @@ static bool b9_format(struct dlz_bind9_data *state,
 		if (mname == NULL) {
 			return false;
 		}
+
+		state->soa_serial = rec->data.soa.serial;
 
 		*data = talloc_asprintf(mem_ctx, "%s %s %u %u %u %u %u",
 					mname,
@@ -1186,6 +1189,10 @@ _PUBLIC_ isc_result_t dlz_addrdataset(const char *name, const char *rdatastr, vo
 	if (rec == NULL) {
 		return ISC_R_NOMEMORY;
 	}
+
+	/* we're waiting on docs for this field */
+	rec->dwFlags = 0x0000f005;
+	rec->dwSerial = state->soa_serial;
 
 	if (!b9_parse(state, rdatastr, rec)) {
 		state->log(ISC_LOG_INFO, "samba_dlz: failed to parse rdataset '%s'", rdatastr);
