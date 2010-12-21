@@ -67,7 +67,7 @@ static int ctdb_ltdb_store_server(struct ctdb_db_context *ctdb_db,
 	int ret;
 	bool seqnum_suppressed = false;
 	bool keep = false;
-	uint32_t lmaster = ctdb_lmaster(ctdb_db->ctdb, &key);
+	uint32_t lmaster;
 
 	if (ctdb->flags & CTDB_FLAG_TORTURE) {
 		struct ctdb_ltdb_header *h2;
@@ -79,6 +79,17 @@ static int ctdb_ltdb_store_server(struct ctdb_db_context *ctdb_db,
 		}
 		if (rec.dptr) free(rec.dptr);
 	}
+
+	if (ctdb->vnn_map == NULL) {
+		/*
+		 * Called from a client: always store the record
+		 * Also don't call ctdb_lmaster since it uses the vnn_map!
+		 */
+		keep = true;
+		goto store;
+	}
+
+	lmaster = ctdb_lmaster(ctdb_db->ctdb, &key);
 
 	/*
 	 * If we migrate an empty record off to another node
@@ -116,6 +127,7 @@ static int ctdb_ltdb_store_server(struct ctdb_db_context *ctdb_db,
 		keep = true;
 	}
 
+store:
 	/*
 	 * The VACUUM_MIGRATED flag is only set temporarily for
 	 * the above logic when the record was retrieved by a
