@@ -120,8 +120,8 @@ _PUBLIC_ NTSTATUS auth_generate_session_info(TALLOC_CTX *mem_ctx,
 		
 		account_sid_blob = data_blob_string_const(account_sid_dn);
 		
-		nt_status = authsam_expand_nested_groups(sam_ctx, &account_sid_blob, true, filter,
-							 tmp_ctx, &groupSIDs, &num_groupSIDs);
+		nt_status = dsdb_expand_nested_groups(sam_ctx, &account_sid_blob, true, filter,
+						      tmp_ctx, &groupSIDs, &num_groupSIDs);
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			talloc_free(tmp_ctx);
 			return nt_status;
@@ -144,8 +144,8 @@ _PUBLIC_ NTSTATUS auth_generate_session_info(TALLOC_CTX *mem_ctx,
 		
 		primary_group_blob = data_blob_string_const(primary_group_dn);
 		
-		nt_status = authsam_expand_nested_groups(sam_ctx, &primary_group_blob, true, filter,
-							 tmp_ctx, &groupSIDs, &num_groupSIDs);
+		nt_status = dsdb_expand_nested_groups(sam_ctx, &primary_group_blob, true, filter,
+						      tmp_ctx, &groupSIDs, &num_groupSIDs);
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			talloc_free(tmp_ctx);
 			return nt_status;
@@ -168,8 +168,8 @@ _PUBLIC_ NTSTATUS auth_generate_session_info(TALLOC_CTX *mem_ctx,
 			/* This function takes in memberOf values and expands
 			 * them, as long as they meet the filter - so only
 			 * builtin groups */
-			nt_status = authsam_expand_nested_groups(sam_ctx, &group_blob, true, filter,
-								 tmp_ctx, &groupSIDs, &num_groupSIDs);
+			nt_status = dsdb_expand_nested_groups(sam_ctx, &group_blob, true, filter,
+							      tmp_ctx, &groupSIDs, &num_groupSIDs);
 			if (!NT_STATUS_IS_OK(nt_status)) {
 				talloc_free(tmp_ctx);
 				return nt_status;
