@@ -52,10 +52,23 @@ case "$1" in
 	    exit 0
 	fi
 
-	if ! ctdb_check_tcp_ports 80 ; then
-	    echo "HTTPD is not running. Trying to restart HTTPD."
-	    ctdb_service_start
-	    exit 1
+	if ctdb_check_tcp_ports 80 >/dev/null 2>/dev/null ; then
+	    ctdb_counter_init
+	else
+	    ctdb_counter_incr
+
+	    ctdb_check_counter_equal 5 || {
+		echo "HTTPD is not running. Trying to restart HTTPD."
+		ctdb_service_stop
+		ctdb_service_start
+		exit 0
+	    }
+            ctdb_check_counter_limit 10 quiet|| {
+		echo "HTTPD is not running. Trying to restart HTTPD."
+		ctdb_service_stop
+		ctdb_service_start
+		exit 1
+	    }
 	fi
 	;;
 
