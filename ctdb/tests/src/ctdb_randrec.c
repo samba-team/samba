@@ -142,6 +142,11 @@ int main(int argc, const char *argv[])
 
 	ctdb = ctdb_cmdline_client(ev);
 
+	if (ctdb == NULL) {
+		printf("failed to connect to daemon\n");
+		exit(1);
+	}
+
 	/* attach to a specific database */
 	ctdb_db = ctdb_attach(ctdb, "test.tdb", false, 0);
 	if (!ctdb_db) {
