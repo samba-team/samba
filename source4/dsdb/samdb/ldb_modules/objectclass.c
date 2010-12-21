@@ -565,37 +565,6 @@ static int objectclass_do_add(struct oc_context *ac)
 		for (current = sorted; current; current = current->next) {
 			const char *objectclass_name = current->objectclass->lDAPDisplayName;
 
-			/* LSA-specific objectclasses per default not
-			 * allowed to be created over LDAP, so we need
-			 * to tell if this connection is LDAP (ie
-			 * marked as untrusted), and if the client is
-			 * adding these particular objectClass values
-			 * we must reject */
-
-			/* Hongwei Sun from Microsoft explians:
-			   The constraint in 3.1.1.5.2.2 MS-ADTS means that the TDO
-			   cannot be added through LDAP interface, instead it can only be
-			   created through LSA Policy API.  This is also explained in
-			   7.1.6.9.7 MS-ADTS as follows:
-
-			   "Despite being replicated normally between peer DCs in a domain,
-			   the process of creating or manipulating TDOs is specifically
-			   restricted to the LSA Policy APIs, as detailed in [MS-LSAD] section
-			   3.1.1.5. Unlike other objects in the DS, TDOs may not be created or
-			   manipulated by client machines over the LDAPv3 transport."
-			*/
-
-			if (ldb_req_is_untrusted(ac->req) &&
-			    ((strcasecmp(objectclass_name, "secret") == 0) ||
-			     (strcasecmp(objectclass_name, "trustedDomain") == 0))) {
-				ldb_asprintf_errstring(ldb,
-						       "objectclass: object class '%s' is LSA-specific, rejecting creation of '%s' over LDAP!",
-						       objectclass_name,
-						       ldb_dn_get_linearized(msg->dn));
-				talloc_free(mem_ctx);
-				return LDB_ERR_UNWILLING_TO_PERFORM;
-			}
-
 			ret = ldb_msg_add_string(msg, "objectClass", objectclass_name);
 			if (ret != LDB_SUCCESS) {
 				ldb_set_errstring(ldb,

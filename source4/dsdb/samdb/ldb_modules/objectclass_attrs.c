@@ -217,12 +217,40 @@ static int attr_handler2(struct oc_context *ac)
 		return ldb_operr(ldb);
 	}
 
-	/* We rely here on the preceding "objectclass" LDB module which did
+	/* We rely here on the preceeding "objectclass" LDB module which did
 	 * already fix up the objectclass list (inheritance, order...). */
 	oc_element = ldb_msg_find_element(ac->search_res->message,
 					  "objectClass");
 	if (oc_element == NULL) {
 		return ldb_operr(ldb);
+	}
+
+	/* LSA-specific object classes are not allowed to be created over LDAP,
+	 * so we need to tell if this connection is internal (trusted) or not
+	 * (untrusted).
+	 *
+	 * Hongwei Sun from Microsoft explains:
+	 * The constraint in 3.1.1.5.2.2 MS-ADTS means that LSA objects cannot
+	 * be added or modified through the LDAP interface, instead they can
+	 * only be handled through LSA Policy API.  This is also explained in
+	 * 7.1.6.9.7 MS-ADTS as follows:
+	 * "Despite being replicated normally between peer DCs in a domain,
+	 * the process of creating or manipulating TDOs is specifically
+	 * restricted to the LSA Policy APIs, as detailed in [MS-LSAD] section
+	 * 3.1.1.5. Unlike other objects in the DS, TDOs may not be created or
+	 *  manipulated by client machines over the LDAPv3 transport."
+	 */
+	if (ldb_req_is_untrusted(ac->req)) {
+		for (i = 0; i < oc_element->num_values; i++) {
+			if ((strcmp((char *)oc_element->values[i].data,
+				    "secret") == 0) ||
+			    (strcmp((char *)oc_element->values[i].data,
+				    "trustedDomain") == 0)) {
+				ldb_asprintf_errstring(ldb, "objectclass_attrs: LSA objectclasses (entry '%s') cannot be created or changed over LDAP!",
+						       ldb_dn_get_linearized(ac->search_res->message->dn));
+				return LDB_ERR_UNWILLING_TO_PERFORM;
+			}
+		}
 	}
 
 	must_contain = dsdb_full_attribute_list(ac, ac->schema, oc_element,
