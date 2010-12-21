@@ -1385,4 +1385,17 @@ int ctdb_deferred_drop_all_ips(struct ctdb_context *ctdb);
 
 int ctdb_process_deferred_attach(struct ctdb_context *ctdb);
 
+/**
+ * structure to pass to a schedule_for_deletion_control
+ */
+struct ctdb_control_schedule_for_deletion {
+	uint32_t db_id;
+	struct ctdb_ltdb_header hdr;
+	uint32_t keylen;
+	uint8_t key[1]; /* key[] */
+};
+
+int32_t ctdb_control_schedule_for_deletion(struct ctdb_context *ctdb,
+					   TDB_DATA indata);
+
 #endif

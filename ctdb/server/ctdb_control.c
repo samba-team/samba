@@ -604,6 +604,15 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		CHECK_CONTROL_DATA_SIZE(0);
 		return ctdb_control_get_stat_history(ctdb, c, outdata);
 
+	case CTDB_CONTROL_SCHEDULE_FOR_DELETION: {
+		struct ctdb_control_schedule_for_deletion *d;
+		size_t size = offsetof(struct ctdb_control_schedule_for_deletion, key);
+		CHECK_CONTROL_MIN_DATA_SIZE(size);
+		d = (struct ctdb_control_schedule_for_deletion *)indata.dptr;
+		size += d->keylen;
+		CHECK_CONTROL_DATA_SIZE(size);
+		return ctdb_control_schedule_for_deletion(ctdb, indata);
+	}
 	default:
 		DEBUG(DEBUG_CRIT,(__location__ " Unknown CTDB control opcode %u\n", opcode));
 		return -1;
