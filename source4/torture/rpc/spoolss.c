@@ -4592,6 +4592,11 @@ static const char *driver_winreg_date(TALLOC_CTX *mem_ctx, NTTIME nt)
 {
 	time_t t;
 	struct tm *tm;
+
+	if (nt == 0) {
+		return talloc_strdup(mem_ctx, "01/01/1601");
+	}
+
 	t = nt_time_to_unix(nt);
 	tm = localtime(&t);
 
