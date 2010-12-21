@@ -9,7 +9,7 @@
      ** NOTE! The following LGPL license applies to the tdb
      ** library. This does NOT imply that all of Samba is released
      ** under the LGPL
-   
+
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
    License as published by the Free Software Foundation; either
@@ -41,7 +41,7 @@ typedef struct {
 	bool closed;
 } PyTdbObject;
 
-extern PyTypeObject PyTdb;
+staticforward PyTypeObject PyTdb;
 
 static void PyErr_SetTDBError(TDB_CONTEXT *tdb)
 {
@@ -538,7 +538,7 @@ static PyMappingMethods tdb_object_mapping = {
 	.mp_subscript = (binaryfunc)obj_getitem,
 	.mp_ass_subscript = (objobjargproc)obj_setitem,
 };
-PyTypeObject PyTdb = {
+static PyTypeObject PyTdb = {
 	.tp_name = "Tdb",
 	.tp_basicsize = sizeof(PyTdbObject),
 	.tp_methods = tdb_object_methods,
