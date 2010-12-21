@@ -1,6 +1,7 @@
 /*
    ldb database library
 
+   Copyright (C) Andrew Bartlett <abartlet@samba.org> 2001-2010
    Copyright (C) Andrew Tridgell 2005
    Copyright (C) Simo Sorce 2006-2008
    Copyright (C) Matthias Dieter Wallnöfer 2009
@@ -129,60 +130,131 @@ static int construct_token_groups(struct ldb_module *module,
 				  struct ldb_message *msg, enum ldb_scope scope)
 {
 	struct ldb_context *ldb = ldb_module_get_ctx(module);;
-	struct auth_context *auth_context;
-	struct auth_serversupplied_info *server_info;
-	struct auth_session_info *session_info;
 	TALLOC_CTX *tmp_ctx = talloc_new(msg);
-	uint32_t i;
+	unsigned int i;
 	int ret;
+	const char *filter;
 
 	NTSTATUS status;
+
+	struct dom_sid *primary_group_sid;
+	const char *primary_group_string;
+	const char *primary_group_dn;
+	DATA_BLOB primary_group_blob;
+
+	struct dom_sid *account_sid;
+	const char *account_sid_string;
+	const char *account_sid_dn;
+	DATA_BLOB account_sid_blob;
+	struct dom_sid **groupSIDs = NULL;
+	unsigned int num_groupSIDs = 0;
+
+	struct dom_sid *domain_sid;
 
 	if (scope != LDB_SCOPE_BASE) {
 		ldb_set_errstring(ldb, "Cannot provide tokenGroups attribute, this is not a BASE search");
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	status = auth_context_create_from_ldb(tmp_ctx, ldb, &auth_context);
-	if (NT_STATUS_EQUAL(status, NT_STATUS_NO_MEMORY)) {
-		talloc_free(tmp_ctx);
-		return ldb_module_oom(module);
-	} else if (!NT_STATUS_IS_OK(status)) {
-		ldb_set_errstring(ldb, "Cannot provide tokenGroups attribute, could not create authContext");
-		talloc_free(tmp_ctx);
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
-	status = auth_get_server_info_principal(tmp_ctx, auth_context, NULL, msg->dn, &server_info);
-	if (NT_STATUS_EQUAL(status, NT_STATUS_NO_MEMORY)) {
-		talloc_free(tmp_ctx);
-		return ldb_module_oom(module);
-	} else if (NT_STATUS_EQUAL(status, NT_STATUS_NO_SUCH_USER)) {
-		/* Not a user, we have no tokenGroups */
+	/* If it's not a user, it won't have a primaryGroupID */
+	if (ldb_msg_find_element(msg, "primaryGroupID") == NULL) {
 		talloc_free(tmp_ctx);
 		return LDB_SUCCESS;
+	}
+
+	/* Ensure it has an objectSID too */
+	account_sid = samdb_result_dom_sid(tmp_ctx, msg, "objectSid");
+	if (account_sid == NULL) {
+		talloc_free(tmp_ctx);
+		return LDB_SUCCESS;
+	}
+
+	status = dom_sid_split_rid(tmp_ctx, account_sid, &domain_sid, NULL);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_INVALID_PARAMETER)) {
+		talloc_free(tmp_ctx);
+		return LDB_ERR_INVALID_ATTRIBUTE_SYNTAX;
 	} else if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(tmp_ctx);
-		ldb_asprintf_errstring(ldb, "Cannot provide tokenGroups attribute: auth_get_server_info_principal failed: %s", nt_errstr(status));
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	status = auth_generate_session_info(tmp_ctx, auth_context->lp_ctx, ldb, server_info, 0, &session_info);
-	if (NT_STATUS_EQUAL(status, NT_STATUS_NO_MEMORY)) {
+	primary_group_sid = dom_sid_add_rid(tmp_ctx,
+					    domain_sid,
+					    ldb_msg_find_attr_as_uint(msg, "primaryGroupID", ~0));
+	if (!primary_group_sid) {
 		talloc_free(tmp_ctx);
-		return ldb_module_oom(module);
-	} else if (!NT_STATUS_IS_OK(status)) {
+		return ldb_oom(ldb);
+	}
+
+	/* Filter out builtin groups from this token.  We will search
+	 * for builtin groups later, and not include them in the
+	 * tokenGroups (and therefore the PAC or SamLogon validation
+	 * info) */
+	filter = talloc_asprintf(tmp_ctx, "(&(objectClass=group)(!(groupType:1.2.840.113556.1.4.803:=%u))(groupType:1.2.840.113556.1.4.803:=%u))", GROUP_TYPE_BUILTIN_LOCAL_GROUP, GROUP_TYPE_SECURITY_ENABLED);
+	if (!filter) {
 		talloc_free(tmp_ctx);
-		ldb_asprintf_errstring(ldb, "Cannot provide tokenGroups attribute: auth_generate_session_info failed: %s", nt_errstr(status));
+		return ldb_oom(ldb);
+	}
+
+	primary_group_string = dom_sid_string(tmp_ctx, primary_group_sid);
+	if (!primary_group_string) {
+		talloc_free(tmp_ctx);
+		return ldb_oom(ldb);
+	}
+
+	primary_group_dn = talloc_asprintf(tmp_ctx, "<SID=%s>", primary_group_string);
+	if (!primary_group_dn) {
+		talloc_free(tmp_ctx);
+		return ldb_oom(ldb);
+	}
+
+	primary_group_blob = data_blob_string_const(primary_group_dn);
+
+	account_sid_string = dom_sid_string(tmp_ctx, account_sid);
+	if (!account_sid_string) {
+		talloc_free(tmp_ctx);
+		return ldb_oom(ldb);
+	}
+
+	account_sid_dn = talloc_asprintf(tmp_ctx, "<SID=%s>", account_sid_string);
+	if (!account_sid_dn) {
+		talloc_free(tmp_ctx);
+		return ldb_oom(ldb);
+	}
+
+	account_sid_blob = data_blob_string_const(account_sid_dn);
+
+	status = dsdb_expand_nested_groups(ldb, &account_sid_blob,
+					   true, /* We don't want to add the object's SID itself,
+						    it's not returend in this attribute */
+					   filter,
+					   tmp_ctx, &groupSIDs, &num_groupSIDs);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		ldb_asprintf_errstring(ldb, "Failed to construct tokenGroups: expanding groups of SID %s failed: %s",
+				       account_sid_string, nt_errstr(status));
+		talloc_free(tmp_ctx);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	/* We start at 1, as the first SID is the user's SID, not included in the tokenGroups */
-	for (i = 1; i < session_info->security_token->num_sids; i++) {
-		ret = samdb_msg_add_dom_sid(ldb, msg, msg,
-					    "tokenGroups",
-					    &session_info->security_token->sids[i]);
-		if (ret != LDB_SUCCESS) {
+	/* Expands the primary group - this function takes in
+	 * memberOf-like values, so we fake one up with the
+	 * <SID=S-...> format of DN and then let it expand
+	 * them, as long as they meet the filter - so only
+	 * domain groups, not builtin groups
+	 */
+	status = dsdb_expand_nested_groups(ldb, &primary_group_blob, false, filter,
+					   tmp_ctx, &groupSIDs, &num_groupSIDs);
+	if (!NT_STATUS_IS_OK(status)) {
+		ldb_asprintf_errstring(ldb, "Failed to construct tokenGroups: expanding groups of SID %s failed: %s",
+				       account_sid_string, nt_errstr(status));
+		talloc_free(tmp_ctx);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	for (i=0; i < num_groupSIDs; i++) {
+		ret = samdb_msg_add_dom_sid(ldb, msg, msg, "tokenGroups", groupSIDs[i]);
+		if (ret) {
 			talloc_free(tmp_ctx);
 			return ret;
 		}
@@ -542,7 +614,7 @@ static const struct {
 	{ "structuralObjectClass", NULL, NULL , NULL },
 	{ "canonicalName", NULL, NULL , construct_canonical_name },
 	{ "primaryGroupToken", "objectClass", "objectSid", construct_primary_group_token },
-	{ "tokenGroups", "objectClass", NULL, construct_token_groups },
+	{ "tokenGroups", "primaryGroupID", "objectSid", construct_token_groups },
 	{ "parentGUID", NULL, NULL, construct_parent_guid },
 	{ "subSchemaSubEntry", NULL, NULL, construct_subschema_subentry },
 	{ "msDS-isRODC", "objectClass", "objectCategory", construct_msds_isrodc },
