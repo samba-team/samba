@@ -695,6 +695,41 @@ int sys_posix_fallocate(int fd, SMB_OFF_T offset, SMB_OFF_T len)
 }
 
 /*******************************************************************
+ An fallocate() function that matches the semantics of the Linux one.
+********************************************************************/
+
+#ifdef HAVE_LINUX_FALLOC_H
+#include <linux/falloc.h>
+#endif
+
+int sys_fallocate(int fd, enum vfs_fallocate_mode mode, SMB_OFF_T offset, SMB_OFF_T len)
+{
+#if defined(HAVE_LINUX_FALLOCATE64) || defined(HAVE_LINUX_FALLOCATE)
+	int lmode;
+	switch (mode) {
+	case VFS_FALLOCATE_EXTEND_SIZE:
+		lmode = 0;
+		break;
+	case VFS_FALLOCATE_KEEP_SIZE:
+		lmode = FALLOC_FL_KEEP_SIZE;
+		break;
+	default:
+		errno = EINVAL;
+		return -1;
+	}
+#if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_OFF64_T) && defined(HAVE_LINUX_FALLOCATE64)
+	return fallocate64(fd, lmode, offset, len);
+#elif defined(HAVE_LINUX_FALLOCATE)
+	return fallocate(fd, lmode, offset, len);
+#endif
+#else
+	/* TODO - plumb in fallocate from other filesysetms like VXFS etc. JRA. */
+	errno = ENOSYS;
+	return -1;
+#endif
+}
+
+/*******************************************************************
  An ftruncate() wrapper that will deal with 64 bit filesizes.
 ********************************************************************/
 
