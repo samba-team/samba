@@ -209,6 +209,11 @@ int main(int argc, const char *argv[])
 
 	ctdb = ctdb_cmdline_client(ev);
 
+	if (ctdb == NULL) {
+		printf("failed to connect to ctdb daemon.\n");
+		exit(1);
+	}
+
 	ctdb_client_set_message_handler(ctdb, CTDB_SRVID_RECONFIGURE, reconfigure_handler, 
 				 &cluster_ready);
 
