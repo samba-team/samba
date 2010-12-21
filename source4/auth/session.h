@@ -30,7 +30,7 @@ struct auth_session_info {
 
 #include "librpc/gen_ndr/netlogon.h"
 
-struct tevent_context;
+struct ldb_context;
 /* Create a security token for a session SYSTEM (the most
  * trusted/prvilaged account), including the local machine account as
  * the off-host credentials */
