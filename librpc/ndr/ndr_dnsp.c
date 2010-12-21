@@ -36,13 +36,15 @@ _PUBLIC_ void ndr_print_dnsp_name(struct ndr_print *ndr, const char *name,
 */
 _PUBLIC_ enum ndr_err_code ndr_pull_dnsp_name(struct ndr_pull *ndr, int ndr_flags, const char **name)
 {
-	uint8_t len, count, final;
+	uint8_t len, count, termination;
 	int i;
-	uint32_t total_len;
+	uint32_t total_len, raw_offset;
 	char *ret;
 
 	NDR_CHECK(ndr_pull_uint8(ndr, ndr_flags, &len));
 	NDR_CHECK(ndr_pull_uint8(ndr, ndr_flags, &count));
+
+	raw_offset = ndr->offset;
 
 	ret = talloc_strdup(ndr->current_mem_ctx, "");
 	if (!ret) {
@@ -68,7 +70,19 @@ _PUBLIC_ enum ndr_err_code ndr_pull_dnsp_name(struct ndr_pull *ndr, int ndr_flag
 		ret[newlen-1] = 0;
 		total_len = newlen;
 	}
-	NDR_CHECK(ndr_pull_uint8(ndr, ndr_flags, &final));
+	NDR_CHECK(ndr_pull_uint8(ndr, ndr_flags, &termination));
+	if (termination != 0) {
+		return ndr_pull_error(ndr, NDR_ERR_ALLOC, "Failed to pull dnsp - not NUL terminated");
+	}
+	if (ndr->offset > raw_offset + len) {
+		return ndr_pull_error(ndr, NDR_ERR_ALLOC, "Failed to pull dnsp - overrun by %u bytes",
+				      ndr->offset - (raw_offset + len));
+	}
+	/* there could be additional pad bytes */
+	while (ndr->offset < raw_offset + len) {
+		uint8_t pad;
+		NDR_CHECK(ndr_pull_uint8(ndr, ndr_flags, &pad));
+	}
 	(*name) = ret;
 	return NDR_ERR_SUCCESS;
 }
@@ -81,7 +95,7 @@ enum ndr_err_code ndr_push_dnsp_name(struct ndr_push *ndr, int ndr_flags, const 
 	for (count=i=0; name[i]; i++) {
 		if (name[i] == '.') count++;
 	}
-	total_len = strlen(name) + 1;
+	total_len = strlen(name) + 1 + 1;
 	if (total_len > 255 || count > 255) {
 		return ndr_push_error(ndr, NDR_ERR_BUFSIZE,
 				      "dns_name of length %d larger than 255", total_len);
