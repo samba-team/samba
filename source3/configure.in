@@ -741,6 +741,7 @@ AC_CHECK_HEADERS(sys/syslog.h syslog.h)
 AC_CHECK_HEADERS(langinfo.h locale.h)
 AC_CHECK_HEADERS(xfs/libxfs.h)
 AC_CHECK_HEADERS(netgroup.h)
+AC_CHECK_HEADERS(linux/falloc.h)
 
 AC_CHECK_HEADERS(rpcsvc/yp_prot.h,,,[[
 #if HAVE_RPC_RPC_H
@@ -1095,6 +1096,7 @@ AC_CHECK_FUNCS(sigprocmask sigblock sigaction sigset innetgr setnetgrent getnetg
 AC_CHECK_FUNCS(initgroups select poll rdchk getgrnam getgrent pathconf)
 AC_CHECK_FUNCS(setpriv setgidx setuidx setgroups sysconf stat64 fstat64)
 AC_CHECK_FUNCS(lstat64 fopen64 atexit grantpt lseek64 ftruncate64 posix_fallocate posix_fallocate64)
+AC_CHECK_FUNCS(fallocate fallocate64)
 AC_CHECK_FUNCS(fseek64 fseeko64 ftell64 ftello64 setluid getpwanam)
 AC_CHECK_FUNCS(opendir64 readdir64 seekdir64 telldir64 rewinddir64 closedir64)
 AC_CHECK_FUNCS(getpwent_r)
@@ -2563,6 +2565,39 @@ fi
 fi
 # end utmp details
 
+AC_CACHE_CHECK([for linux fallocate],samba_cv_HAVE_LINUX_FALLOCATE,[
+AC_TRY_COMPILE([
+#if defined(HAVE_UNISTD_H)
+#include <unistd.h>
+#endif
+#include <sys/types.h>
+#define _GNU_SOURCE
+#include <fcntl.h>
+#if defined(HAVE_LINUX_FALLOC_H)
+#include <linux/falloc.h>
+#endif],
+[int ret = fallocate(0, FALLOC_FL_KEEP_SIZE, 0, 10);],
+samba_cv_HAVE_LINUX_FALLOCATE=yes,samba_cv_HAVE_LINUX_FALLOCATE=no)])
+if test x"$samba_cv_HAVE_LINUX_FALLOCATE" = x"yes" && test x"$ac_cv_func_fallocate" = x"yes"; then
+    AC_DEFINE(HAVE_LINUX_FALLOCATE,1,[Whether the Linux 'fallocate' function is available])
+fi
+
+AC_CACHE_CHECK([for linux fallocate64],samba_cv_HAVE_LINUX_FALLOCATE64,[
+AC_TRY_COMPILE([
+#if defined(HAVE_UNISTD_H)
+#include <unistd.h>
+#endif
+#include <sys/types.h>
+#define _GNU_SOURCE
+#include <fcntl.h>
+#if defined(HAVE_LINUX_FALLOC_H)
+#include <linux/falloc.h>
+#endif],
+[int ret = fallocate64(0, FALLOC_FL_KEEP_SIZE, 0, 10);],
+samba_cv_HAVE_LINUX_FALLOCATE64=yes,samba_cv_HAVE_LINUX_FALLOCATE64=no)])
+if test x"$samba_cv_HAVE_LINUX_FALLOCATE64" = x"yes" && test x"$ac_cv_func_fallocate64" = x"yes"; then
+    AC_DEFINE(HAVE_LINUX_FALLOCATE64,1,[Whether the Linux 'fallocate64' function is available])
+fi
 
 ICONV_LOOK_DIRS="/usr /usr/local /sw /opt"
 AC_ARG_WITH(libiconv,

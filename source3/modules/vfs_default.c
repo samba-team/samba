@@ -965,9 +965,10 @@ static int vfswrap_fallocate(vfs_handle_struct *handle,
 	START_PROFILE(syscall_fallocate);
 	if (mode == VFS_FALLOCATE_EXTEND_SIZE) {
 		result = sys_posix_fallocate(fsp->fh->fd, offset, len);
+	} else if (mode == VFS_FALLOCATE_KEEP_SIZE) {
+		result = sys_fallocate(fsp->fh->fd, mode, offset, len);
 	} else {
-		/* TODO - implement call into Linux fallocate call. */
-		errno = ENOSYS;
+		errno = EINVAL;
 		result = -1;
 	}
 	END_PROFILE(syscall_fallocate);
