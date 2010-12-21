@@ -57,7 +57,7 @@ extern PyTypeObject PyLdbMessage;
 extern PyTypeObject PyLdbModule;
 extern PyTypeObject PyLdbDn;
 extern PyTypeObject PyLdb;
-extern PyTypeObject PyLdbMessageElement;
+staticforward PyTypeObject PyLdbMessageElement;
 extern PyTypeObject PyLdbTree;
 
 static PyObject *PyLdb_FromLdbContext(struct ldb_context *ldb_ctx);
@@ -649,23 +649,23 @@ static PyObject *py_ldb_modify(PyLdbObject *self, PyObject *args)
 		return NULL;
 	}
 
-        /* do request and autostart a transaction */
+	/* do request and autostart a transaction */
 	/* Then let's LDB handle the message error in case of pb as they are meaningful */
 
 	ret = ldb_transaction_start(ldb_ctx);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(mem_ctx);
 		PyErr_LDB_ERROR_IS_ERR_RAISE(PyExc_LdbError, ret, ldb_ctx);
-        }
+	}
 
-        ret = ldb_request(ldb_ctx, req);
-        if (ret == LDB_SUCCESS) {
-                ret = ldb_wait(req->handle, LDB_WAIT_ALL);
-        }
+	ret = ldb_request(ldb_ctx, req);
+	if (ret == LDB_SUCCESS) {
+			ret = ldb_wait(req->handle, LDB_WAIT_ALL);
+	}
 
 	if (ret == LDB_SUCCESS) {
-                ret = ldb_transaction_commit(ldb_ctx);
-        } else {
+		ret = ldb_transaction_commit(ldb_ctx);
+	} else {
 		ldb_transaction_cancel(ldb_ctx);
 		if (ldb_ctx->err_string == NULL) {
 			/* no error string was setup by the backend */
@@ -782,15 +782,15 @@ static PyObject *py_ldb_add(PyLdbObject *self, PyObject *args)
 	}
 
 	ret = ldb_msg_sanity_check(ldb_ctx, msg);
-        if (ret != LDB_SUCCESS) {
+	if (ret != LDB_SUCCESS) {
 		PyErr_LDB_ERROR_IS_ERR_RAISE(PyExc_LdbError, ret, ldb_ctx);
 		talloc_free(mem_ctx);
 		return NULL;
-        }
+	}
 
-        ret = ldb_build_add_req(&req, ldb_ctx, mem_ctx, msg, parsed_controls,
+	ret = ldb_build_add_req(&req, ldb_ctx, mem_ctx, msg, parsed_controls,
 				NULL, ldb_op_default_callback, NULL);
-        if (ret != LDB_SUCCESS) {
+	if (ret != LDB_SUCCESS) {
 		PyErr_SetString(PyExc_TypeError, "failed to build request");
 		talloc_free(mem_ctx);
 		return NULL;
@@ -799,21 +799,21 @@ static PyObject *py_ldb_add(PyLdbObject *self, PyObject *args)
         /* do request and autostart a transaction */
 	/* Then let's LDB handle the message error in case of pb as they are meaningful */
 
-        ret = ldb_transaction_start(ldb_ctx);
-        if (ret != LDB_SUCCESS) {
+	ret = ldb_transaction_start(ldb_ctx);
+	if (ret != LDB_SUCCESS) {
 		talloc_free(mem_ctx);
 		PyErr_LDB_ERROR_IS_ERR_RAISE(PyExc_LdbError, ret, ldb_ctx);
-        }
+	}
 
-        ret = ldb_request(ldb_ctx, req);
-        if (ret == LDB_SUCCESS) {
-                ret = ldb_wait(req->handle, LDB_WAIT_ALL);
-        } 
+	ret = ldb_request(ldb_ctx, req);
+	if (ret == LDB_SUCCESS) {
+			ret = ldb_wait(req->handle, LDB_WAIT_ALL);
+	} 
 
 	if (ret == LDB_SUCCESS) {
-                ret = ldb_transaction_commit(ldb_ctx);
-        } else {
-        	ldb_transaction_cancel(ldb_ctx);
+			ret = ldb_transaction_commit(ldb_ctx);
+	} else {
+		ldb_transaction_cancel(ldb_ctx);
 		if (ldb_ctx->err_string == NULL) {
 			/* no error string was setup by the backend */
 			ldb_asprintf_errstring(ldb_ctx, "%s (%d)", ldb_strerror(ret), ret);
@@ -1978,7 +1978,7 @@ static PyObject *py_ldb_msg_element_str(PyLdbMessageElementObject *self)
 
 	if (el->num_values == 1)
 		return PyString_FromStringAndSize((char *)el->values[0].data, el->values[0].length);
-	else 
+	else
 		Py_RETURN_NONE;
 }
 
@@ -1988,7 +1988,7 @@ static void py_ldb_msg_element_dealloc(PyLdbMessageElementObject *self)
 	self->ob_type->tp_free(self);
 }
 
-PyTypeObject PyLdbMessageElement = {
+static PyTypeObject PyLdbMessageElement = {
 	.tp_name = "ldb.MessageElement",
 	.tp_basicsize = sizeof(PyLdbMessageElementObject),
 	.tp_dealloc = (destructor)py_ldb_msg_element_dealloc,
@@ -2127,16 +2127,56 @@ static PyObject *py_ldb_msg_items(PyLdbMessageObject *self)
 	return l;
 }
 
-static PyMethodDef py_ldb_msg_methods[] = { 
+static PyObject *py_ldb_msg_elements(PyLdbMessageObject *self)
+{
+	struct ldb_message *msg = PyLdbMessage_AsMessage(self);
+	Py_ssize_t i = 0;
+	PyObject *l = PyList_New(msg->num_elements);
+	for (i = 0; i < msg->num_elements; i++) {
+		PyList_SetItem(l, i, PyLdbMessageElement_FromMessageElement(&msg->elements[i], msg->elements));
+	}
+	return l;
+}
+
+static PyObject *py_ldb_msg_add(PyLdbMessageObject *self, PyObject *args)
+{
+	struct ldb_message *msg = PyLdbMessage_AsMessage(self);
+	PyObject *py_element;
+	int flags, ret;
+	struct ldb_message_element *el;
+
+	if (!PyArg_ParseTuple(args, "O!", &PyLdbMessageElement, &py_element))
+		return NULL;
+
+	el = talloc_reference(msg, PyLdbMessageElement_AsMessageElement(py_element));
+	if (el == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	ret = ldb_msg_add(msg, el, el->flags);
+	PyErr_LDB_ERROR_IS_ERR_RAISE(PyExc_LdbError, ret, NULL);
+
+	Py_RETURN_NONE;
+}
+
+static PyMethodDef py_ldb_msg_methods[] = {
 	{ "from_dict", (PyCFunction)py_ldb_msg_from_dict, METH_CLASS | METH_VARARGS,
-		"Message.from_dict(ldb, dict, mod_flag) -> ldb.Message\n"
+		"Message.from_dict(ldb, dict, mod_flag=FLAG_MOD_REPLACE) -> ldb.Message\n"
 		"Class method to create ldb.Message object from Dictionary.\n"
-		"mod_flag is one of FLAG_MOD_ADD, FLAG_MOD_REPLACE or FLAG_MOD_DELETE.\n"
-		"mod_flag defaults to FLAG_MOD_REPLACE"},
-	{ "keys", (PyCFunction)py_ldb_msg_keys, METH_NOARGS, NULL },
-	{ "remove", (PyCFunction)py_ldb_msg_remove_attr, METH_VARARGS, NULL },
+		"mod_flag is one of FLAG_MOD_ADD, FLAG_MOD_REPLACE or FLAG_MOD_DELETE."},
+	{ "keys", (PyCFunction)py_ldb_msg_keys, METH_NOARGS, 
+		"S.keys() -> list\n\n"
+		"Return sequence of all attribute names." },
+	{ "remove", (PyCFunction)py_ldb_msg_remove_attr, METH_VARARGS, 
+		"S.remove(name)\n\n"
+		"Remove all entries for attributes with the specified name."},
 	{ "get", (PyCFunction)py_ldb_msg_get, METH_VARARGS, NULL },
 	{ "items", (PyCFunction)py_ldb_msg_items, METH_NOARGS, NULL },
+	{ "elements", (PyCFunction)py_ldb_msg_elements, METH_NOARGS, NULL },
+	{ "add", (PyCFunction)py_ldb_msg_add, METH_VARARGS,
+		"S.append(element)\n\n"
+		"Add an element to this message." },
 	{ NULL },
 };
 
@@ -2158,7 +2198,7 @@ static int py_ldb_msg_setitem(PyLdbMessageObject *self, PyObject *name, PyObject
 		PyErr_SetNone(PyExc_TypeError);
 		return -1;
 	}
-	
+
 	attr_name = PyString_AsString(name);
 	if (value == NULL) {
 		/* delitem */

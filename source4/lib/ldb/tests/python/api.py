@@ -278,15 +278,14 @@ class SimpleLdb(unittest.TestCase):
             rm = l.search(m.dn)[0]
             self.assertEquals(2, len(rm))
             self.assertEquals(["1234", "456"], list(rm["bla"]))
-            
-            #Now create another modify, but switch the flags before we do it
+
+            # Now create another modify, but switch the flags before we do it
             m["bla"] = ldb.MessageElement(["456"], ldb.FLAG_MOD_ADD, "bla")
             m["bla"].set_flags(ldb.FLAG_MOD_DELETE)
             l.modify(m)
             rm = l.search(m.dn, attrs=["bla"])[0]
             self.assertEquals(1, len(rm))
             self.assertEquals(["1234"], list(rm["bla"]))
-            
         finally:
             l.delete(ldb.Dn(l, "dc=add"))
 
@@ -421,7 +420,7 @@ class DnTests(unittest.TestCase):
         self.assertTrue(isinstance(msg[1], ldb.Message))
         ldif = self.ldb.write_ldif(msg[1], ldb.CHANGETYPE_NONE)
         self.assertEquals("dn: foo=bar\n\n", ldif)
-        
+
     def test_parse_ldif_more(self):
         msgs = self.ldb.parse_ldif("dn: foo=bar\n\n\ndn: bar=bar")
         msg = msgs.next()
@@ -465,6 +464,17 @@ class LdbMsgTests(unittest.TestCase):
 
     def test_del(self):
         del self.msg["foo"]
+
+    def test_add(self):
+        self.msg.add(ldb.MessageElement(["456"], ldb.FLAG_MOD_ADD, "bla"))
+
+    def test_elements_empty(self):
+        self.assertEquals([], self.msg.elements())
+
+    def test_elements(self):
+        el = ldb.MessageElement(["456"], ldb.FLAG_MOD_ADD, "bla")
+        self.msg.add(el)
+        self.assertEquals([el], self.msg.elements())
 
     def test_add_value(self):
         self.assertEquals(0, len(self.msg))
