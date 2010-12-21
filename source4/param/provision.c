@@ -343,8 +343,6 @@ struct ldb_context *provision_get_schema(TALLOC_CTX *mem_ctx, struct loadparm_co
 	const char *setupdir;
 	PyObject *schema_mod, *schema_dict, *schema_fn, *py_result, *parameters;
 	
-	DEBUG(0,("Schema for DRS tests using python\n"));
-
 	Py_Initialize();
 	py_update_path("bin"); /* FIXME: Can't assume this is always the case */
 
