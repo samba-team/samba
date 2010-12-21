@@ -29,120 +29,6 @@
 #include "auth/session.h"
 #include "auth/system_session_proto.h"
 
-/**
- * Create the SID list for this user. 
- *
- * @note Specialised version for system sessions that doesn't use the SAM.
- */
-static NTSTATUS create_token(TALLOC_CTX *mem_ctx, 
-			     struct dom_sid *user_sid,
-			     struct dom_sid *group_sid,
-			     unsigned int n_groupSIDs,
-			     struct dom_sid **groupSIDs,
-			     bool is_authenticated,
-			     struct security_token **token)
-{
-	struct security_token *ptoken;
-	unsigned int i;
-
-	ptoken = security_token_initialise(mem_ctx);
-	NT_STATUS_HAVE_NO_MEMORY(ptoken);
-
-	ptoken->sids = talloc_array(ptoken, struct dom_sid, n_groupSIDs + 5);
-	NT_STATUS_HAVE_NO_MEMORY(ptoken->sids);
-
-	ptoken->sids[PRIMARY_USER_SID_INDEX] = *user_sid;
-	ptoken->sids[PRIMARY_GROUP_SID_INDEX] = *group_sid;
-	ptoken->privilege_mask = 0;
-
-	/*
-	 * Finally add the "standard" SIDs.
-	 * The only difference between guest and "anonymous"
-	 * is the addition of Authenticated_Users.
-	 */
-
-	if (!dom_sid_parse(SID_WORLD, &ptoken->sids[2])) {
-		return NT_STATUS_INTERNAL_ERROR;
-	}
-	if (!dom_sid_parse(SID_NT_NETWORK, &ptoken->sids[3])) {
-		return NT_STATUS_INTERNAL_ERROR;
-	}
-	ptoken->num_sids = 4;
-
-	if (is_authenticated) {
-		if (!dom_sid_parse(SID_NT_AUTHENTICATED_USERS, &ptoken->sids[4])) {
-			return NT_STATUS_INTERNAL_ERROR;
-		}
-		ptoken->num_sids++;
-	}
-
-	for (i = 0; i < n_groupSIDs; i++) {
-		size_t check_sid_idx;
-		for (check_sid_idx = 1; 
-		     check_sid_idx < ptoken->num_sids; 
-		     check_sid_idx++) {
-			if (dom_sid_equal(&ptoken->sids[check_sid_idx], groupSIDs[i])) {
-				break;
-			}
-		}
-
-		if (check_sid_idx == ptoken->num_sids) {
-			ptoken->sids[ptoken->num_sids++] = *groupSIDs[i];
-		}
-	}
-
-	*token = ptoken;
-
-	/* Shortcuts to prevent recursion and avoid lookups */
-	if (ptoken->sids == NULL) {
-		ptoken->privilege_mask = 0;
-		return NT_STATUS_OK;
-	} 
-	
-	if (security_token_is_system(ptoken)) {
-		ptoken->privilege_mask = ~0;
-	} else if (security_token_is_anonymous(ptoken)) {
-		ptoken->privilege_mask = 0;
-	} else if (security_token_has_builtin_administrators(ptoken)) {
-		ptoken->privilege_mask = ~0;
-	} else {
-		/* All other 'users' get a empty priv set so far */
-		ptoken->privilege_mask = 0;
-	}
-	return NT_STATUS_OK;
-}
-
-NTSTATUS auth_generate_simple_session_info(TALLOC_CTX *mem_ctx,
-					   struct auth_serversupplied_info *server_info,
-					   struct auth_session_info **_session_info)
-{
-	struct auth_session_info *session_info;
-	NTSTATUS nt_status;
-
-	session_info = talloc(mem_ctx, struct auth_session_info);
-	NT_STATUS_HAVE_NO_MEMORY(session_info);
-
-	session_info->server_info = talloc_reference(session_info, server_info);
-
-	/* unless set otherwise, the session key is the user session
-	 * key from the auth subsystem */ 
-	session_info->session_key = server_info->user_session_key;
-
-	nt_status = create_token(session_info,
-					  server_info->account_sid,
-					  server_info->primary_group_sid,
-					  server_info->n_domain_groups,
-					  server_info->domain_groups,
-					  server_info->authenticated,
-					  &session_info->security_token);
-	NT_STATUS_NOT_OK_RETURN(nt_status);
-
-	session_info->credentials = NULL;
-
-	*_session_info = session_info;
-	return NT_STATUS_OK;
-}
-
 
 /*
   prevent the static system session being freed
@@ -194,7 +80,7 @@ NTSTATUS auth_system_session_info(TALLOC_CTX *parent_ctx,
 	}
 
 	/* references the server_info into the session_info */
-	nt_status = auth_generate_session_info(parent_ctx, lp_ctx, NULL, server_info, 0, &session_info);
+	nt_status = auth_generate_session_info(parent_ctx, NULL, NULL, server_info, AUTH_SESSION_INFO_SIMPLE_PRIVILEGES, &session_info);
 	talloc_free(mem_ctx);
 
 	NT_STATUS_NOT_OK_RETURN(nt_status);
@@ -368,11 +254,10 @@ static NTSTATUS auth_domain_admin_server_info(TALLOC_CTX *mem_ctx,
 static NTSTATUS auth_domain_admin_session_info(TALLOC_CTX *parent_ctx,
 					       struct loadparm_context *lp_ctx,
 					       struct dom_sid *domain_sid,
-					       struct auth_session_info **_session_info)
+					       struct auth_session_info **session_info)
 {
 	NTSTATUS nt_status;
 	struct auth_serversupplied_info *server_info = NULL;
-	struct auth_session_info *session_info = NULL;
 	TALLOC_CTX *mem_ctx = talloc_new(parent_ctx);
 
 	nt_status = auth_domain_admin_server_info(mem_ctx, lpcfg_netbios_name(lp_ctx),
@@ -383,34 +268,15 @@ static NTSTATUS auth_domain_admin_session_info(TALLOC_CTX *parent_ctx,
 		return nt_status;
 	}
 
-	session_info = talloc(mem_ctx, struct auth_session_info);
-	NT_STATUS_HAVE_NO_MEMORY(session_info);
-
-	session_info->server_info = talloc_reference(session_info, server_info);
-
-	/* unless set otherwise, the session key is the user session
-	 * key from the auth subsystem */
-	session_info->session_key = server_info->user_session_key;
-
-	nt_status = create_token(session_info,
-				 server_info->account_sid,
-				 server_info->primary_group_sid,
-				 server_info->n_domain_groups,
-				 server_info->domain_groups,
-				 true,
-				 &session_info->security_token);
-	NT_STATUS_NOT_OK_RETURN(nt_status);
-
-	session_info->credentials = cli_credentials_init(session_info);
-	if (!session_info->credentials) {
-		return NT_STATUS_NO_MEMORY;
+	nt_status = auth_generate_session_info(mem_ctx, NULL, NULL, server_info,
+					       AUTH_SESSION_INFO_SIMPLE_PRIVILEGES|AUTH_SESSION_INFO_AUTHENTICATED|AUTH_SESSION_INFO_DEFAULT_GROUPS,
+					       session_info);
+	/* There is already a reference between the sesion_info and server_info */
+	if (NT_STATUS_IS_OK(nt_status)) {
+		talloc_steal(parent_ctx, *session_info);
 	}
-
-	cli_credentials_set_conf(session_info->credentials, lp_ctx);
-
-	*_session_info = session_info;
-
-	return NT_STATUS_OK;
+	talloc_free(mem_ctx);
+	return nt_status;
 }
 
 _PUBLIC_ struct auth_session_info *admin_session(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx, struct dom_sid *domain_sid)
@@ -445,7 +311,7 @@ _PUBLIC_ NTSTATUS auth_anonymous_session_info(TALLOC_CTX *parent_ctx,
 	}
 
 	/* references the server_info into the session_info */
-	nt_status = auth_generate_session_info(parent_ctx, lp_ctx, NULL, server_info, 0, &session_info);
+	nt_status = auth_generate_session_info(parent_ctx, NULL, NULL, server_info, AUTH_SESSION_INFO_SIMPLE_PRIVILEGES, &session_info);
 	talloc_free(mem_ctx);
 
 	NT_STATUS_NOT_OK_RETURN(nt_status);

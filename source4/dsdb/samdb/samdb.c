@@ -222,11 +222,28 @@ NTSTATUS security_token_create(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	/* setup the privilege mask for this token */
-	status = samdb_privilege_setup(lp_ctx, ptoken);
-	if (!NT_STATUS_IS_OK(status)) {
-		talloc_free(ptoken);
-		return status;
+	/* The caller may have requested simple privilages, for example if there isn't a local DB */
+	if (session_info_flags & AUTH_SESSION_INFO_SIMPLE_PRIVILEGES) {
+		/* Shortcuts to prevent recursion and avoid lookups */
+		if (ptoken->sids == NULL) {
+			ptoken->privilege_mask = 0;
+		} else if (security_token_is_system(ptoken)) {
+			ptoken->privilege_mask = ~0;
+		} else if (security_token_is_anonymous(ptoken)) {
+			ptoken->privilege_mask = 0;
+		} else if (security_token_has_builtin_administrators(ptoken)) {
+			ptoken->privilege_mask = ~0;
+		} else {
+			/* All other 'users' get a empty priv set so far */
+			ptoken->privilege_mask = 0;
+		}
+	} else {
+		/* setup the privilege mask for this token */
+		status = samdb_privilege_setup(lp_ctx, ptoken);
+		if (!NT_STATUS_IS_OK(status)) {
+			talloc_free(ptoken);
+			return status;
+		}
 	}
 
 	security_token_debug(0, 10, ptoken);
