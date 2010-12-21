@@ -821,13 +821,11 @@ _PUBLIC_ isc_result_t dlz_allnodes(const char *zone, void *dbdata,
 			if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 				state->log(ISC_LOG_ERROR, "samba_dlz: failed to parse dnsRecord for %s",
 					   ldb_dn_get_linearized(dn));
-				talloc_free(el_ctx);
 				continue;
 			}
 
 			result = b9_putnamedrr(state, allnodes, name, &rec);
 			if (result != ISC_R_SUCCESS) {
-				talloc_free(el_ctx);
 				continue;
 			}
 		}
