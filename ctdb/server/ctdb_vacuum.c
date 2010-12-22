@@ -68,6 +68,17 @@ struct vacuum_data {
 	uint32_t total;
 	uint32_t vacuumed;
 	uint32_t copied;
+	uint32_t fast_added_to_vacuum_fetch_list;
+	uint32_t fast_added_to_delete_tree;
+	uint32_t fast_deleted;
+	uint32_t fast_skipped;
+	uint32_t fast_error;
+	uint32_t fast_total;
+	uint32_t full_added_to_vacuum_fetch_list;
+	uint32_t full_added_to_delete_tree;
+	uint32_t full_skipped;
+	uint32_t full_error;
+	uint32_t full_total;
 };
 
 /* tuning information stored for every db */
@@ -210,8 +221,11 @@ static int vacuum_traverse(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data,
 	struct ctdb_ltdb_header *hdr;
 	int res = 0;
 
+	vdata->full_total++;
+
 	lmaster = ctdb_lmaster(ctdb, &key);
 	if (lmaster >= ctdb->num_nodes) {
+		vdata->full_error++;
 		DEBUG(DEBUG_CRIT, (__location__
 				   " lmaster[%u] >= ctdb->num_nodes[%u] for key"
 				   " with hash[%u]!\n",
@@ -223,12 +237,14 @@ static int vacuum_traverse(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data,
 
 	if (data.dsize != sizeof(struct ctdb_ltdb_header)) {
 		/* its not a deleted record */
+		vdata->full_skipped++;
 		return 0;
 	}
 
 	hdr = (struct ctdb_ltdb_header *)data.dptr;
 
 	if (hdr->dmaster != ctdb->pnn) {
+		vdata->full_skipped++;
 		return 0;
 	}
 
@@ -238,12 +254,22 @@ static int vacuum_traverse(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data,
 		 * So we should be able to delete it.
 		 */
 		res = add_record_to_delete_tree(vdata, key, hdr);
+		if (res != 0) {
+			vdata->full_error++;
+		} else {
+			vdata->full_added_to_delete_tree++;
+		}
 	} else {
 		/*
 		 * We are not lmaster.
 		 * Add the record to the blob ready to send to the nodes.
 		 */
 		res = add_record_to_vacuum_fetch_list(vdata, key);
+		if (res != 0) {
+			vdata->full_error++;
+		} else {
+			vdata->full_added_to_vacuum_fetch_list++;
+		}
 	}
 
 	return res;
@@ -308,28 +334,31 @@ static void delete_queue_traverse(void *param, void *data)
 	TDB_DATA tdb_data;
 	uint32_t lmaster;
 
+	vdata->fast_total++;
+
 	res = tdb_chainlock(ctdb_db->ltdb->tdb, dd->key);
 	if (res != 0) {
 		DEBUG(DEBUG_ERR, (__location__ " Error getting chainlock.\n"));
+		vdata->fast_error++;
 		return;
 	}
 
 	tdb_data = tdb_fetch(ctdb_db->ltdb->tdb, dd->key);
 	if (tdb_data.dsize < sizeof(struct ctdb_ltdb_header)) {
 		/* Does not exist or not a ctdb record. Skip. */
-		goto done;
+		goto skipped;
 	}
 
 	if (tdb_data.dsize > sizeof(struct ctdb_ltdb_header)) {
 		/* The record has been recycled (filled with data). Skip. */
-		goto done;
+		goto skipped;
 	}
 
 	header = (struct ctdb_ltdb_header *)tdb_data.dptr;
 
 	if (header->dmaster != ctdb->pnn) {
 		/* The record has been migrated off the node. Skip. */
-		goto done;
+		goto skipped;
 	}
 
 
@@ -338,7 +367,7 @@ static void delete_queue_traverse(void *param, void *data)
 		 * The record has been migrated off the node and back again.
 		 * But not requeued for deletion. Skip it.
 		 */
-		goto done;
+		goto skipped;
 	}
 
 	/*
@@ -359,8 +388,10 @@ static void delete_queue_traverse(void *param, void *data)
 			DEBUG(DEBUG_ERR,
 			      (__location__ " Error adding record to list "
 			       "of records to send to lmaster.\n"));
+			vdata->fast_error++;
+		} else {
+			vdata->fast_added_to_vacuum_fetch_list++;
 		}
-
 		goto done;
 	}
 
@@ -372,6 +403,9 @@ static void delete_queue_traverse(void *param, void *data)
 			DEBUG(DEBUG_ERR,
 			      (__location__ " Error adding record to list "
 			       "of records for deletion on lmaster.\n"));
+			vdata->fast_error++;
+		} else {
+			vdata->fast_added_to_delete_tree++;
 		}
 	} else {
 		res = tdb_delete(ctdb_db->ltdb->tdb, dd->key);
@@ -380,8 +414,16 @@ static void delete_queue_traverse(void *param, void *data)
 			DEBUG(DEBUG_ERR,
 			      (__location__ " Error deleting record from local "
 			       "data base.\n"));
+			vdata->fast_error++;
+		} else {
+			vdata->fast_deleted++;
 		}
 	}
+
+	goto done;
+
+skipped:
+	vdata->fast_skipped++;
 
 done:
 	if (tdb_data.dptr != NULL) {
@@ -406,6 +448,11 @@ static int ctdb_vacuum_db(struct ctdb_db_context *ctdb_db,
 	const char *name = ctdb_db->db_name;
 	int ret, i, pnn;
 
+	DEBUG(DEBUG_INFO, (__location__ " Entering %s vacuum run for db "
+			   "%s db_id[0x%08x]\n",
+			   full_vacuum_run ? "full" : "fast",
+			   ctdb_db->db_name, ctdb_db->db_id));
+
 	ret = ctdb_ctrl_getvnnmap(ctdb, TIMELIMIT(), CTDB_CURRENT_NODE, ctdb, &ctdb->vnn_map);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR, ("Unable to get vnnmap from local node\n"));
@@ -419,6 +466,19 @@ static int ctdb_vacuum_db(struct ctdb_db_context *ctdb_db,
 	}
 
 	ctdb->pnn = pnn;
+
+	vdata->fast_added_to_delete_tree = 0;
+	vdata->fast_added_to_vacuum_fetch_list = 0;
+	vdata->fast_deleted = 0;
+	vdata->fast_skipped = 0;
+	vdata->fast_error = 0;
+	vdata->fast_total = 0;
+	vdata->full_added_to_delete_tree = 0;
+	vdata->full_added_to_vacuum_fetch_list = 0;
+	vdata->full_skipped = 0;
+	vdata->full_error = 0;
+	vdata->full_total = 0;
+
 	/* the list needs to be of length num_nodes */
 	vdata->list = talloc_array(vdata, struct ctdb_marshall_buffer *, ctdb->num_nodes);
 	if (vdata->list == NULL) {
@@ -442,6 +502,26 @@ static int ctdb_vacuum_db(struct ctdb_db_context *ctdb_db,
 	 */
 	trbt_traversearray32(ctdb_db->delete_queue, 1, delete_queue_traverse, vdata);
 
+	if (vdata->fast_total > 0) {
+		DEBUG(DEBUG_INFO,
+		      (__location__
+		       " fast vacuuming delete_queue traverse statistics: "
+		       "db[%s] "
+		       "total[%u] "
+		       "del[%u] "
+		       "skp[%u] "
+		       "err[%u] "
+		       "adt[%u] "
+		       "avf[%u]\n",
+		       ctdb_db->db_name,
+		       (unsigned)vdata->fast_total,
+		       (unsigned)vdata->fast_deleted,
+		       (unsigned)vdata->fast_skipped,
+		       (unsigned)vdata->fast_error,
+		       (unsigned)vdata->fast_added_to_delete_tree,
+		       (unsigned)vdata->fast_added_to_vacuum_fetch_list));
+	}
+
 	/*
 	 * read-only traverse of the database, looking for records that
 	 * might be able to be vacuumed.
@@ -454,6 +534,23 @@ static int ctdb_vacuum_db(struct ctdb_db_context *ctdb_db,
 		if (ret == -1 || vdata->traverse_error) {
 			DEBUG(DEBUG_ERR,(__location__ " Traverse error in vacuuming '%s'\n", name));
 			return -1;
+		}
+		if (vdata->full_total > 0) {
+			DEBUG(DEBUG_INFO,
+			      (__location__
+			       " full vacuuming db traverse statistics: "
+			       "db[%s] "
+			       "total[%u] "
+			       "skp[%u] "
+			       "err[%u] "
+			       "adt[%u] "
+			       "avf[%u]\n",
+			       ctdb_db->db_name,
+			       (unsigned)vdata->full_total,
+			       (unsigned)vdata->full_skipped,
+			       (unsigned)vdata->full_error,
+			       (unsigned)vdata->full_added_to_delete_tree,
+			       (unsigned)vdata->full_added_to_vacuum_fetch_list));
 		}
 	}
 
