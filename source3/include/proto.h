@@ -1331,8 +1331,6 @@ struct tevent_req *open_socket_out_defer_send(TALLOC_CTX *mem_ctx,
 					      uint16_t port,
 					      int timeout);
 NTSTATUS open_socket_out_defer_recv(struct tevent_req *req, int *pfd);
-bool open_any_socket_out(struct sockaddr_storage *addrs, int num_addrs,
-			 int timeout, int *fd_index, int *fd);
 int open_udp_socket(const char *host, int port);
 const char *get_peer_name(int fd, bool force_lookup);
 const char *get_peer_addr(int fd, char *addr, size_t addr_len);
