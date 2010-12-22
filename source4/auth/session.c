@@ -23,6 +23,7 @@
 
 #include "includes.h"
 #include "auth/auth.h"
+#include "auth/auth_sam.h"
 #include "libcli/security/security.h"
 #include "libcli/auth/libcli_auth.h"
 #include "dsdb/samdb/samdb.h"
@@ -191,6 +192,44 @@ _PUBLIC_ NTSTATUS auth_generate_session_info(TALLOC_CTX *mem_ctx,
 
 	talloc_steal(mem_ctx, session_info);
 	*_session_info = session_info;
+	talloc_free(tmp_ctx);
+	return NT_STATUS_OK;
+}
+
+/* Produce a session_info for an arbitary DN or principal in the local
+ * DB, assuming the local DB holds all the groups
+ *
+ * Supply either a principal or a DN
+ */
+NTSTATUS authsam_get_session_info_principal(TALLOC_CTX *mem_ctx,
+					    struct loadparm_context *lp_ctx,
+					    struct ldb_context *sam_ctx,
+					    const char *principal,
+					    struct ldb_dn *user_dn,
+					    uint32_t session_info_flags,
+					    struct auth_session_info **session_info)
+{
+	NTSTATUS nt_status;
+	struct auth_serversupplied_info *server_info;
+	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
+	if (!tmp_ctx) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	nt_status = authsam_get_server_info_principal(tmp_ctx, lp_ctx, sam_ctx,
+						      principal, user_dn,
+						      &server_info);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		talloc_free(tmp_ctx);
+		return nt_status;
+	}
+
+	nt_status = auth_generate_session_info(tmp_ctx, lp_ctx, sam_ctx,
+					       server_info, session_info_flags,
+					       session_info);
+
+	if (NT_STATUS_IS_OK(nt_status)) {
+		talloc_steal(mem_ctx, *session_info);
+	}
 	talloc_free(tmp_ctx);
 	return NT_STATUS_OK;
 }

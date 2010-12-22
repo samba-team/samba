@@ -28,6 +28,8 @@
 #include "libcli/security/security.h"
 #include "auth/auth_sam.h"
 #include "dsdb/common/util.h"
+#include "libcli/ldap/ldap_ndr.h"
+#include "param/param.h"
 
 #define KRBTGT_ATTRS \
 	/* required for the krb5 kdc */		\
@@ -501,5 +503,87 @@ NTSTATUS sam_get_results_principal(struct ldb_context *sam_ctx,
 	talloc_steal(mem_ctx, *domain_dn);
 	talloc_free(tmp_ctx);
 	
+	return NT_STATUS_OK;
+}
+
+/* Used in the gensec_gssapi and gensec_krb5 server-side code, where the PAC isn't available, and for tokenGroups in the DSDB stack.
+
+ Supply either a principal or a DN
+*/
+NTSTATUS authsam_get_server_info_principal(TALLOC_CTX *mem_ctx,
+					   struct loadparm_context *lp_ctx,
+					   struct ldb_context *sam_ctx,
+					   const char *principal,
+					   struct ldb_dn *user_dn,
+					   struct auth_serversupplied_info **server_info)
+{
+	NTSTATUS nt_status;
+	DATA_BLOB user_sess_key = data_blob(NULL, 0);
+	DATA_BLOB lm_sess_key = data_blob(NULL, 0);
+
+	struct ldb_message *msg;
+	struct ldb_dn *domain_dn;
+
+	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
+	if (!tmp_ctx) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (principal) {
+		nt_status = sam_get_results_principal(sam_ctx, tmp_ctx, principal,
+						      user_attrs, &domain_dn, &msg);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			talloc_free(tmp_ctx);
+			return nt_status;
+		}
+	} else if (user_dn) {
+		struct dom_sid *user_sid, *domain_sid;
+		int ret;
+		/* pull the user attributes */
+		ret = dsdb_search_one(sam_ctx, tmp_ctx, &msg, user_dn,
+				      LDB_SCOPE_BASE, user_attrs, DSDB_SEARCH_SHOW_EXTENDED_DN, "(objectClass=*)");
+		if (ret == LDB_ERR_NO_SUCH_OBJECT) {
+			talloc_free(tmp_ctx);
+			return NT_STATUS_NO_SUCH_USER;
+		} else if (ret != LDB_SUCCESS) {
+			talloc_free(tmp_ctx);
+			return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		}
+
+		user_sid = samdb_result_dom_sid(msg, msg, "objectSid");
+
+		nt_status = dom_sid_split_rid(tmp_ctx, user_sid, &domain_sid, NULL);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			return nt_status;
+		}
+
+		domain_dn = samdb_search_dn(sam_ctx, mem_ctx, NULL,
+					  "(&(objectSid=%s)(objectClass=domain))",
+					    ldap_encode_ndr_dom_sid(tmp_ctx, domain_sid));
+		if (!domain_dn) {
+			DEBUG(3, ("authsam_get_server_info_principal: Failed to find domain with: SID %s\n",
+				  dom_sid_string(tmp_ctx, domain_sid)));
+			return NT_STATUS_NO_SUCH_USER;
+		}
+
+	} else {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	nt_status = authsam_make_server_info(tmp_ctx, sam_ctx,
+					     lpcfg_netbios_name(lp_ctx),
+					     lpcfg_workgroup(lp_ctx),
+					     domain_dn,
+					     msg,
+					     user_sess_key, lm_sess_key,
+					     server_info);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		talloc_free(tmp_ctx);
+		return nt_status;
+	}
+
+	talloc_steal(mem_ctx, *server_info);
+	talloc_free(tmp_ctx);
+
 	return NT_STATUS_OK;
 }

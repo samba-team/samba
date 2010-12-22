@@ -30,7 +30,9 @@ struct auth_session_info {
 
 #include "librpc/gen_ndr/netlogon.h"
 
+struct tevent_context;
 struct ldb_context;
+struct ldb_dn;
 /* Create a security token for a session SYSTEM (the most
  * trusted/prvilaged account), including the local machine account as
  * the off-host credentials */
@@ -48,6 +50,18 @@ NTSTATUS auth_generate_session_info(TALLOC_CTX *mem_ctx,
 NTSTATUS auth_anonymous_session_info(TALLOC_CTX *parent_ctx, 
 				     struct loadparm_context *lp_ctx,
 				     struct auth_session_info **_session_info);
+/* Produce a session_info for an arbitary DN or principal in the local
+ * DB, assuming the local DB holds all the groups
+ *
+ * Supply either a principal or a DN
+ */
+NTSTATUS authsam_get_session_info_principal(TALLOC_CTX *mem_ctx,
+					    struct loadparm_context *lp_ctx,
+					    struct ldb_context *sam_ctx,
+					    const char *principal,
+					    struct ldb_dn *user_dn,
+					    uint32_t session_info_flags,
+					    struct auth_session_info **session_info);
 
 struct auth_session_info *anonymous_session(TALLOC_CTX *mem_ctx, 
 					    struct loadparm_context *lp_ctx);

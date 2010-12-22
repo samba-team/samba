@@ -18,12 +18,14 @@
 
 #include <Python.h>
 #include "includes.h"
+#include "libcli/util/pyerrors.h"
 #include "param/param.h"
 #include "pyauth.h"
+#include "pyldb.h"
 #include "auth/system_session_proto.h"
+#include "auth/session.h"
 #include "param/pyparam.h"
 #include "libcli/security/security.h"
-
 
 static PyTypeObject PyAuthSession = {
 	.tp_name = "AuthSession",
@@ -102,9 +104,69 @@ static PyObject *py_admin_session(PyObject *module, PyObject *args)
 	return PyAuthSession_FromSession(session);
 }
 
+static PyObject *py_user_session(PyObject *module, PyObject *args, PyObject *kwargs)
+{
+	NTSTATUS nt_status;
+	struct auth_session_info *session;
+	TALLOC_CTX *mem_ctx;
+	const char * const kwnames[] = { "ldb", "lp_ctx", "principal", "dn", "session_info_flags" };
+	struct ldb_context *ldb_ctx;
+	PyObject *py_ldb = Py_None;
+	PyObject *py_dn = Py_None;
+	PyObject *py_lp_ctx = Py_None;
+	struct loadparm_context *lp_ctx = NULL;
+	struct ldb_dn *user_dn;
+	char *principal = NULL;
+	int session_info_flags; /* This is an int, because that's what
+				 * we need for the python
+				 * PyArg_ParseTupleAndKeywords */
+
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O|OzOi",
+					 discard_const_p(char *, kwnames),
+					 &py_ldb, &py_lp_ctx, &principal, &py_dn, &session_info_flags)) {
+		return NULL;
+	}
+
+	mem_ctx = talloc_new(NULL);
+	if (mem_ctx == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	ldb_ctx = PyLdb_AsLdbContext(py_ldb);
+
+	if (py_dn == Py_None) {
+		user_dn = NULL;
+	} else {
+		if (!PyObject_AsDn(ldb_ctx, py_dn, ldb_ctx, &user_dn)) {
+			talloc_free(mem_ctx);
+			return NULL;
+		}
+	}
+
+	lp_ctx = lpcfg_from_py_object(mem_ctx, py_lp_ctx);
+	if (lp_ctx == NULL) {
+		talloc_free(mem_ctx);
+		return NULL;
+	}
+
+	nt_status = authsam_get_session_info_principal(mem_ctx, lp_ctx, ldb_ctx, principal, user_dn,
+						       session_info_flags, &session);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		talloc_free(mem_ctx);
+		PyErr_NTSTATUS_IS_ERR_RAISE(nt_status);
+	}
+
+	talloc_steal(NULL, session);
+	talloc_free(mem_ctx);
+
+	return PyAuthSession_FromSession(session);
+}
+
 static PyMethodDef py_auth_methods[] = {
 	{ "system_session", (PyCFunction)py_system_session, METH_VARARGS, NULL },
 	{ "admin_session", (PyCFunction)py_admin_session, METH_VARARGS, NULL },
+	{ "user_session", (PyCFunction)py_user_session, METH_VARARGS, NULL },
 	{ NULL },
 };
 
