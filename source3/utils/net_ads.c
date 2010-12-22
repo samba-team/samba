@@ -1464,9 +1464,10 @@ int net_ads_join(struct net_context *c, int argc, const char **argv)
 		/* exit from this block using machine creds */
 		ads_destroy(&ads_dns);
 	}
-#endif
 
 done:
+#endif
+
 	TALLOC_FREE(r);
 	TALLOC_FREE( ctx );
 
