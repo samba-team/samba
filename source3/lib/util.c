@@ -3070,3 +3070,14 @@ const char *strip_hostname(const char *s)
 
 	return s;
 }
+
+bool tevent_req_poll_ntstatus(struct tevent_req *req,
+			      struct tevent_context *ev,
+			      NTSTATUS *status)
+{
+	bool ret = tevent_req_poll(req, ev);
+	if (!ret) {
+		*status = map_nt_error_from_unix(errno);
+	}
+	return ret;
+}
