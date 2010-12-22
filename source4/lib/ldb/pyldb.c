@@ -2142,7 +2142,7 @@ static PyObject *py_ldb_msg_add(PyLdbMessageObject *self, PyObject *args)
 {
 	struct ldb_message *msg = PyLdbMessage_AsMessage(self);
 	PyObject *py_element;
-	int flags, ret;
+	int ret;
 	struct ldb_message_element *el;
 
 	if (!PyArg_ParseTuple(args, "O!", &PyLdbMessageElement, &py_element))
