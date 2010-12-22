@@ -688,28 +688,29 @@ if not bld.CONFIG_SET("USING_SYSTEM_ASN1"):
             source='',
             vnum='8.0.0')
 
-
-if not bld.CONFIG_SET("USING_SYSTEM_TOMMATH"):
-    HEIMDAL_SUBSYSTEM('tommath',
+if not bld.CONFIG_SET('USING_SYSTEM_HCRYPTO'):
+    if not bld.CONFIG_SET("USING_SYSTEM_TOMMATH"):
+        HEIMDAL_SUBSYSTEM('tommath',
         'lib/hcrypto/libtommath/bncore.c lib/hcrypto/libtommath/bn_mp_init.c lib/hcrypto/libtommath/bn_mp_clear.c lib/hcrypto/libtommath/bn_mp_exch.c lib/hcrypto/libtommath/bn_mp_grow.c lib/hcrypto/libtommath/bn_mp_shrink.c lib/hcrypto/libtommath/bn_mp_clamp.c lib/hcrypto/libtommath/bn_mp_zero.c lib/hcrypto/libtommath/bn_mp_zero_multi.c lib/hcrypto/libtommath/bn_mp_set.c lib/hcrypto/libtommath/bn_mp_set_int.c lib/hcrypto/libtommath/bn_mp_init_size.c lib/hcrypto/libtommath/bn_mp_copy.c lib/hcrypto/libtommath/bn_mp_init_copy.c lib/hcrypto/libtommath/bn_mp_abs.c lib/hcrypto/libtommath/bn_mp_neg.c lib/hcrypto/libtommath/bn_mp_cmp_mag.c lib/hcrypto/libtommath/bn_mp_cmp.c lib/hcrypto/libtommath/bn_mp_cmp_d.c lib/hcrypto/libtommath/bn_mp_rshd.c lib/hcrypto/libtommath/bn_mp_lshd.c lib/hcrypto/libtommath/bn_mp_mod_2d.c lib/hcrypto/libtommath/bn_mp_div_2d.c lib/hcrypto/libtommath/bn_mp_mul_2d.c lib/hcrypto/libtommath/bn_mp_div_2.c lib/hcrypto/libtommath/bn_mp_mul_2.c lib/hcrypto/libtommath/bn_s_mp_add.c lib/hcrypto/libtommath/bn_s_mp_sub.c lib/hcrypto/libtommath/bn_fast_s_mp_mul_digs.c lib/hcrypto/libtommath/bn_s_mp_mul_digs.c lib/hcrypto/libtommath/bn_fast_s_mp_mul_high_digs.c lib/hcrypto/libtommath/bn_s_mp_mul_high_digs.c lib/hcrypto/libtommath/bn_fast_s_mp_sqr.c lib/hcrypto/libtommath/bn_s_mp_sqr.c lib/hcrypto/libtommath/bn_mp_add.c lib/hcrypto/libtommath/bn_mp_sub.c lib/hcrypto/libtommath/bn_mp_karatsuba_mul.c lib/hcrypto/libtommath/bn_mp_mul.c lib/hcrypto/libtommath/bn_mp_karatsuba_sqr.c lib/hcrypto/libtommath/bn_mp_sqr.c lib/hcrypto/libtommath/bn_mp_div.c lib/hcrypto/libtommath/bn_mp_mod.c lib/hcrypto/libtommath/bn_mp_add_d.c lib/hcrypto/libtommath/bn_mp_sub_d.c lib/hcrypto/libtommath/bn_mp_mul_d.c lib/hcrypto/libtommath/bn_mp_div_d.c lib/hcrypto/libtommath/bn_mp_mod_d.c lib/hcrypto/libtommath/bn_mp_expt_d.c lib/hcrypto/libtommath/bn_mp_addmod.c lib/hcrypto/libtommath/bn_mp_submod.c lib/hcrypto/libtommath/bn_mp_mulmod.c lib/hcrypto/libtommath/bn_mp_sqrmod.c lib/hcrypto/libtommath/bn_mp_gcd.c lib/hcrypto/libtommath/bn_mp_lcm.c lib/hcrypto/libtommath/bn_fast_mp_invmod.c lib/hcrypto/libtommath/bn_mp_invmod.c lib/hcrypto/libtommath/bn_mp_reduce.c lib/hcrypto/libtommath/bn_mp_montgomery_setup.c lib/hcrypto/libtommath/bn_fast_mp_montgomery_reduce.c lib/hcrypto/libtommath/bn_mp_montgomery_reduce.c lib/hcrypto/libtommath/bn_mp_exptmod_fast.c lib/hcrypto/libtommath/bn_mp_exptmod.c lib/hcrypto/libtommath/bn_mp_2expt.c lib/hcrypto/libtommath/bn_mp_n_root.c lib/hcrypto/libtommath/bn_mp_jacobi.c lib/hcrypto/libtommath/bn_reverse.c lib/hcrypto/libtommath/bn_mp_count_bits.c lib/hcrypto/libtommath/bn_mp_read_unsigned_bin.c lib/hcrypto/libtommath/bn_mp_read_signed_bin.c lib/hcrypto/libtommath/bn_mp_to_unsigned_bin.c lib/hcrypto/libtommath/bn_mp_to_signed_bin.c lib/hcrypto/libtommath/bn_mp_unsigned_bin_size.c lib/hcrypto/libtommath/bn_mp_signed_bin_size.c lib/hcrypto/libtommath/bn_mp_xor.c lib/hcrypto/libtommath/bn_mp_and.c lib/hcrypto/libtommath/bn_mp_or.c lib/hcrypto/libtommath/bn_mp_rand.c lib/hcrypto/libtommath/bn_mp_montgomery_calc_normalization.c lib/hcrypto/libtommath/bn_mp_prime_is_divisible.c lib/hcrypto/libtommath/bn_prime_tab.c lib/hcrypto/libtommath/bn_mp_prime_fermat.c lib/hcrypto/libtommath/bn_mp_prime_miller_rabin.c lib/hcrypto/libtommath/bn_mp_prime_is_prime.c lib/hcrypto/libtommath/bn_mp_prime_next_prime.c lib/hcrypto/libtommath/bn_mp_find_prime.c lib/hcrypto/libtommath/bn_mp_isprime.c lib/hcrypto/libtommath/bn_mp_dr_reduce.c lib/hcrypto/libtommath/bn_mp_dr_is_modulus.c lib/hcrypto/libtommath/bn_mp_dr_setup.c lib/hcrypto/libtommath/bn_mp_reduce_setup.c lib/hcrypto/libtommath/bn_mp_toom_mul.c lib/hcrypto/libtommath/bn_mp_toom_sqr.c lib/hcrypto/libtommath/bn_mp_div_3.c lib/hcrypto/libtommath/bn_s_mp_exptmod.c lib/hcrypto/libtommath/bn_mp_reduce_2k.c lib/hcrypto/libtommath/bn_mp_reduce_is_2k.c lib/hcrypto/libtommath/bn_mp_reduce_2k_setup.c lib/hcrypto/libtommath/bn_mp_reduce_2k_l.c lib/hcrypto/libtommath/bn_mp_reduce_is_2k_l.c lib/hcrypto/libtommath/bn_mp_reduce_2k_setup_l.c lib/hcrypto/libtommath/bn_mp_radix_smap.c lib/hcrypto/libtommath/bn_mp_read_radix.c lib/hcrypto/libtommath/bn_mp_toradix.c lib/hcrypto/libtommath/bn_mp_radix_size.c lib/hcrypto/libtommath/bn_mp_fread.c lib/hcrypto/libtommath/bn_mp_fwrite.c lib/hcrypto/libtommath/bn_mp_cnt_lsb.c lib/hcrypto/libtommath/bn_error.c lib/hcrypto/libtommath/bn_mp_init_multi.c lib/hcrypto/libtommath/bn_mp_clear_multi.c lib/hcrypto/libtommath/bn_mp_exteuclid.c lib/hcrypto/libtommath/bn_mp_toradix_n.c lib/hcrypto/libtommath/bn_mp_prime_random_ex.c lib/hcrypto/libtommath/bn_mp_get_int.c lib/hcrypto/libtommath/bn_mp_sqrt.c lib/hcrypto/libtommath/bn_mp_is_square.c lib/hcrypto/libtommath/bn_mp_init_set.c lib/hcrypto/libtommath/bn_mp_init_set_int.c lib/hcrypto/libtommath/bn_mp_invmod_slow.c lib/hcrypto/libtommath/bn_mp_prime_rabin_miller_trials.c lib/hcrypto/libtommath/bn_mp_to_signed_bin_n.c lib/hcrypto/libtommath/bn_mp_to_unsigned_bin_n.c',
             includes='../heimdal/lib/hcrypto/libtommath'
+            )
+
+    HEIMDAL_LIBRARY('hcrypto',
+        'lib/hcrypto/aes.c lib/hcrypto/bn.c lib/hcrypto/dh.c lib/hcrypto/dh-ltm.c lib/hcrypto/des.c lib/hcrypto/dsa.c lib/hcrypto/engine.c lib/hcrypto/md2.c lib/hcrypto/md4.c lib/hcrypto/md5.c lib/hcrypto/rsa.c lib/hcrypto/rsa-ltm.c lib/hcrypto/rc2.c lib/hcrypto/rc4.c lib/hcrypto/rijndael-alg-fst.c lib/hcrypto/rnd_keys.c lib/hcrypto/sha.c lib/hcrypto/sha256.c lib/hcrypto/sha512.c lib/hcrypto/ui.c lib/hcrypto/evp.c lib/hcrypto/evp-hcrypto.c lib/hcrypto/pkcs5.c lib/hcrypto/pkcs12.c lib/hcrypto/rand.c lib/hcrypto/rand-egd.c lib/hcrypto/rand-unix.c lib/hcrypto/rand-fortuna.c lib/hcrypto/rand-timer.c lib/hcrypto/hmac.c lib/hcrypto/camellia.c lib/hcrypto/camellia-ntt.c lib/hcrypto/common.c lib/hcrypto/validate.c',
+        includes='../heimdal/lib/hcrypto ../heimdal/lib ../heimdal/include',
+        deps='roken asn1 tommath replace',
+        version_script='lib/hcrypto/version-script.map',
+        vnum='5.0.1',
         )
 
-HEIMDAL_LIBRARY('hcrypto',
-    'lib/hcrypto/aes.c lib/hcrypto/bn.c lib/hcrypto/dh.c lib/hcrypto/dh-ltm.c lib/hcrypto/des.c lib/hcrypto/dsa.c lib/hcrypto/engine.c lib/hcrypto/md2.c lib/hcrypto/md4.c lib/hcrypto/md5.c lib/hcrypto/rsa.c lib/hcrypto/rsa-ltm.c lib/hcrypto/rc2.c lib/hcrypto/rc4.c lib/hcrypto/rijndael-alg-fst.c lib/hcrypto/rnd_keys.c lib/hcrypto/sha.c lib/hcrypto/sha256.c lib/hcrypto/sha512.c lib/hcrypto/ui.c lib/hcrypto/evp.c lib/hcrypto/evp-hcrypto.c lib/hcrypto/pkcs5.c lib/hcrypto/pkcs12.c lib/hcrypto/rand.c lib/hcrypto/rand-egd.c lib/hcrypto/rand-unix.c lib/hcrypto/rand-fortuna.c lib/hcrypto/rand-timer.c lib/hcrypto/hmac.c lib/hcrypto/camellia.c lib/hcrypto/camellia-ntt.c lib/hcrypto/common.c lib/hcrypto/validate.c',
-    includes='../heimdal/lib/hcrypto ../heimdal/lib ../heimdal/include',
-    deps='roken asn1 tommath replace',
-    version_script='lib/hcrypto/version-script.map',
-    vnum='5.0.1',
-    )
-
-HEIMDAL_LIBRARY('hbase',
-    'base/array.c base/bool.c base/dict.c base/heimbase.c base/string.c base/number.c base/null.c',
-    includes='../heimdal/base ../heimdal/include',
-    deps='roken replace',
-    version_script='base/version-script.map',
-    vnum='1.0.0',
-    )
+if not bld.CONFIG_SET('USING_SYSTEM_HBASE'):
+    HEIMDAL_LIBRARY('hbase',
+        'base/array.c base/bool.c base/dict.c base/heimbase.c base/string.c base/number.c base/null.c',
+        includes='../heimdal/base ../heimdal/include',
+        deps='roken replace',
+        version_script='base/version-script.map',
+        vnum='1.0.0',
+        )
 
 
 if not bld.CONFIG_SET("USING_SYSTEM_HX509"):
