@@ -2002,6 +2002,7 @@ struct traverse_state {
 	uint32_t count;
 	ctdb_traverse_func fn;
 	void *private_data;
+	bool listemptyrecords;
 };
 
 /*
@@ -2031,7 +2032,9 @@ static void traverse_handler(struct ctdb_context *ctdb, uint64_t srvid, TDB_DATA
 		return;
 	}
 
-	if (data.dsize == sizeof(struct ctdb_ltdb_header)) {
+	if (!state->listemptyrecords &&
+	    data.dsize == sizeof(struct ctdb_ltdb_header))
+	{
 		/* empty records are deleted records in ctdb */
 		return;
 	}
@@ -2043,12 +2046,17 @@ static void traverse_handler(struct ctdb_context *ctdb, uint64_t srvid, TDB_DATA
 	state->count++;
 }
 
-
-/*
-  start a cluster wide traverse, calling the supplied fn on each record
-  return the number of records traversed, or -1 on error
+/**
+ * start a cluster wide traverse, calling the supplied fn on each record
+ * return the number of records traversed, or -1 on error
+ *
+ * Extendet variant with a flag to signal whether empty records should
+ * be listed.
  */
-int ctdb_traverse(struct ctdb_db_context *ctdb_db, ctdb_traverse_func fn, void *private_data)
+static int ctdb_traverse_ext(struct ctdb_db_context *ctdb_db,
+			     ctdb_traverse_func fn,
+			     bool withemptyrecords,
+			     void *private_data)
 {
 	TDB_DATA data;
 	struct ctdb_traverse_start t;
@@ -2061,6 +2069,7 @@ int ctdb_traverse(struct ctdb_db_context *ctdb_db, ctdb_traverse_func fn, void *
 	state.count = 0;
 	state.private_data = private_data;
 	state.fn = fn;
+	state.listemptyrecords = withemptyrecords;
 
 	ret = ctdb_client_set_message_handler(ctdb_db->ctdb, srvid, traverse_handler, &state);
 	if (ret != 0) {
@@ -2071,7 +2080,7 @@ int ctdb_traverse(struct ctdb_db_context *ctdb_db, ctdb_traverse_func fn, void *
 	t.db_id = ctdb_db->db_id;
 	t.srvid = srvid;
 	t.reqid = 0;
-	t.withemptyrecords = false;
+	t.withemptyrecords = withemptyrecords;
 
 	data.dptr = (uint8_t *)&t;
 	data.dsize = sizeof(t);
@@ -2095,6 +2104,18 @@ int ctdb_traverse(struct ctdb_db_context *ctdb_db, ctdb_traverse_func fn, void *
 	}
 
 	return state.count;
+}
+
+/**
+ * start a cluster wide traverse, calling the supplied fn on each record
+ * return the number of records traversed, or -1 on error
+ *
+ * Standard version which does not list the empty records:
+ * These are considered deleted.
+ */
+int ctdb_traverse(struct ctdb_db_context *ctdb_db, ctdb_traverse_func fn, void *private_data)
+{
+	return ctdb_traverse_ext(ctdb_db, fn, false, private_data);
 }
 
 #define ISASCII(x) (isprint(x) && !strchr("\"\\", (x)))
