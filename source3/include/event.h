@@ -27,7 +27,6 @@
 /* The following definitions come from lib/events.c  */
 
 bool event_add_to_select_args(struct event_context *event_ctx,
-			      const struct timeval *now,
 			      fd_set *read_fds, fd_set *write_fds,
 			      struct timeval *timeout, int *maxfd);
 bool run_events(struct event_context *event_ctx,

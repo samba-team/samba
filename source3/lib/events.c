@@ -27,10 +27,10 @@
  */
 
 bool event_add_to_select_args(struct tevent_context *ev,
-			      const struct timeval *now,
 			      fd_set *read_fds, fd_set *write_fds,
 			      struct timeval *timeout, int *maxfd)
 {
+	struct timeval now;
 	struct tevent_fd *fde;
 	struct timeval diff;
 	bool ret = false;
@@ -60,7 +60,8 @@ bool event_add_to_select_args(struct tevent_context *ev,
 		return ret;
 	}
 
-	diff = timeval_until(now, &ev->timer_events->next_event);
+	now = timeval_current();
+	diff = timeval_until(&now, &ev->timer_events->next_event);
 	*timeout = timeval_min(timeout, &diff);
 
 	return true;
@@ -167,7 +168,7 @@ struct timeval *get_timed_events_timeout(struct tevent_context *ev,
 
 static int s3_event_loop_once(struct tevent_context *ev, const char *location)
 {
-	struct timeval now, to;
+	struct timeval to;
 	fd_set r_fds, w_fds;
 	int maxfd = 0;
 	int ret = 0;
@@ -182,9 +183,7 @@ static int s3_event_loop_once(struct tevent_context *ev, const char *location)
 		return 0;
 	}
 
-	GetTimeOfDay(&now);
-
-	if (!event_add_to_select_args(ev, &now, &r_fds, &w_fds, &to, &maxfd)) {
+	if (!event_add_to_select_args(ev, &r_fds, &w_fds, &to, &maxfd)) {
 		return -1;
 	}
 

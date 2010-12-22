@@ -1881,11 +1881,8 @@ bool listen_for_packets(bool run_election)
 	timeout.tv_sec = (run_election||num_response_packets) ? 1 : NMBD_SELECT_LOOP;
 	timeout.tv_usec = 0;
 
-	{
-		struct timeval now = timeval_current();
-		event_add_to_select_args(nmbd_event_context(), &now,
-					 &r_fds, &w_fds, &timeout, &maxfd);
-	}
+	event_add_to_select_args(nmbd_event_context(),
+				 &r_fds, &w_fds, &timeout, &maxfd);
 
 	selrtn = sys_select(maxfd+1,&r_fds,&w_fds,NULL,&timeout);
 
