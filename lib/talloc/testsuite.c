@@ -1167,6 +1167,21 @@ static bool test_free_ref_null_context(void)
 	return true;
 }
 
+static bool test_rusty(void)
+{
+	void *root;
+	const char *p1;
+
+	talloc_enable_null_tracking();
+	root = talloc_new(NULL);
+	p1 = talloc_strdup(root, "foo");
+	talloc_increase_ref_count(p1);
+	talloc_report_full(root, stdout);
+	talloc_free(root);
+	return true;
+}
+
+
 static void test_reset(void)
 {
 	talloc_set_log_fn(test_log_stdout);
@@ -1221,6 +1236,8 @@ bool torture_local_talloc(struct torture_context *tctx)
 	ret &= test_pool();
 	test_reset();
 	ret &= test_free_ref_null_context();
+	test_reset();
+	ret &= test_rusty();
 
 	if (ret) {
 		test_reset();
