@@ -483,7 +483,7 @@ KDC_SOURCE='kdc/default_config.c kdc/kerberos5.c kdc/krb5tgs.c kdc/pkinit.c kdc/
 
 HEIMDAL_LIBRARY('kdc', source=KDC_SOURCE,
                     includes='../heimdal/kdc',
-                    deps='roken krb5 hdb asn1 HEIMDAL_DIGEST_ASN1 HEIMDAL_KX509_ASN1 heimntlm hcrypto com_err wind hbase',
+                    deps='roken krb5 hdb asn1 HEIMDAL_DIGEST_ASN1 HEIMDAL_KX509_ASN1 heimntlm hcrypto com_err wind heimbase',
                     vnum='2.0.0',
                     version_script='kdc/version-script.map')
 HEIMDAL_AUTOPROTO('kdc/kdc-protos.h', KDC_SOURCE)
@@ -579,7 +579,7 @@ HEIMDAL_SUBSYSTEM('HEIMDAL_CONFIG',
                   'lib/krb5/expand_path.c lib/krb5/plugin.c lib/krb5/context.c',
                   includes='../heimdal/lib/krb5 ../heimdal/lib/asn1 ../heimdal/include',
                   cflags=bld.dynconfig_cflags('LIBDIR BINDIR LIBEXECDIR SBINDIR'),
-                  deps='hcrypto hbase wind hx509 com_err'
+                  deps='hcrypto heimbase wind hx509 com_err'
                   )
 
 KRB5_SOURCE = [os.path.join('lib/krb5/', x) for x in to_list(
@@ -622,7 +622,7 @@ KRB5_SOURCE = [os.path.join('lib/krb5/', x) for x in to_list(
 HEIMDAL_LIBRARY('krb5', KRB5_SOURCE,
     version_script='lib/krb5/version-script.map',
                     includes='../heimdal/lib/krb5 ../heimdal/lib/asn1 ../heimdal/include',
-            deps='roken wind asn1 hx509 hcrypto samba-hostconfig intl com_err HEIMDAL_CONFIG hbase',
+            deps='roken wind asn1 hx509 hcrypto samba-hostconfig intl com_err HEIMDAL_CONFIG heimbase',
             vnum='26.0.0',
                     )
 KRB5_PROTO_SOURCE = KRB5_SOURCE + ['lib/krb5/expand_path.c', 'lib/krb5/plugin.c', 'lib/krb5/context.c']
@@ -703,8 +703,8 @@ if not bld.CONFIG_SET('USING_SYSTEM_HCRYPTO'):
         vnum='5.0.1',
         )
 
-if not bld.CONFIG_SET('USING_SYSTEM_HBASE'):
-    HEIMDAL_LIBRARY('hbase',
+if not bld.CONFIG_SET('USING_SYSTEM_HEIMBASE'):
+    HEIMDAL_LIBRARY('heimbase',
         'base/array.c base/bool.c base/dict.c base/heimbase.c base/string.c base/number.c base/null.c',
         includes='../heimdal/base ../heimdal/include',
         deps='roken replace',
