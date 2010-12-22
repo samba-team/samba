@@ -7553,8 +7553,9 @@ static bool torture_rpc_spoolss_printerwkn_setup(struct torture_context *tctx, v
 	t->info2.printername	= TORTURE_WELLKNOWN_PRINTER;
 	t->devmode		= NULL;
 
-	if (t->wellknown && torture_setting_bool(tctx, "samba3", false)) {
-		torture_skip(tctx, "skipping AddPrinter level 1 against samba");
+	/* FIXME */
+	if (t->wellknown) {
+		torture_skip(tctx, "skipping AddPrinter level 1");
 	}
 
 	return torture_rpc_spoolss_printer_setup_common(tctx, t);
@@ -7571,8 +7572,9 @@ static bool torture_rpc_spoolss_printerexwkn_setup(struct torture_context *tctx,
 	t->info2.printername	= TORTURE_WELLKNOWN_PRINTER_EX;
 	t->devmode		= NULL;
 
-	if (t->wellknown && torture_setting_bool(tctx, "samba3", false)) {
-		torture_skip(tctx, "skipping AddPrinter level 1 against samba");
+	/* FIXME */
+	if (t->wellknown) {
+		torture_skip(tctx, "skipping AddPrinterEx level 1");
 	}
 
 	return torture_rpc_spoolss_printer_setup_common(tctx, t);
