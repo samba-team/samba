@@ -276,14 +276,11 @@ class BasicTests(unittest.TestCase):
             self.assertEquals(num, ERR_OBJECT_CLASS_VIOLATION)
 
         # More than one change operation is allowed
-        ldb.modify_ldif("""
-dn: cn=ldaptestuser,cn=users, """ + self.base_dn + """
-changetype: modify
-delete: objectClass
-objectClass: bootableDevice
-add: objectClass
-objectClass: bootableDevice
-""")
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+        m.add(MessageElement("bootableDevice", FLAG_MOD_DELETE, "objectClass"))
+        m.add(MessageElement("bootableDevice", FLAG_MOD_ADD, "objectClass"))
+        ldb.modify(m)
 
         # We cannot remove all object classes by an empty replace
         m = Message()
