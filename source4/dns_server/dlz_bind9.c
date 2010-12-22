@@ -150,7 +150,7 @@ static bool b9_format(struct dlz_bind9_data *state,
 		*type = "soa";
 
 		/* we need to fake the authoritative nameserver to
-		 * point at ourselves. This is now AD DNS servers
+		 * point at ourselves. This is how AD DNS servers
 		 * force clients to send updates to the right local DC
 		 */
 		mname = talloc_asprintf(mem_ctx, "%s.%s",
@@ -1179,6 +1179,7 @@ _PUBLIC_ isc_result_t dlz_addrdataset(const char *name, const char *rdatastr, vo
 	int ret, i;
 	struct ldb_message_element *el;
 	enum ndr_err_code ndr_err;
+	NTTIME t;
 
 	if (state->transaction_token != (void*)version) {
 		state->log(ISC_LOG_INFO, "samba_dlz: bad transaction version");
@@ -1190,9 +1191,13 @@ _PUBLIC_ isc_result_t dlz_addrdataset(const char *name, const char *rdatastr, vo
 		return ISC_R_NOMEMORY;
 	}
 
-	/* we're waiting on docs for this field */
-	rec->dwFlags = 0x0000f005;
-	rec->dwSerial = state->soa_serial;
+	unix_to_nt_time(&t, time(NULL));
+	t /= 10*1000*1000; /* convert to seconds (NT time is in 100ns units) */
+	t /= 3600;         /* convert to hours */
+
+	rec->rank        = DNS_RANK_ZONE;
+	rec->dwSerial    = state->soa_serial;
+	rec->dwTimeStamp = (uint32_t)t;
 
 	if (!b9_parse(state, rdatastr, rec)) {
 		state->log(ISC_LOG_INFO, "samba_dlz: failed to parse rdataset '%s'", rdatastr);

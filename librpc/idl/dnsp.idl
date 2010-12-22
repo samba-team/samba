@@ -23,7 +23,7 @@ import "misc.idl";
 
 interface dnsp
 {
-	typedef enum {
+	typedef [enum16bit] enum {
 		DNS_TYPE_ZERO  = 0x0,
 		DNS_TYPE_A     = 0x1,
 		DNS_TYPE_NS    = 0x2,
@@ -64,6 +64,22 @@ interface dnsp
 		DNS_TYPE_WINS  = 0xFF01,
 		DNS_TYPE_WINSR = 0xFF02
 	} dns_record_type;
+
+	typedef [enum8bit] enum {
+		DNS_RANK_NONE		        = 0x00,
+		DNS_RANK_CACHE_BIT              = 0x01,
+		DNS_RANK_ROOT_HINT              = 0x08,
+		DNS_RANK_OUTSIDE_GLUE           = 0x20,
+		DNS_RANK_CACHE_NA_ADDITIONAL    = 0x31,
+		DNS_RANK_CACHE_NA_AUTHORITY     = 0x41,
+		DNS_RANK_CACHE_A_ADDITIONAL     = 0x51,
+		DNS_RANK_CACHE_NA_ANSWER        = 0x61,
+		DNS_RANK_CACHE_A_AUTHORITY      = 0x71,
+		DNS_RANK_GLUE                   = 0x80,
+		DNS_RANK_NS_GLUE                = 0x82,
+		DNS_RANK_CACHE_A_ANSWER         = 0xc1,
+		DNS_RANK_ZONE                   = 0xf0
+	} dns_record_rank;
 
 	typedef [public] struct {
 		uint32		serial;
@@ -110,12 +126,14 @@ interface dnsp
 	   partitions in AD */
 	typedef [public] struct {
 		[value(ndr_size_dnsRecordData(&data,wType,ndr->flags))] uint16 wDataLength;
-		dns_record_type wType;
-		uint32          dwFlags;
-		uint32          dwSerial;
-	        [flag(NDR_BIG_ENDIAN)] uint32   dwTtlSeconds;
-		uint32		dwTimeStamp;
-		uint32          dwReserved;
+		dns_record_type 	wType;
+		[value(5)] uint8	version;
+		dns_record_rank 	rank;
+		uint16			flags;
+		uint32          	dwSerial;
+	        [flag(NDR_BIG_ENDIAN)]  uint32   dwTtlSeconds;
+		uint32          	dwReserved;
+		uint32			dwTimeStamp;
 		[switch_is(wType)] dnsRecordData data;
 	} dnsp_DnssrvRpcRecord;
 
