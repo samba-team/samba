@@ -1219,10 +1219,14 @@ static WERROR winreg_printer_write_date(TALLOC_CTX *mem_ctx,
 	struct tm *tm;
 	time_t t;
 
-	t = nt_time_to_unix(data);
-	tm = localtime(&t);
-	str = talloc_asprintf(mem_ctx, "%02d/%02d/%04d",
-			      tm->tm_mon + 1, tm->tm_mday, tm->tm_year + 1900);
+	if (data == 0) {
+		str = talloc_strdup(mem_ctx, "01/01/1601");
+	} else {
+		t = nt_time_to_unix(data);
+		tm = localtime(&t);
+		str = talloc_asprintf(mem_ctx, "%02d/%02d/%04d",
+				      tm->tm_mon + 1, tm->tm_mday, tm->tm_year + 1900);
+	}
 	if (!str) {
 		return WERR_NOMEM;
 	}
@@ -1254,6 +1258,11 @@ static WERROR winreg_printer_date_to_NTTIME(const char *str, NTTIME *data)
 {
 	struct tm tm;
 	time_t t;
+
+	if (strequal(str, "01/01/1601")) {
+		*data = 0;
+		return WERR_OK;
+	}
 
 	ZERO_STRUCT(tm);
 
