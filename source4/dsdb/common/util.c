@@ -3952,6 +3952,25 @@ const char *samdb_forest_name(struct ldb_context *ldb, TALLOC_CTX *mem_ctx)
 	return forest_name;
 }
 
+/* returns back the default domain DNS name */
+const char *samdb_default_domain_name(struct ldb_context *ldb, TALLOC_CTX *mem_ctx)
+{
+	const char *domain_name = ldb_dn_canonical_string(mem_ctx,
+							  ldb_get_default_basedn(ldb));
+	char *p;
+
+	if (domain_name == NULL) {
+		return NULL;
+	}
+
+	p = strchr(domain_name, '/');
+	if (p) {
+		*p = '\0';
+	}
+
+	return domain_name;
+}
+
 /*
    validate that an DSA GUID belongs to the specified user sid.
    The user SID must be a domain controller account (either RODC or
