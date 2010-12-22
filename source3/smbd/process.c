@@ -979,13 +979,8 @@ static NTSTATUS smbd_server_connection_loop_once(struct smbd_server_connection *
 	 * select for longer than it would take to wait for them.
 	 */
 
-	{
-		struct timeval now;
-		GetTimeOfDay(&now);
-
-		event_add_to_select_args(smbd_event_context(), &now,
-					 &r_fds, &w_fds, &to, &maxfd);
-	}
+	event_add_to_select_args(smbd_event_context(),
+				 &r_fds, &w_fds, &to, &maxfd);
 
 	/* Process a signal and timed events now... */
 	if (run_events(smbd_event_context(), &selrtn, NULL, NULL)) {

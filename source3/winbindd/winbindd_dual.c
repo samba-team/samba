@@ -1384,7 +1384,6 @@ static bool fork_domain_child(struct winbindd_child *child)
 		int maxfd;
 		struct timeval t;
 		struct timeval *tp;
-		struct timeval now;
 		TALLOC_CTX *frame = talloc_stackframe();
 		struct iovec iov[2];
 		int iov_count;
@@ -1394,8 +1393,6 @@ static bool fork_domain_child(struct winbindd_child *child)
 			TALLOC_FREE(frame);
 			continue;
 		}
-
-		GetTimeOfDay(&now);
 
 		if (child->domain && child->domain->startup &&
 				(time_mono(NULL) > child->domain->startup_time + 30)) {
@@ -1418,7 +1415,7 @@ static bool fork_domain_child(struct winbindd_child *child)
 		t.tv_sec = 999999;
 		t.tv_usec = 0;
 
-		event_add_to_select_args(winbind_event_context(), &now,
+		event_add_to_select_args(winbind_event_context(),
 					 &r_fds, &w_fds, &t, &maxfd);
 		tp = get_timed_events_timeout(winbind_event_context(), &t);
 		if (tp) {
