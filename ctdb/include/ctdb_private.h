@@ -514,6 +514,7 @@ struct ctdb_db_context {
 	struct lockwait_handle *lockwait_active;
 	struct lockwait_handle *lockwait_overflow;
 	struct ctdb_persistent_state *persistent_state;
+	struct trbt_tree *delete_queue;
 };
 
 
