@@ -908,9 +908,56 @@ static NTSTATUS db_ctdb_store(struct db_record *rec, TDB_DATA data, int flag)
 
 
 
+#ifdef CTDB_CONTROL_SCHEDULE_FOR_DELETION
+static NTSTATUS db_ctdb_send_schedule_for_deletion(struct db_record *rec)
+{
+	NTSTATUS status;
+	struct ctdb_control_schedule_for_deletion *dd;
+	TDB_DATA indata;
+	int cstatus;
+	struct db_ctdb_rec *crec = talloc_get_type_abort(
+		rec->private_data, struct db_ctdb_rec);
+
+	indata.dsize = offsetof(struct ctdb_control_schedule_for_deletion, key) + rec->key.dsize;
+	indata.dptr = talloc_zero_array(crec, uint8_t, indata.dsize);
+	if (indata.dptr == NULL) {
+		DEBUG(0, (__location__ " talloc failed!\n"));
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	dd = (struct ctdb_control_schedule_for_deletion *)(void *)indata.dptr;
+	dd->db_id = crec->ctdb_ctx->db_id;
+	dd->hdr = crec->header;
+	dd->keylen = rec->key.dsize;
+	memcpy(dd->key, rec->key.dptr, rec->key.dsize);
+
+	status = ctdbd_control_local(messaging_ctdbd_connection(),
+				     CTDB_CONTROL_SCHEDULE_FOR_DELETION,
+				     crec->ctdb_ctx->db_id,
+				     CTDB_CTRL_FLAG_NOREPLY, /* flags */
+				     indata,
+				     NULL, /* outdata */
+				     NULL, /* errmsg */
+				     &cstatus);
+	talloc_free(indata.dptr);
+
+	if (!NT_STATUS_IS_OK(status) || cstatus != 0) {
+		DEBUG(1, (__location__ " Error sending local control "
+			  "SCHEDULE_FOR_DELETION: %s, cstatus = %d\n",
+			  nt_errstr(status), cstatus));
+		if (NT_STATUS_IS_OK(status)) {
+			status = NT_STATUS_UNSUCCESSFUL;
+		}
+	}
+
+	return status;
+}
+#endif
+
 static NTSTATUS db_ctdb_delete(struct db_record *rec)
 {
 	TDB_DATA data;
+	NTSTATUS status;
 
 	/*
 	 * We have to store the header with empty data. TODO: Fix the
@@ -919,8 +966,16 @@ static NTSTATUS db_ctdb_delete(struct db_record *rec)
 
 	ZERO_STRUCT(data);
 
-	return db_ctdb_store(rec, data, 0);
+	status = db_ctdb_store(rec, data, 0);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 
+#ifdef CTDB_CONTROL_SCHEDULE_FOR_DELETION
+	status = db_ctdb_send_schedule_for_deletion(rec);
+#endif
+
+	return status;
 }
 
 static int db_ctdb_record_destr(struct db_record* data)
