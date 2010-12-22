@@ -41,6 +41,8 @@
 #include "dsdb/samdb/ldb_modules/util.h"
 #include "dsdb/samdb/ldb_modules/schema.h"
 #include "lib/util/tsort.h"
+#include "system/kerberos.h"
+#include "auth/kerberos/kerberos.h"
 
 struct extended_access_check_attribute {
 	const char *oa_name;
@@ -431,6 +433,208 @@ static int acl_sDRightsEffective(struct ldb_module *module,
 				  "sDRightsEffective", flags);
 }
 
+static int acl_validate_spn_value(TALLOC_CTX *mem_ctx,
+				  struct ldb_context *ldb,
+				  const char *spn_value,
+				  int userAccountControl,
+				  const char *samAccountName,
+				  const char *dnsHostName,
+				  const char *netbios_name,
+				  const char *ntds_guid)
+{
+	int ret;
+	krb5_context krb_ctx;
+	krb5_error_code kerr;
+	krb5_principal principal;
+	char *instanceName;
+	char *serviceType;
+	char *serviceName;
+	const char *realm;
+	const char *guid_str;
+	const char *forest_name = samdb_forest_name(ldb, mem_ctx);
+	const char *base_domain = samdb_default_domain_name(ldb, mem_ctx);
+	struct loadparm_context *lp_ctx = talloc_get_type(ldb_get_opaque(ldb, "loadparm"),
+							  struct loadparm_context);
+	bool is_dc = (userAccountControl & UF_SERVER_TRUST_ACCOUNT) ||
+		(userAccountControl & UF_PARTIAL_SECRETS_ACCOUNT);
+
+	kerr = smb_krb5_init_context_basic(mem_ctx,
+					   lp_ctx,
+					   &krb_ctx);
+	if (kerr != 0) {
+		return ldb_error(ldb, LDB_ERR_OPERATIONS_ERROR,
+				 "Could not initialize kerberos context.");
+	}
+
+	ret = krb5_parse_name(krb_ctx, spn_value, &principal);
+	if (ret) {
+		krb5_free_context(krb_ctx);
+		return LDB_ERR_CONSTRAINT_VIOLATION;
+	}
+
+	instanceName = principal->name.name_string.val[1];
+	serviceType = principal->name.name_string.val[0];
+	realm = krb5_principal_get_realm(krb_ctx, principal);
+	guid_str = talloc_asprintf(mem_ctx,"%s._msdcs.%s",
+				   ntds_guid,
+				   forest_name);
+	if (principal->name.name_string.len == 3) {
+		serviceName = principal->name.name_string.val[2];
+	} else {
+		serviceName = NULL;
+	}
+
+	if (serviceName) {
+		if (!is_dc) {
+			goto fail;
+		}
+		if (strcasecmp(serviceType, "ldap") == 0) {
+			if (strcasecmp(serviceName, netbios_name) != 0 &&
+			    strcasecmp(serviceName, forest_name) != 0) {
+				goto fail;
+			}
+
+		} else if (strcasecmp(serviceType, "gc") == 0) {
+			if (strcasecmp(serviceName, forest_name) != 0) {
+				goto fail;
+			}
+		} else {
+			if (strcasecmp(serviceName, base_domain) != 0 &&
+			    strcasecmp(serviceName, netbios_name) != 0) {
+				goto fail;
+			}
+		}
+	}
+	/* instanceName can be samAccountName without $ or dnsHostName
+	 * or "ntds_guid._msdcs.forest_domain for DC objects */
+	if (strncasecmp(instanceName, samAccountName, strlen(samAccountName - 1)) == 0) {
+		goto success;
+	} else if (strcasecmp(instanceName, dnsHostName) == 0) {
+		goto success;
+	} else if (is_dc) {
+		if (strcasecmp(instanceName, guid_str) == 0) {
+			goto success;
+		}
+	} else {
+		goto fail;
+	}
+fail:
+	krb5_free_principal(krb_ctx, principal);
+	krb5_free_context(krb_ctx);
+	return LDB_ERR_CONSTRAINT_VIOLATION;
+
+success:
+	krb5_free_principal(krb_ctx, principal);
+	krb5_free_context(krb_ctx);
+	return LDB_SUCCESS;
+}
+
+static int acl_check_spn(TALLOC_CTX *mem_ctx,
+			 struct ldb_module *module,
+			 struct ldb_request *req,
+			 struct security_descriptor *sd,
+			 struct dom_sid *sid,
+			 const struct GUID *oc_guid,
+			 const struct dsdb_attribute *attr)
+{
+	int ret;
+	unsigned int i;
+	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
+	struct ldb_result *acl_res;
+	struct ldb_result *netbios_res;
+	struct ldb_message_element *el;
+	struct ldb_dn *partitions_dn = samdb_partitions_dn(ldb, tmp_ctx);
+	int userAccountControl;
+	const char *samAccountName;
+	const char *dnsHostName;
+	const char *netbios_name;
+	const struct GUID *ntds = samdb_ntds_objectGUID(ldb);
+	const char *ntds_guid = GUID_string(tmp_ctx, ntds);
+
+	static const char *acl_attrs[] = {
+		"samAccountName",
+		"dnsHostName",
+		"userAccountControl",
+		NULL
+	};
+	static const char *netbios_attrs[] = {
+		"nETBIOSName",
+		NULL
+	};
+	/* if we have wp, we can do whatever we like */
+	if (acl_check_access_on_attribute(module,
+					  tmp_ctx,
+					  sd,
+					  sid,
+					  SEC_ADS_WRITE_PROP,
+					  attr) == LDB_SUCCESS) {
+		talloc_free(tmp_ctx);
+		return LDB_SUCCESS;
+	}
+
+	ret = acl_check_extended_right(tmp_ctx, sd, acl_user_token(module),
+				       GUID_DRS_VALIDATE_SPN,
+				       SEC_ADS_SELF_WRITE,
+				       sid);
+
+	if (ret == LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS) {
+		dsdb_acl_debug(sd, acl_user_token(module),
+			       req->op.mod.message->dn,
+			       true,
+			       10);
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
+	ret = dsdb_module_search_dn(module, tmp_ctx,
+				    &acl_res, req->op.mod.message->dn,
+				    acl_attrs,
+				    DSDB_FLAG_NEXT_MODULE |
+				    DSDB_SEARCH_SHOW_DELETED);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
+	userAccountControl = ldb_msg_find_attr_as_int(acl_res->msgs[0], "userAccountControl", 0);
+	dnsHostName = ldb_msg_find_attr_as_string(acl_res->msgs[0], "dnsHostName", NULL);
+	samAccountName = ldb_msg_find_attr_as_string(acl_res->msgs[0], "samAccountName", NULL);
+
+	ret = dsdb_module_search(module, tmp_ctx,
+				 &netbios_res, partitions_dn,
+				 LDB_SCOPE_ONELEVEL,
+				 netbios_attrs,
+				 DSDB_FLAG_NEXT_MODULE,
+				 "(ncName=%s)",
+				 ldb_dn_get_linearized(ldb_get_default_basedn(ldb)));
+
+	netbios_name = ldb_msg_find_attr_as_string(netbios_res->msgs[0], "nETBIOSName", NULL);
+
+	el = ldb_msg_find_element(req->op.mod.message, "servicePrincipalName");
+	if (!el) {
+		return ldb_error(ldb, LDB_ERR_OPERATIONS_ERROR,
+					 "Error finding element for servicePrincipalName.");
+	}
+
+	for (i=0; i < el->num_values; i++) {
+		ret = acl_validate_spn_value(tmp_ctx,
+					     ldb,
+					     (char *)el->values[i].data,
+					     userAccountControl,
+					     samAccountName,
+					     dnsHostName,
+					     netbios_name,
+					     ntds_guid);
+		if (ret != LDB_SUCCESS) {
+			talloc_free(tmp_ctx);
+			return ret;
+		}
+	}
+	talloc_free(tmp_ctx);
+	return LDB_SUCCESS;
+}
+
 static int acl_add(struct ldb_module *module, struct ldb_request *req)
 {
 	int ret;
@@ -755,6 +959,17 @@ static int acl_modify(struct ldb_module *module, struct ldb_request *req)
 							sid,
 							guid,
 							userPassword);
+			if (ret != LDB_SUCCESS) {
+				goto fail;
+			}
+		} else if (ldb_attr_cmp("servicePrincipalName", req->op.mod.message->elements[i].name) == 0) {
+			ret = acl_check_spn(tmp_ctx,
+					    module,
+					    req,
+					    sd,
+					    sid,
+					    guid,
+					    attr);
 			if (ret != LDB_SUCCESS) {
 				goto fail;
 			}
