@@ -208,7 +208,9 @@ done:
 	if (!NT_STATUS_IS_OK(status)) {
 		if (fd != -1) {
 			close(fd);
-			unlink(fsp->print_file->filename);
+			if (fsp->print_file) {
+				unlink(fsp->print_file->filename);
+			}
 		}
 		/* We need to delete the job from spoolss too */
 		if (pf->jobid) {
