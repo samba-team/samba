@@ -28,14 +28,16 @@
 /*
   display any protocol tower
  */
-static void display_tower(TALLOC_CTX *mem_ctx, struct epm_tower *twr)
+static void display_tower(struct torture_context *tctx, struct epm_tower *twr)
 {
 	int i;
 
-	for (i=0;i<twr->num_floors;i++) {
-		printf(" %s", epm_floor_string(mem_ctx, &twr->floors[i]));
+	for (i = 0; i < twr->num_floors; i++) {
+		torture_comment(tctx,
+				" %s",
+				epm_floor_string(tctx, &twr->floors[i]));
 	}
-	printf("\n");
+	torture_comment(tctx, "\n");
 }
 
 
@@ -152,6 +154,7 @@ static bool test_LookupHandleFree(struct torture_context *tctx,
 	}
 
 	r.in.entry_handle = entry_handle;
+	r.out.entry_handle = entry_handle;
 
 	status = dcerpc_epm_LookupHandleFree_r(h, tctx, &r);
 	if (NT_STATUS_IS_ERR(status)) {
@@ -172,55 +175,63 @@ static bool test_LookupHandleFree(struct torture_context *tctx,
 	return true;
 }
 
-static bool test_Lookup(struct torture_context *tctx, 
-						struct dcerpc_pipe *p)
+static bool test_Lookup_simple(struct torture_context *tctx,
+			       struct dcerpc_pipe *p)
 {
 	NTSTATUS status;
 	struct epm_Lookup r;
-	struct GUID uuid;
-	struct rpc_if_id_t iface;
-	struct policy_handle handle;
-	uint32_t num_ents;
-	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct policy_handle entry_handle;
+	uint32_t num_ents = 0;
+	struct dcerpc_binding_handle *h = p->binding_handle;
 
-	ZERO_STRUCT(handle);
+	ZERO_STRUCT(entry_handle);
 
-	r.in.inquiry_type = 0;
-	r.in.object = &uuid;
-	r.in.interface_id = &iface;
-	r.in.vers_option = 0;
-	r.in.entry_handle = &handle;
-	r.out.entry_handle = &handle;
+	torture_comment(tctx, "Testing epm_Lookup\n");
+
+	/* get all elements */
+	r.in.inquiry_type = RPC_C_EP_ALL_ELTS;
+	r.in.object = NULL;
+	r.in.interface_id = NULL;
+	r.in.vers_option = RPC_C_VERS_ALL;
+
+	r.in.entry_handle = &entry_handle;
 	r.in.max_ents = 10;
+
+	r.out.entry_handle = &entry_handle;
 	r.out.num_ents = &num_ents;
 
 	do {
 		int i;
 
-		ZERO_STRUCT(uuid);
-		ZERO_STRUCT(iface);
-
-		status = dcerpc_epm_Lookup_r(b, tctx, &r);
-		if (!NT_STATUS_IS_OK(status) || r.out.result != 0) {
+		status = dcerpc_epm_Lookup_r(h, tctx, &r);
+		if (!NT_STATUS_IS_OK(status) ||
+		    r.out.result != EPMAPPER_STATUS_OK) {
 			break;
 		}
 
-		printf("epm_Lookup returned %d events GUID %s\n", 
-		       *r.out.num_ents, GUID_string(tctx, &handle.uuid));
+		torture_comment(tctx,
+				"epm_Lookup returned %d events, entry_handle: %s\n",
+				*r.out.num_ents,
+				GUID_string(tctx, &entry_handle.uuid));
 
-		for (i=0;i<*r.out.num_ents;i++) {
-			printf("\nFound '%s'\n", r.out.entries[i].annotation);
+		for (i = 0; i < *r.out.num_ents; i++) {
+			torture_comment(tctx,
+					"\n  Found '%s'\n",
+					r.out.entries[i].annotation);
+
 			display_tower(tctx, &r.out.entries[i].tower->tower);
-			if (r.out.entries[i].tower->tower.num_floors == 5) {
-				test_Map(b, tctx, r.out.entries[i].tower);
-			}
 		}
-	} while (NT_STATUS_IS_OK(status) && 
-		 r.out.result == 0 && 
+	} while (NT_STATUS_IS_OK(status) &&
+		 r.out.result == EPMAPPER_STATUS_OK &&
 		 *r.out.num_ents == r.in.max_ents &&
-		 !policy_handle_empty(&handle));
+		 !policy_handle_empty(&entry_handle));
 
-	torture_assert_ntstatus_ok(tctx, status, "Lookup failed");
+	torture_assert_ntstatus_ok(tctx, status, "epm_Lookup failed");
+	torture_assert(tctx, r.out.result == EPMAPPER_STATUS_NO_MORE_ENTRIES, "epm_Lookup failed");
+
+	torture_assert(tctx,
+		       policy_handle_empty(&entry_handle),
+		       "epm_Lookup failed - The policy handle should be emtpy.");
 
 	return true;
 }
@@ -329,6 +340,9 @@ struct torture_suite *torture_rpc_epmapper(TALLOC_CTX *mem_ctx)
 	torture_rpc_tcase_add_test(tcase,
 				   "Insert_noreplace",
 				   test_Insert_noreplace);
+	torture_rpc_tcase_add_test(tcase,
+				   "Lookup_simple",
+				   test_Lookup_simple);
 
 	return suite;
 }
