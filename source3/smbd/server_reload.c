@@ -114,8 +114,6 @@ bool reload_services(struct messaging_context *msg_ctx, int smb_sock,
 
 	ret = lp_load(get_dyn_CONFIGFILE(), False, False, True, True);
 
-	pcap_cache_reload(server_event_context(), msg_ctx, &reload_printers);
-
 	/* perhaps the config filename is now set */
 	if (!test)
 		reload_services(msg_ctx, smb_sock, True);
@@ -136,4 +134,13 @@ bool reload_services(struct messaging_context *msg_ctx, int smb_sock,
 	set_current_service(NULL,0,True);
 
 	return(ret);
+}
+
+/****************************************************************************
+ Notify smbds of new printcap data
+**************************************************************************/
+void reload_pcap_change_notify(struct tevent_context *ev,
+			       struct messaging_context *msg_ctx)
+{
+	message_send_all(msg_ctx, MSG_PRINTER_PCAP, NULL, 0, NULL);
 }

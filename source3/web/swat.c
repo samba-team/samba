@@ -30,6 +30,7 @@
 #include "includes.h"
 #include "popt_common.h"
 #include "web/swat_proto.h"
+#include "printing/pcap.h"
 
 static int demo_mode = False;
 static int passwd_only = False;
@@ -491,8 +492,10 @@ static int save_reload(int snum)
                 return 0;
         }
 	iNumNonAutoPrintServices = lp_numservices();
-	pcap_cache_reload(server_event_context(), server_messaging_context(),
-			  &load_printers);
+	if (pcap_cache_loaded()) {
+		load_printers(server_event_context(),
+			      server_messaging_context());
+	}
 
 	return 1;
 }
@@ -1436,8 +1439,10 @@ const char *lang_msg_rotate(TALLOC_CTX *ctx, const char *msgid)
 	reopen_logs();
 	load_interfaces();
 	iNumNonAutoPrintServices = lp_numservices();
-	pcap_cache_reload(server_event_context(), server_messaging_context(),
-			  &load_printers);
+	if (pcap_cache_loaded()) {
+		load_printers(server_event_context(),
+			      server_messaging_context());
+	}
 
 	cgi_setup(get_dyn_SWATDIR(), !demo_mode);
 
