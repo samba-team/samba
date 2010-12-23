@@ -771,7 +771,7 @@ static int test_FUNCTION(void)
 {
 	printf("test: FUNCTION\n");
 	if (strcmp(__FUNCTION__, "test_FUNCTION") != 0) {
-		printf("failure: FAILURE [\nFAILURE invalid\n]\n");
+		printf("failure: FUNCTION [\nFUNCTION invalid\n]\n");
 		return false;
 	}
 	printf("success: FUNCTION\n");
