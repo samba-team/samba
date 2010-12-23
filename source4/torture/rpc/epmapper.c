@@ -135,6 +135,43 @@ static bool test_Map(struct dcerpc_binding_handle *b,
 	return true;
 }
 
+static bool test_LookupHandleFree(struct torture_context *tctx,
+				  struct dcerpc_binding_handle *h,
+				  struct policy_handle *entry_handle) {
+	NTSTATUS status;
+	struct epm_LookupHandleFree r;
+
+	if (torture_setting_bool(tctx, "samba4", false)) {
+		torture_skip(tctx, "Skip Insert test against Samba4");
+	}
+
+	if (policy_handle_empty(entry_handle)) {
+		torture_comment(tctx,
+				"epm_LookupHandleFree failed - empty policy_handle\n");
+		return false;
+	}
+
+	r.in.entry_handle = entry_handle;
+
+	status = dcerpc_epm_LookupHandleFree_r(h, tctx, &r);
+	if (NT_STATUS_IS_ERR(status)) {
+		torture_comment(tctx,
+				"epm_LookupHandleFree failed - %s\n",
+				nt_errstr(status));
+		return false;
+	}
+
+	if (r.out.result != EPMAPPER_STATUS_OK) {
+		torture_comment(tctx,
+				"epm_LookupHandleFree failed - internal error: "
+				"0x%.4x\n",
+				r.out.result);
+		return false;
+	}
+
+	return true;
+}
+
 static bool test_Lookup(struct torture_context *tctx, 
 						struct dcerpc_pipe *p)
 {
