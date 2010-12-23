@@ -48,6 +48,7 @@
 #define TORTURE_DRIVER_ADOBE		"torture_driver_adobe"
 #define TORTURE_DRIVER_EX_ADOBE		"torture_driver_ex_adobe"
 #define TORTURE_DRIVER_ADOBE_CUPSADDSMB	"torture_driver_adobe_cupsaddsmb"
+#define TORTURE_DRIVER_TIMESTAMPS	"torture_driver_timestamps"
 
 #define TOP_LEVEL_PRINT_KEY "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Print"
 #define TOP_LEVEL_PRINT_PRINTERS_KEY TOP_LEVEL_PRINT_KEY "\\Printers"
@@ -9215,6 +9216,42 @@ static bool test_add_driver_adobe_cupsaddsmb(struct torture_context *tctx,
 	return test_add_driver_arg(tctx, p, d);
 }
 
+static bool test_add_driver_timestamps(struct torture_context *tctx,
+				       struct dcerpc_pipe *p)
+{
+	struct torture_driver_context *d;
+	struct timeval t = timeval_current();
+
+	if (torture_setting_bool(tctx, "samba3", false)) {
+		torture_skip(tctx, "skipping timestamps test against samba");
+	}
+
+	d = talloc_zero(tctx, struct torture_driver_context);
+
+	d->info8.version		= SPOOLSS_DRIVER_VERSION_200X;
+	d->info8.driver_name		= TORTURE_DRIVER_TIMESTAMPS;
+	d->info8.architecture		= NULL;
+	d->info8.driver_path		= talloc_strdup(d, "pscript5.dll");
+	d->info8.data_file		= talloc_strdup(d, "cups6.ppd");
+	d->info8.config_file		= talloc_strdup(d, "cupsui6.dll");
+	d->info8.driver_date		= timeval_to_nttime(&t);
+	d->local.environment		= talloc_strdup(d, "Windows NT x86");
+	d->local.driver_directory	= talloc_strdup(d, "/usr/share/cups/drivers/i386");
+	d->ex				= true;
+
+	torture_assert(tctx,
+		test_add_driver_arg(tctx, p, d),
+		"");
+
+	unix_to_nt_time(&d->info8.driver_date, 1);
+
+	torture_assert(tctx,
+		test_add_driver_arg(tctx, p, d),
+		"");
+
+	return true;
+}
+
 struct torture_suite *torture_rpc_spoolss_driver(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *suite = torture_suite_create(mem_ctx, "spoolss.driver");
@@ -9230,6 +9267,8 @@ struct torture_suite *torture_rpc_spoolss_driver(TALLOC_CTX *mem_ctx)
 	torture_rpc_tcase_add_test(tcase, "add_driver_adobe", test_add_driver_adobe);
 
 	torture_rpc_tcase_add_test(tcase, "add_driver_adobe_cupsaddsmb", test_add_driver_adobe_cupsaddsmb);
+
+	torture_rpc_tcase_add_test(tcase, "add_driver_timestamps", test_add_driver_timestamps);
 
 	return suite;
 }
