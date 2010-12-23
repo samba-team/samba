@@ -1,6 +1,6 @@
                    =================================
                    Release Notes for Samba 3.6.0pre1
-			     July 28, 2010
+                   July 28, 2010
                    =================================
 
 
@@ -50,7 +50,7 @@ this insecure hint.
 SMB2 support
 ------------
 
-SMB2 support in 3.6.0 is fully functional (with one ommission),
+SMB2 support in 3.6.0 is fully functional (with one omission),
 and can be enabled by setting:
 
 max protocol = SMB2
