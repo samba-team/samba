@@ -969,7 +969,12 @@ void print_driver_info_6(PDRIVER_INFO_6 info)
 		printf("\tPrevious Names\t= (null)\n");
 	}
 
-	printf("\tDriver Date\t= %d\n",		info->ftDriverDate);
+	printf("\tDriver Date\t= %d (%08x:%08x)\n",
+		info->ftDriverDate,
+		info->ftDriverDate.dwLowDateTime,
+		info->ftDriverDate.dwHighDateTime);
+	printf("\t\t");
+	print_file_time(&info->ftDriverDate);
 	printf("\tDriver Version\t= %d\n",	info->dwlDriverVersion);
 	printf("\tManufacture Name = %s\n",	info->pszMfgName);
 	printf("\tOEM URL\t\t= %s\n",		info->pszOEMUrl);
@@ -1014,7 +1019,12 @@ void print_driver_info_8(PDRIVER_INFO_8 info)
 	print_multi_sz(info->pszzPreviousNames);
 	printf("\tDependent Files\t=\n");
 	print_multi_sz(info->pDependentFiles);
-	printf("\tDriver Date\t= %d\n",		info->ftDriverDate);
+	printf("\tDriver Date\t= %d (%08x:%08x)\n",
+		info->ftDriverDate,
+		info->ftDriverDate.dwLowDateTime,
+		info->ftDriverDate.dwHighDateTime);
+	printf("\t\t");
+	print_file_time(&info->ftDriverDate);
 	printf("\tDriver Version\t= %d\n",	info->dwlDriverVersion);
 	printf("\tManufacture Name = %s\n",	info->pszMfgName);
 	printf("\tOEM URL\t\t= %s\n",		info->pszOEMUrl);
@@ -1028,7 +1038,12 @@ void print_driver_info_8(PDRIVER_INFO_8 info)
 	printf("\tPrinter Driver Attributes = %d\n", info->dwPrinterDriverAttributes);
 	printf("\tCore Driver Dependencies\t=\n");
 	print_multi_sz(info->pszzCoreDriverDependencies);
-	printf("\tMin Inbox Driver VerDate\t= %d\n", info->ftMinInboxDriverVerDate);
+	printf("\tMin Inbox Driver VerDate\t= %d (%08x:%08x)\n",
+		info->ftMinInboxDriverVerDate,
+		info->ftMinInboxDriverVerDate.dwLowDateTime,
+		info->ftMinInboxDriverVerDate.dwHighDateTime);
+	printf("\t\t");
+	print_file_time(&info->ftMinInboxDriverVerDate);
 	printf("\tMin Inbox Driver VerVersion\t= %d\n", info->dwlMinInboxDriverVerVersion);
 	return;
 }
@@ -1288,3 +1303,84 @@ void print_printer_enum_values(PRINTER_ENUM_VALUES *info)
 	print_printer_data(NULL, info->pValueName, info->cbData, info->pData, info->dwType);
 }
 
+void print_file_time(const FILETIME *t)
+{
+	SYSTEMTIME s;
+	LPSTR dayofweek = NULL;
+	LPSTR month = NULL;
+
+	if (!FileTimeToSystemTime(t, &s)) {
+		printf("Failed to convert FILETIME to SYSTEMTIME\n");
+		return;
+	}
+	switch (s.wDayOfWeek) {
+	case 0:
+		dayofweek = "Sun";
+		break;
+	case 1:
+		dayofweek = "Mon";
+		break;
+	case 2:
+		dayofweek = "Tue";
+		break;
+	case 3:
+		dayofweek = "Wed";
+		break;
+	case 4:
+		dayofweek = "Thu";
+		break;
+	case 5:
+		dayofweek = "Fri";
+		break;
+	case 6:
+		dayofweek = "Sat";
+		break;
+	default:
+		break;
+	}
+
+	switch (s.wMonth) {
+	case 1:
+		month = "Jan";
+		break;
+	case 2:
+		month = "Feb";
+		break;
+	case 3:
+		month = "Mar";
+		break;
+	case 4:
+		month = "Apr";
+		break;
+	case 5:
+		month = "May";
+		break;
+	case 6:
+		month = "Jun";
+		break;
+	case 7:
+		month = "Jul";
+		break;
+	case 8:
+		month = "Aug";
+		break;
+	case 9:
+		month = "Sep";
+		break;
+	case 10:
+		month = "Oct";
+		break;
+	case 11:
+		month = "Nov";
+		break;
+	case 12:
+		month = "Dec";
+		break;
+	default:
+		break;
+	}
+
+	printf("%s %s %02d %02d:%02d:%02d %04d\n",
+		dayofweek, month, s.wDay,
+		s.wHour, s.wMinute, s.wSecond, s.wYear);
+}
