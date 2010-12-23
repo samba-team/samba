@@ -796,9 +796,6 @@ static NTSTATUS ctdbd_control(struct ctdbd_connection *conn,
 	struct ctdbd_connection *new_conn = NULL;
 	NTSTATUS status;
 
-	/* the samba3 ctdb code can't handle NOREPLY yet */
-	flags &= ~CTDB_CTRL_FLAG_NOREPLY;
-
 	if (conn == NULL) {
 		status = ctdbd_init_connection(NULL, &new_conn);
 
