@@ -844,6 +844,9 @@ static NTSTATUS ctdbd_control(struct ctdbd_connection *conn,
 
 	if (flags & CTDB_CTRL_FLAG_NOREPLY) {
 		TALLOC_FREE(new_conn);
+		if (cstatus) {
+			*cstatus = 0;
+		}
 		return NT_STATUS_OK;
 	}
 
