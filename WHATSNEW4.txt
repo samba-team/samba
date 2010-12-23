@@ -78,6 +78,8 @@ Although still in development, samba4 is already used in a couple of production 
 and such kind of use case is intensifying. This script is intendended for administrators
 to allow them to make a periodic backup of the provision in case of problem.
 
+* the 'net' command has been renamed to 'samba-tool'
+
 CHANGES
 =======
 
@@ -114,8 +116,9 @@ KNOWN ISSUES
 RUNNING Samba4
 ==============
 
-A short guide to setting up Samba 4 can be found in the howto.txt file
-in root of the tarball.
+A short guide to setting up Samba 4 can be found on the wiki:
+
+  http://wiki.samba.org/index.php/Samba4/HOWTO
 
 DEVELOPMENT and FEEDBACK
 ========================
