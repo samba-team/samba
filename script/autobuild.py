@@ -36,14 +36,12 @@ tasks = {
                           ("test", "TDB_NO_FSYNC=1 make test", "text/plain") ],
 
     # We don't use TDB_NO_FSYNC=1 here, because we want to test the transaction code
-    "lib/tdb" : [ ("autogen", "./autogen-waf.sh", "text/plain"),
-                  ("configure", "./configure --enable-developer -C ${PREFIX}", "text/plain"),
+    "lib/tdb" : [ ("configure", "./configure --enable-developer -C ${PREFIX}", "text/plain"),
                   ("make", "make -j", "text/plain"),
                   ("install", "make install", "text/plain"),
                   ("test", "make test", "text/plain") ],
 
-    "lib/talloc" : [ ("autogen", "./autogen-waf.sh", "text/plain"),
-                     ("configure", "./configure --enable-developer -C ${PREFIX}", "text/plain"),
+    "lib/talloc" : [ ("configure", "./configure --enable-developer -C ${PREFIX}", "text/plain"),
                      ("make", "make -j", "text/plain"),
                      ("install", "make install", "text/plain"),
                      ("test", "make test", "text/plain"), ],
