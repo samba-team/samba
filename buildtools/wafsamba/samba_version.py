@@ -167,8 +167,7 @@ also accepted as dictionary entries here
         self.STRING = SAMBA_VERSION_STRING
 
         if self.RELEASE_NICKNAME is not None:
-            self.STRING_WITH_NICKNAME += (" (" + self.RELEASE_NICKNAME + ")")
-            self.RELEASE_NICKNAME = self.RELEASE_NICKNAME
+            self.STRING_WITH_NICKNAME = "%s (%s)" % (self.STRING, self.RELEASE_NICKNAME)
         else:
             self.STRING_WITH_NICKNAME = self.STRING
 
