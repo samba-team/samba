@@ -22,40 +22,54 @@ tasks = {
                   ("make basics", "make basics", "text/plain"),
                   ("make", "make -j 4 everything", "text/plain"), # don't use too many processes
                   ("install", "make install", "text/plain"),
-                  ("test", "TDB_NO_FSYNC=1 make test FAIL_IMMEDIATELY=1", "text/plain") ],
+                  ("test", "TDB_NO_FSYNC=1 make test FAIL_IMMEDIATELY=1", "text/plain"),
+                  ("check-clean-tree", "../script/clean-source-tree.sh", "text/plain"),
+                  ("clean", "make clean", "text/plain") ],
 
     # We have 'test' before 'install' because, 'test' should work without 'install'
     "source4" : [ ("configure", "./configure.developer ${PREFIX}", "text/plain"),
                   ("make", "make -j", "text/plain"),
                   ("test", "TDB_NO_FSYNC=1 make test FAIL_IMMEDIATELY=1", "text/plain"),
-                  ("install", "make install", "text/plain") ],
+                  ("install", "make install", "text/plain"),
+                  ("check-clean-tree", "../script/clean-source-tree.sh", "text/plain"),
+                  ("clean", "make clean", "text/plain") ],
 
     "source4/lib/ldb" : [ ("configure", "./configure --enable-developer -C ${PREFIX}", "text/plain"),
                           ("make", "make -j", "text/plain"),
                           ("install", "make install", "text/plain"),
-                          ("test", "TDB_NO_FSYNC=1 make test", "text/plain") ],
+                          ("test", "TDB_NO_FSYNC=1 make test", "text/plain"),
+                          ("check-clean-tree", "../../../script/clean-source-tree.sh", "text/plain"),
+                          ("clean", "make clean", "text/plain") ],
 
     # We don't use TDB_NO_FSYNC=1 here, because we want to test the transaction code
     "lib/tdb" : [ ("configure", "./configure --enable-developer -C ${PREFIX}", "text/plain"),
                   ("make", "make -j", "text/plain"),
                   ("install", "make install", "text/plain"),
-                  ("test", "make test", "text/plain") ],
+                  ("test", "make test", "text/plain"),
+                  ("check-clean-tree", "../../script/clean-source-tree.sh", "text/plain"),
+                  ("clean", "make clean", "text/plain") ],
 
     "lib/talloc" : [ ("configure", "./configure --enable-developer -C ${PREFIX}", "text/plain"),
                      ("make", "make -j", "text/plain"),
                      ("install", "make install", "text/plain"),
-                     ("test", "make test", "text/plain"), ],
+                     ("test", "make test", "text/plain"),
+                     ("check-clean-tree", "../../script/clean-source-tree.sh", "text/plain"),
+                     ("clean", "make clean", "text/plain") ],
 
     "lib/replace" : [ ("autogen", "./autogen-waf.sh", "text/plain"),
                       ("configure", "./configure --enable-developer -C ${PREFIX}", "text/plain"),
                       ("make", "make -j", "text/plain"),
                       ("install", "make install", "text/plain"),
-                      ("test", "make test", "text/plain"), ],
+                      ("test", "make test", "text/plain"),
+                      ("check-clean-tree", "../../script/clean-source-tree.sh", "text/plain"),
+                      ("clean", "make clean", "text/plain") ],
 
     "lib/tevent" : [ ("configure", "./configure --enable-developer -C ${PREFIX}", "text/plain"),
                      ("make", "make -j", "text/plain"),
                      ("install", "make install", "text/plain"),
-                     ("test", "make test", "text/plain"), ],
+                     ("test", "make test", "text/plain"),
+                     ("check-clean-tree", "../script/clean-source-tree.sh", "text/plain"),
+                     ("clean", "make clean", "text/plain") ],
 }
 
 retry_task = [ ( "retry",
