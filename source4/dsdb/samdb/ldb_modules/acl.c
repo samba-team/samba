@@ -1148,26 +1148,28 @@ static int acl_rename(struct ldb_module *module, struct ldb_request *req)
 
 	/* Look for the parent */
 
-	ret = dsdb_module_search_dn(module, req, &acl_res, req->op.rename.olddn,
-				    acl_attrs,
+	ret = dsdb_module_search_dn(module, tmp_ctx, &acl_res,
+				    req->op.rename.olddn, acl_attrs,
 				    DSDB_FLAG_NEXT_MODULE |
 				    DSDB_SEARCH_SHOW_RECYCLED);
 	/* we sould be able to find the parent */
 	if (ret != LDB_SUCCESS) {
 		DEBUG(10,("acl: failed to find object %s\n",
 			  ldb_dn_get_linearized(req->op.rename.olddn)));
+		talloc_free(tmp_ctx);
 		return ret;
 	}
 
 	schema = dsdb_get_schema(ldb, acl_res);
 	if (!schema) {
-		talloc_free(acl_res);
+		talloc_free(tmp_ctx);
 		return ldb_operr(ldb);
 	}
 
 	guid = get_oc_guid_from_message(module, schema, acl_res->msgs[0]);
 	if (!insert_in_object_tree(tmp_ctx, guid, SEC_ADS_WRITE_PROP,
 				   &root, &new_node)) {
+		talloc_free(tmp_ctx);
 		return ldb_operr(ldb);
 	};
 
@@ -1175,27 +1177,32 @@ static int acl_rename(struct ldb_module *module, struct ldb_request *req)
 							  "name");
 	if (!insert_in_object_tree(tmp_ctx, guid, SEC_ADS_WRITE_PROP,
 				   &new_node, &new_node)) {
+		talloc_free(tmp_ctx);
 		return ldb_operr(ldb);
 	};
 
 	rdn_name = ldb_dn_get_rdn_name(req->op.rename.olddn);
 	if (rdn_name == NULL) {
+		talloc_free(tmp_ctx);
 		return ldb_operr(ldb);
 	}
 	guid = attribute_schemaid_guid_by_lDAPDisplayName(schema,
 							  rdn_name);
 	if (!insert_in_object_tree(tmp_ctx, guid, SEC_ADS_WRITE_PROP,
 				   &new_node, &new_node)) {
+		talloc_free(tmp_ctx);
 		return ldb_operr(ldb);
 	};
 
 	ret = dsdb_get_sd_from_ldb_message(ldb, req, acl_res->msgs[0], &sd);
 
 	if (ret != LDB_SUCCESS) {
+		talloc_free(tmp_ctx);
 		return ldb_operr(ldb);
 	}
 	/* Theoretically we pass the check if the object has no sd */
 	if (!sd) {
+		talloc_free(tmp_ctx);
 		return LDB_SUCCESS;
 	}
 	sid = samdb_result_dom_sid(req, acl_res->msgs[0], "objectSid");
@@ -1213,28 +1220,30 @@ static int acl_rename(struct ldb_module *module, struct ldb_request *req)
 			  req->op.rename.olddn,
 			  true,
 			  10);
+		talloc_free(tmp_ctx);
 		return LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS;
 	}
 
 	if (ldb_dn_compare(oldparent, newparent) == 0) {
 		/* regular rename, not move, nothing more to do */
+		talloc_free(tmp_ctx);
 		return ldb_next_request(module, req);
 	}
 
 	/* new parent should have create child */
-	talloc_free(tmp_ctx);
-	tmp_ctx = talloc_new(req);
 	root = NULL;
 	new_node = NULL;
 	guid = get_oc_guid_from_message(module, schema, acl_res->msgs[0]);
 	if (!guid) {
 		DEBUG(10,("acl:renamed object has no object class\n"));
+		talloc_free(tmp_ctx);
 		return ldb_module_done(req, NULL, NULL,  LDB_ERR_OPERATIONS_ERROR);
 	}
 
 	ret = dsdb_module_check_access_on_dn(module, req, newparent, SEC_ADS_CREATE_CHILD, guid);
 	if (ret != LDB_SUCCESS) {
 		DEBUG(10,("acl:access_denied renaming %s", ldb_dn_get_linearized(req->op.rename.olddn)));
+		talloc_free(tmp_ctx);
 		return ret;
 	}
 	/* do we have delete object on the object? */
@@ -1246,14 +1255,19 @@ static int acl_rename(struct ldb_module *module, struct ldb_request *req)
 				     sid);
 
 	if (NT_STATUS_IS_OK(status)) {
+		talloc_free(tmp_ctx);
 		return ldb_next_request(module, req);
 	}
 	/* what about delete child on the current parent */
 	ret = dsdb_module_check_access_on_dn(module, req, oldparent, SEC_ADS_DELETE_CHILD, NULL);
 	if (ret != LDB_SUCCESS) {
 		DEBUG(10,("acl:access_denied renaming %s", ldb_dn_get_linearized(req->op.rename.olddn)));
+		talloc_free(tmp_ctx);
 		return ldb_module_done(req, NULL, NULL, ret);
 	}
+
+	talloc_free(tmp_ctx);
+
 	return ldb_next_request(module, req);
 }
 
