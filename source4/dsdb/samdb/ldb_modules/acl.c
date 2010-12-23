@@ -613,6 +613,7 @@ static int acl_check_spn(TALLOC_CTX *mem_ctx,
 
 	el = ldb_msg_find_element(req->op.mod.message, "servicePrincipalName");
 	if (!el) {
+		talloc_free(tmp_ctx);
 		return ldb_error(ldb, LDB_ERR_OPERATIONS_ERROR,
 					 "Error finding element for servicePrincipalName.");
 	}
