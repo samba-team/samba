@@ -688,7 +688,7 @@ static bool getprinterdriver2_out_check(struct torture_context *tctx,
 	torture_assert(tctx, r->out.info->info6.default_datatype == NULL, "default_datatype");
 	torture_assert(tctx, r->out.info->info6.previous_names == NULL, "previous_names");
 	/* driver_date              : Wed Jun 21 02:00:00 2006 CEST */
-	torture_assert_u64_equal(tctx, r->out.info->info6.driver_version, 0x000600011db04001, "driver_version");
+	torture_assert_u64_equal(tctx, r->out.info->info6.driver_version, 0x000600011db04001ULL, "driver_version");
 	torture_assert_str_equal(tctx, r->out.info->info6.manufacturer_name, "Ricoh", "manufacturer_name");
 	torture_assert_str_equal(tctx, r->out.info->info6.manufacturer_url, "http://go.microsoft.com/fwlink/?LinkID=47&prd=10798&sbp=Printers", "manufacturer_url");
 	torture_assert_str_equal(tctx, r->out.info->info6.hardware_id, "ricohricoh_aficio_mp5063", "hardware_id");
