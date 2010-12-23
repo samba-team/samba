@@ -61,7 +61,6 @@ extern bool logged_ioctl_message;
 
 extern int trans_num;
 
-extern pid_t mypid;
 extern time_t last_smb_conf_reload_time;
 extern time_t last_printer_reload_time;
 /****************************************************************************

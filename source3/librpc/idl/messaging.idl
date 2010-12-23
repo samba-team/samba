@@ -45,6 +45,7 @@ interface messaging
 		MSG_PRINTERDATA_INIT_RESET	= 0x0204,
 		MSG_PRINTER_UPDATE		= 0x0205,
 		MSG_PRINTER_MOD			= 0x0206,
+		MSG_PRINTER_PCAP		= 0x0207,
 
 		/* smbd messages */
 		MSG_SMB_CONF_UPDATED		= 0x0301,

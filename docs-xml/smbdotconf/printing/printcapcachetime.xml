@@ -5,9 +5,7 @@
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>This option specifies the number of seconds before the printing
-    subsystem is again asked for the known printers.  If the value
-    is greater than 60 the initial waiting time is set to 60 seconds
-    to allow an earlier first rescan of the printing subsystem.
+    subsystem is again asked for the known printers.
     </para>
 
     <para>Setting this parameter to 0 disables any rescanning for new 

@@ -102,8 +102,26 @@ static void smb_conf_updated(struct messaging_context *msg,
 		  "updated. Reloading.\n"));
 	change_to_root_user();
 	reload_services(msg, smbd_server_conn->sock, False);
+	if (am_parent) {
+		pcap_cache_reload(server_event_context(), msg,
+				  &reload_pcap_change_notify);
+	}
 }
 
+/*******************************************************************
+ What to do when printcap is updated.
+ ********************************************************************/
+
+static void smb_pcap_updated(struct messaging_context *msg,
+			     void *private_data,
+			     uint32_t msg_type,
+			     struct server_id server_id,
+			     DATA_BLOB *data)
+{
+	DEBUG(10,("Got message saying pcap was updated. Reloading.\n"));
+	change_to_root_user();
+	reload_printers(server_event_context(), msg);
+}
 
 /*******************************************************************
  Delete a statcache entry.
@@ -579,6 +597,26 @@ static bool smbd_open_one_socket(struct smbd_parent_context *parent,
 	return true;
 }
 
+static bool smbd_parent_housekeeping(const struct timeval *now, void *private_data)
+{
+	time_t printcap_cache_time = (time_t)lp_printcap_cache_time();
+	time_t t = time_mono(NULL);
+
+	DEBUG(5, ("parent housekeeping\n"));
+
+	/* if periodic printcap rescan is enabled, see if it's time to reload */
+	if ((printcap_cache_time != 0)
+	 && (t >= (last_printer_reload_time + printcap_cache_time))) {
+		DEBUG( 3,( "Printcap cache time expired.\n"));
+		pcap_cache_reload(server_event_context(),
+				  smbd_messaging_context(),
+				  &reload_pcap_change_notify);
+		last_printer_reload_time = t;
+	}
+
+	return true;
+}
+
 /****************************************************************************
  Open the socket communication.
 ****************************************************************************/
@@ -713,6 +751,14 @@ static bool open_sockets_smbd(struct smbd_parent_context *parent,
 		return false;
 	}
 
+	if (!(event_add_idle(smbd_event_context(), NULL,
+			     timeval_set(SMBD_HOUSEKEEPING_INTERVAL, 0),
+			     "parent_housekeeping", smbd_parent_housekeeping,
+			     NULL))) {
+		DEBUG(0, ("Could not add parent_housekeeping event\n"));
+		return false;
+	}
+
         /* Listen to messages */
 
 	messaging_register(msg_ctx, NULL, MSG_SMB_SAM_SYNC, msg_sam_sync);
@@ -724,6 +770,7 @@ static bool open_sockets_smbd(struct smbd_parent_context *parent,
 	messaging_register(msg_ctx, NULL, MSG_SMB_STAT_CACHE_DELETE,
 			   smb_stat_cache_delete);
 	messaging_register(msg_ctx, NULL, MSG_DEBUG, smbd_msg_debug);
+	messaging_register(msg_ctx, NULL, MSG_PRINTER_PCAP, smb_pcap_updated);
 	brl_register_msgs(msg_ctx);
 
 #ifdef CLUSTER_SUPPORT

@@ -943,6 +943,9 @@ static void smbd_sig_hup_handler(struct tevent_context *ev,
 	change_to_root_user();
 	DEBUG(1,("Reloading services after SIGHUP\n"));
 	reload_services(msg_ctx, smbd_server_conn->sock, False);
+	if (am_parent) {
+		pcap_cache_reload(ev, msg_ctx, &reload_pcap_change_notify);
+	}
 }
 
 void smbd_setup_sig_hup_handler(struct tevent_context *ev,
@@ -2222,47 +2225,14 @@ void chain_reply(struct smb_request *req)
 
 static void check_reload(struct smbd_server_connection *sconn, time_t t)
 {
-	time_t printcap_cache_time = (time_t)lp_printcap_cache_time();
 
-	if(last_smb_conf_reload_time == 0) {
+	if (last_smb_conf_reload_time == 0) {
 		last_smb_conf_reload_time = t;
-		/* Our printing subsystem might not be ready at smbd start up.
-		   Then no printer is available till the first printers check
-		   is performed.  A lower initial interval circumvents this. */
-		if ( printcap_cache_time > 60 )
-			last_printer_reload_time = t - printcap_cache_time + 60;
-		else
-			last_printer_reload_time = t;
-	}
-
-	if (mypid != getpid()) { /* First time or fork happened meanwhile */
-		/* randomize over 60 second the printcap reload to avoid all
-		 * process hitting cupsd at the same time */
-		int time_range = 60;
-
-		last_printer_reload_time += random() % time_range;
-		mypid = getpid();
 	}
 
 	if (t >= last_smb_conf_reload_time+SMBD_RELOAD_CHECK) {
 		reload_services(sconn->msg_ctx, sconn->sock, True);
 		last_smb_conf_reload_time = t;
-	}
-
-	/* 'printcap cache time = 0' disable the feature */
-
-	if ( printcap_cache_time != 0 )
-	{ 
-		/* see if it's time to reload or if the clock has been set back */
-
-		if ( (t >= last_printer_reload_time+printcap_cache_time) 
-			|| (t-last_printer_reload_time  < 0) ) 
-		{
-			DEBUG( 3,( "Printcap cache time expired.\n"));
-			pcap_cache_reload(server_event_context(),
-					  sconn->msg_ctx, &reload_printers);
-			last_printer_reload_time = t;
-		}
 	}
 }
 
@@ -2493,13 +2463,16 @@ static bool housekeeping_fn(const struct timeval *now, void *private_data)
 {
 	struct smbd_server_connection *sconn = talloc_get_type_abort(
 		private_data, struct smbd_server_connection);
+
+	DEBUG(5, ("housekeeping\n"));
+
 	change_to_root_user();
 
 	/* update printer queue caches if necessary */
 	update_monitored_printq_cache(sconn->msg_ctx);
 
 	/* check if we need to reload services */
-	check_reload(sconn, time(NULL));
+	check_reload(sconn, time_mono(NULL));
 
 	/* Change machine password if neccessary. */
 	attempt_machine_password_change();
@@ -3106,7 +3079,7 @@ void smbd_process(struct smbd_server_connection *sconn)
 	}
 
 	if (!(event_add_idle(smbd_event_context(), NULL,
-			     timeval_set(SMBD_SELECT_TIMEOUT, 0),
+			     timeval_set(SMBD_HOUSEKEEPING_INTERVAL, 0),
 			     "housekeeping", housekeeping_fn, sconn))) {
 		DEBUG(0, ("Could not add housekeeping event\n"));
 		exit(1);
