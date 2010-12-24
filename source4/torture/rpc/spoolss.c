@@ -8450,6 +8450,7 @@ static bool test_AddPrinterDriver_args_level_6(struct torture_context *tctx,
 	}
 
 	torture_assert_nttime_equal(tctx, info.info6.driver_date, info6.driver_date, "driverdate mismatch");
+	torture_assert_u64_equal(tctx, info.info6.driver_version, info6.driver_version, "driverversion mismatch");
 
 	return true;
 }
@@ -8500,6 +8501,7 @@ static bool test_AddPrinterDriver_args_level_8(struct torture_context *tctx,
 	}
 
 	torture_assert_nttime_equal(tctx, info.info8.driver_date, r->driver_date, "driverdate mismatch");
+	torture_assert_u64_equal(tctx, info.info8.driver_version, r->driver_version, "driverversion mismatch");
 
 	return true;
 }
