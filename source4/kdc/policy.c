@@ -34,11 +34,11 @@ void kdc_get_policy(struct loadparm_context *lp_ctx,
 	k->authentication_options = LSA_POLICY_KERBEROS_VALIDATE_CLIENT;
 
 	unix_to_nt_time(&k->service_tkt_lifetime,
-			lpcfg_parm_int(lp_ctx, NULL, "kdc", "service ticket lifefime", 10) * 60 * 60); 
+			lpcfg_parm_int(lp_ctx, NULL, "kdc", "service ticket lifetime", 10) * 60 * 60);
 	unix_to_nt_time(&k->user_tkt_lifetime,
-			lpcfg_parm_int(lp_ctx, NULL, "kdc", "user ticket lifefime", 10) * 60 * 60); 
+			lpcfg_parm_int(lp_ctx, NULL, "kdc", "user ticket lifetime", 10) * 60 * 60);
 	unix_to_nt_time(&k->user_tkt_renewaltime,
-			lpcfg_parm_int(lp_ctx, NULL, "kdc", "renewal lifefime", 24*7) * 60 * 60); 
+			lpcfg_parm_int(lp_ctx, NULL, "kdc", "renewal lifetime", 24*7) * 60 * 60);
 	if (smb_krb5_context) {
 		unix_to_nt_time(&k->clock_skew, 
 				krb5_get_max_time_skew(smb_krb5_context->krb5_context));
