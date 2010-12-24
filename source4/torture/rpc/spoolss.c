@@ -8988,12 +8988,19 @@ static bool test_add_driver_arg(struct torture_context *tctx,
 		upload_printer_driver(tctx, dcerpc_server_name(p), d),
 		"failed to upload printer driver");
 
-	info8.version		= d->info8.version;
-	info8.driver_name	= d->info8.driver_name;
-	info8.architecture	= d->local.environment;
-	info8.driver_path	= d->info8.driver_path;
-	info8.data_file		= d->info8.data_file;
-	info8.config_file	= d->info8.config_file;
+	info8 = d->info8;
+	if (d->info8.dependent_files) {
+		info8.dependent_files = talloc_zero(tctx, struct spoolss_StringArray);
+		if (d->info8.dependent_files->string) {
+			for (i=0; d->info8.dependent_files->string[i] != NULL; i++) {
+			}
+			info8.dependent_files->string = talloc_zero_array(info8.dependent_files, const char *, i+1);
+			for (i=0; d->info8.dependent_files->string[i] != NULL; i++) {
+				info8.dependent_files->string[i] = talloc_strdup(info8.dependent_files->string, d->info8.dependent_files->string[i]);
+			}
+		}
+	}
+	info8.architecture      = d->local.environment;
 
 	for (i=0; i < ARRAY_SIZE(levels); i++) {
 
