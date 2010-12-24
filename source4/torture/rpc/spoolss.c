@@ -4742,7 +4742,9 @@ static bool test_GetDriverInfo_winreg(struct torture_context *tctx,
 	test_sz("Driver",			driver_path);
 	if (torture_setting_bool(tctx, "w2k3", false)) {
 		DATA_BLOB blob = data_blob_talloc_zero(tctx, 8);
+		push_nttime(blob.data, 0, info.info6.driver_date);
 		test_binary("DriverDate",	blob);
+		SBVAL(blob.data, 0, info.info6.driver_version);
 		test_binary("DriverVersion",	blob);
 	} else {
 		test_sz("DriverDate",		driver_date);
