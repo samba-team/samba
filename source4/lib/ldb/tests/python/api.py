@@ -60,7 +60,7 @@ class SimpleLdb(unittest.TestCase):
         self.assertEquals([], x.modules())
 
     def test_modules_tdb(self):
-        x = ldb.Ldb("bar.ldb")
+        x = ldb.Ldb(filename())
         self.assertEquals("[<ldb module 'tdb'>]", repr(x.modules()))
 
     def test_search(self):
@@ -80,7 +80,7 @@ class SimpleLdb(unittest.TestCase):
         self.assertEquals(len(l.search("", ldb.SCOPE_SUBTREE, "(dc=*)", ["dc"])), 0)
 
     def test_search_attr_string(self):
-        l = ldb.Ldb("foo.tdb")
+        l = ldb.Ldb(filename())
         self.assertRaises(TypeError, l.search, attrs="dc")
 
     def test_opaque(self):
@@ -626,13 +626,14 @@ class ModuleTests(unittest.TestCase):
             def search(self, *args, **kwargs):
                 return self.next.search(*args, **kwargs)
 
+        name = filename()
         ldb.register_module(ExampleModule)
-        if os.path.exists("usemodule.ldb"):
-            os.unlink("usemodule.ldb")
-        l = ldb.Ldb("usemodule.ldb")
+        if os.path.exists(name):
+            os.unlink(name)
+        l = ldb.Ldb(name)
         l.add({"dn": "@MODULES", "@LIST": "bla"})
         self.assertEquals([], ops)
-        l = ldb.Ldb("usemodule.ldb")
+        l = ldb.Ldb(name)
         self.assertEquals(["init"], ops)
 
 
