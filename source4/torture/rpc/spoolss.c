@@ -4654,11 +4654,8 @@ static bool test_GetDriverInfo_winreg(struct torture_context *tctx,
 		test_winreg_OpenKey(tctx, winreg_handle, hive_handle, driver_key, &key_handle),
 		"failed to open driver key");
 
-	if (torture_setting_bool(tctx, "samba3", false)) {
-		goto try_level3;
-	}
-
-	if (torture_setting_bool(tctx, "w2k3", false)) {
+	if (torture_setting_bool(tctx, "samba3", false) ||
+	    torture_setting_bool(tctx, "w2k3", false)) {
 		goto try_level6;
 	}
 
@@ -4761,8 +4758,6 @@ static bool test_GetDriverInfo_winreg(struct torture_context *tctx,
 /*	test_dword("Attributes",		?); */
 	test_dword("Version",			info.info6.version);
 /*	test_dword("TempDir",			?); */
-
- try_level3:
 
 	if (handle) {
 		torture_assert(tctx,
