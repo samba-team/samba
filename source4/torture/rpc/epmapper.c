@@ -236,6 +236,62 @@ static bool test_Lookup_simple(struct torture_context *tctx,
 	return true;
 }
 
+/*
+ * This test starts a epm_Lookup request, but doesn't finish the
+ * call terminates the search. So it will call epm_LookupHandleFree.
+ */
+static bool test_Lookup_terminate_search(struct torture_context *tctx,
+					 struct dcerpc_pipe *p)
+{
+	bool ok;
+	NTSTATUS status;
+	struct epm_Lookup r;
+	struct policy_handle entry_handle;
+	uint32_t i, num_ents = 0;
+	struct dcerpc_binding_handle *h = p->binding_handle;
+
+	ZERO_STRUCT(entry_handle);
+
+	torture_comment(tctx, "Testing epm_Lookup and epm_LookupHandleFree\n");
+
+	/* get all elements */
+	r.in.inquiry_type = RPC_C_EP_ALL_ELTS;
+	r.in.object = NULL;
+	r.in.interface_id = NULL;
+	r.in.vers_option = RPC_C_VERS_ALL;
+
+	r.in.entry_handle = &entry_handle;
+	r.in.max_ents = 2;
+
+	r.out.entry_handle = &entry_handle;
+	r.out.num_ents = &num_ents;
+
+	status = dcerpc_epm_Lookup_r(h, tctx, &r);
+
+	torture_assert_ntstatus_ok(tctx, status, "epm_Lookup failed");
+	torture_assert(tctx, r.out.result == EPMAPPER_STATUS_OK, "epm_Lookup failed");
+
+	torture_comment(tctx,
+			"epm_Lookup returned %d events, entry_handle: %s\n",
+			*r.out.num_ents,
+			GUID_string(tctx, &entry_handle.uuid));
+
+	for (i = 0; i < *r.out.num_ents; i++) {
+		torture_comment(tctx,
+				"\n  Found '%s'\n",
+				r.out.entries[i].annotation);
+	}
+
+	ok = test_LookupHandleFree(tctx,
+				   h,
+				   &entry_handle);
+	if (!ok) {
+		return false;
+	}
+
+	return true;
+}
+
 static bool test_Delete(struct torture_context *tctx,
 			struct dcerpc_binding_handle *h,
 			struct epm_entry_t *entries)
@@ -340,6 +396,9 @@ struct torture_suite *torture_rpc_epmapper(TALLOC_CTX *mem_ctx)
 	torture_rpc_tcase_add_test(tcase,
 				   "Insert_noreplace",
 				   test_Insert_noreplace);
+	torture_rpc_tcase_add_test(tcase,
+				   "Lookup_terminate_search",
+				   test_Lookup_terminate_search);
 	torture_rpc_tcase_add_test(tcase,
 				   "Lookup_simple",
 				   test_Lookup_simple);
