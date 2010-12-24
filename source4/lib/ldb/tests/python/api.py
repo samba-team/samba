@@ -108,9 +108,10 @@ class SimpleLdb(unittest.TestCase):
         l.delete(m.dn)
 
     def test_contains(self):
-        l = ldb.Ldb(filename())
+        name = filename()
+        l = ldb.Ldb(name)
         self.assertFalse(ldb.Dn(l, "dc=foo3") in l)
-        l = ldb.Ldb(filename())
+        l = ldb.Ldb(name)
         m = ldb.Message()
         m.dn = ldb.Dn(l, "dc=foo3")
         m["b"] = ["a"]
