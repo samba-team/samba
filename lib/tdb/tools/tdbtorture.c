@@ -228,9 +228,9 @@ static void send_count_and_suicide(int sig)
 	kill(getpid(), SIGUSR2);
 }
 
-static int run_child(int i, int seed, unsigned num_loops, unsigned start)
+static int run_child(const char *filename, int i, int seed, unsigned num_loops, unsigned start)
 {
-	db = tdb_open_ex("torture.tdb", hash_size, TDB_DEFAULT,
+	db = tdb_open_ex(filename, hash_size, TDB_DEFAULT,
 			 O_RDWR | O_CREAT, 0600, &log_ctx, NULL);
 	if (!db) {
 		fatal("db open failed");
@@ -270,6 +270,24 @@ static int run_child(int i, int seed, unsigned num_loops, unsigned start)
 	return (error_count < 100 ? error_count : 100);
 }
 
+static char *test_path(const char *filename)
+{
+	const char *prefix = getenv("TEST_DATA_PREFIX");
+
+	if (prefix) {
+		char *path = NULL;
+		int ret;
+
+		ret = asprintf(&path, "%s/%s", prefix, filename);
+		if (ret == -1) {
+			return NULL;
+		}
+		return path;
+	}
+
+	return strdup(filename);
+}
+
 int main(int argc, char * const *argv)
 {
 	int i, seed = -1;
@@ -280,6 +298,7 @@ int main(int argc, char * const *argv)
 	pid_t *pids;
 	int kill_random = 0;
 	int *done;
+	char *test_tdb;
 
 	log_ctx.log_fn = tdb_log;
 
@@ -308,7 +327,9 @@ int main(int argc, char * const *argv)
 		}
 	}
 
-	unlink("torture.tdb");
+	test_tdb = test_path("torture.tdb");
+
+	unlink(test_tdb);
 
 	if (seed == -1) {
 		seed = (getpid() + time(NULL)) & 0x7FFFFFFF;
@@ -316,7 +337,7 @@ int main(int argc, char * const *argv)
 
 	if (num_procs == 1 && !kill_random) {
 		/* Don't fork for this case, makes debugging easier. */
-		error_count = run_child(0, seed, num_loops, 0);
+		error_count = run_child(test_tdb, 0, seed, num_loops, 0);
 		goto done;
 	}
 
@@ -336,7 +357,7 @@ int main(int argc, char * const *argv)
 				printf("Testing with %d processes, %d loops, %d hash_size, seed=%d%s\n",
 				       num_procs, num_loops, hash_size, seed, always_transaction ? " (all within transactions)" : "");
 			}
-			exit(run_child(i, seed, num_loops, 0));
+			exit(run_child(test_tdb, i, seed, num_loops, 0));
 		}
 	}
 
@@ -389,8 +410,8 @@ int main(int argc, char * const *argv)
 				}
 				pids[j] = fork();
 				if (pids[j] == 0)
-					exit(run_child(j, seed, num_loops,
-						       done[j]));
+					exit(run_child(test_tdb, j, seed,
+						       num_loops, done[j]));
 				printf("Restarting child %i for %u-%u\n",
 				       j, done[j], num_loops);
 				continue;
@@ -414,7 +435,7 @@ int main(int argc, char * const *argv)
 
 done:
 	if (error_count == 0) {
-		db = tdb_open_ex("torture.tdb", hash_size, TDB_DEFAULT,
+		db = tdb_open_ex(test_tdb, hash_size, TDB_DEFAULT,
 				 O_RDWR, 0, &log_ctx, NULL);
 		if (!db) {
 			fatal("db open failed");
@@ -427,5 +448,6 @@ done:
 		printf("OK\n");
 	}
 
+	free(test_tdb);
 	return error_count;
 }
