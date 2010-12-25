@@ -509,10 +509,20 @@ int tevent_set_debug_stderr(struct tevent_context *ev);
  * @defgroup tevent_request The tevent request functions.
  * @ingroup tevent
  *
- * A tevent_req represents an asynchronous computation. Such a
- * computation is started by a computation_send function. When it is
- * finished, its result can be received by a computation_recv
- * function.
+ * A tevent_req represents an asynchronous computation.
+ *
+ * The tevent_req group of API calls is the recommended way of
+ * programming async computations within tevent. In particular the
+ * file descriptor (tevent_add_fd) and timer (tevent_add_timed) events
+ * are considered too low-level to be used in larger computations. To
+ * read and write from and to sockets, Samba provides two calls on top
+ * of tevent_add_fd: read_packet_send/recv and writev_send/recv. These
+ * requests are much easier to compose than the low-level event
+ * handlers called from tevent_add_fd.
+ *
+ * An async computation is started by a computation_send
+ * function. When it is finished, its result can be received by a
+ * computation_recv function.
  *
  * It is up to the user of the async computation to talloc_free it
  * after it has finished. If an async computation should be aborted,
@@ -523,35 +533,41 @@ int tevent_set_debug_stderr(struct tevent_context *ev);
  */
 
 /**
- * An async request moves between the following 4 states:
+ * An async request moves from TEVENT_REQ_INIT to
+ * TEVENT_REQ_IN_PROGRESS. All other states are valid after a request
+ * has finished.
  */
 enum tevent_req_state {
 	/**
-	 * we are creating the request
+	 * We are creating the request
 	 */
 	TEVENT_REQ_INIT,
 	/**
-	 * we are waiting the request to complete
+	 * We are waiting the request to complete
 	 */
 	TEVENT_REQ_IN_PROGRESS,
 	/**
-	 * the request is finished
+	 * The request is finished successfully
 	 */
 	TEVENT_REQ_DONE,
 	/**
-	 * A user error has occurred
+	 * A user error has occurred. The user error has been
+	 * indicated by tevent_req_error(), it can be retrieved via
+	 * tevent_req_is_error().
 	 */
 	TEVENT_REQ_USER_ERROR,
 	/**
-	 * Request timed out
+	 * Request timed out after the timeout set by tevent_req_set_endtime.
 	 */
 	TEVENT_REQ_TIMED_OUT,
 	/**
-	 * No memory in between
+	 * An internal allocation has failed, or tevent_req_nomem has
+	 * been given a NULL pointer as the first argument.
 	 */
 	TEVENT_REQ_NO_MEMORY,
 	/**
-	 * the request is already received by the caller
+	 * The request has been received by the caller. No further
+	 * action is valid.
 	 */
 	TEVENT_REQ_RECEIVED
 };
@@ -919,6 +935,24 @@ bool _tevent_req_nomem(const void *p,
  * immediate timed event. This way the caller can use the same calling
  * conventions, independent of whether the request was actually deferred.
  *
+ * @code
+ * struct tevent_req *computation_send(TALLOC_CTX *mem_ctx,
+ *                                     struct tevent_context *ev)
+ * {
+ *     struct tevent_req *req, *subreq;
+ *     struct computation_state *state;
+ *     req = tevent_req_create(mem_ctx, &state, struct computation_state);
+ *     if (req == NULL) {
+ *         return NULL;
+ *     }
+ *     subreq = subcomputation_send(state, ev);
+ *     if (tevent_req_nomem(subreq, req)) {
+ *         return tevent_req_post(req, ev);
+ *     }
+ *     return req;
+ * }
+ * @endcode
+ *
  * @param[in]  req      The finished request.
  *
  * @param[in]  ev       The tevent_context for the timed event.
@@ -970,7 +1004,7 @@ bool tevent_req_poll(struct tevent_req *req,
 		     struct tevent_context *ev);
 
 /**
- * @brief Get the tevent request and the actual error set by
+ * @brief Get the tevent request state and the actual error set by
  * tevent_req_error.
  *
  * @code
