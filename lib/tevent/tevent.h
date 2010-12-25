@@ -509,16 +509,15 @@ int tevent_set_debug_stderr(struct tevent_context *ev);
  * @defgroup tevent_request The tevent request functions.
  * @ingroup tevent
  *
- * This represents an async request being processed by callbacks via an event
- * context. A user can issue for example a write request to a socket, giving
- * an implementation function the fd, the buffer and the number of bytes to
- * transfer. The function issuing the request will immediately return without
- * blocking most likely without having sent anything. The API user then fills
- * in req->async.fn and req->async.private_data, functions that are called
- * when the request is finished.
+ * A tevent_req represents an asynchronous computation. Such a
+ * computation is started by a computation_send function. When it is
+ * finished, its result can be received by a computation_recv
+ * function.
  *
- * It is up to the user of the async request to talloc_free it after it has
- * finished. This can happen while the completion function is called.
+ * It is up to the user of the async computation to talloc_free it
+ * after it has finished. If an async computation should be aborted,
+ * the tevent_req structure can be talloc_free'ed. After it has
+ * finished, it should talloc_free'ed by the API user.
  *
  * @{
  */
@@ -583,8 +582,16 @@ void tevent_req_set_callback(struct tevent_req *req, tevent_req_fn fn, void *pvt
 
 #ifdef DOXYGEN
 /**
- * @brief Get the private data casted to the given type for a callback from
+ * @brief Get the private data cast to the given type for a callback from
  *        a tevent request structure.
+ *
+ * @code
+ * static void computation_done(struct tevent_req *subreq) {
+ *     struct tevent_req *req = tevent_req_callback_data(subreq, struct tevent_req);
+ *     struct computation_state *state = tevent_req_data(req, struct computation_state);
+ *     .... more things, eventually maybe call tevent_req_done(req);
+ * }
+ * @endcode
  *
  * @param[in]  req      The structure to get the callback data from.
  *
@@ -621,9 +628,11 @@ void *tevent_req_callback_data_void(struct tevent_req *req);
  *
  * @param[in]  req      The structure to get the private data from.
  *
+ * @param[in]  type	The type of the private data
+ *
  * @return              The private data or NULL if not set.
  */
-void *tevent_req_data(struct tevent_req *req);
+void *tevent_req_data(struct tevent_req *req, #type);
 #else
 void *_tevent_req_data(struct tevent_req *req);
 #define tevent_req_data(_req, _type) \
@@ -755,22 +764,22 @@ bool _tevent_req_cancel(struct tevent_req *req, const char *location);
 /**
  * @brief Create an async tevent request.
  *
- * The new async request will be initialized in state ASYNC_REQ_IN_PROGRESS.
+ * The new async request will be initialized in state TEVENT_REQ_IN_PROGRESS.
+ *
+ * @code
+ * struct tevent_req *req;
+ * struct computation_state *state;
+ * req = tevent_req_create(mem_ctx, &state, struct computation_state);
+ * @endcode
  *
  * @param[in] mem_ctx   The memory context for the result.
- *
- * @param[in] pstate    The private state of the request.
- *
- * @param[in] state_size  The size of the private state of the request.
- *
+ * @param[in] pstate    Pointer to the private request state.
  * @param[in] type      The name of the request.
  *
  * @return              A new async request. NULL on error.
  */
 struct tevent_req *tevent_req_create(TALLOC_CTX *mem_ctx,
-				      void *pstate,
-				      size_t state_size,
-				      const char *type);
+				     void **pstate, #type);
 #else
 struct tevent_req *_tevent_req_create(TALLOC_CTX *mem_ctx,
 				      void *pstate,
@@ -904,7 +913,7 @@ bool _tevent_req_nomem(const void *p,
  * @brief Finish a request before the caller had the change to set the callback.
  *
  * An implementation of an async request might find that it can either finish
- * the request without waiting for an external event, or it can't even start
+ * the request without waiting for an external event, or it can not even start
  * the engine. To present the illusion of a callback to the user of the API,
  * the implementation can call this helper function which triggers an
  * immediate timed event. This way the caller can use the same calling
@@ -961,7 +970,21 @@ bool tevent_req_poll(struct tevent_req *req,
 		     struct tevent_context *ev);
 
 /**
- * @brief Get the tevent request and the actual error code you've set.
+ * @brief Get the tevent request and the actual error set by
+ * tevent_req_error.
+ *
+ * @code
+ * int computation_recv(struct tevent_req *req, uint64_t *perr)
+ * {
+ *     enum tevent_req_state state;
+ *     uint64_t err;
+ *     if (tevent_req_is_error(req, &state, &err)) {
+ *         *perr = err;
+ *         return -1;
+ *     }
+ *     return 0;
+ * }
+ * @endcode
  *
  * @param[in]  req      The tevent request to get the error from.
  *
