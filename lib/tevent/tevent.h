@@ -520,9 +520,65 @@ int tevent_set_debug_stderr(struct tevent_context *ev);
  * requests are much easier to compose than the low-level event
  * handlers called from tevent_add_fd.
  *
+ * A lot of the simplicity tevent_req has brought to the notoriously
+ * hairy async programming came via a set of conventions that every
+ * async computation programmed should follow. One central piece of
+ * these conventions is the naming of routines and variables.
+ *
+ * Every async computation needs a name (sensibly called "computation"
+ * down from here). From this name quite a few naming conventions are
+ * derived.
+ *
+ * Every computation that requires local state needs a
+ * @code
+ * struct computation_state {
+ *     int local_var;
+ * };
+ * @endcode
+ * Even if no local variables are required, such a state struct should
+ * be created containing a dummy variable. Quite a few helper
+ * functions and macros (for example tevent_req_create()) assume such
+ * a state struct.
+ *
  * An async computation is started by a computation_send
  * function. When it is finished, its result can be received by a
- * computation_recv function.
+ * computation_recv function. For an example how to set up an async
+ * computation, see the code example in the documentation for
+ * tevent_req_create() and tevent_req_post(). The prototypes for _send
+ * and _recv functions should follow some conventions:
+ *
+ * @code
+ * struct tevent_req *computation_send(TALLOC_CTX *mem_ctx,
+ *                                     struct tevent_req *ev,
+ *                                     ... further args);
+ * int computation_recv(struct tevent_req *req, ... further output args);
+ * @endcode
+ *
+ * The "int" result of computation_recv() depends on the result the
+ * sync version of the function would have, "int" is just an example
+ * here.
+ *
+ * Another important piece of the conventions is that the program flow
+ * is interrupted as little as possible. Because a blocking
+ * sub-computation requires that the flow needs to continue in a
+ * separate function that is the logical sequel of some computation,
+ * it should lexically follow sending off the blocking
+ * sub-computation. Setting the callback function via
+ * tevent_req_set_callback() requires referencing a function lexically
+ * below the call to tevent_req_set_callback(), forward declarations
+ * are required. A lot of the async computations thus begin with a
+ * sequence of declarations such as
+ *
+ * @code
+ * static void computation_step1_done(struct tevent_req *subreq);
+ * static void computation_step2_done(struct tevent_req *subreq);
+ * static void computation_step3_done(struct tevent_req *subreq);
+ * @endcode
+ *
+ * It really helps readability a lot to do these forward declarations,
+ * because the lexically sequential program flow makes the async
+ * computations almost as clear to read as a normal, sync program
+ * flow.
  *
  * It is up to the user of the async computation to talloc_free it
  * after it has finished. If an async computation should be aborted,
@@ -587,6 +643,9 @@ typedef void (*tevent_req_fn)(struct tevent_req *req);
 /**
  * @brief Set an async request callback.
  *
+ * See the documentation of tevent_req_post() for an example how this
+ * is supposed to be used.
+ *
  * @param[in]  req      The async request to set the callback.
  *
  * @param[in]  fn       The callback function to set.
@@ -641,6 +700,10 @@ void *tevent_req_callback_data_void(struct tevent_req *req);
 #ifdef DOXYGEN
 /**
  * @brief Get the private data from a tevent request structure.
+ *
+ * When the tevent_req has been created by tevent_req_create, the
+ * result of tevent_req_data() is the state variable created by
+ * tevent_req_create() as a child of the req.
  *
  * @param[in]  req      The structure to get the private data from.
  *
@@ -787,6 +850,13 @@ bool _tevent_req_cancel(struct tevent_req *req, const char *location);
  * struct computation_state *state;
  * req = tevent_req_create(mem_ctx, &state, struct computation_state);
  * @endcode
+ *
+ * Tevent_req_create() creates the state variable as a talloc child of
+ * its result. The state variable should be used as the talloc parent
+ * for all temporary variables that are allocated during the async
+ * computation. This way, when the user of the async computation frees
+ * the request, the state as a talloc child will be free'd along with
+ * all the temporary variables hanging off the state.
  *
  * @param[in] mem_ctx   The memory context for the result.
  * @param[in] pstate    Pointer to the private request state.
@@ -949,6 +1019,7 @@ bool _tevent_req_nomem(const void *p,
  *     if (tevent_req_nomem(subreq, req)) {
  *         return tevent_req_post(req, ev);
  *     }
+ *     tevent_req_set_callback(subreq, computation_done, req);
  *     return req;
  * }
  * @endcode
