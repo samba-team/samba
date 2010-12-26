@@ -137,13 +137,16 @@ smb.conf changes
    Parameter Name                      Description     Default
    --------------                      -----------     -------
 
-   log writeable files on exit	       New	       No
+   async smb echo handler	       New	       No
+   client ntlmv2 auth		       Changed Default Yes
+   client use spnego principal	       New	       No
    ctdb locktime warn threshold	       New	       0
+   log writeable files on exit	       New	       No
+   send spnego principal	       New	       No
    smb2 max read		       New	       1048576
    smb2 max write		       New	       1048576
    smb2 max trans		       New	       1048576
    username map cache time	       New	       0
-   async smb echo handler	       New	       No
 
 
 ######################################################################
