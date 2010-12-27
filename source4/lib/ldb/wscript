@@ -241,7 +241,11 @@ def build(bld):
 
 def test(ctx):
     '''run ldb testsuite'''
-    import Utils, samba_utils
+    import Utils, samba_utils, shutil
+    test_prefix = "%s/st" % (Utils.g_module.blddir)
+    shutil.rmtree(test_prefix, ignore_errors=True)
+    os.makedirs(test_prefix)
+    os.putenv('TEST_DATA_PREFIX', test_prefix)
     cmd = 'tests/test-tdb.sh'
     ret = samba_utils.RUN_COMMAND(cmd)
     print("testsuite returned %d" % ret)
