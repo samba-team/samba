@@ -1065,7 +1065,7 @@ sub ConvertObjectFromPythonLevel($$$$$$$$)
 		my $union_type = mapTypeName($nl->{DATA_TYPE});
 		$self->pidl("$union_type *$switch_ptr;");
 		$self->pidl("$switch_ptr = py_export_" . $nl->{DATA_TYPE} . "($mem_ctx, $switch, $py_var);");
-		$self->pidl("if ($switch_ptr == NULL) { $fail }");
+		$self->fail_on_null($switch_ptr, $fail);
 		$self->assign($var_name, "$switch_ptr");
 		$self->deindent;
 		$self->pidl("}");
