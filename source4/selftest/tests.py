@@ -207,9 +207,8 @@ for t in smb4torture_testsuites("ldap."):
 ldbdir = os.path.join(samba4srcdir, "lib/ldb")
 # Don't run LDB tests when using system ldb, as we won't have ldbtest installed
 if os.path.exists(os.path.join(samba4bindir, "ldbtest")):
-    plantestsuite("ldb.base", "none",
-        "TEST_DATA_PREFIX=$PREFIX %s/tests/test-tdb.sh" % ldbdir,
-        allow_empty_output=True)
+    plantestsuite("ldb.base", "none", "%s/tests/test-tdb.sh" % ldbdir,
+                  allow_empty_output=True)
 else:
     skiptestsuite("ldb.base", "Using system LDB, ldbtest not available")
 
