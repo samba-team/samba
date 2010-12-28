@@ -94,11 +94,11 @@ static int wins_lookup_open_socket_in(void)
 static void nss_wins_init(void)
 {
 	initialised = 1;
+	load_case_tables();
 	lp_set_cmdline("log level", "0");
 
 	TimeInit();
 	setup_logging("nss_wins",False);
-	load_case_tables();
 	lp_load(get_dyn_CONFIGFILE(),True,False,False,True);
 	load_interfaces();
 }
