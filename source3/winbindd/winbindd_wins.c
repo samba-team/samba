@@ -70,12 +70,12 @@ static int wins_lookup_open_socket_in(void)
 }
 
 
-static NODE_STATUS_STRUCT *lookup_byaddr_backend(const char *addr, int *count)
+static struct node_status *lookup_byaddr_backend(const char *addr, int *count)
 {
 	int fd;
 	struct sockaddr_storage ss;
 	struct nmb_name nname;
-	NODE_STATUS_STRUCT *status;
+	struct node_status *status;
 
 	fd = wins_lookup_open_socket_in();
 	if (fd == -1)
@@ -147,7 +147,7 @@ void winbindd_wins_byip(struct winbindd_cli_state *state)
 {
 	fstring response;
 	int i, count, maxlen, size;
-	NODE_STATUS_STRUCT *status;
+	struct node_status *status;
 
 	/* Ensure null termination */
 	state->request->data.winsreq[sizeof(state->request->data.winsreq)-1]='\0';

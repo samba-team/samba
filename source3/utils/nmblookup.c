@@ -113,7 +113,7 @@ static void do_node_status(int fd,
 {
 	struct nmb_name nname;
 	int count, i, j;
-	NODE_STATUS_STRUCT *status;
+	struct node_status *status;
 	struct node_status_extra extra;
 	fstring cleanname;
 	char addr[INET6_ADDRSTRLEN];
