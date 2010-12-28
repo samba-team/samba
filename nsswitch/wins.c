@@ -162,12 +162,12 @@ static struct in_addr *lookup_byname_backend(const char *name, int *count)
 
 #ifdef HAVE_NS_API_H
 
-static NODE_STATUS_STRUCT *lookup_byaddr_backend(char *addr, int *count)
+static struct node_status *lookup_byaddr_backend(char *addr, int *count)
 {
 	int fd;
 	struct sockaddr_storage ss;
 	struct nmb_name nname;
-	NODE_STATUS_STRUCT *status;
+	struct node_status *status;
 
 	if (!initialised) {
 		nss_wins_init();
@@ -202,7 +202,7 @@ int lookup(nsd_file_t *rq)
 	char *key;
 	char *addr;
 	struct in_addr *ip_list;
-	NODE_STATUS_STRUCT *status;
+	struct node_status *status;
 	int i, count, len, size;
 	char response[1024];
 	bool found = False;

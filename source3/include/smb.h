@@ -1687,11 +1687,11 @@ struct nmb_name {
 };
 
 /* A netbios node status array element. */
-typedef struct node_status_ {
+struct node_status {
 	nstring name;
 	unsigned char type;
 	unsigned char flags;
-} NODE_STATUS_STRUCT;
+};
 
 /* The extra info from a NetBIOS node status query */
 struct node_status_extra {

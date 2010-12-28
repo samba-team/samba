@@ -212,11 +212,11 @@ static int generate_trn_id(void)
  Parse a node status response into an array of structures.
 ****************************************************************************/
 
-static NODE_STATUS_STRUCT *parse_node_status(char *p,
+static struct node_status *parse_node_status(char *p,
 				int *num_names,
 				struct node_status_extra *extra)
 {
-	NODE_STATUS_STRUCT *ret;
+	struct node_status *ret;
 	int i;
 
 	*num_names = CVAL(p,0);
@@ -224,7 +224,7 @@ static NODE_STATUS_STRUCT *parse_node_status(char *p,
 	if (*num_names == 0)
 		return NULL;
 
-	ret = SMB_MALLOC_ARRAY(NODE_STATUS_STRUCT,*num_names);
+	ret = SMB_MALLOC_ARRAY(struct node_status,*num_names);
 	if (!ret)
 		return NULL;
 
@@ -278,7 +278,7 @@ static bool send_packet_request(struct packet_struct *p)
  structures holding the returned names or NULL if the query failed.
 **************************************************************************/
 
-NODE_STATUS_STRUCT *node_status_query(int fd,
+struct node_status *node_status_query(int fd,
 					struct nmb_name *name,
 					const struct sockaddr_storage *to_ss,
 					int *num_names,
@@ -291,7 +291,7 @@ NODE_STATUS_STRUCT *node_status_query(int fd,
 	struct packet_struct p;
 	struct packet_struct *p2;
 	struct nmb_packet *nmb = &p.packet.nmb;
-	NODE_STATUS_STRUCT *ret;
+	struct node_status *ret;
 
 	ZERO_STRUCT(p);
 
@@ -381,7 +381,7 @@ bool name_status_find(const char *q_name,
 {
 	char addr[INET6_ADDRSTRLEN];
 	struct sockaddr_storage ss;
-	NODE_STATUS_STRUCT *status = NULL;
+	struct node_status *status = NULL;
 	struct nmb_name nname;
 	int count, i;
 	int sock;

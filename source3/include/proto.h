@@ -2699,7 +2699,7 @@ bool saf_store( const char *domain, const char *servername );
 bool saf_join_store( const char *domain, const char *servername );
 bool saf_delete( const char *domain );
 char *saf_fetch( const char *domain );
-NODE_STATUS_STRUCT *node_status_query(int fd,
+struct node_status *node_status_query(int fd,
 					struct nmb_name *name,
 					const struct sockaddr_storage *to_ss,
 					int *num_names,
