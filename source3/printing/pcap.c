@@ -97,13 +97,28 @@ bool pcap_cache_loaded(void)
 	return NT_STATUS_IS_OK(status);
 }
 
-void pcap_cache_replace(const struct pcap_cache *pcache)
+bool pcap_cache_replace(const struct pcap_cache *pcache)
 {
 	const struct pcap_cache *p;
+	NTSTATUS status;
+
+	status = printer_list_mark_reload();
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("Failed to mark printer list for reload!\n"));
+		return false;
+	}
 
 	for (p = pcache; p; p = p->next) {
 		pcap_cache_add(p->name, p->comment);
 	}
+
+	status = printer_list_clean_old();
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("Failed to cleanup printer list!\n"));
+		return false;
+	}
+
+	return true;
 }
 
 void pcap_cache_reload(struct tevent_context *ev,
@@ -175,7 +190,7 @@ void pcap_cache_reload(struct tevent_context *ev,
 done:
 	DEBUG(3, ("reload status: %s\n", (pcap_reloaded) ? "ok" : "error"));
 
-	if (pcap_reloaded) {
+	if ((pcap_reloaded) && (post_cache_fill_fn_handled == false)) {
 		/* cleanup old entries only if the operation was successful,
 		 * otherwise keep around the old entries until we can
 		 * successfuly reaload */
@@ -183,8 +198,7 @@ done:
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0, ("Failed to cleanup printer list!\n"));
 		}
-		if ((post_cache_fill_fn_handled == false)
-		 && (post_cache_fill_fn != NULL)) {
+		if (post_cache_fill_fn != NULL) {
 			post_cache_fill_fn(ev, msg_ctx);
 		}
 	}

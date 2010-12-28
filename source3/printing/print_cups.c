@@ -552,15 +552,18 @@ static void cups_async_callback(struct event_context *event_ctx,
 
 	TALLOC_FREE(frame);
 	if (tmp_pcap_cache) {
+		bool ret;
 		/* We got a namelist, replace our local cache. */
 		pcap_cache_destroy_specific(&local_pcap_copy);
 		local_pcap_copy = tmp_pcap_cache;
 
 		/* And the systemwide pcap cache. */
-		pcap_cache_replace(local_pcap_copy);
+		ret = pcap_cache_replace(local_pcap_copy);
+		if (!ret)
+			DEBUG(0, ("failed to replace pcap cache\n"));
 
 		/* Caller may have requested post cache fill callback */
-		if (cb_args->post_cache_fill_fn != NULL) {
+		if (ret && cb_args->post_cache_fill_fn != NULL) {
 			cb_args->post_cache_fill_fn(cb_args->event_ctx,
 						    cb_args->msg_ctx);
 		}
@@ -611,10 +614,6 @@ bool cups_cache_reload(struct tevent_context *ev,
 			return false;
 		}
 	} else {
-		/* Replace the system cache with our
-		 * local copy. */
-		pcap_cache_replace(local_pcap_copy);
-
 		DEBUG(10,("cups_cache_reload: async read on fd %d\n",
 			*p_pipe_fd ));
 
