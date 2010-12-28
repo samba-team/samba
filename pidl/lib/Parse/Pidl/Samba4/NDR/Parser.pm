@@ -2634,10 +2634,6 @@ sub ParseInterface($$$)
 		($needed->{"ndr_push_$d->{NAME}"}) && $self->ParseFunctionPush($d);
 		($needed->{"ndr_pull_$d->{NAME}"}) && $self->ParseFunctionPull($d);
 		($needed->{"ndr_print_$d->{NAME}"}) && $self->ParseFunctionPrint($d);
-
-		# Make sure we don't generate a function twice...
-		$needed->{"ndr_push_$d->{NAME}"} = $needed->{"ndr_pull_$d->{NAME}"} = 
-			$needed->{"ndr_print_$d->{NAME}"} = 0;
 	}
 
 	$self->FunctionTable($interface);

@@ -23,7 +23,6 @@
 #include "includes.h"
 #include "librpc/gen_ndr/ndr_dcom.h"
 #include "librpc/gen_ndr/ndr_wmi.h"
-#include "librpc/ndr/ndr_wmi.h"
 
 // Just for debugging
 int NDR_CHECK_depth = 0;
@@ -35,18 +34,18 @@ enum ndr_err_code ndr_push_BSTR(struct ndr_push *ndr, int ndr_flags, const struc
 	uint32_t flags;
 	enum ndr_err_code status;
 	len = strlen(r->data);
-        if (ndr_flags & NDR_SCALARS) {
-                NDR_CHECK(ndr_push_align(ndr, 4));
-                NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0x72657355));
-                NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, len));
-                NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 2*len));
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0x72657355));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, len));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 2*len));
 		flags = ndr->flags;
 		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NOTERM | LIBNDR_FLAG_STR_SIZE4);
 		status = ndr_push_string(ndr, NDR_SCALARS, r->data);
 		ndr->flags = flags;
 		return status;
-        }
-        return NDR_ERR_SUCCESS;
+	}
+	return NDR_ERR_SUCCESS;
 }
 
 enum ndr_err_code ndr_pull_BSTR(struct ndr_pull *ndr, int ndr_flags, struct BSTR *r)

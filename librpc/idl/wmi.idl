@@ -8,7 +8,6 @@ import "dcom.idl";
 import "misc.idl";
 
 [
-	helper("librpc/ndr/ndr_wmi.h"),
 	uuid("8BC3F05E-D86B-11d0-A075-00C04FB68820")
 ] coclass WbemLevel1Login
 {
@@ -17,8 +16,8 @@ import "misc.idl";
 };
 
 [
-	local, 
-	object, 
+	local,
+	object,
 	uuid("dc12a681-737f-11cf-884d-00aa004b2e24")
 ]
 interface IWbemClassObject : IUnknown
@@ -203,7 +202,7 @@ coclass WbemClassObject
         WBEM_E_PROVIDER_DISABLED                = 0x8004108a
     }   WBEMSTATUS;
 
-    typedef [public,noprint] enum
+    typedef [public] bitmap
     {
         WBEM_FLAG_RETURN_WBEM_COMPLETE 		= 0,
         WBEM_FLAG_BIDIRECTIONAL 			= 0,
@@ -225,7 +224,7 @@ coclass WbemClassObject
         WBEM_MASK_RESERVED_FLAGS 			= 0x001F000
     } WBEM_GENERIC_FLAG_TYPE;
 
-    typedef [public,noprint,v1_enum] enum tag_WBEM_TIMEOUT_TYPE
+    typedef [public,v1_enum] enum tag_WBEM_TIMEOUT_TYPE
     {
         WBEM_NO_WAIT = 0,
         WBEM_INFINITE = 0xFFFFFFFF
@@ -300,18 +299,18 @@ coclass WbemClassObject
 		WCF_CLASS = 4,
 		WCF_CLASS_PART_INTERNAL = 8
 	/*	WCF_CLASS_PART_SHARED = 0x104 */
-    } WCO_FLAGS;
+	} WCO_FLAGS;
 
-    typedef [public,nopull,nopush] struct
-    {
+	typedef struct
+	{
 		uint32 count;
 		[ref,charset(UTF16)] uint16 *item[count];
-    } CIMSTRINGS;
+	} CIMSTRINGS;
 
-    typedef [public,bitmap8bit] bitmap {
-        DEFAULT_FLAG_EMPTY = 1,
-        DEFAULT_FLAG_INHERITED = 2
-    } DEFAULT_FLAGS;
+	typedef [public,bitmap8bit] bitmap {
+		DEFAULT_FLAG_EMPTY = 1,
+		DEFAULT_FLAG_INHERITED = 2
+	} DEFAULT_FLAGS;
 
 	WERROR OpenNamespace(
 		[in] BSTR strNamespace,
@@ -653,7 +652,7 @@ coclass WbemClassObject
 		[in,ref] GUID *gWCO,
 		[out,ref] uint32 *puReturned,
 		[out,ref] uint32 *pSize,
-		[out,ref,noprint,size_is(,*pSize)] uint8 **pData
+		[out,ref,size_is(,*pSize)] uint8 **pData
 		);
 }
 
