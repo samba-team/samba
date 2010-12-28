@@ -96,13 +96,4 @@ NTSTATUS printer_list_clean_old(void);
 
 NTSTATUS printer_list_run_fn(void (*fn)(const char *, const char *, void *),
 			     void *private_data);
-
-/**
- * @brief Check if the printer list needs to be refreshed.
- *
- * @return              True if the database needs to be refreshed, false if
- *                      not.
- */
-bool printer_list_need_refresh(void);
-
 #endif /* _PRINTER_LIST_H_ */

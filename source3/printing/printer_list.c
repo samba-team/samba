@@ -215,32 +215,6 @@ done:
 	return status;
 }
 
-bool printer_list_need_refresh(void)
-{
-	NTSTATUS status;
-	time_t last_refresh;
-	int timediff;
-
-	status = printer_list_get_last_refresh(&last_refresh);
-	if (!NT_STATUS_IS_OK(status)) {
-		return true;
-	}
-	timediff = time_mono(NULL) - last_refresh;
-
-	if (timediff > 1 ) {
-		/* if refresh occurred more than 1s (TODO:use lp_printcap_cache_time) ago,
-		 * then we need to refresh */
-		return true;
-	} else if (timediff < 0) {
-		/* last_refresh newer than now. Seems we have no monotonic
-		 * clock and the clock was adjusted backwards.
-		 * we need to refresh which also resets last_refresh */
-		return true;
-	}
-
-	return false;
-}
-
 NTSTATUS printer_list_mark_reload(void)
 {
 	struct db_context *db;
