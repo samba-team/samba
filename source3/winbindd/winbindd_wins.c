@@ -70,12 +70,14 @@ static int wins_lookup_open_socket_in(void)
 }
 
 
-static struct node_status *lookup_byaddr_backend(const char *addr, int *count)
+static struct node_status *lookup_byaddr_backend(TALLOC_CTX *mem_ctx,
+						 const char *addr, int *count)
 {
 	int fd;
 	struct sockaddr_storage ss;
 	struct nmb_name nname;
-	struct node_status *status;
+	struct node_status *result;
+	NTSTATUS status;
 
 	fd = wins_lookup_open_socket_in();
 	if (fd == -1)
@@ -85,10 +87,13 @@ static struct node_status *lookup_byaddr_backend(const char *addr, int *count)
 	if (!interpret_string_addr(&ss, addr, AI_NUMERICHOST)) {
 		return NULL;
 	}
-	status = node_status_query(fd, &nname, &ss, count, NULL);
-
+	status = node_status_query(fd, &nname, &ss, mem_ctx,
+				   &result, count, NULL);
 	close(fd);
-	return status;
+	if (!NT_STATUS_IS_OK(status)) {
+		return NULL;
+	}
+	return result;
 }
 
 static struct sockaddr_storage *lookup_byname_backend(const char *name,
@@ -158,10 +163,11 @@ void winbindd_wins_byip(struct winbindd_cli_state *state)
 	*response = '\0';
 	maxlen = sizeof(response) - 1;
 
-	if ((status = lookup_byaddr_backend(state->request->data.winsreq, &count))){
+	if ((status = lookup_byaddr_backend(
+		     state->mem_ctx, state->request->data.winsreq, &count))) {
 	    size = strlen(state->request->data.winsreq);
 	    if (size > maxlen) {
-		SAFE_FREE(status);
+		TALLOC_FREE(status);
 		request_error(state);
 		return;
 	    }
@@ -173,7 +179,7 @@ void winbindd_wins_byip(struct winbindd_cli_state *state)
 		if (status[i].type == 0x20) {
 			size = sizeof(status[i].name) + strlen(response);
 			if (size > maxlen) {
-			    SAFE_FREE(status);
+			    TALLOC_FREE(status);
 			    request_error(state);
 			    return;
 			}
@@ -183,7 +189,7 @@ void winbindd_wins_byip(struct winbindd_cli_state *state)
 	    }
 	    /* make last character a newline */
 	    response[strlen(response)-1] = '\n';
-	    SAFE_FREE(status);
+	    TALLOC_FREE(status);
 	}
 	fstrcpy(state->response->data.winsresp,response);
 	request_ok(state);
