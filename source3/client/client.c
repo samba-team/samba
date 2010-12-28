@@ -36,7 +36,6 @@
 
 extern int do_smb_browse(void); /* mDNS browsing */
 
-extern bool AllowDebugChange;
 extern bool override_logfile;
 extern char tar_type;
 
