@@ -152,6 +152,7 @@ static struct in_addr *lookup_byname_backend(const char *name, int *count)
 				return NULL;
 			}
 			*ret = ((struct sockaddr_in *)pss)->sin_addr;
+			SAFE_FREE(pss);
 			break;
 		}
 	}
