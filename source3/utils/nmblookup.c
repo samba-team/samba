@@ -156,14 +156,16 @@ static bool query_one(const char *lookup, unsigned int lookup_type)
 {
 	int j, count, flags = 0;
 	struct sockaddr_storage *ip_list=NULL;
+	NTSTATUS status;
 
 	if (got_bcast) {
 		char addr[INET6_ADDRSTRLEN];
 		print_sockaddr(addr, sizeof(addr), &bcast_addr);
 		d_printf("querying %s on %s\n", lookup, addr);
-		ip_list = name_query(ServerFD,lookup,lookup_type,use_bcast,
-				     use_bcast?true:recursion_desired,
-				     &bcast_addr, &count, &flags, NULL);
+		status = name_query(ServerFD,lookup,lookup_type,use_bcast,
+				    use_bcast?true:recursion_desired,
+				    &bcast_addr, talloc_tos(),
+				    &ip_list, &count, &flags, NULL);
 	} else {
 		const struct in_addr *bcast;
 		for (j=iface_count() - 1;
@@ -180,14 +182,15 @@ static bool query_one(const char *lookup, unsigned int lookup_type)
 			print_sockaddr(addr, sizeof(addr), &bcast_ss);
 			d_printf("querying %s on %s\n",
 			       lookup, addr);
-			ip_list = name_query(ServerFD,lookup,lookup_type,
-					     use_bcast,
-					     use_bcast?True:recursion_desired,
-					     &bcast_ss,&count, &flags, NULL);
+			status = name_query(ServerFD,lookup,lookup_type,
+					    use_bcast,
+					    use_bcast?True:recursion_desired,
+					    &bcast_ss, talloc_tos(),
+					    &ip_list, &count, &flags, NULL);
 		}
 	}
 
-	if (!ip_list) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return false;
 	}
 
@@ -220,9 +223,9 @@ static bool query_one(const char *lookup, unsigned int lookup_type)
 		}
 	}
 
-	free(ip_list);
+	TALLOC_FREE(ip_list);
 
-	return (ip_list != NULL);
+	return NT_STATUS_IS_OK(status);
 }
 
 

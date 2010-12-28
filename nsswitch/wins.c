@@ -140,17 +140,20 @@ static struct in_addr *lookup_byname_backend(const char *name, int *count)
 		const struct in_addr *bcast = iface_n_bcast_v4(j);
 		struct sockaddr_storage ss;
 		struct sockaddr_storage *pss;
+		NTSTATUS status;
+
 		if (!bcast) {
 			continue;
 		}
 		in_addr_to_sockaddr_storage(&ss, *bcast);
-		pss = name_query(fd,name,0x00,True,True,&ss,count, &flags, NULL);
+		status = name_query(fd, name, 0x00, True, True, &ss,
+				    NULL, &pss, count, &flags, NULL);
 		if (pss) {
 			if ((ret = SMB_MALLOC_P(struct in_addr)) == NULL) {
 				return NULL;
 			}
 			*ret = ((struct sockaddr_in *)pss)->sin_addr;
-			SAFE_FREE(pss);
+			TALLOC_FREE(pss);
 			break;
 		}
 	}

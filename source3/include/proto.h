@@ -2712,12 +2712,14 @@ bool name_status_find(const char *q_name,
 			const struct sockaddr_storage *to_ss,
 			fstring name);
 int ip_service_compare(struct ip_service *ss1, struct ip_service *ss2);
-struct sockaddr_storage *name_query(int fd,
+NTSTATUS name_query(int fd,
 			const char *name,
 			int name_type,
 			bool bcast,
 			bool recurse,
 			const struct sockaddr_storage *to_ss,
+			TALLOC_CTX *mem_ctx,
+			struct sockaddr_storage **addrs,
 			int *count,
 			int *flags,
 			bool *timed_out);

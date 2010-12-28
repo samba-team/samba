@@ -96,13 +96,15 @@ static struct node_status *lookup_byaddr_backend(TALLOC_CTX *mem_ctx,
 	return result;
 }
 
-static struct sockaddr_storage *lookup_byname_backend(const char *name,
-					int *count)
+static struct sockaddr_storage *lookup_byname_backend(TALLOC_CTX *mem_ctx,
+						      const char *name,
+						      int *count)
 {
 	int fd;
 	struct ip_service *ret = NULL;
 	struct sockaddr_storage *return_ss = NULL;
 	int j, i, flags = 0;
+	NTSTATUS status;
 
 	*count = 0;
 
@@ -110,7 +112,9 @@ static struct sockaddr_storage *lookup_byname_backend(const char *name,
 	if (NT_STATUS_IS_OK(resolve_wins(name,0x20,&ret,count))) {
 		if ( *count == 0 )
 			return NULL;
-		if ( (return_ss = SMB_MALLOC_ARRAY(struct sockaddr_storage, *count)) == NULL ) {
+		return_ss = TALLOC_ARRAY(mem_ctx, struct sockaddr_storage,
+					 *count);
+		if (return_ss == NULL ) {
 			free( ret );
 			return NULL;
 		}
@@ -136,8 +140,9 @@ static struct sockaddr_storage *lookup_byname_backend(const char *name,
 		if (!bcast_ss) {
 			continue;
 		}
-		return_ss = name_query(fd,name,0x20,True,True,bcast_ss,count, &flags, NULL);
-		if (return_ss) {
+		status = name_query(fd, name, 0x20, True, True,bcast_ss,
+				    mem_ctx, &return_ss, count, &flags, NULL);
+		if (NT_STATUS_IS_OK(status)) {
 			break;
 		}
 	}
@@ -213,12 +218,14 @@ void winbindd_wins_byname(struct winbindd_cli_state *state)
 	*response = '\0';
 	maxlen = sizeof(response) - 1;
 
-	if ((ip_list = lookup_byname_backend(state->request->data.winsreq,&count))){
+	ip_list = lookup_byname_backend(
+		state->mem_ctx, state->request->data.winsreq, &count);
+	if (ip_list != NULL){
 		for (i = count; i ; i--) {
 			print_sockaddr(addr, sizeof(addr), &ip_list[i-1]);
 			size = strlen(addr);
 			if (size > maxlen) {
-				SAFE_FREE(ip_list);
+				TALLOC_FREE(ip_list);
 				request_error(state);
 				return;
 			}
@@ -235,13 +242,13 @@ void winbindd_wins_byname(struct winbindd_cli_state *state)
 		}
 		size = strlen(state->request->data.winsreq) + strlen(response);
 		if (size > maxlen) {
-		    SAFE_FREE(ip_list);
+		    TALLOC_FREE(ip_list);
 		    request_error(state);
 		    return;
 		}
 		fstrcat(response,state->request->data.winsreq);
 		fstrcat(response,"\n");
-		SAFE_FREE(ip_list);
+		TALLOC_FREE(ip_list);
 	} else {
 		request_error(state);
 		return;

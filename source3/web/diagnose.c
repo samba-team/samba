@@ -44,10 +44,12 @@ bool nmbd_running(void)
 
 	if ((fd = open_socket_in(SOCK_DGRAM, 0, 3,
 				 &ss, True)) != -1) {
-		if ((ss_list = name_query(fd, "__SAMBA__", 0, 
-					  True, True, &ss,
-					  &count, &flags, NULL)) != NULL) {
-			SAFE_FREE(ss_list);
+		NTSTATUS status = name_query(fd, "__SAMBA__", 0,
+					     True, True, &ss,
+					     talloc_tos(), &ss_list, &count,
+					     &flags, NULL);
+		if (NT_STATUS_IS_OK(status)) {
+			TALLOC_FREE(ss_list);
 			close(fd);
 			return True;
 		}
