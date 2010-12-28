@@ -1398,4 +1398,9 @@ struct ctdb_control_schedule_for_deletion {
 int32_t ctdb_control_schedule_for_deletion(struct ctdb_context *ctdb,
 					   TDB_DATA indata);
 
+
+int32_t ctdb_local_schedule_for_deletion(struct ctdb_db_context *ctdb_db,
+					 const struct ctdb_ltdb_header *hdr,
+					 TDB_DATA key);
+
 #endif

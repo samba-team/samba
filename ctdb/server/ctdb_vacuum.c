@@ -1333,3 +1333,64 @@ int32_t ctdb_control_schedule_for_deletion(struct ctdb_context *ctdb,
 
 	return 0;
 }
+
+int32_t ctdb_local_schedule_for_deletion(struct ctdb_db_context *ctdb_db,
+					 const struct ctdb_ltdb_header *hdr,
+					 TDB_DATA key)
+{
+	int ret;
+	struct ctdb_control_schedule_for_deletion *dd;
+	TDB_DATA indata;
+	int32_t status;
+
+	if (ctdb_db->ctdb->ctdbd_pid == getpid()) {
+		/* main daemon - directly queue */
+		ret = insert_delete_record_data_into_tree(ctdb_db->ctdb,
+							  ctdb_db,
+							  ctdb_db->delete_queue,
+							  hdr, key);
+		if (ret != 0) {
+			return -1;
+		}
+		return 0;
+	}
+
+	/* child process: send the main daemon a control */
+
+	indata.dsize = offsetof(struct ctdb_control_schedule_for_deletion, key) + key.dsize;
+	indata.dptr = talloc_zero_array(ctdb_db, uint8_t, indata.dsize);
+	if (indata.dptr == NULL) {
+		DEBUG(DEBUG_ERR, (__location__ " out of memory\n"));
+		return -1;
+	}
+	dd = (struct ctdb_control_schedule_for_deletion *)(void *)indata.dptr;
+	dd->db_id = ctdb_db->db_id;
+	dd->hdr = *hdr;
+	dd->keylen = key.dsize;
+	memcpy(dd->key, key.dptr, key.dsize);
+
+	ret = ctdb_control(ctdb_db->ctdb,
+			   CTDB_CURRENT_NODE,
+			   ctdb_db->db_id,
+			   CTDB_CONTROL_SCHEDULE_FOR_DELETION,
+			   CTDB_CTRL_FLAG_NOREPLY, /* flags */
+			   indata,
+			   NULL, /* mem_ctx */
+			   NULL, /* outdata */
+			   &status,
+			   NULL, /* timeout : NULL == wait forever */
+			   NULL); /* error message */
+
+	talloc_free(indata.dptr);
+
+	if (ret != 0 || status != 0) {
+		DEBUG(DEBUG_ERR, (__location__ " Error sending "
+				  "SCHEDULE_FOR_DELETION "
+				  "control.\n"));
+		if (status != 0) {
+			ret = -1;
+		}
+	}
+
+	return ret;
+}
