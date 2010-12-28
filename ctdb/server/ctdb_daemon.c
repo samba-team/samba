@@ -777,6 +777,7 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork, bool use_syslog, 
 	block_signal(SIGPIPE);
 
 	ctdbd_pid = getpid();
+	ctdb->ctdbd_pid = ctdbd_pid;
 
 
 	DEBUG(DEBUG_ERR, ("Starting CTDBD as pid : %u\n", ctdbd_pid));
