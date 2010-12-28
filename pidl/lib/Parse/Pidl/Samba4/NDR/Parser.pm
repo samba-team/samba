@@ -206,11 +206,11 @@ sub ParseArrayPushHeader($$$$$$)
 	if ((!$l->{IS_SURROUNDING}) and $l->{IS_CONFORMANT}) {
 		$self->pidl("NDR_CHECK(ndr_push_uint3264($ndr, NDR_SCALARS, $size));");
 	}
-	
+
 	if ($l->{IS_VARYING}) {
 		$self->pidl("NDR_CHECK(ndr_push_uint3264($ndr, NDR_SCALARS, 0));");  # array offset
 		$self->pidl("NDR_CHECK(ndr_push_uint3264($ndr, NDR_SCALARS, $length));");
-	} 
+	}
 
 	return $length;
 }
@@ -1194,7 +1194,7 @@ sub ParsePtrPull($$$$$)
 			$self->pidl("\tNDR_PULL_ALLOC($ndr, $var_name);"); 
 			$self->pidl("}");
 		}
-		
+
 		return;
 	} elsif ($l->{POINTER_TYPE} eq "ref" and $l->{LEVEL} eq "EMBEDDED") {
 		$self->pidl("NDR_CHECK(ndr_pull_ref_ptr($ndr, &_ptr_$e->{NAME}));");
