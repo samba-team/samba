@@ -2026,7 +2026,7 @@ static NTSTATUS cm_get_schannel_creds(struct winbindd_domain *domain,
 	struct rpc_pipe_client *netlogon_pipe;
 
 	if (lp_client_schannel() == False) {
-		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;;
+		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 	}
 
 	result = cm_connect_netlogon(domain, &netlogon_pipe);
