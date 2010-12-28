@@ -40,8 +40,6 @@ static pthread_mutex_t wins_nss_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static int initialised;
 
-extern bool AllowDebugChange;
-
 NSS_STATUS _nss_wins_gethostbyname_r(const char *hostname, struct hostent *he,
 			  char *buffer, size_t buflen, int *h_errnop);
 NSS_STATUS _nss_wins_gethostbyname2_r(const char *name, int af, struct hostent *he,
