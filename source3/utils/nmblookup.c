@@ -113,33 +113,35 @@ static void do_node_status(int fd,
 {
 	struct nmb_name nname;
 	int count, i, j;
-	struct node_status *status;
+	struct node_status *addrs;
 	struct node_status_extra extra;
 	fstring cleanname;
 	char addr[INET6_ADDRSTRLEN];
+	NTSTATUS status;
 
 	print_sockaddr(addr, sizeof(addr), pss);
 	d_printf("Looking up status of %s\n",addr);
 	make_nmb_name(&nname, name, type);
-	status = node_status_query(fd, &nname, pss, &count, &extra);
-	if (status) {
+	status = node_status_query(fd, &nname, pss, talloc_tos(),
+				   &addrs, &count, &extra);
+	if (NT_STATUS_IS_OK(status)) {
 		for (i=0;i<count;i++) {
-			pull_ascii_fstring(cleanname, status[i].name);
+			pull_ascii_fstring(cleanname, addrs[i].name);
 			for (j=0;cleanname[j];j++) {
 				if (!isprint((int)cleanname[j])) {
 					cleanname[j] = '.';
 				}
 			}
 			d_printf("\t%-15s <%02x> - %s\n",
-			       cleanname,status[i].type,
-			       node_status_flags(status[i].flags));
+			       cleanname,addrs[i].type,
+			       node_status_flags(addrs[i].flags));
 		}
 		d_printf("\n\tMAC Address = %02X-%02X-%02X-%02X-%02X-%02X\n",
 				extra.mac_addr[0], extra.mac_addr[1],
 				extra.mac_addr[2], extra.mac_addr[3],
 				extra.mac_addr[4], extra.mac_addr[5]);
 		d_printf("\n");
-		SAFE_FREE(status);
+		TALLOC_FREE(addrs);
 	} else {
 		d_printf("No reply from %s\n\n",addr);
 	}

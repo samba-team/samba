@@ -212,7 +212,7 @@ static int generate_trn_id(void)
  Parse a node status response into an array of structures.
 ****************************************************************************/
 
-static struct node_status *parse_node_status(char *p,
+static struct node_status *parse_node_status(TALLOC_CTX *mem_ctx, char *p,
 				int *num_names,
 				struct node_status_extra *extra)
 {
@@ -224,7 +224,7 @@ static struct node_status *parse_node_status(char *p,
 	if (*num_names == 0)
 		return NULL;
 
-	ret = SMB_MALLOC_ARRAY(struct node_status,*num_names);
+	ret = TALLOC_ARRAY(mem_ctx, struct node_status,*num_names);
 	if (!ret)
 		return NULL;
 
@@ -278,11 +278,13 @@ static bool send_packet_request(struct packet_struct *p)
  structures holding the returned names or NULL if the query failed.
 **************************************************************************/
 
-struct node_status *node_status_query(int fd,
-					struct nmb_name *name,
-					const struct sockaddr_storage *to_ss,
-					int *num_names,
-					struct node_status_extra *extra)
+NTSTATUS node_status_query(int fd,
+			   struct nmb_name *name,
+			   const struct sockaddr_storage *to_ss,
+			   TALLOC_CTX *mem_ctx,
+			   struct node_status **names,
+			   int *num_names,
+			   struct node_status_extra *extra)
 {
 	bool found=False;
 	int retries = 2;
@@ -297,7 +299,7 @@ struct node_status *node_status_query(int fd,
 
 	if (to_ss->ss_family != AF_INET) {
 		/* Can't do node status to IPv6 */
-		return NULL;
+		return NT_STATUS_INVALID_ADDRESS;
 	}
 	nmb->header.name_trn_id = generate_trn_id();
 	nmb->header.opcode = 0;
@@ -326,7 +328,7 @@ struct node_status *node_status_query(int fd,
 	clock_gettime_mono(&tp);
 
 	if (!send_packet_request(&p))
-		return NULL;
+		return NT_STATUS_NOT_FOUND;
 
 	retries--;
 
@@ -337,7 +339,7 @@ struct node_status *node_status_query(int fd,
 			if (!retries)
 				break;
 			if (!found && !send_packet_request(&p))
-				return NULL;
+				return NT_STATUS_NOT_FOUND;
 			clock_gettime_mono(&tp);
 			retries--;
 		}
@@ -358,14 +360,20 @@ struct node_status *node_status_query(int fd,
 				continue;
 			}
 
-			ret = parse_node_status(&nmb2->answers->rdata[0],
-					num_names, extra);
+			ret = parse_node_status(
+				mem_ctx, &nmb2->answers->rdata[0], num_names,
+				extra);
 			free_packet(p2);
-			return ret;
+
+			if (ret == NULL) {
+				return NT_STATUS_NO_MEMORY;
+			}
+			*names = ret;
+			return NT_STATUS_OK;
 		}
 	}
 
-	return NULL;
+	return NT_STATUS_IO_TIMEOUT;
 }
 
 /****************************************************************************
@@ -381,11 +389,12 @@ bool name_status_find(const char *q_name,
 {
 	char addr[INET6_ADDRSTRLEN];
 	struct sockaddr_storage ss;
-	struct node_status *status = NULL;
+	struct node_status *addrs = NULL;
 	struct nmb_name nname;
 	int count, i;
 	int sock;
 	bool result = false;
+	NTSTATUS status;
 
 	if (lp_disable_netbios()) {
 		DEBUG(5,("name_status_find(%s#%02x): netbios is disabled\n",
@@ -420,20 +429,22 @@ bool name_status_find(const char *q_name,
 
 	/* W2K PDC's seem not to respond to '*'#0. JRA */
 	make_nmb_name(&nname, q_name, q_type);
-	status = node_status_query(sock, &nname, to_ss, &count, NULL);
+	status = node_status_query(sock, &nname, to_ss, talloc_tos(),
+				   &addrs, &count, NULL);
 	close(sock);
-	if (!status)
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
+	}
 
 	for (i=0;i<count;i++) {
                 /* Find first one of the requested type that's not a GROUP. */
-		if (status[i].type == type && ! (status[i].flags & 0x80))
+		if (addrs[i].type == type && ! (addrs[i].flags & 0x80))
 			break;
 	}
 	if (i == count)
 		goto done;
 
-	pull_ascii_nstring(name, sizeof(fstring), status[i].name);
+	pull_ascii_nstring(name, sizeof(fstring), addrs[i].name);
 
 	/* Store the result in the cache. */
 	/* but don't store an entry for 0x1c names here.  Here we have
@@ -446,7 +457,7 @@ bool name_status_find(const char *q_name,
 	result = true;
 
  done:
-	SAFE_FREE(status);
+	TALLOC_FREE(addrs);
 
 	DEBUG(10, ("name_status_find: name %sfound", result ? "" : "not "));
 
