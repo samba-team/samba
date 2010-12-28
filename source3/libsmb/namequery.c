@@ -1090,11 +1090,12 @@ NTSTATUS resolve_wins(const char *name,
 			close(sock);
 
 			if (timed_out) {
-				/* Timed out wating for WINS server to respond.
+				/* Timed out waiting for WINS server to
+				 * respond.
 				 * Mark it dead. */
 				wins_srv_died(wins_ip, src_ip);
 			} else {
-				/* The name definately isn't in this
+				/* The name definitely isn't in this
 				   group of WINS servers.
 				   goto the next group  */
 				break;
