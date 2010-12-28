@@ -679,12 +679,14 @@ static bool prioritize_ipv4_list(struct ip_service *iplist, int count)
  *timed_out is set if we failed by timing out
 ****************************************************************************/
 
-struct sockaddr_storage *name_query(int fd,
+NTSTATUS name_query(int fd,
 			const char *name,
 			int name_type,
 			bool bcast,
 			bool recurse,
 			const struct sockaddr_storage *to_ss,
+			TALLOC_CTX *mem_ctx,
+			struct sockaddr_storage **addrs,
 			int *count,
 			int *flags,
 			bool *timed_out)
@@ -701,11 +703,11 @@ struct sockaddr_storage *name_query(int fd,
 	if (lp_disable_netbios()) {
 		DEBUG(5,("name_query(%s#%02x): netbios is disabled\n",
 					name, name_type));
-		return NULL;
+		return NT_STATUS_NOT_FOUND;
 	}
 
 	if (to_ss->ss_family != AF_INET) {
-		return NULL;
+		return NT_STATUS_INVALID_ADDRESS;
 	}
 
 	if (timed_out) {
@@ -745,7 +747,7 @@ struct sockaddr_storage *name_query(int fd,
 	clock_gettime_mono(&tp);
 
 	if (!send_packet_request(&p))
-		return NULL;
+		return NT_STATUS_NOT_FOUND;
 
 	retries--;
 
@@ -757,7 +759,7 @@ struct sockaddr_storage *name_query(int fd,
 			if (!retries)
 				break;
 			if (!found && !send_packet_request(&p))
-				return NULL;
+				return NT_STATUS_NOT_FOUND;
 			clock_gettime_mono(&tp);
 			retries--;
 		}
@@ -806,7 +808,7 @@ struct sockaddr_storage *name_query(int fd,
 					}
 				}
 				free_packet(p2);
-				return( NULL );
+				return NT_STATUS_NOT_FOUND;
 			}
 
 			if (nmb2->header.opcode != 0 ||
@@ -822,7 +824,7 @@ struct sockaddr_storage *name_query(int fd,
 				continue;
 			}
 
-			ss_list = SMB_REALLOC_ARRAY(ss_list,
+			ss_list = TALLOC_REALLOC_ARRAY(mem_ctx, ss_list,
 						struct sockaddr_storage,
 						(*count) +
 						nmb2->answers->rdlength/6);
@@ -830,7 +832,7 @@ struct sockaddr_storage *name_query(int fd,
 			if (!ss_list) {
 				DEBUG(0,("name_query: Realloc failed.\n"));
 				free_packet(p2);
-				return NULL;
+				return NT_STATUS_NO_MEMORY;
 			}
 
 			DEBUG(2,("Got a positive name query response "
@@ -882,7 +884,8 @@ struct sockaddr_storage *name_query(int fd,
 	/* sort the ip list so we choose close servers first if possible */
 	sort_addr_list(ss_list, *count);
 
-	return ss_list;
+	*addrs = ss_list;
+	return NT_STATUS_OK;
 }
 
 /********************************************************
@@ -953,7 +956,7 @@ NTSTATUS name_resolve_bcast(const char *name,
 
 	sock = open_socket_in( SOCK_DGRAM, 0, 3, &ss, true );
 	if (sock == -1) {
-		return NT_STATUS_UNSUCCESSFUL;
+		return map_nt_error_from_unix(errno);
 	}
 
 	set_socket_options(sock,"SO_BROADCAST");
@@ -969,9 +972,10 @@ NTSTATUS name_resolve_bcast(const char *name,
 		if (!pss) {
 			continue;
 		}
-		ss_list = name_query(sock, name, name_type, true,
-				    true, pss, return_count, &flags, NULL);
-		if (ss_list) {
+		status = name_query(sock, name, name_type, true, true, pss,
+				    talloc_tos(), &ss_list, return_count,
+				    &flags, NULL);
+		if (NT_STATUS_IS_OK(status)) {
 			goto success;
 		}
 	}
@@ -979,15 +983,14 @@ NTSTATUS name_resolve_bcast(const char *name,
 	/* failed - no response */
 
 	close(sock);
-	return NT_STATUS_UNSUCCESSFUL;
+	return status;
 
 success:
 
-	status = NT_STATUS_OK;
 	if (!convert_ss2service(return_iplist, ss_list, *return_count) )
-		status = NT_STATUS_INVALID_PARAMETER;
+		status = NT_STATUS_NO_MEMORY;
 
-	SAFE_FREE(ss_list);
+	TALLOC_FREE(ss_list);
 	close(sock);
 	return status;
 }
@@ -1083,20 +1086,23 @@ NTSTATUS resolve_wins(const char *name,
 			}
 
 			in_addr_to_sockaddr_storage(&wins_ss, wins_ip);
-			ss_list = name_query(sock,
+			status = name_query(sock,
 						name,
 						name_type,
 						false,
 						true,
 						&wins_ss,
+						talloc_tos(),
+						&ss_list,
 						return_count,
 						&flags,
 						&timed_out);
 
 			/* exit loop if we got a list of addresses */
 
-			if (ss_list)
+			if (NT_STATUS_IS_OK(status)) {
 				goto success;
+			}
 
 			close(sock);
 
@@ -1123,7 +1129,7 @@ success:
 	if (!convert_ss2service(return_iplist, ss_list, *return_count))
 		status = NT_STATUS_INVALID_PARAMETER;
 
-	SAFE_FREE(ss_list);
+	TALLOC_FREE(ss_list);
 	wins_srv_tags_free(wins_tags);
 	close(sock);
 
