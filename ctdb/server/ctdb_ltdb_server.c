@@ -55,7 +55,8 @@ static int ctdb_fetch_func(struct ctdb_call_info *call)
  *
  * This is the server-variant of the ctdb_ltdb_store function.
  * It contains logic to determine whether a record should be
- * stored or deleted.
+ * stored or deleted. It also sends SCHEDULE_FOR_DELETION
+ * controls to the local ctdb daemon if apporpriate.
  */
 static int ctdb_ltdb_store_server(struct ctdb_db_context *ctdb_db,
 				  TDB_DATA key,
@@ -67,6 +68,7 @@ static int ctdb_ltdb_store_server(struct ctdb_db_context *ctdb_db,
 	int ret;
 	bool seqnum_suppressed = false;
 	bool keep = false;
+	bool schedule_for_deletion = false;
 	uint32_t lmaster;
 
 	if (ctdb->flags & CTDB_FLAG_TORTURE) {
@@ -125,6 +127,14 @@ static int ctdb_ltdb_store_server(struct ctdb_db_context *ctdb_db,
 		}
 	} else if (ctdb_db->ctdb->pnn == header->dmaster) {
 		keep = true;
+	}
+
+	if (keep &&
+	    (data.dsize == 0) &&
+	    !ctdb_db->persistent &&
+	    (ctdb_db->ctdb->pnn == header->dmaster))
+	{
+		schedule_for_deletion = true;
 	}
 
 store:
@@ -195,12 +205,22 @@ store:
 			    ctdb_db->db_name,
 			    keep?"store":"delete", ret,
 			    tdb_errorstr(ctdb_db->ltdb->tdb)));
+
+		schedule_for_deletion = false;
 	}
 	if (seqnum_suppressed) {
 		tdb_add_flags(ctdb_db->ltdb->tdb, TDB_SEQNUM);
 	}
 
 	talloc_free(rec.dptr);
+
+	if (schedule_for_deletion) {
+		int ret2;
+		ret2 = ctdb_local_schedule_for_deletion(ctdb_db, header, key);
+		if (ret != 0) {
+			DEBUG(DEBUG_ERR, (__location__ " ctdb_local_schedule_for_deletion failed.\n"));
+		}
+	}
 
 	return ret;
 }
