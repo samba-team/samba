@@ -540,6 +540,7 @@ static PyMethodDef net_obj_methods[] = {
 static void py_net_dealloc(py_net_Object *self)
 {
 	talloc_free(self->mem_ctx);
+	PyObject_Del(self);
 }
 
 static PyObject *net_obj_new(PyTypeObject *type, PyObject *args, PyObject *kwargs)

@@ -358,7 +358,7 @@ static PyObject *py_ldb_dn_new(PyTypeObject *type, PyObject *args, PyObject *kwa
 static void py_ldb_dn_dealloc(PyLdbDnObject *self)
 {
 	talloc_free(self->mem_ctx);
-	self->ob_type->tp_free(self);
+	PyObject_Del(self);
 }
 
 PyTypeObject PyLdbDn = {
@@ -1500,7 +1500,7 @@ static PyObject *PyLdb_FromLdbContext(struct ldb_context *ldb_ctx)
 static void py_ldb_dealloc(PyLdbObject *self)
 {
 	talloc_free(self->mem_ctx);
-	self->ob_type->tp_free(self);
+	PyObject_Del(self);
 }
 
 PyTypeObject PyLdb = {
@@ -1694,7 +1694,7 @@ static PyMethodDef py_ldb_module_methods[] = {
 static void py_ldb_module_dealloc(PyLdbModuleObject *self)
 {
 	talloc_free(self->mem_ctx);
-	self->ob_type->tp_free(self);
+	PyObject_Del(self);
 }
 
 PyTypeObject PyLdbModule = {
@@ -1985,7 +1985,7 @@ static PyObject *py_ldb_msg_element_str(PyLdbMessageElementObject *self)
 static void py_ldb_msg_element_dealloc(PyLdbMessageElementObject *self)
 {
 	talloc_free(self->mem_ctx);
-	self->ob_type->tp_free(self);
+	PyObject_Del(self);
 }
 
 static PyTypeObject PyLdbMessageElement = {
@@ -2322,7 +2322,7 @@ static PyObject *py_ldb_msg_repr(PyLdbMessageObject *self)
 static void py_ldb_msg_dealloc(PyLdbMessageObject *self)
 {
 	talloc_free(self->mem_ctx);
-	self->ob_type->tp_free(self);
+	PyObject_Del(self);
 }
 
 static int py_ldb_msg_compare(PyLdbMessageObject *py_msg1,
@@ -2394,7 +2394,7 @@ PyObject *PyLdbTree_FromTree(struct ldb_parse_tree *tree)
 static void py_ldb_tree_dealloc(PyLdbTreeObject *self)
 {
 	talloc_free(self->mem_ctx);
-	self->ob_type->tp_free(self);
+	PyObject_Del(self);
 }
 
 PyTypeObject PyLdbTree = {
