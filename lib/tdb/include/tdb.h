@@ -168,6 +168,7 @@ void tdb_dump_all(struct tdb_context *tdb);
 int tdb_printfreelist(struct tdb_context *tdb);
 int tdb_validate_freelist(struct tdb_context *tdb, int *pnum_entries);
 int tdb_freelist_size(struct tdb_context *tdb);
+char *tdb_summary(struct tdb_context *tdb);
 
 extern TDB_DATA tdb_null;
 
