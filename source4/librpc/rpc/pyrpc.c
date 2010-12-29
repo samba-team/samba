@@ -219,12 +219,11 @@ static PyMethodDef dcerpc_interface_methods[] = {
 	{ NULL, NULL, 0, NULL },
 };
 
-
 static void dcerpc_interface_dealloc(PyObject* self)
 {
 	dcerpc_InterfaceObject *interface = (dcerpc_InterfaceObject *)self;
 	talloc_free(interface->mem_ctx);
-	PyObject_Del(self);
+	self->ob_type->tp_free(self);
 }
 
 static PyObject *dcerpc_interface_new(PyTypeObject *type, PyObject *args, PyObject *kwargs)

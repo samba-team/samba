@@ -479,7 +479,7 @@ static void tdb_object_dealloc(PyTdbObject *self)
 {
 	if (!self->closed)
 		tdb_close(self->ctx);
-	PyObject_Del(self);
+	self->ob_type->tp_free(self);
 }
 
 static PyObject *obj_getitem(PyTdbObject *self, PyObject *key)

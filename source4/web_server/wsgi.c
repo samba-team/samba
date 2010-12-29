@@ -111,7 +111,7 @@ PyTypeObject web_request_Type = {
 	.tp_name = "wsgi.Request",
 	.tp_methods = web_request_methods,
 	.tp_basicsize = sizeof(web_request_Object),
-	.tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+	.tp_flags = Py_TPFLAGS_DEFAULT,
 };
 
 typedef struct {
@@ -168,7 +168,7 @@ PyTypeObject error_Stream_Type = {
 	.tp_name = "wsgi.ErrorStream",
 	.tp_basicsize = sizeof(error_Stream_Object),
 	.tp_methods = error_Stream_methods,
-	.tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+	.tp_flags = Py_TPFLAGS_DEFAULT,
 };
 
 typedef struct {
@@ -242,7 +242,7 @@ PyTypeObject input_Stream_Type = {
 	.tp_name = "wsgi.InputStream",
 	.tp_basicsize = sizeof(input_Stream_Object),
 	.tp_methods = input_Stream_methods,
-	.tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+	.tp_flags = Py_TPFLAGS_DEFAULT,
 };
 
 static PyObject *Py_InputHttpStream(struct websrv_context *web)

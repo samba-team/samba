@@ -61,7 +61,7 @@ typedef struct {
 	struct messaging_context *msg_ctx;
 } messaging_Object;
 
-PyObject *py_messaging_connect(PyTypeObject *self, PyObject *args, PyObject *kwargs)
+static PyObject *py_messaging_connect(PyTypeObject *self, PyObject *args, PyObject *kwargs)
 {
 	struct tevent_context *ev;
 	const char *kwnames[] = { "own_id", "messaging_path", NULL };
@@ -118,7 +118,7 @@ static void py_messaging_dealloc(PyObject *self)
 {
 	messaging_Object *iface = (messaging_Object *)self;
 	talloc_free(iface->msg_ctx);
-	PyObject_Del(self);
+	self->ob_type->tp_free(self);
 }
 
 static PyObject *py_messaging_send(PyObject *self, PyObject *args, PyObject *kwargs)

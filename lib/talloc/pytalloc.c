@@ -96,7 +96,7 @@ static void py_talloc_dealloc(PyObject* self)
 	py_talloc_Object *obj = (py_talloc_Object *)self;
 	assert(talloc_unlink(NULL, obj->talloc_ctx) != -1);
 	obj->talloc_ctx = NULL;
-	PyObject_Del(self);
+	self->ob_type->tp_free(self);
 }
 
 /**
@@ -111,8 +111,6 @@ static int py_talloc_default_cmp(PyObject *_obj1, PyObject *_obj2)
 
 	return ((char *)py_talloc_get_ptr(obj1) - (char *)py_talloc_get_ptr(obj2));
 }
-
-
 
 static PyTypeObject TallocObject_Type = {
 	.tp_name = "talloc.Object",

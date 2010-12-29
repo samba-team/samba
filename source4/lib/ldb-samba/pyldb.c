@@ -45,8 +45,6 @@ static void PyErr_SetLdbError(PyObject *error, int ret, struct ldb_context *ldb_
 			ldb_ctx == NULL?ldb_strerror(ret):ldb_errstring(ldb_ctx)));
 }
 
-
-
 static PyObject *py_ldb_set_loadparm(PyObject *self, PyObject *args)
 {
 	PyObject *py_lp_ctx;
@@ -116,33 +114,33 @@ static PyObject *py_ldb_set_opaque_integer(PyObject *self, PyObject *args)
 	if (old_val) {
 		*old_val = value;
 		Py_RETURN_NONE;
-	} 
+	}
 
 	tmp_ctx = talloc_new(ldb);
 	if (tmp_ctx == NULL) {
 		PyErr_NoMemory();
 		return NULL;
 	}
-	
+
 	new_val = talloc(tmp_ctx, int);
 	if (new_val == NULL) {
 		talloc_free(tmp_ctx);
 		PyErr_NoMemory();
 		return NULL;
 	}
-	
+
 	opaque_name_talloc = talloc_strdup(tmp_ctx, py_opaque_name);
 	if (opaque_name_talloc == NULL) {
 		talloc_free(tmp_ctx);
 		PyErr_NoMemory();
 		return NULL;
 	}
-	
+
 	*new_val = value;
 
 	/* cache the domain_sid in the ldb */
 	ret = ldb_set_opaque(ldb, opaque_name_talloc, new_val);
-	
+
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
 		PyErr_SetLdbError(py_ldb_error, ret, ldb);
@@ -240,12 +238,11 @@ static PyMethodDef py_samba_ldb_methods[] = {
 };
 
 static PyTypeObject PySambaLdb = {
-	.tp_name = "samba.Ldb",
+	.tp_name = "samba._ldb.Ldb",
 	.tp_doc = "Connection to a LDB database.",
 	.tp_methods = py_samba_ldb_methods,
 	.tp_flags = Py_TPFLAGS_DEFAULT|Py_TPFLAGS_BASETYPE,
 };
-
 
 void init_ldb(void)
 {

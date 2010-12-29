@@ -8,9 +8,9 @@
    Copyright (C) 2007-2010 Jelmer Vernooij <jelmer@samba.org>
    Copyright (C) 2009-2010 Matthias Dieter Wallnöfer
 
-	 ** NOTE! The following LGPL license applies to the ldb
-	 ** library. This does NOT imply that all of Samba is released
-	 ** under the LGPL
+    ** NOTE! The following LGPL license applies to the ldb
+    ** library. This does NOT imply that all of Samba is released
+    ** under the LGPL
 
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
@@ -1502,7 +1502,7 @@ static PyObject *PyLdb_FromLdbContext(struct ldb_context *ldb_ctx)
 static void py_ldb_dealloc(PyLdbObject *self)
 {
 	talloc_free(self->mem_ctx);
-	PyObject_Del(self);
+	self->ob_type->tp_free(self);
 }
 
 PyTypeObject PyLdb = {
