@@ -51,9 +51,6 @@ static void convert_USER_INFO_X_to_samr_user_info21(struct USER_INFO_X *infoX,
 	if (infoX->usriX_flags) {
 		fields_present |= SAMR_FIELD_ACCT_FLAGS;
 	}
-	if (infoX->usriX_name) {
-		fields_present |= SAMR_FIELD_FULL_NAME;
-	}
 	if (infoX->usriX_home_dir) {
 		fields_present |= SAMR_FIELD_HOME_DIRECTORY;
 	}
