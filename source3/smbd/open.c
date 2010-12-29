@@ -2291,23 +2291,15 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
  Open a file for for write to ensure that we can fchmod it.
 ****************************************************************************/
 
-NTSTATUS open_file_fchmod(struct smb_request *req, connection_struct *conn,
+NTSTATUS open_file_fchmod(connection_struct *conn,
 			  struct smb_filename *smb_fname,
 			  files_struct **result)
 {
-	files_struct *fsp = NULL;
-	NTSTATUS status;
-
 	if (!VALID_STAT(smb_fname->st)) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	status = file_new(req, conn, &fsp);
-	if(!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-        status = SMB_VFS_CREATE_FILE(
+        return SMB_VFS_CREATE_FILE(
 		conn,					/* conn */
 		NULL,					/* req */
 		0,					/* root_dir_fid */
@@ -2318,37 +2310,13 @@ NTSTATUS open_file_fchmod(struct smb_request *req, connection_struct *conn,
 		FILE_OPEN,				/* create_disposition*/
 		0,					/* create_options */
 		0,					/* file_attributes */
-		0,					/* oplock_request */
+		INTERNAL_OPEN_ONLY,			/* oplock_request */
 		0,					/* allocation_size */
 		0,					/* private_flags */
 		NULL,					/* sd */
 		NULL,					/* ea_list */
-		&fsp,					/* result */
+		result,					/* result */
 		NULL);					/* pinfo */
-
-	/*
-	 * This is not a user visible file open.
-	 * Don't set a share mode.
-	 */
-
-	if (!NT_STATUS_IS_OK(status)) {
-		file_free(req, fsp);
-		return status;
-	}
-
-	*result = fsp;
-	return NT_STATUS_OK;
-}
-
-/****************************************************************************
- Close the fchmod file fd - ensure no locks are lost.
-****************************************************************************/
-
-NTSTATUS close_file_fchmod(struct smb_request *req, files_struct *fsp)
-{
-	NTSTATUS status = fd_close(fsp);
-	file_free(req, fsp);
-	return status;
 }
 
 static NTSTATUS mkdir_internal(connection_struct *conn,
