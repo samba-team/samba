@@ -41,7 +41,7 @@ struct sendto_state {
 	const void *buf;
 	size_t len;
 	int flags;
-	const struct sockaddr *addr;
+	const struct sockaddr_storage *addr;
 	socklen_t addr_len;
 	ssize_t sent;
 };
@@ -52,8 +52,7 @@ static void sendto_handler(struct tevent_context *ev,
 
 struct tevent_req *sendto_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 			       int fd, const void *buf, size_t len, int flags,
-			       const struct sockaddr *addr,
-			       socklen_t addr_len)
+			       const struct sockaddr_storage *addr)
 {
 	struct tevent_req *result;
 	struct sendto_state *state;
@@ -68,7 +67,23 @@ struct tevent_req *sendto_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 	state->len = len;
 	state->flags = flags;
 	state->addr = addr;
-	state->addr_len = addr_len;
+
+	switch (addr->ss_family) {
+	case AF_INET:
+		state->addr_len = sizeof(struct sockaddr_in);
+		break;
+#if defined(HAVE_IPV6)
+	case AF_INET6:
+		state->addr_len = sizeof(struct sockaddr_in6);
+		break;
+#endif
+	case AF_UNIX:
+		state->addr_len = sizeof(struct sockaddr_un);
+		break;
+	default:
+		state->addr_len = sizeof(struct sockaddr_storage);
+		break;
+	}
 
 	fde = tevent_add_fd(ev, state, fd, TEVENT_FD_WRITE, sendto_handler,
 			    result);
@@ -89,7 +104,7 @@ static void sendto_handler(struct tevent_context *ev,
 		tevent_req_data(req, struct sendto_state);
 
 	state->sent = sendto(state->fd, state->buf, state->len, state->flags,
-			     state->addr, state->addr_len);
+			     (struct sockaddr *)state->addr, state->addr_len);
 	if ((state->sent == -1) && (errno == EINTR)) {
 		/* retry */
 		return;
@@ -117,7 +132,7 @@ struct recvfrom_state {
 	void *buf;
 	size_t len;
 	int flags;
-	struct sockaddr *addr;
+	struct sockaddr_storage *addr;
 	socklen_t *addr_len;
 	ssize_t received;
 };
@@ -129,7 +144,8 @@ static void recvfrom_handler(struct tevent_context *ev,
 struct tevent_req *recvfrom_send(TALLOC_CTX *mem_ctx,
 				 struct tevent_context *ev,
 				 int fd, void *buf, size_t len, int flags,
-				 struct sockaddr *addr, socklen_t *addr_len)
+				 struct sockaddr_storage *addr,
+				 socklen_t *addr_len)
 {
 	struct tevent_req *result;
 	struct recvfrom_state *state;
@@ -165,7 +181,8 @@ static void recvfrom_handler(struct tevent_context *ev,
 		tevent_req_data(req, struct recvfrom_state);
 
 	state->received = recvfrom(state->fd, state->buf, state->len,
-				   state->flags, state->addr, state->addr_len);
+				   state->flags, (struct sockaddr *)state->addr,
+				   state->addr_len);
 	if ((state->received == -1) && (errno == EINTR)) {
 		/* retry */
 		return;

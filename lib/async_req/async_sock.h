@@ -29,14 +29,14 @@
 
 struct tevent_req *sendto_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 			       int fd, const void *buf, size_t len, int flags,
-			       const struct sockaddr *addr,
-			       socklen_t addr_len);
+			       const struct sockaddr_storage *addr);
 ssize_t sendto_recv(struct tevent_req *req, int *perrno);
 
 struct tevent_req *recvfrom_send(TALLOC_CTX *mem_ctx,
 				 struct tevent_context *ev,
 				 int fd, void *buf, size_t len, int flags,
-				 struct sockaddr *addr, socklen_t *addr_len);
+				 struct sockaddr_storage *addr,
+				 socklen_t *addr_len);
 ssize_t recvfrom_recv(struct tevent_req *req, int *perrno);
 
 struct tevent_req *async_connect_send(TALLOC_CTX *mem_ctx,
