@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 APPNAME = 'tdb'
-VERSION = '1.2.8'
+VERSION = '1.2.9'
 
 blddir = 'bin'
 
@@ -60,7 +60,7 @@ def build(bld):
     COMMON_SRC = bld.SUBDIR('common',
                             '''check.c error.c tdb.c traverse.c
                             freelistcheck.c lock.c dump.c freelist.c
-                            io.c open.c transaction.c hash.c''')
+                            io.c open.c transaction.c hash.c summary.c''')
 
     if bld.env.standalone_tdb:
         bld.env.PKGCONFIGDIR = '${LIBDIR}/pkgconfig'
