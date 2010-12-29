@@ -29,6 +29,8 @@
 #include "lib/ldb-samba/ldif_handlers.h"
 #include "auth/pyauth.h"
 
+void init_ldb(void);
+
 static PyObject *pyldb_module;
 static PyObject *py_ldb_error;
 staticforward PyTypeObject PySambaLdb;

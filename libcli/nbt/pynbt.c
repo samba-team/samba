@@ -24,6 +24,8 @@
 #include "../libcli/nbt/libnbt.h"
 #include "lib/events/events.h"
 
+void initnetbios(void);
+
 #ifndef Py_RETURN_NONE
 #define Py_RETURN_NONE return Py_INCREF(Py_None), Py_None
 #endif

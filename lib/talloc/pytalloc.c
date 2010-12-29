@@ -21,6 +21,8 @@
 #include <talloc.h>
 #include <pytalloc.h>
 
+void inittalloc(void);
+
 /* print a talloc tree report for a talloc python object */
 static PyObject *py_talloc_report_full(PyObject *self, PyObject *args)
 {

@@ -30,6 +30,8 @@
 #include "ldb_private.h"
 #include "pyldb.h"
 
+void initldb(void);
+
 /* There's no Py_ssize_t in 2.4, apparently */
 #if PY_MAJOR_VERSION == 2 && PY_MINOR_VERSION < 5
 typedef int Py_ssize_t;
