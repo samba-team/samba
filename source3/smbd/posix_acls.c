@@ -3472,7 +3472,7 @@ int try_chown(connection_struct *conn, const char *fname, uid_t uid, gid_t gid)
 		return -1;
 	}
 
-	if (!NT_STATUS_IS_OK(open_file_fchmod(NULL, conn, fname, &st, &fsp))) {
+	if (!NT_STATUS_IS_OK(open_file_fchmod(conn, fname, &st, &fsp))) {
 		return -1;
 	}
 
@@ -3481,7 +3481,7 @@ int try_chown(connection_struct *conn, const char *fname, uid_t uid, gid_t gid)
 	ret = SMB_VFS_FCHOWN(fsp, uid, (gid_t)-1);
 	unbecome_root();
 
-	close_file_fchmod(NULL, fsp);
+	close_file(NULL, fsp, NORMAL_CLOSE);
 
 	return ret;
 }

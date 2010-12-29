@@ -6637,10 +6637,9 @@ bool map_open_params_to_ntcreate(const char *fname, int deny_mode, int open_func
 				 uint32 *pshare_mode,
 				 uint32 *pcreate_disposition,
 				 uint32 *pcreate_options);
-NTSTATUS open_file_fchmod(struct smb_request *req, connection_struct *conn,
+NTSTATUS open_file_fchmod(connection_struct *conn,
 			  const char *fname,
 			  SMB_STRUCT_STAT *psbuf, files_struct **result);
-NTSTATUS close_file_fchmod(struct smb_request *req, files_struct *fsp);
 NTSTATUS create_directory(connection_struct *conn, struct smb_request *req, const char *directory);
 void msg_file_was_renamed(struct messaging_context *msg,
 			  void *private_data,

@@ -301,7 +301,7 @@ static bool set_ea_dos_attribute(connection_struct *conn, const char *path, SMB_
 		 * are not violating security in doing the setxattr.
 		 */
 
-		if (!NT_STATUS_IS_OK(open_file_fchmod(NULL, conn, path, sbuf,
+		if (!NT_STATUS_IS_OK(open_file_fchmod(conn, path, sbuf,
 						      &fsp)))
 			return ret;
 		become_root();
@@ -309,7 +309,7 @@ static bool set_ea_dos_attribute(connection_struct *conn, const char *path, SMB_
 			ret = True;
 		}
 		unbecome_root();
-		close_file_fchmod(NULL, fsp);
+		close_file(NULL, fsp, NORMAL_CLOSE);
 		return ret;
 	}
 	DEBUG(10,("set_ea_dos_attribute: set EA %s on file %s\n", attrstr, path));
@@ -705,18 +705,15 @@ int file_set_dosmode(connection_struct *conn, const char *fname,
 		 * We need to open the file with write access whilst
 		 * still in our current user context. This ensures we
 		 * are not violating security in doing the fchmod.
-		 * This file open does *not* break any oplocks we are
-		 * holding. We need to review this.... may need to
-		 * break batch oplocks open by others. JRA.
 		 */
 		files_struct *fsp;
-		if (!NT_STATUS_IS_OK(open_file_fchmod(NULL, conn, fname, st,
+		if (!NT_STATUS_IS_OK(open_file_fchmod(conn, fname, st,
 						      &fsp)))
 			return -1;
 		become_root();
 		ret = SMB_VFS_FCHMOD(fsp, unixmode);
 		unbecome_root();
-		close_file_fchmod(NULL, fsp);
+		close_file(NULL, fsp, NORMAL_CLOSE);
 		if (!newfile) {
 			notify_fname(conn, NOTIFY_ACTION_MODIFIED,
 				FILE_NOTIFY_CHANGE_ATTRIBUTES, fname);
