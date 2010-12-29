@@ -3603,7 +3603,7 @@ int try_chown(connection_struct *conn, struct smb_filename *smb_fname,
 		return -1;
 	}
 
-	if (!NT_STATUS_IS_OK(open_file_fchmod(NULL, conn, smb_fname, &fsp))) {
+	if (!NT_STATUS_IS_OK(open_file_fchmod(conn, smb_fname, &fsp))) {
 		return -1;
 	}
 
@@ -3622,7 +3622,7 @@ int try_chown(connection_struct *conn, struct smb_filename *smb_fname,
 	}
 	unbecome_root();
 
-	close_file_fchmod(NULL, fsp);
+	close_file(NULL, fsp, NORMAL_CLOSE);
 
 	return ret;
 }

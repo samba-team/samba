@@ -5013,10 +5013,9 @@ bool map_open_params_to_ntcreate(const struct smb_filename *smb_fname,
 				 uint32_t *pprivate_flags);
 void remove_deferred_open_entry(struct file_id id, uint64_t mid,
 				struct server_id pid);
-NTSTATUS open_file_fchmod(struct smb_request *req, connection_struct *conn,
+NTSTATUS open_file_fchmod(connection_struct *conn,
 			  struct smb_filename *smb_fname,
 			  files_struct **result);
-NTSTATUS close_file_fchmod(struct smb_request *req, files_struct *fsp);
 NTSTATUS create_directory(connection_struct *conn, struct smb_request *req,
 			  struct smb_filename *smb_dname);
 void msg_file_was_renamed(struct messaging_context *msg,
