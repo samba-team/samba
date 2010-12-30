@@ -269,8 +269,6 @@ static PyMethodDef py_ldb_dn_methods[] = {
 	{ "canonical_ex_str", (PyCFunction)py_ldb_dn_canonical_ex_str, METH_NOARGS,
 		"S.canonical_ex_str() -> string\n"
 		"Canonical version of this DN (like a posix path, with terminating newline)." },
-	{ "check_special", (PyCFunction)py_ldb_dn_is_special, METH_VARARGS, 
-		NULL },
 	{ "parent", (PyCFunction)py_ldb_dn_get_parent, METH_NOARGS,
    		"S.parent() -> dn\n"
 		"Get the parent for this DN." },
@@ -281,7 +279,8 @@ static PyMethodDef py_ldb_dn_methods[] = {
 		"S.add_base(dn) -> None\n"
 		"Add a base DN to this DN." },
 	{ "check_special", (PyCFunction)py_ldb_dn_check_special, METH_VARARGS,
-		NULL },
+		"S.check_special(name) -> bool\n\n"
+		"Check if name is a special DN name"},
 	{ NULL }
 };
 
@@ -1866,7 +1865,7 @@ static PyObject *py_ldb_msg_element_iter(PyLdbMessageElementObject *self)
 PyObject *PyLdbMessageElement_FromMessageElement(struct ldb_message_element *el, TALLOC_CTX *mem_ctx)
 {
 	PyLdbMessageElementObject *ret;
-	ret = (PyLdbMessageElementObject *)PyLdbMessageElement.tp_alloc(&PyLdbMessageElement, 0);
+	ret = PyObject_New(PyLdbMessageElementObject, &PyLdbMessageElement);
 	if (ret == NULL) {
 		PyErr_NoMemory();
 		return NULL;
@@ -1937,7 +1936,7 @@ static PyObject *py_ldb_msg_element_new(PyTypeObject *type, PyObject *args, PyOb
 	el->flags = flags;
 	el->name = talloc_strdup(el, name);
 
-	ret = (PyLdbMessageElementObject *)PyLdbMessageElement.tp_alloc(&PyLdbMessageElement, 0);
+	ret = PyObject_New(PyLdbMessageElementObject, &PyLdbMessageElement);
 	if (ret == NULL) {
 		PyErr_NoMemory();
 		talloc_free(mem_ctx);
