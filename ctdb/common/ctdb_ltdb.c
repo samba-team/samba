@@ -129,6 +129,10 @@ int ctdb_ltdb_store(struct ctdb_db_context *ctdb_db, TDB_DATA key,
 	int ret;
 	bool seqnum_suppressed = false;
 
+	if (ctdb_db->ctdb_ltdb_store_fn) {
+		return ctdb_db->ctdb_ltdb_store_fn(ctdb_db, key, header, data);
+	}
+
 	if (ctdb->flags & CTDB_FLAG_TORTURE) {
 		struct ctdb_ltdb_header *h2;
 		rec = tdb_fetch(ctdb_db->ltdb->tdb, key);

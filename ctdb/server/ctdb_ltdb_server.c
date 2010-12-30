@@ -604,6 +604,8 @@ static int ctdb_local_attach(struct ctdb_context *ctdb, const char *db_name,
 		if (ctdb_db->delete_queue == NULL) {
 			CTDB_NO_MEMORY(ctdb, ctdb_db->delete_queue);
 		}
+
+		ctdb_db->ctdb_ltdb_store_fn = ctdb_ltdb_store_server;
 	}
 
 	/* check for hash collisions */
