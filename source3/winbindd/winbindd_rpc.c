@@ -84,6 +84,13 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 						      &total_size,
 						      &returned_size,
 						      &disp_info);
+
+		if (!NT_STATUS_IS_OK(result)) {
+		        if (!NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES)) {
+		                return result;
+		        }
+		}
+
 		num_dom_users = disp_info.info1.count;
 		start_idx += disp_info.info1.count;
 		loop_count++;
