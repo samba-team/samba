@@ -1747,6 +1747,10 @@ static struct ldb_message_element *PyObject_AsMessageElement(
 	}
 
 	me = talloc(mem_ctx, struct ldb_message_element);
+	if (me == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
 
 	me->name = talloc_strdup(me, attr_name);
 	me->flags = flags;
@@ -1908,20 +1912,39 @@ static PyObject *py_ldb_msg_element_new(PyTypeObject *type, PyObject *args, PyOb
 	}
 
 	el = talloc_zero(mem_ctx, struct ldb_message_element);
+	if (el == NULL) {
+		PyErr_NoMemory();
+		talloc_free(mem_ctx);
+		return NULL;
+	}
 
 	if (py_elements != NULL) {
 		Py_ssize_t i;
 		if (PyString_Check(py_elements)) {
 			el->num_values = 1;
 			el->values = talloc_array(el, struct ldb_val, 1);
+			if (el->values == NULL) {
+				talloc_free(mem_ctx);
+				PyErr_NoMemory();
+				return NULL;
+			}
 			el->values[0].length = PyString_Size(py_elements);
-			el->values[0].data = talloc_memdup(el, 
+			el->values[0].data = talloc_memdup(el->values, 
 				(uint8_t *)PyString_AsString(py_elements), el->values[0].length+1);
 		} else if (PySequence_Check(py_elements)) {
 			el->num_values = PySequence_Size(py_elements);
 			el->values = talloc_array(el, struct ldb_val, el->num_values);
+			if (el->values == NULL) {
+				talloc_free(mem_ctx);
+				PyErr_NoMemory();
+				return NULL;
+			}
 			for (i = 0; i < el->num_values; i++) {
 				PyObject *item = PySequence_GetItem(py_elements, i);
+				if (item == NULL) {
+					talloc_free(mem_ctx);
+					return NULL;
+				}
 				if (!PyString_Check(item)) {
 					PyErr_Format(PyExc_TypeError, 
 						     "Expected string as element %zd in list", i);
@@ -1943,9 +1966,8 @@ static PyObject *py_ldb_msg_element_new(PyTypeObject *type, PyObject *args, PyOb
 	el->flags = flags;
 	el->name = talloc_strdup(el, name);
 
-	ret = PyObject_New(PyLdbMessageElementObject, &PyLdbMessageElement);
+	ret = PyObject_New(PyLdbMessageElementObject, type);
 	if (ret == NULL) {
-		PyErr_NoMemory();
 		talloc_free(mem_ctx);
 		return NULL;
 	}
@@ -2130,7 +2152,9 @@ static PyObject *py_ldb_msg_items(PyLdbMessageObject *self)
 		j++;
 	}
 	for (i = 0; i < msg->num_elements; i++, j++) {
-		PyList_SetItem(l, j, Py_BuildValue("(sO)", msg->elements[i].name, PyLdbMessageElement_FromMessageElement(&msg->elements[i], msg->elements)));
+		PyObject *py_el = PyLdbMessageElement_FromMessageElement(&msg->elements[i], msg->elements);
+		PyObject *value = Py_BuildValue("(sO)", msg->elements[i].name, py_el);
+		PyList_SetItem(l, j, value);
 	}
 	return l;
 }
