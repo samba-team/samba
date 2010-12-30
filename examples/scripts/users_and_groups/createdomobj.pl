@@ -39,7 +39,7 @@ my $rpccli_cmd	= "rpcclient";
 my $server;
 my $num_targets	= 1;
 my $startnum;				# if empty, don't add numbers to prefix
-my $prefix	= $target_type;		# name-prefix
+my $prefix;				# name-prefix
 my $path;				# path to rpcclient command
 my $rpccli_path	= $rpccli_cmd;
 my $creds;
@@ -102,6 +102,8 @@ if (exists($options{n})) {
 
 if (exists($options{p})) {
 	$prefix = $options{p};
+} else {
+	$prefix = $target_type;
 }
 
 if (exists($options{P})) {
