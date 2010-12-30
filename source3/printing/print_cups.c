@@ -390,8 +390,7 @@ static bool cups_cache_reload_async(int fd)
 	return ret;
 }
 
-static struct pcap_cache *local_pcap_copy;
-struct fd_event *cache_fd_event;
+static struct fd_event *cache_fd_event;
 
 static bool cups_pcap_load_async(struct tevent_context *ev,
 				 struct messaging_context *msg_ctx,
@@ -553,12 +552,8 @@ static void cups_async_callback(struct event_context *event_ctx,
 	TALLOC_FREE(frame);
 	if (tmp_pcap_cache) {
 		bool ret;
-		/* We got a namelist, replace our local cache. */
-		pcap_cache_destroy_specific(&local_pcap_copy);
-		local_pcap_copy = tmp_pcap_cache;
-
-		/* And the systemwide pcap cache. */
-		ret = pcap_cache_replace(local_pcap_copy);
+		/* replace the systemwide pcap cache. */
+		ret = pcap_cache_replace(tmp_pcap_cache);
 		if (!ret)
 			DEBUG(0, ("failed to replace pcap cache\n"));
 
@@ -600,35 +595,22 @@ bool cups_cache_reload(struct tevent_context *ev,
 		talloc_free(cb_args);
 		return false;
 	}
-	if (!local_pcap_copy) {
-		/* We have no local cache, wait directly for
-		 * async refresh to complete.
-		 */
-		DEBUG(10,("cups_cache_reload: sync read on fd %d\n",
-			*p_pipe_fd ));
 
-		cups_async_callback(ev, NULL,
-					EVENT_FD_READ,
-					(void *)cb_args);
-		if (!local_pcap_copy) {
-			return false;
-		}
-	} else {
-		DEBUG(10,("cups_cache_reload: async read on fd %d\n",
-			*p_pipe_fd ));
+	DEBUG(10,("cups_cache_reload: async read on fd %d\n",
+		*p_pipe_fd ));
 
-		/* Trigger an event when the pipe can be read. */
-		cache_fd_event = event_add_fd(ev,
-					NULL, *p_pipe_fd,
-					EVENT_FD_READ,
-					cups_async_callback,
-					(void *)cb_args);
-		if (!cache_fd_event) {
-			close(*p_pipe_fd);
-			TALLOC_FREE(cb_args);
-			return false;
-		}
+	/* Trigger an event when the pipe can be read. */
+	cache_fd_event = event_add_fd(ev,
+				NULL, *p_pipe_fd,
+				EVENT_FD_READ,
+				cups_async_callback,
+				(void *)cb_args);
+	if (!cache_fd_event) {
+		close(*p_pipe_fd);
+		TALLOC_FREE(cb_args);
+		return false;
 	}
+
 	return true;
 }
 
