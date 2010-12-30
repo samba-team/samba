@@ -156,7 +156,7 @@ static bool query_one(const char *lookup, unsigned int lookup_type)
 {
 	int j, count, flags = 0;
 	struct sockaddr_storage *ip_list=NULL;
-	NTSTATUS status;
+	NTSTATUS status = NT_STATUS_NOT_FOUND;
 
 	if (got_bcast) {
 		char addr[INET6_ADDRSTRLEN];
