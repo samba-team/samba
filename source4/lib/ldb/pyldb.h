@@ -64,7 +64,7 @@ typedef struct {
 #define PyLdbModule_AsModule(pyobj) ((PyLdbModuleObject *)pyobj)->mod
 
 typedef struct {
-	PyObject_HEAD	
+	PyObject_HEAD
 	TALLOC_CTX *mem_ctx;
 	struct ldb_message_element *el;
 } PyLdbMessageElementObject;

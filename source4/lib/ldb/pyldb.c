@@ -504,6 +504,11 @@ static const char **PyList_AsStringList(TALLOC_CTX *mem_ctx, PyObject *list,
 		return NULL;
 	}
 	ret = talloc_array(NULL, const char *, PyList_Size(list)+1);
+	if (ret == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
 	for (i = 0; i < PyList_Size(list); i++) {
 		PyObject *item = PyList_GetItem(list, i);
 		if (!PyString_Check(item)) {
@@ -1739,7 +1744,8 @@ static struct ldb_message_element *PyObject_AsMessageElement(
 
 	if (PyLdbMessageElement_Check(set_obj)) {
 		PyLdbMessageElementObject *set_obj_as_me = (PyLdbMessageElementObject *)set_obj;
-		/* We have to talloc_reference() the memory context, not the pointer which may not actually be it's own context */
+		/* We have to talloc_reference() the memory context, not the pointer
+		 * which may not actually be it's own context */
 		if (talloc_reference(mem_ctx, set_obj_as_me->mem_ctx)) {
 			return PyLdbMessageElement_AsMessageElement(set_obj);
 		}
@@ -1817,9 +1823,7 @@ static PyObject *py_ldb_msg_element_get(PyLdbMessageElementObject *self, PyObjec
 
 static PyObject *py_ldb_msg_element_flags(PyLdbMessageElementObject *self, PyObject *args)
 {
-	struct ldb_message_element *el;
-
-	el = PyLdbMessageElement_AsMessageElement(self);
+	struct ldb_message_element *el = PyLdbMessageElement_AsMessageElement(self);
 	return PyInt_FromLong(el->flags);
 }
 
@@ -2173,14 +2177,14 @@ static PyObject *py_ldb_msg_elements(PyLdbMessageObject *self)
 static PyObject *py_ldb_msg_add(PyLdbMessageObject *self, PyObject *args)
 {
 	struct ldb_message *msg = PyLdbMessage_AsMessage(self);
-	PyObject *py_element;
+	PyLdbMessageElementObject *py_element;
 	int ret;
 	struct ldb_message_element *el;
 
 	if (!PyArg_ParseTuple(args, "O!", &PyLdbMessageElement, &py_element))
 		return NULL;
 
-	el = talloc_reference(msg, PyLdbMessageElement_AsMessageElement(py_element));
+	el = talloc_reference(msg, py_element->mem_ctx);
 	if (el == NULL) {
 		PyErr_NoMemory();
 		return NULL;
