@@ -53,7 +53,6 @@ typedef struct {
 	TALLOC_CTX *mem_ctx;
 	struct ldb_message *msg;
 } PyLdbMessageObject;
-PyObject *PyLdbMessage_FromMessage(struct ldb_message *message);
 #define PyLdbMessage_Check(ob) PyObject_TypeCheck(ob, &PyLdbMessage)
 #define PyLdbMessage_AsMessage(pyobj) ((PyLdbMessageObject *)pyobj)->msg
 
@@ -62,7 +61,6 @@ typedef struct {
 	TALLOC_CTX *mem_ctx;
 	struct ldb_module *mod;
 } PyLdbModuleObject;
-PyObject *PyLdbModule_FromModule(struct ldb_module *mod);
 #define PyLdbModule_AsModule(pyobj) ((PyLdbModuleObject *)pyobj)->mod
 
 typedef struct {
@@ -70,8 +68,6 @@ typedef struct {
 	TALLOC_CTX *mem_ctx;
 	struct ldb_message_element *el;
 } PyLdbMessageElementObject;
-struct ldb_message_element *PyObject_AsMessageElement(TALLOC_CTX *mem_ctx, PyObject *obj, int flags, const char *name);
-PyObject *PyLdbMessageElement_FromMessageElement(struct ldb_message_element *, TALLOC_CTX *mem_ctx);
 #define PyLdbMessageElement_AsMessageElement(pyobj) ((PyLdbMessageElementObject *)pyobj)->el
 #define PyLdbMessageElement_Check(ob) PyObject_TypeCheck(ob, &PyLdbMessageElement)
 
@@ -80,7 +76,6 @@ typedef struct {
 	TALLOC_CTX *mem_ctx;
 	struct ldb_parse_tree *tree;
 } PyLdbTreeObject;
-PyObject *PyLdbTree_FromTree(struct ldb_parse_tree *);
 #define PyLdbTree_AsTree(pyobj) ((PyLdbTreeObject *)pyobj)->tree
 
 #define PyErr_LDB_ERROR_IS_ERR_RAISE(err,ret,ldb) \

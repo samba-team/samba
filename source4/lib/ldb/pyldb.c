@@ -32,6 +32,22 @@
 #include "pyldb.h"
 
 void initldb(void);
+static PyObject *PyLdbMessage_FromMessage(struct ldb_message *msg);
+static PyObject *PyExc_LdbError;
+
+staticforward PyTypeObject PyLdbMessage;
+staticforward PyTypeObject PyLdbModule;
+staticforward PyTypeObject PyLdbDn;
+staticforward PyTypeObject PyLdb;
+staticforward PyTypeObject PyLdbMessageElement;
+staticforward PyTypeObject PyLdbTree;
+static PyObject *PyLdb_FromLdbContext(struct ldb_context *ldb_ctx);
+static PyObject *PyLdbModule_FromModule(struct ldb_module *mod);
+static struct ldb_message_element *PyObject_AsMessageElement(
+						      TALLOC_CTX *mem_ctx,
+						      PyObject *set_obj,
+						      int flags,
+						      const char *attr_name);
 
 /* There's no Py_ssize_t in 2.4, apparently */
 #if PY_MAJOR_VERSION == 2 && PY_MINOR_VERSION < 5
@@ -53,17 +69,6 @@ static void PyErr_SetLdbError(PyObject *error, int ret, struct ldb_context *ldb_
 			Py_BuildValue(discard_const_p(char, "(i,s)"), ret,
 				      ldb_ctx == NULL?ldb_strerror(ret):ldb_errstring(ldb_ctx)));
 }
-
-static PyObject *PyExc_LdbError;
-
-extern PyTypeObject PyLdbMessage;
-extern PyTypeObject PyLdbModule;
-extern PyTypeObject PyLdbDn;
-extern PyTypeObject PyLdb;
-staticforward PyTypeObject PyLdbMessageElement;
-extern PyTypeObject PyLdbTree;
-
-static PyObject *PyLdb_FromLdbContext(struct ldb_context *ldb_ctx);
 
 static PyObject *PyObject_FromLdbValue(struct ldb_context *ldb_ctx, 
 				       struct ldb_message_element *el,
@@ -363,7 +368,7 @@ static void py_ldb_dn_dealloc(PyLdbDnObject *self)
 	PyObject_Del(self);
 }
 
-PyTypeObject PyLdbDn = {
+static PyTypeObject PyLdbDn = {
 	.tp_name = "ldb.Dn",
 	.tp_methods = py_ldb_dn_methods,
 	.tp_str = (reprfunc)py_ldb_dn_get_linearized,
@@ -1423,7 +1428,7 @@ static PyMethodDef py_ldb_methods[] = {
 	{ NULL },
 };
 
-PyObject *PyLdbModule_FromModule(struct ldb_module *mod)
+static PyObject *PyLdbModule_FromModule(struct ldb_module *mod)
 {
 	PyLdbModuleObject *ret;
 
@@ -1505,7 +1510,7 @@ static void py_ldb_dealloc(PyLdbObject *self)
 	PyObject_Del(self);
 }
 
-PyTypeObject PyLdb = {
+static PyTypeObject PyLdb = {
 	.tp_name = "ldb.Ldb",
 	.tp_methods = py_ldb_methods,
 	.tp_repr = (reprfunc)py_ldb_repr,
@@ -1699,7 +1704,7 @@ static void py_ldb_module_dealloc(PyLdbModuleObject *self)
 	PyObject_Del(self);
 }
 
-PyTypeObject PyLdbModule = {
+static PyTypeObject PyLdbModule = {
 	.tp_name = "ldb.LdbModule",
 	.tp_methods = py_ldb_module_methods,
 	.tp_repr = (reprfunc)py_ldb_module_repr,
@@ -1724,7 +1729,8 @@ PyTypeObject PyLdbModule = {
  * @param attr_name Name of the attribute
  * @return New ldb_message_element, allocated as child of mem_ctx
  */
-struct ldb_message_element *PyObject_AsMessageElement(TALLOC_CTX *mem_ctx,
+static struct ldb_message_element *PyObject_AsMessageElement(
+						      TALLOC_CTX *mem_ctx,
 						      PyObject *set_obj,
 						      int flags,
 						      const char *attr_name)
@@ -1863,7 +1869,7 @@ static PyObject *py_ldb_msg_element_iter(PyLdbMessageElementObject *self)
 	return PyObject_GetIter(ldb_msg_element_to_set(NULL, PyLdbMessageElement_AsMessageElement(self)));
 }
 
-PyObject *PyLdbMessageElement_FromMessageElement(struct ldb_message_element *el, TALLOC_CTX *mem_ctx)
+static PyObject *PyLdbMessageElement_FromMessageElement(struct ldb_message_element *el, TALLOC_CTX *mem_ctx)
 {
 	PyLdbMessageElementObject *ret;
 	ret = PyObject_New(PyLdbMessageElementObject, &PyLdbMessageElement);
@@ -2274,7 +2280,7 @@ static PyObject *py_ldb_msg_new(PyTypeObject *type, PyObject *args, PyObject *kw
 	return (PyObject *)py_ret;
 }
 
-PyObject *PyLdbMessage_FromMessage(struct ldb_message *msg)
+static PyObject *PyLdbMessage_FromMessage(struct ldb_message *msg)
 {
 	PyLdbMessageObject *ret;
 
@@ -2364,7 +2370,7 @@ static int py_ldb_msg_compare(PyLdbMessageObject *py_msg1,
 	return 0;
 }
 
-PyTypeObject PyLdbMessage = {
+static PyTypeObject PyLdbMessage = {
 	.tp_name = "ldb.Message",
 	.tp_methods = py_ldb_msg_methods,
 	.tp_getset = py_ldb_msg_getset,
@@ -2378,7 +2384,7 @@ PyTypeObject PyLdbMessage = {
 	.tp_compare = (cmpfunc)py_ldb_msg_compare,
 };
 
-PyObject *PyLdbTree_FromTree(struct ldb_parse_tree *tree)
+static PyObject *PyLdbTree_FromTree(struct ldb_parse_tree *tree)
 {
 	PyLdbTreeObject *ret;
 
@@ -2399,7 +2405,7 @@ static void py_ldb_tree_dealloc(PyLdbTreeObject *self)
 	PyObject_Del(self);
 }
 
-PyTypeObject PyLdbTree = {
+static PyTypeObject PyLdbTree = {
 	.tp_name = "ldb.Tree",
 	.tp_basicsize = sizeof(PyLdbTreeObject),
 	.tp_dealloc = (destructor)py_ldb_tree_dealloc,
