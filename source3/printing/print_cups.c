@@ -465,6 +465,7 @@ static void cups_async_callback(struct event_context *event_ctx,
 	struct cups_async_cb_args *cb_args = (struct cups_async_cb_args *)p;
 	int fd = cb_args->pipe_fd;
 	struct pcap_cache *tmp_pcap_cache = NULL;
+	bool ret_ok = true;
 
 	DEBUG(5,("cups_async_callback: callback received for printer data. "
 		"fd = %d\n", fd));
@@ -482,6 +483,7 @@ static void cups_async_callback(struct event_context *event_ctx,
 		if (ret != sizeof(namelen)) {
 			DEBUG(10,("cups_async_callback: namelen read failed %d %s\n",
 				errno, strerror(errno)));
+			ret_ok = false;
 			break;
 		}
 
@@ -496,6 +498,7 @@ static void cups_async_callback(struct event_context *event_ctx,
 		if (ret != sizeof(infolen)) {
 			DEBUG(10,("cups_async_callback: infolen read failed %s\n",
 				strerror(errno)));
+			ret_ok = false;
 			break;
 		}
 
@@ -505,6 +508,7 @@ static void cups_async_callback(struct event_context *event_ctx,
 		if (namelen) {
 			name = TALLOC_ARRAY(frame, char, namelen);
 			if (!name) {
+				ret_ok = false;
 				break;
 			}
 			ret = sys_read(fd, name, namelen);
@@ -515,6 +519,7 @@ static void cups_async_callback(struct event_context *event_ctx,
 			if (ret != namelen) {
 				DEBUG(10,("cups_async_callback: name read failed %s\n",
 					strerror(errno)));
+				ret_ok = false;
 				break;
 			}
 			DEBUG(11,("cups_async_callback: read name %s\n",
@@ -525,6 +530,7 @@ static void cups_async_callback(struct event_context *event_ctx,
 		if (infolen) {
 			info = TALLOC_ARRAY(frame, char, infolen);
 			if (!info) {
+				ret_ok = false;
 				break;
 			}
 			ret = sys_read(fd, info, infolen);
@@ -535,6 +541,7 @@ static void cups_async_callback(struct event_context *event_ctx,
 			if (ret != infolen) {
 				DEBUG(10,("cups_async_callback: info read failed %s\n",
 					strerror(errno)));
+				ret_ok = false;
 				break;
 			}
 			DEBUG(11,("cups_async_callback: read info %s\n",
@@ -544,27 +551,35 @@ static void cups_async_callback(struct event_context *event_ctx,
 		}
 
 		/* Add to our local pcap cache. */
-		pcap_cache_add_specific(&tmp_pcap_cache, name, info);
+		ret_ok = pcap_cache_add_specific(&tmp_pcap_cache, name, info);
 		TALLOC_FREE(name);
 		TALLOC_FREE(info);
+		if (!ret_ok) {
+			DEBUG(0, ("failed to add to tmp pcap cache\n"));
+			break;
+		}
 	}
 
 	TALLOC_FREE(frame);
-	if (tmp_pcap_cache) {
-		bool ret;
-		/* replace the systemwide pcap cache. */
-		ret = pcap_cache_replace(tmp_pcap_cache);
-		if (!ret)
+	if (!ret_ok) {
+		DEBUG(0, ("failed to read a new printer list\n"));
+		pcap_cache_destroy_specific(&tmp_pcap_cache);
+	} else {
+		/*
+		 * replace the system-wide pcap cache with a (possibly empty)
+		 * new one.
+		 * FIXME The child process does not currently propagate cups
+		 * errors back up to the parent, therefore we cannot
+		 * differentiate between an empty printer list and a failure.
+		 */
+		ret_ok = pcap_cache_replace(tmp_pcap_cache);
+		if (!ret_ok) {
 			DEBUG(0, ("failed to replace pcap cache\n"));
-
-		/* Caller may have requested post cache fill callback */
-		if (ret && cb_args->post_cache_fill_fn != NULL) {
+		} else if (cb_args->post_cache_fill_fn != NULL) {
+			/* Caller requested post cache fill callback */
 			cb_args->post_cache_fill_fn(cb_args->event_ctx,
 						    cb_args->msg_ctx);
 		}
-	} else {
-		DEBUG(2,("cups_async_callback: failed to read a new "
-			"printer list\n"));
 	}
 	close(fd);
 	TALLOC_FREE(cb_args);
