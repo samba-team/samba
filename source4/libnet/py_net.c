@@ -32,6 +32,8 @@
 #include "libcli/finddc.h"
 #include "libcli/resolve/resolve.h"
 
+void initnet(void);
+
 typedef struct {
 	PyObject_HEAD
 	TALLOC_CTX *mem_ctx;
