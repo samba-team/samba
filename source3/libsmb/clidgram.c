@@ -130,7 +130,7 @@ static const char *mailslot_name(TALLOC_CTX *mem_ctx, struct in_addr dc_ip)
 
 bool send_getdc_request(TALLOC_CTX *mem_ctx,
 			struct messaging_context *msg_ctx,
-			struct sockaddr_storage *dc_ss,
+			const struct sockaddr_storage *dc_ss,
 			const char *domain_name,
 			const struct dom_sid *sid,
 			uint32_t nt_version,
