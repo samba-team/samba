@@ -198,7 +198,7 @@ bool send_getdc_request(TALLOC_CTX *mem_ctx,
 }
 
 bool receive_getdc_response(TALLOC_CTX *mem_ctx,
-			    struct sockaddr_storage *dc_ss,
+			    const struct sockaddr_storage *dc_ss,
 			    const char *domain_name,
 			    int dgm_id,
 			    uint32_t *nt_version,
