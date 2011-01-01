@@ -186,8 +186,7 @@ fail:
 	return ret;
 }
 
-bool send_getdc_request(TALLOC_CTX *mem_ctx,
-			struct messaging_context *msg_ctx,
+bool send_getdc_request(struct messaging_context *msg_ctx,
 			const struct sockaddr_storage *dc_ss,
 			const char *domain_name,
 			const struct dom_sid *sid,

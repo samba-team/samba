@@ -950,7 +950,7 @@ static NTSTATUS process_dc_netbios(TALLOC_CTX *mem_ctx,
 			return NT_STATUS_UNSUCCESSFUL;
 		}
 
-		if (send_getdc_request(mem_ctx, msg_ctx,
+		if (send_getdc_request(msg_ctx,
 				       &dclist[i].ss, domain_name,
 				       NULL, nt_version, dgm_id))
 		{
