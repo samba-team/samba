@@ -493,18 +493,20 @@ HEIMDAL_LIBRARY('kdc', source=KDC_SOURCE,
 HEIMDAL_AUTOPROTO('kdc/kdc-protos.h', KDC_SOURCE)
 HEIMDAL_AUTOPROTO_PRIVATE('kdc/kdc-private.h', KDC_SOURCE)
 
-HEIMDAL_ERRTABLE('HEIMNTLM_ET',
-                 'lib/ntlm/ntlm_err.et')
 
-HEIMNTLM_SOURCE = 'lib/ntlm/ntlm.c'
-HEIMDAL_LIBRARY('heimntlm',
-                    source=HEIMNTLM_SOURCE,
-                    includes='../heimdal/lib/ntlm',
-                    deps='roken hcrypto krb5',
-                    vnum='1.0.1',
-                    version_script='lib/ntlm/version-script.map',
-    )
-HEIMDAL_AUTOPROTO('lib/ntlm/heimntlm-protos.h', HEIMNTLM_SOURCE)
+if not bld.CONFIG_SET("USING_SYSTEM_HEIMNTLM"):
+    HEIMDAL_ERRTABLE('HEIMNTLM_ET',
+                     'lib/ntlm/ntlm_err.et')
+
+    HEIMNTLM_SOURCE = 'lib/ntlm/ntlm.c'
+    HEIMDAL_LIBRARY('heimntlm',
+                        source=HEIMNTLM_SOURCE,
+                        includes='../heimdal/lib/ntlm',
+                        deps='roken hcrypto krb5',
+                        vnum='1.0.1',
+                        version_script='lib/ntlm/version-script.map',
+        )
+    HEIMDAL_AUTOPROTO('lib/ntlm/heimntlm-protos.h', HEIMNTLM_SOURCE)
 
 
 HEIMDAL_SUBSYSTEM('HEIMDAL_HDB_KEYS',
