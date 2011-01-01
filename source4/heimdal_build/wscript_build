@@ -375,20 +375,6 @@ HEIMDAL_ASN1('HEIMDAL_HDB_ASN1', 'lib/hdb/hdb.asn1',
     directory='lib/asn1',
     includes='../heimdal/lib/asn1')
 
-HEIMDAL_ERRTABLE('HEIMDAL_ASN1_ERR_ET', 'lib/asn1/asn1_err.et')
-
-HEIMDAL_ERRTABLE('HEIMDAL_HDB_ERR_ET', 'lib/hdb/hdb_err.et')
-
-HEIMDAL_ERRTABLE('HEIMDAL_HEIM_ERR_ET', 'lib/krb5/heim_err.et')
-
-HEIMDAL_ERRTABLE('HEIMDAL_K524_ERR_ET', 'lib/krb5/k524_err.et')
-
-HEIMDAL_ERRTABLE('HEIMDAL_KRB_ERR_ET', 'lib/krb5/krb_err.et')
-
-HEIMDAL_ERRTABLE('HEIMDAL_KRB5_ERR_ET', 'lib/krb5/krb5_err.et')
-
-HEIMDAL_ERRTABLE('HEIMDAL_GKRB5_ERR_ET', 'lib/gssapi/krb5/gkrb5_err.et')
-
 
 if not bld.CONFIG_SET('USING_SYSTEM_ROKEN'):
 
@@ -515,6 +501,7 @@ HEIMDAL_SUBSYSTEM('HEIMDAL_HDB_KEYS',
     deps='roken hcrypto krb5 HEIMDAL_HDB_ASN1'
     )
 
+HEIMDAL_ERRTABLE('HEIMDAL_HDB_ERR_ET', 'lib/hdb/hdb_err.et')
 
 HDB_SOURCE = '''lib/hdb/db.c lib/hdb/dbinfo.c lib/hdb/hdb.c
                               lib/hdb/ext.c lib/hdb/keytab.c lib/hdb/hdb-keytab.c
@@ -531,6 +518,8 @@ HEIMDAL_LIBRARY('hdb',
 HEIMDAL_AUTOPROTO('lib/hdb/hdb-protos.h', HDB_SOURCE)
 HEIMDAL_AUTOPROTO_PRIVATE('lib/hdb/hdb-private.h', HDB_SOURCE)
 
+
+HEIMDAL_ERRTABLE('HEIMDAL_GKRB5_ERR_ET', 'lib/gssapi/krb5/gkrb5_err.et')
 
 HEIMDAL_LIBRARY('gssapi',
                     '''
@@ -580,62 +569,71 @@ lib/gssapi/mech/gss_set_cred_option.c  lib/gssapi/mech/gss_pseudo_random.c ../he
     version_script='lib/gssapi/version-script.map',
     )
 
-# expand_path.c needs some of the install paths
-HEIMDAL_SUBSYSTEM('HEIMDAL_CONFIG',
-                  'lib/krb5/expand_path.c lib/krb5/plugin.c lib/krb5/context.c',
-                  includes='../heimdal/lib/krb5 ../heimdal/lib/asn1 ../heimdal/include',
-                  cflags=bld.dynconfig_cflags('LIBDIR BINDIR LIBEXECDIR SBINDIR'),
-                  deps='hcrypto heimbase wind hx509 com_err'
-                  )
+if not bld.CONFIG_SET("USING_SYSTEM_KRB5"):
+    # expand_path.c needs some of the install paths
+    HEIMDAL_SUBSYSTEM('HEIMDAL_CONFIG',
+                      'lib/krb5/expand_path.c lib/krb5/plugin.c lib/krb5/context.c',
+                      includes='../heimdal/lib/krb5 ../heimdal/lib/asn1 ../heimdal/include',
+                      cflags=bld.dynconfig_cflags('LIBDIR BINDIR LIBEXECDIR SBINDIR'),
+                      deps='hcrypto heimbase wind hx509 com_err'
+                      )
 
-KRB5_SOURCE = [os.path.join('lib/krb5/', x) for x in to_list(
-                               '''acache.c add_et_list.c
-                               addr_families.c appdefault.c
-                               asn1_glue.c auth_context.c
-                               build_ap_req.c build_auth.c cache.c
-                               changepw.c codec.c config_file.c
-                               constants.c convert_creds.c
-                               copy_host_realm.c crc.c creds.c
-                               crypto.c crypto-aes.c crypto-algs.c
-                               crypto-arcfour.c crypto-des3.c crypto-des.c
-                               crypto-des-common.c crypto-evp.c
-                               crypto-null.c crypto-pk.c crypto-rand.c
-                               data.c eai_to_heim_errno.c
-                               error_string.c expand_hostname.c
-                               fcache.c free.c free_host_realm.c
-                               generate_seq_number.c generate_subkey.c
-                               get_addrs.c get_cred.c
-                               get_default_principal.c
-                               get_default_realm.c get_for_creds.c
-                               get_host_realm.c get_in_tkt.c
-                               get_port.c init_creds.c init_creds_pw.c
-                               kcm.c keyblock.c keytab.c keytab_any.c
-                               keytab_file.c keytab_memory.c
-                               keytab_keyfile.c krbhst.c log.c
-                               mcache.c misc.c mk_error.c mk_priv.c
-                               mk_rep.c mk_req.c mk_req_ext.c
-                               mit_glue.c n-fold.c padata.c pkinit.c
-                               principal.c prog_setup.c pac.c
-                               pcache.c prompter_posix.c rd_cred.c rd_error.c
-                               rd_priv.c rd_rep.c rd_req.c replay.c
-                               salt.c salt-aes.c salt-arcfour.c salt-des3.c salt-des.c
-                               send_to_kdc.c set_default_realm.c
-                               store.c store-int.c store_emem.c store_fd.c
-                               store_mem.c ticket.c time.c transited.c
-                               version.c warn.c krb5_err.c
-                               heim_err.c k524_err.c krb_err.c''')]  + ["../heimdal_build/krb5-glue.c"]
+    HEIMDAL_ERRTABLE('HEIMDAL_KRB5_ERR_ET', 'lib/krb5/krb5_err.et')
 
-HEIMDAL_LIBRARY('krb5', KRB5_SOURCE,
-    version_script='lib/krb5/version-script.map',
-                    includes='../heimdal/lib/krb5 ../heimdal/lib/asn1 ../heimdal/include',
-            deps='roken wind asn1 hx509 hcrypto samba-hostconfig intl com_err HEIMDAL_CONFIG heimbase',
-            vnum='26.0.0',
-                    )
-KRB5_PROTO_SOURCE = KRB5_SOURCE + ['lib/krb5/expand_path.c', 'lib/krb5/plugin.c', 'lib/krb5/context.c']
+    HEIMDAL_ERRTABLE('HEIMDAL_KRB_ERR_ET', 'lib/krb5/krb_err.et')
 
-HEIMDAL_AUTOPROTO_PRIVATE('lib/krb5/krb5-private.h', KRB5_PROTO_SOURCE)
-HEIMDAL_AUTOPROTO('lib/krb5/krb5-protos.h', KRB5_PROTO_SOURCE,
-    options='-E KRB5_LIB -q -P comment -o')
+    HEIMDAL_ERRTABLE('HEIMDAL_K524_ERR_ET', 'lib/krb5/k524_err.et')
+
+    HEIMDAL_ERRTABLE('HEIMDAL_HEIM_ERR_ET', 'lib/krb5/heim_err.et')
+
+    KRB5_SOURCE = [os.path.join('lib/krb5/', x) for x in to_list(
+                                   '''acache.c add_et_list.c
+                                   addr_families.c appdefault.c
+                                   asn1_glue.c auth_context.c
+                                   build_ap_req.c build_auth.c cache.c
+                                   changepw.c codec.c config_file.c
+                                   constants.c convert_creds.c
+                                   copy_host_realm.c crc.c creds.c
+                                   crypto.c crypto-aes.c crypto-algs.c
+                                   crypto-arcfour.c crypto-des3.c crypto-des.c
+                                   crypto-des-common.c crypto-evp.c
+                                   crypto-null.c crypto-pk.c crypto-rand.c
+                                   data.c eai_to_heim_errno.c
+                                   error_string.c expand_hostname.c
+                                   fcache.c free.c free_host_realm.c
+                                   generate_seq_number.c generate_subkey.c
+                                   get_addrs.c get_cred.c
+                                   get_default_principal.c
+                                   get_default_realm.c get_for_creds.c
+                                   get_host_realm.c get_in_tkt.c
+                                   get_port.c init_creds.c init_creds_pw.c
+                                   kcm.c keyblock.c keytab.c keytab_any.c
+                                   keytab_file.c keytab_memory.c
+                                   keytab_keyfile.c krbhst.c log.c
+                                   mcache.c misc.c mk_error.c mk_priv.c
+                                   mk_rep.c mk_req.c mk_req_ext.c
+                                   mit_glue.c n-fold.c padata.c pkinit.c
+                                   principal.c prog_setup.c pac.c
+                                   pcache.c prompter_posix.c rd_cred.c rd_error.c
+                                   rd_priv.c rd_rep.c rd_req.c replay.c
+                                   salt.c salt-aes.c salt-arcfour.c salt-des3.c salt-des.c
+                                   send_to_kdc.c set_default_realm.c
+                                   store.c store-int.c store_emem.c store_fd.c
+                                   store_mem.c ticket.c time.c transited.c
+                                   version.c warn.c krb5_err.c
+                                   heim_err.c k524_err.c krb_err.c''')]  + ["../heimdal_build/krb5-glue.c"]
+
+    HEIMDAL_LIBRARY('krb5', KRB5_SOURCE,
+        version_script='lib/krb5/version-script.map',
+                        includes='../heimdal/lib/krb5 ../heimdal/lib/asn1 ../heimdal/include',
+                deps='roken wind asn1 hx509 hcrypto intl com_err HEIMDAL_CONFIG heimbase',
+                vnum='26.0.0',
+                        )
+    KRB5_PROTO_SOURCE = KRB5_SOURCE + ['lib/krb5/expand_path.c', 'lib/krb5/plugin.c', 'lib/krb5/context.c']
+
+    HEIMDAL_AUTOPROTO_PRIVATE('lib/krb5/krb5-private.h', KRB5_PROTO_SOURCE)
+    HEIMDAL_AUTOPROTO('lib/krb5/krb5-protos.h', KRB5_PROTO_SOURCE,
+        options='-E KRB5_LIB -q -P comment -o')
 
 if not bld.CONFIG_SET("USING_SYSTEM_ASN1"):
     HEIMDAL_HEIM_ASN1_DER_SOURCE = '''
@@ -658,6 +656,8 @@ if not bld.CONFIG_SET("USING_SYSTEM_ASN1"):
                           HEIMDAL_HEIM_ASN1_DER_SOURCE,
                           group = 'compiler_prototypes',
                           options="-q -P comment -p")
+
+    HEIMDAL_ERRTABLE('HEIMDAL_ASN1_ERR_ET', 'lib/asn1/asn1_err.et')
 
     HEIMDAL_SUBSYSTEM('HEIMDAL_HEIM_ASN1',
         HEIMDAL_HEIM_ASN1_DER_SOURCE + 'lib/asn1/extra.c lib/asn1/timegm.c lib/asn1/asn1_err.c',
