@@ -53,12 +53,16 @@ def HEIMDAL_ASN1(name, source,
     # source file. Note that in the case of a option_file, we have more than
     # one source file
     cd_rule = 'cd "${TGT[0].parent.abspath(env)}"'
-    asn1_rule = cd_rule + ' && "${BLDBIN}/asn1_compile" ${OPTION_FILE} ${ASN1OPTIONS} --one-code-file "${SRC[0].abspath(env)}" ${ASN1NAME}'
+    asn1_rule = cd_rule + ' && "${ASN1_COMPILE}" ${OPTION_FILE} ${ASN1OPTIONS} --one-code-file "${SRC[0].abspath(env)}" ${ASN1NAME}'
 
     source = to_list(source)
 
     if option_file is not None:
         source.append(option_file)
+
+    deps = ''
+    if not bld.CONFIG_SET('USING_SYSTEM_ASN1_COMPILE'):
+        deps = 'asn1_compile'
 
     t = bld(rule=asn1_rule,
             ext_out = '.x',
@@ -67,7 +71,7 @@ def HEIMDAL_ASN1(name, source,
             shell = True,
             source = source,
             target = out_files,
-            depends_on = 'asn1_compile',
+            depends_on = deps,
             name=name + '_ASN1')
 
     t.env.ASN1NAME     = asn1name
@@ -861,8 +865,10 @@ HEIMDAL_SUBSYSTEM('HEIMDAL_VERS',
         group='build_compilers',
         deps='roken replace')
 
-# here is the asn1 compiler build rule
-HEIMDAL_BINARY('asn1_compile',
+
+if not bld.CONFIG_SET('USING_SYSTEM_ASN1_COMPILE'):
+    # here is the asn1 compiler build rule
+    HEIMDAL_BINARY('asn1_compile',
     'lib/asn1/main.c lib/asn1/gen.c lib/asn1/gen_copy.c lib/asn1/gen_decode.c lib/asn1/gen_encode.c lib/asn1/gen_free.c lib/asn1/gen_glue.c lib/asn1/gen_length.c lib/asn1/gen_seq.c lib/asn1/gen_template.c lib/asn1/hash.c lib/asn1/symbol.c lib/asn1/asn1parse.c lib/asn1/lex.c',
     use_hostcc=True,
         use_global_deps=False,
@@ -872,6 +878,7 @@ HEIMDAL_BINARY('asn1_compile',
         deps='ROKEN_HOSTCC LIBREPLACE_HOSTCC HEIMDAL_VERS_HOSTCC',
         install=False
     )
+    bld.env['ASN1_COMPILE'] = os.path.join(bld.env['BUILD_DIRECTORY'], 'asn1_compile')
 
 
 if not bld.CONFIG_SET('USING_SYSTEM_COMPILE_ET'):

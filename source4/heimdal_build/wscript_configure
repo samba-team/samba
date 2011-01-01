@@ -1,4 +1,12 @@
 #!/usr/bin/env python
+# Waf build script for Samba 4's bundled Heimdal.
+
+# Unless explicitly requested by the user (e.g.
+# "./configure --bundled-libraries=!asn1_compile") this will always use the
+# bundled Heimdal, even if a system heimdal was found. The reason
+# for this is that our checks for the system heimdal are not accurate
+# enough yet to know if it is usable (some bug fix might be missing,
+# compile_et might not generate the expected code, etc).
 
 import Logs, sys
 
@@ -66,13 +74,22 @@ if conf.CHECK_BUNDLED_SYSTEM('com_err', checkfunctions='com_right_r com_err', he
     conf.define('USING_SYSTEM_COM_ERR', 1)
 
 def check_system_heimdal_lib(name, functions='', headers='', onlyif=None):
-    # Only use system library if the user requested the bundled one not be used.
+    # Only use system library if the user requested the bundled one not be
+    # used.
     if conf.LIB_MAY_BE_BUNDLED(name):
         return False
     setattr(conf.env, "CPPPATH_%s" % name.upper(), ["/usr/include/heimdal"])
     setattr(conf.env, "LIBPATH_%s" % name.upper(), ["/usr/lib/heimdal"])
     conf.CHECK_BUNDLED_SYSTEM(name, checkfunctions=functions, headers=headers,
         onlyif=onlyif)
+    conf.define('USING_SYSTEM_%s' % name.upper(), 1)
+    return True
+
+def check_system_heimdal_binary(name):
+    if conf.LIB_MAY_BE_BUNDLED(name):
+        return False
+    if not conf.find_program(name, var=name.upper()):
+        return False
     conf.define('USING_SYSTEM_%s' % name.upper(), 1)
     return True
 
@@ -92,8 +109,5 @@ check_system_heimdal_lib("hcrypto", "MD4_Init", "hcrypto/md4.h",
 # conf.CHECK_BUNDLED_SYSTEM('tommath', checkfunctions='mp_init', headers='tommath.h')
 # conf.define('USING_SYSTEM_TOMMATH', 1)
 
-# disable trying to use an external compile_et until we have a configure
-# test that checks that the system one actually works. On some systems it
-# results in missing symbols (eg. OpenSUSE 10.2 'opi' in the build farm)
-#if conf.find_program('compile_et', var='COMPILE_ET'):
-#    conf.define('USING_SYSTEM_COMPILE_ET', 1)
+check_system_heimdal_binary("compile_et")
+check_system_heimdal_binary("asn1_compile")
