@@ -27,33 +27,21 @@
  * cli_send_mailslot, send a mailslot for client code ...
  */
 
-static bool cli_send_mailslot(struct messaging_context *msg_ctx,
-		       bool unique, const char *mailslot,
+static bool cli_prep_mailslot(bool unique, const char *mailslot,
 		       uint16 priority,
 		       char *buf, int len,
 		       const char *srcname, int src_type,
 		       const char *dstname, int dest_type,
 		       const struct sockaddr_storage *dest_ss,
-		       int dgm_id)
+		       int dgm_id,
+		       struct packet_struct *p)
 {
-	struct packet_struct p;
-	struct dgram_packet *dgram = &p.packet.dgram;
+	struct dgram_packet *dgram = &p->packet.dgram;
 	char *ptr, *p2;
 	char tmp[4];
-	pid_t nmbd_pid;
 	char addr[INET6_ADDRSTRLEN];
 
-	if ((nmbd_pid = pidfile_pid("nmbd")) == 0) {
-		DEBUG(3, ("No nmbd found\n"));
-		return False;
-	}
-
-	if (dest_ss->ss_family != AF_INET) {
-		DEBUG(3, ("cli_send_mailslot: can't send to IPv6 address.\n"));
-		return false;
-	}
-
-	memset((char *)&p, '\0', sizeof(p));
+	ZERO_STRUCTP(p);
 
 	/*
 	 * Next, build the DGRAM ...
@@ -106,9 +94,9 @@ static bool cli_send_mailslot(struct messaging_context *msg_ctx,
 
 	dgram->datasize = PTR_DIFF(p2,ptr+4); /* +4 for tcp length. */
 
-	p.packet_type = DGRAM_PACKET;
-	p.ip = ((const struct sockaddr_in *)dest_ss)->sin_addr;
-	p.timestamp = time(NULL);
+	p->packet_type = DGRAM_PACKET;
+	p->ip = ((const struct sockaddr_in *)dest_ss)->sin_addr;
+	p->timestamp = time(NULL);
 
 	DEBUG(4,("send_mailslot: Sending to mailslot %s from %s ",
 		 mailslot, nmb_namestr(&dgram->source_name)));
@@ -116,10 +104,7 @@ static bool cli_send_mailslot(struct messaging_context *msg_ctx,
 
 	DEBUGADD(4,("to %s IP %s\n", nmb_namestr(&dgram->dest_name), addr));
 
-	return NT_STATUS_IS_OK(messaging_send_buf(msg_ctx,
-						  pid_to_procid(nmbd_pid),
-						  MSG_SEND_PACKET,
-						  (uint8 *)&p, sizeof(p)));
+	return true;
 }
 
 static const char *mailslot_name(TALLOC_CTX *mem_ctx, struct in_addr dc_ip)
@@ -144,13 +129,20 @@ bool send_getdc_request(TALLOC_CTX *mem_ctx,
 	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct dom_sid my_sid;
+	struct packet_struct p;
+	pid_t nmbd_pid;
 
-	ZERO_STRUCT(packet);
-	ZERO_STRUCT(my_sid);
+	if ((nmbd_pid = pidfile_pid("nmbd")) == 0) {
+		DEBUG(3, ("No nmbd found\n"));
+		return False;
+	}
 
 	if (dc_ss->ss_family != AF_INET) {
 		return false;
 	}
+
+	ZERO_STRUCT(packet);
+	ZERO_STRUCT(my_sid);
 
 	if (sid) {
 		my_sid = *sid;
@@ -190,11 +182,16 @@ bool send_getdc_request(TALLOC_CTX *mem_ctx,
 		return false;
 	}
 
-	return cli_send_mailslot(msg_ctx,
-				 false, NBT_MAILSLOT_NTLOGON, 0,
-				 (char *)blob.data, blob.length,
-				 global_myname(), 0, domain_name, 0x1c,
-				 dc_ss, dgm_id);
+	if (!cli_prep_mailslot(false, NBT_MAILSLOT_NTLOGON, 0,
+			       (char *)blob.data, blob.length,
+			       global_myname(), 0, domain_name, 0x1c,
+			       dc_ss, dgm_id, &p)) {
+		return false;
+	}
+	return NT_STATUS_IS_OK(messaging_send_buf(msg_ctx,
+						  pid_to_procid(nmbd_pid),
+						  MSG_SEND_PACKET,
+						  (uint8 *)&p, sizeof(p)));
 }
 
 bool receive_getdc_response(TALLOC_CTX *mem_ctx,
