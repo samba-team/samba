@@ -108,6 +108,11 @@ check_system_heimdal_lib("krb5", "krb5_anyaddr", "krb5.h",
     onlyif="roken wind asn1 hx509 hcrypto com_err heimbase")
 check_system_heimdal_lib("heimntlm", "heim_ntlm_ntlmv2_key", "heimntlm.h",
     onlyif="roken hcrypto krb5")
+check_system_heimdal_lib("hdb", "hdb_db_dir", "krb5.h hdb.h",
+    onlyif="roken krb5 hcrypto com_err wind")
+check_system_heimdal_lib("kdc", "kdc_log", "kdc.h",
+    onlyif="roken krb5 hdb asn1 heimntlm hcrypto com_err wind heimbase")
+
 
 # With the proper checks in place we should be able to build against the system libtommath.
 # conf.CHECK_BUNDLED_SYSTEM('tommath', checkfunctions='mp_init', headers='tommath.h')
