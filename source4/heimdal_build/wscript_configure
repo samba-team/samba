@@ -106,6 +106,8 @@ check_system_heimdal_lib("hcrypto", "MD4_Init", "hcrypto/md4.h",
     onlyif="asn1 roken com_err")
 check_system_heimdal_lib("krb5", "krb5_anyaddr", "krb5.h",
     onlyif="roken wind asn1 hx509 hcrypto com_err heimbase")
+check_system_heimdal_lib("gssapi", "gss_oid_to_name", "gssapi.h",
+    onlyif="hcrypto asn1 roken krb5 com_err wind")
 check_system_heimdal_lib("heimntlm", "heim_ntlm_ntlmv2_key", "heimntlm.h",
     onlyif="roken hcrypto krb5")
 check_system_heimdal_lib("hdb", "hdb_db_dir", "krb5.h hdb.h",
