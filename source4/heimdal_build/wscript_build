@@ -344,38 +344,6 @@ def HEIMDAL_BINARY(binname, source,
         )
 
 
-HEIMDAL_ASN1('HEIMDAL_SPNEGO_ASN1',
-    source='lib/gssapi/spnego/spnego.asn1',
-    options='--sequence=MechTypeList',
-    includes='../heimdal/lib/asn1',
-    directory='lib/gssapi'
-    )
-
-
-HEIMDAL_ASN1('HEIMDAL_GSSAPI_ASN1',
-    'lib/gssapi/mech/gssapi.asn1',
-    includes='../heimdal/lib/asn1',
-    directory='lib/gssapi'
-    )
-
-
-HEIMDAL_ASN1('HEIMDAL_DIGEST_ASN1',
-    'lib/asn1/digest.asn1',
-    directory='lib/asn1'
-    )
-
-
-HEIMDAL_ASN1('HEIMDAL_KX509_ASN1',
-    'lib/asn1/kx509.asn1',
-    directory='lib/asn1'
-    )
-
-
-HEIMDAL_ASN1('HEIMDAL_HDB_ASN1', 'lib/hdb/hdb.asn1',
-    directory='lib/asn1',
-    includes='../heimdal/lib/asn1')
-
-
 if not bld.CONFIG_SET('USING_SYSTEM_ROKEN'):
 
     if not bld.CONFIG_SET('HAVE_IFADDRS_H'):
@@ -469,16 +437,25 @@ if not bld.CONFIG_SET('USING_SYSTEM_ROKEN'):
             install=False
         )
 
-KDC_SOURCE='kdc/default_config.c kdc/kerberos5.c kdc/krb5tgs.c kdc/pkinit.c kdc/log.c kdc/misc.c kdc/digest.c kdc/process.c kdc/windc.c kdc/kx509.c'
+if not bld.CONFIG_SET("USING_SYSTEM_KDC"):
+    HEIMDAL_ASN1('HEIMDAL_KX509_ASN1',
+        'lib/asn1/kx509.asn1',
+        directory='lib/asn1'
+        )
+    HEIMDAL_ASN1('HEIMDAL_DIGEST_ASN1',
+        'lib/asn1/digest.asn1',
+        directory='lib/asn1'
+        )
 
-HEIMDAL_LIBRARY('kdc', source=KDC_SOURCE,
-                    includes='../heimdal/kdc',
-                    deps='roken krb5 hdb asn1 HEIMDAL_DIGEST_ASN1 HEIMDAL_KX509_ASN1 heimntlm hcrypto com_err wind heimbase',
-                    vnum='2.0.0',
-                    version_script='kdc/version-script.map')
-HEIMDAL_AUTOPROTO('kdc/kdc-protos.h', KDC_SOURCE)
-HEIMDAL_AUTOPROTO_PRIVATE('kdc/kdc-private.h', KDC_SOURCE)
+    KDC_SOURCE='kdc/default_config.c kdc/kerberos5.c kdc/krb5tgs.c kdc/pkinit.c kdc/log.c kdc/misc.c kdc/digest.c kdc/process.c kdc/windc.c kdc/kx509.c'
 
+    HEIMDAL_LIBRARY('kdc', source=KDC_SOURCE,
+                        includes='../heimdal/kdc',
+                        deps='roken krb5 hdb asn1 HEIMDAL_DIGEST_ASN1 HEIMDAL_KX509_ASN1 heimntlm hcrypto com_err wind heimbase',
+                        vnum='2.0.0',
+                        version_script='kdc/version-script.map')
+    HEIMDAL_AUTOPROTO('kdc/kdc-protos.h', KDC_SOURCE)
+    HEIMDAL_AUTOPROTO_PRIVATE('kdc/kdc-private.h', KDC_SOURCE)
 
 if not bld.CONFIG_SET("USING_SYSTEM_HEIMNTLM"):
     HEIMDAL_ERRTABLE('HEIMNTLM_ET',
@@ -494,80 +471,98 @@ if not bld.CONFIG_SET("USING_SYSTEM_HEIMNTLM"):
         )
     HEIMDAL_AUTOPROTO('lib/ntlm/heimntlm-protos.h', HEIMNTLM_SOURCE)
 
+if not bld.CONFIG_SET("USING_SYSTEM_HDB"):
+    HEIMDAL_ASN1('HEIMDAL_HDB_ASN1', 'lib/hdb/hdb.asn1',
+        directory='lib/asn1',
+        includes='../heimdal/lib/asn1')
 
-HEIMDAL_SUBSYSTEM('HEIMDAL_HDB_KEYS',
-    'lib/hdb/keys.c',
-    includes='../heimdal/lib/hdb',
-    deps='roken hcrypto krb5 HEIMDAL_HDB_ASN1'
-    )
+    HEIMDAL_SUBSYSTEM('HEIMDAL_HDB_KEYS',
+        'lib/hdb/keys.c',
+        includes='../heimdal/lib/hdb',
+        deps='roken hcrypto krb5 HEIMDAL_HDB_ASN1'
+        )
 
-HEIMDAL_ERRTABLE('HEIMDAL_HDB_ERR_ET', 'lib/hdb/hdb_err.et')
+    HEIMDAL_ERRTABLE('HEIMDAL_HDB_ERR_ET', 'lib/hdb/hdb_err.et')
 
-HDB_SOURCE = '''lib/hdb/db.c lib/hdb/dbinfo.c lib/hdb/hdb.c
-                              lib/hdb/ext.c lib/hdb/keytab.c lib/hdb/hdb-keytab.c
-                              lib/hdb/mkey.c lib/hdb/ndbm.c lib/hdb/hdb_err.c
-                              ../heimdal_build/hdb-glue.c'''
+    HDB_SOURCE = '''lib/hdb/db.c lib/hdb/dbinfo.c lib/hdb/hdb.c
+                                  lib/hdb/ext.c lib/hdb/keytab.c lib/hdb/hdb-keytab.c
+                                  lib/hdb/mkey.c lib/hdb/ndbm.c lib/hdb/hdb_err.c
+                                  ../heimdal_build/hdb-glue.c'''
 
-HEIMDAL_LIBRARY('hdb',
-    version_script='lib/hdb/version-script.map',
-    source=HDB_SOURCE,
-    includes='../heimdal/lib/hdb',
-    deps='krb5 HEIMDAL_HDB_KEYS roken hcrypto com_err HEIMDAL_HDB_ASN1 wind',
-    vnum='11.0.2',
-    )
-HEIMDAL_AUTOPROTO('lib/hdb/hdb-protos.h', HDB_SOURCE)
-HEIMDAL_AUTOPROTO_PRIVATE('lib/hdb/hdb-private.h', HDB_SOURCE)
+    HEIMDAL_LIBRARY('hdb',
+        version_script='lib/hdb/version-script.map',
+        source=HDB_SOURCE,
+        includes='../heimdal/lib/hdb',
+        deps='krb5 HEIMDAL_HDB_KEYS roken hcrypto com_err HEIMDAL_HDB_ASN1 wind',
+        vnum='11.0.2',
+        )
+    HEIMDAL_AUTOPROTO('lib/hdb/hdb-protos.h', HDB_SOURCE)
+    HEIMDAL_AUTOPROTO_PRIVATE('lib/hdb/hdb-private.h', HDB_SOURCE)
 
 
-HEIMDAL_ERRTABLE('HEIMDAL_GKRB5_ERR_ET', 'lib/gssapi/krb5/gkrb5_err.et')
+if not bld.CONFIG_SET("USING_SYSTEM_GSSAPI"):
+    HEIMDAL_ERRTABLE('HEIMDAL_GKRB5_ERR_ET', 'lib/gssapi/krb5/gkrb5_err.et')
 
-HEIMDAL_LIBRARY('gssapi',
-                    '''
-lib/gssapi/spnego/init_sec_context.c lib/gssapi/spnego/external.c lib/gssapi/spnego/compat.c
-lib/gssapi/spnego/context_stubs.c lib/gssapi/spnego/cred_stubs.c lib/gssapi/spnego/accept_sec_context.c
-lib/gssapi/krb5/copy_ccache.c lib/gssapi/krb5/delete_sec_context.c lib/gssapi/krb5/init_sec_context.c
-lib/gssapi/krb5/context_time.c lib/gssapi/krb5/init.c lib/gssapi/krb5/address_to_krb5addr.c
-lib/gssapi/krb5/get_mic.c lib/gssapi/krb5/inquire_context.c lib/gssapi/krb5/add_cred.c
-lib/gssapi/krb5/inquire_cred.c lib/gssapi/krb5/inquire_cred_by_oid.c lib/gssapi/krb5/inquire_cred_by_mech.c
-lib/gssapi/krb5/inquire_mechs_for_name.c lib/gssapi/krb5/inquire_names_for_mech.c lib/gssapi/krb5/indicate_mechs.c
-lib/gssapi/krb5/inquire_sec_context_by_oid.c lib/gssapi/krb5/export_sec_context.c lib/gssapi/krb5/import_sec_context.c
-lib/gssapi/krb5/duplicate_name.c lib/gssapi/krb5/import_name.c lib/gssapi/krb5/compare_name.c
-lib/gssapi/krb5/export_name.c lib/gssapi/krb5/canonicalize_name.c lib/gssapi/krb5/unwrap.c
-lib/gssapi/krb5/wrap.c lib/gssapi/krb5/release_name.c lib/gssapi/krb5/cfx.c
-lib/gssapi/krb5/8003.c lib/gssapi/krb5/arcfour.c lib/gssapi/krb5/encapsulate.c
-lib/gssapi/krb5/display_name.c lib/gssapi/krb5/sequence.c lib/gssapi/krb5/display_status.c
-lib/gssapi/krb5/release_buffer.c lib/gssapi/krb5/external.c lib/gssapi/krb5/compat.c
-lib/gssapi/krb5/creds.c lib/gssapi/krb5/acquire_cred.c lib/gssapi/krb5/release_cred.c
-lib/gssapi/krb5/store_cred.c lib/gssapi/krb5/set_cred_option.c lib/gssapi/krb5/decapsulate.c
-lib/gssapi/krb5/verify_mic.c lib/gssapi/krb5/accept_sec_context.c lib/gssapi/krb5/set_sec_context_option.c
-lib/gssapi/krb5/process_context_token.c lib/gssapi/krb5/prf.c lib/gssapi/krb5/aeap.c
-lib/gssapi/mech/context.c lib/gssapi/mech/gss_krb5.c lib/gssapi/mech/gss_mech_switch.c
-lib/gssapi/mech/gss_process_context_token.c lib/gssapi/mech/gss_buffer_set.c
-lib/gssapi/mech/gss_aeap.c lib/gssapi/mech/gss_add_cred.c lib/gssapi/mech/gss_cred.c
-lib/gssapi/mech/gss_add_oid_set_member.c lib/gssapi/mech/gss_compare_name.c lib/gssapi/mech/gss_release_oid_set.c
-lib/gssapi/mech/gss_create_empty_oid_set.c lib/gssapi/mech/gss_decapsulate_token.c lib/gssapi/mech/gss_inquire_cred_by_oid.c
-lib/gssapi/mech/gss_canonicalize_name.c lib/gssapi/mech/gss_inquire_sec_context_by_oid.c lib/gssapi/mech/gss_inquire_names_for_mech.c
-lib/gssapi/mech/gss_inquire_mechs_for_name.c lib/gssapi/mech/gss_wrap_size_limit.c lib/gssapi/mech/gss_names.c
-lib/gssapi/mech/gss_verify.c lib/gssapi/mech/gss_display_name.c
-lib/gssapi/mech/gss_duplicate_oid.c lib/gssapi/mech/gss_display_status.c lib/gssapi/mech/gss_release_buffer.c
-lib/gssapi/mech/gss_release_oid.c lib/gssapi/mech/gss_test_oid_set_member.c
-lib/gssapi/mech/gss_release_cred.c
-lib/gssapi/mech/gss_set_sec_context_option.c lib/gssapi/mech/gss_export_name.c lib/gssapi/mech/gss_seal.c
-lib/gssapi/mech/gss_acquire_cred.c lib/gssapi/mech/gss_unseal.c lib/gssapi/mech/gss_verify_mic.c
-lib/gssapi/mech/gss_accept_sec_context.c lib/gssapi/mech/gss_inquire_cred_by_mech.c lib/gssapi/mech/gss_indicate_mechs.c
-lib/gssapi/mech/gss_delete_sec_context.c lib/gssapi/mech/gss_sign.c lib/gssapi/mech/gss_utils.c
-lib/gssapi/mech/gss_init_sec_context.c lib/gssapi/mech/gss_oid_equal.c lib/gssapi/mech/gss_oid.c
-lib/gssapi/mech/gss_oid_to_str.c lib/gssapi/mech/gss_mo.c
-lib/gssapi/mech/gss_context_time.c lib/gssapi/mech/gss_encapsulate_token.c lib/gssapi/mech/gss_get_mic.c
-lib/gssapi/mech/gss_import_sec_context.c lib/gssapi/mech/gss_inquire_cred.c lib/gssapi/mech/gss_wrap.c
-lib/gssapi/mech/gss_import_name.c lib/gssapi/mech/gss_duplicate_name.c lib/gssapi/mech/gss_unwrap.c
-lib/gssapi/mech/gss_export_sec_context.c lib/gssapi/mech/gss_inquire_context.c lib/gssapi/mech/gss_release_name.c
-lib/gssapi/mech/gss_set_cred_option.c  lib/gssapi/mech/gss_pseudo_random.c ../heimdal_build/gssapi-glue.c''',
-    includes='../heimdal/lib/gssapi ../heimdal/lib/gssapi/gssapi ../heimdal/lib/gssapi/spnego ../heimdal/lib/gssapi/krb5 ../heimdal/lib/gssapi/mech',
-    deps='hcrypto asn1 HEIMDAL_SPNEGO_ASN1 HEIMDAL_GSSAPI_ASN1 roken krb5 com_err wind',
-    vnum='2.0.0',
-    version_script='lib/gssapi/version-script.map',
-    )
+    HEIMDAL_ASN1('HEIMDAL_GSSAPI_ASN1',
+        'lib/gssapi/mech/gssapi.asn1',
+        includes='../heimdal/lib/asn1',
+        directory='lib/gssapi'
+        )
+
+    HEIMDAL_ASN1('HEIMDAL_SPNEGO_ASN1',
+        source='lib/gssapi/spnego/spnego.asn1',
+        options='--sequence=MechTypeList',
+        includes='../heimdal/lib/asn1',
+        directory='lib/gssapi'
+        )
+
+    HEIMDAL_LIBRARY('gssapi',
+                        '''
+    lib/gssapi/spnego/init_sec_context.c lib/gssapi/spnego/external.c lib/gssapi/spnego/compat.c
+    lib/gssapi/spnego/context_stubs.c lib/gssapi/spnego/cred_stubs.c lib/gssapi/spnego/accept_sec_context.c
+    lib/gssapi/krb5/copy_ccache.c lib/gssapi/krb5/delete_sec_context.c lib/gssapi/krb5/init_sec_context.c
+    lib/gssapi/krb5/context_time.c lib/gssapi/krb5/init.c lib/gssapi/krb5/address_to_krb5addr.c
+    lib/gssapi/krb5/get_mic.c lib/gssapi/krb5/inquire_context.c lib/gssapi/krb5/add_cred.c
+    lib/gssapi/krb5/inquire_cred.c lib/gssapi/krb5/inquire_cred_by_oid.c lib/gssapi/krb5/inquire_cred_by_mech.c
+    lib/gssapi/krb5/inquire_mechs_for_name.c lib/gssapi/krb5/inquire_names_for_mech.c lib/gssapi/krb5/indicate_mechs.c
+    lib/gssapi/krb5/inquire_sec_context_by_oid.c lib/gssapi/krb5/export_sec_context.c lib/gssapi/krb5/import_sec_context.c
+    lib/gssapi/krb5/duplicate_name.c lib/gssapi/krb5/import_name.c lib/gssapi/krb5/compare_name.c
+    lib/gssapi/krb5/export_name.c lib/gssapi/krb5/canonicalize_name.c lib/gssapi/krb5/unwrap.c
+    lib/gssapi/krb5/wrap.c lib/gssapi/krb5/release_name.c lib/gssapi/krb5/cfx.c
+    lib/gssapi/krb5/8003.c lib/gssapi/krb5/arcfour.c lib/gssapi/krb5/encapsulate.c
+    lib/gssapi/krb5/display_name.c lib/gssapi/krb5/sequence.c lib/gssapi/krb5/display_status.c
+    lib/gssapi/krb5/release_buffer.c lib/gssapi/krb5/external.c lib/gssapi/krb5/compat.c
+    lib/gssapi/krb5/creds.c lib/gssapi/krb5/acquire_cred.c lib/gssapi/krb5/release_cred.c
+    lib/gssapi/krb5/store_cred.c lib/gssapi/krb5/set_cred_option.c lib/gssapi/krb5/decapsulate.c
+    lib/gssapi/krb5/verify_mic.c lib/gssapi/krb5/accept_sec_context.c lib/gssapi/krb5/set_sec_context_option.c
+    lib/gssapi/krb5/process_context_token.c lib/gssapi/krb5/prf.c lib/gssapi/krb5/aeap.c
+    lib/gssapi/mech/context.c lib/gssapi/mech/gss_krb5.c lib/gssapi/mech/gss_mech_switch.c
+    lib/gssapi/mech/gss_process_context_token.c lib/gssapi/mech/gss_buffer_set.c
+    lib/gssapi/mech/gss_aeap.c lib/gssapi/mech/gss_add_cred.c lib/gssapi/mech/gss_cred.c
+    lib/gssapi/mech/gss_add_oid_set_member.c lib/gssapi/mech/gss_compare_name.c lib/gssapi/mech/gss_release_oid_set.c
+    lib/gssapi/mech/gss_create_empty_oid_set.c lib/gssapi/mech/gss_decapsulate_token.c lib/gssapi/mech/gss_inquire_cred_by_oid.c
+    lib/gssapi/mech/gss_canonicalize_name.c lib/gssapi/mech/gss_inquire_sec_context_by_oid.c lib/gssapi/mech/gss_inquire_names_for_mech.c
+    lib/gssapi/mech/gss_inquire_mechs_for_name.c lib/gssapi/mech/gss_wrap_size_limit.c lib/gssapi/mech/gss_names.c
+    lib/gssapi/mech/gss_verify.c lib/gssapi/mech/gss_display_name.c
+    lib/gssapi/mech/gss_duplicate_oid.c lib/gssapi/mech/gss_display_status.c lib/gssapi/mech/gss_release_buffer.c
+    lib/gssapi/mech/gss_release_oid.c lib/gssapi/mech/gss_test_oid_set_member.c
+    lib/gssapi/mech/gss_release_cred.c
+    lib/gssapi/mech/gss_set_sec_context_option.c lib/gssapi/mech/gss_export_name.c lib/gssapi/mech/gss_seal.c
+    lib/gssapi/mech/gss_acquire_cred.c lib/gssapi/mech/gss_unseal.c lib/gssapi/mech/gss_verify_mic.c
+    lib/gssapi/mech/gss_accept_sec_context.c lib/gssapi/mech/gss_inquire_cred_by_mech.c lib/gssapi/mech/gss_indicate_mechs.c
+    lib/gssapi/mech/gss_delete_sec_context.c lib/gssapi/mech/gss_sign.c lib/gssapi/mech/gss_utils.c
+    lib/gssapi/mech/gss_init_sec_context.c lib/gssapi/mech/gss_oid_equal.c lib/gssapi/mech/gss_oid.c
+    lib/gssapi/mech/gss_oid_to_str.c lib/gssapi/mech/gss_mo.c
+    lib/gssapi/mech/gss_context_time.c lib/gssapi/mech/gss_encapsulate_token.c lib/gssapi/mech/gss_get_mic.c
+    lib/gssapi/mech/gss_import_sec_context.c lib/gssapi/mech/gss_inquire_cred.c lib/gssapi/mech/gss_wrap.c
+    lib/gssapi/mech/gss_import_name.c lib/gssapi/mech/gss_duplicate_name.c lib/gssapi/mech/gss_unwrap.c
+    lib/gssapi/mech/gss_export_sec_context.c lib/gssapi/mech/gss_inquire_context.c lib/gssapi/mech/gss_release_name.c
+    lib/gssapi/mech/gss_set_cred_option.c  lib/gssapi/mech/gss_pseudo_random.c ../heimdal_build/gssapi-glue.c''',
+        includes='../heimdal/lib/gssapi ../heimdal/lib/gssapi/gssapi ../heimdal/lib/gssapi/spnego ../heimdal/lib/gssapi/krb5 ../heimdal/lib/gssapi/mech',
+        deps='hcrypto asn1 HEIMDAL_SPNEGO_ASN1 HEIMDAL_GSSAPI_ASN1 roken krb5 com_err wind',
+        vnum='2.0.0',
+        version_script='lib/gssapi/version-script.map',
+        )
 
 if not bld.CONFIG_SET("USING_SYSTEM_KRB5"):
     # expand_path.c needs some of the install paths
