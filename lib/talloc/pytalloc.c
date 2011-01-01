@@ -96,7 +96,7 @@ static void py_talloc_dealloc(PyObject* self)
 	py_talloc_Object *obj = (py_talloc_Object *)self;
 	assert(talloc_unlink(NULL, obj->talloc_ctx) != -1);
 	obj->talloc_ctx = NULL;
-	PyObject_Del(self);
+	self->ob_type->tp_free(self);
 }
 
 /**

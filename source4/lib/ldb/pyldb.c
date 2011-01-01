@@ -1512,7 +1512,7 @@ static PyObject *PyLdb_FromLdbContext(struct ldb_context *ldb_ctx)
 static void py_ldb_dealloc(PyLdbObject *self)
 {
 	talloc_free(self->mem_ctx);
-	PyObject_Del(self);
+	self->ob_type->tp_free(self);
 }
 
 static PyTypeObject PyLdb = {
