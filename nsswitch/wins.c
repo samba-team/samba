@@ -125,7 +125,8 @@ static struct in_addr *lookup_byname_backend(const char *name, int *count)
 			free(ret);
 			return NULL;
 		}
-		*ret = ((struct sockaddr_in *)&address[0].ss)->sin_addr;
+		*ret = ((struct sockaddr_in *)(void *)&address[0].ss)
+			->sin_addr;
 		free( address );
 		return ret;
 	}
