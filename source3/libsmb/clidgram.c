@@ -113,50 +113,45 @@ static const char *mailslot_name(TALLOC_CTX *mem_ctx, struct in_addr dc_ip)
 			       NBT_MAILSLOT_GETDC, dc_ip.s_addr);
 }
 
-bool send_getdc_request(TALLOC_CTX *mem_ctx,
-			struct messaging_context *msg_ctx,
-			const struct sockaddr_storage *dc_ss,
-			const char *domain_name,
-			const struct dom_sid *sid,
-			uint32_t nt_version,
-			int dgm_id)
+static bool prep_getdc_request(const struct sockaddr_storage *dc_ss,
+			       const char *domain_name,
+			       const struct dom_sid *sid,
+			       uint32_t nt_version,
+			       int dgm_id,
+			       struct packet_struct *p)
 {
+	TALLOC_CTX *frame = talloc_stackframe();
 	struct in_addr dc_ip;
-	const char *my_acct_name = NULL;
-	const char *my_mailslot = NULL;
+	const char *my_acct_name;
+	const char *my_mailslot;
 	struct nbt_netlogon_packet packet;
 	struct NETLOGON_SAM_LOGON_REQUEST *s;
 	enum ndr_err_code ndr_err;
-	DATA_BLOB blob;
+	DATA_BLOB blob = data_blob_null;
 	struct dom_sid my_sid;
-	struct packet_struct p;
-	pid_t nmbd_pid;
-
-	if ((nmbd_pid = pidfile_pid("nmbd")) == 0) {
-		DEBUG(3, ("No nmbd found\n"));
-		return False;
-	}
+	bool ret = false;
 
 	if (dc_ss->ss_family != AF_INET) {
-		return false;
+		goto fail;
 	}
 
 	ZERO_STRUCT(packet);
 	ZERO_STRUCT(my_sid);
 
-	if (sid) {
+	if (sid != NULL) {
 		my_sid = *sid;
 	}
 
 	dc_ip = ((struct sockaddr_in *)dc_ss)->sin_addr;
-	my_mailslot = mailslot_name(mem_ctx, dc_ip);
-	if (!my_mailslot) {
-		return false;
+
+	my_mailslot = mailslot_name(talloc_tos(), dc_ip);
+	if (my_mailslot == NULL) {
+		goto fail;
 	}
 
-	my_acct_name = talloc_asprintf(mem_ctx, "%s$", global_myname());
-	if (!my_acct_name) {
-		return false;
+	my_acct_name = talloc_asprintf(talloc_tos(), "%s$", global_myname());
+	if (my_acct_name == NULL) {
+		goto fail;
 	}
 
 	packet.command	= LOGON_SAM_LOGON_REQUEST;
@@ -176,18 +171,42 @@ bool send_getdc_request(TALLOC_CTX *mem_ctx,
 		NDR_PRINT_DEBUG(nbt_netlogon_packet, &packet);
 	}
 
-	ndr_err = ndr_push_struct_blob(&blob, mem_ctx, &packet,
+	ndr_err = ndr_push_struct_blob(&blob, talloc_tos(), &packet,
 		       (ndr_push_flags_fn_t)ndr_push_nbt_netlogon_packet);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		goto fail;
+	}
+
+	ret = cli_prep_mailslot(false, NBT_MAILSLOT_NTLOGON, 0,
+				(char *)blob.data, blob.length,
+				global_myname(), 0, domain_name, 0x1c,
+				dc_ss, dgm_id, p);
+fail:
+	TALLOC_FREE(frame);
+	return ret;
+}
+
+bool send_getdc_request(TALLOC_CTX *mem_ctx,
+			struct messaging_context *msg_ctx,
+			const struct sockaddr_storage *dc_ss,
+			const char *domain_name,
+			const struct dom_sid *sid,
+			uint32_t nt_version,
+			int dgm_id)
+{
+	struct packet_struct p;
+	pid_t nmbd_pid;
+
+	if ((nmbd_pid = pidfile_pid("nmbd")) == 0) {
+		DEBUG(3, ("No nmbd found\n"));
+		return False;
+	}
+
+	if (!prep_getdc_request(dc_ss, domain_name, sid, nt_version,
+				dgm_id, &p)) {
 		return false;
 	}
 
-	if (!cli_prep_mailslot(false, NBT_MAILSLOT_NTLOGON, 0,
-			       (char *)blob.data, blob.length,
-			       global_myname(), 0, domain_name, 0x1c,
-			       dc_ss, dgm_id, &p)) {
-		return false;
-	}
 	return NT_STATUS_IS_OK(messaging_send_buf(msg_ctx,
 						  pid_to_procid(nmbd_pid),
 						  MSG_SEND_PACKET,
