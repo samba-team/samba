@@ -1177,7 +1177,7 @@ static bool dcip_to_name(TALLOC_CTX *mem_ctx,
 	generate_random_buffer((uint8_t *)&val, 2);
 	dgm_id = val;
 
-	if (send_getdc_request(mem_ctx, winbind_messaging_context(),
+	if (send_getdc_request(winbind_messaging_context(),
 			       pss, domain->name, &domain->sid,
 			       nt_version, dgm_id)) {
 		const char *dc_name = NULL;
