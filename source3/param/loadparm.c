@@ -4774,7 +4774,7 @@ static int max_open_files(void)
 #endif
 
 	if (sysctl_max < MIN_OPEN_FILES_WINDOWS) {
-		DEBUG(2,("max_open_files: sysctl_max (%d) below "
+		DEBUG(2,("max_open_files: increasing sysctl_max (%d) to "
 			"minimum Windows limit (%d)\n",
 			sysctl_max,
 			MIN_OPEN_FILES_WINDOWS));
@@ -4782,7 +4782,7 @@ static int max_open_files(void)
 	}
 
 	if (rlimit_max < MIN_OPEN_FILES_WINDOWS) {
-		DEBUG(2,("rlimit_max: rlimit_max (%d) below "
+		DEBUG(2,("rlimit_max: increasing rlimit_max (%d) to "
 			"minimum Windows limit (%d)\n",
 			rlimit_max,
 			MIN_OPEN_FILES_WINDOWS));
