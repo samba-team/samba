@@ -117,13 +117,12 @@ static bool prep_getdc_request(const struct sockaddr_storage *dc_ss,
 			       const char *domain_name,
 			       const struct dom_sid *sid,
 			       uint32_t nt_version,
+			       const char *my_mailslot,
 			       int dgm_id,
 			       struct packet_struct *p)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
-	struct in_addr dc_ip;
 	const char *my_acct_name;
-	const char *my_mailslot;
 	struct nbt_netlogon_packet packet;
 	struct NETLOGON_SAM_LOGON_REQUEST *s;
 	enum ndr_err_code ndr_err;
@@ -131,22 +130,11 @@ static bool prep_getdc_request(const struct sockaddr_storage *dc_ss,
 	struct dom_sid my_sid;
 	bool ret = false;
 
-	if (dc_ss->ss_family != AF_INET) {
-		goto fail;
-	}
-
 	ZERO_STRUCT(packet);
 	ZERO_STRUCT(my_sid);
 
 	if (sid != NULL) {
 		my_sid = *sid;
-	}
-
-	dc_ip = ((struct sockaddr_in *)dc_ss)->sin_addr;
-
-	my_mailslot = mailslot_name(talloc_tos(), dc_ip);
-	if (my_mailslot == NULL) {
-		goto fail;
 	}
 
 	my_acct_name = talloc_asprintf(talloc_tos(), "%s$", global_myname());
@@ -195,21 +183,37 @@ bool send_getdc_request(struct messaging_context *msg_ctx,
 {
 	struct packet_struct p;
 	pid_t nmbd_pid;
+	char *my_mailslot;
+	struct in_addr dc_ip;
+	NTSTATUS status;
 
 	if ((nmbd_pid = pidfile_pid("nmbd")) == 0) {
 		DEBUG(3, ("No nmbd found\n"));
 		return False;
 	}
 
+	if (dc_ss->ss_family != AF_INET) {
+		return false;
+	}
+	dc_ip = ((struct sockaddr_in *)dc_ss)->sin_addr;
+
+	my_mailslot = mailslot_name(talloc_tos(), dc_ip);
+	if (my_mailslot == NULL) {
+		return NULL;
+	}
+
 	if (!prep_getdc_request(dc_ss, domain_name, sid, nt_version,
-				dgm_id, &p)) {
+				my_mailslot, dgm_id, &p)) {
+		TALLOC_FREE(my_mailslot);
 		return false;
 	}
 
-	return NT_STATUS_IS_OK(messaging_send_buf(msg_ctx,
-						  pid_to_procid(nmbd_pid),
-						  MSG_SEND_PACKET,
-						  (uint8 *)&p, sizeof(p)));
+	status = messaging_send_buf(msg_ctx, pid_to_procid(nmbd_pid),
+				    MSG_SEND_PACKET,
+				    (uint8 *)&p, sizeof(p));
+	TALLOC_FREE(my_mailslot);
+
+	return NT_STATUS_IS_OK(status);
 }
 
 bool receive_getdc_response(TALLOC_CTX *mem_ctx,
