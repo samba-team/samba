@@ -27,6 +27,8 @@
 #include "system/time.h"
 #include <talloc.h>
 
+#include "talloc_testsuite.h"
+
 static struct timeval timeval_current(void)
 {
 	struct timeval tv;
@@ -101,6 +103,7 @@ static double timeval_elapsed(struct timeval *tv)
 
 static unsigned int test_abort_count;
 
+#if 0
 static void test_abort_fn(const char *reason)
 {
 	printf("# test_abort_fn(%s)\n", reason);
@@ -112,6 +115,7 @@ static void test_abort_start(void)
 	test_abort_count = 0;
 	talloc_set_abort_fn(test_abort_fn);
 }
+#endif
 
 static void test_abort_stop(void)
 {
@@ -1171,7 +1175,6 @@ static void test_reset(void)
 	talloc_enable_null_tracking_no_autofree();
 }
 
-struct torture_context;
 bool torture_local_talloc(struct torture_context *tctx)
 {
 	bool ret = true;
