@@ -83,7 +83,9 @@ static enum ndr_err_code ndr_pull_component(struct ndr_pull *ndr,
 			return ndr_pull_error(ndr, NDR_ERR_STRING,
 					      "BAD NBT NAME component");
 		}
-		*component = (uint8_t*)talloc_strndup(ndr, (const char *)&ndr->data[1 + *offset], len);
+		*component = (uint8_t*)talloc_strndup(
+			ndr->current_mem_ctx,
+			(const char *)&ndr->data[1 + *offset], len);
 		NDR_ERR_HAVE_NO_MEMORY(*component);
 		*offset += len + 1;
 		*max_offset = MAX(*max_offset, *offset);
@@ -127,7 +129,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_nbt_string(struct ndr_pull *ndr, int ndr_fla
 				      "BAD NBT NAME too many components");
 	}
 	if (num_components == 0) {
-		name = talloc_strdup(ndr, "");
+		name = talloc_strdup(ndr->current_mem_ctx, "");
 		NDR_ERR_HAVE_NO_MEMORY(name);
 	}
 
