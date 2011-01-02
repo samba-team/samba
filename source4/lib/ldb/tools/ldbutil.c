@@ -31,6 +31,8 @@
 
 #include "ldb.h"
 #include "ldb_module.h"
+#include "ldbutil.h"
+
 
 /* autostarts a transacion if none active */
 static int ldb_do_autotransaction(struct ldb_context *ldb,
