@@ -9,7 +9,7 @@
  * Copyright (C) Andrew Bartlett <abartlet@samba.org> 2003
  * Copyright (C) Gerald (Jerry) Carter 2004-2007
  * Copyright (C) Luke Howard 2001-2004
- * Copyright (C) Michael Adam 2008
+ * Copyright (C) Michael Adam 2008,2010
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
