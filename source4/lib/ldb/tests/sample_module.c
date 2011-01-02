@@ -26,7 +26,7 @@
 #include "system/time.h"
 #include "ldb_module.h"
 
-int sample_add(struct ldb_module *mod, struct ldb_request *req)
+static int sample_add(struct ldb_module *mod, struct ldb_request *req)
 {
 	struct ldb_control *control;
 
@@ -42,7 +42,7 @@ int sample_add(struct ldb_module *mod, struct ldb_request *req)
 	}
 }
 
-int sample_modify(struct ldb_module *mod, struct ldb_request *req)
+static int sample_modify(struct ldb_module *mod, struct ldb_request *req)
 {
 	struct ldb_control *control;
 
