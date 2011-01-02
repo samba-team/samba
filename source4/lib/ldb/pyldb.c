@@ -60,6 +60,8 @@ typedef intargfunc ssizeargfunc;
 #define Py_RETURN_NONE return Py_INCREF(Py_None), Py_None
 #endif
 
+#define SIGN(a) (((a) == 0)?0:((a) < 0?-1:1))
+
 static void PyErr_SetLdbError(PyObject *error, int ret, struct ldb_context *ldb_ctx)
 {
 	if (ret == LDB_ERR_PYTHON_EXCEPTION)
@@ -1868,8 +1870,9 @@ static PySequenceMethods py_ldb_msg_element_seq = {
 
 static int py_ldb_msg_element_cmp(PyLdbMessageElementObject *self, PyLdbMessageElementObject *other)
 {
-	return ldb_msg_element_compare(PyLdbMessageElement_AsMessageElement(self), 
-								   PyLdbMessageElement_AsMessageElement(other));
+	int ret = ldb_msg_element_compare(PyLdbMessageElement_AsMessageElement(self),
+									  PyLdbMessageElement_AsMessageElement(other));
+	return SIGN(ret);
 }
 
 static PyObject *py_ldb_msg_element_iter(PyLdbMessageElementObject *self)
@@ -2372,26 +2375,26 @@ static int py_ldb_msg_compare(PyLdbMessageObject *py_msg1,
 	if ((msg1->dn != NULL) || (msg2->dn != NULL)) {
 		ret = ldb_dn_compare(msg1->dn, msg2->dn);
 		if (ret != 0) {
-			return ret;
+			return SIGN(ret);
 		}
 	}
 
 	ret = msg1->num_elements - msg2->num_elements;
 	if (ret != 0) {
-		return ret;
+		return SIGN(ret);
 	}
 
 	for (i = 0; i < msg1->num_elements; i++) {
 		ret = ldb_msg_element_compare_name(&msg1->elements[i],
 						   &msg2->elements[i]);
 		if (ret != 0) {
-			return ret;
+			return SIGN(ret);
 		}
 
 		ret = ldb_msg_element_compare(&msg1->elements[i],
 					      &msg2->elements[i]);
 		if (ret != 0) {
-			return ret;
+			return SIGN(ret);
 		}
 	}
 
