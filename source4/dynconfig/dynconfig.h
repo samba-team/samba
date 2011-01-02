@@ -24,22 +24,36 @@
  * @brief Exported global configurations.
  **/
 
-extern const char *dyn_BINDIR;
-extern const char *dyn_SBINDIR;
-extern const char *dyn_SCRIPTSBINDIR;
-extern const char *dyn_CONFIGFILE;
-extern const char *dyn_NCALRPCDIR;
-extern const char *dyn_LOGFILEBASE;
-extern const char *dyn_LMHOSTSFILE;
-extern const char *dyn_DATADIR;
-extern const char *dyn_MODULESDIR;
-extern const char *dyn_LOCKDIR; 
-extern const char *dyn_PIDDIR;
-extern const char *dyn_PRIVATE_DIR;
-extern const char *dyn_SWATDIR;
-extern const char *dyn_JSDIR;
-extern const char *dyn_SETUPDIR;
-extern const char *dyn_WINBINDD_SOCKET_DIR;
-extern const char *dyn_WINBINDD_PRIVILEGED_SOCKET_DIR;
-extern const char *dyn_NTP_SIGND_SOCKET_DIR;
-extern const char *dyn_PYTHONDIR;
+#define DEFINE_DYN_CONFIG_PROTO(name)			\
+const char *dyn_##name;		 			\
+const char *get_dyn_##name(void);			\
+const char *set_dyn_##name(const char *newpath);	\
+bool is_default_dyn_##name(void);
+
+/* these are in common with s3 */
+DEFINE_DYN_CONFIG_PROTO(SBINDIR)
+DEFINE_DYN_CONFIG_PROTO(BINDIR)
+DEFINE_DYN_CONFIG_PROTO(SWATDIR)
+DEFINE_DYN_CONFIG_PROTO(CONFIGFILE) /**< Location of smb.conf file. **/
+DEFINE_DYN_CONFIG_PROTO(LOGFILEBASE) /** Log file directory. **/
+DEFINE_DYN_CONFIG_PROTO(LMHOSTSFILE) /** Statically configured LanMan hosts. **/
+DEFINE_DYN_CONFIG_PROTO(CODEPAGEDIR)
+DEFINE_DYN_CONFIG_PROTO(LIBDIR)
+DEFINE_DYN_CONFIG_PROTO(MODULESDIR)
+DEFINE_DYN_CONFIG_PROTO(SHLIBEXT)
+DEFINE_DYN_CONFIG_PROTO(LOCKDIR)
+DEFINE_DYN_CONFIG_PROTO(STATEDIR) /** Persistent state files. Default LOCKDIR */
+DEFINE_DYN_CONFIG_PROTO(CACHEDIR) /** Temporary cache files. Default LOCKDIR */
+DEFINE_DYN_CONFIG_PROTO(PIDDIR)
+DEFINE_DYN_CONFIG_PROTO(NCALRPCDIR)
+DEFINE_DYN_CONFIG_PROTO(SMB_PASSWD_FILE)
+DEFINE_DYN_CONFIG_PROTO(PRIVATE_DIR)
+
+/* these are not in s3 */
+DEFINE_DYN_CONFIG_PROTO(DATADIR)
+DEFINE_DYN_CONFIG_PROTO(SETUPDIR)
+DEFINE_DYN_CONFIG_PROTO(WINBINDD_SOCKET_DIR)
+DEFINE_DYN_CONFIG_PROTO(WINBINDD_PRIVILEGED_SOCKET_DIR)
+DEFINE_DYN_CONFIG_PROTO(NTP_SIGND_SOCKET_DIR)
+DEFINE_DYN_CONFIG_PROTO(PYTHONDIR)
+DEFINE_DYN_CONFIG_PROTO(SCRIPTSBINDIR)
