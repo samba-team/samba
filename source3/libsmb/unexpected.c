@@ -232,6 +232,7 @@ void clear_unexpected(time_t t)
 		pu_next = pu->next;
 		if (pu->timeout < t) {
 			DLIST_REMOVE(pu_list, pu);
+			SAFE_FREE(pu);
 		}
 	}
 
