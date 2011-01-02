@@ -353,3 +353,198 @@ bool receive_getdc_response(TALLOC_CTX *mem_ctx,
 	free_packet(packet);
 	return ret;
 }
+
+struct nbt_getdc_state {
+	struct tevent_context *ev;
+	struct messaging_context *msg_ctx;
+	struct nb_packet_reader *reader;
+	const char *my_mailslot;
+	pid_t nmbd_pid;
+
+	const struct sockaddr_storage *dc_addr;
+	const char *domain_name;
+	const struct dom_sid *sid;
+	uint32_t nt_version;
+	const char *dc_name;
+	struct netlogon_samlogon_response *samlogon_response;
+
+	struct packet_struct p;
+};
+
+static void nbt_getdc_got_reader(struct tevent_req *subreq);
+static void nbt_getdc_got_response(struct tevent_req *subreq);
+
+struct tevent_req *nbt_getdc_send(TALLOC_CTX *mem_ctx,
+				  struct tevent_context *ev,
+				  struct messaging_context *msg_ctx,
+				  const struct sockaddr_storage *dc_addr,
+				  const char *domain_name,
+				  const struct dom_sid *sid,
+				  uint32_t nt_version)
+{
+	struct tevent_req *req, *subreq;
+	struct nbt_getdc_state *state;
+	uint16_t dgm_id;
+
+	req = tevent_req_create(mem_ctx, &state, struct nbt_getdc_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->ev = ev;
+	state->msg_ctx = msg_ctx;
+	state->dc_addr = dc_addr;
+	state->domain_name = domain_name;
+	state->sid = sid;
+	state->nt_version = nt_version;
+
+	if (dc_addr->ss_family != AF_INET) {
+		tevent_req_nterror(req, NT_STATUS_NOT_SUPPORTED);
+		return tevent_req_post(req, ev);
+	}
+	state->my_mailslot = mailslot_name(
+		state, ((struct sockaddr_in *)dc_addr)->sin_addr);
+	if (tevent_req_nomem(state->my_mailslot, req)) {
+		return tevent_req_post(req, ev);
+	}
+	state->nmbd_pid = pidfile_pid("nmbd");
+	if (state->nmbd_pid == 0) {
+		DEBUG(3, ("No nmbd found\n"));
+		tevent_req_nterror(req, NT_STATUS_NOT_SUPPORTED);
+		return tevent_req_post(req, ev);
+	}
+
+	generate_random_buffer((uint8_t *)(void *)&dgm_id, sizeof(dgm_id));
+
+	if (!prep_getdc_request(dc_addr, domain_name, sid, nt_version,
+				state->my_mailslot, dgm_id & 0x7fff,
+				&state->p)) {
+		DEBUG(3, ("prep_getdc_request failed\n"));
+		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		return tevent_req_post(req, ev);
+	}
+
+	subreq = nb_packet_reader_send(state, ev, DGRAM_PACKET, -1,
+				       state->my_mailslot);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, nbt_getdc_got_reader, req);
+	return req;
+}
+
+static void nbt_getdc_got_reader(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct nbt_getdc_state *state = tevent_req_data(
+		req, struct nbt_getdc_state);
+	NTSTATUS status;
+
+	status = nb_packet_reader_recv(subreq, state, &state->reader);
+	TALLOC_FREE(subreq);
+	if (tevent_req_nterror(req, status)) {
+		DEBUG(10, ("nb_packet_reader_recv returned %s\n",
+			   nt_errstr(status)));
+		return;
+	}
+
+	status = messaging_send_buf(
+		state->msg_ctx, pid_to_procid(state->nmbd_pid),
+		MSG_SEND_PACKET, (uint8_t *)&state->p, sizeof(state->p));
+
+	if (tevent_req_nterror(req, status)) {
+		DEBUG(10, ("messaging_send_buf returned %s\n",
+			   nt_errstr(status)));
+		return;
+	}
+	subreq = nb_packet_read_send(state, state->ev, state->reader);
+	if (tevent_req_nomem(subreq, req)) {
+		return;
+	}
+	tevent_req_set_callback(subreq, nbt_getdc_got_response, req);
+}
+
+static void nbt_getdc_got_response(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct nbt_getdc_state *state = tevent_req_data(
+		req, struct nbt_getdc_state);
+	struct packet_struct *p;
+	NTSTATUS status;
+	bool ret;
+
+	status = nb_packet_read_recv(subreq, &p);
+	TALLOC_FREE(subreq);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+
+	ret = parse_getdc_response(p, state, state->domain_name,
+				   &state->nt_version, &state->dc_name,
+				   &state->samlogon_response);
+	free_packet(p);
+	if (!ret) {
+		tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
+		return;
+	}
+	tevent_req_done(req);
+}
+
+NTSTATUS nbt_getdc_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
+			uint32_t *nt_version, const char **dc_name,
+			struct netlogon_samlogon_response **samlogon_response)
+{
+	struct nbt_getdc_state *state = tevent_req_data(
+		req, struct nbt_getdc_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		return status;
+	}
+	if (nt_version != NULL) {
+		*nt_version = state->nt_version;
+	}
+	if (dc_name != NULL) {
+		*dc_name = talloc_move(mem_ctx, &state->dc_name);
+	}
+	if (samlogon_response != NULL) {
+		*samlogon_response = talloc_move(
+			mem_ctx, &state->samlogon_response);
+	}
+	return NT_STATUS_OK;
+}
+
+NTSTATUS nbt_getdc(struct messaging_context *msg_ctx,
+		   const struct sockaddr_storage *dc_addr,
+		   const char *domain_name,
+		   const struct dom_sid *sid,
+		   uint32_t nt_version,
+		   TALLOC_CTX *mem_ctx,
+		   uint32_t *pnt_version,
+		   const char **dc_name,
+		   struct netlogon_samlogon_response **samlogon_response)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct tevent_context *ev;
+	struct tevent_req *req;
+	NTSTATUS status = NT_STATUS_NO_MEMORY;
+
+	ev = tevent_context_init(frame);
+	if (ev == NULL) {
+		goto fail;
+	}
+	req = nbt_getdc_send(ev, ev, msg_ctx, dc_addr, domain_name,
+			     sid, nt_version);
+	if (req == NULL) {
+		goto fail;
+	}
+	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
+		goto fail;
+	}
+	status = nbt_getdc_recv(req, mem_ctx, pnt_version, dc_name,
+				samlogon_response);
+ fail:
+	TALLOC_FREE(frame);
+	return status;
+}
