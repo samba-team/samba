@@ -92,7 +92,7 @@ class DrsFsmoTestCase(samba.tests.TestCase):
         # find out where is samba-tool command
         net_cmd = os.path.abspath("./bin/samba-tool")
         # make command line credentials string
-        creds = samba.tests.cmdline_credentials
+        creds = self.get_credentials()
         cmd_line_auth = "-U%s/%s%%%s" % (creds.get_domain(),
                                          creds.get_username(), creds.get_password())
         # bin/samba-tool fsmo transfer --role=role --host=ldap://DC:389

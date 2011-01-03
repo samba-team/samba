@@ -32,15 +32,13 @@ from samba import net
 import samba.tests
 
 if not "ACCOUNT_NAME" in os.environ.keys():
-    parser.error("Please supply ACCOUNT_NAME in environment")
+    raise Exception("Please supply ACCOUNT_NAME in environment")
 
 if not "NEW_PASS" in os.environ.keys():
-    parser.error("Please supply NEW_PASS in environment")
+    raise Exception("Please supply NEW_PASS in environment")
 
 account_name = os.environ["ACCOUNT_NAME"]
 new_pass = os.environ["NEW_PASS"]
-
-creds = samba.tests.cmdline_credentials
 
 #
 # Tests start here
@@ -51,6 +49,7 @@ class Libnet_SetPwdTest(samba.tests.TestCase):
     ########################################################################################
 
     def test_SetPassword(self):
+        creds = self.get_credentials()
         net.SetPassword(account_name=account_name,
                         domain_name=creds.get_domain(),
                         newpassword=new_pass,
