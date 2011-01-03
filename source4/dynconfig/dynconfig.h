@@ -25,7 +25,7 @@
  **/
 
 #define DEFINE_DYN_CONFIG_PROTO(name)			\
-const char *dyn_##name;		 			\
+extern const char *dyn_##name;		 			\
 const char *get_dyn_##name(void);			\
 const char *set_dyn_##name(const char *newpath);	\
 bool is_default_dyn_##name(void);
