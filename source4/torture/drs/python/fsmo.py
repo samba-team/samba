@@ -83,7 +83,6 @@ class DrsFsmoTestCase(samba.tests.TestCase):
         # we will need DCs DNS names for 'net fsmo' command
         self.dnsname_dc1 = self.info_dc1["dnsHostName"][0]
         self.dnsname_dc2 = self.info_dc2["dnsHostName"][0]
-        pass
 
     def tearDown(self):
         super(DrsFsmoTestCase, self).tearDown()
@@ -100,7 +99,6 @@ class DrsFsmoTestCase(samba.tests.TestCase):
                                                                            cmd_line_auth)
         ret = os.system(cmd_line)
         self.assertEquals(ret, 0, "Transferring role %s to %s has failed!" % (role, DC))
-        pass
 
     def _wait_for_role_transfer(self, ldb_dc, role_dn, master):
         """Wait for role transfer for certain amount of time
@@ -146,25 +144,19 @@ class DrsFsmoTestCase(samba.tests.TestCase):
                                                      master=self.dsServiceName_dc1)
         self.assertTrue(res,
                         "Transferring %s role to %s has failed, master is: %s!"%(role, self.dsServiceName_dc1, master))
-        pass
 
     def test_SchemaMasterTransfer(self):
         self._role_transfer(role="schema", role_dn=self.schema_dn)
-        pass
 
     def test_InfrastructureMasterTransfer(self):
         self._role_transfer(role="infrastructure", role_dn=self.infrastructure_dn)
-        pass
 
     def test_PDCMasterTransfer(self):
         self._role_transfer(role="pdc", role_dn=self.domain_dn)
-        pass
 
     def test_RIDMasterTransfer(self):
         self._role_transfer(role="rid", role_dn=self.rid_dn)
-        pass
 
     def test_NamingMasterTransfer(self):
         self._role_transfer(role="naming", role_dn=self.naming_dn)
-        pass
 
