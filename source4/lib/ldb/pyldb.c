@@ -1959,7 +1959,7 @@ static PyObject *py_ldb_msg_element_new(PyTypeObject *type, PyObject *args, PyOb
 					return NULL;
 				}
 				el->values[i].length = PyString_Size(item);
-				el->values[i].data = talloc_memdup(el, 
+				el->values[i].data = talloc_memdup(el,
 					(uint8_t *)PyString_AsString(item), el->values[i].length+1);
 			}
 		} else {
@@ -2187,7 +2187,7 @@ static PyObject *py_ldb_msg_add(PyLdbMessageObject *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "O!", &PyLdbMessageElement, &py_element))
 		return NULL;
 
-	el = talloc_reference(msg, py_element->mem_ctx);
+	el = talloc_reference(msg, py_element->el);
 	if (el == NULL) {
 		PyErr_NoMemory();
 		return NULL;

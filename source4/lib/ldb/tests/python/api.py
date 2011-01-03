@@ -607,6 +607,10 @@ class MessageElementTests(unittest.TestCase):
         y = ldb.MessageElement(["foo"])
         self.assertEquals(y, x)
 
+    def test_extended(self):
+        el = ldb.MessageElement(["456"], ldb.FLAG_MOD_ADD, "bla")
+        self.assertEquals("MessageElement(['456'])", repr(el))
+
 
 class ModuleTests(unittest.TestCase):
 
