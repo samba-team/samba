@@ -1085,7 +1085,7 @@ void *talloc_reparent(const void *old_parent, const void *new_parent, const void
  * @endcode
  *
  * @see talloc()
- * @see talloc_array_zero()
+ * @see talloc_zero_array()
  */
 void *talloc_array(const void *ctx, #type, unsigned count);
 #else
