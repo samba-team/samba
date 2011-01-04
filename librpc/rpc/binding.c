@@ -758,7 +758,8 @@ _PUBLIC_ NTSTATUS dcerpc_binding_build_tower(TALLOC_CTX *mem_ctx,
 
 	/* The 5th contains the network address */
 	if (num_protocols >= 3 && binding->host) {
-		if (is_ipaddress(binding->host)) {
+		if (is_ipaddress(binding->host) ||
+		    (binding->host[0] == '\\' && binding->host[1] == '\\')) {
 			status = dcerpc_floor_set_rhs_data(tower->floors, &tower->floors[4], 
 							   binding->host);
 		} else {
