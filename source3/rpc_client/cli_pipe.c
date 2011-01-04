@@ -2464,6 +2464,7 @@ static NTSTATUS rpc_pipe_get_tcp_port(const char *host,
 {
 	NTSTATUS status;
 	struct rpc_pipe_client *epm_pipe = NULL;
+	struct dcerpc_binding_handle *epm_handle = NULL;
 	struct pipe_auth_data *auth = NULL;
 	struct dcerpc_binding *map_binding = NULL;
 	struct dcerpc_binding *res_binding = NULL;
@@ -2474,6 +2475,7 @@ static NTSTATUS rpc_pipe_get_tcp_port(const char *host,
 	uint32_t max_towers = 1;
 	struct epm_twr_p_t towers;
 	TALLOC_CTX *tmp_ctx = talloc_stackframe();
+	uint32_t result = 0;
 
 	if (pport == NULL) {
 		status = NT_STATUS_INVALID_PARAMETER;
@@ -2488,6 +2490,7 @@ static NTSTATUS rpc_pipe_get_tcp_port(const char *host,
 	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
+	epm_handle = epm_pipe->binding_handle;
 
 	status = rpccli_anon_bind_data(tmp_ctx, &auth);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -2541,7 +2544,7 @@ static NTSTATUS rpc_pipe_get_tcp_port(const char *host,
 
 	/* ask the endpoint mapper for the port */
 
-	status = rpccli_epm_Map(epm_pipe,
+	status = dcerpc_epm_Map(epm_handle,
 				tmp_ctx,
 				CONST_DISCARD(struct GUID *,
 					      &(abstract_syntax->uuid)),
@@ -2549,9 +2552,15 @@ static NTSTATUS rpc_pipe_get_tcp_port(const char *host,
 				entry_handle,
 				max_towers,
 				&num_towers,
-				&towers);
+				&towers,
+				&result);
 
 	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
+
+	if (result != EPMAPPER_STATUS_OK) {
+		status = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
 
