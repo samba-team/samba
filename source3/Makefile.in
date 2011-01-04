@@ -363,8 +363,7 @@ LIBCLI_ECHO_OBJ = librpc/gen_ndr/cli_echo.o \
 LIBCLI_INITSHUTDOWN_OBJ = librpc/gen_ndr/cli_initshutdown.o \
 			  librpc/gen_ndr/ndr_initshutdown_c.o
 
-LIBCLI_DSSETUP_OBJ = librpc/gen_ndr/cli_dssetup.o \
-		     librpc/gen_ndr/ndr_dssetup_c.o
+LIBCLI_DSSETUP_OBJ = librpc/gen_ndr/ndr_dssetup_c.o
 
 LIBCLI_SVCCTL_OBJ = librpc/gen_ndr/cli_svcctl.o \
 		    librpc/gen_ndr/ndr_svcctl_c.o
