@@ -106,8 +106,7 @@ static char *query_flags(int flags)
  Do a node status query.
 ****************************************************************************/
 
-static void do_node_status(int fd,
-		const char *name,
+static void do_node_status(const char *name,
 		int type,
 		struct sockaddr_storage *pss)
 {
@@ -122,7 +121,7 @@ static void do_node_status(int fd,
 	print_sockaddr(addr, sizeof(addr), pss);
 	d_printf("Looking up status of %s\n",addr);
 	make_nmb_name(&nname, name, type);
-	status = node_status_query(fd, &nname, pss, talloc_tos(),
+	status = node_status_query(talloc_tos(), &nname, pss,
 				   &addrs, &count, &extra);
 	if (NT_STATUS_IS_OK(status)) {
 		for (i=0;i<count;i++) {
@@ -218,8 +217,7 @@ static bool query_one(const char *lookup, unsigned int lookup_type)
 		   was valid - ie. name_query returned true.
 		 */
 		if (find_status) {
-			do_node_status(ServerFD, lookup,
-					lookup_type, &ip_list[j]);
+			do_node_status(lookup, lookup_type, &ip_list[j]);
 		}
 	}
 
@@ -339,7 +337,7 @@ int main(int argc,char *argv[])
 			ip = interpret_addr2(lookup);
 			in_addr_to_sockaddr_storage(&ss, ip);
 			fstrcpy(lookup,"*");
-			do_node_status(ServerFD, lookup, lookup_type, &ss);
+			do_node_status(lookup, lookup_type, &ss);
 			continue;
 		}
 

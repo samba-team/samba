@@ -690,29 +690,54 @@ static bool send_packet_request(struct packet_struct *p)
  structures holding the returned names or NULL if the query failed.
 **************************************************************************/
 
-NTSTATUS node_status_query(int fd,
-			   struct nmb_name *name,
-			   const struct sockaddr_storage *to_ss,
-			   TALLOC_CTX *mem_ctx,
-			   struct node_status **names,
-			   int *num_names,
-			   struct node_status_extra *extra)
+struct node_status_query_state {
+	struct sockaddr_storage my_addr;
+	struct sockaddr_storage addr;
+	uint8_t buf[1024];
+	ssize_t buflen;
+	struct packet_struct *packet;
+};
+
+static int node_status_query_state_destructor(
+	struct node_status_query_state *s);
+static bool node_status_query_validator(struct packet_struct *p,
+					void *private_data);
+static void node_status_query_done(struct tevent_req *subreq);
+
+struct tevent_req *node_status_query_send(TALLOC_CTX *mem_ctx,
+					  struct tevent_context *ev,
+					  struct nmb_name *name,
+					  const struct sockaddr_storage *addr)
 {
-	bool found=False;
-	int retries = 2;
-	int retry_time = 2000;
-	struct timespec tp;
+	struct tevent_req *req, *subreq;
+	struct node_status_query_state *state;
 	struct packet_struct p;
-	struct packet_struct *p2;
 	struct nmb_packet *nmb = &p.packet.nmb;
-	struct node_status *ret;
+	struct sockaddr_in *in_addr;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct node_status_query_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	talloc_set_destructor(state, node_status_query_state_destructor);
+
+	if (addr->ss_family != AF_INET) {
+		/* Can't do node status to IPv6 */
+		tevent_req_nterror(req, NT_STATUS_INVALID_ADDRESS);
+		return tevent_req_post(req, ev);
+	}
+
+	state->addr = *addr;
+	in_addr = (struct sockaddr_in *)(void *)&state->addr;
+	in_addr->sin_port = htons(NMB_PORT);
+
+	if (!interpret_string_addr(&state->my_addr, lp_socket_address(),
+				   AI_NUMERICHOST|AI_PASSIVE)) {
+		zero_sockaddr(&state->my_addr);
+	}
 
 	ZERO_STRUCT(p);
-
-	if (to_ss->ss_family != AF_INET) {
-		/* Can't do node status to IPv6 */
-		return NT_STATUS_INVALID_ADDRESS;
-	}
 	nmb->header.name_trn_id = generate_trn_id();
 	nmb->header.opcode = 0;
 	nmb->header.response = false;
@@ -730,62 +755,152 @@ NTSTATUS node_status_query(int fd,
 	nmb->question.question_type = 0x21;
 	nmb->question.question_class = 0x1;
 
-	p.ip = ((const struct sockaddr_in *)to_ss)->sin_addr;
+#if DEBUG_UNEXPECTED
+	p.ip = in_addr->sin_addr;
 	p.port = NMB_PORT;
 	p.recv_fd = -1;
-	p.send_fd = fd;
+	p.send_fd = -1;
 	p.timestamp = time(NULL);
 	p.packet_type = NMB_PACKET;
 
-	clock_gettime_mono(&tp);
+	{
+		pid_t nmbd_pid = pidfile_pid("nmbd");
 
-	if (!send_packet_request(&p))
-		return NT_STATUS_NOT_FOUND;
-
-	retries--;
-
-	while (1) {
-		struct timespec tp2;
-		clock_gettime_mono(&tp2);
-		if (nsec_time_diff(&tp2,&tp)/1000000 > retry_time) {
-			if (!retries)
-				break;
-			if (!found && !send_packet_request(&p))
-				return NT_STATUS_NOT_FOUND;
-			clock_gettime_mono(&tp);
-			retries--;
-		}
-
-		if ((p2=receive_nmb_packet(fd,90,nmb->header.name_trn_id))) {
-			struct nmb_packet *nmb2 = &p2->packet.nmb;
-			debug_nmb_packet(p2);
-
-			if (nmb2->header.opcode != 0 ||
-			    nmb2->header.nm_flags.bcast ||
-			    nmb2->header.rcode ||
-			    !nmb2->header.ancount ||
-			    nmb2->answers->rr_type != 0x21) {
-				/* XXXX what do we do with this? could be a
-				   redirect, but we'll discard it for the
-				   moment */
-				free_packet(p2);
-				continue;
-			}
-
-			ret = parse_node_status(
-				mem_ctx, &nmb2->answers->rdata[0], num_names,
-				extra);
-			free_packet(p2);
-
-			if (ret == NULL) {
-				return NT_STATUS_NO_MEMORY;
-			}
-			*names = ret;
-			return NT_STATUS_OK;
+		if (nmbd_pid) {
+			struct messaging_context *msg_ctx = messaging_init(
+				state, procid_self(), ev);
+			/* Try nmbd. */
+			messaging_send_buf(msg_ctx,
+					   pid_to_procid(nmbd_pid),
+					   MSG_SEND_PACKET,
+					   (uint8_t *)&p,
+					   sizeof(struct packet_struct));
+			TALLOC_FREE(msg_ctx);
 		}
 	}
+#endif
 
-	return NT_STATUS_IO_TIMEOUT;
+	state->buflen = build_packet((char *)state->buf, sizeof(state->buf),
+				     &p);
+	if (state->buflen == 0) {
+		tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
+		DEBUG(10, ("build_packet failed\n"));
+		return tevent_req_post(req, ev);
+	}
+
+	subreq = nb_trans_send(state, ev, &state->my_addr, addr, false,
+			       state->buf, state->buflen,
+			       NMB_PACKET, nmb->header.name_trn_id,
+			       node_status_query_validator, NULL);
+	if (tevent_req_nomem(subreq, req)) {
+		DEBUG(10, ("nb_trans_send failed\n"));
+		return tevent_req_post(req, ev);
+	}
+	if (!tevent_req_set_endtime(req, ev, timeval_current_ofs(10, 0))) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, node_status_query_done, req);
+	return req;
+}
+
+static bool node_status_query_validator(struct packet_struct *p,
+					void *private_data)
+{
+	struct nmb_packet *nmb = &p->packet.nmb;
+	debug_nmb_packet(p);
+
+	if (nmb->header.opcode != 0 ||
+	    nmb->header.nm_flags.bcast ||
+	    nmb->header.rcode ||
+	    !nmb->header.ancount ||
+	    nmb->answers->rr_type != 0x21) {
+		/*
+		 * XXXX what do we do with this? could be a redirect,
+		 * but we'll discard it for the moment
+		 */
+		return false;
+	}
+	return true;
+}
+
+static int node_status_query_state_destructor(
+	struct node_status_query_state *s)
+{
+	if (s->packet != NULL) {
+		free_packet(s->packet);
+		s->packet = NULL;
+	}
+	return 0;
+}
+
+static void node_status_query_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct node_status_query_state *state = tevent_req_data(
+		req, struct node_status_query_state);
+	NTSTATUS status;
+
+	status = nb_trans_recv(subreq, &state->packet);
+	TALLOC_FREE(subreq);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+	tevent_req_done(req);
+}
+
+NTSTATUS node_status_query_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
+				struct node_status **pnode_status,
+				int *pnum_names,
+				struct node_status_extra *extra)
+{
+	struct node_status_query_state *state = tevent_req_data(
+		req, struct node_status_query_state);
+	struct node_status *node_status;
+	int num_names;
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		return status;
+	}
+	node_status = parse_node_status(
+		mem_ctx, &state->packet->packet.nmb.answers->rdata[0],
+		&num_names, extra);
+	if (node_status == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	*pnode_status = node_status;
+	*pnum_names = num_names;
+	return NT_STATUS_OK;
+}
+
+NTSTATUS node_status_query(TALLOC_CTX *mem_ctx, struct nmb_name *name,
+			   const struct sockaddr_storage *addr,
+			   struct node_status **pnode_status,
+			   int *pnum_names,
+			   struct node_status_extra *extra)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct tevent_context *ev;
+	struct tevent_req *req;
+	NTSTATUS status = NT_STATUS_NO_MEMORY;
+
+	ev = tevent_context_init(frame);
+	if (ev == NULL) {
+		goto fail;
+	}
+	req = node_status_query_send(ev, ev, name, addr);
+	if (req == NULL) {
+		goto fail;
+	}
+	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
+		goto fail;
+	}
+	status = node_status_query_recv(req, mem_ctx, pnode_status,
+					pnum_names, extra);
+ fail:
+	TALLOC_FREE(frame);
+	return status;
 }
 
 /****************************************************************************
@@ -804,7 +919,6 @@ bool name_status_find(const char *q_name,
 	struct node_status *addrs = NULL;
 	struct nmb_name nname;
 	int count, i;
-	int sock;
 	bool result = false;
 	NTSTATUS status;
 
@@ -835,15 +949,10 @@ bool name_status_find(const char *q_name,
 		zero_sockaddr(&ss);
 	}
 
-	sock = open_socket_in(SOCK_DGRAM, 0, 3, &ss, True);
-	if (sock == -1)
-		goto done;
-
 	/* W2K PDC's seem not to respond to '*'#0. JRA */
 	make_nmb_name(&nname, q_name, q_type);
-	status = node_status_query(sock, &nname, to_ss, talloc_tos(),
+	status = node_status_query(talloc_tos(), &nname, to_ss,
 				   &addrs, &count, NULL);
-	close(sock);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
