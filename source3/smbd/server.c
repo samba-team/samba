@@ -1225,9 +1225,11 @@ extern void build_options(bool screen);
 	if (!NT_STATUS_IS_OK(rpc_netdfs_init(NULL))) {
 		exit(1);
 	}
+#ifdef DEVELOPER
 	if (!NT_STATUS_IS_OK(rpc_rpcecho_init(NULL))) {
 		exit(1);
 	}
+#endif
 	if (!NT_STATUS_IS_OK(rpc_dssetup_init(NULL))) {
 		exit(1);
 	}

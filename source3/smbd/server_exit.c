@@ -131,7 +131,9 @@ static void exit_server_common(enum server_exit_reason how,
 	if (am_parent) {
 		rpc_wkssvc_shutdown();
 		rpc_dssetup_shutdown();
+#ifdef DEVELOPER
 		rpc_rpcecho_shutdown();
+#endif
 		rpc_netdfs_shutdown();
 		rpc_initshutdown_shutdown();
 		rpc_eventlog_shutdown();
