@@ -24,8 +24,6 @@
 #include "includes.h"
 #include "../librpc/gen_ndr/srv_echo.h"
 
-#ifdef DEVELOPER
-
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
 
@@ -121,5 +119,3 @@ uint16 _echo_TestDoublePointer(struct pipes_struct *p, struct echo_TestDoublePoi
 	p->rng_fault_state = True;
 	return 0;
 }
-
-#endif /* DEVELOPER */
