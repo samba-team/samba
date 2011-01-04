@@ -29,11 +29,12 @@ static WERROR cmd_ds_dsrole_getprimarydominfo(struct rpc_pipe_client *cli,
 					      TALLOC_CTX *mem_ctx, int argc,
 					      const char **argv)
 {
+	struct dcerpc_binding_handle *b = cli->binding_handle;
 	NTSTATUS status;
 	WERROR werr;
 	union dssetup_DsRoleInfo info;
 
-	status = rpccli_dssetup_DsRoleGetPrimaryDomainInformation(cli, mem_ctx,
+	status = dcerpc_dssetup_DsRoleGetPrimaryDomainInformation(b, mem_ctx,
 								  DS_ROLE_BASIC_INFORMATION,
 								  &info,
 								  &werr);
