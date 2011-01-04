@@ -7109,10 +7109,7 @@ static int rpc_vampire(struct net_context *c, int argc, const char **argv)
 			return 0;
 		}
 
-		return run_rpc_command(c, NULL, &ndr_table_netlogon.syntax_id,
-				       NET_FLAGS_ANONYMOUS,
-				       rpc_vampire_internals,
-				       argc, argv);
+		return rpc_vampire_passdb(c, argc, argv);
 	}
 
 	return net_run_function(c, argc, argv, "net rpc vampire", func);
