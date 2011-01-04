@@ -2772,6 +2772,7 @@ void put_name(char *dest, const char *name, int pad, unsigned int name_type);
 char *nmb_namestr(const struct nmb_name *n);
 struct packet_struct *copy_packet(struct packet_struct *packet);
 void free_packet(struct packet_struct *packet);
+int packet_trn_id(struct packet_struct *p);
 struct packet_struct *parse_packet(char *buf,int length,
 				   enum packet_type packet_type,
 				   struct in_addr ip,
