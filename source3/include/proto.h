@@ -2933,6 +2933,28 @@ void clear_unexpected(time_t t);
 struct packet_struct *receive_unexpected(enum packet_type packet_type, int id,
 					 const char *mailslot_name);
 
+struct nb_packet_server;
+struct nb_packet_reader;
+
+NTSTATUS nb_packet_server_create(TALLOC_CTX *mem_ctx,
+				 struct tevent_context *ev,
+				 int max_clients,
+				 struct nb_packet_server **presult);
+void nb_packet_dispatch(struct nb_packet_server *server,
+			struct packet_struct *p);
+struct tevent_req *nb_packet_reader_send(TALLOC_CTX *mem_ctx,
+					 struct tevent_context *ev,
+					 enum packet_type type,
+					 int trn_id,
+					 const char *mailslot_name);
+NTSTATUS nb_packet_reader_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
+			       struct nb_packet_reader **preader);
+struct tevent_req *nb_packet_read_send(TALLOC_CTX *mem_ctx,
+				       struct tevent_context *ev,
+				       struct nb_packet_reader *reader);
+NTSTATUS nb_packet_read_recv(struct tevent_req *req,
+			     struct packet_struct **ppacket);
+
 /* The following definitions come from locking/brlock.c  */
 
 bool brl_same_context(const struct lock_context *ctx1, 
