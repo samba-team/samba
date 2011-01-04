@@ -19,12 +19,6 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "includes.h"
-#include "system/network.h"
-#include "system/kerberos.h"
-#include "lib/socket/netif.h"
-#include "param/param.h"
-
 #include "heimdal/lib/krb5/krb5_locl.h"
 
 const krb5_cc_ops krb5_scc_ops = {
