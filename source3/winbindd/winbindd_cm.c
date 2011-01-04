@@ -1861,12 +1861,15 @@ static void set_dc_type_and_flags_connect( struct winbindd_domain *domain )
 		goto no_dssetup;
 	}
 
-	result = rpccli_dssetup_DsRoleGetPrimaryDomainInformation(cli, mem_ctx,
+	result = dcerpc_dssetup_DsRoleGetPrimaryDomainInformation(cli->binding_handle, mem_ctx,
 								  DS_ROLE_BASIC_INFORMATION,
 								  &info,
 								  &werr);
 	TALLOC_FREE(cli);
 
+	if (NT_STATUS_IS_OK(result)) {
+		result = werror_to_ntstatus(werr);
+	}
 	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(5, ("set_dc_type_and_flags_connect: rpccli_ds_getprimarydominfo "
 			  "on domain %s failed: (%s)\n",
