@@ -572,14 +572,12 @@ static void nb_trans_got_reader(struct tevent_req *subreq)
 	}
 	tevent_req_set_callback(subreq, nb_trans_done, req);
 
-#if !DEBUG_UNEXPECTED
 	subreq = sendto_send(state, state->ev, state->sock,
 			     state->buf, state->buflen, 0, state->dst_addr);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}
 	tevent_req_set_callback(subreq, nb_trans_sent, req);
-#endif
 }
 
 static void nb_trans_sent(struct tevent_req *subreq)
@@ -755,31 +753,6 @@ struct tevent_req *node_status_query_send(TALLOC_CTX *mem_ctx,
 	nmb->question.question_type = 0x21;
 	nmb->question.question_class = 0x1;
 
-#if DEBUG_UNEXPECTED
-	p.ip = in_addr->sin_addr;
-	p.port = NMB_PORT;
-	p.recv_fd = -1;
-	p.send_fd = -1;
-	p.timestamp = time(NULL);
-	p.packet_type = NMB_PACKET;
-
-	{
-		pid_t nmbd_pid = pidfile_pid("nmbd");
-
-		if (nmbd_pid) {
-			struct messaging_context *msg_ctx = messaging_init(
-				state, procid_self(), ev);
-			/* Try nmbd. */
-			messaging_send_buf(msg_ctx,
-					   pid_to_procid(nmbd_pid),
-					   MSG_SEND_PACKET,
-					   (uint8_t *)&p,
-					   sizeof(struct packet_struct));
-			TALLOC_FREE(msg_ctx);
-		}
-	}
-#endif
-
 	state->buflen = build_packet((char *)state->buf, sizeof(state->buf),
 				     &p);
 	if (state->buflen == 0) {
@@ -788,7 +761,7 @@ struct tevent_req *node_status_query_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	subreq = nb_trans_send(state, ev, &state->my_addr, addr, false,
+	subreq = nb_trans_send(state, ev, &state->my_addr, &state->addr, false,
 			       state->buf, state->buflen,
 			       NMB_PACKET, nmb->header.name_trn_id,
 			       node_status_query_validator, NULL);
@@ -1200,45 +1173,67 @@ static bool prioritize_ipv4_list(struct ip_service *iplist, int count)
  *timed_out is set if we failed by timing out
 ****************************************************************************/
 
-NTSTATUS name_query(int fd,
-			const char *name,
-			int name_type,
-			bool bcast,
-			bool recurse,
-			const struct sockaddr_storage *to_ss,
-			TALLOC_CTX *mem_ctx,
-			struct sockaddr_storage **addrs,
-			int *count,
-			int *flags,
-			bool *timed_out)
+struct name_query_state {
+	struct sockaddr_storage my_addr;
+	struct sockaddr_storage addr;
+	bool bcast;
+
+
+	uint8_t buf[1024];
+	ssize_t buflen;
+
+	NTSTATUS validate_error;
+	uint8_t flags;
+
+	struct sockaddr_storage *addrs;
+	int num_addrs;
+};
+
+static bool name_query_validator(struct packet_struct *p, void *private_data);
+static void name_query_done(struct tevent_req *subreq);
+
+struct tevent_req *name_query_send(TALLOC_CTX *mem_ctx,
+				   struct tevent_context *ev,
+				   const char *name, int name_type,
+				   bool bcast, bool recurse,
+				   const struct sockaddr_storage *addr)
 {
-	bool found=false;
-	int i, retries = 3;
-	int retry_time = bcast?250:2000;
-	struct timespec tp;
+	struct tevent_req *req, *subreq;
+	struct name_query_state *state;
 	struct packet_struct p;
-	struct packet_struct *p2;
 	struct nmb_packet *nmb = &p.packet.nmb;
-	struct sockaddr_storage *ss_list = NULL;
+	struct sockaddr_in *in_addr;
+	struct timeval timeout;
+
+	req = tevent_req_create(mem_ctx, &state, struct name_query_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->bcast = bcast;
+
+	if (addr->ss_family != AF_INET) {
+		/* Can't do node status to IPv6 */
+		tevent_req_nterror(req, NT_STATUS_INVALID_ADDRESS);
+		return tevent_req_post(req, ev);
+	}
 
 	if (lp_disable_netbios()) {
 		DEBUG(5,("name_query(%s#%02x): netbios is disabled\n",
 					name, name_type));
-		return NT_STATUS_NOT_FOUND;
+		tevent_req_nterror(req, NT_STATUS_NOT_SUPPORTED);
+		return tevent_req_post(req, ev);
 	}
 
-	if (to_ss->ss_family != AF_INET) {
-		return NT_STATUS_INVALID_ADDRESS;
+	state->addr = *addr;
+	in_addr = (struct sockaddr_in *)(void *)&state->addr;
+	in_addr->sin_port = htons(NMB_PORT);
+
+	if (!interpret_string_addr(&state->my_addr, lp_socket_address(),
+				   AI_NUMERICHOST|AI_PASSIVE)) {
+		zero_sockaddr(&state->my_addr);
 	}
 
-	if (timed_out) {
-		*timed_out = false;
-	}
-
-	memset((char *)&p,'\0',sizeof(p));
-	(*count) = 0;
-	(*flags) = 0;
-
+	ZERO_STRUCT(p);
 	nmb->header.name_trn_id = generate_trn_id();
 	nmb->header.opcode = 0;
 	nmb->header.response = false;
@@ -1258,155 +1253,229 @@ NTSTATUS name_query(int fd,
 	nmb->question.question_type = 0x20;
 	nmb->question.question_class = 0x1;
 
-	p.ip = ((struct sockaddr_in *)to_ss)->sin_addr;
-	p.port = NMB_PORT;
-	p.recv_fd = -1;
-	p.send_fd = fd;
-	p.timestamp = time(NULL);
-	p.packet_type = NMB_PACKET;
+	state->buflen = build_packet((char *)state->buf, sizeof(state->buf),
+				     &p);
+	if (state->buflen == 0) {
+		tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
+		DEBUG(10, ("build_packet failed\n"));
+		return tevent_req_post(req, ev);
+	}
 
-	clock_gettime_mono(&tp);
+	subreq = nb_trans_send(state, ev, &state->my_addr, &state->addr, bcast,
+			       state->buf, state->buflen,
+			       NMB_PACKET, nmb->header.name_trn_id,
+			       name_query_validator, state);
+	if (tevent_req_nomem(subreq, req)) {
+		DEBUG(10, ("nb_trans_send failed\n"));
+		return tevent_req_post(req, ev);
+	}
+	if (bcast) {
+		timeout = timeval_current_ofs(0, 250000);
+	} else {
+		timeout = timeval_current_ofs(2, 0);
+	}
+	if (!tevent_req_set_endtime(req, ev, timeout)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, name_query_done, req);
+	return req;
+}
 
-	if (!send_packet_request(&p))
+static bool name_query_validator(struct packet_struct *p, void *private_data)
+{
+	struct name_query_state *state = talloc_get_type_abort(
+		private_data, struct name_query_state);
+	struct nmb_packet *nmb = &p->packet.nmb;
+	struct sockaddr_storage *tmp_addrs;
+	int i;
+
+	debug_nmb_packet(p);
+
+	/*
+	 * If we get a Negative Name Query Response from a WINS
+	 * server, we should report it and give up.
+	 */
+	if( 0 == nmb->header.opcode	/* A query response   */
+	    && !state->bcast		/* from a WINS server */
+	    && nmb->header.rcode	/* Error returned     */
+		) {
+
+		if( DEBUGLVL( 3 ) ) {
+			/* Only executed if DEBUGLEVEL >= 3 */
+			dbgtext( "Negative name query "
+				 "response, rcode 0x%02x: ",
+				 nmb->header.rcode );
+			switch( nmb->header.rcode ) {
+			case 0x01:
+				dbgtext("Request was invalidly formatted.\n");
+				break;
+			case 0x02:
+				dbgtext("Problem with NBNS, cannot process "
+					"name.\n");
+				break;
+			case 0x03:
+				dbgtext("The name requested does not "
+					"exist.\n");
+				break;
+			case 0x04:
+				dbgtext("Unsupported request error.\n");
+				break;
+			case 0x05:
+				dbgtext("Query refused error.\n");
+				break;
+			default:
+				dbgtext("Unrecognized error code.\n" );
+				break;
+			}
+		}
+
+		/*
+		 * We accept this packet as valid, but tell the upper
+		 * layers that it's a negative response.
+		 */
+		state->validate_error = NT_STATUS_NOT_FOUND;
+		return true;
+	}
+
+	if (nmb->header.opcode != 0 ||
+	    nmb->header.nm_flags.bcast ||
+	    nmb->header.rcode ||
+	    !nmb->header.ancount) {
+		/*
+		 * XXXX what do we do with this? Could be a redirect,
+		 * but we'll discard it for the moment.
+		 */
+		return false;
+	}
+
+	tmp_addrs = TALLOC_REALLOC_ARRAY(
+		state, state->addrs, struct sockaddr_storage,
+		state->num_addrs + nmb->answers->rdlength/6);
+	if (tmp_addrs == NULL) {
+		state->validate_error = NT_STATUS_NO_MEMORY;
+		return true;
+	}
+	state->addrs = tmp_addrs;
+
+	DEBUG(2,("Got a positive name query response "
+		 "from %s ( ", inet_ntoa(p->ip)));
+
+	for (i=0; i<nmb->answers->rdlength/6; i++) {
+		struct in_addr ip;
+		putip((char *)&ip,&nmb->answers->rdata[2+i*6]);
+		in_addr_to_sockaddr_storage(
+			&state->addrs[state->num_addrs], ip);
+		DEBUGADD(2,("%s ",inet_ntoa(ip)));
+		state->num_addrs += 1;
+	}
+	DEBUGADD(2,(")\n"));
+
+	/* We add the flags back ... */
+	if (nmb->header.response)
+		state->flags |= NM_FLAGS_RS;
+	if (nmb->header.nm_flags.authoritative)
+		state->flags |= NM_FLAGS_AA;
+	if (nmb->header.nm_flags.trunc)
+		state->flags |= NM_FLAGS_TC;
+	if (nmb->header.nm_flags.recursion_desired)
+		state->flags |= NM_FLAGS_RD;
+	if (nmb->header.nm_flags.recursion_available)
+		state->flags |= NM_FLAGS_RA;
+	if (nmb->header.nm_flags.bcast)
+		state->flags |= NM_FLAGS_B;
+
+	if (state->bcast) {
+		/*
+		 * We have to collect all entries coming in from
+		 * broadcast queries
+		 */
+		return false;
+	}
+	/*
+	 * WINS responses are accepted when they are received
+	 */
+	return true;
+}
+
+static void name_query_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct name_query_state *state = tevent_req_data(
+		req, struct name_query_state);
+	NTSTATUS status;
+	struct packet_struct *p = NULL;
+
+	status = nb_trans_recv(subreq, &p);
+	TALLOC_FREE(subreq);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+	if (!NT_STATUS_IS_OK(state->validate_error)) {
+		tevent_req_nterror(req, state->validate_error);
+		return;
+	}
+	if (p != NULL) {
+		/*
+		 * Free the packet here, we've collected the response in the
+		 * validator
+		 */
+		free_packet(p);
+	}
+	tevent_req_done(req);
+}
+
+NTSTATUS name_query_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
+			 struct sockaddr_storage **addrs, int *num_addrs,
+			 uint8_t *flags)
+{
+	struct name_query_state *state = tevent_req_data(
+		req, struct name_query_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)
+	    && !NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
+		return status;
+	}
+	if (state->num_addrs == 0) {
 		return NT_STATUS_NOT_FOUND;
-
-	retries--;
-
-	while (1) {
-		struct timespec tp2;
-
-		clock_gettime_mono(&tp2);
-		if (nsec_time_diff(&tp2,&tp)/1000000 > retry_time) {
-			if (!retries)
-				break;
-			if (!found && !send_packet_request(&p))
-				return NT_STATUS_NOT_FOUND;
-			clock_gettime_mono(&tp);
-			retries--;
-		}
-		if ((p2=receive_nmb_packet(fd,90,nmb->header.name_trn_id))) {
-			struct nmb_packet *nmb2 = &p2->packet.nmb;
-			debug_nmb_packet(p2);
-
-			/* If we get a Negative Name Query Response from a WINS
-			 * server, we should report it and give up.
-			 */
-			if( 0 == nmb2->header.opcode	/* A query response   */
-			    && !(bcast)			/* from a WINS server */
-			    && nmb2->header.rcode	/* Error returned     */
-				) {
-
-				if( DEBUGLVL( 3 ) ) {
-					/* Only executed if DEBUGLEVEL >= 3 */
-					dbgtext( "Negative name query "
-						"response, rcode 0x%02x: ",
-						nmb2->header.rcode );
-					switch( nmb2->header.rcode ) {
-					case 0x01:
-						dbgtext( "Request "
-						"was invalidly formatted.\n" );
-						break;
-					case 0x02:
-						dbgtext( "Problem with NBNS, "
-						"cannot process name.\n");
-						break;
-					case 0x03:
-						dbgtext( "The name requested "
-						"does not exist.\n" );
-						break;
-					case 0x04:
-						dbgtext( "Unsupported request "
-						"error.\n" );
-						break;
-					case 0x05:
-						dbgtext( "Query refused "
-						"error.\n" );
-						break;
-					default:
-						dbgtext( "Unrecognized error "
-						"code.\n" );
-						break;
-					}
-				}
-				free_packet(p2);
-				return NT_STATUS_NOT_FOUND;
-			}
-
-			if (nmb2->header.opcode != 0 ||
-			    nmb2->header.nm_flags.bcast ||
-			    nmb2->header.rcode ||
-			    !nmb2->header.ancount) {
-				/*
-				 * XXXX what do we do with this? Could be a
-				 * redirect, but we'll discard it for the
-				 * moment.
-				 */
-				free_packet(p2);
-				continue;
-			}
-
-			ss_list = TALLOC_REALLOC_ARRAY(mem_ctx, ss_list,
-						struct sockaddr_storage,
-						(*count) +
-						nmb2->answers->rdlength/6);
-
-			if (!ss_list) {
-				DEBUG(0,("name_query: Realloc failed.\n"));
-				free_packet(p2);
-				return NT_STATUS_NO_MEMORY;
-			}
-
-			DEBUG(2,("Got a positive name query response "
-					"from %s ( ",
-					inet_ntoa(p2->ip)));
-
-			for (i=0;i<nmb2->answers->rdlength/6;i++) {
-				struct in_addr ip;
-				putip((char *)&ip,&nmb2->answers->rdata[2+i*6]);
-				in_addr_to_sockaddr_storage(&ss_list[(*count)],
-						ip);
-				DEBUGADD(2,("%s ",inet_ntoa(ip)));
-				(*count)++;
-			}
-			DEBUGADD(2,(")\n"));
-
-			found=true;
-			retries=0;
-			/* We add the flags back ... */
-			if (nmb2->header.response)
-				(*flags) |= NM_FLAGS_RS;
-			if (nmb2->header.nm_flags.authoritative)
-				(*flags) |= NM_FLAGS_AA;
-			if (nmb2->header.nm_flags.trunc)
-				(*flags) |= NM_FLAGS_TC;
-			if (nmb2->header.nm_flags.recursion_desired)
-				(*flags) |= NM_FLAGS_RD;
-			if (nmb2->header.nm_flags.recursion_available)
-				(*flags) |= NM_FLAGS_RA;
-			if (nmb2->header.nm_flags.bcast)
-				(*flags) |= NM_FLAGS_B;
-			free_packet(p2);
-			/*
-			 * If we're doing a unicast lookup we only
-			 * expect one reply. Don't wait the full 2
-			 * seconds if we got one. JRA.
-			 */
-			if(!bcast && found)
-				break;
-		}
 	}
-
-	/* only set timed_out if we didn't fund what we where looking for*/
-
-	if ( !found && timed_out ) {
-		*timed_out = true;
+	*addrs = talloc_move(mem_ctx, &state->addrs);
+	sort_addr_list(*addrs, state->num_addrs);
+	*num_addrs = state->num_addrs;
+	if (flags != NULL) {
+		*flags = state->flags;
 	}
-
-	/* sort the ip list so we choose close servers first if possible */
-	sort_addr_list(ss_list, *count);
-
-	*addrs = ss_list;
 	return NT_STATUS_OK;
+}
+
+NTSTATUS name_query(const char *name, int name_type,
+		    bool bcast, bool recurse,
+		    const struct sockaddr_storage *to_ss,
+		    TALLOC_CTX *mem_ctx,
+		    struct sockaddr_storage **addrs,
+		    int *num_addrs, uint8_t *flags)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct tevent_context *ev;
+	struct tevent_req *req;
+	NTSTATUS status = NT_STATUS_NO_MEMORY;
+
+	ev = tevent_context_init(frame);
+	if (ev == NULL) {
+		goto fail;
+	}
+	req = name_query_send(ev, ev, name, name_type, bcast, recurse, to_ss);
+	if (req == NULL) {
+		goto fail;
+	}
+	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
+		goto fail;
+	}
+	status = name_query_recv(req, mem_ctx, addrs, num_addrs, flags);
+ fail:
+	TALLOC_FREE(frame);
+	return status;
 }
 
 /********************************************************
@@ -1448,7 +1517,7 @@ NTSTATUS name_resolve_bcast(const char *name,
 			struct ip_service **return_iplist,
 			int *return_count)
 {
-	int sock, i;
+	int i;
 	int num_interfaces = iface_count();
 	struct sockaddr_storage *ss_list;
 	struct sockaddr_storage ss;
@@ -1475,27 +1544,20 @@ NTSTATUS name_resolve_bcast(const char *name,
 		zero_sockaddr(&ss);
 	}
 
-	sock = open_socket_in( SOCK_DGRAM, 0, 3, &ss, true );
-	if (sock == -1) {
-		return map_nt_error_from_unix(errno);
-	}
-
-	set_socket_options(sock,"SO_BROADCAST");
 	/*
 	 * Lookup the name on all the interfaces, return on
 	 * the first successful match.
 	 */
 	for( i = num_interfaces-1; i >= 0; i--) {
 		const struct sockaddr_storage *pss = iface_n_bcast(i);
-		int flags;
 
 		/* Done this way to fix compiler error on IRIX 5.x */
 		if (!pss) {
 			continue;
 		}
-		status = name_query(sock, name, name_type, true, true, pss,
+		status = name_query(name, name_type, true, true, pss,
 				    talloc_tos(), &ss_list, return_count,
-				    &flags, NULL);
+				    NULL);
 		if (NT_STATUS_IS_OK(status)) {
 			goto success;
 		}
@@ -1503,7 +1565,6 @@ NTSTATUS name_resolve_bcast(const char *name,
 
 	/* failed - no response */
 
-	close(sock);
 	return status;
 
 success:
@@ -1512,7 +1573,6 @@ success:
 		status = NT_STATUS_NO_MEMORY;
 
 	TALLOC_FREE(ss_list);
-	close(sock);
 	return status;
 }
 
@@ -1525,7 +1585,7 @@ NTSTATUS resolve_wins(const char *name,
 		struct ip_service **return_iplist,
 		int *return_count)
 {
-	int sock, t, i;
+	int t, i;
 	char **wins_tags;
 	struct sockaddr_storage src_ss, *ss_list = NULL;
 	struct in_addr src_ip;
@@ -1582,8 +1642,6 @@ NTSTATUS resolve_wins(const char *name,
 		for (i=0; i<srv_count; i++) {
 			struct sockaddr_storage wins_ss;
 			struct in_addr wins_ip;
-			int flags;
-			bool timed_out;
 
 			wins_ip = wins_srv_ip_tag(wins_tags[t], src_ip);
 
@@ -1601,14 +1659,8 @@ NTSTATUS resolve_wins(const char *name,
 				"and tag '%s'\n",
 				inet_ntoa(wins_ip), wins_tags[t]));
 
-			sock = open_socket_in(SOCK_DGRAM, 0, 3, &src_ss, true);
-			if (sock == -1) {
-				continue;
-			}
-
 			in_addr_to_sockaddr_storage(&wins_ss, wins_ip);
-			status = name_query(sock,
-						name,
+			status = name_query(name,
 						name_type,
 						false,
 						true,
@@ -1616,8 +1668,7 @@ NTSTATUS resolve_wins(const char *name,
 						talloc_tos(),
 						&ss_list,
 						return_count,
-						&flags,
-						&timed_out);
+						NULL);
 
 			/* exit loop if we got a list of addresses */
 
@@ -1625,9 +1676,8 @@ NTSTATUS resolve_wins(const char *name,
 				goto success;
 			}
 
-			close(sock);
-
-			if (timed_out) {
+			if (NT_STATUS_EQUAL(status,
+					    NT_STATUS_IO_TIMEOUT)) {
 				/* Timed out waiting for WINS server to
 				 * respond.
 				 * Mark it dead. */
@@ -1652,7 +1702,6 @@ success:
 
 	TALLOC_FREE(ss_list);
 	wins_srv_tags_free(wins_tags);
-	close(sock);
 
 	return status;
 }

@@ -94,10 +94,9 @@ static struct sockaddr_storage *lookup_byname_backend(TALLOC_CTX *mem_ctx,
 						      const char *name,
 						      int *count)
 {
-	int fd;
 	struct ip_service *ret = NULL;
 	struct sockaddr_storage *return_ss = NULL;
-	int j, i, flags = 0;
+	int j, i;
 	NTSTATUS status;
 
 	*count = 0;
@@ -121,11 +120,6 @@ static struct sockaddr_storage *lookup_byname_backend(TALLOC_CTX *mem_ctx,
 		return return_ss;
 	}
 
-	fd = wins_lookup_open_socket_in();
-	if (fd == -1) {
-		return NULL;
-	}
-
 	/* uggh, we have to broadcast to each interface in turn */
 	for (j=iface_count() - 1;
 	     j >= 0;
@@ -134,14 +128,13 @@ static struct sockaddr_storage *lookup_byname_backend(TALLOC_CTX *mem_ctx,
 		if (!bcast_ss) {
 			continue;
 		}
-		status = name_query(fd, name, 0x20, True, True,bcast_ss,
-				    mem_ctx, &return_ss, count, &flags, NULL);
+		status = name_query(name, 0x20, True, True,bcast_ss,
+				    mem_ctx, &return_ss, count, NULL);
 		if (NT_STATUS_IS_OK(status)) {
 			break;
 		}
 	}
 
-	close(fd);
 	return return_ss;
 }
 
