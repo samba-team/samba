@@ -462,6 +462,203 @@ static NTSTATUS sock_packet_read_recv(struct tevent_req *req,
 	return NT_STATUS_OK;
 }
 
+struct nb_trans_state {
+	struct tevent_context *ev;
+	int sock;
+	struct nb_packet_reader *reader;
+
+	const struct sockaddr_storage *dst_addr;
+	uint8_t *buf;
+	size_t buflen;
+	enum packet_type type;
+	int trn_id;
+
+	bool (*validator)(struct packet_struct *p,
+			  void *private_data);
+	void *private_data;
+
+	struct packet_struct *packet;
+};
+
+static int nb_trans_state_destructor(struct nb_trans_state *s);
+static void nb_trans_got_reader(struct tevent_req *subreq);
+static void nb_trans_done(struct tevent_req *subreq);
+static void nb_trans_sent(struct tevent_req *subreq);
+static void nb_trans_send_next(struct tevent_req *subreq);
+
+static struct tevent_req *nb_trans_send(
+	TALLOC_CTX *mem_ctx,
+	struct tevent_context *ev,
+	const struct sockaddr_storage *my_addr,
+	const struct sockaddr_storage *dst_addr,
+	bool bcast,
+	uint8_t *buf, size_t buflen,
+	enum packet_type type, int trn_id,
+	bool (*validator)(struct packet_struct *p,
+			  void *private_data),
+	void *private_data)
+{
+	struct tevent_req *req, *subreq;
+	struct nb_trans_state *state;
+
+	req = tevent_req_create(mem_ctx, &state, struct nb_trans_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	talloc_set_destructor(state, nb_trans_state_destructor);
+	state->ev = ev;
+	state->dst_addr = dst_addr;
+	state->buf = buf;
+	state->buflen = buflen;
+	state->type = type;
+	state->trn_id = trn_id;
+	state->validator = validator;
+	state->private_data = private_data;
+
+	state->sock = open_socket_in(SOCK_DGRAM, 0, 3, my_addr, True);
+	if (state->sock == -1) {
+		tevent_req_nterror(req, map_nt_error_from_unix(errno));
+		DEBUG(10, ("open_socket_in failed: %s\n", strerror(errno)));
+		return tevent_req_post(req, ev);
+	}
+
+	if (bcast) {
+		set_socket_options(state->sock,"SO_BROADCAST");
+	}
+
+	subreq = nb_packet_reader_send(state, ev, type, state->trn_id, NULL);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, nb_trans_got_reader, req);
+	return req;
+}
+
+static int nb_trans_state_destructor(struct nb_trans_state *s)
+{
+	if (s->sock != -1) {
+		close(s->sock);
+		s->sock = -1;
+	}
+	if (s->packet != NULL) {
+		free_packet(s->packet);
+		s->packet = NULL;
+	}
+	return 0;
+}
+
+static void nb_trans_got_reader(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct nb_trans_state *state = tevent_req_data(
+		req, struct nb_trans_state);
+	NTSTATUS status;
+
+	status = nb_packet_reader_recv(subreq, state, &state->reader);
+	TALLOC_FREE(subreq);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(10, ("nmbd not around\n"));
+		state->reader = NULL;
+	}
+
+	subreq = sock_packet_read_send(
+		state, state->ev, state->sock,
+		state->reader, state->type, state->trn_id,
+		state->validator, state->private_data);
+	if (tevent_req_nomem(subreq, req)) {
+		return;
+	}
+	tevent_req_set_callback(subreq, nb_trans_done, req);
+
+#if !DEBUG_UNEXPECTED
+	subreq = sendto_send(state, state->ev, state->sock,
+			     state->buf, state->buflen, 0, state->dst_addr);
+	if (tevent_req_nomem(subreq, req)) {
+		return;
+	}
+	tevent_req_set_callback(subreq, nb_trans_sent, req);
+#endif
+}
+
+static void nb_trans_sent(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct nb_trans_state *state = tevent_req_data(
+		req, struct nb_trans_state);
+	ssize_t sent;
+	int err;
+
+	sent = sendto_recv(subreq, &err);
+	TALLOC_FREE(subreq);
+	if (sent == -1) {
+		DEBUG(10, ("sendto failed: %s\n", strerror(err)));
+		tevent_req_nterror(req, map_nt_error_from_unix(err));
+		return;
+	}
+	subreq = tevent_wakeup_send(state, state->ev,
+				    timeval_current_ofs(1, 0));
+	if (tevent_req_nomem(subreq, req)) {
+		return;
+	}
+	tevent_req_set_callback(subreq, nb_trans_send_next, req);
+}
+
+static void nb_trans_send_next(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct nb_trans_state *state = tevent_req_data(
+		req, struct nb_trans_state);
+	bool ret;
+
+	ret = tevent_wakeup_recv(subreq);
+	TALLOC_FREE(subreq);
+	if (!ret) {
+		tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
+		return;
+	}
+	subreq = sendto_send(state, state->ev, state->sock,
+			     state->buf, state->buflen, 0, state->dst_addr);
+	if (tevent_req_nomem(subreq, req)) {
+		return;
+	}
+	tevent_req_set_callback(subreq, nb_trans_sent, req);
+}
+
+static void nb_trans_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct nb_trans_state *state = tevent_req_data(
+		req, struct nb_trans_state);
+	NTSTATUS status;
+
+	status = sock_packet_read_recv(subreq, &state->packet);
+	TALLOC_FREE(subreq);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+	tevent_req_done(req);
+}
+
+static NTSTATUS nb_trans_recv(struct tevent_req *req,
+			      struct packet_struct **ppacket)
+{
+	struct nb_trans_state *state = tevent_req_data(
+		req, struct nb_trans_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		return status;
+	}
+	*ppacket = state->packet;
+	state->packet = NULL;
+	return NT_STATUS_OK;
+}
+
 /****************************************************************************
  Try and send a request to nmbd to send a packet_struct packet first.
  If this fails, use send_packet().
