@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "../libcli/security/security.h"
 #include "librpc/gen_ndr/ndr_epmapper.h"
 #include "librpc/gen_ndr/srv_epmapper.h"
 
@@ -202,6 +203,16 @@ static uint32_t build_ep_list(TALLOC_CTX *mem_ctx,
 	return total;
 }
 
+static bool is_priviledged_pipe(struct auth_serversupplied_info *info) {
+	/* If the user is not root, or has the system token, fail */
+	if ((info->utok.uid != sec_initial_uid()) &&
+	    !security_token_is_system(info->ptok)) {
+		return false;
+	}
+
+	return true;
+}
+
 /*
  * epm_Insert
  *
@@ -215,6 +226,11 @@ error_status_t _epm_Insert(struct pipes_struct *p,
 	NTSTATUS status;
 	uint32_t i;
 
+	/* If this is not a priviledged users, return */
+	if (!is_priviledged_pipe(p->server_info)) {
+		return EPMAPPER_STATUS_CANT_PERFORM_OP;
+	}
+
 	tmp_ctx = talloc_stackframe();
 	if (tmp_ctx == NULL) {
 		return EPMAPPER_STATUS_NO_MEMORY;
@@ -222,8 +238,6 @@ error_status_t _epm_Insert(struct pipes_struct *p,
 
 	DEBUG(3, ("_epm_Insert: Trying to add %u new entries.\n",
 		  r->in.num_ents));
-
-	/* TODO Check if we have a priviledged pipe/handle */
 
 	for (i = 0; i < r->in.num_ents; i++) {
 		struct dcerpc_binding *b = NULL;
@@ -328,12 +342,15 @@ error_status_t _epm_Delete(struct pipes_struct *p,
 	DEBUG(3, ("_epm_Delete: Trying to delete %u entries.\n",
 		  r->in.num_ents));
 
+	/* If this is not a priviledged users, return */
+	if (!is_priviledged_pipe(p->server_info)) {
+		return EPMAPPER_STATUS_CANT_PERFORM_OP;
+	}
+
 	tmp_ctx = talloc_stackframe();
 	if (tmp_ctx == NULL) {
 		return EPMAPPER_STATUS_NO_MEMORY;
 	}
-
-	/* TODO Check if we have a priviledged pipe/handle */
 
 	for (i = 0; i < r->in.num_ents; i++) {
 		struct dcerpc_binding *b = NULL;
