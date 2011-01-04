@@ -627,8 +627,10 @@ NTSTATUS net_scan_dc(struct net_context *c,
 {
 	TALLOC_CTX *mem_ctx = talloc_tos();
 	struct rpc_pipe_client *dssetup_pipe = NULL;
+	struct dcerpc_binding_handle *dssetup_handle = NULL;
 	union dssetup_DsRoleInfo info;
 	NTSTATUS status;
+	WERROR werr;
 
 	ZERO_STRUCTP(dc_info);
 
@@ -637,13 +639,17 @@ NTSTATUS net_scan_dc(struct net_context *c,
         if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
+	dssetup_handle = dssetup_pipe->binding_handle;
 
-	status = rpccli_dssetup_DsRoleGetPrimaryDomainInformation(dssetup_pipe, mem_ctx,
+	status = dcerpc_dssetup_DsRoleGetPrimaryDomainInformation(dssetup_handle, mem_ctx,
 								  DS_ROLE_BASIC_INFORMATION,
 								  &info,
-								  NULL);
+								  &werr);
 	TALLOC_FREE(dssetup_pipe);
 
+	if (NT_STATUS_IS_OK(status)) {
+		status = werror_to_ntstatus(werr);
+	}
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
