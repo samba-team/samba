@@ -35,25 +35,21 @@ bool winbindd_running(void)
 bool nmbd_running(void)
 {
 	struct in_addr loopback_ip;
-	int fd, count, flags;
+	int count, flags;
 	struct sockaddr_storage *ss_list;
 	struct sockaddr_storage ss;
+	NTSTATUS status;
 
 	loopback_ip.s_addr = htonl(INADDR_LOOPBACK);
 	in_addr_to_sockaddr_storage(&ss, loopback_ip);
 
-	if ((fd = open_socket_in(SOCK_DGRAM, 0, 3,
-				 &ss, True)) != -1) {
-		NTSTATUS status = name_query(fd, "__SAMBA__", 0,
-					     True, True, &ss,
-					     talloc_tos(), &ss_list, &count,
-					     &flags, NULL);
-		if (NT_STATUS_IS_OK(status)) {
-			TALLOC_FREE(ss_list);
-			close(fd);
-			return True;
-		}
-		close (fd);
+	status = name_query("__SAMBA__", 0,
+			    True, True, &ss,
+			    talloc_tos(), &ss_list, &count,
+			    &flags);
+	if (NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(ss_list);
+		return True;
 	}
 
 	return False;

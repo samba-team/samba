@@ -103,10 +103,9 @@ static void nss_wins_init(void)
 
 static struct in_addr *lookup_byname_backend(const char *name, int *count)
 {
-	int fd = -1;
 	struct ip_service *address = NULL;
 	struct in_addr *ret = NULL;
-	int j, flags = 0;
+	int j;
 
 	if (!initialised) {
 		nss_wins_init();
@@ -131,11 +130,6 @@ static struct in_addr *lookup_byname_backend(const char *name, int *count)
 		return ret;
 	}
 
-	fd = wins_lookup_open_socket_in();
-	if (fd == -1) {
-		return NULL;
-	}
-
 	/* uggh, we have to broadcast to each interface in turn */
 	for (j=iface_count() - 1;j >= 0;j--) {
 		const struct in_addr *bcast = iface_n_bcast_v4(j);
@@ -147,8 +141,8 @@ static struct in_addr *lookup_byname_backend(const char *name, int *count)
 			continue;
 		}
 		in_addr_to_sockaddr_storage(&ss, *bcast);
-		status = name_query(fd, name, 0x00, True, True, &ss,
-				    NULL, &pss, count, &flags, NULL);
+		status = name_query(name, 0x00, True, True, &ss,
+				    NULL, &pss, count, NULL);
 		if (pss) {
 			if ((ret = SMB_MALLOC_P(struct in_addr)) == NULL) {
 				return NULL;
@@ -159,7 +153,6 @@ static struct in_addr *lookup_byname_backend(const char *name, int *count)
 		}
 	}
 
-	close(fd);
 	return ret;
 }
 

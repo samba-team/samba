@@ -153,7 +153,8 @@ static void do_node_status(const char *name,
 
 static bool query_one(const char *lookup, unsigned int lookup_type)
 {
-	int j, count, flags = 0;
+	int j, count;
+	uint8_t flags;
 	struct sockaddr_storage *ip_list=NULL;
 	NTSTATUS status = NT_STATUS_NOT_FOUND;
 
@@ -161,10 +162,10 @@ static bool query_one(const char *lookup, unsigned int lookup_type)
 		char addr[INET6_ADDRSTRLEN];
 		print_sockaddr(addr, sizeof(addr), &bcast_addr);
 		d_printf("querying %s on %s\n", lookup, addr);
-		status = name_query(ServerFD,lookup,lookup_type,use_bcast,
+		status = name_query(lookup,lookup_type,use_bcast,
 				    use_bcast?true:recursion_desired,
 				    &bcast_addr, talloc_tos(),
-				    &ip_list, &count, &flags, NULL);
+				    &ip_list, &count, &flags);
 	} else {
 		const struct in_addr *bcast;
 		for (j=iface_count() - 1;
@@ -181,11 +182,11 @@ static bool query_one(const char *lookup, unsigned int lookup_type)
 			print_sockaddr(addr, sizeof(addr), &bcast_ss);
 			d_printf("querying %s on %s\n",
 			       lookup, addr);
-			status = name_query(ServerFD,lookup,lookup_type,
+			status = name_query(lookup,lookup_type,
 					    use_bcast,
 					    use_bcast?True:recursion_desired,
 					    &bcast_ss, talloc_tos(),
-					    &ip_list, &count, &flags, NULL);
+					    &ip_list, &count, &flags);
 		}
 	}
 

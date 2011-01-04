@@ -2718,17 +2718,20 @@ bool name_status_find(const char *q_name,
 			const struct sockaddr_storage *to_ss,
 			fstring name);
 int ip_service_compare(struct ip_service *ss1, struct ip_service *ss2);
-NTSTATUS name_query(int fd,
-			const char *name,
-			int name_type,
-			bool bcast,
-			bool recurse,
-			const struct sockaddr_storage *to_ss,
-			TALLOC_CTX *mem_ctx,
-			struct sockaddr_storage **addrs,
-			int *count,
-			int *flags,
-			bool *timed_out);
+struct tevent_req *name_query_send(TALLOC_CTX *mem_ctx,
+				   struct tevent_context *ev,
+				   const char *name, int name_type,
+				   bool bcast, bool recurse,
+				   const struct sockaddr_storage *addr);
+NTSTATUS name_query_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
+			 struct sockaddr_storage **addrs, int *num_addrs,
+			 uint8_t *flags);
+NTSTATUS name_query(const char *name, int name_type,
+		    bool bcast, bool recurse,
+		    const struct sockaddr_storage *to_ss,
+		    TALLOC_CTX *mem_ctx,
+		    struct sockaddr_storage **addrs,
+		    int *num_addrs, uint8_t *flags);
 NTSTATUS name_resolve_bcast(const char *name,
 			int name_type,
 			struct ip_service **return_iplist,
