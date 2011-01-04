@@ -73,23 +73,17 @@ static int wins_lookup_open_socket_in(void)
 static struct node_status *lookup_byaddr_backend(TALLOC_CTX *mem_ctx,
 						 const char *addr, int *count)
 {
-	int fd;
 	struct sockaddr_storage ss;
 	struct nmb_name nname;
 	struct node_status *result;
 	NTSTATUS status;
 
-	fd = wins_lookup_open_socket_in();
-	if (fd == -1)
-		return NULL;
-
 	make_nmb_name(&nname, "*", 0);
 	if (!interpret_string_addr(&ss, addr, AI_NUMERICHOST)) {
 		return NULL;
 	}
-	status = node_status_query(fd, &nname, &ss, mem_ctx,
+	status = node_status_query(mem_ctx, &nname, &ss,
 				   &result, count, NULL);
-	close(fd);
 	if (!NT_STATUS_IS_OK(status)) {
 		return NULL;
 	}

@@ -2699,12 +2699,18 @@ bool saf_store( const char *domain, const char *servername );
 bool saf_join_store( const char *domain, const char *servername );
 bool saf_delete( const char *domain );
 char *saf_fetch( const char *domain );
-NTSTATUS node_status_query(int fd,
-			   struct nmb_name *name,
-			   const struct sockaddr_storage *to_ss,
-			   TALLOC_CTX *mem_ctx,
-			   struct node_status **names,
-			   int *num_names,
+struct tevent_req *node_status_query_send(TALLOC_CTX *mem_ctx,
+					  struct tevent_context *ev,
+					  struct nmb_name *name,
+					  const struct sockaddr_storage *addr);
+NTSTATUS node_status_query_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
+				struct node_status **pnode_status,
+				int *pnum_names,
+				struct node_status_extra *extra);
+NTSTATUS node_status_query(TALLOC_CTX *mem_ctx, struct nmb_name *name,
+			   const struct sockaddr_storage *addr,
+			   struct node_status **pnode_status,
+			   int *pnum_names,
 			   struct node_status_extra *extra);
 bool name_status_find(const char *q_name,
 			int q_type,
