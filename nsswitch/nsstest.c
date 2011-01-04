@@ -18,15 +18,8 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "includes.h"
+#include "replace.h"
 #include "nsswitch/nsstest.h"
-
-#ifdef malloc
-#undef malloc
-#endif
-#ifdef realloc
-#undef realloc
-#endif
 
 static const char *so_path = "/lib/libnss_winbind.so";
 static const char *nss_name = "winbind";
@@ -55,10 +48,10 @@ static void *find_fn(const char *name)
 	if (!res) {
 		printf("Can't find function %s\n", s);
 		total_errors++;
-		SAFE_FREE(s);
+		free(s);
 		return NULL;
 	}
-	SAFE_FREE(s);
+	free(s);
 	return res;
 }
 
@@ -201,12 +194,12 @@ again:
 		goto again;
 	}
 	if (status == NSS_STATUS_NOTFOUND) {
-		SAFE_FREE(buf);
+		free(buf);
 		return NULL;
 	}
 	if (status != NSS_STATUS_SUCCESS) {
 		report_nss_error("getgrent", status);
-		SAFE_FREE(buf);
+		free(buf);
 		return NULL;
 	}
 	return &grp;
@@ -239,12 +232,12 @@ again:
 		goto again;
 	}
 	if (status == NSS_STATUS_NOTFOUND) {
-		SAFE_FREE(buf);
+		free(buf);
 		return NULL;
 	}
 	if (status != NSS_STATUS_SUCCESS) {
 		report_nss_error("getgrnam", status);
-		SAFE_FREE(buf);
+		free(buf);
 		return NULL;
 	}
 	return &grp;
@@ -278,12 +271,12 @@ again:
 		goto again;
 	}
 	if (status == NSS_STATUS_NOTFOUND) {
-		SAFE_FREE(buf);
+		free(buf);
 		return NULL;
 	}
 	if (status != NSS_STATUS_SUCCESS) {
 		report_nss_error("getgrgid", status);
-		SAFE_FREE(buf);
+		free(buf);
 		return NULL;
 	}
 	return &grp;
