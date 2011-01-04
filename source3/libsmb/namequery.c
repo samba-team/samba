@@ -23,6 +23,7 @@
 #include "libads/dns.h"
 #include "../libcli/netlogon.h"
 #include "librpc/gen_ndr/messaging.h"
+#include "lib/async_req/async_sock.h"
 
 /* nmbd.c sets this to True. */
 bool global_in_nmbd = False;
@@ -245,6 +246,220 @@ static struct node_status *parse_node_status(TALLOC_CTX *mem_ctx, char *p,
 		memcpy(&extra->mac_addr, p, 6); /* Fill in the mac addr */
 	}
 	return ret;
+}
+
+struct sock_packet_read_state {
+	struct tevent_context *ev;
+	enum packet_type type;
+	int trn_id;
+
+	struct nb_packet_reader *reader;
+	struct tevent_req *reader_req;
+
+	int sock;
+	struct tevent_req *socket_req;
+	uint8_t buf[1024];
+	struct sockaddr_storage addr;
+	socklen_t addr_len;
+
+	bool (*validator)(struct packet_struct *p,
+			  void *private_data);
+	void *private_data;
+
+	struct packet_struct *packet;
+};
+
+static int sock_packet_read_state_destructor(struct sock_packet_read_state *s);
+static void sock_packet_read_got_packet(struct tevent_req *subreq);
+static void sock_packet_read_got_socket(struct tevent_req *subreq);
+
+static struct tevent_req *sock_packet_read_send(
+	TALLOC_CTX *mem_ctx,
+	struct tevent_context *ev,
+	int sock, /* dgram socket */
+	struct nb_packet_reader *reader,
+	enum packet_type type,
+	int trn_id,
+	bool (*validator)(struct packet_struct *p, void *private_data),
+	void *private_data)
+{
+	struct tevent_req *req;
+	struct sock_packet_read_state *state;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct sock_packet_read_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	talloc_set_destructor(state, sock_packet_read_state_destructor);
+	state->ev = ev;
+	state->reader = reader;
+	state->sock = sock;
+	state->type = type;
+	state->trn_id = trn_id;
+	state->validator = validator;
+	state->private_data = private_data;
+
+	if (reader != NULL) {
+		state->reader_req = nb_packet_read_send(state, ev, reader);
+		if (tevent_req_nomem(state->reader_req, req)) {
+			return tevent_req_post(req, ev);
+		}
+		tevent_req_set_callback(
+			state->reader_req, sock_packet_read_got_packet, req);
+	}
+
+	state->addr_len = sizeof(state->addr);
+	state->socket_req = recvfrom_send(state, ev, sock,
+					  state->buf, sizeof(state->buf), 0,
+					  &state->addr, &state->addr_len);
+	if (tevent_req_nomem(state->socket_req, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(state->socket_req, sock_packet_read_got_socket,
+				req);
+
+	return req;
+}
+
+static int sock_packet_read_state_destructor(struct sock_packet_read_state *s)
+{
+	if (s->packet != NULL) {
+		free_packet(s->packet);
+		s->packet = NULL;
+	}
+	return 0;
+}
+
+static void sock_packet_read_got_packet(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct sock_packet_read_state *state = tevent_req_data(
+		req, struct sock_packet_read_state);
+	NTSTATUS status;
+
+	status = nb_packet_read_recv(subreq, &state->packet);
+
+	TALLOC_FREE(state->reader_req);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		if (state->socket_req != NULL) {
+			/*
+			 * Still waiting for socket
+			 */
+			return;
+		}
+		/*
+		 * Both socket and packet reader failed
+		 */
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	if ((state->validator != NULL) &&
+	    !state->validator(state->packet, state->private_data)) {
+		DEBUG(10, ("validator failed\n"));
+
+		free_packet(state->packet);
+		state->packet = NULL;
+
+		state->reader_req = nb_packet_read_send(state, state->ev,
+							state->reader);
+		if (tevent_req_nomem(state->reader_req, req)) {
+			return;
+		}
+		tevent_req_set_callback(
+			state->reader_req, sock_packet_read_got_packet, req);
+		return;
+	}
+
+	TALLOC_FREE(state->socket_req);
+	tevent_req_done(req);
+}
+
+static void sock_packet_read_got_socket(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct sock_packet_read_state *state = tevent_req_data(
+		req, struct sock_packet_read_state);
+	struct sockaddr_in *in_addr;
+	ssize_t received;
+	int err;
+
+	received = recvfrom_recv(subreq, &err);
+
+	TALLOC_FREE(state->socket_req);
+
+	if (received == -1) {
+		if (state->reader_req != NULL) {
+			/*
+			 * Still waiting for reader
+			 */
+			return;
+		}
+		/*
+		 * Both socket and reader failed
+		 */
+		tevent_req_nterror(req, map_nt_error_from_unix(err));
+		return;
+	}
+	if (state->addr.ss_family != AF_INET) {
+		goto retry;
+	}
+	in_addr = (struct sockaddr_in *)(void *)&state->addr;
+
+	state->packet = parse_packet((char *)state->buf, received, state->type,
+				     in_addr->sin_addr, in_addr->sin_port);
+	if (state->packet == NULL) {
+		DEBUG(10, ("parse_packet failed\n"));
+		goto retry;
+	}
+	if ((state->trn_id != -1) &&
+	    (state->trn_id != packet_trn_id(state->packet))) {
+		DEBUG(10, ("Expected transaction id %d, got %d\n",
+			   state->trn_id, packet_trn_id(state->packet)));
+		goto retry;
+	}
+
+	if ((state->validator != NULL) &&
+	    !state->validator(state->packet, state->private_data)) {
+		DEBUG(10, ("validator failed\n"));
+		goto retry;
+	}
+
+	tevent_req_done(req);
+	return;
+
+retry:
+	if (state->packet != NULL) {
+		free_packet(state->packet);
+		state->packet = NULL;
+	}
+	state->socket_req = recvfrom_send(state, state->ev, state->sock,
+					  state->buf, sizeof(state->buf), 0,
+					  &state->addr, &state->addr_len);
+	if (tevent_req_nomem(state->socket_req, req)) {
+		return;
+	}
+	tevent_req_set_callback(state->socket_req, sock_packet_read_got_socket,
+				req);
+}
+
+static NTSTATUS sock_packet_read_recv(struct tevent_req *req,
+				      struct packet_struct **ppacket)
+{
+	struct sock_packet_read_state *state = tevent_req_data(
+		req, struct sock_packet_read_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		return status;
+	}
+	*ppacket = state->packet;
+	state->packet = NULL;
+	return NT_STATUS_OK;
 }
 
 /****************************************************************************
