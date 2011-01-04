@@ -1017,6 +1017,11 @@ static bool open_sockets(bool isdaemon, int port)
 		exit(1);
 	}
 
+	if (!nmbd_init_packet_server()) {
+		kill_async_dns_child();
+                exit(1);
+        }
+
 	TALLOC_FREE(frame);
 	process();
 

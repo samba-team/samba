@@ -173,6 +173,8 @@ bool node_status(struct subnet_record *subrec, struct nmb_name *nmbname,
 
 /* The following definitions come from nmbd/nmbd_packets.c  */
 
+bool nmbd_init_packet_server(void);
+
 uint16 get_nb_flags(char *buf);
 void set_nb_flags(char *buf, uint16 nb_flags);
 struct response_record *queue_register_name( struct subnet_record *subrec,

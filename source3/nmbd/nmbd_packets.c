@@ -31,6 +31,22 @@ extern int num_response_packets;
 
 bool rescan_listen_set = False;
 
+static struct nb_packet_server *packet_server;
+
+bool nmbd_init_packet_server(void)
+{
+	NTSTATUS status;
+
+	status = nb_packet_server_create(NULL, nmbd_event_context(), 0,
+					 &packet_server);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("ERROR: nb_packet_server_create failed: %s\n",
+			  nt_errstr(status)));
+		return false;
+	}
+	return true;
+}
+
 
 /*******************************************************************
   The global packet linked-list. Incoming entries are 
@@ -1204,6 +1220,7 @@ static void process_dgram(struct packet_struct *p)
 
 	/* If we aren't listening to the destination name then ignore the packet */
 	if (!listening(p,&dgram->dest_name)) {
+			nb_packet_dispatch(packet_server, p);
 			unexpected_packet(p);
 			DEBUG(5,("process_dgram: ignoring dgram packet sent to name %s from %s\n",
 				nmb_namestr(&dgram->dest_name), inet_ntoa(p->ip)));
@@ -1211,6 +1228,7 @@ static void process_dgram(struct packet_struct *p)
 	}
 
 	if (dgram->header.msg_type != 0x10 && dgram->header.msg_type != 0x11 && dgram->header.msg_type != 0x12) {
+		nb_packet_dispatch(packet_server, p);
 		unexpected_packet(p);
 		/* Don't process error packets etc yet */
 		DEBUG(5,("process_dgram: ignoring dgram packet sent to name %s from IP %s as it is \
@@ -1297,6 +1315,7 @@ packet sent to name %s from IP %s\n",
 		return;
 	}
 
+	nb_packet_dispatch(packet_server, p);
 	unexpected_packet(p);
 }
 
@@ -1417,6 +1436,7 @@ static struct subnet_record *find_subnet_for_nmb_packet( struct packet_struct *p
 		if(rrec == NULL) {
 			DEBUG(3,("find_subnet_for_nmb_packet: response record not found for response id %hu\n",
 				nmb->header.name_trn_id));
+			nb_packet_dispatch(packet_server, p);
 			unexpected_packet(p);
 			return NULL;
 		}
