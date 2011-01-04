@@ -1328,7 +1328,6 @@ WINBINDD_OBJ1 = \
 		winbindd/winbindd_dual.o  \
 		winbindd/winbindd_dual_ndr.o  \
 		winbindd/winbindd_dual_srv.o  \
-		librpc/gen_ndr/cli_wbint.o \
 		librpc/gen_ndr/ndr_wbint_c.o \
 		librpc/gen_ndr/srv_wbint.o \
 		librpc/gen_ndr/ndr_wbint.o \
