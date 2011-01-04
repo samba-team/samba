@@ -726,6 +726,22 @@ void free_packet(struct packet_struct *packet)
 	SAFE_FREE(packet);
 }
 
+int packet_trn_id(struct packet_struct *p)
+{
+	int result;
+	switch (p->packet_type) {
+	case NMB_PACKET:
+		result = p->packet.nmb.header.name_trn_id;
+		break;
+	case DGRAM_PACKET:
+		result = p->packet.dgram.header.dgm_id;
+		break;
+	default:
+		result = -1;
+	}
+	return result;
+}
+
 /*******************************************************************
  Parse a packet buffer into a packet structure.
 ******************************************************************/
