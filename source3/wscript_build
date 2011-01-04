@@ -780,7 +780,7 @@ if bld.CONFIG_SET('HAVE_KRB5_LOCATE_PLUGIN_H'):
 bld.SAMBA_SUBSYSTEM('LIBMSRPC',
                     source='${LIBMSRPC_SRC}',
                     deps='''ndr NDR_SECURITY NDR_DCERPC NDR_SCHANNEL
-                    RPCCLI_EPMAPPER COMMON_SCHANNELDB LIBCLI_AUTH''',
+                    RPC_NDR_EPMAPPER COMMON_SCHANNELDB LIBCLI_AUTH''',
                     vars=locals())
 
 bld.SAMBA_SUBSYSTEM('LIBMSRPC_GEN',
@@ -1139,10 +1139,6 @@ bld.SAMBA_SUBSYSTEM('RPCCLI_DRSUAPI',
 bld.SAMBA_SUBSYSTEM('RPCCLI_EVENTLOG',
 	source='../librpc/gen_ndr/cli_eventlog.c',
 	public_deps='RPC_NDR_EVENTLOG')
-
-bld.SAMBA_SUBSYSTEM('RPCCLI_EPMAPPER',
-	source='../librpc/gen_ndr/cli_epmapper.c',
-	public_deps='RPC_NDR_EPMAPPER')
 
 bld.SAMBA_SUBSYSTEM('RPCCLI_SPOOLSS',
 	source='../librpc/gen_ndr/cli_spoolss.c',
