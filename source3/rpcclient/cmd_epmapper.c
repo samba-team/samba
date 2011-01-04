@@ -30,14 +30,14 @@ static NTSTATUS cmd_epmapper_map(struct rpc_pipe_client *p,
 	struct dcerpc_binding_handle *b = p->binding_handle;
 	struct dcerpc_binding map_binding;
 	struct epm_twr_t map_tower;
-	struct epm_twr_t res_tower;
-	struct epm_twr_p_t towers;
+	struct epm_twr_p_t towers[500];
 	struct policy_handle entry_handle;
 	struct ndr_syntax_id abstract_syntax;
 	uint32_t num_towers;
 	TALLOC_CTX *tmp_ctx = talloc_stackframe();
 	NTSTATUS status;
 	uint32_t result;
+	uint32_t i;
 
 	abstract_syntax = ndr_table_lsarpc.syntax_id;
 
@@ -54,13 +54,13 @@ static NTSTATUS cmd_epmapper_map(struct rpc_pipe_client *p,
 		return status;
 	}
 
-	towers.twr = &res_tower;
-
+	ZERO_STRUCT(towers);
 	ZERO_STRUCT(entry_handle);
+
 	status = dcerpc_epm_Map(
 		b, tmp_ctx, &abstract_syntax.uuid,
-		&map_tower, &entry_handle, 1,
-		&num_towers, &towers, &result);
+		&map_tower, &entry_handle, ARRAY_SIZE(towers),
+		&num_towers, towers, &result);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_fprintf(stderr, "dcerpc_epm_Map returned %s\n",
 			  nt_errstr(status));
@@ -71,6 +71,25 @@ static NTSTATUS cmd_epmapper_map(struct rpc_pipe_client *p,
 		d_fprintf(stderr, "epm_Map returned %u (0x%08X)\n",
 			  result, result);
 		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	d_printf("num_tower[%u]\n", num_towers);
+
+	for (i=0; i < num_towers; i++) {
+		struct dcerpc_binding *binding;
+
+		if (towers[i].twr == NULL) {
+			d_fprintf(stderr, "tower[%u] NULL\n", i);
+			break;
+		}
+
+		status = dcerpc_binding_from_tower(tmp_ctx, &towers[i].twr->tower,
+						   &binding);
+		if (!NT_STATUS_IS_OK(status)) {
+			break;
+		}
+
+		d_printf("tower[%u] %s\n", i, dcerpc_binding_string(tmp_ctx, binding));
 	}
 
 	return NT_STATUS_OK;
