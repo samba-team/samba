@@ -1202,7 +1202,7 @@ bld.SAMBA_BINARY('winbindd/winbindd',
                  deps='''talloc tdb tevent cap dl z
                  wbclient PASSDB ldap resolv PARAM LIB_NONSMBD LIBSMB
                  POPT_SAMBA KRBCLIENT LIBMSRPC_GEN LIBMSRPC LIBADS LIBADS_SERVER
-                 SRV_NDR_WBINT RPCCLI_NDR_WBINT LIBAFS
+                 SRV_NDR_WBINT RPC_NDR_WBINT LIBAFS
                  LIBAFS_SETTOKEN PROFILE SLCACHE DCUTIL idmap nss_info
                  TOKEN_UTIL
                  LIBCLI_SAMR LIBCLI_LSA LIBCLI_NETLOGON
