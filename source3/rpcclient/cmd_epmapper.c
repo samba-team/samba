@@ -27,6 +27,7 @@ static NTSTATUS cmd_epmapper_map(struct rpc_pipe_client *p,
 				 TALLOC_CTX *mem_ctx,
 				 int argc, const char **argv)
 {
+	struct dcerpc_binding_handle *b = p->binding_handle;
 	struct dcerpc_binding map_binding;
 	struct epm_twr_t map_tower;
 	struct epm_twr_t res_tower;
@@ -36,6 +37,7 @@ static NTSTATUS cmd_epmapper_map(struct rpc_pipe_client *p,
 	uint32_t num_towers;
 	TALLOC_CTX *tmp_ctx = talloc_stackframe();
 	NTSTATUS status;
+	uint32_t result;
 
 	abstract_syntax = ndr_table_lsarpc.syntax_id;
 
@@ -55,18 +57,30 @@ static NTSTATUS cmd_epmapper_map(struct rpc_pipe_client *p,
 	towers.twr = &res_tower;
 
 	ZERO_STRUCT(entry_handle);
-	status = rpccli_epm_Map(
-		p, tmp_ctx, &abstract_syntax.uuid,
+	status = dcerpc_epm_Map(
+		b, tmp_ctx, &abstract_syntax.uuid,
 		&map_tower, &entry_handle, 1,
-		&num_towers, &towers);
+		&num_towers, &towers, &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_fprintf(stderr, "dcerpc_epm_Map returned %s\n",
+			  nt_errstr(status));
+		return status;
+	}
 
-	return status;
+	if (result != EPMAPPER_STATUS_OK) {
+		d_fprintf(stderr, "epm_Map returned %u (0x%08X)\n",
+			  result, result);
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	return NT_STATUS_OK;
 }
 
 static NTSTATUS cmd_epmapper_lookup(struct rpc_pipe_client *p,
 				    TALLOC_CTX *mem_ctx,
 				    int argc, const char **argv)
 {
+	struct dcerpc_binding_handle *b = p->binding_handle;
 	struct policy_handle entry_handle;
 
 	ZERO_STRUCT(entry_handle);
@@ -78,23 +92,36 @@ static NTSTATUS cmd_epmapper_lookup(struct rpc_pipe_client *p,
 		NTSTATUS status;
 		char *guid_string;
 		struct dcerpc_binding *binding;
+		uint32_t result;
 
-		status = rpccli_epm_Lookup(p, tmp_ctx,
+		status = dcerpc_epm_Lookup(b, tmp_ctx,
 				   0, /* rpc_c_ep_all */
 				   NULL,
 				   NULL,
 				   0, /* rpc_c_vers_all */
 				   &entry_handle,
 				   1, /* max_ents */
-				   &num_entries, &entry);
+				   &num_entries, &entry,
+				   &result);
 		if (!NT_STATUS_IS_OK(status)) {
-			d_fprintf(stderr, "rpccli_epm_Lookup returned %s\n",
+			d_fprintf(stderr, "dcerpc_epm_Lookup returned %s\n",
 				  nt_errstr(status));
 			break;
 		}
 
+		if (result == EPMAPPER_STATUS_NO_MORE_ENTRIES) {
+			d_fprintf(stderr, "epm_Lookup no more entries\n");
+			break;
+		}
+
+		if (result != EPMAPPER_STATUS_OK) {
+			d_fprintf(stderr, "epm_Lookup returned %u (0x%08X)\n",
+				  result, result);
+			break;
+		}
+
 		if (num_entries != 1) {
-			d_fprintf(stderr, "rpccli_epm_Lookup returned %d "
+			d_fprintf(stderr, "epm_Lookup returned %d "
 				  "entries, expected one\n", (int)num_entries);
 			break;
 		}
