@@ -476,8 +476,7 @@ NMBD_SRC = '${NMBD_SRC1}'
 SWAT_SRC1 = '''web/cgi.c web/diagnose.c web/startstop.c web/statuspage.c
                web/swat.c web/neg_lang.c'''
 
-SWAT_SRC = '''${SWAT_SRC1}
-           ${PASSCHANGE_SRC}'''
+SWAT_SRC = '''${SWAT_SRC1}'''
 
 STATUS_SRC = '''utils/status.c utils/status_profile.c'''
 
@@ -493,7 +492,7 @@ TEST_LP_LOAD_SRC = '''param/test_lp_load.c'''
 
 PASSWD_UTIL_SRC = 'utils/passwd_util.c'
 
-SMBPASSWD_SRC = '''utils/smbpasswd.c ${PASSCHANGE_SRC}'''
+SMBPASSWD_SRC = '''utils/smbpasswd.c'''
 
 PDBEDIT_SRC = '''utils/pdbedit.c'''
 
@@ -1023,6 +1022,11 @@ bld.SAMBA_SUBSYSTEM('PLAINTEXT_AUTH',
                     deps='pam',
                     vars=locals())
 
+bld.SAMBA_SUBSYSTEM('PASSCHANGE',
+                    source=PASSCHANGE_SRC,
+                    deps='LIBCLI_SAMR',
+                    vars=locals())
+
 bld.SAMBA_SUBSYSTEM('SLCACHE',
                     source=SLCACHE_SRC,
                     vars=locals())
@@ -1223,7 +1227,7 @@ bld.SAMBA_BINARY('web/swat',
                  deps='''talloc tevent cap LIBS LIBSMB wbclient PARAM
                  LIB_NONSMBD resolv PASSDB POPT_SAMBA KRBCLIENT cups
                  LIBMSRPC_GEN LIBMSRPC LOCKING PLAINTEXT_AUTH PRINTBASE PRINTING FNAME_UTIL
-                 LIBCLI_SAMR INIT_LSA''',
+                 LIBCLI_SAMR INIT_LSA PASSCHANGE''',
                  enabled=bld.env.build_swat,
                  install_path='${SBINDIR}',
                  vars=locals())
@@ -1308,7 +1312,7 @@ bld.SAMBA_BINARY('smbpasswd',
                  source=SMBPASSWD_SRC,
                  deps='''talloc tdb tevent cap resolv wbclient PARAM LIB_NONSMBD
                  LIBSMB LIBSMB_ERR POPT_SAMBA KRBCLIENT PASSDB SMBLDAP GROUPDB LIBMSRPC_GEN LIBMSRPC PASSWD_UTIL
-                 LIBCLI_SAMR INIT_LSA''',
+                 LIBCLI_SAMR INIT_LSA PASSCHANGE''',
                  vars=locals())
 
 bld.SAMBA_BINARY('pdbedit',
