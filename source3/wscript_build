@@ -87,7 +87,7 @@ LIB_SRC = '''${LIBSAMBAUTIL_SRC}
           lib/serverid.c
           lib/util_transfer_file.c
           ${TDB_LIB_SRC}
-          ${VERSION_SRC} lib/debug.c lib/fault.c
+          lib/debug.c lib/fault.c
           lib/interface.c lib/pidfile.c
           lib/system.c lib/sendfile.c lib/recvfile.c lib/time.c
           lib/username.c
@@ -863,7 +863,7 @@ bld.SAMBA_SUBSYSTEM('KRBCLIENT',
 
 bld.SAMBA_SUBSYSTEM('LIBS',
                     source=LIB_SRC,
-                    deps='LIBCRYPTO ndr security NDR_SECURITY charset NDR_MESSAGING LIBASYNC_REQ tdb-wrap samba-util CHARSET UTIL_TDB',
+                    deps='LIBCRYPTO ndr security NDR_SECURITY charset NDR_MESSAGING LIBASYNC_REQ tdb-wrap samba-util CHARSET UTIL_TDB SAMBA_VERSION',
                     vars=locals())
 
 bld.SAMBA_SUBSYSTEM('LIB_NONSMBD',
@@ -1025,6 +1025,10 @@ bld.SAMBA_SUBSYSTEM('PLAINTEXT_AUTH',
 bld.SAMBA_SUBSYSTEM('PASSCHANGE',
                     source=PASSCHANGE_SRC,
                     deps='LIBCLI_SAMR',
+                    vars=locals())
+
+bld.SAMBA_SUBSYSTEM('SAMBA_VERSION',
+                    source=VERSION_SRC,
                     vars=locals())
 
 bld.SAMBA_SUBSYSTEM('SLCACHE',
@@ -1429,7 +1433,8 @@ bld.SAMBA_BINARY('smbfilter',
                  vars=locals())
 
 bld.SAMBA_BINARY('versiontest',
-                 source='lib/version_test.c ${VERSION_SRC}',
+                 source='lib/version_test.c',
+                 deps='SAMBA_VERSION',
                  vars=locals())
 
 bld.SAMBA_BINARY('wbinfo',
