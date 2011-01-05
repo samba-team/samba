@@ -47,7 +47,7 @@ class LDAPBase(object):
 
     def __init__(self, host, creds, lp,
                  two=False, quiet=False, descriptor=False, verbose=False,
-                 view="section"):
+                 view="section", base="", scope="SUB"):
         ldb_options = []
         samdb_url = host
         if not "://" in host:
@@ -62,6 +62,8 @@ class LDAPBase(object):
                        credentials=creds,
                        lp=lp,
                        options=ldb_options)
+        self.search_base = base
+        self.search_scope = scope
         self.two_domains = two
         self.quiet = quiet
         self.descriptor = descriptor
@@ -591,6 +593,8 @@ class LDAPBundel(object):
         self.two_domains = self.con.two_domains
         self.quiet = self.con.quiet
         self.verbose = self.con.verbose
+        self.search_base = self.con.search_base
+        self.search_scope = self.con.search_scope
         self.summary = {}
         self.summary["unique_attrs"] = []
         self.summary["df_value_attrs"] = []
@@ -635,32 +639,36 @@ class LDAPBundel(object):
             self.log( "\n* DN lists have different size: %s != %s" % (self.size, other.size) )
             res = False
         #
-        title= "\n* DNs found only in %s:" % self.con.host
-        for x in self.dn_list:
-            if not x.upper() in [q.upper() for q in other.dn_list]:
-                if title:
-                    self.log( title )
-                    title = None
-                    res = False
-                self.log( 4*" " + x )
-                self.dn_list[self.dn_list.index(x)] = ""
-        self.dn_list = [x for x in self.dn_list if x]
-        #
-        title= "\n* DNs found only in %s:" % other.con.host
-        for x in other.dn_list:
-            if not x.upper() in [q.upper() for q in self.dn_list]:
-                if title:
-                    self.log( title )
-                    title = None
-                    res = False
-                self.log( 4*" " + x )
-                other.dn_list[other.dn_list.index(x)] = ""
-        other.dn_list = [x for x in other.dn_list if x]
-        #
-        self.update_size()
-        other.update_size()
-        assert self.size == other.size
-        assert sorted([x.upper() for x in self.dn_list]) == sorted([x.upper() for x in other.dn_list])
+        # This is the case where we want to explicitly compare two objects with different DNs.
+        # It does not matter if they are in the same DC, in two DC in one domain or in two
+        # different domains.
+        if self.search_scope != SCOPE_BASE:
+            title= "\n* DNs found only in %s:" % self.con.host
+            for x in self.dn_list:
+                if not x.upper() in [q.upper() for q in other.dn_list]:
+                    if title:
+                        self.log( title )
+                        title = None
+                        res = False
+                    self.log( 4*" " + x )
+                    self.dn_list[self.dn_list.index(x)] = ""
+            self.dn_list = [x for x in self.dn_list if x]
+            #
+            title= "\n* DNs found only in %s:" % other.con.host
+            for x in other.dn_list:
+                if not x.upper() in [q.upper() for q in self.dn_list]:
+                    if title:
+                        self.log( title )
+                        title = None
+                        res = False
+                    self.log( 4*" " + x )
+                    other.dn_list[other.dn_list.index(x)] = ""
+            other.dn_list = [x for x in other.dn_list if x]
+            #
+            self.update_size()
+            other.update_size()
+            assert self.size == other.size
+            assert sorted([x.upper() for x in self.dn_list]) == sorted([x.upper() for x in other.dn_list])
         self.log( "\n* Objects to be compared: %s" % self.size )
 
         index = 0
@@ -718,10 +726,22 @@ class LDAPBundel(object):
             search_base = "CN=Schema,CN=Configuration,%s" % self.con.base_dn
 
         dn_list = []
-        res = self.con.ldb.search(base=search_base, scope=SCOPE_SUBTREE, attrs=["dn"])
+        if not self.search_base:
+            self.search_base = search_base
+        self.search_scope = self.search_scope.upper()
+        if self.search_scope == "SUB":
+            self.search_scope = SCOPE_SUBTREE
+        elif self.search_scope == "BASE":
+            self.search_scope = SCOPE_BASE
+        elif self.search_scope == "ONE":
+            self.search_scope = SCOPE_ONELEVEL
+        else:
+            raise StandardError("Wrong 'scope' given. Choose from: SUB, ONE, BASE")
+        if not self.search_base.upper().endswith(search_base.upper()):
+            raise StandardError("Invalid search base specified: %s" % self.search_base)
+        res = self.con.ldb.search(base=self.search_base, scope=self.search_scope, attrs=["dn"])
         for x in res:
            dn_list.append(x["dn"].get_linearized())
-
         #
         global summary
         #
@@ -754,24 +774,31 @@ class cmd_ldapcmp(Command):
 
     takes_options = [
         Option("-w", "--two", dest="two", action="store_true", default=False,
-               help="Hosts are in two different domains"),
+            help="Hosts are in two different domains"),
         Option("-q", "--quiet", dest="quiet", action="store_true", default=False,
-               help="Do not print anything but relay on just exit code"),
+            help="Do not print anything but relay on just exit code"),
         Option("-v", "--verbose", dest="verbose", action="store_true", default=False,
-               help="Print all DN pairs that have been compared"),
+            help="Print all DN pairs that have been compared"),
         Option("--sd", dest="descriptor", action="store_true", default=False,
-                help="Compare nTSecurityDescriptor attibutes only"),
+            help="Compare nTSecurityDescriptor attibutes only"),
         Option("--view", dest="view", default="section",
-               help="Display mode for nTSecurityDescriptor results. Possible values: section or collision.")
+            help="Display mode for nTSecurityDescriptor results. Possible values: section or collision."),
+        Option("--base", dest="base", default="",
+            help="Pass search base that will build DN list for the first DC."),
+        Option("--base2", dest="base2", default="",
+            help="Pass search base that will build DN list for the second DC. Used when --two or when compare two different DNs."),
+        Option("--scope", dest="scope", default="SUB",
+            help="Pass search scope that builds DN list. Options: SUB, ONE, BASE"),
         ]
 
     def run(self, URL1, URL2,
             context1=None, context2=None, context3=None,
             two=False, quiet=False, verbose=False, descriptor=False, view="section",
+            base="", base2="", scope="SUB",
             credopts=None, sambaopts=None, versionopts=None):
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp, fallback_machine=True)
-        creds2 = credopts.get_credentials2(lp, False)
+        creds2 = credopts.get_credentials2(lp, guess=False)
         if creds2.is_anonymous():
             creds2 = creds
         else:
@@ -783,8 +810,13 @@ class cmd_ldapcmp(Command):
         # make a list of contexts to compare in
         contexts = []
         if context1 is None:
-            # if no argument given, we compare all contexts
-            contexts = ["DOMAIN", "CONFIGURATION", "SCHEMA"]
+            if base and base2:
+                # If search bases are specified context is defaulted to
+                # DOMAIN so the given search bases can be verified.
+                contexts = ["DOMAIN"]
+            else:
+                # if no argument given, we compare all contexts
+                contexts = ["DOMAIN", "CONFIGURATION", "SCHEMA"]
         else:
             for c in [context1, context2, context3]:
                 if c is None:
@@ -795,15 +827,19 @@ class cmd_ldapcmp(Command):
 
         if verbose and quiet:
             raise CommandError("You cannot set --verbose and --quiet together")
+        if (not base and base2) or (base and not base2):
+            raise CommandError("You need to specify both --base and --base2 at the same time")
         if descriptor and view.upper() not in ["SECTION", "COLLISION"]:
-            raise CommandError("Unknown --view option value. Choose from: section or collision.")
+            raise CommandError("Invalid --view value. Choose from: section or collision")
+        if not scope.upper() in ["SUB", "ONE", "BASE"]:
+            raise CommandError("Invalid --scope value. Choose from: SUB, ONE, BASE")
 
         con1 = LDAPBase(URL1, creds, lp,
-                        two=two, quiet=quiet, descriptor=descriptor, verbose=verbose, view=view)
+                        two=two, quiet=quiet, descriptor=descriptor, verbose=verbose, view=view, base=base, scope=scope)
         assert len(con1.base_dn) > 0
 
         con2 = LDAPBase(URL2, creds2, lp,
-                        two=two, quiet=quiet, descriptor=descriptor, verbose=verbose, view=view)
+                        two=two, quiet=quiet, descriptor=descriptor, verbose=verbose, view=view, base=base2, scope=scope)
         assert len(con2.base_dn) > 0
 
         status = 0
