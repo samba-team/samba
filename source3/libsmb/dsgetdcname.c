@@ -950,26 +950,13 @@ static NTSTATUS process_dc_netbios(TALLOC_CTX *mem_ctx,
 			return NT_STATUS_UNSUCCESSFUL;
 		}
 
-		if (send_getdc_request(msg_ctx,
-				       &dclist[i].ss, domain_name,
-				       NULL, nt_version, dgm_id))
-		{
-			int k;
-			smb_msleep(300);
-			for (k=0; k<5; k++) {
-				if (receive_getdc_response(mem_ctx,
-							   &dclist[i].ss,
-							   domain_name,
-							   dgm_id,
-							   &nt_version,
-							   &dc_name,
-							   &r)) {
-					store_cache = true;
-					namecache_store(dc_name, NBT_NAME_SERVER, 1, &ip_list);
-					goto make_reply;
-				}
-				smb_msleep(1500);
-			}
+		status = nbt_getdc(msg_ctx, &dclist[i].ss, domain_name,
+				   NULL, nt_version,
+				   mem_ctx, &nt_version, &dc_name, &r);
+		if (NT_STATUS_IS_OK(status)) {
+			store_cache = true;
+			namecache_store(dc_name, NBT_NAME_SERVER, 1, &ip_list);
+			goto make_reply;
 		}
 
 		if (name_status_find(domain_name,
