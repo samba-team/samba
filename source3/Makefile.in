@@ -354,8 +354,7 @@ LIBCLI_NTSVCS_OBJ = librpc/gen_ndr/ndr_ntsvcs_c.o
 LIBCLI_DRSUAPI_OBJ = librpc/gen_ndr/cli_drsuapi.o \
 		     librpc/gen_ndr/ndr_drsuapi_c.o
 
-LIBCLI_DFS_OBJ = librpc/gen_ndr/cli_dfs.o \
-		 librpc/gen_ndr/ndr_dfs_c.o
+LIBCLI_DFS_OBJ = librpc/gen_ndr/ndr_dfs_c.o
 
 LIBCLI_ECHO_OBJ = librpc/gen_ndr/cli_echo.o \
 		  librpc/gen_ndr/ndr_echo_c.o
