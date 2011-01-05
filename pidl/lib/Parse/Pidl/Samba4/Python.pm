@@ -1032,7 +1032,7 @@ sub ConvertObjectFromPythonLevel($$$$$$$$)
 			$self->pidl("} else {");
 			$self->indent;
 			$self->pidl("PyErr_Format(PyExc_TypeError, \"Expected string or unicode object, got %s\", Py_TYPE($py_var)->tp_name);");
-			$self->pidl("$fail;");
+			$self->pidl("$fail");
 			$self->deindent;
 			$self->pidl("}");
 		} else {
