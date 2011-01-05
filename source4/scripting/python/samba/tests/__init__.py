@@ -36,6 +36,16 @@ from testtools.testcase import (
 
 
 class TestCase(TesttoolsTestCase):
+    """A Samba test case."""
+
+    def setUp(self):
+        super(TestCase, self).setUp()
+        test_debug_level = os.getenv("TEST_DEBUG_LEVEL")
+        if test_debug_level is not None:
+            test_debug_level = int(test_debug_level)
+            self._old_debug_level = samba.get_debug_level()
+            samba.set_debug_level(test_debug_level)
+            self.addCleanup(samba.set_debug_level, test_debug_level)
 
     def get_loadparm(self):
         return env_loadparm()
