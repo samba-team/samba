@@ -606,7 +606,7 @@ static NTSTATUS dcerpc_lsa_lookup_names_generic(struct dcerpc_binding_handle *h,
 						 level,
 						 &count,
 						 LSA_LOOKUP_OPTION_SEARCH_ISOLATED_NAMES,
-						 0,
+						 LSA_CLIENT_REVISION_2,
 						 presult);
 	} else {
 		status = dcerpc_lsa_LookupNames(h,
