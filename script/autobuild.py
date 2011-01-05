@@ -68,7 +68,7 @@ tasks = {
                      ("make", "make -j", "text/plain"),
                      ("install", "make install", "text/plain"),
                      ("test", "make test", "text/plain"),
-                     ("check-clean-tree", "../script/clean-source-tree.sh", "text/plain"),
+                     ("check-clean-tree", "../../script/clean-source-tree.sh", "text/plain"),
                      ("clean", "make clean", "text/plain") ],
 }
 
