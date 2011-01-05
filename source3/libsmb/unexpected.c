@@ -672,6 +672,14 @@ static void nb_packet_client_send(struct nb_packet_client *client,
 	struct nb_packet_client_state *state;
 	struct tevent_req *req;
 
+	if (tevent_queue_length(client->out_queue) > 10) {
+		/*
+		 * Skip clients that don't listen anyway, some form of DoS
+		 * protection
+		 */
+		return;
+	}
+
 	state = TALLOC_ZERO_P(client, struct nb_packet_client_state);
 	if (state == NULL) {
 		DEBUG(10, ("talloc failed\n"));
