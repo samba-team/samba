@@ -4,20 +4,19 @@
    Copyright (C) Andrew Tridgell 1994-1998
    Copyright (C) Luke Kenneth Casson Leighton 1994-1998
    Copyright (C) Jeremy Allison 1994-2003
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-   
 */
 
 #include "includes.h"
@@ -106,7 +105,7 @@ static void debug_browse_data(char *outbuf, int len)
 			x = outbuf[i+j];
 			if (x < 32 || x > 127) 
 				x = '.';
-	    
+
 			DEBUGADD( 4, ( "%c", x ) );
 		}
 
@@ -160,7 +159,7 @@ static bool send_netbios_packet(struct packet_struct *p)
 			inet_ntoa(p->ip),p->port));
 		return False;
 	}
-  
+
 	return True;
 } 
 
@@ -185,7 +184,7 @@ static struct packet_struct *create_and_init_netbios_packet(struct nmb_name *nmb
 		DEBUG(0,("create_and_init_netbios_packet: malloc fail (1) for packet struct.\n"));
 		return NULL;
 	}
-    
+
 	memset((char *)packet,'\0',sizeof(*packet));
 
 	nmb = &packet->packet.nmb;
@@ -197,7 +196,7 @@ static struct packet_struct *create_and_init_netbios_packet(struct nmb_name *nmb
 	nmb->header.nm_flags.trunc = False;
 	nmb->header.nm_flags.authoritative = False;
 	nmb->header.nm_flags.bcast = bcast;
-  
+
 	nmb->header.rcode = 0;
 	nmb->header.qdcount = 1;
 	nmb->header.ancount = 0;
@@ -214,7 +213,7 @@ static struct packet_struct *create_and_init_netbios_packet(struct nmb_name *nmb
 	packet->timestamp = time(NULL);
 	packet->packet_type = NMB_PACKET;
 	packet->locked = False;
-  
+
 	return packet; /* Caller must free. */
 }
 
@@ -238,20 +237,20 @@ static bool create_and_init_additional_record(struct packet_struct *packet,
 	nmb->additional->rr_name  = nmb->question.question_name;
 	nmb->additional->rr_type  = RR_TYPE_NB;
 	nmb->additional->rr_class = RR_CLASS_IN;
-	
+
 	/* See RFC 1002, sections 5.1.1.1, 5.1.1.2 and 5.1.1.3 */
 	if (nmb->header.nm_flags.bcast)
 		nmb->additional->ttl = PERMANENT_TTL;
 	else
 		nmb->additional->ttl = lp_max_ttl();
-	
+
 	nmb->additional->rdlength = 6;
-	
+
 	set_nb_flags(nmb->additional->rdata,nb_flags);
-	
+
 	/* Set the address for the name we are registering. */
 	putip(&nmb->additional->rdata[2], register_ip);
-	
+
 	/* 
 	   it turns out that Jeremys code was correct, we are supposed
 	   to send registrations from the IP we are registering. The
@@ -296,18 +295,18 @@ static bool initiate_name_query_packet( struct packet_struct *packet)
 static bool initiate_name_query_packet_from_wins_server( struct packet_struct *packet)
 {   
 	struct nmb_packet *nmb = NULL;
-  
+
 	nmb = &packet->packet.nmb;
 
 	nmb->header.opcode = NMB_NAME_QUERY_OPCODE;
 	nmb->header.arcount = 0;
-    
+
 	nmb->header.nm_flags.recursion_desired = False;
-  
+
 	DEBUG(4,("initiate_name_query_packet_from_wins_server: sending query for name %s (bcast=%s) to IP %s\n",
 		nmb_namestr(&nmb->question.question_name),
 		BOOLSTR(nmb->header.nm_flags.bcast), inet_ntoa(packet->ip)));
-    
+
 	return send_netbios_packet( packet );
 } 
 
@@ -351,10 +350,10 @@ static bool initiate_multihomed_name_register_packet(struct packet_struct *packe
 	nmb->header.arcount = 1;
 
 	nmb->header.nm_flags.recursion_desired = True;
-	
+
 	if(create_and_init_additional_record(packet, nb_flags, register_ip) == False)
 		return False;
-	
+
 	DEBUG(4,("initiate_multihomed_name_register_packet: sending registration \
 for name %s IP %s (bcast=%s) to IP %s\n",
 		 nmb_namestr(&nmb->additional->rr_name), inet_ntoa(*register_ip),
@@ -590,7 +589,7 @@ struct response_record *queue_register_multihomed_name( struct subnet_record *su
 	struct packet_struct *p;
 	struct response_record *rrec;
 	bool ret;
-	
+
 	/* Sanity check. */
 	if(subrec != unicast_subnet) {
 		DEBUG(0,("queue_register_multihomed_name: should only be done on \
@@ -600,7 +599,7 @@ unicast subnet. subnet is %s\n.", subrec->subnet_name ));
 
 	if(assert_check_subnet(subrec))
 		return NULL;
-     
+
 	if ((p = create_and_init_netbios_packet(nmbname, False, True, wins_ip)) == NULL)
 		return NULL;
 
@@ -614,7 +613,7 @@ unicast subnet. subnet is %s\n.", subrec->subnet_name ));
 		free_packet(p);
 		return NULL;
 	}  
-  
+
 	if ((rrec = make_response_record(subrec,    /* subnet record. */
 					 p,                     /* packet we sent. */
 					 resp_fn,               /* function to call on response. */
@@ -626,7 +625,7 @@ unicast subnet. subnet is %s\n.", subrec->subnet_name ));
 		free_packet(p);
 		return NULL;
 	}  
-	
+
 	return rrec;
 }
 
@@ -688,7 +687,7 @@ struct response_record *queue_release_name( struct subnet_record *subrec,
 /****************************************************************************
  Queue a query name packet to the broadcast address of a subnet.
 ****************************************************************************/
- 
+
 struct response_record *queue_query_name( struct subnet_record *subrec,
                           response_function resp_fn,
                           timeout_response_function timeout_fn,
@@ -705,7 +704,7 @@ struct response_record *queue_query_name( struct subnet_record *subrec,
 		return NULL;
 
 	to_ip = subrec->bcast_ip;
-  
+
 	/* queries to the WINS server turn up here as queries to IP 0.0.0.0 
 			These need to be handled a bit differently */
 	if (subrec->type == UNICAST_SUBNET && is_zero_ip_v4(to_ip)) {
