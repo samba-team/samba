@@ -1,7 +1,7 @@
 # functions to support bundled libraries
 
 from Configure import conf
-import Logs
+import sys, Logs
 from samba_utils import *
 
 def PRIVATE_NAME(bld, name, private_extension, private_library):

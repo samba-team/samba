@@ -1,7 +1,7 @@
 # waf build tool for building IDL files with pidl
 
 from TaskGen import before
-import Build, os
+import Build, os, sys, Logs
 from samba_utils import *
 
 def SAMBA_PIDL(bld, pname, source,

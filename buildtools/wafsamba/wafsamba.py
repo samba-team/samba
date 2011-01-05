@@ -1,7 +1,7 @@
 # a waf tool to add autoconf-like macros to the configure section
 # and for SAMBA_ macros for building libraries, binaries etc
 
-import Build, os, Options, Task, Utils, cc, TaskGen, fnmatch, re, shutil, Logs, Constants
+import Build, os, sys, Options, Task, Utils, cc, TaskGen, fnmatch, re, shutil, Logs, Constants
 from Configure import conf
 from Logs import debug
 from samba_utils import SUBST_VARS_RECURSIVE
