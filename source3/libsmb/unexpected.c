@@ -481,6 +481,15 @@ static void nb_packet_server_listener(struct tevent_context *ev,
 
 	DLIST_ADD(server->clients, client);
 	server->num_clients += 1;
+
+	if (server->num_clients > server->max_clients) {
+		DEBUG(10, ("Too many clients, dropping oldest\n"));
+
+		/*
+		 * no TALLOC_FREE here, don't mess with the list structs
+		 */
+		talloc_free(server->clients->prev);
+	}
 }
 
 static ssize_t nb_packet_client_more(uint8_t *buf, size_t buflen,
