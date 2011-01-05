@@ -1000,6 +1000,9 @@ sub ConvertObjectFromPythonLevel($$$$$$$$)
 		# then this is where we would need to allocate it
 		if ($l->{POINTER_TYPE} eq "ref") {
 			$self->pidl("$var_name = talloc_ptrtype($mem_ctx, $var_name);");
+		} elsif ($nl->{TYPE} eq "DATA" and Parse::Pidl::Typelist::is_scalar($nl->{DATA_TYPE})
+			 and not Parse::Pidl::Typelist::scalar_is_reference($nl->{DATA_TYPE})) {
+			$self->pidl("$var_name = talloc_ptrtype($mem_ctx, $var_name);");
 		} else {
 			$self->pidl("$var_name = NULL;");
 		}
