@@ -460,9 +460,7 @@ static void msg_nmbd_send_packet(struct messaging_context *msg,
 		p->packet.dgram.header.source_port = 138;
 	}
 
-	if (store_outstanding_send_packet(p)) {
-		send_packet(p);
-	}
+	send_packet(p);
 }
 
 /**************************************************************************** **
@@ -657,12 +655,6 @@ static void process(void)
 
 		if (lp_enhanced_browsing())
 			sync_all_dmbs(t);
-
-		/*
-		 * clear the unexpected packet queue 
-		 */
-
-		clear_unexpected(t);
 
 		/* check for new network interfaces */
 

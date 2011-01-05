@@ -2792,9 +2792,6 @@ bool nmb_name_equal(struct nmb_name *n1, struct nmb_name *n2);
 int build_packet(char *buf, size_t buflen, struct packet_struct *p);
 bool send_packet(struct packet_struct *p);
 struct packet_struct *receive_packet(int fd,enum packet_type type,int t);
-struct packet_struct *receive_nmb_packet(int fd, int t, int trn_id);
-struct packet_struct *receive_dgram_packet(int fd, int t,
-		const char *mailslot_name);
 bool match_mailslot_name(struct packet_struct *p, const char *mailslot_name);
 int matching_len_bits(unsigned char *p1, unsigned char *p2, size_t len);
 void sort_query_replies(char *data, int n, struct in_addr ip);
@@ -2935,13 +2932,6 @@ bool enumerate_domain_trusts( TALLOC_CTX *mem_ctx, const char *domain,
 NTSTATUS change_trust_account_password( const char *domain, const char *remote_machine);
 
 /* The following definitions come from libsmb/unexpected.c  */
-
-bool is_requested_send_packet(struct packet_struct *p);
-bool store_outstanding_send_packet(struct packet_struct *p);
-void unexpected_packet(struct packet_struct *p);
-void clear_unexpected(time_t t);
-struct packet_struct *receive_unexpected(enum packet_type packet_type, int id,
-					 const char *mailslot_name);
 
 struct nb_packet_server;
 struct nb_packet_reader;

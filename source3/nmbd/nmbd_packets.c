@@ -1223,7 +1223,6 @@ static void process_dgram(struct packet_struct *p)
 	/* If we aren't listening to the destination name then ignore the packet */
 	if (!listening(p,&dgram->dest_name)) {
 			nb_packet_dispatch(packet_server, p);
-			unexpected_packet(p);
 			DEBUG(5,("process_dgram: ignoring dgram packet sent to name %s from %s\n",
 				nmb_namestr(&dgram->dest_name), inet_ntoa(p->ip)));
 			return;
@@ -1231,7 +1230,6 @@ static void process_dgram(struct packet_struct *p)
 
 	if (dgram->header.msg_type != 0x10 && dgram->header.msg_type != 0x11 && dgram->header.msg_type != 0x12) {
 		nb_packet_dispatch(packet_server, p);
-		unexpected_packet(p);
 		/* Don't process error packets etc yet */
 		DEBUG(5,("process_dgram: ignoring dgram packet sent to name %s from IP %s as it is \
 an error packet of type %x\n", nmb_namestr(&dgram->dest_name), inet_ntoa(p->ip), dgram->header.msg_type));
@@ -1318,7 +1316,6 @@ packet sent to name %s from IP %s\n",
 	}
 
 	nb_packet_dispatch(packet_server, p);
-	unexpected_packet(p);
 }
 
 /****************************************************************************
@@ -1439,7 +1436,6 @@ static struct subnet_record *find_subnet_for_nmb_packet( struct packet_struct *p
 			DEBUG(3,("find_subnet_for_nmb_packet: response record not found for response id %hu\n",
 				nmb->header.name_trn_id));
 			nb_packet_dispatch(packet_server, p);
-			unexpected_packet(p);
 			return NULL;
 		}
 
@@ -1927,7 +1923,6 @@ bool listen_for_packets(bool run_election)
 		const char *packet_name;
 		int client_fd;
 		int client_port;
-		bool is_requested_send_reply = false;
 
 		if (sock_array[i] == -1) {
 			continue;
@@ -1956,8 +1951,6 @@ bool listen_for_packets(bool run_election)
 			continue;
 		}
 
-		is_requested_send_reply = is_requested_send_packet(packet);
-
 		/*
 		 * If we got a packet on the broadcast socket and interfaces
 		 * only is set then check it came from one of our local nets.
@@ -1971,8 +1964,7 @@ bool listen_for_packets(bool run_election)
 			continue;
 		}
 
-		if (!is_requested_send_reply &&
-		    (is_loopback_ip_v4(packet->ip) || ismyip_v4(packet->ip)) &&
+		if ((is_loopback_ip_v4(packet->ip) || ismyip_v4(packet->ip)) &&
 		    packet->port == client_port)
 		{
 			if (client_port == DGRAM_PORT) {

@@ -174,48 +174,6 @@ fail:
 	return ret;
 }
 
-bool send_getdc_request(struct messaging_context *msg_ctx,
-			const struct sockaddr_storage *dc_ss,
-			const char *domain_name,
-			const struct dom_sid *sid,
-			uint32_t nt_version,
-			int dgm_id)
-{
-	struct packet_struct p;
-	pid_t nmbd_pid;
-	char *my_mailslot;
-	struct in_addr dc_ip;
-	NTSTATUS status;
-
-	if ((nmbd_pid = pidfile_pid("nmbd")) == 0) {
-		DEBUG(3, ("No nmbd found\n"));
-		return False;
-	}
-
-	if (dc_ss->ss_family != AF_INET) {
-		return false;
-	}
-	dc_ip = ((struct sockaddr_in *)dc_ss)->sin_addr;
-
-	my_mailslot = mailslot_name(talloc_tos(), dc_ip);
-	if (my_mailslot == NULL) {
-		return NULL;
-	}
-
-	if (!prep_getdc_request(dc_ss, domain_name, sid, nt_version,
-				my_mailslot, dgm_id, &p)) {
-		TALLOC_FREE(my_mailslot);
-		return false;
-	}
-
-	status = messaging_send_buf(msg_ctx, pid_to_procid(nmbd_pid),
-				    MSG_SEND_PACKET,
-				    (uint8 *)&p, sizeof(p));
-	TALLOC_FREE(my_mailslot);
-
-	return NT_STATUS_IS_OK(status);
-}
-
 static bool parse_getdc_response(
 	struct packet_struct *packet,
 	TALLOC_CTX *mem_ctx,
@@ -311,47 +269,6 @@ static bool parse_getdc_response(
 		   *dc_name, returned_domain));
 
 	return True;
-}
-
-bool receive_getdc_response(TALLOC_CTX *mem_ctx,
-			    const struct sockaddr_storage *dc_ss,
-			    const char *domain_name,
-			    int dgm_id,
-			    uint32_t *nt_version,
-			    const char **dc_name,
-			    struct netlogon_samlogon_response **samlogon_response)
-{
-	struct packet_struct *packet = NULL;
-	char *my_mailslot = NULL;
-	struct in_addr dc_ip;
-	bool ret;
-
-
-	if (dc_ss->ss_family != AF_INET) {
-		return false;
-	}
-
-	dc_ip = ((struct sockaddr_in *)dc_ss)->sin_addr;
-
-	my_mailslot = mailslot_name(mem_ctx, dc_ip);
-	if (!my_mailslot) {
-		return false;
-	}
-
-	packet = receive_unexpected(DGRAM_PACKET, dgm_id, my_mailslot);
-
-	if (packet == NULL) {
-		DEBUG(5, ("Did not receive packet for %s\n", my_mailslot));
-		return False;
-	}
-
-	DEBUG(5, ("Received packet for %s\n", my_mailslot));
-
-	ret = parse_getdc_response(packet, mem_ctx, domain_name, nt_version,
-				   dc_name, samlogon_response);
-
-	free_packet(packet);
-	return ret;
 }
 
 struct nbt_getdc_state {

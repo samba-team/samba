@@ -1133,50 +1133,10 @@ struct packet_struct *receive_packet(int fd,enum packet_type type,int t)
 }
 
 /****************************************************************************
- Receive a UDP/137 packet either via UDP or from the unexpected packet
- queue. The packet must be a reply packet and have the specified trn_id.
- The timeout is in milliseconds.
-***************************************************************************/
-
-struct packet_struct *receive_nmb_packet(int fd, int t, int trn_id)
-{
-	struct packet_struct *p;
-
-	p = receive_packet(fd, NMB_PACKET, t);
-
-	if (p && p->packet.nmb.header.response &&
-			p->packet.nmb.header.name_trn_id == trn_id) {
-		return p;
-	}
-	if (p)
-		free_packet(p);
-
-	/* try the unexpected packet queue */
-	return receive_unexpected(NMB_PACKET, trn_id, NULL);
-}
-
-/****************************************************************************
  Receive a UDP/138 packet either via UDP or from the unexpected packet
  queue. The packet must be a reply packet and have the specified mailslot name
  The timeout is in milliseconds.
 ***************************************************************************/
-
-struct packet_struct *receive_dgram_packet(int fd, int t,
-		const char *mailslot_name)
-{
-	struct packet_struct *p;
-
-	p = receive_packet(fd, DGRAM_PACKET, t);
-
-	if (p && match_mailslot_name(p, mailslot_name)) {
-		return p;
-	}
-	if (p)
-		free_packet(p);
-
-	/* try the unexpected packet queue */
-	return receive_unexpected(DGRAM_PACKET, 0, mailslot_name);
-}
 
 /****************************************************************************
  See if a datagram has the right mailslot name.
