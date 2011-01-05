@@ -1107,8 +1107,8 @@ static bool dcip_to_name(TALLOC_CTX *mem_ctx,
 {
 	struct ip_service ip_list;
 	uint32_t nt_version = NETLOGON_NT_VERSION_1;
-	int dgm_id;
-	uint16_t val;
+	NTSTATUS status;
+	const char *dc_name;
 
 	ip_list.ss = *pss;
 	ip_list.port = 0;
@@ -1173,27 +1173,13 @@ static bool dcip_to_name(TALLOC_CTX *mem_ctx,
 	}
 #endif
 
-	/* try GETDC requests next */
-	generate_random_buffer((uint8_t *)&val, 2);
-	dgm_id = val;
-
-	if (send_getdc_request(winbind_messaging_context(),
-			       pss, domain->name, &domain->sid,
-			       nt_version, dgm_id)) {
-		const char *dc_name = NULL;
-		int i;
-		smb_msleep(100);
-		for (i=0; i<5; i++) {
-			if (receive_getdc_response(mem_ctx, pss, domain->name,
-						   dgm_id,
-						   &nt_version,
-						   &dc_name, NULL)) {
-				fstrcpy(name, dc_name);
-				namecache_store(name, 0x20, 1, &ip_list);
-				return True;
-			}
-			smb_msleep(500);
-		}
+	status = nbt_getdc(winbind_messaging_context(), pss, domain->name,
+			   &domain->sid, nt_version, mem_ctx, &nt_version,
+			   &dc_name, NULL);
+	if (NT_STATUS_IS_OK(status)) {
+		fstrcpy(name, dc_name);
+		namecache_store(name, 0x20, 1, &ip_list);
+		return True;
 	}
 
 	/* try node status request */
