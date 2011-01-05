@@ -658,32 +658,6 @@ static NTSTATUS nb_trans_recv(struct tevent_req *req,
 }
 
 /****************************************************************************
- Try and send a request to nmbd to send a packet_struct packet first.
- If this fails, use send_packet().
-**************************************************************************/
-
-static bool send_packet_request(struct packet_struct *p)
-{
-	struct messaging_context *msg_ctx = server_messaging_context();
-	if (msg_ctx) {
-		pid_t nmbd_pid = pidfile_pid("nmbd");
-
-		if (nmbd_pid) {
-			/* Try nmbd. */
-			if (NT_STATUS_IS_OK(messaging_send_buf(msg_ctx,
-					pid_to_procid(nmbd_pid),
-					MSG_SEND_PACKET,
-					(uint8_t *)p,
-					sizeof(struct packet_struct)))) {
-				return true;
-			}
-		}
-	}
-
-	return send_packet(p);
-}
-
-/****************************************************************************
  Do a NBT node status query on an open socket and return an array of
  structures holding the returned names or NULL if the query failed.
 **************************************************************************/

@@ -26,50 +26,6 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
 
-/* Use our own create socket code so we don't recurse.... */
-
-static int wins_lookup_open_socket_in(void)
-{
-	struct sockaddr_in sock;
-	int val=1;
-	int res;
-
-	memset((char *)&sock,'\0',sizeof(sock));
-
-#ifdef HAVE_SOCK_SIN_LEN
-	sock.sin_len = sizeof(sock);
-#endif
-	sock.sin_port = 0;
-	sock.sin_family = AF_INET;
-	sock.sin_addr.s_addr = interpret_addr("0.0.0.0");
-	res = socket(AF_INET, SOCK_DGRAM, 0);
-	if (res == -1)
-		return -1;
-
-	if (setsockopt(res,SOL_SOCKET,SO_REUSEADDR,(char *)&val,sizeof(val))) {
-		close(res);
-		return -1;
-	}
-#ifdef SO_REUSEPORT
-	if (setsockopt(res,SOL_SOCKET,SO_REUSEPORT,(char *)&val,sizeof(val))) {
-		close(res);
-		return -1;
-	}
-#endif /* SO_REUSEPORT */
-
-	/* now we've got a socket - we need to bind it */
-
-	if (bind(res, (struct sockaddr *)(void *)&sock, sizeof(sock)) < 0) {
-		close(res);
-		return(-1);
-	}
-
-	set_socket_options(res,"SO_BROADCAST");
-
-	return res;
-}
-
-
 static struct node_status *lookup_byaddr_backend(TALLOC_CTX *mem_ctx,
 						 const char *addr, int *count)
 {
