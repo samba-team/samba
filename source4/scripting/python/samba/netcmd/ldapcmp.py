@@ -772,7 +772,7 @@ class cmd_ldapcmp(Command):
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp, fallback_machine=True)
         creds2 = credopts.get_credentials2(lp)
-        if credopts.no_pass2:
+        if creds2.is_anonymous():
             creds2 = creds
         if not creds.authentication_requested():
             raise CommandError("You must supply at least one username/password pair")
