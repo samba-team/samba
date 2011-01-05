@@ -1,6 +1,6 @@
 # a waf tool to add autoconf-like macros to the configure section
 
-import Build, os, Options, preproc, Logs
+import Build, os, sys, Options, preproc, Logs
 import string
 from Configure import conf
 from samba_utils import *

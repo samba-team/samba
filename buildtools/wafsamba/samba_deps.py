@@ -1,6 +1,6 @@
 # Samba automatic dependency handling and project rules
 
-import Build, os, re, Environment, Logs, time
+import Build, os, sys, re, Environment, Logs, time
 from samba_utils import *
 from samba_autoconf import *
 from samba_bundled import BUILTIN_LIBRARY

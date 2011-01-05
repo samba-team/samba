@@ -1,6 +1,6 @@
 # handle substitution of variables in pc files
 
-import Build
+import Build, sys, Logs
 from samba_utils import *
 
 def subst_at_vars(task):

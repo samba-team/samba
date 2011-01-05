@@ -2,7 +2,7 @@
 
 # this is a base set of waf rules that everything else pulls in first
 
-import sys, wafsamba, Configure
+import sys, wafsamba, Configure, Logs
 import Options, os, preproc
 from samba_utils import *
 from optparse import SUPPRESS_HELP
