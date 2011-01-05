@@ -37,8 +37,10 @@ bool nmbd_init_packet_server(void)
 {
 	NTSTATUS status;
 
-	status = nb_packet_server_create(NULL, nmbd_event_context(), 0,
-					 &packet_server);
+	status = nb_packet_server_create(
+		NULL, nmbd_event_context(),
+		lp_parm_int(-1, "nmbd", "unexpected_clients", 200),
+		&packet_server);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("ERROR: nb_packet_server_create failed: %s\n",
 			  nt_errstr(status)));
