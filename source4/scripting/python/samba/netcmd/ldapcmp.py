@@ -774,6 +774,9 @@ class cmd_ldapcmp(Command):
         creds2 = credopts.get_credentials2(lp, False)
         if creds2.is_anonymous():
             creds2 = creds
+        else:
+            creds2.set_domain("")
+            creds2.set_workstation("")
         if not creds.authentication_requested():
             raise CommandError("You must supply at least one username/password pair")
 
