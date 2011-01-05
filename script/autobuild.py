@@ -70,6 +70,14 @@ tasks = {
                      ("test", "make test", "text/plain"),
                      ("check-clean-tree", "../../script/clean-source-tree.sh", "text/plain"),
                      ("clean", "make clean", "text/plain") ],
+
+    "pidl" : [ ("configure", "perl Makefile.PL PREFIX=${PREFIX_DIR}", "text/plain"),
+               ("touch", "touch *.yp", "text/plain"),
+               ("make", "make", "text/plain"),
+               ("test", "make test", "text/plain"),
+               ("install", "make install", "text/plain"),
+               ("check-clean-tree", "../script/clean-source-tree.sh", "text/plain"),
+               ("clean", "make clean", "text/plain") ],
 }
 
 retry_task = [ ( "retry",
@@ -138,6 +146,7 @@ class builder(object):
             return
         (self.stage, self.cmd, self.output_mime_type) = self.sequence[self.next]
         self.cmd = self.cmd.replace("${PREFIX}", "--prefix=%s" % self.prefix)
+        self.cmd = self.cmd.replace("${PREFIX_DIR}", "%s" % self.prefix)
 #        if self.output_mime_type == "text/x-subunit":
 #            self.cmd += " | %s --immediate" % (os.path.join(os.path.dirname(__file__), "selftest/format-subunit"))
         print '%s: [%s] Running %s' % (self.name, self.stage, self.cmd)
