@@ -30,13 +30,14 @@ static WERROR cmd_dfs_version(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 {
 	enum dfs_ManagerVersion version;
 	NTSTATUS result;
+	struct dcerpc_binding_handle *b = cli->binding_handle;
 
 	if (argc != 1) {
 		printf("Usage: %s\n", argv[0]);
 		return WERR_OK;
 	}
 
-	result = rpccli_dfs_GetManagerVersion(cli, mem_ctx, &version);
+	result = dcerpc_dfs_GetManagerVersion(b, mem_ctx, &version);
 
 	if (!NT_STATUS_IS_OK(result)) {
 		return ntstatus_to_werror(result);
@@ -58,6 +59,7 @@ static WERROR cmd_dfs_add(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 	WERROR werr;
 	const char *path, *servername, *sharename, *comment;
 	uint32 flags = 0;
+	struct dcerpc_binding_handle *b = cli->binding_handle;
 
 	if (argc != 5) {
 		printf("Usage: %s path servername sharename comment\n", 
@@ -70,7 +72,7 @@ static WERROR cmd_dfs_add(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 	sharename = argv[3];
 	comment = argv[4];
 
-	result = rpccli_dfs_Add(cli, mem_ctx, path, servername,
+	result = dcerpc_dfs_Add(b, mem_ctx, path, servername,
 				sharename, comment, flags, &werr);
 	if (!NT_STATUS_IS_OK(result)) {
 		return ntstatus_to_werror(result);
@@ -85,6 +87,7 @@ static WERROR cmd_dfs_remove(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 	NTSTATUS result;
 	WERROR werr;
 	const char *path, *servername, *sharename;
+	struct dcerpc_binding_handle *b = cli->binding_handle;
 
 	if (argc != 4) {
 		printf("Usage: %s path servername sharename\n", argv[0]);
@@ -95,7 +98,7 @@ static WERROR cmd_dfs_remove(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 	servername = argv[2];
 	sharename = argv[3];
 
-	result = rpccli_dfs_Remove(cli, mem_ctx, path, servername,
+	result = dcerpc_dfs_Remove(b, mem_ctx, path, servername,
 				   sharename, &werr);
 	if (!NT_STATUS_IS_OK(result)) {
 		return ntstatus_to_werror(result);
@@ -195,6 +198,7 @@ static WERROR cmd_dfs_enum(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 	struct dfs_EnumArray4 info4;
 	struct dfs_EnumArray200 info200;
 	struct dfs_EnumArray300 info300;
+	struct dcerpc_binding_handle *b = cli->binding_handle;
 
 	NTSTATUS result;
 	WERROR werr;
@@ -221,10 +225,12 @@ static WERROR cmd_dfs_enum(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 			  break;
 	}
 
-	result = rpccli_dfs_Enum(cli, mem_ctx, str.level, 0xFFFFFFFF, &str,
+	result = dcerpc_dfs_Enum(b, mem_ctx, str.level, 0xFFFFFFFF, &str,
 				 &total, &werr);
-
-	if (NT_STATUS_IS_OK(result)) {
+	if (!NT_STATUS_IS_OK(result)) {
+		return ntstatus_to_werror(result);
+	}
+	if (W_ERROR_IS_OK(werr)) {
 		display_dfs_enumstruct(&str);
 	}
 
@@ -243,6 +249,7 @@ static WERROR cmd_dfs_enumex(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 	struct dfs_EnumArray4 info4;
 	struct dfs_EnumArray200 info200;
 	struct dfs_EnumArray300 info300;
+	struct dcerpc_binding_handle *b = cli->binding_handle;
 
 	NTSTATUS result;
 	WERROR werr;
@@ -270,10 +277,12 @@ static WERROR cmd_dfs_enumex(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 		  break;
 	}
 
-	result = rpccli_dfs_EnumEx(cli, mem_ctx, argv[1], str.level,
+	result = dcerpc_dfs_EnumEx(b, mem_ctx, argv[1], str.level,
 				   0xFFFFFFFF, &str, &total, &werr);
-
-	if (NT_STATUS_IS_OK(result)) {
+	if (!NT_STATUS_IS_OK(result)) {
+		return ntstatus_to_werror(result);
+	}
+	if (W_ERROR_IS_OK(werr)) {
 		display_dfs_enumstruct(&str);
 	}
 
@@ -289,6 +298,7 @@ static WERROR cmd_dfs_getinfo(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 	const char *path, *servername, *sharename;
 	uint32 info_level = 1;
 	union dfs_Info ctr;
+	struct dcerpc_binding_handle *b = cli->binding_handle;
 
 	if (argc < 4 || argc > 5) {
 		printf("Usage: %s path servername sharename "
@@ -303,10 +313,12 @@ static WERROR cmd_dfs_getinfo(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 	if (argc == 5)
 		info_level = atoi(argv[4]);
 
-	result = rpccli_dfs_GetInfo(cli, mem_ctx, path, servername,
+	result = dcerpc_dfs_GetInfo(b, mem_ctx, path, servername,
 				    sharename, info_level, &ctr, &werr);
-
-	if (NT_STATUS_IS_OK(result)) {
+	if (!NT_STATUS_IS_OK(result)) {
+		return ntstatus_to_werror(result);
+	}
+	if (W_ERROR_IS_OK(werr)) {
 		display_dfs_info(info_level, &ctr);
 	}
 
