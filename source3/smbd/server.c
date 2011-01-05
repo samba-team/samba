@@ -32,24 +32,7 @@
 #include "memcache.h"
 #include "ctdbd_conn.h"
 #include "printing/printer_list.h"
-
-#include "../librpc/gen_ndr/srv_dfs.h"
-#include "../librpc/gen_ndr/srv_dssetup.h"
-#include "../librpc/gen_ndr/srv_echo.h"
-#include "../librpc/gen_ndr/srv_eventlog.h"
-#include "../librpc/gen_ndr/srv_initshutdown.h"
-#include "../librpc/gen_ndr/srv_lsa.h"
-#include "../librpc/gen_ndr/srv_netlogon.h"
-#include "../librpc/gen_ndr/srv_ntsvcs.h"
-#include "../librpc/gen_ndr/srv_samr.h"
-#include "../librpc/gen_ndr/srv_spoolss.h"
-#include "../librpc/gen_ndr/srv_srvsvc.h"
-#include "../librpc/gen_ndr/srv_svcctl.h"
-#include "../librpc/gen_ndr/srv_winreg.h"
-#include "../librpc/gen_ndr/srv_wkssvc.h"
-#include "../librpc/gen_ndr/srv_epmapper.h"
-
-#include "printing/nt_printing_migrate.h"
+#include "rpc_server/srv_rpc_register.h"
 
 #ifdef WITH_DFS
 extern int dcelogin_atmost_once;
@@ -845,20 +828,6 @@ static bool init_structs(void )
 	return True;
 }
 
-static bool spoolss_init_cb(void *ptr)
-{
-	struct messaging_context *msg_ctx = talloc_get_type_abort(
-		ptr, struct messaging_context);
-	return nt_printing_tdb_migrate(msg_ctx);
-}
-
-static bool spoolss_shutdown_cb(void *ptr)
-{
-	srv_spoolss_cleanup();
-
-	return true;
-}
-
 /****************************************************************************
  main program.
 ****************************************************************************/
@@ -907,7 +876,6 @@ extern void build_options(bool screen);
 	TALLOC_CTX *frame;
 	NTSTATUS status;
 	uint64_t unique_id;
-	struct rpc_srv_callbacks spoolss_cb;
 
 	/*
 	 * Do this before any other talloc operation
@@ -1225,63 +1193,7 @@ extern void build_options(bool screen);
 		return -1;
 	}
 
-	/*
-	 * Initialize spoolss with an init function to convert printers first.
-	 * static_init_rpc will try to initialize the spoolss server too but you
-	 * can't register it twice.
-	 */
-	spoolss_cb.init = spoolss_init_cb;
-	spoolss_cb.shutdown = spoolss_shutdown_cb;
-	spoolss_cb.private_data = smbd_server_conn->msg_ctx;
-
-	/*
-	 * TODO: Create a dependency tree, so that all services are started
-	 * in the right order.
-	 */
-	if (!NT_STATUS_IS_OK(rpc_lsarpc_init(NULL))) {
-		exit(1);
-	}
-	if (!NT_STATUS_IS_OK(rpc_samr_init(NULL))) {
-		exit(1);
-	}
-	if (!NT_STATUS_IS_OK(rpc_netlogon_init(NULL))) {
-		exit(1);
-	}
-
-	if (!NT_STATUS_IS_OK(rpc_winreg_init(NULL))) {
-		exit(1);
-	}
-	if (!NT_STATUS_IS_OK(rpc_srvsvc_init(NULL))) {
-		exit(1);
-	}
-
-	if (!NT_STATUS_IS_OK(rpc_spoolss_init(&spoolss_cb))) {
-		exit(1);
-	}
-	if (!NT_STATUS_IS_OK(rpc_svcctl_init(NULL))) {
-		exit(1);
-	}
-	if (!NT_STATUS_IS_OK(rpc_ntsvcs_init(NULL))) {
-		exit(1);
-	}
-	if (!NT_STATUS_IS_OK(rpc_eventlog_init(NULL))) {
-		exit(1);
-	}
-	if (!NT_STATUS_IS_OK(rpc_initshutdown_init(NULL))) {
-		exit(1);
-	}
-	if (!NT_STATUS_IS_OK(rpc_netdfs_init(NULL))) {
-		exit(1);
-	}
-#ifdef DEVELOPER
-	if (!NT_STATUS_IS_OK(rpc_rpcecho_init(NULL))) {
-		exit(1);
-	}
-#endif
-	if (!NT_STATUS_IS_OK(rpc_dssetup_init(NULL))) {
-		exit(1);
-	}
-	if (!NT_STATUS_IS_OK(rpc_wkssvc_init(NULL))) {
+	if (!srv_rpc_register(smbd_server_conn->msg_ctx)) {
 		exit(1);
 	}
 
