@@ -146,7 +146,7 @@ parser.add_option("--debugguess", action="store_true",
 parser.add_option("--debugchange", action="store_true",
                   help="Print information on what is different but won't be changed")
 parser.add_option("--debugchangesd", action="store_true",
-                  help="Print information security descriptors differences")
+                  help="Print security descriptor differences")
 parser.add_option("--debugall", action="store_true",
                   help="Print all available information (very verbose)")
 parser.add_option("--resetfileacl", action="store_true",
@@ -219,11 +219,11 @@ def check_for_DNS(refprivate, private):
             os.mkdir(dnsdir)
         shutil.copy("%s/named.conf" % refprivate, "%s/named.conf" % destdir)
         shutil.copy("%s/named.txt" % refprivate, "%s/named.txt" % destdir)
-        message(SIMPLE, "It seems that you provision didn't integrate new rules "
-                "for dynamic dns update of domain related entries")
+        message(SIMPLE, "It seems that your provision did not integrate "
+                "new rules for dynamic dns update of domain related entries")
         message(SIMPLE, "A copy of the new bind configuration files and "
-                "template as been put in %s, you should read them and configure dynamic "
-                " dns update" % destdir)
+                "template has been put in %s, you should read them and "
+                "configure dynamic dns updates" % destdir)
 
 
 def populate_links(samdb, schemadn):
@@ -263,12 +263,13 @@ def sanitychecks(samdb, names):
                          scope=SCOPE_SUBTREE, attrs=["dn"],
                          controls=["search_options:1:2"])
     if len(res) == 0:
-        print "No DC found, your provision is most probably hardly broken !"
+        print "No DC found. Your provision is most probably broken!"
         return False
     elif len(res) != 1:
-        print "Found %d domain controllers, for the moment upgradeprovision" \
-              "is not able to handle upgrade on domain with more than one DC, please demote" \
-              " the other(s) DC(s) before upgrading" % len(res)
+        print "Found %d domain controllers. For the moment " \
+              "upgradeprovision is not able to handle an upgrade on a " \
+              "domain with more than one DC. PLease demote the other " \
+              "DC(s) before upgrading" % len(res)
         return False
     else:
         return True
@@ -409,7 +410,7 @@ def handle_special_case(att, delta, new, old, usn, basedn, aldb):
     return False
 
 def dump_denied_change(dn, att, flagtxt, current, reference):
-    """Print detailed information about why a changed is denied
+    """Print detailed information about why a change is denied
 
     :param dn: DN of the object which attribute is denied
     :param att: Attribute that was supposed to be upgraded
@@ -419,7 +420,7 @@ def dump_denied_change(dn, att, flagtxt, current, reference):
     :param reference: Value(s) of the reference attribute"""
 
     message(CHANGE, "dn= " + str(dn)+" " + att+" with flag " + flagtxt
-                +" is not allowed to be changed/removed, I discard this change")
+                + " must not be changed/removed. Discarding the change")
     if att == "objectSid" :
         message(CHANGE, "old : %s" % ndr_unpack(security.dom_sid, current[0]))
         message(CHANGE, "new : %s" % ndr_unpack(security.dom_sid, reference[0]))
@@ -488,7 +489,7 @@ def handle_special_add(samdb, dn, names):
                             controls=["search_options:1:2"])
 
         if len(res) > 0 and len(res2) == 0:
-            message(CHANGE, "Existing object %s must be replaced by %s,"
+            message(CHANGE, "Existing object %s must be replaced by %s. "
                             "Renaming old object" % (str(oldDn), str(dn)))
             samdb.rename(oldDn, objDn, ["relax:0", "provision:0"])
 
@@ -507,8 +508,8 @@ def handle_special_add(samdb, dn, names):
                             scope=SCOPE_SUBTREE, attrs=["dn"],
                             controls=["search_options:1:2"])
         if len(res) > 0:
-            message(CHANGE, "Existing object %s must be replaced by %s,"
-                            "removing old object" % (dntoremove, str(dn)))
+            message(CHANGE, "Existing object %s must be replaced by %s. "
+                            "Removing old object" % (dntoremove, str(dn)))
             samdb.delete(res[0]["dn"])
             return 0
 
@@ -594,8 +595,8 @@ def add_missing_object(ref_samdb, samdb, dn, names, basedn, hash, index):
             depend_on_yet_tobecreated = check_dn_nottobecreated(hash, index,
                                                                 delta.get(str(att)))
             if depend_on_yet_tobecreated is not None:
-                message(CHANGE, "Object %s depends on %s in attribute %s,"
-                                "delaying the creation" % (dn,
+                message(CHANGE, "Object %s depends on %s in attribute %s. "
+                                "Delaying the creation" % (dn,
                                           depend_on_yet_tobecreated, att))
                 return False
 
@@ -718,7 +719,7 @@ def add_missing_entries(ref_samdb, samdb, names, basedn, list):
                 listDefered.append(dn)
 
     if len(listDefered) != 0:
-        raise ProvisioningError("Unable to insert missing elements:"
+        raise ProvisioningError("Unable to insert missing elements: "
                                 "circular references")
 
 def handle_links(samdb, att, basedn, dn, value, ref_value, delta):
@@ -815,9 +816,9 @@ def update_present(ref_samdb, samdb, basedn, listPresent, usns, invocationid):
              (str(current[0].dn) != str(reference[0].dn)) and
              (str(current[0].dn).upper() == str(reference[0].dn).upper())
            ):
-            message(CHANGE, "Name are the same but case change,"\
-                            "let's rename %s to %s" % (str(current[0].dn),
-                                                       str(reference[0].dn)))
+            message(CHANGE, "Names are the same except for the case. "
+                            "Renaming %s to %s" % (str(current[0].dn),
+                                                   str(reference[0].dn)))
             identic_rename(samdb, reference[0].dn)
             current = samdb.search(expression="dn=%s" % (str(dn)), base=basedn,
                                     scope=SCOPE_SUBTREE,
@@ -914,17 +915,18 @@ def update_present(ref_samdb, samdb, basedn, listPresent, usns, invocationid):
                 if attrUSN == -1:
                     # This attribute was last modified by another DC forget
                     # about it
-                    message(CHANGE, "%sAttribute: %s has been"
-                            "created/modified/deleted  by another DC,"
-                            " do nothing" % (txt, att ))
+                    message(CHANGE, "%sAttribute: %s has been "
+                            "created/modified/deleted by another DC. "
+                            "Doing nothing" % (txt, att))
                     txt = ""
                     delta.remove(att)
                     continue
                 elif not usn_in_range(int(attrUSN), usns):
-                    message(CHANGE, "%sAttribute: %s has been"
-                                    "created/modified/deleted not during a"
-                                    " provision or upgradeprovision: current"
-                                    " usn %d , do nothing" % (txt, att, attrUSN))
+                    message(CHANGE, "%sAttribute: %s was not "
+                                    "created/modified/deleted during a "
+                                    "provision or upgradeprovision. Current "
+                                    "usn: %d. Doing nothing" % (txt, att,
+                                                                attrUSN))
                     txt = ""
                     delta.remove(att)
                     continue
@@ -933,13 +935,13 @@ def update_present(ref_samdb, samdb, basedn, listPresent, usns, invocationid):
                         defSDmodified = True
                     if attrUSN:
                         message(CHANGE, "%sAttribute: %s will be modified"
-                                        "/deleted it was last modified"
-                                        " during a provision, current usn:"
-                                        "%d" % (txt, att,  attrUSN))
+                                        "/deleted it was last modified "
+                                        "during a provision. Current usn: "
+                                        "%d" % (txt, att, attrUSN))
                         txt = ""
                     else:
-                        message(CHANGE, "%sAttribute: %s will be added because"
-                                        " it hasn't existed before " % (txt, att))
+                        message(CHANGE, "%sAttribute: %s will be added because "
+                                        "it did not exist before" % (txt, att))
                         txt = ""
                     continue
 
@@ -1091,10 +1093,10 @@ def update_partition(ref_samdb, samdb, basedn, names, schema, provisionUSNs, pre
         add_missing_entries(ref_samdb, samdb, names, basedn, listMissing)
 
         prereloadfunc()
-        message(SIMPLE, "Reloading a merged schema, it might trigger"\
-                        " reindexing so please be patient")
+        message(SIMPLE, "Reloading a merged schema, which might trigger "
+                        "reindexing so please be patient")
         reload_full_schema(samdb, names)
-        message(SIMPLE, "Schema reloaded !")
+        message(SIMPLE, "Schema reloaded!")
 
         changed = update_present(ref_samdb, samdb, basedn, listPresent,
                                     provisionUSNs, names.invocation)
@@ -1616,8 +1618,9 @@ if __name__ == '__main__':
         # ldbs = get_ldbs(paths, creds, adm_session, lp)
 
         if not sanitychecks(ldbs.sam, names):
-            message(SIMPLE, "Sanity checks for the upgrade fails, checks messages"
-                            " and correct them before rerunning upgradeprovision")
+            message(SIMPLE, "Sanity checks for the upgrade have failed. "
+                            "Check the messages and correct the errors "
+                            "before rerunning upgradeprovision")
             sys.exit(1)
 
         # Let's see provision parameters
@@ -1700,16 +1703,15 @@ if __name__ == '__main__':
                 deltaattr.dn = ldb.Dn(basesam, "@ATTRIBUTES")
                 basesam.modify(deltaattr)
             else:
-                message(CHANGE, "Not applying delta to @ATTRIBUTES because "\
+                message(CHANGE, "Not applying delta to @ATTRIBUTES because "
                                 "there is not only add")
         # 13)
         if opts.full:
             if not update_samdb(new_ldbs.sam, ldbs.sam, names, lastProvisionUSNs,
                                 schema, schemareloadclosure):
-                message(SIMPLE, "Rollbacking every changes. Check the reason"
+                message(SIMPLE, "Rolling back all changes. Check the cause"
                                 " of the problem")
-                message(SIMPLE, "In any case your system as it was before"
-                                " the upgrade")
+                message(SIMPLE, "Your system is as it was before the upgrade")
                 ldbs.groupedRollback()
                 new_ldbs.groupedRollback()
                 shutil.rmtree(provisiondir)
@@ -1723,9 +1725,9 @@ if __name__ == '__main__':
                                 scope=SCOPE_SUBTREE, attrs=["dn"],
                                 controls=["search_options:1:2"])
             if len(res) > 0:
-                message(SIMPLE, "You still have the old dns object for managing"
+                message(SIMPLE, "You still have the old DNS object for managing "
                                 "dynamic DNS, but you didn't supply --full so "
-                                "correct update can't be done")
+                                "a correct update can't be done")
                 ldbs.groupedRollback()
                 new_ldbs.groupedRollback()
                 shutil.rmtree(provisiondir)
@@ -1742,11 +1744,12 @@ if __name__ == '__main__':
             res2 = ldbs.secrets.search(expression="(samaccountname=dns)",
                                   scope=SCOPE_SUBTREE, attrs=["dn"])
             update_dns_account_password(ldbs.sam, ldbs.secrets, names)
-            message(SIMPLE, "IMPORTANT !!! "
-                            "If you were using Dynamic DNS before you need"
-                            " to update your configuration, so that the "
-                            "tkey-gssapi-credential has the following value:"
-                            "DNS/%s.%s" % (names.netbiosname.lower(), names.realm.lower()))
+            message(SIMPLE, "IMPORTANT!!! "
+                            "If you were using Dynamic DNS before you need "
+                            "to update your configuration, so that the "
+                            "tkey-gssapi-credential has the following value: "
+                            "DNS/%s.%s" % (names.netbiosname.lower(),
+                                           names.realm.lower()))
         # 15)
         message(SIMPLE, "Update machine account")
         update_machine_account_password(ldbs.sam, ldbs.secrets, names)
@@ -1799,34 +1802,34 @@ if __name__ == '__main__':
             try:
                 update_gpo(paths, ldbs.sam, names, lp, message, 1)
             except ProvisioningError, e:
-                message(ERROR, "The policy for domain controller is missing,"
-                               " you should restart upgradeprovision with --full")
+                message(ERROR, "The policy for domain controller is missing. "
+                               "You should restart upgradeprovision with --full")
             except IOError, e:
                 message(ERROR, "Setting ACL not supported on your filesystem")
         else:
             try:
                 update_gpo(paths, ldbs.sam, names, lp, message, 0)
             except ProvisioningError, e:
-                message(ERROR, "The policy for domain controller is missing,"
-                               " you should restart upgradeprovision with --full")
+                message(ERROR, "The policy for domain controller is missing. "
+                               "You should restart upgradeprovision with --full")
         ldbs.groupedCommit()
         new_ldbs.groupedCommit()
-        message(SIMPLE, "Upgrade finished !")
+        message(SIMPLE, "Upgrade finished!")
         # remove reference provision now that everything is done !
         # So we have reindexed first if need when the merged schema was reloaded
         # (as new attributes could have quick in)
         # But the second part of the update (when we update existing objects
         # can also have an influence on indexing as some attribute might have their
         # searchflag modificated
-        message(SIMPLE, "Reopenning samdb to trigger reindexing if needed after"\
-                        " modification")
+        message(SIMPLE, "Reopenning samdb to trigger reindexing if needed "
+                        "after modification")
         samdb = Ldb(paths.samdb, session_info=session, credentials=creds, lp=lp)
         message(SIMPLE, "Reindexing finished")
 
         shutil.rmtree(provisiondir)
     except StandardError, err:
-        message(ERROR,"A problem has occured when trying to upgrade your provision,"
-                      " a full backup is located at %s" % backupdir)
+        message(ERROR, "A problem occurred when trying to upgrade your "
+                       "provision. A full backup is located at %s" % backupdir)
         if opts.debugall or opts.debugchange:
             (typ, val, tb) = sys.exc_info()
             traceback.print_exception(typ, val, tb)
