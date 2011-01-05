@@ -1137,10 +1137,6 @@ bld.SAMBA_SUBSYSTEM('RPCCLI_SVCCTL',
 	source='../librpc/gen_ndr/cli_svcctl.c',
 	public_deps='RPC_NDR_SVCCTL')
 
-bld.SAMBA_SUBSYSTEM('RPCCLI_DFS',
-	source='../librpc/gen_ndr/cli_dfs.c',
-	public_deps='RPC_NDR_DFS')
-
 bld.SAMBA_SUBSYSTEM('RPCCLI_DRSUAPI',
 	source='../librpc/gen_ndr/cli_drsuapi.c',
 	public_deps='RPC_NDR_DRSUAPI')
@@ -1231,7 +1227,7 @@ bld.SAMBA_BINARY('rpcclient/rpcclient',
                  LIBADS SMBREADLINE DCUTIL RPCCLI_WINREG RPCCLI_ECHO
                  RPC_CLIENT_SCHANNEL
                  LIBCLI_SAMR LIBCLI_LSA LIBCLI_NETLOGON LIBCLI_SPOOLSS
-                 RPCCLI_SRVSVC RPCCLI_WKSSVC RPC_NDR_DSSETUP RPCCLI_DFS
+                 RPCCLI_SRVSVC RPCCLI_WKSSVC RPC_NDR_DSSETUP RPC_NDR_DFS
                  RPCCLI_DRSUAPI RPC_NDR_NTSVCS RPCCLI_EVENTLOG INIT_NETLOGON
                  INIT_SAMR
                  ''',
