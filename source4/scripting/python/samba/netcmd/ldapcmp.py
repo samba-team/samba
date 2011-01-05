@@ -771,7 +771,7 @@ class cmd_ldapcmp(Command):
             credopts=None, sambaopts=None, versionopts=None):
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp, fallback_machine=True)
-        creds2 = credopts.get_credentials2(lp)
+        creds2 = credopts.get_credentials2(lp, False)
         if creds2.is_anonymous():
             creds2 = creds
         if not creds.authentication_requested():
