@@ -243,12 +243,26 @@ static NTSTATUS ldapsrv_BindSASL(struct ldapsrv_call *call)
 						 req->creds.SASL.mechanism);
 		}
 
+		if (context && conn->sockets.sasl) {
+			TALLOC_FREE(context);
+			status = NT_STATUS_NOT_SUPPORTED;
+			result = LDAP_UNWILLING_TO_PERFORM;
+			errstr = talloc_asprintf(reply,
+						 "SASL:[%s]: Sign or Seal are not allowed if SASL encryption has already been set up",
+						 req->creds.SASL.mechanism);
+		}
+
 		if (context) {
 			context->conn = conn;
 			status = gensec_create_tstream(context,
 						       context->conn->gensec,
 						       context->conn->sockets.raw,
 						       &context->sasl);
+			if (NT_STATUS_IS_OK(status)) {
+				if (!talloc_reference(context->sasl, conn->gensec)) {
+					status = NT_STATUS_NO_MEMORY;
+				}
+			}
 		}
 
 		if (result != LDAP_SUCCESS) {
@@ -294,12 +308,16 @@ static NTSTATUS ldapsrv_BindSASL(struct ldapsrv_call *call)
 			call->postprocess_recv = ldapsrv_sasl_postprocess_recv;
 			call->postprocess_private = context;
 		}
+		talloc_unlink(conn, conn->gensec);
+		conn->gensec = NULL;
 	} else {
 		status = auth_nt_status_squash(status);
 		if (result == 0) {
 			result = LDAP_INVALID_CREDENTIALS;
 			errstr = talloc_asprintf(reply, "SASL:[%s]: %s", req->creds.SASL.mechanism, nt_errstr(status));
 		}
+		talloc_unlink(conn, conn->gensec);
+		conn->gensec = NULL;
 	}
 
 	resp->response.resultcode = result;
