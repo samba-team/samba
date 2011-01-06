@@ -492,8 +492,8 @@ PARAM_OBJ = $(PARAM_WITHOUT_REG_OBJ) $(PARAM_REG_ADD_OBJ)
 
 KRBCLIENT_OBJ = libads/kerberos.o libads/ads_status.o
 
-LIBADDNS_OBJ0 = libaddns/dnsrecord.o libaddns/dnsutils.o  libaddns/dnssock.o \
-	       libaddns/dnsgss.o libaddns/dnsmarshall.o libaddns/error.o
+LIBADDNS_OBJ0 = ../lib/addns/dnsrecord.o ../lib/addns/dnsutils.o  ../lib/addns/dnssock.o \
+	       ../lib/addns/dnsgss.o ../lib/addns/dnsmarshall.o ../lib/addns/error.o
 LIBADDNS_OBJ = $(LIBADDNS_OBJ0) $(SOCKET_WRAPPER_OBJ)
 
 GPEXT_OBJ = ../libgpo/gpext/gpext.o @GPEXT_STATIC@
@@ -2246,7 +2246,7 @@ LIBADDNS_SHARED_TARGET_SONAME=$(LIBADDNS_SHARED_TARGET).$(LIBADDNS_SOVER)
 LIBADDNS_STATIC_TARGET=@LIBADDNS_STATIC_TARGET@
 LIBADDNS=@LIBADDNS_STATIC@ @LIBADDNS_SHARED@
 #LIBADDNS_SYMS=$(srcdir)/exports/libaddns.@SYMSEXT@
-LIBADDNS_HEADERS=$(srcdir)/libaddns/addns.h
+LIBADDNS_HEADERS=$(srcdir)/../lib/addns/addns.h
 
 $(LIBADDNS_SHARED_TARGET_SONAME): $(BINARY_PREREQS) $(LIBADDNS_OBJ) $(LIBTALLOC)
 	@echo Linking shared library $@
