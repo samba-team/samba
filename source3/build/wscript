@@ -23,6 +23,7 @@ def configure(conf):
     for option in dir_options.keys():
         varname = get_varname(option)
         value = getattr(Options.options, varname, None)
+        value = Utils.subst_vars(value, conf.env)
         conf.ASSERT(value is not None, "Missing configure option %s" % varname)
         conf.ASSERT(varname not in conf.env, "Variable %s already defined" % varname)
         conf.env[varname] = value
@@ -33,7 +34,8 @@ def configure(conf):
         v = Utils.subst_vars(v, conf.env)
         conf.ASSERT(v != '', "Empty dynconfig value for %s" % f)
         conf.ASSERT(v.find('${') == -1, "Unsubstituted variable in %s : %s : %s" % (f, dyn_cflags[f], v))
-        conf.env[f] = v
+        if f not in conf.env:
+            conf.env[f] = v
         if f in cflags_vars:
             conf.DEFINE(f, v, quote=True)
 
