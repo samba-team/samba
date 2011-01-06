@@ -64,20 +64,20 @@ def build(bld):
         bld.IS_NEWER('expr.yp', 'lib/Parse/Pidl/Expr.pm')))
 
     if need_yapp_build:
-        Logs.error('''
+        Logs.warn('''
 Pidl grammar files have changed. Please use the pidl standalone build
 to regenerate them with yapp.
 
-$ cd pidl
+$ cd ../pidl
 $ perl Makefile.PL
 $ make lib/Parse/Pidl/IDL.pm lib/Parse/Pidl/Expr.pm
 $ git add lib/Parse/Pidl/IDL.pm lib/Parse/Pidl/Expr.pm
 $ git commit
+$ cd -
 
 If your 100% sure you haven't changed idl.yp and expr.yp
 try this to avoid this message:
 
-$ touch lib/Parse/Pidl/IDL.pm lib/Parse/Pidl/Expr.pm
+$ touch ../pidl/lib/Parse/Pidl/IDL.pm ../pidl/lib/Parse/Pidl/Expr.pm
 ''')
-        sys.exit(1)
 
