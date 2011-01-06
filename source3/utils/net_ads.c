@@ -1132,7 +1132,7 @@ static NTSTATUS net_update_dns_internal(TALLOC_CTX *ctx, ADS_STRUCT *ads,
 					int num_addrs)
 {
 	struct dns_rr_ns *nameservers = NULL;
-	int ns_count = 0;
+	int ns_count = 0, i;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	DNS_ERROR dns_err;
 	fstring dns_server;
@@ -1197,16 +1197,31 @@ static NTSTATUS net_update_dns_internal(TALLOC_CTX *ctx, ADS_STRUCT *ads,
 
 	}
 
-	/* Now perform the dns update - we'll try non-secure and if we fail,
-	   we'll follow it up with a secure update */
+	for (i=0; i < ns_count; i++) {
 
-	fstrcpy( dns_server, nameservers[0].hostname );
+		/* Now perform the dns update - we'll try non-secure and if we fail,
+		   we'll follow it up with a secure update */
 
-	dns_err = DoDNSUpdate(dns_server, dnsdomain, machine_name, addrs, num_addrs);
-	if (!ERR_DNS_IS_OK(dns_err)) {
+		fstrcpy( dns_server, nameservers[i].hostname );
+
+		dns_err = DoDNSUpdate(dns_server, dnsdomain, machine_name, addrs, num_addrs);
+		if (ERR_DNS_IS_OK(dns_err)) {
+			status = NT_STATUS_OK;
+			goto done;
+		}
+
+		if (ERR_DNS_EQUAL(dns_err, ERROR_DNS_INVALID_NAME_SERVER) ||
+		    ERR_DNS_EQUAL(dns_err, ERROR_DNS_CONNECTION_FAILED) ||
+		    ERR_DNS_EQUAL(dns_err, ERROR_DNS_SOCKET_ERROR)) {
+			DEBUG(1,("retrying DNS update with next nameserver after receiving %s\n",
+				dns_errstr(dns_err)));
+			continue;
+		}
+
 		d_printf(_("DNS Update for %s failed: %s\n"),
 			machine_name, dns_errstr(dns_err));
 		status = NT_STATUS_UNSUCCESSFUL;
+		goto done;
 	}
 
 done:
