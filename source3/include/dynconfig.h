@@ -79,6 +79,10 @@ const char *get_dyn_PIDDIR(void);
 const char *set_dyn_PIDDIR(const char *newpath);
 bool is_default_dyn_PIDDIR(void);
 
+const char *get_dyn_NMBDSOCKETDIR(void);
+const char *set_dyn_NMBDSOCKETDIR(const char *newpath);
+bool is_default_dyn_NMBDSOCKETDIR(void);
+
 const char *get_dyn_NCALRPCDIR(void);
 const char *set_dyn_NCALRPCDIR(const char *newpath);
 bool is_default_dyn_NCALRPCDIR(void);

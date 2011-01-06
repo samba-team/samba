@@ -177,6 +177,9 @@ CODEPAGEDIR = @codepagedir@
 # the directory where pid files go
 PIDDIR = @piddir@
 
+# the directory where nmbd listens on the unexpected socket
+NMBDSOCKETDIR = @nmbdsocketdir@
+
 FLAGS = -I. \
 	-I$(srcdir) \
 	@FLAGS1@ \
@@ -206,6 +209,7 @@ PATH_FLAGS = -DSMB_PASSWD_FILE=\"$(SMB_PASSWD_FILE)\" \
 	-DCODEPAGEDIR=\"$(CODEPAGEDIR)\" \
 	-DCACHEDIR=\"$(CACHEDIR)\" \
 	-DSTATEDIR=\"$(STATEDIR)\" \
+	-DNMBDSOCKETDIR=\"$(NMBDSOCKETDIR)\" \
 	-DLOCALEDIR=\"$(LOCALEDIR)\"
 
 # Note that all executable programs now provide for an optional executable suffix.
@@ -3150,6 +3154,7 @@ installdirs::
 	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) \
 		$(DESTDIR) $(prefix) $(BINDIR) $(SBINDIR) $(LIBDIR) \
 		$(VARDIR) $(PRIVATEDIR) $(PIDDIR) $(LOCKDIR) $(STATEDIR) \
+		$(NMBDSOCKETDIR) \
 		$(CACHEDIR) $(MANDIR) $(CODEPAGEDIR) $(MODULESDIR) $(LOCALEDIR)
 
 installservers:: all installdirs
@@ -3228,6 +3233,7 @@ showlayout::
 	@echo "  statedir:    $(STATEDIR)"
 	@echo "  cachedir:    $(CACHEDIR)"
 	@echo "  piddir:      $(PIDDIR)"
+	@echo "  nmbdsocketdir: $(NMBSOCKETDIR)"
 	@echo "  swatdir:     $(SWATDIR)"
 	@echo "  datadir:     ${DATADIR}"
 	@echo "  codepagedir: $(CODEPAGEDIR)"
