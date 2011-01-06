@@ -36,7 +36,8 @@ import talloc
 # this makes debugging easier
 talloc.enable_null_tracking()
 
-class dc_join:
+
+class dc_join(object):
     '''perform a DC join'''
 
     def __init__(ctx, server=None, creds=None, lp=None, site=None,
