@@ -19,12 +19,11 @@ from ldb import (
 from ldb import ERR_CONSTRAINT_VIOLATION
 from ldb import ERR_OPERATIONS_ERROR
 from ldb import Message, MessageElement, Dn
-from ldb import FLAG_MOD_REPLACE, FLAG_MOD_ADD, FLAG_MOD_DELETE
-from samba.ndr import ndr_pack, ndr_unpack
-from samba.dcerpc import security, drsuapi, misc, netlogon, nbt
+from ldb import FLAG_MOD_REPLACE, FLAG_MOD_ADD
+from samba.dcerpc import security, drsuapi, misc
 
 from samba.auth import system_session
-from samba import gensec, sd_utils, join
+from samba import gensec, sd_utils
 from samba.samdb import SamDB
 from samba.credentials import Credentials
 import samba.tests

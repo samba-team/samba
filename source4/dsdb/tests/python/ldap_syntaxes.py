@@ -6,7 +6,6 @@ import optparse
 import sys
 import time
 import random
-import os
 import uuid
 
 sys.path.append("bin/python")
@@ -17,14 +16,10 @@ samba.ensure_external_module("subunit", "subunit/python")
 import samba.getopt as options
 
 from samba.auth import system_session
-from ldb import SCOPE_ONELEVEL, SCOPE_BASE, SCOPE_SUBTREE, LdbError
-from ldb import ERR_NO_SUCH_OBJECT
+from ldb import SCOPE_BASE, SCOPE_SUBTREE, LdbError
 from ldb import ERR_CONSTRAINT_VIOLATION
 from ldb import ERR_INVALID_ATTRIBUTE_SYNTAX
 from ldb import ERR_ENTRY_ALREADY_EXISTS
-
-from samba.ndr import ndr_pack, ndr_unpack
-from samba.dcerpc import security
 
 from subunit.run import SubunitTestRunner
 import unittest

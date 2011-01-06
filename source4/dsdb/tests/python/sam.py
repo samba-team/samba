@@ -42,7 +42,6 @@ from samba.dcerpc.security import (DOMAIN_RID_USERS, DOMAIN_RID_DOMAIN_MEMBERS,
 from subunit.run import SubunitTestRunner
 import unittest
 
-from samba.ndr import ndr_unpack
 from samba.dcerpc import security
 from samba.tests import delete_force
 

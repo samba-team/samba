@@ -19,7 +19,7 @@ import samba.getopt as options
 from ldb import SCOPE_SUBTREE, SCOPE_BASE, LdbError, ERR_NO_SUCH_OBJECT
 
 # For running the test unit
-from samba.ndr import ndr_pack, ndr_unpack
+from samba.ndr import ndr_pack
 from samba.dcerpc import security
 
 from samba import gensec, sd_utils

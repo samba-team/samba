@@ -13,7 +13,7 @@ samba.ensure_external_module("subunit", "subunit/python")
 import samba.getopt as options
 
 from samba.auth import system_session
-from ldb import (SCOPE_BASE, LdbError, ERR_NO_SUCH_OBJECT, Message,
+from ldb import (LdbError, ERR_NO_SUCH_OBJECT, Message,
     MessageElement, Dn, FLAG_MOD_REPLACE)
 from samba.samdb import SamDB
 import samba.tests
