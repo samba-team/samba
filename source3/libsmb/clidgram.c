@@ -271,7 +271,7 @@ static bool parse_getdc_response(
 		return false;
 	}
 
-	status = pull_netlogon_samlogon_response(&blob, mem_ctx, r);
+	status = pull_netlogon_samlogon_response(&blob, r, r);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(r);
 		return false;
