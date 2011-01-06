@@ -297,9 +297,14 @@ sub PythonStruct($$$$$$)
 		$self->pidl("{");
 		$self->indent;
 		$self->pidl("$cname *object = ($cname *)py_talloc_get_ptr(py_obj);");
+		$self->pidl("PyObject *ret;");
 		$self->pidl("char *retstr;");
+		$self->pidl("");
 		$self->pidl("retstr = ndr_print_struct_string(py_talloc_get_mem_ctx(py_obj), (ndr_print_fn_t)ndr_print_$name, \"$name\", object);");
-		$self->pidl("return PyString_FromString(retstr);");
+		$self->pidl("ret = PyString_FromString(retstr);");
+		$self->pidl("talloc_free(retstr);");
+		$self->pidl("");
+		$self->pidl("return ret;");
 		$self->deindent;
 		$self->pidl("}");
 		$self->pidl("");
