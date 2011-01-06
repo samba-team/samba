@@ -23,7 +23,8 @@
 
 static const char *nmbd_socket_dir(void)
 {
-	return lp_parm_const_string(-1, "nmbd", "socket dir", "/tmp/.nmbd");
+	return lp_parm_const_string(-1, "nmbd", "socket dir",
+				    get_dyn_NMBDSOCKETDIR());
 }
 
 struct nb_packet_query {
