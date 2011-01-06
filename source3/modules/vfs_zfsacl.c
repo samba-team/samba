@@ -254,36 +254,36 @@ static NTSTATUS zfsacl_fset_nt_acl(vfs_handle_struct *handle,
    Function declarations taken from vfs_solarisacl
 */
 
-SMB_ACL_T zfsacl_fail__sys_acl_get_file(vfs_handle_struct *handle,
-					const char *path_p,
-					SMB_ACL_TYPE_T type)
-{
-	return (SMB_ACL_T)NULL;
-}
-SMB_ACL_T zfsacl_fail__sys_acl_get_fd(vfs_handle_struct *handle,
-				      files_struct *fsp,
-				      int fd)
+static SMB_ACL_T zfsacl_fail__sys_acl_get_file(vfs_handle_struct *handle,
+					       const char *path_p,
+					       SMB_ACL_TYPE_T type)
 {
 	return (SMB_ACL_T)NULL;
 }
 
-int zfsacl_fail__sys_acl_set_file(vfs_handle_struct *handle,
-				  const char *name,
-				  SMB_ACL_TYPE_T type,
-				  SMB_ACL_T theacl)
+static SMB_ACL_T zfsacl_fail__sys_acl_get_fd(vfs_handle_struct *handle,
+					     files_struct *fsp)
+{
+	return (SMB_ACL_T)NULL;
+}
+
+static int zfsacl_fail__sys_acl_set_file(vfs_handle_struct *handle,
+					 const char *name,
+					 SMB_ACL_TYPE_T type,
+					 SMB_ACL_T theacl)
 {
 	return -1;
 }
 
-int zfsacl_fail__sys_acl_set_fd(vfs_handle_struct *handle,
-				files_struct *fsp,
-				int fd, SMB_ACL_T theacl)
+static int zfsacl_fail__sys_acl_set_fd(vfs_handle_struct *handle,
+				       files_struct *fsp,
+				       SMB_ACL_T theacl)
 {
 	return -1;
 }
 
-int zfsacl_fail__sys_acl_delete_def_file(vfs_handle_struct *handle,
-					 const char *path)
+static int zfsacl_fail__sys_acl_delete_def_file(vfs_handle_struct *handle,
+						const char *path)
 {
 	return -1;
 }
