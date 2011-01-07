@@ -39,8 +39,8 @@ for d in $DIRS;do
 	relativedirname=`find . -type d -name "$d" -prune`
 	n=`echo $d | sed 's/\//_/g'`
 	if [ "$d" = "private" ]; then
-		find $refativedirname -name "*.ldb.bak" -exec rm {} \;
-		for ldb in `find $refativedirname -name "*.ldb"`; do
+		find $relativedirname -name "*.ldb.bak" -exec rm {} \;
+		for ldb in `find $relativedirname -name "*.ldb"`; do
 			tdbbackup $ldb
 			if [ $? -ne 0 ]; then
 				echo "Error while backuping $ldb"
@@ -52,7 +52,7 @@ for d in $DIRS;do
 			echo "Error while archiving ${WHERE}/samba4_${n}.${WHEN}.tar.bz2"
 			exit 1
 		fi
-		find $refativedirname -name "*.ldb.bak" -exec rm {} \;
+		find $relativedirname -name "*.ldb.bak" -exec rm {} \;
 	else
 		tar cjf ${WHERE}/${n}.${WHEN}.tar.bz2  $relativedirname >/dev/null 2>&1
 		if [ $? -ne 0 ]; then
