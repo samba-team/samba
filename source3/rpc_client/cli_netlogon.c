@@ -283,6 +283,92 @@ NTSTATUS rpccli_netlogon_sam_logon(struct rpc_pipe_client *cli,
 	return result;
 }
 
+#define COPY_LSA_STRING(mem_ctx, in, out, name) do { \
+	if (in->name.string) { \
+		out->name.string = talloc_strdup(mem_ctx, in->name.string); \
+		NT_STATUS_HAVE_NO_MEMORY(out->name.string); \
+	} \
+} while (0)
+
+static NTSTATUS copy_netr_SamBaseInfo(TALLOC_CTX *mem_ctx,
+				      const struct netr_SamBaseInfo *in,
+				      struct netr_SamBaseInfo *out)
+{
+	/* first copy all, then realloc pointers */
+	*out = *in;
+
+	COPY_LSA_STRING(mem_ctx, in, out, account_name);
+	COPY_LSA_STRING(mem_ctx, in, out, full_name);
+	COPY_LSA_STRING(mem_ctx, in, out, logon_script);
+	COPY_LSA_STRING(mem_ctx, in, out, profile_path);
+	COPY_LSA_STRING(mem_ctx, in, out, home_directory);
+	COPY_LSA_STRING(mem_ctx, in, out, home_drive);
+
+	if (in->groups.count) {
+		out->groups.rids = (struct samr_RidWithAttribute *)
+			talloc_memdup(mem_ctx, in->groups.rids,
+				(sizeof(struct samr_RidWithAttribute) *
+					in->groups.count));
+		NT_STATUS_HAVE_NO_MEMORY(out->groups.rids);
+	}
+
+	COPY_LSA_STRING(mem_ctx, in, out, logon_server);
+	COPY_LSA_STRING(mem_ctx, in, out, domain);
+
+	if (in->domain_sid) {
+		out->domain_sid = sid_dup_talloc(mem_ctx, in->domain_sid);
+		NT_STATUS_HAVE_NO_MEMORY(out->domain_sid);
+	}
+
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS map_validation_to_info3(TALLOC_CTX *mem_ctx,
+					uint16_t validation_level,
+					union netr_Validation *validation,
+					struct netr_SamInfo3 **info3_p)
+{
+	struct netr_SamInfo3 *info3;
+	NTSTATUS status;
+
+	if (validation == NULL) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	switch (validation_level) {
+	case 3:
+		if (validation->sam3 == NULL) {
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+
+		info3 = talloc_move(mem_ctx, &validation->sam3);
+		break;
+	case 6:
+		if (validation->sam6 == NULL) {
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+
+		info3 = talloc_zero(mem_ctx, struct netr_SamInfo3);
+		if (info3 == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		status = copy_netr_SamBaseInfo(info3, &validation->sam6->base, &info3->base);
+		if (!NT_STATUS_IS_OK(status)) {
+			TALLOC_FREE(info3);
+			return status;
+		}
+
+		info3->sidcount = validation->sam6->sidcount;
+		info3->sids = talloc_move(info3, &validation->sam6->sids);
+		break;
+	default:
+		return NT_STATUS_BAD_VALIDATION_CLASS;
+	}
+
+	*info3_p = info3;
+
+	return NT_STATUS_OK;
+}
 
 /**
  * Logon domain user with an 'network' SAM logon
@@ -298,12 +384,12 @@ NTSTATUS rpccli_netlogon_sam_network_logon(struct rpc_pipe_client *cli,
 					   const char *domain,
 					   const char *workstation,
 					   const uint8 chal[8],
+					   uint16_t validation_level,
 					   DATA_BLOB lm_response,
 					   DATA_BLOB nt_response,
 					   struct netr_SamInfo3 **info3)
 {
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	int validation_level = 3;
 	const char *workstation_name_slash;
 	const char *server_name_slash;
 	uint8 zeros[16];
@@ -397,7 +483,10 @@ NTSTATUS rpccli_netlogon_sam_network_logon(struct rpc_pipe_client *cli,
 
 	netlogon_creds_decrypt_samlogon(cli->dc, validation_level, &validation);
 
-	*info3 = validation.sam3;
+	result = map_validation_to_info3(mem_ctx, validation_level, &validation, info3);
+	if (!NT_STATUS_IS_OK(result)) {
+		return result;
+	}
 
 	return result;
 }
@@ -410,12 +499,12 @@ NTSTATUS rpccli_netlogon_sam_network_logon_ex(struct rpc_pipe_client *cli,
 					      const char *domain,
 					      const char *workstation,
 					      const uint8 chal[8],
+					      uint16_t validation_level,
 					      DATA_BLOB lm_response,
 					      DATA_BLOB nt_response,
 					      struct netr_SamInfo3 **info3)
 {
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	int validation_level = 3;
 	const char *workstation_name_slash;
 	const char *server_name_slash;
 	uint8 zeros[16];
@@ -498,7 +587,10 @@ NTSTATUS rpccli_netlogon_sam_network_logon_ex(struct rpc_pipe_client *cli,
 
 	netlogon_creds_decrypt_samlogon(cli->dc, validation_level, &validation);
 
-	*info3 = validation.sam3;
+	result = map_validation_to_info3(mem_ctx, validation_level, &validation, info3);
+	if (!NT_STATUS_IS_OK(result)) {
+		return result;
+	}
 
 	return result;
 }

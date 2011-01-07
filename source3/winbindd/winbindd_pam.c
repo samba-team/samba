@@ -1185,6 +1185,7 @@ typedef	NTSTATUS (*netlogon_fn_t)(struct rpc_pipe_client *cli,
 				  const char *domain,
 				  const char *workstation,
 				  const uint8 chal[8],
+				  uint16_t validation_level,
 				  DATA_BLOB lm_response,
 				  DATA_BLOB nt_response,
 				  struct netr_SamInfo3 **info3);
@@ -1296,6 +1297,8 @@ static NTSTATUS winbindd_dual_pam_auth_samlogon(struct winbindd_domain *domain,
 
 	do {
 		netlogon_fn_t logon_fn;
+		const struct cli_pipe_auth_data *auth;
+		uint32_t neg_flags = 0;
 
 		ZERO_STRUCTP(my_info3);
 		retry = false;
@@ -1305,6 +1308,10 @@ static NTSTATUS winbindd_dual_pam_auth_samlogon(struct winbindd_domain *domain,
 		if (!NT_STATUS_IS_OK(result)) {
 			DEBUG(3, ("could not open handle to NETLOGON pipe\n"));
 			goto done;
+		}
+		auth = netlogon_pipe->auth;
+		if (netlogon_pipe->dc) {
+			neg_flags = netlogon_pipe->dc->negotiate_flags;
 		}
 
 		/* It is really important to try SamLogonEx here,
@@ -1326,7 +1333,34 @@ static NTSTATUS winbindd_dual_pam_auth_samlogon(struct winbindd_domain *domain,
 		 * wrapping SamLogon context.
 		 *
 		 *  -- abartlet 21 April 2008
+		 *
+		 * It's also important to use NetlogonValidationSamInfo4 (6),
+		 * because it relies on the rpc transport encryption
+		 * and avoids using the global netlogon schannel
+		 * session key to en/decrypt secret information
+		 * like the user_session_key for network logons.
+		 *
+		 * [MS-APDS] 3.1.5.2 NTLM Network Logon
+		 * says NETLOGON_NEG_CROSS_FOREST_TRUSTS and
+		 * NETLOGON_NEG_AUTHENTICATED_RPC set together
+		 * are the indication that the server supports
+		 * NetlogonValidationSamInfo4 (6). And must only
+		 * be used if "SealSecureChannel" is used.
+		 *
+		 * -- metze 4 February 2011
 		 */
+
+		if (auth == NULL) {
+			domain->can_do_validation6 = false;
+		} else if (auth->auth_type != PIPE_AUTH_TYPE_SCHANNEL) {
+			domain->can_do_validation6 = false;
+		} else if (auth->auth_level != DCERPC_AUTH_LEVEL_PRIVACY) {
+			domain->can_do_validation6 = false;
+		} else if (!(neg_flags & NETLOGON_NEG_CROSS_FOREST_TRUSTS)) {
+			domain->can_do_validation6 = false;
+		} else if (!(neg_flags & NETLOGON_NEG_AUTHENTICATED_RPC)) {
+			domain->can_do_validation6 = false;
+		}
 
 		logon_fn = contact_domain->can_do_samlogon_ex
 			? rpccli_netlogon_sam_network_logon_ex
@@ -1340,19 +1374,41 @@ static NTSTATUS winbindd_dual_pam_auth_samlogon(struct winbindd_domain *domain,
 				  name_domain,            /* target domain */
 				  global_myname(),        /* workstation */
 				  chal,
+				  domain->can_do_validation6 ? 6 : 3,
 				  lm_resp,
 				  nt_resp,
 				  &my_info3);
-		attempts += 1;
 
 		if ((NT_STATUS_V(result) == DCERPC_FAULT_OP_RNG_ERROR)
 		    && contact_domain->can_do_samlogon_ex) {
 			DEBUG(3, ("Got a DC that can not do NetSamLogonEx, "
 				  "retrying with NetSamLogon\n"));
 			contact_domain->can_do_samlogon_ex = false;
+			/*
+			 * It's likely that the server also does not support
+			 * validation level 6
+			 */
+			domain->can_do_validation6 = false;
 			retry = true;
 			continue;
 		}
+
+		if (domain->can_do_validation6 &&
+		    (NT_STATUS_EQUAL(result, NT_STATUS_INVALID_INFO_CLASS) ||
+		     NT_STATUS_EQUAL(result, NT_STATUS_INVALID_PARAMETER) ||
+		     NT_STATUS_EQUAL(result, NT_STATUS_BUFFER_TOO_SMALL))) {
+			DEBUG(3,("Got a DC that can not do validation level 6, "
+				  "retrying with level 3\n"));
+			domain->can_do_validation6 = false;
+			retry = true;
+			continue;
+		}
+
+		/*
+		 * we increment this after the "feature negotiation"
+		 * for can_do_samlogon_ex and can_do_validation6
+		 */
+		attempts += 1;
 
 		/* We have to try a second time as cm_connect_netlogon
 		   might not yet have noticed that the DC has killed
@@ -1889,6 +1945,8 @@ enum winbindd_result winbindd_dual_pam_auth_crap(struct winbindd_domain *domain,
 
 	do {
 		netlogon_fn_t logon_fn;
+		const struct cli_pipe_auth_data *auth;
+		uint32_t neg_flags = 0;
 
 		retry = false;
 
@@ -1899,6 +1957,22 @@ enum winbindd_result winbindd_dual_pam_auth_crap(struct winbindd_domain *domain,
 			DEBUG(3, ("could not open handle to NETLOGON pipe (error: %s)\n",
 				  nt_errstr(result)));
 			goto done;
+		}
+		auth = netlogon_pipe->auth;
+		if (netlogon_pipe->dc) {
+			neg_flags = netlogon_pipe->dc->negotiate_flags;
+		}
+
+		if (auth == NULL) {
+			domain->can_do_validation6 = false;
+		} else if (auth->auth_type != PIPE_AUTH_TYPE_SCHANNEL) {
+			domain->can_do_validation6 = false;
+		} else if (auth->auth_level != DCERPC_AUTH_LEVEL_PRIVACY) {
+			domain->can_do_validation6 = false;
+		} else if (!(neg_flags & NETLOGON_NEG_CROSS_FOREST_TRUSTS)) {
+			domain->can_do_validation6 = false;
+		} else if (!(neg_flags & NETLOGON_NEG_AUTHENTICATED_RPC)) {
+			domain->can_do_validation6 = false;
 		}
 
 		logon_fn = contact_domain->can_do_samlogon_ex
@@ -1914,6 +1988,7 @@ enum winbindd_result winbindd_dual_pam_auth_crap(struct winbindd_domain *domain,
 				  /* Bug #3248 - found by Stefan Burkei. */
 				  workstation, /* We carefully set this above so use it... */
 				  state->request->data.auth_crap.chal,
+				  domain->can_do_validation6 ? 6 : 3,
 				  lm_resp,
 				  nt_resp,
 				  &info3);
@@ -1923,10 +1998,30 @@ enum winbindd_result winbindd_dual_pam_auth_crap(struct winbindd_domain *domain,
 			DEBUG(3, ("Got a DC that can not do NetSamLogonEx, "
 				  "retrying with NetSamLogon\n"));
 			contact_domain->can_do_samlogon_ex = false;
+			/*
+			 * It's likely that the server also does not support
+			 * validation level 6
+			 */
+			domain->can_do_validation6 = false;
 			retry = true;
 			continue;
 		}
 
+		if (domain->can_do_validation6 &&
+		    (NT_STATUS_EQUAL(result, NT_STATUS_INVALID_INFO_CLASS) ||
+		     NT_STATUS_EQUAL(result, NT_STATUS_INVALID_PARAMETER) ||
+		     NT_STATUS_EQUAL(result, NT_STATUS_BUFFER_TOO_SMALL))) {
+			DEBUG(3,("Got a DC that can not do validation level 6, "
+				  "retrying with level 3\n"));
+			domain->can_do_validation6 = false;
+			retry = true;
+			continue;
+		}
+
+		/*
+		 * we increment this after the "feature negotiation"
+		 * for can_do_samlogon_ex and can_do_validation6
+		 */
 		attempts += 1;
 
 		/* We have to try a second time as cm_connect_netlogon

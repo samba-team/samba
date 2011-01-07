@@ -85,6 +85,7 @@ static NTSTATUS netlogond_validate(TALLOC_CTX *mem_ctx,
 		user_info->client_domain,   /* domain name */
 		user_info->wksta_name,      /* workstation name */
 		(uchar *)auth_context->challenge.data, /* 8 byte challenge. */
+		3,                          /* validation level */
 		user_info->lm_resp,         /* lanman 24 byte response */
 		user_info->nt_resp,         /* nt 24 byte response */
 		&info3);                    /* info3 out */
