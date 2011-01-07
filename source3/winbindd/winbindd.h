@@ -167,6 +167,7 @@ struct winbindd_domain {
 				  * we don't have to try _ex every time. */
 
 	bool can_do_ncacn_ip_tcp;
+	bool can_do_validation6;
 
 	/* Lookup methods for this domain (LDAP or RPC) */
 	struct winbindd_methods *methods;
