@@ -561,9 +561,7 @@ CLIENT_SRC1 = '''client/client.c client/clitar.c
 
 CLIENT_SRC = '''${CLIENT_SRC1}'''
 
-LIBSMBCONF_SRC = '''../lib/smbconf/smbconf.c ../lib/smbconf/smbconf_util.c
-                    ../lib/smbconf/smbconf_txt.c lib/smbconf/smbconf_reg.c
-                    lib/smbconf/smbconf_init.c'''
+LIB_SMBCONF_SRC = 'lib/smbconf/smbconf_init.c lib/smbconf/smbconf_reg.c'
 
 SMBCONFTORT_SRC0 = 'lib/smbconf/testsuite.c'
 
@@ -726,7 +724,7 @@ bld.SAMBA_LIBRARY('netapi',
                     public_deps='''talloc tdb cap wbclient LIB_NONSMBD LIBSMB KRBCLIENT
                     PASSDB SMBLDAP GROUPDB PARAM_WITHOUT_REG DYNCONFIG
                     LIBMSRPC_GEN LIBMSRPC LIBADS LIBNET DCUTIL NDR_LIBNETAPI
-                    RPC_CLIENT_SCHANNEL LIBSMBCONF REG_SMBCONF TOKEN_UTIL
+                    RPC_CLIENT_SCHANNEL LIB_SMBCONF REG_SMBCONF TOKEN_UTIL
                     LIBCLI_SAMR LIBCLI_LSA LIBCLI_NETLOGON
                     RPCCLI_SRVSVC RPCCLI_WKSSVC RPCCLI_INITSHUTDOWN
                     INIT_NETLOGON INIT_SAMR''',
@@ -823,7 +821,7 @@ bld.SAMBA_SUBSYSTEM('PARAM_WITHOUT_REG',
 
 bld.SAMBA_SUBSYSTEM('PARAM',
                     source='',
-                    deps='PARAM_WITHOUT_REG DYNCONFIG LIBSMBCONF',
+                    deps='PARAM_WITHOUT_REG DYNCONFIG LIB_SMBCONF',
                     vars=locals())
 
 bld.SAMBA_SUBSYSTEM('REGFIO',
@@ -928,9 +926,9 @@ bld.SAMBA_SUBSYSTEM('LIBAFS_SETTOKEN',
                     source=AFS_SETTOKEN_SRC,
                     vars=locals())
 
-bld.SAMBA_SUBSYSTEM('LIBSMBCONF',
-                    source=LIBSMBCONF_SRC,
-                    deps='REG_BASE REG_SMBCONF',
+bld.SAMBA_SUBSYSTEM('LIB_SMBCONF',
+                    source=LIB_SMBCONF_SRC,
+                    deps='LIBSMBCONF REG_BASE REG_SMBCONF',
                     vars=locals())
 
 bld.SAMBA_SUBSYSTEM('SMBD_BASE',
@@ -941,7 +939,7 @@ bld.SAMBA_SUBSYSTEM('SMBD_BASE',
                     LIBMSRPC_GEN LIBMSRPC LIBADS LIBADS_SERVER LIBADS_PRINTER
                     vfs vfs_default vfs_posixacl auth rpc LOCKING LIBAFS LIBAFS_SETTOKEN PROFILE
                     PRINTING PRINTBACKEND NDR_XATTR NDR_NOTIFY REGFIO
-                    LIBSMBCONF REG_FULL FNAME_UTIL
+                    LIB_SMBCONF REG_FULL FNAME_UTIL
                     LIBCLI_SAMR LIBCLI_LSA LIBCLI_NETLOGON LIBCLI_SPOOLSS
                     RPCCLI_SRVSVC NAMED_PIPE_AUTH_TSTREAM INIT_NETLOGON INIT_SAMR
                     LIBCLI_SMB_COMMON RPC_SERVER
@@ -1490,6 +1488,7 @@ bld.RECURSE('../lib/iniparser/src')
 bld.RECURSE('../lib/crypto')
 bld.RECURSE('../lib/async_req')
 bld.RECURSE('../lib/addns')
+bld.RECURSE('../lib/smbconf')
 bld.RECURSE('../libcli/auth')
 bld.RECURSE('../libcli/drsuapi')
 bld.RECURSE('../libcli/samsync')
