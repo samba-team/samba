@@ -656,14 +656,6 @@ WINBIND_WINS_NSS_SRC = '''../nsswitch/wins.c'''
 
 WBINFO_SRC = '''../nsswitch/wbinfo.c'''
 
-WINBIND_NSS_SRC = '''${WBCOMMON_SRC} ${LIBREPLACE_SRC}'''
-
-WINBIND_KRB5_LOCATOR_SRC1 = '../nsswitch/winbind_krb5_locator.c'
-WINBIND_KRB5_LOCATOR_SRC = '''${WINBIND_KRB5_LOCATOR_SRC1} ${LIBREPLACE_SRC}'''
-
-POPT_SRC = '''../lib/popt/findme.c ../lib/popt/popt.c ../lib/popt/poptconfig.c \
-          ../lib/popt/popthelp.c ../lib/popt/poptparse.c'''
-
 NTLM_AUTH_SRC1 = '''utils/ntlm_auth.c utils/ntlm_auth_diagnostics.c'''
 
 NTLM_AUTH_SRC = '''${NTLM_AUTH_SRC1}
