@@ -526,8 +526,8 @@ SECRETS_OBJ = passdb/secrets.o passdb/machine_account_secrets.o passdb/machine_s
 	      librpc/gen_ndr/ndr_secrets.o
 
 LIBNBT_OBJ = ../libcli/nbt/nbtname.o \
-	     ../libcli/netlogon.o \
-	     ../libcli/ndr_netlogon.o \
+	     ../libcli/netlogon/netlogon.o \
+	     ../libcli/netlogon/ndr_netlogon.o \
 	     librpc/gen_ndr/ndr_nbt.o \
 	     librpc/gen_ndr/ndr_svcctl.o \
 	     ../librpc/ndr/ndr_svcctl.o
