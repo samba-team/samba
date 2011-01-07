@@ -21,7 +21,7 @@
 
 #include "lib/messaging/messaging.h"
 #include "libcli/libcli.h"
-#include "libcli/netlogon.h"
+#include "libcli/netlogon/netlogon.h"
 
 struct finddcs {
 	struct {

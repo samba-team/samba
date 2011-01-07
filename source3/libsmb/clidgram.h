@@ -1,4 +1,4 @@
-#include "../libcli/netlogon.h"
+#include "../libcli/netlogon/netlogon.h"
 
 /* The following definitions come from libsmb/clidgram.c  */
 

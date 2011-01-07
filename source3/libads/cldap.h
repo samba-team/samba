@@ -1,4 +1,4 @@
-#include "../libcli/netlogon.h"
+#include "../libcli/netlogon/netlogon.h"
 
 /* The following definitions come from libads/cldap.c  */
 bool ads_cldap_netlogon(TALLOC_CTX *mem_ctx,

@@ -20,7 +20,7 @@
 */
 
 #include "includes.h"
-#include "../libcli/netlogon.h"
+#include "../libcli/netlogon/netlogon.h"
 
 NTSTATUS push_netlogon_samlogon_response(DATA_BLOB *data, TALLOC_CTX *mem_ctx,
 					 struct netlogon_samlogon_response *response)
