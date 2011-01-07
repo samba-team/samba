@@ -2086,6 +2086,7 @@ done:
 		  domain->name, domain->active_directory ? "" : "NOT "));
 
 	domain->can_do_ncacn_ip_tcp = domain->active_directory;
+	domain->can_do_validation6 = domain->active_directory;
 
 	TALLOC_FREE(cli);
 
