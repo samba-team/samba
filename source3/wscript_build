@@ -49,7 +49,7 @@ LIBCLI_LSA_SRC = '''rpc_client/cli_lsarpc.c'''
 
 LIBCLI_SAMR_SRC = 'rpc_client/cli_samr.c'
 
-LIBCLI_NETLOGON_SRC = 'rpc_client/cli_netlogon.c'
+LIBRPCCLI_NETLOGON_SRC = 'rpc_client/cli_netlogon.c'
 
 # this includes only the low level parse code, not stuff
 # that requires knowledge of security contexts
@@ -711,7 +711,7 @@ bld.SAMBA_LIBRARY('netapi',
                     PASSDB SMBLDAP GROUPDB PARAM_WITHOUT_REG DYNCONFIG
                     LIBMSRPC_GEN LIBMSRPC LIBADS LIBNET DCUTIL NDR_LIBNETAPI
                     RPC_CLIENT_SCHANNEL LIB_SMBCONF REG_SMBCONF TOKEN_UTIL
-                    LIBCLI_SAMR LIBCLI_LSA LIBCLI_NETLOGON
+                    LIBCLI_SAMR LIBCLI_LSA LIBRPCCLI_NETLOGON
                     RPCCLI_SRVSVC RPCCLI_WKSSVC RPCCLI_INITSHUTDOWN
                     INIT_NETLOGON INIT_SAMR''',
                     public_headers='lib/netapi/netapi.h',
@@ -926,7 +926,7 @@ bld.SAMBA_SUBSYSTEM('SMBD_BASE',
                     vfs vfs_default vfs_posixacl auth rpc LOCKING LIBAFS LIBAFS_SETTOKEN PROFILE
                     PRINTING PRINTBACKEND NDR_XATTR NDR_NOTIFY REGFIO
                     LIB_SMBCONF REG_FULL FNAME_UTIL
-                    LIBCLI_SAMR LIBCLI_LSA LIBCLI_NETLOGON LIBCLI_SPOOLSS
+                    LIBCLI_SAMR LIBCLI_LSA LIBRPCCLI_NETLOGON LIBCLI_SPOOLSS
                     RPCCLI_SRVSVC NAMED_PIPE_AUTH_TSTREAM INIT_NETLOGON INIT_SAMR
                     LIBCLI_SMB_COMMON RPC_SERVER
                     ''',
@@ -1141,8 +1141,8 @@ bld.SAMBA_SUBSYSTEM('LIBCLI_LSA',
                     source=LIBCLI_LSA_SRC,
                     deps='RPCCLI_LSA INIT_LSA')
 
-bld.SAMBA_SUBSYSTEM('LIBCLI_NETLOGON',
-                    source=LIBCLI_NETLOGON_SRC,
+bld.SAMBA_SUBSYSTEM('LIBRPCCLI_NETLOGON',
+                    source=LIBRPCCLI_NETLOGON_SRC,
                     deps='RPCCLI_NETLOGON')
 
 bld.SAMBA_SUBSYSTEM('LIBCLI_SPOOLSS',
@@ -1186,7 +1186,7 @@ bld.SAMBA_BINARY('winbindd/winbindd',
                  SRV_NDR_WBINT RPC_NDR_WBINT LIBAFS
                  LIBAFS_SETTOKEN PROFILE SLCACHE DCUTIL idmap nss_info
                  TOKEN_UTIL
-                 LIBCLI_SAMR LIBCLI_LSA LIBCLI_NETLOGON
+                 LIBCLI_SAMR LIBCLI_LSA LIBRPCCLI_NETLOGON
                  RPC_NDR_DSSETUP NAMED_PIPE_AUTH_TSTREAM INIT_NETLOGON
                  RPC_NCACN_NP RPC_PIPE_REGISTER RPC_SAMR RPC_LSARPC
                  ''',
@@ -1210,7 +1210,7 @@ bld.SAMBA_BINARY('rpcclient/rpcclient',
                  PARAM_WITHOUT_REG wbclient PARAM KRBCLIENT LIBMSRPC_GEN LIBMSRPC
                  LIBADS SMBREADLINE DCUTIL RPCCLI_WINREG RPCCLI_ECHO
                  RPC_CLIENT_SCHANNEL
-                 LIBCLI_SAMR LIBCLI_LSA LIBCLI_NETLOGON LIBCLI_SPOOLSS
+                 LIBCLI_SAMR LIBCLI_LSA LIBRPCCLI_NETLOGON LIBCLI_SPOOLSS
                  RPCCLI_SRVSVC RPCCLI_WKSSVC RPC_NDR_DSSETUP RPC_NDR_DFS
                  RPCCLI_DRSUAPI RPC_NDR_NTSVCS RPCCLI_EVENTLOG INIT_NETLOGON
                  INIT_SAMR
@@ -1232,7 +1232,7 @@ bld.SAMBA_BINARY('net',
                  LIBNET_DSSYNC LIBNET_SAMSYNC LIBEVENTLOG DCUTIL
                  REGFIO NDR_NTPRINTING RPCCLI_WINREG
                  RPC_CLIENT_SCHANNEL TOKEN_UTIL
-                 LIBCLI_SAMR LIBCLI_LSA LIBCLI_NETLOGON LIBCLI_SPOOLSS
+                 LIBCLI_SAMR LIBCLI_LSA LIBRPCCLI_NETLOGON LIBCLI_SPOOLSS
                  RPCCLI_SRVSVC RPCCLI_WKSSVC RPCCLI_SVCCTL RPC_NDR_DSSETUP
                  RPCCLI_INITSHUTDOWN RPCCLI_DRSUAPI INIT_NETLOGON INIT_SAMR
 		 ''',
