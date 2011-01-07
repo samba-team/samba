@@ -147,8 +147,6 @@ LIBADS_PRINTER_SRC = '''libads/ldap_printer.c'''
 SECRETS_SRC = '''passdb/secrets.c passdb/machine_account_secrets.c
                  passdb/machine_sid.c'''
 
-LIBNBT_SRC = '''../libcli/netlogon.c'''
-
 LIBNMB_SRC = '''libsmb/unexpected.c libsmb/namecache.c libsmb/nmblib.c
              libsmb/namequery.c ../libcli/nbt/lmhosts.c libsmb/conncache.c
              libads/dns.c libads/sitename_cache.c'''
@@ -993,8 +991,8 @@ bld.SAMBA_SUBSYSTEM('LIBNMB',
                     vars=locals())
 
 bld.SAMBA_SUBSYSTEM('LIBNBT',
-                    source=LIBNBT_SRC,
-                    deps='NDR_SVCCTL NDR_NBT NDR_NBT_BUF LIBCLI_NDR_NETLOGON',
+                    source='',
+                    deps='NDR_SVCCTL NDR_NBT NDR_NBT_BUF LIBCLI_NETLOGON LIBCLI_NDR_NETLOGON',
                     vars=locals())
 
 bld.SAMBA_SUBSYSTEM('SERVICES',
@@ -1080,10 +1078,6 @@ bld.SAMBA_SUBSYSTEM('NDR_NBT_BUF',
 	source='../libcli/nbt/nbtname.c',
 	deps='talloc',
 	autoproto='nbtname.h')
-
-bld.SAMBA_SUBSYSTEM('LIBCLI_NDR_NETLOGON',
-	source='../libcli/ndr_netlogon.c',
-	public_deps='ndr NDR_SECURITY')
 
 bld.SAMBA_SUBSYSTEM('RPCCLI_WINREG',
 	source='../librpc/gen_ndr/cli_winreg.c',
@@ -1468,6 +1462,7 @@ bld.RECURSE('../libcli/auth')
 bld.RECURSE('../libcli/drsuapi')
 bld.RECURSE('../libcli/ldap')
 bld.RECURSE('../libcli/named_pipe_auth')
+bld.RECURSE('../libcli/netlogon')
 bld.RECURSE('../libcli/samsync')
 bld.RECURSE('../libcli/security')
 bld.RECURSE('../libcli/smb')

@@ -19,7 +19,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "../libcli/netlogon.h"
+#include "../libcli/netlogon/netlogon.h"
 
 /*
   a datagram name request
