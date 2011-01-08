@@ -133,7 +133,7 @@ static int display_referral(char *referral, struct search_context *sctx)
 static int search_callback(struct ldb_request *req, struct ldb_reply *ares)
 {
 	struct search_context *sctx;
-	int ret;
+	int ret = LDB_SUCCESS;
 
 	sctx = talloc_get_type(req->context, struct search_context);
 
@@ -174,7 +174,7 @@ static int search_callback(struct ldb_request *req, struct ldb_reply *ares)
 	}
 
 	talloc_free(ares);
-	if (ret) {
+	if (ret != LDB_SUCCESS) {
 		return ldb_request_done(req, LDB_ERR_OPERATIONS_ERROR);
 	}
 
