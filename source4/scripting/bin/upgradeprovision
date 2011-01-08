@@ -265,7 +265,7 @@ def sanitychecks(samdb, names):
     elif len(res) != 1:
         print "Found %d domain controllers. For the moment " \
               "upgradeprovision is not able to handle an upgrade on a " \
-              "domain with more than one DC. PLease demote the other " \
+              "domain with more than one DC. Please demote the other " \
               "DC(s) before upgrading" % len(res)
         return False
     else:
@@ -1821,7 +1821,7 @@ if __name__ == '__main__':
 
         shutil.rmtree(provisiondir)
     except StandardError, err:
-        message(ERROR, "A problem occurred when trying to upgrade your "
+        message(ERROR, "A problem occurred while trying to upgrade your "
                        "provision. A full backup is located at %s" % backupdir)
         if opts.debugall or opts.debugchange:
             (typ, val, tb) = sys.exc_info()
