@@ -1105,6 +1105,10 @@ static int ltdb_sequence_number(struct ltdb_context *ctx,
 	}
 
 	dn = ldb_dn_new(tmp_ctx, ldb, LTDB_BASEINFO);
+	if (dn == NULL) {
+		ret = LDB_ERR_OPERATIONS_ERROR;
+		goto done;
+	}
 
 	msg = ldb_msg_new(tmp_ctx);
 	if (msg == NULL) {
