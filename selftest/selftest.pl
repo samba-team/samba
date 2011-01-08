@@ -818,6 +818,7 @@ my @exported_envvars = (
 	"KRB5_CONFIG",
 	"WINBINDD_SOCKET_DIR",
 	"WINBINDD_PRIV_PIPE_DIR",
+	"NMBD_SOCKET_DIR",
 	"LOCAL_PATH"
 );
 
