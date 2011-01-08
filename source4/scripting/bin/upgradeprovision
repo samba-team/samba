@@ -142,7 +142,7 @@ parser.add_option("--setupdir", type="string", metavar="DIR",
                   help="directory with setup files")
 parser.add_option("--debugprovision", help="Debug provision", action="store_true")
 parser.add_option("--debugguess", action="store_true",
-                  help="Print information on what is different but won't be changed")
+                  help="Print information on which values are guessed")
 parser.add_option("--debugchange", action="store_true",
                   help="Print information on what is different but won't be changed")
 parser.add_option("--debugchangesd", action="store_true",
