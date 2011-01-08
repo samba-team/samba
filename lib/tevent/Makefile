@@ -15,10 +15,12 @@ test:
 	$(WAF) test $(TEST_OPTIONS)
 
 dist:
-	$(WAF) dist
+	touch .tmplock
+	WAFLOCK=.tmplock $(WAF) dist
 
 distcheck:
-	$(WAF) distcheck
+	touch .tmplock
+	WAFLOCK=.tmplock $(WAF) distcheck
 
 clean:
 	$(WAF) clean
