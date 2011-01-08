@@ -362,7 +362,7 @@ static int extended_callback(struct ldb_request *req, struct ldb_reply *ares,
 	struct ldb_message *msg;
 	struct extended_dn_out_private *p;
 	struct ldb_context *ldb;
-	bool have_reveal_control, checked_reveal_control=false;
+	bool have_reveal_control=false, checked_reveal_control=false;
 
 	ac = talloc_get_type(req->context, struct extended_search_context);
 	p = talloc_get_type(ldb_module_get_private(ac->module), struct extended_dn_out_private);
