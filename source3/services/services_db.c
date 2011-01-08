@@ -270,6 +270,24 @@ static WERROR svcctl_setvalue(struct registry_key *key,
 			      struct registry_value *value)
 {
 	WERROR wresult;
+	struct registry_value *existing;
+
+	wresult = reg_queryvalue(talloc_tos(), key, name, &existing);
+	if (W_ERROR_IS_OK(wresult)) {
+		bool exists;
+
+		exists = ((value->type == existing->type) &&
+			  (data_blob_cmp(&value->data, &existing->data) == 0));
+
+		TALLOC_FREE(existing);
+
+		if (exists) {
+			/*
+			 * Avoid an expensive write when not necessary
+			 */
+			return WERR_OK;
+		}
+	}
 
 	wresult = reg_setvalue(key, name, value);
 	if (!W_ERROR_IS_OK(wresult)) {
