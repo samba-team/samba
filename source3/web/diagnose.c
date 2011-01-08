@@ -35,7 +35,7 @@ bool winbindd_running(void)
 bool nmbd_running(void)
 {
 	struct in_addr loopback_ip;
-	int count, flags;
+	int count;
 	struct sockaddr_storage *ss_list;
 	struct sockaddr_storage ss;
 	NTSTATUS status;
@@ -46,7 +46,7 @@ bool nmbd_running(void)
 	status = name_query("__SAMBA__", 0,
 			    True, True, &ss,
 			    talloc_tos(), &ss_list, &count,
-			    &flags);
+			    NULL);
 	if (NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(ss_list);
 		return True;
