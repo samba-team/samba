@@ -680,7 +680,7 @@ static isc_result_t dlz_lookup_types(struct dlz_bind9_data *state,
 {
 	TALLOC_CTX *tmp_ctx = talloc_new(state);
 	const char *attrs[] = { "dnsRecord", NULL };
-	int ret, i;
+	int ret = LDB_SUCCESS, i;
 	struct ldb_result *res;
 	struct ldb_message_element *el;
 	struct ldb_dn *dn;
@@ -767,7 +767,7 @@ _PUBLIC_ isc_result_t dlz_allnodes(const char *zone, void *dbdata,
 {
 	struct dlz_bind9_data *state = talloc_get_type_abort(dbdata, struct dlz_bind9_data);
 	const char *attrs[] = { "dnsRecord", NULL };
-	int ret, i, j;
+	int ret = LDB_SUCCESS, i, j;
 	struct ldb_dn *dn;
 	struct ldb_result *res;
 	TALLOC_CTX *tmp_ctx = talloc_new(state);
