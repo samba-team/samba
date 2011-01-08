@@ -1071,7 +1071,7 @@ static int ltdb_sequence_number(struct ltdb_context *ctx,
 	struct ldb_context *ldb;
 	struct ldb_module *module = ctx->module;
 	struct ldb_request *req = ctx->req;
-	TALLOC_CTX *tmp_ctx;
+	TALLOC_CTX *tmp_ctx = NULL;
 	struct ldb_seqnum_request *seq;
 	struct ldb_seqnum_result *res;
 	struct ldb_message *msg = NULL;
@@ -1098,6 +1098,7 @@ static int ltdb_sequence_number(struct ltdb_context *ctx,
 		ret = LDB_ERR_OPERATIONS_ERROR;
 		goto done;
 	}
+
 	tmp_ctx = talloc_new(req);
 	if (tmp_ctx == NULL) {
 		ret = LDB_ERR_OPERATIONS_ERROR;
