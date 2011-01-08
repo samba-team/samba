@@ -288,8 +288,8 @@ char *ldb_dn_escape_value(TALLOC_CTX *mem_ctx, struct ldb_val value)
 static bool ldb_dn_explode(struct ldb_dn *dn)
 {
 	char *p, *ex_name, *ex_value, *data, *d, *dt, *t;
-	bool trim = false;
-	bool in_extended = false;
+	bool trim = true;
+	bool in_extended = true;
 	bool in_ex_name = false;
 	bool in_ex_value = false;
 	bool in_attr = false;
@@ -352,10 +352,6 @@ static bool ldb_dn_explode(struct ldb_dn *dn)
 	}
 
 	p = parse_dn;
-	in_extended = true;
-	in_ex_name = false;
-	in_ex_value = false;
-	trim = true;
 	t = NULL;
 	d = dt = data;
 
