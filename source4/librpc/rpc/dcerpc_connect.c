@@ -539,6 +539,7 @@ static void continue_connect(struct composite_context *c, struct pipe_connect_st
 	/* dcerpc pipe connect input parameters */
 	pc.pipe         = s->pipe;
 	pc.binding      = s->binding;
+	pc.pipe_name    = NULL;
 	pc.interface    = s->table;
 	pc.creds        = s->credentials;
 	pc.resolve_ctx  = lpcfg_resolve_context(s->lp_ctx);
