@@ -519,48 +519,35 @@ NTSTATUS cli_get_posix_fs_info(struct cli_state *cli,
 
 static NTSTATUS enc_blob_send_receive(struct cli_state *cli, DATA_BLOB *in, DATA_BLOB *out, DATA_BLOB *param_out)
 {
-	uint16 setup;
-	char param[4];
-	char *rparam=NULL, *rdata=NULL;
-	unsigned int rparam_count=0, rdata_count=0;
-	NTSTATUS status = NT_STATUS_OK;
+	uint16_t setup[1];
+	uint8_t param[4];
+	uint8_t *rparam=NULL, *rdata=NULL;
+	uint32_t num_rparam, num_rdata;
+	NTSTATUS status;
 
-	setup = TRANSACT2_SETFSINFO;
-
+	SSVAL(setup+0, 0, TRANSACT2_SETFSINFO);
 	SSVAL(param,0,0);
 	SSVAL(param,2,SMB_REQUEST_TRANSPORT_ENCRYPTION);
 
-	if (!cli_send_trans(cli, SMBtrans2,
-				NULL,
-				0, 0,
-				&setup, 1, 0,
-				param, 4, 0,
-				(char *)in->data, in->length, CLI_BUFFER_SIZE)) {
-		status = cli_nt_error(cli);
-		goto out;
+	status = cli_trans(talloc_tos(), cli, SMBtrans2, NULL, 0, 0, 0,
+			   setup, 1, 0,
+			   param, 4, 2,
+			   (uint8_t *)in->data, in->length, CLI_BUFFER_SIZE,
+			   NULL,	  /* recv_flags */
+			   NULL, 0, NULL, /* rsetup */
+			   &rparam, 0, &num_rparam,
+			   &rdata, 0, &num_rdata);
+
+	if (!NT_STATUS_IS_OK(status) &&
+	    !NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+		return status;
 	}
 
-	if (!cli_receive_trans(cli, SMBtrans2,
-				&rparam, &rparam_count,
-				&rdata, &rdata_count)) {
-		status = cli_nt_error(cli);
-		goto out;
-	}
+	*out = data_blob(rdata, num_rdata);
+	*param_out = data_blob(rparam, num_rparam);
 
-	if (cli_is_error(cli)) {
-		status = cli_nt_error(cli);
-		if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-			goto out;
-		}
-	}
-
-	*out = data_blob(rdata, rdata_count);
-	*param_out = data_blob(rparam, rparam_count);
-
-  out:
-
-	SAFE_FREE(rparam);
-	SAFE_FREE(rdata);
+	TALLOC_FREE(rparam);
+	TALLOC_FREE(rdata);
 	return status;
 }
 
