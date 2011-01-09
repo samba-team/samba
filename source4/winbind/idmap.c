@@ -311,7 +311,10 @@ static NTSTATUS idmap_sid_to_xid(struct idmap_context *idmap_ctx,
 		uint32_t rid;
 		DEBUG(6, ("This is a local unix uid, just calculate that.\n"));
 		status = dom_sid_split_rid(tmp_ctx, sid, NULL, &rid);
-		if (!NT_STATUS_IS_OK(status)) goto failed;
+		if (!NT_STATUS_IS_OK(status)) {
+			talloc_free(tmp_ctx);
+			return status;
+		}
 
 		unixid->id = rid;
 		unixid->type = ID_TYPE_UID;
@@ -324,7 +327,10 @@ static NTSTATUS idmap_sid_to_xid(struct idmap_context *idmap_ctx,
 		uint32_t rid;
 		DEBUG(6, ("This is a local unix gid, just calculate that.\n"));
 		status = dom_sid_split_rid(tmp_ctx, sid, NULL, &rid);
-		if (!NT_STATUS_IS_OK(status)) goto failed;
+		if (!NT_STATUS_IS_OK(status)) {
+			talloc_free(tmp_ctx);
+			return status;
+		}
 
 		unixid->id = rid;
 		unixid->type = ID_TYPE_GID;
@@ -338,8 +344,8 @@ static NTSTATUS idmap_sid_to_xid(struct idmap_context *idmap_ctx,
 				 ldap_encode_ndr_dom_sid(tmp_ctx, sid));
 	if (ret != LDB_SUCCESS) {
 		DEBUG(1, ("Search failed: %s\n", ldb_errstring(ldb)));
-		status = NT_STATUS_NONE_MAPPED;
-		goto failed;
+		talloc_free(tmp_ctx);
+		return NT_STATUS_NONE_MAPPED;
 	}
 
 	if (res->count == 1) {
@@ -349,14 +355,14 @@ static NTSTATUS idmap_sid_to_xid(struct idmap_context *idmap_ctx,
 						    -1);
 		if (new_xid == (uint32_t) -1) {
 			DEBUG(1, ("Invalid xid mapping.\n"));
-			status = NT_STATUS_NONE_MAPPED;
-			goto failed;
+			talloc_free(tmp_ctx);
+			return NT_STATUS_NONE_MAPPED;
 		}
 
 		if (type == NULL) {
 			DEBUG(1, ("Invalid type for mapping entry.\n"));
-			status = NT_STATUS_NONE_MAPPED;
-			goto failed;
+			talloc_free(tmp_ctx);
+			return NT_STATUS_NONE_MAPPED;
 		}
 
 		unixid->id = new_xid;
