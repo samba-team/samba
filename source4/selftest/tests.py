@@ -311,6 +311,10 @@ for env in ["dc", "fl2000dc", "fl2003dc", "fl2008r2dc"]:
             plantestsuite_loadlist("samba4.rpc.echo on %s with %s and %s" % (transport, bindoptions, echooptions), env, [smb4torture, "$LISTOPT", "%s:$SERVER[%s]" % (transport, bindoptions), echooptions, '-U$USERNAME%$PASSWORD', '-W', '$DOMAIN', 'rpc.echo'])
     plansmbtorturetestsuite("net.api.become.dc", env, '$SERVER[%s] -U$USERNAME%%$PASSWORD -W $DOMAIN' % validate)
 
+for bindoptions in ["sign", "seal"]:
+    env = "dc"
+    plantestsuite_loadlist("samba4.rpc.backupkey with %s" % (bindoptions), env, [smb4torture, "$LISTOPT", "ncacn_np:$SERVER[%s]" % ( bindoptions), '-U$USERNAME%$PASSWORD', '-W', '$DOMAIN', 'rpc.backupkey'])
+
 for transport in transports:
     for bindoptions in ["sign", "seal"]:
         for ntlmoptions in [
