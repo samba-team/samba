@@ -546,7 +546,7 @@ static bool test_dsintid_schema(struct torture_context *tctx, struct DsIntIdTest
 						   la->identifier))
 		if (dsdb_attr->msDS_IntId) {
 			torture_assert(tctx,
-				       drs_attr->attid != dsdb_attr->msDS_IntId,
+				       la->attid != dsdb_attr->msDS_IntId,
 				       _make_error_message(ctx, la->attid,
 							   dsdb_attr,
 							   la->identifier))
