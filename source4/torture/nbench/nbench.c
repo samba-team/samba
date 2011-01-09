@@ -63,7 +63,7 @@ static bool run_netbench(struct torture_context *tctx, struct smbcli_state *cli,
 	FILE *f;
 	bool correct = true;
 	double target_rate = torture_setting_double(tctx, "targetrate", 0);	
-	int n;
+	int n = 0;
 
 	if (target_rate != 0 && client == 0) {
 		printf("Targetting %.4f MByte/sec\n", target_rate);
