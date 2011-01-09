@@ -498,22 +498,12 @@ bool cli_oem_change_password(struct cli_state *cli, const char *user, const char
 
 	data_len = 532;
 
-	if (cli_send_trans(cli,SMBtrans,
-                    PIPE_LANMAN,                          /* name */
-                    0,0,                                  /* fid, flags */
-                    NULL,0,0,                             /* setup, length, max */
-                    param,param_len,4,                    /* param, length, max */
-                    (char *)data,data_len,0                       /* data, length, max */
-                   ) == False) {
+	if (!cli_api(cli,
+		     param, param_len, 4,		/* param, length, max */
+		     (char *)data, data_len, 0,		/* data, length, max */
+		     &rparam, &rprcnt,
+		     &rdata, &rdrcnt)) {
 		DEBUG(0,("cli_oem_change_password: Failed to send password change for user %s\n",
-			user ));
-		return False;
-	}
-
-	if (!cli_receive_trans(cli,SMBtrans,
-                       &rparam, &rprcnt,
-                       &rdata, &rdrcnt)) {
-		DEBUG(0,("cli_oem_change_password: Failed to recieve reply to password change for user %s\n",
 			user ));
 		return False;
 	}
