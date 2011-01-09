@@ -438,7 +438,7 @@ static void smb2_set_operation_credit(struct smbd_server_connection *sconn,
 			const struct iovec *in_vector,
 			struct iovec *out_vector)
 {
-	uint8_t *outhdr = out_vector->iov_base;
+	uint8_t *outhdr = (uint8_t *)out_vector->iov_base;
 	uint16_t credits_requested = 0;
 	uint16_t credits_granted = 0;
 
