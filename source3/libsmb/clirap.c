@@ -1275,67 +1275,41 @@ NTSTATUS cli_qpathinfo_basic(struct cli_state *cli, const char *name,
 
 NTSTATUS cli_qpathinfo_alt_name(struct cli_state *cli, const char *fname, fstring alt_name)
 {
-	unsigned int data_len = 0;
-	unsigned int param_len = 0;
-	uint16 setup = TRANSACT2_QPATHINFO;
-	char *param;
-	char *rparam=NULL, *rdata=NULL;
-	int count=8;
-	char *p;
-	bool ret;
+	uint8_t *rdata;
+	uint32_t num_rdata;
 	unsigned int len;
-	size_t nlen = 2*(strlen(fname)+1);
+	char *converted = NULL;
+	size_t converted_size = 0;
+	NTSTATUS status;
 
-	param = SMB_MALLOC_ARRAY(char, 6+nlen+2);
-	if (!param) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	p = param;
-	memset(param, '\0', 6);
-	SSVAL(p, 0, SMB_QUERY_FILE_ALT_NAME_INFO);
-	p += 6;
-	p += clistr_push(cli, p, fname, nlen, STR_TERMINATE);
-	param_len = PTR_DIFF(p, param);
-
-	do {
-		ret = (cli_send_trans(cli, SMBtrans2,
-				      NULL,           /* Name */
-				      -1, 0,          /* fid, flags */
-				      &setup, 1, 0,   /* setup, length, max */
-				      param, param_len, 10, /* param, length, max */
-				      NULL, data_len, cli->max_xmit /* data, length, max */
-				      ) &&
-		       cli_receive_trans(cli, SMBtrans2,
-					 &rparam, &param_len,
-					 &rdata, &data_len));
-		if (!ret && cli_is_dos_error(cli)) {
-			/* we need to work around a Win95 bug - sometimes
-			   it gives ERRSRV/ERRerror temprarily */
-			uint8 eclass;
-			uint32 ecode;
-			cli_dos_error(cli, &eclass, &ecode);
-			if (eclass != ERRSRV || ecode != ERRerror) break;
-			smb_msleep(100);
-		}
-	} while (count-- && ret==False);
-
-	SAFE_FREE(param);
-
-	if (!ret || !rdata || data_len < 4) {
-		return NT_STATUS_UNSUCCESSFUL;
+	status = cli_qpathinfo(talloc_tos(), cli, fname,
+			       SMB_QUERY_FILE_ALT_NAME_INFO,
+			       4, cli->max_xmit, &rdata, &num_rdata);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
 	len = IVAL(rdata, 0);
 
-	if (len > data_len - 4) {
+	if (len > num_rdata - 4) {
 		return NT_STATUS_INVALID_NETWORK_RESPONSE;
 	}
 
-	clistr_pull(cli->inbuf, alt_name, rdata+4, sizeof(fstring), len,
-		    STR_UNICODE);
+	/* The returned data is a pushed string, not raw data. */
+	if (!convert_string_talloc(talloc_tos(),
+				   cli_ucs2(cli) ? CH_UTF16LE : CH_DOS,
+				   CH_UNIX,
+				   rdata + 4,
+				   len,
+				   &converted,
+				   &converted_size,
+				   true)) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	fstrcpy(alt_name, converted);
 
-	SAFE_FREE(rdata);
-	SAFE_FREE(rparam);
+	TALLOC_FREE(converted);
+	TALLOC_FREE(rdata);
 
 	return NT_STATUS_OK;
 }
