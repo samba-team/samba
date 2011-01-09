@@ -390,7 +390,7 @@ static void nb_packet_client_send(struct nb_packet_client *client,
 	state->hdr.type = p->packet_type;
 	state->hdr.len = build_packet(state->buf, sizeof(state->buf), p);
 
-	state->iov[0].iov_base = &state->hdr;
+	state->iov[0].iov_base = (char *)&state->hdr;
 	state->iov[0].iov_len = sizeof(state->hdr);
 	state->iov[1].iov_base = state->buf;
 	state->iov[1].iov_len = state->hdr.len;
@@ -540,7 +540,7 @@ static void nb_packet_reader_connected(struct tevent_req *subreq)
 		return;
 	}
 
-	state->iov[0].iov_base = &state->query;
+	state->iov[0].iov_base = (char *)&state->query;
 	state->iov[0].iov_len = sizeof(state->query);
 
 	if (state->mailslot_name != NULL) {
