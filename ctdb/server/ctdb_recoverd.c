@@ -1626,13 +1626,14 @@ static int do_recovery(struct ctdb_recoverd *rec,
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR,("Failed to read public ips from remote node %d\n",
 				 culprit));
+		rec->need_takeover_run = true;
 		return -1;
 	}
 	rec->need_takeover_run = false;
 	ret = ctdb_takeover_run(ctdb, nodemap);
 	if (ret != 0) {
-		DEBUG(DEBUG_ERR, (__location__ " Unable to setup public takeover addresses\n"));
-		return -1;
+		DEBUG(DEBUG_ERR, (__location__ " Unable to setup public takeover addresses. ctdb_takeover_run() failed.\n"));
+		rec->need_takeover_run = true;
 	}
 	DEBUG(DEBUG_NOTICE, (__location__ " Recovery - takeip finished\n"));
 
@@ -2047,8 +2048,7 @@ static void process_ipreallocate_requests(struct ctdb_context *ctdb, struct ctdb
 	if (ret == 0) {
 		ret = ctdb_takeover_run(ctdb, rec->nodemap);
 		if (ret != 0) {
-			DEBUG(DEBUG_ERR,("Failed to read public ips from remote node %d\n",
-					 culprit));
+			DEBUG(DEBUG_ERR,("Failed to reallocate addresses: ctdb_takeover_run() failed.\n"));
 			rec->need_takeover_run = true;
 		}
 	}
@@ -3400,8 +3400,7 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 		if (ret != 0) {
 			DEBUG(DEBUG_ERR,("Failed to read public ips from remote node %d\n",
 					 culprit));
-			ctdb_set_culprit(rec, culprit);
-			do_recovery(rec, mem_ctx, pnn, nodemap, vnnmap);
+			rec->need_takeover_run = true;
 			return;
 		}
 
@@ -3416,9 +3415,7 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 
 		ret = ctdb_takeover_run(ctdb, nodemap);
 		if (ret != 0) {
-			DEBUG(DEBUG_ERR, (__location__ " Unable to setup public takeover addresses - starting recovery\n"));
-			ctdb_set_culprit(rec, ctdb->pnn);
-			do_recovery(rec, mem_ctx, pnn, nodemap, vnnmap);
+			DEBUG(DEBUG_ERR, (__location__ " Unable to setup public takeover addresses. Try again later\n"));
 			return;
 		}
 
