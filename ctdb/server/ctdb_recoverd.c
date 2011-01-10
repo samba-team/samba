@@ -2770,7 +2770,7 @@ static int check_recovery_lock(struct ctdb_context *ctdb)
 		return -1;
 	}
 
-	state->child = fork();
+	state->child = ctdb_fork(ctdb);
 	if (state->child == (pid_t)-1) {
 		DEBUG(DEBUG_CRIT,(__location__ " fork() failed in check_reclock child\n"));
 		close(state->fd[0]);

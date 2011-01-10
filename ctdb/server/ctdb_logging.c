@@ -96,7 +96,7 @@ int start_syslog_daemon(struct ctdb_context *ctdb)
 		return -1;
 	}
 	
-	ctdb->syslogd_pid = fork();
+	ctdb->syslogd_pid = ctdb_fork(ctdb);
 	if (ctdb->syslogd_pid == (pid_t)-1) {
 		printf("Failed to create syslog child process\n");
 		close(state->fd[0]);
@@ -454,7 +454,7 @@ struct ctdb_log_state *ctdb_fork_with_logging(TALLOC_CTX *mem_ctx,
 		goto free_log;
 	}
 
-	*pid = fork();
+	*pid = ctdb_fork(ctdb);
 
 	/* Child? */
 	if (*pid == 0) {

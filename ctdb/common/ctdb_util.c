@@ -341,15 +341,20 @@ void ctdb_restore_scheduler(struct ctdb_context *ctdb)
 }
 
 /*
-  make ourselves slightly nicer: eg. a ctdb child.
+ * This function forks a child process and drops the realtime 
+ * scheduler for the child process.
  */
-void ctdb_reduce_priority(struct ctdb_context *ctdb)
+pid_t ctdb_fork(struct ctdb_context *ctdb)
 {
-	errno = 0;
-	if (nice(10) == -1 && errno != 0) {
-		DEBUG(DEBUG_WARNING,("Unable to lower priority: %s\n",
-				     strerror(errno)));
+	pid_t pid;
+
+	pid = fork();
+	if (pid == 0) {
+		if (ctdb->do_setsched) {
+			ctdb_restore_scheduler(ctdb);
+		}
 	}
+	return pid;
 }
 
 void set_nonblocking(int fd)

@@ -117,7 +117,7 @@ struct lockwait_handle *ctdb_lockwait(struct ctdb_db_context *ctdb_db,
 		return NULL;
 	}
 
-	result->child = fork();
+	result->child = ctdb_fork(ctdb_db->ctdb);
 
 	if (result->child == (pid_t)-1) {
 		close(result->fd[0]);

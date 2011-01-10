@@ -153,7 +153,7 @@ static struct ctdb_traverse_local_handle *ctdb_traverse_local(struct ctdb_db_con
 		return NULL;
 	}
 
-	h->child = fork();
+	h->child = ctdb_fork(ctdb_db->ctdb);
 
 	if (h->child == (pid_t)-1) {
 		close(h->fd[0]);

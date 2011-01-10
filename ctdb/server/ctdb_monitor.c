@@ -83,7 +83,7 @@ void ctdb_run_notification_script(struct ctdb_context *ctdb, const char *event)
 		return;
 	}
 
-	child = fork();
+	child = ctdb_fork(ctdb);
 	if (child == (pid_t)-1) {
 		DEBUG(DEBUG_ERR,("Failed to fork() a notification child process\n"));
 		return;

@@ -511,9 +511,8 @@ static void debug_timeout(struct ctdb_event_script_state *state)
 	sprintf(buf, "{ pstree -p; cat /proc/locks; ls -li /var/ctdb/ /var/ctdb/persistent; }"
 			" >/tmp/ctdb.event.%s.%d", tbuf, getpid());
 
-	pid = fork();
+	pid = ctdb_fork(state->ctdb);
 	if (pid == 0) {
-		ctdb_reduce_priority(state->ctdb);
 		system(buf);
 		/* Now we can kill the child */
 		kill(state->child, SIGTERM);

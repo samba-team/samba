@@ -836,7 +836,7 @@ ctdb_vacuum_event(struct event_context *ev, struct timed_event *te,
 		return;
 	}
 
-	child_ctx->child_pid = fork();
+	child_ctx->child_pid = ctdb_fork(ctdb);
 	if (child_ctx->child_pid == (pid_t)-1) {
 		close(child_ctx->fd[0]);
 		close(child_ctx->fd[1]);

@@ -157,7 +157,7 @@ int32_t ctdb_control_get_log(struct ctdb_context *ctdb, TDB_DATA addr)
 	/* spawn a child process to marshall the huge log blob and send it back
 	   to the ctdb tool using a MESSAGE
 	*/
-	child = fork();
+	child = ctdb_fork(ctdb);
 	if (child == (pid_t)-1) {
 		DEBUG(DEBUG_ERR,("Failed to fork a log collector child\n"));
 		return -1;
