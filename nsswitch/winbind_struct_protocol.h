@@ -54,8 +54,9 @@ typedef char fstring[FSTRING_LEN];
  * 25: removed WINBINDD_SET_HWM
  *     removed WINBINDD_SET_MAPPING
  *     removed WINBINDD_REMOVE_MAPPING
+ * 26: added WINBINDD_DC_INFO
  */
-#define WINBIND_INTERFACE_VERSION 25
+#define WINBIND_INTERFACE_VERSION 26
 
 /* Have to deal with time_t being 4 or 8 bytes due to structure alignment.
    On a 64bit Linux box, we have to support a constant structure size
@@ -132,6 +133,7 @@ enum winbindd_cmd {
 				   struct winbindd_domain */
 	WINBINDD_GETDCNAME,	/* Issue a GetDCName Request */
 	WINBINDD_DSGETDCNAME,	/* Issue a DsGetDCName Request */
+	WINBINDD_DC_INFO,	/* Which DC are we connected to? */
 
 	WINBINDD_SHOW_SEQUENCE, /* display sequence numbers of domains */
 
