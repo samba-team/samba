@@ -39,6 +39,7 @@ tasks = {
                           ("install", "make install", "text/plain"),
                           ("test", "TDB_NO_FSYNC=1 make test", "text/plain"),
                           ("check-clean-tree", "../../../script/clean-source-tree.sh", "text/plain"),
+                          ("distcheck", "make distcheck", "text/plain"),
                           ("clean", "make clean", "text/plain") ],
 
     # We don't use TDB_NO_FSYNC=1 here, because we want to test the transaction code
@@ -47,6 +48,7 @@ tasks = {
                   ("install", "make install", "text/plain"),
                   ("test", "make test", "text/plain"),
                   ("check-clean-tree", "../../script/clean-source-tree.sh", "text/plain"),
+                  ("distcheck", "make distcheck", "text/plain"),
                   ("clean", "make clean", "text/plain") ],
 
     "lib/talloc" : [ ("configure", "./configure --enable-developer -C ${PREFIX}", "text/plain"),
@@ -54,6 +56,7 @@ tasks = {
                      ("install", "make install", "text/plain"),
                      ("test", "make test", "text/plain"),
                      ("check-clean-tree", "../../script/clean-source-tree.sh", "text/plain"),
+                     ("distcheck", "make distcheck", "text/plain"),
                      ("clean", "make clean", "text/plain") ],
 
     "lib/replace" : [ ("autogen", "./autogen-waf.sh", "text/plain"),
@@ -62,6 +65,7 @@ tasks = {
                       ("install", "make install", "text/plain"),
                       ("test", "make test", "text/plain"),
                       ("check-clean-tree", "../../script/clean-source-tree.sh", "text/plain"),
+                      ("distcheck", "make distcheck", "text/plain"),
                       ("clean", "make clean", "text/plain") ],
 
     "lib/tevent" : [ ("configure", "./configure --enable-developer -C ${PREFIX}", "text/plain"),
@@ -69,6 +73,7 @@ tasks = {
                      ("install", "make install", "text/plain"),
                      ("test", "make test", "text/plain"),
                      ("check-clean-tree", "../../script/clean-source-tree.sh", "text/plain"),
+                     ("distcheck", "make distcheck", "text/plain"),
                      ("clean", "make clean", "text/plain") ],
 
     "pidl" : [ ("configure", "perl Makefile.PL PREFIX=${PREFIX_DIR}", "text/plain"),
