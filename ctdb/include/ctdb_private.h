@@ -455,7 +455,9 @@ struct ctdb_context {
 	uint32_t recovery_master;
 	struct ctdb_call_state *pending_calls;
 	struct ctdb_client_ip *client_ip_list;
-	struct trbt_tree *server_ids;	
+	struct trbt_tree *server_ids; 
+	bool do_setsched;
+	void *saved_scheduler_param;
 	const char *event_script_dir;
 	const char *notification_script;
 	const char *default_public_interface;
@@ -990,8 +992,8 @@ void ctdb_call_resend_all(struct ctdb_context *ctdb);
 void ctdb_node_dead(struct ctdb_node *node);
 void ctdb_node_connected(struct ctdb_node *node);
 bool ctdb_blocking_freeze(struct ctdb_context *ctdb);
-void ctdb_high_priority(struct ctdb_context *ctdb);
-void ctdb_reduce_priority(struct ctdb_context *ctdb);
+void ctdb_set_scheduler(struct ctdb_context *ctdb);
+void ctdb_restore_scheduler(struct ctdb_context *ctdb);
 int32_t ctdb_control_takeover_ip(struct ctdb_context *ctdb, 
 				 struct ctdb_req_control *c,
 				 TDB_DATA indata, 
