@@ -126,20 +126,18 @@ static const struct {
 	{SID_NAME_DELETED, "Deleted Account"},
 	{SID_NAME_INVALID, "Invalid Account"},
 	{SID_NAME_UNKNOWN, "UNKNOWN"},
-	{SID_NAME_COMPUTER, "Computer"},
-
-	{(enum lsa_SidType)0, NULL}
+	{SID_NAME_COMPUTER, "Computer"}
 };
 
 const char *sid_type_lookup(uint32_t sid_type)
 {
-	int i = 0;
+	int i;
 
 	/* Look through list */
-	while(sid_name_type[i].sid_type != 0) {
-		if (sid_name_type[i].sid_type == sid_type)
+	for (i=0; i < ARRAY_SIZE(sid_name_type); i++) {
+		if (sid_name_type[i].sid_type == sid_type) {
 			return sid_name_type[i].string;
-		i++;
+		}
 	}
 
 	/* Default return */
