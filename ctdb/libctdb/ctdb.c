@@ -154,6 +154,7 @@ struct ctdb_connection *ctdb_connect(const char *addr,
 	ctdb->outq = NULL;
 	ctdb->doneq = NULL;
 	ctdb->in = NULL;
+	ctdb->inqueue = NULL;
 	ctdb->message_handlers = NULL;
 	ctdb->next_id = 0;
 	ctdb->broken = false;
