@@ -248,7 +248,7 @@ sub check_or_start($$$$$) {
 			@preargs = split(/ /, $ENV{NMBD_VALGRIND});
 		}
 
-		exec(@preargs, $self->binpath("nmbd"), "-F", "--no-process-group", "-s", $env_vars->{SERVERCONFFILE}, @optargs) or die("Unable to start nmbd: $!");
+		exec(@preargs, $self->binpath("nmbd"), "-F", "--no-process-group", "-S", "-s", $env_vars->{SERVERCONFFILE}, @optargs) or die("Unable to start nmbd: $!");
 	}
 	write_pid($env_vars, "nmbd", $pid);
 	print "DONE\n";
@@ -407,7 +407,7 @@ sub provision($$$$$$)
 	my $wbsockprivdir="$lockdir/winbindd_privileged";
 
 	my $nmbdsockdir="$prefix_abs/nmbd";
-	push(@dirs,$nmbdsockdir);
+	unlink($nmbdsockdir);
 
 	## 
 	## create the test directory layout
