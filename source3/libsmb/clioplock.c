@@ -38,7 +38,7 @@ struct tevent_req *cli_oplock_ack_send(TALLOC_CTX *mem_ctx,
 	struct tevent_req *req, *subreq;
 	struct cli_oplock_ack_state *state;
 
-	req = tevent_req_create(mem_ctx, &state, struct cli_oplock_ack_state);;
+	req = tevent_req_create(mem_ctx, &state, struct cli_oplock_ack_state);
 	if (req == NULL) {
 		return NULL;
 	}
