@@ -24,6 +24,9 @@ def set_options(opt):
     gr.add_option('--load-list', 
                   help=("Load a test id list from a text file"),
                   action="store", dest='LOAD_LIST', default=None)
+    gr.add_option('--list', 
+                  help=("List available tests"),
+                  action="store_true", dest='LIST', default=False)
     gr.add_option('--tests',
                   help=("wildcard pattern of tests to run"),
                   action="store", dest='TESTS', default='')
@@ -48,8 +51,11 @@ def set_options(opt):
     gr.add_option('--valgrind-server',
                   help=("use valgrind on the server in the tests (opens an xterm)"),
                   action="store_true", dest='VALGRIND_SERVER', default=False)
+    gr.add_option('--screen',
+                  help=("run the samba servers in screen sessions"),
+                  action="store_true", dest='SCREEN', default=False)
     gr.add_option('--gdbtest',
-                  help=("run the testsuite within a gdb xterm window"),
+                  help=("run the servers within a gdb window"),
                   action="store_true", dest='GDBTEST', default=False)
     gr.add_option('--fail-immediately',
                   help=("stop tests on first failure"),
@@ -75,6 +81,8 @@ def cmd_testonly(opt):
         print("ERROR: You must use --enable-selftest to enable selftest")
         sys.exit(1)
 
+    os.environ['SAMBA_SELFTEST'] = '1'
+
     env.TESTS  = Options.options.TESTS
 
     env.SUBUNIT_FORMATTER = '${PYTHON} -u ../selftest/format-subunit --prefix=${SELFTEST_PREFIX} --immediate'
@@ -84,6 +92,14 @@ def cmd_testonly(opt):
         env.FILTER_XFAIL += ' --fail-immediately'
 
     env.FORMAT_TEST_OUTPUT = '${SUBUNIT_FORMATTER}'
+
+    # clean any previous temporary files
+    os.system("rm -rf %s/tmp" % env.SELFTEST_PREFIX);
+
+    # put all command line options in the environment as TESTENV_*=*
+    for o in dir(Options.options):
+        if o[0:1] != '_':
+            os.environ['TESTENV_%s' % o.upper()] = str(getattr(Options.options, o, ''))
 
     env.OPTIONS = ''
     if not Options.options.SLOWTEST:
@@ -98,7 +114,8 @@ def cmd_testonly(opt):
         env.OPTIONS += ' --socket-wrapper-pcap'
     if Options.options.SOCKET_WRAPPER_KEEP_PCAP:
         env.OPTIONS += ' --socket-wrapper-keep-pcap'
-
+    if Options.options.LIST:
+        env.OPTIONS += ' --list'
     if os.environ.get('RUN_FROM_BUILD_FARM') is not None:
         env.FILTER_OPTIONS = '${FILTER_XFAIL} --strip-passed-output'
     else:
@@ -109,14 +126,30 @@ def cmd_testonly(opt):
         if Options.options.VALGRINDLOG is not None:
             os.environ['VALGRIND'] += ' --log-file=%s' % Options.options.VALGRINDLOG
 
-    if Options.options.VALGRIND_SERVER:
-        os.environ['SAMBA_VALGRIND'] = 'xterm -n server -l -e ../selftest/valgrind_run DUMMY=X'
+    server_wrapper=''
 
-    if Options.options.GDBTEST:
-        os.environ['SAMBA_VALGRIND'] = 'xterm -n server -e ../selftest/gdb_run DUMMY=X'
+    if Options.options.VALGRIND_SERVER:
+        server_wrapper = '../selftest/valgrind_run _DUMMY=X'
+    elif Options.options.GDBTEST:
+        server_wrapper = '../selftest/gdb_run _DUMMY=X'
+
+    if Options.options.SCREEN:
+        server_wrapper = '%s/../selftest/in_screen %s' % (os.getcwd(), server_wrapper)
+        os.environ['TERMINAL'] = '%s/../selftest/in_screen' % os.getcwd()
+    elif server_wrapper != '':
+        server_wrapper = 'xterm -n server -l -e %s' % server_wrapper
+
+    if server_wrapper != '':
+        os.environ['SAMBA_VALGRIND'] = server_wrapper
 
     # this is needed for systems without rpath, or with rpath disabled
     ADD_LD_LIBRARY_PATH('bin/shared')
+    ADD_LD_LIBRARY_PATH('bin/shared/private')
+
+    # if we are using a system version of ldb then we need to tell it to
+    # load modules from our modules path
+    if env.USING_SYSTEM_LDB:
+        os.environ['LDB_MODULES_PATH'] = 'bin/modules/ldb'
 
     # tell build system where to find config.h
     os.environ['CONFIG_H'] = 'bin/default/source3/include/config.h'
@@ -126,9 +159,15 @@ def cmd_testonly(opt):
     if os.path.exists(st_done):
         os.unlink(st_done)
 
-    cmd = '(${PERL} ../selftest/selftest.pl --target=samba3 --prefix=${SELFTEST_PREFIX} --builddir=. --srcdir=. --exclude=./selftest/skip --testlist="./selftest/tests.sh|" ${OPTIONS} --socket-wrapper ${TESTS} && touch ${SELFTEST_PREFIX}/st_done) | ${FILTER_OPTIONS} | tee ${SELFTEST_PREFIX}/subunit'
+    if not os.path.isdir(env.SELFTEST_PREFIX):
+        os.makedirs(env.SELFTEST_PREFIX, int('755', 8))
+
+    # We use the full path rather than relative path because it cause problems on some plateforms (ie. solaris 8).
+    cmd = '(${PERL} %s/../selftest/selftest.pl --target=samba3 --prefix=${SELFTEST_PREFIX} --builddir=. --srcdir=. --exclude=./selftest/skip --testlist="./selftest/tests.sh|" ${OPTIONS} --socket-wrapper ${TESTS} && touch ${SELFTEST_PREFIX}/st_done) | ${FILTER_OPTIONS} | tee ${SELFTEST_PREFIX}/subunit' % (os.getcwd())
     if os.environ.get('RUN_FROM_BUILD_FARM') is None and not Options.options.FILTERED_SUBUNIT:
         cmd += ' | ${FORMAT_TEST_OUTPUT}'
+    else:
+        cmd += ' | ${PYTHON} -u ../selftest/filter-subunit'
     cmd = EXPAND_VARIABLES(opt, cmd)
 
     print("test: running %s" % cmd)
