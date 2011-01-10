@@ -192,7 +192,6 @@ struct wbcDomainInfo {
 #define WBC_DOMINFO_TRUSTTYPE_IN_FOREST  0x00000002
 #define WBC_DOMINFO_TRUSTTYPE_EXTERNAL   0x00000003
 
-
 /**
  * @brief Auth User Parameters
  **/
@@ -990,6 +989,20 @@ wbcErr wbcGetGroups(const char *account,
  **/
 wbcErr wbcDomainInfo(const char *domain,
 		     struct wbcDomainInfo **dinfo);
+
+/**
+ * @brief Lookup the currently contacted DCs
+ *
+ * @param domain        The domain to query
+ *
+ * @param num_dcs       Number of DCs currently known
+ * @param dc_names      Names of the currently known DCs
+ * @param dc_ips        IP addresses of the currently known DCs
+ *
+ * @return #wbcErr
+ **/
+wbcErr wbcDcInfo(const char *domain, size_t *num_dcs,
+		 const char ***dc_names, const char ***dc_ips);
 
 /**
  * @brief Enumerate the domain trusts known by Winbind

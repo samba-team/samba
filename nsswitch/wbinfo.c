@@ -787,6 +787,31 @@ static bool wbinfo_check_secret(const char *domain)
 	return true;
 }
 
+/* Find the currently connected DCs */
+
+static bool wbinfo_dc_info(const char *domain_name)
+{
+	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
+	size_t i, num_dcs;
+	const char **dc_names, **dc_ips;
+
+	wbc_status = wbcDcInfo(domain_name, &num_dcs,
+			       &dc_names, &dc_ips);
+	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		printf("Could not find dc info %s\n",
+		       domain_name ? domain_name : "our domain");
+		return false;
+	}
+
+	for (i=0; i<num_dcs; i++) {
+		printf("%s (%s)\n", dc_names[i], dc_ips[i]);
+	}
+	wbcFreeMemory(dc_names);
+	wbcFreeMemory(dc_ips);
+
+	return true;
+}
+
 /* Change trust account password */
 
 static bool wbinfo_change_secret(const char *domain)
@@ -1921,6 +1946,7 @@ enum {
 	OPT_SEQUENCE,
 	OPT_GETDCNAME,
 	OPT_DSGETDCNAME,
+	OPT_DC_INFO,
 	OPT_USERDOMGROUPS,
 	OPT_SIDALIASES,
 	OPT_USERSIDS,
@@ -2030,6 +2056,8 @@ int main(int argc, char **argv, char **envp)
 		{ "getdcname", 0, POPT_ARG_STRING, &string_arg, OPT_GETDCNAME,
 		  "Get a DC name for a foreign domain", "domainname" },
 		{ "dsgetdcname", 0, POPT_ARG_STRING, &string_arg, OPT_DSGETDCNAME, "Find a DC for a domain", "domainname" },
+		{ "dc-info", 0, POPT_ARG_STRING, &string_arg, OPT_DC_INFO,
+		  "Find the currently known DCs", "domainname" },
 		{ "get-auth-user", 0, POPT_ARG_NONE, NULL, OPT_GET_AUTH_USER, "Retrieve user and password used by winbindd (root only)", NULL },
 		{ "ping", 'p', POPT_ARG_NONE, 0, 'p', "Ping winbindd to see if it is alive" },
 		{ "domain", 0, POPT_ARG_STRING, &opt_domain_name, OPT_DOMAIN_NAME, "Define to the domain to restrict operation", "domain" },
@@ -2440,6 +2468,11 @@ int main(int argc, char **argv, char **envp)
 			break;
 		case OPT_DSGETDCNAME:
 			if (!wbinfo_dsgetdcname(string_arg, 0)) {
+				goto done;
+			}
+			break;
+		case OPT_DC_INFO:
+			if (!wbinfo_dc_info(string_arg)) {
 				goto done;
 			}
 			break;

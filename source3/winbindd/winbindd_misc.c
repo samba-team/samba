@@ -314,6 +314,56 @@ static void domain_info_done(struct tevent_req *req)
 	request_ok(state->cli);
 }
 
+void winbindd_dc_info(struct winbindd_cli_state *cli)
+{
+	struct winbindd_domain *domain;
+	char *dc_name, *dc_ip;
+
+	cli->request->domain_name[sizeof(cli->request->domain_name-1)] = '\0';
+
+	DEBUG(3, ("[%5lu]: domain_info [%s]\n", (unsigned long)cli->pid,
+		  cli->request->domain_name));
+
+	if (cli->request->domain_name[0] != '\0') {
+		domain = find_domain_from_name_noinit(
+			cli->request->domain_name);
+		DEBUG(10, ("Could not find domain %s\n",
+			   cli->request->domain_name));
+		if (domain == NULL) {
+			request_error(cli);
+			return;
+		}
+	} else {
+		domain = find_our_domain();
+	}
+
+	if (!fetch_current_dc_from_gencache(
+		    talloc_tos(), domain->name, &dc_name, &dc_ip)) {
+		DEBUG(10, ("fetch_current_dc_from_gencache(%s) failed\n",
+			   domain->name));
+		request_error(cli);
+		return;
+	}
+
+	cli->response->data.num_entries = 1;
+	cli->response->extra_data.data = talloc_asprintf(
+		cli->mem_ctx, "%s\n%s\n", dc_name, dc_ip);
+
+	TALLOC_FREE(dc_name);
+	TALLOC_FREE(dc_ip);
+
+	if (cli->response->extra_data.data == NULL) {
+		request_error(cli);
+		return;
+	}
+
+	/* must add one to length to copy the 0 for string termination */
+	cli->response->length +=
+		strlen((char *)cli->response->extra_data.data) + 1;
+
+	request_ok(cli);
+}
+
 /* List various tidbits of information */
 
 void winbindd_info(struct winbindd_cli_state *state)

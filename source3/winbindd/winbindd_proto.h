@@ -170,6 +170,9 @@ NTSTATUS cm_connect_lsa_tcp(struct winbindd_domain *domain,
 			    struct rpc_pipe_client **cli);
 NTSTATUS cm_connect_netlogon(struct winbindd_domain *domain,
 			     struct rpc_pipe_client **cli);
+bool fetch_current_dc_from_gencache(TALLOC_CTX *mem_ctx,
+				    const char *domain_name,
+				    char **p_dc_name, char **p_dc_ip);
 
 /* The following definitions come from winbindd/winbindd_cred_cache.c  */
 
@@ -322,6 +325,7 @@ enum winbindd_result winbindd_dual_list_trusted_domains(struct winbindd_domain *
 							struct winbindd_cli_state *state);
 void winbindd_show_sequence(struct winbindd_cli_state *state);
 void winbindd_domain_info(struct winbindd_cli_state *state);
+void winbindd_dc_info(struct winbindd_cli_state *state);
 void winbindd_ping(struct winbindd_cli_state *state);
 void winbindd_info(struct winbindd_cli_state *state);
 void winbindd_interface_version(struct winbindd_cli_state *state);

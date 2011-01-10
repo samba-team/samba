@@ -1419,6 +1419,88 @@ static bool find_new_dc(TALLOC_CTX *mem_ctx,
 	goto again;
 }
 
+static char *current_dc_key(TALLOC_CTX *mem_ctx, const char *domain_name)
+{
+	return talloc_asprintf_strupper_m(mem_ctx, "CURRENT_DCNAME/%s",
+					  domain_name);
+}
+
+static void store_current_dc_in_gencache(const char *domain_name,
+					 const char *dc_name,
+					 struct cli_state *cli)
+{
+	char addr[INET6_ADDRSTRLEN];
+	char *key, *value;
+
+	if (cli == NULL) {
+		return;
+	}
+	if (cli->fd == -1) {
+		return;
+	}
+	get_peer_addr(cli->fd, addr, sizeof(addr));
+
+	key = current_dc_key(talloc_tos(), domain_name);
+	if (key == NULL) {
+		goto done;
+	}
+
+	value = talloc_asprintf(talloc_tos(), "%s %s", addr, dc_name);
+	if (value == NULL) {
+		goto done;
+	}
+
+	gencache_set(key, value, 0x7ffffffff);
+done:
+	TALLOC_FREE(value);
+	TALLOC_FREE(key);
+}
+
+bool fetch_current_dc_from_gencache(TALLOC_CTX *mem_ctx,
+				    const char *domain_name,
+				    char **p_dc_name, char **p_dc_ip)
+{
+	char *key, *value, *p;
+	bool ret = false;
+	char *dc_name = NULL;
+	char *dc_ip = NULL;
+
+	key = current_dc_key(talloc_tos(), domain_name);
+	if (key == NULL) {
+		goto done;
+	}
+	if (!gencache_get(key, &value, NULL)) {
+		goto done;
+	}
+	p = strchr(value, ' ');
+	if (p == NULL) {
+		goto done;
+	}
+	dc_ip = talloc_strndup(mem_ctx, value, p - value);
+	if (dc_ip == NULL) {
+		goto done;
+	}
+	dc_name = talloc_strdup(mem_ctx, p+1);
+	if (dc_name == NULL) {
+		goto done;
+	}
+
+	if (p_dc_ip != NULL) {
+		*p_dc_ip = dc_ip;
+		dc_ip = NULL;
+	}
+	if (p_dc_name != NULL) {
+		*p_dc_name = dc_name;
+		dc_name = NULL;
+	}
+	ret = true;
+done:
+	TALLOC_FREE(dc_name);
+	TALLOC_FREE(dc_ip);
+	TALLOC_FREE(key);
+	return ret;
+}
+
 static NTSTATUS cm_open_connection(struct winbindd_domain *domain,
 				   struct winbindd_cm_conn *new_conn)
 {
@@ -1520,6 +1602,17 @@ static NTSTATUS cm_open_connection(struct winbindd_domain *domain,
 			set_global_winbindd_state_online();
 		}
 		set_domain_online(domain);
+
+		/*
+		 * Much as I hate global state, this seems to be the point
+		 * where we can be certain that we have a proper connection to
+		 * a DC. wbinfo --dc-info needs that information, store it in
+		 * gencache with a looong timeout. This will need revisiting
+		 * once we start to connect to multiple DCs, wbcDcInfo is
+		 * already prepared for that.
+		 */
+		store_current_dc_in_gencache(domain->name, domain->dcname,
+					     new_conn->cli);
 	} else {
 		/* Ensure we setup the retry handler. */
 		set_domain_offline(domain);
