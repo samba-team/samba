@@ -62,8 +62,8 @@
 
 
 		<varlistentry>
-		<term>-c|--command='command string'</term>
-		<listitem><para>execute semicolon separated commands (listed 
+		<term>-c|--command=&lt;command string&gt;</term>
+		<listitem><para>Execute semicolon separated commands (listed
 		below) </para></listitem>
 		</varlistentry>
 
