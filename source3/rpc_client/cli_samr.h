@@ -1,3 +1,32 @@
+/*
+ *  Unix SMB/CIFS implementation.
+ *
+ *  SAMR client routines
+ *
+ *  Copyright (c) 2000-2001 Tim Potter
+ *  Copyright (c) 1992-2000 Andrew Tridgell
+ *  Copyright (c) 2002      Rafal Szczesniak
+ *  Copyright (c) 2005      Jeremy Allison
+ *  Copyright (c) 2007      Michael Adam
+ *  Copyright (c) 2008      Guenther Deschner
+ *
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, see <http://www.gnu.org/licenses/>.
+ */
+
+#ifndef _CLI_SAMR_H
+#define _CLI_SAMR_H
+
 /* The following definitions come from rpc_client/cli_samr.c  */
 
 NTSTATUS rpccli_samr_chgpasswd_user(struct rpc_pipe_client *cli,
@@ -31,3 +60,4 @@ NTSTATUS rpccli_try_samr_connects(struct rpc_pipe_client *cli,
 				  uint32_t access_mask,
 				  struct policy_handle *connect_pol);
 
+#endif /* _CLI_SAMR_H */
