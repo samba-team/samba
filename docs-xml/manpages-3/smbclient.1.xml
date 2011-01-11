@@ -469,7 +469,7 @@
 		</varlistentry>
 		
 		<varlistentry>
-		<term>-c|--comand command string</term>
+		<term>-c|--command command string</term>
 		<listitem><para>command string is a semicolon-separated list of 
 		commands to be executed instead of prompting from stdin. <parameter>
 		-N</parameter> is implied by <parameter>-c</parameter>.</para>
