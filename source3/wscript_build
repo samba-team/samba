@@ -710,7 +710,7 @@ bld.SAMBA_LIBRARY('netapi',
                     LIBMSRPC_GEN LIBMSRPC LIBADS LIBNET DCUTIL NDR_LIBNETAPI
                     RPC_CLIENT_SCHANNEL LIB_SMBCONF REG_SMBCONF TOKEN_UTIL
                     LIBCLI_SAMR LIBCLI_LSA LIBRPCCLI_NETLOGON
-                    RPCCLI_SRVSVC RPCCLI_WKSSVC RPCCLI_INITSHUTDOWN
+                    RPCCLI_SRVSVC RPC_NDR_WKSSVC RPCCLI_INITSHUTDOWN
                     INIT_NETLOGON INIT_SAMR''',
                     public_headers='lib/netapi/netapi.h',
                     private_library=True,
@@ -1107,10 +1107,6 @@ bld.SAMBA_SUBSYSTEM('RPCCLI_INITSHUTDOWN',
 	source='../librpc/gen_ndr/cli_initshutdown.c',
 	public_deps='RPC_NDR_INITSHUTDOWN')
 
-bld.SAMBA_SUBSYSTEM('RPCCLI_WKSSVC',
-	source='../librpc/gen_ndr/cli_wkssvc.c',
-	public_deps='RPC_NDR_WKSSVC')
-
 bld.SAMBA_SUBSYSTEM('RPCCLI_SVCCTL',
 	source='../librpc/gen_ndr/cli_svcctl.c',
 	public_deps='RPC_NDR_SVCCTL')
@@ -1205,7 +1201,7 @@ bld.SAMBA_BINARY('rpcclient/rpcclient',
                  LIBADS SMBREADLINE DCUTIL RPCCLI_WINREG RPCCLI_ECHO
                  RPC_CLIENT_SCHANNEL
                  LIBCLI_SAMR LIBCLI_LSA LIBRPCCLI_NETLOGON LIBCLI_SPOOLSS
-                 RPCCLI_SRVSVC RPCCLI_WKSSVC RPC_NDR_DSSETUP RPC_NDR_DFS
+                 RPCCLI_SRVSVC RPC_NDR_WKSSVC RPC_NDR_DSSETUP RPC_NDR_DFS
                  RPCCLI_DRSUAPI RPC_NDR_NTSVCS RPCCLI_EVENTLOG INIT_NETLOGON
                  INIT_SAMR
                  ''',
@@ -1227,7 +1223,7 @@ bld.SAMBA_BINARY('net',
                  REGFIO NDR_NTPRINTING RPCCLI_WINREG
                  RPC_CLIENT_SCHANNEL TOKEN_UTIL
                  LIBCLI_SAMR LIBCLI_LSA LIBRPCCLI_NETLOGON LIBCLI_SPOOLSS
-                 RPCCLI_SRVSVC RPCCLI_WKSSVC RPCCLI_SVCCTL RPC_NDR_DSSETUP
+                 RPCCLI_SRVSVC RPC_NDR_WKSSVC RPCCLI_SVCCTL RPC_NDR_DSSETUP
                  RPCCLI_INITSHUTDOWN RPCCLI_DRSUAPI INIT_NETLOGON INIT_SAMR
 		 ''',
                  vars=locals())
