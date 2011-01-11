@@ -29,19 +29,25 @@ release_lib() {
     }
     tarname=$(basename $tgzname .gz)
     echo "Tarball: $tarname"
-    gunzip $tgzname || exit 1
+    gunzip -f $tgzname || exit 1
     [ -f "$tarname" ] || {
 	echo "Failed to decompress tarball $tarname"
 	exit 1
     }
+
+    tagname=$(basename $tarname .tar | sed s/[\.]/-/g)
+    echo "tagging as $tagname"
+    git tag -s "$tagname" -m "$lib: tag release $tagname"
+
     echo "signing"
+    rm -f "$tarname.asc"
     gpg --detach-sign --armor $tarname || exit 1
     [ -f "$tarname.asc" ] || {
 	echo "Failed to create signature $tarname.asc"
 	exit 1
     }
     echo "compressing"
-    gzip -9 $tarname
+    gzip -f -9 $tarname
     [ -f "$tgzname" ] || {
 	echo "Failed to compress $tgzname"
 	exit 1
