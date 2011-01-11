@@ -354,8 +354,7 @@ LIBCLI_WINREG_OBJ = librpc/gen_ndr/cli_winreg.o \
 
 LIBCLI_NTSVCS_OBJ = librpc/gen_ndr/ndr_ntsvcs_c.o
 
-LIBCLI_DRSUAPI_OBJ = librpc/gen_ndr/cli_drsuapi.o \
-		     librpc/gen_ndr/ndr_drsuapi_c.o
+LIBCLI_DRSUAPI_OBJ = librpc/gen_ndr/ndr_drsuapi_c.o
 
 LIBCLI_DFS_OBJ = librpc/gen_ndr/ndr_dfs_c.o
 
