@@ -43,7 +43,7 @@ LIBCLI_LSA_SRC = '''rpc_client/cli_lsarpc.c'''
 
 LIBCLI_SAMR_SRC = 'rpc_client/cli_samr.c'
 
-LIBRPCCLI_NETLOGON_SRC = 'rpc_client/cli_netlogon.c'
+LIBRPCCLI_NETLOGON_SRC = 'rpc_client/cli_netlogon.c rpc_client/util_netlogon.c'
 
 # this includes only the low level parse code, not stuff
 # that requires knowledge of security contexts
