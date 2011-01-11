@@ -1,7 +1,8 @@
 /* 
    Unix SMB/CIFS implementation.
    Copyright (C) Jelmer Vernooij <jelmer@samba.org> 2007-2008
-   
+   Copyright (C) Andrew Bartlett <abartlet@samba.org> 2011
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
@@ -23,14 +24,73 @@
 #include "pyauth.h"
 #include "pyldb.h"
 #include "auth/system_session_proto.h"
-#include "auth/session.h"
+#include "auth/auth.h"
 #include "param/pyparam.h"
 #include "libcli/security/security.h"
+#include "auth/credentials/pycredentials.h"
+#include "librpc/rpc/pyrpc_util.h"
+
+static PyObject *py_auth_session_get_security_token(PyObject *self, void *closure)
+{
+	struct auth_session_info *session = (struct auth_session_info *)py_talloc_get_ptr(self);
+	PyObject *py_security_token;
+	py_security_token = py_return_ndr_struct("samba.dcerpc.security", "token",
+						 session->security_token, session->security_token);
+	return py_security_token;
+}
+
+static int py_auth_session_set_security_token(PyObject *self, PyObject *value, void *closure)
+{
+	struct auth_session_info *session = (struct auth_session_info *)py_talloc_get_ptr(self);
+	session->security_token = talloc_reference(session, py_talloc_get_ptr(value));
+	return 0;
+}
+
+static PyObject *py_auth_session_get_session_key(PyObject *self, void *closure)
+{
+	struct auth_session_info *session = (struct auth_session_info *)py_talloc_get_ptr(self);
+	return PyString_FromStringAndSize((char *)session->session_key.data, session->session_key.length);
+}
+
+static int py_auth_session_set_session_key(PyObject *self, PyObject *value, void *closure)
+{
+	DATA_BLOB val;
+	struct auth_session_info *session = (struct auth_session_info *)py_talloc_get_ptr(self);
+	val.data = (uint8_t *)PyString_AsString(value);
+	val.length = PyString_Size(value);
+
+	session->session_key = data_blob_talloc(session, val.data, val.length);
+	return 0;
+}
+
+static PyObject *py_auth_session_get_credentials(PyObject *self, void *closure)
+{
+	struct auth_session_info *session = (struct auth_session_info *)py_talloc_get_ptr(self);
+	PyObject *py_credentials;
+	/* This is evil, as the credentials are not IDL structures */
+	py_credentials = py_return_ndr_struct("samba.credentials", "Credentials", session->credentials, session->credentials);
+	return py_credentials;
+}
+
+static int py_auth_session_set_credentials(PyObject *self, PyObject *value, void *closure)
+{
+	struct auth_session_info *session = (struct auth_session_info *)py_talloc_get_ptr(self);
+	session->credentials = talloc_reference(session, PyCredentials_AsCliCredentials(value));
+	return 0;
+}
+
+static PyGetSetDef py_auth_session_getset[] = {
+	{ discard_const_p(char, "security_token"), (getter)py_auth_session_get_security_token, (setter)py_auth_session_set_security_token, NULL },
+	{ discard_const_p(char, "session_key"), (getter)py_auth_session_get_session_key, (setter)py_auth_session_set_session_key, NULL },
+	{ discard_const_p(char, "credentials"), (getter)py_auth_session_get_credentials, (setter)py_auth_session_set_credentials, NULL },
+	{ NULL }
+};
 
 static PyTypeObject PyAuthSession = {
 	.tp_name = "AuthSession",
 	.tp_basicsize = sizeof(py_talloc_Object),
 	.tp_flags = Py_TPFLAGS_DEFAULT,
+	.tp_getset = py_auth_session_getset,
 };
 
 PyObject *PyAuthSession_FromSession(struct auth_session_info *session)
@@ -109,7 +169,7 @@ static PyObject *py_user_session(PyObject *module, PyObject *args, PyObject *kwa
 	NTSTATUS nt_status;
 	struct auth_session_info *session;
 	TALLOC_CTX *mem_ctx;
-	const char * const kwnames[] = { "ldb", "lp_ctx", "principal", "dn", "session_info_flags" };
+	const char * const kwnames[] = { "ldb", "lp_ctx", "principal", "dn", "session_info_flags", NULL };
 	struct ldb_context *ldb_ctx;
 	PyObject *py_ldb = Py_None;
 	PyObject *py_dn = Py_None;
@@ -117,8 +177,8 @@ static PyObject *py_user_session(PyObject *module, PyObject *args, PyObject *kwa
 	struct loadparm_context *lp_ctx = NULL;
 	struct ldb_dn *user_dn;
 	char *principal = NULL;
-	int session_info_flags; /* This is an int, because that's what
-				 * we need for the python
+	int session_info_flags = 0; /* This is an int, because that's
+				 * what we need for the python
 				 * PyArg_ParseTupleAndKeywords */
 
 	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O|OzOi",
@@ -166,7 +226,7 @@ static PyObject *py_user_session(PyObject *module, PyObject *args, PyObject *kwa
 static PyMethodDef py_auth_methods[] = {
 	{ "system_session", (PyCFunction)py_system_session, METH_VARARGS, NULL },
 	{ "admin_session", (PyCFunction)py_admin_session, METH_VARARGS, NULL },
-	{ "user_session", (PyCFunction)py_user_session, METH_VARARGS, NULL },
+	{ "user_session", (PyCFunction)py_user_session, METH_VARARGS|METH_KEYWORDS, NULL },
 	{ NULL },
 };
 
@@ -188,4 +248,10 @@ void initauth(void)
 
 	Py_INCREF(&PyAuthSession);
 	PyModule_AddObject(m, "AuthSession", (PyObject *)&PyAuthSession);
+
+#define ADD_FLAG(val)  PyModule_AddObject(m, #val, PyInt_FromLong(val))
+	ADD_FLAG(AUTH_SESSION_INFO_DEFAULT_GROUPS);
+	ADD_FLAG(AUTH_SESSION_INFO_AUTHENTICATED);
+	ADD_FLAG(AUTH_SESSION_INFO_SIMPLE_PRIVILEGES);
+
 }
