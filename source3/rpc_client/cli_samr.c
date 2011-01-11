@@ -30,13 +30,14 @@
 
 /* User change password */
 
-NTSTATUS rpccli_samr_chgpasswd_user(struct rpc_pipe_client *cli,
+NTSTATUS dcerpc_samr_chgpasswd_user(struct dcerpc_binding_handle *h,
 				    TALLOC_CTX *mem_ctx,
 				    struct policy_handle *user_handle,
 				    const char *newpassword,
-				    const char *oldpassword)
+				    const char *oldpassword,
+				    NTSTATUS *presult)
 {
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS status;
 	struct samr_Password hash1, hash2, hash3, hash4, hash5, hash6;
 
 	uchar old_nt_hash[16];
@@ -64,7 +65,8 @@ NTSTATUS rpccli_samr_chgpasswd_user(struct rpc_pipe_client *cli,
 	E_old_pw_hash(old_lm_hash, new_nt_hash, hash5.hash);
 	E_old_pw_hash(old_nt_hash, new_lm_hash, hash6.hash);
 
-	result = rpccli_samr_ChangePasswordUser(cli, mem_ctx,
+	status = dcerpc_samr_ChangePasswordUser(h,
+						mem_ctx,
 						user_handle,
 						true,
 						&hash1,
@@ -75,11 +77,33 @@ NTSTATUS rpccli_samr_chgpasswd_user(struct rpc_pipe_client *cli,
 						true,
 						&hash5,
 						true,
-						&hash6);
+						&hash6,
+						presult);
+
+	return status;
+}
+
+NTSTATUS rpccli_samr_chgpasswd_user(struct rpc_pipe_client *cli,
+				    TALLOC_CTX *mem_ctx,
+				    struct policy_handle *user_handle,
+				    const char *newpassword,
+				    const char *oldpassword)
+{
+	NTSTATUS status;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+
+	status = dcerpc_samr_chgpasswd_user(cli->binding_handle,
+					    mem_ctx,
+					    user_handle,
+					    newpassword,
+					    oldpassword,
+					    &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 
 	return result;
 }
-
 
 /* User change password */
 
