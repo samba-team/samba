@@ -651,6 +651,7 @@ ctdb_service_unset_reconfigure ()
 
 ctdb_service_reconfigure ()
 {
+    echo "Reconfiguring service \"$service_name\"..."
     if [ -n "$service_reconfigure" ] ; then
 	eval $service_reconfigure
     else
