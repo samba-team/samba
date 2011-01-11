@@ -374,6 +374,15 @@ return acl_get_perm_np(permset_d, perm);
 		msg="Checking whether Linux readahead is available")
     conf.CHECK_DECLS('readahead', headers='fcntl.h', always=True)
 
+    conf.CHECK_CODE('''
+		#include <sys/types.h>
+		#include <sys/socket.h>],
+		struct ucred cred;
+		socklen_t cred_len;
+		int ret = getsockopt(0, SOL_SOCKET, SO_PEERCRED, &cred, &cred_len);''',
+		'HAVE_PEERCRED',
+		msg="Checking whether we can use SO_PEERCRED to get socket credentials")
+
     default_static_modules=TO_LIST('''pdb_smbpasswd pdb_tdbsam pdb_wbc_sam pdb_ldap
                                       auth_sam auth_unix auth_winbind auth_wbc auth_server
                                       auth_domain auth_builtin auth_netlogond vfs_default
