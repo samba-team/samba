@@ -47,6 +47,7 @@ struct composite_context *wb_get_dom_info_send(TALLOC_CTX *mem_ctx,
 	struct dom_sid *dom_sid;
 	struct finddcs finddcs_io;
 
+	DEBUG(5, ("wb_get_dom_info_send called\n"));
 	result = composite_create(mem_ctx, service->task->event_ctx);
 	if (result == NULL) goto failed;
 
