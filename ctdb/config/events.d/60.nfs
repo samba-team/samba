@@ -60,7 +60,7 @@ case "$1" in
 	# the check compeltely
 	p="rpc.statd"
 	which $p >/dev/null 2>/dev/null && {
-		if ctdb_check_rpc "STATD" 1000247 1 >/dev/null ; then
+		if ctdb_check_rpc "STATD" 100024 1 >/dev/null ; then
 			(service_name="nfs_statd"; ctdb_counter_init)
 		else
 			cmd="$p"
