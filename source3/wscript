@@ -364,6 +364,15 @@ return acl_get_perm_np(permset_d, perm);
 		int ret = fallocate64(0, FALLOC_FL_KEEP_SIZE, 0, 10);''',
 		'HAVE_LINUX_FALLOCATE64',
 		msg="Checking whether the Linux 'fallocate64' function is available")
+    conf.CHECK_CODE('''
+		#if defined(HAVE_UNISTD_H)
+		#include <unistd.h>
+		#endif
+		#include <fcntl.h>
+		ssize_t err = readahead(0,0,0x80000);''',
+		'HAVE_LINUX_READAHEAD',
+		msg="Checking whether Linux readahead is available")
+    conf.CHECK_DECLS('readahead', headers='fcntl.h', always=True)
 
     default_static_modules=TO_LIST('''pdb_smbpasswd pdb_tdbsam pdb_wbc_sam pdb_ldap
                                       auth_sam auth_unix auth_winbind auth_wbc auth_server
