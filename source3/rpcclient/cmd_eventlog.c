@@ -21,7 +21,7 @@
 #include "includes.h"
 #include "rpcclient.h"
 #include "../librpc/gen_ndr/ndr_eventlog.h"
-#include "../librpc/gen_ndr/cli_eventlog.h"
+#include "../librpc/gen_ndr/ndr_eventlog_c.h"
 #include "rpc_client/init_lsa.h"
 
 static NTSTATUS get_eventlog_handle(struct rpc_pipe_client *cli,
@@ -29,9 +29,10 @@ static NTSTATUS get_eventlog_handle(struct rpc_pipe_client *cli,
 				    const char *log,
 				    struct policy_handle *handle)
 {
-	NTSTATUS status;
+	NTSTATUS status, result;
 	struct eventlog_OpenUnknown0 unknown0;
 	struct lsa_String logname, servername;
+	struct dcerpc_binding_handle *b = cli->binding_handle;
 
 	unknown0.unknown0 = 0x005c;
 	unknown0.unknown1 = 0x0001;
@@ -39,18 +40,19 @@ static NTSTATUS get_eventlog_handle(struct rpc_pipe_client *cli,
 	init_lsa_String(&logname, log);
 	init_lsa_String(&servername, NULL);
 
-	status = rpccli_eventlog_OpenEventLogW(cli, mem_ctx,
+	status = dcerpc_eventlog_OpenEventLogW(b, mem_ctx,
 					       &unknown0,
 					       &logname,
 					       &servername,
 					       0x00000001, /* major */
 					       0x00000001, /* minor */
-					       handle);
+					       handle,
+					       &result);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	return NT_STATUS_OK;
+	return result;
 }
 
 static NTSTATUS cmd_eventlog_readlog(struct rpc_pipe_client *cli,
@@ -59,7 +61,9 @@ static NTSTATUS cmd_eventlog_readlog(struct rpc_pipe_client *cli,
 				     const char **argv)
 {
 	NTSTATUS status = NT_STATUS_OK;
+	NTSTATUS result = NT_STATUS_OK;
 	struct policy_handle handle;
+	struct dcerpc_binding_handle *b = cli->binding_handle;
 
 	uint32_t flags = EVENTLOG_BACKWARDS_READ |
 			 EVENTLOG_SEQUENTIAL_READ;
@@ -99,33 +103,41 @@ static NTSTATUS cmd_eventlog_readlog(struct rpc_pipe_client *cli,
 		uint32_t size = 0;
 		uint32_t pos = 0;
 
-		status = rpccli_eventlog_ReadEventLogW(cli, mem_ctx,
+		status = dcerpc_eventlog_ReadEventLogW(b, mem_ctx,
 						       &handle,
 						       flags,
 						       offset,
 						       number_of_bytes,
 						       data,
 						       &sent_size,
-						       &real_size);
-		if (NT_STATUS_EQUAL(status, NT_STATUS_BUFFER_TOO_SMALL) &&
+						       &real_size,
+						       &result);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+		if (NT_STATUS_EQUAL(result, NT_STATUS_BUFFER_TOO_SMALL) &&
 		    real_size > 0 ) {
 			number_of_bytes = real_size;
 			data = talloc_array(mem_ctx, uint8_t, real_size);
 			if (!data) {
 				goto done;
 			}
-			status = rpccli_eventlog_ReadEventLogW(cli, mem_ctx,
+			status = dcerpc_eventlog_ReadEventLogW(b, mem_ctx,
 							       &handle,
 							       flags,
 							       offset,
 							       number_of_bytes,
 							       data,
 							       &sent_size,
-							       &real_size);
+							       &real_size,
+							       &result);
+			if (!NT_STATUS_IS_OK(status)) {
+				return status;
+			}
 		}
 
-		if (!NT_STATUS_EQUAL(status, NT_STATUS_END_OF_FILE) &&
-		    !NT_STATUS_IS_OK(status)) {
+		if (!NT_STATUS_EQUAL(result, NT_STATUS_END_OF_FILE) &&
+		    !NT_STATUS_IS_OK(result)) {
 			goto done;
 		}
 
@@ -157,10 +169,10 @@ static NTSTATUS cmd_eventlog_readlog(struct rpc_pipe_client *cli,
 
 		offset++;
 
-	} while (NT_STATUS_IS_OK(status));
+	} while (NT_STATUS_IS_OK(result));
 
  done:
-	rpccli_eventlog_CloseEventLog(cli, mem_ctx, &handle);
+	dcerpc_eventlog_CloseEventLog(b, mem_ctx, &handle, &result);
 
 	return status;
 }
@@ -170,9 +182,10 @@ static NTSTATUS cmd_eventlog_numrecords(struct rpc_pipe_client *cli,
 					int argc,
 					const char **argv)
 {
-	NTSTATUS status;
+	NTSTATUS status, result;
 	struct policy_handle handle;
 	uint32_t number = 0;
+	struct dcerpc_binding_handle *b = cli->binding_handle;
 
 	if (argc != 2) {
 		printf("Usage: %s logname\n", argv[0]);
@@ -184,17 +197,22 @@ static NTSTATUS cmd_eventlog_numrecords(struct rpc_pipe_client *cli,
 		return status;
 	}
 
-	status = rpccli_eventlog_GetNumRecords(cli, mem_ctx,
+	status = dcerpc_eventlog_GetNumRecords(b, mem_ctx,
 					       &handle,
-					       &number);
+					       &number,
+					       &result);
 	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
+	if (!NT_STATUS_IS_OK(result)) {
+		status = result;
 		goto done;
 	}
 
 	printf("number of records: %d\n", number);
 
  done:
-	rpccli_eventlog_CloseEventLog(cli, mem_ctx, &handle);
+	dcerpc_eventlog_CloseEventLog(b, mem_ctx, &handle, &result);
 
 	return status;
 }
@@ -204,9 +222,10 @@ static NTSTATUS cmd_eventlog_oldestrecord(struct rpc_pipe_client *cli,
 					  int argc,
 					  const char **argv)
 {
-	NTSTATUS status;
+	NTSTATUS status, result;
 	struct policy_handle handle;
 	uint32_t oldest_entry = 0;
+	struct dcerpc_binding_handle *b = cli->binding_handle;
 
 	if (argc != 2) {
 		printf("Usage: %s logname\n", argv[0]);
@@ -218,17 +237,22 @@ static NTSTATUS cmd_eventlog_oldestrecord(struct rpc_pipe_client *cli,
 		return status;
 	}
 
-	status = rpccli_eventlog_GetOldestRecord(cli, mem_ctx,
+	status = dcerpc_eventlog_GetOldestRecord(b, mem_ctx,
 						 &handle,
-						 &oldest_entry);
+						 &oldest_entry,
+						 &result);
 	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
+	if (!NT_STATUS_IS_OK(result)) {
+		status = result;
 		goto done;
 	}
 
 	printf("oldest entry: %d\n", oldest_entry);
 
  done:
-	rpccli_eventlog_CloseEventLog(cli, mem_ctx, &handle);
+	dcerpc_eventlog_CloseEventLog(b, mem_ctx, &handle, &result);
 
 	return status;
 }
@@ -238,8 +262,9 @@ static NTSTATUS cmd_eventlog_reportevent(struct rpc_pipe_client *cli,
 					 int argc,
 					 const char **argv)
 {
-	NTSTATUS status;
+	NTSTATUS status, result;
 	struct policy_handle handle;
+	struct dcerpc_binding_handle *b = cli->binding_handle;
 
 	uint16_t num_of_strings = 1;
 	uint32_t data_size = 0;
@@ -267,7 +292,7 @@ static NTSTATUS cmd_eventlog_reportevent(struct rpc_pipe_client *cli,
 	init_lsa_String(&strings[0], "test event written by rpcclient\n");
 	init_lsa_String(&servername, NULL);
 
-	status = rpccli_eventlog_ReportEventW(cli, mem_ctx,
+	status = dcerpc_eventlog_ReportEventW(b, mem_ctx,
 					      &handle,
 					      time(NULL),
 					      EVENTLOG_INFORMATION_TYPE,
@@ -281,9 +306,14 @@ static NTSTATUS cmd_eventlog_reportevent(struct rpc_pipe_client *cli,
 					      data,
 					      0, /* flags */
 					      &record_number,
-					      &time_written);
+					      &time_written,
+					      &result);
 
 	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
+	if (!NT_STATUS_IS_OK(result)) {
+		status = result;
 		goto done;
 	}
 
@@ -291,7 +321,7 @@ static NTSTATUS cmd_eventlog_reportevent(struct rpc_pipe_client *cli,
 		http_timestring(talloc_tos(), time_written));
 
  done:
-	rpccli_eventlog_CloseEventLog(cli, mem_ctx, &handle);
+	dcerpc_eventlog_CloseEventLog(b, mem_ctx, &handle, &result);
 
 	return status;
 }
@@ -301,8 +331,9 @@ static NTSTATUS cmd_eventlog_reporteventsource(struct rpc_pipe_client *cli,
 					       int argc,
 					       const char **argv)
 {
-	NTSTATUS status;
+	NTSTATUS status, result;
 	struct policy_handle handle;
+	struct dcerpc_binding_handle *b = cli->binding_handle;
 
 	uint16_t num_of_strings = 1;
 	uint32_t data_size = 0;
@@ -331,7 +362,7 @@ static NTSTATUS cmd_eventlog_reporteventsource(struct rpc_pipe_client *cli,
 	init_lsa_String(&servername, NULL);
 	init_lsa_String(&sourcename, "rpcclient");
 
-	status = rpccli_eventlog_ReportEventAndSourceW(cli, mem_ctx,
+	status = dcerpc_eventlog_ReportEventAndSourceW(b, mem_ctx,
 						       &handle,
 						       time(NULL),
 						       EVENTLOG_INFORMATION_TYPE,
@@ -346,8 +377,13 @@ static NTSTATUS cmd_eventlog_reporteventsource(struct rpc_pipe_client *cli,
 						       data,
 						       0, /* flags */
 						       &record_number,
-						       &time_written);
+						       &time_written,
+						       &result);
 	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
+	if (!NT_STATUS_IS_OK(result)) {
+		status = result;
 		goto done;
 	}
 
@@ -355,7 +391,7 @@ static NTSTATUS cmd_eventlog_reporteventsource(struct rpc_pipe_client *cli,
 		http_timestring(talloc_tos(), time_written));
 
  done:
-	rpccli_eventlog_CloseEventLog(cli, mem_ctx, &handle);
+	dcerpc_eventlog_CloseEventLog(b, mem_ctx, &handle, &result);
 
 	return status;
 }
@@ -365,10 +401,11 @@ static NTSTATUS cmd_eventlog_registerevsource(struct rpc_pipe_client *cli,
 					      int argc,
 					      const char **argv)
 {
-	NTSTATUS status;
+	NTSTATUS status, result;
 	struct policy_handle log_handle;
 	struct lsa_String module_name, reg_module_name;
 	struct eventlog_OpenUnknown0 unknown0;
+	struct dcerpc_binding_handle *b = cli->binding_handle;
 
 	unknown0.unknown0 = 0x005c;
 	unknown0.unknown1 = 0x0001;
@@ -381,19 +418,24 @@ static NTSTATUS cmd_eventlog_registerevsource(struct rpc_pipe_client *cli,
 	init_lsa_String(&module_name, "rpcclient");
 	init_lsa_String(&reg_module_name, NULL);
 
-	status = rpccli_eventlog_RegisterEventSourceW(cli, mem_ctx,
+	status = dcerpc_eventlog_RegisterEventSourceW(b, mem_ctx,
 						      &unknown0,
 						      &module_name,
 						      &reg_module_name,
 						      1, /* major_version */
 						      1, /* minor_version */
-						      &log_handle);
+						      &log_handle,
+						      &result);
 	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
+	if (!NT_STATUS_IS_OK(result)) {
+		status = result;
 		goto done;
 	}
 
  done:
-	rpccli_eventlog_DeregisterEventSource(cli, mem_ctx, &log_handle);
+	dcerpc_eventlog_DeregisterEventSource(b, mem_ctx, &log_handle, &result);
 
 	return status;
 }
@@ -403,10 +445,11 @@ static NTSTATUS cmd_eventlog_backuplog(struct rpc_pipe_client *cli,
 				       int argc,
 				       const char **argv)
 {
-	NTSTATUS status;
+	NTSTATUS status, result;
 	struct policy_handle handle;
 	struct lsa_String backup_filename;
 	const char *tmp;
+	struct dcerpc_binding_handle *b = cli->binding_handle;
 
 	if (argc != 3) {
 		printf("Usage: %s logname backupname\n", argv[0]);
@@ -426,12 +469,20 @@ static NTSTATUS cmd_eventlog_backuplog(struct rpc_pipe_client *cli,
 
 	init_lsa_String(&backup_filename, tmp);
 
-	status = rpccli_eventlog_BackupEventLogW(cli, mem_ctx,
+	status = dcerpc_eventlog_BackupEventLogW(b, mem_ctx,
 						 &handle,
-						 &backup_filename);
+						 &backup_filename,
+						 &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
+	if (!NT_STATUS_IS_OK(result)) {
+		status = result;
+		goto done;
+	}
 
  done:
-	rpccli_eventlog_CloseEventLog(cli, mem_ctx, &handle);
+	dcerpc_eventlog_CloseEventLog(b, mem_ctx, &handle, &result);
 
 	return status;
 }
@@ -441,11 +492,12 @@ static NTSTATUS cmd_eventlog_loginfo(struct rpc_pipe_client *cli,
 				     int argc,
 				     const char **argv)
 {
-	NTSTATUS status;
+	NTSTATUS status, result;
 	struct policy_handle handle;
 	uint8_t *buffer = NULL;
 	uint32_t buf_size = 0;
 	uint32_t bytes_needed = 0;
+	struct dcerpc_binding_handle *b = cli->binding_handle;
 
 	if (argc != 2) {
 		printf("Usage: %s logname\n", argv[0]);
@@ -457,14 +509,18 @@ static NTSTATUS cmd_eventlog_loginfo(struct rpc_pipe_client *cli,
 		return status;
 	}
 
-	status = rpccli_eventlog_GetLogInformation(cli, mem_ctx,
+	status = dcerpc_eventlog_GetLogInformation(b, mem_ctx,
 						   &handle,
 						   0, /* level */
 						   buffer,
 						   buf_size,
-						   &bytes_needed);
-	if (!NT_STATUS_IS_OK(status) &&
-	    !NT_STATUS_EQUAL(status, NT_STATUS_BUFFER_TOO_SMALL)) {
+						   &bytes_needed,
+						   &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
+	if (!NT_STATUS_IS_OK(result) &&
+	    !NT_STATUS_EQUAL(result, NT_STATUS_BUFFER_TOO_SMALL)) {
 		goto done;
 	}
 
@@ -475,18 +531,23 @@ static NTSTATUS cmd_eventlog_loginfo(struct rpc_pipe_client *cli,
 		goto done;
 	}
 
-	status = rpccli_eventlog_GetLogInformation(cli, mem_ctx,
+	status = dcerpc_eventlog_GetLogInformation(b, mem_ctx,
 						   &handle,
 						   0, /* level */
 						   buffer,
 						   buf_size,
-						   &bytes_needed);
+						   &bytes_needed,
+						   &result);
 	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
+	if (!NT_STATUS_IS_OK(result)) {
+		status = result;
 		goto done;
 	}
 
  done:
-	rpccli_eventlog_CloseEventLog(cli, mem_ctx, &handle);
+	dcerpc_eventlog_CloseEventLog(b, mem_ctx, &handle, &result);
 
 	return status;
 }
