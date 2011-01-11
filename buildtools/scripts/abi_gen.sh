@@ -16,5 +16,6 @@ nm "$SHAREDLIB" | cut -d' ' -f2- | egrep '^[BDGTRVWS]' | grep -v @ | cut -c3- | 
 done
 ) > $GDBSCRIPT
 
-gdb -batch -x $GDBSCRIPT "$SHAREDLIB" < /dev/null
+# forcing the terminal avoids a problem on Fedora12
+TERM=none gdb -batch -x $GDBSCRIPT "$SHAREDLIB" < /dev/null
 rm -f $GDBSCRIPT
