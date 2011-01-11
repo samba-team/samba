@@ -1103,10 +1103,6 @@ bld.SAMBA_SUBSYSTEM('RPCCLI_SRVSVC',
 	source='../librpc/gen_ndr/cli_srvsvc.c',
 	public_deps='RPC_NDR_SRVSVC')
 
-bld.SAMBA_SUBSYSTEM('RPCCLI_SVCCTL',
-	source='../librpc/gen_ndr/cli_svcctl.c',
-	public_deps='RPC_NDR_SVCCTL')
-
 bld.SAMBA_SUBSYSTEM('RPCCLI_SPOOLSS',
 	source='../librpc/gen_ndr/cli_spoolss.c',
 	public_deps='RPC_NDR_SPOOLSS')
@@ -1211,7 +1207,7 @@ bld.SAMBA_BINARY('net',
                  REGFIO NDR_NTPRINTING RPCCLI_WINREG
                  RPC_CLIENT_SCHANNEL TOKEN_UTIL
                  LIBCLI_SAMR LIBCLI_LSA LIBRPCCLI_NETLOGON LIBCLI_SPOOLSS
-                 RPCCLI_SRVSVC RPC_NDR_WKSSVC RPCCLI_SVCCTL RPC_NDR_DSSETUP
+                 RPCCLI_SRVSVC RPC_NDR_WKSSVC RPC_NDR_SVCCTL RPC_NDR_DSSETUP
                  RPC_NDR_INITSHUTDOWN RPC_NDR_DRSUAPI INIT_NETLOGON INIT_SAMR
 		 ''',
                  vars=locals())
