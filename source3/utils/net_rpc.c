@@ -31,7 +31,7 @@
 #include "../librpc/gen_ndr/cli_netlogon.h"
 #include "../librpc/gen_ndr/cli_srvsvc.h"
 #include "../librpc/gen_ndr/cli_spoolss.h"
-#include "../librpc/gen_ndr/cli_initshutdown.h"
+#include "../librpc/gen_ndr/ndr_initshutdown_c.h"
 #include "../librpc/gen_ndr/cli_winreg.h"
 #include "secrets.h"
 #include "lib/netapi/netapi.h"
@@ -5073,17 +5073,21 @@ static NTSTATUS rpc_shutdown_abort_internals(struct net_context *c,
 					int argc,
 					const char **argv)
 {
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
+	WERROR result;
+	struct dcerpc_binding_handle *b = pipe_hnd->binding_handle;
 
-	result = rpccli_initshutdown_Abort(pipe_hnd, mem_ctx, NULL, NULL);
-
-	if (NT_STATUS_IS_OK(result)) {
+	status = dcerpc_initshutdown_Abort(b, mem_ctx, NULL, &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+	if (W_ERROR_IS_OK(result)) {
 		d_printf(_("\nShutdown successfully aborted\n"));
 		DEBUG(5,("cmd_shutdown_abort: query succeeded\n"));
 	} else
 		DEBUG(5,("cmd_shutdown_abort: query failed\n"));
 
-	return result;
+	return werror_to_ntstatus(result);
 }
 
 /**
@@ -5188,10 +5192,12 @@ NTSTATUS rpc_init_shutdown_internals(struct net_context *c,
 				     int argc,
 				     const char **argv)
 {
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
+	WERROR result;
         const char *msg = N_("This machine will be shutdown shortly");
 	uint32 timeout = 20;
 	struct lsa_StringLarge msg_string;
+	struct dcerpc_binding_handle *b = pipe_hnd->binding_handle;
 
 	if (c->opt_comment) {
 		msg = c->opt_comment;
@@ -5203,17 +5209,19 @@ NTSTATUS rpc_init_shutdown_internals(struct net_context *c,
 	msg_string.string = msg;
 
 	/* create an entry */
-	result = rpccli_initshutdown_Init(pipe_hnd, mem_ctx, NULL,
+	status = dcerpc_initshutdown_Init(b, mem_ctx, NULL,
 			&msg_string, timeout, c->opt_force, c->opt_reboot,
-			NULL);
-
-	if (NT_STATUS_IS_OK(result)) {
+			&result);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+	if (W_ERROR_IS_OK(result)) {
 		d_printf(_("\nShutdown of remote machine succeeded\n"));
 		DEBUG(5,("Shutdown of remote machine succeeded\n"));
 	} else {
 		DEBUG(1,("Shutdown of remote machine failed!\n"));
 	}
-	return result;
+	return werror_to_ntstatus(result);
 }
 
 /**
