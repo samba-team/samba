@@ -31,9 +31,12 @@ from samba.netcmd import (
     SuperCommand,
     )
 from samba.samdb import SamDB
-from samba import drs_utils, nttime2string, dsdb
+from samba import drs_utils, nttime2string, dsdb, dcerpc
 from samba.dcerpc import misc
-
+from samba.ndr import ndr_unpack
+import samba.security
+import samba.auth
+from samba.auth import AUTH_SESSION_INFO_DEFAULT_GROUPS, AUTH_SESSION_INFO_AUTHENTICATED, AUTH_SESSION_INFO_SIMPLE_PRIVILEGES
 
 def samdb_connect(ctx):
     '''make a ldap connection to the server'''
@@ -167,15 +170,25 @@ class cmd_list(Command):
         except Exception, e:
             raise CommandError("Failed to find objectClass for user %s" % username, e)
 
-        print("TODO: get user token")
-        # token = self.samdb.get_user_token(username)
+        session_info_flags = ( AUTH_SESSION_INFO_DEFAULT_GROUPS |
+                               AUTH_SESSION_INFO_AUTHENTICATED )
+
+        # When connecting to a remote server, don't look up the local privilege DB
+        if self.url is not None and self.url.startswith('ldap'):
+            session_info_flags |= AUTH_SESSION_INFO_SIMPLE_PRIVILEGES
+
+        session = samba.auth.user_session(self.samdb, lp_ctx=self.lp, dn=user_dn,
+                                          session_info_flags=session_info_flags)
+
+        print dir(session)
+        token = session.security_token
 
         gpos = []
 
         inherit = True
         dn = ldb.Dn(self.samdb, str(user_dn)).parent()
         while True:
-            msg = self.samdb.search(base=dn, scope=ldb.SCOPE_BASE, attrs=['gPLink', 'gPOptions'])[0]
+            msg = self.samdb.search(base=dn, scope=ldb.SCOPE_BASE, attrs=['gPLink', 'gPOptions', 'ntSecurityDescriptor'])[0]
             if 'gPLink' in msg:
                 glist = parse_gplink(msg['gPLink'][0])
                 for g in glist:
@@ -184,9 +197,14 @@ class cmd_list(Command):
                     if g['options'] & dsdb.GPLINK_OPT_DISABLE:
                         continue
 
-                    print("TODO: access checking")
-                    #if not samdb.access_check(secdesc, token, security.SEC_RIGHTS_FILE_READ):
-                    #    continue
+                    secdesc_ndr = msg['ntSecurityDescriptor'][0]
+                    secdesc = ndr_unpack(dcerpc.security.descriptor, secdesc_ndr)
+
+                    try:
+                        samba.security.access_check(secdesc, token, dcerpc.security.SEC_RIGHTS_FILE_READ)
+                    except RuntimeError:
+                        print "Failed access check on %s" % msg.dn
+                        continue
 
                     # check the flags on the GPO
                     flags = int(attr_default(self.samdb.search(base=g['dn'], scope=ldb.SCOPE_BASE, attrs=['flags'])[0], 'flags', 0))
