@@ -14,6 +14,7 @@ start_nfs() {
 service_name="nfs"
 service_start="start_nfs"
 service_stop="startstop_nfs stop"
+service_reconfigure="startstop_nfs restart"
 
 loadconfig
 
