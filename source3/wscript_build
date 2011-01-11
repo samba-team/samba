@@ -1115,10 +1115,6 @@ bld.SAMBA_SUBSYSTEM('RPCCLI_DRSUAPI',
 	source='../librpc/gen_ndr/cli_drsuapi.c',
 	public_deps='RPC_NDR_DRSUAPI')
 
-bld.SAMBA_SUBSYSTEM('RPCCLI_EVENTLOG',
-	source='../librpc/gen_ndr/cli_eventlog.c',
-	public_deps='RPC_NDR_EVENTLOG')
-
 bld.SAMBA_SUBSYSTEM('RPCCLI_SPOOLSS',
 	source='../librpc/gen_ndr/cli_spoolss.c',
 	public_deps='RPC_NDR_SPOOLSS')
@@ -1202,7 +1198,7 @@ bld.SAMBA_BINARY('rpcclient/rpcclient',
                  RPC_CLIENT_SCHANNEL
                  LIBCLI_SAMR LIBCLI_LSA LIBRPCCLI_NETLOGON LIBCLI_SPOOLSS
                  RPCCLI_SRVSVC RPC_NDR_WKSSVC RPC_NDR_DSSETUP RPC_NDR_DFS
-                 RPCCLI_DRSUAPI RPC_NDR_NTSVCS RPCCLI_EVENTLOG INIT_NETLOGON
+                 RPCCLI_DRSUAPI RPC_NDR_NTSVCS RPC_NDR_EVENTLOG INIT_NETLOGON
                  INIT_SAMR
                  ''',
                  vars=locals())
