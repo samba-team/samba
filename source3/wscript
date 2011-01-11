@@ -88,6 +88,7 @@ def configure(conf):
     conf.ADD_LDFLAGS("-Wl,--export-dynamic", testflags=True)
 
     conf.CHECK_HEADERS('execinfo.h libexc.h libunwind.h netdb.h')
+    conf.CHECK_HEADERS('linux/falloc.h')
 
     conf.CHECK_FUNCS('getcwd fchown chmod fchmod mknod mknod64')
     conf.CHECK_FUNCS('strtol strchr strupr chflags')
@@ -334,6 +335,35 @@ return acl_get_perm_np(permset_d, perm);
                     msg="vfs_fileid: checking for statfs() and struct statfs.f_fsid",
                     headers='sys/types.h sys/statfs.h',
                     execute=True)
+
+    if conf.CONFIG_SET('HAVE_FALLOCATE'):
+        conf.CHECK_CODE('''
+		#if defined(HAVE_UNISTD_H)
+		#include <unistd.h>
+		#endif
+		#include <sys/types.h>
+		#define _GNU_SOURCE
+		#include <fcntl.h>
+		#if defined(HAVE_LINUX_FALLOC_H)
+		#include <linux/falloc.h>
+		#endif
+		int ret = fallocate(0, FALLOC_FL_KEEP_SIZE, 0, 10);''',
+		'HAVE_LINUX_FALLOCATE',
+		msg="Checking whether the Linux 'fallocate' function is available")
+    if conf.CONFIG_SET('HAVE_FALLOCATE64'):
+        conf.CHECK_CODE('''
+		#if defined(HAVE_UNISTD_H)
+		#include <unistd.h>
+		#endif
+		#include <sys/types.h>
+		#define _GNU_SOURCE
+		#include <fcntl.h>
+		#if defined(HAVE_LINUX_FALLOC_H)
+		#include <linux/falloc.h>
+		#endif
+		int ret = fallocate64(0, FALLOC_FL_KEEP_SIZE, 0, 10);''',
+		'HAVE_LINUX_FALLOCATE64',
+		msg="Checking whether the Linux 'fallocate64' function is available")
 
     default_static_modules=TO_LIST('''pdb_smbpasswd pdb_tdbsam pdb_wbc_sam pdb_ldap
                                       auth_sam auth_unix auth_winbind auth_wbc auth_server
