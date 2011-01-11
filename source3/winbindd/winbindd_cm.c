@@ -66,7 +66,7 @@
 #include "../librpc/gen_ndr/cli_samr.h"
 #include "../librpc/gen_ndr/cli_lsa.h"
 #include "rpc_client/cli_lsarpc.h"
-#include "../librpc/gen_ndr/cli_dssetup.h"
+#include "../librpc/gen_ndr/ndr_dssetup_c.h"
 #include "libads/sitename_cache.h"
 #include "librpc/gen_ndr/messaging.h"
 #include "libsmb/clidgram.h"
