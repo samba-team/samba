@@ -57,7 +57,7 @@ case "$1" in
 	# if statd is not running we try to restart it
 	# we only do this IF we have a rpc.statd command.
 	# For platforms where rpc.statd does not exist, we skip
-	# the check compeltely
+	# the check completely
 	p="rpc.statd"
 	which $p >/dev/null 2>/dev/null && {
 		if ctdb_check_rpc "STATD" 100024 1 >/dev/null ; then
