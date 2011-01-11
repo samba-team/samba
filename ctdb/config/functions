@@ -375,7 +375,10 @@ startstop_nfs() {
 			service nfsserver stop > /dev/null 2>&1
 			;;
 		restart)
-			service nfsserver restart
+			echo 0 >/proc/fs/nfsd/threads
+			service nfsserver stop > /dev/null 2>&1
+			pkill -9 nfsd
+			service nfsserver start
 			;;
 		esac
 		;;
@@ -390,8 +393,12 @@ startstop_nfs() {
 			service nfslock stop > /dev/null 2>&1
 			;;
 		restart)
-			service nfslock restart
-			service nfs restart
+			echo 0 >/proc/fs/nfsd/threads
+			service nfs stop > /dev/null 2>&1
+			service nfslock stop > /dev/null 2>&1
+			pkill -9 nfsd
+			service nfslock start
+			service nfs start
 			;;
 		esac
 		;;
