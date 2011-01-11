@@ -710,7 +710,7 @@ bld.SAMBA_LIBRARY('netapi',
                     LIBMSRPC_GEN LIBMSRPC LIBADS LIBNET DCUTIL NDR_LIBNETAPI
                     RPC_CLIENT_SCHANNEL LIB_SMBCONF REG_SMBCONF TOKEN_UTIL
                     LIBCLI_SAMR LIBCLI_LSA LIBRPCCLI_NETLOGON
-                    RPCCLI_SRVSVC RPC_NDR_WKSSVC RPCCLI_INITSHUTDOWN
+                    RPCCLI_SRVSVC RPC_NDR_WKSSVC RPC_NDR_INITSHUTDOWN
                     INIT_NETLOGON INIT_SAMR''',
                     public_headers='lib/netapi/netapi.h',
                     private_library=True,
@@ -1103,10 +1103,6 @@ bld.SAMBA_SUBSYSTEM('RPCCLI_SRVSVC',
 	source='../librpc/gen_ndr/cli_srvsvc.c',
 	public_deps='RPC_NDR_SRVSVC')
 
-bld.SAMBA_SUBSYSTEM('RPCCLI_INITSHUTDOWN',
-	source='../librpc/gen_ndr/cli_initshutdown.c',
-	public_deps='RPC_NDR_INITSHUTDOWN')
-
 bld.SAMBA_SUBSYSTEM('RPCCLI_SVCCTL',
 	source='../librpc/gen_ndr/cli_svcctl.c',
 	public_deps='RPC_NDR_SVCCTL')
@@ -1220,7 +1216,7 @@ bld.SAMBA_BINARY('net',
                  RPC_CLIENT_SCHANNEL TOKEN_UTIL
                  LIBCLI_SAMR LIBCLI_LSA LIBRPCCLI_NETLOGON LIBCLI_SPOOLSS
                  RPCCLI_SRVSVC RPC_NDR_WKSSVC RPCCLI_SVCCTL RPC_NDR_DSSETUP
-                 RPCCLI_INITSHUTDOWN RPCCLI_DRSUAPI INIT_NETLOGON INIT_SAMR
+                 RPC_NDR_INITSHUTDOWN RPCCLI_DRSUAPI INIT_NETLOGON INIT_SAMR
 		 ''',
                  vars=locals())
 
