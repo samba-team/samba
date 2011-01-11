@@ -72,21 +72,9 @@ static void PyErr_SetLdbError(PyObject *error, int ret, struct ldb_context *ldb_
 				      ldb_ctx == NULL?ldb_strerror(ret):ldb_errstring(ldb_ctx)));
 }
 
-static PyObject *PyObject_FromLdbValue(struct ldb_context *ldb_ctx, 
-				       struct ldb_message_element *el,
-				       struct ldb_val *val)
+static PyObject *PyObject_FromLdbValue(struct ldb_val *val)
 {
-	struct ldb_val new_val;
-	TALLOC_CTX *mem_ctx = talloc_new(NULL);
-	PyObject *ret;
-
-	new_val = *val;
-
-	ret = PyString_FromStringAndSize((const char *)new_val.data, new_val.length);
-
-	talloc_free(mem_ctx);
-
-	return ret;
+	return PyString_FromStringAndSize((const char *)val->data, val->length);
 }
 
 /**
@@ -1805,7 +1793,7 @@ static PyObject *ldb_msg_element_to_set(struct ldb_context *ldb_ctx,
 
 	for (i = 0; i < me->num_values; i++) {
 		PyList_SetItem(result, i,
-			PyObject_FromLdbValue(ldb_ctx, me, &me->values[i]));
+			PyObject_FromLdbValue(&me->values[i]));
 	}
 
 	return result;
@@ -1819,8 +1807,7 @@ static PyObject *py_ldb_msg_element_get(PyLdbMessageElementObject *self, PyObjec
 	if (i >= PyLdbMessageElement_AsMessageElement(self)->num_values)
 		Py_RETURN_NONE;
 
-	return PyObject_FromLdbValue(NULL, PyLdbMessageElement_AsMessageElement(self), 
-								 &(PyLdbMessageElement_AsMessageElement(self)->values[i]));
+	return PyObject_FromLdbValue(&(PyLdbMessageElement_AsMessageElement(self)->values[i]));
 }
 
 static PyObject *py_ldb_msg_element_flags(PyLdbMessageElementObject *self, PyObject *args)
