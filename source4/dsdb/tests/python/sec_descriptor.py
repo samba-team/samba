@@ -1238,12 +1238,19 @@ class OwnerGroupDescriptorTests(DescriptorTests):
         self.assertEqual("O:DAG:DA", res)
 
     ########################################################################################
-    # Inharitance tests for DACL
+    # Inheritance tests for DACL
 
 class DaclDescriptorTests(DescriptorTests):
 
     def deleteAll(self):
         delete_force(self.ldb_admin, "CN=test_inherit_group,OU=test_inherit_ou," + self.base_dn)
+        delete_force(self.ldb_admin, "OU=test_inherit_ou5,OU=test_inherit_ou1,OU=test_inherit_ou_p," + self.base_dn)
+        delete_force(self.ldb_admin, "OU=test_inherit_ou6,OU=test_inherit_ou2,OU=test_inherit_ou_p," + self.base_dn)
+        delete_force(self.ldb_admin, "OU=test_inherit_ou1,OU=test_inherit_ou_p," + self.base_dn)
+        delete_force(self.ldb_admin, "OU=test_inherit_ou2,OU=test_inherit_ou_p," + self.base_dn)
+        delete_force(self.ldb_admin, "OU=test_inherit_ou3,OU=test_inherit_ou_p," + self.base_dn)
+        delete_force(self.ldb_admin, "OU=test_inherit_ou4,OU=test_inherit_ou_p," + self.base_dn)
+        delete_force(self.ldb_admin, "OU=test_inherit_ou_p," + self.base_dn)
         delete_force(self.ldb_admin, "OU=test_inherit_ou," + self.base_dn)
 
     def setUp(self):
@@ -1545,7 +1552,8 @@ class DaclDescriptorTests(DescriptorTests):
         tmp_desc = security.descriptor.from_sddl(mod, self.domain_sid)
         self.ldb_admin.newgroup("test_inherit_group", groupou="OU=test_inherit_ou", grouptype=4, sd=tmp_desc)
         desc_sddl = self.sd_utils.get_sd_as_sddl(group_dn)
-        self.assertTrue("(D;;WP;;;DA)(D;CIIO;WP;;;CO)" in desc_sddl)
+        self.assertTrue("(D;;WP;;;DA)" in desc_sddl)
+        self.assertTrue("(D;CIIO;WP;;;CO)" in desc_sddl)
 
     def test_212(self):
         """ Provide ACE with IO flag, should be ignored
@@ -1579,6 +1587,55 @@ class DaclDescriptorTests(DescriptorTests):
         # that we've added manually
         desc_sddl = self.sd_utils.get_sd_as_sddl(group_dn)
         self.assertFalse("(D;IO;WP;;;DA)" in desc_sddl)
+
+    def test_214(self):
+        """ Test behavior of ACEs containing generic rights
+        """
+        ou_dn = "OU=test_inherit_ou_p," + self.base_dn
+        ou_dn1 = "OU=test_inherit_ou1," + ou_dn
+        ou_dn2 = "OU=test_inherit_ou2," + ou_dn
+        ou_dn3 = "OU=test_inherit_ou3," + ou_dn
+        ou_dn4 = "OU=test_inherit_ou4," + ou_dn
+        ou_dn5 = "OU=test_inherit_ou5," + ou_dn1
+        ou_dn6 = "OU=test_inherit_ou6," + ou_dn2
+        # Create inheritable-free OU
+        mod = "D:P(A;CI;WPRPLCCCDCWDRC;;;DA)"
+        tmp_desc = security.descriptor.from_sddl(mod, self.domain_sid)
+        self.ldb_admin.create_ou(ou_dn, sd=tmp_desc)
+        mod = "D:(A;CI;GA;;;DU)"
+        tmp_desc = security.descriptor.from_sddl(mod, self.domain_sid)
+        self.ldb_admin.create_ou(ou_dn1, sd=tmp_desc)
+        mod = "D:(A;CIIO;GA;;;DU)"
+        tmp_desc = security.descriptor.from_sddl(mod, self.domain_sid)
+        self.ldb_admin.create_ou(ou_dn2, sd=tmp_desc)
+        mod = "D:(A;;GA;;;DU)"
+        tmp_desc = security.descriptor.from_sddl(mod, self.domain_sid)
+        self.ldb_admin.create_ou(ou_dn3, sd=tmp_desc)
+        mod = "D:(A;IO;GA;;;DU)"
+        tmp_desc = security.descriptor.from_sddl(mod, self.domain_sid)
+        self.ldb_admin.create_ou(ou_dn4, sd=tmp_desc)
+
+        self.ldb_admin.create_ou(ou_dn5)
+        self.ldb_admin.create_ou(ou_dn6)
+
+        desc_sddl = self.sd_utils.get_sd_as_sddl(ou_dn1)
+        self.assertTrue("(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DU)" in desc_sddl)
+        self.assertTrue("(A;CIIO;GA;;;DU)" in desc_sddl)
+        desc_sddl = self.sd_utils.get_sd_as_sddl(ou_dn2)
+        self.assertFalse("(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DU)" in desc_sddl)
+        self.assertTrue("(A;CIIO;GA;;;DU)" in desc_sddl)
+        desc_sddl = self.sd_utils.get_sd_as_sddl(ou_dn3)
+        self.assertTrue("(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DU)" in desc_sddl)
+        self.assertFalse("(A;CIIO;GA;;;DU)" in desc_sddl)
+        desc_sddl = self.sd_utils.get_sd_as_sddl(ou_dn4)
+        self.assertFalse("(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DU)" in desc_sddl)
+        self.assertFalse("(A;CIIO;GA;;;DU)" in desc_sddl)
+        desc_sddl = self.sd_utils.get_sd_as_sddl(ou_dn5)
+        self.assertTrue("(A;ID;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DU)" in desc_sddl)
+        self.assertTrue("(A;CIIOID;GA;;;DU)" in desc_sddl)
+        desc_sddl = self.sd_utils.get_sd_as_sddl(ou_dn6)
+        self.assertTrue("(A;ID;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DU)" in desc_sddl)
+        self.assertTrue("(A;CIIOID;GA;;;DU)" in desc_sddl)
 
     ########################################################################################
 
