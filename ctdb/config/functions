@@ -692,6 +692,8 @@ ctdb_start_stop_service ()
 {
     _service_name="${1:-${service_name}}"
 
+    [ "$event_name" = "monitor" ] || return 0
+
     _active="$ctdb_active_dir/$_service_name"
     if is_ctdb_managed_service "$_service_name"; then
 	if ! [ -e "$_active" ] ; then
@@ -887,3 +889,4 @@ update_tickles ()
 script_name="${0##*/}"       # basename
 service_name="$script_name"  # default is just the script name
 service_fail_limit=1
+event_name="$1"
