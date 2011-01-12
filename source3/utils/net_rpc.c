@@ -32,7 +32,7 @@
 #include "../librpc/gen_ndr/ndr_srvsvc_c.h"
 #include "../librpc/gen_ndr/cli_spoolss.h"
 #include "../librpc/gen_ndr/ndr_initshutdown_c.h"
-#include "../librpc/gen_ndr/cli_winreg.h"
+#include "../librpc/gen_ndr/ndr_winreg_c.h"
 #include "secrets.h"
 #include "lib/netapi/netapi.h"
 #include "lib/netapi/netapi_net.h"
@@ -5154,16 +5154,22 @@ static NTSTATUS rpc_reg_shutdown_abort_internals(struct net_context *c,
 						const char **argv)
 {
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	WERROR werr;
+	struct dcerpc_binding_handle *b = pipe_hnd->binding_handle;
 
-	result = rpccli_winreg_AbortSystemShutdown(pipe_hnd, mem_ctx, NULL, NULL);
+	result = dcerpc_winreg_AbortSystemShutdown(b, mem_ctx, NULL, &werr);
 
-	if (NT_STATUS_IS_OK(result)) {
+	if (!NT_STATUS_IS_OK(result)) {
+		DEBUG(5,("cmd_reg_abort_shutdown: query failed\n"));
+		return result;
+	}
+	if (W_ERROR_IS_OK(werr)) {
 		d_printf(_("\nShutdown successfully aborted\n"));
 		DEBUG(5,("cmd_reg_abort_shutdown: query succeeded\n"));
 	} else
 		DEBUG(5,("cmd_reg_abort_shutdown: query failed\n"));
 
-	return result;
+	return werror_to_ntstatus(werr);
 }
 
 /**
@@ -5292,6 +5298,7 @@ NTSTATUS rpc_reg_shutdown_internals(struct net_context *c,
 	struct lsa_StringLarge msg_string;
 	NTSTATUS result;
 	WERROR werr;
+	struct dcerpc_binding_handle *b = pipe_hnd->binding_handle;
 
 	if (c->opt_comment) {
 		msg = c->opt_comment;
@@ -5303,11 +5310,15 @@ NTSTATUS rpc_reg_shutdown_internals(struct net_context *c,
 	}
 
 	/* create an entry */
-	result = rpccli_winreg_InitiateSystemShutdown(pipe_hnd, mem_ctx, NULL,
+	result = dcerpc_winreg_InitiateSystemShutdown(b, mem_ctx, NULL,
 			&msg_string, timeout, c->opt_force, c->opt_reboot,
 			&werr);
+	if (!NT_STATUS_IS_OK(result)) {
+		d_fprintf(stderr, "\nShutdown of remote machine failed\n");
+		return result;
+	}
 
-	if (NT_STATUS_IS_OK(result)) {
+	if (W_ERROR_IS_OK(werr)) {
 		d_printf(_("\nShutdown of remote machine succeeded\n"));
 	} else {
 		d_fprintf(stderr, "\nShutdown of remote machine failed\n");
@@ -5317,7 +5328,7 @@ NTSTATUS rpc_reg_shutdown_internals(struct net_context *c,
 			d_fprintf(stderr, "\nresult was: %s\n", win_errstr(werr));
 	}
 
-	return result;
+	return werror_to_ntstatus(werr);
 }
 
 /**
