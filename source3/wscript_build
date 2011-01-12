@@ -710,7 +710,7 @@ bld.SAMBA_LIBRARY('netapi',
                     LIBMSRPC_GEN LIBMSRPC LIBADS LIBNET DCUTIL NDR_LIBNETAPI
                     RPC_CLIENT_SCHANNEL LIB_SMBCONF REG_SMBCONF TOKEN_UTIL
                     LIBCLI_SAMR LIBCLI_LSA LIBRPCCLI_NETLOGON
-                    RPCCLI_SRVSVC RPC_NDR_WKSSVC RPC_NDR_INITSHUTDOWN
+                    RPC_NDR_SRVSVC RPC_NDR_WKSSVC RPC_NDR_INITSHUTDOWN
                     INIT_NETLOGON INIT_SAMR''',
                     public_headers='lib/netapi/netapi.h',
                     private_library=True,
@@ -719,7 +719,7 @@ bld.SAMBA_LIBRARY('netapi',
 bld.SAMBA_LIBRARY('smbclient',
                     source=LIBSMBCLIENT_SRC,
                     public_deps='''talloc tdb wbclient cap PARAM LIB_NONSMBD LIBSMB KRBCLIENT PASSDB SMBLDAP GROUPDB
-                    LIBMSRPC_GEN LIBMSRPC LIBCLI_LSA RPCCLI_SRVSVC''',
+                    LIBMSRPC_GEN LIBMSRPC LIBCLI_LSA RPC_NDR_SRVSVC''',
                     public_headers='include/libsmbclient.h',
                     private_library=True,
                     vars=locals())
@@ -925,7 +925,7 @@ bld.SAMBA_SUBSYSTEM('SMBD_BASE',
                     PRINTING PRINTBACKEND NDR_XATTR NDR_NOTIFY REGFIO
                     LIB_SMBCONF REG_FULL FNAME_UTIL
                     LIBCLI_SAMR LIBCLI_LSA LIBRPCCLI_NETLOGON LIBCLI_SPOOLSS
-                    RPCCLI_SRVSVC NAMED_PIPE_AUTH_TSTREAM INIT_NETLOGON INIT_SAMR
+                    RPC_NDR_SRVSVC NAMED_PIPE_AUTH_TSTREAM INIT_NETLOGON INIT_SAMR
                     LIBCLI_SMB_COMMON RPC_SERVER
                     ''',
                     vars=locals())
@@ -1095,10 +1095,6 @@ bld.SAMBA_SUBSYSTEM('RPCCLI_LSA',
 	source='../librpc/gen_ndr/cli_lsa.c',
 	public_deps='RPC_NDR_LSA')
 
-bld.SAMBA_SUBSYSTEM('RPCCLI_SRVSVC',
-	source='../librpc/gen_ndr/cli_srvsvc.c',
-	public_deps='RPC_NDR_SRVSVC')
-
 bld.SAMBA_SUBSYSTEM('RPCCLI_SPOOLSS',
 	source='../librpc/gen_ndr/cli_spoolss.c',
 	public_deps='RPC_NDR_SPOOLSS')
@@ -1181,7 +1177,7 @@ bld.SAMBA_BINARY('rpcclient/rpcclient',
                  LIBADS SMBREADLINE DCUTIL RPCCLI_WINREG RPCCLI_ECHO
                  RPC_CLIENT_SCHANNEL
                  LIBCLI_SAMR LIBCLI_LSA LIBRPCCLI_NETLOGON LIBCLI_SPOOLSS
-                 RPCCLI_SRVSVC RPC_NDR_WKSSVC RPC_NDR_DSSETUP RPC_NDR_DFS
+                 RPC_NDR_SRVSVC RPC_NDR_WKSSVC RPC_NDR_DSSETUP RPC_NDR_DFS
                  RPC_NDR_DRSUAPI RPC_NDR_NTSVCS RPC_NDR_EVENTLOG INIT_NETLOGON
                  INIT_SAMR
                  ''',
@@ -1191,7 +1187,7 @@ bld.SAMBA_BINARY('client/smbclient',
                  source=CLIENT_SRC,
                  deps='''talloc tdb cap resolv POPT_SAMBA PASSDB LIBSMB LIB_NONSMBD
                  PARAM_WITHOUT_REG wbclient PARAM KRBCLIENT LIBMSRPC_GEN
-                 LIBMSRPC SMBREADLINE smbclient RPCCLI_SRVSVC INIT_LSA''',
+                 LIBMSRPC SMBREADLINE smbclient RPC_NDR_SRVSVC INIT_LSA''',
                  vars=locals())
 
 bld.SAMBA_BINARY('net',
@@ -1203,7 +1199,7 @@ bld.SAMBA_BINARY('net',
                  REGFIO NDR_NTPRINTING RPCCLI_WINREG
                  RPC_CLIENT_SCHANNEL TOKEN_UTIL
                  LIBCLI_SAMR LIBCLI_LSA LIBRPCCLI_NETLOGON LIBCLI_SPOOLSS
-                 RPCCLI_SRVSVC RPC_NDR_WKSSVC RPC_NDR_SVCCTL RPC_NDR_DSSETUP
+                 RPC_NDR_SRVSVC RPC_NDR_WKSSVC RPC_NDR_SVCCTL RPC_NDR_DSSETUP
                  RPC_NDR_INITSHUTDOWN RPC_NDR_DRSUAPI INIT_NETLOGON INIT_SAMR
 		 ''',
                  vars=locals())
@@ -1247,7 +1243,7 @@ bld.SAMBA_BINARY('smbtree',
                  source=SMBTREE_SRC,
                  deps='''talloc tdb tevent cap resolv wbclient PARAM LIB_NONSMBD
                  LIBSMB LIBSMB_ERR POPT_SAMBA KRBCLIENT PASSDB SMBLDAP GROUPDB LIBMSRPC_GEN LIBMSRPC PROFILE
-                 RPCCLI_SRVSVC''',
+                 RPC_NDR_SRVSVC''',
                  vars=locals())
 
 bld.SAMBA_BINARY('smbpasswd',
