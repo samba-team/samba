@@ -20,7 +20,7 @@
 
 #include "includes.h"
 #include "rpcclient.h"
-#include "../librpc/gen_ndr/cli_winreg.h"
+#include "../librpc/gen_ndr/ndr_winreg_c.h"
 #include "../librpc/gen_ndr/ndr_misc.h"
 
 static WERROR cmd_winreg_enumkeys(struct rpc_pipe_client *cli,
@@ -32,13 +32,14 @@ static WERROR cmd_winreg_enumkeys(struct rpc_pipe_client *cli,
 	struct policy_handle handle;
 	uint32_t enum_index = 0;
 	struct winreg_StringBuf name;
+	struct dcerpc_binding_handle *b = cli->binding_handle;
 
 	if (argc < 2) {
 		printf("usage: %s [name]\n", argv[0]);
 		return WERR_OK;
 	}
 
-	status = rpccli_winreg_OpenHKLM(cli, mem_ctx,
+	status = dcerpc_winreg_OpenHKLM(b, mem_ctx,
 					NULL,
 					SEC_FLAG_MAXIMUM_ALLOWED,
 					&handle,
@@ -56,7 +57,7 @@ static WERROR cmd_winreg_enumkeys(struct rpc_pipe_client *cli,
 	name.length = strlen_m_term_null(name.name)*2;
 	name.size = name.length;
 
-	status = rpccli_winreg_EnumKey(cli, mem_ctx,
+	status = dcerpc_winreg_EnumKey(b, mem_ctx,
 				       &handle,
 				       enum_index,
 				       &name,
@@ -156,6 +157,7 @@ static WERROR cmd_winreg_querymultiplevalues_ex(struct rpc_pipe_client *cli,
 	WERROR werr;
 	struct policy_handle handle, key_handle;
 	struct winreg_String key_name;
+	struct dcerpc_binding_handle *b = cli->binding_handle;
 
 	struct QueryMultipleValue *values_in, *values_out;
 	uint32_t num_values;
@@ -168,7 +170,7 @@ static WERROR cmd_winreg_querymultiplevalues_ex(struct rpc_pipe_client *cli,
 		return WERR_OK;
 	}
 
-	status = rpccli_winreg_OpenHKLM(cli, mem_ctx,
+	status = dcerpc_winreg_OpenHKLM(b, mem_ctx,
 					NULL,
 					SEC_FLAG_MAXIMUM_ALLOWED,
 					&handle,
@@ -182,7 +184,7 @@ static WERROR cmd_winreg_querymultiplevalues_ex(struct rpc_pipe_client *cli,
 
 	key_name.name = argv[1];
 
-	status = rpccli_winreg_OpenKey(cli, mem_ctx,
+	status = dcerpc_winreg_OpenKey(b, mem_ctx,
 				       &handle,
 				       key_name,
 				       0, /* options */
@@ -224,7 +226,7 @@ static WERROR cmd_winreg_querymultiplevalues_ex(struct rpc_pipe_client *cli,
 
 		uint32_t offered = 0, needed = 0;
 
-		status = rpccli_winreg_QueryMultipleValues2(cli, mem_ctx,
+		status = dcerpc_winreg_QueryMultipleValues2(b, mem_ctx,
 							   &key_handle,
 							   values_in,
 							   values_out,
@@ -233,6 +235,9 @@ static WERROR cmd_winreg_querymultiplevalues_ex(struct rpc_pipe_client *cli,
 							   &offered,
 							   &needed,
 							   &werr);
+		if (!NT_STATUS_IS_OK(status)) {
+			return ntstatus_to_werror(status);
+		}
 		if (W_ERROR_EQUAL(werr, WERR_MORE_DATA)) {
 			offered = needed;
 
@@ -241,7 +246,7 @@ static WERROR cmd_winreg_querymultiplevalues_ex(struct rpc_pipe_client *cli,
 				return WERR_NOMEM;
 			}
 
-			status = rpccli_winreg_QueryMultipleValues2(cli, mem_ctx,
+			status = dcerpc_winreg_QueryMultipleValues2(b, mem_ctx,
 								    &key_handle,
 								    values_in,
 								    values_out,
@@ -267,7 +272,7 @@ static WERROR cmd_winreg_querymultiplevalues_ex(struct rpc_pipe_client *cli,
 			return WERR_NOMEM;
 		}
 
-		status = rpccli_winreg_QueryMultipleValues(cli, mem_ctx,
+		status = dcerpc_winreg_QueryMultipleValues(b, mem_ctx,
 							   &key_handle,
 							   values_in,
 							   values_out,
