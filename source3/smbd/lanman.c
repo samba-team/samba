@@ -31,7 +31,7 @@
 #include "../librpc/gen_ndr/cli_spoolss.h"
 #include "rpc_client/cli_spoolss.h"
 #include "rpc_client/init_spoolss.h"
-#include "../librpc/gen_ndr/cli_srvsvc.h"
+#include "../librpc/gen_ndr/ndr_srvsvc_c.h"
 #include "../librpc/gen_ndr/srv_samr.h"
 #include "../librpc/gen_ndr/srv_srvsvc.h"
 #include "../librpc/gen_ndr/rap.h"
@@ -2182,6 +2182,7 @@ static bool api_RNetShareAdd(struct smbd_server_connection *sconn,
 	struct rpc_pipe_client *cli = NULL;
 	union srvsvc_NetShareInfo info;
 	struct srvsvc_NetShareInfo2 info2;
+	struct dcerpc_binding_handle *b;
 
 	if (!str1 || !str2 || !p) {
 		return False;
@@ -2260,6 +2261,8 @@ static bool api_RNetShareAdd(struct smbd_server_connection *sconn,
 		goto out;
 	}
 
+	b = cli->binding_handle;
+
 	info2.name		= sharename;
 	info2.type		= STYPE_DISKTREE;
 	info2.comment		= comment;
@@ -2271,7 +2274,7 @@ static bool api_RNetShareAdd(struct smbd_server_connection *sconn,
 
 	info.info2 = &info2;
 
-	status = rpccli_srvsvc_NetShareAdd(cli, mem_ctx,
+	status = dcerpc_srvsvc_NetShareAdd(b, mem_ctx,
 					   cli->srv_name_slash,
 					   2,
 					   &info,
@@ -3666,6 +3669,7 @@ static bool api_RNetServerGetInfo(struct smbd_server_connection *sconn,
 	struct rpc_pipe_client *cli = NULL;
 	union srvsvc_NetSrvInfo info;
 	int errcode;
+	struct dcerpc_binding_handle *b;
 
 	if (!str1 || !str2 || !p) {
 		return False;
@@ -3740,7 +3744,9 @@ static bool api_RNetServerGetInfo(struct smbd_server_connection *sconn,
 		goto out;
 	}
 
-	status = rpccli_srvsvc_NetSrvGetInfo(cli, mem_ctx,
+	b = cli->binding_handle;
+
+	status = dcerpc_srvsvc_NetSrvGetInfo(b, mem_ctx,
 					     NULL,
 					     101,
 					     &info,
