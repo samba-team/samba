@@ -418,10 +418,12 @@ void dcerpc_get_query_dispinfo_params(int loop_count,
 	}
 }
 
-NTSTATUS rpccli_try_samr_connects(struct rpc_pipe_client *cli,
+NTSTATUS dcerpc_try_samr_connects(struct dcerpc_binding_handle *h,
 				  TALLOC_CTX *mem_ctx,
+				  const char *srv_name_slash,
 				  uint32_t access_mask,
-				  struct policy_handle *connect_pol)
+				  struct policy_handle *connect_pol,
+				  NTSTATUS *presult)
 {
 	NTSTATUS status;
 	union samr_ConnectInfo info_in, info_out;
@@ -433,31 +435,60 @@ NTSTATUS rpccli_try_samr_connects(struct rpc_pipe_client *cli,
 	info1.client_version = SAMR_CONNECT_W2K;
 	info_in.info1 = info1;
 
-	status = rpccli_samr_Connect5(cli, mem_ctx,
-				      cli->srv_name_slash,
+	status = dcerpc_samr_Connect5(h,
+				      mem_ctx,
+				      srv_name_slash,
 				      access_mask,
 				      1,
 				      &info_in,
 				      &lvl_out,
 				      &info_out,
-				      connect_pol);
+				      connect_pol,
+				      presult);
 	if (NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	status = rpccli_samr_Connect4(cli, mem_ctx,
-				      cli->srv_name_slash,
+	status = dcerpc_samr_Connect4(h,
+				      mem_ctx,
+				      srv_name_slash,
 				      SAMR_CONNECT_W2K,
 				      access_mask,
-				      connect_pol);
+				      connect_pol,
+				      presult);
 	if (NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	status = rpccli_samr_Connect2(cli, mem_ctx,
-				      cli->srv_name_slash,
+	status = dcerpc_samr_Connect2(h,
+				      mem_ctx,
+				      srv_name_slash,
 				      access_mask,
-				      connect_pol);
+				      connect_pol,
+				      presult);
+
 	return status;
 }
 
+NTSTATUS rpccli_try_samr_connects(struct rpc_pipe_client *cli,
+				  TALLOC_CTX *mem_ctx,
+				  uint32_t access_mask,
+				  struct policy_handle *connect_pol)
+{
+	NTSTATUS status;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+
+	status = dcerpc_try_samr_connects(cli->binding_handle,
+					  mem_ctx,
+					  cli->srv_name_slash,
+					  access_mask,
+					  connect_pol,
+					  &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	return result;
+}
+
+/* vim: set ts=8 sw=8 noet cindent: */
