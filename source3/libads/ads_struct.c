@@ -3,17 +3,17 @@
    ads (active directory) utility library
    Copyright (C) Andrew Tridgell 2001
    Copyright (C) Andrew Bartlett 2001
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -56,7 +56,7 @@ char *ads_build_path(const char *realm, const char *sep, const char *field, int 
 	p=strtok_r(r, sep, &saveptr);
 	if (p) {
 		strlcat(ret, p, len);
-	
+
 		while ((p=strtok_r(NULL, sep, &saveptr)) != NULL) {
 			int retval;
 			char *s = NULL;
@@ -93,7 +93,7 @@ char *ads_build_dn(const char *realm)
 char *ads_build_domain(const char *dn)
 {
 	char *dnsdomain = NULL;
-	
+
 	/* result should always be shorter than the DN */
 
 	if ( (dnsdomain = SMB_STRDUP( dn )) == NULL ) {
@@ -123,10 +123,10 @@ ADS_STRUCT *ads_init(const char *realm,
 {
 	ADS_STRUCT *ads;
 	int wrap_flags;
-	
+
 	ads = SMB_XMALLOC_P(ADS_STRUCT);
 	ZERO_STRUCTP(ads);
-	
+
 	ads->server.realm = realm? SMB_STRDUP(realm) : NULL;
 	ads->server.workgroup = workgroup ? SMB_STRDUP(workgroup) : NULL;
 	ads->server.ldap_server = ldap_server? SMB_STRDUP(ldap_server) : NULL;
@@ -194,7 +194,7 @@ void ads_destroy(ADS_STRUCT **ads)
 		SAFE_FREE((*ads)->config.client_site_name);
 		SAFE_FREE((*ads)->config.schema_path);
 		SAFE_FREE((*ads)->config.config_path);
-		
+
 		ZERO_STRUCTP(*ads);
 
 		if ( is_mine )
