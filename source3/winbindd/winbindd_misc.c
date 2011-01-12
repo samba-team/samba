@@ -22,7 +22,6 @@
 
 #include "includes.h"
 #include "winbindd.h"
-#include "../librpc/gen_ndr/cli_netlogon.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
