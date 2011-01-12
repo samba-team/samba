@@ -28,7 +28,7 @@
 #include "rpc_client/init_samr.h"
 #include "../librpc/gen_ndr/cli_lsa.h"
 #include "rpc_client/cli_lsarpc.h"
-#include "../librpc/gen_ndr/cli_netlogon.h"
+#include "../librpc/gen_ndr/ndr_netlogon_c.h"
 #include "../librpc/gen_ndr/cli_srvsvc.h"
 #include "../librpc/gen_ndr/cli_spoolss.h"
 #include "../librpc/gen_ndr/ndr_initshutdown_c.h"
@@ -5656,6 +5656,8 @@ static NTSTATUS rpc_trustdom_get_pdc(struct net_context *c,
 	const char *buffer = NULL;
 	struct rpc_pipe_client *netr;
 	NTSTATUS status;
+	WERROR result;
+	struct dcerpc_binding_handle *b;
 
 	/* Use NetServerEnum2 */
 
@@ -5675,21 +5677,27 @@ static NTSTATUS rpc_trustdom_get_pdc(struct net_context *c,
 		return status;
 	}
 
-	status = rpccli_netr_GetDcName(netr, mem_ctx,
+	b = netr->binding_handle;
+
+	status = dcerpc_netr_GetDcName(b, mem_ctx,
 				       cli->desthost,
 				       domain_name,
 				       &buffer,
-				       NULL);
+				       &result);
 	TALLOC_FREE(netr);
 
-	if (NT_STATUS_IS_OK(status)) {
+	if (NT_STATUS_IS_OK(status) && W_ERROR_IS_OK(result)) {
 		return status;
 	}
 
 	DEBUG(1,("netr_GetDcName error: Couldn't find primary domain controller\
 		 for domain %s\n", domain_name));
 
-	return status;
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	return werror_to_ntstatus(result);
 }
 
 /**
