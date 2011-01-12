@@ -24,7 +24,7 @@
 #include "includes.h"
 #include "popt_common.h"
 #include "client/client_proto.h"
-#include "../librpc/gen_ndr/cli_srvsvc.h"
+#include "../librpc/gen_ndr/ndr_srvsvc_c.h"
 #include "../lib/util/select.h"
 #include "system/readline.h"
 #include "../libcli/smbreadline/smbreadline.h"
@@ -3973,6 +3973,7 @@ static bool browse_host_rpc(bool sort)
 	uint32_t resume_handle = 0;
 	uint32_t total_entries = 0;
 	int i;
+	struct dcerpc_binding_handle *b;
 
 	status = cli_rpc_pipe_open_noauth(cli, &ndr_table_srvsvc.syntax_id,
 					  &pipe_hnd);
@@ -3984,13 +3985,15 @@ static bool browse_host_rpc(bool sort)
 		return false;
 	}
 
+	b = pipe_hnd->binding_handle;
+
 	ZERO_STRUCT(info_ctr);
 	ZERO_STRUCT(ctr1);
 
 	info_ctr.level = 1;
 	info_ctr.ctr.ctr1 = &ctr1;
 
-	status = rpccli_srvsvc_NetShareEnumAll(pipe_hnd, frame,
+	status = dcerpc_srvsvc_NetShareEnumAll(b, frame,
 					      pipe_hnd->desthost,
 					      &info_ctr,
 					      0xffffffff,
