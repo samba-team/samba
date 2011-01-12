@@ -131,7 +131,8 @@ static WERROR cmd_drsuapi_cracknames(struct rpc_pipe_client *cli,
 
  out:
 	if (is_valid_policy_hnd(&bind_handle)) {
-		dcerpc_drsuapi_DsUnbind(b, mem_ctx, &bind_handle, &werr);
+		WERROR _werr;
+		dcerpc_drsuapi_DsUnbind(b, mem_ctx, &bind_handle, &_werr);
 	}
 
 	return werr;
@@ -296,7 +297,8 @@ static WERROR cmd_drsuapi_getdcinfo(struct rpc_pipe_client *cli,
 	display_domain_controller_info(level_out, &ctr);
  out:
 	if (is_valid_policy_hnd(&bind_handle)) {
-		dcerpc_drsuapi_DsUnbind(b, mem_ctx, &bind_handle, &werr);
+		WERROR _werr;
+		dcerpc_drsuapi_DsUnbind(b, mem_ctx, &bind_handle, &_werr);
 	}
 
 	return werr;
@@ -495,12 +497,15 @@ static WERROR cmd_drsuapi_getncchanges(struct rpc_pipe_client *cli,
 						       &ctr,
 						       &werr);
 		if (!NT_STATUS_IS_OK(status)) {
+			werr = ntstatus_to_werror(status);
 			printf("Failed to get NC Changes: %s",
-				get_friendly_werror_msg(werr));
+				get_friendly_nt_error_msg(status));
 			goto out;
 		}
 
 		if (!W_ERROR_IS_OK(werr)) {
+			printf("Failed to get NC Changes: %s",
+				get_friendly_werror_msg(werr));
 			goto out;
 		}
 
