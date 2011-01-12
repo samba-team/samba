@@ -91,6 +91,41 @@ NTSTATUS rpccli_samr_chgpasswd_user2(struct rpc_pipe_client *cli,
 				     const char *username,
 				     const char *newpassword,
 				     const char *oldpassword);
+
+/**
+ * @brief Change the password of a user based on the user name given and using
+ * blobs.
+ *
+ * @param[in]  h        The dcerpc binding hanlde to use.
+ *
+ * @param[in]  mem_ctx  The memory context to use.
+ *
+ * @param[in]  srv_name_slash The server name with leading slashes.
+ *
+ * @param[in]  username The name of ther user.
+ *
+ * @param[in]  new_nt_password_blob The new password as a crypted blob.
+ *
+ * @param[in]  old_nt_hash_enc_blob The old password as a hash encoded blob.
+ *
+ * @param[in]  new_lm_password_blob The new password as a lanman encoded blob.
+ *
+ * @param[in]  old_lm_hash_enc_blob The old password as a lanman encoded blob.
+ *
+ * @param[out] presult  A pointer for the NDR NTSTATUS error code.
+ *
+ * @return              A corresponding NTSTATUS error code for the connection.
+ */
+NTSTATUS dcerpc_samr_chng_pswd_auth_crap(struct dcerpc_binding_handle *h,
+					 TALLOC_CTX *mem_ctx,
+					 const char *srv_name_slash,
+					 const char *username,
+					 DATA_BLOB new_nt_password_blob,
+					 DATA_BLOB old_nt_hash_enc_blob,
+					 DATA_BLOB new_lm_password_blob,
+					 DATA_BLOB old_lm_hash_enc_blob,
+					 NTSTATUS *presult);
+
 NTSTATUS rpccli_samr_chng_pswd_auth_crap(struct rpc_pipe_client *cli,
 					 TALLOC_CTX *mem_ctx,
 					 const char *username,

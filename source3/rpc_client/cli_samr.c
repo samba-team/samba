@@ -197,15 +197,17 @@ NTSTATUS rpccli_samr_chgpasswd_user2(struct rpc_pipe_client *cli,
 
 /* User change password given blobs */
 
-NTSTATUS rpccli_samr_chng_pswd_auth_crap(struct rpc_pipe_client *cli,
+NTSTATUS dcerpc_samr_chng_pswd_auth_crap(struct dcerpc_binding_handle *h,
 					 TALLOC_CTX *mem_ctx,
+					 const char *srv_name_slash,
 					 const char *username,
 					 DATA_BLOB new_nt_password_blob,
 					 DATA_BLOB old_nt_hash_enc_blob,
 					 DATA_BLOB new_lm_password_blob,
-					 DATA_BLOB old_lm_hash_enc_blob)
+					 DATA_BLOB old_lm_hash_enc_blob,
+					 NTSTATUS *presult)
 {
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS status;
 	struct samr_CryptPassword new_nt_password;
 	struct samr_CryptPassword new_lm_password;
 	struct samr_Password old_nt_hash_enc;
@@ -214,7 +216,7 @@ NTSTATUS rpccli_samr_chng_pswd_auth_crap(struct rpc_pipe_client *cli,
 
 	DEBUG(10,("rpccli_samr_chng_pswd_auth_crap\n"));
 
-	init_lsa_String(&server, cli->srv_name_slash);
+	init_lsa_String(&server, srv_name_slash);
 	init_lsa_String(&account, username);
 
 	if (new_nt_password_blob.length > 0) {
@@ -241,17 +243,46 @@ NTSTATUS rpccli_samr_chng_pswd_auth_crap(struct rpc_pipe_client *cli,
 		ZERO_STRUCT(old_lm_hash_enc);
 	}
 
-	result = rpccli_samr_ChangePasswordUser2(cli, mem_ctx,
+	status = dcerpc_samr_ChangePasswordUser2(h,
+						 mem_ctx,
 						 &server,
 						 &account,
 						 &new_nt_password,
 						 &old_nt_hash_enc,
 						 true,
 						 &new_lm_password,
-						 &old_lm_hash_enc);
-	return result;
+						 &old_lm_hash_enc,
+						 presult);
+
+	return status;
 }
 
+NTSTATUS rpccli_samr_chng_pswd_auth_crap(struct rpc_pipe_client *cli,
+					 TALLOC_CTX *mem_ctx,
+					 const char *username,
+					 DATA_BLOB new_nt_password_blob,
+					 DATA_BLOB old_nt_hash_enc_blob,
+					 DATA_BLOB new_lm_password_blob,
+					 DATA_BLOB old_lm_hash_enc_blob)
+{
+	NTSTATUS status;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+
+	status = dcerpc_samr_chng_pswd_auth_crap(cli->binding_handle,
+						 mem_ctx,
+						 cli->srv_name_slash,
+						 username,
+						 new_nt_password_blob,
+						 old_nt_hash_enc_blob,
+						 new_lm_password_blob,
+						 old_lm_hash_enc_blob,
+						 &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	return result;
+}
 
 /* change password 3 */
 
