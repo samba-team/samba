@@ -58,6 +58,34 @@ NTSTATUS rpccli_samr_chgpasswd_user(struct rpc_pipe_client *cli,
 				    struct policy_handle *user_handle,
 				    const char *newpassword,
 				    const char *oldpassword);
+
+/**
+ * @brief Change the password of a user based on username.
+ *
+ * @param[in]  h        The dcerpc binding hanlde to use.
+ *
+ * @param[in]  mem_ctx  The memory context to use.
+ *
+ * @param[in]  srv_name_slash The server name with leading slashes.
+ *
+ * @param[in]  username The name of ther user.
+ *
+ * @param[in]  newpassword The new password to set.
+ *
+ * @param[in]  oldpassword The old password for verification
+ *
+ * @param[out] presult  A pointer for the NDR NTSTATUS error code.
+ *
+ * @return              A corresponding NTSTATUS error code for the connection.
+ */
+NTSTATUS dcerpc_samr_chgpasswd_user2(struct dcerpc_binding_handle *h,
+				     TALLOC_CTX *mem_ctx,
+				     const char *srv_name_slash,
+				     const char *username,
+				     const char *newpassword,
+				     const char *oldpassword,
+				     NTSTATUS *presult);
+
 NTSTATUS rpccli_samr_chgpasswd_user2(struct rpc_pipe_client *cli,
 				     TALLOC_CTX *mem_ctx,
 				     const char *username,
