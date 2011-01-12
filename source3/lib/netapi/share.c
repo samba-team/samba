@@ -184,6 +184,7 @@ WERROR NetShareAdd_r(struct libnetapi_ctx *ctx,
 	NTSTATUS status;
 	struct rpc_pipe_client *pipe_cli = NULL;
 	union srvsvc_NetShareInfo info;
+	struct dcerpc_binding_handle *b;
 
 	if (!r->in.buffer) {
 		return WERR_INVALID_PARAM;
@@ -206,6 +207,8 @@ WERROR NetShareAdd_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
+	b = pipe_cli->binding_handle;
+
 	status = map_SHARE_INFO_buffer_to_srvsvc_share_info(ctx,
 							    r->in.buffer,
 							    r->in.level,
@@ -215,12 +218,17 @@ WERROR NetShareAdd_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
-	status = rpccli_srvsvc_NetShareAdd(pipe_cli, talloc_tos(),
+	status = dcerpc_srvsvc_NetShareAdd(b, talloc_tos(),
 					   r->in.server_name,
 					   r->in.level,
 					   &info,
 					   r->out.parm_err,
 					   &werr);
+	if (!NT_STATUS_IS_OK(status)) {
+		werr = ntstatus_to_werror(status);
+		goto done;
+	}
+
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}
@@ -247,6 +255,7 @@ WERROR NetShareDel_r(struct libnetapi_ctx *ctx,
 	WERROR werr;
 	NTSTATUS status;
 	struct rpc_pipe_client *pipe_cli = NULL;
+	struct dcerpc_binding_handle *b;
 
 	if (!r->in.net_name) {
 		return WERR_INVALID_PARAM;
@@ -259,7 +268,9 @@ WERROR NetShareDel_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
-	status = rpccli_srvsvc_NetShareDel(pipe_cli, talloc_tos(),
+	b = pipe_cli->binding_handle;
+
+	status = dcerpc_srvsvc_NetShareDel(b, talloc_tos(),
 					   r->in.server_name,
 					   r->in.net_name,
 					   r->in.reserved,
@@ -296,6 +307,7 @@ WERROR NetShareEnum_r(struct libnetapi_ctx *ctx,
 	struct srvsvc_NetShareCtr1 ctr1;
 	struct srvsvc_NetShareCtr2 ctr2;
 	uint32_t i;
+	struct dcerpc_binding_handle *b;
 
 	if (!r->out.buffer) {
 		return WERR_INVALID_PARAM;
@@ -322,6 +334,8 @@ WERROR NetShareEnum_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
+	b = pipe_cli->binding_handle;
+
 	info_ctr.level = r->in.level;
 	switch (r->in.level) {
 		case 0:
@@ -338,14 +352,19 @@ WERROR NetShareEnum_r(struct libnetapi_ctx *ctx,
 			break;
 	}
 
-	status = rpccli_srvsvc_NetShareEnumAll(pipe_cli, talloc_tos(),
+	status = dcerpc_srvsvc_NetShareEnumAll(b, talloc_tos(),
 					       r->in.server_name,
 					       &info_ctr,
 					       r->in.prefmaxlen,
 					       r->out.total_entries,
 					       r->out.resume_handle,
 					       &werr);
-	if (NT_STATUS_IS_ERR(status)) {
+	if (!NT_STATUS_IS_OK(status)) {
+		werr = ntstatus_to_werror(status);
+		goto done;
+	}
+
+	if (!W_ERROR_IS_OK(werr) && !W_ERROR_EQUAL(werr, WERR_MORE_DATA)) {
 		goto done;
 	}
 
@@ -370,6 +389,7 @@ WERROR NetShareEnum_r(struct libnetapi_ctx *ctx,
 								    r->out.entries_read);
 		if (!NT_STATUS_IS_OK(status)) {
 			werr = ntstatus_to_werror(status);
+			goto done;
 		}
 	}
 
@@ -397,6 +417,7 @@ WERROR NetShareGetInfo_r(struct libnetapi_ctx *ctx,
 	struct rpc_pipe_client *pipe_cli = NULL;
 	union srvsvc_NetShareInfo info;
 	uint32_t num_entries = 0;
+	struct dcerpc_binding_handle *b;
 
 	if (!r->in.net_name || !r->out.buffer) {
 		return WERR_INVALID_PARAM;
@@ -423,12 +444,18 @@ WERROR NetShareGetInfo_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
-	status = rpccli_srvsvc_NetShareGetInfo(pipe_cli, talloc_tos(),
+	b = pipe_cli->binding_handle;
+
+	status = dcerpc_srvsvc_NetShareGetInfo(b, talloc_tos(),
 					       r->in.server_name,
 					       r->in.net_name,
 					       r->in.level,
 					       &info,
 					       &werr);
+	if (!NT_STATUS_IS_OK(status)) {
+		werr = ntstatus_to_werror(status);
+		goto done;
+	}
 
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
@@ -466,6 +493,7 @@ WERROR NetShareSetInfo_r(struct libnetapi_ctx *ctx,
 	NTSTATUS status;
 	struct rpc_pipe_client *pipe_cli = NULL;
 	union srvsvc_NetShareInfo info;
+	struct dcerpc_binding_handle *b;
 
 	if (!r->in.buffer) {
 		return WERR_INVALID_PARAM;
@@ -493,6 +521,8 @@ WERROR NetShareSetInfo_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
+	b = pipe_cli->binding_handle;
+
 	status = map_SHARE_INFO_buffer_to_srvsvc_share_info(ctx,
 							    r->in.buffer,
 							    r->in.level,
@@ -502,13 +532,18 @@ WERROR NetShareSetInfo_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
-	status = rpccli_srvsvc_NetShareSetInfo(pipe_cli, talloc_tos(),
+	status = dcerpc_srvsvc_NetShareSetInfo(b, talloc_tos(),
 					       r->in.server_name,
 					       r->in.net_name,
 					       r->in.level,
 					       &info,
 					       r->out.parm_err,
 					       &werr);
+	if (!NT_STATUS_IS_OK(status)) {
+		werr = ntstatus_to_werror(status);
+		goto done;
+	}
+
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}

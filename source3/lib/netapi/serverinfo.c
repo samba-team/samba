@@ -23,7 +23,7 @@
 #include "lib/netapi/netapi.h"
 #include "lib/netapi/netapi_private.h"
 #include "lib/netapi/libnetapi.h"
-#include "../librpc/gen_ndr/cli_srvsvc.h"
+#include "../librpc/gen_ndr/ndr_srvsvc_c.h"
 #include "lib/smbconf/smbconf.h"
 #include "lib/smbconf/smbconf_reg.h"
 
@@ -484,6 +484,7 @@ WERROR NetServerGetInfo_r(struct libnetapi_ctx *ctx,
 	NTSTATUS status;
 	WERROR werr;
 	union srvsvc_NetSrvInfo info;
+	struct dcerpc_binding_handle *b;
 
 	if (!r->out.buffer) {
 		return WERR_INVALID_PARAM;
@@ -509,13 +510,19 @@ WERROR NetServerGetInfo_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
-	status = rpccli_srvsvc_NetSrvGetInfo(pipe_cli, talloc_tos(),
+	b = pipe_cli->binding_handle;
+
+	status = dcerpc_srvsvc_NetSrvGetInfo(b, talloc_tos(),
 					     r->in.server_name,
 					     r->in.level,
 					     &info,
 					     &werr);
 	if (!NT_STATUS_IS_OK(status)) {
 		werr = ntstatus_to_werror(status);
+		goto done;
+	}
+
+	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}
 
@@ -598,6 +605,7 @@ WERROR NetServerSetInfo_r(struct libnetapi_ctx *ctx,
 	NTSTATUS status;
 	WERROR werr;
 	union srvsvc_NetSrvInfo info;
+	struct dcerpc_binding_handle *b;
 
 	werr = libnetapi_open_pipe(ctx, r->in.server_name,
 				   &ndr_table_srvsvc.syntax_id,
@@ -605,6 +613,8 @@ WERROR NetServerSetInfo_r(struct libnetapi_ctx *ctx,
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}
+
+	b = pipe_cli->binding_handle;
 
 	switch (r->in.level) {
 		case 1005:
@@ -615,7 +625,7 @@ WERROR NetServerSetInfo_r(struct libnetapi_ctx *ctx,
 			goto done;
 	}
 
-	status = rpccli_srvsvc_NetSrvSetInfo(pipe_cli, talloc_tos(),
+	status = dcerpc_srvsvc_NetSrvSetInfo(b, talloc_tos(),
 					     r->in.server_name,
 					     r->in.level,
 					     &info,
@@ -640,6 +650,7 @@ WERROR NetRemoteTOD_r(struct libnetapi_ctx *ctx,
 	NTSTATUS status;
 	WERROR werr;
 	struct srvsvc_NetRemoteTODInfo *info = NULL;
+	struct dcerpc_binding_handle *b;
 
 	werr = libnetapi_open_pipe(ctx, r->in.server_name,
 				   &ndr_table_srvsvc.syntax_id,
@@ -648,12 +659,18 @@ WERROR NetRemoteTOD_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
-	status = rpccli_srvsvc_NetRemoteTOD(pipe_cli, talloc_tos(),
+	b = pipe_cli->binding_handle;
+
+	status = dcerpc_srvsvc_NetRemoteTOD(b, talloc_tos(),
 					    r->in.server_name,
 					    &info,
 					    &werr);
 	if (!NT_STATUS_IS_OK(status)) {
 		werr = ntstatus_to_werror(status);
+		goto done;
+	}
+
+	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}
 
