@@ -94,6 +94,41 @@ static WERROR open_service(struct dcerpc_binding_handle *b,
 /********************************************************************
 ********************************************************************/
 
+static WERROR open_scm(struct dcerpc_binding_handle *b,
+		       TALLOC_CTX *mem_ctx,
+		       const char *server_name,
+		       uint32_t access_mask,
+		       struct policy_handle *hSCM)
+{
+	NTSTATUS status;
+	WERROR result;
+
+	status = dcerpc_svcctl_OpenSCManagerW(b, mem_ctx,
+					      server_name,
+					      NULL,
+					      access_mask,
+					      hSCM,
+					      &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		result = ntstatus_to_werror(status);
+		d_fprintf(stderr,
+			  _("Failed to open Service Control Manager. [%s]\n"),
+			  nt_errstr(status));
+		return result;
+	}
+	if (!W_ERROR_IS_OK(result)) {
+		d_fprintf(stderr,
+			  _("Failed to open Service Control Manager. [%s]\n"),
+			  win_errstr(result));
+		return result;
+	}
+
+	return WERR_OK;
+}
+
+/********************************************************************
+********************************************************************/
+
 static WERROR query_service_state(struct rpc_pipe_client *pipe_hnd,
 				TALLOC_CTX *mem_ctx,
 				struct policy_handle *hSCM,
@@ -264,22 +299,10 @@ static NTSTATUS rpc_service_list_internal(struct net_context *c,
 		return NT_STATUS_OK;
 	}
 
-	status = dcerpc_svcctl_OpenSCManagerW(b, mem_ctx,
-					      pipe_hnd->srv_name_slash,
-					      NULL,
-					      SC_RIGHT_MGR_ENUMERATE_SERVICE,
-					      &hSCM,
-					      &result);
-	if (!NT_STATUS_IS_OK(status)) {
-		d_fprintf(stderr,
-			  _("Failed to open Service Control Manager. [%s]\n"),
-			  nt_errstr(status));
-		return status;
-	}
+	result = open_scm(b, mem_ctx, pipe_hnd->srv_name_slash,
+			  SC_RIGHT_MGR_ENUMERATE_SERVICE,
+			  &hSCM);
 	if (!W_ERROR_IS_OK(result)) {
-		d_fprintf(stderr,
-			  _("Failed to open Service Control Manager. [%s]\n"),
-			  win_errstr(result));
 		return werror_to_ntstatus(result);
 	}
 
@@ -392,22 +415,10 @@ static NTSTATUS rpc_service_status_internal(struct net_context *c,
 	}
 
 	/* Open the Service Control Manager */
-	status = dcerpc_svcctl_OpenSCManagerW(b, mem_ctx,
-					      pipe_hnd->srv_name_slash,
-					      NULL,
-					      SC_RIGHT_MGR_ENUMERATE_SERVICE,
-					      &hSCM,
-					      &result);
-	if (!NT_STATUS_IS_OK(status)) {
-		d_fprintf(stderr,
-			  _("Failed to open Service Control Manager. [%s]\n"),
-			  nt_errstr(status));
-		return status;
-	}
+	result = open_scm(b, mem_ctx, pipe_hnd->srv_name_slash,
+			  SC_RIGHT_MGR_ENUMERATE_SERVICE,
+			  &hSCM);
 	if (!W_ERROR_IS_OK(result)) {
-		d_fprintf(stderr,
-			  _("Failed to open Service Control Manager. [%s]\n"),
-			  win_errstr(result));
 		return werror_to_ntstatus(result);
 	}
 
@@ -540,7 +551,6 @@ static NTSTATUS rpc_service_stop_internal(struct net_context *c,
 {
 	struct policy_handle hSCM;
 	WERROR result = WERR_GENERAL_FAILURE;
-	NTSTATUS status;
 	fstring servicename;
 	struct dcerpc_binding_handle *b = pipe_hnd->binding_handle;
 
@@ -552,22 +562,10 @@ static NTSTATUS rpc_service_stop_internal(struct net_context *c,
 	fstrcpy( servicename, argv[0] );
 
 	/* Open the Service Control Manager */
-	status = dcerpc_svcctl_OpenSCManagerW(b, mem_ctx,
-					      pipe_hnd->srv_name_slash,
-					      NULL,
-					      SC_RIGHT_MGR_ENUMERATE_SERVICE,
-					      &hSCM,
-					      &result);
-	if (!NT_STATUS_IS_OK(status)) {
-		d_fprintf(stderr,
-			  _("Failed to open Service Control Manager.  [%s]\n"),
-			  nt_errstr(status));
-		return status;
-	}
+	result = open_scm(b, mem_ctx, pipe_hnd->srv_name_slash,
+			  SC_RIGHT_MGR_ENUMERATE_SERVICE,
+			  &hSCM);
 	if (!W_ERROR_IS_OK(result)) {
-		d_fprintf(stderr,
-			  _("Failed to open Service Control Manager.  [%s]\n"),
-			  win_errstr(result));
 		return werror_to_ntstatus(result);
 	}
 
@@ -596,7 +594,6 @@ static NTSTATUS rpc_service_pause_internal(struct net_context *c,
 {
 	struct policy_handle hSCM;
 	WERROR result = WERR_GENERAL_FAILURE;
-	NTSTATUS status;
 	fstring servicename;
 	struct dcerpc_binding_handle *b = pipe_hnd->binding_handle;
 
@@ -608,22 +605,10 @@ static NTSTATUS rpc_service_pause_internal(struct net_context *c,
 	fstrcpy( servicename, argv[0] );
 
 	/* Open the Service Control Manager */
-	status = dcerpc_svcctl_OpenSCManagerW(b, mem_ctx,
-					      pipe_hnd->srv_name_slash,
-					      NULL,
-					      SC_RIGHT_MGR_ENUMERATE_SERVICE,
-					      &hSCM,
-					      &result);
-	if (!NT_STATUS_IS_OK(status)) {
-		d_fprintf(stderr,
-			  _("Failed to open Service Control Manager.  [%s]\n"),
-			  nt_errstr(status));
-		return status;
-	}
+	result = open_scm(b, mem_ctx, pipe_hnd->srv_name_slash,
+			  SC_RIGHT_MGR_ENUMERATE_SERVICE,
+			  &hSCM);
 	if (!W_ERROR_IS_OK(result)) {
-		d_fprintf(stderr,
-			  _("Failed to open Service Control Manager.  [%s]\n"),
-			  win_errstr(result));
 		return werror_to_ntstatus(result);
 	}
 
@@ -652,7 +637,6 @@ static NTSTATUS rpc_service_resume_internal(struct net_context *c,
 {
 	struct policy_handle hSCM;
 	WERROR result = WERR_GENERAL_FAILURE;
-	NTSTATUS status;
 	fstring servicename;
 	struct dcerpc_binding_handle *b = pipe_hnd->binding_handle;
 
@@ -664,22 +648,10 @@ static NTSTATUS rpc_service_resume_internal(struct net_context *c,
 	fstrcpy( servicename, argv[0] );
 
 	/* Open the Service Control Manager */
-	status = dcerpc_svcctl_OpenSCManagerW(b, mem_ctx,
-					      pipe_hnd->srv_name_slash,
-					      NULL,
-					      SC_RIGHT_MGR_ENUMERATE_SERVICE,
-					      &hSCM,
-					      &result);
-	if (!NT_STATUS_IS_OK(status)) {
-		d_fprintf(stderr,
-			  _("Failed to open Service Control Manager.  [%s]\n"),
-			  nt_errstr(status));
-		return status;
-	}
+	result = open_scm(b, mem_ctx, pipe_hnd->srv_name_slash,
+			  SC_RIGHT_MGR_ENUMERATE_SERVICE,
+			  &hSCM);
 	if (!W_ERROR_IS_OK(result)) {
-		d_fprintf(stderr,
-			  _("Failed to open Service Control Manager.  [%s]\n"),
-			  win_errstr(result));
 		return werror_to_ntstatus(result);
 	}
 
@@ -718,22 +690,10 @@ static NTSTATUS rpc_service_start_internal(struct net_context *c,
 	}
 
 	/* Open the Service Control Manager */
-	status = dcerpc_svcctl_OpenSCManagerW(b, mem_ctx,
-					      pipe_hnd->srv_name_slash,
-					      NULL,
-					      SC_RIGHT_MGR_ENUMERATE_SERVICE,
-					      &hSCM,
-					      &result);
-	if (!NT_STATUS_IS_OK(status)) {
-		d_fprintf(stderr,
-			  _("Failed to open Service Control Manager.  [%s]\n"),
-			  nt_errstr(status));
-		return status;
-	}
+	result = open_scm(b, mem_ctx, pipe_hnd->srv_name_slash,
+			  SC_RIGHT_MGR_ENUMERATE_SERVICE,
+			  &hSCM);
 	if (!W_ERROR_IS_OK(result)) {
-		d_fprintf(stderr,
-			  _("Failed to open Service Control Manager.  [%s]\n"),
-			  win_errstr(result));
 		return werror_to_ntstatus(result);
 	}
 
@@ -815,22 +775,10 @@ static NTSTATUS rpc_service_delete_internal(struct net_context *c,
 	ZERO_STRUCT(hService);
 
 	/* Open the Service Control Manager */
-	status = dcerpc_svcctl_OpenSCManagerW(b, mem_ctx,
-					      pipe_hnd->srv_name_slash,
-					      NULL,
-					      SC_RIGHT_MGR_ENUMERATE_SERVICE,
-					      &hSCM,
-					      &result);
-	if (!NT_STATUS_IS_OK(status)) {
-		d_fprintf(stderr,
-			  _("Failed to open Service Control Manager.  [%s]\n"),
-			  nt_errstr(status));
-		return status;
-	}
+	result = open_scm(b, mem_ctx, pipe_hnd->srv_name_slash,
+			  SC_RIGHT_MGR_ENUMERATE_SERVICE,
+			  &hSCM);
 	if (!W_ERROR_IS_OK(result)) {
-		d_fprintf(stderr,
-			  _("Failed to open Service Control Manager.  [%s]\n"),
-			  win_errstr(result));
 		return werror_to_ntstatus(result);
 	}
 
@@ -906,22 +854,10 @@ static NTSTATUS rpc_service_create_internal(struct net_context *c,
 	ZERO_STRUCT(hService);
 
 	/* Open the Service Control Manager */
-	status = dcerpc_svcctl_OpenSCManagerW(b, mem_ctx,
-					      pipe_hnd->srv_name_slash,
-					      NULL,
-					      SC_RIGHT_MGR_CREATE_SERVICE,
-					      &hSCM,
-					      &result);
-	if (!NT_STATUS_IS_OK(status)) {
-		d_fprintf(stderr,
-			  _("Failed to open Service Control Manager.  [%s]\n"),
-			  nt_errstr(status));
-		return status;
-	}
+	result = open_scm(b, mem_ctx, pipe_hnd->srv_name_slash,
+			  SC_RIGHT_MGR_CREATE_SERVICE,
+			  &hSCM);
 	if (!W_ERROR_IS_OK(result)) {
-		d_fprintf(stderr,
-			  _("Failed to open Service Control Manager.  [%s]\n"),
-			  win_errstr(result));
 		return werror_to_ntstatus(result);
 	}
 
