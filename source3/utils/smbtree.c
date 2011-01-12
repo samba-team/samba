@@ -21,7 +21,7 @@
 
 #include "includes.h"
 #include "popt_common.h"
-#include "../librpc/gen_ndr/cli_srvsvc.h"
+#include "../librpc/gen_ndr/ndr_srvsvc_c.h"
 
 static int use_bcast;
 
@@ -158,6 +158,7 @@ static bool get_rpc_shares(struct cli_state *cli,
 	int i;
 	uint32_t resume_handle = 0;
 	uint32_t total_entries = 0;
+	struct dcerpc_binding_handle *b;
 
 	mem_ctx = talloc_new(NULL);
 	if (mem_ctx == NULL) {
@@ -175,13 +176,15 @@ static bool get_rpc_shares(struct cli_state *cli,
 		return False;
 	}
 
+	b = pipe_hnd->binding_handle;
+
 	ZERO_STRUCT(info_ctr);
 	ZERO_STRUCT(ctr1);
 
 	info_ctr.level = 1;
 	info_ctr.ctr.ctr1 = &ctr1;
 
-	status = rpccli_srvsvc_NetShareEnumAll(pipe_hnd, mem_ctx,
+	status = dcerpc_srvsvc_NetShareEnumAll(b, mem_ctx,
 					       pipe_hnd->desthost,
 					       &info_ctr,
 					       0xffffffff,
