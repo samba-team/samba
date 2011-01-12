@@ -59,9 +59,9 @@ NTSTATUS rpc_query_user_list(TALLOC_CTX *mem_ctx,
 		uint32_t total_size, returned_size;
 		union samr_DispInfo disp_info;
 
-		get_query_dispinfo_params(loop_count,
-					  &max_entries,
-					  &max_size);
+		dcerpc_get_query_dispinfo_params(loop_count,
+						 &max_entries,
+						 &max_size);
 
 		status = rpccli_samr_QueryDisplayInfo(samr_pipe,
 						      mem_ctx,

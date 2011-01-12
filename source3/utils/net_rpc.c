@@ -952,7 +952,7 @@ static int rpc_user_list(struct net_context *c, int argc, const char **argv)
 	do {
 		uint32_t max_entries, max_size;
 
-		get_query_dispinfo_params(
+		dcerpc_get_query_dispinfo_params(
 			loop_count, &max_entries, &max_size);
 
 		status = NetQueryDisplayInformation(c->opt_host,
@@ -2348,7 +2348,7 @@ static NTSTATUS rpc_group_list_internals(struct net_context *c,
 
 		if (!global) break;
 
-		get_query_dispinfo_params(
+		dcerpc_get_query_dispinfo_params(
 			loop_count, &max_entries, &max_size);
 
 		result = rpccli_samr_QueryDisplayInfo(pipe_hnd, mem_ctx,
