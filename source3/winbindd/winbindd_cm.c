@@ -61,7 +61,7 @@
 #include "includes.h"
 #include "winbindd.h"
 #include "../libcli/auth/libcli_auth.h"
-#include "../librpc/gen_ndr/cli_netlogon.h"
+#include "../librpc/gen_ndr/ndr_netlogon_c.h"
 #include "rpc_client/cli_netlogon.h"
 #include "../librpc/gen_ndr/cli_samr.h"
 #include "../librpc/gen_ndr/cli_lsa.h"
@@ -603,6 +603,7 @@ static bool get_dc_name_via_netlogon(struct winbindd_domain *domain,
 	unsigned int orig_timeout;
 	const char *tmp = NULL;
 	const char *p;
+	struct dcerpc_binding_handle *b;
 
 	/* Hmmmm. We can only open one connection to the NETLOGON pipe at the
 	 * moment.... */
@@ -627,6 +628,8 @@ static bool get_dc_name_via_netlogon(struct winbindd_domain *domain,
 		return False;
 	}
 
+	b = netlogon_pipe->binding_handle;
+
 	/* This call can take a long time - allow the server to time out.
 	   35 seconds should do it. */
 
@@ -635,7 +638,7 @@ static bool get_dc_name_via_netlogon(struct winbindd_domain *domain,
 	if (our_domain->active_directory) {
 		struct netr_DsRGetDCNameInfo *domain_info = NULL;
 
-		result = rpccli_netr_DsRGetDCName(netlogon_pipe,
+		result = dcerpc_netr_DsRGetDCName(b,
 						  mem_ctx,
 						  our_domain->dcname,
 						  domain->name,
@@ -662,7 +665,7 @@ static bool get_dc_name_via_netlogon(struct winbindd_domain *domain,
 			}
 		}
 	} else {
-		result = rpccli_netr_GetAnyDCName(netlogon_pipe, mem_ctx,
+		result = dcerpc_netr_GetAnyDCName(b, mem_ctx,
 						  our_domain->dcname,
 						  domain->name,
 						  &tmp,
@@ -673,27 +676,27 @@ static bool get_dc_name_via_netlogon(struct winbindd_domain *domain,
 	rpccli_set_timeout(netlogon_pipe, orig_timeout);
 
 	if (!NT_STATUS_IS_OK(result)) {
-		DEBUG(10,("rpccli_netr_GetAnyDCName failed: %s\n",
+		DEBUG(10,("dcerpc_netr_GetAnyDCName failed: %s\n",
 			nt_errstr(result)));
 		talloc_destroy(mem_ctx);
 		return false;
 	}
 
 	if (!W_ERROR_IS_OK(werr)) {
-		DEBUG(10,("rpccli_netr_GetAnyDCName failed: %s\n",
+		DEBUG(10,("dcerpc_netr_GetAnyDCName failed: %s\n",
 			   win_errstr(werr)));
 		talloc_destroy(mem_ctx);
 		return false;
 	}
 
-	/* rpccli_netr_GetAnyDCName gives us a name with \\ */
+	/* dcerpc_netr_GetAnyDCName gives us a name with \\ */
 	p = strip_hostname(tmp);
 
 	fstrcpy(dcname, p);
 
 	talloc_destroy(mem_ctx);
 
-	DEBUG(10,("rpccli_netr_GetAnyDCName returned %s\n", dcname));
+	DEBUG(10,("dcerpc_netr_GetAnyDCName returned %s\n", dcname));
 
 	if (!resolve_name(dcname, dc_ss, 0x20, true)) {
 		return False;
@@ -1704,6 +1707,7 @@ static bool set_dc_type_and_flags_trustinfo( struct winbindd_domain *domain )
 {
 	struct winbindd_domain *our_domain;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	WERROR werr;
 	struct netr_DomainTrustList trusts;
 	int i;
 	uint32 flags = (NETR_TRUST_FLAG_IN_FOREST |
@@ -1711,6 +1715,7 @@ static bool set_dc_type_and_flags_trustinfo( struct winbindd_domain *domain )
 			NETR_TRUST_FLAG_INBOUND);
 	struct rpc_pipe_client *cli;
 	TALLOC_CTX *mem_ctx = NULL;
+	struct dcerpc_binding_handle *b;
 
 	DEBUG(5, ("set_dc_type_and_flags_trustinfo: domain %s\n", domain->name ));
 
@@ -1745,20 +1750,29 @@ static bool set_dc_type_and_flags_trustinfo( struct winbindd_domain *domain )
 		return False;
 	}
 
+	b = cli->binding_handle;
+
 	if ( (mem_ctx = talloc_init("set_dc_type_and_flags_trustinfo")) == NULL ) {
 		DEBUG(0,("set_dc_type_and_flags_trustinfo: talloc_init() failed!\n"));
 		return False;
 	}	
 
-	result = rpccli_netr_DsrEnumerateDomainTrusts(cli, mem_ctx,
+	result = dcerpc_netr_DsrEnumerateDomainTrusts(b, mem_ctx,
 						      cli->desthost,
 						      flags,
 						      &trusts,
-						      NULL);
+						      &werr);
 	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(0,("set_dc_type_and_flags_trustinfo: "
 			"failed to query trusted domain list: %s\n",
 			nt_errstr(result)));
+		talloc_destroy(mem_ctx);
+		return false;
+	}
+	if (!W_ERROR_IS_OK(werr)) {
+		DEBUG(0,("set_dc_type_and_flags_trustinfo: "
+			"failed to query trusted domain list: %s\n",
+			win_errstr(werr)));
 		talloc_destroy(mem_ctx);
 		return false;
 	}

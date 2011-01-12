@@ -24,7 +24,7 @@
 #include "winbindd/winbindd.h"
 #include "winbindd/winbindd_proto.h"
 #include "librpc/gen_ndr/srv_wbint.h"
-#include "../librpc/gen_ndr/cli_netlogon.h"
+#include "../librpc/gen_ndr/ndr_netlogon_c.h"
 #include "idmap.h"
 #include "../libcli/security/security.h"
 
@@ -291,6 +291,7 @@ NTSTATUS _wbint_DsGetDcName(struct pipes_struct *p, struct wbint_DsGetDcName *r)
 	NTSTATUS status;
 	WERROR werr;
 	unsigned int orig_timeout;
+	struct dcerpc_binding_handle *b;
 
 	if (domain == NULL) {
 		return dsgetdcname(p->mem_ctx, winbind_messaging_context(),
@@ -307,14 +308,16 @@ NTSTATUS _wbint_DsGetDcName(struct pipes_struct *p, struct wbint_DsGetDcName *r)
 		return status;
 	}
 
+	b = netlogon_pipe->binding_handle;
+
 	/* This call can take a long time - allow the server to time out.
 	   35 seconds should do it. */
 
 	orig_timeout = rpccli_set_timeout(netlogon_pipe, 35000);
 
 	if (domain->active_directory) {
-		status = rpccli_netr_DsRGetDCName(
-			netlogon_pipe, p->mem_ctx, domain->dcname,
+		status = dcerpc_netr_DsRGetDCName(b,
+			p->mem_ctx, domain->dcname,
 			r->in.domain_name, NULL, r->in.domain_guid,
 			r->in.flags, r->out.dc_info, &werr);
 		if (NT_STATUS_IS_OK(status) && W_ERROR_IS_OK(werr)) {
@@ -333,22 +336,22 @@ NTSTATUS _wbint_DsGetDcName(struct pipes_struct *p, struct wbint_DsGetDcName *r)
 	}
 
 	if (r->in.flags & DS_PDC_REQUIRED) {
-		status = rpccli_netr_GetDcName(
-			netlogon_pipe, p->mem_ctx, domain->dcname,
+		status = dcerpc_netr_GetDcName(b,
+			p->mem_ctx, domain->dcname,
 			r->in.domain_name, &dc_info->dc_unc, &werr);
 	} else {
-		status = rpccli_netr_GetAnyDCName(
-			netlogon_pipe, p->mem_ctx, domain->dcname,
+		status = dcerpc_netr_GetAnyDCName(b,
+			p->mem_ctx, domain->dcname,
 			r->in.domain_name, &dc_info->dc_unc, &werr);
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(10, ("rpccli_netr_Get[Any]DCName failed: %s\n",
+		DEBUG(10, ("dcerpc_netr_Get[Any]DCName failed: %s\n",
 			   nt_errstr(status)));
 		goto done;
 	}
 	if (!W_ERROR_IS_OK(werr)) {
-		DEBUG(10, ("rpccli_netr_Get[Any]DCName failed: %s\n",
+		DEBUG(10, ("dcerpc_netr_Get[Any]DCName failed: %s\n",
 			   win_errstr(werr)));
 		status = werror_to_ntstatus(werr);
 		goto done;
@@ -526,6 +529,7 @@ NTSTATUS _wbint_PingDc(struct pipes_struct *p, struct wbint_PingDc *r)
 	union netr_CONTROL_QUERY_INFORMATION info;
 	WERROR werr;
 	fstring logon_server;
+	struct dcerpc_binding_handle *b;
 
 	domain = wb_child_domain();
 	if (domain == NULL) {
@@ -538,6 +542,8 @@ NTSTATUS _wbint_PingDc(struct pipes_struct *p, struct wbint_PingDc *r)
 		return status;
         }
 
+	b = netlogon_pipe->binding_handle;
+
 	fstr_sprintf(logon_server, "\\\\%s", domain->dcname);
 
 	/*
@@ -546,21 +552,27 @@ NTSTATUS _wbint_PingDc(struct pipes_struct *p, struct wbint_PingDc *r)
 	 * call to work, but the main point here is testing that the
 	 * netlogon pipe works.
 	 */
-	status = rpccli_netr_LogonControl(netlogon_pipe, p->mem_ctx,
+	status = dcerpc_netr_LogonControl(b, p->mem_ctx,
 					  logon_server, NETLOGON_CONTROL_QUERY,
 					  2, &info, &werr);
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
-		DEBUG(2, ("rpccli_netr_LogonControl timed out\n"));
+		DEBUG(2, ("dcerpc_netr_LogonControl timed out\n"));
 		invalidate_cm_connection(&domain->conn);
 		return status;
 	}
 
-	if (!NT_STATUS_EQUAL(status, NT_STATUS_CTL_FILE_NOT_SUPPORTED)) {
-		DEBUG(2, ("rpccli_netr_LogonControl returned %s, expected "
-			  "NT_STATUS_CTL_FILE_NOT_SUPPORTED\n",
-			  nt_errstr(status)));
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(2, ("dcerpc_netr_LogonControl failed: %s\n",
+			nt_errstr(status)));
 		return status;
+	}
+
+	if (!W_ERROR_EQUAL(werr, WERR_NOT_SUPPORTED)) {
+		DEBUG(2, ("dcerpc_netr_LogonControl returned %s, expected "
+			  "WERR_NOT_SUPPORTED\n",
+			  win_errstr(werr)));
+		return werror_to_ntstatus(werr);
 	}
 
 	DEBUG(5, ("winbindd_dual_ping_dc succeeded\n"));

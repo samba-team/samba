@@ -23,7 +23,7 @@
 
 #include "includes.h"
 #include "winbindd.h"
-#include "../librpc/gen_ndr/cli_netlogon.h"
+#include "../librpc/gen_ndr/ndr_netlogon_c.h"
 #include "../libds/common/flags.h"
 #include "ads.h"
 #include "secrets.h"
@@ -1292,10 +1292,12 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 				struct netr_DomainTrustList *trusts)
 {
 	NTSTATUS 		result = NT_STATUS_UNSUCCESSFUL;
+	WERROR werr;
 	int			i;
 	uint32			flags;	
 	struct rpc_pipe_client *cli;
 	int ret_count;
+	struct dcerpc_binding_handle *b;
 
 	DEBUG(3,("ads: trusted_domains\n"));
 
@@ -1322,13 +1324,19 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	result = rpccli_netr_DsrEnumerateDomainTrusts(cli, mem_ctx,
+	b = cli->binding_handle;
+
+	result = dcerpc_netr_DsrEnumerateDomainTrusts(b, mem_ctx,
 						      cli->desthost,
 						      flags,
 						      trusts,
-						      NULL);
+						      &werr);
 	if (!NT_STATUS_IS_OK(result)) {
 		return result;
+	}
+
+	if (!W_ERROR_IS_OK(werr)) {
+		return werror_to_ntstatus(werr);
 	}
 	if (trusts->count == 0) {
 		return NT_STATUS_OK;
