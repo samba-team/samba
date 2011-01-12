@@ -133,6 +133,40 @@ NTSTATUS rpccli_samr_chng_pswd_auth_crap(struct rpc_pipe_client *cli,
 					 DATA_BLOB old_nt_hash_enc_blob,
 					 DATA_BLOB new_lm_password_blob,
 					 DATA_BLOB old_lm_hash_enc_blob);
+
+/**
+ * @brief
+ *
+ * @param[in]  h        The dcerpc binding hanlde to use.
+ *
+ * @param[in]  mem_ctx  The memory context to use.
+ *
+ * @param[in]  srv_name_slash The server name with leading slashes.
+ *
+ * @param[in]  username The name of ther user.
+ *
+ * @param[in]  newpassword The new password to set.
+ *
+ * @param[in]  oldpassword The old password to set.
+ *
+ * @param[in]  dominfo1 A pointer to hold the domain information.
+ *
+ * @param[in]  reject   A pointer to store the result of a possible reject.
+ *
+ * @param[out] presult  A pointer for the NDR NTSTATUS error code.
+ *
+ * @return              A corresponding NTSTATUS error code for the connection.
+ */
+NTSTATUS dcerpc_samr_chgpasswd_user3(struct dcerpc_binding_handle *h,
+				     TALLOC_CTX *mem_ctx,
+				     const char *srv_name_slash,
+				     const char *username,
+				     const char *newpassword,
+				     const char *oldpassword,
+				     struct samr_DomInfo1 **dominfo1,
+				     struct userPwdChangeFailureInformation **reject,
+				     NTSTATUS *presult);
+
 NTSTATUS rpccli_samr_chgpasswd_user3(struct rpc_pipe_client *cli,
 				     TALLOC_CTX *mem_ctx,
 				     const char *username,
