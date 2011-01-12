@@ -23,7 +23,7 @@
 #include "includes.h"
 #include "rpcclient.h"
 #include "../librpc/gen_ndr/ndr_srvsvc.h"
-#include "../librpc/gen_ndr/cli_srvsvc.h"
+#include "../librpc/gen_ndr/ndr_srvsvc_c.h"
 
 /* Display server query info */
 
@@ -175,6 +175,7 @@ static WERROR cmd_srvsvc_srv_query_info(struct rpc_pipe_client *cli,
 	WERROR result;
 	NTSTATUS status;
 	const char *server_unc = cli->srv_name_slash;
+	struct dcerpc_binding_handle *b = cli->binding_handle;
 
 	if (argc > 3) {
 		printf("Usage: %s [infolevel] [server_unc]\n", argv[0]);
@@ -189,7 +190,7 @@ static WERROR cmd_srvsvc_srv_query_info(struct rpc_pipe_client *cli,
 		server_unc = argv[2];
 	}
 
-	status = rpccli_srvsvc_NetSrvGetInfo(cli, mem_ctx,
+	status = dcerpc_srvsvc_NetSrvGetInfo(b, mem_ctx,
 					     server_unc,
 					     info_level,
 					     &info,
@@ -274,6 +275,7 @@ static WERROR cmd_srvsvc_net_share_enum_int(struct rpc_pipe_client *cli,
 	uint32_t resume_handle = 0;
 	uint32_t *resume_handle_p = NULL;
 	uint32 preferred_len = 0xffffffff, i;
+	struct dcerpc_binding_handle *b = cli->binding_handle;
 
 	if (argc > 3) {
 		printf("Usage: %s [infolevel] [resume_handle]\n", argv[0]);
@@ -338,7 +340,7 @@ static WERROR cmd_srvsvc_net_share_enum_int(struct rpc_pipe_client *cli,
 
 	switch (opcode) {
 		case NDR_SRVSVC_NETSHAREENUM:
-			status = rpccli_srvsvc_NetShareEnum(cli, mem_ctx,
+			status = dcerpc_srvsvc_NetShareEnum(b, mem_ctx,
 							    cli->desthost,
 							    &info_ctr,
 							    preferred_len,
@@ -347,7 +349,7 @@ static WERROR cmd_srvsvc_net_share_enum_int(struct rpc_pipe_client *cli,
 							    &result);
 			break;
 		case NDR_SRVSVC_NETSHAREENUMALL:
-			status = rpccli_srvsvc_NetShareEnumAll(cli, mem_ctx,
+			status = dcerpc_srvsvc_NetShareEnumAll(b, mem_ctx,
 							       cli->desthost,
 							       &info_ctr,
 							       preferred_len,
@@ -359,7 +361,11 @@ static WERROR cmd_srvsvc_net_share_enum_int(struct rpc_pipe_client *cli,
 			return WERR_INVALID_PARAM;
 	}
 
-	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(result)) {
+	if (!NT_STATUS_IS_OK(status)) {
+		result = ntstatus_to_werror(status);
+		goto done;
+	}
+	if (!W_ERROR_IS_OK(result)) {
 		goto done;
 	}
 
@@ -413,6 +419,7 @@ static WERROR cmd_srvsvc_net_share_get_info(struct rpc_pipe_client *cli,
 	union srvsvc_NetShareInfo info;
 	WERROR result;
 	NTSTATUS status;
+	struct dcerpc_binding_handle *b = cli->binding_handle;
 
 	if (argc < 2 || argc > 3) {
 		printf("Usage: %s [sharename] [infolevel]\n", argv[0]);
@@ -422,14 +429,18 @@ static WERROR cmd_srvsvc_net_share_get_info(struct rpc_pipe_client *cli,
 	if (argc == 3)
 		info_level = atoi(argv[2]);
 
-	status = rpccli_srvsvc_NetShareGetInfo(cli, mem_ctx,
+	status = dcerpc_srvsvc_NetShareGetInfo(b, mem_ctx,
 					       cli->desthost,
 					       argv[1],
 					       info_level,
 					       &info,
 					       &result);
 
-	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(result)) {
+	if (!NT_STATUS_IS_OK(status)) {
+		result = ntstatus_to_werror(status);
+		goto done;
+	}
+	if (!W_ERROR_IS_OK(result)) {
 		goto done;
 	}
 
@@ -463,6 +474,7 @@ static WERROR cmd_srvsvc_net_share_set_info(struct rpc_pipe_client *cli,
 	WERROR result;
 	NTSTATUS status;
 	uint32_t parm_err = 0;
+	struct dcerpc_binding_handle *b = cli->binding_handle;
 
 	if (argc > 3) {
 		printf("Usage: %s [sharename] [comment]\n", argv[0]);
@@ -470,21 +482,25 @@ static WERROR cmd_srvsvc_net_share_set_info(struct rpc_pipe_client *cli,
 	}
 
 	/* retrieve share info */
-	status = rpccli_srvsvc_NetShareGetInfo(cli, mem_ctx,
+	status = dcerpc_srvsvc_NetShareGetInfo(b, mem_ctx,
 					       cli->desthost,
 					       argv[1],
 					       info_level,
 					       &info_get,
 					       &result);
 
-	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(result)) {
+	if (!NT_STATUS_IS_OK(status)) {
+		result = ntstatus_to_werror(status);
+		goto done;
+	}
+	if (!W_ERROR_IS_OK(result)) {
 		goto done;
 	}
 
 	info_get.info502->comment = argv[2];
 
 	/* set share info */
-	status = rpccli_srvsvc_NetShareSetInfo(cli, mem_ctx,
+	status = dcerpc_srvsvc_NetShareSetInfo(b, mem_ctx,
 					       cli->desthost,
 					       argv[1],
 					       info_level,
@@ -492,19 +508,26 @@ static WERROR cmd_srvsvc_net_share_set_info(struct rpc_pipe_client *cli,
 					       &parm_err,
 					       &result);
 
-	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(result)) {
+	if (!NT_STATUS_IS_OK(status)) {
+		result = ntstatus_to_werror(status);
+		goto done;
+	}
+	if (!W_ERROR_IS_OK(result)) {
 		goto done;
 	}
 
 	/* re-retrieve share info and display */
-	status = rpccli_srvsvc_NetShareGetInfo(cli, mem_ctx,
+	status = dcerpc_srvsvc_NetShareGetInfo(b, mem_ctx,
 					       cli->desthost,
 					       argv[1],
 					       info_level,
 					       &info_get,
 					       &result);
-
-	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(result)) {
+	if (!NT_STATUS_IS_OK(status)) {
+		result = ntstatus_to_werror(status);
+		goto done;
+	}
+	if (!W_ERROR_IS_OK(result)) {
 		goto done;
 	}
 
@@ -521,13 +544,14 @@ static WERROR cmd_srvsvc_net_remote_tod(struct rpc_pipe_client *cli,
 	struct srvsvc_NetRemoteTODInfo *tod = NULL;
 	WERROR result;
 	NTSTATUS status;
+	struct dcerpc_binding_handle *b = cli->binding_handle;
 
 	if (argc > 1) {
 		printf("Usage: %s\n", argv[0]);
 		return WERR_OK;
 	}
 
-	status = rpccli_srvsvc_NetRemoteTOD(cli, mem_ctx,
+	status = dcerpc_srvsvc_NetRemoteTOD(b, mem_ctx,
 					    cli->srv_name_slash,
 					    &tod,
 					    &result);
@@ -555,6 +579,7 @@ static WERROR cmd_srvsvc_net_file_enum(struct rpc_pipe_client *cli,
 	uint32 preferred_len = 0xffff;
 	uint32_t total_entries = 0;
 	uint32_t resume_handle = 0;
+	struct dcerpc_binding_handle *b = cli->binding_handle;
 
 	if (argc > 2) {
 		printf("Usage: %s [infolevel]\n", argv[0]);
@@ -570,7 +595,7 @@ static WERROR cmd_srvsvc_net_file_enum(struct rpc_pipe_client *cli,
 	info_ctr.level = info_level;
 	info_ctr.ctr.ctr3 = &ctr3;
 
-	status = rpccli_srvsvc_NetFileEnum(cli, mem_ctx,
+	status = dcerpc_srvsvc_NetFileEnum(b, mem_ctx,
 					   cli->desthost,
 					   NULL,
 					   NULL,
@@ -579,9 +604,14 @@ static WERROR cmd_srvsvc_net_file_enum(struct rpc_pipe_client *cli,
 					   &total_entries,
 					   &resume_handle,
 					   &result);
-
-	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(result))
+	if (!NT_STATUS_IS_OK(status)) {
+		result = ntstatus_to_werror(status);
 		goto done;
+	}
+
+	if (!W_ERROR_IS_OK(result)) {
+		goto done;
+	}
 
  done:
 	return result;
@@ -595,6 +625,7 @@ static WERROR cmd_srvsvc_net_name_validate(struct rpc_pipe_client *cli,
 	NTSTATUS status;
 	uint32_t name_type = 9;
 	uint32_t flags = 0;
+	struct dcerpc_binding_handle *b = cli->binding_handle;
 
 	if (argc < 2 || argc > 3) {
 		printf("Usage: %s [sharename] [type]\n", argv[0]);
@@ -605,12 +636,16 @@ static WERROR cmd_srvsvc_net_name_validate(struct rpc_pipe_client *cli,
 		name_type = atoi(argv[2]);
 	}
 
-	status = rpccli_srvsvc_NetNameValidate(cli, mem_ctx,
+	status = dcerpc_srvsvc_NetNameValidate(b, mem_ctx,
 					       cli->desthost,
 					       argv[1],
 					       name_type,
 					       flags,
 					       &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		result = ntstatus_to_werror(status);
+		goto done;
+	}
 
 	if (!W_ERROR_IS_OK(result))
 		goto done;
@@ -626,21 +661,26 @@ static WERROR cmd_srvsvc_net_file_get_sec(struct rpc_pipe_client *cli,
 	WERROR result;
 	NTSTATUS status;
 	struct sec_desc_buf *sd_buf = NULL;
+	struct dcerpc_binding_handle *b = cli->binding_handle;
 
 	if (argc < 2 || argc > 4) {
 		printf("Usage: %s [sharename] [file]\n", argv[0]);
 		return WERR_OK;
 	}
 
-	status = rpccli_srvsvc_NetGetFileSecurity(cli, mem_ctx,
+	status = dcerpc_srvsvc_NetGetFileSecurity(b, mem_ctx,
 						  cli->desthost,
 						  argv[1],
 						  argv[2],
 						  SECINFO_DACL,
 						  &sd_buf,
 						  &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		result = ntstatus_to_werror(status);
+		goto done;
+	}
 
-	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(result)) {
+	if (!W_ERROR_IS_OK(result)) {
 		goto done;
 	}
 
@@ -656,19 +696,24 @@ static WERROR cmd_srvsvc_net_sess_del(struct rpc_pipe_client *cli,
 {
 	WERROR result;
 	NTSTATUS status;
+	struct dcerpc_binding_handle *b = cli->binding_handle;
 
 	if (argc < 2 || argc > 4) {
 		printf("Usage: %s [client] [user]\n", argv[0]);
 		return WERR_OK;
 	}
 
-	status = rpccli_srvsvc_NetSessDel(cli, mem_ctx,
+	status = dcerpc_srvsvc_NetSessDel(b, mem_ctx,
 					  cli->desthost,
 					  argv[1],
 					  argv[2],
 					  &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		result = ntstatus_to_werror(status);
+		goto done;
+	}
 
-	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(result)) {
+	if (!W_ERROR_IS_OK(result)) {
 		goto done;
 	}
 
@@ -694,6 +739,7 @@ static WERROR cmd_srvsvc_net_sess_enum(struct rpc_pipe_client *cli,
 	uint32_t level = 1;
 	const char *client = NULL;
 	const char *user = NULL;
+	struct dcerpc_binding_handle *b = cli->binding_handle;
 
 	if (argc > 6) {
 		printf("Usage: %s [client] [user] [level] [resume_handle]\n", argv[0]);
@@ -746,7 +792,7 @@ static WERROR cmd_srvsvc_net_sess_enum(struct rpc_pipe_client *cli,
 		break;
 	}
 
-	status = rpccli_srvsvc_NetSessEnum(cli, mem_ctx,
+	status = dcerpc_srvsvc_NetSessEnum(b, mem_ctx,
 					  cli->desthost,
 					  client,
 					  user,
@@ -756,7 +802,12 @@ static WERROR cmd_srvsvc_net_sess_enum(struct rpc_pipe_client *cli,
 					  resume_handle_p,
 					  &result);
 
-	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(result)) {
+	if (!NT_STATUS_IS_OK(status)) {
+		result = ntstatus_to_werror(status);
+		goto done;
+	}
+
+	if (!W_ERROR_IS_OK(result)) {
 		goto done;
 	}
 
@@ -774,6 +825,7 @@ static WERROR cmd_srvsvc_net_disk_enum(struct rpc_pipe_client *cli,
 	uint32_t total_entries = 0;
 	uint32_t resume_handle = 0;
 	uint32_t level = 0;
+	struct dcerpc_binding_handle *b = cli->binding_handle;
 
 	if (argc > 4) {
 		printf("Usage: %s [level] [resume_handle]\n", argv[0]);
@@ -790,7 +842,7 @@ static WERROR cmd_srvsvc_net_disk_enum(struct rpc_pipe_client *cli,
 
 	ZERO_STRUCT(info);
 
-	status = rpccli_srvsvc_NetDiskEnum(cli, mem_ctx,
+	status = dcerpc_srvsvc_NetDiskEnum(b, mem_ctx,
 					   cli->desthost,
 					   level,
 					   &info,
@@ -798,8 +850,12 @@ static WERROR cmd_srvsvc_net_disk_enum(struct rpc_pipe_client *cli,
 					   &total_entries,
 					   &resume_handle,
 					   &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		result = ntstatus_to_werror(status);
+		goto done;
+	}
 
-	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(result)) {
+	if (!W_ERROR_IS_OK(result)) {
 		goto done;
 	}
 
@@ -821,6 +877,7 @@ static WERROR cmd_srvsvc_net_conn_enum(struct rpc_pipe_client *cli,
 	uint32_t *resume_handle_p = NULL;
 	uint32_t level = 1;
 	const char *path = "IPC$";
+	struct dcerpc_binding_handle *b = cli->binding_handle;
 
 	if (argc > 4) {
 		printf("Usage: %s [level] [path] [resume_handle]\n", argv[0]);
@@ -857,7 +914,7 @@ static WERROR cmd_srvsvc_net_conn_enum(struct rpc_pipe_client *cli,
 			return WERR_INVALID_PARAM;
 	}
 
-	status = rpccli_srvsvc_NetConnEnum(cli, mem_ctx,
+	status = dcerpc_srvsvc_NetConnEnum(b, mem_ctx,
 					   cli->desthost,
 					   path,
 					   &info_ctr,
@@ -866,7 +923,12 @@ static WERROR cmd_srvsvc_net_conn_enum(struct rpc_pipe_client *cli,
 					   resume_handle_p,
 					   &result);
 
-	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(result)) {
+	if (!NT_STATUS_IS_OK(status)) {
+		result = ntstatus_to_werror(status);
+		goto done;
+	}
+
+	if (!W_ERROR_IS_OK(result)) {
 		goto done;
 	}
 
