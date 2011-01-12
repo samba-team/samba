@@ -3090,6 +3090,8 @@ static WERROR get_share_info(struct net_context *c,
 		ctr1->array = info.info1;
 
 		info_ctr->ctr.ctr1 = ctr1;
+
+		break;
 	}
 	case 2:
 	{
@@ -3102,6 +3104,8 @@ static WERROR get_share_info(struct net_context *c,
 		ctr2->array = info.info2;
 
 		info_ctr->ctr.ctr2 = ctr2;
+
+		break;
 	}
 	case 502:
 	{
@@ -3114,6 +3118,8 @@ static WERROR get_share_info(struct net_context *c,
 		ctr502->array = info.info502;
 
 		info_ctr->ctr.ctr502 = ctr502;
+
+		break;
 	}
 	} /* switch */
 done:
