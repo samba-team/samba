@@ -390,8 +390,9 @@ NTSTATUS rpccli_samr_chgpasswd_user3(struct rpc_pipe_client *cli,
    with large (10k and higher) numbers of users.  These values were 
    obtained by inspection using ethereal and NT4 running User Manager. */
 
-void get_query_dispinfo_params(int loop_count, uint32 *max_entries,
-			       uint32 *max_size)
+void dcerpc_get_query_dispinfo_params(int loop_count,
+				      uint32_t *max_entries,
+				      uint32_t *max_size)
 {
 	switch(loop_count) {
 	case 0:

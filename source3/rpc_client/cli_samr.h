@@ -174,8 +174,25 @@ NTSTATUS rpccli_samr_chgpasswd_user3(struct rpc_pipe_client *cli,
 				     const char *oldpassword,
 				     struct samr_DomInfo1 **dominfo1,
 				     struct userPwdChangeFailureInformation **reject);
-void get_query_dispinfo_params(int loop_count, uint32 *max_entries,
-			       uint32 *max_size);
+
+/**
+ * @brief Create a set of max_entries, max_size for QueryDisplayInfo.
+ *
+ * This function returns a set of (max_entries, max_size) required
+ * for the QueryDisplayInfo RPC to actually work against a domain controller
+ * with large (10k and higher) numbers of users.  These values were
+ * obtained by inspection using wireshark and NT4 running User Manager.
+ *
+ * @param[in]  loop_count The loop count.
+ *
+ * @param[out] max_entries A pointer to store maximum entries value.
+ *
+ * @param[out] max_size A poiter to store the maximum size value.
+ */
+void dcerpc_get_query_dispinfo_params(int loop_count,
+				      uint32_t *max_entries,
+				      uint32_t *max_size);
+
 NTSTATUS rpccli_try_samr_connects(struct rpc_pipe_client *cli,
 				  TALLOC_CTX *mem_ctx,
 				  uint32_t access_mask,

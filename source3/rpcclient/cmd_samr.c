@@ -1400,7 +1400,7 @@ static NTSTATUS cmd_samr_query_dispinfo_internal(struct rpc_pipe_client *cli,
 	do {
 
 		if (!got_params)
-			get_query_dispinfo_params(
+			dcerpc_get_query_dispinfo_params(
 				loop_count, &max_entries, &max_size);
 
 		switch (opcode) {
