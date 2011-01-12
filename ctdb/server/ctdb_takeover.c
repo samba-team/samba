@@ -594,10 +594,8 @@ int32_t ctdb_control_takeover_ip(struct ctdb_context *ctdb,
 
 	if (vnn->iface == NULL && have_ip) {
 		DEBUG(DEBUG_CRIT,(__location__ " takeoverip of IP %s is known to the kernel, "
-				  "but we have no interface assigned, has someone manually configured it?"
-				  "banning ourself\n",
+				  "but we have no interface assigned, has someone manually configured it? Ignore for now.\n",
 				 ctdb_addr_to_str(&vnn->public_address)));
-		ctdb_ban_self(ctdb);
 		return -1;
 	}
 
@@ -794,12 +792,10 @@ int32_t ctdb_control_release_ip(struct ctdb_context *ctdb,
 	}
 
 	if (vnn->iface == NULL) {
-		DEBUG(DEBUG_CRIT,(__location__ " release_ip of IP %s is known to the kernel, "
-				  "but we have no interface assigned, has someone manually configured it?"
-				  "banning ourself\n",
+		DEBUG(DEBUG_ERR,(__location__ " release_ip of IP %s is known to the kernel, "
+				 "but we have no interface assigned, has someone manually configured it? Ignore for now.\n",
 				 ctdb_addr_to_str(&vnn->public_address)));
-		ctdb_ban_self(ctdb);
-		return -1;
+		return 0;
 	}
 
 	DEBUG(DEBUG_NOTICE,("Release of IP %s/%u on interface %s  node:%d\n",
