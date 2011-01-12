@@ -26,7 +26,7 @@
 #include "popt_common.h"
 #include "libsmbclient.h"
 #include "libsmb_internal.h"
-#include "../librpc/gen_ndr/cli_srvsvc.h"
+#include "../librpc/gen_ndr/ndr_srvsvc_c.h"
 
 /*
  * Routine to open a directory
@@ -270,6 +270,7 @@ net_share_enum_rpc(struct cli_state *cli,
         NTSTATUS nt_status;
 	uint32_t resume_handle = 0;
 	uint32_t total_entries = 0;
+	struct dcerpc_binding_handle *b;
 
         /* Open the server service pipe */
         nt_status = cli_rpc_pipe_open_noauth(cli, &ndr_table_srvsvc.syntax_id,
@@ -285,8 +286,10 @@ net_share_enum_rpc(struct cli_state *cli,
 	info_ctr.level = 1;
 	info_ctr.ctr.ctr1 = &ctr1;
 
+	b = pipe_hnd->binding_handle;
+
         /* Issue the NetShareEnum RPC call and retrieve the response */
-	nt_status = rpccli_srvsvc_NetShareEnumAll(pipe_hnd, talloc_tos(),
+	nt_status = dcerpc_srvsvc_NetShareEnumAll(b, talloc_tos(),
 						  pipe_hnd->desthost,
 						  &info_ctr,
 						  preferred_len,
@@ -295,11 +298,22 @@ net_share_enum_rpc(struct cli_state *cli,
 						  &result);
 
         /* Was it successful? */
-	if (!NT_STATUS_IS_OK(nt_status) || !W_ERROR_IS_OK(result) ||
-	    total_entries == 0) {
+	if (!NT_STATUS_IS_OK(nt_status)) {
+                /*  Nope.  Go clean up. */
+		result = ntstatus_to_werror(nt_status);
+		goto done;
+	}
+
+	if (!W_ERROR_IS_OK(result)) {
                 /*  Nope.  Go clean up. */
 		goto done;
         }
+
+	if (total_entries == 0) {
+                /*  Nope.  Go clean up. */
+		result = WERR_GENERAL_FAILURE;
+		goto done;
+	}
 
         /* For each returned entry... */
         for (i = 0; i < info_ctr.ctr.ctr1->count; i++) {
