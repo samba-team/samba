@@ -90,7 +90,7 @@ static WERROR query_service_state(struct rpc_pipe_client *pipe_hnd,
 						  &service_status,
 						  &result);
 
-	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(result) ) {
+	if (NT_STATUS_IS_OK(status) && W_ERROR_IS_OK(result) ) {
 		*state = service_status.state;
 	}
 
