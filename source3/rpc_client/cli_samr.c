@@ -286,13 +286,15 @@ NTSTATUS rpccli_samr_chng_pswd_auth_crap(struct rpc_pipe_client *cli,
 
 /* change password 3 */
 
-NTSTATUS rpccli_samr_chgpasswd_user3(struct rpc_pipe_client *cli,
+NTSTATUS dcerpc_samr_chgpasswd_user3(struct dcerpc_binding_handle *h,
 				     TALLOC_CTX *mem_ctx,
+				     const char *srv_name_slash,
 				     const char *username,
 				     const char *newpassword,
 				     const char *oldpassword,
 				     struct samr_DomInfo1 **dominfo1,
-				     struct userPwdChangeFailureInformation **reject)
+				     struct userPwdChangeFailureInformation **reject,
+				     NTSTATUS *presult)
 {
 	NTSTATUS status;
 
@@ -301,16 +303,16 @@ NTSTATUS rpccli_samr_chgpasswd_user3(struct rpc_pipe_client *cli,
 	struct samr_Password old_nt_hash_enc;
 	struct samr_Password old_lanman_hash_enc;
 
-	uchar old_nt_hash[16];
-	uchar old_lanman_hash[16];
-	uchar new_nt_hash[16];
-	uchar new_lanman_hash[16];
+	uint8_t old_nt_hash[16];
+	uint8_t old_lanman_hash[16];
+	uint8_t new_nt_hash[16];
+	uint8_t new_lanman_hash[16];
 
 	struct lsa_String server, account;
 
 	DEBUG(10,("rpccli_samr_chgpasswd_user3\n"));
 
-	init_lsa_String(&server, cli->srv_name_slash);
+	init_lsa_String(&server, srv_name_slash);
 	init_lsa_String(&account, username);
 
 	/* Calculate the MD4 hash (NT compatible) of the password */
@@ -339,7 +341,8 @@ NTSTATUS rpccli_samr_chgpasswd_user3(struct rpc_pipe_client *cli,
 	arcfour_crypt(new_nt_password.data, old_nt_hash, 516);
 	E_old_pw_hash(new_nt_hash, old_nt_hash, old_nt_hash_enc.hash);
 
-	status = rpccli_samr_ChangePasswordUser3(cli, mem_ctx,
+	status = dcerpc_samr_ChangePasswordUser3(h,
+						 mem_ctx,
 						 &server,
 						 &account,
 						 &new_nt_password,
@@ -349,8 +352,37 @@ NTSTATUS rpccli_samr_chgpasswd_user3(struct rpc_pipe_client *cli,
 						 &old_lanman_hash_enc,
 						 NULL,
 						 dominfo1,
-						 reject);
+						 reject,
+						 presult);
+
 	return status;
+}
+
+NTSTATUS rpccli_samr_chgpasswd_user3(struct rpc_pipe_client *cli,
+				     TALLOC_CTX *mem_ctx,
+				     const char *username,
+				     const char *newpassword,
+				     const char *oldpassword,
+				     struct samr_DomInfo1 **dominfo1,
+				     struct userPwdChangeFailureInformation **reject)
+{
+	NTSTATUS status;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+
+	status = dcerpc_samr_chgpasswd_user3(cli->binding_handle,
+					     mem_ctx,
+					     cli->srv_name_slash,
+					     username,
+					     newpassword,
+					     oldpassword,
+					     dominfo1,
+					     reject,
+					     &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	return result;
 }
 
 /* This function returns the bizzare set of (max_entries, max_size) required
