@@ -29,7 +29,7 @@
 #include "../librpc/gen_ndr/cli_lsa.h"
 #include "rpc_client/cli_lsarpc.h"
 #include "../librpc/gen_ndr/ndr_netlogon_c.h"
-#include "../librpc/gen_ndr/cli_srvsvc.h"
+#include "../librpc/gen_ndr/ndr_srvsvc_c.h"
 #include "../librpc/gen_ndr/cli_spoolss.h"
 #include "../librpc/gen_ndr/ndr_initshutdown_c.h"
 #include "../librpc/gen_ndr/cli_winreg.h"
@@ -3041,6 +3041,7 @@ static WERROR get_share_info(struct net_context *c,
 	WERROR result;
 	NTSTATUS status;
 	union srvsvc_NetShareInfo info;
+	struct dcerpc_binding_handle *b = pipe_hnd->binding_handle;
 
 	/* no specific share requested, enumerate all */
 	if (argc == 0) {
@@ -3051,25 +3052,33 @@ static WERROR get_share_info(struct net_context *c,
 
 		info_ctr->level = level;
 
-		status = rpccli_srvsvc_NetShareEnumAll(pipe_hnd, mem_ctx,
+		status = dcerpc_srvsvc_NetShareEnumAll(b, mem_ctx,
 						       pipe_hnd->desthost,
 						       info_ctr,
 						       preferred_len,
 						       &total_entries,
 						       &resume_handle,
 						       &result);
+		if (!NT_STATUS_IS_OK(status)) {
+			return ntstatus_to_werror(status);
+		}
 		return result;
 	}
 
 	/* request just one share */
-	status = rpccli_srvsvc_NetShareGetInfo(pipe_hnd, mem_ctx,
+	status = dcerpc_srvsvc_NetShareGetInfo(b, mem_ctx,
 					       pipe_hnd->desthost,
 					       argv[0],
 					       level,
 					       &info,
 					       &result);
 
-	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(result)) {
+	if (!NT_STATUS_IS_OK(status)) {
+		result = ntstatus_to_werror(status);
+		goto done;
+	}
+
+	if (!W_ERROR_IS_OK(result)) {
 		goto done;
 	}
 
@@ -3251,6 +3260,7 @@ static NTSTATUS rpc_share_migrate_shares_internals(struct net_context *c,
 	struct cli_state *cli_dst = NULL;
 	uint32 level = 502; /* includes secdesc */
 	uint32_t parm_error = 0;
+	struct dcerpc_binding_handle *b;
 
 	result = get_share_info(c, pipe_hnd, mem_ctx, level, argc, argv,
 				&ctr_src);
@@ -3263,6 +3273,7 @@ static NTSTATUS rpc_share_migrate_shares_internals(struct net_context *c,
         if (!NT_STATUS_IS_OK(nt_status))
                 return nt_status;
 
+	b = srvsvc_pipe->binding_handle;
 
 	for (i = 0; i < ctr_src.ctr.ctr502->count; i++) {
 
@@ -3284,21 +3295,27 @@ static NTSTATUS rpc_share_migrate_shares_internals(struct net_context *c,
 
 		info.info502 = &info502;
 
-		nt_status = rpccli_srvsvc_NetShareAdd(srvsvc_pipe, mem_ctx,
+		nt_status = dcerpc_srvsvc_NetShareAdd(b, mem_ctx,
 						      srvsvc_pipe->desthost,
 						      502,
 						      &info,
 						      &parm_error,
 						      &result);
-
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			printf(_("cannot add share: %s\n"),
+				nt_errstr(nt_status));
+			goto done;
+		}
                 if (W_ERROR_V(result) == W_ERROR_V(WERR_FILE_EXISTS)) {
 			printf(_("           [%s] does already exist\n"),
 				info502.name);
 			continue;
 		}
 
-		if (!NT_STATUS_IS_OK(nt_status) || !W_ERROR_IS_OK(result)) {
-			printf(_("cannot add share: %s\n"), win_errstr(result));
+		if (!W_ERROR_IS_OK(result)) {
+			nt_status = werror_to_ntstatus(result);
+			printf(_("cannot add share: %s\n"),
+				win_errstr(result));
 			goto done;
 		}
 
@@ -3721,6 +3738,7 @@ static NTSTATUS rpc_share_migrate_security_internals(struct net_context *c,
 	struct cli_state *cli_dst = NULL;
 	uint32 level = 502; /* includes secdesc */
 	uint32_t parm_error = 0;
+	struct dcerpc_binding_handle *b;
 
 	result = get_share_info(c, pipe_hnd, mem_ctx, level, argc, argv,
 				&ctr_src);
@@ -3734,6 +3752,7 @@ static NTSTATUS rpc_share_migrate_security_internals(struct net_context *c,
         if (!NT_STATUS_IS_OK(nt_status))
                 return nt_status;
 
+	b = srvsvc_pipe->binding_handle;
 
 	for (i = 0; i < ctr_src.ctr.ctr502->count; i++) {
 
@@ -3757,14 +3776,20 @@ static NTSTATUS rpc_share_migrate_security_internals(struct net_context *c,
 		info.info502 = &info502;
 
 		/* finally modify the share on the dst server */
-		nt_status = rpccli_srvsvc_NetShareSetInfo(srvsvc_pipe, mem_ctx,
+		nt_status = dcerpc_srvsvc_NetShareSetInfo(b, mem_ctx,
 							  srvsvc_pipe->desthost,
 							  info502.name,
 							  level,
 							  &info,
 							  &parm_error,
 							  &result);
-		if (!NT_STATUS_IS_OK(nt_status) || !W_ERROR_IS_OK(result)) {
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			printf(_("cannot set share-acl: %s\n"),
+			       nt_errstr(nt_status));
+			goto done;
+		}
+		if (!W_ERROR_IS_OK(result)) {
+			nt_status = werror_to_ntstatus(result);
 			printf(_("cannot set share-acl: %s\n"),
 			       win_errstr(result));
 			goto done;
@@ -4448,8 +4473,9 @@ static void show_userlist(struct rpc_pipe_client *pipe_hnd,
 	WERROR result;
 	NTSTATUS status;
 	uint16 cnum;
+	struct dcerpc_binding_handle *b = pipe_hnd->binding_handle;
 
-	status = rpccli_srvsvc_NetShareGetInfo(pipe_hnd, mem_ctx,
+	status = dcerpc_srvsvc_NetShareGetInfo(b, mem_ctx,
 					       pipe_hnd->desthost,
 					       netname,
 					       502,
@@ -4845,19 +4871,24 @@ static NTSTATUS rpc_sh_share_info(struct net_context *c,
 	union srvsvc_NetShareInfo info;
 	WERROR result;
 	NTSTATUS status;
+	struct dcerpc_binding_handle *b = pipe_hnd->binding_handle;
 
 	if (argc != 1) {
 		d_fprintf(stderr, "%s %s <share>\n", _("Usage:"), ctx->whoami);
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	status = rpccli_srvsvc_NetShareGetInfo(pipe_hnd, mem_ctx,
+	status = dcerpc_srvsvc_NetShareGetInfo(b, mem_ctx,
 					       pipe_hnd->desthost,
 					       argv[0],
 					       2,
 					       &info,
 					       &result);
-	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(result)) {
+	if (!NT_STATUS_IS_OK(status)) {
+		result = ntstatus_to_werror(status);
+		goto done;
+	}
+	if (!W_ERROR_IS_OK(result)) {
 		goto done;
 	}
 
