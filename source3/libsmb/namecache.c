@@ -160,9 +160,9 @@ bool namecache_fetch(const char *name,
 		DEBUG(5, ("no entry for %s#%02X found.\n", name, name_type));
 		SAFE_FREE(key);
 		return False;
-	} else {
-		DEBUG(5, ("name %s#%02X found.\n", name, name_type));
 	}
+
+	DEBUG(5, ("name %s#%02X found.\n", name, name_type));
 
 	/*
 	 * Split up the stored value into the list of IP adresses
