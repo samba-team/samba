@@ -60,6 +60,40 @@ const char *svc_status_string( uint32 state )
 /********************************************************************
 ********************************************************************/
 
+static WERROR open_service(struct dcerpc_binding_handle *b,
+			   TALLOC_CTX *mem_ctx,
+			   struct policy_handle *hSCM,
+			   const char *service,
+			   uint32_t access_mask,
+			   struct policy_handle *hService)
+{
+	NTSTATUS status;
+	WERROR result;
+
+	status = dcerpc_svcctl_OpenServiceW(b, mem_ctx,
+					    hSCM,
+					    service,
+					    access_mask,
+					    hService,
+					    &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		result = ntstatus_to_werror(status);
+		d_fprintf(stderr, _("Failed to open service.  [%s]\n"),
+			  nt_errstr(status));
+		return result;
+	}
+	if (!W_ERROR_IS_OK(result) ) {
+		d_fprintf(stderr, _("Failed to open service.  [%s]\n"),
+			  win_errstr(result));
+		return result;
+	}
+
+	return WERR_OK;
+}
+
+/********************************************************************
+********************************************************************/
+
 static WERROR query_service_state(struct rpc_pipe_client *pipe_hnd,
 				TALLOC_CTX *mem_ctx,
 				struct policy_handle *hSCM,
@@ -74,21 +108,10 @@ static WERROR query_service_state(struct rpc_pipe_client *pipe_hnd,
 
 	/* now cycle until the status is actually 'watch_state' */
 
-	status = dcerpc_svcctl_OpenServiceW(b, mem_ctx,
-					    hSCM,
-					    service,
-					    SC_RIGHT_SVC_QUERY_STATUS,
-					    &hService,
-					    &result);
-	if (!NT_STATUS_IS_OK(status)) {
-		result = ntstatus_to_werror(status);
-		d_fprintf(stderr, _("Failed to open service.  [%s]\n"),
-			  nt_errstr(status));
-		return result;
-	}
+	result = open_service(b, mem_ctx, hSCM, service,
+			      SC_RIGHT_SVC_QUERY_STATUS,
+			      &hService);
 	if (!W_ERROR_IS_OK(result) ) {
-		d_fprintf(stderr, _("Failed to open service.  [%s]\n"),
-			  win_errstr(result));
 		return result;
 	}
 
@@ -169,23 +192,11 @@ static WERROR control_service(struct rpc_pipe_client *pipe_hnd,
 
 	/* Open the Service */
 
-	status = dcerpc_svcctl_OpenServiceW(b, mem_ctx,
-					    hSCM,
-					    service,
-					    (SC_RIGHT_SVC_STOP|SC_RIGHT_SVC_PAUSE_CONTINUE),
-					    &hService,
-					    &result);
-	if (!NT_STATUS_IS_OK(status)) {
-		result = ntstatus_to_werror(status);
-		d_fprintf(stderr, _("Failed to open service.  [%s]\n"),
-			  nt_errstr(status));
-		goto done;
-	}
-
+	result = open_service(b, mem_ctx, hSCM, service,
+			      (SC_RIGHT_SVC_STOP|SC_RIGHT_SVC_PAUSE_CONTINUE),
+			      &hService);
 	if (!W_ERROR_IS_OK(result) ) {
-		d_fprintf(stderr, _("Failed to open service.  [%s]\n"),
-			  win_errstr(result));
-		goto done;
+		return result;
 	}
 
 	/* get the status */
@@ -402,22 +413,10 @@ static NTSTATUS rpc_service_status_internal(struct net_context *c,
 
 	/* Open the Service */
 
-	status = dcerpc_svcctl_OpenServiceW(b, mem_ctx,
-					    &hSCM,
-					    argv[0],
-					    (SC_RIGHT_SVC_QUERY_STATUS|SC_RIGHT_SVC_QUERY_CONFIG),
-					    &hService,
-					    &result);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		result = ntstatus_to_werror(status);
-		d_fprintf(stderr, _("Failed to open service.  [%s]\n"),
-			  nt_errstr(status));
-		goto done;
-	}
+	result = open_service(b, mem_ctx, &hSCM, argv[0],
+			      (SC_RIGHT_SVC_QUERY_STATUS|SC_RIGHT_SVC_QUERY_CONFIG),
+			      &hService);
 	if (!W_ERROR_IS_OK(result) ) {
-		d_fprintf(stderr, _("Failed to open service.  [%s]\n"),
-			  win_errstr(result));
 		goto done;
 	}
 
@@ -741,22 +740,10 @@ static NTSTATUS rpc_service_start_internal(struct net_context *c,
 
 	/* Open the Service */
 
-	status = dcerpc_svcctl_OpenServiceW(b, mem_ctx,
-					    &hSCM,
-					    argv[0],
-					    SC_RIGHT_SVC_START,
-					    &hService,
-					    &result);
-	if (!NT_STATUS_IS_OK(status)) {
-		result = ntstatus_to_werror(status);
-		d_fprintf(stderr, _("Failed to open service.  [%s]\n"),
-			  nt_errstr(status));
-		goto done;
-	}
-
+	result = open_service(b, mem_ctx, &hSCM, argv[0],
+			      SC_RIGHT_SVC_START,
+			      &hService);
 	if (!W_ERROR_IS_OK(result) ) {
-		d_fprintf(stderr, _("Failed to open service.  [%s]\n"),
-			  win_errstr(result));
 		goto done;
 	}
 
@@ -849,23 +836,10 @@ static NTSTATUS rpc_service_delete_internal(struct net_context *c,
 
 	/* Open the Service */
 
-	status = dcerpc_svcctl_OpenServiceW(b, mem_ctx,
-					    &hSCM,
-					    argv[0],
-					    SERVICE_ALL_ACCESS,
-					    &hService,
-					    &result);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		result = ntstatus_to_werror(status);
-		d_fprintf(stderr, _("Failed to open service.  [%s]\n"),
-			  nt_errstr(status));
-		goto done;
-	}
-
+	result = open_service(b, mem_ctx, &hSCM, argv[0],
+			      SERVICE_ALL_ACCESS,
+			      &hService);
 	if (!W_ERROR_IS_OK(result) ) {
-		d_fprintf(stderr, _("Failed to open service.  [%s]\n"),
-			  win_errstr(result));
 		goto done;
 	}
 
