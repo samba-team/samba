@@ -23,7 +23,7 @@
 #include "utils/net.h"
 #include "utils/net_registry_util.h"
 #include "registry/regfio.h"
-#include "../librpc/gen_ndr/cli_winreg.h"
+#include "../librpc/gen_ndr/ndr_winreg_c.h"
 #include "registry/reg_objects.h"
 #include "../librpc/gen_ndr/ndr_security.h"
 #include "registry/reg_format.h"
@@ -35,7 +35,7 @@
  connect to a registry hive root (open a registry policy)
 *******************************************************************/
 
-static NTSTATUS rpccli_winreg_Connect(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
+static NTSTATUS dcerpc_winreg_Connect(struct dcerpc_binding_handle *b, TALLOC_CTX *mem_ctx,
 				      uint32_t reg_type, uint32_t access_mask,
 				      struct policy_handle *reg_hnd, WERROR *werr)
 {
@@ -44,23 +44,23 @@ static NTSTATUS rpccli_winreg_Connect(struct rpc_pipe_client *cli, TALLOC_CTX *m
 	switch (reg_type)
 	{
 	case HKEY_CLASSES_ROOT:
-		return rpccli_winreg_OpenHKCR( cli, mem_ctx, NULL,
+		return dcerpc_winreg_OpenHKCR(b, mem_ctx, NULL,
 			access_mask, reg_hnd, werr);
 
 	case HKEY_LOCAL_MACHINE:
-		return rpccli_winreg_OpenHKLM( cli, mem_ctx, NULL,
+		return dcerpc_winreg_OpenHKLM(b, mem_ctx, NULL,
 			access_mask, reg_hnd, werr);
 
 	case HKEY_USERS:
-		return rpccli_winreg_OpenHKU( cli, mem_ctx, NULL,
+		return dcerpc_winreg_OpenHKU(b, mem_ctx, NULL,
 			access_mask, reg_hnd, werr);
 
 	case HKEY_CURRENT_USER:
-		return rpccli_winreg_OpenHKCU( cli, mem_ctx, NULL,
+		return dcerpc_winreg_OpenHKCU(b, mem_ctx, NULL,
 			access_mask, reg_hnd, werr);
 
 	case HKEY_PERFORMANCE_DATA:
-		return rpccli_winreg_OpenHKPD( cli, mem_ctx, NULL,
+		return dcerpc_winreg_OpenHKPD(b, mem_ctx, NULL,
 			access_mask, reg_hnd, werr);
 
 	default:
@@ -131,7 +131,9 @@ static NTSTATUS registry_openkey(TALLOC_CTX *mem_ctx,
 {
 	uint32 hive;
 	NTSTATUS status;
+	WERROR werr;
 	struct winreg_String key;
+	struct dcerpc_binding_handle *b = pipe_hnd->binding_handle;
 
 	ZERO_STRUCT(key);
 
@@ -139,17 +141,25 @@ static NTSTATUS registry_openkey(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	status = rpccli_winreg_Connect(pipe_hnd, mem_ctx, hive, access_mask,
-				       hive_hnd, NULL);
+	status = dcerpc_winreg_Connect(b, mem_ctx, hive, access_mask,
+				       hive_hnd, &werr);
 	if (!(NT_STATUS_IS_OK(status))) {
 		return status;
 	}
+	if (!W_ERROR_IS_OK(werr)) {
+		return werror_to_ntstatus(werr);
+	}
 
-	status = rpccli_winreg_OpenKey(pipe_hnd, mem_ctx, hive_hnd, key, 0,
-				       access_mask, key_hnd, NULL);
+	status = dcerpc_winreg_OpenKey(b, mem_ctx, hive_hnd, key, 0,
+				       access_mask, key_hnd, &werr);
 	if (!(NT_STATUS_IS_OK(status))) {
-		rpccli_winreg_CloseKey(pipe_hnd, mem_ctx, hive_hnd, NULL);
+		dcerpc_winreg_CloseKey(b, mem_ctx, hive_hnd, &werr);
 		return status;
+	}
+	if (!(W_ERROR_IS_OK(werr))) {
+		WERROR _werr;
+		dcerpc_winreg_CloseKey(b, mem_ctx, hive_hnd, &_werr);
+		return werror_to_ntstatus(werr);
 	}
 
 	return NT_STATUS_OK;
@@ -163,6 +173,7 @@ static NTSTATUS registry_enumkeys(TALLOC_CTX *ctx,
 {
 	TALLOC_CTX *mem_ctx;
 	NTSTATUS status;
+	WERROR werr;
 	uint32 num_subkeys, max_subkeylen, max_classlen;
 	uint32 num_values, max_valnamelen, max_valbufsize;
 	uint32 i;
@@ -171,18 +182,23 @@ static NTSTATUS registry_enumkeys(TALLOC_CTX *ctx,
 	struct winreg_String classname;
 	char **names, **classes;
 	NTTIME **modtimes;
+	struct dcerpc_binding_handle *b = pipe_hnd->binding_handle;
 
 	if (!(mem_ctx = talloc_new(ctx))) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	ZERO_STRUCT(classname);
-	status = rpccli_winreg_QueryInfoKey(
-		pipe_hnd, mem_ctx, key_hnd, &classname, &num_subkeys,
+	status = dcerpc_winreg_QueryInfoKey(
+		b, mem_ctx, key_hnd, &classname, &num_subkeys,
 		&max_subkeylen, &max_classlen, &num_values, &max_valnamelen,
-		&max_valbufsize, &secdescsize, &last_changed_time, NULL );
+		&max_valbufsize, &secdescsize, &last_changed_time, &werr);
 
 	if (!NT_STATUS_IS_OK(status)) {
+		goto error;
+	}
+	if (!W_ERROR_IS_OK(werr)) {
+		status = werror_to_ntstatus(werr);
 		goto error;
 	}
 
@@ -205,7 +221,6 @@ static NTSTATUS registry_enumkeys(TALLOC_CTX *ctx,
 		struct winreg_StringBuf class_buf;
 		struct winreg_StringBuf name_buf;
 		NTTIME modtime;
-		WERROR werr;
 
 		c = '\0';
 		class_buf.name = &c;
@@ -217,16 +232,19 @@ static NTSTATUS registry_enumkeys(TALLOC_CTX *ctx,
 
 		ZERO_STRUCT(modtime);
 
-		status = rpccli_winreg_EnumKey(pipe_hnd, mem_ctx, key_hnd,
+		status = dcerpc_winreg_EnumKey(b, mem_ctx, key_hnd,
 					       i, &name_buf, &class_buf,
 					       &modtime, &werr);
-
+		if (!NT_STATUS_IS_OK(status)) {
+			goto error;
+		}
 		if (W_ERROR_EQUAL(werr,
 				  WERR_NO_MORE_ITEMS) ) {
 			status = NT_STATUS_OK;
 			break;
 		}
-		if (!NT_STATUS_IS_OK(status)) {
+		if (!W_ERROR_IS_OK(werr)) {
+			status = werror_to_ntstatus(werr);
 			goto error;
 		}
 
@@ -277,6 +295,7 @@ static NTSTATUS registry_enumvalues(TALLOC_CTX *ctx,
 {
 	TALLOC_CTX *mem_ctx;
 	NTSTATUS status;
+	WERROR werr;
 	uint32 num_subkeys, max_subkeylen, max_classlen;
 	uint32 num_values, max_valnamelen, max_valbufsize;
 	uint32 i;
@@ -285,18 +304,23 @@ static NTSTATUS registry_enumvalues(TALLOC_CTX *ctx,
 	struct winreg_String classname;
 	struct registry_value **values;
 	char **names;
+	struct dcerpc_binding_handle *b = pipe_hnd->binding_handle;
 
 	if (!(mem_ctx = talloc_new(ctx))) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	ZERO_STRUCT(classname);
-	status = rpccli_winreg_QueryInfoKey(
-		pipe_hnd, mem_ctx, key_hnd, &classname, &num_subkeys,
+	status = dcerpc_winreg_QueryInfoKey(
+		b, mem_ctx, key_hnd, &classname, &num_subkeys,
 		&max_subkeylen, &max_classlen, &num_values, &max_valnamelen,
-		&max_valbufsize, &secdescsize, &last_changed_time, NULL );
+		&max_valbufsize, &secdescsize, &last_changed_time, &werr);
 
 	if (!NT_STATUS_IS_OK(status)) {
+		goto error;
+	}
+	if (!W_ERROR_IS_OK(werr)) {
+		status = werror_to_ntstatus(werr);
 		goto error;
 	}
 
@@ -331,10 +355,13 @@ static NTSTATUS registry_enumvalues(TALLOC_CTX *ctx,
 		data = (uint8 *)TALLOC(mem_ctx, data_size);
 		value_length = 0;
 
-		status = rpccli_winreg_EnumValue(pipe_hnd, mem_ctx, key_hnd,
+		status = dcerpc_winreg_EnumValue(b, mem_ctx, key_hnd,
 						 i, &name_buf, &type,
 						 data, &data_size,
 						 &value_length, &err);
+		if (!(NT_STATUS_IS_OK(status))) {
+			goto error;
+		}
 
 		if ( W_ERROR_EQUAL(err,
 				   WERR_NO_MORE_ITEMS) ) {
@@ -342,7 +369,8 @@ static NTSTATUS registry_enumvalues(TALLOC_CTX *ctx,
 			break;
 		}
 
-		if (!(NT_STATUS_IS_OK(status))) {
+		if (!W_ERROR_IS_OK(err)) {
+			status = werror_to_ntstatus(err);
 			goto error;
 		}
 
@@ -390,6 +418,7 @@ static NTSTATUS registry_enumvalues2(TALLOC_CTX *ctx,
 {
 	TALLOC_CTX *mem_ctx;
 	NTSTATUS status;
+	WERROR werr;
 	uint32 num_subkeys, max_subkeylen, max_classlen;
 	uint32 num_values, max_valnamelen, max_valbufsize;
 	uint32 i;
@@ -398,18 +427,23 @@ static NTSTATUS registry_enumvalues2(TALLOC_CTX *ctx,
 	struct winreg_String classname;
 	struct regval_blob **values;
 	char **names;
+	struct dcerpc_binding_handle *b = pipe_hnd->binding_handle;
 
 	if (!(mem_ctx = talloc_new(ctx))) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	ZERO_STRUCT(classname);
-	status = rpccli_winreg_QueryInfoKey(
-		pipe_hnd, mem_ctx, key_hnd, &classname, &num_subkeys,
+	status = dcerpc_winreg_QueryInfoKey(
+		b, mem_ctx, key_hnd, &classname, &num_subkeys,
 		&max_subkeylen, &max_classlen, &num_values, &max_valnamelen,
-		&max_valbufsize, &secdescsize, &last_changed_time, NULL );
+		&max_valbufsize, &secdescsize, &last_changed_time, &werr);
 
 	if (!NT_STATUS_IS_OK(status)) {
+		goto error;
+	}
+	if (!W_ERROR_IS_OK(werr)) {
+		status = werror_to_ntstatus(werr);
 		goto error;
 	}
 
@@ -444,17 +478,21 @@ static NTSTATUS registry_enumvalues2(TALLOC_CTX *ctx,
 		data = (uint8 *)TALLOC(mem_ctx, data_size);
 		value_length = 0;
 
-		status = rpccli_winreg_EnumValue(pipe_hnd, mem_ctx, key_hnd,
+		status = dcerpc_winreg_EnumValue(b, mem_ctx, key_hnd,
 						 i, &name_buf, &type,
 						 data, &data_size,
 						 &value_length, &err);
+		if (!(NT_STATUS_IS_OK(status))) {
+			goto error;
+		}
 
 		if ( W_ERROR_EQUAL(err, WERR_NO_MORE_ITEMS) ) {
 			status = NT_STATUS_OK;
 			break;
 		}
 
-		if (!(NT_STATUS_IS_OK(status))) {
+		if (!W_ERROR_IS_OK(err)) {
+			status = werror_to_ntstatus(err);
 			goto error;
 		}
 
@@ -497,13 +535,14 @@ static NTSTATUS registry_enumvalues2(TALLOC_CTX *ctx,
 }
 
 static NTSTATUS registry_getsd(TALLOC_CTX *mem_ctx,
-			       struct rpc_pipe_client *pipe_hnd,
+			       struct dcerpc_binding_handle *b,
 			       struct policy_handle *key_hnd,
 			       uint32_t sec_info,
-			       struct KeySecurityData *sd)
+			       struct KeySecurityData *sd,
+			       WERROR *werr)
 {
-	return rpccli_winreg_GetKeySecurity(pipe_hnd, mem_ctx, key_hnd,
-					    sec_info, sd, NULL);
+	return dcerpc_winreg_GetKeySecurity(b, mem_ctx, key_hnd,
+					    sec_info, sd, werr);
 }
 
 
@@ -515,14 +554,20 @@ static NTSTATUS registry_setvalue(TALLOC_CTX *mem_ctx,
 {
 	struct winreg_String name_string;
 	NTSTATUS result;
+	WERROR werr;
+	struct dcerpc_binding_handle *b = pipe_hnd->binding_handle;
 
 	ZERO_STRUCT(name_string);
 
 	name_string.name = name;
-	result = rpccli_winreg_SetValue(pipe_hnd, mem_ctx, key_hnd,
+	result = dcerpc_winreg_SetValue(b, mem_ctx, key_hnd,
 					name_string, value->type,
-					value->data.data, value->data.length, NULL);
-	return result;
+					value->data.data, value->data.length, &werr);
+	if (!NT_STATUS_IS_OK(result)) {
+		return result;
+	}
+
+	return werror_to_ntstatus(werr);
 }
 
 static NTSTATUS rpc_registry_setvalue_internal(struct net_context *c,
@@ -536,7 +581,9 @@ static NTSTATUS rpc_registry_setvalue_internal(struct net_context *c,
 {
 	struct policy_handle hive_hnd, key_hnd;
 	NTSTATUS status;
+	WERROR werr;
 	struct registry_value value;
+	struct dcerpc_binding_handle *b = pipe_hnd->binding_handle;
 
 	status = registry_openkey(mem_ctx, pipe_hnd, argv[0],
 				  SEC_FLAG_MAXIMUM_ALLOWED,
@@ -580,8 +627,8 @@ static NTSTATUS rpc_registry_setvalue_internal(struct net_context *c,
 	}
 
  error:
-	rpccli_winreg_CloseKey(pipe_hnd, mem_ctx, &key_hnd, NULL);
-	rpccli_winreg_CloseKey(pipe_hnd, mem_ctx, &hive_hnd, NULL);
+	dcerpc_winreg_CloseKey(b, mem_ctx, &key_hnd, &werr);
+	dcerpc_winreg_CloseKey(b, mem_ctx, &hive_hnd, &werr);
 
 	return NT_STATUS_OK;
 }
@@ -612,7 +659,9 @@ static NTSTATUS rpc_registry_deletevalue_internal(struct net_context *c,
 {
 	struct policy_handle hive_hnd, key_hnd;
 	NTSTATUS status;
+	WERROR werr;
 	struct winreg_String valuename;
+	struct dcerpc_binding_handle *b = pipe_hnd->binding_handle;
 
 	ZERO_STRUCT(valuename);
 
@@ -627,16 +676,20 @@ static NTSTATUS rpc_registry_deletevalue_internal(struct net_context *c,
 
 	valuename.name = argv[1];
 
-	status = rpccli_winreg_DeleteValue(pipe_hnd, mem_ctx, &key_hnd,
-					   valuename, NULL);
-
+	status = dcerpc_winreg_DeleteValue(b, mem_ctx, &key_hnd,
+					   valuename, &werr);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_fprintf(stderr, _("registry_deletevalue failed: %s\n"),
 			  nt_errstr(status));
 	}
+	if (!W_ERROR_IS_OK(werr)) {
+		status = werror_to_ntstatus(werr);
+		d_fprintf(stderr, _("registry_deletevalue failed: %s\n"),
+			  win_errstr(werr));
+	}
 
-	rpccli_winreg_CloseKey(pipe_hnd, mem_ctx, &key_hnd, NULL);
-	rpccli_winreg_CloseKey(pipe_hnd, mem_ctx, &hive_hnd, NULL);
+	dcerpc_winreg_CloseKey(b, mem_ctx, &key_hnd, &werr);
+	dcerpc_winreg_CloseKey(b, mem_ctx, &hive_hnd, &werr);
 
 	return status;
 }
@@ -667,12 +720,14 @@ static NTSTATUS rpc_registry_getvalue_internal(struct net_context *c,
 {
 	struct policy_handle hive_hnd, key_hnd;
 	NTSTATUS status;
+	WERROR werr;
 	struct winreg_String valuename;
 	struct registry_value *value = NULL;
 	enum winreg_Type type = REG_NONE;
 	uint32_t data_size = 0;
 	uint32_t value_length = 0;
 	TALLOC_CTX *tmp_ctx = talloc_stackframe();
+	struct dcerpc_binding_handle *b = pipe_hnd->binding_handle;
 
 	ZERO_STRUCT(valuename);
 
@@ -697,15 +752,21 @@ static NTSTATUS rpc_registry_getvalue_internal(struct net_context *c,
 	 * needed memory size to be allocated, then allocate
 	 * data buffer and call again.
 	 */
-	status = rpccli_winreg_QueryValue(pipe_hnd, tmp_ctx, &key_hnd,
+	status = dcerpc_winreg_QueryValue(b, tmp_ctx, &key_hnd,
 					  &valuename,
 					  &type,
 					  NULL,
 					  &data_size,
 					  &value_length,
-					  NULL);
+					  &werr);
 
 	if (!NT_STATUS_IS_OK(status)) {
+		d_fprintf(stderr, _("registry_queryvalue failed: %s\n"),
+			  nt_errstr(status));
+		goto done;
+	}
+	if (!W_ERROR_IS_OK(werr)) {
+		status = werror_to_ntstatus(werr);
 		d_fprintf(stderr, _("registry_queryvalue failed: %s\n"),
 			  nt_errstr(status));
 		goto done;
@@ -713,27 +774,34 @@ static NTSTATUS rpc_registry_getvalue_internal(struct net_context *c,
 
 	value->data = data_blob_talloc(tmp_ctx, NULL, data_size);
 
-	status = rpccli_winreg_QueryValue(pipe_hnd, tmp_ctx, &key_hnd,
+	status = dcerpc_winreg_QueryValue(b, tmp_ctx, &key_hnd,
 					  &valuename,
 					  &type,
 					  value->data.data,
 					  &data_size,
 					  &value_length,
-					  NULL);
+					  &werr);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		d_fprintf(stderr, _("registry_queryvalue failed: %s\n"),
 			  nt_errstr(status));
 		goto done;
 	}
+	if (!W_ERROR_IS_OK(werr)) {
+		status = werror_to_ntstatus(werr);
+		d_fprintf(stderr, _("registry_queryvalue failed: %s\n"),
+			  win_errstr(werr));
+		goto done;
+	}
+
 
 	value->type = type;
 
 	print_registry_value(value, raw);
 
 done:
-	rpccli_winreg_CloseKey(pipe_hnd, tmp_ctx, &key_hnd, NULL);
-	rpccli_winreg_CloseKey(pipe_hnd, tmp_ctx, &hive_hnd, NULL);
+	dcerpc_winreg_CloseKey(b, tmp_ctx, &key_hnd, &werr);
+	dcerpc_winreg_CloseKey(b, tmp_ctx, &hive_hnd, &werr);
 
 	TALLOC_FREE(tmp_ctx);
 
@@ -810,6 +878,8 @@ static NTSTATUS rpc_registry_createkey_internal(struct net_context *c,
 	struct winreg_String key, keyclass;
 	enum winreg_CreateAction action;
 	NTSTATUS status;
+	WERROR werr;
+	struct dcerpc_binding_handle *b = pipe_hnd->binding_handle;
 
 	ZERO_STRUCT(key);
 	ZERO_STRUCT(keyclass);
@@ -818,24 +888,34 @@ static NTSTATUS rpc_registry_createkey_internal(struct net_context *c,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	status = rpccli_winreg_Connect(pipe_hnd, mem_ctx, hive,
+	status = dcerpc_winreg_Connect(b, mem_ctx, hive,
 				       SEC_FLAG_MAXIMUM_ALLOWED,
-				       &hive_hnd, NULL);
+				       &hive_hnd, &werr);
 	if (!(NT_STATUS_IS_OK(status))) {
 		return status;
+	}
+	if (!W_ERROR_IS_OK(werr)) {
+		return werror_to_ntstatus(werr);
 	}
 
 	action = REG_ACTION_NONE;
 	keyclass.name = "";
 
-	status = rpccli_winreg_CreateKey(pipe_hnd, mem_ctx, &hive_hnd, key,
+	status = dcerpc_winreg_CreateKey(b, mem_ctx, &hive_hnd, key,
 					 keyclass, 0, REG_KEY_READ, NULL,
-					 &key_hnd, &action, NULL);
+					 &key_hnd, &action, &werr);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_fprintf(stderr, _("createkey returned %s\n"),
 			  nt_errstr(status));
-		rpccli_winreg_CloseKey(pipe_hnd, mem_ctx, &hive_hnd, NULL);
+		dcerpc_winreg_CloseKey(b, mem_ctx, &hive_hnd, &werr);
 		return status;
+	}
+	if (!W_ERROR_IS_OK(werr)) {
+		WERROR _werr;
+		d_fprintf(stderr, _("createkey returned %s\n"),
+			  win_errstr(werr));
+		dcerpc_winreg_CloseKey(b, mem_ctx, &hive_hnd, &_werr);
+		return werror_to_ntstatus(werr);
 	}
 
 	switch (action) {
@@ -850,8 +930,8 @@ static NTSTATUS rpc_registry_createkey_internal(struct net_context *c,
 			break;
 	}
 
-	rpccli_winreg_CloseKey(pipe_hnd, mem_ctx, &key_hnd, NULL);
-	rpccli_winreg_CloseKey(pipe_hnd, mem_ctx, &hive_hnd, NULL);
+	dcerpc_winreg_CloseKey(b, mem_ctx, &key_hnd, &werr);
+	dcerpc_winreg_CloseKey(b, mem_ctx, &hive_hnd, &werr);
 
 	return status;
 }
@@ -883,6 +963,8 @@ static NTSTATUS rpc_registry_deletekey_internal(struct net_context *c,
 	struct policy_handle hive_hnd;
 	struct winreg_String key;
 	NTSTATUS status;
+	WERROR werr;
+	struct dcerpc_binding_handle *b = pipe_hnd->binding_handle;
 
 	ZERO_STRUCT(key);
 
@@ -890,19 +972,32 @@ static NTSTATUS rpc_registry_deletekey_internal(struct net_context *c,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	status = rpccli_winreg_Connect(pipe_hnd, mem_ctx, hive,
+	status = dcerpc_winreg_Connect(b, mem_ctx, hive,
 				       SEC_FLAG_MAXIMUM_ALLOWED,
-				       &hive_hnd, NULL);
+				       &hive_hnd, &werr);
 	if (!(NT_STATUS_IS_OK(status))) {
 		return status;
 	}
+	if (!W_ERROR_IS_OK(werr)) {
+		return werror_to_ntstatus(werr);
+	}
 
-	status = rpccli_winreg_DeleteKey(pipe_hnd, mem_ctx, &hive_hnd, key, NULL);
-	rpccli_winreg_CloseKey(pipe_hnd, mem_ctx, &hive_hnd, NULL);
+	status = dcerpc_winreg_DeleteKey(b, mem_ctx, &hive_hnd, key, &werr);
+	if (is_valid_policy_hnd(&hive_hnd)) {
+		WERROR _werr;
+		dcerpc_winreg_CloseKey(b, mem_ctx, &hive_hnd, &_werr);
+	}
 
 	if (!NT_STATUS_IS_OK(status)) {
 		d_fprintf(stderr, _("deletekey returned %s\n"),
 			  nt_errstr(status));
+		return status;
+	}
+
+	if (!W_ERROR_IS_OK(werr)) {
+		d_fprintf(stderr, _("deletekey returned %s\n"),
+			  win_errstr(werr));
+		return werror_to_ntstatus(werr);
 	}
 
 	return status;
@@ -935,12 +1030,14 @@ static NTSTATUS rpc_registry_enumerate_internal(struct net_context *c,
 {
 	struct policy_handle pol_hive, pol_key;
 	NTSTATUS status;
+	WERROR werr;
 	uint32 num_subkeys = 0;
 	uint32 num_values = 0;
 	char **names = NULL, **classes = NULL;
 	NTTIME **modtimes = NULL;
 	uint32 i;
 	struct registry_value **values = NULL;
+	struct dcerpc_binding_handle *b = pipe_hnd->binding_handle;
 
 	if (argc != 1 || c->display_usage) {
 		d_printf("%s\n%s",
@@ -983,8 +1080,8 @@ static NTSTATUS rpc_registry_enumerate_internal(struct net_context *c,
 		print_registry_value_with_name(names[i], values[i]);
 	}
 
-	rpccli_winreg_CloseKey(pipe_hnd, mem_ctx, &pol_key, NULL);
-	rpccli_winreg_CloseKey(pipe_hnd, mem_ctx, &pol_hive, NULL);
+	dcerpc_winreg_CloseKey(b, mem_ctx, &pol_key, &werr);
+	dcerpc_winreg_CloseKey(b, mem_ctx, &pol_hive, &werr);
 
 	return status;
 }
@@ -1015,6 +1112,7 @@ static NTSTATUS rpc_registry_save_internal(struct net_context *c,
 	struct policy_handle pol_hive, pol_key;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	struct winreg_String filename;
+	struct dcerpc_binding_handle *b = pipe_hnd->binding_handle;
 
 	if (argc != 2 || c->display_usage) {
 		d_printf("%s\n%s",
@@ -1032,16 +1130,21 @@ static NTSTATUS rpc_registry_save_internal(struct net_context *c,
 	}
 
 	filename.name = argv[1];
-	status = rpccli_winreg_SaveKey( pipe_hnd, mem_ctx, &pol_key, &filename, NULL, NULL);
-	if ( !W_ERROR_IS_OK(result) ) {
+	status = dcerpc_winreg_SaveKey(b, mem_ctx, &pol_key, &filename, NULL, &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_fprintf(stderr, _("Unable to save [%s] to %s:%s\n"), argv[0],
+			  cli->desthost, argv[1]);
+	}
+	if (!W_ERROR_IS_OK(result)) {
+		status = werror_to_ntstatus(result);
 		d_fprintf(stderr, _("Unable to save [%s] to %s:%s\n"), argv[0],
 			  cli->desthost, argv[1]);
 	}
 
 	/* cleanup */
 
-	rpccli_winreg_CloseKey(pipe_hnd, mem_ctx, &pol_key, NULL);
-	rpccli_winreg_CloseKey(pipe_hnd, mem_ctx, &pol_hive, NULL);
+	dcerpc_winreg_CloseKey(b, mem_ctx, &pol_key, &result);
+	dcerpc_winreg_CloseKey(b, mem_ctx, &pol_hive, &result);
 
 	return status;
 }
@@ -1317,6 +1420,7 @@ static NTSTATUS rpc_registry_getsd_internal(struct net_context *c,
 {
 	struct policy_handle pol_hive, pol_key;
 	NTSTATUS status;
+	WERROR werr;
 	enum ndr_err_code ndr_err;
 	struct KeySecurityData *sd = NULL;
 	uint32_t sec_info;
@@ -1324,6 +1428,7 @@ static NTSTATUS rpc_registry_getsd_internal(struct net_context *c,
 	struct security_descriptor sec_desc;
 	uint32_t access_mask = SEC_FLAG_MAXIMUM_ALLOWED |
 			       SEC_FLAG_SYSTEM_SECURITY;
+	struct dcerpc_binding_handle *b = pipe_hnd->binding_handle;
 
 	if (argc <1 || argc > 2 || c->display_usage) {
 		d_printf("%s\n%s",
@@ -1357,10 +1462,16 @@ static NTSTATUS rpc_registry_getsd_internal(struct net_context *c,
 		sec_info = SECINFO_OWNER | SECINFO_GROUP | SECINFO_DACL;
 	}
 
-	status = registry_getsd(mem_ctx, pipe_hnd, &pol_key, sec_info, sd);
+	status = registry_getsd(mem_ctx, b, &pol_key, sec_info, sd, &werr);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_fprintf(stderr, _("getting sd failed: %s\n"),
 			  nt_errstr(status));
+		goto out;
+	}
+	if (!W_ERROR_IS_OK(werr)) {
+		status = werror_to_ntstatus(werr);
+		d_fprintf(stderr, _("getting sd failed: %s\n"),
+			  win_errstr(werr));
 		goto out;
 	}
 
@@ -1378,8 +1489,8 @@ static NTSTATUS rpc_registry_getsd_internal(struct net_context *c,
 	display_sec_desc(&sec_desc);
 
  out:
-	rpccli_winreg_CloseKey(pipe_hnd, mem_ctx, &pol_key, NULL);
-	rpccli_winreg_CloseKey(pipe_hnd, mem_ctx, &pol_hive, NULL);
+	dcerpc_winreg_CloseKey(b, mem_ctx, &pol_key, &werr);
+	dcerpc_winreg_CloseKey(b, mem_ctx, &pol_hive, &werr);
 
 	return status;
 }
@@ -1417,6 +1528,7 @@ static NTSTATUS registry_export(struct rpc_pipe_client* pipe_hnd,
 	NTTIME **modtimes = NULL;
 	struct regval_blob **values = NULL;
 	uint32 i;
+	struct dcerpc_binding_handle *b = pipe_hnd->binding_handle;
 
 	TALLOC_CTX* mem_ctx = talloc_new(ctx);
 
@@ -1450,28 +1562,37 @@ static NTSTATUS registry_export(struct rpc_pipe_client* pipe_hnd,
 	for (i=0; i<num_subkeys; i++) {
 		struct policy_handle subkey_hnd;
 		struct winreg_String key;
+		WERROR werr;
 		ZERO_STRUCT(key);
 		/* key.name = talloc_strdup(mem_ctx, names[i]); ??? */
 		key.name = names[i];
 
-		status = rpccli_winreg_OpenKey(pipe_hnd, mem_ctx, key_hnd, key,
+		status = dcerpc_winreg_OpenKey(b, mem_ctx, key_hnd, key,
 					       0, REG_KEY_READ,
-					       &subkey_hnd, NULL);
-		if (NT_STATUS_IS_OK(status)) {
-			status = registry_export(pipe_hnd, mem_ctx, &subkey_hnd,
-						 f, fullname, names[i]);
-			if (!(NT_STATUS_IS_OK(status)))
-				d_fprintf(stderr,
-					  _("export key failed: %s %s\n"),
-					  names[i], nt_errstr(status));
-
-			rpccli_winreg_CloseKey(pipe_hnd, mem_ctx,
-					       &subkey_hnd, NULL);
-		} else {
+					       &subkey_hnd, &werr);
+		if (!NT_STATUS_IS_OK(status)) {
 			d_fprintf(stderr,
-				  _("rpccli_winreg_OpenKey failed: %s %s\n"),
+				  _("dcerpc_winreg_OpenKey failed: %s %s\n"),
+				  names[i], nt_errstr(status));
+			continue;
+		}
+		if (!W_ERROR_IS_OK(werr)) {
+			status = werror_to_ntstatus(werr);
+			d_fprintf(stderr,
+				  _("dcerpc_winreg_OpenKey failed: %s %s\n"),
+				  names[i], win_errstr(werr));
+			continue;
+		}
+
+		status = registry_export(pipe_hnd, mem_ctx, &subkey_hnd,
+					 f, fullname, names[i]);
+		if (!(NT_STATUS_IS_OK(status))) {
+			d_fprintf(stderr,
+				  _("export key failed: %s %s\n"),
 				  names[i], nt_errstr(status));
 		}
+		dcerpc_winreg_CloseKey(b, mem_ctx,
+				       &subkey_hnd, &werr);
 	}
 done:
 	talloc_free(mem_ctx);
@@ -1489,7 +1610,9 @@ static NTSTATUS rpc_registry_export_internal(struct net_context *c,
 {
 	struct policy_handle pol_hive, pol_key;
 	NTSTATUS status;
+	WERROR werr;
 	struct reg_format* f;
+	struct dcerpc_binding_handle *b = pipe_hnd->binding_handle;
 
 	if (argc < 2 || argc > 3 || c->display_usage) {
 		d_printf("%s\n%s",
@@ -1519,8 +1642,8 @@ static NTSTATUS rpc_registry_export_internal(struct net_context *c,
 	if (!NT_STATUS_IS_OK(status))
 		return status;
 
-	rpccli_winreg_CloseKey(pipe_hnd, mem_ctx, &pol_key, NULL);
-	rpccli_winreg_CloseKey(pipe_hnd, mem_ctx, &pol_hive, NULL);
+	dcerpc_winreg_CloseKey(b, mem_ctx, &pol_key, &werr);
+	dcerpc_winreg_CloseKey(b, mem_ctx, &pol_hive, &werr);
 
 	return status;
 }
@@ -1562,6 +1685,7 @@ static WERROR import_create_key(struct import_ctx* ctx,
 	struct policy_handle  hive;
 	struct winreg_String  keyclass, keyname;
 	enum winreg_CreateAction action = REG_ACTION_NONE;
+	struct dcerpc_binding_handle *b = ctx->pipe_hnd->binding_handle;
 
 	ZERO_STRUCT(keyname);
 	keyname.name = name;
@@ -1573,12 +1697,18 @@ static WERROR import_create_key(struct import_ctx* ctx,
 			goto done;
 		}
 
-		status = rpccli_winreg_Connect(ctx->pipe_hnd, mem_ctx,
+		status = dcerpc_winreg_Connect(b, mem_ctx,
 					       hive_idx, SEC_FLAG_MAXIMUM_ALLOWED,
 					       &hive, &werr);
 		if (!NT_STATUS_IS_OK(status)) {
-			d_fprintf(stderr, _("rpccli_winreg_Connect returned %s\n"),
+			werr = ntstatus_to_werror(status);
+			d_fprintf(stderr, _("dcerpc_winreg_Connect returned %s\n"),
 				  nt_errstr(status));
+			goto done;
+		}
+		if (!W_ERROR_IS_OK(werr)) {
+			d_fprintf(stderr, _("dcerpc_winreg_Connect returned %s\n"),
+				  win_errstr(werr));
 			goto done;
 		}
 
@@ -1594,13 +1724,19 @@ static WERROR import_create_key(struct import_ctx* ctx,
 	ZERO_STRUCT(keyclass);
 	keyclass.name = "";
 
-	status = rpccli_winreg_CreateKey(ctx->pipe_hnd, mem_ctx,
+	status = dcerpc_winreg_CreateKey(b, mem_ctx,
 					 parent, keyname,
 					 keyclass, 0, REG_KEY_READ, NULL,
 					 key, &action, &werr);
 	if (!NT_STATUS_IS_OK(status)) {
-		d_fprintf(stderr, _("rpccli_winreg_CreateKey returned %s\n"),
+		werr = ntstatus_to_werror(status);
+		d_fprintf(stderr, _("dcerpc_winreg_CreateKey returned %s\n"),
 			  nt_errstr(status));
+		goto done;
+	}
+	if (!W_ERROR_IS_OK(werr)) {
+		d_fprintf(stderr, _("dcerpc_winreg_CreateKey returned %s\n"),
+			  win_errstr(werr));
 		goto done;
 	}
 
@@ -1627,8 +1763,9 @@ static WERROR import_create_key(struct import_ctx* ctx,
 
 done:
 	if ( parent == &hive ) {
-		rpccli_winreg_CloseKey(ctx->pipe_hnd, mem_ctx,
-				       parent, NULL);
+		WERROR _result;
+		dcerpc_winreg_CloseKey(b, mem_ctx,
+				       parent, &_result);
 	}
 
 	if (pkey!=NULL) {
@@ -1647,6 +1784,7 @@ static WERROR import_delete_key(struct import_ctx* ctx,
 	void* mem_ctx = talloc_new(ctx->mem_ctx);
 	struct winreg_String  keyname;
 	struct policy_handle  hive;
+	struct dcerpc_binding_handle *b = ctx->pipe_hnd->binding_handle;
 
 	keyname.name = name;
 
@@ -1657,29 +1795,42 @@ static WERROR import_delete_key(struct import_ctx* ctx,
 			goto done;
 		}
 
-		status = rpccli_winreg_Connect(ctx->pipe_hnd, mem_ctx, hive_idx,
+		status = dcerpc_winreg_Connect(b, mem_ctx, hive_idx,
 					       SEC_FLAG_MAXIMUM_ALLOWED, &hive,
 					       &werr);
 		if (!NT_STATUS_IS_OK(status)) {
-			d_fprintf(stderr, _("rpccli_winreg_Connect returned %s\n"),
+			werr = ntstatus_to_werror(status);
+			d_fprintf(stderr, _("dcerpc_winreg_Connect returned %s\n"),
 				  nt_errstr(status));
+			goto done;
+		}
+		if (!W_ERROR_IS_OK(werr)) {
+			d_fprintf(stderr, _("dcerpc_winreg_Connect returned %s\n"),
+				  win_errstr(werr));
 			goto done;
 		}
 
 		parent = &hive;
 	}
 
-	status = rpccli_winreg_DeleteKey(ctx->pipe_hnd, mem_ctx, parent,
+	status = dcerpc_winreg_DeleteKey(b, mem_ctx, parent,
 					 keyname, &werr);
 	if (!NT_STATUS_IS_OK(status)) {
-		d_fprintf(stderr, _("rpccli_winreg_DeleteKey returned %s\n"),
+		werr = ntstatus_to_werror(status);
+		d_fprintf(stderr, _("dcerpc_winreg_DeleteKey returned %s\n"),
 			  nt_errstr(status));
+		goto done;
+	}
+	if (!W_ERROR_IS_OK(werr)) {
+		d_fprintf(stderr, _("dcerpc_winreg_DeleteKey returned %s\n"),
+			  win_errstr(werr));
 		goto done;
 	}
 
 done:
 	if ( parent == &hive ) {
-		rpccli_winreg_CloseKey(ctx->pipe_hnd, mem_ctx, parent, NULL);
+		WERROR _result;
+		dcerpc_winreg_CloseKey(b, mem_ctx, parent, &_result);
 	}
 
 	talloc_free(mem_ctx);
@@ -1692,11 +1843,18 @@ static WERROR import_close_key(struct import_ctx* ctx,
 	WERROR werr;
 	NTSTATUS status;
 	void* mem_ctx = talloc_new(ctx->mem_ctx);
+	struct dcerpc_binding_handle *b = ctx->pipe_hnd->binding_handle;
 
-	status = rpccli_winreg_CloseKey(ctx->pipe_hnd, mem_ctx,	key, &werr);
+	status = dcerpc_winreg_CloseKey(b, mem_ctx, key, &werr);
 	if (!NT_STATUS_IS_OK(status)) {
-		d_fprintf(stderr, _("rpccli_winreg_CloseKey returned %s\n"),
+		werr = ntstatus_to_werror(status);
+		d_fprintf(stderr, _("dcerpc_winreg_CloseKey returned %s\n"),
 			  nt_errstr(status));
+		goto done;
+	}
+	if (!W_ERROR_IS_OK(werr)) {
+		d_fprintf(stderr, _("dcerpc_winreg_CloseKey returned %s\n"),
+			  win_errstr(werr));
 		goto done;
 	}
 
@@ -1714,6 +1872,7 @@ static WERROR import_create_val(struct import_ctx* ctx,
 	NTSTATUS status;
 	void* mem_ctx = talloc_new(ctx->mem_ctx);
 	struct winreg_String valuename;
+	struct dcerpc_binding_handle *b = ctx->pipe_hnd->binding_handle;
 
 	if (parent == NULL) {
 		return WERR_INVALID_PARAM;
@@ -1722,12 +1881,18 @@ static WERROR import_create_val(struct import_ctx* ctx,
 	ZERO_STRUCT(valuename);
 	valuename.name = name;
 
-	status = rpccli_winreg_SetValue(ctx->pipe_hnd, mem_ctx, parent,
+	status = dcerpc_winreg_SetValue(b, mem_ctx, parent,
 					valuename, type,
 					(uint8_t *)discard_const(val), len, &werr);
 	if (!NT_STATUS_IS_OK(status)) {
+		werr = ntstatus_to_werror(status);
 		d_fprintf(stderr, _("registry_setvalue failed: %s\n"),
 			  nt_errstr(status));
+		goto done;
+	}
+	if (!W_ERROR_IS_OK(werr)) {
+		d_fprintf(stderr, _("registry_setvalue failed: %s\n"),
+			  win_errstr(werr));
 		goto done;
 	}
 
@@ -1743,6 +1908,7 @@ static WERROR import_delete_val(struct import_ctx* ctx,
 	NTSTATUS status;
 	void* mem_ctx = talloc_new(ctx->mem_ctx);
 	struct winreg_String valuename;
+	struct dcerpc_binding_handle *b = ctx->pipe_hnd->binding_handle;
 
 	if (parent == NULL) {
 		return WERR_INVALID_PARAM;
@@ -1751,14 +1917,21 @@ static WERROR import_delete_val(struct import_ctx* ctx,
 	ZERO_STRUCT(valuename);
 	valuename.name = name;
 
-	status = rpccli_winreg_DeleteValue(ctx->pipe_hnd, mem_ctx,
+	status = dcerpc_winreg_DeleteValue(b, mem_ctx,
 					   parent, valuename, &werr);
 
 	if (!NT_STATUS_IS_OK(status)) {
+		werr = ntstatus_to_werror(status);
 		d_fprintf(stderr, _("registry_deletevalue failed: %s\n"),
 			  nt_errstr(status));
 		goto done;
 	}
+	if (!NT_STATUS_IS_OK(status)) {
+		d_fprintf(stderr, _("registry_deletevalue failed: %s\n"),
+			  win_errstr(werr));
+		goto done;
+	}
+
 done:
 	talloc_free(mem_ctx);
 	return werr;
