@@ -551,15 +551,12 @@ static NTSTATUS rpc_service_stop_internal(struct net_context *c,
 {
 	struct policy_handle hSCM;
 	WERROR result = WERR_GENERAL_FAILURE;
-	fstring servicename;
 	struct dcerpc_binding_handle *b = pipe_hnd->binding_handle;
 
 	if (argc != 1 ) {
 		d_printf("%s net rpc service status <service>\n", _("Usage:"));
 		return NT_STATUS_OK;
 	}
-
-	fstrcpy( servicename, argv[0] );
 
 	/* Open the Service Control Manager */
 	result = open_scm(b, mem_ctx, pipe_hnd->srv_name_slash,
@@ -569,7 +566,7 @@ static NTSTATUS rpc_service_stop_internal(struct net_context *c,
 		return werror_to_ntstatus(result);
 	}
 
-	result = control_service(pipe_hnd, mem_ctx, &hSCM, servicename,
+	result = control_service(pipe_hnd, mem_ctx, &hSCM, argv[0],
 		SVCCTL_CONTROL_STOP, SVCCTL_STOPPED );
 
 	if (is_valid_policy_hnd(&hSCM)) {
@@ -594,15 +591,12 @@ static NTSTATUS rpc_service_pause_internal(struct net_context *c,
 {
 	struct policy_handle hSCM;
 	WERROR result = WERR_GENERAL_FAILURE;
-	fstring servicename;
 	struct dcerpc_binding_handle *b = pipe_hnd->binding_handle;
 
 	if (argc != 1 ) {
 		d_printf("%s net rpc service status <service>\n", _("Usage:"));
 		return NT_STATUS_OK;
 	}
-
-	fstrcpy( servicename, argv[0] );
 
 	/* Open the Service Control Manager */
 	result = open_scm(b, mem_ctx, pipe_hnd->srv_name_slash,
@@ -612,7 +606,7 @@ static NTSTATUS rpc_service_pause_internal(struct net_context *c,
 		return werror_to_ntstatus(result);
 	}
 
-	result = control_service(pipe_hnd, mem_ctx, &hSCM, servicename,
+	result = control_service(pipe_hnd, mem_ctx, &hSCM, argv[0],
 		SVCCTL_CONTROL_PAUSE, SVCCTL_PAUSED );
 
 	if (is_valid_policy_hnd(&hSCM)) {
@@ -637,15 +631,12 @@ static NTSTATUS rpc_service_resume_internal(struct net_context *c,
 {
 	struct policy_handle hSCM;
 	WERROR result = WERR_GENERAL_FAILURE;
-	fstring servicename;
 	struct dcerpc_binding_handle *b = pipe_hnd->binding_handle;
 
 	if (argc != 1 ) {
 		d_printf("%s net rpc service status <service>\n", _("Usage:"));
 		return NT_STATUS_OK;
 	}
-
-	fstrcpy( servicename, argv[0] );
 
 	/* Open the Service Control Manager */
 	result = open_scm(b, mem_ctx, pipe_hnd->srv_name_slash,
@@ -655,7 +646,7 @@ static NTSTATUS rpc_service_resume_internal(struct net_context *c,
 		return werror_to_ntstatus(result);
 	}
 
-	result = control_service(pipe_hnd, mem_ctx, &hSCM, servicename,
+	result = control_service(pipe_hnd, mem_ctx, &hSCM, argv[0],
 		SVCCTL_CONTROL_CONTINUE, SVCCTL_RUNNING );
 
 	if (is_valid_policy_hnd(&hSCM)) {
