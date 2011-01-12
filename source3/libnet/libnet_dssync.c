@@ -251,11 +251,14 @@ static NTSTATUS libnet_dssync_lookup_nc(TALLOC_CTX *mem_ctx,
 	if (!NT_STATUS_IS_OK(status)) {
 		ctx->error_message = talloc_asprintf(ctx,
 			"Failed to lookup DN for domain name: %s",
-			get_friendly_werror_msg(werr));
+			get_friendly_nt_error_msg(status));
 		return status;
 	}
 
 	if (!W_ERROR_IS_OK(werr)) {
+		ctx->error_message = talloc_asprintf(ctx,
+			"Failed to lookup DN for domain name: %s",
+			get_friendly_werror_msg(werr));
 		return werror_to_ntstatus(werr);
 	}
 
@@ -469,7 +472,7 @@ static NTSTATUS libnet_dssync_getncchanges(TALLOC_CTX *mem_ctx,
 		if (!NT_STATUS_IS_OK(status)) {
 			ctx->error_message = talloc_asprintf(ctx,
 				"Failed to get NC Changes: %s",
-				get_friendly_werror_msg(werr));
+				get_friendly_nt_error_msg(status));
 			goto out;
 		}
 
