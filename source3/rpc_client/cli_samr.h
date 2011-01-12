@@ -193,6 +193,31 @@ void dcerpc_get_query_dispinfo_params(int loop_count,
 				      uint32_t *max_entries,
 				      uint32_t *max_size);
 
+/**
+ * @brief Try if we can connnect to samr.
+ *
+ * @param[in]  h        The dcerpc binding hanlde to use.
+ *
+ * @param[in]  mem_ctx  The memory context to use.
+ *
+ * @param[in]  srv_name_slash The server name with leading slashes.
+ *
+ * @param[in]  access_mask The access mask to use to open the connection.
+ *
+ * @param[in]  connect_pol A pointer to store the policy handle for the
+ *                         connection.
+ *
+ * @param[out] presult  A pointer for the NDR NTSTATUS error code.
+ *
+ * @return              A corresponding NTSTATUS error code for the connection.
+ */
+NTSTATUS dcerpc_try_samr_connects(struct dcerpc_binding_handle *h,
+				  TALLOC_CTX *mem_ctx,
+				  const char *srv_name_slash,
+				  uint32_t access_mask,
+				  struct policy_handle *connect_pol,
+				  NTSTATUS *presult);
+
 NTSTATUS rpccli_try_samr_connects(struct rpc_pipe_client *cli,
 				  TALLOC_CTX *mem_ctx,
 				  uint32_t access_mask,
