@@ -314,6 +314,10 @@ WERROR NetGetJoinInformation_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
+	if (!W_ERROR_IS_OK(werr)) {
+		goto done;
+	}
+
 	*r->out.name_buffer = talloc_strdup(ctx, buffer);
 	W_ERROR_HAVE_NO_MEMORY(*r->out.name_buffer);
 
