@@ -30,6 +30,11 @@ struct dssync_ops {
 				    TALLOC_CTX *mem_ctx,
 				    struct drsuapi_DsReplicaObjectListItemEx *objects,
 				    struct drsuapi_DsReplicaOIDMapping_Ctr *mappings);
+	NTSTATUS (*process_links)(struct dssync_context *ctx,
+				  TALLOC_CTX *mem_ctx,
+				  uint32_t count,
+				  struct drsuapi_DsReplicaLinkedAttribute *links,
+				  struct drsuapi_DsReplicaOIDMapping_Ctr *mappings);
 	NTSTATUS (*finish)(struct dssync_context *ctx, TALLOC_CTX *mem_ctx,
 			   struct replUpToDateVectorBlob *new_utdv);
 };
