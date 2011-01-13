@@ -740,13 +740,13 @@ ctdb_start_stop_service ()
 
     if is_ctdb_managed_service "$_service_name" ; then
 	if ! is_ctdb_previously_managed_service "$_service_name" ; then
-	    echo "Starting service $_service_name"
+	    echo "Starting service \"$_service_name\" - now managed"
 	    ctdb_service_start "$_service_name"
 	    exit $?
 	fi
     else
 	if is_ctdb_previously_managed_service "$_service_name" ; then
-	    echo "Stopping service $_service_name"
+	    echo "Stopping service \"$_service_name\" - no longer managed"
 	    ctdb_service_stop "$_service_name"
 	    exit $?
 	fi
