@@ -253,18 +253,18 @@ static struct security_acl *process_user_acl(TALLOC_CTX *mem_ctx,
 						    owner,
 						    group);
 			} else {
-			/*The original ACE becomes read only */
-			tmp_acl->aces[tmp_acl->num_aces-1].flags |= SEC_ACE_FLAG_INHERIT_ONLY;
-			tmp_acl->aces = talloc_realloc(tmp_acl, tmp_acl->aces,
-						       struct security_ace,
-						       tmp_acl->num_aces+1);
-			/* add a new ACE with expanded generic info */
-			tmp_acl->aces[tmp_acl->num_aces] = *ace;
-			desc_expand_generic(tmp_ctx,
-					    &tmp_acl->aces[tmp_acl->num_aces],
-					    owner,
-					    group);
-			tmp_acl->num_aces++;
+				/*The original ACE becomes read only */
+				tmp_acl->aces[tmp_acl->num_aces-1].flags |= SEC_ACE_FLAG_INHERIT_ONLY;
+				tmp_acl->aces = talloc_realloc(tmp_acl, tmp_acl->aces,
+							       struct security_ace,
+							       tmp_acl->num_aces+1);
+				/* add a new ACE with expanded generic info */
+				tmp_acl->aces[tmp_acl->num_aces] = *ace;
+				desc_expand_generic(tmp_ctx,
+						    &tmp_acl->aces[tmp_acl->num_aces],
+						    owner,
+						    group);
+				tmp_acl->num_aces++;
 			}
 		}
 	}
