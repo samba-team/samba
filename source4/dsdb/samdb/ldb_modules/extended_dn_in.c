@@ -273,6 +273,12 @@ static int extended_dn_in_fix(struct ldb_module *module, struct ldb_request *req
 	} else {
 		/* It looks like we need to map the DN */
 		const struct ldb_val *sid_val, *guid_val, *wkguid_val;
+		int num_components = ldb_dn_get_comp_num(dn);
+		int num_ex_components = ldb_dn_get_extended_comp_num(dn);
+
+		if (num_components != 0 || num_ex_components != 1) {
+			return ldb_error(ldb_module_get_ctx(module), LDB_ERR_INVALID_DN_SYNTAX, "invalid number of DN components");
+		}
 
 		sid_val = ldb_dn_get_extended_component(dn, "SID");
 		guid_val = ldb_dn_get_extended_component(dn, "GUID");
@@ -311,7 +317,8 @@ static int extended_dn_in_fix(struct ldb_module *module, struct ldb_request *req
 
 			p = strchr(wkguid_dup, ',');
 			if (!p) {
-				return LDB_ERR_INVALID_DN_SYNTAX;
+				return ldb_error(ldb_module_get_ctx(module), LDB_ERR_INVALID_DN_SYNTAX,
+						 "Invalid WKGUID format");
 			}
 
 			p[0] = '\0';
@@ -336,7 +343,8 @@ static int extended_dn_in_fix(struct ldb_module *module, struct ldb_request *req
 			base_dn_scope = LDB_SCOPE_BASE;
 			base_dn_attrs = wkattr;
 		} else {
-			return LDB_ERR_INVALID_DN_SYNTAX;
+			return ldb_error(ldb_module_get_ctx(module), LDB_ERR_INVALID_DN_SYNTAX,
+					 "Invalid extended DN component");
 		}
 
 		ac = talloc_zero(req, struct extended_search_context);
