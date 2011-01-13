@@ -1331,6 +1331,7 @@ static int move_ip(struct ctdb_context *ctdb, ctdb_sock_addr *addr, uint32_t pnn
 static int control_moveip(struct ctdb_context *ctdb, int argc, const char **argv)
 {
 	uint32_t pnn;
+	int ret, retries = 0;
 	ctdb_sock_addr addr;
 
 	if (argc < 2) {
@@ -1349,8 +1350,16 @@ static int control_moveip(struct ctdb_context *ctdb, int argc, const char **argv
 		return -1;
 	}
 
-	if (move_ip(ctdb, &addr, pnn) != 0) {
-		DEBUG(DEBUG_ERR,("Failed to move ip to node %d\n", pnn));
+	do {
+		ret = move_ip(ctdb, &addr, pnn);
+		if (ret != 0) {
+			DEBUG(DEBUG_ERR,("Failed to move ip to node %d. Wait 3 second and try again.\n", pnn));
+			sleep(3);
+			retries++;
+		}
+	} while (retries < 5 && ret != 0);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR,("Failed to move ip to node %d. Giving up.\n", pnn));
 		return -1;
 	}
 
@@ -1657,7 +1666,7 @@ again:
 static int control_addip(struct ctdb_context *ctdb, int argc, const char **argv)
 {
 	int i, ret;
-	int len;
+	int len, retries = 0;
 	uint32_t pnn;
 	unsigned mask;
 	ctdb_sock_addr addr;
@@ -1703,9 +1712,16 @@ static int control_addip(struct ctdb_context *ctdb, int argc, const char **argv)
 	pub->len   = strlen(argv[1])+1;
 	memcpy(&pub->iface[0], argv[1], strlen(argv[1])+1);
 
-	ret = ctdb_ctrl_add_public_ip(ctdb, TIMELIMIT(), options.pnn, pub);
+	do {
+		ret = ctdb_ctrl_add_public_ip(ctdb, TIMELIMIT(), options.pnn, pub);
+		if (ret != 0) {
+			DEBUG(DEBUG_ERR, ("Unable to add public ip to node %u. Wait 3 seconds and try again.\n", options.pnn));
+			sleep(3);
+			retries++;
+		}
+	} while (retries < 5 && ret != 0);
 	if (ret != 0) {
-		DEBUG(DEBUG_ERR, ("Unable to add public ip to node %u\n", options.pnn));
+		DEBUG(DEBUG_ERR, ("Unable to add public ip to node %u. Giving up.\n", options.pnn));
 		talloc_free(tmp_ctx);
 		return ret;
 	}
@@ -1717,14 +1733,31 @@ static int control_addip(struct ctdb_context *ctdb, int argc, const char **argv)
 		pnn  = ips->ips[i].pnn;
 	}
 
-	if (move_ip(ctdb, &addr, pnn) != 0) {
-		DEBUG(DEBUG_ERR,("Failed to move ip to node %d\n", pnn));
-		return -1;
+	do {
+		ret = move_ip(ctdb, &addr, pnn);
+		if (ret != 0) {
+			DEBUG(DEBUG_ERR,("Failed to move ip to node %d. wait 3 seconds and try again.\n", pnn));
+			sleep(3);
+			retries++;
+		}
+	} while (retries < 5 && ret != 0);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR,("Failed to move ip to node %d. Giving up.\n", pnn));
+		talloc_free(tmp_ctx);
+		return ret;
 	}
 
-	ret = control_ipreallocate(ctdb, argc, argv);
+	do {
+		ret = control_ipreallocate(ctdb, argc, argv);
+		if (ret != 0) {
+			DEBUG(DEBUG_ERR, ("IP Reallocate failed on node %u. Wait 3 seconds and try again.\n", options.pnn));
+			sleep(3);
+			retries++;
+		}
+	} while (retries < 5 && ret != 0);
 	if (ret != 0) {
-		DEBUG(DEBUG_ERR, ("IP Reallocate failed on node %u\n", options.pnn));
+		DEBUG(DEBUG_ERR, ("IP Reallocate failed on node %u. Giving up.\n", options.pnn));
+		talloc_free(tmp_ctx);
 		return ret;
 	}
 
@@ -1808,6 +1841,7 @@ static int control_delip_all(struct ctdb_context *ctdb, int argc, const char **a
 static int control_delip(struct ctdb_context *ctdb, int argc, const char **argv)
 {
 	int i, ret;
+	int retries = 0;
 	ctdb_sock_addr addr;
 	struct ctdb_control_ip_iface pub;
 	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
@@ -1854,8 +1888,16 @@ static int control_delip(struct ctdb_context *ctdb, int argc, const char **argv)
 	if (ips->ips[i].pnn == options.pnn) {
 		ret = find_other_host_for_public_ip(ctdb, &addr);
 		if (ret != -1) {
-			if (move_ip(ctdb, &addr, ret) != 0) {
-				DEBUG(DEBUG_ERR,("Failed to move ip to node %d\n", ret));
+			do {
+				ret = move_ip(ctdb, &addr, ret);
+				if (ret != 0) {
+					DEBUG(DEBUG_ERR,("Failed to move ip to node %d. Wait 3 seconds and try again.\n", options.pnn));
+					sleep(3);
+					retries++;
+				}
+			} while (retries < 5 && ret != 0);
+			if (ret != 0) {
+				DEBUG(DEBUG_ERR,("Failed to move ip to node %d. Giving up.\n", options.pnn));
 				return -1;
 			}
 		}
