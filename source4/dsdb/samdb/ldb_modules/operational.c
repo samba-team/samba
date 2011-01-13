@@ -186,11 +186,9 @@ static int construct_token_groups(struct ldb_module *module,
 		return ldb_oom(ldb);
 	}
 
-	/* Filter out builtin groups from this token.  We will search
-	 * for builtin groups later, and not include them in the
-	 * tokenGroups (and therefore the PAC or SamLogon validation
-	 * info) */
-	filter = talloc_asprintf(tmp_ctx, "(&(objectClass=group)(!(groupType:1.2.840.113556.1.4.803:=%u))(groupType:1.2.840.113556.1.4.803:=%u))", GROUP_TYPE_BUILTIN_LOCAL_GROUP, GROUP_TYPE_SECURITY_ENABLED);
+	/* only return security groups */
+	filter = talloc_asprintf(tmp_ctx, "(&(objectClass=group)(groupType:1.2.840.113556.1.4.803:=%u))",
+				 GROUP_TYPE_SECURITY_ENABLED);
 	if (!filter) {
 		talloc_free(tmp_ctx);
 		return ldb_oom(ldb);
