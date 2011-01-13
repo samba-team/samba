@@ -246,6 +246,7 @@ static void aio_child_cleanup(struct event_context *event_ctx,
 			   "deleting\n", (int)child->pid));
 
 		TALLOC_FREE(child);
+		child = next;
 	}
 
 	if (list->children != NULL) {
