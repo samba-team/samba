@@ -104,6 +104,11 @@ NTSTATUS dsdb_expand_nested_groups(struct ldb_context *sam_ctx,
 		return status;
 	}
 
+	if (!ldb_dn_minimise(dn)) {
+		talloc_free(tmp_ctx);
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
 	if (only_childs) {
 		ret = dsdb_search_dn(sam_ctx, tmp_ctx, &res, dn, attrs,
 				     DSDB_SEARCH_SHOW_EXTENDED_DN);
