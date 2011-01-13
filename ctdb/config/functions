@@ -355,8 +355,8 @@ startstop_nfs() {
 			service nfs start
 			;;
 		stop)
-			service nfs stop > /dev/null 2>&1
-			service nfslock stop > /dev/null 2>&1
+			service nfs stop
+			service nfslock stop
 			;;
 		restart)
 			set_proc "fs/nfsd/threads" 0
