@@ -515,7 +515,7 @@ setup_iface_ip_readd_script()
 # ctdb_check_counter_limit succeeds when count >= <limit>
 ########################################################
 _ctdb_counter_common () {
-    _service_name="${$1:-${service_name}}"
+    _service_name="${1:-${service_name}}"
     _counter_file="$ctdb_fail_dir/$_service_name"
     mkdir -p "${_counter_file%/*}" # dirname
 }
