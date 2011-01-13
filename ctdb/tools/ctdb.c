@@ -3038,6 +3038,7 @@ static int control_readkey(struct ctdb_context *ctdb, int argc, const char **arg
 	struct ctdb_record_handle *h;
 	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
 	TDB_DATA key, data;
+	bool persistent;
 
 	if (argc < 2) {
 		usage();
@@ -3046,12 +3047,12 @@ static int control_readkey(struct ctdb_context *ctdb, int argc, const char **arg
 	db_name = argv[0];
 
 
-	if (db_exists(ctdb, db_name)) {
+	if (db_exists(ctdb, db_name, &persistent)) {
 		DEBUG(DEBUG_ERR,("Database '%s' does not exist\n", db_name));
 		return -1;
 	}
 
-	ctdb_db = ctdb_attach(ctdb, db_name, false, 0);
+	ctdb_db = ctdb_attach(ctdb, db_name, persistent, 0);
 
 	if (ctdb_db == NULL) {
 		DEBUG(DEBUG_ERR,("Unable to attach to database '%s'\n", db_name));
@@ -3086,6 +3087,7 @@ static int control_writekey(struct ctdb_context *ctdb, int argc, const char **ar
 	struct ctdb_record_handle *h;
 	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
 	TDB_DATA key, data;
+	bool persistent;
 
 	if (argc < 3) {
 		usage();
@@ -3094,12 +3096,12 @@ static int control_writekey(struct ctdb_context *ctdb, int argc, const char **ar
 	db_name = argv[0];
 
 
-	if (db_exists(ctdb, db_name)) {
+	if (db_exists(ctdb, db_name, &persistent)) {
 		DEBUG(DEBUG_ERR,("Database '%s' does not exist\n", db_name));
 		return -1;
 	}
 
-	ctdb_db = ctdb_attach(ctdb, db_name, false, 0);
+	ctdb_db = ctdb_attach(ctdb, db_name, persistent, 0);
 
 	if (ctdb_db == NULL) {
 		DEBUG(DEBUG_ERR,("Unable to attach to database '%s'\n", db_name));
