@@ -12,7 +12,7 @@ service_start ()
 }
 service_stop ()
 {
-    service $service_name stop > /dev/null 2>&1
+    service $service_name stop
 }
 
 service_fail_limit=2
