@@ -242,6 +242,7 @@ NTSTATUS security_token_create(TALLOC_CTX *mem_ctx,
 		status = samdb_privilege_setup(lp_ctx, ptoken);
 		if (!NT_STATUS_IS_OK(status)) {
 			talloc_free(ptoken);
+			DEBUG(1,("Unable to access privileges database\n"));
 			return status;
 		}
 	}
