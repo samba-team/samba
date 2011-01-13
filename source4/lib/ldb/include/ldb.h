@@ -1758,6 +1758,7 @@ struct ldb_dn *ldb_dn_get_parent(TALLOC_CTX *mem_ctx, struct ldb_dn *dn);
 char *ldb_dn_canonical_string(TALLOC_CTX *mem_ctx, struct ldb_dn *dn);
 char *ldb_dn_canonical_ex_string(TALLOC_CTX *mem_ctx, struct ldb_dn *dn);
 int ldb_dn_get_comp_num(struct ldb_dn *dn);
+int ldb_dn_get_extended_comp_num(struct ldb_dn *dn);
 const char *ldb_dn_get_component_name(struct ldb_dn *dn, unsigned int num);
 const struct ldb_val *ldb_dn_get_component_val(struct ldb_dn *dn, unsigned int num);
 const char *ldb_dn_get_rdn_name(struct ldb_dn *dn);
