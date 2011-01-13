@@ -61,16 +61,16 @@ case "$1" in
 	else
 	    ctdb_counter_incr
 
-	    ctdb_check_counter_equal 5 || {
+	    ctdb_check_counter warn -eq 2 || {
 		echo "HTTPD is not running. Trying to restart HTTPD."
-		ctdb_service_stop
-		ctdb_service_start
+		service_stop
+		service_start
 		exit 0
 	    }
-            ctdb_check_counter_limit 10 quiet|| {
+            ctdb_check_counter warn -ge 5 || {
 		echo "HTTPD is not running. Trying to restart HTTPD."
-		ctdb_service_stop
-		ctdb_service_start
+		service_stop
+		service_start
 		exit 1
 	    }
 	fi
