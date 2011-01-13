@@ -280,7 +280,9 @@ static bool smbacl4_nfs42win(TALLOC_CTX *mem_ctx, SMB4ACL_T *theacl, /* in */
 		DEBUG(10, ("mapped ace flags: 0x%x => 0x%x\n",
 		      ace->aceFlags, mapped_ace_flags));
 
-		mask = ace->aceMask;
+		/* Windows clients expect SYNC on acls to
+		   correctly allow rename. See bug #7909. */
+		mask = ace->aceMask | SMB_ACE4_SYNCHRONIZE;
 		init_sec_ace(&nt_ace_list[good_aces++], &sid,
 			ace->aceType, mask,
 			mapped_ace_flags);
