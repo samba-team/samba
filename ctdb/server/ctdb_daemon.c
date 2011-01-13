@@ -43,6 +43,33 @@ static void print_exit_message(void)
 	DEBUG(DEBUG_NOTICE,("CTDB daemon shutting down\n"));
 }
 
+
+
+static void ctdb_time_tick(struct event_context *ev, struct timed_event *te, 
+				  struct timeval t, void *private_data)
+{
+	struct ctdb_context *ctdb = talloc_get_type(private_data, struct ctdb_context);
+
+	if (getpid() != ctdbd_pid) {
+		return;
+	}
+
+	event_add_timed(ctdb->ev, ctdb, 
+			timeval_current_ofs(1, 0), 
+			ctdb_time_tick, ctdb);
+}
+
+/* Used to trigger a dummy event once per second, to make
+ * detection of hangs more reliable.
+ */
+static void ctdb_start_time_tickd(struct ctdb_context *ctdb)
+{
+	event_add_timed(ctdb->ev, ctdb, 
+			timeval_current_ofs(1, 0), 
+			ctdb_time_tick, ctdb);
+}
+
+
 /* called when the "startup" event script has finished */
 static void ctdb_start_transport(struct ctdb_context *ctdb)
 {
@@ -77,6 +104,9 @@ static void ctdb_start_transport(struct ctdb_context *ctdb)
 
 	/* start listening for recovery daemon pings */
 	ctdb_control_recd_ping(ctdb);
+
+	/* start listening to timer ticks */
+	ctdb_start_time_tickd(ctdb);
 }
 
 static void block_signal(int signum)
