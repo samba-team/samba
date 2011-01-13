@@ -451,6 +451,8 @@ static NTSTATUS libnet_dssync_getncchanges(TALLOC_CTX *mem_ctx,
 	for (y=0, last_query = false; !last_query; y++) {
 		struct drsuapi_DsReplicaObjectListItemEx *first_object = NULL;
 		struct drsuapi_DsReplicaOIDMapping_Ctr *mapping_ctr = NULL;
+		uint32_t linked_attributes_count = 0;
+		struct drsuapi_DsReplicaLinkedAttribute *linked_attributes = NULL;
 
 		if (level == 8) {
 			DEBUG(1,("start[%d] tmp_higest_usn: %llu , highest_usn: %llu\n",y,
@@ -537,6 +539,9 @@ static NTSTATUS libnet_dssync_getncchanges(TALLOC_CTX *mem_ctx,
 			first_object = ctr6->first_object;
 			mapping_ctr = &ctr6->mapping_ctr;
 
+			linked_attributes = ctr6->linked_attributes;
+			linked_attributes_count = ctr6->linked_attributes_count;
+
 			if (ctr6->more_data) {
 				req->req8.highwatermark = ctr6->new_highwatermark;
 			} else {
@@ -569,6 +574,23 @@ static NTSTATUS libnet_dssync_getncchanges(TALLOC_CTX *mem_ctx,
 			status = ctx->ops->process_objects(ctx, mem_ctx,
 							   first_object,
 							   mapping_ctr);
+			if (!NT_STATUS_IS_OK(status)) {
+				ctx->error_message = talloc_asprintf(ctx,
+					"Failed to call processing function: %s",
+					nt_errstr(status));
+				goto out;
+			}
+		}
+
+		if (linked_attributes_count == 0) {
+			continue;
+		}
+
+		if (ctx->ops->process_links) {
+			status = ctx->ops->process_links(ctx, mem_ctx,
+							 linked_attributes_count,
+							 linked_attributes,
+							 mapping_ctr);
 			if (!NT_STATUS_IS_OK(status)) {
 				ctx->error_message = talloc_asprintf(ctx,
 					"Failed to call processing function: %s",
