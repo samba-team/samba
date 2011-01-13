@@ -124,6 +124,9 @@ static bool zfs_process_smbacl(files_struct *fsp, SMB4ACL_T *smbacl)
 		acebuf[i].a_type        = aceprop->aceType;
 		acebuf[i].a_flags       = aceprop->aceFlags;
 		acebuf[i].a_access_mask = aceprop->aceMask;
+		/* SYNC on acls is a no-op on ZFS.
+		   See bug #7909. */
+		acebuf[i].a_access_mask &= ~SMB_ACE4_SYNCHRONIZE;
 		acebuf[i].a_who         = aceprop->who.id;
 		if(aceprop->flags & SMB_ACE4_ID_SPECIAL) {
 			switch(aceprop->who.special_id) {
