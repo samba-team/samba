@@ -422,7 +422,18 @@ static void handle_aio_completion(struct event_context *event_ctx,
 
 static int aio_child_destructor(struct aio_child *child)
 {
+	char c=0;
+
 	SMB_ASSERT((child->aiocb == NULL) || child->cancelled);
+
+	DEBUG(10, ("aio_child_destructor: removing child %d on fd %d\n",
+			child->pid, child->sockfd));
+
+	/*
+	 * closing the sockfd makes the child not return from recvmsg() on RHEL
+	 * 5.5 so instead force the child to exit by writing bad data to it
+	 */
+	write(child->sockfd, &c, sizeof(c));
 	close(child->sockfd);
 	DLIST_REMOVE(child->list->children, child);
 	return 0;
@@ -486,7 +497,8 @@ static NTSTATUS create_aio_child(struct smbd_server_connection *sconn,
 		aio_child_loop(result->sockfd, result->map);
 	}
 
-	DEBUG(10, ("Child %d created\n", result->pid));
+	DEBUG(10, ("Child %d created with sockfd %d\n",
+			result->pid, fdpair[0]));
 
 	result->sockfd = fdpair[0];
 	close(fdpair[1]);
