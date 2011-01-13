@@ -180,7 +180,6 @@ class cmd_list(Command):
         session = samba.auth.user_session(self.samdb, lp_ctx=self.lp, dn=user_dn,
                                           session_info_flags=session_info_flags)
 
-        print dir(session)
         token = session.security_token
 
         gpos = []
@@ -188,7 +187,7 @@ class cmd_list(Command):
         inherit = True
         dn = ldb.Dn(self.samdb, str(user_dn)).parent()
         while True:
-            msg = self.samdb.search(base=dn, scope=ldb.SCOPE_BASE, attrs=['gPLink', 'gPOptions', 'ntSecurityDescriptor'])[0]
+            msg = self.samdb.search(base=dn, scope=ldb.SCOPE_BASE, attrs=['gPLink', 'gPOptions'])[0]
             if 'gPLink' in msg:
                 glist = parse_gplink(msg['gPLink'][0])
                 for g in glist:
@@ -197,17 +196,27 @@ class cmd_list(Command):
                     if g['options'] & dsdb.GPLINK_OPT_DISABLE:
                         continue
 
-                    secdesc_ndr = msg['ntSecurityDescriptor'][0]
+                    try:
+                        gmsg = self.samdb.search(base=g['dn'], scope=ldb.SCOPE_BASE,
+                                                 attrs=['flags', 'ntSecurityDescriptor'])
+                    except Exception:
+                        print "Failed to fetch gpo object %s" % g['dn']
+                        continue
+
+                    secdesc_ndr = gmsg[0]['ntSecurityDescriptor'][0]
                     secdesc = ndr_unpack(dcerpc.security.descriptor, secdesc_ndr)
 
                     try:
-                        samba.security.access_check(secdesc, token, dcerpc.security.SEC_RIGHTS_FILE_READ)
+                        samba.security.access_check(secdesc, token,
+                                                    dcerpc.security.SEC_STD_READ_CONTROL |
+                                                    dcerpc.security.SEC_ADS_LIST |
+                                                    dcerpc.security.SEC_ADS_READ_PROP)
                     except RuntimeError:
                         print "Failed access check on %s" % msg.dn
                         continue
 
                     # check the flags on the GPO
-                    flags = int(attr_default(self.samdb.search(base=g['dn'], scope=ldb.SCOPE_BASE, attrs=['flags'])[0], 'flags', 0))
+                    flags = int(attr_default(gmsg[0], 'flags', 0))
                     if is_computer and (flags & dsdb.GPO_FLAG_MACHINE_DISABLE):
                         continue
                     if not is_computer and (flags & dsdb.GPO_FLAG_USER_DISABLE):
