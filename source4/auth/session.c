@@ -231,7 +231,7 @@ NTSTATUS authsam_get_session_info_principal(TALLOC_CTX *mem_ctx,
 		talloc_steal(mem_ctx, *session_info);
 	}
 	talloc_free(tmp_ctx);
-	return NT_STATUS_OK;
+	return nt_status;
 }
 
 /**
