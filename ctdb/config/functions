@@ -689,11 +689,26 @@ service_reconfigure ()
 
 ctdb_service_check_reconfigure ()
 {
-    [ "$event_name" = "monitor" ] || return 0
+    # Only do this for certain events.
+    case "$event_name" in
+	monitor|ipreallocated) : ;;
+	*) return 0
+    esac
 
     if ctdb_service_needs_reconfigure "$@" ; then
 	ctdb_service_reconfigure "$@"
-	exit 0
+
+	# Fall through to non-monitor events.
+	[ "$event_name" = "monitor" ] || return 0
+
+	# We don't want to proceed with the rest of the monitor event
+	# here, so we exit.  However, if we exit 0 then, if the
+	# service was previously broken, we might return a false
+	# positive.  So we simply retrieve the status of this script
+	# from the previous monitor loop and exit with that status.
+	ctdb scriptstatus | \
+	    grep -q -E "^${script_name}[[:space:]]+Status:OK[[:space:]]"
+	exit $?
     fi
 }
 
