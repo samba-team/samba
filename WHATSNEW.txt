@@ -15,6 +15,42 @@ Changes since 3.4.9
 
 
 o   Jeremy Allison <jra@samba.org>
+    * BUG 7577: Fix SPNEGO auth when contacting Win7 system using Microsoft Live
+      Sign-in Assistant.
+    * BUG 7590: Fix offline login in Winbind.
+    * BUG 7617: Fix smbd coredump.
+    * BUG 7636: Fix Winbind internal error.
+    * BUG 7892: Fix stale lock in open_file_fchmod().
+
+
+o   Björn Baumbach <bb@sernet.de>
+    * BUG 7875: Fix 'nmbd --port'.
+
+
+o   Günther Deschner <gd@samba.org>
+    * BUG 7568: Make sure cm_connect_lsa_tcp does not reset the secure channel.
+
+
+o   Björn Jacke <bj@sernet.de>
+    * BUG 7821: Set Tru64 cc's PIC switch right.
+
+
+o   Volker Lendecke <vl@samba.org>
+    * BUG 7715: Stop using the write cache after an oplock break: Stop using the
+      write cache after an oplock break.
+    * BUG 7066: Fix "Your Password expires today" message for users from trusted
+      domains.
+    * BUG 7800: Make winbind recover from a signing error.
+    * BUG 7881: Fix flaky Winbind against w2k8.
+
+
+o   Jim McDonough <jmcd@samba.org>
+    * BUG 7280: Fix loading of auto printers with registry config.
+
+
+o   Stefan Metzmacher <metze@samba.org>
+    * BUG 7607: Fix buffer over-read in pidl generated client code.
+    * BUG 7896: Fix 'net rpc user rename'.
 
 
 ######################################################################
