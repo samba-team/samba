@@ -220,15 +220,16 @@ static bool b9_single_valued(enum dns_record_type dns_type)
 /*
   see if a DNS type is single valued
  */
-static enum dns_record_type b9_dns_type(const char *type)
+static bool b9_dns_type(const char *type, enum dns_record_type *dtype)
 {
 	int i;
 	for (i=0; i<ARRAY_SIZE(dns_typemap); i++) {
 		if (strcasecmp(dns_typemap[i].typestr, type) == 0) {
-			return dns_typemap[i].dns_type;
+			*dtype = dns_typemap[i].dns_type;
+			return true;
 		}
 	}
-	return DNS_TYPE_ZERO;
+	return false;
 }
 
 
@@ -1410,8 +1411,7 @@ _PUBLIC_ isc_result_t dlz_delrdataset(const char *name, const char *type, void *
 		return ISC_R_FAILURE;
 	}
 
-	dns_type = b9_dns_type(type);
-	if (dns_type == DNS_TYPE_ZERO) {
+	if (!b9_dns_type(type, &dns_type)) {
 		state->log(ISC_LOG_INFO, "samba_dlz: bad dns type %s in delete", type);
 		return ISC_R_FAILURE;
 	}
