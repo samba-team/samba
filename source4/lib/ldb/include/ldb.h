@@ -2172,4 +2172,14 @@ const char *ldb_req_location(struct ldb_request *req);
 /* set the location marker on a request handle - used for debugging */
 #define LDB_REQ_SET_LOCATION(req) ldb_req_set_location(req, __location__)
 
+/*
+  minimise a DN. The caller must pass in a validated DN.
+
+  If the DN has an extended component then only the first extended
+  component is kept, the DN string is stripped.
+
+  The existing dn is modified
+ */
+bool ldb_dn_minimise(struct ldb_dn *dn);
+
 #endif
