@@ -1730,7 +1730,7 @@ NTSTATUS samba_kdc_setup_db_ctx(TALLOC_CTX *mem_ctx, struct samba_kdc_base_conte
 		ldb_ret = dsdb_search_one(kdc_db_ctx->samdb, kdc_db_ctx,
 					  &msg, NULL, LDB_SCOPE_SUBTREE,
 					  krbtgt_attrs,
-					  DSDB_SEARCH_SHOW_EXTENDED_DN,
+					  0,
 					  "(&(objectClass=user)(samAccountName=krbtgt))");
 
 		if (ldb_ret != LDB_SUCCESS) {
