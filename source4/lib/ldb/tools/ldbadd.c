@@ -141,7 +141,7 @@ int main(int argc, const char **argv)
 
 	talloc_free(mem_ctx);
 
-	printf("Added %d records with %d failures\n", count, failures);
+	printf("Added %u records with %u failures\n", count, failures);
 
 	return ret;
 }
