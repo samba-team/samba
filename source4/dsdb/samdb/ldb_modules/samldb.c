@@ -1404,7 +1404,6 @@ static int samldb_member_check(struct samldb_ctx *ac)
 	struct ldb_context *ldb = ldb_module_get_ctx(ac->module);
 	struct ldb_message_element *el;
 	struct ldb_dn *member_dn;
-	uint32_t prim_group_rid;
 	struct dom_sid *sid;
 	struct ldb_result *res;
 	struct dom_sid *group_sid;
@@ -1438,6 +1437,9 @@ static int samldb_member_check(struct samldb_ctx *ac)
 		el = &ac->msg->elements[i];
 		for (j = 0; j < el->num_values; j++) {
 			struct ldb_message_element *mo;
+			struct ldb_result *group_res;
+			const char *group_attrs[] = { "primaryGroupID" , NULL };
+			uint32_t prim_group_rid;
 
 			member_dn = ldb_dn_from_ldb_val(ac, ldb,
 							&el->values[j]);
@@ -1479,11 +1481,17 @@ static int samldb_member_check(struct samldb_ctx *ac)
 			 * ones for them - in this case return
 			 * ERR_ENTRY_ALREADY_EXISTS. */
 
-			prim_group_rid = samdb_search_uint(ldb, ac,
-							   (uint32_t) -1,
-							   member_dn,
-							   "primaryGroupID",
-							   NULL);
+			ret = dsdb_module_search_dn(ac->module, ac, &group_res,
+						    member_dn, group_attrs,
+						    DSDB_FLAG_NEXT_MODULE);
+			if (ret == LDB_ERR_NO_SUCH_OBJECT) {
+				/* member DN doesn't exist yet */
+				continue;
+			}
+			if (ret != LDB_SUCCESS) {
+				return ret;
+			}
+			prim_group_rid = ldb_msg_find_attr_as_uint(group_res->msgs[0], "primaryGroupID", (uint32_t)-1);
 			if (prim_group_rid == (uint32_t) -1) {
 				/* the member hasn't to be a user account ->
 				 * therefore no check needed in this case. */
