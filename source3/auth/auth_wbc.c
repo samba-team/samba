@@ -59,6 +59,9 @@ static NTSTATUS check_wbc_security(const struct auth_context *auth_context,
 	if (!user_info || !auth_context || !server_info) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
+
+	ZERO_STRUCT(params);
+
 	/* Send off request */
 
 	DEBUG(10, ("Check auth for: [%s]", user_info->mapped.account_name));
@@ -91,10 +94,18 @@ static NTSTATUS check_wbc_security(const struct auth_context *auth_context,
 		    auth_context->challenge.data,
 		    sizeof(params.password.response.challenge));
 
-		params.password.response.nt_length = user_info->password.response.nt.length;
-		params.password.response.nt_data = user_info->password.response.nt.data;
-		params.password.response.lm_length = user_info->password.response.lanman.length;
-		params.password.response.lm_data = user_info->password.response.lanman.data;
+		if (user_info->password.response.nt.length != 0) {
+			params.password.response.nt_length =
+				user_info->password.response.nt.length;
+			params.password.response.nt_data =
+				user_info->password.response.nt.data;
+		}
+		if (user_info->password.response.lanman.length != 0) {
+			params.password.response.lm_length =
+				user_info->password.response.lanman.length;
+			params.password.response.lm_data =
+				user_info->password.response.lanman.data;
+		}
 	default:
 		DEBUG(0,("user_info constructed for user '%s' was invalid - password_state=%u invalid.\n",user_info->mapped.account_name, user_info->password_state));
 		return NT_STATUS_INTERNAL_ERROR;
