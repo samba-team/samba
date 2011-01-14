@@ -994,9 +994,11 @@ static int samldb_objectclass_trigger(struct samldb_ctx *ac)
 static int samldb_prim_group_set(struct samldb_ctx *ac)
 {
 	struct ldb_context *ldb = ldb_module_get_ctx(ac->module);
-	struct ldb_dn *prim_group_dn;
 	uint32_t rid;
 	struct dom_sid *sid;
+	struct ldb_result *res;
+	int ret;
+	const char *noattrs[] = { NULL };
 
 	rid = ldb_msg_find_attr_as_uint(ac->msg, "primaryGroupID", (uint32_t) -1);
 	if (rid == (uint32_t) -1) {
@@ -1014,14 +1016,20 @@ static int samldb_prim_group_set(struct samldb_ctx *ac)
 		return ldb_operr(ldb);
 	}
 
-	prim_group_dn = samdb_search_dn(ldb, ac, NULL, "(objectSid=%s)",
-					ldap_encode_ndr_dom_sid(ac, sid));
-	if (prim_group_dn == NULL) {
+	ret = dsdb_module_search(ac->module, ac, &res, NULL, LDB_SCOPE_SUBTREE,
+				 noattrs, DSDB_FLAG_NEXT_MODULE, "(objectSid=%s)",
+				 ldap_encode_ndr_dom_sid(ac, sid));
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+	if (res->count != 1) {
+		talloc_free(res);
 		ldb_asprintf_errstring(ldb,
 				       "Failed to find primary group with RID %u!",
 				       rid);
 		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
+	talloc_free(res);
 
 	return LDB_SUCCESS;
 }
@@ -1030,13 +1038,14 @@ static int samldb_prim_group_change(struct samldb_ctx *ac)
 {
 	struct ldb_context *ldb = ldb_module_get_ctx(ac->module);
 	const char * attrs[] = { "primaryGroupID", "memberOf", NULL };
-	struct ldb_result *res;
+	struct ldb_result *res, *group_res;
 	struct ldb_message_element *el;
 	struct ldb_message *msg;
 	uint32_t prev_rid, new_rid;
 	struct dom_sid *prev_sid, *new_sid;
 	struct ldb_dn *prev_prim_group_dn, *new_prim_group_dn;
 	int ret;
+	const char *noattrs[] = { NULL };
 
 	el = dsdb_get_single_valued_attr(ac->msg, "primaryGroupID",
 					 ac->req->operation);
@@ -1095,24 +1104,34 @@ static int samldb_prim_group_change(struct samldb_ctx *ac)
 		return LDB_SUCCESS;
 	}
 
-	prev_prim_group_dn = samdb_search_dn(ldb, ac, NULL, "(objectSid=%s)",
-					     ldap_encode_ndr_dom_sid(ac, prev_sid));
-	if (prev_prim_group_dn == NULL) {
+	ret = dsdb_module_search(ac->module, ac, &group_res, NULL, LDB_SCOPE_SUBTREE,
+				 noattrs, DSDB_FLAG_NEXT_MODULE, "(objectSid=%s)",
+				 ldap_encode_ndr_dom_sid(ac, prev_sid));
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+	if (group_res->count != 1) {
 		return ldb_operr(ldb);
 	}
+	prev_prim_group_dn = group_res->msgs[0]->dn;
 
 	new_sid = dom_sid_add_rid(ac, samdb_domain_sid(ldb), new_rid);
 	if (new_sid == NULL) {
 		return ldb_operr(ldb);
 	}
 
-	new_prim_group_dn = samdb_search_dn(ldb, ac, NULL, "(objectSid=%s)",
-					    ldap_encode_ndr_dom_sid(ac, new_sid));
-	if (new_prim_group_dn == NULL) {
+	ret = dsdb_module_search(ac->module, ac, &group_res, NULL, LDB_SCOPE_SUBTREE,
+				 noattrs, DSDB_FLAG_NEXT_MODULE, "(objectSid=%s)",
+				 ldap_encode_ndr_dom_sid(ac, new_sid));
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+	if (group_res->count != 1) {
 		/* Here we know if the specified new primary group candidate is
 		 * valid or not. */
 		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
+	new_prim_group_dn = group_res->msgs[0]->dn;
 
 	/* We need to be already a normal member of the new primary
 	 * group in order to be successful. */
@@ -1257,6 +1276,8 @@ static int samldb_group_type_change(struct samldb_ctx *ac)
 	struct ldb_message_element *el;
 	struct ldb_message *tmp_msg;
 	int ret;
+	struct ldb_result *res;
+	const char *attrs[] = { "groupType", NULL };
 
 	el = dsdb_get_single_valued_attr(ac->msg, "groupType",
 					 ac->req->operation);
@@ -1277,8 +1298,12 @@ static int samldb_group_type_change(struct samldb_ctx *ac)
 	group_type = ldb_msg_find_attr_as_uint(tmp_msg, "groupType", 0);
 	talloc_free(tmp_msg);
 
-	old_group_type = samdb_search_uint(ldb, ac, 0, ac->msg->dn,
-					   "groupType", NULL);
+	ret = dsdb_module_search_dn(ac->module, ac, &res, ac->msg->dn, attrs,
+				    DSDB_FLAG_NEXT_MODULE);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+	old_group_type = ldb_msg_find_attr_as_uint(res->msgs[0], "groupType", 0);
 	if (old_group_type == 0) {
 		return ldb_operr(ldb);
 	}
@@ -1617,6 +1642,7 @@ static int samldb_service_principal_names_change(struct samldb_ctx *ac)
 
 	/* Create a temporary message for fetching the "dNSHostName" */
 	if (el != NULL) {
+		const char *dns_attrs[] = { "dNSHostName", NULL };
 		msg = ldb_msg_new(ac->msg);
 		if (msg == NULL) {
 			return ldb_module_oom(ac->module);
@@ -1629,13 +1655,17 @@ static int samldb_service_principal_names_change(struct samldb_ctx *ac)
 					    ldb_msg_find_attr_as_string(msg, "dNSHostName", NULL));
 		talloc_free(msg);
 
-		old_dns_hostname = samdb_search_string(ldb, ac, ac->msg->dn,
-						       "dNSHostName", NULL);
+		ret = dsdb_module_search_dn(ac->module, ac, &res, ac->msg->dn,
+					    dns_attrs, DSDB_FLAG_NEXT_MODULE);
+		if (ret == LDB_SUCCESS) {
+			old_dns_hostname = ldb_msg_find_attr_as_string(res->msgs[0], "dNSHostName", NULL);
+		}
 	}
 
 	/* Create a temporary message for fetching the "sAMAccountName" */
 	if (el2 != NULL) {
 		char *tempstr, *tempstr2;
+		const char *acct_attrs[] = { "sAMAccountName", NULL };
 
 		msg = ldb_msg_new(ac->msg);
 		if (msg == NULL) {
@@ -1649,8 +1679,14 @@ static int samldb_service_principal_names_change(struct samldb_ctx *ac)
 					ldb_msg_find_attr_as_string(msg, "sAMAccountName", NULL));
 		talloc_free(msg);
 
-		tempstr2 = talloc_strdup(ac,
-					 samdb_search_string(ldb, ac, ac->msg->dn, "sAMAccountName", NULL));
+		ret = dsdb_module_search_dn(ac->module, ac, &res, ac->msg->dn, acct_attrs,
+					    DSDB_FLAG_NEXT_MODULE);
+		if (ret == LDB_SUCCESS) {
+			tempstr2 = talloc_strdup(ac,
+						 ldb_msg_find_attr_as_string(res->msgs[0],
+									     "sAMAccountName", NULL));
+		}
+
 
 		/* The "sAMAccountName" needs some additional trimming: we need
 		 * to remove the trailing "$"s if they exist. */
@@ -2036,13 +2072,20 @@ static int samldb_prim_group_users_check(struct samldb_ctx *ac)
 	struct dom_sid *sid;
 	uint32_t rid;
 	NTSTATUS status;
-	int count;
+	int ret;
+	struct ldb_result *res;
+	const char *attrs[] = { "objectSid", NULL };
+	const char *noattrs[] = { NULL };
 
 	ldb = ldb_module_get_ctx(ac->module);
 
 	/* Finds out the SID/RID of the SAM object */
-	sid = samdb_search_dom_sid(ldb, ac, ac->req->op.del.dn, "objectSid",
-				   NULL);
+	ret = dsdb_module_search_dn(ac->module, ac, &res, ac->req->op.del.dn, attrs, DSDB_FLAG_NEXT_MODULE);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	sid = samdb_result_dom_sid(ac, res->msgs[0], "objectSid");
 	if (sid == NULL) {
 		/* No SID - it might not be a SAM object - therefore ok */
 		return LDB_SUCCESS;
@@ -2057,13 +2100,13 @@ static int samldb_prim_group_users_check(struct samldb_ctx *ac)
 	}
 
 	/* Deny delete requests from groups which are primary ones */
-	count = samdb_search_count(ldb, ac, NULL,
-				   "(&(primaryGroupID=%u)(objectClass=user))",
-				   rid);
-	if (count < 0) {
-		return ldb_operr(ldb);
+	ret = dsdb_module_search(ac->module, ac, &res, NULL, LDB_SCOPE_SUBTREE, noattrs,
+				 DSDB_FLAG_NEXT_MODULE,
+				 "(&(primaryGroupID=%u)(objectClass=user))", rid);
+	if (ret != LDB_SUCCESS) {
+		return ret;
 	}
-	if (count > 0) {
+	if (res->count > 0) {
 		return LDB_ERR_ENTRY_ALREADY_EXISTS;
 	}
 
