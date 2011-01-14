@@ -35,7 +35,7 @@
 #include "tools/cmdline.h"
 #include "ldbutil.h"
 
-static int failures;
+static unsigned int failures;
 static struct ldb_cmdline *options;
 
 static void usage(struct ldb_context *ldb)
@@ -49,7 +49,7 @@ static void usage(struct ldb_context *ldb)
 /*
   process modifies for one file
 */
-static int process_file(struct ldb_context *ldb, FILE *f, int *count)
+static int process_file(struct ldb_context *ldb, FILE *f, unsigned int *count)
 {
 	struct ldb_ldif *ldif;
 	int ret = LDB_SUCCESS;
@@ -92,8 +92,8 @@ static int process_file(struct ldb_context *ldb, FILE *f, int *count)
 int main(int argc, const char **argv)
 {
 	struct ldb_context *ldb;
-	int count=0;
-	int i, ret=LDB_SUCCESS;
+	unsigned int i, count = 0;
+	int ret = LDB_SUCCESS;
 	TALLOC_CTX *mem_ctx = talloc_new(NULL);
 
 	ldb = ldb_init(mem_ctx, NULL);
@@ -118,7 +118,7 @@ int main(int argc, const char **argv)
 
 	talloc_free(mem_ctx);
 
-	printf("Modified %d records with %d failures\n", count, failures);
+	printf("Modified %u records with %u failures\n", count, failures);
 
 	return ret;
 }
