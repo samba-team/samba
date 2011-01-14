@@ -305,6 +305,11 @@ static void websrv_task_init(struct task_server *task)
 	model_ops = process_model_startup("single");
 	if (!model_ops) goto failed;
 
+	/* startup the Python processor - unfortunately we can't do this
+	   per connection as that wouldn't allow for session variables */
+	wdata = talloc_zero(task, struct web_server_data);
+	if (wdata == NULL) goto failed;
+
 	if (lpcfg_interfaces(task->lp_ctx) && lpcfg_bind_interfaces_only(task->lp_ctx)) {
 		int num_interfaces;
 		int i;
@@ -321,25 +326,20 @@ static void websrv_task_init(struct task_server *task)
 						     &web_stream_ops, 
 						     "ipv4", address, 
 						     &port, lpcfg_socket_options(task->lp_ctx),
-						     task);
+						     wdata);
 			if (!NT_STATUS_IS_OK(status)) goto failed;
 		}
 
 		talloc_free(ifaces);
 	} else {
-		status = stream_setup_socket(task, task->event_ctx, task->lp_ctx,
-					     model_ops, &web_stream_ops, 
+		status = stream_setup_socket(task, task->event_ctx,
+					     task->lp_ctx, model_ops,
+					     &web_stream_ops,
 					     "ipv4", lpcfg_socket_address(task->lp_ctx),
-					     &port, lpcfg_socket_options(task->lp_ctx), task);
+					     &port, lpcfg_socket_options(task->lp_ctx),
+					     wdata);
 		if (!NT_STATUS_IS_OK(status)) goto failed;
 	}
-
-	/* startup the esp processor - unfortunately we can't do this
-	   per connection as that wouldn't allow for session variables */
-	wdata = talloc_zero(task, struct web_server_data);
-	if (wdata == NULL)goto failed;
-
-	task->private_data = wdata;
 	
 	wdata->tls_params = tls_initialise(wdata, task->lp_ctx);
 	if (wdata->tls_params == NULL) goto failed;
