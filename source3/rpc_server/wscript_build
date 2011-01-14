@@ -86,7 +86,7 @@ bld.SAMBA_SUBSYSTEM('RPC_SRVSVC',
 
 bld.SAMBA_SUBSYSTEM('RPC_SPOOLSS',
                     source=RPC_SPOOLSS_SRC,
-                    deps='cups PRINTING PRINTBACKEND RPCCLI_WINREG',
+                    deps='cups PRINTING PRINTBACKEND RPC_NDR_WINREG',
                     vars=locals())
 
 bld.SAMBA_SUBSYSTEM('RPC_EVENTLOG',
