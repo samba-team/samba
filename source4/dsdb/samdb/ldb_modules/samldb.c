@@ -167,6 +167,8 @@ static int samldb_check_sAMAccountName(struct samldb_ctx *ac)
 	struct ldb_context *ldb = ldb_module_get_ctx(ac->module);
 	const char *name;
 	int ret;
+	struct ldb_result *res;
+	const char *noattrs[] = { NULL };
 
 	if (ldb_msg_find_element(ac->msg, "sAMAccountName") == NULL) {
 		ret = samldb_generate_sAMAccountName(ldb, ac->msg);
@@ -183,17 +185,21 @@ static int samldb_check_sAMAccountName(struct samldb_ctx *ac)
 		return LDB_ERR_CONSTRAINT_VIOLATION;
 	}
 
-	ret = samdb_search_count(ldb, ac, NULL, "(sAMAccountName=%s)",
+	ret = dsdb_module_search(ac->module, ac, &res,
+				 NULL, LDB_SCOPE_SUBTREE, noattrs,
+				 DSDB_FLAG_NEXT_MODULE, "(sAMAccountName=%s)",
 				 ldb_binary_encode_string(ac, name));
-	if ((ret < 0) || (ret > 1)) {
-		return ldb_operr(ldb);
+	if (ret != LDB_SUCCESS) {
+		return ret;
 	}
-	if (ret == 1) {
+	if (res->count != 0) {
 		ldb_asprintf_errstring(ldb,
 				       "samldb: Account name (sAMAccountName) '%s' already in use!",
 				       name);
+		talloc_free(res);
 		return LDB_ERR_ENTRY_ALREADY_EXISTS;
 	}
+	talloc_free(res);
 
 	return samldb_next_step(ac);
 }
