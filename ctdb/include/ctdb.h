@@ -291,6 +291,47 @@ bool ctdb_writerecord(struct ctdb_db *ctdb_db,
  */
 void ctdb_release_lock(struct ctdb_db *ctdb_db, struct ctdb_lock *lock);
 
+
+
+/**
+ * ctdb_traverse_callback_t - callback for ctdb_traverse_async.
+ * return 0 - to continue traverse
+ * return 1 - to abort the traverse
+ *
+ * See Also:
+ *	ctdb_traverse_async()
+ */
+#define TRAVERSE_STATUS_RECORD		0
+#define TRAVERSE_STATUS_FINISHED	1
+#define TRAVERSE_STATUS_ERROR		2
+typedef int (*ctdb_traverse_callback_t)(struct ctdb_connection *ctdb,
+				    struct ctdb_db *ctdb_db,
+				    int status,
+				    TDB_DATA key,
+				    TDB_DATA data,
+				    void *private_data);
+
+/**
+ * ctdb_traverse_async - traverse a database.
+ * @ctdb_db: the database handle from ctdb_attachdb/ctdb_attachdb_recv.
+ * @callback: the callback once the record is locked (typesafe).
+ * @cbdata: the argument to callback()
+ *
+ * This returns true on success.
+ * when successfull, the callback will be invoked for each record
+ * until the traversal is finished.
+ *
+ * status == 
+ * TRAVERSE_STATUS_RECORD         key/data contains a record.
+ * TRAVERSE_STATUS_FINISHED       traverse is finished. key/data is undefined.
+ * TRAVERSE_STATUS_ERROR          an error occured during traverse.
+ *                                key/data is undefined.
+ *
+ * If failure is immediate, false is returned.
+ */
+bool ctdb_traverse_async(struct ctdb_db *ctdb_db,
+			 ctdb_traverse_callback_t callback, void *cbdata);
+
 /**
  * ctdb_message_fn_t - messaging callback for ctdb messages
  *
@@ -479,6 +520,7 @@ ctdb_getpublicips_send(struct ctdb_connection *ctdb,
  */
 bool ctdb_getpublicips_recv(struct ctdb_connection *ctdb,
 		      struct ctdb_request *req, struct ctdb_all_public_ips **ips);
+
 
 /**
  * ctdb_getrecmaster_send - read the recovery master of a node

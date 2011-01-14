@@ -838,24 +838,6 @@ int ctdb_control_getnodemap(struct ctdb_context *ctdb, uint32_t opcode, TDB_DATA
 int ctdb_control_writerecord(struct ctdb_context *ctdb, uint32_t opcode, TDB_DATA indata, TDB_DATA *outdata);
 
 
-struct ctdb_traverse_start {
-	uint32_t db_id;
-	uint32_t reqid;
-	uint64_t srvid;
-};
-
-/*
-  structure used to pass record data between the child and parent
- */
-struct ctdb_rec_data {
-	uint32_t length;
-	uint32_t reqid;
-	uint32_t keylen;
-	uint32_t datalen;
-	uint8_t  data[1];
-};
-				   
-
 /* structure used for pulldb control */
 struct ctdb_control_pulldb {
 	uint32_t db_id;

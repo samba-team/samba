@@ -161,6 +161,9 @@ struct ctdb_call_info {
  */
 #define CTDB_SRVID_TEST_RANGE  0xFE03000000000000LL
 
+/* Range of ports reserved for traversals */
+#define CTDB_SRVID_TRAVERSE_RANGE  0xFE04000000000000LL
+
 /* used on the domain socket, send a pdu to the local daemon */
 #define CTDB_CURRENT_NODE     0xF0000001
 /* send a broadcast to all nodes in the cluster, active or not */
@@ -541,6 +544,23 @@ struct latency_counter {
 	double min;
 	double max;
 	double total;
+};
+
+/*
+  structure used to pass record data between the child and parent
+ */
+struct ctdb_rec_data {
+	uint32_t length;
+	uint32_t reqid;
+	uint32_t keylen;
+	uint32_t datalen;
+	uint8_t  data[1];
+};
+
+struct ctdb_traverse_start {
+	uint32_t db_id;
+	uint32_t reqid;
+	uint64_t srvid;
 };
 
 /*

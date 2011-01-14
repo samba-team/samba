@@ -223,6 +223,25 @@ void message_handler_cb(struct ctdb_connection *ctdb,
 	registered = true;
 }
 
+static int traverse_callback(struct ctdb_connection *ctdb_connection, struct ctdb_db *ctdb_db, int status, TDB_DATA key, TDB_DATA data, void *private_data)
+{
+	if (status == TRAVERSE_STATUS_FINISHED) {
+		printf("Traverse finished\n");
+		return 0;
+	}
+	if (status == TRAVERSE_STATUS_ERROR) {
+		printf("Traverse failed\n");
+		return 1;
+	}
+
+	printf("traverse callback   status:%d\n", status);
+	printf("key: %d [%s]\n", key.dsize, key.dptr);
+	printf("data:%d [%s]\n", data.dsize, data.dptr);
+
+	return 0;
+}
+
+
 int main(int argc, char *argv[])
 {
 	struct ctdb_connection *ctdb_connection;
@@ -365,6 +384,9 @@ int main(int argc, char *argv[])
 	printf("SYNC response to getnodemap:\n");
 	print_nodemap(nodemap);
 	ctdb_free_nodemap(nodemap);
+
+	printf("Traverse the test_test.tdb database\n");
+	ctdb_traverse_async(ctdb_db_context, traverse_callback, NULL);
 
 	for (;;) {
 
