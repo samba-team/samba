@@ -3415,6 +3415,151 @@ static bool run_oplock3(int dummy)
 /* What are we looking for here?  What's sucess and what's FAILURE? */
 }
 
+/* handler for oplock 4 tests */
+bool *oplock4_shared_correct;
+
+static NTSTATUS oplock4_handler(struct cli_state *cli, uint16_t fnum, unsigned char level)
+{
+	printf("got oplock break fnum=%d level=%d\n",
+	       fnum, level);
+	*oplock4_shared_correct = true;
+	cli_oplock_ack(cli, fnum, level);
+	return NT_STATUS_UNSUCCESSFUL; /* Cause cli_receive_smb to return. */
+}
+
+static bool run_oplock4(int dummy)
+{
+	struct cli_state *cli1, *cli2;
+	const char *fname = "\\lockt4.lck";
+	const char *fname_ln = "\\lockt4_ln.lck";
+	uint16_t fnum1, fnum2;
+	int saved_use_oplocks = use_oplocks;
+	NTSTATUS status;
+	bool correct = true;
+
+	oplock4_shared_correct = (bool *)shm_setup(sizeof(bool));
+	*oplock4_shared_correct = false;
+
+	printf("starting oplock test 4\n");
+
+	if (!torture_open_connection(&cli1, 0)) {
+		use_level_II_oplocks = false;
+		use_oplocks = saved_use_oplocks;
+		return false;
+	}
+
+	if (!torture_open_connection(&cli2, 1)) {
+		use_level_II_oplocks = false;
+		use_oplocks = saved_use_oplocks;
+		return false;
+	}
+
+	cli_unlink(cli1, fname, aSYSTEM | aHIDDEN);
+	cli_unlink(cli1, fname_ln, aSYSTEM | aHIDDEN);
+
+	cli_sockopt(cli1, sockops);
+	cli_sockopt(cli2, sockops);
+
+	/* Create the file. */
+	if (!NT_STATUS_IS_OK(cli_open(cli1, fname, O_RDWR|O_CREAT|O_EXCL, DENY_NONE, &fnum1))) {
+		printf("open of %s failed (%s)\n", fname, cli_errstr(cli1));
+		return false;
+	}
+
+	if (!NT_STATUS_IS_OK(cli_close(cli1, fnum1))) {
+		printf("close1 failed (%s)\n", cli_errstr(cli1));
+		return false;
+	}
+
+	/* Now create a hardlink. */
+	if (!NT_STATUS_IS_OK(cli_nt_hardlink(cli1, fname, fname_ln))) {
+		printf("nt hardlink failed (%s)\n", cli_errstr(cli1));
+		return false;
+	}
+
+	/* Prove that opening hardlinks cause deny modes to conflict. */
+	if (!NT_STATUS_IS_OK(cli_open(cli1, fname, O_RDWR, DENY_ALL, &fnum1))) {
+		printf("open of %s failed (%s)\n", fname, cli_errstr(cli1));
+		return false;
+	}
+
+	status = cli_open(cli1, fname_ln, O_RDWR, DENY_NONE, &fnum2);
+	if (NT_STATUS_IS_OK(status)) {
+		printf("open of %s succeeded - should fail with sharing violation.\n",
+			fname_ln);
+		return false;
+	}
+
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_SHARING_VIOLATION)) {
+		printf("open of %s should fail with sharing violation. Got %s\n",
+			fname_ln, nt_errstr(status));
+		return false;
+	}
+
+	if (!NT_STATUS_IS_OK(cli_close(cli1, fnum1))) {
+		printf("close1 failed (%s)\n", cli_errstr(cli1));
+		return false;
+	}
+
+	cli1->use_oplocks = true;
+	cli1->use_level_II_oplocks = true;
+
+	cli2->use_oplocks = true;
+	cli2->use_level_II_oplocks = true;
+
+	cli_oplock_handler(cli1, oplock4_handler);
+	if (!NT_STATUS_IS_OK(cli_open(cli1, fname, O_RDWR, DENY_NONE, &fnum1))) {
+		printf("open of %s failed (%s)\n", fname, cli_errstr(cli1));
+		return false;
+	}
+
+	if (fork() == 0) {
+		/* Child code */
+		if (!NT_STATUS_IS_OK(cli_open(cli2, fname_ln, O_RDWR, DENY_NONE, &fnum2))) {
+			printf("open of %s failed (%s)\n", fname_ln, cli_errstr(cli1));
+			*oplock4_shared_correct = false;
+			exit(0);
+		}
+
+		if (!NT_STATUS_IS_OK(cli_close(cli2, fnum2))) {
+			printf("close2 failed (%s)\n", cli_errstr(cli1));
+			*oplock4_shared_correct = false;
+		}
+
+		exit(0);
+	}
+
+	sleep(2);
+
+	/* Process the oplock break. */
+	cli_receive_smb(cli1);
+
+	if (!NT_STATUS_IS_OK(cli_close(cli1, fnum1))) {
+		printf("close1 failed (%s)\n", cli_errstr(cli1));
+		correct = false;
+	}
+
+	if (!NT_STATUS_IS_OK(cli_unlink(cli1, fname, aSYSTEM | aHIDDEN))) {
+		printf("unlink failed (%s)\n", cli_errstr(cli1));
+		correct = false;
+	}
+	if (!NT_STATUS_IS_OK(cli_unlink(cli1, fname_ln, aSYSTEM | aHIDDEN))) {
+		printf("unlink failed (%s)\n", cli_errstr(cli1));
+		correct = false;
+	}
+
+	if (!torture_close_connection(cli1)) {
+		correct = false;
+	}
+
+	if (!*oplock4_shared_correct) {
+		correct = false;
+	}
+
+	printf("finished oplock test 4\n");
+
+	return correct;
+}
 
 
 /*
@@ -7801,6 +7946,7 @@ static struct {
 	{"OPLOCK1",  run_oplock1, 0},
 	{"OPLOCK2",  run_oplock2, 0},
 	{"OPLOCK3",  run_oplock3, 0},
+	{"OPLOCK4",  run_oplock4, 0},
 	{"DIR",  run_dirtest, 0},
 	{"DIR1",  run_dirtest1, 0},
 	{"DIR-CREATETIME",  run_dir_createtime, 0},
