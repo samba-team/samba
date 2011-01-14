@@ -157,7 +157,9 @@ static int select_event_loop_select(struct select_event_context *select_ev, stru
 		return 0;
 	}
 
+	tevent_before_wait(select_ev->ev);
 	selrtn = select(select_ev->maxfd+1, &r_fds, &w_fds, NULL, tvalp);
+	tevent_after_wait(select_ev->ev);
 
 	if (selrtn == -1 && errno == EINTR &&
 	    select_ev->ev->signal_events) {

@@ -250,7 +250,9 @@ static int epoll_event_loop(struct epoll_event_context *epoll_ev, struct timeval
 		return 0;
 	}
 
+	tevent_before_wait(epoll_ev->ev);
 	ret = epoll_wait(epoll_ev->epoll_fd, events, MAXEVENTS, timeout);
+	tevent_after_wait(epoll_ev->ev);
 
 	if (ret == -1 && errno == EINTR && epoll_ev->ev->signal_events) {
 		if (tevent_common_check_signal(epoll_ev->ev)) {
