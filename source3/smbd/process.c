@@ -2039,8 +2039,8 @@ void chain_reply(struct smb_request *req)
 		 * Update smb headers where subsequent chained commands
 		 * may have updated them.
 		 */
-		SCVAL(req->chain_outbuf, smb_tid, CVAL(req->outbuf, smb_tid));
-		SCVAL(req->chain_outbuf, smb_uid, CVAL(req->outbuf, smb_uid));
+		SSVAL(req->chain_outbuf, smb_tid, SVAL(req->outbuf, smb_tid));
+		SSVAL(req->chain_outbuf, smb_uid, SVAL(req->outbuf, smb_uid));
 
 		if (!smb_splice_chain(&req->chain_outbuf,
 				      CVAL(req->outbuf, smb_com),
