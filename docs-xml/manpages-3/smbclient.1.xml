@@ -261,7 +261,7 @@
 		</varlistentry>
 
 		<varlistentry>
-		<term>-P</term>
+		<term>-P|--machine-pass</term>
 		<listitem><para>
 		Make queries to the external server using the machine account of the local server.
 		</para></listitem>
@@ -317,7 +317,7 @@
 		</varlistentry>
 		
 		<varlistentry>
-		<term>-e</term>
+		<term>-e|--encrypt</term>
 		<listitem><para>This command line parameter requires the remote
 		server support the UNIX extensions. Request that the connection be
 		encrypted. This is new for Samba 3.2 and will only work with Samba
