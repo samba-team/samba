@@ -39,6 +39,8 @@ static NTSTATUS check_winbind_security(const struct auth_context *auth_context,
 	struct wbcAuthUserInfo *info = NULL;
 	struct wbcAuthErrorInfo *err = NULL;
 
+	ZERO_STRUCT(params);
+
 	if (!user_info) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
@@ -72,10 +74,18 @@ static NTSTATUS check_winbind_security(const struct auth_context *auth_context,
 	       auth_context->challenge.data,
 	       sizeof(params.password.response.challenge));
 
-	params.password.response.nt_length	= user_info->password.response.nt.length;
-	params.password.response.nt_data	= user_info->password.response.nt.data;
-	params.password.response.lm_length	= user_info->password.response.lanman.length;
-	params.password.response.lm_data	= user_info->password.response.lanman.data;
+	if (user_info->password.response.nt.length != 0) {
+		params.password.response.nt_length =
+			user_info->password.response.nt.length;
+		params.password.response.nt_data =
+			user_info->password.response.nt.data;
+	}
+	if (user_info->password.response.lanman.length != 0) {
+		params.password.response.lm_length =
+			user_info->password.response.lanman.length;
+		params.password.response.lm_data =
+			user_info->password.response.lanman.data;
+	}
 
 	/* we are contacting the privileged pipe */
 	become_root();
