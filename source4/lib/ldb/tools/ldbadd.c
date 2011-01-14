@@ -57,7 +57,7 @@ static int process_file(struct ldb_context *ldb, FILE *f, unsigned int *count)
         struct ldb_control **req_ctrls = ldb_parse_control_strings(ldb, ldb, (const char **)options->controls);
 	if (options->controls != NULL &&  req_ctrls== NULL) {
 		printf("parsing controls failed: %s\n", ldb_errstring(ldb));
-		return -1;
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 
@@ -102,14 +102,14 @@ int main(int argc, const char **argv)
 {
 	struct ldb_context *ldb;
 	unsigned int i, count = 0;
-	int ret=0;
+	int ret = LDB_SUCCESS;
 	TALLOC_CTX *mem_ctx = talloc_new(NULL);
 
 	ldb = ldb_init(mem_ctx, NULL);
 
 	options = ldb_cmdline_process(ldb, argc, argv, usage);
 
-	if (ldb_transaction_start(ldb) != 0) {
+	if (ldb_transaction_start(ldb) != LDB_SUCCESS) {
 		printf("Failed to start transaction: %s\n", ldb_errstring(ldb));
 		exit(1);
 	}
@@ -131,7 +131,7 @@ int main(int argc, const char **argv)
 	}
 
 	if (count != 0) {
-		if (ldb_transaction_commit(ldb) != 0) {
+		if (ldb_transaction_commit(ldb) != LDB_SUCCESS) {
 			printf("Failed to commit transaction: %s\n", ldb_errstring(ldb));
 			exit(1);
 		}
