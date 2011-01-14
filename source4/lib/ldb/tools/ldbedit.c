@@ -120,7 +120,7 @@ static int merge_edits(struct ldb_context *ldb,
 	unsigned int i;
 	struct ldb_message *msg;
 	int ret = 0;
-	int adds=0, modifies=0, deletes=0;
+	unsigned int adds=0, modifies=0, deletes=0;
 	struct ldb_control **req_ctrls = ldb_parse_control_strings(ldb, ldb, (const char **)options->controls);
 	if (options->controls != NULL && req_ctrls == NULL) {
 		fprintf(stderr, "parsing controls failed: %s\n", ldb_errstring(ldb));
@@ -177,7 +177,7 @@ static int merge_edits(struct ldb_context *ldb,
 		return -1;
 	}
 
-	printf("# %d adds  %d modifies  %d deletes\n", adds, modifies, deletes);
+	printf("# %u adds  %u modifies  %u deletes\n", adds, modifies, deletes);
 
 	return ret;
 }
