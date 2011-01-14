@@ -24,7 +24,7 @@ from ldb import ERR_UNDEFINED_ATTRIBUTE_TYPE
 from ldb import Message, MessageElement, Dn
 from ldb import FLAG_MOD_ADD, FLAG_MOD_REPLACE, FLAG_MOD_DELETE
 from samba.samdb import SamDB
-from samba.dsdb import (UF_NORMAL_ACCOUNT,
+from samba.dsdb import (UF_NORMAL_ACCOUNT, UF_ACCOUNTDISABLE,
     UF_WORKSTATION_TRUST_ACCOUNT, UF_SERVER_TRUST_ACCOUNT,
     UF_PARTIAL_SECRETS_ACCOUNT, UF_TEMP_DUPLICATE_ACCOUNT,
     UF_PASSWD_NOTREQD, ATYPE_NORMAL_ACCOUNT,
@@ -1453,10 +1453,12 @@ class SamTests(unittest.TestCase):
             "userAccountControl": str(UF_NORMAL_ACCOUNT | UF_PASSWD_NOTREQD)})
 
         res1 = ldb.search("cn=ldaptestuser,cn=users," + self.base_dn,
-                          scope=SCOPE_BASE, attrs=["sAMAccountType"])
+                          scope=SCOPE_BASE,
+                          attrs=["sAMAccountType", "userAccountControl"])
         self.assertTrue(len(res1) == 1)
         self.assertEquals(int(res1[0]["sAMAccountType"][0]),
           ATYPE_NORMAL_ACCOUNT)
+        self.assertTrue(int(res1[0]["userAccountControl"][0]) & UF_ACCOUNTDISABLE == 0)
         delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
 
         try:
@@ -1508,10 +1510,12 @@ class SamTests(unittest.TestCase):
 
         # After creation we should have a normal account
         res1 = ldb.search("cn=ldaptestuser,cn=users," + self.base_dn,
-                          scope=SCOPE_BASE, attrs=["sAMAccountType"])
+                          scope=SCOPE_BASE,
+                          attrs=["sAMAccountType", "userAccountControl"])
         self.assertTrue(len(res1) == 1)
         self.assertEquals(int(res1[0]["sAMAccountType"][0]),
           ATYPE_NORMAL_ACCOUNT)
+        self.assertTrue(int(res1[0]["userAccountControl"][0]) & UF_ACCOUNTDISABLE != 0)
 
         # As user you can only switch from a normal account to a workstation
         # trust account and back.
@@ -1548,10 +1552,12 @@ class SamTests(unittest.TestCase):
         ldb.modify(m)
 
         res1 = ldb.search("cn=ldaptestuser,cn=users," + self.base_dn,
-                          scope=SCOPE_BASE, attrs=["sAMAccountType"])
+                          scope=SCOPE_BASE,
+                          attrs=["sAMAccountType", "userAccountControl"])
         self.assertTrue(len(res1) == 1)
         self.assertEquals(int(res1[0]["sAMAccountType"][0]),
           ATYPE_NORMAL_ACCOUNT)
+        self.assertTrue(int(res1[0]["userAccountControl"][0]) & UF_ACCOUNTDISABLE == 0)
 
         try:
             m = Message()
@@ -1651,10 +1657,12 @@ class SamTests(unittest.TestCase):
             "userAccountControl": str(UF_NORMAL_ACCOUNT | UF_PASSWD_NOTREQD)})
 
         res1 = ldb.search("cn=ldaptestcomputer,cn=computers," + self.base_dn,
-                          scope=SCOPE_BASE, attrs=["sAMAccountType"])
+                          scope=SCOPE_BASE,
+                          attrs=["sAMAccountType", "userAccountControl"])
         self.assertTrue(len(res1) == 1)
         self.assertEquals(int(res1[0]["sAMAccountType"][0]),
           ATYPE_NORMAL_ACCOUNT)
+        self.assertTrue(int(res1[0]["userAccountControl"][0]) & UF_ACCOUNTDISABLE == 0)
         delete_force(self.ldb, "cn=ldaptestcomputer,cn=computers," + self.base_dn)
 
         try:
@@ -1707,10 +1715,12 @@ class SamTests(unittest.TestCase):
 
         # After creation we should have a normal account
         res1 = ldb.search("cn=ldaptestcomputer,cn=computers," + self.base_dn,
-                          scope=SCOPE_BASE, attrs=["sAMAccountType"])
+                          scope=SCOPE_BASE,
+                          attrs=["sAMAccountType", "userAccountControl"])
         self.assertTrue(len(res1) == 1)
         self.assertEquals(int(res1[0]["sAMAccountType"][0]),
           ATYPE_NORMAL_ACCOUNT)
+        self.assertTrue(int(res1[0]["userAccountControl"][0]) & UF_ACCOUNTDISABLE != 0)
 
         # As computer you can switch from a normal account to a workstation
         # or server trust account and back (also swapping between trust
@@ -1748,10 +1758,12 @@ class SamTests(unittest.TestCase):
         ldb.modify(m)
 
         res1 = ldb.search("cn=ldaptestcomputer,cn=computers," + self.base_dn,
-                          scope=SCOPE_BASE, attrs=["sAMAccountType"])
+                          scope=SCOPE_BASE,
+                          attrs=["sAMAccountType", "userAccountControl"])
         self.assertTrue(len(res1) == 1)
         self.assertEquals(int(res1[0]["sAMAccountType"][0]),
           ATYPE_NORMAL_ACCOUNT)
+        self.assertTrue(int(res1[0]["userAccountControl"][0]) & UF_ACCOUNTDISABLE == 0)
 
         try:
             m = Message()

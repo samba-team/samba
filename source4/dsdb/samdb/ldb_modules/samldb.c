@@ -800,7 +800,6 @@ static int samldb_objectclass_trigger(struct samldb_ctx *ac)
 	struct ldb_message_element *el, *el2;
 	enum sid_generator sid_generator;
 	struct dom_sid *sid;
-	const char *tempstr;
 	int ret;
 
 	/* make sure that "sAMAccountType" is not specified */
@@ -834,6 +833,8 @@ static int samldb_objectclass_trigger(struct samldb_ctx *ac)
 	}
 
 	if (strcmp(ac->type, "user") == 0) {
+		bool uac_generated = false;
+
 		/* Step 1.2: Default values */
 		ret = samdb_find_or_add_attribute(ldb, ac->msg,
 			"accountExpires", "9223372036854775807");
@@ -863,11 +864,18 @@ static int samldb_objectclass_trigger(struct samldb_ctx *ac)
 			"pwdLastSet", "0");
 		if (ret != LDB_SUCCESS) return ret;
 
-		tempstr = talloc_asprintf(ac->msg, "%d", UF_NORMAL_ACCOUNT);
-		if (tempstr == NULL) return ldb_operr(ldb);
-		ret = samdb_find_or_add_attribute(ldb, ac->msg,
-			"userAccountControl", tempstr);
-		if (ret != LDB_SUCCESS) return ret;
+		/* On add operations we might need to generate a
+		 * "userAccountControl" (if it isn't specified). */
+		el = ldb_msg_find_element(ac->msg, "userAccountControl");
+		if ((el == NULL) && (ac->req->operation == LDB_ADD)) {
+			ret = samdb_msg_set_uint(ldb, ac->msg, ac->msg,
+						 "userAccountControl",
+						 UF_NORMAL_ACCOUNT);
+			if (ret != LDB_SUCCESS) {
+				return ret;
+			}
+			uac_generated = true;
+		}
 
 		el = ldb_msg_find_element(ac->msg, "userAccountControl");
 		if (el != NULL) {
@@ -924,8 +932,10 @@ static int samldb_objectclass_trigger(struct samldb_ctx *ac)
 			}
 
 			/* Step 1.5: Add additional flags when needed */
-			if ((user_account_control & UF_NORMAL_ACCOUNT) &&
-			    (ldb_request_get_control(ac->req, LDB_CONTROL_RELAX_OID) == NULL)) {
+			/* Obviously this is done when the "userAccountControl"
+			 * has been generated here (tested against Windows
+			 * Server) */
+			if (uac_generated) {
 				user_account_control |= UF_ACCOUNTDISABLE;
 				user_account_control |= UF_PASSWD_NOTREQD;
 
@@ -939,6 +949,8 @@ static int samldb_objectclass_trigger(struct samldb_ctx *ac)
 		}
 
 	} else if (strcmp(ac->type, "group") == 0) {
+		const char *tempstr;
+
 		/* Step 2.2: Default values */
 		tempstr = talloc_asprintf(ac->msg, "%d",
 					  GTYPE_SECURITY_GLOBAL_GROUP);
