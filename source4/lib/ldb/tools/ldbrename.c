@@ -65,7 +65,7 @@ int main(int argc, const char **argv)
 	dn2 = ldb_dn_new(ldb, ldb, options->argv[1]);
 
 	ret = ldb_rename(ldb, dn1, dn2);
-	if (ret == 0) {
+	if (ret == LDB_SUCCESS) {
 		printf("Renamed 1 record\n");
 	} else  {
 		printf("rename of '%s' to '%s' failed - %s\n", 
