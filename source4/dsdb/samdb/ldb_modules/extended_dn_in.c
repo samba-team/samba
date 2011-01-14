@@ -276,8 +276,27 @@ static int extended_dn_in_fix(struct ldb_module *module, struct ldb_request *req
 		int num_components = ldb_dn_get_comp_num(dn);
 		int num_ex_components = ldb_dn_get_extended_comp_num(dn);
 
-		if (num_components != 0 || num_ex_components != 1) {
-			return ldb_error(ldb_module_get_ctx(module), LDB_ERR_INVALID_DN_SYNTAX, "invalid number of DN components");
+		/*
+		  windows ldap searchs don't allow a baseDN with more
+		  than one extended component, or an extended
+		  component and a string DN
+
+		  We only enforce this over ldap, not for internal
+		  use, as there are just too many places where we
+		  internally want to use a DN that has come from a
+		  search with extended DN enabled, or comes from a DRS
+		  naming context.
+
+		  Enforcing this would also make debugging samba much
+		  harder, as we'd need to use ldb_dn_minimise() in a
+		  lot of places, and that would lose the DN string
+		  which is so useful for working out what a request is
+		  for
+		 */
+		if ((num_components != 0 || num_ex_components != 1) &&
+		    ldb_req_is_untrusted(req)) {
+			return ldb_error(ldb_module_get_ctx(module),
+					 LDB_ERR_INVALID_DN_SYNTAX, "invalid number of DN components");
 		}
 
 		sid_val = ldb_dn_get_extended_component(dn, "SID");
