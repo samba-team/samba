@@ -81,7 +81,7 @@ static int modify_record(struct ldb_context *ldb,
 		ldif_write_msg(ldb, stdout, LDB_CHANGETYPE_MODIFY, mod);
 	}
 
-	if (ldb_modify_ctrl(ldb, mod, req_ctrls) != 0) {
+	if (ldb_modify_ctrl(ldb, mod, req_ctrls) != LDB_SUCCESS) {
 		fprintf(stderr, "failed to modify %s - %s\n",
 			ldb_dn_get_linearized(msg1->dn), ldb_errstring(ldb));
 		ret = -1;
@@ -127,7 +127,7 @@ static int merge_edits(struct ldb_context *ldb,
 		return -1;
 	}
 
-	if (ldb_transaction_start(ldb) != 0) {
+	if (ldb_transaction_start(ldb) != LDB_SUCCESS) {
 		fprintf(stderr, "Failed to start transaction: %s\n", ldb_errstring(ldb));
 		return -1;
 	}
@@ -139,7 +139,7 @@ static int merge_edits(struct ldb_context *ldb,
 			if (options->verbose > 0) {
 				ldif_write_msg(ldb, stdout, LDB_CHANGETYPE_ADD, msgs2[i]);
 			}
-			if (ldb_add_ctrl(ldb, msgs2[i], req_ctrls) != 0) {
+			if (ldb_add_ctrl(ldb, msgs2[i], req_ctrls) != LDB_SUCCESS) {
 				fprintf(stderr, "failed to add %s - %s\n",
 					ldb_dn_get_linearized(msgs2[i]->dn),
 					ldb_errstring(ldb));
@@ -161,7 +161,7 @@ static int merge_edits(struct ldb_context *ldb,
 			if (options->verbose > 0) {
 				ldif_write_msg(ldb, stdout, LDB_CHANGETYPE_DELETE, msgs1[i]);
 			}
-			if (ldb_delete_ctrl(ldb, msgs1[i]->dn, req_ctrls) != 0) {
+			if (ldb_delete_ctrl(ldb, msgs1[i]->dn, req_ctrls) != LDB_SUCCESS) {
 				fprintf(stderr, "failed to delete %s - %s\n",
 					ldb_dn_get_linearized(msgs1[i]->dn),
 					ldb_errstring(ldb));
@@ -172,7 +172,7 @@ static int merge_edits(struct ldb_context *ldb,
 		}
 	}
 
-	if (ldb_transaction_commit(ldb) != 0) {
+	if (ldb_transaction_commit(ldb) != LDB_SUCCESS) {
 		fprintf(stderr, "Failed to commit transaction: %s\n", ldb_errstring(ldb));
 		return -1;
 	}
