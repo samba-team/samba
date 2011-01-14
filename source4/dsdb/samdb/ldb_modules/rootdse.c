@@ -202,10 +202,18 @@ static int rootdse_add_dynamic(struct ldb_module *module, struct ldb_message *ms
 	}
 
 	if (do_attribute(attrs, "dnsHostName")) {
-		if (ldb_msg_add_string(msg, "dnsHostName",
-			samdb_search_string(ldb, msg, samdb_server_dn(ldb, msg),
-					    "dNSHostName", NULL)) != LDB_SUCCESS) {
-			goto failed;
+		struct ldb_result *res;
+		int ret;
+		const char *dns_attrs[] = { "dNSHostName", NULL };
+		ret = dsdb_module_search_dn(module, msg, &res, samdb_server_dn(ldb, msg),
+					    dns_attrs, DSDB_FLAG_NEXT_MODULE);
+		if (ret == LDB_SUCCESS) {
+			const char *hostname = ldb_msg_find_attr_as_string(res->msgs[0], "dNSHostName", NULL);
+			if (hostname != NULL) {
+				if (ldb_msg_add_string(msg, "dNSHostName", hostname)) {
+					goto failed;
+				}
+			}
 		}
 	}
 
