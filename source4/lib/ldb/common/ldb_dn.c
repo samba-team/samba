@@ -2056,7 +2056,7 @@ int ldb_dn_update_components(struct ldb_dn *dn, const struct ldb_dn *ref_dn)
  */
 bool ldb_dn_minimise(struct ldb_dn *dn)
 {
-	int i;
+	unsigned int i;
 
 	if (!ldb_dn_validate(dn)) {
 		return false;
