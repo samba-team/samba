@@ -63,7 +63,7 @@ def SAMBA_PYTHON(bld, name,
                       link_name=link_name,
                       pyembed=True,
                       target_type='PYTHON',
-                      install_path='${PYTHONDIR}',
+                      install_path='${PYTHONARCHDIR}',
                       enabled=enabled)
 
 Build.BuildContext.SAMBA_PYTHON = SAMBA_PYTHON

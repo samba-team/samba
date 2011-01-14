@@ -50,6 +50,10 @@ bool py_update_path(const char *bindir)
 		return false;
 	}
 
+	if (!PySys_PathPrepend(py_path, dyn_PYTHONARCHDIR)) {
+		return false;
+	}
+
 	if (!PySys_PathPrepend(py_path, dyn_PYTHONDIR)) {
 		return false;
 	}

@@ -634,8 +634,8 @@ def install_file(bld, destdir, file, chmod=MODE_644, flat=False,
     if python_fixup:
         # fixup the python path it will use to find Samba modules
         inst_file = file + '.inst'
-        if bld.env["PYTHONDIR"] not in sys.path:
-            regex = "s|\(sys.path.insert.*\)bin/python\(.*\)$|\\1${PYTHONDIR}\\2|g"
+        if bld.env["PYTHONARCHDIR"] not in sys.path:
+            regex = "s|\(sys.path.insert.*\)bin/python\(.*\)$|\\1${PYTHONARCHDIR}\\2|g"
         else:
             # Eliminate updating sys.path if the target python dir is already
             # in python path.
