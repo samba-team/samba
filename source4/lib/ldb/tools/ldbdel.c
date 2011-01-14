@@ -49,13 +49,13 @@ static int ldb_delete_recursive(struct ldb_context *ldb, struct ldb_dn *dn,struc
 	struct ldb_result *res;
 	
 	ret = ldb_search(ldb, ldb, &res, dn, LDB_SCOPE_SUBTREE, attrs, "distinguishedName=*");
-	if (ret != LDB_SUCCESS) return -1;
+	if (ret != LDB_SUCCESS) return ret;
 
 	/* sort the DNs, deepest first */
 	TYPESAFE_QSORT(res->msgs, res->count, dn_cmp);
 
 	for (i = 0; i < res->count; i++) {
-		if (ldb_delete_ctrl(ldb, res->msgs[i]->dn,req_ctrls) == 0) {
+		if (ldb_delete_ctrl(ldb, res->msgs[i]->dn,req_ctrls) == LDB_SUCCESS) {
 			total++;
 		} else {
 			printf("Failed to delete '%s' - %s\n",
@@ -67,10 +67,10 @@ static int ldb_delete_recursive(struct ldb_context *ldb, struct ldb_dn *dn,struc
 	talloc_free(res);
 
 	if (total == 0) {
-		return -1;
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
-	printf("Deleted %d records\n", total);
-	return 0;
+	printf("Deleted %u records\n", total);
+	return LDB_SUCCESS;
 }
 
 static void usage(struct ldb_context *ldb)
@@ -116,11 +116,11 @@ int main(int argc, const char **argv)
 			ret = ldb_delete_recursive(ldb, dn,req_ctrls);
 		} else {
 			ret = ldb_delete_ctrl(ldb, dn,req_ctrls);
-			if (ret == 0) {
+			if (ret == LDB_SUCCESS) {
 				printf("Deleted 1 record\n");
 			}
 		}
-		if (ret != 0) {
+		if (ret != LDB_SUCCESS) {
 			printf("delete of '%s' failed - (%s) %s\n",
 			       ldb_dn_get_linearized(dn),
 			       ldb_strerror(ret),
