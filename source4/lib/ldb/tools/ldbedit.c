@@ -119,7 +119,7 @@ static int merge_edits(struct ldb_context *ldb,
 {
 	unsigned int i;
 	struct ldb_message *msg;
-	int ret = 0;
+	int ret;
 	unsigned int adds=0, modifies=0, deletes=0;
 	struct ldb_control **req_ctrls = ldb_parse_control_strings(ldb, ldb, (const char **)options->controls);
 	if (options->controls != NULL && req_ctrls == NULL) {
@@ -148,8 +148,11 @@ static int merge_edits(struct ldb_context *ldb,
 			}
 			adds++;
 		} else {
-			if (modify_record(ldb, msg, msgs2[i], req_ctrls) > 0) {
-				modifies++;
+			ret = modify_record(ldb, msg, msgs2[i], req_ctrls);
+			if (ret != -1) {
+				modifies += (unsigned int) ret;
+			} else {
+				return -1;
 			}
 		}
 	}
@@ -179,7 +182,7 @@ static int merge_edits(struct ldb_context *ldb,
 
 	printf("# %u adds  %u modifies  %u deletes\n", adds, modifies, deletes);
 
-	return ret;
+	return 0;
 }
 
 /*
