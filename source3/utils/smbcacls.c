@@ -727,6 +727,7 @@ static bool set_secdesc(struct cli_state *cli, const char *filename,
 {
 	uint16_t fnum = (uint16_t)-1;
         bool result=true;
+	NTSTATUS status;
 
 	/* The desired access below is the only one I could find that works
 	   with NT4, W2KP and Samba */
@@ -739,9 +740,10 @@ static bool set_secdesc(struct cli_state *cli, const char *filename,
 		return false;
 	}
 
-	if (!cli_set_secdesc(cli, fnum, sd)) {
+	status = cli_set_secdesc(cli, fnum, sd);
+	if (!NT_STATUS_IS_OK(status)) {
 		printf("ERROR: security description set failed: %s\n",
-                       cli_errstr(cli));
+                       nt_errstr(status));
 		result=false;
 	}
 
