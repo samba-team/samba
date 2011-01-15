@@ -667,22 +667,25 @@ get fileinfo for filename
 static uint16 get_fileinfo(struct cli_state *cli, const char *filename)
 {
 	uint16_t fnum = (uint16_t)-1;
-	uint16 mode;
+	uint16 mode = 0;
+	NTSTATUS status;
 
 	/* The desired access below is the only one I could find that works
 	   with NT4, W2KP and Samba */
 
-	if (!NT_STATUS_IS_OK(cli_ntcreate(cli, filename, 0, CREATE_ACCESS_READ,
-                                          0, FILE_SHARE_READ|FILE_SHARE_WRITE,
-                                          FILE_OPEN, 0x0, 0x0, &fnum))) {
-		printf("Failed to open %s: %s\n", filename, cli_errstr(cli));
+	status = cli_ntcreate(cli, filename, 0, CREATE_ACCESS_READ,
+			      0, FILE_SHARE_READ|FILE_SHARE_WRITE,
+			      FILE_OPEN, 0x0, 0x0, &fnum);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("Failed to open %s: %s\n", filename, nt_errstr(status));
+		return 0;
 	}
 
-	if (!NT_STATUS_IS_OK(cli_qfileinfo_basic(
-				     cli, fnum, &mode, NULL, NULL, NULL,
-				     NULL, NULL, NULL))) {
+	status = cli_qfileinfo_basic(cli, fnum, &mode, NULL, NULL, NULL,
+				     NULL, NULL, NULL);
+	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to file info %s: %s\n", filename,
-                                                       cli_errstr(cli));
+		       nt_errstr(status));
         }
 
 	cli_close(cli, fnum);
@@ -697,14 +700,16 @@ static struct security_descriptor *get_secdesc(struct cli_state *cli, const char
 {
 	uint16_t fnum = (uint16_t)-1;
 	struct security_descriptor *sd;
+	NTSTATUS status;
 
 	/* The desired access below is the only one I could find that works
 	   with NT4, W2KP and Samba */
 
-	if (!NT_STATUS_IS_OK(cli_ntcreate(cli, filename, 0, CREATE_ACCESS_READ,
-                                          0, FILE_SHARE_READ|FILE_SHARE_WRITE,
-                                          FILE_OPEN, 0x0, 0x0, &fnum))) {
-		printf("Failed to open %s: %s\n", filename, cli_errstr(cli));
+	status = cli_ntcreate(cli, filename, 0, CREATE_ACCESS_READ,
+			      0, FILE_SHARE_READ|FILE_SHARE_WRITE,
+			      FILE_OPEN, 0x0, 0x0, &fnum);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("Failed to open %s: %s\n", filename, nt_errstr(status));
 		return NULL;
 	}
 
@@ -732,11 +737,12 @@ static bool set_secdesc(struct cli_state *cli, const char *filename,
 	/* The desired access below is the only one I could find that works
 	   with NT4, W2KP and Samba */
 
-	if (!NT_STATUS_IS_OK(cli_ntcreate(cli, filename, 0,
-                                          WRITE_DAC_ACCESS|WRITE_OWNER_ACCESS,
-                                          0, FILE_SHARE_READ|FILE_SHARE_WRITE,
-                                          FILE_OPEN, 0x0, 0x0, &fnum))) {
-		printf("Failed to open %s: %s\n", filename, cli_errstr(cli));
+	status = cli_ntcreate(cli, filename, 0,
+			      WRITE_DAC_ACCESS|WRITE_OWNER_ACCESS,
+			      0, FILE_SHARE_READ|FILE_SHARE_WRITE,
+			      FILE_OPEN, 0x0, 0x0, &fnum);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("Failed to open %s: %s\n", filename, nt_errstr(status));
 		return false;
 	}
 
