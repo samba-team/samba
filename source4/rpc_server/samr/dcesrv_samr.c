@@ -3621,8 +3621,8 @@ static NTSTATUS dcesrv_samr_QueryDisplayInfo(struct dcesrv_call_state *dce_call,
 {
 	struct dcesrv_handle *h;
 	struct samr_domain_state *d_state;
-	struct ldb_message **res;
-	int i, ldb_cnt;
+	struct ldb_result *res;
+	unsigned int i;
 	uint32_t count;
 	const char * const attrs[] = { "objectSid", "sAMAccountName",
 		"displayName", "description", "userAccountControl",
@@ -3632,6 +3632,7 @@ static NTSTATUS dcesrv_samr_QueryDisplayInfo(struct dcesrv_call_state *dce_call,
 	struct samr_DispEntryAscii *entriesAscii = NULL;
 	struct samr_DispEntryGeneral *entriesGeneral = NULL;
 	const char *filter;
+	int ret;
 
 	DCESRV_PULL_HANDLE(h, r->in.domain_handle, SAMR_HANDLE_DOMAIN);
 
@@ -3661,39 +3662,38 @@ static NTSTATUS dcesrv_samr_QueryDisplayInfo(struct dcesrv_call_state *dce_call,
 		return NT_STATUS_INVALID_INFO_CLASS;
 	}
 
-	/* search for all requested objects in this domain. This could
+	/* search for all requested objects in all domains. This could
 	   possibly be cached and resumed based on resume_key */
-	ldb_cnt = samdb_search_domain(d_state->sam_ctx, mem_ctx,
-				      d_state->domain_dn, &res, attrs,
-				      d_state->domain_sid, "%s", filter);
-	if (ldb_cnt == -1) {
+	ret = dsdb_search(d_state->sam_ctx, mem_ctx, &res, NULL,
+			  LDB_SCOPE_SUBTREE, attrs, 0, "%s", filter);
+	if (ret != LDB_SUCCESS) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
-	if (ldb_cnt == 0 || r->in.max_entries == 0) {
+	if ((res->count == 0) || (r->in.max_entries == 0)) {
 		return NT_STATUS_OK;
 	}
 
 	switch (r->in.level) {
 	case 1:
 		entriesGeneral = talloc_array(mem_ctx,
-					     struct samr_DispEntryGeneral,
-					     ldb_cnt);
+					      struct samr_DispEntryGeneral,
+					      res->count);
 		break;
 	case 2:
 		entriesFull = talloc_array(mem_ctx,
-					     struct samr_DispEntryFull,
-					     ldb_cnt);
+					   struct samr_DispEntryFull,
+					   res->count);
 		break;
 	case 3:
 		entriesFullGroup = talloc_array(mem_ctx,
-					     struct samr_DispEntryFullGroup,
-					     ldb_cnt);
+						struct samr_DispEntryFullGroup,
+						res->count);
 		break;
 	case 4:
 	case 5:
 		entriesAscii = talloc_array(mem_ctx,
-					      struct samr_DispEntryAscii,
-					      ldb_cnt);
+					    struct samr_DispEntryAscii,
+					    res->count);
 		break;
 	}
 
@@ -3703,10 +3703,10 @@ static NTSTATUS dcesrv_samr_QueryDisplayInfo(struct dcesrv_call_state *dce_call,
 
 	count = 0;
 
-	for (i=0; i<ldb_cnt; i++) {
+	for (i = 0; i < res->count; i++) {
 		struct dom_sid *objectsid;
 
-		objectsid = samdb_result_dom_sid(mem_ctx, res[i],
+		objectsid = samdb_result_dom_sid(mem_ctx, res->msgs[i],
 						 "objectSid");
 		if (objectsid == NULL)
 			continue;
@@ -3717,16 +3717,19 @@ static NTSTATUS dcesrv_samr_QueryDisplayInfo(struct dcesrv_call_state *dce_call,
 			entriesGeneral[count].rid =
 				objectsid->sub_auths[objectsid->num_auths-1];
 			entriesGeneral[count].acct_flags =
-				samdb_result_acct_flags(d_state->sam_ctx, mem_ctx,
-							res[i],
+				samdb_result_acct_flags(d_state->sam_ctx,
+							mem_ctx,
+							res->msgs[i],
 							d_state->domain_dn);
 			entriesGeneral[count].account_name.string =
-				ldb_msg_find_attr_as_string(res[i],
-						    "sAMAccountName", "");
+				ldb_msg_find_attr_as_string(res->msgs[i],
+							    "sAMAccountName", "");
 			entriesGeneral[count].full_name.string =
-				ldb_msg_find_attr_as_string(res[i], "displayName", "");
+				ldb_msg_find_attr_as_string(res->msgs[i],
+							    "displayName", "");
 			entriesGeneral[count].description.string =
-				ldb_msg_find_attr_as_string(res[i], "description", "");
+				ldb_msg_find_attr_as_string(res->msgs[i],
+							    "description", "");
 			break;
 		case 2:
 			entriesFull[count].idx = count + 1;
@@ -3735,14 +3738,16 @@ static NTSTATUS dcesrv_samr_QueryDisplayInfo(struct dcesrv_call_state *dce_call,
 
 			/* No idea why we need to or in ACB_NORMAL here, but this is what Win2k3 seems to do... */
 			entriesFull[count].acct_flags =
-				samdb_result_acct_flags(d_state->sam_ctx, mem_ctx,
-							res[i],
+				samdb_result_acct_flags(d_state->sam_ctx,
+							mem_ctx,
+							res->msgs[i],
 							d_state->domain_dn) | ACB_NORMAL;
 			entriesFull[count].account_name.string =
-				ldb_msg_find_attr_as_string(res[i], "sAMAccountName",
-						    "");
+				ldb_msg_find_attr_as_string(res->msgs[i],
+							    "sAMAccountName", "");
 			entriesFull[count].description.string =
-				ldb_msg_find_attr_as_string(res[i], "description", "");
+				ldb_msg_find_attr_as_string(res->msgs[i],
+							    "description", "");
 			break;
 		case 3:
 			entriesFullGroup[count].idx = count + 1;
@@ -3752,17 +3757,18 @@ static NTSTATUS dcesrv_samr_QueryDisplayInfo(struct dcesrv_call_state *dce_call,
 			entriesFullGroup[count].acct_flags
 				= SE_GROUP_MANDATORY | SE_GROUP_ENABLED_BY_DEFAULT | SE_GROUP_ENABLED;
 			entriesFullGroup[count].account_name.string =
-				ldb_msg_find_attr_as_string(res[i], "sAMAccountName",
-						    "");
+				ldb_msg_find_attr_as_string(res->msgs[i],
+							    "sAMAccountName", "");
 			entriesFullGroup[count].description.string =
-				ldb_msg_find_attr_as_string(res[i], "description", "");
+				ldb_msg_find_attr_as_string(res->msgs[i],
+							    "description", "");
 			break;
 		case 4:
 		case 5:
 			entriesAscii[count].idx = count + 1;
 			entriesAscii[count].account_name.string =
-				ldb_msg_find_attr_as_string(res[i], "sAMAccountName",
-						    "");
+				ldb_msg_find_attr_as_string(res->msgs[i],
+							    "sAMAccountName", "");
 			break;
 		}
 
