@@ -31,7 +31,7 @@
 #include "nt_printing.h"
 #include "srv_spoolss_util.h"
 #include "../librpc/gen_ndr/srv_spoolss.h"
-#include "../librpc/gen_ndr/cli_spoolss.h"
+#include "../librpc/gen_ndr/ndr_spoolss_c.h"
 #include "rpc_client/init_spoolss.h"
 #include "librpc/gen_ndr/messaging.h"
 #include "../libcli/security/security.h"
@@ -124,6 +124,7 @@ struct notify_back_channel {
 
 	/* print notify back-channel pipe handle*/
 	struct rpc_pipe_client *cli_pipe;
+	struct dcerpc_binding_handle *binding_handle;
 	uint32_t active_connections;
 };
 
@@ -243,12 +244,16 @@ static void srv_spoolss_replycloseprinter(int snum,
 		return;
 	}
 
-	status = rpccli_spoolss_ReplyClosePrinter(
-					prn_hnd->notify.cli_chan->cli_pipe,
+	status = dcerpc_spoolss_ReplyClosePrinter(
+					prn_hnd->notify.cli_chan->binding_handle,
 					talloc_tos(),
 					&prn_hnd->notify.cli_hnd,
 					&result);
-	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(result)) {
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("dcerpc_spoolss_ReplyClosePrinter failed [%s].\n",
+			  nt_errstr(status)));
+		result = ntstatus_to_werror(status);
+	} else if (!W_ERROR_IS_OK(result)) {
 		DEBUG(0, ("reply_close_printer failed [%s].\n",
 			  win_errstr(result)));
 	}
@@ -256,6 +261,7 @@ static void srv_spoolss_replycloseprinter(int snum,
 	/* if it's the last connection, deconnect the IPC$ share */
 	if (prn_hnd->notify.cli_chan->active_connections == 1) {
 
+		prn_hnd->notify.cli_chan->binding_handle = NULL;
 		cli_shutdown(rpc_pipe_np_smb_conn(prn_hnd->notify.cli_chan->cli_pipe));
 		DLIST_REMOVE(back_channels, prn_hnd->notify.cli_chan);
 		TALLOC_FREE(prn_hnd->notify.cli_chan);
@@ -1266,8 +1272,8 @@ static int send_notify2_printer(TALLOC_CTX *mem_ctx,
 
 	info.info0 = &info0;
 
-	status = rpccli_spoolss_RouterReplyPrinterEx(
-				prn_hnd->notify.cli_chan->cli_pipe,
+	status = dcerpc_spoolss_RouterReplyPrinterEx(
+				prn_hnd->notify.cli_chan->binding_handle,
 				mem_ctx,
 				&prn_hnd->notify.cli_hnd,
 				prn_hnd->notify.change, /* color */
@@ -1275,7 +1281,13 @@ static int send_notify2_printer(TALLOC_CTX *mem_ctx,
 				&reply_result,
 				0, /* reply_type, must be 0 */
 				info, &werr);
-	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(werr)) {
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("dcerpc_spoolss_RouterReplyPrinterEx to client: %s "
+			  "failed: %s\n",
+			  prn_hnd->notify.cli_chan->cli_pipe->srv_name_slash,
+			  nt_errstr(status)));
+		werr = ntstatus_to_werror(status);
+	} else if (!W_ERROR_IS_OK(werr)) {
 		DEBUG(1, ("RouterReplyPrinterEx to client: %s "
 			  "failed: %s\n",
 			  prn_hnd->notify.cli_chan->cli_pipe->srv_name_slash,
@@ -2577,6 +2589,7 @@ static bool srv_spoolss_replyopenprinter(int snum, const char *printer,
 			TALLOC_FREE(chan);
 			return false;
 		}
+		chan->binding_handle = chan->cli_pipe->binding_handle;
 
 		DLIST_ADD(back_channels, chan);
 
@@ -2598,7 +2611,8 @@ static bool srv_spoolss_replyopenprinter(int snum, const char *printer,
 			  printer));
 	}
 
-	status = rpccli_spoolss_ReplyOpenPrinter(chan->cli_pipe, talloc_tos(),
+	status = dcerpc_spoolss_ReplyOpenPrinter(chan->binding_handle,
+						 talloc_tos(),
 						 printer,
 						 localprinter,
 						 type,
@@ -2606,8 +2620,11 @@ static bool srv_spoolss_replyopenprinter(int snum, const char *printer,
 						 NULL,
 						 handle,
 						 &result);
-	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(result)) {
-		DEBUG(5, ("Client RPC returned [%s]\n", win_errstr(result)));
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(5, ("dcerpc_spoolss_ReplyOpenPrinter returned [%s]\n", nt_errstr(status)));
+		result = ntstatus_to_werror(status);
+	} else if (!W_ERROR_IS_OK(result)) {
+		DEBUG(5, ("ReplyOpenPrinter returned [%s]\n", win_errstr(result)));
 	}
 
 	chan->active_connections++;
