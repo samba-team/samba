@@ -1,22 +1,22 @@
 /* 
    Unix SMB/CIFS implementation.
    QUOTA get/set utility
-   
+
    Copyright (C) Andrew Tridgell		2000
    Copyright (C) Tim Potter			2000
    Copyright (C) Jeremy Allison			2000
    Copyright (C) Stefan (metze) Metzmacher	2003
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -77,7 +77,7 @@ static bool cli_open_policy_hnd(void)
 
 		got_policy_hnd = True;
 	}
-	
+
 	return True;
 }
 
@@ -107,7 +107,6 @@ static void SidToString(fstring str, struct dom_sid *sid, bool _numeric)
 	slprintf(str, sizeof(fstring) - 1, "%s%s%s",
 		 domains[0], lp_winbind_separator(),
 		 names[0]);
-	
 }
 
 /* convert a string to a SID, either numeric or username/group */
@@ -614,7 +613,6 @@ FSQFLAGS:QUOTA_ENABLED/DENY_DISK/LOG_SOFTLIMIT/LOG_HARD_LIMIT", "SETSTRING" },
 			result = do_quota(cli, qtype, cmd, username_str, &qt);
 			break;
 		default: 
-			
 			result = EXIT_FAILED;
 			break;
 	}
