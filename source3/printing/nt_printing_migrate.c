@@ -22,7 +22,7 @@
 #include "printing/nt_printing_migrate.h"
 
 #include "librpc/gen_ndr/ndr_ntprinting.h"
-#include "librpc/gen_ndr/cli_spoolss.h"
+#include "librpc/gen_ndr/ndr_spoolss_c.h"
 #include "rpc_client/cli_spoolss.h"
 #include "librpc/gen_ndr/ndr_security.h"
 #include "rpc_server/rpc_ncacn_np.h"
@@ -38,6 +38,7 @@ static NTSTATUS migrate_form(TALLOC_CTX *mem_ctx,
 			 unsigned char *data,
 			 size_t length)
 {
+	struct dcerpc_binding_handle *b = pipe_hnd->binding_handle;
 	struct spoolss_DevmodeContainer devmode_ctr;
 	struct policy_handle hnd;
 	enum ndr_err_code ndr_err;
@@ -76,7 +77,7 @@ static NTSTATUS migrate_form(TALLOC_CTX *mem_ctx,
 
 	ZERO_STRUCT(devmode_ctr);
 
-	status = rpccli_spoolss_OpenPrinter(pipe_hnd,
+	status = dcerpc_spoolss_OpenPrinter(b,
 					    mem_ctx,
 					    srv_name_slash,
 					    NULL,
@@ -85,11 +86,14 @@ static NTSTATUS migrate_form(TALLOC_CTX *mem_ctx,
 					    &hnd,
 					    &result);
 	if (!NT_STATUS_IS_OK(status)) {
-		if (!W_ERROR_IS_OK(result)) {
-			status = werror_to_ntstatus(result);
-		}
-		DEBUG(2, ("OpenPrinter(%s) failed: %s\n",
+		DEBUG(2, ("dcerpc_spoolss_OpenPrinter(%s) failed: %s\n",
 			  srv_name_slash, nt_errstr(status)));
+		return status;
+	}
+	if (!W_ERROR_IS_OK(result)) {
+		DEBUG(2, ("OpenPrinter(%s) failed: %s\n",
+			  srv_name_slash, win_errstr(result)));
+		status = werror_to_ntstatus(result);
 		return status;
 	}
 
@@ -106,18 +110,22 @@ static NTSTATUS migrate_form(TALLOC_CTX *mem_ctx,
 
 	f.info1 = &f1;
 
-	status = rpccli_spoolss_AddForm(pipe_hnd,
+	status = dcerpc_spoolss_AddForm(b,
 					mem_ctx,
 					&hnd,
 					1,
 					f,
 					&result);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(2, ("AddForm(%s) refused -- %s.\n",
+		DEBUG(2, ("dcerpc_spoolss_AddForm(%s) refused -- %s.\n",
 			  f.info1->form_name, nt_errstr(status)));
+	} else if (!W_ERROR_IS_OK(result)) {
+		DEBUG(2, ("AddForm(%s) refused -- %s.\n",
+			  f.info1->form_name, win_errstr(result)));
+		status = werror_to_ntstatus(result);
 	}
 
-	rpccli_spoolss_ClosePrinter(pipe_hnd, mem_ctx, &hnd, NULL);
+	dcerpc_spoolss_ClosePrinter(b, mem_ctx, &hnd, &result);
 
 	return status;
 }
@@ -128,6 +136,7 @@ static NTSTATUS migrate_driver(TALLOC_CTX *mem_ctx,
 			       unsigned char *data,
 			       size_t length)
 {
+	struct dcerpc_binding_handle *b = pipe_hnd->binding_handle;
 	const char *srv_name_slash;
 	enum ndr_err_code ndr_err;
 	struct ntprinting_driver r;
@@ -176,17 +185,18 @@ static NTSTATUS migrate_driver(TALLOC_CTX *mem_ctx,
 	d.level = 3;
 	d.info.info3 = &d3;
 
-	status = rpccli_spoolss_AddPrinterDriver(pipe_hnd,
+	status = dcerpc_spoolss_AddPrinterDriver(b,
 						 mem_ctx,
 						 srv_name_slash,
 						 &d,
 						 &result);
 	if (!NT_STATUS_IS_OK(status)) {
-		if (!W_ERROR_IS_OK(result)) {
-			status = werror_to_ntstatus(result);
-		}
-		DEBUG(2, ("AddPrinterDriver(%s) refused -- %s.\n",
+		DEBUG(2, ("dcerpc_spoolss_AddPrinterDriver(%s) refused -- %s.\n",
 			  d3.driver_name, nt_errstr(status)));
+	} else if (!W_ERROR_IS_OK(result)) {
+		DEBUG(2, ("AddPrinterDriver(%s) refused -- %s.\n",
+			  d3.driver_name, win_errstr(result)));
+		status = werror_to_ntstatus(result);
 	}
 
 	return status;
@@ -198,6 +208,7 @@ static NTSTATUS migrate_printer(TALLOC_CTX *mem_ctx,
 				unsigned char *data,
 				size_t length)
 {
+	struct dcerpc_binding_handle *b = pipe_hnd->binding_handle;
 	struct policy_handle hnd;
 	enum ndr_err_code ndr_err;
 	struct ntprinting_printer r;
@@ -231,7 +242,7 @@ static NTSTATUS migrate_printer(TALLOC_CTX *mem_ctx,
 
 	ZERO_STRUCT(devmode_ctr);
 
-	status = rpccli_spoolss_OpenPrinter(pipe_hnd,
+	status = dcerpc_spoolss_OpenPrinter(b,
 					    mem_ctx,
 					    key_name,
 					    NULL,
@@ -240,11 +251,14 @@ static NTSTATUS migrate_printer(TALLOC_CTX *mem_ctx,
 					    &hnd,
 					    &result);
 	if (!NT_STATUS_IS_OK(status)) {
-		if (!W_ERROR_IS_OK(result)) {
-			status = werror_to_ntstatus(result);
-		}
+		DEBUG(2, ("dcerpc_spoolss_OpenPrinter(%s) failed: %s\n",
+			  key_name, nt_errstr(status)));
+		return status;
+	}
+	if (!W_ERROR_IS_OK(result)) {
 		DEBUG(2, ("OpenPrinter(%s) failed: %s\n",
 			  key_name, win_errstr(result)));
+		status = werror_to_ntstatus(result);
 		return status;
 	}
 
@@ -320,7 +334,7 @@ static NTSTATUS migrate_printer(TALLOC_CTX *mem_ctx,
 	info_ctr.info.info2 = &info2;
 	info_ctr.level = 2;
 
-	status = rpccli_spoolss_SetPrinter(pipe_hnd,
+	status = dcerpc_spoolss_SetPrinter(b,
 					   mem_ctx,
 					   &hnd,
 					   &info_ctr,
@@ -329,8 +343,14 @@ static NTSTATUS migrate_printer(TALLOC_CTX *mem_ctx,
 					   0, /* command */
 					   &result);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(2, ("SetPrinter(%s) level 2 refused -- %s.\n",
+		DEBUG(2, ("dcerpc_spoolss_SetPrinter(%s) level 2 refused -- %s.\n",
 			  key_name, nt_errstr(status)));
+		goto done;
+	}
+	if (!W_ERROR_IS_OK(result)) {
+		DEBUG(2, ("SetPrinter(%s) level 2 refused -- %s.\n",
+			  key_name, win_errstr(result)));
+		status = werror_to_ntstatus(result);
 		goto done;
 	}
 
@@ -352,7 +372,7 @@ static NTSTATUS migrate_printer(TALLOC_CTX *mem_ctx,
 			valuename++;
 		}
 
-		status = rpccli_spoolss_SetPrinterDataEx(pipe_hnd,
+		status = dcerpc_spoolss_SetPrinterDataEx(b,
 							 mem_ctx,
 							 &hnd,
 							 keyname,
@@ -362,16 +382,25 @@ static NTSTATUS migrate_printer(TALLOC_CTX *mem_ctx,
 							 r.printer_data[j].data.length,
 							 &result);
 		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(2, ("SetPrinterDataEx: printer [%s], keyname [%s], "
+			DEBUG(2, ("dcerpc_spoolss_SetPrinterDataEx: "
+				  "printer [%s], keyname [%s], "
 				  "valuename [%s] refused -- %s.\n",
 				  key_name, keyname, valuename,
 				  nt_errstr(status)));
 			break;
 		}
+		if (!W_ERROR_IS_OK(result)) {
+			DEBUG(2, ("SetPrinterDataEx: printer [%s], keyname [%s], "
+				  "valuename [%s] refused -- %s.\n",
+				  key_name, keyname, valuename,
+				  win_errstr(result)));
+			status = werror_to_ntstatus(result);
+			break;
+		}
 	}
 
  done:
-	rpccli_spoolss_ClosePrinter(pipe_hnd, mem_ctx, &hnd, NULL);
+	dcerpc_spoolss_ClosePrinter(b, mem_ctx, &hnd, &result);
 
 	return status;
 }
@@ -382,6 +411,7 @@ static NTSTATUS migrate_secdesc(TALLOC_CTX *mem_ctx,
 				unsigned char *data,
 				size_t length)
 {
+	struct dcerpc_binding_handle *b = pipe_hnd->binding_handle;
 	struct policy_handle hnd;
 	enum ndr_err_code ndr_err;
 	struct sec_desc_buf secdesc_ctr;
@@ -412,7 +442,7 @@ static NTSTATUS migrate_secdesc(TALLOC_CTX *mem_ctx,
 
 	ZERO_STRUCT(devmode_ctr);
 
-	status = rpccli_spoolss_OpenPrinter(pipe_hnd,
+	status = dcerpc_spoolss_OpenPrinter(b,
 					    mem_ctx,
 					    key_name,
 					    NULL,
@@ -421,15 +451,18 @@ static NTSTATUS migrate_secdesc(TALLOC_CTX *mem_ctx,
 					    &hnd,
 					    &result);
 	if (!NT_STATUS_IS_OK(status)) {
-		if (W_ERROR_EQUAL(WERR_INVALID_PRINTER_NAME, result)) {
-			DEBUG(3, ("Ignoring missing printer %s\n", key_name));
-			return NT_STATUS_OK;
-		}
-		if (!W_ERROR_IS_OK(result)) {
-			status = werror_to_ntstatus(result);
-		}
-		DEBUG(2, ("OpenPrinter(%s) failed: %s\n",
+		DEBUG(2, ("dcerpc_spoolss_OpenPrinter(%s) failed: %s\n",
 			  key_name, nt_errstr(status)));
+		return status;
+	}
+	if (W_ERROR_EQUAL(WERR_INVALID_PRINTER_NAME, result)) {
+		DEBUG(3, ("Ignoring missing printer %s\n", key_name));
+		return NT_STATUS_OK;
+	}
+	if (!W_ERROR_IS_OK(result)) {
+		DEBUG(2, ("OpenPrinter(%s) failed: %s\n",
+			  key_name, win_errstr(result)));
+		status = werror_to_ntstatus(result);
 		return status;
 	}
 
@@ -440,7 +473,7 @@ static NTSTATUS migrate_secdesc(TALLOC_CTX *mem_ctx,
 	info_ctr.info.info3 = &info3;
 	info_ctr.level = 3;
 
-	status = rpccli_spoolss_SetPrinter(pipe_hnd,
+	status = dcerpc_spoolss_SetPrinter(b,
 					   mem_ctx,
 					   &hnd,
 					   &info_ctr,
@@ -449,11 +482,15 @@ static NTSTATUS migrate_secdesc(TALLOC_CTX *mem_ctx,
 					   0, /* command */
 					   &result);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(2, ("SetPrinter(%s) level 3 refused -- %s.\n",
+		DEBUG(2, ("dcerpc_spoolss_SetPrinter(%s) level 3 refused -- %s.\n",
 			  key_name, nt_errstr(status)));
+	} else if (!W_ERROR_IS_OK(result)) {
+		DEBUG(2, ("SetPrinter(%s) level 3 refused -- %s.\n",
+			  key_name, win_errstr(result)));
+		status = werror_to_ntstatus(result);
 	}
 
-	rpccli_spoolss_ClosePrinter(pipe_hnd, mem_ctx, &hnd, NULL);
+	dcerpc_spoolss_ClosePrinter(b, mem_ctx, &hnd, &result);
 
 	return status;
 }
