@@ -28,7 +28,7 @@
 #include "includes.h"
 #include "smbd/globals.h"
 #include "../librpc/gen_ndr/cli_samr.h"
-#include "../librpc/gen_ndr/cli_spoolss.h"
+#include "../librpc/gen_ndr/ndr_spoolss_c.h"
 #include "rpc_client/cli_spoolss.h"
 #include "rpc_client/init_spoolss.h"
 #include "../librpc/gen_ndr/ndr_srvsvc_c.h"
@@ -774,6 +774,7 @@ static bool api_DosPrintQGetInfo(struct smbd_server_connection *sconn,
 	TALLOC_CTX *mem_ctx = talloc_tos();
 	NTSTATUS status;
 	struct rpc_pipe_client *cli = NULL;
+	struct dcerpc_binding_handle *b = NULL;
 	struct policy_handle handle;
 	struct spoolss_DevmodeContainer devmode_ctr;
 	union spoolss_DriverInfo driver_info;
@@ -839,10 +840,11 @@ static bool api_DosPrintQGetInfo(struct smbd_server_connection *sconn,
 		desc.errcode = W_ERROR_V(ntstatus_to_werror(status));
 		goto out;
 	}
+	b = cli->binding_handle;
 
 	ZERO_STRUCT(devmode_ctr);
 
-	status = rpccli_spoolss_OpenPrinter(cli, mem_ctx,
+	status = dcerpc_spoolss_OpenPrinter(b, mem_ctx,
 					    QueueName,
 					    "RAW",
 					    devmode_ctr,
@@ -939,8 +941,8 @@ static bool api_DosPrintQGetInfo(struct smbd_server_connection *sconn,
 		desc.errcode = ERRbuftoosmall;
 
  out:
-	if (cli && is_valid_policy_hnd(&handle)) {
-		rpccli_spoolss_ClosePrinter(cli, mem_ctx, &handle, NULL);
+	if (b && is_valid_policy_hnd(&handle)) {
+		dcerpc_spoolss_ClosePrinter(b, mem_ctx, &handle, &werr);
 	}
 
 	*rdata_len = desc.usedlen;
@@ -987,6 +989,7 @@ static bool api_DosPrintQEnum(struct smbd_server_connection *sconn,
 	TALLOC_CTX *mem_ctx = talloc_tos();
 	NTSTATUS status;
 	struct rpc_pipe_client *cli = NULL;
+	struct dcerpc_binding_handle *b = NULL;
 	struct spoolss_DevmodeContainer devmode_ctr;
 	uint32_t num_printers;
 	union spoolss_PrinterInfo *printer_info;
@@ -1034,6 +1037,7 @@ static bool api_DosPrintQEnum(struct smbd_server_connection *sconn,
 		desc.errcode = W_ERROR_V(ntstatus_to_werror(status));
 		goto out;
 	}
+	b = cli->binding_handle;
 
 	werr = rpccli_spoolss_enumprinters(cli, mem_ctx,
 					   PRINTER_ENUM_LOCAL,
@@ -1088,7 +1092,7 @@ static bool api_DosPrintQEnum(struct smbd_server_connection *sconn,
 		ZERO_STRUCT(handle);
 		ZERO_STRUCT(devmode_ctr);
 
-		status = rpccli_spoolss_OpenPrinter(cli, mem_ctx,
+		status = dcerpc_spoolss_OpenPrinter(b, mem_ctx,
 						    printername,
 						    "RAW",
 						    devmode_ctr,
@@ -1140,8 +1144,8 @@ static bool api_DosPrintQEnum(struct smbd_server_connection *sconn,
 		subcntarr[i] = num_jobs;
 		subcnt += subcntarr[i];
 
-		if (cli && is_valid_policy_hnd(&handle)) {
-			rpccli_spoolss_ClosePrinter(cli, mem_ctx, &handle, NULL);
+		if (b && is_valid_policy_hnd(&handle)) {
+			dcerpc_spoolss_ClosePrinter(b, mem_ctx, &handle, &werr);
 		}
 	}
 
@@ -3219,6 +3223,7 @@ static bool api_RDosPrintJobDel(struct smbd_server_connection *sconn,
 	TALLOC_CTX *mem_ctx = talloc_tos();
 	NTSTATUS status;
 	struct rpc_pipe_client *cli = NULL;
+	struct dcerpc_binding_handle *b = NULL;
 	struct policy_handle handle;
 	struct spoolss_DevmodeContainer devmode_ctr;
 	enum spoolss_JobControl command;
@@ -3261,10 +3266,11 @@ static bool api_RDosPrintJobDel(struct smbd_server_connection *sconn,
 		errcode = W_ERROR_V(ntstatus_to_werror(status));
 		goto out;
 	}
+	b = cli->binding_handle;
 
 	ZERO_STRUCT(devmode_ctr);
 
-	status = rpccli_spoolss_OpenPrinter(cli, mem_ctx,
+	status = dcerpc_spoolss_OpenPrinter(b, mem_ctx,
 					    sharename,
 					    "RAW",
 					    devmode_ctr,
@@ -3300,7 +3306,7 @@ static bool api_RDosPrintJobDel(struct smbd_server_connection *sconn,
 		goto out;
 	}
 
-	status = rpccli_spoolss_SetJob(cli, mem_ctx,
+	status = dcerpc_spoolss_SetJob(b, mem_ctx,
 				       &handle,
 				       jobid,
 				       NULL, /* unique ptr ctr */
@@ -3316,8 +3322,8 @@ static bool api_RDosPrintJobDel(struct smbd_server_connection *sconn,
 	}
 
  out:
-	if (cli && is_valid_policy_hnd(&handle)) {
-		rpccli_spoolss_ClosePrinter(cli, mem_ctx, &handle, NULL);
+	if (b && is_valid_policy_hnd(&handle)) {
+		dcerpc_spoolss_ClosePrinter(b, mem_ctx, &handle, &werr);
 	}
 
 	SSVAL(*rparam,0,errcode);	
@@ -3348,6 +3354,7 @@ static bool api_WPrintQueueCtrl(struct smbd_server_connection *sconn,
 
 	TALLOC_CTX *mem_ctx = talloc_tos();
 	struct rpc_pipe_client *cli = NULL;
+	struct dcerpc_binding_handle *b = NULL;
 	struct policy_handle handle;
 	struct spoolss_SetPrinterInfoCtr info_ctr;
 	struct spoolss_DevmodeContainer devmode_ctr;
@@ -3387,10 +3394,11 @@ static bool api_WPrintQueueCtrl(struct smbd_server_connection *sconn,
 		errcode = W_ERROR_V(ntstatus_to_werror(status));
 		goto out;
 	}
+	b = cli->binding_handle;
 
 	ZERO_STRUCT(devmode_ctr);
 
-	status = rpccli_spoolss_OpenPrinter(cli, mem_ctx,
+	status = dcerpc_spoolss_OpenPrinter(b, mem_ctx,
 					    QueueName,
 					    NULL,
 					    devmode_ctr,
@@ -3429,7 +3437,7 @@ static bool api_WPrintQueueCtrl(struct smbd_server_connection *sconn,
 	ZERO_STRUCT(info_ctr);
 	ZERO_STRUCT(secdesc_ctr);
 
-	status = rpccli_spoolss_SetPrinter(cli, mem_ctx,
+	status = dcerpc_spoolss_SetPrinter(b, mem_ctx,
 					   &handle,
 					   &info_ctr,
 					   &devmode_ctr,
@@ -3449,8 +3457,8 @@ static bool api_WPrintQueueCtrl(struct smbd_server_connection *sconn,
 
  out:
 
-	if (cli && is_valid_policy_hnd(&handle)) {
-		rpccli_spoolss_ClosePrinter(cli, mem_ctx, &handle, NULL);
+	if (b && is_valid_policy_hnd(&handle)) {
+		dcerpc_spoolss_ClosePrinter(b, mem_ctx, &handle, &werr);
 	}
 
 	SSVAL(*rparam,0,errcode);
@@ -3512,6 +3520,7 @@ static bool api_PrintJobInfo(struct smbd_server_connection *sconn,
 	WERROR werr;
 	NTSTATUS status;
 	struct rpc_pipe_client *cli = NULL;
+	struct dcerpc_binding_handle *b = NULL;
 	struct policy_handle handle;
 	struct spoolss_DevmodeContainer devmode_ctr;
 	struct spoolss_JobInfoContainer ctr;
@@ -3567,10 +3576,11 @@ static bool api_PrintJobInfo(struct smbd_server_connection *sconn,
 		errcode = W_ERROR_V(ntstatus_to_werror(status));
 		goto out;
 	}
+	b = cli->binding_handle;
 
 	ZERO_STRUCT(devmode_ctr);
 
-	status = rpccli_spoolss_OpenPrinter(cli, mem_ctx,
+	status = dcerpc_spoolss_OpenPrinter(b, mem_ctx,
 					    sharename,
 					    "RAW",
 					    devmode_ctr,
@@ -3615,7 +3625,7 @@ static bool api_PrintJobInfo(struct smbd_server_connection *sconn,
 	ctr.level = 1;
 	ctr.info.info1 = &info1;
 
-	status = rpccli_spoolss_SetJob(cli, mem_ctx,
+	status = dcerpc_spoolss_SetJob(b, mem_ctx,
 				       &handle,
 				       jobid,
 				       &ctr,
@@ -3633,8 +3643,8 @@ static bool api_PrintJobInfo(struct smbd_server_connection *sconn,
 	errcode = NERR_Success;
  out:
 
-	if (cli && is_valid_policy_hnd(&handle)) {
-		rpccli_spoolss_ClosePrinter(cli, mem_ctx, &handle, NULL);
+	if (b && is_valid_policy_hnd(&handle)) {
+		dcerpc_spoolss_ClosePrinter(b, mem_ctx, &handle, &werr);
 	}
 
 	SSVALS(*rparam,0,errcode);
@@ -4622,6 +4632,7 @@ static bool api_WPrintJobGetInfo(struct smbd_server_connection *sconn,
 	WERROR werr;
 	NTSTATUS status;
 	struct rpc_pipe_client *cli = NULL;
+	struct dcerpc_binding_handle *b = NULL;
 	struct policy_handle handle;
 	struct spoolss_DevmodeContainer devmode_ctr;
 	union spoolss_JobInfo info;
@@ -4663,10 +4674,11 @@ static bool api_WPrintJobGetInfo(struct smbd_server_connection *sconn,
 		desc.errcode = W_ERROR_V(ntstatus_to_werror(status));
 		goto out;
 	}
+	b = cli->binding_handle;
 
 	ZERO_STRUCT(devmode_ctr);
 
-	status = rpccli_spoolss_OpenPrinter(cli, mem_ctx,
+	status = dcerpc_spoolss_OpenPrinter(b, mem_ctx,
 					    sharename,
 					    "RAW",
 					    devmode_ctr,
@@ -4717,8 +4729,8 @@ static bool api_WPrintJobGetInfo(struct smbd_server_connection *sconn,
 		*rdata_len = 0;
 	}
  out:
-	if (cli && is_valid_policy_hnd(&handle)) {
-		rpccli_spoolss_ClosePrinter(cli, mem_ctx, &handle, NULL);
+	if (b && is_valid_policy_hnd(&handle)) {
+		dcerpc_spoolss_ClosePrinter(b, mem_ctx, &handle, &werr);
 	}
 
 	*rparam_len = 6;
@@ -4757,6 +4769,7 @@ static bool api_WPrintJobEnumerate(struct smbd_server_connection *sconn,
 	WERROR werr;
 	NTSTATUS status;
 	struct rpc_pipe_client *cli = NULL;
+	struct dcerpc_binding_handle *b = NULL;
 	struct policy_handle handle;
 	struct spoolss_DevmodeContainer devmode_ctr;
 	uint32_t count = 0;
@@ -4803,10 +4816,11 @@ static bool api_WPrintJobEnumerate(struct smbd_server_connection *sconn,
 		desc.errcode = W_ERROR_V(ntstatus_to_werror(status));
 		goto out;
 	}
+	b = cli->binding_handle;
 
 	ZERO_STRUCT(devmode_ctr);
 
-	status = rpccli_spoolss_OpenPrinter(cli, mem_ctx,
+	status = dcerpc_spoolss_OpenPrinter(b, mem_ctx,
 					    name,
 					    NULL,
 					    devmode_ctr,
@@ -4854,8 +4868,8 @@ static bool api_WPrintJobEnumerate(struct smbd_server_connection *sconn,
 		}
 	}
  out:
-	if (cli && is_valid_policy_hnd(&handle)) {
-		rpccli_spoolss_ClosePrinter(cli, mem_ctx, &handle, NULL);
+	if (b && is_valid_policy_hnd(&handle)) {
+		dcerpc_spoolss_ClosePrinter(b, mem_ctx, &handle, &werr);
 	}
 
 	*rdata_len = desc.usedlen;
@@ -4961,6 +4975,7 @@ static bool api_WPrintDestGetInfo(struct smbd_server_connection *sconn,
 	WERROR werr;
 	NTSTATUS status;
 	struct rpc_pipe_client *cli = NULL;
+	struct dcerpc_binding_handle *b = NULL;
 	struct policy_handle handle;
 	struct spoolss_DevmodeContainer devmode_ctr;
 	union spoolss_PrinterInfo info;
@@ -5001,10 +5016,11 @@ static bool api_WPrintDestGetInfo(struct smbd_server_connection *sconn,
 		desc.errcode = W_ERROR_V(ntstatus_to_werror(status));
 		goto out;
 	}
+	b = cli->binding_handle;
 
 	ZERO_STRUCT(devmode_ctr);
 
-	status = rpccli_spoolss_OpenPrinter(cli, mem_ctx,
+	status = dcerpc_spoolss_OpenPrinter(b, mem_ctx,
 					    PrinterName,
 					    NULL,
 					    devmode_ctr,
@@ -5056,8 +5072,8 @@ static bool api_WPrintDestGetInfo(struct smbd_server_connection *sconn,
 	}
 
  out:
-	if (cli && is_valid_policy_hnd(&handle)) {
-		rpccli_spoolss_ClosePrinter(cli, mem_ctx, &handle, NULL);
+	if (b && is_valid_policy_hnd(&handle)) {
+		dcerpc_spoolss_ClosePrinter(b, mem_ctx, &handle, &werr);
 	}
 
 	*rdata_len = desc.usedlen;

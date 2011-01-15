@@ -28,7 +28,7 @@
 #include "printing.h"
 #include "smbd/globals.h"
 #include "fake_file.h"
-#include "../librpc/gen_ndr/cli_spoolss.h"
+#include "../librpc/gen_ndr/ndr_spoolss_c.h"
 #include "rpc_client/cli_spoolss.h"
 #include "rpc_client/init_spoolss.h"
 #include "rpc_server/rpc_ncacn_np.h"
@@ -5319,6 +5319,7 @@ void reply_printqueue(struct smb_request *req)
 		WERROR werr;
 		const char *sharename = lp_servicename(SNUM(conn));
 		struct rpc_pipe_client *cli = NULL;
+		struct dcerpc_binding_handle *b = NULL;
 		struct policy_handle handle;
 		struct spoolss_DevmodeContainer devmode_ctr;
 		union spoolss_JobInfo *info;
@@ -5342,10 +5343,11 @@ void reply_printqueue(struct smb_request *req)
 			reply_nterror(req, status);
 			goto out;
 		}
+		b = cli->binding_handle;
 
 		ZERO_STRUCT(devmode_ctr);
 
-		status = rpccli_spoolss_OpenPrinter(cli, mem_ctx,
+		status = dcerpc_spoolss_OpenPrinter(b, mem_ctx,
 						sharename,
 						NULL, devmode_ctr,
 						SEC_FLAG_MAXIMUM_ALLOWED,
@@ -5429,8 +5431,8 @@ void reply_printqueue(struct smb_request *req)
 			  (unsigned)count));
 
 out:
-		if (cli && is_valid_policy_hnd(&handle)) {
-			rpccli_spoolss_ClosePrinter(cli, mem_ctx, &handle, NULL);
+		if (b && is_valid_policy_hnd(&handle)) {
+			dcerpc_spoolss_ClosePrinter(b, mem_ctx, &handle, &werr);
 		}
 
 	}
