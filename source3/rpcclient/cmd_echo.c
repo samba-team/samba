@@ -20,38 +20,41 @@
 
 #include "includes.h"
 #include "rpcclient.h"
-#include "../librpc/gen_ndr/cli_echo.h"
+#include "../librpc/gen_ndr/ndr_echo_c.h"
 
 static NTSTATUS cmd_echo_add_one(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 				 int argc, const char **argv)
 {
+	struct dcerpc_binding_handle *b = cli->binding_handle;
 	uint32 request = 1, response;
-	NTSTATUS result;
+	NTSTATUS status;
 
 	if (argc > 2) {
 		printf("Usage: %s [num]\n", argv[0]);
 		return NT_STATUS_OK;
 	}
 
-	if (argc == 2)
+	if (argc == 2) {
 		request = atoi(argv[1]);
+	}
 
-	result = rpccli_echo_AddOne(cli, mem_ctx, request, &response);
-
-	if (!NT_STATUS_IS_OK(result))
+	status = dcerpc_echo_AddOne(b, mem_ctx, request, &response);
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
+	}
 
 	printf("%d + 1 = %d\n", request, response);
 
 done:
-	return result;
+	return status;
 }
 
 static NTSTATUS cmd_echo_data(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 			      int argc, const char **argv)
 {
+	struct dcerpc_binding_handle *b = cli->binding_handle;
 	uint32 size, i;
-	NTSTATUS result;
+	NTSTATUS status;
 	uint8_t *in_data = NULL, *out_data = NULL;
 
 	if (argc != 2) {
@@ -63,29 +66,30 @@ static NTSTATUS cmd_echo_data(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 	if ( (in_data = (uint8_t*)SMB_MALLOC(size)) == NULL ) {
 		printf("Failure to allocate buff of %d bytes\n",
 		       size);
-		result = NT_STATUS_NO_MEMORY;
+		status = NT_STATUS_NO_MEMORY;
 		goto done;
 	}
 	if ( (out_data = (uint8_t*)SMB_MALLOC(size)) == NULL ) {
 		printf("Failure to allocate buff of %d bytes\n",
 		       size);
-		result = NT_STATUS_NO_MEMORY;
+		status = NT_STATUS_NO_MEMORY;
 		goto done;
 	}
 
-	for (i = 0; i < size; i++)
+	for (i = 0; i < size; i++) {
 		in_data[i] = i & 0xff;
+	}
 
-	result = rpccli_echo_EchoData(cli, mem_ctx, size, in_data, out_data);
-
-	if (!NT_STATUS_IS_OK(result))
+	status = dcerpc_echo_EchoData(b, mem_ctx, size, in_data, out_data);
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
+	}
 
 	for (i = 0; i < size; i++) {
 		if (in_data[i] != out_data[i]) {
 			printf("mismatch at offset %d, %d != %d\n",
 			       i, in_data[i], out_data[i]);
-			result = NT_STATUS_UNSUCCESSFUL;
+			status = NT_STATUS_UNSUCCESSFUL;
 		}
 	}
 
@@ -93,15 +97,16 @@ done:
 	SAFE_FREE(in_data);
 	SAFE_FREE(out_data);
 
-	return result;
+	return status;
 }
 
 static NTSTATUS cmd_echo_source_data(struct rpc_pipe_client *cli, 
 				     TALLOC_CTX *mem_ctx, int argc, 
 				     const char **argv)
 {
+	struct dcerpc_binding_handle *b = cli->binding_handle;
 	uint32 size, i;
-	NTSTATUS result;
+	NTSTATUS status;
 	uint8_t *out_data = NULL;
 
 	if (argc != 2) {
@@ -113,35 +118,36 @@ static NTSTATUS cmd_echo_source_data(struct rpc_pipe_client *cli,
 	if ( (out_data = (uint8_t*)SMB_MALLOC(size)) == NULL ) {
 		printf("Failure to allocate buff of %d bytes\n",
 		       size);
-		result = NT_STATUS_NO_MEMORY;
+		status = NT_STATUS_NO_MEMORY;
 		goto done;		
 	}
 	
 
-	result = rpccli_echo_SourceData(cli, mem_ctx, size, out_data);
-
-	if (!NT_STATUS_IS_OK(result))
+	status = dcerpc_echo_SourceData(b, mem_ctx, size, out_data);
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
+	}
 
 	for (i = 0; i < size; i++) {
 		if (out_data && out_data[i] != (i & 0xff)) {
 			printf("mismatch at offset %d, %d != %d\n",
 			       i, out_data[i], i & 0xff);
-			result = NT_STATUS_UNSUCCESSFUL;
+			status = NT_STATUS_UNSUCCESSFUL;
 		}
 	}
 
 done:
 
 	SAFE_FREE(out_data);
-	return result;
+	return status;
 }
 
 static NTSTATUS cmd_echo_sink_data(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 				   int argc, const char **argv)
 {
+	struct dcerpc_binding_handle *b = cli->binding_handle;
 	uint32 size, i;
-	NTSTATUS result;
+	NTSTATUS status;
 	uint8_t *in_data = NULL;
 
 	if (argc != 2) {
@@ -153,22 +159,23 @@ static NTSTATUS cmd_echo_sink_data(struct rpc_pipe_client *cli, TALLOC_CTX *mem_
 	if ( (in_data = (uint8_t*)SMB_MALLOC(size)) == NULL ) {
 		printf("Failure to allocate buff of %d bytes\n",
 		       size);
-		result = NT_STATUS_NO_MEMORY;
+		status = NT_STATUS_NO_MEMORY;
 		goto done;		
 	}
 
-	for (i = 0; i < size; i++)
+	for (i = 0; i < size; i++) {
 		in_data[i] = i & 0xff;
+	}
 
-	result = rpccli_echo_SinkData(cli, mem_ctx, size, in_data);
-
-	if (!NT_STATUS_IS_OK(result))
+	status = dcerpc_echo_SinkData(b, mem_ctx, size, in_data);
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
+	}
 
 done:
 	SAFE_FREE(in_data);
 
-	return result;
+	return status;
 }
 
 /* List of commands exported by this module */
