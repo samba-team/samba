@@ -354,11 +354,11 @@ static NTSTATUS authsam_want_check(struct auth_method_context *ctx,
 
 				   
 /* Wrapper for the auth subsystem pointer */
-NTSTATUS authsam_get_server_info_principal_wrapper(TALLOC_CTX *mem_ctx,
-						   struct auth_context *auth_context,
-						   const char *principal,
-						   struct ldb_dn *user_dn,
-						   struct auth_serversupplied_info **server_info)
+static NTSTATUS authsam_get_server_info_principal_wrapper(TALLOC_CTX *mem_ctx,
+							  struct auth_context *auth_context,
+							  const char *principal,
+							  struct ldb_dn *user_dn,
+							  struct auth_serversupplied_info **server_info)
 {
 	return authsam_get_server_info_principal(mem_ctx, auth_context->lp_ctx, auth_context->sam_ctx,
 						 principal, user_dn, server_info);
@@ -368,7 +368,7 @@ static const struct auth_operations sam_ignoredomain_ops = {
 	.get_challenge	           = auth_get_challenge_not_implemented,
 	.want_check	           = authsam_ignoredomain_want_check,
 	.check_password	           = authsam_check_password_internals,
-	.get_server_info_principal = authsam_get_server_info_principal
+	.get_server_info_principal = authsam_get_server_info_principal_wrapper
 };
 
 static const struct auth_operations sam_ops = {
@@ -376,7 +376,7 @@ static const struct auth_operations sam_ops = {
 	.get_challenge	           = auth_get_challenge_not_implemented,
 	.want_check	           = authsam_want_check,
 	.check_password	           = authsam_check_password_internals,
-	.get_server_info_principal = authsam_get_server_info_principal
+	.get_server_info_principal = authsam_get_server_info_principal_wrapper
 };
 
 _PUBLIC_ NTSTATUS auth_sam_init(void)
