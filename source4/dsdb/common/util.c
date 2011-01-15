@@ -3284,10 +3284,10 @@ int dsdb_find_nc_root(struct ldb_context *samdb, TALLOC_CTX *mem_ctx, struct ldb
 	}
 
 	el = ldb_msg_find_element(root_res->msgs[0], "namingContexts");
-	if (!el) {
+	if ((el == NULL) || (el->num_values < 3)) {
 		struct ldb_message *tmp_msg;
 
-		DEBUG(5,("Finding namingContexts element in root_res failed. Using a temporary list."));
+		DEBUG(5,("dsdb_find_nc_root: Finding a valid 'namingContexts' element in the RootDSE failed. Using a temporary list."));
 
 		/* This generates a temporary list of NCs in order to let the
 		 * provisioning work. */
