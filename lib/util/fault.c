@@ -187,9 +187,10 @@ setup our fault handlers
 **/
 _PUBLIC_ void fault_setup(const char *pname)
 {
-	if (progname == NULL) {
-		progname = pname;
+	if (progname != NULL) {
+		return;
 	}
+	progname = pname;
 #ifdef SIGSEGV
 	CatchSignal(SIGSEGV, sig_fault);
 #endif
@@ -203,6 +204,15 @@ _PUBLIC_ void fault_setup(const char *pname)
 	CatchSignal(SIGFPE, sig_fault);
 #endif
 }
+
+/**
+   disable setting up fault handlers
+**/
+_PUBLIC_ void fault_setup_disable(void)
+{
+	progname = "fault disabled";
+}
+
 
 /**
   register a fault handler. 
