@@ -440,19 +440,13 @@ static bool cups_pcap_load_async(int *pfd)
 	_exit(0);
 }
 
-struct cups_async_cb_args {
-	int pipe_fd;
-	void (*post_cache_fill_fn)(void);
-};
-
 static void cups_async_callback(struct event_context *event_ctx,
 				struct fd_event *event,
 				uint16 flags,
 				void *p)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
-	struct cups_async_cb_args *cb_args = (struct cups_async_cb_args *)p;
-	int fd = cb_args->pipe_fd;
+	int fd = *(int *)p;
 	struct pcap_cache *tmp_pcap_cache = NULL;
 
 	DEBUG(5,("cups_async_callback: callback received for printer data. "
@@ -546,36 +540,27 @@ static void cups_async_callback(struct event_context *event_ctx,
 
 		/* And the systemwide pcap cache. */
 		pcap_cache_replace(local_pcap_copy);
-
-		/* Caller may have requested post cache fill callback */
-		if (cb_args->post_cache_fill_fn) {
-			cb_args->post_cache_fill_fn();
-		}
 	} else {
 		DEBUG(2,("cups_async_callback: failed to read a new "
 			"printer list\n"));
 	}
 	close(fd);
-	TALLOC_FREE(cb_args);
+	TALLOC_FREE(p);
 	TALLOC_FREE(cache_fd_event);
 }
 
-bool cups_cache_reload(void (*post_cache_fill_fn)(void))
+bool cups_cache_reload(void)
 {
-	struct cups_async_cb_args *cb_args;
-	int *p_pipe_fd;
+	int *p_pipe_fd = TALLOC_P(NULL, int);
 
-	cb_args = TALLOC_P(NULL, struct cups_async_cb_args);
-	if (!cb_args) {
+	if (!p_pipe_fd) {
 		return false;
 	}
-	cb_args->post_cache_fill_fn = post_cache_fill_fn;
-	p_pipe_fd = &cb_args->pipe_fd;
+
 	*p_pipe_fd = -1;
 
 	/* Set up an async refresh. */
 	if (!cups_pcap_load_async(p_pipe_fd)) {
-		talloc_free(cb_args);
 		return false;
 	}
 	if (!local_pcap_copy) {
@@ -588,7 +573,7 @@ bool cups_cache_reload(void (*post_cache_fill_fn)(void))
 		cups_async_callback(smbd_event_context(),
 					NULL,
 					EVENT_FD_READ,
-					(void *)cb_args);
+					(void *)p_pipe_fd);
 		if (!local_pcap_copy) {
 			return false;
 		}
@@ -605,10 +590,10 @@ bool cups_cache_reload(void (*post_cache_fill_fn)(void))
 					NULL, *p_pipe_fd,
 					EVENT_FD_READ,
 					cups_async_callback,
-					(void *)cb_args);
+					(void *)p_pipe_fd);
 		if (!cache_fd_event) {
 			close(*p_pipe_fd);
-			talloc_free(cb_args);
+			TALLOC_FREE(p_pipe_fd);
 			return false;
 		}
 	}
