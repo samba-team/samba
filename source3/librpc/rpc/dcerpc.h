@@ -259,9 +259,6 @@ void *_dcerpc_binding_handle_data(struct dcerpc_binding_handle *h);
 #define dcerpc_binding_handle_data(_h, _type) \
 	talloc_get_type_abort(_dcerpc_binding_handle_data(_h), _type)
 
-_DEPRECATED_ void dcerpc_binding_handle_set_ref_alloc(struct dcerpc_binding_handle *h,
-						      bool ref_alloc);
-
 _DEPRECATED_ void dcerpc_binding_handle_set_sync_ev(struct dcerpc_binding_handle *h,
 						    struct tevent_context *ev);
 
