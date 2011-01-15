@@ -19,7 +19,7 @@
 
 #include "includes.h"
 #include "ads.h"
-#include "../librpc/gen_ndr/cli_spoolss.h"
+#include "../librpc/gen_ndr/ndr_spoolss_c.h"
 #include "rpc_client/cli_spoolss.h"
 #include "registry.h"
 #include "registry/reg_objects.h"
@@ -315,12 +315,14 @@ WERROR get_remote_printer_publishing_data(struct rpc_pipe_client *cli,
 					  ADS_MODLIST *mods,
 					  const char *printer)
 {
+	struct dcerpc_binding_handle *b = cli->binding_handle;
 	WERROR result;
 	char *printername;
 	struct spoolss_PrinterEnumValues *info;
 	uint32_t count;
 	uint32 i;
 	struct policy_handle pol;
+	WERROR werr;
 
 	if ((asprintf(&printername, "%s\\%s", cli->srv_name_slash, printer) == -1)) {
 		DEBUG(3, ("Insufficient memory\n"));
@@ -392,7 +394,7 @@ WERROR get_remote_printer_publishing_data(struct rpc_pipe_client *cli,
 
 	ads_mod_str(mem_ctx, mods, SPOOL_REG_PRINTERNAME, printer);
 
-	rpccli_spoolss_ClosePrinter(cli, mem_ctx, &pol, NULL);
+	dcerpc_spoolss_ClosePrinter(b, mem_ctx, &pol, &werr);
 	SAFE_FREE(printername);
 
 	return result;
