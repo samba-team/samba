@@ -19,15 +19,15 @@
 
 #include "includes.h"
 #include "torture/proto.h"
-#include "librpc/gen_ndr/cli_echo.h"
+#include "librpc/gen_ndr/ndr_echo_c.h"
 
 static void rpccli_sleep_done(struct tevent_req *req)
 {
 	int *done = (int *)tevent_req_callback_data_void(req);
 	NTSTATUS status;
-	uint32_t result;
+	uint32_t result = UINT32_MAX;
 
-	status = rpccli_echo_TestSleep_recv(req, talloc_tos(), &result);
+	status = dcerpc_echo_TestSleep_recv(req, talloc_tos(), &result);
 	TALLOC_FREE(req);
 	printf("sleep returned %s, %d\n", nt_errstr(status), (int)result);
 	*done -= 1;
@@ -60,6 +60,7 @@ bool run_async_echo(int dummy)
 {
 	struct cli_state *cli = NULL;
 	struct rpc_pipe_client *p;
+	struct dcerpc_binding_handle *b;
 	struct tevent_context *ev;
 	struct tevent_req *req;
 	NTSTATUS status;
@@ -85,10 +86,11 @@ bool run_async_echo(int dummy)
 		printf("Could not open echo pipe: %s\n", nt_errstr(status));
 		goto fail;
 	}
+	b = p->binding_handle;
 
 	num_reqs = 0;
 
-	req = rpccli_echo_TestSleep_send(ev, ev, p, 15);
+	req = dcerpc_echo_TestSleep_send(ev, ev, b, 15);
 	if (req == NULL) {
 		printf("rpccli_echo_TestSleep_send failed\n");
 		goto fail;
