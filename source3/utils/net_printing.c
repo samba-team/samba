@@ -22,7 +22,7 @@
 #include "includes.h"
 #include "utils/net.h"
 #include "librpc/gen_ndr/ndr_ntprinting.h"
-#include "librpc/gen_ndr/cli_spoolss.h"
+#include "librpc/gen_ndr/ndr_spoolss_c.h"
 #include "rpc_client/cli_spoolss.h"
 #include "../libcli/security/security.h"
 #include "../librpc/gen_ndr/ndr_security.h"
@@ -221,6 +221,7 @@ static NTSTATUS migrate_form(TALLOC_CTX *mem_ctx,
 			 unsigned char *data,
 			 size_t length)
 {
+	struct dcerpc_binding_handle *b = pipe_hnd->binding_handle;
 	struct policy_handle hnd;
 	enum ndr_err_code ndr_err;
 	struct ntprinting_form r;
@@ -273,7 +274,7 @@ static NTSTATUS migrate_form(TALLOC_CTX *mem_ctx,
 
 	f.info1 = &f1;
 
-	status = rpccli_spoolss_AddForm(pipe_hnd,
+	status = dcerpc_spoolss_AddForm(b,
 					mem_ctx,
 					&hnd,
 					1,
@@ -282,9 +283,13 @@ static NTSTATUS migrate_form(TALLOC_CTX *mem_ctx,
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf(_("\tAddForm(%s) refused -- %s.\n"),
 			f.info1->form_name, nt_errstr(status));
+	} else if (!W_ERROR_IS_OK(result)) {
+		d_printf(_("\tAddForm(%s) refused -- %s.\n"),
+			f.info1->form_name, win_errstr(result));
+		status = werror_to_ntstatus(result);
 	}
 
-	rpccli_spoolss_ClosePrinter(pipe_hnd, mem_ctx, &hnd, NULL);
+	dcerpc_spoolss_ClosePrinter(b, mem_ctx, &hnd, &result);
 
 	return status;
 }
@@ -295,6 +300,7 @@ static NTSTATUS migrate_driver(TALLOC_CTX *mem_ctx,
 			       unsigned char *data,
 			       size_t length)
 {
+	struct dcerpc_binding_handle *b = pipe_hnd->binding_handle;
 	enum ndr_err_code ndr_err;
 	struct ntprinting_driver r;
 	struct spoolss_AddDriverInfoCtr d;
@@ -337,7 +343,7 @@ static NTSTATUS migrate_driver(TALLOC_CTX *mem_ctx,
 	d.info.info3 = &d3;
 	d.level = 3;
 
-	status = rpccli_spoolss_AddPrinterDriver(pipe_hnd,
+	status = dcerpc_spoolss_AddPrinterDriver(b,
 						 mem_ctx,
 						 NULL,
 						 &d,
@@ -345,6 +351,10 @@ static NTSTATUS migrate_driver(TALLOC_CTX *mem_ctx,
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf(_("\tAddDriver driver: [%s] refused -- %s.\n"),
 			d3.driver_name, nt_errstr(status));
+	} else if (!W_ERROR_IS_OK(result)) {
+		d_printf(_("\tAddDriver driver: [%s] refused -- %s.\n"),
+			d3.driver_name, win_errstr(result));
+		status = werror_to_ntstatus(result);
 	}
 
 	return status;
@@ -356,6 +366,7 @@ static NTSTATUS migrate_printer(TALLOC_CTX *mem_ctx,
 				unsigned char *data,
 				size_t length)
 {
+	struct dcerpc_binding_handle *b = pipe_hnd->binding_handle;
 	struct policy_handle hnd;
 	enum ndr_err_code ndr_err;
 	struct ntprinting_printer r;
@@ -471,7 +482,7 @@ static NTSTATUS migrate_printer(TALLOC_CTX *mem_ctx,
 	info_ctr.info.info2 = &info2;
 	info_ctr.level = 2;
 
-	status = rpccli_spoolss_SetPrinter(pipe_hnd,
+	status = dcerpc_spoolss_SetPrinter(b,
 					   mem_ctx,
 					   &hnd,
 					   &info_ctr,
@@ -482,6 +493,11 @@ static NTSTATUS migrate_printer(TALLOC_CTX *mem_ctx,
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf(_("\tSetPrinter(%s) level 2 refused -- %s.\n"),
 			key_name, nt_errstr(status));
+		goto done;
+	} else if (!W_ERROR_IS_OK(result)) {
+		d_printf(_("\tSetPrinter(%s) level 2 refused -- %s.\n"),
+			key_name, win_errstr(result));
+		status = werror_to_ntstatus(result);
 		goto done;
 	}
 
@@ -505,7 +521,7 @@ static NTSTATUS migrate_printer(TALLOC_CTX *mem_ctx,
 
 		printf("          data: %s\\%s\n", keyname, valuename);
 
-		status = rpccli_spoolss_SetPrinterDataEx(pipe_hnd,
+		status = dcerpc_spoolss_SetPrinterDataEx(b,
 							 mem_ctx,
 							 &hnd,
 							 keyname,
@@ -518,11 +534,16 @@ static NTSTATUS migrate_printer(TALLOC_CTX *mem_ctx,
 			d_printf(_("\tSetPrinterDataEx: printer [%s], keyname [%s], valuename [%s] refused -- %s.\n"),
 				key_name, keyname, valuename, nt_errstr(status));
 			break;
+		} else if (!W_ERROR_IS_OK(result)) {
+			d_printf(_("\tSetPrinterDataEx: printer [%s], keyname [%s], valuename [%s] refused -- %s.\n"),
+				key_name, keyname, valuename, win_errstr(result));
+			status = werror_to_ntstatus(result);
+			break;
 		}
 	}
 
  done:
-	rpccli_spoolss_ClosePrinter(pipe_hnd, mem_ctx, &hnd, NULL);
+	dcerpc_spoolss_ClosePrinter(b, mem_ctx, &hnd, &result);
 
 	return status;
 }
@@ -533,6 +554,7 @@ static NTSTATUS migrate_secdesc(TALLOC_CTX *mem_ctx,
 				unsigned char *data,
 				size_t length)
 {
+	struct dcerpc_binding_handle *b = pipe_hnd->binding_handle;
 	struct policy_handle hnd;
 	enum ndr_err_code ndr_err;
 	struct sec_desc_buf secdesc_ctr;
@@ -579,7 +601,7 @@ static NTSTATUS migrate_secdesc(TALLOC_CTX *mem_ctx,
 	info_ctr.info.info3 = &info3;
 	info_ctr.level = 3;
 
-	status = rpccli_spoolss_SetPrinter(pipe_hnd,
+	status = dcerpc_spoolss_SetPrinter(b,
 					   mem_ctx,
 					   &hnd,
 					   &info_ctr,
@@ -590,9 +612,13 @@ static NTSTATUS migrate_secdesc(TALLOC_CTX *mem_ctx,
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf(_("\tSetPrinter(%s) level 3 refused -- %s.\n"),
 			key_name, nt_errstr(status));
+	} else if (!W_ERROR_IS_OK(result)) {
+		d_printf(_("\tSetPrinter(%s) level 3 refused -- %s.\n"),
+			key_name, win_errstr(result));
+		status = werror_to_ntstatus(result);
 	}
 
-	rpccli_spoolss_ClosePrinter(pipe_hnd, mem_ctx, &hnd, NULL);
+	dcerpc_spoolss_ClosePrinter(b, mem_ctx, &hnd, &result);
 
 	return status;
 }
