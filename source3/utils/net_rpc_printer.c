@@ -231,12 +231,14 @@ NTSTATUS net_copy_fileattr(struct net_context *c,
 	}
 
 	if (copy_acls) {
+		NTSTATUS status;
 
 		/* set acls */
-		if (!cli_set_secdesc(cli_share_dst, fnum_dst, sd)) {
-			DEBUG(0,("could not set secdesc on %s: %s\n",
-				dst_name, cli_errstr(cli_share_dst)));
-			nt_status = cli_nt_error(cli_share_dst);
+		status = cli_set_secdesc(cli_share_dst, fnum_dst, sd);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0, ("could not set secdesc on %s: %s\n",
+				  dst_name, nt_errstr(status)));
+			nt_status = status;
 			goto out;
 		}
 	}

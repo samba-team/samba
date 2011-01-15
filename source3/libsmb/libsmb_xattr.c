@@ -1513,6 +1513,7 @@ cacl_set(SMBCCTX *context,
         bool numeric = True;
 	char *targetpath = NULL;
 	struct cli_state *targetcli = NULL;
+	NTSTATUS status;
 
         /* the_acl will be null for REMOVE_ALL operations */
         if (the_acl) {
@@ -1666,9 +1667,10 @@ cacl_set(SMBCCTX *context,
 		return -1;
 	}
 
-	if (!cli_set_secdesc(targetcli, fnum, sd)) {
+	status = cli_set_secdesc(targetcli, fnum, sd);
+	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(5, ("ERROR: secdesc set failed: %s\n",
-			cli_errstr(targetcli)));
+			  nt_errstr(status)));
 		ret = -1;
 	}
 

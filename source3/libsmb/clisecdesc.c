@@ -70,14 +70,11 @@ struct security_descriptor *cli_query_secdesc(struct cli_state *cli, uint16_t fn
 /****************************************************************************
   set the security descriptor for a open file
  ****************************************************************************/
-bool cli_set_secdesc(struct cli_state *cli, uint16_t fnum, struct security_descriptor *sd)
+NTSTATUS cli_set_secdesc(struct cli_state *cli, uint16_t fnum,
+			 struct security_descriptor *sd)
 {
-	char param[8];
-	char *rparam=NULL, *rdata=NULL;
-	unsigned int rparam_count=0, rdata_count=0;
+	uint8_t param[8];
 	uint32 sec_info = 0;
-	TALLOC_CTX *frame = talloc_stackframe();
-	bool ret = False;
 	uint8 *data;
 	size_t len;
 	NTSTATUS status;
@@ -86,7 +83,7 @@ bool cli_set_secdesc(struct cli_state *cli, uint16_t fnum, struct security_descr
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10, ("marshall_sec_desc failed: %s\n",
 			   nt_errstr(status)));
-		goto cleanup;
+		return status;
 	}
 
 	SIVAL(param, 0, fnum);
@@ -99,32 +96,20 @@ bool cli_set_secdesc(struct cli_state *cli, uint16_t fnum, struct security_descr
 		sec_info |= SECINFO_GROUP;
 	SSVAL(param, 4, sec_info);
 
-	if (!cli_send_nt_trans(cli, 
-			       NT_TRANSACT_SET_SECURITY_DESC, 
-			       0, 
-			       NULL, 0, 0,
-			       param, 8, 0,
-			       (char *)data, len, 0)) {
-		DEBUG(1,("Failed to send NT_TRANSACT_SET_SECURITY_DESC\n"));
-		goto cleanup;
+	status = cli_trans(talloc_tos(), cli, SMBnttrans,
+			   NULL, -1, /* name, fid */
+			   NT_TRANSACT_SET_SECURITY_DESC, 0,
+			   NULL, 0, 0, /* setup */
+			   param, 8, 0, /* param */
+			   data, len, 0, /* data */
+			   NULL,	 /* recv_flags2 */
+			   NULL, 0, NULL, /* rsetup */
+			   NULL, 0, NULL, /* rparam */
+			   NULL, 0, NULL); /* rdata */
+	TALLOC_FREE(data);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("Failed to send NT_TRANSACT_SET_SECURITY_DESC: %s\n",
+			  nt_errstr(status)));
 	}
-
-
-	if (!cli_receive_nt_trans(cli, 
-				  &rparam, &rparam_count,
-				  &rdata, &rdata_count)) {
-		DEBUG(1,("NT_TRANSACT_SET_SECURITY_DESC failed\n"));
-		goto cleanup;
-	}
-
-	ret = True;
-
-  cleanup:
-
-	SAFE_FREE(rparam);
-	SAFE_FREE(rdata);
-
-	TALLOC_FREE(frame);
-
-	return ret;
+	return status;
 }
