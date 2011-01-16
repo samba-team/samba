@@ -458,15 +458,14 @@ NTSTATUS cli_get_fs_quota_info(struct cli_state *cli, int quota_fnum,
 	return status;
 }
 
-bool cli_set_fs_quota_info(struct cli_state *cli, int quota_fnum, SMB_NTQUOTA_STRUCT *pqt)
+NTSTATUS cli_set_fs_quota_info(struct cli_state *cli, int quota_fnum,
+			       SMB_NTQUOTA_STRUCT *pqt)
 {
-	bool ret = False;
-	uint16 setup;
-	char param[4];
-	char data[48];
-	char *rparam=NULL, *rdata=NULL;
-	unsigned int rparam_count=0, rdata_count=0;
+	uint16_t setup[1];
+	uint8_t param[4];
+	uint8_t data[48];
 	SMB_NTQUOTA_STRUCT qt;
+	NTSTATUS status;
 	ZERO_STRUCT(qt);
 	memset(data,'\0',48);
 
@@ -474,7 +473,7 @@ bool cli_set_fs_quota_info(struct cli_state *cli, int quota_fnum, SMB_NTQUOTA_ST
 		smb_panic("cli_set_fs_quota_info() called with NULL Pointer!");
 	}
 
-	setup = TRANSACT2_SETFSINFO;
+	SSVAL(setup + 0, 0,TRANSACT2_SETFSINFO);
 
 	SSVAL(param,0,quota_fnum);
 	SSVAL(param,2,SMB_FS_QUOTA_INFORMATION);
@@ -492,33 +491,23 @@ bool cli_set_fs_quota_info(struct cli_state *cli, int quota_fnum, SMB_NTQUOTA_ST
 
 	/* Unknown3 6 NULL bytes */
 
-	if (!cli_send_trans(cli, SMBtrans2, 
-		    NULL, 
-		    0, 0,
-		    &setup, 1, 0,
-		    param, 4, 0,
-		    data, 48, 0)) {
-		goto cleanup;
+	status = cli_trans(talloc_tos(), cli, SMBtrans2,
+			   NULL, -1, /* name, fid */
+			   0, 0,     /* function, flags */
+			   setup, 1, 0, /* setup */
+			   param, 8, 0, /* param */
+			   data, 48, 0, /* data */
+			   NULL,	 /* recv_flags2 */
+			   NULL, 0, NULL, /* rsetup */
+			   NULL, 0, NULL, /* rparam */
+			   NULL, 0, NULL); /* rdata */
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("SMB_FS_QUOTA_INFORMATION failed: %s\n",
+			  nt_errstr(status)));
 	}
 
-	if (!cli_receive_trans(cli, SMBtrans2,
-                              &rparam, &rparam_count,
-                              &rdata, &rdata_count)) {
-		goto cleanup;
-	}
-
-	if (cli_is_error(cli)) {
-		ret = False;
-		goto cleanup;
-	} else {
-		ret = True;
-	}
-
-cleanup:
-	SAFE_FREE(rparam);
-	SAFE_FREE(rdata);
-
-	return ret;	
+	return status;
 }
 
 static const char *quota_str_static(uint64_t val, bool special, bool _numeric)
