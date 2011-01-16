@@ -50,40 +50,40 @@ check for existance of a trans2 call
 ****************************************************************************/
 static NTSTATUS try_trans2(struct cli_state *cli, 
 			 int op,
-			 char *param, char *data,
-			 int param_len, int data_len,
-			 unsigned int *rparam_len, unsigned int *rdata_len)
+			 uint8_t *param, uint8_t *data,
+			 uint32_t param_len, uint32_t data_len,
+			 uint32_t *rparam_len, uint32_t *rdata_len)
 {
-	uint16 setup = op;
-	char *rparam=NULL, *rdata=NULL;
+	uint16_t setup[1];
+	uint8_t *rparam=NULL, *rdata=NULL;
+	NTSTATUS status;
 
-	if (!cli_send_trans(cli, SMBtrans2, 
-                            NULL,                           /* name */
-                            -1, 0,                          /* fid, flags */
-                            &setup, 1, 0,                   /* setup, length, max */
-                            param, param_len, 2,            /* param, length, max */
-                            data, data_len, cli->max_xmit   /* data, length, max */
-                           )) {
-		return cli_nt_error(cli);
-	}
+	SSVAL(setup+0, 0, op);
 
-	cli_receive_trans(cli, SMBtrans2,
-			   &rparam, rparam_len,
-			   &rdata, rdata_len);
+	status = cli_trans(talloc_tos(), cli, SMBtrans2,
+			   NULL, -1, /* name, fid */
+			   op, 0,
+			   NULL, 0, 0, /* setup */
+			   param, param_len, 2,
+			   data, data_len, cli->max_xmit,
+			   NULL,		/* recv_flags2 */
+			   NULL, 0, NULL,	/* rsetup */
+			   &rparam, 0, rparam_len,
+			   &rdata, 0, rdata_len);
 
-	SAFE_FREE(rdata);
-	SAFE_FREE(rparam);
+	TALLOC_FREE(rdata);
+	TALLOC_FREE(rparam);
 
-	return cli_nt_error(cli);
+	return status;
 }
 
 
 static NTSTATUS try_trans2_len(struct cli_state *cli, 
 			     const char *format,
 			     int op, int level,
-			     char *param, char *data,
-			     int param_len, int *data_len,
-			     unsigned int *rparam_len, unsigned int *rdata_len)
+			     uint8_t *param, uint8_t *data,
+			     uint32_t param_len, uint32_t *data_len,
+			     uint32_t *rparam_len, uint32_t *rdata_len)
 {
 	NTSTATUS ret=NT_STATUS_OK;
 
@@ -116,10 +116,10 @@ check for existance of a trans2 call
 static bool scan_trans2(struct cli_state *cli, int op, int level, 
 			int fnum, int dnum, const char *fname)
 {
-	int data_len = 0;
-	int param_len = 0;
-	unsigned int rparam_len, rdata_len;
-	char param[PARAM_SIZE], data[DATA_SIZE];
+	uint32_t data_len = 0;
+	uint32_t param_len = 0;
+	uint32_t rparam_len, rdata_len;
+	uint8_t param[PARAM_SIZE], data[DATA_SIZE];
 	NTSTATUS status;
 
 	memset(data, 0, sizeof(data));
