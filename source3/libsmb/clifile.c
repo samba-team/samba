@@ -4082,14 +4082,13 @@ NTSTATUS cli_raw_ioctl(struct cli_state *cli, uint16_t fnum, uint32_t code, DATA
 {
 	uint16_t vwv[3];
 	NTSTATUS status;
-	struct tevent_req *result_parent;
 
 	SSVAL(vwv+0, 0, fnum);
 	SSVAL(vwv+1, 0, code>>16);
 	SSVAL(vwv+2, 0, (code&0xFFFF));
 
 	status = cli_smb(talloc_tos(), cli, SMBioctl, 0, 3, vwv, 0, NULL,
-			 &result_parent, 0, NULL, NULL, NULL, NULL);
+			 NULL, 0, NULL, NULL, NULL, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}

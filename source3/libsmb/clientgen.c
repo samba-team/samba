@@ -954,7 +954,7 @@ NTSTATUS cli_smb(TALLOC_CTX *mem_ctx, struct cli_state *cli,
 			      pnum_bytes, pbytes);
 fail:
         TALLOC_FREE(ev);
-	if (NT_STATUS_IS_OK(status)) {
+	if (NT_STATUS_IS_OK(status) && (result_parent != NULL)) {
 		*result_parent = req;
 	}
         return status;
