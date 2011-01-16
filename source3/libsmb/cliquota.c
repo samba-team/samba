@@ -380,48 +380,41 @@ NTSTATUS cli_list_user_quota(struct cli_state *cli, int quota_fnum,
 	return status;
 }
 
-bool cli_get_fs_quota_info(struct cli_state *cli, int quota_fnum, SMB_NTQUOTA_STRUCT *pqt)
+NTSTATUS cli_get_fs_quota_info(struct cli_state *cli, int quota_fnum,
+			       SMB_NTQUOTA_STRUCT *pqt)
 {
-	bool ret = False;
-	uint16 setup;
-	char param[2];
-	char *rparam=NULL, *rdata=NULL;
-	unsigned int rparam_count=0, rdata_count=0;
+	uint16_t setup[1];
+	uint8_t param[2];
+	uint8_t *rdata=NULL;
+	uint32_t rdata_count=0;
 	SMB_NTQUOTA_STRUCT qt;
+	NTSTATUS status;
+
 	ZERO_STRUCT(qt);
 
 	if (!cli||!pqt) {
 		smb_panic("cli_get_fs_quota_info() called with NULL Pointer!");
 	}
 
-	setup = TRANSACT2_QFSINFO;
+	SSVAL(setup + 0, 0, TRANSACT2_QFSINFO);
 
 	SSVAL(param,0,SMB_FS_QUOTA_INFORMATION);
 
-	if (!cli_send_trans(cli, SMBtrans2, 
-		    NULL, 
-		    0, 0,
-		    &setup, 1, 0,
-		    param, 2, 0,
-		    NULL, 0, 560)) {
-		goto cleanup;
-	}
+	status = cli_trans(talloc_tos(), cli, SMBtrans2,
+			   NULL, -1, /* name, fid */
+			   0, 0,     /* function, flags */
+			   setup, 1, 0, /* setup */
+			   param, 2, 0, /* param */
+			   NULL, 0, 560, /* data */
+			   NULL,	 /* recv_flags2 */
+			   NULL, 0, NULL, /* rsetup */
+			   NULL, 0, NULL, /* rparam */
+			   &rdata, 48, &rdata_count);
 
-	if (!cli_receive_trans(cli, SMBtrans2,
-                              &rparam, &rparam_count,
-                              &rdata, &rdata_count)) {
-		goto cleanup;
-	}
-
-	if (cli_is_error(cli)) {
-		ret = False;
-		goto cleanup;
-	} else {
-		ret = True;
-	}
-
-	if (rdata_count < 48) {
-		goto cleanup;
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("SMB_FS_QUOTA_INFORMATION failed: %s\n",
+			  nt_errstr(status)));
+		return status;
 	}
 
 	/* unknown_1 24 NULL bytes in pdata*/
@@ -435,6 +428,7 @@ bool cli_get_fs_quota_info(struct cli_state *cli, int quota_fnum, SMB_NTQUOTA_ST
 		((qt.softlim != 0xFFFFFFFF)||
 		 (IVAL(rdata,28)!=0xFFFFFFFF))) {
 		/* more than 32 bits? */
+		status = NT_STATUS_INVALID_NETWORK_RESPONSE;
 		goto cleanup;
 	}
 #endif /* LARGE_SMB_OFF_T */
@@ -448,6 +442,7 @@ bool cli_get_fs_quota_info(struct cli_state *cli, int quota_fnum, SMB_NTQUOTA_ST
 		((qt.hardlim != 0xFFFFFFFF)||
 		 (IVAL(rdata,36)!=0xFFFFFFFF))) {
 		/* more than 32 bits? */
+		status = NT_STATUS_INVALID_NETWORK_RESPONSE;
 		goto cleanup;
 	}
 #endif /* LARGE_SMB_OFF_T */
@@ -459,12 +454,8 @@ bool cli_get_fs_quota_info(struct cli_state *cli, int quota_fnum, SMB_NTQUOTA_ST
 
 	*pqt = qt;
 
-	ret = True;
-cleanup:
-	SAFE_FREE(rparam);
-	SAFE_FREE(rdata);
-
-	return ret;	
+	TALLOC_FREE(rdata);
+	return status;
 }
 
 bool cli_set_fs_quota_info(struct cli_state *cli, int quota_fnum, SMB_NTQUOTA_STRUCT *pqt)

@@ -321,17 +321,21 @@ static int do_quota(struct cli_state *cli,
 		case SMB_USER_FS_QUOTA_TYPE:
 			switch(cmd) {
 				case QUOTA_GET:
-					if (!cli_get_fs_quota_info(cli, quota_fnum, &qt)) {
+					status = cli_get_fs_quota_info(
+						cli, quota_fnum, &qt);
+					if (!NT_STATUS_IS_OK(status)) {
 						d_printf("%s cli_get_fs_quota_info\n",
-							 cli_errstr(cli));
+							 nt_errstr(status));
 						return -1;
 					}
 					dump_ntquota(&qt,True,numeric,NULL);
 					break;
 				case QUOTA_SETLIM:
-					if (!cli_get_fs_quota_info(cli, quota_fnum, &qt)) {
+					status = cli_get_fs_quota_info(
+						cli, quota_fnum, &qt);
+					if (!NT_STATUS_IS_OK(status)) {
 						d_printf("%s cli_get_fs_quota_info\n",
-							 cli_errstr(cli));
+							 nt_errstr(status));
 						return -1;
 					}
 					qt.softlim = pqt->softlim;
@@ -341,17 +345,21 @@ static int do_quota(struct cli_state *cli,
 							 cli_errstr(cli));
 						return -1;
 					}
-					if (!cli_get_fs_quota_info(cli, quota_fnum, &qt)) {
+					status = cli_get_fs_quota_info(
+						cli, quota_fnum, &qt);
+					if (!NT_STATUS_IS_OK(status)) {
 						d_printf("%s cli_get_fs_quota_info\n",
-							 cli_errstr(cli));
+							 nt_errstr(status));
 						return -1;
 					}
 					dump_ntquota(&qt,True,numeric,NULL);
 					break;
 				case QUOTA_SETFLAGS:
-					if (!cli_get_fs_quota_info(cli, quota_fnum, &qt)) {
+					status = cli_get_fs_quota_info(
+						cli, quota_fnum, &qt);
+					if (!NT_STATUS_IS_OK(status)) {
 						d_printf("%s cli_get_fs_quota_info\n",
-							 cli_errstr(cli));
+							 nt_errstr(status));
 						return -1;
 					}
 					qt.qflags = pqt->qflags;
@@ -360,9 +368,11 @@ static int do_quota(struct cli_state *cli,
 							 cli_errstr(cli));
 						return -1;
 					}
-					if (!cli_get_fs_quota_info(cli, quota_fnum, &qt)) {
+					status = cli_get_fs_quota_info(
+						cli, quota_fnum, &qt);
+					if (!NT_STATUS_IS_OK(status)) {
 						d_printf("%s cli_get_fs_quota_info\n",
-							 cli_errstr(cli));
+							 nt_errstr(status));
 						return -1;
 					}
 					dump_ntquota(&qt,True,numeric,NULL);
