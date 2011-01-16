@@ -2667,11 +2667,14 @@ NTSTATUS cli_unlock(struct cli_state *cli,
 ****************************************************************************/
 
 bool cli_lock64(struct cli_state *cli, uint16_t fnum,
-		uint64_t offset, uint64_t len, int timeout, enum brl_type lock_type)
+		uint64_t offset, uint64_t len, int timeout,
+		enum brl_type lock_type)
 {
-	char *p;
+	uint16_t vwv[8];
+	uint8_t bytes[20];
         int saved_timeout = cli->timeout;
 	int ltype;
+	NTSTATUS status;
 
 	if (! (cli->capabilities & CAP_LARGE_FILES)) {
 		return cli_lock(cli, fnum, offset, len, timeout, lock_type);
@@ -2680,47 +2683,34 @@ bool cli_lock64(struct cli_state *cli, uint16_t fnum,
 	ltype = (lock_type == READ_LOCK? 1 : 0);
 	ltype |= LOCKING_ANDX_LARGE_FILES;
 
-	memset(cli->outbuf,'\0',smb_size);
-	memset(cli->inbuf,'\0', smb_size);
+	SCVAL(vwv + 0, 0, 0xff);
+	SCVAL(vwv + 0, 1, 0);
+	SSVAL(vwv + 1, 0, 0);
+	SSVAL(vwv + 2, 0, fnum);
+	SCVAL(vwv + 3, 0, ltype);
+	SCVAL(vwv + 3, 1, 0);
+	SIVALS(vwv + 4, 0, timeout);
+	SSVAL(vwv + 6, 0, 0);
+	SSVAL(vwv + 7, 0, 1);
 
-	cli_set_message(cli->outbuf,8,0,True);
+	SIVAL(bytes, 0, cli->pid);
+	SOFF_T_R(bytes, 4, offset);
+	SOFF_T_R(bytes, 12, len);
 
-	SCVAL(cli->outbuf,smb_com,SMBlockingX);
-	SSVAL(cli->outbuf,smb_tid,cli->cnum);
-	cli_setup_packet(cli);
-
-	SCVAL(cli->outbuf,smb_vwv0,0xFF);
-	SSVAL(cli->outbuf,smb_vwv2,fnum);
-	SCVAL(cli->outbuf,smb_vwv3,ltype);
-	SIVALS(cli->outbuf, smb_vwv4, timeout);
-	SSVAL(cli->outbuf,smb_vwv6,0);
-	SSVAL(cli->outbuf,smb_vwv7,1);
-
-	p = smb_buf(cli->outbuf);
-	SIVAL(p, 0, cli->pid);
-	SOFF_T_R(p, 4, offset);
-	SOFF_T_R(p, 12, len);
-	p += 20;
-
-	cli_setup_bcc(cli, p);
-	cli_send_smb(cli);
+	saved_timeout = cli->timeout;
 
 	if (timeout != 0) {
-		cli->timeout = (timeout == -1) ? 0x7FFFFFFF : (timeout + 5*1000);
+		cli->timeout = (timeout == -1)
+			? 0x7FFFFFFF : (timeout + 2*1000);
 	}
 
-	if (!cli_receive_smb(cli)) {
-                cli->timeout = saved_timeout;
-		return False;
-	}
+	status = cli_smb(talloc_tos(), cli, SMBlockingX, 0, 8, vwv,
+			 20, bytes, NULL, 0, NULL, NULL, NULL, NULL);
 
 	cli->timeout = saved_timeout;
 
-	if (cli_is_error(cli)) {
-		return False;
-	}
-
-	return True;
+	cli_set_error(cli, status);
+	return NT_STATUS_IS_OK(status);
 }
 
 /****************************************************************************
