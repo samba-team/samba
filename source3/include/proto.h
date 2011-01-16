@@ -2251,8 +2251,6 @@ void cli_oplock_handler(struct cli_state *cli,
 int cli_print_queue(struct cli_state *cli,
 		    void (*fn)(struct print_job_info *));
 int cli_printjob_del(struct cli_state *cli, int job);
-int cli_spl_open(struct cli_state *cli, const char *fname, int flags, int share_mode);
-bool cli_spl_close(struct cli_state *cli, uint16_t fnum);
 
 /* The following definitions come from libsmb/cliquota.c  */
 
