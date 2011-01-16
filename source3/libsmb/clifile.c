@@ -205,6 +205,41 @@ NTSTATUS cli_setpathinfo_recv(struct tevent_req *req)
 	return tevent_req_simple_recv_ntstatus(req);
 }
 
+NTSTATUS cli_setpathinfo(struct cli_state *cli,
+			 uint16_t level,
+			 const char *path,
+			 uint8_t *data,
+			 size_t data_len)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct tevent_context *ev;
+	struct tevent_req *req;
+	NTSTATUS status = NT_STATUS_NO_MEMORY;
+
+	if (cli_has_async_calls(cli)) {
+		/*
+		 * Can't use sync call while an async call is in flight
+		 */
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto fail;
+	}
+	ev = tevent_context_init(frame);
+	if (ev == NULL) {
+		goto fail;
+	}
+	req = cli_setpathinfo_send(ev, ev, cli, level, path, data, data_len);
+	if (req == NULL) {
+		goto fail;
+	}
+	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
+		goto fail;
+	}
+	status = cli_setpathinfo_recv(req);
+ fail:
+	TALLOC_FREE(frame);
+	return status;
+}
+
 /****************************************************************************
  Hard/Symlink a file (UNIX extensions).
  Creates new name (sym)linked to oldname.
