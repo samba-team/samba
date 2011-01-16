@@ -43,7 +43,10 @@ void free_ntquota_list(SMB_NTQUOTA_LIST **qt_list)
 	return;	
 }
 
-static bool parse_user_quota_record(const char *rdata, unsigned int rdata_count, unsigned int *offset, SMB_NTQUOTA_STRUCT *pqt)
+static bool parse_user_quota_record(const uint8_t *rdata,
+				    unsigned int rdata_count,
+				    unsigned int *offset,
+				    SMB_NTQUOTA_STRUCT *pqt)
 {
 	int sid_len;
 	SMB_NTQUOTA_STRUCT qt;
@@ -114,7 +117,7 @@ static bool parse_user_quota_record(const char *rdata, unsigned int rdata_count,
 	}
 #endif /* LARGE_SMB_OFF_T */
 
-	if (!sid_parse(rdata+40,sid_len,&qt.sid)) {
+	if (!sid_parse((char *)rdata+40,sid_len,&qt.sid)) {
 		return false;
 	}
 
@@ -125,23 +128,24 @@ static bool parse_user_quota_record(const char *rdata, unsigned int rdata_count,
 	return True;
 }
 
-bool cli_get_user_quota(struct cli_state *cli, int quota_fnum, SMB_NTQUOTA_STRUCT *pqt)
+NTSTATUS cli_get_user_quota(struct cli_state *cli, int quota_fnum,
+			    SMB_NTQUOTA_STRUCT *pqt)
 {
-	bool ret = False;
-	uint16 setup;
-	char params[16];
+	uint16_t setup[1];
+	uint8_t params[16];
 	unsigned int data_len;
-	char data[SID_MAX_SIZE+8];
-	char *rparam=NULL, *rdata=NULL;
-	unsigned int rparam_count=0, rdata_count=0;
+	uint8_t data[SID_MAX_SIZE+8];
+	uint8_t *rparam, *rdata;
+	uint32_t rparam_count, rdata_count;
 	unsigned int sid_len;
 	unsigned int offset;
+	NTSTATUS status;
 
 	if (!cli||!pqt) {
 		smb_panic("cli_get_user_quota() called with NULL Pointer!");
 	}
 
-	setup = NT_TRANSACT_GET_USER_QUOTA;
+	SSVAL(setup + 0, 0, NT_TRANSACT_GET_USER_QUOTA);
 
 	SSVAL(params, 0,quota_fnum);
 	SSVAL(params, 2,TRANSACT_GET_USER_QUOTA_FOR_SID);
@@ -153,44 +157,32 @@ bool cli_get_user_quota(struct cli_state *cli, int quota_fnum, SMB_NTQUOTA_STRUC
 	data_len = sid_len+8;
 	SIVAL(data, 0, 0x00000000);
 	SIVAL(data, 4, sid_len);
-	sid_linearize(data+8, sid_len, &pqt->sid);
+	sid_linearize((char *)data+8, sid_len, &pqt->sid);
 
-	if (!cli_send_nt_trans(cli, 
-			       NT_TRANSACT_GET_USER_QUOTA, 
-			       0, 
-			       &setup, 1, 0,
-			       params, 16, 4,
-			       data, data_len, 112)) {
-		DEBUG(1,("Failed to send NT_TRANSACT_GET_USER_QUOTA\n"));
-		goto cleanup;
+	status = cli_trans(talloc_tos(), cli, SMBnttrans,
+			   NULL, -1, /* name, fid */
+			   NT_TRANSACT_GET_USER_QUOTA, 0,
+			   setup, 1, 0, /* setup */
+			   params, 16, 4, /* params */
+			   data, data_len, 112, /* data */
+			   NULL,		/* recv_flags2 */
+			   NULL, 0, NULL,	/* rsetup */
+			   &rparam, 4, &rparam_count,
+			   &rdata, 8, &rdata_count);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("NT_TRANSACT_GET_USER_QUOTA failed: %s\n",
+			  nt_errstr(status)));
+		return status;
 	}
 
-
-	if (!cli_receive_nt_trans(cli,
-				  &rparam, &rparam_count,
-				  &rdata, &rdata_count)) {
-		DEBUG(1,("Failed to recv NT_TRANSACT_GET_USER_QUOTA\n"));
-		goto cleanup;
-	}
-
-	if (cli_is_error(cli)) {
-		ret = False;
-		goto cleanup;
-	} else {
-		ret = True;
-	}
-
-	if ((rparam&&rdata)&&(rparam_count>=4&&rdata_count>=8)) {
-		ret = parse_user_quota_record(rdata, rdata_count, &offset, pqt);
-	} else {
+	if (!parse_user_quota_record(rdata, rdata_count, &offset, pqt)) {
+		status = NT_STATUS_INVALID_NETWORK_RESPONSE;
 		DEBUG(0,("Got INVALID NT_TRANSACT_GET_USER_QUOTA reply.\n"));
-		ret = False; 
 	}
 
- cleanup:
-	SAFE_FREE(rparam);
-	SAFE_FREE(rdata); 
-	return ret;
+	TALLOC_FREE(rparam);
+	TALLOC_FREE(rdata);
+	return status;
 }
 
 bool cli_set_user_quota(struct cli_state *cli, int quota_fnum, SMB_NTQUOTA_STRUCT *pqt)
@@ -318,7 +310,8 @@ bool cli_list_user_quota(struct cli_state *cli, int quota_fnum, SMB_NTQUOTA_LIST
 		((curdata)&&(curdata_count>=8)&&(offset>0));
 		curdata +=offset,curdata_count -= offset) {
 		ZERO_STRUCT(qt);
-		if (!parse_user_quota_record(curdata, curdata_count, &offset, &qt)) {
+		if (!parse_user_quota_record((uint8_t *)curdata, curdata_count,
+					     &offset, &qt)) {
 			DEBUG(1,("Failed to parse the quota record\n"));
 			goto cleanup;
 		}
@@ -378,7 +371,9 @@ bool cli_list_user_quota(struct cli_state *cli, int quota_fnum, SMB_NTQUOTA_LIST
 			((curdata)&&(curdata_count>=8)&&(offset>0));
 			curdata +=offset,curdata_count -= offset) {
 			ZERO_STRUCT(qt);
-			if (!parse_user_quota_record(curdata, curdata_count, &offset, &qt)) {
+			if (!parse_user_quota_record((uint8_t *)curdata,
+						     curdata_count, &offset,
+						     &qt)) {
 				DEBUG(1,("Failed to parse the quota record\n"));
 				goto cleanup;
 			}
