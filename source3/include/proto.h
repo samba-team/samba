@@ -2256,7 +2256,8 @@ NTSTATUS cli_get_quota_handle(struct cli_state *cli, uint16_t *quota_fnum);
 void free_ntquota_list(SMB_NTQUOTA_LIST **qt_list);
 NTSTATUS cli_get_user_quota(struct cli_state *cli, int quota_fnum,
 			    SMB_NTQUOTA_STRUCT *pqt);
-bool cli_set_user_quota(struct cli_state *cli, int quota_fnum, SMB_NTQUOTA_STRUCT *pqt);
+NTSTATUS cli_set_user_quota(struct cli_state *cli, int quota_fnum,
+			    SMB_NTQUOTA_STRUCT *pqt);
 bool cli_list_user_quota(struct cli_state *cli, int quota_fnum, SMB_NTQUOTA_LIST **pqt_list);
 bool cli_get_fs_quota_info(struct cli_state *cli, int quota_fnum, SMB_NTQUOTA_STRUCT *pqt);
 bool cli_set_fs_quota_info(struct cli_state *cli, int quota_fnum, SMB_NTQUOTA_STRUCT *pqt);
