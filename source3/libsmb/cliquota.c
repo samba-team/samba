@@ -185,22 +185,22 @@ NTSTATUS cli_get_user_quota(struct cli_state *cli, int quota_fnum,
 	return status;
 }
 
-bool cli_set_user_quota(struct cli_state *cli, int quota_fnum, SMB_NTQUOTA_STRUCT *pqt)
+NTSTATUS cli_set_user_quota(struct cli_state *cli, int quota_fnum,
+			    SMB_NTQUOTA_STRUCT *pqt)
 {
-	bool ret = False;
-	uint16 setup;
-	char params[2];
-	char data[112];
-	char *rparam=NULL, *rdata=NULL;
-	unsigned int rparam_count=0, rdata_count=0;
+	uint16_t setup[1];
+	uint8_t params[2];
+	uint8_t data[112];
 	unsigned int sid_len;	
+	NTSTATUS status;
+
 	memset(data,'\0',112);
 
 	if (!cli||!pqt) {
 		smb_panic("cli_set_user_quota() called with NULL Pointer!");
 	}
 
-	setup = NT_TRANSACT_SET_USER_QUOTA;
+	SSVAL(setup + 0, 0, NT_TRANSACT_SET_USER_QUOTA);
 
 	SSVAL(params,0,quota_fnum);
 
@@ -211,37 +211,25 @@ bool cli_set_user_quota(struct cli_state *cli, int quota_fnum, SMB_NTQUOTA_STRUC
 	SBIG_UINT(data,16,pqt->usedspace);
 	SBIG_UINT(data,24,pqt->softlim);
 	SBIG_UINT(data,32,pqt->hardlim);
-	sid_linearize(data+40, sid_len, &pqt->sid);
+	sid_linearize((char *)data+40, sid_len, &pqt->sid);
 
-	if (!cli_send_nt_trans(cli, 
-			       NT_TRANSACT_SET_USER_QUOTA, 
-			       0, 
-			       &setup, 1, 0,
-			       params, 2, 0,
-			       data, 112, 0)) {
-		DEBUG(1,("Failed to send NT_TRANSACT_SET_USER_QUOTA\n"));
-		goto cleanup;
+	status = cli_trans(talloc_tos(), cli, SMBnttrans,
+			   NULL, -1, /* name, fid */
+			   NT_TRANSACT_SET_USER_QUOTA, 0,
+			   setup, 1, 0, /* setup */
+			   params, 2, 0, /* params */
+			   data, 112, 0, /* data */
+			   NULL,		/* recv_flags2 */
+			   NULL, 0, NULL,	/* rsetup */
+			   NULL, 0, NULL,	/* rparams */
+			   NULL, 0, NULL);	/* rdata */
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("NT_TRANSACT_SET_USER_QUOTA failed: %s\n",
+			  nt_errstr(status)));
 	}
 
-
-	if (!cli_receive_nt_trans(cli, 
-				  &rparam, &rparam_count,
-				  &rdata, &rdata_count)) {
-		DEBUG(1,("NT_TRANSACT_SET_USER_QUOTA failed\n"));
-		goto cleanup;
-	}
-
-	if (cli_is_error(cli)) {
-		ret = False;
-		goto cleanup;
-	} else {
-		ret = True;
-	}
-
-  cleanup:
-  	SAFE_FREE(rparam);
-	SAFE_FREE(rdata);
-	return ret;
+	return status;
 }
 
 bool cli_list_user_quota(struct cli_state *cli, int quota_fnum, SMB_NTQUOTA_LIST **pqt_list)

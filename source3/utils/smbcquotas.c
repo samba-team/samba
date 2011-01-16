@@ -283,9 +283,12 @@ static int do_quota(struct cli_state *cli,
 					break;
 				case QUOTA_SETLIM:
 					pqt->sid = qt.sid;
-					if (!cli_set_user_quota(cli, quota_fnum, pqt)) {
+					status = cli_set_user_quota(
+						cli, quota_fnum, pqt);
+					if (!NT_STATUS_IS_OK(status)) {
 						d_printf("%s cli_set_user_quota %s\n",
-							 cli_errstr(cli),username_str);
+							 nt_errstr(status),
+							 username_str);
 						return -1;
 					}
 					status = cli_get_user_quota(
