@@ -271,9 +271,12 @@ static int do_quota(struct cli_state *cli,
 
 			switch(cmd) {
 				case QUOTA_GET:
-					if (!cli_get_user_quota(cli, quota_fnum, &qt)) {
+					status = cli_get_user_quota(
+						cli, quota_fnum, &qt);
+					if (!NT_STATUS_IS_OK(status)) {
 						d_printf("%s cli_get_user_quota %s\n",
-							 cli_errstr(cli),username_str);
+							 nt_errstr(status),
+							 username_str);
 						return -1;
 					}
 					dump_ntquota(&qt,verbose,numeric,SidToString);
@@ -285,9 +288,12 @@ static int do_quota(struct cli_state *cli,
 							 cli_errstr(cli),username_str);
 						return -1;
 					}
-					if (!cli_get_user_quota(cli, quota_fnum, &qt)) {
+					status = cli_get_user_quota(
+						cli, quota_fnum, &qt);
+					if (!NT_STATUS_IS_OK(status)) {
 						d_printf("%s cli_get_user_quota %s\n",
-							 cli_errstr(cli),username_str);
+							 nt_errstr(status),
+							 username_str);
 						return -1;
 					}
 					dump_ntquota(&qt,verbose,numeric,SidToString);
