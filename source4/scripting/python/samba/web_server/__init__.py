@@ -20,17 +20,30 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-def __call__(environ, start_response):
+
+
+def render_placeholder(environ, start_response):
     status = '200 OK'
     response_headers = [('Content-type','text/html')]
     start_response(status, response_headers)
-    yield '<table>\n'
 
-    for key, value in environ.items():
-        if isinstance(value, str):
-            yield '\t<tr><td><b>%s</b></td><td>%s</td></tr>\n' % (key, value)
+    yield "<!doctype html>\n"
+    yield "<html>\n"
+    yield "  <title>The Samba web service</title>\n"
+    yield "</html>\n"
 
-    yield '</table>\n'
+    yield "<body>\n"
+    yield "<p>Welcome to this Samba web server.</p>\n"
+    yield "<p>This page is a simple placeholder. You probably want to install "
+    yield "SWAT. More information can be found "
+    yield "<a href='http://wiki.samba.org/index.php/SWAT'>on the wiki</a>.</p>"
+    yield "</p>\n"
+    yield "</body>\n"
+    yield "</html>\n"
+
+
+__call__ = render_placeholder
+
 
 if __name__ == '__main__':
     from wsgiref import simple_server
