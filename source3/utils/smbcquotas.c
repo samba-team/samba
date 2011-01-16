@@ -340,9 +340,11 @@ static int do_quota(struct cli_state *cli,
 					}
 					qt.softlim = pqt->softlim;
 					qt.hardlim = pqt->hardlim;
-					if (!cli_set_fs_quota_info(cli, quota_fnum, &qt)) {
+					status = cli_set_fs_quota_info(
+						cli, quota_fnum, &qt);
+					if (!NT_STATUS_IS_OK(status)) {
 						d_printf("%s cli_set_fs_quota_info\n",
-							 cli_errstr(cli));
+							 nt_errstr(status));
 						return -1;
 					}
 					status = cli_get_fs_quota_info(
@@ -363,9 +365,11 @@ static int do_quota(struct cli_state *cli,
 						return -1;
 					}
 					qt.qflags = pqt->qflags;
-					if (!cli_set_fs_quota_info(cli, quota_fnum, &qt)) {
+					status = cli_set_fs_quota_info(
+						cli, quota_fnum, &qt);
+					if (!NT_STATUS_IS_OK(status)) {
 						d_printf("%s cli_set_fs_quota_info\n",
-							 cli_errstr(cli));
+							 nt_errstr(status));
 						return -1;
 					}
 					status = cli_get_fs_quota_info(
