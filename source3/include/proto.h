@@ -2296,12 +2296,12 @@ NTSTATUS cli_qpathinfo1(struct cli_state *cli,
 			time_t *write_time,
 			SMB_OFF_T *size,
 			uint16 *mode);
-bool cli_setpathinfo(struct cli_state *cli, const char *fname,
-                     time_t create_time,
-                     time_t access_time,
-                     time_t write_time,
-                     time_t change_time,
-                     uint16 mode);
+bool cli_setpathinfo_basic(struct cli_state *cli, const char *fname,
+			   time_t create_time,
+			   time_t access_time,
+			   time_t write_time,
+			   time_t change_time,
+			   uint16 mode);
 struct tevent_req *cli_qpathinfo2_send(TALLOC_CTX *mem_ctx,
 				       struct event_context *ev,
 				       struct cli_state *cli,
