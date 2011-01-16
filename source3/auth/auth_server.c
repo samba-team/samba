@@ -135,11 +135,11 @@ static struct cli_state *server_cryptkey(TALLOC_CTX *mem_ctx)
 	   this one...
 	*/
 
-	if (!NT_STATUS_IS_OK(cli_session_setup(cli, "", "", 0, "", 0,
-					       ""))) {
+	status = cli_session_setup(cli, "", "", 0, "", 0, "");
+	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(mutex);
 		DEBUG(0,("%s rejected the initial session setup (%s)\n",
-			 desthost, cli_errstr(cli)));
+			 desthost, nt_errstr(status)));
 		cli_shutdown(cli);
 		return NULL;
 	}
