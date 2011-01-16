@@ -2497,48 +2497,38 @@ NTSTATUS cli_locktype(struct cli_state *cli, uint16_t fnum,
 		      uint32_t offset, uint32_t len,
 		      int timeout, unsigned char locktype)
 {
-	char *p;
-	int saved_timeout = cli->timeout;
+	uint16_t vwv[8];
+	uint8_t bytes[10];
+	NTSTATUS status;
+	int saved_timeout;
 
-	memset(cli->outbuf,'\0',smb_size);
-	memset(cli->inbuf,'\0', smb_size);
+	SCVAL(vwv + 0, 0, 0xff);
+	SCVAL(vwv + 0, 1, 0);
+	SSVAL(vwv + 1, 0, 0);
+	SSVAL(vwv + 2, 0, fnum);
+	SCVAL(vwv + 3, 0, locktype);
+	SCVAL(vwv + 3, 1, 0);
+	SIVALS(vwv + 4, 0, timeout);
+	SSVAL(vwv + 6, 0, 0);
+	SSVAL(vwv + 7, 0, 1);
 
-	cli_set_message(cli->outbuf,8,0,True);
+	SSVAL(bytes, 0, cli->pid);
+	SIVAL(bytes, 2, offset);
+	SIVAL(bytes, 6, len);
 
-	SCVAL(cli->outbuf,smb_com,SMBlockingX);
-	SSVAL(cli->outbuf,smb_tid,cli->cnum);
-	cli_setup_packet(cli);
-
-	SCVAL(cli->outbuf,smb_vwv0,0xFF);
-	SSVAL(cli->outbuf,smb_vwv2,fnum);
-	SCVAL(cli->outbuf,smb_vwv3,locktype);
-	SIVALS(cli->outbuf, smb_vwv4, timeout);
-	SSVAL(cli->outbuf,smb_vwv6,0);
-	SSVAL(cli->outbuf,smb_vwv7,1);
-
-	p = smb_buf(cli->outbuf);
-	SSVAL(p, 0, cli->pid);
-	SIVAL(p, 2, offset);
-	SIVAL(p, 6, len);
-
-	p += 10;
-
-	cli_setup_bcc(cli, p);
-
-	cli_send_smb(cli);
+	saved_timeout = cli->timeout;
 
 	if (timeout != 0) {
-		cli->timeout = (timeout == -1) ? 0x7FFFFFFF : (timeout + 2*1000);
+		cli->timeout = (timeout == -1)
+			? 0x7FFFFFFF : (timeout + 2*1000);
 	}
 
-	if (!cli_receive_smb(cli)) {
-		cli->timeout = saved_timeout;
-		return NT_STATUS_UNSUCCESSFUL;
-	}
+	status = cli_smb(talloc_tos(), cli, SMBlockingX, 0, 8, vwv,
+			 10, bytes, NULL, 0, NULL, NULL, NULL, NULL);
 
 	cli->timeout = saved_timeout;
 
-	return cli_nt_error(cli);
+	return status;
 }
 
 /****************************************************************************
