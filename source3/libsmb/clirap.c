@@ -656,44 +656,16 @@ NTSTATUS cli_qpathinfo1(struct cli_state *cli,
  Send a setpathinfo call.
 ****************************************************************************/
 
-bool cli_setpathinfo_basic(struct cli_state *cli, const char *fname,
-			   time_t create_time,
-			   time_t access_time,
-			   time_t write_time,
-			   time_t change_time,
-			   uint16 mode)
+NTSTATUS cli_setpathinfo_basic(struct cli_state *cli, const char *fname,
+			       time_t create_time,
+			       time_t access_time,
+			       time_t write_time,
+			       time_t change_time,
+			       uint16 mode)
 {
 	unsigned int data_len = 0;
-	unsigned int param_len = 0;
-	unsigned int rparam_len, rdata_len;
-	uint16 setup = TRANSACT2_SETPATHINFO;
-	char *param;
 	char data[40];
-	char *rparam=NULL, *rdata=NULL;
-	int count=8;
-	bool ret;
 	char *p;
-	size_t nlen = 2*(strlen(fname)+1);
-
-	param = SMB_MALLOC_ARRAY(char, 6+nlen+2);
-	if (!param) {
-		return false;
-	}
-	memset(param, '\0', 6);
-	memset(data, 0, sizeof(data));
-
-        p = param;
-
-        /* Add the information level */
-	SSVAL(p, 0, SMB_FILE_BASIC_INFORMATION);
-
-        /* Skip reserved */
-	p += 6;
-
-        /* Add the file name */
-	p += clistr_push(cli, p, fname, nlen, STR_TERMINATE);
-
-	param_len = PTR_DIFF(p, param);
 
         p = data;
 
@@ -722,37 +694,8 @@ bool cli_setpathinfo_basic(struct cli_state *cli, const char *fname,
 
         data_len = PTR_DIFF(p, data);
 
-	do {
-		ret = (cli_send_trans(cli, SMBtrans2,
-				      NULL,           /* Name */
-				      -1, 0,          /* fid, flags */
-				      &setup, 1, 0,   /* setup, length, max */
-				      param, param_len, 10, /* param, length, max */
-				      data, data_len, cli->max_xmit /* data, length, max */
-				      ) &&
-		       cli_receive_trans(cli, SMBtrans2,
-					 &rparam, &rparam_len,
-					 &rdata, &rdata_len));
-		if (!cli_is_dos_error(cli)) break;
-		if (!ret) {
-			/* we need to work around a Win95 bug - sometimes
-			   it gives ERRSRV/ERRerror temprarily */
-			uint8 eclass;
-			uint32 ecode;
-			cli_dos_error(cli, &eclass, &ecode);
-			if (eclass != ERRSRV || ecode != ERRerror) break;
-			smb_msleep(100);
-		}
-	} while (count-- && ret==False);
-
-	SAFE_FREE(param);
-	if (!ret) {
-		return False;
-	}
-
-	SAFE_FREE(rdata);
-	SAFE_FREE(rparam);
-	return True;
+	return cli_setpathinfo(cli, SMB_FILE_BASIC_INFORMATION, fname,
+			       (uint8_t *)data, data_len);
 }
 
 /****************************************************************************
