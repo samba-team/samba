@@ -1786,6 +1786,11 @@ struct tevent_req *cli_setpathinfo_send(TALLOC_CTX *mem_ctx,
 					uint8_t *data,
 					size_t data_len);
 NTSTATUS cli_setpathinfo_recv(struct tevent_req *req);
+NTSTATUS cli_setpathinfo(struct cli_state *cli,
+			 uint16_t level,
+			 const char *path,
+			 uint8_t *data,
+			 size_t data_len);
 
 struct tevent_req *cli_posix_symlink_send(TALLOC_CTX *mem_ctx,
 					struct event_context *ev,
