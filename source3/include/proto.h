@@ -2588,15 +2588,6 @@ size_t clistr_align_out(struct cli_state *cli, const void *p, int flags);
 
 /* The following definitions come from libsmb/clitrans.c  */
 
-bool cli_send_trans(struct cli_state *cli, int trans,
-		    const char *pipe_name,
-		    int fid, int flags,
-		    uint16 *setup, unsigned int lsetup, unsigned int msetup,
-		    const char *param, unsigned int lparam, unsigned int mparam,
-		    const char *data, unsigned int ldata, unsigned int mdata);
-bool cli_receive_trans(struct cli_state *cli,int trans,
-                              char **param, unsigned int *param_len,
-                              char **data, unsigned int *data_len);
 struct tevent_req *cli_trans_send(
 	TALLOC_CTX *mem_ctx, struct event_context *ev,
 	struct cli_state *cli, uint8_t cmd,
