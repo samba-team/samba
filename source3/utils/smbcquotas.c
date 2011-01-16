@@ -227,6 +227,105 @@ static int parse_quota_set(TALLOC_CTX *ctx,
 	return 0;
 }
 
+
+static const char *quota_str_static(uint64_t val, bool special, bool _numeric)
+{
+	const char *result;
+
+	if (!_numeric&&special&&(val == SMB_NTQUOTAS_NO_LIMIT)) {
+		return "NO LIMIT";
+	}
+	result = talloc_asprintf(talloc_tos(), "%"PRIu64, val);
+	SMB_ASSERT(result != NULL);
+	return result;
+}
+
+static void dump_ntquota(SMB_NTQUOTA_STRUCT *qt, bool _verbose,
+			 bool _numeric,
+			 void (*_sidtostring)(fstring str,
+					      struct dom_sid *sid,
+					      bool _numeric))
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+
+	if (!qt) {
+		smb_panic("dump_ntquota() called with NULL pointer");
+	}
+
+	switch (qt->qtype) {
+	case SMB_USER_FS_QUOTA_TYPE:
+	{
+		d_printf("File System QUOTAS:\n");
+		d_printf("Limits:\n");
+		d_printf(" Default Soft Limit: %15s\n",
+			 quota_str_static(qt->softlim,True,_numeric));
+		d_printf(" Default Hard Limit: %15s\n",
+			 quota_str_static(qt->hardlim,True,_numeric));
+		d_printf("Quota Flags:\n");
+		d_printf(" Quotas Enabled: %s\n",
+			 ((qt->qflags&QUOTAS_ENABLED)
+			  ||(qt->qflags&QUOTAS_DENY_DISK))?"On":"Off");
+		d_printf(" Deny Disk:      %s\n",
+			 (qt->qflags&QUOTAS_DENY_DISK)?"On":"Off");
+		d_printf(" Log Soft Limit: %s\n",
+			 (qt->qflags&QUOTAS_LOG_THRESHOLD)?"On":"Off");
+		d_printf(" Log Hard Limit: %s\n",
+			 (qt->qflags&QUOTAS_LOG_LIMIT)?"On":"Off");
+	}
+	break;
+	case SMB_USER_QUOTA_TYPE:
+	{
+		fstring username_str = {0};
+
+		if (_sidtostring) {
+			_sidtostring(username_str,&qt->sid,_numeric);
+		} else {
+			sid_to_fstring(username_str, &qt->sid);
+		}
+
+		if (_verbose) {
+			d_printf("Quotas for User: %s\n",username_str);
+			d_printf("Used Space: %15s\n",
+				 quota_str_static(qt->usedspace,False,
+						  _numeric));
+			d_printf("Soft Limit: %15s\n",
+				 quota_str_static(qt->softlim,True,
+						  _numeric));
+			d_printf("Hard Limit: %15s\n",
+				 quota_str_static(qt->hardlim,True,_numeric));
+		} else {
+			d_printf("%-30s: ",username_str);
+			d_printf("%15s/",quota_str_static(
+					 qt->usedspace,False,_numeric));
+			d_printf("%15s/",quota_str_static(
+					 qt->softlim,True,_numeric));
+			d_printf("%15s\n",quota_str_static(
+					 qt->hardlim,True,_numeric));
+		}
+	}
+	break;
+	default:
+		d_printf("dump_ntquota() invalid qtype(%d)\n",qt->qtype);
+	}
+	TALLOC_FREE(frame);
+	return;
+}
+
+static void dump_ntquota_list(SMB_NTQUOTA_LIST **qtl, bool _verbose,
+			      bool _numeric,
+			      void (*_sidtostring)(fstring str,
+						   struct dom_sid *sid,
+						   bool _numeric))
+{
+	SMB_NTQUOTA_LIST *cur;
+
+	for (cur = *qtl;cur;cur = cur->next) {
+		if (cur->quotas)
+			dump_ntquota(cur->quotas,_verbose,_numeric,
+				     _sidtostring);
+	}
+}
+
 static int do_quota(struct cli_state *cli,
 		enum SMB_QUOTA_TYPE qtype,
 		uint16 cmd,
