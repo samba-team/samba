@@ -2592,15 +2592,6 @@ bool cli_send_trans(struct cli_state *cli, int trans,
 bool cli_receive_trans(struct cli_state *cli,int trans,
                               char **param, unsigned int *param_len,
                               char **data, unsigned int *data_len);
-bool cli_send_nt_trans(struct cli_state *cli,
-		       int function,
-		       int flags,
-		       uint16 *setup, unsigned int lsetup, unsigned int msetup,
-		       char *param, unsigned int lparam, unsigned int mparam,
-		       char *data, unsigned int ldata, unsigned int mdata);
-bool cli_receive_nt_trans(struct cli_state *cli,
-			  char **param, unsigned int *param_len,
-			  char **data, unsigned int *data_len);
 struct tevent_req *cli_trans_send(
 	TALLOC_CTX *mem_ctx, struct event_context *ev,
 	struct cli_state *cli, uint8_t cmd,
