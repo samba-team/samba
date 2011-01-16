@@ -310,6 +310,8 @@ static void websrv_task_init(struct task_server *task)
 	wdata = talloc_zero(task, struct web_server_data);
 	if (wdata == NULL) goto failed;
 
+	task->private_data = wdata;
+
 	if (lpcfg_interfaces(task->lp_ctx) && lpcfg_bind_interfaces_only(task->lp_ctx)) {
 		int num_interfaces;
 		int i;
@@ -326,7 +328,7 @@ static void websrv_task_init(struct task_server *task)
 						     &web_stream_ops, 
 						     "ipv4", address, 
 						     &port, lpcfg_socket_options(task->lp_ctx),
-						     wdata);
+						     task);
 			if (!NT_STATUS_IS_OK(status)) goto failed;
 		}
 
@@ -337,14 +339,15 @@ static void websrv_task_init(struct task_server *task)
 					     &web_stream_ops,
 					     "ipv4", lpcfg_socket_address(task->lp_ctx),
 					     &port, lpcfg_socket_options(task->lp_ctx),
-					     wdata);
+					     task);
 		if (!NT_STATUS_IS_OK(status)) goto failed;
 	}
-	
+
 	wdata->tls_params = tls_initialise(wdata, task->lp_ctx);
 	if (wdata->tls_params == NULL) goto failed;
 
 	if (!wsgi_initialize(wdata)) goto failed;
+
 
 	return;
 
