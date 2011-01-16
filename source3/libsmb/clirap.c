@@ -656,12 +656,12 @@ NTSTATUS cli_qpathinfo1(struct cli_state *cli,
  Send a setpathinfo call.
 ****************************************************************************/
 
-bool cli_setpathinfo(struct cli_state *cli, const char *fname,
-                     time_t create_time,
-                     time_t access_time,
-                     time_t write_time,
-                     time_t change_time,
-                     uint16 mode)
+bool cli_setpathinfo_basic(struct cli_state *cli, const char *fname,
+			   time_t create_time,
+			   time_t access_time,
+			   time_t write_time,
+			   time_t change_time,
+			   uint16 mode)
 {
 	unsigned int data_len = 0;
 	unsigned int param_len = 0;
