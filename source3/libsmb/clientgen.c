@@ -766,25 +766,6 @@ bool cli_set_case_sensitive(struct cli_state *cli, bool case_sensitive)
 	return ret;
 }
 
-/****************************************************************************
-Send a keepalive packet to the server
-****************************************************************************/
-
-bool cli_send_keepalive(struct cli_state *cli)
-{
-        if (cli->fd == -1) {
-                DEBUG(3, ("cli_send_keepalive: fd == -1\n"));
-                return false;
-        }
-        if (!send_keepalive(cli->fd)) {
-                close(cli->fd);
-                cli->fd = -1;
-                DEBUG(0,("Error sending keepalive packet to client.\n"));
-                return false;
-        }
-        return true;
-}
-
 struct cli_echo_state {
 	uint16_t vwv[1];
 	DATA_BLOB data;
