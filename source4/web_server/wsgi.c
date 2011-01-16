@@ -26,6 +26,7 @@
 #include "../lib/util/dlinklist.h"
 #include "lib/tls/tls.h"
 #include "lib/tsocket/tsocket.h"
+#include "scripting/python/modules.h"
 
 /* There's no Py_ssize_t in 2.4, apparently */
 #if PY_MAJOR_VERSION == 2 && PY_MINOR_VERSION < 5
@@ -380,9 +381,11 @@ static void wsgi_process_http_input(struct web_server_data *wdata,
 
 bool wsgi_initialize(struct web_server_data *wdata)
 {
-	PyObject *py_swat;
+	PyObject *py_web_server;
 
 	Py_Initialize();
+
+	py_update_path("bin"); /* FIXME: Can't assume this is always the case */
 
 	if (PyType_Ready(&web_request_Type) < 0)
 		return false;
@@ -394,11 +397,11 @@ bool wsgi_initialize(struct web_server_data *wdata)
 		return false;
 
 	wdata->http_process_input = wsgi_process_http_input;
-	py_swat = PyImport_Import(PyString_FromString("swat"));
-	if (py_swat == NULL) {
-		DEBUG(0, ("Unable to find SWAT\n"));
+	py_web_server = PyImport_ImportModule("samba.web_server");
+	if (py_web_server == NULL) {
+		DEBUG(0, ("Unable to find web server\n"));
 		return false;
 	}
-	wdata->private_data = py_swat;
+	wdata->private_data = py_web_server;
 	return true;
 }
