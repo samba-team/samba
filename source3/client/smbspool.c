@@ -558,6 +558,7 @@ smb_print(struct cli_state * cli,	/* I - SMB connection */
 	                tbytes;	/* Total bytes read */
 	char            buffer[8192],	/* Buffer for copy */
 	               *ptr;	/* Pointer into title */
+	NTSTATUS nt_status;
 
 
 	/*
@@ -574,10 +575,12 @@ smb_print(struct cli_state * cli,	/* I - SMB connection */
          * Open the printer device...
          */
 
-	if (!NT_STATUS_IS_OK(cli_open(cli, title, O_RDWR | O_CREAT | O_TRUNC, DENY_NONE, &fnum))) {
+	nt_status = cli_open(cli, title, O_RDWR | O_CREAT | O_TRUNC, DENY_NONE,
+			  &fnum);
+	if (!NT_STATUS_IS_OK(nt_status)) {
 		fprintf(stderr, "ERROR: %s opening remote spool %s\n",
-			cli_errstr(cli), title);
-		return (get_exit_code(cli, cli_nt_error(cli)));
+			nt_errstr(nt_status), title);
+		return get_exit_code(cli, nt_status);
 	}
 
 	/*
@@ -602,10 +605,11 @@ smb_print(struct cli_state * cli,	/* I - SMB connection */
 		tbytes += nbytes;
 	}
 
-	if (!NT_STATUS_IS_OK(cli_close(cli, fnum))) {
+	nt_status = cli_close(cli, fnum);
+	if (!NT_STATUS_IS_OK(nt_status)) {
 		fprintf(stderr, "ERROR: %s closing remote spool %s\n",
-			cli_errstr(cli), title);
-		return (get_exit_code(cli, cli_nt_error(cli)));
+			nt_errstr(nt_status), title);
+		return get_exit_code(cli, nt_status);
 	} else {
 		return (0);
 	}
