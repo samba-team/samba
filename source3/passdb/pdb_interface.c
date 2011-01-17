@@ -235,7 +235,7 @@ static bool pdb_try_account_unlock(struct samu *sampass)
 {
 	uint32_t acb_info = pdb_get_acct_ctrl(sampass);
 
-	if (acb_info & (ACB_NORMAL|ACB_AUTOLOCK)) {
+	if ((acb_info & ACB_NORMAL) && (acb_info & ACB_AUTOLOCK)) {
 		uint32_t lockout_duration;
 		time_t bad_password_time;
 		time_t now = time(NULL);
