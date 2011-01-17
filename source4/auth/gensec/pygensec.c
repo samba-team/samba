@@ -213,20 +213,20 @@ static PyObject *py_gensec_session_info(PyObject *self)
 
 static PyObject *py_gensec_start_mech_by_name(PyObject *self, PyObject *args)
 {
-    char *name;
-    struct gensec_security *security = py_talloc_get_type(self, struct gensec_security);
-    NTSTATUS status;
+	char *name;
+	struct gensec_security *security = py_talloc_get_type(self, struct gensec_security);
+	NTSTATUS status;
 
-    if (!PyArg_ParseTuple(args, "s", &name))
-        return NULL;
+	if (!PyArg_ParseTuple(args, "s", &name))
+		return NULL;
 
-    status = gensec_start_mech_by_name(security, name);
-    if (!NT_STATUS_IS_OK(status)) {
-        PyErr_SetNTSTATUS(status);
-        return NULL;
-    }
+	status = gensec_start_mech_by_name(security, name);
+	if (!NT_STATUS_IS_OK(status)) {
+		PyErr_SetNTSTATUS(status);
+		return NULL;
+	}
 
-    Py_RETURN_NONE;
+	Py_RETURN_NONE;
 }
 
 static PyObject *py_gensec_start_mech_by_authtype(PyObject *self, PyObject *args)
