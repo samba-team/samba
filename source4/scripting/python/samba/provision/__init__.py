@@ -106,11 +106,9 @@ def find_setup_dir():
 # "get_schema_descriptor" is located in "schema.py"
 
 def get_sites_descriptor(domain_sid):
-    sddl = "O:EAG:EAD:AI(A;;RPLCLORC;;;AU)" \
+    sddl = "D:(A;;RPLCLORC;;;AU)" \
            "(A;;RPWPCRCCLCLORCWOWDSW;;;EA)" \
            "(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)" \
-           "(A;CIID;RPWPCRCCDCLCLORCWOWDSDDTSW;;;EA)" \
-           "(A;CIID;RPWPCRCCLCLORCWOWDSDSW;;;DA)" \
            "S:AI(AU;CISA;CCDCSDDT;;;WD)" \
            "(OU;CIIOSA;CR;;f0f8ffab-1191-11d0-a060-00aa006c33ed;WD)" \
            "(OU;CIIOSA;WP;f30e3bbe-9ff0-11d1-b603-0000f80367c1;bf967ab3-0de6-11d0-a285-00aa003049e2;WD)" \
