@@ -1075,8 +1075,8 @@ static int samldb_prim_group_change(struct samldb_ctx *ac)
 
 	/* Fetch informations from the existing object */
 
-	ret = ldb_search(ldb, ac, &res, ac->msg->dn, LDB_SCOPE_BASE, attrs,
-			 NULL);
+	ret = dsdb_module_search(ac->module, ac, &res, ac->msg->dn, LDB_SCOPE_BASE, attrs,
+				 DSDB_FLAG_NEXT_MODULE, ac->req, NULL);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
@@ -1432,8 +1432,9 @@ static int samldb_sam_accountname_check(struct samldb_ctx *ac)
 
 	/* Make sure that a "sAMAccountName" is only used once */
 
-	ret = ldb_search(ldb, ac, &res, NULL, LDB_SCOPE_SUBTREE, no_attrs,
-			 "(sAMAccountName=%s)", enc_str);
+	ret = dsdb_module_search(ac->module, ac, &res, NULL, LDB_SCOPE_SUBTREE, no_attrs,
+				 DSDB_FLAG_NEXT_MODULE, ac->req,
+				 "(sAMAccountName=%s)", enc_str);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
@@ -1467,8 +1468,8 @@ static int samldb_member_check(struct samldb_ctx *ac)
 
 	/* Fetch informations from the existing object */
 
-	ret = ldb_search(ldb, ac, &res, ac->msg->dn, LDB_SCOPE_BASE, attrs,
-			 NULL);
+	ret = dsdb_module_search(ac->module, ac, &res, ac->msg->dn, LDB_SCOPE_BASE, attrs,
+				 DSDB_FLAG_NEXT_MODULE, ac->req, NULL);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
@@ -1582,8 +1583,8 @@ static int samldb_description_check(struct samldb_ctx *ac)
 
 	/* Fetch informations from the existing object */
 
-	ret = ldb_search(ldb, ac, &res, ac->msg->dn, LDB_SCOPE_BASE, attrs,
-			 NULL);
+	ret = dsdb_module_search(ac->module, ac, &res, ac->msg->dn, LDB_SCOPE_BASE, attrs,
+				 DSDB_FLAG_NEXT_MODULE, ac->req, NULL);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
@@ -1782,8 +1783,8 @@ static int samldb_service_principal_names_change(struct samldb_ctx *ac)
 	}
 
 	/* Fetch the "servicePrincipalName"s if any */
-	ret = ldb_search(ldb, ac, &res, ac->msg->dn, LDB_SCOPE_BASE, attrs,
-			 NULL);
+	ret = dsdb_module_search(ac->module, ac, &res, ac->msg->dn, LDB_SCOPE_BASE, attrs,
+				 DSDB_FLAG_NEXT_MODULE, ac->req, NULL);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}

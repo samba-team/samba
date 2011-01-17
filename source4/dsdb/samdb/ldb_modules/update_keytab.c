@@ -34,6 +34,7 @@
 #include "auth/credentials/credentials_krb5.h"
 #include "system/kerberos.h"
 #include "auth/kerberos/kerberos.h"
+#include "util.h"
 
 struct dn_list {
 	struct ldb_message *msg;
@@ -78,7 +79,9 @@ static struct update_kt_ctx *update_kt_ctx_init(struct ldb_module *module,
  * Just hope we are lucky and nothing breaks (using the tdb backend masks a lot
  * of async issues). -SSS
  */
-static int add_modified(struct ldb_module *module, struct ldb_dn *dn, bool do_delete) {
+static int add_modified(struct ldb_module *module, struct ldb_dn *dn, bool do_delete,
+			struct ldb_request *parent)
+{
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	struct update_kt_private *data = talloc_get_type(ldb_module_get_private(module), struct update_kt_private);
 	struct dn_list *item;
@@ -92,8 +95,10 @@ static int add_modified(struct ldb_module *module, struct ldb_dn *dn, bool do_de
 		return ldb_oom(ldb);
 	}
 
-	ret = ldb_search(ldb, data, &res,
-			 dn, LDB_SCOPE_BASE, NULL, "%s", filter);
+	ret = dsdb_module_search(module, data, &res,
+				 dn, LDB_SCOPE_BASE, NULL,
+				 DSDB_FLAG_NEXT_MODULE, parent,
+				 "%s", filter);
 	talloc_free(filter);
 	if (ret != LDB_SUCCESS) {
 		return ret;
@@ -214,7 +219,7 @@ static int ukt_search_modified_callback(struct ldb_request *req,
 
 		if (ac->found) {
 			/* do the dirty sync job here :/ */
-			ret = add_modified(ac->module, ac->dn, ac->do_delete);
+			ret = add_modified(ac->module, ac->dn, ac->do_delete, ac->req);
 		}
 
 		if (ac->do_delete) {

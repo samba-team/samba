@@ -802,9 +802,9 @@ static int rootdse_init(struct ldb_module *module)
 
 	   Then stuff these values into an opaque
 	*/
-	ret = ldb_search(ldb, mem_ctx, &res,
-			 ldb_get_default_basedn(ldb),
-			 LDB_SCOPE_BASE, attrs, NULL);
+	ret = dsdb_module_search(module, mem_ctx, &res,
+				 ldb_get_default_basedn(ldb),
+				 LDB_SCOPE_BASE, attrs, DSDB_FLAG_NEXT_MODULE, NULL, NULL);
 	if (ret == LDB_SUCCESS && res->count == 1) {
 		int domain_behaviour_version
 			= ldb_msg_find_attr_as_int(res->msgs[0],
@@ -824,9 +824,9 @@ static int rootdse_init(struct ldb_module *module)
 		}
 	}
 
-	ret = ldb_search(ldb, mem_ctx, &res,
-			 samdb_partitions_dn(ldb, mem_ctx),
-			 LDB_SCOPE_BASE, attrs, NULL);
+	ret = dsdb_module_search(module, mem_ctx, &res,
+				 samdb_partitions_dn(ldb, mem_ctx),
+				 LDB_SCOPE_BASE, attrs, DSDB_FLAG_NEXT_MODULE, NULL, NULL);
 	if (ret == LDB_SUCCESS && res->count == 1) {
 		int forest_behaviour_version
 			= ldb_msg_find_attr_as_int(res->msgs[0],
@@ -846,16 +846,16 @@ static int rootdse_init(struct ldb_module *module)
 		}
 	}
 
-	ret = ldb_search(ldb, mem_ctx, &res,
-			 ldb_dn_new(mem_ctx, ldb, ""),
-			 LDB_SCOPE_BASE, ds_attrs, NULL);
+	ret = dsdb_module_search(module, mem_ctx, &res,
+				 ldb_dn_new(mem_ctx, ldb, ""),
+				 LDB_SCOPE_BASE, ds_attrs, DSDB_FLAG_NEXT_MODULE, NULL, NULL);
 	if (ret == LDB_SUCCESS && res->count == 1) {
 		struct ldb_dn *ds_dn
 			= ldb_msg_find_attr_as_dn(ldb, mem_ctx, res->msgs[0],
 						  "dsServiceName");
 		if (ds_dn) {
-			ret = ldb_search(ldb, mem_ctx, &res, ds_dn,
-					 LDB_SCOPE_BASE, attrs, NULL);
+			ret = dsdb_module_search(module, mem_ctx, &res, ds_dn,
+						 LDB_SCOPE_BASE, attrs, DSDB_FLAG_NEXT_MODULE, NULL, NULL);
 			if (ret == LDB_SUCCESS && res->count == 1) {
 				int domain_controller_behaviour_version
 					= ldb_msg_find_attr_as_int(res->msgs[0],
