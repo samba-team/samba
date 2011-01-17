@@ -190,10 +190,6 @@ int ldb_should_b64_encode(struct ldb_context *ldb, const struct ldb_val *val)
 	unsigned int i;
 	uint8_t *p = val->data;
 
-	if (ldb->flags & LDB_FLG_SHOW_BINARY) {
-		return 0;
-	}
-
 	if (val->length == 0) {
 		return 0;
 	}
