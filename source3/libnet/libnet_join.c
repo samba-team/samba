@@ -23,7 +23,7 @@
 #include "librpc/gen_ndr/ndr_libnet_join.h"
 #include "libnet/libnet_join.h"
 #include "libcli/auth/libcli_auth.h"
-#include "../librpc/gen_ndr/cli_samr.h"
+#include "../librpc/gen_ndr/ndr_samr_c.h"
 #include "rpc_client/init_samr.h"
 #include "../librpc/gen_ndr/cli_lsa.h"
 #include "rpc_client/cli_lsarpc.h"
@@ -830,7 +830,7 @@ static NTSTATUS libnet_join_joindomain_rpc(TALLOC_CTX *mem_ctx,
 {
 	struct rpc_pipe_client *pipe_hnd = NULL;
 	struct policy_handle sam_pol, domain_pol, user_pol;
-	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS status = NT_STATUS_UNSUCCESSFUL, result;
 	char *acct_name;
 	struct lsa_String lsa_acct_name;
 	uint32_t user_rid;
@@ -838,6 +838,7 @@ static NTSTATUS libnet_join_joindomain_rpc(TALLOC_CTX *mem_ctx,
 	struct samr_Ids user_rids;
 	struct samr_Ids name_types;
 	union samr_UserInfo user_info;
+	struct dcerpc_binding_handle *b = NULL;
 
 	struct samr_CryptPassword crypt_pwd;
 	struct samr_CryptPasswordEx crypt_pwd_ex;
@@ -872,23 +873,35 @@ static NTSTATUS libnet_join_joindomain_rpc(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	status = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
+	b = pipe_hnd->binding_handle;
+
+	status = dcerpc_samr_Connect2(b, mem_ctx,
 				      pipe_hnd->desthost,
 				      SAMR_ACCESS_ENUM_DOMAINS
 				      | SAMR_ACCESS_LOOKUP_DOMAIN,
-				      &sam_pol);
+				      &sam_pol,
+				      &result);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
+	if (!NT_STATUS_IS_OK(result)) {
+		status = result;
+		goto done;
+	}
 
-	status = rpccli_samr_OpenDomain(pipe_hnd, mem_ctx,
+	status = dcerpc_samr_OpenDomain(b, mem_ctx,
 					&sam_pol,
 					SAMR_DOMAIN_ACCESS_LOOKUP_INFO_1
 					| SAMR_DOMAIN_ACCESS_CREATE_USER
 					| SAMR_DOMAIN_ACCESS_OPEN_ACCOUNT,
 					r->out.domain_sid,
-					&domain_pol);
+					&domain_pol,
+					&result);
 	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
+	if (!NT_STATUS_IS_OK(result)) {
+		status = result;
 		goto done;
 	}
 
@@ -911,14 +924,20 @@ static NTSTATUS libnet_join_joindomain_rpc(TALLOC_CTX *mem_ctx,
 		DEBUG(10,("Creating account with desired access mask: %d\n",
 			access_desired));
 
-		status = rpccli_samr_CreateUser2(pipe_hnd, mem_ctx,
+		status = dcerpc_samr_CreateUser2(b, mem_ctx,
 						 &domain_pol,
 						 &lsa_acct_name,
 						 acct_flags,
 						 access_desired,
 						 &user_pol,
 						 &access_granted,
-						 &user_rid);
+						 &user_rid,
+						 &result);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto done;
+		}
+
+		status = result;
 		if (!NT_STATUS_IS_OK(status) &&
 		    !NT_STATUS_EQUAL(status, NT_STATUS_USER_EXISTS)) {
 
@@ -948,17 +967,22 @@ static NTSTATUS libnet_join_joindomain_rpc(TALLOC_CTX *mem_ctx,
 		/* We *must* do this.... don't ask... */
 
 		if (NT_STATUS_IS_OK(status)) {
-			rpccli_samr_Close(pipe_hnd, mem_ctx, &user_pol);
+			dcerpc_samr_Close(b, mem_ctx, &user_pol, &result);
 		}
 	}
 
-	status = rpccli_samr_LookupNames(pipe_hnd, mem_ctx,
+	status = dcerpc_samr_LookupNames(b, mem_ctx,
 					 &domain_pol,
 					 1,
 					 &lsa_acct_name,
 					 &user_rids,
-					 &name_types);
+					 &name_types,
+					 &result);
 	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
+	if (!NT_STATUS_IS_OK(result)) {
+		status = result;
 		goto done;
 	}
 
@@ -973,12 +997,17 @@ static NTSTATUS libnet_join_joindomain_rpc(TALLOC_CTX *mem_ctx,
 
 	/* Open handle on user */
 
-	status = rpccli_samr_OpenUser(pipe_hnd, mem_ctx,
+	status = dcerpc_samr_OpenUser(b, mem_ctx,
 				      &domain_pol,
 				      SEC_FLAG_MAXIMUM_ALLOWED,
 				      user_rid,
-				      &user_pol);
+				      &user_pol,
+				      &result);
 	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
+	if (!NT_STATUS_IS_OK(result)) {
+		status = result;
 		goto done;
 	}
 
@@ -990,15 +1019,28 @@ static NTSTATUS libnet_join_joindomain_rpc(TALLOC_CTX *mem_ctx,
 	ZERO_STRUCT(user_info.info16);
 	user_info.info16.acct_flags = acct_flags;
 
-	status = rpccli_samr_SetUserInfo(pipe_hnd, mem_ctx,
+	status = dcerpc_samr_SetUserInfo(b, mem_ctx,
 					 &user_pol,
 					 16,
-					 &user_info);
-
+					 &user_info,
+					 &result);
 	if (!NT_STATUS_IS_OK(status)) {
+		dcerpc_samr_DeleteUser(b, mem_ctx,
+				       &user_pol,
+				       &result);
 
-		rpccli_samr_DeleteUser(pipe_hnd, mem_ctx,
-				       &user_pol);
+		libnet_join_set_error_string(mem_ctx, r,
+			"Failed to set account flags for machine account (%s)\n",
+			nt_errstr(status));
+		goto done;
+	}
+
+	if (!NT_STATUS_IS_OK(result)) {
+		status = result;
+
+		dcerpc_samr_DeleteUser(b, mem_ctx,
+				       &user_pol,
+				       &result);
 
 		libnet_join_set_error_string(mem_ctx, r,
 			"Failed to set account flags for machine account (%s)\n",
@@ -1015,10 +1057,11 @@ static NTSTATUS libnet_join_joindomain_rpc(TALLOC_CTX *mem_ctx,
 	user_info.info26.password = crypt_pwd_ex;
 	user_info.info26.password_expired = PASS_DONT_CHANGE_AT_NEXT_LOGON;
 
-	status = rpccli_samr_SetUserInfo2(pipe_hnd, mem_ctx,
+	status = dcerpc_samr_SetUserInfo2(b, mem_ctx,
 					  &user_pol,
 					  26,
-					  &user_info);
+					  &user_info,
+					  &result);
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS(DCERPC_FAULT_INVALID_TAG))) {
 
@@ -1031,16 +1074,30 @@ static NTSTATUS libnet_join_joindomain_rpc(TALLOC_CTX *mem_ctx,
 		user_info.info24.password = crypt_pwd;
 		user_info.info24.password_expired = PASS_DONT_CHANGE_AT_NEXT_LOGON;
 
-		status = rpccli_samr_SetUserInfo2(pipe_hnd, mem_ctx,
+		status = dcerpc_samr_SetUserInfo2(b, mem_ctx,
 						  &user_pol,
 						  24,
-						  &user_info);
+						  &user_info,
+						  &result);
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
 
-		rpccli_samr_DeleteUser(pipe_hnd, mem_ctx,
-				       &user_pol);
+		dcerpc_samr_DeleteUser(b, mem_ctx,
+				       &user_pol,
+				       &result);
+
+		libnet_join_set_error_string(mem_ctx, r,
+			"Failed to set password for machine account (%s)\n",
+			nt_errstr(status));
+		goto done;
+	}
+	if (!NT_STATUS_IS_OK(result)) {
+		status = result;
+
+		dcerpc_samr_DeleteUser(b, mem_ctx,
+				       &user_pol,
+				       &result);
 
 		libnet_join_set_error_string(mem_ctx, r,
 			"Failed to set password for machine account (%s)\n",
@@ -1056,13 +1113,13 @@ static NTSTATUS libnet_join_joindomain_rpc(TALLOC_CTX *mem_ctx,
 	}
 
 	if (is_valid_policy_hnd(&sam_pol)) {
-		rpccli_samr_Close(pipe_hnd, mem_ctx, &sam_pol);
+		dcerpc_samr_Close(b, mem_ctx, &sam_pol, &result);
 	}
 	if (is_valid_policy_hnd(&domain_pol)) {
-		rpccli_samr_Close(pipe_hnd, mem_ctx, &domain_pol);
+		dcerpc_samr_Close(b, mem_ctx, &domain_pol, &result);
 	}
 	if (is_valid_policy_hnd(&user_pol)) {
-		rpccli_samr_Close(pipe_hnd, mem_ctx, &user_pol);
+		dcerpc_samr_Close(b, mem_ctx, &user_pol, &result);
 	}
 	TALLOC_FREE(pipe_hnd);
 
@@ -1216,13 +1273,14 @@ static NTSTATUS libnet_join_unjoindomain_rpc(TALLOC_CTX *mem_ctx,
 	struct cli_state *cli = NULL;
 	struct rpc_pipe_client *pipe_hnd = NULL;
 	struct policy_handle sam_pol, domain_pol, user_pol;
-	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS status = NT_STATUS_UNSUCCESSFUL, result;
 	char *acct_name;
 	uint32_t user_rid;
 	struct lsa_String lsa_acct_name;
 	struct samr_Ids user_rids;
 	struct samr_Ids name_types;
 	union samr_UserInfo *info = NULL;
+	struct dcerpc_binding_handle *b;
 
 	ZERO_STRUCT(sam_pol);
 	ZERO_STRUCT(domain_pol);
@@ -1247,20 +1305,32 @@ static NTSTATUS libnet_join_unjoindomain_rpc(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	status = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
+	b = pipe_hnd->binding_handle;
+
+	status = dcerpc_samr_Connect2(b, mem_ctx,
 				      pipe_hnd->desthost,
 				      SEC_FLAG_MAXIMUM_ALLOWED,
-				      &sam_pol);
+				      &sam_pol,
+				      &result);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
+	if (!NT_STATUS_IS_OK(result)) {
+		status = result;
+		goto done;
+	}
 
-	status = rpccli_samr_OpenDomain(pipe_hnd, mem_ctx,
+	status = dcerpc_samr_OpenDomain(b, mem_ctx,
 					&sam_pol,
 					SEC_FLAG_MAXIMUM_ALLOWED,
 					r->in.domain_sid,
-					&domain_pol);
+					&domain_pol,
+					&result);
 	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
+	if (!NT_STATUS_IS_OK(result)) {
+		status = result;
 		goto done;
 	}
 
@@ -1271,14 +1341,19 @@ static NTSTATUS libnet_join_unjoindomain_rpc(TALLOC_CTX *mem_ctx,
 
 	init_lsa_String(&lsa_acct_name, acct_name);
 
-	status = rpccli_samr_LookupNames(pipe_hnd, mem_ctx,
+	status = dcerpc_samr_LookupNames(b, mem_ctx,
 					 &domain_pol,
 					 1,
 					 &lsa_acct_name,
 					 &user_rids,
-					 &name_types);
+					 &name_types,
+					 &result);
 
 	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
+	if (!NT_STATUS_IS_OK(result)) {
+		status = result;
 		goto done;
 	}
 
@@ -1293,23 +1368,34 @@ static NTSTATUS libnet_join_unjoindomain_rpc(TALLOC_CTX *mem_ctx,
 
 	/* Open handle on user */
 
-	status = rpccli_samr_OpenUser(pipe_hnd, mem_ctx,
+	status = dcerpc_samr_OpenUser(b, mem_ctx,
 				      &domain_pol,
 				      SEC_FLAG_MAXIMUM_ALLOWED,
 				      user_rid,
-				      &user_pol);
+				      &user_pol,
+				      &result);
 	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
+	if (!NT_STATUS_IS_OK(result)) {
+		status = result;
 		goto done;
 	}
 
 	/* Get user info */
 
-	status = rpccli_samr_QueryUserInfo(pipe_hnd, mem_ctx,
+	status = dcerpc_samr_QueryUserInfo(b, mem_ctx,
 					   &user_pol,
 					   16,
-					   &info);
+					   &info,
+					   &result);
 	if (!NT_STATUS_IS_OK(status)) {
-		rpccli_samr_Close(pipe_hnd, mem_ctx, &user_pol);
+		dcerpc_samr_Close(b, mem_ctx, &user_pol, &result);
+		goto done;
+	}
+	if (!NT_STATUS_IS_OK(result)) {
+		status = result;
+		dcerpc_samr_Close(b, mem_ctx, &user_pol, &result);
 		goto done;
 	}
 
@@ -1317,20 +1403,30 @@ static NTSTATUS libnet_join_unjoindomain_rpc(TALLOC_CTX *mem_ctx,
 
 	info->info16.acct_flags |= ACB_DISABLED;
 
-	status = rpccli_samr_SetUserInfo(pipe_hnd, mem_ctx,
+	status = dcerpc_samr_SetUserInfo(b, mem_ctx,
 					 &user_pol,
 					 16,
-					 info);
-
-	rpccli_samr_Close(pipe_hnd, mem_ctx, &user_pol);
+					 info,
+					 &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		dcerpc_samr_Close(b, mem_ctx, &user_pol, &result);
+		goto done;
+	}
+	if (!NT_STATUS_IS_OK(result)) {
+		status = result;
+		dcerpc_samr_Close(b, mem_ctx, &user_pol, &result);
+		goto done;
+	}
+	status = result;
+	dcerpc_samr_Close(b, mem_ctx, &user_pol, &result);
 
 done:
 	if (pipe_hnd) {
 		if (is_valid_policy_hnd(&domain_pol)) {
-			rpccli_samr_Close(pipe_hnd, mem_ctx, &domain_pol);
+			dcerpc_samr_Close(b, mem_ctx, &domain_pol, &result);
 		}
 		if (is_valid_policy_hnd(&sam_pol)) {
-			rpccli_samr_Close(pipe_hnd, mem_ctx, &sam_pol);
+			dcerpc_samr_Close(b, mem_ctx, &sam_pol, &result);
 		}
 		TALLOC_FREE(pipe_hnd);
 	}
