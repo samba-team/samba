@@ -27,7 +27,7 @@
 
 #include "includes.h"
 #include "smbd/globals.h"
-#include "../librpc/gen_ndr/cli_samr.h"
+#include "../librpc/gen_ndr/ndr_samr_c.h"
 #include "../librpc/gen_ndr/ndr_spoolss_c.h"
 #include "rpc_client/cli_spoolss.h"
 #include "rpc_client/init_spoolss.h"
@@ -2341,7 +2341,8 @@ static bool api_RNetGroupEnum(struct smbd_server_connection *sconn,
 	uint32_t resume_handle;
 	struct rpc_pipe_client *samr_pipe;
 	struct policy_handle samr_handle, domain_handle;
-	NTSTATUS status;
+	NTSTATUS status, result;
+	struct dcerpc_binding_handle *b;
 
 	if (!str1 || !str2 || !p) {
 		return False;
@@ -2373,21 +2374,36 @@ static bool api_RNetGroupEnum(struct smbd_server_connection *sconn,
 		return false;
 	}
 
-	status = rpccli_samr_Connect2(samr_pipe, talloc_tos(), global_myname(),
-				      SAMR_ACCESS_LOOKUP_DOMAIN, &samr_handle);
+	b = samr_pipe->binding_handle;
+
+	status = dcerpc_samr_Connect2(b, talloc_tos(), global_myname(),
+				      SAMR_ACCESS_LOOKUP_DOMAIN, &samr_handle,
+				      &result);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("api_RNetUserEnum: samr_Connect2 failed: %s\n",
 			  nt_errstr(status)));
 		return false;
 	}
+	if (!NT_STATUS_IS_OK(result)) {
+		DEBUG(0, ("api_RNetUserEnum: samr_Connect2 failed: %s\n",
+			  nt_errstr(result)));
+		return false;
+	}
 
-	status = rpccli_samr_OpenDomain(samr_pipe, talloc_tos(), &samr_handle,
+	status = dcerpc_samr_OpenDomain(b, talloc_tos(), &samr_handle,
 					SAMR_DOMAIN_ACCESS_ENUM_ACCOUNTS,
-					get_global_sam_sid(), &domain_handle);
+					get_global_sam_sid(), &domain_handle,
+					&result);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("api_RNetUserEnum: samr_OpenDomain failed: %s\n",
 			  nt_errstr(status)));
-		rpccli_samr_Close(samr_pipe, talloc_tos(), &samr_handle);
+		dcerpc_samr_Close(b, talloc_tos(), &samr_handle, &result);
+		return false;
+	}
+	if (!NT_STATUS_IS_OK(result)) {
+		DEBUG(0, ("api_RNetUserEnum: samr_OpenDomain failed: %s\n",
+			  nt_errstr(result)));
+		dcerpc_samr_Close(b, talloc_tos(), &samr_handle, &result);
 		return false;
 	}
 
@@ -2412,19 +2428,26 @@ static bool api_RNetGroupEnum(struct smbd_server_connection *sconn,
 		struct samr_SamArray *sam_entries;
 		uint32_t num_entries;
 
-		status = rpccli_samr_EnumDomainGroups(samr_pipe, talloc_tos(),
+		status = dcerpc_samr_EnumDomainGroups(b, talloc_tos(),
 						      &domain_handle,
 						      &resume_handle,
 						      &sam_entries, 1,
-						      &num_entries);
+						      &num_entries,
+						      &result);
 		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(10, ("rpccli_samr_EnumDomainGroups returned "
+			DEBUG(10, ("dcerpc_samr_EnumDomainGroups returned "
 				   "%s\n", nt_errstr(status)));
+			break;
+		}
+		if (!NT_STATUS_IS_OK(result)) {
+			status = result;
+			DEBUG(10, ("dcerpc_samr_EnumDomainGroups returned "
+				   "%s\n", nt_errstr(result)));
 			break;
 		}
 
 		if (num_entries == 0) {
-			DEBUG(10, ("rpccli_samr_EnumDomainGroups returned "
+			DEBUG(10, ("dcerpc_samr_EnumDomainGroups returned "
 				   "no entries -- done\n"));
 			break;
 		}
@@ -2459,8 +2482,8 @@ static bool api_RNetGroupEnum(struct smbd_server_connection *sconn,
 		TALLOC_FREE(sam_entries);
 	}
 
-	rpccli_samr_Close(samr_pipe, talloc_tos(), &domain_handle);
-	rpccli_samr_Close(samr_pipe, talloc_tos(), &samr_handle);
+	dcerpc_samr_Close(b, talloc_tos(), &domain_handle, &result);
+	dcerpc_samr_Close(b, talloc_tos(), &samr_handle, &result);
 
 	*rdata_len = PTR_DIFF(p,*rdata);
 
@@ -2506,7 +2529,8 @@ static bool api_NetUserGetGroups(struct smbd_server_connection *sconn,
 	struct lsa_Strings names;
 	struct samr_Ids type, rid;
 	struct samr_RidWithAttributeArray *rids;
-	NTSTATUS status;
+	NTSTATUS status, result;
+	struct dcerpc_binding_handle *b;
 
 	if (!str1 || !str2 || !UserName || !p) {
 		return False;
@@ -2556,31 +2580,51 @@ static bool api_NetUserGetGroups(struct smbd_server_connection *sconn,
 		return false;
 	}
 
-	status = rpccli_samr_Connect2(samr_pipe, talloc_tos(), global_myname(),
-				      SAMR_ACCESS_LOOKUP_DOMAIN, &samr_handle);
+	b = samr_pipe->binding_handle;
+
+	status = dcerpc_samr_Connect2(b, talloc_tos(), global_myname(),
+				      SAMR_ACCESS_LOOKUP_DOMAIN, &samr_handle,
+				      &result);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("api_RNetUserEnum: samr_Connect2 failed: %s\n",
 			  nt_errstr(status)));
 		return false;
 	}
+	if (!NT_STATUS_IS_OK(result)) {
+		DEBUG(0, ("api_RNetUserEnum: samr_Connect2 failed: %s\n",
+			  nt_errstr(result)));
+		return false;
+	}
 
-	status = rpccli_samr_OpenDomain(samr_pipe, talloc_tos(), &samr_handle,
+	status = dcerpc_samr_OpenDomain(b, talloc_tos(), &samr_handle,
 					SAMR_DOMAIN_ACCESS_OPEN_ACCOUNT,
-					get_global_sam_sid(), &domain_handle);
+					get_global_sam_sid(), &domain_handle,
+					&result);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("api_RNetUserEnum: samr_OpenDomain failed: %s\n",
 			  nt_errstr(status)));
 		goto close_sam;
 	}
+	if (!NT_STATUS_IS_OK(result)) {
+		DEBUG(0, ("api_RNetUserEnum: samr_OpenDomain failed: %s\n",
+			  nt_errstr(result)));
+		goto close_sam;
+	}
 
 	name.string = UserName;
 
-	status = rpccli_samr_LookupNames(samr_pipe, talloc_tos(),
+	status = dcerpc_samr_LookupNames(b, talloc_tos(),
 					 &domain_handle, 1, &name,
-					 &rid, &type);
+					 &rid, &type,
+					 &result);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("api_RNetUserEnum: samr_LookupNames failed: %s\n",
 			  nt_errstr(status)));
+		goto close_domain;
+	}
+	if (!NT_STATUS_IS_OK(result)) {
+		DEBUG(0, ("api_RNetUserEnum: samr_LookupNames failed: %s\n",
+			  nt_errstr(result)));
 		goto close_domain;
 	}
 
@@ -2590,31 +2634,44 @@ static bool api_NetUserGetGroups(struct smbd_server_connection *sconn,
 		goto close_domain;
 	}
 
-	status = rpccli_samr_OpenUser(samr_pipe, talloc_tos(),
+	status = dcerpc_samr_OpenUser(b, talloc_tos(),
 				      &domain_handle,
 				      SAMR_USER_ACCESS_GET_GROUPS,
-				      rid.ids[0], &user_handle);
+				      rid.ids[0], &user_handle,
+				      &result);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("api_RNetUserEnum: samr_LookupNames failed: %s\n",
 			  nt_errstr(status)));
 		goto close_domain;
 	}
+	if (!NT_STATUS_IS_OK(result)) {
+		DEBUG(0, ("api_RNetUserEnum: samr_LookupNames failed: %s\n",
+			  nt_errstr(result)));
+		goto close_domain;
+	}
 
-	status = rpccli_samr_GetGroupsForUser(samr_pipe, talloc_tos(),
-					      &user_handle, &rids);
+	status = dcerpc_samr_GetGroupsForUser(b, talloc_tos(),
+					      &user_handle, &rids,
+					      &result);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("api_RNetUserEnum: samr_LookupNames failed: %s\n",
 			  nt_errstr(status)));
 		goto close_user;
 	}
+	if (!NT_STATUS_IS_OK(result)) {
+		DEBUG(0, ("api_RNetUserEnum: samr_LookupNames failed: %s\n",
+			  nt_errstr(result)));
+		goto close_user;
+	}
 
 	for (i=0; i<rids->count; i++) {
 
-		status = rpccli_samr_LookupRids(samr_pipe, talloc_tos(),
+		status = dcerpc_samr_LookupRids(b, talloc_tos(),
 						&domain_handle,
 						1, &rids->rids[i].rid,
-						&names, &type);
-		if (NT_STATUS_IS_OK(status) && (names.count == 1)) {
+						&names, &type,
+						&result);
+		if (NT_STATUS_IS_OK(status) && NT_STATUS_IS_OK(result) && (names.count == 1)) {
 			strlcpy(p, names.names[0].string, PTR_DIFF(endp,p));
 			p += 21;
 			count++;
@@ -2629,11 +2686,11 @@ static bool api_NetUserGetGroups(struct smbd_server_connection *sconn,
 	ret = True;
 
  close_user:
-	rpccli_samr_Close(samr_pipe, talloc_tos(), &user_handle);
+	dcerpc_samr_Close(b, talloc_tos(), &user_handle, &result);
  close_domain:
-	rpccli_samr_Close(samr_pipe, talloc_tos(), &domain_handle);
+	dcerpc_samr_Close(b, talloc_tos(), &domain_handle, &result);
  close_sam:
-	rpccli_samr_Close(samr_pipe, talloc_tos(), &samr_handle);
+	dcerpc_samr_Close(b, talloc_tos(), &samr_handle, &result);
 
 	return ret;
 }
@@ -2658,12 +2715,14 @@ static bool api_RNetUserEnum(struct smbd_server_connection *sconn,
 
 	struct rpc_pipe_client *samr_pipe;
 	struct policy_handle samr_handle, domain_handle;
-	NTSTATUS status;
+	NTSTATUS status, result;
 
 	char *str1 = get_safe_str_ptr(param,tpscnt,param,2);
 	char *str2 = skip_string(param,tpscnt,str1);
 	char *p = skip_string(param,tpscnt,str2);
 	char *endp = NULL;
+
+	struct dcerpc_binding_handle *b;
 
 	if (!str1 || !str2 || !p) {
 		return False;
@@ -2713,21 +2772,36 @@ static bool api_RNetUserEnum(struct smbd_server_connection *sconn,
 		return false;
 	}
 
-	status = rpccli_samr_Connect2(samr_pipe, talloc_tos(), global_myname(),
-				      SAMR_ACCESS_LOOKUP_DOMAIN, &samr_handle);
+	b = samr_pipe->binding_handle;
+
+	status = dcerpc_samr_Connect2(b, talloc_tos(), global_myname(),
+				      SAMR_ACCESS_LOOKUP_DOMAIN, &samr_handle,
+				      &result);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("api_RNetUserEnum: samr_Connect2 failed: %s\n",
 			  nt_errstr(status)));
 		return false;
 	}
+	if (!NT_STATUS_IS_OK(result)) {
+		DEBUG(0, ("api_RNetUserEnum: samr_Connect2 failed: %s\n",
+			  nt_errstr(result)));
+		return false;
+	}
 
-	status = rpccli_samr_OpenDomain(samr_pipe, talloc_tos(), &samr_handle,
+	status = dcerpc_samr_OpenDomain(b, talloc_tos(), &samr_handle,
 					SAMR_DOMAIN_ACCESS_ENUM_ACCOUNTS,
-					get_global_sam_sid(), &domain_handle);
+					get_global_sam_sid(), &domain_handle,
+					&result);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("api_RNetUserEnum: samr_OpenDomain failed: %s\n",
 			  nt_errstr(status)));
-		rpccli_samr_Close(samr_pipe, talloc_tos(), &samr_handle);
+		dcerpc_samr_Close(b, talloc_tos(), &samr_handle, &result);
+		return false;
+	}
+	if (!NT_STATUS_IS_OK(result)) {
+		DEBUG(0, ("api_RNetUserEnum: samr_OpenDomain failed: %s\n",
+			  nt_errstr(result)));
+		dcerpc_samr_Close(b, talloc_tos(), &samr_handle, &result);
 		return false;
 	}
 
@@ -2739,20 +2813,26 @@ static bool api_RNetUserEnum(struct smbd_server_connection *sconn,
 		struct samr_SamArray *sam_entries;
 		uint32_t num_entries;
 
-		status = rpccli_samr_EnumDomainUsers(samr_pipe, talloc_tos(),
+		status = dcerpc_samr_EnumDomainUsers(b, talloc_tos(),
 						     &domain_handle,
 						     &resume_handle,
 						     0, &sam_entries, 1,
-						     &num_entries);
+						     &num_entries,
+						     &result);
 
 		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(10, ("rpccli_samr_EnumDomainUsers returned "
+			DEBUG(10, ("dcerpc_samr_EnumDomainUsers returned "
 				   "%s\n", nt_errstr(status)));
+			break;
+		}
+		if (!NT_STATUS_IS_OK(result)) {
+			DEBUG(10, ("dcerpc_samr_EnumDomainUsers returned "
+				   "%s\n", nt_errstr(result)));
 			break;
 		}
 
 		if (num_entries == 0) {
-			DEBUG(10, ("rpccli_samr_EnumDomainUsers returned "
+			DEBUG(10, ("dcerpc_samr_EnumDomainUsers returned "
 				   "no entries -- done\n"));
 			break;
 		}
@@ -2785,8 +2865,8 @@ static bool api_RNetUserEnum(struct smbd_server_connection *sconn,
 		TALLOC_FREE(sam_entries);
 	}
 
-	rpccli_samr_Close(samr_pipe, talloc_tos(), &domain_handle);
-	rpccli_samr_Close(samr_pipe, talloc_tos(), &samr_handle);
+	dcerpc_samr_Close(b, talloc_tos(), &domain_handle, &result);
+	dcerpc_samr_Close(b, talloc_tos(), &samr_handle, &result);
 
 	*rdata_len = PTR_DIFF(p,*rdata);
 
@@ -2874,7 +2954,7 @@ static bool api_SetUserPassword(struct smbd_server_connection *sconn,
 	fstring user;
 	fstring pass1,pass2;
 	TALLOC_CTX *mem_ctx = talloc_tos();
-	NTSTATUS status;
+	NTSTATUS status, result;
 	struct rpc_pipe_client *cli = NULL;
 	struct policy_handle connect_handle, domain_handle, user_handle;
 	struct lsa_String domain_name;
@@ -2888,6 +2968,7 @@ static bool api_SetUserPassword(struct smbd_server_connection *sconn,
 	uint32_t rid;
 	int encrypted;
 	int min_pwd_length;
+	struct dcerpc_binding_handle *b = NULL;
 
 	/* Skip 2 strings. */
 	p = skip_string(param,tpscnt,np);
@@ -2959,48 +3040,70 @@ static bool api_SetUserPassword(struct smbd_server_connection *sconn,
 		goto out;
 	}
 
-	status = rpccli_samr_Connect2(cli, mem_ctx,
+	b = cli->binding_handle;
+
+	status = dcerpc_samr_Connect2(b, mem_ctx,
 				      global_myname(),
 				      SAMR_ACCESS_CONNECT_TO_SERVER |
 				      SAMR_ACCESS_ENUM_DOMAINS |
 				      SAMR_ACCESS_LOOKUP_DOMAIN,
-				      &connect_handle);
+				      &connect_handle,
+				      &result);
 	if (!NT_STATUS_IS_OK(status)) {
 		errcode = W_ERROR_V(ntstatus_to_werror(status));
+		goto out;
+	}
+	if (!NT_STATUS_IS_OK(result)) {
+		errcode = W_ERROR_V(ntstatus_to_werror(result));
 		goto out;
 	}
 
 	init_lsa_String(&domain_name, get_global_sam_name());
 
-	status = rpccli_samr_LookupDomain(cli, mem_ctx,
+	status = dcerpc_samr_LookupDomain(b, mem_ctx,
 					  &connect_handle,
 					  &domain_name,
-					  &domain_sid);
+					  &domain_sid,
+					  &result);
 	if (!NT_STATUS_IS_OK(status)) {
 		errcode = W_ERROR_V(ntstatus_to_werror(status));
 		goto out;
 	}
+	if (!NT_STATUS_IS_OK(result)) {
+		errcode = W_ERROR_V(ntstatus_to_werror(result));
+		goto out;
+	}
 
-	status = rpccli_samr_OpenDomain(cli, mem_ctx,
+	status = dcerpc_samr_OpenDomain(b, mem_ctx,
 					&connect_handle,
 					SAMR_DOMAIN_ACCESS_OPEN_ACCOUNT,
 					domain_sid,
-					&domain_handle);
+					&domain_handle,
+					&result);
 	if (!NT_STATUS_IS_OK(status)) {
 		errcode = W_ERROR_V(ntstatus_to_werror(status));
+		goto out;
+	}
+	if (!NT_STATUS_IS_OK(result)) {
+		errcode = W_ERROR_V(ntstatus_to_werror(result));
 		goto out;
 	}
 
 	init_lsa_String(&names, user);
 
-	status = rpccli_samr_LookupNames(cli, mem_ctx,
+	status = dcerpc_samr_LookupNames(b, mem_ctx,
 					 &domain_handle,
 					 1,
 					 &names,
 					 &rids,
-					 &types);
+					 &types,
+					 &result);
 	if (!NT_STATUS_IS_OK(status)) {
 		errcode = W_ERROR_V(ntstatus_to_werror(status));
+		goto out;
+	}
+	if (!NT_STATUS_IS_OK(result)) {
+		errcode = W_ERROR_V(ntstatus_to_werror(result));
 		goto out;
 	}
 
@@ -3019,13 +3122,18 @@ static bool api_SetUserPassword(struct smbd_server_connection *sconn,
 
 	rid = rids.ids[0];
 
-	status = rpccli_samr_OpenUser(cli, mem_ctx,
+	status = dcerpc_samr_OpenUser(b, mem_ctx,
 				      &domain_handle,
 				      SAMR_USER_ACCESS_CHANGE_PASSWORD,
 				      rid,
-				      &user_handle);
+				      &user_handle,
+				      &result);
 	if (!NT_STATUS_IS_OK(status)) {
 		errcode = W_ERROR_V(ntstatus_to_werror(status));
+		goto out;
+	}
+	if (!NT_STATUS_IS_OK(result)) {
+		errcode = W_ERROR_V(ntstatus_to_werror(result));
 		goto out;
 	}
 
@@ -3039,7 +3147,7 @@ static bool api_SetUserPassword(struct smbd_server_connection *sconn,
 		memcpy(new_lm_hash.hash, pass1, MIN(strlen(pass2), 16));
 	}
 
-	status = rpccli_samr_ChangePasswordUser(cli, mem_ctx,
+	status = dcerpc_samr_ChangePasswordUser(b, mem_ctx,
 						&user_handle,
 						true, /* lm_present */
 						&old_lm_hash,
@@ -3050,23 +3158,28 @@ static bool api_SetUserPassword(struct smbd_server_connection *sconn,
 						false, /* cross1_present */
 						NULL, /* nt_cross */
 						false, /* cross2_present */
-						NULL); /* lm_cross */
+						NULL, /* lm_cross */
+						&result);
 	if (!NT_STATUS_IS_OK(status)) {
 		errcode = W_ERROR_V(ntstatus_to_werror(status));
+		goto out;
+	}
+	if (!NT_STATUS_IS_OK(result)) {
+		errcode = W_ERROR_V(ntstatus_to_werror(result));
 		goto out;
 	}
 
 	errcode = NERR_Success;
  out:
 
-	if (cli && is_valid_policy_hnd(&user_handle)) {
-		rpccli_samr_Close(cli, mem_ctx, &user_handle);
+	if (b && is_valid_policy_hnd(&user_handle)) {
+		dcerpc_samr_Close(b, mem_ctx, &user_handle, &result);
 	}
-	if (cli && is_valid_policy_hnd(&domain_handle)) {
-		rpccli_samr_Close(cli, mem_ctx, &domain_handle);
+	if (b && is_valid_policy_hnd(&domain_handle)) {
+		dcerpc_samr_Close(b, mem_ctx, &domain_handle, &result);
 	}
-	if (cli && is_valid_policy_hnd(&connect_handle)) {
-		rpccli_samr_Close(cli, mem_ctx, &connect_handle);
+	if (b && is_valid_policy_hnd(&connect_handle)) {
+		dcerpc_samr_Close(b, mem_ctx, &connect_handle, &result);
 	}
 
 	memset((char *)pass1,'\0',sizeof(fstring));
@@ -3093,13 +3206,14 @@ static bool api_SamOEMChangePassword(struct smbd_server_connection *sconn,
 	char *p = get_safe_str_ptr(param,tpscnt,param,2);
 
 	TALLOC_CTX *mem_ctx = talloc_tos();
-	NTSTATUS status;
+	NTSTATUS status, result;
 	struct rpc_pipe_client *cli = NULL;
 	struct lsa_AsciiString server, account;
 	struct samr_CryptPassword password;
 	struct samr_Password hash;
 	int errcode = NERR_badpass;
 	int bufsize;
+	struct dcerpc_binding_handle *b;
 
 	*rparam_len = 4;
 	*rparam = smb_realloc_limit(*rparam,*rparam_len);
@@ -3177,16 +3291,23 @@ static bool api_SamOEMChangePassword(struct smbd_server_connection *sconn,
 		goto out;
 	}
 
+	b = cli->binding_handle;
+
 	init_lsa_AsciiString(&server, global_myname());
 	init_lsa_AsciiString(&account, user);
 
-	status = rpccli_samr_OemChangePasswordUser2(cli, mem_ctx,
+	status = dcerpc_samr_OemChangePasswordUser2(b, mem_ctx,
 						    &server,
 						    &account,
 						    &password,
-						    &hash);
+						    &hash,
+						    &result);
 	if (!NT_STATUS_IS_OK(status)) {
 		errcode = W_ERROR_V(ntstatus_to_werror(status));
+		goto out;
+	}
+	if (!NT_STATUS_IS_OK(result)) {
+		errcode = W_ERROR_V(ntstatus_to_werror(result));
 		goto out;
 	}
 
@@ -4110,7 +4231,7 @@ static bool api_RNetUserGetInfo(struct smbd_server_connection *sconn,
 	const char *level_string;
 
 	TALLOC_CTX *mem_ctx = talloc_tos();
-	NTSTATUS status;
+	NTSTATUS status, result;
 	struct rpc_pipe_client *cli = NULL;
 	struct policy_handle connect_handle, domain_handle, user_handle;
 	struct lsa_String domain_name;
@@ -4121,6 +4242,7 @@ static bool api_RNetUserGetInfo(struct smbd_server_connection *sconn,
 	int errcode = W_ERROR_V(WERR_USER_NOT_FOUND);
 	uint32_t rid;
 	union samr_UserInfo *info;
+	struct dcerpc_binding_handle *b = NULL;
 
 	if (!str1 || !str2 || !UserName || !p) {
 		return False;
@@ -4180,48 +4302,70 @@ static bool api_RNetUserGetInfo(struct smbd_server_connection *sconn,
 		goto out;
 	}
 
-	status = rpccli_samr_Connect2(cli, mem_ctx,
+	b = cli->binding_handle;
+
+	status = dcerpc_samr_Connect2(b, mem_ctx,
 				      global_myname(),
 				      SAMR_ACCESS_CONNECT_TO_SERVER |
 				      SAMR_ACCESS_ENUM_DOMAINS |
 				      SAMR_ACCESS_LOOKUP_DOMAIN,
-				      &connect_handle);
+				      &connect_handle,
+				      &result);
 	if (!NT_STATUS_IS_OK(status)) {
 		errcode = W_ERROR_V(ntstatus_to_werror(status));
+		goto out;
+	}
+	if (!NT_STATUS_IS_OK(result)) {
+		errcode = W_ERROR_V(ntstatus_to_werror(result));
 		goto out;
 	}
 
 	init_lsa_String(&domain_name, get_global_sam_name());
 
-	status = rpccli_samr_LookupDomain(cli, mem_ctx,
+	status = dcerpc_samr_LookupDomain(b, mem_ctx,
 					  &connect_handle,
 					  &domain_name,
-					  &domain_sid);
+					  &domain_sid,
+					  &result);
 	if (!NT_STATUS_IS_OK(status)) {
 		errcode = W_ERROR_V(ntstatus_to_werror(status));
 		goto out;
 	}
+	if (!NT_STATUS_IS_OK(result)) {
+		errcode = W_ERROR_V(ntstatus_to_werror(result));
+		goto out;
+	}
 
-	status = rpccli_samr_OpenDomain(cli, mem_ctx,
+	status = dcerpc_samr_OpenDomain(b, mem_ctx,
 					&connect_handle,
 					SAMR_DOMAIN_ACCESS_OPEN_ACCOUNT,
 					domain_sid,
-					&domain_handle);
+					&domain_handle,
+					&result);
 	if (!NT_STATUS_IS_OK(status)) {
 		errcode = W_ERROR_V(ntstatus_to_werror(status));
+		goto out;
+	}
+	if (!NT_STATUS_IS_OK(result)) {
+		errcode = W_ERROR_V(ntstatus_to_werror(result));
 		goto out;
 	}
 
 	init_lsa_String(&names, UserName);
 
-	status = rpccli_samr_LookupNames(cli, mem_ctx,
+	status = dcerpc_samr_LookupNames(b, mem_ctx,
 					 &domain_handle,
 					 1,
 					 &names,
 					 &rids,
-					 &types);
+					 &types,
+					 &result);
 	if (!NT_STATUS_IS_OK(status)) {
 		errcode = W_ERROR_V(ntstatus_to_werror(status));
+		goto out;
+	}
+	if (!NT_STATUS_IS_OK(result)) {
+		errcode = W_ERROR_V(ntstatus_to_werror(result));
 		goto out;
 	}
 
@@ -4240,7 +4384,7 @@ static bool api_RNetUserGetInfo(struct smbd_server_connection *sconn,
 
 	rid = rids.ids[0];
 
-	status = rpccli_samr_OpenUser(cli, mem_ctx,
+	status = dcerpc_samr_OpenUser(b, mem_ctx,
 				      &domain_handle,
 				      SAMR_USER_ACCESS_GET_LOCALE |
 				      SAMR_USER_ACCESS_GET_LOGONINFO |
@@ -4249,18 +4393,28 @@ static bool api_RNetUserGetInfo(struct smbd_server_connection *sconn,
 				      SAMR_USER_ACCESS_GET_GROUP_MEMBERSHIP |
 				      SEC_STD_READ_CONTROL,
 				      rid,
-				      &user_handle);
+				      &user_handle,
+				      &result);
 	if (!NT_STATUS_IS_OK(status)) {
 		errcode = W_ERROR_V(ntstatus_to_werror(status));
 		goto out;
 	}
+	if (!NT_STATUS_IS_OK(result)) {
+		errcode = W_ERROR_V(ntstatus_to_werror(result));
+		goto out;
+	}
 
-	status = rpccli_samr_QueryUserInfo2(cli, mem_ctx,
+	status = dcerpc_samr_QueryUserInfo2(b, mem_ctx,
 					    &user_handle,
 					    UserAllInformation,
-					    &info);
+					    &info,
+					    &result);
 	if (!NT_STATUS_IS_OK(status)) {
 		errcode = W_ERROR_V(ntstatus_to_werror(status));
+		goto out;
+	}
+	if (!NT_STATUS_IS_OK(result)) {
+		errcode = W_ERROR_V(ntstatus_to_werror(result));
 		goto out;
 	}
 
@@ -4439,14 +4593,14 @@ static bool api_RNetUserGetInfo(struct smbd_server_connection *sconn,
  out:
 	*rdata_len = PTR_DIFF(p2,*rdata);
 
-	if (cli && is_valid_policy_hnd(&user_handle)) {
-		rpccli_samr_Close(cli, mem_ctx, &user_handle);
+	if (b && is_valid_policy_hnd(&user_handle)) {
+		dcerpc_samr_Close(b, mem_ctx, &user_handle, &result);
 	}
-	if (cli && is_valid_policy_hnd(&domain_handle)) {
-		rpccli_samr_Close(cli, mem_ctx, &domain_handle);
+	if (b && is_valid_policy_hnd(&domain_handle)) {
+		dcerpc_samr_Close(b, mem_ctx, &domain_handle, &result);
 	}
-	if (cli && is_valid_policy_hnd(&connect_handle)) {
-		rpccli_samr_Close(cli, mem_ctx, &connect_handle);
+	if (b && is_valid_policy_hnd(&connect_handle)) {
+		dcerpc_samr_Close(b, mem_ctx, &connect_handle, &result);
 	}
 
 	SSVAL(*rparam,0,errcode);
