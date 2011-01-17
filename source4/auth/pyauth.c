@@ -32,7 +32,7 @@
 
 static PyObject *py_auth_session_get_security_token(PyObject *self, void *closure)
 {
-	struct auth_session_info *session = (struct auth_session_info *)py_talloc_get_ptr(self);
+	struct auth_session_info *session = py_talloc_get_type(self, struct auth_session_info);
 	PyObject *py_security_token;
 	py_security_token = py_return_ndr_struct("samba.dcerpc.security", "token",
 						 session->security_token, session->security_token);
@@ -41,21 +41,21 @@ static PyObject *py_auth_session_get_security_token(PyObject *self, void *closur
 
 static int py_auth_session_set_security_token(PyObject *self, PyObject *value, void *closure)
 {
-	struct auth_session_info *session = (struct auth_session_info *)py_talloc_get_ptr(self);
+	struct auth_session_info *session = py_talloc_get_type(self, struct auth_session_info);
 	session->security_token = talloc_reference(session, py_talloc_get_ptr(value));
 	return 0;
 }
 
 static PyObject *py_auth_session_get_session_key(PyObject *self, void *closure)
 {
-	struct auth_session_info *session = (struct auth_session_info *)py_talloc_get_ptr(self);
+	struct auth_session_info *session = py_talloc_get_type(self, struct auth_session_info);
 	return PyString_FromStringAndSize((char *)session->session_key.data, session->session_key.length);
 }
 
 static int py_auth_session_set_session_key(PyObject *self, PyObject *value, void *closure)
 {
 	DATA_BLOB val;
-	struct auth_session_info *session = (struct auth_session_info *)py_talloc_get_ptr(self);
+	struct auth_session_info *session = py_talloc_get_type(self, struct auth_session_info);
 	val.data = (uint8_t *)PyString_AsString(value);
 	val.length = PyString_Size(value);
 
@@ -65,7 +65,7 @@ static int py_auth_session_set_session_key(PyObject *self, PyObject *value, void
 
 static PyObject *py_auth_session_get_credentials(PyObject *self, void *closure)
 {
-	struct auth_session_info *session = (struct auth_session_info *)py_talloc_get_ptr(self);
+	struct auth_session_info *session = py_talloc_get_type(self, struct auth_session_info);
 	PyObject *py_credentials;
 	/* This is evil, as the credentials are not IDL structures */
 	py_credentials = py_return_ndr_struct("samba.credentials", "Credentials", session->credentials, session->credentials);
@@ -74,7 +74,7 @@ static PyObject *py_auth_session_get_credentials(PyObject *self, void *closure)
 
 static int py_auth_session_set_credentials(PyObject *self, PyObject *value, void *closure)
 {
-	struct auth_session_info *session = (struct auth_session_info *)py_talloc_get_ptr(self);
+	struct auth_session_info *session = py_talloc_get_type(self, struct auth_session_info);
 	session->credentials = talloc_reference(session, PyCredentials_AsCliCredentials(value));
 	return 0;
 }

@@ -24,6 +24,7 @@
 #include "scripting/python/modules.h"
 #include "lib/talloc/pytalloc.h"
 #include <tevent.h>
+#include "librpc/rpc/pyrpc_util.h"
 
 static PyObject *py_get_name_by_authtype(PyObject *self, PyObject *args)
 {
@@ -34,7 +35,7 @@ static PyObject *py_get_name_by_authtype(PyObject *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "i", &type))
 		return NULL;
 
-	security = (struct gensec_security *)py_talloc_get_ptr(self);
+	security = py_talloc_get_type(self, struct gensec_security);
 
 	name = gensec_get_name_by_authtype(security, type);
 	if (name == NULL)
@@ -132,7 +133,8 @@ static PyObject *py_gensec_start_client(PyTypeObject *type, PyObject *args, PyOb
 static PyObject *py_gensec_session_info(PyObject *self)
 {
 	NTSTATUS status;
-	struct gensec_security *security = (struct gensec_security *)py_talloc_get_ptr(self);
+	PyObject *py_session_info;
+	struct gensec_security *security = py_talloc_get_type(self, struct gensec_security);
 	struct auth_session_info *info;
 	if (security->ops == NULL) {
 		PyErr_SetString(PyExc_RuntimeError, "no mechanism selected");
@@ -144,14 +146,15 @@ static PyObject *py_gensec_session_info(PyObject *self)
 		return NULL;
 	}
 
-	/* FIXME */
-	Py_RETURN_NONE;
+	py_session_info = py_return_ndr_struct("samba.auth", "session_info",
+						 info, info);
+	return py_session_info;
 }
 
 static PyObject *py_gensec_start_mech_by_name(PyObject *self, PyObject *args)
 {
     char *name;
-    struct gensec_security *security = (struct gensec_security *)py_talloc_get_ptr(self);
+    struct gensec_security *security = py_talloc_get_type(self, struct gensec_security);
     NTSTATUS status;
 
     if (!PyArg_ParseTuple(args, "s", &name))
@@ -169,7 +172,7 @@ static PyObject *py_gensec_start_mech_by_name(PyObject *self, PyObject *args)
 static PyObject *py_gensec_start_mech_by_authtype(PyObject *self, PyObject *args)
 {
 	int authtype, level;
-    struct gensec_security *security = (struct gensec_security *)py_talloc_get_ptr(self);
+	struct gensec_security *security = py_talloc_get_type(self, struct gensec_security);
 	NTSTATUS status;
 	if (!PyArg_ParseTuple(args, "ii", &authtype, &level))
 		return NULL;
