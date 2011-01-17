@@ -368,7 +368,7 @@ static PyTypeObject PyLdbDn = {
 	.tp_doc = "A LDB distinguished name.",
 	.tp_new = py_ldb_dn_new,
 	.tp_dealloc = (destructor)py_ldb_dn_dealloc,
-	.tp_basicsize = sizeof(PyLdbObject),
+	.tp_basicsize = sizeof(PyLdbDnObject),
 	.tp_flags = Py_TPFLAGS_DEFAULT,
 };
 
