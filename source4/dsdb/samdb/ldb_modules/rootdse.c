@@ -206,7 +206,7 @@ static int rootdse_add_dynamic(struct ldb_module *module, struct ldb_message *ms
 		int ret;
 		const char *dns_attrs[] = { "dNSHostName", NULL };
 		ret = dsdb_module_search_dn(module, msg, &res, samdb_server_dn(ldb, msg),
-					    dns_attrs, DSDB_FLAG_NEXT_MODULE);
+					    dns_attrs, DSDB_FLAG_NEXT_MODULE, req);
 		if (ret == LDB_SUCCESS) {
 			const char *hostname = ldb_msg_find_attr_as_string(res->msgs[0], "dNSHostName", NULL);
 			if (hostname != NULL) {
@@ -878,7 +878,7 @@ static int rootdse_init(struct ldb_module *module)
 		}
 	}
 
-	data->block_anonymous = dsdb_block_anonymous_ops(module);
+	data->block_anonymous = dsdb_block_anonymous_ops(module, NULL);
 
 	talloc_free(mem_ctx);
 
@@ -938,16 +938,18 @@ static int get_optional_feature_dn_guid(struct ldb_request *req, struct ldb_cont
  * ldb_message object.
  */
 static int dsdb_find_optional_feature(struct ldb_module *module, struct ldb_context *ldb,
-				TALLOC_CTX *mem_ctx, struct GUID op_feature_guid, struct ldb_message **msg)
+				      TALLOC_CTX *mem_ctx, struct GUID op_feature_guid, struct ldb_message **msg,
+				      struct ldb_request *parent)
 {
 	struct ldb_result *res;
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 	int ret;
 
 	ret = dsdb_module_search(module, tmp_ctx, &res, NULL, LDB_SCOPE_SUBTREE,
-				NULL,
-				DSDB_FLAG_NEXT_MODULE |
-				DSDB_SEARCH_SEARCH_ALL_PARTITIONS,
+				 NULL,
+				 DSDB_FLAG_NEXT_MODULE |
+				 DSDB_SEARCH_SEARCH_ALL_PARTITIONS,
+				 parent,
 				 "(&(objectClass=msDS-OptionalFeature)"
 				 "(msDS-OptionalFeatureGUID=%s))",GUID_string(tmp_ctx, &op_feature_guid));
 
@@ -974,8 +976,8 @@ static int dsdb_find_optional_feature(struct ldb_module *module, struct ldb_cont
 }
 
 static int rootdse_enable_recycle_bin(struct ldb_module *module,struct ldb_context *ldb,
-			TALLOC_CTX *mem_ctx, struct ldb_dn *op_feature_scope_dn,
-			struct ldb_message *op_feature_msg)
+				      TALLOC_CTX *mem_ctx, struct ldb_dn *op_feature_scope_dn,
+				      struct ldb_message *op_feature_msg, struct ldb_request *parent)
 {
 	int ret;
 	const int domain_func_level = dsdb_functional_level(ldb);
@@ -1015,7 +1017,7 @@ static int rootdse_enable_recycle_bin(struct ldb_module *module,struct ldb_conte
 	ldb_msg_add_linearized_dn(msg, "msDS-EnabledFeature", op_feature_msg->dn);
 	msg->elements[el_count++].flags = LDB_FLAG_MOD_ADD;
 
-	ret = dsdb_module_modify(module, msg, DSDB_FLAG_NEXT_MODULE);
+	ret = dsdb_module_modify(module, msg, DSDB_FLAG_NEXT_MODULE, parent);
 	if (ret != LDB_SUCCESS) {
 		ldb_asprintf_errstring(ldb,
 				       "rootdse_enable_recycle_bin: Failed to modify object %s - %s",
@@ -1026,7 +1028,7 @@ static int rootdse_enable_recycle_bin(struct ldb_module *module,struct ldb_conte
 	}
 
 	msg->dn = op_feature_scope_dn;
-	ret = dsdb_module_modify(module, msg, DSDB_FLAG_NEXT_MODULE);
+	ret = dsdb_module_modify(module, msg, DSDB_FLAG_NEXT_MODULE, parent);
 	if (ret != LDB_SUCCESS) {
 		ldb_asprintf_errstring(ldb,
 				       "rootdse_enable_recycle_bin: Failed to modify object %s - %s",
@@ -1078,7 +1080,7 @@ static int rootdse_enableoptionalfeature(struct ldb_module *module, struct ldb_r
 		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
 
-	ret = dsdb_find_optional_feature(module, ldb, tmp_ctx, op_feature_guid, &op_feature_msg);
+	ret = dsdb_find_optional_feature(module, ldb, tmp_ctx, op_feature_guid, &op_feature_msg, req);
 	if (ret != LDB_SUCCESS) {
 		ldb_asprintf_errstring(ldb,
 				       "rootdse: unable to find optional feature for %s - %s",
@@ -1090,7 +1092,7 @@ static int rootdse_enableoptionalfeature(struct ldb_module *module, struct ldb_r
 	if (strcasecmp(DS_GUID_FEATURE_RECYCLE_BIN, guid_string) == 0) {
 			ret = rootdse_enable_recycle_bin(module, ldb,
 							 tmp_ctx, op_feature_scope_dn,
-							 op_feature_msg);
+							 op_feature_msg, req);
 	} else {
 		ldb_asprintf_errstring(ldb,
 				       "rootdse: unknown optional feature %s",

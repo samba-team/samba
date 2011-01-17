@@ -2693,7 +2693,7 @@ static int password_hash_add(struct ldb_module *module, struct ldb_request *req)
 		*ntAttr, *lmAttr;
 	int ret;
 	struct ldb_control *bypass = NULL;
-	bool userPassword = dsdb_user_password_support(module, req);
+	bool userPassword = dsdb_user_password_support(module, req, req);
 
 	ldb = ldb_module_get_ctx(module);
 
@@ -2892,7 +2892,7 @@ static int password_hash_modify(struct ldb_module *module, struct ldb_request *r
 	struct ldb_request *down_req;
 	int ret;
 	struct ldb_control *bypass = NULL;
-	bool userPassword = dsdb_user_password_support(module, req);
+	bool userPassword = dsdb_user_password_support(module, req, req);
 
 	ldb = ldb_module_get_ctx(module);
 

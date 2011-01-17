@@ -105,7 +105,7 @@ static int aclread_callback(struct ldb_request *req, struct ldb_reply *ares)
 							     tmp_ctx,
 							     parent_dn,
 							     SEC_ADS_LIST,
-							     NULL);
+							     NULL, req);
 			if (ret == LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS) {
 				talloc_free(tmp_ctx);
 				return LDB_SUCCESS;
@@ -253,7 +253,7 @@ static int aclread_search(struct ldb_module *module, struct ldb_request *req)
 		ret = dsdb_module_search_dn(module, req, &res, req->op.search.base,
 					    acl_attrs,
 					    DSDB_FLAG_NEXT_MODULE |
-					    DSDB_SEARCH_SHOW_DELETED);
+					    DSDB_SEARCH_SHOW_DELETED, req);
 		if (ret != LDB_SUCCESS) {
 			return ldb_error(ldb, ret,
 					 "acl_read: Error retrieving instanceType for base.");
@@ -268,7 +268,7 @@ static int aclread_search(struct ldb_module *module, struct ldb_request *req)
 							     req,
 							     parent_dn,
 							     SEC_ADS_LIST,
-							     NULL);
+							     NULL, req);
 			if (ret == LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS) {
 				return ldb_module_done(req, NULL, NULL, LDB_ERR_NO_SUCH_OBJECT);
 			} else if (ret != LDB_SUCCESS) {

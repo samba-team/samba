@@ -395,11 +395,11 @@ static bool test_dsdb_module_schema_info_blob_rw(struct torture_context *tctx,
 
 	ldb_err = dsdb_module_schema_info_blob_write(priv->ldb_module,
 						     DSDB_FLAG_TOP_MODULE,
-						     &blob_write);
+						     &blob_write, NULL);
 	torture_assert_int_equal(tctx, ldb_err, LDB_SUCCESS, "dsdb_module_schema_info_blob_write() failed");
 
 	ldb_err = dsdb_module_schema_info_blob_read(priv->ldb_module, DSDB_FLAG_TOP_MODULE,
-	                                         priv, &blob_read);
+						    priv, &blob_read, NULL);
 	torture_assert_int_equal(tctx, ldb_err, LDB_SUCCESS, "dsdb_module_schema_info_blob_read() failed");
 
 	/* check if we get what we wrote */
@@ -427,12 +427,12 @@ static bool test_dsdb_module_schema_info_update(struct torture_context *tctx,
 
 	ldb_err = dsdb_module_schema_info_update(priv->ldb_module,
 						 priv->schema,
-						 DSDB_FLAG_TOP_MODULE | DSDB_FLAG_AS_SYSTEM);
+						 DSDB_FLAG_TOP_MODULE | DSDB_FLAG_AS_SYSTEM, NULL);
 	torture_assert_int_equal(tctx, ldb_err, LDB_SUCCESS, "dsdb_module_schema_info_update() failed");
 
 	/* get updated schemaInfo */
 	ldb_err = dsdb_module_schema_info_blob_read(priv->ldb_module, DSDB_FLAG_TOP_MODULE,
-						    priv, &blob);
+						    priv, &blob, NULL);
 	torture_assert_int_equal(tctx, ldb_err, LDB_SUCCESS, "dsdb_module_schema_info_blob_read() failed");
 
 	werr = dsdb_schema_info_from_blob(&blob, priv, &schema_info);

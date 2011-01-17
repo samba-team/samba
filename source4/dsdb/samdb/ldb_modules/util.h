@@ -35,4 +35,4 @@ struct dom_sid;
 #define DSDB_FLAG_NEXT_MODULE		      0x00100000
 #define DSDB_FLAG_OWN_MODULE		      0x00400000
 #define DSDB_FLAG_TOP_MODULE		      0x00800000
-
+#define DSDB_FLAG_TRUSTED		      0x01000000

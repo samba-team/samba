@@ -29,7 +29,8 @@
 #include "libcli/security/security.h"
 
 
-const struct dsdb_class * get_last_structural_class(const struct dsdb_schema *schema,const struct ldb_message_element *element)
+const struct dsdb_class * get_last_structural_class(const struct dsdb_schema *schema,const struct ldb_message_element *element,
+						    struct ldb_request *parent)
 {
 	const struct dsdb_class *last_class = NULL;
 	unsigned int i;

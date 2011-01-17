@@ -89,7 +89,8 @@ struct operational_data {
   construct a canonical name from a message
 */
 static int construct_canonical_name(struct ldb_module *module,
-	struct ldb_message *msg, enum ldb_scope scope)
+				    struct ldb_message *msg, enum ldb_scope scope,
+				    struct ldb_request *parent)
 {
 	char *canonicalName;
 	canonicalName = ldb_dn_canonical_string(msg, msg->dn);
@@ -103,7 +104,8 @@ static int construct_canonical_name(struct ldb_module *module,
   construct a primary group token for groups from a message
 */
 static int construct_primary_group_token(struct ldb_module *module,
-					 struct ldb_message *msg, enum ldb_scope scope)
+					 struct ldb_message *msg, enum ldb_scope scope,
+					 struct ldb_request *parent)
 {
 	struct ldb_context *ldb;
 	uint32_t primary_group_token;
@@ -127,7 +129,8 @@ static int construct_primary_group_token(struct ldb_module *module,
   construct the token groups for SAM objects from a message
 */
 static int construct_token_groups(struct ldb_module *module,
-				  struct ldb_message *msg, enum ldb_scope scope)
+				  struct ldb_message *msg, enum ldb_scope scope,
+				  struct ldb_request *parent)
 {
 	struct ldb_context *ldb = ldb_module_get_ctx(module);;
 	TALLOC_CTX *tmp_ctx = talloc_new(msg);
@@ -265,7 +268,8 @@ static int construct_token_groups(struct ldb_module *module,
   construct the parent GUID for an entry from a message
 */
 static int construct_parent_guid(struct ldb_module *module,
-				 struct ldb_message *msg, enum ldb_scope scope)
+				 struct ldb_message *msg, enum ldb_scope scope,
+				 struct ldb_request *parent)
 {
 	struct ldb_result *res, *parent_res;
 	const struct ldb_val *parent_guid;
@@ -279,7 +283,7 @@ static int construct_parent_guid(struct ldb_module *module,
 	/* determine if the object is NC by instance type */
 	ret = dsdb_module_search_dn(module, msg, &res, msg->dn, attrs,
 	                            DSDB_FLAG_NEXT_MODULE |
-	                            DSDB_SEARCH_SHOW_RECYCLED);
+	                            DSDB_SEARCH_SHOW_RECYCLED, parent);
 
 	instanceType = ldb_msg_find_attr_as_uint(res->msgs[0],
 						 "instanceType", 0);
@@ -298,7 +302,7 @@ static int construct_parent_guid(struct ldb_module *module,
 	}
 	ret = dsdb_module_search_dn(module, msg, &parent_res, parent_dn, attrs2,
 	                            DSDB_FLAG_NEXT_MODULE |
-	                            DSDB_SEARCH_SHOW_RECYCLED);
+	                            DSDB_SEARCH_SHOW_RECYCLED, parent);
 	talloc_free(parent_dn);
 
 	/* not NC, so the object should have a parent*/
@@ -330,7 +334,8 @@ static int construct_parent_guid(struct ldb_module *module,
   construct a subSchemaSubEntry
 */
 static int construct_subschema_subentry(struct ldb_module *module,
-					struct ldb_message *msg, enum ldb_scope scope)
+					struct ldb_message *msg, enum ldb_scope scope,
+					struct ldb_request *parent)
 {
 	struct operational_data *data = talloc_get_type(ldb_module_get_private(module), struct operational_data);
 	char *subSchemaSubEntry;
@@ -394,7 +399,8 @@ static int construct_msds_isrodc_with_dn(struct ldb_module *module,
 
 static int construct_msds_isrodc_with_server_dn(struct ldb_module *module,
 						struct ldb_message *msg,
-						struct ldb_dn *dn)
+						struct ldb_dn *dn,
+						struct ldb_request *parent)
 {
 	struct ldb_dn *server_dn;
 	const char *attr_obj_cat[] = { "objectCategory", NULL };
@@ -410,7 +416,7 @@ static int construct_msds_isrodc_with_server_dn(struct ldb_module *module,
 	}
 
 	ret = dsdb_module_search_dn(module, msg, &res, server_dn, attr_obj_cat,
-	                            DSDB_FLAG_NEXT_MODULE);
+	                            DSDB_FLAG_NEXT_MODULE, parent);
 	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
 		DEBUG(4,(__location__ ": Can't get objectCategory for %s \n",
 					 ldb_dn_get_linearized(server_dn)));
@@ -429,7 +435,8 @@ static int construct_msds_isrodc_with_server_dn(struct ldb_module *module,
 }
 
 static int construct_msds_isrodc_with_computer_dn(struct ldb_module *module,
-						  struct ldb_message *msg)
+						  struct ldb_message *msg,
+						  struct ldb_request *parent)
 {
 	struct ldb_context *ldb;
 	const char *attr[] = { "serverReferenceBL", NULL };
@@ -438,7 +445,7 @@ static int construct_msds_isrodc_with_computer_dn(struct ldb_module *module,
 	struct ldb_dn *server_dn;
 
 	ret = dsdb_module_search_dn(module, msg, &res, msg->dn, attr,
-	                            DSDB_FLAG_NEXT_MODULE);
+	                            DSDB_FLAG_NEXT_MODULE, parent);
 	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
 		DEBUG(4,(__location__ ": Can't get serverReferenceBL for %s \n",
 			 ldb_dn_get_linearized(msg->dn)));
@@ -458,14 +465,15 @@ static int construct_msds_isrodc_with_computer_dn(struct ldb_module *module,
 			 ldb_dn_get_linearized(res->msgs[0]->dn)));
 		return LDB_SUCCESS;
 	}
-	return construct_msds_isrodc_with_server_dn(module, msg, server_dn);
+	return construct_msds_isrodc_with_server_dn(module, msg, server_dn, parent);
 }
 
 /*
   construct msDS-isRODC attr
 */
 static int construct_msds_isrodc(struct ldb_module *module,
-				 struct ldb_message *msg, enum ldb_scope scope)
+				 struct ldb_message *msg, enum ldb_scope scope,
+				 struct ldb_request *parent)
 {
 	struct ldb_message_element * object_class;
 	struct ldb_message_element * object_category;
@@ -496,13 +504,13 @@ static int construct_msds_isrodc(struct ldb_module *module,
 			 * the DN of TO. Apply the previous rule for the "TO is an nTDSDSA  object" case,
 			 * substituting TN for TO.
 			 */
-			return construct_msds_isrodc_with_server_dn(module, msg, msg->dn);
+			return construct_msds_isrodc_with_server_dn(module, msg, msg->dn, parent);
 		}
 		if (strequal((const char*)object_class->values[i].data, "computer")) {
 			/* Let TS be the server  object named by TO!serverReferenceBL. Apply the previous
 			 * rule for the "TO is a server  object" case, substituting TS for TO.
 			 */
-			return construct_msds_isrodc_with_computer_dn(module, msg);
+			return construct_msds_isrodc_with_computer_dn(module, msg, parent);
 		}
 	}
 
@@ -518,7 +526,8 @@ static int construct_msds_isrodc(struct ldb_module *module,
 */
 static int construct_msds_keyversionnumber(struct ldb_module *module,
 					   struct ldb_message *msg,
-					   enum ldb_scope scope)
+					   enum ldb_scope scope,
+					   struct ldb_request *parent)
 {
 	uint32_t i;
 	enum ndr_err_code ndr_err;
@@ -605,7 +614,7 @@ static const struct {
 	const char *attr;
 	const char *replace;
 	const char *extra_attr;
-	int (*constructor)(struct ldb_module *, struct ldb_message *, enum ldb_scope);
+	int (*constructor)(struct ldb_module *, struct ldb_message *, enum ldb_scope, struct ldb_request *);
 } search_sub[] = {
 	{ "createTimestamp", "whenCreated", NULL , NULL },
 	{ "modifyTimestamp", "whenChanged", NULL , NULL },
@@ -657,7 +666,8 @@ static int operational_search_post_process(struct ldb_module *module,
 					   enum ldb_scope scope,
 					   const char * const *attrs_from_user,
 					   const char * const *attrs_searched_for,
-					   struct op_controls_flags* controls_flags)
+					   struct op_controls_flags* controls_flags,
+					   struct ldb_request *parent)
 {
 	struct ldb_context *ldb;
 	unsigned int i, a = 0;
@@ -708,7 +718,7 @@ static int operational_search_post_process(struct ldb_module *module,
 			   constructor or a simple copy */
 			constructed_attributes = true;
 			if (search_sub[i].constructor != NULL) {
-				if (search_sub[i].constructor(module, msg, scope) != LDB_SUCCESS) {
+				if (search_sub[i].constructor(module, msg, scope, parent) != LDB_SUCCESS) {
 					goto failed;
 				}
 			} else if (ldb_msg_copy_attr(msg,
@@ -784,7 +794,7 @@ static int operational_callback(struct ldb_request *req, struct ldb_reply *ares)
 						      ac->scope,
 						      ac->attrs,
 						      req->op.search.attrs,
-						      ac->controls_flags);
+						      ac->controls_flags, req);
 		if (ret != 0) {
 			return ldb_module_done(ac->req, NULL, NULL,
 						LDB_ERR_OPERATIONS_ERROR);

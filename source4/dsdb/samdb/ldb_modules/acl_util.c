@@ -55,7 +55,8 @@ int dsdb_module_check_access_on_dn(struct ldb_module *module,
 				   TALLOC_CTX *mem_ctx,
 				   struct ldb_dn *dn,
 				   uint32_t access_mask,
-				   const struct GUID *guid)
+				   const struct GUID *guid,
+				   struct ldb_request *parent)
 {
 	int ret;
 	struct ldb_result *acl_res;
@@ -73,7 +74,8 @@ int dsdb_module_check_access_on_dn(struct ldb_module *module,
 	ret = dsdb_module_search_dn(module, mem_ctx, &acl_res, dn,
 				    acl_attrs,
 				    DSDB_FLAG_NEXT_MODULE |
-				    DSDB_SEARCH_SHOW_RECYCLED);
+				    DSDB_SEARCH_SHOW_RECYCLED,
+				    parent);
 	if (ret != LDB_SUCCESS) {
 		DEBUG(0,("access_check: failed to find object %s\n", ldb_dn_get_linearized(dn)));
 		return ret;
@@ -90,7 +92,8 @@ int dsdb_module_check_access_on_guid(struct ldb_module *module,
 				     TALLOC_CTX *mem_ctx,
 				     struct GUID *guid,
 				     uint32_t access_mask,
-				     const struct GUID *oc_guid)
+				     const struct GUID *oc_guid,
+				     struct ldb_request *parent)
 {
 	int ret;
 	struct ldb_result *acl_res;
@@ -109,6 +112,7 @@ int dsdb_module_check_access_on_guid(struct ldb_module *module,
 				 acl_attrs,
 				 DSDB_FLAG_NEXT_MODULE |
 				 DSDB_SEARCH_SHOW_RECYCLED,
+				 parent,
 				 "objectGUID=%s", GUID_string(mem_ctx, guid));
 
 	if (ret != LDB_SUCCESS || acl_res->count == 0) {

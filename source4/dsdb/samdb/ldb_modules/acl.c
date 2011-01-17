@@ -107,7 +107,7 @@ static int acl_module_init(struct ldb_module *module)
 	ret = dsdb_module_search_dn(module, mem_ctx, &res,
 				    ldb_dn_new(mem_ctx, ldb, "@KLUDGEACL"),
 				    attrs,
-				    DSDB_FLAG_NEXT_MODULE);
+				    DSDB_FLAG_NEXT_MODULE, NULL);
 	if (ret != LDB_SUCCESS) {
 		goto done;
 	}
@@ -591,7 +591,7 @@ static int acl_check_spn(TALLOC_CTX *mem_ctx,
 				    &acl_res, req->op.mod.message->dn,
 				    acl_attrs,
 				    DSDB_FLAG_NEXT_MODULE |
-				    DSDB_SEARCH_SHOW_DELETED);
+				    DSDB_SEARCH_SHOW_DELETED, req);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
 		return ret;
@@ -606,6 +606,7 @@ static int acl_check_spn(TALLOC_CTX *mem_ctx,
 				 LDB_SCOPE_ONELEVEL,
 				 netbios_attrs,
 				 DSDB_FLAG_NEXT_MODULE,
+				 req,
 				 "(ncName=%s)",
 				 ldb_dn_get_linearized(ldb_get_default_basedn(ldb)));
 
@@ -686,7 +687,7 @@ static int acl_add(struct ldb_module *module, struct ldb_request *req)
 
 	guid = class_schemaid_guid_by_lDAPDisplayName(schema,
 						      (char *)oc_el->values[oc_el->num_values-1].data);
-	ret = dsdb_module_check_access_on_dn(module, req, parent, SEC_ADS_CREATE_CHILD, guid);
+	ret = dsdb_module_check_access_on_dn(module, req, parent, SEC_ADS_CREATE_CHILD, guid, req);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
@@ -850,7 +851,7 @@ static int acl_modify(struct ldb_module *module, struct ldb_request *req)
 	struct security_descriptor *sd;
 	struct dom_sid *sid = NULL;
 	struct ldb_control *as_system = ldb_request_get_control(req, LDB_CONTROL_AS_SYSTEM_OID);
-	bool userPassword = dsdb_user_password_support(module, req);
+	bool userPassword = dsdb_user_password_support(module, req, req);
 	TALLOC_CTX *tmp_ctx = talloc_new(req);
 	static const char *acl_attrs[] = {
 		"nTSecurityDescriptor",
@@ -876,7 +877,7 @@ static int acl_modify(struct ldb_module *module, struct ldb_request *req)
 	}
 	ret = dsdb_module_search_dn(module, tmp_ctx, &acl_res, req->op.mod.message->dn,
 				    acl_attrs,
-				    DSDB_FLAG_NEXT_MODULE);
+				    DSDB_FLAG_NEXT_MODULE, req);
 
 	if (ret != LDB_SUCCESS) {
 		goto fail;
@@ -1075,7 +1076,7 @@ static int acl_delete(struct ldb_module *module, struct ldb_request *req)
 
 	/* First check if we have delete object right */
 	ret = dsdb_module_check_access_on_dn(module, req, req->op.del.dn,
-					     SEC_STD_DELETE, NULL);
+					     SEC_STD_DELETE, NULL, req);
 	if (ret == LDB_SUCCESS) {
 		return ldb_next_request(module, req);
 	}
@@ -1083,7 +1084,7 @@ static int acl_delete(struct ldb_module *module, struct ldb_request *req)
 	/* Nope, we don't have delete object. Lets check if we have delete
 	 * child on the parent */
 	ret = dsdb_module_check_access_on_dn(module, req, parent,
-					     SEC_ADS_DELETE_CHILD, NULL);
+					     SEC_ADS_DELETE_CHILD, NULL, req);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
@@ -1151,7 +1152,7 @@ static int acl_rename(struct ldb_module *module, struct ldb_request *req)
 	ret = dsdb_module_search_dn(module, tmp_ctx, &acl_res,
 				    req->op.rename.olddn, acl_attrs,
 				    DSDB_FLAG_NEXT_MODULE |
-				    DSDB_SEARCH_SHOW_RECYCLED);
+				    DSDB_SEARCH_SHOW_RECYCLED, req);
 	/* we sould be able to find the parent */
 	if (ret != LDB_SUCCESS) {
 		DEBUG(10,("acl: failed to find object %s\n",
@@ -1240,7 +1241,7 @@ static int acl_rename(struct ldb_module *module, struct ldb_request *req)
 		return ldb_module_done(req, NULL, NULL,  LDB_ERR_OPERATIONS_ERROR);
 	}
 
-	ret = dsdb_module_check_access_on_dn(module, req, newparent, SEC_ADS_CREATE_CHILD, guid);
+	ret = dsdb_module_check_access_on_dn(module, req, newparent, SEC_ADS_CREATE_CHILD, guid, req);
 	if (ret != LDB_SUCCESS) {
 		DEBUG(10,("acl:access_denied renaming %s", ldb_dn_get_linearized(req->op.rename.olddn)));
 		talloc_free(tmp_ctx);
@@ -1259,7 +1260,7 @@ static int acl_rename(struct ldb_module *module, struct ldb_request *req)
 		return ldb_next_request(module, req);
 	}
 	/* what about delete child on the current parent */
-	ret = dsdb_module_check_access_on_dn(module, req, oldparent, SEC_ADS_DELETE_CHILD, NULL);
+	ret = dsdb_module_check_access_on_dn(module, req, oldparent, SEC_ADS_DELETE_CHILD, NULL, req);
 	if (ret != LDB_SUCCESS) {
 		DEBUG(10,("acl:access_denied renaming %s", ldb_dn_get_linearized(req->op.rename.olddn)));
 		talloc_free(tmp_ctx);
@@ -1308,7 +1309,7 @@ static int acl_search_callback(struct ldb_request *req, struct ldb_reply *ares)
 		    || ac->sDRightsEffective) {
 			ret = dsdb_module_search_dn(ac->module, ac, &acl_res, ares->message->dn, 
 						    acl_attrs,
-						    DSDB_FLAG_NEXT_MODULE);
+						    DSDB_FLAG_NEXT_MODULE, req);
 			if (ret != LDB_SUCCESS) {
 				return ldb_module_done(ac->req, NULL, NULL, ret);
 			}
@@ -1390,7 +1391,7 @@ static int acl_search(struct ldb_module *module, struct ldb_request *req)
 	ac->allowedChildClasses = ldb_attr_in_list(req->op.search.attrs, "allowedChildClasses");
 	ac->allowedChildClassesEffective = ldb_attr_in_list(req->op.search.attrs, "allowedChildClassesEffective");
 	ac->sDRightsEffective = ldb_attr_in_list(req->op.search.attrs, "sDRightsEffective");
-	ac->userPassword = dsdb_user_password_support(module, ac);
+	ac->userPassword = dsdb_user_password_support(module, ac, req);
 	ac->schema = dsdb_get_schema(ldb, ac);
 
 	/* replace any attributes in the parse tree that are private,

@@ -37,7 +37,8 @@
   (loosely based on Volkers code)
  */
 static int samba3sid_next_sid(struct ldb_module *module,
-			      TALLOC_CTX *mem_ctx, char **sid)
+			      TALLOC_CTX *mem_ctx, char **sid,
+			      struct ldb_request *parent)
 {
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 	struct ldb_result *res;
@@ -53,6 +54,7 @@ static int samba3sid_next_sid(struct ldb_module *module,
 				 attrs,
 				 DSDB_FLAG_NEXT_MODULE |
 				 DSDB_SEARCH_SEARCH_ALL_PARTITIONS,
+				 parent,
 				 "(&(objectClass=sambaDomain)(sambaDomainName=%s))",
 				 lpcfg_sam_name(ldb_get_opaque(ldb, "loadparm")));
 	if (ret != LDB_SUCCESS) {
@@ -119,7 +121,7 @@ static int samba3sid_next_sid(struct ldb_module *module,
 
 	ret = dsdb_module_constrainted_update_uint32(module, msg->dn,
 						     "sambaNextRid",
-						     &sambaNextRid, &rid);
+						     &sambaNextRid, &rid, parent);
 	if (ret != LDB_SUCCESS) {
 		ldb_asprintf_errstring(ldb,
 				       __location__
@@ -169,7 +171,7 @@ static int samba3sid_add(struct ldb_module *module, struct ldb_request *req)
 		return ldb_module_oom(module);
 	}
 
-	ret = samba3sid_next_sid(module, new_msg, &sid);
+	ret = samba3sid_next_sid(module, new_msg, &sid, req);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}

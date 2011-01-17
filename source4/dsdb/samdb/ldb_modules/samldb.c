@@ -187,7 +187,9 @@ static int samldb_check_sAMAccountName(struct samldb_ctx *ac)
 
 	ret = dsdb_module_search(ac->module, ac, &res,
 				 NULL, LDB_SCOPE_SUBTREE, noattrs,
-				 DSDB_FLAG_NEXT_MODULE, "(sAMAccountName=%s)",
+				 DSDB_FLAG_NEXT_MODULE,
+				 ac->req,
+				 "(sAMAccountName=%s)",
 				 ldb_binary_encode_string(ac, name));
 	if (ret != LDB_SUCCESS) {
 		return ret;
@@ -229,7 +231,7 @@ static int samldb_allocate_sid(struct samldb_ctx *ac)
 	struct ldb_context *ldb = ldb_module_get_ctx(ac->module);
 	int ret;
 
-	ret = ridalloc_allocate_rid(ac->module, &rid);
+	ret = ridalloc_allocate_rid(ac->module, &rid, ac->req);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
@@ -260,6 +262,7 @@ static bool samldb_krbtgtnumber_available(struct samldb_ctx *ac,
 	ret = dsdb_module_search(ac->module, tmp_ctx, &res, NULL,
 				 LDB_SCOPE_SUBTREE, no_attrs,
 				 DSDB_FLAG_NEXT_MODULE,
+				 ac->req,
 				 "(msDC-SecondaryKrbTgtNumber=%u)",
 				 krbtgt_number);
 	if (ret == LDB_SUCCESS && res->count == 0) {
@@ -358,6 +361,7 @@ static int samldb_find_for_defaultObjectCategory(struct samldb_ctx *ac)
 				 ac->dn, LDB_SCOPE_BASE, no_attrs,
 				 DSDB_SEARCH_SHOW_DN_IN_STORAGE_FORMAT
 				 | DSDB_FLAG_NEXT_MODULE,
+				 ac->req,
 				 "(objectClass=classSchema)");
 	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
 		/* Don't be pricky when the DN doesn't exist if we have the */
@@ -440,6 +444,7 @@ static int samldb_add_handle_msDS_IntId(struct samldb_ctx *ac)
 		                         &ldb_res,
 		                         schema_dn, LDB_SCOPE_ONELEVEL, NULL,
 		                         DSDB_FLAG_NEXT_MODULE,
+					 ac->req,
 		                         "(msDS-IntId=%d)", msds_intid);
 		if (ret != LDB_SUCCESS) {
 			ldb_debug_set(ldb, LDB_DEBUG_ERROR,
@@ -773,7 +778,7 @@ static int samldb_schema_info_update(struct samldb_ctx *ac)
 	}
 
 	ret = dsdb_module_schema_info_update(ac->module, schema,
-					     DSDB_FLAG_NEXT_MODULE);
+					     DSDB_FLAG_NEXT_MODULE, ac->req);
 	if (ret != LDB_SUCCESS) {
 		ldb_asprintf_errstring(ldb,
 				       "samldb_schema_info_update: dsdb_module_schema_info_update failed with %s",
@@ -1029,7 +1034,9 @@ static int samldb_prim_group_set(struct samldb_ctx *ac)
 	}
 
 	ret = dsdb_module_search(ac->module, ac, &res, NULL, LDB_SCOPE_SUBTREE,
-				 noattrs, DSDB_FLAG_NEXT_MODULE, "(objectSid=%s)",
+				 noattrs, DSDB_FLAG_NEXT_MODULE,
+				 ac->req,
+				 "(objectSid=%s)",
 				 ldap_encode_ndr_dom_sid(ac, sid));
 	if (ret != LDB_SUCCESS) {
 		return ret;
@@ -1117,7 +1124,9 @@ static int samldb_prim_group_change(struct samldb_ctx *ac)
 	}
 
 	ret = dsdb_module_search(ac->module, ac, &group_res, NULL, LDB_SCOPE_SUBTREE,
-				 noattrs, DSDB_FLAG_NEXT_MODULE, "(objectSid=%s)",
+				 noattrs, DSDB_FLAG_NEXT_MODULE,
+				 ac->req,
+				 "(objectSid=%s)",
 				 ldap_encode_ndr_dom_sid(ac, prev_sid));
 	if (ret != LDB_SUCCESS) {
 		return ret;
@@ -1133,7 +1142,9 @@ static int samldb_prim_group_change(struct samldb_ctx *ac)
 	}
 
 	ret = dsdb_module_search(ac->module, ac, &group_res, NULL, LDB_SCOPE_SUBTREE,
-				 noattrs, DSDB_FLAG_NEXT_MODULE, "(objectSid=%s)",
+				 noattrs, DSDB_FLAG_NEXT_MODULE,
+				 ac->req,
+				 "(objectSid=%s)",
 				 ldap_encode_ndr_dom_sid(ac, new_sid));
 	if (ret != LDB_SUCCESS) {
 		return ret;
@@ -1166,7 +1177,7 @@ static int samldb_prim_group_change(struct samldb_ctx *ac)
 		return ret;
 	}
 
-	ret = dsdb_module_modify(ac->module, msg, DSDB_FLAG_NEXT_MODULE);
+	ret = dsdb_module_modify(ac->module, msg, DSDB_FLAG_NEXT_MODULE, ac->req);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
@@ -1185,7 +1196,7 @@ static int samldb_prim_group_change(struct samldb_ctx *ac)
 		return ret;
 	}
 
-	ret = dsdb_module_modify(ac->module, msg, DSDB_FLAG_NEXT_MODULE);
+	ret = dsdb_module_modify(ac->module, msg, DSDB_FLAG_NEXT_MODULE, ac->req);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
@@ -1311,7 +1322,7 @@ static int samldb_group_type_change(struct samldb_ctx *ac)
 	talloc_free(tmp_msg);
 
 	ret = dsdb_module_search_dn(ac->module, ac, &res, ac->msg->dn, attrs,
-				    DSDB_FLAG_NEXT_MODULE);
+				    DSDB_FLAG_NEXT_MODULE, ac->req);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
@@ -1526,7 +1537,7 @@ static int samldb_member_check(struct samldb_ctx *ac)
 
 			ret = dsdb_module_search_dn(ac->module, ac, &group_res,
 						    member_dn, group_attrs,
-						    DSDB_FLAG_NEXT_MODULE);
+						    DSDB_FLAG_NEXT_MODULE, ac->req);
 			if (ret == LDB_ERR_NO_SUCH_OBJECT) {
 				/* member DN doesn't exist yet */
 				continue;
@@ -1668,7 +1679,7 @@ static int samldb_service_principal_names_change(struct samldb_ctx *ac)
 		talloc_free(msg);
 
 		ret = dsdb_module_search_dn(ac->module, ac, &res, ac->msg->dn,
-					    dns_attrs, DSDB_FLAG_NEXT_MODULE);
+					    dns_attrs, DSDB_FLAG_NEXT_MODULE, ac->req);
 		if (ret == LDB_SUCCESS) {
 			old_dns_hostname = ldb_msg_find_attr_as_string(res->msgs[0], "dNSHostName", NULL);
 		}
@@ -1692,7 +1703,7 @@ static int samldb_service_principal_names_change(struct samldb_ctx *ac)
 		talloc_free(msg);
 
 		ret = dsdb_module_search_dn(ac->module, ac, &res, ac->msg->dn, acct_attrs,
-					    DSDB_FLAG_NEXT_MODULE);
+					    DSDB_FLAG_NEXT_MODULE, ac->req);
 		if (ret == LDB_SUCCESS) {
 			tempstr2 = talloc_strdup(ac,
 						 ldb_msg_find_attr_as_string(res->msgs[0],
@@ -1763,7 +1774,7 @@ static int samldb_service_principal_names_change(struct samldb_ctx *ac)
 		} while (el != NULL);
 
 		ret = dsdb_module_modify(ac->module, msg,
-					 DSDB_FLAG_NEXT_MODULE);
+					 DSDB_FLAG_NEXT_MODULE, ac->req);
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
@@ -2092,7 +2103,7 @@ static int samldb_prim_group_users_check(struct samldb_ctx *ac)
 	ldb = ldb_module_get_ctx(ac->module);
 
 	/* Finds out the SID/RID of the SAM object */
-	ret = dsdb_module_search_dn(ac->module, ac, &res, ac->req->op.del.dn, attrs, DSDB_FLAG_NEXT_MODULE);
+	ret = dsdb_module_search_dn(ac->module, ac, &res, ac->req->op.del.dn, attrs, DSDB_FLAG_NEXT_MODULE, ac->req);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
@@ -2114,6 +2125,7 @@ static int samldb_prim_group_users_check(struct samldb_ctx *ac)
 	/* Deny delete requests from groups which are primary ones */
 	ret = dsdb_module_search(ac->module, ac, &res, NULL, LDB_SCOPE_SUBTREE, noattrs,
 				 DSDB_FLAG_NEXT_MODULE,
+				 ac->req,
 				 "(&(primaryGroupID=%u)(objectClass=user))", rid);
 	if (ret != LDB_SUCCESS) {
 		return ret;
@@ -2166,7 +2178,7 @@ static int samldb_extended_allocate_rid_pool(struct ldb_module *module, struct l
 		return LDB_ERR_PROTOCOL_ERROR;
 	}
 
-	ret = ridalloc_allocate_rid_pool_fsmo(module, exop);
+	ret = ridalloc_allocate_rid_pool_fsmo(module, exop, req);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}

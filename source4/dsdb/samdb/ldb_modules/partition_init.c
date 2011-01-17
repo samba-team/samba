@@ -130,7 +130,9 @@ static int partition_load_modules(struct ldb_context *ldb,
 	return LDB_SUCCESS;
 }
 
-static int partition_reload_metadata(struct ldb_module *module, struct partition_private_data *data, TALLOC_CTX *mem_ctx, struct ldb_message **_msg) 
+static int partition_reload_metadata(struct ldb_module *module, struct partition_private_data *data,
+				     TALLOC_CTX *mem_ctx, struct ldb_message **_msg,
+				     struct ldb_request *parent)
 {
 	int ret;
 	struct ldb_message *msg, *module_msg;
@@ -141,7 +143,7 @@ static int partition_reload_metadata(struct ldb_module *module, struct partition
 	ret = dsdb_module_search_dn(module, mem_ctx, &res, 
 				    ldb_dn_new(mem_ctx, ldb, DSDB_PARTITION_DN),
 				    attrs,
-				    DSDB_FLAG_NEXT_MODULE);
+				    DSDB_FLAG_NEXT_MODULE, parent);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
@@ -372,7 +374,8 @@ static int add_partition_to_data(struct ldb_context *ldb, struct partition_priva
 }
 
 int partition_reload_if_required(struct ldb_module *module, 
-				 struct partition_private_data *data)
+				 struct partition_private_data *data,
+				 struct ldb_request *parent)
 {
 	uint64_t seq;
 	int ret;
@@ -402,7 +405,7 @@ int partition_reload_if_required(struct ldb_module *module,
 		return LDB_SUCCESS;
 	}
 
-	ret = partition_reload_metadata(module, data, mem_ctx, &msg);
+	ret = partition_reload_metadata(module, data, mem_ctx, &msg, parent);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(mem_ctx);
 		return ret;
@@ -505,7 +508,7 @@ int partition_reload_if_required(struct ldb_module *module,
 		/* Get the 'correct' case of the partition DNs from the database */
 		ret = dsdb_module_search_dn(partition->module, data, &dn_res, 
 					    dn, no_attrs,
-					    DSDB_FLAG_NEXT_MODULE);
+					    DSDB_FLAG_NEXT_MODULE, parent);
 		if (ret == LDB_SUCCESS) {
 			talloc_free(partition->ctrl->dn);
 			partition->ctrl->dn = talloc_steal(partition->ctrl, dn_res->msgs[0]->dn);
@@ -547,7 +550,7 @@ static int new_partition_set_replicated_metadata(struct ldb_context *ldb,
 		ret = dsdb_module_search_dn(module, last_req, &replicate_res, 
 					    data->replicate[i],
 					    NULL,
-					    DSDB_FLAG_NEXT_MODULE);
+					    DSDB_FLAG_NEXT_MODULE, NULL);
 		if (ret == LDB_ERR_NO_SUCH_OBJECT) {
 			continue;
 		}
@@ -826,7 +829,7 @@ int partition_init(struct ldb_module *module)
 		struct ldb_message);
 
 	/* This loads the partitions */
-	ret = partition_reload_if_required(module, data);
+	ret = partition_reload_if_required(module, data, NULL);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}

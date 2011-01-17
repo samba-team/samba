@@ -55,6 +55,7 @@ static int subtree_delete(struct ldb_module *module, struct ldb_request *req)
 	ret = dsdb_module_search(module, req, &res, req->op.del.dn,
 				 LDB_SCOPE_ONELEVEL, attrs,
 				 DSDB_FLAG_NEXT_MODULE,
+				 req,
 				 "(objectClass=*)");
 	if (ret != LDB_SUCCESS) {
 		talloc_free(res);
@@ -82,7 +83,7 @@ static int subtree_delete(struct ldb_module *module, struct ldb_request *req)
 		}
 
 		for (i = 0; i < res->count; i++) {
-			ret = dsdb_module_del(module, res->msgs[i]->dn, flags);
+			ret = dsdb_module_del(module, res->msgs[i]->dn, flags, req);
 			if (ret != LDB_SUCCESS) {
 				return ret;
 			}

@@ -572,7 +572,7 @@ static int descriptor_do_mod(struct descriptor_context *ac)
 		return ldb_operr(ldb);
 	}
 
-	objectclass = get_last_structural_class(schema, objectclass_element);
+	objectclass = get_last_structural_class(schema, objectclass_element, ac->req);
 	if (objectclass == NULL) {
 		return ldb_operr(ldb);
 	}
@@ -667,7 +667,7 @@ static int descriptor_do_add(struct descriptor_context *ac)
 		}
 
 		objectclass = get_last_structural_class(schema,
-							objectclass_element);
+							objectclass_element, ac->req);
 		if (objectclass == NULL) {
 			return ldb_operr(ldb);
 		}

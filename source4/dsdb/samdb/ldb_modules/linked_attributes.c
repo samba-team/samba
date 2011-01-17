@@ -594,7 +594,8 @@ static int linked_attributes_modify(struct ldb_module *module, struct ldb_reques
 static int linked_attributes_fix_links(struct ldb_module *module,
 				       struct ldb_dn *old_dn, struct ldb_dn *new_dn,
 				       struct ldb_message_element *el, struct dsdb_schema *schema,
-				       const struct dsdb_attribute *schema_attr)
+				       const struct dsdb_attribute *schema_attr,
+				       struct ldb_request *parent)
 {
 	unsigned int i, j;
 	TALLOC_CTX *tmp_ctx = talloc_new(module);
@@ -629,7 +630,7 @@ static int linked_attributes_fix_links(struct ldb_module *module,
 					    DSDB_FLAG_NEXT_MODULE |
 					    DSDB_SEARCH_SHOW_RECYCLED |
 					    DSDB_SEARCH_SHOW_DN_IN_STORAGE_FORMAT |
-					    DSDB_SEARCH_REVEAL_INTERNALS);
+					    DSDB_SEARCH_REVEAL_INTERNALS, parent);
 		if (ret != LDB_SUCCESS) {
 			ldb_asprintf_errstring(ldb, "Linked attribute %s->%s between %s and %s - remote not found - %s",
 					       el->name, target->lDAPDisplayName,
@@ -690,7 +691,7 @@ static int linked_attributes_fix_links(struct ldb_module *module,
 		   disable checking for this attribute */
 		el2->flags |= LDB_FLAG_INTERNAL_DISABLE_SINGLE_VALUE_CHECK;
 
-		ret = dsdb_module_modify(module, msg, DSDB_FLAG_NEXT_MODULE);
+		ret = dsdb_module_modify(module, msg, DSDB_FLAG_NEXT_MODULE, parent);
 		if (ret != LDB_SUCCESS) {
 			ldb_asprintf_errstring(ldb, "Linked attribute %s->%s between %s and %s - update failed - %s",
 					       el->name, target->lDAPDisplayName,
@@ -725,7 +726,7 @@ static int linked_attributes_rename(struct ldb_module *module, struct ldb_reques
 	ret = dsdb_module_search_dn(module, req, &res, req->op.rename.olddn,
 				    NULL,
 				    DSDB_FLAG_NEXT_MODULE |
-				    DSDB_SEARCH_SHOW_RECYCLED);
+				    DSDB_SEARCH_SHOW_RECYCLED, req);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
@@ -745,7 +746,7 @@ static int linked_attributes_rename(struct ldb_module *module, struct ldb_reques
 			continue;
 		}
 		ret = linked_attributes_fix_links(module, msg->dn, req->op.rename.newdn, el,
-						  schema, schema_attr);
+						  schema, schema_attr, req);
 		if (ret != LDB_SUCCESS) {
 			talloc_free(res);
 			return ret;
@@ -986,7 +987,7 @@ static int la_do_op_request(struct ldb_module *module, struct la_context *ac, st
 			 ldb_ldif_message_string(ldb, op, LDB_CHANGETYPE_MODIFY, new_msg)));
 	}
 
-	ret = dsdb_module_modify(module, new_msg, DSDB_FLAG_NEXT_MODULE);
+	ret = dsdb_module_modify(module, new_msg, DSDB_FLAG_NEXT_MODULE, ac->req);
 	if (ret != LDB_SUCCESS) {
 		ldb_debug(ldb, LDB_DEBUG_WARNING, "Failed to apply linked attribute change '%s'\n%s\n",
 			  ldb_errstring(ldb),

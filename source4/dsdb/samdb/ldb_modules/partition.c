@@ -469,7 +469,7 @@ static int partition_search(struct ldb_module *module, struct ldb_request *req)
 	int ret;
 	bool domain_scope = false, phantom_root = false;
 	
-	ret = partition_reload_if_required(module, data);
+	ret = partition_reload_if_required(module, data, req);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
@@ -724,7 +724,7 @@ static int partition_start_trans(struct ldb_module *module)
 		return ret;
 	}
 
-	ret = partition_reload_if_required(module, data);
+	ret = partition_reload_if_required(module, data, NULL);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
@@ -1169,7 +1169,7 @@ static int partition_extended(struct ldb_module *module, struct ldb_request *req
 		return ldb_next_request(module, req);
 	}
 
-	ret = partition_reload_if_required(module, data);
+	ret = partition_reload_if_required(module, data, req);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}

@@ -121,7 +121,7 @@ struct dsdb_schema *dsdb_schema_refresh(struct ldb_module *module, struct dsdb_s
 	schema->reload_seq_number = tseqr->seq_num;
 	talloc_free(res);
 		
-	ret = dsdb_module_load_partition_usn(module, schema->base_dn, &current_usn, NULL);
+	ret = dsdb_module_load_partition_usn(module, schema->base_dn, &current_usn, NULL, NULL);
 	if (ret != LDB_SUCCESS || current_usn == schema->loaded_usn) {
 		return schema;
 	}
@@ -174,7 +174,7 @@ static int dsdb_schema_from_db(struct ldb_module *module, struct ldb_dn *schema_
 	 */
 	ret = dsdb_module_search_dn(module, tmp_ctx, &schema_res,
 				    schema_dn, schema_attrs,
-				    DSDB_FLAG_NEXT_MODULE);
+				    DSDB_FLAG_NEXT_MODULE, NULL);
 	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
 		ldb_reset_err_string(ldb);
 		ldb_debug(ldb, LDB_DEBUG_WARNING,
@@ -193,6 +193,7 @@ static int dsdb_schema_from_db(struct ldb_module *module, struct ldb_dn *schema_
 	ret = dsdb_module_search(module, tmp_ctx, &a_res,
 				 schema_dn, LDB_SCOPE_ONELEVEL, NULL,
 				 DSDB_FLAG_NEXT_MODULE,
+				 NULL,
 				 "(objectClass=attributeSchema)");
 	if (ret != LDB_SUCCESS) {
 		ldb_asprintf_errstring(ldb, 
@@ -208,6 +209,7 @@ static int dsdb_schema_from_db(struct ldb_module *module, struct ldb_dn *schema_
 				 schema_dn, LDB_SCOPE_ONELEVEL, NULL,
 				 DSDB_FLAG_NEXT_MODULE |
 				 DSDB_SEARCH_SHOW_DN_IN_STORAGE_FORMAT,
+				 NULL,
 				 "(objectClass=classSchema)");
 	if (ret != LDB_SUCCESS) {
 		ldb_asprintf_errstring(ldb, 
@@ -297,7 +299,7 @@ static int schema_load_init(struct ldb_module *module)
 		return LDB_SUCCESS;
 	}
 
-	ret = dsdb_module_load_partition_usn(module, schema_dn, &current_usn, NULL);
+	ret = dsdb_module_load_partition_usn(module, schema_dn, &current_usn, NULL, NULL);
 	if (ret != LDB_SUCCESS) {
 		/* Ignore the error and just reload the DB more often */
 		current_usn = 0;

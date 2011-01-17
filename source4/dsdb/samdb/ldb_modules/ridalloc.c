@@ -180,7 +180,8 @@ static int ridalloc_set_ridset_values(struct ldb_module *module,
 /*
   allocate a new range of RIDs in the RID Manager object
  */
-static int ridalloc_rid_manager_allocate(struct ldb_module *module, struct ldb_dn *rid_manager_dn, uint64_t *new_pool)
+static int ridalloc_rid_manager_allocate(struct ldb_module *module, struct ldb_dn *rid_manager_dn, uint64_t *new_pool,
+					 struct ldb_request *parent)
 {
 	int ret;
 	TALLOC_CTX *tmp_ctx = talloc_new(module);
@@ -192,7 +193,7 @@ static int ridalloc_rid_manager_allocate(struct ldb_module *module, struct ldb_d
 	const unsigned alloc_size = 500;
 
 	ret = dsdb_module_search_dn(module, tmp_ctx, &res, rid_manager_dn,
-	                            attrs, DSDB_FLAG_NEXT_MODULE);
+	                            attrs, DSDB_FLAG_NEXT_MODULE, parent);
 	if (ret != LDB_SUCCESS) {
 		ldb_asprintf_errstring(ldb, "Failed to find rIDAvailablePool in %s - %s",
 				       ldb_dn_get_linearized(rid_manager_dn), ldb_errstring(ldb));
@@ -223,7 +224,7 @@ static int ridalloc_rid_manager_allocate(struct ldb_module *module, struct ldb_d
 	new_rid_pool = rid_pool_lo | (((uint64_t)rid_pool_hi)<<32);
 
 	ret = dsdb_module_constrainted_update_uint64(module, rid_manager_dn, "rIDAvailablePool",
-						     &rid_pool, &new_rid_pool);
+						     &rid_pool, &new_rid_pool, parent);
 	if (ret != LDB_SUCCESS) {
 		ldb_asprintf_errstring(ldb, "Failed to update rIDAvailablePool - %s",
 				       ldb_errstring(ldb));
@@ -241,7 +242,8 @@ static int ridalloc_rid_manager_allocate(struct ldb_module *module, struct ldb_d
  */
 static int ridalloc_create_rid_set_ntds(struct ldb_module *module, TALLOC_CTX *mem_ctx,
 					struct ldb_dn *rid_manager_dn,
-					struct ldb_dn *ntds_dn, struct ldb_dn **dn)
+					struct ldb_dn *ntds_dn, struct ldb_dn **dn,
+					struct ldb_request *parent)
 {
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 	struct ldb_dn *server_dn, *machine_dn, *rid_set_dn;
@@ -278,7 +280,7 @@ static int ridalloc_create_rid_set_ntds(struct ldb_module *module, TALLOC_CTX *m
 		return ldb_module_oom(module);
 	}
 
-	ret = dsdb_module_reference_dn(module, tmp_ctx, server_dn, "serverReference", &machine_dn);
+	ret = dsdb_module_reference_dn(module, tmp_ctx, server_dn, "serverReference", &machine_dn, parent);
 	if (ret != LDB_SUCCESS) {
 		ldb_asprintf_errstring(ldb, "Failed to find serverReference in %s - %s",
 				       ldb_dn_get_linearized(server_dn), ldb_errstring(ldb));
@@ -298,7 +300,7 @@ static int ridalloc_create_rid_set_ntds(struct ldb_module *module, TALLOC_CTX *m
 	}
 
 	/* grab a pool from the RID Manager object */
-	ret = ridalloc_rid_manager_allocate(module, rid_manager_dn, &n.alloc_pool);
+	ret = ridalloc_rid_manager_allocate(module, rid_manager_dn, &n.alloc_pool, parent);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
 		return ret;
@@ -323,7 +325,7 @@ static int ridalloc_create_rid_set_ntds(struct ldb_module *module, TALLOC_CTX *m
 	/* we need this to go all the way to the top of the module
 	 * stack, as we need all the extra attributes added (including
 	 * complex ones like ntsecuritydescriptor) */
-	ret = dsdb_module_add(module, msg, DSDB_FLAG_TOP_MODULE | DSDB_MODIFY_RELAX);
+	ret = dsdb_module_add(module, msg, DSDB_FLAG_TOP_MODULE | DSDB_MODIFY_RELAX, parent);
 	if (ret != LDB_SUCCESS) {
 		ldb_asprintf_errstring(ldb, "Failed to add RID Set %s - %s",
 				       ldb_dn_get_linearized(msg->dn),
@@ -343,7 +345,7 @@ static int ridalloc_create_rid_set_ntds(struct ldb_module *module, TALLOC_CTX *m
 	}
 	msg->elements[0].flags = LDB_FLAG_MOD_ADD;
 
-	ret = dsdb_module_modify(module, msg, DSDB_FLAG_NEXT_MODULE);
+	ret = dsdb_module_modify(module, msg, DSDB_FLAG_NEXT_MODULE, parent);
 	if (ret != LDB_SUCCESS) {
 		ldb_asprintf_errstring(ldb, "Failed to add rIDSetReferences to %s - %s",
 				       ldb_dn_get_linearized(msg->dn),
@@ -363,7 +365,7 @@ static int ridalloc_create_rid_set_ntds(struct ldb_module *module, TALLOC_CTX *m
   create a RID Set object for this DC
  */
 static int ridalloc_create_own_rid_set(struct ldb_module *module, TALLOC_CTX *mem_ctx,
-				       struct ldb_dn **dn)
+				       struct ldb_dn **dn, struct ldb_request *parent)
 {
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 	struct ldb_dn *rid_manager_dn, *fsmo_role_dn;
@@ -371,7 +373,7 @@ static int ridalloc_create_own_rid_set(struct ldb_module *module, TALLOC_CTX *me
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 
 	/* work out who is the RID Manager */
-	ret = dsdb_module_rid_manager_dn(module, tmp_ctx, &rid_manager_dn);
+	ret = dsdb_module_rid_manager_dn(module, tmp_ctx, &rid_manager_dn, parent);
 	if (ret != LDB_SUCCESS) {
 		ldb_asprintf_errstring(ldb, "Failed to find RID Manager object - %s",
 				       ldb_errstring(ldb));
@@ -380,7 +382,7 @@ static int ridalloc_create_own_rid_set(struct ldb_module *module, TALLOC_CTX *me
 	}
 
 	/* find the DN of the RID Manager */
-	ret = dsdb_module_reference_dn(module, tmp_ctx, rid_manager_dn, "fSMORoleOwner", &fsmo_role_dn);
+	ret = dsdb_module_reference_dn(module, tmp_ctx, rid_manager_dn, "fSMORoleOwner", &fsmo_role_dn, parent);
 	if (ret != LDB_SUCCESS) {
 		ldb_asprintf_errstring(ldb, "Failed to find fSMORoleOwner in RID Manager object - %s",
 				       ldb_errstring(ldb));
@@ -395,7 +397,7 @@ static int ridalloc_create_own_rid_set(struct ldb_module *module, TALLOC_CTX *me
 		return LDB_ERR_UNWILLING_TO_PERFORM;
 	}
 
-	ret = ridalloc_create_rid_set_ntds(module, mem_ctx, rid_manager_dn, fsmo_role_dn, dn);
+	ret = ridalloc_create_rid_set_ntds(module, mem_ctx, rid_manager_dn, fsmo_role_dn, dn, parent);
 	talloc_free(tmp_ctx);
 	return ret;
 }
@@ -404,7 +406,7 @@ static int ridalloc_create_own_rid_set(struct ldb_module *module, TALLOC_CTX *me
   get a new RID pool for ourselves
   also returns the first rid for the new pool
  */
-static int ridalloc_new_own_pool(struct ldb_module *module, uint64_t *new_pool)
+static int ridalloc_new_own_pool(struct ldb_module *module, uint64_t *new_pool, struct ldb_request *parent)
 {
 	TALLOC_CTX *tmp_ctx = talloc_new(module);
 	struct ldb_dn *rid_manager_dn, *fsmo_role_dn;
@@ -412,7 +414,7 @@ static int ridalloc_new_own_pool(struct ldb_module *module, uint64_t *new_pool)
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 
 	/* work out who is the RID Manager */
-	ret = dsdb_module_rid_manager_dn(module, tmp_ctx, &rid_manager_dn);
+	ret = dsdb_module_rid_manager_dn(module, tmp_ctx, &rid_manager_dn, parent);
 	if (ret != LDB_SUCCESS) {
 		ldb_asprintf_errstring(ldb, "Failed to find RID Manager object - %s",
 				       ldb_errstring(ldb));
@@ -421,7 +423,7 @@ static int ridalloc_new_own_pool(struct ldb_module *module, uint64_t *new_pool)
 	}
 
 	/* find the DN of the RID Manager */
-	ret = dsdb_module_reference_dn(module, tmp_ctx, rid_manager_dn, "fSMORoleOwner", &fsmo_role_dn);
+	ret = dsdb_module_reference_dn(module, tmp_ctx, rid_manager_dn, "fSMORoleOwner", &fsmo_role_dn, parent);
 	if (ret != LDB_SUCCESS) {
 		ldb_asprintf_errstring(ldb, "Failed to find fSMORoleOwner in RID Manager object - %s",
 				       ldb_errstring(ldb));
@@ -437,7 +439,7 @@ static int ridalloc_new_own_pool(struct ldb_module *module, uint64_t *new_pool)
 	}
 
 	/* grab a pool from the RID Manager object */
-	ret = ridalloc_rid_manager_allocate(module, rid_manager_dn, new_pool);
+	ret = ridalloc_rid_manager_allocate(module, rid_manager_dn, new_pool, parent);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
 		return ret;
@@ -452,7 +454,7 @@ static int ridalloc_new_own_pool(struct ldb_module *module, uint64_t *new_pool)
    If we run out of RIDs then allocate a new pool
    either locally or by contacting the RID Manager
 */
-int ridalloc_allocate_rid(struct ldb_module *module, uint32_t *rid)
+int ridalloc_allocate_rid(struct ldb_module *module, uint32_t *rid, struct ldb_request *parent)
 {
 	struct ldb_context *ldb;
 	int ret;
@@ -469,7 +471,7 @@ int ridalloc_allocate_rid(struct ldb_module *module, uint32_t *rid)
 
 	ret = samdb_rid_set_dn(ldb, tmp_ctx, &rid_set_dn);
 	if (ret == LDB_ERR_NO_SUCH_ATTRIBUTE) {
-		ret = ridalloc_create_own_rid_set(module, tmp_ctx, &rid_set_dn);
+		ret = ridalloc_create_own_rid_set(module, tmp_ctx, &rid_set_dn, parent);
 	}
 	if (ret != LDB_SUCCESS) {
 		ldb_asprintf_errstring(ldb, __location__ ": No RID Set DN - %s",
@@ -479,7 +481,7 @@ int ridalloc_allocate_rid(struct ldb_module *module, uint32_t *rid)
 	}
 
 	ret = dsdb_module_search_dn(module, tmp_ctx, &res, rid_set_dn,
-				    ridalloc_ridset_attrs, DSDB_FLAG_NEXT_MODULE);
+				    ridalloc_ridset_attrs, DSDB_FLAG_NEXT_MODULE, parent);
 	if (ret != LDB_SUCCESS) {
 		ldb_asprintf_errstring(ldb, __location__ ": No RID Set %s",
 				       ldb_dn_get_linearized(rid_set_dn));
@@ -524,7 +526,7 @@ int ridalloc_allocate_rid(struct ldb_module *module, uint32_t *rid)
 			 * Otherwise we fail the operation and
 			 * ask async for a new pool.
 			 */
-			ret = ridalloc_new_own_pool(module, &nridset.alloc_pool);
+			ret = ridalloc_new_own_pool(module, &nridset.alloc_pool, parent);
 			if (ret == LDB_ERR_UNWILLING_TO_PERFORM) {
 				ridalloc_poke_rid_manager(module);
 				talloc_free(tmp_ctx);
@@ -570,7 +572,7 @@ int ridalloc_allocate_rid(struct ldb_module *module, uint32_t *rid)
 		 * Otherwise we fail the operation and
 		 * ask async for a new pool.
 		 */
-		ret = ridalloc_new_own_pool(module, &nridset.alloc_pool);
+		ret = ridalloc_new_own_pool(module, &nridset.alloc_pool, parent);
 		if (ret == LDB_ERR_UNWILLING_TO_PERFORM) {
 			ridalloc_poke_rid_manager(module);
 			ret = LDB_SUCCESS;
@@ -597,7 +599,7 @@ int ridalloc_allocate_rid(struct ldb_module *module, uint32_t *rid)
 		return ret;
 	}
 
-	ret = dsdb_module_modify(module, msg, DSDB_FLAG_NEXT_MODULE);
+	ret = dsdb_module_modify(module, msg, DSDB_FLAG_NEXT_MODULE, parent);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
 		return ret;
@@ -612,7 +614,8 @@ int ridalloc_allocate_rid(struct ldb_module *module, uint32_t *rid)
 /*
   called by DSDB_EXTENDED_ALLOCATE_RID_POOL extended operation in samldb
  */
-int ridalloc_allocate_rid_pool_fsmo(struct ldb_module *module, struct dsdb_fsmo_extended_op *exop)
+int ridalloc_allocate_rid_pool_fsmo(struct ldb_module *module, struct dsdb_fsmo_extended_op *exop,
+				    struct ldb_request *parent)
 {
 	struct ldb_dn *ntds_dn, *server_dn, *machine_dn, *rid_set_dn;
 	struct ldb_dn *rid_manager_dn;
@@ -623,7 +626,7 @@ int ridalloc_allocate_rid_pool_fsmo(struct ldb_module *module, struct dsdb_fsmo_
 	struct ldb_message *msg;
 	struct ridalloc_ridset_values oridset, nridset;
 
-	ret = dsdb_module_dn_by_guid(module, tmp_ctx, &exop->destination_dsa_guid, &ntds_dn);
+	ret = dsdb_module_dn_by_guid(module, tmp_ctx, &exop->destination_dsa_guid, &ntds_dn, parent);
 	if (ret != LDB_SUCCESS) {
 		ldb_asprintf_errstring(ldb, __location__ ": Unable to find NTDS object for guid %s - %s\n",
 				       GUID_string(tmp_ctx, &exop->destination_dsa_guid), ldb_errstring(ldb));
@@ -637,7 +640,7 @@ int ridalloc_allocate_rid_pool_fsmo(struct ldb_module *module, struct dsdb_fsmo_
 		return ldb_module_oom(module);
 	}
 
-	ret = dsdb_module_reference_dn(module, tmp_ctx, server_dn, "serverReference", &machine_dn);
+	ret = dsdb_module_reference_dn(module, tmp_ctx, server_dn, "serverReference", &machine_dn, parent);
 	if (ret != LDB_SUCCESS) {
 		ldb_asprintf_errstring(ldb, __location__ ": Failed to find serverReference in %s - %s",
 				       ldb_dn_get_linearized(server_dn), ldb_errstring(ldb));
@@ -645,7 +648,7 @@ int ridalloc_allocate_rid_pool_fsmo(struct ldb_module *module, struct dsdb_fsmo_
 		return ret;
 	}
 
-	ret = dsdb_module_rid_manager_dn(module, tmp_ctx, &rid_manager_dn);
+	ret = dsdb_module_rid_manager_dn(module, tmp_ctx, &rid_manager_dn, parent);
 	if (ret != LDB_SUCCESS) {
 		ldb_asprintf_errstring(ldb, __location__ ": Failed to find RID Manager object - %s",
 				       ldb_errstring(ldb));
@@ -653,9 +656,9 @@ int ridalloc_allocate_rid_pool_fsmo(struct ldb_module *module, struct dsdb_fsmo_
 		return ret;
 	}
 
-	ret = dsdb_module_reference_dn(module, tmp_ctx, machine_dn, "rIDSetReferences", &rid_set_dn);
+	ret = dsdb_module_reference_dn(module, tmp_ctx, machine_dn, "rIDSetReferences", &rid_set_dn, parent);
 	if (ret == LDB_ERR_NO_SUCH_ATTRIBUTE) {
-		ret = ridalloc_create_rid_set_ntds(module, tmp_ctx, rid_manager_dn, ntds_dn, &rid_set_dn);
+		ret = ridalloc_create_rid_set_ntds(module, tmp_ctx, rid_manager_dn, ntds_dn, &rid_set_dn, parent);
 		talloc_free(tmp_ctx);
 		return ret;
 	}
@@ -668,7 +671,7 @@ int ridalloc_allocate_rid_pool_fsmo(struct ldb_module *module, struct dsdb_fsmo_
 	}
 
 	ret = dsdb_module_search_dn(module, tmp_ctx, &res, rid_set_dn,
-				    ridalloc_ridset_attrs, DSDB_FLAG_NEXT_MODULE);
+				    ridalloc_ridset_attrs, DSDB_FLAG_NEXT_MODULE, parent);
 	if (ret != LDB_SUCCESS) {
 		ldb_asprintf_errstring(ldb, __location__ ": No RID Set %s",
 				       ldb_dn_get_linearized(rid_set_dn));
@@ -699,7 +702,7 @@ int ridalloc_allocate_rid_pool_fsmo(struct ldb_module *module, struct dsdb_fsmo_
 	}
 
 	/* grab a pool from the RID Manager object */
-	ret = ridalloc_rid_manager_allocate(module, rid_manager_dn, &nridset.alloc_pool);
+	ret = ridalloc_rid_manager_allocate(module, rid_manager_dn, &nridset.alloc_pool, parent);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
 		return ret;
@@ -721,7 +724,7 @@ int ridalloc_allocate_rid_pool_fsmo(struct ldb_module *module, struct dsdb_fsmo_
 		return ret;
 	}
 
-	ret = dsdb_module_modify(module, msg, DSDB_FLAG_NEXT_MODULE);
+	ret = dsdb_module_modify(module, msg, DSDB_FLAG_NEXT_MODULE, parent);
 	if (ret != LDB_SUCCESS) {
 		ldb_asprintf_errstring(ldb, "Failed to modify RID Set object %s - %s",
 				       ldb_dn_get_linearized(rid_set_dn), ldb_errstring(ldb));

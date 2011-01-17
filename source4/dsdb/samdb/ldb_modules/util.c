@@ -37,7 +37,8 @@ int dsdb_module_search_dn(struct ldb_module *module,
 			  struct ldb_result **_res,
 			  struct ldb_dn *basedn,
 			  const char * const *attrs,
-			  uint32_t dsdb_flags)
+			  uint32_t dsdb_flags,
+			  struct ldb_request *parent)
 {
 	int ret;
 	struct ldb_request *req;
@@ -60,7 +61,7 @@ int dsdb_module_search_dn(struct ldb_module *module,
 				   NULL,
 				   res,
 				   ldb_search_default_callback,
-				   NULL);
+				   parent);
 	LDB_REQ_SET_LOCATION(req);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
@@ -71,6 +72,10 @@ int dsdb_module_search_dn(struct ldb_module *module,
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
 		return ret;
+	}
+
+	if (dsdb_flags & DSDB_FLAG_TRUSTED) {
+		ldb_req_mark_trusted(req);
 	}
 
 	/* Run the new request */
@@ -114,7 +119,8 @@ int dsdb_module_search(struct ldb_module *module,
 		       struct ldb_dn *basedn, enum ldb_scope scope, 
 		       const char * const *attrs,
 		       int dsdb_flags, 
-		       const char *format, ...) _PRINTF_ATTRIBUTE(8, 9)
+		       struct ldb_request *parent,
+		       const char *format, ...) _PRINTF_ATTRIBUTE(9, 10)
 {
 	int ret;
 	struct ldb_request *req;
@@ -152,7 +158,7 @@ int dsdb_module_search(struct ldb_module *module,
 				   NULL,
 				   res,
 				   ldb_search_default_callback,
-				   NULL);
+				   parent);
 	LDB_REQ_SET_LOCATION(req);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
@@ -163,6 +169,10 @@ int dsdb_module_search(struct ldb_module *module,
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
 		return ret;
+	}
+
+	if (dsdb_flags & DSDB_FLAG_TRUSTED) {
+		ldb_req_mark_trusted(req);
 	}
 
 	if (dsdb_flags & DSDB_FLAG_NEXT_MODULE) {
@@ -190,7 +200,8 @@ int dsdb_module_search(struct ldb_module *module,
   find a DN given a GUID. This searches across all partitions
  */
 int dsdb_module_dn_by_guid(struct ldb_module *module, TALLOC_CTX *mem_ctx,
-			   const struct GUID *guid, struct ldb_dn **dn)
+			   const struct GUID *guid, struct ldb_dn **dn,
+			   struct ldb_request *parent)
 {
 	struct ldb_result *res;
 	const char *attrs[] = { NULL };
@@ -203,6 +214,7 @@ int dsdb_module_dn_by_guid(struct ldb_module *module, TALLOC_CTX *mem_ctx,
 				 DSDB_SEARCH_SHOW_RECYCLED |
 				 DSDB_SEARCH_SEARCH_ALL_PARTITIONS |
 				 DSDB_SEARCH_SHOW_DN_IN_STORAGE_FORMAT,
+				 parent,
 				 "objectGUID=%s", GUID_string(tmp_ctx, guid));
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
@@ -228,7 +240,8 @@ int dsdb_module_dn_by_guid(struct ldb_module *module, TALLOC_CTX *mem_ctx,
 /*
   find a GUID given a DN.
  */
-int dsdb_module_guid_by_dn(struct ldb_module *module, struct ldb_dn *dn, struct GUID *guid)
+int dsdb_module_guid_by_dn(struct ldb_module *module, struct ldb_dn *dn, struct GUID *guid,
+			   struct ldb_request *parent)
 {
 	const char *attrs[] = { NULL };
 	struct ldb_result *res;
@@ -239,7 +252,8 @@ int dsdb_module_guid_by_dn(struct ldb_module *module, struct ldb_dn *dn, struct 
 	ret = dsdb_module_search_dn(module, tmp_ctx, &res, dn, attrs,
 	                            DSDB_FLAG_NEXT_MODULE |
 	                            DSDB_SEARCH_SHOW_RECYCLED |
-				    DSDB_SEARCH_SHOW_EXTENDED_DN);
+				    DSDB_SEARCH_SHOW_EXTENDED_DN,
+				    parent);
 	if (ret != LDB_SUCCESS) {
 		ldb_asprintf_errstring(ldb_module_get_ctx(module), "Failed to find GUID for %s",
 				       ldb_dn_get_linearized(dn));
@@ -263,7 +277,8 @@ int dsdb_module_guid_by_dn(struct ldb_module *module, struct ldb_dn *dn, struct 
  */
 int dsdb_module_modify(struct ldb_module *module,
 		       const struct ldb_message *message,
-		       uint32_t dsdb_flags)
+		       uint32_t dsdb_flags,
+		       struct ldb_request *parent)
 {
 	struct ldb_request *mod_req;
 	int ret;
@@ -282,7 +297,7 @@ int dsdb_module_modify(struct ldb_module *module,
 				NULL,
 				res,
 				ldb_modify_default_callback,
-				NULL);
+				parent);
 	LDB_REQ_SET_LOCATION(mod_req);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
@@ -293,6 +308,10 @@ int dsdb_module_modify(struct ldb_module *module,
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
 		return ret;
+	}
+
+	if (dsdb_flags & DSDB_FLAG_TRUSTED) {
+		ldb_req_mark_trusted(mod_req);
 	}
 
 	/* Run the new request */
@@ -320,8 +339,9 @@ int dsdb_module_modify(struct ldb_module *module,
   current module
  */
 int dsdb_module_rename(struct ldb_module *module,
-                      struct ldb_dn *olddn, struct ldb_dn *newdn,
-                      uint32_t dsdb_flags)
+		       struct ldb_dn *olddn, struct ldb_dn *newdn,
+		       uint32_t dsdb_flags,
+		       struct ldb_request *parent)
 {
 	struct ldb_request *req;
 	int ret;
@@ -341,7 +361,7 @@ int dsdb_module_rename(struct ldb_module *module,
 				   NULL,
 				   res,
 				   ldb_modify_default_callback,
-				   NULL);
+				   parent);
 	LDB_REQ_SET_LOCATION(req);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
@@ -352,6 +372,10 @@ int dsdb_module_rename(struct ldb_module *module,
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
 		return ret;
+	}
+
+	if (dsdb_flags & DSDB_FLAG_TRUSTED) {
+		ldb_req_mark_trusted(req);
 	}
 
 	/* Run the new request */
@@ -378,7 +402,8 @@ int dsdb_module_rename(struct ldb_module *module,
  */
 int dsdb_module_add(struct ldb_module *module,
 		    const struct ldb_message *message,
-		    uint32_t dsdb_flags)
+		    uint32_t dsdb_flags,
+		    struct ldb_request *parent)
 {
 	struct ldb_request *req;
 	int ret;
@@ -397,7 +422,7 @@ int dsdb_module_add(struct ldb_module *module,
 				NULL,
 				res,
 				ldb_modify_default_callback,
-				NULL);
+				parent);
 	LDB_REQ_SET_LOCATION(req);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
@@ -408,6 +433,10 @@ int dsdb_module_add(struct ldb_module *module,
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
 		return ret;
+	}
+
+	if (dsdb_flags & DSDB_FLAG_TRUSTED) {
+		ldb_req_mark_trusted(req);
 	}
 
 	/* Run the new request */
@@ -434,7 +463,8 @@ int dsdb_module_add(struct ldb_module *module,
  */
 int dsdb_module_del(struct ldb_module *module,
 		    struct ldb_dn *dn,
-		    uint32_t dsdb_flags)
+		    uint32_t dsdb_flags,
+		    struct ldb_request *parent)
 {
 	struct ldb_request *req;
 	int ret;
@@ -453,7 +483,7 @@ int dsdb_module_del(struct ldb_module *module,
 				NULL,
 				res,
 				ldb_modify_default_callback,
-				NULL);
+				parent);
 	LDB_REQ_SET_LOCATION(req);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
@@ -464,6 +494,10 @@ int dsdb_module_del(struct ldb_module *module,
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
 		return ret;
+	}
+
+	if (dsdb_flags & DSDB_FLAG_TRUSTED) {
+		ldb_req_mark_trusted(req);
 	}
 
 	/* Run the new request */
@@ -577,7 +611,7 @@ int dsdb_check_optional_feature(struct ldb_module *module, struct ldb_dn *scope,
   (eg. serverReference, rIDManagerReference etc)
  */
 int dsdb_module_reference_dn(struct ldb_module *module, TALLOC_CTX *mem_ctx, struct ldb_dn *base,
-			     const char *attribute, struct ldb_dn **dn)
+			     const char *attribute, struct ldb_dn **dn, struct ldb_request *parent)
 {
 	const char *attrs[2];
 	struct ldb_result *res;
@@ -587,7 +621,7 @@ int dsdb_module_reference_dn(struct ldb_module *module, TALLOC_CTX *mem_ctx, str
 	attrs[1] = NULL;
 
 	ret = dsdb_module_search_dn(module, mem_ctx, &res, base, attrs,
-	                            DSDB_FLAG_NEXT_MODULE);
+	                            DSDB_FLAG_NEXT_MODULE, parent);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
@@ -608,11 +642,12 @@ int dsdb_module_reference_dn(struct ldb_module *module, TALLOC_CTX *mem_ctx, str
   find the RID Manager$ DN via the rIDManagerReference attribute in the
   base DN
  */
-int dsdb_module_rid_manager_dn(struct ldb_module *module, TALLOC_CTX *mem_ctx, struct ldb_dn **dn)
+int dsdb_module_rid_manager_dn(struct ldb_module *module, TALLOC_CTX *mem_ctx, struct ldb_dn **dn,
+			       struct ldb_request *parent)
 {
 	return dsdb_module_reference_dn(module, mem_ctx,
 					ldb_get_default_basedn(ldb_module_get_ctx(module)),
-					"rIDManagerReference", dn);
+					"rIDManagerReference", dn, parent);
 }
 
 /*
@@ -631,7 +666,7 @@ int dsdb_next_callback(struct ldb_request *req, struct ldb_reply *ares)
   object for a partition
  */
 int dsdb_module_load_partition_usn(struct ldb_module *module, struct ldb_dn *dn,
-				  uint64_t *uSN, uint64_t *urgent_uSN)
+				   uint64_t *uSN, uint64_t *urgent_uSN, struct ldb_request *parent)
 {
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	struct ldb_request *req;
@@ -652,7 +687,7 @@ int dsdb_module_load_partition_usn(struct ldb_module *module, struct ldb_dn *dn,
 				   NULL, NULL,
 				   NULL,
 				   res, ldb_search_default_callback,
-				   NULL);
+				   parent);
 	LDB_REQ_SET_LOCATION(req);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
@@ -719,7 +754,8 @@ int dsdb_module_load_partition_usn(struct ldb_module *module, struct ldb_dn *dn,
   partition
  */
 int dsdb_module_save_partition_usn(struct ldb_module *module, struct ldb_dn *dn,
-				   uint64_t uSN, uint64_t urgent_uSN)
+				   uint64_t uSN, uint64_t urgent_uSN,
+				   struct ldb_request *parent)
 {
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	struct ldb_request *req;
@@ -776,7 +812,7 @@ int dsdb_module_save_partition_usn(struct ldb_module *module, struct ldb_dn *dn,
 				NULL,
 				res,
 				ldb_modify_default_callback,
-				NULL);
+				parent);
 	LDB_REQ_SET_LOCATION(req);
 again:
 	if (ret != LDB_SUCCESS) {
@@ -804,7 +840,7 @@ again:
 					NULL,
 					res,
 					ldb_modify_default_callback,
-					NULL);
+					parent);
 		LDB_REQ_SET_LOCATION(req);
 		goto again;
 	}
@@ -978,7 +1014,8 @@ int dsdb_module_constrainted_update_int32(struct ldb_module *module,
 					  struct ldb_dn *dn,
 					  const char *attr,
 					  const int32_t *old_val,
-					  const int32_t *new_val)
+					  const int32_t *new_val,
+					  struct ldb_request *parent)
 {
 	struct ldb_message *msg;
 	int ret;
@@ -995,7 +1032,7 @@ int dsdb_module_constrainted_update_int32(struct ldb_module *module,
 		return ret;
 	}
 
-	ret = dsdb_module_modify(module, msg, DSDB_FLAG_NEXT_MODULE);
+	ret = dsdb_module_modify(module, msg, DSDB_FLAG_NEXT_MODULE, parent);
 	talloc_free(msg);
 	return ret;
 }
@@ -1004,11 +1041,12 @@ int dsdb_module_constrainted_update_uint32(struct ldb_module *module,
 					   struct ldb_dn *dn,
 					   const char *attr,
 					   const uint32_t *old_val,
-					   const uint32_t *new_val)
+					   const uint32_t *new_val,
+					   struct ldb_request *parent)
 {
 	return dsdb_module_constrainted_update_int32(module, dn, attr,
 						     (const int32_t *)old_val,
-						     (const int32_t *)new_val);
+						     (const int32_t *)new_val, parent);
 }
 
 /*
@@ -1018,7 +1056,8 @@ int dsdb_module_constrainted_update_int64(struct ldb_module *module,
 					  struct ldb_dn *dn,
 					  const char *attr,
 					  const int64_t *old_val,
-					  const int64_t *new_val)
+					  const int64_t *new_val,
+					  struct ldb_request *parent)
 {
 	struct ldb_message *msg;
 	int ret;
@@ -1035,7 +1074,7 @@ int dsdb_module_constrainted_update_int64(struct ldb_module *module,
 		return ret;
 	}
 
-	ret = dsdb_module_modify(module, msg, DSDB_FLAG_NEXT_MODULE);
+	ret = dsdb_module_modify(module, msg, DSDB_FLAG_NEXT_MODULE, parent);
 	talloc_free(msg);
 	return ret;
 }
@@ -1044,16 +1083,18 @@ int dsdb_module_constrainted_update_uint64(struct ldb_module *module,
 					   struct ldb_dn *dn,
 					   const char *attr,
 					   const uint64_t *old_val,
-					   const uint64_t *new_val)
+					   const uint64_t *new_val,
+					   struct ldb_request *parent)
 {
 	return dsdb_module_constrainted_update_int64(module, dn, attr,
 						     (const int64_t *)old_val,
-						     (const int64_t *)new_val);
+						     (const int64_t *)new_val,
+						     parent);
 }
 
 
 const struct ldb_val *dsdb_module_find_dsheuristics(struct ldb_module *module,
-						    TALLOC_CTX *mem_ctx)
+						    TALLOC_CTX *mem_ctx, struct ldb_request *parent)
 {
 	int ret;
 	struct ldb_dn *new_dn;
@@ -1070,7 +1111,8 @@ const struct ldb_val *dsdb_module_find_dsheuristics(struct ldb_module *module,
 	ret = dsdb_module_search_dn(module, mem_ctx, &res,
 				    new_dn,
 				    attrs,
-				    DSDB_FLAG_NEXT_MODULE);
+				    DSDB_FLAG_NEXT_MODULE,
+				    parent);
 	if (ret == LDB_SUCCESS && res->count == 1) {
 		talloc_free(new_dn);
 		return ldb_msg_find_ldb_val(res->msgs[0],
@@ -1080,12 +1122,12 @@ const struct ldb_val *dsdb_module_find_dsheuristics(struct ldb_module *module,
 	return NULL;
 }
 
-bool dsdb_block_anonymous_ops(struct ldb_module *module)
+bool dsdb_block_anonymous_ops(struct ldb_module *module, struct ldb_request *parent)
 {
 	TALLOC_CTX *tmp_ctx = talloc_new(module);
 	bool result;
 	const struct ldb_val *hr_val = dsdb_module_find_dsheuristics(module,
-								     tmp_ctx);
+								     tmp_ctx, parent);
 	if (hr_val == NULL || hr_val->length < DS_HR_BLOCK_ANONYMOUS_OPS) {
 		result = true;
 	} else if (hr_val->data[DS_HR_BLOCK_ANONYMOUS_OPS -1] == '2') {
@@ -1099,12 +1141,14 @@ bool dsdb_block_anonymous_ops(struct ldb_module *module)
 }
 
 bool dsdb_user_password_support(struct ldb_module *module,
-				TALLOC_CTX *mem_ctx)
+				TALLOC_CTX *mem_ctx,
+				struct ldb_request *parent)
 {
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 	bool result;
 	const struct ldb_val *hr_val = dsdb_module_find_dsheuristics(module,
-								     tmp_ctx);
+								     tmp_ctx,
+								     parent);
 	if (hr_val == NULL || hr_val->length < DS_HR_USER_PASSWORD_SUPPORT) {
 		result = false;
 	} else if ((hr_val->data[DS_HR_USER_PASSWORD_SUPPORT -1] == '2') ||

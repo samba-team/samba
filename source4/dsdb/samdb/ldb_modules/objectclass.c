@@ -613,7 +613,7 @@ static int objectclass_do_add(struct oc_context *ac)
 
 		/* Make sure its valid to add an object of this type */
 		objectclass = get_last_structural_class(ac->schema,
-							objectclass_element);
+							objectclass_element, ac->req);
 		if(objectclass == NULL) {
 			ldb_asprintf_errstring(ldb,
 					       "Failed to find a structural class for %s",
@@ -1039,7 +1039,7 @@ static int objectclass_do_mod(struct oc_context *ac)
 			}
 
 			objectclass = get_last_structural_class(ac->schema,
-								oc_el_change);
+								oc_el_change, ac->req);
 			if (objectclass != NULL) {
 				ldb_asprintf_errstring(ldb,
 						       "objectclass: cannot add a new top-most structural objectclass '%s'!",
@@ -1075,7 +1075,7 @@ static int objectclass_do_mod(struct oc_context *ac)
 		case LDB_FLAG_MOD_DELETE:
 			/* get the actual top-most structural objectclass */
 			objectclass = get_last_structural_class(ac->schema,
-								oc_el_entry);
+								oc_el_entry, ac->req);
 			if (objectclass == NULL) {
 				/* no structural objectclass? */
 				talloc_free(mem_ctx);
@@ -1352,7 +1352,7 @@ static int objectclass_do_rename2(struct oc_context *ac)
 			/* existing entry without a valid object class? */
 			return ldb_operr(ldb);
 		}
-		objectclass = get_last_structural_class(ac->schema, oc_el_entry);
+		objectclass = get_last_structural_class(ac->schema, oc_el_entry, ac->req);
 		if (objectclass == NULL) {
 			/* existing entry without a valid object class? */
 			return ldb_operr(ldb);

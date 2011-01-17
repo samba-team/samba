@@ -39,7 +39,8 @@
 int dsdb_module_schema_info_blob_read(struct ldb_module *ldb_module,
 				      uint32_t dsdb_flags,
 				      TALLOC_CTX *mem_ctx,
-				      struct ldb_val *schema_info_blob)
+				      struct ldb_val *schema_info_blob,
+				      struct ldb_request *parent)
 {
 	int ldb_err;
 	const struct ldb_val *blob_val;
@@ -57,7 +58,8 @@ int dsdb_module_schema_info_blob_read(struct ldb_module *ldb_module,
 	}
 
 	ldb_err = dsdb_module_search(ldb_module, mem_ctx, &schema_res, schema_dn,
-	                             LDB_SCOPE_BASE, schema_attrs, dsdb_flags, NULL);
+	                             LDB_SCOPE_BASE, schema_attrs, dsdb_flags, parent,
+				     NULL);
 	if (ldb_err == LDB_ERR_NO_SUCH_OBJECT) {
 		DEBUG(0,("dsdb_module_schema_info_blob_read: Schema DN not found!\n"));
 		talloc_free(schema_res);
@@ -137,7 +139,8 @@ static int dsdb_schema_info_write_prepare(struct ldb_context *ldb,
  */
 int dsdb_module_schema_info_blob_write(struct ldb_module *ldb_module,
 				       uint32_t dsdb_flags,
-				       struct ldb_val *schema_info_blob)
+				       struct ldb_val *schema_info_blob,
+				       struct ldb_request *parent)
 {
 	int ldb_err;
 	struct ldb_message *msg;
@@ -158,7 +161,7 @@ int dsdb_module_schema_info_blob_write(struct ldb_module *ldb_module,
 	}
 
 
-	ldb_err = dsdb_module_modify(ldb_module, msg, dsdb_flags);
+	ldb_err = dsdb_module_modify(ldb_module, msg, dsdb_flags, parent);
 
 	talloc_free(temp_ctx);
 
@@ -181,7 +184,8 @@ int dsdb_module_schema_info_blob_write(struct ldb_module *ldb_module,
 static int dsdb_module_schema_info_read(struct ldb_module *ldb_module,
 					uint32_t dsdb_flags,
 					TALLOC_CTX *mem_ctx,
-					struct dsdb_schema_info **_schema_info)
+					struct dsdb_schema_info **_schema_info,
+					struct ldb_request *parent)
 {
 	int ret;
 	DATA_BLOB ndr_blob;
@@ -194,7 +198,7 @@ static int dsdb_module_schema_info_read(struct ldb_module *ldb_module,
 	}
 
 	/* read serialized schemaInfo from LDB  */
-	ret = dsdb_module_schema_info_blob_read(ldb_module, dsdb_flags, temp_ctx, &ndr_blob);
+	ret = dsdb_module_schema_info_blob_read(ldb_module, dsdb_flags, temp_ctx, &ndr_blob, parent);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(temp_ctx);
 		return ret;
@@ -226,7 +230,8 @@ static int dsdb_module_schema_info_read(struct ldb_module *ldb_module,
  */
 static int dsdb_module_schema_info_write(struct ldb_module *ldb_module,
 					 uint32_t dsdb_flags,
-					 const struct dsdb_schema_info *schema_info)
+					 const struct dsdb_schema_info *schema_info,
+					 struct ldb_request *parent)
 {
 	WERROR werr;
 	int ret;
@@ -247,7 +252,7 @@ static int dsdb_module_schema_info_write(struct ldb_module *ldb_module,
 	}
 
 	/* write serialized schemaInfo into LDB */
-	ret = dsdb_module_schema_info_blob_write(ldb_module, dsdb_flags, &ndr_blob);
+	ret = dsdb_module_schema_info_blob_write(ldb_module, dsdb_flags, &ndr_blob, parent);
 
 	talloc_free(temp_ctx);
 
@@ -267,7 +272,7 @@ static int dsdb_module_schema_info_write(struct ldb_module *ldb_module,
  */
 int dsdb_module_schema_info_update(struct ldb_module *ldb_module,
 				   struct dsdb_schema *schema,
-				   int dsdb_flags)
+				   int dsdb_flags, struct ldb_request *parent)
 {
 	int ret;
 	const struct GUID *invocation_id;
@@ -287,7 +292,7 @@ int dsdb_module_schema_info_update(struct ldb_module *ldb_module,
 	}
 
 	/* read serialized schemaInfo from LDB  */
-	ret = dsdb_module_schema_info_read(ldb_module, dsdb_flags, temp_ctx, &schema_info);
+	ret = dsdb_module_schema_info_read(ldb_module, dsdb_flags, temp_ctx, &schema_info, parent);
 	if (ret == LDB_ERR_NO_SUCH_ATTRIBUTE) {
 		/* make default value in case
 		 * we have no schemaInfo value yet */
@@ -307,7 +312,7 @@ int dsdb_module_schema_info_update(struct ldb_module *ldb_module,
 	schema_info->revision++;
 	schema_info->invocation_id = *invocation_id;
 
-	ret = dsdb_module_schema_info_write(ldb_module, dsdb_flags, schema_info);
+	ret = dsdb_module_schema_info_write(ldb_module, dsdb_flags, schema_info, parent);
 	if (ret != LDB_SUCCESS) {
 		ldb_asprintf_errstring(ldb_module_get_ctx(ldb_module),
 				       "dsdb_module_schema_info_update: failed to save schemaInfo - %s\n",
