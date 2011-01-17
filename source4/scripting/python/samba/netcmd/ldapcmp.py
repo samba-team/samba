@@ -46,7 +46,7 @@ summary = {}
 class LDAPBase(object):
 
     def __init__(self, host, creds, lp,
-                 two=False, quiet=False, descriptor=False, verbose=False,
+                 two=False, quiet=False, descriptor=False, sort_aces=False, verbose=False,
                  view="section", base="", scope="SUB"):
         ldb_options = []
         samdb_url = host
@@ -67,6 +67,7 @@ class LDAPBase(object):
         self.two_domains = two
         self.quiet = quiet
         self.descriptor = descriptor
+        self.sort_aces = sort_aces
         self.view = view
         self.verbose = verbose
         self.host = host
@@ -208,6 +209,8 @@ class Descriptor(object):
         self.dn = dn
         self.sddl = self.con.get_descriptor_sddl(self.dn)
         self.dacl_list = self.extract_dacl()
+        if self.con.sort_aces:
+            self.dacl_list.sort()
 
     def extract_dacl(self):
         """ Extracts the DACL as a list of ACE string (with the brakets).
@@ -781,6 +784,8 @@ class cmd_ldapcmp(Command):
             help="Print all DN pairs that have been compared"),
         Option("--sd", dest="descriptor", action="store_true", default=False,
             help="Compare nTSecurityDescriptor attibutes only"),
+        Option("--sort-aces", dest="sort_aces", action="store_true", default=False,
+            help="Sort ACEs before comparison of nTSecurityDescriptor attribute"),
         Option("--view", dest="view", default="section",
             help="Display mode for nTSecurityDescriptor results. Possible values: section or collision."),
         Option("--base", dest="base", default="",
@@ -793,9 +798,8 @@ class cmd_ldapcmp(Command):
 
     def run(self, URL1, URL2,
             context1=None, context2=None, context3=None,
-            two=False, quiet=False, verbose=False, descriptor=False, view="section",
-            base="", base2="", scope="SUB",
-            credopts=None, sambaopts=None, versionopts=None):
+            two=False, quiet=False, verbose=False, descriptor=False, sort_aces=False, view="section",
+            base="", base2="", scope="SUB", credopts=None, sambaopts=None, versionopts=None):
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp, fallback_machine=True)
         creds2 = credopts.get_credentials2(lp, guess=False)
@@ -835,11 +839,13 @@ class cmd_ldapcmp(Command):
             raise CommandError("Invalid --scope value. Choose from: SUB, ONE, BASE")
 
         con1 = LDAPBase(URL1, creds, lp,
-                        two=two, quiet=quiet, descriptor=descriptor, verbose=verbose, view=view, base=base, scope=scope)
+                        two=two, quiet=quiet, descriptor=descriptor, sort_aces=sort_aces,
+                        verbose=verbose,view=view, base=base, scope=scope)
         assert len(con1.base_dn) > 0
 
         con2 = LDAPBase(URL2, creds2, lp,
-                        two=two, quiet=quiet, descriptor=descriptor, verbose=verbose, view=view, base=base2, scope=scope)
+                        two=two, quiet=quiet, descriptor=descriptor, sort_aces=sort_aces,
+                        verbose=verbose, view=view, base=base2, scope=scope)
         assert len(con2.base_dn) > 0
 
         status = 0
