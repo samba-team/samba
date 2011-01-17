@@ -130,6 +130,66 @@ static PyObject *py_gensec_start_client(PyTypeObject *type, PyObject *args, PyOb
 	return (PyObject *)self;
 }
 
+static PyObject *py_gensec_start_server(PyTypeObject *type, PyObject *args, PyObject *kwargs)
+{
+	NTSTATUS status;
+	py_talloc_Object *self;
+	struct gensec_settings *settings;
+	const char *kwnames[] = { "auth_context", "settings", NULL };
+	PyObject *py_settings;
+	PyObject *py_auth_context;
+	struct tevent_context *ev;
+	struct gensec_security *gensec;
+	struct auth_context *auth_context;
+
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "OO", discard_const_p(char *, kwnames), &py_auth_context, &py_settings))
+		return NULL;
+
+	self = (py_talloc_Object*)type->tp_alloc(type, 0);
+	if (self == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+	self->talloc_ctx = talloc_new(NULL);
+	if (self->talloc_ctx == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	settings = settings_from_object(self->talloc_ctx, py_settings);
+	if (settings == NULL) {
+		PyObject_DEL(self);
+		return NULL;
+	}
+
+	ev = tevent_context_init(self->talloc_ctx);
+	if (ev == NULL) {
+		PyErr_NoMemory();
+		PyObject_Del(self);
+		return NULL;
+	}
+
+	auth_context = py_talloc_get_type(self, struct auth_context);
+
+	status = gensec_init(settings->lp_ctx);
+	if (!NT_STATUS_IS_OK(status)) {
+		PyErr_SetNTSTATUS(status);
+		PyObject_DEL(self);
+		return NULL;
+	}
+
+	status = gensec_server_start(self->talloc_ctx, ev, settings, auth_context, &gensec);
+	if (!NT_STATUS_IS_OK(status)) {
+		PyErr_SetNTSTATUS(status);
+		PyObject_DEL(self);
+		return NULL;
+	}
+
+	self->ptr = gensec;
+
+	return (PyObject *)self;
+}
+
 static PyObject *py_gensec_session_info(PyObject *self)
 {
 	NTSTATUS status;
@@ -186,18 +246,50 @@ static PyObject *py_gensec_start_mech_by_authtype(PyObject *self, PyObject *args
 	Py_RETURN_NONE;
 }
 
+static PyObject *py_gensec_update(PyObject *self, PyObject *args)
+{
+	NTSTATUS status;
+
+	TALLOC_CTX *mem_ctx;
+	DATA_BLOB in, out;
+	PyObject *ret, *py_in;
+	struct gensec_security *security = py_talloc_get_type(self, struct gensec_security);
+
+	if (!PyArg_ParseTuple(args, "O", &py_in))
+		return NULL;
+
+	mem_ctx = talloc_new(NULL);
+
+	in.data = (uint8_t *)PyString_AsString(py_in);
+	in.length = PyString_Size(py_in);
+
+	status = gensec_update(security, mem_ctx, in, &out);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		PyErr_SetNTSTATUS(status);
+		talloc_free(mem_ctx);
+		return NULL;
+	}
+
+	ret = PyString_FromStringAndSize((const char *)out.data, out.length);
+	talloc_free(mem_ctx);
+	return ret;
+}
+
 static PyMethodDef py_gensec_security_methods[] = {
 	{ "start_client", (PyCFunction)py_gensec_start_client, METH_VARARGS|METH_KEYWORDS|METH_CLASS, 
 		"S.start_client(settings) -> gensec" },
-/*	{ "start_server", (PyCFunction)py_gensec_start_server, METH_VARARGS|METH_KEYWORDS|METH_CLASS, 
-		"S.start_server(auth_ctx, settings) -> gensec" },*/
+	{ "start_server", (PyCFunction)py_gensec_start_server, METH_VARARGS|METH_KEYWORDS|METH_CLASS,
+		"S.start_server(auth_ctx, settings) -> gensec" },
 	{ "session_info", (PyCFunction)py_gensec_session_info, METH_NOARGS,
-		"S.session_info() -> info" },
-    { "start_mech_by_name", (PyCFunction)py_gensec_start_mech_by_name, METH_VARARGS, 
+	        "S.session_info() -> info" },
+	{ "start_mech_by_name", (PyCFunction)py_gensec_start_mech_by_name, METH_VARARGS,
         "S.start_mech_by_name(name)" },
 	{ "start_mech_by_authtype", (PyCFunction)py_gensec_start_mech_by_authtype, METH_VARARGS, "S.start_mech_by_authtype(authtype, level)" },
 	{ "get_name_by_authtype", (PyCFunction)py_get_name_by_authtype, METH_VARARGS,
 		"S.get_name_by_authtype(authtype) -> name\nLookup an auth type." },
+	{ "update",  (PyCFunction)py_gensec_update, METH_VARARGS,
+		"S.update(blob_in) -> blob_out\nPerform one step in a GENSEC dance." },
 	{ NULL }
 };
 
