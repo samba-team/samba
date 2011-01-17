@@ -267,7 +267,7 @@ Comma Separated list of Files
 		</listitem></varlistentry>
 
 
-		<varlistentry><term>deldriver</term><listitem><para>Delete the 
+		<varlistentry><term>deldriver &lt;driver&gt;</term><listitem><para>Delete the
 		specified printer driver for all architectures.  This
 		does not delete the actual driver files from the server,
 		only the entry from the server's list of drivers.
