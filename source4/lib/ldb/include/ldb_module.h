@@ -228,6 +228,11 @@ int ldb_reply_add_control(struct ldb_reply *ares, const char *oid, bool critical
 void ldb_req_mark_untrusted(struct ldb_request *req);
 
 /**
+  mark a request as trusted.
+ */
+void ldb_req_mark_trusted(struct ldb_request *req);
+
+/**
    return true is a request is untrusted
  */
 bool ldb_req_is_untrusted(struct ldb_request *req);
