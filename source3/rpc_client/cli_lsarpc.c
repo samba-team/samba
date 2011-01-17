@@ -354,19 +354,19 @@ static NTSTATUS dcerpc_lsa_lookup_sids_generic(struct dcerpc_binding_handle *h,
 	if (num_sids) {
 		if (!(domains = TALLOC_ARRAY(mem_ctx, char *, num_sids))) {
 			DEBUG(0, ("rpccli_lsa_lookup_sids(): out of memory\n"));
-			result = NT_STATUS_NO_MEMORY;
+			status = NT_STATUS_NO_MEMORY;
 			goto fail;
 		}
 
 		if (!(names = TALLOC_ARRAY(mem_ctx, char *, num_sids))) {
 			DEBUG(0, ("rpccli_lsa_lookup_sids(): out of memory\n"));
-			result = NT_STATUS_NO_MEMORY;
+			status = NT_STATUS_NO_MEMORY;
 			goto fail;
 		}
 
 		if (!(types = TALLOC_ARRAY(mem_ctx, enum lsa_SidType, num_sids))) {
 			DEBUG(0, ("rpccli_lsa_lookup_sids(): out of memory\n"));
-			result = NT_STATUS_NO_MEMORY;
+			status = NT_STATUS_NO_MEMORY;
 			goto fail;
 		}
 	}
@@ -378,7 +378,7 @@ static NTSTATUS dcerpc_lsa_lookup_sids_generic(struct dcerpc_binding_handle *h,
 
 	while (sids_left > 0) {
 		int hunk_num_sids;
-		NTSTATUS hunk_result;
+		NTSTATUS hunk_result = NT_STATUS_UNSUCCESSFUL;
 
 		hunk_num_sids = ((sids_left > LOOKUP_SIDS_HUNK_SIZE)
 				? LOOKUP_SIDS_HUNK_SIZE
