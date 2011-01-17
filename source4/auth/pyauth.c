@@ -28,7 +28,10 @@
 #include "param/pyparam.h"
 #include "libcli/security/security.h"
 #include "auth/credentials/pycredentials.h"
+#include <tevent.h>
 #include "librpc/rpc/pyrpc_util.h"
+
+staticforward PyTypeObject PyAuthContext;
 
 static PyObject *py_auth_session_get_security_token(PyObject *self, void *closure)
 {
@@ -222,6 +225,83 @@ static PyObject *py_user_session(PyObject *module, PyObject *args, PyObject *kwa
 
 	return PyAuthSession_FromSession(session);
 }
+
+static PyObject *PyAuthContext_FromContext(struct auth_context *auth_context)
+{
+	return py_talloc_reference(&PyAuthContext, auth_context);
+}
+
+static PyObject *py_auth_context_new(PyTypeObject *type, PyObject *args, PyObject *kwargs)
+{
+	PyObject *py_lp_ctx;
+	PyObject *py_messaging_ctx;
+	PyObject *py_auth_context;
+	TALLOC_CTX *mem_ctx;
+	struct auth_context *auth_context;
+	struct messaging_context *messaging_context;
+	struct loadparm_context *lp_ctx;
+	struct tevent_context *ev;
+	NTSTATUS nt_status;
+
+	const char * const kwnames[] = { "lp_ctx", "messaging_ctx", NULL };
+
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "OO",
+					 discard_const_p(char *, kwnames),
+					 &py_lp_ctx, &py_messaging_ctx))
+		return NULL;
+
+	mem_ctx = talloc_new(NULL);
+	if (mem_ctx == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	lp_ctx = lpcfg_from_py_object(mem_ctx, py_lp_ctx);
+	if (!lp_ctx) {
+		return NULL;
+	}
+
+	ev = tevent_context_init(mem_ctx);
+	if (ev == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	messaging_context = py_talloc_get_type(py_messaging_ctx, struct messaging_context);
+
+	nt_status = auth_context_create(mem_ctx, ev, messaging_context, lp_ctx, &auth_context);
+
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		talloc_free(mem_ctx);
+		PyErr_NTSTATUS_IS_ERR_RAISE(nt_status);
+	}
+
+	if (!talloc_reference(auth_context, lp_ctx)) {
+		talloc_free(mem_ctx);
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	if (!talloc_reference(auth_context, ev)) {
+		talloc_free(mem_ctx);
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	py_auth_context = PyAuthContext_FromContext(auth_context);
+
+	talloc_free(mem_ctx);
+
+	return py_auth_context;
+}
+
+static PyTypeObject PyAuthContext = {
+	.tp_name = "AuthContext",
+	.tp_basicsize = sizeof(py_talloc_Object),
+	.tp_flags = Py_TPFLAGS_DEFAULT,
+	.tp_new = py_auth_context_new,
+	.tp_basicsize = sizeof(py_talloc_Object),
+};
 
 static PyMethodDef py_auth_methods[] = {
 	{ "system_session", (PyCFunction)py_system_session, METH_VARARGS, NULL },
