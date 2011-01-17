@@ -19,7 +19,7 @@
 #include "includes.h"
 #include "popt_common.h"
 #include "utils/net.h"
-#include "../librpc/gen_ndr/cli_samr.h"
+#include "../librpc/gen_ndr/ndr_samr_c.h"
 #include "../libcli/security/security.h"
 
 /*
@@ -42,64 +42,87 @@ static NTSTATUS rpc_sh_acct_do(struct net_context *c,
 					  int argc, const char **argv))
 {
 	struct policy_handle connect_pol, domain_pol;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS status, result;
 	union samr_DomainInfo *info1 = NULL;
 	union samr_DomainInfo *info3 = NULL;
 	union samr_DomainInfo *info12 = NULL;
 	int store;
+	struct dcerpc_binding_handle *b = pipe_hnd->binding_handle;
 
 	ZERO_STRUCT(connect_pol);
 	ZERO_STRUCT(domain_pol);
 
 	/* Get sam policy handle */
 
-	result = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
+	status = dcerpc_samr_Connect2(b, mem_ctx,
 				      pipe_hnd->desthost,
 				      MAXIMUM_ALLOWED_ACCESS,
-				      &connect_pol);
+				      &connect_pol,
+				      &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
 	if (!NT_STATUS_IS_OK(result)) {
+		status = result;
 		goto done;
 	}
 
 	/* Get domain policy handle */
 
-	result = rpccli_samr_OpenDomain(pipe_hnd, mem_ctx,
+	status = dcerpc_samr_OpenDomain(b, mem_ctx,
 					&connect_pol,
 					MAXIMUM_ALLOWED_ACCESS,
 					ctx->domain_sid,
-					&domain_pol);
+					&domain_pol,
+					&result);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
 	if (!NT_STATUS_IS_OK(result)) {
+		status = result;
 		goto done;
 	}
 
-	result = rpccli_samr_QueryDomainInfo(pipe_hnd, mem_ctx,
+	status = dcerpc_samr_QueryDomainInfo(b, mem_ctx,
 					     &domain_pol,
 					     1,
-					     &info1);
-
+					     &info1,
+					     &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
 	if (!NT_STATUS_IS_OK(result)) {
+		status = result;
 		d_fprintf(stderr, _("query_domain_info level 1 failed: %s\n"),
 			  nt_errstr(result));
 		goto done;
 	}
 
-	result = rpccli_samr_QueryDomainInfo(pipe_hnd, mem_ctx,
+	status = dcerpc_samr_QueryDomainInfo(b, mem_ctx,
 					     &domain_pol,
 					     3,
-					     &info3);
-
+					     &info3,
+					     &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
 	if (!NT_STATUS_IS_OK(result)) {
+		status = result;
 		d_fprintf(stderr, _("query_domain_info level 3 failed: %s\n"),
 			  nt_errstr(result));
 		goto done;
 	}
 
-	result = rpccli_samr_QueryDomainInfo(pipe_hnd, mem_ctx,
+	status = dcerpc_samr_QueryDomainInfo(b, mem_ctx,
 					     &domain_pol,
 					     12,
-					     &info12);
-
+					     &info12,
+					     &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
 	if (!NT_STATUS_IS_OK(result)) {
+		status = result;
 		d_fprintf(stderr, _("query_domain_info level 12 failed: %s\n"),
 			  nt_errstr(result));
 		goto done;
@@ -115,38 +138,47 @@ static NTSTATUS rpc_sh_acct_do(struct net_context *c,
 
 	switch (store) {
 	case 1:
-		result = rpccli_samr_SetDomainInfo(pipe_hnd, mem_ctx,
+		status = dcerpc_samr_SetDomainInfo(b, mem_ctx,
 						   &domain_pol,
 						   1,
-						   info1);
+						   info1,
+						   &result);
 		break;
 	case 3:
-		result = rpccli_samr_SetDomainInfo(pipe_hnd, mem_ctx,
+		status = dcerpc_samr_SetDomainInfo(b, mem_ctx,
 						   &domain_pol,
 						   3,
-						   info3);
+						   info3,
+						   &result);
 		break;
 	case 12:
-		result = rpccli_samr_SetDomainInfo(pipe_hnd, mem_ctx,
+		status = dcerpc_samr_SetDomainInfo(b, mem_ctx,
 						   &domain_pol,
 						   12,
-						   info12);
+						   info12,
+						   &result);
 		break;
 	default:
 		d_fprintf(stderr, _("Got unexpected info level %d\n"), store);
-		result = NT_STATUS_INTERNAL_ERROR;
+		status = NT_STATUS_INTERNAL_ERROR;
 		goto done;
 	}
 
- done:
-	if (is_valid_policy_hnd(&domain_pol)) {
-		rpccli_samr_Close(pipe_hnd, mem_ctx, &domain_pol);
-	}
-	if (is_valid_policy_hnd(&connect_pol)) {
-		rpccli_samr_Close(pipe_hnd, mem_ctx, &connect_pol);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
 	}
 
-	return result;
+	status = result;
+
+ done:
+	if (is_valid_policy_hnd(&domain_pol)) {
+		dcerpc_samr_Close(b, mem_ctx, &domain_pol, &result);
+	}
+	if (is_valid_policy_hnd(&connect_pol)) {
+		dcerpc_samr_Close(b, mem_ctx, &connect_pol, &result);
+	}
+
+	return status;
 }
 
 static int account_show(struct net_context *c,
