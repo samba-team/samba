@@ -26,7 +26,7 @@
 #include "rpcclient.h"
 #include "../libcli/auth/libcli_auth.h"
 #include "../librpc/gen_ndr/ndr_samr.h"
-#include "../librpc/gen_ndr/cli_samr.h"
+#include "../librpc/gen_ndr/ndr_samr_c.h"
 #include "rpc_client/cli_samr.h"
 #include "rpc_client/init_samr.h"
 #include "rpc_client/init_lsa.h"
@@ -281,22 +281,30 @@ static NTSTATUS get_domain_handle(struct rpc_pipe_client *cli,
 				  struct dom_sid *_domain_sid,
 				  struct policy_handle *domain_pol)
 {
+	struct dcerpc_binding_handle *b = cli->binding_handle;
+	NTSTATUS status = NT_STATUS_INVALID_PARAMETER, result;
 
 	if (StrCaseCmp(sam, "domain") == 0) {
-		return rpccli_samr_OpenDomain(cli, mem_ctx,
+		status = dcerpc_samr_OpenDomain(b, mem_ctx,
 					      connect_pol,
 					      access_mask,
 					      _domain_sid,
-					      domain_pol);
+					      domain_pol,
+					      &result);
 	} else if (StrCaseCmp(sam, "builtin") == 0) {
-		return rpccli_samr_OpenDomain(cli, mem_ctx,
+		status = dcerpc_samr_OpenDomain(b, mem_ctx,
 					      connect_pol,
 					      access_mask,
 					      CONST_DISCARD(struct dom_sid2 *, &global_sid_Builtin),
-					      domain_pol);
+					      domain_pol,
+					      &result);
 	}
 
-	return NT_STATUS_INVALID_PARAMETER;
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	return result;
 }
 
 /**********************************************************************
@@ -307,11 +315,12 @@ static NTSTATUS cmd_samr_query_user(struct rpc_pipe_client *cli,
                                     int argc, const char **argv)
 {
 	struct policy_handle connect_pol, domain_pol, user_pol;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS status, result;
 	uint32 info_level = 21;
 	uint32 access_mask = MAXIMUM_ALLOWED_ACCESS;
 	union samr_UserInfo *info = NULL;
 	uint32 user_rid = 0;
+	struct dcerpc_binding_handle *b = cli->binding_handle;
 
 	if ((argc < 2) || (argc > 4)) {
 		printf("Usage: %s rid [info level] [access mask] \n", argv[0]);
@@ -327,27 +336,36 @@ static NTSTATUS cmd_samr_query_user(struct rpc_pipe_client *cli,
 		sscanf(argv[3], "%x", &access_mask);
 
 
-	result = rpccli_try_samr_connects(cli, mem_ctx,
+	status = rpccli_try_samr_connects(cli, mem_ctx,
 					  MAXIMUM_ALLOWED_ACCESS,
 					  &connect_pol);
-
-	if (!NT_STATUS_IS_OK(result))
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
+	}
 
-	result = rpccli_samr_OpenDomain(cli, mem_ctx,
+	status = dcerpc_samr_OpenDomain(b, mem_ctx,
 					&connect_pol,
 					MAXIMUM_ALLOWED_ACCESS,
 					&domain_sid,
-					&domain_pol);
-	if (!NT_STATUS_IS_OK(result))
+					&domain_pol,
+					&result);
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
+	}
+	if (!NT_STATUS_IS_OK(result)) {
+		status = result;
+		goto done;
+	}
 
-	result = rpccli_samr_OpenUser(cli, mem_ctx,
+	status = dcerpc_samr_OpenUser(b, mem_ctx,
 				      &domain_pol,
 				      access_mask,
 				      user_rid,
-				      &user_pol);
-
+				      &user_pol,
+				      &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
 	if (NT_STATUS_EQUAL(result, NT_STATUS_NO_SUCH_USER) &&
 	    (user_rid == 0)) {
 
@@ -357,33 +375,47 @@ static NTSTATUS cmd_samr_query_user(struct rpc_pipe_client *cli,
 
 		init_lsa_String(&lsa_acct_name, argv[1]);
 
-		result = rpccli_samr_LookupNames(cli, mem_ctx,
+		status = dcerpc_samr_LookupNames(b, mem_ctx,
 						 &domain_pol,
 						 1,
 						 &lsa_acct_name,
 						 &rids,
-						 &types);
-
+						 &types,
+						 &result);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto done;
+		}
 		if (NT_STATUS_IS_OK(result)) {
-			result = rpccli_samr_OpenUser(cli, mem_ctx,
+			status = dcerpc_samr_OpenUser(b, mem_ctx,
 						      &domain_pol,
 						      access_mask,
 						      rids.ids[0],
-						      &user_pol);
+						      &user_pol,
+						      &result);
+			if (!NT_STATUS_IS_OK(status)) {
+				goto done;
+			}
 		}
 	}
 
 
-	if (!NT_STATUS_IS_OK(result))
+	if (!NT_STATUS_IS_OK(result)) {
+		status = result;
 		goto done;
+	}
 
-	result = rpccli_samr_QueryUserInfo(cli, mem_ctx,
+	status = dcerpc_samr_QueryUserInfo(b, mem_ctx,
 					   &user_pol,
 					   info_level,
-					   &info);
-
-	if (!NT_STATUS_IS_OK(result))
+					   &info,
+					   &result);
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
+	}
+	if (!NT_STATUS_IS_OK(result)) {
+		status = result;
+		goto done;
+	}
 
 	switch (info_level) {
 	case 7:
@@ -406,12 +438,12 @@ static NTSTATUS cmd_samr_query_user(struct rpc_pipe_client *cli,
 		break;
 	}
 
-	rpccli_samr_Close(cli, mem_ctx, &user_pol);
-	rpccli_samr_Close(cli, mem_ctx, &domain_pol);
-	rpccli_samr_Close(cli, mem_ctx, &connect_pol);
+	dcerpc_samr_Close(b, mem_ctx, &user_pol, &result);
+	dcerpc_samr_Close(b, mem_ctx, &domain_pol, &result);
+	dcerpc_samr_Close(b, mem_ctx, &connect_pol, &result);
 
 done:
-	return result;
+	return status;
 }
 
 /****************************************************************************
@@ -495,11 +527,12 @@ static NTSTATUS cmd_samr_query_group(struct rpc_pipe_client *cli,
                                      int argc, const char **argv)
 {
 	struct policy_handle connect_pol, domain_pol, group_pol;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS status, result;
 	enum samr_GroupInfoEnum info_level = GROUPINFOALL;
 	uint32 access_mask = MAXIMUM_ALLOWED_ACCESS;
 	union samr_GroupInfo *group_info = NULL;
 	uint32 group_rid;
+	struct dcerpc_binding_handle *b = cli->binding_handle;
 
 	if ((argc < 2) || (argc > 4)) {
 		printf("Usage: %s rid [info level] [access mask]\n", argv[0]);
@@ -514,46 +547,61 @@ static NTSTATUS cmd_samr_query_group(struct rpc_pipe_client *cli,
 	if (argc > 3)
 		sscanf(argv[3], "%x", &access_mask);
 
-	result = rpccli_try_samr_connects(cli, mem_ctx,
+	status = rpccli_try_samr_connects(cli, mem_ctx,
 					  MAXIMUM_ALLOWED_ACCESS,
 					  &connect_pol);
-
-	if (!NT_STATUS_IS_OK(result))
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
+	}
 
-	result = rpccli_samr_OpenDomain(cli, mem_ctx,
+	status = dcerpc_samr_OpenDomain(b, mem_ctx,
 					&connect_pol,
 					MAXIMUM_ALLOWED_ACCESS,
 					&domain_sid,
-					&domain_pol);
-
-	if (!NT_STATUS_IS_OK(result))
+					&domain_pol,
+					&result);
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
+	}
+	if (!NT_STATUS_IS_OK(result)) {
+		status = result;
+		goto done;
+	}
 
-	result = rpccli_samr_OpenGroup(cli, mem_ctx,
+	status = dcerpc_samr_OpenGroup(b, mem_ctx,
 				       &domain_pol,
 				       access_mask,
 				       group_rid,
-				       &group_pol);
-
-	if (!NT_STATUS_IS_OK(result))
+				       &group_pol,
+				       &result);
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
+	}
+	if (!NT_STATUS_IS_OK(result)) {
+		status = result;
+		goto done;
+	}
 
-	result = rpccli_samr_QueryGroupInfo(cli, mem_ctx,
+	status = dcerpc_samr_QueryGroupInfo(b, mem_ctx,
 					    &group_pol,
 					    info_level,
-					    &group_info);
+					    &group_info,
+					    &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
 	if (!NT_STATUS_IS_OK(result)) {
+		status = result;
 		goto done;
 	}
 
 	display_group_info(group_info, info_level);
 
-	rpccli_samr_Close(cli, mem_ctx, &group_pol);
-	rpccli_samr_Close(cli, mem_ctx, &domain_pol);
-	rpccli_samr_Close(cli, mem_ctx, &connect_pol);
+	dcerpc_samr_Close(b, mem_ctx, &group_pol, &result);
+	dcerpc_samr_Close(b, mem_ctx, &domain_pol, &result);
+	dcerpc_samr_Close(b, mem_ctx, &connect_pol, &result);
 done:
-	return result;
+	return status;
 }
 
 /* Query groups a user is a member of */
@@ -565,11 +613,12 @@ static NTSTATUS cmd_samr_query_usergroups(struct rpc_pipe_client *cli,
 	struct policy_handle 		connect_pol,
 				domain_pol,
 				user_pol;
-	NTSTATUS		result = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS status, result;
 	uint32 			user_rid;
 	uint32			access_mask = MAXIMUM_ALLOWED_ACCESS;
 	int 			i;
 	struct samr_RidWithAttributeArray *rid_array = NULL;
+	struct dcerpc_binding_handle *b = cli->binding_handle;
 
 	if ((argc < 2) || (argc > 3)) {
 		printf("Usage: %s rid [access mask]\n", argv[0]);
@@ -581,36 +630,53 @@ static NTSTATUS cmd_samr_query_usergroups(struct rpc_pipe_client *cli,
 	if (argc > 2)
 		sscanf(argv[2], "%x", &access_mask);
 
-	result = rpccli_try_samr_connects(cli, mem_ctx,
+	status = rpccli_try_samr_connects(cli, mem_ctx,
 					  MAXIMUM_ALLOWED_ACCESS,
 					  &connect_pol);
-
-	if (!NT_STATUS_IS_OK(result))
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
+	}
 
-	result = rpccli_samr_OpenDomain(cli, mem_ctx,
+	status = dcerpc_samr_OpenDomain(b, mem_ctx,
 					&connect_pol,
 					MAXIMUM_ALLOWED_ACCESS,
-					&domain_sid, &domain_pol);
-
-	if (!NT_STATUS_IS_OK(result))
+					&domain_sid,
+					&domain_pol,
+					&result);
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
+	}
+	if (!NT_STATUS_IS_OK(result)) {
+		status = result;
+		goto done;
+	}
 
-	result = rpccli_samr_OpenUser(cli, mem_ctx,
+	status = dcerpc_samr_OpenUser(b, mem_ctx,
 				      &domain_pol,
 				      access_mask,
 				      user_rid,
-				      &user_pol);
+				      &user_pol,
+				      &result);
 
-	if (!NT_STATUS_IS_OK(result))
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
+	}
+	if (!NT_STATUS_IS_OK(result)) {
+		status = result;
+		goto done;
+	}
 
-	result = rpccli_samr_GetGroupsForUser(cli, mem_ctx,
+	status = dcerpc_samr_GetGroupsForUser(b, mem_ctx,
 					      &user_pol,
-					      &rid_array);
-
-	if (!NT_STATUS_IS_OK(result))
+					      &rid_array,
+					      &result);
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
+	}
+	if (!NT_STATUS_IS_OK(result)) {
+		status = result;
+		goto done;
+	}
 
 	for (i = 0; i < rid_array->count; i++) {
 		printf("\tgroup rid:[0x%x] attr:[0x%x]\n",
@@ -618,11 +684,11 @@ static NTSTATUS cmd_samr_query_usergroups(struct rpc_pipe_client *cli,
 		       rid_array->rids[i].attributes);
 	}
 
-	rpccli_samr_Close(cli, mem_ctx, &user_pol);
-	rpccli_samr_Close(cli, mem_ctx, &domain_pol);
-	rpccli_samr_Close(cli, mem_ctx, &connect_pol);
+	dcerpc_samr_Close(b, mem_ctx, &user_pol, &result);
+	dcerpc_samr_Close(b, mem_ctx, &domain_pol, &result);
+	dcerpc_samr_Close(b, mem_ctx, &connect_pol, &result);
  done:
-	return result;
+	return status;
 }
 
 /* Query aliases a user is a member of */
@@ -632,13 +698,14 @@ static NTSTATUS cmd_samr_query_useraliases(struct rpc_pipe_client *cli,
 					   int argc, const char **argv)
 {
 	struct policy_handle 		connect_pol, domain_pol;
-	NTSTATUS		result = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS status, result;
 	struct dom_sid                *sids;
 	uint32_t                     num_sids;
 	uint32			access_mask = MAXIMUM_ALLOWED_ACCESS;
 	int 			i;
 	struct lsa_SidArray sid_array;
 	struct samr_Ids alias_rids;
+	struct dcerpc_binding_handle *b = cli->binding_handle;
 
 	if (argc < 3) {
 		printf("Usage: %s builtin|domain sid1 sid2 ...\n", argv[0]);
@@ -677,37 +744,43 @@ static NTSTATUS cmd_samr_query_useraliases(struct rpc_pipe_client *cli,
 
 	sid_array.num_sids = num_sids;
 
-	result = rpccli_try_samr_connects(cli, mem_ctx,
+	status = rpccli_try_samr_connects(cli, mem_ctx,
 					  MAXIMUM_ALLOWED_ACCESS,
 					  &connect_pol);
-
-	if (!NT_STATUS_IS_OK(result))
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
+	}
 
-	result = get_domain_handle(cli, mem_ctx, argv[1],
+	status = get_domain_handle(cli, mem_ctx, argv[1],
 				   &connect_pol,
 				   access_mask,
 				   &domain_sid,
 				   &domain_pol);
-
-	if (!NT_STATUS_IS_OK(result))
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
+	}
 
-	result = rpccli_samr_GetAliasMembership(cli, mem_ctx,
+	status = dcerpc_samr_GetAliasMembership(b, mem_ctx,
 						&domain_pol,
 						&sid_array,
-						&alias_rids);
-	if (!NT_STATUS_IS_OK(result))
+						&alias_rids,
+						&result);
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
+	}
+	if (!NT_STATUS_IS_OK(result)) {
+		status = result;
+		goto done;
+	}
 
 	for (i = 0; i < alias_rids.count; i++) {
 		printf("\tgroup rid:[0x%x]\n", alias_rids.ids[i]);
 	}
 
-	rpccli_samr_Close(cli, mem_ctx, &domain_pol);
-	rpccli_samr_Close(cli, mem_ctx, &connect_pol);
+	dcerpc_samr_Close(b, mem_ctx, &domain_pol, &result);
+	dcerpc_samr_Close(b, mem_ctx, &connect_pol, &result);
  done:
-	return result;
+	return status;
 }
 
 /* Query members of a group */
@@ -717,12 +790,13 @@ static NTSTATUS cmd_samr_query_groupmem(struct rpc_pipe_client *cli,
                                         int argc, const char **argv)
 {
 	struct policy_handle connect_pol, domain_pol, group_pol;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS status, result;
 	uint32 group_rid;
 	uint32 access_mask = MAXIMUM_ALLOWED_ACCESS;
 	int i;
 	unsigned int old_timeout;
 	struct samr_RidAttrArray *rids = NULL;
+	struct dcerpc_binding_handle *b = cli->binding_handle;
 
 	if ((argc < 2) || (argc > 3)) {
 		printf("Usage: %s rid [access mask]\n", argv[0]);
@@ -734,54 +808,70 @@ static NTSTATUS cmd_samr_query_groupmem(struct rpc_pipe_client *cli,
 	if (argc > 2)
 		sscanf(argv[2], "%x", &access_mask);
 
-	result = rpccli_try_samr_connects(cli, mem_ctx,
+	status = rpccli_try_samr_connects(cli, mem_ctx,
 					  MAXIMUM_ALLOWED_ACCESS,
 					  &connect_pol);
-
-	if (!NT_STATUS_IS_OK(result))
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
+	}
 
-	result = rpccli_samr_OpenDomain(cli, mem_ctx,
+	status = dcerpc_samr_OpenDomain(b, mem_ctx,
 					&connect_pol,
 					MAXIMUM_ALLOWED_ACCESS,
 					&domain_sid,
-					&domain_pol);
-
-	if (!NT_STATUS_IS_OK(result))
+					&domain_pol,
+					&result);
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
+	}
+	if (!NT_STATUS_IS_OK(result)) {
+		status = result;
+		goto done;
+	}
 
-	result = rpccli_samr_OpenGroup(cli, mem_ctx,
+	status = dcerpc_samr_OpenGroup(b, mem_ctx,
 				       &domain_pol,
 				       access_mask,
 				       group_rid,
-				       &group_pol);
-
-	if (!NT_STATUS_IS_OK(result))
+				       &group_pol,
+				       &result);
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
+	}
+	if (!NT_STATUS_IS_OK(result)) {
+		status = result;
+		goto done;
+	}
 
 	/* Make sure to wait for our DC's reply */
 	old_timeout = rpccli_set_timeout(cli, 30000); /* 30 seconds. */
 	rpccli_set_timeout(cli, MAX(30000, old_timeout)); /* At least 30 sec */
 
-	result = rpccli_samr_QueryGroupMember(cli, mem_ctx,
+	status = dcerpc_samr_QueryGroupMember(b, mem_ctx,
 					      &group_pol,
-					      &rids);
+					      &rids,
+					      &result);
 
 	rpccli_set_timeout(cli, old_timeout);
 
-	if (!NT_STATUS_IS_OK(result))
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
+	}
+	if (!NT_STATUS_IS_OK(result)) {
+		status = result;
+		goto done;
+	}
 
 	for (i = 0; i < rids->count; i++) {
 		printf("\trid:[0x%x] attr:[0x%x]\n", rids->rids[i],
 		       rids->attributes[i]);
 	}
 
-	rpccli_samr_Close(cli, mem_ctx, &group_pol);
-	rpccli_samr_Close(cli, mem_ctx, &domain_pol);
-	rpccli_samr_Close(cli, mem_ctx, &connect_pol);
+	dcerpc_samr_Close(b, mem_ctx, &group_pol, &result);
+	dcerpc_samr_Close(b, mem_ctx, &domain_pol, &result);
+	dcerpc_samr_Close(b, mem_ctx, &connect_pol, &result);
  done:
-	return result;
+	return status;
 }
 
 /* Enumerate domain users */
@@ -791,12 +881,13 @@ static NTSTATUS cmd_samr_enum_dom_users(struct rpc_pipe_client *cli,
 					int argc, const char **argv)
 {
 	struct policy_handle connect_pol, domain_pol;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS status, result;
 	uint32 start_idx, num_dom_users, i;
 	struct samr_SamArray *dom_users = NULL;
 	uint32 access_mask = MAXIMUM_ALLOWED_ACCESS;
 	uint32 acb_mask = ACB_NORMAL;
 	uint32_t size = 0xffff;
+	struct dcerpc_binding_handle *b = cli->binding_handle;
 
 	if ((argc < 1) || (argc > 4)) {
 		printf("Usage: %s [access_mask] [acb_mask] [size]\n", argv[0]);
@@ -817,36 +908,40 @@ static NTSTATUS cmd_samr_enum_dom_users(struct rpc_pipe_client *cli,
 
 	/* Get sam policy handle */
 
-	result = rpccli_try_samr_connects(cli, mem_ctx,
+	status = rpccli_try_samr_connects(cli, mem_ctx,
 					  MAXIMUM_ALLOWED_ACCESS,
 					  &connect_pol);
-
-	if (!NT_STATUS_IS_OK(result))
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
+	}
 
 	/* Get domain policy handle */
 
-	result = get_domain_handle(cli, mem_ctx, "domain",
+	status = get_domain_handle(cli, mem_ctx, "domain",
 				   &connect_pol,
 				   access_mask,
 				   &domain_sid,
 				   &domain_pol);
-	if (!NT_STATUS_IS_OK(result))
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
+	}
 
 	/* Enumerate domain users */
 
 	start_idx = 0;
 
 	do {
-		result = rpccli_samr_EnumDomainUsers(cli, mem_ctx,
+		status = dcerpc_samr_EnumDomainUsers(b, mem_ctx,
 						     &domain_pol,
 						     &start_idx,
 						     acb_mask,
 						     &dom_users,
 						     size,
-						     &num_dom_users);
-
+						     &num_dom_users,
+						     &result);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto done;
+		}
 		if (NT_STATUS_IS_OK(result) ||
 		    NT_STATUS_V(result) == NT_STATUS_V(STATUS_MORE_ENTRIES)) {
 
@@ -860,12 +955,12 @@ static NTSTATUS cmd_samr_enum_dom_users(struct rpc_pipe_client *cli,
 
  done:
 	if (is_valid_policy_hnd(&domain_pol))
-		rpccli_samr_Close(cli, mem_ctx, &domain_pol);
+		dcerpc_samr_Close(b, mem_ctx, &domain_pol, &result);
 
 	if (is_valid_policy_hnd(&connect_pol))
-		rpccli_samr_Close(cli, mem_ctx, &connect_pol);
+		dcerpc_samr_Close(b, mem_ctx, &connect_pol, &result);
 
-	return result;
+	return status;
 }
 
 /* Enumerate domain groups */
@@ -875,11 +970,12 @@ static NTSTATUS cmd_samr_enum_dom_groups(struct rpc_pipe_client *cli,
                                          int argc, const char **argv)
 {
 	struct policy_handle connect_pol, domain_pol;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS status, result;
 	uint32 start_idx, num_dom_groups, i;
 	uint32 access_mask = MAXIMUM_ALLOWED_ACCESS;
 	struct samr_SamArray *dom_groups = NULL;
 	uint32_t size = 0xffff;
+	struct dcerpc_binding_handle *b = cli->binding_handle;
 
 	if ((argc < 1) || (argc > 3)) {
 		printf("Usage: %s [access_mask] [max_size]\n", argv[0]);
@@ -896,34 +992,39 @@ static NTSTATUS cmd_samr_enum_dom_groups(struct rpc_pipe_client *cli,
 
 	/* Get sam policy handle */
 
-	result = rpccli_try_samr_connects(cli, mem_ctx,
+	status = rpccli_try_samr_connects(cli, mem_ctx,
 					  MAXIMUM_ALLOWED_ACCESS,
 					  &connect_pol);
-
-	if (!NT_STATUS_IS_OK(result))
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
+	}
 
 	/* Get domain policy handle */
 
-	result = get_domain_handle(cli, mem_ctx, "domain",
+	status = get_domain_handle(cli, mem_ctx, "domain",
 				   &connect_pol,
 				   access_mask,
 				   &domain_sid,
 				   &domain_pol);
-	if (!NT_STATUS_IS_OK(result))
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
+	}
 
 	/* Enumerate domain groups */
 
 	start_idx = 0;
 
 	do {
-		result = rpccli_samr_EnumDomainGroups(cli, mem_ctx,
+		status = dcerpc_samr_EnumDomainGroups(b, mem_ctx,
 						      &domain_pol,
 						      &start_idx,
 						      &dom_groups,
 						      size,
-						      &num_dom_groups);
+						      &num_dom_groups,
+						      &result);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto done;
+		}
 		if (NT_STATUS_IS_OK(result) ||
 		    NT_STATUS_V(result) == NT_STATUS_V(STATUS_MORE_ENTRIES)) {
 
@@ -937,12 +1038,12 @@ static NTSTATUS cmd_samr_enum_dom_groups(struct rpc_pipe_client *cli,
 
  done:
 	if (is_valid_policy_hnd(&domain_pol))
-		rpccli_samr_Close(cli, mem_ctx, &domain_pol);
+		dcerpc_samr_Close(b, mem_ctx, &domain_pol, &result);
 
 	if (is_valid_policy_hnd(&connect_pol))
-		rpccli_samr_Close(cli, mem_ctx, &connect_pol);
+		dcerpc_samr_Close(b, mem_ctx, &connect_pol, &result);
 
-	return result;
+	return status;
 }
 
 /* Enumerate alias groups */
@@ -952,11 +1053,12 @@ static NTSTATUS cmd_samr_enum_als_groups(struct rpc_pipe_client *cli,
                                          int argc, const char **argv)
 {
 	struct policy_handle connect_pol, domain_pol;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS status, result;
 	uint32 start_idx, num_als_groups, i;
 	uint32 access_mask = MAXIMUM_ALLOWED_ACCESS;
 	struct samr_SamArray *als_groups = NULL;
 	uint32_t size = 0xffff;
+	struct dcerpc_binding_handle *b = cli->binding_handle;
 
 	if ((argc < 2) || (argc > 4)) {
 		printf("Usage: %s builtin|domain [access mask] [max_size]\n", argv[0]);
@@ -973,36 +1075,39 @@ static NTSTATUS cmd_samr_enum_als_groups(struct rpc_pipe_client *cli,
 
 	/* Get sam policy handle */
 
-	result = rpccli_try_samr_connects(cli, mem_ctx,
+	status = rpccli_try_samr_connects(cli, mem_ctx,
 					  MAXIMUM_ALLOWED_ACCESS,
 					  &connect_pol);
-
-	if (!NT_STATUS_IS_OK(result))
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
+	}
 
 	/* Get domain policy handle */
 
-	result = get_domain_handle(cli, mem_ctx, argv[1],
+	status = get_domain_handle(cli, mem_ctx, argv[1],
 				   &connect_pol,
 				   access_mask,
 				   &domain_sid,
 				   &domain_pol);
-
-	if (!NT_STATUS_IS_OK(result))
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
+	}
 
 	/* Enumerate alias groups */
 
 	start_idx = 0;
 
 	do {
-		result = rpccli_samr_EnumDomainAliases(cli, mem_ctx,
+		status = dcerpc_samr_EnumDomainAliases(b, mem_ctx,
 						       &domain_pol,
 						       &start_idx,
 						       &als_groups,
 						       size,
-						       &num_als_groups);
-
+						       &num_als_groups,
+						       &result);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto done;
+		}
 		if (NT_STATUS_IS_OK(result) ||
 		    NT_STATUS_V(result) == NT_STATUS_V(STATUS_MORE_ENTRIES)) {
 
@@ -1015,12 +1120,12 @@ static NTSTATUS cmd_samr_enum_als_groups(struct rpc_pipe_client *cli,
 
  done:
 	if (is_valid_policy_hnd(&domain_pol))
-		rpccli_samr_Close(cli, mem_ctx, &domain_pol);
+		dcerpc_samr_Close(b, mem_ctx, &domain_pol, &result);
 
 	if (is_valid_policy_hnd(&connect_pol))
-		rpccli_samr_Close(cli, mem_ctx, &connect_pol);
+		dcerpc_samr_Close(b, mem_ctx, &connect_pol, &result);
 
-	return result;
+	return status;
 }
 
 /* Enumerate domains */
@@ -1030,10 +1135,11 @@ static NTSTATUS cmd_samr_enum_domains(struct rpc_pipe_client *cli,
 				      int argc, const char **argv)
 {
 	struct policy_handle connect_pol;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS status, result;
 	uint32 start_idx, size, num_entries, i;
 	uint32 access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	struct samr_SamArray *sam = NULL;
+	struct dcerpc_binding_handle *b = cli->binding_handle;
 
 	if ((argc < 1) || (argc > 2)) {
 		printf("Usage: %s [access mask]\n", argv[0]);
@@ -1046,11 +1152,10 @@ static NTSTATUS cmd_samr_enum_domains(struct rpc_pipe_client *cli,
 
 	/* Get sam policy handle */
 
-	result = rpccli_try_samr_connects(cli, mem_ctx,
+	status = rpccli_try_samr_connects(cli, mem_ctx,
 					  access_mask,
 					  &connect_pol);
-
-	if (!NT_STATUS_IS_OK(result)) {
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
 
@@ -1060,13 +1165,16 @@ static NTSTATUS cmd_samr_enum_domains(struct rpc_pipe_client *cli,
 	size = 0xffff;
 
 	do {
-		result = rpccli_samr_EnumDomains(cli, mem_ctx,
+		status = dcerpc_samr_EnumDomains(b, mem_ctx,
 						 &connect_pol,
 						 &start_idx,
 						 &sam,
 						 size,
-						 &num_entries);
-
+						 &num_entries,
+						 &result);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto done;
+		}
 		if (NT_STATUS_IS_OK(result) ||
 		    NT_STATUS_V(result) == NT_STATUS_V(STATUS_MORE_ENTRIES)) {
 
@@ -1079,10 +1187,10 @@ static NTSTATUS cmd_samr_enum_domains(struct rpc_pipe_client *cli,
 
  done:
 	if (is_valid_policy_hnd(&connect_pol)) {
-		rpccli_samr_Close(cli, mem_ctx, &connect_pol);
+		dcerpc_samr_Close(b, mem_ctx, &connect_pol, &result);
 	}
 
-	return result;
+	return status;
 }
 
 
@@ -1093,10 +1201,11 @@ static NTSTATUS cmd_samr_query_aliasmem(struct rpc_pipe_client *cli,
                                         int argc, const char **argv)
 {
 	struct policy_handle connect_pol, domain_pol, alias_pol;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS status, result;
 	uint32 alias_rid, i;
 	uint32 access_mask = MAXIMUM_ALLOWED_ACCESS;
 	struct lsa_SidArray sid_array;
+	struct dcerpc_binding_handle *b = cli->binding_handle;
 
 	if ((argc < 3) || (argc > 4)) {
 		printf("Usage: %s builtin|domain rid [access mask]\n", argv[0]);
@@ -1110,40 +1219,51 @@ static NTSTATUS cmd_samr_query_aliasmem(struct rpc_pipe_client *cli,
 
 	/* Open SAMR handle */
 
-	result = rpccli_try_samr_connects(cli, mem_ctx,
+	status = rpccli_try_samr_connects(cli, mem_ctx,
 					  MAXIMUM_ALLOWED_ACCESS,
 					  &connect_pol);
-
-	if (!NT_STATUS_IS_OK(result))
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
+	}
 
 	/* Open handle on domain */
 
-	result = get_domain_handle(cli, mem_ctx, argv[1],
+	status = get_domain_handle(cli, mem_ctx, argv[1],
 				   &connect_pol,
 				   MAXIMUM_ALLOWED_ACCESS,
 				   &domain_sid,
 				   &domain_pol);
-
-	if (!NT_STATUS_IS_OK(result))
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
+	}
 
 	/* Open handle on alias */
 
-	result = rpccli_samr_OpenAlias(cli, mem_ctx,
+	status = dcerpc_samr_OpenAlias(b, mem_ctx,
 				       &domain_pol,
 				       access_mask,
 				       alias_rid,
-				       &alias_pol);
-	if (!NT_STATUS_IS_OK(result))
+				       &alias_pol,
+				       &result);
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
+	}
+	if (!NT_STATUS_IS_OK(result)) {
+		status = result;
+		goto done;
+	}
 
-	result = rpccli_samr_GetMembersInAlias(cli, mem_ctx,
+	status = dcerpc_samr_GetMembersInAlias(b, mem_ctx,
 					       &alias_pol,
-					       &sid_array);
-
-	if (!NT_STATUS_IS_OK(result))
+					       &sid_array,
+					       &result);
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
+	}
+	if (!NT_STATUS_IS_OK(result)) {
+		status = result;
+		goto done;
+	}
 
 	for (i = 0; i < sid_array.num_sids; i++) {
 		fstring sid_str;
@@ -1152,11 +1272,11 @@ static NTSTATUS cmd_samr_query_aliasmem(struct rpc_pipe_client *cli,
 		printf("\tsid:[%s]\n", sid_str);
 	}
 
-	rpccli_samr_Close(cli, mem_ctx, &alias_pol);
-	rpccli_samr_Close(cli, mem_ctx, &domain_pol);
-	rpccli_samr_Close(cli, mem_ctx, &connect_pol);
+	dcerpc_samr_Close(b, mem_ctx, &alias_pol, &result);
+	dcerpc_samr_Close(b, mem_ctx, &domain_pol, &result);
+	dcerpc_samr_Close(b, mem_ctx, &connect_pol, &result);
  done:
-	return result;
+	return status;
 }
 
 /* Query alias info */
@@ -1166,11 +1286,12 @@ static NTSTATUS cmd_samr_query_aliasinfo(struct rpc_pipe_client *cli,
 					 int argc, const char **argv)
 {
 	struct policy_handle connect_pol, domain_pol, alias_pol;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS status, result;
 	uint32_t alias_rid;
 	uint32_t access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	union samr_AliasInfo *info = NULL;
 	enum samr_AliasInfoEnum level = ALIASINFOALL;
+	struct dcerpc_binding_handle *b = cli->binding_handle;
 
 	if ((argc < 3) || (argc > 4)) {
 		printf("Usage: %s builtin|domain rid [level] [access mask]\n",
@@ -1190,43 +1311,50 @@ static NTSTATUS cmd_samr_query_aliasinfo(struct rpc_pipe_client *cli,
 
 	/* Open SAMR handle */
 
-	result = rpccli_try_samr_connects(cli, mem_ctx,
+	status = rpccli_try_samr_connects(cli, mem_ctx,
 					  SEC_FLAG_MAXIMUM_ALLOWED,
 					  &connect_pol);
-
-	if (!NT_STATUS_IS_OK(result)) {
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
 
 	/* Open handle on domain */
 
-	result = get_domain_handle(cli, mem_ctx, argv[1],
+	status = get_domain_handle(cli, mem_ctx, argv[1],
 				   &connect_pol,
 				   SEC_FLAG_MAXIMUM_ALLOWED,
 				   &domain_sid,
 				   &domain_pol);
-
-	if (!NT_STATUS_IS_OK(result)) {
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
 
 	/* Open handle on alias */
 
-	result = rpccli_samr_OpenAlias(cli, mem_ctx,
+	status = dcerpc_samr_OpenAlias(b, mem_ctx,
 				       &domain_pol,
 				       access_mask,
 				       alias_rid,
-				       &alias_pol);
+				       &alias_pol,
+				       &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
 	if (!NT_STATUS_IS_OK(result)) {
+		status = result;
 		goto done;
 	}
 
-	result = rpccli_samr_QueryAliasInfo(cli, mem_ctx,
+	status = dcerpc_samr_QueryAliasInfo(b, mem_ctx,
 					    &alias_pol,
 					    level,
-					    &info);
-
+					    &info,
+					    &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
 	if (!NT_STATUS_IS_OK(result)) {
+		status = result;
 		goto done;
 	}
 
@@ -1246,11 +1374,11 @@ static NTSTATUS cmd_samr_query_aliasinfo(struct rpc_pipe_client *cli,
 			break;
 	}
 
-	rpccli_samr_Close(cli, mem_ctx, &alias_pol);
-	rpccli_samr_Close(cli, mem_ctx, &domain_pol);
-	rpccli_samr_Close(cli, mem_ctx, &connect_pol);
+	dcerpc_samr_Close(b, mem_ctx, &alias_pol, &result);
+	dcerpc_samr_Close(b, mem_ctx, &domain_pol, &result);
+	dcerpc_samr_Close(b, mem_ctx, &connect_pol, &result);
  done:
-	return result;
+	return status;
 }
 
 
@@ -1261,9 +1389,10 @@ static NTSTATUS cmd_samr_delete_alias(struct rpc_pipe_client *cli,
 				      int argc, const char **argv)
 {
 	struct policy_handle connect_pol, domain_pol, alias_pol;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS status, result;
 	uint32 alias_rid;
 	uint32 access_mask = MAXIMUM_ALLOWED_ACCESS;
+	struct dcerpc_binding_handle *b = cli->binding_handle;
 
 	if (argc != 3) {
 		printf("Usage: %s builtin|domain [rid|name]\n", argv[0]);
@@ -1274,31 +1403,35 @@ static NTSTATUS cmd_samr_delete_alias(struct rpc_pipe_client *cli,
 
 	/* Open SAMR handle */
 
-	result = rpccli_try_samr_connects(cli, mem_ctx,
+	status = rpccli_try_samr_connects(cli, mem_ctx,
 					  MAXIMUM_ALLOWED_ACCESS,
 					  &connect_pol);
-
-	if (!NT_STATUS_IS_OK(result))
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
+	}
 
 	/* Open handle on domain */
 
-	result = get_domain_handle(cli, mem_ctx, argv[1],
+	status = get_domain_handle(cli, mem_ctx, argv[1],
 				   &connect_pol,
 				   MAXIMUM_ALLOWED_ACCESS,
 				   &domain_sid,
 				   &domain_pol);
-
-	if (!NT_STATUS_IS_OK(result))
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
+	}
 
 	/* Open handle on alias */
 
-	result = rpccli_samr_OpenAlias(cli, mem_ctx,
+	status = dcerpc_samr_OpenAlias(b, mem_ctx,
 				       &domain_pol,
 				       access_mask,
 				       alias_rid,
-				       &alias_pol);
+				       &alias_pol,
+				       &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
 	if (!NT_STATUS_IS_OK(result) && (alias_rid == 0)) {
 		/* Probably this was a user name, try lookupnames */
 		struct samr_Ids rids, types;
@@ -1306,32 +1439,44 @@ static NTSTATUS cmd_samr_delete_alias(struct rpc_pipe_client *cli,
 
 		init_lsa_String(&lsa_acct_name, argv[2]);
 
-		result = rpccli_samr_LookupNames(cli, mem_ctx,
+		status = dcerpc_samr_LookupNames(b, mem_ctx,
 						 &domain_pol,
 						 1,
 						 &lsa_acct_name,
 						 &rids,
-						 &types);
-
+						 &types,
+						 &result);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto done;
+		}
 		if (NT_STATUS_IS_OK(result)) {
-			result = rpccli_samr_OpenAlias(cli, mem_ctx,
+			status = dcerpc_samr_OpenAlias(b, mem_ctx,
 						       &domain_pol,
 						       access_mask,
 						       rids.ids[0],
-						       &alias_pol);
+						       &alias_pol,
+						       &result);
+			if (!NT_STATUS_IS_OK(status)) {
+				goto done;
+			}
 		}
 	}
 
-	result = rpccli_samr_DeleteDomAlias(cli, mem_ctx,
-					    &alias_pol);
-
-	if (!NT_STATUS_IS_OK(result))
+	status = dcerpc_samr_DeleteDomAlias(b, mem_ctx,
+					    &alias_pol,
+					    &result);
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
+	}
+	if (!NT_STATUS_IS_OK(result)) {
+		status = result;
+		goto done;
+	}
 
-	rpccli_samr_Close(cli, mem_ctx, &domain_pol);
-	rpccli_samr_Close(cli, mem_ctx, &connect_pol);
+	dcerpc_samr_Close(b, mem_ctx, &domain_pol, &result);
+	dcerpc_samr_Close(b, mem_ctx, &connect_pol, &result);
  done:
-	return result;
+	return status;
 }
 
 /* Query display info */
@@ -1342,7 +1487,7 @@ static NTSTATUS cmd_samr_query_dispinfo_internal(struct rpc_pipe_client *cli,
 						 uint32_t opcode)
 {
 	struct policy_handle connect_pol, domain_pol;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS status, result;
 	uint32 start_idx=0, max_entries=250, max_size = 0xffff, num_entries = 0, i;
 	uint32 access_mask = MAXIMUM_ALLOWED_ACCESS;
 	uint32 info_level = 1;
@@ -1350,6 +1495,7 @@ static NTSTATUS cmd_samr_query_dispinfo_internal(struct rpc_pipe_client *cli,
 	int loop_count = 0;
 	bool got_params = False; /* Use get_query_dispinfo_params() or not? */
 	uint32_t total_size, returned_size;
+	struct dcerpc_binding_handle *b = cli->binding_handle;
 
 	if (argc > 6) {
 		printf("Usage: %s [info level] [start index] [max entries] [max size] [access mask]\n", argv[0]);
@@ -1377,23 +1523,28 @@ static NTSTATUS cmd_samr_query_dispinfo_internal(struct rpc_pipe_client *cli,
 
 	/* Get sam policy handle */
 
-	result = rpccli_try_samr_connects(cli, mem_ctx,
+	status = rpccli_try_samr_connects(cli, mem_ctx,
 					  MAXIMUM_ALLOWED_ACCESS,
 					  &connect_pol);
-
-	if (!NT_STATUS_IS_OK(result))
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
+	}
 
 	/* Get domain policy handle */
 
-	result = rpccli_samr_OpenDomain(cli, mem_ctx,
+	status = dcerpc_samr_OpenDomain(b, mem_ctx,
 					&connect_pol,
 					access_mask,
 					&domain_sid,
-					&domain_pol);
-
-	if (!NT_STATUS_IS_OK(result))
+					&domain_pol,
+					&result);
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
+	}
+	if (!NT_STATUS_IS_OK(result)) {
+		status = result;
+		goto done;
+	}
 
 	/* Query display info */
 
@@ -1405,7 +1556,7 @@ static NTSTATUS cmd_samr_query_dispinfo_internal(struct rpc_pipe_client *cli,
 
 		switch (opcode) {
 		case NDR_SAMR_QUERYDISPLAYINFO:
-			result = rpccli_samr_QueryDisplayInfo(cli, mem_ctx,
+			status = dcerpc_samr_QueryDisplayInfo(b, mem_ctx,
 							      &domain_pol,
 							      info_level,
 							      start_idx,
@@ -1413,10 +1564,11 @@ static NTSTATUS cmd_samr_query_dispinfo_internal(struct rpc_pipe_client *cli,
 							      max_size,
 							      &total_size,
 							      &returned_size,
-							      &info);
+							      &info,
+							      &result);
 			break;
 		case NDR_SAMR_QUERYDISPLAYINFO2:
-			result = rpccli_samr_QueryDisplayInfo2(cli, mem_ctx,
+			status = dcerpc_samr_QueryDisplayInfo2(b, mem_ctx,
 							       &domain_pol,
 							       info_level,
 							       start_idx,
@@ -1424,11 +1576,12 @@ static NTSTATUS cmd_samr_query_dispinfo_internal(struct rpc_pipe_client *cli,
 							       max_size,
 							       &total_size,
 							       &returned_size,
-							       &info);
+							       &info,
+							       &result);
 
 			break;
 		case NDR_SAMR_QUERYDISPLAYINFO3:
-			result = rpccli_samr_QueryDisplayInfo3(cli, mem_ctx,
+			status = dcerpc_samr_QueryDisplayInfo3(b, mem_ctx,
 							       &domain_pol,
 							       info_level,
 							       start_idx,
@@ -1436,13 +1589,18 @@ static NTSTATUS cmd_samr_query_dispinfo_internal(struct rpc_pipe_client *cli,
 							       max_size,
 							       &total_size,
 							       &returned_size,
-							       &info);
+							       &info,
+							       &result);
 
 			break;
 		default:
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 
+		if (!NT_STATUS_IS_OK(status)) {
+			break;
+		}
+		status = result;
 		if (!NT_STATUS_IS_OK(result) &&
 		    !NT_STATUS_EQUAL(result, NT_STATUS_NO_MORE_ENTRIES) &&
 		    !NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES)) {
@@ -1497,10 +1655,10 @@ static NTSTATUS cmd_samr_query_dispinfo_internal(struct rpc_pipe_client *cli,
 		}
 	} while ( NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES));
 
-	rpccli_samr_Close(cli, mem_ctx, &domain_pol);
-	rpccli_samr_Close(cli, mem_ctx, &connect_pol);
+	dcerpc_samr_Close(b, mem_ctx, &domain_pol, &result);
+	dcerpc_samr_Close(b, mem_ctx, &connect_pol, &result);
  done:
-	return result;
+	return status;
 }
 
 static NTSTATUS cmd_samr_query_dispinfo(struct rpc_pipe_client *cli,
@@ -1534,10 +1692,11 @@ static NTSTATUS cmd_samr_query_dominfo(struct rpc_pipe_client *cli,
                                        int argc, const char **argv)
 {
 	struct policy_handle connect_pol, domain_pol;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS status, result;
 	uint32 switch_level = 2;
 	uint32 access_mask = MAXIMUM_ALLOWED_ACCESS;
 	union samr_DomainInfo *info = NULL;
+	struct dcerpc_binding_handle *b = cli->binding_handle;
 
 	if (argc > 3) {
 		printf("Usage: %s [info level] [access mask]\n", argv[0]);
@@ -1552,33 +1711,43 @@ static NTSTATUS cmd_samr_query_dominfo(struct rpc_pipe_client *cli,
 
 	/* Get sam policy handle */
 
-	result = rpccli_try_samr_connects(cli, mem_ctx,
+	status = rpccli_try_samr_connects(cli, mem_ctx,
 					  MAXIMUM_ALLOWED_ACCESS,
 					  &connect_pol);
-
-	if (!NT_STATUS_IS_OK(result))
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
+	}
 
 	/* Get domain policy handle */
 
-	result = rpccli_samr_OpenDomain(cli, mem_ctx,
+	status = dcerpc_samr_OpenDomain(b, mem_ctx,
 					&connect_pol,
 					access_mask,
 					&domain_sid,
-					&domain_pol);
-
-	if (!NT_STATUS_IS_OK(result))
+					&domain_pol,
+					&result);
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
+	}
+	if (!NT_STATUS_IS_OK(result)) {
+		status = result;
+		goto done;
+	}
 
 	/* Query domain info */
 
-	result = rpccli_samr_QueryDomainInfo(cli, mem_ctx,
+	status = dcerpc_samr_QueryDomainInfo(b, mem_ctx,
 					     &domain_pol,
 					     switch_level,
-					     &info);
-
-	if (!NT_STATUS_IS_OK(result))
+					     &info,
+					     &result);
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
+	}
+	if (!NT_STATUS_IS_OK(result)) {
+		status = result;
+		goto done;
+	}
 
 	/* Display domain info */
 
@@ -1625,9 +1794,9 @@ static NTSTATUS cmd_samr_query_dominfo(struct rpc_pipe_client *cli,
 
  done:
 
-	rpccli_samr_Close(cli, mem_ctx, &domain_pol);
-	rpccli_samr_Close(cli, mem_ctx, &connect_pol);
-	return result;
+	dcerpc_samr_Close(b, mem_ctx, &domain_pol, &result);
+	dcerpc_samr_Close(b, mem_ctx, &connect_pol, &result);
+	return status;
 }
 
 /* Create domain user */
@@ -1637,12 +1806,13 @@ static NTSTATUS cmd_samr_create_dom_user(struct rpc_pipe_client *cli,
                                          int argc, const char **argv)
 {
 	struct policy_handle connect_pol, domain_pol, user_pol;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS status, result;
 	struct lsa_String acct_name;
 	uint32 acb_info;
 	uint32 acct_flags, user_rid;
 	uint32 access_mask = MAXIMUM_ALLOWED_ACCESS;
 	uint32_t access_granted = 0;
+	struct dcerpc_binding_handle *b = cli->binding_handle;
 
 	if ((argc < 2) || (argc > 3)) {
 		printf("Usage: %s username [access mask]\n", argv[0]);
@@ -1656,23 +1826,28 @@ static NTSTATUS cmd_samr_create_dom_user(struct rpc_pipe_client *cli,
 
 	/* Get sam policy handle */
 
-	result = rpccli_try_samr_connects(cli, mem_ctx,
+	status = rpccli_try_samr_connects(cli, mem_ctx,
 					  MAXIMUM_ALLOWED_ACCESS,
 					  &connect_pol);
-
-	if (!NT_STATUS_IS_OK(result))
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
+	}
 
 	/* Get domain policy handle */
 
-	result = rpccli_samr_OpenDomain(cli, mem_ctx,
+	status = dcerpc_samr_OpenDomain(b, mem_ctx,
 					&connect_pol,
 					access_mask,
 					&domain_sid,
-					&domain_pol);
-
-	if (!NT_STATUS_IS_OK(result))
+					&domain_pol,
+					&result);
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
+	}
+	if (!NT_STATUS_IS_OK(result)) {
+		status = result;
+		goto done;
+	}
 
 	/* Create domain user */
 
@@ -1683,29 +1858,34 @@ static NTSTATUS cmd_samr_create_dom_user(struct rpc_pipe_client *cli,
 		     SAMR_USER_ACCESS_GET_ATTRIBUTES |
 		     SAMR_USER_ACCESS_SET_ATTRIBUTES;
 
-	result = rpccli_samr_CreateUser2(cli, mem_ctx,
+	status = dcerpc_samr_CreateUser2(b, mem_ctx,
 					 &domain_pol,
 					 &acct_name,
 					 acb_info,
 					 acct_flags,
 					 &user_pol,
 					 &access_granted,
-					 &user_rid);
-
-	if (!NT_STATUS_IS_OK(result))
+					 &user_rid,
+					 &result);
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
+	}
+	if (!NT_STATUS_IS_OK(result)) {
+		status = result;
+		goto done;
+	}
 
-	result = rpccli_samr_Close(cli, mem_ctx, &user_pol);
-	if (!NT_STATUS_IS_OK(result)) goto done;
+	status = dcerpc_samr_Close(b, mem_ctx, &user_pol, &result);
+	if (!NT_STATUS_IS_OK(status)) goto done;
 
-	result = rpccli_samr_Close(cli, mem_ctx, &domain_pol);
-	if (!NT_STATUS_IS_OK(result)) goto done;
+	status = dcerpc_samr_Close(b, mem_ctx, &domain_pol, &result);
+	if (!NT_STATUS_IS_OK(status)) goto done;
 
-	result = rpccli_samr_Close(cli, mem_ctx, &connect_pol);
-	if (!NT_STATUS_IS_OK(result)) goto done;
+	status = dcerpc_samr_Close(b, mem_ctx, &connect_pol, &result);
+	if (!NT_STATUS_IS_OK(status)) goto done;
 
  done:
-	return result;
+	return status;
 }
 
 /* Create domain group */
@@ -1715,10 +1895,11 @@ static NTSTATUS cmd_samr_create_dom_group(struct rpc_pipe_client *cli,
                                           int argc, const char **argv)
 {
 	struct policy_handle connect_pol, domain_pol, group_pol;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS status, result;
 	struct lsa_String grp_name;
 	uint32 access_mask = MAXIMUM_ALLOWED_ACCESS;
 	uint32_t rid = 0;
+	struct dcerpc_binding_handle *b = cli->binding_handle;
 
 	if ((argc < 2) || (argc > 3)) {
 		printf("Usage: %s groupname [access mask]\n", argv[0]);
@@ -1732,46 +1913,56 @@ static NTSTATUS cmd_samr_create_dom_group(struct rpc_pipe_client *cli,
 
 	/* Get sam policy handle */
 
-	result = rpccli_try_samr_connects(cli, mem_ctx,
+	status = rpccli_try_samr_connects(cli, mem_ctx,
 					  MAXIMUM_ALLOWED_ACCESS,
 					  &connect_pol);
-
-	if (!NT_STATUS_IS_OK(result))
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
+	}
 
 	/* Get domain policy handle */
 
-	result = rpccli_samr_OpenDomain(cli, mem_ctx,
+	status = dcerpc_samr_OpenDomain(b, mem_ctx,
 					&connect_pol,
 					access_mask,
 					&domain_sid,
-					&domain_pol);
-
-	if (!NT_STATUS_IS_OK(result))
+					&domain_pol,
+					&result);
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
+	}
+	if (!NT_STATUS_IS_OK(result)) {
+		status = result;
+		goto done;
+	}
 
 	/* Create domain user */
-	result = rpccli_samr_CreateDomainGroup(cli, mem_ctx,
+	status = dcerpc_samr_CreateDomainGroup(b, mem_ctx,
 					       &domain_pol,
 					       &grp_name,
 					       MAXIMUM_ALLOWED_ACCESS,
 					       &group_pol,
-					       &rid);
-
-	if (!NT_STATUS_IS_OK(result))
+					       &rid,
+					       &result);
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
+	}
+	if (!NT_STATUS_IS_OK(result)) {
+		status = result;
+		goto done;
+	}
 
-	result = rpccli_samr_Close(cli, mem_ctx, &group_pol);
-	if (!NT_STATUS_IS_OK(result)) goto done;
+	status = dcerpc_samr_Close(b, mem_ctx, &group_pol, &result);
+	if (!NT_STATUS_IS_OK(status)) goto done;
 
-	result = rpccli_samr_Close(cli, mem_ctx, &domain_pol);
-	if (!NT_STATUS_IS_OK(result)) goto done;
+	status = dcerpc_samr_Close(b, mem_ctx, &domain_pol, &result);
+	if (!NT_STATUS_IS_OK(status)) goto done;
 
-	result = rpccli_samr_Close(cli, mem_ctx, &connect_pol);
-	if (!NT_STATUS_IS_OK(result)) goto done;
+	status = dcerpc_samr_Close(b, mem_ctx, &connect_pol, &result);
+	if (!NT_STATUS_IS_OK(status)) goto done;
 
  done:
-	return result;
+	return status;
 }
 
 /* Create domain alias */
@@ -1781,10 +1972,11 @@ static NTSTATUS cmd_samr_create_dom_alias(struct rpc_pipe_client *cli,
                                           int argc, const char **argv)
 {
 	struct policy_handle connect_pol, domain_pol, alias_pol;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS status, result;
 	struct lsa_String alias_name;
 	uint32 access_mask = MAXIMUM_ALLOWED_ACCESS;
 	uint32_t rid = 0;
+	struct dcerpc_binding_handle *b = cli->binding_handle;
 
 	if ((argc < 2) || (argc > 3)) {
 		printf("Usage: %s aliasname [access mask]\n", argv[0]);
@@ -1798,47 +1990,58 @@ static NTSTATUS cmd_samr_create_dom_alias(struct rpc_pipe_client *cli,
 
 	/* Get sam policy handle */
 
-	result = rpccli_try_samr_connects(cli, mem_ctx,
+	status = rpccli_try_samr_connects(cli, mem_ctx,
 					  MAXIMUM_ALLOWED_ACCESS,
 					  &connect_pol);
-
-	if (!NT_STATUS_IS_OK(result))
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
+	}
 
 	/* Get domain policy handle */
 
-	result = rpccli_samr_OpenDomain(cli, mem_ctx,
+	status = dcerpc_samr_OpenDomain(b, mem_ctx,
 					&connect_pol,
 					access_mask,
 					&domain_sid,
-					&domain_pol);
-
-	if (!NT_STATUS_IS_OK(result))
+					&domain_pol,
+					&result);
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
+	}
+	if (!NT_STATUS_IS_OK(result)) {
+		status = result;
+		goto done;
+	}
 
 	/* Create domain user */
 
-	result = rpccli_samr_CreateDomAlias(cli, mem_ctx,
+	status = dcerpc_samr_CreateDomAlias(b, mem_ctx,
 					    &domain_pol,
 					    &alias_name,
 					    MAXIMUM_ALLOWED_ACCESS,
 					    &alias_pol,
-					    &rid);
-
-	if (!NT_STATUS_IS_OK(result))
+					    &rid,
+					    &result);
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
+	}
+	if (!NT_STATUS_IS_OK(result)) {
+		status = result;
+		goto done;
+	}
 
-	result = rpccli_samr_Close(cli, mem_ctx, &alias_pol);
-	if (!NT_STATUS_IS_OK(result)) goto done;
 
-	result = rpccli_samr_Close(cli, mem_ctx, &domain_pol);
-	if (!NT_STATUS_IS_OK(result)) goto done;
+	status = dcerpc_samr_Close(b, mem_ctx, &alias_pol, &result);
+	if (!NT_STATUS_IS_OK(status)) goto done;
 
-	result = rpccli_samr_Close(cli, mem_ctx, &connect_pol);
-	if (!NT_STATUS_IS_OK(result)) goto done;
+	status = dcerpc_samr_Close(b, mem_ctx, &domain_pol, &result);
+	if (!NT_STATUS_IS_OK(status)) goto done;
+
+	status = dcerpc_samr_Close(b, mem_ctx, &connect_pol, &result);
+	if (!NT_STATUS_IS_OK(status)) goto done;
 
  done:
-	return result;
+	return status;
 }
 
 /* Lookup sam names */
@@ -1847,12 +2050,13 @@ static NTSTATUS cmd_samr_lookup_names(struct rpc_pipe_client *cli,
                                       TALLOC_CTX *mem_ctx,
                                       int argc, const char **argv)
 {
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS status, result;
 	struct policy_handle connect_pol, domain_pol;
 	uint32 num_names;
 	struct samr_Ids rids, name_types;
 	int i;
 	struct lsa_String *names = NULL;;
+	struct dcerpc_binding_handle *b = cli->binding_handle;
 
 	if (argc < 3) {
 		printf("Usage: %s  domain|builtin name1 [name2 [name3] [...]]\n", argv[0]);
@@ -1863,30 +2067,30 @@ static NTSTATUS cmd_samr_lookup_names(struct rpc_pipe_client *cli,
 
 	/* Get sam policy and domain handles */
 
-	result = rpccli_try_samr_connects(cli, mem_ctx,
+	status = rpccli_try_samr_connects(cli, mem_ctx,
 					  MAXIMUM_ALLOWED_ACCESS,
 					  &connect_pol);
-
-	if (!NT_STATUS_IS_OK(result))
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
+	}
 
-	result = get_domain_handle(cli, mem_ctx, argv[1],
+	status = get_domain_handle(cli, mem_ctx, argv[1],
 				   &connect_pol,
 				   MAXIMUM_ALLOWED_ACCESS,
 				   &domain_sid,
 				   &domain_pol);
-
-	if (!NT_STATUS_IS_OK(result))
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
+	}
 
 	/* Look up names */
 
 	num_names = argc - 2;
 
 	if ((names = TALLOC_ARRAY(mem_ctx, struct lsa_String, num_names)) == NULL) {
-		rpccli_samr_Close(cli, mem_ctx, &domain_pol);
-		rpccli_samr_Close(cli, mem_ctx, &connect_pol);
-		result = NT_STATUS_NO_MEMORY;
+		dcerpc_samr_Close(b, mem_ctx, &domain_pol, &result);
+		dcerpc_samr_Close(b, mem_ctx, &connect_pol, &result);
+		status = NT_STATUS_NO_MEMORY;
 		goto done;
 	}
 
@@ -1894,15 +2098,20 @@ static NTSTATUS cmd_samr_lookup_names(struct rpc_pipe_client *cli,
 		init_lsa_String(&names[i], argv[i + 2]);
 	}
 
-	result = rpccli_samr_LookupNames(cli, mem_ctx,
+	status = dcerpc_samr_LookupNames(b, mem_ctx,
 					 &domain_pol,
 					 num_names,
 					 names,
 					 &rids,
-					 &name_types);
-
-	if (!NT_STATUS_IS_OK(result))
+					 &name_types,
+					 &result);
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
+	}
+	if (!NT_STATUS_IS_OK(result)) {
+		status = result;
+		goto done;
+	}
 
 	/* Display results */
 
@@ -1910,10 +2119,10 @@ static NTSTATUS cmd_samr_lookup_names(struct rpc_pipe_client *cli,
 		printf("name %s: 0x%x (%d)\n", names[i].string, rids.ids[i],
 		       name_types.ids[i]);
 
-	rpccli_samr_Close(cli, mem_ctx, &domain_pol);
-	rpccli_samr_Close(cli, mem_ctx, &connect_pol);
+	dcerpc_samr_Close(b, mem_ctx, &domain_pol, &result);
+	dcerpc_samr_Close(b, mem_ctx, &connect_pol, &result);
  done:
-	return result;
+	return status;
 }
 
 /* Lookup sam rids */
@@ -1922,11 +2131,12 @@ static NTSTATUS cmd_samr_lookup_rids(struct rpc_pipe_client *cli,
                                      TALLOC_CTX *mem_ctx,
                                      int argc, const char **argv)
 {
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS status, result;
 	struct policy_handle connect_pol, domain_pol;
 	uint32_t num_rids, *rids;
 	struct lsa_Strings names;
 	struct samr_Ids types;
+	struct dcerpc_binding_handle *b = cli->binding_handle;
 
 	int i;
 
@@ -1937,43 +2147,47 @@ static NTSTATUS cmd_samr_lookup_rids(struct rpc_pipe_client *cli,
 
 	/* Get sam policy and domain handles */
 
-	result = rpccli_try_samr_connects(cli, mem_ctx,
+	status = rpccli_try_samr_connects(cli, mem_ctx,
 					  MAXIMUM_ALLOWED_ACCESS,
 					  &connect_pol);
-
-	if (!NT_STATUS_IS_OK(result))
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
+	}
 
-	result = get_domain_handle(cli, mem_ctx, argv[1],
+	status = get_domain_handle(cli, mem_ctx, argv[1],
 				   &connect_pol,
 				   MAXIMUM_ALLOWED_ACCESS,
 				   &domain_sid,
 				   &domain_pol);
-
-	if (!NT_STATUS_IS_OK(result))
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
+	}
 
 	/* Look up rids */
 
 	num_rids = argc - 2;
 
 	if ((rids = TALLOC_ARRAY(mem_ctx, uint32, num_rids)) == NULL) {
-		rpccli_samr_Close(cli, mem_ctx, &domain_pol);
-		rpccli_samr_Close(cli, mem_ctx, &connect_pol);
-		result = NT_STATUS_NO_MEMORY;
+		dcerpc_samr_Close(b, mem_ctx, &domain_pol, &result);
+		dcerpc_samr_Close(b, mem_ctx, &connect_pol, &result);
+		status = NT_STATUS_NO_MEMORY;
 		goto done;
 	}
 
 	for (i = 0; i < argc - 2; i++)
                 sscanf(argv[i + 2], "%i", &rids[i]);
 
-	result = rpccli_samr_LookupRids(cli, mem_ctx,
+	status = dcerpc_samr_LookupRids(b, mem_ctx,
 					&domain_pol,
 					num_rids,
 					rids,
 					&names,
-					&types);
-
+					&types,
+					&result);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
+	status = result;
 	if (!NT_STATUS_IS_OK(result) &&
 	    !NT_STATUS_EQUAL(result, STATUS_SOME_UNMAPPED))
 		goto done;
@@ -1985,10 +2199,10 @@ static NTSTATUS cmd_samr_lookup_rids(struct rpc_pipe_client *cli,
 			rids[i], names.names[i].string, types.ids[i]);
 	}
 
-	rpccli_samr_Close(cli, mem_ctx, &domain_pol);
-	rpccli_samr_Close(cli, mem_ctx, &connect_pol);
+	dcerpc_samr_Close(b, mem_ctx, &domain_pol, &result);
+	dcerpc_samr_Close(b, mem_ctx, &connect_pol, &result);
  done:
-	return result;
+	return status;
 }
 
 /* Delete domain group */
@@ -1997,9 +2211,10 @@ static NTSTATUS cmd_samr_delete_dom_group(struct rpc_pipe_client *cli,
                                          TALLOC_CTX *mem_ctx,
                                          int argc, const char **argv)
 {
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS status, result;
 	struct policy_handle connect_pol, domain_pol, group_pol;
 	uint32 access_mask = MAXIMUM_ALLOWED_ACCESS;
+	struct dcerpc_binding_handle *b = cli->binding_handle;
 
 	if ((argc < 2) || (argc > 3)) {
 		printf("Usage: %s groupname\n", argv[0]);
@@ -2011,21 +2226,26 @@ static NTSTATUS cmd_samr_delete_dom_group(struct rpc_pipe_client *cli,
 
 	/* Get sam policy and domain handles */
 
-	result = rpccli_try_samr_connects(cli, mem_ctx,
+	status = rpccli_try_samr_connects(cli, mem_ctx,
 					  MAXIMUM_ALLOWED_ACCESS,
 					  &connect_pol);
-
-	if (!NT_STATUS_IS_OK(result))
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
+	}
 
-	result = rpccli_samr_OpenDomain(cli, mem_ctx,
+	status = dcerpc_samr_OpenDomain(b, mem_ctx,
 					&connect_pol,
 					MAXIMUM_ALLOWED_ACCESS,
 					&domain_sid,
-					&domain_pol);
-
-	if (!NT_STATUS_IS_OK(result))
+					&domain_pol,
+					&result);
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
+	}
+	if (!NT_STATUS_IS_OK(result)) {
+		status = result;
+		goto done;
+	}
 
 	/* Get handle on group */
 
@@ -2035,41 +2255,57 @@ static NTSTATUS cmd_samr_delete_dom_group(struct rpc_pipe_client *cli,
 
 		init_lsa_String(&lsa_acct_name, argv[1]);
 
-		result = rpccli_samr_LookupNames(cli, mem_ctx,
+		status = dcerpc_samr_LookupNames(b, mem_ctx,
 						 &domain_pol,
 						 1,
 						 &lsa_acct_name,
 						 &group_rids,
-						 &name_types);
-		if (!NT_STATUS_IS_OK(result))
+						 &name_types,
+						 &result);
+		if (!NT_STATUS_IS_OK(status)) {
 			goto done;
+		}
+		if (!NT_STATUS_IS_OK(result)) {
+			status = result;
+			goto done;
+		}
 
-		result = rpccli_samr_OpenGroup(cli, mem_ctx,
+		status = dcerpc_samr_OpenGroup(b, mem_ctx,
 					       &domain_pol,
 					       access_mask,
 					       group_rids.ids[0],
-					       &group_pol);
-
-		if (!NT_STATUS_IS_OK(result))
+					       &group_pol,
+					       &result);
+		if (!NT_STATUS_IS_OK(status)) {
 			goto done;
+		}
+		if (!NT_STATUS_IS_OK(result)) {
+			status = result;
+			goto done;
+		}
 	}
 
 	/* Delete group */
 
-	result = rpccli_samr_DeleteDomainGroup(cli, mem_ctx,
-					       &group_pol);
-
-	if (!NT_STATUS_IS_OK(result))
+	status = dcerpc_samr_DeleteDomainGroup(b, mem_ctx,
+					       &group_pol,
+					       &result);
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
+	}
+	if (!NT_STATUS_IS_OK(result)) {
+		status = result;
+		goto done;
+	}
 
 	/* Display results */
 
-	rpccli_samr_Close(cli, mem_ctx, &group_pol);
-	rpccli_samr_Close(cli, mem_ctx, &domain_pol);
-	rpccli_samr_Close(cli, mem_ctx, &connect_pol);
+	dcerpc_samr_Close(b, mem_ctx, &group_pol, &result);
+	dcerpc_samr_Close(b, mem_ctx, &domain_pol, &result);
+	dcerpc_samr_Close(b, mem_ctx, &connect_pol, &result);
 
  done:
-	return result;
+	return status;
 }
 
 /* Delete domain user */
@@ -2078,9 +2314,10 @@ static NTSTATUS cmd_samr_delete_dom_user(struct rpc_pipe_client *cli,
                                          TALLOC_CTX *mem_ctx,
                                          int argc, const char **argv)
 {
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS status, result;
 	struct policy_handle connect_pol, domain_pol, user_pol;
 	uint32 access_mask = MAXIMUM_ALLOWED_ACCESS;
+	struct dcerpc_binding_handle *b = cli->binding_handle;
 
 	if ((argc < 2) || (argc > 3)) {
 		printf("Usage: %s username\n", argv[0]);
@@ -2092,21 +2329,26 @@ static NTSTATUS cmd_samr_delete_dom_user(struct rpc_pipe_client *cli,
 
 	/* Get sam policy and domain handles */
 
-	result = rpccli_try_samr_connects(cli, mem_ctx,
+	status = rpccli_try_samr_connects(cli, mem_ctx,
 					  MAXIMUM_ALLOWED_ACCESS,
 					  &connect_pol);
-
-	if (!NT_STATUS_IS_OK(result))
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
+	}
 
-	result = rpccli_samr_OpenDomain(cli, mem_ctx,
+	status = dcerpc_samr_OpenDomain(b, mem_ctx,
 					&connect_pol,
 					MAXIMUM_ALLOWED_ACCESS,
 					&domain_sid,
-					&domain_pol);
-
-	if (!NT_STATUS_IS_OK(result))
+					&domain_pol,
+					&result);
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
+	}
+	if (!NT_STATUS_IS_OK(result)) {
+		status = result;
+		goto done;
+	}
 
 	/* Get handle on user */
 
@@ -2116,42 +2358,57 @@ static NTSTATUS cmd_samr_delete_dom_user(struct rpc_pipe_client *cli,
 
 		init_lsa_String(&lsa_acct_name, argv[1]);
 
-		result = rpccli_samr_LookupNames(cli, mem_ctx,
+		status = dcerpc_samr_LookupNames(b, mem_ctx,
 						 &domain_pol,
 						 1,
 						 &lsa_acct_name,
 						 &user_rids,
-						 &name_types);
-
-		if (!NT_STATUS_IS_OK(result))
+						 &name_types,
+						 &result);
+		if (!NT_STATUS_IS_OK(status)) {
 			goto done;
+		}
+		if (!NT_STATUS_IS_OK(result)) {
+			status = result;
+			goto done;
+		}
 
-		result = rpccli_samr_OpenUser(cli, mem_ctx,
+		status = dcerpc_samr_OpenUser(b, mem_ctx,
 					      &domain_pol,
 					      access_mask,
 					      user_rids.ids[0],
-					      &user_pol);
-
-		if (!NT_STATUS_IS_OK(result))
+					      &user_pol,
+					      &result);
+		if (!NT_STATUS_IS_OK(status)) {
 			goto done;
+		}
+		if (!NT_STATUS_IS_OK(result)) {
+			status = result;
+			goto done;
+		}
 	}
 
 	/* Delete user */
 
-	result = rpccli_samr_DeleteUser(cli, mem_ctx,
-					&user_pol);
-
-	if (!NT_STATUS_IS_OK(result))
+	status = dcerpc_samr_DeleteUser(b, mem_ctx,
+					&user_pol,
+					&result);
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
+	}
+	if (!NT_STATUS_IS_OK(result)) {
+		status = result;
+		goto done;
+	}
 
 	/* Display results */
 
-	rpccli_samr_Close(cli, mem_ctx, &user_pol);
-	rpccli_samr_Close(cli, mem_ctx, &domain_pol);
-	rpccli_samr_Close(cli, mem_ctx, &connect_pol);
+	dcerpc_samr_Close(b, mem_ctx, &user_pol, &result);
+	dcerpc_samr_Close(b, mem_ctx, &domain_pol, &result);
+	dcerpc_samr_Close(b, mem_ctx, &connect_pol, &result);
 
  done:
-	return result;
+	return status;
 }
 
 /**********************************************************************
@@ -2162,12 +2419,13 @@ static NTSTATUS cmd_samr_query_sec_obj(struct rpc_pipe_client *cli,
                                     int argc, const char **argv)
 {
 	struct policy_handle connect_pol, domain_pol, user_pol, *pol;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS status, result;
 	uint32 sec_info = SECINFO_DACL;
 	uint32 user_rid = 0;
 	TALLOC_CTX *ctx = NULL;
 	struct sec_desc_buf *sec_desc_buf=NULL;
 	bool domain = False;
+	struct dcerpc_binding_handle *b = cli->binding_handle;
 
 	ctx=talloc_init("cmd_samr_query_sec_obj");
 
@@ -2189,32 +2447,44 @@ static NTSTATUS cmd_samr_query_sec_obj(struct rpc_pipe_client *cli,
 		sec_info = atoi(argv[2]);
 	}
 
-	result = rpccli_try_samr_connects(cli, mem_ctx,
+	status = rpccli_try_samr_connects(cli, mem_ctx,
 					  MAXIMUM_ALLOWED_ACCESS,
 					  &connect_pol);
-
-	if (!NT_STATUS_IS_OK(result))
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
+	}
 
-	if (domain || user_rid)
-		result = rpccli_samr_OpenDomain(cli, mem_ctx,
+	if (domain || user_rid) {
+		status = dcerpc_samr_OpenDomain(b, mem_ctx,
 						&connect_pol,
 						MAXIMUM_ALLOWED_ACCESS,
 						&domain_sid,
-						&domain_pol);
+						&domain_pol,
+						&result);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto done;
+		}
+		if (!NT_STATUS_IS_OK(result)) {
+			status = result;
+			goto done;
+		}
+	}
 
-	if (!NT_STATUS_IS_OK(result))
-		goto done;
-
-	if (user_rid)
-		result = rpccli_samr_OpenUser(cli, mem_ctx,
+	if (user_rid) {
+		status = dcerpc_samr_OpenUser(b, mem_ctx,
 					      &domain_pol,
 					      MAXIMUM_ALLOWED_ACCESS,
 					      user_rid,
-					      &user_pol);
-
-	if (!NT_STATUS_IS_OK(result))
-		goto done;
+					      &user_pol,
+					      &result);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto done;
+		}
+		if (!NT_STATUS_IS_OK(result)) {
+			status = result;
+			goto done;
+		}
+	}
 
 	/* Pick which query pol to use */
 
@@ -2228,32 +2498,38 @@ static NTSTATUS cmd_samr_query_sec_obj(struct rpc_pipe_client *cli,
 
 	/* Query SAM security object */
 
-	result = rpccli_samr_QuerySecurity(cli, mem_ctx,
+	status = dcerpc_samr_QuerySecurity(b, mem_ctx,
 					   pol,
 					   sec_info,
-					   &sec_desc_buf);
-
-	if (!NT_STATUS_IS_OK(result))
+					   &sec_desc_buf,
+					   &result);
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
+	}
+	if (!NT_STATUS_IS_OK(result)) {
+		status = result;
+		goto done;
+	}
 
 	display_sec_desc(sec_desc_buf->sd);
 
-	rpccli_samr_Close(cli, mem_ctx, &user_pol);
-	rpccli_samr_Close(cli, mem_ctx, &domain_pol);
-	rpccli_samr_Close(cli, mem_ctx, &connect_pol);
+	dcerpc_samr_Close(b, mem_ctx, &user_pol, &result);
+	dcerpc_samr_Close(b, mem_ctx, &domain_pol, &result);
+	dcerpc_samr_Close(b, mem_ctx, &connect_pol, &result);
 done:
 	talloc_destroy(ctx);
-	return result;
+	return status;
 }
 
 static NTSTATUS cmd_samr_get_usrdom_pwinfo(struct rpc_pipe_client *cli,
 					   TALLOC_CTX *mem_ctx,
 					   int argc, const char **argv)
 {
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS status, result;
 	struct policy_handle connect_pol, domain_pol, user_pol;
 	struct samr_PwInfo info;
 	uint32_t rid;
+	struct dcerpc_binding_handle *b = cli->binding_handle;
 
 	if (argc != 2) {
 		printf("Usage: %s rid\n", argv[0]);
@@ -2262,35 +2538,49 @@ static NTSTATUS cmd_samr_get_usrdom_pwinfo(struct rpc_pipe_client *cli,
 
 	sscanf(argv[1], "%i", &rid);
 
-	result = rpccli_try_samr_connects(cli, mem_ctx,
+	status = rpccli_try_samr_connects(cli, mem_ctx,
 					  MAXIMUM_ALLOWED_ACCESS,
 					  &connect_pol);
-
-	if (!NT_STATUS_IS_OK(result)) {
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
 
-	result = rpccli_samr_OpenDomain(cli, mem_ctx,
+	status = dcerpc_samr_OpenDomain(b, mem_ctx,
 					&connect_pol,
 					MAXIMUM_ALLOWED_ACCESS,
 					&domain_sid,
-					&domain_pol);
-
+					&domain_pol,
+					&result);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
 	if (!NT_STATUS_IS_OK(result)) {
+		status = result;
 		goto done;
 	}
 
-	result = rpccli_samr_OpenUser(cli, mem_ctx,
+	status = dcerpc_samr_OpenUser(b, mem_ctx,
 				      &domain_pol,
 				      MAXIMUM_ALLOWED_ACCESS,
 				      rid,
-				      &user_pol);
-
+				      &user_pol,
+				      &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
 	if (!NT_STATUS_IS_OK(result)) {
+		status = result;
 		goto done;
 	}
 
-	result = rpccli_samr_GetUserPwInfo(cli, mem_ctx, &user_pol, &info);
+	status = dcerpc_samr_GetUserPwInfo(b, mem_ctx,
+					   &user_pol,
+					   &info,
+					   &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
+	status = result;
 	if (NT_STATUS_IS_OK(result)) {
 		printf("min_password_length: %d\n", info.min_password_length);
 		printf("%s\n",
@@ -2299,20 +2589,21 @@ static NTSTATUS cmd_samr_get_usrdom_pwinfo(struct rpc_pipe_client *cli,
 	}
 
  done:
-	rpccli_samr_Close(cli, mem_ctx, &user_pol);
-	rpccli_samr_Close(cli, mem_ctx, &domain_pol);
-	rpccli_samr_Close(cli, mem_ctx, &connect_pol);
+	dcerpc_samr_Close(b, mem_ctx, &user_pol, &result);
+	dcerpc_samr_Close(b, mem_ctx, &domain_pol, &result);
+	dcerpc_samr_Close(b, mem_ctx, &connect_pol, &result);
 
-	return result;
+	return status;
 }
 
 static NTSTATUS cmd_samr_get_dom_pwinfo(struct rpc_pipe_client *cli,
 					TALLOC_CTX *mem_ctx,
 					int argc, const char **argv)
 {
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS status, result;
 	struct lsa_String domain_name;
 	struct samr_PwInfo info;
+	struct dcerpc_binding_handle *b = cli->binding_handle;
 
 	if (argc < 1 || argc > 3) {
 		printf("Usage: %s <domain>\n", argv[0]);
@@ -2321,8 +2612,13 @@ static NTSTATUS cmd_samr_get_dom_pwinfo(struct rpc_pipe_client *cli,
 
 	init_lsa_String(&domain_name, argv[1]);
 
-	result = rpccli_samr_GetDomPwInfo(cli, mem_ctx, &domain_name, &info);
-
+	status = dcerpc_samr_GetDomPwInfo(b, mem_ctx,
+					  &domain_name,
+					  &info,
+					  &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 	if (NT_STATUS_IS_OK(result)) {
 		printf("min_password_length: %d\n", info.min_password_length);
 		display_password_properties(info.password_properties);
@@ -2338,11 +2634,12 @@ static NTSTATUS cmd_samr_lookup_domain(struct rpc_pipe_client *cli,
 				       int argc, const char **argv)
 {
 	struct policy_handle connect_pol, domain_pol;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS status, result;
 	uint32 access_mask = MAXIMUM_ALLOWED_ACCESS;
 	fstring sid_string;
 	struct lsa_String domain_name;
 	struct dom_sid *sid = NULL;
+	struct dcerpc_binding_handle *b = cli->binding_handle;
 
 	if (argc != 2) {
 		printf("Usage: %s domain_name\n", argv[0]);
@@ -2351,26 +2648,39 @@ static NTSTATUS cmd_samr_lookup_domain(struct rpc_pipe_client *cli,
 
 	init_lsa_String(&domain_name, argv[1]);
 
-	result = rpccli_try_samr_connects(cli, mem_ctx,
+	status = rpccli_try_samr_connects(cli, mem_ctx,
 					  access_mask,
 					  &connect_pol);
-
-	if (!NT_STATUS_IS_OK(result))
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
+	}
 
-	result = rpccli_samr_OpenDomain(cli, mem_ctx,
+	status = dcerpc_samr_OpenDomain(b, mem_ctx,
 					&connect_pol,
 					access_mask,
 					&domain_sid,
-					&domain_pol);
-
-	if (!NT_STATUS_IS_OK(result))
+					&domain_pol,
+					&result);
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
+	}
+	if (!NT_STATUS_IS_OK(result)) {
+		status = result;
+		goto done;
+	}
 
-	result = rpccli_samr_LookupDomain(cli, mem_ctx,
+	status = dcerpc_samr_LookupDomain(b, mem_ctx,
 					  &connect_pol,
 					  &domain_name,
-					  &sid);
+					  &sid,
+					  &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
+	if (!NT_STATUS_IS_OK(result)) {
+		status = result;
+		goto done;
+	}
 
 	if (NT_STATUS_IS_OK(result)) {
 		sid_to_fstring(sid_string, sid);
@@ -2378,10 +2688,10 @@ static NTSTATUS cmd_samr_lookup_domain(struct rpc_pipe_client *cli,
 		       argv[1], sid_string);
 	}
 
-	rpccli_samr_Close(cli, mem_ctx, &domain_pol);
-	rpccli_samr_Close(cli, mem_ctx, &connect_pol);
+	dcerpc_samr_Close(b, mem_ctx, &domain_pol, &result);
+	dcerpc_samr_Close(b, mem_ctx, &connect_pol, &result);
 done:
-	return result;
+	return status;
 }
 
 /* Change user password */
@@ -2391,11 +2701,12 @@ static NTSTATUS cmd_samr_chgpasswd(struct rpc_pipe_client *cli,
 				   int argc, const char **argv)
 {
 	struct policy_handle connect_pol, domain_pol, user_pol;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS status, result;
 	const char *user, *oldpass, *newpass;
 	uint32 access_mask = MAXIMUM_ALLOWED_ACCESS;
 	struct samr_Ids rids, types;
 	struct lsa_String lsa_acct_name;
+	struct dcerpc_binding_handle *b = cli->binding_handle;
 
 	if (argc < 3) {
 		printf("Usage: %s username oldpass newpass\n", argv[0]);
@@ -2408,71 +2719,81 @@ static NTSTATUS cmd_samr_chgpasswd(struct rpc_pipe_client *cli,
 
 	/* Get sam policy handle */
 
-	result = rpccli_try_samr_connects(cli, mem_ctx,
+	status = rpccli_try_samr_connects(cli, mem_ctx,
 					  MAXIMUM_ALLOWED_ACCESS,
 					  &connect_pol);
-
-	if (!NT_STATUS_IS_OK(result)) {
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
 
 	/* Get domain policy handle */
 
-	result = rpccli_samr_OpenDomain(cli, mem_ctx,
+	status = dcerpc_samr_OpenDomain(b, mem_ctx,
 					&connect_pol,
 					access_mask,
 					&domain_sid,
-					&domain_pol);
-
+					&domain_pol,
+					&result);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
 	if (!NT_STATUS_IS_OK(result)) {
+		status = result;
 		goto done;
 	}
 
 	init_lsa_String(&lsa_acct_name, user);
 
-	result = rpccli_samr_LookupNames(cli, mem_ctx,
+	status = dcerpc_samr_LookupNames(b, mem_ctx,
 					 &domain_pol,
 					 1,
 					 &lsa_acct_name,
 					 &rids,
-					 &types);
-
+					 &types,
+					 &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
 	if (!NT_STATUS_IS_OK(result)) {
+		status = result;
 		goto done;
 	}
 
-	result = rpccli_samr_OpenUser(cli, mem_ctx,
+	status = dcerpc_samr_OpenUser(b, mem_ctx,
 				      &domain_pol,
 				      access_mask,
 				      rids.ids[0],
-				      &user_pol);
-
+				      &user_pol,
+				      &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
 	if (!NT_STATUS_IS_OK(result)) {
+		status = result;
 		goto done;
 	}
 
 	/* Change user password */
-	result = rpccli_samr_chgpasswd_user(cli, mem_ctx,
+	status = rpccli_samr_chgpasswd_user(cli, mem_ctx,
 					    &user_pol,
 					    newpass,
 					    oldpass);
-
-	if (!NT_STATUS_IS_OK(result)) {
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
 
  done:
 	if (is_valid_policy_hnd(&user_pol)) {
-		rpccli_samr_Close(cli, mem_ctx, &user_pol);
+		dcerpc_samr_Close(b, mem_ctx, &user_pol, &result);
 	}
 	if (is_valid_policy_hnd(&domain_pol)) {
-		rpccli_samr_Close(cli, mem_ctx, &domain_pol);
+		dcerpc_samr_Close(b, mem_ctx, &domain_pol, &result);
 	}
 	if (is_valid_policy_hnd(&connect_pol)) {
-		rpccli_samr_Close(cli, mem_ctx, &connect_pol);
+		dcerpc_samr_Close(b, mem_ctx, &connect_pol, &result);
 	}
 
-	return result;
+	return status;
 }
 
 
@@ -2483,9 +2804,10 @@ static NTSTATUS cmd_samr_chgpasswd2(struct rpc_pipe_client *cli,
 				    int argc, const char **argv)
 {
 	struct policy_handle connect_pol, domain_pol;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS status, result;
 	const char *user, *oldpass, *newpass;
 	uint32 access_mask = MAXIMUM_ALLOWED_ACCESS;
+	struct dcerpc_binding_handle *b = cli->binding_handle;
 
 	if (argc < 3) {
 		printf("Usage: %s username oldpass newpass\n", argv[0]);
@@ -2498,38 +2820,44 @@ static NTSTATUS cmd_samr_chgpasswd2(struct rpc_pipe_client *cli,
 
 	/* Get sam policy handle */
 
-	result = rpccli_try_samr_connects(cli, mem_ctx,
+	status = rpccli_try_samr_connects(cli, mem_ctx,
 					  MAXIMUM_ALLOWED_ACCESS,
 					  &connect_pol);
-
-	if (!NT_STATUS_IS_OK(result))
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
+	}
 
 	/* Get domain policy handle */
 
-	result = rpccli_samr_OpenDomain(cli, mem_ctx,
+	status = dcerpc_samr_OpenDomain(b, mem_ctx,
 					&connect_pol,
 					access_mask,
 					&domain_sid,
-					&domain_pol);
-
-	if (!NT_STATUS_IS_OK(result))
+					&domain_pol,
+					&result);
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
+	}
+	if (!NT_STATUS_IS_OK(result)) {
+		status = result;
+		goto done;
+	}
 
 	/* Change user password */
-	result = rpccli_samr_chgpasswd_user2(cli, mem_ctx, user, newpass, oldpass);
+	status = rpccli_samr_chgpasswd_user2(cli, mem_ctx, user, newpass, oldpass);
 
-	if (!NT_STATUS_IS_OK(result))
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
+	}
 
-	result = rpccli_samr_Close(cli, mem_ctx, &domain_pol);
-	if (!NT_STATUS_IS_OK(result)) goto done;
+	status = dcerpc_samr_Close(b, mem_ctx, &domain_pol, &result);
+	if (!NT_STATUS_IS_OK(status)) goto done;
 
-	result = rpccli_samr_Close(cli, mem_ctx, &connect_pol);
-	if (!NT_STATUS_IS_OK(result)) goto done;
+	status = dcerpc_samr_Close(b, mem_ctx, &connect_pol, &result);
+	if (!NT_STATUS_IS_OK(status)) goto done;
 
  done:
-	return result;
+	return status;
 }
 
 
@@ -2540,11 +2868,12 @@ static NTSTATUS cmd_samr_chgpasswd3(struct rpc_pipe_client *cli,
 				    int argc, const char **argv)
 {
 	struct policy_handle connect_pol, domain_pol;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS status, result;
 	const char *user, *oldpass, *newpass;
 	uint32 access_mask = MAXIMUM_ALLOWED_ACCESS;
 	struct samr_DomInfo1 *info = NULL;
 	struct userPwdChangeFailureInformation *reject = NULL;
+	struct dcerpc_binding_handle *b = cli->binding_handle;
 
 	if (argc < 3) {
 		printf("Usage: %s username oldpass newpass\n", argv[0]);
@@ -2557,31 +2886,39 @@ static NTSTATUS cmd_samr_chgpasswd3(struct rpc_pipe_client *cli,
 
 	/* Get sam policy handle */
 
-	result = rpccli_try_samr_connects(cli, mem_ctx,
+	status = rpccli_try_samr_connects(cli, mem_ctx,
 					  MAXIMUM_ALLOWED_ACCESS,
 					  &connect_pol);
-
-	if (!NT_STATUS_IS_OK(result))
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
+	}
 
 	/* Get domain policy handle */
 
-	result = rpccli_samr_OpenDomain(cli, mem_ctx,
+	status = dcerpc_samr_OpenDomain(b, mem_ctx,
 					&connect_pol,
 					access_mask,
 					&domain_sid,
-					&domain_pol);
-
-	if (!NT_STATUS_IS_OK(result))
+					&domain_pol,
+					&result);
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
+	}
+	if (!NT_STATUS_IS_OK(result)) {
+		status = result;
+		goto done;
+	}
 
 	/* Change user password */
-	result = rpccli_samr_chgpasswd_user3(cli, mem_ctx,
+	status = rpccli_samr_chgpasswd_user3(cli, mem_ctx,
 					     user,
 					     newpass,
 					     oldpass,
 					     &info,
 					     &reject);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
 
 	if (NT_STATUS_EQUAL(result, NT_STATUS_PASSWORD_RESTRICTION)) {
 
@@ -2604,17 +2941,19 @@ static NTSTATUS cmd_samr_chgpasswd3(struct rpc_pipe_client *cli,
 		}
 	}
 
-	if (!NT_STATUS_IS_OK(result))
+	if (!NT_STATUS_IS_OK(result)) {
+		status = result;
 		goto done;
+	}
 
-	result = rpccli_samr_Close(cli, mem_ctx, &domain_pol);
-	if (!NT_STATUS_IS_OK(result)) goto done;
+	status = dcerpc_samr_Close(b, mem_ctx, &domain_pol, &result);
+	if (!NT_STATUS_IS_OK(status)) goto done;
 
-	result = rpccli_samr_Close(cli, mem_ctx, &connect_pol);
-	if (!NT_STATUS_IS_OK(result)) goto done;
+	status = dcerpc_samr_Close(b, mem_ctx, &connect_pol, &result);
+	if (!NT_STATUS_IS_OK(status)) goto done;
 
  done:
-	return result;
+	return status;
 }
 
 static NTSTATUS cmd_samr_setuserinfo_int(struct rpc_pipe_client *cli,
@@ -2623,7 +2962,7 @@ static NTSTATUS cmd_samr_setuserinfo_int(struct rpc_pipe_client *cli,
 					 int opcode)
 {
 	struct policy_handle connect_pol, domain_pol, user_pol;
-	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS status, result;
 	const char *user, *param;
 	uint32_t access_mask = MAXIMUM_ALLOWED_ACCESS;
 	uint32_t level;
@@ -2635,6 +2974,7 @@ static NTSTATUS cmd_samr_setuserinfo_int(struct rpc_pipe_client *cli,
 	uint8_t lm_hash[16];
 	DATA_BLOB session_key;
 	uint8_t password_expired = 0;
+	struct dcerpc_binding_handle *b = cli->binding_handle;
 
 	if (argc < 4) {
 		printf("Usage: %s username level password [password_expired]\n",
@@ -2764,28 +3104,39 @@ static NTSTATUS cmd_samr_setuserinfo_int(struct rpc_pipe_client *cli,
 	status = rpccli_try_samr_connects(cli, mem_ctx,
 					  MAXIMUM_ALLOWED_ACCESS,
 					  &connect_pol);
-
-	if (!NT_STATUS_IS_OK(status))
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
+	}
 
 	/* Get domain policy handle */
 
-	status = rpccli_samr_OpenDomain(cli, mem_ctx,
+	status = dcerpc_samr_OpenDomain(b, mem_ctx,
 					&connect_pol,
 					access_mask,
 					&domain_sid,
-					&domain_pol);
+					&domain_pol,
+					&result);
 
 	if (!NT_STATUS_IS_OK(status))
 		goto done;
+	if (!NT_STATUS_IS_OK(result)) {
+		status = result;
+		goto done;
+	}
 
 	user_rid = strtol(user, NULL, 0);
 	if (user_rid) {
-		status = rpccli_samr_OpenUser(cli, mem_ctx,
+		status = dcerpc_samr_OpenUser(b, mem_ctx,
 					      &domain_pol,
 					      access_mask,
 					      user_rid,
-					      &user_pol);
+					      &user_pol,
+					      &result);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto done;
+		}
+
+		status = result;
 	}
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_NO_SUCH_USER) ||
@@ -2797,43 +3148,62 @@ static NTSTATUS cmd_samr_setuserinfo_int(struct rpc_pipe_client *cli,
 
 		init_lsa_String(&lsa_acct_name, user);
 
-		status = rpccli_samr_LookupNames(cli, mem_ctx,
+		status = dcerpc_samr_LookupNames(b, mem_ctx,
 						 &domain_pol,
 						 1,
 						 &lsa_acct_name,
 						 &rids,
-						 &types);
+						 &types,
+						 &result);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
+		if (!NT_STATUS_IS_OK(result)) {
+			return result;
+		}
 
-		status = rpccli_samr_OpenUser(cli, mem_ctx,
+
+		status = dcerpc_samr_OpenUser(b, mem_ctx,
 					      &domain_pol,
 					      access_mask,
 					      rids.ids[0],
-					      &user_pol);
+					      &user_pol,
+					      &result);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
+		}
+		if (!NT_STATUS_IS_OK(result)) {
+			return result;
 		}
 	}
 
 	switch (opcode) {
 	case NDR_SAMR_SETUSERINFO:
-		status = rpccli_samr_SetUserInfo(cli, mem_ctx,
+		status = dcerpc_samr_SetUserInfo(b, mem_ctx,
 						 &user_pol,
 						 level,
-						 &info);
+						 &info,
+						 &result);
 		break;
 	case NDR_SAMR_SETUSERINFO2:
-		status = rpccli_samr_SetUserInfo2(cli, mem_ctx,
+		status = dcerpc_samr_SetUserInfo2(b, mem_ctx,
 						  &user_pol,
 						  level,
-						  &info);
+						  &info,
+						  &result);
 		break;
 	default:
 		return NT_STATUS_INVALID_PARAMETER;
 	}
-
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("status: %s\n", nt_errstr(status)));
+		goto done;
+	}
+	if (!NT_STATUS_IS_OK(result)) {
+		status = result;
+		DEBUG(0,("result: %s\n", nt_errstr(status)));
+		goto done;
+	}
  done:
 	return status;
 }
@@ -2858,12 +3228,13 @@ static NTSTATUS cmd_samr_get_dispinfo_idx(struct rpc_pipe_client *cli,
 					  TALLOC_CTX *mem_ctx,
 					  int argc, const char **argv)
 {
-	NTSTATUS status;
+	NTSTATUS status, result;
 	struct policy_handle connect_handle;
 	struct policy_handle domain_handle;
 	uint16_t level = 1;
 	struct lsa_String name;
 	uint32_t idx = 0;
+	struct dcerpc_binding_handle *b = cli->binding_handle;
 
 	if (argc < 2 || argc > 3) {
 		printf("Usage: %s name level\n", argv[0]);
@@ -2879,26 +3250,35 @@ static NTSTATUS cmd_samr_get_dispinfo_idx(struct rpc_pipe_client *cli,
 	status = rpccli_try_samr_connects(cli, mem_ctx,
 					  SEC_FLAG_MAXIMUM_ALLOWED,
 					  &connect_handle);
-
 	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
 
-	status = rpccli_samr_OpenDomain(cli, mem_ctx,
+	status = dcerpc_samr_OpenDomain(b, mem_ctx,
 					&connect_handle,
 					SEC_FLAG_MAXIMUM_ALLOWED,
 					&domain_sid,
-					&domain_handle);
-
-	if (!NT_STATUS_IS_OK(status))
+					&domain_handle,
+					&result);
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
+	}
+	if (!NT_STATUS_IS_OK(result)) {
+		status = result;
+		goto done;
+	}
 
-
-	status = rpccli_samr_GetDisplayEnumerationIndex(cli, mem_ctx,
+	status = dcerpc_samr_GetDisplayEnumerationIndex(b, mem_ctx,
 							&domain_handle,
 							level,
 							&name,
-							&idx);
+							&idx,
+							&result);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
+
+	status = result;
 
 	if (NT_STATUS_IS_OK(status) ||
 	    NT_STATUS_EQUAL(status, NT_STATUS_NO_MORE_ENTRIES)) {
@@ -2907,10 +3287,10 @@ static NTSTATUS cmd_samr_get_dispinfo_idx(struct rpc_pipe_client *cli,
  done:
 
 	if (is_valid_policy_hnd(&domain_handle)) {
-		rpccli_samr_Close(cli, mem_ctx, &domain_handle);
+		dcerpc_samr_Close(b, mem_ctx, &domain_handle, &result);
 	}
 	if (is_valid_policy_hnd(&connect_handle)) {
-		rpccli_samr_Close(cli, mem_ctx, &connect_handle);
+		dcerpc_samr_Close(b, mem_ctx, &connect_handle, &result);
 	}
 
 	return status;
