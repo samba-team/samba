@@ -582,8 +582,6 @@ done:
 }
 
 
-extern pid_t ctdbd_pid;
-
 /*
   return on failure or (with 0) if all fd events are removed
 */
