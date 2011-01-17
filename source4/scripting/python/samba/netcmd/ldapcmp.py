@@ -216,7 +216,10 @@ class Descriptor(object):
         """ Extracts the DACL as a list of ACE string (with the brakets).
         """
         try:
-            res = re.search("D:(.*?)(\(.*?\))S:", self.sddl).group(2)
+            if "S:" in self.sddl:
+                res = re.search("D:(.*?)(\(.*?\))S:", self.sddl).group(2)
+            else:
+                res = re.search("D:(.*?)(\(.*\))", self.sddl).group(2)
         except AttributeError:
             return []
         return re.findall("(\(.*?\))", res)
