@@ -39,7 +39,7 @@ from subunit.run import SubunitTestRunner
 import unittest
 
 from samba.ndr import ndr_pack, ndr_unpack
-from samba.dcerpc import security
+from samba.dcerpc import security, lsa
 from samba.tests import delete_force
 
 parser = optparse.OptionParser("ldap.py [options] <host>")
@@ -95,7 +95,7 @@ class BasicTests(unittest.TestCase):
         delete_force(self.ldb, "cn=ldaptestobject," + self.base_dn)
         delete_force(self.ldb, "description=xyz,cn=users," + self.base_dn)
         delete_force(self.ldb, "ou=testou,cn=users," + self.base_dn)
-        delete_force(self.ldb, "cn=testsecret,cn=system," + self.base_dn)
+        delete_force(self.ldb, "cn=Test Secret,cn=system," + self.base_dn)
 
     def test_objectclasses(self):
         """Test objectClass behaviour"""
@@ -104,7 +104,7 @@ class BasicTests(unittest.TestCase):
         # We cannot create LSA-specific objects (oc "secret" or "trustedDomain")
         try:
             self.ldb.add({
-                "dn": "cn=testsecret,cn=system," + self.base_dn,
+                "dn": "cn=Test Secret,cn=system," + self.base_dn,
                 "objectClass": "secret" })
             self.fail()
         except LdbError, (num, _):
@@ -369,14 +369,39 @@ class BasicTests(unittest.TestCase):
 
         try:
             self.ldb.add({
-                "dn": "cn=testsecret,cn=system," + self.base_dn,
+                "dn": "cn=Test Secret,cn=system," + self.base_dn,
                 "objectclass": "secret"})
             self.fail()
         except LdbError, (num, _):
             self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
 
         delete_force(self.ldb, "cn=ldaptestobject," + self.base_dn)
-        delete_force(self.ldb, "cn=testsecret,cn=system," + self.base_dn)
+        delete_force(self.ldb, "cn=Test Secret,cn=system," + self.base_dn)
+
+        # Create secret over LSA and try to change it
+
+        lsa_conn = lsa.lsarpc("ncacn_np:%s" % args[0], lp, creds)
+        lsa_handle = lsa_conn.OpenPolicy2(system_name="\\",
+                                          attr=lsa.ObjectAttribute(),
+                                          access_mask=security.SEC_FLAG_MAXIMUM_ALLOWED)
+        secret_name = lsa.String()
+        secret_name.string = "G$Test"
+        sec_handle = lsa_conn.CreateSecret(handle=lsa_handle,
+                                           name=secret_name,
+                                           access_mask=security.SEC_FLAG_MAXIMUM_ALLOWED)
+        lsa_conn.Close(lsa_handle)
+
+        m = Message()
+        m.dn = Dn(ldb, "cn=Test Secret,cn=system," + self.base_dn)
+        m["description"] = MessageElement("desc", FLAG_MOD_REPLACE,
+          "description")
+        try:
+            ldb.modify(m)
+            self.fail()
+        except LdbError, (num, _):
+            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
+
+        delete_force(self.ldb, "cn=Test Secret,cn=system," + self.base_dn)
 
         try:
             self.ldb.add({
