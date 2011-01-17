@@ -1086,6 +1086,7 @@ int ldb_build_search_req_ex(struct ldb_request **ret_req,
 	if (parent) {
 		req->handle->nesting++;
 		req->handle->parent = parent;
+		req->handle->flags = parent->handle->flags;
 	}
 
 	*ret_req = req;
@@ -1157,6 +1158,8 @@ int ldb_build_add_req(struct ldb_request **ret_req,
 
 	if (parent) {
 		req->handle->nesting++;
+		req->handle->parent = parent;
+		req->handle->flags = parent->handle->flags;
 	}
 
 	*ret_req = req;
@@ -1199,6 +1202,8 @@ int ldb_build_mod_req(struct ldb_request **ret_req,
 
 	if (parent) {
 		req->handle->nesting++;
+		req->handle->parent = parent;
+		req->handle->flags = parent->handle->flags;
 	}
 
 	*ret_req = req;
@@ -1241,6 +1246,8 @@ int ldb_build_del_req(struct ldb_request **ret_req,
 
 	if (parent) {
 		req->handle->nesting++;
+		req->handle->parent = parent;
+		req->handle->flags = parent->handle->flags;
 	}
 
 	*ret_req = req;
@@ -1285,6 +1292,8 @@ int ldb_build_rename_req(struct ldb_request **ret_req,
 
 	if (parent) {
 		req->handle->nesting++;
+		req->handle->parent = parent;
+		req->handle->flags = parent->handle->flags;
 	}
 
 	*ret_req = req;
@@ -1358,6 +1367,8 @@ int ldb_build_extended_req(struct ldb_request **ret_req,
 
 	if (parent) {
 		req->handle->nesting++;
+		req->handle->parent = parent;
+		req->handle->flags = parent->handle->flags;
 	}
 
 	*ret_req = req;
