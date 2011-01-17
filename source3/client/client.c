@@ -4110,6 +4110,7 @@ static int cmd_logon(void)
 {
 	TALLOC_CTX *ctx = talloc_tos();
 	char *l_username, *l_password;
+	NTSTATUS nt_status;
 
 	if (!next_token_talloc(ctx, &cmd_ptr,&l_username,NULL)) {
 		d_printf("logon <username> [<password>]\n");
@@ -4126,11 +4127,12 @@ static int cmd_logon(void)
 		return 1;
 	}
 
-	if (!NT_STATUS_IS_OK(cli_session_setup(cli, l_username,
-					       l_password, strlen(l_password),
-					       l_password, strlen(l_password),
-					       lp_workgroup()))) {
-		d_printf("session setup failed: %s\n", cli_errstr(cli));
+	nt_status = cli_session_setup(cli, l_username,
+				      l_password, strlen(l_password),
+				      l_password, strlen(l_password),
+				      lp_workgroup());
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		d_printf("session setup failed: %s\n", nt_errstr(nt_status));
 		return -1;
 	}
 
