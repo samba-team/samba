@@ -74,7 +74,6 @@ static bool test_PACVerify(struct torture_context *tctx,
 
 	struct auth_session_info *session_info;
 
-	char *tmp_dir;
 	struct dcerpc_binding_handle *b = p->binding_handle;
 	TALLOC_CTX *tmp_ctx = talloc_new(tctx);
 	torture_assert(tctx, tmp_ctx != NULL, "talloc_new() failed");
@@ -84,9 +83,6 @@ static bool test_PACVerify(struct torture_context *tctx,
 				    &creds)) {
 		return false;
 	}
-
-	status = torture_temp_dir(tctx, "PACVerify", &tmp_dir);
-	torture_assert_ntstatus_ok(tctx, status, "torture_temp_dir failed");
 
 	status = gensec_client_start(tctx, &gensec_client_context, tctx->ev, 
 				     lpcfg_gensec_settings(tctx, tctx->lp_ctx));
@@ -418,16 +414,11 @@ static bool test_S2U4Self(struct torture_context *tctx,
 
 	struct dom_sid *builtin_domain;
 
-	char *tmp_dir;
-
 	TALLOC_CTX *tmp_ctx = talloc_new(tctx);
 
 	torture_assert(tctx, tmp_ctx != NULL, "talloc_new() failed");
 
 	/* First, do a normal Kerberos connection */
-
-	status = torture_temp_dir(tctx, "S2U4Self", &tmp_dir);
-	torture_assert_ntstatus_ok(tctx, status, "torture_temp_dir failed");
 
 	status = gensec_client_start(tctx, &gensec_client_context, tctx->ev,
 				     lpcfg_gensec_settings(tctx, tctx->lp_ctx));
