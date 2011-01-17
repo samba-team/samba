@@ -57,8 +57,6 @@ load automatic printer services from pre-populated pcap cache
 ***************************************************************************/
 void load_printers(void)
 {
-	SMB_ASSERT(pcap_cache_loaded());
-
 	add_auto_printers();
 
 	/* load all printcap printers */

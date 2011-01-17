@@ -715,8 +715,6 @@ void reload_printers(void)
 	int pnum = lp_servicenumber(PRINTERS_NAME);
 	const char *pname;
 
-	SMB_ASSERT(pcap_cache_loaded());
-
 	DEBUG(10, ("reloading printer services from pcap cache\n"));
 	for (snum = 0; snum < n_services; snum++) {
 		/* avoid removing PRINTERS_NAME or non-autoloaded printers */
