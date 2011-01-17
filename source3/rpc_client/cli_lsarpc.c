@@ -213,7 +213,7 @@ static NTSTATUS dcerpc_lsa_lookup_sids_noalloc(struct dcerpc_binding_handle *h,
 						LSA_LOOKUP_OPTION_SEARCH_ISOLATED_NAMES,
 						LSA_CLIENT_REVISION_2,
 						&result);
-		if (NT_STATUS_IS_OK(status)) {
+		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
 
