@@ -13,6 +13,9 @@ Major enhancements in Samba 3.4.10 include:
 Changes since 3.4.9
 -------------------
 
+o   Michael Adam <obnox@samba.org>
+    * BUG 7507: init_sam_from_ldap stores group in sid2uid cache.
+
 
 o   Jeremy Allison <jra@samba.org>
     * BUG 7577: Fix SPNEGO auth when contacting Win7 system using Microsoft Live
@@ -23,12 +26,26 @@ o   Jeremy Allison <jra@samba.org>
     * BUG 7892: Fix stale lock in open_file_fchmod().
 
 
+o   Andrew Bartlett <abartlet@samba.org>
+    * BUG 7356: Fix 'net ads dns register' in Win 2008 R2 domains.
+
+
 o   Björn Baumbach <bb@sernet.de>
     * BUG 7875: Fix 'nmbd --port'.
+    * BUG 7880: Make 'rpcclient deldriver' delete drivers for all architectures.
 
 
 o   Günther Deschner <gd@samba.org>
+    * BUG 7341: Fix Winbind over IPv6.
+    * BUG 7417: Fix 'net rpc user password' command.
+    * BUG 7418: Fix 'net rpc printer list' command.
+    * BUG 7500: Fix 'not a string literal' warning in netdomjoin-gui.
+    * BUG 7541: Fix smbd crash caused by "%D" in "printer admin" option.
     * BUG 7568: Make sure cm_connect_lsa_tcp does not reset the secure channel.
+
+
+o   Olaf Flebbe <o.flebbe@science-computing.de>
+    * BUG 7421: Fix build on AIX 6.1.
 
 
 o   Björn Jacke <bj@sernet.de>
@@ -36,10 +53,12 @@ o   Björn Jacke <bj@sernet.de>
 
 
 o   Volker Lendecke <vl@samba.org>
-    * BUG 7715: Stop using the write cache after an oplock break: Stop using the
-      write cache after an oplock break.
     * BUG 7066: Fix "Your Password expires today" message for users from trusted
       domains.
+    * BUG 7262: Fix EnumDomainAliases when no aliases are in LDAP.
+    * BUG 7336: Enable idmap_passdb module build as shared.
+    * BUG 7715: Stop using the write cache after an oplock break: Stop using the
+      write cache after an oplock break.
     * BUG 7800: Make winbind recover from a signing error.
     * BUG 7881: Fix flaky Winbind against w2k8.
 
@@ -51,6 +70,15 @@ o   Jim McDonough <jmcd@samba.org>
 o   Stefan Metzmacher <metze@samba.org>
     * BUG 7607: Fix buffer over-read in pidl generated client code.
     * BUG 7896: Fix 'net rpc user rename'.
+
+
+o   Andreas Schneider <asn@samba.org>
+    * BUG 7423: Add EN ISO 216, A0 and A1 to builtin forms.
+    * BUG 7538: Backport fixes for GUID_from_data_blob.
+
+
+o   Andrew Tridgell <tridge@samba.org>
+    * BUG 7538: Backport fixes for GUID_from_data_blob.
 
 
 ######################################################################
