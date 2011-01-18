@@ -21,7 +21,7 @@
 #include "includes.h"
 #include "utils/net.h"
 #include "../libcli/auth/libcli_auth.h"
-#include "../librpc/gen_ndr/cli_lsa.h"
+#include "../librpc/gen_ndr/ndr_lsa_c.h"
 #include "rpc_client/cli_lsarpc.h"
 #include "../librpc/gen_ndr/ndr_samr_c.h"
 #include "rpc_client/init_samr.h"
@@ -248,22 +248,24 @@ int net_rpc_join_newstyle(struct net_context *c, int argc, const char **argv)
 		goto done;
 	}
 
+	b = pipe_hnd->binding_handle;
 
 	CHECK_RPC_ERR(rpccli_lsa_open_policy(pipe_hnd, mem_ctx, true,
 					  SEC_FLAG_MAXIMUM_ALLOWED,
 					  &lsa_pol),
 		      "error opening lsa policy handle");
 
-	CHECK_RPC_ERR(rpccli_lsa_QueryInfoPolicy(pipe_hnd, mem_ctx,
-						 &lsa_pol,
-						 LSA_POLICY_INFO_ACCOUNT_DOMAIN,
-						 &info),
+	CHECK_DCERPC_ERR(dcerpc_lsa_QueryInfoPolicy(b, mem_ctx,
+						    &lsa_pol,
+						    LSA_POLICY_INFO_ACCOUNT_DOMAIN,
+						    &info,
+						    &result),
 		      "error querying info policy");
 
 	domain = info->account_domain.name.string;
 	domain_sid = info->account_domain.sid;
 
-	rpccli_lsa_Close(pipe_hnd, mem_ctx, &lsa_pol);
+	dcerpc_lsa_Close(b, mem_ctx, &lsa_pol, &result);
 	TALLOC_FREE(pipe_hnd); /* Done with this pipe */
 
 	/* Bail out if domain didn't get set. */
