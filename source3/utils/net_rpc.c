@@ -4386,7 +4386,6 @@ static bool get_user_tokens(struct net_context *c, int *num_tokens,
 		}
 
 		get_user_sids(domain, user, &(result[i].token));
-		i+=1;
 	}
 	TALLOC_FREE(frame);
 	wbcFreeMemory(users);
