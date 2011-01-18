@@ -3,7 +3,7 @@
 
    Endpoint server for the epmapper pipe
 
-   Copyright (C) 2010      Andreas Schneider <asn@samba.org>
+   Copyright (C) 2010-2011 Andreas Schneider <asn@samba.org>
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -981,8 +981,11 @@ error_status_t _epm_LookupHandleFree(struct pipes_struct *p,
 
 
 /*
-  epm_InqObject
-*/
+ * epm_InqObject
+ *
+ * A client implementation SHOULD NOT call this method. These extensions do not
+ * provide an alternative method.
+ */
 error_status_t _epm_InqObject(struct pipes_struct *p,
 		      struct epm_InqObject *r)
 {
@@ -992,7 +995,10 @@ error_status_t _epm_InqObject(struct pipes_struct *p,
 
 
 /*
-  epm_MgmtDelete
+ * epm_MgmtDelete
+ *
+ * A client implementation SHOULD NOT call this method. These extensions do not
+ * provide an alternative method.
 */
 error_status_t _epm_MgmtDelete(struct pipes_struct *p,
 		       struct epm_MgmtDelete *r)
