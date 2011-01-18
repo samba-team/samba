@@ -2083,9 +2083,10 @@ static NTSTATUS rpc_add_aliasmem(struct rpc_pipe_client *pipe_hnd,
 				const char *member)
 {
 	struct policy_handle connect_pol, domain_pol;
-	NTSTATUS result;
+	NTSTATUS status, result;
 	uint32 alias_rid;
 	struct policy_handle alias_pol;
+	struct dcerpc_binding_handle *b = pipe_hnd->binding_handle;
 
 	struct dom_sid member_sid;
 	enum lsa_SidType member_type;
@@ -2108,45 +2109,60 @@ static NTSTATUS rpc_add_aliasmem(struct rpc_pipe_client *pipe_hnd,
 	}
 
 	/* Get sam policy handle */
-	result = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
+	status = dcerpc_samr_Connect2(b, mem_ctx,
 				      pipe_hnd->desthost,
 				      MAXIMUM_ALLOWED_ACCESS,
-				      &connect_pol);
+				      &connect_pol,
+				      &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
 	if (!NT_STATUS_IS_OK(result)) {
+		status = result;
 		goto done;
 	}
 
 	/* Get domain policy handle */
-	result = rpccli_samr_OpenDomain(pipe_hnd, mem_ctx,
+	status = dcerpc_samr_OpenDomain(b, mem_ctx,
 					&connect_pol,
 					MAXIMUM_ALLOWED_ACCESS,
 					&sid,
-					&domain_pol);
+					&domain_pol,
+					&result);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
 	if (!NT_STATUS_IS_OK(result)) {
+		status = result;
 		goto done;
 	}
 
-	result = rpccli_samr_OpenAlias(pipe_hnd, mem_ctx,
+	status = dcerpc_samr_OpenAlias(b, mem_ctx,
 				       &domain_pol,
 				       MAXIMUM_ALLOWED_ACCESS,
 				       alias_rid,
-				       &alias_pol);
-
+				       &alias_pol,
+				       &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 	if (!NT_STATUS_IS_OK(result)) {
 		return result;
 	}
 
-	result = rpccli_samr_AddAliasMember(pipe_hnd, mem_ctx,
+	status = dcerpc_samr_AddAliasMember(b, mem_ctx,
 					    &alias_pol,
-					    &member_sid);
-
-	if (!NT_STATUS_IS_OK(result)) {
-		return result;
+					    &member_sid,
+					    &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
+
+	status = result;
 
  done:
-	rpccli_samr_Close(pipe_hnd, mem_ctx, &connect_pol);
-	return result;
+	dcerpc_samr_Close(b, mem_ctx, &connect_pol, &result);
+	return status;
 }
 
 static NTSTATUS rpc_group_addmem_internals(struct net_context *c,
