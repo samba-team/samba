@@ -425,6 +425,11 @@ static bool test_Insert_noreplace(struct torture_context *tctx,
 	return true;
 }
 
+#if 0
+/*
+ * The MS-RPCE documentation states that this function isn't implemented and
+ * SHOULD NOT be called by a client.
+ */
 static bool test_InqObject(struct torture_context *tctx, struct dcerpc_pipe *p)
 {
 	NTSTATUS status;
@@ -439,6 +444,7 @@ static bool test_InqObject(struct torture_context *tctx, struct dcerpc_pipe *p)
 
 	return true;
 }
+#endif
 
 struct torture_suite *torture_rpc_epmapper(TALLOC_CTX *mem_ctx)
 {
