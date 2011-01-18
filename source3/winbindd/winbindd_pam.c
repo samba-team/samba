@@ -25,7 +25,7 @@
 #include "includes.h"
 #include "winbindd.h"
 #include "../libcli/auth/libcli_auth.h"
-#include "../librpc/gen_ndr/cli_samr.h"
+#include "../librpc/gen_ndr/ndr_samr_c.h"
 #include "rpc_client/cli_samr.h"
 #include "../librpc/gen_ndr/ndr_netlogon.h"
 #include "rpc_client/cli_netlogon.h"
@@ -1344,8 +1344,9 @@ static NTSTATUS winbindd_dual_pam_auth_samlogon(TALLOC_CTX *mem_ctx,
 		struct rpc_pipe_client *samr_pipe;
 		struct policy_handle samr_domain_handle, user_pol;
 		union samr_UserInfo *info = NULL;
-		NTSTATUS status_tmp;
+		NTSTATUS status_tmp, result_tmp;
 		uint32 acct_flags;
+		struct dcerpc_binding_handle *b;
 
 		status_tmp = cm_connect_sam(domain, mem_ctx,
 					    &samr_pipe, &samr_domain_handle);
@@ -1356,34 +1357,49 @@ static NTSTATUS winbindd_dual_pam_auth_samlogon(TALLOC_CTX *mem_ctx,
 			goto done;
 		}
 
-		status_tmp = rpccli_samr_OpenUser(samr_pipe, mem_ctx,
+		b = samr_pipe->binding_handle;
+
+		status_tmp = dcerpc_samr_OpenUser(b, mem_ctx,
 						  &samr_domain_handle,
 						  MAXIMUM_ALLOWED_ACCESS,
 						  my_info3->base.rid,
-						  &user_pol);
+						  &user_pol,
+						  &result_tmp);
 
 		if (!NT_STATUS_IS_OK(status_tmp)) {
 			DEBUG(3, ("could not open user handle on SAMR pipe: %s\n",
 				nt_errstr(status_tmp)));
 			goto done;
 		}
+		if (!NT_STATUS_IS_OK(result_tmp)) {
+			DEBUG(3, ("could not open user handle on SAMR pipe: %s\n",
+				nt_errstr(result_tmp)));
+			goto done;
+		}
 
-		status_tmp = rpccli_samr_QueryUserInfo(samr_pipe, mem_ctx,
+		status_tmp = dcerpc_samr_QueryUserInfo(b, mem_ctx,
 						       &user_pol,
 						       16,
-						       &info);
+						       &info,
+						       &result_tmp);
 
 		if (!NT_STATUS_IS_OK(status_tmp)) {
 			DEBUG(3, ("could not query user info on SAMR pipe: %s\n",
 				nt_errstr(status_tmp)));
-			rpccli_samr_Close(samr_pipe, mem_ctx, &user_pol);
+			dcerpc_samr_Close(b, mem_ctx, &user_pol, &result_tmp);
+			goto done;
+		}
+		if (!NT_STATUS_IS_OK(result_tmp)) {
+			DEBUG(3, ("could not query user info on SAMR pipe: %s\n",
+				nt_errstr(result_tmp)));
+			dcerpc_samr_Close(b, mem_ctx, &user_pol, &result_tmp);
 			goto done;
 		}
 
 		acct_flags = info->info16.acct_flags;
 
 		if (acct_flags == 0) {
-			rpccli_samr_Close(samr_pipe, mem_ctx, &user_pol);
+			dcerpc_samr_Close(b, mem_ctx, &user_pol, &result_tmp);
 			goto done;
 		}
 
@@ -1391,7 +1407,7 @@ static NTSTATUS winbindd_dual_pam_auth_samlogon(TALLOC_CTX *mem_ctx,
 
 		DEBUG(10,("successfully retrieved acct_flags 0x%x\n", acct_flags));
 
-		rpccli_samr_Close(samr_pipe, mem_ctx, &user_pol);
+		dcerpc_samr_Close(b, mem_ctx, &user_pol, &result_tmp);
 	}
 
 	*info3 = my_info3;
@@ -1808,6 +1824,7 @@ enum winbindd_result winbindd_dual_pam_chauthtok(struct winbindd_domain *contact
 	struct userPwdChangeFailureInformation *reject = NULL;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	fstring domain, user;
+	struct dcerpc_binding_handle *b = NULL;
 
 	ZERO_STRUCT(dom_pol);
 
@@ -1834,6 +1851,8 @@ enum winbindd_result winbindd_dual_pam_chauthtok(struct winbindd_domain *contact
 		DEBUG(1, ("could not get SAM handle on DC for %s\n", domain));
 		goto done;
 	}
+
+	b = cli->binding_handle;
 
 	result = rpccli_samr_chgpasswd_user3(cli, state->mem_ctx,
 					     user,
@@ -1924,9 +1943,10 @@ process_result:
 
 	if (strequal(contact_domain->name, get_global_sam_name())) {
 		/* FIXME: internal rpc pipe does not cache handles yet */
-		if (cli) {
+		if (b) {
 			if (is_valid_policy_hnd(&dom_pol)) {
-				rpccli_samr_Close(cli, state->mem_ctx, &dom_pol);
+				NTSTATUS _result;
+				dcerpc_samr_Close(b, state->mem_ctx, &dom_pol, &_result);
 			}
 			TALLOC_FREE(cli);
 		}
@@ -2017,6 +2037,7 @@ enum winbindd_result winbindd_dual_pam_chng_pswd_auth_crap(struct winbindd_domai
 	struct policy_handle dom_pol;
 	struct winbindd_domain *contact_domain = domainSt;
 	struct rpc_pipe_client *cli = NULL;
+	struct dcerpc_binding_handle *b = NULL;
 
 	ZERO_STRUCT(dom_pol);
 
@@ -2096,6 +2117,8 @@ enum winbindd_result winbindd_dual_pam_chng_pswd_auth_crap(struct winbindd_domai
 		goto done;
 	}
 
+	b = cli->binding_handle;
+
 	result = rpccli_samr_chng_pswd_auth_crap(
 		cli, state->mem_ctx, user, new_nt_password, old_nt_hash_enc,
 		new_lm_password, old_lm_hash_enc);
@@ -2104,9 +2127,10 @@ enum winbindd_result winbindd_dual_pam_chng_pswd_auth_crap(struct winbindd_domai
 
 	if (strequal(contact_domain->name, get_global_sam_name())) {
 		/* FIXME: internal rpc pipe does not cache handles yet */
-		if (cli) {
+		if (b) {
 			if (is_valid_policy_hnd(&dom_pol)) {
-				rpccli_samr_Close(cli, state->mem_ctx, &dom_pol);
+				NTSTATUS _result;
+				dcerpc_samr_Close(b, state->mem_ctx, &dom_pol, &_result);
 			}
 			TALLOC_FREE(cli);
 		}
