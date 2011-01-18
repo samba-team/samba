@@ -37,7 +37,7 @@ static NTSTATUS name_to_sid(struct rpc_pipe_client *cli,
 {
 	struct policy_handle pol;
 	enum lsa_SidType *sid_types;
-	NTSTATUS result;
+	NTSTATUS status;
 	struct dom_sid *sids;
 
 	/* maybe its a raw SID */
@@ -46,14 +46,14 @@ static NTSTATUS name_to_sid(struct rpc_pipe_client *cli,
 		return NT_STATUS_OK;
 	}
 
-	result = rpccli_lsa_open_policy(cli, mem_ctx, True, 
+	status = rpccli_lsa_open_policy(cli, mem_ctx, True,
 				     SEC_FLAG_MAXIMUM_ALLOWED,
 				     &pol);
-	if (!NT_STATUS_IS_OK(result))
+	if (!NT_STATUS_IS_OK(status))
 		goto done;
 
-	result = rpccli_lsa_lookup_names(cli, mem_ctx, &pol, 1, &name, NULL, 1, &sids, &sid_types);
-	if (!NT_STATUS_IS_OK(result))
+	status = rpccli_lsa_lookup_names(cli, mem_ctx, &pol, 1, &name, NULL, 1, &sids, &sid_types);
+	if (!NT_STATUS_IS_OK(status))
 		goto done;
 
 	rpccli_lsa_Close(cli, mem_ctx, &pol);
@@ -61,7 +61,7 @@ static NTSTATUS name_to_sid(struct rpc_pipe_client *cli,
 	*sid = sids[0];
 
 done:
-	return result;
+	return status;
 }
 
 static void display_query_info_1(struct lsa_AuditLogInfo *r)
@@ -156,7 +156,7 @@ static NTSTATUS cmd_lsa_query_info_policy(struct rpc_pipe_client *cli,
                                           const char **argv) 
 {
 	struct policy_handle pol;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	union lsa_PolicyInformation *info = NULL;
 
 	uint32 info_class = 3;
@@ -171,40 +171,40 @@ static NTSTATUS cmd_lsa_query_info_policy(struct rpc_pipe_client *cli,
 
 	switch (info_class) {
 	case 12:
-		result = rpccli_lsa_open_policy2(cli, mem_ctx, True, 
+		status = rpccli_lsa_open_policy2(cli, mem_ctx, True,
 						 SEC_FLAG_MAXIMUM_ALLOWED,
 						 &pol);
 
-		if (!NT_STATUS_IS_OK(result))
+		if (!NT_STATUS_IS_OK(status))
 			goto done;
 
-		result = rpccli_lsa_QueryInfoPolicy2(cli, mem_ctx,
+		status = rpccli_lsa_QueryInfoPolicy2(cli, mem_ctx,
 						     &pol,
 						     info_class,
 						     &info);
 		break;
 	default:
-		result = rpccli_lsa_open_policy(cli, mem_ctx, True, 
+		status = rpccli_lsa_open_policy(cli, mem_ctx, True,
 						SEC_FLAG_MAXIMUM_ALLOWED,
 						&pol);
 
-		if (!NT_STATUS_IS_OK(result))
+		if (!NT_STATUS_IS_OK(status))
 			goto done;
 
-		result = rpccli_lsa_QueryInfoPolicy(cli, mem_ctx,
+		status = rpccli_lsa_QueryInfoPolicy(cli, mem_ctx,
 						    &pol,
 						    info_class,
 						    &info);
 	}
 
-	if (NT_STATUS_IS_OK(result)) {
+	if (NT_STATUS_IS_OK(status)) {
 		display_lsa_query_info(info, info_class);
 	}
 
 	rpccli_lsa_Close(cli, mem_ctx, &pol);
 
  done:
-	return result;
+	return status;
 }
 
 /* Resolve a list of names to a list of sids */
@@ -214,7 +214,7 @@ static NTSTATUS cmd_lsa_lookup_names(struct rpc_pipe_client *cli,
                                      const char **argv)
 {
 	struct policy_handle pol;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	struct dom_sid *sids;
 	enum lsa_SidType *types;
 	int i;
@@ -224,21 +224,21 @@ static NTSTATUS cmd_lsa_lookup_names(struct rpc_pipe_client *cli,
 		return NT_STATUS_OK;
 	}
 
-	result = rpccli_lsa_open_policy(cli, mem_ctx, True, 
+	status = rpccli_lsa_open_policy(cli, mem_ctx, True,
 				     SEC_FLAG_MAXIMUM_ALLOWED,
 				     &pol);
 
-	if (!NT_STATUS_IS_OK(result))
+	if (!NT_STATUS_IS_OK(status))
 		goto done;
 
-	result = rpccli_lsa_lookup_names(cli, mem_ctx, &pol, argc - 1, 
+	status = rpccli_lsa_lookup_names(cli, mem_ctx, &pol, argc - 1,
 				      (const char**)(argv + 1), NULL, 1, &sids, &types);
 
-	if (!NT_STATUS_IS_OK(result) && NT_STATUS_V(result) != 
+	if (!NT_STATUS_IS_OK(status) && NT_STATUS_V(status) !=
 	    NT_STATUS_V(STATUS_SOME_UNMAPPED))
 		goto done;
 
-	result = NT_STATUS_OK;
+	status = NT_STATUS_OK;
 
 	/* Print results */
 
@@ -252,7 +252,7 @@ static NTSTATUS cmd_lsa_lookup_names(struct rpc_pipe_client *cli,
 	rpccli_lsa_Close(cli, mem_ctx, &pol);
 
  done:
-	return result;
+	return status;
 }
 
 /* Resolve a list of names to a list of sids */
@@ -262,7 +262,7 @@ static NTSTATUS cmd_lsa_lookup_names_level(struct rpc_pipe_client *cli,
 					   const char **argv)
 {
 	struct policy_handle pol;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	struct dom_sid *sids;
 	enum lsa_SidType *types;
 	int i, level;
@@ -272,23 +272,23 @@ static NTSTATUS cmd_lsa_lookup_names_level(struct rpc_pipe_client *cli,
 		return NT_STATUS_OK;
 	}
 
-	result = rpccli_lsa_open_policy(cli, mem_ctx, True, 
+	status = rpccli_lsa_open_policy(cli, mem_ctx, True,
 				     SEC_FLAG_MAXIMUM_ALLOWED,
 				     &pol);
 
-	if (!NT_STATUS_IS_OK(result))
+	if (!NT_STATUS_IS_OK(status))
 		goto done;
 
 	level = atoi(argv[1]);
 
-	result = rpccli_lsa_lookup_names(cli, mem_ctx, &pol, argc - 2, 
+	status = rpccli_lsa_lookup_names(cli, mem_ctx, &pol, argc - 2,
 				      (const char**)(argv + 2), NULL, level, &sids, &types);
 
-	if (!NT_STATUS_IS_OK(result) && NT_STATUS_V(result) != 
+	if (!NT_STATUS_IS_OK(status) && NT_STATUS_V(status) !=
 	    NT_STATUS_V(STATUS_SOME_UNMAPPED))
 		goto done;
 
-	result = NT_STATUS_OK;
+	status = NT_STATUS_OK;
 
 	/* Print results */
 
@@ -302,14 +302,14 @@ static NTSTATUS cmd_lsa_lookup_names_level(struct rpc_pipe_client *cli,
 	rpccli_lsa_Close(cli, mem_ctx, &pol);
 
  done:
-	return result;
+	return status;
 }
 
 static NTSTATUS cmd_lsa_lookup_names4(struct rpc_pipe_client *cli,
 				      TALLOC_CTX *mem_ctx, int argc,
 				      const char **argv)
 {
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 
 	uint32_t num_names;
 	struct lsa_String *names;
@@ -333,7 +333,7 @@ static NTSTATUS cmd_lsa_lookup_names4(struct rpc_pipe_client *cli,
 		init_lsa_String(&names[i], argv[i+1]);
 	}
 
-	result = rpccli_lsa_LookupNames4(cli, mem_ctx,
+	status = rpccli_lsa_LookupNames4(cli, mem_ctx,
 					 num_names,
 					 names,
 					 &domains,
@@ -342,8 +342,8 @@ static NTSTATUS cmd_lsa_lookup_names4(struct rpc_pipe_client *cli,
 					 &count,
 					 0,
 					 0);
-	if (!NT_STATUS_IS_OK(result)) {
-		return result;
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
 	for (i = 0; i < sids.count; i++) {
@@ -354,7 +354,7 @@ static NTSTATUS cmd_lsa_lookup_names4(struct rpc_pipe_client *cli,
 		       sids.sids[i].sid_type);
 	}
 
-	return result;
+	return status;
 }
 
 /* Resolve a list of SIDs to a list of names */
@@ -363,7 +363,7 @@ static NTSTATUS cmd_lsa_lookup_sids(struct rpc_pipe_client *cli, TALLOC_CTX *mem
                                     int argc, const char **argv)
 {
 	struct policy_handle pol;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	struct dom_sid *sids;
 	char **domains;
 	char **names;
@@ -375,11 +375,11 @@ static NTSTATUS cmd_lsa_lookup_sids(struct rpc_pipe_client *cli, TALLOC_CTX *mem
 		return NT_STATUS_OK;
 	}
 
-	result = rpccli_lsa_open_policy(cli, mem_ctx, True, 
+	status = rpccli_lsa_open_policy(cli, mem_ctx, True,
 				     SEC_FLAG_MAXIMUM_ALLOWED,
 				     &pol);
 
-	if (!NT_STATUS_IS_OK(result))
+	if (!NT_STATUS_IS_OK(status))
 		goto done;
 
 	/* Convert arguments to sids */
@@ -393,20 +393,20 @@ static NTSTATUS cmd_lsa_lookup_sids(struct rpc_pipe_client *cli, TALLOC_CTX *mem
 
 	for (i = 0; i < argc - 1; i++) 
 		if (!string_to_sid(&sids[i], argv[i + 1])) {
-			result = NT_STATUS_INVALID_SID;
+			status = NT_STATUS_INVALID_SID;
 			goto done;
 		}
 
 	/* Lookup the SIDs */
 
-	result = rpccli_lsa_lookup_sids(cli, mem_ctx, &pol, argc - 1, sids, 
+	status = rpccli_lsa_lookup_sids(cli, mem_ctx, &pol, argc - 1, sids,
 				     &domains, &names, &types);
 
-	if (!NT_STATUS_IS_OK(result) && NT_STATUS_V(result) != 
+	if (!NT_STATUS_IS_OK(status) && NT_STATUS_V(status) !=
 	    NT_STATUS_V(STATUS_SOME_UNMAPPED))
 		goto done;
 
-	result = NT_STATUS_OK;
+	status = NT_STATUS_OK;
 
 	/* Print results */
 
@@ -422,7 +422,7 @@ static NTSTATUS cmd_lsa_lookup_sids(struct rpc_pipe_client *cli, TALLOC_CTX *mem
 	rpccli_lsa_Close(cli, mem_ctx, &pol);
 
  done:
-	return result;
+	return status;
 }
 
 /* Resolve a list of SIDs to a list of names */
@@ -431,7 +431,7 @@ static NTSTATUS cmd_lsa_lookup_sids3(struct rpc_pipe_client *cli,
 				     TALLOC_CTX *mem_ctx,
 				     int argc, const char **argv)
 {
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	int i;
 	struct lsa_SidArray sids;
 	struct lsa_RefDomainList *domains;
@@ -457,17 +457,17 @@ static NTSTATUS cmd_lsa_lookup_sids3(struct rpc_pipe_client *cli,
 	for (i = 0; i < sids.num_sids; i++) {
 		sids.sids[i].sid = talloc(sids.sids, struct dom_sid);
 		if (sids.sids[i].sid == NULL) {
-			result = NT_STATUS_NO_MEMORY;
+			status = NT_STATUS_NO_MEMORY;
 			goto done;
 		}
 		if (!string_to_sid(sids.sids[i].sid, argv[i+1])) {
-			result = NT_STATUS_INVALID_SID;
+			status = NT_STATUS_INVALID_SID;
 			goto done;
 		}
 	}
 
 	/* Lookup the SIDs */
-	result = rpccli_lsa_LookupSids3(cli, mem_ctx,
+	status = rpccli_lsa_LookupSids3(cli, mem_ctx,
 					&sids,
 					&domains,
 					&names,
@@ -476,11 +476,11 @@ static NTSTATUS cmd_lsa_lookup_sids3(struct rpc_pipe_client *cli,
 					0,
 					0);
 
-	if (!NT_STATUS_IS_OK(result) && NT_STATUS_V(result) !=
+	if (!NT_STATUS_IS_OK(status) && NT_STATUS_V(status) !=
 	    NT_STATUS_V(STATUS_SOME_UNMAPPED))
 		goto done;
 
-	result = NT_STATUS_OK;
+	status = NT_STATUS_OK;
 
 	/* Print results */
 
@@ -494,7 +494,7 @@ static NTSTATUS cmd_lsa_lookup_sids3(struct rpc_pipe_client *cli,
 	}
 
  done:
-	return result;
+	return status;
 }
 
 
@@ -505,7 +505,7 @@ static NTSTATUS cmd_lsa_enum_trust_dom(struct rpc_pipe_client *cli,
                                        const char **argv)
 {
 	struct policy_handle pol;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	struct lsa_DomainList domain_list;
 
 	/* defaults, but may be changed using params */
@@ -522,27 +522,27 @@ static NTSTATUS cmd_lsa_enum_trust_dom(struct rpc_pipe_client *cli,
 		enum_ctx = atoi(argv[2]);
 	}	
 
-	result = rpccli_lsa_open_policy(cli, mem_ctx, True, 
+	status = rpccli_lsa_open_policy(cli, mem_ctx, True,
 				     LSA_POLICY_VIEW_LOCAL_INFORMATION,
 				     &pol);
 
-	if (!NT_STATUS_IS_OK(result))
+	if (!NT_STATUS_IS_OK(status))
 		goto done;
 
-	result = STATUS_MORE_ENTRIES;
+	status = STATUS_MORE_ENTRIES;
 
-	while (NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES)) {
+	while (NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES)) {
 
 		/* Lookup list of trusted domains */
 
-		result = rpccli_lsa_EnumTrustDom(cli, mem_ctx,
+		status = rpccli_lsa_EnumTrustDom(cli, mem_ctx,
 						 &pol,
 						 &enum_ctx,
 						 &domain_list,
 						 max_size);
-		if (!NT_STATUS_IS_OK(result) &&
-		    !NT_STATUS_EQUAL(result, NT_STATUS_NO_MORE_ENTRIES) &&
-		    !NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES))
+		if (!NT_STATUS_IS_OK(status) &&
+		    !NT_STATUS_EQUAL(status, NT_STATUS_NO_MORE_ENTRIES) &&
+		    !NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES))
 			goto done;
 
 		/* Print results: list of names and sids returned in this
@@ -560,7 +560,7 @@ static NTSTATUS cmd_lsa_enum_trust_dom(struct rpc_pipe_client *cli,
 
 	rpccli_lsa_Close(cli, mem_ctx, &pol);
  done:
-	return result;
+	return status;
 }
 
 /* Enumerates privileges */
@@ -570,7 +570,7 @@ static NTSTATUS cmd_lsa_enum_privilege(struct rpc_pipe_client *cli,
 				       const char **argv) 
 {
 	struct policy_handle pol;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	struct lsa_PrivArray priv_array;
 
 	uint32 enum_context=0;
@@ -588,19 +588,19 @@ static NTSTATUS cmd_lsa_enum_privilege(struct rpc_pipe_client *cli,
 	if (argc==3)
 		pref_max_length=atoi(argv[2]);
 
-	result = rpccli_lsa_open_policy(cli, mem_ctx, True, 
+	status = rpccli_lsa_open_policy(cli, mem_ctx, True,
 				     SEC_FLAG_MAXIMUM_ALLOWED,
 				     &pol);
 
-	if (!NT_STATUS_IS_OK(result))
+	if (!NT_STATUS_IS_OK(status))
 		goto done;
 
-	result = rpccli_lsa_EnumPrivs(cli, mem_ctx,
+	status = rpccli_lsa_EnumPrivs(cli, mem_ctx,
 				      &pol,
 				      &enum_context,
 				      &priv_array,
 				      pref_max_length);
-	if (!NT_STATUS_IS_OK(result))
+	if (!NT_STATUS_IS_OK(status))
 		goto done;
 
 	/* Print results */
@@ -617,7 +617,7 @@ static NTSTATUS cmd_lsa_enum_privilege(struct rpc_pipe_client *cli,
 
 	rpccli_lsa_Close(cli, mem_ctx, &pol);
  done:
-	return result;
+	return status;
 }
 
 /* Get privilege name */
@@ -627,7 +627,7 @@ static NTSTATUS cmd_lsa_get_dispname(struct rpc_pipe_client *cli,
                                      const char **argv) 
 {
 	struct policy_handle pol;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 
 	uint16 lang_id=0;
 	uint16 lang_id_sys=0;
@@ -640,16 +640,16 @@ static NTSTATUS cmd_lsa_get_dispname(struct rpc_pipe_client *cli,
 		return NT_STATUS_OK;
 	}
 
-	result = rpccli_lsa_open_policy(cli, mem_ctx, True, 
+	status = rpccli_lsa_open_policy(cli, mem_ctx, True,
 				     SEC_FLAG_MAXIMUM_ALLOWED,
 				     &pol);
 
-	if (!NT_STATUS_IS_OK(result))
+	if (!NT_STATUS_IS_OK(status))
 		goto done;
 
 	init_lsa_String(&lsa_name, argv[1]);
 
-	result = rpccli_lsa_LookupPrivDisplayName(cli, mem_ctx,
+	status = rpccli_lsa_LookupPrivDisplayName(cli, mem_ctx,
 						  &pol,
 						  &lsa_name,
 						  lang_id,
@@ -657,7 +657,7 @@ static NTSTATUS cmd_lsa_get_dispname(struct rpc_pipe_client *cli,
 						  &description,
 						  &lang_id_desc);
 
-	if (!NT_STATUS_IS_OK(result))
+	if (!NT_STATUS_IS_OK(status))
 		goto done;
 
 	/* Print results */
@@ -665,7 +665,7 @@ static NTSTATUS cmd_lsa_get_dispname(struct rpc_pipe_client *cli,
 
 	rpccli_lsa_Close(cli, mem_ctx, &pol);
  done:
-	return result;
+	return status;
 }
 
 /* Enumerate the LSA SIDS */
@@ -675,7 +675,7 @@ static NTSTATUS cmd_lsa_enum_sids(struct rpc_pipe_client *cli,
 				  const char **argv) 
 {
 	struct policy_handle pol;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 
 	uint32 enum_context=0;
 	uint32 pref_max_length=0x1000;
@@ -693,20 +693,20 @@ static NTSTATUS cmd_lsa_enum_sids(struct rpc_pipe_client *cli,
 	if (argc==3)
 		pref_max_length=atoi(argv[2]);
 
-	result = rpccli_lsa_open_policy(cli, mem_ctx, True, 
+	status = rpccli_lsa_open_policy(cli, mem_ctx, True,
 				     SEC_FLAG_MAXIMUM_ALLOWED,
 				     &pol);
 
-	if (!NT_STATUS_IS_OK(result))
+	if (!NT_STATUS_IS_OK(status))
 		goto done;
 
-	result = rpccli_lsa_EnumAccounts(cli, mem_ctx,
+	status = rpccli_lsa_EnumAccounts(cli, mem_ctx,
 					 &pol,
 					 &enum_context,
 					 &sid_array,
 					 pref_max_length);
 
-	if (!NT_STATUS_IS_OK(result))
+	if (!NT_STATUS_IS_OK(status))
 		goto done;
 
 	/* Print results */
@@ -721,7 +721,7 @@ static NTSTATUS cmd_lsa_enum_sids(struct rpc_pipe_client *cli,
 
 	rpccli_lsa_Close(cli, mem_ctx, &pol);
  done:
-	return result;
+	return status;
 }
 
 /* Create a new account */
@@ -732,7 +732,7 @@ static NTSTATUS cmd_lsa_create_account(struct rpc_pipe_client *cli,
 {
 	struct policy_handle dom_pol;
 	struct policy_handle user_pol;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	uint32 des_access = 0x000f000f;
 
 	struct dom_sid sid;
@@ -742,32 +742,32 @@ static NTSTATUS cmd_lsa_create_account(struct rpc_pipe_client *cli,
 		return NT_STATUS_OK;
 	}
 
-	result = name_to_sid(cli, mem_ctx, &sid, argv[1]);
-	if (!NT_STATUS_IS_OK(result))
+	status = name_to_sid(cli, mem_ctx, &sid, argv[1]);
+	if (!NT_STATUS_IS_OK(status))
 		goto done;	
 
-	result = rpccli_lsa_open_policy2(cli, mem_ctx, True, 
+	status = rpccli_lsa_open_policy2(cli, mem_ctx, True,
 				     SEC_FLAG_MAXIMUM_ALLOWED,
 				     &dom_pol);
 
-	if (!NT_STATUS_IS_OK(result))
+	if (!NT_STATUS_IS_OK(status))
 		goto done;
 
-	result = rpccli_lsa_CreateAccount(cli, mem_ctx,
+	status = rpccli_lsa_CreateAccount(cli, mem_ctx,
 					  &dom_pol,
 					  &sid,
 					  des_access,
 					  &user_pol);
 
-	if (!NT_STATUS_IS_OK(result))
+	if (!NT_STATUS_IS_OK(status))
 		goto done;
 
 	printf("Account for SID %s successfully created\n\n", argv[1]);
-	result = NT_STATUS_OK;
+	status = NT_STATUS_OK;
 
 	rpccli_lsa_Close(cli, mem_ctx, &dom_pol);
  done:
-	return result;
+	return status;
 }
 
 
@@ -779,7 +779,7 @@ static NTSTATUS cmd_lsa_enum_privsaccounts(struct rpc_pipe_client *cli,
 {
 	struct policy_handle dom_pol;
 	struct policy_handle user_pol;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	uint32 access_desired = 0x000f000f;
 	struct dom_sid sid;
 	struct lsa_PrivilegeSet *privs = NULL;
@@ -790,31 +790,31 @@ static NTSTATUS cmd_lsa_enum_privsaccounts(struct rpc_pipe_client *cli,
 		return NT_STATUS_OK;
 	}
 
-	result = name_to_sid(cli, mem_ctx, &sid, argv[1]);
-	if (!NT_STATUS_IS_OK(result))
+	status = name_to_sid(cli, mem_ctx, &sid, argv[1]);
+	if (!NT_STATUS_IS_OK(status))
 		goto done;	
 
-	result = rpccli_lsa_open_policy2(cli, mem_ctx, True, 
+	status = rpccli_lsa_open_policy2(cli, mem_ctx, True,
 				     SEC_FLAG_MAXIMUM_ALLOWED,
 				     &dom_pol);
 
-	if (!NT_STATUS_IS_OK(result))
+	if (!NT_STATUS_IS_OK(status))
 		goto done;
 
-	result = rpccli_lsa_OpenAccount(cli, mem_ctx,
+	status = rpccli_lsa_OpenAccount(cli, mem_ctx,
 					&dom_pol,
 					&sid,
 					access_desired,
 					&user_pol);
 
-	if (!NT_STATUS_IS_OK(result))
+	if (!NT_STATUS_IS_OK(status))
 		goto done;
 
-	result = rpccli_lsa_EnumPrivsAccount(cli, mem_ctx,
+	status = rpccli_lsa_EnumPrivsAccount(cli, mem_ctx,
 					     &user_pol,
 					     &privs);
 
-	if (!NT_STATUS_IS_OK(result))
+	if (!NT_STATUS_IS_OK(status))
 		goto done;
 
 	/* Print results */
@@ -830,7 +830,7 @@ static NTSTATUS cmd_lsa_enum_privsaccounts(struct rpc_pipe_client *cli,
 
 	rpccli_lsa_Close(cli, mem_ctx, &dom_pol);
  done:
-	return result;
+	return status;
 }
 
 
@@ -841,7 +841,7 @@ static NTSTATUS cmd_lsa_enum_acct_rights(struct rpc_pipe_client *cli,
 					 const char **argv) 
 {
 	struct policy_handle dom_pol;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	struct dom_sid sid;
 	struct lsa_RightSet rights;
 
@@ -852,23 +852,23 @@ static NTSTATUS cmd_lsa_enum_acct_rights(struct rpc_pipe_client *cli,
 		return NT_STATUS_OK;
 	}
 
-	result = name_to_sid(cli, mem_ctx, &sid, argv[1]);
-	if (!NT_STATUS_IS_OK(result))
+	status = name_to_sid(cli, mem_ctx, &sid, argv[1]);
+	if (!NT_STATUS_IS_OK(status))
 		goto done;	
 
-	result = rpccli_lsa_open_policy2(cli, mem_ctx, True, 
+	status = rpccli_lsa_open_policy2(cli, mem_ctx, True,
 				     SEC_FLAG_MAXIMUM_ALLOWED,
 				     &dom_pol);
 
-	if (!NT_STATUS_IS_OK(result))
+	if (!NT_STATUS_IS_OK(status))
 		goto done;
 
-	result = rpccli_lsa_EnumAccountRights(cli, mem_ctx,
+	status = rpccli_lsa_EnumAccountRights(cli, mem_ctx,
 					      &dom_pol,
 					      &sid,
 					      &rights);
 
-	if (!NT_STATUS_IS_OK(result))
+	if (!NT_STATUS_IS_OK(status))
 		goto done;
 
 	printf("found %d privileges for SID %s\n", rights.count,
@@ -880,7 +880,7 @@ static NTSTATUS cmd_lsa_enum_acct_rights(struct rpc_pipe_client *cli,
 
 	rpccli_lsa_Close(cli, mem_ctx, &dom_pol);
  done:
-	return result;
+	return status;
 }
 
 
@@ -891,7 +891,7 @@ static NTSTATUS cmd_lsa_add_acct_rights(struct rpc_pipe_client *cli,
 					const char **argv) 
 {
 	struct policy_handle dom_pol;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	struct lsa_RightSet rights;
 	struct dom_sid sid;
 	int i;
@@ -901,15 +901,15 @@ static NTSTATUS cmd_lsa_add_acct_rights(struct rpc_pipe_client *cli,
 		return NT_STATUS_OK;
 	}
 
-	result = name_to_sid(cli, mem_ctx, &sid, argv[1]);
-	if (!NT_STATUS_IS_OK(result))
+	status = name_to_sid(cli, mem_ctx, &sid, argv[1]);
+	if (!NT_STATUS_IS_OK(status))
 		goto done;	
 
-	result = rpccli_lsa_open_policy2(cli, mem_ctx, True, 
+	status = rpccli_lsa_open_policy2(cli, mem_ctx, True,
 				     SEC_FLAG_MAXIMUM_ALLOWED,
 				     &dom_pol);
 
-	if (!NT_STATUS_IS_OK(result))
+	if (!NT_STATUS_IS_OK(status))
 		goto done;
 
 	rights.count = argc-2;
@@ -923,17 +923,17 @@ static NTSTATUS cmd_lsa_add_acct_rights(struct rpc_pipe_client *cli,
 		init_lsa_StringLarge(&rights.names[i], argv[i+2]);
 	}
 
-	result = rpccli_lsa_AddAccountRights(cli, mem_ctx,
+	status = rpccli_lsa_AddAccountRights(cli, mem_ctx,
 					     &dom_pol,
 					     &sid,
 					     &rights);
 
-	if (!NT_STATUS_IS_OK(result))
+	if (!NT_STATUS_IS_OK(status))
 		goto done;
 
 	rpccli_lsa_Close(cli, mem_ctx, &dom_pol);
  done:
-	return result;
+	return status;
 }
 
 
@@ -944,7 +944,7 @@ static NTSTATUS cmd_lsa_remove_acct_rights(struct rpc_pipe_client *cli,
 					const char **argv) 
 {
 	struct policy_handle dom_pol;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	struct lsa_RightSet rights;
 	struct dom_sid sid;
 	int i;
@@ -954,15 +954,15 @@ static NTSTATUS cmd_lsa_remove_acct_rights(struct rpc_pipe_client *cli,
 		return NT_STATUS_OK;
 	}
 
-	result = name_to_sid(cli, mem_ctx, &sid, argv[1]);
-	if (!NT_STATUS_IS_OK(result))
+	status = name_to_sid(cli, mem_ctx, &sid, argv[1]);
+	if (!NT_STATUS_IS_OK(status))
 		goto done;	
 
-	result = rpccli_lsa_open_policy2(cli, mem_ctx, True, 
+	status = rpccli_lsa_open_policy2(cli, mem_ctx, True,
 				     SEC_FLAG_MAXIMUM_ALLOWED,
 				     &dom_pol);
 
-	if (!NT_STATUS_IS_OK(result))
+	if (!NT_STATUS_IS_OK(status))
 		goto done;
 
 	rights.count = argc-2;
@@ -976,19 +976,19 @@ static NTSTATUS cmd_lsa_remove_acct_rights(struct rpc_pipe_client *cli,
 		init_lsa_StringLarge(&rights.names[i], argv[i+2]);
 	}
 
-	result = rpccli_lsa_RemoveAccountRights(cli, mem_ctx,
+	status = rpccli_lsa_RemoveAccountRights(cli, mem_ctx,
 						&dom_pol,
 						&sid,
 						false,
 						&rights);
 
-	if (!NT_STATUS_IS_OK(result))
+	if (!NT_STATUS_IS_OK(status))
 		goto done;
 
 	rpccli_lsa_Close(cli, mem_ctx, &dom_pol);
 
  done:
-	return result;
+	return status;
 }
 
 
@@ -999,7 +999,7 @@ static NTSTATUS cmd_lsa_lookup_priv_value(struct rpc_pipe_client *cli,
 					const char **argv) 
 {
 	struct policy_handle pol;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	struct lsa_LUID luid;
 	struct lsa_String name;
 
@@ -1008,21 +1008,21 @@ static NTSTATUS cmd_lsa_lookup_priv_value(struct rpc_pipe_client *cli,
 		return NT_STATUS_OK;
 	}
 
-	result = rpccli_lsa_open_policy2(cli, mem_ctx, True, 
+	status = rpccli_lsa_open_policy2(cli, mem_ctx, True,
 				     SEC_FLAG_MAXIMUM_ALLOWED,
 				     &pol);
 
-	if (!NT_STATUS_IS_OK(result))
+	if (!NT_STATUS_IS_OK(status))
 		goto done;
 
 	init_lsa_String(&name, argv[1]);
 
-	result = rpccli_lsa_LookupPrivValue(cli, mem_ctx,
+	status = rpccli_lsa_LookupPrivValue(cli, mem_ctx,
 					    &pol,
 					    &name,
 					    &luid);
 
-	if (!NT_STATUS_IS_OK(result))
+	if (!NT_STATUS_IS_OK(status))
 		goto done;
 
 	/* Print results */
@@ -1031,7 +1031,7 @@ static NTSTATUS cmd_lsa_lookup_priv_value(struct rpc_pipe_client *cli,
 
 	rpccli_lsa_Close(cli, mem_ctx, &pol);
  done:
-	return result;
+	return status;
 }
 
 /* Query LSA security object */
@@ -1041,7 +1041,7 @@ static NTSTATUS cmd_lsa_query_secobj(struct rpc_pipe_client *cli,
 				     const char **argv) 
 {
 	struct policy_handle pol;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	struct sec_desc_buf *sdb;
 	uint32 sec_info = SECINFO_DACL;
 
@@ -1050,21 +1050,21 @@ static NTSTATUS cmd_lsa_query_secobj(struct rpc_pipe_client *cli,
 		return NT_STATUS_OK;
 	}
 
-	result = rpccli_lsa_open_policy2(cli, mem_ctx, True, 
+	status = rpccli_lsa_open_policy2(cli, mem_ctx, True,
 				      SEC_FLAG_MAXIMUM_ALLOWED,
 				      &pol);
 
 	if (argc == 2) 
 		sscanf(argv[1], "%x", &sec_info);
 
-	if (!NT_STATUS_IS_OK(result))
+	if (!NT_STATUS_IS_OK(status))
 		goto done;
 
-	result = rpccli_lsa_QuerySecurity(cli, mem_ctx,
+	status = rpccli_lsa_QuerySecurity(cli, mem_ctx,
 					  &pol,
 					  sec_info,
 					  &sdb);
-	if (!NT_STATUS_IS_OK(result))
+	if (!NT_STATUS_IS_OK(status))
 		goto done;
 
 	/* Print results */
@@ -1073,7 +1073,7 @@ static NTSTATUS cmd_lsa_query_secobj(struct rpc_pipe_client *cli,
 
 	rpccli_lsa_Close(cli, mem_ctx, &pol);
  done:
-	return result;
+	return status;
 }
 
 static void display_trust_dom_info_4(struct lsa_TrustDomainInfoPassword *p,
@@ -1122,7 +1122,7 @@ static NTSTATUS cmd_lsa_query_trustdominfobysid(struct rpc_pipe_client *cli,
 						const char **argv) 
 {
 	struct policy_handle pol;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	struct dom_sid dom_sid;
 	uint32 access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	union lsa_TrustedDomainInfo *info = NULL;
@@ -1140,17 +1140,17 @@ static NTSTATUS cmd_lsa_query_trustdominfobysid(struct rpc_pipe_client *cli,
 	if (argc == 3)
 		info_class = atoi(argv[2]);
 
-	result = rpccli_lsa_open_policy2(cli, mem_ctx, True, access_mask, &pol);
+	status = rpccli_lsa_open_policy2(cli, mem_ctx, True, access_mask, &pol);
 
-	if (!NT_STATUS_IS_OK(result))
+	if (!NT_STATUS_IS_OK(status))
 		goto done;
 
-	result = rpccli_lsa_QueryTrustedDomainInfoBySid(cli, mem_ctx,
+	status = rpccli_lsa_QueryTrustedDomainInfoBySid(cli, mem_ctx,
 							&pol,
 							&dom_sid,
 							info_class,
 							&info);
-	if (!NT_STATUS_IS_OK(result))
+	if (!NT_STATUS_IS_OK(status))
 		goto done;
 
 	if (!rpccli_get_pwd_hash(cli, nt_hash)) {
@@ -1163,7 +1163,7 @@ static NTSTATUS cmd_lsa_query_trustdominfobysid(struct rpc_pipe_client *cli,
  done:
 	rpccli_lsa_Close(cli, mem_ctx, &pol);
 
-	return result;
+	return status;
 }
 
 static NTSTATUS cmd_lsa_query_trustdominfobyname(struct rpc_pipe_client *cli,
@@ -1171,7 +1171,7 @@ static NTSTATUS cmd_lsa_query_trustdominfobyname(struct rpc_pipe_client *cli,
 						 const char **argv) 
 {
 	struct policy_handle pol;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	uint32 access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	union lsa_TrustedDomainInfo *info = NULL;
 	enum lsa_TrustDomInfoEnum info_class = 1;
@@ -1186,19 +1186,19 @@ static NTSTATUS cmd_lsa_query_trustdominfobyname(struct rpc_pipe_client *cli,
 	if (argc == 3)
 		info_class = atoi(argv[2]);
 
-	result = rpccli_lsa_open_policy2(cli, mem_ctx, True, access_mask, &pol);
+	status = rpccli_lsa_open_policy2(cli, mem_ctx, True, access_mask, &pol);
 
-	if (!NT_STATUS_IS_OK(result))
+	if (!NT_STATUS_IS_OK(status))
 		goto done;
 
 	init_lsa_String(&trusted_domain, argv[1]);
 
-	result = rpccli_lsa_QueryTrustedDomainInfoByName(cli, mem_ctx,
+	status = rpccli_lsa_QueryTrustedDomainInfoByName(cli, mem_ctx,
 							 &pol,
 							 &trusted_domain,
 							 info_class,
 							 &info);
-	if (!NT_STATUS_IS_OK(result))
+	if (!NT_STATUS_IS_OK(status))
 		goto done;
 
 	if (!rpccli_get_pwd_hash(cli, nt_hash)) {
@@ -1211,7 +1211,7 @@ static NTSTATUS cmd_lsa_query_trustdominfobyname(struct rpc_pipe_client *cli,
  done:
 	rpccli_lsa_Close(cli, mem_ctx, &pol);
 
-	return result;
+	return status;
 }
 
 static NTSTATUS cmd_lsa_query_trustdominfo(struct rpc_pipe_client *cli,
@@ -1219,7 +1219,7 @@ static NTSTATUS cmd_lsa_query_trustdominfo(struct rpc_pipe_client *cli,
 					   const char **argv) 
 {
 	struct policy_handle pol, trustdom_pol;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	uint32 access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	union lsa_TrustedDomainInfo *info = NULL;
 	struct dom_sid dom_sid;
@@ -1238,26 +1238,26 @@ static NTSTATUS cmd_lsa_query_trustdominfo(struct rpc_pipe_client *cli,
 	if (argc == 3)
 		info_class = atoi(argv[2]);
 
-	result = rpccli_lsa_open_policy2(cli, mem_ctx, True, access_mask, &pol);
+	status = rpccli_lsa_open_policy2(cli, mem_ctx, True, access_mask, &pol);
 
-	if (!NT_STATUS_IS_OK(result))
+	if (!NT_STATUS_IS_OK(status))
 		goto done;
 
-	result = rpccli_lsa_OpenTrustedDomain(cli, mem_ctx,
+	status = rpccli_lsa_OpenTrustedDomain(cli, mem_ctx,
 					      &pol,
 					      &dom_sid,
 					      access_mask,
 					      &trustdom_pol);
 
-	if (!NT_STATUS_IS_OK(result))
+	if (!NT_STATUS_IS_OK(status))
 		goto done;
 
-	result = rpccli_lsa_QueryTrustedDomainInfo(cli, mem_ctx,
+	status = rpccli_lsa_QueryTrustedDomainInfo(cli, mem_ctx,
 						   &trustdom_pol,
 						   info_class,
 						   &info);
 
-	if (!NT_STATUS_IS_OK(result))
+	if (!NT_STATUS_IS_OK(status))
 		goto done;
 
 	if (!rpccli_get_pwd_hash(cli, nt_hash)) {
@@ -1270,7 +1270,7 @@ static NTSTATUS cmd_lsa_query_trustdominfo(struct rpc_pipe_client *cli,
  done:
 	rpccli_lsa_Close(cli, mem_ctx, &pol);
 
-	return result;
+	return status;
 }
 
 static NTSTATUS cmd_lsa_get_username(struct rpc_pipe_client *cli,
@@ -1278,7 +1278,7 @@ static NTSTATUS cmd_lsa_get_username(struct rpc_pipe_client *cli,
                                      const char **argv)
 {
 	struct policy_handle pol;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	const char *servername = cli->desthost;
 	struct lsa_String *account_name = NULL;
 	struct lsa_String *authority_name = NULL;
@@ -1288,19 +1288,19 @@ static NTSTATUS cmd_lsa_get_username(struct rpc_pipe_client *cli,
 		return NT_STATUS_OK;
 	}
 
-	result = rpccli_lsa_open_policy(cli, mem_ctx, true,
+	status = rpccli_lsa_open_policy(cli, mem_ctx, true,
 					SEC_FLAG_MAXIMUM_ALLOWED,
 					&pol);
 
-	if (!NT_STATUS_IS_OK(result)) {
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
 
-	result = rpccli_lsa_GetUserName(cli, mem_ctx,
+	status = rpccli_lsa_GetUserName(cli, mem_ctx,
 					servername,
 					&account_name,
 					&authority_name);
-	if (!NT_STATUS_IS_OK(result)) {
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
 
@@ -1312,7 +1312,7 @@ static NTSTATUS cmd_lsa_get_username(struct rpc_pipe_client *cli,
 
 	rpccli_lsa_Close(cli, mem_ctx, &pol);
  done:
-	return result;
+	return status;
 }
 
 static NTSTATUS cmd_lsa_add_priv(struct rpc_pipe_client *cli,
@@ -1320,7 +1320,7 @@ static NTSTATUS cmd_lsa_add_priv(struct rpc_pipe_client *cli,
 				 const char **argv)
 {
 	struct policy_handle dom_pol, user_pol;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	struct lsa_PrivilegeSet privs;
 	struct lsa_LUIDAttribute *set = NULL;
 	struct dom_sid sid;
@@ -1333,26 +1333,26 @@ static NTSTATUS cmd_lsa_add_priv(struct rpc_pipe_client *cli,
 		return NT_STATUS_OK;
 	}
 
-	result = name_to_sid(cli, mem_ctx, &sid, argv[1]);
-	if (!NT_STATUS_IS_OK(result)) {
+	status = name_to_sid(cli, mem_ctx, &sid, argv[1]);
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
 
-	result = rpccli_lsa_open_policy2(cli, mem_ctx, True,
+	status = rpccli_lsa_open_policy2(cli, mem_ctx, True,
 					 SEC_FLAG_MAXIMUM_ALLOWED,
 					 &dom_pol);
 
-	if (!NT_STATUS_IS_OK(result)) {
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
 
-	result = rpccli_lsa_OpenAccount(cli, mem_ctx,
+	status = rpccli_lsa_OpenAccount(cli, mem_ctx,
 					&dom_pol,
 					&sid,
 					SEC_FLAG_MAXIMUM_ALLOWED,
 					&user_pol);
 
-	if (!NT_STATUS_IS_OK(result)) {
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
 
@@ -1363,11 +1363,11 @@ static NTSTATUS cmd_lsa_add_priv(struct rpc_pipe_client *cli,
 
 		init_lsa_String(&priv_name, argv[i]);
 
-		result = rpccli_lsa_LookupPrivValue(cli, mem_ctx,
+		status = rpccli_lsa_LookupPrivValue(cli, mem_ctx,
 						    &dom_pol,
 						    &priv_name,
 						    &luid);
-		if (!NT_STATUS_IS_OK(result)) {
+		if (!NT_STATUS_IS_OK(status)) {
 			continue;
 		}
 
@@ -1385,18 +1385,18 @@ static NTSTATUS cmd_lsa_add_priv(struct rpc_pipe_client *cli,
 
 	privs.set = set;
 
-	result = rpccli_lsa_AddPrivilegesToAccount(cli, mem_ctx,
+	status = rpccli_lsa_AddPrivilegesToAccount(cli, mem_ctx,
 						   &user_pol,
 						   &privs);
 
-	if (!NT_STATUS_IS_OK(result)) {
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
 
 	rpccli_lsa_Close(cli, mem_ctx, &user_pol);
 	rpccli_lsa_Close(cli, mem_ctx, &dom_pol);
  done:
-	return result;
+	return status;
 }
 
 static NTSTATUS cmd_lsa_del_priv(struct rpc_pipe_client *cli,
@@ -1404,7 +1404,7 @@ static NTSTATUS cmd_lsa_del_priv(struct rpc_pipe_client *cli,
 				 const char **argv)
 {
 	struct policy_handle dom_pol, user_pol;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	struct lsa_PrivilegeSet privs;
 	struct lsa_LUIDAttribute *set = NULL;
 	struct dom_sid sid;
@@ -1417,26 +1417,26 @@ static NTSTATUS cmd_lsa_del_priv(struct rpc_pipe_client *cli,
 		return NT_STATUS_OK;
 	}
 
-	result = name_to_sid(cli, mem_ctx, &sid, argv[1]);
-	if (!NT_STATUS_IS_OK(result)) {
+	status = name_to_sid(cli, mem_ctx, &sid, argv[1]);
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
 
-	result = rpccli_lsa_open_policy2(cli, mem_ctx, True,
+	status = rpccli_lsa_open_policy2(cli, mem_ctx, True,
 					 SEC_FLAG_MAXIMUM_ALLOWED,
 					 &dom_pol);
 
-	if (!NT_STATUS_IS_OK(result)) {
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
 
-	result = rpccli_lsa_OpenAccount(cli, mem_ctx,
+	status = rpccli_lsa_OpenAccount(cli, mem_ctx,
 					&dom_pol,
 					&sid,
 					SEC_FLAG_MAXIMUM_ALLOWED,
 					&user_pol);
 
-	if (!NT_STATUS_IS_OK(result)) {
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
 
@@ -1447,11 +1447,11 @@ static NTSTATUS cmd_lsa_del_priv(struct rpc_pipe_client *cli,
 
 		init_lsa_String(&priv_name, argv[i]);
 
-		result = rpccli_lsa_LookupPrivValue(cli, mem_ctx,
+		status = rpccli_lsa_LookupPrivValue(cli, mem_ctx,
 						    &dom_pol,
 						    &priv_name,
 						    &luid);
-		if (!NT_STATUS_IS_OK(result)) {
+		if (!NT_STATUS_IS_OK(status)) {
 			continue;
 		}
 
@@ -1470,19 +1470,19 @@ static NTSTATUS cmd_lsa_del_priv(struct rpc_pipe_client *cli,
 	privs.set = set;
 
 
-	result = rpccli_lsa_RemovePrivilegesFromAccount(cli, mem_ctx,
+	status = rpccli_lsa_RemovePrivilegesFromAccount(cli, mem_ctx,
 							&user_pol,
 							false,
 							&privs);
 
-	if (!NT_STATUS_IS_OK(result)) {
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
 
 	rpccli_lsa_Close(cli, mem_ctx, &user_pol);
 	rpccli_lsa_Close(cli, mem_ctx, &dom_pol);
  done:
-	return result;
+	return status;
 }
 
 static NTSTATUS cmd_lsa_create_secret(struct rpc_pipe_client *cli,
