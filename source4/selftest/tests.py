@@ -474,7 +474,7 @@ def plansambapythontestsuite(name, env, path, module, environ={}, extra_args=[])
 
 plansambapythontestsuite("ldb.python", "none", "./lib/ldb/tests/python/", 'api')
 planpythontestsuite("none", "samba.tests.credentials")
-planpythontestsuite("none", "samba.tests.gensec")
+plantestsuite_idlist("samba.tests.gensec", "dc:local", [subunitrun, "$LISTOPT", '-U"$USERNAME%$PASSWORD"', "samba.tests.gensec"])
 planpythontestsuite("none", "samba.tests.registry")
 plansambapythontestsuite("tdb.python", "none", "../lib/tdb/python/tests", 'simple')
 planpythontestsuite("none", "samba.tests.auth")
