@@ -27,7 +27,7 @@
 #include "winbindd.h"
 #include "winbindd_rpc.h"
 
-#include "librpc/gen_ndr/cli_samr.h"
+#include "librpc/gen_ndr/ndr_samr_c.h"
 #include "librpc/gen_ndr/srv_samr.h"
 #include "librpc/gen_ndr/cli_lsa.h"
 #include "librpc/gen_ndr/srv_lsa.h"
@@ -48,7 +48,8 @@ NTSTATUS rpc_query_user_list(TALLOC_CTX *mem_ctx,
 	uint32_t loop_count = 0;
 	uint32_t start_idx = 0;
 	uint32_t i = 0;
-	NTSTATUS status;
+	NTSTATUS status, result;
+	struct dcerpc_binding_handle *b = samr_pipe->binding_handle;
 
 	*pnum_info = 0;
 
@@ -63,7 +64,7 @@ NTSTATUS rpc_query_user_list(TALLOC_CTX *mem_ctx,
 						 &max_entries,
 						 &max_size);
 
-		status = rpccli_samr_QueryDisplayInfo(samr_pipe,
+		status = dcerpc_samr_QueryDisplayInfo(b,
 						      mem_ctx,
 						      samr_policy,
 						      1, /* level */
@@ -72,10 +73,14 @@ NTSTATUS rpc_query_user_list(TALLOC_CTX *mem_ctx,
 						      max_size,
 						      &total_size,
 						      &returned_size,
-						      &disp_info);
+						      &disp_info,
+						      &result);
 		if (!NT_STATUS_IS_OK(status)) {
-			if (!NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES)) {
-				return status;
+			return status;
+		}
+		if (!NT_STATUS_IS_OK(result)) {
+			if (!NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES)) {
+				return result;
 			}
 		}
 
@@ -130,7 +135,7 @@ NTSTATUS rpc_query_user_list(TALLOC_CTX *mem_ctx,
 			sid_compose(&dst->group_sid, domain_sid,
 				    DOMAIN_RID_USERS);
 		}
-	} while (NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES));
+	} while (NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES));
 
 	*pnum_info = num_info;
 	*pinfo = info;
@@ -148,7 +153,8 @@ NTSTATUS rpc_enum_dom_groups(TALLOC_CTX *mem_ctx,
 	struct acct_info *info = NULL;
 	uint32_t start = 0;
 	uint32_t num_info = 0;
-	NTSTATUS status;
+	NTSTATUS status, result;
+	struct dcerpc_binding_handle *b = samr_pipe->binding_handle;
 
 	*pnum_info = 0;
 
@@ -158,18 +164,22 @@ NTSTATUS rpc_enum_dom_groups(TALLOC_CTX *mem_ctx,
 		uint32_t g;
 
 		/* start is updated by this call. */
-		status = rpccli_samr_EnumDomainGroups(samr_pipe,
+		status = dcerpc_samr_EnumDomainGroups(b,
 						      mem_ctx,
 						      samr_policy,
 						      &start,
 						      &sam_array,
 						      0xFFFF, /* buffer size? */
-						      &count);
+						      &count,
+						      &result);
 		if (!NT_STATUS_IS_OK(status)) {
-			if (!NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES)) {
+			return status;
+		}
+		if (!NT_STATUS_IS_OK(result)) {
+			if (!NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES)) {
 				DEBUG(2,("query_user_list: failed to enum domain groups: %s\n",
-					 nt_errstr(status)));
-				return status;
+					 nt_errstr(result)));
+				return result;
 			}
 		}
 
@@ -189,7 +199,7 @@ NTSTATUS rpc_enum_dom_groups(TALLOC_CTX *mem_ctx,
 		}
 
 		num_info += count;
-	} while (NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES));
+	} while (NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES));
 
 	*pnum_info = num_info;
 	*pinfo = info;
@@ -205,7 +215,8 @@ NTSTATUS rpc_enum_local_groups(TALLOC_CTX *mem_ctx,
 {
 	struct acct_info *info = NULL;
 	uint32_t num_info = 0;
-	NTSTATUS status;
+	NTSTATUS status, result;
+	struct dcerpc_binding_handle *b = samr_pipe->binding_handle;
 
 	*pnum_info = 0;
 
@@ -215,16 +226,20 @@ NTSTATUS rpc_enum_local_groups(TALLOC_CTX *mem_ctx,
 		uint32_t start = num_info;
 		uint32_t g;
 
-		status = rpccli_samr_EnumDomainAliases(samr_pipe,
+		status = dcerpc_samr_EnumDomainAliases(b,
 						       mem_ctx,
 						       samr_policy,
 						       &start,
 						       &sam_array,
 						       0xFFFF, /* buffer size? */
-						       &count);
+						       &count,
+						       &result);
 		if (!NT_STATUS_IS_OK(status)) {
-			if (!NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES)) {
-				return status;
+			return status;
+		}
+		if (!NT_STATUS_IS_OK(result)) {
+			if (!NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES)) {
+				return result;
 			}
 		}
 
@@ -243,7 +258,7 @@ NTSTATUS rpc_enum_local_groups(TALLOC_CTX *mem_ctx,
 		}
 
 		num_info += count;
-	} while (NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES));
+	} while (NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES));
 
 	*pnum_info = num_info;
 	*pinfo = info;
@@ -460,34 +475,44 @@ NTSTATUS rpc_query_user(TALLOC_CTX *mem_ctx,
 	struct policy_handle user_policy;
 	union samr_UserInfo *info = NULL;
 	uint32_t user_rid;
-	NTSTATUS status;
+	NTSTATUS status, result;
+	struct dcerpc_binding_handle *b = samr_pipe->binding_handle;
 
 	if (!sid_peek_check_rid(domain_sid, user_sid, &user_rid)) {
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	/* Get user handle */
-	status = rpccli_samr_OpenUser(samr_pipe,
+	status = dcerpc_samr_OpenUser(b,
 				      mem_ctx,
 				      samr_policy,
 				      SEC_FLAG_MAXIMUM_ALLOWED,
 				      user_rid,
-				      &user_policy);
+				      &user_policy,
+				      &result);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
+	if (!NT_STATUS_IS_OK(result)) {
+		return result;
+	}
 
 	/* Get user info */
-	status = rpccli_samr_QueryUserInfo(samr_pipe,
+	status = dcerpc_samr_QueryUserInfo(b,
 					   mem_ctx,
 					   &user_policy,
 					   0x15,
-					   &info);
-
-	rpccli_samr_Close(samr_pipe, mem_ctx, &user_policy);
-
+					   &info,
+					   &result);
+	{
+		NTSTATUS _result;
+		dcerpc_samr_Close(b, mem_ctx, &user_policy, &_result);
+	}
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
+	}
+	if (!NT_STATUS_IS_OK(result)) {
+		return result;
 	}
 
 	sid_compose(&user_info->user_sid, domain_sid, user_rid);
@@ -529,34 +554,46 @@ NTSTATUS rpc_lookup_usergroups(TALLOC_CTX *mem_ctx,
 	struct dom_sid *user_grpsids = NULL;
 	uint32_t num_groups = 0, i;
 	uint32_t user_rid;
-	NTSTATUS status;
+	NTSTATUS status, result;
+	struct dcerpc_binding_handle *b = samr_pipe->binding_handle;
 
 	if (!sid_peek_check_rid(domain_sid, user_sid, &user_rid)) {
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	/* Get user handle */
-	status = rpccli_samr_OpenUser(samr_pipe,
+	status = dcerpc_samr_OpenUser(b,
 				      mem_ctx,
 				      samr_policy,
 				      SEC_FLAG_MAXIMUM_ALLOWED,
 				      user_rid,
-				      &user_policy);
+				      &user_policy,
+				      &result);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
+	if (!NT_STATUS_IS_OK(result)) {
+		return result;
+	}
 
 	/* Query user rids */
-	status = rpccli_samr_GetGroupsForUser(samr_pipe,
+	status = dcerpc_samr_GetGroupsForUser(b,
 					      mem_ctx,
 					      &user_policy,
-					      &rid_array);
+					      &rid_array,
+					      &result);
 	num_groups = rid_array->count;
 
-	rpccli_samr_Close(samr_pipe, mem_ctx, &user_policy);
+	{
+		NTSTATUS _result;
+		dcerpc_samr_Close(b, mem_ctx, &user_policy, &_result);
+	}
 
-	if (!NT_STATUS_IS_OK(status) || num_groups == 0) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
+	}
+	if (!NT_STATUS_IS_OK(result) || num_groups == 0) {
+		return result;
 	}
 
 	user_grpsids = TALLOC_ARRAY(mem_ctx, struct dom_sid, num_groups);
@@ -594,7 +631,8 @@ NTSTATUS rpc_lookup_useraliases(TALLOC_CTX *mem_ctx,
 	uint32_t rangesize = MAX_SAM_ENTRIES_W2K;
 	uint32_t i;
 	struct samr_Ids alias_rids_query;
-	NTSTATUS status;
+	NTSTATUS status, result;
+	struct dcerpc_binding_handle *b = samr_pipe->binding_handle;
 
 	do {
 		/* prepare query */
@@ -625,13 +663,17 @@ NTSTATUS rpc_lookup_useraliases(TALLOC_CTX *mem_ctx,
 		sid_array.num_sids = num_query_sids;
 
 		/* do request */
-		status = rpccli_samr_GetAliasMembership(samr_pipe,
+		status = dcerpc_samr_GetAliasMembership(b,
 							mem_ctx,
 							samr_policy,
 							&sid_array,
-							&alias_rids_query);
+							&alias_rids_query,
+							&result);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
+		}
+		if (!NT_STATUS_IS_OK(result)) {
+			return result;
 		}
 
 		/* process output */
@@ -688,7 +730,8 @@ NTSTATUS rpc_lookup_groupmem(TALLOC_CTX *mem_ctx,
 	struct samr_Ids tmp_types;
 
 	uint32_t j, r;
-	NTSTATUS status;
+	NTSTATUS status, result;
+	struct dcerpc_binding_handle *b = samr_pipe->binding_handle;
 
 	if (!sid_peek_check_rid(domain_sid, group_sid, &group_rid)) {
 		return NT_STATUS_UNSUCCESSFUL;
@@ -699,29 +742,40 @@ NTSTATUS rpc_lookup_groupmem(TALLOC_CTX *mem_ctx,
 	{
 		struct samr_RidAttrArray *rids = NULL;
 
-		status = rpccli_samr_OpenGroup(samr_pipe,
+		status = dcerpc_samr_OpenGroup(b,
 					       mem_ctx,
 					       samr_policy,
 					       SEC_FLAG_MAXIMUM_ALLOWED,
 					       group_rid,
-					       &group_policy);
+					       &group_policy,
+					       &result);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
+		}
+		if (!NT_STATUS_IS_OK(result)) {
+			return result;
 		}
 
 		/*
 		 * Step #1: Get a list of user rids that are the members of the group.
 		 */
-		status = rpccli_samr_QueryGroupMember(samr_pipe,
+		status = dcerpc_samr_QueryGroupMember(b,
 						      mem_ctx,
 						      &group_policy,
-						      &rids);
-
-		rpccli_samr_Close(samr_pipe, mem_ctx, &group_policy);
+						      &rids,
+						      &result);
+		{
+			NTSTATUS _result;
+			dcerpc_samr_Close(b, mem_ctx, &group_policy, &_result);
+		}
 
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
+		if (!NT_STATUS_IS_OK(result)) {
+			return result;
+		}
+
 
 		if (rids == NULL || rids->count == 0) {
 			pnum_names = 0;
@@ -752,11 +806,18 @@ NTSTATUS rpc_lookup_groupmem(TALLOC_CTX *mem_ctx,
 		sid_array.num_sids = 1;
 		sid_array.sids = &sid_ptr;
 
-		status = rpccli_samr_GetAliasMembership(samr_pipe,
+		status = dcerpc_samr_GetAliasMembership(b,
 							mem_ctx,
 							samr_policy,
 							&sid_array,
-							&rids_query);
+							&rids_query,
+							&result);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+		if (!NT_STATUS_IS_OK(result)) {
+			return result;
+		}
 
 		if (rids_query.count == 0) {
 			pnum_names = 0;
@@ -792,16 +853,21 @@ NTSTATUS rpc_lookup_groupmem(TALLOC_CTX *mem_ctx,
 		sid_compose(&sid_mem[j], domain_sid, rid_mem[j]);
 	}
 
-	status = rpccli_samr_LookupRids(samr_pipe,
+	status = dcerpc_samr_LookupRids(b,
 					mem_ctx,
 					samr_policy,
 					num_names,
 					rid_mem,
 					&tmp_names,
-					&tmp_types);
+					&tmp_types,
+					&result);
 	if (!NT_STATUS_IS_OK(status)) {
-		if (!NT_STATUS_EQUAL(status, STATUS_SOME_UNMAPPED)) {
-			return status;
+		return status;
+	}
+
+	if (!NT_STATUS_IS_OK(result)) {
+		if (!NT_STATUS_EQUAL(result, STATUS_SOME_UNMAPPED)) {
+			return result;
 		}
 	}
 
@@ -843,15 +909,17 @@ NTSTATUS rpc_sequence_number(TALLOC_CTX *mem_ctx,
 {
 	union samr_DomainInfo *info = NULL;
 	bool got_seq_num = false;
-	NTSTATUS status;
+	NTSTATUS status, result;
+	struct dcerpc_binding_handle *b = samr_pipe->binding_handle;
 
 	/* query domain info */
-	status = rpccli_samr_QueryDomainInfo(samr_pipe,
+	status = dcerpc_samr_QueryDomainInfo(b,
 					     mem_ctx,
 					     samr_policy,
 					     8,
-					     &info);
-	if (NT_STATUS_IS_OK(status)) {
+					     &info,
+					     &result);
+	if (NT_STATUS_IS_OK(status) && NT_STATUS_IS_OK(result)) {
 		*pseq = info->info8.sequence_num;
 		got_seq_num = true;
 		goto seq_num;
@@ -859,15 +927,23 @@ NTSTATUS rpc_sequence_number(TALLOC_CTX *mem_ctx,
 
 	/* retry with info-level 2 in case the dc does not support info-level 8
 	 * (like all older samba2 and samba3 dc's) - Guenther */
-	status = rpccli_samr_QueryDomainInfo(samr_pipe,
+	status = dcerpc_samr_QueryDomainInfo(b,
 					     mem_ctx,
 					     samr_policy,
 					     2,
-					     &info);
-	if (NT_STATUS_IS_OK(status)) {
+					     &info,
+					     &result);
+	if (NT_STATUS_IS_OK(status) && NT_STATUS_IS_OK(result)) {
 		*pseq = info->general.sequence_num;
 		got_seq_num = true;
+		goto seq_num;
 	}
+
+	if (!NT_STATUS_IS_OK(status)) {
+		goto seq_num;
+	}
+
+	status = result;
 
 seq_num:
 	if (got_seq_num) {
