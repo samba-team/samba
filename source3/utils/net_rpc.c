@@ -23,7 +23,7 @@
 #include "includes.h"
 #include "utils/net.h"
 #include "../libcli/auth/libcli_auth.h"
-#include "../librpc/gen_ndr/cli_samr.h"
+#include "../librpc/gen_ndr/ndr_samr_c.h"
 #include "rpc_client/cli_samr.h"
 #include "rpc_client/init_samr.h"
 #include "../librpc/gen_ndr/cli_lsa.h"
@@ -505,39 +505,60 @@ NTSTATUS rpc_info_internals(struct net_context *c,
 			const char **argv)
 {
 	struct policy_handle connect_pol, domain_pol;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS status, result;
 	union samr_DomainInfo *info = NULL;
 	fstring sid_str;
+	struct dcerpc_binding_handle *b = pipe_hnd->binding_handle;
 
 	sid_to_fstring(sid_str, domain_sid);
 
 	/* Get sam policy handle */
-	result = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
+	status = dcerpc_samr_Connect2(b, mem_ctx,
 				      pipe_hnd->desthost,
 				      MAXIMUM_ALLOWED_ACCESS,
-				      &connect_pol);
+				      &connect_pol,
+				      &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_fprintf(stderr, _("Could not connect to SAM: %s\n"),
+			  nt_errstr(status));
+		goto done;
+	}
+
 	if (!NT_STATUS_IS_OK(result)) {
+		status = result;
 		d_fprintf(stderr, _("Could not connect to SAM: %s\n"),
 			  nt_errstr(result));
 		goto done;
 	}
 
 	/* Get domain policy handle */
-	result = rpccli_samr_OpenDomain(pipe_hnd, mem_ctx,
+	status = dcerpc_samr_OpenDomain(b, mem_ctx,
 					&connect_pol,
 					MAXIMUM_ALLOWED_ACCESS,
 					CONST_DISCARD(struct dom_sid2 *, domain_sid),
-					&domain_pol);
+					&domain_pol,
+					&result);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_fprintf(stderr, _("Could not open domain: %s\n"),
+			  nt_errstr(status));
+		goto done;
+	}
 	if (!NT_STATUS_IS_OK(result)) {
+		status = result;
 		d_fprintf(stderr, _("Could not open domain: %s\n"),
 			  nt_errstr(result));
 		goto done;
 	}
 
-	result = rpccli_samr_QueryDomainInfo(pipe_hnd, mem_ctx,
+	status = dcerpc_samr_QueryDomainInfo(b, mem_ctx,
 					     &domain_pol,
 					     2,
-					     &info);
+					     &info,
+					     &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
+	status = result;
 	if (NT_STATUS_IS_OK(result)) {
 		d_printf(_("Domain Name: %s\n"),
 			 info->general.domain_name.string);
@@ -550,7 +571,7 @@ NTSTATUS rpc_info_internals(struct net_context *c,
 	}
 
  done:
-	return result;
+	return status;
 }
 
 /**
