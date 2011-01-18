@@ -26,7 +26,7 @@
 #include "../librpc/gen_ndr/ndr_samr_c.h"
 #include "rpc_client/cli_samr.h"
 #include "rpc_client/init_samr.h"
-#include "../librpc/gen_ndr/cli_lsa.h"
+#include "../librpc/gen_ndr/ndr_lsa_c.h"
 #include "rpc_client/cli_lsarpc.h"
 #include "../librpc/gen_ndr/ndr_netlogon_c.h"
 #include "../librpc/gen_ndr/ndr_srvsvc_c.h"
@@ -72,30 +72,40 @@ NTSTATUS net_get_remote_domain_sid(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 {
 	struct rpc_pipe_client *lsa_pipe = NULL;
 	struct policy_handle pol;
-	NTSTATUS result = NT_STATUS_OK;
+	NTSTATUS status, result;
 	union lsa_PolicyInformation *info = NULL;
+	struct dcerpc_binding_handle *b;
 
-	result = cli_rpc_pipe_open_noauth(cli, &ndr_table_lsarpc.syntax_id,
+	status = cli_rpc_pipe_open_noauth(cli, &ndr_table_lsarpc.syntax_id,
 					  &lsa_pipe);
-	if (!NT_STATUS_IS_OK(result)) {
+	if (!NT_STATUS_IS_OK(status)) {
 		d_fprintf(stderr, _("Could not initialise lsa pipe\n"));
-		return result;
+		return status;
 	}
 
-	result = rpccli_lsa_open_policy(lsa_pipe, mem_ctx, false,
+	b = lsa_pipe->binding_handle;
+
+	status = rpccli_lsa_open_policy(lsa_pipe, mem_ctx, false,
 				     SEC_FLAG_MAXIMUM_ALLOWED,
 				     &pol);
-	if (!NT_STATUS_IS_OK(result)) {
+	if (!NT_STATUS_IS_OK(status)) {
 		d_fprintf(stderr, "open_policy %s: %s\n",
 			  _("failed"),
-			  nt_errstr(result));
-		return result;
+			  nt_errstr(status));
+		return status;
 	}
 
-	result = rpccli_lsa_QueryInfoPolicy(lsa_pipe, mem_ctx,
+	status = dcerpc_lsa_QueryInfoPolicy(b, mem_ctx,
 					    &pol,
 					    LSA_POLICY_INFO_ACCOUNT_DOMAIN,
-					    &info);
+					    &info,
+					    &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_fprintf(stderr, "lsaquery %s: %s\n",
+			  _("failed"),
+			  nt_errstr(status));
+		return status;
+	}
 	if (!NT_STATUS_IS_OK(result)) {
 		d_fprintf(stderr, "lsaquery %s: %s\n",
 			  _("failed"),
@@ -106,7 +116,7 @@ NTSTATUS net_get_remote_domain_sid(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	*domain_name = info->account_domain.name.string;
 	*domain_sid = info->account_domain.sid;
 
-	rpccli_lsa_Close(lsa_pipe, mem_ctx, &pol);
+	dcerpc_lsa_Close(b, mem_ctx, &pol, &result);
 	TALLOC_FREE(lsa_pipe);
 
 	return NT_STATUS_OK;
@@ -1929,37 +1939,40 @@ static NTSTATUS get_sid_from_name(struct cli_state *cli,
 	enum lsa_SidType *types = NULL;
 	struct rpc_pipe_client *pipe_hnd = NULL;
 	struct policy_handle lsa_pol;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS status, result;
+	struct dcerpc_binding_handle *b;
 
-	result = cli_rpc_pipe_open_noauth(cli, &ndr_table_lsarpc.syntax_id,
+	status = cli_rpc_pipe_open_noauth(cli, &ndr_table_lsarpc.syntax_id,
 					  &pipe_hnd);
-	if (!NT_STATUS_IS_OK(result)) {
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
 
-	result = rpccli_lsa_open_policy(pipe_hnd, mem_ctx, false,
+	b = pipe_hnd->binding_handle;
+
+	status = rpccli_lsa_open_policy(pipe_hnd, mem_ctx, false,
 				     SEC_FLAG_MAXIMUM_ALLOWED, &lsa_pol);
 
-	if (!NT_STATUS_IS_OK(result)) {
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
 
-	result = rpccli_lsa_lookup_names(pipe_hnd, mem_ctx, &lsa_pol, 1,
+	status = rpccli_lsa_lookup_names(pipe_hnd, mem_ctx, &lsa_pol, 1,
 				      &name, NULL, 1, &sids, &types);
 
-	if (NT_STATUS_IS_OK(result)) {
+	if (NT_STATUS_IS_OK(status)) {
 		sid_copy(sid, &sids[0]);
 		*type = types[0];
 	}
 
-	rpccli_lsa_Close(pipe_hnd, mem_ctx, &lsa_pol);
+	dcerpc_lsa_Close(b, mem_ctx, &lsa_pol, &result);
 
  done:
 	if (pipe_hnd) {
 		TALLOC_FREE(pipe_hnd);
 	}
 
-	if (!NT_STATUS_IS_OK(result) && (StrnCaseCmp(name, "S-", 2) == 0)) {
+	if (!NT_STATUS_IS_OK(status) && (StrnCaseCmp(name, "S-", 2) == 0)) {
 
 		/* Try as S-1-5-whatever */
 
@@ -1968,11 +1981,11 @@ static NTSTATUS get_sid_from_name(struct cli_state *cli,
 		if (string_to_sid(&tmp_sid, name)) {
 			sid_copy(sid, &tmp_sid);
 			*type = SID_NAME_UNKNOWN;
-			result = NT_STATUS_OK;
+			status = NT_STATUS_OK;
 		}
 	}
 
-	return result;
+	return status;
 }
 
 static NTSTATUS rpc_add_groupmem(struct rpc_pipe_client *pipe_hnd,
@@ -4411,6 +4424,7 @@ static NTSTATUS rpc_aliaslist_dump(struct net_context *c,
 	int i;
 	NTSTATUS result;
 	struct policy_handle lsa_pol;
+	struct dcerpc_binding_handle *b = pipe_hnd->binding_handle;
 
 	result = rpccli_lsa_open_policy(pipe_hnd, mem_ctx, true,
 				     SEC_FLAG_MAXIMUM_ALLOWED,
@@ -4455,7 +4469,7 @@ static NTSTATUS rpc_aliaslist_dump(struct net_context *c,
 		DEBUG(1, ("\n"));
 	}
 
-	rpccli_lsa_Close(pipe_hnd, mem_ctx, &lsa_pol);
+	dcerpc_lsa_Close(b, mem_ctx, &lsa_pol, &result);
 
 	return NT_STATUS_OK;
 }
@@ -6178,13 +6192,14 @@ static int rpc_trustdom_establish(struct net_context *c, int argc,
 	struct rpc_pipe_client *pipe_hnd = NULL;
 	struct policy_handle connect_hnd;
 	TALLOC_CTX *mem_ctx;
-	NTSTATUS nt_status;
+	NTSTATUS nt_status, result;
 	struct dom_sid *domain_sid;
 
 	char* domain_name;
 	char* acct_name;
 	fstring pdc_name;
 	union lsa_PolicyInformation *info = NULL;
+	struct dcerpc_binding_handle *b;
 
 	/*
 	 * Connect to \\server\ipc$ as 'our domain' account with password
@@ -6278,6 +6293,8 @@ static int rpc_trustdom_establish(struct net_context *c, int argc,
 		return -1;
 	}
 
+	b = pipe_hnd->binding_handle;
+
 	nt_status = rpccli_lsa_open_policy2(pipe_hnd, mem_ctx, true, KEY_QUERY_VALUE,
 	                                 &connect_hnd);
 	if (NT_STATUS_IS_ERR(nt_status)) {
@@ -6290,13 +6307,21 @@ static int rpc_trustdom_establish(struct net_context *c, int argc,
 
 	/* Querying info level 5 */
 
-	nt_status = rpccli_lsa_QueryInfoPolicy(pipe_hnd, mem_ctx,
+	nt_status = dcerpc_lsa_QueryInfoPolicy(b, mem_ctx,
 					       &connect_hnd,
 					       LSA_POLICY_INFO_ACCOUNT_DOMAIN,
-					       &info);
+					       &info,
+					       &result);
 	if (NT_STATUS_IS_ERR(nt_status)) {
 		DEBUG(0, ("LSA Query Info failed. Returned error was %s\n",
 			nt_errstr(nt_status)));
+		cli_shutdown(cli);
+		talloc_destroy(mem_ctx);
+		return -1;
+	}
+	if (NT_STATUS_IS_ERR(result)) {
+		DEBUG(0, ("LSA Query Info failed. Returned error was %s\n",
+			nt_errstr(result)));
 		cli_shutdown(cli);
 		talloc_destroy(mem_ctx);
 		return -1;
@@ -6322,7 +6347,7 @@ static int rpc_trustdom_establish(struct net_context *c, int argc,
 	 * Close the pipes and clean up
 	 */
 
-	nt_status = rpccli_lsa_Close(pipe_hnd, mem_ctx, &connect_hnd);
+	nt_status = dcerpc_lsa_Close(b, mem_ctx, &connect_hnd, &result);
 	if (NT_STATUS_IS_ERR(nt_status)) {
 		DEBUG(0, ("Couldn't close LSA pipe. Error was %s\n",
 			nt_errstr(nt_status)));
@@ -6414,21 +6439,29 @@ static NTSTATUS vampire_trusted_domain(struct rpc_pipe_client *pipe_hnd,
 				      struct dom_sid dom_sid,
 				      const char *trusted_dom_name)
 {
-	NTSTATUS nt_status;
+	NTSTATUS nt_status, result;
 	union lsa_TrustedDomainInfo *info = NULL;
 	char *cleartextpwd = NULL;
 	uint8_t session_key[16];
 	DATA_BLOB session_key_blob;
 	DATA_BLOB data = data_blob_null;
+	struct dcerpc_binding_handle *b = pipe_hnd->binding_handle;
 
-	nt_status = rpccli_lsa_QueryTrustedDomainInfoBySid(pipe_hnd, mem_ctx,
+	nt_status = dcerpc_lsa_QueryTrustedDomainInfoBySid(b, mem_ctx,
 							   pol,
 							   &dom_sid,
 							   LSA_TRUSTED_DOMAIN_INFO_PASSWORD,
-							   &info);
+							   &info,
+							   &result);
 	if (NT_STATUS_IS_ERR(nt_status)) {
 		DEBUG(0,("Could not query trusted domain info. Error was %s\n",
 		nt_errstr(nt_status)));
+		goto done;
+	}
+	if (NT_STATUS_IS_ERR(result)) {
+		nt_status = result;
+		DEBUG(0,("Could not query trusted domain info. Error was %s\n",
+		nt_errstr(result)));
 		goto done;
 	}
 
@@ -6475,7 +6508,7 @@ static int rpc_trustdom_vampire(struct net_context *c, int argc,
 	TALLOC_CTX* mem_ctx;
 	struct cli_state *cli = NULL;
 	struct rpc_pipe_client *pipe_hnd = NULL;
-	NTSTATUS nt_status;
+	NTSTATUS nt_status, result;
 	const char *domain_name = NULL;
 	struct dom_sid *queried_dom_sid;
 	struct policy_handle connect_hnd;
@@ -6486,6 +6519,7 @@ static int rpc_trustdom_vampire(struct net_context *c, int argc,
 	int i;
 	struct lsa_DomainList dom_list;
 	fstring pdc_name;
+	struct dcerpc_binding_handle *b;
 
 	if (c->display_usage) {
 		d_printf(  "%s\n"
@@ -6535,6 +6569,8 @@ static int rpc_trustdom_vampire(struct net_context *c, int argc,
 		return -1;
 	};
 
+	b = pipe_hnd->binding_handle;
+
 	nt_status = rpccli_lsa_open_policy2(pipe_hnd, mem_ctx, false, KEY_QUERY_VALUE,
 					&connect_hnd);
 	if (NT_STATUS_IS_ERR(nt_status)) {
@@ -6546,14 +6582,22 @@ static int rpc_trustdom_vampire(struct net_context *c, int argc,
 	};
 
 	/* query info level 5 to obtain sid of a domain being queried */
-	nt_status = rpccli_lsa_QueryInfoPolicy(pipe_hnd, mem_ctx,
+	nt_status = dcerpc_lsa_QueryInfoPolicy(b, mem_ctx,
 					       &connect_hnd,
 					       LSA_POLICY_INFO_ACCOUNT_DOMAIN,
-					       &info);
+					       &info,
+					       &result);
 
 	if (NT_STATUS_IS_ERR(nt_status)) {
 		DEBUG(0, ("LSA Query Info failed. Returned error was %s\n",
 			nt_errstr(nt_status)));
+		cli_shutdown(cli);
+		talloc_destroy(mem_ctx);
+		return -1;
+	}
+	if (NT_STATUS_IS_ERR(result)) {
+		DEBUG(0, ("LSA Query Info failed. Returned error was %s\n",
+			nt_errstr(result)));
 		cli_shutdown(cli);
 		talloc_destroy(mem_ctx);
 		return -1;
@@ -6569,11 +6613,12 @@ static int rpc_trustdom_vampire(struct net_context *c, int argc,
 	d_printf(_("Vampire trusted domains:\n\n"));
 
 	do {
-		nt_status = rpccli_lsa_EnumTrustDom(pipe_hnd, mem_ctx,
+		nt_status = dcerpc_lsa_EnumTrustDom(b, mem_ctx,
 						    &connect_hnd,
 						    &enum_ctx,
 						    &dom_list,
-						    (uint32_t)-1);
+						    (uint32_t)-1,
+						    &result);
 		if (NT_STATUS_IS_ERR(nt_status)) {
 			DEBUG(0, ("Couldn't enumerate trusted domains. Error was %s\n",
 				nt_errstr(nt_status)));
@@ -6581,6 +6626,15 @@ static int rpc_trustdom_vampire(struct net_context *c, int argc,
 			talloc_destroy(mem_ctx);
 			return -1;
 		};
+		if (NT_STATUS_IS_ERR(result)) {
+			nt_status = result;
+			DEBUG(0, ("Couldn't enumerate trusted domains. Error was %s\n",
+				nt_errstr(result)));
+			cli_shutdown(cli);
+			talloc_destroy(mem_ctx);
+			return -1;
+		};
+
 
 		for (i = 0; i < dom_list.count; i++) {
 
@@ -6606,7 +6660,7 @@ static int rpc_trustdom_vampire(struct net_context *c, int argc,
 	} while (NT_STATUS_EQUAL(nt_status, STATUS_MORE_ENTRIES));
 
 	/* close this connection before doing next one */
-	nt_status = rpccli_lsa_Close(pipe_hnd, mem_ctx, &connect_hnd);
+	nt_status = dcerpc_lsa_Close(b, mem_ctx, &connect_hnd, &result);
 	if (NT_STATUS_IS_ERR(nt_status)) {
 		DEBUG(0, ("Couldn't properly close lsa policy handle. Error was %s\n",
 			nt_errstr(nt_status)));
@@ -6706,14 +6760,22 @@ static int rpc_trustdom_list(struct net_context *c, int argc, const char **argv)
 	};
 	
 	/* query info level 5 to obtain sid of a domain being queried */
-	nt_status = rpccli_lsa_QueryInfoPolicy(pipe_hnd, mem_ctx,
+	nt_status = dcerpc_lsa_QueryInfoPolicy(b, mem_ctx,
 					       &connect_hnd,
 					       LSA_POLICY_INFO_ACCOUNT_DOMAIN,
-					       &info);
+					       &info,
+					       &result);
 
 	if (NT_STATUS_IS_ERR(nt_status)) {
 		DEBUG(0, ("LSA Query Info failed. Returned error was %s\n",
 			nt_errstr(nt_status)));
+		cli_shutdown(cli);
+		talloc_destroy(mem_ctx);
+		return -1;
+	}
+	if (NT_STATUS_IS_ERR(result)) {
+		DEBUG(0, ("LSA Query Info failed. Returned error was %s\n",
+			nt_errstr(result)));
 		cli_shutdown(cli);
 		talloc_destroy(mem_ctx);
 		return -1;
@@ -6731,11 +6793,12 @@ static int rpc_trustdom_list(struct net_context *c, int argc, const char **argv)
 	found_domain = false;
 
 	do {
-		nt_status = rpccli_lsa_EnumTrustDom(pipe_hnd, mem_ctx,
+		nt_status = dcerpc_lsa_EnumTrustDom(b, mem_ctx,
 						    &connect_hnd,
 						    &enum_ctx,
 						    &dom_list,
-						    (uint32_t)-1);
+						    (uint32_t)-1,
+						    &result);
 		if (NT_STATUS_IS_ERR(nt_status)) {
 			DEBUG(0, ("Couldn't enumerate trusted domains. Error was %s\n",
 				nt_errstr(nt_status)));
@@ -6743,6 +6806,14 @@ static int rpc_trustdom_list(struct net_context *c, int argc, const char **argv)
 			talloc_destroy(mem_ctx);
 			return -1;
 		};
+		if (NT_STATUS_IS_ERR(result)) {
+			DEBUG(0, ("Couldn't enumerate trusted domains. Error was %s\n",
+				nt_errstr(result)));
+			cli_shutdown(cli);
+			talloc_destroy(mem_ctx);
+			return -1;
+		};
+
 
 		for (i = 0; i < dom_list.count; i++) {
 			print_trusted_domain(dom_list.domains[i].sid,
@@ -6762,7 +6833,7 @@ static int rpc_trustdom_list(struct net_context *c, int argc, const char **argv)
 	}
 
 	/* close this connection before doing next one */
-	nt_status = rpccli_lsa_Close(pipe_hnd, mem_ctx, &connect_hnd);
+	nt_status = dcerpc_lsa_Close(b, mem_ctx, &connect_hnd, &result);
 	if (NT_STATUS_IS_ERR(nt_status)) {
 		DEBUG(0, ("Couldn't properly close lsa policy handle. Error was %s\n",
 			nt_errstr(nt_status)));
