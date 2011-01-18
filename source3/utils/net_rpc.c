@@ -1572,12 +1572,13 @@ static NTSTATUS rpc_group_delete_internals(struct net_context *c,
 {
 	struct policy_handle connect_pol, domain_pol, group_pol, user_pol;
 	bool group_is_primary = false;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS status, result;
 	uint32_t group_rid;
 	struct samr_RidAttrArray *rids = NULL;
 	/* char **names; */
 	int i;
 	/* struct samr_RidWithAttribute *user_gids; */
+	struct dcerpc_binding_handle *b = pipe_hnd->binding_handle;
 
 	struct samr_Ids group_rids, name_types;
 	struct lsa_String lsa_acct_name;
@@ -1588,64 +1589,98 @@ static NTSTATUS rpc_group_delete_internals(struct net_context *c,
 		return NT_STATUS_OK; /* ok? */
 	}
 
-	result = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
+	status = dcerpc_samr_Connect2(b, mem_ctx,
 				      pipe_hnd->desthost,
 				      MAXIMUM_ALLOWED_ACCESS,
-				      &connect_pol);
-
-        if (!NT_STATUS_IS_OK(result)) {
+				      &connect_pol,
+				      &result);
+        if (!NT_STATUS_IS_OK(status)) {
 		d_fprintf(stderr, _("Request samr_Connect2 failed\n"));
-        	goto done;
+		goto done;
         }
 
-        result = rpccli_samr_OpenDomain(pipe_hnd, mem_ctx,
+        if (!NT_STATUS_IS_OK(result)) {
+		status = result;
+		d_fprintf(stderr, _("Request samr_Connect2 failed\n"));
+		goto done;
+        }
+
+	status = dcerpc_samr_OpenDomain(b, mem_ctx,
 					&connect_pol,
 					MAXIMUM_ALLOWED_ACCESS,
 					CONST_DISCARD(struct dom_sid2 *, domain_sid),
-					&domain_pol);
+					&domain_pol,
+					&result);
+        if (!NT_STATUS_IS_OK(status)) {
+		d_fprintf(stderr, _("Request open_domain failed\n"));
+		goto done;
+        }
 
         if (!NT_STATUS_IS_OK(result)) {
+		status = result;
 		d_fprintf(stderr, _("Request open_domain failed\n"));
-        	goto done;
+		goto done;
         }
 
 	init_lsa_String(&lsa_acct_name, argv[0]);
 
-	result = rpccli_samr_LookupNames(pipe_hnd, mem_ctx,
+	status = dcerpc_samr_LookupNames(b, mem_ctx,
 					 &domain_pol,
 					 1,
 					 &lsa_acct_name,
 					 &group_rids,
-					 &name_types);
-	if (!NT_STATUS_IS_OK(result)) {
+					 &name_types,
+					 &result);
+	if (!NT_STATUS_IS_OK(status)) {
 		d_fprintf(stderr, _("Lookup of '%s' failed\n"),argv[0]);
-   		goto done;
+		goto done;
+	}
+
+	if (!NT_STATUS_IS_OK(result)) {
+		status = result;
+		d_fprintf(stderr, _("Lookup of '%s' failed\n"),argv[0]);
+		goto done;
 	}
 
 	switch (name_types.ids[0])
 	{
 	case SID_NAME_DOM_GRP:
-		result = rpccli_samr_OpenGroup(pipe_hnd, mem_ctx,
+		status = dcerpc_samr_OpenGroup(b, mem_ctx,
 					       &domain_pol,
 					       MAXIMUM_ALLOWED_ACCESS,
 					       group_rids.ids[0],
-					       &group_pol);
-		if (!NT_STATUS_IS_OK(result)) {
+					       &group_pol,
+					       &result);
+		if (!NT_STATUS_IS_OK(status)) {
 			d_fprintf(stderr, _("Request open_group failed"));
-   			goto done;
+			goto done;
+		}
+
+		if (!NT_STATUS_IS_OK(result)) {
+			status = result;
+			d_fprintf(stderr, _("Request open_group failed"));
+			goto done;
 		}
 
 		group_rid = group_rids.ids[0];
 
-		result = rpccli_samr_QueryGroupMember(pipe_hnd, mem_ctx,
+		status = dcerpc_samr_QueryGroupMember(b, mem_ctx,
 						      &group_pol,
-						      &rids);
-
-		if (!NT_STATUS_IS_OK(result)) {
+						      &rids,
+						      &result);
+		if (!NT_STATUS_IS_OK(status)) {
 			d_fprintf(stderr,
 				  _("Unable to query group members of %s"),
 				  argv[0]);
-   			goto done;
+			goto done;
+		}
+
+		if (!NT_STATUS_IS_OK(result)) {
+			status = result;
+			d_fprintf(stderr,
+				  _("Unable to query group members of %s"),
+				  argv[0]);
+			goto done;
 		}
 
 		if (c->opt_verbose) {
@@ -1657,31 +1692,48 @@ static NTSTATUS rpc_group_delete_internals(struct net_context *c,
 		/* Check if group is anyone's primary group */
                 for (i = 0; i < rids->count; i++)
 		{
-	                result = rpccli_samr_OpenUser(pipe_hnd, mem_ctx,
+	                status = dcerpc_samr_OpenUser(b, mem_ctx,
 						      &domain_pol,
 						      MAXIMUM_ALLOWED_ACCESS,
 						      rids->rids[i],
-						      &user_pol);
-
-	        	if (!NT_STATUS_IS_OK(result)) {
+						      &user_pol,
+						      &result);
+			if (!NT_STATUS_IS_OK(status)) {
 				d_fprintf(stderr,
 					_("Unable to open group member %d\n"),
 					rids->rids[i]);
-	           		goto done;
-	        	}
+				goto done;
+			}
 
-			result = rpccli_samr_QueryUserInfo(pipe_hnd, mem_ctx,
+			if (!NT_STATUS_IS_OK(result)) {
+				status = result;
+				d_fprintf(stderr,
+					_("Unable to open group member %d\n"),
+					rids->rids[i]);
+				goto done;
+			}
+
+			status = dcerpc_samr_QueryUserInfo(b, mem_ctx,
 							   &user_pol,
 							   21,
-							   &info);
-
-	        	if (!NT_STATUS_IS_OK(result)) {
+							   &info,
+							   &result);
+			if (!NT_STATUS_IS_OK(status)) {
 				d_fprintf(stderr,
 					_("Unable to lookup userinfo for group "
 					  "member %d\n"),
 					rids->rids[i]);
-	           		goto done;
-	        	}
+				goto done;
+			}
+
+			if (!NT_STATUS_IS_OK(result)) {
+				status = result;
+				d_fprintf(stderr,
+					_("Unable to lookup userinfo for group "
+					  "member %d\n"),
+					rids->rids[i]);
+				goto done;
+			}
 
 			if (info->info21.primary_gid == group_rid) {
 				if (c->opt_verbose) {
@@ -1692,14 +1744,14 @@ static NTSTATUS rpc_group_delete_internals(struct net_context *c,
 				group_is_primary = true;
                         }
 
-			rpccli_samr_Close(pipe_hnd, mem_ctx, &user_pol);
+			dcerpc_samr_Close(b, mem_ctx, &user_pol, &result);
 		}
 
 		if (group_is_primary) {
 			d_fprintf(stderr, _("Unable to delete group because "
 				 "some of it's members have it as primary "
 				 "group\n"));
-			result = NT_STATUS_MEMBERS_PRIMARY_GROUP;
+			status = NT_STATUS_MEMBERS_PRIMARY_GROUP;
 			goto done;
 		}
 
@@ -1709,10 +1761,14 @@ static NTSTATUS rpc_group_delete_internals(struct net_context *c,
 			if (c->opt_verbose)
 				d_printf(_("Remove group member %d..."),
 					rids->rids[i]);
-			result = rpccli_samr_DeleteGroupMember(pipe_hnd, mem_ctx,
+			status = dcerpc_samr_DeleteGroupMember(b, mem_ctx,
 							       &group_pol,
-							       rids->rids[i]);
-
+							       rids->rids[i],
+							       &result);
+			if (!NT_STATUS_IS_OK(status)) {
+				goto done;
+			}
+			status = result;
 			if (NT_STATUS_IS_OK(result)) {
 				if (c->opt_verbose)
 					d_printf(_("ok\n"));
@@ -1723,45 +1779,63 @@ static NTSTATUS rpc_group_delete_internals(struct net_context *c,
 			}
 		}
 
-		result = rpccli_samr_DeleteDomainGroup(pipe_hnd, mem_ctx,
-						       &group_pol);
+		status = dcerpc_samr_DeleteDomainGroup(b, mem_ctx,
+						       &group_pol,
+						       &result);
+		if (!NT_STATUS_IS_OK(status)) {
+			break;
+		}
+
+		status = result;
 
 		break;
 	/* removing a local group is easier... */
 	case SID_NAME_ALIAS:
-		result = rpccli_samr_OpenAlias(pipe_hnd, mem_ctx,
+		status = dcerpc_samr_OpenAlias(b, mem_ctx,
 					       &domain_pol,
 					       MAXIMUM_ALLOWED_ACCESS,
 					       group_rids.ids[0],
-					       &group_pol);
-
-		if (!NT_STATUS_IS_OK(result)) {
+					       &group_pol,
+					       &result);
+		if (!NT_STATUS_IS_OK(status)) {
 			d_fprintf(stderr, _("Request open_alias failed\n"));
-   			goto done;
+			goto done;
+		}
+		if (!NT_STATUS_IS_OK(result)) {
+			status = result;
+			d_fprintf(stderr, _("Request open_alias failed\n"));
+			goto done;
 		}
 
-		result = rpccli_samr_DeleteDomAlias(pipe_hnd, mem_ctx,
-						    &group_pol);
+		status = dcerpc_samr_DeleteDomAlias(b, mem_ctx,
+						    &group_pol,
+						    &result);
+		if (!NT_STATUS_IS_OK(status)) {
+			break;
+		}
+
+		status = result;
+
 		break;
 	default:
 		d_fprintf(stderr, _("%s is of type %s. This command is only "
 				    "for deleting local or global groups\n"),
 			argv[0],sid_type_lookup(name_types.ids[0]));
-		result = NT_STATUS_UNSUCCESSFUL;
+		status = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
 
-	if (NT_STATUS_IS_OK(result)) {
+	if (NT_STATUS_IS_OK(status)) {
 		if (c->opt_verbose)
 			d_printf(_("Deleted %s '%s'\n"),
 				 sid_type_lookup(name_types.ids[0]), argv[0]);
 	} else {
 		d_fprintf(stderr, _("Deleting of %s failed: %s\n"), argv[0],
-			get_friendly_nt_error_msg(result));
+			get_friendly_nt_error_msg(status));
 	}
 
  done:
-	return result;
+	return status;
 
 }
 
