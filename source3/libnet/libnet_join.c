@@ -25,7 +25,7 @@
 #include "libcli/auth/libcli_auth.h"
 #include "../librpc/gen_ndr/ndr_samr_c.h"
 #include "rpc_client/init_samr.h"
-#include "../librpc/gen_ndr/cli_lsa.h"
+#include "../librpc/gen_ndr/ndr_lsa_c.h"
 #include "rpc_client/cli_lsarpc.h"
 #include "../librpc/gen_ndr/ndr_netlogon.h"
 #include "rpc_client/cli_netlogon.h"
@@ -710,8 +710,9 @@ static NTSTATUS libnet_join_lookup_dc_rpc(TALLOC_CTX *mem_ctx,
 {
 	struct rpc_pipe_client *pipe_hnd = NULL;
 	struct policy_handle lsa_pol;
-	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS status, result;
 	union lsa_PolicyInformation *info = NULL;
+	struct dcerpc_binding_handle *b;
 
 	status = libnet_join_connect_dc_ipc(r->in.dc_name,
 					    r->in.admin_account,
@@ -730,17 +731,20 @@ static NTSTATUS libnet_join_lookup_dc_rpc(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
+	b = pipe_hnd->binding_handle;
+
 	status = rpccli_lsa_open_policy(pipe_hnd, mem_ctx, true,
 					SEC_FLAG_MAXIMUM_ALLOWED, &lsa_pol);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
 
-	status = rpccli_lsa_QueryInfoPolicy2(pipe_hnd, mem_ctx,
+	status = dcerpc_lsa_QueryInfoPolicy2(b, mem_ctx,
 					     &lsa_pol,
 					     LSA_POLICY_INFO_DNS,
-					     &info);
-	if (NT_STATUS_IS_OK(status)) {
+					     &info,
+					     &result);
+	if (NT_STATUS_IS_OK(status) && NT_STATUS_IS_OK(result)) {
 		r->out.domain_is_ad = true;
 		r->out.netbios_domain_name = info->dns.name.string;
 		r->out.dns_domain_name = info->dns.dns_domain.string;
@@ -750,11 +754,16 @@ static NTSTATUS libnet_join_lookup_dc_rpc(TALLOC_CTX *mem_ctx,
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
-		status = rpccli_lsa_QueryInfoPolicy(pipe_hnd, mem_ctx,
+		status = dcerpc_lsa_QueryInfoPolicy(b, mem_ctx,
 						    &lsa_pol,
 						    LSA_POLICY_INFO_ACCOUNT_DOMAIN,
-						    &info);
+						    &info,
+						    &result);
 		if (!NT_STATUS_IS_OK(status)) {
+			goto done;
+		}
+		if (!NT_STATUS_IS_OK(result)) {
+			status = result;
 			goto done;
 		}
 
@@ -763,7 +772,7 @@ static NTSTATUS libnet_join_lookup_dc_rpc(TALLOC_CTX *mem_ctx,
 		NT_STATUS_HAVE_NO_MEMORY(r->out.domain_sid);
 	}
 
-	rpccli_lsa_Close(pipe_hnd, mem_ctx, &lsa_pol);
+	dcerpc_lsa_Close(b, mem_ctx, &lsa_pol, &result);
 	TALLOC_FREE(pipe_hnd);
 
  done:
