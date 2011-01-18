@@ -65,7 +65,7 @@ static NTSTATUS rpc_audit_get_internal(struct net_context *c,
 				       const char **argv)
 {
 	struct policy_handle pol;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	union lsa_PolicyInformation *info = NULL;
 	int i;
 	uint32_t audit_category;
@@ -81,20 +81,20 @@ static NTSTATUS rpc_audit_get_internal(struct net_context *c,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	result = rpccli_lsa_open_policy(pipe_hnd, mem_ctx, true,
+	status = rpccli_lsa_open_policy(pipe_hnd, mem_ctx, true,
 					SEC_FLAG_MAXIMUM_ALLOWED,
 					&pol);
 
-	if (!NT_STATUS_IS_OK(result)) {
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
 
-	result = rpccli_lsa_QueryInfoPolicy(pipe_hnd, mem_ctx,
+	status = rpccli_lsa_QueryInfoPolicy(pipe_hnd, mem_ctx,
 					    &pol,
 					    LSA_POLICY_INFO_AUDIT_EVENTS,
 					    &info);
 
-	if (!NT_STATUS_IS_OK(result)) {
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
 
@@ -112,12 +112,12 @@ static NTSTATUS rpc_audit_get_internal(struct net_context *c,
 	}
 
  done:
-	if (!NT_STATUS_IS_OK(result)) {
+	if (!NT_STATUS_IS_OK(status)) {
 		d_printf(_("failed to get auditing policy: %s\n"),
-			nt_errstr(result));
+			nt_errstr(status));
 	}
 
-	return result;
+	return status;
 }
 
 /********************************************************************
@@ -133,7 +133,7 @@ static NTSTATUS rpc_audit_set_internal(struct net_context *c,
 				       const char **argv)
 {
 	struct policy_handle pol;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	union lsa_PolicyInformation *info = NULL;
 	uint32_t audit_policy, audit_category;
 
@@ -163,35 +163,35 @@ static NTSTATUS rpc_audit_set_internal(struct net_context *c,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	result = rpccli_lsa_open_policy(pipe_hnd, mem_ctx, true,
+	status = rpccli_lsa_open_policy(pipe_hnd, mem_ctx, true,
 					SEC_FLAG_MAXIMUM_ALLOWED,
 					&pol);
 
-	if (!NT_STATUS_IS_OK(result)) {
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
 
-	result = rpccli_lsa_QueryInfoPolicy(pipe_hnd, mem_ctx,
+	status = rpccli_lsa_QueryInfoPolicy(pipe_hnd, mem_ctx,
 					    &pol,
 					    LSA_POLICY_INFO_AUDIT_EVENTS,
 					    &info);
 
-	if (!NT_STATUS_IS_OK(result)) {
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
 
 	info->audit_events.settings[audit_category] = audit_policy;
 
-	result = rpccli_lsa_SetInfoPolicy(pipe_hnd, mem_ctx,
+	status = rpccli_lsa_SetInfoPolicy(pipe_hnd, mem_ctx,
 					  &pol,
 					  LSA_POLICY_INFO_AUDIT_EVENTS,
 					  info);
 
-	if (!NT_STATUS_IS_OK(result)) {
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
 
-	result = rpccli_lsa_QueryInfoPolicy(pipe_hnd, mem_ctx,
+	status = rpccli_lsa_QueryInfoPolicy(pipe_hnd, mem_ctx,
 					    &pol,
 					    LSA_POLICY_INFO_AUDIT_EVENTS,
 					    &info);
@@ -202,12 +202,12 @@ static NTSTATUS rpc_audit_set_internal(struct net_context *c,
 	}
 
  done:
-	if (!NT_STATUS_IS_OK(result)) {
+	if (!NT_STATUS_IS_OK(status)) {
 		d_printf(_("failed to set audit policy: %s\n"),
-			 nt_errstr(result));
+			 nt_errstr(status));
 	}
 
-	return result;
+	return status;
 }
 
 /********************************************************************
@@ -220,45 +220,45 @@ static NTSTATUS rpc_audit_enable_internal_ext(struct rpc_pipe_client *pipe_hnd,
 					      bool enable)
 {
 	struct policy_handle pol;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	union lsa_PolicyInformation *info = NULL;
 
-	result = rpccli_lsa_open_policy(pipe_hnd, mem_ctx, true,
+	status = rpccli_lsa_open_policy(pipe_hnd, mem_ctx, true,
 					SEC_FLAG_MAXIMUM_ALLOWED,
 					&pol);
 
-	if (!NT_STATUS_IS_OK(result)) {
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
 
-	result = rpccli_lsa_QueryInfoPolicy(pipe_hnd, mem_ctx,
+	status = rpccli_lsa_QueryInfoPolicy(pipe_hnd, mem_ctx,
 					    &pol,
 					    LSA_POLICY_INFO_AUDIT_EVENTS,
 					    &info);
-	if (!NT_STATUS_IS_OK(result)) {
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
 
 	info->audit_events.auditing_mode = enable;
 
-	result = rpccli_lsa_SetInfoPolicy(pipe_hnd, mem_ctx,
+	status = rpccli_lsa_SetInfoPolicy(pipe_hnd, mem_ctx,
 					  &pol,
 					  LSA_POLICY_INFO_AUDIT_EVENTS,
 					  info);
 
-	if (!NT_STATUS_IS_OK(result)) {
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
 
  done:
-	if (!NT_STATUS_IS_OK(result)) {
+	if (!NT_STATUS_IS_OK(status)) {
 		d_printf(_("%s: %s\n"),
 			enable ? _("failed to enable audit policy"):
 				 _("failed to disable audit policy"),
-			nt_errstr(result));
+			nt_errstr(status));
 	}
 
-	return result;
+	return status;
 }
 
 /********************************************************************
@@ -306,23 +306,23 @@ static NTSTATUS rpc_audit_list_internal(struct net_context *c,
 					const char **argv)
 {
 	struct policy_handle pol;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	union lsa_PolicyInformation *info = NULL;
 	int i;
 
-	result = rpccli_lsa_open_policy(pipe_hnd, mem_ctx, true,
+	status = rpccli_lsa_open_policy(pipe_hnd, mem_ctx, true,
 					SEC_FLAG_MAXIMUM_ALLOWED,
 					&pol);
 
-	if (!NT_STATUS_IS_OK(result)) {
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
 
-	result = rpccli_lsa_QueryInfoPolicy(pipe_hnd, mem_ctx,
+	status = rpccli_lsa_QueryInfoPolicy(pipe_hnd, mem_ctx,
 					    &pol,
 					    LSA_POLICY_INFO_AUDIT_EVENTS,
 					    &info);
-	if (!NT_STATUS_IS_OK(result)) {
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
 
@@ -351,12 +351,12 @@ static NTSTATUS rpc_audit_list_internal(struct net_context *c,
 	}
 
  done:
-	if (!NT_STATUS_IS_OK(result)) {
+	if (!NT_STATUS_IS_OK(status)) {
 		d_printf(_("failed to list auditing policies: %s\n"),
-			nt_errstr(result));
+			nt_errstr(status));
 	}
 
-	return result;
+	return status;
 }
 
 /********************************************************************
