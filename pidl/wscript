@@ -59,11 +59,13 @@ def build(bld):
     # Only if the source has changed do we want to re-run yapp
     # But we force the developer to use the pidl standalone build
     # to regenerate the files.
-    need_yapp_build = ('YAPP' in bld.env and (
+    # TODO: only warn in developer mode and if 'git diff HEAD'
+    #       shows a difference
+    warn_about_grammar_changes = ('PIDL_BUILD_WARNINGS' in bld.env and (
         bld.IS_NEWER('idl.yp', 'lib/Parse/Pidl/IDL.pm') or
         bld.IS_NEWER('expr.yp', 'lib/Parse/Pidl/Expr.pm')))
 
-    if need_yapp_build:
+    if warn_about_grammar_changes:
         Logs.warn('''
 Pidl grammar files have changed. Please use the pidl standalone build
 to regenerate them with yapp.
