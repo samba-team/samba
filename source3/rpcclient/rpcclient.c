@@ -23,7 +23,7 @@
 #include "popt_common.h"
 #include "rpcclient.h"
 #include "../libcli/auth/libcli_auth.h"
-#include "../librpc/gen_ndr/cli_lsa.h"
+#include "../librpc/gen_ndr/ndr_lsa_c.h"
 #include "rpc_client/cli_lsarpc.h"
 #include "../librpc/gen_ndr/ndr_netlogon.h"
 #include "rpc_client/cli_netlogon.h"
@@ -149,11 +149,12 @@ static char *next_command (char **cmdstr)
 static void fetch_machine_sid(struct cli_state *cli)
 {
 	struct policy_handle pol;
-	NTSTATUS result = NT_STATUS_OK;
+	NTSTATUS result = NT_STATUS_OK, status;
 	static bool got_domain_sid;
 	TALLOC_CTX *mem_ctx;
 	struct rpc_pipe_client *lsapipe = NULL;
 	union lsa_PolicyInformation *info = NULL;
+	struct dcerpc_binding_handle *b;
 
 	if (got_domain_sid) return;
 
@@ -169,6 +170,8 @@ static void fetch_machine_sid(struct cli_state *cli)
 		goto error;
 	}
 
+	b = lsapipe->binding_handle;
+
 	result = rpccli_lsa_open_policy(lsapipe, mem_ctx, True, 
 				     SEC_FLAG_MAXIMUM_ALLOWED,
 				     &pol);
@@ -176,10 +179,15 @@ static void fetch_machine_sid(struct cli_state *cli)
 		goto error;
 	}
 
-	result = rpccli_lsa_QueryInfoPolicy(lsapipe, mem_ctx,
+	status = dcerpc_lsa_QueryInfoPolicy(b, mem_ctx,
 					    &pol,
 					    LSA_POLICY_INFO_ACCOUNT_DOMAIN,
-					    &info);
+					    &info,
+					    &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		result = status;
+		goto error;
+	}
 	if (!NT_STATUS_IS_OK(result)) {
 		goto error;
 	}
@@ -187,7 +195,7 @@ static void fetch_machine_sid(struct cli_state *cli)
 	got_domain_sid = True;
 	sid_copy(&domain_sid, info->account_domain.sid);
 
-	rpccli_lsa_Close(lsapipe, mem_ctx, &pol);
+	dcerpc_lsa_Close(b, mem_ctx, &pol, &result);
 	TALLOC_FREE(lsapipe);
 	talloc_destroy(mem_ctx);
 
