@@ -2210,6 +2210,10 @@ WERROR winreg_get_printer(TALLOC_CTX *mem_ctx,
 		}
 	}
 
+	if (info2->devmode) {
+		info2->devmode->size = ndr_size_spoolss_DeviceMode(info2->devmode, 0);
+	}
+
 	result = winreg_get_printer_secdesc(info2,
 					    server_info,
 					    msg_ctx,
