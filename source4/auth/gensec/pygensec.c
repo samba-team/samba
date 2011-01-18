@@ -349,23 +349,24 @@ static PyObject *py_gensec_have_feature(PyObject *self, PyObject *args)
 static PyObject *py_gensec_update(PyObject *self, PyObject *args)
 {
 	NTSTATUS status;
-
 	TALLOC_CTX *mem_ctx;
 	DATA_BLOB in, out;
 	PyObject *ret, *py_in;
 	struct gensec_security *security = py_talloc_get_type(self, struct gensec_security);
+	PyObject *finished_processing;
 
 	if (!PyArg_ParseTuple(args, "O", &py_in))
 		return NULL;
 
 	mem_ctx = talloc_new(NULL);
 
-	if (py_in == Py_None) {
-		in = data_blob_null;
-	} else {
-		in.data = (uint8_t *)PyString_AsString(py_in);
-		in.length = PyString_Size(py_in);
+	if (!PyString_Check(py_in)) {
+		PyErr_Format(PyExc_TypeError, "expected a string");
+		return NULL;
 	}
+
+	in.data = (uint8_t *)PyString_AsString(py_in);
+	in.length = PyString_Size(py_in);
 
 	status = gensec_update(security, mem_ctx, in, &out);
 
@@ -375,18 +376,16 @@ static PyObject *py_gensec_update(PyObject *self, PyObject *args)
 		talloc_free(mem_ctx);
 		return NULL;
 	}
-	if (out.length != 0) {
-		ret = PyString_FromStringAndSize((const char *)out.data, out.length);
-	} else {
-		ret = Py_None;
-	}
+	ret = PyString_FromStringAndSize((const char *)out.data, out.length);
 	talloc_free(mem_ctx);
-	if (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) 
-	{
-		return PyTuple_Pack(2, Py_False, ret);
+
+	if (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+		finished_processing = Py_False;
 	} else {
-		return PyTuple_Pack(2, Py_True, ret);
+		finished_processing = Py_True;
 	}
+
+	return PyTuple_Pack(2, finished_processing, ret);
 }
 
 static PyObject *py_gensec_wrap(PyObject *self, PyObject *args)
@@ -403,12 +402,12 @@ static PyObject *py_gensec_wrap(PyObject *self, PyObject *args)
 
 	mem_ctx = talloc_new(NULL);
 
-	if (py_in == Py_None) {
-		in = data_blob_null;
-	} else {
-		in.data = (uint8_t *)PyString_AsString(py_in);
-		in.length = PyString_Size(py_in);
+	if (!PyString_Check(py_in)) {
+		PyErr_Format(PyExc_TypeError, "expected a string");
+		return NULL;
 	}
+	in.data = (uint8_t *)PyString_AsString(py_in);
+	in.length = PyString_Size(py_in);
 
 	status = gensec_wrap(security, mem_ctx, &in, &out);
 
@@ -418,11 +417,7 @@ static PyObject *py_gensec_wrap(PyObject *self, PyObject *args)
 		return NULL;
 	}
 
-	if (out.length != 0) {
-		ret = PyString_FromStringAndSize((const char *)out.data, out.length);
-	} else {
-		ret = Py_None;
-	}
+	ret = PyString_FromStringAndSize((const char *)out.data, out.length);
 	talloc_free(mem_ctx);
 	return ret;
 }
@@ -441,12 +436,13 @@ static PyObject *py_gensec_unwrap(PyObject *self, PyObject *args)
 
 	mem_ctx = talloc_new(NULL);
 
-	if (py_in == Py_None) {
-		in = data_blob_null;
-	} else {
-		in.data = (uint8_t *)PyString_AsString(py_in);
-		in.length = PyString_Size(py_in);
+	if (!PyString_Check(py_in)) {
+		PyErr_Format(PyExc_TypeError, "expected a string");
+		return NULL;
 	}
+
+	in.data = (uint8_t *)PyString_AsString(py_in);
+	in.length = PyString_Size(py_in);
 
 	status = gensec_unwrap(security, mem_ctx, &in, &out);
 
@@ -456,11 +452,7 @@ static PyObject *py_gensec_unwrap(PyObject *self, PyObject *args)
 		return NULL;
 	}
 
-	if (out.length != 0) {
-		ret = PyString_FromStringAndSize((const char *)out.data, out.length);
-	} else {
-		ret = Py_None;
-	}
+	ret = PyString_FromStringAndSize((const char *)out.data, out.length);
 	talloc_free(mem_ctx);
 	return ret;
 }
@@ -502,6 +494,7 @@ static PyTypeObject Py_Security = {
 	.tp_basicsize = sizeof(py_talloc_Object),
 };
 
+void initgensec(void);
 void initgensec(void)
 {
 	PyObject *m;
