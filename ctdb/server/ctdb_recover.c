@@ -57,7 +57,11 @@ static int ctdb_lock_all_databases_mark(struct ctdb_context *ctdb, uint32_t prio
 		if (strstr(ctdb_db->db_name, "notify") != NULL) {
 			continue;
 		}
+		if (tdb_transaction_write_lock_mark(ctdb_db->ltdb->tdb) != 0) {
+			return -1;
+		}
 		if (tdb_lockall_mark(ctdb_db->ltdb->tdb) != 0) {
+			tdb_transaction_write_lock_unmark(ctdb_db->ltdb->tdb);
 			return -1;
 		}
 	}
@@ -68,7 +72,11 @@ static int ctdb_lock_all_databases_mark(struct ctdb_context *ctdb, uint32_t prio
 		if (strstr(ctdb_db->db_name, "notify") == NULL) {
 			continue;
 		}
+		if (tdb_transaction_write_lock_mark(ctdb_db->ltdb->tdb) != 0) {
+			return -1;
+		}
 		if (tdb_lockall_mark(ctdb_db->ltdb->tdb) != 0) {
+			tdb_transaction_write_lock_unmark(ctdb_db->ltdb->tdb);
 			return -1;
 		}
 	}
@@ -95,6 +103,7 @@ static int ctdb_lock_all_databases_unmark(struct ctdb_context *ctdb, uint32_t pr
 		if (ctdb_db->priority != priority) {
 			continue;
 		}
+		tdb_transaction_write_lock_unmark(ctdb_db->ltdb->tdb);
 		if (tdb_lockall_unmark(ctdb_db->ltdb->tdb) != 0) {
 			return -1;
 		}
