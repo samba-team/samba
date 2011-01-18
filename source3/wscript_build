@@ -1076,17 +1076,13 @@ bld.SAMBA_SUBSYSTEM('NDR_NBT_BUF',
 	deps='talloc',
 	autoproto='nbtname.h')
 
-bld.SAMBA_SUBSYSTEM('RPCCLI_LSA',
-	source='../librpc/gen_ndr/cli_lsa.c',
-	public_deps='RPC_NDR_LSA')
-
 bld.SAMBA_SUBSYSTEM('LIBCLI_SAMR',
                     source=LIBCLI_SAMR_SRC,
                     deps='RPC_NDR_SAMR')
 
 bld.SAMBA_SUBSYSTEM('LIBCLI_LSA',
                     source=LIBCLI_LSA_SRC,
-                    deps='RPCCLI_LSA INIT_LSA')
+                    deps='RPC_NDR_LSA INIT_LSA')
 
 bld.SAMBA_SUBSYSTEM('LIBRPCCLI_NETLOGON',
                     source=LIBRPCCLI_NETLOGON_SRC,
