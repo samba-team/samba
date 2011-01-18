@@ -1637,6 +1637,24 @@ class DaclDescriptorTests(DescriptorTests):
         self.assertTrue("(A;ID;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DU)" in desc_sddl)
         self.assertTrue("(A;CIIOID;GA;;;DU)" in desc_sddl)
 
+    def test_215(self):
+        """ Make sure IO flag is removed in child objects
+        """
+        ou_dn = "OU=test_inherit_ou_p," + self.base_dn
+        ou_dn1 = "OU=test_inherit_ou1," + ou_dn
+        ou_dn5 = "OU=test_inherit_ou5," + ou_dn1
+        # Create inheritable-free OU
+        mod = "D:P(A;CI;WPRPLCCCDCWDRC;;;DA)"
+        tmp_desc = security.descriptor.from_sddl(mod, self.domain_sid)
+        self.ldb_admin.create_ou(ou_dn, sd=tmp_desc)
+        mod = "D:(A;CIIO;WP;;;DU)"
+        tmp_desc = security.descriptor.from_sddl(mod, self.domain_sid)
+        self.ldb_admin.create_ou(ou_dn1, sd=tmp_desc)
+        self.ldb_admin.create_ou(ou_dn5)
+        desc_sddl = self.sd_utils.get_sd_as_sddl(ou_dn5)
+        self.assertTrue("(A;CIID;WP;;;DU)" in desc_sddl)
+        self.assertFalse("(A;CIIOID;WP;;;DU)" in desc_sddl)
+
     ########################################################################################
 
 
