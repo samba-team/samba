@@ -157,6 +157,11 @@ static struct security_acl *calculate_inherited_from_parent(TALLOC_CTX *mem_ctx,
 
 			tmp_acl->aces[tmp_acl->num_aces] = *ace;
 			tmp_acl->aces[tmp_acl->num_aces].flags |= SEC_ACE_FLAG_INHERITED_ACE;
+			/* remove IO flag from the child's ace */
+			if (ace->flags & SEC_ACE_FLAG_INHERIT_ONLY &&
+			    !desc_ace_has_generic(tmp_ctx, ace)) {
+				tmp_acl->aces[tmp_acl->num_aces].flags &= ~SEC_ACE_FLAG_INHERIT_ONLY;
+			}
 
 			if (is_container && (ace->flags & SEC_ACE_FLAG_OBJECT_INHERIT))
 			    tmp_acl->aces[tmp_acl->num_aces].flags |= SEC_ACE_FLAG_INHERIT_ONLY;
