@@ -14,8 +14,6 @@ DOCS_DIR=${DIRNAME}/../docs
 
 pushd ${DOCS_XML_DIR} || exit 1
 
-#git clean -xdf || _exit "Error running git clean."
-
 autoconf || _exit "Error running autoconf."
 
 ./configure || _exit "Error running configure."
