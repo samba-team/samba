@@ -63,7 +63,7 @@
 #include "../libcli/auth/libcli_auth.h"
 #include "../librpc/gen_ndr/ndr_netlogon_c.h"
 #include "rpc_client/cli_netlogon.h"
-#include "../librpc/gen_ndr/cli_samr.h"
+#include "../librpc/gen_ndr/ndr_samr_c.h"
 #include "../librpc/gen_ndr/cli_lsa.h"
 #include "rpc_client/cli_lsarpc.h"
 #include "../librpc/gen_ndr/ndr_dssetup_c.h"
@@ -1635,8 +1635,11 @@ void invalidate_cm_connection(struct winbindd_cm_conn *conn)
 
 	if (conn->samr_pipe != NULL) {
 		if (is_valid_policy_hnd(&conn->sam_connect_handle)) {
-			rpccli_samr_Close(conn->samr_pipe, talloc_tos(),
-					  &conn->sam_connect_handle);
+			NTSTATUS result;
+			dcerpc_samr_Close(conn->samr_pipe->binding_handle,
+					  talloc_tos(),
+					  &conn->sam_connect_handle,
+					  &result);
 		}
 		TALLOC_FREE(conn->samr_pipe);
 		/* Ok, it must be dead. Drop timeout to 0.5 sec. */
