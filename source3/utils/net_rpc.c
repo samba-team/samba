@@ -1288,10 +1288,11 @@ static NTSTATUS rpc_sh_user_str_edit_internals(struct net_context *c,
 					       struct policy_handle *user_hnd,
 					       int argc, const char **argv)
 {
-	NTSTATUS result;
+	NTSTATUS status, result;
 	const char *username;
 	const char *oldval = "";
 	union samr_UserInfo *info = NULL;
+	struct dcerpc_binding_handle *b = pipe_hnd->binding_handle;
 
 	if (argc > 1) {
 		d_fprintf(stderr, "%s %s <username> [new value|NULL]\n",
@@ -1299,10 +1300,14 @@ static NTSTATUS rpc_sh_user_str_edit_internals(struct net_context *c,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	result = rpccli_samr_QueryUserInfo(pipe_hnd, mem_ctx,
+	status = dcerpc_samr_QueryUserInfo(b, mem_ctx,
 					   user_hnd,
 					   21,
-					   &info);
+					   &info,
+					   &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 	if (!NT_STATUS_IS_OK(result)) {
 		return result;
 	}
@@ -1334,17 +1339,23 @@ static NTSTATUS rpc_sh_user_str_edit_internals(struct net_context *c,
 	SETSTR("profilepath", profile_path, PROFILE_PATH);
 	SETSTR("description", description, DESCRIPTION);
 
-	result = rpccli_samr_SetUserInfo(pipe_hnd, mem_ctx,
+	status = dcerpc_samr_SetUserInfo(b, mem_ctx,
 					 user_hnd,
 					 21,
-					 info);
+					 info,
+					 &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	status = result;
 
 	d_printf(_("Set %s's %s from [%s] to [%s]\n"), username,
 		 ctx->thiscmd, oldval, argv[0]);
 
  done:
 
-	return result;
+	return status;
 }
 
 #define HANDLEFLG(name, rec) \
