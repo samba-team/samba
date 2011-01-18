@@ -2146,7 +2146,7 @@ NTSTATUS cm_connect_sam(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 			struct rpc_pipe_client **cli, struct policy_handle *sam_handle)
 {
 	struct winbindd_cm_conn *conn;
-	NTSTATUS status;
+	NTSTATUS status, result;
 	struct netlogon_creds_CredentialState *p_creds;
 	char *machine_password = NULL;
 	char *machine_account = NULL;
@@ -2224,14 +2224,19 @@ NTSTATUS cm_connect_sam(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 		  "pipe: user %s\\%s\n", domain->name,
 		  domain_name, machine_account));
 
-	status = rpccli_samr_Connect2(conn->samr_pipe, mem_ctx,
+	status = dcerpc_samr_Connect2(conn->samr_pipe->binding_handle, mem_ctx,
 				      conn->samr_pipe->desthost,
 				      SEC_FLAG_MAXIMUM_ALLOWED,
-				      &conn->sam_connect_handle);
-	if (NT_STATUS_IS_OK(status)) {
+				      &conn->sam_connect_handle,
+				      &result);
+	if (NT_STATUS_IS_OK(status) && NT_STATUS_IS_OK(result)) {
 		goto open_domain;
 	}
-	DEBUG(10,("cm_connect_sam: ntlmssp-sealed rpccli_samr_Connect2 "
+	if (NT_STATUS_IS_OK(status)) {
+		status = result;
+	}
+
+	DEBUG(10,("cm_connect_sam: ntlmssp-sealed dcerpc_samr_Connect2 "
 		  "failed for domain %s, error was %s. Trying schannel\n",
 		  domain->name, nt_errstr(status) ));
 	TALLOC_FREE(conn->samr_pipe);
@@ -2263,14 +2268,18 @@ NTSTATUS cm_connect_sam(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 	DEBUG(10,("cm_connect_sam: connected to SAMR pipe for domain %s using "
 		  "schannel.\n", domain->name ));
 
-	status = rpccli_samr_Connect2(conn->samr_pipe, mem_ctx,
+	status = dcerpc_samr_Connect2(conn->samr_pipe->binding_handle, mem_ctx,
 				      conn->samr_pipe->desthost,
 				      SEC_FLAG_MAXIMUM_ALLOWED,
-				      &conn->sam_connect_handle);
-	if (NT_STATUS_IS_OK(status)) {
+				      &conn->sam_connect_handle,
+				      &result);
+	if (NT_STATUS_IS_OK(status) && NT_STATUS_IS_OK(result)) {
 		goto open_domain;
 	}
-	DEBUG(10,("cm_connect_sam: schannel-sealed rpccli_samr_Connect2 failed "
+	if (NT_STATUS_IS_OK(status)) {
+		status = result;
+	}
+	DEBUG(10,("cm_connect_sam: schannel-sealed dcerpc_samr_Connect2 failed "
 		  "for domain %s, error was %s. Trying anonymous\n",
 		  domain->name, nt_errstr(status) ));
 	TALLOC_FREE(conn->samr_pipe);
@@ -2285,25 +2294,38 @@ NTSTATUS cm_connect_sam(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	status = rpccli_samr_Connect2(conn->samr_pipe, mem_ctx,
+	status = dcerpc_samr_Connect2(conn->samr_pipe->binding_handle, mem_ctx,
 				      conn->samr_pipe->desthost,
 				      SEC_FLAG_MAXIMUM_ALLOWED,
-				      &conn->sam_connect_handle);
+				      &conn->sam_connect_handle,
+				      &result);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10,("cm_connect_sam: rpccli_samr_Connect2 failed "
 			  "for domain %s Error was %s\n",
 			  domain->name, nt_errstr(status) ));
 		goto done;
 	}
+	if (!NT_STATUS_IS_OK(result)) {
+		status = result;
+		DEBUG(10,("cm_connect_sam: dcerpc_samr_Connect2 failed "
+			  "for domain %s Error was %s\n",
+			  domain->name, nt_errstr(result)));
+		goto done;
+	}
 
  open_domain:
-	status = rpccli_samr_OpenDomain(conn->samr_pipe,
+	status = dcerpc_samr_OpenDomain(conn->samr_pipe->binding_handle,
 					mem_ctx,
 					&conn->sam_connect_handle,
 					SEC_FLAG_MAXIMUM_ALLOWED,
 					&domain->sid,
-					&conn->sam_domain_handle);
+					&conn->sam_domain_handle,
+					&result);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
 
+	status = result;
  done:
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
