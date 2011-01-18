@@ -861,3 +861,23 @@ void tdb_release_transaction_locks(struct tdb_context *tdb)
 		SAFE_FREE(tdb->lockrecs);
 	}
 }
+
+int tdb_transaction_write_lock_mark(struct tdb_context *tdb)
+{
+	return tdb_transaction_lock(tdb, F_WRLCK, TDB_LOCK_MARK_ONLY);
+}
+
+int tdb_transaction_write_lock(struct tdb_context *tdb)
+{
+	return tdb_transaction_lock(tdb, F_WRLCK, 0);
+}
+
+int tdb_transaction_write_unlock(struct tdb_context *tdb)
+{
+	return tdb_transaction_unlock(tdb, F_WRLCK);
+}
+
+int tdb_transaction_write_lock_unmark(struct tdb_context *tdb)
+{
+	return tdb_nest_unlock(tdb, TRANSACTION_LOCK, F_WRLCK, true);
+}

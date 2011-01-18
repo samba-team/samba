@@ -161,6 +161,10 @@ _PUBLIC_ int tdb_chainlock_read(struct tdb_context *tdb, TDB_DATA key);
 _PUBLIC_ int tdb_chainunlock_read(struct tdb_context *tdb, TDB_DATA key);
 _PUBLIC_ int tdb_chainlock_mark(struct tdb_context *tdb, TDB_DATA key);
 _PUBLIC_ int tdb_chainlock_unmark(struct tdb_context *tdb, TDB_DATA key);
+_PUBLIC_ int tdb_transaction_write_lock(struct tdb_context *tdb);
+_PUBLIC_ int tdb_transaction_write_unlock(struct tdb_context *tdb);
+_PUBLIC_ int tdb_transaction_write_lock_mark(struct tdb_context *tdb);
+_PUBLIC_ int tdb_transaction_write_lock_unmark(struct tdb_context *tdb);
 
 _PUBLIC_ void tdb_setalarm_sigptr(struct tdb_context *tdb, volatile sig_atomic_t *sigptr);
 
