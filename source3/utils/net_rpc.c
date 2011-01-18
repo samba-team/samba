@@ -4292,55 +4292,83 @@ static NTSTATUS rpc_fetch_domain_aliases(struct rpc_pipe_client *pipe_hnd,
 {
 	uint32 start_idx, max_entries, num_entries, i;
 	struct samr_SamArray *groups = NULL;
-	NTSTATUS result;
+	NTSTATUS result, status;
 	struct policy_handle domain_pol;
+	struct dcerpc_binding_handle *b = pipe_hnd->binding_handle;
 
 	/* Get domain policy handle */
 
-	result = rpccli_samr_OpenDomain(pipe_hnd, mem_ctx,
+	status = dcerpc_samr_OpenDomain(b, mem_ctx,
 					connect_pol,
 					MAXIMUM_ALLOWED_ACCESS,
 					CONST_DISCARD(struct dom_sid2 *, domain_sid),
-					&domain_pol);
-	if (!NT_STATUS_IS_OK(result))
+					&domain_pol,
+					&result);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+	if (!NT_STATUS_IS_OK(result)) {
 		return result;
+	}
 
 	start_idx = 0;
 	max_entries = 250;
 
 	do {
-		result = rpccli_samr_EnumDomainAliases(pipe_hnd, mem_ctx,
+		status = dcerpc_samr_EnumDomainAliases(b, mem_ctx,
 						       &domain_pol,
 						       &start_idx,
 						       &groups,
 						       max_entries,
-						       &num_entries);
+						       &num_entries,
+						       &result);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto done;
+		}
 		for (i = 0; i < num_entries; i++) {
 
 			struct policy_handle alias_pol;
 			struct full_alias alias;
 			struct lsa_SidArray sid_array;
 			int j;
+			NTSTATUS _result;
 
-			result = rpccli_samr_OpenAlias(pipe_hnd, mem_ctx,
+			status = dcerpc_samr_OpenAlias(b, mem_ctx,
 						       &domain_pol,
 						       MAXIMUM_ALLOWED_ACCESS,
 						       groups->entries[i].idx,
-						       &alias_pol);
-			if (!NT_STATUS_IS_OK(result))
+						       &alias_pol,
+						       &_result);
+			if (!NT_STATUS_IS_OK(status)) {
 				goto done;
+			}
+			if (!NT_STATUS_IS_OK(_result)) {
+				status = _result;
+				goto done;
+			}
 
-			result = rpccli_samr_GetMembersInAlias(pipe_hnd, mem_ctx,
+			status = dcerpc_samr_GetMembersInAlias(b, mem_ctx,
 							       &alias_pol,
-							       &sid_array);
-			if (!NT_STATUS_IS_OK(result))
+							       &sid_array,
+							       &_result);
+			if (!NT_STATUS_IS_OK(status)) {
 				goto done;
+			}
+			if (!NT_STATUS_IS_OK(_result)) {
+				status = _result;
+				goto done;
+			}
 
 			alias.num_members = sid_array.num_sids;
 
-			result = rpccli_samr_Close(pipe_hnd, mem_ctx, &alias_pol);
-			if (!NT_STATUS_IS_OK(result))
+			status = dcerpc_samr_Close(b, mem_ctx, &alias_pol, &_result);
+			if (!NT_STATUS_IS_OK(status)) {
 				goto done;
+			}
+			if (!NT_STATUS_IS_OK(_result)) {
+				status = _result;
+				goto done;
+			}
 
 			alias.members = NULL;
 
@@ -4359,12 +4387,12 @@ static NTSTATUS rpc_fetch_domain_aliases(struct rpc_pipe_client *pipe_hnd,
 		}
 	} while (NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES));
 
-	result = NT_STATUS_OK;
+	status = NT_STATUS_OK;
 
  done:
-	rpccli_samr_Close(pipe_hnd, mem_ctx, &domain_pol);
+	dcerpc_samr_Close(b, mem_ctx, &domain_pol, &result);
 
-	return result;
+	return status;
 }
 
 /*
