@@ -2990,40 +2990,53 @@ static NTSTATUS rpc_group_members_internals(struct net_context *c,
 					int argc,
 					const char **argv)
 {
-	NTSTATUS result;
+	NTSTATUS result, status;
 	struct policy_handle connect_pol, domain_pol;
 	struct samr_Ids rids, rid_types;
 	struct lsa_String lsa_acct_name;
+	struct dcerpc_binding_handle *b = pipe_hnd->binding_handle;
 
 	/* Get sam policy handle */
 
-	result = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
+	status = dcerpc_samr_Connect2(b, mem_ctx,
 				      pipe_hnd->desthost,
 				      MAXIMUM_ALLOWED_ACCESS,
-				      &connect_pol);
-
-	if (!NT_STATUS_IS_OK(result))
+				      &connect_pol,
+				      &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+	if (!NT_STATUS_IS_OK(result)) {
 		return result;
+	}
 
 	/* Get domain policy handle */
 
-	result = rpccli_samr_OpenDomain(pipe_hnd, mem_ctx,
+	status = dcerpc_samr_OpenDomain(b, mem_ctx,
 					&connect_pol,
 					MAXIMUM_ALLOWED_ACCESS,
 					CONST_DISCARD(struct dom_sid2 *, domain_sid),
-					&domain_pol);
-
-	if (!NT_STATUS_IS_OK(result))
+					&domain_pol,
+					&result);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+	if (!NT_STATUS_IS_OK(result)) {
 		return result;
+	}
 
 	init_lsa_String(&lsa_acct_name, argv[0]); /* sure? */
 
-	result = rpccli_samr_LookupNames(pipe_hnd, mem_ctx,
+	status = dcerpc_samr_LookupNames(b, mem_ctx,
 					 &domain_pol,
 					 1,
 					 &lsa_acct_name,
 					 &rids,
-					 &rid_types);
+					 &rid_types,
+					 &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 
 	if (!NT_STATUS_IS_OK(result)) {
 
@@ -3031,29 +3044,35 @@ static NTSTATUS rpc_group_members_internals(struct net_context *c,
 
 		struct dom_sid sid_Builtin;
 
-		rpccli_samr_Close(pipe_hnd, mem_ctx, &domain_pol);
+		dcerpc_samr_Close(b, mem_ctx, &domain_pol, &result);
 
 		sid_copy(&sid_Builtin, &global_sid_Builtin);
 
-		result = rpccli_samr_OpenDomain(pipe_hnd, mem_ctx,
+		status = dcerpc_samr_OpenDomain(b, mem_ctx,
 						&connect_pol,
 						MAXIMUM_ALLOWED_ACCESS,
 						&sid_Builtin,
-						&domain_pol);
-
+						&domain_pol,
+						&result);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
 		if (!NT_STATUS_IS_OK(result)) {
 			d_fprintf(stderr, _("Couldn't find group %s\n"),
 				  argv[0]);
 			return result;
 		}
 
-		result = rpccli_samr_LookupNames(pipe_hnd, mem_ctx,
+		status = dcerpc_samr_LookupNames(b, mem_ctx,
 						 &domain_pol,
 						 1,
 						 &lsa_acct_name,
 						 &rids,
-						 &rid_types);
-
+						 &rid_types,
+						 &result);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
 		if (!NT_STATUS_IS_OK(result)) {
 			d_fprintf(stderr, _("Couldn't find group %s\n"),
 				  argv[0]);
