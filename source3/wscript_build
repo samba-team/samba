@@ -1087,10 +1087,6 @@ bld.SAMBA_SUBSYSTEM('RPCCLI_LSA',
 	source='../librpc/gen_ndr/cli_lsa.c',
 	public_deps='RPC_NDR_LSA')
 
-bld.SAMBA_SUBSYSTEM('RPCCLI_SPOOLSS',
-	source='../librpc/gen_ndr/cli_spoolss.c',
-	public_deps='RPC_NDR_SPOOLSS')
-
 bld.SAMBA_SUBSYSTEM('LIBCLI_SAMR',
                     source=LIBCLI_SAMR_SRC,
                     deps='RPCCLI_SAMR')
@@ -1105,7 +1101,7 @@ bld.SAMBA_SUBSYSTEM('LIBRPCCLI_NETLOGON',
 
 bld.SAMBA_SUBSYSTEM('LIBCLI_SPOOLSS',
                     source=LIBCLI_SPOOLSS_SRC,
-                    deps='RPCCLI_SPOOLSS')
+                    deps='RPC_NDR_SPOOLSS')
 
 bld.SAMBA_SUBSYSTEM('RPC_CLIENT_SCHANNEL',
 	source=RPC_CLIENT_SCHANNEL_SRC,
