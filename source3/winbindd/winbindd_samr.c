@@ -30,7 +30,7 @@
 #include "../librpc/gen_ndr/ndr_samr_c.h"
 #include "rpc_client/cli_samr.h"
 #include "../librpc/gen_ndr/srv_samr.h"
-#include "../librpc/gen_ndr/cli_lsa.h"
+#include "../librpc/gen_ndr/ndr_lsa_c.h"
 #include "rpc_client/cli_lsarpc.h"
 #include "../librpc/gen_ndr/srv_lsa.h"
 #include "rpc_server/rpc_ncacn_np.h"
@@ -371,7 +371,8 @@ static NTSTATUS sam_trusted_domains(struct winbindd_domain *domain,
 	struct netr_DomainTrust *trusts = NULL;
 	uint32_t num_trusts = 0;
 	TALLOC_CTX *tmp_ctx;
-	NTSTATUS status;
+	NTSTATUS status, result;
+	struct dcerpc_binding_handle *b = NULL;
 
 	DEBUG(3,("samr: trusted domains\n"));
 
@@ -391,6 +392,8 @@ static NTSTATUS sam_trusted_domains(struct winbindd_domain *domain,
 		goto done;
 	}
 
+	b = lsa_pipe->binding_handle;
+
 	status = rpc_trusted_domains(tmp_ctx,
 				     lsa_pipe,
 				     &lsa_policy,
@@ -406,8 +409,8 @@ static NTSTATUS sam_trusted_domains(struct winbindd_domain *domain,
 	}
 
 done:
-	if (is_valid_policy_hnd(&lsa_policy)) {
-		rpccli_lsa_Close(lsa_pipe, mem_ctx, &lsa_policy);
+	if (b && is_valid_policy_hnd(&lsa_policy)) {
+		dcerpc_lsa_Close(b, mem_ctx, &lsa_policy, &result);
 	}
 
 	TALLOC_FREE(tmp_ctx);
@@ -623,7 +626,8 @@ static NTSTATUS sam_name_to_sid(struct winbindd_domain *domain,
 	struct dom_sid sid;
 	enum lsa_SidType type;
 	TALLOC_CTX *tmp_ctx;
-	NTSTATUS status;
+	NTSTATUS status, result;
+	struct dcerpc_binding_handle *b = NULL;
 
 	DEBUG(3,("sam_name_to_sid\n"));
 
@@ -638,6 +642,8 @@ static NTSTATUS sam_name_to_sid(struct winbindd_domain *domain,
 	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
+
+	b = lsa_pipe->binding_handle;
 
 	status = rpc_name_to_sid(tmp_ctx,
 				 lsa_pipe,
@@ -659,8 +665,8 @@ static NTSTATUS sam_name_to_sid(struct winbindd_domain *domain,
 	}
 
 done:
-	if (is_valid_policy_hnd(&lsa_policy)) {
-		rpccli_lsa_Close(lsa_pipe, mem_ctx, &lsa_policy);
+	if (b && is_valid_policy_hnd(&lsa_policy)) {
+		dcerpc_lsa_Close(b, mem_ctx, &lsa_policy, &result);
 	}
 
 	TALLOC_FREE(tmp_ctx);
@@ -681,7 +687,8 @@ static NTSTATUS sam_sid_to_name(struct winbindd_domain *domain,
 	char *name = NULL;
 	enum lsa_SidType type;
 	TALLOC_CTX *tmp_ctx;
-	NTSTATUS status;
+	NTSTATUS status, result;
+	struct dcerpc_binding_handle *b = NULL;
 
 	DEBUG(3,("sam_sid_to_name\n"));
 
@@ -710,6 +717,8 @@ static NTSTATUS sam_sid_to_name(struct winbindd_domain *domain,
 		goto done;
 	}
 
+	b = lsa_pipe->binding_handle;
+
 	status = rpc_sid_to_name(tmp_ctx,
 				 lsa_pipe,
 				 &lsa_policy,
@@ -732,8 +741,8 @@ static NTSTATUS sam_sid_to_name(struct winbindd_domain *domain,
 	}
 
 done:
-	if (is_valid_policy_hnd(&lsa_policy)) {
-		rpccli_lsa_Close(lsa_pipe, mem_ctx, &lsa_policy);
+	if (b && is_valid_policy_hnd(&lsa_policy)) {
+		dcerpc_lsa_Close(b, mem_ctx, &lsa_policy, &result);
 	}
 
 	TALLOC_FREE(tmp_ctx);
@@ -755,7 +764,8 @@ static NTSTATUS sam_rids_to_names(struct winbindd_domain *domain,
 	char *domain_name = NULL;
 	char **names = NULL;
 	TALLOC_CTX *tmp_ctx;
-	NTSTATUS status;
+	NTSTATUS status, result;
+	struct dcerpc_binding_handle *b = NULL;
 
 	DEBUG(3,("sam_rids_to_names for %s\n", domain->name));
 
@@ -784,6 +794,8 @@ static NTSTATUS sam_rids_to_names(struct winbindd_domain *domain,
 		goto done;
 	}
 
+	b = lsa_pipe->binding_handle;
+
 	status = rpc_rids_to_names(tmp_ctx,
 				   lsa_pipe,
 				   &lsa_policy,
@@ -811,8 +823,8 @@ static NTSTATUS sam_rids_to_names(struct winbindd_domain *domain,
 	}
 
 done:
-	if (is_valid_policy_hnd(&lsa_policy)) {
-		rpccli_lsa_Close(lsa_pipe, mem_ctx, &lsa_policy);
+	if (b && is_valid_policy_hnd(&lsa_policy)) {
+		dcerpc_lsa_Close(b, mem_ctx, &lsa_policy, &result);
 	}
 
 	TALLOC_FREE(tmp_ctx);
