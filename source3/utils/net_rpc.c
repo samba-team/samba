@@ -2789,32 +2789,41 @@ static NTSTATUS rpc_list_group_members(struct net_context *c,
 					struct policy_handle *domain_pol,
 					uint32 rid)
 {
-	NTSTATUS result;
+	NTSTATUS result, status;
 	struct policy_handle group_pol;
 	uint32 num_members, *group_rids;
 	int i;
 	struct samr_RidAttrArray *rids = NULL;
 	struct lsa_Strings names;
 	struct samr_Ids types;
+	struct dcerpc_binding_handle *b = pipe_hnd->binding_handle;
 
 	fstring sid_str;
 	sid_to_fstring(sid_str, domain_sid);
 
-	result = rpccli_samr_OpenGroup(pipe_hnd, mem_ctx,
+	status = dcerpc_samr_OpenGroup(b, mem_ctx,
 				       domain_pol,
 				       MAXIMUM_ALLOWED_ACCESS,
 				       rid,
-				       &group_pol);
-
-	if (!NT_STATUS_IS_OK(result))
+				       &group_pol,
+				       &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+	if (!NT_STATUS_IS_OK(result)) {
 		return result;
+	}
 
-	result = rpccli_samr_QueryGroupMember(pipe_hnd, mem_ctx,
+	status = dcerpc_samr_QueryGroupMember(b, mem_ctx,
 					      &group_pol,
-					      &rids);
-
-	if (!NT_STATUS_IS_OK(result))
+					      &rids,
+					      &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+	if (!NT_STATUS_IS_OK(result)) {
 		return result;
+	}
 
 	num_members = rids->count;
 	group_rids = rids->rids;
@@ -2825,15 +2834,19 @@ static NTSTATUS rpc_list_group_members(struct net_context *c,
 		if (num_members < this_time)
 			this_time = num_members;
 
-		result = rpccli_samr_LookupRids(pipe_hnd, mem_ctx,
+		status = dcerpc_samr_LookupRids(b, mem_ctx,
 						domain_pol,
 						this_time,
 						group_rids,
 						&names,
-						&types);
-
-		if (!NT_STATUS_IS_OK(result))
+						&types,
+						&result);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+		if (!NT_STATUS_IS_OK(result)) {
 			return result;
+		}
 
 		/* We only have users as members, but make the output
 		   the same as the output of alias members */
