@@ -1131,10 +1131,11 @@ static NTSTATUS rpc_sh_handle_user(struct net_context *c,
 					   int argc, const char **argv))
 {
 	struct policy_handle connect_pol, domain_pol, user_pol;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS status, result;
 	struct dom_sid sid;
 	uint32 rid;
 	enum lsa_SidType type;
+	struct dcerpc_binding_handle *b = pipe_hnd->binding_handle;
 
 	if (argc == 0) {
 		d_fprintf(stderr, "%s %s <username>\n", _("Usage:"),
@@ -1146,66 +1147,81 @@ static NTSTATUS rpc_sh_handle_user(struct net_context *c,
 	ZERO_STRUCT(domain_pol);
 	ZERO_STRUCT(user_pol);
 
-	result = net_rpc_lookup_name(c, mem_ctx, rpc_pipe_np_smb_conn(pipe_hnd),
+	status = net_rpc_lookup_name(c, mem_ctx, rpc_pipe_np_smb_conn(pipe_hnd),
 				     argv[0], NULL, NULL, &sid, &type);
-	if (!NT_STATUS_IS_OK(result)) {
+	if (!NT_STATUS_IS_OK(status)) {
 		d_fprintf(stderr, _("Could not lookup %s: %s\n"), argv[0],
-			  nt_errstr(result));
+			  nt_errstr(status));
 		goto done;
 	}
 
 	if (type != SID_NAME_USER) {
 		d_fprintf(stderr, _("%s is a %s, not a user\n"), argv[0],
 			  sid_type_lookup(type));
-		result = NT_STATUS_NO_SUCH_USER;
+		status = NT_STATUS_NO_SUCH_USER;
 		goto done;
 	}
 
 	if (!sid_peek_check_rid(ctx->domain_sid, &sid, &rid)) {
 		d_fprintf(stderr, _("%s is not in our domain\n"), argv[0]);
-		result = NT_STATUS_NO_SUCH_USER;
+		status = NT_STATUS_NO_SUCH_USER;
 		goto done;
 	}
 
-	result = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
+	status = dcerpc_samr_Connect2(b, mem_ctx,
 				      pipe_hnd->desthost,
 				      MAXIMUM_ALLOWED_ACCESS,
-				      &connect_pol);
+				      &connect_pol,
+				      &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
 	if (!NT_STATUS_IS_OK(result)) {
+		status = result;
 		goto done;
 	}
 
-	result = rpccli_samr_OpenDomain(pipe_hnd, mem_ctx,
+	status = dcerpc_samr_OpenDomain(b, mem_ctx,
 					&connect_pol,
 					MAXIMUM_ALLOWED_ACCESS,
 					ctx->domain_sid,
-					&domain_pol);
+					&domain_pol,
+					&result);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
 	if (!NT_STATUS_IS_OK(result)) {
+		status = result;
 		goto done;
 	}
 
-	result = rpccli_samr_OpenUser(pipe_hnd, mem_ctx,
+	status = dcerpc_samr_OpenUser(b, mem_ctx,
 				      &domain_pol,
 				      MAXIMUM_ALLOWED_ACCESS,
 				      rid,
-				      &user_pol);
+				      &user_pol,
+				      &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
 	if (!NT_STATUS_IS_OK(result)) {
+		status = result;
 		goto done;
 	}
 
-	result = fn(c, mem_ctx, ctx, pipe_hnd, &user_pol, argc-1, argv+1);
+	status = fn(c, mem_ctx, ctx, pipe_hnd, &user_pol, argc-1, argv+1);
 
  done:
 	if (is_valid_policy_hnd(&user_pol)) {
-		rpccli_samr_Close(pipe_hnd, mem_ctx, &user_pol);
+		dcerpc_samr_Close(b, mem_ctx, &user_pol, &result);
 	}
 	if (is_valid_policy_hnd(&domain_pol)) {
-		rpccli_samr_Close(pipe_hnd, mem_ctx, &domain_pol);
+		dcerpc_samr_Close(b, mem_ctx, &domain_pol, &result);
 	}
 	if (is_valid_policy_hnd(&connect_pol)) {
-		rpccli_samr_Close(pipe_hnd, mem_ctx, &connect_pol);
+		dcerpc_samr_Close(b, mem_ctx, &connect_pol, &result);
 	}
-	return result;
+	return status;
 }
 
 static NTSTATUS rpc_sh_user_show_internals(struct net_context *c,
