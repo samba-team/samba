@@ -29,7 +29,7 @@
 
 #include "librpc/gen_ndr/ndr_samr_c.h"
 #include "librpc/gen_ndr/srv_samr.h"
-#include "librpc/gen_ndr/cli_lsa.h"
+#include "librpc/gen_ndr/ndr_lsa_c.h"
 #include "librpc/gen_ndr/srv_lsa.h"
 #include "rpc_client/cli_samr.h"
 #include "rpc_client/cli_lsarpc.h"
@@ -969,7 +969,8 @@ NTSTATUS rpc_trusted_domains(TALLOC_CTX *mem_ctx,
 	struct netr_DomainTrust *array = NULL;
 	uint32_t enum_ctx = 0;
 	uint32_t count = 0;
-	NTSTATUS status;
+	NTSTATUS status, result;
+	struct dcerpc_binding_handle *b = lsa_pipe->binding_handle;
 
 	do {
 		struct lsa_DomainList dom_list;
@@ -980,15 +981,19 @@ NTSTATUS rpc_trusted_domains(TALLOC_CTX *mem_ctx,
 		 * We don't run into deadlocks here, cause winbind_off() is
 		 * called in the main function.
 		 */
-		status = rpccli_lsa_EnumTrustDom(lsa_pipe,
+		status = dcerpc_lsa_EnumTrustDom(b,
 						 mem_ctx,
 						 lsa_policy,
 						 &enum_ctx,
 						 &dom_list,
-						 (uint32_t) -1);
+						 (uint32_t) -1,
+						 &result);
 		if (!NT_STATUS_IS_OK(status)) {
-			if (!NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES)) {
-				return status;
+			return status;
+		}
+		if (!NT_STATUS_IS_OK(result)) {
+			if (!NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES)) {
+				return result;
 			}
 		}
 
@@ -1020,7 +1025,7 @@ NTSTATUS rpc_trusted_domains(TALLOC_CTX *mem_ctx,
 			sid_copy(sid, dom_list.domains[i].sid);
 			trust->sid = sid;
 		}
-	} while (NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES));
+	} while (NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES));
 
 	*pnum_trusts = count;
 	*ptrusts = array;
