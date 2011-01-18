@@ -226,6 +226,35 @@ static PyObject *py_user_session(PyObject *module, PyObject *args, PyObject *kwa
 	return PyAuthSession_FromSession(session);
 }
 
+
+static const char **PyList_AsStringList(TALLOC_CTX *mem_ctx, PyObject *list, 
+					const char *paramname)
+{
+	const char **ret;
+	Py_ssize_t i;
+	if (!PyList_Check(list)) {
+		PyErr_Format(PyExc_TypeError, "%s is not a list", paramname);
+		return NULL;
+	}
+	ret = talloc_array(NULL, const char *, PyList_Size(list)+1);
+	if (ret == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	for (i = 0; i < PyList_Size(list); i++) {
+		PyObject *item = PyList_GetItem(list, i);
+		if (!PyString_Check(item)) {
+			PyErr_Format(PyExc_TypeError, "%s should be strings", paramname);
+			return NULL;
+		}
+		ret[i] = talloc_strndup(ret, PyString_AsString(item),
+					PyString_Size(item));
+	}
+	ret[i] = NULL;
+	return ret;
+}
+
 static PyObject *PyAuthContext_FromContext(struct auth_context *auth_context)
 {
 	return py_talloc_reference(&PyAuthContext, auth_context);
@@ -233,21 +262,25 @@ static PyObject *PyAuthContext_FromContext(struct auth_context *auth_context)
 
 static PyObject *py_auth_context_new(PyTypeObject *type, PyObject *args, PyObject *kwargs)
 {
-	PyObject *py_lp_ctx;
-	PyObject *py_messaging_ctx;
-	PyObject *py_auth_context;
+	PyObject *py_lp_ctx = Py_None;
+	PyObject *py_ldb = Py_None;
+	PyObject *py_messaging_ctx = Py_None;
+	PyObject *py_auth_context = Py_None;
+	PyObject *py_methods = Py_None;
 	TALLOC_CTX *mem_ctx;
 	struct auth_context *auth_context;
 	struct messaging_context *messaging_context;
 	struct loadparm_context *lp_ctx;
 	struct tevent_context *ev;
+	struct ldb_context *ldb;
 	NTSTATUS nt_status;
+	const char **methods;
 
-	const char * const kwnames[] = { "lp_ctx", "messaging_ctx", NULL };
+	const char * const kwnames[] = { "lp_ctx", "messaging_ctx", "ldb", "methods", NULL };
 
-	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "OO",
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|OOOO",
 					 discard_const_p(char *, kwnames),
-					 &py_lp_ctx, &py_messaging_ctx))
+					 &py_lp_ctx, &py_messaging_ctx, &py_ldb, &py_methods))
 		return NULL;
 
 	mem_ctx = talloc_new(NULL);
@@ -256,10 +289,11 @@ static PyObject *py_auth_context_new(PyTypeObject *type, PyObject *args, PyObjec
 		return NULL;
 	}
 
-	lp_ctx = lpcfg_from_py_object(mem_ctx, py_lp_ctx);
-	if (!lp_ctx) {
-		return NULL;
+	if (py_ldb != Py_None) {
+		ldb = PyLdb_AsLdbContext(py_ldb);
 	}
+
+	lp_ctx = lpcfg_from_py_object(mem_ctx, py_lp_ctx);
 
 	ev = tevent_context_init(mem_ctx);
 	if (ev == NULL) {
@@ -269,7 +303,22 @@ static PyObject *py_auth_context_new(PyTypeObject *type, PyObject *args, PyObjec
 
 	messaging_context = py_talloc_get_type(py_messaging_ctx, struct messaging_context);
 
-	nt_status = auth_context_create(mem_ctx, ev, messaging_context, lp_ctx, &auth_context);
+	if (py_methods == Py_None && py_ldb == Py_None) {
+		nt_status = auth_context_create(mem_ctx, ev, messaging_context, lp_ctx, &auth_context);
+	} else {
+		if (py_methods != Py_None) {
+			methods = PyList_AsStringList(mem_ctx, py_methods, "methods");
+			if (methods == NULL) {
+				talloc_free(mem_ctx);
+				return NULL;
+			}
+		} else {
+			methods = auth_methods_from_lp(mem_ctx, lp_ctx);
+		}
+		nt_status = auth_context_create_methods(mem_ctx, methods, ev, 
+							messaging_context, lp_ctx, 
+							ldb, &auth_context);
+	}
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(mem_ctx);

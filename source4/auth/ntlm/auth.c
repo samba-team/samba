@@ -496,7 +496,7 @@ _PUBLIC_ NTSTATUS auth_context_create_methods(TALLOC_CTX *mem_ctx, const char **
 	return NT_STATUS_OK;
 }
 
-static const char **auth_methods_from_lp(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx)
+const char **auth_methods_from_lp(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx)
 {
 	const char **auth_methods = NULL;
 	switch (lpcfg_server_role(lp_ctx)) {
