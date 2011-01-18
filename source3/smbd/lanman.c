@@ -1,4 +1,4 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    Inter-process communication and named pipe handling
    Copyright (C) Andrew Tridgell 1992-1998
@@ -193,7 +193,7 @@ struct pack_desc {
 	int buflen;	   /* remaining size for fixed part; on init: length of base */
 	int subcount;	    /* count of substructures */
 	char *structbuf;  /* pointer into buffer for remaining fixed part */
-	int stringlen;    /* remaining size for variable part */		
+	int stringlen;    /* remaining size for variable part */
 	char *stringbuf;  /* pointer into buffer for remaining variable part */
 	int neededlen;    /* total needed size */
 	int usedlen;	    /* total used size (usedlen <= neededlen and usedlen <= buflen) */
@@ -514,7 +514,7 @@ static int check_printq_info(struct pack_desc* desc,
 #define RAP_QUEUE_STATUS_PAUSED 1
 #define RAP_QUEUE_STATUS_ERROR 2
 
-/* turn a print job status into a on the wire status 
+/* turn a print job status into a on the wire status
 */
 static int printj_spoolss_status(int v)
 {
@@ -529,7 +529,7 @@ static int printj_spoolss_status(int v)
 	return 0;
 }
 
-/* turn a print queue status into a on the wire status 
+/* turn a print queue status into a on the wire status
 */
 static int printq_spoolss_status(int v)
 {
@@ -1197,7 +1197,7 @@ static bool check_server_info(int uLevel, char* id)
 				return False;
 			}
 			break;
-		default: 
+		default:
 			return False;
 	}
 	return True;
@@ -1216,7 +1216,7 @@ struct srv_info_struct {
  number of entries.
 ******************************************************************/
 
-static int get_server_info(uint32 servertype, 
+static int get_server_info(uint32 servertype,
 			   struct srv_info_struct **servers,
 			   const char *domain)
 {
@@ -1316,7 +1316,7 @@ static int get_server_info(uint32 servertype,
 			ok = False;
 		}
 
-		if ((servertype & SV_TYPE_DOMAIN_ENUM) != 
+		if ((servertype & SV_TYPE_DOMAIN_ENUM) !=
 				(s->type & SV_TYPE_DOMAIN_ENUM)) {
 			DEBUG(4,("s: dom mismatch "));
 			ok = False;
@@ -1348,8 +1348,8 @@ static int get_server_info(uint32 servertype,
  Fill in a server info structure.
 ******************************************************************/
 
-static int fill_srv_info(struct srv_info_struct *service, 
-			 int uLevel, char **buf, int *buflen, 
+static int fill_srv_info(struct srv_info_struct *service,
+			 int uLevel, char **buf, int *buflen,
 			 char **stringbuf, int *stringspace, char *baseaddr)
 {
 	int struct_len;
@@ -1438,7 +1438,7 @@ static bool api_RNetServerEnum2(struct smbd_server_connection *sconn,
 				connection_struct *conn, uint16 vuid,
 				char *param, int tpscnt,
 				char *data, int tdscnt,
-				int mdrcnt, int mprcnt, char **rdata, 
+				int mdrcnt, int mprcnt, char **rdata,
 				char **rparam, int *rdata_len, int *rparam_len)
 {
 	char *str1 = get_safe_str_ptr(param, tpscnt, param, 2);
@@ -1470,9 +1470,9 @@ static bool api_RNetServerEnum2(struct smbd_server_connection *sconn,
 	}
 
 	/* If someone sets SV_TYPE_LOCAL_LIST_ONLY but hasn't set
-	   any other bit (they may just set this bit on its own) they 
-	   want all the locally seen servers. However this bit can be 
-	   set on its own so set the requested servers to be 
+	   any other bit (they may just set this bit on its own) they
+	   want all the locally seen servers. However this bit can be
+	   set on its own so set the requested servers to be
 	   ALL - DOMAIN_ENUM. */
 
 	if ((servertype & SV_TYPE_LOCAL_LIST_ONLY) && !(servertype & SV_TYPE_DOMAIN_ENUM)) {
@@ -1801,7 +1801,7 @@ static bool api_RNetGroupGetUsers(struct smbd_server_connection *sconn,
 				  connection_struct *conn, uint16 vuid,
 				char *param, int tpscnt,
 				char *data, int tdscnt,
-				int mdrcnt, int mprcnt, char **rdata, 
+				int mdrcnt, int mprcnt, char **rdata,
 				char **rparam, int *rdata_len, int *rparam_len)
 {
 	char *str1 = get_safe_str_ptr(param,tpscnt,param,2);
@@ -2351,9 +2351,9 @@ static bool api_RNetGroupEnum(struct smbd_server_connection *sconn,
 		return False;
 	}
 
-	/* parameters  
+	/* parameters
 	 * W-> resume context (number of users to skip)
-	 * r -> return parameter pointer to receive buffer 
+	 * r -> return parameter pointer to receive buffer
 	 * L -> length of receive buffer
 	 * e -> return parameter number of entries
 	 * h -> return parameter total number of users
@@ -2835,7 +2835,7 @@ static bool api_NetRemoteTOD(struct smbd_server_connection *sconn,
 					    by NT in a "net time" operation,
 					    it seems to ignore the one below */
 
-	/* the client expects to get localtime, not GMT, in this bit 
+	/* the client expects to get localtime, not GMT, in this bit
 		(I think, this needs testing) */
 	t = localtime(&unixdate);
 	if (!t) {
@@ -3070,7 +3070,7 @@ static bool api_SetUserPassword(struct smbd_server_connection *sconn,
 	}
 
 	memset((char *)pass1,'\0',sizeof(fstring));
-	memset((char *)pass2,'\0',sizeof(fstring));	 
+	memset((char *)pass2,'\0',sizeof(fstring));
 
 	SSVAL(*rparam,0,errcode);
 	SSVAL(*rparam,2,0);		/* converter word */
@@ -3200,7 +3200,7 @@ static bool api_SamOEMChangePassword(struct smbd_server_connection *sconn,
 
 /****************************************************************************
   delete a print job
-  Form: <W> <> 
+  Form: <W> <>
   ****************************************************************************/
 
 static bool api_RDosPrintJobDel(struct smbd_server_connection *sconn,
@@ -3326,7 +3326,7 @@ static bool api_RDosPrintJobDel(struct smbd_server_connection *sconn,
 		dcerpc_spoolss_ClosePrinter(b, mem_ctx, &handle, &werr);
 	}
 
-	SSVAL(*rparam,0,errcode);	
+	SSVAL(*rparam,0,errcode);
 	SSVAL(*rparam,2,0);		/* converter word */
 
 	return(True);
@@ -3471,8 +3471,8 @@ static bool api_WPrintQueueCtrl(struct smbd_server_connection *sconn,
   set the property of a print job (undocumented?)
   ? function = 0xb -> set name of print job
   ? function = 0x6 -> move print job up/down
-  Form: <WWsTP> <WWzWWDDzzzzzzzzzzlz> 
-  or   <WWsTP> <WB21BB16B10zWWzDDz> 
+  Form: <WWsTP> <WWzWWDDzzzzzzzzzzlz>
+  or   <WWsTP> <WB21BB16B10zWWzDDz>
 ****************************************************************************/
 
 static int check_printjob_info(struct pack_desc* desc,
@@ -3936,9 +3936,9 @@ static bool api_NetWkstaGetInfo(struct smbd_server_connection *sconn,
   get info about a user
 
     struct user_info_11 {
-        char                usri11_name[21];  0-20 
-        char                usri11_pad;       21 
-        char                *usri11_comment;  22-25 
+        char                usri11_name[21];  0-20
+        char                usri11_pad;       21
+        char                *usri11_comment;  22-25
         char            *usri11_usr_comment;  26-29
         unsigned short      usri11_priv;      30-31
         unsigned long       usri11_auth_flags; 32-35
@@ -4069,7 +4069,7 @@ There is no auxiliary data in the response.
 
   ****************************************************************************/
 
-#define usri11_name           0 
+#define usri11_name           0
 #define usri11_pad            21
 #define usri11_comment        22
 #define usri11_usr_comment    26
@@ -4798,7 +4798,7 @@ static bool api_WPrintJobEnumerate(struct smbd_server_connection *sconn,
 		return False;	/* defined only for uLevel 0,1,2 */
 	}
 
-	if (!check_printjob_info(&desc,uLevel,str2)) { 
+	if (!check_printjob_info(&desc,uLevel,str2)) {
 		return False;
 	}
 
@@ -4912,7 +4912,7 @@ static int check_printdest_info(struct pack_desc* desc,
 			return False;
 	}
 	if (id == NULL || strcmp(desc->format,id) != 0) {
-		DEBUG(0,("check_printdest_info: invalid string %s\n", 
+		DEBUG(0,("check_printdest_info: invalid string %s\n",
 			id ? id : "<NULL>" ));
 		return False;
 	}
@@ -5175,7 +5175,7 @@ static bool api_WPrintDestEnum(struct smbd_server_connection *sconn,
 
 	desc.base = *rdata;
 	desc.buflen = mdrcnt;
-	if (init_package(&desc,queuecnt,0)) {    
+	if (init_package(&desc,queuecnt,0)) {
 		succnt = 0;
 		n = 0;
 		for (i = 0; i < count; i++) {
@@ -5584,7 +5584,7 @@ static const struct {
 	{NULL,		-1,	api_Unsupported}
 	/*  The following RAP calls are not implemented by Samba:
 
-	RAP_WFileEnum2 - anon not OK 
+	RAP_WFileEnum2 - anon not OK
 	*/
 };
 
