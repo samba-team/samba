@@ -2146,7 +2146,7 @@ NTSTATUS cm_connect_sam(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 			struct rpc_pipe_client **cli, struct policy_handle *sam_handle)
 {
 	struct winbindd_cm_conn *conn;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS status;
 	struct netlogon_creds_CredentialState *p_creds;
 	char *machine_password = NULL;
 	char *machine_account = NULL;
@@ -2156,9 +2156,9 @@ NTSTATUS cm_connect_sam(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 		return open_internal_samr_conn(mem_ctx, domain, cli, sam_handle);
 	}
 
-	result = init_dc_connection_rpc(domain);
-	if (!NT_STATUS_IS_OK(result)) {
-		return result;
+	status = init_dc_connection_rpc(domain);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
 	conn = &domain->conn;
@@ -2180,9 +2180,9 @@ NTSTATUS cm_connect_sam(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 	    (conn->cli->domain[0] == '\0') || 
 	    (conn->cli->password == NULL || conn->cli->password[0] == '\0'))
 	{
-		result = get_trust_creds(domain, &machine_password,
+		status = get_trust_creds(domain, &machine_password,
 					 &machine_account, NULL);
-		if (!NT_STATUS_IS_OK(result)) {
+		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(10, ("cm_connect_sam: No no user available for "
 				   "domain %s, trying schannel\n", conn->cli->domain));
 			goto schannel;
@@ -2195,13 +2195,13 @@ NTSTATUS cm_connect_sam(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 	}
 
 	if (!machine_password || !machine_account) {
-		result = NT_STATUS_NO_MEMORY;
+		status = NT_STATUS_NO_MEMORY;
 		goto done;
 	}
 
 	/* We have an authenticated connection. Use a NTLMSSP SPNEGO
 	   authenticated SAMR pipe with sign & seal. */
-	result = cli_rpc_pipe_open_spnego_ntlmssp(conn->cli,
+	status = cli_rpc_pipe_open_spnego_ntlmssp(conn->cli,
 						  &ndr_table_samr.syntax_id,
 						  NCACN_NP,
 						  DCERPC_AUTH_LEVEL_PRIVACY,
@@ -2210,12 +2210,12 @@ NTSTATUS cm_connect_sam(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 						  machine_password,
 						  &conn->samr_pipe);
 
-	if (!NT_STATUS_IS_OK(result)) {
+	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10,("cm_connect_sam: failed to connect to SAMR "
 			  "pipe for domain %s using NTLMSSP "
 			  "authenticated pipe: user %s\\%s. Error was "
 			  "%s\n", domain->name, domain_name,
-			  machine_account, nt_errstr(result)));
+			  machine_account, nt_errstr(status)));
 		goto schannel;
 	}
 
@@ -2224,80 +2224,80 @@ NTSTATUS cm_connect_sam(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 		  "pipe: user %s\\%s\n", domain->name,
 		  domain_name, machine_account));
 
-	result = rpccli_samr_Connect2(conn->samr_pipe, mem_ctx,
+	status = rpccli_samr_Connect2(conn->samr_pipe, mem_ctx,
 				      conn->samr_pipe->desthost,
 				      SEC_FLAG_MAXIMUM_ALLOWED,
 				      &conn->sam_connect_handle);
-	if (NT_STATUS_IS_OK(result)) {
+	if (NT_STATUS_IS_OK(status)) {
 		goto open_domain;
 	}
 	DEBUG(10,("cm_connect_sam: ntlmssp-sealed rpccli_samr_Connect2 "
 		  "failed for domain %s, error was %s. Trying schannel\n",
-		  domain->name, nt_errstr(result) ));
+		  domain->name, nt_errstr(status) ));
 	TALLOC_FREE(conn->samr_pipe);
 
  schannel:
 
 	/* Fall back to schannel if it's a W2K pre-SP1 box. */
 
-	result = cm_get_schannel_creds(domain, &p_creds);
-	if (!NT_STATUS_IS_OK(result)) {
+	status = cm_get_schannel_creds(domain, &p_creds);
+	if (!NT_STATUS_IS_OK(status)) {
 		/* If this call fails - conn->cli can now be NULL ! */
 		DEBUG(10, ("cm_connect_sam: Could not get schannel auth info "
 			   "for domain %s (error %s), trying anon\n",
 			domain->name,
-			nt_errstr(result) ));
+			nt_errstr(status) ));
 		goto anonymous;
 	}
-	result = cli_rpc_pipe_open_schannel_with_key
+	status = cli_rpc_pipe_open_schannel_with_key
 		(conn->cli, &ndr_table_samr.syntax_id, NCACN_NP,
 		 DCERPC_AUTH_LEVEL_PRIVACY,
 		 domain->name, &p_creds, &conn->samr_pipe);
 
-	if (!NT_STATUS_IS_OK(result)) {
+	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10,("cm_connect_sam: failed to connect to SAMR pipe for "
 			  "domain %s using schannel. Error was %s\n",
-			  domain->name, nt_errstr(result) ));
+			  domain->name, nt_errstr(status) ));
 		goto anonymous;
 	}
 	DEBUG(10,("cm_connect_sam: connected to SAMR pipe for domain %s using "
 		  "schannel.\n", domain->name ));
 
-	result = rpccli_samr_Connect2(conn->samr_pipe, mem_ctx,
+	status = rpccli_samr_Connect2(conn->samr_pipe, mem_ctx,
 				      conn->samr_pipe->desthost,
 				      SEC_FLAG_MAXIMUM_ALLOWED,
 				      &conn->sam_connect_handle);
-	if (NT_STATUS_IS_OK(result)) {
+	if (NT_STATUS_IS_OK(status)) {
 		goto open_domain;
 	}
 	DEBUG(10,("cm_connect_sam: schannel-sealed rpccli_samr_Connect2 failed "
 		  "for domain %s, error was %s. Trying anonymous\n",
-		  domain->name, nt_errstr(result) ));
+		  domain->name, nt_errstr(status) ));
 	TALLOC_FREE(conn->samr_pipe);
 
  anonymous:
 
 	/* Finally fall back to anonymous. */
-	result = cli_rpc_pipe_open_noauth(conn->cli, &ndr_table_samr.syntax_id,
+	status = cli_rpc_pipe_open_noauth(conn->cli, &ndr_table_samr.syntax_id,
 					  &conn->samr_pipe);
 
-	if (!NT_STATUS_IS_OK(result)) {
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
 
-	result = rpccli_samr_Connect2(conn->samr_pipe, mem_ctx,
+	status = rpccli_samr_Connect2(conn->samr_pipe, mem_ctx,
 				      conn->samr_pipe->desthost,
 				      SEC_FLAG_MAXIMUM_ALLOWED,
 				      &conn->sam_connect_handle);
-	if (!NT_STATUS_IS_OK(result)) {
+	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10,("cm_connect_sam: rpccli_samr_Connect2 failed "
 			  "for domain %s Error was %s\n",
-			  domain->name, nt_errstr(result) ));
+			  domain->name, nt_errstr(status) ));
 		goto done;
 	}
 
  open_domain:
-	result = rpccli_samr_OpenDomain(conn->samr_pipe,
+	status = rpccli_samr_OpenDomain(conn->samr_pipe,
 					mem_ctx,
 					&conn->sam_connect_handle,
 					SEC_FLAG_MAXIMUM_ALLOWED,
@@ -2306,7 +2306,7 @@ NTSTATUS cm_connect_sam(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 
  done:
 
-	if (NT_STATUS_EQUAL(result, NT_STATUS_ACCESS_DENIED)) {
+	if (NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
 		/*
 		 * if we got access denied, we might just have no access rights
 		 * to talk to the remote samr server server (e.g. when we are a
@@ -2316,17 +2316,17 @@ NTSTATUS cm_connect_sam(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 		 */
 		TALLOC_FREE(conn->samr_pipe);
 		ZERO_STRUCT(conn->sam_domain_handle);
-		return result;
-	} else if (!NT_STATUS_IS_OK(result)) {
+		return status;
+	} else if (!NT_STATUS_IS_OK(status)) {
 		invalidate_cm_connection(conn);
-		return result;
+		return status;
 	}
 
 	*cli = conn->samr_pipe;
 	*sam_handle = conn->sam_domain_handle;
 	SAFE_FREE(machine_password);
 	SAFE_FREE(machine_account);
-	return result;
+	return status;
 }
 
 /**********************************************************************
