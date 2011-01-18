@@ -1384,12 +1384,13 @@ static NTSTATUS rpc_sh_user_flag_edit_internals(struct net_context *c,
 						struct policy_handle *user_hnd,
 						int argc, const char **argv)
 {
-	NTSTATUS result;
+	NTSTATUS status, result;
 	const char *username;
 	const char *oldval = "unknown";
 	uint32 oldflags, newflags;
 	bool newval;
 	union samr_UserInfo *info = NULL;
+	struct dcerpc_binding_handle *b = pipe_hnd->binding_handle;
 
 	if ((argc > 1) ||
 	    ((argc == 1) && !strequal(argv[0], "yes") &&
@@ -1403,10 +1404,14 @@ static NTSTATUS rpc_sh_user_flag_edit_internals(struct net_context *c,
 
 	newval = strequal(argv[0], "yes");
 
-	result = rpccli_samr_QueryUserInfo(pipe_hnd, mem_ctx,
+	status = dcerpc_samr_QueryUserInfo(b, mem_ctx,
 					   user_hnd,
 					   21,
-					   &info);
+					   &info,
+					   &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 	if (!NT_STATUS_IS_OK(result)) {
 		return result;
 	}
@@ -1431,11 +1436,15 @@ static NTSTATUS rpc_sh_user_flag_edit_internals(struct net_context *c,
 	info->info21.acct_flags = newflags;
 	info->info21.fields_present = SAMR_FIELD_ACCT_FLAGS;
 
-	result = rpccli_samr_SetUserInfo(pipe_hnd, mem_ctx,
+	status = dcerpc_samr_SetUserInfo(b, mem_ctx,
 					 user_hnd,
 					 21,
-					 info);
-
+					 info,
+					 &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
+	status = result;
 	if (NT_STATUS_IS_OK(result)) {
 		d_printf(_("Set %s's %s flag from [%s] to [%s]\n"), username,
 			 ctx->thiscmd, oldval, argv[0]);
@@ -1443,7 +1452,7 @@ static NTSTATUS rpc_sh_user_flag_edit_internals(struct net_context *c,
 
  done:
 
-	return result;
+	return status;
 }
 
 static NTSTATUS rpc_sh_user_flag_edit(struct net_context *c,
