@@ -21,7 +21,7 @@
 
 #include "includes.h"
 #include "utils/net.h"
-#include "../librpc/gen_ndr/cli_lsa.h"
+#include "../librpc/gen_ndr/ndr_lsa_c.h"
 #include "rpc_client/cli_lsarpc.h"
 #include "../librpc/gen_ndr/ndr_dssetup_c.h"
 #include "secrets.h"
@@ -35,33 +35,36 @@ NTSTATUS net_rpc_lookup_name(struct net_context *c,
 {
 	struct rpc_pipe_client *lsa_pipe = NULL;
 	struct policy_handle pol;
-	NTSTATUS result = NT_STATUS_OK;
+	NTSTATUS status, result;
 	const char **dom_names;
 	struct dom_sid *sids;
 	enum lsa_SidType *types;
+	struct dcerpc_binding_handle *b;
 
 	ZERO_STRUCT(pol);
 
-	result = cli_rpc_pipe_open_noauth(cli, &ndr_table_lsarpc.syntax_id,
+	status = cli_rpc_pipe_open_noauth(cli, &ndr_table_lsarpc.syntax_id,
 					  &lsa_pipe);
-	if (!NT_STATUS_IS_OK(result)) {
+	if (!NT_STATUS_IS_OK(status)) {
 		d_fprintf(stderr, _("Could not initialise lsa pipe\n"));
-		return result;
+		return status;
 	}
 
-	result = rpccli_lsa_open_policy(lsa_pipe, mem_ctx, false,
+	b = lsa_pipe->binding_handle;
+
+	status = rpccli_lsa_open_policy(lsa_pipe, mem_ctx, false,
 					SEC_FLAG_MAXIMUM_ALLOWED,
 					&pol);
-	if (!NT_STATUS_IS_OK(result)) {
+	if (!NT_STATUS_IS_OK(status)) {
 		d_fprintf(stderr, "open_policy %s: %s\n", _("failed"),
-			  nt_errstr(result));
-		return result;
+			  nt_errstr(status));
+		return status;
 	}
 
-	result = rpccli_lsa_lookup_names(lsa_pipe, mem_ctx, &pol, 1,
+	status = rpccli_lsa_lookup_names(lsa_pipe, mem_ctx, &pol, 1,
 					 &name, &dom_names, 1, &sids, &types);
 
-	if (!NT_STATUS_IS_OK(result)) {
+	if (!NT_STATUS_IS_OK(status)) {
 		/* This can happen easily, don't log an error */
 		goto done;
 	}
@@ -81,11 +84,11 @@ NTSTATUS net_rpc_lookup_name(struct net_context *c,
 
  done:
 	if (is_valid_policy_hnd(&pol)) {
-		rpccli_lsa_Close(lsa_pipe, mem_ctx, &pol);
+		dcerpc_lsa_Close(b, mem_ctx, &pol, &result);
 	}
 	TALLOC_FREE(lsa_pipe);
 
-	return result;
+	return status;
 }
 
 /****************************************************************************
