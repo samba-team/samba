@@ -4474,29 +4474,35 @@ static NTSTATUS rpc_aliaslist_internals(struct net_context *c,
 					int argc,
 					const char **argv)
 {
-	NTSTATUS result;
+	NTSTATUS result, status;
 	struct policy_handle connect_pol;
+	struct dcerpc_binding_handle *b = pipe_hnd->binding_handle;
 
-	result = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
+	status = dcerpc_samr_Connect2(b, mem_ctx,
 				      pipe_hnd->desthost,
 				      MAXIMUM_ALLOWED_ACCESS,
-				      &connect_pol);
-
-	if (!NT_STATUS_IS_OK(result))
+				      &connect_pol,
+				      &result);
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
+	}
+	if (!NT_STATUS_IS_OK(result)) {
+		status = result;
+		goto done;
+	}
 
-	result = rpc_fetch_domain_aliases(pipe_hnd, mem_ctx, &connect_pol,
+	status = rpc_fetch_domain_aliases(pipe_hnd, mem_ctx, &connect_pol,
 					  &global_sid_Builtin);
-
-	if (!NT_STATUS_IS_OK(result))
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
+	}
 
-	result = rpc_fetch_domain_aliases(pipe_hnd, mem_ctx, &connect_pol,
+	status = rpc_fetch_domain_aliases(pipe_hnd, mem_ctx, &connect_pol,
 					  domain_sid);
 
-	rpccli_samr_Close(pipe_hnd, mem_ctx, &connect_pol);
+	dcerpc_samr_Close(b, mem_ctx, &connect_pol, &result);
  done:
-	return result;
+	return status;
 }
 
 static void init_user_token(struct security_token *token, struct dom_sid *user_sid)
