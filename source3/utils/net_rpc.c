@@ -5750,7 +5750,7 @@ static NTSTATUS rpc_trustdom_add_internals(struct net_context *c,
 						const char **argv)
 {
 	struct policy_handle connect_pol, domain_pol, user_pol;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS status, result;
 	char *acct_name;
 	struct lsa_String lsa_acct_name;
 	uint32 acb_info;
@@ -5759,6 +5759,7 @@ static NTSTATUS rpc_trustdom_add_internals(struct net_context *c,
 	uint32_t access_granted = 0;
 	union samr_UserInfo info;
 	unsigned int orig_timeout;
+	struct dcerpc_binding_handle *b = pipe_hnd->binding_handle;
 
 	if (argc != 2) {
 		d_printf("%s\n%s",
@@ -5781,21 +5782,31 @@ static NTSTATUS rpc_trustdom_add_internals(struct net_context *c,
 	init_lsa_String(&lsa_acct_name, acct_name);
 
 	/* Get samr policy handle */
-	result = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
+	status = dcerpc_samr_Connect2(b, mem_ctx,
 				      pipe_hnd->desthost,
 				      MAXIMUM_ALLOWED_ACCESS,
-				      &connect_pol);
+				      &connect_pol,
+				      &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
 	if (!NT_STATUS_IS_OK(result)) {
+		status = result;
 		goto done;
 	}
 
 	/* Get domain policy handle */
-	result = rpccli_samr_OpenDomain(pipe_hnd, mem_ctx,
+	status = dcerpc_samr_OpenDomain(b, mem_ctx,
 					&connect_pol,
 					MAXIMUM_ALLOWED_ACCESS,
 					CONST_DISCARD(struct dom_sid2 *, domain_sid),
-					&domain_pol);
+					&domain_pol,
+					&result);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
 	if (!NT_STATUS_IS_OK(result)) {
+		status = result;
 		goto done;
 	}
 
@@ -5812,19 +5823,23 @@ static NTSTATUS rpc_trustdom_add_internals(struct net_context *c,
 		     SAMR_USER_ACCESS_GET_ATTRIBUTES |
 		     SAMR_USER_ACCESS_SET_ATTRIBUTES;
 
-	result = rpccli_samr_CreateUser2(pipe_hnd, mem_ctx,
+	status = dcerpc_samr_CreateUser2(b, mem_ctx,
 					 &domain_pol,
 					 &lsa_acct_name,
 					 acb_info,
 					 acct_flags,
 					 &user_pol,
 					 &access_granted,
-					 &user_rid);
-
+					 &user_rid,
+					 &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
 	/* And restore our original timeout. */
 	rpccli_set_timeout(pipe_hnd, orig_timeout);
 
 	if (!NT_STATUS_IS_OK(result)) {
+		status = result;
 		d_printf(_("net rpc trustdom add: create user %s failed %s\n"),
 			acct_name, nt_errstr(result));
 		goto done;
@@ -5844,12 +5859,17 @@ static NTSTATUS rpc_trustdom_add_internals(struct net_context *c,
 		info.info23.info.acct_flags = ACB_DOMTRUST;
 		info.info23.password = crypt_pwd;
 
-		result = rpccli_samr_SetUserInfo2(pipe_hnd, mem_ctx,
+		status = dcerpc_samr_SetUserInfo2(b, mem_ctx,
 						  &user_pol,
 						  23,
-						  &info);
+						  &info,
+						  &result);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto done;
+		}
 
 		if (!NT_STATUS_IS_OK(result)) {
+			status = result;
 			DEBUG(0,("Could not set trust account password: %s\n",
 				 nt_errstr(result)));
 			goto done;
@@ -5858,7 +5878,7 @@ static NTSTATUS rpc_trustdom_add_internals(struct net_context *c,
 
  done:
 	SAFE_FREE(acct_name);
-	return result;
+	return status;
 }
 
 /**
