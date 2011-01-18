@@ -29,66 +29,6 @@
   </xsl:if>
 </xsl:template>
 
-<xsl:template match="itemizedlist/listitem">
-  <!-- * We output a real bullet here (rather than, "\(bu", -->
-  <!-- * the roff bullet) because, when we do character-map -->
-  <!-- * processing before final output, the character-map will -->
-  <!-- * handle conversion of the &#x2022; to "\(bu" for us -->
-  <xsl:text>&#10;</xsl:text>
-  <xsl:text>.sp</xsl:text>
-  <xsl:text>&#10;</xsl:text>
-  <xsl:text>.RS</xsl:text>
-  <xsl:if test="not($list-indent = '')">
-    <xsl:text> </xsl:text>
-    <xsl:value-of select="$list-indent"/>
-  </xsl:if>
-  <xsl:text>&#10;</xsl:text>
-  <!-- * if "n" then we are using "nroff", which means the output is for -->
-  <!-- * TTY; so we do some fixed-width-font hackery with \h to make a -->
-  <!-- * hanging indent (instead of using .IP, which has some -->
-  <!-- * undesirable side effects under certain circumstances) -->
-  <xsl:call-template name="roff-if-else-start"/>
-  <xsl:text>\h'-</xsl:text>
-  <xsl:choose>
-    <xsl:when test="not($list-indent = '')">
-      <xsl:text>0</xsl:text>
-      <xsl:value-of select="$list-indent"/>
-    </xsl:when>
-    <xsl:otherwise>
-      <xsl:text>\n(INu</xsl:text>
-    </xsl:otherwise>
-  </xsl:choose>
-  <xsl:text>'</xsl:text>
-  <xsl:text>&#x2022;</xsl:text>
-  <xsl:text>\h'+</xsl:text>
-  <xsl:choose>
-    <xsl:when test="not($list-indent = '')">
-      <xsl:text>0</xsl:text>
-      <xsl:value-of select="$list-indent - 1"/>
-    </xsl:when>
-    <xsl:otherwise>
-      <xsl:text>\n(INu-1</xsl:text>
-    </xsl:otherwise>
-  </xsl:choose>
-  <xsl:text>'\c&#10;</xsl:text>
-  <!-- * else, we are not using for "nroff", but instead "troff" - which -->
-  <!-- * means not for TTY, but for PS or whatever; so we’re not using a -->
-  <!-- * fixed-width font, so use a real .IP instead -->
-  <xsl:call-template name="roff-else"/>
-  <!-- * .IP generates a blank like of space, so let’s go backwards one -->
-  <!-- * line up to compensate for that -->
-  <xsl:text>.sp -1&#10;</xsl:text>
-  <xsl:text>.IP \(bu 2.3&#10;</xsl:text>
-  <!-- * The value 2.3 is the amount of indentation; we use 2.3 instead -->
-  <!-- * of 2 because when the font family is New Century Schoolbook it -->
-  <!-- * seems to require the extra space. -->
-  <xsl:call-template name="roff-if-end"/>
-  <xsl:apply-templates/>
-  <xsl:if test=" following-sibling::listitem">
-	 <xsl:text>&#10;.RE&#10;</xsl:text>
-  </xsl:if>
-</xsl:template>
-
 <xsl:template match="itemizedlist|orderedlist|procedure">
   <xsl:if test="title">
     <xsl:text>.PP&#10;</xsl:text>
