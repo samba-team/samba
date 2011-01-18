@@ -2239,9 +2239,19 @@ static bool test_PrinterInfo_DevModes(struct torture_context *tctx,
 
 	devmode = info.info8.devmode;
 
+	if (devmode && devmode->size == 0) {
+		torture_fail(tctx,
+			"devmode of zero size!");
+	}
+
 	torture_assert(tctx, test_GetPrinter_level(tctx, b, handle, 2, &info), "");
 
 	devmode2 = info.info2.devmode;
+
+	if (devmode2 && devmode2->size == 0) {
+		torture_fail(tctx,
+			"devmode of zero size!");
+	}
 
 	torture_assert(tctx, test_devicemode_equal(tctx, devmode, devmode2),
 		"DM level 8 != DM level 2");
@@ -2383,6 +2393,11 @@ static bool test_PrinterInfo_DevMode(struct torture_context *tctx,
 		"failed to get initial global devicemode");
 
 	devmode = info.info8.devmode;
+
+	if (devmode && devmode->size == 0) {
+		torture_fail(tctx,
+			"devmode of zero size!");
+	}
 
 	if (addprinter_devmode) {
 		if (!test_devicemode_equal(tctx, devmode, addprinter_devmode)) {
