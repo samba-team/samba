@@ -30,7 +30,7 @@
 #include "../librpc/gen_ndr/srv_samr.h"
 #include "../librpc/gen_ndr/srv_lsa.h"
 #include "../librpc/gen_ndr/ndr_samr_c.h"
-#include "../librpc/gen_ndr/cli_lsa.h"
+#include "../librpc/gen_ndr/ndr_lsa_c.h"
 #include "rpc_client/cli_lsarpc.h"
 #include "librpc/gen_ndr/messaging.h"
 #include "../lib/crypto/md4.h"
