@@ -30,7 +30,7 @@
 #include "rpc_client/cli_lsarpc.h"
 #include "../librpc/gen_ndr/ndr_netlogon_c.h"
 #include "../librpc/gen_ndr/ndr_srvsvc_c.h"
-#include "../librpc/gen_ndr/cli_spoolss.h"
+#include "../librpc/gen_ndr/ndr_spoolss.h"
 #include "../librpc/gen_ndr/ndr_initshutdown_c.h"
 #include "../librpc/gen_ndr/ndr_winreg_c.h"
 #include "secrets.h"
