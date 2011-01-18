@@ -2877,7 +2877,7 @@ static NTSTATUS rpc_list_alias_members(struct net_context *c,
 					struct policy_handle *domain_pol,
 					uint32 rid)
 {
-	NTSTATUS result;
+	NTSTATUS result, status;
 	struct rpc_pipe_client *lsa_pipe;
 	struct policy_handle alias_pol, lsa_pol;
 	uint32 num_members;
@@ -2887,20 +2887,29 @@ static NTSTATUS rpc_list_alias_members(struct net_context *c,
 	enum lsa_SidType *types;
 	int i;
 	struct lsa_SidArray sid_array;
+	struct dcerpc_binding_handle *b = pipe_hnd->binding_handle;
 
-	result = rpccli_samr_OpenAlias(pipe_hnd, mem_ctx,
+	status = dcerpc_samr_OpenAlias(b, mem_ctx,
 				       domain_pol,
 				       MAXIMUM_ALLOWED_ACCESS,
 				       rid,
-				       &alias_pol);
-
-	if (!NT_STATUS_IS_OK(result))
+				       &alias_pol,
+				       &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+	if (!NT_STATUS_IS_OK(result)) {
 		return result;
+	}
 
-	result = rpccli_samr_GetMembersInAlias(pipe_hnd, mem_ctx,
+	status = dcerpc_samr_GetMembersInAlias(b, mem_ctx,
 					       &alias_pol,
-					       &sid_array);
-
+					       &sid_array,
+					       &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_fprintf(stderr, _("Couldn't list alias members\n"));
+		return status;
+	}
 	if (!NT_STATUS_IS_OK(result)) {
 		d_fprintf(stderr, _("Couldn't list alias members\n"));
 		return result;
