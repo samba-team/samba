@@ -18,7 +18,7 @@
 
 #include "includes.h"
 #include "utils/net.h"
-#include "../librpc/gen_ndr/cli_lsa.h"
+#include "../librpc/gen_ndr/ndr_lsa_c.h"
 #include "rpc_client/cli_lsarpc.h"
 
 /********************************************************************
@@ -65,10 +65,11 @@ static NTSTATUS rpc_audit_get_internal(struct net_context *c,
 				       const char **argv)
 {
 	struct policy_handle pol;
-	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS status, result;
 	union lsa_PolicyInformation *info = NULL;
 	int i;
 	uint32_t audit_category;
+	struct dcerpc_binding_handle *b = pipe_hnd->binding_handle;
 
 	if (argc < 1 || argc > 2) {
 		d_printf(_("insufficient arguments\n"));
@@ -89,12 +90,16 @@ static NTSTATUS rpc_audit_get_internal(struct net_context *c,
 		goto done;
 	}
 
-	status = rpccli_lsa_QueryInfoPolicy(pipe_hnd, mem_ctx,
+	status = dcerpc_lsa_QueryInfoPolicy(b, mem_ctx,
 					    &pol,
 					    LSA_POLICY_INFO_AUDIT_EVENTS,
-					    &info);
-
+					    &info,
+					    &result);
 	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
+	if (!NT_STATUS_IS_OK(result)) {
+		status = result;
 		goto done;
 	}
 
@@ -133,9 +138,10 @@ static NTSTATUS rpc_audit_set_internal(struct net_context *c,
 				       const char **argv)
 {
 	struct policy_handle pol;
-	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS status, result;
 	union lsa_PolicyInformation *info = NULL;
 	uint32_t audit_policy, audit_category;
+	struct dcerpc_binding_handle *b = pipe_hnd->binding_handle;
 
 	if (argc < 2 || argc > 3) {
 		d_printf(_("insufficient arguments\n"));
@@ -171,30 +177,45 @@ static NTSTATUS rpc_audit_set_internal(struct net_context *c,
 		goto done;
 	}
 
-	status = rpccli_lsa_QueryInfoPolicy(pipe_hnd, mem_ctx,
+	status = dcerpc_lsa_QueryInfoPolicy(b, mem_ctx,
 					    &pol,
 					    LSA_POLICY_INFO_AUDIT_EVENTS,
-					    &info);
-
+					    &info,
+					    &result);
 	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
+	if (!NT_STATUS_IS_OK(result)) {
+		status = result;
 		goto done;
 	}
 
 	info->audit_events.settings[audit_category] = audit_policy;
 
-	status = rpccli_lsa_SetInfoPolicy(pipe_hnd, mem_ctx,
+	status = dcerpc_lsa_SetInfoPolicy(b, mem_ctx,
 					  &pol,
 					  LSA_POLICY_INFO_AUDIT_EVENTS,
-					  info);
+					  info,
+					  &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
+	if (!NT_STATUS_IS_OK(result)) {
+		status = result;
+		goto done;
+	}
 
+	status = dcerpc_lsa_QueryInfoPolicy(b, mem_ctx,
+					    &pol,
+					    LSA_POLICY_INFO_AUDIT_EVENTS,
+					    &info,
+					    &result);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
 
-	status = rpccli_lsa_QueryInfoPolicy(pipe_hnd, mem_ctx,
-					    &pol,
-					    LSA_POLICY_INFO_AUDIT_EVENTS,
-					    &info);
+	status = result;
+
 	{
 		const char *val = audit_policy_str(mem_ctx, info->audit_events.settings[audit_category]);
 		const char *policy = audit_description_str(audit_category);
@@ -220,8 +241,9 @@ static NTSTATUS rpc_audit_enable_internal_ext(struct rpc_pipe_client *pipe_hnd,
 					      bool enable)
 {
 	struct policy_handle pol;
-	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS status, result;
 	union lsa_PolicyInformation *info = NULL;
+	struct dcerpc_binding_handle *b = pipe_hnd->binding_handle;
 
 	status = rpccli_lsa_open_policy(pipe_hnd, mem_ctx, true,
 					SEC_FLAG_MAXIMUM_ALLOWED,
@@ -231,22 +253,31 @@ static NTSTATUS rpc_audit_enable_internal_ext(struct rpc_pipe_client *pipe_hnd,
 		goto done;
 	}
 
-	status = rpccli_lsa_QueryInfoPolicy(pipe_hnd, mem_ctx,
+	status = dcerpc_lsa_QueryInfoPolicy(b, mem_ctx,
 					    &pol,
 					    LSA_POLICY_INFO_AUDIT_EVENTS,
-					    &info);
+					    &info,
+					    &result);
 	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
+	if (!NT_STATUS_IS_OK(result)) {
+		status = result;
 		goto done;
 	}
 
 	info->audit_events.auditing_mode = enable;
 
-	status = rpccli_lsa_SetInfoPolicy(pipe_hnd, mem_ctx,
+	status = dcerpc_lsa_SetInfoPolicy(b, mem_ctx,
 					  &pol,
 					  LSA_POLICY_INFO_AUDIT_EVENTS,
-					  info);
-
+					  info,
+					  &result);
 	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
+	if (!NT_STATUS_IS_OK(result)) {
+		status = result;
 		goto done;
 	}
 
@@ -306,9 +337,10 @@ static NTSTATUS rpc_audit_list_internal(struct net_context *c,
 					const char **argv)
 {
 	struct policy_handle pol;
-	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS status, result;
 	union lsa_PolicyInformation *info = NULL;
 	int i;
+	struct dcerpc_binding_handle *b = pipe_hnd->binding_handle;
 
 	status = rpccli_lsa_open_policy(pipe_hnd, mem_ctx, true,
 					SEC_FLAG_MAXIMUM_ALLOWED,
@@ -318,11 +350,16 @@ static NTSTATUS rpc_audit_list_internal(struct net_context *c,
 		goto done;
 	}
 
-	status = rpccli_lsa_QueryInfoPolicy(pipe_hnd, mem_ctx,
+	status = dcerpc_lsa_QueryInfoPolicy(b, mem_ctx,
 					    &pol,
 					    LSA_POLICY_INFO_AUDIT_EVENTS,
-					    &info);
+					    &info,
+					    &result);
 	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
+	if (!NT_STATUS_IS_OK(result)) {
+		status = result;
 		goto done;
 	}
 
