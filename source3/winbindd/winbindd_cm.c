@@ -64,7 +64,7 @@
 #include "../librpc/gen_ndr/ndr_netlogon_c.h"
 #include "rpc_client/cli_netlogon.h"
 #include "../librpc/gen_ndr/ndr_samr_c.h"
-#include "../librpc/gen_ndr/cli_lsa.h"
+#include "../librpc/gen_ndr/ndr_lsa_c.h"
 #include "rpc_client/cli_lsarpc.h"
 #include "../librpc/gen_ndr/ndr_dssetup_c.h"
 #include "libads/sitename_cache.h"
@@ -1626,6 +1626,8 @@ static NTSTATUS cm_open_connection(struct winbindd_domain *domain,
 
 void invalidate_cm_connection(struct winbindd_cm_conn *conn)
 {
+	NTSTATUS result;
+
 	/* We're closing down a possibly dead
 	   connection. Don't have impossibly long (10s) timeouts. */
 
@@ -1635,7 +1637,6 @@ void invalidate_cm_connection(struct winbindd_cm_conn *conn)
 
 	if (conn->samr_pipe != NULL) {
 		if (is_valid_policy_hnd(&conn->sam_connect_handle)) {
-			NTSTATUS result;
 			dcerpc_samr_Close(conn->samr_pipe->binding_handle,
 					  talloc_tos(),
 					  &conn->sam_connect_handle,
@@ -1650,8 +1651,10 @@ void invalidate_cm_connection(struct winbindd_cm_conn *conn)
 
 	if (conn->lsa_pipe != NULL) {
 		if (is_valid_policy_hnd(&conn->lsa_policy)) {
-			rpccli_lsa_Close(conn->lsa_pipe, talloc_tos(),
-					 &conn->lsa_policy);
+			dcerpc_lsa_Close(conn->lsa_pipe->binding_handle,
+					 talloc_tos(),
+					 &conn->lsa_policy,
+					 &result);
 		}
 		TALLOC_FREE(conn->lsa_pipe);
 		/* Ok, it must be dead. Drop timeout to 0.5 sec. */
@@ -1662,8 +1665,10 @@ void invalidate_cm_connection(struct winbindd_cm_conn *conn)
 
 	if (conn->lsa_pipe_tcp != NULL) {
 		if (is_valid_policy_hnd(&conn->lsa_policy)) {
-			rpccli_lsa_Close(conn->lsa_pipe, talloc_tos(),
-					 &conn->lsa_policy);
+			dcerpc_lsa_Close(conn->lsa_pipe->binding_handle,
+					 talloc_tos(),
+					 &conn->lsa_policy,
+					 &result);
 		}
 		TALLOC_FREE(conn->lsa_pipe_tcp);
 		/* Ok, it must be dead. Drop timeout to 0.5 sec. */
@@ -1920,7 +1925,7 @@ static bool set_dc_type_and_flags_trustinfo( struct winbindd_domain *domain )
 
 static void set_dc_type_and_flags_connect( struct winbindd_domain *domain )
 {
-	NTSTATUS 		result;
+	NTSTATUS status, result;
 	WERROR werr;
 	TALLOC_CTX              *mem_ctx = NULL;
 	struct rpc_pipe_client  *cli = NULL;
@@ -1941,14 +1946,14 @@ static void set_dc_type_and_flags_connect( struct winbindd_domain *domain )
 
 	DEBUG(5, ("set_dc_type_and_flags_connect: domain %s\n", domain->name ));
 
-	result = cli_rpc_pipe_open_noauth(domain->conn.cli,
+	status = cli_rpc_pipe_open_noauth(domain->conn.cli,
 					  &ndr_table_dssetup.syntax_id,
 					  &cli);
 
-	if (!NT_STATUS_IS_OK(result)) {
+	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(5, ("set_dc_type_and_flags_connect: Could not bind to "
 			  "PI_DSSETUP on domain %s: (%s)\n",
-			  domain->name, nt_errstr(result)));
+			  domain->name, nt_errstr(status)));
 
 		/* if this is just a non-AD domain we need to continue
 		 * identifying so that we can in the end return with
@@ -1957,26 +1962,26 @@ static void set_dc_type_and_flags_connect( struct winbindd_domain *domain )
 		goto no_dssetup;
 	}
 
-	result = dcerpc_dssetup_DsRoleGetPrimaryDomainInformation(cli->binding_handle, mem_ctx,
+	status = dcerpc_dssetup_DsRoleGetPrimaryDomainInformation(cli->binding_handle, mem_ctx,
 								  DS_ROLE_BASIC_INFORMATION,
 								  &info,
 								  &werr);
 	TALLOC_FREE(cli);
 
-	if (NT_STATUS_IS_OK(result)) {
+	if (NT_STATUS_IS_OK(status)) {
 		result = werror_to_ntstatus(werr);
 	}
-	if (!NT_STATUS_IS_OK(result)) {
+	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(5, ("set_dc_type_and_flags_connect: rpccli_ds_getprimarydominfo "
 			  "on domain %s failed: (%s)\n",
-			  domain->name, nt_errstr(result)));
+			  domain->name, nt_errstr(status)));
 
 		/* older samba3 DCs will return DCERPC_FAULT_OP_RNG_ERROR for
 		 * every opcode on the DSSETUP pipe, continue with
 		 * no_dssetup mode here as well to get domain->initialized
 		 * set - gd */
 
-		if (NT_STATUS_V(result) == DCERPC_FAULT_OP_RNG_ERROR) {
+		if (NT_STATUS_V(status) == DCERPC_FAULT_OP_RNG_ERROR) {
 			goto no_dssetup;
 		}
 
@@ -1992,31 +1997,32 @@ static void set_dc_type_and_flags_connect( struct winbindd_domain *domain )
 	}
 
 no_dssetup:
-	result = cli_rpc_pipe_open_noauth(domain->conn.cli,
+	status = cli_rpc_pipe_open_noauth(domain->conn.cli,
 					  &ndr_table_lsarpc.syntax_id, &cli);
 
-	if (!NT_STATUS_IS_OK(result)) {
+	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(5, ("set_dc_type_and_flags_connect: Could not bind to "
 			  "PI_LSARPC on domain %s: (%s)\n",
-			  domain->name, nt_errstr(result)));
+			  domain->name, nt_errstr(status)));
 		TALLOC_FREE(cli);
 		TALLOC_FREE(mem_ctx);
 		return;
 	}
 
-	result = rpccli_lsa_open_policy2(cli, mem_ctx, True, 
+	status = rpccli_lsa_open_policy2(cli, mem_ctx, True,
 					 SEC_FLAG_MAXIMUM_ALLOWED, &pol);
 
-	if (NT_STATUS_IS_OK(result)) {
+	if (NT_STATUS_IS_OK(status)) {
 		/* This particular query is exactly what Win2k clients use 
 		   to determine that the DC is active directory */
-		result = rpccli_lsa_QueryInfoPolicy2(cli, mem_ctx,
+		status = dcerpc_lsa_QueryInfoPolicy2(cli->binding_handle, mem_ctx,
 						     &pol,
 						     LSA_POLICY_INFO_DNS,
-						     &lsa_info);
+						     &lsa_info,
+						     &result);
 	}
 
-	if (NT_STATUS_IS_OK(result)) {
+	if (NT_STATUS_IS_OK(status) && NT_STATUS_IS_OK(result)) {
 		domain->active_directory = True;
 
 		if (lsa_info->dns.name.string) {
@@ -2046,20 +2052,20 @@ no_dssetup:
 	} else {
 		domain->active_directory = False;
 
-		result = rpccli_lsa_open_policy(cli, mem_ctx, True, 
+		status = rpccli_lsa_open_policy(cli, mem_ctx, True,
 						SEC_FLAG_MAXIMUM_ALLOWED,
 						&pol);
 
-		if (!NT_STATUS_IS_OK(result)) {
+		if (!NT_STATUS_IS_OK(status)) {
 			goto done;
 		}
 
-		result = rpccli_lsa_QueryInfoPolicy(cli, mem_ctx,
+		status = dcerpc_lsa_QueryInfoPolicy(cli->binding_handle, mem_ctx,
 						    &pol,
 						    LSA_POLICY_INFO_ACCOUNT_DOMAIN,
-						    &lsa_info);
-
-		if (NT_STATUS_IS_OK(result)) {
+						    &lsa_info,
+						    &result);
+		if (NT_STATUS_IS_OK(status) && NT_STATUS_IS_OK(result)) {
 
 			if (lsa_info->account_domain.name.string) {
 				fstrcpy(domain->name,
