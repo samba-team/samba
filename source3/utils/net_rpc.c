@@ -6628,12 +6628,13 @@ static int rpc_trustdom_list(struct net_context *c, int argc, const char **argv)
 	TALLOC_CTX* mem_ctx;
 	struct cli_state *cli = NULL, *remote_cli = NULL;
 	struct rpc_pipe_client *pipe_hnd = NULL;
-	NTSTATUS nt_status;
+	NTSTATUS nt_status, result;
 	const char *domain_name = NULL;
 	struct dom_sid *queried_dom_sid;
 	int ascii_dom_name_len;
 	struct policy_handle connect_hnd;
 	union lsa_PolicyInformation *info = NULL;
+	struct dcerpc_binding_handle *b = NULL;
 
 	/* trusted domains listing variables */
 	unsigned int num_domains, enum_ctx = 0;
@@ -6790,11 +6791,14 @@ static int rpc_trustdom_list(struct net_context *c, int argc, const char **argv)
 		return -1;
 	};
 
+	b = pipe_hnd->binding_handle;
+
 	/* SamrConnect2 */
-	nt_status = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
+	nt_status = dcerpc_samr_Connect2(b, mem_ctx,
 					 pipe_hnd->desthost,
 					 SAMR_ACCESS_LOOKUP_DOMAIN,
-					 &connect_hnd);
+					 &connect_hnd,
+					 &result);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0, ("Couldn't open SAMR policy handle. Error was %s\n",
 			nt_errstr(nt_status)));
@@ -6802,17 +6806,34 @@ static int rpc_trustdom_list(struct net_context *c, int argc, const char **argv)
 		talloc_destroy(mem_ctx);
 		return -1;
 	};
+	if (!NT_STATUS_IS_OK(result)) {
+		nt_status = result;
+		DEBUG(0, ("Couldn't open SAMR policy handle. Error was %s\n",
+			nt_errstr(result)));
+		cli_shutdown(cli);
+		talloc_destroy(mem_ctx);
+		return -1;
+	};
 
 	/* SamrOpenDomain - we have to open domain policy handle in order to be
 	   able to enumerate accounts*/
-	nt_status = rpccli_samr_OpenDomain(pipe_hnd, mem_ctx,
+	nt_status = dcerpc_samr_OpenDomain(b, mem_ctx,
 					   &connect_hnd,
 					   SAMR_DOMAIN_ACCESS_ENUM_ACCOUNTS,
 					   queried_dom_sid,
-					   &domain_hnd);
+					   &domain_hnd,
+					   &result);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0, ("Couldn't open domain object. Error was %s\n",
 			nt_errstr(nt_status)));
+		cli_shutdown(cli);
+		talloc_destroy(mem_ctx);
+		return -1;
+	};
+	if (!NT_STATUS_IS_OK(result)) {
+		nt_status = result;
+		DEBUG(0, ("Couldn't open domain object. Error was %s\n",
+			nt_errstr(result)));
 		cli_shutdown(cli);
 		talloc_destroy(mem_ctx);
 		return -1;
@@ -6827,16 +6848,25 @@ static int rpc_trustdom_list(struct net_context *c, int argc, const char **argv)
 	enum_ctx = 0;	/* reset enumeration context from last enumeration */
 	do {
 
-		nt_status = rpccli_samr_EnumDomainUsers(pipe_hnd, mem_ctx,
+		nt_status = dcerpc_samr_EnumDomainUsers(b, mem_ctx,
 							&domain_hnd,
 							&enum_ctx,
 							ACB_DOMTRUST,
 							&trusts,
 							0xffff,
-							&num_domains);
+							&num_domains,
+							&result);
 		if (NT_STATUS_IS_ERR(nt_status)) {
 			DEBUG(0, ("Couldn't enumerate accounts. Error was: %s\n",
 				nt_errstr(nt_status)));
+			cli_shutdown(cli);
+			talloc_destroy(mem_ctx);
+			return -1;
+		};
+		if (NT_STATUS_IS_ERR(result)) {
+			nt_status = result;
+			DEBUG(0, ("Couldn't enumerate accounts. Error was: %s\n",
+				nt_errstr(result)));
 			cli_shutdown(cli);
 			talloc_destroy(mem_ctx);
 			return -1;
@@ -6889,19 +6919,19 @@ static int rpc_trustdom_list(struct net_context *c, int argc, const char **argv)
 			}
 		}
 
-	} while (NT_STATUS_EQUAL(nt_status, STATUS_MORE_ENTRIES));
+	} while (NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES));
 
 	if (!found_domain) {
 		d_printf("none\n");
 	}
 
 	/* close opened samr and domain policy handles */
-	nt_status = rpccli_samr_Close(pipe_hnd, mem_ctx, &domain_hnd);
+	nt_status = dcerpc_samr_Close(b, mem_ctx, &domain_hnd, &result);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0, ("Couldn't properly close domain policy handle for domain %s\n", domain_name));
 	};
 
-	nt_status = rpccli_samr_Close(pipe_hnd, mem_ctx, &connect_hnd);
+	nt_status = dcerpc_samr_Close(b, mem_ctx, &connect_hnd, &result);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0, ("Couldn't properly close samr policy handle for domain %s\n", domain_name));
 	};
