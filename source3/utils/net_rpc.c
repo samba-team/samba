@@ -2236,9 +2236,10 @@ static NTSTATUS rpc_del_groupmem(struct net_context *c,
 				const char *member)
 {
 	struct policy_handle connect_pol, domain_pol;
-	NTSTATUS result;
+	NTSTATUS status, result;
 	uint32 group_rid;
 	struct policy_handle group_pol;
+	struct dcerpc_binding_handle *b = pipe_hnd->binding_handle;
 
 	struct samr_Ids rids, rid_types;
 	struct lsa_String lsa_acct_name;
@@ -2251,52 +2252,81 @@ static NTSTATUS rpc_del_groupmem(struct net_context *c,
 		return NT_STATUS_UNSUCCESSFUL;
 
 	/* Get sam policy handle */
-	result = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
+	status = dcerpc_samr_Connect2(b, mem_ctx,
 				      pipe_hnd->desthost,
 				      MAXIMUM_ALLOWED_ACCESS,
-				      &connect_pol);
-	if (!NT_STATUS_IS_OK(result))
+				      &connect_pol,
+				      &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+	if (!NT_STATUS_IS_OK(result)) {
 		return result;
+	}
+
 
 	/* Get domain policy handle */
-	result = rpccli_samr_OpenDomain(pipe_hnd, mem_ctx,
+	status = dcerpc_samr_OpenDomain(b, mem_ctx,
 					&connect_pol,
 					MAXIMUM_ALLOWED_ACCESS,
 					&sid,
-					&domain_pol);
-	if (!NT_STATUS_IS_OK(result))
+					&domain_pol,
+					&result);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+	if (!NT_STATUS_IS_OK(result)) {
 		return result;
+	}
 
 	init_lsa_String(&lsa_acct_name, member);
 
-	result = rpccli_samr_LookupNames(pipe_hnd, mem_ctx,
+	status = dcerpc_samr_LookupNames(b, mem_ctx,
 					 &domain_pol,
 					 1,
 					 &lsa_acct_name,
 					 &rids,
-					 &rid_types);
-	if (!NT_STATUS_IS_OK(result)) {
+					 &rid_types,
+					 &result);
+	if (!NT_STATUS_IS_OK(status)) {
 		d_fprintf(stderr, _("Could not lookup up group member %s\n"),
 			  member);
 		goto done;
 	}
 
-	result = rpccli_samr_OpenGroup(pipe_hnd, mem_ctx,
+	if (!NT_STATUS_IS_OK(result)) {
+		status = result;
+		d_fprintf(stderr, _("Could not lookup up group member %s\n"),
+			  member);
+		goto done;
+	}
+
+	status = dcerpc_samr_OpenGroup(b, mem_ctx,
 				       &domain_pol,
 				       MAXIMUM_ALLOWED_ACCESS,
 				       group_rid,
-				       &group_pol);
-
-	if (!NT_STATUS_IS_OK(result))
+				       &group_pol,
+				       &result);
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
+	}
+	if (!NT_STATUS_IS_OK(result)) {
+		status = result;
+		goto done;
+	}
 
-	result = rpccli_samr_DeleteGroupMember(pipe_hnd, mem_ctx,
+	status = dcerpc_samr_DeleteGroupMember(b, mem_ctx,
 					       &group_pol,
-					       rids.ids[0]);
+					       rids.ids[0],
+					       &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
 
+	status = result;
  done:
-	rpccli_samr_Close(pipe_hnd, mem_ctx, &connect_pol);
-	return result;
+	dcerpc_samr_Close(b, mem_ctx, &connect_pol, &result);
+	return status;
 }
 
 static NTSTATUS rpc_del_aliasmem(struct rpc_pipe_client *pipe_hnd,
