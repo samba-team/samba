@@ -2508,12 +2508,13 @@ static NTSTATUS rpc_group_list_internals(struct net_context *c,
 					const char **argv)
 {
 	struct policy_handle connect_pol, domain_pol;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS status, result;
 	uint32 start_idx=0, max_entries=250, num_entries, i, loop_count = 0;
 	struct samr_SamArray *groups = NULL;
 	bool global = false;
 	bool local = false;
 	bool builtin = false;
+	struct dcerpc_binding_handle *b = pipe_hnd->binding_handle;
 
 	if (c->display_usage) {
 		d_printf("%s\n%s",
@@ -2548,22 +2549,32 @@ static NTSTATUS rpc_group_list_internals(struct net_context *c,
 
 	/* Get sam policy handle */
 
-	result = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
+	status = dcerpc_samr_Connect2(b, mem_ctx,
 				      pipe_hnd->desthost,
 				      MAXIMUM_ALLOWED_ACCESS,
-				      &connect_pol);
+				      &connect_pol,
+				      &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
 	if (!NT_STATUS_IS_OK(result)) {
+		status = result;
 		goto done;
 	}
 
 	/* Get domain policy handle */
 
-	result = rpccli_samr_OpenDomain(pipe_hnd, mem_ctx,
+	status = dcerpc_samr_OpenDomain(b, mem_ctx,
 					&connect_pol,
 					MAXIMUM_ALLOWED_ACCESS,
 					CONST_DISCARD(struct dom_sid2 *, domain_sid),
-					&domain_pol);
+					&domain_pol,
+					&result);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
 	if (!NT_STATUS_IS_OK(result)) {
+		status = result;
 		goto done;
 	}
 
@@ -2580,7 +2591,7 @@ static NTSTATUS rpc_group_list_internals(struct net_context *c,
 		dcerpc_get_query_dispinfo_params(
 			loop_count, &max_entries, &max_size);
 
-		result = rpccli_samr_QueryDisplayInfo(pipe_hnd, mem_ctx,
+		status = dcerpc_samr_QueryDisplayInfo(b, mem_ctx,
 						      &domain_pol,
 						      3,
 						      start_idx,
@@ -2588,7 +2599,11 @@ static NTSTATUS rpc_group_list_internals(struct net_context *c,
 						      max_size,
 						      &total_size,
 						      &returned_size,
-						      &info);
+						      &info,
+						      &result);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto done;
+		}
 		num_entries = info.info3.count;
 		start_idx += info.info3.count;
 
@@ -2616,12 +2631,16 @@ static NTSTATUS rpc_group_list_internals(struct net_context *c,
 	do {
 		if (!local) break;
 
-		result = rpccli_samr_EnumDomainAliases(pipe_hnd, mem_ctx,
+		status = dcerpc_samr_EnumDomainAliases(b, mem_ctx,
 						       &domain_pol,
 						       &start_idx,
 						       &groups,
 						       0xffff,
-						       &num_entries);
+						       &num_entries,
+						       &result);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto done;
+		}
 		if (!NT_STATUS_IS_OK(result) &&
 		    !NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES))
 			break;
@@ -2634,19 +2653,28 @@ static NTSTATUS rpc_group_list_internals(struct net_context *c,
 
 				struct policy_handle alias_pol;
 				union samr_AliasInfo *info = NULL;
+				NTSTATUS _result;
 
-				if ((NT_STATUS_IS_OK(rpccli_samr_OpenAlias(pipe_hnd, mem_ctx,
-									   &domain_pol,
-									   0x8,
-									   groups->entries[i].idx,
-									   &alias_pol))) &&
-				    (NT_STATUS_IS_OK(rpccli_samr_QueryAliasInfo(pipe_hnd, mem_ctx,
-										&alias_pol,
-										3,
-										&info))) &&
-				    (NT_STATUS_IS_OK(rpccli_samr_Close(pipe_hnd, mem_ctx,
-								    &alias_pol)))) {
-					description = info->description.string;
+				status = dcerpc_samr_OpenAlias(b, mem_ctx,
+							       &domain_pol,
+							       0x8,
+							       groups->entries[i].idx,
+							       &alias_pol,
+							       &_result);
+				if (NT_STATUS_IS_OK(status) && NT_STATUS_IS_OK(_result)) {
+					status = dcerpc_samr_QueryAliasInfo(b, mem_ctx,
+									    &alias_pol,
+									    3,
+									    &info,
+									    &_result);
+					if (NT_STATUS_IS_OK(status) && NT_STATUS_IS_OK(_result)) {
+						status = dcerpc_samr_Close(b, mem_ctx,
+									   &alias_pol,
+									   &_result);
+						if (NT_STATUS_IS_OK(status) && NT_STATUS_IS_OK(_result)) {
+							description = info->description.string;
+						}
+					}
 				}
 			}
 
@@ -2659,31 +2687,43 @@ static NTSTATUS rpc_group_list_internals(struct net_context *c,
 			}
 		}
 	} while (NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES));
-	rpccli_samr_Close(pipe_hnd, mem_ctx, &domain_pol);
+	dcerpc_samr_Close(b, mem_ctx, &domain_pol, &result);
 	/* Get builtin policy handle */
 
-	result = rpccli_samr_OpenDomain(pipe_hnd, mem_ctx,
+	status = dcerpc_samr_OpenDomain(b, mem_ctx,
 					&connect_pol,
 					MAXIMUM_ALLOWED_ACCESS,
 					CONST_DISCARD(struct dom_sid2 *, &global_sid_Builtin),
-					&domain_pol);
-	if (!NT_STATUS_IS_OK(result)) {
+					&domain_pol,
+					&result);
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
+	if (!NT_STATUS_IS_OK(result)) {
+		status = result;
+		goto done;
+	}
+
 	/* query builtin aliases */
 	start_idx = 0;
 	do {
 		if (!builtin) break;
 
-		result = rpccli_samr_EnumDomainAliases(pipe_hnd, mem_ctx,
+		status = dcerpc_samr_EnumDomainAliases(b, mem_ctx,
 						       &domain_pol,
 						       &start_idx,
 						       &groups,
 						       max_entries,
-						       &num_entries);
-		if (!NT_STATUS_IS_OK(result) &&
-		    !NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES))
+						       &num_entries,
+						       &result);
+		if (!NT_STATUS_IS_OK(status)) {
 			break;
+		}
+		if (!NT_STATUS_IS_OK(result) &&
+		    !NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES)) {
+			status = result;
+			break;
+		}
 
 		for (i = 0; i < num_entries; i++) {
 
@@ -2693,19 +2733,28 @@ static NTSTATUS rpc_group_list_internals(struct net_context *c,
 
 				struct policy_handle alias_pol;
 				union samr_AliasInfo *info = NULL;
+				NTSTATUS _result;
 
-				if ((NT_STATUS_IS_OK(rpccli_samr_OpenAlias(pipe_hnd, mem_ctx,
-									   &domain_pol,
-									   0x8,
-									   groups->entries[i].idx,
-									   &alias_pol))) &&
-				    (NT_STATUS_IS_OK(rpccli_samr_QueryAliasInfo(pipe_hnd, mem_ctx,
-										&alias_pol,
-										3,
-										&info))) &&
-				    (NT_STATUS_IS_OK(rpccli_samr_Close(pipe_hnd, mem_ctx,
-								    &alias_pol)))) {
-					description = info->description.string;
+				status = dcerpc_samr_OpenAlias(b, mem_ctx,
+							       &domain_pol,
+							       0x8,
+							       groups->entries[i].idx,
+							       &alias_pol,
+							       &_result);
+				if (NT_STATUS_IS_OK(status) && NT_STATUS_IS_OK(_result)) {
+					status = dcerpc_samr_QueryAliasInfo(b, mem_ctx,
+									    &alias_pol,
+									    3,
+									    &info,
+									    &_result);
+					if (NT_STATUS_IS_OK(status) && NT_STATUS_IS_OK(_result)) {
+						status = dcerpc_samr_Close(b, mem_ctx,
+									   &alias_pol,
+									   &_result);
+						if (NT_STATUS_IS_OK(status) && NT_STATUS_IS_OK(_result)) {
+							description = info->description.string;
+						}
+					}
 				}
 			}
 
@@ -2719,8 +2768,10 @@ static NTSTATUS rpc_group_list_internals(struct net_context *c,
 		}
 	} while (NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES));
 
+	status = result;
+
  done:
-	return result;
+	return status;
 }
 
 static int rpc_group_list(struct net_context *c, int argc, const char **argv)
