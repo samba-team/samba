@@ -1231,8 +1231,9 @@ static NTSTATUS rpc_sh_user_show_internals(struct net_context *c,
 					   struct policy_handle *user_hnd,
 					   int argc, const char **argv)
 {
-	NTSTATUS result;
+	NTSTATUS status, result;
 	union samr_UserInfo *info = NULL;
+	struct dcerpc_binding_handle *b = pipe_hnd->binding_handle;
 
 	if (argc != 0) {
 		d_fprintf(stderr, "%s %s show <username>\n", _("Usage:"),
@@ -1240,10 +1241,14 @@ static NTSTATUS rpc_sh_user_show_internals(struct net_context *c,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	result = rpccli_samr_QueryUserInfo(pipe_hnd, mem_ctx,
+	status = dcerpc_samr_QueryUserInfo(b, mem_ctx,
 					   user_hnd,
 					   21,
-					   &info);
+					   &info,
+					   &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 	if (!NT_STATUS_IS_OK(result)) {
 		return result;
 	}
