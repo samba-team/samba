@@ -24,7 +24,7 @@
 #include "lib/netapi/netapi_private.h"
 #include "lib/netapi/libnetapi.h"
 #include "../librpc/gen_ndr/ndr_samr_c.h"
-#include "../librpc/gen_ndr/cli_lsa.h"
+#include "../librpc/gen_ndr/ndr_lsa_c.h"
 #include "rpc_client/cli_lsarpc.h"
 #include "rpc_client/init_lsa.h"
 #include "../libcli/security/security.h"
@@ -999,8 +999,9 @@ static NTSTATUS libnetapi_lsa_lookup_names3(TALLOC_CTX *mem_ctx,
 					    const char *name,
 					    struct dom_sid *sid)
 {
-	NTSTATUS status;
+	NTSTATUS status, result;
 	struct policy_handle lsa_handle;
+	struct dcerpc_binding_handle *b = lsa_pipe->binding_handle;
 
 	struct lsa_RefDomainList *domains = NULL;
 	struct lsa_TransSidArray3 sids;
@@ -1025,7 +1026,7 @@ static NTSTATUS libnetapi_lsa_lookup_names3(TALLOC_CTX *mem_ctx,
 					 &lsa_handle);
 	NT_STATUS_NOT_OK_RETURN(status);
 
-	status = rpccli_lsa_LookupNames3(lsa_pipe, mem_ctx,
+	status = dcerpc_lsa_LookupNames3(b, mem_ctx,
 					 &lsa_handle,
 					 num_names,
 					 &names,
@@ -1033,8 +1034,10 @@ static NTSTATUS libnetapi_lsa_lookup_names3(TALLOC_CTX *mem_ctx,
 					 &sids,
 					 LSA_LOOKUP_NAMES_ALL, /* sure ? */
 					 &count,
-					 0, 0);
+					 0, 0,
+					 &result);
 	NT_STATUS_NOT_OK_RETURN(status);
+	NT_STATUS_NOT_OK_RETURN(result);
 
 	if (count != 1 || sids.count != 1) {
 		return NT_STATUS_NONE_MAPPED;
