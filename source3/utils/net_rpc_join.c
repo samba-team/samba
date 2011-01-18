@@ -23,7 +23,7 @@
 #include "../libcli/auth/libcli_auth.h"
 #include "../librpc/gen_ndr/cli_lsa.h"
 #include "rpc_client/cli_lsarpc.h"
-#include "../librpc/gen_ndr/cli_samr.h"
+#include "../librpc/gen_ndr/ndr_samr_c.h"
 #include "rpc_client/init_samr.h"
 #include "../librpc/gen_ndr/ndr_netlogon.h"
 #include "rpc_client/cli_netlogon.h"
@@ -38,11 +38,35 @@
                 goto done; \
         }
 
+#define CHECK_DCERPC_ERR(rpc, msg) \
+	if (!NT_STATUS_IS_OK(status = rpc)) { \
+		DEBUG(0, (msg ": %s\n", nt_errstr(status))); \
+		goto done; \
+	} \
+	if (!NT_STATUS_IS_OK(result)) { \
+		status = result; \
+		DEBUG(0, (msg ": %s\n", nt_errstr(result))); \
+		goto done; \
+	}
+
+
 #define CHECK_RPC_ERR_DEBUG(rpc, debug_args) \
         if (!NT_STATUS_IS_OK(status = rpc)) { \
                 DEBUG(0, debug_args); \
                 goto done; \
         }
+
+#define CHECK_DCERPC_ERR_DEBUG(rpc, debug_args) \
+	if (!NT_STATUS_IS_OK(status = rpc)) { \
+		DEBUG(0, debug_args); \
+		goto done; \
+	} \
+	if (!NT_STATUS_IS_OK(result)) { \
+		status = result; \
+		DEBUG(0, debug_args); \
+		goto done; \
+	}
+
 
 /**
  * confirm that a domain join is still valid
@@ -148,6 +172,7 @@ int net_rpc_join_newstyle(struct net_context *c, int argc, const char **argv)
 	uint32_t neg_flags = NETLOGON_NEG_AUTH2_ADS_FLAGS;
 	enum netr_SchannelType sec_channel_type;
 	struct rpc_pipe_client *pipe_hnd = NULL;
+	struct dcerpc_binding_handle *b = NULL;
 
 	/* rpc variables */
 
@@ -164,7 +189,7 @@ int net_rpc_join_newstyle(struct net_context *c, int argc, const char **argv)
 
 	/* Misc */
 
-	NTSTATUS status;
+	NTSTATUS status, result;
 	int retval = 1;
 	const char *domain = NULL;
 	char *acct_name;
@@ -174,6 +199,7 @@ int net_rpc_join_newstyle(struct net_context *c, int argc, const char **argv)
 	union lsa_PolicyInformation *info = NULL;
 	struct samr_Ids user_rids;
 	struct samr_Ids name_types;
+
 
 	/* check what type of join */
 	if (argc >= 0) {
@@ -255,21 +281,25 @@ int net_rpc_join_newstyle(struct net_context *c, int argc, const char **argv)
 		goto done;
 	}
 
-	CHECK_RPC_ERR(rpccli_samr_Connect2(pipe_hnd, mem_ctx,
-					   pipe_hnd->desthost,
-					   SAMR_ACCESS_ENUM_DOMAINS
-					   | SAMR_ACCESS_LOOKUP_DOMAIN,
-					   &sam_pol),
+	b = pipe_hnd->binding_handle;
+
+	CHECK_DCERPC_ERR(dcerpc_samr_Connect2(b, mem_ctx,
+					      pipe_hnd->desthost,
+					      SAMR_ACCESS_ENUM_DOMAINS
+					      | SAMR_ACCESS_LOOKUP_DOMAIN,
+					      &sam_pol,
+					      &result),
 		      "could not connect to SAM database");
 
 
-	CHECK_RPC_ERR(rpccli_samr_OpenDomain(pipe_hnd, mem_ctx,
-					     &sam_pol,
-					     SAMR_DOMAIN_ACCESS_LOOKUP_INFO_1
-					     | SAMR_DOMAIN_ACCESS_CREATE_USER
-					     | SAMR_DOMAIN_ACCESS_OPEN_ACCOUNT,
-					     domain_sid,
-					     &domain_pol),
+	CHECK_DCERPC_ERR(dcerpc_samr_OpenDomain(b, mem_ctx,
+						&sam_pol,
+						SAMR_DOMAIN_ACCESS_LOOKUP_INFO_1
+						| SAMR_DOMAIN_ACCESS_CREATE_USER
+						| SAMR_DOMAIN_ACCESS_OPEN_ACCOUNT,
+						domain_sid,
+						&domain_pol,
+						&result),
 		      "could not open domain");
 
 	/* Create domain user */
@@ -289,24 +319,28 @@ int net_rpc_join_newstyle(struct net_context *c, int argc, const char **argv)
 
 	DEBUG(10, ("Creating account with flags: %d\n",acct_flags));
 
-	status = rpccli_samr_CreateUser2(pipe_hnd, mem_ctx,
+	status = dcerpc_samr_CreateUser2(b, mem_ctx,
 					 &domain_pol,
 					 &lsa_acct_name,
 					 acb_info,
 					 acct_flags,
 					 &user_pol,
 					 &access_granted,
-					 &user_rid);
-
-	if (!NT_STATUS_IS_OK(status) &&
-	    !NT_STATUS_EQUAL(status, NT_STATUS_USER_EXISTS)) {
+					 &user_rid,
+					 &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
+	if (!NT_STATUS_IS_OK(result) &&
+	    !NT_STATUS_EQUAL(result, NT_STATUS_USER_EXISTS)) {
+		status = result;
 		d_fprintf(stderr,_("Creation of workstation account failed\n"));
 
 		/* If NT_STATUS_ACCESS_DENIED then we have a valid
 		   username/password combo but the user does not have
 		   administrator access. */
 
-		if (NT_STATUS_V(status) == NT_STATUS_V(NT_STATUS_ACCESS_DENIED))
+		if (NT_STATUS_V(result) == NT_STATUS_V(NT_STATUS_ACCESS_DENIED))
 			d_fprintf(stderr, _("User specified does not have "
 					    "administrator privileges\n"));
 
@@ -315,18 +349,19 @@ int net_rpc_join_newstyle(struct net_context *c, int argc, const char **argv)
 
 	/* We *must* do this.... don't ask... */
 
-	if (NT_STATUS_IS_OK(status)) {
-		rpccli_samr_Close(pipe_hnd, mem_ctx, &user_pol);
+	if (NT_STATUS_IS_OK(result)) {
+		dcerpc_samr_Close(b, mem_ctx, &user_pol, &result);
 	}
 
-	CHECK_RPC_ERR_DEBUG(rpccli_samr_LookupNames(pipe_hnd, mem_ctx,
-						    &domain_pol,
-						    1,
-						    &lsa_acct_name,
-						    &user_rids,
-						    &name_types),
-			    ("error looking up rid for user %s: %s\n",
-			     acct_name, nt_errstr(status)));
+	CHECK_DCERPC_ERR_DEBUG(dcerpc_samr_LookupNames(b, mem_ctx,
+						       &domain_pol,
+						       1,
+						       &lsa_acct_name,
+						       &user_rids,
+						       &name_types,
+						       &result),
+			    ("error looking up rid for user %s: %s/%s\n",
+			     acct_name, nt_errstr(status), nt_errstr(result)));
 
 	if (name_types.ids[0] != SID_NAME_USER) {
 		DEBUG(0, ("%s is not a user account (type=%d)\n", acct_name, name_types.ids[0]));
@@ -337,14 +372,15 @@ int net_rpc_join_newstyle(struct net_context *c, int argc, const char **argv)
 
 	/* Open handle on user */
 
-	CHECK_RPC_ERR_DEBUG(
-		rpccli_samr_OpenUser(pipe_hnd, mem_ctx,
+	CHECK_DCERPC_ERR_DEBUG(
+		dcerpc_samr_OpenUser(b, mem_ctx,
 				     &domain_pol,
 				     SEC_FLAG_MAXIMUM_ALLOWED,
 				     user_rid,
-				     &user_pol),
-		("could not re-open existing user %s: %s\n",
-		 acct_name, nt_errstr(status)));
+				     &user_pol,
+				     &result),
+		("could not re-open existing user %s: %s/%s\n",
+		 acct_name, nt_errstr(status), nt_errstr(result)));
 	
 	/* Create a random machine account password */
 
@@ -360,10 +396,11 @@ int net_rpc_join_newstyle(struct net_context *c, int argc, const char **argv)
 	set_info.info24.password = crypt_pwd;
 	set_info.info24.password_expired = PASS_DONT_CHANGE_AT_NEXT_LOGON;
 
-	CHECK_RPC_ERR(rpccli_samr_SetUserInfo2(pipe_hnd, mem_ctx,
-					       &user_pol,
-					       24,
-					       &set_info),
+	CHECK_DCERPC_ERR(dcerpc_samr_SetUserInfo2(b, mem_ctx,
+						  &user_pol,
+						  24,
+						  &set_info,
+						  &result),
 		      "error setting trust account password");
 
 	/* Why do we have to try to (re-)set the ACB to be the same as what
@@ -380,12 +417,13 @@ int net_rpc_join_newstyle(struct net_context *c, int argc, const char **argv)
 	/* Ignoring the return value is necessary for joining a domain
 	   as a normal user with "Add workstation to domain" privilege. */
 
-	status = rpccli_samr_SetUserInfo(pipe_hnd, mem_ctx,
+	status = dcerpc_samr_SetUserInfo(b, mem_ctx,
 					 &user_pol,
 					 16,
-					 &set_info);
+					 &set_info,
+					 &result);
 
-	rpccli_samr_Close(pipe_hnd, mem_ctx, &user_pol);
+	dcerpc_samr_Close(b, mem_ctx, &user_pol, &result);
 	TALLOC_FREE(pipe_hnd); /* Done with this pipe */
 
 	/* Now check the whole process from top-to-bottom */
