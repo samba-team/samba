@@ -5931,11 +5931,12 @@ static NTSTATUS rpc_trustdom_del_internals(struct net_context *c,
 					const char **argv)
 {
 	struct policy_handle connect_pol, domain_pol, user_pol;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS status, result;
 	char *acct_name;
 	struct dom_sid trust_acct_sid;
 	struct samr_Ids user_rids, name_types;
 	struct lsa_String lsa_acct_name;
+	struct dcerpc_binding_handle *b = pipe_hnd->binding_handle;
 
 	if (argc != 1) {
 		d_printf("%s\n%s",
@@ -5955,47 +5956,72 @@ static NTSTATUS rpc_trustdom_del_internals(struct net_context *c,
 	strupper_m(acct_name);
 
 	/* Get samr policy handle */
-	result = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
+	status = dcerpc_samr_Connect2(b, mem_ctx,
 				      pipe_hnd->desthost,
 				      MAXIMUM_ALLOWED_ACCESS,
-				      &connect_pol);
+				      &connect_pol,
+				      &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
 	if (!NT_STATUS_IS_OK(result)) {
+		status = result;
 		goto done;
 	}
 
 	/* Get domain policy handle */
-	result = rpccli_samr_OpenDomain(pipe_hnd, mem_ctx,
+	status = dcerpc_samr_OpenDomain(b, mem_ctx,
 					&connect_pol,
 					MAXIMUM_ALLOWED_ACCESS,
 					CONST_DISCARD(struct dom_sid2 *, domain_sid),
-					&domain_pol);
+					&domain_pol,
+					&result);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
 	if (!NT_STATUS_IS_OK(result)) {
+		status = result;
 		goto done;
 	}
 
 	init_lsa_String(&lsa_acct_name, acct_name);
 
-	result = rpccli_samr_LookupNames(pipe_hnd, mem_ctx,
+	status = dcerpc_samr_LookupNames(b, mem_ctx,
 					 &domain_pol,
 					 1,
 					 &lsa_acct_name,
 					 &user_rids,
-					 &name_types);
-
+					 &name_types,
+					 &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf(_("net rpc trustdom del: LookupNames on user %s "
+			   "failed %s\n"),
+			acct_name, nt_errstr(status));
+		goto done;
+	}
 	if (!NT_STATUS_IS_OK(result)) {
+		status = result;
 		d_printf(_("net rpc trustdom del: LookupNames on user %s "
 			   "failed %s\n"),
 			acct_name, nt_errstr(result) );
 		goto done;
 	}
 
-	result = rpccli_samr_OpenUser(pipe_hnd, mem_ctx,
+	status = dcerpc_samr_OpenUser(b, mem_ctx,
 				      &domain_pol,
 				      MAXIMUM_ALLOWED_ACCESS,
 				      user_rids.ids[0],
-				      &user_pol);
+				      &user_pol,
+				      &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf(_("net rpc trustdom del: OpenUser on user %s failed "
+			   "%s\n"),
+			acct_name, nt_errstr(status) );
+		goto done;
+	}
 
 	if (!NT_STATUS_IS_OK(result)) {
+		status = result;
 		d_printf(_("net rpc trustdom del: OpenUser on user %s failed "
 			   "%s\n"),
 			acct_name, nt_errstr(result) );
@@ -6009,22 +6035,39 @@ static NTSTATUS rpc_trustdom_del_internals(struct net_context *c,
 
 	/* remove the sid */
 
-	result = rpccli_samr_RemoveMemberFromForeignDomain(pipe_hnd, mem_ctx,
+	status = dcerpc_samr_RemoveMemberFromForeignDomain(b, mem_ctx,
 							   &user_pol,
-							   &trust_acct_sid);
+							   &trust_acct_sid,
+							   &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf(_("net rpc trustdom del: RemoveMemberFromForeignDomain"
+			   " on user %s failed %s\n"),
+			acct_name, nt_errstr(status));
+		goto done;
+	}
 	if (!NT_STATUS_IS_OK(result)) {
+		status = result;
 		d_printf(_("net rpc trustdom del: RemoveMemberFromForeignDomain"
 			   " on user %s failed %s\n"),
 			acct_name, nt_errstr(result) );
 		goto done;
 	}
 
+
 	/* Delete user */
 
-	result = rpccli_samr_DeleteUser(pipe_hnd, mem_ctx,
-					&user_pol);
+	status = dcerpc_samr_DeleteUser(b, mem_ctx,
+					&user_pol,
+					&result);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf(_("net rpc trustdom del: DeleteUser on user %s failed "
+			   "%s\n"),
+			acct_name, nt_errstr(status));
+		goto done;
+	}
 
 	if (!NT_STATUS_IS_OK(result)) {
+		result = status;
 		d_printf(_("net rpc trustdom del: DeleteUser on user %s failed "
 			   "%s\n"),
 			acct_name, nt_errstr(result) );
@@ -6038,7 +6081,7 @@ static NTSTATUS rpc_trustdom_del_internals(struct net_context *c,
 	}
 
  done:
-	return result;
+	return status;
 }
 
 /**
