@@ -535,19 +535,6 @@ static NTSTATUS gensec_gssapi_update(struct gensec_security *gensec_security,
 			/* We may have been invoked as SASL, so there
 			 * is more work to do */
 			if (gensec_gssapi_state->sasl) {
-				/* Due to a very subtle interaction
-				 * with SASL and the LDAP libs, we
-				 * must ensure the data pointer is 
-				 * != NULL, but the length is 0.  
-				 *
-				 * This ensures we send a 'zero
-				 * length' (rather than NULL) response 
-				 */
-				
-				if (!out->data) {
-					out->data = (uint8_t *)talloc_strdup(out_mem_ctx, "\0");
-				}
-
 				gensec_gssapi_state->sasl_state = STAGE_SASL_SSF_NEG;
 				return NT_STATUS_MORE_PROCESSING_REQUIRED;
 			} else {
