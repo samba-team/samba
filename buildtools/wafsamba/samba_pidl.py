@@ -62,9 +62,9 @@ def SAMBA_PIDL(bld, pname, source,
     cc = ""
     if bld.CONFIG_SET("CPP"):
         if isinstance(bld.CONFIG_GET("CPP"), list):
-            cpp = "CPP=%s" % bld.CONFIG_GET("CPP")[0]
+            cpp = 'CPP="%s"' % bld.CONFIG_GET("CPP")[0]
         else:
-            cpp = "CPP=%s" % bld.CONFIG_GET("CPP")
+            cpp = 'CPP="%s"' % bld.CONFIG_GET("CPP")
 
     if cpp == "CPP=xlc_r":
         cpp = ""
@@ -72,9 +72,9 @@ def SAMBA_PIDL(bld, pname, source,
 
     if bld.CONFIG_SET("CC"):
         if isinstance(bld.CONFIG_GET("CC"), list):
-            cc = "CC=%s" % bld.CONFIG_GET("CC")[0]
+            cc = 'CC="%s"' % bld.CONFIG_GET("CC")[0]
         else:
-            cc = "CC=%s" % bld.CONFIG_GET("CC")
+            cc = 'CC="%s"' % bld.CONFIG_GET("CC")
 
     t = bld(rule='cd .. && %s %s ${PERL} "${PIDL}" --quiet ${OPTIONS} --outputdir ${OUTPUTDIR} -- "${SRC[0].abspath(env)}"' % (cpp, cc),
             ext_out    = '.c',
