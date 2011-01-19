@@ -411,6 +411,7 @@ static int smb_download_file(const char *base, const char *name, int recursive,
 				fprintf(stderr, "Offset in local and remote files is different (local: "OFF_T_FORMAT", remote: "OFF_T_FORMAT")\n",
 					(OFF_T_FORMAT_CAST)off1,
 					(OFF_T_FORMAT_CAST)off2);
+				smbc_close(remotehandle); close(localhandle);
 				return 1;
 			}
 
