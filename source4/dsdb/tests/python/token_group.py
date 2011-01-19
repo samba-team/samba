@@ -63,11 +63,13 @@ class TokenTest(unittest.TestCase):
         for sid in res[0]['tokenGroups']:
             tokengroups.append(str(ndr_unpack(samba.dcerpc.security.dom_sid, sid)))
 
+        user_sid_dn = "<SID=%s>" % tokengroups[0]
+
         print("Geting token from user session")
         session_info_flags = ( AUTH_SESSION_INFO_DEFAULT_GROUPS |
                                AUTH_SESSION_INFO_AUTHENTICATED |
                                AUTH_SESSION_INFO_SIMPLE_PRIVILEGES)
-        session = samba.auth.user_session(self.ldb, lp_ctx=lp, dn="<SID=%s>" % tokengroups[0],
+        session = samba.auth.user_session(self.ldb, lp_ctx=lp, dn=user_sid_dn,
                                           session_info_flags=session_info_flags)
 
         token = session.security_token
@@ -76,14 +78,30 @@ class TokenTest(unittest.TestCase):
             sids.append(str(s))
         sidset1 = set(tokengroups)
         sidset2 = set(sids)
-        if sidset1 != sidset2:
+        if len(sidset1.difference(sidset2)):
             print("token sids don't match")
             print("tokengroups: %s" % tokengroups)
             print("calculated : %s" % sids);
             print("difference : %s" % sidset1.difference(sidset2))
-            self.fail(msg="token groups don't match")
+            self.fail(msg="calculated groups don't match against rootDSE tokenGroups")
 
+        res = self.ldb.search(user_sid_dn, scope=ldb.SCOPE_BASE, attrs=["tokenGroups"])
+        self.assertEquals(len(res), 1)
 
+        print("Geting tokenGroups from user DN")
+        dn_tokengroups = []
+        for sid in res[0]['tokenGroups']:
+            dn_tokengroups.append(str(ndr_unpack(samba.dcerpc.security.dom_sid, sid)))
+
+        sidset1 = set(dn_tokengroups)
+        sidset2 = set(sids)
+        if len(sidset1.difference(sidset2)):
+            print("token sids don't match")
+            print("tokengroups: %s" % tokengroups)
+            print("calculated : %s" % sids);
+            print("difference : %s" % sidset1.difference(sidset2))
+            self.fail(msg="calculated groups don't match against user DN tokenGroups")
+        
 
 if not "://" in url:
     if os.path.isfile(url):
