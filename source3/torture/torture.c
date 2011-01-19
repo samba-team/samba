@@ -3998,6 +3998,116 @@ static bool run_deletetest(int dummy)
 	return correct;
 }
 
+static bool run_deletetest_ln(int dummy)
+{
+	struct cli_state *cli;
+	const char *fname = "\\delete1";
+	const char *fname_ln = "\\delete1_ln";
+	uint16_t fnum;
+	uint16_t fnum1;
+	NTSTATUS status;
+	bool correct = true;
+	time_t t;
+
+	printf("starting deletetest-ln\n");
+
+	if (!torture_open_connection(&cli, 0)) {
+		return false;
+	}
+
+	cli_unlink(cli, fname, aSYSTEM | aHIDDEN);
+	cli_unlink(cli, fname_ln, aSYSTEM | aHIDDEN);
+
+	cli_sockopt(cli, sockops);
+
+	/* Create the file. */
+	if (!NT_STATUS_IS_OK(cli_open(cli, fname, O_RDWR|O_CREAT|O_EXCL, DENY_NONE, &fnum))) {
+		printf("open of %s failed (%s)\n", fname, cli_errstr(cli));
+		return false;
+	}
+
+	if (!NT_STATUS_IS_OK(cli_close(cli, fnum))) {
+		printf("close1 failed (%s)\n", cli_errstr(cli));
+		return false;
+	}
+
+	/* Now create a hardlink. */
+	if (!NT_STATUS_IS_OK(cli_nt_hardlink(cli, fname, fname_ln))) {
+		printf("nt hardlink failed (%s)\n", cli_errstr(cli));
+		return false;
+	}
+
+	/* Open the original file. */
+	status = cli_ntcreate(cli, fname, 0, FILE_READ_DATA,
+			FILE_ATTRIBUTE_NORMAL,
+			FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,
+			FILE_OPEN_IF, 0, 0, &fnum);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("ntcreate of %s failed (%s)\n", fname, nt_errstr(status));
+		return false;
+	}
+
+	/* Unlink the hard link path. */
+	status = cli_ntcreate(cli, fname_ln, 0, DELETE_ACCESS,
+			FILE_ATTRIBUTE_NORMAL,
+			FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,
+			FILE_OPEN_IF, 0, 0, &fnum1);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("ntcreate of %s failed (%s)\n", fname_ln, nt_errstr(status));
+		return false;
+	}
+	status = cli_nt_delete_on_close(cli, fnum1, true);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("(%s) failed to set delete_on_close %s: %s\n",
+			__location__, fname_ln, nt_errstr(status));
+		return false;
+	}
+
+	status = cli_close(cli, fnum1);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("close %s failed (%s)\n",
+			fname_ln, nt_errstr(status));
+		return false;
+	}
+
+	status = cli_close(cli, fnum);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("close %s failed (%s)\n",
+			fname, nt_errstr(status));
+		return false;
+	}
+
+	/* Ensure the original file is still there. */
+        status = cli_getatr(cli, fname, NULL, NULL, &t);
+        if (!NT_STATUS_IS_OK(status)) {
+                printf("%s getatr on file %s failed (%s)\n",
+			__location__,
+			fname,
+			nt_errstr(status));
+                correct = False;
+        }
+
+	/* Ensure the link path is gone. */
+	status = cli_getatr(cli, fname_ln, NULL, NULL, &t);
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
+                printf("%s, getatr for file %s returned wrong error code %s "
+			"- should have been deleted\n",
+			__location__,
+			fname_ln, nt_errstr(status));
+                correct = False;
+        }
+
+	cli_unlink(cli, fname, aSYSTEM | aHIDDEN);
+	cli_unlink(cli, fname_ln, aSYSTEM | aHIDDEN);
+
+	if (!torture_close_connection(cli)) {
+		correct = false;
+	}
+
+	printf("finished deletetest-ln\n");
+
+	return correct;
+}
 
 /*
   print out server properties
@@ -7970,6 +8080,7 @@ static struct {
 	{"XCOPY", run_xcopy, 0},
 	{"RENAME", run_rename, 0},
 	{"DELETE", run_deletetest, 0},
+	{"DELETE-LN", run_deletetest_ln, 0},
 	{"PROPERTIES", run_properties, 0},
 	{"MANGLE", torture_mangle, 0},
 	{"MANGLE1", run_mangle1, 0},
