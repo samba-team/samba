@@ -44,6 +44,7 @@ static void save_file(const char *fname, void *ppacket, size_t length)
 	}
 	if (write(fd, ppacket, length) != length) {
 		fprintf(stderr,"Failed to write %s\n", fname);
+		close(fd);
 		return;
 	}
 	close(fd);
