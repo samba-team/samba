@@ -269,7 +269,7 @@ static PyObject *py_auth_context_new(PyTypeObject *type, PyObject *args, PyObjec
 	PyObject *py_methods = Py_None;
 	TALLOC_CTX *mem_ctx;
 	struct auth_context *auth_context;
-	struct messaging_context *messaging_context;
+	struct messaging_context *messaging_context = NULL;
 	struct loadparm_context *lp_ctx;
 	struct tevent_context *ev;
 	struct ldb_context *ldb;
@@ -301,7 +301,9 @@ static PyObject *py_auth_context_new(PyTypeObject *type, PyObject *args, PyObjec
 		return NULL;
 	}
 
-	messaging_context = py_talloc_get_type(py_messaging_ctx, struct messaging_context);
+	if (py_messaging_ctx != Py_None) {
+		messaging_context = py_talloc_get_type(py_messaging_ctx, struct messaging_context);
+	}
 
 	if (py_methods == Py_None && py_ldb == Py_None) {
 		nt_status = auth_context_create(mem_ctx, ev, messaging_context, lp_ctx, &auth_context);
@@ -370,6 +372,13 @@ void initauth(void)
 	if (PyType_Ready(&PyAuthSession) < 0)
 		return;
 
+	PyAuthContext.tp_base = PyTalloc_GetObjectType();
+	if (PyAuthContext.tp_base == NULL)
+		return;
+
+	if (PyType_Ready(&PyAuthContext) < 0)
+		return;
+
 	m = Py_InitModule3("auth", py_auth_methods,
 					   "Authentication and authorization support.");
 	if (m == NULL)
@@ -377,6 +386,8 @@ void initauth(void)
 
 	Py_INCREF(&PyAuthSession);
 	PyModule_AddObject(m, "AuthSession", (PyObject *)&PyAuthSession);
+	Py_INCREF(&PyAuthContext);
+	PyModule_AddObject(m, "AuthContext", (PyObject *)&PyAuthContext);
 
 #define ADD_FLAG(val)  PyModule_AddObject(m, #val, PyInt_FromLong(val))
 	ADD_FLAG(AUTH_SESSION_INFO_DEFAULT_GROUPS);
