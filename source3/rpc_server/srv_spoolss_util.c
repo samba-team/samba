@@ -1773,6 +1773,12 @@ WERROR winreg_update_printer(TALLOC_CTX *mem_ctx,
 				goto done;
 			}
 		}
+
+		if (devmode->size != (ndr_size_spoolss_DeviceMode(devmode, 0) - devmode->__driverextra_length)) {
+			result = WERR_INVALID_PARAM;
+			goto done;
+		}
+
 		ndr_err = ndr_push_struct_blob(&blob, tmp_ctx, devmode,
 				(ndr_push_flags_fn_t) ndr_push_spoolss_DeviceMode);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
