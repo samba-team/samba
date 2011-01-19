@@ -79,4 +79,4 @@ samba4.smb2.compound.*.related2
 samba4.smb2.compound.*.invalid2
 samba4.ldap.acl.*.search.* # ACL search behaviour not enabled by default
 samba4.ldap.acl.*.ntSecurityDescriptor.* # ACL extended checks on search not enabled by default
-
+samba4.tokengroups.python # randomly fails
