@@ -122,12 +122,10 @@ _PUBLIC_ NTSTATUS auth_get_server_info_principal(TALLOC_CTX *mem_ctx,
 			continue;
 		}
 
-		NT_STATUS_NOT_OK_RETURN(nt_status);
-
-		break;
+		return nt_status;
 	}
 
-	return NT_STATUS_OK;
+	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
 /**
@@ -437,11 +435,6 @@ _PUBLIC_ NTSTATUS auth_context_create_methods(TALLOC_CTX *mem_ctx, const char **
 
 	auth_init();
 
-	if (!methods) {
-		DEBUG(0,("auth_context_create: No auth method list!?\n"));
-		return NT_STATUS_INTERNAL_ERROR;
-	}
-
 	if (!ev) {
 		DEBUG(0,("auth_context_create: called with out event context\n"));
 		return NT_STATUS_INTERNAL_ERROR;
@@ -463,7 +456,7 @@ _PUBLIC_ NTSTATUS auth_context_create_methods(TALLOC_CTX *mem_ctx, const char **
 		ctx->sam_ctx = samdb_connect(ctx, ctx->event_ctx, ctx->lp_ctx, system_session(ctx->lp_ctx), 0);
 	}
 
-	for (i=0; methods[i] ; i++) {
+	for (i=0; methods && methods[i] ; i++) {
 		struct auth_method_context *method;
 
 		method = talloc(ctx, struct auth_method_context);
@@ -478,10 +471,6 @@ _PUBLIC_ NTSTATUS auth_context_create_methods(TALLOC_CTX *mem_ctx, const char **
 		method->auth_ctx	= ctx;
 		method->depth		= i;
 		DLIST_ADD_END(ctx->methods, method, struct auth_method_context *);
-	}
-
-	if (!ctx->methods) {
-		return NT_STATUS_INTERNAL_ERROR;
 	}
 
 	ctx->check_password = auth_check_password;
