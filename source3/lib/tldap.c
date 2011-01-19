@@ -2371,6 +2371,7 @@ void tldap_msg_sctrls(struct tldap_message *msg, int *num_sctrls,
 	if (msg == NULL) {
 		*sctrls = NULL;
 		*num_sctrls = 0;
+		return;
 	}
 	*sctrls = msg->res_sctrls;
 	*num_sctrls = talloc_array_length(msg->res_sctrls);
