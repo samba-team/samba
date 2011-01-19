@@ -83,6 +83,7 @@ static void load_key_from_file(char *filename, char *key)
 		fclose(keyfile);
 		exit(1);
 	}
+	fclose(keyfile);
 }
 
 static void create_file_from_key(char *filename)
