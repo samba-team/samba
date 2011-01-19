@@ -128,6 +128,7 @@ static struct blocking_lock_record *onefs_cbrl_find_blr(uint64_t id)
 				    onefs_cbrl_blr_state_str(blr)));
 				break;
 			}
+		}
 	} else {
 		for (blr = sconn->smb1.locks.blocking_lock_queue; blr; blr = blr->next) {
 			bs = (struct onefs_cbrl_blr_state *)blr->blr_private;
