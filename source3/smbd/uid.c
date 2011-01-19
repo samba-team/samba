@@ -229,7 +229,7 @@ void conn_clear_vuid_cache(connection_struct *conn, uint16_t vuid)
 bool change_to_user(connection_struct *conn, uint16 vuid)
 {
 	const struct auth_serversupplied_info *server_info = NULL;
-	user_struct *vuser = get_valid_user_struct(conn->sconn, vuid);
+	user_struct *vuser;
 	int snum;
 	gid_t gid;
 	uid_t uid;
@@ -241,6 +241,8 @@ bool change_to_user(connection_struct *conn, uint16 vuid)
 		DEBUG(2,("change_to_user: Connection not open\n"));
 		return(False);
 	}
+
+	vuser = get_valid_user_struct(conn->sconn, vuid);
 
 	/*
 	 * We need a separate check in security=share mode due to vuid
