@@ -941,10 +941,14 @@ void *allocate_anonymous_shared(size_t bufsz)
 {
 	void *buf;
 	size_t pagesz = getpagesize();
+	size_t pagecnt;
 
+	/* round up to full pages */
+	pagecnt = bufsz / pagesz;
 	if (bufsz % pagesz) {
-		bufsz = (bufsz + pagesz) % pagesz; /* round up to pagesz */
+		pagecnt += 1;
 	}
+	bufsz = pagesz * pagecnt;
 
 #ifdef MAP_ANON
 	/* BSD */
