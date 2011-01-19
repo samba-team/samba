@@ -5,7 +5,7 @@
    Copyright (C) Tim Potter 2003
    Copyright (C) Stefan Metzmacher 2005
    Copyright (C) Jelmer Vernooij 2007
-   Copyright (C) Guenther Deschner 2009-2010
+   Copyright (C) Guenther Deschner 2009-2011
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -2135,7 +2135,7 @@ static bool test_devicemode_full(struct torture_context *tctx,
 	bool ret = true;
 	NTSTATUS status;
 
-#define TEST_DEVMODE_INT_EXP(lvl1, field1, lvl2, field2, value, exp_value) do { \
+#define TEST_DEVMODE_INT_EXP_RESULT(lvl1, field1, lvl2, field2, value, exp_value, expected_result) do { \
 		torture_comment(tctx, "field test %d/%s vs %d/%s\n", lvl1, #field1, lvl2, #field2); \
 		q.in.level = lvl1; \
 		TESTGETCALL(GetPrinter, q) \
@@ -2147,16 +2147,22 @@ static bool test_devicemode_full(struct torture_context *tctx,
 		}\
 		devmode_ctr.devmode = q.out.info->info ## lvl1.devmode; \
 		devmode_ctr.devmode->field1 = value; \
-		TESTSETCALL(SetPrinter, s) \
-		TESTGETCALL(GetPrinter, q) \
-		INT_EQUAL(q.out.info->info ## lvl1.devmode->field1, exp_value, field1); \
-		q.in.level = lvl2; \
-		TESTGETCALL(GetPrinter, q) \
-		INT_EQUAL(q.out.info->info ## lvl2.devmode->field2, exp_value, field1); \
+		TESTSETCALL_EXP(SetPrinter, s, expected_result) \
+		if (W_ERROR_IS_OK(expected_result)) { \
+			TESTGETCALL(GetPrinter, q) \
+			INT_EQUAL(q.out.info->info ## lvl1.devmode->field1, exp_value, field1); \
+			q.in.level = lvl2; \
+			TESTGETCALL(GetPrinter, q) \
+			INT_EQUAL(q.out.info->info ## lvl2.devmode->field2, exp_value, field1); \
+		}\
 	} while (0)
 
+#define TEST_DEVMODE_INT_EXP(lvl1, field1, lvl2, field2, value, expected_result) do { \
+        TEST_DEVMODE_INT_EXP_RESULT(lvl1, field1, lvl2, field2, value, value, expected_result); \
+        } while (0)
+
 #define TEST_DEVMODE_INT(lvl1, field1, lvl2, field2, value) do { \
-        TEST_DEVMODE_INT_EXP(lvl1, field1, lvl2, field2, value, value); \
+        TEST_DEVMODE_INT_EXP_RESULT(lvl1, field1, lvl2, field2, value, value, WERR_OK); \
         } while (0)
 
 	ZERO_STRUCT(devmode_ctr);
