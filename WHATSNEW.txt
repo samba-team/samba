@@ -8,6 +8,9 @@ This is the latest stable release of Samba 3.4.
 
 Major enhancements in Samba 3.4.10 include:
 
+   o Fix smbd coredump (bug #7617).
+   o Fix Winbind internal error (bug #7636).
+   o Fix flaky Winbind against w2k8 (bug #7881).
 
 
 Changes since 3.4.9
