@@ -4893,8 +4893,8 @@ static int max_open_files(void)
 #if defined(RLIM_INFINITY)
 		if(rl.rlim_cur == RLIM_INFINITY)
 			rlimit_max = MAX_OPEN_FILES;
-	}
 #endif
+	}
 #endif
 
 	if (sysctl_max < MIN_OPEN_FILES_WINDOWS) {
