@@ -2186,12 +2186,20 @@ static bool test_devicemode_full(struct torture_context *tctx,
 	uint16_t __driverextra_length;/* [value(r->driverextra_data.length)] */
 	uint32_t fields;
 #endif
-
 	TEST_DEVMODE_INT_EXP(8, size,		8, size, __LINE__, WERR_INVALID_PARAM);
 	TEST_DEVMODE_INT_EXP(8, size,		8, size, 0, WERR_INVALID_PARAM);
 	TEST_DEVMODE_INT_EXP(8, size,		8, size, 0xffff, WERR_INVALID_PARAM);
-	TEST_DEVMODE_INT_EXP(8, size,		8, size, ndr_size_spoolss_DeviceMode(devmode_ctr.devmode, 0), WERR_INVALID_PARAM);
+	TEST_DEVMODE_INT_EXP(8, size,		8, size, ndr_size_spoolss_DeviceMode(devmode_ctr.devmode, 0), (devmode_ctr.devmode->__driverextra_length > 0 ) ? WERR_INVALID_PARAM : WERR_OK);
 	TEST_DEVMODE_INT(8, size,		8, size, ndr_size_spoolss_DeviceMode(devmode_ctr.devmode, 0) - devmode_ctr.devmode->__driverextra_length);
+
+	devmode_ctr.devmode->driverextra_data = data_blob_string_const("foobar");
+	torture_assert(tctx,
+		test_devmode_set_level(tctx, b, handle, 8, devmode_ctr.devmode),
+		"failed to set devmode");
+
+	TEST_DEVMODE_INT_EXP(8, size,		8, size, ndr_size_spoolss_DeviceMode(devmode_ctr.devmode, 0), (devmode_ctr.devmode->__driverextra_length > 0 ) ? WERR_INVALID_PARAM : WERR_OK);
+	TEST_DEVMODE_INT(8, size,		8, size, ndr_size_spoolss_DeviceMode(devmode_ctr.devmode, 0) - devmode_ctr.devmode->__driverextra_length);
+
 	TEST_DEVMODE_INT(8, orientation,	8, orientation, __LINE__);
 	TEST_DEVMODE_INT(8, papersize,		8, papersize, __LINE__);
 	TEST_DEVMODE_INT(8, paperlength,	8, paperlength, __LINE__);
