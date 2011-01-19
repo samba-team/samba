@@ -2217,7 +2217,7 @@ WERROR winreg_get_printer(TALLOC_CTX *mem_ctx,
 	}
 
 	if (info2->devmode) {
-		info2->devmode->size = ndr_size_spoolss_DeviceMode(info2->devmode, 0);
+		info2->devmode->size = ndr_size_spoolss_DeviceMode(info2->devmode, 0) - info2->devmode->driverextra_data.length;
 	}
 
 	result = winreg_get_printer_secdesc(info2,
