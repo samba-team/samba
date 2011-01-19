@@ -51,8 +51,10 @@ int net_afs_key(struct net_context *c, int argc, const char **argv)
 
 	if (read(fd, &keyfile, sizeof(keyfile)) != sizeof(keyfile)) {
 		d_fprintf(stderr, _("Could not read keyfile\n"));
+		close(fd);
 		return -1;
 	}
+	close(fd);
 
 	if (!secrets_store_afs_keyfile(argv[1], &keyfile)) {
 		d_fprintf(stderr, _("Could not write keyfile to secrets.tdb\n"));
