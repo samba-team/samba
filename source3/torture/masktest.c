@@ -226,11 +226,12 @@ static struct cli_state *connect_one(char *share)
 		}
 	}
 
-	if (!NT_STATUS_IS_OK(cli_session_setup(c, username, 
-					       password, strlen(password),
-					       password, strlen(password),
-					       lp_workgroup()))) {
-		DEBUG(0,("session setup failed: %s\n", cli_errstr(c)));
+	status = cli_session_setup(c, username,
+				   password, strlen(password),
+				   password, strlen(password),
+				   lp_workgroup());
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("session setup failed: %s\n", nt_errstr(status)));
 		return NULL;
 	}
 
