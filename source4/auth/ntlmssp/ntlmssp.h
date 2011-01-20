@@ -33,4 +33,6 @@ struct gensec_ntlmssp_context {
 struct loadparm_context;
 struct auth_session_info;
 
+NTSTATUS gensec_ntlmssp_init(void);
+
 #include "auth/ntlmssp/proto.h"
