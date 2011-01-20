@@ -111,141 +111,30 @@ size_t gensec_ntlmssp_sig_size(struct gensec_security *gensec_security, size_t d
 }
 
 NTSTATUS gensec_ntlmssp_wrap(struct gensec_security *gensec_security, 
-			     TALLOC_CTX *sig_mem_ctx, 
+			     TALLOC_CTX *out_mem_ctx,
 			     const DATA_BLOB *in, 
 			     DATA_BLOB *out)
 {
-	DATA_BLOB sig;
-	NTSTATUS nt_status;
+	struct gensec_ntlmssp_context *gensec_ntlmssp =
+		talloc_get_type_abort(gensec_security->private_data,
+				      struct gensec_ntlmssp_context);
 
-	if (gensec_have_feature(gensec_security, GENSEC_FEATURE_SEAL)) {
-
-		*out = data_blob_talloc(sig_mem_ctx, NULL, in->length + NTLMSSP_SIG_SIZE);
-		if (!out->data) {
-			return NT_STATUS_NO_MEMORY;
-		}
-		memcpy(out->data + NTLMSSP_SIG_SIZE, in->data, in->length);
-		
-	        nt_status = gensec_ntlmssp_seal_packet(gensec_security, sig_mem_ctx, 
-						       out->data + NTLMSSP_SIG_SIZE, 
-						       out->length - NTLMSSP_SIG_SIZE, 
-						       out->data + NTLMSSP_SIG_SIZE, 
-						       out->length - NTLMSSP_SIG_SIZE, 
-						       &sig);
-		
-		if (NT_STATUS_IS_OK(nt_status)) {
-			memcpy(out->data, sig.data, NTLMSSP_SIG_SIZE);
-		}
-		return nt_status;
-
-	} else if (gensec_have_feature(gensec_security, GENSEC_FEATURE_SIGN)) {
-
-		*out = data_blob_talloc(sig_mem_ctx, NULL, in->length + NTLMSSP_SIG_SIZE);
-		if (!out->data) {
-			return NT_STATUS_NO_MEMORY;
-		}
-		memcpy(out->data + NTLMSSP_SIG_SIZE, in->data, in->length);
-
-	        nt_status = gensec_ntlmssp_sign_packet(gensec_security, sig_mem_ctx, 
-						       out->data + NTLMSSP_SIG_SIZE, 
-						       out->length - NTLMSSP_SIG_SIZE, 
-						       out->data + NTLMSSP_SIG_SIZE, 
-						       out->length - NTLMSSP_SIG_SIZE, 
-						       &sig);
-
-		if (NT_STATUS_IS_OK(nt_status)) {
-			memcpy(out->data, sig.data, NTLMSSP_SIG_SIZE);
-		}
-		return nt_status;
-
-	} else {
-		*out = *in;
-		return NT_STATUS_OK;
-	}
+	return ntlmssp_wrap(gensec_ntlmssp->ntlmssp_state,
+			    out_mem_ctx,
+			    in, out);
 }
 
 
 NTSTATUS gensec_ntlmssp_unwrap(struct gensec_security *gensec_security, 
-			       TALLOC_CTX *sig_mem_ctx, 
+			       TALLOC_CTX *out_mem_ctx,
 			       const DATA_BLOB *in, 
 			       DATA_BLOB *out)
 {
 	struct gensec_ntlmssp_context *gensec_ntlmssp =
 		talloc_get_type_abort(gensec_security->private_data,
 				      struct gensec_ntlmssp_context);
-	struct ntlmssp_state *ntlmssp_state = gensec_ntlmssp->ntlmssp_state;
-	DATA_BLOB sig;
 
-	if (gensec_have_feature(gensec_security, GENSEC_FEATURE_SEAL)) {
-		if (in->length < NTLMSSP_SIG_SIZE) {
-			return NT_STATUS_INVALID_PARAMETER;
-		}
-		sig.data = in->data;
-		sig.length = NTLMSSP_SIG_SIZE;
-
-		*out = data_blob_talloc(sig_mem_ctx, in->data + NTLMSSP_SIG_SIZE, in->length - NTLMSSP_SIG_SIZE);
-		
-	        return gensec_ntlmssp_unseal_packet(gensec_security, sig_mem_ctx, 
-						    out->data, out->length, 
-						    out->data, out->length, 
-						    &sig);
-						  
-	} else if (gensec_have_feature(gensec_security, GENSEC_FEATURE_SIGN)) {
-		NTSTATUS status;
-		struct ntlmssp_crypt_direction save_direction;
-
-		if (in->length < NTLMSSP_SIG_SIZE) {
-			return NT_STATUS_INVALID_PARAMETER;
-		}
-		sig.data = in->data;
-		sig.length = NTLMSSP_SIG_SIZE;
-		*out = data_blob_talloc(sig_mem_ctx, in->data + NTLMSSP_SIG_SIZE, in->length - NTLMSSP_SIG_SIZE);
-
-		if (ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_NTLM2) {
-			save_direction = ntlmssp_state->crypt->ntlm2.receiving;
-		} else {
-			save_direction = ntlmssp_state->crypt->ntlm;
-		}
-
-		status = gensec_ntlmssp_check_packet(gensec_security, sig_mem_ctx,
-						     out->data, out->length,
-						     out->data, out->length,
-						     &sig);
-		if (!NT_STATUS_IS_OK(status)) {
-			NTSTATUS check_status = status;
-			/*
-			 * The Windows LDAP libraries seems to have a bug
-			 * and always use sealing even if only signing was
-			 * negotiated. So we need to fallback.
-			 */
-
-			if (ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_NTLM2) {
-				ntlmssp_state->crypt->ntlm2.receiving = save_direction;
-			} else {
-				ntlmssp_state->crypt->ntlm = save_direction;
-			}
-
-			status = gensec_ntlmssp_unseal_packet(gensec_security,
-							      sig_mem_ctx,
-							      out->data,
-							      out->length,
-							      out->data,
-							      out->length,
-							      &sig);
-			if (NT_STATUS_IS_OK(status)) {
-				ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_SEAL;
-			} else {
-				status = check_status;
-			}
-		}
-
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(1, ("NTLMSSP packet check for unwrap failed due to invalid signature\n"));
-		}
-		return status;
-	} else {
-		*out = *in;
-		return NT_STATUS_OK;
-	}
+	return ntlmssp_unwrap(gensec_ntlmssp->ntlmssp_state,
+			      out_mem_ctx,
+			      in, out);
 }
-

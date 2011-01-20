@@ -160,4 +160,12 @@ NTSTATUS ntlmssp_unseal_packet(struct ntlmssp_state *ntlmssp_state,
 			       uint8_t *data, size_t length,
 			       const uint8_t *whole_pdu, size_t pdu_length,
 			       const DATA_BLOB *sig);
+NTSTATUS ntlmssp_wrap(struct ntlmssp_state *ntlmssp_state,
+		      TALLOC_CTX *out_mem_ctx,
+		      const DATA_BLOB *in,
+		      DATA_BLOB *out);
+NTSTATUS ntlmssp_unwrap(struct ntlmssp_state *ntlmssp_stae,
+			TALLOC_CTX *out_mem_ctx,
+			const DATA_BLOB *in,
+			DATA_BLOB *out);
 NTSTATUS ntlmssp_sign_init(struct ntlmssp_state *ntlmssp_state);
