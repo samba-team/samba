@@ -179,11 +179,11 @@ case "$1" in
 		$cmd &
 	}
 
-	# once every 60 seconds, update the statd state database for which
+	# once every 600 seconds, update the statd state database for which
 	# clients need notifications
 	LAST_UPDATE=`stat --printf="%Y" $CTDB_VARDIR/state/statd/update-trigger 2>/dev/null`
 	CURRENT_TIME=`date +"%s"`
-	[ $CURRENT_TIME -ge $(($LAST_UPDATE + 60)) ] && {
+	[ $CURRENT_TIME -ge $(($LAST_UPDATE + 600)) ] && {
 	    mkdir -p $CTDB_VARDIR/state/statd
 	    touch $CTDB_VARDIR/state/statd/update-trigger
 	    $CTDB_BASE/statd-callout updatelocal &
