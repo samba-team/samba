@@ -27,6 +27,9 @@
 #define SPOOLSS_PIPE_NAME "spoolss"
 #define DAEMON_NAME "spoolssd"
 
+void start_spoolssd(struct tevent_context *ev_ctx,
+		    struct messaging_context *msg_ctx);
+
 static void spoolss_reopen_logs(void)
 {
 	char *lfile = lp_logfile();
@@ -48,9 +51,12 @@ static void smb_conf_updated(struct messaging_context *msg,
 			     struct server_id server_id,
 			     DATA_BLOB *data)
 {
+	struct tevent_context *ev_ctx = talloc_get_type_abort(private_data,
+							     struct tevent_context);
+
 	DEBUG(10, ("Got message saying smb.conf was updated. Reloading.\n"));
 	change_to_root_user();
-	reload_printers(msg);
+	reload_printers(ev_ctx, msg);
 	spoolss_reopen_logs();
 }
 
@@ -64,12 +70,12 @@ static void spoolss_sig_term_handler(struct tevent_context *ev,
 	exit_server_cleanly("termination signal");
 }
 
-static void spoolss_setup_sig_term_handler(void)
+static void spoolss_setup_sig_term_handler(struct tevent_context *ev_ctx)
 {
 	struct tevent_signal *se;
 
-	se = tevent_add_signal(server_event_context(),
-			       server_event_context(),
+	se = tevent_add_signal(ev_ctx,
+			       ev_ctx,
 			       SIGTERM, 0,
 			       spoolss_sig_term_handler,
 			       NULL);
@@ -85,21 +91,25 @@ static void spoolss_sig_hup_handler(struct tevent_context *ev,
 				    void *siginfo,
 				    void *private_data)
 {
+	struct messaging_context *msg_ctx = talloc_get_type_abort(private_data,
+								  struct messaging_context);
+
 	change_to_root_user();
 	DEBUG(1,("Reloading printers after SIGHUP\n"));
-	reload_printers(server_messaging_context());
+	reload_printers(ev, msg_ctx);
 	spoolss_reopen_logs();
 }
 
-static void spoolss_setup_sig_hup_handler(void)
+static void spoolss_setup_sig_hup_handler(struct tevent_context *ev_ctx,
+					  struct messaging_context *msg_ctx)
 {
 	struct tevent_signal *se;
 
-	se = tevent_add_signal(server_event_context(),
-			       server_event_context(),
+	se = tevent_add_signal(ev_ctx,
+			       ev_ctx,
 			       SIGHUP, 0,
 			       spoolss_sig_hup_handler,
-			       NULL);
+			       msg_ctx);
 	if (!se) {
 		exit_server("failed to setup SIGHUP handler");
 	}
@@ -107,10 +117,21 @@ static void spoolss_setup_sig_hup_handler(void)
 
 static bool spoolss_init_cb(void *ptr)
 {
-	return nt_printing_tdb_migrate(server_messaging_context());
+	struct messaging_context *msg_ctx = talloc_get_type_abort(
+		ptr, struct messaging_context);
+
+	return nt_printing_tdb_migrate(msg_ctx);
 }
 
-void start_spoolssd(void)
+static bool spoolss_shutdown_cb(void *ptr)
+{
+	srv_spoolss_cleanup();
+
+	return true;
+}
+
+void start_spoolssd(struct tevent_context *ev_ctx,
+		    struct messaging_context *msg_ctx)
 {
 	struct rpc_srv_callbacks spoolss_cb;
 	pid_t pid;
@@ -135,8 +156,8 @@ void start_spoolssd(void)
 	/* child */
 	close_low_fds(false);
 
-	status = reinit_after_fork(server_messaging_context(),
-				   server_event_context(),
+	status = reinit_after_fork(msg_ctx,
+				   ev_ctx,
 				   procid_self(), true);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("reinit_after_fork() failed\n"));
@@ -145,8 +166,8 @@ void start_spoolssd(void)
 
 	spoolss_reopen_logs();
 
-	spoolss_setup_sig_term_handler();
-	spoolss_setup_sig_hup_handler();
+	spoolss_setup_sig_term_handler(ev_ctx);
+	spoolss_setup_sig_hup_handler(ev_ctx, msg_ctx);
 
 	if (!serverid_register(procid_self(),
 				FLAG_MSG_GENERAL|FLAG_MSG_SMBD
@@ -158,9 +179,9 @@ void start_spoolssd(void)
 		exit(1);
 	}
 
-	messaging_register(server_messaging_context(), NULL,
+	messaging_register(msg_ctx, NULL,
 			   MSG_PRINTER_UPDATE, print_queue_receive);
-	messaging_register(server_messaging_context(), NULL,
+	messaging_register(msg_ctx, ev_ctx,
 			   MSG_SMB_CONF_UPDATED, smb_conf_updated);
 
 	/*
@@ -169,7 +190,8 @@ void start_spoolssd(void)
 	 * can't register it twice.
 	 */
 	spoolss_cb.init = spoolss_init_cb;
-	spoolss_cb.shutdown = NULL;
+	spoolss_cb.shutdown = spoolss_shutdown_cb;
+	spoolss_cb.private_data = msg_ctx;
 
 	status = rpc_winreg_init(NULL);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -185,14 +207,14 @@ void start_spoolssd(void)
 		exit(1);
 	}
 
-	if (!setup_named_pipe_socket(SPOOLSS_PIPE_NAME, server_event_context())) {
+	if (!setup_named_pipe_socket(SPOOLSS_PIPE_NAME, ev_ctx)) {
 		exit(1);
 	}
 
 	DEBUG(1, ("SPOOLSS Daemon Started (%d)\n", getpid()));
 
 	/* loop forever */
-	ret = tevent_loop_wait(server_event_context());
+	ret = tevent_loop_wait(ev_ctx);
 
 	/* should not be reached */
 	DEBUG(0,("background_queue: tevent_loop_wait() exited with %d - %s\n",

@@ -40,7 +40,8 @@
 extern void start_epmd(struct tevent_context *ev_ctx,
 		       struct messaging_context *msg_ctx);
 
-extern void start_spoolssd(void);
+extern void start_spoolssd(struct event_context *ev_ctx,
+			   struct messaging_context *msg_ctx);
 
 #ifdef WITH_DFS
 extern int dcelogin_atmost_once;
@@ -1253,7 +1254,8 @@ extern void build_options(bool screen);
 						   "rpc_server", "spoolss",
 						   "embedded");
 		if (StrCaseCmp(rpcsrv_type, "embedded") != 0) {
-			start_spoolssd();
+			start_spoolssd(smbd_event_context(),
+				       smbd_messaging_context());
 		}
 	}
 
