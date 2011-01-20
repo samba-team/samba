@@ -50,11 +50,8 @@ struct loadparm_context;
 
 struct auth_serversupplied_info
 {
-	struct dom_sid *account_sid;
-	struct dom_sid *primary_group_sid;
-
-	size_t n_domain_groups;
-	struct dom_sid **domain_groups;
+	size_t num_sids;
+	struct dom_sid *sids;
 
 	DATA_BLOB user_session_key;
 	DATA_BLOB lm_session_key;

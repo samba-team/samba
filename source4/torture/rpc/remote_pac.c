@@ -603,21 +603,17 @@ static bool test_S2U4Self(struct torture_context *tctx,
 				 s2u4self_session_info->server_info->account_name, "Account name differs for S2U4Self");
 	torture_assert_str_equal(tctx, netlogon_server_info->full_name == NULL ? "" : netlogon_server_info->full_name, kinit_session_info->server_info->full_name, "Full name differs for kinit-based PAC");
 	torture_assert_str_equal(tctx, netlogon_server_info->full_name == NULL ? "" : netlogon_server_info->full_name, s2u4self_session_info->server_info->full_name, "Full name differs for S2U4Self");
-	torture_assert(tctx, dom_sid_equal(netlogon_server_info->account_sid, kinit_session_info->server_info->account_sid), "Account SID differs for kinit-based PAC");
-	torture_assert(tctx, dom_sid_equal(netlogon_server_info->primary_group_sid, kinit_session_info->server_info->primary_group_sid), "Primary Group SID differs for kinit-based PAC");
-	torture_assert(tctx, dom_sid_equal(netlogon_server_info->account_sid, s2u4self_session_info->server_info->account_sid), "Account SID differs for S2U4Self");
-	torture_assert(tctx, dom_sid_equal(netlogon_server_info->primary_group_sid, s2u4self_session_info->server_info->primary_group_sid), "Primary Group SID differs for S2U4Self");
-	torture_assert_int_equal(tctx, netlogon_server_info->n_domain_groups, kinit_session_info->server_info->n_domain_groups, "Different numbers of domain groups for kinit-based PAC");
-	torture_assert_int_equal(tctx, netlogon_server_info->n_domain_groups, s2u4self_session_info->server_info->n_domain_groups, "Different numbers of domain groups for S2U4Self");
+	torture_assert_int_equal(tctx, netlogon_server_info->num_sids, kinit_session_info->server_info->num_sids, "Different numbers of domain groups for kinit-based PAC");
+	torture_assert_int_equal(tctx, netlogon_server_info->num_sids, s2u4self_session_info->server_info->num_sids, "Different numbers of domain groups for S2U4Self");
 
 	builtin_domain = dom_sid_parse_talloc(tmp_ctx, SID_BUILTIN);
 
-	for (i = 0; i < kinit_session_info->server_info->n_domain_groups; i++) {
-		torture_assert(tctx, dom_sid_equal(netlogon_server_info->domain_groups[i], kinit_session_info->server_info->domain_groups[i]), "Different domain groups for kinit-based PAC");
-		torture_assert(tctx, dom_sid_equal(netlogon_server_info->domain_groups[i], s2u4self_session_info->server_info->domain_groups[i]), "Different domain groups for S2U4Self");
-		torture_assert(tctx, !dom_sid_in_domain(builtin_domain, s2u4self_session_info->server_info->domain_groups[i]), "Returned BUILTIN domain in groups for S2U4Self");
-		torture_assert(tctx, !dom_sid_in_domain(builtin_domain, kinit_session_info->server_info->domain_groups[i]), "Returned BUILTIN domain in groups kinit-based PAC");
-		torture_assert(tctx, !dom_sid_in_domain(builtin_domain, netlogon_server_info->domain_groups[i]), "Returned BUILTIN domian in groups from NETLOGON SamLogon reply");
+	for (i = 0; i < kinit_session_info->server_info->num_sids; i++) {
+		torture_assert(tctx, dom_sid_equal(&netlogon_server_info->sids[i], &kinit_session_info->server_info->sids[i]), "Different domain groups for kinit-based PAC");
+		torture_assert(tctx, dom_sid_equal(&netlogon_server_info->sids[i], &s2u4self_session_info->server_info->sids[i]), "Different domain groups for S2U4Self");
+		torture_assert(tctx, !dom_sid_in_domain(builtin_domain, &s2u4self_session_info->server_info->sids[i]), "Returned BUILTIN domain in groups for S2U4Self");
+		torture_assert(tctx, !dom_sid_in_domain(builtin_domain, &kinit_session_info->server_info->sids[i]), "Returned BUILTIN domain in groups kinit-based PAC");
+		torture_assert(tctx, !dom_sid_in_domain(builtin_domain, &netlogon_server_info->sids[i]), "Returned BUILTIN domian in groups from NETLOGON SamLogon reply");
 	}
 
 	return true;

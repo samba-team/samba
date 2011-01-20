@@ -149,7 +149,7 @@ static int construct_token_groups(struct ldb_module *module,
 	const char *account_sid_string;
 	const char *account_sid_dn;
 	DATA_BLOB account_sid_blob;
-	struct dom_sid **groupSIDs = NULL;
+	struct dom_sid *groupSIDs = NULL;
 	unsigned int num_groupSIDs = 0;
 
 	struct dom_sid *domain_sid;
@@ -254,7 +254,7 @@ static int construct_token_groups(struct ldb_module *module,
 	}
 
 	for (i=0; i < num_groupSIDs; i++) {
-		ret = samdb_msg_add_dom_sid(ldb, msg, msg, "tokenGroups", groupSIDs[i]);
+		ret = samdb_msg_add_dom_sid(ldb, msg, msg, "tokenGroups", &groupSIDs[i]);
 		if (ret) {
 			talloc_free(tmp_ctx);
 			return ret;

@@ -29,12 +29,32 @@ NTSTATUS auth_convert_server_info_sambaseinfo(TALLOC_CTX *mem_ctx,
 					      struct auth_serversupplied_info *server_info, 
 					      struct netr_SamBaseInfo **_sam)
 {
+	NTSTATUS status;
 	struct netr_SamBaseInfo *sam = talloc_zero(mem_ctx, struct netr_SamBaseInfo);
 	NT_STATUS_HAVE_NO_MEMORY(sam);
 
-	sam->domain_sid = dom_sid_dup(mem_ctx, server_info->account_sid);
-	NT_STATUS_HAVE_NO_MEMORY(sam->domain_sid);
-	sam->domain_sid->num_auths--;
+	if (server_info->num_sids > PRIMARY_USER_SID_INDEX) {
+		status = dom_sid_split_rid(sam, &server_info->sids[PRIMARY_USER_SID_INDEX],
+					   &sam->domain_sid, &sam->rid);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+	} else {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if (server_info->num_sids > PRIMARY_GROUP_SID_INDEX) {
+		status = dom_sid_split_rid(NULL, &server_info->sids[PRIMARY_GROUP_SID_INDEX],
+					   NULL, &sam->primary_gid);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+	} else {
+		/* if we have to encode something like SYSTEM (with no
+		 * second SID in the token) then this is the only
+		 * choice */
+		sam->primary_gid = sam->rid;
+	}
 
 	sam->last_logon = server_info->last_logon;
 	sam->last_logoff =  server_info->last_logoff;
@@ -52,22 +72,19 @@ NTSTATUS auth_convert_server_info_sambaseinfo(TALLOC_CTX *mem_ctx,
 
 	sam->logon_count = server_info->logon_count;
 	sam->bad_password_count = sam->bad_password_count;
-	sam->rid = server_info->account_sid->sub_auths[server_info->account_sid->num_auths-1];
-	sam->primary_gid = server_info->primary_group_sid->sub_auths[server_info->primary_group_sid->num_auths-1];
-
 	sam->groups.count = 0;
 	sam->groups.rids = NULL;
 
-	if (server_info->n_domain_groups > 0) {
+	if (server_info->num_sids > 2) {
 		size_t i;
 		sam->groups.rids = talloc_array(sam, struct samr_RidWithAttribute,
-						server_info->n_domain_groups);
+						server_info->num_sids);
 
 		if (sam->groups.rids == NULL)
 			return NT_STATUS_NO_MEMORY;
 
-		for (i=0; i<server_info->n_domain_groups; i++) {
-			struct dom_sid *group_sid = server_info->domain_groups[i];
+		for (i=2; i<server_info->num_sids; i++) {
+			struct dom_sid *group_sid = &server_info->sids[i];
 			if (!dom_sid_in_domain(sam->domain_sid, group_sid)) {
 				/* We handle this elsewhere */
 				continue;
@@ -116,8 +133,9 @@ NTSTATUS auth_convert_server_info_saminfo3(TALLOC_CTX *mem_ctx,
 	size_t i;
 	NT_STATUS_HAVE_NO_MEMORY(sam3);
 
-	status = auth_convert_server_info_sambaseinfo(mem_ctx, server_info, &sam);
+	status = auth_convert_server_info_sambaseinfo(sam3, server_info, &sam);
 	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(sam3);
 		return status;
 	}
 	sam3->base = *sam;
@@ -126,14 +144,16 @@ NTSTATUS auth_convert_server_info_saminfo3(TALLOC_CTX *mem_ctx,
 
 	
 	sam3->sids = talloc_array(sam, struct netr_SidAttr,
-				  server_info->n_domain_groups);
-	NT_STATUS_HAVE_NO_MEMORY(sam3->sids);
-	
-	for (i=0; i<server_info->n_domain_groups; i++) {
-		if (dom_sid_in_domain(sam->domain_sid, server_info->domain_groups[i])) {
+				  server_info->num_sids);
+	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(sam3->sids, sam3);
+
+	/* We don't put the user and group SIDs in there */
+	for (i=2; i<server_info->num_sids; i++) {
+		if (dom_sid_in_domain(sam->domain_sid, &server_info->sids[i])) {
 			continue;
 		}
-		sam3->sids[sam3->sidcount].sid = talloc_reference(sam3->sids,server_info->domain_groups[i]);
+		sam3->sids[sam3->sidcount].sid = dom_sid_dup(sam3->sids, &server_info->sids[i]);
+		NT_STATUS_HAVE_NO_MEMORY_AND_FREE(sam3->sids[sam3->sidcount].sid, sam3);
 		sam3->sids[sam3->sidcount].attributes =
 			SE_GROUP_MANDATORY | SE_GROUP_ENABLED_BY_DEFAULT | SE_GROUP_ENABLED;
 		sam3->sidcount += 1;
@@ -192,24 +212,38 @@ NTSTATUS make_server_info_netlogon_validation(TALLOC_CTX *mem_ctx,
 	   trusted domains, and verify that the SID 
 	   matches.
 	*/
-	server_info->account_sid = dom_sid_add_rid(server_info, base->domain_sid, base->rid);
-	NT_STATUS_HAVE_NO_MEMORY(server_info->account_sid);
+	if (!base->domain_sid) {
+		DEBUG(0, ("Cannot operate on a Netlogon Validation without a domain SID"));
+		return NT_STATUS_INVALID_PARAMETER;
+	}
 
+	/* The IDL layer would be a better place to check this, but to
+	 * guard the integer addition below, we double-check */
+	if (base->groups.count > 65535) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
 
-	server_info->primary_group_sid = dom_sid_add_rid(server_info, base->domain_sid, base->primary_gid);
-	NT_STATUS_HAVE_NO_MEMORY(server_info->primary_group_sid);
+	server_info->num_sids = 2;
 
-	server_info->n_domain_groups = base->groups.count;
-	if (base->groups.count) {
-		server_info->domain_groups = talloc_array(server_info, struct dom_sid*, base->groups.count);
-		NT_STATUS_HAVE_NO_MEMORY(server_info->domain_groups);
-	} else {
-		server_info->domain_groups = NULL;
+	server_info->sids = talloc_array(server_info, struct dom_sid,  server_info->num_sids + base->groups.count);
+	NT_STATUS_HAVE_NO_MEMORY(server_info->sids);
+
+	server_info->sids[PRIMARY_USER_SID_INDEX] = *base->domain_sid;
+	if (!sid_append_rid(&server_info->sids[PRIMARY_USER_SID_INDEX], base->rid)) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	server_info->sids[PRIMARY_GROUP_SID_INDEX] = *base->domain_sid;
+	if (!sid_append_rid(&server_info->sids[PRIMARY_GROUP_SID_INDEX], base->primary_gid)) {
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	for (i = 0; i < base->groups.count; i++) {
-		server_info->domain_groups[i] = dom_sid_add_rid(server_info->domain_groups, base->domain_sid, base->groups.rids[i].rid);
-		NT_STATUS_HAVE_NO_MEMORY(server_info->domain_groups[i]);
+		server_info->sids[server_info->num_sids] = *base->domain_sid;
+		if (!sid_append_rid(&server_info->sids[server_info->num_sids], base->groups.rids[i].rid)) {
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+		server_info->num_sids++;
 	}
 
 	/* Copy 'other' sids.  We need to do sid filtering here to
@@ -219,21 +253,29 @@ NTSTATUS make_server_info_netlogon_validation(TALLOC_CTX *mem_ctx,
          */
 
 	if (validation_level == 3) {
-		struct dom_sid **dgrps = server_info->domain_groups;
-		size_t sidcount = server_info->n_domain_groups + validation->sam3->sidcount;
-		size_t n_dgrps = server_info->n_domain_groups;
+		struct dom_sid *dgrps = server_info->sids;
+		size_t sidcount;
 
+		/* The IDL layer would be a better place to check this, but to
+		 * guard the integer addition below, we double-check */
+		if (validation->sam3->sidcount > 65535) {
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+
+		sidcount = server_info->num_sids + validation->sam3->sidcount;
 		if (validation->sam3->sidcount > 0) {
-			dgrps = talloc_realloc(server_info, dgrps, struct dom_sid*, sidcount);
+			dgrps = talloc_realloc(server_info, dgrps, struct dom_sid, sidcount);
 			NT_STATUS_HAVE_NO_MEMORY(dgrps);
 
 			for (i = 0; i < validation->sam3->sidcount; i++) {
-				dgrps[n_dgrps + i] = talloc_reference(dgrps, validation->sam3->sids[i].sid);
+				if (validation->sam3->sids[i].sid) {
+					dgrps[server_info->num_sids] = *validation->sam3->sids[i].sid;
+					server_info->num_sids++;
+				}
 			}
 		}
 
-		server_info->n_domain_groups = sidcount;
-		server_info->domain_groups = dgrps;
+		server_info->sids = dgrps;
 
 		/* Where are the 'global' sids?... */
 	}
@@ -307,18 +349,36 @@ NTSTATUS make_server_info_pac(TALLOC_CTX *mem_ctx,
 	}
 
 	if (pac_logon_info->res_groups.count > 0) {
-		struct dom_sid **rgrps;
-		size_t sidcount = server_info->n_domain_groups + pac_logon_info->res_groups.count;
-		server_info->domain_groups = rgrps
-			= talloc_realloc(server_info, server_info->domain_groups, struct dom_sid *, sidcount);
-		NT_STATUS_HAVE_NO_MEMORY(rgrps);
+		size_t sidcount;
+		/* The IDL layer would be a better place to check this, but to
+		 * guard the integer addition below, we double-check */
+		if (pac_logon_info->res_groups.count > 65535) {
+			talloc_free(server_info);
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+
+		/*
+		  Here is where we should check the list of
+		  trusted domains, and verify that the SID
+		  matches.
+		*/
+		if (!pac_logon_info->res_group_dom_sid) {
+			DEBUG(0, ("Cannot operate on a PAC without a resource domain SID"));
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+
+		sidcount = server_info->num_sids + pac_logon_info->res_groups.count;
+		server_info->sids
+			= talloc_realloc(server_info, server_info->sids, struct dom_sid, sidcount);
+		NT_STATUS_HAVE_NO_MEMORY_AND_FREE(server_info->sids, server_info);
 
 		for (i = 0; pac_logon_info->res_group_dom_sid && i < pac_logon_info->res_groups.count; i++) {
-			size_t sid_idx = server_info->n_domain_groups + i;
-			rgrps[sid_idx]
-				= dom_sid_add_rid(rgrps, pac_logon_info->res_group_dom_sid,
-						  pac_logon_info->res_groups.rids[i].rid);
-			NT_STATUS_HAVE_NO_MEMORY(rgrps[server_info->n_domain_groups + sid_idx]);
+			server_info->sids[server_info->num_sids] = *pac_logon_info->res_group_dom_sid;
+			if (!sid_append_rid(&server_info->sids[server_info->num_sids],
+					    pac_logon_info->res_groups.rids[i].rid)) {
+				return NT_STATUS_INVALID_PARAMETER;
+			}
+			server_info->num_sids++;
 		}
 	}
 	*_server_info = server_info;

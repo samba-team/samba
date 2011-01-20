@@ -65,10 +65,8 @@ static NTSTATUS authunix_make_server_info(TALLOC_CTX *mem_ctx,
 		NT_STATUS_HAVE_NO_MEMORY(server_info->domain_name);
 
 		/* This isn't in any way correct.. */
-		server_info->account_sid = NULL;
-		server_info->primary_group_sid = NULL;
-		server_info->n_domain_groups = 0;
-		server_info->domain_groups = NULL;
+		server_info->num_sids = 0;
+		server_info->sids = NULL;
 	}
 	server_info->user_session_key = data_blob(NULL,0);
 	server_info->lm_session_key = data_blob(NULL,0);

@@ -144,10 +144,8 @@ struct ldb_context *samdb_connect(TALLOC_CTX *mem_ctx,
 ****************************************************************************/
 NTSTATUS security_token_create(TALLOC_CTX *mem_ctx, 
 			       struct loadparm_context *lp_ctx,
-			       struct dom_sid *user_sid,
-			       struct dom_sid *group_sid, 
-			       unsigned int n_groupSIDs,
-			       struct dom_sid **groupSIDs, 
+			       unsigned int num_sids,
+			       struct dom_sid *sids,
 			       uint32_t session_info_flags,
 			       struct security_token **token)
 {
@@ -158,22 +156,32 @@ NTSTATUS security_token_create(TALLOC_CTX *mem_ctx,
 	ptoken = security_token_initialise(mem_ctx);
 	NT_STATUS_HAVE_NO_MEMORY(ptoken);
 
-	ptoken->sids = talloc_array(ptoken, struct dom_sid, n_groupSIDs + 6 /* over-allocate */);
+	ptoken->sids = talloc_array(ptoken, struct dom_sid, num_sids + 6 /* over-allocate */);
 	NT_STATUS_HAVE_NO_MEMORY(ptoken->sids);
 
-	ptoken->num_sids = 1;
+	ptoken->num_sids = 0;
 
-	ptoken->sids = talloc_realloc(ptoken, ptoken->sids, struct dom_sid, ptoken->num_sids + 1);
-	NT_STATUS_HAVE_NO_MEMORY(ptoken->sids);
+	for (i = 0; i < num_sids; i++) {
+		size_t check_sid_idx;
+		for (check_sid_idx = 0;
+		     check_sid_idx < ptoken->num_sids;
+		     check_sid_idx++) {
+			if (dom_sid_equal(&ptoken->sids[check_sid_idx], &sids[i])) {
+				break;
+			}
+		}
 
-	ptoken->sids[PRIMARY_USER_SID_INDEX] = *user_sid;
-	if (!dom_sid_equal(user_sid, group_sid)) {
-		ptoken->sids[PRIMARY_GROUP_SID_INDEX] = *group_sid;
-		ptoken->num_sids++;
+		if (check_sid_idx == ptoken->num_sids) {
+			ptoken->sids = talloc_realloc(ptoken, ptoken->sids, struct dom_sid, ptoken->num_sids + 1);
+			NT_STATUS_HAVE_NO_MEMORY(ptoken->sids);
+
+			ptoken->sids[ptoken->num_sids] = sids[i];
+			ptoken->num_sids++;
+		}
 	}
 
 	/*
-	 * Finally add the "standard" SIDs.
+	 * Finally add the "standard" sids.
 	 * The only difference between guest and "anonymous"
 	 * is the addition of Authenticated_Users.
 	 */
@@ -201,25 +209,6 @@ NTSTATUS security_token_create(TALLOC_CTX *mem_ctx,
 			return NT_STATUS_INTERNAL_ERROR;
 		}
 		ptoken->num_sids++;
-	}
-
-	for (i = 0; i < n_groupSIDs; i++) {
-		size_t check_sid_idx;
-		for (check_sid_idx = 1; 
-		     check_sid_idx < ptoken->num_sids; 
-		     check_sid_idx++) {
-			if (dom_sid_equal(&ptoken->sids[check_sid_idx], groupSIDs[i])) {
-				break;
-			}
-		}
-
-		if (check_sid_idx == ptoken->num_sids) {
-			ptoken->sids = talloc_realloc(ptoken, ptoken->sids, struct dom_sid, ptoken->num_sids + 1);
-			NT_STATUS_HAVE_NO_MEMORY(ptoken->sids);
-
-			ptoken->sids[ptoken->num_sids] = *groupSIDs[i];
-			ptoken->num_sids++;
-		}
 	}
 
 	/* The caller may have requested simple privilages, for example if there isn't a local DB */

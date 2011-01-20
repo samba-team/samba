@@ -50,17 +50,11 @@ _PUBLIC_ NTSTATUS auth_generate_session_info(TALLOC_CTX *mem_ctx,
 {
 	struct auth_session_info *session_info;
 	NTSTATUS nt_status;
-	unsigned int i, num_groupSIDs = 0;
-	const char *account_sid_string;
-	const char *account_sid_dn;
-	DATA_BLOB account_sid_blob;
-	const char *primary_group_string;
-	const char *primary_group_dn;
-	DATA_BLOB primary_group_blob;
+	unsigned int i, num_sids = 0;
 
 	const char *filter;
 
-	struct dom_sid **groupSIDs = NULL;
+	struct dom_sid *sids = NULL;
 	const struct dom_sid *anonymous_sid, *system_sid;
 
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
@@ -81,96 +75,50 @@ _PUBLIC_ NTSTATUS auth_generate_session_info(TALLOC_CTX *mem_ctx,
 	system_sid = dom_sid_parse_talloc(tmp_ctx, SID_NT_SYSTEM);
 	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(system_sid, tmp_ctx);
 
-	groupSIDs = talloc_array(tmp_ctx, struct dom_sid *, server_info->n_domain_groups);
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(groupSIDs, tmp_ctx);
-	if (!groupSIDs) {
+	sids = talloc_array(tmp_ctx, struct dom_sid, server_info->num_sids);
+	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(sids, tmp_ctx);
+	if (!sids) {
 		talloc_free(tmp_ctx);
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	num_groupSIDs = server_info->n_domain_groups;
+	num_sids = server_info->num_sids;
 
-	for (i=0; i < server_info->n_domain_groups; i++) {
-		groupSIDs[i] = server_info->domain_groups[i];
+	for (i=0; i < server_info->num_sids; i++) {
+		sids[i] = server_info->sids[i];
 	}
 
-	if (dom_sid_equal(anonymous_sid, server_info->account_sid)) {
+	if (server_info->num_sids > PRIMARY_USER_SID_INDEX && dom_sid_equal(anonymous_sid, &server_info->sids[PRIMARY_USER_SID_INDEX])) {
 		/* Don't expand nested groups of system, anonymous etc*/
-	} else if (dom_sid_equal(system_sid, server_info->account_sid)) {
+	} else if (server_info->num_sids > PRIMARY_USER_SID_INDEX && dom_sid_equal(system_sid, &server_info->sids[PRIMARY_USER_SID_INDEX])) {
 		/* Don't expand nested groups of system, anonymous etc*/
 	} else if (sam_ctx) {
 		filter = talloc_asprintf(tmp_ctx, "(&(objectClass=group)(groupType:1.2.840.113556.1.4.803:=%u))",
 					 GROUP_TYPE_BUILTIN_LOCAL_GROUP);
 
 		/* Search for each group in the token */
-
-		/* Expands the account SID - this function takes in
-		 * memberOf-like values, so we fake one up with the
-		 * <SID=S-...> format of DN and then let it expand
-		 * them, as long as they meet the filter - so only
-		 * builtin groups
-		 *
-		 * We already have the primary group in the token, so set
-		 * 'only childs' flag to true
-		 */
-		account_sid_string = dom_sid_string(tmp_ctx, server_info->account_sid);
-		NT_STATUS_HAVE_NO_MEMORY_AND_FREE(account_sid_string, server_info);
-		
-		account_sid_dn = talloc_asprintf(tmp_ctx, "<SID=%s>", account_sid_string);
-		NT_STATUS_HAVE_NO_MEMORY_AND_FREE(account_sid_dn, server_info);
-		
-		account_sid_blob = data_blob_string_const(account_sid_dn);
-		
-		nt_status = dsdb_expand_nested_groups(sam_ctx, &account_sid_blob, true, filter,
-						      tmp_ctx, &groupSIDs, &num_groupSIDs);
-		if (!NT_STATUS_IS_OK(nt_status)) {
-			talloc_free(tmp_ctx);
-			return nt_status;
-		}
-
-		/* Expands the primary group - this function takes in
-		 * memberOf-like values, so we fake one up with the
-		 * <SID=S-...> format of DN and then let it expand
-		 * them, as long as they meet the filter - so only
-		 * builtin groups
-		 *
-		 * We already have the primary group in the token, so set
-		 * 'only childs' flag to true
-		 */
-		primary_group_string = dom_sid_string(tmp_ctx, server_info->primary_group_sid);
-		NT_STATUS_HAVE_NO_MEMORY_AND_FREE(primary_group_string, server_info);
-		
-		primary_group_dn = talloc_asprintf(tmp_ctx, "<SID=%s>", primary_group_string);
-		NT_STATUS_HAVE_NO_MEMORY_AND_FREE(primary_group_dn, server_info);
-		
-		primary_group_blob = data_blob_string_const(primary_group_dn);
-		
-		nt_status = dsdb_expand_nested_groups(sam_ctx, &primary_group_blob, true, filter,
-						      tmp_ctx, &groupSIDs, &num_groupSIDs);
-		if (!NT_STATUS_IS_OK(nt_status)) {
-			talloc_free(tmp_ctx);
-			return nt_status;
-		}
-		
-		for (i = 0; i < server_info->n_domain_groups; i++) {
-			char *group_string;
-			const char *group_dn;
-			DATA_BLOB group_blob;
+		for (i = 0; i < server_info->num_sids; i++) {
+			char *sid_string;
+			const char *sid_dn;
+			DATA_BLOB sid_blob;
 			
-			group_string = dom_sid_string(tmp_ctx,
-						      server_info->domain_groups[i]);
-			NT_STATUS_HAVE_NO_MEMORY_AND_FREE(group_string, server_info);
+			sid_string = dom_sid_string(tmp_ctx,
+						      &server_info->sids[i]);
+			NT_STATUS_HAVE_NO_MEMORY_AND_FREE(sid_string, server_info);
 			
-			group_dn = talloc_asprintf(tmp_ctx, "<SID=%s>", group_string);
-			talloc_free(group_string);
-			NT_STATUS_HAVE_NO_MEMORY_AND_FREE(group_dn, server_info);
-			group_blob = data_blob_string_const(group_dn);
+			sid_dn = talloc_asprintf(tmp_ctx, "<SID=%s>", sid_string);
+			talloc_free(sid_string);
+			NT_STATUS_HAVE_NO_MEMORY_AND_FREE(sid_dn, server_info);
+			sid_blob = data_blob_string_const(sid_dn);
 			
 			/* This function takes in memberOf values and expands
 			 * them, as long as they meet the filter - so only
-			 * builtin groups */
-			nt_status = dsdb_expand_nested_groups(sam_ctx, &group_blob, true, filter,
-							      tmp_ctx, &groupSIDs, &num_groupSIDs);
+			 * builtin groups
+			 *
+			 * We already have the SID in the token, so set
+			 * 'only childs' flag to true */
+			nt_status = dsdb_expand_nested_groups(sam_ctx, &sid_blob, true, filter,
+							      tmp_ctx, &sids, &num_sids);
 			if (!NT_STATUS_IS_OK(nt_status)) {
 				talloc_free(tmp_ctx);
 				return nt_status;
@@ -180,10 +128,8 @@ _PUBLIC_ NTSTATUS auth_generate_session_info(TALLOC_CTX *mem_ctx,
 
 	nt_status = security_token_create(session_info,
 					  lp_ctx,
-					  server_info->account_sid,
-					  server_info->primary_group_sid,
-					  num_groupSIDs,
-					  groupSIDs,
+					  num_sids,
+					  sids,
 					  session_info_flags,
 					  &session_info->security_token);
 	NT_STATUS_NOT_OK_RETURN_AND_FREE(nt_status, tmp_ctx);

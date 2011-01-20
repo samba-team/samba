@@ -27,14 +27,14 @@
 #include "dsdb/common/util.h"
 
 /* This function tests if a SID structure "sids" contains the SID "sid" */
-static bool sids_contains_sid(const struct dom_sid **sids,
+static bool sids_contains_sid(const struct dom_sid *sids,
 			      const unsigned int num_sids,
 			      const struct dom_sid *sid)
 {
 	unsigned int i;
 
 	for (i = 0; i < num_sids; i++) {
-		if (dom_sid_equal(sids[i], sid))
+		if (dom_sid_equal(&sids[i], sid))
 			return true;
 	}
 	return false;
@@ -56,7 +56,7 @@ static bool sids_contains_sid(const struct dom_sid **sids,
  */
 NTSTATUS dsdb_expand_nested_groups(struct ldb_context *sam_ctx,
 				   struct ldb_val *dn_val, const bool only_childs, const char *filter,
-				   TALLOC_CTX *res_sids_ctx, struct dom_sid ***res_sids,
+				   TALLOC_CTX *res_sids_ctx, struct dom_sid **res_sids,
 				   unsigned int *num_res_sids)
 {
 	const char * const attrs[] = { "memberOf", NULL };
@@ -114,7 +114,7 @@ NTSTATUS dsdb_expand_nested_groups(struct ldb_context *sam_ctx,
 				     DSDB_SEARCH_SHOW_EXTENDED_DN);
 	} else {
 		/* This is an O(n^2) linear search */
-		already_there = sids_contains_sid((const struct dom_sid**) *res_sids,
+		already_there = sids_contains_sid(*res_sids,
 						  *num_res_sids, &sid);
 		if (already_there) {
 			talloc_free(tmp_ctx);
@@ -148,10 +148,9 @@ NTSTATUS dsdb_expand_nested_groups(struct ldb_context *sam_ctx,
 	/* We only apply this test once we know the SID matches the filter */
 	if (!only_childs) {
 		*res_sids = talloc_realloc(res_sids_ctx, *res_sids,
-			struct dom_sid *, *num_res_sids + 1);
+			struct dom_sid, *num_res_sids + 1);
 		NT_STATUS_HAVE_NO_MEMORY_AND_FREE(*res_sids, tmp_ctx);
-		(*res_sids)[*num_res_sids] = dom_sid_dup(*res_sids, &sid);
-		NT_STATUS_HAVE_NO_MEMORY_AND_FREE((*res_sids)[*num_res_sids], tmp_ctx);
+		(*res_sids)[*num_res_sids] = sid;
 		++(*num_res_sids);
 	}
 

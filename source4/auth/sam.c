@@ -282,13 +282,12 @@ _PUBLIC_ NTSTATUS authsam_make_server_info(TALLOC_CTX *mem_ctx,
 	const char *str, *filter;
 	/* SIDs for the account and his primary group */
 	struct dom_sid *account_sid;
-	struct dom_sid *primary_group_sid;
 	const char *primary_group_string;
 	const char *primary_group_dn;
 	DATA_BLOB primary_group_blob;
 	/* SID structures for the expanded group memberships */
-	struct dom_sid **groupSIDs = NULL;
-	unsigned int num_groupSIDs = 0, i;
+	struct dom_sid *sids = NULL;
+	unsigned int num_sids = 0, i;
 	struct dom_sid *domain_sid;
 	TALLOC_CTX *tmp_ctx;
 	struct ldb_message_element *el;
@@ -299,6 +298,11 @@ _PUBLIC_ NTSTATUS authsam_make_server_info(TALLOC_CTX *mem_ctx,
 	tmp_ctx = talloc_new(server_info);
 	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(server_info, server_info);
 
+	sids = talloc_array(server_info, struct dom_sid, 2);
+	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(sids, server_info);
+
+	num_sids = 2;
+
 	account_sid = samdb_result_dom_sid(server_info, msg, "objectSid");
 	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(account_sid, server_info);
 
@@ -308,10 +312,9 @@ _PUBLIC_ NTSTATUS authsam_make_server_info(TALLOC_CTX *mem_ctx,
 		return status;
 	}
 
-	primary_group_sid = dom_sid_add_rid(server_info,
-					    domain_sid,
-					    ldb_msg_find_attr_as_uint(msg, "primaryGroupID", ~0));
-	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(primary_group_sid, server_info);
+	sids[PRIMARY_USER_SID_INDEX] = *account_sid;
+	sids[PRIMARY_GROUP_SID_INDEX] = *domain_sid;
+	sid_append_rid(&sids[PRIMARY_GROUP_SID_INDEX], ldb_msg_find_attr_as_uint(msg, "primaryGroupID", ~0));
 
 	/* Filter out builtin groups from this token.  We will search
 	 * for builtin groups later, and not include them in the PAC
@@ -319,7 +322,7 @@ _PUBLIC_ NTSTATUS authsam_make_server_info(TALLOC_CTX *mem_ctx,
 	filter = talloc_asprintf(tmp_ctx, "(&(objectClass=group)(!(groupType:1.2.840.113556.1.4.803:=%u))(groupType:1.2.840.113556.1.4.803:=%u))", GROUP_TYPE_BUILTIN_LOCAL_GROUP, GROUP_TYPE_SECURITY_ENABLED);
 	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(filter, server_info);
 
-	primary_group_string = dom_sid_string(tmp_ctx, primary_group_sid);
+	primary_group_string = dom_sid_string(tmp_ctx, &sids[PRIMARY_GROUP_SID_INDEX]);
 	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(primary_group_string, server_info);
 
 	primary_group_dn = talloc_asprintf(tmp_ctx, "<SID=%s>", primary_group_string);
@@ -337,7 +340,7 @@ _PUBLIC_ NTSTATUS authsam_make_server_info(TALLOC_CTX *mem_ctx,
 	 * 'only childs' flag to true
 	 */
 	status = dsdb_expand_nested_groups(sam_ctx, &primary_group_blob, true, filter,
-					   server_info, &groupSIDs, &num_groupSIDs);
+					   server_info, &sids, &num_sids);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(server_info);
 		return status;
@@ -350,18 +353,15 @@ _PUBLIC_ NTSTATUS authsam_make_server_info(TALLOC_CTX *mem_ctx,
 		 * them, as long as they meet the filter - so only
 		 * domain groups, not builtin groups */
 		status = dsdb_expand_nested_groups(sam_ctx, &el->values[i], false, filter,
-						   server_info, &groupSIDs, &num_groupSIDs);
+						   server_info, &sids, &num_sids);
 		if (!NT_STATUS_IS_OK(status)) {
 			talloc_free(server_info);
 			return status;
 		}
 	}
 
-	server_info->account_sid = account_sid;
-	server_info->primary_group_sid = primary_group_sid;
-	
-	server_info->domain_groups = groupSIDs;
-	server_info->n_domain_groups = num_groupSIDs;
+	server_info->sids = sids;
+	server_info->num_sids = num_sids;
 
 	server_info->account_name = talloc_steal(server_info,
 		ldb_msg_find_attr_as_string(msg, "sAMAccountName", NULL));
@@ -433,33 +433,27 @@ _PUBLIC_ NTSTATUS authsam_make_server_info(TALLOC_CTX *mem_ctx,
 	if (server_info->acct_flags & ACB_SVRTRUST) {
 		/* the SID_NT_ENTERPRISE_DCS SID gets added into the
 		   PAC */
-		server_info->domain_groups = talloc_realloc(server_info,
-							    server_info->domain_groups,
-							    struct dom_sid *,
-							    server_info->n_domain_groups+1);
-		NT_STATUS_HAVE_NO_MEMORY_AND_FREE(server_info->domain_groups, server_info);
-		server_info->domain_groups[server_info->n_domain_groups] =
-			dom_sid_parse_talloc(server_info->domain_groups,
-					     SID_NT_ENTERPRISE_DCS);
-		NT_STATUS_HAVE_NO_MEMORY_AND_FREE(server_info->domain_groups[server_info->n_domain_groups],
-						  server_info);
-		server_info->n_domain_groups++;
+		server_info->sids = talloc_realloc(server_info,
+						   server_info->sids,
+						   struct dom_sid,
+						   server_info->num_sids+1);
+		NT_STATUS_HAVE_NO_MEMORY_AND_FREE(server_info->sids, server_info);
+		server_info->sids[server_info->num_sids] = global_sid_Enterprise_DCs;
+		server_info->num_sids++;
 	}
 
 	if ((server_info->acct_flags & (ACB_PARTIAL_SECRETS_ACCOUNT | ACB_WSTRUST)) ==
 	    (ACB_PARTIAL_SECRETS_ACCOUNT | ACB_WSTRUST)) {
 		/* the DOMAIN_RID_ENTERPRISE_READONLY_DCS PAC */
-		server_info->domain_groups = talloc_realloc(server_info,
-							    server_info->domain_groups,
-							    struct dom_sid *,
-							    server_info->n_domain_groups+1);
-		NT_STATUS_HAVE_NO_MEMORY_AND_FREE(server_info->domain_groups, server_info);
-		server_info->domain_groups[server_info->n_domain_groups] =
-			dom_sid_add_rid(server_info->domain_groups, domain_sid,
-				DOMAIN_RID_ENTERPRISE_READONLY_DCS);
-		NT_STATUS_HAVE_NO_MEMORY_AND_FREE(server_info->domain_groups[server_info->n_domain_groups],
-						  server_info);
-		server_info->n_domain_groups++;
+		server_info->sids = talloc_realloc(server_info,
+						   server_info->sids,
+						   struct dom_sid,
+						   server_info->num_sids+1);
+		NT_STATUS_HAVE_NO_MEMORY_AND_FREE(server_info->sids, server_info);
+		server_info->sids[server_info->num_sids] = *domain_sid;
+		sid_append_rid(&server_info->sids[server_info->num_sids],
+			    DOMAIN_RID_ENTERPRISE_READONLY_DCS);
+		server_info->num_sids++;
 	}
 
 	server_info->authenticated = true;

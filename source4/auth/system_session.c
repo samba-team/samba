@@ -106,15 +106,11 @@ NTSTATUS auth_system_server_info(TALLOC_CTX *mem_ctx, const char *netbios_name,
 	server_info = talloc(mem_ctx, struct auth_serversupplied_info);
 	NT_STATUS_HAVE_NO_MEMORY(server_info);
 
-	server_info->account_sid = dom_sid_parse_talloc(server_info, SID_NT_SYSTEM);
-	NT_STATUS_HAVE_NO_MEMORY(server_info->account_sid);
-
-	/* is this correct? */
-	server_info->primary_group_sid = dom_sid_parse_talloc(server_info, SID_BUILTIN_ADMINISTRATORS);
-	NT_STATUS_HAVE_NO_MEMORY(server_info->primary_group_sid);
-
-	server_info->n_domain_groups = 0;
-	server_info->domain_groups = NULL;
+	/* This returns a pointer to a struct dom_sid, which is the
+	 * same as a 1 element list of struct dom_sid */
+	server_info->num_sids = 1;
+	server_info->sids = dom_sid_parse_talloc(server_info, SID_NT_SYSTEM);
+	NT_STATUS_HAVE_NO_MEMORY(server_info->sids);
 
 	/* annoying, but the Anonymous really does have a session key, 
 	   and it is all zeros! */
@@ -182,21 +178,25 @@ static NTSTATUS auth_domain_admin_server_info(TALLOC_CTX *mem_ctx,
 	server_info = talloc(mem_ctx, struct auth_serversupplied_info);
 	NT_STATUS_HAVE_NO_MEMORY(server_info);
 
-	server_info->account_sid = dom_sid_add_rid(server_info, domain_sid, DOMAIN_RID_ADMINISTRATOR);
-	NT_STATUS_HAVE_NO_MEMORY(server_info->account_sid);
+	server_info->num_sids = 7;
+	server_info->sids = talloc_array(server_info, struct dom_sid, server_info->num_sids);
 
-	server_info->primary_group_sid = dom_sid_add_rid(server_info, domain_sid, DOMAIN_RID_USERS);
-	NT_STATUS_HAVE_NO_MEMORY(server_info->primary_group_sid);
+	server_info->sids[PRIMARY_USER_SID_INDEX] = *domain_sid;
+	sid_append_rid(&server_info->sids[PRIMARY_USER_SID_INDEX], DOMAIN_RID_ADMINISTRATOR);
 
-	server_info->n_domain_groups = 6;
-	server_info->domain_groups = talloc_array(server_info, struct dom_sid *, server_info->n_domain_groups);
+	server_info->sids[PRIMARY_GROUP_SID_INDEX] = *domain_sid;
+	sid_append_rid(&server_info->sids[PRIMARY_USER_SID_INDEX], DOMAIN_RID_USERS);
 
-	server_info->domain_groups[0] = dom_sid_parse_talloc(server_info, SID_BUILTIN_ADMINISTRATORS);
-	server_info->domain_groups[1] = dom_sid_add_rid(server_info, domain_sid, DOMAIN_RID_ADMINS);
-	server_info->domain_groups[2] = dom_sid_add_rid(server_info, domain_sid, DOMAIN_RID_USERS);
-	server_info->domain_groups[3] = dom_sid_add_rid(server_info, domain_sid, DOMAIN_RID_ENTERPRISE_ADMINS);
-	server_info->domain_groups[4] = dom_sid_add_rid(server_info, domain_sid, DOMAIN_RID_POLICY_ADMINS);
-	server_info->domain_groups[5] = dom_sid_add_rid(server_info, domain_sid, DOMAIN_RID_SCHEMA_ADMINS);
+	server_info->sids[2] = global_sid_Builtin_Administrators;
+
+	server_info->sids[3] = *domain_sid;
+	sid_append_rid(&server_info->sids[3], DOMAIN_RID_ADMINS);
+	server_info->sids[4] = *domain_sid;
+	sid_append_rid(&server_info->sids[4], DOMAIN_RID_ENTERPRISE_ADMINS);
+	server_info->sids[5] = *domain_sid;
+	sid_append_rid(&server_info->sids[5], DOMAIN_RID_POLICY_ADMINS);
+	server_info->sids[6] = *domain_sid;
+	sid_append_rid(&server_info->sids[6], DOMAIN_RID_SCHEMA_ADMINS);
 
 	/* What should the session key be?*/
 	server_info->user_session_key = data_blob_talloc(server_info, NULL, 16);
@@ -337,15 +337,11 @@ _PUBLIC_ NTSTATUS auth_anonymous_server_info(TALLOC_CTX *mem_ctx,
 	server_info = talloc(mem_ctx, struct auth_serversupplied_info);
 	NT_STATUS_HAVE_NO_MEMORY(server_info);
 
-	server_info->account_sid = dom_sid_parse_talloc(server_info, SID_NT_ANONYMOUS);
-	NT_STATUS_HAVE_NO_MEMORY(server_info->account_sid);
-
-	/* The anonymous user has only one SID in it's token, but we need to fill something in here */
-	server_info->primary_group_sid = dom_sid_parse_talloc(server_info, SID_NT_ANONYMOUS);
-	NT_STATUS_HAVE_NO_MEMORY(server_info->primary_group_sid);
-
-	server_info->n_domain_groups = 0;
-	server_info->domain_groups = NULL;
+	/* This returns a pointer to a struct dom_sid, which is the
+	 * same as a 1 element list of struct dom_sid */
+	server_info->num_sids = 1;
+	server_info->sids = dom_sid_parse_talloc(server_info, SID_NT_ANONYMOUS);
+	NT_STATUS_HAVE_NO_MEMORY(server_info->sids);
 
 	/* annoying, but the Anonymous really does have a session key... */
 	server_info->user_session_key = data_blob_talloc(server_info, NULL, 16);

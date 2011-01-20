@@ -169,7 +169,7 @@ static void named_pipe_accept_done(struct tevent_req *subreq)
 		}
 
 		session_flags = AUTH_SESSION_INFO_DEFAULT_GROUPS;
-		if (!dom_sid_equal(anonymous_sid, server_info->account_sid)) {
+		if (server_info->num_sids > 1 && !dom_sid_equal(anonymous_sid, &server_info->sids[0])) {
 			session_flags |= AUTH_SESSION_INFO_AUTHENTICATED;
 		}
 

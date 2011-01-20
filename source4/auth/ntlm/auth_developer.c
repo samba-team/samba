@@ -68,15 +68,11 @@ static NTSTATUS name_to_ntstatus_check_password(struct auth_method_context *ctx,
 	server_info = talloc(mem_ctx, struct auth_serversupplied_info);
 	NT_STATUS_HAVE_NO_MEMORY(server_info);
 
-	server_info->account_sid = dom_sid_parse_talloc(server_info, SID_NT_ANONYMOUS);
-	NT_STATUS_HAVE_NO_MEMORY(server_info->account_sid);
-
-	/* is this correct? */
-	server_info->primary_group_sid = dom_sid_parse_talloc(server_info, SID_BUILTIN_GUESTS);
-	NT_STATUS_HAVE_NO_MEMORY(server_info->primary_group_sid);
-
-	server_info->n_domain_groups = 0;
-	server_info->domain_groups = NULL;
+	/* This returns a pointer to a struct dom_sid, which is the
+	 * same as a 1 element list of struct dom_sid */
+	server_info->num_sids = 1;
+	server_info->sids = dom_sid_parse_talloc(server_info, SID_NT_ANONYMOUS);
+	NT_STATUS_HAVE_NO_MEMORY(server_info->sids);
 
 	/* annoying, but the Anonymous really does have a session key, 
 	   and it is all zeros! */
