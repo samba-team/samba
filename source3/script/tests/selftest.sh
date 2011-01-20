@@ -343,6 +343,8 @@ cat >$SERVERCONFFILE<<EOF
 	queue resume command = $BINDIR/vlp tdbfile=$LOCKDIR/vlp.tdb queueresume %p
 	lpq cache time = 0
 
+	rpc_server:epmapper = embedded
+
 	#Include user defined custom parameters if set
 	$INCLUDE_CUSTOM_CONF
 

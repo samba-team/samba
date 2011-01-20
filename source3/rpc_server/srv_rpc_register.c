@@ -48,6 +48,15 @@ static NTSTATUS _rpc_ep_register(const struct ndr_interface_table *iface,
 {
 	struct dcerpc_binding_vector *v = NULL;
 	NTSTATUS status;
+	const char *rpcsrv_type;
+
+	/* start endpoint mapper only if enabled */
+	rpcsrv_type = lp_parm_const_string(GLOBAL_SECTION_SNUM,
+					   "rpc_server", "epmapper",
+					   "none");
+	if (StrCaseCmp(rpcsrv_type, "none") == 0) {
+		return NT_STATUS_OK;
+	}
 
 	status = dcerpc_binding_vector_create(talloc_tos(),
 					      iface,
@@ -71,6 +80,15 @@ static NTSTATUS _rpc_ep_unregister(const struct ndr_interface_table *iface)
 {
 	struct dcerpc_binding_vector *v = NULL;
 	NTSTATUS status;
+	const char *rpcsrv_type;
+
+	/* start endpoint mapper only if enabled */
+	rpcsrv_type = lp_parm_const_string(GLOBAL_SECTION_SNUM,
+					   "rpc_server", "epmapper",
+					   "none");
+	if (StrCaseCmp(rpcsrv_type, "none") == 0) {
+		return NT_STATUS_OK;
+	}
 
 	status = dcerpc_binding_vector_create(talloc_tos(),
 					      iface,
@@ -265,8 +283,16 @@ bool srv_rpc_register(struct messaging_context *msg_ctx) {
 	struct rpc_srv_callbacks dssetup_cb;
 	struct rpc_srv_callbacks wkssvc_cb;
 
-	if (!NT_STATUS_IS_OK(rpc_epmapper_init(NULL))) {
-		return false;
+	const char *rpcsrv_type;
+
+	/* start endpoint mapper only if enabled */
+	rpcsrv_type = lp_parm_const_string(GLOBAL_SECTION_SNUM,
+					   "rpc_server", "epmapper",
+					   "none");
+	if (StrCaseCmp(rpcsrv_type, "embedded") == 0) {
+		if (!NT_STATUS_IS_OK(rpc_epmapper_init(NULL))) {
+			return false;
+		}
 	}
 
 	winreg_cb.init         = winreg_init_cb;
