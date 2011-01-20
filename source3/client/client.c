@@ -1108,13 +1108,15 @@ static int do_get(const char *rname, const char *lname_in, bool reget)
 	}
 
 
-	if (!NT_STATUS_IS_OK(cli_qfileinfo_basic(
-				     targetcli, fnum, &attr, &size, NULL, NULL,
-				     NULL, NULL, NULL)) &&
-	    !NT_STATUS_IS_OK(cli_getattrE(targetcli, fnum,
-			  &attr, &size, NULL, NULL, NULL))) {
-		d_printf("getattrib: %s\n",cli_errstr(targetcli));
-		return 1;
+	status = cli_qfileinfo_basic(targetcli, fnum, &attr, &size, NULL, NULL,
+				     NULL, NULL, NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		status = cli_getattrE(targetcli, fnum, &attr, &size, NULL, NULL,
+				      NULL);
+		if(!NT_STATUS_IS_OK(status)) {
+			d_printf("getattrib: %s\n", nt_errstr(status));
+			return 1;
+		}
 	}
 
 	DEBUG(1,("getting file %s of size %.0f as %s ",
