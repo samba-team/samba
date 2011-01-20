@@ -314,7 +314,7 @@ static void ldapsrv_accept(struct stream_connection *c,
 	}
 	port = socket_address->port;
 	talloc_free(socket_address);
-	if (port == 3268) /* Global catalog */ {
+	if (port == 3268 || port == 3269) /* Global catalog */ {
 		conn->global_catalog = true;
 	}
 
@@ -347,7 +347,7 @@ static void ldapsrv_accept(struct stream_connection *c,
 
 	conn->sockets.active = conn->sockets.raw;
 
-	if (port != 636) {
+	if (port != 636 && port != 3269) {
 		ldapsrv_call_read_next(conn);
 		return;
 	}
@@ -860,9 +860,24 @@ static NTSTATUS add_socket(struct task_server *task,
 				 address, port, nt_errstr(status)));
 			return status;
 		}
+		if (tstream_tls_params_enabled(ldap_service->tls_params)) {
+			/* add ldaps server for the global catalog */
+			port = 3269;
+			status = stream_setup_socket(task, task->event_ctx, lp_ctx,
+						     model_ops,
+						     &ldap_stream_nonpriv_ops,
+						     "ipv4", address, &port,
+						     lpcfg_socket_options(lp_ctx),
+						     ldap_service);
+			if (!NT_STATUS_IS_OK(status)) {
+				DEBUG(0,("ldapsrv failed to bind to %s:%u - %s\n",
+					 address, port, nt_errstr(status)));
+				return status;
+			}
+		}
 	}
 
-	/* And once we are bound, free the tempoary ldb, it will
+	/* And once we are bound, free the temporary ldb, it will
 	 * connect again on each incoming LDAP connection */
 	talloc_unlink(ldap_service, ldb);
 
