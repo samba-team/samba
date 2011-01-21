@@ -15,6 +15,7 @@ NTSTATUS rpccli_netlogon_sam_logon(struct rpc_pipe_client *cli,
 				   const char *username,
 				   const char *password,
 				   const char *workstation,
+				   uint16_t validation_level,
 				   int logon_type);
 NTSTATUS rpccli_netlogon_sam_network_logon(struct rpc_pipe_client *cli,
 					   TALLOC_CTX *mem_ctx,
