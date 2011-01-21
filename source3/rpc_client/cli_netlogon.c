@@ -159,6 +159,7 @@ NTSTATUS rpccli_netlogon_sam_logon(struct rpc_pipe_client *cli,
 				   const char *username,
 				   const char *password,
 				   const char *workstation,
+				   uint16_t validation_level,
 				   int logon_type)
 {
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
@@ -168,7 +169,6 @@ NTSTATUS rpccli_netlogon_sam_logon(struct rpc_pipe_client *cli,
 	union netr_LogonLevel *logon;
 	union netr_Validation validation;
 	uint8_t authoritative;
-	int validation_level = 3;
 	fstring clnt_name_slash;
 	struct dcerpc_binding_handle *b = cli->binding_handle;
 

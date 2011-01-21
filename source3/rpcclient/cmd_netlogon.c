@@ -718,7 +718,7 @@ static NTSTATUS cmd_netlogon_sam_logon(struct rpc_pipe_client *cli,
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	int logon_type = NetlogonNetworkInformation;
 	const char *username, *password;
-	int auth_level = 2;
+	uint16_t validation_level = 3;
 	uint32 logon_param = 0;
 	const char *workstation = NULL;
 
@@ -740,14 +740,14 @@ static NTSTATUS cmd_netlogon_sam_logon(struct rpc_pipe_client *cli,
 		sscanf(argv[4], "%i", &logon_type);
 
 	if (argc >= 6)
-		sscanf(argv[5], "%i", &auth_level);
+		validation_level = atoi(argv[5]);
 
 	if (argc == 7)
 		sscanf(argv[6], "%x", &logon_param);
 
 	/* Perform the sam logon */
 
-	result = rpccli_netlogon_sam_logon(cli, mem_ctx, logon_param, lp_workgroup(), username, password, workstation, logon_type);
+	result = rpccli_netlogon_sam_logon(cli, mem_ctx, logon_param, lp_workgroup(), username, password, workstation, validation_level, logon_type);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
