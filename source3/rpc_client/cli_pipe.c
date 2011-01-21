@@ -1688,7 +1688,7 @@ static void rpc_pipe_bind_step_one_done(struct tevent_req *subreq)
 	struct auth_ntlmssp_state *ntlmssp_ctx;
 	struct spnego_context *spnego_ctx;
 	struct gse_context *gse_ctx;
-	struct ncacn_packet *pkt;
+	struct ncacn_packet *pkt = NULL;
 	struct dcerpc_auth auth;
 	DATA_BLOB auth_token = data_blob_null;
 	NTSTATUS status;
