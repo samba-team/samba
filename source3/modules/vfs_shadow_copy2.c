@@ -250,8 +250,8 @@ static const char *shadow_copy2_normalise_path(TALLOC_CTX *mem_ctx, const char *
 } while (0)
 
 #define _SHADOW2_NEXT_SMB_FNAME(op, args, rtype, eret, extra) do { \
-		const char *gmt_start; \
-		if (shadow_copy2_match_name(smb_fname->base_name, &gmt_start)) {	\
+	const char *gmt_start; \
+	if (shadow_copy2_match_name(smb_fname->base_name, &gmt_start)) { \
 		char *name2; \
 		char *smb_base_name_tmp = NULL; \
 		rtype ret; \
