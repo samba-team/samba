@@ -324,8 +324,8 @@ int smb_add_user_group(const char *unix_group, const char *unix_user)
 		if (!add_script) {
 			return -1;
 		}
-		add_script = talloc_string_sub(ctx,
-				add_script, "%u", unix_user);
+		add_script = talloc_string_sub2(ctx,
+				add_script, "%u", unix_user, true, false, true);
 		if (!add_script) {
 			return -1;
 		}
@@ -364,8 +364,8 @@ int smb_delete_user_group(const char *unix_group, const char *unix_user)
 		if (!del_script) {
 			return -1;
 		}
-		del_script = talloc_string_sub(ctx,
-				del_script, "%u", unix_user);
+		del_script = talloc_string_sub2(ctx,
+				del_script, "%u", unix_user, true, false, true);
 		if (!del_script) {
 			return -1;
 		}
