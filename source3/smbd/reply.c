@@ -2587,6 +2587,17 @@ NTSTATUS unlink_internals(connection_struct *conn, struct smb_request *req,
 		 * onto the directory.
 		 */
 		TALLOC_FREE(smb_fname->base_name);
+		if (ISDOT(fname_dir)) {
+			/* Ensure we use canonical names on open. */
+			smb_fname->base_name = talloc_asprintf(smb_fname,
+							"%s",
+							fname_mask);
+		} else {
+			smb_fname->base_name = talloc_asprintf(smb_fname,
+							"%s/%s",
+							fname_dir,
+							fname_mask);
+		}
 		smb_fname->base_name = talloc_asprintf(smb_fname,
 						       "%s/%s",
 						       fname_dir,
@@ -2675,9 +2686,16 @@ NTSTATUS unlink_internals(connection_struct *conn, struct smb_request *req,
 			}
 
 			TALLOC_FREE(smb_fname->base_name);
-			smb_fname->base_name =
-			    talloc_asprintf(smb_fname, "%s/%s",
-					    fname_dir, dname);
+			if (ISDOT(fname_dir)) {
+				/* Ensure we use canonical names on open. */
+				smb_fname->base_name =
+					talloc_asprintf(smb_fname, "%s",
+						dname);
+			} else {
+				smb_fname->base_name =
+					talloc_asprintf(smb_fname, "%s/%s",
+						fname_dir, dname);
+			}
 
 			if (!smb_fname->base_name) {
 				TALLOC_FREE(dir_hnd);
@@ -5929,19 +5947,6 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 		goto out;
 	}
 
-	/* Ensure the dst smb_fname contains a '/' */
-	if(strrchr_m(smb_fname_dst->base_name,'/') == 0) {
-		char * tmp;
-		tmp = talloc_asprintf(smb_fname_dst, "./%s",
-				      smb_fname_dst->base_name);
-		if (!tmp) {
-			status = NT_STATUS_NO_MEMORY;
-			goto out;
-		}
-		TALLOC_FREE(smb_fname_dst->base_name);
-		smb_fname_dst->base_name = tmp;
-	}
-
 	/*
 	 * Check for special case with case preserving and not
 	 * case sensitive. If the old last component differs from the original
@@ -5957,12 +5962,14 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 		struct smb_filename *smb_fname_orig_lcomp = NULL;
 
 		/*
-		 * Get the last component of the destination name.  Note that
-		 * we guarantee that destination name contains a '/' character
-		 * above.
+		 * Get the last component of the destination name.
 		 */
 		last_slash = strrchr_m(smb_fname_dst->base_name, '/');
-		fname_dst_lcomp_base_mod = talloc_strdup(ctx, last_slash + 1);
+		if (last_slash) {
+			fname_dst_lcomp_base_mod = talloc_strdup(ctx, last_slash + 1);
+		} else {
+			fname_dst_lcomp_base_mod = talloc_strdup(ctx, smb_fname_dst->base_name);
+		}
 		if (!fname_dst_lcomp_base_mod) {
 			status = NT_STATUS_NO_MEMORY;
 			goto out;
@@ -5988,11 +5995,17 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 			 * Replace the modified last component with the
 			 * original.
 			 */
-			*last_slash = '\0'; /* Truncate at the '/' */
-			tmp = talloc_asprintf(smb_fname_dst,
+			if (last_slash) {
+				*last_slash = '\0'; /* Truncate at the '/' */
+				tmp = talloc_asprintf(smb_fname_dst,
 					"%s/%s",
 					smb_fname_dst->base_name,
 					smb_fname_orig_lcomp->base_name);
+			} else {
+				tmp = talloc_asprintf(smb_fname_dst,
+					"%s",
+					smb_fname_orig_lcomp->base_name);
+			}
 			if (tmp == NULL) {
 				status = NT_STATUS_NO_MEMORY;
 				TALLOC_FREE(fname_dst_lcomp_base_mod);
@@ -6247,26 +6260,20 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 		 * onto the directory.
 		 */
 		TALLOC_FREE(smb_fname_src->base_name);
-		smb_fname_src->base_name = talloc_asprintf(smb_fname_src,
-							   "%s/%s",
-							   fname_src_dir,
-							   fname_src_mask);
+		if (ISDOT(fname_src_dir)) {
+			/* Ensure we use canonical names on open. */
+			smb_fname_src->base_name = talloc_asprintf(smb_fname_src,
+							"%s",
+							fname_src_mask);
+		} else {
+			smb_fname_src->base_name = talloc_asprintf(smb_fname_src,
+							"%s/%s",
+							fname_src_dir,
+							fname_src_mask);
+		}
 		if (!smb_fname_src->base_name) {
 			status = NT_STATUS_NO_MEMORY;
 			goto out;
-		}
-
-		/* Ensure dst fname contains a '/' also */
-		if(strrchr_m(smb_fname_dst->base_name, '/') == 0) {
-			char *tmp;
-			tmp = talloc_asprintf(smb_fname_dst, "./%s",
-					      smb_fname_dst->base_name);
-			if (!tmp) {
-				status = NT_STATUS_NO_MEMORY;
-				goto out;
-			}
-			TALLOC_FREE(smb_fname_dst->base_name);
-			smb_fname_dst->base_name = tmp;
 		}
 
 		DEBUG(3, ("rename_internals: case_sensitive = %d, "
@@ -6409,10 +6416,17 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 		}
 
 		TALLOC_FREE(smb_fname_src->base_name);
-		smb_fname_src->base_name = talloc_asprintf(smb_fname_src,
-							   "%s/%s",
-							   fname_src_dir,
-							   dname);
+		if (ISDOT(fname_src_dir)) {
+			/* Ensure we use canonical names on open. */
+			smb_fname_src->base_name = talloc_asprintf(smb_fname_src,
+							"%s",
+							dname);
+		} else {
+			smb_fname_src->base_name = talloc_asprintf(smb_fname_src,
+							"%s/%s",
+							fname_src_dir,
+							dname);
+		}
 		if (!smb_fname_src->base_name) {
 			status = NT_STATUS_NO_MEMORY;
 			goto out;
@@ -6957,10 +6971,17 @@ void reply_copy(struct smb_request *req)
 		 * the directory.
 		 */
 		TALLOC_FREE(smb_fname_src->base_name);
-		smb_fname_src->base_name = talloc_asprintf(smb_fname_src,
-							   "%s/%s",
-							   fname_src_dir,
-							   fname_src_mask);
+		if (ISDOT(fname_src_dir)) {
+			/* Ensure we use canonical names on open. */
+			smb_fname_src->base_name = talloc_asprintf(smb_fname_src,
+							"%s",
+							fname_src_mask);
+		} else {
+			smb_fname_src->base_name = talloc_asprintf(smb_fname_src,
+							"%s/%s",
+							fname_src_dir,
+							fname_src_mask);
+		}
 		if (!smb_fname_src->base_name) {
 			reply_nterror(req, NT_STATUS_NO_MEMORY);
 			goto out;
@@ -7068,9 +7089,16 @@ void reply_copy(struct smb_request *req)
 
 			/* Get the src smb_fname struct setup. */
 			TALLOC_FREE(smb_fname_src->base_name);
-			smb_fname_src->base_name =
-			    talloc_asprintf(smb_fname_src, "%s/%s",
-					    fname_src_dir, dname);
+			if (ISDOT(fname_src_dir)) {
+				/* Ensure we use canonical names on open. */
+				smb_fname_src->base_name =
+					talloc_asprintf(smb_fname_src, "%s",
+						dname);
+			} else {
+				smb_fname_src->base_name =
+					talloc_asprintf(smb_fname_src, "%s/%s",
+						fname_src_dir, dname);
+			}
 
 			if (!smb_fname_src->base_name) {
 				TALLOC_FREE(dir_hnd);
