@@ -2352,13 +2352,17 @@ close_if_end = %d requires_resume_key = %d level = 0x%x, max_data_bytes = %d\n",
 			}
 			mask_contains_wcard = True;
 		}
-		directory = talloc_strdup(talloc_tos(), "./");
+	} else {
+		*p = 0;
+	}
+
+	if (p == NULL || p == directory) {
+		/* Ensure we don't have a directory name of "". */
+		directory = talloc_strdup(talloc_tos(), ".");
 		if (!directory) {
 			reply_nterror(req, NT_STATUS_NO_MEMORY);
 			goto out;
 		}
-	} else {
-		*p = 0;
 	}
 
 	DEBUG(5,("dir=%s, mask = %s\n",directory, mask));
@@ -6238,7 +6242,7 @@ static NTSTATUS smb_file_rename_information(connection_struct *conn,
 		if (p) {
 			p[1] = '\0';
 		} else {
-			base_name = talloc_strdup(ctx, "./");
+			base_name = talloc_strdup(ctx, "");
 			if (!base_name) {
 				return NT_STATUS_NO_MEMORY;
 			}
