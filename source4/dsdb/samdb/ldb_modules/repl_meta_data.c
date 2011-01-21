@@ -2951,12 +2951,12 @@ static bool replmd_update_is_newer(const struct GUID *current_invocation_id,
 				   NTTIME update_change_time)
 {
 	if (update_version != current_version) {
-		return update_version >= current_version;
+		return update_version > current_version;
 	}
 	if (update_change_time != current_change_time) {
-		return update_change_time >= current_change_time;
+		return update_change_time > current_change_time;
 	}
-	return GUID_compare(update_invocation_id, current_invocation_id) >= 0;
+	return GUID_compare(update_invocation_id, current_invocation_id) > 0;
 }
 
 static bool replmd_replPropertyMetaData1_is_newer(struct replPropertyMetaData1 *cur_m,
