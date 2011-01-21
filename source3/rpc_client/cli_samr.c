@@ -445,7 +445,7 @@ NTSTATUS dcerpc_try_samr_connects(struct dcerpc_binding_handle *h,
 				      &info_out,
 				      connect_pol,
 				      presult);
-	if (NT_STATUS_IS_OK(status)) {
+	if (NT_STATUS_IS_OK(status) && NT_STATUS_IS_OK(*presult)) {
 		return status;
 	}
 
@@ -456,7 +456,7 @@ NTSTATUS dcerpc_try_samr_connects(struct dcerpc_binding_handle *h,
 				      access_mask,
 				      connect_pol,
 				      presult);
-	if (NT_STATUS_IS_OK(status)) {
+	if (NT_STATUS_IS_OK(status) && NT_STATUS_IS_OK(*presult)) {
 		return status;
 	}
 
