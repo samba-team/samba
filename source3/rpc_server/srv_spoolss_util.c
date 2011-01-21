@@ -1457,8 +1457,7 @@ WERROR winreg_create_printer(TALLOC_CTX *mem_ctx,
 			goto done;
 		}
 
-		switch (i) {
-		case 1: {
+		if (strequal(subkeys[i], SPOOL_DSSPOOLER_KEY)) {
 			const char *dnssuffix;
 			const char *longname;
 			const char *uncname;
@@ -1565,9 +1564,6 @@ WERROR winreg_create_printer(TALLOC_CTX *mem_ctx,
 			if (!W_ERROR_IS_OK(result)) {
 				goto done;
 			}
-		} /* case 1 */
-		default:
-			break;
 		}
 
 		if (is_valid_policy_hnd(&key_hnd)) {
