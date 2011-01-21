@@ -1495,6 +1495,7 @@ void reply_ntrename(struct smb_request *req)
 	uint32_t ucf_flags_dst = 0;
 	uint16 rename_type;
 	TALLOC_CTX *ctx = talloc_tos();
+	bool stream_rename = false;
 
 	START_PROFILE(SMBntrename);
 
@@ -1527,10 +1528,16 @@ void reply_ntrename(struct smb_request *req)
 		goto out;
 	}
 
-	/* The newname must begin with a ':' if the oldname contains a ':'. */
-	if (strchr_m(oldname, ':') && (newname[0] != ':')) {
-		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
-		goto out;
+	if (!lp_posix_pathnames()) {
+		/* The newname must begin with a ':' if the
+		   oldname contains a ':'. */
+		if (strchr_m(oldname, ':')) {
+			if (newname[0] != ':') {
+				reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
+				goto out;
+			}
+			stream_rename = true;
+		}
 	}
 
 	/*
@@ -1577,6 +1584,17 @@ void reply_ntrename(struct smb_request *req)
 		}
 		reply_nterror(req, status);
 		goto out;
+	}
+
+	if (stream_rename) {
+		/* smb_fname_new must be the same as smb_fname_old. */
+		TALLOC_FREE(smb_fname_new->base_name);
+		smb_fname_new->base_name = talloc_strdup(smb_fname_new,
+						smb_fname_old->base_name);
+		if (!smb_fname_new->base_name) {
+			reply_nterror(req, NT_STATUS_NO_MEMORY);
+			goto out;
+		}
 	}
 
 	DEBUG(3,("reply_ntrename: %s -> %s\n",

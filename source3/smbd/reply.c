@@ -6532,6 +6532,7 @@ void reply_mv(struct smb_request *req)
 	TALLOC_CTX *ctx = talloc_tos();
 	struct smb_filename *smb_fname_src = NULL;
 	struct smb_filename *smb_fname_dst = NULL;
+	bool stream_rename = false;
 
 	START_PROFILE(SMBmv);
 
@@ -6556,6 +6557,18 @@ void reply_mv(struct smb_request *req)
 		reply_nterror(req, status);
 		goto out;
 	}
+
+	if (!lp_posix_pathnames()) {
+		/* The newname must begin with a ':' if the
+		   name contains a ':'. */
+		if (strchr_m(name, ':')) {
+			if (newname[0] != ':') {
+				reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
+				goto out;
+			}
+			stream_rename = true;
+		}
+        }
 
 	status = filename_convert(ctx,
 				  conn,
@@ -6591,6 +6604,18 @@ void reply_mv(struct smb_request *req)
 		}
 		reply_nterror(req, status);
 		goto out;
+	}
+
+	if (stream_rename) {
+		/* smb_fname_dst->base_name must be the same as
+		   smb_fname_src->base_name. */
+		TALLOC_FREE(smb_fname_dst->base_name);
+		smb_fname_dst->base_name = talloc_strdup(smb_fname_dst,
+						smb_fname_src->base_name);
+		if (!smb_fname_dst->base_name) {
+			reply_nterror(req, NT_STATUS_NO_MEMORY);
+			goto out;
+		}
 	}
 
 	DEBUG(3,("reply_mv : %s -> %s\n", smb_fname_str_dbg(smb_fname_src),
