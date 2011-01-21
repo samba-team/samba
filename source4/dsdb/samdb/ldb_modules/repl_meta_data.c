@@ -372,6 +372,7 @@ static int replmd_op_callback(struct ldb_request *req, struct ldb_reply *ares)
 	controls = ldb_controls_except_specified(ares->controls, ares, partition_ctrl);
 
 	if (ares->error != LDB_SUCCESS) {
+		DEBUG(0,("%s failure. Error is: %s\n", __FUNCTION__, ldb_strerror(ares->error)));
 		return ldb_module_done(ac->req, controls,
 					ares->response, ares->error);
 	}
