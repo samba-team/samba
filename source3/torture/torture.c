@@ -667,7 +667,7 @@ static bool rw_torture3(struct cli_state *c, char *lockfname)
 	unsigned countprev = 0;
 	ssize_t sent = 0;
 	bool correct = True;
-	NTSTATUS status;
+	NTSTATUS status = NT_STATUS_OK;
 
 	srandom(1);
 	for (i = 0; i < sizeof(buf); i += sizeof(uint32))
