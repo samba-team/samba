@@ -23,7 +23,7 @@
 
 #include "includes.h"
 #include "../libcli/auth/libcli_auth.h"
-#include "../librpc/gen_ndr/cli_samr.h"
+#include "../librpc/gen_ndr/ndr_samr_c.h"
 #include "rpc_client/cli_samr.h"
 #include "../lib/crypto/arcfour.h"
 #include "rpc_client/init_lsa.h"
