@@ -661,7 +661,6 @@ static int streams_depot_rename(vfs_handle_struct *handle,
 {
 	struct smb_filename *smb_fname_src_stream = NULL;
 	struct smb_filename *smb_fname_dst_stream = NULL;
-	struct smb_filename *smb_fname_dst_mod = NULL;
 	bool src_is_stream, dst_is_stream;
 	NTSTATUS status;
 	int ret = -1;
@@ -692,23 +691,7 @@ static int streams_depot_rename(vfs_handle_struct *handle,
 		goto done;
 	}
 
-	/*
-	 * Handle passing in a stream name without the base file.  This is
-	 * exercised by the NTRENAME streams rename path.
-	 */
-	if (StrCaseCmp(smb_fname_dst->base_name, "./") == 0) {
-		status = create_synthetic_smb_fname(talloc_tos(),
-						    smb_fname_src->base_name,
-						    smb_fname_dst->stream_name,
-						    NULL, &smb_fname_dst_mod);
-		if (!NT_STATUS_IS_OK(status)) {
-			errno = map_errno_from_nt_status(status);
-			goto done;
-		}
-	}
-
-	status = stream_smb_fname(handle, (smb_fname_dst_mod ?
-					   smb_fname_dst_mod : smb_fname_dst),
+	status = stream_smb_fname(handle, smb_fname_dst,
 				  &smb_fname_dst_stream, false);
 	if (!NT_STATUS_IS_OK(status)) {
 		errno = map_errno_from_nt_status(status);
@@ -721,7 +704,6 @@ static int streams_depot_rename(vfs_handle_struct *handle,
 done:
 	TALLOC_FREE(smb_fname_src_stream);
 	TALLOC_FREE(smb_fname_dst_stream);
-	TALLOC_FREE(smb_fname_dst_mod);
 	return ret;
 }
 
