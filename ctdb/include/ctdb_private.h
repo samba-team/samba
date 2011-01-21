@@ -507,6 +507,8 @@ struct ctdb_db_context {
 	bool transaction_active;
 	struct ctdb_vacuum_handle *vacuum_handle;
 	char *unhealthy_reason;
+	int pending_requests;
+	struct lockwait_handle *lockwait_overflow;
 };
 
 
