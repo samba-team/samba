@@ -2946,16 +2946,9 @@ static bool replmd_update_is_newer(const struct GUID *current_invocation_id,
 				   const struct GUID *update_invocation_id,
 				   uint32_t current_version,
 				   uint32_t update_version,
-				   uint32_t current_usn,
-				   uint32_t update_usn,
 				   NTTIME current_change_time,
 				   NTTIME update_change_time)
 {
-	if (GUID_compare(update_invocation_id, current_invocation_id) == 0) {
-		if (update_usn != current_usn) {
-			return update_usn >= current_usn;
-		}
-	}
 	if (update_version != current_version) {
 		return update_version >= current_version;
 	}
@@ -2972,8 +2965,6 @@ static bool replmd_replPropertyMetaData1_is_newer(struct replPropertyMetaData1 *
 				      &new_m->originating_invocation_id,
 				      cur_m->version,
 				      new_m->version,
-				      cur_m->originating_usn,
-				      new_m->originating_usn,
 				      cur_m->originating_change_time,
 				      new_m->originating_change_time);
 }
@@ -4004,8 +3995,6 @@ linked_attributes[0]:
 					    &la->meta_data.originating_invocation_id,
 					    version,
 					    la->meta_data.version,
-					    originating_usn,
-					    la->meta_data.originating_usn,
 					    change_time,
 					    la->meta_data.originating_change_time)) {
 			DEBUG(3,("Discarding older DRS linked attribute update to %s on %s from %s\n",
