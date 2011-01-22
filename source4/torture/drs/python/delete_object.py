@@ -42,35 +42,16 @@ import samba.tests
 
 class DrsDeleteObjectTestCase(samba.tests.TestCase):
 
-    # RootDSE msg for DC1
-    info_dc1 = None
-    ldb_dc1 = None
-    # RootDSE msg for DC1
-    info_dc2 = None
-    ldb_dc2 = None
-
     def setUp(self):
         super(DrsDeleteObjectTestCase, self).setUp()
 
-        # connect to DCs singleton
-        if self.ldb_dc1 is None:
-            DrsDeleteObjectTestCase.dc1 = samba.tests.env_get_var_value("DC1")
-            DrsDeleteObjectTestCase.ldb_dc1 = samba.tests.connect_samdb(self.dc1, ldap_only=True)
-        if self.ldb_dc2 is None:
-            DrsDeleteObjectTestCase.dc2 = samba.tests.env_get_var_value("DC2")
-            DrsDeleteObjectTestCase.ldb_dc2 = samba.tests.connect_samdb(self.dc2, ldap_only=True)
-
-        # fetch rootDSEs
-        if self.info_dc1 is None:
-            ldb = self.ldb_dc1
-            res = ldb.search(base="", expression="", scope=SCOPE_BASE, attrs=["*"])
-            self.assertEquals(len(res), 1)
-            DrsDeleteObjectTestCase.info_dc1 = res[0]
-        if self.info_dc2 is None:
-            ldb = self.ldb_dc2
-            res = ldb.search(base="", expression="", scope=SCOPE_BASE, attrs=["*"])
-            self.assertEquals(len(res), 1)
-            DrsDeleteObjectTestCase.info_dc2 = res[0]
+        # connect to DCs
+        url_dc = samba.tests.env_get_var_value("DC1")
+        (self.ldb_dc1, self.info_dc1) = samba.tests.connect_samdb_ex(url_dc,
+                                                                     ldap_only=True)
+        url_dc = samba.tests.env_get_var_value("DC2")
+        (self.ldb_dc2, self.info_dc2) = samba.tests.connect_samdb_ex(url_dc,
+                                                                     ldap_only=True)
 
         # cache some of RootDSE props
         self.schema_dn = self.info_dc1["schemaNamingContext"][0]
