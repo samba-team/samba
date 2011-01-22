@@ -221,12 +221,14 @@ struct tevent_req *smbsock_connect_send(TALLOC_CTX *mem_ctx,
 	/*
 	 * After 5 msecs, fire the 139 request
 	 */
-	subreq = tevent_wakeup_send(state, ev, timeval_current_ofs(0, 5000));
-	if (tevent_req_nomem(subreq, req)) {
+	state->req_139 = tevent_wakeup_send(
+		state, ev, timeval_current_ofs(0, 5000));
+	if (tevent_req_nomem(state->req_139, req)) {
 		TALLOC_FREE(state->req_445);
 		return tevent_req_post(req, ev);
 	}
-	tevent_req_set_callback(subreq, smbsock_connect_do_139, req);
+	tevent_req_set_callback(state->req_139, smbsock_connect_do_139,
+				req);
 	return req;
 }
 
