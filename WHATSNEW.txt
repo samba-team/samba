@@ -1,18 +1,20 @@
                    ==============================
                    Release Notes for Samba 3.4.11
-			  January , 2011
+			  January 12, 2011
                    ==============================
 
 
-This is the latest stable release of Samba 3.4.
+This is the latest stable release of Samba 3.4. It addresses the following
+issue introduced with Samba 3.4.10:
 
-Major enhancements in Samba 3.4.11 include:
+   o Fix connecting to port-139 only servers (bug 7881).
 
-   o
 
 Changes since 3.4.10
 --------------------
 
+o   Volker Lendecke <vl@samba.org>
+    * BUG 7881: Fix connecting to port-139 only servers.
 
 
 ######################################################################
