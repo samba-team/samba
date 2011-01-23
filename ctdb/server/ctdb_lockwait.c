@@ -64,7 +64,7 @@ static void do_overflow(struct ctdb_db_context *ctdb_db,
 
 	/* Remove one from the overflow queue if there is one. */
 	if (ctdb_db->lockwait_overflow) {
-		i = ctdb->lockwait_overflow;
+		i = ctdb_db->lockwait_overflow;
 		ctdb_lockwait(ctdb_db, i->key, i->callback, i->private_data);
 		talloc_free(i);
 	}
