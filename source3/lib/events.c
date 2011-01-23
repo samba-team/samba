@@ -120,6 +120,10 @@ bool run_events(struct tevent_context *ev,
 		return false;
 	}
 
+	if (selrtn <= 0) {
+		return false;
+	}
+
 	for (fde = ev->fd_events; fde; fde = fde->next) {
 		uint16 flags = 0;
 
