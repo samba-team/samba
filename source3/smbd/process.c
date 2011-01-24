@@ -837,6 +837,10 @@ static NTSTATUS smbd_server_connection_loop_once(struct smbd_server_connection *
 		errno = sav;
 	}
 
+	if (selrtn == -1 && errno != EINTR) {
+		return map_nt_error_from_unix(errno);
+	}
+
 	if (run_events(smbd_event_context(), selrtn, &r_fds, &w_fds)) {
 		return NT_STATUS_RETRY;
 	}
