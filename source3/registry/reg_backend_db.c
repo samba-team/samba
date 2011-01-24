@@ -453,11 +453,11 @@ static WERROR regdb_store_regdb_version(uint32_t version)
 
 	status = dbwrap_trans_store_int32(regdb, version_keyname, version);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1, ("regdb_init: error storing %s = %d: %s\n",
+		DEBUG(1, ("regdb_store_regdb_version: error storing %s = %d: %s\n",
 			  version_keyname, version, nt_errstr(status)));
 		return ntstatus_to_werror(status);
 	} else {
-		DEBUG(10, ("regdb_init: stored %s = %d\n",
+		DEBUG(10, ("regdb_store_regdb_version: stored %s = %d\n",
 			  version_keyname, version));
 		return WERR_OK;
 	}
