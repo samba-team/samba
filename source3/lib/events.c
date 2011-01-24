@@ -127,6 +127,7 @@ bool run_events(struct tevent_context *ev,
 		if (FD_ISSET(fde->fd, write_fds)) flags |= EVENT_FD_WRITE;
 
 		if (flags & fde->flags) {
+			DLIST_DEMOTE(ev->fd_events, fde, struct tevent_fd);
 			fde->handler(ev, fde, flags, fde->private_data);
 			return true;
 		}
