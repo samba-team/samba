@@ -71,4 +71,17 @@ struct ldb_parse_tree {
 	} u;
 };
 
+struct ldb_message_element {
+	unsigned int flags;
+	const char *name;
+	unsigned int num_values;
+	struct ldb_val *values;
+};
+
+struct ldb_control {
+	const char *oid;
+	int critical;
+	void *data;
+};
+
 #endif
