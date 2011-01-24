@@ -70,6 +70,15 @@ static void do_overflow(struct ctdb_db_context *ctdb_db,
 	}
 }
 
+static int lockwait_destructor(struct lockwait_handle *h)
+{
+	CTDB_DECREMENT_STAT(h->ctdb, pending_lockwait_calls);
+	kill(h->child, SIGKILL);
+	h->ctdb_db->pending_requests--;
+	DLIST_REMOVE(h->ctdb_db->lockwait_active, h);
+	return 0;
+}
+
 static void lockwait_handler(struct event_context *ev, struct fd_event *fde, 
 			     uint16_t flags, void *private_data)
 {
@@ -77,7 +86,6 @@ static void lockwait_handler(struct event_context *ev, struct fd_event *fde,
 						     struct lockwait_handle);
 	void (*callback)(void *) = h->callback;
 	void *p = h->private_data;
-	pid_t child = h->child;
 	TDB_DATA key = h->key;
 	struct tdb_context *tdb = h->ctdb_db->ltdb->tdb;
 	TALLOC_CTX *tmp_ctx = talloc_new(ev);
@@ -85,9 +93,7 @@ static void lockwait_handler(struct event_context *ev, struct fd_event *fde,
 	key.dptr = talloc_memdup(tmp_ctx, key.dptr, key.dsize);
 	h->ctdb_db->pending_requests--;
 
-	talloc_set_destructor(h, NULL);
 	CTDB_UPDATE_LATENCY(h->ctdb, h->ctdb_db, "lockwait", lockwait_latency, h->start_time);
-	CTDB_DECREMENT_STAT(h->ctdb, pending_lockwait_calls);
 
 	/* the handle needs to go away when the context is gone - when
 	   the handle goes away this implicitly closes the pipe, which
@@ -107,17 +113,9 @@ static void lockwait_handler(struct event_context *ev, struct fd_event *fde,
 	}
 	tdb_chainlock_unmark(tdb, key);
 
-	kill(child, SIGKILL);
 	talloc_free(tmp_ctx);
 }
 
-static int lockwait_destructor(struct lockwait_handle *h)
-{
-	CTDB_DECREMENT_STAT(h->ctdb, pending_lockwait_calls);
-	kill(h->child, SIGKILL);
-	h->ctdb_db->pending_requests--;
-	return 0;
-}
 
 static int overflow_lockwait_destructor(struct lockwait_handle *h)
 {
@@ -141,7 +139,7 @@ struct lockwait_handle *ctdb_lockwait(struct ctdb_db_context *ctdb_db,
 				      void (*callback)(void *private_data),
 				      void *private_data)
 {
-	struct lockwait_handle *result;
+	struct lockwait_handle *result, *i;
 	int ret;
 	pid_t parent = getpid();
 
@@ -158,6 +156,18 @@ struct lockwait_handle *ctdb_lockwait(struct ctdb_db_context *ctdb_db,
 	result->ctdb = ctdb_db->ctdb;
 	result->ctdb_db = ctdb_db;
 	result->key = key;
+
+	/* If we already have a lockwait child for this request, then put this
+	   request on the overflow queue straight away
+	 */
+	for (i = ctdb_db->lockwait_active; i; i = i->next) {
+		if (key.dsize == i->key.dsize
+		    && memcmp(key.dptr, i->key.dptr, key.dsize) == 0) {
+			DLIST_ADD_END(ctdb_db->lockwait_overflow, result, NULL);
+			talloc_set_destructor(result, overflow_lockwait_destructor);
+			return result;
+		}
+	}
 
 	/* Don't fire off too many children at once! */
 	if (ctdb_db->pending_requests > 200) {
@@ -201,6 +211,9 @@ struct lockwait_handle *ctdb_lockwait(struct ctdb_db_context *ctdb_db,
 
 	close(result->fd[1]);
 	set_close_on_exec(result->fd[0]);
+
+	/* This is an active lockwait child process */
+	DLIST_ADD_END(ctdb_db->lockwait_active, result, NULL);
 
 	DEBUG(DEBUG_DEBUG, (__location__ " Created PIPE FD:%d to child lockwait process\n", result->fd[0]));
 
