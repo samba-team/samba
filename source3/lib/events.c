@@ -139,7 +139,7 @@ bool run_events(struct tevent_context *ev,
 		return true;
 	}
 
-	if (selrtn == 0) {
+	if (selrtn <= 0) {
 		/*
 		 * No fd ready
 		 */
