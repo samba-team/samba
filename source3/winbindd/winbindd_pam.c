@@ -1263,6 +1263,7 @@ static NTSTATUS winbindd_dual_pam_auth_samlogon(struct winbindd_domain *domain,
 			DEBUG(3, ("Got a DC that can not do NetSamLogonEx, "
 				  "retrying with NetSamLogon\n"));
 			domain->can_do_samlogon_ex = false;
+			retry = true;
 			continue;
 		}
 
