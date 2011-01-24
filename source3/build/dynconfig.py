@@ -38,6 +38,7 @@ dyn_cflags = {
     'NMBDSOCKETDIR'                  : '${LOCKDIR}/.nmbd',
     'NTP_SIGND_SOCKET_DIR'           : '${NTP_SIGND_SOCKET_DIR}',
     'PIDDIR'                         : '${LOCALSTATEDIR}/run',
+    'PKGCONFIGDIR'                   : '${LIBDIR}/pkgconfigdir',
     'PRIVATE_DIR'                    : '${PRIVATEDIR}',
     'SBINDIR'                        : '${SBINDIR}',
     'SETUPDIR'                       : '${DATADIR}/setup',
