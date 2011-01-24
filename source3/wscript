@@ -71,7 +71,7 @@ def configure(conf):
         conf.env['build_swat'] = True
 
     conf.ADD_EXTRA_INCLUDES('''#source3 #source3/include #lib/replace #lib/talloc
-                               #lib/tevent #source3/libaddns #source3/librpc
+                               #lib/tevent #lib/addns #source3/librpc
                                #source3/lib #lib/tdb/include #lib/popt''')
 
     conf.RECURSE('../lib/replace')
