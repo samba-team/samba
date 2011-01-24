@@ -1123,31 +1123,135 @@ static NTSTATUS winbindd_dual_auth_passdb(TALLOC_CTX *mem_ctx,
 	return status;
 }
 
-typedef	NTSTATUS (*netlogon_fn_t)(struct rpc_pipe_client *cli,
-				  TALLOC_CTX *mem_ctx,
-				  uint32 logon_parameters,
-				  const char *server,
-				  const char *username,
-				  const char *domain,
-				  const char *workstation,
-				  const uint8 chal[8],
-				  DATA_BLOB lm_response,
-				  DATA_BLOB nt_response,
-				  struct netr_SamInfo3 **info3);
+static NTSTATUS winbind_samlogon_retry_loop(struct winbindd_domain *domain,
+					    TALLOC_CTX *mem_ctx,
+					    uint32_t logon_parameters,
+					    const char *server,
+					    const char *username,
+					    const char *domainname,
+					    const char *workstation,
+					    const uint8_t chal[8],
+					    DATA_BLOB lm_response,
+					    DATA_BLOB nt_response,
+					    struct netr_SamInfo3 **info3)
+{
+	int attempts = 0;
+	bool retry = false;
+	NTSTATUS result;
+
+	do {
+		struct rpc_pipe_client *netlogon_pipe;
+
+		ZERO_STRUCTP(info3);
+		retry = false;
+
+		result = cm_connect_netlogon(domain, &netlogon_pipe);
+
+		if (!NT_STATUS_IS_OK(result)) {
+			DEBUG(3,("could not open handle to NETLOGON pipe (error: %s)\n",
+				  nt_errstr(result)));
+			return result;
+		}
+
+		/* It is really important to try SamLogonEx here,
+		 * because in a clustered environment, we want to use
+		 * one machine account from multiple physical
+		 * computers.
+		 *
+		 * With a normal SamLogon call, we must keep the
+		 * credentials chain updated and intact between all
+		 * users of the machine account (which would imply
+		 * cross-node communication for every NTLM logon).
+		 *
+		 * (The credentials chain is not per NETLOGON pipe
+		 * connection, but globally on the server/client pair
+		 * by machine name).
+		 *
+		 * When using SamLogonEx, the credentials are not
+		 * supplied, but the session key is implied by the
+		 * wrapping SamLogon context.
+		 *
+		 *  -- abartlet 21 April 2008
+		 */
+
+		if (domain->can_do_samlogon_ex) {
+			result = rpccli_netlogon_sam_network_logon_ex(
+					netlogon_pipe,
+					mem_ctx,
+					0,
+					server,		/* server name */
+					username,	/* user name */
+					domainname,	/* target domain */
+					workstation,	/* workstation */
+					chal,
+					lm_response,
+					nt_response,
+					info3);
+		} else {
+			result = rpccli_netlogon_sam_network_logon(
+					netlogon_pipe,
+					mem_ctx,
+					0,
+					server,		/* server name */
+					username,	/* user name */
+					domainname,	/* target domain */
+					workstation,	/* workstation */
+					chal,
+					lm_response,
+					nt_response,
+					info3);
+		}
+
+		attempts += 1;
+
+		if ((NT_STATUS_V(result) == DCERPC_FAULT_OP_RNG_ERROR)
+		    && domain->can_do_samlogon_ex) {
+			DEBUG(3, ("Got a DC that can not do NetSamLogonEx, "
+				  "retrying with NetSamLogon\n"));
+			domain->can_do_samlogon_ex = false;
+			retry = true;
+			continue;
+		}
+
+		/* We have to try a second time as cm_connect_netlogon
+		   might not yet have noticed that the DC has killed
+		   our connection. */
+
+		if (!rpccli_is_connected(netlogon_pipe)) {
+			retry = true;
+			continue;
+		}
+
+		/* if we get access denied, a possible cause was that we had
+		   and open connection to the DC, but someone changed our
+		   machine account password out from underneath us using 'net
+		   rpc changetrustpw' */
+
+		if ( NT_STATUS_EQUAL(result, NT_STATUS_ACCESS_DENIED) ) {
+			DEBUG(3,("winbindd_pam_auth: sam_logon returned "
+				 "ACCESS_DENIED.  Maybe the trust account "
+				"password was changed and we didn't know it. "
+				 "Killing connections to domain %s\n",
+				domainname));
+			invalidate_cm_connection(&domain->conn);
+			retry = true;
+		}
+
+	} while ( (attempts < 2) && retry );
+
+	return result;
+}
 
 static NTSTATUS winbindd_dual_pam_auth_samlogon(struct winbindd_domain *domain,
 						struct winbindd_cli_state *state,
 						struct netr_SamInfo3 **info3)
 {
 
-	struct rpc_pipe_client *netlogon_pipe;
 	uchar chal[8];
 	DATA_BLOB lm_resp;
 	DATA_BLOB nt_resp;
-	int attempts = 0;
 	unsigned char local_nt_response[24];
 	fstring name_domain, name_user;
-	bool retry;
 	NTSTATUS result;
 	struct netr_SamInfo3 *my_info3 = NULL;
 
@@ -1207,91 +1311,20 @@ static NTSTATUS winbindd_dual_pam_auth_samlogon(struct winbindd_domain *domain,
 
 	/* check authentication loop */
 
-	do {
-		netlogon_fn_t logon_fn;
-
-		ZERO_STRUCTP(my_info3);
-		retry = false;
-
-		result = cm_connect_netlogon(domain, &netlogon_pipe);
-
-		if (!NT_STATUS_IS_OK(result)) {
-			DEBUG(3, ("could not open handle to NETLOGON pipe\n"));
-			goto done;
-		}
-
-		/* It is really important to try SamLogonEx here,
-		 * because in a clustered environment, we want to use
-		 * one machine account from multiple physical
-		 * computers.
-		 *
-		 * With a normal SamLogon call, we must keep the
-		 * credentials chain updated and intact between all
-		 * users of the machine account (which would imply
-		 * cross-node communication for every NTLM logon).
-		 *
-		 * (The credentials chain is not per NETLOGON pipe
-		 * connection, but globally on the server/client pair
-		 * by machine name).
-		 *
-		 * When using SamLogonEx, the credentials are not
-		 * supplied, but the session key is implied by the
-		 * wrapping SamLogon context.
-		 *
-		 *  -- abartlet 21 April 2008
-		 */
-
-		logon_fn = domain->can_do_samlogon_ex
-			? rpccli_netlogon_sam_network_logon_ex
-			: rpccli_netlogon_sam_network_logon;
-
-		result = logon_fn(netlogon_pipe,
-				  state->mem_ctx,
-				  0,
-				  domain->dcname,	  /* server name */
-				  name_user,              /* user name */
-				  name_domain,            /* target domain */
-				  global_myname(),        /* workstation */
-				  chal,
-				  lm_resp,
-				  nt_resp,
-				  &my_info3);
-		attempts += 1;
-
-		if ((NT_STATUS_V(result) == DCERPC_FAULT_OP_RNG_ERROR)
-		    && domain->can_do_samlogon_ex) {
-			DEBUG(3, ("Got a DC that can not do NetSamLogonEx, "
-				  "retrying with NetSamLogon\n"));
-			domain->can_do_samlogon_ex = false;
-			retry = true;
-			continue;
-		}
-
-		/* We have to try a second time as cm_connect_netlogon
-		   might not yet have noticed that the DC has killed
-		   our connection. */
-
-		if (!rpccli_is_connected(netlogon_pipe)) {
-			retry = true;
-			continue;
-		}
-
-		/* if we get access denied, a possible cause was that we had
-		   and open connection to the DC, but someone changed our
-		   machine account password out from underneath us using 'net
-		   rpc changetrustpw' */
-
-		if ( NT_STATUS_EQUAL(result, NT_STATUS_ACCESS_DENIED) ) {
-			DEBUG(3,("winbindd_pam_auth: sam_logon returned "
-				 "ACCESS_DENIED.  Maybe the trust account "
-				"password was changed and we didn't know it. "
-				 "Killing connections to domain %s\n",
-				name_domain));
-			invalidate_cm_connection(&domain->conn);
-			retry = true;
-		}
-
-	} while ( (attempts < 2) && retry );
+	result = winbind_samlogon_retry_loop(domain,
+					     state->mem_ctx,
+					     0,
+					     domain->dcname,
+					     name_user,
+					     name_domain,
+					     global_myname(),
+					     chal,
+					     lm_resp,
+					     nt_resp,
+					     &my_info3);
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
 
 	/* handle the case where a NT4 DC does not fill in the acct_flags in
 	 * the samlogon reply info3. When accurate info3 is required by the
@@ -1621,12 +1654,9 @@ enum winbindd_result winbindd_dual_pam_auth_crap(struct winbindd_domain *domain,
 {
 	NTSTATUS result;
 	struct netr_SamInfo3 *info3 = NULL;
-	struct rpc_pipe_client *netlogon_pipe;
 	const char *name_user = NULL;
 	const char *name_domain = NULL;
 	const char *workstation;
-	int attempts = 0;
-	bool retry;
 
 	DATA_BLOB lm_resp, nt_resp;
 
@@ -1680,72 +1710,21 @@ enum winbindd_result winbindd_dual_pam_auth_crap(struct winbindd_domain *domain,
 		goto process_result;
 	}
 
-	do {
-		netlogon_fn_t logon_fn;
-
-		retry = false;
-
-		netlogon_pipe = NULL;
-		result = cm_connect_netlogon(domain, &netlogon_pipe);
-
-		if (!NT_STATUS_IS_OK(result)) {
-			DEBUG(3, ("could not open handle to NETLOGON pipe (error: %s)\n",
-				  nt_errstr(result)));
-			goto done;
-		}
-
-		logon_fn = domain->can_do_samlogon_ex
-			? rpccli_netlogon_sam_network_logon_ex
-			: rpccli_netlogon_sam_network_logon;
-
-		result = logon_fn(netlogon_pipe,
-				  state->mem_ctx,
-				  state->request->data.auth_crap.logon_parameters,
-				  domain->dcname,
-				  name_user,
-				  name_domain,
-				  /* Bug #3248 - found by Stefan Burkei. */
-				  workstation, /* We carefully set this above so use it... */
-				  state->request->data.auth_crap.chal,
-				  lm_resp,
-				  nt_resp,
-				  &info3);
-
-		if ((NT_STATUS_V(result) == DCERPC_FAULT_OP_RNG_ERROR)
-		    && domain->can_do_samlogon_ex) {
-			DEBUG(3, ("Got a DC that can not do NetSamLogonEx, "
-				  "retrying with NetSamLogon\n"));
-			domain->can_do_samlogon_ex = false;
-			retry = true;
-			continue;
-		}
-
-		attempts += 1;
-
-		/* We have to try a second time as cm_connect_netlogon
-		   might not yet have noticed that the DC has killed
-		   our connection. */
-
-		if (!rpccli_is_connected(netlogon_pipe)) {
-			retry = true;
-			continue;
-		}
-
-		/* if we get access denied, a possible cause was that we had and open
-		   connection to the DC, but someone changed our machine account password
-		   out from underneath us using 'net rpc changetrustpw' */
-
-		if ( NT_STATUS_EQUAL(result, NT_STATUS_ACCESS_DENIED) ) {
-			DEBUG(3,("winbindd_pam_auth: sam_logon returned "
-				 "ACCESS_DENIED.  Maybe the trust account "
-				"password was changed and we didn't know it. "
-				 "Killing connections to domain %s\n",
-				name_domain));
-			invalidate_cm_connection(&domain->conn);
-			retry = true;
-		}
-
-	} while ( (attempts < 2) && retry );
+	result = winbind_samlogon_retry_loop(domain,
+					     state->mem_ctx,
+					     state->request->data.auth_crap.logon_parameters,
+					     domain->dcname,
+					     name_user,
+					     name_domain,
+					     /* Bug #3248 - found by Stefan Burkei. */
+					     workstation, /* We carefully set this above so use it... */
+					     state->request->data.auth_crap.chal,
+					     lm_resp,
+					     nt_resp,
+					     &info3);
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
 
 process_result:
 
