@@ -188,7 +188,6 @@ FLAGS = -I. \
 	$(ISA) \
 	-I$(srcdir)/lib \
 	-I.. \
-	-I../source4 \
 	-D_SAMBA_BUILD_=3
 
 PATH_FLAGS = -DSMB_PASSWD_FILE=\"$(SMB_PASSWD_FILE)\" \
