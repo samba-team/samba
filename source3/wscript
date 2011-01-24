@@ -72,7 +72,7 @@ def configure(conf):
 
     conf.ADD_EXTRA_INCLUDES('''#source3 #source3/include #lib/replace #lib/talloc
                                #lib/tevent #source3/libaddns #source3/librpc
-                               #source3/lib #lib/tdb/include #lib/popt #source4''')
+                               #source3/lib #lib/tdb/include #lib/popt''')
 
     conf.RECURSE('../lib/replace')
     conf.RECURSE('build')
