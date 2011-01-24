@@ -571,4 +571,6 @@ _PUBLIC_ enum ndr_err_code ndr_push_enum_uint16(struct ndr_push *ndr, int ndr_fl
 _PUBLIC_ enum ndr_err_code ndr_push_enum_uint32(struct ndr_push *ndr, int ndr_flags, uint32_t v);
 _PUBLIC_ enum ndr_err_code ndr_push_enum_uint1632(struct ndr_push *ndr, int ndr_flags, uint16_t v);
 
+_PUBLIC_ void ndr_print_bool(struct ndr_print *ndr, const char *name, const bool b);
+
 #endif /* __LIBNDR_H__ */

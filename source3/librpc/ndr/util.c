@@ -200,11 +200,6 @@ void ndr_print_file_id(struct ndr_print *ndr, const char *name, const struct fil
 	ndr->depth--;
 }
 
-_PUBLIC_ void ndr_print_bool(struct ndr_print *ndr, const char *name, const bool b)
-{
-	ndr->print(ndr, "%-25s: %s", name, b?"true":"false");
-}
-
 _PUBLIC_ void ndr_print_sockaddr_storage(struct ndr_print *ndr, const char *name, const struct sockaddr_storage *ss)
 {
 	char addr[INET6_ADDRSTRLEN];

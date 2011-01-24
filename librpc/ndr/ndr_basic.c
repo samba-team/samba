@@ -1208,3 +1208,8 @@ _PUBLIC_ uint32_t ndr_size_DATA_BLOB(int ret, const DATA_BLOB *data, int flags)
 	if (!data) return ret;
 	return ret + data->length;
 }
+
+_PUBLIC_ void ndr_print_bool(struct ndr_print *ndr, const char *name, const bool b)
+{
+	ndr->print(ndr, "%-25s: %s", name, b?"true":"false");
+}
