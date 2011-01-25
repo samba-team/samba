@@ -122,10 +122,14 @@ def CHECK_BUNDLED_SYSTEM(conf, libname, minversion='0.0.0',
 
     minversion = minimum_library_version(conf, libname, minversion)
 
+    msg = 'Checking for system %s' % libname
+    if minversion != '0.0.0':
+        msg += ' >= %s' % minversion
+
     # try pkgconfig first
     if (conf.check_cfg(package=libname,
                       args='"%s >= %s" --cflags --libs' % (libname, minversion),
-                      msg='Checking for system %s >= %s' % (libname, minversion)) and
+                      msg=msg) and
         check_functions_headers()):
         conf.SET_TARGET_TYPE(libname, 'SYSLIB')
         conf.env[found] = True
