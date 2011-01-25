@@ -492,7 +492,7 @@ char *share_mode_str(TALLOC_CTX *ctx, int num, const struct share_mode_entry *e)
 	return talloc_asprintf(ctx, "share_mode_entry[%d]: %s "
 		 "pid = %s, share_access = 0x%x, private_options = 0x%x, "
 		 "access_mask = 0x%x, mid = 0x%llx, type= 0x%x, gen_id = %lu, "
-		 "uid = %u, flags = %u, file_id %s",
+		 "uid = %u, flags = %u, file_id %s, name_hash = 0x%x",
 		 num,
 		 e->op_type == UNUSED_SHARE_MODE_ENTRY ? "UNUSED" : "",
 		 procid_str_static(&e->pid),
@@ -500,7 +500,8 @@ char *share_mode_str(TALLOC_CTX *ctx, int num, const struct share_mode_entry *e)
 		 e->access_mask, (unsigned long long)e->op_mid,
 		 e->op_type, e->share_file_id,
 		 (unsigned int)e->uid, (unsigned int)e->flags,
-		 file_id_string_tos(&e->id));
+		 file_id_string_tos(&e->id),
+		 (unsigned int)e->name_hash);
 }
 
 /*******************************************************************
@@ -953,6 +954,8 @@ struct share_mode_lock *fetch_share_mode_unlocked(TALLOC_CTX *mem_ctx,
 bool rename_share_filename(struct messaging_context *msg_ctx,
 			struct share_mode_lock *lck,
 			const char *servicepath,
+			uint32_t orig_name_hash,
+			uint32_t new_name_hash,
 			const struct smb_filename *smb_fname_dst)
 {
 	size_t sp_len;
@@ -1018,6 +1021,15 @@ bool rename_share_filename(struct messaging_context *msg_ctx,
 		if (!is_valid_share_mode_entry(se)) {
 			continue;
 		}
+
+		/* If this is a hardlink to the inode
+		   with a different name, skip this. */
+		if (se->name_hash != orig_name_hash) {
+			continue;
+		}
+
+		se->name_hash = new_name_hash;
+
 		/* But not to ourselves... */
 		if (procid_is_me(&se->pid)) {
 			continue;
@@ -1125,6 +1137,7 @@ static void fill_share_mode_entry(struct share_mode_entry *e,
 	e->share_file_id = fsp->fh->gen_id;
 	e->uid = (uint32)uid;
 	e->flags = fsp->posix_open ? SHARE_MODE_FLAG_POSIX_OPEN : 0;
+	e->name_hash = fsp->name_hash;
 }
 
 static void fill_deferred_open_entry(struct share_mode_entry *e,

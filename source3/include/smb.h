@@ -685,6 +685,7 @@ struct share_mode_entry {
 	unsigned long share_file_id;
 	uint32 uid;		/* uid of file opener. */
 	uint16 flags;		/* See SHARE_MODE_XX above. */
+	uint32_t name_hash;		/* Jenkins hash of full pathname. */
 };
 
 /* oplock break message definition - linearization of share_mode_entry.
@@ -704,7 +705,8 @@ Offset  Data			length.
 58	unsigned long file_id	4 bytes
 62	uint32 uid		4 bytes
 66	uint16 flags		2 bytes
-68
+68	uint32 name_hash	4 bytes
+72
 
 */
 
@@ -722,12 +724,13 @@ Offset  Data			length.
 #define OP_BREAK_MSG_FILE_ID_OFFSET 58
 #define OP_BREAK_MSG_UID_OFFSET 62
 #define OP_BREAK_MSG_FLAGS_OFFSET 66
+#define OP_BREAK_MSG_NAME_HASH_OFFSET 68
 
 #ifdef CLUSTER_SUPPORT
-#define OP_BREAK_MSG_VNN_OFFSET 68
-#define MSG_SMB_SHARE_MODE_ENTRY_SIZE 72
+#define OP_BREAK_MSG_VNN_OFFSET 72
+#define MSG_SMB_SHARE_MODE_ENTRY_SIZE 76
 #else
-#define MSG_SMB_SHARE_MODE_ENTRY_SIZE 68
+#define MSG_SMB_SHARE_MODE_ENTRY_SIZE 72
 #endif
 
 struct share_mode_lock {

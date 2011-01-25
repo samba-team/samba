@@ -3068,6 +3068,8 @@ struct share_mode_lock *fetch_share_mode_unlocked(TALLOC_CTX *mem_ctx,
 bool rename_share_filename(struct messaging_context *msg_ctx,
 			struct share_mode_lock *lck,
 			const char *servicepath,
+			uint32_t orig_name_hash,
+			uint32_t new_name_hash,
 			const struct smb_filename *smb_fname);
 void get_file_infos(struct file_id id,
 		    bool *delete_on_close,

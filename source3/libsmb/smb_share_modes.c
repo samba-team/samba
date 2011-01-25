@@ -155,7 +155,8 @@ static int share_mode_entry_equal(const struct smb_share_mode_entry *e_entry,
  */
 
 static void create_share_mode_entry(struct share_mode_entry *out,
-				const struct smb_share_mode_entry *in)
+				const struct smb_share_mode_entry *in,
+				uint32_t name_hash)
 {
 	memset(out, '\0', sizeof(struct share_mode_entry));
 
@@ -170,6 +171,7 @@ static void create_share_mode_entry(struct share_mode_entry *out,
 	out->id.extid = in->extid;
 	out->uid = (uint32)geteuid();
 	out->flags = 0;
+	out->name_hash = name_hash;
 }
 
 /*
@@ -261,6 +263,26 @@ int smb_get_share_mode_entries(struct smbdb_ctx *db_ctx,
 	return list_num;
 }
 
+static uint32_t smb_name_hash(const char *sharepath, const char *filename, int *err)
+{
+	TDB_DATA key;
+	char *fullpath = NULL;
+	int ret;
+	uint32_t name_hash;
+
+	*err = 0;
+	ret = asprintf(&fullpath, "%s/%s", sharepath, filename);
+	if (ret == -1 || fullpath == NULL) {
+		*err = 1;
+		return 0;
+	}
+	key.dptr = (uint8_t *)fullpath;
+	key.dsize = strlen(fullpath);
+	name_hash = tdb_jenkins_hash(&key);
+	free(fullpath);
+	return name_hash;
+}
+
 /* 
  * Create an entry in the Samba share mode db.
  */
@@ -281,6 +303,12 @@ int smb_create_share_mode_entry_ex(struct smbdb_ctx *db_ctx,
 	struct share_mode_entry *shares = NULL;
 	uint8 *new_data_p = NULL;
 	size_t new_data_size = 0;
+	int err = 0;
+	uint32_t name_hash = smb_name_hash(sharepath, filename, &err);
+
+	if (err) {
+		return -1;
+	}
 
 	db_data = tdb_fetch(db_ctx->smb_tdb, locking_key);
 	if (!db_data.dptr) {
@@ -299,7 +327,7 @@ int smb_create_share_mode_entry_ex(struct smbdb_ctx *db_ctx,
 		ld->u.s.delete_on_close = 0;
 		ld->u.s.delete_token_size = 0;
 		shares = (struct share_mode_entry *)(db_data.dptr + sizeof(struct locking_data));
-		create_share_mode_entry(shares, new_entry);
+		create_share_mode_entry(shares, new_entry, name_hash);
 
 		memcpy(db_data.dptr + sizeof(struct locking_data) + sizeof(struct share_mode_entry),
 			sharepath,
@@ -338,7 +366,7 @@ int smb_create_share_mode_entry_ex(struct smbdb_ctx *db_ctx,
 	shares = (struct share_mode_entry *)(new_data_p + sizeof(struct locking_data) +
 			(orig_num_share_modes * sizeof(struct share_mode_entry)));
 
-	create_share_mode_entry(shares, new_entry);
+	create_share_mode_entry(shares, new_entry, name_hash);
 
 	ld = (struct locking_data *)new_data_p;
 	ld->u.s.num_share_mode_entries++;
@@ -521,7 +549,7 @@ int smb_change_share_mode_entry(struct smbdb_ctx *db_ctx,
 		}
 
 		if (share_mode_entry_equal(set_entry, share)) {
-			create_share_mode_entry(share, new_entry);
+			create_share_mode_entry(share, new_entry, share->name_hash);
 			found_entry = 1;
 			break;
 		}
