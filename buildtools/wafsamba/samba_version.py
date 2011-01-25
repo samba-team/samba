@@ -1,13 +1,18 @@
 import os
 import Utils
 import samba_utils
+import sys
 
 def bzr_version_summary(path):
     try:
-        from bzrlib import branch, osutils, workingtree
+        import bzrlib
     except ImportError:
         return ("BZR-UNKNOWN", {})
 
+    import bzrlib.ui
+    bzrlib.ui.ui_factory = bzrlib.ui.make_ui_for_terminal(
+        sys.stdin, sys.stdout, sys.stderr)
+    from bzrlib import branch, osutils, workingtree
     from bzrlib.plugin import load_plugins
     load_plugins()
 
