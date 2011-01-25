@@ -591,6 +591,35 @@ NTSTATUS dup_file_fsp(struct smb_request *req, files_struct *from,
 }
 
 /**
+ * Return a jenkins hash of a pathname on a connection.
+ */
+
+NTSTATUS file_name_hash(connection_struct *conn,
+			const char *name, uint32_t *p_name_hash)
+{
+	TDB_DATA key;
+	char *fullpath = NULL;
+
+	/* Set the hash of the full pathname. */
+	fullpath = talloc_asprintf(talloc_tos(),
+			"%s/%s",
+			conn->connectpath,
+			name);
+	if (!fullpath) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	key = string_term_tdb_data(fullpath);
+	*p_name_hash = tdb_jenkins_hash(&key);
+
+	DEBUG(10,("file_name_hash: %s hash 0x%x\n",
+		fullpath,
+		(unsigned int)*p_name_hash ));
+
+	TALLOC_FREE(fullpath);
+	return NT_STATUS_OK;
+}
+
+/**
  * The only way that the fsp->fsp_name field should ever be set.
  */
 NTSTATUS fsp_set_smb_fname(struct files_struct *fsp,
@@ -607,5 +636,7 @@ NTSTATUS fsp_set_smb_fname(struct files_struct *fsp,
 	TALLOC_FREE(fsp->fsp_name);
 	fsp->fsp_name = smb_fname_new;
 
-	return NT_STATUS_OK;
+	return file_name_hash(fsp->conn,
+			smb_fname_str_dbg(fsp->fsp_name),
+			&fsp->name_hash);
 }

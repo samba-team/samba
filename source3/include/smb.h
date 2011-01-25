@@ -346,6 +346,7 @@ typedef struct files_struct {
 	bool posix_open;
 	bool is_sparse;
 	struct smb_filename *fsp_name;
+	uint32_t name_hash;		/* Jenkins hash of full pathname. */
 
 	struct vfs_fsp_data *vfs_extension;
 	struct fake_file_handle *fake_file_handle;

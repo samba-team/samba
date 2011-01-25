@@ -4764,6 +4764,8 @@ files_struct *file_fsp(struct smb_request *req, uint16 fid);
 NTSTATUS dup_file_fsp(struct smb_request *req, files_struct *from,
 		      uint32 access_mask, uint32 share_access,
 		      uint32 create_options, files_struct *to);
+NTSTATUS file_name_hash(connection_struct *conn,
+			const char *name, uint32_t *p_name_hash);
 NTSTATUS fsp_set_smb_fname(struct files_struct *fsp,
 			   const struct smb_filename *smb_fname_in);
 
