@@ -80,7 +80,7 @@ def nolink(self):
 
 def CHECK_HEADER(conf, h, add_headers=False, lib=None):
     '''check for a header'''
-    if h in missing_headers:
+    if h in missing_headers and lib is None:
         return False
     d = h.upper().replace('/', '_')
     d = d.replace('.', '_')
