@@ -654,7 +654,7 @@ void reply_ntcreate_and_X(struct smb_request *req)
 	/* Deal with other possible opens having a modified
 	   write time. JRA. */
 	ZERO_STRUCT(write_time_ts);
-	get_file_infos(fsp->file_id, NULL, &write_time_ts);
+	get_file_infos(fsp->file_id, 0, NULL, &write_time_ts);
 	if (!null_timespec(write_time_ts)) {
 		update_stat_ex_mtime(&smb_fname->st, write_time_ts);
 	}
@@ -1232,7 +1232,7 @@ static void call_nt_transact_create(connection_struct *conn,
 	/* Deal with other possible opens having a modified
 	   write time. JRA. */
 	ZERO_STRUCT(write_time_ts);
-	get_file_infos(fsp->file_id, NULL, &write_time_ts);
+	get_file_infos(fsp->file_id, 0, NULL, &write_time_ts);
 	if (!null_timespec(write_time_ts)) {
 		update_stat_ex_mtime(&smb_fname->st, write_time_ts);
 	}
