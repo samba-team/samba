@@ -1,5 +1,7 @@
 #include "idl_types.h"
 
+import "file_id.idl";
+
 /*
    IDL structures for notify change code
 

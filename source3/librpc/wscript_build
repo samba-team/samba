@@ -17,7 +17,7 @@ bld.SAMBA_SUBSYSTEM('NDR_MESSAGING',
 
 bld.SAMBA_SUBSYSTEM('NDR_NOTIFY',
 	source='gen_ndr/ndr_notify.c',
-	public_deps='ndr'
+	public_deps='ndr NDR_FILE_ID'
 	)
 
 bld.SAMBA_SUBSYSTEM('NDR_PREG',
