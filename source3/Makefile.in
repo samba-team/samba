@@ -769,7 +769,7 @@ OPLOCK_OBJ = smbd/oplock.o smbd/oplock_irix.o smbd/oplock_linux.o \
 	     smbd/oplock_onefs.o
 
 NOTIFY_OBJ = smbd/notify.o smbd/notify_inotify.o smbd/notify_internal.o \
-	     librpc/gen_ndr/ndr_notify.o
+	     librpc/gen_ndr/ndr_notify.o librpc/gen_ndr/ndr_file_id.o
 
 FNAME_UTIL_OBJ = smbd/filename_util.o
 

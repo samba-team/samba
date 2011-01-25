@@ -286,6 +286,11 @@ bld.SAMBA_SUBSYSTEM('NDR_BACKUPKEY',
 	public_deps='ndr'
 	)
 
+bld.SAMBA_SUBSYSTEM('NDR_FILE_ID',
+	source='../librpc/gen_ndr/ndr_file_id.c',
+	public_deps='ndr'
+	)
+
 bld.SAMBA_SUBSYSTEM('RPC_NDR_XATTR',
 	source='../librpc/gen_ndr/ndr_xattr_c.c',
 	public_deps='NDR_XATTR dcerpc'
