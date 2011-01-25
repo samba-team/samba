@@ -350,13 +350,28 @@ static bool test_Lookup_terminate_search(struct torture_context *tctx,
 
 static bool test_Delete(struct torture_context *tctx,
 			struct dcerpc_binding_handle *h,
-			struct epm_entry_t *entries)
+			const char *annotation,
+			struct dcerpc_binding *b)
 {
 	NTSTATUS status;
 	struct epm_Delete r;
 
 	r.in.num_ents = 1;
-	r.in.entries = entries;
+	r.in.entries = talloc_array(tctx, struct epm_entry_t, 1);
+
+	ZERO_STRUCT(r.in.entries[0].object);
+	r.in.entries[0].annotation = annotation;
+
+	r.in.entries[0].tower = talloc(tctx, struct epm_twr_t);
+
+	status = dcerpc_binding_build_tower(tctx,
+					    b,
+					    &r.in.entries[0].tower->tower);
+
+	torture_assert_ntstatus_ok(tctx,
+				   status,
+				   "Unable to build tower from binding struct");
+	r.in.num_ents = 1;
 
 	status = dcerpc_epm_Delete_r(h, tctx, &r);
 	if (NT_STATUS_IS_ERR(status)) {
@@ -417,7 +432,7 @@ static bool test_Insert_noreplace(struct torture_context *tctx,
 
 	torture_assert(tctx, r.out.result == 0, "epm_Insert failed");
 
-	ok = test_Delete(tctx, h, r.in.entries);
+	ok = test_Delete(tctx, h, "smbtorture", b);
 	if (!ok) {
 		return false;
 	}
