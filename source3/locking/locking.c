@@ -1600,11 +1600,11 @@ const UNIX_USER_TOKEN *get_delete_on_close_token(struct share_mode_lock *lck, ui
 {
 	struct delete_token_list *dtl;
 
-	DEBUG(10,("get_delete_on_close_token: name_hash = %u\n",
+	DEBUG(10,("get_delete_on_close_token: name_hash = 0x%x\n",
 			(unsigned int)name_hash ));
 
 	for (dtl = lck->delete_tokens; dtl; dtl = dtl->next) {
-		DEBUG(10,("get_delete_on_close_token: dtl->name_hash = %u\n",
+		DEBUG(10,("get_delete_on_close_token: dtl->name_hash = 0x%x\n",
 				(unsigned int)dtl->name_hash ));
 		if (dtl->name_hash == name_hash) {
 			return dtl->delete_token;
