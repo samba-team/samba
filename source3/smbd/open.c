@@ -810,6 +810,7 @@ bool is_stat_open(uint32 access_mask)
 
 static NTSTATUS open_mode_check(connection_struct *conn,
 				struct share_mode_lock *lck,
+				uint32_t name_hash,
 				uint32 access_mask,
 				uint32 share_access,
 				uint32 create_options,
@@ -825,7 +826,7 @@ static NTSTATUS open_mode_check(connection_struct *conn,
 
 	/* A delete on close prohibits everything */
 
-	if (lck->delete_on_close) {
+	if (is_delete_on_close_set(lck, name_hash)) {
 		return NT_STATUS_DELETE_PENDING;
 	}
 
@@ -1823,7 +1824,8 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 
 		/* Use the client requested access mask here, not the one we
 		 * open with. */
-		status = open_mode_check(conn, lck, access_mask, share_access,
+		status = open_mode_check(conn, lck, fsp->name_hash,
+					access_mask, share_access,
 					 create_options, &file_existed);
 
 		if (NT_STATUS_IS_OK(status)) {
@@ -2045,7 +2047,8 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 			return NT_STATUS_SHARING_VIOLATION;
 		}
 
-		status = open_mode_check(conn, lck, access_mask, share_access,
+		status = open_mode_check(conn, lck, fsp->name_hash,
+					access_mask, share_access,
 					 create_options, &file_existed);
 
 		if (NT_STATUS_IS_OK(status)) {
@@ -2625,7 +2628,8 @@ static NTSTATUS open_directory(connection_struct *conn,
 		return NT_STATUS_SHARING_VIOLATION;
 	}
 
-	status = open_mode_check(conn, lck, access_mask, share_access,
+	status = open_mode_check(conn, lck, fsp->name_hash,
+				access_mask, share_access,
 				 create_options, &dir_existed);
 
 	if (!NT_STATUS_IS_OK(status)) {
