@@ -1051,6 +1051,7 @@ bool rename_share_filename(struct messaging_context *msg_ctx,
 }
 
 void get_file_infos(struct file_id id,
+		    uint32_t name_hash,
 		    bool *delete_on_close,
 		    struct timespec *write_time)
 {

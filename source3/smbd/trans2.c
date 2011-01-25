@@ -5103,7 +5103,7 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 			}
 
 			fileid = vfs_file_id_from_sbuf(conn, &smb_fname->st);
-			get_file_infos(fileid, &delete_pending, &write_time_ts);
+			get_file_infos(fileid, 0, &delete_pending, &write_time_ts);
 		} else {
 			/*
 			 * Original code - this is an open file.
@@ -5120,7 +5120,7 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 				return;
 			}
 			fileid = vfs_file_id_from_sbuf(conn, &smb_fname->st);
-			get_file_infos(fileid, &delete_pending, &write_time_ts);
+			get_file_infos(fileid, 0, &delete_pending, &write_time_ts);
 		}
 
 	} else {
@@ -5213,7 +5213,7 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 			fileid = vfs_file_id_from_sbuf(conn,
 						       &smb_fname_base->st);
 			TALLOC_FREE(smb_fname_base);
-			get_file_infos(fileid, &delete_pending, NULL);
+			get_file_infos(fileid, 0, &delete_pending, NULL);
 			if (delete_pending) {
 				reply_nterror(req, NT_STATUS_DELETE_PENDING);
 				return;
@@ -5245,7 +5245,7 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 		}
 
 		fileid = vfs_file_id_from_sbuf(conn, &smb_fname->st);
-		get_file_infos(fileid, &delete_pending, &write_time_ts);
+		get_file_infos(fileid, 0, &delete_pending, &write_time_ts);
 		if (delete_pending) {
 			reply_nterror(req, NT_STATUS_DELETE_PENDING);
 			return;
