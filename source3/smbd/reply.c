@@ -5804,11 +5804,13 @@ static bool resolve_wildcards(TALLOC_CTX *ctx,
 
 static void rename_open_files(connection_struct *conn,
 			      struct share_mode_lock *lck,
+			      uint32_t orig_name_hash,
 			      const struct smb_filename *smb_fname_dst)
 {
 	files_struct *fsp;
 	bool did_rename = False;
 	NTSTATUS status;
+	uint32_t new_name_hash;
 
 	for(fsp = file_find_di_first(conn->sconn, lck->id); fsp;
 	    fsp = file_find_di_next(fsp)) {
@@ -5819,6 +5821,9 @@ static void rename_open_files(connection_struct *conn,
 		if (!strequal(fsp->conn->connectpath, conn->connectpath)) {
 			continue;
 		}
+		if (fsp->name_hash != orig_name_hash) {
+			continue;
+		}
 		DEBUG(10, ("rename_open_files: renaming file fnum %d "
 			   "(file_id %s) from %s -> %s\n", fsp->fnum,
 			   file_id_string_tos(&fsp->file_id), fsp_str_dbg(fsp),
@@ -5827,6 +5832,7 @@ static void rename_open_files(connection_struct *conn,
 		status = fsp_set_smb_fname(fsp, smb_fname_dst);
 		if (NT_STATUS_IS_OK(status)) {
 			did_rename = True;
+			new_name_hash = fsp->name_hash;
 		}
 	}
 
@@ -5838,6 +5844,7 @@ static void rename_open_files(connection_struct *conn,
 
 	/* Send messages to all smbd's (not ourself) that the name has changed. */
 	rename_share_filename(conn->sconn->msg_ctx, lck, conn->connectpath,
+			      orig_name_hash, new_name_hash,
 			      smb_fname_dst);
 
 }
@@ -6147,7 +6154,7 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 		notify_rename(conn, fsp->is_directory, fsp->fsp_name,
 			      smb_fname_dst);
 
-		rename_open_files(conn, lck, smb_fname_dst);
+		rename_open_files(conn, lck, fsp->name_hash, smb_fname_dst);
 
 		/*
 		 * A rename acts as a new file create w.r.t. allowing an initial delete
