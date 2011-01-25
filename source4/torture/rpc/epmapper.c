@@ -391,6 +391,52 @@ static bool test_Delete(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_Insert(struct torture_context *tctx,
+			struct dcerpc_binding_handle *h,
+			const char *annotation,
+			struct dcerpc_binding *b)
+{
+	struct epm_Insert r;
+	NTSTATUS status;
+
+	r.in.num_ents = 1;
+	r.in.entries = talloc_array(tctx, struct epm_entry_t, 1);
+
+	ZERO_STRUCT(r.in.entries[0].object);
+	r.in.entries[0].annotation = annotation;
+
+
+	r.in.entries[0].tower = talloc(tctx, struct epm_twr_t);
+
+	status = dcerpc_binding_build_tower(tctx,
+					    b,
+					    &r.in.entries[0].tower->tower);
+
+	torture_assert_ntstatus_ok(tctx,
+				   status,
+				   "Unable to build tower from binding struct");
+	r.in.replace = 0;
+
+	/* shoot! */
+	status = dcerpc_epm_Insert_r(h, tctx, &r);
+
+	if (NT_STATUS_IS_ERR(status)) {
+		torture_comment(tctx,
+				"epm_Insert failed - %s\n",
+				nt_errstr(status));
+		return false;
+	}
+
+	if (r.out.result != EPMAPPER_STATUS_OK) {
+		torture_comment(tctx,
+				"epm_Insert failed - internal error: 0x%.4x\n",
+				r.out.result);
+		return false;
+	}
+
+	return true;
+}
+
 static bool test_Insert_noreplace(struct torture_context *tctx,
 				  struct dcerpc_pipe *p)
 {
