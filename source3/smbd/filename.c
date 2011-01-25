@@ -857,9 +857,18 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 		 */
 		if (VALID_STAT(smb_fname->st)) {
 			bool delete_pending;
+			uint32_t name_hash;
+
+			status = file_name_hash(conn,
+					smb_fname_str_dbg(smb_fname),
+					&name_hash);
+			if (!NT_STATUS_IS_OK(status)) {
+				goto fail;
+			}
+
 			get_file_infos(vfs_file_id_from_sbuf(conn,
 							     &smb_fname->st),
-				       0,
+				       name_hash,
 				       &delete_pending, NULL);
 			if (delete_pending) {
 				status = NT_STATUS_DELETE_PENDING;

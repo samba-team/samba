@@ -320,7 +320,8 @@ static struct tevent_req *smbd_smb2_getinfo_send(TALLOC_CTX *mem_ctx,
 
 			fileid = vfs_file_id_from_sbuf(conn,
 						       &fsp->fsp_name->st);
-			get_file_infos(fileid, 0, &delete_pending, &write_time_ts);
+			get_file_infos(fileid, fsp->name_hash,
+				&delete_pending, &write_time_ts);
 		} else {
 			/*
 			 * Original code - this is an open file.
@@ -336,7 +337,8 @@ static struct tevent_req *smbd_smb2_getinfo_send(TALLOC_CTX *mem_ctx,
 			}
 			fileid = vfs_file_id_from_sbuf(conn,
 						       &fsp->fsp_name->st);
-			get_file_infos(fileid, 0, &delete_pending, &write_time_ts);
+			get_file_infos(fileid, fsp->name_hash,
+				&delete_pending, &write_time_ts);
 		}
 
 		status = smbd_do_qfilepathinfo(conn, state,

@@ -733,6 +733,12 @@ Offset  Data			length.
 #define MSG_SMB_SHARE_MODE_ENTRY_SIZE 72
 #endif
 
+struct delete_token_list {
+	struct delete_token_list *next, *prev;
+	uint32_t name_hash;
+	UNIX_USER_TOKEN *delete_token;
+};
+
 struct share_mode_lock {
 	const char *servicepath; /* canonicalized. */
 	const char *base_name;
@@ -740,8 +746,7 @@ struct share_mode_lock {
 	struct file_id id;
 	int num_share_modes;
 	struct share_mode_entry *share_modes;
-	UNIX_USER_TOKEN *delete_token;
-	bool delete_on_close;
+	struct delete_token_list *delete_tokens;
 	struct timespec old_write_time;
 	struct timespec changed_write_time;
 	bool fresh;
@@ -758,20 +763,23 @@ struct locking_data {
 	union {
 		struct {
 			int num_share_mode_entries;
-			bool delete_on_close;
 			struct timespec old_write_time;
 			struct timespec changed_write_time;
-			uint32 delete_token_size; /* Only valid if either of
-						     the two previous fields
-						     are True. */
+			uint32 num_delete_token_entries;
 		} s;
 		struct share_mode_entry dummy; /* Needed for alignment. */
 	} u;
 	/* The following four entries are implicit
-	   struct share_mode_entry modes[num_share_mode_entries];
-	   char unix_token[delete_token_size] (divisible by 4).
-	   char share_name[];
-	   char file_name[];
+
+	   (1) struct share_mode_entry modes[num_share_mode_entries];
+
+	   (2) A num_delete_token_entries of structs {
+		uint32_t len_delete_token;
+		char unix_token[len_delete_token] (divisible by 4).
+	   };
+
+	   (3) char share_name[];
+	   (4) char file_name[];
         */
 };
 

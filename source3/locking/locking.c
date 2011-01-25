@@ -533,6 +533,104 @@ static void print_share_mode_table(struct locking_data *data)
 	}
 }
 
+static int parse_delete_tokens_list(struct share_mode_lock *lck,
+		struct locking_data *pdata,
+		const TDB_DATA dbuf)
+{
+	uint8_t *p = dbuf.dptr + sizeof(struct locking_data) +
+			(lck->num_share_modes *
+			sizeof(struct share_mode_entry));
+	uint8_t *end_ptr = dbuf.dptr + (dbuf.dsize - 2);
+	int delete_tokens_size = 0;
+	int i;
+
+	lck->delete_tokens = NULL;
+
+	for (i = 0; i < pdata->u.s.num_delete_token_entries; i++) {
+		uint32_t token_len;
+		struct delete_token_list *pdtl;
+
+		if (end_ptr - p < (sizeof(uint32_t) + sizeof(uint32_t) +
+					sizeof(uid_t) + sizeof(gid_t))) {
+			DEBUG(0,("parse_delete_tokens_list: "
+				"corrupt token list (%u)",
+				(unsigned int)(end_ptr - p)));
+			smb_panic("corrupt token list");
+			return -1;
+		}
+
+		memcpy(&token_len, p, sizeof(token_len));
+		delete_tokens_size += token_len;
+
+		if (p + token_len > end_ptr || token_len < sizeof(token_len) +
+						sizeof(pdtl->name_hash) +
+						sizeof(uid_t) +
+						sizeof(gid_t)) {
+			DEBUG(0,("parse_delete_tokens_list: "
+				"invalid token length (%u)\n",
+				(unsigned int)token_len ));
+			smb_panic("invalid token length");
+			return -1;
+		}
+
+		p += sizeof(token_len);
+
+		pdtl = TALLOC_ZERO_P(lck, struct delete_token_list);
+		if (pdtl == NULL) {
+			DEBUG(0,("parse_delete_tokens_list: talloc failed"));
+			return -1;
+		}
+		/* Copy out the name_hash. */
+		memcpy(&pdtl->name_hash, p, sizeof(pdtl->name_hash));
+		p += sizeof(pdtl->name_hash);
+
+		pdtl->delete_token = TALLOC_ZERO_P(pdtl, UNIX_USER_TOKEN);
+		if (pdtl->delete_token == NULL) {
+			DEBUG(0,("parse_delete_tokens_list: talloc failed"));
+			return -1;
+		}
+
+		/* Copy out the uid and gid. */
+		memcpy(&pdtl->delete_token->uid, p, sizeof(uid_t));
+		p += sizeof(uid_t);
+		memcpy(&pdtl->delete_token->gid, p, sizeof(gid_t));
+		p += sizeof(gid_t);
+
+		token_len -= (sizeof(token_len) + sizeof(pdtl->name_hash) +
+				sizeof(uid_t) + sizeof(gid_t));
+
+		/* Any supplementary groups ? */
+		if (token_len) {
+			int j;
+
+			if (token_len % sizeof(gid_t) != 0) {
+				DEBUG(0,("parse_delete_tokens_list: "
+					"corrupt group list (%u)",
+					(unsigned int)(token_len % sizeof(gid_t)) ));
+				smb_panic("corrupt group list");
+				return -1;
+			}
+
+			pdtl->delete_token->ngroups = token_len / sizeof(gid_t);
+			pdtl->delete_token->groups = TALLOC_ARRAY(pdtl->delete_token, gid_t,
+						pdtl->delete_token->ngroups);
+			if (pdtl->delete_token->groups == NULL) {
+				DEBUG(0,("parse_delete_tokens_list: talloc failed"));
+				return -1;
+			}
+
+			for (j = 0; j < pdtl->delete_token->ngroups; j++) {
+				memcpy(&pdtl->delete_token->groups[j], p, sizeof(gid_t));
+				p += sizeof(gid_t);
+			}
+		}
+		/* Add to the list. */
+		DLIST_ADD(lck->delete_tokens, pdtl);
+	}
+
+	return delete_tokens_size;
+}
+
 /*******************************************************************
  Get all share mode entries for a dev/inode pair.
 ********************************************************************/
@@ -540,6 +638,7 @@ static void print_share_mode_table(struct locking_data *data)
 static bool parse_share_modes(const TDB_DATA dbuf, struct share_mode_lock *lck)
 {
 	struct locking_data data;
+	int delete_tokens_size;
 	int i;
 
 	if (dbuf.dsize < sizeof(struct locking_data)) {
@@ -548,20 +647,18 @@ static bool parse_share_modes(const TDB_DATA dbuf, struct share_mode_lock *lck)
 
 	memcpy(&data, dbuf.dptr, sizeof(data));
 
-	lck->delete_on_close = data.u.s.delete_on_close;
 	lck->old_write_time = data.u.s.old_write_time;
 	lck->changed_write_time = data.u.s.changed_write_time;
 	lck->num_share_modes = data.u.s.num_share_mode_entries;
 
-	DEBUG(10, ("parse_share_modes: delete_on_close: %d, owrt: %s, "
-		   "cwrt: %s, tok: %u, num_share_modes: %d\n",
-		   lck->delete_on_close,
+	DEBUG(10, ("parse_share_modes: owrt: %s, "
+		   "cwrt: %s, ntok: %u, num_share_modes: %d\n",
 		   timestring(talloc_tos(),
 			      convert_timespec_to_time_t(lck->old_write_time)),
 		   timestring(talloc_tos(),
 			      convert_timespec_to_time_t(
 				      lck->changed_write_time)),
-		   (unsigned int)data.u.s.delete_token_size,
+		   (unsigned int)data.u.s.num_delete_token_entries,
 		   lck->num_share_modes));
 
 	if ((lck->num_share_modes < 0) || (lck->num_share_modes > 1000000)) {
@@ -591,66 +688,25 @@ static bool parse_share_modes(const TDB_DATA dbuf, struct share_mode_lock *lck)
 		}
 	}
 
-	/* Get any delete token. */
-	if (data.u.s.delete_token_size) {
-		uint8 *p = dbuf.dptr + sizeof(struct locking_data) +
-				(lck->num_share_modes *
-				sizeof(struct share_mode_entry));
-
-		if ((data.u.s.delete_token_size < sizeof(uid_t) + sizeof(gid_t)) ||
-				((data.u.s.delete_token_size - sizeof(uid_t)) % sizeof(gid_t)) != 0) {
-			DEBUG(0, ("parse_share_modes: invalid token size %d\n",
-				data.u.s.delete_token_size));
-			smb_panic("parse_share_modes: invalid token size");
-		}
-
-		lck->delete_token = TALLOC_P(lck, UNIX_USER_TOKEN);
-		if (!lck->delete_token) {
-			smb_panic("parse_share_modes: talloc failed");
-		}
-
-		/* Copy out the uid and gid. */
-		memcpy(&lck->delete_token->uid, p, sizeof(uid_t));
-		p += sizeof(uid_t);
-		memcpy(&lck->delete_token->gid, p, sizeof(gid_t));
-		p += sizeof(gid_t);
-
-		/* Any supplementary groups ? */
-		lck->delete_token->ngroups = (data.u.s.delete_token_size > (sizeof(uid_t) + sizeof(gid_t))) ?
-					((data.u.s.delete_token_size -
-						(sizeof(uid_t) + sizeof(gid_t)))/sizeof(gid_t)) : 0;
-
-		if (lck->delete_token->ngroups) {
-			/* Make this a talloc child of lck->delete_token. */
-			lck->delete_token->groups = TALLOC_ARRAY(lck->delete_token, gid_t,
-							lck->delete_token->ngroups);
-			if (!lck->delete_token) {
-				smb_panic("parse_share_modes: talloc failed");
-			}
-
-			for (i = 0; i < lck->delete_token->ngroups; i++) {
-				memcpy(&lck->delete_token->groups[i], p, sizeof(gid_t));
-				p += sizeof(gid_t);
-			}
-		}
-
-	} else {
-		lck->delete_token = NULL;
+	/* Get any delete tokens. */
+	delete_tokens_size = parse_delete_tokens_list(lck, &data, dbuf);
+	if (delete_tokens_size < 0) {
+		smb_panic("parse_share_modes: parse_delete_tokens_list failed");
 	}
 
 	/* Save off the associated service path and filename. */
 	lck->servicepath = (const char *)dbuf.dptr + sizeof(struct locking_data) +
 		(lck->num_share_modes *	sizeof(struct share_mode_entry)) +
-		data.u.s.delete_token_size;
+		delete_tokens_size;
 
 	lck->base_name = (const char *)dbuf.dptr + sizeof(struct locking_data) +
 		(lck->num_share_modes *	sizeof(struct share_mode_entry)) +
-		data.u.s.delete_token_size +
+		delete_tokens_size +
 		strlen(lck->servicepath) + 1;
 
 	lck->stream_name = (const char *)dbuf.dptr + sizeof(struct locking_data) +
 		(lck->num_share_modes *	sizeof(struct share_mode_entry)) +
-		data.u.s.delete_token_size +
+		delete_tokens_size +
 		strlen(lck->servicepath) + 1 +
 		strlen(lck->base_name) + 1;
 
@@ -686,7 +742,9 @@ static TDB_DATA unparse_share_modes(const struct share_mode_lock *lck)
 	struct locking_data *data;
 	ssize_t offset;
 	ssize_t sp_len, bn_len, sn_len;
-	uint32 delete_token_size;
+	uint32_t delete_tokens_size = 0;
+	struct delete_token_list *pdtl = NULL;
+	uint32_t num_delete_token_entries = 0;
 
 	result.dptr = NULL;
 	result.dsize = 0;
@@ -705,12 +763,18 @@ static TDB_DATA unparse_share_modes(const struct share_mode_lock *lck)
 	bn_len = strlen(lck->base_name);
 	sn_len = lck->stream_name != NULL ? strlen(lck->stream_name) : 0;
 
-	delete_token_size = (lck->delete_token ?
-			(sizeof(uid_t) + sizeof(gid_t) + (lck->delete_token->ngroups*sizeof(gid_t))) : 0);
+	for (pdtl = lck->delete_tokens; pdtl; pdtl = pdtl->next) {
+		num_delete_token_entries++;
+		delete_tokens_size += (sizeof(uint32_t) +
+				sizeof(uint32_t) +
+				sizeof(uid_t) +
+				sizeof(gid_t) +
+				pdtl->delete_token->ngroups*sizeof(gid_t));
+	}
 
 	result.dsize = sizeof(*data) +
 		lck->num_share_modes * sizeof(struct share_mode_entry) +
-		delete_token_size +
+		delete_tokens_size +
 		sp_len + 1 +
 		bn_len + 1 +
 		sn_len + 1;
@@ -723,19 +787,18 @@ static TDB_DATA unparse_share_modes(const struct share_mode_lock *lck)
 	data = (struct locking_data *)result.dptr;
 	ZERO_STRUCTP(data);
 	data->u.s.num_share_mode_entries = lck->num_share_modes;
-	data->u.s.delete_on_close = lck->delete_on_close;
 	data->u.s.old_write_time = lck->old_write_time;
 	data->u.s.changed_write_time = lck->changed_write_time;
-	data->u.s.delete_token_size = delete_token_size;
+	data->u.s.num_delete_token_entries = num_delete_token_entries;
 
-	DEBUG(10,("unparse_share_modes: del: %d, owrt: %s cwrt: %s, tok: %u, "
-		  "num: %d\n", data->u.s.delete_on_close,
+	DEBUG(10,("unparse_share_modes: owrt: %s cwrt: %s, ntok: %u, "
+		  "num: %d\n",
 		  timestring(talloc_tos(),
 			     convert_timespec_to_time_t(lck->old_write_time)),
 		  timestring(talloc_tos(),
 			     convert_timespec_to_time_t(
 				     lck->changed_write_time)),
-		  (unsigned int)data->u.s.delete_token_size,
+		  (unsigned int)data->u.s.num_delete_token_entries,
 		  data->u.s.num_share_mode_entries));
 
 	memcpy(result.dptr + sizeof(*data), lck->share_modes,
@@ -743,21 +806,33 @@ static TDB_DATA unparse_share_modes(const struct share_mode_lock *lck)
 	offset = sizeof(*data) +
 		sizeof(struct share_mode_entry)*lck->num_share_modes;
 
-	/* Store any delete on close token. */
-	if (lck->delete_token) {
-		uint8 *p = result.dptr + offset;
+	/* Store any delete on close tokens. */
+	for (pdtl = lck->delete_tokens; pdtl; pdtl = pdtl->next) {
+		UNIX_USER_TOKEN *pdt = pdtl->delete_token;
+		uint32_t token_size = sizeof(uint32_t) +
+					sizeof(uint32_t) +
+					sizeof(uid_t) +
+					sizeof(gid_t) +
+					(pdt->ngroups * sizeof(gid_t));
+		uint8_t *p = result.dptr + offset;
 
-		memcpy(p, &lck->delete_token->uid, sizeof(uid_t));
+		memcpy(p, &token_size, sizeof(uint32_t));
+		p += sizeof(uint32_t);
+
+		memcpy(p, &pdtl->name_hash, sizeof(uint32_t));
+		p += sizeof(uint32_t);
+
+		memcpy(p, &pdt->uid, sizeof(uid_t));
 		p += sizeof(uid_t);
 
-		memcpy(p, &lck->delete_token->gid, sizeof(gid_t));
+		memcpy(p, &pdt->gid, sizeof(gid_t));
 		p += sizeof(gid_t);
 
-		for (i = 0; i < lck->delete_token->ngroups; i++) {
-			memcpy(p, &lck->delete_token->groups[i], sizeof(gid_t));
+		for (i = 0; i < pdt->ngroups; i++) {
+			memcpy(p, &pdt->groups[i], sizeof(gid_t));
 			p += sizeof(gid_t);
 		}
-		offset = p - result.dptr;
+		offset += token_size;
 	}
 
 	safe_strcpy((char *)result.dptr + offset, lck->servicepath,
@@ -844,8 +919,7 @@ static bool fill_share_mode_lock(struct share_mode_lock *lck,
 	lck->id = id;
 	lck->num_share_modes = 0;
 	lck->share_modes = NULL;
-	lck->delete_token = NULL;
-	lck->delete_on_close = False;
+	lck->delete_tokens = NULL;
 	ZERO_STRUCT(lck->old_write_time);
 	ZERO_STRUCT(lck->changed_write_time);
 	lck->fresh = False;
@@ -1070,7 +1144,7 @@ void get_file_infos(struct file_id id,
 	}
 
 	if (delete_on_close) {
-		*delete_on_close = lck->delete_on_close;
+		*delete_on_close = is_delete_on_close_set(lck, name_hash);
 	}
 
 	if (write_time) {
@@ -1395,10 +1469,6 @@ static UNIX_USER_TOKEN *copy_unix_token(TALLOC_CTX *ctx, const UNIX_USER_TOKEN *
 {
 	UNIX_USER_TOKEN *cpy;
 
-	if (tok == NULL) {
-		return NULL;
-	}
-
 	cpy = TALLOC_P(ctx, UNIX_USER_TOKEN);
 	if (!cpy) {
 		return NULL;
@@ -1419,16 +1489,29 @@ static UNIX_USER_TOKEN *copy_unix_token(TALLOC_CTX *ctx, const UNIX_USER_TOKEN *
 }
 
 /****************************************************************************
- Replace the delete on close token.
+ Adds a delete on close token.
 ****************************************************************************/
 
-void set_delete_on_close_token(struct share_mode_lock *lck, const UNIX_USER_TOKEN *tok)
+static bool add_delete_on_close_token(struct share_mode_lock *lck,
+			uint32_t name_hash,
+			const UNIX_USER_TOKEN *tok)
 {
-	TALLOC_FREE(lck->delete_token); /* Also deletes groups... */
+	struct delete_token_list *dtl;
 
-	/* Copy the new token (can be NULL). */
-	lck->delete_token = copy_unix_token(lck, tok);
-	lck->modified = True;
+	dtl = TALLOC_ZERO_P(lck, struct delete_token_list);
+	if (dtl == NULL) {
+		return false;
+	}
+
+	dtl->name_hash = name_hash;
+	dtl->delete_token = copy_unix_token(lck, tok);
+	if (dtl->delete_token == NULL) {
+		TALLOC_FREE(dtl);
+		return false;
+	}
+	DLIST_ADD(lck->delete_tokens, dtl);
+	lck->modified = true;
+	return true;
 }
 
 /****************************************************************************
@@ -1442,16 +1525,44 @@ void set_delete_on_close_token(struct share_mode_lock *lck, const UNIX_USER_TOKE
  lck entry. This function is used when the lock is already granted.
 ****************************************************************************/
 
-void set_delete_on_close_lck(struct share_mode_lock *lck, bool delete_on_close, const UNIX_USER_TOKEN *tok)
+void set_delete_on_close_lck(files_struct *fsp,
+			struct share_mode_lock *lck,
+			bool delete_on_close,
+			const UNIX_USER_TOKEN *tok)
 {
-	if (lck->delete_on_close != delete_on_close) {
-		set_delete_on_close_token(lck, tok);
-		lck->delete_on_close = delete_on_close;
-		if (delete_on_close) {
-			SMB_ASSERT(lck->delete_token != NULL);
-		}
-		lck->modified = True;
+	struct delete_token_list *dtl;
+	bool ret;
+
+	if (delete_on_close) {
+		SMB_ASSERT(tok != NULL);
+	} else {
+		SMB_ASSERT(tok == NULL);
 	}
+
+	for (dtl = lck->delete_tokens; dtl; dtl = dtl->next) {
+		if (dtl->name_hash == fsp->name_hash) {
+			lck->modified = true;
+			if (delete_on_close == false) {
+				/* Delete this entry. */
+				DLIST_REMOVE(lck->delete_tokens, dtl);
+				TALLOC_FREE(dtl);
+				return;
+			}
+			/* Replace this token with the
+			   given tok. */
+			TALLOC_FREE(dtl->delete_token);
+			dtl->delete_token = copy_unix_token(dtl, tok);
+			SMB_ASSERT(dtl->delete_token != NULL);
+		}
+	}
+
+	if (!delete_on_close) {
+		/* Nothing to delete - not found. */
+		return;
+	}
+
+	ret = add_delete_on_close_token(lck, fsp->name_hash, tok);
+	SMB_ASSERT(ret);
 }
 
 bool set_delete_on_close(files_struct *fsp, bool delete_on_close, const UNIX_USER_TOKEN *tok)
@@ -1469,7 +1580,8 @@ bool set_delete_on_close(files_struct *fsp, bool delete_on_close, const UNIX_USE
 		return False;
 	}
 
-	set_delete_on_close_lck(lck, delete_on_close, tok);
+	set_delete_on_close_lck(fsp, lck, delete_on_close,
+			delete_on_close ? tok : NULL);
 
 	if (fsp->is_directory) {
 		SMB_ASSERT(!is_ntfs_stream_smb_fname(fsp->fsp_name));
@@ -1482,6 +1594,28 @@ bool set_delete_on_close(files_struct *fsp, bool delete_on_close, const UNIX_USE
 	fsp->delete_on_close = delete_on_close;
 
 	return True;
+}
+
+const UNIX_USER_TOKEN *get_delete_on_close_token(struct share_mode_lock *lck, uint32_t name_hash)
+{
+	struct delete_token_list *dtl;
+
+	DEBUG(10,("get_delete_on_close_token: name_hash = %u\n",
+			(unsigned int)name_hash ));
+
+	for (dtl = lck->delete_tokens; dtl; dtl = dtl->next) {
+		DEBUG(10,("get_delete_on_close_token: dtl->name_hash = %u\n",
+				(unsigned int)dtl->name_hash ));
+		if (dtl->name_hash == name_hash) {
+			return dtl->delete_token;
+		}
+	}
+	return NULL;
+}
+
+bool is_delete_on_close_set(struct share_mode_lock *lck, uint32_t name_hash)
+{
+	return (get_delete_on_close_token(lck, name_hash) != NULL);
 }
 
 bool set_sticky_write_time(struct file_id fileid, struct timespec write_time)
@@ -1546,6 +1680,8 @@ static int traverse_fn(struct db_record *rec, void *_state)
 	struct share_mode_entry *shares;
 	const char *sharepath;
 	const char *fname;
+	const char *del_tokens;
+	uint32_t total_del_token_size = 0;
 	int i;
 
 	/* Ensure this is a locking_key record. */
@@ -1554,12 +1690,22 @@ static int traverse_fn(struct db_record *rec, void *_state)
 
 	data = (struct locking_data *)rec->value.dptr;
 	shares = (struct share_mode_entry *)(rec->value.dptr + sizeof(*data));
+	del_tokens = (const char *)rec->value.dptr + sizeof(*data) +
+		data->u.s.num_share_mode_entries*sizeof(*shares);
+
+	for (i = 0; i < data->u.s.num_delete_token_entries; i++) {
+		uint32_t del_token_size;
+		memcpy(&del_token_size, del_tokens, sizeof(uint32_t));
+		total_del_token_size += del_token_size;
+		del_tokens += del_token_size;
+	}
+
 	sharepath = (const char *)rec->value.dptr + sizeof(*data) +
 		data->u.s.num_share_mode_entries*sizeof(*shares) +
-		data->u.s.delete_token_size;
+		total_del_token_size;
 	fname = (const char *)rec->value.dptr + sizeof(*data) +
 		data->u.s.num_share_mode_entries*sizeof(*shares) +
-		data->u.s.delete_token_size +
+		total_del_token_size +
 		strlen(sharepath) + 1;
 
 	for (i=0;i<data->u.s.num_share_mode_entries;i++) {
