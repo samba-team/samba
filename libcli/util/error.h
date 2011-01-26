@@ -46,4 +46,9 @@ WERROR ntstatus_to_werror(NTSTATUS error);
 *********************************************************************/
 NTSTATUS map_nt_error_from_unix(int unix_error);
 
+/*********************************************************************
+convert a Unix error code to a WERROR
+*********************************************************************/
+WERROR unix_to_werror(int unix_error);
+
 #endif /* _SAMBA_ERROR_H */
