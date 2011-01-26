@@ -6789,20 +6789,23 @@ NTSTATUS copy_file(TALLOC_CTX *ctx,
 		goto out;
 	}
 
-	if ((ofun&3) == 1) {
-		if(SMB_VFS_LSEEK(fsp2,0,SEEK_END) == -1) {
-			DEBUG(0,("copy_file: error - vfs lseek returned error %s\n", strerror(errno) ));
-			/*
-			 * Stop the copy from occurring.
-			 */
-			ret = -1;
-			smb_fname_src->st.st_ex_size = 0;
+	if (ofun & OPENX_FILE_EXISTS_OPEN) {
+		ret = SMB_VFS_LSEEK(fsp2, 0, SEEK_END);
+		if (ret == -1) {
+			DEBUG(0, ("error - vfs lseek returned error %s\n",
+				strerror(errno)));
+			status = map_nt_error_from_unix(errno);
+			close_file(NULL, fsp1, ERROR_CLOSE);
+			close_file(NULL, fsp2, ERROR_CLOSE);
+			goto out;
 		}
 	}
 
 	/* Do the actual copy. */
 	if (smb_fname_src->st.st_ex_size) {
 		ret = vfs_transfer_file(fsp1, fsp2, smb_fname_src->st.st_ex_size);
+	} else {
+		ret = 0;
 	}
 
 	close_file(NULL, fsp1, NORMAL_CLOSE);
