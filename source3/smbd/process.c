@@ -2915,7 +2915,6 @@ void smbd_process(struct smbd_server_connection *sconn)
 	int ret;
 
 	if (lp_maxprotocol() == PROTOCOL_SMB2 &&
-	    lp_security() != SEC_SHARE &&
 	    !lp_async_smb_echo_handler()) {
 		/*
 		 * We're not making the desion here,
