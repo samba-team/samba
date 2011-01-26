@@ -650,21 +650,22 @@ struct torture_suite *torture_rpc_epmapper(TALLOC_CTX *mem_ctx)
 						  "epmapper",
 						  &ndr_table_epmapper);
 
+	/* This is a stack */
 	torture_rpc_tcase_add_test(tcase,
-				   "Insert_noreplace",
-				   test_Insert_noreplace);
-	torture_rpc_tcase_add_test(tcase,
-				   "Lookup_terminate_search",
-				   test_Lookup_terminate_search);
-	torture_rpc_tcase_add_test(tcase,
-				   "Lookup_simple",
-				   test_Lookup_simple);
+				   "Map_simple",
+				   test_Map_simple);
 	torture_rpc_tcase_add_test(tcase,
 				   "Map_full",
 				   test_Map_full);
 	torture_rpc_tcase_add_test(tcase,
-				   "Map_simple",
-				   test_Map_simple);
+				   "Lookup_simple",
+				   test_Lookup_simple);
+	torture_rpc_tcase_add_test(tcase,
+				   "Lookup_terminate_search",
+				   test_Lookup_terminate_search);
+	torture_rpc_tcase_add_test(tcase,
+				   "Insert_noreplace",
+				   test_Insert_noreplace);
 
 	return suite;
 }
