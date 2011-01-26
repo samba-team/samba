@@ -128,6 +128,7 @@ sub getType($)
 	return $types{$t};
 }
 
+sub typeIs($$);
 sub typeIs($$)
 {
 	my ($t,$tt) = @_;
