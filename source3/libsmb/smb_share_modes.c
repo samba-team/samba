@@ -277,7 +277,7 @@ static uint32_t smb_name_hash(const char *sharepath, const char *filename, int *
 		return 0;
 	}
 	key.dptr = (uint8_t *)fullpath;
-	key.dsize = strlen(fullpath);
+	key.dsize = strlen(fullpath) + 1;
 	name_hash = tdb_jenkins_hash(&key);
 	free(fullpath);
 	return name_hash;
