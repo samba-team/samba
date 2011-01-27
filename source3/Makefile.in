@@ -704,6 +704,7 @@ RPC_SPOOLSS_OBJ = rpc_server/srv_spoolss_nt.o \
 		  librpc/gen_ndr/srv_spoolss.o
 
 RPC_EVENTLOG_OBJ = rpc_server/srv_eventlog_nt.o \
+		   rpc_server/srv_eventlog_reg.o \
 		   $(LIB_EVENTLOG_OBJ) librpc/gen_ndr/srv_eventlog.o
 
 NPA_TSTREAM_OBJ = ../libcli/named_pipe_auth/npa_tstream.o \
