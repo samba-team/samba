@@ -266,9 +266,3 @@ wbcErr wbcAllocateGid(gid_t *pgid)
  done:
 	return wbc_status;
 }
-
-/* Set the highwater mark for allocated gids - not implemented any more */
-wbcErr wbcSetGidHwm(gid_t gid_hwm)
-{
-	return WBC_ERR_NOT_IMPLEMENTED;
-}
