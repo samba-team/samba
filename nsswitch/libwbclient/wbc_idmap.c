@@ -267,12 +267,6 @@ wbcErr wbcAllocateGid(gid_t *pgid)
 	return wbc_status;
 }
 
-/* Set the highwater mark for allocated uids - not implemented any more */
-wbcErr wbcSetUidHwm(uid_t uid_hwm)
-{
-	return WBC_ERR_NOT_IMPLEMENTED;
-}
-
 /* Set the highwater mark for allocated gids - not implemented any more */
 wbcErr wbcSetGidHwm(gid_t gid_hwm)
 {

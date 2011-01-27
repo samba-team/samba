@@ -787,15 +787,6 @@ wbcErr wbcAllocateUid(uid_t *puid);
 wbcErr wbcAllocateGid(gid_t *pgid);
 
 /**
- * @brief Set the highwater mark for allocated uids.
- *
- * @param uid_hwm      The new uid highwater mark value
- *
- * @return #wbcErr
- **/
-wbcErr wbcSetUidHwm(uid_t uid_hwm);
-
-/**
  * @brief Set the highwater mark for allocated gids.
  *
  * @param gid_hwm      The new gid highwater mark value
