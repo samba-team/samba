@@ -23,7 +23,5 @@
 #define _REG_EVENTLOG_H
 
 bool eventlog_init_keys(void);
-bool eventlog_add_source( const char *eventlog, const char *sourcename,
-			  const char *messagefile );
 
 #endif /* _REG_EVENTLOG_H */
