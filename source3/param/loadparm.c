@@ -5789,7 +5789,18 @@ FN_GLOBAL_INTEGER(lp_passwordlevel, &Globals.pwordlevel)
 FN_GLOBAL_INTEGER(lp_usernamelevel, &Globals.unamelevel)
 FN_GLOBAL_INTEGER(lp_deadtime, &Globals.deadtime)
 FN_GLOBAL_BOOL(lp_getwd_cache, &Globals.getwd_cache)
-FN_GLOBAL_INTEGER(lp_maxprotocol, &Globals.maxprotocol)
+FN_GLOBAL_INTEGER(_lp_maxprotocol, &Globals.maxprotocol)
+int lp_maxprotocol(void)
+{
+	int ret = _lp_maxprotocol();
+	if ((ret == PROTOCOL_SMB2) && (lp_security() == SEC_SHARE)) {
+		DEBUG(2,("WARNING!!: \"security = share\" is incompatible "
+			"with the SMB2 protocol. Resetting to SMB1.\n" ));
+			lp_do_parameter(-1, "max protocol", "NT1");
+		return PROTOCOL_NT1;
+	}
+	return ret;
+}
 FN_GLOBAL_INTEGER(lp_minprotocol, &Globals.minprotocol)
 FN_GLOBAL_INTEGER(lp_security, &Globals.security)
 FN_GLOBAL_LIST(lp_auth_methods, &Globals.AuthMethods)
