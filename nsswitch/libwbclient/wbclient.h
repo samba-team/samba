@@ -66,9 +66,16 @@ const char *wbcErrorString(wbcErr error);
  *  0.4: Added wbcSidTypeString()
  *  0.5: Added wbcChangeTrustCredentials()
  *  0.6: Made struct wbcInterfaceDetails char* members non-const
+ *  1.0: ABI change: removed the following:
+ *       wbcSetUidMapping()
+ *       wbcSetGidMapping()
+ *       wbcRemoveUidMapping()
+ *       wbcRemoveGidMapping()
+ *       wbcSetUidHwm()
+ *       wbcSetGidHwm()
  **/
-#define WBCLIENT_MAJOR_VERSION 0
-#define WBCLIENT_MINOR_VERSION 6
+#define WBCLIENT_MAJOR_VERSION 1
+#define WBCLIENT_MINOR_VERSION 0
 #define WBCLIENT_VENDOR_VERSION "Samba libwbclient"
 struct wbcLibraryDetails {
 	uint16_t major_version;
