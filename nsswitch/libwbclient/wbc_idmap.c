@@ -267,10 +267,6 @@ wbcErr wbcAllocateGid(gid_t *pgid)
 	return wbc_status;
 }
 
-/* we can't include smb.h here... */
-#define _ID_TYPE_UID 1
-#define _ID_TYPE_GID 2
-
 /* Set an user id mapping - not implemented any more */
 wbcErr wbcSetUidMapping(uid_t uid, const struct wbcDomainSid *sid)
 {
