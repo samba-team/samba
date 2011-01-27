@@ -86,5 +86,6 @@ bool run_posix_append(int dummy);
 bool run_nbench2(int dummy);
 bool run_async_echo(int dummy);
 bool run_smb_any_connect(int dummy);
+bool run_addrchange(int dummy);
 
 #endif /* __TORTURE_H__ */

@@ -8074,6 +8074,7 @@ static struct {
 	{"ASYNC-ECHO", run_async_echo, 0},
 	{ "UID-REGRESSION-TEST", run_uid_regression_test, 0},
 	{ "SHORTNAME-TEST", run_shortname_test, 0},
+	{ "ADDRCHANGE", run_addrchange, 0},
 #if 1
 	{"OPENATTR", run_openattrtest, 0},
 #endif
