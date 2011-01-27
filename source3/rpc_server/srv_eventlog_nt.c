@@ -24,12 +24,16 @@
 #include "../librpc/gen_ndr/srv_eventlog.h"
 #include "lib/eventlog/eventlog.h"
 #include "registry.h"
-#include "registry/reg_api.h"
-#include "registry/reg_api_util.h"
 #include "../libcli/security/security.h"
+#include "../librpc/gen_ndr/ndr_winreg_c.h"
+#include "rpc_client/cli_winreg_int.h"
+#include "rpc_client/cli_winreg.h"
+
 
 #undef  DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
+
+#define TOP_LEVEL_EVENTLOG_KEY "SYSTEM\\CurrentControlSet\\Services\\Eventlog"
 
 typedef struct {
 	char *logname;
@@ -304,17 +308,26 @@ static int elog_size( EVENTLOG_INFO *info )
  since it uses the table to find the tdb handle
  ********************************************************************/
 
-static bool sync_eventlog_params( EVENTLOG_INFO *info )
+static bool sync_eventlog_params(TALLOC_CTX *mem_ctx,
+				 struct messaging_context *msg_ctx,
+				 EVENTLOG_INFO *info)
 {
-	char *path = NULL;
+	struct dcerpc_binding_handle *h = NULL;
+	uint32_t access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+	struct policy_handle hive_hnd, key_hnd;
 	uint32_t uiMaxSize = 0;
 	uint32_t uiRetention = 0;
-	struct registry_key *key;
-	struct registry_value *value;
-	WERROR wresult;
+	char *path = NULL;
+	NTSTATUS status;
+	WERROR wresult = WERR_OK;
 	char *elogname = info->logname;
-	TALLOC_CTX *ctx = talloc_stackframe();
+	TALLOC_CTX *ctx;
 	bool ret = false;
+
+	ctx = talloc_stackframe();
+	if (ctx == NULL) {
+		return false;
+	}
 
 	DEBUG( 4, ( "sync_eventlog_params with %s\n", elogname ) );
 
@@ -331,15 +344,26 @@ static bool sync_eventlog_params( EVENTLOG_INFO *info )
 	   key and retrieve the values.  That way we can continue
 	   to use the same fetch/store api that we use in
 	   srv_reg_nt.c */
-
-	path = talloc_asprintf(ctx, "%s\\%s", KEY_EVENTLOG, elogname);
+	path = talloc_asprintf(ctx, "%s\\%s", TOP_LEVEL_EVENTLOG_KEY, elogname);
 	if (!path) {
 		goto done;
 	}
 
-	wresult = reg_open_path(ctx, path, REG_KEY_READ, get_system_token(),
-				&key);
-
+	status = dcerpc_winreg_int_hklm_openkey(ctx,
+						get_server_info_system(),
+						msg_ctx,
+						&h,
+						path,
+						false,
+						access_mask,
+						&hive_hnd,
+						&key_hnd,
+						&wresult);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(4,("sync_eventlog_params: Failed to open key [%s] (%s)\n",
+			 path, nt_errstr(status)));
+		goto done;
+	}
 	if ( !W_ERROR_IS_OK( wresult ) ) {
 		DEBUG( 4,
 		       ( "sync_eventlog_params: Failed to open key [%s] (%s)\n",
@@ -347,25 +371,38 @@ static bool sync_eventlog_params( EVENTLOG_INFO *info )
 		goto done;
 	}
 
-	wresult = reg_queryvalue(key, key, "Retention", &value);
+	status = dcerpc_winreg_query_dword(ctx,
+					   h,
+					   &key_hnd,
+					   "Retention",
+					   &uiRetention,
+					   &wresult);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(4, ("Failed to query value \"Retention\": %s\n",
+			  nt_errstr(status)));
+		goto done;
+	}
 	if (!W_ERROR_IS_OK(wresult)) {
 		DEBUG(4, ("Failed to query value \"Retention\": %s\n",
 			  win_errstr(wresult)));
 		goto done;
 	}
 
-	if (value->data.length >= 4) {
-		uiRetention = IVAL(value->data.data, 0);
+	status = dcerpc_winreg_query_dword(ctx,
+					   h,
+					   &key_hnd,
+					   "MaxSize",
+					   &uiMaxSize,
+					   &wresult);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(4, ("Failed to query value \"Retention\": %s\n",
+			  nt_errstr(status)));
+		goto done;
 	}
-
-	wresult = reg_queryvalue(key, key, "MaxSize", &value);
 	if (!W_ERROR_IS_OK(wresult)) {
 		DEBUG(4, ("Failed to query value \"MaxSize\": %s\n",
 			  win_errstr(wresult)));
 		goto done;
-	}
-	if (value->data.length >= 4) {
-		uiMaxSize = IVAL(value->data.data, 0);
 	}
 
 	tdb_store_int32( ELOG_TDB_CTX(info->etdb), EVT_MAXSIZE, uiMaxSize );
@@ -374,6 +411,17 @@ static bool sync_eventlog_params( EVENTLOG_INFO *info )
 	ret = true;
 
 done:
+	if (h != NULL) {
+		WERROR ignore;
+
+		if (is_valid_policy_hnd(&key_hnd)) {
+			dcerpc_winreg_CloseKey(h, ctx, &key_hnd, &ignore);
+		}
+		if (is_valid_policy_hnd(&hive_hnd)) {
+			dcerpc_winreg_CloseKey(h, ctx, &hive_hnd, &ignore);
+		}
+	}
+
 	TALLOC_FREE(ctx);
 	return ret;
 }
@@ -406,7 +454,9 @@ NTSTATUS _eventlog_OpenEventLogW(struct pipes_struct *p,
 
 	DEBUG(10,("_eventlog_OpenEventLogW: Size [%d]\n", elog_size( info )));
 
-	if (!sync_eventlog_params(info)) {
+	if (!sync_eventlog_params(p->mem_ctx,
+				  p->msg_ctx,
+				  info)) {
 		elog_close(p, r->out.handle);
 		return NT_STATUS_EVENTLOG_FILE_CORRUPT;
 	}
