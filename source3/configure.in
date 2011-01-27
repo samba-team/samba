@@ -5547,6 +5547,15 @@ else
 fi
 
 #################################################
+# check for rtnetlink
+
+AC_CHECK_HEADERS([linux/netlink.h],
+  AC_CHECK_HEADERS([linux/rtnetlink.h],[],[],
+                   [#include <bits/sockaddr.h>
+                    #include <linux/netlink.h>]),
+  [],[#include <bits/sockaddr.h>])
+
+#################################################
 # check for ACL support
 
 AC_MSG_CHECKING(whether to support ACLs)

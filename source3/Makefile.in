@@ -436,6 +436,7 @@ LIB_OBJ = $(LIBSAMBAUTIL_OBJ) $(UTIL_OBJ) $(CRYPTO_OBJ) \
 	  lib/serverid.o \
 	  lib/util_sconn.o \
 	  lib/util_transfer_file.o ../lib/async_req/async_sock.o \
+	  lib/addrchange.o \
 	  $(TDB_LIB_OBJ) \
 	  $(VERSION_OBJ) lib/charcnv.o lib/debug.o lib/fault.o \
 	  lib/interface.o lib/pidfile.o \
