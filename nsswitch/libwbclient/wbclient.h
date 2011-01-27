@@ -787,16 +787,6 @@ wbcErr wbcAllocateUid(uid_t *puid);
 wbcErr wbcAllocateGid(gid_t *pgid);
 
 /**
- * @brief Set an user id mapping
- *
- * @param uid       Uid of the desired mapping.
- * @param *sid      Pointer to the sid of the diresired mapping.
- *
- * @return #wbcErr
- **/
-wbcErr wbcSetUidMapping(uid_t uid, const struct wbcDomainSid *sid);
-
-/**
  * @brief Set a group id mapping
  *
  * @param gid       Gid of the desired mapping.
