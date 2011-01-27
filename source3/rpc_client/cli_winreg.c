@@ -169,4 +169,38 @@ NTSTATUS dcerpc_winreg_query_binary(TALLOC_CTX *mem_ctx,
 	return status;
 }
 
+NTSTATUS dcerpc_winreg_set_dword(TALLOC_CTX *mem_ctx,
+				 struct dcerpc_binding_handle *h,
+				 struct policy_handle *key_handle,
+				 const char *value,
+				 uint32_t data,
+				 WERROR *pwerr)
+{
+	struct winreg_String wvalue;
+	DATA_BLOB blob;
+	WERROR result = WERR_OK;
+	NTSTATUS status;
+
+	wvalue.name = value;
+	blob = data_blob_talloc(mem_ctx, NULL, 4);
+	SIVAL(blob.data, 0, data);
+
+	status = dcerpc_winreg_SetValue(h,
+					mem_ctx,
+					key_handle,
+					wvalue,
+					REG_DWORD,
+					blob.data,
+					blob.length,
+					&result);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+	if (!W_ERROR_IS_OK(result)) {
+		*pwerr = result;
+	}
+
+	return status;
+}
+
 /* vim: set ts=8 sw=8 noet cindent syntax=c.doxygen: */
