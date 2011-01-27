@@ -98,4 +98,75 @@ NTSTATUS dcerpc_winreg_query_dword(TALLOC_CTX *mem_ctx,
 	return status;
 }
 
+NTSTATUS dcerpc_winreg_query_binary(TALLOC_CTX *mem_ctx,
+				    struct dcerpc_binding_handle *h,
+				    struct policy_handle *key_handle,
+				    const char *value,
+				    DATA_BLOB *data,
+				    WERROR *pwerr)
+{
+	struct winreg_String wvalue;
+	enum winreg_Type type;
+	WERROR result = WERR_OK;
+	uint32_t value_len = 0;
+	uint32_t data_size = 0;
+	NTSTATUS status;
+	DATA_BLOB blob;
+
+	wvalue.name = value;
+
+	status = dcerpc_winreg_QueryValue(h,
+					  mem_ctx,
+					  key_handle,
+					  &wvalue,
+					  &type,
+					  NULL,
+					  &data_size,
+					  &value_len,
+					  &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+	if (!W_ERROR_IS_OK(result)) {
+		*pwerr = result;
+		return status;
+	}
+
+	if (type != REG_BINARY) {
+		*pwerr = WERR_INVALID_DATATYPE;
+		return status;
+	}
+
+	blob = data_blob_talloc(mem_ctx, NULL, data_size);
+	if (blob.data == NULL) {
+		*pwerr = WERR_NOMEM;
+		return status;
+	}
+	value_len = 0;
+
+	status = dcerpc_winreg_QueryValue(h,
+					  mem_ctx,
+					  key_handle,
+					  &wvalue,
+					  &type,
+					  blob.data,
+					  &data_size,
+					  &value_len,
+					  &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+	if (!W_ERROR_IS_OK(result)) {
+		*pwerr = result;
+		return status;
+	}
+
+	if (data) {
+		data->data = blob.data;
+		data->length = blob.length;
+	}
+
+	return status;
+}
+
 /* vim: set ts=8 sw=8 noet cindent syntax=c.doxygen: */

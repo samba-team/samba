@@ -52,6 +52,34 @@ NTSTATUS dcerpc_winreg_query_dword(TALLOC_CTX *mem_ctx,
 				   uint32_t *data,
 				   WERROR *pwerr);
 
+/**
+ * @brief Query a key for the specified binary value.
+ *
+ * Get the data that is associated with the named value of a specified registry
+ * open key. This function ensures that the key is a binary value.
+ *
+ * @param[in]  mem_ctx  The memory context to use.
+ *
+ * @param[in]  h        The binding handle for the rpc connection.
+ *
+ * @param[in]  key_handle A handle to a key that MUST have been opened
+ *                        previously.
+ *
+ * @param[in]  value    The name of the value to query.
+ *
+ * @param[out] data     A pointer to store the data of the value.
+ *
+ * @param[out] pwerr    A pointer to a WERROR to store result of the query.
+ *
+ * @return              NT_STATUS_OK on success or a corresponding error if
+ *                      there was a problem on the connection.
+ */
+NTSTATUS dcerpc_winreg_query_binary(TALLOC_CTX *mem_ctx,
+				    struct dcerpc_binding_handle *h,
+				    struct policy_handle *key_handle,
+				    const char *value,
+				    DATA_BLOB *data,
+				    WERROR *pwerr);
 #endif /* CLI_WINREG_H */
 
 /* vim: set ts=8 sw=8 noet cindent syntax=c.doxygen: */
