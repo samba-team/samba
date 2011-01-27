@@ -786,15 +786,6 @@ wbcErr wbcAllocateUid(uid_t *puid);
  **/
 wbcErr wbcAllocateGid(gid_t *pgid);
 
-/**
- * @brief Set the highwater mark for allocated gids.
- *
- * @param gid_hwm      The new gid highwater mark value
- *
- * @return #wbcErr
- **/
-wbcErr wbcSetGidHwm(gid_t gid_hwm);
-
 /**********************************************************
  * NSS Lookup User/Group details
  **********************************************************/
