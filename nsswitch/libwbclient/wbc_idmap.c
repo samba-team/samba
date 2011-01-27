@@ -267,12 +267,6 @@ wbcErr wbcAllocateGid(gid_t *pgid)
 	return wbc_status;
 }
 
-/* Remove a user id mapping - not implemented any more */
-wbcErr wbcRemoveUidMapping(uid_t uid, const struct wbcDomainSid *sid)
-{
-	return WBC_ERR_NOT_IMPLEMENTED;
-}
-
 /* Remove a group id mapping - not implemented any more */
 wbcErr wbcRemoveGidMapping(gid_t gid, const struct wbcDomainSid *sid)
 {
