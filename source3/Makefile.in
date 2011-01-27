@@ -349,6 +349,9 @@ LIBCLI_EVENTLOG_OBJ = librpc/gen_ndr/ndr_eventlog_c.o
 
 LIBCLI_WINREG_OBJ = librpc/gen_ndr/ndr_winreg_c.o
 
+LIBCLI_WINREG_INT_OBJ = $(LIBCLI_WINREG_OBJ) \
+			rpc_client/cli_winreg_int.o
+
 LIBCLI_NTSVCS_OBJ = librpc/gen_ndr/ndr_ntsvcs_c.o
 
 LIBCLI_DRSUAPI_OBJ = librpc/gen_ndr/ndr_drsuapi_c.o
@@ -730,7 +733,7 @@ RPC_SERVER_OBJ = $(RPC_LSARPC_OBJ) $(RPC_WINREG_OBJ) $(RPC_INITSHUTDOWN_OBJ) \
 		 $(RPC_SAMR_OBJ) $(RPC_RPCECHO_OBJ) $(RPC_EPMAPPER_OBJ) \
 		 $(RPC_PIPE_OBJ) $(NPA_TSTREAM_OBJ) \
 		 $(LIBCLI_SPOOLSS_OBJ) \
-		 $(LIBCLI_WINREG_OBJ) \
+		 $(LIBCLI_WINREG_INT_OBJ) \
 		 $(LIBCLI_SRVSVC_OBJ) \
 		 $(LIBCLI_LSA_OBJ) \
 		 $(LIBCLI_SAMR_OBJ) \
