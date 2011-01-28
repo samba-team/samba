@@ -302,7 +302,7 @@ interface netlogon
 		time_t timestamp;
 	} netr_Authenticator;
 
-	NTSTATUS netr_LogonSamLogon(
+	[public] NTSTATUS netr_LogonSamLogon(
 		[in,unique] [string,charset(UTF16)] uint16 *server_name,
 		[in,unique] [string,charset(UTF16)] uint16 *computer_name,
 		[in,unique] netr_Authenticator *credential,
