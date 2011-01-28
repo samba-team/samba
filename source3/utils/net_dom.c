@@ -19,7 +19,7 @@
 
 #include "includes.h"
 #include "utils/net.h"
-#include "../librpc/gen_ndr/cli_initshutdown.h"
+#include "../librpc/gen_ndr/ndr_initshutdown.h"
 #include "../librpc/gen_ndr/ndr_winreg.h"
 #include "lib/netapi/netapi.h"
 #include "lib/netapi/netapi_net.h"

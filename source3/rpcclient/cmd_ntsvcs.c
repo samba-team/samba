@@ -20,7 +20,7 @@
 
 #include "includes.h"
 #include "rpcclient.h"
-#include "../librpc/gen_ndr/cli_ntsvcs.h"
+#include "../librpc/gen_ndr/ndr_ntsvcs_c.h"
 
 static WERROR cmd_ntsvcs_get_version(struct rpc_pipe_client *cli,
 				     TALLOC_CTX *mem_ctx,

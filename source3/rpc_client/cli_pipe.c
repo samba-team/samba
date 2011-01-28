@@ -19,7 +19,7 @@
  */
 
 #include "includes.h"
-#include "librpc/gen_ndr/cli_epmapper.h"
+#include "librpc/gen_ndr/ndr_epmapper_c.h"
 #include "../librpc/gen_ndr/ndr_schannel.h"
 #include "../librpc/gen_ndr/ndr_dssetup.h"
 #include "../libcli/auth/schannel.h"
