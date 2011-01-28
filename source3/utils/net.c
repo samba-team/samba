@@ -815,6 +815,9 @@ static struct functable net_func[] = {
 		{"clean-old-entries", 0, POPT_ARG_NONE, &c->opt_clean_old_entries},
 		/* Options for 'net idmap'*/
 		{"db", 0, POPT_ARG_STRING, &c->opt_db},
+		{"lock", 0, POPT_ARG_NONE,   &c->opt_lock},
+		{"auto", 'a', POPT_ARG_NONE,   &c->opt_auto},
+		{"repair", 0, POPT_ARG_NONE,   &c->opt_repair},
 		POPT_COMMON_SAMBA
 		{ 0, 0, 0, 0}
 	};

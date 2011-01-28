@@ -17,13 +17,13 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#define FOO(x) (x)
 #include "includes.h"
 #include "utils/net.h"
 #include "secrets.h"
 #include "idmap.h"
 #include "dbwrap.h"
 #include "../libcli/security/security.h"
+#include "net_idmap_check.h"
 
 #define ALLOC_CHECK(mem) do { \
 	if (!mem) { \
@@ -534,6 +534,43 @@ static int net_idmap_secret(struct net_context *c, int argc, const char **argv)
 	return 0;
 }
 
+static int net_idmap_check(struct net_context *c, int argc, const char **argv)
+{
+	const char* dbfile;
+	struct check_options opts;
+
+	if ( argc > 1 || c->display_usage) {
+		d_printf("%s\n%s",
+			 _("Usage:"),
+			 _("net idmap check [-f] [-a] [-T] [-v] [--auto] [[--db=]<TDB>]\n"
+			   "  Check an idmap database.\n"
+			   "    --repair,-r\trepair\n"
+			   "    --fore,-f\tforce\n"
+			   "    --auto,-a\tnoninteractive mode\n"
+			   "    --test,-T\tdry run\n"
+			   "    --lock\tlock db while doing the check\n"
+			   "    TDB\tidmap database\n"));
+		return c->display_usage ? 0 : -1;
+	}
+
+	dbfile = (argc > 0) ? argv[0] : net_idmap_dbfile(c);
+	if (dbfile == NULL) {
+		return -1;
+	}
+	d_fprintf(stderr, _("check database: %s\n"), dbfile);
+
+	opts = (struct check_options) {
+		.lock = c->opt_lock,
+		.test = c->opt_testmode,
+		.automatic = c->opt_auto,
+		.verbose = c->opt_verbose,
+		.force = c->opt_force,
+		.repair = c->opt_repair || c->opt_reboot,
+	};
+
+	return net_idmap_check_db(dbfile, &opts);
+}
+
 static int net_idmap_aclmapset(struct net_context *c, int argc, const char **argv)
 {
 	TALLOC_CTX *mem_ctx;
@@ -651,6 +688,14 @@ int net_idmap(struct net_context *c, int argc, const char **argv)
 			N_("Set acl map"),
 			N_("net idmap aclmapset\n"
 			   "  Set acl map")
+		},
+		{
+			"check",
+			net_idmap_check,
+			NET_TRANSPORT_LOCAL,
+			N_("Check id mappings"),
+			N_("net idmap check\n"
+			   "  Check id mappings")
 		},
 		{NULL, NULL, 0, NULL, NULL}
 	};
