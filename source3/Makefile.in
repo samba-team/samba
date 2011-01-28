@@ -655,7 +655,6 @@ REG_SMBCONF_OBJ = $(REG_BASE_OBJ) \
 REG_FULL_OBJ = $(REG_SMBCONF_OBJ) \
 	       $(REG_BACKENDS_EXTRA_OBJ) \
 	       $(REG_INIT_FULL_OBJ) \
-	       registry/reg_eventlog.o \
 	       registry/reg_perfcount.o \
 	       librpc/gen_ndr/ndr_perfcount.o
 
@@ -1261,8 +1260,7 @@ SMBCQUOTAS_OBJ = utils/smbcquotas.o $(LIBSMB_OBJ) $(KRBCLIENT_OBJ) \
 EVTLOGADM_OBJ0	= utils/eventlogadm.o
 
 EVTLOGADM_OBJ	= $(EVTLOGADM_OBJ0) $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) \
-		$(LIBSMB_ERR_OBJ) \
-	        registry/reg_eventlog.o $(LIB_EVENTLOG_OBJ) \
+		$(LIBSMB_ERR_OBJ) $(LIB_EVENTLOG_OBJ) \
 		librpc/gen_ndr/ndr_eventlog.o \
 		librpc/gen_ndr/ndr_lsa.o
 
