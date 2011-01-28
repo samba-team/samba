@@ -891,8 +891,9 @@ static int acl_modify(struct ldb_module *module, struct ldb_request *req)
 
 	ret = dsdb_get_sd_from_ldb_message(ldb, tmp_ctx, acl_res->msgs[0], &sd);
 	if (ret != LDB_SUCCESS) {
-		DEBUG(10, ("acl_modify: cannot get descriptor\n"));
-		goto fail;
+		talloc_free(tmp_ctx);
+		return ldb_error(ldb, LDB_ERR_OPERATIONS_ERROR,
+				 "acl_modify: Error retrieving security descriptor.");
 	}
 	/* Theoretically we pass the check if the object has no sd */
 	if (!sd) {
@@ -901,19 +902,21 @@ static int acl_modify(struct ldb_module *module, struct ldb_request *req)
 
 	guid = get_oc_guid_from_message(module, schema, acl_res->msgs[0]);
 	if (!guid) {
-		DEBUG(10, ("acl_modify: cannot get guid\n"));
-		goto fail;
+		talloc_free(tmp_ctx);
+		return ldb_error(ldb, LDB_ERR_OPERATIONS_ERROR,
+				 "acl_modify: Error retrieving object class GUID.");
 	}
 	sid = samdb_result_dom_sid(req, acl_res->msgs[0], "objectSid");
 	if (!insert_in_object_tree(tmp_ctx, guid, SEC_ADS_WRITE_PROP,
 				   &root, &new_node)) {
-		DEBUG(10, ("acl_modify: cannot add to object tree\n"));
-		goto fail;
+		talloc_free(tmp_ctx);
+		return ldb_error(ldb, LDB_ERR_OPERATIONS_ERROR,
+				 "acl_modify: Error adding new node in object tree.");
 	}
 	for (i=0; i < req->op.mod.message->num_elements; i++){
 		const struct dsdb_attribute *attr;
 		attr = dsdb_attribute_by_lDAPDisplayName(schema,
-								 req->op.mod.message->elements[i].name);
+							 req->op.mod.message->elements[i].name);
 
 		if (ldb_attr_cmp("nTSecurityDescriptor", req->op.mod.message->elements[i].name) == 0) {
 			status = sec_access_check_ds(sd, acl_user_token(module),
