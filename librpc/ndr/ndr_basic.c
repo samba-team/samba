@@ -1213,3 +1213,28 @@ _PUBLIC_ void ndr_print_bool(struct ndr_print *ndr, const char *name, const bool
 {
 	ndr->print(ndr, "%-25s: %s", name, b?"true":"false");
 }
+
+_PUBLIC_ NTSTATUS ndr_map_error2ntstatus(enum ndr_err_code ndr_err)
+{
+	switch (ndr_err) {
+	case NDR_ERR_SUCCESS:
+		return NT_STATUS_OK;
+	case NDR_ERR_BUFSIZE:
+		return NT_STATUS_BUFFER_TOO_SMALL;
+	case NDR_ERR_TOKEN:
+		return NT_STATUS_INTERNAL_ERROR;
+	case NDR_ERR_ALLOC:
+		return NT_STATUS_NO_MEMORY;
+	case NDR_ERR_ARRAY_SIZE:
+		return NT_STATUS_ARRAY_BOUNDS_EXCEEDED;
+	case NDR_ERR_INVALID_POINTER:
+		return NT_STATUS_INVALID_PARAMETER_MIX;
+	case NDR_ERR_UNREAD_BYTES:
+		return NT_STATUS_PORT_MESSAGE_TOO_LONG;
+	default:
+		break;
+	}
+
+	/* we should map all error codes to different status codes */
+	return NT_STATUS_INVALID_PARAMETER;
+}
