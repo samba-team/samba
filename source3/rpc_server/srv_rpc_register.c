@@ -38,6 +38,7 @@
 #include "../librpc/gen_ndr/srv_wkssvc.h"
 
 #include "printing/nt_printing_migrate.h"
+#include "rpc_server/srv_eventlog_reg.h"
 
 #include "librpc/rpc/dcerpc_ep.h"
 
@@ -211,8 +212,17 @@ static bool ntsvcs_shutdown_cb(void *ptr)
 
 static bool eventlog_init_cb(void *ptr)
 {
-	return NT_STATUS_IS_OK(_rpc_ep_register(&ndr_table_eventlog,
-						"eventlog"));
+	struct messaging_context *msg_ctx = talloc_get_type_abort(
+		ptr, struct messaging_context);
+	NTSTATUS status;
+
+	status =_rpc_ep_register(&ndr_table_eventlog,
+				 "eventlog");
+	if (!NT_STATUS_IS_OK(status)) {
+		return false;
+	}
+
+	return eventlog_init_winreg(msg_ctx);
 }
 
 static bool eventlog_shutdown_cb(void *ptr)
@@ -355,7 +365,7 @@ bool srv_rpc_register(struct messaging_context *msg_ctx) {
 
 	eventlog_cb.init         = eventlog_init_cb;
 	eventlog_cb.shutdown     = eventlog_shutdown_cb;
-	eventlog_cb.private_data = NULL;
+	eventlog_cb.private_data = msg_ctx;
 	if (!NT_STATUS_IS_OK(rpc_eventlog_init(&eventlog_cb))) {
 		return false;
 	}

@@ -99,7 +99,6 @@ WERROR registry_init_full(void)
 	/* add any keys for other services */
 
 	svcctl_init_keys();
-	eventlog_init_keys();
 	perfcount_init_keys();
 
 fail:
