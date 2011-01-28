@@ -2972,17 +2972,13 @@ static WERROR cmd_spoolss_enum_data(struct rpc_pipe_client *cli,
 {
 	WERROR result;
 	NTSTATUS status;
-	uint32_t i = 0;
 	const char *printername;
 	struct policy_handle hnd;
-	uint32_t value_offered = 0;
-	const char *value_name = NULL;
 	uint32_t value_needed;
 	enum winreg_Type type;
-	uint8_t *data = NULL;
-	uint32_t data_offered = 0;
 	uint32_t data_needed;
 	struct dcerpc_binding_handle *b = cli->binding_handle;
+	struct spoolss_EnumPrinterData r;
 
 	if (argc != 2) {
 		printf("Usage: %s printername\n", argv[0]);
@@ -3003,53 +2999,55 @@ static WERROR cmd_spoolss_enum_data(struct rpc_pipe_client *cli,
 
 	/* Enumerate data */
 
-	status = dcerpc_spoolss_EnumPrinterData(b, mem_ctx,
-						&hnd,
-						i,
-						value_name,
-						value_offered,
-						&value_needed,
-						&type,
-						data,
-						data_offered,
-						&data_needed,
-						&result);
+	r.in.handle = &hnd;
+	r.in.enum_index = 0;
+	r.in.value_offered = 0;
+	r.in.data_offered = 0;
+	r.out.value_name = NULL;
+	r.out.value_needed = &value_needed;
+	r.out.type = &type;
+	r.out.data = NULL;
+	r.out.data_needed = &data_needed;
 
+	status = dcerpc_spoolss_EnumPrinterData_r(b, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		result = ntstatus_to_werror(status);
 		goto done;
 	}
 
-	if (!W_ERROR_IS_OK(result)) {
+	if (!W_ERROR_IS_OK(r.out.result)) {
+		result = r.out.result;
 		goto done;
 	}
 
-	data_offered	= data_needed;
-	value_offered	= value_needed;
-	data		= talloc_zero_array(mem_ctx, uint8_t, data_needed);
-	value_name	= talloc_zero_array(mem_ctx, char, value_needed);
+	r.in.data_offered	= *r.out.data_needed;
+	r.in.value_offered	= *r.out.value_needed;
+	r.out.data		= talloc_zero_array(mem_ctx, uint8_t, r.in.data_offered);
+	r.out.value_name	= talloc_zero_array(mem_ctx, char, r.in.value_offered);
 
-	while (NT_STATUS_IS_OK(status) && W_ERROR_IS_OK(result)) {
+	do {
 
-		status = dcerpc_spoolss_EnumPrinterData(b, mem_ctx,
-							&hnd,
-							i++,
-							value_name,
-							value_offered,
-							&value_needed,
-							&type,
-							data,
-							data_offered,
-							&data_needed,
-							&result);
-		if (NT_STATUS_IS_OK(status) && W_ERROR_IS_OK(result)) {
+		status = dcerpc_spoolss_EnumPrinterData_r(b, mem_ctx, &r);
+		if (!NT_STATUS_IS_OK(status)) {
+			result = ntstatus_to_werror(status);
+			goto done;
+		}
+
+		if (W_ERROR_EQUAL(r.out.result, WERR_NO_MORE_ITEMS)) {
+			result = WERR_OK;
+			break;
+		}
+
+		r.in.enum_index++;
+
+		{
 			struct regval_blob *v;
 
 			v = regval_compose(talloc_tos(),
-					   value_name,
-					   type,
-					   data,
-					   data_offered);
+					   r.out.value_name,
+					   *r.out.type,
+					   r.out.data,
+					   r.in.data_offered);
 			if (v == NULL) {
 				result = WERR_NOMEM;
 				goto done;
@@ -3058,11 +3056,8 @@ static WERROR cmd_spoolss_enum_data(struct rpc_pipe_client *cli,
 			display_reg_value(v);
 			talloc_free(v);
 		}
-	}
 
-	if (W_ERROR_V(result) == ERRnomoreitems) {
-		result = W_ERROR(ERRsuccess);
-	}
+	} while (W_ERROR_IS_OK(r.out.result));
 
 done:
 	if (is_valid_policy_hnd(&hnd)) {
