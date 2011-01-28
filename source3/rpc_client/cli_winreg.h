@@ -107,6 +107,32 @@ NTSTATUS dcerpc_winreg_set_dword(TALLOC_CTX *mem_ctx,
 				 uint32_t data,
 				 WERROR *pwerr);
 
+/**
+ * @brief Set a value with the specified sz data.
+ *
+ * @param[in]  mem_ctx  The memory context to use.
+ *
+ * @param[in]  h        The binding handle for the rpc connection.
+ *
+ * @param[in]  key_handle A handle to a key that MUST have been opened
+ *                        previously.
+ *
+ * @param[in]  value    The name of the value to set.
+ *
+ * @param[in]  data     The data to store in the value.
+ *
+ * @param[out] pwerr    A pointer to a WERROR to store result of the query.
+ *
+ * @return              NT_STATUS_OK on success or a corresponding error if
+ *                      there was a problem on the connection.
+ */
+NTSTATUS dcerpc_winreg_set_sz(TALLOC_CTX *mem_ctx,
+			      struct dcerpc_binding_handle *h,
+			      struct policy_handle *key_handle,
+			      const char *value,
+			      const char *data,
+			      WERROR *pwerr);
+
 #endif /* CLI_WINREG_H */
 
 /* vim: set ts=8 sw=8 noet cindent syntax=c.doxygen: */
