@@ -372,22 +372,6 @@ static int net_idmap_secret(struct net_context *c, int argc, const char **argv)
 	return 0;
 }
 
-int net_help_idmap(struct net_context *c, int argc, const char **argv)
-{
-	d_printf(_("net idmap dump <inputfile>\n"
-		   "    Dump current id mapping\n"));
-
-	d_printf(_("net idmap restore\n"
-		   "    Restore entries from stdin\n"));
-
-	/* Deliberately *not* document net idmap delete */
-
-	d_printf(_("net idmap secret <DOMAIN> <secret>\n"
-		   "    Set the secret for the specified DOMAIN module)\n"));
-
-	return -1;
-}
-
 static int net_idmap_aclmapset(struct net_context *c, int argc, const char **argv)
 {
 	TALLOC_CTX *mem_ctx;
