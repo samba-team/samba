@@ -199,6 +199,36 @@ struct smbd_smb2_getinfo_state {
 	DATA_BLOB out_output_buffer;
 };
 
+static void smb2_ipc_getinfo(struct tevent_req *req,
+				struct smbd_smb2_getinfo_state *state,
+				struct tevent_context *ev,
+				uint8_t in_info_type,
+				uint8_t in_file_info_class)
+{
+	/* We want to reply to SMB2_GETINFO_FILE
+	   with a class of SMB2_FILE_STANDARD_INFO as
+	   otherwise a Win7 client issues this request
+	   twice (2xroundtrips) if we return NOT_SUPPORTED.
+	   NB. We do the same for SMB1 in call_trans2qpipeinfo() */
+
+	if (in_info_type == 0x01 && /* SMB2_GETINFO_FILE */
+			in_file_info_class == 0x05) { /* SMB2_FILE_STANDARD_INFO */
+		state->out_output_buffer = data_blob_talloc(state,
+						NULL, 24);
+		if (tevent_req_nomem(state->out_output_buffer.data, req)) {
+			return;
+		}
+
+		memset(state->out_output_buffer.data,0,24);
+		SOFF_T(state->out_output_buffer.data,0,4096LL);
+		SIVAL(state->out_output_buffer.data,16,1);
+		SIVAL(state->out_output_buffer.data,20,1);
+		tevent_req_done(req);
+	} else {
+		tevent_req_nterror(req, NT_STATUS_NOT_SUPPORTED);
+	}
+}
+
 static struct tevent_req *smbd_smb2_getinfo_send(TALLOC_CTX *mem_ctx,
 						 struct tevent_context *ev,
 						 struct smbd_smb2_request *smb2req,
@@ -249,7 +279,8 @@ static struct tevent_req *smbd_smb2_getinfo_send(TALLOC_CTX *mem_ctx,
 	}
 
 	if (IS_IPC(conn)) {
-		tevent_req_nterror(req, NT_STATUS_NOT_SUPPORTED);
+		smb2_ipc_getinfo(req, state, ev,
+			in_info_type, in_file_info_class);
 		return tevent_req_post(req, ev);
 	}
 
