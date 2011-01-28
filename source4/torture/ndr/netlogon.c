@@ -168,6 +168,27 @@ static bool netrlogonsamlogon_in_check(struct torture_context *tctx,
 	return true;
 }
 
+static const uint8_t netrlogonsamlogon_out_data[] = {
+	0x6c, 0xdb, 0x14, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x06, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00,
+	0x03, 0x00, 0x00, 0xc0
+};
+
+static bool netrlogonsamlogon_out_check(struct torture_context *tctx,
+					struct netr_LogonSamLogon *r)
+{
+	uint8_t return_authenticator_expected[8] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+
+	torture_assert_mem_equal(tctx, r->out.return_authenticator->cred.data, return_authenticator_expected, 8, "return_authenticator.cred.data");
+	torture_assert_int_equal(tctx, r->out.return_authenticator->timestamp, 0, "return_authenticator.timestamp");
+	torture_assert(tctx, r->out.validation, "validation NULL pointer");
+	torture_assert(tctx, (r->out.validation->sam6 == NULL), "sam6 not NULL");
+	torture_assert_int_equal(tctx, *r->out.authoritative, 1, "authoritative");
+	torture_assert_ntstatus_equal(tctx, r->out.result, NT_STATUS_INVALID_INFO_CLASS, "unexpected result");
+
+	return true;
+}
+
 struct torture_suite *ndr_netlogon_suite(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite = torture_suite_create(ctx, "netlogon");
@@ -179,6 +200,11 @@ struct torture_suite *ndr_netlogon_suite(TALLOC_CTX *ctx)
 	torture_suite_add_ndr_pull_fn_test(suite, netr_ServerAuthenticate3, netrserverauthenticate3_out_data, NDR_OUT, netrserverauthenticate3_out_check );
 
 	torture_suite_add_ndr_pull_fn_test(suite, netr_LogonSamLogon, netrlogonsamlogon_in_data, NDR_IN, netrlogonsamlogon_in_check );
+#if 0
+	/* samba currently fails to parse a validation level 6 samlogon reply
+	 * from w2k and other servers - gd */
+	torture_suite_add_ndr_pull_io_test(suite, netr_LogonSamLogon, netrlogonsamlogon_in_data, netrlogonsamlogon_out_data, netrlogonsamlogon_out_check);
+#endif
 
 	return suite;
 }
