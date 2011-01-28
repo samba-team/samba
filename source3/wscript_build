@@ -707,7 +707,7 @@ bld.SAMBA_LIBRARY('netapi',
                     RPC_NDR_SRVSVC RPC_NDR_WKSSVC RPC_NDR_INITSHUTDOWN
                     INIT_NETLOGON INIT_SAMR''',
                     public_headers='lib/netapi/netapi.h',
-                    private_library=True,
+                    vnum='0',
                     vars=locals())
 
 bld.SAMBA_LIBRARY('smbclient',
@@ -715,14 +715,14 @@ bld.SAMBA_LIBRARY('smbclient',
                     public_deps='''talloc tdb wbclient cap PARAM LIB_NONSMBD LIBSMB KRBCLIENT PASSDB SMBLDAP GROUPDB
                     LIBMSRPC_GEN LIBMSRPC LIBCLI_LSA RPC_NDR_SRVSVC''',
                     public_headers='include/libsmbclient.h',
-                    private_library=True,
+                    vnum='0',
                     vars=locals())
 
 bld.SAMBA_LIBRARY('smbsharemodes',
                     source=LIBSMBSHAREMODES_SRC,
                     public_deps='''talloc tdb''',
                     public_headers='include/smb_share_modes.h',
-                    private_library=True,
+                    vnum='0',
                     vars=locals())
 
 bld.SAMBA_LIBRARY('nss_winbind',
