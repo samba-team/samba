@@ -1,15 +1,8 @@
 #!/usr/bin/env python
 
 bld.RECURSE('../../librpc/idl')
+bld.RECURSE('../../librpc/tools')
 bld.RECURSE('idl')
-
-bld.SAMBA_BINARY('ndrdump',
-	source='../../librpc/tools/ndrdump.c',
-	manpages='../../librpc/tools/ndrdump.1',
-	deps='samba-hostconfig samba-util popt POPT_SAMBA ndr-table errors'
-	)
-
-
 
 bld.SAMBA_SUBSYSTEM('NDR_SECURITY',
 	source='../../librpc/gen_ndr/ndr_security.c ../../librpc/ndr/ndr_sec_helper.c gen_ndr/ndr_server_id.c',
