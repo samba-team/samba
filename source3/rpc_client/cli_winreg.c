@@ -403,4 +403,46 @@ NTSTATUS dcerpc_winreg_set_multi_sz(TALLOC_CTX *mem_ctx,
 	return status;
 }
 
+NTSTATUS dcerpc_winreg_add_multi_sz(TALLOC_CTX *mem_ctx,
+				    struct dcerpc_binding_handle *h,
+				    struct policy_handle *key_handle,
+				    const char *value,
+				    const char *data,
+				    WERROR *pwerr)
+{
+	const char **a = NULL;
+	const char **p;
+	uint32_t i;
+	WERROR result = WERR_OK;
+	NTSTATUS status;
+
+	status = dcerpc_winreg_query_multi_sz(mem_ctx,
+					      h,
+					      key_handle,
+					      value,
+					      &a,
+					      &result);
+
+	/* count the elements */
+	for (p = a, i = 0; p && *p; p++, i++);
+
+	p = TALLOC_REALLOC_ARRAY(mem_ctx, a, const char *, i + 2);
+	if (p == NULL) {
+		*pwerr = WERR_NOMEM;
+		return NT_STATUS_OK;
+	}
+
+	p[i] = data;
+	p[i + 1] = NULL;
+
+	status = dcerpc_winreg_set_multi_sz(mem_ctx,
+					    h,
+					    key_handle,
+					    value,
+					    p,
+					    pwerr);
+
+	return status;
+}
+
 /* vim: set ts=8 sw=8 noet cindent syntax=c.doxygen: */
