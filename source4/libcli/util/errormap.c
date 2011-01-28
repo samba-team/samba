@@ -20,7 +20,6 @@
  */
 
 #include "includes.h"
-#include "librpc/ndr/libndr.h"
 
 /* This map was extracted by the ERRMAPEXTRACT smbtorture command. 
    The setup was a Samba HEAD (2002-01-03) PDC and an Win2k member 
@@ -1387,29 +1386,4 @@ NTSTATUS map_nt_error_from_unix(int unix_error)
 WERROR unix_to_werror(int unix_error)
 {
 	return ntstatus_to_werror(map_nt_error_from_unix(unix_error));
-}
-
-NTSTATUS ndr_map_error2ntstatus(enum ndr_err_code ndr_err)
-{
-	switch (ndr_err) {
-	case NDR_ERR_SUCCESS:
-		return NT_STATUS_OK;
-	case NDR_ERR_BUFSIZE:
-		return NT_STATUS_BUFFER_TOO_SMALL;
-	case NDR_ERR_TOKEN:
-		return NT_STATUS_INTERNAL_ERROR;
-	case NDR_ERR_ALLOC:
-		return NT_STATUS_NO_MEMORY;
-	case NDR_ERR_ARRAY_SIZE:
-		return NT_STATUS_ARRAY_BOUNDS_EXCEEDED;
-	case NDR_ERR_INVALID_POINTER:
-		return NT_STATUS_INVALID_PARAMETER_MIX;
-	case NDR_ERR_UNREAD_BYTES:
-		return NT_STATUS_PORT_MESSAGE_TOO_LONG;
-	default:
-		break;
-	}
-
-	/* we should map all error codes to different status codes */
-	return NT_STATUS_INVALID_PARAMETER;
 }
