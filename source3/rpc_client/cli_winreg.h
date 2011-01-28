@@ -82,6 +82,35 @@ NTSTATUS dcerpc_winreg_query_binary(TALLOC_CTX *mem_ctx,
 				    WERROR *pwerr);
 
 /**
+ * @brief Query a key for the specified multi sz value.
+ *
+ * Get the data that is associated with the named value of a specified registry
+ * open key. This function ensures that the key is a multi sz value.
+ *
+ * @param[in]  mem_ctx  The memory context to use.
+ *
+ * @param[in]  h        The binding handle for the rpc connection.
+ *
+ * @param[in]  key_handle A handle to a key that MUST have been opened
+ *                        previously.
+ *
+ * @param[in]  value    The name of the value to query.
+ *
+ * @param[out] data     A pointer to store the data of the value.
+ *
+ * @param[out] pwerr    A pointer to a WERROR to store result of the query.
+ *
+ * @return              NT_STATUS_OK on success or a corresponding error if
+ *                      there was a problem on the connection.
+ */
+NTSTATUS dcerpc_winreg_query_multi_sz(TALLOC_CTX *mem_ctx,
+				      struct dcerpc_binding_handle *h,
+				      struct policy_handle *key_handle,
+				      const char *value,
+				      const char ***data,
+				      WERROR *pwerr);
+
+/**
  * @brief Set a value with the specified dword data.
  *
  * @param[in]  mem_ctx  The memory context to use.
