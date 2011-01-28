@@ -2255,7 +2255,7 @@ NTSTATUS rpc_printer_migrate_settings_internals(struct net_context *c,
 
 	WERROR result;
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
-	uint32_t i = 0, p = 0, j = 0;
+	uint32_t i = 0, j = 0;
 	uint32_t num_printers;
 	uint32_t level = 2;
 	const char *printername, *sharename;
@@ -2306,11 +2306,10 @@ NTSTATUS rpc_printer_migrate_settings_internals(struct net_context *c,
 	/* do something for all printers */
 	for (i = 0; i < num_printers; i++) {
 
-		uint32_t value_offered = 0, value_needed;
-		uint32_t data_offered = 0, data_needed;
+		uint32_t value_needed;
+		uint32_t data_needed;
 		enum winreg_Type type;
-		uint8_t *buffer = NULL;
-		const char *value_name = NULL;
+		struct spoolss_EnumPrinterData r;
 
 		/* do some initialization */
 		printername = info_enum[i].info2.printername;
@@ -2402,50 +2401,43 @@ NTSTATUS rpc_printer_migrate_settings_internals(struct net_context *c,
 		   FIXME: IIRC I've seen it too on a win2k-server
 		*/
 
-		/* enumerate data on src handle */
-		nt_status = dcerpc_spoolss_EnumPrinterData(b_src, mem_ctx,
-							   &hnd_src,
-							   p,
-							   value_name,
-							   value_offered,
-							   &value_needed,
-							   &type,
-							   buffer,
-							   data_offered,
-							   &data_needed,
-							   &result);
+		r.in.handle = &hnd_src;
+		r.in.enum_index = 0;
+		r.in.value_offered = 0;
+		r.in.data_offered = 0;
+		r.out.value_name = NULL;
+		r.out.value_needed = &value_needed;
+		r.out.type = &type;
+		r.out.data = NULL;
+		r.out.data_needed = &data_needed;
 
-		data_offered	= data_needed;
-		value_offered	= value_needed;
-		buffer		= talloc_zero_array(mem_ctx, uint8_t, data_needed);
-		value_name	= talloc_zero_array(mem_ctx, char, value_needed);
+		/* enumerate data on src handle */
+		nt_status = dcerpc_spoolss_EnumPrinterData_r(b_src, mem_ctx, &r);
+
+		r.in.data_offered	= *r.out.data_needed;
+		r.in.value_offered	= *r.out.value_needed;
+		r.out.data		= talloc_zero_array(mem_ctx, uint8_t, r.in.data_offered);
+		r.out.value_name	= talloc_zero_array(mem_ctx, char, r.in.value_offered);
 
 		/* loop for all printerdata of "PrinterDriverData" */
-		while (NT_STATUS_IS_OK(nt_status) && W_ERROR_IS_OK(result)) {
+		while (NT_STATUS_IS_OK(nt_status) && W_ERROR_IS_OK(r.out.result)) {
 
-			nt_status = dcerpc_spoolss_EnumPrinterData(b_src, mem_ctx,
-								   &hnd_src,
-								   p++,
-								   value_name,
-								   value_offered,
-								   &value_needed,
-								   &type,
-								   buffer,
-								   data_offered,
-								   &data_needed,
-								   &result);
+			r.in.enum_index++;
+
+			nt_status = dcerpc_spoolss_EnumPrinterData_r(b_src, mem_ctx, &r);
+
 			/* loop for all reg_keys */
-			if (NT_STATUS_IS_OK(nt_status) && W_ERROR_IS_OK(result)) {
+			if (NT_STATUS_IS_OK(nt_status) && W_ERROR_IS_OK(r.out.result)) {
 
 				/* display_value */
 				if (c->opt_verbose) {
 					struct regval_blob *v;
 
 					v = regval_compose(talloc_tos(),
-							   value_name,
-							   type,
-							   buffer,
-							   data_offered);
+							   r.out.value_name,
+							   *r.out.type,
+							   r.out.data,
+							   r.in.data_offered);
 					if (v == NULL) {
 						nt_status = NT_STATUS_NO_MEMORY;
 						goto done;
@@ -2457,12 +2449,12 @@ NTSTATUS rpc_printer_migrate_settings_internals(struct net_context *c,
 
 				/* set_value */
 				if (!net_spoolss_setprinterdata(pipe_hnd_dst, mem_ctx,
-								&hnd_dst, value_name,
-								type, buffer, data_offered))
+								&hnd_dst, r.out.value_name,
+								*r.out.type, r.out.data, r.in.data_offered))
 					goto done;
 
 				DEBUGADD(1,("\tSetPrinterData of [%s] succeeded\n",
-					    value_name));
+					    r.out.value_name));
 			}
 		}
 
