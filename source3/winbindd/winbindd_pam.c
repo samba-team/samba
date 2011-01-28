@@ -390,25 +390,29 @@ static void fill_in_password_policy(struct winbindd_response *r,
 static NTSTATUS fillup_password_policy(struct winbindd_domain *domain,
 				       struct winbindd_cli_state *state)
 {
+	TALLOC_CTX *frame = talloc_stackframe();
 	struct winbindd_methods *methods;
-	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS status;
 	struct samr_DomInfo1 password_policy;
 
 	if ( !winbindd_can_contact_domain( domain ) ) {
 		DEBUG(5,("fillup_password_policy: No inbound trust to "
 			 "contact domain %s\n", domain->name));
-		return NT_STATUS_NOT_SUPPORTED;
+		status = NT_STATUS_NOT_SUPPORTED;
+		goto done;
 	}
 
 	methods = domain->methods;
 
-	status = methods->password_policy(domain, state->mem_ctx, &password_policy);
+	status = methods->password_policy(domain, talloc_tos(), &password_policy);
 	if (NT_STATUS_IS_ERR(status)) {
-		return status;
+		goto done;
 	}
 
 	fill_in_password_policy(state->response, &password_policy);
 
+done:
+	TALLOC_FREE(frame);
 	return NT_STATUS_OK;
 }
 
