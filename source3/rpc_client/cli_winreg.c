@@ -445,4 +445,139 @@ NTSTATUS dcerpc_winreg_add_multi_sz(TALLOC_CTX *mem_ctx,
 	return status;
 }
 
+NTSTATUS dcerpc_winreg_enum_keys(TALLOC_CTX *mem_ctx,
+				 struct dcerpc_binding_handle *h,
+				 struct policy_handle *key_hnd,
+				 uint32_t *pnum_subkeys,
+				 const char ***psubkeys,
+				 WERROR *pwerr)
+{
+	const char **subkeys;
+	uint32_t num_subkeys, max_subkeylen, max_classlen;
+	uint32_t num_values, max_valnamelen, max_valbufsize;
+	uint32_t i;
+	NTTIME last_changed_time;
+	uint32_t secdescsize;
+	struct winreg_String classname;
+	WERROR result = WERR_OK;
+	NTSTATUS status;
+	TALLOC_CTX *tmp_ctx;
+
+	tmp_ctx = talloc_stackframe();
+	if (tmp_ctx == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	ZERO_STRUCT(classname);
+
+	status = dcerpc_winreg_QueryInfoKey(h,
+					    tmp_ctx,
+					    key_hnd,
+					    &classname,
+					    &num_subkeys,
+					    &max_subkeylen,
+					    &max_classlen,
+					    &num_values,
+					    &max_valnamelen,
+					    &max_valbufsize,
+					    &secdescsize,
+					    &last_changed_time,
+					    &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto error;
+	}
+	if (!W_ERROR_IS_OK(result)) {
+		*pwerr = result;
+		goto error;
+	}
+
+	subkeys = talloc_zero_array(tmp_ctx, const char *, num_subkeys + 2);
+	if (subkeys == NULL) {
+		*pwerr = WERR_NOMEM;
+		goto error;
+	}
+
+	if (num_subkeys == 0) {
+		subkeys[0] = talloc_strdup(subkeys, "");
+		if (subkeys[0] == NULL) {
+			*pwerr = WERR_NOMEM;
+			goto error;
+		}
+		*pnum_subkeys = 0;
+		if (psubkeys) {
+			*psubkeys = talloc_move(mem_ctx, &subkeys);
+		}
+
+		TALLOC_FREE(tmp_ctx);
+		return NT_STATUS_OK;
+	}
+
+	for (i = 0; i < num_subkeys; i++) {
+		char c = '\0';
+		char n = '\0';
+		char *name = NULL;
+		struct winreg_StringBuf class_buf;
+		struct winreg_StringBuf name_buf;
+		NTTIME modtime;
+
+		class_buf.name = &c;
+		class_buf.size = max_classlen + 2;
+		class_buf.length = 0;
+
+		name_buf.name = &n;
+		name_buf.size = max_subkeylen + 2;
+		name_buf.length = 0;
+
+		ZERO_STRUCT(modtime);
+
+		status = dcerpc_winreg_EnumKey(h,
+					       tmp_ctx,
+					       key_hnd,
+					       i,
+					       &name_buf,
+					       &class_buf,
+					       &modtime,
+					       &result);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(5, ("dcerpc_winreg_enum_keys: Could not enumerate keys: %s\n",
+				  nt_errstr(status)));
+			goto error;
+		}
+
+		if (W_ERROR_EQUAL(result, WERR_NO_MORE_ITEMS) ) {
+			*pwerr = WERR_OK;
+			break;
+		}
+		if (!W_ERROR_IS_OK(result)) {
+			DEBUG(5, ("dcerpc_winreg_enum_keys: Could not enumerate keys: %s\n",
+				  win_errstr(result)));
+			*pwerr = result;
+			goto error;
+		}
+
+		if (name_buf.name == NULL) {
+			*pwerr = WERR_INVALID_PARAMETER;
+			goto error;
+		}
+
+		name = talloc_strdup(subkeys, name_buf.name);
+		if (name == NULL) {
+			*pwerr = WERR_NOMEM;
+			goto error;
+		}
+
+		subkeys[i] = name;
+	}
+
+	*pnum_subkeys = num_subkeys;
+	if (psubkeys) {
+		*psubkeys = talloc_move(mem_ctx, &subkeys);
+	}
+
+ error:
+	TALLOC_FREE(tmp_ctx);
+
+	return status;
+}
+
 /* vim: set ts=8 sw=8 noet cindent syntax=c.doxygen: */

@@ -243,6 +243,32 @@ NTSTATUS dcerpc_winreg_add_multi_sz(TALLOC_CTX *mem_ctx,
 				    const char *data,
 				    WERROR *pwerr);
 
+/**
+ * @brief Enumerate on the given keyhandle to get the subkey names.
+ *
+ * @param[in]  mem_ctx  The memory context to use.
+ *
+ * @param[in]  h        The binding handle for the rpc connection.
+ *
+ * @param[in]  key_handle A handle to a key that MUST have been opened
+ *                        previously.
+ *
+ * @param[out] pnum_subkeys A pointer to store the number of subkeys.
+ *
+ * @param[out] psubkeys A pointer to store the names of the subkeys.
+ *
+ * @param[out] pwerr    A pointer to a WERROR to store result of the query.
+ *
+ * @return              NT_STATUS_OK on success or a corresponding error if
+ *                      there was a problem on the connection.
+ */
+NTSTATUS dcerpc_winreg_enum_keys(TALLOC_CTX *mem_ctx,
+				 struct dcerpc_binding_handle *h,
+				 struct policy_handle *key_hnd,
+				 uint32_t *pnum_subkeys,
+				 const char ***psubkeys,
+				 WERROR *pwerr);
+
 #endif /* CLI_WINREG_H */
 
 /* vim: set ts=8 sw=8 noet cindent syntax=c.doxygen: */
