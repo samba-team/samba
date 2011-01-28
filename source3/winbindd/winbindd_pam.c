@@ -515,11 +515,6 @@ uid_t get_uid_from_request(struct winbindd_request *request)
 	return uid;
 }
 
-static uid_t get_uid_from_state(struct winbindd_cli_state *state)
-{
-	return get_uid_from_request(state->request);
-}
-
 /**********************************************************************
  Authenticate a user with a clear text password using Kerberos and fill up
  ccache if required
@@ -923,7 +918,7 @@ static NTSTATUS winbindd_dual_pam_auth_cached(struct winbindd_domain *domain,
 			const char *service = NULL;
 			const char *user_ccache_file;
 
-			uid = get_uid_from_state(state);
+			uid = get_uid_from_request(state->request);
 			if (uid == -1) {
 				DEBUG(0,("winbindd_dual_pam_auth_cached: invalid uid\n"));
 				return NT_STATUS_INVALID_PARAMETER;
