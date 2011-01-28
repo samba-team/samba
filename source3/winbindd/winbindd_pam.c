@@ -388,7 +388,7 @@ static void fill_in_password_policy(struct winbindd_response *r,
 }
 
 static NTSTATUS fillup_password_policy(struct winbindd_domain *domain,
-				       struct winbindd_cli_state *state)
+				       struct winbindd_response *response)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct winbindd_methods *methods;
@@ -409,7 +409,7 @@ static NTSTATUS fillup_password_policy(struct winbindd_domain *domain,
 		goto done;
 	}
 
-	fill_in_password_policy(state->response, &password_policy);
+	fill_in_password_policy(response, &password_policy);
 
 done:
 	TALLOC_FREE(frame);
@@ -1635,7 +1635,8 @@ process_result:
 
 			result = NT_STATUS_NOT_SUPPORTED;
 			if (our_domain == domain ) {
-				result = fillup_password_policy(our_domain, state);
+				result = fillup_password_policy(
+					our_domain, state->response);
 			}
 
 			if (!NT_STATUS_IS_OK(result)
@@ -1911,7 +1912,8 @@ done:
 
 		NTSTATUS policy_ret;
 
-		policy_ret = fillup_password_policy(contact_domain, state);
+		policy_ret = fillup_password_policy(
+			contact_domain, state->response);
 
 		/* failure of this is non critical, it will just provide no
 		 * additional information to the client why the change has
