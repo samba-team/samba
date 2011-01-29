@@ -898,7 +898,11 @@ static int vfswrap_ntimes(vfs_handle_struct *handle,
 	} else {
 		result = utimensat(AT_FDCWD, smb_fname->base_name, NULL, 0);
 	}
-#elif defined(HAVE_UTIMES)
+	if (!((result == -1) && (errno == ENOSYS))) {
+		goto out;
+	}
+#endif
+#if defined(HAVE_UTIMES)
 	if (ft != NULL) {
 		struct timeval tv[2];
 		tv[0] = convert_timespec_to_timeval(ft->atime);
@@ -907,7 +911,11 @@ static int vfswrap_ntimes(vfs_handle_struct *handle,
 	} else {
 		result = utimes(smb_fname->base_name, NULL);
 	}
-#elif defined(HAVE_UTIME)
+	if (!((result == -1) && (errno == ENOSYS))) {
+		goto out;
+	}
+#endif
+#if defined(HAVE_UTIME)
 	if (ft != NULL) {
 		struct utimbuf times;
 		times.actime = convert_timespec_to_time_t(ft->atime);
@@ -916,10 +924,12 @@ static int vfswrap_ntimes(vfs_handle_struct *handle,
 	} else {
 		result = utime(smb_fname->base_name, NULL);
 	}
-#else
+	if (!((result == -1) && (errno == ENOSYS))) {
+		goto out;
+	}
+#endif
 	errno = ENOSYS;
 	result = -1;
-#endif
 
  out:
 	END_PROFILE(syscall_ntimes);
