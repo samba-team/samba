@@ -272,7 +272,7 @@ static uint32_t smb_name_hash(const char *sharepath, const char *filename, int *
 
 	*err = 0;
 	ret = asprintf(&fullpath, "%s/%s", sharepath, filename);
-	if (ret == -1 || fullpath == NULL) {
+	if (ret == -1) {
 		*err = 1;
 		return 0;
 	}
