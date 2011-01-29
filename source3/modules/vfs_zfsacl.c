@@ -25,6 +25,10 @@
 #include "includes.h"
 #include "nfs4_acls.h"
 
+#if HAVE_FREEBSD_SUNACL_H
+#include "sunacl.h"
+#endif
+
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_VFS
 

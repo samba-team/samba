@@ -2888,7 +2888,7 @@ bin/solarisacl.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_SOLARISACL_OBJ)
 
 bin/zfsacl.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_ZFSACL_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD_MODULE) $(VFS_ZFSACL_OBJ)
+	@$(SHLD_MODULE) $(VFS_ZFSACL_OBJ) @ZFSACL_LIBS@
 
 bin/irixacl.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_IRIXACL_OBJ)
 	@echo "Building plugin $@"

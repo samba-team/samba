@@ -5659,7 +5659,19 @@ else
         esac
 fi # with_acl_support
 
-
+#################################################
+# check if we have FreeBSD sunacl
+case "$host_os" in
+*freebsd*)
+    AC_CHECK_HEADER(sunacl.h)
+    if test x"$ac_cv_header_sunacl_h" = xyes ; then
+       AC_DEFINE(HAVE_FREEBSD_SUNACL_H,1,[Whether we have FreeBSD sunacl around])
+       ZFSACL_LIBS=-lsunacl
+       AC_SUBST(ZFSACL_LIBS)
+       default_shared_modules="$default_shared_modules vfs_zfsacl"
+    fi
+    ;;
+esac
 
 #################################################
 # check for AIO support
