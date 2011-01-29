@@ -5789,7 +5789,7 @@ FN_GLOBAL_INTEGER(lp_passwordlevel, &Globals.pwordlevel)
 FN_GLOBAL_INTEGER(lp_usernamelevel, &Globals.unamelevel)
 FN_GLOBAL_INTEGER(lp_deadtime, &Globals.deadtime)
 FN_GLOBAL_BOOL(lp_getwd_cache, &Globals.getwd_cache)
-FN_GLOBAL_INTEGER(_lp_maxprotocol, &Globals.maxprotocol)
+static FN_GLOBAL_INTEGER(_lp_maxprotocol, &Globals.maxprotocol)
 int lp_maxprotocol(void)
 {
 	int ret = _lp_maxprotocol();
