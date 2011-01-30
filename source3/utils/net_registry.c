@@ -934,7 +934,7 @@ static WERROR import_delete_val (struct import_ctx* ctx, struct registry_key* pa
 
 	werr = reg_deletevalue(parent, name);
 	if (!W_ERROR_IS_OK(werr)) {
-		d_fprintf(stderr, _("reg_deletekey failed: %s\n"),
+		d_fprintf(stderr, _("reg_deletevalue failed: %s\n"),
 			  win_errstr(werr));
 	}
 
