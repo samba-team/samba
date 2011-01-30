@@ -105,6 +105,7 @@ interface dcerpc
 	const int DCERPC_FAULT_OTHER              = 0x00000001;
 	const int DCERPC_FAULT_ACCESS_DENIED      = 0x00000005;
 	const int DCERPC_FAULT_CANT_PERFORM       = 0x000006d8;
+	const int DCERPC_FAULT_SEC_PKG_ERROR      = 0x00000721;
 
 	/* we return this fault when we haven't yet run the test
 	   to see what fault w2k3 returns in this case */
