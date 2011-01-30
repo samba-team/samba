@@ -33,6 +33,17 @@
 
 staticforward PyTypeObject PyAuthContext;
 
+/* There's no Py_ssize_t in 2.4, apparently */
+#if PY_MAJOR_VERSION == 2 && PY_MINOR_VERSION < 5
+typedef int Py_ssize_t;
+typedef inquiry lenfunc;
+typedef intargfunc ssizeargfunc;
+#endif
+
+#ifndef Py_RETURN_NONE
+#define Py_RETURN_NONE return Py_INCREF(Py_None), Py_None
+#endif
+
 static PyObject *py_auth_session_get_security_token(PyObject *self, void *closure)
 {
 	struct auth_session_info *session = py_talloc_get_type(self, struct auth_session_info);
