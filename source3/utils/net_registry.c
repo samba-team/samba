@@ -277,7 +277,9 @@ static int net_registry_deletekey_internal(struct net_context *c, int argc,
 	} else {
 		werr = reg_deletekey(hivekey, subkeyname);
 	}
-	if (!W_ERROR_IS_OK(werr)) {
+	if (!W_ERROR_IS_OK(werr) &&
+	    !(c->opt_force && W_ERROR_EQUAL(werr, WERR_BADFILE)))
+	{
 		d_fprintf(stderr, "reg_deletekey %s: %s\n", _("failed"),
 			  win_errstr(werr));
 		goto done;
