@@ -840,14 +840,21 @@ static WERROR reg_deletekey_recursive_trans(struct registry_key *parent,
 	werr = reg_deletekey_recursive_internal(parent, path, del_key);
 
 	if (!W_ERROR_IS_OK(werr)) {
+		WERROR werr2;
+
 		DEBUG(1, (__location__ " failed to delete key '%s' from key "
 			  "'%s': %s\n", path, parent->key->name,
 			  win_errstr(werr)));
-		werr = regdb_transaction_cancel();
-		if (!W_ERROR_IS_OK(werr)) {
+
+		werr2 = regdb_transaction_cancel();
+		if (!W_ERROR_IS_OK(werr2)) {
 			DEBUG(0, ("reg_deletekey_recursive_trans: "
 				  "error cancelling transaction: %s\n",
-				  win_errstr(werr)));
+				  win_errstr(werr2)));
+			/*
+			 * return the original werr or the
+			 * error from cancelling the transaction?
+			 */
 		}
 	} else {
 		werr = regdb_transaction_commit();
