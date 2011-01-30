@@ -13,7 +13,7 @@ bld.SAMBA_LIBRARY('samba-hostconfig',
 
 bld.SAMBA_SUBSYSTEM('PROVISION',
 	source='provision.c pyparam.c',
-	deps='LIBPYTHON pyparam_util ldb pytalloc-util',
+	deps='LIBPYTHON pyparam_util ldb pytalloc-util pyldb-util',
 	pyext=True,
 	)
 
