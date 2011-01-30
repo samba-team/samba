@@ -10,6 +10,6 @@ bld.SAMBA_LIBRARY('security',
 if getattr(bld.env, '_SAMBA_BUILD_', 0) == 4:
     bld.SAMBA_PYTHON('pysecurity',
                      source='pysecurity.c',
-                     deps='security',
+                     deps='security pytalloc-util',
                      realname='samba/security.so'
                      )
