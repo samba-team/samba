@@ -598,7 +598,7 @@ static int net_registry_deletevalue(struct net_context *c, int argc,
 
 	werr = reg_deletevalue(key, argv[1]);
 	if (!W_ERROR_IS_OK(werr)) {
-		d_fprintf(stderr, _("reg_deletekey failed: %s\n"),
+		d_fprintf(stderr, _("reg_deletevalue failed: %s\n"),
 			  win_errstr(werr));
 		goto done;
 	}
