@@ -2182,7 +2182,10 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	 */
 
 	if (!set_file_oplock(fsp, fsp->oplock_type)) {
-		/* Could not get the kernel oplock */
+		/*
+		 * Could not get the kernel oplock or there are byte-range
+		 * locks on the file.
+		 */
 		fsp->oplock_type = NO_OPLOCK;
 	}
 
