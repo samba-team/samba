@@ -32,6 +32,7 @@
 #include "../librpc/gen_ndr/srv_samr.h"
 #include "secrets.h"
 #include "idmap.h"
+#include "lib/addrchange.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
@@ -1108,6 +1109,87 @@ void winbindd_register_handlers(void)
 
 }
 
+struct winbindd_addrchanged_state {
+	struct addrchange_context *ctx;
+	struct tevent_context *ev;
+	struct messaging_context *msg_ctx;
+};
+
+static void winbindd_addr_changed(struct tevent_req *req);
+
+static void winbindd_init_addrchange(TALLOC_CTX *mem_ctx,
+				     struct tevent_context *ev,
+				     struct messaging_context *msg_ctx)
+{
+	struct winbindd_addrchanged_state *state;
+	struct tevent_req *req;
+	NTSTATUS status;
+
+	state = talloc(mem_ctx, struct winbindd_addrchanged_state);
+	if (state == NULL) {
+		DEBUG(10, ("talloc failed\n"));
+		return;
+	}
+	state->ev = ev;
+	state->msg_ctx = msg_ctx;
+
+	status = addrchange_context_create(state, &state->ctx);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(10, ("addrchange_context_create failed: %s\n",
+			   nt_errstr(status)));
+		TALLOC_FREE(state);
+		return;
+	}
+	req = addrchange_send(state, ev, state->ctx);
+	if (req == NULL) {
+		DEBUG(10, ("addrchange_send failed\n"));
+		TALLOC_FREE(state);
+	}
+	tevent_req_set_callback(req, winbindd_addr_changed, state);
+}
+
+static void winbindd_addr_changed(struct tevent_req *req)
+{
+	struct winbindd_addrchanged_state *state = tevent_req_callback_data(
+		req, struct winbindd_addrchanged_state);
+	enum addrchange_type type;
+	struct sockaddr_storage addr;
+	NTSTATUS status;
+
+	status = addrchange_recv(req, &type, &addr);
+	TALLOC_FREE(req);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(10, ("addrchange_recv failed: %s, stop listening\n",
+			   nt_errstr(status)));
+		TALLOC_FREE(state);
+	}
+	if (type == ADDRCHANGE_DEL) {
+		char addrstr[INET6_ADDRSTRLEN];
+		DATA_BLOB blob;
+
+		print_sockaddr(addrstr, sizeof(addrstr), &addr);
+
+		DEBUG(3, ("winbindd: kernel (AF_NETLINK) dropped ip %s\n",
+			  addrstr));
+
+		blob = data_blob_const(addrstr, strlen(addrstr)+1);
+
+		status = messaging_send(state->msg_ctx,
+					messaging_server_id(state->msg_ctx),
+					MSG_WINBIND_IP_DROPPED, &blob);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(10, ("messaging_send failed: %s\n",
+				   nt_errstr(status)));
+		}
+	}
+	req = addrchange_send(state, state->ev, state->ctx);
+	if (req == NULL) {
+		DEBUG(10, ("addrchange_send failed\n"));
+		TALLOC_FREE(state);
+	}
+	tevent_req_set_callback(req, winbindd_addr_changed, state);
+}
+
 /* Main function */
 
 int main(int argc, char **argv, char **envp)
@@ -1320,6 +1402,9 @@ int main(int argc, char **argv, char **envp)
 
 	rpc_lsarpc_init(NULL);
 	rpc_samr_init(NULL);
+
+	winbindd_init_addrchange(NULL, winbind_event_context(),
+				 winbind_messaging_context());
 
 	/* setup listen sockets */
 
