@@ -839,8 +839,17 @@ static void contend_level2_oplocks_begin_default(files_struct *fsp,
  		 */
 
 		if (procid_is_me(&share_entry->pid)) {
+			struct files_struct *cur_fsp =
+				initial_break_processing(fsp->conn->sconn,
+					share_entry->id,
+					share_entry->share_file_id);
 			wait_before_sending_break();
-			break_level2_to_none_async(fsp);
+			if (cur_fsp != NULL) {
+				break_level2_to_none_async(cur_fsp);
+			} else {
+				DEBUG(3, ("release_level_2_oplocks_on_change: "
+				"Did not find fsp, ignoring\n"));
+			}
 		} else {
 			messaging_send_buf(fsp->conn->sconn->msg_ctx,
 					share_entry->pid,
