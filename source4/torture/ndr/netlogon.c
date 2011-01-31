@@ -105,7 +105,7 @@ static bool netrserverreqchallenge_out_check(struct torture_context *tctx,
 	return true;
 }
 
-static const uint8_t netrlogonsamlogon_in_data[] = {
+static const uint8_t netrlogonsamlogon_w2k_in_data[] = {
 	0x00, 0x00, 0x02, 0x00, 0x09, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 	0x09, 0x00, 0x00, 0x00, 0x5c, 0x00, 0x5c, 0x00, 0x57, 0x00, 0x32, 0x00,
 	0x4b, 0x00, 0x53, 0x00, 0x52, 0x00, 0x56, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -132,8 +132,8 @@ static const uint8_t netrlogonsamlogon_in_data[] = {
 	0x06, 0x00
 };
 
-static bool netrlogonsamlogon_in_check(struct torture_context *tctx,
-				       struct netr_LogonSamLogon *r)
+static bool netrlogonsamlogon_w2k_in_check(struct torture_context *tctx,
+					   struct netr_LogonSamLogon *r)
 {
 	uint8_t credential_expected[8] = { 0x08, 0xaf, 0x72, 0x50, 0xa0, 0x5b, 0x50, 0x19 };
 	uint8_t return_authenticator_expected[8] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
@@ -168,14 +168,14 @@ static bool netrlogonsamlogon_in_check(struct torture_context *tctx,
 	return true;
 }
 
-static const uint8_t netrlogonsamlogon_out_data[] = {
+static const uint8_t netrlogonsamlogon_w2k_out_data[] = {
 	0x6c, 0xdb, 0x14, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 	0x00, 0x00, 0x00, 0x00, 0x06, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00,
 	0x03, 0x00, 0x00, 0xc0
 };
 
-static bool netrlogonsamlogon_out_check(struct torture_context *tctx,
-					struct netr_LogonSamLogon *r)
+static bool netrlogonsamlogon_w2k_out_check(struct torture_context *tctx,
+					    struct netr_LogonSamLogon *r)
 {
 	uint8_t return_authenticator_expected[8] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
 
@@ -199,11 +199,11 @@ struct torture_suite *ndr_netlogon_suite(TALLOC_CTX *ctx)
 	torture_suite_add_ndr_pull_fn_test(suite, netr_ServerAuthenticate3, netrserverauthenticate3_in_data, NDR_IN, netrserverauthenticate3_in_check );
 	torture_suite_add_ndr_pull_fn_test(suite, netr_ServerAuthenticate3, netrserverauthenticate3_out_data, NDR_OUT, netrserverauthenticate3_out_check );
 
-	torture_suite_add_ndr_pull_fn_test(suite, netr_LogonSamLogon, netrlogonsamlogon_in_data, NDR_IN, netrlogonsamlogon_in_check );
+	torture_suite_add_ndr_pull_fn_test(suite, netr_LogonSamLogon, netrlogonsamlogon_w2k_in_data, NDR_IN, netrlogonsamlogon_w2k_in_check );
 #if 0
 	/* samba currently fails to parse a validation level 6 samlogon reply
 	 * from w2k and other servers - gd */
-	torture_suite_add_ndr_pull_io_test(suite, netr_LogonSamLogon, netrlogonsamlogon_in_data, netrlogonsamlogon_out_data, netrlogonsamlogon_out_check);
+	torture_suite_add_ndr_pull_io_test(suite, netr_LogonSamLogon, netrlogonsamlogon_w2k_in_data, netrlogonsamlogon_w2k_out_data, netrlogonsamlogon_w2k_out_check);
 #endif
 
 	return suite;
