@@ -285,6 +285,8 @@ utimensat vsyslog _write __write __xstat
     # Python doesn't have case switches... :/
     # FIXME: original was *linux* | gnu* | k*bsd*-gnu | kopensolaris*-gnu | *qnx*)
     # the search for .rfind('gnu') covers gnu* and *-gnu is that too broad?
+
+    conf.SET_TARGET_TYPE('sunacl', 'EMPTY')
     if (host_os.rfind('linux') > -1) or (host_os.rfind('gnu') > -1) or (host_os.rfind('qnx') > -1):
         if host_os.rfind('linux') > -1:
             conf.DEFINE('LINUX', '1')
@@ -295,6 +297,10 @@ utimensat vsyslog _write __write __xstat
         conf.DEFINE('DARWINOS', 1)
         conf.DEFINE('STAT_ST_BLOCKSIZE', '512')
         conf.ADD_CFLAGS('-fno-common')
+    elif (host_os.rfind('freebsd') > -1):
+        if conf.CHECK_HEADERS('sunacl.h'):
+            conf.define('HAVE_FREEBSD_SUNACL_H', '1')
+            conf.CHECK_FUNCS_IN('acl', 'sunacl')
     # FIXME: Add more checks here.
     else:
         print "Unknown host_os '%s', please report this to samba-technical@samba.org" % host_os
@@ -417,6 +423,9 @@ return acl_get_perm_np(permset_d, perm);
 
     if Options.options.with_acl_support and conf.CONFIG_SET('HAVE_POSIX_ACLS'):
         default_static_modules.extend(TO_LIST('vfs_posixacl'))
+
+    if conf.CONFIG_SET('HAVE_FREEBSD_SUNACL_H'):
+	default_shared_modules.extend(TO_LIST('vfs_zfsacl'))
 
     if conf.CONFIG_SET('HAVE_DIRFD_DECL'):
 	default_shared_modules.extend(TO_LIST('vfs_syncops vfs_dirsort'))
