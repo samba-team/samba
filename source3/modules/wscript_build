@@ -204,7 +204,7 @@ bld.SAMBA_MODULE('vfs_solarisacl',
 bld.SAMBA_MODULE('vfs_zfsacl',
                  subsystem='vfs',
                  source=VFS_ZFSACL_SRC,
-                 deps='NFS4_ACLS',
+                 deps='NFS4_ACLS sunacl',
                  init_function='',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('vfs_zfsacl'),
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('vfs_zfsacl'))
