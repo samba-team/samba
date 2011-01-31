@@ -1458,7 +1458,7 @@ import "misc.idl", "lsa.idl", "security.idl";
 		[string,charset(UTF16)] uint16 *filterModuleName;
 	} userPwdChangeFailureInformation;
 
-	NTSTATUS samr_ChangePasswordUser3(
+	[public] NTSTATUS samr_ChangePasswordUser3(
 		[in,unique]       lsa_String *server,
 		[in,ref]          lsa_String *account,
 		[in,unique]       samr_CryptPassword *nt_password,
