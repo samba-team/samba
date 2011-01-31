@@ -222,6 +222,9 @@ static void ctdb_wait_until_recovered(struct event_context *ev, struct timed_eve
 	int ret;
 
 	DEBUG(DEBUG_NOTICE,("CTDB_WAIT_UNTIL_RECOVERED\n"));
+	if (ctdb->nodes[ctdb->pnn]->flags & NODE_FLAGS_STOPPED) {
+		DEBUG(DEBUG_NOTICE,("Node is STOPPED. Node will NOT recover.\n"));
+	}
 
 	if (ctdb->vnn_map->generation == INVALID_GENERATION) {
 		ctdb->db_persistent_startup_generation = INVALID_GENERATION;
