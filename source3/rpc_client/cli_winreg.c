@@ -478,6 +478,37 @@ NTSTATUS dcerpc_winreg_set_multi_sz(TALLOC_CTX *mem_ctx,
 	return status;
 }
 
+NTSTATUS dcerpc_winreg_set_binary(TALLOC_CTX *mem_ctx,
+				  struct dcerpc_binding_handle *h,
+				  struct policy_handle *key_handle,
+				  const char *value,
+				  DATA_BLOB *data,
+				  WERROR *pwerr)
+{
+	struct winreg_String wvalue;
+	WERROR result = WERR_OK;
+	NTSTATUS status;
+
+	wvalue.name = value;
+
+	status = dcerpc_winreg_SetValue(h,
+					mem_ctx,
+					key_handle,
+					wvalue,
+					REG_BINARY,
+					data->data,
+					data->length,
+					&result);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+	if (!W_ERROR_IS_OK(result)) {
+		*pwerr = result;
+	}
+
+	return status;
+}
+
 NTSTATUS dcerpc_winreg_add_multi_sz(TALLOC_CTX *mem_ctx,
 				    struct dcerpc_binding_handle *h,
 				    struct policy_handle *key_handle,
