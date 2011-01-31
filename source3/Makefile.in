@@ -688,7 +688,8 @@ RPC_WKSSVC_OBJ =  librpc/gen_ndr/srv_wkssvc.o \
 
 RPC_SVCCTL_OBJ =  rpc_server/srv_svcctl_nt.o \
 		  librpc/gen_ndr/srv_svcctl.o \
-                  services/svc_spoolss.o services/svc_rcinit.o services/services_db.o \
+		  services/svc_winreg_glue.o \
+                  services/svc_spoolss.o services/svc_rcinit.o  \
                   services/svc_netlogon.o services/svc_winreg.o \
                   services/svc_wins.o
 
