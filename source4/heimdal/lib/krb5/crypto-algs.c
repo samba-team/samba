@@ -74,9 +74,9 @@ struct encryption_type *_krb5_etypes[] = {
     &_krb5_enctype_old_des3_cbc_sha1,
 #endif
 #ifdef HEIM_WEAK_CRYPTO
-    &_krb5_enctype_des_cbc_crc,
-    &_krb5_enctype_des_cbc_md4,
     &_krb5_enctype_des_cbc_md5,
+    &_krb5_enctype_des_cbc_md4,
+    &_krb5_enctype_des_cbc_crc,
     &_krb5_enctype_des_cbc_none,
     &_krb5_enctype_des_cfb64_none,
     &_krb5_enctype_des_pcbc_none,

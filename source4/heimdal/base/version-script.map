@@ -12,6 +12,7 @@ HEIMDAL_BASE_1.0 {
 		heim_auto_release_create;
 		heim_auto_release_drain;
 		heim_base_once_f;
+		heim_cmp;
 		heim_dict_add_value;
 		heim_dict_copy_value;
 		heim_dict_create;
@@ -22,7 +23,6 @@ HEIMDAL_BASE_1.0 {
 		heim_string_create;
 		heim_string_get_utf8;
 		heim_number_create;
-		heim_string_create_with_static;
 	local:
 		*;
 };

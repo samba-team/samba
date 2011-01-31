@@ -1506,8 +1506,8 @@ static struct hx509_private_key_ops *private_algs[] = {
     NULL
 };
 
-static hx509_private_key_ops *
-find_private_alg(const heim_oid *oid)
+hx509_private_key_ops *
+hx509_find_private_alg(const heim_oid *oid)
 {
     int i;
     for (i = 0; private_algs[i]; i++) {
@@ -1770,7 +1770,7 @@ _hx509_parse_private_key(hx509_context context,
 
     *private_key = NULL;
 
-    ops = find_private_alg(&keyai->algorithm);
+    ops = hx509_find_private_alg(&keyai->algorithm);
     if (ops == NULL) {
 	hx509_clear_error_string(context);
 	return HX509_SIG_ALG_NO_SUPPORTED;
@@ -1865,7 +1865,7 @@ _hx509_generate_private_key(hx509_context context,
 
     *private_key = NULL;
 
-    ops = find_private_alg(ctx->key_oid);
+    ops = hx509_find_private_alg(ctx->key_oid);
     if (ops == NULL) {
 	hx509_clear_error_string(context);
 	return HX509_SIG_ALG_NO_SUPPORTED;

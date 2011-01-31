@@ -54,9 +54,9 @@ gss_set_cred_option (OM_uint32 *minor_status,
 		if (cred == NULL)
 		    return GSS_S_FAILURE;
 
-		SLIST_INIT(&cred->gc_mc);
+		HEIM_SLIST_INIT(&cred->gc_mc);
 
-		SLIST_FOREACH(m, &_gss_mechs, gm_link) {
+		HEIM_SLIST_FOREACH(m, &_gss_mechs, gm_link) {
 
 			if (m->gm_mech.gm_set_cred_option == NULL)
 				continue;
@@ -81,7 +81,7 @@ gss_set_cred_option (OM_uint32 *minor_status,
 				continue;
 			}
 			one_ok = 1;
-			SLIST_INSERT_HEAD(&cred->gc_mc, mc, gmc_link);
+			HEIM_SLIST_INSERT_HEAD(&cred->gc_mc, mc, gmc_link);
 		}
 		*cred_handle = (gss_cred_id_t)cred;
 		if (!one_ok) {
@@ -91,7 +91,7 @@ gss_set_cred_option (OM_uint32 *minor_status,
 	} else {
 		gssapi_mech_interface	m;
 
-		SLIST_FOREACH(mc, &cred->gc_mc, gmc_link) {
+		HEIM_SLIST_FOREACH(mc, &cred->gc_mc, gmc_link) {
 			m = mc->gmc_mech;
 	
 			if (m == NULL)

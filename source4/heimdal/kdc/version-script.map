@@ -16,6 +16,10 @@ HEIMDAL_KDC_1.0 {
 		krb5_kdc_save_request;
 		krb5_kdc_update_time;
 		krb5_kdc_pk_initialize;
+
+		# needed for digest-service
+		_kdc_db_fetch;
+		_kdc_free_ent;
 	local:
 		*;
 };

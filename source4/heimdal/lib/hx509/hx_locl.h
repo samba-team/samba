@@ -82,7 +82,6 @@ typedef struct hx509_path hx509_path;
 
 typedef void (*_hx509_cert_release_func)(struct hx509_cert_data *, void *);
 
-typedef struct hx509_private_key_ops hx509_private_key_ops;
 
 #include "sel.h"
 

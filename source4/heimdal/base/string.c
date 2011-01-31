@@ -44,30 +44,19 @@ string_dealloc(void *ptr)
 static int
 string_cmp(void *a, void *b)
 {
-    if (heim_base_is_tagged_string(a))
-	a = heim_base_tagged_string_ptr(a);
-    if (heim_base_is_tagged_string(b))
-	b = heim_base_tagged_string_ptr(b);
-
     return strcmp(a, b);
 }
 
 static unsigned long
 string_hash(void *ptr)
 {
-    const char *s;
+    const char *s = ptr;
     unsigned long n;
-
-    if (heim_base_is_tagged_string(ptr))
-	s = heim_base_tagged_string_ptr(ptr);
-    else
-	s = ptr;
 
     for (n = 0; *s; ++s)
 	n += *s;
     return n;
 }
-
 
 struct heim_type_data _heim_string_object = {
     HEIM_TID_STRING,
@@ -97,26 +86,6 @@ heim_string_create(const char *string)
     if (s)
 	memcpy(s, string, len + 1);
     return s;
-}
-
-/**
- * Create a string object from a strings allocated in the text segment.
- *
- * Note that static string object wont be auto released with
- * heim_auto_release(), the allocation policy of the string must
- * be manged separately from the returned object. This make this
- * function not very useful for strings in allocated from heap or
- * stack. In that case you should use heim_string_create().
- *
- * @param string the string to create, must be an utf8 string
- *
- * @return string object
- */
-
-heim_string_t
-heim_string_create_with_static(const char *string)
-{
-    return heim_base_make_tagged_string_ptr(string);
 }
 
 /**

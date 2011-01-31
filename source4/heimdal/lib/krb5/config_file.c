@@ -877,12 +877,7 @@ next_component_string(char * begin, char * delims, char **state)
 
     end = begin;
     while (*end == '"') {
-        char * t;
-        while ((t = strchr(end + 1, '"')) != NULL && *(t - 1) == '\\') {
-            --t;
-            memmove(t, t + 1, strlen(t));
-            end = t;
-        }
+        char * t = strchr(end + 1, '"');
 
         if (t)
             end = ++t;

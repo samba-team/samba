@@ -4,6 +4,7 @@ HEIMDAL_X509_1.2 {
 	global:
 		_hx509_cert_assign_key;
 		_hx509_cert_private_key;
+		_hx509_cert_public_encrypt;
 		_hx509_certs_keys_free;
 		_hx509_certs_keys_get;
 		_hx509_expr_eval;
@@ -16,8 +17,12 @@ HEIMDAL_X509_1.2 {
 		_hx509_generate_private_key_is_ca;
 		_hx509_map_file_os;
 		_hx509_name_from_Name;
+		_hx509_parse_private_key;
+		_hx509_private_key_assign_rsa;
 		_hx509_private_key2SPKI;
 		_hx509_private_key_free;
+		_hx509_private_key_init;
+		_hx509_private_key_private_decrypt;
 		_hx509_private_key_ref;
 		_hx509_request_add_dns_name;
 		_hx509_request_add_email;
@@ -146,6 +151,7 @@ HEIMDAL_X509_1.2 {
 		hx509_err;
 		hx509_free_error_string;
 		hx509_free_octet_string_list;
+		hx509_find_private_alg;
 		hx509_general_name_unparse;
 		hx509_get_error_string;
 		hx509_get_one_cert;

@@ -159,8 +159,6 @@ _heim_get_isa(heim_object_t ptr)
     if (heim_base_is_tagged(ptr)) {
 	if (heim_base_is_tagged_object(ptr))
 	    return tagged_isa[heim_base_tagged_object_tid(ptr)];
-	if (heim_base_is_tagged_string(ptr))
-	    return &_heim_string_object;
 	heim_abort("not a supported tagged type");
     }
     p = PTR2BASE(ptr);

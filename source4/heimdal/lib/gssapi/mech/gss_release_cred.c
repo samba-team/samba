@@ -59,9 +59,9 @@ gss_release_cred(OM_uint32 *minor_status, gss_cred_id_t *cred_handle)
 	if (*cred_handle == GSS_C_NO_CREDENTIAL)
 	    return (GSS_S_COMPLETE);
 
-	while (SLIST_FIRST(&cred->gc_mc)) {
-		mc = SLIST_FIRST(&cred->gc_mc);
-		SLIST_REMOVE_HEAD(&cred->gc_mc, gmc_link);
+	while (HEIM_SLIST_FIRST(&cred->gc_mc)) {
+		mc = HEIM_SLIST_FIRST(&cred->gc_mc);
+		HEIM_SLIST_REMOVE_HEAD(&cred->gc_mc, gmc_link);
 		mc->gmc_mech->gm_release_cred(minor_status, &mc->gmc_cred);
 		free(mc);
 	}

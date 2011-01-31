@@ -43,7 +43,7 @@ gss_indicate_mechs(OM_uint32 *minor_status,
 	if (major_status)
 		return (major_status);
 	
-	SLIST_FOREACH(m, &_gss_mechs, gm_link) {
+	HEIM_SLIST_FOREACH(m, &_gss_mechs, gm_link) {
 		if (m->gm_mech.gm_indicate_mechs) {
 			major_status = m->gm_mech.gm_indicate_mechs(
 			    minor_status, &set);

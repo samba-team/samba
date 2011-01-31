@@ -48,6 +48,7 @@ typedef struct hx509_crypto_data *hx509_crypto;
 typedef struct hx509_lock_data *hx509_lock;
 typedef struct hx509_name_data *hx509_name;
 typedef struct hx509_private_key *hx509_private_key;
+typedef struct hx509_private_key_ops hx509_private_key_ops;
 typedef struct hx509_validate_ctx_data *hx509_validate_ctx;
 typedef struct hx509_verify_ctx_data *hx509_verify_ctx;
 typedef struct hx509_revoke_ctx_data *hx509_revoke_ctx;

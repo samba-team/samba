@@ -164,6 +164,36 @@ krb5_kt_register(krb5_context context,
     return 0;
 }
 
+static const char *
+keytab_name(const char * name, const char ** ptype, size_t * ptype_len)
+{
+    const char * residual;
+
+    residual = strchr(name, ':');
+
+    if (residual == NULL
+
+#ifdef _WIN32
+
+        /* Avoid treating <drive>:<path> as a keytab type
+         * specification */
+
+        || name + 1 == residual
+#endif
+        ) {
+
+        *ptype = "FILE";
+        *ptype_len = strlen(*ptype);
+        residual = name;
+    } else {
+        *ptype = name;
+        *ptype_len = residual - name;
+        residual++;
+    }
+
+    return residual;
+}
+
 /**
  * Resolve the keytab name (of the form `type:residual') in `name'
  * into a keytab in `id'.
@@ -189,16 +219,7 @@ krb5_kt_resolve(krb5_context context,
     size_t type_len;
     krb5_error_code ret;
 
-    residual = strchr(name, ':');
-    if(residual == NULL) {
-	type = "FILE";
-	type_len = strlen(type);
-	residual = name;
-    } else {
-	type = name;
-	type_len = residual - name;
-	residual++;
-    }
+    residual = keytab_name(name, &type, &type_len);
 
     for(i = 0; i < context->num_kt_types; i++) {
 	if(strncasecmp(type, context->kt_types[i].prefix, type_len) == 0)

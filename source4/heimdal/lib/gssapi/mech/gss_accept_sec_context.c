@@ -209,7 +209,7 @@ gss_accept_sec_context(OM_uint32 *minor_status,
 	}
 
 	if (cred) {
-		SLIST_FOREACH(mc, &cred->gc_mc, gmc_link)
+		HEIM_SLIST_FOREACH(mc, &cred->gc_mc, gmc_link)
 			if (mc->gmc_mech == m)
 				break;
 		if (!mc) {
@@ -285,7 +285,7 @@ gss_accept_sec_context(OM_uint32 *minor_status,
 				gss_delete_sec_context(&junk, context_handle, NULL);
 				return (GSS_S_FAILURE);
 			}
-			SLIST_INIT(&dcred->gc_mc);
+			HEIM_SLIST_INIT(&dcred->gc_mc);
 			dmc = malloc(sizeof(struct _gss_mechanism_cred));
 			if (!dmc) {
 				free(dcred);
@@ -296,7 +296,7 @@ gss_accept_sec_context(OM_uint32 *minor_status,
 			dmc->gmc_mech = m;
 			dmc->gmc_mech_oid = &m->gm_mech_oid;
 			dmc->gmc_cred = delegated_mc;
-			SLIST_INSERT_HEAD(&dcred->gc_mc, dmc, gmc_link);
+			HEIM_SLIST_INSERT_HEAD(&dcred->gc_mc, dmc, gmc_link);
 
 			*delegated_cred_handle = (gss_cred_id_t) dcred;
 		}

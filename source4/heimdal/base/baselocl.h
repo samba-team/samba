@@ -106,11 +106,6 @@ heim_base_atomic_dec(heim_base_atomic_type *x)
 /* tagged strings/object/XXX */
 #define heim_base_is_tagged(x) (((uintptr_t)(x)) & 0x3)
 
-#define heim_base_is_tagged_string(x) ((((uintptr_t)(x)) & 0x3) == 2)
-#define heim_base_make_tagged_string_ptr(x) ((heim_object_t)(((uintptr_t)(x)) | 2))
-#define heim_base_tagged_string_ptr(x) ((char *)(((uintptr_t)(x)) & (~3)))
-
-
 #define heim_base_is_tagged_object(x) ((((uintptr_t)(x)) & 0x3) == 1)
 #define heim_base_make_tagged_object(x, tid) \
     ((heim_object_t)((((uintptr_t)(x)) << 5) | ((tid) << 2) | 0x1))

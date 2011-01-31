@@ -197,7 +197,7 @@ gsskrb5_register_acceptor_identity(const char *identity)
 	buffer.value = rk_UNCONST(identity);
 	buffer.length = strlen(identity);
 
-	SLIST_FOREACH(m, &_gss_mechs, gm_link) {
+	HEIM_SLIST_FOREACH(m, &_gss_mechs, gm_link) {
 		if (m->gm_mech.gm_set_sec_context_option == NULL)
 			continue;
 		m->gm_mech.gm_set_sec_context_option(&junk, NULL,
@@ -227,7 +227,7 @@ gsskrb5_set_dns_canonicalize(int flag)
 	buffer.value = &b;
 	buffer.length = sizeof(b);
 
-	SLIST_FOREACH(m, &_gss_mechs, gm_link) {
+	HEIM_SLIST_FOREACH(m, &_gss_mechs, gm_link) {
 		if (m->gm_mech.gm_set_sec_context_option == NULL)
 			continue;
 		m->gm_mech.gm_set_sec_context_option(&junk, NULL,
@@ -501,7 +501,7 @@ gsskrb5_set_send_to_kdc(struct gsskrb5_send_to_kdc *c)
 	buffer.length = 0;
     }
 
-    SLIST_FOREACH(m, &_gss_mechs, gm_link) {
+    HEIM_SLIST_FOREACH(m, &_gss_mechs, gm_link) {
 	if (m->gm_mech.gm_set_sec_context_option == NULL)
 	    continue;
 	m->gm_mech.gm_set_sec_context_option(&junk, NULL,
@@ -532,7 +532,7 @@ gss_krb5_ccache_name(OM_uint32 *minor_status,
     buffer.value = rk_UNCONST(name);
     buffer.length = strlen(name);
 
-    SLIST_FOREACH(m, &_gss_mechs, gm_link) {
+    HEIM_SLIST_FOREACH(m, &_gss_mechs, gm_link) {
 	if (m->gm_mech.gm_set_sec_context_option == NULL)
 	    continue;
 	m->gm_mech.gm_set_sec_context_option(&junk, NULL,
@@ -820,7 +820,7 @@ gsskrb5_set_default_realm(const char *realm)
 	buffer.value = rk_UNCONST(realm);
 	buffer.length = strlen(realm);
 
-	SLIST_FOREACH(m, &_gss_mechs, gm_link) {
+	HEIM_SLIST_FOREACH(m, &_gss_mechs, gm_link) {
 		if (m->gm_mech.gm_set_sec_context_option == NULL)
 			continue;
 		m->gm_mech.gm_set_sec_context_option(&junk, NULL,
@@ -882,7 +882,7 @@ gsskrb5_set_time_offset(int offset)
 	buffer.value = &o;
 	buffer.length = sizeof(o);
 
-	SLIST_FOREACH(m, &_gss_mechs, gm_link) {
+	HEIM_SLIST_FOREACH(m, &_gss_mechs, gm_link) {
 		if (m->gm_mech.gm_set_sec_context_option == NULL)
 			continue;
 		m->gm_mech.gm_set_sec_context_option(&junk, NULL,
@@ -905,7 +905,7 @@ gsskrb5_get_time_offset(int *offset)
 	buffer.value = &o;
 	buffer.length = sizeof(o);
 
-	SLIST_FOREACH(m, &_gss_mechs, gm_link) {
+	HEIM_SLIST_FOREACH(m, &_gss_mechs, gm_link) {
 		if (m->gm_mech.gm_set_sec_context_option == NULL)
 			continue;
 		maj_stat = m->gm_mech.gm_set_sec_context_option(&junk, NULL,
@@ -932,7 +932,7 @@ gsskrb5_plugin_register(struct gsskrb5_krb5_plugin *c)
     buffer.value = c;
     buffer.length = sizeof(*c);
 
-    SLIST_FOREACH(m, &_gss_mechs, gm_link) {
+    HEIM_SLIST_FOREACH(m, &_gss_mechs, gm_link) {
 	if (m->gm_mech.gm_set_sec_context_option == NULL)
 	    continue;
 	m->gm_mech.gm_set_sec_context_option(&junk, NULL,

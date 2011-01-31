@@ -209,7 +209,7 @@ gss_import_name(OM_uint32 *minor_status,
 		return (GSS_S_FAILURE);
 	}
 
-	SLIST_INIT(&name->gn_mn);
+	HEIM_SLIST_INIT(&name->gn_mn);
 
 	major_status = _gss_copy_oid(minor_status,
 	    name_type, &name->gn_type);
@@ -228,7 +228,7 @@ gss_import_name(OM_uint32 *minor_status,
 	 * for those supported this nametype.
 	 */
 
-	SLIST_FOREACH(m, &_gss_mechs, gm_link) {
+	HEIM_SLIST_FOREACH(m, &_gss_mechs, gm_link) {
 		int present = 0;
 
 		major_status = gss_test_oid_set_member(minor_status, 
@@ -257,14 +257,14 @@ gss_import_name(OM_uint32 *minor_status,
 
 		mn->gmn_mech = &m->gm_mech;
 		mn->gmn_mech_oid = &m->gm_mech_oid;
-		SLIST_INSERT_HEAD(&name->gn_mn, mn, gmn_link);
+		HEIM_SLIST_INSERT_HEAD(&name->gn_mn, mn, gmn_link);
 	}
 
 	/*
 	 * If we can't find a mn for the name, bail out already here.
 	 */
 
-	mn = SLIST_FIRST(&name->gn_mn);
+	mn = HEIM_SLIST_FIRST(&name->gn_mn);
 	if (!mn) {
 		*minor_status = 0;
 		major_status = GSS_S_NAME_NOT_MN;

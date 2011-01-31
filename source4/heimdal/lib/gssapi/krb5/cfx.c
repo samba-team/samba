@@ -216,7 +216,7 @@ _gk_find_buffer(gss_iov_buffer_desc *iov, int iov_count, OM_uint32 type)
 OM_uint32
 _gk_allocate_buffer(OM_uint32 *minor_status, gss_iov_buffer_desc *buffer, size_t size)
 {
-    if (buffer->type & GSS_IOV_BUFFER_TYPE_FLAG_ALLOCATED) {
+    if (buffer->type & GSS_IOV_BUFFER_FLAG_ALLOCATED) {
 	if (buffer->buffer.length == size)
 	    return GSS_S_COMPLETE;
 	free(buffer->buffer.value);
@@ -228,7 +228,7 @@ _gk_allocate_buffer(OM_uint32 *minor_status, gss_iov_buffer_desc *buffer, size_t
 	*minor_status = ENOMEM;
 	return GSS_S_FAILURE;
     }
-    buffer->type |= GSS_IOV_BUFFER_TYPE_FLAG_ALLOCATED;
+    buffer->type |= GSS_IOV_BUFFER_FLAG_ALLOCATED;
 
     return GSS_S_COMPLETE;
 }
@@ -391,7 +391,7 @@ _gssapi_wrap_cfx_iov(OM_uint32 *minor_status,
 	    rrc -= ec;
 	gsshsize += gsstsize;
 	gsstsize = 0;
-    } else if (GSS_IOV_BUFFER_FLAGS(trailer->type) & GSS_IOV_BUFFER_TYPE_FLAG_ALLOCATE) {
+    } else if (GSS_IOV_BUFFER_FLAGS(trailer->type) & GSS_IOV_BUFFER_FLAG_ALLOCATE) {
 	major_status = _gk_allocate_buffer(minor_status, trailer, gsstsize);
 	if (major_status)
 	    goto failure;
@@ -406,7 +406,7 @@ _gssapi_wrap_cfx_iov(OM_uint32 *minor_status,
      *
      */
 
-    if (GSS_IOV_BUFFER_FLAGS(header->type) & GSS_IOV_BUFFER_TYPE_FLAG_ALLOCATE) {
+    if (GSS_IOV_BUFFER_FLAGS(header->type) & GSS_IOV_BUFFER_FLAG_ALLOCATE) {
 	major_status = _gk_allocate_buffer(minor_status, header, gsshsize);
 	if (major_status != GSS_S_COMPLETE)
 	    goto failure;

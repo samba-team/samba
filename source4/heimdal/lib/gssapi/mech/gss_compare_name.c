@@ -55,7 +55,7 @@ gss_compare_name(OM_uint32 *minor_status,
 		struct _gss_mechanism_name *mn1;
 		struct _gss_mechanism_name *mn2;
 
-		SLIST_FOREACH(mn1, &name1->gn_mn, gmn_link) {
+		HEIM_SLIST_FOREACH(mn1, &name1->gn_mn, gmn_link) {
 			OM_uint32 major_status;
 
 			major_status = _gss_find_mn(minor_status, name2,

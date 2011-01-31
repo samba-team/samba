@@ -99,11 +99,11 @@ gss_canonicalize_name(OM_uint32 *minor_status,
 		return (GSS_S_FAILURE);
 	}
 
-	SLIST_INIT(&name->gn_mn);
+	HEIM_SLIST_INIT(&name->gn_mn);
 	mn->gmn_mech = m;
 	mn->gmn_mech_oid = &m->gm_mech_oid;
 	mn->gmn_name = new_canonical_name;
-	SLIST_INSERT_HEAD(&name->gn_mn, mn, gmn_link);
+	HEIM_SLIST_INSERT_HEAD(&name->gn_mn, mn, gmn_link);
 
 	*output_name = (gss_name_t) name;
 

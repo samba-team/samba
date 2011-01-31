@@ -157,7 +157,7 @@ gss_wrap_iov_length(OM_uint32 * minor_status,
 
 /**
  * Free all buffer allocated by gss_wrap_iov() or gss_unwrap_iov() by
- * looking at the GSS_IOV_BUFFER_TYPE_FLAG_ALLOCATED flag.
+ * looking at the GSS_IOV_BUFFER_FLAG_ALLOCATED flag.
  *
  * @ingroup gssapi
  */
@@ -176,10 +176,10 @@ gss_release_iov_buffer(OM_uint32 *minor_status,
 	return GSS_S_CALL_INACCESSIBLE_READ;
 
     for (i = 0; i < iov_count; i++) {
-	if ((iov[i].type & GSS_IOV_BUFFER_TYPE_FLAG_ALLOCATED) == 0)
+	if ((iov[i].type & GSS_IOV_BUFFER_FLAG_ALLOCATED) == 0)
 	    continue;
 	gss_release_buffer(&junk, &iov[i].buffer);
-	iov[i].type &= ~GSS_IOV_BUFFER_TYPE_FLAG_ALLOCATED;
+	iov[i].type &= ~GSS_IOV_BUFFER_FLAG_ALLOCATED;
     }
     return GSS_S_COMPLETE;
 }

@@ -249,7 +249,7 @@ gss_inquire_mech_for_saslname(OM_uint32 *minor_status,
 
     *mech_type = NULL;
 
-    SLIST_FOREACH(m, &_gss_mechs, gm_link) {
+    HEIM_SLIST_FOREACH(m, &_gss_mechs, gm_link) {
 
 	major = mo_value(&m->gm_mech_oid, GSS_C_MA_SASL_MECH_NAME, &name);
 	if (major)
@@ -295,7 +295,7 @@ gss_indicate_mechs_by_attrs(OM_uint32 * minor_status,
 
     _gss_load_mech();
 
-    SLIST_FOREACH(ms, &_gss_mechs, gm_link) {
+    HEIM_SLIST_FOREACH(ms, &_gss_mechs, gm_link) {
 	gssapi_mech_interface mi = &ms->gm_mech;
 
 	if (desired_mech_attrs) {
@@ -388,7 +388,7 @@ gss_inquire_attrs_for_mech(OM_uint32 * minor_status,
 
 	_gss_load_mech();
 
-	SLIST_FOREACH(m, &_gss_mechs, gm_link)
+	HEIM_SLIST_FOREACH(m, &_gss_mechs, gm_link)
 	    add_all_mo(&m->gm_mech, known_mech_attrs, GSS_MO_MA);
     }
 

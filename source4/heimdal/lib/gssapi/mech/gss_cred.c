@@ -62,7 +62,7 @@ gss_export_cred(OM_uint32 * minor_status,
 	return GSS_S_NO_CRED;
     }
 
-    SLIST_FOREACH(mc, &cred->gc_mc, gmc_link) {
+    HEIM_SLIST_FOREACH(mc, &cred->gc_mc, gmc_link) {
 	if (mc->gmc_mech->gm_export_cred == NULL) {
 	    *minor_status = 0;
 	    return GSS_S_NO_CRED;
@@ -75,7 +75,7 @@ gss_export_cred(OM_uint32 * minor_status,
 	return GSS_S_FAILURE;
     }
 
-    SLIST_FOREACH(mc, &cred->gc_mc, gmc_link) {
+    HEIM_SLIST_FOREACH(mc, &cred->gc_mc, gmc_link) {
 
 	major = mc->gmc_mech->gm_export_cred(minor_status,
 					     mc->gmc_cred, &buffer);
@@ -138,7 +138,7 @@ gss_import_cred(OM_uint32 * minor_status,
 	*minor_status = ENOMEM;
 	return GSS_S_FAILURE;
     }
-    SLIST_INIT(&cred->gc_mc);
+    HEIM_SLIST_INIT(&cred->gc_mc);
 
     *cred_handle = (gss_cred_id_t)cred;
 
@@ -201,12 +201,12 @@ gss_import_cred(OM_uint32 * minor_status,
 	mc->gmc_mech_oid = &m->gm_mech_oid;
 	mc->gmc_cred = mcred;
 
-	SLIST_INSERT_HEAD(&cred->gc_mc, mc, gmc_link);
+	HEIM_SLIST_INSERT_HEAD(&cred->gc_mc, mc, gmc_link);
     }
     krb5_storage_free(sp);
     sp = NULL;
 
-    if (SLIST_EMPTY(&cred->gc_mc)) {
+    if (HEIM_SLIST_EMPTY(&cred->gc_mc)) {
 	major = GSS_S_NO_CRED;
 	goto out;
     }

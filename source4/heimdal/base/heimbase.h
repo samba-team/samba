@@ -146,7 +146,6 @@ void	heim_dict_delete_key(heim_dict_t, heim_object_t);
 typedef struct heim_string_data *heim_string_t;
 
 heim_string_t heim_string_create(const char *);
-heim_string_t heim_string_create_with_static(const char *);
 heim_tid_t heim_string_get_type_id(void);
 const char * heim_string_get_utf8(heim_string_t);
 

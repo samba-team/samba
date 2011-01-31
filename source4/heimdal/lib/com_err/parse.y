@@ -170,5 +170,5 @@ name2number(const char *str)
 void
 yyerror (char *s)
 {
-     lex_error_message ("%s\n", s);
+     _lex_error_message ("%s\n", s);
 }

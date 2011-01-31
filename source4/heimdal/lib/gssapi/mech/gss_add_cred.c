@@ -106,7 +106,7 @@ gss_add_cred(OM_uint32 *minor_status,
 		*minor_status = ENOMEM;
 		return (GSS_S_FAILURE);
 	}
-	SLIST_INIT(&new_cred->gc_mc);
+	HEIM_SLIST_INIT(&new_cred->gc_mc);
 
 	/*
 	 * We go through all the mc attached to the input_cred_handle
@@ -116,7 +116,7 @@ gss_add_cred(OM_uint32 *minor_status,
 	 */
 	target_mc = 0;
 	if (cred) {
-		SLIST_FOREACH(mc, &cred->gc_mc, gmc_link) {
+		HEIM_SLIST_FOREACH(mc, &cred->gc_mc, gmc_link) {
 			if (gss_oid_equal(mc->gmc_mech_oid, desired_mech)) {
 				target_mc = mc;
 			}
@@ -127,7 +127,7 @@ gss_add_cred(OM_uint32 *minor_status,
 				*minor_status = ENOMEM;
 				return (GSS_S_FAILURE);
 			}
-			SLIST_INSERT_HEAD(&new_cred->gc_mc, copy_mc, gmc_link);
+			HEIM_SLIST_INSERT_HEAD(&new_cred->gc_mc, copy_mc, gmc_link);
 		}
 	}
 
@@ -178,7 +178,7 @@ gss_add_cred(OM_uint32 *minor_status,
 		free(mc);
 		return (major_status);
 	}
-	SLIST_INSERT_HEAD(&new_cred->gc_mc, mc, gmc_link);
+	HEIM_SLIST_INSERT_HEAD(&new_cred->gc_mc, mc, gmc_link);
 	*output_cred_handle = (gss_cred_id_t) new_cred;
 
 	return (GSS_S_COMPLETE);

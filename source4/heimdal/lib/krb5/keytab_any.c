@@ -61,7 +61,7 @@ any_resolve(krb5_context context, const char *name, krb5_keytab id)
     char buf[256];
 
     while (strsep_copy(&name, ",", buf, sizeof(buf)) != -1) {
-	a = malloc(sizeof(*a));
+	a = calloc(1, sizeof(*a));
 	if (a == NULL) {
 	    ret = ENOMEM;
 	    goto fail;
