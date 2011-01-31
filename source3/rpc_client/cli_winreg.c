@@ -21,6 +21,7 @@
 
 #include "includes.h"
 #include "../librpc/gen_ndr/ndr_winreg_c.h"
+#include "../librpc/gen_ndr/ndr_security.h"
 #include "rpc_client/cli_winreg.h"
 
 NTSTATUS dcerpc_winreg_query_dword(TALLOC_CTX *mem_ctx,
@@ -507,6 +508,35 @@ NTSTATUS dcerpc_winreg_set_binary(TALLOC_CTX *mem_ctx,
 	}
 
 	return status;
+}
+
+NTSTATUS dcerpc_winreg_set_sd(TALLOC_CTX *mem_ctx,
+			      struct dcerpc_binding_handle *h,
+			      struct policy_handle *key_handle,
+			      const char *value,
+			      const struct security_descriptor *data,
+			      WERROR *pwerr)
+{
+	enum ndr_err_code ndr_err;
+	DATA_BLOB blob;
+
+	ndr_err = ndr_push_struct_blob(&blob,
+				       mem_ctx,
+				       data,
+				       (ndr_push_flags_fn_t) ndr_push_security_descriptor);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		DEBUG(2, ("dcerpc_winreg_set_sd: Failed to marshall security "
+			  "descriptor\n"));
+		*pwerr = WERR_NOMEM;
+		return NT_STATUS_OK;
+	}
+
+	return dcerpc_winreg_set_binary(mem_ctx,
+					h,
+					key_handle,
+					value,
+					&blob,
+					pwerr);
 }
 
 NTSTATUS dcerpc_winreg_add_multi_sz(TALLOC_CTX *mem_ctx,
