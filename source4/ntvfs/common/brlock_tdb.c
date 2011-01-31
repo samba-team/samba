@@ -738,6 +738,32 @@ static NTSTATUS brl_tdb_close(struct brl_context *brl,
 	return status;
 }
 
+static NTSTATUS brl_tdb_count(struct brl_context *brl, struct brl_handle *brlh,
+			      int *count)
+{
+	TDB_DATA kbuf, dbuf;
+
+	kbuf.dptr = brlh->key.data;
+	kbuf.dsize = brlh->key.length;
+	*count = 0;
+
+	if (tdb_chainlock(brl->w->tdb, kbuf) != 0) {
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	dbuf = tdb_fetch(brl->w->tdb, kbuf);
+	if (!dbuf.dptr) {
+		tdb_chainunlock(brl->w->tdb, kbuf);
+		return NT_STATUS_OK;
+	}
+
+	*count = dbuf.dsize / sizeof(struct lock_struct);
+
+	free(dbuf.dptr);
+	tdb_chainunlock(brl->w->tdb, kbuf);
+
+	return NT_STATUS_OK;
+}
 
 static const struct brlock_ops brlock_tdb_ops = {
 	.brl_init           = brl_tdb_init,
@@ -746,7 +772,8 @@ static const struct brlock_ops brlock_tdb_ops = {
 	.brl_unlock         = brl_tdb_unlock,
 	.brl_remove_pending = brl_tdb_remove_pending,
 	.brl_locktest       = brl_tdb_locktest,
-	.brl_close          = brl_tdb_close
+	.brl_close          = brl_tdb_close,
+	.brl_count          = brl_tdb_count
 };
 
 

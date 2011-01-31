@@ -125,3 +125,13 @@ NTSTATUS brl_close(struct brl_context *brl,
 {
 	return ops->brl_close(brl, brlh);
 }
+
+/*
+ Get a number of locks associated with a open file.
+*/
+NTSTATUS brl_count(struct brl_context *brl,
+		   struct brl_handle *brlh,
+		   int *count)
+{
+	return ops->brl_count(brl, brlh, count);
+}

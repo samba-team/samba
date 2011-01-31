@@ -1197,7 +1197,7 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 	struct pvfs_file *f;
 	struct ntvfs_handle *h;
 	NTSTATUS status;
-	int fd;
+	int fd, count;
 	struct odb_lock *lck;
 	uint32_t create_options;
 	uint32_t create_options_must_ignore_mask;
@@ -1568,6 +1568,16 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 	}
 
 	f->handle->fd = fd;
+
+	status = brl_count(f->pvfs->brl_context, f->brl_handle, &count);
+	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(lck);
+		return status;
+	}
+
+	if (count != 0) {
+		oplock_level = OPLOCK_NONE;
+	}
 
 	/* now really mark the file as open */
 	status = odb_open_file(lck, f->handle, name->full_name,

@@ -46,6 +46,9 @@ struct brlock_ops {
 				 enum brl_type );
 	NTSTATUS (*brl_close)(struct brl_context *,
 			      struct brl_handle *);
+	NTSTATUS (*brl_count)(struct brl_context *,
+			      struct brl_handle *,
+			      int *count);
 };
 
 
