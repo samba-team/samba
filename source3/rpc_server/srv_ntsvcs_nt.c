@@ -21,6 +21,7 @@
 
 #include "includes.h"
 #include "../librpc/gen_ndr/srv_ntsvcs.h"
+#include "services/svc_winreg_glue.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
@@ -142,7 +143,10 @@ WERROR _PNP_GetDeviceRegProp(struct pipes_struct *p,
 
 		mem_ctx = talloc_stackframe();
 
-		result = svcctl_lookup_dispname(mem_ctx, ptr, p->server_info->ptok);
+		result = svcctl_lookup_dispname(mem_ctx,
+						p->msg_ctx,
+						p->server_info,
+						ptr);
 		if (result == NULL) {
 			return WERR_GENERAL_FAILURE;
 		}

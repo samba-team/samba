@@ -24,9 +24,10 @@
 
 #include "includes.h"
 #include "../librpc/gen_ndr/srv_svcctl.h"
-#include "services/services.h"
 #include "../libcli/security/security.h"
 #include "../librpc/gen_ndr/ndr_security.h"
+#include "services/services.h"
+#include "services/svc_winreg_glue.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
@@ -301,11 +302,19 @@ WERROR _svcctl_OpenServiceW(struct pipes_struct *p,
 	if ( !find_service_info_by_hnd( p, r->in.scmanager_handle) )
 		return WERR_BADFID;
 
-	/* perform access checks.  Use the root token in order to ensure that we
-	   retrieve the security descriptor */
-
-	if ( !(sec_desc = svcctl_get_secdesc( p->mem_ctx, service, get_root_nt_token() )) )
+	/*
+	 * Perform access checks. Use the system server_info in order to ensure
+	 * that we retrieve the security descriptor
+	 */
+	sec_desc = svcctl_get_secdesc(p->mem_ctx,
+				      p->msg_ctx,
+				      get_server_info_system(),
+				      service);
+	if (sec_desc == NULL) {
+		DEBUG(0, ("_svcctl_OpenServiceW: Failed to get a valid security "
+			  "descriptor"));
 		return WERR_NOMEM;
+	}
 
 	se_map_generic( &r->in.access_mask, &svc_generic_map );
 	status = svcctl_access_check( sec_desc, p->server_info->ptok,
@@ -349,8 +358,10 @@ WERROR _svcctl_GetServiceDisplayNameW(struct pipes_struct *p,
 
 	service = r->in.service_name;
 
-	display_name = svcctl_lookup_dispname(p->mem_ctx, service,
-					      p->server_info->ptok);
+	display_name = svcctl_lookup_dispname(p->mem_ctx,
+					      p->msg_ctx,
+					      p->server_info,
+					      service);
 	if (!display_name) {
 		display_name = "";
 	}
@@ -386,7 +397,10 @@ WERROR _svcctl_QueryServiceStatus(struct pipes_struct *p,
 /********************************************************************
 ********************************************************************/
 
-static int enumerate_status( TALLOC_CTX *ctx, struct ENUM_SERVICE_STATUSW **status, struct security_token *token )
+static int enumerate_status(TALLOC_CTX *ctx,
+			    struct messaging_context *msg_ctx,
+			    struct auth_serversupplied_info *server_info,
+			    struct ENUM_SERVICE_STATUSW **status)
 {
 	int num_services = 0;
 	int i;
@@ -405,7 +419,10 @@ static int enumerate_status( TALLOC_CTX *ctx, struct ENUM_SERVICE_STATUSW **stat
 	for ( i=0; i<num_services; i++ ) {
 		st[i].service_name = talloc_strdup(st, svcctl_ops[i].name );
 
-		display_name = svcctl_lookup_dispname(ctx, svcctl_ops[i].name, token );
+		display_name = svcctl_lookup_dispname(ctx,
+						      msg_ctx,
+						      server_info,
+						      svcctl_ops[i].name);
 		st[i].display_name = talloc_strdup(st, display_name ? display_name : "");
 
 		svcctl_ops[i].ops->service_status( svcctl_ops[i].name, &st[i].status );
@@ -429,7 +446,6 @@ WERROR _svcctl_EnumServicesStatusW(struct pipes_struct *p,
 	size_t buffer_size = 0;
 	WERROR result = WERR_OK;
 	SERVICE_INFO *info = find_service_info_by_hnd( p, r->in.handle );
-	struct security_token *token = p->server_info->ptok;
 	DATA_BLOB blob = data_blob_null;
 
 	/* perform access checks */
@@ -441,7 +457,10 @@ WERROR _svcctl_EnumServicesStatusW(struct pipes_struct *p,
 		return WERR_ACCESS_DENIED;
 	}
 
-	num_services = enumerate_status( p->mem_ctx, &services, token );
+	num_services = enumerate_status(p->mem_ctx,
+					p->msg_ctx,
+					p->server_info,
+					&services);
 	if (num_services == -1 ) {
 		return WERR_NOMEM;
 	}
@@ -639,23 +658,36 @@ WERROR _svcctl_QueryServiceStatusEx(struct pipes_struct *p,
 /********************************************************************
 ********************************************************************/
 
-static WERROR fill_svc_config( TALLOC_CTX *ctx, const char *name,
-			       struct QUERY_SERVICE_CONFIG *config,
-			       struct security_token *token )
+static WERROR fill_svc_config(TALLOC_CTX *ctx,
+			      struct messaging_context *msg_ctx,
+			      struct auth_serversupplied_info *server_info,
+			      const char *name,
+			      struct QUERY_SERVICE_CONFIG *config)
 {
 	TALLOC_CTX *mem_ctx = talloc_stackframe();
 	const char *result = NULL;
 
 	/* now fill in the individual values */
 
-	config->displayname = svcctl_lookup_dispname(mem_ctx, name, token);
+	config->displayname = svcctl_lookup_dispname(mem_ctx,
+						     msg_ctx,
+						     server_info,
+						     name);
 
-	result = svcctl_get_string_value(mem_ctx, name, "ObjectName", token);
+	result = svcctl_get_string_value(mem_ctx,
+					 msg_ctx,
+					 server_info,
+					 name,
+					 "ObjectName");
 	if (result != NULL) {
 		config->startname = result;
 	}
 
-	result = svcctl_get_string_value(mem_ctx, name, "ImagePath", token);
+	result = svcctl_get_string_value(mem_ctx,
+					 msg_ctx,
+					 server_info,
+					 name,
+					 "ImagePath");
 	if (result != NULL) {
 		config->executablepath = result;
 	}
@@ -708,8 +740,11 @@ WERROR _svcctl_QueryServiceConfigW(struct pipes_struct *p,
 
 	*r->out.needed = r->in.offered;
 
-	wresult = fill_svc_config( p->mem_ctx, info->name, r->out.query,
-				   p->server_info->ptok);
+	wresult = fill_svc_config(p->mem_ctx,
+				  p->msg_ctx,
+				  p->server_info,
+				  info->name,
+				  r->out.query);
 	if ( !W_ERROR_IS_OK(wresult) )
 		return wresult;
 
@@ -754,8 +789,10 @@ WERROR _svcctl_QueryServiceConfig2W(struct pipes_struct *p,
 			enum ndr_err_code ndr_err;
 			DATA_BLOB blob;
 
-			description = svcctl_lookup_description(
-				p->mem_ctx, info->name, p->server_info->ptok);
+			description = svcctl_lookup_description(p->mem_ctx,
+								p->msg_ctx,
+								p->server_info,
+								info->name);
 
 			desc_buf.description = description;
 
@@ -874,10 +911,14 @@ WERROR _svcctl_QueryServiceObjectSecurity(struct pipes_struct *p,
 	if ( (r->in.security_flags & SECINFO_DACL) != SECINFO_DACL )
 		return WERR_INVALID_PARAM;
 
-	/* lookup the security descriptor and marshall it up for a reply */
-
-	if ( !(sec_desc = svcctl_get_secdesc( p->mem_ctx, info->name, get_root_nt_token() )) )
-                return WERR_NOMEM;
+	/* Lookup the security descriptor and marshall it up for a reply */
+	sec_desc = svcctl_get_secdesc(p->mem_ctx,
+				      p->msg_ctx,
+				      get_server_info_system(),
+				      info->name);
+	if (sec_desc == NULL) {
+		return WERR_NOMEM;
+	}
 
 	*r->out.needed = ndr_size_security_descriptor(sec_desc, 0);
 
@@ -949,7 +990,7 @@ WERROR _svcctl_SetServiceObjectSecurity(struct pipes_struct *p,
 
 	/* store the new SD */
 
-	if (!svcctl_set_secdesc(info->name, sec_desc, p->server_info->ptok))
+	if (!svcctl_set_secdesc(p->msg_ctx, p->server_info, info->name, sec_desc))
 		return WERR_ACCESS_DENIED;
 
 	return WERR_OK;
