@@ -127,6 +127,15 @@ More information can be found on
 http://holger123.wordpress.com/smb-traffic-analyzer/
 
 
+NFS quota backend on Linux
+--------------------------
+
+A new nfs quota backend for Linux has been added that is based
+on the existing Solaris/FreeBSD implementation. This allows samba
+to communicate correct diskfree information for nfs imports that
+are re-exported as samba shares.
+
+
 ######################################################################
 Changes
 #######
