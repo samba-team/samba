@@ -1862,6 +1862,13 @@ static bool test_LogonControl(struct torture_context *tctx,
 	}
 	}
 
+	r.in.level = 52;
+	torture_comment(tctx, "Testing LogonControl function code %s (%d) level %d\n",
+			function_code_str(tctx, r.in.function_code), r.in.function_code, r.in.level);
+	status = dcerpc_netr_LogonControl_r(b, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status, "LogonControl");
+	torture_assert_werr_equal(tctx, r.out.result, WERR_INVALID_LEVEL, "LogonControl");
+
 	return true;
 }
 
