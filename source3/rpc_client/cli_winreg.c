@@ -320,6 +320,58 @@ NTSTATUS dcerpc_winreg_query_sz(TALLOC_CTX *mem_ctx,
 	return status;
 }
 
+NTSTATUS dcerpc_winreg_query_sd(TALLOC_CTX *mem_ctx,
+				struct dcerpc_binding_handle *h,
+				struct policy_handle *key_handle,
+				const char *value,
+				struct security_descriptor **data,
+				WERROR *pwerr)
+{
+	WERROR result = WERR_OK;
+	NTSTATUS status;
+	DATA_BLOB blob;
+
+	status = dcerpc_winreg_query_binary(mem_ctx,
+					    h,
+					    key_handle,
+					    value,
+					    &blob,
+					    &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+	if (!W_ERROR_IS_OK(result)) {
+		*pwerr = result;
+		return status;
+	}
+
+	if (data) {
+		struct security_descriptor *sd;
+		enum ndr_err_code ndr_err;
+
+		sd = talloc_zero(mem_ctx, struct security_descriptor);
+		if (sd == NULL) {
+			*pwerr = WERR_NOMEM;
+			return NT_STATUS_OK;
+		}
+
+		ndr_err = ndr_pull_struct_blob(&blob,
+					       sd,
+					       sd,
+					       (ndr_pull_flags_fn_t) ndr_pull_security_descriptor);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			DEBUG(2, ("dcerpc_winreg_query_sd: Failed to marshall "
+				  "security descriptor\n"));
+			*pwerr = WERR_NOMEM;
+			return NT_STATUS_OK;
+		}
+
+		*data = sd;
+	}
+
+	return status;
+}
+
 NTSTATUS dcerpc_winreg_set_dword(TALLOC_CTX *mem_ctx,
 				 struct dcerpc_binding_handle *h,
 				 struct policy_handle *key_handle,
