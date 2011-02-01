@@ -256,7 +256,7 @@ again:
 		}
 	}
 
-	printf("# returned %d records\n# %d entries\n# %d referrals\n",
+	printf("# returned %u records\n# %u entries\n# %u referrals\n",
 		sctx->entries + sctx->refs, sctx->entries, sctx->refs);
 
 	talloc_free(sctx);
