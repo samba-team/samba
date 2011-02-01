@@ -405,6 +405,9 @@ int main(int argc, const char **argv)
 	struct ldb_context *ldb;
 
 	ldb = ldb_init(mem_ctx, NULL);
+	if (ldb == NULL) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
 
 	options = ldb_cmdline_process(ldb, argc, argv, usage);
 

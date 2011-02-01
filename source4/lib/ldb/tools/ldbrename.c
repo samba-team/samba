@@ -54,6 +54,9 @@ int main(int argc, const char **argv)
 	TALLOC_CTX *mem_ctx = talloc_new(NULL);
 
 	ldb = ldb_init(mem_ctx, NULL);
+	if (ldb == NULL) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
 
 	options = ldb_cmdline_process(ldb, argc, argv, usage);
 
