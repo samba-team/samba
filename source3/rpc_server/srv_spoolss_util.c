@@ -655,40 +655,6 @@ done:
 	return result;
 }
 
-static WERROR winreg_printer_write_multi_sz(TALLOC_CTX *mem_ctx,
-					    struct dcerpc_binding_handle *winreg_handle,
-					    struct policy_handle *key_handle,
-					    const char *value,
-					    const char **data)
-{
-	struct winreg_String wvalue;
-	DATA_BLOB blob;
-	WERROR result = WERR_OK;
-	NTSTATUS status;
-
-	wvalue.name = value;
-	if (!push_reg_multi_sz(mem_ctx, &blob, data)) {
-		return WERR_NOMEM;
-	}
-	status = dcerpc_winreg_SetValue(winreg_handle,
-					mem_ctx,
-					key_handle,
-					wvalue,
-					REG_MULTI_SZ,
-					blob.data,
-					blob.length,
-					&result);
-	if (!NT_STATUS_IS_OK(status)) {
-		result = ntstatus_to_werror(status);
-	}
-	if (!W_ERROR_IS_OK(result)) {
-		DEBUG(0, ("winreg_printer_write_multi_sz: Could not set value %s: %s\n",
-			wvalue.name, win_errstr(result)));
-	}
-
-	return result;
-}
-
 static WERROR winreg_printer_opendriver(TALLOC_CTX *mem_ctx,
 					const struct auth_serversupplied_info *server_info,
 					struct messaging_context *msg_ctx,
@@ -3608,9 +3574,15 @@ WERROR winreg_add_driver(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	result = winreg_printer_write_multi_sz(tmp_ctx, winreg_handle,
-					       &key_hnd, "Dependent Files",
-					       info8.dependent_files);
+	status = dcerpc_winreg_set_multi_sz(tmp_ctx,
+					    winreg_handle,
+					    &key_hnd,
+					    "Dependent Files",
+					    info8.dependent_files,
+					    &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		result = ntstatus_to_werror(status);
+	}
 	if (!W_ERROR_IS_OK(result)) {
 		goto done;
 	}
@@ -3641,9 +3613,14 @@ WERROR winreg_add_driver(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	result = winreg_printer_write_multi_sz(tmp_ctx, winreg_handle,
-					       &key_hnd, "Previous Names",
-					       info8.previous_names);
+	status = dcerpc_winreg_set_multi_sz(tmp_ctx,
+					    winreg_handle,
+					    &key_hnd, "Previous Names",
+					    info8.previous_names,
+					    &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		result = ntstatus_to_werror(status);
+	}
 	if (!W_ERROR_IS_OK(result)) {
 		goto done;
 	}
@@ -3740,9 +3717,15 @@ WERROR winreg_add_driver(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	result = winreg_printer_write_multi_sz(tmp_ctx, winreg_handle,
-					       &key_hnd, "Color Profiles",
-					       info8.color_profiles);
+	status = dcerpc_winreg_set_multi_sz(tmp_ctx,
+					    winreg_handle,
+					    &key_hnd,
+					    "Color Profiles",
+					    info8.color_profiles,
+					    &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		result = ntstatus_to_werror(status);
+	}
 	if (!W_ERROR_IS_OK(result)) {
 		goto done;
 	}
@@ -3773,9 +3756,15 @@ WERROR winreg_add_driver(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	result = winreg_printer_write_multi_sz(tmp_ctx, winreg_handle,
-					       &key_hnd, "CoreDependencies",
-					       info8.core_driver_dependencies);
+	status = dcerpc_winreg_set_multi_sz(tmp_ctx,
+					    winreg_handle,
+					    &key_hnd,
+					    "CoreDependencies",
+					    info8.core_driver_dependencies,
+					    &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		result = ntstatus_to_werror(status);
+	}
 	if (!W_ERROR_IS_OK(result)) {
 		goto done;
 	}
