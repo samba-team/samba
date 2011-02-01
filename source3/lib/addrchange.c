@@ -21,6 +21,7 @@
 
 #if HAVE_LINUX_RTNETLINK_H
 
+#include "asm/types.h"
 #include "linux/netlink.h"
 #include "linux/rtnetlink.h"
 #include "lib/async_req/async_sock.h"
