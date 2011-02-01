@@ -109,9 +109,10 @@ int main(int argc, const char **argv)
 
 	options = ldb_cmdline_process(ldb, argc, argv, usage);
 
-	if (ldb_transaction_start(ldb) != LDB_SUCCESS) {
+	ret = ldb_transaction_start(ldb);
+	if (ret != LDB_SUCCESS) {
 		printf("Failed to start transaction: %s\n", ldb_errstring(ldb));
-		exit(1);
+		return ret;
 	}
 
 	if (options->argc == 0) {
@@ -131,9 +132,10 @@ int main(int argc, const char **argv)
 	}
 
 	if (count != 0) {
-		if (ldb_transaction_commit(ldb) != LDB_SUCCESS) {
+		ret = ldb_transaction_commit(ldb);
+		if (ret != LDB_SUCCESS) {
 			printf("Failed to commit transaction: %s\n", ldb_errstring(ldb));
-			exit(1);
+			return ret;
 		}
 	} else {
 		ldb_transaction_cancel(ldb);
