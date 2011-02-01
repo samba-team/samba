@@ -43,7 +43,7 @@ static void usage(struct ldb_context *ldb)
 	printf("Usage: ldbadd <options> <ldif...>\n");
 	printf("Adds records to a ldb, reading ldif the specified list of files\n\n");
 	ldb_cmdline_help(ldb, "ldbadd", stdout);
-	exit(1);
+	exit(LDB_ERR_OPERATIONS_ERROR);
 }
 
 
@@ -127,7 +127,7 @@ int main(int argc, const char **argv)
 			f = fopen(fname, "r");
 			if (!f) {
 				perror(fname);
-				exit(1);
+				return LDB_ERR_OPERATIONS_ERROR;
 			}
 			ret = process_file(ldb, f, &count);
 			fclose(f);

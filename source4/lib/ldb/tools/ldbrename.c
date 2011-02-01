@@ -41,7 +41,7 @@ static void usage(struct ldb_context *ldb)
 	printf("Usage: ldbrename [<options>] <olddn> <newdn>\n");
 	printf("Renames records in a ldb\n\n");
 	ldb_cmdline_help(ldb, "ldbmodify", stdout);
-	exit(1);
+	exit(LDB_ERR_OPERATIONS_ERROR);
 }
 
 

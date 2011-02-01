@@ -396,7 +396,7 @@ static void usage(struct ldb_context *ldb)
 	printf("  --num-searches nsearches     number of searches to do\n");
 	printf("\n");
 	printf("tests ldb API\n\n");
-	exit(1);
+	exit(LDB_ERR_OPERATIONS_ERROR);
 }
 
 int main(int argc, const char **argv)
@@ -430,5 +430,5 @@ int main(int argc, const char **argv)
 
 	talloc_free(mem_ctx);
 
-	return 0;
+	return LDB_SUCCESS;
 }

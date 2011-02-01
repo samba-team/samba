@@ -43,7 +43,7 @@ static void usage(struct ldb_context *ldb)
 	printf("Usage: ldbmodify <options> <ldif...>\n");
 	printf("Modifies a ldb based upon ldif change records\n\n");
 	ldb_cmdline_help(ldb, "ldbmodify", stdout);
-	exit(1);
+	exit(LDB_ERR_OPERATIONS_ERROR);
 }
 
 /*
@@ -54,9 +54,10 @@ static int process_file(struct ldb_context *ldb, FILE *f, unsigned int *count)
 	struct ldb_ldif *ldif;
 	int ret = LDB_SUCCESS;
 	struct ldb_control **req_ctrls = ldb_parse_control_strings(ldb, ldb, (const char **)options->controls);
+
 	if (options->controls != NULL &&  req_ctrls== NULL) {
 		printf("parsing controls failed: %s\n", ldb_errstring(ldb));
-		return -1;
+		exit(LDB_ERR_OPERATIONS_ERROR);
 	}
 
 	while ((ldif = ldb_ldif_read_file(ldb, f))) {
@@ -112,7 +113,7 @@ int main(int argc, const char **argv)
 			f = fopen(fname, "r");
 			if (!f) {
 				perror(fname);
-				exit(1);
+				return LDB_ERR_OPERATIONS_ERROR;
 			}
 			ret = process_file(ldb, f, &count);
 			fclose(f);

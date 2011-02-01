@@ -291,7 +291,7 @@ static void usage(struct ldb_context *ldb)
 {
 	printf("Usage: ldbedit <options> <expression> <attributes ...>\n");
 	ldb_cmdline_help(ldb, "ldbedit", stdout);
-	exit(1);
+	exit(LDB_ERR_OPERATIONS_ERROR);
 }
 
 int main(int argc, const char **argv)
@@ -328,20 +328,20 @@ int main(int argc, const char **argv)
 		basedn = ldb_dn_new(ldb, ldb, options->basedn);
 		if ( ! ldb_dn_validate(basedn)) {
 			printf("Invalid Base DN format\n");
-			exit(1);
+			return LDB_ERR_OPERATIONS_ERROR;
 		}
 	}
 
 	req_ctrls = ldb_parse_control_strings(ldb, ldb, (const char **)options->controls);
 	if (options->controls != NULL &&  req_ctrls== NULL) {
 		printf("parsing controls failed: %s\n", ldb_errstring(ldb));
-		return -1;
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	ret = ldb_search_ctrl(ldb, ldb, &result, basedn, options->scope, attrs, req_ctrls, "%s", expression);
 	if (ret != LDB_SUCCESS) {
 		printf("search failed - %s\n", ldb_errstring(ldb));
-		exit(1);
+		return ret;
 	}
 
 	if (result->count == 0) {

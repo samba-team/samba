@@ -313,7 +313,7 @@ struct ldb_cmdline *ldb_cmdline_process(struct ldb_context *ldb,
 
 failed:
 	talloc_free(ret);
-	exit(1);
+	exit(LDB_ERR_OPERATIONS_ERROR);
 	return NULL;
 }
 

@@ -41,7 +41,7 @@ static void usage(struct ldb_context *ldb)
 {
 	printf("Usage: ldbsearch <options> <expression> <attrs...>\n");
 	ldb_cmdline_help(ldb, "ldbsearch", stdout);
-	exit(1);
+	exit(LDB_ERR_OPERATIONS_ERROR);
 }
 
 static int do_compare_msg(struct ldb_message **el1,
@@ -299,7 +299,7 @@ int main(int argc, const char **argv)
 		basedn = ldb_dn_new(ldb, ldb, options->basedn);
 		if ( ! ldb_dn_validate(basedn)) {
 			fprintf(stderr, "Invalid Base DN format\n");
-			exit(1);
+			return LDB_ERR_OPERATIONS_ERROR;
 		}
 	}
 

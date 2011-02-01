@@ -78,7 +78,7 @@ static void usage(struct ldb_context *ldb)
 	printf("Usage: ldbdel <options> <DN...>\n");
 	printf("Deletes records from a ldb\n\n");
 	ldb_cmdline_help(ldb, "ldbdel", stdout);
-	exit(1);
+	exit(LDB_ERR_OPERATIONS_ERROR);
 }
 
 int main(int argc, const char **argv)
@@ -98,13 +98,13 @@ int main(int argc, const char **argv)
 
 	if (options->argc < 1) {
 		usage(ldb);
-		exit(1);
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	req_ctrls = ldb_parse_control_strings(ldb, ldb, (const char **)options->controls);
 	if (options->controls != NULL &&  req_ctrls== NULL) {
 		printf("parsing controls failed: %s\n", ldb_errstring(ldb));
-		return -1;
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	for (i=0;i<options->argc;i++) {
@@ -113,7 +113,7 @@ int main(int argc, const char **argv)
 		dn = ldb_dn_new(ldb, ldb, options->argv[i]);
 		if ( ! ldb_dn_validate(dn)) {
 			printf("Invalid DN format\n");
-			exit(1);
+			return LDB_ERR_OPERATIONS_ERROR;
 		}
 		if (options->recursive) {
 			ret = ldb_delete_recursive(ldb, dn,req_ctrls);
