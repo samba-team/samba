@@ -2055,7 +2055,7 @@ static NTSTATUS cmd_samr_lookup_names(struct rpc_pipe_client *cli,
 	uint32 num_names;
 	struct samr_Ids rids, name_types;
 	int i;
-	struct lsa_String *names = NULL;;
+	struct lsa_String *names = NULL;
 	struct dcerpc_binding_handle *b = cli->binding_handle;
 
 	if (argc < 3) {
