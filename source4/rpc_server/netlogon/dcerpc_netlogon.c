@@ -531,6 +531,65 @@ static WERROR dcesrv_netr_LogonUasLogoff(struct dcesrv_call_state *dce_call, TAL
 }
 
 
+static NTSTATUS dcesrv_netr_LogonSamLogon_check(const struct netr_LogonSamLogonEx *r)
+{
+	switch (r->in.logon_level) {
+	case NetlogonInteractiveInformation:
+	case NetlogonServiceInformation:
+	case NetlogonInteractiveTransitiveInformation:
+	case NetlogonServiceTransitiveInformation:
+		if (r->in.logon->password == NULL) {
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+
+		switch (r->in.validation_level) {
+		case NetlogonValidationSamInfo:  /* 2 */
+		case NetlogonValidationSamInfo2: /* 3 */
+		case NetlogonValidationSamInfo4: /* 6 */
+			break;
+		default:
+			return NT_STATUS_INVALID_INFO_CLASS;
+		}
+
+		break;
+	case NetlogonNetworkInformation:
+	case NetlogonNetworkTransitiveInformation:
+		if (r->in.logon->network == NULL) {
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+
+		switch (r->in.validation_level) {
+		case NetlogonValidationSamInfo:  /* 2 */
+		case NetlogonValidationSamInfo2: /* 3 */
+		case NetlogonValidationSamInfo4: /* 6 */
+			break;
+		default:
+			return NT_STATUS_INVALID_INFO_CLASS;
+		}
+
+		break;
+
+	case NetlogonGenericInformation:
+		if (r->in.logon->generic == NULL) {
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+
+		switch (r->in.validation_level) {
+		/* TODO: case NetlogonValidationGenericInfo: 4 */
+		case NetlogonValidationGenericInfo2: /* 5 */
+			break;
+		default:
+			return NT_STATUS_INVALID_INFO_CLASS;
+		}
+
+		break;
+	default:
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	return NT_STATUS_OK;
+}
+
 /*
   netr_LogonSamLogon_base
 
@@ -771,6 +830,13 @@ static NTSTATUS dcesrv_netr_LogonSamLogonEx(struct dcesrv_call_state *dce_call, 
 	NTSTATUS nt_status;
 	struct netlogon_creds_CredentialState *creds;
 
+	*r->out.authoritative = 1;
+
+	nt_status = dcesrv_netr_LogonSamLogon_check(r);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		return nt_status;
+	}
+
 	nt_status = schannel_get_creds_state(mem_ctx,
 					     lpcfg_private_dir(dce_call->conn->dce_ctx->lp_ctx),
 					     r->in.computer_name, &creds);
@@ -798,16 +864,6 @@ static NTSTATUS dcesrv_netr_LogonSamLogonWithFlags(struct dcesrv_call_state *dce
 
 	struct netr_Authenticator *return_authenticator;
 
-	return_authenticator = talloc(mem_ctx, struct netr_Authenticator);
-	NT_STATUS_HAVE_NO_MEMORY(return_authenticator);
-
-	nt_status = dcesrv_netr_creds_server_step_check(dce_call,
-							mem_ctx,
-							r->in.computer_name,
-							r->in.credential, return_authenticator,
-							&creds);
-	NT_STATUS_NOT_OK_RETURN(nt_status);
-
 	ZERO_STRUCT(r2);
 
 	r2.in.server_name	= r->in.server_name;
@@ -819,6 +875,23 @@ static NTSTATUS dcesrv_netr_LogonSamLogonWithFlags(struct dcesrv_call_state *dce
 	r2.out.validation	= r->out.validation;
 	r2.out.authoritative	= r->out.authoritative;
 	r2.out.flags		= r->out.flags;
+
+	*r->out.authoritative = 1;
+
+	nt_status = dcesrv_netr_LogonSamLogon_check(&r2);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		return nt_status;
+	}
+
+	return_authenticator = talloc(mem_ctx, struct netr_Authenticator);
+	NT_STATUS_HAVE_NO_MEMORY(return_authenticator);
+
+	nt_status = dcesrv_netr_creds_server_step_check(dce_call,
+							mem_ctx,
+							r->in.computer_name,
+							r->in.credential, return_authenticator,
+							&creds);
+	NT_STATUS_NOT_OK_RETURN(nt_status);
 
 	nt_status = dcesrv_netr_LogonSamLogon_base(dce_call, mem_ctx, &r2, creds);
 
