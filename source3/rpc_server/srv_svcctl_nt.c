@@ -106,6 +106,13 @@ bool init_service_op_table( void )
 	return True;
 }
 
+bool shutdown_service_op_table(void)
+{
+	TALLOC_FREE(svcctl_ops);
+
+	return true;
+}
+
 /********************************************************************
 ********************************************************************/
 
