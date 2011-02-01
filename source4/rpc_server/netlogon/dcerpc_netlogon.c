@@ -551,6 +551,8 @@ static NTSTATUS dcesrv_netr_LogonSamLogon_base(struct dcesrv_call_state *dce_cal
 	struct netr_SamInfo3 *sam3;
 	struct netr_SamInfo6 *sam6;
 
+	*r->out.authoritative = 1;
+
 	user_info = talloc_zero(mem_ctx, struct auth_usersupplied_info);
 	NT_STATUS_HAVE_NO_MEMORY(user_info);
 
@@ -674,6 +676,7 @@ static NTSTATUS dcesrv_netr_LogonSamLogon_base(struct dcesrv_call_state *dce_cal
 	}
 
 	nt_status = auth_check_password(auth_context, mem_ctx, user_info, &server_info);
+	/* TODO: set *r->out.authoritative = 0 on specific errors */
 	NT_STATUS_NOT_OK_RETURN(nt_status);
 
 	switch (r->in.validation_level) {
@@ -755,8 +758,6 @@ static NTSTATUS dcesrv_netr_LogonSamLogon_base(struct dcesrv_call_state *dce_cal
 						&sam->LMSessKey);
 		}
 	}
-
-	*r->out.authoritative = 1;
 
 	/* TODO: Describe and deal with these flags */
 	*r->out.flags = 0;
