@@ -194,14 +194,14 @@ static int do_search(struct ldb_context *ldb,
 	req = NULL;
 	
 	sctx = talloc_zero(ldb, struct search_context);
-	if (!sctx) return -1;
+	if (!sctx) return LDB_ERR_OPERATIONS_ERROR;
 
 	sctx->ldb = ldb;
 	sctx->sort = options->sorted;
 	sctx->req_ctrls = ldb_parse_control_strings(ldb, sctx, (const char **)options->controls);
 	if (options->controls != NULL &&  sctx->req_ctrls== NULL) {
 		printf("parsing controls failed: %s\n", ldb_errstring(ldb));
-		return -1;
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	if (basedn == NULL) {
@@ -221,7 +221,7 @@ again:
 	if (ret != LDB_SUCCESS) {
 		talloc_free(sctx);
 		printf("allocating request failed: %s\n", ldb_errstring(ldb));
-		return -1;
+		return ret;
 	}
 
 	sctx->pending = 0;
@@ -229,13 +229,13 @@ again:
 	ret = ldb_request(ldb, req);
 	if (ret != LDB_SUCCESS) {
 		printf("search failed - %s\n", ldb_errstring(ldb));
-		return -1;
+		return ret;
 	}
 
 	ret = ldb_wait(req->handle, LDB_WAIT_ALL);
-       	if (ret != LDB_SUCCESS) {
+	if (ret != LDB_SUCCESS) {
 		printf("search error - %s\n", ldb_errstring(ldb));
-		return -1;
+		return ret;
 	}
 
 	if (sctx->pending)
@@ -262,7 +262,7 @@ again:
 	talloc_free(sctx);
 	talloc_free(req);
 
-	return 0;
+	return LDB_SUCCESS;
 }
 
 int main(int argc, const char **argv)
