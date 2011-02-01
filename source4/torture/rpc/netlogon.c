@@ -1999,6 +1999,30 @@ static bool test_LogonControl2(struct torture_context *tctx,
 		torture_assert_ntstatus_ok(tctx, status, "LogonControl2");
 	}
 
+	ZERO_STRUCT(data);
+	r.in.function_code = 52;
+	r.in.data = &data;
+
+	torture_comment(tctx, "Testing LogonControl2 function code %s (%d) level %d\n",
+			function_code_str(tctx, r.in.function_code), r.in.function_code, r.in.level);
+
+	status = dcerpc_netr_LogonControl2_r(b, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status, "LogonControl2");
+	torture_assert_werr_equal(tctx, r.out.result, WERR_UNKNOWN_LEVEL, "LogonControl2");
+
+	data.debug_level = ~0;
+
+	r.in.function_code = NETLOGON_CONTROL_SET_DBFLAG;
+	r.in.data = &data;
+
+	r.in.level = 52;
+	torture_comment(tctx, "Testing LogonControl2 function code %s (%d) level %d\n",
+			function_code_str(tctx, r.in.function_code), r.in.function_code, r.in.level);
+
+	status = dcerpc_netr_LogonControl2_r(b, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status, "LogonControl2");
+	torture_assert_werr_equal(tctx, r.out.result, WERR_UNKNOWN_LEVEL, "LogonControl2");
+
 	return true;
 }
 
