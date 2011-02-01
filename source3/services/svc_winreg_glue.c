@@ -106,12 +106,12 @@ struct security_descriptor *svcctl_get_secdesc(TALLOC_CTX *mem_ctx,
 						&key_hnd,
 						&result);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("svcctl_set_secdesc: Could not open %s - %s\n",
+		DEBUG(2, ("svcctl_set_secdesc: Could not open %s - %s\n",
 			  key, nt_errstr(status)));
 		return NULL;
 	}
 	if (!W_ERROR_IS_OK(result)) {
-		DEBUG(0, ("svcctl_set_secdesc: Could not open %s - %s\n",
+		DEBUG(2, ("svcctl_set_secdesc: Could not open %s - %s\n",
 			  key, win_errstr(result)));
 		return NULL;
 	}
@@ -123,14 +123,14 @@ struct security_descriptor *svcctl_get_secdesc(TALLOC_CTX *mem_ctx,
 					&sd,
 					&result);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("svcctl_get_secdesc: error getting value 'Security': "
+		DEBUG(2, ("svcctl_get_secdesc: error getting value 'Security': "
 			  "%s\n", nt_errstr(status)));
 		return NULL;
 	}
 	if (W_ERROR_EQUAL(result, WERR_BADFILE)) {
 		goto fallback_to_default_sd;
 	} else if (!W_ERROR_IS_OK(result)) {
-		DEBUG(0, ("svcctl_get_secdesc: error getting value 'Security': "
+		DEBUG(2, ("svcctl_get_secdesc: error getting value 'Security': "
 			  "%s\n", win_errstr(result)));
 		return NULL;
 	}
@@ -221,12 +221,12 @@ bool svcctl_set_secdesc(struct messaging_context *msg_ctx,
 						 &action,
 						 &result);
 		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(0, ("svcctl_set_secdesc: Could not create key %s: %s\n",
+			DEBUG(2, ("svcctl_set_secdesc: Could not create key %s: %s\n",
 				wkey.name, nt_errstr(status)));
 			goto done;
 		}
 		if (!W_ERROR_IS_OK(result)) {
-			DEBUG(0, ("svcctl_set_secdesc: Could not create key %s: %s\n",
+			DEBUG(2, ("svcctl_set_secdesc: Could not create key %s: %s\n",
 				wkey.name, win_errstr(result)));
 			goto done;
 		}
@@ -293,12 +293,12 @@ const char *svcctl_get_string_value(TALLOC_CTX *mem_ctx,
 						&key_hnd,
 						&result);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("svcctl_get_string_value: Could not open %s - %s\n",
+		DEBUG(2, ("svcctl_get_string_value: Could not open %s - %s\n",
 			  path, nt_errstr(status)));
 		goto done;
 	}
 	if (!W_ERROR_IS_OK(result)) {
-		DEBUG(0, ("svcctl_get_string_value: Could not open %s - %s\n",
+		DEBUG(2, ("svcctl_get_string_value: Could not open %s - %s\n",
 			  path, win_errstr(result)));
 		goto done;
 	}

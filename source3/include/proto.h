@@ -4372,6 +4372,7 @@ char *valid_share_pathname(TALLOC_CTX *ctx, const char *dos_pathname);
 /* The following definitions come from rpc_server/srv_svcctl_nt.c  */
 
 bool init_service_op_table( void );
+bool shutdown_service_op_table(void);
 
 /* The following definitions come from rpcclient/cmd_dfs.c  */
 
