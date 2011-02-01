@@ -605,10 +605,6 @@ interface netlogon
 	} netr_DELTA_TRUSTED_DOMAIN;
 
 	typedef struct {
-		uint16 unknown;
-	} netr_DELTA_DELETE_TRUST;
-
-	typedef struct {
 		uint32 privilege_entries;
 		uint32 privilege_control;
 		[size_is(privilege_entries)] uint32 *privilege_attrib;
@@ -626,14 +622,6 @@ interface netlogon
 		uint32 unknown7;
 		uint32 unknown8;
 	} netr_DELTA_ACCOUNT;
-
-	typedef struct {
-		uint16 unknown;
-	} netr_DELTA_DELETE_ACCOUNT;
-
-	typedef struct {
-		uint16 unknown;
-	} netr_DELTA_DELETE_SECRET;
 
 	typedef struct {
 		uint32 len;
@@ -697,12 +685,12 @@ interface netlogon
 		[case(NETR_DELTA_RENAME_ALIAS)]    netr_DELTA_RENAME          *rename_alias;
 		[case(NETR_DELTA_ALIAS_MEMBER)]    netr_DELTA_ALIAS_MEMBER    *alias_member;
 		[case(NETR_DELTA_POLICY)]          netr_DELTA_POLICY          *policy;
-		[case(NETR_DELTA_TRUSTED_DOMAIN)]  netr_DELTA_TRUSTED_DOMAIN   *trusted_domain;
-		[case(NETR_DELTA_DELETE_TRUST)]    netr_DELTA_DELETE_TRUST     delete_trust;
+		[case(NETR_DELTA_TRUSTED_DOMAIN)]  netr_DELTA_TRUSTED_DOMAIN  *trusted_domain;
+		[case(NETR_DELTA_DELETE_TRUST)]    ; /* sid only */
 		[case(NETR_DELTA_ACCOUNT)]         netr_DELTA_ACCOUNT         *account;
-		[case(NETR_DELTA_DELETE_ACCOUNT)]  netr_DELTA_DELETE_ACCOUNT   delete_account;
+		[case(NETR_DELTA_DELETE_ACCOUNT)]  ; /* sid only */
 		[case(NETR_DELTA_SECRET)]          netr_DELTA_SECRET          *secret;
-		[case(NETR_DELTA_DELETE_SECRET)]   netr_DELTA_DELETE_SECRET    delete_secret;
+		[case(NETR_DELTA_DELETE_SECRET)]   ; /* name only */
 		[case(NETR_DELTA_DELETE_GROUP2)]   netr_DELTA_DELETE_USER     *delete_group;
 		[case(NETR_DELTA_DELETE_USER2)]    netr_DELTA_DELETE_USER     *delete_user;
 		[case(NETR_DELTA_MODIFY_COUNT)]    udlong                     *modified_count;
