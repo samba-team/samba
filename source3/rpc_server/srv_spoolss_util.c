@@ -655,40 +655,6 @@ done:
 	return result;
 }
 
-static WERROR winreg_printer_write_dword(TALLOC_CTX *mem_ctx,
-					 struct dcerpc_binding_handle *winreg_handle,
-					 struct policy_handle *key_handle,
-					 const char *value,
-					 uint32_t data)
-{
-	struct winreg_String wvalue;
-	DATA_BLOB blob;
-	WERROR result = WERR_OK;
-	NTSTATUS status;
-
-	wvalue.name = value;
-	blob = data_blob_talloc(mem_ctx, NULL, 4);
-	SIVAL(blob.data, 0, data);
-
-	status = dcerpc_winreg_SetValue(winreg_handle,
-					mem_ctx,
-					key_handle,
-					wvalue,
-					REG_DWORD,
-					blob.data,
-					blob.length,
-					&result);
-	if (!NT_STATUS_IS_OK(status)) {
-		result = ntstatus_to_werror(status);
-	}
-	if (!W_ERROR_IS_OK(result)) {
-		DEBUG(0, ("winreg_printer_write_dword: Could not set value %s: %s\n",
-			wvalue.name, win_errstr(result)));
-	}
-
-	return result;
-}
-
 static WERROR winreg_printer_write_binary(TALLOC_CTX *mem_ctx,
 					  struct dcerpc_binding_handle *winreg_handle,
 					  struct policy_handle *key_handle,
@@ -1344,47 +1310,67 @@ WERROR winreg_create_printer(TALLOC_CTX *mem_ctx,
 				goto done;
 			}
 
-			result = winreg_printer_write_dword(tmp_ctx,
-							    winreg_handle,
-							    &key_hnd,
-							    SPOOL_REG_VERSIONNUMBER,
-							    4);
+			status = dcerpc_winreg_set_dword(tmp_ctx,
+							 winreg_handle,
+							 &key_hnd,
+							 SPOOL_REG_VERSIONNUMBER,
+							 4,
+							 &result);
+			if (!NT_STATUS_IS_OK(status)) {
+				result = ntstatus_to_werror(status);
+			}
 			if (!W_ERROR_IS_OK(result)) {
 				goto done;
 			}
 
-			result = winreg_printer_write_dword(tmp_ctx,
-							    winreg_handle,
-							    &key_hnd,
-							    SPOOL_REG_PRINTSTARTTIME,
-							    0);
+			status = dcerpc_winreg_set_dword(tmp_ctx,
+							 winreg_handle,
+							 &key_hnd,
+							 SPOOL_REG_PRINTSTARTTIME,
+							 0,
+							 &result);
+			if (!NT_STATUS_IS_OK(status)) {
+				result = ntstatus_to_werror(status);
+			}
 			if (!W_ERROR_IS_OK(result)) {
 				goto done;
 			}
 
-			result = winreg_printer_write_dword(tmp_ctx,
-							    winreg_handle,
-							    &key_hnd,
-							    SPOOL_REG_PRINTENDTIME,
-							    0);
+			status = dcerpc_winreg_set_dword(tmp_ctx,
+							 winreg_handle,
+							 &key_hnd,
+							 SPOOL_REG_PRINTENDTIME,
+							 0,
+							 &result);
+			if (!NT_STATUS_IS_OK(status)) {
+				result = ntstatus_to_werror(status);
+			}
 			if (!W_ERROR_IS_OK(result)) {
 				goto done;
 			}
 
-			result = winreg_printer_write_dword(tmp_ctx,
-							    winreg_handle,
-							    &key_hnd,
-							    SPOOL_REG_PRIORITY,
-							    1);
+			status = dcerpc_winreg_set_dword(tmp_ctx,
+							 winreg_handle,
+							 &key_hnd,
+							 SPOOL_REG_PRIORITY,
+							 1,
+							 &result);
+			if (!NT_STATUS_IS_OK(status)) {
+				result = ntstatus_to_werror(status);
+			}
 			if (!W_ERROR_IS_OK(result)) {
 				goto done;
 			}
 
-			result = winreg_printer_write_dword(tmp_ctx,
-							    winreg_handle,
-							    &key_hnd,
-							    SPOOL_REG_PRINTKEEPPRINTEDJOBS,
-							    0);
+			status = dcerpc_winreg_set_dword(tmp_ctx,
+							 winreg_handle,
+							 &key_hnd,
+							 SPOOL_REG_PRINTKEEPPRINTEDJOBS,
+							 0,
+							 &result);
+			if (!NT_STATUS_IS_OK(status)) {
+				result = ntstatus_to_werror(status);
+			}
 			if (!W_ERROR_IS_OK(result)) {
 				goto done;
 			}
@@ -1524,11 +1510,15 @@ WERROR winreg_update_printer(TALLOC_CTX *mem_ctx,
 	}
 
 	if (info2_mask & SPOOLSS_PRINTER_INFO_ATTRIBUTES) {
-		result = winreg_printer_write_dword(tmp_ctx,
-						    winreg_handle,
-						    &key_hnd,
-						    "Attributes",
-						    info2->attributes);
+		status = dcerpc_winreg_set_dword(tmp_ctx,
+						 winreg_handle,
+						 &key_hnd,
+						 "Attributes",
+						 info2->attributes,
+						 &result);
+		if (!NT_STATUS_IS_OK(status)) {
+			result = ntstatus_to_werror(status);
+		}
 		if (!W_ERROR_IS_OK(result)) {
 			goto done;
 		}
@@ -1536,11 +1526,15 @@ WERROR winreg_update_printer(TALLOC_CTX *mem_ctx,
 
 #if 0
 	if (info2_mask & SPOOLSS_PRINTER_INFO_AVERAGEPPM) {
-		result = winreg_printer_write_dword(tmp_ctx,
-						    winreg_handle,
-						    &key_hnd,
-						    "AveragePpm",
-						    info2->attributes);
+		status = dcerpc_winreg_set_dword(tmp_ctx,
+						 winreg_handle,
+						 &key_hnd,
+						 "AveragePpm",
+						 info2->attributes,
+						 &result);
+		if (!NT_STATUS_IS_OK(status)) {
+			result = ntstatus_to_werror(status);
+		}
 		if (!W_ERROR_IS_OK(result)) {
 			goto done;
 		}
@@ -1578,11 +1572,15 @@ WERROR winreg_update_printer(TALLOC_CTX *mem_ctx,
 	}
 
 	if (info2_mask & SPOOLSS_PRINTER_INFO_DEFAULTPRIORITY) {
-		result = winreg_printer_write_dword(tmp_ctx,
-						    winreg_handle,
-						    &key_hnd,
-						    "Default Priority",
-						    info2->defaultpriority);
+		status = dcerpc_winreg_set_dword(tmp_ctx,
+						 winreg_handle,
+						 &key_hnd,
+						 "Default Priority",
+						 info2->defaultpriority,
+						 &result);
+		if (!NT_STATUS_IS_OK(status)) {
+			result = ntstatus_to_werror(status);
+		}
 		if (!W_ERROR_IS_OK(result)) {
 			goto done;
 		}
@@ -1734,11 +1732,15 @@ WERROR winreg_update_printer(TALLOC_CTX *mem_ctx,
 	}
 
 	if (info2_mask & SPOOLSS_PRINTER_INFO_PRIORITY) {
-		result = winreg_printer_write_dword(tmp_ctx,
-						    winreg_handle,
-						    &key_hnd,
-						    "Priority",
-						    info2->priority);
+		status = dcerpc_winreg_set_dword(tmp_ctx,
+						 winreg_handle,
+						 &key_hnd,
+						 "Priority",
+						 info2->priority,
+						 &result);
+		if (!NT_STATUS_IS_OK(status)) {
+			result = ntstatus_to_werror(status);
+		}
 		if (!W_ERROR_IS_OK(result)) {
 			goto done;
 		}
@@ -1796,43 +1798,59 @@ WERROR winreg_update_printer(TALLOC_CTX *mem_ctx,
 	}
 
 	if (info2_mask & SPOOLSS_PRINTER_INFO_STARTTIME) {
-		result = winreg_printer_write_dword(tmp_ctx,
-						    winreg_handle,
-						    &key_hnd,
-						    "StartTime",
-						    info2->starttime);
+		status = dcerpc_winreg_set_dword(tmp_ctx,
+						 winreg_handle,
+						 &key_hnd,
+						 "StartTime",
+						 info2->starttime,
+						 &result);
+		if (!NT_STATUS_IS_OK(status)) {
+			result = ntstatus_to_werror(status);
+		}
 		if (!W_ERROR_IS_OK(result)) {
 			goto done;
 		}
 	}
 
 	if (info2_mask & SPOOLSS_PRINTER_INFO_STATUS) {
-		result = winreg_printer_write_dword(tmp_ctx,
-						    winreg_handle,
-						    &key_hnd,
-						    "Status",
-						    info2->status);
+		status = dcerpc_winreg_set_dword(tmp_ctx,
+						 winreg_handle,
+						 &key_hnd,
+						 "Status",
+						 info2->status,
+						 &result);
+		if (!NT_STATUS_IS_OK(status)) {
+			result = ntstatus_to_werror(status);
+		}
 		if (!W_ERROR_IS_OK(result)) {
 			goto done;
 		}
 	}
 
 	if (info2_mask & SPOOLSS_PRINTER_INFO_UNTILTIME) {
-		result = winreg_printer_write_dword(tmp_ctx,
-						    winreg_handle,
-						    &key_hnd,
-						    "UntilTime",
-						    info2->untiltime);
+		status = dcerpc_winreg_set_dword(tmp_ctx,
+						 winreg_handle,
+						 &key_hnd,
+						 "UntilTime",
+						 info2->untiltime,
+						 &result);
+		if (!NT_STATUS_IS_OK(status)) {
+			result = ntstatus_to_werror(status);
+		}
 		if (!W_ERROR_IS_OK(result)) {
 			goto done;
 		}
 	}
 
-	result = winreg_printer_write_dword(tmp_ctx,
-					    winreg_handle,
-					    &key_hnd,
-					    "ChangeID",
-					    winreg_printer_rev_changeid());
+	status = dcerpc_winreg_set_dword(tmp_ctx,
+					 winreg_handle,
+					 &key_hnd,
+					 "ChangeID",
+					 winreg_printer_rev_changeid(),
+					 &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		result = ntstatus_to_werror(status);
+	}
 	if (!W_ERROR_IS_OK(result)) {
 		goto done;
 	}
@@ -2974,6 +2992,7 @@ WERROR winreg_printer_update_changeid(TALLOC_CTX *mem_ctx,
 	struct dcerpc_binding_handle *winreg_handle = NULL;
 	struct policy_handle hive_hnd, key_hnd;
 	char *path;
+	NTSTATUS status;
 	WERROR result;
 	TALLOC_CTX *tmp_ctx;
 
@@ -3007,11 +3026,15 @@ WERROR winreg_printer_update_changeid(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	result = winreg_printer_write_dword(tmp_ctx,
-					    winreg_handle,
-					    &key_hnd,
-					    "ChangeID",
-					    winreg_printer_rev_changeid());
+	status = dcerpc_winreg_set_dword(tmp_ctx,
+					 winreg_handle,
+					 &key_hnd,
+					 "ChangeID",
+					 winreg_printer_rev_changeid(),
+					 &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		result = ntstatus_to_werror(status);
+	}
 	if (!W_ERROR_IS_OK(result)) {
 		goto done;
 	}
@@ -3702,9 +3725,15 @@ WERROR winreg_add_driver(TALLOC_CTX *mem_ctx,
 
 	/* TODO: "Attributes" ? */
 
-	result = winreg_printer_write_dword(tmp_ctx, winreg_handle,
-					    &key_hnd, "Version",
-					    info8.version);
+	status = dcerpc_winreg_set_dword(tmp_ctx,
+					 winreg_handle,
+					 &key_hnd,
+					 "Version",
+					 info8.version,
+					 &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		result = ntstatus_to_werror(status);
+	}
 	if (!W_ERROR_IS_OK(result)) {
 		goto done;
 	}
@@ -3913,9 +3942,15 @@ WERROR winreg_add_driver(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	result = winreg_printer_write_dword(tmp_ctx, winreg_handle, &key_hnd,
-					    "PrinterDriverAttributes",
-					    info8.printer_driver_attributes);
+	status = dcerpc_winreg_set_dword(tmp_ctx,
+					 winreg_handle,
+					 &key_hnd,
+					 "PrinterDriverAttributes",
+					 info8.printer_driver_attributes,
+					 &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		result = ntstatus_to_werror(status);
+	}
 	if (!W_ERROR_IS_OK(result)) {
 		goto done;
 	}
