@@ -621,6 +621,70 @@ const char *net_share_type_str(int num_type)
 	}
 }
 
+static NTSTATUS net_scan_dc_noad(struct net_context *c,
+				 struct cli_state *cli,
+				 struct net_dc_info *dc_info)
+{
+	TALLOC_CTX *mem_ctx = talloc_tos();
+	struct rpc_pipe_client *pipe_hnd = NULL;
+	struct dcerpc_binding_handle *b;
+	NTSTATUS status, result;
+	struct policy_handle pol;
+	union lsa_PolicyInformation *info;
+
+	ZERO_STRUCTP(dc_info);
+	ZERO_STRUCT(pol);
+
+	status = cli_rpc_pipe_open_noauth(cli, &ndr_table_lsarpc.syntax_id,
+					  &pipe_hnd);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	b = pipe_hnd->binding_handle;
+
+	status = dcerpc_lsa_open_policy(b, mem_ctx,
+					false,
+					SEC_FLAG_MAXIMUM_ALLOWED,
+					&pol,
+					&result);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
+	if (!NT_STATUS_IS_OK(result)) {
+		status = result;
+		goto done;
+	}
+
+	status = dcerpc_lsa_QueryInfoPolicy(b, mem_ctx,
+					    &pol,
+					    LSA_POLICY_INFO_ACCOUNT_DOMAIN,
+					    &info,
+					    &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
+	if (!NT_STATUS_IS_OK(result)) {
+		status = result;
+		goto done;
+	}
+
+	dc_info->netbios_domain_name = talloc_strdup(mem_ctx, info->account_domain.name.string);
+	if (dc_info->netbios_domain_name == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+ done:
+	if (is_valid_policy_hnd(&pol)) {
+		dcerpc_lsa_Close(b, mem_ctx, &pol, &result);
+	}
+
+	TALLOC_FREE(pipe_hnd);
+
+	return status;
+}
+
 NTSTATUS net_scan_dc(struct net_context *c,
 		     struct cli_state *cli,
 		     struct net_dc_info *dc_info)
@@ -637,7 +701,9 @@ NTSTATUS net_scan_dc(struct net_context *c,
 	status = cli_rpc_pipe_open_noauth(cli, &ndr_table_dssetup.syntax_id,
 					  &dssetup_pipe);
         if (!NT_STATUS_IS_OK(status)) {
-		return status;
+		DEBUG(10,("net_scan_dc: failed to open dssetup pipe with %s, "
+			"retrying with lsa pipe\n", nt_errstr(status)));
+		return net_scan_dc_noad(c, cli, dc_info);
 	}
 	dssetup_handle = dssetup_pipe->binding_handle;
 
