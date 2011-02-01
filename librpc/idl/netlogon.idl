@@ -16,6 +16,7 @@ cpp_quote("#define netr_SamDatabaseID8Bit netr_SamDatabaseID")
   version(1.0),
   endpoint("ncacn_np:[\\pipe\\netlogon]","ncacn_ip_tcp:","ncalrpc:"),
   helper("../librpc/ndr/ndr_netlogon.h"),
+  ms_union,
   pointer_default(unique)
 ]
 
