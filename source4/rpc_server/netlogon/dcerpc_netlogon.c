@@ -727,7 +727,7 @@ static NTSTATUS dcesrv_netr_LogonSamLogon_base(struct dcesrv_call_state *dce_cal
 		break;
 
 	default:
-		break;
+		return NT_STATUS_INVALID_INFO_CLASS;
 	}
 
 	/* Don't crypt an all-zero key, it would give away the NETLOGON pipe session key */
