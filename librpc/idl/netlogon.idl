@@ -179,6 +179,7 @@ interface netlogon
 		[case(NetlogonInteractiveTransitiveInformation)] netr_PasswordInfo *password;
 		[case(NetlogonNetworkTransitiveInformation)]     netr_NetworkInfo  *network;
 		[case(NetlogonServiceTransitiveInformation)]     netr_PasswordInfo *password;
+		[default];
 	} netr_LogonLevel;
 
 	typedef [public,flag(NDR_PAHEX)] struct {
@@ -291,6 +292,7 @@ interface netlogon
 		[case(4)] netr_PacInfo  *pac;
 		[case(NetlogonValidationGenericInfo2)] netr_GenericInfo2  *generic;
 		[case(NetlogonValidationSamInfo4)] netr_SamInfo6 *sam6;
+		[default];
 	} netr_Validation;
 
 	typedef [public, flag(NDR_PAHEX)] struct {
@@ -703,6 +705,7 @@ interface netlogon
 		[case(NETR_DELTA_DELETE_GROUP2)]   netr_DELTA_DELETE_USER     *delete_group;
 		[case(NETR_DELTA_DELETE_USER2)]    netr_DELTA_DELETE_USER     *delete_user;
 		[case(NETR_DELTA_MODIFY_COUNT)]    udlong                     *modified_count;
+		[default];
 	} netr_DELTA_UNION;
 
 	typedef [switch_type(netr_DeltaEnum)] union {
@@ -728,6 +731,7 @@ interface netlogon
 		[case(NETR_DELTA_DELETE_GROUP2)]   uint32 rid;
 		[case(NETR_DELTA_DELETE_USER2)]    uint32 rid;
 		[case(NETR_DELTA_MODIFY_COUNT)]    ;
+		[default];
 	} netr_DELTA_ID_UNION;
 
 	typedef struct {
