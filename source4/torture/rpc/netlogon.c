@@ -1947,11 +1947,11 @@ static bool test_LogonControl2(struct torture_context *tctx,
 	for (i=1;i<4;i++) {
 		r.in.level = i;
 
-		torture_comment(tctx, "Testing LogonControl2 level %d function %d\n", 
-		       i, r.in.function_code);
+		torture_comment(tctx, "Testing LogonControl2 function code %s (%d) level %d\n",
+			function_code_str(tctx, r.in.function_code), r.in.function_code, r.in.level);
 
 		status = dcerpc_netr_LogonControl2_r(b, tctx, &r);
-		torture_assert_ntstatus_ok(tctx, status, "LogonControl");
+		torture_assert_ntstatus_ok(tctx, status, "LogonControl2");
 	}
 
 	data.domain = lpcfg_workgroup(tctx->lp_ctx);
@@ -1962,11 +1962,11 @@ static bool test_LogonControl2(struct torture_context *tctx,
 	for (i=1;i<4;i++) {
 		r.in.level = i;
 
-		torture_comment(tctx, "Testing LogonControl2 level %d function %d\n", 
-		       i, r.in.function_code);
+		torture_comment(tctx, "Testing LogonControl2 function code %s (%d) level %d\n",
+			function_code_str(tctx, r.in.function_code), r.in.function_code, r.in.level);
 
 		status = dcerpc_netr_LogonControl2_r(b, tctx, &r);
-		torture_assert_ntstatus_ok(tctx, status, "LogonControl");
+		torture_assert_ntstatus_ok(tctx, status, "LogonControl2");
 	}
 
 	data.domain = lpcfg_workgroup(tctx->lp_ctx);
@@ -1977,11 +1977,11 @@ static bool test_LogonControl2(struct torture_context *tctx,
 	for (i=1;i<4;i++) {
 		r.in.level = i;
 
-		torture_comment(tctx, "Testing LogonControl2 level %d function %d\n", 
-		       i, r.in.function_code);
+		torture_comment(tctx, "Testing LogonControl2 function code %s (%d) level %d\n",
+			function_code_str(tctx, r.in.function_code), r.in.function_code, r.in.level);
 
 		status = dcerpc_netr_LogonControl2_r(b, tctx, &r);
-		torture_assert_ntstatus_ok(tctx, status, "LogonControl");
+		torture_assert_ntstatus_ok(tctx, status, "LogonControl2");
 	}
 
 	data.debug_level = ~0;
@@ -1992,11 +1992,11 @@ static bool test_LogonControl2(struct torture_context *tctx,
 	for (i=1;i<4;i++) {
 		r.in.level = i;
 
-		torture_comment(tctx, "Testing LogonControl2 level %d function %d\n", 
-		       i, r.in.function_code);
+		torture_comment(tctx, "Testing LogonControl2 function code %s (%d) level %d\n",
+			function_code_str(tctx, r.in.function_code), r.in.function_code, r.in.level);
 
 		status = dcerpc_netr_LogonControl2_r(b, tctx, &r);
-		torture_assert_ntstatus_ok(tctx, status, "LogonControl");
+		torture_assert_ntstatus_ok(tctx, status, "LogonControl2");
 	}
 
 	return true;
