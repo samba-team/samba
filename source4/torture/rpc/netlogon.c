@@ -690,6 +690,7 @@ static bool test_netlogon_ops_args(struct dcerpc_pipe *p, struct torture_context
 	NTSTATUS status;
 	struct netr_LogonSamLogon r;
 	struct netr_Authenticator auth, auth2;
+	static const struct netr_Authenticator auth_zero;
 	union netr_LogonLevel logon;
 	union netr_Validation validation;
 	uint8_t authoritative;
@@ -767,11 +768,54 @@ static bool test_netlogon_ops_args(struct dcerpc_pipe *p, struct torture_context
 		torture_assert(tctx, netlogon_creds_client_check(creds, 
 								 &r.out.return_authenticator->cred), 
 			"Credential chaining failed");
+		torture_assert_int_equal(tctx, *r.out.authoritative, 1,
+					 "LogonSamLogon invalid  *r.out.authoritative");
 	}
 
-	r.in.credential = NULL;
+	/* this makes sure we get the unmarshalling right for invalid levels */
+	for (i=52;i<53;i++) {
+		ZERO_STRUCT(auth2);
+		/* the authenticator should be ignored by the server */
+		generate_random_buffer(&auth, sizeof(auth));
+
+		r.in.validation_level = i;
+
+		torture_assert_ntstatus_ok(tctx, dcerpc_netr_LogonSamLogon_r(b, tctx, &r),
+					   "LogonSamLogon failed");
+		torture_assert_ntstatus_equal(tctx, r.out.result,
+					      NT_STATUS_INVALID_INFO_CLASS,
+					      "LogonSamLogon failed");
+
+		torture_assert_int_equal(tctx, *r.out.authoritative, 1,
+					 "LogonSamLogon invalid  *r.out.authoritative");
+		torture_assert(tctx,
+			       memcmp(&auth2, &auth_zero, sizeof(auth2)) == 0,
+			       "Return authenticator non zero");
+	}
 
 	for (i=2;i<=3;i++) {
+		ZERO_STRUCT(auth2);
+		netlogon_creds_client_authenticator(creds, &auth);
+
+		r.in.validation_level = i;
+
+		torture_assert_ntstatus_ok(tctx, dcerpc_netr_LogonSamLogon_r(b, tctx, &r),
+			"LogonSamLogon failed");
+		torture_assert_ntstatus_ok(tctx, r.out.result, "LogonSamLogon failed");
+
+		torture_assert(tctx, netlogon_creds_client_check(creds,
+								 &r.out.return_authenticator->cred),
+			"Credential chaining failed");
+		torture_assert_int_equal(tctx, *r.out.authoritative, 1,
+					 "LogonSamLogon invalid  *r.out.authoritative");
+	}
+
+	r.in.logon_level = 52;
+
+	for (i=2;i<=3;i++) {
+		ZERO_STRUCT(auth2);
+		/* the authenticator should be ignored by the server */
+		generate_random_buffer(&auth, sizeof(auth));
 
 		r.in.validation_level = i;
 
@@ -782,6 +826,52 @@ static bool test_netlogon_ops_args(struct dcerpc_pipe *p, struct torture_context
 		torture_assert_ntstatus_equal(tctx, r.out.result, NT_STATUS_INVALID_PARAMETER,
 			"LogonSamLogon expected INVALID_PARAMETER");
 
+		torture_assert(tctx,
+			       memcmp(&auth2, &auth_zero, sizeof(auth2)) == 0,
+			       "Return authenticator non zero");
+		torture_assert_int_equal(tctx, *r.out.authoritative, 1,
+					 "LogonSamLogon invalid  *r.out.authoritative");
+	}
+
+	r.in.credential = NULL;
+
+	for (i=2;i<=3;i++) {
+		ZERO_STRUCT(auth2);
+
+		r.in.validation_level = i;
+
+		torture_comment(tctx, "Testing SamLogon with validation level %d and a NULL credential\n", i);
+
+		torture_assert_ntstatus_ok(tctx, dcerpc_netr_LogonSamLogon_r(b, tctx, &r),
+			"LogonSamLogon failed");
+		torture_assert_ntstatus_equal(tctx, r.out.result, NT_STATUS_INVALID_PARAMETER,
+			"LogonSamLogon expected INVALID_PARAMETER");
+
+		torture_assert(tctx,
+			       memcmp(&auth2, &auth_zero, sizeof(auth2)) == 0,
+			       "Return authenticator non zero");
+		torture_assert_int_equal(tctx, *r.out.authoritative, 1,
+					 "LogonSamLogon invalid  *r.out.authoritative");
+	}
+
+	r.in.logon_level = 2;
+	r.in.credential = &auth;
+
+	for (i=2;i<=3;i++) {
+		ZERO_STRUCT(auth2);
+		netlogon_creds_client_authenticator(creds, &auth);
+
+		r.in.validation_level = i;
+
+		torture_assert_ntstatus_ok(tctx, dcerpc_netr_LogonSamLogon_r(b, tctx, &r),
+			"LogonSamLogon failed");
+		torture_assert_ntstatus_ok(tctx, r.out.result, "LogonSamLogon failed");
+
+		torture_assert(tctx, netlogon_creds_client_check(creds,
+								 &r.out.return_authenticator->cred),
+			"Credential chaining failed");
+		torture_assert_int_equal(tctx, *r.out.authoritative, 1,
+					 "LogonSamLogon invalid  *r.out.authoritative");
 	}
 
 	return true;
