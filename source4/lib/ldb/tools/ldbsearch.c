@@ -306,9 +306,7 @@ int main(int argc, const char **argv)
 	if (options->interactive) {
 		char line[1024];
 		while (fgets(line, sizeof(line), stdin)) {
-			if (do_search(ldb, basedn, options, line, attrs) == -1) {
-				ret = -1;
-			}
+			ret = do_search(ldb, basedn, options, line, attrs);
 		}
 	} else {
 		ret = do_search(ldb, basedn, options, expression, attrs);
