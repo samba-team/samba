@@ -28,7 +28,7 @@ import time
 import base64
 from decimal import Decimal
 
-sys.path.append("bin/python")
+sys.path.insert(0, "bin/python")
 import samba
 samba.ensure_external_module("testtools", "testtools")
 samba.ensure_external_module("subunit", "subunit/python")

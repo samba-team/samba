@@ -29,7 +29,7 @@ import sys
 import time
 import os
 
-sys.path.append("bin/python")
+sys.path.insert(0, "bin/python")
 
 from ldb import SCOPE_BASE
 

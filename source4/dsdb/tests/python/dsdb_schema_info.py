@@ -29,7 +29,7 @@ import sys
 import time
 import random
 
-sys.path.append("bin/python")
+sys.path.insert(0, "bin/python")
 import samba
 samba.ensure_external_module("testtools", "testtools")
 
