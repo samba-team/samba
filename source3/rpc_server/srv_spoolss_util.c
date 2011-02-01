@@ -655,46 +655,6 @@ done:
 	return result;
 }
 
-static WERROR winreg_printer_write_sz(TALLOC_CTX *mem_ctx,
-				      struct dcerpc_binding_handle *winreg_handle,
-				      struct policy_handle *key_handle,
-				      const char *value,
-				      const char *data)
-{
-	struct winreg_String wvalue;
-	DATA_BLOB blob;
-	WERROR result = WERR_OK;
-	NTSTATUS status;
-
-	wvalue.name = value;
-	if (data == NULL) {
-		blob = data_blob_string_const("");
-	} else {
-		if (!push_reg_sz(mem_ctx, &blob, data)) {
-			DEBUG(0, ("winreg_printer_write_sz: Could not marshall string %s for %s\n",
-				data, wvalue.name));
-			return WERR_NOMEM;
-		}
-	}
-	status = dcerpc_winreg_SetValue(winreg_handle,
-					mem_ctx,
-					key_handle,
-					wvalue,
-					REG_SZ,
-					blob.data,
-					blob.length,
-					&result);
-	if (!NT_STATUS_IS_OK(status)) {
-		result = ntstatus_to_werror(status);
-	}
-	if (!W_ERROR_IS_OK(result)) {
-		DEBUG(0, ("winreg_printer_write_sz: Could not set value %s: %s\n",
-			wvalue.name, win_errstr(result)));
-	}
-
-	return result;
-}
-
 static WERROR winreg_printer_write_dword(TALLOC_CTX *mem_ctx,
 					 struct dcerpc_binding_handle *winreg_handle,
 					 struct policy_handle *key_handle,
@@ -1310,20 +1270,28 @@ WERROR winreg_create_printer(TALLOC_CTX *mem_ctx,
 			const char *longname;
 			const char *uncname;
 
-			result = winreg_printer_write_sz(tmp_ctx,
-							 winreg_handle,
-							 &key_hnd,
-							 SPOOL_REG_PRINTERNAME,
-							 sharename);
+			status = dcerpc_winreg_set_sz(tmp_ctx,
+						      winreg_handle,
+						      &key_hnd,
+						      SPOOL_REG_PRINTERNAME,
+						      sharename,
+						      &result);
+			if (!NT_STATUS_IS_OK(status)) {
+				result = ntstatus_to_werror(status);
+			}
 			if (!W_ERROR_IS_OK(result)) {
 				goto done;
 			}
 
-			result = winreg_printer_write_sz(tmp_ctx,
-							 winreg_handle,
-							 &key_hnd,
-							 SPOOL_REG_SHORTSERVERNAME,
-							 global_myname());
+			status = dcerpc_winreg_set_sz(tmp_ctx,
+						      winreg_handle,
+						      &key_hnd,
+						      SPOOL_REG_SHORTSERVERNAME,
+						      global_myname(),
+						      &result);
+			if (!NT_STATUS_IS_OK(status)) {
+				result = ntstatus_to_werror(status);
+			}
 			if (!W_ERROR_IS_OK(result)) {
 				goto done;
 			}
@@ -1343,11 +1311,15 @@ WERROR winreg_create_printer(TALLOC_CTX *mem_ctx,
 				goto done;
 			}
 
-			result = winreg_printer_write_sz(tmp_ctx,
-							 winreg_handle,
-							 &key_hnd,
-							 SPOOL_REG_SERVERNAME,
-							 longname);
+			status = dcerpc_winreg_set_sz(tmp_ctx,
+						      winreg_handle,
+						      &key_hnd,
+						      SPOOL_REG_SERVERNAME,
+						      longname,
+						      &result);
+			if (!NT_STATUS_IS_OK(status)) {
+				result = ntstatus_to_werror(status);
+			}
 			if (!W_ERROR_IS_OK(result)) {
 				goto done;
 			}
@@ -1359,11 +1331,15 @@ WERROR winreg_create_printer(TALLOC_CTX *mem_ctx,
 				goto done;
 			}
 
-			result = winreg_printer_write_sz(tmp_ctx,
-							 winreg_handle,
-							 &key_hnd,
-							 SPOOL_REG_UNCNAME,
-							 uncname);
+			status = dcerpc_winreg_set_sz(tmp_ctx,
+						      winreg_handle,
+						      &key_hnd,
+						      SPOOL_REG_UNCNAME,
+						      uncname,
+						      &result);
+			if (!NT_STATUS_IS_OK(status)) {
+				result = ntstatus_to_werror(status);
+			}
 			if (!W_ERROR_IS_OK(result)) {
 				goto done;
 			}
@@ -1514,6 +1490,7 @@ WERROR winreg_update_printer(TALLOC_CTX *mem_ctx,
 	DATA_BLOB blob;
 	char *path;
 	WERROR result = WERR_OK;
+	NTSTATUS status;
 	TALLOC_CTX *tmp_ctx;
 
 	tmp_ctx = talloc_stackframe();
@@ -1571,22 +1548,30 @@ WERROR winreg_update_printer(TALLOC_CTX *mem_ctx,
 #endif
 
 	if (info2_mask & SPOOLSS_PRINTER_INFO_COMMENT) {
-		result = winreg_printer_write_sz(tmp_ctx,
-						 winreg_handle,
-						 &key_hnd,
-						 "Description",
-						 info2->comment);
+		status = dcerpc_winreg_set_sz(tmp_ctx,
+					      winreg_handle,
+					      &key_hnd,
+					      "Description",
+					      info2->comment,
+					      &result);
+		if (!NT_STATUS_IS_OK(status)) {
+			result = ntstatus_to_werror(status);
+		}
 		if (!W_ERROR_IS_OK(result)) {
 			goto done;
 		}
 	}
 
 	if (info2_mask & SPOOLSS_PRINTER_INFO_DATATYPE) {
-		result = winreg_printer_write_sz(tmp_ctx,
-						 winreg_handle,
-						 &key_hnd,
-						 "Datatype",
-						 info2->datatype);
+		status = dcerpc_winreg_set_sz(tmp_ctx,
+					      winreg_handle,
+					      &key_hnd,
+					      "Datatype",
+					      info2->datatype,
+					      &result);
+		if (!NT_STATUS_IS_OK(status)) {
+			result = ntstatus_to_werror(status);
+		}
 		if (!W_ERROR_IS_OK(result)) {
 			goto done;
 		}
@@ -1642,44 +1627,60 @@ WERROR winreg_update_printer(TALLOC_CTX *mem_ctx,
 	}
 
 	if (info2_mask & SPOOLSS_PRINTER_INFO_DRIVERNAME) {
-		result = winreg_printer_write_sz(tmp_ctx,
-						 winreg_handle,
-						 &key_hnd,
-						 "Printer Driver",
-						 info2->drivername);
+		status = dcerpc_winreg_set_sz(tmp_ctx,
+					      winreg_handle,
+					      &key_hnd,
+					      "Printer Driver",
+					      info2->drivername,
+					      &result);
+		if (!NT_STATUS_IS_OK(status)) {
+			result = ntstatus_to_werror(status);
+		}
 		if (!W_ERROR_IS_OK(result)) {
 			goto done;
 		}
 	}
 
 	if (info2_mask & SPOOLSS_PRINTER_INFO_LOCATION) {
-		result = winreg_printer_write_sz(tmp_ctx,
-						 winreg_handle,
-						 &key_hnd,
-						 "Location",
-						 info2->location);
+		status = dcerpc_winreg_set_sz(tmp_ctx,
+					      winreg_handle,
+					      &key_hnd,
+					      "Location",
+					      info2->location,
+					      &result);
+		if (!NT_STATUS_IS_OK(status)) {
+			result = ntstatus_to_werror(status);
+		}
 		if (!W_ERROR_IS_OK(result)) {
 			goto done;
 		}
 	}
 
 	if (info2_mask & SPOOLSS_PRINTER_INFO_PARAMETERS) {
-		result = winreg_printer_write_sz(tmp_ctx,
-						 winreg_handle,
-						 &key_hnd,
-						 "Parameters",
-						 info2->parameters);
+		status = dcerpc_winreg_set_sz(tmp_ctx,
+					      winreg_handle,
+					      &key_hnd,
+					      "Parameters",
+					      info2->parameters,
+					      &result);
+		if (!NT_STATUS_IS_OK(status)) {
+			result = ntstatus_to_werror(status);
+		}
 		if (!W_ERROR_IS_OK(result)) {
 			goto done;
 		}
 	}
 
 	if (info2_mask & SPOOLSS_PRINTER_INFO_PORTNAME) {
-		result = winreg_printer_write_sz(tmp_ctx,
-						 winreg_handle,
-						 &key_hnd,
-						 "Port",
-						 info2->portname);
+		status = dcerpc_winreg_set_sz(tmp_ctx,
+					      winreg_handle,
+					      &key_hnd,
+					      "Port",
+					      info2->portname,
+					      &result);
+		if (!NT_STATUS_IS_OK(status)) {
+			result = ntstatus_to_werror(status);
+		}
 		if (!W_ERROR_IS_OK(result)) {
 			goto done;
 		}
@@ -1703,22 +1704,30 @@ WERROR winreg_update_printer(TALLOC_CTX *mem_ctx,
 		} else {
 			p++;
 		}
-		result = winreg_printer_write_sz(tmp_ctx,
-						 winreg_handle,
-						 &key_hnd,
-						 "Name",
-						 p);
+		status = dcerpc_winreg_set_sz(tmp_ctx,
+					      winreg_handle,
+					      &key_hnd,
+					      "Name",
+					      p,
+					      &result);
+		if (!NT_STATUS_IS_OK(status)) {
+			result = ntstatus_to_werror(status);
+		}
 		if (!W_ERROR_IS_OK(result)) {
 			goto done;
 		}
 	}
 
 	if (info2_mask & SPOOLSS_PRINTER_INFO_PRINTPROCESSOR) {
-		result = winreg_printer_write_sz(tmp_ctx,
-						 winreg_handle,
-						 &key_hnd,
-						 "Print Processor",
-						 info2->printprocessor);
+		status = dcerpc_winreg_set_sz(tmp_ctx,
+					      winreg_handle,
+					      &key_hnd,
+					      "Print Processor",
+					      info2->printprocessor,
+					      &result);
+		if (!NT_STATUS_IS_OK(status)) {
+			result = ntstatus_to_werror(status);
+		}
 		if (!W_ERROR_IS_OK(result)) {
 			goto done;
 		}
@@ -1757,22 +1766,30 @@ WERROR winreg_update_printer(TALLOC_CTX *mem_ctx,
 	}
 
 	if (info2_mask & SPOOLSS_PRINTER_INFO_SEPFILE) {
-		result = winreg_printer_write_sz(tmp_ctx,
-						 winreg_handle,
-						 &key_hnd,
-						 "Separator File",
-						 info2->sepfile);
+		status = dcerpc_winreg_set_sz(tmp_ctx,
+					      winreg_handle,
+					      &key_hnd,
+					      "Separator File",
+					      info2->sepfile,
+					      &result);
+		if (!NT_STATUS_IS_OK(status)) {
+			result = ntstatus_to_werror(status);
+		}
 		if (!W_ERROR_IS_OK(result)) {
 			goto done;
 		}
 	}
 
 	if (info2_mask & SPOOLSS_PRINTER_INFO_SHARENAME) {
-		result = winreg_printer_write_sz(tmp_ctx,
-						 winreg_handle,
-						 &key_hnd,
-						 "Share Name",
-						 info2->sharename);
+		status = dcerpc_winreg_set_sz(tmp_ctx,
+					      winreg_handle,
+					      &key_hnd,
+					      "Share Name",
+					      info2->sharename,
+					      &result);
+		if (!NT_STATUS_IS_OK(status)) {
+			result = ntstatus_to_werror(status);
+		}
 		if (!W_ERROR_IS_OK(result)) {
 			goto done;
 		}
@@ -3648,6 +3665,7 @@ WERROR winreg_add_driver(TALLOC_CTX *mem_ctx,
 	struct policy_handle hive_hnd, key_hnd;
 	struct spoolss_DriverInfo8 info8;
 	TALLOC_CTX *tmp_ctx = NULL;
+	NTSTATUS status;
 	WERROR result;
 
 	ZERO_STRUCT(hive_hnd);
@@ -3691,30 +3709,54 @@ WERROR winreg_add_driver(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	result = winreg_printer_write_sz(tmp_ctx, winreg_handle,
-					 &key_hnd, "Driver",
-					 info8.driver_path);
+	status = dcerpc_winreg_set_sz(tmp_ctx,
+				      winreg_handle,
+				      &key_hnd,
+				      "Driver",
+				      info8.driver_path,
+				      &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		result = ntstatus_to_werror(status);
+	}
 	if (!W_ERROR_IS_OK(result)) {
 		goto done;
 	}
 
-	result = winreg_printer_write_sz(tmp_ctx, winreg_handle,
-					 &key_hnd, "Data File",
-					 info8.data_file);
+	status = dcerpc_winreg_set_sz(tmp_ctx,
+				      winreg_handle,
+				      &key_hnd,
+				      "Data File",
+				      info8.data_file,
+				      &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		result = ntstatus_to_werror(status);
+	}
 	if (!W_ERROR_IS_OK(result)) {
 		goto done;
 	}
 
-	result = winreg_printer_write_sz(tmp_ctx, winreg_handle,
-					 &key_hnd, "Configuration File",
-					 info8.config_file);
+	status = dcerpc_winreg_set_sz(tmp_ctx,
+				      winreg_handle,
+				      &key_hnd,
+				      "Configuration File",
+				      info8.config_file,
+				      &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		result = ntstatus_to_werror(status);
+	}
 	if (!W_ERROR_IS_OK(result)) {
 		goto done;
 	}
 
-	result = winreg_printer_write_sz(tmp_ctx, winreg_handle,
-					 &key_hnd, "Help File",
-					 info8.help_file);
+	status = dcerpc_winreg_set_sz(tmp_ctx,
+				      winreg_handle,
+				      &key_hnd,
+				      "Help File",
+				      info8.help_file,
+				      &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		result = ntstatus_to_werror(status);
+	}
 	if (!W_ERROR_IS_OK(result)) {
 		goto done;
 	}
@@ -3726,16 +3768,28 @@ WERROR winreg_add_driver(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	result = winreg_printer_write_sz(tmp_ctx, winreg_handle,
-					 &key_hnd, "Monitor",
-					 info8.monitor_name);
+	status = dcerpc_winreg_set_sz(tmp_ctx,
+				      winreg_handle,
+				      &key_hnd,
+				      "Monitor",
+				      info8.monitor_name,
+				      &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		result = ntstatus_to_werror(status);
+	}
 	if (!W_ERROR_IS_OK(result)) {
 		goto done;
 	}
 
-	result = winreg_printer_write_sz(tmp_ctx, winreg_handle,
-					 &key_hnd, "Datatype",
-					 info8.default_datatype);
+	status = dcerpc_winreg_set_sz(tmp_ctx,
+				      winreg_handle,
+				      &key_hnd,
+				      "Datatype",
+				      info8.default_datatype,
+				      &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		result = ntstatus_to_werror(status);
+	}
 	if (!W_ERROR_IS_OK(result)) {
 		goto done;
 	}
@@ -3761,44 +3815,80 @@ WERROR winreg_add_driver(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	result = winreg_printer_write_sz(tmp_ctx, winreg_handle,
-					 &key_hnd, "Manufacturer",
-					 info8.manufacturer_name);
+	status = dcerpc_winreg_set_sz(tmp_ctx,
+				      winreg_handle,
+				      &key_hnd,
+				      "Manufacturer",
+				      info8.manufacturer_name,
+				      &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		result = ntstatus_to_werror(status);
+	}
 	if (!W_ERROR_IS_OK(result)) {
 		goto done;
 	}
 
-	result = winreg_printer_write_sz(tmp_ctx, winreg_handle,
-					 &key_hnd, "OEM URL",
-					 info8.manufacturer_url);
+	status = dcerpc_winreg_set_sz(tmp_ctx,
+				      winreg_handle,
+				      &key_hnd,
+				      "OEM URL",
+				      info8.manufacturer_url,
+				      &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		result = ntstatus_to_werror(status);
+	}
 	if (!W_ERROR_IS_OK(result)) {
 		goto done;
 	}
 
-	result = winreg_printer_write_sz(tmp_ctx, winreg_handle,
-					 &key_hnd, "HardwareID",
-					 info8.hardware_id);
+	status = dcerpc_winreg_set_sz(tmp_ctx,
+				      winreg_handle,
+				      &key_hnd,
+				      "HardwareID",
+				      info8.hardware_id,
+				      &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		result = ntstatus_to_werror(status);
+	}
 	if (!W_ERROR_IS_OK(result)) {
 		goto done;
 	}
 
-	result = winreg_printer_write_sz(tmp_ctx, winreg_handle,
-					 &key_hnd, "Provider",
-					 info8.provider);
+	status = dcerpc_winreg_set_sz(tmp_ctx,
+				      winreg_handle,
+				      &key_hnd,
+				      "Provider",
+				      info8.provider,
+				      &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		result = ntstatus_to_werror(status);
+	}
 	if (!W_ERROR_IS_OK(result)) {
 		goto done;
 	}
 
-	result = winreg_printer_write_sz(tmp_ctx, winreg_handle,
-					 &key_hnd, "Print Processor",
-					 info8.print_processor);
+	status = dcerpc_winreg_set_sz(tmp_ctx,
+				      winreg_handle,
+				      &key_hnd,
+				      "Print Processor",
+				      info8.print_processor,
+				      &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		result = ntstatus_to_werror(status);
+	}
 	if (!W_ERROR_IS_OK(result)) {
 		goto done;
 	}
 
-	result = winreg_printer_write_sz(tmp_ctx, winreg_handle,
-					 &key_hnd, "VendorSetup",
-					 info8.vendor_setup);
+	status = dcerpc_winreg_set_sz(tmp_ctx,
+				      winreg_handle,
+				      &key_hnd,
+				      "VendorSetup",
+				      info8.vendor_setup,
+				      &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		result = ntstatus_to_werror(status);
+	}
 	if (!W_ERROR_IS_OK(result)) {
 		goto done;
 	}
@@ -3810,9 +3900,15 @@ WERROR winreg_add_driver(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	result = winreg_printer_write_sz(tmp_ctx, winreg_handle,
-					 &key_hnd, "InfPath",
-					 info8.inf_path);
+	status = dcerpc_winreg_set_sz(tmp_ctx,
+				      winreg_handle,
+				      &key_hnd,
+				      "InfPath",
+				      info8.inf_path,
+				      &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		result = ntstatus_to_werror(status);
+	}
 	if (!W_ERROR_IS_OK(result)) {
 		goto done;
 	}
