@@ -655,36 +655,6 @@ done:
 	return result;
 }
 
-static WERROR winreg_printer_write_binary(TALLOC_CTX *mem_ctx,
-					  struct dcerpc_binding_handle *winreg_handle,
-					  struct policy_handle *key_handle,
-					  const char *value,
-					  DATA_BLOB blob)
-{
-	struct winreg_String wvalue;
-	WERROR result = WERR_OK;
-	NTSTATUS status;
-
-	wvalue.name = value;
-	status = dcerpc_winreg_SetValue(winreg_handle,
-					mem_ctx,
-					key_handle,
-					wvalue,
-					REG_BINARY,
-					blob.data,
-					blob.length,
-					&result);
-	if (!NT_STATUS_IS_OK(status)) {
-		result = ntstatus_to_werror(status);
-	}
-	if (!W_ERROR_IS_OK(result)) {
-		DEBUG(0, ("winreg_printer_write_binary: Could not set value %s: %s\n",
-			wvalue.name, win_errstr(result)));
-	}
-
-	return result;
-}
-
 static WERROR winreg_printer_query_binary(TALLOC_CTX *mem_ctx,
 					  struct dcerpc_binding_handle *winreg_handle,
 					  struct policy_handle *key_handle,
@@ -1614,11 +1584,15 @@ WERROR winreg_update_printer(TALLOC_CTX *mem_ctx,
 			goto done;
 		}
 
-		result = winreg_printer_write_binary(tmp_ctx,
-						     winreg_handle,
-						     &key_hnd,
-						     "Default DevMode",
-						     blob);
+		status = dcerpc_winreg_set_binary(tmp_ctx,
+						  winreg_handle,
+						  &key_hnd,
+						  "Default DevMode",
+						  &blob,
+						  &result);
+		if (!NT_STATUS_IS_OK(status)) {
+			result = ntstatus_to_werror(status);
+		}
 		if (!W_ERROR_IS_OK(result)) {
 			goto done;
 		}
@@ -2148,6 +2122,7 @@ WERROR winreg_get_printer_secdesc(TALLOC_CTX *mem_ctx,
 	const char *path;
 	DATA_BLOB blob;
 	TALLOC_CTX *tmp_ctx;
+	NTSTATUS status;
 	WERROR result;
 
 	tmp_ctx = talloc_stackframe();
@@ -2269,19 +2244,15 @@ create_default:
 		}
 	}
 
-	ndr_err = ndr_push_struct_blob(&blob, tmp_ctx, secdesc,
-			(ndr_push_flags_fn_t) ndr_push_security_descriptor);
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		DEBUG(0, ("winreg_set_secdesc: Failed to marshall security descriptor\n"));
-		result = WERR_NOMEM;
-		goto done;
+	status = dcerpc_winreg_set_sd(tmp_ctx,
+					  winreg_handle,
+					  &key_hnd,
+					  "Security",
+					  secdesc,
+					  &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		result = ntstatus_to_werror(status);
 	}
-
-	result = winreg_printer_write_binary(tmp_ctx,
-					     winreg_handle,
-					     &key_hnd,
-					     "Security",
-					     blob);
 	if (!W_ERROR_IS_OK(result)) {
 		return result;
 	}
@@ -2318,10 +2289,9 @@ WERROR winreg_set_printer_secdesc(TALLOC_CTX *mem_ctx,
 	uint32_t access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	struct dcerpc_binding_handle *winreg_handle = NULL;
 	struct policy_handle hive_hnd, key_hnd;
-	enum ndr_err_code ndr_err;
 	const char *path;
-	DATA_BLOB blob;
 	TALLOC_CTX *tmp_ctx;
+	NTSTATUS status;
 	WERROR result;
 
 	tmp_ctx = talloc_stackframe();
@@ -2405,19 +2375,15 @@ WERROR winreg_set_printer_secdesc(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	ndr_err = ndr_push_struct_blob(&blob, tmp_ctx, new_secdesc,
-			(ndr_push_flags_fn_t) ndr_push_security_descriptor);
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		DEBUG(0, ("winreg_set_secdesc: Failed to marshall security descriptor\n"));
-		result = WERR_NOMEM;
-		goto done;
+	status = dcerpc_winreg_set_sd(tmp_ctx,
+				      winreg_handle,
+				      &key_hnd,
+				      "Security",
+				      new_secdesc,
+				      &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		result = ntstatus_to_werror(status);
 	}
-
-	result = winreg_printer_write_binary(tmp_ctx,
-					     winreg_handle,
-					     &key_hnd,
-					     "Security",
-					     blob);
 
 done:
 	if (winreg_handle != NULL) {
