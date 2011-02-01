@@ -621,6 +621,28 @@ def SAMBA_SCRIPT(bld, name, pattern, installdir, installname=None):
 
 Build.BuildContext.SAMBA_SCRIPT = SAMBA_SCRIPT
 
+def copy_and_fix_python_path(task):
+    pattern='sys.path.insert(0, "bin/python")'
+    if task.env["PYTHONARCHDIR"] in sys.path and task.env["PYTHONDIR"] in sys.path:
+        replacement = ""
+    elif task.env["PYTHONARCHDIR"] == task.env["PYTHONDIR"]:
+        replacement="""sys.path.insert(0, "%s")""" % task.env["PYTHONDIR"]
+    else:
+        replacement="""sys.path.insert(0, "%s")
+sys.path.insert(1, "%s")""" % (task.env["PYTHONARCHDIR"], task.env["PYTHONDIR"])
+
+    installed_location=task.outputs[0].bldpath(task.env)
+    source_file = open(task.inputs[0].srcpath(task.env))
+    installed_file = open(installed_location, 'w')
+    for line in source_file:
+        newline = line
+        if pattern in line:
+            newline = line.replace(pattern, replacement)
+        installed_file.write(newline)
+    installed_file.close()
+    os.chmod(installed_location, 0755)
+    return 0
+
 
 def install_file(bld, destdir, file, chmod=MODE_644, flat=False,
                  python_fixup=False, destname=None, base_name=None):
@@ -634,14 +656,8 @@ def install_file(bld, destdir, file, chmod=MODE_644, flat=False,
     if python_fixup:
         # fixup the python path it will use to find Samba modules
         inst_file = file + '.inst'
-        if bld.env["PYTHONARCHDIR"] not in sys.path:
-            regex = "s|\(sys.path.insert.*\)bin/python\(.*\)$|\\1${PYTHONARCHDIR}\\2|g"
-        else:
-            # Eliminate updating sys.path if the target python dir is already
-            # in python path.
-            regex = "s|sys.path.insert.*bin/python.*$||g"
         bld.SAMBA_GENERATOR('python_%s' % destname,
-                            rule="sed '%s' < ${SRC} > ${TGT}" % regex,
+                            rule=copy_and_fix_python_path,
                             source=file,
                             target=inst_file)
         file = inst_file
