@@ -190,11 +190,11 @@ static int save_ldif(struct ldb_context *ldb,
 {
 	unsigned int i;
 
-	fprintf(f, "# editing %d records\n", count);
+	fprintf(f, "# editing %u records\n", count);
 
 	for (i=0;i<count;i++) {
 		struct ldb_ldif ldif;
-		fprintf(f, "# record %d\n", i+1);
+		fprintf(f, "# record %u\n", i+1);
 
 		ldif.changetype = LDB_CHANGETYPE_NONE;
 		ldif.msg = msgs[i];
