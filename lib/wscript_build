@@ -17,14 +17,14 @@ for module, package in external_libs.items():
         list.append(package)
 
 for e in list:
-    bld.INSTALL_WILDCARD('${PYTHONDIR}/samba/external', e + '/**/*', flat=False,
+    bld.INSTALL_WILDCARD('${PYTHONARCHDIR}/samba/external', e + '/**/*', flat=False,
                          exclude='*.pyc', trim_path=os.path.dirname(e))
 
 bld.SAMBA_GENERATOR('external_init_py',
                     rule='touch ${TGT}',
                     target='empty_file')
 
-bld.INSTALL_FILES('${PYTHONDIR}/samba/external', 'empty_file', destname='__init__.py')
+bld.INSTALL_FILES('${PYTHONARCHDIR}/samba/external', 'empty_file', destname='__init__.py')
 
 # a grouping library for event and socket related subsystems
 bld.SAMBA_LIBRARY('samba-sockets',
