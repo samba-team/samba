@@ -1300,6 +1300,65 @@ NTSTATUS _netr_LogonSamLogoff(struct pipes_struct *p,
 	return status;
 }
 
+static NTSTATUS _netr_LogonSamLogon_check(const struct netr_LogonSamLogonEx *r)
+{
+	switch (r->in.logon_level) {
+	case NetlogonInteractiveInformation:
+	case NetlogonServiceInformation:
+	case NetlogonInteractiveTransitiveInformation:
+	case NetlogonServiceTransitiveInformation:
+		if (r->in.logon->password == NULL) {
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+
+		switch (r->in.validation_level) {
+		case NetlogonValidationSamInfo:  /* 2 */
+		case NetlogonValidationSamInfo2: /* 3 */
+		case NetlogonValidationSamInfo4: /* 6 */
+			break;
+		default:
+			return NT_STATUS_INVALID_INFO_CLASS;
+		}
+
+		break;
+	case NetlogonNetworkInformation:
+	case NetlogonNetworkTransitiveInformation:
+		if (r->in.logon->network == NULL) {
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+
+		switch (r->in.validation_level) {
+		case NetlogonValidationSamInfo:  /* 2 */
+		case NetlogonValidationSamInfo2: /* 3 */
+		case NetlogonValidationSamInfo4: /* 6 */
+			break;
+		default:
+			return NT_STATUS_INVALID_INFO_CLASS;
+		}
+
+		break;
+
+	case NetlogonGenericInformation:
+		if (r->in.logon->generic == NULL) {
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+
+		switch (r->in.validation_level) {
+		/* TODO: case NetlogonValidationGenericInfo: 4 */
+		case NetlogonValidationGenericInfo2: /* 5 */
+			break;
+		default:
+			return NT_STATUS_INVALID_INFO_CLASS;
+		}
+
+		break;
+	default:
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	return NT_STATUS_OK;
+}
+
 /*************************************************************************
  _netr_LogonSamLogon_base
  *************************************************************************/
@@ -1556,16 +1615,7 @@ NTSTATUS _netr_LogonSamLogonWithFlags(struct pipes_struct *p,
 	struct netr_LogonSamLogonEx r2;
 	struct netr_Authenticator return_authenticator;
 
-	become_root();
-	status = netr_creds_server_step_check(p, p->mem_ctx,
-					      r->in.computer_name,
-					      r->in.credential,
-					      &return_authenticator,
-					      &creds);
-	unbecome_root();
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
+	*r->out.authoritative = true;
 
 	r2.in.server_name	= r->in.server_name;
 	r2.in.computer_name	= r->in.computer_name;
@@ -1576,6 +1626,22 @@ NTSTATUS _netr_LogonSamLogonWithFlags(struct pipes_struct *p,
 	r2.out.validation	= r->out.validation;
 	r2.out.authoritative	= r->out.authoritative;
 	r2.out.flags		= r->out.flags;
+
+	status = _netr_LogonSamLogon_check(&r2);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	become_root();
+	status = netr_creds_server_step_check(p, p->mem_ctx,
+					      r->in.computer_name,
+					      r->in.credential,
+					      &return_authenticator,
+					      &creds);
+	unbecome_root();
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 
 	status = _netr_LogonSamLogon_base(p, &r2, creds);
 
@@ -1624,10 +1690,9 @@ NTSTATUS _netr_LogonSamLogonEx(struct pipes_struct *p,
 	NTSTATUS status;
 	struct netlogon_creds_CredentialState *creds = NULL;
 
-	become_root();
-	status = schannel_get_creds_state(p->mem_ctx, lp_private_dir(),
-					  r->in.computer_name, &creds);
-	unbecome_root();
+	*r->out.authoritative = true;
+
+	status = _netr_LogonSamLogon_check(r);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -1638,6 +1703,14 @@ NTSTATUS _netr_LogonSamLogonEx(struct pipes_struct *p,
 			get_remote_machine_name() ));
 		return NT_STATUS_INVALID_PARAMETER;
         }
+
+	become_root();
+	status = schannel_get_creds_state(p->mem_ctx, lp_private_dir(),
+					  r->in.computer_name, &creds);
+	unbecome_root();
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 
 	status = _netr_LogonSamLogon_base(p, r, creds);
 	TALLOC_FREE(creds);
