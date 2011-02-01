@@ -114,6 +114,49 @@ need printing functionality in their appliances, reducing the code
 footprint.
 
 
+ID Mapping Changes
+------------------
+
+The id mapping configuration has been a source of much grief in the past.
+For this release, id mapping has ben rewritten yet again with the goal
+of making the configuration more simple and more coherent while keeping
+the needed flexibility and even adding to the flexibility in some respects.
+
+The major change that implies the configuration simplifications is at
+the heart of the id mapping system: The separation of the "idmap alloc
+system" that is responsible for the unix id counters in the tdb, tdb2
+and ldap idmap backends from the id mapping code itself has been removed.
+The sids_to_unixids operation is now atomic and encapsulates (if needed)
+the action of allocating a unix id for a mapping that is to be created.
+Consequently all idmap alloc configuration parameters have vanished and
+it is hence now also not possible any more to specify an idmap alloc
+backend different from the idmap backend. Each idmap backend uses its
+own idmap unixid creation mechanism transparently.
+
+As a consequence of the id mapping changes, the methods that are used
+for storing and deleting id mappings have been removed from the winbindd
+API. The "net idmap dump/restore" commands have been rewritten to
+not speak through winbindd any more but directly act on the databases.
+This is currently available for the tdb and tdb2 backends, the implementation
+for ldap still missing.
+
+The allocate_id functionality is preserved for the unix id creator of the
+default idmap configuration is also used as the source of unix ids
+for the group mapping database and for the posix attributes in a
+ldapsam:editposix setup.
+
+As part of the changes, the default idmap configuration has been
+changed to be more coherent with the per-domain configuration.
+The parameters "idmap uid", "idmap gid" and "idmap range" are now
+deprecated in favour of the systematic "idmap config * : range"
+and "idmap config * : backend" parameters. The reason for this change
+is that the old options only provided an incomplete and hence deceiving
+backwards compatibility, which was a source of many problems with
+updgrades. By introducing this change in configuration, it should be
+brought to the conciousness of the users that even the simple
+id mapping is not working exactly as in Samba 3.0 versions any more.
+
+
 SMB Traffic Analyzer
 --------------------
 
