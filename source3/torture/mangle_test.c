@@ -42,44 +42,51 @@ static bool test_one(struct cli_state *cli, const char *name)
 
 	total++;
 
-	if (!NT_STATUS_IS_OK(cli_open(cli, name, O_RDWR|O_CREAT|O_EXCL, DENY_NONE, &fnum))) {
-		printf("open of %s failed (%s)\n", name, cli_errstr(cli));
+	status = cli_open(cli, name, O_RDWR|O_CREAT|O_EXCL, DENY_NONE, &fnum);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("open of %s failed (%s)\n", name, nt_errstr(status));
 		return False;
 	}
 
-	if (!NT_STATUS_IS_OK(cli_close(cli, fnum))) {
-		printf("close of %s failed (%s)\n", name, cli_errstr(cli));
+	status = cli_close(cli, fnum);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("close of %s failed (%s)\n", name, nt_errstr(status));
 		return False;
 	}
 
 	/* get the short name */
 	status = cli_qpathinfo_alt_name(cli, name, shortname);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("query altname of %s failed (%s)\n", name, cli_errstr(cli));
+		printf("query altname of %s failed (%s)\n", name, nt_errstr(status));
 		return False;
 	}
 
 	fstr_sprintf(name2, "\\mangle_test\\%s", shortname);
-	if (!NT_STATUS_IS_OK(cli_unlink(cli, name2, FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN))) {
+	status = cli_unlink(cli, name2, FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
+	if (!NT_STATUS_IS_OK(status)) {
 		printf("unlink of %s  (%s) failed (%s)\n", 
-		       name2, name, cli_errstr(cli));
+		       name2, name, nt_errstr(status));
 		return False;
 	}
 
 	/* recreate by short name */
-	if (!NT_STATUS_IS_OK(cli_open(cli, name2, O_RDWR|O_CREAT|O_EXCL, DENY_NONE, &fnum))) {
-		printf("open2 of %s failed (%s)\n", name2, cli_errstr(cli));
+	status = cli_open(cli, name2, O_RDWR|O_CREAT|O_EXCL, DENY_NONE, &fnum);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("open2 of %s failed (%s)\n", name2, nt_errstr(status));
 		return False;
 	}
-	if (!NT_STATUS_IS_OK(cli_close(cli, fnum))) {
-		printf("close of %s failed (%s)\n", name, cli_errstr(cli));
+
+	status = cli_close(cli, fnum);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("close of %s failed (%s)\n", name, nt_errstr(status));
 		return False;
 	}
 
 	/* and unlink by long name */
-	if (!NT_STATUS_IS_OK(cli_unlink(cli, name, FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN))) {
+	status = cli_unlink(cli, name, FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
+	if (!NT_STATUS_IS_OK(status)) {
 		printf("unlink2 of %s  (%s) failed (%s)\n", 
-		       name, name2, cli_errstr(cli));
+		       name, name2, nt_errstr(status));
 		failures++;
 		cli_unlink(cli, name2, FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
 		return True;
