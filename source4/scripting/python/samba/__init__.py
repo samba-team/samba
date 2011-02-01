@@ -32,10 +32,9 @@ def in_source_tree():
     return os.path.exists("%s/../../../selftest/skip" % os.path.dirname(__file__))
 
 
-# When running, in-tree, make sure bin/python is in the PYTHONPATH
+# When running, in-tree, make sure ldb modules can be found
 if in_source_tree():
     srcdir = "%s/../../.." % os.path.dirname(__file__)
-    sys.path.append("%s/bin/python" % srcdir)
     default_ldb_modules_dir = "%s/bin/modules/ldb" % srcdir
 else:
     default_ldb_modules_dir = None
