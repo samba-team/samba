@@ -655,81 +655,6 @@ done:
 	return result;
 }
 
-static WERROR winreg_printer_query_dword(TALLOC_CTX *mem_ctx,
-					 struct dcerpc_binding_handle *winreg_handle,
-					 struct policy_handle *key_handle,
-					 const char *value,
-					 uint32_t *data)
-{
-	struct winreg_String wvalue;
-	enum winreg_Type type;
-	WERROR result = WERR_OK;
-	uint32_t value_len = 0;
-	uint32_t data_size = 0;
-	NTSTATUS status;
-	DATA_BLOB blob;
-
-	wvalue.name = value;
-	status = dcerpc_winreg_QueryValue(winreg_handle,
-					  mem_ctx,
-					  key_handle,
-					  &wvalue,
-					  &type,
-					  NULL,
-					  &data_size,
-					  &value_len,
-					  &result);
-	if (!NT_STATUS_IS_OK(status)) {
-		result = ntstatus_to_werror(status);
-	}
-	if (!W_ERROR_IS_OK(result)) {
-		DEBUG(2, ("winreg_printer_query_dword: Could not query value %s: %s\n",
-			  wvalue.name, win_errstr(result)));
-		goto done;
-	}
-
-	if (type != REG_DWORD) {
-		result = WERR_INVALID_DATATYPE;
-		goto done;
-	}
-
-	if (data_size != 4) {
-		result = WERR_INVALID_DATA;
-		goto done;
-	}
-
-	blob = data_blob_talloc(mem_ctx, NULL, data_size);
-	if (blob.data == NULL) {
-		result = WERR_NOMEM;
-		goto done;
-	}
-	value_len = 0;
-
-	status = dcerpc_winreg_QueryValue(winreg_handle,
-					  mem_ctx,
-					  key_handle,
-					  &wvalue,
-					  &type,
-					  blob.data,
-					  &data_size,
-					  &value_len,
-					  &result);
-	if (!NT_STATUS_IS_OK(status)) {
-		result = ntstatus_to_werror(status);
-	}
-	if (!W_ERROR_IS_OK(result)) {
-		DEBUG(2, ("winreg_printer_query_dword: Could not query value %s: %s\n",
-			  wvalue.name, win_errstr(result)));
-		goto done;
-	}
-
-	if (data) {
-		*data = IVAL(blob.data, 0);
-	}
-done:
-	return result;
-}
-
 static WERROR winreg_printer_write_multi_sz(TALLOC_CTX *mem_ctx,
 					    struct dcerpc_binding_handle *winreg_handle,
 					    struct policy_handle *key_handle,
@@ -2955,6 +2880,7 @@ WERROR winreg_printer_get_changeid(TALLOC_CTX *mem_ctx,
 	struct policy_handle hive_hnd, key_hnd;
 	uint32_t changeid = 0;
 	char *path;
+	NTSTATUS status;
 	WERROR result;
 	TALLOC_CTX *tmp_ctx;
 
@@ -2990,11 +2916,15 @@ WERROR winreg_printer_get_changeid(TALLOC_CTX *mem_ctx,
 
 	DEBUG(10, ("winreg_printer_get_changeid: get changeid from %s\n", path));
 
-	result = winreg_printer_query_dword(tmp_ctx,
-					    winreg_handle,
-					    &key_hnd,
-					    "ChangeID",
-					    &changeid);
+	status = dcerpc_winreg_query_dword(tmp_ctx,
+					   winreg_handle,
+					   &key_hnd,
+					   "ChangeID",
+					   &changeid,
+					   &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		result = ntstatus_to_werror(status);
+	}
 	if (!W_ERROR_IS_OK(result)) {
 		goto done;
 	}
