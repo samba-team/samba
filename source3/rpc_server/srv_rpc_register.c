@@ -39,6 +39,7 @@
 
 #include "printing/nt_printing_migrate.h"
 #include "rpc_server/srv_eventlog_reg.h"
+#include "rpc_server/srv_svcctl_reg.h"
 
 #include "librpc/rpc/dcerpc_ep.h"
 
@@ -192,11 +193,25 @@ static bool spoolss_shutdown_cb(void *ptr)
 
 static bool svcctl_init_cb(void *ptr)
 {
+	struct messaging_context *msg_ctx = talloc_get_type_abort(
+		ptr, struct messaging_context);
+	bool ok;
+
+	ok = svcctl_init_winreg(msg_ctx);
+	if (!ok) {
+		return false;
+	}
+
+	/* initialize the control hooks */
+	init_service_op_table();
+
 	return NT_STATUS_IS_OK(_rpc_ep_register(&ndr_table_svcctl, "svcctl"));
 }
 
 static bool svcctl_shutdown_cb(void *ptr)
 {
+	shutdown_service_op_table();
+
 	return NT_STATUS_IS_OK(_rpc_ep_unregister(&ndr_table_svcctl));
 }
 
@@ -351,7 +366,7 @@ bool srv_rpc_register(struct messaging_context *msg_ctx) {
 
 	svcctl_cb.init         = svcctl_init_cb;
 	svcctl_cb.shutdown     = svcctl_shutdown_cb;
-	svcctl_cb.private_data = NULL;
+	svcctl_cb.private_data = msg_ctx;
 	if (!NT_STATUS_IS_OK(rpc_svcctl_init(&svcctl_cb))) {
 		return false;
 	}
