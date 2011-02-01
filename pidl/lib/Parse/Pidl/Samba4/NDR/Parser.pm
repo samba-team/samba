@@ -1857,7 +1857,7 @@ sub ParseUnionPullPrimitives($$$$$)
 	if (defined($e->{ALIGN})) {
 		if ($e->{IS_MS_UNION}) {
 			$self->pidl("/* ms_union is always aligned to the largest union arm*/");
-			$self->pidl("NDR_CHECK(ndr_push_align($ndr, $e->{ALIGN}));");
+			$self->pidl("NDR_CHECK(ndr_pull_align($ndr, $e->{ALIGN}));");
 		} else {
 			$self->pidl("NDR_CHECK(ndr_pull_union_align($ndr, $e->{ALIGN}));");
 		}
