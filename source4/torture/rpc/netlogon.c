@@ -754,7 +754,7 @@ static bool test_netlogon_ops_args(struct dcerpc_pipe *p, struct torture_context
 
 	d_printf("Testing LogonSamLogon with name %s\n", ninfo.identity_info.account_name.string);
 	
-	for (i=2;i<3;i++) {
+	for (i=2;i<=3;i++) {
 		ZERO_STRUCT(auth2);
 		netlogon_creds_client_authenticator(creds, &auth);
 		
