@@ -946,6 +946,20 @@ int i; i = PAM_RADIO_TYPE;
         if conf.CONFIG_SET('HAVE_VALGRIND_H') or conf.CONFIG_SET('HAVE_VALGRIND_VALGRIND_H'):
             conf.DEFINE('VALGRIND', '1')
 
+    if conf.CHECK_CODE('''
+#include <bits/sockaddr.h>
+#include <linux/netlink.h>
+''',
+		'HAVE_LINUX_NETLINK_H',
+                msg="Checking whether Linux netlink is available"):
+        conf.CHECK_CODE('''
+#include <bits/sockaddr.h>
+#include <linux/netlink.h>
+#include <linux/rtnetlink.h>
+''',
+		'HAVE_LINUX_RTNETLINK_H',
+		msg='Checking whether Linux rtnetlink is available')
+
     conf.SAMBA_CONFIG_H('include/config.h')
 
 def ctags(ctx):
