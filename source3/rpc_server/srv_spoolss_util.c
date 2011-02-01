@@ -655,76 +655,6 @@ done:
 	return result;
 }
 
-static WERROR winreg_printer_query_binary(TALLOC_CTX *mem_ctx,
-					  struct dcerpc_binding_handle *winreg_handle,
-					  struct policy_handle *key_handle,
-					  const char *value,
-					  DATA_BLOB *data)
-{
-	struct winreg_String wvalue;
-	enum winreg_Type type;
-	WERROR result = WERR_OK;
-	uint32_t value_len = 0;
-	uint32_t data_size = 0;
-	NTSTATUS status;
-	DATA_BLOB blob;
-
-	wvalue.name = value;
-	status = dcerpc_winreg_QueryValue(winreg_handle,
-					  mem_ctx,
-					  key_handle,
-					  &wvalue,
-					  &type,
-					  NULL,
-					  &data_size,
-					  &value_len,
-					  &result);
-	if (!NT_STATUS_IS_OK(status)) {
-		result = ntstatus_to_werror(status);
-	}
-	if (!W_ERROR_IS_OK(result)) {
-		DEBUG(2, ("winreg_printer_query_binary: Could not query value %s: %s\n",
-			  wvalue.name, win_errstr(result)));
-		goto done;
-	}
-
-	if (type != REG_BINARY) {
-		result = WERR_INVALID_DATATYPE;
-		goto done;
-	}
-	blob = data_blob_talloc(mem_ctx, NULL, data_size);
-	if (blob.data == NULL) {
-		result = WERR_NOMEM;
-		goto done;
-	}
-	value_len = 0;
-
-	status = dcerpc_winreg_QueryValue(winreg_handle,
-					  mem_ctx,
-					  key_handle,
-					  &wvalue,
-					  &type,
-					  blob.data,
-					  &data_size,
-					  &value_len,
-					  &result);
-	if (!NT_STATUS_IS_OK(status)) {
-		result = ntstatus_to_werror(status);
-	}
-	if (!W_ERROR_IS_OK(result)) {
-		DEBUG(2, ("winreg_printer_query_binary: Could not query value %s: %s\n",
-			  wvalue.name, win_errstr(result)));
-		goto done;
-	}
-
-	if (data) {
-		data->data = blob.data;
-		data->length = blob.length;
-	}
-done:
-	return result;
-}
-
 static WERROR winreg_printer_query_dword(TALLOC_CTX *mem_ctx,
 					 struct dcerpc_binding_handle *winreg_handle,
 					 struct policy_handle *key_handle,
@@ -1857,13 +1787,14 @@ WERROR winreg_get_printer(TALLOC_CTX *mem_ctx,
 	struct dcerpc_binding_handle *winreg_handle = NULL;
 	struct policy_handle hive_hnd, key_hnd;
 	struct spoolss_PrinterEnumValues *enum_values = NULL;
-	struct spoolss_PrinterEnumValues *v;
+	struct spoolss_PrinterEnumValues *v = NULL;
 	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	int snum = lp_servicenumber(printer);
 	uint32_t num_values = 0;
 	uint32_t i;
 	char *path;
+	NTSTATUS status;
 	WERROR result = WERR_OK;
 	TALLOC_CTX *tmp_ctx;
 
@@ -2038,11 +1969,15 @@ WERROR winreg_get_printer(TALLOC_CTX *mem_ctx,
 	}
 
 	/* Construct the Device Mode */
-	result = winreg_printer_query_binary(tmp_ctx,
-					     winreg_handle,
-					     &key_hnd,
-					     "Default DevMode",
-					     &blob);
+	status = dcerpc_winreg_query_binary(tmp_ctx,
+					    winreg_handle,
+					    &key_hnd,
+					    "Default DevMode",
+					    &blob,
+					    &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		result = ntstatus_to_werror(status);
+	}
 	if (W_ERROR_IS_OK(result)) {
 		info2->devmode = talloc_zero(info2, struct spoolss_DeviceMode);
 		if (info2->devmode == NULL) {
@@ -2118,9 +2053,7 @@ WERROR winreg_get_printer_secdesc(TALLOC_CTX *mem_ctx,
 	uint32_t access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	struct dcerpc_binding_handle *winreg_handle = NULL;
 	struct policy_handle hive_hnd, key_hnd;
-	enum ndr_err_code ndr_err;
 	const char *path;
-	DATA_BLOB blob;
 	TALLOC_CTX *tmp_ctx;
 	NTSTATUS status;
 	WERROR result;
@@ -2156,30 +2089,19 @@ WERROR winreg_get_printer_secdesc(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	result = winreg_printer_query_binary(tmp_ctx,
-					     winreg_handle,
-					     &key_hnd,
-					     "Security",
-					     &blob);
+	status = dcerpc_winreg_query_sd(tmp_ctx,
+					winreg_handle,
+					&key_hnd,
+					"Security",
+					&secdesc,
+					&result);
+	if (!NT_STATUS_IS_OK(status)) {
+		result = ntstatus_to_werror(status);
+	}
 	if (!W_ERROR_IS_OK(result)) {
 		if (W_ERROR_EQUAL(result, WERR_BADFILE)) {
 			goto create_default;
 		}
-		goto done;
-	}
-
-	secdesc = talloc_zero(tmp_ctx, struct spoolss_security_descriptor);
-	if (secdesc == NULL) {
-		result = WERR_NOMEM;
-		goto done;
-	}
-	ndr_err = ndr_pull_struct_blob(&blob,
-				       secdesc,
-				       secdesc,
-				       (ndr_pull_flags_fn_t) ndr_pull_security_descriptor);
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		DEBUG(0, ("winreg_get_secdesc: Failed to unmarshall security descriptor\n"));
-		result = WERR_NOMEM;
 		goto done;
 	}
 
