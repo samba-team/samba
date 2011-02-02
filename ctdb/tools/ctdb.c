@@ -1667,7 +1667,6 @@ static int control_addip(struct ctdb_context *ctdb, int argc, const char **argv)
 {
 	int i, ret;
 	int len, retries = 0;
-	uint32_t pnn;
 	unsigned mask;
 	ctdb_sock_addr addr;
 	struct ctdb_control_ip_iface *pub;
@@ -1686,22 +1685,27 @@ static int control_addip(struct ctdb_context *ctdb, int argc, const char **argv)
 		return -1;
 	}
 
-	ret = control_get_all_public_ips(ctdb, tmp_ctx, &ips);
+	/* read the public ip list from the node */
+	ret = ctdb_ctrl_get_public_ips(ctdb, TIMELIMIT(), options.pnn, tmp_ctx, &ips);
 	if (ret != 0) {
-		DEBUG(DEBUG_ERR, ("Unable to get public ip list from cluster\n"));
+		DEBUG(DEBUG_ERR, ("Unable to get public ip list from node %u\n", options.pnn));
 		talloc_free(tmp_ctx);
-		return ret;
+		return -1;
 	}
-
-
-	/* check if some other node is already serving this ip, if not,
-	 * we will claim it
-	 */
 	for (i=0;i<ips->num;i++) {
 		if (ctdb_same_ip(&addr, &ips->ips[i].addr)) {
-			break;
+			DEBUG(DEBUG_ERR,("Can not add ip to node. Node already hosts this ip\n"));
+			return 0;
 		}
 	}
+
+
+
+	/* Dont timeout. This command waits for an ip reallocation
+	   which sometimes can take wuite a while if there has
+	   been a recent recovery
+	*/
+	alarm(0);
 
 	len = offsetof(struct ctdb_control_ip_iface, iface) + strlen(argv[1]) + 1;
 	pub = talloc_size(tmp_ctx, len); 
@@ -1722,27 +1726,6 @@ static int control_addip(struct ctdb_context *ctdb, int argc, const char **argv)
 	} while (retries < 5 && ret != 0);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR, ("Unable to add public ip to node %u. Giving up.\n", options.pnn));
-		talloc_free(tmp_ctx);
-		return ret;
-	}
-
-	if (i == ips->num) {
-		/* no one has this ip so we claim it */
-		pnn  = options.pnn;
-	} else {
-		pnn  = ips->ips[i].pnn;
-	}
-
-	do {
-		ret = move_ip(ctdb, &addr, pnn);
-		if (ret != 0) {
-			DEBUG(DEBUG_ERR,("Failed to move ip to node %d. wait 3 seconds and try again.\n", pnn));
-			sleep(3);
-			retries++;
-		}
-	} while (retries < 5 && ret != 0);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR,("Failed to move ip to node %d. Giving up.\n", pnn));
 		talloc_free(tmp_ctx);
 		return ret;
 	}
