@@ -139,31 +139,6 @@ static bool parse_wbinfo_domain_user(const char *domuser, fstring domain,
 	return true;
 }
 
-/* Parse string of "uid,sid" or "gid,sid" into separate int and string values.
- * Return true if input was valid, false otherwise. */
-static bool parse_mapping_arg(char *arg, int *id, char **sid)
-{
-	char *tmp, *endptr;
-
-	if (!arg || !*arg)
-		return false;
-
-	tmp = strtok(arg, ",");
-	*sid = strtok(NULL, ",");
-
-	if (!tmp || !*tmp || !*sid || !**sid)
-		return false;
-
-	/* Because atoi() can return 0 on invalid input, which would be a valid
-	 * UID/GID we must use strtoul() and do error checking */
-	*id = strtoul(tmp, &endptr, 10);
-
-	if (endptr[0] != '\0')
-		return false;
-
-	return true;
-}
-
 /* pull pwent info for a given user */
 
 static bool wbinfo_get_userinfo(char *user)
@@ -1862,10 +1837,8 @@ int main(int argc, char **argv, char **envp)
 	TALLOC_CTX *frame = talloc_stackframe();
 	poptContext pc;
 	static char *string_arg;
-	char *string_subarg = NULL;
 	static char *opt_domain_name;
 	static int int_arg;
-	int int_subarg = -1;
 	int result = 1;
 	bool verbose = false;
 	bool use_ntlmv2 = false;
