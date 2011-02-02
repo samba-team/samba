@@ -70,6 +70,10 @@ NTSTATUS dcerpc_binding_vector_create(TALLOC_CTX *mem_ctx,
 		b->object = iface->syntax_id;
 		if (b->transport == NCACN_NP) {
 			b->host = talloc_asprintf(b, "\\\\%s", global_myname());
+			if (b->host == NULL) {
+				status = NT_STATUS_NO_MEMORY;
+				goto done;
+			}
 		}
 
 		bvec->bindings[i] = *b;
@@ -162,6 +166,7 @@ static NTSTATUS ep_register(const struct ndr_interface_table *iface,
 
 		map_tower = talloc_zero(entries, struct epm_twr_t);
 		if (map_tower == NULL) {
+			status = NT_STATUS_NO_MEMORY;
 			goto done;
 		}
 
