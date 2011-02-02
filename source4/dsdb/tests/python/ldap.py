@@ -2641,6 +2641,39 @@ class BaseDnTests(unittest.TestCase):
         self.assertTrue("CN=Sites" in res[0]["serverName"][0])
         self.assertFalse("CN=NTDS Settings" in res[0]["serverName"][0])
 
+    def test_functionality(self):
+        """Testing the server paths in rootDSE"""
+        res = self.ldb.search("", scope=SCOPE_BASE,
+                              attrs=["forestFunctionality", "domainFunctionality", "domainControllerFunctionality"])
+        self.assertEquals(len(res), 1)
+        self.assertEquals(len(res[0]["forestFunctionality"]), 1)
+        self.assertEquals(len(res[0]["domainFunctionality"]), 1)
+        self.assertEquals(len(res[0]["domainControllerFunctionality"]), 1)
+
+        self.assertTrue(int(res[0]["forestFunctionality"][0]) <= int(res[0]["domainFunctionality"][0]))
+        self.assertTrue(int(res[0]["domainControllerFunctionality"][0]) >= int(res[0]["domainFunctionality"][0]))
+
+        res2 = self.ldb.search("", scope=SCOPE_BASE,
+                              attrs=["dsServiceName", "serverName"])
+        self.assertEquals(len(res2), 1)
+        self.assertEquals(len(res2[0]["dsServiceName"]), 1)
+
+        res3 = self.ldb.search(res2[0]["dsServiceName"][0], scope=SCOPE_BASE, attrs=["msDS-Behavior-Version"])
+        self.assertEquals(len(res3), 1)
+        print res3[0]
+        self.assertEquals(len(res3[0]["msDS-Behavior-Version"]), 1)
+        self.assertEquals(int(res[0]["domainControllerFunctionality"][0]), int(res3[0]["msDS-Behavior-Version"][0]))
+
+        res4 = self.ldb.search(ldb.domain_dn(), scope=SCOPE_BASE, attrs=["msDS-Behavior-Version"])
+        self.assertEquals(len(res4), 1)
+        self.assertEquals(len(res4[0]["msDS-Behavior-Version"]), 1)
+        self.assertEquals(int(res[0]["domainFunctionality"][0]), int(res4[0]["msDS-Behavior-Version"][0]))
+
+        res5 = self.ldb.search("cn=partitions," + str(ldb.get_config_basedn()), scope=SCOPE_BASE, attrs=["msDS-Behavior-Version"])
+        self.assertEquals(len(res5), 1)
+        self.assertEquals(len(res5[0]["msDS-Behavior-Version"]), 1)
+        self.assertEquals(int(res[0]["forestFunctionality"][0]), int(res5[0]["msDS-Behavior-Version"][0]))
+
     def test_dnsHostname(self):
         """Testing the DNS hostname in rootDSE"""
         res = self.ldb.search("", scope=SCOPE_BASE,
