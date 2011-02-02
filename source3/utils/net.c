@@ -669,7 +669,7 @@ static struct functable net_func[] = {
 	{	"maxrid",
 		net_maxrid,
 		NET_TRANSPORT_LOCAL,
-		N_("Display the maximul RID currently used"),
+		N_("Display the maximum RID currently used"),
 		N_("  net maxrid")
 	},
 	{	"idmap",
