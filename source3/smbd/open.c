@@ -915,76 +915,127 @@ static NTSTATUS send_break_message(files_struct *fsp,
 }
 
 /*
- * 1) No files open at all or internal open: Grant whatever the client wants.
- *
- * 2) Exclusive (or batch) oplock around: If the requested access is a delete
- *    request, break if the oplock around is a batch oplock. If it's another
- *    requested access type, break.
- *
- * 3) Only level2 around: Grant level2 and do nothing else.
+ * Return share_mode_entry pointers for :
+ * 1). Batch oplock entry.
+ * 2). Batch or exclusive oplock entry (may be identical to #1).
+ * bool have_level2_oplock
+ * bool have_no_oplock.
+ * Do internal consistency checks on the share mode for a file.
  */
 
-static bool delay_for_oplocks(struct share_mode_lock *lck,
-			      files_struct *fsp,
-			      uint64_t mid,
-			      int pass_number,
-			      int oplock_request)
+static void find_oplock_types(struct share_mode_lock *lck,
+				struct share_mode_entry **pp_batch,
+				struct share_mode_entry **pp_ex_or_batch,
+				bool *got_level2,
+				bool *got_no_oplock)
 {
 	int i;
-	struct share_mode_entry *exclusive = NULL;
-	bool valid_entry = false;
-	bool have_level2 = false;
-	bool have_a_none_oplock = false;
-	bool allow_level2 = (global_client_caps & CAP_LEVEL_II_OPLOCKS) &&
-		            lp_level2_oplocks(SNUM(fsp->conn));
 
-	if (oplock_request & INTERNAL_OPEN_ONLY) {
-		fsp->oplock_type = NO_OPLOCK;
-	}
-
-	if ((oplock_request & INTERNAL_OPEN_ONLY) || is_stat_open(fsp->access_mask)) {
-		return false;
-	}
+	*pp_batch = NULL;
+	*pp_ex_or_batch = NULL;
+	*got_level2 = false;
+	*got_no_oplock = false;
 
 	for (i=0; i<lck->num_share_modes; i++) {
-
 		if (!is_valid_share_mode_entry(&lck->share_modes[i])) {
 			continue;
 		}
 
-		/* At least one entry is not an invalid or deferred entry. */
-		valid_entry = true;
+		if (BATCH_OPLOCK_TYPE(lck->share_modes[i].op_type)) {
+			/* batch - can only be one. */
+			if (*pp_batch || *got_level2 || *got_no_oplock) {
+				smb_panic("Bad batch oplock entry.");
+			}
+			*pp_batch = &lck->share_modes[i];
+		}
 
-		if (pass_number == 1) {
-			if (BATCH_OPLOCK_TYPE(lck->share_modes[i].op_type)) {
-				SMB_ASSERT(exclusive == NULL);
-				exclusive = &lck->share_modes[i];
+		if (EXCLUSIVE_OPLOCK_TYPE(lck->share_modes[i].op_type)) {
+			/* Exclusive or batch - can only be one. */
+			if (*pp_ex_or_batch || *got_level2 || *got_no_oplock) {
+				smb_panic("Bad exclusive or batch oplock entry.");
 			}
-		} else {
-			if (EXCLUSIVE_OPLOCK_TYPE(lck->share_modes[i].op_type)) {
-				SMB_ASSERT(exclusive == NULL);
-				exclusive = &lck->share_modes[i];
-			}
+			*pp_ex_or_batch = &lck->share_modes[i];
 		}
 
 		if (LEVEL_II_OPLOCK_TYPE(lck->share_modes[i].op_type)) {
-			SMB_ASSERT(exclusive == NULL);
-			have_level2 = true;
+			if (*pp_batch || *pp_ex_or_batch) {
+				smb_panic("Bad levelII oplock entry.");
+			}
+			*got_level2 = true;
 		}
 
 		if (lck->share_modes[i].op_type == NO_OPLOCK) {
-			have_a_none_oplock = true;
+			if (*pp_batch || *pp_ex_or_batch) {
+				smb_panic("Bad no oplock entry.");
+			}
+			*got_no_oplock = true;
 		}
 	}
+}
 
-	if (exclusive != NULL) { /* Found an exclusive oplock */
+static bool delay_for_batch_oplocks(files_struct *fsp,
+					uint64_t mid,
+					int oplock_request,
+					struct share_mode_entry *batch_entry)
+{
+	if ((oplock_request & INTERNAL_OPEN_ONLY) || is_stat_open(fsp->access_mask)) {
+		return false;
+	}
+
+	if (batch_entry != NULL) {
+		/* Found a batch oplock */
+		send_break_message(fsp, batch_entry, mid, oplock_request);
+		return true;
+	}
+	return false;
+}
+
+static bool delay_for_exclusive_oplocks(files_struct *fsp,
+					uint64_t mid,
+					int oplock_request,
+					struct share_mode_entry *ex_entry)
+{
+	if ((oplock_request & INTERNAL_OPEN_ONLY) || is_stat_open(fsp->access_mask)) {
+		return false;
+	}
+
+	if (ex_entry != NULL) {
+		/* Found an exclusive or batch oplock */
 		bool delay_it = is_delete_request(fsp) ?
-				BATCH_OPLOCK_TYPE(exclusive->op_type) :	true;
-		SMB_ASSERT(!have_level2);
+				BATCH_OPLOCK_TYPE(ex_entry->op_type) : true;
 		if (delay_it) {
-			send_break_message(fsp, exclusive, mid, oplock_request);
+			send_break_message(fsp, ex_entry, mid, oplock_request);
 			return true;
 		}
+	}
+	return false;
+}
+
+static void grant_fsp_oplock_type(files_struct *fsp,
+				int oplock_request,
+				bool got_level2_oplock,
+				bool got_a_none_oplock)
+{
+	bool allow_level2 = (global_client_caps & CAP_LEVEL_II_OPLOCKS) &&
+		            lp_level2_oplocks(SNUM(fsp->conn));
+
+	/* Start by granting what the client asked for,
+	   but ensure no SAMBA_PRIVATE bits can be set. */
+	fsp->oplock_type = (oplock_request & ~SAMBA_PRIVATE_OPLOCK_MASK);
+
+	if (oplock_request & INTERNAL_OPEN_ONLY) {
+		/* No oplocks on internal open. */
+		fsp->oplock_type = NO_OPLOCK;
+		DEBUG(10,("grant_fsp_oplock_type: oplock type 0x%x on file %s\n",
+			fsp->oplock_type, fsp_str_dbg(fsp)));
+		return;
+	}
+
+	if (is_stat_open(fsp->access_mask)) {
+		/* Leave the value already set. */
+		DEBUG(10,("grant_fsp_oplock_type: oplock type 0x%x on file %s\n",
+			fsp->oplock_type, fsp_str_dbg(fsp)));
+		return;
 	}
 
 	/*
@@ -992,16 +1043,9 @@ static bool delay_for_oplocks(struct share_mode_lock *lck,
  	 * what was found in the existing share modes.
  	 */
 
-	if (!valid_entry) {
-		/* All entries are placeholders or deferred.
-		 * Directly grant whatever the client wants. */
-		if (fsp->oplock_type == NO_OPLOCK) {
-			/* Store a level2 oplock, but don't tell the client */
-			fsp->oplock_type = FAKE_LEVEL_II_OPLOCK;
-		}
-	} else if (have_a_none_oplock) {
+	if (got_a_none_oplock) {
 		fsp->oplock_type = NO_OPLOCK;
-	} else if (have_level2) {
+	} else if (got_level2_oplock) {
 		if (fsp->oplock_type == NO_OPLOCK ||
 				fsp->oplock_type == FAKE_LEVEL_II_OPLOCK) {
 			/* Store a level2 oplock, but don't tell the client */
@@ -1010,8 +1054,13 @@ static bool delay_for_oplocks(struct share_mode_lock *lck,
 			fsp->oplock_type = LEVEL_II_OPLOCK;
 		}
 	} else {
-		/* This case can never happen. */
-		SMB_ASSERT(1);
+		/* All share_mode_entries are placeholders or deferred.
+		 * Silently upgrade to fake levelII if the client didn't
+		 * ask for an oplock. */
+		if (fsp->oplock_type == NO_OPLOCK) {
+			/* Store a level2 oplock, but don't tell the client */
+			fsp->oplock_type = FAKE_LEVEL_II_OPLOCK;
+		}
 	}
 
 	/*
@@ -1022,11 +1071,8 @@ static bool delay_for_oplocks(struct share_mode_lock *lck,
 		fsp->oplock_type = FAKE_LEVEL_II_OPLOCK;
 	}
 
-	DEBUG(10,("delay_for_oplocks: oplock type 0x%x on file %s\n",
+	DEBUG(10,("grant_fsp_oplock_type: oplock type 0x%x on file %s\n",
 		  fsp->oplock_type, fsp_str_dbg(fsp)));
-
-	/* No delay. */
-	return false;
 }
 
 bool request_timed_out(struct timeval request_time,
@@ -1801,6 +1847,11 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	}
 
 	if (file_existed) {
+		struct share_mode_entry *batch_entry = NULL;
+		struct share_mode_entry *exclusive_entry = NULL;
+		bool got_level2_oplock = false;
+		bool got_a_none_oplock = false;
+
 		struct timespec old_write_time = smb_fname->st.st_ex_mtime;
 		id = vfs_file_id_from_sbuf(conn, &smb_fname->st);
 
@@ -1813,10 +1864,19 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 			return NT_STATUS_SHARING_VIOLATION;
 		}
 
+		/* Get the types we need to examine. */
+		find_oplock_types(lck,
+				&batch_entry,
+				&exclusive_entry,
+				&got_level2_oplock,
+				&got_a_none_oplock);
+
 		/* First pass - send break only on batch oplocks. */
-		if ((req != NULL)
-		    && delay_for_oplocks(lck, fsp, req->mid, 1,
-					 oplock_request)) {
+		if ((req != NULL) &&
+				delay_for_batch_oplocks(fsp,
+					req->mid,
+					oplock_request,
+					batch_entry)) {
 			schedule_defer_open(lck, request_time, req);
 			TALLOC_FREE(lck);
 			return NT_STATUS_SHARING_VIOLATION;
@@ -1833,9 +1893,12 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 			 * status again. */
 			/* Second pass - send break for both batch or
 			 * exclusive oplocks. */
-			if ((req != NULL)
-			     && delay_for_oplocks(lck, fsp, req->mid, 2,
-						  oplock_request)) {
+			if ((req != NULL) &&
+					delay_for_exclusive_oplocks(
+						fsp,
+						req->mid,
+						oplock_request,
+						exclusive_entry)) {
 				schedule_defer_open(lck, request_time, req);
 				TALLOC_FREE(lck);
 				return NT_STATUS_SHARING_VIOLATION;
@@ -1847,6 +1910,11 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 			TALLOC_FREE(lck);
 			return status;
 		}
+
+		grant_fsp_oplock_type(fsp,
+                                oplock_request,
+                                got_level2_oplock,
+                                got_a_none_oplock);
 
 		if (!NT_STATUS_IS_OK(status)) {
 			uint32 can_access_mask;
@@ -2007,6 +2075,10 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	}
 
 	if (!file_existed) {
+		struct share_mode_entry *batch_entry = NULL;
+		struct share_mode_entry *exclusive_entry = NULL;
+		bool got_level2_oplock = false;
+		bool got_a_none_oplock = false;
 		struct timespec old_write_time = smb_fname->st.st_ex_mtime;
 		/*
 		 * Deal with the race condition where two smbd's detect the
@@ -2037,10 +2109,19 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 			return NT_STATUS_SHARING_VIOLATION;
 		}
 
+		/* Get the types we need to examine. */
+		find_oplock_types(lck,
+				&batch_entry,
+				&exclusive_entry,
+				&got_level2_oplock,
+				&got_a_none_oplock);
+
 		/* First pass - send break only on batch oplocks. */
-		if ((req != NULL)
-		    && delay_for_oplocks(lck, fsp, req->mid, 1,
-					 oplock_request)) {
+		if ((req != NULL) &&
+				delay_for_batch_oplocks(fsp,
+					req->mid,
+					oplock_request,
+					batch_entry)) {
 			schedule_defer_open(lck, request_time, req);
 			TALLOC_FREE(lck);
 			fd_close(fsp);
@@ -2056,9 +2137,12 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 			 * status again. */
 			/* Second pass - send break for both batch or
 			 * exclusive oplocks. */
-			if ((req != NULL)
-			    && delay_for_oplocks(lck, fsp, req->mid, 2,
-						 oplock_request)) {
+			if ((req != NULL) &&
+					delay_for_exclusive_oplocks(
+						fsp,
+						req->mid,
+						oplock_request,
+						exclusive_entry)) {
 				schedule_defer_open(lck, request_time, req);
 				TALLOC_FREE(lck);
 				fd_close(fsp);
@@ -2088,6 +2172,11 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 			TALLOC_FREE(lck);
 			return status;
 		}
+
+		grant_fsp_oplock_type(fsp,
+                                oplock_request,
+                                got_level2_oplock,
+                                got_a_none_oplock);
 
 		/*
 		 * We exit this block with the share entry *locked*.....
