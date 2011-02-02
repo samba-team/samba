@@ -25,6 +25,7 @@ fi
 AC_HEADER_SYS_WAIT
 
 # capability
+AC_CHECK_HEADERS(linux/types.h)
 AC_CHECK_HEADERS(sys/capability.h)
 
 case "$host_os" in
