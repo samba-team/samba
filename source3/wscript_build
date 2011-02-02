@@ -564,6 +564,7 @@ LIBNET_SRC = 'libnet/libnet_join.c libnet/libnet_keytab.c'
 
 
 LIBNET_DSSYNC_SRC = '''libnet/libnet_dssync.c
+                       libnet/libnet_dssync_passdb.c
                        libnet/libnet_dssync_keytab.c'''
 
 LIBNET_SAMSYNC_SRC = '''libnet/libnet_samsync.c
