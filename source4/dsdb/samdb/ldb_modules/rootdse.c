@@ -846,8 +846,10 @@ static int rootdse_init(struct ldb_module *module)
 		}
 	}
 
+	/* For now, our own server's location in the DB is recorded in
+	 * the @ROOTDSE record */
 	ret = dsdb_module_search(module, mem_ctx, &res,
-				 ldb_dn_new(mem_ctx, ldb, ""),
+				 ldb_dn_new(mem_ctx, ldb, "@ROOTDSE"),
 				 LDB_SCOPE_BASE, ds_attrs, DSDB_FLAG_NEXT_MODULE, NULL, NULL);
 	if (ret == LDB_SUCCESS && res->count == 1) {
 		struct ldb_dn *ds_dn
