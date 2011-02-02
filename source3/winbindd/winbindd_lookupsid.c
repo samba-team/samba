@@ -54,7 +54,7 @@ struct tevent_req *winbindd_lookupsid_send(TALLOC_CTX *mem_ctx,
 	if (!string_to_sid(&state->sid, request->data.sid)) {
 		DEBUG(5, ("%s not a SID\n", request->data.sid));
 		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
-		return tevent_req_post(req, ev);;
+		return tevent_req_post(req, ev);
 	}
 
 	subreq = wb_lookupsid_send(state, ev, &state->sid);

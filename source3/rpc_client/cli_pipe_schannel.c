@@ -76,7 +76,7 @@ static NTSTATUS get_schannel_session_key_common(struct rpc_pipe_client *netlogon
 		return NT_STATUS_INVALID_NETWORK_RESPONSE;
 	}
 
-	return NT_STATUS_OK;;
+	return NT_STATUS_OK;
 }
 
 /****************************************************************************

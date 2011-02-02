@@ -56,7 +56,7 @@ static NTSTATUS xattr_tdb_pull_attrs(TALLOC_CTX *mem_ctx,
 		DEBUG(0, ("ndr_pull_tdb_xattrs failed: %s\n",
 			  ndr_errstr(ndr_err)));
 		TALLOC_FREE(result);
-		return ndr_map_error2ntstatus(ndr_err);;
+		return ndr_map_error2ntstatus(ndr_err);
 	}
 
 	*presult = result;
@@ -80,7 +80,7 @@ static NTSTATUS xattr_tdb_push_attrs(TALLOC_CTX *mem_ctx,
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		DEBUG(0, ("ndr_push_tdb_xattrs failed: %s\n",
 			  ndr_errstr(ndr_err)));
-		return ndr_map_error2ntstatus(ndr_err);;
+		return ndr_map_error2ntstatus(ndr_err);
 	}
 
 	*data = make_tdb_data(blob.data, blob.length);

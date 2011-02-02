@@ -86,7 +86,7 @@ static NTSTATUS parse_acl_blob(const DATA_BLOB *pblob,
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		DEBUG(5, ("parse_acl_blob: ndr_pull_xattr_NTACL failed: %s\n",
 			ndr_errstr(ndr_err)));
-		return ndr_map_error2ntstatus(ndr_err);;
+		return ndr_map_error2ntstatus(ndr_err);
 	}
 
 	switch (xacl.version) {
@@ -153,7 +153,7 @@ static NTSTATUS create_acl_blob(const struct security_descriptor *psd,
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		DEBUG(5, ("create_acl_blob: ndr_push_xattr_NTACL failed: %s\n",
 			ndr_errstr(ndr_err)));
-		return ndr_map_error2ntstatus(ndr_err);;
+		return ndr_map_error2ntstatus(ndr_err);
 	}
 
 	return NT_STATUS_OK;
