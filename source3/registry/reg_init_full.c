@@ -95,9 +95,6 @@ WERROR registry_init_full(void)
 	if ( DEBUGLEVEL >= 20 )
 		reghook_dump_cache(20);
 
-	/* add any keys for other services */
-	perfcount_init_keys();
-
 fail:
 	/* close and let each smbd open up as necessary */
 	regdb_close();
