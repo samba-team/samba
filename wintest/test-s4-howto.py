@@ -166,6 +166,11 @@ SafeModeAdminPassword=${PASSWORD1}
     child.sendline("dcpromo /answer:answers.txt")
     i = child.expect(["You must restart this computer", "failed", "Active Directory Domain Services was not installed", "C:"], timeout=120)
     if i == 1 or i == 2:
+        child.sendline("echo off")
+        child.sendline("echo START DCPROMO log")
+        child.sendline("more c:\windows\debug\dcpromoui.log")
+        child.sendline("echo END DCPROMO log")
+        child.expect("END DCPROMO")
         raise Exception("dcpromo failed")
     t.wait_reboot()
 
@@ -317,8 +322,13 @@ RebootOnCompletion=No
 ''')
     child.expect("copied.")
     child.sendline("dcpromo /answer:answers.txt")
-    i = child.expect(["You must restart this computer", "failed"], timeout=120)
+    i = child.expect(["You must restart this computer", "failed", "could not be located in this domain"], timeout=120)
     if i != 0:
+        child.sendline("echo off")
+        child.sendline("echo START DCPROMO log")
+        child.sendline("more c:\windows\debug\dcpromoui.log")
+        child.sendline("echo END DCPROMO log")
+        child.expect("END DCPROMO")
         raise Exception("dcpromo failed")
     child.sendline("shutdown -r -t 0")
     t.wait_reboot()
