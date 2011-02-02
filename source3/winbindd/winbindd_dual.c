@@ -442,7 +442,7 @@ static void child_process_request(struct winbindd_child *child,
 		}
 	}
 
-	DEBUG(1 ,("child_process_request: unknown request fn number %d\n",
+	DEBUG(1, ("child_process_request: unknown request fn number %d\n",
 		  (int)state->request->cmd));
 	state->response->result = WINBINDD_ERROR;
 }
