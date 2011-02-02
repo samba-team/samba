@@ -121,6 +121,13 @@
 #include <stddef.h>
 #endif
 
+#ifdef HAVE_LINUX_TYPES_H
+/*
+ * This is needed as some broken header files require this to be included early
+ */
+#include <linux/types.h>
+#endif
+
 #ifndef HAVE_STRERROR
 extern char *sys_errlist[];
 #define strerror(i) sys_errlist[i]

@@ -89,6 +89,8 @@ AC_INCLUDES_DEFAULT
 #endif]
 )
 
+AC_CHECK_HEADERS(linux/types.h)
+
 AC_CACHE_CHECK([for working mmap],libreplace_cv_HAVE_MMAP,[
 AC_TRY_RUN([#include "$libreplacedir/test/shared_mmap.c"],
            libreplace_cv_HAVE_MMAP=yes,libreplace_cv_HAVE_MMAP=no,libreplace_cv_HAVE_MMAP=cross)])
