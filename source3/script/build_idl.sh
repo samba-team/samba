@@ -7,7 +7,7 @@ else
 	FULL=0
 fi
 
-ARGS="--includedir=../librpc/idl --outputdir $PIDL_OUTPUTDIR --header --ndr-parser --samba3-ndr-server --samba3-ndr-client $PIDL_ARGS --"
+ARGS="--includedir=../librpc/idl --outputdir $PIDL_OUTPUTDIR --header --ndr-parser --client --samba3-ndr-server $PIDL_ARGS --"
 IDL_FILES="$*"
 
 oldpwd=`pwd`
@@ -30,8 +30,8 @@ fi
 list=""
 for f in ${IDL_FILES}; do
         b=`basename $f .idl`
-	outfiles="cli_$b.c $b.h ndr_$b.h srv_$b.c"
-	outfiles="$outfiles cli_$b.h ndr_$b.c srv_$b.h"
+	outfiles="$b.h ndr_$b.h srv_$b.c"
+	outfiles="$outfiles ndr_$b.c srv_$b.h"
 
 	for o in $outfiles; do
 	    [ -f $PIDL_OUTPUTDIR/$o ] || {
