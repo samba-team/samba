@@ -2,7 +2,12 @@
 
 bld.SAMBA_PIDL_LIST('PIDL',
                     '''messaging.idl libnetapi.idl notify.idl
-                       wbint.idl perfcount.idl secrets.idl libnet_join.idl preg.idl''',
-                    options='--includedir=../librpc/idl --header --ndr-parser --samba3-ndr-server --samba3-ndr-client --client',
+                       perfcount.idl secrets.idl libnet_join.idl preg.idl''',
+                    options='--includedir=../librpc/idl --header --ndr-parser',
+                    output_dir='../gen_ndr')
+
+bld.SAMBA_PIDL_LIST('PIDL',
+                    'wbint.idl',
+                    options='--includedir=../librpc/idl --header --ndr-parser --samba3-ndr-server --client',
                     output_dir='../gen_ndr')
 

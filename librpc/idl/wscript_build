@@ -11,12 +11,12 @@ bld.SAMBA_PIDL_LIST('PIDL',
                        oxidresolver.idl samr.idl srvsvc.idl winreg.idl dcerpc.idl
                        drsblobs.idl efs.idl frstrans.idl mgmt.idl netlogon.idl
                        policyagent.idl scerpc.idl svcctl.idl wkssvc.idl eventlog6.idl backupkey.idl''',
-                    options='--header --ndr-parser --samba3-ndr-server --samba3-ndr-client --server --client --python',
+                    options='--header --ndr-parser --samba3-ndr-server --server --client --python',
                     output_dir='../gen_ndr')
 
 bld.SAMBA_PIDL_LIST('PIDL',
                     'wmi.idl dcom.idl',
-                    options='--header --ndr-parser --samba3-ndr-server --samba3-ndr-client --server --client --python --dcom-proxy --com-header',
+                    options='--header --ndr-parser --server --client --python --dcom-proxy --com-header',
                     output_dir='../gen_ndr')
 
 bld.SAMBA_PIDL_LIST('PIDL',
