@@ -247,9 +247,10 @@ class cmd_drs_replicate(Command):
 
     takes_options = [
         Option("--add-ref", help="use ADD_REF to add to repsTo on source", action="store_true"),
+        Option("--sync-forced", help="use SYNC_FORCED to force inbound replication", action="store_true"),
         ]
 
-    def run(self, DEST_DC, SOURCE_DC, NC, add_ref=False,
+    def run(self, DEST_DC, SOURCE_DC, NC, add_ref=False, sync_forced=False,
             sambaopts=None,
             credopts=None, versionopts=None, server=None):
 
@@ -288,6 +289,8 @@ class cmd_drs_replicate(Command):
             req1.options |= drsuapi.DRSUAPI_DRS_WRIT_REP
         if add_ref:
             req1.options |= drsuapi.DRSUAPI_DRS_ADD_REF
+        if sync_forced:
+            req1.options |= drsuapi.DRSUAPI_DRS_SYNC_FORCED
         req1.source_dsa_guid = misc.GUID(source_dsa_guid)
 
         try:
