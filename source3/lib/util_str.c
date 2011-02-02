@@ -820,10 +820,6 @@ void string_sub2(char *s,const char *pattern, const char *insert, size_t len,
 		}
 		for (i=0;i<li;i++) {
 			switch (insert[i]) {
-			case '`':
-			case '"':
-			case '\'':
-			case ';':
 			case '$':
 				/* allow a trailing $
 				 * (as in machine accounts) */
@@ -831,6 +827,10 @@ void string_sub2(char *s,const char *pattern, const char *insert, size_t len,
 					p[i] = insert[i];
 					break;
 				}
+			case '`':
+			case '"':
+			case '\'':
+			case ';':
 			case '%':
 			case '\r':
 			case '\n':
@@ -902,16 +902,16 @@ char *realloc_string_sub2(char *string,
 	ld = li - lp;
 	for (i=0;i<li;i++) {
 		switch (in[i]) {
-			case '`':
-			case '"':
-			case '\'':
-			case ';':
 			case '$':
 				/* allow a trailing $
 				 * (as in machine accounts) */
 				if (allow_trailing_dollar && (i == li - 1 )) {
 					break;
 				}
+			case '`':
+			case '"':
+			case '\'':
+			case ';':
 			case '%':
 			case '\r':
 			case '\n':
@@ -997,16 +997,16 @@ char *talloc_string_sub2(TALLOC_CTX *mem_ctx, const char *src,
 
 	for (i=0;i<li;i++) {
 		switch (in[i]) {
-			case '`':
-			case '"':
-			case '\'':
-			case ';':
 			case '$':
 				/* allow a trailing $
 				 * (as in machine accounts) */
 				if (allow_trailing_dollar && (i == li - 1 )) {
 					break;
 				}
+			case '`':
+			case '"':
+			case '\'':
+			case ';':
 			case '%':
 			case '\r':
 			case '\n':
