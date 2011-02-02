@@ -266,7 +266,7 @@ NTSTATUS marshall_sec_desc(TALLOC_CTX *mem_ctx,
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		DEBUG(0, ("ndr_push_security_descriptor failed: %s\n",
 			  ndr_errstr(ndr_err)));
-		return ndr_map_error2ntstatus(ndr_err);;
+		return ndr_map_error2ntstatus(ndr_err);
 	}
 
 	*data = blob.data;
@@ -292,7 +292,7 @@ NTSTATUS marshall_sec_desc_buf(TALLOC_CTX *mem_ctx,
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		DEBUG(0, ("ndr_push_sec_desc_buf failed: %s\n",
 			  ndr_errstr(ndr_err)));
-		return ndr_map_error2ntstatus(ndr_err);;
+		return ndr_map_error2ntstatus(ndr_err);
 	}
 
 	*data = blob.data;
@@ -328,7 +328,7 @@ NTSTATUS unmarshall_sec_desc(TALLOC_CTX *mem_ctx, uint8 *data, size_t len,
 		DEBUG(0, ("ndr_pull_security_descriptor failed: %s\n",
 			  ndr_errstr(ndr_err)));
 		TALLOC_FREE(result);
-		return ndr_map_error2ntstatus(ndr_err);;
+		return ndr_map_error2ntstatus(ndr_err);
 	}
 
 	*psecdesc = result;
@@ -364,7 +364,7 @@ NTSTATUS unmarshall_sec_desc_buf(TALLOC_CTX *mem_ctx, uint8_t *data, size_t len,
 		DEBUG(0, ("ndr_pull_sec_desc_buf failed: %s\n",
 			  ndr_errstr(ndr_err)));
 		TALLOC_FREE(result);
-		return ndr_map_error2ntstatus(ndr_err);;
+		return ndr_map_error2ntstatus(ndr_err);
 	}
 
 	*psecdesc_buf = result;

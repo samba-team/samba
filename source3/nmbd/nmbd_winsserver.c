@@ -2138,7 +2138,7 @@ void wins_process_name_release_request(struct subnet_record *subrec,
 	uint16 nb_flags = get_nb_flags(nmb->additional->rdata);
 	struct name_record *namerec = NULL;
 	struct in_addr from_ip;
-	bool releasing_group_name = (nb_flags & NB_GROUP) ? True : False;;
+	bool releasing_group_name = (nb_flags & NB_GROUP) ? True : False;
 
 	putip((char *)&from_ip,&nmb->additional->rdata[2]);
 

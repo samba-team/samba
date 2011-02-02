@@ -1491,7 +1491,7 @@ NTSTATUS _samr_QueryDisplayInfo(struct pipes_struct *p,
 	temp_size=max_entries*struct_size;
 
 	if (temp_size > r->in.buf_size) {
-		max_entries = MIN((r->in.buf_size / struct_size),max_entries);;
+		max_entries = MIN((r->in.buf_size / struct_size),max_entries);
 		DEBUG(5, ("_samr_QueryDisplayInfo: buffer size limits to "
 			  "only %d entries\n", max_entries));
 	}

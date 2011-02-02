@@ -1890,7 +1890,7 @@ static WERROR cmd_spoolss_setdriver(struct rpc_pipe_client *cli,
 	}
 	if (!W_ERROR_IS_OK(result)) {
 		printf("SetPrinter call failed!\n");
-		goto done;;
+		goto done;
 	}
 
 	printf("Successfully set %s to driver %s.\n", argv[1], argv[2]);

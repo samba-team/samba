@@ -387,7 +387,7 @@ static void init_srv_share_info_502(struct pipes_struct *p,
 	struct sec_desc_buf *sd_buf = NULL;
 	size_t sd_size = 0;
 	TALLOC_CTX *ctx = p->mem_ctx;
-	char *remark = talloc_strdup(ctx, lp_comment(snum));;
+	char *remark = talloc_strdup(ctx, lp_comment(snum));
 
 	if (remark) {
 		remark = talloc_sub_advanced(

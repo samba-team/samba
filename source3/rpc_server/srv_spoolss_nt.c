@@ -4798,7 +4798,7 @@ static WERROR string_array_from_driver_info(TALLOC_CTX *mem_ctx,
 	const char **array = NULL;
 
 	if (string_array == NULL) {
-		return WERR_INVALID_PARAMETER;;
+		return WERR_INVALID_PARAMETER;
 	}
 
 	for (i=0; string_array[i] && string_array[i][0] != '\0'; i++) {

@@ -155,7 +155,7 @@ static bool ctdbd_working(struct ctdbd_connection *conn, uint32_t vnn)
 	ret = true;
 fail:
 	TALLOC_FREE(outdata.dptr);
-	return ret;;
+	return ret;
 }
 
 uint32 ctdbd_vnn(const struct ctdbd_connection *conn)

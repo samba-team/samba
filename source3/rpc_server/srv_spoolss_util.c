@@ -461,7 +461,7 @@ static WERROR winreg_printer_enumvalues(TALLOC_CTX *mem_ctx,
 		uint8_t *data;
 		uint32_t data_size;
 		uint32_t length;
-		char n = '\0';;
+		char n = '\0';
 
 		name_buf.name = &n;
 		name_buf.size = max_valnamelen + 2;
