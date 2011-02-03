@@ -27,17 +27,23 @@ __docformat__ = "restructuredText"
 import os
 import sys
 
+def source_tree_topdir():
+    '''return the top level directory (the one containing the source4 directory)'''
+    paths = [ "../../..", "../../../.." ]
+    for p in paths:
+        topdir = os.path.normpath(os.path.join(os.path.dirname(__file__), p))
+        if os.path.exists(os.path.join(topdir, 'source4')):
+            return topdir
+    raise RuntimeError("unable to find top level source directory")
+
 def in_source_tree():
-    """Check whether the script is being run from the source dir. """
-    return os.path.exists("%s/../../../selftest/skip" % os.path.dirname(__file__))
+    '''return True if we are running from within the samba source tree'''
+    try:
+        topdir = source_tree_topdir()
+    except RuntimeError:
+        return False
+    return True
 
-
-# When running, in-tree, make sure ldb modules can be found
-if in_source_tree():
-    srcdir = "%s/../../.." % os.path.dirname(__file__)
-    default_ldb_modules_dir = "%s/bin/modules/ldb" % srcdir
-else:
-    default_ldb_modules_dir = None
 
 
 import ldb
@@ -71,8 +77,6 @@ class Ldb(_Ldb):
 
         if modules_dir is not None:
             self.set_modules_dir(modules_dir)
-        elif default_ldb_modules_dir is not None:
-            self.set_modules_dir(default_ldb_modules_dir)
         elif lp is not None:
             self.set_modules_dir(os.path.join(lp.get("modules dir"), "ldb"))
 
@@ -314,9 +318,7 @@ def import_bundled_package(modulename, location):
         ${srcdir}/lib)
     """
     if in_source_tree():
-        sys.path.insert(0,
-            os.path.join(os.path.dirname(__file__),
-                         "../../../../lib", location))
+        sys.path.insert(0, os.path.join(source_tree_topdir(), "lib", location))
         sys.modules[modulename] = __import__(modulename)
     else:
         sys.modules[modulename] = __import__(

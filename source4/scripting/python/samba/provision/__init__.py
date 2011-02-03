@@ -47,6 +47,7 @@ from samba import (
     Ldb,
     check_all_substituted,
     in_source_tree,
+    source_tree_topdir,
     read_and_sub_file,
     setup_file,
     substitute_var,
@@ -89,8 +90,7 @@ def find_setup_dir():
     """Find the setup directory used by provision."""
     if in_source_tree():
         # In source tree
-        dirname = os.path.dirname(__file__)
-        return os.path.normpath(os.path.join(dirname, "../../../../setup"))
+        return os.path.join(source_tree_topdir(), "source4/setup")
     else:
         import sys
         for prefix in [sys.prefix,
