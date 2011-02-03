@@ -102,6 +102,17 @@ static int ctdb_ltdb_store_server(struct ctdb_db_context *ctdb_db,
 		keep = true;
 	} else if (ctdb_db->persistent) {
 		keep = true;
+	} else if (header->flags & CTDB_REC_FLAG_AUTOMATIC) {
+		/*
+		 * The record is not created by the client but
+		 * automatically by the ctdb_ltdb_fetch logic that
+		 * creates a record with an initial header in the
+		 * ltdb before trying to migrate the record from
+		 * the current lmaster. Keep it instead of trying
+		 * to delete the non-existing record...
+		 */
+		keep = true;
+		schedule_for_deletion = true;
 	} else if (header->flags & CTDB_REC_FLAG_MIGRATED_WITH_DATA) {
 		keep = true;
 	} else if (ctdb_db->ctdb->pnn == lmaster) {
@@ -156,6 +167,14 @@ store:
 	 * VACUUM_MIGRATED flag in the database.
 	 */
 	header->flags &= ~CTDB_REC_FLAG_VACUUM_MIGRATED;
+
+	/*
+	 * Similarly, clear the AUTOMATIC flag which should not enter
+	 * the local database copy since this would require client
+	 * modifications to clear the flag when the client stores
+	 * the record.
+	 */
+	header->flags &= ~CTDB_REC_FLAG_AUTOMATIC;
 
 	rec.dsize = sizeof(*header) + data.dsize;
 	rec.dptr = talloc_size(ctdb, rec.dsize);
