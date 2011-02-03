@@ -1314,7 +1314,13 @@ static NTSTATUS _netr_LogonSamLogon_check(const struct netr_LogonSamLogonEx *r)
 		switch (r->in.validation_level) {
 		case NetlogonValidationSamInfo:  /* 2 */
 		case NetlogonValidationSamInfo2: /* 3 */
+			break;
 		case NetlogonValidationSamInfo4: /* 6 */
+			if ((pdb_capabilities() & PDB_CAP_ADS) == 0) {
+				DEBUG(10,("Not adding validation info level 6 "
+				   "without ADS passdb backend\n"));
+				return NT_STATUS_INVALID_INFO_CLASS;
+			}
 			break;
 		default:
 			return NT_STATUS_INVALID_INFO_CLASS;
@@ -1330,7 +1336,13 @@ static NTSTATUS _netr_LogonSamLogon_check(const struct netr_LogonSamLogonEx *r)
 		switch (r->in.validation_level) {
 		case NetlogonValidationSamInfo:  /* 2 */
 		case NetlogonValidationSamInfo2: /* 3 */
+			break;
 		case NetlogonValidationSamInfo4: /* 6 */
+			if ((pdb_capabilities() & PDB_CAP_ADS) == 0) {
+				DEBUG(10,("Not adding validation info level 6 "
+				   "without ADS passdb backend\n"));
+				return NT_STATUS_INVALID_INFO_CLASS;
+			}
 			break;
 		default:
 			return NT_STATUS_INVALID_INFO_CLASS;
@@ -1343,6 +1355,9 @@ static NTSTATUS _netr_LogonSamLogon_check(const struct netr_LogonSamLogonEx *r)
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 
+		/* we don't support this here */
+		return NT_STATUS_INVALID_PARAMETER;
+#if 0
 		switch (r->in.validation_level) {
 		/* TODO: case NetlogonValidationGenericInfo: 4 */
 		case NetlogonValidationGenericInfo2: /* 5 */
@@ -1352,6 +1367,7 @@ static NTSTATUS _netr_LogonSamLogon_check(const struct netr_LogonSamLogonEx *r)
 		}
 
 		break;
+#endif
 	default:
 		return NT_STATUS_INVALID_PARAMETER;
 	}
