@@ -238,12 +238,12 @@ static int ctdb_vacuum_db(struct ctdb_db_context *ctdb_db, struct vacuum_data *v
 
 	ctdb->pnn = pnn;
 	/* the list needs to be of length num_nodes */
-	vdata->list = talloc_array(vdata, struct ctdb_marshall_buffer *, ctdb->vnn_map->size);
+	vdata->list = talloc_array(vdata, struct ctdb_marshall_buffer *, ctdb->num_nodes);
 	if (vdata->list == NULL) {
 		DEBUG(DEBUG_ERR,(__location__ " Out of memory\n"));
 		return -1;
 	}
-	for (i = 0; i < ctdb->vnn_map->size; i++) {
+	for (i = 0; i < ctdb->num_nodes; i++) {
 		vdata->list[i] = (struct ctdb_marshall_buffer *)
 			talloc_zero_size(vdata->list, 
 							 offsetof(struct ctdb_marshall_buffer, data));
@@ -261,22 +261,24 @@ static int ctdb_vacuum_db(struct ctdb_db_context *ctdb_db, struct vacuum_data *v
 		return -1;		
 	}
 
-	for ( i = 0; i < ctdb->vnn_map->size; i++) {
+	for (i = 0; i < ctdb->num_nodes; i++) {
 		if (vdata->list[i]->count == 0) {
 			continue;
 		}
 
 		/* for records where we are not the lmaster, tell the lmaster to fetch the record */
-		if (ctdb->vnn_map->map[i] != ctdb->pnn) {
+		if (ctdb->nodes[i]->pnn != ctdb->pnn) {
 			TDB_DATA data;
-			DEBUG(DEBUG_INFO,("Found %u records for lmaster %u in '%s'\n", 
-								vdata->list[i]->count, i, name));
+			DEBUG(DEBUG_INFO,
+			      ("Found %u records for lmaster %u in '%s'\n",
+			       vdata->list[i]->count, ctdb->nodes[i]->pnn,
+			       name));
 
 			data.dsize = talloc_get_size(vdata->list[i]);
 			data.dptr  = (void *)vdata->list[i];
-			if (ctdb_client_send_message(ctdb, ctdb->vnn_map->map[i], CTDB_SRVID_VACUUM_FETCH, data) != 0) {
+			if (ctdb_client_send_message(ctdb, ctdb->nodes[i]->pnn, CTDB_SRVID_VACUUM_FETCH, data) != 0) {
 				DEBUG(DEBUG_ERR,(__location__ " Failed to send vacuum fetch message to %u\n",
-					 ctdb->vnn_map->map[i]));
+					 ctdb->nodes[i]->pnn));
 				return -1;		
 			}
 			continue;
