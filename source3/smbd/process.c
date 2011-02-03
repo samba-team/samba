@@ -26,6 +26,7 @@
 #include "ctdbd_conn.h"
 #include "../lib/util/select.h"
 #include "printing/pcap.h"
+#include "system/select.h"
 
 extern bool global_machine_password_needs_changing;
 
@@ -963,31 +964,23 @@ void smbd_setup_sig_hup_handler(struct tevent_context *ev,
 
 static NTSTATUS smbd_server_connection_loop_once(struct smbd_server_connection *conn)
 {
-	fd_set r_fds, w_fds;
-	int selrtn;
-	struct timeval to;
-	int maxfd = 0;
+	int timeout;
+	int num_pfds = 0;
+	int ret;
+	bool retry;
 
-	to.tv_sec = SMBD_SELECT_TIMEOUT;
-	to.tv_usec = 0;
-
-	/*
-	 * Setup the select fd sets.
-	 */
-
-	FD_ZERO(&r_fds);
-	FD_ZERO(&w_fds);
+	timeout = SMBD_SELECT_TIMEOUT * 1000;
 
 	/*
 	 * Are there any timed events waiting ? If so, ensure we don't
 	 * select for longer than it would take to wait for them.
 	 */
 
-	event_add_to_select_args(smbd_event_context(),
-				 &r_fds, &w_fds, &to, &maxfd);
+	event_add_to_poll_args(smbd_event_context(), conn,
+			       &conn->pfds, &num_pfds, &timeout);
 
 	/* Process a signal and timed events now... */
-	if (run_events(smbd_event_context(), 0, NULL, NULL)) {
+	if (run_events_poll(smbd_event_context(), 0, NULL, 0)) {
 		return NT_STATUS_RETRY;
 	}
 
@@ -995,23 +988,25 @@ static NTSTATUS smbd_server_connection_loop_once(struct smbd_server_connection *
 		int sav;
 		START_PROFILE(smbd_idle);
 
-		selrtn = sys_select(maxfd+1,&r_fds,&w_fds,NULL,&to);
+		ret = sys_poll(conn->pfds, num_pfds, timeout);
 		sav = errno;
 
 		END_PROFILE(smbd_idle);
 		errno = sav;
 	}
 
-	if (selrtn == -1 && errno != EINTR) {
+	if (ret == -1 && errno != EINTR) {
 		return map_nt_error_from_unix(errno);
 	}
 
-	if (run_events(smbd_event_context(), selrtn, &r_fds, &w_fds)) {
+	retry = run_events_poll(smbd_event_context(), ret, conn->pfds,
+				num_pfds);
+	if (retry) {
 		return NT_STATUS_RETRY;
 	}
 
 	/* Did we timeout ? */
-	if (selrtn == 0) {
+	if (ret == 0) {
 		return NT_STATUS_RETRY;
 	}
 
