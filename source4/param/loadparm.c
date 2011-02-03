@@ -90,7 +90,6 @@ struct loadparm_global
 	char *szLockDir;
 	char *szModulesDir;
 	char *szPidDir;
-	char *szSetupDir;
 	char *szServerString;
 	char *szAutoServices;
 	char *szPasswdChat;
@@ -482,7 +481,6 @@ static struct parm_struct parm_table[] = {
 	{"lock directory", P_STRING, P_GLOBAL, GLOBAL_VAR(szLockDir), NULL, NULL},
 	{"modules dir", P_STRING, P_GLOBAL, GLOBAL_VAR(szModulesDir), NULL, NULL},
 	{"pid directory", P_STRING, P_GLOBAL, GLOBAL_VAR(szPidDir), NULL, NULL}, 
-	{"setup directory", P_STRING, P_GLOBAL, GLOBAL_VAR(szSetupDir), NULL, NULL},
 
 	{"socket address", P_STRING, P_GLOBAL, GLOBAL_VAR(szSocketAddress), NULL, NULL},
 	{"copy", P_STRING, P_LOCAL, LOCAL_VAR(szCopy), handle_copy, NULL},
@@ -669,7 +667,6 @@ FN_GLOBAL_STRING(private_dir, szPrivateDir)
 FN_GLOBAL_STRING(serverstring, szServerString)
 FN_GLOBAL_STRING(lockdir, szLockDir)
 FN_GLOBAL_STRING(modulesdir, szModulesDir)
-FN_GLOBAL_STRING(setupdir, szSetupDir)
 FN_GLOBAL_STRING(ncalrpc_dir, ncalrpc_dir)
 FN_GLOBAL_STRING(dos_charset, dos_charset)
 FN_GLOBAL_STRING(unix_charset, unix_charset)
@@ -2506,9 +2503,6 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 	lpcfg_do_global_parameter(lp_ctx, "tls keyfile", "tls/key.pem");
 	lpcfg_do_global_parameter(lp_ctx, "tls certfile", "tls/cert.pem");
 	lpcfg_do_global_parameter(lp_ctx, "tls cafile", "tls/ca.pem");
-	lpcfg_do_global_parameter_var(lp_ctx, "setup directory", "%s",
-				      dyn_SETUPDIR);
-
 	lpcfg_do_global_parameter(lp_ctx, "prefork children:smb", "4");
 
 	lpcfg_do_global_parameter(lp_ctx, "ntp signd socket directory", dyn_NTP_SIGND_SOCKET_DIR);

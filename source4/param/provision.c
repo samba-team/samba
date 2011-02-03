@@ -131,13 +131,8 @@ NTSTATUS provision_bare(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx,
 	if (settings->targetdir != NULL)
 		PyDict_SetItemString(parameters, "targetdir", 
 							 PyString_FromString(settings->targetdir));
-	if (file_exist("setup/provision.smb.conf.dc")) {
-		PyDict_SetItemString(parameters, "setup_dir",
-				     PyString_FromString("setup"));
-	} else {
-		PyDict_SetItemString(parameters, "setup_dir",
-				     PyString_FromString(dyn_SETUPDIR));
-	}
+	PyDict_SetItemString(parameters, "setup_dir",
+			     PyString_FromString(dyn_SETUPDIR));
 	PyDict_SetItemString(parameters, "hostname", 
 						 PyString_FromString(settings->netbios_name));
 	PyDict_SetItemString(parameters, "domain", 
@@ -340,7 +335,6 @@ failure:
 struct ldb_context *provision_get_schema(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx,
 					 DATA_BLOB *override_prefixmap)
 {
-	const char *setupdir;
 	PyObject *schema_mod, *schema_dict, *schema_fn, *py_result, *parameters;
 	
 	Py_Initialize();
@@ -370,9 +364,8 @@ struct ldb_context *provision_get_schema(TALLOC_CTX *mem_ctx, struct loadparm_co
 	
 	parameters = PyDict_New();
 
-	setupdir = lpcfg_setupdir(lp_ctx);
 	PyDict_SetItemString(parameters, "setup_dir", 
-			     PyString_FromString(setupdir));
+			     PyString_FromString(dyn_SETUPDIR));
 	if (override_prefixmap) {
 		PyDict_SetItemString(parameters, "override_prefixmap",
 				     PyString_FromStringAndSize((const char *)override_prefixmap->data,
