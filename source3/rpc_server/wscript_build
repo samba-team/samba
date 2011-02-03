@@ -11,12 +11,12 @@ RPC_WINREG_SRC = '''srv_winreg_nt.c ../../librpc/gen_ndr/srv_winreg.c'''
 RPC_DSSETUP_SRC = '''srv_dssetup_nt.c ../../librpc/gen_ndr/srv_dssetup.c'''
 RPC_SRVSVC_SRC = '''srv_srvsvc_nt.c ../../librpc/gen_ndr/srv_srvsvc.c'''
 RPC_WKSSVC_SRC = '''srv_wkssvc_nt.c ../../librpc/gen_ndr/srv_wkssvc.c'''
-RPC_SVCCTL_SRC = '''srv_svcctl_nt.c ../../librpc/gen_ndr/srv_svcctl.c'''
+RPC_SVCCTL_SRC = '''srv_svcctl_nt.c srv_svcctl_reg.c ../../librpc/gen_ndr/srv_svcctl.c'''
 RPC_NTSVCS_SRC = '''srv_ntsvcs_nt.c ../../librpc/gen_ndr/srv_ntsvcs.c'''
 RPC_NETDFS_SRC = '''srv_dfs_nt.c ../../librpc/gen_ndr/srv_dfs.c'''
 RPC_SPOOLSS_SRC = '''srv_spoolss_nt.c ../../librpc/gen_ndr/srv_spoolss.c
                      srv_spoolss_util.c'''
-RPC_EVENTLOG_SRC = '''srv_eventlog_nt.c ../../librpc/gen_ndr/srv_eventlog.c'''
+RPC_EVENTLOG_SRC = '''srv_eventlog_nt.c srv_eventlog_reg.c ../../librpc/gen_ndr/srv_eventlog.c'''
 RPC_RPCECHO_SRC = '''srv_echo_nt.c ../../librpc/gen_ndr/srv_echo.c'''
 RPC_EPMAPPER_SRC = '''srv_epmapper.c ../../librpc/gen_ndr/srv_epmapper.c'''
 
@@ -69,7 +69,7 @@ bld.SAMBA_SUBSYSTEM('RPC_WKSSVC',
 
 bld.SAMBA_SUBSYSTEM('RPC_SVCCTL',
                     source=RPC_SVCCTL_SRC,
-                    deps='SERVICES',
+                    deps='SERVICES LIBCLI_WINREG',
                     vars=locals())
 
 bld.SAMBA_SUBSYSTEM('RPC_NTSVCS',
@@ -90,12 +90,12 @@ bld.SAMBA_SUBSYSTEM('RPC_SRVSVC',
 
 bld.SAMBA_SUBSYSTEM('RPC_SPOOLSS',
                     source=RPC_SPOOLSS_SRC,
-                    deps='cups PRINTING PRINTBACKEND RPC_NDR_WINREG',
+                    deps='cups PRINTING PRINTBACKEND LIBCLI_WINREG',
                     vars=locals())
 
 bld.SAMBA_SUBSYSTEM('RPC_EVENTLOG',
                     source=RPC_EVENTLOG_SRC,
-                    deps='LIBEVENTLOG',
+                    deps='LIBEVENTLOG LIBCLI_WINREG',
                     vars=locals())
 
 bld.SAMBA_SUBSYSTEM('RPC_RPCECHO',
