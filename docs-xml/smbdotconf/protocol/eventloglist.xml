@@ -6,7 +6,7 @@
     <para>This option defines a list of log names that Samba will 
     report to the Microsoft EventViewer utility.  The listed 
     eventlogs will be associated with tdb file on disk in the 
-    <filename>$(lockdir)/eventlog</filename>.
+    <filename>$(statedir)/eventlog</filename>.
     </para>
 
     <para>
