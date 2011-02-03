@@ -445,8 +445,6 @@ static int dssync_passdb_traverse_gmembers(struct db_record *rec,
 
 	state->idx++;
 
-	DEBUG(0,("%s[%u]...\n", state->name, state->idx));
-
 	group_sid = state->obj->cur->object.identifier->sid;
 
 	status = dom_sid_split_rid(talloc_tos(), &group_sid, NULL, &rid);
@@ -567,8 +565,6 @@ static int dssync_passdb_traverse_groups(struct db_record *rec,
 	if (pctx->methods == NULL) {
 		return -1;
 	}
-
-	DEBUG(0,("%s[%u]...\n", state->name, state->idx));
 
 	obj = dssync_parse_obj(rec->value);
 	if (obj == NULL) {
