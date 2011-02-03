@@ -45,6 +45,9 @@ LIBCLI_SAMR_SRC = 'rpc_client/cli_samr.c'
 
 LIBRPCCLI_NETLOGON_SRC = 'rpc_client/cli_netlogon.c rpc_client/util_netlogon.c'
 
+LIBCLI_WINREG_SRC = '''rpc_client/cli_winreg.c
+                       rpc_client/cli_winreg_int.c'''
+
 # this includes only the low level parse code, not stuff
 # that requires knowledge of security contexts
 REG_PARSE_PRS_SRC = '''registry/reg_parse_prs.c'''
@@ -239,8 +242,6 @@ REG_SMBCONF_SRC = '''
                   registry/reg_util_token.c
                   registry/reg_api_util.c'''
 
-REG_EVENTLOG_SRC = '''registry/reg_eventlog.c'''
-
 REG_FULL_SRC = '''
                ${REG_BACKENDS_EXTRA_SRC}
                ${REG_INIT_FULL_SRC}
@@ -248,7 +249,7 @@ REG_FULL_SRC = '''
 
 SERVICES_SRC = '''services/svc_spoolss.c
                   services/svc_rcinit.c
-                  services/services_db.c
+                  services/svc_winreg_glue.c
                   services/svc_netlogon.c
                   services/svc_winreg.c
                   services/svc_wins.c'''
@@ -824,11 +825,7 @@ bld.SAMBA_SUBSYSTEM('REG_SMBCONF',
 
 bld.SAMBA_SUBSYSTEM('REG_FULL',
                     source=REG_FULL_SRC,
-                    deps='REG_SMBCONF REG_EVENTLOG',
-                    vars=locals())
-
-bld.SAMBA_SUBSYSTEM('REG_EVENTLOG',
-                    source=REG_EVENTLOG_SRC,
+                    deps='REG_SMBCONF',
                     vars=locals())
 
 bld.SAMBA_SUBSYSTEM('POPT_SAMBA',
@@ -1092,6 +1089,10 @@ bld.SAMBA_SUBSYSTEM('LIBCLI_SPOOLSS',
                     source=LIBCLI_SPOOLSS_SRC,
                     deps='RPC_NDR_SPOOLSS')
 
+bld.SAMBA_SUBSYSTEM('LIBCLI_WINREG',
+                    source=LIBCLI_WINREG_SRC,
+                    deps='RPC_NDR_WINREG')
+
 bld.SAMBA_SUBSYSTEM('RPC_CLIENT_SCHANNEL',
 	source=RPC_CLIENT_SCHANNEL_SRC,
 	vars=locals())
@@ -1286,7 +1287,7 @@ bld.SAMBA_BINARY('smbcquotas',
 bld.SAMBA_BINARY('eventlogadm',
                  source=EVTLOGADM_SRC,
                  deps='''talloc tevent cap POPT_SAMBA LIBS PARAM
-                 LIB_NONSMBD LIBSMB_ERR PASSDB wbclient LIBEVENTLOG REG_EVENTLOG''',
+                 LIB_NONSMBD LIBSMB_ERR PASSDB wbclient LIBEVENTLOG''',
                  vars=locals())
 
 bld.SAMBA_BINARY('sharesec',
