@@ -65,7 +65,10 @@ def plantestsuite(name, env, cmdline, allow_empty_output=False):
         filter_subunit_args.append("--fail-on-empty")
     if "$LISTOPT" in cmdline:
         filter_subunit_args.append("$LISTOPT")
-    print "%s 2>&1 | ../selftest/filter-subunit %s --prefix=\"%s.\"" % (cmdline, " ".join(filter_subunit_args), name)
+    print "%s 2>&1 | %s/selftest/filter-subunit %s --prefix=\"%s.\"" % (cmdline,
+                                                                        srcdir,
+                                                                        " ".join(filter_subunit_args),
+                                                                        name)
     if allow_empty_output:
         print "WARNING: allowing empty subunit output from %s" % name
 
@@ -75,7 +78,7 @@ def add_prefix(prefix, support_list=False):
         listopt = "$LISTOPT "
     else:
         listopt = ""
-    return "../selftest/filter-subunit %s--fail-on-empty --prefix=\"%s.\"" % (listopt, prefix)
+    return "%s/selftest/filter-subunit %s--fail-on-empty --prefix=\"%s.\"" % (srcdir, listopt, prefix)
 
 
 def plantestsuite_loadlist(name, env, cmdline):
@@ -136,7 +139,8 @@ def plansmbtorturetestsuite(name, env, options):
     plantestsuite_loadlist(modname, env, cmdline)
 
 
-samba4srcdir = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
+srcdir = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "../.."))
+samba4srcdir = os.path.join(srcdir, 'source4')
 builddir = os.getenv("BUILDDIR", samba4srcdir)
 samba4bindir = os.path.normpath(os.path.join(builddir, "bin"))
 smb4torture = binpath("smbtorture")
@@ -163,7 +167,7 @@ else:
 
 subprocess.call([smb4torture, "-V"])
 
-bbdir = "../testprogs/blackbox"
+bbdir = os.path.join(srcdir, "testprogs/blackbox")
 
 configuration = "--configfile=$SMB_CONF_PATH"
 

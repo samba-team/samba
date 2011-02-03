@@ -12,13 +12,13 @@ use POSIX;
 use SocketWrapper;
 
 sub new($$$$$) {
-	my ($classname, $bindir, $ldap, $setupdir, $exeext) = @_;
+	my ($classname, $bindir, $ldap, $srcdir, $exeext) = @_;
 	$exeext = "" unless defined($exeext);
 	my $self = {
 		vars => {},
 		ldap => $ldap,
 		bindir => $bindir,
-		setupdir => $setupdir,
+		srcdir => $srcdir,
 		exeext => $exeext
 	};
 	bless $self;
@@ -32,6 +32,11 @@ sub bindir_path($$) {
 
 	return $valpath if (-f $valpath);
 	return $path;
+}
+
+sub scriptdir_path($$) {
+	my ($self, $path) = @_;
+	return "$self->{srcdir}/source4/scripting/$path";
 }
 
 sub openldap_start($$$) {
@@ -548,7 +553,7 @@ sub provision_raw_prepare($$$$$$$$$$)
 	if (defined($ENV{PYTHON})) {
 		push (@provision_options, $ENV{PYTHON});
 	}
-	push (@provision_options, "$self->{setupdir}/provision");
+	push (@provision_options, "$self->{srcdir}/source4/setup/provision");
 	push (@provision_options, "--configfile=$ctx->{smb_conf}");
 	push (@provision_options, "--host-name=$ctx->{netbiosname}");
 	push (@provision_options, "--host-ip=$ctx->{ipv4}");
@@ -591,7 +596,7 @@ sub provision_raw_step1($$)
 	pid directory = $ctx->{piddir}
 	ncalrpc dir = $ctx->{ncalrpcdir}
 	lock dir = $ctx->{lockdir}
-	setup directory = $self->{setupdir}
+	setup directory = $self->{srcdir}/source4/setup
 	winbindd socket directory = $ctx->{winbindd_socket_dir}
 	winbindd privileged socket directory = $ctx->{winbindd_privileged_socket_dir}
 	ntp signd socket directory = $ctx->{ntp_signd_socket_dir}
@@ -610,8 +615,8 @@ sub provision_raw_step1($$)
 	log level = $ctx->{server_loglevel}
 	lanman auth = Yes
 	rndc command = true
-        dns update command = $ENV{SRCDIR_ABS}/scripting/bin/samba_dnsupdate --all-interfaces --use-file=$ctx->{dns_host_file}
-        spn update command = $ENV{SRCDIR_ABS}/scripting/bin/samba_spnupdate
+        dns update command = $ENV{SRCDIR_ABS}/source4/scripting/bin/samba_dnsupdate --all-interfaces --use-file=$ctx->{dns_host_file}
+        spn update command = $ENV{SRCDIR_ABS}/source4/scripting/bin/samba_spnupdate
         resolv:host file = $ctx->{dns_host_file}
 	dreplsrv:periodic_startup_interval = 0
 ";
@@ -697,7 +702,7 @@ nogroup:x:65534:nobody
 	my $configuration = "--configfile=$ctx->{smb_conf}";
 
 #Ensure the config file is valid before we start
-	my $testparm = $self->bindir_path("../scripting/bin/testparm");
+	my $testparm = $self->scriptdir_path("bin/testparm");
 	if (system("$testparm $configuration -v --suppress-prompt >/dev/null 2>&1") != 0) {
 		system("$testparm -v --suppress-prompt $configuration >&2");
 		warn("Failed to create a valid smb.conf configuration $testparm!");
