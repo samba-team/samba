@@ -167,6 +167,54 @@ static bool do_debug(struct messaging_context *msg_ctx,
 			    strlen(argv[1]) + 1);
 }
 
+
+static bool do_idmap(struct messaging_context *msg_ctx,
+		     const struct server_id pid,
+		     const int argc, const char **argv)
+{
+	static const char* usage = "Usage: "
+		"smbcontrol <dest> idmap <cmd> [arg]\n"
+		"\tcmd:\tflush [gid|uid]\n"
+		"\t\tdelete \"UID <uid>\"|\"GID <gid>\"|<sid>\n"
+		"\t\tkill \"UID <uid>\"|\"GID <gid>\"|<sid>\n";
+	const char* arg = NULL;
+	int arglen = 0;
+	int msg_type;
+
+	switch (argc) {
+	case 2:
+		break;
+	case 3:
+		arg = argv[2];
+		arglen = strlen(arg) + 1;
+		break;
+	default:
+		fprintf(stderr, "%s", usage);
+		return false;
+	}
+
+	if (strcmp(argv[1], "flush") == 0) {
+		msg_type = MSG_IDMAP_FLUSH;
+	}
+	else if (strcmp(argv[1], "delete") == 0) {
+		msg_type = MSG_IDMAP_DELETE;
+	}
+	else if (strcmp(argv[1], "kill") == 0) {
+		msg_type = MSG_IDMAP_KILL;
+	}
+	else if (strcmp(argv[1], "help") == 0) {
+		fprintf(stdout, "%s", usage);
+		return true;
+	}
+	else {
+		fprintf(stderr, "%s", usage);
+		return false;
+	}
+
+	return send_message(msg_ctx, pid, msg_type, arg, arglen);
+}
+
+
 #if defined(HAVE_LIBUNWIND_PTRACE) && defined(HAVE_LINUX_PTRACE)
 
 /* Return the name of a process given it's PID. This will only work on Linux,
@@ -1201,6 +1249,7 @@ static const struct {
 	const char *help;	/* Short help text */
 } msg_types[] = {
 	{ "debug", do_debug, "Set debuglevel"  },
+	{ "idmap", do_idmap, "Manipulate idmap cache" },
 	{ "force-election", do_election,
 	  "Force a browse election" },
 	{ "ping", do_ping, "Elicit a response" },

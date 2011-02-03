@@ -5457,6 +5457,10 @@ struct AvahiPoll *tevent_avahi_poll(TALLOC_CTX *mem_ctx,
 void *avahi_start_register(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 			   uint16_t port);
 
+/* The following definitions come from smbd/msg_idmap.c */
+
+void msg_idmap_register_msgs(struct messaging_context *ctx);
+
 /* Misc protos */
 
 struct fncall_context *fncall_context_init(TALLOC_CTX *mem_ctx,
