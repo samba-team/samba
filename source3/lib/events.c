@@ -21,6 +21,7 @@
 #include "includes.h"
 #include <tevent_internal.h>
 #include "../lib/util/select.h"
+#include "system/select.h"
 
 /*
  * Return if there's something in the queue
@@ -136,6 +137,256 @@ bool run_events(struct tevent_context *ev,
 	return false;
 }
 
+struct tevent_poll_private {
+	/*
+	 * Index from file descriptor into the pollfd array
+	 */
+	int *pollfd_idx;
+
+	/*
+	 * Cache for s3_event_loop_once to avoid reallocs
+	 */
+	struct pollfd *pfds;
+};
+
+static struct tevent_poll_private *tevent_get_poll_private(
+	struct tevent_context *ev)
+{
+	struct tevent_poll_private *state;
+
+	state = (struct tevent_poll_private *)ev->additional_data;
+	if (state == NULL) {
+		state = TALLOC_ZERO_P(ev, struct tevent_poll_private);
+		ev->additional_data = (void *)state;
+		if (state == NULL) {
+			DEBUG(10, ("talloc failed\n"));
+		}
+	}
+	return state;
+}
+
+static void count_fds(struct tevent_context *ev,
+		      int *pnum_fds, int *pmax_fd)
+{
+	struct tevent_fd *fde;
+	int num_fds = 0;
+	int max_fd = 0;
+
+	for (fde = ev->fd_events; fde != NULL; fde = fde->next) {
+		if (fde->flags & (EVENT_FD_READ|EVENT_FD_WRITE)) {
+			num_fds += 1;
+			if (fde->fd > max_fd) {
+				max_fd = fde->fd;
+			}
+		}
+	}
+	*pnum_fds = num_fds;
+	*pmax_fd = max_fd;
+}
+
+bool event_add_to_poll_args(struct tevent_context *ev, TALLOC_CTX *mem_ctx,
+			    struct pollfd **pfds, int *pnum_pfds,
+			    int *ptimeout)
+{
+	struct tevent_poll_private *state;
+	struct tevent_fd *fde;
+	int i, num_fds, max_fd, num_pollfds, idx_len;
+	struct pollfd *fds;
+	struct timeval now, diff;
+	int timeout;
+
+	state = tevent_get_poll_private(ev);
+	if (state == NULL) {
+		return false;
+	}
+	count_fds(ev, &num_fds, &max_fd);
+
+	idx_len = max_fd+1;
+
+	if (talloc_array_length(state->pollfd_idx) < idx_len) {
+		state->pollfd_idx = TALLOC_REALLOC_ARRAY(
+			state, state->pollfd_idx, int, idx_len);
+		if (state->pollfd_idx == NULL) {
+			DEBUG(10, ("talloc_realloc failed\n"));
+			return false;
+		}
+	}
+
+	fds = *pfds;
+	num_pollfds = *pnum_pfds;
+
+	/*
+	 * The +1 is for the sys_poll calling convention. It expects
+	 * an array 1 longer for the signal pipe
+	 */
+
+	if (talloc_array_length(fds) < num_pollfds + num_fds + 1) {
+		fds = TALLOC_REALLOC_ARRAY(mem_ctx, fds, struct pollfd,
+					   num_pollfds + num_fds + 1);
+		if (fds == NULL) {
+			DEBUG(10, ("talloc_realloc failed\n"));
+			return false;
+		}
+	}
+
+	memset(&fds[num_pollfds], 0, sizeof(struct pollfd) * num_fds);
+
+	/*
+	 * This needs tuning. We need to cope with multiple fde's for a file
+	 * descriptor. The problem is that we need to re-use pollfd_idx across
+	 * calls for efficiency. One way would be a direct bitmask that might
+	 * be initialized quicker, but our bitmap_init implementation is
+	 * pretty heavy-weight as well.
+	 */
+	for (i=0; i<idx_len; i++) {
+		state->pollfd_idx[i] = -1;
+	}
+
+	for (fde = ev->fd_events; fde; fde = fde->next) {
+		struct pollfd *pfd;
+
+		if ((fde->flags & (EVENT_FD_READ|EVENT_FD_WRITE)) == 0) {
+			continue;
+		}
+
+		if (state->pollfd_idx[fde->fd] == -1) {
+			/*
+			 * We haven't seen this fd yet. Allocate a new pollfd.
+			 */
+			state->pollfd_idx[fde->fd] = num_pollfds;
+			pfd = &fds[num_pollfds];
+			num_pollfds += 1;
+		} else {
+			/*
+			 * We have already seen this fd. OR in the flags.
+			 */
+			pfd = &fds[state->pollfd_idx[fde->fd]];
+		}
+
+		pfd->fd = fde->fd;
+
+		if (fde->flags & EVENT_FD_READ) {
+			pfd->events |= (POLLIN|POLLHUP);
+		}
+		if (fde->flags & EVENT_FD_WRITE) {
+			pfd->events |= POLLOUT;
+		}
+	}
+	*pfds = fds;
+	*pnum_pfds = num_pollfds;
+
+	if (ev->immediate_events != NULL) {
+		*ptimeout = 0;
+		return true;
+	}
+	if (ev->timer_events == NULL) {
+		*ptimeout = INT_MAX;
+		return true;
+	}
+
+	now = timeval_current();
+	diff = timeval_until(&now, &ev->timer_events->next_event);
+	timeout = timeval_to_msec(diff);
+
+	if (timeout < *ptimeout) {
+		*ptimeout = timeout;
+	}
+
+	return true;
+}
+
+bool run_events_poll(struct tevent_context *ev, int pollrtn,
+		     struct pollfd *pfds, int num_pfds)
+{
+	struct tevent_poll_private *state;
+	int *pollfd_idx;
+	struct tevent_fd *fde;
+	struct timeval now;
+
+	if (ev->signal_events &&
+	    tevent_common_check_signal(ev)) {
+		return true;
+	}
+
+	if (ev->immediate_events &&
+	    tevent_common_loop_immediate(ev)) {
+		return true;
+	}
+
+	GetTimeOfDay(&now);
+
+	if ((ev->timer_events != NULL)
+	    && (timeval_compare(&now, &ev->timer_events->next_event) >= 0)) {
+		/* this older events system did not auto-free timed
+		   events on running them, and had a race condition
+		   where the event could be called twice if the
+		   talloc_free of the te happened after the callback
+		   made a call which invoked the event loop. To avoid
+		   this while still allowing old code which frees the
+		   te, we need to create a temporary context which
+		   will be used to ensure the te is freed. We also
+		   remove the te from the timed event list before we
+		   call the handler, to ensure we can't loop */
+
+		struct tevent_timer *te = ev->timer_events;
+		TALLOC_CTX *tmp_ctx = talloc_new(ev);
+
+		DEBUG(10, ("Running timed event \"%s\" %p\n",
+			   ev->timer_events->handler_name, ev->timer_events));
+
+		DLIST_REMOVE(ev->timer_events, te);
+		talloc_steal(tmp_ctx, te);
+
+		te->handler(ev, te, now, te->private_data);
+
+		talloc_free(tmp_ctx);
+		return true;
+	}
+
+	if (pollrtn <= 0) {
+		/*
+		 * No fd ready
+		 */
+		return false;
+	}
+
+	state = (struct tevent_poll_private *)ev->additional_data;
+	pollfd_idx = state->pollfd_idx;
+
+	for (fde = ev->fd_events; fde; fde = fde->next) {
+		struct pollfd *pfd;
+		uint16 flags = 0;
+
+		if (pollfd_idx[fde->fd] >= num_pfds) {
+			DEBUG(1, ("internal error: pollfd_idx[fde->fd] (%d) "
+				  ">= num_pfds (%d)\n", pollfd_idx[fde->fd],
+				  num_pfds));
+			return false;
+		}
+		pfd = &pfds[pollfd_idx[fde->fd]];
+
+		if (pfd->fd != fde->fd) {
+			DEBUG(1, ("internal error: pfd->fd (%d) "
+				  "!= fde->fd (%d)\n", pollfd_idx[fde->fd],
+                                  num_pfds));
+			return false;
+		}
+
+		if (pfd->revents & (POLLIN|POLLHUP|POLLERR)) {
+			flags |= EVENT_FD_READ;
+		}
+		if (pfd->revents & POLLOUT) {
+			flags |= EVENT_FD_WRITE;
+		}
+		if (flags & fde->flags) {
+			DLIST_DEMOTE(ev->fd_events, fde, struct tevent_fd);
+			fde->handler(ev, fde, flags, fde->private_data);
+			return true;
+		}
+	}
+
+	return false;
+}
 
 struct timeval *get_timed_events_timeout(struct tevent_context *ev,
 					 struct timeval *to_ret)
@@ -161,35 +412,38 @@ struct timeval *get_timed_events_timeout(struct tevent_context *ev,
 
 static int s3_event_loop_once(struct tevent_context *ev, const char *location)
 {
-	struct timeval to;
-	fd_set r_fds, w_fds;
-	int maxfd = 0;
+	struct tevent_poll_private *state;
+	int timeout;
+	int num_pfds;
 	int ret;
 
-	FD_ZERO(&r_fds);
-	FD_ZERO(&w_fds);
+	timeout = INT_MAX;
 
-	to.tv_sec = 9999;	/* Max timeout */
-	to.tv_usec = 0;
-
-	if (run_events(ev, 0, NULL, NULL)) {
-		return 0;
-	}
-
-	if (!event_add_to_select_args(ev, &r_fds, &w_fds, &to, &maxfd)) {
+	state = tevent_get_poll_private(ev);
+	if (state == NULL) {
+		errno = ENOMEM;
 		return -1;
 	}
 
-	ret = sys_select(maxfd+1, &r_fds, &w_fds, NULL, &to);
+	if (run_events_poll(ev, 0, NULL, 0)) {
+		return 0;
+	}
 
+	num_pfds = 0;
+	if (!event_add_to_poll_args(ev, state,
+				    &state->pfds, &num_pfds, &timeout)) {
+		return -1;
+	}
+
+	ret = sys_poll(state->pfds, num_pfds, timeout);
 	if (ret == -1 && errno != EINTR) {
 		tevent_debug(ev, TEVENT_DEBUG_FATAL,
-			     "sys_select() failed: %d:%s\n",
+			     "poll() failed: %d:%s\n",
 			     errno, strerror(errno));
 		return -1;
 	}
 
-	run_events(ev, ret, &r_fds, &w_fds);
+	run_events_poll(ev, ret, state->pfds, num_pfds);
 	return 0;
 }
 
