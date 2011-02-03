@@ -12,8 +12,11 @@ def to_list(str):
         return str
     return str.split(None)
 
-def heimdal_path(p):
-    return os.path.join("../heimdal", p)
+def heimdal_path(p, absolute=False):
+    hpath = os.path.join("../heimdal", p)
+    if not absolute:
+        return hpath
+    return os.path.normpath(os.path.join(bld.curdir, hpath))
 
 def heimdal_paths(ps):
     return [heimdal_path(p) for p in to_list(ps)]
@@ -254,7 +257,7 @@ def HEIMDAL_LIBRARY(libname, source, deps, vnum, version_script, includes='', cf
         ldflags         = ldflags,
         vars            = [version],
         private_library = bundled_build,
-        version_script  = heimdal_path(version_script),
+        version_script  = heimdal_path(version_script, absolute=True),
         )
 
 
