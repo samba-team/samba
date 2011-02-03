@@ -364,7 +364,6 @@ def newprovision(names, setup_dir, creds, session, smbconf, provdir, logger):
     """
     if os.path.isdir(provdir):
         shutil.rmtree(provdir)
-    os.chdir(os.path.join(setup_dir,".."))
     os.mkdir(provdir)
     logger.info("Provision stored in %s", provdir)
     provision(setup_dir, logger, session, creds, smbconf=smbconf,
