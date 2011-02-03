@@ -193,6 +193,10 @@ bool netsamlogon_cache_store(const char *username, struct netr_SamInfo3 *info3)
 	r.timestamp = time(NULL);
 	r.info3 = *info3;
 
+	/* avoid storing secret information */
+	ZERO_STRUCT(r.info3.base.key);
+	ZERO_STRUCT(r.info3.base.LMSessKey);
+
 	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_DEBUG(netsamlogoncache_entry, &r);
 	}
