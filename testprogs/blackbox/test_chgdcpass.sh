@@ -21,9 +21,11 @@ shift 7
 failed=0
 
 samba4bindir="$BUILDDIR/bin"
+samba4srcdir="$SRCDIR/source4"
 smbclient="$samba4bindir/smbclient$EXEEXT"
 samba4kinit="$samba4bindir/samba4kinit$EXEEXT"
-machineaccountccache="$BUILDDIR/scripting/bin/machineaccountccache"
+
+machineaccountccache="$samba4srcdir/scripting/bin/machineaccountccache"
 
 . `dirname $0`/subunit.sh
 
@@ -52,7 +54,7 @@ testit "kinit with keytab" $samba4kinit $enctype -t $PROVDIR/private/secrets.key
 
 #This is important because it puts the ticket for the old KVNO and password into a local ccache
 test_smbclient "Test login with kerberos ccache before password change" 'ls' -k yes || failed=`expr $failed + 1`
-testit "change dc password" ./scripting/devel/chgtdcpass -s $PROVDIR/etc/smb.conf || failed=`expr $failed + 1`
+testit "change dc password" $samba4srcdir/scripting/devel/chgtdcpass -s $PROVDIR/etc/smb.conf || failed=`expr $failed + 1`
 
 #This is important because it shows that the old ticket remains valid (as it must) for incoming connections after the DC password is changed
 test_smbclient "Test login with kerberos ccache after password change" 'ls' -k yes || failed=`expr $failed + 1`

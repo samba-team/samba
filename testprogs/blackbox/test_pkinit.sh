@@ -21,6 +21,7 @@ shift 7
 failed=0
 
 samba4bindir="$BUILDDIR/bin"
+samba4srcdir="$SRCDIR/source4"
 smbclient="$samba4bindir/smbclient$EXEEXT"
 samba4kinit="$samba4bindir/samba4kinit$EXEEXT"
 samba_tool="$samba4bindir/samba-tool$EXEEXT"
@@ -29,7 +30,7 @@ ldbsearch="$samba4bindir/ldbsearch$EXEEXT"
 rkpty="$samba4bindir/rkpty$EXEEXT"
 samba4kpasswd="$samba4bindir/samba4kpasswd$EXEEXT"
 enableaccount="$samba_tool enableaccount"
-machineaccountccache="$BUILDDIR/scripting/bin/machineaccountccache"
+machineaccountccache="$samba4srcdir/scripting/bin/machineaccountccache"
 
 . `dirname $0`/subunit.sh
 

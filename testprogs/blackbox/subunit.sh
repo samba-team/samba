@@ -83,3 +83,11 @@ testit_expect_failure () {
 	fi
 	return $status
 }
+
+# work out the top level source directory
+if [ -d source4 ]; then
+    SRCDIR="."
+else
+    SRCDIR=".."
+fi
+export SRCDIR
