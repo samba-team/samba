@@ -1450,7 +1450,7 @@ static void store_current_dc_in_gencache(const char *domain_name,
 		goto done;
 	}
 
-	gencache_set(key, value, 0x7ffffffff);
+	gencache_set(key, value, 0x7fffffff);
 done:
 	TALLOC_FREE(value);
 	TALLOC_FREE(key);
