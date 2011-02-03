@@ -31,10 +31,14 @@ import samba.dcerpc.security
 import samba.ndr
 from samba.auth import system_session
 
-datadir = os.path.join(os.path.dirname(__file__), 
-                       "../../../../../testdata/samba3")
 
 def read_datafile(filename):
+    paths = [ "../../../../../testdata/samba3",
+              "../../../../testdata/samba3" ]
+    for p in paths:
+        datadir = os.path.join(os.path.dirname(__file__), p)
+        if os.path.exists(datadir):
+            break
     return open(os.path.join(datadir, filename), 'r').read()
 
 def ldb_debug(l, text):

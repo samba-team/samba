@@ -20,11 +20,11 @@
 """Tests for samba.provision."""
 
 import os
-from samba.provision import setup_secretsdb, findnss, ProvisionPaths
+from samba.provision import setup_secretsdb, findnss, ProvisionPaths, find_setup_dir
 import samba.tests
 from samba.tests import env_loadparm, TestCase
 
-setup_dir = "setup"
+setup_dir = find_setup_dir()
 def setup_path(file):
     return os.path.join(setup_dir, file)
 

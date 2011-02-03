@@ -26,8 +26,11 @@ from samba.samba3 import (WinsDatabase, SmbpasswdFile, ACB_NORMAL,
 from samba.tests import TestCase
 import os
 
-DATADIR = os.path.join(os.path.dirname(__file__),
-                       "../../../../../testdata/samba3")
+for p in [ "../../../../../testdata/samba3", "../../../../testdata/samba3" ]:
+    DATADIR = os.path.join(os.path.dirname(__file__), p)
+    if os.path.exists(DATADIR):
+        break
+
 
 class RegistryTestCase(TestCase):
 
