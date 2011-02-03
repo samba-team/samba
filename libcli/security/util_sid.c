@@ -310,7 +310,7 @@ NTSTATUS add_sid_to_array(TALLOC_CTX *mem_ctx, const struct dom_sid *sid,
 NTSTATUS add_sid_to_array_unique(TALLOC_CTX *mem_ctx, const struct dom_sid *sid,
 				 struct dom_sid **sids, uint32_t *num_sids)
 {
-	size_t i;
+	uint32_t i;
 
 	for (i=0; i<(*num_sids); i++) {
 		if (dom_sid_compare(sid, &(*sids)[i]) == 0)
