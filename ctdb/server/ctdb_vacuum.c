@@ -290,6 +290,9 @@ static int ctdb_vacuum_db(struct ctdb_db_context *ctdb_db, struct vacuum_data *v
 		struct delete_records_list *recs;
 		TDB_DATA indata, outdata;
 		int32_t res;
+		struct ctdb_node_map *nodemap;
+		uint32_t *active_nodes;
+		int num_active_nodes;
 
 		recs = talloc_zero(vdata, struct delete_records_list);
 		if (recs == NULL) {
@@ -315,24 +318,37 @@ static int ctdb_vacuum_db(struct ctdb_db_context *ctdb_db, struct vacuum_data *v
 		indata.dptr  = (void *)recs->records;
 
 		/* 
-		 * now tell all the other nodes to delete all these records
+		 * now tell all the active nodes to delete all these records
 		 * (if possible)
 		 */
-		for (i = 0; i < ctdb->vnn_map->size; i++) {
+
+		ret = ctdb_ctrl_getnodemap(ctdb, TIMELIMIT(),
+					   CTDB_CURRENT_NODE,
+					   recs, /* talloc context */
+					   &nodemap);
+		if (ret != 0) {
+			DEBUG(DEBUG_ERR,(__location__ " unable to get node map\n"));
+			return -1;
+		}
+
+		active_nodes = list_of_active_nodes(ctdb, nodemap,
+						    nodemap, /* talloc context */
+						    false /* include self */);
+		/* yuck! ;-) */
+		num_active_nodes = talloc_get_size(active_nodes)/sizeof(*active_nodes);
+
+		for (i = 0; i < num_active_nodes; i++) {
 			struct ctdb_marshall_buffer *records;
 			struct ctdb_rec_data *rec;
 
-			if (ctdb->vnn_map->map[i] == ctdb->pnn) {
-				/* we dont delete the records on the local node just yet */
-				continue;
-			}
-
-			ret = ctdb_control(ctdb, ctdb->vnn_map->map[i], 0,
+			ret = ctdb_control(ctdb, active_nodes[i], 0,
 					CTDB_CONTROL_TRY_DELETE_RECORDS, 0,
 					indata, recs, &outdata, &res,
 					NULL, NULL);
 			if (ret != 0 || res != 0) {
-				DEBUG(DEBUG_ERR,("Failed to delete records on node %u\n", ctdb->vnn_map->map[i]));
+				DEBUG(DEBUG_ERR, ("Failed to delete records on "
+						  "node %u: ret[%d] res[%d]\n",
+						  active_nodes[i], ret, res));
 				return -1;
 			}
 
@@ -368,6 +384,9 @@ static int ctdb_vacuum_db(struct ctdb_db_context *ctdb_db, struct vacuum_data *v
 				rec = (struct ctdb_rec_data *)(rec->length + (uint8_t *)rec);
 			}	    
 		}
+
+		/* free nodemap and active_nodes */
+		talloc_free(nodemap);
 
 		/* 
 		 * The only records remaining in the tree would be those
