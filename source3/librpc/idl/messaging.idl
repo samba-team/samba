@@ -34,6 +34,10 @@ interface messaging
 		MSG_REQ_DMALLOC_LOG_CHANGED	= 0x000C,
 		MSG_SHUTDOWN			= 0x000D,
 
+		MSG_IDMAP_FLUSH                 = 0x000E,
+		MSG_IDMAP_DELETE                = 0x000F,
+		MSG_IDMAP_KILL                  = 0x0010,
+
 		/* nmbd messages */
 		MSG_FORCE_ELECTION		= 0x0101,
 		MSG_WINS_NEW_ENTRY		= 0x0102,

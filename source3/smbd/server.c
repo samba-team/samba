@@ -758,6 +758,8 @@ static bool open_sockets_smbd(struct smbd_parent_context *parent,
 	messaging_register(msg_ctx, NULL, MSG_PRINTER_PCAP, smb_pcap_updated);
 	brl_register_msgs(msg_ctx);
 
+	msg_idmap_register_msgs(msg_ctx);
+
 #ifdef CLUSTER_SUPPORT
 	if (lp_clustering()) {
 		ctdbd_register_reconfigure(messaging_ctdbd_connection());
