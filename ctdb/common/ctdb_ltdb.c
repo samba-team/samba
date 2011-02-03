@@ -65,6 +65,7 @@ static void ltdb_initial_header(struct ctdb_db_context *ctdb_db,
 	ZERO_STRUCTP(header);
 	/* initial dmaster is the lmaster */
 	header->dmaster = ctdb_lmaster(ctdb_db->ctdb, &key);
+	header->flags = CTDB_REC_FLAG_AUTOMATIC;
 }
 
 
