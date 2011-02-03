@@ -109,8 +109,14 @@ static int vacuum_traverse(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data,
 	size_t old_size;
 	       
 	lmaster = ctdb_lmaster(ctdb, &key);
-	if (lmaster >= ctdb->vnn_map->size) {
-		return 0;
+	if (lmaster >= ctdb->num_nodes) {
+		DEBUG(DEBUG_CRIT, (__location__
+				   " lmaster[%u] >= ctdb->num_nodes[%u] for key"
+				   " with hash[%u]!\n",
+				   (unsigned)lmaster,
+				   (unsigned)ctdb->num_nodes,
+				   (unsigned)ctdb_hash(&key)));
+		return -1;
 	}
 
 	if (data.dsize != sizeof(struct ctdb_ltdb_header)) {
