@@ -324,10 +324,11 @@ NTSTATUS add_sid_to_array_unique(TALLOC_CTX *mem_ctx, const struct dom_sid *sid,
  Remove SID from an array
 ********************************************************************/
 
-void del_sid_from_array(const struct dom_sid *sid, struct dom_sid **sids, size_t *num)
+void del_sid_from_array(const struct dom_sid *sid, struct dom_sid **sids,
+			uint32_t *num)
 {
 	struct dom_sid *sid_list = *sids;
-	size_t i;
+	uint32_t i;
 
 	for ( i=0; i<*num; i++ ) {
 
