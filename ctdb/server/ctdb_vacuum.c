@@ -261,27 +261,32 @@ static int ctdb_vacuum_db(struct ctdb_db_context *ctdb_db, struct vacuum_data *v
 		return -1;		
 	}
 
+	/*
+	 * For records where we are not the lmaster,
+	 * tell the lmaster to fetch the record.
+	 */
 	for (i = 0; i < ctdb->num_nodes; i++) {
+		TDB_DATA data;
+
+		if (ctdb->nodes[i]->pnn == ctdb->pnn) {
+			continue;
+		}
+
 		if (vdata->list[i]->count == 0) {
 			continue;
 		}
 
-		/* for records where we are not the lmaster, tell the lmaster to fetch the record */
-		if (ctdb->nodes[i]->pnn != ctdb->pnn) {
-			TDB_DATA data;
-			DEBUG(DEBUG_INFO,
-			      ("Found %u records for lmaster %u in '%s'\n",
-			       vdata->list[i]->count, ctdb->nodes[i]->pnn,
-			       name));
+		DEBUG(DEBUG_INFO, ("Found %u records for lmaster %u in '%s'\n",
+				   vdata->list[i]->count, ctdb->nodes[i]->pnn,
+				   name));
 
-			data.dsize = talloc_get_size(vdata->list[i]);
-			data.dptr  = (void *)vdata->list[i];
-			if (ctdb_client_send_message(ctdb, ctdb->nodes[i]->pnn, CTDB_SRVID_VACUUM_FETCH, data) != 0) {
-				DEBUG(DEBUG_ERR,(__location__ " Failed to send vacuum fetch message to %u\n",
-					 ctdb->nodes[i]->pnn));
-				return -1;		
-			}
-			continue;
+		data.dsize = talloc_get_size(vdata->list[i]);
+		data.dptr  = (void *)vdata->list[i];
+		if (ctdb_client_send_message(ctdb, ctdb->nodes[i]->pnn, CTDB_SRVID_VACUUM_FETCH, data) != 0) {
+			DEBUG(DEBUG_ERR, (__location__ " Failed to send vacuum "
+					  "fetch message to %u\n",
+					  ctdb->nodes[i]->pnn));
+			return -1;
 		}
 	}	
 
