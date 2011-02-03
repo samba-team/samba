@@ -34,6 +34,7 @@
 #include "secrets.h"
 #include "../lib/util/select.h"
 #include "../libcli/security/security.h"
+#include "system/select.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
@@ -1419,9 +1420,9 @@ static bool fork_domain_child(struct winbindd_child *child)
 	while (1) {
 
 		int ret;
-		fd_set r_fds;
-		fd_set w_fds;
-		int maxfd;
+		struct pollfd *pfds;
+		int num_pfds;
+		int timeout;
 		struct timeval t;
 		struct timeval *tp;
 		TALLOC_CTX *frame = talloc_stackframe();
@@ -1429,7 +1430,7 @@ static bool fork_domain_child(struct winbindd_child *child)
 		int iov_count;
 		NTSTATUS status;
 
-		if (run_events(winbind_event_context(), 0, NULL, NULL)) {
+		if (run_events_poll(winbind_event_context(), 0, NULL, 0)) {
 			TALLOC_FREE(frame);
 			continue;
 		}
@@ -1442,34 +1443,40 @@ static bool fork_domain_child(struct winbindd_child *child)
 			child->domain->startup = False;
 		}
 
-		FD_ZERO(&r_fds);
-		FD_ZERO(&w_fds);
-		FD_SET(state.sock, &r_fds);
-		maxfd = state.sock;
+		pfds = TALLOC_ZERO_P(talloc_tos(), struct pollfd);
+		if (pfds == NULL) {
+			DEBUG(1, ("talloc failed\n"));
+			_exit(1);
+		}
 
-		/*
-		 * Initialize this high as event_add_to_select_args()
- 		 * uses a timeval_min() on this and next_event. Fix
- 		 * from Roel van Meer <rolek@alt001.com>.
- 		 */
-		t.tv_sec = 999999;
-		t.tv_usec = 0;
+		pfds->fd = state.sock;
+		pfds->events = POLLIN|POLLHUP;
+		num_pfds = 1;
 
-		event_add_to_select_args(winbind_event_context(),
-					 &r_fds, &w_fds, &t, &maxfd);
+		timeout = INT_MAX;
+
+		if (!event_add_to_poll_args(
+			    winbind_event_context(), talloc_tos(),
+			    &pfds, &num_pfds, &timeout)) {
+			DEBUG(1, ("event_add_to_poll_args failed\n"));
+			_exit(1);
+		}
 		tp = get_timed_events_timeout(winbind_event_context(), &t);
 		if (tp) {
 			DEBUG(11,("select will use timeout of %u.%u seconds\n",
 				(unsigned int)tp->tv_sec, (unsigned int)tp->tv_usec ));
 		}
 
-		ret = sys_select(maxfd + 1, &r_fds, &w_fds, NULL, tp);
+		ret = sys_poll(pfds, num_pfds, timeout);
 
-		if (run_events(winbind_event_context(), ret, &r_fds, &w_fds)) {
+		if (run_events_poll(winbind_event_context(), ret,
+				    pfds, num_pfds)) {
 			/* We got a signal - continue. */
 			TALLOC_FREE(frame);
 			continue;
 		}
+
+		TALLOC_FREE(pfds);
 
 		if (ret == 0) {
 			DEBUG(11,("nothing is ready yet, continue\n"));
@@ -1484,9 +1491,9 @@ static bool fork_domain_child(struct winbindd_child *child)
 		}
 
 		if (ret == -1 && errno != EINTR) {
-			DEBUG(0,("select error occured\n"));
+			DEBUG(0,("poll error occured\n"));
 			TALLOC_FREE(frame);
-			perror("select");
+			perror("poll");
 			_exit(1);
 		}
 
