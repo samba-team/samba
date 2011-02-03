@@ -18,6 +18,8 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include "system/select.h"
+
 #if defined(WITH_AIO)
 struct aio_extra;
 extern struct aio_extra *aio_list_head;
@@ -455,6 +457,12 @@ struct smbd_server_connection {
 	} nbt;
 	bool using_smb2;
 	int trans_num;
+
+	/*
+	 * Cache for calling poll(2) to avoid allocations in our
+	 * central event loop
+	 */
+	struct pollfd *pfds;
 
 	struct files_struct *files;
 	struct bitmap *file_bmap;
