@@ -421,8 +421,9 @@ def identic_rename(ldbobj, dn):
     :param dn: DN of the object to manipulate
     """
     (before, after) = str(dn).split('=', 1)
-    ldbobj.rename(dn, ldb.Dn(ldbobj, "%s=foo%s" % (before, after)))
-    ldbobj.rename(ldb.Dn(ldbobj, "%s=foo%s" % (before, after)), dn)
+    # we need to use relax to avoid the subtree_rename constraints
+    ldbobj.rename(dn, ldb.Dn(ldbobj, "%s=foo%s" % (before, after)), ["relax:0"])
+    ldbobj.rename(ldb.Dn(ldbobj, "%s=foo%s" % (before, after)), dn, ["relax:0"])
 
 
 def chunck_acl(acl):
