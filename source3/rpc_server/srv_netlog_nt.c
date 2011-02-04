@@ -1494,7 +1494,7 @@ static NTSTATUS _netr_LogonSamLogon_base(struct pipes_struct *p,
 		if (*wksname == '\\') wksname++;
 		if (*wksname == '\\') wksname++;
 
-		/* Standard challenge/response authenticaion */
+		/* Standard challenge/response authentication */
 		if (!make_user_info_netlogon_network(&user_info,
 						     nt_username, nt_domain,
 						     wksname,
