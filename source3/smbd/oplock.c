@@ -52,17 +52,6 @@ void break_kernel_oplock(struct messaging_context *msg_ctx, files_struct *fsp)
 			   msg, MSG_SMB_KERNEL_BREAK_SIZE);
 }
 
-static bool file_has_brlocks(files_struct *fsp)
-{
-	struct byte_range_lock *br_lck;
-
-	br_lck = brl_get_locks_readonly(fsp);
-	if (!br_lck)
-		return false;
-
-	return br_lck->num_locks > 0 ? true : false;
-}
-
 /****************************************************************************
  Attempt to set an oplock on a file. Succeeds if kernel oplocks are
  disabled (just sets flags) and no byte-range locks in the file. Returns True
@@ -72,12 +61,6 @@ static bool file_has_brlocks(files_struct *fsp)
 bool set_file_oplock(files_struct *fsp, int oplock_type)
 {
 	if (fsp->oplock_type == LEVEL_II_OPLOCK) {
-		if (lp_locking(fsp->conn->params) && file_has_brlocks(fsp)) {
-			DEBUG(10, ("Refusing level2 oplock because of "
-				   "byte-range locks on the file\n"));
-			return false;
-		}
-
 		if (koplocks &&
 		    !(koplocks->flags & KOPLOCKS_LEVEL2_SUPPORTED)) {
 			DEBUG(10, ("Refusing level2 oplock, kernel oplocks "
