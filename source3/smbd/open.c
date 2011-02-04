@@ -1011,6 +1011,17 @@ static bool delay_for_exclusive_oplocks(files_struct *fsp,
 	return false;
 }
 
+static bool file_has_brlocks(files_struct *fsp)
+{
+	struct byte_range_lock *br_lck;
+
+	br_lck = brl_get_locks_readonly(fsp);
+	if (!br_lck)
+		return false;
+
+	return br_lck->num_locks > 0 ? true : false;
+}
+
 static void grant_fsp_oplock_type(files_struct *fsp,
 				int oplock_request,
 				bool got_level2_oplock,
@@ -1029,6 +1040,10 @@ static void grant_fsp_oplock_type(files_struct *fsp,
 		DEBUG(10,("grant_fsp_oplock_type: oplock type 0x%x on file %s\n",
 			fsp->oplock_type, fsp_str_dbg(fsp)));
 		return;
+	} else if (lp_locking(fsp->conn->params) && file_has_brlocks(fsp)) {
+		DEBUG(10,("grant_fsp_oplock_type: file %s has byte range locks\n",
+			fsp_str_dbg(fsp)));
+		fsp->oplock_type = NO_OPLOCK;
 	}
 
 	if (is_stat_open(fsp->access_mask)) {
