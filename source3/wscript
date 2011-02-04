@@ -53,6 +53,7 @@ def set_options(opt):
     opt.SAMBA3_ADD_OPTION('iconv')
     opt.SAMBA3_ADD_OPTION('acl-support')
     opt.SAMBA3_ADD_OPTION('dnsupdate')
+    opt.SAMBA3_ADD_OPTION('syslog')
 
 
 def configure(conf):
@@ -556,6 +557,8 @@ return acl_get_perm_np(permset_d, perm);
         else:
             print "--enable-iprint=yes but cups support not sufficient"
             sys.exit(1)
+    if Options.options.with_syslog:
+        conf.DEFINE('WITH_SYSLOG', '1')
 
     # Check for LDAP
     if Options.options.with_ldap:
