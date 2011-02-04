@@ -17,6 +17,8 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#define TEVENT_DEPRECATED 1
+
 #include "includes.h"
 #include "param/param.h"
 #include "dsdb/samdb/samdb.h"
@@ -68,6 +70,7 @@ static int mit_samba_context_init(struct mit_samba_context **_ctx)
 		ret = ENOMEM;
 		goto done;
 	}
+	tevent_loop_allow_nesting(base_ctx.ev_ctx);
 	base_ctx.lp_ctx = loadparm_init_global(false);
 	if (!base_ctx.lp_ctx) {
 		ret = ENOMEM;
