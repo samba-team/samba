@@ -86,20 +86,9 @@ DEFAULTSITE = "Default-First-Site-Name"
 LAST_PROVISION_USN_ATTRIBUTE = "lastProvisionUSN"
 
 
-def find_setup_dir():
-    """Find the setup directory used by provision."""
-    if in_source_tree():
-        # In source tree
-        return os.path.join(source_tree_topdir(), "source4/setup")
-    else:
-        import sys
-        for prefix in [sys.prefix,
-                os.path.join(os.path.dirname(__file__), "../../../../..")]:
-            for suffix in ["share/setup", "share/samba/setup", "setup"]:
-                ret = os.path.normpath(os.path.join(prefix, suffix))
-                if os.path.isdir(ret):
-                    return ret
-        raise Exception("Unable to find setup directory.")
+def setup_path(file):
+    """Return an absolute path to the provision tempate file specified by file"""
+    return os.path.join(samba.param.setup_dir(), file)
 
 # Descriptors of naming contexts and other important objects
 
@@ -560,7 +549,7 @@ def guess_names(lp=None, hostname=None, domain=None, dnsdomain=None,
     return names
 
 
-def make_smbconf(smbconf, setup_path, hostname, domain, realm, serverrole,
+def make_smbconf(smbconf, hostname, domain, realm, serverrole,
                  targetdir, sid_generator="internal", eadb=False, lp=None):
     """Create a new smb.conf file based on a couple of basic settings.
     """
@@ -672,7 +661,7 @@ def setup_name_mappings(samdb, idmap, sid, domaindn, root_uid, nobody_uid,
     idmap.setup_name_mapping(sid + "-513", idmap.TYPE_GID, users_gid)
 
 
-def setup_samdb_partitions(samdb_path, setup_path, logger, lp, session_info,
+def setup_samdb_partitions(samdb_path, logger, lp, session_info,
                            provision_backend, names, schema, serverrole,
                            erase=False):
     """Setup the partitions for the SAM database.
@@ -720,7 +709,7 @@ def setup_samdb_partitions(samdb_path, setup_path, logger, lp, session_info,
                 })
 
         logger.info("Setting up sam.ldb rootDSE")
-        setup_samdb_rootdse(samdb, setup_path, names)
+        setup_samdb_rootdse(samdb, names)
     except Exception:
         samdb.transaction_cancel()
         raise
@@ -815,12 +804,11 @@ def secretsdb_self_join(secretsdb, domain,
         secretsdb.add(msg)
 
 
-def secretsdb_setup_dns(secretsdb, setup_path, names, private_dir, realm,
+def secretsdb_setup_dns(secretsdb, names, private_dir, realm,
                         dnsdomain, dns_keytab_path, dnspass):
     """Add DNS specific bits to a secrets database.
 
     :param secretsdb: Ldb Handle to the secrets database
-    :param setup_path: Setup path function
     :param machinepass: Machine password
     """
     try:
@@ -839,14 +827,13 @@ def secretsdb_setup_dns(secretsdb, setup_path, names, private_dir, realm,
             })
 
 
-def setup_secretsdb(paths, setup_path, session_info, backend_credentials, lp):
+def setup_secretsdb(paths, session_info, backend_credentials, lp):
     """Setup the secrets database.
 
    :note: This function does not handle exceptions and transaction on purpose,
        it's up to the caller to do this job.
 
     :param path: Path to the secrets database.
-    :param setup_path: Get the path to a setup file.
     :param session_info: Session info.
     :param credentials: Credentials
     :param lp: Loadparm context
@@ -897,11 +884,10 @@ def setup_secretsdb(paths, setup_path, session_info, backend_credentials, lp):
         raise
 
 
-def setup_privileges(path, setup_path, session_info, lp):
+def setup_privileges(path, session_info, lp):
     """Setup the privileges database.
 
     :param path: Path to the privileges database.
-    :param setup_path: Get the path to a setup file.
     :param session_info: Session info.
     :param credentials: Credentials
     :param lp: Loadparm context
@@ -914,11 +900,10 @@ def setup_privileges(path, setup_path, session_info, lp):
     privilege_ldb.load_ldif_file_add(setup_path("provision_privilege.ldif"))
 
 
-def setup_registry(path, setup_path, session_info, lp):
+def setup_registry(path, session_info, lp):
     """Setup the registry.
 
     :param path: Path to the registry database
-    :param setup_path: Function that returns the path to a setup.
     :param session_info: Session information
     :param credentials: Credentials
     :param lp: Loadparm context
@@ -931,11 +916,10 @@ def setup_registry(path, setup_path, session_info, lp):
     reg.diff_apply(provision_reg)
 
 
-def setup_idmapdb(path, setup_path, session_info, lp):
+def setup_idmapdb(path, session_info, lp):
     """Setup the idmap database.
 
     :param path: path to the idmap database
-    :param setup_path: Function that returns a path to a setup file
     :param session_info: Session information
     :param credentials: Credentials
     :param lp: Loadparm context
@@ -949,11 +933,10 @@ def setup_idmapdb(path, setup_path, session_info, lp):
     return idmap_ldb
 
 
-def setup_samdb_rootdse(samdb, setup_path, names):
+def setup_samdb_rootdse(samdb, names):
     """Setup the SamDB rootdse.
 
     :param samdb: Sam Database handle
-    :param setup_path: Obtain setup path
     """
     setup_add_ldif(samdb, setup_path("provision_rootdse_add.ldif"), {
         "SCHEMADN": names.schemadn,
@@ -965,7 +948,7 @@ def setup_samdb_rootdse(samdb, setup_path, names):
 
 
 def setup_self_join(samdb, names, machinepass, dnspass,
-                    domainsid, next_rid, invocationid, setup_path,
+                    domainsid, next_rid, invocationid,
                     policyguid, policyguid_dc, domainControllerFunctionality,
                     ntdsguid):
     """Join a host to its own domain."""
@@ -1069,7 +1052,7 @@ def create_default_gpo(sysvolpath, dnsdomain, policyguid, policyguid_dc):
     create_gpo_struct(policy_path)
 
 
-def setup_samdb(path, setup_path, session_info, provision_backend, lp, names,
+def setup_samdb(path, session_info, provision_backend, lp, names,
         logger, domainsid, domainguid, policyguid, policyguid_dc, fill,
         adminpass, krbtgtpass, machinepass, invocationid, dnspass, ntdsguid,
         serverrole, am_rodc=False, dom_for_fun_level=None, schema=None,
@@ -1102,12 +1085,12 @@ def setup_samdb(path, setup_path, session_info, provision_backend, lp, names,
     forestFunctionality = dom_for_fun_level
 
     # Also wipes the database
-    setup_samdb_partitions(path, setup_path, logger=logger, lp=lp,
+    setup_samdb_partitions(path, logger=logger, lp=lp,
         provision_backend=provision_backend, session_info=session_info,
         names=names, serverrole=serverrole, schema=schema)
 
     if schema is None:
-        schema = Schema(setup_path, domainsid, schemadn=names.schemadn)
+        schema = Schema(domainsid, schemadn=names.schemadn)
 
     # Load the database, but don's load the global schema and don't connect
     # quite yet
@@ -1287,7 +1270,6 @@ def setup_samdb(path, setup_path, session_info, provision_backend, lp, names,
                 next_rid=next_rid,
                 policyguid=policyguid,
                 policyguid_dc=policyguid_dc,
-                setup_path=setup_path,
                 domainControllerFunctionality=domainControllerFunctionality,
                 ntdsguid=ntdsguid)
 
@@ -1383,7 +1365,7 @@ def setsysvolacl(samdb, netlogon, sysvol, gid, domainsid, dnsdomain, domaindn,
     set_gpos_acl(sysvol, dnsdomain, domainsid, domaindn, samdb, lp)
 
 
-def provision(setup_dir, logger, session_info, credentials, smbconf=None,
+def provision(logger, session_info, credentials, smbconf=None,
         targetdir=None, samdb_fill=FILL_FULL, realm=None, rootdn=None,
         domaindn=None, schemadn=None, configdn=None, serverdn=None,
         domain=None, hostname=None, hostip=None, hostip6=None, domainsid=None,
@@ -1400,9 +1382,6 @@ def provision(setup_dir, logger, session_info, credentials, smbconf=None,
 
     :note: caution, this wipes all existing data!
     """
-
-    def setup_path(file):
-        return os.path.join(setup_dir, file)
 
     if domainsid is None:
         domainsid = security.random_sid()
@@ -1466,11 +1445,11 @@ def provision(setup_dir, logger, session_info, credentials, smbconf=None,
         data = open(smbconf, 'r').read()
         data = data.lstrip()
         if data is None or data == "":
-            make_smbconf(smbconf, setup_path, hostname, domain, realm,
+            make_smbconf(smbconf, hostname, domain, realm,
                          serverrole, targetdir, sid_generator, useeadb,
                          lp=lp)
     else:
-        make_smbconf(smbconf, setup_path, hostname, domain, realm, serverrole,
+        make_smbconf(smbconf, hostname, domain, realm, serverrole,
                      targetdir, sid_generator, useeadb, lp=lp)
 
     if lp is None:
@@ -1510,21 +1489,21 @@ def provision(setup_dir, logger, session_info, credentials, smbconf=None,
 
     ldapi_url = "ldapi://%s" % urllib.quote(paths.s4_ldapi_path, safe="")
 
-    schema = Schema(setup_path, domainsid, invocationid=invocationid,
+    schema = Schema(domainsid, invocationid=invocationid,
         schemadn=names.schemadn)
 
     if backend_type == "ldb":
         provision_backend = LDBBackend(backend_type, paths=paths,
-            setup_path=setup_path, lp=lp, credentials=credentials,
+            lp=lp, credentials=credentials,
             names=names, logger=logger)
     elif backend_type == "existing":
         provision_backend = ExistingBackend(backend_type, paths=paths,
-            setup_path=setup_path, lp=lp, credentials=credentials,
+            lp=lp, credentials=credentials,
             names=names, logger=logger,
             ldap_backend_forced_uri=ldap_backend_forced_uri)
     elif backend_type == "fedora-ds":
         provision_backend = FDSBackend(backend_type, paths=paths,
-            setup_path=setup_path, lp=lp, credentials=credentials,
+            lp=lp, credentials=credentials,
             names=names, logger=logger, domainsid=domainsid,
             schema=schema, hostname=hostname, ldapadminpass=ldapadminpass,
             slapd_path=slapd_path,
@@ -1534,7 +1513,7 @@ def provision(setup_dir, logger, session_info, credentials, smbconf=None,
             ldap_backend_forced_uri=ldap_backend_forced_uri)
     elif backend_type == "openldap":
         provision_backend = OpenLDAPBackend(backend_type, paths=paths,
-            setup_path=setup_path, lp=lp, credentials=credentials,
+            lp=lp, credentials=credentials,
             names=names, logger=logger, domainsid=domainsid,
             schema=schema, hostname=hostname, ldapadminpass=ldapadminpass,
             slapd_path=slapd_path,
@@ -1556,24 +1535,24 @@ def provision(setup_dir, logger, session_info, credentials, smbconf=None,
         share_ldb.load_ldif_file_add(setup_path("share.ldif"))
 
     logger.info("Setting up secrets.ldb")
-    secrets_ldb = setup_secretsdb(paths, setup_path,
+    secrets_ldb = setup_secretsdb(paths,
         session_info=session_info,
         backend_credentials=provision_backend.secrets_credentials, lp=lp)
 
     try:
         logger.info("Setting up the registry")
-        setup_registry(paths.hklm, setup_path, session_info,
+        setup_registry(paths.hklm, session_info,
                        lp=lp)
 
         logger.info("Setting up the privileges database")
-        setup_privileges(paths.privilege, setup_path, session_info, lp=lp)
+        setup_privileges(paths.privilege, session_info, lp=lp)
 
         logger.info("Setting up idmap db")
-        idmap = setup_idmapdb(paths.idmapdb, setup_path,
+        idmap = setup_idmapdb(paths.idmapdb,
             session_info=session_info, lp=lp)
 
         logger.info("Setting up SAM db")
-        samdb = setup_samdb(paths.samdb, setup_path, session_info,
+        samdb = setup_samdb(paths.samdb, session_info,
             provision_backend, lp, names, logger=logger,
             domainsid=domainsid, schema=schema, domainguid=domainguid,
             policyguid=policyguid, policyguid_dc=policyguid_dc,
@@ -1640,7 +1619,7 @@ def provision(setup_dir, logger, session_info, credentials, smbconf=None,
                     raise
 
             if serverrole == "domain controller":
-                secretsdb_setup_dns(secrets_ldb, setup_path, names,
+                secretsdb_setup_dns(secrets_ldb, names,
                     paths.private_dir, realm=names.realm,
                     dnsdomain=names.dnsdomain,
                     dns_keytab_path=paths.dns_keytab, dnspass=dnspass)
@@ -1651,15 +1630,15 @@ def provision(setup_dir, logger, session_info, credentials, smbconf=None,
 
                 # Only make a zone file on the first DC, it should be
                 # replicated with DNS replication
-                create_zone_file(lp, logger, paths, targetdir, setup_path,
+                create_zone_file(lp, logger, paths, targetdir,
                     dnsdomain=names.dnsdomain, hostip=hostip, hostip6=hostip6,
                     hostname=names.hostname, realm=names.realm,
                     domainguid=domainguid, ntdsguid=names.ntdsguid)
 
-                create_named_conf(paths, setup_path, realm=names.realm,
+                create_named_conf(paths, realm=names.realm,
                     dnsdomain=names.dnsdomain, private_dir=paths.private_dir)
 
-                create_named_txt(paths.namedtxt, setup_path,
+                create_named_txt(paths.namedtxt,
                     realm=names.realm, dnsdomain=names.dnsdomain,
                     private_dir=paths.private_dir,
                     keytab_name=paths.dns_keytab)
@@ -1674,19 +1653,19 @@ def provision(setup_dir, logger, session_info, credentials, smbconf=None,
             else:
                 set_provision_usn(samdb, 0, maxUSN)
 
-        create_krb5_conf(paths.krb5conf, setup_path,
+        create_krb5_conf(paths.krb5conf,
                          dnsdomain=names.dnsdomain, hostname=names.hostname,
                          realm=names.realm)
         logger.info("A Kerberos configuration suitable for Samba 4 has been "
                     "generated at %s", paths.krb5conf)
 
         if serverrole == "domain controller":
-            create_dns_update_list(lp, logger, paths, setup_path)
+            create_dns_update_list(lp, logger, paths)
 
         provision_backend.post_setup()
         provision_backend.shutdown()
 
-        create_phpldapadmin_config(paths.phpldapadminconfig, setup_path,
+        create_phpldapadmin_config(paths.phpldapadminconfig,
                                    ldapi_url)
     except Exception:
         secrets_ldb.transaction_cancel()
@@ -1745,7 +1724,7 @@ def provision(setup_dir, logger, session_info, credentials, smbconf=None,
     return result
 
 
-def provision_become_dc(setup_dir=None, smbconf=None, targetdir=None,
+def provision_become_dc(smbconf=None, targetdir=None,
         realm=None, rootdn=None, domaindn=None, schemadn=None, configdn=None,
         serverdn=None, domain=None, hostname=None, domainsid=None,
         adminpass=None, krbtgtpass=None, domainguid=None, policyguid=None,
@@ -1757,7 +1736,7 @@ def provision_become_dc(setup_dir=None, smbconf=None, targetdir=None,
     logger = logging.getLogger("provision")
     samba.set_debug_level(debuglevel)
 
-    res = provision(setup_dir, logger, system_session(), None,
+    res = provision(logger, system_session(), None,
         smbconf=smbconf, targetdir=targetdir, samdb_fill=FILL_DRS,
         realm=realm, rootdn=rootdn, domaindn=domaindn, schemadn=schemadn,
         configdn=configdn, serverdn=serverdn, domain=domain,
@@ -1768,23 +1747,21 @@ def provision_become_dc(setup_dir=None, smbconf=None, targetdir=None,
     return res
 
 
-def create_phpldapadmin_config(path, setup_path, ldapi_uri):
+def create_phpldapadmin_config(path, ldapi_uri):
     """Create a PHP LDAP admin configuration file.
 
     :param path: Path to write the configuration to.
-    :param setup_path: Function to generate setup paths.
     """
     setup_file(setup_path("phpldapadmin-config.php"), path,
             {"S4_LDAPI_URI": ldapi_uri})
 
 
-def create_zone_file(lp, logger, paths, targetdir, setup_path, dnsdomain,
+def create_zone_file(lp, logger, paths, targetdir, dnsdomain,
                      hostip, hostip6, hostname, realm, domainguid,
                      ntdsguid):
     """Write out a DNS zone file, from the info in the current database.
 
     :param paths: paths object
-    :param setup_path: Setup path function.
     :param dnsdomain: DNS Domain name
     :param domaindn: DN of the Domain
     :param hostip: Local IPv4 IP
@@ -1867,7 +1844,7 @@ def create_zone_file(lp, logger, paths, targetdir, setup_path, dnsdomain,
         os.system(rndc + " unfreeze " + lp.get("realm"))
 
 
-def create_dns_update_list(lp, logger, paths, setup_path):
+def create_dns_update_list(lp, logger, paths):
     """Write out a dns_update_list file"""
     # note that we use no variable substitution on this file
     # the substitution is done at runtime by samba_dnsupdate
@@ -1875,13 +1852,12 @@ def create_dns_update_list(lp, logger, paths, setup_path):
     setup_file(setup_path("spn_update_list"), paths.spn_update_list, None)
 
 
-def create_named_conf(paths, setup_path, realm, dnsdomain,
+def create_named_conf(paths, realm, dnsdomain,
                       private_dir):
     """Write out a file containing zone statements suitable for inclusion in a
     named.conf file (including GSS-TSIG configuration).
 
     :param paths: all paths
-    :param setup_path: Setup path function.
     :param realm: Realm name
     :param dnsdomain: DNS Domain name
     :param private_dir: Path to private directory
@@ -1900,13 +1876,12 @@ def create_named_conf(paths, setup_path, realm, dnsdomain,
     setup_file(setup_path("named.conf.update"), paths.namedconf_update)
 
 
-def create_named_txt(path, setup_path, realm, dnsdomain, private_dir,
+def create_named_txt(path, realm, dnsdomain, private_dir,
     keytab_name):
     """Write out a file containing zone statements suitable for inclusion in a
     named.conf file (including GSS-TSIG configuration).
 
     :param path: Path of the new named.conf file.
-    :param setup_path: Setup path function.
     :param realm: Realm name
     :param dnsdomain: DNS Domain name
     :param private_dir: Path to private directory
@@ -1921,12 +1896,11 @@ def create_named_txt(path, setup_path, realm, dnsdomain, private_dir,
         })
 
 
-def create_krb5_conf(path, setup_path, dnsdomain, hostname, realm):
+def create_krb5_conf(path, dnsdomain, hostname, realm):
     """Write out a file containing zone statements suitable for inclusion in a
     named.conf file (including GSS-TSIG configuration).
 
     :param path: Path of the new named.conf file.
-    :param setup_path: Setup path function.
     :param dnsdomain: DNS Domain name
     :param hostname: Local hostname
     :param realm: Realm name

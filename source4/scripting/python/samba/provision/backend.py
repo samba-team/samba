@@ -42,7 +42,6 @@ from samba import Ldb, read_and_sub_file, setup_file
 from samba.credentials import Credentials, DONT_USE_KERBEROS
 from samba.schema import Schema
 
-
 class SlapdAlreadyRunning(Exception):
 
     def __init__(self, uri):
@@ -53,12 +52,10 @@ class SlapdAlreadyRunning(Exception):
 
 
 class ProvisionBackend(object):
-
-    def __init__(self, backend_type, paths=None, setup_path=None, lp=None,
+    def __init__(self, backend_type, paths=None, lp=None,
             credentials=None, names=None, logger=None):
         """Provision a backend for samba4"""
         self.paths = paths
-        self.setup_path = setup_path
         self.lp = lp
         self.credentials = credentials
         self.names = names
@@ -107,11 +104,11 @@ class LDBBackend(ProvisionBackend):
 
 class ExistingBackend(ProvisionBackend):
 
-    def __init__(self, backend_type, paths=None, setup_path=None, lp=None,
+    def __init__(self, backend_type, paths=None, lp=None,
             credentials=None, names=None, logger=None, ldapi_uri=None):
 
         super(ExistingBackend, self).__init__(backend_type=backend_type,
-                paths=paths, setup_path=setup_path, lp=lp,
+                paths=paths, lp=lp,
                 credentials=credentials, names=names, logger=logger,
                 ldap_backend_forced_uri=ldapi_uri)
 
@@ -132,14 +129,14 @@ class ExistingBackend(ProvisionBackend):
 
 class LDAPBackend(ProvisionBackend):
 
-    def __init__(self, backend_type, paths=None, setup_path=None, lp=None,
+    def __init__(self, backend_type, paths=None, lp=None,
                  credentials=None, names=None, logger=None, domainsid=None,
                  schema=None, hostname=None, ldapadminpass=None,
                  slapd_path=None, ldap_backend_extra_port=None,
                  ldap_backend_forced_uri=None, ldap_dryrun_mode=False):
 
         super(LDAPBackend, self).__init__(backend_type=backend_type,
-                paths=paths, setup_path=setup_path, lp=lp,
+                paths=paths, lp=lp,
                 credentials=credentials, names=names, logger=logger)
 
         self.domainsid = domainsid
@@ -286,13 +283,14 @@ class LDAPBackend(ProvisionBackend):
 
 class OpenLDAPBackend(LDAPBackend):
 
-    def __init__(self, backend_type, paths=None, setup_path=None, lp=None,
+    def __init__(self, backend_type, paths=None, lp=None,
             credentials=None, names=None, logger=None, domainsid=None,
             schema=None, hostname=None, ldapadminpass=None, slapd_path=None,
             ldap_backend_extra_port=None, ldap_dryrun_mode=False,
             ol_mmr_urls=None, nosync=False, ldap_backend_forced_uri=None):
+        from samba.provision import setup_path
         super(OpenLDAPBackend, self).__init__( backend_type=backend_type,
-                paths=paths, setup_path=setup_path, lp=lp,
+                paths=paths, lp=lp,
                 credentials=credentials, names=names, logger=logger,
                 domainsid=domainsid, schema=schema, hostname=hostname,
                 ldapadminpass=ldapadminpass, slapd_path=slapd_path,
@@ -311,26 +309,26 @@ class OpenLDAPBackend(LDAPBackend):
         self.olcdir             = os.path.join(self.ldapdir, "slapd.d")
         self.olcseedldif        = os.path.join(self.ldapdir, "olc_seed.ldif")
 
-        self.schema = Schema(self.setup_path, self.domainsid,
-            schemadn=self.names.schemadn, files=[
+        self.schema = Schema(self.domainsid,
+                             schemadn=self.names.schemadn, files=[
                 setup_path("schema_samba4.ldif")])
 
     def setup_db_config(self, dbdir):
         """Setup a Berkeley database.
 
-        :param setup_path: Setup path function.
         :param dbdir: Database directory.
         """
+        from samba.provision import setup_path
         if not os.path.isdir(os.path.join(dbdir, "bdb-logs")):
             os.makedirs(os.path.join(dbdir, "bdb-logs"), 0700)
             if not os.path.isdir(os.path.join(dbdir, "tmp")):
                 os.makedirs(os.path.join(dbdir, "tmp"), 0700)
 
-        setup_file(self.setup_path("DB_CONFIG"),
+        setup_file(setup_path("DB_CONFIG"),
             os.path.join(dbdir, "DB_CONFIG"), {"LDAPDBDIR": dbdir})
 
     def provision(self):
-        from samba.provision import ProvisioningError
+        from samba.provision import ProvisioningError, setup_path
         # Wipe the directories so we can start
         shutil.rmtree(os.path.join(self.ldapdir, "db"), True)
 
@@ -348,11 +346,11 @@ class OpenLDAPBackend(LDAPBackend):
                 refint_attributes = refint_attributes + " " + att
 
                 memberof_config += read_and_sub_file(
-                    self.setup_path("memberof.conf"), {
+                    setup_path("memberof.conf"), {
                         "MEMBER_ATTR": att,
                         "MEMBEROF_ATTR" : lnkattr[att] })
 
-        refint_config = read_and_sub_file(self.setup_path("refint.conf"),
+        refint_config = read_and_sub_file(setup_path("refint.conf"),
                                       { "LINK_ATTRS" : refint_attributes})
 
         attrs = ["linkID", "lDAPDisplayName"]
@@ -389,13 +387,13 @@ class OpenLDAPBackend(LDAPBackend):
             for url in url_list:
                 serverid = serverid + 1
                 mmr_serverids_config += read_and_sub_file(
-                    self.setup_path("mmr_serverids.conf"), {
+                    setup_path("mmr_serverids.conf"), {
                         "SERVERID": str(serverid),
                         "LDAPSERVER": url })
                 rid = serverid * 10
                 rid = rid + 1
                 mmr_syncrepl_schema_config += read_and_sub_file(
-                        self.setup_path("mmr_syncrepl.conf"), {
+                        setup_path("mmr_syncrepl.conf"), {
                             "RID" : str(rid),
                            "MMRDN": self.names.schemadn,
                            "LDAPSERVER" : url,
@@ -403,7 +401,7 @@ class OpenLDAPBackend(LDAPBackend):
 
                 rid = rid + 1
                 mmr_syncrepl_config_config += read_and_sub_file(
-                    self.setup_path("mmr_syncrepl.conf"), {
+                    setup_path("mmr_syncrepl.conf"), {
                         "RID" : str(rid),
                         "MMRDN": self.names.configdn,
                         "LDAPSERVER" : url,
@@ -411,7 +409,7 @@ class OpenLDAPBackend(LDAPBackend):
 
                 rid = rid + 1
                 mmr_syncrepl_user_config += read_and_sub_file(
-                    self.setup_path("mmr_syncrepl.conf"), {
+                    setup_path("mmr_syncrepl.conf"), {
                         "RID" : str(rid),
                         "MMRDN": self.names.domaindn,
                         "LDAPSERVER" : url,
@@ -426,31 +424,31 @@ class OpenLDAPBackend(LDAPBackend):
             olc_serverids_config = ""
             olc_syncrepl_seed_config = ""
             olc_mmr_config += read_and_sub_file(
-                self.setup_path("olc_mmr.conf"), {})
+                setup_path("olc_mmr.conf"), {})
             rid = 500
             for url in url_list:
                 serverid = serverid + 1
                 olc_serverids_config += read_and_sub_file(
-                    self.setup_path("olc_serverid.conf"), {
+                    setup_path("olc_serverid.conf"), {
                         "SERVERID" : str(serverid), "LDAPSERVER" : url })
 
                 rid = rid + 1
                 olc_syncrepl_config += read_and_sub_file(
-                    self.setup_path("olc_syncrepl.conf"), {
+                    setup_path("olc_syncrepl.conf"), {
                         "RID" : str(rid), "LDAPSERVER" : url,
                         "MMR_PASSWORD": mmr_pass})
 
                 olc_syncrepl_seed_config += read_and_sub_file(
-                    self.setup_path("olc_syncrepl_seed.conf"), {
+                    setup_path("olc_syncrepl_seed.conf"), {
                         "RID" : str(rid), "LDAPSERVER" : url})
 
-            setup_file(self.setup_path("olc_seed.ldif"), self.olcseedldif,
+            setup_file(setup_path("olc_seed.ldif"), self.olcseedldif,
                        {"OLC_SERVER_ID_CONF": olc_serverids_config,
                         "OLC_PW": self.ldapadminpass,
                         "OLC_SYNCREPL_CONF": olc_syncrepl_seed_config})
         # end olc
 
-        setup_file(self.setup_path("slapd.conf"), self.slapdconf,
+        setup_file(setup_path("slapd.conf"), self.slapdconf,
                    {"DNSDOMAIN": self.names.dnsdomain,
                     "LDAPDIR": self.ldapdir,
                     "DOMAINDN": self.names.domaindn,
@@ -476,18 +474,18 @@ class OpenLDAPBackend(LDAPBackend):
         if not os.path.exists(os.path.join(self.ldapdir, "db", "samba", "cn=samba")):
             os.makedirs(os.path.join(self.ldapdir, "db", "samba", "cn=samba"), 0700)
 
-        setup_file(self.setup_path("cn=samba.ldif"),
+        setup_file(setup_path("cn=samba.ldif"),
                    os.path.join(self.ldapdir, "db", "samba", "cn=samba.ldif"),
                    { "UUID": str(uuid.uuid4()),
                      "LDAPTIME": timestring(int(time.time()))} )
-        setup_file(self.setup_path("cn=samba-admin.ldif"),
+        setup_file(setup_path("cn=samba-admin.ldif"),
                    os.path.join(self.ldapdir, "db", "samba", "cn=samba", "cn=samba-admin.ldif"),
                    {"LDAPADMINPASS_B64": b64encode(self.ldapadminpass),
                     "UUID": str(uuid.uuid4()),
                     "LDAPTIME": timestring(int(time.time()))} )
 
         if self.ol_mmr_urls is not None:
-            setup_file(self.setup_path("cn=replicator.ldif"),
+            setup_file(setup_path("cn=replicator.ldif"),
                        os.path.join(self.ldapdir, "db", "samba", "cn=samba", "cn=replicator.ldif"),
                        {"MMR_PASSWORD_B64": b64encode(mmr_pass),
                         "UUID": str(uuid.uuid4()),
@@ -496,7 +494,7 @@ class OpenLDAPBackend(LDAPBackend):
         mapping = "schema-map-openldap-2.3"
         backend_schema = "backend-schema.schema"
 
-        f = open(self.setup_path(mapping), 'r')
+        f = open(setup_path(mapping), 'r')
         backend_schema_data = self.schema.convert_to_openldap(
                 "openldap", f.read())
         assert backend_schema_data is not None
@@ -567,14 +565,14 @@ class OpenLDAPBackend(LDAPBackend):
 
 class FDSBackend(LDAPBackend):
 
-    def __init__(self, backend_type, paths=None, setup_path=None, lp=None,
+    def __init__(self, backend_type, paths=None, lp=None,
             credentials=None, names=None, logger=None, domainsid=None,
             schema=None, hostname=None, ldapadminpass=None, slapd_path=None,
             ldap_backend_extra_port=None, ldap_dryrun_mode=False, root=None,
             setup_ds_path=None):
 
         super(FDSBackend, self).__init__(backend_type=backend_type,
-                paths=paths, setup_path=setup_path, lp=lp,
+                paths=paths, lp=lp,
                 credentials=credentials, names=names, logger=logger,
                 domainsid=domainsid, schema=schema, hostname=hostname,
                 ldapadminpass=ldapadminpass, slapd_path=slapd_path,
@@ -600,7 +598,7 @@ class FDSBackend(LDAPBackend):
         self.index_ldif = os.path.join(self.ldapdir, "fedorads-index.ldif")
         self.samba_ldif = os.path.join(self.ldapdir, "fedorads-samba.ldif")
 
-        self.samba3_schema = self.setup_path(
+        self.samba3_schema = setup_path(
             "../../examples/LDAP/samba.schema")
         self.samba3_ldif = os.path.join(self.ldapdir, "samba3.ldif")
 
@@ -614,7 +612,6 @@ class FDSBackend(LDAPBackend):
             raise Exception("Unable to convert Samba 3 schema.")
 
         self.schema = Schema(
-                self.setup_path,
                 self.domainsid,
                 schemadn=self.names.schemadn,
                 files=[setup_path("schema_samba4.ldif"), self.samba3_ldif],
@@ -622,13 +619,13 @@ class FDSBackend(LDAPBackend):
                                       "1001:1.3.6.1.4.1.7165.2.2"])
 
     def provision(self):
-        from samba.provision import ProvisioningError
+        from samba.provision import ProvisioningError, setup_path
         if self.ldap_backend_extra_port is not None:
             serverport = "ServerPort=%d" % self.ldap_backend_extra_port
         else:
             serverport = ""
 
-        setup_file(self.setup_path("fedorads.inf"), self.fedoradsinf,
+        setup_file(setup_path("fedorads.inf"), self.fedoradsinf,
                    {"ROOT": self.root,
                     "HOSTNAME": self.hostname,
                     "DNSDOMAIN": self.names.dnsdomain,
@@ -639,28 +636,28 @@ class FDSBackend(LDAPBackend):
                     "LDAPMANAGERPASS": self.ldapadminpass,
                     "SERVERPORT": serverport})
 
-        setup_file(self.setup_path("fedorads-partitions.ldif"),
+        setup_file(setup_path("fedorads-partitions.ldif"),
             self.partitions_ldif,
                    {"CONFIGDN": self.names.configdn,
                     "SCHEMADN": self.names.schemadn,
                     "SAMBADN": self.sambadn,
                     })
 
-        setup_file(self.setup_path("fedorads-sasl.ldif"), self.sasl_ldif,
+        setup_file(setup_path("fedorads-sasl.ldif"), self.sasl_ldif,
                    {"SAMBADN": self.sambadn,
                     })
 
-        setup_file(self.setup_path("fedorads-dna.ldif"), self.dna_ldif,
+        setup_file(setup_path("fedorads-dna.ldif"), self.dna_ldif,
                    {"DOMAINDN": self.names.domaindn,
                     "SAMBADN": self.sambadn,
                     "DOMAINSID": str(self.domainsid),
                     })
 
-        setup_file(self.setup_path("fedorads-pam.ldif"), self.pam_ldif)
+        setup_file(setup_path("fedorads-pam.ldif"), self.pam_ldif)
 
         lnkattr = self.schema.linked_attributes()
 
-        refint_config = open(self.setup_path("fedorads-refint-delete.ldif"), 'r').read()
+        refint_config = open(setup_path("fedorads-refint-delete.ldif"), 'r').read()
         memberof_config = ""
         index_config = ""
         argnum = 3
@@ -668,15 +665,15 @@ class FDSBackend(LDAPBackend):
         for attr in lnkattr.keys():
             if lnkattr[attr] is not None:
                 refint_config += read_and_sub_file(
-                    self.setup_path("fedorads-refint-add.ldif"),
+                    setup_path("fedorads-refint-add.ldif"),
                          { "ARG_NUMBER" : str(argnum),
                            "LINK_ATTR" : attr })
                 memberof_config += read_and_sub_file(
-                    self.setup_path("fedorads-linked-attributes.ldif"),
+                    setup_path("fedorads-linked-attributes.ldif"),
                          { "MEMBER_ATTR" : attr,
                            "MEMBEROF_ATTR" : lnkattr[attr] })
                 index_config += read_and_sub_file(
-                    self.setup_path("fedorads-index.ldif"), { "ATTR" : attr })
+                    setup_path("fedorads-index.ldif"), { "ATTR" : attr })
                 argnum += 1
 
         open(self.refint_ldif, 'w').write(refint_config)
@@ -692,11 +689,11 @@ class FDSBackend(LDAPBackend):
                 attr = "nsUniqueId"
 
             index_config += read_and_sub_file(
-                self.setup_path("fedorads-index.ldif"), { "ATTR" : attr })
+                setup_path("fedorads-index.ldif"), { "ATTR" : attr })
 
         open(self.index_ldif, 'w').write(index_config)
 
-        setup_file(self.setup_path("fedorads-samba.ldif"), self.samba_ldif, {
+        setup_file(setup_path("fedorads-samba.ldif"), self.samba_ldif, {
             "SAMBADN": self.sambadn,
             "LDAPADMINPASS": self.ldapadminpass
             })
@@ -706,7 +703,7 @@ class FDSBackend(LDAPBackend):
 
         # Build a schema file in Fedora DS format
         backend_schema_data = self.schema.convert_to_openldap("fedora-ds",
-            open(self.setup_path(mapping), 'r').read())
+            open(setup_path(mapping), 'r').read())
         assert backend_schema_data is not None
         f = open(os.path.join(self.ldapdir, backend_schema), 'w')
         try:

@@ -44,7 +44,7 @@ from ldb import (SCOPE_SUBTREE, SCOPE_BASE,
                 FLAG_MOD_REPLACE, FLAG_MOD_ADD, FLAG_MOD_DELETE,
                 MessageElement, Message, Dn)
 from samba import param, dsdb, Ldb
-from samba.provision import (find_setup_dir, get_domain_descriptor,
+from samba.provision import (get_domain_descriptor,
                             get_config_descriptor,
                             ProvisioningError, get_last_provision_usn,
                             get_max_usn, update_provision_usn)
@@ -182,9 +182,6 @@ smbconf = lp.configfile
 
 creds = credopts.get_credentials(lp)
 creds.set_kerberos_state(DONT_USE_KERBEROS)
-setup_dir = opts.setupdir
-if setup_dir is None:
-    setup_dir = find_setup_dir()
 
 
 
@@ -1442,9 +1439,6 @@ def sync_calculated_attributes(samdb, names):
        increment_calculated_keyversion_number(samdb, names.rootdn,
                                             hash["msDs-KeyVersionNumber"])
 
-def setup_path(file):
-    return os.path.join(setup_dir, file)
-
 # Synopsis for updateprovision
 # 1) get path related to provision to be update (called current)
 # 2) open current provision ldbs
@@ -1586,7 +1580,6 @@ if __name__ == '__main__':
     # From here start the big steps of the program
     # 1) First get files paths
     paths = get_paths(param, smbconf=smbconf)
-    paths.setup = setup_dir
     # Get ldbs with the system session, it is needed for searching
     # provision parameters
     session = system_session()
@@ -1631,7 +1624,7 @@ if __name__ == '__main__':
         message(SIMPLE, "Creating a reference provision")
         provisiondir = tempfile.mkdtemp(dir=paths.private_dir,
                                         prefix="referenceprovision")
-        newprovision(names, setup_dir, creds, session, smbconf, provisiondir,
+        newprovision(names, creds, session, smbconf, provisiondir,
                         provision_logger)
 
         # TODO
@@ -1680,7 +1673,7 @@ if __name__ == '__main__':
         new_ldbs.startTransactions()
 
         # 12)
-        schema = Schema(setup_path, names.domainsid, schemadn=str(names.schemadn))
+        schema = Schema(names.domainsid, schemadn=str(names.schemadn))
         # We create a closure that will be invoked just before schema reload
         def schemareloadclosure():
             basesam = Ldb(paths.samdb, session_info=session, credentials=creds, lp=lp,

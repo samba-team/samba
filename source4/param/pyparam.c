@@ -22,6 +22,7 @@
 #include "param/param.h"
 #include "param/loadparm.h"
 #include "lib/talloc/pytalloc.h"
+#include "dynconfig/dynconfig.h"
 
 /* There's no Py_ssize_t in 2.4, apparently */
 #if PY_MAJOR_VERSION == 2 && PY_MINOR_VERSION < 5
@@ -419,9 +420,16 @@ static PyObject *py_default_path(PyObject *self)
     return PyString_FromString(lp_default_path());
 }
 
+static PyObject *py_setup_dir(PyObject *self)
+{
+    return PyString_FromString(dyn_SETUPDIR);
+}
+
 static PyMethodDef pyparam_methods[] = {
     { "default_path", (PyCFunction)py_default_path, METH_NOARGS, 
         "Returns the default smb.conf path." },
+    { "setup_dir", (PyCFunction)py_setup_dir, METH_NOARGS,
+        "Returns the compiled in location of provision tempates." },
     { NULL }
 };
 

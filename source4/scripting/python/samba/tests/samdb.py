@@ -25,7 +25,7 @@ import uuid
 
 from samba.auth import system_session
 from samba.provision import (setup_samdb, guess_names, make_smbconf,
-    find_setup_dir, provision_paths_from_lp)
+    provision_paths_from_lp)
 from samba.provision import DEFAULT_POLICY_GUID, DEFAULT_DC_POLICY_GUID
 from samba.provision.backend import ProvisionBackend
 from samba.tests import TestCaseInTempDir
@@ -40,9 +40,6 @@ class SamDBTestCase(TestCaseInTempDir):
     This is used by the Samba SamDB-tests, but e.g. also by the OpenChange
     provisioning tests (which need a Sam).
     """
-
-    def setup_path(self, relpath):
-        return os.path.join(find_setup_dir(), relpath)
 
     def setUp(self):
         super(SamDBTestCase, self).setUp()
@@ -64,7 +61,7 @@ class SamDBTestCase(TestCaseInTempDir):
         policyguid_dc = DEFAULT_DC_POLICY_GUID
 
         smbconf = os.path.join(self.tempdir, "smb.conf")
-        make_smbconf(smbconf, self.setup_path, hostname, domain, dnsdomain, 
+        make_smbconf(smbconf, hostname, domain, dnsdomain,
                      serverrole, self.tempdir)
 
         self.lp = param.LoadParm()
@@ -81,14 +78,14 @@ class SamDBTestCase(TestCaseInTempDir):
         logger = logging.getLogger("provision")
 
         provision_backend = ProvisionBackend("ldb", paths=paths,
-                setup_path=self.setup_path, lp=self.lp, credentials=None,
+                lp=self.lp, credentials=None,
                 names=names, logger=logger)
 
-        schema = Schema(self.setup_path, domainsid, invocationid=invocationid,
+        schema = Schema(domainsid, invocationid=invocationid,
                 schemadn=names.schemadn, serverdn=names.serverdn,
                 am_rodc=False)
 
-        self.samdb = setup_samdb(path, self.setup_path, session_info,
+        self.samdb = setup_samdb(path, session_info,
                 provision_backend, self.lp, names, logger,
                 domainsid, domainguid, policyguid, policyguid_dc, False,
                 "secret", "secret", "secret", invocationid, "secret",

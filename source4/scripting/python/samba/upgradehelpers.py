@@ -348,14 +348,13 @@ def find_provision_key_parameters(samdb, secretsdb, idmapdb, paths, smbconf, lp)
     return names
 
 
-def newprovision(names, setup_dir, creds, session, smbconf, provdir, logger):
+def newprovision(names, creds, session, smbconf, provdir, logger):
     """Create a new provision.
 
     This provision will be the reference for knowing what has changed in the
     since the latest upgrade in the current provision
 
     :param names: List of provision parameters
-    :param setup_dir: Directory where the setup files are stored
     :param creds: Credentials for the authentification
     :param session: Session object
     :param smbconf: Path to the smb.conf file
@@ -366,7 +365,7 @@ def newprovision(names, setup_dir, creds, session, smbconf, provdir, logger):
         shutil.rmtree(provdir)
     os.mkdir(provdir)
     logger.info("Provision stored in %s", provdir)
-    provision(setup_dir, logger, session, creds, smbconf=smbconf,
+    provision(logger, session, creds, smbconf=smbconf,
             targetdir=provdir, samdb_fill=FILL_FULL, realm=names.realm,
             domain=names.domain, domainguid=names.domainguid,
             domainsid=str(names.domainsid), ntdsguid=names.ntdsguid,

@@ -62,13 +62,14 @@ def get_schema_descriptor(domain_sid):
 
 class Schema(object):
 
-    def __init__(self, setup_path, domain_sid, invocationid=None, schemadn=None,
+    def __init__(self, domain_sid, invocationid=None, schemadn=None,
                  files=None, override_prefixmap=None, additional_prefixmap=None):
+        from samba.provision import setup_path
+
         """Load schema for the SamDB from the AD schema files and
         samba4_schema.ldif
 
         :param samdb: Load a schema into a SamDB.
-        :param setup_path: Setup path function.
         :param schemadn: DN of the schema
 
         Returns the schema data loaded, to avoid double-parsing when then
@@ -182,13 +183,11 @@ def get_dnsyntax_attributes(schemadn,schemaldb):
     return attributes
 
 
-def ldb_with_schema(setup_dir=None,
-        schemadn="cn=schema,cn=configuration,dc=example,dc=com", 
-        domainsid=None,
-        override_prefixmap=None):
+def ldb_with_schema(schemadn="cn=schema,cn=configuration,dc=example,dc=com",
+                    domainsid=None,
+                    override_prefixmap=None):
     """Load schema for the SamDB from the AD schema files and samba4_schema.ldif
 
-    :param setup_dir: Setup path
     :param schemadn: DN of the schema
     :param serverdn: DN of the server
 
@@ -197,12 +196,9 @@ def ldb_with_schema(setup_dir=None,
     operate without a remote or local schema.
     """
 
-    def setup_path(file):
-        return os.path.join(setup_dir, file)
-
     if domainsid is None:
         domainsid = security.random_sid()
     else:
         domainsid = security.dom_sid(domainsid)
-    return Schema(setup_path, domainsid, schemadn=schemadn,
+    return Schema(domainsid, schemadn=schemadn,
         override_prefixmap=override_prefixmap)

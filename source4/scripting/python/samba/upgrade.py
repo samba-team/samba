@@ -377,7 +377,7 @@ def import_registry(samba4_registry, samba3_regdb):
             key_handle.set_value(value_name, value_type, value_data)
 
 
-def upgrade_provision(samba3, setup_dir, logger, credentials, session_info,
+def upgrade_provision(samba3, logger, credentials, session_info,
                       smbconf, targetdir):
     oldconf = samba3.get_conf()
 
@@ -420,7 +420,7 @@ def upgrade_provision(samba3, setup_dir, logger, credentials, session_info,
     else:
         machinepass = None
 
-    result = provision(setup_dir=setup_dir, logger=logger,
+    result = provision(logger=logger,
                        session_info=session_info, credentials=credentials,
                        targetdir=targetdir, realm=realm, domain=domainname,
                        domainguid=domainguid, domainsid=domainsid,

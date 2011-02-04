@@ -35,7 +35,7 @@ import samba.ntacls
 from samba.credentials import DONT_USE_KERBEROS
 from samba.auth import system_session
 import samba.getopt as options
-from samba.provision import provision, FILL_FULL, FILL_NT4SYNC, FILL_DRS, find_setup_dir, ProvisioningError
+from samba.provision import provision, FILL_FULL, FILL_NT4SYNC, FILL_DRS, ProvisioningError
 from samba.dsdb import (
 	DS_DOMAIN_FUNCTION_2000,
 	DS_DOMAIN_FUNCTION_2003,
@@ -52,8 +52,6 @@ parser.add_option_group(options.VersionOptions(parser))
 credopts = options.CredentialsOptions(parser)
 parser.add_option_group(credopts)
 parser.add_option("--interactive", help="Ask for names", action="store_true")
-parser.add_option("--setupdir", type="string", metavar="DIR", 
-		help="directory with setup files")
 parser.add_option("--domain", type="string", metavar="DOMAIN",
 				  help="set domain")
 parser.add_option("--domain-guid", type="string", metavar="GUID", 
@@ -205,10 +203,6 @@ creds = credopts.get_credentials(lp)
 
 creds.set_kerberos_state(DONT_USE_KERBEROS)
 
-setup_dir = opts.setupdir
-if setup_dir is None:
-	setup_dir = find_setup_dir()
-
 samdb_fill = FILL_FULL
 if opts.blank:
     samdb_fill = FILL_NT4SYNC
@@ -241,7 +235,7 @@ else:
 	
 session = system_session()
 try:
-	provision(setup_dir, logger,
+	provision(logger,
 		  session, creds, smbconf=smbconf, targetdir=opts.targetdir,
 		  samdb_fill=samdb_fill, realm=opts.realm, domain=opts.domain,
 		  domainguid=opts.domain_guid, domainsid=opts.domain_sid,

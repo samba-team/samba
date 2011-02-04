@@ -27,7 +27,7 @@ import ldb, samba, sys, os, uuid
 from samba.ndr import ndr_pack
 from samba.dcerpc import security, drsuapi, misc, nbt
 from samba.credentials import Credentials, DONT_USE_KERBEROS
-from samba.provision import secretsdb_self_join, provision, FILL_DRS, find_setup_dir
+from samba.provision import secretsdb_self_join, provision, FILL_DRS
 from samba.schema import Schema
 from samba.net import Net
 import logging
@@ -100,7 +100,6 @@ class dc_join(object):
 
         ctx.acct_dn = "CN=%s,OU=Domain Controllers,%s" % (ctx.myname, ctx.base_dn)
 
-        ctx.setup_dir = find_setup_dir()
         ctx.tmp_samdb = None
 
         ctx.SPNs = [ "HOST/%s" % ctx.myname,
@@ -245,9 +244,7 @@ class dc_join(object):
 
     def create_tmp_samdb(ctx):
         '''create a temporary samdb object for schema queries'''
-        def setup_path(file):
-            return os.path.join(ctx.setup_dir, file)
-        ctx.tmp_schema = Schema(setup_path, security.dom_sid(ctx.domsid),
+        ctx.tmp_schema = Schema(security.dom_sid(ctx.domsid),
                                 schemadn=ctx.schema_dn)
         ctx.tmp_samdb = SamDB(session_info=system_session(), url=None, auto_connect=False,
                               credentials=ctx.creds, lp=ctx.lp, global_schema=False,
@@ -424,7 +421,7 @@ class dc_join(object):
         logger.addHandler(logging.StreamHandler(sys.stdout))
         smbconf = ctx.lp.configfile
 
-        presult = provision(ctx.setup_dir, logger, system_session(), None,
+        presult = provision(logger, system_session(), None,
                             smbconf=smbconf, targetdir=ctx.targetdir, samdb_fill=FILL_DRS,
                             realm=ctx.realm, rootdn=ctx.root_dn, domaindn=ctx.base_dn,
                             schemadn=ctx.schema_dn,
