@@ -226,14 +226,14 @@ static int check_constraints(struct ldb_message *msg,
 	if (ldb_dn_compare(nc_root, ldb_get_schema_basedn(ldb)) == 0) {
 		if (move_op) {
 			ldb_asprintf_errstring(ldb,
-					       "subtree_rename: Cannot move %s, it isn't permitted!",
+					       "subtree_rename: Cannot move %s within schema partition",
 					       ldb_dn_get_linearized(olddn));
 			return LDB_ERR_UNWILLING_TO_PERFORM;
 		}
 		if (rename_op &&
 		    (systemFlags & SYSTEM_FLAG_SCHEMA_BASE_OBJECT) != 0) {
 			ldb_asprintf_errstring(ldb,
-					       "subtree_rename: Cannot rename %s, it isn't permitted!",
+					       "subtree_rename: Cannot rename %s within schema partition",
 					       ldb_dn_get_linearized(olddn));
 			return LDB_ERR_UNWILLING_TO_PERFORM;
 		}
@@ -264,31 +264,31 @@ static int check_constraints(struct ldb_message *msg,
 
 			if (!limited_move) {
 				ldb_asprintf_errstring(ldb,
-						       "subtree_rename: Cannot move %s, it isn't permitted!",
-						       ldb_dn_get_linearized(olddn));
+						       "subtree_rename: Cannot move %s to %s in config partition",
+						       ldb_dn_get_linearized(olddn), ldb_dn_get_linearized(newdn));
 				return LDB_ERR_UNWILLING_TO_PERFORM;
 			}
 		}
 		if (rename_op &&
 		    (systemFlags & SYSTEM_FLAG_CONFIG_ALLOW_RENAME) == 0) {
 			ldb_asprintf_errstring(ldb,
-					       "subtree_rename: Cannot rename %s, it isn't permitted!",
-					       ldb_dn_get_linearized(olddn));
+					       "subtree_rename: Cannot rename %s to %s within config partition",
+					       ldb_dn_get_linearized(olddn), ldb_dn_get_linearized(newdn));
 			return LDB_ERR_UNWILLING_TO_PERFORM;
 		}
 	} else if (ldb_dn_compare(nc_root, ldb_get_default_basedn(ldb)) == 0) {
 		if (move_op &&
 		    (systemFlags & SYSTEM_FLAG_DOMAIN_DISALLOW_MOVE) != 0) {
 			ldb_asprintf_errstring(ldb,
-					       "subtree_rename: Cannot move %s, it isn't permitted!",
-					       ldb_dn_get_linearized(olddn));
+					       "subtree_rename: Cannot move %s to %s - DISALLOW_MOVE set",
+					       ldb_dn_get_linearized(olddn), ldb_dn_get_linearized(newdn));
 			return LDB_ERR_UNWILLING_TO_PERFORM;
 		}
 		if (rename_op &&
 		    (systemFlags & SYSTEM_FLAG_DOMAIN_DISALLOW_RENAME) != 0) {
 			ldb_asprintf_errstring(ldb,
-						       "subtree_rename: Cannot rename %s, it isn't permitted!",
-					       ldb_dn_get_linearized(olddn));
+						       "subtree_rename: Cannot rename %s to %s - DISALLOW_RENAME set",
+					       ldb_dn_get_linearized(olddn), ldb_dn_get_linearized(newdn));
 			return LDB_ERR_UNWILLING_TO_PERFORM;
 		}
 	}
