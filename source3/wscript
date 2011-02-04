@@ -85,6 +85,7 @@ def configure(conf):
     conf.RECURSE('../lib/socket_wrapper')
     conf.RECURSE('../lib/zlib')
     conf.RECURSE('../libcli/smbreadline')
+    conf.RECURSE('../lib/util')
 
     conf.ADD_LDFLAGS("-Wl,--export-dynamic", testflags=True)
 
