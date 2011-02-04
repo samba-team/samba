@@ -28,7 +28,6 @@
 
 struct addrchange_context {
 	int sock;
-	uint8_t *buf;
 };
 
 static int addrchange_context_destructor(struct addrchange_context *c);
