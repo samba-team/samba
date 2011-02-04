@@ -399,6 +399,76 @@ class cmd_drs_bind(Command):
             print("Forest GUID: %s" % info.info.config_dn_guid)
 
 
+
+class cmd_drs_options(Command):
+    """query or change 'options' for NTDS Settings object of a domain controller"""
+
+    synopsis = ("%prog drs options <DC>"
+                " [--dsa-option={+|-}IS_GC | {+|-}DISABLE_INBOUND_REPL"
+                " |{+|-}DISABLE_OUTBOUND_REPL | {+|-}DISABLE_NTDSCONN_XLATE]")
+
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "versionopts": options.VersionOptions,
+        "credopts": options.CredentialsOptions,
+    }
+
+    takes_args = ["DC"]
+
+    takes_options = [
+        Option("--dsa-option", help="DSA option to enable/disable", type="str"),
+        ]
+
+    option_map = {"IS_GC": 0x00000001,
+                  "DISABLE_INBOUND_REPL": 0x00000002,
+                  "DISABLE_OUTBOUND_REPL": 0x00000004,
+                  "DISABLE_NTDSCONN_XLATE": 0x00000008}
+
+    def get_dsServiceName(ctx):
+        '''get the NTDS DN from the rootDSE'''
+        res = ctx.samdb.search(base="", scope=ldb.SCOPE_BASE, attrs=["dsServiceName"])
+        return res[0]["dsServiceName"][0]
+
+    def run(self, DC, dsa_option=None,
+            sambaopts=None, credopts=None, versionopts=None):
+
+        self.lp = sambaopts.get_loadparm()
+        if DC is None:
+            DC = common.netcmd_dnsname(self.lp)
+        self.server = DC
+        self.creds = credopts.get_credentials(self.lp, fallback_machine=True)
+
+        samdb_connect(self)
+
+        ntds_dn = self.get_dsServiceName()
+        res = self.samdb.search(base=ntds_dn, scope=ldb.SCOPE_BASE, attrs=["options"])
+        dsa_opts = int(res[0]["options"][0])
+
+        # print out current DSA options
+        cur_opts = [x for x in self.option_map if self.option_map[x] & dsa_opts]
+        self.message("Current DSA options: " + ", ".join(cur_opts))
+
+        # modify options
+        if dsa_option:
+            if dsa_option[:1] not in ("+", "-"):
+                raise CommandError("Unknown option %s" % dsa_option)
+            flag = dsa_option[1:]
+            if flag not in self.option_map.keys():
+                raise CommandError("Unknown option %s" % dsa_option)
+            if dsa_option[:1] == "+":
+                dsa_opts |= self.option_map[flag]
+            else:
+                dsa_opts &= ~self.option_map[flag]
+            #save new options
+            m = ldb.Message()
+            m.dn = ldb.Dn(self.samdb, ntds_dn)
+            m["options"]= ldb.MessageElement(str(dsa_opts), ldb.FLAG_MOD_REPLACE, "options")
+            self.samdb.modify(m)
+            # print out new DSA options
+            cur_opts = [x for x in self.option_map if self.option_map[x] & dsa_opts]
+            self.message("New DSA options: " + ", ".join(cur_opts))
+
+
 class cmd_drs(SuperCommand):
     """DRS commands"""
 
@@ -407,3 +477,4 @@ class cmd_drs(SuperCommand):
     subcommands["kcc"] = cmd_drs_kcc()
     subcommands["replicate"] = cmd_drs_replicate()
     subcommands["showrepl"] = cmd_drs_showrepl()
+    subcommands["options"] = cmd_drs_options()
