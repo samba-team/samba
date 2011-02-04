@@ -41,6 +41,7 @@ def set_options(opt):
     opt.SAMBA3_ADD_OPTION('krb5')
     opt.SAMBA3_ADD_OPTION('ldap')
     opt.SAMBA3_ADD_OPTION('cups', with_name="enable", without_name="disable")
+    opt.SAMBA3_ADD_OPTION('iprint', with_name="enable", without_name="disable")
     opt.SAMBA3_ADD_OPTION('merged-build', with_name="enable", without_name="disable")
     opt.SAMBA3_ADD_OPTION('pam')
     opt.SAMBA3_ADD_OPTION('quotas')
@@ -547,6 +548,13 @@ return acl_get_perm_np(permset_d, perm);
     else:
         # define an empty subsystem for cups, to allow it to be used as an empty dependency
         conf.SET_TARGET_TYPE('cups', 'EMPTY')
+
+    if Options.options.with_iprint:
+	if conf.CONFIG_SET('HAVE_CUPS'):
+            conf.DEFINE('HAVE_IPRINT', '1')
+        else:
+            print "--enable-iprint=yes but cups support not sufficient"
+            sys.exit(1)
 
     # Check for LDAP
     if Options.options.with_ldap:
