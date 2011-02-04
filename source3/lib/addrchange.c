@@ -83,6 +83,8 @@ static int addrchange_context_destructor(struct addrchange_context *c)
 }
 
 struct addrchange_state {
+	struct tevent_context *ev;
+	struct addrchange_context *ctx;
 	uint8_t buf[8192];
 	struct sockaddr_storage fromaddr;
 	socklen_t fromaddr_len;
@@ -104,14 +106,15 @@ struct tevent_req *addrchange_send(TALLOC_CTX *mem_ctx,
 	if (req == NULL) {
 		return NULL;
 	}
+	state->ev = ev;
+	state->ctx = ctx;
 
 	state->fromaddr_len = sizeof(state->fromaddr);
-
-	subreq = recvfrom_send(state, ev, ctx->sock,
+	subreq = recvfrom_send(state, state->ev, state->ctx->sock,
 			       state->buf, sizeof(state->buf), 0,
 			       &state->fromaddr, &state->fromaddr_len);
 	if (tevent_req_nomem(subreq, req)) {
-		return tevent_req_post(req, ev);
+		return tevent_req_post(req, state->ev);
 	}
 	tevent_req_set_callback(subreq, addrchange_done, req);
 	return req;
@@ -166,8 +169,16 @@ static void addrchange_done(struct tevent_req *subreq)
 		state->type = ADDRCHANGE_DEL;
 		break;
 	default:
-		DEBUG(10, ("Got unexpected type %d\n", h->nlmsg_type));
-		tevent_req_nterror(req, NT_STATUS_INVALID_ADDRESS);
+		DEBUG(10, ("Got unexpected type %d - ignoring\n", h->nlmsg_type));
+
+		state->fromaddr_len = sizeof(state->fromaddr);
+		subreq = recvfrom_send(state, state->ev, state->ctx->sock,
+			       state->buf, sizeof(state->buf), 0,
+			       &state->fromaddr, &state->fromaddr_len);
+		if (tevent_req_nomem(subreq, req)) {
+			return;
+		}
+		tevent_req_set_callback(subreq, addrchange_done, req);
 		return;
 	}
 
