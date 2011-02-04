@@ -139,16 +139,6 @@ static smb_iconv_t get_conv_handle(struct smb_iconv_convenience *ic,
 
 	if (initialised == false) {
 		initialised = true;
-		
-#ifdef LC_ALL
-		/* we set back the locale to C to get ASCII-compatible
-		   toupper/lower functions.  For now we do not need
-		   any other POSIX localisations anyway. When we
-		   should really need localized string functions one
-		   day we need to write our own ascii_tolower etc.
-		*/
-		setlocale(LC_ALL, "C");
-#endif
 	}
 
 	if (ic->conv_handles[from][to]) {
