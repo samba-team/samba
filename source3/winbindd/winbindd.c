@@ -1142,8 +1142,9 @@ static void winbindd_init_addrchange(TALLOC_CTX *mem_ctx,
 	}
 	req = addrchange_send(state, ev, state->ctx);
 	if (req == NULL) {
-		DEBUG(10, ("addrchange_send failed\n"));
+		DEBUG(0, ("addrchange_send failed\n"));
 		TALLOC_FREE(state);
+		return;
 	}
 	tevent_req_set_callback(req, winbindd_addr_changed, state);
 }
@@ -1162,6 +1163,7 @@ static void winbindd_addr_changed(struct tevent_req *req)
 		DEBUG(10, ("addrchange_recv failed: %s, stop listening\n",
 			   nt_errstr(status)));
 		TALLOC_FREE(state);
+		return;
 	}
 	if (type == ADDRCHANGE_DEL) {
 		char addrstr[INET6_ADDRSTRLEN];
@@ -1178,14 +1180,15 @@ static void winbindd_addr_changed(struct tevent_req *req)
 					messaging_server_id(state->msg_ctx),
 					MSG_WINBIND_IP_DROPPED, &blob);
 		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(10, ("messaging_send failed: %s\n",
+			DEBUG(10, ("messaging_send failed: %s - ignoring\n",
 				   nt_errstr(status)));
 		}
 	}
 	req = addrchange_send(state, state->ev, state->ctx);
 	if (req == NULL) {
-		DEBUG(10, ("addrchange_send failed\n"));
+		DEBUG(0, ("addrchange_send failed\n"));
 		TALLOC_FREE(state);
+		return;
 	}
 	tevent_req_set_callback(req, winbindd_addr_changed, state);
 }
