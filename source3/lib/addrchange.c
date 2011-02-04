@@ -76,7 +76,7 @@ static int addrchange_context_destructor(struct addrchange_context *c)
 {
 	if (c->sock != -1) {
 		close(c->sock);
-		c->sock = 0;
+		c->sock = -1;
 	}
 	return 0;
 }
