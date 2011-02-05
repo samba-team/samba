@@ -124,6 +124,8 @@ def dynconfig_cflags(bld, list=None):
     cflags = []
     # override some paths when running from the build directory
     override = { 'MODULESDIR'    : 'bin/modules',
+                 'PYTHONDIR'     : 'bin/python',
+                 'PYTHONARCHDIR' : 'bin/python',
                  'SCRIPTSBINDIR' : os.path.join(bld.env.srcdir, 'source4/scripting/bin'),
                  'SETUPDIR'      : os.path.join(bld.env.srcdir, 'source4/setup') }
     for f in dyn_cflags.keys():
