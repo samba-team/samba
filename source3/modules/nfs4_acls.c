@@ -765,14 +765,14 @@ NTSTATUS smb_set_nt_acl_nfs4(files_struct *fsp,
 		if (((newUID != (uid_t)-1) && (sbuf.st_ex_uid != newUID)) ||
 		    ((newGID != (gid_t)-1) && (sbuf.st_ex_gid != newGID))) {
 
-			if(try_chown(fsp->conn, fsp->fsp_name, newUID,
-				     newGID)) {
+			status = try_chown(fsp, newUID, newGID);
+			if (!NT_STATUS_IS_OK(status)) {
 				DEBUG(3,("chown %s, %u, %u failed. Error = "
 					 "%s.\n", fsp_str_dbg(fsp),
 					 (unsigned int)newUID,
 					 (unsigned int)newGID,
-					 strerror(errno)));
-				return map_nt_error_from_unix(errno);
+					 nt_errstr(status)));
+				return status;
 			}
 
 			DEBUG(10,("chown %s, %u, %u succeeded.\n",
