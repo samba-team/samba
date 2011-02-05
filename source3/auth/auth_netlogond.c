@@ -22,6 +22,8 @@
 #include "../librpc/gen_ndr/ndr_netlogon.h"
 #include "rpc_client/cli_netlogon.h"
 #include "secrets.h"
+#include "tldap.h"
+#include "tldap_util.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_AUTH
@@ -107,51 +109,125 @@ static NTSTATUS netlogond_validate(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
-static char *mymachinepw(TALLOC_CTX *mem_ctx)
+static NTSTATUS get_ldapi_ctx(TALLOC_CTX *mem_ctx, struct tldap_context **pld)
 {
-	fstring pwd;
-	const char *script;
-	char *to_free = NULL;
-	ssize_t nread;
-	int ret, fd;
+	struct tldap_context *ld;
+	struct sockaddr_un addr;
+	char *sockaddr;
+	int fd;
+	NTSTATUS status;
+	int res;
 
-	script = lp_parm_const_string(
-		GLOBAL_SECTION_SNUM, "auth_netlogond", "machinepwscript",
-		NULL);
-
-	if (script == NULL) {
-		to_free = talloc_asprintf(talloc_tos(), "%s/%s",
-					  get_dyn_SBINDIR(), "mymachinepw");
-		script = to_free;
-	}
-	if (script == NULL) {
-		return NULL;
+	sockaddr = talloc_asprintf(talloc_tos(), "/%s/ldap_priv/ldapi",
+				   lp_private_dir());
+	if (sockaddr == NULL) {
+		DEBUG(10, ("talloc failed\n"));
+		return NT_STATUS_NO_MEMORY;
 	}
 
-	ret = smbrun(script, &fd);
-	DEBUG(ret ? 0 : 3, ("mymachinepw: Running the command `%s' gave %d\n",
-			    script, ret));
-	TALLOC_FREE(to_free);
+	ZERO_STRUCT(addr);
+	addr.sun_family = AF_UNIX;
+	strncpy(addr.sun_path, sockaddr, sizeof(addr.sun_path));
+	TALLOC_FREE(sockaddr);
 
-	if (ret != 0) {
-		return NULL;
+	status = open_socket_out((struct sockaddr_storage *)(void *)&addr,
+				 0, 0, &fd);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(10, ("Could not connect to %s: %s\n", addr.sun_path,
+			   nt_errstr(status)));
+		return status;
+	}
+	set_blocking(fd, false);
+
+	ld = tldap_context_create(mem_ctx, fd);
+	if (ld == NULL) {
+		close(fd);
+		return NT_STATUS_NO_MEMORY;
+	}
+	res = tldap_fetch_rootdse(ld);
+	if (res != TLDAP_SUCCESS) {
+		DEBUG(10, ("tldap_fetch_rootdse failed: %s\n",
+			   tldap_errstr(talloc_tos(), ld, res)));
+		TALLOC_FREE(ld);
+		return NT_STATUS_LDAP(res);
+	}
+	*pld = ld;
+	return NT_STATUS_OK;;
+}
+
+static NTSTATUS mymachinepw(uint8_t pwd[16])
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct tldap_context *ld;
+	struct tldap_message *rootdse, **msg;
+	const char *attrs[1] = { "unicodePwd" };
+	char *default_nc, *myname;
+	int rc, num_msg;
+	DATA_BLOB pwdblob;
+	NTSTATUS status;
+
+	status = get_ldapi_ctx(talloc_tos(), &ld);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto fail;
+	}
+	rootdse = tldap_rootdse(ld);
+	if (rootdse == NULL) {
+		DEBUG(10, ("Could not get rootdse\n"));
+		status = NT_STATUS_INTERNAL_ERROR;
+		goto fail;
+	}
+	default_nc = tldap_talloc_single_attribute(
+		rootdse, "defaultNamingContext", talloc_tos());
+	if (default_nc == NULL) {
+		DEBUG(10, ("Could not get defaultNamingContext\n"));
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
+	}
+	DEBUG(10, ("default_nc = %s\n", default_nc));
+
+	myname = talloc_asprintf_strupper_m(talloc_tos(), "%s$",
+					    global_myname());
+	if (myname == NULL) {
+		DEBUG(10, ("talloc failed\n"));
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
 	}
 
-	nread = read(fd, pwd, sizeof(pwd)-1);
-	close(fd);
-
-	if (nread <= 0) {
-		DEBUG(3, ("mymachinepwd: Could not read password\n"));
-		return NULL;
+	rc = tldap_search_fmt(
+		ld, default_nc, TLDAP_SCOPE_SUB, attrs, ARRAY_SIZE(attrs), 0,
+		talloc_tos(), &msg,
+		"(&(sAMAccountName=%s)(objectClass=computer))", myname);
+	if (rc != TLDAP_SUCCESS) {
+		DEBUG(10, ("Could not retrieve our account: %s\n",
+			   tldap_errstr(talloc_tos(), ld, rc)));
+		status = NT_STATUS_LDAP(rc);
+		goto fail;
 	}
-
-	pwd[nread] = '\0';
-
-	if (pwd[nread-1] == '\n') {
-		pwd[nread-1] = '\0';
+	num_msg = talloc_array_length(msg);
+	if (num_msg != 1) {
+		DEBUG(10, ("Got %d accounts, expected one\n", num_msg));
+		status = NT_STATUS_INTERNAL_DB_CORRUPTION;
+		goto fail;
 	}
+	if (!tldap_get_single_valueblob(msg[0], "unicodePwd", &pwdblob)) {
+		char *dn = NULL;
+		tldap_entry_dn(msg[0], &dn);
+		DEBUG(10, ("No unicodePwd attribute in %s\n",
+			   dn ? dn : "<unknown DN>"));
+		status = NT_STATUS_INTERNAL_DB_CORRUPTION;
+		goto fail;
+	}
+	if (pwdblob.length != 16) {
+		DEBUG(10, ("Password hash hash has length %d, expected 16\n",
+			   (int)pwdblob.length));
+		status = NT_STATUS_INTERNAL_DB_CORRUPTION;
+		goto fail;
+	}
+	memcpy(pwd, pwdblob.data, 16);
 
-	return talloc_strdup(mem_ctx, pwd);
+fail:
+	TALLOC_FREE(frame);
+	return status;
 }
 
 static NTSTATUS check_netlogond_security(const struct auth_context *auth_context,
@@ -165,7 +241,6 @@ static NTSTATUS check_netlogond_security(const struct auth_context *auth_context
 	struct rpc_pipe_client *p = NULL;
 	struct pipe_auth_data *auth = NULL;
 	uint32_t neg_flags = NETLOGON_NEG_AUTH2_ADS_FLAGS;
-	char *plaintext_machinepw = NULL;
 	uint8_t machine_password[16];
 	uint8_t schannel_key[16];
 	NTSTATUS schannel_bind_result, status;
@@ -241,15 +316,11 @@ static NTSTATUS check_netlogond_security(const struct auth_context *auth_context
 		goto done;
 	}
 
-	plaintext_machinepw = mymachinepw(talloc_tos());
-	if (plaintext_machinepw == NULL) {
-		status = NT_STATUS_NO_MEMORY;
+	status = mymachinepw(machine_password);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(10, ("mymachinepw failed: %s\n", nt_errstr(status)));
 		goto done;
 	}
-
-	E_md4hash(plaintext_machinepw, machine_password);
-
-	TALLOC_FREE(plaintext_machinepw);
 
 	status = rpccli_netlogon_setup_creds(
 		p, global_myname(), lp_workgroup(), global_myname(),
