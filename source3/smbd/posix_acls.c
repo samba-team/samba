@@ -3526,105 +3526,73 @@ NTSTATUS posix_get_nt_acl(struct connection_struct *conn, const char *name,
  Try to chown a file. We will be able to chown it under the following conditions.
 
   1) If we have root privileges, then it will just work.
-  2) If we have SeTakeOwnershipPrivilege we can change the user to the current user.
-  3) If we have SeRestorePrivilege we can change the user to any other user. 
+  2) If we have SeRestorePrivilege we can change the user + group to any other user. 
+  3) If we have SeTakeOwnershipPrivilege we can change the user to the current user.
   4) If we have write permission to the file and dos_filemodes is set
      then allow chown to the currently authenticated user.
 ****************************************************************************/
 
-int try_chown(connection_struct *conn, struct smb_filename *smb_fname,
-	      uid_t uid, gid_t gid)
+NTSTATUS try_chown(files_struct *fsp, uid_t uid, gid_t gid)
 {
-	int ret;
-	files_struct *fsp;
+	NTSTATUS status;
 
-	if(!CAN_WRITE(conn)) {
-		return -1;
+	if(!CAN_WRITE(fsp->conn)) {
+		return NT_STATUS_MEDIA_WRITE_PROTECTED;
 	}
 
 	/* Case (1). */
-	/* try the direct way first */
-	if (lp_posix_pathnames()) {
-		ret = SMB_VFS_LCHOWN(conn, smb_fname->base_name, uid, gid);
-	} else {
-		ret = SMB_VFS_CHOWN(conn, smb_fname->base_name, uid, gid);
+	status = vfs_chown_fsp(fsp, uid, gid);
+	if (NT_STATUS_IS_OK(status)) {
+		return status;
 	}
-
-	if (ret == 0)
-		return 0;
 
 	/* Case (2) / (3) */
 	if (lp_enable_privileges()) {
+		bool has_take_ownership_priv = security_token_has_privilege(
+						get_current_nttok(fsp->conn),
+						SEC_PRIV_TAKE_OWNERSHIP);
+		bool has_restore_priv = security_token_has_privilege(
+						get_current_nttok(fsp->conn),
+						SEC_PRIV_RESTORE);
 
-		bool has_take_ownership_priv = security_token_has_privilege(get_current_nttok(conn), SEC_PRIV_TAKE_OWNERSHIP);
-		bool has_restore_priv = security_token_has_privilege(get_current_nttok(conn), SEC_PRIV_RESTORE);
-
-		/* Case (2) */
-		if ( ( has_take_ownership_priv && ( uid == get_current_uid(conn) ) ) ||
-		/* Case (3) */
-		     ( has_restore_priv ) ) {
-
-			become_root();
-			/* Keep the current file gid the same - take ownership doesn't imply group change. */
-			if (lp_posix_pathnames()) {
-				ret = SMB_VFS_LCHOWN(conn, smb_fname->base_name, uid,
-						    (gid_t)-1);
+		if (has_restore_priv) {
+			; /* Case (2) */
+		} else if (has_take_ownership_priv) {
+			/* Case (3) */
+			if (uid == get_current_uid(fsp->conn)) {
+				gid = (gid_t)-1;
 			} else {
-				ret = SMB_VFS_CHOWN(conn, smb_fname->base_name, uid,
-						    (gid_t)-1);
+				has_take_ownership_priv = false;
 			}
+		}
+
+		if (has_take_ownership_priv || has_restore_priv) {
+			become_root();
+			status = vfs_chown_fsp(fsp, uid, gid);
 			unbecome_root();
-			return ret;
+			return status;
 		}
 	}
 
 	/* Case (4). */
-	if (!lp_dos_filemode(SNUM(conn))) {
-		errno = EPERM;
-		return -1;
+	if (!lp_dos_filemode(SNUM(fsp->conn))) {
+		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	/* only allow chown to the current user. This is more secure,
 	   and also copes with the case where the SID in a take ownership ACL is
 	   a local SID on the users workstation
 	*/
-	if (uid != get_current_uid(conn)) {
-		errno = EPERM;
-		return -1;
-	}
-
-	if (lp_posix_pathnames()) {
-		ret = SMB_VFS_LSTAT(conn, smb_fname);
-	} else {
-		ret = SMB_VFS_STAT(conn, smb_fname);
-	}
-
-	if (ret == -1) {
-		return -1;
-	}
-
-	if (!NT_STATUS_IS_OK(open_file_fchmod(conn, smb_fname, &fsp))) {
-		return -1;
+	if (uid != get_current_uid(fsp->conn)) {
+		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	become_root();
 	/* Keep the current file gid the same. */
-	if (fsp->fh->fd == -1) {
-		if (lp_posix_pathnames()) {
-			ret = SMB_VFS_LCHOWN(conn, smb_fname->base_name, uid,
-					    (gid_t)-1);
-		} else {
-			ret = SMB_VFS_CHOWN(conn, smb_fname->base_name, uid,
-					    (gid_t)-1);
-		}
-	} else {
-		ret = SMB_VFS_FCHOWN(fsp, uid, (gid_t)-1);
-	}
+	status = vfs_chown_fsp(fsp, uid, (gid_t)-1);
 	unbecome_root();
 
-	close_file(NULL, fsp, NORMAL_CLOSE);
-
-	return ret;
+	return status;
 }
 
 #if 0
@@ -3912,15 +3880,14 @@ NTSTATUS set_nt_acl(files_struct *fsp, uint32 security_info_sent, const struct s
 			 fsp_str_dbg(fsp), (unsigned int)user,
 			 (unsigned int)grp));
 
-		if(try_chown(fsp->conn, fsp->fsp_name, user, grp) == -1) {
+		status = try_chown(fsp, user, grp);
+		if(!NT_STATUS_IS_OK(status)) {
 			DEBUG(3,("set_nt_acl: chown %s, %u, %u failed. Error "
-				 "= %s.\n", fsp_str_dbg(fsp),
-				 (unsigned int)user, (unsigned int)grp,
-				 strerror(errno)));
-			if (errno == EPERM) {
-				return NT_STATUS_INVALID_OWNER;
-			}
-			return map_nt_error_from_unix(errno);
+				"= %s.\n", fsp_str_dbg(fsp),
+				(unsigned int)user,
+				(unsigned int)grp,
+				nt_errstr(status)));
+			return status;
 		}
 
 		/*

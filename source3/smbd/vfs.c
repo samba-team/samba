@@ -1439,6 +1439,36 @@ int smb_vfs_call_lchown(struct vfs_handle_struct *handle, const char *path,
 	return handle->fns->lchown(handle, path, uid, gid);
 }
 
+NTSTATUS vfs_chown_fsp(files_struct *fsp, uid_t uid, gid_t gid)
+{
+	int ret;
+
+	if (!fsp->is_directory && fsp->fh->fd != -1) {
+		/* Try fchown. */
+		ret = SMB_VFS_FCHOWN(fsp, uid, gid);
+		if (ret == 0) {
+			return NT_STATUS_OK;
+		}
+		if (ret == -1 && errno != ENOSYS) {
+			return map_nt_error_from_unix(errno);
+		}
+	}
+
+	if (fsp->posix_open) {
+		ret = SMB_VFS_LCHOWN(fsp->conn,
+			fsp->fsp_name->base_name,
+			uid, gid);
+	} else {
+		ret = SMB_VFS_CHOWN(fsp->conn,
+			fsp->fsp_name->base_name,
+			uid, gid);
+	}
+	if (ret == 0) {
+		return NT_STATUS_OK;
+	}
+	return map_nt_error_from_unix(errno);
+}
+
 int smb_vfs_call_chdir(struct vfs_handle_struct *handle, const char *path)
 {
 	VFS_FIND(chdir);

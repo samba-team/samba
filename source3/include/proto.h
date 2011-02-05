@@ -5158,8 +5158,7 @@ NTSTATUS posix_fget_nt_acl(struct files_struct *fsp, uint32_t security_info,
 			   struct security_descriptor **ppdesc);
 NTSTATUS posix_get_nt_acl(struct connection_struct *conn, const char *name,
 			  uint32_t security_info, struct security_descriptor **ppdesc);
-int try_chown(connection_struct *conn, struct smb_filename *smb_fname,
-	      uid_t uid, gid_t gid);
+NTSTATUS try_chown(files_struct *fsp, uid_t uid, gid_t gid);
 NTSTATUS append_parent_acl(files_struct *fsp,
 				const struct security_descriptor *pcsd,
 				struct security_descriptor **pp_new_sd);
@@ -5606,6 +5605,7 @@ int vfs_stat_smb_fname(struct connection_struct *conn, const char *fname,
 int vfs_lstat_smb_fname(struct connection_struct *conn, const char *fname,
 			SMB_STRUCT_STAT *psbuf);
 NTSTATUS vfs_stat_fsp(files_struct *fsp);
+NTSTATUS vfs_chown_fsp(files_struct *fsp, uid_t uid, gid_t gid);
 
 /* The following definitions come from utils/passwd_util.c  */
 
