@@ -343,20 +343,13 @@ int main(int argc, const char **argv)
 
 	if (result->count == 0) {
 		printf("no matching records - cannot edit\n");
-		return 0;
+		talloc_free(mem_ctx);
+		return LDB_SUCCESS;
 	}
 
-	do_edit(ldb, result->msgs, result->count, options->editor);
-
-	if (result) {
-		ret = talloc_free(result);
-		if (ret == -1) {
-			fprintf(stderr, "talloc_free failed\n");
-			exit(1);
-		}
-	}
+	ret = do_edit(ldb, result->msgs, result->count, options->editor);
 
 	talloc_free(mem_ctx);
 
-	return 0;
+	return ret == 0 ? LDB_SUCCESS : LDB_ERR_OPERATIONS_ERROR;
 }
