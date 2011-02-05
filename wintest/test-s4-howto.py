@@ -11,7 +11,7 @@ def set_krb5_conf(t):
 def build_s4(t):
     '''build samba4'''
     t.info('Building s4')
-    t.chdir('${SOURCETREE}/source4')
+    t.chdir('${SOURCETREE}')
     t.putenv('CC', 'ccache gcc')
     t.run_cmd('make reconfigure || ./configure --enable-auto-reconfigure --enable-developer --prefix=${PREFIX} -C')
     t.run_cmd('make -j')
