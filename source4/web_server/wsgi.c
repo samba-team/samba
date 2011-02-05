@@ -385,7 +385,8 @@ bool wsgi_initialize(struct web_server_data *wdata)
 
 	Py_Initialize();
 
-	py_update_path("bin"); /* FIXME: Can't assume this is always the case */
+	py_update_path(); /* Ensure that we have the Samba paths at
+			   * the start of the sys.path() */
 
 	if (PyType_Ready(&web_request_Type) < 0)
 		return false;

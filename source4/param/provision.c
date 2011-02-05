@@ -84,7 +84,7 @@ NTSTATUS provision_bare(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx,
 	DEBUG(0,("Provision for Become-DC test using python\n"));
 
 	Py_Initialize();
-	py_update_path("bin"); /* FIXME: Can't assume this is always the case */
+	py_update_path(); /* Put the samba path at the start of sys.path */
 
 	provision_mod = provision_module();
 
@@ -240,7 +240,7 @@ NTSTATUS provision_store_self_join(TALLOC_CTX *mem_ctx, struct loadparm_context 
 	}
 
 	Py_Initialize();
-	py_update_path("bin"); /* FIXME: Can't assume this is always the case */
+	py_update_path(); /* Put the samba path at the start of sys.path */
 	provision_mod = provision_module();
 
 	if (provision_mod == NULL) {
@@ -336,7 +336,7 @@ struct ldb_context *provision_get_schema(TALLOC_CTX *mem_ctx, struct loadparm_co
 	PyObject *schema_mod, *schema_dict, *schema_fn, *py_result, *parameters;
 	
 	Py_Initialize();
-	py_update_path("bin"); /* FIXME: Can't assume this is always the case */
+	py_update_path(); /* Put the samba path at the start of sys.path */
 
 	schema_mod = schema_module();
 

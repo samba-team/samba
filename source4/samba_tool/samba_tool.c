@@ -308,7 +308,7 @@ static int binary_net(int argc, const char **argv)
 	}
 	Py_Initialize();
 	PySys_SetArgv(argc, discard_const_p(char *, argv));
-	py_update_path("bin"); /* FIXME: Can't assume this is always the case */
+	py_update_path(); /* Put the Samba path at the start of sys.path */
 
 	py_cmds = py_commands();
 	if (py_cmds == NULL) {

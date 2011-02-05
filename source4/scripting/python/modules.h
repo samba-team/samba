@@ -20,6 +20,6 @@
 #ifndef __SAMBA_PYTHON_MODULES_H__
 #define __SAMBA_PYTHON_MODULES_H__
 
-bool py_update_path(const char *bindir);
+bool py_update_path();
 
 #endif /* __SAMBA_PYTHON_MODULES_H__ */ 
