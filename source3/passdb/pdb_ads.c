@@ -2206,8 +2206,8 @@ static NTSTATUS pdb_ads_connect(struct pdb_ads_state *state,
 
 	ZERO_STRUCT(state->socket_address);
 	state->socket_address.sun_family = AF_UNIX;
-	strncpy(state->socket_address.sun_path, location,
-		sizeof(state->socket_address.sun_path) - 1);
+	strlcpy(state->socket_address.sun_path, location,
+		sizeof(state->socket_address.sun_path));
 
 	ld = pdb_ads_ld(state);
 	if (ld == NULL) {
