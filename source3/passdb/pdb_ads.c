@@ -983,37 +983,43 @@ static NTSTATUS pdb_ads_enum_group_memberships(struct pdb_methods *m,
 	gid_t *gids;
 
 	priv = pdb_ads_get_samu_private(m, user);
-	if (priv == NULL) {
+	if (priv != NULL) {
+		rc = pdb_ads_search_fmt(
+			state, state->domaindn, TLDAP_SCOPE_SUB,
+			attrs, ARRAY_SIZE(attrs), 0, talloc_tos(), &groups,
+			"(&(member=%s)(grouptype=%d)(objectclass=group))",
+			priv->dn, GTYPE_SECURITY_GLOBAL_GROUP);
+		if (rc != TLDAP_SUCCESS) {
+			DEBUG(10, ("ldap_search failed %s\n",
+				   tldap_errstr(talloc_tos(), state->ld, rc)));
+			return NT_STATUS_LDAP(rc);
+		}
+		count = talloc_array_length(groups);
+	} else {
+		/*
+		 * This happens for artificial samu users
+		 */
 		DEBUG(10, ("Could not get pdb_ads_samu_private\n"));
-		*pp_sids = NULL;
-		*pp_gids = NULL;
-		*p_num_groups = 0;
-		return NT_STATUS_OK;
+		count = 0;
 	}
 
-	rc = pdb_ads_search_fmt(
-		state, state->domaindn, TLDAP_SCOPE_SUB,
-		attrs, ARRAY_SIZE(attrs), 0, talloc_tos(), &groups,
-		"(&(member=%s)(grouptype=%d)(objectclass=group))",
-		priv->dn, GTYPE_SECURITY_GLOBAL_GROUP);
-	if (rc != TLDAP_SUCCESS) {
-		DEBUG(10, ("ldap_search failed %s\n",
-			   tldap_errstr(talloc_tos(), state->ld, rc)));
-		return NT_STATUS_LDAP(rc);
-	}
-
-	count = talloc_array_length(groups);
-
-	group_sids = talloc_array(mem_ctx, struct dom_sid, count);
+	group_sids = talloc_array(mem_ctx, struct dom_sid, count+1);
 	if (group_sids == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	gids = talloc_array(mem_ctx, gid_t, count);
+	gids = talloc_array(mem_ctx, gid_t, count+1);
 	if (gids == NULL) {
 		TALLOC_FREE(group_sids);
 		return NT_STATUS_NO_MEMORY;
 	}
-	num_groups = 0;
+
+	sid_copy(&group_sids[0], pdb_get_group_sid(user));
+	if (!sid_to_gid(&group_sids[0], &gids[0])) {
+		TALLOC_FREE(gids);
+		TALLOC_FREE(group_sids);
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+	num_groups = 1;
 
 	for (i=0; i<count; i++) {
 		if (!tldap_pull_binsid(groups[i], "objectSid",
