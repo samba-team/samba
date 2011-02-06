@@ -123,7 +123,5 @@ void secrets_fetch_ipc_userpass(char **username, char **domain, char **password)
 bool secrets_store_generic(const char *owner, const char *key, const char *secret);
 char *secrets_fetch_generic(const char *owner, const char *key);
 bool secrets_delete_generic(const char *owner, const char *key);
-bool secrets_store_local_schannel_key(uint8_t schannel_key[16]);
-bool secrets_fetch_local_schannel_key(uint8_t schannel_key[16]);
 
 #endif /* _SECRETS_H */
