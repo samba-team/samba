@@ -16,34 +16,66 @@ cleanup_list = []
 
 os.putenv('CC', "ccache gcc")
 
+builddirs = {
+    "samba3"  : "source3",
+    "samba4"  : ".",
+    "ldb"     : "source4/lib/ldb",
+    "tdb"     : "lib/tdb",
+    "talloc"  : "lib/talloc",
+    "replace" : "lib/replace",
+    "tevent"  : "lib/tevent",
+    "pidl"    : "pidl",
+    "pass"    : ".",
+    "fail"    : "."
+    }
+
+defaulttasks = [ "samba3", "samba4", "ldb", "tdb", "talloc", "replace", "tevent", "pidl" ]
+
 tasks = {
-    "source3" : [ ("autogen", "./autogen.sh", "text/plain"),
-                  ("configure", "./configure.developer ${PREFIX}", "text/plain"),
-                  ("make basics", "make basics", "text/plain"),
-                  ("make", "make -j 4 everything", "text/plain"), # don't use too many processes
-                  ("install", "make install", "text/plain"),
-                  ("test", "TDB_NO_FSYNC=1 make test FAIL_IMMEDIATELY=1", "text/plain"),
-                  ("check-clean-tree", "../script/clean-source-tree.sh", "text/plain"),
-                  ("clean", "make clean", "text/plain") ],
+    "samba3" : [ ("autogen", "./autogen.sh", "text/plain"),
+                 ("configure", "./configure.developer ${PREFIX}", "text/plain"),
+                 ("make basics", "make basics", "text/plain"),
+                 ("make", "make -j 4 everything", "text/plain"), # don't use too many processes
+                 ("install", "make install", "text/plain"),
+                 ("test", "TDB_NO_FSYNC=1 make test FAIL_IMMEDIATELY=1", "text/plain"),
+                 ("check-clean-tree", "../script/clean-source-tree.sh", "text/plain"),
+                 ("clean", "make clean", "text/plain") ],
 
     # We have 'test' before 'install' because, 'test' should work without 'install'
-    "source4" : [ ("configure", "./configure.developer ${PREFIX}", "text/plain"),
-                  ("make", "make -j", "text/plain"),
-                  ("test", "TDB_NO_FSYNC=1 make test FAIL_IMMEDIATELY=1", "text/plain"),
-                  ("install", "make install", "text/plain"),
-                  ("check-clean-tree", "../script/clean-source-tree.sh", "text/plain"),
-                  ("clean", "make clean", "text/plain") ],
+    "samba4" : [ ("configure", "./configure.developer ${PREFIX}", "text/plain"),
+                 ("make", "make -j", "text/plain"),
+                 ("test", "TDB_NO_FSYNC=1 make test FAIL_IMMEDIATELY=1", "text/plain"),
+                 ("install", "make install", "text/plain"),
+                 ("check-clean-tree", "script/clean-source-tree.sh", "text/plain"),
+                 ("clean", "make clean", "text/plain") ],
 
-    "source4/lib/ldb" : [ ("configure", "./configure --enable-developer -C ${PREFIX}", "text/plain"),
-                          ("make", "make -j", "text/plain"),
-                          ("install", "make install", "text/plain"),
-                          ("test", "TDB_NO_FSYNC=1 make test", "text/plain"),
-                          ("check-clean-tree", "../../../script/clean-source-tree.sh", "text/plain"),
-                          ("distcheck", "make distcheck", "text/plain"),
-                          ("clean", "make clean", "text/plain") ],
+    "ldb" : [ ("configure", "./configure --enable-developer -C ${PREFIX}", "text/plain"),
+              ("make", "make -j", "text/plain"),
+              ("install", "make install", "text/plain"),
+              ("test", "TDB_NO_FSYNC=1 make test", "text/plain"),
+              ("check-clean-tree", "../../../script/clean-source-tree.sh", "text/plain"),
+              ("distcheck", "make distcheck", "text/plain"),
+              ("clean", "make clean", "text/plain") ],
 
     # We don't use TDB_NO_FSYNC=1 here, because we want to test the transaction code
-    "lib/tdb" : [ ("configure", "./configure --enable-developer -C ${PREFIX}", "text/plain"),
+    "tdb" : [ ("configure", "./configure --enable-developer -C ${PREFIX}", "text/plain"),
+              ("make", "make -j", "text/plain"),
+              ("install", "make install", "text/plain"),
+              ("test", "make test", "text/plain"),
+              ("check-clean-tree", "../../script/clean-source-tree.sh", "text/plain"),
+              ("distcheck", "make distcheck", "text/plain"),
+              ("clean", "make clean", "text/plain") ],
+
+    "talloc" : [ ("configure", "./configure --enable-developer -C ${PREFIX}", "text/plain"),
+                 ("make", "make -j", "text/plain"),
+                 ("install", "make install", "text/plain"),
+                 ("test", "make test", "text/plain"),
+                 ("check-clean-tree", "../../script/clean-source-tree.sh", "text/plain"),
+                 ("distcheck", "make distcheck", "text/plain"),
+                 ("clean", "make clean", "text/plain") ],
+
+    "replace" : [ ("autogen", "./autogen-waf.sh", "text/plain"),
+                  ("configure", "./configure --enable-developer -C ${PREFIX}", "text/plain"),
                   ("make", "make -j", "text/plain"),
                   ("install", "make install", "text/plain"),
                   ("test", "make test", "text/plain"),
@@ -51,30 +83,13 @@ tasks = {
                   ("distcheck", "make distcheck", "text/plain"),
                   ("clean", "make clean", "text/plain") ],
 
-    "lib/talloc" : [ ("configure", "./configure --enable-developer -C ${PREFIX}", "text/plain"),
-                     ("make", "make -j", "text/plain"),
-                     ("install", "make install", "text/plain"),
-                     ("test", "make test", "text/plain"),
-                     ("check-clean-tree", "../../script/clean-source-tree.sh", "text/plain"),
-                     ("distcheck", "make distcheck", "text/plain"),
-                     ("clean", "make clean", "text/plain") ],
-
-    "lib/replace" : [ ("autogen", "./autogen-waf.sh", "text/plain"),
-                      ("configure", "./configure --enable-developer -C ${PREFIX}", "text/plain"),
-                      ("make", "make -j", "text/plain"),
-                      ("install", "make install", "text/plain"),
-                      ("test", "make test", "text/plain"),
-                      ("check-clean-tree", "../../script/clean-source-tree.sh", "text/plain"),
-                      ("distcheck", "make distcheck", "text/plain"),
-                      ("clean", "make clean", "text/plain") ],
-
-    "lib/tevent" : [ ("configure", "./configure --enable-developer -C ${PREFIX}", "text/plain"),
-                     ("make", "make -j", "text/plain"),
-                     ("install", "make install", "text/plain"),
-                     ("test", "make test", "text/plain"),
-                     ("check-clean-tree", "../../script/clean-source-tree.sh", "text/plain"),
-                     ("distcheck", "make distcheck", "text/plain"),
-                     ("clean", "make clean", "text/plain") ],
+    "tevent" : [ ("configure", "./configure --enable-developer -C ${PREFIX}", "text/plain"),
+                 ("make", "make -j", "text/plain"),
+                 ("install", "make install", "text/plain"),
+                 ("test", "make test", "text/plain"),
+                 ("check-clean-tree", "../../script/clean-source-tree.sh", "text/plain"),
+                 ("distcheck", "make distcheck", "text/plain"),
+                 ("clean", "make clean", "text/plain") ],
 
     "pidl" : [ ("configure", "perl Makefile.PL PREFIX=${PREFIX_DIR}", "text/plain"),
                ("touch", "touch *.yp", "text/plain"),
@@ -83,6 +98,10 @@ tasks = {
                ("install", "make install", "text/plain"),
                ("check-clean-tree", "../script/clean-source-tree.sh", "text/plain"),
                ("clean", "make clean", "text/plain") ],
+
+    # these are useful for debugging autobuild
+    'pass' : [ ("pass", 'echo passing && /bin/true', "text/plain") ],
+    'fail' : [ ("fail", 'echo failing && /bin/false', "text/plain") ]
 }
 
 retry_task = [ ( "retry",
@@ -120,7 +139,7 @@ class builder(object):
         if name in ['pass', 'fail', 'retry']:
             self.dir = "."
         else:
-            self.dir = self.name
+            self.dir = builddirs[name]
 
         self.tag = self.name.replace('/', '_')
         self.sequence = sequence
@@ -171,12 +190,8 @@ class buildlist(object):
         self.tlist = []
         self.tail_proc = None
         self.retry = None
-        if tasknames == ['pass']:
-            tasks = { 'pass' : [ ("pass", '/bin/true', "text/plain") ]}
-        if tasknames == ['fail']:
-            tasks = { 'fail' : [ ("fail", '/bin/false', "text/plain") ]}
         if tasknames == []:
-            tasknames = tasklist
+            tasknames = defaulttasks
         for n in tasknames:
             b = builder(n, tasks[n])
             self.tlist.append(b)
