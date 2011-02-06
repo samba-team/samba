@@ -235,11 +235,13 @@ bool secrets_fetch_trusted_domain_password(const char *domain, char** pwd,
 	/* unpack trusted domain password */
 	ndr_err = ndr_pull_struct_blob(&blob, talloc_tos(), &pass,
 			(ndr_pull_flags_fn_t)ndr_pull_TRUSTED_DOM_PASS);
+
+	SAFE_FREE(blob.data);
+
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		return false;
 	}
 
-	SAFE_FREE(blob.data);
 
 	/* the trust's password */
 	if (pwd) {
