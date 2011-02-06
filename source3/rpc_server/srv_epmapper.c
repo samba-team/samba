@@ -63,7 +63,7 @@ struct rpc_eps {
 	uint32_t count;
 };
 
-struct dcesrv_endpoint *endpoint_table;
+static struct dcesrv_endpoint *endpoint_table;
 
 /*
  * Check if the UUID and if_version match to an interface.
