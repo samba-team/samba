@@ -20,6 +20,7 @@
 #include "includes.h"
 #include "../libcli/auth/libcli_auth.h"
 #include "../librpc/gen_ndr/ndr_netlogon.h"
+#include "librpc/gen_ndr/ndr_schannel.h"
 #include "rpc_client/cli_netlogon.h"
 #include "secrets.h"
 #include "tldap.h"
@@ -28,10 +29,65 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_AUTH
 
+static bool secrets_store_local_schannel_creds(
+	const struct netlogon_creds_CredentialState *creds)
+{
+	DATA_BLOB blob;
+	enum ndr_err_code ndr_err;
+	bool ret;
+
+	ndr_err = ndr_push_struct_blob(
+		&blob, talloc_tos(), creds,
+		(ndr_push_flags_fn_t)ndr_push_netlogon_creds_CredentialState);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		DEBUG(10, ("ndr_push_netlogon_creds_CredentialState failed: "
+			   "%s\n", ndr_errstr(ndr_err)));
+		return false;
+	}
+	ret = secrets_store(SECRETS_LOCAL_SCHANNEL_KEY,
+			    blob.data, blob.length);
+	data_blob_free(&blob);
+	return ret;
+}
+
+static struct netlogon_creds_CredentialState *
+secrets_fetch_local_schannel_creds(TALLOC_CTX *mem_ctx)
+{
+	struct netlogon_creds_CredentialState *creds;
+	enum ndr_err_code ndr_err;
+	DATA_BLOB blob;
+
+	blob.data = (uint8_t *)secrets_fetch(SECRETS_LOCAL_SCHANNEL_KEY,
+					     &blob.length);
+	if (blob.data == NULL) {
+		DEBUG(10, ("secrets_fetch failed\n"));
+		return NULL;
+	}
+
+	creds = talloc(mem_ctx, struct netlogon_creds_CredentialState);
+	if (creds == NULL) {
+		DEBUG(10, ("talloc failed\n"));
+		SAFE_FREE(blob.data);
+		return NULL;
+	}
+	ndr_err = ndr_pull_struct_blob(
+		&blob, creds, creds,
+		(ndr_pull_flags_fn_t)ndr_pull_netlogon_creds_CredentialState);
+	SAFE_FREE(blob.data);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		DEBUG(10, ("ndr_pull_netlogon_creds_CredentialState failed: "
+			   "%s\n", ndr_errstr(ndr_err)));
+		TALLOC_FREE(creds);
+		return NULL;
+	}
+
+	return creds;
+}
+
 static NTSTATUS netlogond_validate(TALLOC_CTX *mem_ctx,
 				   const struct auth_context *auth_context,
 				   const char *ncalrpc_sockname,
-				   uint8_t schannel_key[16],
+				   struct netlogon_creds_CredentialState *creds,
 				   const struct auth_usersupplied_info *user_info,
 				   struct netr_SamInfo3 **pinfo3,
 				   NTSTATUS *schannel_bind_result)
@@ -51,17 +107,7 @@ static NTSTATUS netlogond_validate(TALLOC_CTX *mem_ctx,
 		return status;
 	}
 
-	/*
-	 * We have to fake a struct dcinfo, so that
-	 * rpccli_netlogon_sam_network_logon_ex can decrypt the session keys.
-	 */
-
-	p->dc = netlogon_creds_client_init_session_key(p, schannel_key);
-	if (p->dc == NULL) {
-		DEBUG(0, ("talloc failed\n"));
-		TALLOC_FREE(p);
-		return NT_STATUS_NO_MEMORY;
-	}
+	p->dc = creds;
 
 	status = rpccli_schannel_bind_data(p, lp_workgroup(),
 					   DCERPC_AUTH_LEVEL_PRIVACY,
@@ -242,7 +288,7 @@ static NTSTATUS check_netlogond_security(const struct auth_context *auth_context
 	struct pipe_auth_data *auth = NULL;
 	uint32_t neg_flags = NETLOGON_NEG_AUTH2_ADS_FLAGS;
 	uint8_t machine_password[16];
-	uint8_t schannel_key[16];
+	struct netlogon_creds_CredentialState *creds;
 	NTSTATUS schannel_bind_result, status;
 	struct named_mutex *mutex = NULL;
 	const char *ncalrpcsock;
@@ -262,12 +308,13 @@ static NTSTATUS check_netlogond_security(const struct auth_context *auth_context
 		goto done;
 	}
 
-	if (!secrets_fetch_local_schannel_key(schannel_key)) {
+	creds = secrets_fetch_local_schannel_creds(talloc_tos());
+	if (creds == NULL) {
 		goto new_key;
 	}
 
 	status = netlogond_validate(talloc_tos(), auth_context, ncalrpcsock,
-				    schannel_key, user_info, &info3,
+				    creds, user_info, &info3,
 				    &schannel_bind_result);
 
 	DEBUG(10, ("netlogond_validate returned %s\n", nt_errstr(status)));
@@ -322,6 +369,9 @@ static NTSTATUS check_netlogond_security(const struct auth_context *auth_context
 		goto done;
 	}
 
+	DEBUG(10, ("machinepw "));
+	dump_data(10, machine_password, 16);
+
 	status = rpccli_netlogon_setup_creds(
 		p, global_myname(), lp_workgroup(), global_myname(),
 		global_myname(), machine_password, SEC_CHAN_BDC, &neg_flags);
@@ -332,10 +382,7 @@ static NTSTATUS check_netlogond_security(const struct auth_context *auth_context
 		goto done;
 	}
 
-	memcpy(schannel_key, p->dc->session_key, 16);
-	secrets_store_local_schannel_key(schannel_key);
-
-	TALLOC_FREE(p);
+	secrets_store_local_schannel_creds(p->dc);
 
 	/*
 	 * Retry the authentication with the mutex held. This way nobody else
@@ -343,8 +390,10 @@ static NTSTATUS check_netlogond_security(const struct auth_context *auth_context
 	 */
 
 	status = netlogond_validate(talloc_tos(), auth_context, ncalrpcsock,
-				    schannel_key, user_info, &info3,
+				    creds, user_info, &info3,
 				    &schannel_bind_result);
+
+	TALLOC_FREE(p);
 
 	DEBUG(10, ("netlogond_validate returned %s\n", nt_errstr(status)));
 
