@@ -50,12 +50,14 @@ bool py_update_path()
 		return false;
 	}
 
-	if (!PySys_PathPrepend(py_path, dyn_PYTHONARCHDIR)) {
+	if (!PySys_PathPrepend(py_path, dyn_PYTHONDIR)) {
 		return false;
 	}
 
-	if (!PySys_PathPrepend(py_path, dyn_PYTHONDIR)) {
-		return false;
+	if (strcmp(dyn_PYTHONARCHDIR, dyn_PYTHONDIR) != 0) {
+		if (!PySys_PathPrepend(py_path, dyn_PYTHONARCHDIR)) {
+			return false;
+		}
 	}
 
 	return true;
