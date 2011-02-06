@@ -426,7 +426,6 @@ default_static_modules="$default_static_modules auth_wbc"
 default_static_modules="$default_static_modules auth_server"
 default_static_modules="$default_static_modules auth_domain"
 default_static_modules="$default_static_modules auth_builtin"
-default_static_modules="$default_static_modules auth_netlogond"
 default_static_modules="$default_static_modules vfs_default"
 default_static_modules="$default_static_modules nss_info_template"
 
@@ -464,6 +463,7 @@ default_shared_modules="$default_shared_modules idmap_autorid"
 
 if test "x$developer" = xyes; then
    default_static_modules="$default_static_modules rpc_rpcecho pdb_ads"
+   default_static_modules="$default_static_modules auth_netlogond"
    default_shared_modules="$default_shared_modules charset_weird perfcount_test"
 fi
 
