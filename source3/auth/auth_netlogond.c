@@ -390,7 +390,7 @@ static NTSTATUS check_netlogond_security(const struct auth_context *auth_context
 	 */
 
 	status = netlogond_validate(talloc_tos(), auth_context, ncalrpcsock,
-				    creds, user_info, &info3,
+				    p->dc, user_info, &info3,
 				    &schannel_bind_result);
 
 	TALLOC_FREE(p);
