@@ -974,14 +974,22 @@ static NTSTATUS pdb_ads_enum_group_memberships(struct pdb_methods *m,
 {
 	struct pdb_ads_state *state = talloc_get_type_abort(
 		m->private_data, struct pdb_ads_state);
-	struct pdb_ads_samu_private *priv = pdb_ads_get_samu_private(
-		m, user);
+	struct pdb_ads_samu_private *priv;
 	const char *attrs[1] = { "objectSid" };
 	struct tldap_message **groups;
 	int i, rc, count;
 	size_t num_groups;
 	struct dom_sid *group_sids;
 	gid_t *gids;
+
+	priv = pdb_ads_get_samu_private(m, user);
+	if (priv == NULL) {
+		DEBUG(10, ("Could not get pdb_ads_samu_private\n"));
+		*pp_sids = NULL;
+		*pp_gids = NULL;
+		*p_num_groups = 0;
+		return NT_STATUS_OK;
+	}
 
 	rc = pdb_ads_search_fmt(
 		state, state->domaindn, TLDAP_SCOPE_SUB,
