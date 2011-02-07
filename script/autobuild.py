@@ -26,7 +26,8 @@ builddirs = {
     "tevent"  : "lib/tevent",
     "pidl"    : "pidl",
     "pass"    : ".",
-    "fail"    : "."
+    "fail"    : ".",
+    "retry"   : "."
     }
 
 defaulttasks = [ "samba3", "samba4", "ldb", "tdb", "talloc", "replace", "tevent", "pidl" ]
@@ -135,11 +136,7 @@ class builder(object):
 
     def __init__(self, name, sequence):
         self.name = name
-
-        if name in ['pass', 'fail', 'retry']:
-            self.dir = "."
-        else:
-            self.dir = builddirs[name]
+        self.dir = builddirs[name]
 
         self.tag = self.name.replace('/', '_')
         self.sequence = sequence
@@ -325,6 +322,7 @@ def write_pidfile(fname):
 
 def rebase_tree(url):
     print("Rebasing on %s" % url)
+    run_cmd("git describe HEAD", show=True, dir=test_master)
     run_cmd("git remote add -t master master %s" % url, show=True, dir=test_master)
     run_cmd("git fetch master", show=True, dir=test_master)
     if options.fix_whitespace:
@@ -335,6 +333,9 @@ def rebase_tree(url):
     if diff == '':
         print("No differences between HEAD and master/master - exiting")
         sys.exit(0)
+    run_cmd("git describe master/master", show=True, dir=test_master)
+    run_cmd("git describe HEAD", show=True, dir=test_master)
+    run_cmd("git --no-pager diff HEAD master/master | diffstat", show=True, dir=test_master)
 
 def push_to(url):
     print("Pushing to %s" % url)
@@ -490,7 +491,7 @@ while True:
     try:
         run_cmd("rm -rf %s" % test_master)
         cleanup_list.append(test_master)
-        run_cmd("git clone --shared %s %s" % (gitroot, test_master))
+        run_cmd("git clone --shared %s %s" % (gitroot, test_master), show=True, dir=gitroot)
     except:
         cleanup()
         raise
