@@ -795,7 +795,7 @@ bld.SAMBA_SUBSYSTEM('TLDAP',
 
 bld.SAMBA_SUBSYSTEM('PASSDB',
                     source=PASSDB_SRC,
-                    deps='''GROUPDB TLDAP SECRETS SMBLDAP pdb''',
+                    deps='''GROUPDB SECRETS SMBLDAP pdb''',
                     vars=locals())
 
 bld.SAMBA_SUBSYSTEM('PARAM_UTIL',
