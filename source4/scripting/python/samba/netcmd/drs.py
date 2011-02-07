@@ -83,6 +83,12 @@ def drs_parse_ntds_dn(ntds_dn):
     return (site, server)
 
 
+def get_dsServiceName(samdb):
+    '''get the NTDS DN from the rootDSE'''
+    res = samdb.search(base="", scope=ldb.SCOPE_BASE, attrs=["dsServiceName"])
+    return res[0]["dsServiceName"][0]
+
+
 class cmd_drs_showrepl(Command):
     """show replication status"""
 
@@ -110,11 +116,6 @@ class cmd_drs_showrepl(Command):
         print("\t\tLast success @ %s" % nttime2string(n.last_success))
         print("")
 
-    def get_dsServiceName(ctx):
-        '''get the NTDS DN from the rootDSE'''
-        res = ctx.samdb.search(base="", scope=ldb.SCOPE_BASE, attrs=["dsServiceName"])
-        return res[0]["dsServiceName"][0]
-
     def drsuapi_ReplicaInfo(ctx, info_type):
         '''call a DsReplicaInfo'''
 
@@ -140,7 +141,7 @@ class cmd_drs_showrepl(Command):
         samdb_connect(self)
 
         # show domain information
-        ntds_dn = self.get_dsServiceName()
+        ntds_dn = get_dsServiceName(self.samdb)
         server_dns = self.samdb.search(base="", scope=ldb.SCOPE_BASE, attrs=["dnsHostName"])[0]['dnsHostName'][0]
 
         (site, server) = drs_parse_ntds_dn(ntds_dn)
@@ -424,11 +425,6 @@ class cmd_drs_options(Command):
                   "DISABLE_OUTBOUND_REPL": 0x00000004,
                   "DISABLE_NTDSCONN_XLATE": 0x00000008}
 
-    def get_dsServiceName(ctx):
-        '''get the NTDS DN from the rootDSE'''
-        res = ctx.samdb.search(base="", scope=ldb.SCOPE_BASE, attrs=["dsServiceName"])
-        return res[0]["dsServiceName"][0]
-
     def run(self, DC, dsa_option=None,
             sambaopts=None, credopts=None, versionopts=None):
 
@@ -440,7 +436,7 @@ class cmd_drs_options(Command):
 
         samdb_connect(self)
 
-        ntds_dn = self.get_dsServiceName()
+        ntds_dn = get_dsServiceName(self.samdb)
         res = self.samdb.search(base=ntds_dn, scope=ldb.SCOPE_BASE, attrs=["options"])
         dsa_opts = int(res[0]["options"][0])
 
