@@ -398,7 +398,7 @@ static int net_conf_import(struct net_context *c, struct smbconf_ctx *conf_ctx,
 
 		/*
 		 * Wrap the importing of shares into a transaction,
-		 * but only 100 at a time, in order to serve memory.
+		 * but only 100 at a time, in order to save memory.
 		 * The allocated memory accumulates across the actions
 		 * within the transaction, and for me, some 1500
 		 * imported shares, the MAX_TALLOC_SIZE of 256 MB
