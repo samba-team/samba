@@ -61,7 +61,6 @@ static void do_smb_resolve(struct mdns_smbsrv_result *browsesrv)
 	int mdnsfd;
 	int fdsetsz;
 	int ret;
-	fd_set *fdset = NULL;
 	struct timeval tv;
 	DNSServiceErrorType err;
 
@@ -78,24 +77,14 @@ static void do_smb_resolve(struct mdns_smbsrv_result *browsesrv)
 
 	mdnsfd = DNSServiceRefSockFD(mdns_conn_sdref);
 	for (;;)  {
-		if (fdset != NULL) {
-			TALLOC_FREE(fdset);
-		}
+		int revents;
 
-		fdsetsz = howmany(mdnsfd + 1, NFDBITS) * sizeof(fd_mask);
-		fdset = TALLOC_ZERO(ctx, fdsetsz);
-		FD_SET(mdnsfd, fdset);
-
-		tv.tv_sec = 1;
-		tv.tv_usec = 0;
-
-		/* Wait until response received from mDNS daemon */
-		ret = sys_select(mdnsfd + 1, fdset, NULL, NULL, &tv);
+		ret = poll_one_fd(mdnsfd, POLLIN|POLLHUP, 1000, &revents);
 		if (ret <= 0 && errno != EINTR) {
 			break;
 		}
 
-		if (FD_ISSET(mdnsfd, fdset)) {
+		if (revents & (POLLIN|POLLHUP|POLLERR)) {
 			/* Invoke callback function */
 			DNSServiceProcessResult(mdns_conn_sdref);
 			break;
