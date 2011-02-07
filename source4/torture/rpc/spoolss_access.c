@@ -100,13 +100,6 @@ static bool test_openprinter_handle(struct torture_context *tctx,
 	return true;
 }
 
-static bool is_valid_policy_hnd(const struct policy_handle *hnd)
-{
-	struct policy_handle tmp;
-	ZERO_STRUCT(tmp);
-	return (memcmp(&tmp, hnd, sizeof(tmp)) != 0);
-}
-
 static bool test_openprinter_access(struct torture_context *tctx,
 				    struct dcerpc_pipe *p,
 				    const char *name,

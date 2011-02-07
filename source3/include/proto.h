@@ -1186,9 +1186,6 @@ void *_talloc_memdup_zeronull(const void *t, const void *p, size_t size, const c
 void *_talloc_array_zeronull(const void *ctx, size_t el_size, unsigned count, const char *name);
 void *_talloc_zero_array_zeronull(const void *ctx, size_t el_size, unsigned count, const char *name);
 void *talloc_zeronull(const void *context, size_t size, const char *name);
-bool is_valid_policy_hnd(const struct policy_handle *hnd);
-bool policy_hnd_equal(const struct policy_handle *hnd1,
-		      const struct policy_handle *hnd2);
 const char *strip_hostname(const char *s);
 bool tevent_req_poll_ntstatus(struct tevent_req *req,
 			      struct tevent_context *ev,
