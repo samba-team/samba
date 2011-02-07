@@ -1586,7 +1586,6 @@ enum ndr_err_code ndr_pull_server_id(struct ndr_pull *ndr, int ndr_flags, struct
 void ndr_print_server_id(struct ndr_print *ndr, const char *name, const struct server_id *r);
 _PUBLIC_ void ndr_print_sockaddr_storage(struct ndr_print *ndr, const char *name, const struct sockaddr_storage *ss);
 const char *ndr_errstr(enum ndr_err_code err);
-extern const struct ndr_syntax_id null_ndr_syntax_id;
 
 /* The following definitions come from libsmb/cliconnect.c  */
 

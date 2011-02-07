@@ -328,6 +328,7 @@ typedef void (*ndr_print_function_t)(struct ndr_print *, const char *, int, cons
 
 extern const struct ndr_syntax_id ndr_transfer_syntax;
 extern const struct ndr_syntax_id ndr64_transfer_syntax;
+extern const struct ndr_syntax_id null_ndr_syntax_id;
 
 struct ndr_interface_call {
 	const char *name;
