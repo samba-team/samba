@@ -75,8 +75,7 @@ tasks = {
                  ("distcheck", "make distcheck", "text/plain"),
                  ("clean", "make clean", "text/plain") ],
 
-    "replace" : [ ("autogen", "./autogen-waf.sh", "text/plain"),
-                  ("configure", "./configure --enable-developer -C ${PREFIX}", "text/plain"),
+    "replace" : [ ("configure", "./configure --enable-developer -C ${PREFIX}", "text/plain"),
                   ("make", "make -j", "text/plain"),
                   ("install", "make install", "text/plain"),
                   ("test", "make test", "text/plain"),
