@@ -135,10 +135,13 @@ void nb_setup(struct cli_state *cli)
 
 void nb_unlink(const char *fname)
 {
-	if (!NT_STATUS_IS_OK(cli_unlink(c, fname, FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN))) {
+	NTSTATUS status;
+
+	status = cli_unlink(c, fname, FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
+	if (!NT_STATUS_IS_OK(status)) {
 #if NBDEBUG
 		printf("(%d) unlink %s failed (%s)\n", 
-		       line_count, fname, cli_errstr(c));
+		       line_count, fname, nt_errstr(status));
 #endif
 	}
 }
@@ -166,7 +169,7 @@ void nb_createx(const char *fname,
 				create_options, 0, &fd);
 	if (!NT_STATUS_IS_OK(status) && handle != -1) {
 		printf("ERROR: cli_ntcreate failed for %s - %s\n",
-		       fname, cli_errstr(c));
+		       fname, nt_errstr(status));
 		exit(1);
 	}
 	if (NT_STATUS_IS_OK(status) && handle == -1) {
@@ -233,18 +236,24 @@ void nb_close(int handle)
 
 void nb_rmdir(const char *fname)
 {
-	if (!NT_STATUS_IS_OK(cli_rmdir(c, fname))) {
+	NTSTATUS status;
+
+	status = cli_rmdir(c, fname);
+	if (!NT_STATUS_IS_OK(status)) {
 		printf("ERROR: rmdir %s failed (%s)\n", 
-		       fname, cli_errstr(c));
+		       fname, nt_errstr(status));
 		exit(1);
 	}
 }
 
 void nb_rename(const char *oldname, const char *newname)
 {
-	if (!NT_STATUS_IS_OK(cli_rename(c, oldname, newname))) {
+	NTSTATUS status;
+
+	status = cli_rename(c, oldname, newname);
+	if (!NT_STATUS_IS_OK(status)) {
 		printf("ERROR: rename %s %s failed (%s)\n", 
-		       oldname, newname, cli_errstr(c));
+		       oldname, newname, nt_errstr(status));
 		exit(1);
 	}
 }
