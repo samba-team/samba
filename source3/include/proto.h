@@ -1333,6 +1333,7 @@ struct tevent_req *getaddrinfo_send(TALLOC_CTX *mem_ctx,
 				    const char *service,
 				    const struct addrinfo *hints);
 int getaddrinfo_recv(struct tevent_req *req, struct addrinfo **res);
+int poll_one_fd(int fd, int events, int timeout, int *revents);
 struct tevent_req *tstream_read_packet_send(TALLOC_CTX *mem_ctx,
 					    struct tevent_context *ev,
 					    struct tstream_context *stream,

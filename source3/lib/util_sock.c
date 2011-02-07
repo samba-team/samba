@@ -1766,3 +1766,30 @@ int getaddrinfo_recv(struct tevent_req *req, struct addrinfo **res)
 	}
 	return state->ret;
 }
+
+int poll_one_fd(int fd, int events, int timeout, int *revents)
+{
+	struct pollfd *fds;
+	int ret;
+	int saved_errno;
+
+	fds = TALLOC_ZERO_ARRAY(talloc_tos(), struct pollfd, 2);
+	if (fds == NULL) {
+		errno = ENOMEM;
+		return -1;
+	}
+	fds[0].fd = fd;
+	fds[0].events = events;
+
+	ret = sys_poll(fds, 1, timeout);
+
+	/*
+	 * Assign whatever poll did, even in the ret<=0 case.
+	 */
+	*revents = fds[0].revents;
+	saved_errno = errno;
+	TALLOC_FREE(fds);
+	errno = saved_errno;
+
+	return ret;
+}
