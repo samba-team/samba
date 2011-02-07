@@ -38,8 +38,7 @@ NTSTATUS packet_fd_read(struct packet_context *ctx);
 /*
  * Sync read, wait for the next chunk
  */
-NTSTATUS packet_fd_read_sync(struct packet_context *ctx,
-			     struct timeval *timeout);
+NTSTATUS packet_fd_read_sync(struct packet_context *ctx, int timeout);
 
 /*
  * Handle an incoming packet:
