@@ -2224,18 +2224,12 @@ static void check_reload(struct smbd_server_connection *sconn, time_t t)
 
 static bool fd_is_readable(int fd)
 {
-	fd_set fds;
-	struct timeval timeout = {0, };
-	int ret;
+	int ret, revents;
 
-	FD_ZERO(&fds);
-	FD_SET(fd, &fds);
+	ret = poll_one_fd(fd, POLLIN|POLLHUP, 0, &revents);
 
-	ret = sys_select(fd+1, &fds, NULL, NULL, &timeout);
-	if (ret == -1) {
-		return false;
-	}
-	return FD_ISSET(fd, &fds);
+	return ((ret > 0) && ((revents & (POLLIN|POLLHUP|POLLERR)) != 0));
+
 }
 
 static void smbd_server_connection_write_handler(struct smbd_server_connection *conn)
