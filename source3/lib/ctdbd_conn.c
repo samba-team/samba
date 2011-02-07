@@ -331,13 +331,12 @@ static struct messaging_rec *ctdb_pull_messaging_rec(TALLOC_CTX *mem_ctx,
 
 static NTSTATUS ctdb_packet_fd_read_sync(struct packet_context *ctx)
 {
-	struct timeval timeout;
-	struct timeval *ptimeout;
+	int timeout = lp_ctdb_timeout();
 
-	timeout = timeval_set(lp_ctdb_timeout(), 0);
-	ptimeout = (timeout.tv_sec != 0) ? &timeout : NULL;
-
-	return packet_fd_read_sync(ctx, ptimeout);
+	if (timeout == 0) {
+		timeout = -1;
+	}
+	return packet_fd_read_sync(ctx, timeout);
 }
 
 /*

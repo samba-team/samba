@@ -19,6 +19,7 @@
 
 #include "includes.h"
 #include "../lib/util/select.h"
+#include "system/select.h"
 
 struct packet_context {
 	int fd;
@@ -102,25 +103,23 @@ NTSTATUS packet_fd_read(struct packet_context *ctx)
 	return NT_STATUS_OK;
 }
 
-NTSTATUS packet_fd_read_sync(struct packet_context *ctx,
-			     struct timeval *timeout)
+NTSTATUS packet_fd_read_sync(struct packet_context *ctx, int timeout)
 {
-	int res;
-	fd_set r_fds;
+	int res, revents;
 
-	FD_ZERO(&r_fds);
-	FD_SET(ctx->fd, &r_fds);
-
-	res = sys_select(ctx->fd+1, &r_fds, NULL, NULL, timeout);
-
+	res = poll_one_fd(ctx->fd, POLLIN|POLLHUP, timeout, &revents);
 	if (res == 0) {
-		DEBUG(10, ("select timed out\n"));
+		DEBUG(10, ("poll timed out\n"));
 		return NT_STATUS_IO_TIMEOUT;
 	}
 
 	if (res == -1) {
-		DEBUG(10, ("select returned %s\n", strerror(errno)));
+		DEBUG(10, ("poll returned %s\n", strerror(errno)));
 		return map_nt_error_from_unix(errno);
+	}
+	if ((revents & (POLLIN|POLLHUP|POLLERR)) == 0) {
+		DEBUG(10, ("socket not readable\n"));
+		return NT_STATUS_IO_TIMEOUT;
 	}
 
 	return packet_fd_read(ctx);
