@@ -26,11 +26,6 @@
 
 /* The following definitions come from lib/events.c  */
 
-bool event_add_to_select_args(struct event_context *event_ctx,
-			      fd_set *read_fds, fd_set *write_fds,
-			      struct timeval *timeout, int *maxfd);
-bool run_events(struct event_context *event_ctx,
-		int selrtn, fd_set *read_fds, fd_set *write_fds);
 struct timeval *get_timed_events_timeout(struct event_context *event_ctx,
 					 struct timeval *to_ret);
 void dump_event_list(struct event_context *event_ctx);
