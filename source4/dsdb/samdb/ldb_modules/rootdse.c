@@ -612,7 +612,11 @@ static int rootdse_filter_controls(struct ldb_module *module, struct ldb_request
 			continue;
 		}
 
-		if (is_registered) {
+		/* If the control is DIRSYNC control then we keep the critical
+		 * flag as the dirsync module will need to act upon it
+		 */
+		if (is_registered && strcmp(req->controls[i]->oid,
+					LDB_CONTROL_DIRSYNC_OID)!= 0) {
 			req->controls[i]->critical = 0;
 		}
 	}
