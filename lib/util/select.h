@@ -20,10 +20,13 @@
 #ifndef _select_h_
 #define _select_h_
 
+#include "system/select.h"
+
 /* The following definitions come from lib/util/select.c  */
 
 void sys_select_signal(char c);
 int sys_select(int maxfd, fd_set *readfds, fd_set *writefds, fd_set *errorfds, struct timeval *tval);
 int sys_select_intr(int maxfd, fd_set *readfds, fd_set *writefds, fd_set *errorfds, struct timeval *tval);
+int sys_poll(struct pollfd *fds, int num_fds, int timeout);
 
 #endif

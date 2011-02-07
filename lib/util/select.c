@@ -208,3 +208,81 @@ int sys_select_intr(int maxfd, fd_set *readfds, fd_set *writefds, fd_set *errorf
 
 	return ret;
 }
+
+/*
+ * sys_poll expects pollfd's to be a talloc'ed array.
+ *
+ * It expects the talloc_array_length(fds) >= num_fds+1 to give space
+ * to the signal pipe.
+ */
+
+int sys_poll(struct pollfd *fds, int num_fds, int timeout)
+{
+	int ret;
+
+	if (talloc_array_length(fds) < num_fds+1) {
+		errno = ENOSPC;
+		return -1;
+	}
+
+	if (initialised != sys_getpid()) {
+		if (pipe(select_pipe) == -1)
+		{
+			int saved_errno = errno;
+			DEBUG(0, ("sys_poll: pipe failed (%s)\n",
+				strerror(errno)));
+			errno = saved_errno;
+			return -1;
+		}
+
+		/*
+		 * These next two lines seem to fix a bug with the Linux
+		 * 2.0.x kernel (and probably other UNIXes as well) where
+		 * the one byte read below can block even though the
+		 * select returned that there is data in the pipe and
+		 * the pipe_written variable was incremented. Thanks to
+		 * HP for finding this one. JRA.
+		 */
+
+		if(set_blocking(select_pipe[0],0)==-1)
+			smb_panic("select_pipe[0]: O_NONBLOCK failed");
+		if(set_blocking(select_pipe[1],0)==-1)
+			smb_panic("select_pipe[1]: O_NONBLOCK failed");
+
+		initialised = sys_getpid();
+	}
+
+	ZERO_STRUCT(fds[num_fds]);
+	fds[num_fds].fd = select_pipe[0];
+	fds[num_fds].events = POLLIN|POLLHUP;
+
+	errno = 0;
+	ret = poll(fds, num_fds+1, timeout);
+
+	if ((ret >= 0) && (fds[num_fds].revents & (POLLIN|POLLHUP|POLLERR))) {
+		char c;
+		int saved_errno = errno;
+
+		if (read(select_pipe[0], &c, 1) == 1) {
+			pipe_read += 1;
+
+			/* Mark Weaver <mark-clist@npsl.co.uk> pointed out a critical
+			   fix to ensure we don't lose signals. We must always
+			   return -1 when the select pipe is set, otherwise if another
+			   fd is also ready (so ret == 2) then we used to eat the
+			   byte in the pipe and lose the signal. JRA.
+			*/
+			ret = -1;
+#if 0
+			/* JRA - we can use this to debug the signal messaging... */
+			DEBUG(0,("select got %u signal\n", (unsigned int)c));
+#endif
+			errno = EINTR;
+		} else {
+			ret -= 1;
+			errno = saved_errno;
+		}
+	}
+
+	return ret;
+}
