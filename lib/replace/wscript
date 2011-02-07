@@ -202,7 +202,23 @@ def configure(conf):
         # some systems are missing the declaration
         conf.CHECK_DECLS('fdatasync')
 
-    conf.CHECK_FUNCS_IN('clock_gettime', 'rt', checklibc=True)
+    if conf.CHECK_FUNCS_IN('clock_gettime', 'rt', checklibc=True):
+        for c in ['CLOCK_MONOTONIC', 'CLOCK_PROCESS_CPUTIME_ID', 'CLOCK_REALTIME']:
+            conf.CHECK_CODE('''
+			    #if TIME_WITH_SYS_TIME
+			    # include <sys/time.h>
+			    # include <time.h>
+			    #else
+			    # if HAVE_SYS_TIME_H
+			    #  include <sys/time.h>
+			    # else
+			    #  include <time.h>
+			    # endif
+			    #endif
+			    clockid_t clk = %s''' % c,
+			    'HAVE_%s' % c,
+			    msg='Checking whether the clock_gettime clock ID %s is available' % c)
+
 
     # these headers need to be tested as a group on freebsd
     conf.CHECK_HEADERS(headers='sys/socket.h net/if.h', together=True)
