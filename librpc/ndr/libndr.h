@@ -363,6 +363,7 @@ struct ndr_interface_list {
 *********************************************************************/
 NTSTATUS ndr_map_error2ntstatus(enum ndr_err_code ndr_err);
 const char *ndr_map_error2string(enum ndr_err_code ndr_err);
+#define ndr_errstr ndr_map_error2string
 
 /* FIXME: Use represent_as instead */
 struct dom_sid;
