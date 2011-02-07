@@ -22,6 +22,7 @@
 #include "includes.h"
 #include "nmbd/nmbd.h"
 #include "../lib/util/select.h"
+#include "system/select.h"
 
 extern int ClientNMB;
 extern int ClientDGRAM;
@@ -1674,93 +1675,98 @@ on subnet %s\n", rrec->response_id, inet_ntoa(rrec->packet->ip), subrec->subnet_
   plus the broadcast sockets.
 ***************************************************************************/
 
-static bool create_listen_fdset(fd_set **ppset, int **psock_array, int *listen_number, int *maxfd)
+struct socket_attributes {
+	enum packet_type type;
+	bool broadcast;
+};
+
+static bool create_listen_pollfds(struct pollfd **pfds,
+				  struct socket_attributes **pattrs,
+				  int *pnum_sockets)
 {
-	int *sock_array = NULL;
 	struct subnet_record *subrec = NULL;
 	int count = 0;
 	int num = 0;
-	fd_set *pset = SMB_MALLOC_P(fd_set);
+	struct pollfd *fds;
+	struct socket_attributes *attrs;
 
-	if(pset == NULL) {
-		DEBUG(0,("create_listen_fdset: malloc fail !\n"));
-		return True;
-	}
-
-	/* The Client* sockets */
-	count++;
+	/* The ClientNMB and ClientDGRAM sockets */
+	count = 2;
 
 	/* Check that we can add all the fd's we need. */
-	for (subrec = FIRST_SUBNET; subrec; subrec = NEXT_SUBNET_EXCLUDING_UNICAST(subrec))
-		count++;
-
-	/* each interface gets 4 sockets */
-	count *= 4;
-
-	if(count > FD_SETSIZE) {
-		DEBUG(0,("create_listen_fdset: Too many file descriptors needed (%d). We can \
-only use %d.\n", count, FD_SETSIZE));
-		SAFE_FREE(pset);
-		return True;
-	}
-
-	if((sock_array = SMB_MALLOC_ARRAY(int, count)) == NULL) {
-		DEBUG(0,("create_listen_fdset: malloc fail for socket array. size %d\n", count));
-		SAFE_FREE(pset);
-		return True;
-	}
-
-	FD_ZERO(pset);
-
-	/* Add in the lp_socket_address() interface on 137. */
-	FD_SET(ClientNMB,pset);
-	sock_array[num++] = ClientNMB;
-	*maxfd = MAX( *maxfd, ClientNMB);
-
-	/* the lp_socket_address() interface has only one socket */
-	sock_array[num++] = -1;
-
-	/* Add in the 137 sockets on all the interfaces. */
-	for (subrec = FIRST_SUBNET; subrec; subrec = NEXT_SUBNET_EXCLUDING_UNICAST(subrec)) {
-		FD_SET(subrec->nmb_sock,pset);
-		sock_array[num++] = subrec->nmb_sock;
-		*maxfd = MAX( *maxfd, subrec->nmb_sock);
-
-		sock_array[num++] = subrec->nmb_bcast;
+	for (subrec = FIRST_SUBNET;
+	     subrec != NULL;
+	     subrec = NEXT_SUBNET_EXCLUDING_UNICAST(subrec)) {
+		count += 2;	/* nmb_sock and dgram_sock */
 		if (subrec->nmb_bcast != -1) {
-			FD_SET(subrec->nmb_bcast,pset);
-			*maxfd = MAX( *maxfd, subrec->nmb_bcast);
+			count += 1;
 		}
-	}
-
-	/* Add in the lp_socket_address() interface on 138. */
-	FD_SET(ClientDGRAM,pset);
-	sock_array[num++] = ClientDGRAM;
-	*maxfd = MAX( *maxfd, ClientDGRAM);
-
-	/* the lp_socket_address() interface has only one socket */
-	sock_array[num++] = -1;
-
-	/* Add in the 138 sockets on all the interfaces. */
-	for (subrec = FIRST_SUBNET; subrec; subrec = NEXT_SUBNET_EXCLUDING_UNICAST(subrec)) {
-		FD_SET(subrec->dgram_sock,pset);
-		sock_array[num++] = subrec->dgram_sock;
-		*maxfd = MAX( *maxfd, subrec->dgram_sock);
-
-		sock_array[num++] = subrec->dgram_bcast;
 		if (subrec->dgram_bcast != -1) {
-			FD_SET(subrec->dgram_bcast,pset);
-			*maxfd = MAX( *maxfd, subrec->dgram_bcast);
+			count += 1;
 		}
 	}
 
-	*listen_number = count;
+	fds = TALLOC_ZERO_ARRAY(NULL, struct pollfd, count);
+	if (fds == NULL) {
+		DEBUG(1, ("create_listen_pollfds: malloc fail for fds. "
+			  "size %d\n", count));
+		return true;
+	}
 
-	SAFE_FREE(*ppset);
-	SAFE_FREE(*psock_array);
+	attrs = TALLOC_ARRAY(NULL, struct socket_attributes, count);
+	if (fds == NULL) {
+		DEBUG(1, ("create_listen_pollfds: malloc fail for attrs. "
+			  "size %d\n", count));
+		SAFE_FREE(fds);
+		return true;
+	}
 
-	*ppset = pset;
-	*psock_array = sock_array;
+	num = 0;
+
+	fds[num].fd = ClientNMB;
+	attrs[num].type = NMB_PACKET;
+	attrs[num].broadcast = false;
+	num += 1;
+
+	fds[num].fd = ClientDGRAM;
+	attrs[num].type = DGRAM_PACKET;
+	attrs[num].broadcast = false;
+	num += 1;
+
+	for (subrec = FIRST_SUBNET; subrec; subrec = NEXT_SUBNET_EXCLUDING_UNICAST(subrec)) {
+
+		fds[num].fd = subrec->nmb_sock;
+		attrs[num].type = NMB_PACKET;
+		attrs[num].broadcast = false;
+		num += 1;
+
+		if (subrec->nmb_bcast != -1) {
+			fds[num].fd = subrec->nmb_bcast;
+			attrs[num].type = NMB_PACKET;
+			attrs[num].broadcast = true;
+			num += 1;
+		}
+
+		fds[num].fd = subrec->dgram_sock;
+		attrs[num].type = DGRAM_PACKET;
+		attrs[num].broadcast = false;
+		num += 1;
+
+		if (subrec->dgram_bcast != -1) {
+			fds[num].fd = subrec->dgram_bcast;
+			attrs[num].type = DGRAM_PACKET;
+			attrs[num].broadcast = true;
+			num += 1;
+		}
+	}
+
+	TALLOC_FREE(*pfds);
+	*pfds = fds;
+
+	TALLOC_FREE(*pattrs);
+	*pattrs = attrs;
+
+	*pnum_sockets = count;
 
 	return False;
 }
@@ -1849,42 +1855,59 @@ static void free_processed_packet_list(struct processed_packet **pp_processed_pa
 
 bool listen_for_packets(bool run_election)
 {
-	static fd_set *listen_set = NULL;
+	static struct pollfd *fds = NULL;
+	static struct socket_attributes *attrs = NULL;
 	static int listen_number = 0;
-	static int *sock_array = NULL;
+	int num_sockets;
 	int i;
-	static int maxfd = 0;
 
-	fd_set r_fds;
-	fd_set w_fds;
-	int selrtn;
-	struct timeval timeout;
+	int pollrtn;
+	int timeout;
 #ifndef SYNC_DNS
 	int dns_fd;
+	int dns_pollidx = -1;
 #endif
 	struct processed_packet *processed_packet_list = NULL;
 
-	if(listen_set == NULL || rescan_listen_set) {
-		if(create_listen_fdset(&listen_set, &sock_array, &listen_number, &maxfd)) {
+	if ((fds == NULL) || rescan_listen_set) {
+		if (create_listen_pollfds(&fds, &attrs, &listen_number)) {
 			DEBUG(0,("listen_for_packets: Fatal error. unable to create listen set. Exiting.\n"));
 			return True;
 		}
 		rescan_listen_set = False;
 	}
 
-	memcpy((char *)&r_fds, (char *)listen_set, sizeof(fd_set));
-	FD_ZERO(&w_fds);
+	/*
+	 * "fds" can be enlarged by event_add_to_poll_args
+	 * below. Shrink it again to what was given to us by
+	 * create_listen_pollfds.
+	 */
+
+	fds = TALLOC_REALLOC_ARRAY(NULL, fds, struct pollfd, listen_number);
+	if (fds == NULL) {
+		return true;
+	}
+	num_sockets = listen_number;
 
 #ifndef SYNC_DNS
 	dns_fd = asyncdns_fd();
 	if (dns_fd != -1) {
-		FD_SET(dns_fd, &r_fds);
-		maxfd = MAX( maxfd, dns_fd);
+		fds = TALLOC_REALLOC_ARRAY(NULL, fds, struct pollfd, num_sockets+1);
+		if (fds == NULL) {
+			return true;
+		}
+		dns_pollidx = num_sockets;
+		fds[num_sockets].fd = dns_fd;
+		num_sockets += 1;
 	}
 #endif
 
+	for (i=0; i<num_sockets; i++) {
+		fds[i].events = POLLIN|POLLHUP;
+	}
+
 	/* Process a signal and timer events now... */
-	if (run_events(nmbd_event_context(), 0, NULL, NULL)) {
+	if (run_events_poll(nmbd_event_context(), 0, NULL, 0)) {
 		return False;
 	}
 
@@ -1895,24 +1918,25 @@ bool listen_for_packets(bool run_election)
 	 * the time we are expecting the next netbios packet.
 	 */
 
-	timeout.tv_sec = (run_election||num_response_packets) ? 1 : NMBD_SELECT_LOOP;
-	timeout.tv_usec = 0;
+	timeout = ((run_election||num_response_packets)
+		   ? 1 : NMBD_SELECT_LOOP) * 1000;
 
-	event_add_to_select_args(nmbd_event_context(),
-				 &r_fds, &w_fds, &timeout, &maxfd);
+	event_add_to_poll_args(nmbd_event_context(), NULL,
+			       &fds, &num_sockets, &timeout);
 
-	selrtn = sys_select(maxfd+1,&r_fds,&w_fds,NULL,&timeout);
+	pollrtn = sys_poll(fds, num_sockets, timeout);
 
-	if (run_events(nmbd_event_context(), selrtn, &r_fds, &w_fds)) {
+	if (run_events_poll(nmbd_event_context(), pollrtn, fds, num_sockets)) {
 		return False;
 	}
 
-	if (selrtn == -1) {
+	if (pollrtn == -1) {
 		return False;
 	}
 
 #ifndef SYNC_DNS
-	if (dns_fd != -1 && FD_ISSET(dns_fd,&r_fds)) {
+	if ((dns_fd != -1) && (dns_pollidx != -1) &&
+	    (fds[dns_pollidx].revents & (POLLIN|POLLHUP|POLLERR))) {
 		run_dns_queue();
 	}
 #endif
@@ -1924,15 +1948,11 @@ bool listen_for_packets(bool run_election)
 		int client_fd;
 		int client_port;
 
-		if (sock_array[i] == -1) {
+		if ((fds[i].revents & (POLLIN|POLLHUP|POLLERR)) == 0) {
 			continue;
 		}
 
-		if (!FD_ISSET(sock_array[i],&r_fds)) {
-			continue;
-		}
-
-		if (i < (listen_number/2)) {
+		if (attrs[i].type == NMB_PACKET) {
 			/* Port 137 */
 			packet_type = NMB_PACKET;
 			packet_name = "nmb";
@@ -1946,7 +1966,7 @@ bool listen_for_packets(bool run_election)
 			client_port = DGRAM_PORT;
 		}
 
-		packet = read_packet(sock_array[i], packet_type);
+		packet = read_packet(fds[i].fd, packet_type);
 		if (!packet) {
 			continue;
 		}
@@ -1956,7 +1976,7 @@ bool listen_for_packets(bool run_election)
 		 * only is set then check it came from one of our local nets.
 		 */
 		if (lp_bind_interfaces_only() &&
-		    (sock_array[i] == client_fd) &&
+		    (fds[i].fd == client_fd) &&
 		    (!is_local_net_v4(packet->ip))) {
 			DEBUG(7,("discarding %s packet sent to broadcast socket from %s:%d\n",
 				packet_name, inet_ntoa(packet->ip), packet->port));
@@ -1991,21 +2011,12 @@ bool listen_for_packets(bool run_election)
 
 		store_processed_packet(&processed_packet_list, packet);
 
-		/*
-		 * 0,2,4,... are unicast sockets
-		 * 1,3,5,... are broadcast sockets
-		 *
-		 * on broadcast socket we only receive packets
-		 * and send replies via the unicast socket.
-		 *
-		 * 0,1 and 2,3 and ... belong together.
-		 */
-		if ((i % 2) != 0) {
+		if (attrs[i].broadcast) {
 			/* this is a broadcast socket */
-			packet->send_fd = sock_array[i-1];
+			packet->send_fd = fds[i-1].fd;
 		} else {
 			/* this is already a unicast socket */
-			packet->send_fd = sock_array[i];
+			packet->send_fd = fds[i].fd;
 		}
 
 		queue_packet(packet);
