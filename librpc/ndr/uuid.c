@@ -335,3 +335,20 @@ _PUBLIC_ bool policy_handle_empty(struct policy_handle *h)
 {
 	return (h->handle_type == 0 && GUID_all_zero(&h->uuid));
 }
+
+_PUBLIC_ bool is_valid_policy_hnd(const struct policy_handle *hnd)
+{
+	struct policy_handle tmp;
+	ZERO_STRUCT(tmp);
+	return (memcmp(&tmp, hnd, sizeof(tmp)) != 0);
+}
+
+_PUBLIC_ bool policy_handle_equal(const struct policy_handle *hnd1,
+				  const struct policy_handle *hnd2)
+{
+	if (!hnd1 || !hnd2) {
+		return false;
+	}
+
+	return (memcmp(hnd1, hnd2, sizeof(*hnd1)) == 0);
+}
