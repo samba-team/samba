@@ -290,7 +290,7 @@ struct ldb_control **ldb_parse_control_strings(struct ldb_context *ldb, TALLOC_C
 
 			attr[0] = '\0';
 			ctxid[0] = '\0';
-			p = &(control_strings[i][4]);
+			p = &(control_strings[i][sizeof(LDB_CONTROL_VLV_REQ_NAME)]);
 			ret = sscanf(p, "%d:%d:%d:%d:%d:%1023[^$]", &crit, &bc, &ac, &os, &cc, ctxid);
 			if (ret < 5) {
 				ret = sscanf(p, "%d:%d:%d:%1023[^:]:%1023[^$]", &crit, &bc, &ac, attr, ctxid);
@@ -345,7 +345,7 @@ struct ldb_control **ldb_parse_control_strings(struct ldb_context *ldb, TALLOC_C
 			int crit, flags, max_attrs, ret;
 		       
 			cookie[0] = '\0';
-			p = &(control_strings[i][8]);
+			p = &(control_strings[i][sizeof(LDB_CONTROL_DIRSYNC_NAME)]);
 			ret = sscanf(p, "%d:%d:%d:%1023[^$]", &crit, &flags, &max_attrs, cookie);
 
 			if ((ret < 3) || (crit < 0) || (crit > 1) || (flags < 0) || (max_attrs < 0)) {
@@ -389,7 +389,7 @@ struct ldb_control **ldb_parse_control_strings(struct ldb_context *ldb, TALLOC_C
 			int crit, ret;
 
 			attr[0] = '\0';
-			p = &(control_strings[i][4]);
+			p = &(control_strings[i][sizeof(LDB_CONTROL_ASQ_NAME)]);
 			ret = sscanf(p, "%d:%255[^$]", &crit, attr);
 			if ((ret != 2) || (crit < 0) || (crit > 1) || (attr[0] == '\0')) {
 				error_string = talloc_asprintf(mem_ctx, "invalid asq control syntax\n");
@@ -421,7 +421,7 @@ struct ldb_control **ldb_parse_control_strings(struct ldb_context *ldb, TALLOC_C
 			const char *p;
 			int crit, type, ret;
 
-			p = &(control_strings[i][12]);
+			p = &(control_strings[i][sizeof(LDB_CONTROL_EXTENDED_DN_NAME)]);
 			ret = sscanf(p, "%d:%d", &crit, &type);
 			if ((ret != 2) || (crit < 0) || (crit > 1) || (type < 0) || (type > 1)) {
 				ret = sscanf(p, "%d", &crit);
@@ -460,7 +460,7 @@ struct ldb_control **ldb_parse_control_strings(struct ldb_context *ldb, TALLOC_C
 			int crit, ret;
 			unsigned secinfo_flags;
 
-			p = &(control_strings[i][9]);
+			p = &(control_strings[i][sizeof(LDB_CONTROL_SD_FLAGS_NAME)]);
 			ret = sscanf(p, "%d:%u", &crit, &secinfo_flags);
 			if ((ret != 2) || (crit < 0) || (crit > 1) || (secinfo_flags < 0) || (secinfo_flags > 0xF)) {
 				error_string = talloc_asprintf(mem_ctx, "invalid sd_flags control syntax\n");
@@ -491,7 +491,7 @@ struct ldb_control **ldb_parse_control_strings(struct ldb_context *ldb, TALLOC_C
 			int crit, ret;
 			unsigned search_options;
 
-			p = &(control_strings[i][15]);
+			p = &(control_strings[i][sizeof(LDB_CONTROL_SEARCH_OPTIONS_NAME)]);
 			ret = sscanf(p, "%d:%u", &crit, &search_options);
 			if ((ret != 2) || (crit < 0) || (crit > 1) || (search_options < 0) || (search_options > 0xF)) {
 				error_string = talloc_asprintf(mem_ctx, "invalid search_options control syntax\n");
@@ -520,7 +520,7 @@ struct ldb_control **ldb_parse_control_strings(struct ldb_context *ldb, TALLOC_C
 			const char *p;
 			int crit, ret;
 
-			p = &(control_strings[i][18]);
+			p = &(control_strings[i][sizeof(LDB_CONTROL_BYPASS_OPERATIONAL_NAME)]);
 			ret = sscanf(p, "%d", &crit);
 			if ((ret != 1) || (crit < 0) || (crit > 1)) {
 				error_string = talloc_asprintf(mem_ctx, "invalid bypassopreational control syntax\n");
@@ -547,7 +547,7 @@ struct ldb_control **ldb_parse_control_strings(struct ldb_context *ldb, TALLOC_C
 			const char *p;
 			int crit, ret;
 
-			p = &(control_strings[i][6]);
+			p = &(control_strings[i][sizeof(LDB_CONTROL_RELAX_NAME)]);
 			ret = sscanf(p, "%d", &crit);
 			if ((ret != 1) || (crit < 0) || (crit > 1)) {
 				error_string = talloc_asprintf(mem_ctx, "invalid relax control syntax\n");
@@ -574,7 +574,7 @@ struct ldb_control **ldb_parse_control_strings(struct ldb_context *ldb, TALLOC_C
 			const char *p;
 			int crit, ret;
 
-			p = &(control_strings[i][15]);
+			p = &(control_strings[i][sizeof(LDB_CONTROL_RECALCULATE_SD_NAME)]);
 			ret = sscanf(p, "%d", &crit);
 			if ((ret != 1) || (crit < 0) || (crit > 1)) {
 				error_string = talloc_asprintf(mem_ctx, "invalid recalculate_sd control syntax\n");
@@ -601,7 +601,7 @@ struct ldb_control **ldb_parse_control_strings(struct ldb_context *ldb, TALLOC_C
 			const char *p;
 			int crit, ret;
 
-			p = &(control_strings[i][13]);
+			p = &(control_strings[i][sizeof(LDB_CONTROL_DOMAIN_SCOPE_NAME)]);
 			ret = sscanf(p, "%d", &crit);
 			if ((ret != 1) || (crit < 0) || (crit > 1)) {
 				error_string = talloc_asprintf(mem_ctx, "invalid domain_scope control syntax\n");
@@ -629,9 +629,8 @@ struct ldb_control **ldb_parse_control_strings(struct ldb_context *ldb, TALLOC_C
 			const char *p;
 			int crit, size, ret;
 		       
-			p = &(control_strings[i][14]);
+			p = &(control_strings[i][sizeof(LDB_CONTROL_PAGED_RESULTS_NAME)]);
 			ret = sscanf(p, "%d:%d", &crit, &size);
-
 			if ((ret != 2) || (crit < 0) || (crit > 1) || (size < 0)) {
 				error_string = talloc_asprintf(mem_ctx, "invalid paged_results control syntax\n");
 				error_string = talloc_asprintf_append(error_string, " syntax: crit(b):size(n)\n");
@@ -666,7 +665,7 @@ struct ldb_control **ldb_parse_control_strings(struct ldb_context *ldb, TALLOC_C
 
 			attr[0] = '\0';
 			rule[0] = '\0';
-			p = &(control_strings[i][12]);
+			p = &(control_strings[i][sizeof(LDB_CONTROL_SERVER_SORT_NAME)]);
 			ret = sscanf(p, "%d:%d:%255[^:]:%127[^:]", &crit, &rev, attr, rule);
 			if ((ret < 3) || (crit < 0) || (crit > 1) || (rev < 0 ) || (rev > 1) ||attr[0] == '\0') {
 				error_string = talloc_asprintf(mem_ctx, "invalid server_sort control syntax\n");
@@ -701,7 +700,7 @@ struct ldb_control **ldb_parse_control_strings(struct ldb_context *ldb, TALLOC_C
 			const char *p;
 			int crit, ret;
 
-			p = &(control_strings[i][13]);
+			p = &(control_strings[i][sizeof(LDB_CONTROL_NOTIFICATION_NAME)]);
 			ret = sscanf(p, "%d", &crit);
 			if ((ret != 1) || (crit < 0) || (crit > 1)) {
 				error_string = talloc_asprintf(mem_ctx, "invalid notification control syntax\n");
@@ -728,7 +727,7 @@ struct ldb_control **ldb_parse_control_strings(struct ldb_context *ldb, TALLOC_C
 			const char *p;
 			int crit, ret;
 
-			p = &(control_strings[i][12]);
+			p = &(control_strings[i][sizeof(LDB_CONTROL_TREE_DELETE_NAME)]);
 			ret = sscanf(p, "%d", &crit);
 			if ((ret != 1) || (crit < 0) || (crit > 1)) {
 				error_string = talloc_asprintf(mem_ctx, "invalid tree_delete control syntax\n");
@@ -755,7 +754,7 @@ struct ldb_control **ldb_parse_control_strings(struct ldb_context *ldb, TALLOC_C
 			const char *p;
 			int crit, ret;
 
-			p = &(control_strings[i][13]);
+			p = &(control_strings[i][sizeof(LDB_CONTROL_SHOW_DELETED_NAME)]);
 			ret = sscanf(p, "%d", &crit);
 			if ((ret != 1) || (crit < 0) || (crit > 1)) {
 				error_string = talloc_asprintf(mem_ctx, "invalid show_deleted control syntax\n");
@@ -782,7 +781,7 @@ struct ldb_control **ldb_parse_control_strings(struct ldb_context *ldb, TALLOC_C
 			const char *p;
 			int crit, ret;
 
-			p = &(control_strings[i][22]);
+			p = &(control_strings[i][sizeof(LDB_CONTROL_SHOW_DEACTIVATED_LINK_NAME)]);
 			ret = sscanf(p, "%d", &crit);
 			if ((ret != 1) || (crit < 0) || (crit > 1)) {
 				error_string = talloc_asprintf(mem_ctx, "invalid show_deactivated_link control syntax\n");
@@ -809,7 +808,7 @@ struct ldb_control **ldb_parse_control_strings(struct ldb_context *ldb, TALLOC_C
 			const char *p;
 			int crit, ret;
 
-			p = &(control_strings[i][14]);
+			p = &(control_strings[i][sizeof(LDB_CONTROL_SHOW_RECYCLED_NAME)]);
 			ret = sscanf(p, "%d", &crit);
 			if ((ret != 1) || (crit < 0) || (crit > 1)) {
 				error_string = talloc_asprintf(mem_ctx, "invalid show_recycled control syntax\n");
@@ -836,7 +835,7 @@ struct ldb_control **ldb_parse_control_strings(struct ldb_context *ldb, TALLOC_C
 			const char *p;
 			int crit, ret;
 
-			p = &(control_strings[i][18]);
+			p = &(control_strings[i][sizeof(LDB_CONTROL_PERMISSIVE_MODIFY_NAME)]);
 			ret = sscanf(p, "%d", &crit);
 			if ((ret != 1) || (crit < 0) || (crit > 1)) {
 				error_string = talloc_asprintf(mem_ctx, "invalid permissive_modify control syntax\n");
@@ -863,7 +862,7 @@ struct ldb_control **ldb_parse_control_strings(struct ldb_context *ldb, TALLOC_C
 			const char *p;
 			int crit, ret;
 
-			p = &(control_strings[i][17]);
+			p = &(control_strings[i][sizeof(LDB_CONTROL_REVEAL_INTERNALS_NAME)]);
 			ret = sscanf(p, "%d", &crit);
 			if ((ret != 1) || (crit < 0) || (crit > 1)) {
 				error_string = talloc_asprintf(mem_ctx, "invalid reveal_internals control syntax\n");
@@ -924,7 +923,7 @@ struct ldb_control **ldb_parse_control_strings(struct ldb_context *ldb, TALLOC_C
 			const char *p;
 			int crit, ret;
 
-			p = &(control_strings[i][10]);
+			p = &(control_strings[i][sizeof(LDB_CONTROL_RODC_DCPROMO_NAME)]);
 			ret = sscanf(p, "%d", &crit);
 			if ((ret != 1) || (crit < 0) || (crit > 1)) {
 				error_string = talloc_asprintf(mem_ctx, "invalid rodc_join control syntax\n");
@@ -951,7 +950,7 @@ struct ldb_control **ldb_parse_control_strings(struct ldb_context *ldb, TALLOC_C
 			const char *p;
 			int crit, ret;
 
-			p = &(control_strings[i][10]);
+			p = &(control_strings[i][sizeof(LDB_CONTROL_PROVISION_NAME)]);
 			ret = sscanf(p, "%d", &crit);
 			if ((ret != 1) || (crit < 0) || (crit > 1)) {
 				error_string = talloc_asprintf(mem_ctx, "invalid provision control syntax\n");
