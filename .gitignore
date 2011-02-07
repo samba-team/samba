@@ -9,7 +9,7 @@ st/
 *.swp
 tags
 TAGS
-cscope.out
+cscope*.out
 *.x
 autom4te.cache
 config.cache
@@ -17,6 +17,8 @@ config.h
 config.h.in
 config.log
 config.status
+source3/.build.log
+source3/.clang_complete
 source3/configure
 source3/Makefile
 examples/libsmbclient/Makefile.internal
