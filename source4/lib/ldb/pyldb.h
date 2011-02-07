@@ -78,6 +78,20 @@ typedef struct {
 } PyLdbTreeObject;
 #define PyLdbTree_AsTree(pyobj) ((PyLdbTreeObject *)pyobj)->tree
 
+typedef struct {
+	PyObject_HEAD
+	TALLOC_CTX *mem_ctx;
+	PyObject *msgs;
+	PyObject *referals;
+	PyObject *controls;
+} PyLdbResultObject;
+
+typedef struct {
+	PyObject_HEAD
+	TALLOC_CTX *mem_ctx;
+	struct ldb_control *data;
+} PyLdbControlObject;
+
 #define PyErr_LDB_ERROR_IS_ERR_RAISE(err,ret,ldb) \
 	if (ret != LDB_SUCCESS) { \
 		PyErr_SetLdbError(err, ret, ldb); \

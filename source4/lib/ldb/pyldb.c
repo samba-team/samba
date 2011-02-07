@@ -35,6 +35,8 @@ void initldb(void);
 static PyObject *PyLdbMessage_FromMessage(struct ldb_message *msg);
 static PyObject *PyExc_LdbError;
 
+staticforward PyTypeObject PyLdbControl;
+staticforward PyTypeObject PyLdbResult;
 staticforward PyTypeObject PyLdbMessage;
 staticforward PyTypeObject PyLdbModule;
 staticforward PyTypeObject PyLdbDn;
@@ -62,6 +64,119 @@ typedef intargfunc ssizeargfunc;
 
 #define SIGN(a) (((a) == 0)?0:((a) < 0?-1:1))
 
+
+
+static PyObject *py_ldb_control_str(PyLdbControlObject *self)
+{
+	if (self->data != NULL) {
+		char* control = ldb_control_to_string(self->mem_ctx, self->data);
+		if (control == NULL) {
+			PyErr_NoMemory();
+			return NULL;
+		}
+		return PyString_FromString(control);
+	} else {
+		return PyString_FromFormat("ldb control");
+	}
+}
+
+static void py_ldb_control_dealloc(PyLdbControlObject *self)
+{
+	if (self->mem_ctx != NULL) {
+		talloc_free(self->mem_ctx);
+	}
+	self->ob_type->tp_free(self);
+}
+
+static PyObject *py_ldb_control_get_oid(PyLdbControlObject *self)
+{
+	return PyString_FromString(self->data->oid);
+}
+
+static PyObject *py_ldb_control_get_critical(PyLdbControlObject *self)
+{
+	return PyBool_FromLong(self->data->critical);
+}
+
+static PyObject *py_ldb_control_set_critical(PyLdbControlObject *self, PyObject *value, void *closure)
+{
+	if (PyObject_IsTrue(value)) {
+		self->data->critical = true;
+	} else {
+		self->data->critical = false;
+	}
+	return 0;
+}
+
+static PyObject *py_ldb_control_new(PyTypeObject *type, PyObject *args, PyObject *kwargs)
+{
+	char *data = NULL;
+	const char *array[2];
+	const char * const kwnames[] = { "ldb", "data", NULL };
+	struct ldb_control *parsed_controls;
+	PyLdbControlObject *ret;
+	PyObject *py_ldb;
+	TALLOC_CTX *mem_ctx;
+	struct ldb_context *ldb_ctx;
+
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "Os",
+					 discard_const_p(char *, kwnames),
+					 &py_ldb, &data))
+		return NULL;
+
+	mem_ctx = talloc_new(NULL);
+	if (mem_ctx == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	ldb_ctx = PyLdb_AsLdbContext(py_ldb);
+	parsed_controls = ldb_parse_control_from_string(ldb_ctx, mem_ctx, data);
+
+	if (!parsed_controls) {
+		talloc_free(mem_ctx);
+		PyErr_SetString(PyExc_ValueError, "unable to parse control string");
+		return NULL;
+	}
+
+	ret = PyObject_New(PyLdbControlObject, type);
+	if (ret == NULL) {
+		PyErr_NoMemory();
+		talloc_free(mem_ctx);
+		return NULL;
+	}
+
+	ret->mem_ctx = mem_ctx;
+
+	ret->data = talloc_steal(mem_ctx, parsed_controls);
+	if (ret->data == NULL) {
+		Py_DECREF(ret);
+		PyErr_NoMemory();
+		talloc_free(mem_ctx);
+		return NULL;
+	}
+
+	return (PyObject *)ret;
+}
+
+static PyGetSetDef py_ldb_control_getset[] = {
+	{ discard_const_p(char, "oid"), (getter)py_ldb_control_get_oid, NULL, NULL },
+	{ discard_const_p(char, "critical"), (getter)py_ldb_control_get_critical, (setter)py_ldb_control_set_critical, NULL },
+	{ NULL }
+};
+
+static PyTypeObject PyLdbControl = {
+	.tp_name = "ldb.control",
+	.tp_dealloc = (destructor)py_ldb_control_dealloc,
+	.tp_getattro = PyObject_GenericGetAttr,
+	.tp_basicsize = sizeof(PyLdbControlObject),
+	.tp_getset = py_ldb_control_getset,
+	.tp_doc = "LDB control.",
+	.tp_str = (reprfunc)py_ldb_control_str,
+	.tp_new = py_ldb_control_new,
+	.tp_flags = Py_TPFLAGS_DEFAULT|Py_TPFLAGS_BASETYPE,
+};
+
 static void PyErr_SetLdbError(PyObject *error, int ret, struct ldb_context *ldb_ctx)
 {
 	if (ret == LDB_ERR_PYTHON_EXCEPTION)
@@ -83,18 +198,122 @@ static PyObject *PyObject_FromLdbValue(struct ldb_val *val)
  * @param result LDB result to convert
  * @return Python object with converted result (a list object)
  */
+static PyObject *PyLdbControl_FromControl(struct ldb_control *control)
+{
+	TALLOC_CTX *ctl_ctx = talloc_new(NULL);
+	PyLdbControlObject *ctrl;
+	if (ctl_ctx == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	ctrl = (PyLdbControlObject *)PyLdbControl.tp_alloc(&PyLdbControl, 0);
+	if (ctrl == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+	ctrl->mem_ctx = ctl_ctx;
+	ctrl->data = talloc_steal(ctrl->mem_ctx, control);
+	if (ctrl->data == NULL) {
+		Py_DECREF(ctrl);
+		PyErr_NoMemory();
+		return NULL;
+	}
+	return (PyObject*) ctrl;
+}
+
+/**
+ * Create a Python object from a ldb_result.
+ *
+ * @param result LDB result to convert
+ * @return Python object with converted result (a list object)
+ */
 static PyObject *PyLdbResult_FromResult(struct ldb_result *result)
 {
-	PyObject *ret;
+	PyLdbResultObject *ret;
+	PyObject *list, *controls, *referals;
 	Py_ssize_t i;
+
 	if (result == NULL) {
 		Py_RETURN_NONE;
-	} 
-	ret = PyList_New(result->count);
-	for (i = 0; i < result->count; i++) {
-		PyList_SetItem(ret, i, PyLdbMessage_FromMessage(result->msgs[i]));
 	}
-	return ret;
+
+	ret = (PyLdbResultObject *)PyLdbResult.tp_alloc(&PyLdbResult, 0);
+	if (ret == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	list = PyList_New(result->count);
+	if (list == NULL) {
+		PyErr_NoMemory();
+		Py_DECREF(ret);
+		return NULL;
+	}
+
+	for (i = 0; i < result->count; i++) {
+		PyList_SetItem(list, i, PyLdbMessage_FromMessage(result->msgs[i]));
+	}
+
+	ret->mem_ctx = talloc_new(NULL);
+	if (ret->mem_ctx == NULL) {
+		Py_DECREF(list);
+		Py_DECREF(ret);
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	ret->msgs = list;
+
+	if (result->controls) {
+		controls = PyList_New(1);
+		if (controls == NULL) {
+			Py_DECREF(ret);
+			PyErr_NoMemory();
+			return NULL;
+		}
+		for (i=0; result->controls[i]; i++) {
+			PyObject *ctrl = (PyObject*) PyLdbControl_FromControl(result->controls[i]);
+			if (ctrl == NULL) {
+				Py_DECREF(ret);
+				Py_DECREF(controls);
+				PyErr_NoMemory();
+				return NULL;
+			}
+			PyList_SetItem(controls, i, ctrl);
+		}
+	} else {
+		/*
+		 * No controls so we keep an empty list
+		 */
+		controls = PyList_New(0);
+		if (controls == NULL) {
+			Py_DECREF(ret);
+			PyErr_NoMemory();
+			return NULL;
+		}
+	}
+
+	ret->controls = controls;
+
+	i = 0;
+
+	while (result->refs && result->refs[i]) {
+		i++;
+	}
+
+	referals = PyList_New(i);
+	if (referals == NULL) {
+		Py_DECREF(ret);
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	for (i = 0;result->refs && result->refs[i]; i++) {
+		PyList_SetItem(referals, i, PyString_FromString(result->refs[i]));
+	}
+	ret->referals = referals;
+	return (PyObject *)ret;
 }
 
 /**
@@ -1520,6 +1739,91 @@ static PyTypeObject PyLdb = {
 	.tp_flags = Py_TPFLAGS_DEFAULT|Py_TPFLAGS_BASETYPE,
 };
 
+static void py_ldb_result_dealloc(PyLdbResultObject *self)
+{
+	talloc_free(self->mem_ctx);
+	Py_DECREF(self->msgs);
+	Py_DECREF(self->referals);
+	Py_DECREF(self->controls);
+	self->ob_type->tp_free(self);
+}
+
+static PyObject *py_ldb_result_get_msgs(PyLdbResultObject *self, void *closure)
+{
+	Py_INCREF(self->msgs);
+	return self->msgs;
+}
+
+static PyObject *py_ldb_result_get_controls(PyLdbResultObject *self, void *closure)
+{
+	Py_INCREF(self->controls);
+	return self->controls;
+}
+
+static PyObject *py_ldb_result_get_referals(PyLdbResultObject *self, void *closure)
+{
+	Py_INCREF(self->referals);
+	return self->referals;
+}
+
+static PyObject *py_ldb_result_get_count(PyLdbResultObject *self, void *closure)
+{
+	Py_ssize_t size;
+	if (self->msgs == NULL) {
+		PyErr_SetString(PyExc_AttributeError, "Count attribute is meaningless in this context");
+		return NULL;
+	}
+	size = PyList_Size(self->msgs);
+	return PyInt_FromLong(size);
+}
+
+static PyGetSetDef py_ldb_result_getset[] = {
+	{ discard_const_p(char, "controls"), (getter)py_ldb_result_get_controls, NULL, NULL },
+	{ discard_const_p(char, "msgs"), (getter)py_ldb_result_get_msgs, NULL, NULL },
+	{ discard_const_p(char, "referals"), (getter)py_ldb_result_get_referals, NULL, NULL },
+	{ discard_const_p(char, "count"), (getter)py_ldb_result_get_count, NULL, NULL },
+	{ NULL }
+};
+
+static PyObject *py_ldb_result_iter(PyLdbResultObject *self)
+{
+	return PyObject_GetIter(self->msgs);
+}
+
+static Py_ssize_t py_ldb_result_len(PyLdbResultObject *self)
+{
+	return PySequence_Size(self->msgs);
+}
+
+static PyObject *py_ldb_result_find(PyLdbResultObject *self, Py_ssize_t idx)
+{
+	return PySequence_GetItem(self->msgs, idx);
+}
+
+static PySequenceMethods py_ldb_result_seq = {
+	.sq_length = (lenfunc)py_ldb_result_len,
+	.sq_item = (ssizeargfunc)py_ldb_result_find,
+};
+
+static PyObject *py_ldb_result_repr(PyLdbObject *self)
+{
+	return PyString_FromFormat("<ldb result>");
+}
+
+
+static PyTypeObject PyLdbResult = {
+	.tp_name = "ldb.Result",
+	.tp_repr = (reprfunc)py_ldb_result_repr,
+	.tp_dealloc = (destructor)py_ldb_result_dealloc,
+	.tp_iter = (getiterfunc)py_ldb_result_iter,
+	.tp_getset = py_ldb_result_getset,
+	.tp_getattro = PyObject_GenericGetAttr,
+	.tp_basicsize = sizeof(PyLdbResultObject),
+	.tp_as_sequence = &py_ldb_result_seq,
+	.tp_doc = "LDB result.",
+	.tp_flags = Py_TPFLAGS_DEFAULT|Py_TPFLAGS_BASETYPE,
+};
+
 static PyObject *py_ldb_module_repr(PyLdbModuleObject *self)
 {
 	return PyString_FromFormat("<ldb module '%s'>", PyLdbModule_AsModule(self)->ops->name);
@@ -2802,6 +3106,12 @@ void initldb(void)
 	if (PyType_Ready(&PyLdbTree) < 0)
 		return;
 
+	if (PyType_Ready(&PyLdbResult) < 0)
+		return;
+
+	if (PyType_Ready(&PyLdbControl) < 0)
+		return;
+
 	m = Py_InitModule3("ldb", py_ldb_global_methods, 
 		"An interface to LDB, a LDAP-like API that can either to talk an embedded database (TDB-based) or a standards-compliant LDAP server.");
 	if (m == NULL)
@@ -2880,6 +3190,8 @@ void initldb(void)
 	Py_INCREF(&PyLdbMessage);
 	Py_INCREF(&PyLdbMessageElement);
 	Py_INCREF(&PyLdbTree);
+	Py_INCREF(&PyLdbResult);
+	Py_INCREF(&PyLdbControl);
 
 	PyModule_AddObject(m, "Ldb", (PyObject *)&PyLdb);
 	PyModule_AddObject(m, "Dn", (PyObject *)&PyLdbDn);
@@ -2887,6 +3199,7 @@ void initldb(void)
 	PyModule_AddObject(m, "MessageElement", (PyObject *)&PyLdbMessageElement);
 	PyModule_AddObject(m, "Module", (PyObject *)&PyLdbModule);
 	PyModule_AddObject(m, "Tree", (PyObject *)&PyLdbTree);
+	PyModule_AddObject(m, "Control", (PyObject *)&PyLdbControl);
 
 	PyModule_AddObject(m, "__version__", PyString_FromString(PACKAGE_VERSION));
 }
