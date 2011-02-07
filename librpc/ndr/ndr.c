@@ -46,6 +46,11 @@ const struct ndr_syntax_id ndr64_transfer_syntax = {
   1
 };
 
+const struct ndr_syntax_id null_ndr_syntax_id = {
+  { 0, 0, 0, { 0, 0 }, { 0, 0, 0, 0, 0, 0 } },
+  0
+};
+
 /*
   work out the number of bytes needed to align on a n byte boundary
 */

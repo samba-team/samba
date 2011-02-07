@@ -141,6 +141,3 @@ _PUBLIC_ void ndr_print_sockaddr_storage(struct ndr_print *ndr, const char *name
 	char addr[INET6_ADDRSTRLEN];
 	ndr->print(ndr, "%-25s: %s", name, print_sockaddr(addr, sizeof(addr), ss));
 }
-
-const struct ndr_syntax_id null_ndr_syntax_id =
-{ { 0, 0, 0, { 0, 0 }, { 0, 0, 0, 0, 0, 0 } }, 0 };
