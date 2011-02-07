@@ -54,6 +54,7 @@ def set_options(opt):
     opt.SAMBA3_ADD_OPTION('acl-support')
     opt.SAMBA3_ADD_OPTION('dnsupdate')
     opt.SAMBA3_ADD_OPTION('syslog')
+    opt.SAMBA3_ADD_OPTION('aio-support')
 
 
 def configure(conf):
@@ -405,6 +406,65 @@ return acl_get_perm_np(permset_d, perm);
 		'HAVE_EXPLICIT_LARGEFILE_SUPPORT',
 		msg="Checking whether large file support can be enabled")
 
+    if Options.options.with_aio_support:
+	conf.CHECK_FUNCS_IN('aio_read', 'aio')
+	conf.CHECK_FUNCS_IN('aio_read', 'rt')
+        conf.CHECK_CODE('struct aiocb a; return aio_read(&a);',
+			'HAVE_AIO',
+			msg='Checking for asynchronous io support',
+			headers='sys/types.h aio.h',
+			lib='aio rt')
+        conf.CHECK_CODE('struct aiocb64 a; return aio_read64(&a);',
+			'HAVE_AIO64',
+			msg='Checking for 64-bit asynchronous io support',
+			headers='sys/types.h aio.h',
+			lib='aio rt')
+        if conf.CONFIG_SET('HAVE_AIO64'):
+            conf.DEFINE('HAVE_AIOCB64', '1')
+            conf.DEFINE('WITH_AIO', '1')
+        elif conf.CONFIG_SET('HAVE_AIO'):
+            conf.DEFINE('WITH_AIO', '1')
+        if conf.CONFIG_SET('HAVE_AIO'):
+            conf.CHECK_CODE('struct aiocb a; return aio_read(&a);', 'HAVE_AIO_READ', msg='Checking for aio_read', headers='aio.h', lib='aio rt')
+            conf.CHECK_CODE('struct aiocb a; return aio_write(&a);', 'HAVE_AIO_WRITE', msg='Checking for aio_write', headers='aio.h', lib='aio rt')
+            conf.CHECK_CODE('struct aiocb a; return aio_fsync(1, &a);', 'HAVE_AIO_FSYNC', msg='Checking for aio_fsync', headers='aio.h', lib='aio rt')
+            conf.CHECK_CODE('struct aiocb a; return aio_return(&a);', 'HAVE_AIO_RETURN', msg='Checking for aio_return', headers='aio.h', lib='aio rt')
+            conf.CHECK_CODE('struct aiocb a; return aio_error(&a);', 'HAVE_AIO_ERROR', msg='Checking for aio_error', headers='aio.h', lib='aio rt')
+            conf.CHECK_CODE('struct aiocb a; return aio_cancel(1, &a);', 'HAVE_AIO_CANCEL', msg='Checking for aio_cancel', headers='aio.h', lib='aio rt')
+            conf.CHECK_CODE('struct aiocb a; return aio_suspend(&a, 1, NULL);', 'HAVE_AIO_SUSPEND', msg='Checking for aio_suspend', headers='aio.h', lib='aio rt')
+        if conf.CONFIG_SET('HAVE_AIO64'):
+            conf.CHECK_CODE('struct aiocb a; return aio_read64(&a);', 'HAVE_AIO_READ64', msg='Checking for aio_read64', headers='aio.h', lib='aio rt')
+            conf.CHECK_CODE('struct aiocb a; return aio_write64(&a);', 'HAVE_AIO_WRITE64', msg='Checking for aio_write64', headers='aio.h', lib='aio rt')
+            conf.CHECK_CODE('struct aiocb a; return aio_fsync64(1, &a);', 'HAVE_AIO_FSYNC64', msg='Checking for aio_fsync64', headers='aio.h', lib='aio rt')
+            conf.CHECK_CODE('struct aiocb a; return aio_return64(&a);', 'HAVE_AIO_RETURN64', msg='Checking for aio_return64', headers='aio.h', lib='aio rt')
+            conf.CHECK_CODE('struct aiocb a; return aio_error64(&a);', 'HAVE_AIO_ERROR64', msg='Checking for aio_error64', headers='aio.h', lib='aio rt')
+            conf.CHECK_CODE('struct aiocb a; return aio_cancel64(1, &a);', 'HAVE_AIO_CANCEL64', msg='Checking for aio_cancel64', headers='aio.h', lib='aio rt')
+	    conf.CHECK_CODE('struct aiocb a; return aio_suspend64(&a, 1, NULL);', 'HAVE_AIO_SUSPEND64', msg='Checking for aio_suspend64', headers='aio.h', lib='aio rt')
+    else:
+        conf.DEFINE('HAVE_NO_AIO', '1')
+
+    conf.CHECK_CODE('''
+struct msghdr msg;
+union {
+	struct cmsghdr cm;
+        char control[CMSG_SPACE(sizeof(int))];
+} control_un;
+msg.msg_control = control_un.control;
+msg.msg_controllen = sizeof(control_un.control);
+''',
+	'HAVE_MSGHDR_MSG_CONTROL',
+	msg='Checking if we can use msg_control for passing file descriptors',
+	headers='sys/types.h stdlib.h stddef.h sys/socket.h sys/un.h')
+    conf.CHECK_CODE('''
+struct msghdr msg;
+int fd;
+msg.msg_acctrights = (caddr_t) &fd;
+msg.msg_acctrightslen = sizeof(fd);
+''',
+	'HAVE_MSGHDR_MSG_ACCTRIGHTS',
+	msg='Checking if we can use msg_acctrights for passing file descriptors',
+	headers='sys/types.h stdlib.h stddef.h sys/socket.h sys/un.h')
+
     default_static_modules=TO_LIST('''pdb_smbpasswd pdb_tdbsam pdb_wbc_sam pdb_ldap
                                       auth_sam auth_unix auth_winbind auth_wbc auth_server
                                       auth_domain auth_builtin vfs_default
@@ -435,6 +495,9 @@ return acl_get_perm_np(permset_d, perm);
 
     if conf.CONFIG_SET('HAVE_STATFS_F_FSID'):
 	default_shared_modules.extend(TO_LIST('vfs_fileid'))
+
+    if conf.CONFIG_SET('HAVE_AIO') and conf.CONFIG_SET('HAVE_MSGHDR_MSG_CONTROL') and conf.CONFIG_SET('HAVE_MSGHDR_MSG_ACCTRIGHTS'):
+	default_shared_modules.extend(TO_LIST('vfs_aio_fork'))
 
     explicit_shared_modules = TO_LIST(Options.options.shared_modules, delimiter=',')
     explicit_static_modules = TO_LIST(Options.options.static_modules, delimiter=',')
