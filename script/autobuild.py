@@ -334,7 +334,7 @@ def rebase_tree(url):
         sys.exit(0)
     run_cmd("git describe master/master", show=True, dir=test_master)
     run_cmd("git describe HEAD", show=True, dir=test_master)
-    run_cmd("git --no-pager diff HEAD master/master | diffstat", show=True, dir=test_master)
+    run_cmd("git --no-pager diff --stat HEAD master/master", show=True, dir=test_master)
 
 def push_to(url):
     print("Pushing to %s" % url)
