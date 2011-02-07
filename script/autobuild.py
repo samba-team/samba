@@ -157,7 +157,7 @@ class builder(object):
         cleanup_list.append(self.prefix)
         os.makedirs(self.sdir)
         run_cmd("rm -rf %s" % self.sdir)
-        run_cmd("git clone --shared %s %s" % (gitroot, self.sdir))
+        run_cmd("git clone --shared %s %s" % (test_master, self.sdir), dir=test_master, show=True)
         self.start_next()
 
     def start_next(self):
