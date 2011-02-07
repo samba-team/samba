@@ -496,7 +496,7 @@ msg.msg_acctrightslen = sizeof(fd);
     if conf.CONFIG_SET('HAVE_STATFS_F_FSID'):
 	default_shared_modules.extend(TO_LIST('vfs_fileid'))
 
-    if conf.CONFIG_SET('HAVE_AIO') and conf.CONFIG_SET('HAVE_MSGHDR_MSG_CONTROL') and conf.CONFIG_SET('HAVE_MSGHDR_MSG_ACCTRIGHTS'):
+    if conf.CONFIG_SET('HAVE_AIO') and (conf.CONFIG_SET('HAVE_MSGHDR_MSG_CONTROL') or conf.CONFIG_SET('HAVE_MSGHDR_MSG_ACCTRIGHTS')):
 	default_shared_modules.extend(TO_LIST('vfs_aio_fork'))
 
     explicit_shared_modules = TO_LIST(Options.options.shared_modules, delimiter=',')
