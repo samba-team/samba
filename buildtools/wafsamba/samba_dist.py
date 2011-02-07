@@ -80,14 +80,14 @@ def vcs_dir_contents(path):
     while repo != "/":
         if os.path.isdir(os.path.join(repo, ".git")):
             ls_files_cmd = [ 'git', 'ls-files', '--full-name',
-                             os.path.relpath(path, repo) ]
+                             os_path_relpath(path, repo) ]
             cwd = None
             env = dict(os.environ)
             env["GIT_DIR"] = os.path.join(repo, ".git")
             break
         elif os.path.isdir(os.path.join(repo, ".bzr")):
             ls_files_cmd = [ 'bzr', 'ls', '--recursive', '--versioned',
-                             os.path.relpath(path, repo)]
+                             os_path_relpath(path, repo)]
             cwd = repo
             env = None
             break

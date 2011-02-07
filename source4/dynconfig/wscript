@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import string, Utils, Options, sys, Build, os
-from samba_utils import EXPAND_VARIABLES
+from samba_utils import EXPAND_VARIABLES, os_path_relpath
 
 # list of directory options to offer in configure
 dir_options = {
@@ -145,6 +145,6 @@ def build(bld):
     bld.SAMBA_SUBSYSTEM('DYNCONFIG',
                         'dynconfig.c',
                         deps='replace talloc',
-                        public_headers=os.path.relpath(os.path.join(Options.launch_dir, 'version.h'), bld.curdir),
+                        public_headers=os_path_relpath(os.path.join(Options.launch_dir, 'version.h'), bld.curdir),
                         header_path='samba',
                         cflags=cflags)
