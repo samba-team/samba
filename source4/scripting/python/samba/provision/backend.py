@@ -571,6 +571,8 @@ class FDSBackend(LDAPBackend):
             ldap_backend_extra_port=None, ldap_dryrun_mode=False, root=None,
             setup_ds_path=None):
 
+        from samba.provision import setup_path
+
         super(FDSBackend, self).__init__(backend_type=backend_type,
                 paths=paths, lp=lp,
                 credentials=credentials, names=names, logger=logger,

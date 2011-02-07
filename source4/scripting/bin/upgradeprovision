@@ -47,7 +47,7 @@ from samba import param, dsdb, Ldb
 from samba.provision import (get_domain_descriptor,
                             get_config_descriptor,
                             ProvisioningError, get_last_provision_usn,
-                            get_max_usn, update_provision_usn)
+                            get_max_usn, update_provision_usn, setup_path)
 from samba.schema import get_linked_attributes, Schema, get_schema_descriptor
 from samba.dcerpc import security, drsblobs, xattr
 from samba.ndr import ndr_unpack
