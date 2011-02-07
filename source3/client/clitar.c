@@ -509,6 +509,7 @@ static bool ensurepath(const char *fname)
 	const char *p=fname;
 	char *basehack;
 	char *saveptr;
+	NTSTATUS status;
 
 	DEBUG(5, ( "Ensurepath called with: %s\n", fname));
 
@@ -542,11 +543,13 @@ static bool ensurepath(const char *fname)
 	while (p) {
 		strlcat(partpath, p, fnamelen);
 
-		if (!NT_STATUS_IS_OK(cli_chkpath(cli, partpath))) {
-			if (!NT_STATUS_IS_OK(cli_mkdir(cli, partpath))) {
+		status = cli_chkpath(cli, partpath);
+		if (!NT_STATUS_IS_OK(status)) {
+			status = cli_mkdir(cli, partpath);
+			if (!NT_STATUS_IS_OK(status)) {
 				SAFE_FREE(partpath);
 				SAFE_FREE(ffname);
-				DEBUG(0, ("Error mkdir %s\n", cli_errstr(cli)));
+				DEBUG(0, ("Error mkdir %s\n", nt_errstr(status)));
 				return False;
 			} else {
 				DEBUG(3, ("mkdirhiering %s\n", partpath));
@@ -581,6 +584,7 @@ static int padit(char *buf, uint64_t bufsize, uint64_t padsize)
 static void do_setrattr(char *name, uint16 attr, int set)
 {
 	uint16 oldattr;
+	NTSTATUS status;
 
 	if (!NT_STATUS_IS_OK(cli_getatr(cli, name, &oldattr, NULL, NULL))) {
 		return;
@@ -592,8 +596,9 @@ static void do_setrattr(char *name, uint16 attr, int set)
 		attr = oldattr & ~attr;
 	}
 
-	if (!NT_STATUS_IS_OK(cli_setatr(cli, name, attr, 0))) {
-		DEBUG(1,("setatr failed: %s\n", cli_errstr(cli)));
+	status = cli_setatr(cli, name, attr, 0);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("setatr failed: %s\n", nt_errstr(status)));
 	}
 }
 
@@ -656,7 +661,7 @@ static NTSTATUS do_atar(const char *rname_in, char *lname,
 	status = cli_open(cli, rname, O_RDONLY, DENY_NONE, &fnum);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("%s opening remote file %s (%s)\n",
-				cli_errstr(cli),rname, client_get_cur_dir()));
+				nt_errstr(status),rname, client_get_cur_dir()));
 		goto cleanup;
 	}
 
@@ -1082,10 +1087,10 @@ static int get_file(file_info2 finfo)
 	}
 
 	/* Now close the file ... */
-
-	if (!NT_STATUS_IS_OK(cli_close(cli, fnum))) {
+	status = cli_close(cli, fnum);
+	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("Error %s closing remote file\n",
-			cli_errstr(cli)));
+			nt_errstr(status)));
 		return(False);
 	}
 
