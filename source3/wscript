@@ -54,6 +54,7 @@ def set_options(opt):
     opt.SAMBA3_ADD_OPTION('acl-support')
     opt.SAMBA3_ADD_OPTION('dnsupdate')
     opt.SAMBA3_ADD_OPTION('syslog')
+    opt.SAMBA3_ADD_OPTION('automount')
     opt.SAMBA3_ADD_OPTION('aio-support')
 
 
@@ -622,6 +623,8 @@ msg.msg_acctrightslen = sizeof(fd);
             sys.exit(1)
     if Options.options.with_syslog:
         conf.DEFINE('WITH_SYSLOG', '1')
+    if Options.options.with_automount:
+        conf.DEFINE('WITH_AUTOMOUNT', '1')
 
     # Check for LDAP
     if Options.options.with_ldap:
