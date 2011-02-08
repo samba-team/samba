@@ -190,6 +190,12 @@ static int net_idmap_restore(struct net_context *c, int argc, const char **argv)
 
 	if (argc == 1) {
 		input = fopen(argv[0], "r");
+		if (input == NULL) {
+			d_fprintf(stderr, _("Could not open input file (%s): %s\n"),
+				  argv[0], strerror(errno));
+			ret = -1;
+			goto done;
+		}
 	} else {
 		input = stdin;
 	}
