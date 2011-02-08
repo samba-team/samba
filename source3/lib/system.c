@@ -867,6 +867,22 @@ SMB_STRUCT_DIR *sys_opendir(const char *name)
 }
 
 /*******************************************************************
+ An fdopendir wrapper that will deal with 64 bit filesizes.
+********************************************************************/
+
+SMB_STRUCT_DIR *sys_fdopendir(int fd)
+{
+#if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_FDOPENDIR64)
+	return fdopendir64(fd);
+#elif defined(HAVE_FDOPENDIR)
+	return fdopendir(fd);
+#else
+	errno = ENOSYS;
+	return NULL;
+#endif
+}
+
+/*******************************************************************
  A readdir wrapper that will deal with 64 bit filesizes.
 ********************************************************************/
 
