@@ -29,6 +29,7 @@
 #include "system/readline.h"
 #include "../libcli/smbreadline/smbreadline.h"
 #include "../libcli/security/security.h"
+#include "system/select.h"
 
 #ifndef REGISTER
 #define REGISTER 0
@@ -4735,11 +4736,10 @@ static bool finished;
 
 static void readline_callback(void)
 {
-	fd_set fds;
-	struct timeval timeout;
 	static time_t last_t;
 	struct timespec now;
 	time_t t;
+	int ret, revents;
 
 	clock_gettime_mono(&now);
 	t = now.tv_sec;
@@ -4754,18 +4754,14 @@ static void readline_callback(void)
 	if (cli->fd == -1)
 		return;
 
-	FD_ZERO(&fds);
-	FD_SET(cli->fd,&fds);
-
-	timeout.tv_sec = 0;
-	timeout.tv_usec = 0;
-	sys_select_intr(cli->fd+1,&fds,NULL,NULL,&timeout);
-
 	/* We deliberately use receive_smb_raw instead of
 	   client_receive_smb as we want to receive
 	   session keepalives and then drop them here.
 	*/
-	if (FD_ISSET(cli->fd,&fds)) {
+
+	ret = poll_intr_one_fd(cli->fd, POLLIN|POLLHUP, 0, &revents);
+
+	if ((ret > 0) && (revents & (POLLIN|POLLHUP|POLLERR))) {
 		NTSTATUS status;
 		size_t len;
 
