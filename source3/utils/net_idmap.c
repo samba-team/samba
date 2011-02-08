@@ -101,11 +101,13 @@ static int net_idmap_dump(struct net_context *c, int argc, const char **argv)
 {
 	struct db_context *db;
 	TALLOC_CTX *mem_ctx;
+	const char* dbfile;
+	int ret = -1;
 
-	if ( argc != 1  || c->display_usage) {
+	if ( argc > 1  || c->display_usage) {
 		d_printf("%s\n%s",
 			 _("Usage:"),
-			 _("net idmap dump <inputfile>\n"
+			 _("net idmap dump [[--db=]<inputfile>]\n"
 			   "  Dump current ID mapping.\n"
 			   "    inputfile\tTDB file to read mappings from.\n"));
 		return c->display_usage?0:-1;
@@ -113,19 +115,25 @@ static int net_idmap_dump(struct net_context *c, int argc, const char **argv)
 
 	mem_ctx = talloc_stackframe();
 
-	db = db_open(mem_ctx, argv[0], 0, TDB_DEFAULT, O_RDONLY, 0);
+	dbfile = (argc > 0) ? argv[0] : net_idmap_dbfile(c);
+	if (dbfile == NULL) {
+		goto done;
+	}
+	d_fprintf(stderr, _("dumping id mapping from %s\n"), dbfile);
+
+	db = db_open(mem_ctx, dbfile, 0, TDB_DEFAULT, O_RDONLY, 0);
 	if (db == NULL) {
 		d_fprintf(stderr, _("Could not open idmap db (%s): %s\n"),
 			  argv[0], strerror(errno));
-		talloc_free(mem_ctx);
-		return -1;
+		goto done;
 	}
 
 	db->traverse_read(db, net_idmap_dump_one_entry, NULL);
+	ret = 0;
 
+done:
 	talloc_free(mem_ctx);
-
-	return 0;
+	return ret;
 }
 
 /***********************************************************
