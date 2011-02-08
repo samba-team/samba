@@ -111,7 +111,7 @@ char *print_canonical_sockaddr(TALLOC_CTX *ctx,
 	} else {
 		dest = talloc_asprintf(ctx, "%s", addr);
 	}
-	
+
 	return dest;
 }
 

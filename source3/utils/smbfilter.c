@@ -2,17 +2,17 @@
    Unix SMB/CIFS implementation.
    SMB filter/socket plugin
    Copyright (C) Andrew Tridgell 1999
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -193,14 +193,14 @@ static void filter_child(int c, struct sockaddr_storage *dest_ss)
 	while (c != -1 || s != -1) {
 		fd_set fds;
 		int num;
-		
+
 		FD_ZERO(&fds);
 		if (s != -1) FD_SET(s, &fds);
 		if (c != -1) FD_SET(c, &fds);
 
 		num = sys_select_intr(MAX(s+1, c+1),&fds,NULL,NULL,NULL);
 		if (num <= 0) continue;
-		
+
 		if (c != -1 && FD_ISSET(c, &fds)) {
 			size_t len;
 			if (!NT_STATUS_IS_OK(receive_smb_raw(
@@ -247,7 +247,7 @@ static void start_filter(char *desthost)
 
 	zero_sockaddr(&my_ss);
 	s = open_socket_in(SOCK_STREAM, 445, 0, &my_ss, True);
-	
+
 	if (s == -1) {
 		d_printf("bind failed\n");
 		exit(1);
@@ -267,7 +267,7 @@ static void start_filter(char *desthost)
 		int num;
 		struct sockaddr_storage ss;
 		socklen_t in_addrlen = sizeof(ss);
-		
+
 		FD_ZERO(&fds);
 		FD_SET(s, &fds);
 

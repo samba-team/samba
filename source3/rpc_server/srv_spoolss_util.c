@@ -208,7 +208,7 @@ static uint32_t winreg_printer_rev_changeid(void)
 #else
 	/*
 	 * This setting seems to work well but is too untested
-	 * to replace the above calculation.  Left in for experiementation
+	 * to replace the above calculation.  Left in for experimentation
 	 * of the reader            --jerry (Tue Mar 12 09:15:05 CST 2002)
 	 */
 	return tv.tv_sec * 10 + tv.tv_usec / 100000;
