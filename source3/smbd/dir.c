@@ -554,10 +554,16 @@ NTSTATUS dptr_create(connection_struct *conn, const char *path, bool old_handle,
  Wrapper functions to access the lower level directory handles.
 ****************************************************************************/
 
-int dptr_CloseDir(struct dptr_struct *dptr)
+void dptr_CloseDir(files_struct *fsp)
 {
-	dptr_close_internal(dptr);
-	return 0;
+	if (fsp->dptr) {
+		if (fsp->fh->fd == dirfd(fsp->dptr->dir_hnd->dir)) {
+			/* The call below closes the underlying fd. */
+			fsp->fh->fd = -1;
+		}
+		dptr_close_internal(fsp->dptr);
+		fsp->dptr = NULL;
+	}
 }
 
 void dptr_SeekDir(struct dptr_struct *dptr, long offset)
