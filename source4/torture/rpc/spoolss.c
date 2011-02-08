@@ -9269,10 +9269,6 @@ static bool test_add_driver_timestamps(struct torture_context *tctx,
 	struct torture_driver_context *d;
 	struct timeval t = timeval_current();
 
-	if (torture_setting_bool(tctx, "samba3", false)) {
-		torture_skip(tctx, "skipping timestamps test against samba");
-	}
-
 	d = talloc_zero(tctx, struct torture_driver_context);
 
 	d->info8.version		= SPOOLSS_DRIVER_VERSION_200X;
