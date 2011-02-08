@@ -62,7 +62,7 @@ def configure(conf):
     # this enables smbtorture.static for s3 in the build farm
     conf.env.BUILD_FARM = Options.options.BUILD_FARM or os.environ.get('RUN_FROM_BUILD_FARM')
 
-    conf.ADD_EXTRA_INCLUDES('#source4 #lib #source4/lib #source4/include #includexxx #include #includeyyy')
+    conf.ADD_EXTRA_INCLUDES('#source4 #lib #source4/lib #source4/include #include')
 
     conf.RECURSE('lib/replace')
 
