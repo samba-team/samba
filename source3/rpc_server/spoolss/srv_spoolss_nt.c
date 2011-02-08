@@ -2406,7 +2406,7 @@ static WERROR getprinterdata_printer_server(TALLOC_CTX *mem_ctx,
 	}
 
 
-   	if (!StrCaseCmp(value, "DefaultSpoolDirectory")) {
+	if (!StrCaseCmp(value, "DefaultSpoolDirectory")) {
 		*type = REG_SZ;
 
 		data->string = talloc_strdup(mem_ctx, "C:\\PRINTERS");
@@ -4647,7 +4647,7 @@ WERROR _spoolss_EnumPrinters(struct pipes_struct *p,
 	}
 
 	*r->out.needed	= SPOOLSS_BUFFER_UNION_ARRAY(p->mem_ctx,
-						     spoolss_EnumPrinters, 
+						     spoolss_EnumPrinters,
 						     *r->out.info, r->in.level,
 						     *r->out.count);
 	*r->out.info	= SPOOLSS_BUFFER_OK(*r->out.info, NULL);
@@ -4757,7 +4757,7 @@ WERROR _spoolss_GetPrinter(struct pipes_struct *p,
 		return result;
 	}
 
-	*r->out.needed	= SPOOLSS_BUFFER_UNION(spoolss_PrinterInfo, 
+	*r->out.needed	= SPOOLSS_BUFFER_UNION(spoolss_PrinterInfo,
 					       r->out.info, r->in.level);
 	r->out.info	= SPOOLSS_BUFFER_OK(r->out.info, NULL);
 
@@ -5589,7 +5589,7 @@ WERROR _spoolss_GetPrinterDriver2(struct pipes_struct *p,
 		return result;
 	}
 
-	*r->out.needed	= SPOOLSS_BUFFER_UNION(spoolss_DriverInfo, 
+	*r->out.needed	= SPOOLSS_BUFFER_UNION(spoolss_DriverInfo,
 					       r->out.info, r->in.level);
 	r->out.info	= SPOOLSS_BUFFER_OK(r->out.info, NULL);
 
@@ -7088,7 +7088,7 @@ WERROR _spoolss_EnumJobs(struct pipes_struct *p,
 	}
 
 	*r->out.needed	= SPOOLSS_BUFFER_UNION_ARRAY(p->mem_ctx,
-						     spoolss_EnumJobs, 
+						     spoolss_EnumJobs,
 						     *r->out.info, r->in.level,
 						     *r->out.count);
 	*r->out.info	= SPOOLSS_BUFFER_OK(*r->out.info, NULL);
@@ -7420,7 +7420,7 @@ WERROR _spoolss_EnumPrinterDrivers(struct pipes_struct *p,
 	}
 
 	*r->out.needed	= SPOOLSS_BUFFER_UNION_ARRAY(p->mem_ctx,
-						     spoolss_EnumPrinterDrivers, 
+						     spoolss_EnumPrinterDrivers,
 						     *r->out.info, r->in.level,
 						     *r->out.count);
 	*r->out.info	= SPOOLSS_BUFFER_OK(*r->out.info, NULL);
@@ -7474,7 +7474,7 @@ WERROR _spoolss_EnumForms(struct pipes_struct *p,
 	}
 
 	*r->out.needed	= SPOOLSS_BUFFER_UNION_ARRAY(p->mem_ctx,
-						     spoolss_EnumForms, 
+						     spoolss_EnumForms,
 						     *r->out.info, r->in.level,
 						     *r->out.count);
 	*r->out.info	= SPOOLSS_BUFFER_OK(*r->out.info, NULL);
@@ -7520,7 +7520,7 @@ WERROR _spoolss_GetForm(struct pipes_struct *p,
 		return result;
 	}
 
-	*r->out.needed	= SPOOLSS_BUFFER_UNION(spoolss_FormInfo, 
+	*r->out.needed	= SPOOLSS_BUFFER_UNION(spoolss_FormInfo,
 					       r->out.info, r->in.level);
 	r->out.info	= SPOOLSS_BUFFER_OK(r->out.info, NULL);
 
@@ -7768,7 +7768,7 @@ WERROR _spoolss_EnumPorts(struct pipes_struct *p,
 	}
 
 	*r->out.needed	= SPOOLSS_BUFFER_UNION_ARRAY(p->mem_ctx,
-						     spoolss_EnumPorts, 
+						     spoolss_EnumPorts,
 						     *r->out.info, r->in.level,
 						     *r->out.count);
 	*r->out.info	= SPOOLSS_BUFFER_OK(*r->out.info, NULL);
@@ -8189,7 +8189,7 @@ WERROR _spoolss_GetPrinterDriverDirectory(struct pipes_struct *p,
 		return werror;
 	}
 
-	*r->out.needed	= SPOOLSS_BUFFER_UNION(spoolss_DriverDirectoryInfo, 
+	*r->out.needed	= SPOOLSS_BUFFER_UNION(spoolss_DriverDirectoryInfo,
 					       r->out.info, r->in.level);
 	r->out.info	= SPOOLSS_BUFFER_OK(r->out.info, NULL);
 
@@ -8319,8 +8319,8 @@ WERROR _spoolss_EnumPrinterData(struct pipes_struct *p,
 
 		/*
 		 * See the section "Dynamically Typed Query Parameters"
- 		 * in MS-RPRN.
- 		 */
+		 * in MS-RPRN.
+		 */
 
 		if (r->out.data && val->data && val->data->data &&
 				val->data_length && r->in.data_offered) {
@@ -8784,7 +8784,7 @@ WERROR _spoolss_EnumPrintProcDataTypes(struct pipes_struct *p,
 	}
 
 	*r->out.needed	= SPOOLSS_BUFFER_UNION_ARRAY(p->mem_ctx,
-						     spoolss_EnumPrintProcDataTypes, 
+						     spoolss_EnumPrintProcDataTypes,
 						     *r->out.info, r->in.level,
 						     *r->out.count);
 	*r->out.info	= SPOOLSS_BUFFER_OK(*r->out.info, NULL);
@@ -8957,7 +8957,7 @@ WERROR _spoolss_EnumMonitors(struct pipes_struct *p,
 	}
 
 	*r->out.needed	= SPOOLSS_BUFFER_UNION_ARRAY(p->mem_ctx,
-						     spoolss_EnumMonitors, 
+						     spoolss_EnumMonitors,
 						     *r->out.info, r->in.level,
 						     *r->out.count);
 	*r->out.info	= SPOOLSS_BUFFER_OK(*r->out.info, NULL);
@@ -9607,7 +9607,7 @@ WERROR _spoolss_EnumPrinterDataEx(struct pipes_struct *p,
 	}
 
 	*r->out.needed	= SPOOLSS_BUFFER_ARRAY(p->mem_ctx,
-					       spoolss_EnumPrinterDataEx, 
+					       spoolss_EnumPrinterDataEx,
 					       *r->out.info,
 					       *r->out.count);
 	*r->out.info	= SPOOLSS_BUFFER_OK(*r->out.info, NULL);

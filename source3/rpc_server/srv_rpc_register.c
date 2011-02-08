@@ -38,8 +38,8 @@
 #include "../librpc/gen_ndr/srv_wkssvc.h"
 
 #include "printing/nt_printing_migrate.h"
-#include "rpc_server/srv_eventlog_reg.h"
-#include "rpc_server/srv_svcctl_reg.h"
+#include "rpc_server/eventlog/srv_eventlog_reg.h"
+#include "rpc_server/svcctl/srv_svcctl_reg.h"
 
 #include "librpc/rpc/dcerpc_ep.h"
 

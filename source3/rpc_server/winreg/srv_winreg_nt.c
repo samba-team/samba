@@ -525,7 +525,7 @@ WERROR _winreg_InitiateSystemShutdownEx(struct pipes_struct *p,
 	int ret = -1;
 	bool can_shutdown = false;
 
- 	shutdown_script = talloc_strdup(p->mem_ctx, lp_shutdown_script());
+	shutdown_script = talloc_strdup(p->mem_ctx, lp_shutdown_script());
 	if (!shutdown_script) {
 		return WERR_NOMEM;
 	}

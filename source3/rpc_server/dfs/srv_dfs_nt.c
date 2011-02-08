@@ -239,7 +239,7 @@ static bool init_reply_dfs_info_3(TALLOC_CTX *mem_ctx, struct junction_map* j, s
 	for(ii=0;ii<j->referral_count;ii++) {
 		char* p;
 		char *path = NULL;
- 		struct dfs_StorageInfo* stor = &(dfs3->stores[ii]);
+		struct dfs_StorageInfo* stor = &(dfs3->stores[ii]);
 		struct referral* ref = &(j->referral_list[ii]);
 
 		path = talloc_strdup(mem_ctx, ref->alternate_path);

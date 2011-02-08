@@ -21,7 +21,7 @@
 
 #include "includes.h"
 #include "../librpc/gen_ndr/spoolss.h"
-#include "rpc_server/srv_spoolss_util.h"
+#include "rpc_server/spoolss/srv_spoolss_util.h"
 #include "nt_printing.h"
 #include "ads.h"
 #include "secrets.h"
