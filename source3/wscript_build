@@ -108,7 +108,7 @@ LIB_SRC = '''${LIBSAMBAUTIL_SRC}
           lib/util.c lib/util_names.c
           lib/util_sock.c lib/sock_exec.c lib/util_sec.c
           lib/substitute.c lib/dbwrap_util.c
-          lib/ms_fnmatch.c lib/errmap_unix.c
+          lib/ms_fnmatch.c
           lib/tallocmsg.c lib/dmallocmsg.c
           libsmb/clisigning.c libsmb/smb_signing.c
           intl/lang_tdb.c
@@ -159,11 +159,9 @@ LIBNMB_SRC = '''libsmb/unexpected.c libsmb/namecache.c libsmb/nmblib.c
              libsmb/namequery.c ../libcli/nbt/lmhosts.c libsmb/conncache.c
              libads/dns.c libads/sitename_cache.c'''
 
-NTERR_SRC = '''libsmb/smberr.c'''
-ERRORMAP_SRC = 'libsmb/errormap.c'
 DCE_RPC_ERR_SRC = '../librpc/rpc/dcerpc_error.c'
 
-LIBSMB_ERR_SRC = '''${NTERR_SRC} ${ERRORMAP_SRC} ${DCE_RPC_ERR_SRC}'''
+LIBSMB_ERR_SRC = '''${DCE_RPC_ERR_SRC}'''
 
 LIBSMB_SRC0 = '''
                libsmb/ntlmssp.c
@@ -1073,7 +1071,7 @@ bld.SAMBA_SUBSYSTEM('NDR_DCERPC',
                     vars=locals())
 
 bld.SAMBA_SUBSYSTEM('errors',
-	source='../libcli/util/doserr.c libsmb/nterr.c')
+	source='../libcli/util/doserr.c libsmb/nterr.c libsmb/errormap.c libsmb/smberr.c lib/errmap_unix.c')
 
 bld.SAMBA_SUBSYSTEM('NDR_NBT_BUF',
 	source='../libcli/nbt/nbtname.c',
