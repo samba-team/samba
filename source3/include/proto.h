@@ -1180,6 +1180,7 @@ bool tevent_req_poll_ntstatus(struct tevent_req *req,
 			      struct tevent_context *ev,
 			      NTSTATUS *status);
 bool any_nt_status_not_ok(NTSTATUS err1, NTSTATUS err2, NTSTATUS *result);
+int timeval_to_msec(struct timeval t);
 
 /* The following definitions come from lib/util_file.c  */
 
