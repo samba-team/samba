@@ -1105,7 +1105,7 @@ NTSTATUS vfs_stat_fsp(files_struct *fsp)
 {
 	int ret;
 
-	if(fsp->is_directory || fsp->fh->fd == -1) {
+	if(fsp->fh->fd == -1) {
 		if (fsp->posix_open) {
 			ret = SMB_VFS_LSTAT(fsp->conn, fsp->fsp_name);
 		} else {
@@ -1443,7 +1443,7 @@ NTSTATUS vfs_chown_fsp(files_struct *fsp, uid_t uid, gid_t gid)
 {
 	int ret;
 
-	if (!fsp->is_directory && fsp->fh->fd != -1) {
+	if (fsp->fh->fd != -1) {
 		/* Try fchown. */
 		ret = SMB_VFS_FCHOWN(fsp, uid, gid);
 		if (ret == 0) {

@@ -2726,12 +2726,25 @@ static NTSTATUS open_directory(connection_struct *conn,
 
 	mtimespec = smb_dname->st.st_ex_mtime;
 
+#ifdef O_DIRECTORY
+	status = fd_open(conn, fsp, O_RDONLY|O_DIRECTORY, 0);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(5, ("open_directory: Could not open fd for "
+			"%s (%s)\n",
+			smb_fname_str_dbg(smb_dname),
+			nt_errstr(status)));
+		file_free(req, fsp);
+		return status;
+	}
+#endif
+
 	lck = get_share_mode_lock(talloc_tos(), fsp->file_id,
 				  conn->connectpath, smb_dname, &mtimespec);
 
 	if (lck == NULL) {
 		DEBUG(0, ("open_directory: Could not get share mode lock for "
 			  "%s\n", smb_fname_str_dbg(smb_dname)));
+		fd_close(fsp);
 		file_free(req, fsp);
 		return NT_STATUS_SHARING_VIOLATION;
 	}
@@ -2742,6 +2755,7 @@ static NTSTATUS open_directory(connection_struct *conn,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(lck);
+		fd_close(fsp);
 		file_free(req, fsp);
 		return status;
 	}
@@ -2754,6 +2768,7 @@ static NTSTATUS open_directory(connection_struct *conn,
 		status = can_set_delete_on_close(fsp, 0);
 		if (!NT_STATUS_IS_OK(status) && !NT_STATUS_EQUAL(status, NT_STATUS_DIRECTORY_NOT_EMPTY)) {
 			TALLOC_FREE(lck);
+			fd_close(fsp);
 			file_free(req, fsp);
 			return status;
 		}
