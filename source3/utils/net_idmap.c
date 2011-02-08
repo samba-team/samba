@@ -61,13 +61,22 @@ static const char* net_idmap_dbfile(struct net_context *c)
 
 	if (c->opt_db != NULL) {
 		dbfile = talloc_strdup(talloc_tos(), c->opt_db);
+		if (dbfile == NULL) {
+			d_fprintf(stderr, _("Out of memory!\n"));
+		}
 	} else if (strequal(lp_idmap_backend(), "tdb")) {
 		dbfile = state_path("winbindd_idmap.tdb");
+		if (dbfile == NULL) {
+			d_fprintf(stderr, _("Out of memory!\n"));
+		}
 	} else if (strequal(lp_idmap_backend(), "tdb2")) {
 		dbfile = lp_parm_talloc_string(-1, "tdb", "idmap2.tdb", NULL);
 		if (dbfile == NULL) {
 			dbfile = talloc_asprintf(talloc_tos(), "%s/idmap2.tdb",
 						 lp_private_dir());
+		}
+		if (dbfile == NULL) {
+			d_fprintf(stderr, _("Out of memory!\n"));
 		}
 	} else {
 		char* backend = talloc_strdup(talloc_tos(), lp_idmap_backend());
@@ -81,9 +90,7 @@ static const char* net_idmap_dbfile(struct net_context *c)
 
 		talloc_free(backend);
 	}
-	if (dbfile == NULL) {
-		DEBUG(0,("Out of memory\n"));
-	}
+
 	return dbfile;
 }
 
