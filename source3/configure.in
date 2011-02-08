@@ -1099,6 +1099,7 @@ AC_CHECK_FUNCS(lstat64 fopen64 atexit grantpt lseek64 ftruncate64 posix_fallocat
 AC_CHECK_FUNCS(fallocate fallocate64)
 AC_CHECK_FUNCS(fseek64 fseeko64 ftell64 ftello64 setluid getpwanam)
 AC_CHECK_FUNCS(opendir64 readdir64 seekdir64 telldir64 rewinddir64 closedir64)
+AC_CHECK_FUNCS(fdopendir fdopendir64)
 AC_CHECK_FUNCS(getpwent_r)
 AC_CHECK_FUNCS(getdents64)
 AC_CHECK_FUNCS(setenv strcasecmp fcvt fcvtl)
