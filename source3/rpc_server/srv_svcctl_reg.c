@@ -483,6 +483,7 @@ static bool svcctl_add_service(TALLOC_CTX *mem_ctx,
 	if (is_valid_policy_hnd(&key_hnd)) {
 		dcerpc_winreg_CloseKey(h, mem_ctx, &key_hnd, &result);
 	}
+	ZERO_STRUCT(key_hnd);
 
 	ZERO_STRUCT(wkey);
 	wkey.name = talloc_asprintf(mem_ctx, "%s\\%s\\Security", key, name);
@@ -564,7 +565,13 @@ bool svcctl_init_winreg(struct messaging_context *msg_ctx)
 
 	DEBUG(3, ("Initialise the svcctl registry keys if needed.\n"));
 
+	ZERO_STRUCT(hive_hnd);
+	ZERO_STRUCT(key_hnd);
+
 	key = talloc_strdup(tmp_ctx, TOP_LEVEL_SERVICES_KEY);
+	if (key == NULL) {
+		goto done;
+	}
 
 	status = dcerpc_winreg_int_hklm_openkey(tmp_ctx,
 						get_server_info_system(),
@@ -653,6 +660,7 @@ bool svcctl_init_winreg(struct messaging_context *msg_ctx)
 		if (is_valid_policy_hnd(&key_hnd)) {
 			dcerpc_winreg_CloseKey(h, tmp_ctx, &key_hnd, &result);
 		}
+		ZERO_STRUCT(key_hnd);
 
 		if (!ok) {
 			goto done;
