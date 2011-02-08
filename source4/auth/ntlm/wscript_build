@@ -48,12 +48,6 @@ bld.SAMBA_MODULE('auth_unix',
 	)
 
 
-bld.SAMBA_SUBSYSTEM('PAM_ERRORS',
-	source='pam_errors.c',
-	deps='talloc'
-	)
-
-
 bld.SAMBA_LIBRARY('auth',
 	source='auth.c auth_util.c auth_simple.c',
 	autoproto='auth_proto.h',

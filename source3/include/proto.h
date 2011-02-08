@@ -608,13 +608,6 @@ int ms_fnmatch(const char *pattern, const char *string, bool translate_pattern,
 	       bool is_case_sensitive);
 int gen_fnmatch(const char *pattern, const char *string);
 
-/* The following definitions come from lib/pam_errors.c  */
-
-NTSTATUS pam_to_nt_status(int pam_error);
-int nt_status_to_pam(NTSTATUS nt_status);
-NTSTATUS pam_to_nt_status(int pam_error);
-int nt_status_to_pam(NTSTATUS nt_status);
-
 /* The following definitions come from lib/pidfile.c  */
 
 pid_t pidfile_pid(const char *name);

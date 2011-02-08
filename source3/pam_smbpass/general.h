@@ -1,4 +1,5 @@
 #include "../librpc/gen_ndr/samr.h"
+#include "../libcli/auth/pam_errors.h"
 
 #ifndef LINUX
 /* This is only needed by modules in the Sun implementation. */

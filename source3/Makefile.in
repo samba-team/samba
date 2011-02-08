@@ -457,7 +457,7 @@ LIB_OBJ = $(LIBSAMBAUTIL_OBJ) $(UTIL_OBJ) $(CRYPTO_OBJ) \
 	  lib/ms_fnmatch.o lib/errmap_unix.o \
 	  lib/tallocmsg.o lib/dmallocmsg.o \
 	  libsmb/clisigning.o libsmb/smb_signing.o \
-	  lib/iconv.o lib/pam_errors.o intl/lang_tdb.o \
+	  lib/iconv.o intl/lang_tdb.o \
 	  lib/conn_tdb.o lib/adt_tree.o lib/gencache.o \
 	  lib/sessionid_tdb.o \
 	  lib/module.o lib/events.o @LIBTEVENT_OBJ0@ \
@@ -838,7 +838,8 @@ VFS_CROSSRENAME_OBJ = modules/vfs_crossrename.o
 VFS_LINUX_XFS_SGID_OBJ = modules/vfs_linux_xfs_sgid.o
 VFS_TIME_AUDIT_OBJ = modules/vfs_time_audit.o
 
-PLAINTEXT_AUTH_OBJ = auth/pampass.o auth/pass_check.o
+PAM_ERRORS_OBJ = ../libcli/auth/pam_errors.o
+PLAINTEXT_AUTH_OBJ = auth/pampass.o auth/pass_check.o $(PAM_ERRORS_OBJ)
 
 SLCACHE_OBJ = libsmb/samlogon_cache.o
 
@@ -1294,7 +1295,7 @@ PAM_SMBPASS_OBJ_0 = pam_smbpass/pam_smb_auth.o pam_smbpass/pam_smb_passwd.o \
 		pam_smbpass/pam_smb_acct.o pam_smbpass/support.o ../lib/util/asn1.o
 PAM_SMBPASS_OBJ = $(PAM_SMBPASS_OBJ_0) $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) $(PASSDB_OBJ) $(GROUPDB_OBJ) \
 		$(SMBLDAP_OBJ) $(LIBSAMBA_OBJ) \
-		$(LIBTSOCKET_OBJ)
+		$(LIBTSOCKET_OBJ) $(PAM_ERRORS_OBJ)
 
 IDMAP_RW_OBJ = winbindd/idmap_rw.o
 
@@ -1427,7 +1428,8 @@ WINBINDD_OBJ = \
 		$(LIBCLI_SAMR_OBJ) \
 		$(LIBCLI_NETLOGON_OBJ) \
 		rpc_client/init_netlogon.o \
-		rpc_client/init_samr.o
+		rpc_client/init_samr.o \
+		$(PAM_ERRORS_OBJ)
 
 WBINFO_OBJ = ../nsswitch/wbinfo.o $(LIBSAMBA_OBJ) $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) \
 		$(POPT_LIB_OBJ) $(AFS_SETTOKEN_OBJ) \

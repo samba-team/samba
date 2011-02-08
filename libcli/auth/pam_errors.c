@@ -1,30 +1,35 @@
-/* 
+/*
  *  Unix SMB/CIFS implementation.
  *  PAM error mapping functions
  *  Copyright (C) Andrew Bartlett 2002
- *  
+ *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
  *  the Free Software Foundation; either version 3 of the License, or
  *  (at your option) any later version.
- *  
+ *
  *  This program is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
 #include "includes.h"
+#include "../libcli/auth/pam_errors.h"
 
-#ifdef WITH_HAVE_SECURITY_PAM_APPL_H
+#ifdef WITH_PAM
+#if defined(HAVE_SECURITY_PAM_APPL_H)
 #include <security/pam_appl.h>
+#elif defined(HAVE_PAM_PAM_APPL_H)
+#include <pam/pam_appl.h>
+#endif
 
 #if defined(PAM_AUTHTOK_RECOVERY_ERR) && !defined(PAM_AUTHTOK_RECOVER_ERR)
 #define PAM_AUTHTOK_RECOVER_ERR PAM_AUTHTOK_RECOVERY_ERR
-#endif	
+#endif
 
 /* PAM -> NT_STATUS map */
 static const struct {
@@ -35,7 +40,7 @@ static const struct {
 	{PAM_SYMBOL_ERR, NT_STATUS_UNSUCCESSFUL},
 	{PAM_SERVICE_ERR, NT_STATUS_UNSUCCESSFUL},
 	{PAM_SYSTEM_ERR,  NT_STATUS_UNSUCCESSFUL},
-	{PAM_BUF_ERR, NT_STATUS_UNSUCCESSFUL},
+	{PAM_BUF_ERR, NT_STATUS_NO_MEMORY},
 	{PAM_PERM_DENIED, NT_STATUS_ACCESS_DENIED},
 	{PAM_AUTH_ERR, NT_STATUS_WRONG_PASSWORD},
 	{PAM_CRED_INSUFFICIENT, NT_STATUS_INSUFFICIENT_LOGON_INFO}, /* FIXME:  Is this correct? */
@@ -68,6 +73,16 @@ static const struct {
 	{NT_STATUS_ACCOUNT_EXPIRED, PAM_ACCT_EXPIRED},
 	{NT_STATUS_PASSWORD_EXPIRED, PAM_AUTHTOK_EXPIRED},
 	{NT_STATUS_PASSWORD_MUST_CHANGE, PAM_NEW_AUTHTOK_REQD},
+	{NT_STATUS_ACCOUNT_LOCKED_OUT, PAM_MAXTRIES},
+	{NT_STATUS_NO_MEMORY, PAM_BUF_ERR},
+	{NT_STATUS_PASSWORD_RESTRICTION, PAM_PERM_DENIED},
+	{NT_STATUS_BACKUP_CONTROLLER, PAM_AUTHINFO_UNAVAIL},
+	{NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND, PAM_AUTHINFO_UNAVAIL},
+	{NT_STATUS_NO_LOGON_SERVERS, PAM_AUTHINFO_UNAVAIL},
+	{NT_STATUS_INVALID_WORKSTATION, PAM_PERM_DENIED},
+	{NT_STATUS_NOLOGON_WORKSTATION_TRUST_ACCOUNT, PAM_AUTHINFO_UNAVAIL},
+	{NT_STATUS_NOLOGON_SERVER_TRUST_ACCOUNT, PAM_AUTHINFO_UNAVAIL},
+	{NT_STATUS_NOLOGON_INTERDOMAIN_TRUST_ACCOUNT, PAM_AUTHINFO_UNAVAIL},
 	{NT_STATUS_OK, PAM_SUCCESS}
 };
 
@@ -78,7 +93,7 @@ NTSTATUS pam_to_nt_status(int pam_error)
 {
 	int i;
 	if (pam_error == 0) return NT_STATUS_OK;
-	
+
 	for (i=0; NT_STATUS_V(pam_to_nt_status_map[i].ntstatus); i++) {
 		if (pam_error == pam_to_nt_status_map[i].pam_code)
 			return pam_to_nt_status_map[i].ntstatus;
@@ -93,7 +108,7 @@ int nt_status_to_pam(NTSTATUS nt_status)
 {
 	int i;
 	if NT_STATUS_IS_OK(nt_status) return PAM_SUCCESS;
-	
+
 	for (i=0; NT_STATUS_V(nt_status_to_pam_map[i].ntstatus); i++) {
 		if (NT_STATUS_EQUAL(nt_status,nt_status_to_pam_map[i].ntstatus))
 			return nt_status_to_pam_map[i].pam_code;
@@ -101,7 +116,7 @@ int nt_status_to_pam(NTSTATUS nt_status)
 	return PAM_SYSTEM_ERR;
 }
 
-#else 
+#else
 
 /*****************************************************************************
 convert a PAM error to a NT status32 code
@@ -122,4 +137,3 @@ int nt_status_to_pam(NTSTATUS nt_status)
 }
 
 #endif
-

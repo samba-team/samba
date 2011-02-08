@@ -24,3 +24,7 @@ bld.SAMBA_SUBSYSTEM('COMMON_SCHANNELDB',
 	deps='tdb-wrap'
 	)
 
+
+bld.SAMBA_SUBSYSTEM('PAM_ERRORS',
+	source='pam_errors.c'
+	)
