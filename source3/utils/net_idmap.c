@@ -305,13 +305,145 @@ done:
 	return ret;
 }
 
+static
+NTSTATUS dbwrap_delete_mapping(struct db_context *db, TDB_DATA key1, bool force)
+{
+	TALLOC_CTX* mem_ctx = talloc_tos();
+	struct db_record *rec1=NULL, *rec2=NULL;
+	TDB_DATA key2;
+	bool is_valid_mapping;
+	NTSTATUS status = NT_STATUS_OK;
+
+	rec1 = db->fetch_locked(db, mem_ctx, key1);
+	if (rec1 == NULL) {
+		DEBUG(1, ("failed to fetch: %.*s\n", (int)key1.dsize, key1.dptr));
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+	key2 = rec1->value;
+	if (key2.dptr == NULL) {
+		DEBUG(1, ("could not find %.*s\n", (int)key1.dsize, key1.dptr));
+		status = NT_STATUS_NOT_FOUND;
+		goto done;
+	}
+
+	DEBUG(2, ("mapping: %.*s -> %.*s\n",
+		  (int)key1.dsize, key1.dptr, (int)key2.dsize, key2.dptr));
+
+	rec2 = db->fetch_locked(db, mem_ctx, key2);
+	if (rec2 == NULL) {
+		DEBUG(1, ("failed to fetch: %.*s\n", (int)key2.dsize, key2.dptr));
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	is_valid_mapping = tdb_data_equal(key1, rec2->value);
+
+	if (!is_valid_mapping) {
+		DEBUG(1, ("invalid mapping: %.*s -> %.*s -> %.*s\n",
+			  (int)key1.dsize, key1.dptr, (int)key2.dsize, key2.dptr,
+			  (int)rec2->value.dsize, rec2->value.dptr ));
+		if ( !force ) {
+			status = NT_STATUS_FILE_INVALID;
+			goto done;
+		}
+	}
+
+	status = rec1->delete_rec(rec1);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("failed to delete: %.*s\n", (int)key1.dsize, key1.dptr));
+		goto done;
+	}
+
+	if (is_valid_mapping) {
+		status = rec2->delete_rec(rec2);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(1, ("failed to delete: %.*s\n", (int)key2.dsize, key2.dptr));
+		}
+	}
+done:
+	TALLOC_FREE(rec1);
+	TALLOC_FREE(rec2);
+	return status;
+}
+
+static
+NTSTATUS delete_mapping_action(struct db_context *db, void* data)
+{
+	return dbwrap_delete_mapping(db, *(TDB_DATA*)data, false);
+}
+static
+NTSTATUS delete_mapping_action_force(struct db_context *db, void* data)
+{
+	return dbwrap_delete_mapping(db, *(TDB_DATA*)data, true);
+}
+
 /***********************************************************
  Delete a SID mapping from a winbindd_idmap.tdb
  **********************************************************/
+static bool delete_args_ok(int argc, const char **argv)
+{
+	if (argc != 1)
+		return false;
+	if (strncmp(argv[0], "S-", 2) == 0)
+		return true;
+	if (strncmp(argv[0], "GID ", 4) == 0)
+		return true;
+	if (strncmp(argv[0], "UID ", 4) == 0)
+		return true;
+	return false;
+}
+
 static int net_idmap_delete(struct net_context *c, int argc, const char **argv)
 {
-	d_printf("%s\n", _("Not implemented yet"));
-	return -1;
+	int ret = -1;
+	struct db_context *db;
+	TALLOC_CTX *mem_ctx;
+	TDB_DATA key;
+	NTSTATUS status;
+	const char* dbfile;
+
+	if ( !delete_args_ok(argc,argv) || c->display_usage) {
+		d_printf("%s\n%s",
+			 _("Usage:"),
+			 _("net idmap delete [-f] [--db=<TDB>] <ID>\n"
+			   "  Delete mapping of ID from TDB.\n"
+			   "    -f\tforce\n"
+			   "    TDB\tidmap database\n"
+			   "    ID\tSID|GID|UID\n"));
+		return c->display_usage ? 0 : -1;
+	}
+
+	mem_ctx = talloc_stackframe();
+
+	dbfile = net_idmap_dbfile(c);
+	if (dbfile == NULL) {
+		goto done;
+	}
+	d_fprintf(stderr, _("deleting id mapping from %s\n"), dbfile);
+
+	db = db_open(mem_ctx, dbfile, 0, TDB_DEFAULT, O_RDWR, 0);
+	if (db == NULL) {
+		d_fprintf(stderr, _("Could not open idmap db (%s): %s\n"),
+			  dbfile, strerror(errno));
+		goto done;
+	}
+
+	key = string_term_tdb_data(argv[0]);
+
+	status = dbwrap_trans_do(db, (c->opt_force
+				      ? delete_mapping_action_force
+				      : delete_mapping_action),  &key);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		d_fprintf(stderr, _("could not delete mapping: %s\n"),
+			  nt_errstr(status));
+		goto done;
+	}
+	ret = 0;
+done:
+	talloc_free(mem_ctx);
+	return ret;
 }
 
 static int net_idmap_set(struct net_context *c, int argc, const char **argv)
@@ -500,9 +632,9 @@ int net_idmap(struct net_context *c, int argc, const char **argv)
 			"delete",
 			net_idmap_delete,
 			NET_TRANSPORT_LOCAL,
-			N_("Not implemented yet"),
-			N_("net idmap delete\n"
-			   "  Not implemented yet")
+			N_("Delete ID mapping"),
+			N_("net idmap delete <ID>\n"
+			   "  Delete ID mapping")
 		},
 		{
 			"secret",
