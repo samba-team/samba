@@ -293,9 +293,9 @@ AC_DEFUN(AC_VERIFY_C_PROTOTYPE,
 			$2
 		}
 	])],[
-		AS_TR_SH([ac_cv_c_prototype_$1])=yes
+		eval AS_TR_SH([ac_cv_c_prototype_$1])=yes
 	],[
-		AS_TR_SH([ac_cv_c_prototype_$1])=no
+		eval AS_TR_SH([ac_cv_c_prototype_$1])=no
 	])
 )
 AS_IF([test $AS_TR_SH([ac_cv_c_prototype_$1]) = yes],[$3],[$4])
