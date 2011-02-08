@@ -22,7 +22,7 @@
 #ifndef CLI_WINREG_INT_H
 #define CLI_WINREG_INT_H
 
-/*
+/**
  * @brief Connect to the interal winreg server and open the given key.
  *
  * The function will create the needed subkeys if they don't exist.
@@ -30,8 +30,6 @@
  * @param[in]  mem_ctx       The memory context to use.
  *
  * @param[in]  server_info   The supplied server info.
- *
- * @param[in]  path          The path to the key to open.
  *
  * @param[in]  key           The key to open.
  *
