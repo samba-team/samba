@@ -43,6 +43,10 @@ enum profile_stats_values
 #define syscall_opendir_count __profile_stats_value(PR_VALUE_SYSCALL_OPENDIR, count)
 #define syscall_opendir_time __profile_stats_value(PR_VALUE_SYSCALL_OPENDIR, time)
 
+	PR_VALUE_SYSCALL_FDOPENDIR,
+#define syscall_fdopendir_count __profile_stats_value(PR_VALUE_SYSCALL_FDOPENDIR, count)
+#define syscall_fdopendir_time __profile_stats_value(PR_VALUE_SYSCALL_FDOPENDIR, time)
+
 	PR_VALUE_SYSCALL_READDIR,
 #define syscall_readdir_count __profile_stats_value(PR_VALUE_SYSCALL_READDIR, count)
 #define syscall_readdir_time __profile_stats_value(PR_VALUE_SYSCALL_READDIR, time)

@@ -198,6 +198,31 @@ static SMB_STRUCT_DIR *atalk_opendir(struct vfs_handle_struct *handle, const cha
 	return ret;
 }
 
+static SMB_STRUCT_DIR *atalk_fdopendir(struct vfs_handle_struct *handle, files_struct *fsp, const char *mask, uint32 attr)
+{
+	SMB_STRUCT_DIR *ret = 0;
+
+	ret = SMB_VFS_NEXT_FDOPENDIR(handle, fsp, mask, attr);
+
+	if (ret == NULL) {
+		return ret;
+	}
+
+	/*
+	 * when we try to perform delete operation upon file which has fork
+	 * in ./.AppleDouble and this directory wasn't hidden by Samba,
+	 * MS Windows explorer causes the error: "Cannot find the specified file"
+	 * There is some workaround to avoid this situation, i.e. if
+	 * connection has not .AppleDouble entry in either veto or hide 
+	 * list then it would be nice to add one.
+	 */
+
+	atalk_add_to_list(&handle->conn->hide_list);
+	atalk_add_to_list(&handle->conn->veto_list);
+
+	return ret;
+}
+
 static int atalk_rmdir(struct vfs_handle_struct *handle, const char *path)
 {
 	bool add = False;
@@ -432,6 +457,7 @@ exit_lchown:
 
 static struct vfs_fn_pointers vfs_netatalk_fns = {
 	.opendir = atalk_opendir,
+	.fdopendir = atalk_fdopendir,
 	.rmdir = atalk_rmdir,
 	.rename = atalk_rename,
 	.unlink = atalk_unlink,

@@ -221,6 +221,26 @@ static SMB_STRUCT_DIR *smb_time_audit_opendir(vfs_handle_struct *handle,
 	return result;
 }
 
+static SMB_STRUCT_DIR *smb_time_audit_fdopendir(vfs_handle_struct *handle,
+					      files_struct *fsp,
+					      const char *mask, uint32 attr)
+{
+	SMB_STRUCT_DIR *result;
+	struct timespec ts1,ts2;
+	double timediff;
+
+	clock_gettime_mono(&ts1);
+	result = SMB_VFS_NEXT_FDOPENDIR(handle, fsp, mask, attr);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
+
+	if (timediff > audit_timeout) {
+		smb_time_audit_log("fdopendir", timediff);
+	}
+
+	return result;
+}
+
 static SMB_STRUCT_DIRENT *smb_time_audit_readdir(vfs_handle_struct *handle,
 						 SMB_STRUCT_DIR *dirp,
 						 SMB_STRUCT_STAT *sbuf)
@@ -2324,6 +2344,7 @@ static struct vfs_fn_pointers vfs_time_audit_fns = {
 	.statvfs = smb_time_audit_statvfs,
 	.fs_capabilities = smb_time_audit_fs_capabilities,
 	.opendir = smb_time_audit_opendir,
+	.fdopendir = smb_time_audit_fdopendir,
 	.readdir = smb_time_audit_readdir,
 	.seekdir = smb_time_audit_seekdir,
 	.telldir = smb_time_audit_telldir,

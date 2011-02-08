@@ -84,6 +84,11 @@ static SMB_STRUCT_DIR *skel_opendir(vfs_handle_struct *handle,  const char *fnam
 	return SMB_VFS_NEXT_OPENDIR(handle, fname, mask, attr);
 }
 
+static SMB_STRUCT_DIR *skel_fdopendir(vfs_handle_struct *handle, files_struct *fsp, const char *mask, uint32 attr)
+{
+	return SMB_VFS_NEXT_FDOPENDIR(handle, fsp, mask, attr);
+}
+
 static SMB_STRUCT_DIRENT *skel_readdir(vfs_handle_struct *handle,
 				       SMB_STRUCT_DIR *dirp,
 				       SMB_STRUCT_STAT *sbuf)
@@ -728,6 +733,7 @@ struct vfs_fn_pointers skel_transparent_fns = {
 	/* Directory operations */
 
 	.opendir = skel_opendir,
+	.fdopendir = skel_fdopendir,
 	.readdir = skel_readdir,
 	.seekdir = skel_seekdir,
 	.telldir = skel_telldir,
