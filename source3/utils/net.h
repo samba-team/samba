@@ -73,6 +73,7 @@ struct net_context {
 	int opt_ccache;
 	int opt_single_obj_repl;
 	int opt_clean_old_entries;
+	const char *opt_db;
 
 	int opt_have_ip;
 	struct sockaddr_storage opt_dest_ip;

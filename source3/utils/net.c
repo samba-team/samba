@@ -813,7 +813,8 @@ static struct functable net_func[] = {
 		{"force-full-repl", 0, POPT_ARG_NONE, &c->opt_force_full_repl},
 		{"single-obj-repl", 0, POPT_ARG_NONE, &c->opt_single_obj_repl},
 		{"clean-old-entries", 0, POPT_ARG_NONE, &c->opt_clean_old_entries},
-
+		/* Options for 'net idmap'*/
+		{"db", 0, POPT_ARG_STRING, &c->opt_db},
 		POPT_COMMON_SAMBA
 		{ 0, 0, 0, 0}
 	};
