@@ -197,6 +197,11 @@ static int net_idmap_restore(struct net_context *c, int argc, const char **argv)
 
 	dbfile = net_idmap_dbfile(c);
 
+	if (dbfile == NULL) {
+		ret = -1;
+		goto done;
+	}
+
 	d_fprintf(stderr, _("restoring id mapping to %s\n"), dbfile);
 
 	if (argc == 1) {
