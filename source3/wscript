@@ -106,6 +106,7 @@ def configure(conf):
     conf.CHECK_FUNCS('fseek64 fseeko64 ftell64 ftello64 setluid')
     conf.CHECK_FUNCS('getpwnam', headers='sys/types.h pwd.h')
     conf.CHECK_FUNCS('opendir64 readdir64 seekdir64 telldir64 rewinddir64 closedir64')
+    conf.CHECK_FUNCS('fdopendir fdopendir64')
     conf.CHECK_FUNCS('getpwent_r getdents64 setenv strcasecmp fcvt fcvtl')
     conf.CHECK_FUNCS('syslog vsyslog timegm setlocale nl_langinfo')
     conf.CHECK_FUNCS_IN('nanosleep', 'rt')
