@@ -9295,6 +9295,81 @@ static bool test_add_driver_timestamps(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_multiple_drivers(struct torture_context *tctx,
+				  struct dcerpc_pipe *p)
+{
+	struct torture_driver_context *d;
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	const char *server_name_slash = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
+	int i;
+	struct spoolss_AddDriverInfo8 info8;
+	uint32_t add_flags = APD_COPY_NEW_FILES;
+	uint32_t delete_flags = 0;
+
+	d = talloc_zero(tctx, struct torture_driver_context);
+
+	d->info8.version		= SPOOLSS_DRIVER_VERSION_200X;
+	d->info8.driver_path		= talloc_strdup(d, "pscript5.dll");
+	d->info8.data_file		= talloc_strdup(d, "cups6.ppd");
+	d->info8.config_file		= talloc_strdup(d, "cupsui6.dll");
+	d->local.environment		= talloc_strdup(d, "Windows NT x86");
+	d->local.driver_directory	= talloc_strdup(d, "/usr/share/cups/drivers/i386");
+	d->ex				= true;
+
+	torture_assert(tctx,
+		fillup_printserver_info(tctx, p, d),
+		"failed to fillup printserver info");
+
+	if (!directory_exist(d->local.driver_directory)) {
+		torture_skip(tctx, "Skipping Printer Driver test as no local driver is available");
+	}
+
+	torture_assert(tctx,
+		upload_printer_driver(tctx, dcerpc_server_name(p), d),
+		"failed to upload printer driver");
+
+	info8 = d->info8;
+	info8.architecture      = d->local.environment;
+
+	for (i=0; i < 3; i++) {
+		info8.driver_name		= talloc_asprintf(d, "torture_test_driver_%d", i);
+
+		torture_assert(tctx,
+			test_AddPrinterDriver_args_level_3(tctx, b, server_name_slash, &info8, add_flags, true, NULL),
+			"failed to add driver");
+	}
+
+	torture_assert(tctx,
+		test_DeletePrinterDriverEx(tctx, b, server_name_slash, "torture_test_driver_0", info8.architecture, delete_flags, info8.version),
+		"failed to delete driver");
+
+	torture_assert(tctx,
+		test_EnumPrinterDrivers_findone(tctx, b, server_name_slash, info8.architecture, 3, "torture_test_driver_1", NULL),
+		"torture_test_driver_1 no longer on the server");
+
+	torture_assert(tctx,
+		test_EnumPrinterDrivers_findone(tctx, b, server_name_slash, info8.architecture, 3, "torture_test_driver_2", NULL),
+		"torture_test_driver_2 no longer on the server");
+
+	torture_assert(tctx,
+		test_DeletePrinterDriverEx(tctx, b, server_name_slash, "torture_test_driver_1", info8.architecture, delete_flags, info8.version),
+		"failed to delete driver");
+
+	torture_assert(tctx,
+		test_EnumPrinterDrivers_findone(tctx, b, server_name_slash, info8.architecture, 3, "torture_test_driver_2", NULL),
+		"torture_test_driver_2 no longer on the server");
+
+	torture_assert(tctx,
+		test_DeletePrinterDriverEx(tctx, b, server_name_slash, "torture_test_driver_2", info8.architecture, delete_flags, info8.version),
+		"failed to delete driver");
+
+	torture_assert(tctx,
+		remove_printer_driver(tctx, dcerpc_server_name(p), d),
+		"failed to remove printer driver");
+
+	return true;
+}
+
 struct torture_suite *torture_rpc_spoolss_driver(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *suite = torture_suite_create(mem_ctx, "spoolss.driver");
@@ -9312,6 +9387,8 @@ struct torture_suite *torture_rpc_spoolss_driver(TALLOC_CTX *mem_ctx)
 	torture_rpc_tcase_add_test(tcase, "add_driver_adobe_cupsaddsmb", test_add_driver_adobe_cupsaddsmb);
 
 	torture_rpc_tcase_add_test(tcase, "add_driver_timestamps", test_add_driver_timestamps);
+
+	torture_rpc_tcase_add_test(tcase, "multiple_drivers", test_multiple_drivers);
 
 	return suite;
 }
