@@ -29,7 +29,7 @@
 #include "version.h"
 #include "librpc/gen_ndr/ndr_netlogon.h"
 #include "libcli/security/security.h"
-#include "auth/ntlm/pam_errors.h"
+#include "../libcli/auth/pam_errors.h"
 #include "auth/credentials/credentials.h"
 #include "smbd/service_task.h"
 

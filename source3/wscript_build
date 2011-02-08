@@ -101,7 +101,7 @@ LIB_SRC = '''${LIBSAMBAUTIL_SRC}
           lib/ms_fnmatch.c lib/errmap_unix.c
           lib/tallocmsg.c lib/dmallocmsg.c
           libsmb/clisigning.c libsmb/smb_signing.c
-          lib/pam_errors.c intl/lang_tdb.c
+          intl/lang_tdb.c
           lib/conn_tdb.c lib/adt_tree.c lib/gencache.c
           lib/sessionid_tdb.c
           lib/module.c lib/events.c ${LIBTEVENT_SRC0}
@@ -995,7 +995,7 @@ bld.SAMBA_SUBSYSTEM('SERVICES',
 
 bld.SAMBA_SUBSYSTEM('PLAINTEXT_AUTH',
                     source=PLAINTEXT_AUTH_SRC,
-                    deps='pam',
+                    deps='pam PAM_ERRORS',
                     vars=locals())
 
 bld.SAMBA_SUBSYSTEM('PASSCHANGE',
@@ -1133,6 +1133,7 @@ bld.SAMBA_BINARY('winbindd/winbindd',
                  LIBCLI_SAMR LIBCLI_LSA LIBRPCCLI_NETLOGON
                  RPC_NDR_DSSETUP NAMED_PIPE_AUTH_TSTREAM INIT_NETLOGON
                  RPC_NCACN_NP RPC_PIPE_REGISTER RPC_SAMR RPC_LSARPC
+                 PAM_ERRORS
                  ''',
                  enabled=bld.env.build_winbind,
                  install_path='${SBINDIR}',

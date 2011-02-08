@@ -27,6 +27,7 @@
  */
 
 #include "includes.h"
+#include "../libcli/auth/pam_errors.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_AUTH

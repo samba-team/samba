@@ -24,7 +24,7 @@
 #include "libcli/security/security.h"
 #include "librpc/gen_ndr/netlogon.h"
 #include "param/param.h"
-#include "auth/ntlm/pam_errors.h"
+#include "../libcli/auth/pam_errors.h"
 
 #define DO_STRUCT_REQ_REP_EXT(op,req,rep,expected,strict,warnaction,cmt) do { \
 	NSS_STATUS __got, __expected = (expected); \
