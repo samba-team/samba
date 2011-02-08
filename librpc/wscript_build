@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 bld.RECURSE('idl')
+bld.RECURSE('../lib/compression')
 
 bld.SAMBA_SUBSYSTEM('NDR_AUDIOSRV',
 	source='../librpc/gen_ndr/ndr_audiosrv.c',

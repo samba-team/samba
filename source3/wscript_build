@@ -1052,10 +1052,6 @@ bld.SAMBA_SUBSYSTEM('dcerpc', '')
 bld.SAMBA_SUBSYSTEM('ldb',
                     source='lib/ldb_compat.c')
 
-bld.SAMBA_SUBSYSTEM('LZXPRESS',
-		    deps='replace',
-		    source='../lib/compression/lzxpress.c')
-
 bld.SAMBA_SUBSYSTEM('NDR_SECURITY',
                     source='''../librpc/gen_ndr/ndr_security.c ../librpc/ndr/ndr_sec_helper.c''',
                     deps='ndr',
