@@ -317,10 +317,7 @@ static struct tevent_req *smbd_smb2_find_send(TALLOC_CTX *mem_ctx,
 	}
 
 	if (in_flags & SMB2_CONTINUE_FLAG_REOPEN) {
-		if (fsp->dptr) {
-			dptr_CloseDir(fsp->dptr);
-			fsp->dptr = NULL;
-		}
+		dptr_CloseDir(fsp);
 	}
 
 	if (fsp->dptr == NULL) {

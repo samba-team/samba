@@ -4548,7 +4548,7 @@ void dptr_closepath(struct smbd_server_connection *sconn,
 		    char *path,uint16 spid);
 NTSTATUS dptr_create(connection_struct *conn, const char *path, bool old_handle, bool expect_close,uint16 spid,
 		const char *wcard, bool wcard_has_wild, uint32 attr, struct dptr_struct **dptr_ret);
-int dptr_CloseDir(struct dptr_struct *dptr);
+void dptr_CloseDir(files_struct *fsp);
 void dptr_SeekDir(struct dptr_struct *dptr, long offset);
 long dptr_TellDir(struct dptr_struct *dptr);
 bool dptr_has_wild(struct dptr_struct *dptr);
