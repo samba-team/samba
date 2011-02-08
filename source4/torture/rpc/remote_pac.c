@@ -32,6 +32,7 @@
 #include "libcli/auth/libcli_auth.h"
 #include "libcli/security/security.h"
 #include "librpc/gen_ndr/ndr_netlogon_c.h"
+#include "librpc/gen_ndr/ndr_krb5pac.h"
 #include "librpc/gen_ndr/ndr_samr_c.h"
 #include "param/param.h"
 
@@ -130,19 +131,22 @@ static bool test_PACVerify(struct torture_context *tctx,
 
 	status = gensec_session_info(gensec_server_context, &session_info);
 	torture_assert_ntstatus_ok(tctx, status, "gensec_session_info failed");
-	
-	pac_wrapped_struct.ChecksumLength = session_info->server_info->pac_srv_sig.signature.length;
-	pac_wrapped_struct.SignatureType = session_info->server_info->pac_kdc_sig.type;
-	pac_wrapped_struct.SignatureLength = session_info->server_info->pac_kdc_sig.signature.length;
+	torture_assert(tctx, session_info->torture != NULL, "gensec_session_info failed to fill in torture sub struct");
+	torture_assert(tctx, session_info->torture->pac_srv_sig != NULL, "pac_srv_sig not present");
+	torture_assert(tctx, session_info->torture->pac_kdc_sig != NULL, "pac_kdc_sig not present");
+
+	pac_wrapped_struct.ChecksumLength = session_info->torture->pac_srv_sig->signature.length;
+	pac_wrapped_struct.SignatureType = session_info->torture->pac_kdc_sig->type;
+	pac_wrapped_struct.SignatureLength = session_info->torture->pac_kdc_sig->signature.length;
 	pac_wrapped_struct.ChecksumAndSignature = payload
 		= data_blob_talloc(tmp_ctx, NULL, 
 				   pac_wrapped_struct.ChecksumLength
 				   + pac_wrapped_struct.SignatureLength);
 	memcpy(&payload.data[0], 
-	       session_info->server_info->pac_srv_sig.signature.data, 
+	       session_info->torture->pac_srv_sig->signature.data,
 	       pac_wrapped_struct.ChecksumLength);
 	memcpy(&payload.data[pac_wrapped_struct.ChecksumLength], 
-	       session_info->server_info->pac_kdc_sig.signature.data, 
+	       session_info->torture->pac_kdc_sig->signature.data,
 	       pac_wrapped_struct.SignatureLength);
 
 	ndr_err = ndr_push_struct_blob(&pac_wrapped, tmp_ctx, &pac_wrapped_struct,
@@ -160,8 +164,8 @@ static bool test_PACVerify(struct torture_context *tctx,
 	generic.identity_info.parameter_control = 0;
 	generic.identity_info.logon_id_high = 0;
 	generic.identity_info.logon_id_low = 0;
-	generic.identity_info.domain_name.string = session_info->server_info->domain_name;
-	generic.identity_info.account_name.string = session_info->server_info->account_name;
+	generic.identity_info.domain_name.string = session_info->info->domain_name;
+	generic.identity_info.account_name.string = session_info->info->account_name;
 	generic.identity_info.workstation.string = test_machine_name;
 
 	generic.package_name.string = "Kerberos";
@@ -233,22 +237,22 @@ static bool test_PACVerify(struct torture_context *tctx,
 							 &r.out.return_authenticator->cred), 
 		       "Credential chaining failed");
 
-	pac_wrapped_struct.ChecksumLength = session_info->server_info->pac_srv_sig.signature.length;
-	pac_wrapped_struct.SignatureType = session_info->server_info->pac_kdc_sig.type;
+	pac_wrapped_struct.ChecksumLength = session_info->torture->pac_srv_sig->signature.length;
+	pac_wrapped_struct.SignatureType = session_info->torture->pac_kdc_sig->type;
 	
 	/* Break the SignatureType */
 	pac_wrapped_struct.SignatureType++;
 
-	pac_wrapped_struct.SignatureLength = session_info->server_info->pac_kdc_sig.signature.length;
+	pac_wrapped_struct.SignatureLength = session_info->torture->pac_kdc_sig->signature.length;
 	pac_wrapped_struct.ChecksumAndSignature = payload
 		= data_blob_talloc(tmp_ctx, NULL, 
 				   pac_wrapped_struct.ChecksumLength
 				   + pac_wrapped_struct.SignatureLength);
 	memcpy(&payload.data[0], 
-	       session_info->server_info->pac_srv_sig.signature.data, 
+	       session_info->torture->pac_srv_sig->signature.data,
 	       pac_wrapped_struct.ChecksumLength);
 	memcpy(&payload.data[pac_wrapped_struct.ChecksumLength], 
-	       session_info->server_info->pac_kdc_sig.signature.data, 
+	       session_info->torture->pac_kdc_sig->signature.data,
 	       pac_wrapped_struct.SignatureLength);
 	
 	ndr_err = ndr_push_struct_blob(&pac_wrapped, tmp_ctx, &pac_wrapped_struct,
@@ -281,19 +285,19 @@ static bool test_PACVerify(struct torture_context *tctx,
 	torture_assert(tctx, netlogon_creds_client_check(creds, &r.out.return_authenticator->cred), 
 		       "Credential chaining failed");
 
-	pac_wrapped_struct.ChecksumLength = session_info->server_info->pac_srv_sig.signature.length;
-	pac_wrapped_struct.SignatureType = session_info->server_info->pac_kdc_sig.type;
-	pac_wrapped_struct.SignatureLength = session_info->server_info->pac_kdc_sig.signature.length;
+	pac_wrapped_struct.ChecksumLength = session_info->torture->pac_srv_sig->signature.length;
+	pac_wrapped_struct.SignatureType = session_info->torture->pac_kdc_sig->type;
+	pac_wrapped_struct.SignatureLength = session_info->torture->pac_kdc_sig->signature.length;
 
 	pac_wrapped_struct.ChecksumAndSignature = payload
 		= data_blob_talloc(tmp_ctx, NULL, 
 				   pac_wrapped_struct.ChecksumLength
 				   + pac_wrapped_struct.SignatureLength);
 	memcpy(&payload.data[0], 
-	       session_info->server_info->pac_srv_sig.signature.data, 
+	       session_info->torture->pac_srv_sig->signature.data,
 	       pac_wrapped_struct.ChecksumLength);
 	memcpy(&payload.data[pac_wrapped_struct.ChecksumLength], 
-	       session_info->server_info->pac_kdc_sig.signature.data, 
+	       session_info->torture->pac_kdc_sig->signature.data,
 	       pac_wrapped_struct.SignatureLength);
 	
 	/* Break the signature length */
@@ -405,7 +409,7 @@ static bool test_S2U4Self(struct torture_context *tctx,
 
 	struct auth_session_info *kinit_session_info;
 	struct auth_session_info *s2u4self_session_info;
-	struct auth_serversupplied_info *netlogon_server_info;
+	struct auth_user_info_dc *netlogon_user_info_dc;
 
 	struct netr_NetworkInfo ninfo;
 	DATA_BLOB names_blob, chal, lm_resp, nt_resp;
@@ -589,31 +593,31 @@ static bool test_S2U4Self(struct torture_context *tctx,
 							 &r.out.return_authenticator->cred),
 		       "Credential chaining failed");
 
-	status = make_server_info_netlogon_validation(tmp_ctx,
+	status = make_user_info_dc_netlogon_validation(tmp_ctx,
 						      ninfo.identity_info.account_name.string,
 						      r.in.validation_level,
 						      r.out.validation,
-						      &netlogon_server_info);
+						      &netlogon_user_info_dc);
 
-	torture_assert_ntstatus_ok(tctx, status, "make_server_info_netlogon_validation failed");
+	torture_assert_ntstatus_ok(tctx, status, "make_user_info_dc_netlogon_validation failed");
 
-	torture_assert_str_equal(tctx, netlogon_server_info->account_name == NULL ? "" : netlogon_server_info->account_name,
-				 kinit_session_info->server_info->account_name, "Account name differs for kinit-based PAC");
-	torture_assert_str_equal(tctx,netlogon_server_info->account_name == NULL ? "" : netlogon_server_info->account_name,
-				 s2u4self_session_info->server_info->account_name, "Account name differs for S2U4Self");
-	torture_assert_str_equal(tctx, netlogon_server_info->full_name == NULL ? "" : netlogon_server_info->full_name, kinit_session_info->server_info->full_name, "Full name differs for kinit-based PAC");
-	torture_assert_str_equal(tctx, netlogon_server_info->full_name == NULL ? "" : netlogon_server_info->full_name, s2u4self_session_info->server_info->full_name, "Full name differs for S2U4Self");
-	torture_assert_int_equal(tctx, netlogon_server_info->num_sids, kinit_session_info->server_info->num_sids, "Different numbers of domain groups for kinit-based PAC");
-	torture_assert_int_equal(tctx, netlogon_server_info->num_sids, s2u4self_session_info->server_info->num_sids, "Different numbers of domain groups for S2U4Self");
+	torture_assert_str_equal(tctx, netlogon_user_info_dc->info->account_name == NULL ? "" : netlogon_user_info_dc->info->account_name,
+				 kinit_session_info->info->account_name, "Account name differs for kinit-based PAC");
+	torture_assert_str_equal(tctx,netlogon_user_info_dc->info->account_name == NULL ? "" : netlogon_user_info_dc->info->account_name,
+				 s2u4self_session_info->info->account_name, "Account name differs for S2U4Self");
+	torture_assert_str_equal(tctx, netlogon_user_info_dc->info->full_name == NULL ? "" : netlogon_user_info_dc->info->full_name, kinit_session_info->info->full_name, "Full name differs for kinit-based PAC");
+	torture_assert_str_equal(tctx, netlogon_user_info_dc->info->full_name == NULL ? "" : netlogon_user_info_dc->info->full_name, s2u4self_session_info->info->full_name, "Full name differs for S2U4Self");
+	torture_assert_int_equal(tctx, netlogon_user_info_dc->num_sids, kinit_session_info->torture->num_dc_sids, "Different numbers of domain groups for kinit-based PAC");
+	torture_assert_int_equal(tctx, netlogon_user_info_dc->num_sids, s2u4self_session_info->torture->num_dc_sids, "Different numbers of domain groups for S2U4Self");
 
 	builtin_domain = dom_sid_parse_talloc(tmp_ctx, SID_BUILTIN);
 
-	for (i = 0; i < kinit_session_info->server_info->num_sids; i++) {
-		torture_assert(tctx, dom_sid_equal(&netlogon_server_info->sids[i], &kinit_session_info->server_info->sids[i]), "Different domain groups for kinit-based PAC");
-		torture_assert(tctx, dom_sid_equal(&netlogon_server_info->sids[i], &s2u4self_session_info->server_info->sids[i]), "Different domain groups for S2U4Self");
-		torture_assert(tctx, !dom_sid_in_domain(builtin_domain, &s2u4self_session_info->server_info->sids[i]), "Returned BUILTIN domain in groups for S2U4Self");
-		torture_assert(tctx, !dom_sid_in_domain(builtin_domain, &kinit_session_info->server_info->sids[i]), "Returned BUILTIN domain in groups kinit-based PAC");
-		torture_assert(tctx, !dom_sid_in_domain(builtin_domain, &netlogon_server_info->sids[i]), "Returned BUILTIN domian in groups from NETLOGON SamLogon reply");
+	for (i = 0; i < kinit_session_info->torture->num_dc_sids; i++) {
+		torture_assert(tctx, dom_sid_equal(&netlogon_user_info_dc->sids[i], &kinit_session_info->torture->dc_sids[i]), "Different domain groups for kinit-based PAC");
+		torture_assert(tctx, dom_sid_equal(&netlogon_user_info_dc->sids[i], &s2u4self_session_info->torture->dc_sids[i]), "Different domain groups for S2U4Self");
+		torture_assert(tctx, !dom_sid_in_domain(builtin_domain, &s2u4self_session_info->torture->dc_sids[i]), "Returned BUILTIN domain in groups for S2U4Self");
+		torture_assert(tctx, !dom_sid_in_domain(builtin_domain, &kinit_session_info->torture->dc_sids[i]), "Returned BUILTIN domain in groups kinit-based PAC");
+		torture_assert(tctx, !dom_sid_in_domain(builtin_domain, &netlogon_user_info_dc->sids[i]), "Returned BUILTIN domian in groups from NETLOGON SamLogon reply");
 	}
 
 	return true;

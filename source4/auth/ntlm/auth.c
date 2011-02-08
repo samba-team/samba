@@ -103,21 +103,21 @@ PAC isn't available, and for tokenGroups in the DSDB stack.
 
  Supply either a principal or a DN
 ****************************************************************************/
-_PUBLIC_ NTSTATUS auth_get_server_info_principal(TALLOC_CTX *mem_ctx, 
+_PUBLIC_ NTSTATUS auth_get_user_info_dc_principal(TALLOC_CTX *mem_ctx,
 						 struct auth_context *auth_ctx,
 						 const char *principal,
 						 struct ldb_dn *user_dn,
-						 struct auth_serversupplied_info **server_info)
+						 struct auth_user_info_dc **user_info_dc)
 {
 	NTSTATUS nt_status;
 	struct auth_method_context *method;
 
 	for (method = auth_ctx->methods; method; method = method->next) {
-		if (!method->ops->get_server_info_principal) {
+		if (!method->ops->get_user_info_dc_principal) {
 			continue;
 		}
 
-		nt_status = method->ops->get_server_info_principal(mem_ctx, auth_ctx, principal, user_dn, server_info);
+		nt_status = method->ops->get_user_info_dc_principal(mem_ctx, auth_ctx, principal, user_dn, user_info_dc);
 		if (NT_STATUS_EQUAL(nt_status, NT_STATUS_NOT_IMPLEMENTED)) {
 			continue;
 		}
@@ -133,9 +133,9 @@ _PUBLIC_ NTSTATUS auth_get_server_info_principal(TALLOC_CTX *mem_ctx,
  * (sync version)
  *
  * Check a user's password, as given in the user_info struct and return various
- * interesting details in the server_info struct.
+ * interesting details in the user_info_dc struct.
  *
- * The return value takes precedence over the contents of the server_info 
+ * The return value takes precedence over the contents of the user_info_dc
  * struct.  When the return is other than NT_STATUS_OK the contents 
  * of that structure is undefined.
  *
@@ -146,9 +146,9 @@ _PUBLIC_ NTSTATUS auth_get_server_info_principal(TALLOC_CTX *mem_ctx,
  *
  * @param user_info Contains the user supplied components, including the passwords.
  *
- * @param mem_ctx The parent memory context for the server_info structure
+ * @param mem_ctx The parent memory context for the user_info_dc structure
  *
- * @param server_info If successful, contains information about the authentication, 
+ * @param user_info_dc If successful, contains information about the authentication,
  *                    including a SAM_ACCOUNT struct describing the user.
  *
  * @return An NTSTATUS with NT_STATUS_OK or an appropriate error.
@@ -158,7 +158,7 @@ _PUBLIC_ NTSTATUS auth_get_server_info_principal(TALLOC_CTX *mem_ctx,
 _PUBLIC_ NTSTATUS auth_check_password(struct auth_context *auth_ctx,
 			     TALLOC_CTX *mem_ctx,
 			     const struct auth_usersupplied_info *user_info, 
-			     struct auth_serversupplied_info **server_info)
+			     struct auth_user_info_dc **user_info_dc)
 {
 	struct tevent_req *subreq;
 	struct tevent_context *ev;
@@ -181,7 +181,7 @@ _PUBLIC_ NTSTATUS auth_check_password(struct auth_context *auth_ctx,
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
-	status = auth_check_password_recv(subreq, mem_ctx, server_info);
+	status = auth_check_password_recv(subreq, mem_ctx, user_info_dc);
 	TALLOC_FREE(subreq);
 
 	return status;
@@ -190,7 +190,7 @@ _PUBLIC_ NTSTATUS auth_check_password(struct auth_context *auth_ctx,
 struct auth_check_password_state {
 	struct auth_context *auth_ctx;
 	const struct auth_usersupplied_info *user_info;
-	struct auth_serversupplied_info *server_info;
+	struct auth_user_info_dc *user_info_dc;
 	struct auth_method_context *method;
 };
 
@@ -202,9 +202,9 @@ static void auth_check_password_async_trigger(struct tevent_context *ev,
  * async send hook
  *
  * Check a user's password, as given in the user_info struct and return various
- * interesting details in the server_info struct.
+ * interesting details in the user_info_dc struct.
  *
- * The return value takes precedence over the contents of the server_info 
+ * The return value takes precedence over the contents of the user_info_dc
  * struct.  When the return is other than NT_STATUS_OK the contents 
  * of that structure is undefined.
  *
@@ -334,7 +334,7 @@ static void auth_check_password_async_trigger(struct tevent_context *ev,
 		status = method->ops->check_password(method,
 						     state,
 						     state->user_info,
-						     &state->server_info);
+						     &state->user_info_dc);
 		if (!NT_STATUS_EQUAL(status, NT_STATUS_NOT_IMPLEMENTED)) {
 			/* the backend has handled the request */
 			break;
@@ -358,16 +358,16 @@ static void auth_check_password_async_trigger(struct tevent_context *ev,
  * Check a user's Plaintext, LM or NTLM password.
  * async receive function
  *
- * The return value takes precedence over the contents of the server_info 
+ * The return value takes precedence over the contents of the user_info_dc
  * struct.  When the return is other than NT_STATUS_OK the contents 
  * of that structure is undefined.
  *
  *
  * @param req The async request state
  *
- * @param mem_ctx The parent memory context for the server_info structure
+ * @param mem_ctx The parent memory context for the user_info_dc structure
  *
- * @param server_info If successful, contains information about the authentication, 
+ * @param user_info_dc If successful, contains information about the authentication,
  *                    including a SAM_ACCOUNT struct describing the user.
  *
  * @return An NTSTATUS with NT_STATUS_OK or an appropriate error.
@@ -376,7 +376,7 @@ static void auth_check_password_async_trigger(struct tevent_context *ev,
 
 _PUBLIC_ NTSTATUS auth_check_password_recv(struct tevent_req *req,
 				  TALLOC_CTX *mem_ctx,
-				  struct auth_serversupplied_info **server_info)
+				  struct auth_user_info_dc **user_info_dc)
 {
 	struct auth_check_password_state *state =
 		tevent_req_data(req, struct auth_check_password_state);
@@ -397,10 +397,10 @@ _PUBLIC_ NTSTATUS auth_check_password_recv(struct tevent_req *req,
 	DEBUG(5,("auth_check_password_recv: "
 		 "%s authentication for user [%s\\%s] succeeded\n",
 		 state->method->ops->name,
-		 state->server_info->domain_name,
-		 state->server_info->account_name));
+		 state->user_info_dc->info->domain_name,
+		 state->user_info_dc->info->account_name));
 
-	*server_info = talloc_move(mem_ctx, &state->server_info);
+	*user_info_dc = talloc_move(mem_ctx, &state->user_info_dc);
 
 	tevent_req_received(req);
 	return NT_STATUS_OK;
@@ -410,12 +410,12 @@ _PUBLIC_ NTSTATUS auth_check_password_recv(struct tevent_req *req,
  * know that session_info is generated from the main ldb */
 static NTSTATUS auth_generate_session_info_wrapper(TALLOC_CTX *mem_ctx,
 						   struct auth_context *auth_context,
-						   struct auth_serversupplied_info *server_info,
+						   struct auth_user_info_dc *user_info_dc,
 						   uint32_t session_info_flags,
 						   struct auth_session_info **session_info)
 {
 	return auth_generate_session_info(mem_ctx, auth_context->lp_ctx,
-					  auth_context->sam_ctx, server_info,
+					  auth_context->sam_ctx, user_info_dc,
 					  session_info_flags, session_info);
 }
 
@@ -477,7 +477,7 @@ _PUBLIC_ NTSTATUS auth_context_create_methods(TALLOC_CTX *mem_ctx, const char **
 	ctx->get_challenge = auth_get_challenge;
 	ctx->set_challenge = auth_context_set_challenge;
 	ctx->challenge_may_be_modified = auth_challenge_may_be_modified;
-	ctx->get_server_info_principal = auth_get_server_info_principal;
+	ctx->get_user_info_dc_principal = auth_get_user_info_dc_principal;
 	ctx->generate_session_info = auth_generate_session_info_wrapper;
 
 	*auth_ctx = ctx;
@@ -625,7 +625,7 @@ const struct auth_critical_sizes *auth_interface_version(void)
 		sizeof(struct auth_method_context),
 		sizeof(struct auth_context),
 		sizeof(struct auth_usersupplied_info),
-		sizeof(struct auth_serversupplied_info)
+		sizeof(struct auth_user_info_dc)
 	};
 
 	return &critical_sizes;

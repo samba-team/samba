@@ -208,7 +208,7 @@ static int net_gpo_list(struct net_context *ctx, int argc, const char **argv)
 {
 	struct gp_context *gp_ctx;
 	struct ldb_result *result;
-	struct auth_serversupplied_info *server_info;
+	struct auth_user_info_dc *user_info_dc;
 	struct auth_session_info *session_info;
 	DATA_BLOB dummy = { NULL, 0 };
 	const char **gpos;
@@ -227,7 +227,7 @@ static int net_gpo_list(struct net_context *ctx, int argc, const char **argv)
 	}
 
 	/* Find the user in the directory. We need extended DN's for group expansion
-	 * in authsam_make_server_info */
+	 * in authsam_make_user_info_dc */
 	rv = dsdb_search(gp_ctx->ldb_ctx,
 			gp_ctx,
 			&result,
@@ -251,7 +251,7 @@ static int net_gpo_list(struct net_context *ctx, int argc, const char **argv)
 
 	/* We need the server info, as this will contain the groups of this
 	 * user, needed for a token */
-	status = authsam_make_server_info(gp_ctx,
+	status = authsam_make_user_info_dc(gp_ctx,
 			gp_ctx->ldb_ctx,
 			lpcfg_netbios_name(gp_ctx->lp_ctx),
 			lpcfg_sam_name(gp_ctx->lp_ctx),
@@ -259,7 +259,7 @@ static int net_gpo_list(struct net_context *ctx, int argc, const char **argv)
 			result->msgs[0],
 			dummy,
 			dummy,
-			&server_info);
+			&user_info_dc);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("Failed to make server information: %s\n", get_friendly_nt_error_msg(status)));
 		talloc_free(gp_ctx);
@@ -267,7 +267,7 @@ static int net_gpo_list(struct net_context *ctx, int argc, const char **argv)
 	}
 
 	/* The session info will contain the security token for this user */
-	status = auth_generate_session_info(gp_ctx, gp_ctx->lp_ctx, gp_ctx->ldb_ctx, server_info, 0, &session_info);
+	status = auth_generate_session_info(gp_ctx, gp_ctx->lp_ctx, gp_ctx->ldb_ctx, user_info_dc, 0, &session_info);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("Failed to generate session information: %s\n", get_friendly_nt_error_msg(status)));
 		talloc_free(gp_ctx);

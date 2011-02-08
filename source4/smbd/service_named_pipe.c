@@ -98,7 +98,7 @@ static void named_pipe_accept_done(struct tevent_req *subreq)
 	DATA_BLOB delegated_creds;
 
 	union netr_Validation val;
-	struct auth_serversupplied_info *server_info;
+	struct auth_user_info_dc *user_info_dc;
 	struct auth_context *auth_context;
 	uint32_t session_flags = 0;
 	struct dom_sid *anonymous_sid;
@@ -140,12 +140,12 @@ static void named_pipe_accept_done(struct tevent_req *subreq)
 	if (info3) {
 		val.sam3 = info3;
 
-		status = make_server_info_netlogon_validation(conn,
+		status = make_user_info_dc_netlogon_validation(conn,
 					val.sam3->base.account_name.string,
-					3, &val, &server_info);
+					3, &val, &user_info_dc);
 		if (!NT_STATUS_IS_OK(status)) {
 			reason = talloc_asprintf(conn,
-					"make_server_info_netlogon_validation "
+					"make_user_info_dc_netlogon_validation "
 					"returned: %s", nt_errstr(status));
 			goto out;
 		}
@@ -169,7 +169,7 @@ static void named_pipe_accept_done(struct tevent_req *subreq)
 		}
 
 		session_flags = AUTH_SESSION_INFO_DEFAULT_GROUPS;
-		if (server_info->num_sids > 1 && !dom_sid_equal(anonymous_sid, &server_info->sids[0])) {
+		if (user_info_dc->num_sids > 1 && !dom_sid_equal(anonymous_sid, &user_info_dc->sids[0])) {
 			session_flags |= AUTH_SESSION_INFO_AUTHENTICATED;
 		}
 
@@ -177,7 +177,7 @@ static void named_pipe_accept_done(struct tevent_req *subreq)
 		/* setup the session_info on the connection */
 		status = auth_context->generate_session_info(conn,
 							     auth_context,
-							     server_info,
+							     user_info_dc,
 							     session_flags,
 							     &conn->session_info);
 		talloc_free(auth_context);

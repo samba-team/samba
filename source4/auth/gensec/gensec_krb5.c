@@ -603,7 +603,7 @@ static NTSTATUS gensec_krb5_session_info(struct gensec_security *gensec_security
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
 	struct gensec_krb5_state *gensec_krb5_state = (struct gensec_krb5_state *)gensec_security->private_data;
 	krb5_context context = gensec_krb5_state->smb_krb5_context->krb5_context;
-	struct auth_serversupplied_info *server_info = NULL;
+	struct auth_user_info_dc *user_info_dc = NULL;
 	struct auth_session_info *session_info = NULL;
 	struct PAC_LOGON_INFO *logon_info;
 
@@ -663,10 +663,10 @@ static NTSTATUS gensec_krb5_session_info(struct gensec_security *gensec_security
 			DEBUG(1, ("Unable to find PAC for %s, resorting to local user lookup: %s",
 				  principal_string, smb_get_krb5_error_message(context, 
 						     ret, mem_ctx)));
-			nt_status = gensec_security->auth_context->get_server_info_principal(mem_ctx, 
+			nt_status = gensec_security->auth_context->get_user_info_dc_principal(mem_ctx,
 											     gensec_security->auth_context, 
 											     principal_string,
-											     NULL, &server_info);
+											     NULL, &user_info_dc);
 			if (!NT_STATUS_IS_OK(nt_status)) {
 				free(principal_string);
 				krb5_free_principal(context, client_principal);
@@ -709,10 +709,10 @@ static NTSTATUS gensec_krb5_session_info(struct gensec_security *gensec_security
 		}
 
 		validation.sam3 = &logon_info->info3;
-		nt_status = make_server_info_netlogon_validation(mem_ctx, 
+		nt_status = make_user_info_dc_netlogon_validation(mem_ctx,
 								 NULL,
 								 3, &validation,
-								 &server_info); 
+								 &user_info_dc);
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			free(principal_string);
 			krb5_free_principal(context, client_principal);
@@ -724,8 +724,8 @@ static NTSTATUS gensec_krb5_session_info(struct gensec_security *gensec_security
 	free(principal_string);
 	krb5_free_principal(context, client_principal);
 
-	/* references the server_info into the session_info */
-	nt_status = gensec_generate_session_info(mem_ctx, gensec_security, server_info, &session_info);
+	/* references the user_info_dc into the session_info */
+	nt_status = gensec_generate_session_info(mem_ctx, gensec_security, user_info_dc, &session_info);
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(mem_ctx);

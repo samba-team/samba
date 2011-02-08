@@ -23,7 +23,7 @@
 #include "auth/kerberos/krb5_init_context.h"
 #include "librpc/gen_ndr/krb5pac.h"
 
-struct auth_serversupplied_info;
+struct auth_user_info_dc;
 struct cli_credentials;
 
 struct ccache_container {
@@ -134,7 +134,7 @@ NTSTATUS kerberos_decode_pac(TALLOC_CTX *mem_ctx,
 				    const krb5_keyblock *service_keyblock,
 				    DATA_BLOB *pac);
  krb5_error_code kerberos_create_pac(TALLOC_CTX *mem_ctx,
-				     struct auth_serversupplied_info *server_info,
+				     struct auth_user_info_dc *user_info_dc,
 				     krb5_context context,
 				     const krb5_keyblock *krbtgt_keyblock,
 				     const krb5_keyblock *service_keyblock,

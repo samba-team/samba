@@ -602,7 +602,7 @@ static NTSTATUS dcesrv_netr_LogonSamLogon_base(struct dcesrv_call_state *dce_cal
 {
 	struct auth_context *auth_context;
 	struct auth_usersupplied_info *user_info;
-	struct auth_serversupplied_info *server_info;
+	struct auth_user_info_dc *user_info_dc;
 	NTSTATUS nt_status;
 	static const char zeros[16];
 	struct netr_SamBaseInfo *sam;
@@ -734,13 +734,13 @@ static NTSTATUS dcesrv_netr_LogonSamLogon_base(struct dcesrv_call_state *dce_cal
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	nt_status = auth_check_password(auth_context, mem_ctx, user_info, &server_info);
+	nt_status = auth_check_password(auth_context, mem_ctx, user_info, &user_info_dc);
 	/* TODO: set *r->out.authoritative = 0 on specific errors */
 	NT_STATUS_NOT_OK_RETURN(nt_status);
 
 	switch (r->in.validation_level) {
 	case 2:
-		nt_status = auth_convert_server_info_sambaseinfo(mem_ctx, server_info, &sam);
+		nt_status = auth_convert_user_info_dc_sambaseinfo(mem_ctx, user_info_dc, &sam);
 		NT_STATUS_NOT_OK_RETURN(nt_status);
 
 		sam2 = talloc_zero(mem_ctx, struct netr_SamInfo2);
@@ -755,8 +755,8 @@ static NTSTATUS dcesrv_netr_LogonSamLogon_base(struct dcesrv_call_state *dce_cal
 		break;
 
 	case 3:
-		nt_status = auth_convert_server_info_saminfo3(mem_ctx,
-							      server_info,
+		nt_status = auth_convert_user_info_dc_saminfo3(mem_ctx,
+							      user_info_dc,
 							      &sam3);
 		NT_STATUS_NOT_OK_RETURN(nt_status);
 
@@ -766,8 +766,8 @@ static NTSTATUS dcesrv_netr_LogonSamLogon_base(struct dcesrv_call_state *dce_cal
 		break;
 
 	case 6:
-		nt_status = auth_convert_server_info_saminfo3(mem_ctx,
-							   server_info,
+		nt_status = auth_convert_user_info_dc_saminfo3(mem_ctx,
+							   user_info_dc,
 							   &sam3);
 		NT_STATUS_NOT_OK_RETURN(nt_status);
 

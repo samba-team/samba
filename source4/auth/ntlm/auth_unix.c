@@ -31,68 +31,75 @@
 /* TODO: look at how to best fill in parms retrieveing a struct passwd info
  * except in case USER_INFO_DONT_CHECK_UNIX_ACCOUNT is set
  */
-static NTSTATUS authunix_make_server_info(TALLOC_CTX *mem_ctx,
+static NTSTATUS authunix_make_user_info_dc(TALLOC_CTX *mem_ctx,
 					  const char *netbios_name,
 					  const struct auth_usersupplied_info *user_info,
 					  struct passwd *pwd,
-					  struct auth_serversupplied_info **_server_info)
+					  struct auth_user_info_dc **_user_info_dc)
 {
-	struct auth_serversupplied_info *server_info;
+	struct auth_user_info_dc *user_info_dc;
+	struct auth_user_info *info;
 	NTSTATUS status;
 
 	/* This is a real, real hack */
 	if (pwd->pw_uid == 0) {
-		status = auth_system_server_info(mem_ctx, netbios_name, &server_info);
+		status = auth_system_user_info_dc(mem_ctx, netbios_name, &user_info_dc);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
 
-		server_info->account_name = talloc_steal(server_info, pwd->pw_name);
-		NT_STATUS_HAVE_NO_MEMORY(server_info->account_name);
+		user_info_dc->info = info = talloc_zero(user_info_dc, struct auth_user_info);
+		NT_STATUS_HAVE_NO_MEMORY(user_info_dc->info);
+
+		info->account_name = talloc_steal(info, pwd->pw_name);
+		NT_STATUS_HAVE_NO_MEMORY(info->account_name);
 		
-		server_info->domain_name = talloc_strdup(server_info, "unix");
-		NT_STATUS_HAVE_NO_MEMORY(server_info->domain_name);
+		info->domain_name = talloc_strdup(info, "unix");
+		NT_STATUS_HAVE_NO_MEMORY(info->domain_name);
 	} else {
-		server_info = talloc(mem_ctx, struct auth_serversupplied_info);
-		NT_STATUS_HAVE_NO_MEMORY(server_info);
+		user_info_dc = talloc(mem_ctx, struct auth_user_info_dc);
+		NT_STATUS_HAVE_NO_MEMORY(user_info_dc);
 		
-		server_info->authenticated = true;
+		user_info_dc->info = info = talloc_zero(user_info_dc, struct auth_user_info);
+		NT_STATUS_HAVE_NO_MEMORY(user_info_dc->info);
+
+		info->authenticated = true;
 		
-		server_info->account_name = talloc_steal(server_info, pwd->pw_name);
-		NT_STATUS_HAVE_NO_MEMORY(server_info->account_name);
+		info->account_name = talloc_steal(info, pwd->pw_name);
+		NT_STATUS_HAVE_NO_MEMORY(info->account_name);
 		
-		server_info->domain_name = talloc_strdup(server_info, "unix");
-		NT_STATUS_HAVE_NO_MEMORY(server_info->domain_name);
+		info->domain_name = talloc_strdup(info, "unix");
+		NT_STATUS_HAVE_NO_MEMORY(info->domain_name);
 
 		/* This isn't in any way correct.. */
-		server_info->num_sids = 0;
-		server_info->sids = NULL;
+		user_info_dc->num_sids = 0;
+		user_info_dc->sids = NULL;
 	}
-	server_info->user_session_key = data_blob(NULL,0);
-	server_info->lm_session_key = data_blob(NULL,0);
+	user_info_dc->user_session_key = data_blob(NULL,0);
+	user_info_dc->lm_session_key = data_blob(NULL,0);
 
-	server_info->full_name = talloc_steal(server_info, pwd->pw_gecos);
-	NT_STATUS_HAVE_NO_MEMORY(server_info->full_name);
-	server_info->logon_script = talloc_strdup(server_info, "");
-	NT_STATUS_HAVE_NO_MEMORY(server_info->logon_script);
-	server_info->profile_path = talloc_strdup(server_info, "");
-	NT_STATUS_HAVE_NO_MEMORY(server_info->profile_path);
-	server_info->home_directory = talloc_strdup(server_info, "");
-	NT_STATUS_HAVE_NO_MEMORY(server_info->home_directory);
-	server_info->home_drive = talloc_strdup(server_info, "");
-	NT_STATUS_HAVE_NO_MEMORY(server_info->home_drive);
+	info->full_name = talloc_steal(info, pwd->pw_gecos);
+	NT_STATUS_HAVE_NO_MEMORY(info->full_name);
+	info->logon_script = talloc_strdup(info, "");
+	NT_STATUS_HAVE_NO_MEMORY(info->logon_script);
+	info->profile_path = talloc_strdup(info, "");
+	NT_STATUS_HAVE_NO_MEMORY(info->profile_path);
+	info->home_directory = talloc_strdup(info, "");
+	NT_STATUS_HAVE_NO_MEMORY(info->home_directory);
+	info->home_drive = talloc_strdup(info, "");
+	NT_STATUS_HAVE_NO_MEMORY(info->home_drive);
 
-	server_info->last_logon = 0;
-	server_info->last_logoff = 0;
-	server_info->acct_expiry = 0;
-	server_info->last_password_change = 0;
-	server_info->allow_password_change = 0;
-	server_info->force_password_change = 0;
-	server_info->logon_count = 0;
-	server_info->bad_password_count = 0;
-	server_info->acct_flags = 0;
+	info->last_logon = 0;
+	info->last_logoff = 0;
+	info->acct_expiry = 0;
+	info->last_password_change = 0;
+	info->allow_password_change = 0;
+	info->force_password_change = 0;
+	info->logon_count = 0;
+	info->bad_password_count = 0;
+	info->acct_flags = 0;
 
-	*_server_info = server_info;
+	*_user_info_dc = user_info_dc;
 
 	return NT_STATUS_OK;
 }
@@ -791,7 +798,7 @@ static NTSTATUS authunix_want_check(struct auth_method_context *ctx,
 static NTSTATUS authunix_check_password(struct auth_method_context *ctx,
 					TALLOC_CTX *mem_ctx,
 					const struct auth_usersupplied_info *user_info,
-					struct auth_serversupplied_info **server_info)
+					struct auth_user_info_dc **user_info_dc)
 {
 	TALLOC_CTX *check_ctx;
 	NTSTATUS nt_status;
@@ -812,8 +819,8 @@ static NTSTATUS authunix_check_password(struct auth_method_context *ctx,
 		return nt_status;
 	}
 
-	nt_status = authunix_make_server_info(mem_ctx, lpcfg_netbios_name(ctx->auth_ctx->lp_ctx),
-					      user_info, pwd, server_info);
+	nt_status = authunix_make_user_info_dc(mem_ctx, lpcfg_netbios_name(ctx->auth_ctx->lp_ctx),
+					      user_info, pwd, user_info_dc);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(check_ctx);
 		return nt_status;

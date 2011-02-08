@@ -40,7 +40,7 @@ _PUBLIC_ NTSTATUS authenticate_username_pw(TALLOC_CTX *mem_ctx,
 {
 	struct auth_context *auth_context;
 	struct auth_usersupplied_info *user_info;
-	struct auth_serversupplied_info *server_info;
+	struct auth_user_info_dc *user_info_dc;
 	NTSTATUS nt_status;
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 
@@ -83,7 +83,7 @@ _PUBLIC_ NTSTATUS authenticate_username_pw(TALLOC_CTX *mem_ctx,
 		MSV1_0_CLEARTEXT_PASSWORD_ALLOWED |
 		MSV1_0_CLEARTEXT_PASSWORD_SUPPLIED;
 
-	nt_status = auth_check_password(auth_context, tmp_ctx, user_info, &server_info);
+	nt_status = auth_check_password(auth_context, tmp_ctx, user_info, &user_info_dc);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(tmp_ctx);
 		return nt_status;
@@ -91,11 +91,11 @@ _PUBLIC_ NTSTATUS authenticate_username_pw(TALLOC_CTX *mem_ctx,
 
 	if (session_info) {
 		uint32_t flags = AUTH_SESSION_INFO_DEFAULT_GROUPS;
-		if (server_info->authenticated) {
+		if (user_info_dc->info->authenticated) {
 			flags |= AUTH_SESSION_INFO_AUTHENTICATED;
 		}
 		nt_status = auth_context->generate_session_info(tmp_ctx, auth_context,
-								server_info,
+								user_info_dc,
 								flags,
 								session_info);
 

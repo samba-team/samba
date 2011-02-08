@@ -131,7 +131,7 @@ struct winbind_check_password_state {
 static NTSTATUS winbind_check_password(struct auth_method_context *ctx,
 				       TALLOC_CTX *mem_ctx,
 				       const struct auth_usersupplied_info *user_info, 
-				       struct auth_serversupplied_info **server_info)
+				       struct auth_user_info_dc **user_info_dc)
 {
 	NTSTATUS status;
 	struct dcerpc_binding_handle *irpc_handle;
@@ -214,11 +214,11 @@ static NTSTATUS winbind_check_password(struct auth_method_context *ctx,
 	status = dcerpc_winbind_SamLogon_r(irpc_handle, s, &s->req);
 	NT_STATUS_NOT_OK_RETURN(status);
 
-	status = make_server_info_netlogon_validation(mem_ctx,
+	status = make_user_info_dc_netlogon_validation(mem_ctx,
 						      user_info->client.account_name,
 						      s->req.in.validation_level,
 						      &s->req.out.validation,
-						      server_info);
+						      user_info_dc);
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	return NT_STATUS_OK;
@@ -231,7 +231,7 @@ static NTSTATUS winbind_check_password(struct auth_method_context *ctx,
 static NTSTATUS winbind_check_password_wbclient(struct auth_method_context *ctx,
 						TALLOC_CTX *mem_ctx,
 						const struct auth_usersupplied_info *user_info,
-						struct auth_serversupplied_info **server_info)
+						struct auth_user_info_dc **user_info_dc)
 {
 	struct wbcAuthUserParams params;
 	struct wbcAuthUserInfo *info = NULL;
@@ -301,9 +301,9 @@ static NTSTATUS winbind_check_password_wbclient(struct auth_method_context *ctx,
 	NT_STATUS_NOT_OK_RETURN(nt_status);
 
 	validation.sam3 = &info3;
-	nt_status = make_server_info_netlogon_validation(mem_ctx,
+	nt_status = make_user_info_dc_netlogon_validation(mem_ctx,
 					user_info->client.account_name,
-					3, &validation, server_info);
+					3, &validation, user_info_dc);
 	return nt_status;
 
 }

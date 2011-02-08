@@ -29,6 +29,7 @@
 #include "torture/torture.h"
 #include "auth/auth_sam_reply.h"
 #include "param/param.h"
+#include "librpc/gen_ndr/ndr_krb5pac.h"
 
 static bool torture_pac_self_check(struct torture_context *tctx)
 {
@@ -48,8 +49,8 @@ static bool torture_pac_self_check(struct torture_context *tctx)
 
 	struct smb_krb5_context *smb_krb5_context;
 
-	struct auth_serversupplied_info *server_info;
-	struct auth_serversupplied_info *server_info_out;
+	struct auth_user_info_dc *user_info_dc;
+	struct auth_user_info_dc *user_info_dc_out;
 
 	krb5_principal client_principal;
 	time_t logon_time = time(NULL);
@@ -90,18 +91,18 @@ static bool torture_pac_self_check(struct torture_context *tctx)
 	}
 
 	/* We need an input, and this one requires no underlying database */
-	nt_status = auth_anonymous_server_info(mem_ctx, lpcfg_netbios_name(tctx->lp_ctx), &server_info);
+	nt_status = auth_anonymous_user_info_dc(mem_ctx, lpcfg_netbios_name(tctx->lp_ctx), &user_info_dc);
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
 					    &server_keyblock);
 		krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
 					    &krbtgt_keyblock);
-		torture_fail(tctx, "auth_anonymous_server_info");
+		torture_fail(tctx, "auth_anonymous_user_info_dc");
 	}
 
 	ret = krb5_parse_name_flags(smb_krb5_context->krb5_context, 
-				    server_info->account_name, 
+				    user_info_dc->info->account_name,
 				    KRB5_PRINCIPAL_PARSE_NO_REALM, 
 				    &client_principal);
 	if (ret) {
@@ -114,7 +115,7 @@ static bool torture_pac_self_check(struct torture_context *tctx)
 
 	/* OK, go ahead and make a PAC */
 	ret = kerberos_create_pac(mem_ctx, 
-				  server_info, 
+				  user_info_dc,
 				  smb_krb5_context->krb5_context,  
 				  &krbtgt_keyblock,
 				  &server_keyblock,
@@ -162,14 +163,14 @@ static bool torture_pac_self_check(struct torture_context *tctx)
 	}
 
 	/* Now check we can read it back (using Heimdal's pac parsing) */
-	nt_status = kerberos_pac_blob_to_server_info(mem_ctx, 
+	nt_status = kerberos_pac_blob_to_user_info_dc(mem_ctx,
 						     tmp_blob, 
 						     smb_krb5_context->krb5_context,
-						     &server_info_out);
+						      &user_info_dc_out, NULL, NULL);
 
 	/* The user's SID is the first element in the list */
-	if (!dom_sid_equal(server_info->sids,
-			   server_info_out->sids)) {
+	if (!dom_sid_equal(user_info_dc->sids,
+			   user_info_dc_out->sids)) {
 		krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
 					    &krbtgt_keyblock);
 		krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
@@ -180,10 +181,10 @@ static bool torture_pac_self_check(struct torture_context *tctx)
 		torture_fail(tctx,  
 			     talloc_asprintf(tctx, 
 					     "(self test) PAC Decode resulted in *different* domain SID: %s != %s",
-					     dom_sid_string(mem_ctx, server_info->sids),
-					     dom_sid_string(mem_ctx, server_info_out->sids)));
+					     dom_sid_string(mem_ctx, user_info_dc->sids),
+					     dom_sid_string(mem_ctx, user_info_dc_out->sids)));
 	}
-	talloc_free(server_info_out);
+	talloc_free(user_info_dc_out);
 
 	/* Now check that we can read it back (yet again) */
 	nt_status = kerberos_pac_logon_info(mem_ctx, 
@@ -219,10 +220,10 @@ static bool torture_pac_self_check(struct torture_context *tctx)
 
 	/* And make a server info from the samba-parsed PAC */
 	validation.sam3 = &logon_info->info3;
-	nt_status = make_server_info_netlogon_validation(mem_ctx,
+	nt_status = make_user_info_dc_netlogon_validation(mem_ctx,
 							 "",
 							 3, &validation,
-							 &server_info_out); 
+							 &user_info_dc_out);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		torture_fail(tctx, 
 			     talloc_asprintf(tctx, 
@@ -230,13 +231,13 @@ static bool torture_pac_self_check(struct torture_context *tctx)
 					     nt_errstr(nt_status)));
 	}
 	
-	if (!dom_sid_equal(server_info->sids,
-			   server_info_out->sids)) {
+	if (!dom_sid_equal(user_info_dc->sids,
+			   user_info_dc_out->sids)) {
 		torture_fail(tctx,  
 			     talloc_asprintf(tctx, 
 					     "(self test) PAC Decode resulted in *different* domain SID: %s != %s",
-					     dom_sid_string(mem_ctx, server_info->sids),
-					     dom_sid_string(mem_ctx, server_info_out->sids)));
+					     dom_sid_string(mem_ctx, user_info_dc->sids),
+					     dom_sid_string(mem_ctx, user_info_dc_out->sids)));
 	}
 	return true;
 }
@@ -298,7 +299,7 @@ static bool torture_pac_saved_check(struct torture_context *tctx)
 	struct PAC_LOGON_INFO *logon_info;
 	union netr_Validation validation;
 	const char *pac_file, *pac_kdc_key, *pac_member_key;
-	struct auth_serversupplied_info *server_info_out;
+	struct auth_user_info_dc *user_info_dc_out;
 
 	krb5_keyblock server_keyblock;
 	krb5_keyblock krbtgt_keyblock, *krbtgt_keyblock_p;
@@ -425,10 +426,11 @@ static bool torture_pac_saved_check(struct torture_context *tctx)
 	}
 
 	/* Now check we can read it back (using Heimdal's pac parsing) */
-	nt_status = kerberos_pac_blob_to_server_info(mem_ctx, 
+	nt_status = kerberos_pac_blob_to_user_info_dc(mem_ctx,
 						     tmp_blob, 
 						     smb_krb5_context->krb5_context,
-						     &server_info_out);
+						      &user_info_dc_out,
+						      NULL, NULL);
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
@@ -445,7 +447,7 @@ static bool torture_pac_saved_check(struct torture_context *tctx)
 	if (!pac_file &&
 	    !dom_sid_equal(dom_sid_parse_talloc(mem_ctx, 
 						"S-1-5-21-3048156945-3961193616-3706469200-1005"), 
-			   server_info_out->sids)) {
+			   user_info_dc_out->sids)) {
 		krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
 					    krbtgt_keyblock_p);
 		krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
@@ -456,10 +458,10 @@ static bool torture_pac_saved_check(struct torture_context *tctx)
 			     talloc_asprintf(tctx, 
 					     "(saved test) Heimdal PAC Decode resulted in *different* domain SID: %s != %s",
 					     "S-1-5-21-3048156945-3961193616-3706469200-1005", 
-					     dom_sid_string(mem_ctx, server_info_out->sids)));
+					     dom_sid_string(mem_ctx, user_info_dc_out->sids)));
 	}
 
-	talloc_free(server_info_out);
+	talloc_free(user_info_dc_out);
 
 	/* Parse the PAC again, for the logon info this time (using Samba4's parsing) */
 	nt_status = kerberos_pac_logon_info(mem_ctx, 
@@ -484,10 +486,10 @@ static bool torture_pac_saved_check(struct torture_context *tctx)
 	}
 
 	validation.sam3 = &logon_info->info3;
-	nt_status = make_server_info_netlogon_validation(mem_ctx,
+	nt_status = make_user_info_dc_netlogon_validation(mem_ctx,
 							 "",
 							 3, &validation,
-							 &server_info_out); 
+							 &user_info_dc_out);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
 					    krbtgt_keyblock_p);
@@ -504,7 +506,7 @@ static bool torture_pac_saved_check(struct torture_context *tctx)
 	if (!pac_file &&
 	    !dom_sid_equal(dom_sid_parse_talloc(mem_ctx, 
 						"S-1-5-21-3048156945-3961193616-3706469200-1005"), 
-			   server_info_out->sids)) {
+			   user_info_dc_out->sids)) {
 		krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
 					    krbtgt_keyblock_p);
 		krb5_free_keyblock_contents(smb_krb5_context->krb5_context, 
@@ -515,7 +517,7 @@ static bool torture_pac_saved_check(struct torture_context *tctx)
 			     talloc_asprintf(tctx, 
 					     "(saved test) PAC Decode resulted in *different* domain SID: %s != %s",
 					     "S-1-5-21-3048156945-3961193616-3706469200-1005", 
-					     dom_sid_string(mem_ctx, server_info_out->sids)));
+					     dom_sid_string(mem_ctx, user_info_dc_out->sids)));
 	}
 
 	if (krbtgt_bytes == NULL) {
@@ -578,7 +580,7 @@ static bool torture_pac_saved_check(struct torture_context *tctx)
 	}
 
 	ret = kerberos_create_pac(mem_ctx, 
-				  server_info_out,
+				  user_info_dc_out,
 				  smb_krb5_context->krb5_context,
 				  krbtgt_keyblock_p,
 				  &server_keyblock,

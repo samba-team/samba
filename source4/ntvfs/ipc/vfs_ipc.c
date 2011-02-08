@@ -255,6 +255,7 @@ static NTSTATUS ipc_open(struct ntvfs_module_context *ntvfs,
 	const struct tsocket_address *server_addr;
 	int ret;
 	DATA_BLOB delegated_creds = data_blob_null;
+	struct auth_user_info_dc user_info_dc;
 
 	switch (oi->generic.level) {
 	case RAW_OPEN_NTCREATEX:
@@ -309,9 +310,16 @@ static NTSTATUS ipc_open(struct ntvfs_module_context *ntvfs,
 	state->req = req;
 	state->oi = oi;
 
-	status = auth_convert_server_info_saminfo3(state,
-						   req->session_info->server_info,
-						   &state->info3);
+	/* Disgusting hack to recreate the user_info_dc that should
+	 * not be used that this layer in this way */
+	ZERO_STRUCT(user_info_dc);
+	user_info_dc.info = req->session_info->info;
+	user_info_dc.num_sids = req->session_info->torture->num_dc_sids;
+	user_info_dc.sids = req->session_info->torture->dc_sids;
+
+	status = auth_convert_user_info_dc_saminfo3(state,
+						    &user_info_dc,
+						    &state->info3);
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	client_addr = ntvfs_get_local_address(ipriv->ntvfs);

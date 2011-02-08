@@ -169,7 +169,7 @@ static bool kpasswdd_change_password(struct kdc_server *kdc,
 	 * seem to be the case here. */
 	ret = gendb_search(kdc->samdb, mem_ctx, NULL, &res, attrs,
 			   "(&(objectClass=user)(sAMAccountName=%s))",
-			   session_info->server_info->account_name);
+			   session_info->info->account_name);
 	if (ret != 1) {
 		return kpasswdd_make_error_reply(kdc, mem_ctx,
 						KRB5_KPASSWD_ACCESSDENIED,
@@ -197,8 +197,8 @@ static bool kpasswdd_change_password(struct kdc_server *kdc,
 	}
 
 	DEBUG(3, ("Changing password of %s\\%s (%s)\n",
-		  session_info->server_info->domain_name,
-		  session_info->server_info->account_name,
+		  session_info->info->domain_name,
+		  session_info->info->account_name,
 		  dom_sid_string(mem_ctx, &session_info->security_token->sids[PRIMARY_USER_SID_INDEX])));
 
 	/* Performs the password change */
@@ -359,8 +359,8 @@ static bool kpasswd_process_request(struct kdc_server *kdc,
 		}
 
 		DEBUG(3, ("%s\\%s (%s) is changing password of %s\n",
-			  session_info->server_info->domain_name,
-			  session_info->server_info->account_name,
+			  session_info->info->domain_name,
+			  session_info->info->account_name,
 			  dom_sid_string(mem_ctx, &session_info->security_token->sids[PRIMARY_USER_SID_INDEX]),
 			  set_password_on_princ));
 		ret = ldb_transaction_start(samdb);

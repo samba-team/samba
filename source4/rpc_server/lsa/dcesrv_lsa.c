@@ -3637,8 +3637,8 @@ static NTSTATUS dcesrv_lsa_GetUserName(struct dcesrv_call_state *dce_call, TALLO
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	account_name = talloc_reference(mem_ctx, dce_call->conn->auth_state.session_info->server_info->account_name);
-	authority_name = talloc_reference(mem_ctx, dce_call->conn->auth_state.session_info->server_info->domain_name);
+	account_name = talloc_reference(mem_ctx, dce_call->conn->auth_state.session_info->info->account_name);
+	authority_name = talloc_reference(mem_ctx, dce_call->conn->auth_state.session_info->info->domain_name);
 
 	_account_name = talloc(mem_ctx, struct lsa_String);
 	NT_STATUS_HAVE_NO_MEMORY(_account_name);

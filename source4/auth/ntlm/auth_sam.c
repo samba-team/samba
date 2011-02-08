@@ -237,7 +237,7 @@ static NTSTATUS authsam_authenticate(struct auth_context *auth_context,
 static NTSTATUS authsam_check_password_internals(struct auth_method_context *ctx,
 						 TALLOC_CTX *mem_ctx,
 						 const struct auth_usersupplied_info *user_info, 
-						 struct auth_serversupplied_info **server_info)
+						 struct auth_user_info_dc **user_info_dc)
 {
 	NTSTATUS nt_status;
 	const char *account_name = user_info->mapped.account_name;
@@ -280,18 +280,18 @@ static NTSTATUS authsam_check_password_internals(struct auth_method_context *ctx
 		return nt_status;
 	}
 
-	nt_status = authsam_make_server_info(tmp_ctx, ctx->auth_ctx->sam_ctx, lpcfg_netbios_name(ctx->auth_ctx->lp_ctx),
+	nt_status = authsam_make_user_info_dc(tmp_ctx, ctx->auth_ctx->sam_ctx, lpcfg_netbios_name(ctx->auth_ctx->lp_ctx),
 					     lpcfg_sam_name(ctx->auth_ctx->lp_ctx),
 					     domain_dn,
 					     msg,
 					     user_sess_key, lm_sess_key,
-					     server_info);
+					     user_info_dc);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(tmp_ctx);
 		return nt_status;
 	}
 
-	talloc_steal(mem_ctx, *server_info);
+	talloc_steal(mem_ctx, *user_info_dc);
 	talloc_free(tmp_ctx);
 
 	return NT_STATUS_OK;
@@ -354,21 +354,21 @@ static NTSTATUS authsam_want_check(struct auth_method_context *ctx,
 
 				   
 /* Wrapper for the auth subsystem pointer */
-static NTSTATUS authsam_get_server_info_principal_wrapper(TALLOC_CTX *mem_ctx,
+static NTSTATUS authsam_get_user_info_dc_principal_wrapper(TALLOC_CTX *mem_ctx,
 							  struct auth_context *auth_context,
 							  const char *principal,
 							  struct ldb_dn *user_dn,
-							  struct auth_serversupplied_info **server_info)
+							  struct auth_user_info_dc **user_info_dc)
 {
-	return authsam_get_server_info_principal(mem_ctx, auth_context->lp_ctx, auth_context->sam_ctx,
-						 principal, user_dn, server_info);
+	return authsam_get_user_info_dc_principal(mem_ctx, auth_context->lp_ctx, auth_context->sam_ctx,
+						 principal, user_dn, user_info_dc);
 }
 static const struct auth_operations sam_ignoredomain_ops = {
 	.name		           = "sam_ignoredomain",
 	.get_challenge	           = auth_get_challenge_not_implemented,
 	.want_check	           = authsam_ignoredomain_want_check,
 	.check_password	           = authsam_check_password_internals,
-	.get_server_info_principal = authsam_get_server_info_principal_wrapper
+	.get_user_info_dc_principal = authsam_get_user_info_dc_principal_wrapper
 };
 
 static const struct auth_operations sam_ops = {
@@ -376,7 +376,7 @@ static const struct auth_operations sam_ops = {
 	.get_challenge	           = auth_get_challenge_not_implemented,
 	.want_check	           = authsam_want_check,
 	.check_password	           = authsam_check_password_internals,
-	.get_server_info_principal = authsam_get_server_info_principal_wrapper
+	.get_user_info_dc_principal = authsam_get_user_info_dc_principal_wrapper
 };
 
 _PUBLIC_ NTSTATUS auth_sam_init(void)

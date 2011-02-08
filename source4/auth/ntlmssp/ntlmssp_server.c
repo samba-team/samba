@@ -181,23 +181,23 @@ static NTSTATUS auth_ntlmssp_check_password(struct ntlmssp_state *ntlmssp_state,
 	nt_status = auth_context->check_password(auth_context,
 						 gensec_ntlmssp,
 						 user_info,
-						 &gensec_ntlmssp->server_info);
+						 &gensec_ntlmssp->user_info_dc);
 	talloc_free(user_info);
 	NT_STATUS_NOT_OK_RETURN(nt_status);
 
-	if (gensec_ntlmssp->server_info->user_session_key.length) {
+	if (gensec_ntlmssp->user_info_dc->user_session_key.length) {
 		DEBUG(10, ("Got NT session key of length %u\n",
-			   (unsigned)gensec_ntlmssp->server_info->user_session_key.length));
-		*user_session_key = gensec_ntlmssp->server_info->user_session_key;
+			   (unsigned)gensec_ntlmssp->user_info_dc->user_session_key.length));
+		*user_session_key = gensec_ntlmssp->user_info_dc->user_session_key;
 		talloc_steal(mem_ctx, user_session_key->data);
-		gensec_ntlmssp->server_info->user_session_key = data_blob_null;
+		gensec_ntlmssp->user_info_dc->user_session_key = data_blob_null;
 	}
-	if (gensec_ntlmssp->server_info->lm_session_key.length) {
+	if (gensec_ntlmssp->user_info_dc->lm_session_key.length) {
 		DEBUG(10, ("Got LM session key of length %u\n",
-			   (unsigned)gensec_ntlmssp->server_info->lm_session_key.length));
-		*lm_session_key = gensec_ntlmssp->server_info->lm_session_key;
+			   (unsigned)gensec_ntlmssp->user_info_dc->lm_session_key.length));
+		*lm_session_key = gensec_ntlmssp->user_info_dc->lm_session_key;
 		talloc_steal(mem_ctx, lm_session_key->data);
-		gensec_ntlmssp->server_info->lm_session_key = data_blob_null;
+		gensec_ntlmssp->user_info_dc->lm_session_key = data_blob_null;
 	}
 	return nt_status;
 }
@@ -223,7 +223,7 @@ NTSTATUS gensec_ntlmssp_session_info(struct gensec_security *gensec_security,
 
 	nt_status = gensec_generate_session_info(ntlmssp_state,
 						 gensec_security,
-						 gensec_ntlmssp->server_info,
+						 gensec_ntlmssp->user_info_dc,
 						 session_info);
 	NT_STATUS_NOT_OK_RETURN(nt_status);
 

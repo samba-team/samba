@@ -111,10 +111,11 @@ static NTSTATUS server_get_challenge(struct auth_method_context *ctx, TALLOC_CTX
 static NTSTATUS server_check_password(struct auth_method_context *ctx,
 				      TALLOC_CTX *mem_ctx,
 				      const struct auth_usersupplied_info *user_info, 
-				      struct auth_serversupplied_info **_server_info)
+				      struct auth_user_info_dc **_user_info_dc)
 {
 	NTSTATUS nt_status;
-	struct auth_serversupplied_info *server_info;
+	struct auth_user_info_dc *user_info_dc;
+	struct auth_user_info *info;
 	struct cli_credentials *creds;
 	struct smb_composite_sesssetup session_setup;
 
@@ -156,56 +157,59 @@ static NTSTATUS server_check_password(struct auth_method_context *ctx,
 		return nt_status;
 	}
 
-	server_info = talloc(mem_ctx, struct auth_serversupplied_info);
-	NT_STATUS_HAVE_NO_MEMORY(server_info);
+	user_info_dc = talloc(mem_ctx, struct auth_user_info_dc);
+	NT_STATUS_HAVE_NO_MEMORY(user_info_dc);
 
-	server_info->num_sids = 1;
+	user_info_dc->num_sids = 1;
 
 	/* This returns a pointer to a struct dom_sid, which is the
 	 * same as a 1 element list of struct dom_sid */
-	server_info->sids = dom_sid_parse_talloc(server_info, SID_NT_ANONYMOUS);
-	NT_STATUS_HAVE_NO_MEMORY(server_info->sids);
+	user_info_dc->sids = dom_sid_parse_talloc(user_info_dc, SID_NT_ANONYMOUS);
+	NT_STATUS_HAVE_NO_MEMORY(user_info_dc->sids);
 
 	/* annoying, but the Anonymous really does have a session key, 
 	   and it is all zeros! */
-	server_info->user_session_key = data_blob(NULL, 0);
-	server_info->lm_session_key = data_blob(NULL, 0);
+	user_info_dc->user_session_key = data_blob(NULL, 0);
+	user_info_dc->lm_session_key = data_blob(NULL, 0);
 
-	server_info->account_name = talloc_strdup(server_info, user_info->client.account_name);
-	NT_STATUS_HAVE_NO_MEMORY(server_info->account_name);
+	user_info_dc->info = info = talloc_zero(user_info_dc, struct auth_user_info);
+	NT_STATUS_HAVE_NO_MEMORY(user_info_dc->info);
 
-	server_info->domain_name = talloc_strdup(server_info, user_info->client.domain_name);
-	NT_STATUS_HAVE_NO_MEMORY(server_info->domain_name);
+	info->account_name = talloc_strdup(user_info_dc, user_info->client.account_name);
+	NT_STATUS_HAVE_NO_MEMORY(info->account_name);
 
-	server_info->full_name = NULL;
+	info->domain_name = talloc_strdup(user_info_dc, user_info->client.domain_name);
+	NT_STATUS_HAVE_NO_MEMORY(info->domain_name);
 
-	server_info->logon_script = talloc_strdup(server_info, "");
-	NT_STATUS_HAVE_NO_MEMORY(server_info->logon_script);
+	info->full_name = NULL;
 
-	server_info->profile_path = talloc_strdup(server_info, "");
-	NT_STATUS_HAVE_NO_MEMORY(server_info->profile_path);
+	info->logon_script = talloc_strdup(user_info_dc, "");
+	NT_STATUS_HAVE_NO_MEMORY(info->logon_script);
 
-	server_info->home_directory = talloc_strdup(server_info, "");
-	NT_STATUS_HAVE_NO_MEMORY(server_info->home_directory);
+	info->profile_path = talloc_strdup(user_info_dc, "");
+	NT_STATUS_HAVE_NO_MEMORY(info->profile_path);
 
-	server_info->home_drive = talloc_strdup(server_info, "");
-	NT_STATUS_HAVE_NO_MEMORY(server_info->home_drive);
+	info->home_directory = talloc_strdup(user_info_dc, "");
+	NT_STATUS_HAVE_NO_MEMORY(info->home_directory);
 
-	server_info->last_logon = 0;
-	server_info->last_logoff = 0;
-	server_info->acct_expiry = 0;
-	server_info->last_password_change = 0;
-	server_info->allow_password_change = 0;
-	server_info->force_password_change = 0;
+	info->home_drive = talloc_strdup(user_info_dc, "");
+	NT_STATUS_HAVE_NO_MEMORY(info->home_drive);
 
-	server_info->logon_count = 0;
-	server_info->bad_password_count = 0;
+	info->last_logon = 0;
+	info->last_logoff = 0;
+	info->acct_expiry = 0;
+	info->last_password_change = 0;
+	info->allow_password_change = 0;
+	info->force_password_change = 0;
 
-	server_info->acct_flags = ACB_NORMAL;
+	info->logon_count = 0;
+	info->bad_password_count = 0;
 
-	server_info->authenticated = false;
+	info->acct_flags = ACB_NORMAL;
 
-	*_server_info = server_info;
+	info->authenticated = false;
+
+	*_user_info_dc = user_info_dc;
 
 	return nt_status;
 }

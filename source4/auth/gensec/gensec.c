@@ -1315,17 +1315,17 @@ const char *gensec_get_target_principal(struct gensec_security *gensec_security)
 
 NTSTATUS gensec_generate_session_info(TALLOC_CTX *mem_ctx,
 				      struct gensec_security *gensec_security,
-				      struct auth_serversupplied_info *server_info,
+				      struct auth_user_info_dc *user_info_dc,
 				      struct auth_session_info **session_info)
 {
 	NTSTATUS nt_status;
 	uint32_t flags = AUTH_SESSION_INFO_DEFAULT_GROUPS;
-	if (server_info->authenticated) {
+	if (user_info_dc->info->authenticated) {
 		flags |= AUTH_SESSION_INFO_AUTHENTICATED;
 	}
 	if (gensec_security->auth_context) {
 		nt_status = gensec_security->auth_context->generate_session_info(mem_ctx, gensec_security->auth_context,
-										 server_info,
+										 user_info_dc,
 										 flags,
 										 session_info);
 	} else {
@@ -1333,7 +1333,7 @@ NTSTATUS gensec_generate_session_info(TALLOC_CTX *mem_ctx,
 		nt_status = auth_generate_session_info(mem_ctx,
 						       NULL,
 						       NULL,
-						       server_info, flags,
+						       user_info_dc, flags,
 						       session_info);
 	}
 	return nt_status;
