@@ -2720,6 +2720,7 @@ static NTSTATUS open_directory(connection_struct *conn,
 	fsp->posix_open = (file_attributes & FILE_FLAG_POSIX_SEMANTICS) ? True : False;
 	status = fsp_set_smb_fname(fsp, smb_dname);
 	if (!NT_STATUS_IS_OK(status)) {
+		file_free(req, fsp);
 		return status;
 	}
 
