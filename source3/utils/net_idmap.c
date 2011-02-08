@@ -55,6 +55,38 @@ static int net_idmap_dump_one_entry(struct db_record *rec,
 	return 0;
 }
 
+static const char* net_idmap_dbfile(struct net_context *c)
+{
+	const char* dbfile = NULL;
+
+	if (c->opt_db != NULL) {
+		dbfile = talloc_strdup(talloc_tos(), c->opt_db);
+	} else if (strequal(lp_idmap_backend(), "tdb")) {
+		dbfile = state_path("winbindd_idmap.tdb");
+	} else if (strequal(lp_idmap_backend(), "tdb2")) {
+		dbfile = lp_parm_talloc_string(-1, "tdb", "idmap2.tdb", NULL);
+		if (dbfile == NULL) {
+			dbfile = talloc_asprintf(talloc_tos(), "%s/idmap2.tdb",
+						 lp_private_dir());
+		}
+	} else {
+		char* backend = talloc_strdup(talloc_tos(), lp_idmap_backend());
+		char* args = strchr(backend, ':');
+		if (args != NULL) {
+			*args = '\0';
+		}
+
+		d_printf(_("Sorry, 'idmap backend = %s' is currently not supported\n"),
+			 backend);
+
+		talloc_free(backend);
+	}
+	if (dbfile == NULL) {
+		DEBUG(0,("Out of memory\n"));
+	}
+	return dbfile;
+}
+
 /***********************************************************
  Dump the current idmap
  **********************************************************/
@@ -140,14 +172,15 @@ static int net_idmap_restore(struct net_context *c, int argc, const char **argv)
 	TALLOC_CTX *mem_ctx;
 	FILE *input = NULL;
 	struct db_context *db;
-	char *dbfile = NULL;
+	const char *dbfile = NULL;
 	int ret = 0;
 
 	if (c->display_usage) {
 		d_printf("%s\n%s",
 			 _("Usage:"),
-			 _("net idmap restore [<inputfile>]\n"
+			 _("net idmap restore [--db=<TDB>] [<inputfile>]\n"
 			   "  Restore ID mappings from file\n"
+			   "    TDB\tFile to store ID mappings to."
 			   "    inputfile\tFile to load ID mappings from. If not "
 			   "given, load data from stdin.\n"));
 		return 0;
@@ -155,38 +188,9 @@ static int net_idmap_restore(struct net_context *c, int argc, const char **argv)
 
 	mem_ctx = talloc_stackframe();
 
-	if (strequal(lp_idmap_backend(), "tdb")) {
-		dbfile = state_path("winbindd_idmap.tdb");
-		if (dbfile == NULL) {
-			d_fprintf(stderr, _("Out of memory!\n"));
-			return -1;
-		}
-	} else if (strequal(lp_idmap_backend(), "tdb2")) {
-		dbfile = lp_parm_talloc_string(-1, "tdb", "idmap2.tdb", NULL);
-		if (dbfile == NULL) {
-			dbfile = talloc_asprintf(mem_ctx, "%s/idmap2.tdb",
-						 lp_private_dir());
-		}
-	} else {
-		char *backend, *args;
+	dbfile = net_idmap_dbfile(c);
 
-		backend = talloc_strdup(mem_ctx, lp_idmap_backend());
-		args = strchr(backend, ':');
-		if (args != NULL) {
-			*args = '\0';
-		}
-
-		d_printf(_("Sorry, 'net idmap restore' is currently not "
-			   "supported for idmap backend = %s.\n"
-			   "Only tdb and tdb2 are supported.\n"),
-			 backend);
-
-		ret = -1;
-		goto done;
-	}
-
-	d_fprintf(stderr, _("restoring id mapping to %s data base in '%s'\n"),
-		  lp_idmap_backend(), dbfile);
+	d_fprintf(stderr, _("restoring id mapping to %s\n"), dbfile);
 
 	if (argc == 1) {
 		input = fopen(argv[0], "r");
