@@ -1,11 +1,5 @@
 #!/usr/bin/env python
 
-bld.SAMBA_SUBSYSTEM('LZXPRESS',
-        deps='replace',
-	source='../../lib/compression/lzxpress.c'
-	)
-
-
 bld.SAMBA_SUBSYSTEM('GENCACHE',
 	source='../../source3/lib/gencache.c',
         enabled=False,
