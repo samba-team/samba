@@ -31,6 +31,43 @@
  *
  * @param[in]  server_info   The supplied server info.
  *
+ * @param[in]  key           The key to open. This needs to start with the name
+ *                           of the hive like HKLM.
+ *
+ * @param[in]  create_key    Set to true if the key should be created if it
+ *                           doesn't exist.
+ *
+ * @param[in]  access_mask   The access mask to open the key.
+ *
+ * @param[out] binding_handle A pointer for the winreg dcerpc binding handle.
+ *
+ * @param[out] hive_handle   A policy handle for the opened hive.
+ *
+ * @param[out] key_handle    A policy handle for the opened key.
+ *
+ * @return                   WERR_OK on success, the corresponding DOS error
+ *                           code if something gone wrong.
+ */
+NTSTATUS dcerpc_winreg_int_openkey(TALLOC_CTX *mem_ctx,
+				   const struct auth_serversupplied_info *server_info,
+				   struct messaging_context *msg_ctx,
+				   struct dcerpc_binding_handle **h,
+				   const char *key,
+				   bool create_key,
+				   uint32_t access_mask,
+				   struct policy_handle *hive_handle,
+				   struct policy_handle *key_handle,
+				   WERROR *pwerr);
+
+/**
+ * @brief Connect to the interal winreg server and open the given key.
+ *
+ * The function will create the needed subkeys if they don't exist.
+ *
+ * @param[in]  mem_ctx       The memory context to use.
+ *
+ * @param[in]  server_info   The supplied server info.
+ *
  * @param[in]  key           The key to open.
  *
  * @param[in]  create_key    Set to true if the key should be created if it

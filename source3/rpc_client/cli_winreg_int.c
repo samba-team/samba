@@ -20,20 +20,81 @@
  */
 
 #include "includes.h"
-#include "../librpc/gen_ndr/ndr_winreg_c.h"
+#include "include/registry.h"
+#include "utils/net_registry_util.h"
+#include "librpc/gen_ndr/ndr_winreg_c.h"
 #include "rpc_client/cli_winreg_int.h"
 #include "rpc_server/rpc_ncacn_np.h"
 
-NTSTATUS dcerpc_winreg_int_hklm_openkey(TALLOC_CTX *mem_ctx,
-					const struct auth_serversupplied_info *server_info,
-					struct messaging_context *msg_ctx,
-					struct dcerpc_binding_handle **h,
-					const char *key,
-					bool create_key,
-					uint32_t access_mask,
-					struct policy_handle *hive_handle,
-					struct policy_handle *key_handle,
-					WERROR *pwerr)
+/**
+ * Split path into hive name and subkeyname
+ * normalizations performed:
+ *  - if the path contains no '\\' characters,
+ *    assume that the legacy format of using '/'
+ *    as a separator is used and  convert '/' to '\\'
+ *  - strip trailing '\\' chars
+ */
+static WERROR _split_hive_key(TALLOC_CTX *mem_ctx,
+			      const char *path,
+			      char **hivename,
+			      char **subkeyname)
+{
+	char *p;
+	const char *tmp_subkeyname;
+
+	if ((path == NULL) || (hivename == NULL) || (subkeyname == NULL)) {
+		return WERR_INVALID_PARAM;
+	}
+
+	if (strlen(path) == 0) {
+		return WERR_INVALID_PARAM;
+	}
+
+	if (strchr(path, '\\') == NULL) {
+		*hivename = talloc_string_sub(mem_ctx, path, "/", "\\");
+	} else {
+		*hivename = talloc_strdup(mem_ctx, path);
+	}
+
+	if (*hivename == NULL) {
+		return WERR_NOMEM;
+	}
+
+	/* strip trailing '\\' chars */
+	p = strrchr(*hivename, '\\');
+	while ((p != NULL) && (p[1] == '\0')) {
+		*p = '\0';
+		p = strrchr(*hivename, '\\');
+	}
+
+	p = strchr(*hivename, '\\');
+
+	if ((p == NULL) || (*p == '\0')) {
+		/* just the hive - no subkey given */
+		tmp_subkeyname = "";
+	} else {
+		*p = '\0';
+		tmp_subkeyname = p+1;
+	}
+	*subkeyname = talloc_strdup(mem_ctx, tmp_subkeyname);
+	if (*subkeyname == NULL) {
+		return WERR_NOMEM;
+	}
+
+	return WERR_OK;
+}
+
+static NTSTATUS _winreg_int_openkey(TALLOC_CTX *mem_ctx,
+				    const struct auth_serversupplied_info *server_info,
+				    struct messaging_context *msg_ctx,
+				    struct dcerpc_binding_handle **h,
+				    uint32_t reg_type,
+				    const char *key,
+				    bool create_key,
+				    uint32_t access_mask,
+				    struct policy_handle *hive_handle,
+				    struct policy_handle *key_handle,
+				    WERROR *pwerr)
 {
 	static struct client_address client_id;
 	struct dcerpc_binding_handle *binding_handle;
@@ -56,12 +117,51 @@ NTSTATUS dcerpc_winreg_int_hklm_openkey(TALLOC_CTX *mem_ctx,
 		return status;
 	}
 
-	status = dcerpc_winreg_OpenHKLM(binding_handle,
-					mem_ctx,
-					NULL,
-					access_mask,
-					hive_handle,
-					&result);
+	switch (reg_type) {
+	case HKEY_LOCAL_MACHINE:
+		status = dcerpc_winreg_OpenHKLM(binding_handle,
+						mem_ctx,
+						NULL,
+						access_mask,
+						hive_handle,
+						&result);
+		break;
+	case HKEY_CLASSES_ROOT:
+		status = dcerpc_winreg_OpenHKCR(binding_handle,
+						mem_ctx,
+						NULL,
+						access_mask,
+						hive_handle,
+						&result);
+		break;
+	case HKEY_USERS:
+		status = dcerpc_winreg_OpenHKU(binding_handle,
+					       mem_ctx,
+					       NULL,
+					       access_mask,
+					       hive_handle,
+					       &result);
+		break;
+	case HKEY_CURRENT_USER:
+		status = dcerpc_winreg_OpenHKCU(binding_handle,
+						mem_ctx,
+						NULL,
+						access_mask,
+						hive_handle,
+						&result);
+		break;
+	case HKEY_PERFORMANCE_DATA:
+		status = dcerpc_winreg_OpenHKPD(binding_handle,
+						mem_ctx,
+						NULL,
+						access_mask,
+						hive_handle,
+						&result);
+		break;
+	default:
+		result = WERR_INVALID_PARAMETER;
+		status = NT_STATUS_OK;
+	}
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(binding_handle);
 		return status;
@@ -129,6 +229,87 @@ NTSTATUS dcerpc_winreg_int_hklm_openkey(TALLOC_CTX *mem_ctx,
 	*h = binding_handle;
 
 	return status;
+}
+
+NTSTATUS dcerpc_winreg_int_openkey(TALLOC_CTX *mem_ctx,
+				   const struct auth_serversupplied_info *server_info,
+				   struct messaging_context *msg_ctx,
+				   struct dcerpc_binding_handle **h,
+				   const char *key,
+				   bool create_key,
+				   uint32_t access_mask,
+				   struct policy_handle *hive_handle,
+				   struct policy_handle *key_handle,
+				   WERROR *pwerr)
+{
+	char *hivename = NULL;
+	char *subkey = NULL;
+	uint32_t reg_type;
+	WERROR result;
+
+	result = _split_hive_key(mem_ctx, key, &hivename, &subkey);
+	if (!W_ERROR_IS_OK(result)) {
+		*pwerr = result;
+		return NT_STATUS_OK;
+	}
+
+	if (strequal(hivename, "HKLM") ||
+	    strequal(hivename, "HKEY_LOCAL_MACHINE")) {
+		reg_type = HKEY_LOCAL_MACHINE;
+	} else if (strequal(hivename, "HKCR") ||
+		   strequal(hivename, "HKEY_CLASSES_ROOT")) {
+		reg_type = HKEY_CLASSES_ROOT;
+	} else if (strequal(hivename, "HKU") ||
+		   strequal(hivename, "HKEY_USERS")) {
+		reg_type = HKEY_USERS;
+	} else if (strequal(hivename, "HKCU") ||
+		   strequal(hivename, "HKEY_CURRENT_USER")) {
+		reg_type = HKEY_CURRENT_USER;
+	} else if (strequal(hivename, "HKPD") ||
+		   strequal(hivename, "HKEY_PERFORMANCE_DATA")) {
+		reg_type = HKEY_PERFORMANCE_DATA;
+	} else {
+		DEBUG(10,("dcerpc_winreg_int_openkey: unrecognised hive key %s\n",
+			  key));
+		*pwerr = WERR_INVALID_PARAMETER;
+		return NT_STATUS_OK;
+	}
+
+	return _winreg_int_openkey(mem_ctx,
+				   server_info,
+				   msg_ctx,
+				   h,
+				   reg_type,
+				   key,
+				   create_key,
+				   access_mask,
+				   hive_handle,
+				   key_handle,
+				   pwerr);
+}
+
+NTSTATUS dcerpc_winreg_int_hklm_openkey(TALLOC_CTX *mem_ctx,
+					const struct auth_serversupplied_info *server_info,
+					struct messaging_context *msg_ctx,
+					struct dcerpc_binding_handle **h,
+					const char *key,
+					bool create_key,
+					uint32_t access_mask,
+					struct policy_handle *hive_handle,
+					struct policy_handle *key_handle,
+					WERROR *pwerr)
+{
+	return _winreg_int_openkey(mem_ctx,
+				   server_info,
+				   msg_ctx,
+				   h,
+				   HKEY_LOCAL_MACHINE,
+				   key,
+				   create_key,
+				   access_mask,
+				   hive_handle,
+				   key_handle,
+				   pwerr);
 }
 
 /* vim: set ts=8 sw=8 noet cindent syntax=c.doxygen: */
