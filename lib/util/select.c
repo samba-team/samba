@@ -286,3 +286,29 @@ int sys_poll(struct pollfd *fds, int num_fds, int timeout)
 
 	return ret;
 }
+
+int sys_poll_intr(struct pollfd *fds, int num_fds, int timeout)
+{
+	int orig_timeout = timeout;
+	struct timespec start;
+	int ret;
+
+	clock_gettime_mono(&start);
+
+	while (true) {
+		struct timespec now;
+		int64_t elapsed;
+
+		ret = poll(fds, num_fds, timeout);
+		if (ret != -1) {
+			break;
+		}
+		if (errno != EINTR) {
+			break;
+		}
+		clock_gettime_mono(&now);
+		elapsed = nsec_time_diff(&now, &start);
+		timeout = (orig_timeout - elapsed) / 1000000;
+	};
+	return ret;
+}
