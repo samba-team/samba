@@ -35,7 +35,7 @@
 #include "smbd/globals.h"
 #include "../libcli/auth/libcli_auth.h"
 #include "../librpc/gen_ndr/srv_samr.h"
-#include "rpc_server/srv_samr_util.h"
+#include "rpc_server/samr/srv_samr_util.h"
 #include "../lib/crypto/arcfour.h"
 #include "secrets.h"
 #include "rpc_client/init_lsa.h"
@@ -2368,7 +2368,7 @@ NTSTATUS _samr_OpenUser(struct pipes_struct *p,
 
 	/* check that the SID exists in our domain. */
 	if (ret == False) {
-        	return NT_STATUS_NO_SUCH_USER;
+		return NT_STATUS_NO_SUCH_USER;
 	}
 
 	/* If we did the rid admins hack above, allow access. */
@@ -3749,8 +3749,8 @@ NTSTATUS _samr_QueryDomainInfo(struct pipes_struct *p,
 		case 13:
 			status = query_dom_info_13(p->mem_ctx, &dom_info->info13);
 			break;
-        	default:
-            		return NT_STATUS_INVALID_INFO_CLASS;
+		default:
+			return NT_STATUS_INVALID_INFO_CLASS;
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
@@ -4753,7 +4753,7 @@ static NTSTATUS set_user_info_21(struct samr_UserInfo21 *id21,
 	/* write the change out */
 	if(!NT_STATUS_IS_OK(status = pdb_update_sam_account(pwd))) {
 		return status;
- 	}
+	}
 
 	return NT_STATUS_OK;
 }
@@ -4873,7 +4873,7 @@ static bool set_user_info_pw(uint8 *pass, const char *rhost, struct samu *pwd)
 				&len,
 				CH_UTF16)) {
 		return False;
- 	}
+	}
 
 	if (!pdb_set_plaintext_passwd (pwd, plaintext_buf)) {
 		return False;
@@ -4939,7 +4939,7 @@ static NTSTATUS set_user_info_24(TALLOC_CTX *mem_ctx,
 	status = pdb_update_sam_account(pwd);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
- 	}
+	}
 
 	return NT_STATUS_OK;
 }
@@ -4981,7 +4981,7 @@ static NTSTATUS set_user_info_25(TALLOC_CTX *mem_ctx,
 	/* write the change out */
 	if(!NT_STATUS_IS_OK(status = pdb_update_sam_account(pwd))) {
 		return status;
- 	}
+	}
 
 	/*
 	 * We need to "pdb_update_sam_account" before the unix primary group
@@ -5193,7 +5193,7 @@ NTSTATUS _samr_SetUserInfo(struct pipes_struct *p,
 	if (!ret) {
 		TALLOC_FREE(pwd);
 		return NT_STATUS_NO_SUCH_USER;
- 	}
+	}
 
 	/* ================ BEGIN Privilege BLOCK ================ */
 
@@ -6558,7 +6558,7 @@ NTSTATUS _samr_SetDomainInfo(struct pipes_struct *p,
 	switch (r->in.level) {
 		case 1:
 			status = set_dom_info_1(p->mem_ctx, &r->in.info->info1);
-            		break;
+			break;
 		case 3:
 			status = set_dom_info_3(p->mem_ctx, &r->in.info->info3);
 			break;

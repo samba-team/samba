@@ -26,7 +26,7 @@
 #include "../librpc/gen_ndr/ndr_winreg_c.h"
 #include "rpc_client/cli_winreg_int.h"
 #include "rpc_client/cli_winreg.h"
-#include "rpc_server/srv_eventlog_reg.h"
+#include "rpc_server/eventlog/srv_eventlog_reg.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_REGISTRY

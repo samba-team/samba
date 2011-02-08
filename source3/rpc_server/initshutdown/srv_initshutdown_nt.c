@@ -1,4 +1,4 @@
-/* 
+/*
  *  Unix SMB/CIFS implementation.
  *  RPC Pipe client / server routines
  *  Copyright (C) Andrew Tridgell               1992-1997.
@@ -8,12 +8,12 @@
  *  it under the terms of the GNU General Public License as published by
  *  the Free Software Foundation; either version 3 of the License, or
  *  (at your option) any later version.
- *  
+ *
  *  This program is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
@@ -41,9 +41,9 @@ WERROR _initshutdown_Init(struct pipes_struct *p, struct initshutdown_Init *r)
 	s.in.do_reboot = r->in.do_reboot;
 	s.in.reason = 0;
 
-	/* thunk down to _winreg_InitiateSystemShutdownEx() 
+	/* thunk down to _winreg_InitiateSystemShutdownEx()
 	   (just returns a status) */
-	
+
 	return _winreg_InitiateSystemShutdownEx( p, &s );
 }
 

@@ -222,4 +222,3 @@ WERROR _dssetup_DsRoleAbortDownlevelServerUpgrade(struct pipes_struct *p,
 	p->rng_fault_state = true;
 	return WERR_NOT_SUPPORTED;
 }
-

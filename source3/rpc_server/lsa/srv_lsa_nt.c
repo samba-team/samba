@@ -1776,7 +1776,7 @@ NTSTATUS _lsa_OpenAccount(struct pipes_struct *p,
 	}
 
 	/* des_access is for the account here, not the policy
- 	 * handle - so don't check against policy handle. */
+	 * handle - so don't check against policy handle. */
 
 	/* Work out max allowed. */
 	map_max_allowed_access(p->server_info->ptok,
@@ -2148,10 +2148,10 @@ NTSTATUS _lsa_AddAccountRights(struct pipes_struct *p,
 
 	/*
 	 * From the MS DOCs. If the sid doesn't exist, ask for LSA_POLICY_CREATE_ACCOUNT
- 	 * on the policy handle. If it does, ask for
- 	 * LSA_ACCOUNT_ADJUST_PRIVILEGES|LSA_ACCOUNT_ADJUST_SYSTEM_ACCESS|LSA_ACCOUNT_VIEW,
- 	 * on the account sid. We don't check here so just use the latter. JRA.
- 	 */
+	 * on the policy handle. If it does, ask for
+	 * LSA_ACCOUNT_ADJUST_PRIVILEGES|LSA_ACCOUNT_ADJUST_SYSTEM_ACCESS|LSA_ACCOUNT_VIEW,
+	 * on the account sid. We don't check here so just use the latter. JRA.
+	 */
 
 	status = access_check_object(psd, p->server_info->ptok,
 				     SEC_PRIV_INVALID, SEC_PRIV_INVALID, 0,
@@ -2221,7 +2221,7 @@ NTSTATUS _lsa_RemoveAccountRights(struct pipes_struct *p,
 	 * From the MS DOCs. We need
 	 * LSA_ACCOUNT_ADJUST_PRIVILEGES|LSA_ACCOUNT_ADJUST_SYSTEM_ACCESS|LSA_ACCOUNT_VIEW
 	 * and DELETE on the account sid.
- 	 */
+	 */
 
 	status = access_check_object(psd, p->server_info->ptok,
 				     SEC_PRIV_INVALID, SEC_PRIV_INVALID, 0,

@@ -1199,4 +1199,3 @@ WERROR _svcctl_SCSendTSMessage(struct pipes_struct *p,
 	p->rng_fault_state = True;
 	return WERR_NOT_SUPPORTED;
 }
-

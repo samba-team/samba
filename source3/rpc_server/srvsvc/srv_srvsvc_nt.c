@@ -138,8 +138,8 @@ static void enum_file_fn( const struct share_mode_entry *e,
                           const char *sharepath, const char *fname,
 			  void *private_data )
 {
- 	struct file_enum_count *fenum =
- 		(struct file_enum_count *)private_data;
+	struct file_enum_count *fenum =
+		(struct file_enum_count *)private_data;
 
 	struct srvsvc_NetFileInfo3 *f;
 	int i = fenum->ctr3->count;
@@ -2817,4 +2817,3 @@ WERROR _srvsvc_NETRSERVERTRANSPORTDELEX(struct pipes_struct *p,
 	p->rng_fault_state = True;
 	return WERR_NOT_SUPPORTED;
 }
-
