@@ -186,7 +186,7 @@ static int smbacl4_fGetFileOwner(files_struct *fsp, SMB_STRUCT_STAT *psbuf)
 {
 	memset(psbuf, 0, sizeof(SMB_STRUCT_STAT));
 
-	if (fsp->is_directory || fsp->fh->fd == -1) {
+	if (fsp->fh->fd == -1) {
 		return smbacl4_GetFileOwner(fsp->conn,
 					    fsp->fsp_name->base_name, psbuf);
 	}

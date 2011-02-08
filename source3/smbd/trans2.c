@@ -4827,7 +4827,7 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 				uint16 num_file_acls = 0;
 				uint16 num_def_acls = 0;
 
-				if (fsp && !fsp->is_directory && (fsp->fh->fd != -1)) {
+				if (fsp && fsp->fh->fd != -1) {
 					file_acl = SMB_VFS_SYS_ACL_GET_FD(fsp);
 				} else {
 					file_acl =
@@ -4920,7 +4920,7 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 			enum brl_type lock_type;
 
 			/* We need an open file with a real fd for this. */
-			if (!fsp || fsp->is_directory || fsp->fh->fd == -1) {
+			if (!fsp || fsp->fh->fd == -1) {
 				return NT_STATUS_INVALID_LEVEL;
 			}
 
@@ -5073,7 +5073,7 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 
 			/* We know this name is ok, it's already passed the checks. */
 
-		} else if(fsp->is_directory || fsp->fh->fd == -1) {
+		} else if(fsp->fh->fd == -1) {
 			/*
 			 * This is actually a QFILEINFO on a directory
 			 * handle (returned from an NT SMB). NT5.0 seems
@@ -5108,10 +5108,6 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 			/*
 			 * Original code - this is an open file.
 			 */
-			if (!check_fsp(conn, req, fsp)) {
-				return;
-			}
-
 			if (SMB_VFS_FSTAT(fsp, &smb_fname->st) != 0) {
 				DEBUG(3, ("fstat of fnum %d failed (%s)\n",
 					  fsp->fnum, strerror(errno)));
@@ -7885,7 +7881,7 @@ static void call_trans2setfilepathinfo(connection_struct *conn,
 			return;
 		}
 
-		if(fsp->is_directory || fsp->fh->fd == -1) {
+		if(fsp->fh->fd == -1) {
 			/*
 			 * This is actually a SETFILEINFO on a directory
 			 * handle (returned from an NT SMB). NT5.0 seems
@@ -7937,10 +7933,6 @@ static void call_trans2setfilepathinfo(connection_struct *conn,
 			/*
 			 * Original code - this is an open file.
 			 */
-		        if (!check_fsp(conn, req, fsp)) {
-				return;
-			}
-
 			if (SMB_VFS_FSTAT(fsp, &smb_fname->st) != 0) {
 				DEBUG(3,("call_trans2setfilepathinfo: fstat "
 					 "of fnum %d failed (%s)\n", fsp->fnum,
