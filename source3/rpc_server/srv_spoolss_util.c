@@ -4126,9 +4126,10 @@ WERROR winreg_del_driver(TALLOC_CTX *mem_ctx,
 	}
 
 	key_name = talloc_asprintf(tmp_ctx,
-				   "%s\\Environments\\%s\\Drivers\\Version-%u",
+				   "%s\\Environments\\%s\\Drivers\\Version-%u\\%s",
 				   TOP_LEVEL_CONTROL_KEY,
-				   info8->architecture, version);
+				   info8->architecture, version,
+				   info8->driver_name);
 	if (key_name == NULL) {
 		result = WERR_NOMEM;
 		goto done;
