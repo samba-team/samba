@@ -1793,3 +1793,20 @@ int poll_one_fd(int fd, int events, int timeout, int *revents)
 
 	return ret;
 }
+
+int poll_intr_one_fd(int fd, int events, int timeout, int *revents)
+{
+	struct pollfd pfd;
+	int ret;
+
+	pfd.fd = fd;
+	pfd.events = events;
+
+	ret = sys_poll_intr(&pfd, 1, timeout);
+	if (ret <= 0) {
+		*revents = 0;
+		return ret;
+	}
+	*revents = pfd.revents;
+	return 1;
+}
