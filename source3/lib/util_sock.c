@@ -446,11 +446,9 @@ NTSTATUS read_fd_with_timeout(int fd, char *buf,
 				  unsigned int time_out,
 				  size_t *size_ret)
 {
-	fd_set fds;
-	int selrtn;
+	int pollrtn;
 	ssize_t readret;
 	size_t nread = 0;
-	struct timeval timeout;
 
 	/* just checking .... */
 	if (maxcnt <= 0)
@@ -485,23 +483,20 @@ NTSTATUS read_fd_with_timeout(int fd, char *buf,
 	   system performance will suffer severely as
 	   select always returns true on disk files */
 
-	/* Set initial timeout */
-	timeout.tv_sec = (time_t)(time_out / 1000);
-	timeout.tv_usec = (long)(1000 * (time_out % 1000));
-
 	for (nread=0; nread < mincnt; ) {
-		FD_ZERO(&fds);
-		FD_SET(fd,&fds);
+		int revents;
 
-		selrtn = sys_select_intr(fd+1,&fds,NULL,NULL,&timeout);
+		pollrtn = poll_intr_one_fd(fd, POLLIN|POLLHUP, time_out,
+					   &revents);
 
 		/* Check if error */
-		if (selrtn == -1) {
+		if (pollrtn == -1) {
 			return map_nt_error_from_unix(errno);
 		}
 
 		/* Did we timeout ? */
-		if (selrtn == 0) {
+		if ((pollrtn == 0) ||
+		    ((revents & (POLLIN|POLLHUP|POLLERR)) == 0)) {
 			DEBUG(10,("read_fd_with_timeout: timeout read. "
 				"select timed out.\n"));
 			return NT_STATUS_IO_TIMEOUT;
