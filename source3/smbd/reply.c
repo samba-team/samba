@@ -4821,7 +4821,7 @@ void reply_close(struct smb_request *req)
 	 * We can only use check_fsp if we know it's not a directory.
 	 */
 
-	if(!fsp || (fsp->conn != conn) || (fsp->vuid != req->vuid)) {
+	if (!check_fsp_open(conn, req, fsp)) {
 		reply_nterror(req, NT_STATUS_INVALID_HANDLE);
 		END_PROFILE(SMBclose);
 		return;
