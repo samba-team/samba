@@ -22,6 +22,7 @@
 #define _SAMBA_AUTH_H
 
 #include "librpc/gen_ndr/ndr_krb5pac.h"
+#include "librpc/gen_ndr/auth.h"
 #include "../auth/common_auth.h"
 
 extern const char *krbtgt_attrs[];

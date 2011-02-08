@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 bld.SAMBA_PIDL_LIST('PIDL',
-                    '''atsvc.idl drsuapi.idl epmapper.idl initshutdown.idl
+                    '''atsvc.idl auth.idl drsuapi.idl epmapper.idl initshutdown.idl
                        misc.idl ntlmssp.idl schannel.idl trkwks.idl
                        audiosrv.idl dfsblobs.idl dsbackup.idl eventlog.idl file_id.idl keysvc.idl
                        msgsvc.idl ntsvcs.idl remact.idl security.idl unixinfo.idl wzcsvc.idl
