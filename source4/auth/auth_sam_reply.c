@@ -74,7 +74,7 @@ NTSTATUS auth_convert_user_info_dc_sambaseinfo(TALLOC_CTX *mem_ctx,
 	sam->home_drive.string = info->home_drive;
 
 	sam->logon_count = info->logon_count;
-	sam->bad_password_count = sam->bad_password_count;
+	sam->bad_password_count = info->bad_password_count;
 	sam->groups.count = 0;
 	sam->groups.rids = NULL;
 
