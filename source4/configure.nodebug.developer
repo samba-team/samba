@@ -1,3 +1,0 @@
-#!/bin/sh
-CFLAGS="-Wall -Wshadow -Wstrict-prototypes -Wpointer-arith -Wcast-qual -Wcast-align -DDEBUG_PASSWORD"; export CFLAGS
-./configure "$@"
