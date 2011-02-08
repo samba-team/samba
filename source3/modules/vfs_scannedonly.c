@@ -526,6 +526,35 @@ static SMB_STRUCT_DIR *scannedonly_opendir(vfs_handle_struct * handle,
 	return (SMB_STRUCT_DIR *) sDIR;
 }
 
+static SMB_STRUCT_DIR *scannedonly_fdopendir(vfs_handle_struct * handle,
+					   files_struct *fsp,
+					   const char *mask, uint32 attr)
+{
+	SMB_STRUCT_DIR *DIRp;
+	struct scannedonly_DIR *sDIR;
+	const char *fname;
+
+	DIRp = SMB_VFS_NEXT_FDOPENDIR(handle, fsp, mask, attr);
+	if (!DIRp) {
+		return NULL;
+	}
+
+	fname = (const char *)fsp->fsp_name->base_name;
+
+	sDIR = TALLOC_P(NULL, struct scannedonly_DIR);
+	if (fname[0] != '/') {
+		sDIR->base = construct_full_path(sDIR,handle, fname, true);
+	} else {
+		sDIR->base = name_w_ending_slash(sDIR, fname);
+	}
+	DEBUG(SCANNEDONLY_DEBUG,
+			("scannedonly_fdopendir, fname=%s, base=%s\n",fname,sDIR->base));
+	sDIR->DIR = DIRp;
+	sDIR->notify_loop_done = 0;
+	return (SMB_STRUCT_DIR *) sDIR;
+}
+
+
 static SMB_STRUCT_DIRENT *scannedonly_readdir(vfs_handle_struct *handle,
 					      SMB_STRUCT_DIR * dirp,
 					      SMB_STRUCT_STAT *sbuf)
@@ -986,6 +1015,7 @@ static int scannedonly_connect(struct vfs_handle_struct *handle,
 /* VFS operations structure */
 static struct vfs_fn_pointers vfs_scannedonly_fns = {
 	.opendir = scannedonly_opendir,
+	.fdopendir = scannedonly_fdopendir,
 	.readdir = scannedonly_readdir,
 	.seekdir = scannedonly_seekdir,
 	.telldir = scannedonly_telldir,

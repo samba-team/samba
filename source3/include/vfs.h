@@ -132,6 +132,7 @@
 		where it belongs. JRA. */
 /* Leave at 28 - not yet released. Rename posix_fallocate to fallocate
 		to split out the two possible uses. JRA. */
+/* Leave at 28 - not yet released. Add fdopendir. JRA. */
 #define SMB_VFS_INTERFACE_VERSION 28
 
 
@@ -198,6 +199,7 @@ struct vfs_fn_pointers {
 	/* Directory operations */
 
 	SMB_STRUCT_DIR *(*opendir)(struct vfs_handle_struct *handle, const char *fname, const char *mask, uint32 attributes);
+	SMB_STRUCT_DIR *(*fdopendir)(struct vfs_handle_struct *handle, files_struct *fsp, const char *mask, uint32 attributes);
 	SMB_STRUCT_DIRENT *(*readdir)(struct vfs_handle_struct *handle,
 				      SMB_STRUCT_DIR *dirp,
 				      SMB_STRUCT_STAT *sbuf);
@@ -526,6 +528,10 @@ uint32_t smb_vfs_call_fs_capabilities(struct vfs_handle_struct *handle,
 SMB_STRUCT_DIR *smb_vfs_call_opendir(struct vfs_handle_struct *handle,
 				     const char *fname, const char *mask,
 				     uint32 attributes);
+SMB_STRUCT_DIR *smb_vfs_call_fdopendir(struct vfs_handle_struct *handle,
+					struct files_struct *fsp,
+					const char *mask,
+					uint32 attributes);
 SMB_STRUCT_DIRENT *smb_vfs_call_readdir(struct vfs_handle_struct *handle,
 					SMB_STRUCT_DIR *dirp,
 					SMB_STRUCT_STAT *sbuf);

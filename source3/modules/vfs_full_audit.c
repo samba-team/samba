@@ -87,6 +87,7 @@ typedef enum _vfs_op_type {
 	/* Directory operations */
 
 	SMB_VFS_OP_OPENDIR,
+	SMB_VFS_OP_FDOPENDIR,
 	SMB_VFS_OP_READDIR,
 	SMB_VFS_OP_SEEKDIR,
 	SMB_VFS_OP_TELLDIR,
@@ -229,6 +230,7 @@ static struct {
 	{ SMB_VFS_OP_STATVFS,	"statvfs" },
 	{ SMB_VFS_OP_FS_CAPABILITIES,	"fs_capabilities" },
 	{ SMB_VFS_OP_OPENDIR,	"opendir" },
+	{ SMB_VFS_OP_FDOPENDIR,	"fdopendir" },
 	{ SMB_VFS_OP_READDIR,	"readdir" },
 	{ SMB_VFS_OP_SEEKDIR,   "seekdir" },
 	{ SMB_VFS_OP_TELLDIR,   "telldir" },
@@ -731,6 +733,19 @@ static SMB_STRUCT_DIR *smb_full_audit_opendir(vfs_handle_struct *handle,
 	result = SMB_VFS_NEXT_OPENDIR(handle, fname, mask, attr);
 
 	do_log(SMB_VFS_OP_OPENDIR, (result != NULL), handle, "%s", fname);
+
+	return result;
+}
+
+static SMB_STRUCT_DIR *smb_full_audit_fdopendir(vfs_handle_struct *handle,
+			  files_struct *fsp, const char *mask, uint32 attr)
+{
+	SMB_STRUCT_DIR *result;
+
+	result = SMB_VFS_NEXT_FDOPENDIR(handle, fsp, mask, attr);
+
+	do_log(SMB_VFS_OP_FDOPENDIR, (result != NULL), handle, "%s",
+			fsp_str_do_log(fsp));
 
 	return result;
 }
@@ -2201,6 +2216,7 @@ static struct vfs_fn_pointers vfs_full_audit_fns = {
 	.statvfs = smb_full_audit_statvfs,
 	.fs_capabilities = smb_full_audit_fs_capabilities,
 	.opendir = smb_full_audit_opendir,
+	.fdopendir = smb_full_audit_fdopendir,
 	.readdir = smb_full_audit_readdir,
 	.seekdir = smb_full_audit_seekdir,
 	.telldir = smb_full_audit_telldir,

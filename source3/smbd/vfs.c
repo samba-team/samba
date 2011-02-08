@@ -1200,6 +1200,15 @@ SMB_STRUCT_DIR *smb_vfs_call_opendir(struct vfs_handle_struct *handle,
 	return handle->fns->opendir(handle, fname, mask, attributes);
 }
 
+SMB_STRUCT_DIR *smb_vfs_call_fdopendir(struct vfs_handle_struct *handle,
+					struct files_struct *fsp,
+					const char *mask,
+					uint32 attributes)
+{
+	VFS_FIND(fdopendir);
+	return handle->fns->fdopendir(handle, fsp, mask, attributes);
+}
+
 SMB_STRUCT_DIRENT *smb_vfs_call_readdir(struct vfs_handle_struct *handle,
 					      SMB_STRUCT_DIR *dirp,
 					      SMB_STRUCT_STAT *sbuf)

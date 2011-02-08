@@ -57,6 +57,8 @@ bool status_profile_dump(bool verbose)
 	profile_separator("System Calls");
 	d_printf("opendir_count:                  %u\n", profile_p->syscall_opendir_count);
 	d_printf("opendir_time:                   %u\n", profile_p->syscall_opendir_time);
+	d_printf("fdopendir_count:                %u\n", profile_p->syscall_fdopendir_count);
+	d_printf("fdopendir_time:                 %u\n", profile_p->syscall_fdopendir_time);
 	d_printf("readdir_count:                  %u\n", profile_p->syscall_readdir_count);
 	d_printf("readdir_time:                   %u\n", profile_p->syscall_readdir_time);
 	d_printf("mkdir_count:                    %u\n", profile_p->syscall_mkdir_count);
