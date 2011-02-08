@@ -141,7 +141,7 @@ static NTSTATUS open_internal_lsa_pipe(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	/* create a samr connection */
+	/* create a lsa connection */
 	status = rpc_pipe_open_interface(mem_ctx,
 					&ndr_table_lsarpc.syntax_id,
 					server_info,
