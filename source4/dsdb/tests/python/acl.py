@@ -153,7 +153,7 @@ class AclAddTests(AclTests):
         res = self.ldb_admin.search(self.base_dn,
             expression="(distinguishedName=%s,%s)" % (
                 "OU=test_add_ou1", self.base_dn))
-        self.assertEqual(res, [])
+        self.assertEqual(len(res), 0)
 
     def test_add_u1(self):
         """Testing OU with the rights of Doman Admin not creator of the OU """
@@ -193,9 +193,9 @@ class AclAddTests(AclTests):
             self.fail()
         # Make sure we HAVEN'T created any of two objects -- user or group
         res = self.ldb_admin.search(self.base_dn, expression="(distinguishedName=%s,%s)" % ("CN=test_add_user1,OU=test_add_ou2,OU=test_add_ou1", self.base_dn))
-        self.assertEqual(res, [])
+        self.assertEqual(len(res), 0)
         res = self.ldb_admin.search(self.base_dn, expression="(distinguishedName=%s,%s)" % ("CN=test_add_group1,OU=test_add_ou2,OU=test_add_ou1", self.base_dn))
-        self.assertEqual(res, [])
+        self.assertEqual(len(res), 0)
 
     def test_add_u3(self):
         """Testing OU with the rights of regular user granted the right 'Create User child objects' """
@@ -225,7 +225,7 @@ class AclAddTests(AclTests):
                 expression="(distinguishedName=%s,%s)" %
                 ("CN=test_add_group1,OU=test_add_ou2,OU=test_add_ou1",
                     self.base_dn) )
-        self.assertEqual(res, [])
+        self.assertEqual(len(res), 0)
 
     def test_add_u4(self):
         """ 4 Testing OU with the rights of Doman Admin creator of the OU"""
@@ -627,7 +627,7 @@ class AclSearchTests(AclTests):
         res = self.ldb_admin.search(base=self.base_dn, scope=SCOPE_SUBTREE, \
                 expression="distinguishedName=%s" % object_dn)
         # Make sure top testing OU has been deleted before starting the test
-        self.assertEqual(res, [])
+        self.assertEqual(len(res), 0)
         self.ldb_admin.create_ou(object_dn)
         desc_sddl = self.sd_utils.get_sd_as_sddl(object_dn)
         # Make sure there are inheritable ACEs initially
@@ -925,7 +925,7 @@ class AclSearchTests(AclTests):
         res = self.ldb_user.search("OU=ou1," + self.base_dn, expression="(ou=ou3)",
                                     scope=SCOPE_SUBTREE)
         #nothing should be returned as ou is not accessible
-        self.assertEquals(res, [])
+        self.assertEquals(len(res), 0)
 
         #give read property on ou and assert user can only see dn and ou
         mod = "(OA;;RP;bf9679f0-0de6-11d0-a285-00aa003049e2;;%s)" % (str(self.user_sid))
@@ -986,7 +986,7 @@ class AclDeleteTests(AclTests):
         self.ldb_user.delete(user_dn)
         res = self.ldb_admin.search(self.base_dn,
                 expression="(distinguishedName=%s)" % user_dn)
-        self.assertEqual(res, [])
+        self.assertEqual(len(res), 0)
 
     def test_delete_u3(self):
         """User indentified by SID has RIGHT_DELETE to another User object"""
@@ -999,7 +999,7 @@ class AclDeleteTests(AclTests):
         self.ldb_user.delete(user_dn)
         res = self.ldb_admin.search(self.base_dn,
                 expression="(distinguishedName=%s)" % user_dn)
-        self.assertEqual(res, [])
+        self.assertEqual(len(res), 0)
 
     def test_delete_anonymous(self):
         """Test add operation with anonymous user"""
@@ -1078,10 +1078,10 @@ class AclRenameTests(AclTests):
         self.ldb_user.rename(user_dn, rename_user_dn)
         res = self.ldb_admin.search(self.base_dn,
                 expression="(distinguishedName=%s)" % user_dn)
-        self.assertEqual(res, [])
+        self.assertEqual(len(res), 0)
         res = self.ldb_admin.search(self.base_dn,
                 expression="(distinguishedName=%s)" % rename_user_dn)
-        self.assertNotEqual(res, [])
+        self.assertNotEqual(len(res), 0)
 
     def test_rename_u3(self):
         """Test rename with rights granted to 'User object' SID"""
@@ -1098,10 +1098,10 @@ class AclRenameTests(AclTests):
         self.ldb_user.rename(user_dn, rename_user_dn)
         res = self.ldb_admin.search(self.base_dn,
                 expression="(distinguishedName=%s)" % user_dn)
-        self.assertEqual(res, [])
+        self.assertEqual(len(res), 0)
         res = self.ldb_admin.search(self.base_dn,
                 expression="(distinguishedName=%s)" % rename_user_dn)
-        self.assertNotEqual(res, [])
+        self.assertNotEqual(len(res), 0)
 
     def test_rename_u4(self):
         """Rename 'User object' cross OU with WP, SD and CC right granted on reg. user to AU"""
@@ -1121,10 +1121,10 @@ class AclRenameTests(AclTests):
         self.ldb_user.rename(user_dn, rename_user_dn)
         res = self.ldb_admin.search(self.base_dn,
                 expression="(distinguishedName=%s)" % user_dn)
-        self.assertEqual(res, [])
+        self.assertEqual(len(res), 0)
         res = self.ldb_admin.search(self.base_dn,
                 expression="(distinguishedName=%s)" % rename_user_dn)
-        self.assertNotEqual(res, [])
+        self.assertNotEqual(len(res), 0)
 
     def test_rename_u5(self):
         """Test rename with rights granted to 'User object' SID"""
@@ -1145,10 +1145,10 @@ class AclRenameTests(AclTests):
         self.ldb_user.rename(user_dn, rename_user_dn)
         res = self.ldb_admin.search(self.base_dn,
                 expression="(distinguishedName=%s)" % user_dn)
-        self.assertEqual(res, [])
+        self.assertEqual(len(res), 0)
         res = self.ldb_admin.search(self.base_dn,
                 expression="(distinguishedName=%s)" % rename_user_dn)
-        self.assertNotEqual(res, [])
+        self.assertNotEqual(len(res), 0)
 
     def test_rename_u6(self):
         """Rename 'User object' cross OU with WP, DC and CC right granted on OU & user to AU"""
@@ -1171,10 +1171,10 @@ class AclRenameTests(AclTests):
         self.ldb_user.rename(user_dn, rename_user_dn)
         res = self.ldb_admin.search(self.base_dn,
                 expression="(distinguishedName=%s)" % user_dn)
-        self.assertEqual(res, [])
+        self.assertEqual(len(res), 0)
         res = self.ldb_admin.search(self.base_dn,
                 expression="(distinguishedName=%s)" % rename_user_dn)
-        self.assertNotEqual(res, [])
+        self.assertNotEqual(len(res), 0)
 
     def test_rename_u7(self):
         """Rename 'User object' cross OU (second level) with WP, DC and CC right granted on OU to AU"""
@@ -1196,10 +1196,10 @@ class AclRenameTests(AclTests):
         self.ldb_user.rename(user_dn, rename_user_dn)
         res = self.ldb_admin.search(self.base_dn,
                 expression="(distinguishedName=%s)" % user_dn)
-        self.assertEqual(res, [])
+        self.assertEqual(len(res), 0)
         res = self.ldb_admin.search(self.base_dn,
                 expression="(distinguishedName=%s)" % rename_user_dn)
-        self.assertNotEqual(res, [])
+        self.assertNotEqual(len(res), 0)
 
     def test_rename_u8(self):
         """Test rename on an object with and without modify access on the RDN attribute"""
@@ -1226,9 +1226,9 @@ class AclRenameTests(AclTests):
         self.sd_utils.dacl_add_ace(ou2_dn, mod)
         self.ldb_user.rename(ou2_dn, ou3_dn)
         res = self.ldb_admin.search(self.base_dn, expression="(distinguishedName=%s)" % ou2_dn)
-        self.assertEqual(res, [])
+        self.assertEqual(len(res), 0)
         res = self.ldb_admin.search(self.base_dn, expression="(distinguishedName=%s)" % ou3_dn)
-        self.assertNotEqual(res, [])
+        self.assertNotEqual(len(res), 0)
 
 #tests on Control Access Rights
 class AclCARTests(AclTests):
@@ -1547,14 +1547,14 @@ class AclExtendedTests(AclTests):
         #u2 must not read the descriptor
         res = self.ldb_user2.search("CN=ext_group1,OU=ext_ou1," + self.base_dn,
                                     SCOPE_BASE, None, ["nTSecurityDescriptor"])
-        self.assertNotEqual(res,[])
+        self.assertNotEqual(len(res), 0)
         self.assertFalse("nTSecurityDescriptor" in res[0].keys())
         #grant RC to u2 - still no access
         mod = "(A;;RC;;;%s)" % str(self.user_sid2)
         self.sd_utils.dacl_add_ace("CN=ext_group1,OU=ext_ou1," + self.base_dn, mod)
         res = self.ldb_user2.search("CN=ext_group1,OU=ext_ou1," + self.base_dn,
                                     SCOPE_BASE, None, ["nTSecurityDescriptor"])
-        self.assertNotEqual(res,[])
+        self.assertNotEqual(len(res), 0)
         self.assertFalse("nTSecurityDescriptor" in res[0].keys())
         #u3 is member of administrators group, should be able to read sd
         res = self.ldb_user3.search("CN=ext_group1,OU=ext_ou1," + self.base_dn,

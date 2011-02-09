@@ -127,7 +127,7 @@ class UpdateSecretsTests(samba.tests.TestCaseInTempDir):
             expression="dn=@MODULES", base="", scope=SCOPE_SUBTREE)
         refmodules = self.referencedb.search(
             expression="dn=@MODULES", base="", scope=SCOPE_SUBTREE)
-        self.assertEquals(newmodules, refmodules)
+        self.assertEquals(newmodules.msgs, refmodules.msgs)
 
     def tearDown(self):
         for name in ["ref.ldb", "secrets.ldb"]:

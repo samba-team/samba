@@ -1262,7 +1262,7 @@ class DaclDescriptorTests(DescriptorTests):
         res = self.ldb_admin.search(base=self.base_dn, scope=SCOPE_SUBTREE, \
                 expression="distinguishedName=%s" % object_dn)
         # Make sure top testing OU has been deleted before starting the test
-        self.assertEqual(res, [])
+        self.assertEqual(len(res), 0)
         self.ldb_admin.create_ou(object_dn)
         desc_sddl = self.sd_utils.get_sd_as_sddl(object_dn)
         # Make sure there are inheritable ACEs initially
