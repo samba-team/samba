@@ -622,7 +622,6 @@ msg.msg_acctrightslen = sizeof(fd);
             conf.DEFINE('HAVE_IPRINT', '1')
         else:
             print "--enable-iprint=yes but cups support not sufficient"
-            sys.exit(1)
     if Options.options.with_syslog:
         conf.DEFINE('WITH_SYSLOG', '1')
     if Options.options.with_automount:
@@ -904,12 +903,10 @@ return krb5_kt_resolve(context, "WRFILE:api", &keytab);
         conf.CHECK_HEADERS('security/pam_appl.h pam/pam_appl.h')
         if not conf.CONFIG_SET('HAVE_SECURITY_PAM_APPL_H') and not conf.CONFIG_SET('HAVE_PAM_PAM_APPL_H'):
             print "--with-pam=yes but pam_appl.h not found"
-            sys.exit(1)
         conf.CHECK_FUNCS_IN('pam_get_data', 'pam', mandatory=True)
 	conf.CHECK_HEADERS('security/pam_modules.h pam/pam_modules.h')
 	if not conf.CONFIG_SET('HAVE_SECURITY_PAM_MODULES_H') and not conf.CONFIG_SET('HAVE_PAM_PAM_MODULES_H'):
             print "--with-pam=yes but pam_modules.h not found"
-            sys.exit(1)
         conf.CHECK_HEADERS('security/pam_ext.h security/_pam_macros.h')
         conf.CHECK_HEADERS('pam/pam_ext.h pam/_pam_macros.h')
         conf.CHECK_FUNCS_IN('pam_vsyslog', 'pam')
@@ -1018,7 +1015,6 @@ int i; i = PAM_RADIO_TYPE;
         conf.CHECK_FUNCS_IN('uuid_generate', 'uuid')
         if not conf.CONFIG_SET('HAVE_UUID_UUID_H') and not conf.CONFIG_SET('HAVE_UUID_GENERATE'):
             print "--with-dnsupdate=yes but uuid support not sufficient"
-            sys.exit(1)
         conf.DEFINE('WITH_DNS_UPDATES', 1)
     else:
         conf.SET_TARGET_TYPE('uuid', 'EMPTY')
