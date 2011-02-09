@@ -52,6 +52,16 @@ NTSTATUS auth_generate_session_info(TALLOC_CTX *mem_ctx,
 NTSTATUS auth_anonymous_session_info(TALLOC_CTX *parent_ctx, 
 				     struct loadparm_context *lp_ctx,
 				     struct auth_session_info **session_info);
+struct auth_session_info *auth_session_info_from_transport(TALLOC_CTX *mem_ctx,
+							   struct auth_session_info_transport *session_info_transport,
+							   struct loadparm_context *lp_ctx,
+							   const char **reason);
+NTSTATUS auth_session_info_transport_from_session(TALLOC_CTX *mem_ctx,
+						  struct auth_session_info *session_info,
+						  struct tevent_context *event_ctx,
+						  struct loadparm_context *lp_ctx,
+						  struct auth_session_info_transport **transport_out);
+
 /* Produce a session_info for an arbitary DN or principal in the local
  * DB, assuming the local DB holds all the groups
  *

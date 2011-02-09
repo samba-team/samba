@@ -217,7 +217,7 @@ struct ipc_open_state {
 	struct pipe_state *p;
 	struct ntvfs_request *req;
 	union smb_open *oi;
-	struct netr_SamInfo3 *info3;
+	struct auth_session_info_transport *session_info_transport;
 };
 
 static void ipc_open_done(struct tevent_req *subreq);
@@ -253,9 +253,6 @@ static NTSTATUS ipc_open(struct ntvfs_module_context *ntvfs,
 	const char *directory;
 	const struct tsocket_address *client_addr;
 	const struct tsocket_address *server_addr;
-	int ret;
-	DATA_BLOB delegated_creds = data_blob_null;
-	struct auth_user_info_dc user_info_dc;
 
 	switch (oi->generic.level) {
 	case RAW_OPEN_NTCREATEX:
@@ -310,53 +307,16 @@ static NTSTATUS ipc_open(struct ntvfs_module_context *ntvfs,
 	state->req = req;
 	state->oi = oi;
 
-	/* Disgusting hack to recreate the user_info_dc that should
-	 * not be used that this layer in this way */
-	ZERO_STRUCT(user_info_dc);
-	user_info_dc.info = req->session_info->info;
-	user_info_dc.num_sids = req->session_info->torture->num_dc_sids;
-	user_info_dc.sids = req->session_info->torture->dc_sids;
+	status = auth_session_info_transport_from_session(state,
+							  req->session_info,
+							  ipriv->ntvfs->ctx->event_ctx,
+							  ipriv->ntvfs->ctx->lp_ctx,
+							  &state->session_info_transport);
 
-	status = auth_convert_user_info_dc_saminfo3(state,
-						    &user_info_dc,
-						    &state->info3);
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	client_addr = ntvfs_get_local_address(ipriv->ntvfs);
 	server_addr = ntvfs_get_remote_address(ipriv->ntvfs);
-
-	if (req->session_info->credentials) {
-		struct gssapi_creds_container *gcc;
-		OM_uint32 gret;
-		OM_uint32 minor_status;
-		gss_buffer_desc cred_token;
-		const char *error_string;
-
-		ret = cli_credentials_get_client_gss_creds(req->session_info->credentials,
-							   ipriv->ntvfs->ctx->event_ctx,
-							   ipriv->ntvfs->ctx->lp_ctx,
-							   &gcc, &error_string);
-		if (ret) {
-			goto skip;
-		}
-
-		gret = gss_export_cred(&minor_status,
-				       gcc->creds,
-				       &cred_token);
-		if (gret != GSS_S_COMPLETE) {
-			return NT_STATUS_INTERNAL_ERROR;
-		}
-
-		if (cred_token.length) {
-			delegated_creds = data_blob_talloc(req,
-							   cred_token.value,
-							   cred_token.length);
-			gss_release_buffer(&minor_status, &cred_token);
-			NT_STATUS_HAVE_NO_MEMORY(delegated_creds.data);
-		}
-	}
-
-skip:
 
 	subreq = tstream_npa_connect_send(p,
 					  ipriv->ntvfs->ctx->event_ctx,
@@ -366,9 +326,7 @@ skip:
 					  NULL,
 					  server_addr,
 					  NULL,
-					  state->info3,
-					  req->session_info->session_key,
-					  delegated_creds);
+					  state->session_info_transport);
 	NT_STATUS_HAVE_NO_MEMORY(subreq);
 	tevent_req_set_callback(subreq, ipc_open_done, state);
 

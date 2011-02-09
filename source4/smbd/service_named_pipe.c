@@ -33,8 +33,7 @@
 #include "system/passwd.h"
 #include "system/network.h"
 #include "libcli/raw/smb.h"
-#include "auth/credentials/credentials.h"
-#include "auth/credentials/credentials_krb5.h"
+#include "auth/session.h"
 #include "libcli/security/security.h"
 #include "libcli/named_pipe_auth/npa_tstream.h"
 
@@ -93,18 +92,9 @@ static void named_pipe_accept_done(struct tevent_req *subreq)
 	char *client_name;
 	struct tsocket_address *server;
 	char *server_name;
-	struct netr_SamInfo3 *info3;
-	DATA_BLOB session_key;
-	DATA_BLOB delegated_creds;
-
-	union netr_Validation val;
-	struct auth_user_info_dc *user_info_dc;
-	struct auth_context *auth_context;
-	uint32_t session_flags = 0;
-	struct dom_sid *anonymous_sid;
+	struct auth_session_info_transport *session_info_transport;
 	const char *reason = NULL;
 	TALLOC_CTX *tmp_ctx;
-	NTSTATUS status;
 	int error;
 	int ret;
 
@@ -115,14 +105,12 @@ static void named_pipe_accept_done(struct tevent_req *subreq)
 	}
 
 	ret = tstream_npa_accept_existing_recv(subreq, &error, tmp_ctx,
-						&conn->tstream,
-						&client,
-						&client_name,
-						&server,
-						&server_name,
-						&info3,
-						&session_key,
-						&delegated_creds);
+					       &conn->tstream,
+					       &client,
+					       &client_name,
+					       &server,
+					       &server_name,
+					       &session_info_transport);
 	TALLOC_FREE(subreq);
 	if (ret != 0) {
 		reason = talloc_asprintf(conn,
@@ -137,111 +125,11 @@ static void named_pipe_accept_done(struct tevent_req *subreq)
 		   client_name, tsocket_address_string(client, tmp_ctx),
 		   server_name, tsocket_address_string(server, tmp_ctx)));
 
-	if (info3) {
-		val.sam3 = info3;
-
-		status = make_user_info_dc_netlogon_validation(conn,
-					val.sam3->base.account_name.string,
-					3, &val, &user_info_dc);
-		if (!NT_STATUS_IS_OK(status)) {
-			reason = talloc_asprintf(conn,
-					"make_user_info_dc_netlogon_validation "
-					"returned: %s", nt_errstr(status));
-			goto out;
-		}
-
-		status = auth_context_create(conn, conn->event.ctx,
-					     conn->msg_ctx, conn->lp_ctx,
-					     &auth_context);
-		if (!NT_STATUS_IS_OK(status)) {
-			reason = talloc_asprintf(conn,
-					"auth_context_create returned: %s",
-					nt_errstr(status));
-			goto out;
-		}
-
-		anonymous_sid = dom_sid_parse_talloc(auth_context,
-						     SID_NT_ANONYMOUS);
-		if (anonymous_sid == NULL) {
-			talloc_free(auth_context);
-			reason = "Failed to parse Anonymous SID ";
-			goto out;
-		}
-
-		session_flags = AUTH_SESSION_INFO_DEFAULT_GROUPS;
-		if (user_info_dc->num_sids > 1 && !dom_sid_equal(anonymous_sid, &user_info_dc->sids[0])) {
-			session_flags |= AUTH_SESSION_INFO_AUTHENTICATED;
-		}
-
-
-		/* setup the session_info on the connection */
-		status = auth_context->generate_session_info(conn,
-							     auth_context,
-							     user_info_dc,
-							     session_flags,
-							     &conn->session_info);
-		talloc_free(auth_context);
-		if (!NT_STATUS_IS_OK(status)) {
-			reason = talloc_asprintf(conn,
-					"auth_generate_session_info "
-					"returned: %s", nt_errstr(status));
-			goto out;
-		}
-	}
-
-	if (session_key.length) {
-		conn->session_info->session_key = session_key;
-		talloc_steal(conn->session_info, session_key.data);
-	}
-
-	if (delegated_creds.length) {
-		struct cli_credentials *creds;
-		OM_uint32 minor_status;
-		gss_buffer_desc cred_token;
-		gss_cred_id_t cred_handle;
-		const char *error_string;
-
-		DEBUG(10, ("Delegated credentials supplied by client\n"));
-
-		cred_token.value = delegated_creds.data;
-		cred_token.length = delegated_creds.length;
-
-		ret = gss_import_cred(&minor_status,
-				      &cred_token,
-				      &cred_handle);
-		if (ret != GSS_S_COMPLETE) {
-			reason = "Internal error in gss_import_cred()";
-			goto out;
-		}
-
-		creds = cli_credentials_init(conn->session_info);
-		if (!creds) {
-			reason = "Out of memory in cli_credentials_init()";
-			goto out;
-		}
-		conn->session_info->credentials = creds;
-
-		cli_credentials_set_conf(creds, conn->lp_ctx);
-		/* Just so we don't segfault trying to get at a username */
-		cli_credentials_set_anonymous(creds);
-
-		ret = cli_credentials_set_client_gss_creds(creds,
-							   conn->lp_ctx,
-							   cred_handle,
-							   CRED_SPECIFIED,
-							   &error_string);
-		if (ret) {
-			reason = talloc_asprintf(conn,
-						 "Failed to set pipe forwarded"
-						 "creds: %s\n", error_string);
-			goto out;
-		}
-
-		/* This credential handle isn't useful for password
-		 * authentication, so ensure nobody tries to do that */
-		cli_credentials_set_kerberos_state(creds,
-						   CRED_MUST_USE_KERBEROS);
-
+	conn->session_info = auth_session_info_from_transport(conn, session_info_transport,
+							      conn->lp_ctx,
+							      &reason);
+	if (!conn->session_info) {
+		goto out;
 	}
 
 	/*

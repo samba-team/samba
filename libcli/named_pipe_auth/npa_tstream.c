@@ -59,16 +59,14 @@ struct tstream_npa_connect_state {
 static void tstream_npa_connect_unix_done(struct tevent_req *subreq);
 
 struct tevent_req *tstream_npa_connect_send(TALLOC_CTX *mem_ctx,
-					struct tevent_context *ev,
-					const char *directory,
-					const char *npipe,
-					const struct tsocket_address *client,
-					const char *client_name_in,
-					const struct tsocket_address *server,
-					const char *server_name,
-					const struct netr_SamInfo3 *sam_info3,
-					DATA_BLOB session_key,
-					DATA_BLOB delegated_creds)
+					    struct tevent_context *ev,
+					    const char *directory,
+					    const char *npipe,
+					    const struct tsocket_address *client,
+					    const char *client_name_in,
+					    const struct tsocket_address *server,
+					    const char *server_name,
+					    const struct auth_session_info_transport *session_info)
 {
 	struct tevent_req *req;
 	struct tstream_npa_connect_state *state;
@@ -76,7 +74,7 @@ struct tevent_req *tstream_npa_connect_send(TALLOC_CTX *mem_ctx,
 	int ret;
 	enum ndr_err_code ndr_err;
 	char *lower_case_npipe;
-	struct named_pipe_auth_req_info3 *info3;
+	struct named_pipe_auth_req_info4 *info4;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct tstream_npa_connect_state);
@@ -122,37 +120,33 @@ struct tevent_req *tstream_npa_connect_send(TALLOC_CTX *mem_ctx,
 		goto post;
 	}
 
-	state->auth_req.level = 3;
-	info3 = &state->auth_req.info.info3;
+	state->auth_req.level = 4;
+	info4 = &state->auth_req.info.info4;
 
-	info3->client_name = client_name_in;
-	info3->client_addr = tsocket_address_inet_addr_string(client, state);
-	if (!info3->client_addr) {
+	info4->client_name = client_name_in;
+	info4->client_addr = tsocket_address_inet_addr_string(client, state);
+	if (!info4->client_addr) {
 		/* errno might be EINVAL */
 		tevent_req_error(req, errno);
 		goto post;
 	}
-	info3->client_port = tsocket_address_inet_port(client);
-	if (!info3->client_name) {
-		info3->client_name = info3->client_addr;
+	info4->client_port = tsocket_address_inet_port(client);
+	if (!info4->client_name) {
+		info4->client_name = info4->client_addr;
 	}
 
-	info3->server_addr = tsocket_address_inet_addr_string(server, state);
-	if (!info3->server_addr) {
+	info4->server_addr = tsocket_address_inet_addr_string(server, state);
+	if (!info4->server_addr) {
 		/* errno might be EINVAL */
 		tevent_req_error(req, errno);
 		goto post;
 	}
-	info3->server_port = tsocket_address_inet_port(server);
-	if (!info3->server_name) {
-		info3->server_name = info3->server_addr;
+	info4->server_port = tsocket_address_inet_port(server);
+	if (!info4->server_name) {
+		info4->server_name = info4->server_addr;
 	}
 
-	info3->sam_info3 = discard_const_p(struct netr_SamInfo3, sam_info3);
-	info3->session_key_length = session_key.length;
-	info3->session_key = session_key.data;
-	info3->gssapi_delegated_creds_length = delegated_creds.length;
-	info3->gssapi_delegated_creds = delegated_creds.data;
+	info4->session_info = discard_const_p(struct auth_session_info_transport, session_info);
 
 	if (DEBUGLVL(10)) {
 		NDR_PRINT_DEBUG(named_pipe_auth_req, &state->auth_req);
@@ -422,10 +416,10 @@ int _tstream_npa_connect_recv(struct tevent_req *req,
 
 	npas->unix_stream = talloc_move(stream, &state->unix_stream);
 	switch (state->auth_rep.level) {
-	case 3:
-		npas->file_type = state->auth_rep.info.info3.file_type;
-		device_state = state->auth_rep.info.info3.device_state;
-		allocation_size = state->auth_rep.info.info3.allocation_size;
+	case 4:
+		npas->file_type = state->auth_rep.info.info4.file_type;
+		device_state = state->auth_rep.info.info4.device_state;
+		allocation_size = state->auth_rep.info.info4.allocation_size;
 		break;
 	}
 
@@ -1086,9 +1080,7 @@ struct tstream_npa_accept_state {
 	char *client_name;
 	struct tsocket_address *server;
 	char *server_name;
-	struct netr_SamInfo3 *info3;
-	DATA_BLOB session_key;
-	DATA_BLOB delegated_creds;
+	struct auth_session_info_transport *session_info;
 };
 
 static int tstream_npa_accept_next_vector(struct tstream_context *unix_stream,
@@ -1238,7 +1230,7 @@ static void tstream_npa_accept_existing_reply(struct tevent_req *subreq)
 			tevent_req_data(req, struct tstream_npa_accept_state);
 	struct named_pipe_auth_req *pipe_request;
 	struct named_pipe_auth_rep pipe_reply;
-	struct named_pipe_auth_req_info3 i3;
+	struct named_pipe_auth_req_info4 i4;
 	enum ndr_err_code ndr_err;
 	DATA_BLOB out;
 	int sys_errno;
@@ -1283,70 +1275,62 @@ static void tstream_npa_accept_existing_reply(struct tevent_req *subreq)
 		NDR_PRINT_DEBUG(named_pipe_auth_req, pipe_request);
 	}
 
-	ZERO_STRUCT(i3);
+	ZERO_STRUCT(i4);
 
-	if (pipe_request->level != 3) {
+	if (pipe_request->level != 4) {
 		DEBUG(0, ("Unknown level %u\n", pipe_request->level));
 		pipe_reply.level = 0;
 		pipe_reply.status = NT_STATUS_INVALID_LEVEL;
 		goto reply;
 	}
 
-	pipe_reply.level = 3;
+	pipe_reply.level = 4;
 	pipe_reply.status = NT_STATUS_OK;
-	pipe_reply.info.info3.file_type = state->file_type;
-	pipe_reply.info.info3.device_state = state->device_state;
-	pipe_reply.info.info3.allocation_size = state->alloc_size;
+	pipe_reply.info.info4.file_type = state->file_type;
+	pipe_reply.info.info4.device_state = state->device_state;
+	pipe_reply.info.info4.allocation_size = state->alloc_size;
 
-	i3 = pipe_request->info.info3;
-	if (i3.server_addr == NULL) {
+	i4 = pipe_request->info.info4;
+	if (i4.server_addr == NULL) {
 		pipe_reply.status = NT_STATUS_INVALID_ADDRESS;
 		DEBUG(2, ("Missing server address\n"));
 		goto reply;
 	}
-	if (i3.client_addr == NULL) {
+	if (i4.client_addr == NULL) {
 		pipe_reply.status = NT_STATUS_INVALID_ADDRESS;
 		DEBUG(2, ("Missing client address\n"));
 		goto reply;
 	}
 
 	state->server_name = discard_const_p(char,
-					     talloc_move(state, &i3.server_name));
+					     talloc_move(state, &i4.server_name));
 	ret = tsocket_address_inet_from_strings(state, "ip",
-						i3.server_addr,
-						i3.server_port,
+						i4.server_addr,
+						i4.server_port,
 						&state->server);
 	if (ret != 0) {
 		DEBUG(2, ("Invalid server address[%s:%u] - %s\n",
-			  i3.server_addr, i3.server_port,
+			  i4.server_addr, i4.server_port,
 			  strerror(errno)));
 		pipe_reply.status = NT_STATUS_INVALID_ADDRESS;
 		goto reply;
 	}
 
 	state->client_name = discard_const_p(char,
-					     talloc_move(state, &i3.client_name));
+					     talloc_move(state, &i4.client_name));
 	ret = tsocket_address_inet_from_strings(state, "ip",
-						i3.client_addr,
-						i3.client_port,
+						i4.client_addr,
+						i4.client_port,
 						&state->client);
 	if (ret != 0) {
 		DEBUG(2, ("Invalid server address[%s:%u] - %s\n",
-			  i3.client_addr, i3.client_port,
+			  i4.client_addr, i4.client_port,
 			  strerror(errno)));
 		pipe_reply.status = NT_STATUS_INVALID_ADDRESS;
 		goto reply;
 	}
 
-	state->info3 = talloc_move(state, &i3.sam_info3);
-	state->session_key.data = talloc_move(state, &i3.session_key);
-	state->session_key.length = i3.session_key_length;
-
-	state->delegated_creds.data =
-		talloc_move(state, &i3.gssapi_delegated_creds);
-	state->delegated_creds.length =
-		i3.gssapi_delegated_creds_length;
-
+	state->session_info = talloc_move(state, &i4.session_info);
 reply:
 	/* create the output */
 	ndr_err = ndr_push_struct_blob(&out, state, &pipe_reply,
@@ -1406,9 +1390,7 @@ int _tstream_npa_accept_existing_recv(struct tevent_req *req,
 				      char **_client_name,
 				      struct tsocket_address **server,
 				      char **server_name,
-				      struct netr_SamInfo3 **info3,
-				      DATA_BLOB *session_key,
-				      DATA_BLOB *delegated_creds,
+				      struct auth_session_info_transport **session_info,
 				      const char *location)
 {
 	struct tstream_npa_accept_state *state =
@@ -1457,11 +1439,7 @@ int _tstream_npa_accept_existing_recv(struct tevent_req *req,
 	*_client_name = talloc_move(mem_ctx, &state->client_name);
 	*server = talloc_move(mem_ctx, &state->server);
 	*server_name = talloc_move(mem_ctx, &state->server_name);
-	*info3 = talloc_move(mem_ctx, &state->info3);
-	*session_key = state->session_key;
-	talloc_steal(mem_ctx, state->session_key.data);
-	*delegated_creds = state->delegated_creds;
-	talloc_steal(mem_ctx, state->delegated_creds.data);
+	*session_info = talloc_move(mem_ctx, &state->session_info);
 
 	tevent_req_received(req);
 	return 0;

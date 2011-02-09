@@ -24,10 +24,14 @@
 #include "includes.h"
 #include "auth/auth.h"
 #include "auth/auth_sam.h"
+#include "auth/credentials/credentials.h"
+#include "auth/credentials/credentials_krb5.h"
 #include "libcli/security/security.h"
 #include "libcli/auth/libcli_auth.h"
 #include "dsdb/samdb/samdb.h"
 #include "auth/session_proto.h"
+#include "system/kerberos.h"
+#include <gssapi/gssapi.h>
 
 _PUBLIC_ struct auth_session_info *anonymous_session(TALLOC_CTX *mem_ctx, 
 					    struct loadparm_context *lp_ctx)
@@ -150,6 +154,149 @@ _PUBLIC_ NTSTATUS auth_generate_session_info(TALLOC_CTX *mem_ctx,
 	talloc_free(tmp_ctx);
 	return NT_STATUS_OK;
 }
+
+/* Create a session_info structure from the
+ * auth_session_info_transport we were forwarded over named pipe
+ * forwarding.
+ *
+ * NOTE: The stucture members of session_info_transport are stolen
+ * with talloc_move() into auth_session_info for long term use
+ */
+struct auth_session_info *auth_session_info_from_transport(TALLOC_CTX *mem_ctx,
+							   struct auth_session_info_transport *session_info_transport,
+							   struct loadparm_context *lp_ctx,
+							   const char **reason)
+{
+	struct auth_session_info *session_info;
+	session_info = talloc_zero(mem_ctx, struct auth_session_info);
+	if (!session_info) {
+		*reason = "failed to allocate session_info";
+		return NULL;
+	}
+
+	session_info->security_token = talloc_move(session_info, &session_info_transport->security_token);
+	session_info->info = talloc_move(session_info, &session_info_transport->info);
+	session_info->session_key = session_info_transport->session_key;
+	session_info->session_key.data = talloc_move(session_info, &session_info_transport->session_key.data);
+
+	if (session_info_transport->exported_gssapi_credentials.length) {
+		struct cli_credentials *creds;
+		OM_uint32 minor_status;
+		gss_buffer_desc cred_token;
+		gss_cred_id_t cred_handle;
+		const char *error_string;
+		int ret;
+
+		DEBUG(10, ("Delegated credentials supplied by client\n"));
+
+		cred_token.value = session_info_transport->exported_gssapi_credentials.data;
+		cred_token.length = session_info_transport->exported_gssapi_credentials.length;
+
+		ret = gss_import_cred(&minor_status,
+				      &cred_token,
+				      &cred_handle);
+		if (ret != GSS_S_COMPLETE) {
+			*reason = "Internal error in gss_import_cred()";
+			return NULL;
+		}
+
+		creds = cli_credentials_init(session_info);
+		if (!creds) {
+			*reason = "Out of memory in cli_credentials_init()";
+			return NULL;
+		}
+		session_info->credentials = creds;
+
+		cli_credentials_set_conf(creds, lp_ctx);
+		/* Just so we don't segfault trying to get at a username */
+		cli_credentials_set_anonymous(creds);
+
+		ret = cli_credentials_set_client_gss_creds(creds,
+							   lp_ctx,
+							   cred_handle,
+							   CRED_SPECIFIED,
+							   &error_string);
+		if (ret) {
+			*reason = talloc_asprintf(mem_ctx,
+						  "Failed to set pipe forwarded"
+						  "creds: %s\n", error_string);
+			return NULL;
+		}
+
+		/* This credential handle isn't useful for password
+		 * authentication, so ensure nobody tries to do that */
+		cli_credentials_set_kerberos_state(creds,
+						   CRED_MUST_USE_KERBEROS);
+
+	}
+
+	return session_info;
+}
+
+
+/* Create a auth_session_info_transport from an auth_session_info.
+ *
+ * NOTE: Members of the auth_session_info_transport structure are not talloc_referenced, but simply assigned.  They are only valid for the lifetime of the struct auth_session_info
+ *
+ * This isn't normally an issue, as the auth_session_info has a very long typical life
+ */
+NTSTATUS auth_session_info_transport_from_session(TALLOC_CTX *mem_ctx,
+						  struct auth_session_info *session_info,
+						  struct tevent_context *event_ctx,
+						  struct loadparm_context *lp_ctx,
+						  struct auth_session_info_transport **transport_out)
+{
+
+	struct auth_session_info_transport *session_info_transport = talloc_zero(mem_ctx, struct auth_session_info_transport);
+	session_info_transport->security_token = talloc_reference(session_info, session_info->security_token);
+	NT_STATUS_HAVE_NO_MEMORY(session_info_transport->security_token);
+
+	session_info_transport->info = talloc_reference(session_info, session_info->info);
+	NT_STATUS_HAVE_NO_MEMORY(session_info_transport->info);
+
+	session_info_transport->session_key = session_info->session_key;
+	session_info_transport->session_key.data = talloc_reference(session_info, session_info->session_key.data);
+	if (!session_info_transport->session_key.data && session_info->session_key.length) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (session_info->credentials) {
+		struct gssapi_creds_container *gcc;
+		OM_uint32 gret;
+		OM_uint32 minor_status;
+		gss_buffer_desc cred_token;
+		const char *error_string;
+		int ret;
+
+		ret = cli_credentials_get_client_gss_creds(session_info->credentials,
+							   event_ctx,
+							   lp_ctx,
+							   &gcc, &error_string);
+		if (ret != 0) {
+			*transport_out = session_info_transport;
+			return NT_STATUS_OK;
+		}
+
+		gret = gss_export_cred(&minor_status,
+				       gcc->creds,
+				       &cred_token);
+		if (gret != GSS_S_COMPLETE) {
+			return NT_STATUS_INTERNAL_ERROR;
+		}
+
+		if (cred_token.length) {
+			session_info_transport->exported_gssapi_credentials
+				= data_blob_talloc(session_info_transport,
+						   cred_token.value,
+						   cred_token.length);
+			gss_release_buffer(&minor_status, &cred_token);
+			NT_STATUS_HAVE_NO_MEMORY(session_info_transport->exported_gssapi_credentials.data);
+		}
+	}
+	*transport_out = session_info_transport;
+	return NT_STATUS_OK;
+}
+
 
 /* Produce a session_info for an arbitary DN or principal in the local
  * DB, assuming the local DB holds all the groups

@@ -21,9 +21,11 @@
 #include "rpc_server/rpc_server.h"
 #include "rpc_dce.h"
 #include "librpc/gen_ndr/netlogon.h"
+#include "librpc/gen_ndr/auth.h"
 #include "registry/reg_parse_prs.h"
 #include "lib/tsocket/tsocket.h"
 #include "libcli/named_pipe_auth/npa_tstream.h"
+#include "../auth/auth_sam_reply.h"
 
 /* Creates a pipes_struct and initializes it with the information
  * sent from the client */
@@ -31,10 +33,12 @@ static int make_server_pipes_struct(TALLOC_CTX *mem_ctx,
 				    const char *pipe_name,
 				    const struct ndr_syntax_id id,
 				    const char *client_address,
-				    struct netr_SamInfo3 *info3,
+				    struct auth_session_info_transport *session_info,
 				    struct pipes_struct **_p,
 				    int *perrno)
 {
+	struct netr_SamInfo3 *info3;
+	struct auth_user_info_dc *auth_user_info_dc;
 	struct pipes_struct *p;
 	NTSTATUS status;
 	bool ok;
@@ -67,6 +71,30 @@ static int make_server_pipes_struct(TALLOC_CTX *mem_ctx,
 
 	p->endian = RPC_LITTLE_ENDIAN;
 
+	/* Fake up an auth_user_info_dc for now, to make an info3, to make the server_info structure */
+	auth_user_info_dc = talloc_zero(p, struct auth_user_info_dc);
+	if (!auth_user_info_dc) {
+		TALLOC_FREE(p);
+		*perrno = ENOMEM;
+		return -1;
+	}
+
+	auth_user_info_dc->num_sids = session_info->security_token->num_sids;
+	auth_user_info_dc->sids = session_info->security_token->sids;
+	auth_user_info_dc->info = session_info->info;
+	auth_user_info_dc->user_session_key = session_info->session_key;
+
+	/* This creates the input structure that make_server_info_info3 is looking for */
+	status = auth_convert_user_info_dc_saminfo3(p, auth_user_info_dc,
+						    &info3);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("Failed to convert auth_user_info_dc into netr_SamInfo3\n"));
+		TALLOC_FREE(p);
+		*perrno = EINVAL;
+		return -1;
+	}
+
 	status = make_server_info_info3(p,
 					info3->base.account_name.string,
 					info3->base.domain.string,
@@ -89,6 +117,15 @@ static int make_server_pipes_struct(TALLOC_CTX *mem_ctx,
 		*perrno = EINVAL;
 		return -1;
 	}
+
+	/* Now override the server_info->ptok with the exact
+	 * security_token we were given from the other side,
+	 * regardless of what we just calculated */
+	p->server_info->ptok = talloc_move(p->server_info, &session_info->security_token);
+
+	/* Also set the session key to the correct value */
+	p->server_info->user_session_key = session_info->session_key;
+	p->server_info->user_session_key.data = talloc_move(p->server_info, &session_info->session_key.data);
 
 	p->client_id = talloc_zero(p, struct client_address);
 	if (!p->client_id) {
@@ -318,9 +355,7 @@ struct named_pipe_client {
 	char *client_name;
 	struct tsocket_address *server;
 	char *server_name;
-	struct netr_SamInfo3 *info3;
-	DATA_BLOB session_key;
-	DATA_BLOB delegated_creds;
+	struct auth_session_info_transport *session_info;
 
 	struct pipes_struct *p;
 
@@ -410,9 +445,7 @@ static void named_pipe_accept_done(struct tevent_req *subreq)
 						&npc->client_name,
 						&npc->server,
 						&npc->server_name,
-						&npc->info3,
-						&npc->session_key,
-						&npc->delegated_creds);
+						&npc->session_info);
 	TALLOC_FREE(subreq);
 	if (ret != 0) {
 		DEBUG(2, ("Failed to accept named pipe connection! (%s)\n",
@@ -434,7 +467,7 @@ static void named_pipe_accept_done(struct tevent_req *subreq)
 
 	ret = make_server_pipes_struct(npc,
 					npc->pipe_name, npc->pipe_id,
-					cli_addr, npc->info3,
+					cli_addr, npc->session_info,
 					&npc->p, &error);
 	if (ret != 0) {
 		DEBUG(2, ("Failed to create pipes_struct! (%s)\n",
