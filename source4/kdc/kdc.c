@@ -38,6 +38,30 @@
 extern struct krb5plugin_windc_ftable windc_plugin_table;
 extern struct hdb_method hdb_samba4;
 
+static NTSTATUS kdc_proxy_unavailable_error(struct kdc_server *kdc,
+					    TALLOC_CTX *mem_ctx,
+					    DATA_BLOB *out)
+{
+	int kret;
+	krb5_data k5_error_blob;
+
+	kret = krb5_mk_error(kdc->smb_krb5_context->krb5_context,
+			     KRB5KDC_ERR_SVC_UNAVAILABLE, NULL, NULL,
+			     NULL, NULL, NULL, NULL, &k5_error_blob);
+	if (kret != 0) {
+		DEBUG(2,(__location__ ": Unable to form krb5 error reply\n"));
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	*out = data_blob_talloc(mem_ctx, k5_error_blob.data, k5_error_blob.length);
+	krb5_data_free(&k5_error_blob);
+	if (!out->data) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	return NT_STATUS_OK;
+}
+
 static void kdc_tcp_terminate_connection(struct kdc_tcp_connection *kdcconn, const char *reason)
 {
 	stream_terminate_connection(kdcconn->conn, reason);
