@@ -124,20 +124,20 @@ class ValidNetbiosNameTests(TestCase):
 class BlackboxTestCase(TestCase):
     """Base test case for blackbox tests."""
 
-    def check_run(self, line):
+    def _make_cmdline(self, line):
         bindir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../../bin"))
         parts = line.split(" ")
         if os.path.exists(os.path.join(bindir, parts[0])):
             parts[0] = os.path.join(bindir, parts[0])
         line = " ".join(parts)
+        return line
+
+    def check_run(self, line):
+        line = self._make_cmdline(line)
         subprocess.check_call(line, shell=True)
 
     def check_output(self, line):
-        bindir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../../bin"))
-        parts = line.split(" ")
-        if os.path.exists(os.path.join(bindir, parts[0])):
-            parts[0] = os.path.join(bindir, parts[0])
-        line = " ".join(parts)
+        line = self._make_cmdline(line)
         p = subprocess.Popen(line, stdout=subprocess.PIPE, shell=True, close_fds=True)
         retcode = p.wait()
         if retcode:
