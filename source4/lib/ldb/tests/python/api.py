@@ -631,6 +631,9 @@ class ModuleTests(unittest.TestCase):
             def search(self, *args, **kwargs):
                 return self.next.search(*args, **kwargs)
 
+        def request(self, *args, **kwargs):
+            pass
+
         name = filename()
         ldb.register_module(ExampleModule)
         if os.path.exists(name):
