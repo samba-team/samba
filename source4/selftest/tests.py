@@ -536,6 +536,7 @@ plantestsuite("samba4.blackbox.spn.py(dc:local)", "dc:local", ["PYTHON=%s" % pyt
 plantestsuite("samba4.ldap.bind(dc)", "dc", [python, os.path.join(samba4srcdir, "auth/credentials/tests/bind.py"), '$SERVER', '-U"$USERNAME%$PASSWORD"'])
 
 # DRS python tests
+plansambapythontestsuite("samba4.blackbox.samba-tool.drs(vampire_dc)", "vampire_dc", os.path.join(samba4srcdir, 'scripting/python'), "samba.tests.blackbox.samba_tool_drs", environ={'DC1': '$DC_SERVER', 'DC2': '$VAMPIRE_DC_SERVER'}, extra_args=['-U$DOMAIN/$DC_USERNAME%$DC_PASSWORD'])
 plansambapythontestsuite("samba4.drs.delete_object.python(vampire_dc)", "vampire_dc", os.path.join(samba4srcdir, 'torture/drs/python'), "delete_object", environ={'DC1': '$DC_SERVER', 'DC2': '$VAMPIRE_DC_SERVER'}, extra_args=['-U$DOMAIN/$DC_USERNAME%$DC_PASSWORD'])
 plansambapythontestsuite("samba4.drs.fsmo.python(vampire_dc)", "vampire_dc", os.path.join(samba4srcdir, 'torture/drs/python'), "fsmo", environ={'DC1': "$DC_SERVER", 'DC2': "$VAMPIRE_DC_SERVER"}, extra_args=['-U$DOMAIN/$DC_USERNAME%$DC_PASSWORD'])
 plansambapythontestsuite("samba4.drs.repl_schema.python(vampire_dc)", "vampire_dc", os.path.join(samba4srcdir, 'torture/drs/python'), "repl_schema", environ={'DC1': "$DC_SERVER", 'DC2': '$VAMPIRE_DC_SERVER'}, extra_args=['-U$DOMAIN/$DC_USERNAME%$DC_PASSWORD'])
