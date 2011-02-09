@@ -797,4 +797,9 @@ int fdatasync(int );
 #endif
 #endif
 
+#ifndef HAVE_POLL
+#define poll rep_poll
+/* prototype is in "system/network.h" */
+#endif
+
 #endif /* _LIBREPLACE_REPLACE_H */

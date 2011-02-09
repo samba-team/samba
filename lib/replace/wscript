@@ -243,6 +243,9 @@ def configure(conf):
     if conf.CONFIG_SET('HAVE_EPOLL_CREATE') and conf.CONFIG_SET('HAVE_SYS_EPOLL_H'):
         conf.DEFINE('HAVE_EPOLL', 1)
 
+    conf.CHECK_HEADERS('poll.h')
+    conf.CHECK_FUNCS('poll')
+
     if not conf.CHECK_CODE('''#define LIBREPLACE_CONFIGURE_TEST_STRPTIME
                            #include "test/strptime.c"''',
                            define='HAVE_STRPTIME',
@@ -406,6 +409,7 @@ def build(bld):
     if bld.CONFIG_SET('REPLACE_GETPASS'):        REPLACE_SOURCE += ' getpass.c'
     if not bld.CONFIG_SET('HAVE_CRYPT'):         REPLACE_SOURCE += ' crypt.c'
     if not bld.CONFIG_SET('HAVE_DLOPEN'):        REPLACE_SOURCE += ' dlfcn.c'
+    if not bld.CONFIG_SET('HAVE_POLL'):          REPLACE_SOURCE += ' poll.c'
 
     if not bld.CONFIG_SET('HAVE_SOCKETPAIR'):    REPLACE_SOURCE += ' socketpair.c'
     if not bld.CONFIG_SET('HAVE_CONNECT'):       REPLACE_SOURCE += ' socket.c'
