@@ -46,7 +46,7 @@ interface auth
 	typedef [public] struct {
 		/* Number SIDs from the DC netlogon validation info */
 		uint32 num_dc_sids;
-		[size_is(num_sids)] dom_sid dc_sids[*];
+		[size_is(num_dc_sids)] dom_sid dc_sids[*];
 		PAC_SIGNATURE_DATA *pac_srv_sig;
 		PAC_SIGNATURE_DATA *pac_kdc_sig;
 	} auth_user_info_torture;
