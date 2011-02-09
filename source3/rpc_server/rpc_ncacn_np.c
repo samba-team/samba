@@ -762,6 +762,13 @@ static NTSTATUS rpc_pipe_open_external(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
+	result->binding_handle = rpccli_bh_create(result);
+	if (result->binding_handle == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		DEBUG(0, ("Failed to create binding handle.\n"));
+		goto done;
+	}
+
 	result->auth = talloc_zero(result, struct pipe_auth_data);
 	if (!result->auth) {
 		status = NT_STATUS_NO_MEMORY;
@@ -778,9 +785,10 @@ static NTSTATUS rpc_pipe_open_external(TALLOC_CTX *mem_ctx,
 
 	status = rpc_pipe_bind(result, auth);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("Failed to bind spoolss pipe.\n"));
+		DEBUG(0, ("Failed to bind external pipe.\n"));
 		goto done;
 	}
+
 done:
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(result);
