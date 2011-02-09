@@ -1815,6 +1815,9 @@ static NTSTATUS resolve_hosts(const char *name, int name_type,
  Resolve via "ADS" method.
 *********************************************************/
 
+/* Special name type used to cause a _kerberos DNS lookup. */
+#define KDC_NAME_TYPE 0xDCDC
+
 static NTSTATUS resolve_ads(const char *name,
 			    int name_type,
 			    const char *sitename,
