@@ -2584,6 +2584,14 @@ nTSecurityDescriptor:: """ + desc_base64
         # restore old value
         self.ldb.set_dsheuristics(dsheuristics)
 
+    def test_ldapControlReturn(self):
+        """Testing that if we request a control that return a control it
+           really return something"""
+        res = self.ldb.search(attrs=["cn"],
+                              controls=["paged_result:1:10"])
+        self.assertEquals(len(res.controls), 1)
+        self.assertEquals(res.controls[0].oid, "1.2.840.113556.1.4.319")
+
 
 class BaseDnTests(unittest.TestCase):
 
