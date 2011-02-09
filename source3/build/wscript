@@ -41,11 +41,11 @@ def configure(conf):
 
 def build(bld):
     cflags = dynconfig_cflags(bld)
-    bld.SAMBA_SUBSYSTEM('DYNCONFIG',
+    bld.SAMBA3_SUBSYSTEM('DYNCONFIG',
                         '../dynconfig.c',
                         deps='replace talloc tdb popt',
                         cflags=cflags)
-    bld.SAMBA_SUBSYSTEM('LOCALE_DIR',
+    bld.SAMBA3_SUBSYSTEM('LOCALE_DIR',
                         '../localedir.c',
                         cflags='-DLOCALEDIR=\"%s\"' % bld.env.LOCALEDIR)
 

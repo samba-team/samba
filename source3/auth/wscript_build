@@ -18,51 +18,51 @@ AUTH_SRC = '''auth.c auth_util.c
            user_krb5.c
            auth_compat.c auth_ntlmssp.c'''
 
-bld.SAMBA_SUBSYSTEM('TOKEN_UTIL',
+bld.SAMBA3_SUBSYSTEM('TOKEN_UTIL',
                     source='token_util.c',
                     vars=locals())
 
-bld.SAMBA_SUBSYSTEM('auth',
+bld.SAMBA3_SUBSYSTEM('auth',
                     source=AUTH_SRC,
                     deps='''PLAINTEXT_AUTH SLCACHE DCUTIL TOKEN_UTIL''',
                     vars=locals())
 
-bld.SAMBA_MODULE('auth_sam',
+bld.SAMBA3_MODULE('auth_sam',
                  subsystem='auth',
                  source=AUTH_SAM_SRC,
                  init_function='',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('auth_sam'),
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('auth_sam'))
 
-bld.SAMBA_MODULE('auth_unix',
+bld.SAMBA3_MODULE('auth_unix',
                  subsystem='auth',
                  source=AUTH_UNIX_SRC,
                  init_function='',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('auth_unix'),
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('auth_unix'))
 
-bld.SAMBA_MODULE('auth_winbind',
+bld.SAMBA3_MODULE('auth_winbind',
                  subsystem='auth',
                  source=AUTH_WINBIND_SRC,
                  init_function='',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('auth_winbind'),
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('auth_winbind'))
 
-bld.SAMBA_MODULE('auth_wbc',
+bld.SAMBA3_MODULE('auth_wbc',
                  subsystem='auth',
                  source=AUTH_WBC_SRC,
                  init_function='',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('auth_wbc'),
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('auth_wbc'))
 
-bld.SAMBA_MODULE('auth_server',
+bld.SAMBA3_MODULE('auth_server',
                  subsystem='auth',
                  source=AUTH_SERVER_SRC,
                  init_function='',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('auth_server'),
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('auth_server'))
 
-bld.SAMBA_MODULE('auth_domain',
+bld.SAMBA3_MODULE('auth_domain',
                  subsystem='auth',
                  source=AUTH_DOMAIN_SRC,
                  deps='RPC_CLIENT_SCHANNEL',
@@ -70,21 +70,21 @@ bld.SAMBA_MODULE('auth_domain',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('auth_domain'),
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('auth_domain'))
 
-bld.SAMBA_MODULE('auth_builtin',
+bld.SAMBA3_MODULE('auth_builtin',
                  subsystem='auth',
                  source=AUTH_BUILTIN_SRC,
                  init_function='',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('auth_builtin'),
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('auth_builtin'))
 
-bld.SAMBA_MODULE('auth_netlogond',
+bld.SAMBA3_MODULE('auth_netlogond',
                  subsystem='auth',
                  source=AUTH_NETLOGOND_SRC,
                  init_function='',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('auth_netlogond'),
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('auth_netlogond'))
 
-bld.SAMBA_MODULE('auth_script',
+bld.SAMBA3_MODULE('auth_script',
                  subsystem='auth',
                  source=AUTH_SCRIPT_SRC,
                  init_function='',
