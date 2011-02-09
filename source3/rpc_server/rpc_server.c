@@ -306,6 +306,7 @@ struct named_pipe_client {
 	struct ndr_syntax_id pipe_id;
 
 	struct tevent_context *ev;
+	struct messaging_context *msg_ctx;
 
 	uint16_t file_type;
 	uint16_t device_state;
@@ -356,6 +357,7 @@ static void named_pipe_accept_function(const char *pipe_name, int fd)
 	npc->pipe_name = pipe_name;
 	npc->pipe_id = syntax;
 	npc->ev = server_event_context();
+	npc->msg_ctx = server_messaging_context();
 
 	/* make sure socket is in NON blocking state */
 	ret = set_blocking(fd, false);
@@ -439,6 +441,7 @@ static void named_pipe_accept_done(struct tevent_req *subreq)
 			  strerror(error)));
 		goto fail;
 	}
+	npc->p->msg_ctx = npc->msg_ctx;
 
 	npc->write_queue = tevent_queue_create(npc, "np_server_write_queue");
 	if (!npc->write_queue) {
