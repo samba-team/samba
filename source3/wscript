@@ -605,10 +605,11 @@ msg.msg_acctrightslen = sizeof(fd);
         conf.DEFINE('WITH_ADS', '1')
 
     # Look for CUPS
-    conf.find_program('cups-config', var='CUPS_CONFIG')
-    if conf.env.CUPS_CONFIG and Options.options.with_cups:
-        conf.check_cfg(path="cups-config", args="--cflags --ldflags --libs",
-                       package="", uselib_store="cups")
+    if Options.options.with_cups:
+        conf.find_program('cups-config', var='CUPS_CONFIG')
+        if conf.env.CUPS_CONFIG:
+	    conf.check_cfg(path=conf.env.CUPS_CONFIG, args="--cflags --ldflags --libs",
+                           package="", uselib_store="cups")
         conf.CHECK_HEADERS('cups/cups.h cups/language.h', lib='cups')
         conf.CHECK_LIB('cups')
         conf.CHECK_FUNCS_IN('httpConnect httpConnectEncrypt', 'cups')
@@ -667,9 +668,10 @@ msg.msg_acctrightslen = sizeof(fd);
         conf.SET_TARGET_TYPE('lber', 'EMPTY')
 
     # Check for kerberos
-    conf.find_program('krb5-config', var='KRB5_CONFIG')
-    if conf.env.KRB5_CONFIG and Options.options.with_krb5:
-        conf.check_cfg(path="krb5-config", args="--cflags --libs",
+    if Options.options.with_krb5:
+        conf.find_program('krb5-config', var='KRB5_CONFIG')
+        if conf.env.KRB5_CONFIG:
+            conf.check_cfg(path="krb5-config", args="--cflags --libs",
                        package="gssapi", uselib_store="krb5")
         conf.CHECK_HEADERS('krb5.h krb5/locate_plugin.h', lib='krb5')
         conf.CHECK_HEADERS('gssapi.h gssapi/gssapi_generic.h gssapi/gssapi.h gssapi/gssapi_ext.h com_err.h', lib='krb5')
