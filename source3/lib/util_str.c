@@ -2020,7 +2020,7 @@ char *base64_encode_data_blob(TALLOC_CTX *mem_ctx, DATA_BLOB data)
 uint64_t STR_TO_SMB_BIG_UINT(const char *nptr, const char **entptr)
 {
 
-	uint64_t val = -1;
+	uint64_t val = (uint64_t)-1;
 	const char *p = nptr;
 
 	if (!p) {

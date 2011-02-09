@@ -118,7 +118,7 @@ static NTSTATUS dbwrap_change_uint32_atomic_action(struct db_context *db,
 						   void *private_data)
 {
 	struct db_record *rec;
-	uint32 val = -1;
+	uint32_t val = (uint32_t)-1;
 	uint32_t v_store;
 	NTSTATUS ret;
 	struct dbwrap_change_uint32_atomic_context *state;
