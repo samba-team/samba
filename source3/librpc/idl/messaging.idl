@@ -5,6 +5,7 @@
 */
 
 [
+  helper("../librpc/ndr/util.h"),
   pointer_default(unique)
 ]
 interface messaging

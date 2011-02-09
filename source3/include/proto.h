@@ -1570,13 +1570,6 @@ void wins_srv_tags_free(char **list);
 struct in_addr wins_srv_ip_tag(const char *tag, struct in_addr src_ip);
 unsigned wins_srv_count_tag(const char *tag);
 
-/* The following definitions come from librpc/ndr/util.c  */
-
-enum ndr_err_code ndr_push_server_id(struct ndr_push *ndr, int ndr_flags, const struct server_id *r);
-enum ndr_err_code ndr_pull_server_id(struct ndr_pull *ndr, int ndr_flags, struct server_id *r);
-void ndr_print_server_id(struct ndr_print *ndr, const char *name, const struct server_id *r);
-_PUBLIC_ void ndr_print_sockaddr_storage(struct ndr_print *ndr, const char *name, const struct sockaddr_storage *ss);
-
 /* The following definitions come from libsmb/cliconnect.c  */
 
 ADS_STATUS cli_session_setup_spnego(struct cli_state *cli, const char *user, 
