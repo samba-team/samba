@@ -706,7 +706,7 @@ krb5_get_init_creds_opt_free krb5_get_init_creds_opt_get_error
 krb5_enctype_to_string krb5_fwd_tgt_creds krb5_auth_con_set_req_cksumtype
 krb5_get_creds_opt_alloc krb5_get_creds_opt_set_impersonate krb5_get_creds
 krb5_get_credentials_for_user krb5_get_host_realm krb5_free_host_realm''',
-                         lib='krb5')
+                         lib='krb5 k5crypto')
         conf.CHECK_DECLS('''krb5_get_credentials_for_user
                             krb5_auth_con_set_req_cksumtype''',
                             headers='krb5.h', always=True)
@@ -772,7 +772,7 @@ krb5_enctype_to_string(1, buf, 256);
 return 0;
 }''',
                         'HAVE_KRB5_ENCTYPE_TO_STRING_WITH_SIZE_T_ARG',
-                        headers='krb5.h', lib='krb5',
+                        headers='krb5.h', lib='krb5 k5crypto',
                         addmain=False, cflags='-Werror',
                         msg="Checking whether krb5_enctype_to_string takes size_t argument")
 
