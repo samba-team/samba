@@ -1074,7 +1074,7 @@ static int get_real_filename_full_scan(connection_struct *conn,
 	}
 
 	/* open the directory */
-	if (!(cur_dir = OpenDir(talloc_tos(), conn, path, NULL, 0))) {
+	if (!(cur_dir = OpenDir(talloc_tos(), conn, NULL, path, NULL, 0))) {
 		DEBUG(3,("scan dir didn't open dir [%s]\n",path));
 		TALLOC_FREE(unmangled_name);
 		return -1;

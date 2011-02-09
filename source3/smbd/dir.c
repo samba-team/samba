@@ -190,7 +190,7 @@ static struct dptr_struct *dptr_get(struct smbd_server_connection *sconn,
 					dptr_idleoldest(sconn);
 				DEBUG(4,("dptr_get: Reopening dptr key %d\n",key));
 				if (!(dptr->dir_hnd = OpenDir(
-					      NULL, dptr->conn, dptr->path,
+					      NULL, dptr->conn, NULL, dptr->path,
 					      dptr->wcard, dptr->attr))) {
 					DEBUG(4,("dptr_get: Failed to open %s (%s)\n",dptr->path,
 						strerror(errno)));
@@ -413,13 +413,18 @@ static void dptr_close_oldest(struct smbd_server_connection *sconn,
  wcard must not be zero.
 ****************************************************************************/
 
-NTSTATUS dptr_create(connection_struct *conn, const char *path, bool old_handle, bool expect_close,uint16 spid,
+NTSTATUS dptr_create(connection_struct *conn, files_struct *fsp,
+		const char *path, bool old_handle, bool expect_close,uint16 spid,
 		const char *wcard, bool wcard_has_wild, uint32 attr, struct dptr_struct **dptr_ret)
 {
 	struct smbd_server_connection *sconn = conn->sconn;
 	struct dptr_struct *dptr = NULL;
 	struct smb_Dir *dir_hnd;
 	NTSTATUS status;
+
+	if (fsp && fsp->is_directory && fsp->fh->fd != -1) {
+		path = fsp->fsp_name->base_name;
+	}
 
 	DEBUG(5,("dptr_create dir=%s\n", path));
 
@@ -432,12 +437,14 @@ NTSTATUS dptr_create(connection_struct *conn, const char *path, bool old_handle,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	status = check_name(conn,path);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+	if (!fsp) {
+		status = check_name(conn,path);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
 	}
 
-	dir_hnd = OpenDir(NULL, conn, path, wcard, attr);
+	dir_hnd = OpenDir(NULL, conn, fsp, path, wcard, attr);
 	if (!dir_hnd) {
 		return map_nt_error_from_unix(errno);
 	}
@@ -1305,7 +1312,10 @@ static int smb_Dir_destructor(struct smb_Dir *dirp)
 ********************************************************************/
 
 struct smb_Dir *OpenDir(TALLOC_CTX *mem_ctx, connection_struct *conn,
-			const char *name, const char *mask, uint32 attr)
+			files_struct *fsp,
+			const char *name,
+			const char *mask,
+			uint32 attr)
 {
 	struct smb_Dir *dirp = TALLOC_ZERO_P(mem_ctx, struct smb_Dir);
 	struct smbd_server_connection *sconn = conn->sconn;
@@ -1317,7 +1327,11 @@ struct smb_Dir *OpenDir(TALLOC_CTX *mem_ctx, connection_struct *conn,
 	dirp->conn = conn;
 	dirp->name_cache_size = lp_directory_name_cache_size(SNUM(conn));
 
-	dirp->dir_path = talloc_strdup(dirp, name);
+	if (fsp) {
+		dirp->dir_path = talloc_strdup(dirp, fsp->fsp_name->base_name);
+	} else {
+		dirp->dir_path = talloc_strdup(dirp, name);
+	}
 	if (!dirp->dir_path) {
 		errno = ENOMEM;
 		goto fail;
@@ -1328,7 +1342,25 @@ struct smb_Dir *OpenDir(TALLOC_CTX *mem_ctx, connection_struct *conn,
 	}
 	talloc_set_destructor(dirp, smb_Dir_destructor);
 
-	dirp->dir = SMB_VFS_OPENDIR(conn, dirp->dir_path, mask, attr);
+	if (fsp && fsp->is_directory && fsp->fh->fd != -1) {
+		dirp->dir = SMB_VFS_FDOPENDIR(fsp, mask, attr);
+		if (dirp->dir == NULL) {
+			DEBUG(10,("OpenDir: SMB_VFS_FDOPENDIR on %s returned "
+				"NULL (%s)\n",
+				dirp->dir_path,
+				strerror(errno)));
+			if (errno != ENOSYS) {
+				return NULL;
+			}
+		}
+	}
+
+	if (dirp->dir == NULL) {
+		/* FDOPENDIR didn't work - or fsp == NULL. Use
+		   OPENDIR instead. */
+		dirp->dir = SMB_VFS_OPENDIR(conn, dirp->dir_path, mask, attr);
+	}
+
 	if (!dirp->dir) {
 		DEBUG(5,("OpenDir: Can't open %s. %s\n", dirp->dir_path,
 			 strerror(errno) ));
@@ -1536,8 +1568,8 @@ NTSTATUS can_delete_directory(struct connection_struct *conn,
 	const char *dname = NULL;
 	char *talloced = NULL;
 	SMB_STRUCT_STAT st;
-	struct smb_Dir *dir_hnd = OpenDir(talloc_tos(), conn, dirname,
-					  NULL, 0);
+	struct smb_Dir *dir_hnd = OpenDir(talloc_tos(), conn, NULL,
+					dirname, NULL, 0);
 
 	if (!dir_hnd) {
 		return map_nt_error_from_unix(errno);
