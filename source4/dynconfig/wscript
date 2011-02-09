@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import string, Utils, Options, sys, Build, os
+import string, Utils, Options, sys, Build, os, intltool
 from samba_utils import EXPAND_VARIABLES, os_path_relpath
 
 # list of directory options to offer in configure
@@ -26,6 +26,7 @@ dyn_cflags = {
     'LOCKDIR'                        : '${LOCALSTATEDIR}/locks',
     'PIDDIR'                         : '${LOCALSTATEDIR}/run',
     'DATADIR'                        : '${DATADIR}',
+    'LOCALEDIR'                      : '${LOCALEDIR}',
     'SETUPDIR'                       : '${DATADIR}/setup',
     'WINBINDD_SOCKET_DIR'            : '${WINBINDD_SOCKET_DIR}',
     'WINBINDD_PRIVILEGED_SOCKET_DIR' : '${WINBINDD_PRIVILEGED_SOCKET_DIR}',
