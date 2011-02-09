@@ -337,7 +337,7 @@ static NTSTATUS dcerpc_lsa_lookup_sids_generic(struct dcerpc_binding_handle *h,
 					       bool use_lookupsids3,
 					       NTSTATUS *presult)
 {
-	NTSTATUS status;
+	NTSTATUS status = NT_STATUS_OK;
 	NTSTATUS result = NT_STATUS_OK;
 	int sids_left = 0;
 	int sids_processed = 0;
