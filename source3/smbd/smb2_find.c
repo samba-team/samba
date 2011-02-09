@@ -227,7 +227,6 @@ static struct tevent_req *smbd_smb2_find_send(TALLOC_CTX *mem_ctx,
 	int off = 0;
 	uint32_t num = 0;
 	uint32_t dirtype = aHIDDEN | aSYSTEM | aDIR;
-	const char *directory;
 	bool dont_descend = false;
 	bool ask_sharemode = true;
 
@@ -265,8 +264,6 @@ static struct tevent_req *smbd_smb2_find_send(TALLOC_CTX *mem_ctx,
 		tevent_req_nterror(req, NT_STATUS_NOT_SUPPORTED);
 		return tevent_req_post(req, ev);
 	}
-
-	directory = fsp->fsp_name->base_name;
 
 	if (strcmp(in_file_name, "") == 0) {
 		tevent_req_nterror(req, NT_STATUS_OBJECT_NAME_INVALID);
@@ -332,7 +329,7 @@ static struct tevent_req *smbd_smb2_find_send(TALLOC_CTX *mem_ctx,
 
 		status = dptr_create(conn,
 				     fsp,
-				     directory,
+				     fsp->fsp_name->base_name,
 				     false, /* old_handle */
 				     false, /* expect_close */
 				     0, /* spid */
@@ -382,9 +379,10 @@ static struct tevent_req *smbd_smb2_find_send(TALLOC_CTX *mem_ctx,
 
 	DEBUG(8,("smbd_smb2_find_send: dirpath=<%s> dontdescend=<%s>, "
 		"in_output_buffer_length = %u\n",
-		directory, lp_dontdescend(SNUM(conn)),
+		fsp->fsp_name->base_name, lp_dontdescend(SNUM(conn)),
 		(unsigned int)in_output_buffer_length ));
-	if (in_list(directory,lp_dontdescend(SNUM(conn)),conn->case_sensitive)) {
+	if (in_list(fsp->fsp_name->base_name,lp_dontdescend(SNUM(conn)),
+			conn->case_sensitive)) {
 		dont_descend = true;
 	}
 
