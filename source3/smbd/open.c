@@ -2525,6 +2525,22 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 }
 
 /****************************************************************************
+ Ensure we didn't get symlink raced on opening a directory.
+****************************************************************************/
+
+static bool check_same_stat(const SMB_STRUCT_STAT *sbuf1,
+			const SMB_STRUCT_STAT *sbuf2)
+{
+	if (sbuf1->st_ex_uid != sbuf2->st_ex_uid ||
+			sbuf1->st_ex_gid != sbuf2->st_ex_gid ||
+			sbuf1->st_ex_dev != sbuf2->st_ex_dev ||
+			sbuf1->st_ex_ino != sbuf2->st_ex_ino) {
+		return false;
+	}
+	return true;
+}
+
+/****************************************************************************
  Open a directory from an NT SMB call.
 ****************************************************************************/
 
@@ -2726,6 +2742,10 @@ static NTSTATUS open_directory(connection_struct *conn,
 
 #ifdef O_DIRECTORY
 	status = fd_open(conn, fsp, O_RDONLY|O_DIRECTORY, 0);
+#else
+	/* POSIX allows us to open a directory with O_RDONLY. */
+	status = fd_open(conn, fsp, O_RDONLY, 0);
+#endif
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(5, ("open_directory: Could not open fd for "
 			"%s (%s)\n",
@@ -2734,7 +2754,23 @@ static NTSTATUS open_directory(connection_struct *conn,
 		file_free(req, fsp);
 		return status;
 	}
-#endif
+
+	status = vfs_stat_fsp(fsp);
+	if (NT_STATUS_IS_OK(status)) {
+		fd_close(fsp);
+		file_free(req, fsp);
+		return status;
+	}
+
+	/* Ensure there was no race condition. */
+	if (!check_same_stat(&smb_dname->st, &fsp->fsp_name->st)) {
+		DEBUG(5,("open_directory: stat struct differs for "
+			"directory %s.\n",
+			smb_fname_str_dbg(smb_dname)));
+		fd_close(fsp);
+		file_free(req, fsp);
+		return NT_STATUS_ACCESS_DENIED;
+	}
 
 	lck = get_share_mode_lock(talloc_tos(), fsp->file_id,
 				  conn->connectpath, smb_dname, &mtimespec);
