@@ -2417,6 +2417,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 		needed as lanman2 assumes these are being saved between calls */
 
 	ntstatus = dptr_create(conn,
+				NULL, /* fsp */
 				directory,
 				False,
 				True,
