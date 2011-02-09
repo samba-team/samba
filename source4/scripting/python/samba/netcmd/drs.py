@@ -104,17 +104,18 @@ class cmd_drs_showrepl(Command):
 
     def print_neighbour(self, n):
         '''print one set of neighbour information'''
-        print("%s" % n.naming_context_dn)
+        self.message("%s" % n.naming_context_dn)
         try:
             (site, server) = drs_parse_ntds_dn(n.source_dsa_obj_dn)
-            print("\t%s\%s via RPC" % (site, server))
+            self.message("\t%s\%s via RPC" % (site, server))
         except RuntimeError:
-            print("\tNTDS DN: %s" % n.source_dsa_obj_dn)
-        print("\t\tDSA object GUID: %s" % n.source_dsa_obj_guid)
-        print("\t\tLast attempt @ %s %s" % (nttime2string(n.last_attempt), drs_errmsg(n.result_last_attempt)))
-        print("\t\t%u consecutive failure(s)." % n.consecutive_sync_failures)
-        print("\t\tLast success @ %s" % nttime2string(n.last_success))
-        print("")
+            self.message("\tNTDS DN: %s" % n.source_dsa_obj_dn)
+        self.message("\t\tDSA object GUID: %s" % n.source_dsa_obj_guid)
+        self.message("\t\tLast attempt @ %s %s" % (nttime2string(n.last_attempt),
+                                                   drs_errmsg(n.result_last_attempt)))
+        self.message("\t\t%u consecutive failure(s)." % n.consecutive_sync_failures)
+        self.message("\t\tLast success @ %s" % nttime2string(n.last_success))
+        self.message("")
 
     def drsuapi_ReplicaInfo(ctx, info_type):
         '''call a DsReplicaInfo'''
@@ -151,18 +152,18 @@ class cmd_drs_showrepl(Command):
             raise CommandError("Failed to search NTDS DN %s" % ntds_dn)
         conn = self.samdb.search(base=ntds_dn, expression="(objectClass=nTDSConnection)")
 
-        print("%s\\%s" % (site, server))
-        print("DSA Options: 0x%08x" % int(attr_default(ntds[0], "options", 0)))
-        print("DSA object GUID: %s" % self.samdb.schema_format_value("objectGUID", ntds[0]["objectGUID"][0]))
-        print("DSA invocationId: %s\n" % self.samdb.schema_format_value("objectGUID", ntds[0]["invocationId"][0]))
+        self.message("%s\\%s" % (site, server))
+        self.message("DSA Options: 0x%08x" % int(attr_default(ntds[0], "options", 0)))
+        self.message("DSA object GUID: %s" % self.samdb.schema_format_value("objectGUID", ntds[0]["objectGUID"][0]))
+        self.message("DSA invocationId: %s\n" % self.samdb.schema_format_value("objectGUID", ntds[0]["invocationId"][0]))
 
-        print("==== INBOUND NEIGHBORS ====\n")
+        self.message("==== INBOUND NEIGHBORS ====\n")
         (info_type, info) = self.drsuapi_ReplicaInfo(drsuapi.DRSUAPI_DS_REPLICA_INFO_NEIGHBORS)
         for n in info.array:
             self.print_neighbour(n)
 
 
-        print("==== OUTBOUND NEIGHBORS ====\n")
+        self.message("==== OUTBOUND NEIGHBORS ====\n")
         (info_type, info) = self.drsuapi_ReplicaInfo(drsuapi.DRSUAPI_DS_REPLICA_INFO_REPSTO)
         for n in info.array:
             self.print_neighbour(n)
@@ -178,25 +179,25 @@ class cmd_drs_showrepl(Command):
                    'NTDSCONN_KCC_SITE_FAILOVER_TOPOLOGY',
                    'NTDSCONN_KCC_REDUNDANT_SERVER_TOPOLOGY']
 
-        print("==== KCC CONNECTION OBJECTS ====\n")
+        self.message("==== KCC CONNECTION OBJECTS ====\n")
         for c in conn:
-            print("Connection --")
-            print("\tConnection name: %s" % c['name'][0])
-            print("\tEnabled        : %s" % attr_default(c, 'enabledConnection', 'TRUE'))
-            print("\tServer DNS name : %s" % server_dns)
-            print("\tServer DN name  : %s" % c['fromServer'][0])
-            print("\t\tTransportType: RPC")
-            print("\t\toptions: 0x%08X" % int(attr_default(c, 'options', 0)))
+            self.message("Connection --")
+            self.message("\tConnection name: %s" % c['name'][0])
+            self.message("\tEnabled        : %s" % attr_default(c, 'enabledConnection', 'TRUE'))
+            self.message("\tServer DNS name : %s" % server_dns)
+            self.message("\tServer DN name  : %s" % c['fromServer'][0])
+            self.message("\t\tTransportType: RPC")
+            self.message("\t\toptions: 0x%08X" % int(attr_default(c, 'options', 0)))
             if not 'mS-DS-ReplicatesNCReason' in c:
-                print("Warning: No NC replicated for Connection!")
+                self.message("Warning: No NC replicated for Connection!")
                 continue
             for r in c['mS-DS-ReplicatesNCReason']:
                 a = str(r).split(':')
-                print("\t\tReplicatesNC: %s" % a[3])
-                print("\t\tReason: 0x%08x" % int(a[2]))
+                self.message("\t\tReplicatesNC: %s" % a[3])
+                self.message("\t\tReason: 0x%08x" % int(a[2]))
                 for s in reasons:
                     if getattr(dsdb, s, 0) & int(a[2]):
-                        print("\t\t\t%s" % s)
+                        self.message("\t\t\t%s" % s)
 
 
 class cmd_drs_kcc(Command):
@@ -229,7 +230,7 @@ class cmd_drs_kcc(Command):
             self.drsuapi.DsExecuteKCC(self.drsuapi_handle, 1, req1)
         except Exception, e:
             raise CommandError("DsExecuteKCC failed", e)
-        print("Consistency check on %s successful." % DC)
+        self.message("Consistency check on %s successful." % DC)
 
 
 
@@ -298,7 +299,7 @@ class cmd_drs_replicate(Command):
             self.drsuapi.DsReplicaSync(self.drsuapi_handle, 1, req1)
         except Exception, estr:
             raise CommandError("DsReplicaSync failed", estr)
-	print("Replicate from %s to %s was successful." % (SOURCE_DC, DEST_DC))
+        self.message("Replicate from %s to %s was successful." % (SOURCE_DC, DEST_DC))
 
 
 
@@ -374,30 +375,30 @@ class cmd_drs_bind(Command):
             ("DRSUAPI_SUPPORTED_EXTENSION_LH_BETA2",			"DRS_EXT_LH_BETA2"),
             ("DRSUAPI_SUPPORTED_EXTENSION_RECYCLE_BIN",			"DRS_EXT_RECYCLE_BIN")]
 
-        print("Bind to %s succeeded." % DC)
-        print("Extensions supported:")
+        self.message("Bind to %s succeeded." % DC)
+        self.message("Extensions supported:")
         for (opt, str) in optmap:
             optval = getattr(drsuapi, opt, 0)
             if info.info.supported_extensions & optval:
                 yesno = "Yes"
             else:
                 yesno = "No "
-            print("  %-60s: %s (%s)" % (opt, yesno, str))
+            self.message("  %-60s: %s (%s)" % (opt, yesno, str))
 
         if isinstance(info.info, drsuapi.DsBindInfo48):
-            print("\nExtended Extensions supported:")
+            self.message("\nExtended Extensions supported:")
             for (opt, str) in optmap_ext:
                 optval = getattr(drsuapi, opt, 0)
                 if info.info.supported_extensions_ext & optval:
                     yesno = "Yes"
                 else:
                     yesno = "No "
-                print("  %-60s: %s (%s)" % (opt, yesno, str))
+                self.message("  %-60s: %s (%s)" % (opt, yesno, str))
 
-        print("\nSite GUID: %s" % info.info.site_guid)
-        print("Repl epoch: %u" % info.info.repl_epoch)
+        self.message("\nSite GUID: %s" % info.info.site_guid)
+        self.message("Repl epoch: %u" % info.info.repl_epoch)
         if isinstance(info.info, drsuapi.DsBindInfo48):
-            print("Forest GUID: %s" % info.info.config_dn_guid)
+            self.message("Forest GUID: %s" % info.info.config_dn_guid)
 
 
 
