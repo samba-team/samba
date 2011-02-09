@@ -124,7 +124,7 @@ static int net_idmap_dump(struct net_context *c, int argc, const char **argv)
 	db = db_open(mem_ctx, dbfile, 0, TDB_DEFAULT, O_RDONLY, 0);
 	if (db == NULL) {
 		d_fprintf(stderr, _("Could not open idmap db (%s): %s\n"),
-			  argv[0], strerror(errno));
+			  dbfile, strerror(errno));
 		goto done;
 	}
 
