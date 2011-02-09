@@ -2756,7 +2756,7 @@ static NTSTATUS open_directory(connection_struct *conn,
 	}
 
 	status = vfs_stat_fsp(fsp);
-	if (NT_STATUS_IS_OK(status)) {
+	if (!NT_STATUS_IS_OK(status)) {
 		fd_close(fsp);
 		file_free(req, fsp);
 		return status;
