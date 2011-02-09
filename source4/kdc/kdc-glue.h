@@ -50,19 +50,6 @@ enum kdc_process_ret {
 	KDC_PROCESS_FAILED,
 	KDC_PROCESS_PROXY};
 
-struct kdc_udp_call {
-	struct tsocket_address *src;
-	DATA_BLOB in;
-	DATA_BLOB out;
-};
-
-/* hold information about one kdc/kpasswd udp socket */
-struct kdc_udp_socket {
-	struct kdc_socket *kdc_socket;
-	struct tdgram_context *dgram;
-	struct tevent_queue *send_queue;
-};
-
 struct kdc_tcp_call {
 	struct kdc_tcp_connection *kdc_conn;
 	DATA_BLOB in;
@@ -116,8 +103,14 @@ NTSTATUS hdb_samba4_create_kdc(struct samba_kdc_base_context *base_ctx,
 			       krb5_context context, struct HDB **db);
 
 /* from proxy.c */
-void kdc_udp_proxy(struct kdc_server *kdc, struct kdc_udp_socket *sock,
-		   struct kdc_udp_call *call, uint16_t port);
+struct tevent_req *kdc_udp_proxy_send(TALLOC_CTX *mem_ctx,
+				      struct tevent_context *ev,
+				      struct kdc_server *kdc,
+				      uint16_t port,
+				      DATA_BLOB in);
+NTSTATUS kdc_udp_proxy_recv(struct tevent_req *req,
+			    TALLOC_CTX *mem_ctx,
+			    DATA_BLOB *out);
 
 void kdc_tcp_proxy(struct kdc_server *kdc, struct kdc_tcp_connection *kdc_conn,
 		   struct kdc_tcp_call *call, uint16_t port);

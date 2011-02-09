@@ -345,6 +345,21 @@ static const struct stream_server_ops kdc_tcp_stream_ops = {
 	.send_handler		= kdc_tcp_send
 };
 
+/* hold information about one kdc/kpasswd udp socket */
+struct kdc_udp_socket {
+	struct kdc_socket *kdc_socket;
+	struct tdgram_context *dgram;
+	struct tevent_queue *send_queue;
+};
+
+struct kdc_udp_call {
+	struct kdc_udp_socket *sock;
+	struct tsocket_address *src;
+	DATA_BLOB in;
+	DATA_BLOB out;
+};
+
+static void kdc_udp_call_proxy_done(struct tevent_req *subreq);
 static void kdc_udp_call_sendto_done(struct tevent_req *subreq);
 
 static void kdc_udp_call_loop(struct tevent_req *subreq)
@@ -362,6 +377,7 @@ static void kdc_udp_call_loop(struct tevent_req *subreq)
 		talloc_free(call);
 		goto done;
 	}
+	call->sock = sock;
 
 	len = tdgram_recvfrom_recv(subreq, &sys_errno,
 				   call, &buf, &call->src);
@@ -392,13 +408,26 @@ static void kdc_udp_call_loop(struct tevent_req *subreq)
 	}
 
 	if (ret == KDC_PROCESS_PROXY) {
+		uint16_t port;
+
 		if (!sock->kdc_socket->kdc->am_rodc) {
 			DEBUG(0,("kdc_udp_call_loop: proxying requested when not RODC"));
 			talloc_free(call);
 			goto done;
 		}
-		kdc_udp_proxy(sock->kdc_socket->kdc, sock, call,
-			      tsocket_address_inet_port(sock->kdc_socket->local_address));
+
+		port = tsocket_address_inet_port(sock->kdc_socket->local_address);
+
+		subreq = kdc_udp_proxy_send(call,
+					    sock->kdc_socket->kdc->task->event_ctx,
+					    sock->kdc_socket->kdc,
+					    port,
+					    call->in);
+		if (subreq == NULL) {
+			talloc_free(call);
+			goto done;
+		}
+		tevent_req_set_callback(subreq, kdc_udp_call_proxy_done, call);
 		goto done;
 	}
 
@@ -426,6 +455,41 @@ done:
 		return;
 	}
 	tevent_req_set_callback(subreq, kdc_udp_call_loop, sock);
+}
+
+static void kdc_udp_call_proxy_done(struct tevent_req *subreq)
+{
+	struct kdc_udp_call *call =
+		tevent_req_callback_data(subreq,
+		struct kdc_udp_call);
+	NTSTATUS status;
+
+	status = kdc_udp_proxy_recv(subreq, call, &call->out);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		/* generate an error packet */
+		status = kdc_proxy_unavailable_error(call->sock->kdc_socket->kdc,
+						     call, &call->out);
+	}
+
+	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(call);
+		return;
+	}
+
+	subreq = tdgram_sendto_queue_send(call,
+					  call->sock->kdc_socket->kdc->task->event_ctx,
+					  call->sock->dgram,
+					  call->sock->send_queue,
+					  call->out.data,
+					  call->out.length,
+					  call->src);
+	if (subreq == NULL) {
+		talloc_free(call);
+		return;
+	}
+
+	tevent_req_set_callback(subreq, kdc_udp_call_sendto_done, call);
 }
 
 static void kdc_udp_call_sendto_done(struct tevent_req *subreq)
