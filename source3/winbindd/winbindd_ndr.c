@@ -21,6 +21,7 @@
 #include "winbindd.h"
 #include "../librpc/gen_ndr/ndr_netlogon.h"
 #include "../librpc/gen_ndr/ndr_security.h"
+#include "librpc/ndr/util.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND

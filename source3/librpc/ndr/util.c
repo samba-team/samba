@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "librpc/ndr/util.h"
 
 enum ndr_err_code ndr_push_server_id(struct ndr_push *ndr, int ndr_flags, const struct server_id *r)
 {
