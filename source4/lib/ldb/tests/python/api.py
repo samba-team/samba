@@ -644,6 +644,93 @@ class ModuleTests(unittest.TestCase):
         l = ldb.Ldb(name)
         self.assertEquals(["init"], ops)
 
+class LdbResultTests(unittest.TestCase):
+
+    def setUp(self):
+        name = filename()
+        self.name = name
+        if os.path.exists(name):
+            os.unlink(name)
+        self.l = ldb.Ldb(name)
+        self.l.add({"dn": "DC=SAMBA,DC=ORG", "name": "samba.org"})
+        self.l.add({"dn": "OU=ADMIN,DC=SAMBA,DC=ORG", "name": "Admins"})
+        self.l.add({"dn": "OU=USERS,DC=SAMBA,DC=ORG", "name": "Users"})
+        self.l.add({"dn": "OU=OU1,DC=SAMBA,DC=ORG", "name": "OU #1"})
+        self.l.add({"dn": "OU=OU2,DC=SAMBA,DC=ORG", "name": "OU #2"})
+        self.l.add({"dn": "OU=OU3,DC=SAMBA,DC=ORG", "name": "OU #3"})
+        self.l.add({"dn": "OU=OU4,DC=SAMBA,DC=ORG", "name": "OU #4"})
+        self.l.add({"dn": "OU=OU5,DC=SAMBA,DC=ORG", "name": "OU #5"})
+        self.l.add({"dn": "OU=OU6,DC=SAMBA,DC=ORG", "name": "OU #6"})
+        self.l.add({"dn": "OU=OU7,DC=SAMBA,DC=ORG", "name": "OU #7"})
+        self.l.add({"dn": "OU=OU8,DC=SAMBA,DC=ORG", "name": "OU #8"})
+        self.l.add({"dn": "OU=OU9,DC=SAMBA,DC=ORG", "name": "OU #9"})
+        self.l.add({"dn": "OU=OU10,DC=SAMBA,DC=ORG", "name": "OU #10"})
+
+    def tearDown(self):
+        if os.path.exists(self.name):
+            os.unlink(self.name)
+
+    def test_return_type(self):
+        res = self.l.search()
+        self.assertEquals(str(res), "<ldb result>")
+
+    def test_get_msgs(self):
+        res = self.l.search()
+        list = res.msgs
+
+    def test_get_controls(self):
+        res = self.l.search()
+        list = res.controls
+
+    def test_get_referals(self):
+        res = self.l.search()
+        list = res.referals
+
+    def test_iter_msgs(self):
+        found = False
+        for l in self.l.search().msgs:
+            if str(l.dn) == "OU=OU10,DC=SAMBA,DC=ORG":
+                found = True
+        self.assertTrue(found)
+
+    def test_iter_msgs_count(self):
+        self.assertTrue(self.l.search().count > 0)
+        # 13 objects has been added to the DC=SAMBA, DC=ORG
+        self.assertEqual(self.l.search(base="DC=SAMBA,DC=ORG").count, 13)
+
+    def test_iter_controls(self):
+        res = self.l.search().controls
+        it = iter(res)
+
+    def test_create_control(self):
+        self.assertRaises(ValueError, ldb.Control, self.l, "tatayoyo:0")
+        c = ldb.Control(self.l, "relax:1")
+        self.assertEquals(c.critical, True)
+        self.assertEquals(c.oid, "1.3.6.1.4.1.4203.666.5.12")
+
+    def test_iter_refs(self):
+        res = self.l.search().referals
+        it = iter(res)
+
+    def test_iter_as_sequence_msgs(self):
+        found = False
+        res = self.l.search().msgs
+
+        for i in range(0, len(res)):
+            l = res[i]
+            if str(l.dn) == "OU=OU10,DC=SAMBA,DC=ORG":
+                found = True
+        self.assertTrue(found)
+
+    def test_iter_as_sequence(self):
+        found = False
+        res = self.l.search()
+
+        for i in range(0, len(res)):
+            l = res[i]
+            if str(l.dn) == "OU=OU10,DC=SAMBA,DC=ORG":
+                found = True
+        self.assertTrue(found)
 
 class VersionTests(unittest.TestCase):
 
