@@ -2680,15 +2680,42 @@ void winbind_msg_ip_dropped(struct messaging_context *msg_ctx,
 			    DATA_BLOB *data)
 {
 	struct winbindd_domain *domain;
+	char *freeit = NULL;
+	char *addr;
 
 	if ((data == NULL)
 	    || (data->data == NULL)
 	    || (data->length == 0)
-	    || (data->data[data->length-1] != '\0')
-	    || !is_ipaddress((char *)data->data)) {
-		DEBUG(1, ("invalid msg_ip_dropped message\n"));
+	    || (data->data[data->length-1] != '\0')) {
+		DEBUG(1, ("invalid msg_ip_dropped message: not a valid "
+			  "string\n"));
 		return;
 	}
+
+	addr = (char *)data->data;
+	DEBUG(10, ("IP %s dropped\n", addr));
+
+	if (!is_ipaddress(addr)) {
+		char *slash;
+		/*
+		 * Some code sends us ip addresses with the /netmask
+		 * suffix
+		 */
+		slash = strchr(addr, '/');
+		if (slash == NULL) {
+			DEBUG(1, ("invalid msg_ip_dropped message: %s",
+				  addr));
+			return;
+		}
+		freeit = talloc_strndup(talloc_tos(), addr, slash-addr);
+		if (freeit == NULL) {
+			DEBUG(1, ("talloc failed\n"));
+			return;
+		}
+		addr = freeit;
+		DEBUG(10, ("Stripped /netmask to IP %s\n", addr));
+	}
+
 	for (domain = domain_list(); domain != NULL; domain = domain->next) {
 		char sockaddr[INET6_ADDRSTRLEN];
 		if (domain->conn.cli == NULL) {
@@ -2699,9 +2726,10 @@ void winbind_msg_ip_dropped(struct messaging_context *msg_ctx,
 		}
 		client_socket_addr(domain->conn.cli->fd, sockaddr,
 				   sizeof(sockaddr));
-		if (strequal(sockaddr, (char *)data->data)) {
+		if (strequal(sockaddr, addr)) {
 			close(domain->conn.cli->fd);
 			domain->conn.cli->fd = -1;
 		}
 	}
+	TALLOC_FREE(freeit);
 }
