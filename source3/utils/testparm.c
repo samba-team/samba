@@ -339,6 +339,7 @@ rameter is ignored when using CUPS libraries.\n",
 		{"section-name", '\0', POPT_ARG_STRING, &section_name, 0, "Limit testparm to a named section" },
 		POPT_COMMON_VERSION
 		POPT_COMMON_DEBUGLEVEL
+		POPT_COMMON_OPTION
 		POPT_TABLEEND
 	};
 
