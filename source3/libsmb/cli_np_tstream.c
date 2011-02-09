@@ -82,7 +82,7 @@ static int tstream_cli_np_destructor(struct tstream_cli_np *cli_nps)
 	 * We can't do much on failure
 	 */
 	return 0;
-};
+}
 
 struct tstream_cli_np_open_state {
 	struct cli_state *cli;
