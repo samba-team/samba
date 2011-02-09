@@ -110,6 +110,7 @@ def SAMBA_LIBRARY(bld, libname, source,
                   depends_on='',
                   local_include=True,
                   vars=None,
+                  subdir=None,
                   install_path=None,
                   install=True,
                   pyembed=False,
@@ -131,6 +132,8 @@ def SAMBA_LIBRARY(bld, libname, source,
         return
 
     source = bld.EXPAND_VARIABLES(source, vars=vars)
+    if subdir:
+        source = bld.SUBDIR(subdir, source)
 
     # remember empty libraries, so we can strip the dependencies
     if ((source == '') or (source == [])) and deps == '' and public_deps == '':
@@ -280,6 +283,7 @@ def SAMBA_BINARY(bld, binname, source,
                  subsystem_name=None,
                  pyembed=False,
                  vars=None,
+                 subdir=None,
                  install=True,
                  install_path=None,
                  enabled=True):
@@ -299,6 +303,8 @@ def SAMBA_BINARY(bld, binname, source,
     obj_target = binname + '.objlist'
 
     source = bld.EXPAND_VARIABLES(source, vars=vars)
+    if subdir:
+        source = bld.SUBDIR(subdir, source)
     source = unique_list(TO_LIST(source))
 
     if group == 'binaries':
@@ -444,6 +450,7 @@ def SAMBA_SUBSYSTEM(bld, modname, source,
                     use_hostcc=False,
                     use_global_deps=True,
                     vars=None,
+                    subdir=None,
                     hide_symbols=False,
                     pyext=False):
     '''define a Samba subsystem'''
@@ -461,6 +468,8 @@ def SAMBA_SUBSYSTEM(bld, modname, source,
         return
 
     source = bld.EXPAND_VARIABLES(source, vars=vars)
+    if subdir:
+        source = bld.SUBDIR(subdir, source)
     source = unique_list(TO_LIST(source))
 
     deps += ' ' + public_deps
