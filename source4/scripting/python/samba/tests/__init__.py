@@ -132,6 +132,17 @@ class BlackboxTestCase(TestCase):
         line = " ".join(parts)
         subprocess.check_call(line, shell=True)
 
+    def check_output(self, line):
+        bindir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../../bin"))
+        parts = line.split(" ")
+        if os.path.exists(os.path.join(bindir, parts[0])):
+            parts[0] = os.path.join(bindir, parts[0])
+        line = " ".join(parts)
+        p = subprocess.Popen(line, stdout=subprocess.PIPE, shell=True, close_fds=True)
+        retcode = p.wait()
+        if retcode:
+            raise subprocess.CalledProcessError(retcode, line)
+        return p.stdout.read()
 
 def connect_samdb(samdb_url, lp=None, session_info=None, credentials=None,
                   flags=0, ldb_options=None, ldap_only=False):
