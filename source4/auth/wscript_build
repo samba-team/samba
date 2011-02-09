@@ -38,13 +38,6 @@ bld.SAMBA_SUBSYSTEM('auth_sam',
 	)
 
 
-bld.SAMBA_SUBSYSTEM('auth_sam_reply',
-	source='auth_sam_reply.c',
-        deps='talloc',
-	autoproto='auth_sam_reply.h'
-	)
-
-
 bld.SAMBA_PYTHON('pyauth',
 	source='pyauth.c',
 	public_deps='auth_system_session',

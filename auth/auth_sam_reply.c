@@ -1,27 +1,27 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
 
    Convert a server info struct into the form for PAC and NETLOGON replies
 
    Copyright (C) Andrew Bartlett <abartlet@samba.org> 2004
    Copyright (C) Stefan Metzmacher <metze@samba.org>  2005
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include "includes.h"
-#include "auth/auth.h"
+#include "librpc/gen_ndr/auth.h"
 #include "libcli/security/security.h"
 #include "auth/auth_sam_reply.h"
 
@@ -94,8 +94,8 @@ NTSTATUS auth_convert_user_info_dc_sambaseinfo(TALLOC_CTX *mem_ctx,
 			}
 			sam->groups.rids[sam->groups.count].rid =
 				group_sid->sub_auths[group_sid->num_auths-1];
-			
-			sam->groups.rids[sam->groups.count].attributes = 
+
+			sam->groups.rids[sam->groups.count].attributes =
 				SE_GROUP_MANDATORY | SE_GROUP_ENABLED_BY_DEFAULT | SE_GROUP_ENABLED;
 			sam->groups.count += 1;
 		}
@@ -118,11 +118,11 @@ NTSTATUS auth_convert_user_info_dc_sambaseinfo(TALLOC_CTX *mem_ctx,
 		memcpy(sam->LMSessKey.key, user_info_dc->lm_session_key.data,
 		       sizeof(sam->LMSessKey.key));
 	}
-	
+
 	*_sam = sam;
 
 	return NT_STATUS_OK;
-}	
+}
 
 /* Note that the validity of the _sam3 structure is only as long as
  * the user_info_dc it was generated from */
@@ -145,7 +145,7 @@ NTSTATUS auth_convert_user_info_dc_saminfo3(TALLOC_CTX *mem_ctx,
 	sam3->sidcount	= 0;
 	sam3->sids	= NULL;
 
-	
+
 	sam3->sids = talloc_array(sam, struct netr_SidAttr,
 				  user_info_dc->num_sids);
 	NT_STATUS_HAVE_NO_MEMORY_AND_FREE(sam3->sids, sam3);
@@ -169,7 +169,7 @@ NTSTATUS auth_convert_user_info_dc_saminfo3(TALLOC_CTX *mem_ctx,
 	*_sam3 = sam3;
 
 	return NT_STATUS_OK;
-}	
+}
 
 /**
  * Make a user_info_dc struct from the info3 returned by a domain logon
@@ -213,7 +213,7 @@ NTSTATUS make_user_info_dc_netlogon_validation(TALLOC_CTX *mem_ctx,
 
 	/*
 	   Here is where we should check the list of
-	   trusted domains, and verify that the SID 
+	   trusted domains, and verify that the SID
 	   matches.
 	*/
 	if (!base->domain_sid) {
@@ -251,7 +251,7 @@ NTSTATUS make_user_info_dc_netlogon_validation(TALLOC_CTX *mem_ctx,
 	}
 
 	/* Copy 'other' sids.  We need to do sid filtering here to
- 	   prevent possible elevation of privileges.  See:
+	   prevent possible elevation of privileges.  See:
 
            http://www.microsoft.com/windows2000/techinfo/administration/security/sidfilter.asp
          */
