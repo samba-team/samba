@@ -462,7 +462,7 @@ static WERROR delete_printer_handle(struct pipes_struct *p, struct policy_handle
 		return WERR_BADFID;
 	}
 
-	result = delete_printer_hook(p->mem_ctx, p->server_info->ptok,
+	result = delete_printer_hook(p->mem_ctx, p->server_info->security_token,
 				     Printer->sharename, p->msg_ctx);
 	if (!W_ERROR_IS_OK(result)) {
 		return result;
@@ -1802,13 +1802,13 @@ WERROR _spoolss_OpenPrinterEx(struct pipes_struct *p,
 			   and not a printer admin, then fail */
 
 			if ((p->server_info->utok.uid != sec_initial_uid()) &&
-			    !security_token_has_privilege(p->server_info->ptok, SEC_PRIV_PRINT_OPERATOR) &&
-			    !nt_token_check_sid(&global_sid_Builtin_Print_Operators, p->server_info->ptok) &&
+			    !security_token_has_privilege(p->server_info->security_token, SEC_PRIV_PRINT_OPERATOR) &&
+			    !nt_token_check_sid(&global_sid_Builtin_Print_Operators, p->server_info->security_token) &&
 			    !token_contains_name_in_list(
 				    uidtoname(p->server_info->utok.uid),
 				    p->server_info->info3->base.domain.string,
 				    NULL,
-				    p->server_info->ptok,
+				    p->server_info->security_token,
 				    lp_printer_admin(snum))) {
 				close_printer_handle(p, r->out.handle);
 				ZERO_STRUCTP(r->out.handle);
@@ -1874,7 +1874,7 @@ WERROR _spoolss_OpenPrinterEx(struct pipes_struct *p,
 		}
 
 		if (!user_ok_token(uidtoname(p->server_info->utok.uid), NULL,
-				   p->server_info->ptok, snum) ||
+				   p->server_info->security_token, snum) ||
 		    !print_access_check(p->server_info,
 					p->msg_ctx,
 					snum,
@@ -2050,12 +2050,12 @@ WERROR _spoolss_DeletePrinterDriver(struct pipes_struct *p,
 	   and not a printer admin, then fail */
 
 	if ( (p->server_info->utok.uid != sec_initial_uid())
-	     && !security_token_has_privilege(p->server_info->ptok, SEC_PRIV_PRINT_OPERATOR)
+	     && !security_token_has_privilege(p->server_info->security_token, SEC_PRIV_PRINT_OPERATOR)
 		&& !token_contains_name_in_list(
 			uidtoname(p->server_info->utok.uid),
 			p->server_info->info3->base.domain.string,
 			NULL,
-			p->server_info->ptok,
+			p->server_info->security_token,
 			lp_printer_admin(-1)) )
 	{
 		return WERR_ACCESS_DENIED;
@@ -2155,12 +2155,12 @@ WERROR _spoolss_DeletePrinterDriverEx(struct pipes_struct *p,
 	   and not a printer admin, then fail */
 
 	if ( (p->server_info->utok.uid != sec_initial_uid())
-		&& !security_token_has_privilege(p->server_info->ptok, SEC_PRIV_PRINT_OPERATOR)
+		&& !security_token_has_privilege(p->server_info->security_token, SEC_PRIV_PRINT_OPERATOR)
 		&& !token_contains_name_in_list(
 			uidtoname(p->server_info->utok.uid),
 			p->server_info->info3->base.domain.string,
 			NULL,
-			p->server_info->ptok, lp_printer_admin(-1)) )
+			p->server_info->security_token, lp_printer_admin(-1)) )
 	{
 		return WERR_ACCESS_DENIED;
 	}
@@ -6519,7 +6519,7 @@ static WERROR update_printer(struct pipes_struct *p,
 			 !strequal(printer->location, old_printer->location)) )
 	{
 		/* add_printer_hook() will call reload_services() */
-		if (!add_printer_hook(tmp_ctx, p->server_info->ptok,
+		if (!add_printer_hook(tmp_ctx, p->server_info->security_token,
 				      printer, p->client_id->addr,
 				      p->msg_ctx)) {
 			result = WERR_ACCESS_DENIED;
@@ -7836,7 +7836,7 @@ static WERROR spoolss_addprinterex_level_2(struct pipes_struct *p,
 	   trying to add a printer like this  --jerry */
 
 	if (*lp_addprinter_cmd() ) {
-		if ( !add_printer_hook(p->mem_ctx, p->server_info->ptok,
+		if ( !add_printer_hook(p->mem_ctx, p->server_info->security_token,
 				       info2, p->client_id->addr,
 				       p->msg_ctx) ) {
 			return WERR_ACCESS_DENIED;
@@ -8428,11 +8428,11 @@ WERROR _spoolss_AddForm(struct pipes_struct *p,
 	   and not a printer admin, then fail */
 
 	if ((p->server_info->utok.uid != sec_initial_uid()) &&
-	    !security_token_has_privilege(p->server_info->ptok, SEC_PRIV_PRINT_OPERATOR) &&
+	    !security_token_has_privilege(p->server_info->security_token, SEC_PRIV_PRINT_OPERATOR) &&
 	    !token_contains_name_in_list(uidtoname(p->server_info->utok.uid),
 					  p->server_info->info3->base.domain.string,
 					  NULL,
-					  p->server_info->ptok,
+					  p->server_info->security_token,
 					  lp_printer_admin(snum))) {
 		DEBUG(2,("_spoolss_Addform: denied by insufficient permissions.\n"));
 		return WERR_ACCESS_DENIED;
@@ -8496,11 +8496,11 @@ WERROR _spoolss_DeleteForm(struct pipes_struct *p,
 	}
 
 	if ((p->server_info->utok.uid != sec_initial_uid()) &&
-	    !security_token_has_privilege(p->server_info->ptok, SEC_PRIV_PRINT_OPERATOR) &&
+	    !security_token_has_privilege(p->server_info->security_token, SEC_PRIV_PRINT_OPERATOR) &&
 	    !token_contains_name_in_list(uidtoname(p->server_info->utok.uid),
 					  p->server_info->info3->base.domain.string,
 					  NULL,
-					  p->server_info->ptok,
+					  p->server_info->security_token,
 					  lp_printer_admin(snum))) {
 		DEBUG(2,("_spoolss_DeleteForm: denied by insufficient permissions.\n"));
 		return WERR_ACCESS_DENIED;
@@ -8560,11 +8560,11 @@ WERROR _spoolss_SetForm(struct pipes_struct *p,
 	   and not a printer admin, then fail */
 
 	if ((p->server_info->utok.uid != sec_initial_uid()) &&
-	     !security_token_has_privilege(p->server_info->ptok, SEC_PRIV_PRINT_OPERATOR) &&
+	     !security_token_has_privilege(p->server_info->security_token, SEC_PRIV_PRINT_OPERATOR) &&
 	     !token_contains_name_in_list(uidtoname(p->server_info->utok.uid),
 					  p->server_info->info3->base.domain.string,
 					  NULL,
-					  p->server_info->ptok,
+					  p->server_info->security_token,
 					  lp_printer_admin(snum))) {
 		DEBUG(2,("_spoolss_Setform: denied by insufficient permissions.\n"));
 		return WERR_ACCESS_DENIED;
@@ -9984,14 +9984,14 @@ WERROR _spoolss_XcvData(struct pipes_struct *p,
 	switch ( Printer->printer_type ) {
 	case SPLHND_PORTMON_TCP:
 		werror = process_xcvtcp_command(p->mem_ctx,
-						p->server_info->ptok,
+						p->server_info->security_token,
 						r->in.function_name,
 						&r->in.in_data, &out_data,
 						r->out.needed);
 		break;
 	case SPLHND_PORTMON_LOCAL:
 		werror = process_xcvlocal_command(p->mem_ctx,
-						  p->server_info->ptok,
+						  p->server_info->security_token,
 						  r->in.function_name,
 						  &r->in.in_data, &out_data,
 						  r->out.needed);

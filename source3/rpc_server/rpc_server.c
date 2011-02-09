@@ -118,10 +118,10 @@ static int make_server_pipes_struct(TALLOC_CTX *mem_ctx,
 		return -1;
 	}
 
-	/* Now override the server_info->ptok with the exact
+	/* Now override the server_info->security_token with the exact
 	 * security_token we were given from the other side,
 	 * regardless of what we just calculated */
-	p->server_info->ptok = talloc_move(p->server_info, &session_info->security_token);
+	p->server_info->security_token = talloc_move(p->server_info, &session_info->security_token);
 
 	/* Also set the session key to the correct value */
 	p->server_info->user_session_key = session_info->session_key;

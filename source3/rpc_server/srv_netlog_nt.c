@@ -208,8 +208,8 @@ WERROR _netr_LogonControl2Ex(struct pipes_struct *p,
 	case NETLOGON_CONTROL_CHANGE_PASSWORD:
 	case NETLOGON_CONTROL_REDISCOVER:
 		if ((geteuid() != sec_initial_uid()) &&
-		    !nt_token_check_domain_rid(p->server_info->ptok, DOMAIN_RID_ADMINS) &&
-		    !nt_token_check_sid(&global_sid_Builtin_Administrators, p->server_info->ptok) &&
+		    !nt_token_check_domain_rid(p->server_info->security_token, DOMAIN_RID_ADMINS) &&
+		    !nt_token_check_sid(&global_sid_Builtin_Administrators, p->server_info->security_token) &&
 		    !(acct_ctrl & (ACB_WSTRUST | ACB_SVRTRUST))) {
 			return WERR_ACCESS_DENIED;
 		}

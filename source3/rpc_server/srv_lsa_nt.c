@@ -376,7 +376,7 @@ NTSTATUS _lsa_OpenPolicy2(struct pipes_struct *p,
 	NTSTATUS status;
 
 	/* Work out max allowed. */
-	map_max_allowed_access(p->server_info->ptok,
+	map_max_allowed_access(p->server_info->security_token,
 			       &p->server_info->utok,
 			       &des_access);
 
@@ -390,7 +390,7 @@ NTSTATUS _lsa_OpenPolicy2(struct pipes_struct *p,
 		return status;
 	}
 
-	status = access_check_object(psd, p->server_info->ptok,
+	status = access_check_object(psd, p->server_info->security_token,
 				     SEC_PRIV_INVALID, SEC_PRIV_INVALID, 0, des_access,
 				     &acc_granted, "_lsa_OpenPolicy2" );
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1710,7 +1710,7 @@ NTSTATUS _lsa_CreateAccount(struct pipes_struct *p,
 	}
 
 	/* Work out max allowed. */
-	map_max_allowed_access(p->server_info->ptok,
+	map_max_allowed_access(p->server_info->security_token,
 			       &p->server_info->utok,
 			       &r->in.access_mask);
 
@@ -1724,7 +1724,7 @@ NTSTATUS _lsa_CreateAccount(struct pipes_struct *p,
 		return status;
 	}
 
-	status = access_check_object(psd, p->server_info->ptok,
+	status = access_check_object(psd, p->server_info->security_token,
 				     SEC_PRIV_INVALID, SEC_PRIV_INVALID, 0, r->in.access_mask,
 				     &acc_granted, "_lsa_CreateAccount");
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1779,7 +1779,7 @@ NTSTATUS _lsa_OpenAccount(struct pipes_struct *p,
  	 * handle - so don't check against policy handle. */
 
 	/* Work out max allowed. */
-	map_max_allowed_access(p->server_info->ptok,
+	map_max_allowed_access(p->server_info->security_token,
 			       &p->server_info->utok,
 			       &des_access);
 
@@ -1794,7 +1794,7 @@ NTSTATUS _lsa_OpenAccount(struct pipes_struct *p,
 		return status;
 	}
 
-	status = access_check_object(psd, p->server_info->ptok,
+	status = access_check_object(psd, p->server_info->security_token,
 				     SEC_PRIV_INVALID, SEC_PRIV_INVALID, 0, des_access,
 				     &acc_granted, "_lsa_OpenAccount" );
 	if (!NT_STATUS_IS_OK(status)) {
@@ -2153,7 +2153,7 @@ NTSTATUS _lsa_AddAccountRights(struct pipes_struct *p,
  	 * on the account sid. We don't check here so just use the latter. JRA.
  	 */
 
-	status = access_check_object(psd, p->server_info->ptok,
+	status = access_check_object(psd, p->server_info->security_token,
 				     SEC_PRIV_INVALID, SEC_PRIV_INVALID, 0,
 				     LSA_ACCOUNT_ADJUST_PRIVILEGES|LSA_ACCOUNT_ADJUST_SYSTEM_ACCESS|LSA_ACCOUNT_VIEW,
 				     &acc_granted, "_lsa_AddAccountRights" );
@@ -2223,7 +2223,7 @@ NTSTATUS _lsa_RemoveAccountRights(struct pipes_struct *p,
 	 * and DELETE on the account sid.
  	 */
 
-	status = access_check_object(psd, p->server_info->ptok,
+	status = access_check_object(psd, p->server_info->security_token,
 				     SEC_PRIV_INVALID, SEC_PRIV_INVALID, 0,
 				     LSA_ACCOUNT_ADJUST_PRIVILEGES|LSA_ACCOUNT_ADJUST_SYSTEM_ACCESS|
 				     LSA_ACCOUNT_VIEW|SEC_STD_DELETE,

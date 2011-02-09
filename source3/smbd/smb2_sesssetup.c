@@ -248,7 +248,7 @@ static NTSTATUS smbd_smb2_session_setup_krb5(struct smbd_smb2_session *session,
 	/* we need to build the token for the user. make_server_info_guest()
 	   already does this */
 
-	if (!session->server_info->ptok ) {
+	if (!session->server_info->security_token ) {
 		status = create_local_token(session->server_info);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(10,("smb2: failed to create local token: %s\n",

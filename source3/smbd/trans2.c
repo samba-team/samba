@@ -3356,7 +3356,7 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 			 * in our list of SIDs.
 			 */
 			if (nt_token_check_sid(&global_sid_Builtin_Guests,
-					       conn->server_info->ptok)) {
+					       conn->server_info->security_token)) {
 				flags |= SMB_WHOAMI_GUEST;
 			}
 
@@ -3364,7 +3364,7 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 			 * is in our list of SIDs.
 			 */
 			if (nt_token_check_sid(&global_sid_Authenticated_Users,
-					       conn->server_info->ptok)) {
+					       conn->server_info->security_token)) {
 				flags &= ~SMB_WHOAMI_GUEST;
 			}
 
@@ -3382,7 +3382,7 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 			    + 4 /* pad/reserved */
 			    + (conn->server_info->utok.ngroups * 8)
 				/* groups list */
-			    + (conn->server_info->ptok->num_sids *
+			    + (conn->server_info->security_token->num_sids *
 				    SID_MAX_SIZE)
 				/* SID list */;
 
@@ -3407,16 +3407,16 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 			}
 
 			SIVAL(pdata, 24, conn->server_info->utok.ngroups);
-			SIVAL(pdata, 28, conn->server_info->ptok->num_sids);
+			SIVAL(pdata, 28, conn->server_info->security_token->num_sids);
 
 			/* We walk the SID list twice, but this call is fairly
 			 * infrequent, and I don't expect that it's performance
 			 * sensitive -- jpeach
 			 */
 			for (i = 0, sid_bytes = 0;
-			     i < conn->server_info->ptok->num_sids; ++i) {
+			     i < conn->server_info->security_token->num_sids; ++i) {
 				sid_bytes += ndr_size_dom_sid(
-					&conn->server_info->ptok->sids[i],
+					&conn->server_info->security_token->sids[i],
 					0);
 			}
 
@@ -3436,13 +3436,13 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 
 			/* SID list */
 			for (i = 0;
-			    i < conn->server_info->ptok->num_sids; ++i) {
+			    i < conn->server_info->security_token->num_sids; ++i) {
 				int sid_len = ndr_size_dom_sid(
-					&conn->server_info->ptok->sids[i],
+					&conn->server_info->security_token->sids[i],
 					0);
 
 				sid_linearize(pdata + data_len, sid_len,
-				    &conn->server_info->ptok->sids[i]);
+				    &conn->server_info->security_token->sids[i]);
 				data_len += sid_len;
 			}
 

@@ -278,7 +278,7 @@ WERROR _svcctl_OpenSCManagerW(struct pipes_struct *p,
 		return WERR_NOMEM;
 
 	se_map_generic( &r->in.access_mask, &scm_generic_map );
-	status = svcctl_access_check( sec_desc, p->server_info->ptok,
+	status = svcctl_access_check( sec_desc, p->server_info->security_token,
 				      r->in.access_mask, &access_granted );
 	if ( !NT_STATUS_IS_OK(status) )
 		return ntstatus_to_werror( status );
@@ -324,7 +324,7 @@ WERROR _svcctl_OpenServiceW(struct pipes_struct *p,
 	}
 
 	se_map_generic( &r->in.access_mask, &svc_generic_map );
-	status = svcctl_access_check( sec_desc, p->server_info->ptok,
+	status = svcctl_access_check( sec_desc, p->server_info->security_token,
 				      r->in.access_mask, &access_granted );
 	if ( !NT_STATUS_IS_OK(status) )
 		return ntstatus_to_werror( status );

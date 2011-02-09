@@ -613,7 +613,7 @@ static NTSTATUS create_connection_server_info(struct smbd_server_connection *sco
                 } else {
                         if (!user_ok_token(vuid_serverinfo->unix_name,
 					   vuid_serverinfo->info3->base.domain.string,
-                                           vuid_serverinfo->ptok, snum)) {
+                                           vuid_serverinfo->security_token, snum)) {
                                 DEBUG(2, ("user '%s' (from session setup) not "
                                           "permitted to access this share "
                                           "(%s)\n",
@@ -782,7 +782,7 @@ connection_struct *make_connection_snum(struct smbd_server_connection *sconn,
 
 		status = find_forced_group(
 			conn->force_user, snum, conn->server_info->unix_name,
-			&conn->server_info->ptok->sids[1],
+			&conn->server_info->security_token->sids[1],
 			&conn->server_info->utok.gid);
 
 		if (!NT_STATUS_IS_OK(status)) {
@@ -835,12 +835,12 @@ connection_struct *make_connection_snum(struct smbd_server_connection *sconn,
 	{
 		bool can_write = False;
 
-		can_write = share_access_check(conn->server_info->ptok,
+		can_write = share_access_check(conn->server_info->security_token,
 					       lp_servicename(snum),
 					       FILE_WRITE_DATA);
 
 		if (!can_write) {
-			if (!share_access_check(conn->server_info->ptok,
+			if (!share_access_check(conn->server_info->security_token,
 						lp_servicename(snum),
 						FILE_READ_DATA)) {
 				/* No access, read or write. */

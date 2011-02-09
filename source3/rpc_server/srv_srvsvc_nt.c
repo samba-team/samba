@@ -520,7 +520,7 @@ static bool is_enumeration_allowed(struct pipes_struct *p,
     if (!lp_access_based_share_enum(snum))
         return true;
 
-    return share_access_check(p->server_info->ptok, lp_servicename(snum),
+    return share_access_check(p->server_info->security_token, lp_servicename(snum),
                               FILE_READ_DATA);
 }
 
@@ -1055,7 +1055,7 @@ WERROR _srvsvc_NetFileEnum(struct pipes_struct *p,
 	}
 
 	if (!nt_token_check_sid(&global_sid_Builtin_Administrators,
-				p->server_info->ptok)) {
+				p->server_info->security_token)) {
 		DEBUG(1, ("Enumerating files only allowed for "
 			  "administrators\n"));
 		return WERR_ACCESS_DENIED;
@@ -1214,7 +1214,7 @@ WERROR _srvsvc_NetConnEnum(struct pipes_struct *p,
 	DEBUG(5,("_srvsvc_NetConnEnum: %d\n", __LINE__));
 
 	if (!nt_token_check_sid(&global_sid_Builtin_Administrators,
-				p->server_info->ptok)) {
+				p->server_info->security_token)) {
 		DEBUG(1, ("Enumerating connections only allowed for "
 			  "administrators\n"));
 		return WERR_ACCESS_DENIED;
@@ -1252,7 +1252,7 @@ WERROR _srvsvc_NetSessEnum(struct pipes_struct *p,
 	DEBUG(5,("_srvsvc_NetSessEnum: %d\n", __LINE__));
 
 	if (!nt_token_check_sid(&global_sid_Builtin_Administrators,
-				p->server_info->ptok)) {
+				p->server_info->security_token)) {
 		DEBUG(1, ("Enumerating sessions only allowed for "
 			  "administrators\n"));
 		return WERR_ACCESS_DENIED;
@@ -1311,7 +1311,7 @@ WERROR _srvsvc_NetSessDel(struct pipes_struct *p,
 	/* fail out now if you are not root or not a domain admin */
 
 	if ((p->server_info->utok.uid != sec_initial_uid()) &&
-		( ! nt_token_check_domain_rid(p->server_info->ptok,
+		( ! nt_token_check_domain_rid(p->server_info->security_token,
 					      DOMAIN_RID_ADMINS))) {
 
 		goto done;
@@ -1579,7 +1579,7 @@ WERROR _srvsvc_NetShareSetInfo(struct pipes_struct *p,
 	if (lp_print_ok(snum))
 		return WERR_ACCESS_DENIED;
 
-	is_disk_op = security_token_has_privilege(p->server_info->ptok, SEC_PRIV_DISK_OPERATOR);
+	is_disk_op = security_token_has_privilege(p->server_info->security_token, SEC_PRIV_DISK_OPERATOR);
 
 	/* fail out now if you are not root and not a disk op */
 
@@ -1782,7 +1782,7 @@ WERROR _srvsvc_NetShareAdd(struct pipes_struct *p,
 		*r->out.parm_error = 0;
 	}
 
-	is_disk_op = security_token_has_privilege(p->server_info->ptok, SEC_PRIV_DISK_OPERATOR);
+	is_disk_op = security_token_has_privilege(p->server_info->security_token, SEC_PRIV_DISK_OPERATOR);
 
 	if (p->server_info->utok.uid != sec_initial_uid()  && !is_disk_op )
 		return WERR_ACCESS_DENIED;
@@ -1988,7 +1988,7 @@ WERROR _srvsvc_NetShareDel(struct pipes_struct *p,
 	if (lp_print_ok(snum))
 		return WERR_ACCESS_DENIED;
 
-	is_disk_op = security_token_has_privilege(p->server_info->ptok, SEC_PRIV_DISK_OPERATOR);
+	is_disk_op = security_token_has_privilege(p->server_info->security_token, SEC_PRIV_DISK_OPERATOR);
 
 	if (p->server_info->utok.uid != sec_initial_uid()  && !is_disk_op )
 		return WERR_ACCESS_DENIED;
@@ -2554,7 +2554,7 @@ WERROR _srvsvc_NetFileClose(struct pipes_struct *p,
 
 	DEBUG(5,("_srvsvc_NetFileClose: %d\n", __LINE__));
 
-	is_disk_op = security_token_has_privilege(p->server_info->ptok, SEC_PRIV_DISK_OPERATOR);
+	is_disk_op = security_token_has_privilege(p->server_info->security_token, SEC_PRIV_DISK_OPERATOR);
 
 	if (p->server_info->utok.uid != sec_initial_uid() && !is_disk_op) {
 		return WERR_ACCESS_DENIED;

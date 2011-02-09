@@ -657,7 +657,7 @@ static bool pipe_ntlmssp_verify_final(TALLOC_CTX *mem_ctx,
 		return false;
 	}
 
-	if ((*server_info)->ptok == NULL) {
+	if ((*server_info)->security_token == NULL) {
 		DEBUG(1, ("Auth module failed to provide nt_user_token\n"));
 		return false;
 	}
@@ -752,7 +752,7 @@ static NTSTATUS pipe_gssapi_verify_final(TALLOC_CTX *mem_ctx,
 		return status;
 	}
 
-	if ((*server_info)->ptok == NULL) {
+	if ((*server_info)->security_token == NULL) {
 		status = create_local_token(*server_info);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(1, ("Failed to create local user token (%s)\n",

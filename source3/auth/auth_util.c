@@ -458,14 +458,14 @@ NTSTATUS create_local_token(struct auth_serversupplied_info *server_info)
 						    &server_info->utok.uid,
 						    &server_info->utok.gid,
 						    &server_info->unix_name,
-						    &server_info->ptok);
+						    &server_info->security_token);
 
 	} else {
 		status = create_local_nt_token_from_info3(server_info,
 							  server_info->guest,
 							  server_info->info3,
 							  &server_info->extra,
-							  &server_info->ptok);
+							  &server_info->security_token);
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
@@ -479,9 +479,9 @@ NTSTATUS create_local_token(struct auth_serversupplied_info *server_info)
 
 	/* Start at index 1, where the groups start. */
 
-	for (i=1; i<server_info->ptok->num_sids; i++) {
+	for (i=1; i<server_info->security_token->num_sids; i++) {
 		gid_t gid;
-		struct dom_sid *sid = &server_info->ptok->sids[i];
+		struct dom_sid *sid = &server_info->security_token->sids[i];
 
 		if (!sid_to_gid(sid, &gid)) {
 			DEBUG(10, ("Could not convert SID %s to gid, "
@@ -508,25 +508,25 @@ NTSTATUS create_local_token(struct auth_serversupplied_info *server_info)
 
 	uid_to_unix_users_sid(server_info->utok.uid, &tmp_sid);
 
-	add_sid_to_array_unique(server_info->ptok, &tmp_sid,
-				&server_info->ptok->sids,
-				&server_info->ptok->num_sids);
+	add_sid_to_array_unique(server_info->security_token, &tmp_sid,
+				&server_info->security_token->sids,
+				&server_info->security_token->num_sids);
 
 	for ( i=0; i<server_info->utok.ngroups; i++ ) {
 		gid_to_unix_groups_sid(server_info->utok.groups[i], &tmp_sid);
-		add_sid_to_array_unique(server_info->ptok, &tmp_sid,
-					&server_info->ptok->sids,
-					&server_info->ptok->num_sids);
+		add_sid_to_array_unique(server_info->security_token, &tmp_sid,
+					&server_info->security_token->sids,
+					&server_info->security_token->num_sids);
 	}
 
-	security_token_debug(DBGC_AUTH, 10, server_info->ptok);
+	security_token_debug(DBGC_AUTH, 10, server_info->security_token);
 	debug_unix_user_token(DBGC_AUTH, 10,
 			      server_info->utok.uid,
 			      server_info->utok.gid,
 			      server_info->utok.ngroups,
 			      server_info->utok.groups);
 
-	status = log_nt_token(server_info->ptok);
+	status = log_nt_token(server_info->security_token);
 	return status;
 }
 
@@ -771,10 +771,10 @@ static NTSTATUS make_new_server_info_system(TALLOC_CTX *mem_ctx,
 
 	(*server_info)->system = true;
 
-	status = add_sid_to_array_unique((*server_info)->ptok->sids,
+	status = add_sid_to_array_unique((*server_info)->security_token->sids,
 					 &global_sid_System,
-					 &(*server_info)->ptok->sids,
-					 &(*server_info)->ptok->num_sids);
+					 &(*server_info)->security_token->sids,
+					 &(*server_info)->security_token->num_sids);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE((*server_info));
 		return status;
@@ -847,9 +847,9 @@ struct auth_serversupplied_info *copy_serverinfo(TALLOC_CTX *mem_ctx,
 		dst->utok.groups = NULL;
 	}
 
-	if (src->ptok) {
-		dst->ptok = dup_nt_token(dst, src->ptok);
-		if (!dst->ptok) {
+	if (src->security_token) {
+		dst->security_token = dup_nt_token(dst, src->security_token);
+		if (!dst->security_token) {
 			TALLOC_FREE(dst);
 			return NULL;
 		}

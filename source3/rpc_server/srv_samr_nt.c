@@ -561,7 +561,7 @@ NTSTATUS _samr_OpenDomain(struct pipes_struct *p,
 	}
 
 	/*check if access can be granted as requested by client. */
-	map_max_allowed_access(p->server_info->ptok,
+	map_max_allowed_access(p->server_info->security_token,
 			       &p->server_info->utok,
 			       &des_access);
 
@@ -572,7 +572,7 @@ NTSTATUS _samr_OpenDomain(struct pipes_struct *p,
 	 * Users with SeAddUser get the ability to manipulate groups
 	 * and aliases.
 	 */
-	if (security_token_has_privilege(p->server_info->ptok, SEC_PRIV_ADD_USERS)) {
+	if (security_token_has_privilege(p->server_info->security_token, SEC_PRIV_ADD_USERS)) {
 		extra_access |= (SAMR_DOMAIN_ACCESS_CREATE_GROUP |
 				SAMR_DOMAIN_ACCESS_ENUM_ACCOUNTS |
 				SAMR_DOMAIN_ACCESS_OPEN_ACCOUNT |
@@ -585,7 +585,7 @@ NTSTATUS _samr_OpenDomain(struct pipes_struct *p,
 	 * SAMR_DOMAIN_ACCESS_CREATE_USER access.
 	 */
 
-	status = access_check_object( psd, p->server_info->ptok,
+	status = access_check_object( psd, p->server_info->security_token,
 				      SEC_PRIV_MACHINE_ACCOUNT, SEC_PRIV_ADD_USERS,
 				      extra_access, des_access,
 				      &acc_granted, "_samr_OpenDomain" );
@@ -2296,7 +2296,7 @@ NTSTATUS _samr_OpenUser(struct pipes_struct *p,
 		return NT_STATUS_NO_SUCH_USER;
 
 	/* check if access can be granted as requested by client. */
-	map_max_allowed_access(p->server_info->ptok,
+	map_max_allowed_access(p->server_info->security_token,
 			       &p->server_info->utok,
 			       &des_access);
 
@@ -2345,7 +2345,7 @@ NTSTATUS _samr_OpenUser(struct pipes_struct *p,
 		 * DOMAIN_RID_ADMINS.
 		 */
 		if (acb_info & (ACB_SVRTRUST|ACB_DOMTRUST)) {
-			if (lp_enable_privileges() && nt_token_check_domain_rid(p->server_info->ptok,
+			if (lp_enable_privileges() && nt_token_check_domain_rid(p->server_info->security_token,
 							DOMAIN_RID_ADMINS)) {
 				des_access &= ~GENERIC_RIGHTS_USER_WRITE;
 				extra_access = GENERIC_RIGHTS_USER_WRITE;
@@ -2358,7 +2358,7 @@ NTSTATUS _samr_OpenUser(struct pipes_struct *p,
 
 	TALLOC_FREE(sampass);
 
-	nt_status = access_check_object(psd, p->server_info->ptok,
+	nt_status = access_check_object(psd, p->server_info->security_token,
 					needed_priv_1, needed_priv_2,
 					GENERIC_RIGHTS_USER_WRITE, des_access,
 					&acc_granted, "_samr_OpenUser");
@@ -3860,19 +3860,19 @@ NTSTATUS _samr_CreateUser2(struct pipes_struct *p,
 		can_add_account = true;
 	} else if (acb_info & ACB_WSTRUST) {
 		needed_priv = SEC_PRIV_MACHINE_ACCOUNT;
-		can_add_account = security_token_has_privilege(p->server_info->ptok, SEC_PRIV_MACHINE_ACCOUNT);
+		can_add_account = security_token_has_privilege(p->server_info->security_token, SEC_PRIV_MACHINE_ACCOUNT);
 	} else if (acb_info & ACB_NORMAL &&
 		  (account[strlen(account)-1] != '$')) {
 		/* usrmgr.exe (and net rpc trustdom grant) creates a normal user
 		   account for domain trusts and changes the ACB flags later */
 		needed_priv = SEC_PRIV_ADD_USERS;
-		can_add_account = security_token_has_privilege(p->server_info->ptok, SEC_PRIV_ADD_USERS);
+		can_add_account = security_token_has_privilege(p->server_info->security_token, SEC_PRIV_ADD_USERS);
 	} else if (lp_enable_privileges()) {
 		/* implicit assumption of a BDC or domain trust account here
 		 * (we already check the flags earlier) */
 		/* only Domain Admins can add a BDC or domain trust */
 		can_add_account = nt_token_check_domain_rid(
-			p->server_info->ptok,
+			p->server_info->security_token,
 			DOMAIN_RID_ADMINS );
 	}
 
@@ -3902,7 +3902,7 @@ NTSTATUS _samr_CreateUser2(struct pipes_struct *p,
 
 	sid_compose(&sid, get_global_sam_sid(), *r->out.rid);
 
-	map_max_allowed_access(p->server_info->ptok,
+	map_max_allowed_access(p->server_info->security_token,
 			       &p->server_info->utok,
 			       &des_access);
 
@@ -3917,7 +3917,7 @@ NTSTATUS _samr_CreateUser2(struct pipes_struct *p,
 	 * just assume we have all the rights we need ?
 	 */
 
-	nt_status = access_check_object(psd, p->server_info->ptok,
+	nt_status = access_check_object(psd, p->server_info->security_token,
 					needed_priv, SEC_PRIV_INVALID,
 					GENERIC_RIGHTS_USER_WRITE, des_access,
 		&acc_granted, "_samr_CreateUser2");
@@ -3985,7 +3985,7 @@ NTSTATUS _samr_Connect(struct pipes_struct *p,
 	   was observed from a win98 client trying to enumerate users (when configured
 	   user level access control on shares)   --jerry */
 
-	map_max_allowed_access(p->server_info->ptok,
+	map_max_allowed_access(p->server_info->security_token,
 			       &p->server_info->utok,
 			       &des_access);
 
@@ -4047,14 +4047,14 @@ NTSTATUS _samr_Connect2(struct pipes_struct *p,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	map_max_allowed_access(p->server_info->ptok,
+	map_max_allowed_access(p->server_info->security_token,
 			       &p->server_info->utok,
 			       &des_access);
 
 	make_samr_object_sd(p->mem_ctx, &psd, &sd_size, &sam_generic_mapping, NULL, 0);
 	se_map_generic(&des_access, &sam_generic_mapping);
 
-	nt_status = access_check_object(psd, p->server_info->ptok,
+	nt_status = access_check_object(psd, p->server_info->security_token,
 					SEC_PRIV_INVALID, SEC_PRIV_INVALID,
 					0, des_access, &acc_granted, fn);
 
@@ -4262,14 +4262,14 @@ NTSTATUS _samr_OpenAlias(struct pipes_struct *p,
 
 	/*check if access can be granted as requested by client. */
 
-	map_max_allowed_access(p->server_info->ptok,
+	map_max_allowed_access(p->server_info->security_token,
 			       &p->server_info->utok,
 			       &des_access);
 
 	make_samr_object_sd(p->mem_ctx, &psd, &sd_size, &ali_generic_mapping, NULL, 0);
 	se_map_generic(&des_access,&ali_generic_mapping);
 
-	status = access_check_object(psd, p->server_info->ptok,
+	status = access_check_object(psd, p->server_info->security_token,
 				     SEC_PRIV_ADD_USERS, SEC_PRIV_INVALID,
 				     GENERIC_RIGHTS_ALIAS_ALL_ACCESS,
 				     des_access, &acc_granted, "_samr_OpenAlias");
@@ -6336,14 +6336,14 @@ NTSTATUS _samr_OpenGroup(struct pipes_struct *p,
 	}
 
 	/*check if access can be granted as requested by client. */
-	map_max_allowed_access(p->server_info->ptok,
+	map_max_allowed_access(p->server_info->security_token,
 			       &p->server_info->utok,
 			       &des_access);
 
 	make_samr_object_sd(p->mem_ctx, &psd, &sd_size, &grp_generic_mapping, NULL, 0);
 	se_map_generic(&des_access,&grp_generic_mapping);
 
-	status = access_check_object(psd, p->server_info->ptok,
+	status = access_check_object(psd, p->server_info->security_token,
 				     SEC_PRIV_ADD_USERS, SEC_PRIV_INVALID, GENERIC_RIGHTS_GROUP_ALL_ACCESS,
 				     des_access, &acc_granted, "_samr_OpenGroup");
 

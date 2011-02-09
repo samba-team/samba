@@ -293,7 +293,7 @@ int register_existing_vuid(struct smbd_server_connection *sconn,
 		  "Real name: %s\n", vuser->server_info->unix_name,
 		  vuser->server_info->info3->base.full_name.string));
 
-	if (!vuser->server_info->ptok) {
+	if (!vuser->server_info->security_token) {
 		DEBUG(1, ("register_existing_vuid: server_info does not "
 			"contain a user_token - cannot continue\n"));
 		goto fail;

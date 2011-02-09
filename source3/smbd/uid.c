@@ -107,17 +107,17 @@ static bool check_user_ok(connection_struct *conn,
 
 	if (!user_ok_token(server_info->unix_name,
 			   server_info->info3->base.domain.string,
-			   server_info->ptok, snum))
+			   server_info->security_token, snum))
 		return(False);
 
 	readonly_share = is_share_read_only_for_token(
 		server_info->unix_name,
 		server_info->info3->base.domain.string,
-		server_info->ptok,
+		server_info->security_token,
 		conn);
 
 	if (!readonly_share &&
-	    !share_access_check(server_info->ptok, lp_servicename(snum),
+	    !share_access_check(server_info->security_token, lp_servicename(snum),
 				FILE_WRITE_DATA)) {
 		/* smb.conf allows r/w, but the security descriptor denies
 		 * write. Fall back to looking at readonly. */
@@ -126,7 +126,7 @@ static bool check_user_ok(connection_struct *conn,
 			 "security descriptor\n"));
 	}
 
-	if (!share_access_check(server_info->ptok, lp_servicename(snum),
+	if (!share_access_check(server_info->security_token, lp_servicename(snum),
 				readonly_share ?
 				FILE_READ_DATA : FILE_WRITE_DATA)) {
 		return False;
@@ -135,7 +135,7 @@ static bool check_user_ok(connection_struct *conn,
 	admin_user = token_contains_name_in_list(
 		server_info->unix_name,
 		server_info->info3->base.domain.string,
-		NULL, server_info->ptok, lp_admin_users(snum));
+		NULL, server_info->security_token, lp_admin_users(snum));
 
 	if (valid_vuid) {
 		struct vuid_cache_entry *ent =
@@ -327,7 +327,7 @@ bool change_to_user(connection_struct *conn, uint16 vuid)
 					conn->server_info->utok.gid =
 						conn->force_group_gid;
 					gid = conn->force_group_gid;
-					gid_to_sid(&conn->server_info->ptok
+					gid_to_sid(&conn->server_info->security_token
 						   ->sids[1], gid);
 					break;
 				}
@@ -335,7 +335,7 @@ bool change_to_user(connection_struct *conn, uint16 vuid)
 		} else {
 			conn->server_info->utok.gid = conn->force_group_gid;
 			gid = conn->force_group_gid;
-			gid_to_sid(&conn->server_info->ptok->sids[1],
+			gid_to_sid(&conn->server_info->security_token->sids[1],
 				   gid);
 		}
 	}
@@ -347,7 +347,7 @@ bool change_to_user(connection_struct *conn, uint16 vuid)
 	current_user.ut.groups  = group_list;
 
 	set_sec_ctx(uid, gid, current_user.ut.ngroups, current_user.ut.groups,
-		    conn->server_info->ptok);
+		    conn->server_info->security_token);
 
 	current_user.conn = conn;
 	current_user.vuid = vuid;
@@ -389,7 +389,7 @@ bool become_authenticated_pipe_user(struct pipes_struct *p)
 
 	set_sec_ctx(p->server_info->utok.uid, p->server_info->utok.gid,
 		    p->server_info->utok.ngroups, p->server_info->utok.groups,
-		    p->server_info->ptok);
+		    p->server_info->security_token);
 
 	return True;
 }

@@ -2093,7 +2093,7 @@ bool print_access_check(const struct auth_serversupplied_info *server_info,
 	/* Always allow root or SE_PRINT_OPERATROR to do anything */
 
 	if (server_info->utok.uid == sec_initial_uid()
-	    || security_token_has_privilege(server_info->ptok, SEC_PRIV_PRINT_OPERATOR)) {
+	    || security_token_has_privilege(server_info->security_token, SEC_PRIV_PRINT_OPERATOR)) {
 		return True;
 	}
 
@@ -2149,7 +2149,7 @@ bool print_access_check(const struct auth_serversupplied_info *server_info,
 	}
 
 	/* Check access */
-	status = se_access_check(secdesc, server_info->ptok, access_type,
+	status = se_access_check(secdesc, server_info->security_token, access_type,
 				 &access_granted);
 
 	DEBUG(4, ("access check was %s\n", NT_STATUS_IS_OK(status) ? "SUCCESS" : "FAILURE"));
@@ -2159,7 +2159,7 @@ bool print_access_check(const struct auth_serversupplied_info *server_info,
         if (!NT_STATUS_IS_OK(status) &&
 	    (token_contains_name_in_list(uidtoname(server_info->utok.uid),
 					 server_info->info3->base.domain.string,
-					 NULL, server_info->ptok,
+					 NULL, server_info->security_token,
 					 lp_printer_admin(snum)))) {
 		talloc_destroy(mem_ctx);
 		return True;

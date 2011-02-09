@@ -384,7 +384,7 @@ static void reply_spnego_kerberos(struct smb_request *req,
 	/* we need to build the token for the user. make_server_info_guest()
 	   already does this */
 
-	if ( !server_info->ptok ) {
+	if ( !server_info->security_token ) {
 		ret = create_local_token( server_info );
 		if ( !NT_STATUS_IS_OK(ret) ) {
 			DEBUG(10,("failed to create local token: %s\n",
@@ -1643,7 +1643,7 @@ void reply_sesssetup_and_X(struct smb_request *req)
 		return;
 	}
 
-	if (!server_info->ptok) {
+	if (!server_info->security_token) {
 		nt_status = create_local_token(server_info);
 
 		if (!NT_STATUS_IS_OK(nt_status)) {
