@@ -336,11 +336,9 @@ return acl_get_perm_np(permset_d, perm);
         else:
             conf.DEFINE('HAVE_NO_ACLS', 1)
             conf.SET_TARGET_TYPE('acl', 'EMPTY')
-            conf.SET_TARGET_TYPE('attr', 'EMPTY')
     else:
         conf.DEFINE('HAVE_NO_ACLS', 1)
         conf.SET_TARGET_TYPE('acl', 'EMPTY')
-        conf.SET_TARGET_TYPE('attr', 'EMPTY')
 
     if conf.CHECK_FUNCS('dirfd'):
         conf.DEFINE('HAVE_DIRFD_DECL', 1)
