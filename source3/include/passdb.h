@@ -117,6 +117,8 @@ struct login_cache {
 #define SAMU_BUFFER_V4		4
 #define SAMU_BUFFER_LATEST	SAMU_BUFFER_V4
 
+#define MAX_HOURS_LEN 32
+
 struct samu {
 	struct pdb_methods *methods;
 

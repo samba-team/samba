@@ -143,9 +143,6 @@ typedef union unid_t {
 } unid_t;
 
 /* pipe string names */
-#define PIPE_LANMAN   "\\PIPE\\LANMAN"
-
-#define MAX_HOURS_LEN 32
 
 #ifndef MAXSUBAUTHS
 #define MAXSUBAUTHS 15 /* max sub authorities in a SID */
@@ -1784,9 +1781,6 @@ struct ip_service {
 	struct sockaddr_storage ss;
 	unsigned port;
 };
-
-/* Special name type used to cause a _kerberos DNS lookup. */
-#define KDC_NAME_TYPE 0xDCDC
 
 struct ea_struct {
 	uint8 flags;
