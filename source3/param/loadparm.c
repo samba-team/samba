@@ -8045,7 +8045,12 @@ bool lp_set_option(const char *option)
 
 	*p = 0;
 
-	ret = lp_set_cmdline(s, p+1);
+	/* skip white spaces after the = sign */
+	do {
+		p++;
+	} while (*p == ' ');
+
+	ret = lp_set_cmdline(s, p);
 	talloc_free(s);
 	return ret;
 }
