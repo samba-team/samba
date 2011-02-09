@@ -2181,7 +2181,7 @@ static const struct dcerpc_binding_handle_ops rpccli_bh_ops = {
 };
 
 /* initialise a rpc_pipe_client binding handle */
-static struct dcerpc_binding_handle *rpccli_bh_create(struct rpc_pipe_client *c)
+struct dcerpc_binding_handle *rpccli_bh_create(struct rpc_pipe_client *c)
 {
 	struct dcerpc_binding_handle *h;
 	struct rpccli_bh_state *hs;
