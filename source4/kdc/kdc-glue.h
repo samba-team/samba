@@ -50,46 +50,6 @@ enum kdc_process_ret {
 	KDC_PROCESS_FAILED,
 	KDC_PROCESS_PROXY};
 
-struct kdc_tcp_call {
-	struct kdc_tcp_connection *kdc_conn;
-	DATA_BLOB in;
-	DATA_BLOB out;
-	uint8_t out_hdr[4];
-	struct iovec out_iov[2];
-};
-
-typedef enum kdc_process_ret (*kdc_process_fn_t)(struct kdc_server *kdc,
-						 TALLOC_CTX *mem_ctx,
-						 DATA_BLOB *input,
-						 DATA_BLOB *reply,
-						 struct tsocket_address *peer_addr,
-						 struct tsocket_address *my_addr,
-						 int datagram);
-
-
-/* hold information about one kdc socket */
-struct kdc_socket {
-	struct kdc_server *kdc;
-	struct tsocket_address *local_address;
-	kdc_process_fn_t process;
-};
-
-/*
-  state of an open tcp connection
-*/
-struct kdc_tcp_connection {
-	/* stream connection we belong to */
-	struct stream_connection *conn;
-
-	/* the kdc_server the connection belongs to */
-	struct kdc_socket *kdc_socket;
-
-	struct tstream_context *tstream;
-
-	struct tevent_queue *send_queue;
-};
-
-
 enum kdc_process_ret kpasswdd_process(struct kdc_server *kdc,
 				      TALLOC_CTX *mem_ctx,
 				      DATA_BLOB *input,
@@ -112,7 +72,13 @@ NTSTATUS kdc_udp_proxy_recv(struct tevent_req *req,
 			    TALLOC_CTX *mem_ctx,
 			    DATA_BLOB *out);
 
-void kdc_tcp_proxy(struct kdc_server *kdc, struct kdc_tcp_connection *kdc_conn,
-		   struct kdc_tcp_call *call, uint16_t port);
+struct tevent_req *kdc_tcp_proxy_send(TALLOC_CTX *mem_ctx,
+				      struct tevent_context *ev,
+				      struct kdc_server *kdc,
+				      uint16_t port,
+				      DATA_BLOB in);
+NTSTATUS kdc_tcp_proxy_recv(struct tevent_req *req,
+			    TALLOC_CTX *mem_ctx,
+			    DATA_BLOB *out);
 
 #endif

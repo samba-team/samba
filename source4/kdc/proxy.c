@@ -324,296 +324,262 @@ NTSTATUS kdc_udp_proxy_recv(struct tevent_req *req,
 }
 
 struct kdc_tcp_proxy_state {
-	struct kdc_tcp_call *call;
-	struct kdc_tcp_connection *kdc_conn;
+	struct tevent_context *ev;
 	struct kdc_server *kdc;
 	uint16_t port;
-	uint32_t next_proxy;
+	DATA_BLOB in;
+	uint8_t in_hdr[4];
+	struct iovec in_iov[2];
+	DATA_BLOB out;
 	char **proxy_list;
-	const char *proxy_ip;
+	uint32_t next_proxy;
+	struct {
+		struct nbt_name name;
+		const char *ip;
+		struct tstream_context *stream;
+	} proxy;
 };
 
-static void kdc_tcp_next_proxy(struct kdc_tcp_proxy_state *state);
+static void kdc_tcp_next_proxy(struct tevent_req *req);
 
-/*
-  called when the send of the proxied reply to the client is done
- */
-static void kdc_tcp_proxy_reply_done(struct tevent_req *req)
+struct tevent_req *kdc_tcp_proxy_send(TALLOC_CTX *mem_ctx,
+				      struct tevent_context *ev,
+				      struct kdc_server *kdc,
+				      uint16_t port,
+				      DATA_BLOB in)
 {
-	struct kdc_tcp_proxy_state *state = tevent_req_callback_data(req,
-								     struct kdc_tcp_proxy_state);
-	int ret, sys_errno;
-
-	ret = tstream_writev_queue_recv(req, &sys_errno);
-	if (ret == -1) {
-		DEBUG(4,("kdc_tcp_proxy: writev of reply gave %d : %s\n",
-			 sys_errno, strerror(sys_errno)));
-	}
-	talloc_free(req);
-	talloc_free(state);
-}
-
-/*
-  called when the recv of the proxied reply is done
- */
-static void kdc_tcp_proxy_recv_done(struct tevent_req *req)
-{
-	struct kdc_tcp_proxy_state *state = tevent_req_callback_data(req,
-								     struct kdc_tcp_proxy_state);
-	NTSTATUS status;
-
-	status = tstream_read_pdu_blob_recv(req,
-					    state,
-					    &state->call->out);
-	talloc_free(req);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		kdc_tcp_next_proxy(state);
-		return;
-	}
-
-
-	/* send the reply to the original caller */
-
-	state->call->out_iov[0].iov_base = (char *)state->call->out.data;
-	state->call->out_iov[0].iov_len = state->call->out.length;
-
-	req = tstream_writev_queue_send(state,
-					state->kdc_conn->conn->event.ctx,
-					state->kdc_conn->tstream,
-					state->kdc_conn->send_queue,
-					state->call->out_iov, 1);
-	if (req == NULL) {
-		kdc_tcp_next_proxy(state);
-		return;
-	}
-
-	tevent_req_set_callback(req, kdc_tcp_proxy_reply_done, state);
-}
-
-/*
-  called when the send of the proxied packet is done
- */
-static void kdc_tcp_proxy_send_done(struct tevent_req *req)
-{
-	struct kdc_tcp_proxy_state *state = tevent_req_callback_data(req,
-								     struct kdc_tcp_proxy_state);
-	int ret, sys_errno;
-
-	ret = tstream_writev_queue_recv(req, &sys_errno);
-	talloc_free(req);
-	if (ret == -1) {
-		kdc_tcp_next_proxy(state);
-	}
-}
-
-/*
-  called when we've connected to the proxy
- */
-static void kdc_tcp_proxy_connect_done(struct tevent_req *req)
-{
-	struct kdc_tcp_proxy_state *state = tevent_req_callback_data(req,
-								     struct kdc_tcp_proxy_state);
-	int ret, sys_errno;
-	struct tstream_context *stream;
-	struct tevent_queue *send_queue;
-
-
-	ret = tstream_inet_tcp_connect_recv(req, &sys_errno, state, &stream, NULL);
-	talloc_free(req);
-
-	if (ret != 0) {
-		kdc_tcp_next_proxy(state);
-		return;
-	}
-
-	RSIVAL(state->call->out_hdr, 0, state->call->in.length);
-	state->call->out_iov[0].iov_base = (char *)state->call->out_hdr;
-	state->call->out_iov[0].iov_len = 4;
-	state->call->out_iov[1].iov_base = (char *) state->call->in.data;
-	state->call->out_iov[1].iov_len = state->call->in.length;
-
-	send_queue = tevent_queue_create(state, "kdc_tcp_proxy");
-	if (send_queue == NULL) {
-		kdc_tcp_next_proxy(state);
-		return;
-	}
-
-	req = tstream_writev_queue_send(state,
-					state->kdc_conn->conn->event.ctx,
-					stream,
-					send_queue,
-					state->call->out_iov, 2);
-	if (req == NULL) {
-		kdc_tcp_next_proxy(state);
-		return;
-	}
-
-	tevent_req_set_callback(req, kdc_tcp_proxy_send_done, state);
-
-	req = tstream_read_pdu_blob_send(state,
-					 state->kdc_conn->conn->event.ctx,
-					 stream,
-					 4, /* initial_read_size */
-					 packet_full_request_u32,
-					 state);
-	if (req == NULL) {
-		kdc_tcp_next_proxy(state);
-		return;
-	}
-
-	tevent_req_set_callback(req, kdc_tcp_proxy_recv_done, state);
-	tevent_req_set_endtime(req, state->kdc->task->event_ctx,
-			       timeval_current_ofs(state->kdc->proxy_timeout, 0));
-
-}
-
-
-/*
-  called when name resolution for a proxy is done
- */
-static void kdc_tcp_proxy_resolve_done(struct composite_context *c)
-{
-	struct kdc_tcp_proxy_state *state;
-	NTSTATUS status;
 	struct tevent_req *req;
+	struct kdc_tcp_proxy_state *state;
+	WERROR werr;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct kdc_tcp_proxy_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->ev = ev;
+	state->kdc  = kdc;
+	state->port = port;
+	state->in = in;
+
+	werr = kdc_proxy_get_writeable_dcs(kdc, state, &state->proxy_list);
+	if (!W_ERROR_IS_OK(werr)) {
+		NTSTATUS status = werror_to_ntstatus(werr);
+		tevent_req_nterror(req, status);
+		return tevent_req_post(req, ev);
+	}
+
+	RSIVAL(state->in_hdr, 0, state->in.length);
+	state->in_iov[0].iov_base = (char *)state->in_hdr;
+	state->in_iov[0].iov_len = 4;
+	state->in_iov[1].iov_base = (char *)state->in.data;
+	state->in_iov[1].iov_len = state->in.length;
+
+	kdc_tcp_next_proxy(req);
+	if (!tevent_req_is_in_progress(req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	return req;
+}
+
+static void kdc_tcp_proxy_resolve_done(struct composite_context *csubreq);
+
+/*
+  try the next proxy in the list
+ */
+static void kdc_tcp_next_proxy(struct tevent_req *req)
+{
+	struct kdc_tcp_proxy_state *state =
+		tevent_req_data(req,
+		struct kdc_tcp_proxy_state);
+	const char *proxy_dnsname = state->proxy_list[state->next_proxy];
+	struct composite_context *csubreq;
+
+	if (proxy_dnsname == NULL) {
+		tevent_req_nterror(req, NT_STATUS_NO_LOGON_SERVERS);
+		return;
+	}
+
+	state->next_proxy++;
+
+	/* make sure we close the socket of the last try */
+	TALLOC_FREE(state->proxy.stream);
+	ZERO_STRUCT(state->proxy);
+
+	make_nbt_name(&state->proxy.name, proxy_dnsname, 0);
+
+	csubreq = resolve_name_ex_send(lpcfg_resolve_context(state->kdc->task->lp_ctx),
+				       state,
+				       RESOLVE_NAME_FLAG_FORCE_DNS,
+				       0,
+				       &state->proxy.name,
+				       state->ev);
+	if (tevent_req_nomem(csubreq, req)) {
+		return;
+	}
+	csubreq->async.fn = kdc_tcp_proxy_resolve_done;
+	csubreq->async.private_data = req;
+}
+
+static void kdc_tcp_proxy_connect_done(struct tevent_req *subreq);
+
+static void kdc_tcp_proxy_resolve_done(struct composite_context *csubreq)
+{
+	struct tevent_req *req =
+		talloc_get_type_abort(csubreq->async.private_data,
+		struct tevent_req);
+	struct kdc_tcp_proxy_state *state =
+		tevent_req_data(req,
+		struct kdc_tcp_proxy_state);
+	NTSTATUS status;
+	struct tevent_req *subreq;
 	struct tsocket_address *local_addr, *proxy_addr;
 	int ret;
 
-	state = talloc_get_type(c->async.private_data, struct kdc_tcp_proxy_state);
-
-	status = resolve_name_recv(c, state, &state->proxy_ip);
+	status = resolve_name_recv(csubreq, state, &state->proxy.ip);
 	if (!NT_STATUS_IS_OK(status)) {
-		kdc_tcp_next_proxy(state);
+		DEBUG(0,("Unable to resolve proxy[%s] - %s\n",
+			state->proxy.name.name, nt_errstr(status)));
+		kdc_tcp_next_proxy(req);
 		return;
 	}
 
 	/* get an address for us to use locally */
 	ret = tsocket_address_inet_from_strings(state, "ip", NULL, 0, &local_addr);
 	if (ret != 0) {
-		kdc_tcp_next_proxy(state);
+		kdc_tcp_next_proxy(req);
 		return;
 	}
 
 	ret = tsocket_address_inet_from_strings(state, "ip",
-						state->proxy_ip, state->port, &proxy_addr);
+						state->proxy.ip,
+						state->port,
+						&proxy_addr);
 	if (ret != 0) {
-		kdc_tcp_next_proxy(state);
+		kdc_tcp_next_proxy(req);
 		return;
 	}
 
-	/* connect to the proxy */
-	req = tstream_inet_tcp_connect_send(state, state->kdc->task->event_ctx, local_addr, proxy_addr);
-	if (req == NULL) {
-		kdc_tcp_next_proxy(state);
+	subreq = tstream_inet_tcp_connect_send(state, state->ev,
+					       local_addr, proxy_addr);
+	if (tevent_req_nomem(subreq, req)) {
+		return;
+	}
+	tevent_req_set_callback(subreq, kdc_tcp_proxy_connect_done, req);
+	tevent_req_set_endtime(subreq, state->ev,
+			       timeval_current_ofs(state->kdc->proxy_timeout, 0));
+}
+
+static void kdc_tcp_proxy_writev_done(struct tevent_req *subreq);
+static void kdc_tcp_proxy_read_pdu_done(struct tevent_req *subreq);
+
+static void kdc_tcp_proxy_connect_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req =
+		tevent_req_callback_data(subreq,
+		struct tevent_req);
+	struct kdc_tcp_proxy_state *state =
+		tevent_req_data(req,
+		struct kdc_tcp_proxy_state);
+	int ret, sys_errno;
+
+	ret = tstream_inet_tcp_connect_recv(subreq, &sys_errno,
+					    state, &state->proxy.stream, NULL);
+	TALLOC_FREE(subreq);
+	if (ret != 0) {
+		kdc_tcp_next_proxy(req);
 		return;
 	}
 
-	tevent_req_set_callback(req, kdc_tcp_proxy_connect_done, state);
+	subreq = tstream_writev_send(state,
+				     state->ev,
+				     state->proxy.stream,
+				     state->in_iov, 2);
+	if (tevent_req_nomem(subreq, req)) {
+		return;
+	}
+	tevent_req_set_callback(subreq, kdc_tcp_proxy_writev_done, req);
 
-	tevent_req_set_endtime(req, state->kdc->task->event_ctx,
+	subreq = tstream_read_pdu_blob_send(state,
+					    state->ev,
+					    state->proxy.stream,
+					    4, /* initial_read_size */
+					    packet_full_request_u32,
+					    req);
+	if (tevent_req_nomem(subreq, req)) {
+		return;
+	}
+	tevent_req_set_callback(subreq, kdc_tcp_proxy_read_pdu_done, req);
+	tevent_req_set_endtime(subreq, state->kdc->task->event_ctx,
 			       timeval_current_ofs(state->kdc->proxy_timeout, 0));
 
-	DEBUG(4,("kdc_tcp_proxy: proxying request to %s\n", state->proxy_ip));
+	DEBUG(4,("kdc_tcp_proxy: proxying request to %s[%s]\n",
+		 state->proxy.name.name, state->proxy.ip));
 }
 
-
-/*
-  called when our proxies are not available
- */
-static void kdc_tcp_proxy_unavailable(struct kdc_tcp_proxy_state *state)
+static void kdc_tcp_proxy_writev_done(struct tevent_req *subreq)
 {
-	int kret;
-	krb5_data k5_error_blob;
-	struct tevent_req *req;
+	struct tevent_req *req =
+		tevent_req_callback_data(subreq,
+		struct tevent_req);
+	int ret, sys_errno;
 
-	kret = krb5_mk_error(state->kdc->smb_krb5_context->krb5_context,
-			     KRB5KDC_ERR_SVC_UNAVAILABLE, NULL, NULL,
-			     NULL, NULL, NULL, NULL, &k5_error_blob);
-	if (kret != 0) {
-		DEBUG(2,(__location__ ": Unable to form krb5 error reply\n"));
-		talloc_free(state);
-		return;
+	ret = tstream_writev_recv(subreq, &sys_errno);
+	TALLOC_FREE(subreq);
+	if (ret == -1) {
+		kdc_tcp_next_proxy(req);
 	}
-
-
-	state->call->out = data_blob_talloc(state, k5_error_blob.data, k5_error_blob.length);
-	krb5_data_free(&k5_error_blob);
-	if (!state->call->out.data) {
-		talloc_free(state);
-		return;
-	}
-
-	state->call->out_iov[0].iov_base = (char *)state->call->out.data;
-	state->call->out_iov[0].iov_len = state->call->out.length;
-
-	req = tstream_writev_queue_send(state,
-					state->kdc_conn->conn->event.ctx,
-					state->kdc_conn->tstream,
-					state->kdc_conn->send_queue,
-					state->call->out_iov, 1);
-	if (!req) {
-		talloc_free(state);
-		return;
-	}
-
-	tevent_req_set_callback(req, kdc_tcp_proxy_reply_done, state);
 }
 
-/*
-  try the next proxy in the list
- */
-static void kdc_tcp_next_proxy(struct kdc_tcp_proxy_state *state)
+static void kdc_tcp_proxy_read_pdu_done(struct tevent_req *subreq)
 {
-	const char *proxy_dnsname = state->proxy_list[state->next_proxy];
-	struct nbt_name name;
-	struct composite_context *c;
+	struct tevent_req *req =
+		tevent_req_callback_data(subreq,
+		struct tevent_req);
+	struct kdc_tcp_proxy_state *state =
+		tevent_req_data(req,
+		struct kdc_tcp_proxy_state);
+	NTSTATUS status;
+	DATA_BLOB raw;
 
-	if (proxy_dnsname == NULL) {
-		kdc_tcp_proxy_unavailable(state);
+	status = tstream_read_pdu_blob_recv(subreq, state, &raw);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		kdc_tcp_next_proxy(req);
 		return;
 	}
 
-	state->next_proxy++;
-
-	make_nbt_name(&name, proxy_dnsname, 0);
-
-	c = resolve_name_ex_send(lpcfg_resolve_context(state->kdc->task->lp_ctx),
-				 state,
-				 RESOLVE_NAME_FLAG_FORCE_DNS,
-				 0,
-				 &name,
-				 state->kdc->task->event_ctx);
-	if (c == NULL) {
-		kdc_tcp_next_proxy(state);
+	/*
+	 * raw blob has the length in the first 4 bytes,
+	 * which we do not need here.
+	 */
+	state->out = data_blob_talloc(state, raw.data + 4, raw.length - 4);
+	if (state->out.length != raw.length - 4) {
+		tevent_req_nomem(NULL, req);
 		return;
 	}
-	c->async.fn = kdc_tcp_proxy_resolve_done;
-	c->async.private_data = state;
+
+	tevent_req_done(req);
 }
 
-
-/*
-  proxy a TCP kdc request to a writeable DC
- */
-void kdc_tcp_proxy(struct kdc_server *kdc, struct kdc_tcp_connection *kdc_conn,
-		   struct kdc_tcp_call *call, uint16_t port)
+NTSTATUS kdc_tcp_proxy_recv(struct tevent_req *req,
+			    TALLOC_CTX *mem_ctx,
+			    DATA_BLOB *out)
 {
-	struct kdc_tcp_proxy_state *state;
-	WERROR werr;
+	struct kdc_tcp_proxy_state *state =
+		tevent_req_data(req,
+		struct kdc_tcp_proxy_state);
+	NTSTATUS status;
 
-	state = talloc_zero(kdc_conn, struct kdc_tcp_proxy_state);
-
-	state->call = talloc_steal(state, call);
-	state->kdc_conn = kdc_conn;
-	state->kdc  = kdc;
-	state->port = port;
-
-	werr = kdc_proxy_get_writeable_dcs(kdc, state, &state->proxy_list);
-	if (!W_ERROR_IS_OK(werr)) {
-		kdc_tcp_proxy_unavailable(state);
-		return;
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
 	}
 
-	kdc_tcp_next_proxy(state);
+	out->data = talloc_move(mem_ctx, &state->out.data);
+	out->length = state->out.length;
+
+	tevent_req_received(req);
+	return NT_STATUS_OK;
 }

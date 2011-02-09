@@ -62,6 +62,45 @@ static NTSTATUS kdc_proxy_unavailable_error(struct kdc_server *kdc,
 	return NT_STATUS_OK;
 }
 
+typedef enum kdc_process_ret (*kdc_process_fn_t)(struct kdc_server *kdc,
+						 TALLOC_CTX *mem_ctx,
+						 DATA_BLOB *input,
+						 DATA_BLOB *reply,
+						 struct tsocket_address *peer_addr,
+						 struct tsocket_address *my_addr,
+						 int datagram);
+
+/* hold information about one kdc socket */
+struct kdc_socket {
+	struct kdc_server *kdc;
+	struct tsocket_address *local_address;
+	kdc_process_fn_t process;
+};
+
+struct kdc_tcp_call {
+	struct kdc_tcp_connection *kdc_conn;
+	DATA_BLOB in;
+	DATA_BLOB out;
+	uint8_t out_hdr[4];
+	struct iovec out_iov[2];
+};
+
+/*
+  state of an open tcp connection
+*/
+struct kdc_tcp_connection {
+	/* stream connection we belong to */
+	struct stream_connection *conn;
+
+	/* the kdc_server the connection belongs to */
+	struct kdc_socket *kdc_socket;
+
+	struct tstream_context *tstream;
+
+	struct tevent_queue *send_queue;
+};
+
+
 static void kdc_tcp_terminate_connection(struct kdc_tcp_connection *kdcconn, const char *reason)
 {
 	stream_terminate_connection(kdcconn->conn, reason);
@@ -143,6 +182,7 @@ static enum kdc_process_ret kdc_process(struct kdc_server *kdc,
 	return KDC_PROCESS_OK;
 }
 
+static void kdc_tcp_call_proxy_done(struct tevent_req *subreq);
 static void kdc_tcp_call_writev_done(struct tevent_req *subreq);
 
 static void kdc_tcp_call_loop(struct tevent_req *subreq)
@@ -202,14 +242,27 @@ static void kdc_tcp_call_loop(struct tevent_req *subreq)
 	}
 
 	if (ret == KDC_PROCESS_PROXY) {
+		uint16_t port;
+
 		if (!kdc_conn->kdc_socket->kdc->am_rodc) {
 			kdc_tcp_terminate_connection(kdc_conn,
 						     "kdc_tcp_call_loop: proxying requested when not RODC");
 			return;
 		}
-		kdc_tcp_proxy(kdc_conn->kdc_socket->kdc, kdc_conn, call,
-			      tsocket_address_inet_port(kdc_conn->conn->local_address));
-		goto done;
+		port = tsocket_address_inet_port(kdc_conn->conn->local_address);
+
+		subreq = kdc_tcp_proxy_send(call,
+					    kdc_conn->conn->event.ctx,
+					    kdc_conn->kdc_socket->kdc,
+					    port,
+					    call->in);
+		if (subreq == NULL) {
+			kdc_tcp_terminate_connection(kdc_conn,
+				"kdc_tcp_call_loop: kdc_tcp_proxy_send failed");
+			return;
+		}
+		tevent_req_set_callback(subreq, kdc_tcp_call_proxy_done, call);
+		return;
 	}
 
 	/* First add the length of the out buffer */
@@ -232,7 +285,73 @@ static void kdc_tcp_call_loop(struct tevent_req *subreq)
 	}
 	tevent_req_set_callback(subreq, kdc_tcp_call_writev_done, call);
 
-done:
+	/*
+	 * The krb5 tcp pdu's has the length as 4 byte (initial_read_size),
+	 * packet_full_request_u32 provides the pdu length then.
+	 */
+	subreq = tstream_read_pdu_blob_send(kdc_conn,
+					    kdc_conn->conn->event.ctx,
+					    kdc_conn->tstream,
+					    4, /* initial_read_size */
+					    packet_full_request_u32,
+					    kdc_conn);
+	if (subreq == NULL) {
+		kdc_tcp_terminate_connection(kdc_conn, "kdc_tcp_call_loop: "
+				"no memory for tstream_read_pdu_blob_send");
+		return;
+	}
+	tevent_req_set_callback(subreq, kdc_tcp_call_loop, kdc_conn);
+}
+
+static void kdc_tcp_call_proxy_done(struct tevent_req *subreq)
+{
+	struct kdc_tcp_call *call = tevent_req_callback_data(subreq,
+			struct kdc_tcp_call);
+	struct kdc_tcp_connection *kdc_conn = call->kdc_conn;
+	NTSTATUS status;
+
+	status = kdc_tcp_proxy_recv(subreq, call, &call->out);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		/* generate an error packet */
+		status = kdc_proxy_unavailable_error(kdc_conn->kdc_socket->kdc,
+						     call, &call->out);
+	}
+
+	if (!NT_STATUS_IS_OK(status)) {
+		const char *reason;
+
+		reason = talloc_asprintf(call, "kdc_tcp_call_proxy_done: "
+					 "kdc_proxy_unavailable_error - %s",
+					 nt_errstr(status));
+		if (!reason) {
+			reason = "kdc_tcp_call_proxy_done: kdc_proxy_unavailable_error() failed";
+		}
+
+		kdc_tcp_terminate_connection(call->kdc_conn, reason);
+		return;
+	}
+
+	/* First add the length of the out buffer */
+	RSIVAL(call->out_hdr, 0, call->out.length);
+	call->out_iov[0].iov_base = (char *) call->out_hdr;
+	call->out_iov[0].iov_len = 4;
+
+	call->out_iov[1].iov_base = (char *) call->out.data;
+	call->out_iov[1].iov_len = call->out.length;
+
+	subreq = tstream_writev_queue_send(call,
+					   kdc_conn->conn->event.ctx,
+					   kdc_conn->tstream,
+					   kdc_conn->send_queue,
+					   call->out_iov, 2);
+	if (subreq == NULL) {
+		kdc_tcp_terminate_connection(kdc_conn, "kdc_tcp_call_loop: "
+				"no memory for tstream_writev_queue_send");
+		return;
+	}
+	tevent_req_set_callback(subreq, kdc_tcp_call_writev_done, call);
+
 	/*
 	 * The krb5 tcp pdu's has the length as 4 byte (initial_read_size),
 	 * packet_full_request_u32 provides the pdu length then.
