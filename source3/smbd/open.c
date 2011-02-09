@@ -2591,16 +2591,11 @@ static NTSTATUS open_directory(connection_struct *conn,
 	switch( create_disposition ) {
 		case FILE_OPEN:
 
-			info = FILE_WAS_OPENED;
-
-			/*
-			 * We want to follow symlinks here.
-			 */
-
-			if (SMB_VFS_STAT(conn, smb_dname) != 0) {
-				return map_nt_error_from_unix(errno);
+			if (!dir_existed) {
+				return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 			}
-				
+
+			info = FILE_WAS_OPENED;
 			break;
 
 		case FILE_CREATE:
