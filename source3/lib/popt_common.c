@@ -193,6 +193,11 @@ struct poptOption popt_common_debuglevel[] = {
 	POPT_TABLEEND
 };
 
+struct poptOption popt_common_option[] = {
+	{ NULL, 0, POPT_ARG_CALLBACK|POPT_CBFLAG_POST, (void *)popt_common_callback },
+	{ "option",         0, POPT_ARG_STRING, NULL, OPT_OPTION, "Set smb.conf option from command line", "name=value" },
+	POPT_TABLEEND
+};
 
 /* Handle command line options:
  *		--sbindir
