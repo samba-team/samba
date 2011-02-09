@@ -58,8 +58,6 @@ struct auth_serversupplied_info {
 	 * to the special invalid value of 0xFFFFFFFF */
 	struct extra_auth_info extra;
 
-	void *pam_handle;
-
 	/*
 	 * This is a token from /etc/passwd and /etc/group
 	 */

@@ -868,7 +868,6 @@ struct auth_serversupplied_info *copy_serverinfo(TALLOC_CTX *mem_ctx,
 	}
 	dst->extra = src->extra;
 
-	dst->pam_handle = NULL;
 	dst->unix_name = talloc_strdup(dst, src->unix_name);
 	if (!dst->unix_name) {
 		TALLOC_FREE(dst);
