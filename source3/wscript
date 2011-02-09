@@ -1013,7 +1013,10 @@ int i; i = PAM_RADIO_TYPE;
         conf.CHECK_FUNCS_IN('uuid_generate', 'uuid')
         if not conf.CONFIG_SET('HAVE_UUID_UUID_H') and not conf.CONFIG_SET('HAVE_UUID_GENERATE'):
             print "--with-dnsupdate=yes but uuid support not sufficient"
-        conf.DEFINE('WITH_DNS_UPDATES', 1)
+        elif not conf.CONFIG_SET('HAVE_GSSAPI'):
+            print "--with-dnsupdate=yes but gssapi support not sufficient"
+        else:
+            conf.DEFINE('WITH_DNS_UPDATES', 1)
     else:
         conf.SET_TARGET_TYPE('uuid', 'EMPTY')
     conf.CHECK_HEADERS('valgrind.h valgrind/valgrind.h valgrind/memcheck.h')
