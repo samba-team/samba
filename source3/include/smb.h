@@ -1808,13 +1808,6 @@ struct ea_list {
 /* Prefix for xattrs storing streams. */
 #define SAMBA_XATTR_MARKER "user.SAMBA_STREAMS"
 
-#define UUID_SIZE 16
-
-#define UUID_FLAT_SIZE 16
-typedef struct uuid_flat {
-	uint8 info[UUID_FLAT_SIZE];
-} UUID_FLAT;
-
 /* map readonly options */
 enum mapreadonly_options {MAP_READONLY_NO, MAP_READONLY_YES, MAP_READONLY_PERMISSIONS};
 
