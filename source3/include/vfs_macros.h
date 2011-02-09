@@ -74,8 +74,8 @@
 #define SMB_VFS_NEXT_OPENDIR(handle, fname, mask, attr) \
 	smb_vfs_call_opendir((handle)->next, (fname), (mask), (attr))
 
-#define SMB_VFS_FDOPENDIR(conn, fsp, mask, attr) \
-	smb_vfs_call_fdopendir((conn)->vfs_handles, (fsp), (mask), (attr))
+#define SMB_VFS_FDOPENDIR(fsp, mask, attr) \
+	smb_vfs_call_fdopendir((fsp)->conn->vfs_handles, (fsp), (mask), (attr))
 #define SMB_VFS_NEXT_FDOPENDIR(handle, fsp, mask, attr) \
 	smb_vfs_call_fdopendir((handle)->next, (fsp), (mask), (attr))
 

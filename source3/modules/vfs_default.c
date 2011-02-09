@@ -1647,6 +1647,7 @@ static struct vfs_fn_pointers vfs_default_fns = {
 	/* Directory operations */
 
 	.opendir = vfswrap_opendir,
+	.fdopendir = vfswrap_fdopendir,
 	.readdir = vfswrap_readdir,
 	.seekdir = vfswrap_seekdir,
 	.telldir = vfswrap_telldir,
