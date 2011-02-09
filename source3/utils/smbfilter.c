@@ -18,6 +18,7 @@
 */
 
 #include "includes.h"
+#include "system/select.h"
 #include "../lib/util/select.h"
 
 #define SECURITY_MASK 0
@@ -191,17 +192,38 @@ static void filter_child(int c, struct sockaddr_storage *dest_ss)
 	}
 
 	while (c != -1 || s != -1) {
-		fd_set fds;
-		int num;
+		struct pollfd fds[2];
+		int num_fds, ret;
 
-		FD_ZERO(&fds);
-		if (s != -1) FD_SET(s, &fds);
-		if (c != -1) FD_SET(c, &fds);
+		memset(fds, 0, sizeof(struct pollfd) * 2);
+		fds[0].fd = -1;
+		fds[1].fd = -1;
+		num_fds = 0;
 
-		num = sys_select_intr(MAX(s+1, c+1),&fds,NULL,NULL,NULL);
-		if (num <= 0) continue;
+		if (s != -1) {
+			fds[num_fds].fd = s;
+			fds[num_fds].events = POLLIN|POLLHUP;
+			num_fds += 1;
+		}
+		if (c != -1) {
+			fds[num_fds].fd = c;
+			fds[num_fds].events = POLLIN|POLLHUP;
+			num_fds += 1;
+		}
 
-		if (c != -1 && FD_ISSET(c, &fds)) {
+		ret = sys_poll_intr(fds, num_fds, -1);
+		if (ret <= 0) {
+			continue;
+		}
+
+		/*
+		 * find c in fds and see if it's readable
+		 */
+		if ((c != -1) &&
+		    (((fds[0].fd == c)
+		      && (fds[0].revents & (POLLIN|POLLHUP|POLLERR))) ||
+		     ((fds[1].fd == c)
+		      && (fds[1].revents & (POLLIN|POLLHUP|POLLERR))))) {
 			size_t len;
 			if (!NT_STATUS_IS_OK(receive_smb_raw(
 							c, packet, sizeof(packet),
@@ -215,7 +237,15 @@ static void filter_child(int c, struct sockaddr_storage *dest_ss)
 				exit(1);
 			}			
 		}
-		if (s != -1 && FD_ISSET(s, &fds)) {
+
+		/*
+		 * find s in fds and see if it's readable
+		 */
+		if ((s != -1) &&
+		    (((fds[0].fd == s)
+		      && (fds[0].revents & (POLLIN|POLLHUP|POLLERR))) ||
+		     ((fds[1].fd == s)
+		      && (fds[1].revents & (POLLIN|POLLHUP|POLLERR))))) {
 			size_t len;
 			if (!NT_STATUS_IS_OK(receive_smb_raw(
 							s, packet, sizeof(packet),
@@ -263,16 +293,12 @@ static void start_filter(char *desthost)
 	}
 
 	while (1) {
-		fd_set fds;
-		int num;
+		int num, revents;
 		struct sockaddr_storage ss;
 		socklen_t in_addrlen = sizeof(ss);
 
-		FD_ZERO(&fds);
-		FD_SET(s, &fds);
-
-		num = sys_select_intr(s+1,&fds,NULL,NULL,NULL);
-		if (num > 0) {
+		num = poll_intr_one_fd(s, POLLIN|POLLHUP, -1, &revents);
+		if ((num > 0) && (revents & (POLLIN|POLLHUP|POLLERR))) {
 			c = accept(s, (struct sockaddr *)&ss, &in_addrlen);
 			if (c != -1) {
 				if (fork() == 0) {
