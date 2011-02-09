@@ -288,8 +288,7 @@ def check_duplicate_sources(bld, tgt_list):
             Logs.warn("WARNING: source %s is in more than one target: %s" % (s, subsystems[s].keys()))
         for tname in subsystems[s]:
             if len(subsystems[s][tname]) > 1:
-                Logs.error("ERROR: source %s is in more than one subsystem of target '%s': %s" % (s, tname, subsystems[s][tname]))
-                sys.exit(1)
+                raise Utils.WafError("ERROR: source %s is in more than one subsystem of target '%s': %s" % (s, tname, subsystems[s][tname]))
                 
     return ret
 
