@@ -98,6 +98,12 @@ static int make_server_pipes_struct(TALLOC_CTX *mem_ctx,
 	}
 	strlcpy(p->client_id->addr,
 		client_address, sizeof(p->client_id->addr));
+	p->client_id->name = talloc_strdup(p->client_id, client_address);
+	if (p->client_id->name == NULL) {
+		TALLOC_FREE(p);
+		*perrno = ENOMEM;
+		return -1;
+	}
 
 	talloc_set_destructor(p, close_internal_rpc_pipe_hnd);
 
