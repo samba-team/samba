@@ -598,9 +598,6 @@ msg.msg_acctrightslen = sizeof(fd);
                     headers='netdb.h netgroup.h',
                     cflags="-Werror-implicit-function-declaration")
 
-    #FIXME: Should just be set when krb5 and ldap requirements are fulfilled
-    if Options.options.with_ads:
-        conf.DEFINE('WITH_ADS', '1')
 
     # Look for CUPS
     if Options.options.with_cups:
@@ -839,14 +836,56 @@ return krb5_kt_resolve(context, "WRFILE:api", &keytab);
             headers='krb5.h', lib='krb5', execute=True,
             msg="Checking whether the WRFILE:-keytab is supported");
 
-        conf.DEFINE('HAVE_KRB5', '1')
-
     else:
         conf.SET_TARGET_TYPE('krb5', 'EMPTY')
         conf.SET_TARGET_TYPE('gssapi', 'EMPTY')
         conf.SET_TARGET_TYPE('gssapi_krb5', 'EMPTY')
         conf.SET_TARGET_TYPE('com_err', 'EMPTY')
         conf.SET_TARGET_TYPE('k5crypto', 'EMPTY')
+
+    if Options.options.with_ads:
+        use_ads=True
+        if not conf.CONFIG_SET('HAVE_ENCTYPE_ARCFOUR_HMAC_MD5'):
+            print "arcfour-hmac-md5 encryption type not found in -lkrb5"
+            use_ads=False
+        if not conf.CONFIG_SET('HAVE_KRB5_MK_REQ_EXTENDED'):
+            print "krb5_mk_req_extended not found in -lkrb5"
+            use_ads=False
+        if not conf.CONFIG_SET('HAVE_KRB5_PRINCIPAL2SALT') or \
+           not conf.CONFIG_SET('HAVE_KRB5_GET_PW_SALT'):
+            print "no CREATE_KEY_FUNCTIONS detected"
+            use_ads=False
+        if not conf.CONFIG_SET('HAVE_KRB5_GET_PERMITTED_ENCTYPES') or \
+           not conf.CONFIG_SET('HAVE_KRB5_GET_DEFAULT_IN_TKT_ETYPES'):
+            print "no GET_ENCTYPES_FUNCTIONS detected"
+            use_ads=False
+        if not conf.CONFIG_SET('HAVE_KRB5_KT_FREE_ENTRY') or \
+           not conf.CONFIG_SET('HAVE_KRB5_FREE_KEYTAB_ENTRY_CONTENTS'):
+            print "no KT_FREE_FUNCTION detected"
+            use_ads=False
+        if not conf.CONFIG_SET('HAVE_KRB5_C_VERIFY_CHECKSUM') or \
+           not conf.CONFIG_SET('HAVE_KRB5_VERIFY_CHECKSUM'):
+            print "no KRB5_VERIFY_CHECKSUM_FUNCTION detected"
+            use_ads=False
+        if not conf.CONFIG_SET('KRB5_TICKET_HAS_KEYINFO'):
+            # We only need the following functions if we can't get the enctype
+            # and kvno out of the ticket directly (ie. on Heimdal).
+            if not conf.CONFIG_SET('free_AP_REQ'):
+                print "no KRB5_AP_REQ_FREE_FUNCTION detected"
+                use_ads=False
+            if not conf.CONFIG_SET('HAVE_KRB5_DECODE_AP_REQ'):
+                print "no KRB5_AP_REQ_DECODING_FUNCTION detected"
+                use_ads=False
+        if use_ads:
+            conf.DEFINE('WITH_ADS', '1')
+            conf.DEFINE('HAVE_KRB5', '1')
+            conf.DEFINE('HAVE_GSSAPI', '1')
+        else:
+            print "krb5 libs don't have all features required for Active Directory support"
+            conf.undefine('HAVE_KRB5_H')
+            conf.undefine('HAVE_GSSAPI_H')
+            conf.undefine('HAVE_GSSAPI_GSSAPI_GENERIC_H')
+            conf.undefine('HAVE_GSSAPI_GSSAPI_H')
 
     if Options.options.with_utmp:
         conf.CHECK_FUNCS('pututline pututxline updwtmp updwtmpx getutmpx getutxent')
