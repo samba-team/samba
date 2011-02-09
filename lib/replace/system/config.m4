@@ -6,6 +6,10 @@ AC_CHECK_HEADERS(sys/acl.h acl/libacl.h sys/file.h)
 # select
 AC_CHECK_HEADERS(sys/select.h)
 
+# poll
+AC_CHECK_HEADERS(poll.h)
+AC_CHECK_FUNCS(poll,[],[LIBREPLACEOBJ="${LIBREPLACEOBJ} $libreplacedir/poll.o"])
+
 # time
 AC_CHECK_HEADERS(sys/time.h utime.h)
 AC_HEADER_TIME
