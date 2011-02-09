@@ -267,15 +267,20 @@ static uint32_t smb_name_hash(const char *sharepath, const char *filename, int *
 {
 	TDB_DATA key;
 	char *fullpath = NULL;
-	int ret;
+	size_t sharepath_size = strlen(sharepath);
+	size_t filename_size = strlen(filename);
 	uint32_t name_hash;
 
 	*err = 0;
-	ret = asprintf(&fullpath, "%s/%s", sharepath, filename);
-	if (ret == -1) {
+	fullpath = malloc(sharepath_size + filename_size + 2);
+	if (fullpath == NULL) {
 		*err = 1;
 		return 0;
 	}
+	memcpy(fullpath, sharepath, sharepath_size);
+	fullpath[sharepath_size] = '/';
+	memcpy(&fullpath[sharepath_size + 1], filename, filename_size + 1);
+
 	key.dptr = (uint8_t *)fullpath;
 	key.dsize = strlen(fullpath) + 1;
 	name_hash = tdb_jenkins_hash(&key);
