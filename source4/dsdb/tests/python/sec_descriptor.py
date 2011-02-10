@@ -1655,6 +1655,40 @@ class DaclDescriptorTests(DescriptorTests):
         self.assertTrue("(A;CIID;WP;;;DU)" in desc_sddl)
         self.assertFalse("(A;CIIOID;WP;;;DU)" in desc_sddl)
 
+    def test_216(self):
+        """ Make sure ID ACES provided by user are ignored
+        """
+        ou_dn = "OU=test_inherit_ou," + self.base_dn
+        group_dn = "CN=test_inherit_group," + ou_dn
+        mod = "D:P(A;;WPRPLCCCDCWDRC;;;DA)"
+        tmp_desc = security.descriptor.from_sddl(mod, self.domain_sid)
+        self.ldb_admin.create_ou(ou_dn, sd=tmp_desc)
+        # Add some custom  ACE
+        mod = "D:(D;ID;WP;;;AU)"
+        tmp_desc = security.descriptor.from_sddl(mod, self.domain_sid)
+        self.ldb_admin.newgroup("test_inherit_group", groupou="OU=test_inherit_ou", grouptype=4, sd=tmp_desc)
+        # Make sure created group object does not contain the ID ace
+        desc_sddl = self.sd_utils.get_sd_as_sddl(group_dn)
+        self.assertFalse("(A;ID;WP;;;AU)" in desc_sddl)
+        self.assertFalse("(A;;WP;;;AU)" in desc_sddl)
+
+    def test_217(self):
+        """ Make sure ID ACES provided by user are not ignored if P flag is set
+        """
+        ou_dn = "OU=test_inherit_ou," + self.base_dn
+        group_dn = "CN=test_inherit_group," + ou_dn
+        mod = "D:P(A;;WPRPLCCCDCWDRC;;;DA)"
+        tmp_desc = security.descriptor.from_sddl(mod, self.domain_sid)
+        self.ldb_admin.create_ou(ou_dn, sd=tmp_desc)
+        # Add some custom  ACE
+        mod = "D:P(A;ID;WP;;;AU)"
+        tmp_desc = security.descriptor.from_sddl(mod, self.domain_sid)
+        self.ldb_admin.newgroup("test_inherit_group", groupou="OU=test_inherit_ou", grouptype=4, sd=tmp_desc)
+        # Make sure created group object does not contain the ID ace
+        desc_sddl = self.sd_utils.get_sd_as_sddl(group_dn)
+        self.assertFalse("(A;ID;WP;;;AU)" in desc_sddl)
+        self.assertTrue("(A;;WP;;;AU)" in desc_sddl)
+
     ########################################################################################
 
 
