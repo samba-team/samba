@@ -793,6 +793,9 @@ wbcErr wbcAllocateGid(gid_t *pgid);
  * @param *sid      Pointer to the sid of the diresired mapping.
  *
  * @return #wbcErr
+ *
+ * @deprecated      This method is not impemented any more and should
+ *                  be removed in the next major version change.
  **/
 wbcErr wbcSetUidMapping(uid_t uid, const struct wbcDomainSid *sid);
 
