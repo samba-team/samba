@@ -120,7 +120,7 @@ static LDAPMod **lldb_msg_to_mods(void *mem_ctx, const struct ldb_message *msg, 
 			if (!mods[num_mods]->mod_vals.modv_bvals[j]) {
 				goto failed;
 			}
-			mods[num_mods]->mod_vals.modv_bvals[j]->bv_val = el->values[j].data;
+			mods[num_mods]->mod_vals.modv_bvals[j]->bv_val = (char *)el->values[j].data;
 			mods[num_mods]->mod_vals.modv_bvals[j]->bv_len = el->values[j].length;
 		}
 		mods[num_mods]->mod_vals.modv_bvals[j] = NULL;
@@ -455,7 +455,7 @@ static int lldb_del_trans(struct ldb_module *module)
 	return LDB_SUCCESS;
 }
 
-void lldb_request_done(struct lldb_context *ac,
+static void lldb_request_done(struct lldb_context *ac,
 			struct ldb_control **ctrls, int error)
 {
 	struct ldb_request *req;
