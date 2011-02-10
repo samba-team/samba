@@ -21,7 +21,7 @@
 
 #include "includes.h"
 #include "dsdb/samdb/samdb.h"
-#include "lib/ldb/include/ldb_module.h"
+#include <ldb_module.h>
 #include "librpc/ndr/libndr.h"
 #include "libcli/security/dom_sid.h"
 

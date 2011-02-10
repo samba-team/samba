@@ -32,7 +32,7 @@
  */
 
 #include "includes.h"
-#include "ldb/include/ldb_module.h"
+#include <ldb_module.h>
 #include "dsdb/samdb/samdb.h"
 #include "dsdb/samdb/ldb_modules/util.h"
 

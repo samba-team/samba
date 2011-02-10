@@ -27,7 +27,7 @@
 #include "lib/messaging/irpc.h"
 #include "dsdb/kcc/kcc_service.h"
 #include "dsdb/kcc/kcc_connection.h"
-#include "lib/ldb/include/ldb_errors.h"
+#include <ldb_errors.h>
 #include "../lib/util/dlinklist.h"
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "librpc/gen_ndr/ndr_drsuapi.h"

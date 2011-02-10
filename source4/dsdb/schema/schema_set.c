@@ -23,7 +23,7 @@
 #include "includes.h"
 #include "lib/util/dlinklist.h"
 #include "dsdb/samdb/samdb.h"
-#include "lib/ldb/include/ldb_module.h"
+#include <ldb_module.h>
 #include "param/param.h"
 #include "librpc/ndr/libndr.h"
 #include "librpc/gen_ndr/ndr_misc.h"

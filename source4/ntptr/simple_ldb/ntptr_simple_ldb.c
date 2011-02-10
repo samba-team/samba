@@ -30,7 +30,7 @@
 #include "includes.h"
 #include "ntptr/ntptr.h"
 #include "librpc/gen_ndr/ndr_spoolss.h"
-#include "lib/ldb/include/ldb.h"
+#include <ldb.h>
 #include "auth/auth.h"
 #include "dsdb/samdb/samdb.h"
 #include "ldb_wrap.h"

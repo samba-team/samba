@@ -24,7 +24,7 @@
 #include "includes.h"
 #include "system/filesys.h"
 #include "lib/cmdline/popt_common.h"
-#include "lib/ldb/include/ldb.h"
+#include <ldb.h>
 #include "auth/credentials/credentials.h"
 #include "auth/gensec/gensec.h"
 #include "auth/auth.h"

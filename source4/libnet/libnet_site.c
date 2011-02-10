@@ -20,8 +20,8 @@
 #include "includes.h"
 #include "libnet/libnet.h"
 #include "libcli/cldap/cldap.h"
-#include "lib/ldb/include/ldb.h"
-#include "lib/ldb/include/ldb_errors.h"
+#include <ldb.h>
+#include <ldb_errors.h>
 #include "libcli/resolve/resolve.h"
 #include "param/param.h"
 #include "lib/tsocket/tsocket.h"

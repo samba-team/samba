@@ -25,8 +25,8 @@
 #include "librpc/gen_ndr/drsuapi.h"
 #include "lib/events/events.h"
 #include "rpc_server/common/common.h"
-#include "lib/ldb/include/ldb.h"
-#include "lib/ldb/include/ldb_errors.h"
+#include <ldb.h>
+#include <ldb_errors.h>
 #include "system/kerberos.h"
 #include "auth/kerberos/kerberos.h"
 #include "libcli/ldap/ldap_ndr.h"

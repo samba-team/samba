@@ -31,7 +31,7 @@
 #include "lib/events/events.h"
 #include "nbt_server/nbt_server.h"
 #include "nbt_server/wins/winsdb.h"
-#include "lib/ldb/include/ldb_module.h"
+#include <ldb_module.h>
 #include "system/network.h"
 #include "lib/socket/netif.h"
 #include "param/param.h"

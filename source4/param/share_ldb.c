@@ -20,8 +20,8 @@
 */
 
 #include "includes.h"
-#include "ldb/include/ldb.h"
-#include "ldb/include/ldb_errors.h"
+#include <ldb.h>
+#include <ldb_errors.h>
 #include "auth/auth.h"
 #include "ldb_wrap.h"
 #include "param/share.h"

@@ -25,7 +25,7 @@
 #include "dsdb/samdb/samdb.h"
 #include "dsdb/samdb/ldb_modules/util.h"
 #include "ldb_wrap.h"
-#include "lib/ldb/include/ldb_module.h"
+#include <ldb_module.h>
 #include "torture/rpc/drsuapi.h"
 #include "librpc/ndr/libndr.h"
 #include "param/param.h"

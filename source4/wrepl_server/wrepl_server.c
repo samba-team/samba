@@ -27,8 +27,8 @@
 #include "librpc/gen_ndr/winsrepl.h"
 #include "wrepl_server/wrepl_server.h"
 #include "nbt_server/wins/winsdb.h"
-#include "ldb/include/ldb.h"
-#include "ldb/include/ldb_errors.h"
+#include <ldb.h>
+#include <ldb_errors.h>
 #include "auth/auth.h"
 #include "ldb_wrap.h"
 #include "param/param.h"

@@ -22,8 +22,8 @@
 #include "includes.h"
 #include "system/filesys.h"
 #include "../tdb/include/tdb.h"
-#include "lib/ldb/include/ldb.h"
-#include "lib/ldb/include/ldb_errors.h"
+#include <ldb.h>
+#include <ldb_errors.h>
 #include "ldb_wrap.h"
 #include "lib/tdb_wrap.h"
 #include "torture/smbtorture.h"

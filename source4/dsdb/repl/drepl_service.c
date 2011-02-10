@@ -26,7 +26,7 @@
 #include "smbd/service.h"
 #include "lib/events/events.h"
 #include "dsdb/repl/drepl_service.h"
-#include "lib/ldb/include/ldb_errors.h"
+#include <ldb_errors.h>
 #include "../lib/util/dlinklist.h"
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "librpc/gen_ndr/ndr_drsuapi.h"

@@ -21,8 +21,8 @@
 #include "ldap_server/ldap_server.h"
 #include "auth/auth.h"
 #include "smbd/service.h"
-#include "lib/ldb/include/ldb.h"
-#include "lib/ldb/include/ldb_errors.h"
+#include <ldb.h>
+#include <ldb_errors.h>
 #include "dsdb/samdb/samdb.h"
 #include "auth/gensec/gensec.h"
 #include "auth/gensec/gensec_tstream.h"

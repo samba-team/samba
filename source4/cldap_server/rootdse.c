@@ -21,8 +21,8 @@
 
 #include "includes.h"
 #include <tevent.h>
-#include "lib/ldb/include/ldb.h"
-#include "lib/ldb/include/ldb_errors.h"
+#include <ldb.h>
+#include <ldb_errors.h>
 #include "smbd/service_task.h"
 #include "cldap_server/cldap_server.h"
 #include "librpc/gen_ndr/ndr_misc.h"

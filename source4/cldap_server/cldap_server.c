@@ -27,8 +27,8 @@
 #include "cldap_server/cldap_server.h"
 #include "system/network.h"
 #include "lib/socket/netif.h"
-#include "lib/ldb/include/ldb.h"
-#include "lib/ldb/include/ldb_errors.h"
+#include <ldb.h>
+#include <ldb_errors.h>
 #include "dsdb/samdb/samdb.h"
 #include "ldb_wrap.h"
 #include "auth/auth.h"

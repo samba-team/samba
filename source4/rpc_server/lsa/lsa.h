@@ -26,7 +26,7 @@
 #include "auth/auth.h"
 #include "dsdb/samdb/samdb.h"
 #include "libcli/ldap/ldap_ndr.h"
-#include "lib/ldb/include/ldb_errors.h"
+#include <ldb_errors.h>
 #include "libcli/security/security.h"
 #include "libcli/auth/libcli_auth.h"
 #include "param/secrets.h"

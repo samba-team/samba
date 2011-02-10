@@ -27,7 +27,7 @@
 #include "auth/kerberos/kerberos.h"
 #include "librpc/gen_ndr/krb5pac.h"
 #include "auth/auth.h"
-#include "lib/ldb/include/ldb.h"
+#include <ldb.h>
 #include "auth/auth_sam.h"
 #include "librpc/rpc/dcerpc.h"
 #include "auth/credentials/credentials.h"

@@ -28,7 +28,7 @@
 #include "auth/auth.h"
 #include "auth/kerberos/kerberos.h"
 #include "librpc/gen_ndr/ndr_krb5pac.h"
-#include "lib/ldb/include/ldb.h"
+#include <ldb.h>
 #include "auth/auth_sam_reply.h"
 
 krb5_error_code check_pac_checksum(TALLOC_CTX *mem_ctx,

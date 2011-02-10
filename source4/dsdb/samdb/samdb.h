@@ -30,7 +30,7 @@ struct loadparm_context;
 struct tevent_context;
 
 #include "librpc/gen_ndr/security.h"
-#include "lib/ldb/include/ldb.h"
+#include <ldb.h>
 #include "lib/ldb-samba/ldif_handlers.h"
 #include "librpc/gen_ndr/samr.h"
 #include "librpc/gen_ndr/drsuapi.h"

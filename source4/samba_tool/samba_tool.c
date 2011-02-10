@@ -45,7 +45,7 @@
 #include "includes.h"
 #include "samba_tool/samba_tool.h"
 #include "lib/cmdline/popt_common.h"
-#include "lib/ldb/include/ldb.h"
+#include <ldb.h>
 #include "librpc/rpc/dcerpc.h"
 #include "param/param.h"
 #include "lib/events/events.h"

@@ -23,7 +23,7 @@
 
 #include "includes.h"
 #include "samba_tool/samba_tool.h"
-#include "lib/ldb/include/ldb.h"
+#include <ldb.h>
 #include "auth/auth.h"
 #include "param/param.h"
 #include "libcli/security/sddl.h"

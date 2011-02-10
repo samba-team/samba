@@ -32,7 +32,7 @@
 #include "system/network.h"
 #include "lib/socket/socket.h"
 #include "lib/socket/netif.h"
-#include "lib/ldb/include/ldb.h"
+#include <ldb.h>
 #include "param/param.h"
 #include "libcli/resolve/resolve.h"
 #include "lib/util/util_net.h"

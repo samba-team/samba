@@ -28,8 +28,8 @@
 #include "rpc_server/common/common.h"
 #include "rpc_server/samr/dcesrv_samr.h"
 #include "system/time.h"
-#include "lib/ldb/include/ldb.h"
-#include "lib/ldb/include/ldb_errors.h"
+#include <ldb.h>
+#include <ldb_errors.h>
 #include "../libds/common/flags.h"
 #include "dsdb/samdb/samdb.h"
 #include "dsdb/common/util.h"

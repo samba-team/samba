@@ -32,9 +32,9 @@
  */
 
 #include "includes.h"
-#include "ldb/include/ldb.h"
-#include "ldb/include/ldb_errors.h"
-#include "ldb/include/ldb_module.h"
+#include <ldb.h>
+#include <ldb_errors.h>
+#include <ldb_module.h>
 #include "libcli/security/security.h"
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "librpc/gen_ndr/ndr_security.h"

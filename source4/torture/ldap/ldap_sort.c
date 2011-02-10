@@ -22,8 +22,8 @@
 
 #include "includes.h"
 #include "lib/events/events.h"
-#include "lib/ldb/include/ldb.h"
-#include "lib/ldb/include/ldb_errors.h"
+#include <ldb.h>
+#include <ldb_errors.h>
 #include "ldb_wrap.h"
 #include "param/param.h"
 #include "lib/cmdline/popt_common.h" 

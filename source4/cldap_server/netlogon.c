@@ -21,8 +21,8 @@
 */
 
 #include "includes.h"
-#include "lib/ldb/include/ldb.h"
-#include "lib/ldb/include/ldb_errors.h"
+#include <ldb.h>
+#include <ldb_errors.h>
 #include "lib/events/events.h"
 #include "smbd/service_task.h"
 #include "cldap_server/cldap_server.h"

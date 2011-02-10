@@ -23,13 +23,13 @@
 #include "includes.h"
 #include "dsdb/samdb/samdb.h"
 #include "dsdb/common/util.h"
-#include "lib/ldb/include/ldb_errors.h"
+#include <ldb_errors.h>
 #include "../lib/util/dlinklist.h"
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "librpc/gen_ndr/ndr_drsuapi.h"
 #include "librpc/gen_ndr/ndr_drsblobs.h"
 #include "param/param.h"
-#include "lib/ldb/include/ldb_module.h"
+#include <ldb_module.h>
 #include "../lib/util/asn1.h"
 
 

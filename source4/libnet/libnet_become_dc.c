@@ -21,8 +21,8 @@
 #include "libnet/libnet.h"
 #include "libcli/composite/composite.h"
 #include "libcli/cldap/cldap.h"
-#include "lib/ldb/include/ldb.h"
-#include "lib/ldb/include/ldb_errors.h"
+#include <ldb.h>
+#include <ldb_errors.h>
 #include "ldb_wrap.h"
 #include "dsdb/samdb/samdb.h"
 #include "../libds/common/flags.h"

@@ -23,7 +23,7 @@
 #include "includes.h"
 #include "nbt_server/nbt_server.h"
 #include "lib/socket/socket.h"
-#include "lib/ldb/include/ldb.h"
+#include <ldb.h>
 #include "dsdb/samdb/samdb.h"
 #include "auth/auth.h"
 #include "param/param.h"

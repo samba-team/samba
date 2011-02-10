@@ -30,9 +30,9 @@
  */
 
 #include "includes.h"
-#include "lib/ldb/include/ldb.h"
-#include "lib/ldb/include/ldb_errors.h"
-#include "lib/ldb/include/ldb_module.h"
+#include <ldb.h>
+#include <ldb_errors.h>
+#include <ldb_module.h>
 #include "dsdb/samdb/ldb_modules/util.h"
 #include "dsdb/samdb/samdb.h"
 

@@ -35,8 +35,8 @@
 #include "auth/auth.h"
 #include "libcli/security/security.h"
 #include "libcli/ldap/ldap_ndr.h"
-#include "lib/ldb/include/ldb.h"
-#include "lib/ldb/include/ldb_errors.h"
+#include <ldb.h>
+#include <ldb_errors.h>
 #include "../lib/crypto/md5.h"
 #include "system/network.h"
 #include "system/passwd.h"

@@ -18,9 +18,9 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include "includes.h"
-#include "lib/ldb/include/ldb.h"
-#include "lib/ldb/include/ldb_errors.h"
-#include "lib/ldb/include/ldb_module.h"
+#include <ldb.h>
+#include <ldb_errors.h>
+#include <ldb_module.h>
 #include "dsdb/samdb/samdb.h"
 #include "dsdb/samdb/ldb_modules/util.h"
 #include "system/locale.h"

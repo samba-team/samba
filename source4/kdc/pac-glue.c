@@ -23,7 +23,7 @@
 
 #include "includes.h"
 #include "../libds/common/flags.h"
-#include "lib/ldb/include/ldb.h"
+#include <ldb.h>
 #include "auth/auth.h"
 #include "auth/auth_sam_reply.h"
 #include "kdc/kdc-glue.h"

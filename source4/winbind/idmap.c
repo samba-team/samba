@@ -22,7 +22,7 @@
 #include "includes.h"
 #include "auth/auth.h"
 #include "librpc/gen_ndr/ndr_security.h"
-#include "lib/ldb/include/ldb.h"
+#include <ldb.h>
 #include "ldb_wrap.h"
 #include "param/param.h"
 #include "winbind/idmap.h"

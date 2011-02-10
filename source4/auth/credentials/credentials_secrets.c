@@ -23,7 +23,7 @@
 
 #include "includes.h"
 #include "lib/events/events.h"
-#include "lib/ldb/include/ldb.h"
+#include <ldb.h>
 #include "librpc/gen_ndr/samr.h" /* for struct samrPassword */
 #include "param/secrets.h"
 #include "system/filesys.h"

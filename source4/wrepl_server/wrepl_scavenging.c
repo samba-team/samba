@@ -23,8 +23,8 @@
 #include "librpc/gen_ndr/ndr_winsrepl.h"
 #include "wrepl_server/wrepl_server.h"
 #include "nbt_server/wins/winsdb.h"
-#include "ldb/include/ldb.h"
-#include "ldb/include/ldb_errors.h"
+#include <ldb.h>
+#include <ldb_errors.h>
 #include "system/time.h"
 #include "smbd/service_task.h"
 #include "lib/messaging/irpc.h"

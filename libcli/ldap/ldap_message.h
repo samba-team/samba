@@ -25,7 +25,7 @@
 #if _SAMBA_BUILD_ == 3
 #include "lib/ldb_compat.h"
 #else
-#include "lib/ldb/include/ldb.h"
+#include <ldb.h>
 #endif
 
 enum ldap_request_tag {

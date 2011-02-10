@@ -36,8 +36,8 @@
 #include "smbd/process_model.h"
 #include "lib/tls/tls.h"
 #include "lib/messaging/irpc.h"
-#include "lib/ldb/include/ldb.h"
-#include "lib/ldb/include/ldb_errors.h"
+#include <ldb.h>
+#include <ldb_errors.h>
 #include "libcli/ldap/ldap_proto.h"
 #include "system/network.h"
 #include "lib/socket/netif.h"

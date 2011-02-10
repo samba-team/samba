@@ -26,8 +26,8 @@
 #include "param/param.h"
 #include "smbd/service_stream.h"
 #include "dsdb/samdb/samdb.h"
-#include "lib/ldb/include/ldb_errors.h"
-#include "lib/ldb/include/ldb_module.h"
+#include <ldb_errors.h>
+#include <ldb_module.h>
 #include "ldb_wrap.h"
 
 #define VALID_DN_SYNTAX(dn) do {\

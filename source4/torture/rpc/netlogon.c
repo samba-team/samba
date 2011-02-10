@@ -32,7 +32,7 @@
 #include "librpc/gen_ndr/ndr_lsa_c.h"
 #include "param/param.h"
 #include "libcli/security/security.h"
-#include "lib/ldb/include/ldb.h"
+#include <ldb.h>
 #include "lib/util/util_ldb.h"
 #include "ldb_wrap.h"
 #include "lib/replace/system/network.h"

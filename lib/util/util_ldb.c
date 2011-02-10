@@ -21,7 +21,7 @@
 */
 
 #include "includes.h"
-#include "lib/ldb/include/ldb.h"
+#include <ldb.h>
 #include "../lib/util/util_ldb.h"
 
 /*

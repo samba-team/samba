@@ -30,9 +30,9 @@
  */
 
 #include "includes.h"
-#include "ldb/include/ldb.h"
-#include "ldb/include/ldb_errors.h"
-#include "ldb/include/ldb_module.h"
+#include <ldb.h>
+#include <ldb_errors.h>
+#include <ldb_module.h>
 
 /*
   TODO: if relax is not set then we need to reject the fancy RMD_* and

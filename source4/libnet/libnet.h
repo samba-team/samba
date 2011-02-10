@@ -60,7 +60,7 @@ struct libnet_context {
 };
 
 
-#include "lib/ldb/include/ldb.h"
+#include <ldb.h>
 #include "libnet/composite.h"
 #include "libnet/userman.h"
 #include "libnet/userinfo.h"

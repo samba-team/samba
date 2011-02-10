@@ -23,7 +23,7 @@
 #include "dsdb/common/util.h"
 #include "dsdb/samdb/samdb.h"
 #include "dsdb/samdb/ldb_modules/util.h"
-#include "lib/ldb/include/ldb_module.h"
+#include <ldb_module.h>
 #include "librpc/gen_ndr/ndr_drsuapi.h"
 #include "librpc/gen_ndr/ndr_drsblobs.h"
 #include "param/param.h"

@@ -27,7 +27,7 @@
 #include "system/filesys.h"
 #include "tdb_wrap.h"
 #include "lib/ldb-samba/ldb_wrap.h"
-#include "lib/ldb/include/ldb.h"
+#include <ldb.h>
 #include "../lib/util/util_tdb.h"
 #include "librpc/gen_ndr/ndr_security.h"
 #include "dsdb/samdb/samdb.h"

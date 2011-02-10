@@ -28,8 +28,8 @@
 #include "wrepl_server/wrepl_server.h"
 #include "libcli/composite/composite.h"
 #include "nbt_server/wins/winsdb.h"
-#include "lib/ldb/include/ldb.h"
-#include "lib/ldb/include/ldb_errors.h"
+#include <ldb.h>
+#include <ldb_errors.h>
 #include "system/time.h"
 #include "lib/util/tsort.h"
 #include "param/param.h"
