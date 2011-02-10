@@ -2647,7 +2647,7 @@ NTSTATUS unlink_internals(connection_struct *conn, struct smb_request *req,
 			goto out;
 		}
 
-		dir_hnd = OpenDir(talloc_tos(), conn, NULL, fname_dir, fname_mask,
+		dir_hnd = OpenDir(talloc_tos(), conn, fname_dir, fname_mask,
 				  dirtype);
 		if (dir_hnd == NULL) {
 			status = map_nt_error_from_unix(errno);
@@ -6380,7 +6380,7 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 		goto out;
 	}
 
-	dir_hnd = OpenDir(talloc_tos(), conn, NULL, fname_src_dir, fname_src_mask,
+	dir_hnd = OpenDir(talloc_tos(), conn, fname_src_dir, fname_src_mask,
 			  attrs);
 	if (dir_hnd == NULL) {
 		status = map_nt_error_from_unix(errno);
@@ -7067,7 +7067,7 @@ void reply_copy(struct smb_request *req)
 			goto out;
 		}
 
-		dir_hnd = OpenDir(ctx, conn, NULL, fname_src_dir, fname_src_mask, 0);
+		dir_hnd = OpenDir(ctx, conn, fname_src_dir, fname_src_mask, 0);
 		if (dir_hnd == NULL) {
 			status = map_nt_error_from_unix(errno);
 			reply_nterror(req, status);
