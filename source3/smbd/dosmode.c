@@ -308,10 +308,10 @@ static bool get_ea_dos_attribute(connection_struct *conn,
 						create_time)) ));
 			}
 			break;
-			default:
-				DEBUG(1,("get_ea_dos_attribute: Badly formed DOSATTRIB on "
-					 "file %s - %s\n", smb_fname_str_dbg(smb_fname),
-					 attrstr));
+		default:
+			DEBUG(1,("get_ea_dos_attribute: Badly formed DOSATTRIB on "
+				 "file %s - %s\n", smb_fname_str_dbg(smb_fname),
+				 attrstr));
 	                return false;
 	}
 
