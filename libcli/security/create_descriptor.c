@@ -226,7 +226,7 @@ static struct security_acl *process_user_acl(TALLOC_CTX *mem_ctx,
 		return NULL;
 
 	tmp_acl->revision = acl->revision;
-	DEBUG(6,(__location__ ": acl revision %u\n", acl->revision));
+	DEBUG(6,(__location__ ": acl revision %d\n", acl->revision));
 
 	co = dom_sid_parse_talloc(tmp_ctx,  SID_CREATOR_OWNER);
 	cg = dom_sid_parse_talloc(tmp_ctx,  SID_CREATOR_GROUP);

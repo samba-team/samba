@@ -235,7 +235,7 @@ void display_sec_acl(struct security_acl *sec_acl)
 {
 	int i;
 
-	printf("\tACL\tNum ACEs:\t%d\trevision:\t%x\n",
+	printf("\tACL\tNum ACEs:\t%u\trevision:\t%x\n",
 			 sec_acl->num_aces, sec_acl->revision); 
 	printf("\t---\n");
 
