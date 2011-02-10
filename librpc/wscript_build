@@ -9,9 +9,11 @@ bld.SAMBA_SUBSYSTEM('NDR_AUDIOSRV',
 	)
 
 bld.SAMBA_SUBSYSTEM('NDR_AUTH',
-	source='gen_ndr/ndr_auth.c',
-	public_deps='ndr NDR_SECURITY'
-	)
+                    source='gen_ndr/ndr_auth.c',
+                    public_headers='gen_ndr/auth.h',
+                    header_path='gen_ndr',
+                    public_deps='ndr NDR_SECURITY'
+                    )
 
 bld.SAMBA_SUBSYSTEM('NDR_NAMED_PIPE_AUTH',
 	source='gen_ndr/ndr_named_pipe_auth.c',
