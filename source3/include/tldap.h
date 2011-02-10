@@ -131,14 +131,14 @@ struct tevent_req *tldap_modify_send(TALLOC_CTX *mem_ctx,
 				     struct tevent_context *ev,
 				     struct tldap_context *ld,
 				     const char *dn,
-				     int num_mods, struct tldap_mod *mods,
+				     struct tldap_mod *mods, int num_mods,
 				     struct tldap_control *sctrls,
 				     int num_sctrls,
 				     struct tldap_control *cctrls,
 				     int num_cctrls);
 int tldap_modify_recv(struct tevent_req *req);
 int tldap_modify(struct tldap_context *ld, const char *dn,
-		 int num_mods, struct tldap_mod *mods,
+		 struct tldap_mod *mods, int num_mods,
 		 struct tldap_control *sctrls, int num_sctrls,
 		 struct tldap_control *cctrls, int num_cctrls);
 
