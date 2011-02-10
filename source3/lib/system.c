@@ -1543,7 +1543,7 @@ int sys_popen(const char *command)
 err_exit:
 
 	SAFE_FREE(entry);
-	SAFE_FREE(argl);
+	TALLOC_FREE(argl);
 	close(pipe_fds[0]);
 	close(pipe_fds[1]);
 	return -1;
