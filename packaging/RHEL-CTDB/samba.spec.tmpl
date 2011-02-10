@@ -18,8 +18,8 @@ Source: samba-%{version}.tar.bz2
 Source998: filter-requires-samba.sh
 Source999: setup.tar.bz2
 
-Prereq: /sbin/chkconfig /bin/mktemp /usr/bin/killall
-Prereq: fileutils sed /etc/init.d
+Requires: /sbin/chkconfig /bin/mktemp /usr/bin/killall
+Requires: fileutils sed /etc/init.d
 
 Requires: pam >= 0.64 %{auth} 
 Requires: samba-common = %{version}-%{release}
@@ -109,7 +109,7 @@ Compatibility package for 32 bit apps on 64 bit architecures
 Summary:      Samba Documentation
 Group:        Documentation/Other
 Provides:     samba-doc = %{version}-%{release}
-Prereq:       /usr/bin/find /bin/rm /usr/bin/xargs
+Requires:       /usr/bin/find /bin/rm /usr/bin/xargs
 
 %description doc
 The samba-doc package includes the HTML versions of the Samba manpages
