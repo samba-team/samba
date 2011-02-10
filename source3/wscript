@@ -1013,8 +1013,6 @@ int i; i = PAM_RADIO_TYPE;
         if use_pam:
             conf.DEFINE('WITH_PAM', 1)
             conf.DEFINE('WITH_PAM_MODULES', 1)
-        else:
-            conf.SET_TARGET_TYPE('pam', 'EMPTY')
 
     seteuid = False
     if not seteuid:
