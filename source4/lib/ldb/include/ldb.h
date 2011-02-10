@@ -49,6 +49,7 @@
 #include <stdbool.h>
 #include <talloc.h>
 #include <tevent.h>
+#include "ldb_version.h"
 #include "ldb_errors.h"
 
 /*
