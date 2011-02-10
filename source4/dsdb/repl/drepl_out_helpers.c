@@ -34,6 +34,7 @@
 #include "auth/gensec/gensec.h"
 #include "param/param.h"
 #include "../lib/util/tevent_ntstatus.h"
+#include "libcli/security/security.h"
 
 struct dreplsrv_out_drsuapi_state {
 	struct tevent_context *ev;

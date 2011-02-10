@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 bld.RECURSE('ldap')
-bld.RECURSE('security')
 bld.RECURSE('wbclient')
 
 bld.SAMBA_LIBRARY('errors',

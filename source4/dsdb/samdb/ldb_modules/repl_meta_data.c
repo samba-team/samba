@@ -48,7 +48,6 @@
 #include "lib/util/dlinklist.h"
 #include "dsdb/samdb/ldb_modules/util.h"
 #include "lib/util/binsearch.h"
-#include "libcli/security/session.h"
 #include "lib/util/tsort.h"
 
 struct replmd_private {

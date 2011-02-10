@@ -21,14 +21,7 @@
 #ifndef _SAMBA_AUTH_SESSION_H
 #define _SAMBA_AUTH_SESSION_H
 
-struct auth_session_info {
-	struct security_token *security_token;
-	struct auth_user_info *info;
-	struct auth_user_info_torture *torture;
-	DATA_BLOB session_key;
-	struct cli_credentials *credentials;
-};
-
+#include "libcli/security/security.h"
 #include "librpc/gen_ndr/netlogon.h"
 #include "librpc/gen_ndr/auth.h"
 

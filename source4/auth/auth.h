@@ -162,6 +162,7 @@ struct auth_critical_sizes {
 struct ldb_message;
 struct ldb_context;
 struct gensec_security;
+struct cli_credentials;
 
 NTSTATUS auth_get_challenge(struct auth_context *auth_ctx, uint8_t chal[8]);
 NTSTATUS authsam_account_ok(TALLOC_CTX *mem_ctx,
