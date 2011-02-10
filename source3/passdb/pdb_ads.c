@@ -491,7 +491,7 @@ static NTSTATUS pdb_ads_create_user(struct pdb_methods *m,
 	}
 
 
-	rc = tldap_add(ld, dn, num_mods, mods, NULL, 0, NULL, 0);
+	rc = tldap_add(ld, dn, mods, num_mods, NULL, 0, NULL, 0);
 	if (rc != TLDAP_SUCCESS) {
 		DEBUG(10, ("ldap_add failed %s\n",
 			   tldap_errstr(talloc_tos(), ld, rc)));
@@ -779,7 +779,7 @@ static NTSTATUS pdb_ads_create_dom_group(struct pdb_methods *m,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	rc = tldap_add(ld, dn, num_mods, mods, NULL, 0, NULL, 0);
+	rc = tldap_add(ld, dn, mods, num_mods, NULL, 0, NULL, 0);
 	if (rc != TLDAP_SUCCESS) {
 		DEBUG(10, ("ldap_add failed %s\n",
 			   tldap_errstr(talloc_tos(), state->ld, rc)));
@@ -1164,7 +1164,7 @@ static NTSTATUS pdb_ads_create_alias(struct pdb_methods *m,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	rc = tldap_add(ld, dn, num_mods, mods, NULL, 0, NULL, 0);
+	rc = tldap_add(ld, dn, mods, num_mods, NULL, 0, NULL, 0);
 	if (rc != TLDAP_SUCCESS) {
 		DEBUG(10, ("ldap_add failed %s\n",
 			   tldap_errstr(talloc_tos(), state->ld, rc)));

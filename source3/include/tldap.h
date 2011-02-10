@@ -123,7 +123,7 @@ struct tevent_req *tldap_add_send(TALLOC_CTX *mem_ctx,
 				  int num_cctrls);
 int tldap_add_recv(struct tevent_req *req);
 int tldap_add(struct tldap_context *ld, const char *dn,
-	      int num_attributes, struct tldap_mod *attributes,
+	      struct tldap_mod *attributes, int num_attributes,
 	      struct tldap_control *sctrls, int num_sctrls,
 	      struct tldap_control *cctrls, int num_cctrls);
 
