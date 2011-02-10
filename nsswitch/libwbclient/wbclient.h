@@ -787,6 +787,16 @@ wbcErr wbcAllocateUid(uid_t *puid);
 wbcErr wbcAllocateGid(gid_t *pgid);
 
 /**
+ * @brief Remove a group id mapping
+ *
+ * @param gid       Gid of the mapping to remove.
+ * @param *sid      Pointer to the sid of the mapping to remove.
+ *
+ * @return #wbcErr
+ **/
+wbcErr wbcRemoveGidMapping(gid_t gid, const struct wbcDomainSid *sid);
+
+/**
  * @brief Set the highwater mark for allocated uids.
  *
  * @param uid_hwm      The new uid highwater mark value
