@@ -403,31 +403,29 @@ static int winbind_write_sock(void *buffer, int count, int recursing,
 
 		/* Write should be OK if fd not available for reading */
 
-		if (!FD_ISSET(winbindd_fd, &r_fds)) {
-
-			/* Do the write */
-
-			result = write(winbindd_fd,
-				       (char *)buffer + nwritten,
-				       count - nwritten);
-
-			if ((result == -1) || (result == 0)) {
-
-				/* Write failed */
-
-				winbind_close_sock();
-				return -1;
-			}
-
-			nwritten += result;
-
-		} else {
+		if (FD_ISSET(winbindd_fd, &r_fds)) {
 
 			/* Pipe has closed on remote end */
 
 			winbind_close_sock();
 			goto restart;
 		}
+
+		/* Do the write */
+
+		result = write(winbindd_fd,
+			       (char *)buffer + nwritten,
+			       count - nwritten);
+
+		if ((result == -1) || (result == 0)) {
+
+			/* Write failed */
+
+			winbind_close_sock();
+			return -1;
+		}
+
+		nwritten += result;
 	}
 
 	return nwritten;
