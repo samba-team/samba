@@ -1403,6 +1403,7 @@ bld.INSTALL_FILES('${SWATDIR}', swat_files, base_name='../swat')
 
 ########################## INCLUDES #################################
 
+bld.RECURSE('../auth')
 bld.RECURSE('../lib/addns')
 bld.RECURSE('../lib/async_req')
 bld.RECURSE('../libcli/auth')

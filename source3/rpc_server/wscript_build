@@ -26,7 +26,8 @@ bld.SAMBA_SUBSYSTEM('rpc',
                     vars=locals())
 
 bld.SAMBA_SUBSYSTEM('RPC_NCACN_NP',
-                    source='rpc_ncacn_np.c rpc_handles.c')
+                    source='rpc_ncacn_np.c rpc_handles.c',
+                    deps='auth_sam_reply')
 
 bld.SAMBA_SUBSYSTEM('RPC_SERVICE',
                     source='rpc_server.c')
@@ -113,4 +114,4 @@ bld.SAMBA_SUBSYSTEM('RPC_SERVER',
                           RPC_DSSETUP RPC_WKSSVC RPC_SVCCTL RPC_NTSVCS
                           RPC_NETLOGON RPC_NETDFS RPC_SRVSVC RPC_SPOOLSS
                           RPC_EVENTLOG RPC_RPCECHO RPC_SERVER RPC_EPMAPPER
-                          RPC_SERVER_REGISTER''')
+                          RPC_SERVER_REGISTER NDR_NAMED_PIPE_AUTH''')
