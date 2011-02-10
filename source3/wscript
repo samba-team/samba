@@ -845,25 +845,26 @@ return krb5_kt_resolve(context, "WRFILE:api", &keytab);
 
     if Options.options.with_ads:
         use_ads=True
-        if not conf.CONFIG_SET('HAVE_ENCTYPE_ARCFOUR_HMAC_MD5'):
+        if not conf.CONFIG_SET('HAVE_ENCTYPE_ARCFOUR_HMAC_MD5') and \
+           not conf.CONFIG_SET('HAVE_ENCTYPE_ARCFOUR_HMAC'):
             print "arcfour-hmac-md5 encryption type not found in -lkrb5"
             use_ads=False
         if not conf.CONFIG_SET('HAVE_KRB5_MK_REQ_EXTENDED'):
             print "krb5_mk_req_extended not found in -lkrb5"
             use_ads=False
-        if not conf.CONFIG_SET('HAVE_KRB5_PRINCIPAL2SALT') or \
+        if not conf.CONFIG_SET('HAVE_KRB5_PRINCIPAL2SALT') and \
            not conf.CONFIG_SET('HAVE_KRB5_GET_PW_SALT'):
             print "no CREATE_KEY_FUNCTIONS detected"
             use_ads=False
-        if not conf.CONFIG_SET('HAVE_KRB5_GET_PERMITTED_ENCTYPES') or \
+        if not conf.CONFIG_SET('HAVE_KRB5_GET_PERMITTED_ENCTYPES') and \
            not conf.CONFIG_SET('HAVE_KRB5_GET_DEFAULT_IN_TKT_ETYPES'):
             print "no GET_ENCTYPES_FUNCTIONS detected"
             use_ads=False
-        if not conf.CONFIG_SET('HAVE_KRB5_KT_FREE_ENTRY') or \
+        if not conf.CONFIG_SET('HAVE_KRB5_KT_FREE_ENTRY') and \
            not conf.CONFIG_SET('HAVE_KRB5_FREE_KEYTAB_ENTRY_CONTENTS'):
             print "no KT_FREE_FUNCTION detected"
             use_ads=False
-        if not conf.CONFIG_SET('HAVE_KRB5_C_VERIFY_CHECKSUM') or \
+        if not conf.CONFIG_SET('HAVE_KRB5_C_VERIFY_CHECKSUM') and \
            not conf.CONFIG_SET('HAVE_KRB5_VERIFY_CHECKSUM'):
             print "no KRB5_VERIFY_CHECKSUM_FUNCTION detected"
             use_ads=False
