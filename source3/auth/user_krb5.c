@@ -185,7 +185,7 @@ NTSTATUS make_server_info_krb5(TALLOC_CTX *mem_ctx,
 				char *username,
 				struct passwd *pw,
 				struct PAC_LOGON_INFO *logon_info,
-				bool mapped_to_guest,
+			       bool mapped_to_guest, bool username_was_mapped,
 				struct auth_serversupplied_info **server_info)
 {
 	NTSTATUS status;
@@ -259,7 +259,17 @@ NTSTATUS make_server_info_krb5(TALLOC_CTX *mem_ctx,
 			(*server_info)->info3->base.domain.string =
 				talloc_strdup((*server_info)->info3, ntdomain);
 		}
+	}
 
+	(*server_info)->nss_token |= username_was_mapped;
+
+	if (!mapped_to_guest) {
+		status = create_local_token(*server_info);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(10,("failed to create local token: %s\n",
+				nt_errstr(status)));
+			return status;
+		}
 	}
 
 	return NT_STATUS_OK;

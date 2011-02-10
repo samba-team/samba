@@ -264,5 +264,5 @@ NTSTATUS make_server_info_krb5(TALLOC_CTX *mem_ctx,
 				char *username,
 				struct passwd *pw,
 				struct PAC_LOGON_INFO *logon_info,
-				bool mapped_to_guest,
-				struct auth_serversupplied_info **server_info);
+			       bool mapped_to_guest, bool username_was_mapped,
+			       struct auth_serversupplied_info **server_info);

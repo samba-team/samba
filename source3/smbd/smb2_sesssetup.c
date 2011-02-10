@@ -237,27 +237,13 @@ static NTSTATUS smbd_smb2_session_setup_krb5(struct smbd_smb2_session *session,
 	reload_services(smb2req->sconn->msg_ctx, smb2req->sconn->sock, true);
 
 	status = make_server_info_krb5(session,
-					user, domain, real_username, pw,
-					logon_info, map_domainuser_to_guest,
-					&session->session_info);
+				       user, domain, real_username, pw,
+				       logon_info, map_domainuser_to_guest,
+				       username_was_mapped,
+				       &session->session_info);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("smb2: make_server_info_krb5 failed\n"));
 		goto fail;
-	}
-
-
-	session->session_info->nss_token |= username_was_mapped;
-
-	/* we need to build the token for the user. make_session_info_guest()
-	   already does this */
-
-	if (!session->session_info->security_token ) {
-		status = create_local_token(session->session_info);
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(10,("smb2: failed to create local token: %s\n",
-				nt_errstr(status)));
-			goto fail;
-		}
 	}
 
 	if ((in_security_mode & SMB2_NEGOTIATE_SIGNING_REQUIRED) ||

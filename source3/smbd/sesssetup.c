@@ -372,6 +372,7 @@ static void reply_spnego_kerberos(struct smb_request *req,
 	ret = make_server_info_krb5(mem_ctx,
 				    user, domain, real_username, pw,
 				    logon_info, map_domainuser_to_guest,
+				    username_was_mapped,
 				    &server_info);
 	if (!NT_STATUS_IS_OK(ret)) {
 		DEBUG(1, ("make_server_info_krb5 failed!\n"));
@@ -380,25 +381,6 @@ static void reply_spnego_kerberos(struct smb_request *req,
 		TALLOC_FREE(mem_ctx);
 		reply_nterror(req, nt_status_squash(ret));
 		return;
-	}
-
-	server_info->nss_token |= username_was_mapped;
-
-	/* we need to build the token for the user. make_server_info_guest()
-	   already does this */
-
-	if ( !server_info->security_token ) {
-		ret = create_local_token( server_info );
-		if ( !NT_STATUS_IS_OK(ret) ) {
-			DEBUG(10,("failed to create local token: %s\n",
-				nt_errstr(ret)));
-			data_blob_free(&ap_rep);
-			data_blob_free(&session_key);
-			TALLOC_FREE( mem_ctx );
-			TALLOC_FREE( server_info );
-			reply_nterror(req, nt_status_squash(ret));
-			return;
-		}
 	}
 
 	if (!is_partial_auth_vuid(sconn, sess_vuid)) {

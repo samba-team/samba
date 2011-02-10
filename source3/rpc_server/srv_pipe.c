@@ -738,16 +738,6 @@ static NTSTATUS pipe_gssapi_verify_final(TALLOC_CTX *mem_ctx,
 		return status;
 	}
 
-	if ((*session_info)->security_token == NULL) {
-		status = create_local_token(*session_info);
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(1, ("Failed to create local user token (%s)\n",
-				  nt_errstr(status)));
-			status = NT_STATUS_ACCESS_DENIED;
-			return status;
-		}
-	}
-
 	/* TODO: this is what the ntlmssp code does with the session_key, check
 	 * it is ok with gssapi too */
 	/*
