@@ -88,7 +88,7 @@ static void dump_pdu_region(const char *name, int v,
 
 static DATA_BLOB generic_session_key(void)
 {
-	return data_blob("SystemLibraryDTC", 16);
+	return data_blob_const("SystemLibraryDTC", 16);
 }
 
 /*******************************************************************
@@ -460,7 +460,6 @@ static bool pipe_schannel_auth_bind(struct pipes_struct *p,
 	bool ret;
 	NTSTATUS status;
 	struct netlogon_creds_CredentialState *creds;
-	DATA_BLOB session_key;
 	enum ndr_err_code ndr_err;
 	struct schannel_state *schannel_auth;
 
@@ -519,16 +518,7 @@ static bool pipe_schannel_auth_bind(struct pipes_struct *p,
 	 * anymore.
 	 */
 
-	session_key = generic_session_key();
-	if (session_key.data == NULL) {
-		DEBUG(0, ("pipe_schannel_auth_bind: Could not alloc session"
-			  " key\n"));
-		return false;
-	}
-
-	ret = session_info_set_session_key(p->session_info, session_key);
-
-	data_blob_free(&session_key);
+	ret = session_info_set_session_key(p->session_info, generic_session_key());
 
 	if (!ret) {
 		DEBUG(0, ("session_info_set_session_key failed\n"));
@@ -624,7 +614,6 @@ static bool pipe_ntlmssp_verify_final(TALLOC_CTX *mem_ctx,
 				struct ndr_syntax_id *syntax,
 				struct auth_serversupplied_info **session_info)
 {
-	DATA_BLOB session_key;
 	NTSTATUS status;
 	bool ret;
 
@@ -668,13 +657,7 @@ static bool pipe_ntlmssp_verify_final(TALLOC_CTX *mem_ctx,
 	 * does. See the RPC-SAMBA3SESSIONKEY.
 	 */
 
-	session_key = generic_session_key();
-	if (session_key.data == NULL) {
-		return false;
-	}
-
-	ret = session_info_set_session_key((*session_info), session_key);
-	data_blob_free(&session_key);
+	ret = session_info_set_session_key((*session_info), generic_session_key());
 	if (!ret) {
 		DEBUG(0, ("Failed to set session key!\n"));
 		return false;
@@ -730,7 +713,6 @@ static NTSTATUS pipe_gssapi_verify_final(TALLOC_CTX *mem_ctx,
 					 struct client_address *client_id,
 					 struct auth_serversupplied_info **session_info)
 {
-	DATA_BLOB session_key;
 	NTSTATUS status;
 	bool bret;
 
@@ -770,13 +752,7 @@ static NTSTATUS pipe_gssapi_verify_final(TALLOC_CTX *mem_ctx,
 	 * does. See the RPC-SAMBA3SESSIONKEY.
 	 */
 
-	session_key = generic_session_key();
-	if (session_key.data == NULL) {
-		return NT_STATUS_ACCESS_DENIED;
-	}
-
-	bret = session_info_set_session_key((*session_info), session_key);
-	data_blob_free(&session_key);
+	bret = session_info_set_session_key((*session_info), generic_session_key());
 	if (!bret) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
