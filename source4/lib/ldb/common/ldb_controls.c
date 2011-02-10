@@ -256,8 +256,15 @@ int ldb_request_replace_control(struct ldb_request *req, const char *oid, bool c
 	return LDB_ERR_OPERATIONS_ERROR;
 }
 
-/* Parse controls from the format used on the command line and in ejs */
+/*
+ * A little trick to allow to use constants defined in headers rather than
+ * hardwritten in the file hardwritten in the file
+ * sizeof will return the \0 char as well so it will take the place of ":" in the
+ * length of the string
+ */
+#define LDB_CONTROL_CMP(control, NAME) strncmp(control, NAME ":", sizeof(NAME))
 
+/* Parse controls from the format used on the command line and in ejs */
 struct ldb_control **ldb_parse_control_strings(struct ldb_context *ldb, TALLOC_CTX *mem_ctx, const char **control_strings)
 {
 	unsigned int i;
@@ -273,7 +280,8 @@ struct ldb_control **ldb_parse_control_strings(struct ldb_context *ldb, TALLOC_C
 	ctrl = talloc_array(mem_ctx, struct ldb_control *, i + 1);
 
 	for (i = 0; control_strings[i]; i++) {
-		if (strncmp(control_strings[i], "vlv:", 4) == 0) {
+		if (LDB_CONTROL_CMP(control_strings[i],
+					LDB_CONTROL_VLV_REQ_NAME) == 0) {
 			struct ldb_vlv_req_control *control;
 			const char *p;
 			char attr[1024];
@@ -330,7 +338,7 @@ struct ldb_control **ldb_parse_control_strings(struct ldb_context *ldb, TALLOC_C
 			continue;
 		}
 
-		if (strncmp(control_strings[i], "dirsync:", 8) == 0) {
+		if (LDB_CONTROL_CMP(control_strings[i], LDB_CONTROL_DIRSYNC_NAME) == 0) {
 			struct ldb_dirsync_control *control;
 			const char *p;
 			char cookie[1024];
@@ -374,7 +382,7 @@ struct ldb_control **ldb_parse_control_strings(struct ldb_context *ldb, TALLOC_C
 			continue;
 		}
 
-		if (strncmp(control_strings[i], "asq:", 4) == 0) {
+		if (LDB_CONTROL_CMP(control_strings[i], LDB_CONTROL_ASQ_NAME) == 0) {
 			struct ldb_asq_control *control;
 			const char *p;
 			char attr[256];
@@ -408,7 +416,7 @@ struct ldb_control **ldb_parse_control_strings(struct ldb_context *ldb, TALLOC_C
 			continue;
 		}
 
-		if (strncmp(control_strings[i], "extended_dn:", 12) == 0) {
+		if (LDB_CONTROL_CMP(control_strings[i], LDB_CONTROL_EXTENDED_DN_NAME) == 0) {
 			struct ldb_extended_dn_control *control;
 			const char *p;
 			int crit, type, ret;
@@ -446,7 +454,7 @@ struct ldb_control **ldb_parse_control_strings(struct ldb_context *ldb, TALLOC_C
 			continue;
 		}
 
-		if (strncmp(control_strings[i], "sd_flags:", 9) == 0) {
+		if (LDB_CONTROL_CMP(control_strings[i], LDB_CONTROL_SD_FLAGS_NAME) == 0) {
 			struct ldb_sd_flags_control *control;
 			const char *p;
 			int crit, ret;
@@ -477,7 +485,7 @@ struct ldb_control **ldb_parse_control_strings(struct ldb_context *ldb, TALLOC_C
 			continue;
 		}
 
-		if (strncmp(control_strings[i], "search_options:", 15) == 0) {
+		if (LDB_CONTROL_CMP(control_strings[i], LDB_CONTROL_SEARCH_OPTIONS_NAME) == 0) {
 			struct ldb_search_options_control *control;
 			const char *p;
 			int crit, ret;
@@ -508,7 +516,7 @@ struct ldb_control **ldb_parse_control_strings(struct ldb_context *ldb, TALLOC_C
 			continue;
 		}
 
-		if (strncmp(control_strings[i], "bypassoperational:", 18) == 0) {
+		if (LDB_CONTROL_CMP(control_strings[i], LDB_CONTROL_BYPASS_OPERATIONAL_NAME) == 0) {
 			const char *p;
 			int crit, ret;
 
@@ -535,7 +543,7 @@ struct ldb_control **ldb_parse_control_strings(struct ldb_context *ldb, TALLOC_C
 			continue;
 		}
 
-		if (strncmp(control_strings[i], "relax:", 6) == 0) {
+		if (LDB_CONTROL_CMP(control_strings[i], LDB_CONTROL_RELAX_NAME) == 0) {
 			const char *p;
 			int crit, ret;
 
@@ -562,7 +570,7 @@ struct ldb_control **ldb_parse_control_strings(struct ldb_context *ldb, TALLOC_C
 			continue;
 		}
 
-		if (strncmp(control_strings[i], "recalculate_sd:", 15) == 0) {
+		if (LDB_CONTROL_CMP(control_strings[i], LDB_CONTROL_RECALCULATE_SD_NAME) == 0) {
 			const char *p;
 			int crit, ret;
 
@@ -589,7 +597,7 @@ struct ldb_control **ldb_parse_control_strings(struct ldb_context *ldb, TALLOC_C
 			continue;
 		}
 
-		if (strncmp(control_strings[i], "domain_scope:", 13) == 0) {
+		if (LDB_CONTROL_CMP(control_strings[i], LDB_CONTROL_DOMAIN_SCOPE_NAME) == 0) {
 			const char *p;
 			int crit, ret;
 
@@ -616,7 +624,7 @@ struct ldb_control **ldb_parse_control_strings(struct ldb_context *ldb, TALLOC_C
 			continue;
 		}
 
-		if (strncmp(control_strings[i], "paged_results:", 14) == 0) {
+		if (LDB_CONTROL_CMP(control_strings[i], LDB_CONTROL_PAGED_RESULTS_NAME) == 0) {
 			struct ldb_paged_control *control;
 			const char *p;
 			int crit, size, ret;
@@ -649,7 +657,7 @@ struct ldb_control **ldb_parse_control_strings(struct ldb_context *ldb, TALLOC_C
 			continue;
 		}
 
-		if (strncmp(control_strings[i], "server_sort:", 12) == 0) {
+		if (LDB_CONTROL_CMP(control_strings[i], LDB_CONTROL_SERVER_SORT_NAME) == 0) {
 			struct ldb_server_sort_control **control;
 			const char *p;
 			char attr[256];
@@ -689,7 +697,7 @@ struct ldb_control **ldb_parse_control_strings(struct ldb_context *ldb, TALLOC_C
 			continue;
 		}
 
-		if (strncmp(control_strings[i], "notification:", 13) == 0) {
+		if (LDB_CONTROL_CMP(control_strings[i], LDB_CONTROL_NOTIFICATION_NAME) == 0) {
 			const char *p;
 			int crit, ret;
 
@@ -716,7 +724,7 @@ struct ldb_control **ldb_parse_control_strings(struct ldb_context *ldb, TALLOC_C
 			continue;
 		}
 
-		if (strncmp(control_strings[i], "tree_delete:", 12) == 0) {
+		if (LDB_CONTROL_CMP(control_strings[i], LDB_CONTROL_TREE_DELETE_NAME) == 0) {
 			const char *p;
 			int crit, ret;
 
@@ -743,7 +751,7 @@ struct ldb_control **ldb_parse_control_strings(struct ldb_context *ldb, TALLOC_C
 			continue;
 		}
 
-		if (strncmp(control_strings[i], "show_deleted:", 13) == 0) {
+		if (LDB_CONTROL_CMP(control_strings[i], LDB_CONTROL_SHOW_DELETED_NAME) == 0) {
 			const char *p;
 			int crit, ret;
 
@@ -770,7 +778,7 @@ struct ldb_control **ldb_parse_control_strings(struct ldb_context *ldb, TALLOC_C
 			continue;
 		}
 
-		if (strncmp(control_strings[i], "show_deactivated_link:", 22) == 0) {
+		if (LDB_CONTROL_CMP(control_strings[i], LDB_CONTROL_SHOW_DEACTIVATED_LINK_NAME) == 0) {
 			const char *p;
 			int crit, ret;
 
@@ -797,7 +805,7 @@ struct ldb_control **ldb_parse_control_strings(struct ldb_context *ldb, TALLOC_C
 			continue;
 		}
 
-		if (strncmp(control_strings[i], "show_recycled:", 14) == 0) {
+		if (LDB_CONTROL_CMP(control_strings[i], LDB_CONTROL_SHOW_RECYCLED_NAME) == 0) {
 			const char *p;
 			int crit, ret;
 
@@ -824,7 +832,7 @@ struct ldb_control **ldb_parse_control_strings(struct ldb_context *ldb, TALLOC_C
 			continue;
 		}
 
-		if (strncmp(control_strings[i], "permissive_modify:", 18) == 0) {
+		if (LDB_CONTROL_CMP(control_strings[i], LDB_CONTROL_PERMISSIVE_MODIFY_NAME) == 0) {
 			const char *p;
 			int crit, ret;
 
@@ -851,7 +859,7 @@ struct ldb_control **ldb_parse_control_strings(struct ldb_context *ldb, TALLOC_C
 			continue;
 		}
 
-		if (strncmp(control_strings[i], "reveal_internals:", 17) == 0) {
+		if (LDB_CONTROL_CMP(control_strings[i], LDB_CONTROL_REVEAL_INTERNALS_NAME) == 0) {
 			const char *p;
 			int crit, ret;
 
@@ -912,7 +920,7 @@ struct ldb_control **ldb_parse_control_strings(struct ldb_context *ldb, TALLOC_C
 			continue;
 		}
 
-		if (strncmp(control_strings[i], "rodc_join:", 10) == 0) {
+		if (LDB_CONTROL_CMP(control_strings[i], LDB_CONTROL_RODC_DCPROMO_NAME) == 0) {
 			const char *p;
 			int crit, ret;
 
@@ -939,7 +947,7 @@ struct ldb_control **ldb_parse_control_strings(struct ldb_context *ldb, TALLOC_C
 			continue;
 		}
 
-		if (strncmp(control_strings[i], "provision:", 10) == 0) {
+		if (LDB_CONTROL_CMP(control_strings[i], LDB_CONTROL_PROVISION_NAME) == 0) {
 			const char *p;
 			int crit, ret;
 

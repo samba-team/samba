@@ -489,6 +489,7 @@ typedef int (*ldb_qsort_cmp_fn_t) (void *v1, void *v2, void *opaque);
   and that are now calculated.
 */
 #define LDB_CONTROL_BYPASS_OPERATIONAL_OID "1.3.6.1.4.1.7165.4.3.13"
+#define LDB_CONTROL_BYPASS_OPERATIONAL_NAME "bypassoperational"
 
 /**
   OID for recalculate SD control. This control force the
@@ -497,12 +498,14 @@ typedef int (*ldb_qsort_cmp_fn_t) (void *v1, void *v2, void *opaque);
 
 */
 #define LDB_CONTROL_RECALCULATE_SD_OID "1.3.6.1.4.1.7165.4.3.5"
+#define LDB_CONTROL_RECALCULATE_SD_NAME "recalculate_sd"
 
 /**
    REVEAL_INTERNALS is used to reveal internal attributes and DN
    components which are not normally shown to the user
 */
 #define LDB_CONTROL_REVEAL_INTERNALS "1.3.6.1.4.1.7165.4.3.6"
+#define LDB_CONTROL_REVEAL_INTERNALS_NAME	"reveal_internals"
 
 /**
    LDB_CONTROL_AS_SYSTEM is used to skip access checks on operations
@@ -516,6 +519,7 @@ typedef int (*ldb_qsort_cmp_fn_t) (void *v1, void *v2, void *opaque);
    mainly thought to be used for the provisioning.
 */
 #define LDB_CONTROL_PROVISION_OID "1.3.6.1.4.1.7165.4.3.16"
+#define LDB_CONTROL_PROVISION_NAME	"provision"
 
 /* AD controls */
 
@@ -528,6 +532,7 @@ typedef int (*ldb_qsort_cmp_fn_t) (void *v1, void *v2, void *opaque);
    \sa <a href="http://www.ietf.org/rfc/rfc2696.txt">RFC 2696</a>.
 */
 #define LDB_CONTROL_PAGED_RESULTS_OID	"1.2.840.113556.1.4.319"
+#define LDB_CONTROL_PAGED_RESULTS_NAME	"paged_result"
 
 /**
    OID for specifying the returned elements of the ntSecurityDescriptor
@@ -535,6 +540,7 @@ typedef int (*ldb_qsort_cmp_fn_t) (void *v1, void *v2, void *opaque);
    \sa <a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/ldap/ldap/ldap_server_sd_flags_oid.asp">Microsoft documentation of this OID</a>
 */
 #define LDB_CONTROL_SD_FLAGS_OID	"1.2.840.113556.1.4.801"
+#define LDB_CONTROL_SD_FLAGS_NAME	"sd_flags"
 
 /**
    OID for specifying an advanced scope for the search (one partition)
@@ -542,6 +548,7 @@ typedef int (*ldb_qsort_cmp_fn_t) (void *v1, void *v2, void *opaque);
    \sa <a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/ldap/ldap/ldap_server_domain_scope_oid.asp">Microsoft documentation of this OID</a>
 */
 #define LDB_CONTROL_DOMAIN_SCOPE_OID	"1.2.840.113556.1.4.1339"
+#define LDB_CONTROL_DOMAIN_SCOPE_NAME	"domain_scope"
 
 /**
    OID for specifying an advanced scope for a search
@@ -549,6 +556,7 @@ typedef int (*ldb_qsort_cmp_fn_t) (void *v1, void *v2, void *opaque);
    \sa <a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/ldap/ldap/ldap_server_search_options_oid.asp">Microsoft documentation of this OID</a>
 */
 #define LDB_CONTROL_SEARCH_OPTIONS_OID	"1.2.840.113556.1.4.1340"
+#define LDB_CONTROL_SEARCH_OPTIONS_NAME	"search_options"
 
 /**
    OID for notification
@@ -556,6 +564,7 @@ typedef int (*ldb_qsort_cmp_fn_t) (void *v1, void *v2, void *opaque);
    \sa <a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/ldap/ldap/ldap_server_notification_oid.asp">Microsoft documentation of this OID</a>
 */
 #define LDB_CONTROL_NOTIFICATION_OID	"1.2.840.113556.1.4.528"
+#define LDB_CONTROL_NOTIFICATION_NAME	"notification"
 
 /**
    OID for performing subtree deletes
@@ -563,6 +572,7 @@ typedef int (*ldb_qsort_cmp_fn_t) (void *v1, void *v2, void *opaque);
    \sa <a href="http://msdn.microsoft.com/en-us/library/aa366991(v=VS.85).aspx">Microsoft documentation of this OID</a>
 */
 #define LDB_CONTROL_TREE_DELETE_OID	"1.2.840.113556.1.4.805"
+#define LDB_CONTROL_TREE_DELETE_NAME	"tree_delete"
 
 /**
    OID for getting deleted objects
@@ -570,6 +580,7 @@ typedef int (*ldb_qsort_cmp_fn_t) (void *v1, void *v2, void *opaque);
    \sa <a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/ldap/ldap/ldap_server_show_deleted_oid.asp">Microsoft documentation of this OID</a>
 */
 #define LDB_CONTROL_SHOW_DELETED_OID	"1.2.840.113556.1.4.417"
+#define LDB_CONTROL_SHOW_DELETED_NAME	"show_deleted"
 
 /**
    OID for getting recycled objects
@@ -577,6 +588,7 @@ typedef int (*ldb_qsort_cmp_fn_t) (void *v1, void *v2, void *opaque);
    \sa <a href="http://msdn.microsoft.com/en-us/library/dd304621(PROT.13).aspx">Microsoft documentation of this OID</a>
 */
 #define LDB_CONTROL_SHOW_RECYCLED_OID         "1.2.840.113556.1.4.2064"
+#define LDB_CONTROL_SHOW_RECYCLED_NAME	"show_recycled"
 
 /**
    OID for getting deactivated linked attributes
@@ -584,6 +596,7 @@ typedef int (*ldb_qsort_cmp_fn_t) (void *v1, void *v2, void *opaque);
    \sa <a href="http://msdn.microsoft.com/en-us/library/dd302781(PROT.13).aspx">Microsoft documentation of this OID</a>
 */
 #define LDB_CONTROL_SHOW_DEACTIVATED_LINK_OID "1.2.840.113556.1.4.2065"
+#define LDB_CONTROL_SHOW_DEACTIVATED_LINK_NAME	"show_deactivated_link"
 
 /**
    OID for extended DN
@@ -591,6 +604,7 @@ typedef int (*ldb_qsort_cmp_fn_t) (void *v1, void *v2, void *opaque);
    \sa <a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/ldap/ldap/ldap_server_extended_dn_oid.asp">Microsoft documentation of this OID</a>
 */
 #define LDB_CONTROL_EXTENDED_DN_OID	"1.2.840.113556.1.4.529"
+#define LDB_CONTROL_EXTENDED_DN_NAME	"extended_dn"
 
 /**
    OID for LDAP server sort result extension.
@@ -605,6 +619,7 @@ typedef int (*ldb_qsort_cmp_fn_t) (void *v1, void *v2, void *opaque);
    \sa <a href="http://www.ietf.org/rfc/rfc2891.txt">RFC 2891</a>.
 */
 #define LDB_CONTROL_SERVER_SORT_OID	"1.2.840.113556.1.4.473"
+#define LDB_CONTROL_SERVER_SORT_NAME	"server_sort"
 
 /**
    OID for LDAP server sort result response extension.
@@ -616,6 +631,7 @@ typedef int (*ldb_qsort_cmp_fn_t) (void *v1, void *v2, void *opaque);
    \sa <a href="http://www.ietf.org/rfc/rfc2891.txt">RFC 2891</a>.
 */
 #define LDB_CONTROL_SORT_RESP_OID	"1.2.840.113556.1.4.474"
+#define LDB_CONTROL_SORT_RESP_NAME	"server_sort_resp"
 
 /**
    OID for LDAP Attribute Scoped Query extension.
@@ -624,6 +640,7 @@ typedef int (*ldb_qsort_cmp_fn_t) (void *v1, void *v2, void *opaque);
    messages as part of the controls field of the LDAPMessage.
 */
 #define LDB_CONTROL_ASQ_OID		"1.2.840.113556.1.4.1504"
+#define LDB_CONTROL_ASQ_NAME	"asq"
 
 /**
    OID for LDAP Directory Sync extension. 
@@ -632,6 +649,7 @@ typedef int (*ldb_qsort_cmp_fn_t) (void *v1, void *v2, void *opaque);
    messages as part of the controls field of the LDAPMessage.
 */
 #define LDB_CONTROL_DIRSYNC_OID		"1.2.840.113556.1.4.841"
+#define LDB_CONTROL_DIRSYNC_NAME	"dirsync"
 
 
 /**
@@ -641,6 +659,7 @@ typedef int (*ldb_qsort_cmp_fn_t) (void *v1, void *v2, void *opaque);
    as part of the controls field of the LDAPMessage.
 */
 #define LDB_CONTROL_VLV_REQ_OID		"2.16.840.1.113730.3.4.9"
+#define LDB_CONTROL_VLV_REQ_NAME	"vlv"
 
 /**
    OID for LDAP Virtual List View Response extension.
@@ -649,6 +668,7 @@ typedef int (*ldb_qsort_cmp_fn_t) (void *v1, void *v2, void *opaque);
    as part of the controls field of the LDAPMessage.
 */
 #define LDB_CONTROL_VLV_RESP_OID	"2.16.840.1.113730.3.4.10"
+#define LDB_CONTROL_VLV_RESP_NAME	"vlv_resp"
 
 /**
    OID to let modifies don't give an error when adding an existing
@@ -657,6 +677,7 @@ typedef int (*ldb_qsort_cmp_fn_t) (void *v1, void *v2, void *opaque);
    \sa <a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/ldap/ldap/ldap_server_permissive_modify_oid.asp">Microsoft documentation of this OID</a>
 */
 #define LDB_CONTROL_PERMISSIVE_MODIFY_OID	"1.2.840.113556.1.4.1413"
+#define LDB_CONTROL_PERMISSIVE_MODIFY_NAME	"permissive_modify"
 
 /** 
     OID to allow the server to be more 'fast and loose' with the data being added.  
@@ -671,6 +692,7 @@ typedef int (*ldb_qsort_cmp_fn_t) (void *v1, void *v2, void *opaque);
    \sa <a href="">Microsoft documentation of this OID</a>
 */
 #define LDB_CONTROL_RODC_DCPROMO_OID "1.2.840.113556.1.4.1341"
+#define LDB_CONTROL_RODC_DCPROMO_NAME	"rodc_join"
 
 /* Other standardised controls */
 
@@ -683,6 +705,7 @@ typedef int (*ldb_qsort_cmp_fn_t) (void *v1, void *v2, void *opaque);
    \sa <a href="http://opends.dev.java.net/public/standards/draft-zeilenga-ldap-managedit.txt">draft managedit</a>.
 */
 #define LDB_CONTROL_RELAX_OID "1.3.6.1.4.1.4203.666.5.12"
+#define LDB_CONTROL_RELAX_NAME	"relax"
 
 /* Extended operations */
 
