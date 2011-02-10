@@ -135,7 +135,7 @@ def cmd_testonly(opt):
 
     if Options.options.SCREEN:
         server_wrapper = '${srcdir}/selftest/in_screen %s' % server_wrapper
-        os.environ['TERMINAL'] = '${srcdir}/selftest/in_screen'
+        os.environ['TERMINAL'] = EXPAND_VARIABLES(opt, '${srcdir}/selftest/in_screen')
     elif server_wrapper != '':
         server_wrapper = 'xterm -n server -l -e %s' % server_wrapper
 
