@@ -210,7 +210,8 @@ static struct security_acl *process_user_acl(TALLOC_CTX *mem_ctx,
 					     bool is_container,
 					     struct dom_sid *owner,
 					     struct dom_sid *group,
-					     struct GUID *object_list)
+					     struct GUID *object_list,
+					     bool is_protected)
 {
 	uint32_t i;
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
@@ -232,8 +233,16 @@ static struct security_acl *process_user_acl(TALLOC_CTX *mem_ctx,
 
 	for (i=0; i < acl->num_aces; i++){
 		struct security_ace *ace = &acl->aces[i];
-		if (ace->flags & SEC_ACE_FLAG_INHERITED_ACE)
-			continue;
+		/* Remove ID flags from user-provided ACEs
+		 * if we break inheritance, ignore them otherwise */
+		if (ace->flags & SEC_ACE_FLAG_INHERITED_ACE) {
+			if (is_protected) {
+				ace->flags &= ~SEC_ACE_FLAG_INHERITED_ACE;
+			} else {
+				continue;
+			}
+		}
+
 		if (ace->flags & SEC_ACE_FLAG_INHERIT_ONLY &&
 		    !(ace->flags & SEC_ACE_FLAG_CONTAINER_INHERIT ||
 		      ace->flags & SEC_ACE_FLAG_OBJECT_INHERIT))
@@ -358,13 +367,15 @@ static bool compute_acl(struct security_descriptor *parent_sd,
 					     is_container,
 					     new_sd->owner_sid,
 					     new_sd->group_sid,
-					     object_list);
+					     object_list,
+					     creator_sd->type & SEC_DESC_DACL_PROTECTED);
 		user_sacl = process_user_acl(new_sd,
 					     creator_sd->sacl,
 					     is_container,
 					     new_sd->owner_sid,
 					     new_sd->group_sid,
-					     object_list);
+					     object_list,
+					     creator_sd->type & SEC_DESC_SACL_PROTECTED);
 	}
 	cr_descr_log_descriptor(parent_sd, __location__"parent_sd", level);
 	cr_descr_log_descriptor(creator_sd,__location__ "creator_sd", level);
