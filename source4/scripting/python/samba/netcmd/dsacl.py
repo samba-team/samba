@@ -79,6 +79,8 @@ class cmd_ds_acl_set(Command):
             type="string"),
         Option("--trusteedn", help="DN of the entity that gets access",
             type="string"),
+        Option("--sddl", help="An ACE or group of ACEs to be added on the object",
+            type="string"),
         ]
 
     def find_trustee_sid(self, samdb, trusteedn):
@@ -133,13 +135,13 @@ class cmd_ds_acl_set(Command):
         print "new descriptor for %s:" % object_dn
         print desc_sddl
 
-    def run(self, car, action, objectdn, trusteedn,
+    def run(self, car, action, objectdn, trusteedn, sddl,
             host=None, credopts=None, sambaopts=None, versionopts=None):
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp)
 
-        if (car is None or action is None or objectdn is None or 
-            trusteedn is None):
+        if sddl is None and (car is None or action is None
+                             or objectdn is None or trusteedn is None):
             return self.usage()
 
         samdb = SamDB(url=host, session_info=system_session(),
@@ -159,7 +161,9 @@ class cmd_ds_acl_set(Command):
                 'ro-repl-secret-sync' : GUID_DRS_RO_REPL_SECRET_SYNC,
                 }
         sid = self.find_trustee_sid(samdb, trusteedn)
-        if action == "allow":
+        if sddl:
+            new_ace = sddl
+        elif action == "allow":
             new_ace = "(OA;;CR;%s;;%s)" % (cars[car], str(sid))
         elif action == "deny":
             new_ace = "(OD;;CR;%s;;%s)" % (cars[car], str(sid))
