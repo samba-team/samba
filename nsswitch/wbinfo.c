@@ -1040,6 +1040,35 @@ static bool wbinfo_allocate_gid(void)
 	return true;
 }
 
+static bool wbinfo_remove_uid_mapping(uid_t uid, const char *sid_str)
+{
+	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
+	struct wbcDomainSid sid;
+
+	/* Send request */
+
+	wbc_status = wbcStringToSid(sid_str, &sid);
+	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		d_fprintf(stderr, "failed to call wbcStringToSid: %s\n",
+			  wbcErrorString(wbc_status));
+		return false;
+	}
+
+	wbc_status = wbcRemoveUidMapping(uid, &sid);
+	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		d_fprintf(stderr, "failed to call wbcRemoveUidMapping: %s\n",
+			  wbcErrorString(wbc_status));
+		return false;
+	}
+
+	/* Display response */
+
+	d_printf("Removed uid %u to sid %s mapping\n",
+		(unsigned int)uid, sid_str);
+
+	return true;
+}
+
 static bool wbinfo_remove_gid_mapping(gid_t gid, const char *sid_str)
 {
 	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
@@ -1865,6 +1894,7 @@ enum {
 	OPT_USERSIDS,
 	OPT_ALLOCATE_UID,
 	OPT_ALLOCATE_GID,
+	OPT_REMOVE_UID_MAPPING,
 	OPT_REMOVE_GID_MAPPING,
 	OPT_SEPARATOR,
 	OPT_LIST_ALL_DOMAINS,
@@ -1926,6 +1956,7 @@ int main(int argc, char **argv, char **envp)
 		  "Get a new UID out of idmap" },
 		{ "allocate-gid", 0, POPT_ARG_NONE, 0, OPT_ALLOCATE_GID,
 		  "Get a new GID out of idmap" },
+		{ "remove-uid-mapping", 0, POPT_ARG_STRING, &string_arg, OPT_REMOVE_UID_MAPPING, "Remove uid to sid mapping in idmap", "UID,SID" },
 		{ "remove-gid-mapping", 0, POPT_ARG_STRING, &string_arg, OPT_REMOVE_GID_MAPPING, "Remove gid to sid mapping in idmap", "GID,SID" },
 		{ "check-secret", 't', POPT_ARG_NONE, 0, 't', "Check shared secret" },
 		{ "change-secret", 'c', POPT_ARG_NONE, 0, 'c', "Change shared secret" },
@@ -2123,6 +2154,17 @@ int main(int argc, char **argv, char **envp)
 		case OPT_ALLOCATE_GID:
 			if (!wbinfo_allocate_gid()) {
 				d_fprintf(stderr, "Could not allocate a gid\n");
+				goto done;
+			}
+			break;
+		case OPT_REMOVE_UID_MAPPING:
+			if (!parse_mapping_arg(string_arg, &int_subarg,
+				&string_subarg) ||
+			    !wbinfo_remove_uid_mapping(int_subarg,
+				string_subarg))
+			{
+				d_fprintf(stderr, "Could not remove uid to sid "
+				    "mapping\n");
 				goto done;
 			}
 			break;
