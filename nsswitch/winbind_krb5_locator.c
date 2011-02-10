@@ -192,7 +192,7 @@ static krb5_error_code smb_krb5_locator_call_cbfunc(const char *name,
 			break;
 		}
 
-		if (ret == EAI_AGAIN) {
+		if ((ret == EAI_AGAIN) && (count > 1)) {
 			count--;
 			continue;
 		}
