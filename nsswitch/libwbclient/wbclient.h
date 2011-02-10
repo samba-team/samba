@@ -856,6 +856,9 @@ wbcErr wbcSetUidHwm(uid_t uid_hwm);
  * @param gid_hwm      The new gid highwater mark value
  *
  * @return #wbcErr
+ *
+ * @deprecated      This method is not impemented any more and should
+ *                  be removed in the next major version change.
  **/
 wbcErr wbcSetGidHwm(gid_t gid_hwm);
 
