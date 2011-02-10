@@ -593,7 +593,7 @@ static NTSTATUS pdb_ads_update_sam_account(struct pdb_methods *m,
 		return NT_STATUS_OK;
 	}
 
-	rc = tldap_modify(ld, priv->dn, num_mods, mods, NULL, 0,
+	rc = tldap_modify(ld, priv->dn, mods, num_mods, NULL, 0,
 			  NULL, 0);
 	TALLOC_FREE(mods);
 	if (rc != TLDAP_SUCCESS) {
@@ -1089,7 +1089,7 @@ static NTSTATUS pdb_ads_mod_groupmem(struct pdb_methods *m,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	rc = tldap_modify(ld, groupdn, 1, mods, NULL, 0, NULL, 0);
+	rc = tldap_modify(ld, groupdn, mods, 1, NULL, 0, NULL, 0);
 	TALLOC_FREE(frame);
 	if (rc != TLDAP_SUCCESS) {
 		DEBUG(10, ("ldap_modify failed: %s\n",
@@ -1325,7 +1325,7 @@ static NTSTATUS pdb_ads_set_aliasinfo(struct pdb_methods *m,
 		return NT_STATUS_OK;
 	}
 
-	rc = tldap_modify(ld, dn, num_mods, mods, NULL, 0, NULL, 0);
+	rc = tldap_modify(ld, dn, mods, num_mods, NULL, 0, NULL, 0);
 	TALLOC_FREE(msg);
 	if (rc != TLDAP_SUCCESS) {
 		DEBUG(10, ("ldap_modify failed: %s\n",
@@ -1421,7 +1421,7 @@ static NTSTATUS pdb_ads_mod_aliasmem(struct pdb_methods *m,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	rc = tldap_modify(ld, aliasdn, 1, mods, NULL, 0, NULL, 0);
+	rc = tldap_modify(ld, aliasdn, mods, 1, NULL, 0, NULL, 0);
 	TALLOC_FREE(frame);
 	if (rc != TLDAP_SUCCESS) {
 		DEBUG(10, ("ldap_modify failed: %s\n",

@@ -2161,7 +2161,7 @@ struct tevent_req *tldap_modify_send(TALLOC_CTX *mem_ctx,
 				     struct tevent_context *ev,
 				     struct tldap_context *ld,
 				     const char *dn,
-				     int num_mods, struct tldap_mod *mods,
+				     struct tldap_mod *mods, int num_mods,
 				     struct tldap_control *sctrls,
 				     int num_sctrls,
 				     struct tldap_control *cctrls,
@@ -2221,7 +2221,7 @@ int tldap_modify_recv(struct tevent_req *req)
 }
 
 int tldap_modify(struct tldap_context *ld, const char *dn,
-		 int num_mods, struct tldap_mod *mods,
+		 struct tldap_mod *mods, int num_mods,
 		 struct tldap_control *sctrls, int num_sctrls,
 		 struct tldap_control *cctrls, int num_cctrls)
  {
@@ -2236,7 +2236,7 @@ int tldap_modify(struct tldap_context *ld, const char *dn,
 		goto fail;
 	}
 
-	req = tldap_modify_send(frame, ev, ld, dn, num_mods, mods,
+	req = tldap_modify_send(frame, ev, ld, dn, mods, num_mods,
 				sctrls, num_sctrls, cctrls, num_cctrls);
 	if (req == NULL) {
 		result = TLDAP_NO_MEMORY;
