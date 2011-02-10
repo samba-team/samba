@@ -1,6 +1,6 @@
 /*
   Error codes for Linux DNS client library implementation
-  
+
   Copyright (C) 2006 Krishna Ganugapati <krishnag@centeris.com>
   Copyright (C) 2006 Gerald Carter <jerry@samba.org>
 
@@ -28,7 +28,7 @@
 
 /* The Splint code analysis tool (http://www.splint.org.) doesn't 
    like immediate structures. */
-   
+
 #ifdef _SPLINT_
 #undef HAVE_IMMEDIATE_STRUCTURES
 #endif
