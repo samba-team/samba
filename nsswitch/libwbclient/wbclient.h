@@ -844,6 +844,9 @@ wbcErr wbcRemoveGidMapping(gid_t gid, const struct wbcDomainSid *sid);
  * @param uid_hwm      The new uid highwater mark value
  *
  * @return #wbcErr
+ *
+ * @deprecated      This method is not impemented any more and should
+ *                  be removed in the next major version change.
  **/
 wbcErr wbcSetUidHwm(uid_t uid_hwm);
 
