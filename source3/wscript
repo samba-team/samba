@@ -662,6 +662,7 @@ msg.msg_acctrightslen = sizeof(fd);
         conf.SET_TARGET_TYPE('lber', 'EMPTY')
 
     # Check for kerberos
+    have_gssapi=False
     if Options.options.with_krb5:
         conf.find_program('krb5-config', var='KRB5_CONFIG')
         if conf.env.KRB5_CONFIG:
@@ -678,8 +679,9 @@ msg.msg_acctrightslen = sizeof(fd);
         conf.CHECK_FUNCS_IN('crypto', 'des_set_key')
         conf.CHECK_FUNCS_IN('copy_Authenticator', 'asn1')
         conf.CHECK_FUNCS_IN('roken_getaddrinfo_hostspec', 'roken')
-        if conf.CHECK_FUNCS_IN('gss_display_status', 'gssapi gssapi_krb5'):
-            conf.DEFINE('HAVE_GSSAPI', '1')
+        if conf.CHECK_FUNCS_IN('gss_display_status', 'gssapi') or \
+           conf.CHECK_FUNCS_IN('gss_display_status', 'gssapi_krb5'):
+            have_gssapi=True
         conf.CHECK_FUNCS_IN('gss_wrap_iov', 'gssapi gssapi_krb5 krb5')
         conf.CHECK_FUNCS_IN('krb5_mk_req_extended krb5_kt_compare', 'krb5')
         conf.CHECK_FUNCS('''
@@ -880,7 +882,8 @@ return krb5_kt_resolve(context, "WRFILE:api", &keytab);
         if use_ads:
             conf.DEFINE('WITH_ADS', '1')
             conf.DEFINE('HAVE_KRB5', '1')
-            conf.DEFINE('HAVE_GSSAPI', '1')
+            if have_gssapi:
+                conf.DEFINE('HAVE_GSSAPI', '1')
         else:
             print "krb5 libs don't have all features required for Active Directory support"
             conf.undefine('HAVE_KRB5_H')
