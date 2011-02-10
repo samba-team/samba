@@ -832,6 +832,9 @@ wbcErr wbcRemoveUidMapping(uid_t uid, const struct wbcDomainSid *sid);
  * @param *sid      Pointer to the sid of the mapping to remove.
  *
  * @return #wbcErr
+ *
+ * @deprecated      This method is not impemented any more and should
+ *                  be removed in the next major version change.
  **/
 wbcErr wbcRemoveGidMapping(gid_t gid, const struct wbcDomainSid *sid);
 
