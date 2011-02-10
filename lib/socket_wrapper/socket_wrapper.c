@@ -969,7 +969,7 @@ static uint8_t *swrap_packet_init(struct timeval *tval,
 		ip->v6.ver_prio		= 0x60; /* version 4 and 5 * 32 bit words */
 		ip->v6.flow_label_high	= 0x00;
 		ip->v6.flow_label_low	= 0x0000;
-		ip->v6.payload_length	= htons(wire_len - icmp_truncate_len);//TODO
+		ip->v6.payload_length	= htons(wire_len - icmp_truncate_len); /* TODO */
 		ip->v6.next_header	= protocol;
 		memcpy(ip->v6.src_addr, src_in6->sin6_addr.s6_addr, 16);
 		memcpy(ip->v6.dest_addr, dest_in6->sin6_addr.s6_addr, 16);
@@ -1019,7 +1019,7 @@ static uint8_t *swrap_packet_init(struct timeval *tval,
 			ip->v6.ver_prio		= 0x60; /* version 4 and 5 * 32 bit words */
 			ip->v6.flow_label_high	= 0x00;
 			ip->v6.flow_label_low	= 0x0000;
-			ip->v6.payload_length	= htons(wire_len - icmp_truncate_len);//TODO
+			ip->v6.payload_length	= htons(wire_len - icmp_truncate_len); /* TODO */
 			ip->v6.next_header	= protocol;
 			memcpy(ip->v6.src_addr, dest_in6->sin6_addr.s6_addr, 16);
 			memcpy(ip->v6.dest_addr, src_in6->sin6_addr.s6_addr, 16);
