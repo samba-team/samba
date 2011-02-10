@@ -267,6 +267,12 @@ wbcErr wbcAllocateGid(gid_t *pgid)
 	return wbc_status;
 }
 
+/* Remove a group id mapping - not implemented any more */
+wbcErr wbcRemoveGidMapping(gid_t gid, const struct wbcDomainSid *sid)
+{
+	return WBC_ERR_NOT_IMPLEMENTED;
+}
+
 /* Set the highwater mark for allocated uids - not implemented any more */
 wbcErr wbcSetUidHwm(uid_t uid_hwm)
 {
