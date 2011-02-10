@@ -143,7 +143,9 @@ static int local_deltree(const char *path)
 
 _PUBLIC_ NTSTATUS torture_deltree_outputdir(struct torture_context *tctx)
 {
-	SMB_ASSERT(tctx->outputdir != NULL);
+	if (tctx->outputdir == NULL) {
+		return NT_STATUS_OK;
+	}
 	if ((strcmp(tctx->outputdir, "/") == 0)
 	    || (strcmp(tctx->outputdir, "") == 0)) {
 		return NT_STATUS_INVALID_PARAMETER;
