@@ -738,8 +738,6 @@ static NTSTATUS pipe_gssapi_verify_final(TALLOC_CTX *mem_ctx,
 		return status;
 	}
 
-	/* TODO: this is what the ntlmssp code does with the session_key, check
-	 * it is ok with gssapi too */
 	/*
 	 * We're an authenticated bind over smb, so the session key needs to
 	 * be set to "SystemLibraryDTC". Weird, but this is what Windows
