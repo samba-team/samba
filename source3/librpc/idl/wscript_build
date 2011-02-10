@@ -2,7 +2,7 @@
 
 bld.SAMBA_PIDL_LIST('PIDL',
                     '''messaging.idl libnetapi.idl notify.idl
-                       perfcount.idl secrets.idl libnet_join.idl preg.idl''',
+                       perfcount.idl secrets.idl libnet_join.idl''',
                     options='--includedir=../librpc/idl --header --ndr-parser',
                     output_dir='../gen_ndr')
 
