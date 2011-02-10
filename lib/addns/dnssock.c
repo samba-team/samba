@@ -22,9 +22,11 @@
   License along with this library; if not, see <http://www.gnu.org/licenses/>.
 */
 
+#include "replace.h"
 #include "dns.h"
 #include <sys/time.h>
 #include <unistd.h>
+#include "system/select.h"
 
 static int destroy_dns_connection(struct dns_connection *conn)
 {
@@ -103,7 +105,7 @@ static DNS_ERROR dns_udp_open( const char *nameserver,
 		}
 		memcpy( &ulAddress, pHost->h_addr, pHost->h_length );
 	}
-	
+
 	/* Create a socket for sending data */
 
 	conn->s = socket( AF_INET, SOCK_DGRAM, IPPROTO_UDP );
@@ -143,7 +145,7 @@ DNS_ERROR dns_open_connection( const char *nameserver, int32 dwType,
 	case DNS_UDP:
 		return dns_udp_open( nameserver, mem_ctx, conn );
 	}
-	
+
 	return ERROR_DNS_INVALID_PARAMETER;
 }
 
@@ -212,21 +214,17 @@ DNS_ERROR dns_send(struct dns_connection *conn, const struct dns_buffer *buf)
 static DNS_ERROR read_all(int fd, uint8 *data, size_t len)
 {
 	size_t total = 0;
-	fd_set rfds;
-	struct timeval tv;
 
 	while (total < len) {
+		struct pollfd pfd;
 		ssize_t ret;
 		int fd_ready;
-		
-		FD_ZERO( &rfds );
-		FD_SET( fd, &rfds );
 
-		/* 10 second timeout */
-		tv.tv_sec = 10;
-		tv.tv_usec = 0;
-		
-		fd_ready = select( fd+1, &rfds, NULL, NULL, &tv );
+		ZERO_STRUCT(pfd);
+		pfd.fd = fd;
+		pfd.events = POLLIN|POLLHUP;
+
+		fd_ready = poll(&pfd, 1, 10000);
 		if ( fd_ready == 0 ) {
 			/* read timeout */
 			return ERROR_DNS_SOCKET_ERROR;
