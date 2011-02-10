@@ -787,6 +787,16 @@ wbcErr wbcAllocateUid(uid_t *puid);
 wbcErr wbcAllocateGid(gid_t *pgid);
 
 /**
+ * @brief Remove a user id mapping
+ *
+ * @param uid       Uid of the mapping to remove.
+ * @param *sid      Pointer to the sid of the mapping to remove.
+ *
+ * @return #wbcErr
+ **/
+wbcErr wbcRemoveUidMapping(uid_t uid, const struct wbcDomainSid *sid);
+
+/**
  * @brief Remove a group id mapping
  *
  * @param gid       Gid of the mapping to remove.
