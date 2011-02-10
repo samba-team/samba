@@ -336,7 +336,7 @@ LIBNDR_NTPRINTING_OBJ = librpc/gen_ndr/ndr_ntprinting.o \
 			../librpc/ndr/ndr_ntprinting.o \
 
 LIBNDR_PREG_OBJ = librpc/gen_ndr/ndr_preg.o \
-		  librpc/ndr/ndr_preg.o
+		  ../librpc/ndr/ndr_preg.o
 
 LIBNDR_XATTR_OBJ = librpc/gen_ndr/ndr_xattr.o \
 		   ../librpc/ndr/ndr_xattr.o
@@ -1577,8 +1577,7 @@ IDL_FILES = librpc/idl/messaging.idl \
 	    librpc/idl/wbint.idl \
 	    librpc/idl/perfcount.idl \
 	    librpc/idl/secrets.idl \
-	    librpc/idl/libnet_join.idl \
-	    librpc/idl/preg.idl
+	    librpc/idl/libnet_join.idl
 
 samba3-idl::
 	@PIDL_OUTPUTDIR="librpc/gen_ndr" PIDL_ARGS="$(PIDL_ARGS)" CPP="$(CPP)" PIDL="../pidl/pidl" \

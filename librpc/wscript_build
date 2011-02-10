@@ -294,6 +294,11 @@ bld.SAMBA_SUBSYSTEM('NDR_BACKUPKEY',
 	public_deps='ndr'
 	)
 
+bld.SAMBA_SUBSYSTEM('NDR_PREG',
+	source='gen_ndr/ndr_preg.c ndr/ndr_preg.c',
+	public_deps='ndr'
+	)
+
 bld.SAMBA_SUBSYSTEM('NDR_FILE_ID',
 	source='gen_ndr/ndr_file_id.c',
 	public_deps='ndr'

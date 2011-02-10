@@ -20,11 +20,6 @@ bld.SAMBA_SUBSYSTEM('NDR_NOTIFY',
 	public_deps='ndr NDR_FILE_ID'
 	)
 
-bld.SAMBA_SUBSYSTEM('NDR_PREG',
-	source='gen_ndr/ndr_preg.c ndr/ndr_preg.c',
-	public_deps='ndr'
-	)
-
 bld.SAMBA_SUBSYSTEM('NDR_SECRETS',
 	source='gen_ndr/ndr_secrets.c',
 	public_deps='ndr'
