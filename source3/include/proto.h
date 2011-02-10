@@ -4581,7 +4581,6 @@ bool get_dir_entry(TALLOC_CTX *ctx,
 		bool ask_sharemode);
 bool is_visible_file(connection_struct *conn, const char *dir_path, const char *name, SMB_STRUCT_STAT *pst, bool use_veto);
 struct smb_Dir *OpenDir(TALLOC_CTX *mem_ctx, connection_struct *conn,
-			files_struct *fsp,
 			const char *name, const char *mask, uint32 attr);
 const char *ReadDirName(struct smb_Dir *dirp, long *poffset,
 			SMB_STRUCT_STAT *sbuf, char **talloced);
