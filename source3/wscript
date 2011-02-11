@@ -525,6 +525,7 @@ msg.msg_acctrightslen = sizeof(fd);
             conf.DEFINE('HAVE_CUPS', '1')
         else:
             conf.undefine('HAVE_CUPS')
+            conf.SET_TARGET_TYPE('cups', 'EMPTY')
     else:
         # define an empty subsystem for cups, to allow it to be used as an empty dependency
         conf.SET_TARGET_TYPE('cups', 'EMPTY')
