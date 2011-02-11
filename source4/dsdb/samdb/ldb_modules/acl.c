@@ -436,7 +436,7 @@ static int acl_sDRightsEffective(struct ldb_module *module,
 static int acl_validate_spn_value(TALLOC_CTX *mem_ctx,
 				  struct ldb_context *ldb,
 				  const char *spn_value,
-				  int userAccountControl,
+				  uint32_t userAccountControl,
 				  const char *samAccountName,
 				  const char *dnsHostName,
 				  const char *netbios_name,
@@ -544,7 +544,7 @@ static int acl_check_spn(TALLOC_CTX *mem_ctx,
 	struct ldb_result *netbios_res;
 	struct ldb_message_element *el;
 	struct ldb_dn *partitions_dn = samdb_partitions_dn(ldb, tmp_ctx);
-	int userAccountControl;
+	uint32_t userAccountControl;
 	const char *samAccountName;
 	const char *dnsHostName;
 	const char *netbios_name;
@@ -597,7 +597,7 @@ static int acl_check_spn(TALLOC_CTX *mem_ctx,
 		return ret;
 	}
 
-	userAccountControl = ldb_msg_find_attr_as_int(acl_res->msgs[0], "userAccountControl", 0);
+	userAccountControl = ldb_msg_find_attr_as_uint(acl_res->msgs[0], "userAccountControl", 0);
 	dnsHostName = ldb_msg_find_attr_as_string(acl_res->msgs[0], "dnsHostName", NULL);
 	samAccountName = ldb_msg_find_attr_as_string(acl_res->msgs[0], "samAccountName", NULL);
 
