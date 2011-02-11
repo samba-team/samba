@@ -1176,7 +1176,7 @@ bld.SAMBA_BINARY('client/smbclient',
 
 bld.SAMBA_BINARY('net',
                  source=NET_SRC,
-                 deps='''talloc tdb netapi addns cap resolv POPT_SAMBA PASSDB LIBSMB LIB_NONSMBD
+                 deps='''talloc tdb netapi addns cap resolv intl POPT_SAMBA PASSDB LIBSMB LIB_NONSMBD
                  PARAM_WITHOUT_REG wbclient PARAM KRBCLIENT LIBMSRPC_GEN LIBMSRPC LIBGPO LIBADS LIBADS_SERVER LIBADS_PRINTER
                  LOCALE_DIR LIBAFS LIBAFS_SETTOKEN SMBREADLINE PASSWD_UTIL LIBNET
                  LIBNET_DSSYNC LIBNET_SAMSYNC LIBEVENTLOG DCUTIL
