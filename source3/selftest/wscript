@@ -85,8 +85,8 @@ def cmd_testonly(opt):
 
     env.TESTS  = Options.options.TESTS
 
-    env.SUBUNIT_FORMATTER = '${PYTHON} -u ../selftest/format-subunit --prefix=${SELFTEST_PREFIX} --immediate'
-    env.FILTER_XFAIL = '${PYTHON} -u ../selftest/filter-subunit --expected-failures=./selftest/knownfail'
+    env.SUBUNIT_FORMATTER = '${PYTHON} -u ${srcdir}/selftest/format-subunit --prefix=${SELFTEST_PREFIX} --immediate'
+    env.FILTER_XFAIL = '${PYTHON} -u ${srcdir}/selftest/filter-subunit --expected-failures=${srcdir}/source3/selftest/knownfail'
 
     if Options.options.FAIL_IMMEDIATELY:
         env.FILTER_XFAIL += ' --fail-immediately'
@@ -103,9 +103,9 @@ def cmd_testonly(opt):
 
     env.OPTIONS = ''
     if not Options.options.SLOWTEST:
-        env.OPTIONS += ' --exclude=./selftest/slow'
+        env.OPTIONS += ' --exclude=${srcdir}/source3/selftest/slow'
     if Options.options.QUICKTEST:
-        env.OPTIONS += ' --quick --include=./selftest/quick'
+        env.OPTIONS += ' --quick --include=${srcdir}/source3/selftest/quick'
     if Options.options.LOAD_LIST:
         env.OPTIONS += ' --load-list=%s' % Options.options.LOAD_LIST
     if Options.options.TESTENV:
@@ -129,18 +129,18 @@ def cmd_testonly(opt):
     server_wrapper=''
 
     if Options.options.VALGRIND_SERVER:
-        server_wrapper = '../selftest/valgrind_run _DUMMY=X'
+        server_wrapper = '${srcdir}/selftest/valgrind_run _DUMMY=X'
     elif Options.options.GDBTEST:
-        server_wrapper = '../selftest/gdb_run _DUMMY=X'
+        server_wrapper = '${srcdir}/selftest/gdb_run _DUMMY=X'
 
     if Options.options.SCREEN:
-        server_wrapper = '%s/../selftest/in_screen %s' % (os.getcwd(), server_wrapper)
-        os.environ['TERMINAL'] = '%s/../selftest/in_screen' % os.getcwd()
+        server_wrapper = '${srcdir}/selftest/in_screen %s' % server_wrapper
+        os.environ['TERMINAL'] = EXPAND_VARIABLES(opt, '${srcdir}/selftest/in_screen')
     elif server_wrapper != '':
         server_wrapper = 'xterm -n server -l -e %s' % server_wrapper
 
     if server_wrapper != '':
-        os.environ['SAMBA_VALGRIND'] = server_wrapper
+        os.environ['SAMBA_VALGRIND'] = EXPAND_VARIABLES(opt, server_wrapper)
 
     # this is needed for systems without rpath, or with rpath disabled
     ADD_LD_LIBRARY_PATH('bin/shared')
@@ -163,11 +163,11 @@ def cmd_testonly(opt):
         os.makedirs(env.SELFTEST_PREFIX, int('755', 8))
 
     # We use the full path rather than relative path because it cause problems on some plateforms (ie. solaris 8).
-    cmd = '(${PERL} %s/../selftest/selftest.pl --target=samba3 --prefix=${SELFTEST_PREFIX} --builddir=. --srcdir=. --exclude=./selftest/skip --testlist="./selftest/tests.sh|" ${OPTIONS} --socket-wrapper ${TESTS} && touch ${SELFTEST_PREFIX}/st_done) | ${FILTER_OPTIONS} | tee ${SELFTEST_PREFIX}/subunit' % (os.getcwd())
+    cmd = '(${PERL} ${srcdir}/selftest/selftest.pl --target=samba3 --prefix=${SELFTEST_PREFIX} --builddir=. --srcdir=${srcdir} --exclude=${srcdir}/source3/selftest/skip --testlist="${srcdir}/source3/selftest/tests.sh|" ${OPTIONS} --socket-wrapper ${TESTS} && touch ${SELFTEST_PREFIX}/st_done) | ${FILTER_OPTIONS} | tee ${SELFTEST_PREFIX}/subunit'
     if os.environ.get('RUN_FROM_BUILD_FARM') is None and not Options.options.FILTERED_SUBUNIT:
         cmd += ' | ${FORMAT_TEST_OUTPUT}'
     else:
-        cmd += ' | ${PYTHON} -u ../selftest/filter-subunit'
+        cmd += ' | ${PYTHON} -u ${srcdir}/selftest/filter-subunit'
     cmd = EXPAND_VARIABLES(opt, cmd)
 
     print("test: running %s" % cmd)
