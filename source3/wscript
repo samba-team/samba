@@ -471,98 +471,6 @@ msg.msg_acctrightslen = sizeof(fd);
 	msg='Checking if we can use msg_acctrights for passing file descriptors',
 	headers='sys/types.h stdlib.h stddef.h sys/socket.h sys/un.h')
 
-    default_static_modules=TO_LIST('''pdb_smbpasswd pdb_tdbsam pdb_wbc_sam pdb_ldap
-                                      auth_sam auth_unix auth_winbind auth_wbc auth_server
-                                      auth_domain auth_builtin vfs_default
-                                      nss_info_template idmap_ldap idmap_tdb idmap_passdb
-                                      idmap_nss''')
-
-    default_shared_modules=TO_LIST('''vfs_recycle vfs_audit vfs_extd_audit vfs_full_audit vfs_netatalk
-                                      vfs_fake_perms vfs_default_quota vfs_readonly vfs_cap
-                                      vfs_expand_msdfs vfs_shadow_copy vfs_shadow_copy2 charset_CP850
-                                      charset_CP437 auth_script vfs_readahead vfs_xattr_tdb
-                                      vfs_streams_xattr vfs_streams_depot vfs_acl_xattr vfs_acl_tdb
-                                      vfs_smb_traffic_analyzer vfs_preopen vfs_catia vfs_scannedonly
-                                      vfs_crossrename vfs_linux_xfs_sgid
-                                      vfs_time_audit idmap_autorid''')
-
-    if Options.options.developer:
-        default_static_modules.extend(TO_LIST('pdb_ads auth_netlogond'))
-        default_shared_modules.extend(TO_LIST('charset_weird perfcount_test'))
-
-    if Options.options.with_acl_support and conf.CONFIG_SET('HAVE_POSIX_ACLS'):
-        default_static_modules.extend(TO_LIST('vfs_posixacl'))
-
-    if conf.CONFIG_SET('HAVE_FREEBSD_SUNACL_H'):
-	default_shared_modules.extend(TO_LIST('vfs_zfsacl'))
-
-    if conf.CONFIG_SET('HAVE_DIRFD_DECL'):
-	default_shared_modules.extend(TO_LIST('vfs_syncops vfs_dirsort'))
-
-    if conf.CONFIG_SET('HAVE_STATFS_F_FSID'):
-	default_shared_modules.extend(TO_LIST('vfs_fileid'))
-
-    if conf.CONFIG_SET('HAVE_AIO') and (conf.CONFIG_SET('HAVE_MSGHDR_MSG_CONTROL') or conf.CONFIG_SET('HAVE_MSGHDR_MSG_ACCTRIGHTS')):
-	default_shared_modules.extend(TO_LIST('vfs_aio_fork'))
-
-    explicit_shared_modules = TO_LIST(Options.options.shared_modules, delimiter=',')
-    explicit_static_modules = TO_LIST(Options.options.static_modules, delimiter=',')
-
-    final_static_modules = default_static_modules
-    final_shared_modules = default_shared_modules
-
-    for m in explicit_static_modules:
-        if m in final_shared_modules:
-            final_shared_modules.remove(m)
-        final_static_modules.append(m)
-    for m in explicit_shared_modules:
-        if m in final_static_modules:
-            final_static_modules.remove(m)
-        final_shared_modules.append(m)
-
-    conf.env['static_modules'] = final_static_modules
-    conf.env['shared_modules'] = final_shared_modules
-
-    conf.DEFINE('STRING_STATIC_MODULES', ' '.join(final_static_modules), quote=True)
-
-    static_list = {}
-    shared_list = {}
-
-    prefixes = ['vfs', 'pdb', 'auth', 'nss_info', 'charset', 'idmap', 'gpext', 'perfcount']
-    conf.env['MODULE_PREFIXES'] = prefixes
-    for p in prefixes:
-        for m in final_static_modules:
-            if m.find(p) == 0:
-                if not p in static_list:
-                    static_list[p] = []
-                static_list[p].append(m)
-        for m in final_shared_modules:
-            if m.find(p) == 0:
-                if not p in shared_list:
-                    shared_list[p] = []
-                shared_list[p].append(m)
-
-    for p in prefixes:
-        static_env = "%s_STATIC" % p.upper()
-        shared_env = "%s_SHARED" % p.upper()
-        conf.env[static_env] = []
-        conf.env[shared_env] = []
-        if p in static_list:
-            decl_list=""
-            for entry in static_list[p]:
-                decl_list += "extern NTSTATUS %s_init(void); " % entry
-                conf.env[static_env].append('%s' % entry)
-            decl_list = decl_list.rstrip()
-            conf.DEFINE('static_decl_%s' % p, decl_list)
-            conf.DEFINE('static_init_%s' % p, '{ %s_init(); }' % '_init();  '.join(static_list[p]))
-        else:
-            conf.DEFINE('static_decl_%s' % p, '')
-            conf.DEFINE('static_init_%s' % p, '{}')
-        if p in shared_list:
-            for entry in shared_list[p]:
-                conf.DEFINE('%s_init' % entry, 'init_samba_module')
-                conf.env[shared_env].append('%s' % entry)
-
     if Options.options.with_winbind:
         conf.env.build_winbind = True
         conf.DEFINE('WITH_WINBIND', '1')
@@ -615,6 +523,8 @@ msg.msg_acctrightslen = sizeof(fd);
         conf.CHECK_FUNCS_IN('httpConnect httpConnectEncrypt', 'cups')
         if conf.CONFIG_SET('HAVE_CUPS_CUPS_H') and conf.CONFIG_SET('HAVE_CUPS_LANGUAGE_H'):
             conf.DEFINE('HAVE_CUPS', '1')
+        else:
+            conf.undefine('HAVE_CUPS')
     else:
         # define an empty subsystem for cups, to allow it to be used as an empty dependency
         conf.SET_TARGET_TYPE('cups', 'EMPTY')
@@ -1091,6 +1001,101 @@ int i; i = PAM_RADIO_TYPE;
 ''',
 		'HAVE_LINUX_RTNETLINK_H',
 		msg='Checking whether Linux rtnetlink is available')
+
+    default_static_modules=TO_LIST('''pdb_smbpasswd pdb_tdbsam pdb_wbc_sam
+                                      auth_sam auth_unix auth_winbind auth_wbc auth_server
+                                      auth_domain auth_builtin vfs_default
+                                      nss_info_template idmap_tdb idmap_passdb
+                                      idmap_nss''')
+
+    default_shared_modules=TO_LIST('''vfs_recycle vfs_audit vfs_extd_audit vfs_full_audit vfs_netatalk
+                                      vfs_fake_perms vfs_default_quota vfs_readonly vfs_cap
+                                      vfs_expand_msdfs vfs_shadow_copy vfs_shadow_copy2 charset_CP850
+                                      charset_CP437 auth_script vfs_readahead vfs_xattr_tdb
+                                      vfs_streams_xattr vfs_streams_depot vfs_acl_xattr vfs_acl_tdb
+                                      vfs_smb_traffic_analyzer vfs_preopen vfs_catia vfs_scannedonly
+                                      vfs_crossrename vfs_linux_xfs_sgid
+                                      vfs_time_audit idmap_autorid''')
+
+    if Options.options.developer:
+        default_static_modules.extend(TO_LIST('pdb_ads auth_netlogond'))
+        default_shared_modules.extend(TO_LIST('charset_weird perfcount_test'))
+
+    if Options.options.with_acl_support and conf.CONFIG_SET('HAVE_POSIX_ACLS'):
+        default_static_modules.extend(TO_LIST('vfs_posixacl'))
+
+    if conf.CONFIG_SET('HAVE_FREEBSD_SUNACL_H'):
+	default_shared_modules.extend(TO_LIST('vfs_zfsacl'))
+
+    if conf.CONFIG_SET('HAVE_DIRFD_DECL'):
+	default_shared_modules.extend(TO_LIST('vfs_syncops vfs_dirsort'))
+
+    if conf.CONFIG_SET('HAVE_STATFS_F_FSID'):
+	default_shared_modules.extend(TO_LIST('vfs_fileid'))
+
+    if conf.CONFIG_SET('HAVE_AIO') and (conf.CONFIG_SET('HAVE_MSGHDR_MSG_CONTROL') or conf.CONFIG_SET('HAVE_MSGHDR_MSG_ACCTRIGHTS')):
+	default_shared_modules.extend(TO_LIST('vfs_aio_fork'))
+
+    if conf.CONFIG_SET('HAVE_LDAP'):
+        default_static_modules.extend(TO_LIST('pdb_ldap idmap_ldap'))
+
+    explicit_shared_modules = TO_LIST(Options.options.shared_modules, delimiter=',')
+    explicit_static_modules = TO_LIST(Options.options.static_modules, delimiter=',')
+
+    final_static_modules = default_static_modules
+    final_shared_modules = default_shared_modules
+
+    for m in explicit_static_modules:
+        if m in final_shared_modules:
+            final_shared_modules.remove(m)
+        final_static_modules.append(m)
+    for m in explicit_shared_modules:
+        if m in final_static_modules:
+            final_static_modules.remove(m)
+        final_shared_modules.append(m)
+
+    conf.env['static_modules'] = final_static_modules
+    conf.env['shared_modules'] = final_shared_modules
+
+    conf.DEFINE('STRING_STATIC_MODULES', ' '.join(final_static_modules), quote=True)
+
+    static_list = {}
+    shared_list = {}
+
+    prefixes = ['vfs', 'pdb', 'auth', 'nss_info', 'charset', 'idmap', 'gpext', 'perfcount']
+    conf.env['MODULE_PREFIXES'] = prefixes
+    for p in prefixes:
+        for m in final_static_modules:
+            if m.find(p) == 0:
+                if not p in static_list:
+                    static_list[p] = []
+                static_list[p].append(m)
+        for m in final_shared_modules:
+            if m.find(p) == 0:
+                if not p in shared_list:
+                    shared_list[p] = []
+                shared_list[p].append(m)
+
+    for p in prefixes:
+        static_env = "%s_STATIC" % p.upper()
+        shared_env = "%s_SHARED" % p.upper()
+        conf.env[static_env] = []
+        conf.env[shared_env] = []
+        if p in static_list:
+            decl_list=""
+            for entry in static_list[p]:
+                decl_list += "extern NTSTATUS %s_init(void); " % entry
+                conf.env[static_env].append('%s' % entry)
+            decl_list = decl_list.rstrip()
+            conf.DEFINE('static_decl_%s' % p, decl_list)
+            conf.DEFINE('static_init_%s' % p, '{ %s_init(); }' % '_init();  '.join(static_list[p]))
+        else:
+            conf.DEFINE('static_decl_%s' % p, '')
+            conf.DEFINE('static_init_%s' % p, '{}')
+        if p in shared_list:
+            for entry in shared_list[p]:
+                conf.DEFINE('%s_init' % entry, 'init_samba_module')
+                conf.env[shared_env].append('%s' % entry)
 
     conf.SAMBA_CONFIG_H('include/config.h')
 
