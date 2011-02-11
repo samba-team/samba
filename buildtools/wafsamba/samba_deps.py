@@ -214,9 +214,11 @@ def add_init_functions(self):
     cflags = getattr(self, 'samba_cflags', [])[:]
 
     if modules == []:
-        cflags.append('-DSTATIC_%s_MODULES=%s' % (sname.replace('-','_'), sentinal))
+        sname = sname.replace('-','_')
+        sname = sname.replace('/','_')
+        cflags.append('-DSTATIC_%s_MODULES=%s' % (sname, sentinal))
         if sentinal == 'NULL':
-            cflags.append('-DSTATIC_%s_MODULES_PROTO' % sname.replace('-','_'))
+            cflags.append('-DSTATIC_%s_MODULES_PROTO' % sname)
         self.ccflags = cflags
         return
 
