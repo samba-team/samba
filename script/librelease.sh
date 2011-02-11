@@ -1,6 +1,8 @@
 #!/bin/bash
 # make a release of a Samba library
 
+GPG_USER='Samba Library Distribution Key <samba-bugs@samba.org>'
+
 if [ ! -d ".git" ]; then
 	echo "Run this script from the top-level directory in the"
 	echo "repository"
@@ -41,7 +43,7 @@ release_lib() {
 
     echo "signing"
     rm -f "$tarname.asc"
-    gpg --detach-sign --armor $tarname || exit 1
+    gpg -u "$GPG_USER" --detach-sign --armor $tarname || exit 1
     [ -f "$tarname.asc" ] || {
 	echo "Failed to create signature $tarname.asc"
 	exit 1
