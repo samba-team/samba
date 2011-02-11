@@ -536,7 +536,7 @@ gid_t get_current_gid(connection_struct *conn)
  doesn't alter this value.
 ****************************************************************************/
 
-const UNIX_USER_TOKEN *get_current_utok(connection_struct *conn)
+const struct security_unix_token *get_current_utok(connection_struct *conn)
 {
 	return &current_user.ut;
 }

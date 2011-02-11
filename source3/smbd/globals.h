@@ -78,7 +78,7 @@ extern struct smb_srv_trans_enc_ctx *partial_srv_trans_enc_ctx;
 extern struct smb_srv_trans_enc_ctx *srv_trans_enc_ctx;
 
 struct sec_ctx {
-	UNIX_USER_TOKEN ut;
+	struct security_unix_token ut;
 	struct security_token *token;
 };
 /* A stack of security contexts.  We include the current context as being

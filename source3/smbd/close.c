@@ -275,7 +275,7 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 	NTSTATUS status = NT_STATUS_OK;
 	NTSTATUS tmp_status;
 	struct file_id id;
-	const UNIX_USER_TOKEN *del_token = NULL;
+	const struct security_unix_token *del_token = NULL;
 
 	/* Ensure any pending write time updates are done. */
 	if (fsp->update_write_time_event) {
@@ -958,7 +958,7 @@ static NTSTATUS close_directory(struct smb_request *req, files_struct *fsp,
 	bool delete_dir = False;
 	NTSTATUS status = NT_STATUS_OK;
 	NTSTATUS status1 = NT_STATUS_OK;
-	const UNIX_USER_TOKEN *del_token = NULL;
+	const struct security_unix_token *del_token = NULL;
 
 	/*
 	 * NT can set delete_on_close of the last open

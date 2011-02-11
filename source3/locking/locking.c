@@ -584,7 +584,7 @@ static int parse_delete_tokens_list(struct share_mode_lock *lck,
 		memcpy(&pdtl->name_hash, p, sizeof(pdtl->name_hash));
 		p += sizeof(pdtl->name_hash);
 
-		pdtl->delete_token = TALLOC_ZERO_P(pdtl, UNIX_USER_TOKEN);
+		pdtl->delete_token = TALLOC_ZERO_P(pdtl, struct security_unix_token);
 		if (pdtl->delete_token == NULL) {
 			DEBUG(0,("parse_delete_tokens_list: talloc failed"));
 			return -1;
@@ -808,7 +808,7 @@ static TDB_DATA unparse_share_modes(const struct share_mode_lock *lck)
 
 	/* Store any delete on close tokens. */
 	for (pdtl = lck->delete_tokens; pdtl; pdtl = pdtl->next) {
-		UNIX_USER_TOKEN *pdt = pdtl->delete_token;
+		struct security_unix_token *pdt = pdtl->delete_token;
 		uint32_t token_size = sizeof(uint32_t) +
 					sizeof(uint32_t) +
 					sizeof(uid_t) +
@@ -1461,15 +1461,15 @@ NTSTATUS can_set_delete_on_close(files_struct *fsp, uint32 dosmode)
 }
 
 /*************************************************************************
- Return a talloced copy of a UNIX_USER_TOKEN. NULL on fail.
+ Return a talloced copy of a struct security_unix_token. NULL on fail.
  (Should this be in locking.c.... ?).
 *************************************************************************/
 
-static UNIX_USER_TOKEN *copy_unix_token(TALLOC_CTX *ctx, const UNIX_USER_TOKEN *tok)
+static struct security_unix_token *copy_unix_token(TALLOC_CTX *ctx, const struct security_unix_token *tok)
 {
-	UNIX_USER_TOKEN *cpy;
+	struct security_unix_token *cpy;
 
-	cpy = TALLOC_P(ctx, UNIX_USER_TOKEN);
+	cpy = TALLOC_P(ctx, struct security_unix_token);
 	if (!cpy) {
 		return NULL;
 	}
@@ -1494,7 +1494,7 @@ static UNIX_USER_TOKEN *copy_unix_token(TALLOC_CTX *ctx, const UNIX_USER_TOKEN *
 
 static bool add_delete_on_close_token(struct share_mode_lock *lck,
 			uint32_t name_hash,
-			const UNIX_USER_TOKEN *tok)
+			const struct security_unix_token *tok)
 {
 	struct delete_token_list *dtl;
 
@@ -1521,14 +1521,14 @@ static bool add_delete_on_close_token(struct share_mode_lock *lck,
  changed the delete on close flag. This will be noticed
  in the close code, the last closer will delete the file
  if flag is set.
- This makes a copy of any UNIX_USER_TOKEN into the
+ This makes a copy of any struct security_unix_token into the
  lck entry. This function is used when the lock is already granted.
 ****************************************************************************/
 
 void set_delete_on_close_lck(files_struct *fsp,
 			struct share_mode_lock *lck,
 			bool delete_on_close,
-			const UNIX_USER_TOKEN *tok)
+			const struct security_unix_token *tok)
 {
 	struct delete_token_list *dtl;
 	bool ret;
@@ -1565,7 +1565,7 @@ void set_delete_on_close_lck(files_struct *fsp,
 	SMB_ASSERT(ret);
 }
 
-bool set_delete_on_close(files_struct *fsp, bool delete_on_close, const UNIX_USER_TOKEN *tok)
+bool set_delete_on_close(files_struct *fsp, bool delete_on_close, const struct security_unix_token *tok)
 {
 	struct share_mode_lock *lck;
 	
@@ -1596,7 +1596,7 @@ bool set_delete_on_close(files_struct *fsp, bool delete_on_close, const UNIX_USE
 	return True;
 }
 
-const UNIX_USER_TOKEN *get_delete_on_close_token(struct share_mode_lock *lck, uint32_t name_hash)
+const struct security_unix_token *get_delete_on_close_token(struct share_mode_lock *lck, uint32_t name_hash)
 {
 	struct delete_token_list *dtl;
 

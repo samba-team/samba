@@ -250,7 +250,7 @@ done:
 ********************************************************************/
 
 void map_max_allowed_access(const struct security_token *nt_token,
-			    const struct unix_user_token *unix_token,
+			    const struct security_unix_token *unix_token,
 			    uint32_t *pacc_requested)
 {
 	if (!((*pacc_requested) & MAXIMUM_ALLOWED_ACCESS)) {

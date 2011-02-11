@@ -3040,12 +3040,12 @@ void del_deferred_open_entry(struct share_mode_lock *lck, uint64_t mid,
 bool remove_share_oplock(struct share_mode_lock *lck, files_struct *fsp);
 bool downgrade_share_oplock(struct share_mode_lock *lck, files_struct *fsp);
 NTSTATUS can_set_delete_on_close(files_struct *fsp, uint32 dosmode);
-const UNIX_USER_TOKEN *get_delete_on_close_token(struct share_mode_lock *lck, uint32_t name_hash);
+const struct security_unix_token *get_delete_on_close_token(struct share_mode_lock *lck, uint32_t name_hash);
 void set_delete_on_close_lck(files_struct *fsp,
 			struct share_mode_lock *lck,
 			bool delete_on_close,
-			const UNIX_USER_TOKEN *tok);
-bool set_delete_on_close(files_struct *fsp, bool delete_on_close, const UNIX_USER_TOKEN *tok);
+			const struct security_unix_token *tok);
+bool set_delete_on_close(files_struct *fsp, bool delete_on_close, const struct security_unix_token *tok);
 bool is_delete_on_close_set(struct share_mode_lock *lck, uint32_t name_hash);
 bool set_sticky_write_time(struct file_id fileid, struct timespec write_time);
 bool set_write_time(struct file_id fileid, struct timespec write_time);
@@ -5112,7 +5112,7 @@ void server_encryption_shutdown(void);
 
 /* The following definitions come from smbd/sec_ctx.c  */
 
-bool unix_token_equal(const UNIX_USER_TOKEN *t1, const UNIX_USER_TOKEN *t2);
+bool unix_token_equal(const struct security_unix_token *t1, const struct security_unix_token *t2);
 bool push_sec_ctx(void);
 void set_sec_ctx(uid_t uid, gid_t gid, int ngroups, gid_t *groups, struct security_token *token);
 void set_root_sec_ctx(void);
@@ -5282,7 +5282,7 @@ bool become_user(connection_struct *conn, uint16 vuid);
 bool unbecome_user(void);
 uid_t get_current_uid(connection_struct *conn);
 gid_t get_current_gid(connection_struct *conn);
-const UNIX_USER_TOKEN *get_current_utok(connection_struct *conn);
+const struct security_unix_token *get_current_utok(connection_struct *conn);
 const struct security_token *get_current_nttok(connection_struct *conn);
 uint16_t get_current_vuid(connection_struct *conn);
 
@@ -5421,7 +5421,7 @@ NTSTATUS access_check_object( struct security_descriptor *psd, struct security_t
 			      uint32 des_access, uint32 *acc_granted,
 			      const char *debug );
 void map_max_allowed_access(const struct security_token *nt_token,
-			    const struct unix_user_token *unix_token,
+			    const struct security_unix_token *unix_token,
 			    uint32_t *pacc_requested);
 
 /* The following definitions come from ../libds/common/flag_mapping.c  */

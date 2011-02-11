@@ -1306,7 +1306,7 @@ static bool uid_entry_in_group(connection_struct *conn, canon_ace *uid_ace, cano
 	 * and don't need to do the complex user_in_group_sid() call
 	 */
 	if (uid_ace->unix_ug.uid == get_current_uid(conn)) {
-		const UNIX_USER_TOKEN *curr_utok = NULL;
+		const struct security_unix_token *curr_utok = NULL;
 		size_t i;
 
 		if (group_ace->unix_ug.gid == get_current_gid(conn)) {
@@ -2652,7 +2652,7 @@ static canon_ace *canonicalise_acl(struct connection_struct *conn,
 static bool current_user_in_group(connection_struct *conn, gid_t gid)
 {
 	int i;
-	const UNIX_USER_TOKEN *utok = get_current_utok(conn);
+	const struct security_unix_token *utok = get_current_utok(conn);
 
 	for (i = 0; i < utok->ngroups; i++) {
 		if (utok->groups[i] == gid) {

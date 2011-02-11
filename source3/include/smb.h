@@ -203,13 +203,6 @@ struct lsa_name_info {
 #define PRIMARY_USER_SID_INDEX 0
 #define PRIMARY_GROUP_SID_INDEX 1
 
-typedef struct unix_user_token {
-	uid_t uid;
-	gid_t gid;
-	uint32_t ngroups;
-	gid_t *groups;
-} UNIX_USER_TOKEN;
-
 typedef struct write_cache {
 	SMB_OFF_T file_size;
 	SMB_OFF_T offset;
@@ -521,7 +514,7 @@ typedef struct connection_struct {
 struct current_user {
 	connection_struct *conn;
 	uint16 vuid;
-	UNIX_USER_TOKEN ut;
+	struct security_unix_token ut;
 	struct security_token *nt_user_token;
 };
 
@@ -689,7 +682,7 @@ Offset  Data			length.
 struct delete_token_list {
 	struct delete_token_list *next, *prev;
 	uint32_t name_hash;
-	UNIX_USER_TOKEN *delete_token;
+	struct security_unix_token *delete_token;
 };
 
 struct share_mode_lock {

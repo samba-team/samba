@@ -30,7 +30,7 @@ struct auth_serversupplied_info {
 	bool guest;
 	bool system;
 
-	struct unix_user_token utok;
+	struct security_unix_token utok;
 
 	/* NT group information taken from the info3 structure */
 

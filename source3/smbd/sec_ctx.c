@@ -27,7 +27,7 @@ extern struct current_user current_user;
  Are two UNIX tokens equal ?
 ****************************************************************************/
 
-bool unix_token_equal(const UNIX_USER_TOKEN *t1, const UNIX_USER_TOKEN *t2)
+bool unix_token_equal(const struct security_unix_token *t1, const struct security_unix_token *t2)
 {
 	if (t1->uid != t2->uid || t1->gid != t2->gid ||
 			t1->ngroups != t2->ngroups) {

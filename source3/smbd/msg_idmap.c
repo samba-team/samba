@@ -85,7 +85,7 @@ static bool gid_in_use(const struct user_struct* user, gid_t gid)
 	while (user) {
 		if (user->session_info != NULL) {
 			int i;
-			struct unix_user_token utok = user->session_info->utok;
+			struct security_unix_token utok = user->session_info->utok;
 			if (utok.gid == gid) {
 				return true;
 			}
