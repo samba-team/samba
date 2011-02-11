@@ -507,7 +507,7 @@ static int acl_validate_spn_value(TALLOC_CTX *mem_ctx,
 	}
 	/* instanceName can be samAccountName without $ or dnsHostName
 	 * or "ntds_guid._msdcs.forest_domain for DC objects */
-	if (strncasecmp(instanceName, samAccountName, strlen(samAccountName - 1)) == 0) {
+	if (strncasecmp(instanceName, samAccountName, strlen(samAccountName) - 1) == 0) {
 		goto success;
 	} else if (strcasecmp(instanceName, dnsHostName) == 0) {
 		goto success;
