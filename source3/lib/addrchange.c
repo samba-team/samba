@@ -125,6 +125,7 @@ static void addrchange_done(struct tevent_req *subreq)
 		subreq, struct tevent_req);
 	struct addrchange_state *state = tevent_req_data(
 		req, struct addrchange_state);
+	struct sockaddr_nl *addr;
 	struct nlmsghdr *h;
 	struct ifaddrmsg *ifa;
 	struct rtattr *rta;
@@ -140,25 +141,35 @@ static void addrchange_done(struct tevent_req *subreq)
 		tevent_req_nterror(req, map_nt_error_from_unix(err));
 		return;
 	}
+	if ((state->fromaddr_len != sizeof(struct sockaddr_nl))
+	    || (state->fromaddr.ss_family != AF_NETLINK)) {
+		DEBUG(10, ("Got message from wrong addr\n"));
+		goto retry;
+	}
+
+	addr = (struct sockaddr_nl *)(void *)&state->addr;
+	if (addr->nl_pid != 0) {
+		DEBUG(10, ("Got msg from pid %d, not from the kernel\n",
+			   (int)addr->nl_pid));
+		goto retry;
+	}
+
 	if (received < sizeof(struct nlmsghdr)) {
 		DEBUG(10, ("received %d, expected at least %d\n",
 			   (int)received, (int)sizeof(struct nlmsghdr)));
-		tevent_req_nterror(req, NT_STATUS_UNEXPECTED_IO_ERROR);
-		return;
+		goto retry;
 	}
 
 	h = (struct nlmsghdr *)state->buf;
 	if (h->nlmsg_len < sizeof(struct nlmsghdr)) {
 		DEBUG(10, ("nlmsg_len=%d, expected at least %d\n",
 			   (int)h->nlmsg_len, (int)sizeof(struct nlmsghdr)));
-		tevent_req_nterror(req, NT_STATUS_UNEXPECTED_IO_ERROR);
-		return;
+		goto retry;
 	}
 	if (h->nlmsg_len > received) {
 		DEBUG(10, ("nlmsg_len=%d, expected at most %d\n",
 			   (int)h->nlmsg_len, (int)received));
-		tevent_req_nterror(req, NT_STATUS_UNEXPECTED_IO_ERROR);
-		return;
+		goto retry;
 	}
 	switch (h->nlmsg_type) {
 	case RTM_NEWADDR:
@@ -169,16 +180,7 @@ static void addrchange_done(struct tevent_req *subreq)
 		break;
 	default:
 		DEBUG(10, ("Got unexpected type %d - ignoring\n", h->nlmsg_type));
-
-		state->fromaddr_len = sizeof(state->fromaddr);
-		subreq = recvfrom_send(state, state->ev, state->ctx->sock,
-			       state->buf, sizeof(state->buf), 0,
-			       &state->fromaddr, &state->fromaddr_len);
-		if (tevent_req_nomem(subreq, req)) {
-			return;
-		}
-		tevent_req_set_callback(subreq, addrchange_done, req);
-		return;
+		goto retry;
 	}
 
 	if (h->nlmsg_len < sizeof(struct nlmsghdr)+sizeof(struct ifaddrmsg)) {
@@ -240,6 +242,17 @@ static void addrchange_done(struct tevent_req *subreq)
 	}
 
 	tevent_req_done(req);
+	return;
+
+retry:
+	state->fromaddr_len = sizeof(state->fromaddr);
+	subreq = recvfrom_send(state, state->ev, state->ctx->sock,
+			       state->buf, sizeof(state->buf), 0,
+			       &state->fromaddr, &state->fromaddr_len);
+	if (tevent_req_nomem(subreq, req)) {
+		return;
+	}
+	tevent_req_set_callback(subreq, addrchange_done, req);
 }
 
 NTSTATUS addrchange_recv(struct tevent_req *req, enum addrchange_type *type,
