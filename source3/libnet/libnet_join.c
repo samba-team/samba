@@ -102,7 +102,7 @@ static void libnet_unjoin_set_error_string(TALLOC_CTX *mem_ctx,
 	va_end(args);
 }
 
-#ifdef WITH_ADS
+#ifdef HAVE_ADS
 
 /****************************************************************
 ****************************************************************/
@@ -642,7 +642,7 @@ static ADS_STATUS libnet_join_post_processing_ads(TALLOC_CTX *mem_ctx,
 
 	return ADS_SUCCESS;
 }
-#endif /* WITH_ADS */
+#endif /* HAVE_ADS */
 
 /****************************************************************
  Store the machine password and domain SID
@@ -1710,7 +1710,7 @@ static WERROR libnet_join_post_processing(TALLOC_CTX *mem_ctx,
 		saf_join_store(r->out.dns_domain_name, r->in.dc_name);
 	}
 
-#ifdef WITH_ADS
+#ifdef HAVE_ADS
 	if (r->out.domain_is_ad &&
 	    !(r->in.join_flags & WKSSVC_JOIN_FLAGS_JOIN_UNSECURE)) {
 		ADS_STATUS ads_status;
@@ -1720,7 +1720,7 @@ static WERROR libnet_join_post_processing(TALLOC_CTX *mem_ctx,
 			return WERR_GENERAL_FAILURE;
 		}
 	}
-#endif /* WITH_ADS */
+#endif /* HAVE_ADS */
 
 	libnet_join_add_dom_rids_to_builtins(r->out.domain_sid);
 
@@ -1928,9 +1928,9 @@ static WERROR libnet_DomainJoin(TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 	WERROR werr;
 	struct cli_state *cli = NULL;
-#ifdef WITH_ADS
+#ifdef HAVE_ADS
 	ADS_STATUS ads_status;
-#endif /* WITH_ADS */
+#endif /* HAVE_ADS */
 
 	if (!r->in.dc_name) {
 		struct netr_DsRGetDCNameInfo *info;
@@ -1971,7 +1971,7 @@ static WERROR libnet_DomainJoin(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-#ifdef WITH_ADS
+#ifdef HAVE_ADS
 	if (r->out.domain_is_ad && r->in.account_ou &&
 	    !(r->in.join_flags & WKSSVC_JOIN_FLAGS_JOIN_UNSECURE)) {
 
@@ -1991,7 +1991,7 @@ static WERROR libnet_DomainJoin(TALLOC_CTX *mem_ctx,
 
 		r->in.join_flags &= ~WKSSVC_JOIN_FLAGS_ACCOUNT_CREATE;
 	}
-#endif /* WITH_ADS */
+#endif /* HAVE_ADS */
 
 	if ((r->in.join_flags & WKSSVC_JOIN_FLAGS_JOIN_UNSECURE) &&
 	    (r->in.join_flags & WKSSVC_JOIN_FLAGS_MACHINE_PWD_PASSED)) {
@@ -2149,7 +2149,7 @@ static WERROR libnet_DomainUnjoin(TALLOC_CTX *mem_ctx,
 		W_ERROR_HAVE_NO_MEMORY(r->in.dc_name);
 	}
 
-#ifdef WITH_ADS
+#ifdef HAVE_ADS
 	/* for net ads leave, try to delete the account.  If it works, 
 	   no sense in disabling.  If it fails, we can still try to 
 	   disable it. jmcd */
@@ -2176,7 +2176,7 @@ static WERROR libnet_DomainUnjoin(TALLOC_CTX *mem_ctx,
 			return WERR_OK;
 		}
 	}
-#endif /* WITH_ADS */
+#endif /* HAVE_ADS */
 
 	/* The WKSSVC_JOIN_FLAGS_ACCOUNT_DELETE flag really means 
 	   "disable".  */
