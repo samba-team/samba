@@ -13,3 +13,5 @@ samba3.eatest
 samba3.mangle
 samba3.utable
 samba3.pipe_number
+samba3.smbtorture_s3.plain.CHAIN1
+samba3.smbtorture_s3.crypt.CHAIN1
