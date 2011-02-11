@@ -26,5 +26,6 @@ bld.SAMBA_SUBSYSTEM('COMMON_SCHANNELDB',
 
 
 bld.SAMBA_SUBSYSTEM('PAM_ERRORS',
-	source='pam_errors.c'
+	source='pam_errors.c',
+	deps='talloc'
 	)
