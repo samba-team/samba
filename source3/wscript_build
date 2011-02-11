@@ -11,10 +11,7 @@ TDB_LIB_SRC = '''
 
 TDB_VALIDATE_SRC = '''lib/tdb_validate.c'''
 
-SMBLDAP = bld.env.SMBLDAP or ""
-SMBLDAPUTIL = bld.env.SMBLDAPUTIL or ""
-
-SMBLDAP_SRC = '''${SMBLDAP} ${SMBLDAPUTIL}'''
+SMBLDAP_SRC = '''lib/smbldap.c lib/smbldap_util.c'''
 
 VERSION_SRC = '''lib/version.c'''
 
@@ -880,7 +877,8 @@ bld.SAMBA_SUBSYSTEM('SECRETS',
 bld.SAMBA_SUBSYSTEM('SMBLDAP',
                     source=SMBLDAP_SRC,
                     deps='ldap lber',
-                    vars=locals())
+                    vars=locals(),
+                    enabled=bld.env.HAVE_LDAP)
 
 bld.SAMBA_SUBSYSTEM('LIBADS',
                     source=LIBADS_SRC,
