@@ -572,8 +572,7 @@ msg.msg_acctrightslen = sizeof(fd);
         if conf.CONFIG_SET('HAVE_LDAP_INIT'):
             conf.DEFINE('HAVE_LDAP', '1')
             conf.DEFINE('LDAP_DEPRECATED', '1')
-            conf.env['SMBLDAP'] = 'lib/smbldap.c'
-            conf.env['SMBLDAPUTIL'] = 'lib/smbldap_util.c'
+            conf.env['HAVE_LDAP'] = '1'
     else:
         conf.SET_TARGET_TYPE('ldap', 'EMPTY')
         conf.SET_TARGET_TYPE('lber', 'EMPTY')
