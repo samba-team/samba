@@ -152,5 +152,3 @@ ADS_STATUS ads_setup_sasl_wrapping(ADS_STRUCT *ads,
 /* The following definitions come from libads/util.c  */
 
 ADS_STATUS ads_change_trust_account_password(ADS_STRUCT *ads, char *host_principal);
-ADS_STATUS ads_guess_service_principal(ADS_STRUCT *ads,
-				       char **returned_principal);
