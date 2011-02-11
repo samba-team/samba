@@ -895,7 +895,7 @@ sub ConvertObjectFromPythonData($$$$$$;$)
 			$self->pidl("}");
 			return;
 		}
-		if (expandAlias($actual_ctype->{NAME}) =~ /^(char|u?int[0-9]*|time_t)$/) {
+		if (expandAlias($actual_ctype->{NAME}) =~ /^(char|u?int[0-9]*|time_t|uid_t|gid_t)$/) {
 			$self->pidl("PY_CHECK_TYPE(&PyInt_Type, $cvar, $fail);");
 			$self->pidl("$target = PyInt_AsLong($cvar);");
 			return;
@@ -1103,7 +1103,7 @@ sub ConvertScalarToPython($$$)
 		return "PyLong_FromLongLong($cvar)";
 	}
 
-	if ($ctypename =~ /^(char|u?int[0-9]*|time_t)$/) {
+	if ($ctypename =~ /^(char|u?int[0-9]*|time_t|uid_t|gid_t)$/) {
 		return "PyInt_FromLong($cvar)";
 	}
 

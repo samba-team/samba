@@ -810,6 +810,56 @@ _PUBLIC_ enum ndr_err_code ndr_pull_time_t(struct ndr_pull *ndr, int ndr_flags, 
 
 
 /*
+  push a uid_t
+*/
+_PUBLIC_ enum ndr_err_code ndr_push_uid_t(struct ndr_push *ndr, int ndr_flags, uid_t u)
+{
+	return ndr_push_udlong(ndr, NDR_SCALARS, (uint64_t)u);
+}
+
+/*
+  pull a uid_t
+*/
+_PUBLIC_ enum ndr_err_code ndr_pull_uid_t(struct ndr_pull *ndr, int ndr_flags, uid_t *u)
+{
+	uint64_t uu;
+	NDR_CHECK(ndr_pull_udlong(ndr, ndr_flags, &uu));
+	*u = (uid_t)uu;
+	if (unlikely(uu != *u)) {
+		DEBUG(0,(__location__ ": uid_t pull doesn't fit 0x%016llx\n",
+			 (unsigned long long)uu));
+		return NDR_ERR_NDR64;
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+
+/*
+  push a gid_t
+*/
+_PUBLIC_ enum ndr_err_code ndr_push_gid_t(struct ndr_push *ndr, int ndr_flags, gid_t g)
+{
+	return ndr_push_udlong(ndr, NDR_SCALARS, (uint64_t)g);
+}
+
+/*
+  pull a gid_t
+*/
+_PUBLIC_ enum ndr_err_code ndr_pull_gid_t(struct ndr_pull *ndr, int ndr_flags, gid_t *g)
+{
+	uint64_t gg;
+	NDR_CHECK(ndr_pull_udlong(ndr, ndr_flags, &gg));
+	*g = (gid_t)gg;
+	if (unlikely(gg != *g)) {
+		DEBUG(0,(__location__ ": gid_t pull doesn't fit 0x%016llx\n",
+			 (unsigned long long)gg));
+		return NDR_ERR_NDR64;
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+
+/*
   pull a ipv4address
 */
 _PUBLIC_ enum ndr_err_code ndr_pull_ipv4address(struct ndr_pull *ndr, int ndr_flags, const char **address)
@@ -1048,6 +1098,16 @@ _PUBLIC_ void ndr_print_time_t(struct ndr_print *ndr, const char *name, time_t t
 	} else {
 		ndr->print(ndr, "%-25s: %s", name, timestring(ndr, t));
 	}
+}
+
+_PUBLIC_ void ndr_print_uid_t(struct ndr_print *ndr, const char *name, uid_t u)
+{
+	ndr_print_dlong(ndr, name, u);
+}
+
+_PUBLIC_ void ndr_print_gid_t(struct ndr_print *ndr, const char *name, gid_t g)
+{
+	ndr_print_dlong(ndr, name, g);
 }
 
 _PUBLIC_ void ndr_print_union(struct ndr_print *ndr, const char *name, int level, const char *type)
