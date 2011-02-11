@@ -255,7 +255,7 @@ static bool initshutdown_shutdown_cb(void *ptr)
 {
 	return NT_STATUS_IS_OK(_rpc_ep_unregister(&ndr_table_initshutdown));
 }
-
+#ifdef DEVELOPER
 static bool rpcecho_init_cb(void *ptr) {
 	return NT_STATUS_IS_OK(_rpc_ep_register(&ndr_table_rpcecho, "rpcecho"));
 }
@@ -264,7 +264,7 @@ static bool rpcecho_shutdown_cb(void *ptr)
 {
 	return NT_STATUS_IS_OK(_rpc_ep_unregister(&ndr_table_rpcecho));
 }
-
+#endif
 static bool netdfs_init_cb(void *ptr)
 {
 	return NT_STATUS_IS_OK(_rpc_ep_register(&ndr_table_netdfs, "netdfs"));
@@ -304,7 +304,9 @@ bool srv_rpc_register(struct messaging_context *msg_ctx) {
 	struct rpc_srv_callbacks eventlog_cb;
 	struct rpc_srv_callbacks initshutdown_cb;
 	struct rpc_srv_callbacks netdfs_cb;
+#ifdef DEVELOPER
 	struct rpc_srv_callbacks rpcecho_cb;
+#endif
 	struct rpc_srv_callbacks dssetup_cb;
 	struct rpc_srv_callbacks wkssvc_cb;
 
