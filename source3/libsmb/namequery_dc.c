@@ -101,7 +101,7 @@ static bool ads_dc_name(const char *domain,
 			continue;
 		}
 
-#ifdef HAVE_KRB5
+#ifdef HAVE_ADS
 		if (is_our_primary_domain(domain) && (ads->config.flags & NBT_SERVER_KDC)) {
 			if (ads_closest_dc(ads)) {
 				/* We're going to use this KDC for this realm/domain.
