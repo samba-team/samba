@@ -819,7 +819,7 @@ NTSTATUS make_serverinfo_from_username(TALLOC_CTX *mem_ctx,
 		return status;
 	}
 
-	*presult = result;
+	*presult = talloc_steal(mem_ctx, result);
 	return NT_STATUS_OK;
 }
 
