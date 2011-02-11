@@ -2263,7 +2263,7 @@ static void smbd_server_connection_read_handler(
 	if (from_client) {
 		smbd_lock_socket(conn);
 
-		if (!fd_is_readable(fd)) {
+		if (lp_async_smb_echo_handler() && !fd_is_readable(fd)) {
 			DEBUG(10,("the echo listener was faster\n"));
 			smbd_unlock_socket(conn);
 			return;
