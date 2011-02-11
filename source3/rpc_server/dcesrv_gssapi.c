@@ -228,9 +228,10 @@ NTSTATUS gssapi_server_get_user_info(struct gse_context *gse_ctx,
 
 	/* TODO: save PAC data in netsamlogon cache ? */
 
-	status = make_server_info_krb5(mem_ctx,
+	status = make_session_info_krb5(mem_ctx,
 					ntuser, ntdomain, username, pw,
-				       logon_info, is_guest, is_mapped, server_info);
+					logon_info, is_guest, is_mapped, NULL /* No session key for now */,
+					server_info);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Failed to map kerberos pac to server info (%s)\n",
 			  nt_errstr(status)));

@@ -655,8 +655,8 @@ static NTSTATUS create_connection_session_info(struct smbd_server_connection *sc
 			return NT_STATUS_WRONG_PASSWORD;
                 }
 
-		return make_serverinfo_from_username(mem_ctx, user, guest,
-						     presult);
+		return make_session_info_from_username(mem_ctx, user, guest,
+						       presult);
         }
 
 	DEBUG(0, ("invalid VUID (vuser) but not in security=share\n"));
@@ -688,7 +688,7 @@ NTSTATUS set_conn_force_user_group(connection_struct *conn, int snum)
 			return NT_STATUS_NO_MEMORY;
 		}
 
-		status = make_serverinfo_from_username(
+		status = make_session_info_from_username(
 			conn, fuser, conn->session_info->guest,
 			&forced_serverinfo);
 		if (!NT_STATUS_IS_OK(status)) {

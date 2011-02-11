@@ -88,6 +88,7 @@ static int make_server_pipes_struct(TALLOC_CTX *mem_ctx,
 	struct netr_SamInfo3 *info3;
 	struct auth_user_info_dc *auth_user_info_dc;
 	struct pipes_struct *p;
+	struct auth_serversupplied_info *server_info;
 	NTSTATUS status;
 	bool ok;
 
@@ -148,7 +149,7 @@ static int make_server_pipes_struct(TALLOC_CTX *mem_ctx,
 	status = make_server_info_info3(p,
 					info3->base.account_name.string,
 					info3->base.domain.string,
-					&p->session_info, info3);
+					&server_info, info3);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Failed to init server info\n"));
 		TALLOC_FREE(p);
@@ -160,7 +161,8 @@ static int make_server_pipes_struct(TALLOC_CTX *mem_ctx,
 	 * Some internal functions need a local token to determine access to
 	 * resoutrces.
 	 */
-	status = create_local_token(p->session_info);
+	status = create_local_token(p, server_info, &session_info->session_key, &p->session_info);
+	talloc_free(server_info);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Failed to init local auth token\n"));
 		TALLOC_FREE(p);
@@ -172,10 +174,6 @@ static int make_server_pipes_struct(TALLOC_CTX *mem_ctx,
 	 * security_token we were given from the other side,
 	 * regardless of what we just calculated */
 	p->session_info->security_token = talloc_move(p->session_info, &session_info->security_token);
-
-	/* Also set the session key to the correct value */
-	p->session_info->user_session_key = session_info->session_key;
-	p->session_info->user_session_key.data = talloc_move(p->session_info, &session_info->session_key.data);
 
 	p->client_id = talloc_zero(p, struct client_address);
 	if (!p->client_id) {

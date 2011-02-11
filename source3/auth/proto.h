@@ -101,7 +101,10 @@ bool make_user_info_guest(struct auth_usersupplied_info **user_info) ;
 struct samu;
 NTSTATUS make_server_info_sam(struct auth_serversupplied_info **server_info,
 			      struct samu *sampass);
-NTSTATUS create_local_token(struct auth_serversupplied_info *server_info);
+NTSTATUS create_local_token(TALLOC_CTX *mem_ctx,
+			    struct auth_serversupplied_info *server_info,
+			    DATA_BLOB *session_key,
+			    struct auth_serversupplied_info **session_info_out);
 NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
 				    bool is_guest,
 				    uid_t *uid, gid_t *gid,
@@ -113,10 +116,10 @@ struct passwd;
 NTSTATUS make_server_info_pw(struct auth_serversupplied_info **server_info,
                              char *unix_username,
 			     struct passwd *pwd);
-NTSTATUS make_serverinfo_from_username(TALLOC_CTX *mem_ctx,
-				       const char *username,
-				       bool is_guest,
-				       struct auth_serversupplied_info **presult);
+NTSTATUS make_session_info_from_username(TALLOC_CTX *mem_ctx,
+					 const char *username,
+					 bool is_guest,
+					 struct auth_serversupplied_info **session_info);
 struct auth_serversupplied_info *copy_serverinfo(TALLOC_CTX *mem_ctx,
 						 const struct auth_serversupplied_info *src);
 bool init_guest_info(void);
@@ -258,11 +261,12 @@ NTSTATUS get_user_from_kerberos_info(TALLOC_CTX *mem_ctx,
 				     char **ntdomain,
 				     char **username,
 				     struct passwd **_pw);
-NTSTATUS make_server_info_krb5(TALLOC_CTX *mem_ctx,
+NTSTATUS make_session_info_krb5(TALLOC_CTX *mem_ctx,
 				char *ntuser,
 				char *ntdomain,
 				char *username,
 				struct passwd *pw,
 				struct PAC_LOGON_INFO *logon_info,
-			       bool mapped_to_guest, bool username_was_mapped,
-			       struct auth_serversupplied_info **server_info);
+				bool mapped_to_guest, bool username_was_mapped,
+				DATA_BLOB *session_key,
+				struct auth_serversupplied_info **session_info);

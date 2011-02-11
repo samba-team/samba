@@ -248,7 +248,7 @@ static void reply_spnego_kerberos(struct smb_request *req,
 	int sess_vuid = req->vuid;
 	NTSTATUS ret = NT_STATUS_OK;
 	DATA_BLOB ap_rep, ap_rep_wrapped, response;
-	struct auth_serversupplied_info *server_info = NULL;
+	struct auth_serversupplied_info *session_info = NULL;
 	DATA_BLOB session_key = data_blob_null;
 	uint8 tok_id[2];
 	DATA_BLOB nullblob = data_blob_null;
@@ -369,15 +369,16 @@ static void reply_spnego_kerberos(struct smb_request *req,
 	/* reload services so that the new %U is taken into account */
 	reload_services(sconn->msg_ctx, sconn->sock, True);
 
-	ret = make_server_info_krb5(mem_ctx,
-				    user, domain, real_username, pw,
-				    logon_info, map_domainuser_to_guest,
-				    username_was_mapped,
-				    &server_info);
+	ret = make_session_info_krb5(mem_ctx,
+				     user, domain, real_username, pw,
+				     logon_info, map_domainuser_to_guest,
+				     username_was_mapped,
+				     &session_key,
+				     &session_info);
+	data_blob_free(&session_key);
 	if (!NT_STATUS_IS_OK(ret)) {
 		DEBUG(1, ("make_server_info_krb5 failed!\n"));
 		data_blob_free(&ap_rep);
-		data_blob_free(&session_key);
 		TALLOC_FREE(mem_ctx);
 		reply_nterror(req, nt_status_squash(ret));
 		return;
@@ -387,20 +388,13 @@ static void reply_spnego_kerberos(struct smb_request *req,
 		sess_vuid = register_initial_vuid(sconn);
 	}
 
-	data_blob_free(&server_info->user_session_key);
-	/* Set the kerberos-derived session key onto the server_info */
-	server_info->user_session_key = session_key;
-	talloc_steal(server_info, session_key.data);
-
-	session_key = data_blob_null;
-
 	/* register_existing_vuid keeps the server info */
 	/* register_existing_vuid takes ownership of session_key on success,
 	 * no need to free after this on success. A better interface would copy
 	 * it.... */
 
 	sess_vuid = register_existing_vuid(sconn, sess_vuid,
-					   server_info, nullblob, user);
+					   session_info, nullblob, user);
 
 	reply_outbuf(req, 4, 0);
 	SSVAL(req->outbuf,smb_uid,sess_vuid);
@@ -413,7 +407,7 @@ static void reply_spnego_kerberos(struct smb_request *req,
 
 		SSVAL(req->outbuf, smb_vwv3, 0);
 
-		if (server_info->guest) {
+		if (session_info->guest) {
 			SSVAL(req->outbuf,smb_vwv2,1);
 		}
 
@@ -1275,6 +1269,7 @@ void reply_sesssetup_and_X(struct smb_request *req)
 	const char *primary_domain;
 	struct auth_usersupplied_info *user_info = NULL;
 	struct auth_serversupplied_info *server_info = NULL;
+	struct auth_serversupplied_info *session_info = NULL;
 	uint16 smb_flag2 = req->flags2;
 
 	NTSTATUS nt_status;
@@ -1622,27 +1617,18 @@ void reply_sesssetup_and_X(struct smb_request *req)
 		return;
 	}
 
-	/* Ensure we can't possible take a code path leading to a
-	 * null defref. */
-	if (!server_info) {
-		reply_nterror(req, nt_status_squash(NT_STATUS_LOGON_FAILURE));
+	nt_status = create_local_token(req, server_info, NULL, &session_info);
+	TALLOC_FREE(server_info);
+
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		DEBUG(10, ("create_local_token failed: %s\n",
+			   nt_errstr(nt_status)));
+		data_blob_free(&nt_resp);
+		data_blob_free(&lm_resp);
+		data_blob_clear_free(&plaintext_password);
+		reply_nterror(req, nt_status_squash(nt_status));
 		END_PROFILE(SMBsesssetupX);
 		return;
-	}
-
-	if (!server_info->security_token) {
-		nt_status = create_local_token(server_info);
-
-		if (!NT_STATUS_IS_OK(nt_status)) {
-			DEBUG(10, ("create_local_token failed: %s\n",
-				   nt_errstr(nt_status)));
-			data_blob_free(&nt_resp);
-			data_blob_free(&lm_resp);
-			data_blob_clear_free(&plaintext_password);
-			reply_nterror(req, nt_status_squash(nt_status));
-			END_PROFILE(SMBsesssetupX);
-			return;
-		}
 	}
 
 	data_blob_clear_free(&plaintext_password);
@@ -1654,7 +1640,7 @@ void reply_sesssetup_and_X(struct smb_request *req)
 		/* perhaps grab OS version here?? */
 	}
 
-	if (server_info->guest) {
+	if (session_info->guest) {
 		SSVAL(req->outbuf,smb_vwv2,1);
 	}
 
@@ -1663,7 +1649,7 @@ void reply_sesssetup_and_X(struct smb_request *req)
 
 	if (lp_security() == SEC_SHARE) {
 		sess_vuid = UID_FIELD_INVALID;
-		TALLOC_FREE(server_info);
+		TALLOC_FREE(session_info);
 	} else {
 		/* Ignore the initial vuid. */
 		sess_vuid = register_initial_vuid(sconn);
@@ -1675,9 +1661,9 @@ void reply_sesssetup_and_X(struct smb_request *req)
 			END_PROFILE(SMBsesssetupX);
 			return;
 		}
-		/* register_existing_vuid keeps the server info */
+		/* register_existing_vuid keeps the session_info */
 		sess_vuid = register_existing_vuid(sconn, sess_vuid,
-					server_info,
+					session_info,
 					nt_resp.data ? nt_resp : lm_resp,
 					sub_user);
 		if (sess_vuid == UID_FIELD_INVALID) {

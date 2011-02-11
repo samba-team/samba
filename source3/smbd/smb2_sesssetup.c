@@ -236,11 +236,12 @@ static NTSTATUS smbd_smb2_session_setup_krb5(struct smbd_smb2_session *session,
 	/* reload services so that the new %U is taken into account */
 	reload_services(smb2req->sconn->msg_ctx, smb2req->sconn->sock, true);
 
-	status = make_server_info_krb5(session,
-				       user, domain, real_username, pw,
-				       logon_info, map_domainuser_to_guest,
-				       username_was_mapped,
-				       &session->session_info);
+	status = make_session_info_krb5(session,
+					user, domain, real_username, pw,
+					logon_info, map_domainuser_to_guest,
+					username_was_mapped,
+					&session_key,
+					&session->session_info);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("smb2: make_server_info_krb5 failed\n"));
 		goto fail;
@@ -259,18 +260,6 @@ static NTSTATUS smbd_smb2_session_setup_krb5(struct smbd_smb2_session *session,
 		session->do_signing = false;
 	}
 
-	data_blob_free(&session->session_info->user_session_key);
-	session->session_info->user_session_key =
-			data_blob_talloc(
-				session->session_info,
-				session_key.data,
-				session_key.length);
-        if (session_key.length > 0) {
-		if (session->session_info->user_session_key.data == NULL) {
-			status = NT_STATUS_NO_MEMORY;
-			goto fail;
-		}
-	}
 	session->session_key = session->session_info->user_session_key;
 
 	session->compat_vuser = talloc_zero(session, user_struct);
