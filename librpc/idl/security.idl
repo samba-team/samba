@@ -577,6 +577,14 @@ interface security
 		lsa_SystemAccessModeFlags rights_mask;
 	} security_token;
 
+	/* This is not yet sent over the network, but is simply defined in IDL */
+	typedef [public] struct {
+		uid_t uid;
+		uid_t gid;
+		uint32 ngroups;
+		[size_is(ngroups)] gid_t groups[*];
+	} security_unix_token;
+
 	/* bits that determine which parts of a security descriptor
 	   are being queried/set */
 	typedef [public,bitmap32bit] bitmap {
