@@ -488,10 +488,11 @@ wait_until_node_has_status ()
     local pnn="$1"
     local status="$2"
     local timeout="${3:-30}"
+    local proxy_pnn="${4:-any}"
 
     echo "Waiting until node $pnn has status \"$status\"..."
 
-    if ! wait_until $timeout onnode any $CTDB_TEST_WRAPPER node_has_status "$pnn" "$status" ; then
+    if ! wait_until $timeout onnode $proxy_pnn $CTDB_TEST_WRAPPER node_has_status "$pnn" "$status" ; then
 	for i in "onnode -q any $CTDB status" "onnode -q any onnode all $CTDB scriptstatus" ; do
 	    echo "$i"
 	    $i || true
