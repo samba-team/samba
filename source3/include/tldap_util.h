@@ -39,7 +39,7 @@ bool tldap_add_mod_blobs(TALLOC_CTX *mem_ctx, struct tldap_mod **pmods,
 bool tldap_add_mod_str(TALLOC_CTX *mem_ctx, struct tldap_mod **pmods,
 		       int mod_op, const char *attrib, const char *str);
 bool tldap_make_mod_blob(struct tldap_message *existing, TALLOC_CTX *mem_ctx,
-			 int *pnum_mods, struct tldap_mod **pmods,
+			 struct tldap_mod **pmods, int *pnum_mods,
 			 const char *attrib, DATA_BLOB newval);
 bool tldap_make_mod_fmt(struct tldap_message *existing, TALLOC_CTX *mem_ctx,
 			int *pnum_mods, struct tldap_mod **pmods,

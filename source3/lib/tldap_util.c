@@ -271,7 +271,7 @@ static bool tldap_make_mod_blob_int(struct tldap_message *existing,
 }
 
 bool tldap_make_mod_blob(struct tldap_message *existing, TALLOC_CTX *mem_ctx,
-			 int *pnum_mods, struct tldap_mod **pmods,
+			 struct tldap_mod **pmods, int *pnum_mods,
 			 const char *attrib, DATA_BLOB newval)
 {
 	return tldap_make_mod_blob_int(existing, mem_ctx, pmods, pnum_mods,
