@@ -498,6 +498,11 @@ bld.SAMBA_SUBSYSTEM('RPC_NDR_BACKUPKEY',
 	public_deps='dcerpc NDR_BACKUPKEY'
 	)
 
+bld.SAMBA_SUBSYSTEM('RPC_NDR_DNSP',
+	source='gen_ndr/ndr_dnsp_c.c',
+	public_deps='dcerpc NDR_DNSP'
+	)
+
 # a grouping library for NDR subsystems that may be used by more than one target
 bld.SAMBA_LIBRARY('ndr-samba',
 	source=[],

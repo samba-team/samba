@@ -25,6 +25,11 @@ bld.SAMBA_PIDL_LIST('PIDL',
                     output_dir='../gen_ndr')
 
 bld.SAMBA_PIDL_LIST('PIDL',
-                    'rap.idl dnsp.idl ntprinting.idl preg.idl',
+                    'rap.idl ntprinting.idl preg.idl',
                     options='--header --ndr-parser',
+                    output_dir='../gen_ndr')
+
+bld.SAMBA_PIDL_LIST('PIDL',
+                    'dnsp.idl',
+                    options='--header --ndr-parser --client --python',
                     output_dir='../gen_ndr')
