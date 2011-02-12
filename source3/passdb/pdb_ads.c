@@ -296,6 +296,7 @@ static bool pdb_ads_init_ads_from_sam(struct pdb_ads_state *state,
 {
 	bool ret = true;
 	DATA_BLOB blob;
+	const char *pw;
 
 	/* TODO: All fields :-) */
 
@@ -303,16 +304,39 @@ static bool pdb_ads_init_ads_from_sam(struct pdb_ads_state *state,
 		existing, mem_ctx, pnum_mods, pmods, "displayName",
 		"%s", pdb_get_fullname(sam));
 
-	blob = data_blob_const(pdb_get_nt_passwd(sam), NT_HASH_LEN);
-	if (blob.data != NULL) {
+	pw = pdb_get_plaintext_passwd(sam);
+
+	/*
+	 * If we have the plain text pw, this is probably about to be
+	 * set. Is this true always?
+	 */
+	if (pw != NULL) {
+		char *pw_quote;
+		uint8_t *pw_utf16;
+		size_t pw_utf16_len;
+
+		pw_quote = talloc_asprintf(talloc_tos(), "\"%s\"", pw);
+		if (pw_quote == NULL) {
+			ret = false;
+			goto fail;
+		}
+
+		ret &= convert_string_talloc(talloc_tos(),
+					     CH_UNIX, CH_UTF16LE,
+					     pw_quote, strlen(pw_quote),
+					     &pw_utf16, &pw_utf16_len, false);
+		if (!ret) {
+			goto fail;
+		}
+		blob = data_blob_const(pw_utf16, pw_utf16_len);
+
 		ret &= tldap_add_mod_blobs(mem_ctx, pmods, TLDAP_MOD_REPLACE,
 					   "unicodePwd", 1, &blob);
-	}
-
-	blob = data_blob_const(pdb_get_lanman_passwd(sam), NT_HASH_LEN);
-	if (blob.data != NULL) {
-		ret &= tldap_add_mod_blobs(mem_ctx, pmods, TLDAP_MOD_REPLACE,
-					   "dBCSPwd", 1, &blob);
+		if (ret) {
+			*pnum_mods = talloc_array_length(*pmods);
+		}
+		TALLOC_FREE(pw_utf16);
+		TALLOC_FREE(pw_quote);
 	}
 
 	ret &= tldap_make_mod_fmt(
@@ -335,6 +359,7 @@ static bool pdb_ads_init_ads_from_sam(struct pdb_ads_state *state,
 		existing, mem_ctx, pnum_mods, pmods, "profilePath",
 		"%s", pdb_get_profile_path(sam));
 
+fail:
 	return ret;
 }
 
