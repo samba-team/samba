@@ -131,9 +131,10 @@ static bool tldap_add_blob_vals(TALLOC_CTX *mem_ctx, struct tldap_mod *mod,
 	return true;
 }
 
-bool tldap_add_mod_blobs(TALLOC_CTX *mem_ctx, struct tldap_mod **pmods,
+bool tldap_add_mod_blobs(TALLOC_CTX *mem_ctx,
+			 struct tldap_mod **pmods,
 			 int mod_op, const char *attrib,
-			 int num_newvals, DATA_BLOB *newvals)
+			 DATA_BLOB *newvals, int num_newvals)
 {
 	struct tldap_mod new_mod;
 	struct tldap_mod *mods = *pmods;
@@ -198,7 +199,7 @@ bool tldap_add_mod_str(TALLOC_CTX *mem_ctx, struct tldap_mod **pmods,
 		return false;
 	}
 
-	ret = tldap_add_mod_blobs(mem_ctx, pmods, mod_op, attrib, 1, &utf8);
+	ret = tldap_add_mod_blobs(mem_ctx, pmods, mod_op, attrib, &utf8, 1);
 	TALLOC_FREE(utf8.data);
 	return ret;
 }
@@ -248,7 +249,7 @@ static bool tldap_make_mod_blob_int(struct tldap_message *existing,
 		DEBUG(10, ("smbldap_make_mod_blob: deleting attribute |%s|\n",
 			   attrib));
 		if (!tldap_add_mod_blobs(mem_ctx, pmods, TLDAP_MOD_DELETE,
-					 attrib, 1, &oldval)) {
+					 attrib, &oldval, 1)) {
 			return false;
 		}
 	}
@@ -261,7 +262,7 @@ static bool tldap_make_mod_blob_int(struct tldap_message *existing,
 		DEBUG(10, ("smbldap_make_mod: adding attribute |%s| value len "
 			   "%d\n", attrib, (int)newval.length));
 	        if (!tldap_add_mod_blobs(mem_ctx, pmods, TLDAP_MOD_ADD,
-					 attrib, 1, &newval)) {
+					 attrib, &newval, 1)) {
 			return false;
 		}
 	}

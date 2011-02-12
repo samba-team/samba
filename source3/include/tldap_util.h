@@ -35,7 +35,7 @@ bool tldap_pull_guid(struct tldap_message *msg, const char *attribute,
 		     struct GUID *guid);
 bool tldap_add_mod_blobs(TALLOC_CTX *mem_ctx, struct tldap_mod **pmods,
 			 int mod_op, const char *attrib,
-			 int num_values, DATA_BLOB *values);
+			 DATA_BLOB *values, int num_values);
 bool tldap_add_mod_str(TALLOC_CTX *mem_ctx, struct tldap_mod **pmods,
 		       int mod_op, const char *attrib, const char *str);
 bool tldap_make_mod_blob(struct tldap_message *existing, TALLOC_CTX *mem_ctx,

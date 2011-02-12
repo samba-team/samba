@@ -331,7 +331,7 @@ static bool pdb_ads_init_ads_from_sam(struct pdb_ads_state *state,
 		blob = data_blob_const(pw_utf16, pw_utf16_len);
 
 		ret &= tldap_add_mod_blobs(mem_ctx, pmods, TLDAP_MOD_REPLACE,
-					   "unicodePwd", 1, &blob);
+					   "unicodePwd", &blob, 1);
 		if (ret) {
 			*pnum_mods = talloc_array_length(*pmods);
 		}
