@@ -302,7 +302,7 @@ static int compare_utf8_blobs(const DATA_BLOB *d1, const DATA_BLOB *d2)
 }
 
 bool tldap_make_mod_fmt(struct tldap_message *existing, TALLOC_CTX *mem_ctx,
-			int *pnum_mods, struct tldap_mod **pmods,
+			struct tldap_mod **pmods, int *pnum_mods,
 			const char *attrib, const char *fmt, ...)
 {
 	va_list ap;

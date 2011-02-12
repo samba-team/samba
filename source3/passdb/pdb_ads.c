@@ -301,7 +301,7 @@ static bool pdb_ads_init_ads_from_sam(struct pdb_ads_state *state,
 	/* TODO: All fields :-) */
 
 	ret &= tldap_make_mod_fmt(
-		existing, mem_ctx, pnum_mods, pmods, "displayName",
+		existing, mem_ctx, pmods, pnum_mods, "displayName",
 		"%s", pdb_get_fullname(sam));
 
 	pw = pdb_get_plaintext_passwd(sam);
@@ -340,23 +340,23 @@ static bool pdb_ads_init_ads_from_sam(struct pdb_ads_state *state,
 	}
 
 	ret &= tldap_make_mod_fmt(
-		existing, mem_ctx, pnum_mods, pmods, "userAccountControl",
+		existing, mem_ctx, pmods, pnum_mods, "userAccountControl",
 		"%d", ds_acb2uf(pdb_get_acct_ctrl(sam)));
 
 	ret &= tldap_make_mod_fmt(
-		existing, mem_ctx, pnum_mods, pmods, "homeDirectory",
+		existing, mem_ctx, pmods, pnum_mods, "homeDirectory",
 		"%s", pdb_get_homedir(sam));
 
 	ret &= tldap_make_mod_fmt(
-		existing, mem_ctx, pnum_mods, pmods, "homeDrive",
+		existing, mem_ctx, pmods, pnum_mods, "homeDrive",
 		"%s", pdb_get_dir_drive(sam));
 
 	ret &= tldap_make_mod_fmt(
-		existing, mem_ctx, pnum_mods, pmods, "scriptPath",
+		existing, mem_ctx, pmods, pnum_mods, "scriptPath",
 		"%s", pdb_get_logon_script(sam));
 
 	ret &= tldap_make_mod_fmt(
-		existing, mem_ctx, pnum_mods, pmods, "profilePath",
+		existing, mem_ctx, pmods, pnum_mods, "profilePath",
 		"%s", pdb_get_profile_path(sam));
 
 fail:
@@ -507,9 +507,9 @@ static NTSTATUS pdb_ads_create_user(struct pdb_methods *m,
 
 	ok = true;
 	ok &= tldap_make_mod_fmt(
-		NULL, talloc_tos(), &num_mods, &mods, "objectClass", "user");
+		NULL, talloc_tos(), &mods, &num_mods, "objectClass", "user");
 	ok &= tldap_make_mod_fmt(
-		NULL, talloc_tos(), &num_mods, &mods, "samAccountName", "%s",
+		NULL, talloc_tos(), &mods, &num_mods, "samAccountName", "%s",
 		name);
 	if (!ok) {
 		return NT_STATUS_NO_MEMORY;
@@ -791,12 +791,12 @@ static NTSTATUS pdb_ads_create_dom_group(struct pdb_methods *m,
 	}
 
 	ok &= tldap_make_mod_fmt(
-		NULL, talloc_tos(), &num_mods, &mods, "samAccountName", "%s",
+		NULL, talloc_tos(), &mods, &num_mods, "samAccountName", "%s",
 		name);
 	ok &= tldap_make_mod_fmt(
-		NULL, talloc_tos(), &num_mods, &mods, "objectClass", "group");
+		NULL, talloc_tos(), &mods, &num_mods, "objectClass", "group");
 	ok &= tldap_make_mod_fmt(
-		NULL, talloc_tos(), &num_mods, &mods, "groupType",
+		NULL, talloc_tos(), &mods, &num_mods, "groupType",
 		"%d", (int)GTYPE_SECURITY_GLOBAL_GROUP);
 
 	if (!ok) {
@@ -1176,12 +1176,12 @@ static NTSTATUS pdb_ads_create_alias(struct pdb_methods *m,
 	}
 
 	ok &= tldap_make_mod_fmt(
-		NULL, talloc_tos(), &num_mods, &mods, "samAccountName", "%s",
+		NULL, talloc_tos(), &mods, &num_mods, "samAccountName", "%s",
 		name);
 	ok &= tldap_make_mod_fmt(
-		NULL, talloc_tos(), &num_mods, &mods, "objectClass", "group");
+		NULL, talloc_tos(), &mods, &num_mods, "objectClass", "group");
 	ok &= tldap_make_mod_fmt(
-		NULL, talloc_tos(), &num_mods, &mods, "groupType",
+		NULL, talloc_tos(), &mods, &num_mods, "groupType",
 		"%d", (int)GTYPE_SECURITY_DOMAIN_LOCAL_GROUP);
 
 	if (!ok) {
@@ -1335,10 +1335,10 @@ static NTSTATUS pdb_ads_set_aliasinfo(struct pdb_methods *m,
 	ok = true;
 
 	ok &= tldap_make_mod_fmt(
-		msg[0], msg, &num_mods, &mods, "description",
+		msg[0], msg, &mods, &num_mods, "description",
 		"%s", info->acct_desc);
 	ok &= tldap_make_mod_fmt(
-		msg[0], msg, &num_mods, &mods, "samAccountName",
+		msg[0], msg, &mods, &num_mods, "samAccountName",
 		"%s", info->acct_name);
 	if (!ok) {
 		TALLOC_FREE(msg);
