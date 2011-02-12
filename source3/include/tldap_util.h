@@ -23,7 +23,7 @@
 #include "includes.h"
 
 bool tldap_entry_values(struct tldap_message *msg, const char *attribute,
-			int *num_values, DATA_BLOB **values);
+			DATA_BLOB **values, int *num_values);
 bool tldap_get_single_valueblob(struct tldap_message *msg,
 				const char *attribute, DATA_BLOB *blob);
 char *tldap_talloc_single_attribute(struct tldap_message *msg,

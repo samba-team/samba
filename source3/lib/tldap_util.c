@@ -23,7 +23,7 @@
 #include "../libcli/security/security.h"
 
 bool tldap_entry_values(struct tldap_message *msg, const char *attribute,
-			int *num_values, DATA_BLOB **values)
+			DATA_BLOB **values, int *num_values)
 {
 	struct tldap_attribute *attributes;
 	int i, num_attributes;
@@ -54,7 +54,7 @@ bool tldap_get_single_valueblob(struct tldap_message *msg,
 	if (attribute == NULL) {
 		return NULL;
 	}
-	if (!tldap_entry_values(msg, attribute, &num_values, &values)) {
+	if (!tldap_entry_values(msg, attribute, &values, &num_values)) {
 		return NULL;
 	}
 	if (num_values != 1) {
@@ -219,7 +219,7 @@ static bool tldap_make_mod_blob_int(struct tldap_message *existing,
 	DATA_BLOB oldval = data_blob_null;
 
 	if ((existing != NULL)
-	    && tldap_entry_values(existing, attrib, &num_values, &values)) {
+	    && tldap_entry_values(existing, attrib, &values, &num_values)) {
 
 		if (num_values > 1) {
 			/* can't change multivalue attributes atm */
@@ -547,7 +547,7 @@ bool tldap_entry_has_attrvalue(struct tldap_message *msg,
 	int i, num_values;
 	DATA_BLOB *values;
 
-	if (!tldap_entry_values(msg, attribute, &num_values, &values)) {
+	if (!tldap_entry_values(msg, attribute, &values, &num_values)) {
 		return false;
 	}
 	for (i=0; i<num_values; i++) {

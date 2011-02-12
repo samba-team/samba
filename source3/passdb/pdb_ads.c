@@ -965,7 +965,7 @@ static NTSTATUS pdb_ads_enum_group_members(struct pdb_methods *m,
 		break;
 	}
 
-	if (!tldap_entry_values(msg[0], "member", &num_members, &blobs)) {
+	if (!tldap_entry_values(msg[0], "member", &blobs, &num_members)) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
@@ -1548,7 +1548,7 @@ static NTSTATUS pdb_ads_enum_aliasmem(struct pdb_methods *m,
 		break;
 	}
 
-	if (!tldap_entry_values(msg[0], "member", &num_members, &blobs)) {
+	if (!tldap_entry_values(msg[0], "member", &blobs, &num_members)) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
