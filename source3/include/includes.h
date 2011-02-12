@@ -179,6 +179,10 @@ typedef int ber_int_t;
 #if !defined(LDAPS_PORT)
 #define LDAPS_PORT 636
 #endif
+
+/* function declarations not included in proto.h */
+LDAP *ldap_open_with_timeout(const char *server, int port, unsigned int to);
+
 #else
 #undef HAVE_LDAP
 #endif
@@ -556,16 +560,6 @@ enum timestamp_set_resolution {
 	TIMESTAMP_SET_NT_OR_BETTER
 };
 
-#ifdef HAVE_BROKEN_GETGROUPS
-#define GID_T int
-#else
-#define GID_T gid_t
-#endif
-
-#ifndef NGROUPS_MAX
-#define NGROUPS_MAX 32 /* Guess... */
-#endif
-
 /* Our own fstrings */
 
 /*
@@ -843,13 +837,6 @@ char *talloc_asprintf_strupper_m(TALLOC_CTX *t, const char *fmt, ...) PRINTF_ATT
 #ifndef XATTR_REPLACE
 #define XATTR_REPLACE 0x2       /* set value, fail if attr does not exist */
 #endif
-
-#ifdef HAVE_LDAP
-
-/* function declarations not included in proto.h */
-LDAP *ldap_open_with_timeout(const char *server, int port, unsigned int to);
-
-#endif	/* HAVE_LDAP */
 
 #if defined(HAVE_LINUX_READAHEAD) && ! defined(HAVE_READAHEAD_DECL)
 ssize_t readahead(int fd, off64_t offset, size_t count);

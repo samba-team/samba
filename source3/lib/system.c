@@ -1134,6 +1134,10 @@ void sys_srandom(unsigned int seed)
 #endif
 }
 
+#ifndef NGROUPS_MAX
+#define NGROUPS_MAX 32 /* Guess... */
+#endif
+
 /**************************************************************************
  Returns equivalent to NGROUPS_MAX - using sysconf if needed.
 ****************************************************************************/
@@ -1154,6 +1158,13 @@ int groups_max(void)
 ****************************************************************************/
 
 #if defined(HAVE_BROKEN_GETGROUPS)
+
+#ifdef HAVE_BROKEN_GETGROUPS
+#define GID_T int
+#else
+#define GID_T gid_t
+#endif
+
 static int sys_broken_getgroups(int setlen, gid_t *gidset)
 {
 	GID_T gid;
