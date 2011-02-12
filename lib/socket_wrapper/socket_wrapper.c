@@ -297,7 +297,7 @@ static int convert_un_in(const struct sockaddr_un *un, struct sockaddr *in, sock
 	case SOCKET_TYPE_CHAR_TCP:
 	case SOCKET_TYPE_CHAR_UDP: {
 		struct sockaddr_in *in2 = (struct sockaddr_in *)in;
-		
+
 		if ((*len) < sizeof(*in2)) {
 		    errno = EINVAL;
 		    return -1;
@@ -315,7 +315,7 @@ static int convert_un_in(const struct sockaddr_un *un, struct sockaddr *in, sock
 	case SOCKET_TYPE_CHAR_TCP_V6:
 	case SOCKET_TYPE_CHAR_UDP_V6: {
 		struct sockaddr_in6 *in2 = (struct sockaddr_in6 *)in;
-		
+
 		if ((*len) < sizeof(*in2)) {
 			errno = EINVAL;
 			return -1;
@@ -614,7 +614,7 @@ static int sockaddr_convert_to_un(struct socket_info *si, const struct sockaddr 
 	default:
 		break;
 	}
-	
+
 	errno = EAFNOSUPPORT;
 	return -1;
 }
@@ -1669,7 +1669,7 @@ static int swrap_auto_bind(struct socket_info *si, int family)
 			 "%s/"SOCKET_FORMAT, socket_wrapper_dir(),
 			 type, socket_wrapper_default_iface(), port);
 		if (stat(un_addr.sun_path, &st) == 0) continue;
-		
+
 		ret = real_bind(si->fd, (struct sockaddr *)&un_addr, sizeof(un_addr));
 		if (ret == -1) return ret;
 
@@ -1928,7 +1928,7 @@ _PUBLIC_ ssize_t swrap_sendto(int s, const void *buf, size_t len, int flags, con
 		 * which makes it easier to format PCAP capture files
 		 * (as the caller will simply continue from here) */
 		len = MIN(len, 1500);
-	
+
 		ret = real_send(s, buf, len, flags);
 		break;
 	case SOCK_DGRAM:
@@ -1936,29 +1936,29 @@ _PUBLIC_ ssize_t swrap_sendto(int s, const void *buf, size_t len, int flags, con
 			ret = swrap_auto_bind(si, si->family);
 			if (ret == -1) return -1;
 		}
-		
+
 		ret = sockaddr_convert_to_un(si, to, tolen, &un_addr, 0, &bcast);
 		if (ret == -1) return -1;
-		
+
 		if (bcast) {
 			struct stat st;
 			unsigned int iface;
 			unsigned int prt = ntohs(((const struct sockaddr_in *)to)->sin_port);
 			char type;
-			
+
 			type = SOCKET_TYPE_CHAR_UDP;
-			
+
 			for(iface=0; iface <= MAX_WRAPPED_INTERFACES; iface++) {
 				snprintf(un_addr.sun_path, sizeof(un_addr.sun_path), "%s/"SOCKET_FORMAT, 
 					 socket_wrapper_dir(), type, iface, prt);
 				if (stat(un_addr.sun_path, &st) != 0) continue;
-				
+
 				/* ignore the any errors in broadcast sends */
 				real_sendto(s, buf, len, flags, (struct sockaddr *)&un_addr, sizeof(un_addr));
 			}
-			
+
 			swrap_dump_packet(si, to, SWRAP_SENDTO, buf, len);
-			
+
 			return len;
 		}
 
@@ -1994,7 +1994,7 @@ _PUBLIC_ ssize_t swrap_sendto(int s, const void *buf, size_t len, int flags, con
 		errno = EHOSTUNREACH;
 		break;
 	}
-		
+
 	/* to give better errors */
 	if (ret == -1 && errno == ENOENT) {
 		errno = EHOSTUNREACH;
@@ -2155,7 +2155,7 @@ _PUBLIC_ ssize_t swrap_sendmsg(int s, const struct msghdr *msg, int flags)
 	off_t ofs = 0;
 	size_t i;
 	size_t remain;
-	
+
 	struct socket_info *si = find_socket_info(s);
 
 	if (!si) {
@@ -2191,7 +2191,7 @@ _PUBLIC_ ssize_t swrap_sendmsg(int s, const struct msghdr *msg, int flags)
 
 	ret = real_sendmsg(s, msg, flags);
 	remain = ret;
-		
+
 	/* we capture it as one single packet */
 	buf = (uint8_t *)malloc(ret);
 	if (!buf) {
@@ -2199,7 +2199,7 @@ _PUBLIC_ ssize_t swrap_sendmsg(int s, const struct msghdr *msg, int flags)
 		errno = 0;
 		return ret;
 	}
-	
+
 	for (i=0; i < msg->msg_iovlen; i++) {
 		size_t this_time = MIN(remain, msg->msg_iov[i].iov_len);
 		memcpy(buf + ofs,
@@ -2208,7 +2208,7 @@ _PUBLIC_ ssize_t swrap_sendmsg(int s, const struct msghdr *msg, int flags)
 		ofs += this_time;
 		remain -= this_time;
 	}
-	
+
 	swrap_dump_packet(si, NULL, SWRAP_SEND, buf, ret);
 	free(buf);
 	if (ret == -1) {
@@ -2233,7 +2233,7 @@ int swrap_readv(int s, const struct iovec *vector, size_t count)
 		 * which makes it easier to format PCAP capture files
 		 * (as the caller will simply continue from here) */
 		size_t i, len = 0;
-		
+
 		for (i=0; i < count; i++) {
 			size_t nlen;
 			nlen = len + vector[i].iov_len;
