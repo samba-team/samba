@@ -155,7 +155,7 @@ _PUBLIC_ char *tdb_summary(struct tdb_context *tdb)
 
 	/* 20 is max length of a %zu. */
 	len = strlen(SUMMARY_FORMAT) + 35*20 + 1;
-	ret = malloc(len);
+	ret = (char *)malloc(len);
 	if (!ret)
 		goto unlock;
 
