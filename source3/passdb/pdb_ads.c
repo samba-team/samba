@@ -291,7 +291,7 @@ fail:
 static bool pdb_ads_init_ads_from_sam(struct pdb_ads_state *state,
 				      struct tldap_message *existing,
 				      TALLOC_CTX *mem_ctx,
-				      int *pnum_mods, struct tldap_mod **pmods,
+				      struct tldap_mod **pmods, int *pnum_mods,
 				      struct samu *sam)
 {
 	bool ret = true;
@@ -609,7 +609,7 @@ static NTSTATUS pdb_ads_update_sam_account(struct pdb_methods *m,
 	}
 
 	if (!pdb_ads_init_ads_from_sam(state, priv->ldapmsg, talloc_tos(),
-				       &num_mods, &mods, sam)) {
+				       &mods, &num_mods, sam)) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
