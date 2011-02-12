@@ -506,7 +506,7 @@ static bool tldap_msg_set_pending(struct tevent_req *req)
 	}
 
 	/*
-	 * We're the first ones, add the read_ldap request that waits for the
+	 * We're the first one, add the read_ldap request that waits for the
 	 * answer from the server
 	 */
 	subreq = read_ldap_send(ld->pending, state->ev, ld->conn);

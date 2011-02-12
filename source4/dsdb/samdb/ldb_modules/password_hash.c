@@ -1938,7 +1938,7 @@ static int check_password_restrictions(struct setup_password_fields_io *io)
 			ret = LDB_ERR_CONSTRAINT_VIOLATION;
 			ldb_asprintf_errstring(ldb,
 				"%08X: %s - check_password_restrictions: "
-				"the password does not meet the complexity criterias!",
+				"the password does not meet the complexity criteria!",
 				W_ERROR_V(WERR_PASSWORD_RESTRICTION),
 				ldb_strerror(ret));
 			io->ac->status->reject_reason = SAM_PWD_CHANGE_NOT_COMPLEX;
