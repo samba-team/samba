@@ -334,10 +334,6 @@ bool pdb_get_dom_grp_info(const struct dom_sid *sid, struct acct_info *info);
 bool pdb_set_dom_grp_info(const struct dom_sid *sid, const struct acct_info *info);
 NTSTATUS pdb_create_builtin_alias(uint32 rid);
 
-/* The following definitions come from groupdb/mapping_ldb.c  */
-
-const struct mapping_backend *groupdb_ldb_init(void);
-
 /* The following definitions come from groupdb/mapping_tdb.c  */
 
 const struct mapping_backend *groupdb_tdb_init(void);
