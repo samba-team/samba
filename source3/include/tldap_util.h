@@ -33,10 +33,12 @@ bool tldap_pull_binsid(struct tldap_message *msg, const char *attribute,
 		       struct dom_sid *sid);
 bool tldap_pull_guid(struct tldap_message *msg, const char *attribute,
 		     struct GUID *guid);
-bool tldap_add_mod_blobs(TALLOC_CTX *mem_ctx, struct tldap_mod **pmods,
+bool tldap_add_mod_blobs(TALLOC_CTX *mem_ctx,
+			 struct tldap_mod **pmods, int *pnum_mods,
 			 int mod_op, const char *attrib,
-			 DATA_BLOB *values, int num_values);
-bool tldap_add_mod_str(TALLOC_CTX *mem_ctx, struct tldap_mod **pmods,
+			 DATA_BLOB *newvals, int num_newvals);
+bool tldap_add_mod_str(TALLOC_CTX *mem_ctx,
+		       struct tldap_mod **pmods, int *pnum_mods,
 		       int mod_op, const char *attrib, const char *str);
 bool tldap_make_mod_blob(struct tldap_message *existing, TALLOC_CTX *mem_ctx,
 			 struct tldap_mod **pmods, int *pnum_mods,

@@ -132,7 +132,7 @@ static bool tldap_add_blob_vals(TALLOC_CTX *mem_ctx, struct tldap_mod *mod,
 }
 
 bool tldap_add_mod_blobs(TALLOC_CTX *mem_ctx,
-			 struct tldap_mod **pmods,
+			 struct tldap_mod **pmods, int *pnum_mods,
 			 int mod_op, const char *attrib,
 			 DATA_BLOB *newvals, int num_newvals)
 {
@@ -148,7 +148,7 @@ bool tldap_add_mod_blobs(TALLOC_CTX *mem_ctx,
 		return false;
 	}
 
-	num_mods = talloc_array_length(mods);
+	num_mods = *pnum_mods;
 
 	for (i=0; i<num_mods; i++) {
 		if ((mods[i].mod_op == mod_op)
@@ -174,7 +174,7 @@ bool tldap_add_mod_blobs(TALLOC_CTX *mem_ctx,
 		return false;
 	}
 
-	if (i == num_mods) {
+	if ((i == num_mods) && (talloc_array_length(mods) < num_mods + 1)) {
 		mods = talloc_realloc(talloc_tos(), mods, struct tldap_mod,
 				      num_mods+1);
 		if (mods == NULL) {
@@ -184,10 +184,12 @@ bool tldap_add_mod_blobs(TALLOC_CTX *mem_ctx,
 	}
 
 	*pmods = mods;
+	*pnum_mods += 1;
 	return true;
 }
 
-bool tldap_add_mod_str(TALLOC_CTX *mem_ctx, struct tldap_mod **pmods,
+bool tldap_add_mod_str(TALLOC_CTX *mem_ctx,
+		       struct tldap_mod **pmods, int *pnum_mods,
 		       int mod_op, const char *attrib, const char *str)
 {
 	DATA_BLOB utf8;
@@ -199,7 +201,8 @@ bool tldap_add_mod_str(TALLOC_CTX *mem_ctx, struct tldap_mod **pmods,
 		return false;
 	}
 
-	ret = tldap_add_mod_blobs(mem_ctx, pmods, mod_op, attrib, &utf8, 1);
+	ret = tldap_add_mod_blobs(mem_ctx, pmods, pnum_mods, mod_op, attrib,
+				  &utf8, 1);
 	TALLOC_FREE(utf8.data);
 	return ret;
 }
@@ -248,7 +251,8 @@ static bool tldap_make_mod_blob_int(struct tldap_message *existing,
 
 		DEBUG(10, ("smbldap_make_mod_blob: deleting attribute |%s|\n",
 			   attrib));
-		if (!tldap_add_mod_blobs(mem_ctx, pmods, TLDAP_MOD_DELETE,
+		if (!tldap_add_mod_blobs(mem_ctx, pmods, pnum_mods,
+					 TLDAP_MOD_DELETE,
 					 attrib, &oldval, 1)) {
 			return false;
 		}
@@ -261,12 +265,12 @@ static bool tldap_make_mod_blob_int(struct tldap_message *existing,
 	if (newval.data != NULL) {
 		DEBUG(10, ("smbldap_make_mod: adding attribute |%s| value len "
 			   "%d\n", attrib, (int)newval.length));
-	        if (!tldap_add_mod_blobs(mem_ctx, pmods, TLDAP_MOD_ADD,
+	        if (!tldap_add_mod_blobs(mem_ctx, pmods, pnum_mods,
+					 TLDAP_MOD_ADD,
 					 attrib, &newval, 1)) {
 			return false;
 		}
 	}
-	*pnum_mods = talloc_array_length(*pmods);
 	return true;
 }
 

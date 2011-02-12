@@ -330,11 +330,9 @@ static bool pdb_ads_init_ads_from_sam(struct pdb_ads_state *state,
 		}
 		blob = data_blob_const(pw_utf16, pw_utf16_len);
 
-		ret &= tldap_add_mod_blobs(mem_ctx, pmods, TLDAP_MOD_REPLACE,
+		ret &= tldap_add_mod_blobs(mem_ctx, pmods, pnum_mods,
+					   TLDAP_MOD_REPLACE,
 					   "unicodePwd", &blob, 1);
-		if (ret) {
-			*pnum_mods = talloc_array_length(*pmods);
-		}
 		TALLOC_FREE(pw_utf16);
 		TALLOC_FREE(pw_quote);
 	}
@@ -1084,6 +1082,7 @@ static NTSTATUS pdb_ads_mod_groupmem(struct pdb_methods *m,
 	struct dom_sid groupsid, membersid;
 	char *groupdn, *memberdn;
 	struct tldap_mod *mods;
+	int num_mods;
 	int rc;
 	NTSTATUS status;
 
@@ -1107,14 +1106,15 @@ static NTSTATUS pdb_ads_mod_groupmem(struct pdb_methods *m,
 	}
 
 	mods = NULL;
+	num_mods = 0;
 
-	if (!tldap_add_mod_str(talloc_tos(), &mods, mod_op,
+	if (!tldap_add_mod_str(talloc_tos(), &mods, &num_mods, mod_op,
 			       "member", memberdn)) {
 		TALLOC_FREE(frame);
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	rc = tldap_modify(ld, groupdn, mods, 1, NULL, 0, NULL, 0);
+	rc = tldap_modify(ld, groupdn, mods, num_mods, NULL, 0, NULL, 0);
 	TALLOC_FREE(frame);
 	if (rc != TLDAP_SUCCESS) {
 		DEBUG(10, ("ldap_modify failed: %s\n",
@@ -1414,6 +1414,7 @@ static NTSTATUS pdb_ads_mod_aliasmem(struct pdb_methods *m,
 	struct tldap_context *ld;
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct tldap_mod *mods;
+	int num_mods;
 	int rc;
 	char *aliasdn, *memberdn;
 	NTSTATUS status;
@@ -1439,14 +1440,15 @@ static NTSTATUS pdb_ads_mod_aliasmem(struct pdb_methods *m,
 	}
 
 	mods = NULL;
+	num_mods = 0;
 
-	if (!tldap_add_mod_str(talloc_tos(), &mods, mod_op,
+	if (!tldap_add_mod_str(talloc_tos(), &mods, &num_mods, mod_op,
 			       "member", memberdn)) {
 		TALLOC_FREE(frame);
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	rc = tldap_modify(ld, aliasdn, mods, 1, NULL, 0, NULL, 0);
+	rc = tldap_modify(ld, aliasdn, mods, num_mods, NULL, 0, NULL, 0);
 	TALLOC_FREE(frame);
 	if (rc != TLDAP_SUCCESS) {
 		DEBUG(10, ("ldap_modify failed: %s\n",
