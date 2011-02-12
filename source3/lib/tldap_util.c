@@ -106,7 +106,7 @@ bool tldap_pull_guid(struct tldap_message *msg, const char *attribute,
 }
 
 static bool tldap_add_blob_vals(TALLOC_CTX *mem_ctx, struct tldap_mod *mod,
-				int num_newvals, DATA_BLOB *newvals)
+				DATA_BLOB *newvals, int num_newvals)
 {
 	int num_values = talloc_array_length(mod->values);
 	int i;
@@ -170,7 +170,7 @@ bool tldap_add_mod_blobs(TALLOC_CTX *mem_ctx,
 	}
 
 	if ((num_newvals != 0)
-	    && !tldap_add_blob_vals(mods, mod, num_newvals, newvals)) {
+	    && !tldap_add_blob_vals(mods, mod, newvals, num_newvals)) {
 		return false;
 	}
 
