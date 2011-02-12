@@ -20,6 +20,8 @@
 #include "includes.h"
 #include "tldap.h"
 
+static int tldap_simple_recv(struct tevent_req *req);
+
 bool tevent_req_is_ldap_error(struct tevent_req *req, int *perr)
 {
 	enum tevent_req_state state;
@@ -882,12 +884,7 @@ static void tldap_sasl_bind_done(struct tevent_req *subreq)
 
 int tldap_sasl_bind_recv(struct tevent_req *req)
 {
-	int err;
-
-	if (tevent_req_is_ldap_error(req, &err)) {
-		return err;
-	}
-	return TLDAP_SUCCESS;
+	return tldap_simple_recv(req);
 }
 
 int tldap_sasl_bind(struct tldap_context *ld,
