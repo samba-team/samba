@@ -41,9 +41,6 @@ struct pdb_ads_samu_private {
 	struct tldap_message *ldapmsg;
 };
 
-static NTSTATUS pdb_ads_getsampwsid(struct pdb_methods *m,
-				    struct samu *sam_acct,
-				    const struct dom_sid *sid);
 static bool pdb_ads_gid_to_sid(struct pdb_methods *m, gid_t gid,
 			       struct dom_sid *sid);
 static bool pdb_ads_dnblob2sid(struct pdb_ads_state *state, DATA_BLOB *dnblob,
