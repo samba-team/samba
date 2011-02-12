@@ -101,6 +101,8 @@ struct dcerpc_binding {
 
 /* The following definitions come from librpc/rpc/binding.c  */
 
+struct epm_floor;
+struct epm_tower;
 const char *epm_floor_string(TALLOC_CTX *mem_ctx, struct epm_floor *epm_floor);
 _PUBLIC_ char *dcerpc_binding_string(TALLOC_CTX *mem_ctx, const struct dcerpc_binding *b);
 _PUBLIC_ NTSTATUS dcerpc_parse_binding(TALLOC_CTX *mem_ctx, const char *s, struct dcerpc_binding **b_out);
