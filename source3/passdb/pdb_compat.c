@@ -6,17 +6,17 @@
    Copyright (C) Gerald (Jerry) Carter		2000-2001
    Copyright (C) Andrew Bartlett		2001-2002
    Copyright (C) Stefan (metze) Metzmacher	2002
-      
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -34,7 +34,7 @@ uint32 pdb_get_user_rid (const struct samu *sampass)
 	if (sampass)
 		if (sid_peek_check_rid(get_global_sam_sid(), pdb_get_user_sid(sampass),&u_rid))
 			return u_rid;
-	
+
 	return (0);
 }
 
@@ -52,7 +52,7 @@ bool pdb_set_user_sid_from_rid (struct samu *sampass, uint32 rid, enum pdb_value
 {
 	struct dom_sid u_sid;
 	const struct dom_sid *global_sam_sid;
-	
+
 	if (!sampass)
 		return False;
 
@@ -81,7 +81,7 @@ bool pdb_set_group_sid_from_rid (struct samu *sampass, uint32 grid, enum pdb_val
 
 	if (!sampass)
 		return False;
-	
+
 	if (!(global_sam_sid = get_global_sam_sid())) {
 		DEBUG(1, ("pdb_set_user_sid_from_rid: Could not read global sam sid!\n"));
 		return False;
