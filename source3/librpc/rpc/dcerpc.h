@@ -168,7 +168,8 @@ struct ndr_pull;
 struct tevent_context;
 struct tstream_context;
 
-/* from ../librpc/rpc/dcerpc_util.c */
+/* The following definitions come from ../librpc/rpc/dcerpc_util.c  */
+
 void dcerpc_set_frag_length(DATA_BLOB *blob, uint16_t v);
 uint16_t dcerpc_get_frag_length(const DATA_BLOB *blob);
 void dcerpc_set_auth_length(DATA_BLOB *blob, uint16_t v);
@@ -179,6 +180,18 @@ NTSTATUS dcerpc_read_ncacn_packet_recv(struct tevent_req *req,
 				       TALLOC_CTX *mem_ctx,
 				       struct ncacn_packet **pkt,
 				       DATA_BLOB *buffer);
+uint8_t dcerpc_get_endian_flag(DATA_BLOB *blob);
+NTSTATUS dcerpc_pull_auth_trailer(struct ncacn_packet *pkt,
+				  TALLOC_CTX *mem_ctx,
+				  DATA_BLOB *pkt_trailer,
+				  struct dcerpc_auth *auth,
+				  uint32_t *auth_length,
+				  bool auth_data_only);
+
+/* The following definitions come from ../librpc/rpc/dcerpc_error.c  */
+
+const char *dcerpc_errstr(TALLOC_CTX *mem_ctx, uint32_t fault_code);
+NTSTATUS dcerpc_fault_to_nt_status(uint32_t fault_code);
 
 /*
  * This is just a hack this should never be used in code,

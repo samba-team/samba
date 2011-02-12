@@ -2597,24 +2597,6 @@ NTSTATUS check_negative_conn_cache( const char *domain, const char *server);
 void add_failed_connection_entry(const char *domain, const char *server, NTSTATUS result) ;
 void flush_negative_conn_cache_for_domain(const char *domain);
 
-/* The following definitions come from ../librpc/rpc/dcerpc_error.c  */
-
-const char *dcerpc_errstr(TALLOC_CTX *mem_ctx, uint32_t fault_code);
-NTSTATUS dcerpc_fault_to_nt_status(uint32_t fault_code);
-
-/* The following definitions come from ../librpc/rpc/dcerpc_util.c  */
-
-void dcerpc_set_frag_length(DATA_BLOB *blob, uint16_t v);
-uint16_t dcerpc_get_frag_length(const DATA_BLOB *blob);
-void dcerpc_set_auth_length(DATA_BLOB *blob, uint16_t v);
-uint8_t dcerpc_get_endian_flag(DATA_BLOB *blob);
-NTSTATUS dcerpc_pull_auth_trailer(struct ncacn_packet *pkt,
-				  TALLOC_CTX *mem_ctx,
-				  DATA_BLOB *pkt_trailer,
-				  struct dcerpc_auth *auth,
-				  uint32_t *auth_length,
-				  bool auth_data_only);
-
 /* The following definitions come from libsmb/dsgetdcname.c  */
 
 struct netr_DsRGetDCNameInfo;
