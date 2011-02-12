@@ -206,7 +206,7 @@ bool tldap_add_mod_str(TALLOC_CTX *mem_ctx, struct tldap_mod **pmods,
 
 static bool tldap_make_mod_blob_int(struct tldap_message *existing,
 				    TALLOC_CTX *mem_ctx,
-				    int *pnum_mods, struct tldap_mod **pmods,
+				    struct tldap_mod **pmods, int *pnum_mods,
 				    const char *attrib, DATA_BLOB newval,
 				    int (*comparison)(const DATA_BLOB *d1,
 						      const DATA_BLOB *d2))
@@ -274,7 +274,7 @@ bool tldap_make_mod_blob(struct tldap_message *existing, TALLOC_CTX *mem_ctx,
 			 int *pnum_mods, struct tldap_mod **pmods,
 			 const char *attrib, DATA_BLOB newval)
 {
-	return tldap_make_mod_blob_int(existing, mem_ctx, pnum_mods, pmods,
+	return tldap_make_mod_blob_int(existing, mem_ctx, pmods, pnum_mods,
 				       attrib, newval, data_blob_cmp);
 }
 
@@ -322,7 +322,7 @@ bool tldap_make_mod_fmt(struct tldap_message *existing, TALLOC_CTX *mem_ctx,
 	if (blob.length != 0) {
 		blob.data = CONST_DISCARD(uint8_t *, newval);
 	}
-	ret = tldap_make_mod_blob_int(existing, mem_ctx, pnum_mods, pmods,
+	ret = tldap_make_mod_blob_int(existing, mem_ctx, pmods, pnum_mods,
 				      attrib, blob, compare_utf8_blobs);
 	TALLOC_FREE(newval);
 	return ret;
