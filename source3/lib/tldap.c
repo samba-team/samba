@@ -734,6 +734,11 @@ static void tldap_save_msg(struct tldap_context *ld, struct tevent_req *req)
 static char *blob2string_talloc(TALLOC_CTX *mem_ctx, DATA_BLOB blob)
 {
 	char *result = talloc_array(mem_ctx, char, blob.length+1);
+
+	if (result == NULL) {
+		return NULL;
+	}
+
 	memcpy(result, blob.data, blob.length);
 	result[blob.length] = '\0';
 	return result;
@@ -741,13 +746,21 @@ static char *blob2string_talloc(TALLOC_CTX *mem_ctx, DATA_BLOB blob)
 
 static bool asn1_read_OctetString_talloc(TALLOC_CTX *mem_ctx,
 					 struct asn1_data *data,
-					 char **result)
+					 char **presult)
 {
 	DATA_BLOB string;
+	char *result;
 	if (!asn1_read_OctetString(data, mem_ctx, &string))
 		return false;
-	*result = blob2string_talloc(mem_ctx, string);
+
+	result = blob2string_talloc(mem_ctx, string);
+
 	data_blob_free(&string);
+
+	if (result == NULL) {
+		return false;
+	}
+	*presult = result;
 	return true;
 }
 
