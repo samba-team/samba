@@ -284,6 +284,14 @@ static bool ldb_tdb_single_valued(const struct ldb_schema_attribute *a,
 {
 	if (!a) return false;
 	if (el != NULL) {
+		if (el->flags & LDB_FLAG_INTERNAL_FORCE_SINGLE_VALUE_CHECK) {
+			/* override from a ldb module, for example
+			   used for the description field, which is
+			   marked multi-valued in the schema but which
+			   should not actually accept multiple
+			   values */
+			return true;
+		}
 		if (el->flags & LDB_FLAG_INTERNAL_DISABLE_SINGLE_VALUE_CHECK) {
 			/* override from a ldb module, for example used for
 			   deleted linked attribute entries */
