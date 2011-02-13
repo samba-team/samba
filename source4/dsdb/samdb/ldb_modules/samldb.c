@@ -1572,35 +1572,26 @@ static int samldb_member_check(struct samldb_ctx *ac)
 
 /* SAM objects have special rules regarding the "description" attribute on
  * modify operations. */
-static int samldb_description_check(struct samldb_ctx *ac)
+static int samldb_description_check(struct samldb_ctx *ac, bool *modified)
 {
 	struct ldb_context *ldb = ldb_module_get_ctx(ac->module);
 	const char * const attrs[] = { "objectClass", "description", NULL };
-	struct ldb_message_element *el;
 	struct ldb_result *res;
 	unsigned int i;
 	int ret;
 
 	/* Fetch informations from the existing object */
-
 	ret = dsdb_module_search(ac->module, ac, &res, ac->msg->dn, LDB_SCOPE_BASE, attrs,
-				 DSDB_FLAG_NEXT_MODULE, ac->req, NULL);
+				 DSDB_FLAG_NEXT_MODULE | DSDB_SEARCH_SHOW_DELETED, ac->req,
+				 "(|(objectclass=user)(objectclass=group)(objectclass=samDomain)(objectclass=samServer))");
 	if (ret != LDB_SUCCESS) {
-		return ret;
+		/* don't treat it specially ... let normal error codes
+		   happen from other places */
+		ldb_reset_err_string(ldb);
+		return LDB_SUCCESS;
 	}
-	if (res->count != 1) {
-		return ldb_operr(ldb);
-	}
-
-	/* if it's not a SAM object then please skip the constraints */
-	if ((samdb_find_attribute(ldb, res->msgs[0], "objectClass",
-				  "group") == NULL) &&
-	    (samdb_find_attribute(ldb, res->msgs[0], "objectClass",
-				  "samDomain") == NULL) &&
-	    (samdb_find_attribute(ldb, res->msgs[0], "objectClass",
-				  "samServer") == NULL) &&
-	    (samdb_find_attribute(ldb, res->msgs[0], "objectClass",
-				  "user") == NULL)) {
+	if (res->count == 0) {
+		/* we didn't match the filter */
 		talloc_free(res);
 		return LDB_SUCCESS;
 	}
@@ -1608,31 +1599,9 @@ static int samldb_description_check(struct samldb_ctx *ac)
 	/* We've to walk over all modification entries and consider the
 	 * "description" ones. */
 	for (i = 0; i < ac->msg->num_elements; i++) {
-		if (ldb_attr_cmp(ac->msg->elements[i].name,
-				 "description") != 0) {
-			continue;
-		}
-
-		el = &ac->msg->elements[i];
-
-		/* Multi-valued add or replace operations are always denied */
-		if ((LDB_FLAG_MOD_TYPE(el->flags) != LDB_FLAG_MOD_DELETE) &&
-		    (el->num_values > 1)) {
-			ldb_asprintf_errstring(ldb,
-					       "samldb: Description on SAM entry '%s' is changed using a multi-valued add or replace operation!",
-					       ldb_dn_get_linearized(ac->msg->dn));
-			return LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS;
-		}
-
-		/* Add operations are only allowed if no value exists */
-		if (LDB_FLAG_MOD_TYPE(el->flags) == LDB_FLAG_MOD_ADD) {
-			if (ldb_msg_find_element(res->msgs[0], "description")
-								!= NULL) {
-				ldb_asprintf_errstring(ldb,
-						       "samldb: Description on SAM entry '%s' is changed using an add operation while a value already exists!",
-						       ldb_dn_get_linearized(ac->msg->dn));
-				return LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS;
-			}
+		if (ldb_attr_cmp(ac->msg->elements[i].name, "description") == 0) {
+			ac->msg->elements[i].flags |= LDB_FLAG_INTERNAL_FORCE_SINGLE_VALUE_CHECK;
+			*modified = true;
 		}
 	}
 
@@ -2049,7 +2018,7 @@ static int samldb_modify(struct ldb_module *module, struct ldb_request *req)
 
 	el = ldb_msg_find_element(ac->msg, "description");
 	if (el != NULL) {
-		ret = samldb_description_check(ac);
+		ret = samldb_description_check(ac, &modified);
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
