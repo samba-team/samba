@@ -1902,9 +1902,28 @@ static bool pdb_ads_search_users(struct pdb_methods *m,
 				 uint32 acct_flags)
 {
 	struct pdb_ads_search_state *sstate;
+	char *filter;
 	bool ret;
 
-	ret = pdb_ads_search_filter(m, search, "(objectclass=user)", &sstate);
+	if (acct_flags & ACB_NORMAL) {
+		filter = talloc_asprintf(
+			talloc_tos(),
+			"(&(objectclass=user)(sAMAccountType=%d))",
+			ATYPE_NORMAL_ACCOUNT);
+	} else if (acct_flags & ACB_WSTRUST) {
+		filter = talloc_asprintf(
+			talloc_tos(),
+			"(&(objectclass=user)(sAMAccountType=%d))",
+			ATYPE_WORKSTATION_TRUST);
+	} else {
+		filter = talloc_strdup(talloc_tos(), "(objectclass=user)");
+	}
+	if (filter == NULL) {
+		return false;
+	}
+
+	ret = pdb_ads_search_filter(m, search, filter, &sstate);
+	TALLOC_FREE(filter);
 	if (!ret) {
 		return false;
 	}
