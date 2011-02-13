@@ -244,6 +244,18 @@ static NTSTATUS pdb_ads_init_sam_from_priv(struct pdb_methods *m,
 		pdb_set_profile_path(sam, str, PDB_SET);
 	}
 
+	str = tldap_talloc_single_attribute(entry, "comment",
+					    talloc_tos());
+	if (str != NULL) {
+		pdb_set_comment(sam, str, PDB_SET);
+	}
+
+	str = tldap_talloc_single_attribute(entry, "description",
+					    talloc_tos());
+	if (str != NULL) {
+		pdb_set_acct_desc(sam, str, PDB_SET);
+	}
+
 	if (!tldap_pull_binsid(entry, "objectSid", &sid)) {
 		DEBUG(10, ("Could not pull SID\n"));
 		goto fail;
@@ -353,6 +365,14 @@ static bool pdb_ads_init_ads_from_sam(struct pdb_ads_state *state,
 	ret &= tldap_make_mod_fmt(
 		existing, mem_ctx, pmods, pnum_mods, "profilePath",
 		"%s", pdb_get_profile_path(sam));
+
+	ret &= tldap_make_mod_fmt(
+		existing, mem_ctx, pmods, pnum_mods, "comment",
+		"%s", pdb_get_comment(sam));
+
+	ret &= tldap_make_mod_fmt(
+		existing, mem_ctx, pmods, pnum_mods, "description",
+		"%s", pdb_get_acct_desc(sam));
 
 fail:
 	return ret;
