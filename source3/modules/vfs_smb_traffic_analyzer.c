@@ -20,6 +20,7 @@
  */
 
 #include "includes.h"
+#include "../smbd/globals.h"
 #include "../lib/crypto/crypto.h"
 #include "vfs_smb_traffic_analyzer.h"
 #include "../libcli/security/security.h"
@@ -313,6 +314,7 @@ static char *smb_traffic_analyzer_create_string( TALLOC_CTX *ctx,
 	 * 4.affected share
 	 * 5.domain
 	 * 6.timestamp
+	 * 7.IP Addresss of client
 	 */
 
 	/*
@@ -348,10 +350,9 @@ static char *smb_traffic_analyzer_create_string( TALLOC_CTX *ctx,
 		tm->tm_sec, \
 		(int)seconds);
 	len = strlen( timestr );
-
 	/* create the string of common data */
 	buf = talloc_asprintf(ctx,
-		"%s%04u%s%04u%s%04u%s%04u%s%04u%s%04u%s",
+		"%s%04u%s%04u%s%04u%s%04u%s%04u%s%04u%s%04u%s",
 		common_data_count_str,
 		(unsigned int) strlen(vfs_operation_str),
 		vfs_operation_str,
@@ -365,7 +366,9 @@ static char *smb_traffic_analyzer_create_string( TALLOC_CTX *ctx,
 		strlen(handle->conn->server_info->info3->base.domain.string),
 		handle->conn->server_info->info3->base.domain.string,
 		(unsigned int) strlen(timestr),
-		timestr);
+		timestr,
+		(unsigned int) strlen(handle->conn->sconn->client_id.addr),
+		handle->conn->sconn->client_id.addr);
 
 	talloc_free(common_data_count_str);
 

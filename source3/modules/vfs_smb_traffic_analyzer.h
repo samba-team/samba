@@ -85,7 +85,7 @@
  * so that if the receiver is using an older version of the protocol
  * it knows which blocks it can ignore.
  */
-#define SMBTA_COMMON_DATA_COUNT "00016"
+#define SMBTA_COMMON_DATA_COUNT "00017"
 
 /*
  * VFS Functions identifier table. In protocol version 2, every vfs
