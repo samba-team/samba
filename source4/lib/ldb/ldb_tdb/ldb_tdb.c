@@ -276,6 +276,26 @@ done:
 }
 
 
+/*
+  check if a attribute is a single valued, for a given element
+ */
+static bool ldb_tdb_single_valued(const struct ldb_schema_attribute *a,
+				  struct ldb_message_element *el)
+{
+	if (!a) return false;
+	if (el != NULL) {
+		if (el->flags & LDB_FLAG_INTERNAL_DISABLE_SINGLE_VALUE_CHECK) {
+			/* override from a ldb module, for example used for
+			   deleted linked attribute entries */
+			return false;
+		}
+	}
+	if (a->flags & LDB_ATTR_FLAG_SINGLE_VALUE) {
+		return true;
+	}
+	return false;
+}
+
 static int ltdb_add_internal(struct ldb_module *module,
 			     const struct ldb_message *msg)
 {
@@ -292,13 +312,10 @@ static int ltdb_add_internal(struct ldb_module *module,
 					       el->name, ldb_dn_get_linearized(msg->dn));
 			return LDB_ERR_CONSTRAINT_VIOLATION;
 		}
-		if (a && (a->flags & LDB_ATTR_FLAG_SINGLE_VALUE) &&
-		    !(el->flags & LDB_FLAG_INTERNAL_DISABLE_SINGLE_VALUE_CHECK)) {
-			if (el->num_values > 1) {
-				ldb_asprintf_errstring(ldb, "SINGLE-VALUE attribute %s on %s specified more than once",
-						       el->name, ldb_dn_get_linearized(msg->dn));
-				return LDB_ERR_CONSTRAINT_VIOLATION;
-			}
+		if (el->num_values > 1 && ldb_tdb_single_valued(a, el)) {
+			ldb_asprintf_errstring(ldb, "SINGLE-VALUE attribute %s on %s specified more than once",
+					       el->name, ldb_dn_get_linearized(msg->dn));
+			return LDB_ERR_CONSTRAINT_VIOLATION;
 		}
 	}
 
@@ -692,14 +709,11 @@ int ltdb_modify_internal(struct ldb_module *module,
 				}
 			}
 
-			if (a && (a->flags & LDB_ATTR_FLAG_SINGLE_VALUE) &&
-			    !(el->flags & LDB_FLAG_INTERNAL_DISABLE_SINGLE_VALUE_CHECK)) {
-				if (el->num_values > 1) {
-					ldb_asprintf_errstring(ldb, "SINGLE-VALUE attribute %s on %s specified more than once",
-						               el->name, ldb_dn_get_linearized(msg2->dn));
-					ret = LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS;
-					goto done;
-				}
+			if (el->num_values > 1 && ldb_tdb_single_valued(a, el)) {
+				ldb_asprintf_errstring(ldb, "SINGLE-VALUE attribute %s on %s specified more than once",
+						       el->name, ldb_dn_get_linearized(msg2->dn));
+				ret = LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS;
+				goto done;
 			}
 
 			/* Checks if element already exists */
@@ -720,8 +734,7 @@ int ltdb_modify_internal(struct ldb_module *module,
 
 				/* We cannot add another value on a existing one
 				   if the attribute is single-valued */
-				if (a && (a->flags & LDB_ATTR_FLAG_SINGLE_VALUE) &&
-				    !(el->flags & LDB_FLAG_INTERNAL_DISABLE_SINGLE_VALUE_CHECK)) {
+				if (ldb_tdb_single_valued(a, el)) {
 					ldb_asprintf_errstring(ldb, "SINGLE-VALUE attribute %s on %s specified more than once",
 						               el->name, ldb_dn_get_linearized(msg2->dn));
 					ret = LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS;
@@ -787,14 +800,11 @@ int ltdb_modify_internal(struct ldb_module *module,
 
 		case LDB_FLAG_MOD_REPLACE:
 
-			if (a && (a->flags & LDB_ATTR_FLAG_SINGLE_VALUE) &&
-			    !(el->flags & LDB_FLAG_INTERNAL_DISABLE_SINGLE_VALUE_CHECK)) {
-				if (el->num_values > 1) {
-					ldb_asprintf_errstring(ldb, "SINGLE-VALUE attribute %s on %s specified more than once",
-						               el->name, ldb_dn_get_linearized(msg2->dn));
-					ret = LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS;
-					goto done;
-				}
+			if (el->num_values > 1 && ldb_tdb_single_valued(a, el)) {
+				ldb_asprintf_errstring(ldb, "SINGLE-VALUE attribute %s on %s specified more than once",
+						       el->name, ldb_dn_get_linearized(msg2->dn));
+				ret = LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS;
+				goto done;
 			}
 
 			/* TODO: This is O(n^2) - replace with more efficient check */
