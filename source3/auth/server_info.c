@@ -80,11 +80,11 @@ NTSTATUS serverinfo_to_SamInfo2(struct auth_serversupplied_info *server_info,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (server_info->user_session_key.length) {
+	if (server_info->session_key.length) {
 		memcpy(info3->base.key.key,
-		       server_info->user_session_key.data,
+		       server_info->session_key.data,
 		       MIN(sizeof(info3->base.key.key),
-			   server_info->user_session_key.length));
+			   server_info->session_key.length));
 		if (pipe_session_key) {
 			arcfour_crypt(info3->base.key.key,
 				      pipe_session_key, 16);
@@ -123,11 +123,11 @@ NTSTATUS serverinfo_to_SamInfo3(const struct auth_serversupplied_info *server_in
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (server_info->user_session_key.length) {
+	if (server_info->session_key.length) {
 		memcpy(info3->base.key.key,
-		       server_info->user_session_key.data,
+		       server_info->session_key.data,
 		       MIN(sizeof(info3->base.key.key),
-			   server_info->user_session_key.length));
+			   server_info->session_key.length));
 		if (pipe_session_key) {
 			arcfour_crypt(info3->base.key.key,
 				      pipe_session_key, 16);
@@ -181,11 +181,11 @@ NTSTATUS serverinfo_to_SamInfo6(struct auth_serversupplied_info *server_info,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (server_info->user_session_key.length) {
+	if (server_info->session_key.length) {
 		memcpy(info3->base.key.key,
-		       server_info->user_session_key.data,
+		       server_info->session_key.data,
 		       MIN(sizeof(info3->base.key.key),
-			   server_info->user_session_key.length));
+			   server_info->session_key.length));
 		if (pipe_session_key) {
 			arcfour_crypt(info3->base.key.key,
 				      pipe_session_key, 16);

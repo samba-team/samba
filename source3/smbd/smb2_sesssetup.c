@@ -260,7 +260,7 @@ static NTSTATUS smbd_smb2_session_setup_krb5(struct smbd_smb2_session *session,
 		session->do_signing = false;
 	}
 
-	session->session_key = session->session_info->user_session_key;
+	session->session_key = session->session_info->session_key;
 
 	session->compat_vuser = talloc_zero(session, user_struct);
 	if (session->compat_vuser == NULL) {
@@ -466,7 +466,7 @@ static NTSTATUS smbd_smb2_common_ntlmssp_auth_return(struct smbd_smb2_session *s
 		session->do_signing = false;
 	}
 
-	session->session_key = session->session_info->user_session_key;
+	session->session_key = session->session_info->session_key;
 
 	session->compat_vuser = talloc_zero(session, user_struct);
 	if (session->compat_vuser == NULL) {

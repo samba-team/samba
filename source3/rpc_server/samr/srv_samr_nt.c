@@ -5159,7 +5159,7 @@ NTSTATUS _samr_SetUserInfo(struct pipes_struct *p,
 			/* Used by AS/U JRA. */
 			status = set_user_info_18(&info->info18,
 						  p->mem_ctx,
-						  &p->session_info->user_session_key,
+						  &p->session_info->session_key,
 						  pwd);
 			break;
 
@@ -5171,16 +5171,16 @@ NTSTATUS _samr_SetUserInfo(struct pipes_struct *p,
 		case 21:
 			status = set_user_info_21(&info->info21,
 						  p->mem_ctx,
-						  &p->session_info->user_session_key,
+						  &p->session_info->session_key,
 						  pwd);
 			break;
 
 		case 23:
-			if (!p->session_info->user_session_key.length) {
+			if (!p->session_info->session_key.length) {
 				status = NT_STATUS_NO_USER_SESSION_KEY;
 			}
 			arcfour_crypt_blob(info->info23.password.data, 516,
-					   &p->session_info->user_session_key);
+					   &p->session_info->session_key);
 
 			dump_data(100, info->info23.password.data, 516);
 
@@ -5191,12 +5191,12 @@ NTSTATUS _samr_SetUserInfo(struct pipes_struct *p,
 			break;
 
 		case 24:
-			if (!p->session_info->user_session_key.length) {
+			if (!p->session_info->session_key.length) {
 				status = NT_STATUS_NO_USER_SESSION_KEY;
 			}
 			arcfour_crypt_blob(info->info24.password.data,
 					   516,
-					   &p->session_info->user_session_key);
+					   &p->session_info->session_key);
 
 			dump_data(100, info->info24.password.data, 516);
 
@@ -5206,12 +5206,12 @@ NTSTATUS _samr_SetUserInfo(struct pipes_struct *p,
 			break;
 
 		case 25:
-			if (!p->session_info->user_session_key.length) {
+			if (!p->session_info->session_key.length) {
 				status = NT_STATUS_NO_USER_SESSION_KEY;
 			}
 			encode_or_decode_arc4_passwd_buffer(
 				info->info25.password.data,
-				&p->session_info->user_session_key);
+				&p->session_info->session_key);
 
 			dump_data(100, info->info25.password.data, 532);
 
@@ -5221,12 +5221,12 @@ NTSTATUS _samr_SetUserInfo(struct pipes_struct *p,
 			break;
 
 		case 26:
-			if (!p->session_info->user_session_key.length) {
+			if (!p->session_info->session_key.length) {
 				status = NT_STATUS_NO_USER_SESSION_KEY;
 			}
 			encode_or_decode_arc4_passwd_buffer(
 				info->info26.password.data,
-				&p->session_info->user_session_key);
+				&p->session_info->session_key);
 
 			dump_data(100, info->info26.password.data, 516);
 

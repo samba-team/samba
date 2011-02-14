@@ -842,7 +842,7 @@ WERROR _wkssvc_NetrJoinDomain2(struct pipes_struct *p,
 
 	werr = decode_wkssvc_join_password_buffer(
 		p->mem_ctx, r->in.encrypted_password,
-		&p->session_info->user_session_key, &cleartext_pwd);
+		&p->session_info->session_key, &cleartext_pwd);
 	if (!W_ERROR_IS_OK(werr)) {
 		return werr;
 	}
@@ -908,7 +908,7 @@ WERROR _wkssvc_NetrUnjoinDomain2(struct pipes_struct *p,
 
 	werr = decode_wkssvc_join_password_buffer(
 		p->mem_ctx, r->in.encrypted_password,
-		&p->session_info->user_session_key, &cleartext_pwd);
+		&p->session_info->session_key, &cleartext_pwd);
 	if (!W_ERROR_IS_OK(werr)) {
 		return werr;
 	}

@@ -1165,7 +1165,7 @@ static NTSTATUS netr_set_machine_account_password(TALLOC_CTX *mem_ctx,
 
 	in = data_blob_const(nt_hash->hash, 16);
 	out = data_blob_talloc_zero(mem_ctx, 16);
-	sess_crypt_blob(&out, &in, &session_info->user_session_key, true);
+	sess_crypt_blob(&out, &in, &session_info->session_key, true);
 	memcpy(info18.nt_pwd.hash, out.data, out.length);
 
 	info18.nt_pwd_active = true;

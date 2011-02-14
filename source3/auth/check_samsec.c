@@ -492,7 +492,7 @@ NTSTATUS check_sam_security(const DATA_BLOB *challenge,
 		goto done;
 	}
 
-	(*server_info)->user_session_key =
+	(*server_info)->session_key =
 		data_blob_talloc(*server_info, user_sess_key.data,
 				 user_sess_key.length);
 	data_blob_free(&user_sess_key);

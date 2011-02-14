@@ -465,11 +465,11 @@ NTSTATUS create_local_token(TALLOC_CTX *mem_ctx,
 	}
 
 	if (session_key) {
-		data_blob_free(&session_info->user_session_key);
-		session_info->user_session_key = data_blob_talloc(session_info,
+		data_blob_free(&session_info->session_key);
+		session_info->session_key = data_blob_talloc(session_info,
 								  session_key->data,
 								  session_key->length);
-		if (!session_info->user_session_key.data && session_key->length) {
+		if (!session_info->session_key.data && session_key->length) {
 			return NT_STATUS_NO_MEMORY;
 		}
 	}
@@ -788,7 +788,7 @@ static NTSTATUS make_new_server_info_guest(struct auth_serversupplied_info **ses
 
 	/* annoying, but the Guest really does have a session key, and it is
 	   all zeros! */
-	(*session_info)->user_session_key = data_blob(zeros, sizeof(zeros));
+	(*session_info)->session_key = data_blob(zeros, sizeof(zeros));
 	(*session_info)->lm_session_key = data_blob(zeros, sizeof(zeros));
 
 	alpha_strcpy(tmp, (*session_info)->info3->base.account_name.string,
@@ -909,8 +909,8 @@ struct auth_serversupplied_info *copy_serverinfo(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	dst->user_session_key = data_blob_talloc( dst, src->user_session_key.data,
-						src->user_session_key.length);
+	dst->session_key = data_blob_talloc( dst, src->session_key.data,
+						src->session_key.length);
 
 	dst->lm_session_key = data_blob_talloc(dst, src->lm_session_key.data,
 						src->lm_session_key.length);
@@ -945,12 +945,12 @@ struct auth_serversupplied_info *copy_serverinfo(TALLOC_CTX *mem_ctx,
 bool session_info_set_session_key(struct auth_serversupplied_info *info,
 				 DATA_BLOB session_key)
 {
-	TALLOC_FREE(info->user_session_key.data);
+	TALLOC_FREE(info->session_key.data);
 
-	info->user_session_key = data_blob_talloc(
+	info->session_key = data_blob_talloc(
 		info, session_key.data, session_key.length);
 
-	return (info->user_session_key.data != NULL);
+	return (info->session_key.data != NULL);
 }
 
 static struct auth_serversupplied_info *guest_info = NULL;
@@ -1295,9 +1295,9 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 	/* ensure we are never given NULL session keys */
 
 	if (memcmp(info3->base.key.key, zeros, sizeof(zeros)) == 0) {
-		result->user_session_key = data_blob_null;
+		result->session_key = data_blob_null;
 	} else {
-		result->user_session_key = data_blob_talloc(
+		result->session_key = data_blob_talloc(
 			result, info3->base.key.key,
 			sizeof(info3->base.key.key));
 	}

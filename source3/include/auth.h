@@ -46,7 +46,7 @@ struct auth_serversupplied_info {
 	 * Bottom line, it is not the same as the session keys in info3.
 	 */
 
-	DATA_BLOB user_session_key;
+	DATA_BLOB session_key;
 	DATA_BLOB lm_session_key;
 
 	struct netr_SamInfo3 *info3;

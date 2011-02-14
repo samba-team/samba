@@ -51,7 +51,7 @@ static NTSTATUS auth_anonymous_session_info(TALLOC_CTX *mem_ctx,
 	}
 
 	i->security_token = s->security_token;
-	i->session_key    = s->user_session_key;
+	i->session_key    = s->session_key;
 
 	val.sam3 = s->info3;
 

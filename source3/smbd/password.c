@@ -331,7 +331,7 @@ int register_existing_vuid(struct smbd_server_connection *sconn,
 		/* Try and turn on server signing on the first non-guest
 		 * sessionsetup. */
 		srv_set_signing(sconn,
-				vuser->session_info->user_session_key,
+				vuser->session_info->session_key,
 				response_blob);
 	}
 

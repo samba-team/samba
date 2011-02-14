@@ -1751,7 +1751,7 @@ NTSTATUS _lsa_CreateTrustedDomainEx2(struct pipes_struct *p,
 		auth_blob.data = r->in.auth_info->auth_blob.data;
 
 		arcfour_crypt_blob(auth_blob.data, auth_blob.length,
-				   &p->session_info->user_session_key);
+				   &p->session_info->session_key);
 
 		ndr_err = ndr_pull_struct_blob(&auth_blob, p->mem_ctx,
 					       &auth_struct,
