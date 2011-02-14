@@ -705,8 +705,7 @@ int ltdb_modify_internal(struct ldb_module *module,
 					ret = LDB_ERR_OTHER;
 					goto done;
 				}
-				el->name = msg->elements[i].name;
-				el->num_values = msg->elements[i].num_values;
+				*el = msg->elements[i];
 				el->values = talloc_array(el, struct ldb_val, el->num_values);
 				if (el->values == NULL) {
 					ret = LDB_ERR_OTHER;
