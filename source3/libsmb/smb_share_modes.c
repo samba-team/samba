@@ -272,7 +272,7 @@ static uint32_t smb_name_hash(const char *sharepath, const char *filename, int *
 	uint32_t name_hash;
 
 	*err = 0;
-	fullpath = malloc(sharepath_size + filename_size + 2);
+	fullpath = (char *)malloc(sharepath_size + filename_size + 2);
 	if (fullpath == NULL) {
 		*err = 1;
 		return 0;
