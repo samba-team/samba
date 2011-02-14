@@ -70,9 +70,7 @@ void smb_readline_done(void)
 static char *smb_readline_replacement(const char *prompt, void (*callback)(void),
 				char **(completion_fn)(const char *text, int start, int end))
 {
-	fd_set fds;
 	char *line = NULL;
-	struct timeval timeout;
 	int fd = x_fileno(x_stdin);
 	char *ret;
 
@@ -88,13 +86,13 @@ static char *smb_readline_replacement(const char *prompt, void (*callback)(void)
 	}
 
 	while (!smb_rl_done) {
-		timeout.tv_sec = 5;
-		timeout.tv_usec = 0;
+		struct pollfd pfd;
 
-		FD_ZERO(&fds);
-		FD_SET(fd,&fds);
+		ZERO_STRUCT(pfd);
+		pfd.fd = fd;
+		pfd.events = POLLIN|POLLHUP;
 
-		if (sys_select_intr(fd+1,&fds,NULL,NULL,&timeout) == 1) {
+		if (sys_poll_intr(&pfd, 1, 5000) == 1) {
 			ret = x_fgets(line, BUFSIZ, x_stdin);
 			if (ret == 0) {
 				SAFE_FREE(line);
