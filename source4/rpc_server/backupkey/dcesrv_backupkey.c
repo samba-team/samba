@@ -98,7 +98,7 @@ static NTSTATUS set_lsa_secret(TALLOC_CTX *mem_ctx,
 			   ldb_binary_encode_string(mem_ctx, name2));
 
 	if (ret != LDB_SUCCESS ||  res->count != 0 ) {
-		DEBUG(0, ("Secret %s already exists !\n", name2));
+		DEBUG(2, ("Secret %s already exists !\n", name2));
 		talloc_free(msg);
 		return NT_STATUS_OBJECT_NAME_COLLISION;
 	}
@@ -153,7 +153,7 @@ static NTSTATUS set_lsa_secret(TALLOC_CTX *mem_ctx,
 	 */
 	ret = dsdb_add(ldb, msg, DSDB_MODIFY_RELAX);
 	if (ret != LDB_SUCCESS) {
-		DEBUG(0,("Failed to create secret record %s: %s\n",
+		DEBUG(2,("Failed to create secret record %s: %s\n",
 			ldb_dn_get_linearized(msg->dn),
 			ldb_errstring(ldb)));
 		talloc_free(msg);
@@ -217,7 +217,7 @@ static NTSTATUS get_lsa_secret(TALLOC_CTX *mem_ctx,
 	}
 
 	if (res->count > 1) {
-		DEBUG(0, ("Secret %s collision\n", name));
+		DEBUG(2, ("Secret %s collision\n", name));
 		talloc_free(tmp_mem);
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
@@ -301,7 +301,7 @@ static NTSTATUS get_pk_from_raw_keypair_params(TALLOC_CTX *ctx,
 	hx509_context_init(&hctx);
 	ops = hx509_find_private_alg(&_hx509_signature_rsa_with_var_num.algorithm);
 	if (ops == NULL) {
-		DEBUG(0, ("Not supported algorithm\n"));
+		DEBUG(2, ("Not supported algorithm\n"));
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
@@ -476,7 +476,7 @@ static WERROR get_and_verify_access_check(TALLOC_CTX *sub_ctx,
 		 */
 
 		if (memcmp(hash, uncrypted_accesscheckv2.hash, hash_size) != 0) {
-			DEBUG(0, ("Wrong hash value in the access check in backup key remote protocol\n"));
+			DEBUG(2, ("Wrong hash value in the access check in backup key remote protocol\n"));
 			return WERR_INVALID_DATA;
 		}
 		*access_sid = dom_sid_dup(sub_ctx, &(uncrypted_accesscheckv2.sid));
@@ -515,7 +515,7 @@ static WERROR get_and_verify_access_check(TALLOC_CTX *sub_ctx,
 		 */
 
 		if (memcmp(hash, uncrypted_accesscheckv3.hash, hash_size) != 0) {
-			DEBUG(0, ("Wrong hash value in the access check in backup key remote protocol\n"));
+			DEBUG(2, ("Wrong hash value in the access check in backup key remote protocol\n"));
 			return WERR_INVALID_DATA;
 		}
 		*access_sid = dom_sid_dup(sub_ctx, &(uncrypted_accesscheckv3.sid));
@@ -605,7 +605,7 @@ static WERROR bkrp_do_uncrypt_client_wrap_key(struct dcesrv_call_state *dce_call
 
 		ndr_err = ndr_pull_struct_blob(&secret, mem_ctx, &keypair, (ndr_pull_flags_fn_t)ndr_pull_bkrp_exported_RSA_key_pair);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-			DEBUG(1, ("Unable to parse the ndr encoded cert in key %s\n", cert_secret_name));
+			DEBUG(2, ("Unable to parse the ndr encoded cert in key %s\n", cert_secret_name));
 			return WERR_FILE_NOT_FOUND;
 		}
 
@@ -987,7 +987,7 @@ static WERROR generate_bkrp_cert(TALLOC_CTX *ctx, struct dcesrv_call_state *dce_
 	enum ndr_err_code ndr_err;
 	uint32_t nb_days_validity = 365;
 
-	DEBUG(0, ("Trying to generate a certificate\n"));
+	DEBUG(6, ("Trying to generate a certificate\n"));
 	hx509_context_init(&hctx);
 	w_err = create_req(ctx, &hctx, &req, &pk, &rsa, dn);
 	if (!W_ERROR_IS_OK(w_err)) {
@@ -1107,7 +1107,6 @@ static WERROR generate_bkrp_cert(TALLOC_CTX *ctx, struct dcesrv_call_state *dce_
 		return WERR_INVALID_DATA;
 	}
 	keypair.certificate_len = keypair.cert.length;
-	DEBUG(0, ("Len of priv key: %d pub_expo: %d\n", keypair.private_exponent.length, keypair.public_exponent.length));
 	ndr_err = ndr_push_struct_blob(&blobkeypair, ctx, &keypair, (ndr_push_flags_fn_t)ndr_push_bkrp_exported_RSA_key_pair);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		der_free_octet_string(&data);
@@ -1130,14 +1129,14 @@ static WERROR generate_bkrp_cert(TALLOC_CTX *ctx, struct dcesrv_call_state *dce_
 
 	status = set_lsa_secret(ctx, ldb_ctx, secret_name, &blobkeypair);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("Failed to save the secret %s\n", secret_name));
+		DEBUG(2, ("Failed to save the secret %s\n", secret_name));
 	}
 	talloc_free(secret_name);
 
 	GUID_to_ndr_blob(&guid, ctx, &blob);
 	status = set_lsa_secret(ctx, ldb_ctx, "BCKUPKEY_PREFERRED", &blob);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("Failed to save the secret BCKUPKEY_PREFERRED\n"));
+		DEBUG(2, ("Failed to save the secret BCKUPKEY_PREFERRED\n"));
 	}
 
 	der_free_octet_string(&data);
@@ -1186,7 +1185,7 @@ static WERROR bkrp_do_retreive_client_wrap_key(struct dcesrv_call_state *dce_cal
 
 			if (!NT_STATUS_IS_OK(status)) {
 				/* Ok we really don't manage to get this certs ...*/
-				DEBUG(0, ("Unable to locate BCKUPKEY_PREFERRED after cert generation\n"));
+				DEBUG(2, ("Unable to locate BCKUPKEY_PREFERRED after cert generation\n"));
 				return WERR_FILE_NOT_FOUND;
 			}
 		} else {
@@ -1247,16 +1246,17 @@ static WERROR bkrp_do_retreive_client_wrap_key(struct dcesrv_call_state *dce_cal
 	return WERR_NOT_SUPPORTED;
 }
 
-WERROR dcesrv_bkrp_BackupKey (struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, struct bkrp_BackupKey *r)
+static WERROR dcesrv_bkrp_BackupKey(struct dcesrv_call_state *dce_call,
+				    TALLOC_CTX *mem_ctx, struct bkrp_BackupKey *r)
 {
 	WERROR error = WERR_INVALID_PARAM;
 	struct ldb_context *ldb_ctx;
 	bool is_rodc;
 	const char *addr = "unknown";
 	/* At which level we start to add more debug of what is done in the protocol */
-	int debuglevel =4;
+	const int debuglevel = 4;
 
-	if (DEBUGLEVEL >= debuglevel) {
+	if (DEBUGLVL(debuglevel)) {
 		const struct tsocket_address *remote_address;
 		remote_address = dcesrv_connection_get_remote_address(dce_call->conn);
 		if (tsocket_address_is_inet(remote_address, "ip")) {
