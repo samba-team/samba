@@ -247,6 +247,13 @@ static int replmd_process_backlink(struct ldb_module *module, struct la_backlink
 	}
 	msg->elements[0].flags = bl->active?LDB_FLAG_MOD_ADD:LDB_FLAG_MOD_DELETE;
 
+	/* a backlink should never be single valued. Unfortunately the
+	   exchange schema has a attribute
+	   msExchBridgeheadedLocalConnectorsDNBL which is single
+	   valued and a backlink. We need to cope with that by
+	   ignoring the single value flag */
+	msg->elements[0].flags |= LDB_FLAG_INTERNAL_DISABLE_SINGLE_VALUE_CHECK;
+
 	ret = dsdb_module_modify(module, msg, DSDB_FLAG_NEXT_MODULE, parent);
 	if (ret != LDB_SUCCESS) {
 		ldb_asprintf_errstring(ldb, "Failed to %s backlink from %s to %s - %s",
