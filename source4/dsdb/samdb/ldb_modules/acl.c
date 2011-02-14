@@ -450,7 +450,6 @@ static int acl_validate_spn_value(TALLOC_CTX *mem_ctx,
 	char *serviceType;
 	char *serviceName;
 	const char *realm;
-	const char *guid_str;
 	const char *forest_name = samdb_forest_name(ldb, mem_ctx);
 	const char *base_domain = samdb_default_domain_name(ldb, mem_ctx);
 	struct loadparm_context *lp_ctx = talloc_get_type(ldb_get_opaque(ldb, "loadparm"),
@@ -475,9 +474,6 @@ static int acl_validate_spn_value(TALLOC_CTX *mem_ctx,
 	instanceName = principal->name.name_string.val[1];
 	serviceType = principal->name.name_string.val[0];
 	realm = krb5_principal_get_realm(krb_ctx, principal);
-	guid_str = talloc_asprintf(mem_ctx,"%s._msdcs.%s",
-				   ntds_guid,
-				   forest_name);
 	if (principal->name.name_string.len == 3) {
 		serviceName = principal->name.name_string.val[2];
 	} else {
@@ -512,12 +508,15 @@ static int acl_validate_spn_value(TALLOC_CTX *mem_ctx,
 	} else if (strcasecmp(instanceName, dnsHostName) == 0) {
 		goto success;
 	} else if (is_dc) {
+		const char *guid_str;
+		guid_str = talloc_asprintf(mem_ctx,"%s._msdcs.%s",
+					   ntds_guid,
+					   forest_name);
 		if (strcasecmp(instanceName, guid_str) == 0) {
 			goto success;
 		}
-	} else {
-		goto fail;
 	}
+
 fail:
 	krb5_free_principal(krb_ctx, principal);
 	krb5_free_context(krb_ctx);
