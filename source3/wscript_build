@@ -895,7 +895,7 @@ bld.SAMBA_SUBSYSTEM('LIBADS',
 
 bld.SAMBA_SUBSYSTEM('LIBADS_SERVER',
                     source=LIBADS_SERVER_SRC,
-                    deps='NDR_KRB5PAC',
+                    deps='ndr-krb5pac',
 		    vars=locals())
 
 bld.SAMBA_SUBSYSTEM('LIBADS_PRINTER',

@@ -12,7 +12,7 @@ bld.SAMBA_SUBSYSTEM('NDR_AUTH',
                     source='gen_ndr/ndr_auth.c',
                     public_headers='gen_ndr/auth.h',
                     header_path='gen_ndr',
-                    public_deps='ndr NDR_SECURITY'
+                    public_deps='ndr NDR_SECURITY ndr-krb5pac'
                     )
 
 bld.SAMBA_SUBSYSTEM('NDR_NAMED_PIPE_AUTH',
@@ -266,11 +266,13 @@ bld.SAMBA_SUBSYSTEM('NDR_DRSBLOBS',
 	public_deps='ndr NDR_DRSUAPI'
 	)
 
-bld.SAMBA_SUBSYSTEM('NDR_KRB5PAC',
+bld.SAMBA_LIBRARY('ndr-krb5pac',
                     source='ndr/ndr_krb5pac.c gen_ndr/ndr_krb5pac.c',
                     public_deps='ndr ndr-standard NDR_SECURITY',
-                    public_headers='gen_ndr/krb5pac.h',
-                    header_path='gen_ndr'
+                    public_headers='gen_ndr/krb5pac.h gen_ndr/ndr_krb5pac.h',
+                    header_path='gen_ndr',
+                    pc_files='ndr_krb5pac.pc',
+                    vnum='0.0.1'
                     )
 
 
@@ -506,7 +508,7 @@ bld.SAMBA_SUBSYSTEM('RPC_NDR_DNSP',
 # a grouping library for NDR subsystems that may be used by more than one target
 bld.SAMBA_LIBRARY('ndr-samba',
 	source=[],
-	deps='NDR_DRSBLOBS NDR_DRSUAPI NDR_IDMAP NDR_NTLMSSP NDR_SCHANNEL NDR_MGMT NDR_KRB5PAC NDR_DNSP NDR_EPMAPPER NDR_XATTR NDR_UNIXINFO NDR_NAMED_PIPE_AUTH NDR_DCOM',
+	deps='NDR_DRSBLOBS NDR_DRSUAPI NDR_IDMAP NDR_NTLMSSP NDR_SCHANNEL NDR_MGMT NDR_DNSP NDR_EPMAPPER NDR_XATTR NDR_UNIXINFO NDR_NAMED_PIPE_AUTH NDR_DCOM',
 	private_library=True,
 	grouping_library=True
 	)
