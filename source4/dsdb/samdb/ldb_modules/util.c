@@ -607,6 +607,36 @@ int dsdb_check_optional_feature(struct ldb_module *module, struct ldb_dn *scope,
 }
 
 /*
+  find the NTDS GUID from a computers DN record
+ */
+int dsdb_module_find_ntdsguid_for_computer(struct ldb_module *module,
+					   TALLOC_CTX *mem_ctx,
+					   struct ldb_dn *computer_dn,
+					   struct GUID *ntds_guid,
+					   struct ldb_request *parent)
+{
+	int ret;
+	struct ldb_dn *dn;
+
+	*ntds_guid = GUID_zero();
+
+	ret = dsdb_module_reference_dn(module, mem_ctx, computer_dn,
+				       "serverReferenceBL", &dn, parent);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	if (!ldb_dn_add_child_fmt(dn, "CN=NTDS Settings")) {
+		talloc_free(dn);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	ret = dsdb_module_guid_by_dn(module, dn, ntds_guid, parent);
+	talloc_free(dn);
+	return ret;
+}
+
+/*
   find a 'reference' DN that points at another object
   (eg. serverReference, rIDManagerReference etc)
  */
