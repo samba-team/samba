@@ -150,22 +150,22 @@ static int make_server_pipes_struct(TALLOC_CTX *mem_ctx,
 
 /* Add some helper functions to wrap the common ncacn packet reading functions
  * until we can share more dcerpc code */
-struct named_pipe_read_packet_state {
+struct dcerpc_ncacn_read_packet_state {
 	struct ncacn_packet *pkt;
 	DATA_BLOB buffer;
 };
 
-static void named_pipe_read_packet_done(struct tevent_req *subreq);
+static void dcerpc_ncacn_read_packet_done(struct tevent_req *subreq);
 
-static struct tevent_req *named_pipe_read_packet_send(TALLOC_CTX *mem_ctx,
+static struct tevent_req *dcerpc_ncacn_read_packet_send(TALLOC_CTX *mem_ctx,
 					struct tevent_context *ev,
 					struct tstream_context *tstream)
 {
-	struct named_pipe_read_packet_state *state;
+	struct dcerpc_ncacn_read_packet_state *state;
 	struct tevent_req *req, *subreq;
 
 	req = tevent_req_create(mem_ctx, &state,
-				struct named_pipe_read_packet_state);
+				struct dcerpc_ncacn_read_packet_state);
 	if (!req) {
 		return NULL;
 	}
@@ -177,17 +177,17 @@ static struct tevent_req *named_pipe_read_packet_send(TALLOC_CTX *mem_ctx,
 		tevent_req_post(req, ev);
 		return req;
 	}
-	tevent_req_set_callback(subreq, named_pipe_read_packet_done, req);
+	tevent_req_set_callback(subreq, dcerpc_ncacn_read_packet_done, req);
 
 	return req;
 }
 
-static void named_pipe_read_packet_done(struct tevent_req *subreq)
+static void dcerpc_ncacn_read_packet_done(struct tevent_req *subreq)
 {
 	struct tevent_req *req =
 		tevent_req_callback_data(subreq, struct tevent_req);
-	struct named_pipe_read_packet_state *state =
-		tevent_req_data(req, struct named_pipe_read_packet_state);
+	struct dcerpc_ncacn_read_packet_state *state =
+		tevent_req_data(req, struct dcerpc_ncacn_read_packet_state);
 	NTSTATUS status;
 
 	status = dcerpc_read_ncacn_packet_recv(subreq, state,
@@ -203,12 +203,12 @@ static void named_pipe_read_packet_done(struct tevent_req *subreq)
 	tevent_req_done(req);
 }
 
-static NTSTATUS named_pipe_read_packet_recv(struct tevent_req *req,
+static NTSTATUS dcerpc_ncacn_read_packet_recv(struct tevent_req *req,
 						TALLOC_CTX *mem_ctx,
 						DATA_BLOB *buffer)
 {
-	struct named_pipe_read_packet_state *state =
-		tevent_req_data(req, struct named_pipe_read_packet_state);
+	struct dcerpc_ncacn_read_packet_state *state =
+		tevent_req_data(req, struct dcerpc_ncacn_read_packet_state);
 	NTSTATUS status;
 
 	if (tevent_req_is_nterror(req, &status)) {
@@ -483,7 +483,7 @@ static void named_pipe_accept_done(struct tevent_req *subreq)
 	}
 
 	/* And now start receaving and processing packets */
-	subreq = named_pipe_read_packet_send(npc, npc->ev, npc->tstream);
+	subreq = dcerpc_ncacn_read_packet_send(npc, npc->ev, npc->tstream);
 	if (!subreq) {
 		DEBUG(2, ("Failed to start receving packets\n"));
 		goto fail;
@@ -512,7 +512,7 @@ static void named_pipe_packet_process(struct tevent_req *subreq)
 	uint32_t to_send;
 	bool ok;
 
-	status = named_pipe_read_packet_recv(subreq, npc, &recv_buffer);
+	status = dcerpc_ncacn_read_packet_recv(subreq, npc, &recv_buffer);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto fail;
@@ -597,7 +597,7 @@ static void named_pipe_packet_process(struct tevent_req *subreq)
 	 * data */
 	if (npc->count == 0) {
 		/* Wait for the next packet */
-		subreq = named_pipe_read_packet_send(npc, npc->ev, npc->tstream);
+		subreq = dcerpc_ncacn_read_packet_send(npc, npc->ev, npc->tstream);
 		if (!subreq) {
 			DEBUG(2, ("Failed to start receving packets\n"));
 			status = NT_STATUS_NO_MEMORY;
@@ -653,7 +653,7 @@ static void named_pipe_packet_done(struct tevent_req *subreq)
 	data_blob_free(&npc->p->out_data.rdata);
 
 	/* Wait for the next packet */
-	subreq = named_pipe_read_packet_send(npc, npc->ev, npc->tstream);
+	subreq = dcerpc_ncacn_read_packet_send(npc, npc->ev, npc->tstream);
 	if (!subreq) {
 		DEBUG(2, ("Failed to start receving packets\n"));
 		sys_errno = ENOMEM;
