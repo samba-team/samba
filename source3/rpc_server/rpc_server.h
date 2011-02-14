@@ -25,4 +25,10 @@ void process_complete_pdu(struct pipes_struct *p);
 bool setup_named_pipe_socket(const char *pipe_name,
 			     struct tevent_context *ev_ctx);
 
+uint16_t setup_dcerpc_ncacn_tcpip_socket(struct tevent_context *ev_ctx,
+					 struct messaging_context *msg_ctx,
+					 struct ndr_syntax_id syntax_id,
+					 const struct sockaddr_storage *ifss,
+					 uint16_t port);
+
 #endif /* _PRC_SERVER_H_ */
