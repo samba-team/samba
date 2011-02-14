@@ -59,7 +59,7 @@
 
 #include "ads.h"
 #include "../librpc/gen_ndr/svcctl.h"
-
+#include "intl.h"
 #include "smb_signing.h"
 #include "dbwrap.h"
 #include "smbldap.h"
