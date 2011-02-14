@@ -193,7 +193,6 @@ done:
 struct passwd *Get_Pwnam_alloc(TALLOC_CTX *mem_ctx, const char *user)
 {
 	fstring user2;
-	struct passwd *ret;
 
 	if ( *user == '\0' ) {
 		DEBUG(10,("Get_Pwnam: empty username!\n"));
@@ -204,9 +203,7 @@ struct passwd *Get_Pwnam_alloc(TALLOC_CTX *mem_ctx, const char *user)
 
 	DEBUG(5,("Finding user %s\n", user));
 
-	ret = Get_Pwnam_internals(mem_ctx, user, user2);
-
-	return ret;  
+	return Get_Pwnam_internals(mem_ctx, user, user2);
 }
 
 /* The functions below have been taken from password.c and slightly modified */
