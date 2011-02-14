@@ -51,6 +51,12 @@ struct tevent_fd *tevent_common_add_fd(struct tevent_context *ev, TALLOC_CTX *me
 {
 	struct tevent_fd *fde;
 
+	/* tevent will crash later on select() if we save
+	 * a negative file descriptor. Better to fail here
+	 * so that consumers will be able to debug it
+	 */
+	if (fd < 0) return NULL;
+
 	fde = talloc(mem_ctx?mem_ctx:ev, struct tevent_fd);
 	if (!fde) return NULL;
 
