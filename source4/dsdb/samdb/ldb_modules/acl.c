@@ -549,8 +549,8 @@ static int acl_check_spn(TALLOC_CTX *mem_ctx,
 	const char *samAccountName;
 	const char *dnsHostName;
 	const char *netbios_name;
-	const struct GUID *ntds = samdb_ntds_objectGUID(ldb);
-	const char *ntds_guid = GUID_string(tmp_ctx, ntds);
+	struct GUID ntds;
+	char *ntds_guid = NULL;
 
 	static const char *acl_attrs[] = {
 		"samAccountName",
@@ -562,6 +562,7 @@ static int acl_check_spn(TALLOC_CTX *mem_ctx,
 		"nETBIOSName",
 		NULL
 	};
+
 	/* if we have wp, we can do whatever we like */
 	if (acl_check_access_on_attribute(module,
 					  tmp_ctx,
@@ -617,6 +618,20 @@ static int acl_check_spn(TALLOC_CTX *mem_ctx,
 		talloc_free(tmp_ctx);
 		return ldb_error(ldb, LDB_ERR_OPERATIONS_ERROR,
 					 "Error finding element for servicePrincipalName.");
+	}
+
+	/* NTDSDSA objectGuid of object we are checking SPN for */
+	if (userAccountControl & (UF_SERVER_TRUST_ACCOUNT | UF_PARTIAL_SECRETS_ACCOUNT)) {
+		ret = dsdb_module_find_ntdsguid_for_computer(module, tmp_ctx,
+							     req->op.mod.message->dn, &ntds, req);
+		if (ret != LDB_SUCCESS) {
+			ldb_asprintf_errstring(ldb, "Failed to find NTDSDSA objectGuid for %s: %s",
+					       ldb_dn_get_linearized(req->op.mod.message->dn),
+					       ldb_strerror(ret));
+			talloc_free(tmp_ctx);
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+		ntds_guid = GUID_string(tmp_ctx, &ntds);
 	}
 
 	for (i=0; i < el->num_values; i++) {
