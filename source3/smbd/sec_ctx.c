@@ -2,17 +2,17 @@
    Unix SMB/CIFS implementation.
    uid/user handling
    Copyright (C) Tim Potter 2000
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -81,7 +81,7 @@ static bool become_gid(gid_t gid)
 			become_gid_done = true;
 		}
 	}
-  
+
 	/* Set effective group id */
 
 	set_effective_gid(gid);
@@ -304,7 +304,7 @@ static void set_unix_security_ctx(uid_t uid, gid_t gid, int ngroups, gid_t *grou
 void set_sec_ctx(uid_t uid, gid_t gid, int ngroups, gid_t *groups, struct security_token *token)
 {
 	struct sec_ctx *ctx_p = &sec_ctx_stack[sec_ctx_stack_ndx];
-	
+
 	/* Set the security context */
 
 	DEBUG(3, ("setting sec ctx (%u, %u) - sec_ctx_stack_ndx = %d\n", 
@@ -324,7 +324,7 @@ void set_sec_ctx(uid_t uid, gid_t gid, int ngroups, gid_t *groups, struct securi
 	}
 
 	TALLOC_FREE(ctx_p->token);
-	
+
 	if (ngroups) {
 		ctx_p->ut.groups = (gid_t *)memdup(groups,
 						   sizeof(gid_t) * ngroups);
