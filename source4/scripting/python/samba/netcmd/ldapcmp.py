@@ -133,6 +133,73 @@ class LDAPBase(object):
         except Ldb.LdbError, e:
             assert "No such object" in str(e)
 
+    def get_attribute_name(self, key):
+        """ Returns the real attribute name
+            It resolved ranged results e.g. member;range=0-1499
+        """
+
+        r = re.compile("^([^;]+);range=(\d+)-(\d+|\*)$")
+
+        m = r.match(key)
+        if m is None:
+            return key
+
+        return m.group(1)
+
+    def get_attribute_values(self, object_dn, key, vals):
+        """ Returns list with all attribute values
+            It resolved ranged results e.g. member;range=0-1499
+        """
+
+        r = re.compile("^([^;]+);range=(\d+)-(\d+|\*)$")
+
+        m = r.match(key)
+        if m is None:
+            # no range, just return the values
+            return vals
+
+        attr = m.group(1)
+        hi = int(m.group(3))
+
+        # get additional values in a loop
+        # until we get a response with '*' at the end
+        while True:
+
+            n = "%s;range=%d-*" % (attr, hi + 1)
+            res = self.ldb.search(base=object_dn, scope=SCOPE_BASE, attrs=[n])
+            assert len(res) == 1
+            res = dict(res[0])
+            del res["dn"]
+
+            fm = None
+            fvals = None
+
+            for key in res.keys():
+                m = r.match(key)
+
+                if m is None:
+                    continue
+
+                if m.group(1) != attr:
+                    continue
+
+                fm = m
+                fvals = list(res[key])
+                break
+
+            if fm is None:
+                break
+
+            vals.extend(fvals)
+            if fm.group(3) == "*":
+                # if we got "*" we're done
+                break
+
+            assert int(fm.group(2)) == hi + 1
+            hi = int(fm.group(3))
+
+        return vals
+
     def get_attributes(self, object_dn):
         """ Returns dict with all default visible attributes
         """
@@ -142,7 +209,11 @@ class LDAPBase(object):
         # 'Dn' element is not iterable and we have it as 'distinguishedName'
         del res["dn"]
         for key in res.keys():
-            res[key] = list(res[key])
+            vals = list(res[key])
+            del res[key]
+            name = self.get_attribute_name(key)
+            res[name] = self.get_attribute_values(object_dn, key, vals)
+
         return res
 
     def get_descriptor_sddl(self, object_dn):
