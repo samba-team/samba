@@ -15,3 +15,12 @@ samba3.utable
 samba3.pipe_number
 samba3.smbtorture_s3.plain.CHAIN1
 samba3.smbtorture_s3.crypt.CHAIN1
+samba3.*base.charset
+samba3.*base.tcondev
+samba3.*raw.acls
+samba3.*raw.composite
+samba3.*raw.context
+samba3.*raw.ioctl
+samba3.*raw.qfileinfo
+samba3.*raw.qfsinfo
+samba3.*raw.sfileinfo.base

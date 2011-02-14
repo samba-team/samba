@@ -71,14 +71,6 @@ if test "x$POSIX_SUBTESTS" != "x" ; then
 	tests="$POSIX_SUBTESTS"
 fi
 
-skipped="base.charset base.tcondev"
-skipped="$skipped raw.acls raw.composite raw.context"
-skipped="$skipped raw.ioctl"
-skipped="$skipped raw.qfileinfo raw.qfsinfo"
-skipped="$skipped raw.sfileinfo.base"
-
-echo "WARNING: Skipping tests $skipped"
-
 ADDARGS="$ADDARGS --option=torture:sharedelay=100000"
 #ADDARGS="$ADDARGS --option=torture:writetimeupdatedelay=500000"
 
@@ -86,16 +78,6 @@ failed=0
 for t in $tests; do
     if [ ! -z "$start" -a "$start" != $t ]; then
 	continue;
-    fi
-    skip=0
-    for s in $skipped; do
-    	if [ x"$s" = x"$t" ]; then
-    	    skip=1;
-	    break;
-	fi
-    done
-    if [ $skip = 1 ]; then
-    	continue;
     fi
     start=""
     name="$t"
