@@ -74,7 +74,6 @@
 #include "dsdb/samdb/samdb.h"
 #include "dsdb/samdb/ldb_modules/util.h"
 
-#include "auth/auth.h"
 #include "libcli/security/security.h"
 
 #ifndef ARRAY_SIZE
@@ -905,7 +904,6 @@ static int operational_init(struct ldb_module *ctx)
 {
 	struct operational_data *data;
 	int ret;
-	auth_init();
 
 	ret = ldb_next_init(ctx);
 
