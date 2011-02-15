@@ -57,7 +57,6 @@ dyn_cflags_fhs = {
     'LOGFILEBASE'                    : '${LOCALSTATEDIR}/log/samba',
     'LOCKDIR'                        : '${LOCALSTATEDIR}/lib/samba',
     'PIDDIR'                         : '${LOCALSTATEDIR}/run/samba',
-    'DATADIR'                        : '${DATADIR}/samba',
     'SETUPDIR'                       : '${DATADIR}/samba/setup',
     'WINBINDD_SOCKET_DIR'            : '${LOCALSTATEDIR}/run/samba/winbindd',
     'WINBINDD_PRIVILEGED_SOCKET_DIR' : '${LOCALSTATEDIR}/run/samba/winbindd_privileged',
@@ -69,6 +68,7 @@ dyn_cflags_fhs = {
     'INCLUDEDIR'                     : '${INCLUDEDIR}/samba-4.0',
     'PKGCONFIGDIR'                   : '${LIBDIR}/pkgconfig',
     'SWATDIR'                        : '${DATADIR}/swat',
+    'CODEPAGEDIR'                    : '${DATADIR}/samba',
     }
 
 def get_varname(v):
