@@ -10,7 +10,7 @@ import "file_id.idl";
 */
 
 [
-  helper("../librpc/ndr/util.h"),
+  helper("../librpc/ndr/ndr_server_id.h"),
   pointer_default(unique)
 ]
 interface notify
