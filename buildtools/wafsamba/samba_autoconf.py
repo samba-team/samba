@@ -645,6 +645,8 @@ def ADD_CFLAGS(conf, flags, testflags=False):
 def ADD_LDFLAGS(conf, flags, testflags=False):
     '''add some LDFLAGS to the command line
        optionally set testflags to ensure all the flags work
+
+       this will return the flags that are added, if any
     '''
     if testflags:
         ok_flags=[]
@@ -655,7 +657,7 @@ def ADD_LDFLAGS(conf, flags, testflags=False):
     if not 'EXTRA_LDFLAGS' in conf.env:
         conf.env['EXTRA_LDFLAGS'] = []
     conf.env['EXTRA_LDFLAGS'].extend(TO_LIST(flags))
-
+    return flags
 
 
 @conf
