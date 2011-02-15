@@ -640,6 +640,15 @@ void copy_id21_to_sam_passwd(const char *log_prefix,
 			}
 		}
 	}
+
+	if (from->fields_present & SAMR_FIELD_COUNTRY_CODE) {
+		DEBUG(10,("%s SAMR_FIELD_COUNTRY_CODE: %08X -> %08X\n", l,
+			pdb_get_country_code(to), from->country_code));
+		if (from->country_code != pdb_get_country_code(to)) {
+			pdb_set_country_code(to,
+				from->country_code, PDB_CHANGED);
+		}
+	}
 }
 
 
