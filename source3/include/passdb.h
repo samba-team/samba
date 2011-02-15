@@ -70,6 +70,7 @@ enum pdb_elements {
 	PDB_FIELDS_PRESENT,
 	PDB_BAD_PASSWORD_COUNT,
 	PDB_LOGON_COUNT,
+	PDB_COUNTRY_CODE,
 	PDB_UNKNOWN6,
 	PDB_LMPASSWD,
 	PDB_NTPASSWD,
@@ -165,6 +166,8 @@ struct samu {
 	/* Was unknown_5. */
 	uint16_t bad_password_count;
 	uint16_t logon_count;
+
+	uint16_t country_code;
 
 	uint32_t unknown_6; /* 0x0000 04ec */
 

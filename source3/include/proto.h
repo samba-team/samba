@@ -3735,6 +3735,7 @@ const char *pdb_get_comment(const struct samu *sampass);
 const char *pdb_get_munged_dial(const struct samu *sampass);
 uint16_t pdb_get_bad_password_count(const struct samu *sampass);
 uint16_t pdb_get_logon_count(const struct samu *sampass);
+uint16_t pdb_get_country_code(const struct samu *sampass);
 uint32_t pdb_get_unknown_6(const struct samu *sampass);
 void *pdb_get_backend_private_data(const struct samu *sampass, const struct pdb_methods *my_methods);
 bool pdb_set_acct_ctrl(struct samu *sampass, uint32_t acct_ctrl, enum pdb_value_state flag);
@@ -3769,6 +3770,8 @@ bool pdb_set_pw_history(struct samu *sampass, const uint8_t *pwd, uint32_t histo
 bool pdb_set_plaintext_pw_only(struct samu *sampass, const char *password, enum pdb_value_state flag);
 bool pdb_set_bad_password_count(struct samu *sampass, uint16_t bad_password_count, enum pdb_value_state flag);
 bool pdb_set_logon_count(struct samu *sampass, uint16_t logon_count, enum pdb_value_state flag);
+bool pdb_set_country_code(struct samu *sampass, uint16_t country_code,
+			  enum pdb_value_state flag);
 bool pdb_set_unknown_6(struct samu *sampass, uint32_t unkn, enum pdb_value_state flag);
 bool pdb_set_hours(struct samu *sampass, const uint8_t *hours, enum pdb_value_state flag);
 bool pdb_set_backend_private_data(struct samu *sampass, void *private_data, 

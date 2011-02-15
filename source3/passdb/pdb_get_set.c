@@ -305,6 +305,11 @@ uint16_t pdb_get_logon_count(const struct samu *sampass)
 	return sampass->logon_count;
 }
 
+uint16_t pdb_get_country_code(const struct samu *sampass)
+{
+	return sampass->country_code;
+}
+
 uint32_t pdb_get_unknown_6(const struct samu *sampass)
 {
 	return sampass->unknown_6;
@@ -886,6 +891,13 @@ bool pdb_set_logon_count(struct samu *sampass, uint16_t logon_count, enum pdb_va
 {
 	sampass->logon_count = logon_count;
 	return pdb_set_init_flags(sampass, PDB_LOGON_COUNT, flag);
+}
+
+bool pdb_set_country_code(struct samu *sampass, uint16_t country_code,
+			  enum pdb_value_state flag)
+{
+	sampass->country_code = country_code;
+	return pdb_set_init_flags(sampass, PDB_COUNTRY_CODE, flag);
 }
 
 bool pdb_set_unknown_6(struct samu *sampass, uint32_t unkn, enum pdb_value_state flag)
