@@ -309,6 +309,10 @@ static NTSTATUS pdb_ads_init_sam_from_priv(struct pdb_methods *m,
 		pdb_set_country_code(sam, i, PDB_SET);
 	}
 
+	if (tldap_pull_uint32(entry, "codePage", &i)) {
+		pdb_set_code_page(sam, i, PDB_SET);
+	}
+
 	status = NT_STATUS_OK;
 fail:
 	TALLOC_FREE(frame);
@@ -403,6 +407,10 @@ static bool pdb_ads_init_ads_from_sam(struct pdb_ads_state *state,
 	ret &= tldap_make_mod_fmt(
 		existing, mem_ctx, pmods, pnum_mods, "countryCode",
 		"%i", (int)pdb_get_country_code(sam));
+
+	ret &= tldap_make_mod_fmt(
+		existing, mem_ctx, pmods, pnum_mods, "codePage",
+		"%i", (int)pdb_get_code_page(sam));
 
 fail:
 	return ret;
