@@ -649,6 +649,15 @@ void copy_id21_to_sam_passwd(const char *log_prefix,
 				from->country_code, PDB_CHANGED);
 		}
 	}
+
+	if (from->fields_present & SAMR_FIELD_CODE_PAGE) {
+		DEBUG(10,("%s SAMR_FIELD_CODE_PAGE: %08X -> %08X\n", l,
+			pdb_get_code_page(to), from->code_page));
+		if (from->code_page != pdb_get_code_page(to)) {
+			pdb_set_code_page(to,
+				from->code_page, PDB_CHANGED);
+		}
+	}
 }
 
 

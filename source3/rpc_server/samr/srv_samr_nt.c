@@ -2489,7 +2489,7 @@ static NTSTATUS get_user_info_2(TALLOC_CTX *mem_ctx,
 	r->comment.string		= talloc_strdup(mem_ctx, pdb_get_comment(pw));
 	r->reserved.string		= NULL;
 	r->country_code			= pdb_get_country_code(pw);
-	r->code_page			= 0;
+	r->code_page			= pdb_get_code_page(pw);
 
 	return NT_STATUS_OK;
 }
@@ -2975,7 +2975,7 @@ static NTSTATUS get_user_info_21(TALLOC_CTX *mem_ctx,
 	r->password_expired		= (pdb_get_pass_must_change_time(pw) == 0) ?
 						PASS_MUST_CHANGE_AT_NEXT_LOGON : 0;
 	r->country_code			= pdb_get_country_code(pw);
-	r->code_page			= 0;
+	r->code_page			= pdb_get_code_page(pw);
 	r->lm_password_set		= 0;
 	r->nt_password_set		= 0;
 
