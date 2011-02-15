@@ -17,6 +17,7 @@
 
 #ifndef __UID_WRAPPER_H__
 #define __UID_WRAPPER_H__
+#ifndef uwrap_enabled
 
 int uwrap_enabled(void);
 int uwrap_seteuid(uid_t euid);
@@ -68,4 +69,5 @@ gid_t uwrap_getgid(void);
 #endif
 #define getgid	uwrap_getgid
 
+#endif
 #endif /* __UID_WRAPPER_H__ */
