@@ -763,7 +763,8 @@ if bld.CONFIG_SET('HAVE_KRB5_LOCATE_PLUGIN_H'):
 bld.SAMBA_SUBSYSTEM('LIBMSRPC',
                     source='${LIBMSRPC_SRC}',
                     deps='''ndr ndr-util NDR_SECURITY NDR_DCERPC NDR_SCHANNEL
-                    RPC_NDR_EPMAPPER COMMON_SCHANNELDB LIBCLI_AUTH''',
+                    RPC_NDR_EPMAPPER COMMON_SCHANNELDB LIBCLI_AUTH
+                    LIBTSOCKET''',
                     vars=locals())
 
 bld.SAMBA_SUBSYSTEM('LIBMSRPC_GEN',
@@ -864,7 +865,7 @@ bld.SAMBA_SUBSYSTEM('LIBSAMBA',
 
 bld.SAMBA_SUBSYSTEM('LIBSMB',
                     source=LIBSMB_SRC,
-                    deps='LIBSAMBA CLDAP LIBNMB LIBNBT LIBDRSUAPI SPNEGO_PARSE',
+                    deps='LIBSAMBA CLDAP LIBNMB LIBNBT LIBDRSUAPI SPNEGO_PARSE LIBTSOCKET',
                     vars=locals())
 
 bld.SAMBA_SUBSYSTEM('LIBDRSUAPI',
@@ -874,7 +875,7 @@ bld.SAMBA_SUBSYSTEM('LIBDRSUAPI',
 
 bld.SAMBA_SUBSYSTEM('CLDAP',
                     source=CLDAP_SRC,
-                    deps='LIBCLI_LDAP_MESSAGE LIBCLI_LDAP_NDR',
+                    deps='LIBCLI_LDAP_MESSAGE LIBCLI_LDAP_NDR LIBTSOCKET',
                     vars=locals())
 
 bld.SAMBA_SUBSYSTEM('SECRETS',
