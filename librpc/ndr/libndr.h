@@ -378,7 +378,6 @@ enum ndr_err_code ndr_push_dom_sid0(struct ndr_push *ndr, int ndr_flags, const s
 enum ndr_err_code ndr_pull_dom_sid0(struct ndr_pull *ndr, int ndr_flags, struct dom_sid *sid);
 void ndr_print_dom_sid0(struct ndr_print *ndr, const char *name, const struct dom_sid *sid);
 size_t ndr_size_dom_sid0(const struct dom_sid *sid, int flags);
-void ndr_print_ipv4_addr(struct ndr_print *ndr, const char *name, const struct in_addr *_ip);
 void ndr_print_GUID(struct ndr_print *ndr, const char *name, const struct GUID *guid);
 bool ndr_syntax_id_equal(const struct ndr_syntax_id *i1, const struct ndr_syntax_id *i2); 
 enum ndr_err_code ndr_push_struct_blob(DATA_BLOB *blob, TALLOC_CTX *mem_ctx, const void *p, ndr_push_flags_fn_t fn);
