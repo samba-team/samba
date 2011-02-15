@@ -92,10 +92,10 @@ interface ntlmssp
 		uint16 ProductBuild;
 		uint8 Reserved[3];
 		ntlmssp_NTLMRevisionCurrent NTLMRevisionCurrent;
-	} VERSION;
+	} ntlmssp_VERSION;
 
 	typedef [noprint,nodiscriminant] union {
-		[case(NTLMSSP_NEGOTIATE_VERSION)] VERSION version;
+		[case(NTLMSSP_NEGOTIATE_VERSION)] ntlmssp_VERSION version;
 		[default];
 	} ntlmssp_Version;
 

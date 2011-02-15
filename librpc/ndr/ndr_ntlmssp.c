@@ -167,7 +167,7 @@ _PUBLIC_ void ndr_print_ntlmssp_Version(struct ndr_print *ndr, const char *name,
 	level = ndr_print_get_switch_value(ndr, r);
 	switch (level) {
 		case NTLMSSP_NEGOTIATE_VERSION:
-			ndr_print_VERSION(ndr, name, &r->version);
+			ndr_print_ntlmssp_VERSION(ndr, name, &r->version);
 		break;
 
 		default:

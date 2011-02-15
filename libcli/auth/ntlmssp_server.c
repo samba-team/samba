@@ -161,7 +161,7 @@ NTSTATUS ntlmssp_server_negotiate(struct ntlmssp_state *ntlmssp_state,
 
 		if (chal_flags & NTLMSSP_NEGOTIATE_VERSION) {
 			enum ndr_err_code err;
-			struct VERSION vers;
+			struct ntlmssp_VERSION vers;
 
 			/* "What Windows returns" as a version number. */
 			ZERO_STRUCT(vers);
@@ -173,7 +173,7 @@ NTSTATUS ntlmssp_server_negotiate(struct ntlmssp_state *ntlmssp_state,
 			err = ndr_push_struct_blob(&version_blob,
 						ntlmssp_state,
 						&vers,
-						(ndr_push_flags_fn_t)ndr_push_VERSION);
+						(ndr_push_flags_fn_t)ndr_push_ntlmssp_VERSION);
 
 			if (!NDR_ERR_CODE_IS_SUCCESS(err)) {
 				data_blob_free(&struct_blob);
