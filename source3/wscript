@@ -720,6 +720,17 @@ return 0;
                         headers='krb5.h', lib='krb5',
                         addmain=False,
                         msg="Checking whether the macro krb5_princ_realm is defined")
+        conf.CHECK_CODE('''
+int main(void) {
+    krb5_context context;
+    krb5_principal principal;
+    const char *realm; realm = krb5_principal_get_realm(context, principal);
+    return 0;
+}''',
+                        'HAVE_KRB5_PRINCIPAL_GET_REALM',
+                        headers='krb5.h', lib='krb5',
+                        addmain=False,
+                        msg="Checking whether krb5_principal_get_realm is defined")
         if conf.CHECK_CODE('''krb5_verify_checksum(0, 0, 0, 0, 0, 0, 0);''',
                         'KRB5_VERIFY_CHECKSUM_ARGS',
                         headers='krb5.h', lib='krb5',
