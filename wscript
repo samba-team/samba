@@ -107,14 +107,14 @@ def configure(conf):
     # we don't want any libraries or modules to rely on runtime
     # resolution of symbols
     if sys.platform != "openbsd4":
-        conf.ADD_LDFLAGS('-Wl,-no-undefined', testflags=True)
+        conf.env.undefined_ldflags = conf.ADD_LDFLAGS('-Wl,-no-undefined', testflags=True)
 
     # gentoo always adds this. We want our normal build to be as
     # strict as the strictest OS we support, so adding this here
     # allows us to find problems on our development hosts faster.
     # It also results in faster load time.
     if sys.platform != "openbsd4":
-        conf.ADD_LDFLAGS('-Wl,--as-needed', testflags=True)
+        conf.env.asneeded_ldflags = conf.ADD_LDFLAGS('-Wl,--as-needed', testflags=True)
 
     if not conf.CHECK_NEED_LC("-lc not needed"):
         conf.ADD_LDFLAGS('-lc', testflags=False)
