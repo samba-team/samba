@@ -14,8 +14,8 @@ else
 fi
 
 test x"$TEST_FUNCTIONS_SH" != x"INCLUDED" && {
-incdir=`dirname $0`
-. $incdir/test_functions.sh
+incdir=`dirname $0`/../../../testprogs/blackbox
+. $incdir/subunit.sh
 }
 
 failed=0
@@ -420,11 +420,10 @@ conf_roundtrip()
     rm -r $DIR
 }
 
-CONF_FILES=${CONF_FILES:-$(find $SRCDIR/.. -name *.conf | xargs grep -l "\[global\]")}
+CONF_FILES=${CONF_FILES:-$(find $SRCDIR/ -name '*.conf' | xargs grep -l "\[global\]")}
 
 for conf_file in $CONF_FILES
 do
-    conf_file=${conf_file#$SRCDIR/}
     testit "conf_roundtrip $conf_file" \
 	conf_roundtrip $conf_file \
 	|| failed=`expr $failed + 1`
