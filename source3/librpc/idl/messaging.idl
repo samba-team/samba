@@ -1,11 +1,12 @@
 #include "idl_types.h"
 
+import "server_id.idl";
+
 /*
    IDL structures for messaging code
 */
 
 [
-  helper("../librpc/ndr/ndr_server_id.h"),
   pointer_default(unique)
 ]
 interface messaging

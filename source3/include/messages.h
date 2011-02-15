@@ -66,14 +66,7 @@
 
 #define MSG_SRVID_SAMBA 0x0000000100000000LL
 
-
-struct server_id {
-	pid_t pid;
-#ifdef CLUSTER_SUPPORT
-	uint32 vnn;
-#endif
-	uint64_t unique_id;
-};
+#include "librpc/gen_ndr/server_id.h"
 
 #ifdef CLUSTER_SUPPORT
 #define MSG_BROADCAST_PID_STR	"0:0"

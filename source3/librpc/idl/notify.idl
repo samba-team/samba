@@ -1,6 +1,6 @@
 #include "idl_types.h"
 
-import "file_id.idl";
+import "file_id.idl", "server_id.idl";
 
 /*
    IDL structures for notify change code
@@ -10,7 +10,6 @@ import "file_id.idl";
 */
 
 [
-  helper("../librpc/ndr/ndr_server_id.h"),
   pointer_default(unique)
 ]
 interface notify

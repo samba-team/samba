@@ -11,7 +11,7 @@ bld.SAMBA_SUBSYSTEM('NDR_LIBNET_JOIN',
 	)
 
 bld.SAMBA_SUBSYSTEM('NDR_SERVER_ID',
-	source='ndr/ndr_server_id.c',
+	source='gen_ndr/ndr_server_id.c',
 	public_deps='ndr'
 	)
 
