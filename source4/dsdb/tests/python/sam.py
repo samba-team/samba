@@ -2365,6 +2365,19 @@ class SamTests(unittest.TestCase):
         self.assertTrue(len(res[0]["description"]) == 1)
         self.assertEquals(res[0]["description"][0], "desc1")
 
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
+        m.add(MessageElement("desc1", FLAG_MOD_DELETE, "description"))
+        m.add(MessageElement("desc2", FLAG_MOD_ADD, "description"))
+        ldb.modify(m)
+
+        res = ldb.search("cn=ldaptestgroup,cn=users," + self.base_dn,
+                         scope=SCOPE_BASE, attrs=["description"])
+        self.assertTrue(len(res) == 1)
+        self.assertTrue("description" in res[0])
+        self.assertTrue(len(res[0]["description"]) == 1)
+        self.assertEquals(res[0]["description"][0], "desc2")
+
         delete_force(self.ldb, "cn=ldaptestgroup,cn=users," + self.base_dn)
 
 
