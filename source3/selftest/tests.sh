@@ -80,6 +80,7 @@ LOCAL_PATH="\$LOCAL_PATH"
 export LOCAL_PATH
 
 plantest "blackbox.success" dc:local LOCAL_PATH="$LOCAL_PATH" BINDIR="$BINDIR" SCRIPTDIR="$SCRIPTDIR" SERVERCONFFILE="\$SMB_CONF_PATH" script/tests/test_success.sh
+plantest "blackbox.failure" dc:local LOCAL_PATH="$LOCAL_PATH" BINDIR="$BINDIR" SCRIPTDIR="$SCRIPTDIR" SERVERCONFFILE="\$SMB_CONF_PATH" script/tests/test_failure.sh
 
 (
 	shift $#
