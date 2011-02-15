@@ -188,6 +188,7 @@ static NTSTATUS pdb_ads_init_sam_from_priv(struct pdb_methods *m,
 	time_t tmp_time;
 	struct dom_sid sid;
 	uint64_t n;
+	uint32_t i;
 	DATA_BLOB blob;
 
 	str = tldap_talloc_single_attribute(entry, "samAccountName", sam);
@@ -303,6 +304,11 @@ static NTSTATUS pdb_ads_init_sam_from_priv(struct pdb_methods *m,
 		pdb_set_group_sid(sam, &sid, PDB_SET);
 
 	}
+
+	if (tldap_pull_uint32(entry, "countryCode", &i)) {
+		pdb_set_country_code(sam, i, PDB_SET);
+	}
+
 	status = NT_STATUS_OK;
 fail:
 	TALLOC_FREE(frame);
@@ -393,6 +399,10 @@ static bool pdb_ads_init_ads_from_sam(struct pdb_ads_state *state,
 	ret &= tldap_make_mod_fmt(
 		existing, mem_ctx, pmods, pnum_mods, "userParameters",
 		"%s", pdb_get_munged_dial(sam));
+
+	ret &= tldap_make_mod_fmt(
+		existing, mem_ctx, pmods, pnum_mods, "countryCode",
+		"%i", (int)pdb_get_country_code(sam));
 
 fail:
 	return ret;
