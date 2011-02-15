@@ -433,7 +433,7 @@ _PUBLIC_ NTSTATUS auth_context_create_methods(TALLOC_CTX *mem_ctx, const char **
 	int i;
 	struct auth_context *ctx;
 
-	auth_init();
+	auth4_init();
 
 	if (!ev) {
 		DEBUG(0,("auth_context_create: called with out event context\n"));
@@ -631,12 +631,12 @@ const struct auth_critical_sizes *auth_interface_version(void)
 	return &critical_sizes;
 }
 
-_PUBLIC_ NTSTATUS auth_init(void)
+_PUBLIC_ NTSTATUS auth4_init(void)
 {
 	static bool initialized = false;
 #define _MODULE_PROTO(init) extern NTSTATUS init(void);
-	STATIC_auth_MODULES_PROTO;
-	init_module_fn static_init[] = { STATIC_auth_MODULES };
+	STATIC_auth4_MODULES_PROTO;
+	init_module_fn static_init[] = { STATIC_auth4_MODULES };
 	
 	if (initialized) return NT_STATUS_OK;
 	initialized = true;

@@ -22,5 +22,5 @@
 
 NTSTATUS server_service_auth_init(void)
 {
-	return auth_init();
+	return auth4_init();
 }

@@ -209,7 +209,7 @@ NTSTATUS auth_check_password(struct auth_context *auth_ctx,
 			     TALLOC_CTX *mem_ctx,
 			     const struct auth_usersupplied_info *user_info,
 			     struct auth_user_info_dc **user_info_dc);
-NTSTATUS auth_init(void);
+NTSTATUS auth4_init(void);
 NTSTATUS auth_register(const struct auth_operations *ops);
 NTSTATUS server_service_auth_init(void);
 NTSTATUS authenticate_username_pw(TALLOC_CTX *mem_ctx,
