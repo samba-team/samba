@@ -659,6 +659,7 @@ done:
 WERROR reg_setvalue(struct registry_key *key, const char *name,
 		    const struct registry_value *val)
 {
+	struct regval_blob *existing;
 	WERROR err;
 	int res;
 
@@ -668,6 +669,15 @@ WERROR reg_setvalue(struct registry_key *key, const char *name,
 
 	if (!W_ERROR_IS_OK(err = fill_value_cache(key))) {
 		return err;
+	}
+
+	existing = regval_ctr_getvalue(key->values, name);
+
+	if ((existing != NULL) &&
+	    (regval_size(existing) == val->data.length) &&
+	    (memcmp(regval_data_p(existing), val->data.data,
+		    val->data.length) == 0)) {
+		return WERR_OK;
 	}
 
 	res = regval_ctr_addvalue(key->values, name, val->type,
