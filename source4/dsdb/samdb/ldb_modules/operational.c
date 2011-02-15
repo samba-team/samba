@@ -438,15 +438,13 @@ static int construct_msds_isrodc_with_computer_dn(struct ldb_module *module,
 						  struct ldb_message *msg,
 						  struct ldb_request *parent)
 {
-	struct ldb_context *ldb;
-	const char *attr[] = { "serverReferenceBL", NULL };
-	struct ldb_result *res;
 	int ret;
 	struct ldb_dn *server_dn;
 
-	ret = dsdb_module_search_dn(module, msg, &res, msg->dn, attr,
-	                            DSDB_FLAG_NEXT_MODULE, parent);
-	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
+	ret = dsdb_module_reference_dn(module, msg, msg->dn, "serverReferenceBL",
+				       &server_dn, parent);
+	if (ret == LDB_ERR_NO_SUCH_OBJECT || ret == LDB_ERR_NO_SUCH_ATTRIBUTE) {
+		/* it's OK if we can't find serverReferenceBL attribute */
 		DEBUG(4,(__location__ ": Can't get serverReferenceBL for %s \n",
 			 ldb_dn_get_linearized(msg->dn)));
 		return LDB_SUCCESS;
@@ -454,17 +452,6 @@ static int construct_msds_isrodc_with_computer_dn(struct ldb_module *module,
 		return ret;
 	}
 
-	ldb = ldb_module_get_ctx(module);
-	if (!ldb) {
-		return LDB_SUCCESS;
-	}
-
-	server_dn = ldb_msg_find_attr_as_dn(ldb, msg, res->msgs[0], "serverReferenceBL");
-	if (!server_dn) {
-		DEBUG(4,(__location__ ": Can't find serverReferenceBL for %s \n",
-			 ldb_dn_get_linearized(res->msgs[0]->dn)));
-		return LDB_SUCCESS;
-	}
 	return construct_msds_isrodc_with_server_dn(module, msg, server_dn, parent);
 }
 
