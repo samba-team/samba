@@ -228,9 +228,12 @@ static NTSTATUS dcerpc_ncacn_read_packet_recv(struct tevent_req *req,
 /* Start listening on the appropriate unix socket and setup all is needed to
  * dispatch requests to the pipes rpc implementation */
 
-struct named_pipe_listen_state {
+struct dcerpc_ncacn_listen_state {
 	int fd;
-	char *name;
+	union {
+		char *name;
+		uint16_t port;
+	} ep;
 };
 
 static void named_pipe_listener(struct tevent_context *ev,
@@ -241,17 +244,17 @@ static void named_pipe_listener(struct tevent_context *ev,
 bool setup_named_pipe_socket(const char *pipe_name,
 			     struct tevent_context *ev_ctx)
 {
-	struct named_pipe_listen_state *state;
+	struct dcerpc_ncacn_listen_state *state;
 	struct tevent_fd *fde;
 	char *np_dir;
 
-	state = talloc(ev_ctx, struct named_pipe_listen_state);
+	state = talloc(ev_ctx, struct dcerpc_ncacn_listen_state);
 	if (!state) {
 		DEBUG(0, ("Out of memory\n"));
 		return false;
 	}
-	state->name = talloc_strdup(state, pipe_name);
-	if (!state->name) {
+	state->ep.name = talloc_strdup(state, pipe_name);
+	if (state->ep.name == NULL) {
 		DEBUG(0, ("Out of memory\n"));
 		goto out;
 	}
@@ -305,9 +308,9 @@ static void named_pipe_listener(struct tevent_context *ev,
 				uint16_t flags,
 				void *private_data)
 {
-	struct named_pipe_listen_state *state =
+	struct dcerpc_ncacn_listen_state *state =
 			talloc_get_type_abort(private_data,
-					      struct named_pipe_listen_state);
+					      struct dcerpc_ncacn_listen_state);
 	struct sockaddr_un sunaddr;
 	socklen_t len;
 	int sd = -1;
@@ -330,7 +333,7 @@ static void named_pipe_listener(struct tevent_context *ev,
 
 	DEBUG(6, ("Accepted socket %d\n", sd));
 
-	named_pipe_accept_function(state->name, sd);
+	named_pipe_accept_function(state->ep.name, sd);
 }
 
 
