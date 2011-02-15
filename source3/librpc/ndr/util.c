@@ -22,49 +22,6 @@
 #include "includes.h"
 #include "librpc/ndr/util.h"
 
-enum ndr_err_code ndr_push_server_id(struct ndr_push *ndr, int ndr_flags, const struct server_id *r)
-{
-	if (ndr_flags & NDR_SCALARS) {
-		NDR_CHECK(ndr_push_align(ndr, 4));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS,
-					  (uint32_t)r->pid));
-#ifdef CLUSTER_SUPPORT
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS,
-					  (uint32_t)r->vnn));
-#endif
-	}
-	if (ndr_flags & NDR_BUFFERS) {
-	}
-	return NDR_ERR_SUCCESS;
-}
-
-enum ndr_err_code ndr_pull_server_id(struct ndr_pull *ndr, int ndr_flags, struct server_id *r)
-{
-	if (ndr_flags & NDR_SCALARS) {
-		uint32_t pid;
-		NDR_CHECK(ndr_pull_align(ndr, 4));
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &pid));
-#ifdef CLUSTER_SUPPORT
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->vnn));
-#endif
-		r->pid = (pid_t)pid;
-	}
-	if (ndr_flags & NDR_BUFFERS) {
-	}
-	return NDR_ERR_SUCCESS;
-}
-
-void ndr_print_server_id(struct ndr_print *ndr, const char *name, const struct server_id *r)
-{
-	ndr_print_struct(ndr, name, "server_id");
-	ndr->depth++;
-	ndr_print_uint32(ndr, "id", (uint32_t)r->pid);
-#ifdef CLUSTER_SUPPORT
-	ndr_print_uint32(ndr, "vnn", (uint32_t)r->vnn);
-#endif
-	ndr->depth--;
-}
-
 _PUBLIC_ void ndr_print_sockaddr_storage(struct ndr_print *ndr, const char *name, const struct sockaddr_storage *ss)
 {
 	char addr[INET6_ADDRSTRLEN];
