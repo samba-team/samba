@@ -371,6 +371,7 @@ def SAMBA_MODULE(bld, modname, source,
                  internal_module=True,
                  local_include=True,
                  vars=None,
+                 subdir=None,
                  enabled=True,
                  pyembed=False,
                  allow_undefined_symbols=False
@@ -378,6 +379,8 @@ def SAMBA_MODULE(bld, modname, source,
     '''define a Samba module.'''
 
     source = bld.EXPAND_VARIABLES(source, vars=vars)
+    if subdir:
+        source = bld.SUBDIR(subdir, source)
 
     if internal_module or BUILTIN_LIBRARY(bld, modname):
         bld.SAMBA_SUBSYSTEM(modname, source,
