@@ -84,6 +84,15 @@ testit_expect_failure () {
 	return $status
 }
 
+testok () {
+	name=`basename $1`
+	shift
+	failed=$2
+	shift
+
+	exit $failed
+}
+
 # work out the top level source directory
 if [ -d source4 ]; then
     SRCDIR="."
