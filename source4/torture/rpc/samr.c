@@ -456,7 +456,7 @@ static bool test_SetUserInfo(struct dcerpc_binding_handle *b, struct torture_con
 	TEST_USERINFO_BINARYSTRING(21, parameters, 20, parameters, "",
 			   SAMR_FIELD_PARAMETERS);
 
-	/* Samba 3 cannot store country_code and copy_page atm. - gd */
+	/* Samba 3 cannot store country_code and code_page atm. - gd */
 	if (!torture_setting_bool(tctx, "samba3", false)) {
 		TEST_USERINFO_INT(2, country_code, 2, country_code, __LINE__, 0);
 		TEST_USERINFO_INT(2, country_code, 21, country_code, __LINE__, 0);
