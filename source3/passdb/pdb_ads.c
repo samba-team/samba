@@ -319,6 +319,20 @@ fail:
 	return status;
 }
 
+static bool pdb_ads_make_time_mod(struct tldap_message *existing,
+				  TALLOC_CTX *mem_ctx,
+				  struct tldap_mod **pmods, int *pnum_mods,
+				  const char *attrib, time_t t)
+{
+	uint64_t nt_time;
+
+	unix_to_nt_time(&nt_time, t);
+
+	return tldap_make_mod_fmt(
+		existing, mem_ctx, pmods, pnum_mods, attrib,
+		"%llu", nt_time);
+}
+
 static bool pdb_ads_init_ads_from_sam(struct pdb_ads_state *state,
 				      struct tldap_message *existing,
 				      TALLOC_CTX *mem_ctx,
@@ -411,6 +425,10 @@ static bool pdb_ads_init_ads_from_sam(struct pdb_ads_state *state,
 	ret &= tldap_make_mod_fmt(
 		existing, mem_ctx, pmods, pnum_mods, "codePage",
 		"%i", (int)pdb_get_code_page(sam));
+
+	ret &= pdb_ads_make_time_mod(
+		existing, mem_ctx, pmods, pnum_mods, "accountExpires",
+		(int)pdb_get_kickoff_time(sam));
 
 fail:
 	return ret;
