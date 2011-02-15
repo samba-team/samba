@@ -8,8 +8,8 @@ NETTIME="${NET} time"
 NETLOOKUP="${NET} lookup"
 
 test x"$TEST_FUNCTIONS_SH" != x"INCLUDED" && {
-incdir=`dirname $0`
-. $incdir/test_functions.sh
+incdir=`dirname $0`/../../../testprogs/blackbox
+. $incdir/subunit.sh
 }
 
 failed=0
