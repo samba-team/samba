@@ -6800,6 +6800,7 @@ static bool test_QueryDomainInfo2(struct dcerpc_binding_handle *b,
    set of group names. */
 static bool test_GroupList(struct dcerpc_binding_handle *b,
 			   struct torture_context *tctx,
+			   struct dom_sid *domain_sid,
 			   struct policy_handle *handle)
 {
 	struct samr_EnumDomainGroups q1;
@@ -6816,6 +6817,9 @@ static bool test_GroupList(struct dcerpc_binding_handle *b,
 
 	int num_names = 0;
 	const char **names = NULL;
+
+	bool builtin_domain = dom_sid_compare(domain_sid,
+					      &global_sid_Builtin) == 0;
 
 	torture_comment(tctx, "Testing coherency of querydispinfo vs enumdomgroups\n");
 
@@ -6846,6 +6850,11 @@ static bool test_GroupList(struct dcerpc_binding_handle *b,
 	torture_assert_ntstatus_ok(tctx, status, "EnumDomainGroups");
 
 	torture_assert(tctx, sam, "EnumDomainGroups failed to return sam");
+
+	if (builtin_domain) {
+		torture_assert(tctx, num_names == 0,
+			       "EnumDomainGroups shouldn't return any group in the builtin domain!");
+	}
 
 	q2.in.domain_handle = handle;
 	q2.in.level = 5;
@@ -6879,7 +6888,7 @@ static bool test_GroupList(struct dcerpc_binding_handle *b,
 				}
 			}
 
-			if (!found) {
+			if ((!found) && (!builtin_domain)) {
 				torture_warning(tctx, "QueryDisplayInfo gave name [%s] that EnumDomainGroups did not\n",
 				       name);
 				ret = false;
@@ -6892,6 +6901,11 @@ static bool test_GroupList(struct dcerpc_binding_handle *b,
 		torture_warning(tctx, "QueryDisplayInfo level 5 failed - %s\n",
 		       nt_errstr(status));
 		ret = false;
+	}
+
+	if (builtin_domain) {
+		torture_assert(tctx, q2.in.start_idx != 0,
+			       "QueryDisplayInfo should return all domain groups also on the builtin domain handle!");
 	}
 
 	for (i=0; i<num_names; i++) {
@@ -7646,7 +7660,7 @@ static bool test_OpenDomain(struct dcerpc_pipe *p, struct torture_context *tctx,
 			ret &= test_GetDisplayEnumerationIndex(b, tctx, &domain_handle);
 			ret &= test_GetDisplayEnumerationIndex2(b, tctx, &domain_handle);
 		}
-		ret &= test_GroupList(b, tctx, &domain_handle);
+		ret &= test_GroupList(b, tctx, sid, &domain_handle);
 		ret &= test_TestPrivateFunctionsDomain(b, tctx, &domain_handle);
 		ret &= test_RidToSid(b, tctx, sid, &domain_handle);
 		ret &= test_GetBootKeyInformation(b, tctx, &domain_handle);
