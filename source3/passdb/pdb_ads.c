@@ -67,7 +67,7 @@ static bool pdb_ads_pull_time(struct tldap_message *msg, const char *attr,
 	if (!tldap_pull_uint64(msg, attr, &tmp)) {
 		return false;
 	}
-	*ptime = uint64s_nt_time_to_unix_abs(&tmp);
+	*ptime = nt_time_to_unix(tmp);
 	return true;
 }
 
