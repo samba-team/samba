@@ -256,6 +256,18 @@ static NTSTATUS pdb_ads_init_sam_from_priv(struct pdb_methods *m,
 		pdb_set_acct_desc(sam, str, PDB_SET);
 	}
 
+	str = tldap_talloc_single_attribute(entry, "userWorkstations",
+					    talloc_tos());
+	if (str != NULL) {
+		pdb_set_workstations(sam, str, PDB_SET);
+	}
+
+	str = tldap_talloc_single_attribute(entry, "userParameters",
+					    talloc_tos());
+	if (str != NULL) {
+		pdb_set_munged_dial(sam, str, PDB_SET);
+	}
+
 	if (!tldap_pull_binsid(entry, "objectSid", &sid)) {
 		DEBUG(10, ("Could not pull SID\n"));
 		goto fail;
@@ -373,6 +385,14 @@ static bool pdb_ads_init_ads_from_sam(struct pdb_ads_state *state,
 	ret &= tldap_make_mod_fmt(
 		existing, mem_ctx, pmods, pnum_mods, "description",
 		"%s", pdb_get_acct_desc(sam));
+
+	ret &= tldap_make_mod_fmt(
+		existing, mem_ctx, pmods, pnum_mods, "userWorkstations",
+		"%s", pdb_get_workstations(sam));
+
+	ret &= tldap_make_mod_fmt(
+		existing, mem_ctx, pmods, pnum_mods, "userParameters",
+		"%s", pdb_get_munged_dial(sam));
 
 fail:
 	return ret;
