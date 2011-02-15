@@ -310,6 +310,11 @@ uint16_t pdb_get_country_code(const struct samu *sampass)
 	return sampass->country_code;
 }
 
+uint16_t pdb_get_code_page(const struct samu *sampass)
+{
+	return sampass->code_page;
+}
+
 uint32_t pdb_get_unknown_6(const struct samu *sampass)
 {
 	return sampass->unknown_6;
@@ -898,6 +903,13 @@ bool pdb_set_country_code(struct samu *sampass, uint16_t country_code,
 {
 	sampass->country_code = country_code;
 	return pdb_set_init_flags(sampass, PDB_COUNTRY_CODE, flag);
+}
+
+bool pdb_set_code_page(struct samu *sampass, uint16_t code_page,
+		       enum pdb_value_state flag)
+{
+	sampass->code_page = code_page;
+	return pdb_set_init_flags(sampass, PDB_CODE_PAGE, flag);
 }
 
 bool pdb_set_unknown_6(struct samu *sampass, uint32_t unkn, enum pdb_value_state flag)

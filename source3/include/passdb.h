@@ -71,6 +71,7 @@ enum pdb_elements {
 	PDB_BAD_PASSWORD_COUNT,
 	PDB_LOGON_COUNT,
 	PDB_COUNTRY_CODE,
+	PDB_CODE_PAGE,
 	PDB_UNKNOWN6,
 	PDB_LMPASSWD,
 	PDB_NTPASSWD,
@@ -168,6 +169,7 @@ struct samu {
 	uint16_t logon_count;
 
 	uint16_t country_code;
+	uint16_t code_page;
 
 	uint32_t unknown_6; /* 0x0000 04ec */
 
