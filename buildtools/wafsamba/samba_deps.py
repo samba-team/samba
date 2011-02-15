@@ -85,6 +85,10 @@ def build_dependencies(self):
         new_ldflags.extend(ldflags)
         self.ldflags       = new_ldflags
 
+        if getattr(self, 'allow_undefined_symbols', False) and self.env.undefined_ldflags:
+            for f in self.env.undefined_ldflags:
+                self.ldflags.remove(f)
+
         debug('deps: computed dependencies for target %s: uselib=%s uselib_local=%s add_objects=%s',
               self.sname, self.uselib, self.uselib_local, self.add_objects)
 
@@ -954,7 +958,7 @@ def show_object_duplicates(bld, tgt_list):
 # this provides a way to save our dependency calculations between runs
 savedeps_version = 3
 savedeps_inputs  = ['samba_deps', 'samba_includes', 'local_include', 'local_include_first', 'samba_cflags',
-                    'source', 'grouping_library', 'samba_ldflags']
+                    'source', 'grouping_library', 'samba_ldflags', 'allow_undefined_symbols' ]
 savedeps_outputs = ['uselib', 'uselib_local', 'add_objects', 'includes', 'ccflags', 'ldflags', 'samba_deps_extended']
 savedeps_outenv  = ['INC_PATHS']
 savedeps_envvars = ['NONSHARED_BINARIES', 'GLOBAL_DEPENDENCIES', 'EXTRA_CFLAGS', 'EXTRA_LDFLAGS', 'EXTRA_INCLUDES' ]

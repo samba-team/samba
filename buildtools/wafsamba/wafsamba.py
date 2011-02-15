@@ -124,6 +124,7 @@ def SAMBA_LIBRARY(bld, libname, source,
                   manpages=None,
                   private_library=False,
                   grouping_library=False,
+                  allow_undefined_symbols=False,
                   enabled=True):
     '''define a Samba library'''
 
@@ -245,7 +246,8 @@ def SAMBA_LIBRARY(bld, libname, source,
         abi_directory   = "%s/%s" % (bld.path.abspath(), abi_directory),
         abi_match       = abi_match,
         private_library = private_library,
-        grouping_library=grouping_library
+        grouping_library=grouping_library,
+        allow_undefined_symbols=allow_undefined_symbols
         )
 
     if realname and not link_name:
@@ -371,6 +373,7 @@ def SAMBA_MODULE(bld, modname, source,
                  vars=None,
                  enabled=True,
                  pyembed=False,
+                 allow_undefined_symbols=False
                  ):
     '''define a Samba module.'''
 
@@ -423,6 +426,7 @@ def SAMBA_MODULE(bld, modname, source,
                       link_name=build_link_name,
                       install_path="${MODULESDIR}/%s" % subsystem,
                       pyembed=pyembed,
+                      allow_undefined_symbols=allow_undefined_symbols
                       )
 
 
