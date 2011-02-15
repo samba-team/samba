@@ -1044,7 +1044,7 @@ static WERROR getncchanges_change_master(struct drsuapi_bind_state *b_state,
 struct drsuapi_getncchanges_state {
 	struct GUID *guids;
 	uint32_t num_records;
-	uint32_t num_sent;
+	uint32_t num_processed;
 	struct ldb_dn *ncRoot_dn;
 	bool is_schema_nc;
 	uint64_t min_usn;
@@ -1518,7 +1518,7 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 	 */
 	max_links = lpcfg_parm_int(dce_call->conn->dce_ctx->lp_ctx, NULL, "drs", "max link sync", 1500);
 
-	for (i=getnc_state->num_sent;
+	for (i=getnc_state->num_processed;
 	     i<getnc_state->num_records &&
 		     !null_scope &&
 		     (r->out.ctr->ctr6.object_count < max_objects);
@@ -1614,7 +1614,7 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 		talloc_free(msg_dn);
 	}
 
-	getnc_state->num_sent += r->out.ctr->ctr6.object_count;
+	getnc_state->num_processed = i;
 
 	r->out.ctr->ctr6.nc_object_count = getnc_state->num_records;
 
