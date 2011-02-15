@@ -44,6 +44,7 @@ dyn_cflags = {
     'STATEDIR'                       : '${LOCALSTATEDIR}',
     'CACHEDIR'                       : '${LOCKDIR}',
     'SMB_PASSWD_FILE'                : '${PRIVATEDIR}/smbpasswd',
+    'NMBDSOCKETDIR'                  : '${LOCALSTATEDIR}/nmbd',
     }
 
 # changes for when FHS is enabled
@@ -62,7 +63,7 @@ dyn_cflags_fhs = {
     'WINBINDD_SOCKET_DIR'            : '${LOCALSTATEDIR}/run/samba/winbindd',
     'WINBINDD_PRIVILEGED_SOCKET_DIR' : '${LOCALSTATEDIR}/run/samba/winbindd_privileged',
     'NTP_SIGND_SOCKET_DIR'           : '${LOCALSTATEDIR}/run/samba/ntp_signd',
-    'NCALRPCDIR'                     : '${LOCALSTATEDIR}/ncalrpc',
+    'NCALRPCDIR'                     : '${LOCALSTATEDIR}/run/samba/ncalrpc',
     'PYTHONARCHDIR'                  : '${PYTHONARCHDIR}',
     'MODULESDIR'                     : '${LIBDIR}/samba',
     'LIBEXECDIR'                     : '${MODULESDIR}',
@@ -70,6 +71,7 @@ dyn_cflags_fhs = {
     'PKGCONFIGDIR'                   : '${LIBDIR}/pkgconfig',
     'SWATDIR'                        : '${DATADIR}/swat',
     'CODEPAGEDIR'                    : '${DATADIR}/samba',
+    'NMBDSOCKETDIR'                  : '${LOCALSTATEDIR}/run/samba/nmbd',
     }
 
 def get_varname(v):
