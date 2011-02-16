@@ -1077,6 +1077,14 @@ ssize_t err = posix_fadvise(0,0,0x80000,POSIX_FADV_WILLNEED);
 		'HAVE_POSIX_FADVISE',
 		msg='Checking whether posix_fadvise is available')
 
+    for v in ['_SC_NGROUPS_MAX', '_SC_NPROC_ONLN', '_SC_NPROCESSORS_ONLN', '_SC_PAGESIZE' ]:
+        conf.CHECK_CODE('''
+			#include <unistd.h>
+			return sysconf(%s) == -1 ? 1 : 0;
+			''' % v,
+			'SYSCONF%s' % v,
+			msg='Checking whether sysconf(%s) is available' % v)
+
     default_static_modules=TO_LIST('''pdb_smbpasswd pdb_tdbsam pdb_wbc_sam
                                       auth_sam auth_unix auth_winbind auth_wbc auth_server
                                       auth_domain auth_builtin vfs_default
