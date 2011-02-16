@@ -1085,6 +1085,8 @@ ssize_t err = posix_fadvise(0,0,0x80000,POSIX_FADV_WILLNEED);
 			'SYSCONF%s' % v,
 			msg='Checking whether sysconf(%s) is available' % v)
 
+    conf.CHECK_DECLS('__NR_inotify_init', reverse=True, headers='asm/unistd.h')
+
     default_static_modules=TO_LIST('''pdb_smbpasswd pdb_tdbsam pdb_wbc_sam
                                       auth_sam auth_unix auth_winbind auth_wbc auth_server
                                       auth_domain auth_builtin vfs_default
