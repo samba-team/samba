@@ -887,9 +887,7 @@ void share_mode_entry_to_message(char *msg, const struct share_mode_entry *e)
 	SIVAL(msg,OP_BREAK_MSG_UID_OFFSET,e->uid);
 	SSVAL(msg,OP_BREAK_MSG_FLAGS_OFFSET,e->flags);
 	SIVAL(msg,OP_BREAK_MSG_NAME_HASH_OFFSET,e->name_hash);
-#ifdef CLUSTER_SUPPORT
 	SIVAL(msg,OP_BREAK_MSG_VNN_OFFSET,e->pid.vnn);
-#endif
 }
 
 /****************************************************************************
@@ -911,9 +909,7 @@ void message_to_share_mode_entry(struct share_mode_entry *e, char *msg)
 	e->uid = (uint32)IVAL(msg,OP_BREAK_MSG_UID_OFFSET);
 	e->flags = (uint16)SVAL(msg,OP_BREAK_MSG_FLAGS_OFFSET);
 	e->name_hash = IVAL(msg,OP_BREAK_MSG_NAME_HASH_OFFSET);
-#ifdef CLUSTER_SUPPORT
 	e->pid.vnn = IVAL(msg,OP_BREAK_MSG_VNN_OFFSET);
-#endif
 }
 
 /****************************************************************************

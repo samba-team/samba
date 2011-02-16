@@ -2574,9 +2574,7 @@ struct server_id pid_to_procid(pid_t pid)
 	struct server_id result;
 	result.pid = pid;
 	result.unique_id = my_unique_id;
-#ifdef CLUSTER_SUPPORT
 	result.vnn = my_vnn;
-#endif
 	return result;
 }
 
@@ -2589,10 +2587,8 @@ bool procid_equal(const struct server_id *p1, const struct server_id *p2)
 {
 	if (p1->pid != p2->pid)
 		return False;
-#ifdef CLUSTER_SUPPORT
 	if (p1->vnn != p2->vnn)
 		return False;
-#endif
 	return True;
 }
 
@@ -2606,10 +2602,8 @@ bool procid_is_me(const struct server_id *pid)
 {
 	if (pid->pid != sys_getpid())
 		return False;
-#ifdef CLUSTER_SUPPORT
 	if (pid->vnn != my_vnn)
 		return False;
-#endif
 	return True;
 }
 
@@ -2617,7 +2611,6 @@ struct server_id interpret_pid(const char *pid_string)
 {
 	struct server_id result;
 	int pid;
-#ifdef CLUSTER_SUPPORT
 	unsigned int vnn;
 	if (sscanf(pid_string, "%u:%d", &vnn, &pid) == 2) {
 		result.vnn = vnn;
@@ -2631,13 +2624,6 @@ struct server_id interpret_pid(const char *pid_string)
 		result.vnn = NONCLUSTER_VNN;
 		result.pid = -1;
 	}
-#else
-	if (sscanf(pid_string, "%d", &pid) != 1) {
-		result.pid = -1;
-	} else {
-		result.pid = pid;
-	}
-#endif
 	/* Assigning to result.pid may have overflowed
 	   Map negative pid to -1: i.e. error */
 	if (result.pid < 0) {
@@ -2649,7 +2635,6 @@ struct server_id interpret_pid(const char *pid_string)
 
 char *procid_str(TALLOC_CTX *mem_ctx, const struct server_id *pid)
 {
-#ifdef CLUSTER_SUPPORT
 	if (pid->vnn == NONCLUSTER_VNN) {
 		return talloc_asprintf(mem_ctx,
 				"%d",
@@ -2661,11 +2646,6 @@ char *procid_str(TALLOC_CTX *mem_ctx, const struct server_id *pid)
 					(unsigned)pid->vnn,
 					(int)pid->pid);
 	}
-#else
-	return talloc_asprintf(mem_ctx,
-			"%d",
-			(int)pid->pid);
-#endif
 }
 
 char *procid_str_static(const struct server_id *pid)
@@ -2680,11 +2660,7 @@ bool procid_valid(const struct server_id *pid)
 
 bool procid_is_local(const struct server_id *pid)
 {
-#ifdef CLUSTER_SUPPORT
 	return pid->vnn == my_vnn;
-#else
-	return True;
-#endif
 }
 
 /****************************************************************

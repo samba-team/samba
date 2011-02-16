@@ -23,9 +23,7 @@
 
 struct serverid_key {
 	pid_t pid;
-#ifdef CLUSTER_SUPPORT
 	uint32_t vnn;
-#endif
 };
 
 struct serverid_data {
@@ -71,9 +69,7 @@ static void serverid_fill_key(const struct server_id *id,
 {
 	ZERO_STRUCTP(key);
 	key->pid = id->pid;
-#ifdef CLUSTER_SUPPORT
 	key->vnn = id->vnn;
-#endif
 }
 
 bool serverid_register(const struct server_id id, uint32_t msg_flags)
@@ -276,9 +272,7 @@ static bool serverid_rec_parse(const struct db_record *rec,
 	memcpy(&data, rec->value.dptr, sizeof(data));
 
 	id->pid = key.pid;
-#ifdef CLUSTER_SUPPORT
 	id->vnn = key.vnn;
-#endif
 	id->unique_id = data.unique_id;
 	*msg_flags = data.msg_flags;
 	return true;

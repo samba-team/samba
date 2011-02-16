@@ -44,11 +44,9 @@ static int net_serverid_wipe_fn(struct db_record *rec,
 {
 	NTSTATUS status;
 
-#ifdef CLUSTER_SUPPORT
 	if (id->vnn != get_my_vnn()) {
 		return 0;
 	}
-#endif
 	status = rec->delete_rec(rec);
 	if (!NT_STATUS_IS_OK(status)) {
 		char *str = procid_str(talloc_tos(), id);
