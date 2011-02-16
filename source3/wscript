@@ -446,6 +446,8 @@ return acl_get_perm_np(permset_d, perm);
             conf.CHECK_CODE('struct aiocb a; return aio_error64(&a);', 'HAVE_AIO_ERROR64', msg='Checking for aio_error64', headers='aio.h', lib='aio rt')
             conf.CHECK_CODE('struct aiocb a; return aio_cancel64(1, &a);', 'HAVE_AIO_CANCEL64', msg='Checking for aio_cancel64', headers='aio.h', lib='aio rt')
 	    conf.CHECK_CODE('struct aiocb a; return aio_suspend64(&a, 1, NULL);', 'HAVE_AIO_SUSPEND64', msg='Checking for aio_suspend64', headers='aio.h', lib='aio rt')
+        if not conf.CONFIG_SET('HAVE_AIO'):
+            conf.DEFINE('HAVE_NO_AIO', '1')
     else:
         conf.DEFINE('HAVE_NO_AIO', '1')
 
@@ -1067,6 +1069,14 @@ exit(1);
        conf.CONFIG_SET('HAVE_STRUCT_STAT_ST_UMTIME'):
         conf.DEFINE('HAVE_STAT_HIRES_TIMESTAMPS', '1')
 
+    # recent FreeBSD, NetBSD have creation timestamps called birthtime:
+    conf.CHECK_STRUCTURE_MEMBER('struct stat', 'st_birthtime',
+				define='HAVE_STRUCT_STAT_ST_BIRTHTIME')
+    conf.CHECK_STRUCTURE_MEMBER('struct stat', 'st_birthtimespec.tv_nsec',
+				define='HAVE_STRUCT_STAT_ST_BIRTHTIMESPEC_TV_NSEC')
+    conf.CHECK_STRUCTURE_MEMBER('struct stat', 'st_birthtimensec',
+				define='HAVE_STRUCT_STAT_ST_BIRTHTIMENSEC')
+
     conf.CHECK_CODE('''
 #if defined(HAVE_UNISTD_H)
 #include <unistd.h>
@@ -1086,6 +1096,14 @@ ssize_t err = posix_fadvise(0,0,0x80000,POSIX_FADV_WILLNEED);
 			msg='Checking whether sysconf(%s) is available' % v)
 
     conf.CHECK_DECLS('__NR_inotify_init', reverse=True, headers='asm/unistd.h')
+
+    conf.CHECK_CODE('''
+#include <sys/syscall.h>
+#include <unistd.h>
+syscall(SYS_initgroups, 16, NULL, NULL, 0);
+		    ''',
+		    'HAVE_DARWIN_INITGROUPS',
+		    msg='Checking hether to use the Darwin-specific initgroups system call')
 
     default_static_modules=TO_LIST('''pdb_smbpasswd pdb_tdbsam pdb_wbc_sam
                                       auth_sam auth_unix auth_winbind auth_wbc auth_server
@@ -1123,6 +1141,9 @@ ssize_t err = posix_fadvise(0,0,0x80000,POSIX_FADV_WILLNEED);
 
     if conf.CONFIG_SET('HAVE_LDAP'):
         default_static_modules.extend(TO_LIST('pdb_ldap idmap_ldap'))
+
+    if conf.CONFIG_SET('DARWINOS'):
+	default_shared_modules.extend(TO_LIST('charset_macosxfs'))
 
     explicit_shared_modules = TO_LIST(Options.options.shared_modules, delimiter=',')
     explicit_static_modules = TO_LIST(Options.options.static_modules, delimiter=',')
