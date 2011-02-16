@@ -35,14 +35,6 @@ tests="$tests GETADDRINFO POSIX UID-REGRESSION-TEST SHORTNAME-TEST"
 tests="$tests LOCAL-BASE64 LOCAL-GENCACHE POSIX-APPEND"
 tests="$tests LOCAL-string_to_sid"
 
-skipped1="RANDOMIPC NEGNOWAIT NBENCH ERRMAPEXTRACT TRANS2SCAN NTTRANSSCAN"
-skipped2="DENY1 DENY2 OPENATTR CASETABLE EATEST"
-skipped3="MANGLE UTABLE PIPE_NUMBER"
-echo "Skipping the following tests:"
-echo "$skipped1"
-echo "$skipped2"
-echo "$skipped3"
-
 if test "x$SMBTORTURE_S3_SUBTESTS" != "x" ; then
     tests="$SMBTORTURE_S3_SUBTESTS"
 fi

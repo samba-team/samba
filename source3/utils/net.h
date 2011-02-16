@@ -24,6 +24,7 @@
 
 #include "localedir.h"
 
+#include "intl.h"
 #ifdef HAVE_LIBINTL_H
 #include <libintl.h>
 #endif

@@ -318,6 +318,7 @@ LIBNDR_OBJ = ../librpc/ndr/ndr_basic.o \
 	     ../librpc/ndr/ndr_string.o \
 	     ../librpc/ndr/uuid.o \
 	     librpc/ndr/util.o \
+	     librpc/ndr/ndr_server_id.o \
 	     librpc/gen_ndr/ndr_dcerpc.o
 
 LIBNDR_GEN_OBJ0 = librpc/gen_ndr/ndr_samr.o \
