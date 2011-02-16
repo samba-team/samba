@@ -155,6 +155,7 @@ plantest "blackbox.smbclient_s3.crypt" dc BINDIR="$BINDIR" script/tests/test_smb
 plantest "blackbox.net_s3_misc" dc:local BINDIR="$BINDIR" SCRIPTDIR="$SCRIPTDIR" SERVERCONFFILE="\$SMB_CONF_PATH" script/tests/test_net_misc.sh
 plantest "blackbox.net_s3_registry" dc:local BINDIR="$BINDIR" SCRIPTDIR="$SCRIPTDIR" SERVERCONFFILE="\$SMB_CONF_PATH" script/tests/test_net_registry.sh
 plantest "blackbox.net_s3_registry_rpc" dc:local BINDIR="$BINDIR" SCRIPTDIR="$SCRIPTDIR" SERVERCONFFILE="\$SMB_CONF_PATH" script/tests/test_net_registry.sh rpc
+plantest "blackbox.net_s3_registry_roundtrip" dc:local BINDIR="$BINDIR" SCRIPTDIR="$SCRIPTDIR" SERVERCONFFILE="\$SMB_CONF_PATH" script/tests/test_net_registry_roundtrip.sh
 plantest "blackbox.testparm_s3" dc:local LOCAL_PATH="$LOCAL_PATH" BINDIR="$BINDIR" SCRIPTDIR="$SCRIPTDIR" SERVERCONFFILE="\$SMB_CONF_PATH" script/tests/test_testparm_s3.sh
 
 (
