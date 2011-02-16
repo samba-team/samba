@@ -2100,7 +2100,8 @@ int net_rpc_registry(struct net_context *c, int argc, const char **argv)
 			"export",
 			rpc_registry_export,
 			NET_TRANSPORT_RPC,
-			N_("net registry export\n"
+			N_("Export .reg file"),
+			N_("net rpc registry export\n"
 			   "    Export .reg file")
 		},
 		{NULL, NULL, 0, NULL, NULL}
