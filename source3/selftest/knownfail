@@ -5,3 +5,4 @@ samba3.posix_s3.rpc.spoolss.*printserver.enum_printers_old # fails on some hosts
 samba3.posix_s3.rpc.spoolss.printer.*addprinterex.print_test # another intermittent failure
 samba3.posix_s3.smb2.lock.*.rw-exclusive # another intermittent failure
 .*driver.add_driver_timestamps # we only can store dates, not timestamps
+samba3.blackbox.net_s3_registry_roundtrip # this test needs fixing
