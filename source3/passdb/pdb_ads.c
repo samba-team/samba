@@ -313,6 +313,24 @@ static NTSTATUS pdb_ads_init_sam_from_priv(struct pdb_methods *m,
 		pdb_set_code_page(sam, i, PDB_SET);
 	}
 
+	if (tldap_get_single_valueblob(entry, "logonHours", &blob)) {
+
+		if (blob.length > MAX_HOURS_LEN) {
+			status = NT_STATUS_INVALID_PARAMETER;
+			goto fail;
+		}
+		pdb_set_logon_divs(sam, blob.length * 8, PDB_SET);
+		pdb_set_hours_len(sam, blob.length, PDB_SET);
+		pdb_set_hours(sam, blob.data, blob.length, PDB_SET);
+
+	} else {
+		uint8_t hours[21];
+		pdb_set_logon_divs(sam, sizeof(hours)/8, PDB_SET);
+		pdb_set_hours_len(sam, sizeof(hours), PDB_SET);
+		memset(hours, 0xff, sizeof(hours));
+		pdb_set_hours(sam, hours, sizeof(hours), PDB_SET);
+	}
+
 	status = NT_STATUS_OK;
 fail:
 	TALLOC_FREE(frame);
@@ -429,6 +447,10 @@ static bool pdb_ads_init_ads_from_sam(struct pdb_ads_state *state,
 	ret &= pdb_ads_make_time_mod(
 		existing, mem_ctx, pmods, pnum_mods, "accountExpires",
 		(int)pdb_get_kickoff_time(sam));
+
+	ret &= tldap_make_mod_blob(
+		existing, mem_ctx, pmods, pnum_mods, "logonHours",
+		data_blob_const(pdb_get_hours(sam), pdb_get_hours_len(sam)));
 
 fail:
 	return ret;
