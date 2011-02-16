@@ -1006,6 +1006,14 @@ int i; i = PAM_RADIO_TYPE;
     else:
         conf.undefine('HAVE_STRUCT_DIRENT64')
 
+    conf.CHECK_CODE('''
+#include "../tests/fcntl_lock.c"
+''',
+		'HAVE_FCNTL_LOCK',
+		addmain=False,
+		execute=True,
+		msg='Checking whether fcntl locking is available')
+
     default_static_modules=TO_LIST('''pdb_smbpasswd pdb_tdbsam pdb_wbc_sam
                                       auth_sam auth_unix auth_winbind auth_wbc auth_server
                                       auth_domain auth_builtin vfs_default
