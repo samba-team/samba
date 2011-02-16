@@ -34,3 +34,8 @@ if bld.CONFIG_SET('HAVE_KRB5_LOCATE_PLUGIN_H'):
 		source='winbind_krb5_locator.c',
 		deps='wbclient krb5',
 		realname='winbind_krb5_locator.so')
+
+bld.SAMBA_SUBSYSTEM('WB_REQTRANS',
+	source='wb_reqtrans.c',
+	deps='talloc tevent LIBASYNC_REQ'
+	)

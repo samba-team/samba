@@ -27,7 +27,7 @@
 #include <talloc.h>
 #include <tevent.h>
 #include "nsswitch/libwbclient/wbclient.h"
-#include "lib/wb_reqtrans.h"
+#include "nsswitch/wb_reqtrans.h"
 
 struct wb_context;
 struct winbindd_request;
