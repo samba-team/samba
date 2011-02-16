@@ -2,9 +2,12 @@
 
 
 bld.SAMBA_SUBSYSTEM('CHARSET',
-	source='iconv.c charcnv.c util_unistr.c codepoints.c',
-	public_deps='iconv',
+	source='iconv.c charcnv.c util_unistr.c',
+	public_deps='iconv CODEPOINTS',
 	public_headers='charset.h',
-	deps='DYNCONFIG'
 	)
 
+bld.SAMBA_SUBSYSTEM('CODEPOINTS',
+	source='codepoints.c',
+	deps='DYNCONFIG'
+	)
