@@ -1479,10 +1479,6 @@ size_t dos_PutUniCode(char *dst,const char *src, size_t len, bool null_terminate
 char *skip_unibuf(char *src, size_t len);
 int rpcstr_push(void *dest, const char *src, size_t dest_len, int flags);
 int rpcstr_push_talloc(TALLOC_CTX *ctx, smb_ucs2_t **dest, const char *src);
-smb_ucs2_t toupper_w(smb_ucs2_t val);
-smb_ucs2_t tolower_w( smb_ucs2_t val );
-bool islower_w(smb_ucs2_t c);
-bool isupper_w(smb_ucs2_t c);
 bool isvalid83_w(smb_ucs2_t c);
 size_t strlen_w(const smb_ucs2_t *src);
 size_t strnlen_w(const smb_ucs2_t *src, size_t max);

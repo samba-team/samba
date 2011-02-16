@@ -990,13 +990,14 @@ bld.SAMBA3_SUBSYSTEM('tdb-wrap',
 
 bld.SAMBA3_SUBSYSTEM('CHARSET',
                     source='''lib/util_str.c lib/util_unistr.c lib/charcnv.c lib/iconv.c''',
-                    public_deps='iconv',
+                    public_deps='iconv CODEPOINTS',
                     deps='DYNCONFIG')
 
 bld.SAMBA3_SUBSYSTEM('samba-util',
                     source=UTIL_SRC,
                     deps='talloc CHARSET LIBCRYPTO',
                     vars=locals())
+
 #FIXME
 bld.SAMBA3_SUBSYSTEM('ndr-standard',
                     source='',
@@ -1359,6 +1360,7 @@ bld.INSTALL_FILES('${SWATDIR}', swat_files, base_name='../swat')
 
 ########################## INCLUDES #################################
 
+bld.RECURSE('../lib/util/charset')
 bld.RECURSE('../auth')
 bld.RECURSE('../lib/addns')
 bld.RECURSE('../lib/async_req')

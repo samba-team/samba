@@ -48,9 +48,11 @@ void load_case_tables(void)
 	lowcase_table = map_file(talloc_asprintf(mem_ctx, "%s/lowcase.dat", get_dyn_CODEPAGEDIR()), 0x20000);
 	talloc_free(mem_ctx);
 	if (upcase_table == NULL) {
+		DEBUG(1, ("Failed to load upcase.dat, will use lame ASCII-only case sensitivity rules\n"));
 		upcase_table = (void *)-1;
 	}
 	if (lowcase_table == NULL) {
+		DEBUG(1, ("Failed to load lowcase.dat, will use lame ASCII-only case sensitivity rules\n"));
 		lowcase_table = (void *)-1;
 	}
 }
