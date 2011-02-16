@@ -1022,6 +1022,34 @@ int i; i = PAM_RADIO_TYPE;
 		execute=True,
 		msg='Checking whether fcntl64 locks are broken')
 
+    if not conf.CONFIG_SET('HAVE_BROKEN_FCNTL64_LOCKS'):
+        conf.CHECK_CODE('''
+#if defined(HAVE_UNISTD_H)
+#include <unistd.h>
+#endif
+#include <stdio.h>
+#include <stdlib.h>
+
+#ifdef HAVE_FCNTL_H
+#include <fcntl.h>
+#endif
+
+#ifdef HAVE_SYS_FCNTL_H
+#include <sys/fcntl.h>
+#endif
+main() { struct flock64 fl64;
+#if defined(F_SETLKW64) && defined(F_SETLK64) && defined(F_GETLK64)
+exit(0);
+#else
+exit(1);
+#endif
+}
+''',
+		'HAVE_STRUCT_FLOCK64',
+		addmain=False,
+		execute=True,
+		msg="Checking whether the flock64 struct is available")
+
     default_static_modules=TO_LIST('''pdb_smbpasswd pdb_tdbsam pdb_wbc_sam
                                       auth_sam auth_unix auth_winbind auth_wbc auth_server
                                       auth_domain auth_builtin vfs_default
