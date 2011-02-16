@@ -722,12 +722,8 @@ Offset  Data			length.
 #define OP_BREAK_MSG_FLAGS_OFFSET 66
 #define OP_BREAK_MSG_NAME_HASH_OFFSET 68
 
-#ifdef CLUSTER_SUPPORT
 #define OP_BREAK_MSG_VNN_OFFSET 72
 #define MSG_SMB_SHARE_MODE_ENTRY_SIZE 76
-#else
-#define MSG_SMB_SHARE_MODE_ENTRY_SIZE 72
-#endif
 
 struct delete_token_list {
 	struct delete_token_list *next, *prev;
