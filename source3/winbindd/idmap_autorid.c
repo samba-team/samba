@@ -5,7 +5,7 @@
  *  based on the idmap_rid module, but this module defines the ranges
  *  for the domains by automatically allocating a range for each domain
  *
- *  Copyright (C) Christian Ambach, 2010
+ *  Copyright (C) Christian Ambach, 2010-2011
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -32,6 +32,8 @@
 #define DBGC_CLASS DBGC_IDMAP
 
 #define HWM "NEXT RANGE"
+#define CONFIGKEY "CONFIG"
+
 struct autorid_global_config {
 	uint32_t minvalue;
 	uint32_t rangesize;
@@ -388,11 +390,74 @@ static NTSTATUS idmap_autorid_db_init(void)
 	return NT_STATUS_OK;
 }
 
+static struct autorid_global_config *idmap_autorid_loadconfig(TALLOC_CTX * ctx)
+{
+
+	TDB_DATA data;
+	struct autorid_global_config *cfg;
+
+	data = dbwrap_fetch_bystring(autorid_db, ctx, CONFIGKEY);
+
+	if (!data.dptr) {
+		DEBUG(10, ("No saved config found\n"));
+		return NULL;
+	}
+
+	cfg = TALLOC_ZERO_P(ctx, struct autorid_global_config);
+	if (!cfg) {
+		return NULL;
+	}
+
+	if (sscanf
+	    ((char *)data.dptr, "minvalue:%lu rangesize:%lu maxranges:%lu",
+	     (unsigned long *)&cfg->minvalue, (unsigned long *)&cfg->rangesize,
+	     (unsigned long *)&cfg->maxranges) != 3) {
+		DEBUG(1,
+		      ("Found invalid configuration data"
+		       "creating new config\n"));
+		return NULL;
+	}
+
+	DEBUG(10, ("Loaded previously stored configuration "
+		   "minvalue:%d rangesize:%d\n",
+		   cfg->minvalue, cfg->rangesize));
+
+	return cfg;
+
+}
+
+static NTSTATUS idmap_autorid_saveconfig(struct autorid_global_config *cfg)
+{
+
+	NTSTATUS status;
+	TDB_DATA data;
+	char *cfgstr;
+
+	cfgstr =
+	    talloc_asprintf(talloc_tos(),
+			    "minvalue:%u rangesize:%u maxranges:%u",
+			    cfg->minvalue, cfg->rangesize, cfg->maxranges);
+
+	if (!cfgstr) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	data = string_tdb_data(cfgstr);
+
+	status = dbwrap_trans_store_bystring(autorid_db, CONFIGKEY,
+					     data, TDB_REPLACE);
+
+	talloc_free(cfgstr);
+
+	return status;
+}
+
 static NTSTATUS idmap_autorid_initialize(struct idmap_domain *dom,
 					 const char *params)
 {
-	struct autorid_global_config *config;
+	struct autorid_global_config *config, *storedconfig;
 	NTSTATUS status;
+	uint32_t hwm;
 
 	config = TALLOC_ZERO_P(dom, struct autorid_global_config);
 	if (!config) {
@@ -433,6 +498,49 @@ static NTSTATUS idmap_autorid_initialize(struct idmap_domain *dom,
 			  config->maxranges));
 	}
 
+	DEBUG(10, ("Current configuration in config is "
+		   "minvalue:%d rangesize:%d maxranges:%d\n",
+		   config->minvalue, config->rangesize, config->maxranges));
+
+	/* read previously stored config and current HWM */
+	storedconfig = idmap_autorid_loadconfig(talloc_tos());
+
+	if (!dbwrap_fetch_uint32(autorid_db, HWM, &hwm)) {
+		DEBUG(1, ("Fatal error while fetching current "
+			  "HWM value!\n"));
+		status = NT_STATUS_INTERNAL_ERROR;
+		goto error;
+	}
+
+	/* did the minimum value or rangesize change? */
+	if (storedconfig &&
+	    ((storedconfig->minvalue != config->minvalue) ||
+	     (storedconfig->rangesize != config->rangesize))) {
+		DEBUG(1, ("New configuration values for rangesize or "
+			  "minimum uid value conflict with previously "
+			  "used values! Aborting initialization\n"));
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto error;
+	}
+
+	/*
+	 * has the highest uid value been reduced to setting that is not
+	 * sufficient any more for already existing ranges?
+	 */
+	if (hwm > config->maxranges) {
+		DEBUG(1, ("New upper uid limit is too low to cover "
+			  "existing mappings! Aborting initialization\n"));
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto error;
+	}
+
+	status = idmap_autorid_saveconfig(config);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("Failed to store configuration data!\n"));
+		goto error;
+	}
+
 	DEBUG(5, ("%d domain ranges with a size of %d are available\n",
 		  config->maxranges, config->rangesize));
 
@@ -446,6 +554,8 @@ static NTSTATUS idmap_autorid_initialize(struct idmap_domain *dom,
 
       error:
 	talloc_free(config);
+	talloc_free(storedconfig);
+
 	return status;
 }
 
