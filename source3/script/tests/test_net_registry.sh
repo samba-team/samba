@@ -1,6 +1,10 @@
 #!/bin/sh
-
-# Tests for the "net registry" and "net rpc registry" commands.
+#
+# Blackbox tests for the "net registry" and "net rpc registry" commands.
+#
+# Copyright (C) 2010-2011 Michael Adam <obnox@samba.org>
+# Copyright (C) 2010 Gregor Beck <gbeck@sernet.de>
+#
 # rpc tests are chose by specifying "rpc" as commandline parameter.
 
 RPC="$1"
