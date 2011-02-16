@@ -29,7 +29,7 @@
 
 #include "includes.h"
 #include "winbindd.h"
-#include "lib/wb_reqtrans.h"
+#include "nsswitch/wb_reqtrans.h"
 #include "librpc/gen_ndr/messaging.h"
 #include "secrets.h"
 #include "../lib/util/select.h"
