@@ -918,12 +918,17 @@ bool pdb_set_unknown_6(struct samu *sampass, uint32_t unkn, enum pdb_value_state
 	return pdb_set_init_flags(sampass, PDB_UNKNOWN6, flag);
 }
 
-bool pdb_set_hours(struct samu *sampass, const uint8 *hours, enum pdb_value_state flag)
+bool pdb_set_hours(struct samu *sampass, const uint8 *hours, int hours_len,
+		   enum pdb_value_state flag)
 {
+	if (hours_len > sizeof(sampass->hours)) {
+		return false;
+	}
+
 	if (!hours) {
-		memset ((char *)sampass->hours, 0, MAX_HOURS_LEN);
+		memset ((char *)sampass->hours, 0, hours_len);
 	} else {
-		memcpy (sampass->hours, hours, MAX_HOURS_LEN);
+		memcpy (sampass->hours, hours, hours_len);
 	}
 
 	return pdb_set_init_flags(sampass, PDB_HOURS, flag);

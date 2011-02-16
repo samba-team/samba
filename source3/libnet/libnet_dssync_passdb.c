@@ -1263,7 +1263,8 @@ static NTSTATUS sam_account_from_object(struct samu *account,
 		pdb_sethexhours(oldstr, pdb_get_hours(account));
 		pdb_sethexhours(newstr, logonHours.data);
 		if (!strequal(oldstr, newstr)) {
-			pdb_set_hours(account, logonHours.data, PDB_CHANGED);
+			pdb_set_hours(account, logonHours.data,
+				      logonHours.length, PDB_CHANGED);
 		}
 	}
 

@@ -1027,7 +1027,7 @@ static bool init_sam_from_ldap(struct ldapsam_privates *ldap_state,
 	if (temp) {
 		pdb_gethexhours(temp, hours);
 		memset((char *)temp, '\0', strlen(temp) +1);
-		pdb_set_hours(sampass, hours, PDB_SET);
+		pdb_set_hours(sampass, hours, hours_len, PDB_SET);
 		ZERO_STRUCT(hours);
 	}
 

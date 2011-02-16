@@ -526,7 +526,7 @@ static int set_user_info(const char *username, const char *fullname,
 		hours_len = pdb_get_hours_len(sam_pwent);
 		memset(hours_array, 0xff, hours_len);
 
-		pdb_set_hours(sam_pwent, hours_array, PDB_CHANGED);
+		pdb_set_hours(sam_pwent, hours_array, hours_len, PDB_CHANGED);
 	}
 
 	if (!pdb_update_autolock_flag(sam_pwent, &updated_autolock)) {

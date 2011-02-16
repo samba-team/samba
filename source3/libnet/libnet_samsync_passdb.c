@@ -179,7 +179,8 @@ static NTSTATUS sam_account_from_delta(struct samu *account,
 		pdb_sethexhours(oldstr, pdb_get_hours(account));
 		pdb_sethexhours(newstr, r->logon_hours.bits);
 		if (!strequal(oldstr, newstr))
-			pdb_set_hours(account, r->logon_hours.bits, PDB_CHANGED);
+			pdb_set_hours(account, r->logon_hours.bits,
+				      pdb_get_hours_len(account), PDB_CHANGED);
 	}
 
 	if (pdb_get_bad_password_count(account) != r->bad_password_count)

@@ -580,7 +580,9 @@ void copy_id21_to_sam_passwd(const char *log_prefix,
 		pdb_sethexhours(oldstr, pdb_get_hours(to));
 		pdb_sethexhours(newstr, from->logon_hours.bits);
 		if (!strequal(oldstr, newstr)) {
-			pdb_set_hours(to, from->logon_hours.bits, PDB_CHANGED);
+			pdb_set_hours(to, from->logon_hours.bits,
+				      from->logon_hours.units_per_week/8,
+				      PDB_CHANGED);
 		}
 	}
 

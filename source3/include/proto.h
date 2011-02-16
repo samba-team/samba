@@ -3770,7 +3770,8 @@ bool pdb_set_country_code(struct samu *sampass, uint16_t country_code,
 bool pdb_set_code_page(struct samu *sampass, uint16_t code_page,
 		       enum pdb_value_state flag);
 bool pdb_set_unknown_6(struct samu *sampass, uint32_t unkn, enum pdb_value_state flag);
-bool pdb_set_hours(struct samu *sampass, const uint8_t *hours, enum pdb_value_state flag);
+bool pdb_set_hours(struct samu *sampass, const uint8 *hours, int hours_len,
+		   enum pdb_value_state flag);
 bool pdb_set_backend_private_data(struct samu *sampass, void *private_data, 
 				   void (*free_fn)(void **), 
 				   const struct pdb_methods *my_methods, 

@@ -1086,7 +1086,7 @@ static bool init_samu_from_buffer_v0(struct samu *sampass, uint8_t *buf, uint32_
 	pdb_set_unknown_6(sampass, unknown_6, PDB_SET);
 	pdb_set_acct_ctrl(sampass, acct_ctrl, PDB_SET);
 	pdb_set_logon_divs(sampass, logon_divs, PDB_SET);
-	pdb_set_hours(sampass, hours, PDB_SET);
+	pdb_set_hours(sampass, hours, hours_len, PDB_SET);
 
 done:
 
@@ -1278,7 +1278,7 @@ static bool init_samu_from_buffer_v1(struct samu *sampass, uint8_t *buf, uint32_
 	pdb_set_unknown_6(sampass, unknown_6, PDB_SET);
 	pdb_set_acct_ctrl(sampass, acct_ctrl, PDB_SET);
 	pdb_set_logon_divs(sampass, logon_divs, PDB_SET);
-	pdb_set_hours(sampass, hours, PDB_SET);
+	pdb_set_hours(sampass, hours, hours_len, PDB_SET);
 
 done:
 
@@ -1509,7 +1509,7 @@ static bool init_samu_from_buffer_v2(struct samu *sampass, uint8_t *buf, uint32_
 	pdb_set_unknown_6(sampass, unknown_6, PDB_SET);
 	pdb_set_acct_ctrl(sampass, acct_ctrl, PDB_SET);
 	pdb_set_logon_divs(sampass, logon_divs, PDB_SET);
-	pdb_set_hours(sampass, hours, PDB_SET);
+	pdb_set_hours(sampass, hours, hours_len, PDB_SET);
 
 done:
 
@@ -1744,7 +1744,7 @@ static bool init_samu_from_buffer_v3(struct samu *sampass, uint8_t *buf, uint32_
 	/* Change from V2 is the uint32_t acct_ctrl */
 	pdb_set_acct_ctrl(sampass, acct_ctrl, PDB_SET);
 	pdb_set_logon_divs(sampass, logon_divs, PDB_SET);
-	pdb_set_hours(sampass, hours, PDB_SET);
+	pdb_set_hours(sampass, hours, hours_len, PDB_SET);
 
 done:
 
