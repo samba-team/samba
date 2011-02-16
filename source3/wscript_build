@@ -127,7 +127,7 @@ PARAM_UTIL_SRC = '''param/util.c'''
 PARAM_WITHOUT_REG_SRC = '''param/loadparm.c param/loadparm_server_role.c
                            lib/sharesec.c lib/ldap_debug_handler.c'''
 
-KRBCLIENT_SRC = '''libads/kerberos.c libads/ads_status.c'''
+KRBCLIENT_SRC = '''libads/kerberos.c libads/ads_status.c libsmb/clikrb5.c'''
 
 LIBGPO_SRC0 = '''../libgpo/gpo_ldap.c ../libgpo/gpo_ini.c ../libgpo/gpo_util.c
               ../libgpo/gpo_fetch.c libgpo/gpo_filesync.c ../libgpo/gpo_sec.c
@@ -177,7 +177,7 @@ TLDAP_SRC = '''lib/tldap.c lib/tldap_util.c lib/util_tsock.c'''
 SCHANNEL_SRC = '''../libcli/auth/schannel_sign.c'''
 
 LIBSMB_SRC = '''libsmb/clientgen.c libsmb/cliconnect.c libsmb/clifile.c
-             libsmb/clikrb5.c libsmb/clispnego.c
+             libsmb/clispnego.c
              libsmb/clirap.c libsmb/clierror.c libsmb/climessage.c
              libsmb/clireadwrite.c libsmb/clilist.c libsmb/cliprint.c
              libsmb/clitrans.c libsmb/clisecdesc.c libsmb/clidgram.c
@@ -651,9 +651,7 @@ WBINFO_SRC = '''../nsswitch/wbinfo.c'''
 
 NTLM_AUTH_SRC1 = '''utils/ntlm_auth.c utils/ntlm_auth_diagnostics.c'''
 
-NTLM_AUTH_SRC = '''${NTLM_AUTH_SRC1}
-                libsmb/clikrb5.c libads/kerberos.c'''
-
+NTLM_AUTH_SRC = '''${NTLM_AUTH_SRC1}'''
 
 VLP_SRC = '''printing/tests/vlp.c'''
 
@@ -833,7 +831,7 @@ bld.SAMBA_SUBSYSTEM('LIBSAMBA',
 
 bld.SAMBA_SUBSYSTEM('LIBSMB',
                     source=LIBSMB_SRC,
-                    deps='LIBSAMBA CLDAP LIBNMB LIBNBT LIBDRSUAPI SPNEGO_PARSE LIBTSOCKET',
+                    deps='LIBSAMBA CLDAP LIBNMB LIBNBT LIBDRSUAPI SPNEGO_PARSE LIBTSOCKET KRBCLIENT',
                     vars=locals())
 
 bld.SAMBA_SUBSYSTEM('LIBDRSUAPI',
@@ -1336,7 +1334,7 @@ bld.SAMBA_BINARY('ntlm_auth',
                  deps='''tdb talloc cap resolv krb5 k5crypto com_err wbclient PARAM LIB_NONSMBD
                  LIBS LIBSAMBA POPT_SAMBA ASN1_UTIL LIBTSOCKET
                  PASSDB GROUPDB SMBLDAP winbind-client LIBINIPARSER LIBADS_SERVER
-                 NDR_SAMR NDR_LSA NDR_NETLOGON LIBCLI_LDAP_NDR LIBNMB SLCACHE SPNEGO_PARSE''',
+                 NDR_SAMR NDR_LSA NDR_NETLOGON LIBCLI_LDAP_NDR LIBNMB SLCACHE SPNEGO_PARSE KRBCLIENT''',
                  vars=locals())
 
 bld.SAMBA_BINARY('timelimit',
