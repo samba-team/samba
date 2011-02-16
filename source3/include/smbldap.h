@@ -238,7 +238,7 @@ void talloc_autofree_ldapmsg(TALLOC_CTX *mem_ctx, LDAPMessage *result);
 void talloc_autofree_ldapmod(TALLOC_CTX *mem_ctx, LDAPMod **mod);
 char *smbldap_talloc_dn(TALLOC_CTX *mem_ctx, LDAP *ld,
 			      LDAPMessage *entry);
-
+LDAP *priv2ld(struct ldapsam_privates *priv);
 
 /* The following definitions come from lib/smbldap.c  */
 
