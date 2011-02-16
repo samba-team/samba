@@ -278,7 +278,8 @@ static void remove_child_pid(pid_t pid, bool unclean_shutdown)
 		}
 	}
 
-	DEBUG(0, ("Could not find child %d -- ignoring\n", (int)pid));
+	/* not all forked child processes are added to the children list */
+	DEBUG(1, ("Could not find child %d -- ignoring\n", (int)pid));
 }
 
 /****************************************************************************
