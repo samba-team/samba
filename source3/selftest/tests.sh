@@ -153,7 +153,7 @@ plantest "blackbox.net.misc" dc:local BINDIR="$BINDIR" SCRIPTDIR="$SCRIPTDIR" SE
 plantest "blackbox.net.local.registry" dc:local BINDIR="$BINDIR" SCRIPTDIR="$SCRIPTDIR" SERVERCONFFILE="\$SMB_CONF_PATH" script/tests/test_net_registry.sh
 plantest "blackbox.net.rpc.registry" dc:local BINDIR="$BINDIR" SCRIPTDIR="$SCRIPTDIR" SERVERCONFFILE="\$SMB_CONF_PATH" script/tests/test_net_registry.sh rpc
 plantest "blackbox.net.local.registry.roundtrip" dc:local BINDIR="$BINDIR" SCRIPTDIR="$SCRIPTDIR" SERVERCONFFILE="\$SMB_CONF_PATH" script/tests/test_net_registry_roundtrip.sh
-plantest "blackbox.testparm_s3" dc:local LOCAL_PATH="$LOCAL_PATH" BINDIR="$BINDIR" SCRIPTDIR="$SCRIPTDIR" SERVERCONFFILE="\$SMB_CONF_PATH" script/tests/test_testparm_s3.sh
+plantest "blackbox.testparm" dc:local LOCAL_PATH="$LOCAL_PATH" BINDIR="$BINDIR" SCRIPTDIR="$SCRIPTDIR" SERVERCONFFILE="\$SMB_CONF_PATH" script/tests/test_testparm_s3.sh
 
 (
 	shift $#
