@@ -15,8 +15,6 @@ SMBLDAP_SRC = '''lib/smbldap.c lib/smbldap_util.c'''
 
 VERSION_SRC = '''lib/version.c'''
 
-WBCOMMON_SRC = '../nsswitch/wb_common.c'
-
 AFS_SRC = 'lib/afs.c'
 
 AFS_SETTOKEN_SRC = 'lib/afs_settoken.c'
@@ -509,8 +507,6 @@ RPCCLIENT_SRC1 = '''rpcclient/rpcclient.c rpcclient/cmd_lsarpc.c
 
 RPCCLIENT_SRC = '''${RPCCLIENT_SRC1}'''
 
-PAM_WINBIND_SRC = '../nsswitch/pam_winbind.c'
-
 LIBSMBCLIENT_THREAD_SRC = '''libsmb/libsmb_thread_impl.c
                         libsmb/libsmb_thread_posix.c'''
 
@@ -626,8 +622,6 @@ MSGTEST_SRC = '''torture/msgtest.c'''
 
 LOCKTEST_SRC = '''torture/locktest.c'''
 
-NSSTEST_SRC = '''../nsswitch/nsstest.c ${LIBSAMBAUTIL_SRC}'''
-
 PDBTEST_SRC = '''torture/pdbtest.c'''
 
 VFSTEST_SRC = '''torture/cmd_vfs.c torture/vfstest.c'''
@@ -701,11 +695,6 @@ bld.RECURSE('build')
 
 ######################## SUBSYSTEMS #################################
 
-bld.SAMBA_SUBSYSTEM('winbind-client',
-                    source=WBCOMMON_SRC,
-                    deps='replace',
-                    cflags='-DSOCKET_WRAPPER_DISABLE=1 -DWINBINDD_SOCKET_DIR=\"%s\"' % bld.env.WINBINDD_SOCKET_DIR)
-
 bld.SAMBA_LIBRARY('netapi',
                     source=LIBNETAPI_SRC,
                     public_deps='''talloc tdb cap wbclient LIB_NONSMBD LIBSMB KRBCLIENT
@@ -734,31 +723,12 @@ bld.SAMBA_LIBRARY('smbsharemodes',
                     vnum='0',
                     vars=locals())
 
-bld.SAMBA_LIBRARY('nss_winbind',
-                  source='../nsswitch/winbind_nss_linux.c',
-                  deps='winbind-client',
-                  realname='libnss_winbind.so.2',
-                  vnum='2')
-
 bld.SAMBA_LIBRARY('nss_wins',
                   source=WINBIND_WINS_NSS_SRC,
                   deps='''winbind-client PARAM LIBSMB LIB_NONSMBD LIBTSOCKET KRBCLIENT
                   cap wbclient''',
                   realname='libnss_wins.so.2',
                   vnum='2')
-
-if bld.CONFIG_SET('WITH_PAM_MODULES'):
-        bld.SAMBA_LIBRARY('pamwinbind',
-                          source=PAM_WINBIND_SRC,
-                          deps='intl talloc wbclient winbind-client LIBINIPARSER pam',
-                          cflags='-DLOCALEDIR=\"%s/locale\"' % bld.env.DATADIR,
-                          realname='pam_winbind.so')
-
-if bld.CONFIG_SET('HAVE_KRB5_LOCATE_PLUGIN_H'):
-        bld.SAMBA_LIBRARY('winbind_krb5_locator',
-                          source='../nsswitch/winbind_krb5_locator.c',
-                          deps='wbclient krb5',
-                          realname='winbind_krb5_locator.so')
 
 bld.SAMBA_SUBSYSTEM('LIBMSRPC',
                     source='${LIBMSRPC_SRC}',
@@ -1313,11 +1283,6 @@ bld.SAMBA_BINARY('locktest',
                  ASN1_UTIL LIBTSOCKET NDR_SAMR NDR_LSA LOCKING FNAME_UTIL''',
                  vars=locals())
 
-bld.SAMBA_BINARY('nsstest',
-                 source=NSSTEST_SRC,
-                 deps='dl',
-                 vars=locals())
-
 bld.SAMBA_BINARY('pdbtest',
                  source=PDBTEST_SRC,
                  deps='''talloc tdb cap resolv wbclient PARAM LIBSMB KRBCLIENT LIB_NONSMBD PASSDB GROUPDB
@@ -1441,6 +1406,7 @@ bld.RECURSE('../lib/tdb')
 bld.RECURSE('../lib/tevent')
 bld.RECURSE('../lib/tsocket')
 bld.RECURSE('../lib/zlib')
+bld.RECURSE('../nsswitch')
 bld.RECURSE('../nsswitch/libwbclient')
 bld.RECURSE('auth')
 bld.RECURSE('libgpo/gpext')
