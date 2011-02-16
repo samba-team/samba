@@ -96,6 +96,22 @@ _PUBLIC_ codepoint_t tolower_m(codepoint_t val)
 }
 
 /**
+ If we upper cased this character, would we get the same character?
+**/
+_PUBLIC_ bool islower_m(codepoint_t val)
+{
+	return (toupper_m(val) != val);
+}
+
+/**
+ If we lower cased this character, would we get the same character?
+**/
+_PUBLIC_ bool isupper_m(codepoint_t val)
+{
+	return (tolower_m(val) != val);
+}
+
+/**
   compare two codepoints case insensitively
 */
 _PUBLIC_ int codepoint_cmpi(codepoint_t c1, codepoint_t c2)

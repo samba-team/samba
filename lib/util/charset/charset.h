@@ -184,8 +184,11 @@ codepoint_t next_codepoint_convenience(struct smb_iconv_convenience *ic,
 			    const char *str, size_t *size);
 ssize_t push_codepoint_convenience(struct smb_iconv_convenience *ic, 
 				char *str, codepoint_t c);
+
 codepoint_t toupper_m(codepoint_t val);
 codepoint_t tolower_m(codepoint_t val);
+bool islower_m(codepoint_t val);
+bool isupper_m(codepoint_t val);
 int codepoint_cmpi(codepoint_t c1, codepoint_t c2);
 
 /* Iconv convenience functions */
