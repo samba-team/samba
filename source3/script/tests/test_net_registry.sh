@@ -320,44 +320,6 @@ test_setvalue_twice()
 	${NETREG} setvalue ${KEY} "${VALNAME}" ${VALTYPE2} ${VALVALUE2}
 }
 
-give_administrative_rights()
-{
-	bin/net -s $SERVERCONFFILE sam createbuiltingroup Administrators
-	if test "x$?" != "x0" ; then
-		echo "ERROR: creating builtin group Administrators"
-		false
-		return
-	fi
-
-	bin/net -s $SERVERCONFFILE sam addmem BUILTIN\\Administrators $USERNAME
-	if test "x$?" != "x0" ; then
-		echo "ERROR: adding user $USERNAME to BUILTIN\\Administrators"
-		false
-	else
-		true
-	fi
-}
-
-take_administrative_rights()
-{
-	bin/net -s $SERVERCONFFILE sam delmem BUILTIN\\Administrators $USERNAME
-	if test "x$?" != "x0" ; then
-		echo "ERROR: removing user $USERNAME from BUILTIN\\Administrators"
-		false
-	else
-		true
-	fi
-}
-
-
-if test "x${RPC}" = "xrpc" ; then
-testit "giving user ${USERNAME} administrative rights" \
-	give_administrative_rights
-	if [ "x$?" != "x0" ] ; then
-		failed=`expr $failed + 1`
-		testok $0 $failed
-	fi
-fi
 
 testit "enumerate HKLM" \
 	test_enumerate HKLM || \
@@ -437,12 +399,6 @@ testit "delete nonexisting default value" \
 testit "delete key with value" \
 	test_deletekey HKLM/testkey || \
 	failed=`expr $failed + 1`
-
-if test "x${RPC}" = "xrpc" ; then
-testit "taking administrative rights from user ${USERNAME}" \
-	take_administrative_rights || \
-	failed=`expr $failed + 1`
-fi
 
 
 testok $0 $failed
