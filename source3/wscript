@@ -1067,6 +1067,16 @@ exit(1);
        conf.CONFIG_SET('HAVE_STRUCT_STAT_ST_UMTIME'):
         conf.DEFINE('HAVE_STAT_HIRES_TIMESTAMPS', '1')
 
+    conf.CHECK_CODE('''
+#if defined(HAVE_UNISTD_H)
+#include <unistd.h>
+#endif
+#include <fcntl.h>],
+ssize_t err = posix_fadvise(0,0,0x80000,POSIX_FADV_WILLNEED);
+''',
+		'HAVE_POSIX_FADVISE',
+		msg='Checking whether posix_fadvise is available')
+
     default_static_modules=TO_LIST('''pdb_smbpasswd pdb_tdbsam pdb_wbc_sam
                                       auth_sam auth_unix auth_winbind auth_wbc auth_server
                                       auth_domain auth_builtin vfs_default
