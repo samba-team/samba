@@ -1001,6 +1001,10 @@ int i; i = PAM_RADIO_TYPE;
 ''',
 		'HAVE_LINUX_RTNETLINK_H',
 		msg='Checking whether Linux rtnetlink is available')
+    if conf.CHECK_TYPE('struct dirent64', headers='sys/types.h dirent.h') and conf.CONFIG_SET('HAVE_READDIR64'):
+        conf.DEFINE('HAVE_STRUCT_DIRENT64', '1')
+    else:
+        conf.undefine('HAVE_STRUCT_DIRENT64')
 
     default_static_modules=TO_LIST('''pdb_smbpasswd pdb_tdbsam pdb_wbc_sam
                                       auth_sam auth_unix auth_winbind auth_wbc auth_server
