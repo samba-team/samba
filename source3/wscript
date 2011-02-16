@@ -1050,6 +1050,23 @@ exit(1);
 		execute=True,
 		msg="Checking whether the flock64 struct is available")
 
+    conf.CHECK_STRUCTURE_MEMBER('struct stat', 'st_mtim.tv_nsec',
+				define='HAVE_STRUCT_STAT_ST_MTIM_TV_NSEC') # Linux, Solaris
+    conf.CHECK_STRUCTURE_MEMBER('struct stat', 'st_mtimensec',
+				define='HAVE_STRUCT_STAT_ST_MTIMENSEC') # BSD, if defined _POSIX_SOURCE
+    conf.CHECK_STRUCTURE_MEMBER('struct stat', 'st_mtimespec.tv_nsec',
+				define='HAVE_STRUCT_STAT_ST_MTIMESPEC_TV_NSEC') # BSD, if not defined _POSIX_SOURCE
+    conf.CHECK_STRUCTURE_MEMBER('struct stat', 'st_mtime_n',
+				define='HAVE_STRUCT_STAT_ST_MTIME_N') # AIX
+    conf.CHECK_STRUCTURE_MEMBER('struct stat', 'st_umtime',
+				define='HAVE_STRUCT_STAT_ST_UMTIME') # Tru64
+    if conf.CONFIG_SET('HAVE_STRUCT_STAT_ST_MTIM_TV_NSEC') or \
+       conf.CONFIG_SET('HAVE_STRUCT_STAT_ST_MTIMENSEC') or \
+       conf.CONFIG_SET('HAVE_STRUCT_STAT_ST_MTIMESPEC_TV_NSEC') or \
+       conf.CONFIG_SET('HAVE_STRUCT_STAT_ST_MTIME_N') or \
+       conf.CONFIG_SET('HAVE_STRUCT_STAT_ST_UMTIME'):
+        conf.DEFINE('HAVE_STAT_HIRES_TIMESTAMPS', '1')
+
     default_static_modules=TO_LIST('''pdb_smbpasswd pdb_tdbsam pdb_wbc_sam
                                       auth_sam auth_unix auth_winbind auth_wbc auth_server
                                       auth_domain auth_builtin vfs_default
