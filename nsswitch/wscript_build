@@ -14,11 +14,6 @@ bld.SAMBA_BINARY('nsstest',
 	)
 
 
-bld.SAMBA_BINARY('wbinfo',
-	source='wbinfo.c',
-	deps='samba-util LIBCLI_AUTH popt POPT_SAMBA winbind-client wbclient tevent UTIL_TEVENT LIBASYNC_REQ security ndr NDR_SECURITY'
-	)
-
 bld.SAMBA_LIBRARY('nss_winbind',
 	source='../nsswitch/winbind_nss_linux.c',
 	deps='winbind-client',
