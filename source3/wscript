@@ -1112,6 +1112,17 @@ syscall(SYS_initgroups, 16, NULL, NULL, 0);
 		    headers='sys/types.h utime.h',
 		    msg='Checking whether struct utimbuf is available')
 
+    if conf.CHECK_CODE('''struct sigevent s;''',
+		    'HAVE_STRUCT_SIGEVENT',
+		    headers='sys/types.h stdlib.h stddef.h signal.h',
+		    msg='Checking whether we have the struct sigevent'):
+        conf.CHECK_STRUCTURE_MEMBER('struct sigevent', 'sigev_value.sival_ptr',
+				    define='HAVE_STRUCT_SIGEVENT_SIGEV_VALUE_SIVAL_PTR',
+				    headers='signal.h');
+        conf.CHECK_STRUCTURE_MEMBER('struct sigevent', 'sigev_value.sigval_ptr',
+				    define='HAVE_STRUCT_SIGEVENT_SIGEV_VALUE_SIGVAL_PTR',
+				    headers='signal.h');
+
     default_static_modules=TO_LIST('''pdb_smbpasswd pdb_tdbsam pdb_wbc_sam
                                       auth_sam auth_unix auth_winbind auth_wbc auth_server
                                       auth_domain auth_builtin vfs_default
