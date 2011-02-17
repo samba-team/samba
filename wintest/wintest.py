@@ -90,7 +90,10 @@ class wintest():
     def set_vms(self, vms):
         '''set a list of VMs to test'''
         if vms is not None:
-            self.vms = vms.split(',')
+            self.vms = []
+            for vm in vms.split(','):
+                vm = vm.upper()
+                self.vms.append(vm)
 
     def skip(self, step):
         '''return True if we should skip a step'''
