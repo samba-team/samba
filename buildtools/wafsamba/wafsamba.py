@@ -218,7 +218,13 @@ def SAMBA_LIBRARY(bld, libname, source,
             bld.ABI_VSCRIPT(libname, abi_directory, version, vscript,
                             abi_match)
             fullname = apply_pattern(bundled_name, bld.env.shlib_PATTERN)
-            bld.add_manual_dependency(bld.path.find_or_declare(fullname), bld.path.find_or_declare(vscript))
+            fullpath = bld.path.find_or_declare(fullname)
+            vscriptpath = bld.path.find_or_declare(vscript)
+            if not fullpath:
+                raise Utils.WafError("unable to find fullpath for %s" % fullname)
+            if not vscriptpath:
+                raise Utils.WafError("unable to find vscript path for %s" % vscript)
+            bld.add_manual_dependency(fullpath, vscriptpath)
             if Options.is_install:
                 # also make the .inst file depend on the vscript
                 instname = apply_pattern(bundled_name + '.inst', bld.env.shlib_PATTERN)
