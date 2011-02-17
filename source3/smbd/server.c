@@ -1196,7 +1196,7 @@ extern void build_options(bool screen);
 		return -1;
 	}
 
-	if (!srv_rpc_register(smbd_server_conn->msg_ctx)) {
+	if (!srv_rpc_register(smbd_event_context(), smbd_server_conn->msg_ctx)) {
 		exit(1);
 	}
 

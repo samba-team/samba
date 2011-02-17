@@ -45,6 +45,11 @@
 
 #include "rpc_server/srv_rpc_register.h"
 
+struct dcesrv_ep_context {
+	struct tevent_context *ev_ctx;
+	struct messaging_context *msg_ctx;
+};
+
 static NTSTATUS _rpc_ep_register(const struct ndr_interface_table *iface,
 				 const char *name)
 {
@@ -161,15 +166,15 @@ static bool netlogon_shutdown_cb(void *ptr)
 
 static bool spoolss_init_cb(void *ptr)
 {
-	struct messaging_context *msg_ctx = talloc_get_type_abort(
-		ptr, struct messaging_context);
+	struct dcesrv_ep_context *ep_ctx =
+		talloc_get_type_abort(ptr, struct dcesrv_ep_context);
 	NTSTATUS status;
 	bool ok;
 
 	/*
 	 * Migrate the printers first.
 	 */
-	ok = nt_printing_tdb_migrate(msg_ctx);
+	ok = nt_printing_tdb_migrate(ep_ctx->msg_ctx);
 	if (!ok) {
 		return false;
 	}
@@ -193,11 +198,11 @@ static bool spoolss_shutdown_cb(void *ptr)
 
 static bool svcctl_init_cb(void *ptr)
 {
-	struct messaging_context *msg_ctx = talloc_get_type_abort(
-		ptr, struct messaging_context);
+	struct dcesrv_ep_context *ep_ctx =
+		talloc_get_type_abort(ptr, struct dcesrv_ep_context);
 	bool ok;
 
-	ok = svcctl_init_winreg(msg_ctx);
+	ok = svcctl_init_winreg(ep_ctx->msg_ctx);
 	if (!ok) {
 		return false;
 	}
@@ -227,8 +232,8 @@ static bool ntsvcs_shutdown_cb(void *ptr)
 
 static bool eventlog_init_cb(void *ptr)
 {
-	struct messaging_context *msg_ctx = talloc_get_type_abort(
-		ptr, struct messaging_context);
+	struct dcesrv_ep_context *ep_ctx =
+		talloc_get_type_abort(ptr, struct dcesrv_ep_context);
 	NTSTATUS status;
 
 	status =_rpc_ep_register(&ndr_table_eventlog,
@@ -237,7 +242,7 @@ static bool eventlog_init_cb(void *ptr)
 		return false;
 	}
 
-	return eventlog_init_winreg(msg_ctx);
+	return eventlog_init_winreg(ep_ctx->msg_ctx);
 }
 
 static bool eventlog_shutdown_cb(void *ptr)
@@ -290,7 +295,11 @@ static bool wkssvc_shutdown_cb(void *ptr) {
 	return NT_STATUS_IS_OK(_rpc_ep_unregister(&ndr_table_wkssvc));
 }
 
-bool srv_rpc_register(struct messaging_context *msg_ctx) {
+bool srv_rpc_register(struct tevent_context *ev_ctx,
+		      struct messaging_context *msg_ctx)
+{
+	struct dcesrv_ep_context *ep_ctx;
+
 	struct rpc_srv_callbacks winreg_cb;
 	struct rpc_srv_callbacks srvsvc_cb;
 
@@ -312,6 +321,14 @@ bool srv_rpc_register(struct messaging_context *msg_ctx) {
 
 	const char *rpcsrv_type;
 
+	ep_ctx = talloc(ev_ctx, struct dcesrv_ep_context);
+	if (ep_ctx == NULL) {
+		return false;
+	}
+
+	ep_ctx->ev_ctx = ev_ctx;
+	ep_ctx->msg_ctx = msg_ctx;
+
 	/* start endpoint mapper only if enabled */
 	rpcsrv_type = lp_parm_const_string(GLOBAL_SECTION_SNUM,
 					   "rpc_server", "epmapper",
@@ -324,14 +341,14 @@ bool srv_rpc_register(struct messaging_context *msg_ctx) {
 
 	winreg_cb.init         = winreg_init_cb;
 	winreg_cb.shutdown     = winreg_shutdown_cb;
-	winreg_cb.private_data = NULL;
+	winreg_cb.private_data = ep_ctx;
 	if (!NT_STATUS_IS_OK(rpc_winreg_init(&winreg_cb))) {
 		return false;
 	}
 
 	srvsvc_cb.init         = srvsvc_init_cb;
 	srvsvc_cb.shutdown     = srvsvc_shutdown_cb;
-	srvsvc_cb.private_data = NULL;
+	srvsvc_cb.private_data = ep_ctx;
 	if (!NT_STATUS_IS_OK(rpc_srvsvc_init(&srvsvc_cb))) {
 		return false;
 	}
@@ -339,28 +356,28 @@ bool srv_rpc_register(struct messaging_context *msg_ctx) {
 
 	lsarpc_cb.init         = lsarpc_init_cb;
 	lsarpc_cb.shutdown     = lsarpc_shutdown_cb;
-	lsarpc_cb.private_data = NULL;
+	lsarpc_cb.private_data = ep_ctx;
 	if (!NT_STATUS_IS_OK(rpc_lsarpc_init(&lsarpc_cb))) {
 		return false;
 	}
 
 	samr_cb.init         = samr_init_cb;
 	samr_cb.shutdown     = samr_shutdown_cb;
-	samr_cb.private_data = NULL;
+	samr_cb.private_data = ep_ctx;
 	if (!NT_STATUS_IS_OK(rpc_samr_init(&samr_cb))) {
 		return false;
 	}
 
 	netlogon_cb.init         = netlogon_init_cb;
 	netlogon_cb.shutdown     = netlogon_shutdown_cb;
-	netlogon_cb.private_data = NULL;
+	netlogon_cb.private_data = ep_ctx;
 	if (!NT_STATUS_IS_OK(rpc_netlogon_init(&netlogon_cb))) {
 		return false;
 	}
 
 	spoolss_cb.init         = spoolss_init_cb;
 	spoolss_cb.shutdown     = spoolss_shutdown_cb;
-	spoolss_cb.private_data = msg_ctx;
+	spoolss_cb.private_data = ep_ctx;
 	if (!NT_STATUS_IS_OK(rpc_spoolss_init(&spoolss_cb))) {
 		return false;
 	}
@@ -368,35 +385,35 @@ bool srv_rpc_register(struct messaging_context *msg_ctx) {
 
 	svcctl_cb.init         = svcctl_init_cb;
 	svcctl_cb.shutdown     = svcctl_shutdown_cb;
-	svcctl_cb.private_data = msg_ctx;
+	svcctl_cb.private_data = ep_ctx;
 	if (!NT_STATUS_IS_OK(rpc_svcctl_init(&svcctl_cb))) {
 		return false;
 	}
 
 	ntsvcs_cb.init         = ntsvcs_init_cb;
 	ntsvcs_cb.shutdown     = ntsvcs_shutdown_cb;
-	ntsvcs_cb.private_data = NULL;
+	ntsvcs_cb.private_data = ep_ctx;
 	if (!NT_STATUS_IS_OK(rpc_ntsvcs_init(&ntsvcs_cb))) {
 		return false;
 	}
 
 	eventlog_cb.init         = eventlog_init_cb;
 	eventlog_cb.shutdown     = eventlog_shutdown_cb;
-	eventlog_cb.private_data = msg_ctx;
+	eventlog_cb.private_data = ep_ctx;
 	if (!NT_STATUS_IS_OK(rpc_eventlog_init(&eventlog_cb))) {
 		return false;
 	}
 
 	initshutdown_cb.init         = initshutdown_init_cb;
 	initshutdown_cb.shutdown     = initshutdown_shutdown_cb;
-	initshutdown_cb.private_data = NULL;
+	initshutdown_cb.private_data = ep_ctx;
 	if (!NT_STATUS_IS_OK(rpc_initshutdown_init(&initshutdown_cb))) {
 		return false;
 	}
 
 	netdfs_cb.init         = netdfs_init_cb;
 	netdfs_cb.shutdown     = netdfs_shutdown_cb;
-	netdfs_cb.private_data = NULL;
+	netdfs_cb.private_data = ep_ctx;
 	if (!NT_STATUS_IS_OK(rpc_netdfs_init(&netdfs_cb))) {
 		return false;
 	}
@@ -404,7 +421,7 @@ bool srv_rpc_register(struct messaging_context *msg_ctx) {
 
 	rpcecho_cb.init         = rpcecho_init_cb;
 	rpcecho_cb.shutdown     = rpcecho_shutdown_cb;
-	rpcecho_cb.private_data = NULL;
+	rpcecho_cb.private_data = ep_ctx;
 	if (!NT_STATUS_IS_OK(rpc_rpcecho_init(&rpcecho_cb))) {
 		return false;
 	}
@@ -412,14 +429,14 @@ bool srv_rpc_register(struct messaging_context *msg_ctx) {
 
 	dssetup_cb.init         = dssetup_init_cb;
 	dssetup_cb.shutdown     = dssetup_shutdown_cb;
-	dssetup_cb.private_data = NULL;
+	dssetup_cb.private_data = ep_ctx;
 	if (!NT_STATUS_IS_OK(rpc_dssetup_init(&dssetup_cb))) {
 		return false;
 	}
 
 	wkssvc_cb.init         = wkssvc_init_cb;
 	wkssvc_cb.shutdown     = wkssvc_shutdown_cb;
-	wkssvc_cb.private_data = NULL;
+	wkssvc_cb.private_data = ep_ctx;
 	if (!NT_STATUS_IS_OK(rpc_wkssvc_init(&wkssvc_cb))) {
 		return false;
 	}
