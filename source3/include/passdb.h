@@ -262,8 +262,9 @@ enum pdb_policy_type {
 	PDB_POLICY_REFUSE_MACHINE_PW_CHANGE = 10
 };
 
-#define PDB_CAP_STORE_RIDS	0x0001
-#define PDB_CAP_ADS		0x0002
+#define PDB_CAP_STORE_RIDS		0x0001
+#define PDB_CAP_ADS			0x0002
+#define PDB_CAP_TRUSTED_DOMAINS_EX	0x0004
 
 /*****************************************************************
  Functions to be implemented by the new (v2) passdb API 
