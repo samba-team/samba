@@ -1000,9 +1000,8 @@ _kdc_as_rep(krb5_context context,
 	ret = KRB5KDC_ERR_C_PRINCIPAL_UNKNOWN;
 	goto out;
     }
-
     ret = _kdc_db_fetch(context, config, server_princ,
-			HDB_F_GET_SERVER|HDB_F_GET_KRBTGT,
+			HDB_F_GET_SERVER|HDB_F_GET_KRBTGT | flags,
 			NULL, NULL, &server);
     if(ret == HDB_ERR_NOT_FOUND_HERE) {
 	kdc_log(context, config, 5, "target %s does not have secrets at this KDC, need to proxy", server_name);
