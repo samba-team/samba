@@ -33,7 +33,6 @@ static bool PySys_PathPrepend(PyObject *list, const char *path)
 
 bool py_update_path()
 {
-	char *newpath;
 	PyObject *mod_sys, *py_path;
 
 	mod_sys = PyImport_ImportModule("sys");
