@@ -3,10 +3,14 @@
 
 if bld.env._SAMBA_BUILD_ == 4:
     bld.SAMBA_SUBSYSTEM('CHARSET',
-                        source='iconv.c charcnv.c util_unistr.c',
-                        public_deps='iconv CODEPOINTS',
+                        source='charcnv.c util_unistr.c',
+                        public_deps='ICONV_WRAPPER CODEPOINTS',
                         public_headers='charset.h',
                         )
+
+bld.SAMBA_SUBSYSTEM('ICONV_WRAPPER',
+                    source='iconv.c',
+                    public_deps='iconv')
 
 bld.SAMBA_SUBSYSTEM('CODEPOINTS',
 	source='codepoints.c',

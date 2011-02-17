@@ -23,6 +23,13 @@
 #include "system/iconv.h"
 #include "system/filesys.h"
 
+#ifdef strcasecmp
+#undef strcasecmp
+#endif
+
+#ifdef static_decl_charset
+static_decl_charset;
+#endif
 
 /**
  * @file
@@ -49,6 +56,7 @@
 
 static size_t ascii_pull  (void *,const char **, size_t *, char **, size_t *);
 static size_t ascii_push  (void *,const char **, size_t *, char **, size_t *);
+static size_t latin1_push(void *,const char **, size_t *, char **, size_t *);
 static size_t utf8_pull   (void *,const char **, size_t *, char **, size_t *);
 static size_t utf8_push   (void *,const char **, size_t *, char **, size_t *);
 static size_t utf16_munged_pull(void *,const char **, size_t *, char **, size_t *);
@@ -72,27 +80,62 @@ static const struct charset_functions builtin_functions[] = {
 	{"UTF16_MUNGED",   utf16_munged_pull,  iconv_copy},
 
 	{"ASCII", ascii_pull, ascii_push},
+	{"646", ascii_pull, ascii_push},
+	{"ISO-8859-1", ascii_pull, latin1_push},
 	{"UCS2-HEX", ucs2hex_pull, ucs2hex_push}
 };
 
 static struct charset_functions *charsets = NULL;
 
-bool charset_register_backend(const void *_funcs) 
+static struct charset_functions *find_charset_functions(const char *name)
 {
-	struct charset_functions *funcs = (struct charset_functions *)memdup(_funcs,sizeof(struct charset_functions));
 	struct charset_functions *c;
 
 	/* Check whether we already have this charset... */
 	for (c = charsets; c != NULL; c = c->next) {
-		if(!strcasecmp(c->name, funcs->name)) { 
-			DEBUG(2, ("Duplicate charset %s, not registering\n", funcs->name));
-			return false;
+		if(strcasecmp(c->name, name) == 0) { 
+			return c;
 		}
+		c = c->next;
 	}
 
+	return NULL;
+}
+
+bool smb_register_charset(const struct charset_functions *funcs_in)
+{
+	struct charset_functions *funcs;
+
+	DEBUG(5, ("Attempting to register new charset %s\n", funcs_in->name));
+	/* Check whether we already have this charset... */
+	if (find_charset_functions(funcs_in->name)) {
+		DEBUG(0, ("Duplicate charset %s, not registering\n", funcs_in->name));
+		return false;
+	}
+
+	funcs = talloc(NULL, struct charset_functions);
+	if (!funcs) {
+		DEBUG(0, ("Out of memory duplicating charset %s\n", funcs_in->name));
+		return false;
+	}
+	*funcs = *funcs_in;
+
 	funcs->next = funcs->prev = NULL;
+	DEBUG(5, ("Registered charset %s\n", funcs->name));
 	DLIST_ADD(charsets, funcs);
 	return true;
+}
+
+static void lazy_initialize_iconv(void)
+{
+	static bool initialized;
+
+#ifdef static_init_charset
+	if (!initialized) {
+		static_init_charset;
+		initialized = true;
+	}
+#endif
 }
 
 #ifdef HAVE_NATIVE_ICONV
@@ -158,7 +201,7 @@ static bool is_utf16(const char *name)
 		strcasecmp(name, "UTF-16LE") == 0;
 }
 
-int smb_iconv_t_destructor(smb_iconv_t hwd)
+static int smb_iconv_t_destructor(smb_iconv_t hwd)
 {
 #ifdef HAVE_NATIVE_ICONV
 	if (hwd->cd_pull != NULL && hwd->cd_pull != (iconv_t)-1)
@@ -178,6 +221,8 @@ _PUBLIC_ smb_iconv_t smb_iconv_open_ex(TALLOC_CTX *mem_ctx, const char *tocode,
 	smb_iconv_t ret;
 	const struct charset_functions *from=NULL, *to=NULL;
 	int i;
+
+	lazy_initialize_iconv();
 
 	ret = (smb_iconv_t)talloc_named(mem_ctx,
 					sizeof(*ret), 
@@ -282,7 +327,7 @@ failed:
  */
 _PUBLIC_ smb_iconv_t smb_iconv_open(const char *tocode, const char *fromcode)
 {
-	return smb_iconv_open_ex(talloc_autofree_context(), tocode, fromcode, true);
+	return smb_iconv_open_ex(NULL, tocode, fromcode, true);
 }
 
 /*
@@ -347,6 +392,32 @@ static size_t ascii_push(void *cd, const char **inbuf, size_t *inbytesleft,
 	return ir_count;
 }
 
+static size_t latin1_push(void *cd, const char **inbuf, size_t *inbytesleft,
+			 char **outbuf, size_t *outbytesleft)
+{
+	int ir_count=0;
+
+	while (*inbytesleft >= 2 && *outbytesleft >= 1) {
+		(*outbuf)[0] = (*inbuf)[0];
+		if ((*inbuf)[1]) ir_count++;
+		(*inbytesleft)  -= 2;
+		(*outbytesleft) -= 1;
+		(*inbuf)  += 2;
+		(*outbuf) += 1;
+	}
+
+	if (*inbytesleft == 1) {
+		errno = EINVAL;
+		return -1;
+	}
+
+	if (*inbytesleft > 1) {
+		errno = E2BIG;
+		return -1;
+	}
+
+	return ir_count;
+}
 
 static size_t ucs2hex_pull(void *cd, const char **inbuf, size_t *inbytesleft,
 			 char **outbuf, size_t *outbytesleft)

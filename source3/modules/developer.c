@@ -124,8 +124,10 @@ static size_t weird_push(void *cd, char **inbuf, size_t *inbytesleft,
 
 struct charset_functions weird_functions = {"WEIRD", weird_pull, weird_push};
 
-int charset_weird_init(void)
+NTSTATUS charset_weird_init(void)
 {
-	smb_register_charset(&weird_functions);
-	return True;
+	if (!smb_register_charset(&weird_functions)) {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+	return NT_STATUS_OK;
 }

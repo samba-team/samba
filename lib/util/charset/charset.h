@@ -218,7 +218,7 @@ smb_iconv_t smb_iconv_open_ex(TALLOC_CTX *mem_ctx, const char *tocode,
 			      const char *fromcode, bool native_iconv);
 
 void load_case_tables(void);
-bool charset_register_backend(const void *_funcs);
+bool smb_register_charset(const struct charset_functions *funcs_in);
 
 /*
  *   Define stub for charset module which implements 8-bit encoding with gaps.
@@ -293,8 +293,11 @@ struct charset_functions CHARSETNAME ## _functions = 						\
 NTSTATUS charset_ ## CHARSETNAME ## _init(void);							\
 NTSTATUS charset_ ## CHARSETNAME ## _init(void)							\
 {												\
-	return smb_register_charset(& CHARSETNAME ## _functions);				\
-}												\
+	if (!smb_register_charset(& CHARSETNAME ## _functions)) {	\
+	        return NT_STATUS_INTERNAL_ERROR;			\
+	}								\
+	return NT_STATUS_OK; \
+}						\
 
 
 #endif /* __CHARSET_H__ */

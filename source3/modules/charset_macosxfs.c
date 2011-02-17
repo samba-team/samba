@@ -595,7 +595,10 @@ static struct charset_functions macosxfs_encoding_functions = {
 
 NTSTATUS charset_macosxfs_init(void)
 {
-	return smb_register_charset(&macosxfs_encoding_functions);
+	if (!smb_register_charset(&macosxfs_encoding_functions)) {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+	return NT_STATUS_OK;
 }
 
 /* eof */
