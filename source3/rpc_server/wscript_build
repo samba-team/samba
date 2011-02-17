@@ -39,7 +39,7 @@ bld.SAMBA3_SUBSYSTEM('RPC_PIPE_REGISTER',
                     source='srv_pipe_register.c')
 
 bld.SAMBA3_SUBSYSTEM('RPC_SERVER_REGISTER',
-                    source='srv_rpc_register.c ../librpc/rpc/dcerpc_ep.c')
+                    source='rpc_ep_setup.c ../librpc/rpc/dcerpc_ep.c')
 
 bld.SAMBA3_SUBSYSTEM('RPC_SAMR',
                     source=RPC_SAMR_SRC,

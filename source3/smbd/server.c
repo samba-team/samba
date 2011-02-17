@@ -32,7 +32,7 @@
 #include "memcache.h"
 #include "ctdbd_conn.h"
 #include "printing/printer_list.h"
-#include "rpc_server/srv_rpc_register.h"
+#include "rpc_server/rpc_ep_setup.h"
 
 #ifdef WITH_DFS
 extern int dcelogin_atmost_once;

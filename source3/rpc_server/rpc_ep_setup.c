@@ -43,7 +43,7 @@
 
 #include "librpc/rpc/dcerpc_ep.h"
 
-#include "rpc_server/srv_rpc_register.h"
+#include "rpc_server/rpc_ep_setup.h"
 
 struct dcesrv_ep_context {
 	struct tevent_context *ev_ctx;
