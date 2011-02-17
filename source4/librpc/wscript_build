@@ -5,9 +5,9 @@ bld.RECURSE('../../librpc/tools')
 bld.RECURSE('idl')
 
 bld.SAMBA_SUBSYSTEM('NDR_SERVER_ID4',
-	source='gen_ndr/ndr_server_id.c',
+	source='gen_ndr/ndr_server_id4.c',
 	deps='ndr',
-	public_headers='gen_ndr/server_id.h',
+	public_headers='gen_ndr/server_id4.h',
 	header_path='gen_ndr'
 	)
 

@@ -21,7 +21,7 @@
 #ifndef _MESSAGES_H_
 #define _MESSAGES_H_
 
-#include "librpc/gen_ndr/server_id.h"
+#include "librpc/gen_ndr/server_id4.h"
 
 struct messaging_context;
 

@@ -24,7 +24,7 @@
 #include "libcli/raw/interfaces.h"
 #include "param/share.h"
 #include "librpc/gen_ndr/security.h"
-#include "librpc/gen_ndr/server_id.h"
+#include "librpc/gen_ndr/server_id4.h"
 
 /* modules can use the following to determine if the interface has changed */
 /* version 1 -> 0 - make module stacking easier -- metze */

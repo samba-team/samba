@@ -31,7 +31,7 @@
 #include "param/param.h"
 #include "param/pyparam.h"
 #include "librpc/rpc/dcerpc.h"
-#include "librpc/gen_ndr/server_id.h"
+#include "librpc/gen_ndr/server_id4.h"
 
 void initmessaging(void);
 
