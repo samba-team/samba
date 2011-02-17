@@ -197,6 +197,8 @@ def ABI_VSCRIPT(bld, libname, abi_directory, version, vscript, abi_match=None):
     else:
         source = ''
 
+    libname = os.path.basename(libname)
+    version = os.path.basename(version)
     libname = libname.replace("-", "_").replace("+","_").upper()
     version = version.replace("-", "_").replace("+","_").upper()
 

@@ -560,6 +560,13 @@ def map_shlib_extension(ctx, name, python=False):
     return root1+ext2
 Build.BuildContext.map_shlib_extension = map_shlib_extension
 
+def apply_pattern(filename, pattern):
+    '''apply a filename pattern to a filename that may have a directory component'''
+    dirname = os.path.dirname(filename)
+    if not dirname:
+        return pattern % filename
+    basename = os.path.basename(filename)
+    return os.path.join(dirname, pattern % basename)
 
 def make_libname(ctx, name, nolibprefix=False, version=None, python=False):
     """make a library filename
@@ -569,9 +576,9 @@ def make_libname(ctx, name, nolibprefix=False, version=None, python=False):
               python     : if we should use python module name conventions"""
 
     if python:
-        libname = ctx.env.pyext_PATTERN % name
+        libname = apply_pattern(name, ctx.env.pyext_PATTERN)
     else:
-        libname = ctx.env.shlib_PATTERN % name
+        libname = apply_pattern(name, ctx.env.shlib_PATTERN)
     if nolibprefix and libname[0:3] == 'lib':
         libname = libname[3:]
     if version:
