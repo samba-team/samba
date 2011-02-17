@@ -74,10 +74,6 @@ def configure(conf):
     if Options.options.with_swat:
         conf.env['build_swat'] = True
 
-    conf.ADD_EXTRA_INCLUDES('''#source3 #source3/include #lib/replace #lib/talloc
-                               #lib/tevent #lib/addns #source3/librpc
-                               #source3/lib #lib/tdb/include #lib/popt''')
-
     conf.RECURSE('../lib/replace')
     conf.RECURSE('build')
     conf.RECURSE('../lib/tdb')
@@ -89,6 +85,14 @@ def configure(conf):
     conf.RECURSE('../lib/zlib')
     conf.RECURSE('../libcli/smbreadline')
     conf.RECURSE('../lib/util')
+
+    conf.ADD_EXTRA_INCLUDES('''#source3 #source3/include''')
+    if not conf.env.USING_SYSTEM_TDB:
+        conf.ADD_EXTRA_INCLUDES('#lib/tdb/include')
+    if not conf.env.USING_SYSTEM_TEVENT:
+        conf.ADD_EXTRA_INCLUDES('#lib/tevent')
+    if not conf.env.USING_SYSTEM_TALLOC:
+        conf.ADD_EXTRA_INCLUDES('#lib/talloc')
 
     conf.ADD_LDFLAGS("-Wl,--export-dynamic", testflags=True)
 
