@@ -1,43 +1,44 @@
 #!/usr/bin/env python
 
-bld.SAMBA_LIBRARY('samba-util',
-	source='''
-		become_daemon.c
-		blocking.c
-		data_blob.c
-		debug.c
-		dprintf.c
-		fault.c
-		fsusage.c
-		genrand.c
-		idtree.c
-		ms_fnmatch.c
-		params.c
-		parmlist.c
-		rbtree.c
-		rfc1738.c
-		select.c
-		signal.c
-		smb_threads.c
-		substitute.c
-		system.c
-		talloc_stack.c
-		time.c
-		util.c
-		util_file.c
-		util_id.c
-		util_net.c
-		util_str.c
-		util_strlist.c
-		xfile.c
-		''',
-	public_deps='talloc LIBCRYPTO CHARSET execinfo uid_wrapper',
-	public_headers='attr.h byteorder.h data_blob.h debug.h memory.h safe_string.h time.h talloc_stack.h xfile.h dlinklist.h util.h',
-	header_path= [ ('dlinklist.h util.h', '.'), ('*', 'util') ],
-	local_include=False,
-	vnum='0.0.1',
-	pc_files='samba-util.pc'
-	)
+if bld.env._SAMBA_BUILD_ == 4:
+    bld.SAMBA_LIBRARY('samba-util',
+                      source='''
+                      become_daemon.c
+                      blocking.c
+                      data_blob.c
+                      debug.c
+                      dprintf.c
+                      fault.c
+                      fsusage.c
+                      genrand.c
+                      idtree.c
+                      ms_fnmatch.c
+                      params.c
+                      parmlist.c
+                      rbtree.c
+                      rfc1738.c
+                      select.c
+                      signal.c
+                      smb_threads.c
+                      substitute.c
+                      system.c
+                      talloc_stack.c
+                      time.c
+                      util.c
+                      util_file.c
+                      util_id.c
+                      util_net.c
+                      util_str.c
+                      util_strlist.c
+                      xfile.c
+                      ''',
+                      public_deps='talloc LIBCRYPTO CHARSET execinfo uid_wrapper',
+                      public_headers='attr.h byteorder.h data_blob.h debug.h memory.h safe_string.h time.h talloc_stack.h xfile.h dlinklist.h util.h',
+                      header_path= [ ('dlinklist.h util.h', '.'), ('*', 'util') ],
+                      local_include=False,
+                      vnum='0.0.1',
+                      pc_files='samba-util.pc'
+                      )
 
 
 bld.SAMBA_SUBSYSTEM('ASN1_UTIL',
