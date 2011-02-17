@@ -211,6 +211,8 @@ def symlink_bin(self):
         return
 
     blddir = os.path.dirname(self.bld.srcnode.abspath(self.bld.env))
+    if not self.link_task.outputs or not self.link_task.outputs[0]:
+        raise Utils.WafError('no outputs found for %s in symlink_bin' % self.name)
     binpath = self.link_task.outputs[0].abspath(self.env)
     bldpath = os.path.join(self.bld.env.BUILD_DIRECTORY, self.link_task.outputs[0].name)
 
