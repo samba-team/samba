@@ -170,7 +170,7 @@ plantest "blackbox.testparm_s3" dc:local LOCAL_PATH="$LOCAL_PATH" BINDIR="$BINDI
 	if [ -n "$SELFTEST_VERBOSE" ]; then
 		TORTURE4_OPTIONS="$TORTURE4_OPTIONS --option=torture:progress=no"
 	fi
-	TORTURE_OPTIONS="$TORTURE4_OPTIONS --format=subunit"
+	TORTURE4_OPTIONS="$TORTURE4_OPTIONS --format=subunit"
 	if [ -n "$SELFTEST_QUICK" ]; then
 		TORTURE4_OPTIONS="$TORTURE4_OPTIONS --option=torture:quick=yes"
 	fi
