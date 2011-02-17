@@ -114,7 +114,7 @@ LIBADS_SERVER_SRC = '''libads/kerberos_verify.c libads/authdata.c'''
 LIBADS_PRINTER_SRC = '''libads/ldap_printer.c'''
 
 SECRETS_SRC = '''passdb/secrets.c passdb/machine_account_secrets.c
-                 passdb/machine_sid.c'''
+                 passdb/machine_sid.c passdb/secrets_lsa.c'''
 
 LIBNMB_SRC = '''libsmb/unexpected.c libsmb/namecache.c libsmb/nmblib.c
              libsmb/namequery.c libsmb/conncache.c

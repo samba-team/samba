@@ -2328,7 +2328,12 @@ static NTSTATUS pdb_default_get_secret(struct pdb_methods *methods,
 				       NTTIME *secret_old_lastchange,
 				       struct security_descriptor **sd)
 {
-	return NT_STATUS_NOT_SUPPORTED;
+	return lsa_secret_get(mem_ctx, secret_name,
+			      secret_current,
+			      secret_current_lastchange,
+			      secret_old,
+			      secret_old_lastchange,
+			      sd);
 }
 
 static NTSTATUS pdb_default_set_secret(struct pdb_methods *methods,
@@ -2337,13 +2342,16 @@ static NTSTATUS pdb_default_set_secret(struct pdb_methods *methods,
 				       DATA_BLOB *secret_old,
 				       struct security_descriptor *sd)
 {
-	return NT_STATUS_NOT_SUPPORTED;
+	return lsa_secret_set(secret_name,
+			      secret_current,
+			      secret_old,
+			      sd);
 }
 
 static NTSTATUS pdb_default_delete_secret(struct pdb_methods *methods,
 					  const char *secret_name)
 {
-	return NT_STATUS_NOT_SUPPORTED;
+	return lsa_secret_delete(secret_name);
 }
 
 /*******************************************************************

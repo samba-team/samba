@@ -125,4 +125,18 @@ bool secrets_store_generic(const char *owner, const char *key, const char *secre
 char *secrets_fetch_generic(const char *owner, const char *key);
 bool secrets_delete_generic(const char *owner, const char *key);
 
+/* The following definitions come from passdb/secrets_lsa.c  */
+NTSTATUS lsa_secret_get(TALLOC_CTX *mem_ctx,
+			const char *secret_name,
+			DATA_BLOB *secret_current,
+			NTTIME *secret_current_lastchange,
+			DATA_BLOB *secret_old,
+			NTTIME *secret_old_lastchange,
+			struct security_descriptor **sd);
+NTSTATUS lsa_secret_set(const char *secret_name,
+			DATA_BLOB *secret_current,
+			DATA_BLOB *secret_old,
+			struct security_descriptor *sd);
+NTSTATUS lsa_secret_delete(const char *secret_name);
+
 #endif /* _SECRETS_H */

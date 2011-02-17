@@ -520,7 +520,8 @@ LIBADS_SERVER_OBJ = libads/kerberos_verify.o libads/authdata.o ../auth/kerberos/
 LIBADS_PRINTER_OBJ = libads/ldap_printer.o
 
 SECRETS_OBJ = passdb/secrets.o passdb/machine_account_secrets.o passdb/machine_sid.o \
-	      librpc/gen_ndr/ndr_secrets.o
+	      librpc/gen_ndr/ndr_secrets.o \
+	      passdb/secrets_lsa.o
 
 LIBNBT_OBJ = ../libcli/nbt/nbtname.o \
 	     ../libcli/netlogon/netlogon.o \
