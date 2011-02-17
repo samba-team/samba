@@ -21,9 +21,7 @@
 #ifndef _SAMBA_UTIL_H_
 #define _SAMBA_UTIL_H_
 
-#if _SAMBA_BUILD_ == 4
 #include "../lib/util/charset/charset.h"
-#endif
 #include "../lib/util/attr.h"
 
 /* for TALLOC_CTX */
