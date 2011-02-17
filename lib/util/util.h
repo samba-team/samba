@@ -59,13 +59,6 @@ extern const char *panic_action;
 	    __FILE__, __LINE__, #b)); }} while (0)
 #endif
 
-#if _SAMBA_BUILD_ == 4
-#ifdef VALGRIND
-#define strlen(x) valgrind_strlen(x)
-size_t valgrind_strlen(const char *s);
-#endif
-#endif
-
 #ifndef ABS
 #define ABS(a) ((a)>0?(a):(-(a)))
 #endif

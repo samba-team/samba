@@ -112,17 +112,6 @@ _PUBLIC_ char *safe_strcat(char *dest, const char *src, size_t maxlength)
 	return dest;
 }
 
-#ifdef VALGRIND
-size_t valgrind_strlen(const char *s)
-{
-	size_t count;
-	for(count = 0; *s++; count++)
-		;
-	return count;
-}
-#endif
-
-
 /**
   format a string into length-prefixed dotted domain format, as used in NBT
   and in some ADS structures
