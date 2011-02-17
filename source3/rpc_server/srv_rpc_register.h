@@ -22,8 +22,8 @@
 #ifndef _SMBD_RPC_CALLBACKS_H
 #define _SMBD_RPC_CALLBACKS_H
 
-bool srv_rpc_register(struct tevent_context *ev_ctx,
-		      struct messaging_context *msg_ctx);
+bool dcesrv_ep_setup(struct tevent_context *ev_ctx,
+		     struct messaging_context *msg_ctx);
 
 #endif /* _SMBD_RPC_CALLBACKS_H */
 

@@ -295,8 +295,8 @@ static bool wkssvc_shutdown_cb(void *ptr) {
 	return NT_STATUS_IS_OK(_rpc_ep_unregister(&ndr_table_wkssvc));
 }
 
-bool srv_rpc_register(struct tevent_context *ev_ctx,
-		      struct messaging_context *msg_ctx)
+bool dcesrv_ep_setup(struct tevent_context *ev_ctx,
+		     struct messaging_context *msg_ctx)
 {
 	struct dcesrv_ep_context *ep_ctx;
 
