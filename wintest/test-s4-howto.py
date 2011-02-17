@@ -592,6 +592,13 @@ def test_howto(t):
         t.test_remote_smbclient("WINXP", "administrator", "${PASSWORD1}")
         t.vm_poweroff("${WIN_VM}")
 
+    if t.have_vm('W2K3C') and not t.skip("win2k3_member"):
+        t.start_winvm("W2K3C")
+        run_winjoin(t, "W2K3C")
+        test_winjoin(t, "W2K3C")
+        t.test_remote_smbclient("W2K3C", "administrator", "${PASSWORD1}")
+        t.vm_poweroff("${WIN_VM}")
+
     if t.have_vm('W2K8R2C') and not t.skip("dcpromo_rodc"):
         t.info("Testing w2k8r2 RODC dcpromo")
         t.start_winvm("W2K8R2C")
