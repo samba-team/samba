@@ -289,6 +289,17 @@ bld.SAMBA_LIBRARY('ndr-krb5pac',
                     vnum='0.0.1'
                     )
 
+bld.SAMBA_LIBRARY('ndr-standard',
+	source='gen_ndr/ndr_atsvc.c gen_ndr/ndr_eventlog6.c',
+	vnum='0.0.1',
+	pc_files='ndr_standard.pc',
+	deps='''NDR_SECURITY NDR_LSA NDR_SAMR NDR_NETLOGON NDR_EVENTLOG NDR_DFS
+	NDR_NTSVCS NDR_SVCCTL NDR_INITSHUTDOWN NDR_WKSSVC NDR_SRVSVC NDR_WINREG
+	NDR_ECHO security NDR_DNS''',
+	public_deps='ndr',
+	public_headers='gen_ndr/samr.h gen_ndr/ndr_samr.h gen_ndr/lsa.h gen_ndr/netlogon.h gen_ndr/atsvc.h gen_ndr/ndr_atsvc.h gen_ndr/ndr_svcctl.h gen_ndr/svcctl.h',
+	header_path='gen_ndr'
+	)
 
 bld.SAMBA_SUBSYSTEM('NDR_XATTR',
 	source='ndr/ndr_xattr.c gen_ndr/ndr_xattr.c',

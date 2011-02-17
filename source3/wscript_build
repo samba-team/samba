@@ -999,16 +999,6 @@ bld.SAMBA3_SUBSYSTEM('samba-util',
                     vars=locals())
 
 #FIXME
-bld.SAMBA3_SUBSYSTEM('ndr-standard',
-                    source='',
-                    deps='''
-                    NDR_SECURITY NDR_LSA NDR_SAMR NDR_NETLOGON NDR_EVENTLOG NDR_DFS
-                    NDR_NTSVCS NDR_SVCCTL NDR_INITSHUTDOWN NDR_WKSSVC NDR_SRVSVC NDR_WINREG
-                    NDR_ECHO security NDR_DNS
-                    ''',
-                    vars=locals())
-
-#FIXME
 bld.SAMBA3_SUBSYSTEM('dcerpc', '', deps='UTIL_TEVENT')
 
 bld.SAMBA3_SUBSYSTEM('ldb',
