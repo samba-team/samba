@@ -42,8 +42,7 @@ struct epoll_event_context {
 };
 
 /*
-  called when a epoll call fails, and we should fallback
-  to using select
+  called when a epoll call fails
 */
 static void epoll_panic(struct epoll_event_context *epoll_ev, const char *reason)
 {
