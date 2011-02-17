@@ -210,6 +210,13 @@ bld.SAMBA_SUBSYSTEM('NDR_LSA',
 	public_deps='ndr NDR_SECURITY'
 	)
 
+bld.SAMBA_SUBSYSTEM('NDR_SECURITY',
+	source='gen_ndr/ndr_security.c ndr/ndr_sec_helper.c',
+	deps='ndr security',
+	public_headers='gen_ndr/security.h',
+	header_path='gen_ndr'
+	)
+
 bld.SAMBA_SUBSYSTEM('NDR_SVCCTL',
 	source='gen_ndr/ndr_svcctl.c ndr/ndr_svcctl.c',
 	public_deps='ndr NDR_SECURITY'
@@ -254,6 +261,13 @@ bld.SAMBA_SUBSYSTEM('NDR_COMPRESSION',
 	source='ndr/ndr_compression.c',
 	public_deps='errors ndr',
 	deps='z LZXPRESS'
+	)
+
+bld.SAMBA_SUBSYSTEM('NDR_DCERPC',
+	source='gen_ndr/ndr_dcerpc.c',
+	public_deps='ndr',
+	public_headers='gen_ndr/ndr_dcerpc.h gen_ndr/dcerpc.h',
+	header_path= [ ('*gen_ndr*', 'gen_ndr') ],
 	)
 
 bld.SAMBA_SUBSYSTEM('NDR_DRSUAPI',

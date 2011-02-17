@@ -727,7 +727,7 @@ bld.SAMBA3_LIBRARY('nss_wins',
 
 bld.SAMBA3_SUBSYSTEM('LIBMSRPC',
                     source='${LIBMSRPC_SRC}',
-                    deps='''ndr ndr-util NDR_SECURITY NDR_DCERPC3 NDR_SCHANNEL
+                    deps='''ndr ndr-util NDR_SECURITY NDR_DCERPC NDR_SCHANNEL
                     RPC_NDR_EPMAPPER COMMON_SCHANNELDB LIBCLI_AUTH
                     LIBTSOCKET''',
                     vars=locals())
@@ -1013,15 +1013,6 @@ bld.SAMBA3_SUBSYSTEM('dcerpc', '', deps='UTIL_TEVENT')
 
 bld.SAMBA3_SUBSYSTEM('ldb',
                     source='lib/ldb_compat.c')
-
-bld.SAMBA3_SUBSYSTEM('NDR_SECURITY',
-                    source='''../librpc/gen_ndr/ndr_security.c ../librpc/ndr/ndr_sec_helper.c''',
-                    deps='ndr',
-                    vars=locals())
-
-bld.SAMBA3_SUBSYSTEM('NDR_DCERPC3',
-                    source='../librpc/gen_ndr/ndr_dcerpc.c',
-                    vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('errors',
                      source='../libcli/util/doserr.c libsmb/nterr.c libsmb/errormap.c libsmb/smberr.c lib/errmap_unix.c')
