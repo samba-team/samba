@@ -1107,6 +1107,11 @@ syscall(SYS_initgroups, 16, NULL, NULL, 0);
 		    'HAVE_DARWIN_INITGROUPS',
 		    msg='Checking hether to use the Darwin-specific initgroups system call')
 
+    conf.CHECK_CODE('''struct utimbuf tbuf;  tbuf.actime = 0; tbuf.modtime = 1; exit(utime("foo.c",&tbuf));''',
+		    'HAVE_UTIMBUF',
+		    headers='sys/types.h utime.h',
+		    msg='Checking whether struct utimbuf is available')
+
     default_static_modules=TO_LIST('''pdb_smbpasswd pdb_tdbsam pdb_wbc_sam
                                       auth_sam auth_unix auth_winbind auth_wbc auth_server
                                       auth_domain auth_builtin vfs_default
