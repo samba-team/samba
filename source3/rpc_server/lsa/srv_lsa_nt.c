@@ -3297,6 +3297,15 @@ NTSTATUS _lsa_EnumTrustedDomainsEx(struct pipes_struct *p,
 	int i;
 	NTSTATUS nt_status;
 
+	/* bail out early if pdb backend is not capable of ex trusted domains,
+	 * if we dont do that, the client might not call
+	 * _lsa_EnumTrustedDomains() afterwards - gd */
+
+	if (!(pdb_capabilities() & PDB_CAP_TRUSTED_DOMAINS_EX)) {
+		p->rng_fault_state = True;
+		return NT_STATUS_NOT_IMPLEMENTED;
+	}
+
 	if (!find_policy_by_hnd(p, r->in.handle, (void **)(void *)&info))
 		return NT_STATUS_INVALID_HANDLE;
 

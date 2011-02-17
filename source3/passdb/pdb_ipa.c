@@ -705,7 +705,7 @@ static NTSTATUS ipasam_enum_trusteddoms(struct pdb_methods *methods,
 
 static uint32_t pdb_ipasam_capabilities(struct pdb_methods *methods)
 {
-	return PDB_CAP_STORE_RIDS | PDB_CAP_ADS;
+	return PDB_CAP_STORE_RIDS | PDB_CAP_ADS | PDB_CAP_TRUSTED_DOMAINS_EX;
 }
 
 static struct pdb_domain_info *pdb_ipasam_get_domain_info(struct pdb_methods *pdb_methods,
