@@ -1281,12 +1281,19 @@ sub ParseStructPushPrimitives($$$$$)
 sub ParseStructPushDeferred($$$$)
 {
 	my ($self, $struct, $ndr, $varname, $env) = @_;
+
 	if (defined($struct->{PROPERTIES}{relative_base})) {
+		$self->pidl("NDR_CHECK(ndr_push_align($ndr, $struct->{ALIGN}));");
+
 		# retrieve the current offset as base for relative pointers
 		# based on the toplevel struct/union
 		$self->pidl("NDR_CHECK(ndr_push_setup_relative_base_offset2($ndr, $varname));");
 	}
 	$self->ParseElementPush($_, $ndr, $env, 0, 1) foreach (@{$struct->{ELEMENTS}});
+
+	if (defined($struct->{PROPERTIES}{relative_base})) {
+		$self->pidl("NDR_CHECK(ndr_push_trailer_align($ndr, $struct->{ALIGN}));");
+	}
 }
 
 #####################################################################
