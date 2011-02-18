@@ -93,6 +93,8 @@ def configure(conf):
         conf.ADD_EXTRA_INCLUDES('#lib/tevent')
     if not conf.env.USING_SYSTEM_TALLOC:
         conf.ADD_EXTRA_INCLUDES('#lib/talloc')
+    if not conf.env.USING_SYSTEM_POPT:
+        conf.ADD_EXTRA_INCLUDES('#lib/popt')
 
     conf.ADD_LDFLAGS("-Wl,--export-dynamic", testflags=True)
 

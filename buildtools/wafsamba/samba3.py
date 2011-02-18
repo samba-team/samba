@@ -72,6 +72,9 @@ def s3_fix_kwargs(bld, kwargs):
     if not bld.CONFIG_SET('USING_SYSTEM_TALLOC'):
         extra_includes += [ '../lib/talloc' ]
 
+    if not bld.CONFIG_SET('USING_SYSTEM_POPT'):
+        extra_includes += [ '../lib/popt' ]
+
     # s3 builds assume that they will have a bunch of extra include paths
     includes = []
     for d in extra_includes:
