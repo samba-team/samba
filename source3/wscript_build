@@ -742,11 +742,6 @@ bld.SAMBA3_SUBSYSTEM('LIBGPO',
                     deps='gpext',
                     vars=locals())
 
-bld.SAMBA_SUBSYSTEM('ASN1_UTIL',
-                    source='../lib/util/asn1.c',
-                    deps='talloc',
-                    local_include=False)
-
 bld.SAMBA3_SUBSYSTEM('AVAHI',
                     source=AVAHI_SRC,
                     deps='avahi-common avahi-client',
@@ -925,20 +920,6 @@ bld.SAMBA3_SUBSYSTEM('PASSWD_UTIL',
 bld.SAMBA3_SUBSYSTEM('FNAME_UTIL',
                     source=FNAME_UTIL_SRC,
                     vars=locals())
-
-bld.SAMBA3_SUBSYSTEM('UTIL_TDB3',
-	source='../lib/util/util_tdb.c',
-	local_include=False,
-	public_deps='tdb talloc'
-	)
-
-bld.SAMBA_SUBSYSTEM('UTIL_TEVENT',
-	source='../lib/util/tevent_unix.c ../lib/util/tevent_ntstatus.c ../lib/util/tevent_werror.c',
-	local_include=False,
-	public_deps='tevent',
-	public_headers='../lib/util/tevent_ntstatus.h ../lib/util/tevent_unix.h ../lib/util/tevent_werror.h',
-	header_path=[ ('*', 'util') ],
-	)
 
 bld.SAMBA3_SUBSYSTEM('LIBNET',
                     source=LIBNET_SRC,
@@ -1370,7 +1351,7 @@ bld.SAMBA3_BINARY('split_tokens',
 
 bld.SAMBA3_BINARY('vlp',
                  source=VLP_SRC,
-                 deps='''talloc tdb PARAM_UTIL UTIL_TDB3''',
+                 deps='''talloc tdb PARAM_UTIL UTIL_TDB''',
                  vars=locals())
 
 swat_files=recursive_dirlist('../swat', '../swat', '*')
@@ -1397,8 +1378,10 @@ bld.RECURSE('../lib/popt')
 bld.RECURSE('../librpc')
 bld.RECURSE('../lib/smbconf')
 bld.RECURSE('../lib/socket_wrapper')
+bld.RECURSE('../lib/uid_wrapper')
 bld.RECURSE('../lib/talloc')
 bld.RECURSE('../lib/tdb')
+bld.RECURSE('../lib/util')
 bld.RECURSE('../lib/tevent')
 bld.RECURSE('../lib/tsocket')
 bld.RECURSE('../lib/zlib')
