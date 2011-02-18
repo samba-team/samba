@@ -9,8 +9,8 @@ TEMP_CONFFILE=${LOCAL_PATH}/smb.conf.tmp
 TESTPARM="$VALGRIND ${TESTPARM:-$BINDIR/testparm} --suppress-prompt --skip-logic-checks"
 
 test x"$TEST_FUNCTIONS_SH" != x"INCLUDED" && {
-incdir=`dirname $0`
-. $incdir/test_functions.sh
+incdir=`dirname $0`/../../../testprogs/blackbox
+. $incdir/subunit.sh
 }
 
 failed=0
