@@ -88,17 +88,22 @@ class DrsBaseTestCase(samba.tests.BlackboxTestCase):
     def _make_obj_name(self, prefix):
         return prefix + time.strftime("%s", time.gmtime())
 
-    def _net_drs_replicate(self, DC, fromDC, nc_dn=None):
-        if nc_dn is None:
-            nc_dn = self.domain_dn
+    def _samba_tool_cmdline(self, drs_command):
         # find out where is net command
         samba_tool_cmd = os.path.abspath("./bin/samba-tool")
         # make command line credentials string
         creds = self.get_credentials()
-        cmd_line_auth = "-U%s/%s%%%s" % (creds.get_domain(),
-                                         creds.get_username(), creds.get_password())
+        cmdline_auth = "-U%s/%s%%%s" % (creds.get_domain(),
+                                        creds.get_username(), creds.get_password())
+        # bin/samba-tool drs <drs_command> <cmdline_auth>
+        return "%s drs %s %s" % (samba_tool_cmd, drs_command, cmdline_auth)
+
+    def _net_drs_replicate(self, DC, fromDC, nc_dn=None):
+        if nc_dn is None:
+            nc_dn = self.domain_dn
+        # make base command line
+        samba_tool_cmdline = self._samba_tool_cmdline("replicate")
         # bin/samba-tool drs replicate <Dest_DC_NAME> <Src_DC_NAME> <Naming Context>
-        cmd_line = "%s drs replicate %s %s %s %s" % (samba_tool_cmd, DC, fromDC,
-                                                     nc_dn, cmd_line_auth)
+        cmd_line = "%s %s %s %s" % (samba_tool_cmdline, DC, fromDC, nc_dn)
         self.check_run(cmd_line)
 
