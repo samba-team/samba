@@ -105,7 +105,7 @@ int pam_sm_chauthtok(pam_handle_t *pamh, int flags,
     char *pass_new;
 
     /* Samba initialization. */
-    load_case_tables();
+    load_case_tables_library();
     lp_set_in_client(True);
 
     ctrl = set_ctrl(pamh, flags, argc, argv);

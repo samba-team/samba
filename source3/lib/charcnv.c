@@ -51,7 +51,7 @@ static bool initialized;
 void lazy_initialize_conv(void)
 {
 	if (!initialized) {
-		load_case_tables();
+		load_case_tables_library();
 		init_iconv();
 		initialized = true;
 	}

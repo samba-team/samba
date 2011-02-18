@@ -42,8 +42,10 @@ static void *lowcase_table;
 
 /*******************************************************************
 load the case handling tables
+
+This is the function that should be called from library code.
 ********************************************************************/
-void load_case_tables(void)
+void load_case_tables_library(void)
 {
 	TALLOC_CTX *mem_ctx;
 
@@ -64,6 +66,24 @@ void load_case_tables(void)
 	}
 }
 
+/*******************************************************************
+load the case handling tables
+
+This MUST only be called from main() in application code, never from a
+library.  We don't know if the calling program has already done
+setlocale() to another value, and can't tell if they have.
+********************************************************************/
+void load_case_tables(void)
+{
+	/* This is a useful global hook where we can ensure that the
+	 * locale is set from the environment.  This is needed so that
+	 * we can use LOCALE as a codepage */
+#ifdef HAVE_SETLOCALE
+	setlocale(LC_ALL, "");
+#endif
+	load_case_tables_library();
+}
+
 /**
  Convert a codepoint_t to upper case.
 **/
@@ -73,7 +93,7 @@ _PUBLIC_ codepoint_t toupper_m(codepoint_t val)
 		return toupper(val);
 	}
 	if (upcase_table == NULL) {
-		load_case_tables();
+		load_case_tables_library();
 	}
 	if (upcase_table == (void *)-1) {
 		return val;
@@ -93,7 +113,7 @@ _PUBLIC_ codepoint_t tolower_m(codepoint_t val)
 		return tolower(val);
 	}
 	if (lowcase_table == NULL) {
-		load_case_tables();
+		load_case_tables_library();
 	}
 	if (lowcase_table == (void *)-1) {
 		return val;
