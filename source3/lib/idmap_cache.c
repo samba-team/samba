@@ -260,3 +260,119 @@ void idmap_cache_set_sid2gid(const struct dom_sid *sid, gid_t gid)
 		gencache_set(key, value, now + timeout);
 	}
 }
+
+static char* key_xid2sid_str(TALLOC_CTX* mem_ctx, char t, const char* id) {
+	return talloc_asprintf(mem_ctx, "IDMAP/%cID2SID/%s", t, id);
+}
+
+static char* key_xid2sid(TALLOC_CTX* mem_ctx, char t, int id) {
+	char str[32];
+	snprintf(str, sizeof(str), "%d", id);
+	return key_xid2sid_str(mem_ctx, t, str);
+}
+
+static char* key_sid2xid_str(TALLOC_CTX* mem_ctx, char t, const char* sid) {
+	return talloc_asprintf(mem_ctx, "IDMAP/SID2%cID/%s", t, sid);
+}
+
+/* static char* key_sid2xid(TALLOC_CTX* mem_ctx, char t, const struct dom_sid* sid) */
+/* { */
+/* 	char* sid_str = sid_string_talloc(mem_ctx, sid); */
+/* 	char* key = key_sid2xid_str(mem_ctx, t, sid_str); */
+/* 	talloc_free(sid_str); */
+/* 	return key; */
+/* } */
+
+static bool idmap_cache_del_xid(char t, int xid)
+{
+	TALLOC_CTX* mem_ctx = talloc_stackframe();
+	const char* key = key_xid2sid(mem_ctx, t, xid);
+	char* sid_str = NULL;
+	time_t timeout;
+	bool ret = true;
+
+	if (!gencache_get(key, &sid_str, &timeout)) {
+		DEBUG(0, ("no entry: %s\n", key));
+		ret = false; //???
+		goto done;
+	}
+
+	if (sid_str[0] != '-') {
+		const char* sid_key = key_sid2xid_str(mem_ctx, t, sid_str);
+		if (!gencache_del(sid_key)) {
+			DEBUG(0, ("failed to delete: %s\n", sid_key));
+			ret = false;
+		} else {
+			DEBUG(0, ("delete: %s\n", sid_key));
+		}
+
+	}
+
+	if (!gencache_del(key)) {
+		DEBUG(0, ("failed to delete: %s\n", key));
+		ret = false;
+	} else {
+		DEBUG(0, ("delete: %s\n", key));
+	}
+
+done:
+	talloc_free(mem_ctx);
+	return ret;
+}
+
+bool idmap_cache_del_uid(uid_t uid) {
+	return idmap_cache_del_xid('U', uid);
+}
+
+bool idmap_cache_del_gid(gid_t gid) {
+	return idmap_cache_del_xid('G', gid);
+}
+
+static bool idmap_cache_del_sid2xid(TALLOC_CTX* mem_ctx, char t, const char* sid)
+{
+	const char* sid_key = key_sid2xid_str(mem_ctx, t, sid);
+	char* xid_str;
+	time_t timeout;
+	bool ret = true;
+
+	if (!gencache_get(sid_key, &xid_str, &timeout)) {
+		ret = false;
+		goto done;
+	}
+
+	if (atoi(xid_str) != -1) {
+		const char* xid_key = key_xid2sid_str(mem_ctx, t, xid_str);
+		if (!gencache_del(xid_key)) {
+			DEBUG(0, ("failed to delete: %s\n", xid_key));
+			ret = false;
+		} else {
+			DEBUG(0, ("delete: %s\n", xid_key));
+		}
+	}
+
+	if (!gencache_del(sid_key)) {
+		DEBUG(0, ("failed to delete: %s\n", sid_key));
+		ret = false;
+	} else {
+		DEBUG(0, ("delete: %s\n", sid_key));
+	}
+done:
+	return ret;
+}
+
+bool idmap_cache_del_sid(const struct dom_sid *sid)
+{
+	TALLOC_CTX* mem_ctx = talloc_stackframe();
+	const char* sid_str = sid_string_talloc(mem_ctx, sid);
+	bool ret = true;
+
+	if (!idmap_cache_del_sid2xid(mem_ctx, 'U', sid_str) &&
+	    !idmap_cache_del_sid2xid(mem_ctx, 'G', sid_str))
+	{
+		DEBUG(0, ("no entry: %s\n", key_xid2sid_str(mem_ctx, '?', sid_str)));
+		ret = false;
+	}
+
+	talloc_free(mem_ctx);
+	return ret;
+}
