@@ -86,7 +86,7 @@ def configure(conf):
     conf.RECURSE('../libcli/smbreadline')
     conf.RECURSE('../lib/util')
 
-    conf.ADD_EXTRA_INCLUDES('''#source3 #source3/include''')
+    conf.ADD_EXTRA_INCLUDES('''#source3 #source3/include #lib/replace''')
     if not conf.env.USING_SYSTEM_TDB:
         conf.ADD_EXTRA_INCLUDES('#lib/tdb/include')
     if not conf.env.USING_SYSTEM_TEVENT:
