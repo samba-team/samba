@@ -46,10 +46,10 @@ from ldb import (
     FLAG_MOD_REPLACE,
     )
 
-import samba.tests
+import drs_base
 
 
-class DrsReplSchemaTestCase(samba.tests.TestCase):
+class DrsReplSchemaTestCase(drs_base.DrsBaseTestCase):
 
     # prefix for all objects created
     obj_prefix = None
@@ -59,56 +59,13 @@ class DrsReplSchemaTestCase(samba.tests.TestCase):
     def setUp(self):
         super(DrsReplSchemaTestCase, self).setUp()
 
-        # connect to DCs
-        url_dc = samba.tests.env_get_var_value("DC1")
-        (self.ldb_dc1, self.info_dc1) = samba.tests.connect_samdb_ex(url_dc, 
-                                                                     ldap_only=True)
-        url_dc = samba.tests.env_get_var_value("DC2")
-        (self.ldb_dc2, self.info_dc2) = samba.tests.connect_samdb_ex(url_dc, 
-                                                                     ldap_only=True)
-
         # initialize objects prefix if not done yet
         if self.obj_prefix is None:
             t = time.strftime("%s", time.gmtime())
             DrsReplSchemaTestCase.obj_prefix = "DrsReplSchema-%s" % t
 
-        # cache some of RootDSE props
-        self.schema_dn = self.info_dc1["schemaNamingContext"][0]
-        self.domain_dn = self.info_dc1["defaultNamingContext"][0]
-        self.config_dn = self.info_dc1["configurationNamingContext"][0]
-        self.forest_level = int(self.info_dc1["forestFunctionality"][0])
-
-        # we will need DCs DNS names for 'samba-tool drs' command
-        self.dnsname_dc1 = self.info_dc1["dnsHostName"][0]
-        self.dnsname_dc2 = self.info_dc2["dnsHostName"][0]
-
     def tearDown(self):
         super(DrsReplSchemaTestCase, self).tearDown()
-
-    def _net_drs_replicate(self, DC, fromDC, nc_dn):
-        """Triggers replication cycle on 'DC' to
-           replicate from 'fromDC'. Naming context to
-           be replicated is 'nc_dn' dn"""
-        # find out where is net command
-        samba_tool_cmd = os.path.abspath("./bin/samba-tool")
-        # make command line credentials string
-        creds = self.get_credentials()
-        cmd_line_auth = "-U%s/%s%%%s" % (creds.get_domain(),
-                                         creds.get_username(), creds.get_password())
-        # bin/samba-tool drs replicate <Dest_DC_NAME> <Src_DC_NAME> <Naming Context>
-        cmd_line = "%s drs replicate %s %s %s %s" % (samba_tool_cmd, DC, fromDC,
-                                                     nc_dn, cmd_line_auth)
-        ret = os.system(cmd_line)
-        self.assertEquals(ret, 0, "Replicating %s from %s has failed!" % (DC, fromDC))
-
-    def _GUID_string(self, guid):
-        return self.ldb_dc1.schema_format_value("objectGUID", guid)
-
-    def _ldap_schemaUpdateNow(self, sam_db):
-        rec = {"dn": "",
-               "schemaUpdateNow": "1"}
-        m = Message.from_dict(sam_db, rec, FLAG_MOD_REPLACE)
-        sam_db.modify(m)
 
     def _make_obj_names(self, base_name):
         '''Try to create a unique name for an object
