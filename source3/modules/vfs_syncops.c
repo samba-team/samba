@@ -2,6 +2,7 @@
  * ensure meta data operations are performed synchronously
  *
  * Copyright (C) Andrew Tridgell     2007
+ * Copyright (C) Christian Ambach, 2010-2011
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -37,13 +38,19 @@
      syncops:onclose = no
   that can be set either globally or per share.
 
-  you can also disable the module completely for a service with
+  On certain filesystems that only require the last data written to be
+  fsync()'ed, you can disable the metadata synchronization of this module with
+     syncops:onmeta = no
+  This option can be set either globally or per share.
+
+  you can also disable the module completely for a share with
      syncops:disable = true
 
  */
 
 struct syncops_config_data {
 	bool onclose;
+	bool onmeta;
 	bool disable;
 };
 
@@ -142,7 +149,7 @@ static int syncops_rename(vfs_handle_struct *handle,
 				return -1);
 
 	ret = SMB_VFS_NEXT_RENAME(handle, smb_fname_src, smb_fname_dst);
-	if (ret == 0 && !config->disable) {
+	if (ret == 0 && config->onmeta && !config->disable) {
 		syncops_two_names(smb_fname_src->base_name,
 				  smb_fname_dst->base_name);
 	}
@@ -158,7 +165,7 @@ static int syncops_rename(vfs_handle_struct *handle,
 				return -1); \
 	ret = SMB_VFS_NEXT_ ## op args; \
 	if (ret == 0 \
-		&& !config->disable \
+		&& config->onmeta && !config->disable  \
 		&& fname) syncops_name(fname); \
 	return ret; \
 } while (0)
@@ -171,7 +178,7 @@ static int syncops_rename(vfs_handle_struct *handle,
 				return -1); \
 	ret = SMB_VFS_NEXT_ ## op args; \
 	if (ret == 0 \
-	&& !config->disable \
+	&& config->onmeta && !config->disable \
 	&& fname) syncops_smb_fname(fname); \
 	return ret; \
 } while (0)
@@ -254,6 +261,9 @@ int syncops_connect(struct vfs_handle_struct *handle, const char *service,
 
 	config->onclose = lp_parm_bool(SNUM(handle->conn), "syncops",
 					"onclose", true);
+
+	config->onmeta = lp_parm_bool(SNUM(handle->conn), "syncops",
+					"onmeta", true);
 
 	config->disable = lp_parm_bool(SNUM(handle->conn), "syncops",
 					"disable", false);
