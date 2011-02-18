@@ -98,12 +98,14 @@ class DrsBaseTestCase(samba.tests.BlackboxTestCase):
         # bin/samba-tool drs <drs_command> <cmdline_auth>
         return "%s drs %s %s" % (samba_tool_cmd, drs_command, cmdline_auth)
 
-    def _net_drs_replicate(self, DC, fromDC, nc_dn=None):
+    def _net_drs_replicate(self, DC, fromDC, nc_dn=None, forced=True):
         if nc_dn is None:
             nc_dn = self.domain_dn
         # make base command line
         samba_tool_cmdline = self._samba_tool_cmdline("replicate")
+        if forced:
+            samba_tool_cmdline += " --sync-forced"
         # bin/samba-tool drs replicate <Dest_DC_NAME> <Src_DC_NAME> <Naming Context>
         cmd_line = "%s %s %s %s" % (samba_tool_cmdline, DC, fromDC, nc_dn)
-        self.check_run(cmd_line)
+        return self.check_output(cmd_line)
 
