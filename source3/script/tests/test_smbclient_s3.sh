@@ -402,7 +402,7 @@ LOGDIR=$(mktemp -d --tmpdir=$PREFIX ${LOGDIR_PREFIX}_XXXX)
 
 
 testit "smbclient -L $SERVER_IP" $SMBCLIENT $CONFIGURATION -L $SERVER_IP -N -p 139 || failed=`expr $failed + 1`
-testit "smbclient -L $SERVER -I $SERVER_IP" $SMBCLIENT $CONFIGURATION -L $SERVER -I $SERVER_IP -N -p 139 || failed=`expr $failed + 1`
+testit "smbclient -L $SERVER -I $SERVER_IP" $SMBCLIENT $CONFIGURATION -L $SERVER -I $SERVER_IP -N -p 139 -c quit || failed=`expr $failed + 1`
 
 testit "noninteractive smbclient does not prompt" \
     test_noninteractive_no_prompt || \

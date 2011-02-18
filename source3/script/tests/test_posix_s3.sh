@@ -60,10 +60,7 @@ winbind="winbind.struct winbind.wbclient"
 
 rap="rap.basic rap.rpc rap.printing rap.sam"
 
-# note: to enable the unix-whoami test, we need to change the default share
-# config to allow guest access. i'm not sure whether this would break other
-# tests, so leaving it alone for now -- jpeach
-unix="unix.info2"
+unix="unix.info2 unix.whoami"
 
 tests="$base $raw $smb2 $rpc $unix $local $winbind $rap"
 
@@ -83,12 +80,19 @@ for t in $tests; do
     name="$t"
     if [ "$t" = "base.delaywrite" ]; then
 	    testit "$name" $VALGRIND $SMBTORTURE4 $TORTURE4_OPTIONS --maximum-runtime=900 $ADDARGS $unc -U"$username"%"$password" $t || failed=`expr $failed + 1`
+    elif [ "$t" = "unix.whoami" ]; then
+	    #"Testing with guest-enabled share"
+	    testit "$name" $VALGRIND $SMBTORTURE4 $TORTURE4_OPTIONS $ADDARGS "$unc"guest -U"$username"%"$password" $t || failed=`expr $failed + 1`
     else
 	    testit "$name" $VALGRIND $SMBTORTURE4 $TORTURE4_OPTIONS $ADDARGS $unc -U"$username"%"$password" $t || failed=`expr $failed + 1`
     fi
     if [ "$t" = "raw.chkpath" ]; then
 	    echo "Testing with case sensitive"
 	    testit "$name" $VALGRIND $SMBTORTURE4 $TORTURE4_OPTIONS $ADDARGS "$unc"case -U"$username"%"$password" $t || failed=`expr $failed + 1`
+    fi
+    if [ "$t" = "unix.whoami" ]; then
+	    echo "Testing with guest-enabled share"
+	    testit "$name" $VALGRIND $SMBTORTURE4 $TORTURE4_OPTIONS $ADDARGS "$unc"guest -U"$username"%"$password" $t || failed=`expr $failed + 1`
     fi
 done
 

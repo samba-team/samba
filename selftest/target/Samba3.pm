@@ -98,6 +98,8 @@ sub setup_env($$$)
 	
 	if ($envname eq "dc") {
 		return $self->setup_dc("$path/dc");
+	} elsif ($envname eq "secshare") {
+		return $self->setup_secshare("$path/secshare");
 	} elsif ($envname eq "member") {
 		if (not defined($self->{vars}->{dc})) {
 			$self->setup_dc("$path/dc");
@@ -176,6 +178,34 @@ sub setup_member($$$)
 	$ret->{DC_PASSWORD} = $dcvars->{PASSWORD};
 
 	return $ret;
+}
+
+sub setup_secshare($$)
+{
+	my ($self, $path) = @_;
+
+	print "PROVISIONING server with security=share...";
+
+	my $secshare_options = "
+	security = share
+	lanman auth = yes
+";
+
+	my $vars = $self->provision($path,
+				    "LOCALSHARE4",
+				    4,
+				    "local4pass",
+				    $secshare_options);
+
+	$self->check_or_start($vars,
+			      ($ENV{SMBD_MAXTIME} or 2700),
+			       "yes", "no", "yes");
+
+	$self->wait_for_start($vars);
+
+	$self->{vars}->{secshare} = $vars;
+
+	return $vars;
 }
 
 sub stop_sig_term($$) {
@@ -572,6 +602,21 @@ sub provision($$$$$$)
 	print CONF "
 [tmp]
 	path = $shrdir
+[tmpguest]
+	path = $shrdir
+        guest ok = yes
+[guestonly]
+	path = $shrdir
+        guest only = yes
+        guest ok = yes
+[forceuser]
+	path = $shrdir
+        force user = $unix_name
+        guest ok = yes
+[forcegroup]
+	path = $shrdir
+        force group = nogroup
+        guest ok = yes
 [ro-tmp]
 	path = $ro_shrdir
 	guest ok = yes

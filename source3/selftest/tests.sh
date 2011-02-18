@@ -137,6 +137,10 @@ plantest "blackbox.failure" dc:local LOCAL_PATH="$LOCAL_PATH" BINDIR="$BINDIR" S
 )
 
 # plain
+plantest "blackbox.smbclient_auth.plain" dc BINDIR="$BINDIR" script/tests/test_smbclient_auth.sh \$SERVER \$SERVER_IP \$USERNAME \$PASSWORD \$USERID
+plantest "blackbox.smbclient_auth.plain sec share" secshare BINDIR="$BINDIR" script/tests/test_smbclient_auth.sh \$SERVER \$SERVER_IP \$SERVER\\\\\$USERNAME \$PASSWORD \$USERID
+plantest "blackbox.smbclient_auth.plain member creds" member BINDIR="$BINDIR" script/tests/test_smbclient_auth.sh \$SERVER \$SERVER_IP \$SERVER\\\\\$USERNAME \$PASSWORD \$USERID
+
 plantest "blackbox.smbclient_s3.plain" dc BINDIR="$BINDIR" script/tests/test_smbclient_s3.sh \$SERVER \$SERVER_IP \$USERNAME \$PASSWORD \$USERID \$LOCAL_PATH
 plantest "blackbox.smbclient_s3.plain member creds" member BINDIR="$BINDIR" script/tests/test_smbclient_s3.sh \$SERVER \$SERVER_IP \$SERVER\\\\\$USERNAME \$PASSWORD \$USERID \$LOCAL_PATH
 #plantest "blackbox.smbclient_s3.plain domain creds" member BINDIR="$BINDIR" script/tests/test_smbclient_s3.sh \$SERVER \$SERVER_IP \$DOMAIN\\\\\$DC_USERNAME \$DC_PASSWORD \$USERID \$LOCAL_PATH
