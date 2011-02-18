@@ -22,6 +22,8 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include "replace.h"
+#include "system/select.h"
 #include "winbind_client.h"
 
 /* Global variables.  These are effectively the client state information */
@@ -233,8 +235,7 @@ static int winbind_named_pipe_sock(const char *dir)
 
 	for (wait_time = 0; connect(fd, (struct sockaddr *)&sunaddr, sizeof(sunaddr)) == -1;
 			wait_time += slept) {
-		struct timeval tv;
-		fd_set w_fds;
+		struct pollfd pfd;
 		int ret;
 		int connect_errno = 0;
 		socklen_t errnosize;
@@ -244,12 +245,10 @@ static int winbind_named_pipe_sock(const char *dir)
 
 		switch (errno) {
 			case EINPROGRESS:
-				FD_ZERO(&w_fds);
-				FD_SET(fd, &w_fds);
-				tv.tv_sec = CONNECT_TIMEOUT - wait_time;
-				tv.tv_usec = 0;
+				pfd.fd = fd;
+				pfd.events = POLLOUT;
 
-				ret = select(fd + 1, NULL, &w_fds, NULL, &tv);
+				ret = poll(&pfd, 1, (CONNECT_TIMEOUT - wait_time) * 1000);
 
 				if (ret > 0) {
 					errnosize = sizeof(connect_errno);
@@ -386,24 +385,24 @@ static int winbind_write_sock(void *buffer, int count, int recursing,
 	nwritten = 0;
 
 	while(nwritten < count) {
-		struct timeval tv;
-		fd_set r_fds;
+		struct pollfd pfd;
+		int ret;
 
 		/* Catch pipe close on other end by checking if a read()
-		   call would not block by calling select(). */
+		   call would not block by calling poll(). */
 
-		FD_ZERO(&r_fds);
-		FD_SET(winbindd_fd, &r_fds);
-		ZERO_STRUCT(tv);
+		pfd.fd = winbindd_fd;
+		pfd.events = POLLIN|POLLHUP;
 
-		if (select(winbindd_fd + 1, &r_fds, NULL, NULL, &tv) == -1) {
+		ret = poll(&pfd, 1, 0);
+		if (ret == -1) {
 			winbind_close_sock();
-			return -1;                   /* Select error */
+			return -1;                   /* poll error */
 		}
 
 		/* Write should be OK if fd not available for reading */
 
-		if (FD_ISSET(winbindd_fd, &r_fds)) {
+		if ((ret == 1) && (pfd.revents & (POLLIN|POLLHUP|POLLERR))) {
 
 			/* Pipe has closed on remote end */
 
@@ -436,7 +435,7 @@ static int winbind_write_sock(void *buffer, int count, int recursing,
 static int winbind_read_sock(void *buffer, int count)
 {
 	int nread = 0;
-	int total_time = 0, selret;
+	int total_time = 0;
 
 	if (winbindd_fd == -1) {
 		return -1;
@@ -444,24 +443,24 @@ static int winbind_read_sock(void *buffer, int count)
 
 	/* Read data from socket */
 	while(nread < count) {
-		struct timeval tv;
-		fd_set r_fds;
+		struct pollfd pfd;
+		int ret;
 
 		/* Catch pipe close on other end by checking if a read()
-		   call would not block by calling select(). */
+		   call would not block by calling poll(). */
 
-		FD_ZERO(&r_fds);
-		FD_SET(winbindd_fd, &r_fds);
-		ZERO_STRUCT(tv);
+		pfd.fd = winbindd_fd;
+		pfd.events = POLLIN|POLLHUP;
+
 		/* Wait for 5 seconds for a reply. May need to parameterise this... */
-		tv.tv_sec = 5;
 
-		if ((selret = select(winbindd_fd + 1, &r_fds, NULL, NULL, &tv)) == -1) {
+		ret = poll(&pfd, 1, 5000);
+		if (ret == -1) {
 			winbind_close_sock();
-			return -1;                   /* Select error */
+			return -1;                   /* poll error */
 		}
 
-		if (selret == 0) {
+		if (ret == 0) {
 			/* Not ready for read yet... */
 			if (total_time >= 30) {
 				/* Timeout */
@@ -472,7 +471,7 @@ static int winbind_read_sock(void *buffer, int count)
 			continue;
 		}
 
-		if (FD_ISSET(winbindd_fd, &r_fds)) {
+		if ((ret == 1) && (pfd.revents & (POLLIN|POLLHUP|POLLERR))) {
 
 			/* Do the Read */
 
