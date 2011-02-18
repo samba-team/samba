@@ -37,45 +37,16 @@ from ldb import (
     SCOPE_SUBTREE
     )
 
-import samba.tests
+import drs_base
 
 
-class DrsDeleteObjectTestCase(samba.tests.TestCase):
+class DrsDeleteObjectTestCase(drs_base.DrsBaseTestCase):
 
     def setUp(self):
         super(DrsDeleteObjectTestCase, self).setUp()
 
-        # connect to DCs
-        url_dc = samba.tests.env_get_var_value("DC1")
-        (self.ldb_dc1, self.info_dc1) = samba.tests.connect_samdb_ex(url_dc,
-                                                                     ldap_only=True)
-        url_dc = samba.tests.env_get_var_value("DC2")
-        (self.ldb_dc2, self.info_dc2) = samba.tests.connect_samdb_ex(url_dc,
-                                                                     ldap_only=True)
-
-        # cache some of RootDSE props
-        self.schema_dn = self.info_dc1["schemaNamingContext"][0]
-        self.domain_dn = self.info_dc1["defaultNamingContext"][0]
-        self.config_dn = self.info_dc1["configurationNamingContext"][0]
-        self.forest_level = int(self.info_dc1["forestFunctionality"][0])
-
-        # we will need DCs DNS names for 'samba-tool drs' command
-        self.dnsname_dc1 = self.info_dc1["dnsHostName"][0]
-        self.dnsname_dc2 = self.info_dc2["dnsHostName"][0]
-
     def tearDown(self):
         super(DrsDeleteObjectTestCase, self).tearDown()
-
-    def _GUID_string(self, guid):
-        return self.ldb_dc1.schema_format_value("objectGUID", guid)
-
-    def _deleted_objects_dn(self, sam_ldb):
-        wkdn = "<WKGUID=18E2EA80684F11D2B9AA00C04F79F805,%s>" % self.domain_dn
-        res = sam_ldb.search(base=wkdn,
-                             scope=SCOPE_BASE,
-                             controls=["show_deleted:1"])
-        self.assertEquals(len(res), 1)
-        return str(res[0]["dn"])
 
     def _make_username(self):
         return "DrsDelObjUser_" + time.strftime("%s", time.gmtime())
@@ -106,19 +77,6 @@ class DrsDeleteObjectTestCase(samba.tests.TestCase):
             self.assertEquals(name_cur, name_orig)
             self.assertEquals(user_orig["dn"], user_cur["dn"])
             self.assertTrue(dodn not in str(user_cur["dn"]))
-
-    def _net_drs_replicate(self, DC, fromDC):
-        # find out where is net command
-        samba_tool_cmd = os.path.abspath("./bin/samba-tool")
-        # make command line credentials string
-        creds = self.get_credentials()
-        cmd_line_auth = "-U%s/%s%%%s" % (creds.get_domain(),
-                                         creds.get_username(), creds.get_password())
-        # bin/samba-tool drs replicate <Dest_DC_NAME> <Src_DC_NAME> <Naming Context>
-        cmd_line = "%s drs replicate %s %s %s %s" % (samba_tool_cmd, DC, fromDC,
-                                                     self.domain_dn, cmd_line_auth)
-        ret = os.system(cmd_line)
-        self.assertEquals(ret, 0, "Replicating %s from %s has failed!" % (DC, fromDC))
 
     def test_NetReplicateCmd(self):
         """Triggers replication from DC1 to DC2
