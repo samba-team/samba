@@ -369,7 +369,9 @@ void ctdb_request_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr
 			 (unsigned long long)c->rsn, (unsigned long long)header.rsn, c->hdr.reqid,
 			 (key.dsize >= 4)?(*(uint32_t *)key.dptr):0));
 		if (header.rsn != 0 || header.dmaster != ctdb->pnn) {
-			ctdb_fatal(ctdb, "ctdb_req_dmaster from non-master");
+			DEBUG(DEBUG_ERR,("ctdb_req_dmaster from non-master. Force a recovery.\n"));
+
+			ctdb->recovery_mode = CTDB_RECOVERY_ACTIVE;
 			return;
 		}
 	}
