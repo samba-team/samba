@@ -1642,3 +1642,17 @@ done:
 	TALLOC_FREE(tmp_ctx);
 	return NT_STATUS_OK;
 }
+
+void flush_gid_cache(void)
+{
+	DEBUG(3, ("Flush GID <-> SID memcache\n"));
+	memcache_flush(NULL, SID_GID_CACHE);
+	memcache_flush(NULL, GID_SID_CACHE);
+}
+
+void flush_uid_cache(void)
+{
+	DEBUG(3, ("Flush UID <-> SID memcache\n"));
+	memcache_flush(NULL, SID_UID_CACHE);
+	memcache_flush(NULL, UID_SID_CACHE);
+}
