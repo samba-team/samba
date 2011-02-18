@@ -33,16 +33,9 @@ sys.path.insert(0, "bin/python")
 
 from ldb import SCOPE_BASE
 
-import samba.tests
+import drs_base
 
-class DrsFsmoTestCase(samba.tests.TestCase):
-
-    # RootDSE msg for DC1
-    info_dc1 = None
-    ldb_dc1 = None
-    # RootDSE msg for DC1
-    info_dc2 = None
-    ldb_dc2 = None
+class DrsFsmoTestCase(drs_base.DrsBaseTestCase):
 
     def setUp(self):
         super(DrsFsmoTestCase, self).setUp()
@@ -50,39 +43,13 @@ class DrsFsmoTestCase(samba.tests.TestCase):
         # we have to wait for the replication before we make the check
         self.fsmo_wait_max_time = 20
         self.fsmo_wait_sleep_time = 0.2
-        # connect to DCs singleton
-        if self.ldb_dc1 is None:
-            DrsFsmoTestCase.dc1 = samba.tests.env_get_var_value("DC1")
-            DrsFsmoTestCase.ldb_dc1 = samba.tests.connect_samdb(self.dc1, ldap_only=True)
-        if self.ldb_dc2 is None:
-            DrsFsmoTestCase.dc2 = samba.tests.env_get_var_value("DC2")
-            DrsFsmoTestCase.ldb_dc2 = samba.tests.connect_samdb(self.dc2, ldap_only=True)
-
-        # fetch rootDSEs
-        if self.info_dc1 is None:
-            ldb = self.ldb_dc1
-            res = ldb.search(base="", expression="", scope=SCOPE_BASE, attrs=["*"])
-            self.assertEquals(len(res), 1)
-            DrsFsmoTestCase.info_dc1 = res[0]
-        if self.info_dc2 is None:
-            ldb = self.ldb_dc2
-            res = ldb.search(base="", expression="", scope=SCOPE_BASE, attrs=["*"])
-            self.assertEquals(len(res), 1)
-            DrsFsmoTestCase.info_dc2 = res[0]
 
         # cache some of RootDSE props
-        self.schema_dn = self.info_dc1["schemaNamingContext"][0]
-        self.domain_dn = self.info_dc1["defaultNamingContext"][0]
-        self.config_dn = self.info_dc1["configurationNamingContext"][0]
         self.dsServiceName_dc1 = self.info_dc1["dsServiceName"][0]
         self.dsServiceName_dc2 = self.info_dc2["dsServiceName"][0]
         self.infrastructure_dn = "CN=Infrastructure," + self.domain_dn
         self.naming_dn = "CN=Partitions," + self.config_dn
         self.rid_dn = "CN=RID Manager$,CN=System," + self.domain_dn
-
-        # we will need DCs DNS names for 'net fsmo' command
-        self.dnsname_dc1 = self.info_dc1["dnsHostName"][0]
-        self.dnsname_dc2 = self.info_dc2["dnsHostName"][0]
 
     def tearDown(self):
         super(DrsFsmoTestCase, self).tearDown()
