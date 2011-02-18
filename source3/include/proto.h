@@ -3638,6 +3638,8 @@ NTSTATUS get_primary_group_sid(TALLOC_CTX *mem_ctx,
 				const char *username,
 				struct passwd **_pwd,
 				struct dom_sid **_group_sid);
+void flush_uid_cache(void);
+void flush_gid_cache(void);
 
 /* The following definitions come from passdb/machine_sid.c  */
 
