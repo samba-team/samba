@@ -138,6 +138,7 @@ static int local_deltree(const char *path)
 		}
 	}
 	closedir(dir);
+	rmdir(path);
 	return ret;
 }
 

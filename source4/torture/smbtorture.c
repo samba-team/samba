@@ -285,7 +285,7 @@ void torture_print_testsuites(bool structured)
 	}
 }
 
-_NORETURN_ static void usage(poptContext pc)
+static void usage(poptContext pc)
 {
 	poptPrintUsage(pc, stdout, 0);
 	printf("\n");
@@ -341,7 +341,6 @@ _NORETURN_ static void usage(poptContext pc)
 
 	print_structured_testsuite_list();
 
-	exit(1);
 }
 
 _NORETURN_ static void max_runtime_handler(int sig)
@@ -702,19 +701,17 @@ int main(int argc,char *argv[])
 		if (argc_new < 3) {
 			printf("You must specify a test to run, or 'ALL'\n");
 			usage(pc);
-			exit(1);
-		}
-
+			torture->results->returncode = 1;
+		} else if (!torture_parse_target(cmdline_lp_ctx, argv_new[1])) {
 		/* Take the target name or binding. */
-		if (!torture_parse_target(cmdline_lp_ctx, argv_new[1])) {
 			usage(pc);
-			exit(1);
-		}
-
-		for (i=2;i<argc_new;i++) {
-			if (!torture_run_named_tests(torture, argv_new[i],
-				    (const char **)restricted)) {
-				correct = false;
+			torture->results->returncode = 1;
+		} else {
+			for (i=2;i<argc_new;i++) {
+				if (!torture_run_named_tests(torture, argv_new[i],
+					    (const char **)restricted)) {
+					correct = false;
+				}
 			}
 		}
 	}
