@@ -304,6 +304,7 @@ struct smb_iconv_convenience *smb_iconv_convenience_reinit_lp(TALLOC_CTX *mem_ct
 {
 	return smb_iconv_convenience_reinit(mem_ctx, lpcfg_dos_charset(lp_ctx),
 					    lpcfg_unix_charset(lp_ctx),
+					    lpcfg_display_charset(lp_ctx),
 					    lpcfg_parm_bool(lp_ctx, NULL, "iconv", "native", true),
 					    old_ic);
 }

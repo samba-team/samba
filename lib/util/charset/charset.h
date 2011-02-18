@@ -170,6 +170,10 @@ ssize_t iconv_talloc(TALLOC_CTX *mem_ctx,
 				       void *dest);
 
 extern struct smb_iconv_convenience *global_iconv_convenience;
+struct smb_iconv_convenience *get_iconv_convenience(void);
+smb_iconv_t get_conv_handle(struct smb_iconv_convenience *ic,
+			    charset_t from, charset_t to);
+const char *charset_name(struct smb_iconv_convenience *ic, charset_t ch);
 
 codepoint_t next_codepoint_ext(const char *str, charset_t src_charset,
 			       size_t *size);
@@ -195,6 +199,7 @@ int codepoint_cmpi(codepoint_t c1, codepoint_t c2);
 struct smb_iconv_convenience *smb_iconv_convenience_reinit(TALLOC_CTX *mem_ctx,
 							   const char *dos_charset,
 							   const char *unix_charset,
+							   const char *display_charset,
 							   bool native_iconv,
 							   struct smb_iconv_convenience *old_ic);
 

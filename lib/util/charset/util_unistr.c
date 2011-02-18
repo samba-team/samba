@@ -21,16 +21,6 @@
 #include "includes.h"
 #include "system/locale.h"
 
-struct smb_iconv_convenience *global_iconv_convenience = NULL;
-
-static inline struct smb_iconv_convenience *get_iconv_convenience(void)
-{
-	if (global_iconv_convenience == NULL)
-		global_iconv_convenience = smb_iconv_convenience_reinit(talloc_autofree_context(),
-									"ASCII", "UTF-8", true, NULL);
-	return global_iconv_convenience;
-}
-
 /**
  Case insensitive string compararison
 **/
@@ -1043,19 +1033,3 @@ _PUBLIC_ bool convert_string_talloc(TALLOC_CTX *ctx,
 											 allow_badcharcnv);
 }
 
-_PUBLIC_ codepoint_t next_codepoint_ext(const char *str, charset_t src_charset,
-					size_t *size)
-{
-	return next_codepoint_convenience_ext(get_iconv_convenience(), str,
-					      src_charset, size);
-}
-
-_PUBLIC_ codepoint_t next_codepoint(const char *str, size_t *size)
-{
-	return next_codepoint_convenience(get_iconv_convenience(), str, size);
-}
-
-_PUBLIC_ ssize_t push_codepoint(char *str, codepoint_t c)
-{
-	return push_codepoint_convenience(get_iconv_convenience(), str, c);
-}
