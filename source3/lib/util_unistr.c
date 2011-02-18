@@ -28,7 +28,6 @@
 /* these 3 tables define the unicode case handling.  They are loaded
    at startup either via mmap() or read() from the lib directory */
 static uint8 *valid_table;
-static bool valid_table_use_unmap;
 static bool initialized;
 
 /**
@@ -37,10 +36,8 @@ static bool initialized;
 void gfree_case_tables(void)
 {
 	if ( valid_table ) {
-		if ( valid_table_use_unmap )
-			unmap_file(valid_table, 0x10000);
-		else
-			SAFE_FREE(valid_table);
+		unmap_file(valid_table, 0x10000);
+		valid_table = NULL;
 	}
 	initialized = false;
 }
@@ -71,48 +68,16 @@ static int check_dos_char_slowly(smb_ucs2_t c)
  * from a file, because we can't unmap files.
  **/
 
-void init_valid_table(void)
+static void init_valid_table(void)
 {
-	static int mapped_file;
-	int i;
-	const char *allowed = ".!#$%&'()_-@^`~";
-	uint8 *valid_file;
-
-	if (mapped_file) {
-		/* Can't unmap files, so stick with what we have */
+	if (valid_table) {
 		return;
 	}
 
-	valid_file = (uint8 *)map_file(data_path("valid.dat"), 0x10000);
-	if (valid_file) {
-		valid_table = valid_file;
-		mapped_file = 1;
-		valid_table_use_unmap = True;
+	valid_table = (uint8 *)map_file(data_path("valid.dat"), 0x10000);
+	if (!valid_table) {
+		smb_panic("Could not load valid.dat file required for mangle method=hash");
 		return;
-	}
-
-	/* Otherwise, we're using a dynamically created valid_table.
-	 * It might need to be regenerated if the code page changed.
-	 * We know that we're not using a mapped file, so we can
-	 * free() the old one. */
-	SAFE_FREE(valid_table);
-
-	/* use free rather than unmap */
-	valid_table_use_unmap = False;
-
-	DEBUG(2,("creating default valid table\n"));
-	valid_table = (uint8 *)SMB_MALLOC(0x10000);
-	SMB_ASSERT(valid_table != NULL);
-	for (i=0;i<128;i++) {
-		valid_table[i] = isalnum(i) || strchr(allowed,i);
-	}
-
-	lazy_initialize_conv();
-
-	for (;i<0x10000;i++) {
-		smb_ucs2_t c;
-		SSVAL(&c, 0, i);
-		valid_table[i] = check_dos_char_slowly(c);
 	}
 }
 
@@ -182,6 +147,7 @@ int rpcstr_push_talloc(TALLOC_CTX *ctx, smb_ucs2_t **dest, const char *src)
 
 bool isvalid83_w(smb_ucs2_t c)
 {
+	init_valid_table();
 	return valid_table[SVAL(&c,0)] != 0;
 }
 
