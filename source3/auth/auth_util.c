@@ -757,7 +757,7 @@ static NTSTATUS make_new_server_info_system(TALLOC_CTX *mem_ctx,
 
 	pwd = getpwuid_alloc(mem_ctx, sec_initial_uid());
 	if (pwd == NULL) {
-		return NT_STATUS_NO_MEMORY;
+		return NT_STATUS_NO_SUCH_USER;
 	}
 
 	status = make_serverinfo_from_username(mem_ctx,
