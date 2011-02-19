@@ -1398,8 +1398,10 @@ int main(int argc, char **argv, char **envp)
 
 	winbindd_register_handlers();
 
-	if (!init_system_info()) {
-		DEBUG(0,("ERROR: failed to setup system user info.\n"));
+	status = init_system_info();
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("ERROR: failed to setup system user info: %s.\n",
+			  nt_errstr(status)));
 		exit(1);
 	}
 

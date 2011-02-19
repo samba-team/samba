@@ -143,7 +143,7 @@ NTSTATUS make_serverinfo_from_username(TALLOC_CTX *mem_ctx,
 struct auth_serversupplied_info *copy_serverinfo(TALLOC_CTX *mem_ctx,
 						 const struct auth_serversupplied_info *src);
 bool init_guest_info(void);
-bool init_system_info(void);
+NTSTATUS init_system_info(void);
 bool server_info_set_session_key(struct auth_serversupplied_info *info,
 				 DATA_BLOB session_key);
 NTSTATUS make_server_info_guest(TALLOC_CTX *mem_ctx,

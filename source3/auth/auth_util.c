@@ -918,13 +918,12 @@ NTSTATUS make_server_info_guest(TALLOC_CTX *mem_ctx,
 
 static struct auth_serversupplied_info *system_info = NULL;
 
-bool init_system_info(void)
+NTSTATUS init_system_info(void)
 {
 	if (system_info != NULL)
-		return True;
+		return NT_STATUS_OK;
 
-	return NT_STATUS_IS_OK(make_new_server_info_system(NULL,
-							   &system_info));
+	return make_new_server_info_system(NULL, &system_info);
 }
 
 NTSTATUS make_server_info_system(TALLOC_CTX *mem_ctx,
