@@ -1966,7 +1966,15 @@ static bool pdb_ads_search_filter(struct pdb_methods *m,
 			continue;
 		}
 		sid_peek_rid(&sid, &e->rid);
-		e->acct_flags = ACB_NORMAL;
+
+		if (tldap_pull_uint32(users[i], "userAccountControl", &ctrl)) {
+			e->acct_flags = ds_uf2acb(ctrl);
+			if (e->acct_flags & (ACB_WSTRUST|ACB_SVRTRUST)) {
+				e->acct_flags |= ACB_NORMAL;
+			}
+		} else {
+			e->acct_flags = ACB_NORMAL;
+		}
 
 		if (e->rid == DOMAIN_RID_GUEST) {
 			/*
