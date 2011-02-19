@@ -492,7 +492,7 @@ static NTSTATUS pdb_ads_getsamupriv(struct pdb_ads_state *state,
 	if (count != 1) {
 		DEBUG(10, ("Expected 1 user, got %d\n", count));
 		TALLOC_FREE(result);
-		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		return NT_STATUS_NO_SUCH_USER;
 	}
 
 	result->ldapmsg = users[0];
