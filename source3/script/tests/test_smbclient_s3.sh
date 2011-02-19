@@ -389,6 +389,16 @@ test_ccache_access()
     $WBINFO --logoff
 }
 
+LOGDIR=/tmp/log.test_smbclient_s3.$$
+
+testit "rm -rf $LOGDIR" \
+    rm -rf $LOGDIR || \
+    exit 1
+
+testit "mkdir -p $LOGDIR" \
+    mkdir -p $LOGDIR || \
+    exit 1
+
 
 testit "smbclient -L $SERVER_IP" $SMBCLIENT $CONFIGURATION -L $SERVER_IP -N -p 139 || failed=`expr $failed + 1`
 testit "smbclient -L $SERVER -I $SERVER_IP" $SMBCLIENT $CONFIGURATION -L $SERVER -I $SERVER_IP -N -p 139 || failed=`expr $failed + 1`
@@ -398,7 +408,7 @@ testit "noninteractive smbclient does not prompt" \
     failed=`expr $failed + 1`
 
 testit "noninteractive smbclient -l does not prompt" \
-   test_noninteractive_no_prompt -l /tmp || \
+   test_noninteractive_no_prompt -l $LOGDIR || \
     failed=`expr $failed + 1`
 
 testit "interactive smbclient prompts on stdout" \
@@ -406,7 +416,7 @@ testit "interactive smbclient prompts on stdout" \
     failed=`expr $failed + 1`
 
 testit "interactive smbclient -l prompts on stdout" \
-   test_interactive_prompt_stdout -l /tmp || \
+   test_interactive_prompt_stdout -l $LOGDIR || \
     failed=`expr $failed + 1`
 
 testit "creating a bad symlink and deleting it" \
@@ -431,6 +441,10 @@ testit "Accessing an MS-DFS link" \
 
 testit "ccache access works for smbclient" \
     test_ccache_access || \
+    failed=`expr $failed + 1`
+
+testit "rm -rf $LOGDIR" \
+    rm -rf $LOGDIR || \
     failed=`expr $failed + 1`
 
 testok $0 $failed
