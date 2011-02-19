@@ -25,6 +25,7 @@ def set_options(opt):
         opt.RECURSE('../dynconfig')
         opt.RECURSE('selftest')
         opt.RECURSE('../lib/nss_wrapper')
+        opt.RECURSE('../lib/uid_wrapper')
         opt.RECURSE('../lib/socket_wrapper')
         opt.RECURSE('../lib/tevent')
         opt.RECURSE('../lib/tdb_compat')

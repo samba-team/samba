@@ -23,6 +23,7 @@
 #include "libcli/security/security_token.h"
 #include "auth.h"
 #include "smbprofile.h"
+#include "lib/uid_wrapper/uid_wrapper.h"
 
 extern struct current_user current_user;
 
