@@ -1956,6 +1956,7 @@ static bool pdb_ads_search_filter(struct pdb_methods *m,
 	for (i=0; i<num_users; i++) {
 		struct samr_displayentry *e;
 		struct dom_sid sid;
+		uint32_t ctrl;
 
 		e = &sstate->entries[sstate->num_entries];
 
@@ -1966,18 +1967,30 @@ static bool pdb_ads_search_filter(struct pdb_methods *m,
 		}
 		sid_peek_rid(&sid, &e->rid);
 		e->acct_flags = ACB_NORMAL;
-		e->account_name = tldap_talloc_single_attribute(
-			users[i], "samAccountName", sstate->entries);
+
+		if (e->rid == DOMAIN_RID_GUEST) {
+			/*
+			 * Guest is specially crafted in s3. Make
+			 * QueryDisplayInfo match QueryUserInfo
+			 */
+			e->account_name = lp_guestaccount();
+			e->fullname = lp_guestaccount();
+			e->description = "";
+			e->acct_flags = ACB_NORMAL;
+		} else {
+			e->account_name = tldap_talloc_single_attribute(
+				users[i], "samAccountName", sstate->entries);
+			e->fullname = tldap_talloc_single_attribute(
+				users[i], "displayName", sstate->entries);
+			e->description = tldap_talloc_single_attribute(
+				users[i], "description", sstate->entries);
+		}
 		if (e->account_name == NULL) {
 			return false;
 		}
-		e->fullname = tldap_talloc_single_attribute(
-                        users[i], "displayName", sstate->entries);
 		if (e->fullname == NULL) {
 			e->fullname = "";
 		}
-		e->description = tldap_talloc_single_attribute(
-                        users[i], "description", sstate->entries);
 		if (e->description == NULL) {
 			e->description = "";
 		}
