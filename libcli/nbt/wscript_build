@@ -14,16 +14,16 @@ bld.SAMBA_LIBRARY('cli-nbt',
 	)
 
 
-bld.SAMBA_BINARY('nmblookup',
-	source='tools/nmblookup.c',
-	manpages='man/nmblookup.1',
-	deps='samba-hostconfig samba-util cli-nbt popt POPT_SAMBA netif LIBCLI_RESOLVE'
-	)
+if bld.env._SAMBA_BUILD_ == 4:
+    bld.SAMBA_BINARY('nmblookup',
+                     source='tools/nmblookup.c',
+                     manpages='man/nmblookup.1',
+                     deps='samba-hostconfig samba-util cli-nbt popt POPT_SAMBA netif LIBCLI_RESOLVE'
+                     )
 
-
-bld.SAMBA_PYTHON('python_netbios',
-	source='pynbt.c',
-	public_deps='cli-nbt DYNCONFIG samba-hostconfig',
-	realname='samba/netbios.so'
-	)
+    bld.SAMBA_PYTHON('python_netbios',
+                     source='pynbt.c',
+                     public_deps='cli-nbt DYNCONFIG samba-hostconfig',
+                     realname='samba/netbios.so'
+                     )
 
