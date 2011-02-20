@@ -816,7 +816,7 @@ bld.SAMBA3_SUBSYSTEM('LIB_NONSMBD',
 
 bld.SAMBA3_SUBSYSTEM('LIBSMB_ERR',
                     source=LIBSMB_ERR_SRC,
-                    deps='errors SECRETS3 ldap lber MSRPC_PARSE LIBCLI_AUTH',
+                    deps='errors3 SECRETS3 ldap lber MSRPC_PARSE LIBCLI_AUTH',
                     vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('LIBSAMBA',
@@ -1005,7 +1005,7 @@ bld.SAMBA3_SUBSYSTEM('dcerpc', '', deps='UTIL_TEVENT')
 bld.SAMBA3_SUBSYSTEM('ldb',
                     source='lib/ldb_compat.c')
 
-bld.SAMBA3_SUBSYSTEM('errors',
+bld.SAMBA3_SUBSYSTEM('errors3',
                      source='../libcli/util/doserr.c libsmb/nterr.c libsmb/errormap.c libsmb/smberr.c lib/errmap_unix.c')
 
 bld.SAMBA3_SUBSYSTEM('NDR_NBT_BUF',
@@ -1347,6 +1347,7 @@ bld.INSTALL_FILES('${SWATDIR}', swat_files, base_name='../swat')
 if not bld.env.toplevel_build:
     bld.SAMBA3_SUBSYSTEM('POPT_SAMBA', source='', deps='POPT_SAMBA3')
     bld.SAMBA3_SUBSYSTEM('tdb-wrap', source='', deps='tdb-wrap3')
+    bld.SAMBA3_SUBSYSTEM('errors', source='', deps='errors3')
 
 
 
