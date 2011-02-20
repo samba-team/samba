@@ -1214,10 +1214,12 @@ static NTSTATUS pdb_ads_mod_groupmem(struct pdb_methods *m,
 	if (rc != TLDAP_SUCCESS) {
 		DEBUG(10, ("ldap_modify failed: %s\n",
 			   tldap_errstr(talloc_tos(), state->ld, rc)));
-		if (rc == TLDAP_TYPE_OR_VALUE_EXISTS) {
+		if ((mod_op == TLDAP_MOD_ADD) &&
+		    (rc == TLDAP_ALREADY_EXISTS)) {
 			return NT_STATUS_MEMBER_IN_GROUP;
 		}
-		if (rc == TLDAP_NO_SUCH_ATTRIBUTE) {
+		if ((mod_op == TLDAP_MOD_DELETE) &&
+		    (rc == TLDAP_UNWILLING_TO_PERFORM)) {
 			return NT_STATUS_MEMBER_NOT_IN_GROUP;
 		}
 		return NT_STATUS_LDAP(rc);
