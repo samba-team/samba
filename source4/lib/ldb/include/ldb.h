@@ -2163,6 +2163,25 @@ do { \
 
 
 /**
+   Convert a control into its string representation.
+   
+   \param mem_ctx TALLOC context to return result on, and to allocate error_string on
+   \param control A struct ldb_control to convert
+
+   \return string representation of the control 
+*/
+char* ldb_control_to_string(TALLOC_CTX *mem_ctx, const struct ldb_control *control);
+/**
+   Convert a string representing a control into a ldb_control structure 
+   
+   \param ldb LDB context
+   \param mem_ctx TALLOC context to return result on, and to allocate error_string on
+   \param control_strings A string-formatted control
+
+   \return a ldb_control element
+*/
+struct ldb_control *ldb_parse_control_from_string(struct ldb_context *ldb, TALLOC_CTX *mem_ctx, const char *control_strings);
+/**
    Convert an array of string represention of a control into an array of ldb_control structures 
    
    \param ldb LDB context
