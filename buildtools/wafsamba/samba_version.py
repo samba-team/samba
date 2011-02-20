@@ -260,6 +260,6 @@ def load_version(env=None):
     if not env:
         env = samba_utils.LOAD_ENVIRONMENT()
 
-    version = samba_version_file("./VERSION", "..", env)
+    version = samba_version_file("./VERSION", ".", env)
     Utils.g_module.VERSION = version.STRING
     return version
