@@ -151,10 +151,10 @@ class BlackboxTestCase(TestCase):
 
     def check_output(self, line):
         line = self._make_cmdline(line)
-        p = subprocess.Popen(line, stdout=subprocess.PIPE, shell=True, close_fds=True)
+        p = subprocess.Popen(line, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True, close_fds=True)
         retcode = p.wait()
         if retcode:
-            raise subprocess.CalledProcessError(retcode, line)
+            raise BlackboxProcessError(retcode, line, p.stdout.read(), p.stderr.read())
         return p.stdout.read()
 
 def connect_samdb(samdb_url, lp=None, session_info=None, credentials=None,
