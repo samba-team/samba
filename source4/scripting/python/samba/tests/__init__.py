@@ -121,6 +121,19 @@ class ValidNetbiosNameTests(TestCase):
         self.assertFalse(samba.valid_netbios_name("*BLA"))
 
 
+class BlackboxProcessError(subprocess.CalledProcessError):
+    """This exception is raised when a process run by check_output() returns
+    a non-zero exit status. Exception instance should contain
+    the exact exit code (S.returncode), command line (S.cmd),
+    process output (S.stdout) and process error stream (S.stderr)"""
+    def __init__(self, returncode, cmd, stdout, stderr):
+        super(BlackboxProcessError, self).__init__(returncode, cmd)
+        self.stdout = stdout
+        self.stderr = stderr
+    def __str__(self):
+        return "Command '%s'; exit status %d; stdout: '%s'; stderr: '%s'" % (self.cmd, self.returncode,
+                                                                             self.stdout, self.stderr)
+
 class BlackboxTestCase(TestCase):
     """Base test case for blackbox tests."""
 
