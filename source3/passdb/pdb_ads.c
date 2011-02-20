@@ -1061,7 +1061,9 @@ static NTSTATUS pdb_ads_enum_group_members(struct pdb_methods *m,
 	}
 
 	if (!tldap_entry_values(msg[0], "member", &blobs, &num_members)) {
-		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		*pmembers = NULL;
+		*pnum_members = 0;
+		return NT_STATUS_OK;
 	}
 
 	members = talloc_array(mem_ctx, uint32_t, num_members);
