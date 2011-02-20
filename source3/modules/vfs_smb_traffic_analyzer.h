@@ -77,7 +77,7 @@
  */
 
 /* Protocol subrelease number */
-#define SMBTA_SUBRELEASE 0
+#define SMBTA_SUBRELEASE '0'
 
 /*
  * Every data block sends a number of blocks sending common data
