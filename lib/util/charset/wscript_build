@@ -10,7 +10,7 @@ if bld.env._SAMBA_BUILD_ == 4:
 
 bld.SAMBA_SUBSYSTEM('ICONV_WRAPPER',
                     source='iconv.c',
-                    public_deps='iconv')
+                    public_deps='iconv replace')
 
 bld.SAMBA_SUBSYSTEM('CODEPOINTS',
 	source='codepoints.c',
