@@ -337,7 +337,9 @@ const char *tldap_errstr(TALLOC_CTX *mem_ctx, struct tldap_context *ld, int rc)
 	const char *ld_error = NULL;
 	char *res;
 
-	ld_error = tldap_msg_diagnosticmessage(tldap_ctx_lastmsg(ld));
+	if (ld != NULL) {
+		ld_error = tldap_msg_diagnosticmessage(tldap_ctx_lastmsg(ld));
+	}
 	res = talloc_asprintf(mem_ctx, "LDAP error %d (%s), %s", rc,
 			      tldap_err2string(rc),
 			      ld_error ? ld_error : "unknown");
