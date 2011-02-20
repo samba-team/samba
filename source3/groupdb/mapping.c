@@ -138,7 +138,7 @@ bool get_domain_group_from_sid(struct dom_sid sid, GROUP_MAP *map)
 		return False;
 	}
 
-	DEBUG(10, ("get_domain_group_from_sid: SID found in the TDB\n"));
+	DEBUG(10, ("get_domain_group_from_sid: SID found in passdb\n"));
 
 	/* if it's not a domain group, continue */
 	if (map->sid_name_use!=SID_NAME_DOM_GRP) {
