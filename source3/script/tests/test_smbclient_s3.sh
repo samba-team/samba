@@ -2,9 +2,9 @@
 
 # this runs the file serving tests that are expected to pass with samba3
 
-if [ $# -lt 6 ]; then
+if [ $# -lt 7 ]; then
 cat <<EOF
-Usage: test_smbclient_s3.sh SERVER SERVER_IP USERNAME PASSWORD USERID LOCAL_PATH
+Usage: test_smbclient_s3.sh SERVER SERVER_IP USERNAME PASSWORD USERID LOCAL_PATH PREFIX
 EOF
 exit 1;
 fi
@@ -15,9 +15,10 @@ USERNAME="$3"
 PASSWORD="$4"
 USERID="$5"
 LOCAL_PATH="$6"
+PREFIX="$7"
 SMBCLIENT="$VALGRIND ${SMBCLIENT:-$BINDIR/smbclient} $CONFIGURATION"
 WBINFO="$VALGRIND ${WBINFO:-$BINDIR/wbinfo}"
-shift 6
+shift 7
 ADDARGS="$*"
 
 test x"$TEST_FUNCTIONS_SH" != x"INCLUDED" && {
@@ -58,7 +59,7 @@ test_noninteractive_no_prompt()
 test_interactive_prompt_stdout()
 {
     prompt="smb"
-    tmpfile=/tmp/smbclient.in.$$
+    tmpfile=$PREFIX/smbclient_interactive_prompt_commands
 
     cat > $tmpfile <<EOF
 du
@@ -93,7 +94,7 @@ EOF
 test_bad_symlink()
 {
     prompt="posix_unlink deleted file /newname"
-    tmpfile=/tmp/smbclient.in.$$
+    tmpfile=$PREFIX/smbclient_bad_symlinks_commands
 
     cat > $tmpfile <<EOF
 posix
