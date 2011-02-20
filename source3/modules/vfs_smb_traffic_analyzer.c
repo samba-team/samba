@@ -417,6 +417,17 @@ static void smb_traffic_analyzer_send_data(vfs_handle_struct *handle,
 	 */
 	char state_flags[9] = "000000\0";
 
+	/**
+	 * The first byte of the state flag string represents
+	 * the modules protocol subversion number, defined
+	 * in smb_traffic_analyzer.h. smbtatools/smbtad are designed
+	 * to handle not yet implemented protocol enhancements
+	 * by ignoring them. By recognizing the SMBTA_SUBRELEASE
+	 * smbtatools can tell the user to update the client
+	 * software.
+	 */
+	state_flags[0] = SMBTA_SUBRELEASE;
+
 	SMB_VFS_HANDLE_GET_DATA(handle, rf_sock, struct refcounted_sock, return);
 
 	if (rf_sock == NULL || rf_sock->sock == -1) {
