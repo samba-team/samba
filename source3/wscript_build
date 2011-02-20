@@ -1008,11 +1008,6 @@ bld.SAMBA3_SUBSYSTEM('ldb',
 bld.SAMBA3_SUBSYSTEM('errors3',
                      source='../libcli/util/doserr.c libsmb/nterr.c libsmb/errormap.c libsmb/smberr.c lib/errmap_unix.c')
 
-bld.SAMBA3_SUBSYSTEM('NDR_NBT_BUF',
-	source='../libcli/nbt/nbtname.c',
-	deps='talloc',
-	autoproto='nbtname.h')
-
 bld.SAMBA3_SUBSYSTEM('LIBCLI_SAMR',
                     source=LIBCLI_SAMR_SRC,
                     deps='RPC_NDR_SAMR')
@@ -1366,6 +1361,7 @@ bld.RECURSE('../libcli/samsync')
 bld.RECURSE('../libcli/security')
 bld.RECURSE('../libcli/smb')
 bld.RECURSE('../libcli/smbreadline')
+bld.RECURSE('../libcli/nbt')
 bld.RECURSE('../lib/crypto')
 bld.RECURSE('../lib/iniparser/src')
 bld.RECURSE('../lib/nss_wrapper')

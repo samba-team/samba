@@ -7,14 +7,13 @@ bld.SAMBA_SUBSYSTEM('NDR_NBT_BUF',
 	)
 
 
-bld.SAMBA_LIBRARY('cli-nbt',
-	source='lmhosts.c nbtsocket.c namequery.c nameregister.c namerefresh.c namerelease.c dns_hosts_file.c',
-	public_deps='ndr NDR_NBT tevent UTIL_TEVENT NDR_SECURITY samba_socket samba-util',
-	private_library=True
-	)
-
-
 if bld.env._SAMBA_BUILD_ == 4:
+    bld.SAMBA_LIBRARY('cli-nbt',
+                      source='lmhosts.c nbtsocket.c namequery.c nameregister.c namerefresh.c namerelease.c dns_hosts_file.c',
+                      public_deps='ndr NDR_NBT tevent UTIL_TEVENT NDR_SECURITY samba_socket samba-util',
+                      private_library=True
+                      )
+
     bld.SAMBA_BINARY('nmblookup',
                      source='tools/nmblookup.c',
                      manpages='man/nmblookup.1',
