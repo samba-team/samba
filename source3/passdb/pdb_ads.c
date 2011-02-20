@@ -744,7 +744,9 @@ static NTSTATUS pdb_ads_update_login_attempts(struct pdb_methods *m,
 }
 
 static NTSTATUS pdb_ads_getgrfilter(struct pdb_methods *m, GROUP_MAP *map,
-				    const char *filter)
+				    const char *filter,
+				    TALLOC_CTX *mem_ctx,
+				    struct tldap_message **pmsg)
 {
 	struct pdb_ads_state *state = talloc_get_type_abort(
 		m->private_data, struct pdb_ads_state);
@@ -806,6 +808,9 @@ static NTSTATUS pdb_ads_getgrfilter(struct pdb_methods *m, GROUP_MAP *map,
 		map->comment[0] = '\0';
 	}
 
+	if (pmsg != NULL) {
+		*pmsg = talloc_move(mem_ctx, &group[0]);
+	}
 	TALLOC_FREE(group);
 	return NT_STATUS_OK;
 }
@@ -823,7 +828,7 @@ static NTSTATUS pdb_ads_getgrsid(struct pdb_methods *m, GROUP_MAP *map,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = pdb_ads_getgrfilter(m, map, filter);
+	status = pdb_ads_getgrfilter(m, map, filter, NULL, NULL);
 	TALLOC_FREE(filter);
 	return status;
 }
@@ -849,7 +854,7 @@ static NTSTATUS pdb_ads_getgrnam(struct pdb_methods *m, GROUP_MAP *map,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = pdb_ads_getgrfilter(m, map, filter);
+	status = pdb_ads_getgrfilter(m, map, filter, NULL, NULL);
 	TALLOC_FREE(filter);
 	return status;
 }
@@ -1003,7 +1008,64 @@ static NTSTATUS pdb_ads_add_group_mapping_entry(struct pdb_methods *m,
 static NTSTATUS pdb_ads_update_group_mapping_entry(struct pdb_methods *m,
 						   GROUP_MAP *map)
 {
-	return NT_STATUS_NOT_IMPLEMENTED;
+	struct pdb_ads_state *state = talloc_get_type_abort(
+		m->private_data, struct pdb_ads_state);
+	struct tldap_context *ld;
+	struct tldap_mod *mods = NULL;
+	char *filter;
+	struct tldap_message *existing;
+	char *dn;
+	GROUP_MAP existing_map;
+	int rc, num_mods = 0;
+	bool ret;
+	NTSTATUS status;
+
+	ld = pdb_ads_ld(state);
+	if (ld == NULL) {
+		return NT_STATUS_LDAP(TLDAP_SERVER_DOWN);
+	}
+
+	filter = talloc_asprintf(talloc_tos(),
+				 "(&(objectsid=%s)(objectclass=group))",
+				 sid_string_talloc(talloc_tos(), &map->sid));
+	if (filter == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	status = pdb_ads_getgrfilter(m, &existing_map, filter,
+				     talloc_tos(), &existing);
+	TALLOC_FREE(filter);
+
+	if (!tldap_entry_dn(existing, &dn)) {
+		return NT_STATUS_LDAP(TLDAP_DECODING_ERROR);
+	}
+
+	ret = true;
+
+	ret &= tldap_make_mod_fmt(
+		existing, talloc_tos(), &mods, &num_mods, "description",
+		"%s", map->comment);
+	ret &= tldap_make_mod_fmt(
+		existing, talloc_tos(), &mods, &num_mods, "samaccountname",
+		"%s", map->nt_name);
+
+	if (!ret) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (num_mods == 0) {
+		TALLOC_FREE(existing);
+		return NT_STATUS_OK;
+	}
+
+	rc = tldap_modify(ld, dn, mods, num_mods, NULL, 0, NULL, 0);
+	if (rc != TLDAP_SUCCESS) {
+		DEBUG(10, ("ldap_modify for %s failed: %s\n", dn,
+			   tldap_errstr(talloc_tos(), ld, rc)));
+		TALLOC_FREE(existing);
+		return NT_STATUS_LDAP(rc);
+	}
+	TALLOC_FREE(existing);
+	return NT_STATUS_OK;
 }
 
 static NTSTATUS pdb_ads_delete_group_mapping_entry(struct pdb_methods *m,
