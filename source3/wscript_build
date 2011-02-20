@@ -729,7 +729,7 @@ bld.SAMBA3_SUBSYSTEM('LIBMSRPC',
                     source='${LIBMSRPC_SRC}',
                     deps='''ndr ndr-util NDR_SECURITY NDR_DCERPC NDR_SCHANNEL
                     RPC_NDR_EPMAPPER COMMON_SCHANNELDB LIBCLI_AUTH
-                    LIBTSOCKET''',
+                    LIBTSOCKET krb5''',
                     vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('LIBMSRPC_GEN',
