@@ -1,19 +1,19 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    test suite for various write operations
 
    Copyright (C) Andrew Tridgell 2003
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -83,7 +83,7 @@ static bool check_buffer(uint8_t *buf, unsigned int seed, int len, const char *l
 	for (i=0;i<len;i++) {
 		uint8_t v = random();
 		if (buf[i] != v) {
-			printf("Buffer incorrect at %s! ofs=%d buf=0x%x correct=0x%x\n", 
+			printf("Buffer incorrect at %s! ofs=%d buf=0x%x correct=0x%x\n",
 			       location, i, buf[i], v);
 			return false;
 		}
@@ -94,7 +94,7 @@ static bool check_buffer(uint8_t *buf, unsigned int seed, int len, const char *l
 /*
   test write ops
 */
-static bool test_write(struct torture_context *tctx, 
+static bool test_write(struct torture_context *tctx,
 					   struct smbcli_state *cli)
 {
 	union smb_write io;
@@ -115,7 +115,7 @@ static bool test_write(struct torture_context *tctx,
 
 	printf("Testing RAW_WRITE_WRITE\n");
 	io.generic.level = RAW_WRITE_WRITE;
-	
+
 	fnum = smbcli_open(cli->tree, fname, O_RDWR|O_CREAT, DENY_NONE);
 	if (fnum == -1) {
 		printf("Failed to create %s - %s\n", fname, smbcli_errstr(cli->tree));
@@ -186,7 +186,7 @@ static bool test_write(struct torture_context *tctx,
 		printf("skipping large file tests - CAP_LARGE_FILES not set\n");
 		goto done;
 	}
-	
+
 	if (!(cli->transport->negotiate.capabilities & CAP_LARGE_FILES)) {
 		printf("skipping large file tests - CAP_LARGE_FILES not set\n");
 		goto done;
@@ -202,7 +202,7 @@ static bool test_write(struct torture_context *tctx,
 	CHECK_STATUS(status, NT_STATUS_OK);
 	CHECK_VALUE(io.write.out.nwritten, 4000);
 	CHECK_ALL_INFO(io.write.in.count + (uint64_t)io.write.in.offset, size);
-	
+
 	memset(buf, 0, maxsize);
 	if (smbcli_read(cli->tree, fnum, buf, io.write.in.offset, 4000) != 4000) {
 		printf("read failed at %s\n", __location__);
@@ -222,7 +222,7 @@ done:
 /*
   test writex ops
 */
-static bool test_writex(struct torture_context *tctx, 
+static bool test_writex(struct torture_context *tctx,
 						struct smbcli_state *cli)
 {
 	union smb_write io;
@@ -254,7 +254,7 @@ static bool test_writex(struct torture_context *tctx,
 
 	printf("Testing RAW_WRITE_WRITEX\n");
 	io.generic.level = RAW_WRITE_WRITEX;
-	
+
 	fnum = smbcli_open(cli->tree, fname, O_RDWR|O_CREAT, DENY_NONE);
 	if (fnum == -1) {
 		printf("Failed to create %s - %s\n", fname, smbcli_errstr(cli->tree));
@@ -351,7 +351,7 @@ static bool test_writex(struct torture_context *tctx,
 	printf("Setting file as sparse\n");
 	status = torture_set_sparse(cli->tree, fnum);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	
+
 	if (!(cli->transport->negotiate.capabilities & CAP_LARGE_FILES)) {
 		printf("skipping large file tests - CAP_LARGE_FILES not set\n");
 		goto done;
@@ -415,7 +415,7 @@ done:
 /*
   test write unlock ops
 */
-static bool test_writeunlock(struct torture_context *tctx, 
+static bool test_writeunlock(struct torture_context *tctx,
 							 struct smbcli_state *cli)
 {
 	union smb_write io;
@@ -441,7 +441,7 @@ static bool test_writeunlock(struct torture_context *tctx,
 
 	printf("Testing RAW_WRITE_WRITEUNLOCK\n");
 	io.generic.level = RAW_WRITE_WRITEUNLOCK;
-	
+
 	fnum = smbcli_open(cli->tree, fname, O_RDWR|O_CREAT, DENY_NONE);
 	if (fnum == -1) {
 		printf("Failed to create %s - %s\n", fname, smbcli_errstr(cli->tree));
@@ -476,7 +476,7 @@ static bool test_writeunlock(struct torture_context *tctx,
 	CHECK_VALUE(IVAL(buf,0), 0);
 
 	setup_buffer(buf, seed, maxsize);
-	smbcli_lock(cli->tree, fnum, io.writeunlock.in.offset, io.writeunlock.in.count, 
+	smbcli_lock(cli->tree, fnum, io.writeunlock.in.offset, io.writeunlock.in.count,
 		 0, WRITE_LOCK);
 	status = smb_raw_write(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
@@ -497,7 +497,7 @@ static bool test_writeunlock(struct torture_context *tctx,
 	io.writeunlock.in.count = 4000;
 	io.writeunlock.in.offset = 0;
 	io.writeunlock.in.data = buf;
-	smbcli_lock(cli->tree, fnum, io.writeunlock.in.offset, io.writeunlock.in.count, 
+	smbcli_lock(cli->tree, fnum, io.writeunlock.in.offset, io.writeunlock.in.count,
 		 0, WRITE_LOCK);
 	status = smb_raw_write(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
@@ -525,7 +525,7 @@ static bool test_writeunlock(struct torture_context *tctx,
 	printf("Setting file as sparse\n");
 	status = torture_set_sparse(cli->tree, fnum);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	
+
 	if (!(cli->transport->negotiate.capabilities & CAP_LARGE_FILES)) {
 		printf("skipping large file tests - CAP_LARGE_FILES not set\n");
 		goto done;
@@ -537,7 +537,7 @@ static bool test_writeunlock(struct torture_context *tctx,
 	io.writeunlock.in.count = 4000;
 	io.writeunlock.in.offset = 0xFFFFFFFF - 2000;
 	io.writeunlock.in.data = buf;
-	smbcli_lock(cli->tree, fnum, io.writeunlock.in.offset, io.writeunlock.in.count, 
+	smbcli_lock(cli->tree, fnum, io.writeunlock.in.offset, io.writeunlock.in.count,
 		 0, WRITE_LOCK);
 	status = smb_raw_write(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
@@ -563,7 +563,7 @@ done:
 /*
   test write close ops
 */
-static bool test_writeclose(struct torture_context *tctx, 
+static bool test_writeclose(struct torture_context *tctx,
 							struct smbcli_state *cli)
 {
 	union smb_write io;
@@ -589,7 +589,7 @@ static bool test_writeclose(struct torture_context *tctx,
 
 	printf("Testing RAW_WRITE_WRITECLOSE\n");
 	io.generic.level = RAW_WRITE_WRITECLOSE;
-	
+
 	fnum = smbcli_open(cli->tree, fname, O_RDWR|O_CREAT, DENY_NONE);
 	if (fnum == -1) {
 		printf("Failed to create %s - %s\n", fname, smbcli_errstr(cli->tree));
@@ -686,7 +686,7 @@ static bool test_writeclose(struct torture_context *tctx,
 	printf("Setting file as sparse\n");
 	status = torture_set_sparse(cli->tree, fnum);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	
+
 	if (!(cli->transport->negotiate.capabilities & CAP_LARGE_FILES)) {
 		printf("skipping large file tests - CAP_LARGE_FILES not set\n");
 		goto done;
@@ -721,7 +721,7 @@ done:
 	return ret;
 }
 
-/* 
+/*
    basic testing of write calls
 */
 struct torture_suite *torture_raw_write(TALLOC_CTX *mem_ctx)
