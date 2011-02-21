@@ -50,7 +50,9 @@ struct dcesrv_ep_context {
 	struct messaging_context *msg_ctx;
 };
 
-static NTSTATUS _rpc_ep_register(const struct ndr_interface_table *iface,
+static NTSTATUS _rpc_ep_register(struct tevent_context *ev_ctx,
+				 struct messaging_context *msg_ctx,
+				 const struct ndr_interface_table *iface,
 				 const char *name,
 				 uint16_t port)
 {
@@ -117,7 +119,12 @@ static NTSTATUS _rpc_ep_unregister(const struct ndr_interface_table *iface)
 
 static bool winreg_init_cb(void *ptr)
 {
-	return NT_STATUS_IS_OK(_rpc_ep_register(&ndr_table_winreg,
+	struct dcesrv_ep_context *ep_ctx =
+		talloc_get_type_abort(ptr, struct dcesrv_ep_context);
+
+	return NT_STATUS_IS_OK(_rpc_ep_register(ep_ctx->ev_ctx,
+						ep_ctx->msg_ctx,
+						&ndr_table_winreg,
 						"winreg",
 						0));
 }
@@ -129,7 +136,12 @@ static bool winreg_shutdown_cb(void *ptr)
 
 static bool srvsvc_init_cb(void *ptr)
 {
-	return NT_STATUS_IS_OK(_rpc_ep_register(&ndr_table_srvsvc,
+	struct dcesrv_ep_context *ep_ctx =
+		talloc_get_type_abort(ptr, struct dcesrv_ep_context);
+
+	return NT_STATUS_IS_OK(_rpc_ep_register(ep_ctx->ev_ctx,
+						ep_ctx->msg_ctx,
+						&ndr_table_srvsvc,
 						"srvsvc",
 						0));
 }
@@ -141,7 +153,12 @@ static bool srvsvc_shutdown_cb(void *ptr)
 
 static bool lsarpc_init_cb(void *ptr)
 {
-	return NT_STATUS_IS_OK(_rpc_ep_register(&ndr_table_lsarpc,
+	struct dcesrv_ep_context *ep_ctx =
+		talloc_get_type_abort(ptr, struct dcesrv_ep_context);
+
+	return NT_STATUS_IS_OK(_rpc_ep_register(ep_ctx->ev_ctx,
+						ep_ctx->msg_ctx,
+						&ndr_table_lsarpc,
 						"lsarpc",
 						0));
 }
@@ -153,7 +170,12 @@ static bool lsarpc_shutdown_cb(void *ptr)
 
 static bool samr_init_cb(void *ptr)
 {
-	return NT_STATUS_IS_OK(_rpc_ep_register(&ndr_table_samr,
+	struct dcesrv_ep_context *ep_ctx =
+		talloc_get_type_abort(ptr, struct dcesrv_ep_context);
+
+	return NT_STATUS_IS_OK(_rpc_ep_register(ep_ctx->ev_ctx,
+						ep_ctx->msg_ctx,
+						&ndr_table_samr,
 						"samr",
 						0));
 }
@@ -165,7 +187,12 @@ static bool samr_shutdown_cb(void *ptr)
 
 static bool netlogon_init_cb(void *ptr)
 {
-	return NT_STATUS_IS_OK(_rpc_ep_register(&ndr_table_netlogon,
+	struct dcesrv_ep_context *ep_ctx =
+		talloc_get_type_abort(ptr, struct dcesrv_ep_context);
+
+	return NT_STATUS_IS_OK(_rpc_ep_register(ep_ctx->ev_ctx,
+						ep_ctx->msg_ctx,
+						&ndr_table_netlogon,
 						"netlogon",
 						0));
 }
@@ -190,7 +217,9 @@ static bool spoolss_init_cb(void *ptr)
 		return false;
 	}
 
-	status =_rpc_ep_register(&ndr_table_spoolss,
+	status =_rpc_ep_register(ep_ctx->ev_ctx,
+				 ep_ctx->msg_ctx,
+				 &ndr_table_spoolss,
 				 "spoolss",
 				 0);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -223,7 +252,9 @@ static bool svcctl_init_cb(void *ptr)
 	/* initialize the control hooks */
 	init_service_op_table();
 
-	return NT_STATUS_IS_OK(_rpc_ep_register(&ndr_table_svcctl,
+	return NT_STATUS_IS_OK(_rpc_ep_register(ep_ctx->ev_ctx,
+						ep_ctx->msg_ctx,
+						&ndr_table_svcctl,
 						"svcctl",
 						0));
 }
@@ -237,7 +268,12 @@ static bool svcctl_shutdown_cb(void *ptr)
 
 static bool ntsvcs_init_cb(void *ptr)
 {
-	return NT_STATUS_IS_OK(_rpc_ep_register(&ndr_table_ntsvcs,
+	struct dcesrv_ep_context *ep_ctx =
+		talloc_get_type_abort(ptr, struct dcesrv_ep_context);
+
+	return NT_STATUS_IS_OK(_rpc_ep_register(ep_ctx->ev_ctx,
+						ep_ctx->msg_ctx,
+						&ndr_table_ntsvcs,
 						"ntsvcs",
 						0));
 }
@@ -253,7 +289,9 @@ static bool eventlog_init_cb(void *ptr)
 		talloc_get_type_abort(ptr, struct dcesrv_ep_context);
 	NTSTATUS status;
 
-	status =_rpc_ep_register(&ndr_table_eventlog,
+	status =_rpc_ep_register(ep_ctx->ev_ctx,
+				 ep_ctx->msg_ctx,
+				 &ndr_table_eventlog,
 				 "eventlog",
 				 0);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -270,7 +308,12 @@ static bool eventlog_shutdown_cb(void *ptr)
 
 static bool initshutdown_init_cb(void *ptr)
 {
-	return NT_STATUS_IS_OK(_rpc_ep_register(&ndr_table_initshutdown,
+	struct dcesrv_ep_context *ep_ctx =
+		talloc_get_type_abort(ptr, struct dcesrv_ep_context);
+
+	return NT_STATUS_IS_OK(_rpc_ep_register(ep_ctx->ev_ctx,
+						ep_ctx->msg_ctx,
+						&ndr_table_initshutdown,
 						"initshutdown",
 						0));
 }
@@ -281,7 +324,12 @@ static bool initshutdown_shutdown_cb(void *ptr)
 }
 #ifdef DEVELOPER
 static bool rpcecho_init_cb(void *ptr) {
-	return NT_STATUS_IS_OK(_rpc_ep_register(&ndr_table_rpcecho,
+	struct dcesrv_ep_context *ep_ctx =
+		talloc_get_type_abort(ptr, struct dcesrv_ep_context);
+
+	return NT_STATUS_IS_OK(_rpc_ep_register(ep_ctx->ev_ctx,
+						ep_ctx->msg_ctx,
+						&ndr_table_rpcecho,
 						"rpcecho",
 						0));
 }
@@ -293,7 +341,12 @@ static bool rpcecho_shutdown_cb(void *ptr)
 #endif
 static bool netdfs_init_cb(void *ptr)
 {
-	return NT_STATUS_IS_OK(_rpc_ep_register(&ndr_table_netdfs,
+	struct dcesrv_ep_context *ep_ctx =
+		talloc_get_type_abort(ptr, struct dcesrv_ep_context);
+
+	return NT_STATUS_IS_OK(_rpc_ep_register(ep_ctx->ev_ctx,
+						ep_ctx->msg_ctx,
+						&ndr_table_netdfs,
 						"netdfs",
 						0));
 }
@@ -302,8 +355,14 @@ static bool netdfs_shutdown_cb(void *ptr) {
 	return NT_STATUS_IS_OK(_rpc_ep_unregister(&ndr_table_netdfs));
 }
 
-static bool dssetup_init_cb(void *ptr) {
-	return NT_STATUS_IS_OK(_rpc_ep_register(&ndr_table_dssetup,
+static bool dssetup_init_cb(void *ptr)
+{
+	struct dcesrv_ep_context *ep_ctx =
+		talloc_get_type_abort(ptr, struct dcesrv_ep_context);
+
+	return NT_STATUS_IS_OK(_rpc_ep_register(ep_ctx->ev_ctx,
+						ep_ctx->msg_ctx,
+						&ndr_table_dssetup,
 						"dssetup",
 						0));
 }
@@ -312,8 +371,14 @@ static bool dssetup_shutdown_cb(void *ptr) {
 	return NT_STATUS_IS_OK(_rpc_ep_unregister(&ndr_table_dssetup));
 }
 
-static bool wkssvc_init_cb(void *ptr) {
-	return NT_STATUS_IS_OK(_rpc_ep_register(&ndr_table_wkssvc,
+static bool wkssvc_init_cb(void *ptr)
+{
+	struct dcesrv_ep_context *ep_ctx =
+		talloc_get_type_abort(ptr, struct dcesrv_ep_context);
+
+	return NT_STATUS_IS_OK(_rpc_ep_register(ep_ctx->ev_ctx,
+						ep_ctx->msg_ctx,
+						&ndr_table_wkssvc,
 						"wkssvc",
 						0));
 }
