@@ -4,17 +4,17 @@
    Copyright (C) Andrew Tridgell         1992-1998
    Copyright (C) Gerald (Jerry) Carter   2003
    Copyright (C) Volker Lendecke	 2005
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -261,7 +261,7 @@ bool lookup_name(TALLOC_CTX *mem_ctx,
 		struct dom_sid dom_sid;
 		uint32 tmp_rid;
 		enum lsa_SidType domain_type;
-		
+
 		if (type == SID_NAME_DOMAIN) {
 			/* Swap name and type */
 			tmp = name; name = domain; domain = tmp;
@@ -403,7 +403,7 @@ bool lookup_name_smbconf(TALLOC_CTX *mem_ctx,
 				ret_sid, ret_type)) {
 		return true;
 	}
-	
+
 	/* Finally try with "Unix Users" or "Unix Group" */
 	qualified_name = talloc_asprintf(mem_ctx, "%s\\%s",
 				flags & LOOKUP_NAME_GROUP ?
@@ -801,7 +801,7 @@ NTSTATUS lookup_sids(TALLOC_CTX *mem_ctx, int num_sids,
 				result = NT_STATUS_NO_MEMORY;
 				goto fail;
 			}
-				
+
 			name_infos[i].rid = 0;
 			name_infos[i].type = SID_NAME_DOMAIN;
 			name_infos[i].name = NULL;
@@ -920,7 +920,7 @@ NTSTATUS lookup_sids(TALLOC_CTX *mem_ctx, int num_sids,
 			result = NT_STATUS_NO_MEMORY;
 			goto fail;
 		}
-			
+
 		for (j=0; j<dom->num_idxs; j++) {
 			int idx = dom->idxs[j];
 			name_infos[idx].type = types[j];
@@ -1172,7 +1172,7 @@ static void legacy_gid_to_sid(struct dom_sid *psid, gid_t gid)
 		/* This is a mapped group */
 		goto done;
 	}
-	
+
 	/* This is an unmapped group */
 
 	gid_to_unix_groups_sid(gid, psid);
@@ -1273,14 +1273,14 @@ static bool legacy_sid_to_gid(const struct dom_sid *psid, gid_t *pgid)
 			*pgid = id.gid;
 			goto done;
 		}
-	
+
 		/* This was ours, but it was not mapped.  Fail */
 	}
 
 	DEBUG(10,("LEGACY: mapping failed for sid %s\n",
 		  sid_string_dbg(psid)));
 	return false;
-	
+
  done:
 	DEBUG(10,("LEGACY: sid %s -> gid %u\n", sid_string_dbg(psid),
 		  (unsigned int)*pgid ));
