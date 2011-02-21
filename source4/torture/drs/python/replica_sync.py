@@ -58,18 +58,6 @@ class DrsReplicaSyncTestCase(drs_base.DrsBaseTestCase):
         self._enable_inbound_repl(self.dnsname_dc1)
         super(DrsReplicaSyncTestCase, self).tearDown()
 
-    def _enable_inbound_repl(self, DC):
-        # make base command line
-        samba_tool_cmd = self._samba_tool_cmdline("options")
-        # disable replication
-        self.check_run("%s %s --dsa-option=-DISABLE_INBOUND_REPL" %(samba_tool_cmd, DC))
-
-    def _disable_inbound_repl(self, DC):
-        # make base command line
-        samba_tool_cmd = self._samba_tool_cmdline("options")
-        # disable replication
-        self.check_run("%s %s --dsa-option=+DISABLE_INBOUND_REPL" %(samba_tool_cmd, DC))
-
     def test_ReplEnabled(self):
         """Tests we can replicate when replication is enabled"""
         self._enable_inbound_repl(self.dnsname_dc1)

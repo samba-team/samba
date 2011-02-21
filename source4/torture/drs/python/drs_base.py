@@ -109,3 +109,14 @@ class DrsBaseTestCase(samba.tests.BlackboxTestCase):
         cmd_line = "%s %s %s %s" % (samba_tool_cmdline, DC, fromDC, nc_dn)
         return self.check_output(cmd_line)
 
+    def _enable_inbound_repl(self, DC):
+        # make base command line
+        samba_tool_cmd = self._samba_tool_cmdline("options")
+        # disable replication
+        self.check_run("%s %s --dsa-option=-DISABLE_INBOUND_REPL" %(samba_tool_cmd, DC))
+
+    def _disable_inbound_repl(self, DC):
+        # make base command line
+        samba_tool_cmd = self._samba_tool_cmdline("options")
+        # disable replication
+        self.check_run("%s %s --dsa-option=+DISABLE_INBOUND_REPL" %(samba_tool_cmd, DC))
