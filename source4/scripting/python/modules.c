@@ -31,7 +31,7 @@ static bool PySys_PathPrepend(PyObject *list, const char *path)
 	return (PyList_Insert(list, 0, py_path) == 0);
 }
 
-bool py_update_path()
+bool py_update_path(void)
 {
 	PyObject *mod_sys, *py_path;
 
