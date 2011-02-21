@@ -26,10 +26,9 @@ samba_dist.DIST_BLACKLIST('README Manifest Read-Manifest-Now Roadmap source3/ ' 
 # install in /usr/local/samba by default
 Options.default_prefix = '/usr/local/samba'
 
+os.environ['TOPLEVEL_BUILD'] = '1'
 
 def set_options(opt):
-    os.putenv('TOPLEVEL_BUILD', '1')
-
     opt.BUILTIN_DEFAULT('NONE')
     opt.PRIVATE_EXTENSION_DEFAULT('samba4')
     opt.RECURSE('lib/replace')
