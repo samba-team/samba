@@ -1306,7 +1306,7 @@ done:
 }
 
 /****************************************************************************
- main work for updating the lpq cahe for a printer queue
+ main work for updating the lpq cache for a printer queue
 ****************************************************************************/
 
 static void print_queue_update_internal( struct tevent_context *ev,
