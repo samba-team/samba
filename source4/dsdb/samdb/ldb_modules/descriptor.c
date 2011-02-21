@@ -763,6 +763,113 @@ static int descriptor_do_add(struct descriptor_context *ac)
 	}
 }
 
+static int descriptor_add(struct ldb_module *module, struct ldb_request *req)
+{
+	struct ldb_context *ldb;
+	struct ldb_request *add_req;
+	struct ldb_message *msg;
+	struct ldb_result *parent_res;
+	const struct ldb_val *parent_sd = NULL;
+	const struct ldb_val *user_sd;
+	struct ldb_dn *parent_dn, *dn, *nc_root;
+	struct ldb_message_element *objectclass_element, *sd_element;
+	int ret;
+	const struct dsdb_schema *schema;
+	DATA_BLOB *sd;
+	const struct dsdb_class *objectclass;
+	static const char * const parent_attrs[] = { "nTSecurityDescriptor", NULL };
+
+	ldb = ldb_module_get_ctx(module);
+	dn = req->op.add.message->dn;
+	user_sd = ldb_msg_find_ldb_val(req->op.add.message, "nTSecurityDescriptor");
+	sd_element = ldb_msg_find_element(req->op.add.message, "nTSecurityDescriptor");
+	/* nTSecurityDescriptor without a value is an error, letting through so it is handled */
+	if (user_sd == NULL && sd_element) {
+		return ldb_next_request(module, req);
+	}
+
+	ldb_debug(ldb, LDB_DEBUG_TRACE,"descriptor_add: %s\n", ldb_dn_get_linearized(dn));
+
+	/* do not manipulate our control entries */
+	if (ldb_dn_is_special(dn)) {
+		return ldb_next_request(module, req);
+	}
+
+	/* if the object has a parent, retrieve its SD to
+	 * use for calculation. unfortunately we do not yet have
+	 * instanceType*/
+	parent_dn = ldb_dn_get_parent(req, dn);
+	if (parent_dn == NULL) {
+		return ldb_oom(ldb);
+	}
+
+	ret = dsdb_find_nc_root(ldb, req, dn, &nc_root);
+	if (ret != LDB_SUCCESS) {
+		ldb_debug(ldb, LDB_DEBUG_TRACE,"descriptor_add: Could not find NC root for %s\n",
+			  ldb_dn_get_linearized(dn));
+		return ret;
+	}
+
+	if (ldb_dn_compare(dn, nc_root) != 0) {
+		/* we aren't any NC */
+		ret = dsdb_module_search_dn(module, req, &parent_res, parent_dn,
+					    parent_attrs,
+					    DSDB_FLAG_NEXT_MODULE,
+					    req);
+		if (ret != LDB_SUCCESS) {
+			ldb_debug(ldb, LDB_DEBUG_TRACE,"descriptor_add: Could not find SD for %s\n",
+				  ldb_dn_get_linearized(parent_dn));
+			return ret;
+		}
+		if (parent_res->count != 1) {
+			return ldb_operr(ldb);
+		}
+		parent_sd = ldb_msg_find_ldb_val(parent_res->msgs[0], "nTSecurityDescriptor");
+	}
+
+	schema = dsdb_get_schema(ldb, req);
+
+	objectclass_element = ldb_msg_find_element(req->op.add.message, "objectClass");
+	if (objectclass_element == NULL) {
+		return ldb_operr(ldb);
+	}
+
+	objectclass = get_last_structural_class(schema, objectclass_element, req);
+	if (objectclass == NULL) {
+		return ldb_operr(ldb);
+	}
+
+	sd = get_new_descriptor(module, dn, req,
+				objectclass, parent_sd,
+				user_sd, NULL, 0);
+	msg = ldb_msg_copy_shallow(req, req->op.add.message);
+	if (sd != NULL) {
+		if (sd_element != NULL) {
+			sd_element->values[0] = *sd;
+		} else {
+			ret = ldb_msg_add_steal_value(msg,
+						      "nTSecurityDescriptor",
+						      sd);
+			if (ret != LDB_SUCCESS) {
+				return ret;
+			}
+		}
+	}
+
+	ret = ldb_build_add_req(&add_req, ldb, req,
+				msg,
+				req->controls,
+				req, dsdb_next_callback,
+				req);
+	LDB_REQ_SET_LOCATION(add_req);
+	if (ret != LDB_SUCCESS) {
+		return ldb_error(ldb, ret,
+				 "descriptor_add: Error creating new add request.");
+	}
+
+	return ldb_next_request(module, add_req);
+}
+
 static int descriptor_change(struct ldb_module *module, struct ldb_request *req)
 {
 	struct ldb_context *ldb;
@@ -903,7 +1010,7 @@ static int descriptor_init(struct ldb_module *module)
 static const struct ldb_module_ops ldb_descriptor_module_ops = {
 	.name	       = "descriptor",
 	.search        = descriptor_search,
-	.add           = descriptor_change,
+	.add           = descriptor_add,
 	.modify        = descriptor_change,
 	.rename        = descriptor_rename,
 	.init_context  = descriptor_init
