@@ -57,9 +57,9 @@ NTSTATUS auth_netlogond_init(void);
 
 /* The following definitions come from auth/auth_ntlmssp.c  */
 
-NTSTATUS auth_ntlmssp_steal_server_info(TALLOC_CTX *mem_ctx,
+NTSTATUS auth_ntlmssp_steal_session_info(TALLOC_CTX *mem_ctx,
 				struct auth_ntlmssp_state *auth_ntlmssp_state,
-				struct auth_serversupplied_info **server_info);
+				struct auth_serversupplied_info **session_info);
 NTSTATUS auth_ntlmssp_start(struct auth_ntlmssp_state **auth_ntlmssp_state);
 
 
@@ -144,13 +144,13 @@ struct auth_serversupplied_info *copy_serverinfo(TALLOC_CTX *mem_ctx,
 						 const struct auth_serversupplied_info *src);
 bool init_guest_info(void);
 NTSTATUS init_system_info(void);
-bool server_info_set_session_key(struct auth_serversupplied_info *info,
+bool session_info_set_session_key(struct auth_serversupplied_info *info,
 				 DATA_BLOB session_key);
 NTSTATUS make_server_info_guest(TALLOC_CTX *mem_ctx,
 				struct auth_serversupplied_info **server_info);
-NTSTATUS make_server_info_system(TALLOC_CTX *mem_ctx,
-				 struct auth_serversupplied_info **server_info);
-const struct auth_serversupplied_info *get_server_info_system(void);
+NTSTATUS make_session_info_system(TALLOC_CTX *mem_ctx,
+				 struct auth_serversupplied_info **session_info);
+const struct auth_serversupplied_info *get_session_info_system(void);
 bool copy_current_user(struct current_user *dst, struct current_user *src);
 struct passwd *smb_getpwnam( TALLOC_CTX *mem_ctx, const char *domuser,
 			     char **p_save_username, bool create );
@@ -4094,12 +4094,12 @@ struct dcerpc_binding_handle *rpccli_bh_create(struct rpc_pipe_client *c);
 struct pipes_struct *make_internal_rpc_pipe_p(TALLOC_CTX *mem_ctx,
 					      const struct ndr_syntax_id *syntax,
 					      struct client_address *client_id,
-					      const struct auth_serversupplied_info *server_info,
+					      const struct auth_serversupplied_info *session_info,
 					      struct messaging_context *msg_ctx);
 NTSTATUS rpcint_binding_handle(TALLOC_CTX *mem_ctx,
 			       const struct ndr_interface_table *ndr_table,
 			       struct client_address *client_id,
-			       const struct auth_serversupplied_info *server_info,
+			       const struct auth_serversupplied_info *session_info,
 			       struct messaging_context *msg_ctx,
 			       struct dcerpc_binding_handle **binding_handle);
 NTSTATUS rpc_pipe_open_internal(TALLOC_CTX *mem_ctx,
@@ -4110,7 +4110,7 @@ NTSTATUS rpc_pipe_open_internal(TALLOC_CTX *mem_ctx,
 				struct rpc_pipe_client **presult);
 NTSTATUS rpc_pipe_open_interface(TALLOC_CTX *mem_ctx,
 				 const struct ndr_syntax_id *syntax,
-				 const struct auth_serversupplied_info *server_info,
+				 const struct auth_serversupplied_info *session_info,
 				 struct client_address *client_id,
 				 struct messaging_context *msg_ctx,
 				 struct rpc_pipe_client **cli_pipe);
@@ -4307,7 +4307,7 @@ NTSTATUS np_open(TALLOC_CTX *mem_ctx, const char *name,
 		 const struct tsocket_address *local_address,
 		 const struct tsocket_address *remote_address,
 		 struct client_address *client_id,
-		 struct auth_serversupplied_info *server_info,
+		 struct auth_serversupplied_info *session_info,
 		 struct messaging_context *msg_ctx,
 		 struct fake_file_handle **phandle);
 bool np_read_in_progress(struct fake_file_handle *handle);
@@ -4854,7 +4854,7 @@ NTSTATUS create_conn_struct(TALLOC_CTX *ctx,
 				connection_struct **pconn,
 				int snum,
 				const char *path,
-				const struct auth_serversupplied_info *server_info,
+				const struct auth_serversupplied_info *session_info,
 				char **poldcwd);
 
 /* The following definitions come from smbd/negprot.c  */
@@ -5084,7 +5084,7 @@ int register_initial_vuid(struct smbd_server_connection *sconn);
 int register_homes_share(const char *username);
 int register_existing_vuid(struct smbd_server_connection *sconn,
 			uint16 vuid,
-			struct auth_serversupplied_info *server_info,
+			struct auth_serversupplied_info *session_info,
 			DATA_BLOB response_blob,
 			const char *smb_name);
 void add_session_user(struct smbd_server_connection *sconn, const char *user);
@@ -5408,7 +5408,7 @@ int sessionid_traverse_read(int (*fn)(const char *key,
 /* The following definitions come from smbd/sesssetup.c  */
 
 NTSTATUS do_map_to_guest(NTSTATUS status,
-		struct auth_serversupplied_info **server_info,
+		struct auth_serversupplied_info **session_info,
 		const char *user, const char *domain);
 
 NTSTATUS parse_spnego_mechanisms(TALLOC_CTX *ctx,

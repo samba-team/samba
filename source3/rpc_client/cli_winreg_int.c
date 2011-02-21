@@ -85,7 +85,7 @@ static WERROR _split_hive_key(TALLOC_CTX *mem_ctx,
 }
 
 static NTSTATUS _winreg_int_openkey(TALLOC_CTX *mem_ctx,
-				    const struct auth_serversupplied_info *server_info,
+				    const struct auth_serversupplied_info *session_info,
 				    struct messaging_context *msg_ctx,
 				    struct dcerpc_binding_handle **h,
 				    uint32_t reg_type,
@@ -108,7 +108,7 @@ static NTSTATUS _winreg_int_openkey(TALLOC_CTX *mem_ctx,
 	status = rpcint_binding_handle(mem_ctx,
 				       &ndr_table_winreg,
 				       &client_id,
-				       server_info,
+				       session_info,
 				       msg_ctx,
 				       &binding_handle);
 	if (!NT_STATUS_IS_OK(status)) {

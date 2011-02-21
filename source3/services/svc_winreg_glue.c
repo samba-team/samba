@@ -77,7 +77,7 @@ struct security_descriptor* svcctl_gen_service_sd(TALLOC_CTX *mem_ctx)
 
 struct security_descriptor *svcctl_get_secdesc(TALLOC_CTX *mem_ctx,
 					       struct messaging_context *msg_ctx,
-					       const struct auth_serversupplied_info *server_info,
+					       const struct auth_serversupplied_info *session_info,
 					       const char *name)
 {
 	struct dcerpc_binding_handle *h = NULL;
@@ -96,7 +96,7 @@ struct security_descriptor *svcctl_get_secdesc(TALLOC_CTX *mem_ctx,
 	}
 
 	status = dcerpc_winreg_int_hklm_openkey(mem_ctx,
-						server_info,
+						session_info,
 						msg_ctx,
 						&h,
 						key,
@@ -147,7 +147,7 @@ done:
 }
 
 bool svcctl_set_secdesc(struct messaging_context *msg_ctx,
-			const struct auth_serversupplied_info *server_info,
+			const struct auth_serversupplied_info *session_info,
 			const char *name,
 			struct security_descriptor *sd)
 {
@@ -171,7 +171,7 @@ bool svcctl_set_secdesc(struct messaging_context *msg_ctx,
 	}
 
 	status = dcerpc_winreg_int_hklm_openkey(tmp_ctx,
-						server_info,
+						session_info,
 						msg_ctx,
 						&h,
 						key,
@@ -258,7 +258,7 @@ done:
 
 const char *svcctl_get_string_value(TALLOC_CTX *mem_ctx,
 				    struct messaging_context *msg_ctx,
-				    const struct auth_serversupplied_info *server_info,
+				    const struct auth_serversupplied_info *session_info,
 				    const char *key_name,
 				    const char *value_name)
 {
@@ -283,7 +283,7 @@ const char *svcctl_get_string_value(TALLOC_CTX *mem_ctx,
 	}
 
 	status = dcerpc_winreg_int_hklm_openkey(tmp_ctx,
-						server_info,
+						session_info,
 						msg_ctx,
 						&h,
 						path,
@@ -320,14 +320,14 @@ done:
 
 const char *svcctl_lookup_dispname(TALLOC_CTX *mem_ctx,
 				   struct messaging_context *msg_ctx,
-				   const struct auth_serversupplied_info *server_info,
+				   const struct auth_serversupplied_info *session_info,
 				   const char *name)
 {
 	const char *display_name = NULL;
 
 	display_name = svcctl_get_string_value(mem_ctx,
 					       msg_ctx,
-					       server_info,
+					       session_info,
 					       name,
 					       "DisplayName");
 
@@ -343,14 +343,14 @@ const char *svcctl_lookup_dispname(TALLOC_CTX *mem_ctx,
 
 const char *svcctl_lookup_description(TALLOC_CTX *mem_ctx,
 				      struct messaging_context *msg_ctx,
-				      const struct auth_serversupplied_info *server_info,
+				      const struct auth_serversupplied_info *session_info,
 				      const char *name)
 {
 	const char *description = NULL;
 
 	description = svcctl_get_string_value(mem_ctx,
 					      msg_ctx,
-					      server_info,
+					      session_info,
 					      name,
 					      "Description");
 

@@ -29,7 +29,7 @@
  *
  * @param[in]  mem_ctx       The memory context to use.
  *
- * @param[in]  server_info   The supplied server info.
+ * @param[in]  session_info   The supplied server info.
  *
  * @param[in]  key           The key to open. This needs to start with the name
  *                           of the hive like HKLM.
@@ -85,7 +85,7 @@ NTSTATUS dcerpc_winreg_int_openkey(TALLOC_CTX *mem_ctx,
  *                           code if something gone wrong.
  */
 NTSTATUS dcerpc_winreg_int_hklm_openkey(TALLOC_CTX *mem_ctx,
-					const struct auth_serversupplied_info *server_info,
+					const struct auth_serversupplied_info *session_info,
 					struct messaging_context *msg_ctx,
 					struct dcerpc_binding_handle **h,
 					const char *key,

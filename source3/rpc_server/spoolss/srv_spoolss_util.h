@@ -72,7 +72,7 @@ enum spoolss_PrinterInfo2Mask {
                                  SPOOLSS_PRINTER_INFO_UNTILTIME
 
 WERROR winreg_create_printer(TALLOC_CTX *mem_ctx,
-			     const struct auth_serversupplied_info *server_info,
+			     const struct auth_serversupplied_info *session_info,
 			     struct messaging_context *msg_ctx,
 			     const char *sharename);
 
@@ -83,7 +83,7 @@ WERROR winreg_create_printer(TALLOC_CTX *mem_ctx,
  *
  * @param[in]  mem_ctx  The talloc memory context to use.
  *
- * @param[in]  server_info The server supplied session info.
+ * @param[in]  session_info The server supplied session info.
  *
  * @param[in]  sharename  The share name.
  *
@@ -99,7 +99,7 @@ WERROR winreg_create_printer(TALLOC_CTX *mem_ctx,
  *                      something went wrong.
  */
 WERROR winreg_update_printer(TALLOC_CTX *mem_ctx,
-			     const struct auth_serversupplied_info *server_info,
+			     const struct auth_serversupplied_info *session_info,
 			     struct messaging_context *msg_ctx,
 			     const char *sharename,
 			     uint32_t info2_mask,
@@ -113,7 +113,7 @@ WERROR winreg_update_printer(TALLOC_CTX *mem_ctx,
  *
  * @param[in]  mem_ctx  The talloc memory context to use.
  *
- * @param[in]  server_info The server supplied session info.
+ * @param[in]  session_info The server supplied session info.
  *
   * @param[in]  printer  The name of the printer to get.
  *
@@ -123,7 +123,7 @@ WERROR winreg_update_printer(TALLOC_CTX *mem_ctx,
  *                      something went wrong.
  */
 WERROR winreg_get_printer(TALLOC_CTX *mem_ctx,
-			  const struct auth_serversupplied_info *server_info,
+			  const struct auth_serversupplied_info *session_info,
 			  struct messaging_context *msg_ctx,
 			  const char *printer,
 			  struct spoolss_PrinterInfo2 **pinfo2);
@@ -133,7 +133,7 @@ WERROR winreg_get_printer(TALLOC_CTX *mem_ctx,
  *
  * @param[in]  mem_ctx  The talloc memory context to use.
  *
- * @param[in]  server_info The server supplied session info.
+ * @param[in]  session_info The server supplied session info.
  *
  * @param[in]  sharename  The share name.
  *
@@ -143,7 +143,7 @@ WERROR winreg_get_printer(TALLOC_CTX *mem_ctx,
  *                      something went wrong.
  */
 WERROR winreg_get_printer_secdesc(TALLOC_CTX *mem_ctx,
-				  const struct auth_serversupplied_info *server_info,
+				  const struct auth_serversupplied_info *session_info,
 				  struct messaging_context *msg_ctx,
 				  const char *sharename,
 				  struct spoolss_security_descriptor **psecdesc);
@@ -153,7 +153,7 @@ WERROR winreg_get_printer_secdesc(TALLOC_CTX *mem_ctx,
  *
  * @param[in]  mem_ctx  The talloc memory context to use.
  *
- * @param[in]  server_info The server supplied session info.
+ * @param[in]  session_info The server supplied session info.
  *
  * @param[in]  sharename  The share name.
  *
@@ -163,7 +163,7 @@ WERROR winreg_get_printer_secdesc(TALLOC_CTX *mem_ctx,
  *                      something went wrong.
  */
 WERROR winreg_set_printer_secdesc(TALLOC_CTX *mem_ctx,
-				  const struct auth_serversupplied_info *server_info,
+				  const struct auth_serversupplied_info *session_info,
 				  struct messaging_context *msg_ctx,
 				  const char *sharename,
 				  const struct spoolss_security_descriptor *secdesc);
@@ -175,7 +175,7 @@ WERROR winreg_set_printer_secdesc(TALLOC_CTX *mem_ctx,
  *
  * @param[in]  mem_ctx  The talloc memory context to use.
  *
- * @param[in]  server_info The server supplied session info.
+ * @param[in]  session_info The server supplied session info.
  *
  * @param[in]  printer  The printer name.
  *
@@ -193,7 +193,7 @@ WERROR winreg_set_printer_secdesc(TALLOC_CTX *mem_ctx,
  *                      something went wrong.
  */
 WERROR winreg_set_printer_dataex(TALLOC_CTX *mem_ctx,
-				 const struct auth_serversupplied_info *server_info,
+				 const struct auth_serversupplied_info *session_info,
 				 struct messaging_context *msg_ctx,
 				 const char *printer,
 				 const char *key,
@@ -209,7 +209,7 @@ WERROR winreg_set_printer_dataex(TALLOC_CTX *mem_ctx,
  *
  * @param[in]  mem_ctx  The talloc memory context to use.
  *
- * @param[in]  server_info The server supplied session info.
+ * @param[in]  session_info The server supplied session info.
  *
  * @param[in]  printer  The printer name.
  *
@@ -227,7 +227,7 @@ WERROR winreg_set_printer_dataex(TALLOC_CTX *mem_ctx,
  *                      something went wrong.
  */
 WERROR winreg_get_printer_dataex(TALLOC_CTX *mem_ctx,
-				 const struct auth_serversupplied_info *server_info,
+				 const struct auth_serversupplied_info *session_info,
 				 struct messaging_context *msg_ctx,
 				 const char *printer,
 				 const char *key,
@@ -243,7 +243,7 @@ WERROR winreg_get_printer_dataex(TALLOC_CTX *mem_ctx,
  *
  * @param[in]  mem_ctx  The talloc memory context to use.
  *
- * @param[in]  server_info The server supplied session info.
+ * @param[in]  session_info The server supplied session info.
  *
  * @param[in]  printer  The printer name.
  *
@@ -257,7 +257,7 @@ WERROR winreg_get_printer_dataex(TALLOC_CTX *mem_ctx,
  *                           code if something gone wrong.
  */
 WERROR winreg_enum_printer_dataex(TALLOC_CTX *mem_ctx,
-				  const struct auth_serversupplied_info *server_info,
+				  const struct auth_serversupplied_info *session_info,
 				  struct messaging_context *msg_ctx,
 				  const char *printer,
 				  const char *key,
@@ -271,7 +271,7 @@ WERROR winreg_enum_printer_dataex(TALLOC_CTX *mem_ctx,
  *
  * @param[in]  mem_ctx  The talloc memory context to use.
  *
- * @param[in]  server_info The server supplied session info.
+ * @param[in]  session_info The server supplied session info.
  *
  * @param[in]  printer  The printer name.
  *
@@ -283,7 +283,7 @@ WERROR winreg_enum_printer_dataex(TALLOC_CTX *mem_ctx,
  *                      something went wrong.
  */
 WERROR winreg_delete_printer_dataex(TALLOC_CTX *mem_ctx,
-				    const struct auth_serversupplied_info *server_info,
+				    const struct auth_serversupplied_info *session_info,
 				    struct messaging_context *msg_ctx,
 				    const char *printer,
 				    const char *key,
@@ -296,7 +296,7 @@ WERROR winreg_delete_printer_dataex(TALLOC_CTX *mem_ctx,
  *
  * @param[in]  mem_ctx  The talloc memory context to use.
  *
- * @param[in]  server_info The server supplied session info.
+ * @param[in]  session_info The server supplied session info.
  *
  * @param[in]  printer  The printer name.
  *
@@ -311,7 +311,7 @@ WERROR winreg_delete_printer_dataex(TALLOC_CTX *mem_ctx,
  *                      code if something gone wrong.
  */
 WERROR winreg_enum_printer_key(TALLOC_CTX *mem_ctx,
-			       const struct auth_serversupplied_info *server_info,
+			       const struct auth_serversupplied_info *session_info,
 			       struct messaging_context *msg_ctx,
 			       const char *printer,
 			       const char *key,
@@ -325,7 +325,7 @@ WERROR winreg_enum_printer_key(TALLOC_CTX *mem_ctx,
  *
  * @param[in]  mem_ctx  The talloc memory context to use.
  *
- * @param[in]  server_info The server supplied session info.
+ * @param[in]  session_info The server supplied session info.
  *
  * @param[in]  printer  The printer name.
  *
@@ -335,7 +335,7 @@ WERROR winreg_enum_printer_key(TALLOC_CTX *mem_ctx,
  *                      something went wrong.
  */
 WERROR winreg_delete_printer_key(TALLOC_CTX *mem_ctx,
-				 const struct auth_serversupplied_info *server_info,
+				 const struct auth_serversupplied_info *session_info,
 				 struct messaging_context *msg_ctx,
 				 const char *printer,
 				 const char *key);
@@ -351,7 +351,7 @@ WERROR winreg_delete_printer_key(TALLOC_CTX *mem_ctx,
  *
  * @param[in]  mem_ctx  The talloc memory context to use.
  *
- * @param[in]  server_info The server supplied session info.
+ * @param[in]  session_info The server supplied session info.
  *
  * @param[in]  printer  The printer name.
  *
@@ -359,7 +359,7 @@ WERROR winreg_delete_printer_key(TALLOC_CTX *mem_ctx,
  *                      something went wrong.
  */
 WERROR winreg_printer_update_changeid(TALLOC_CTX *mem_ctx,
-				      const struct auth_serversupplied_info *server_info,
+				      const struct auth_serversupplied_info *session_info,
 				      struct messaging_context *msg_ctx,
 				      const char *printer);
 
@@ -368,7 +368,7 @@ WERROR winreg_printer_update_changeid(TALLOC_CTX *mem_ctx,
  *
  * @param[in]  mem_ctx  The talloc memory context to use.
  *
- * @param[in]  server_info The server supplied session info.
+ * @param[in]  session_info The server supplied session info.
  *
  * @param[in]  printer  The printer name.
  *
@@ -378,7 +378,7 @@ WERROR winreg_printer_update_changeid(TALLOC_CTX *mem_ctx,
  *                      something went wrong.
  */
 WERROR winreg_printer_get_changeid(TALLOC_CTX *mem_ctx,
-				   const struct auth_serversupplied_info *server_info,
+				   const struct auth_serversupplied_info *session_info,
 				   struct messaging_context *msg_ctx,
 				   const char *printer,
 				   uint32_t *pchangeid);
@@ -391,7 +391,7 @@ WERROR winreg_printer_get_changeid(TALLOC_CTX *mem_ctx,
  *
  * @param[in]  mem_ctx  The talloc memory context to use.
  *
- * @param[in]  server_info The server supplied session info.
+ * @param[in]  session_info The server supplied session info.
  *
  * @param[in]  form     The form to add.
  *
@@ -401,7 +401,7 @@ WERROR winreg_printer_get_changeid(TALLOC_CTX *mem_ctx,
  *                      A corresponding DOS error is something went wrong.
  */
 WERROR winreg_printer_addform1(TALLOC_CTX *mem_ctx,
-			       const struct auth_serversupplied_info *server_info,
+			       const struct auth_serversupplied_info *session_info,
 			       struct messaging_context *msg_ctx,
 			       struct spoolss_AddFormInfo1 *form);
 
@@ -410,7 +410,7 @@ WERROR winreg_printer_addform1(TALLOC_CTX *mem_ctx,
  *
  * @param[in]  mem_ctx  The talloc memory context to use.
  *
- * @param[in]  server_info The server supplied session info.
+ * @param[in]  session_info The server supplied session info.
  *
  * @param[out] pnum_info A pointer to store the FormInfo count.
  *
@@ -420,7 +420,7 @@ WERROR winreg_printer_addform1(TALLOC_CTX *mem_ctx,
  *                      something went wrong.
  */
 WERROR winreg_printer_enumforms1(TALLOC_CTX *mem_ctx,
-				 const struct auth_serversupplied_info *server_info,
+				 const struct auth_serversupplied_info *session_info,
 				 struct messaging_context *msg_ctx,
 				 uint32_t *pnum_info,
 				 union spoolss_FormInfo **pinfo);
@@ -430,7 +430,7 @@ WERROR winreg_printer_enumforms1(TALLOC_CTX *mem_ctx,
  *
  * @param[in]  mem_ctx  The talloc memory context to use.
  *
- * @param[in]  server_info The server supplied session info.
+ * @param[in]  session_info The server supplied session info.
  *
  * @param[in]  form_name The name of the form to delete.
  *
@@ -440,7 +440,7 @@ WERROR winreg_printer_enumforms1(TALLOC_CTX *mem_ctx,
  *                      A corresponding DOS error is something went wrong.
  */
 WERROR winreg_printer_deleteform1(TALLOC_CTX *mem_ctx,
-				  const struct auth_serversupplied_info *server_info,
+				  const struct auth_serversupplied_info *session_info,
 				  struct messaging_context *msg_ctx,
 				  const char *form_name);
 
@@ -452,7 +452,7 @@ WERROR winreg_printer_deleteform1(TALLOC_CTX *mem_ctx,
  *
  * @param[in]  mem_ctx  The talloc memory context to use.
  *
- * @param[in]  server_info The server supplied session info.
+ * @param[in]  session_info The server supplied session info.
  *
  * @param[in]  form_name The name of the form to set or rename.
  *
@@ -463,7 +463,7 @@ WERROR winreg_printer_deleteform1(TALLOC_CTX *mem_ctx,
  *                      A corresponding DOS error is something went wrong.
  */
 WERROR winreg_printer_setform1(TALLOC_CTX *mem_ctx,
-			       const struct auth_serversupplied_info *server_info,
+			       const struct auth_serversupplied_info *session_info,
 			       struct messaging_context *msg_ctx,
 			       const char *form_name,
 			       struct spoolss_AddFormInfo1 *form);
@@ -473,7 +473,7 @@ WERROR winreg_printer_setform1(TALLOC_CTX *mem_ctx,
  *
  * @param[in]  mem_ctx  The talloc memory context to use.
  *
- * @param[in]  server_info The server supplied session info.
+ * @param[in]  session_info The server supplied session info.
  *
  * @param[in]  form_name The name of the form to query.
  *
@@ -483,7 +483,7 @@ WERROR winreg_printer_setform1(TALLOC_CTX *mem_ctx,
  *                      something went wrong.
  */
 WERROR winreg_printer_getform1(TALLOC_CTX *mem_ctx,
-			       const struct auth_serversupplied_info *server_info,
+			       const struct auth_serversupplied_info *session_info,
 			       struct messaging_context *msg_ctx,
 			       const char *form_name,
 			       struct spoolss_FormInfo1 *form);
@@ -493,7 +493,7 @@ WERROR winreg_printer_getform1(TALLOC_CTX *mem_ctx,
  *
  * @param[in]  mem_ctx	       A talloc memory context.
  *
- * @param[in]  server_info     Auth info to open the pipe.
+ * @param[in]  session_info     Auth info to open the pipe.
  *
  * @param[in]  r	       The structure containing the new driver data.
  *
@@ -505,7 +505,7 @@ WERROR winreg_printer_getform1(TALLOC_CTX *mem_ctx,
  *                      something went wrong.
  */
 WERROR winreg_add_driver(TALLOC_CTX *mem_ctx,
-			 const struct auth_serversupplied_info *server_info,
+			 const struct auth_serversupplied_info *session_info,
 			 struct messaging_context *msg_ctx,
 			 struct spoolss_AddDriverInfoCtr *r,
 			 const char **driver_name,
@@ -516,7 +516,7 @@ WERROR winreg_add_driver(TALLOC_CTX *mem_ctx,
  *
  * @param[in]  mem_ctx	       A talloc memory context.
  *
- * @param[in]  server_info     Auth info to open the pipe.
+ * @param[in]  session_info     Auth info to open the pipe.
  *
  * @param[in]  architecture    The architecture type.
  *
@@ -531,7 +531,7 @@ WERROR winreg_add_driver(TALLOC_CTX *mem_ctx,
  */
 
 WERROR winreg_get_driver(TALLOC_CTX *mem_ctx,
-			 const struct auth_serversupplied_info *server_info,
+			 const struct auth_serversupplied_info *session_info,
 			 struct messaging_context *msg_ctx,
 			 const char *architecture,
 			 const char *driver_name,
@@ -543,7 +543,7 @@ WERROR winreg_get_driver(TALLOC_CTX *mem_ctx,
  *
  * @param[in]  mem_ctx	       A talloc memory context.
  *
- * @param[in]  server_info     Auth info to open the pipe.
+ * @param[in]  session_info     Auth info to open the pipe.
  *
  * @param[out] info8    The structure that holds the full driver information.
  *
@@ -554,7 +554,7 @@ WERROR winreg_get_driver(TALLOC_CTX *mem_ctx,
  */
 
 WERROR winreg_del_driver(TALLOC_CTX *mem_ctx,
-			 const struct auth_serversupplied_info *server_info,
+			 const struct auth_serversupplied_info *session_info,
 			 struct messaging_context *msg_ctx,
 			 struct spoolss_DriverInfo8 *info8,
 			 uint32_t version);
@@ -565,7 +565,7 @@ WERROR winreg_del_driver(TALLOC_CTX *mem_ctx,
  *
  * @param[in]  mem_ctx	       A talloc memory context.
  *
- * @param[in]  server_info     Auth info to open the pipe.
+ * @param[in]  session_info     Auth info to open the pipe.
  *
  * @param[in]  architecture    The architecture type.
  *
@@ -580,7 +580,7 @@ WERROR winreg_del_driver(TALLOC_CTX *mem_ctx,
  */
 
 WERROR winreg_get_driver_list(TALLOC_CTX *mem_ctx,
-			      const struct auth_serversupplied_info *server_info,
+			      const struct auth_serversupplied_info *session_info,
                               struct messaging_context *msg_ctx,
 			      const char *architecture,
 			      uint32_t version,

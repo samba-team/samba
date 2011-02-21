@@ -474,19 +474,19 @@ static void reply_spnego_ntlmssp(struct smb_request *req,
 {
 	bool do_invalidate = true;
 	DATA_BLOB response;
-	struct auth_serversupplied_info *server_info = NULL;
+	struct auth_serversupplied_info *session_info = NULL;
 	struct smbd_server_connection *sconn = req->sconn;
 
 	if (NT_STATUS_IS_OK(nt_status)) {
-		nt_status = auth_ntlmssp_steal_server_info(talloc_tos(),
-					(*auth_ntlmssp_state), &server_info);
+		nt_status = auth_ntlmssp_steal_session_info(talloc_tos(),
+					(*auth_ntlmssp_state), &session_info);
 	} else {
-		/* Note that this server_info won't have a session
+		/* Note that this session_info won't have a session
 		 * key.  But for map to guest, that's exactly the right
 		 * thing - we can't reasonably guess the key the
 		 * client wants, as the password was wrong */
 		nt_status = do_map_to_guest(nt_status,
-					    &server_info,
+					    &session_info,
 					    auth_ntlmssp_get_username(*auth_ntlmssp_state),
 					    auth_ntlmssp_get_domain(*auth_ntlmssp_state));
 	}
@@ -505,7 +505,7 @@ static void reply_spnego_ntlmssp(struct smb_request *req,
 
 		/* register_existing_vuid keeps the server info */
 		if (register_existing_vuid(sconn, vuid,
-					   server_info, nullblob,
+					   session_info, nullblob,
 					   auth_ntlmssp_get_username(*auth_ntlmssp_state)) !=
 					   vuid) {
 			/* The problem is, *auth_ntlmssp_state points
@@ -522,7 +522,7 @@ static void reply_spnego_ntlmssp(struct smb_request *req,
 
 		SSVAL(req->outbuf, smb_vwv3, 0);
 
-		if (server_info->guest) {
+		if (session_info->guest) {
 			SSVAL(req->outbuf,smb_vwv2,1);
 		}
 	}

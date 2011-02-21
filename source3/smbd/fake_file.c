@@ -132,7 +132,7 @@ NTSTATUS open_fake_file(struct smb_request *req, connection_struct *conn,
 			  "service[%s] file[%s] user[%s]\n",
 			  lp_servicename(SNUM(conn)),
 			  smb_fname_str_dbg(smb_fname),
-			  conn->server_info->unix_name));
+			  conn->session_info->unix_name));
 		return NT_STATUS_ACCESS_DENIED;
 
 	}

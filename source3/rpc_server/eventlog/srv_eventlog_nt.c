@@ -236,7 +236,7 @@ static NTSTATUS elog_open( struct pipes_struct * p, const char *logname, struct 
 			elog->logname = talloc_strdup( elog, ELOG_APPL );
 
 			/* do the access check */
-			if ( !elog_check_access( elog, p->server_info->security_token ) ) {
+			if ( !elog_check_access( elog, p->session_info->security_token ) ) {
 				TALLOC_FREE( elog );
 				return NT_STATUS_ACCESS_DENIED;
 			}
@@ -254,7 +254,7 @@ static NTSTATUS elog_open( struct pipes_struct * p, const char *logname, struct 
 
 	/* now do the access check.  Close the tdb if we fail here */
 
-	if ( !elog_check_access( elog, p->server_info->security_token ) ) {
+	if ( !elog_check_access( elog, p->session_info->security_token ) ) {
 		TALLOC_FREE( elog );
 		return NT_STATUS_ACCESS_DENIED;
 	}
@@ -350,7 +350,7 @@ static bool sync_eventlog_params(TALLOC_CTX *mem_ctx,
 	}
 
 	status = dcerpc_winreg_int_hklm_openkey(ctx,
-						get_server_info_system(),
+						get_session_info_system(),
 						msg_ctx,
 						&h,
 						path,

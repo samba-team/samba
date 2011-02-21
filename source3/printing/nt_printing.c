@@ -618,7 +618,7 @@ static uint32 get_correct_cversion(struct pipes_struct *p,
 
 	nt_status = create_conn_struct(talloc_tos(), &conn, printdollar_snum,
 				       lp_pathname(printdollar_snum),
-				       p->server_info, &oldcwd);
+				       p->session_info, &oldcwd);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0,("get_correct_cversion: create_conn_struct "
 			 "returned %s\n", nt_errstr(nt_status)));
@@ -989,7 +989,7 @@ WERROR move_driver_to_download_area(struct pipes_struct *p,
 
 	nt_status = create_conn_struct(talloc_tos(), &conn, printdollar_snum,
 				       lp_pathname(printdollar_snum),
-				       p->server_info, &oldcwd);
+				       p->session_info, &oldcwd);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0,("move_driver_to_download_area: create_conn_struct "
 			 "returned %s\n", nt_errstr(nt_status)));
@@ -1564,7 +1564,7 @@ bool driver_info_ctr_to_info8(struct spoolss_AddDriverInfoCtr *r,
 ****************************************************************************/
 
 bool printer_driver_in_use(TALLOC_CTX *mem_ctx,
-			   const struct auth_serversupplied_info *server_info,
+			   const struct auth_serversupplied_info *session_info,
 			   struct messaging_context *msg_ctx,
                            const struct spoolss_DriverInfo8 *r)
 {
@@ -1587,7 +1587,7 @@ bool printer_driver_in_use(TALLOC_CTX *mem_ctx,
 			continue;
 		}
 
-		result = winreg_get_printer(mem_ctx, server_info, msg_ctx,
+		result = winreg_get_printer(mem_ctx, session_info, msg_ctx,
 					    lp_servicename(snum),
 					    &pinfo2);
 		if (!W_ERROR_IS_OK(result)) {
@@ -1613,18 +1613,18 @@ bool printer_driver_in_use(TALLOC_CTX *mem_ctx,
 		   "Windows NT x86" version 2 or 3 left */
 
 		if (!strequal("Windows NT x86", r->architecture)) {
-			werr = winreg_get_driver(mem_ctx, server_info, msg_ctx,
+			werr = winreg_get_driver(mem_ctx, session_info, msg_ctx,
 						 "Windows NT x86",
 						 r->driver_name,
 						 DRIVER_ANY_VERSION,
 						 &driver);
 		} else if (r->version == 2) {
-			werr = winreg_get_driver(mem_ctx, server_info, msg_ctx,
+			werr = winreg_get_driver(mem_ctx, session_info, msg_ctx,
 						 "Windows NT x86",
 						 r->driver_name,
 						 3, &driver);
 		} else if (r->version == 3) {
-			werr = winreg_get_driver(mem_ctx, server_info, msg_ctx,
+			werr = winreg_get_driver(mem_ctx, session_info, msg_ctx,
 						 "Windows NT x86",
 						 r->driver_name,
 						 2, &driver);
@@ -1792,7 +1792,7 @@ static bool trim_overlap_drv_files(TALLOC_CTX *mem_ctx,
 ****************************************************************************/
 
 bool printer_driver_files_in_use(TALLOC_CTX *mem_ctx,
-				 const struct auth_serversupplied_info *server_info,
+				 const struct auth_serversupplied_info *session_info,
 				 struct messaging_context *msg_ctx,
 				 struct spoolss_DriverInfo8 *info)
 {
@@ -1815,7 +1815,7 @@ bool printer_driver_files_in_use(TALLOC_CTX *mem_ctx,
 
 	/* get the list of drivers */
 
-	result = winreg_get_driver_list(mem_ctx, server_info, msg_ctx,
+	result = winreg_get_driver_list(mem_ctx, session_info, msg_ctx,
 					info->architecture, version,
 					&num_drivers, &drivers);
 	if (!W_ERROR_IS_OK(result)) {
@@ -1832,7 +1832,7 @@ bool printer_driver_files_in_use(TALLOC_CTX *mem_ctx,
 
 		driver = NULL;
 
-		result = winreg_get_driver(mem_ctx, server_info, msg_ctx,
+		result = winreg_get_driver(mem_ctx, session_info, msg_ctx,
 					   info->architecture, drivers[i],
 					   version, &driver);
 		if (!W_ERROR_IS_OK(result)) {
@@ -1886,7 +1886,7 @@ static NTSTATUS driver_unlink_internals(connection_struct *conn,
   this.
 ****************************************************************************/
 
-bool delete_driver_files(const struct auth_serversupplied_info *server_info,
+bool delete_driver_files(const struct auth_serversupplied_info *session_info,
 			 const struct spoolss_DriverInfo8 *r)
 {
 	int i = 0;
@@ -1916,7 +1916,7 @@ bool delete_driver_files(const struct auth_serversupplied_info *server_info,
 
 	nt_status = create_conn_struct(talloc_tos(), &conn, printdollar_snum,
 				       lp_pathname(printdollar_snum),
-				       server_info, &oldcwd);
+				       session_info, &oldcwd);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0,("delete_driver_files: create_conn_struct "
 			 "returned %s\n", nt_errstr(nt_status)));
@@ -2076,7 +2076,7 @@ void map_job_permissions(struct security_descriptor *sd)
     3)  "printer admins" (may result in numerous calls to winbind)
 
  ****************************************************************************/
-bool print_access_check(const struct auth_serversupplied_info *server_info,
+bool print_access_check(const struct auth_serversupplied_info *session_info,
 			struct messaging_context *msg_ctx, int snum,
 			int access_type)
 {
@@ -2092,8 +2092,8 @@ bool print_access_check(const struct auth_serversupplied_info *server_info,
 
 	/* Always allow root or SE_PRINT_OPERATROR to do anything */
 
-	if (server_info->utok.uid == sec_initial_uid()
-	    || security_token_has_privilege(server_info->security_token, SEC_PRIV_PRINT_OPERATOR)) {
+	if (session_info->utok.uid == sec_initial_uid()
+	    || security_token_has_privilege(session_info->security_token, SEC_PRIV_PRINT_OPERATOR)) {
 		return True;
 	}
 
@@ -2114,7 +2114,7 @@ bool print_access_check(const struct auth_serversupplied_info *server_info,
 	}
 
 	result = winreg_get_printer_secdesc(mem_ctx,
-					    get_server_info_system(),
+					    get_session_info_system(),
 					    msg_ctx,
 					    pname,
 					    &secdesc);
@@ -2149,7 +2149,7 @@ bool print_access_check(const struct auth_serversupplied_info *server_info,
 	}
 
 	/* Check access */
-	status = se_access_check(secdesc, server_info->security_token, access_type,
+	status = se_access_check(secdesc, session_info->security_token, access_type,
 				 &access_granted);
 
 	DEBUG(4, ("access check was %s\n", NT_STATUS_IS_OK(status) ? "SUCCESS" : "FAILURE"));
@@ -2157,9 +2157,9 @@ bool print_access_check(const struct auth_serversupplied_info *server_info,
         /* see if we need to try the printer admin list */
 
         if (!NT_STATUS_IS_OK(status) &&
-	    (token_contains_name_in_list(uidtoname(server_info->utok.uid),
-					 server_info->info3->base.domain.string,
-					 NULL, server_info->security_token,
+	    (token_contains_name_in_list(uidtoname(session_info->utok.uid),
+					 session_info->info3->base.domain.string,
+					 NULL, session_info->security_token,
 					 lp_printer_admin(snum)))) {
 		talloc_destroy(mem_ctx);
 		return True;
@@ -2178,7 +2178,7 @@ bool print_access_check(const struct auth_serversupplied_info *server_info,
  Check the time parameters allow a print operation.
 *****************************************************************************/
 
-bool print_time_access_check(const struct auth_serversupplied_info *server_info,
+bool print_time_access_check(const struct auth_serversupplied_info *session_info,
 			     struct messaging_context *msg_ctx,
 			     const char *servicename)
 {
@@ -2189,7 +2189,7 @@ bool print_time_access_check(const struct auth_serversupplied_info *server_info,
 	struct tm *t;
 	uint32 mins;
 
-	result = winreg_get_printer(NULL, server_info, msg_ctx,
+	result = winreg_get_printer(NULL, session_info, msg_ctx,
 				    servicename, &pinfo2);
 	if (!W_ERROR_IS_OK(result)) {
 		return False;
@@ -2216,13 +2216,13 @@ bool print_time_access_check(const struct auth_serversupplied_info *server_info,
 }
 
 void nt_printer_remove(TALLOC_CTX *mem_ctx,
-			const struct auth_serversupplied_info *server_info,
+			const struct auth_serversupplied_info *session_info,
 			struct messaging_context *msg_ctx,
 			const char *printer)
 {
 	WERROR result;
 
-	result = winreg_delete_printer_key(mem_ctx, server_info, msg_ctx,
+	result = winreg_delete_printer_key(mem_ctx, session_info, msg_ctx,
 					   printer, "");
 	if (!W_ERROR_IS_OK(result)) {
 		DEBUG(0, ("nt_printer_remove: failed to remove rpinter %s",

@@ -115,7 +115,7 @@ static int make_server_pipes_struct(TALLOC_CTX *mem_ctx,
 
 	p->endian = RPC_LITTLE_ENDIAN;
 
-	/* Fake up an auth_user_info_dc for now, to make an info3, to make the server_info structure */
+	/* Fake up an auth_user_info_dc for now, to make an info3, to make the session_info structure */
 	auth_user_info_dc = talloc_zero(p, struct auth_user_info_dc);
 	if (!auth_user_info_dc) {
 		TALLOC_FREE(p);
@@ -142,7 +142,7 @@ static int make_server_pipes_struct(TALLOC_CTX *mem_ctx,
 	status = make_server_info_info3(p,
 					info3->base.account_name.string,
 					info3->base.domain.string,
-					&p->server_info, info3);
+					&p->session_info, info3);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Failed to init server info\n"));
 		TALLOC_FREE(p);
@@ -154,7 +154,7 @@ static int make_server_pipes_struct(TALLOC_CTX *mem_ctx,
 	 * Some internal functions need a local token to determine access to
 	 * resoutrces.
 	 */
-	status = create_local_token(p->server_info);
+	status = create_local_token(p->session_info);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Failed to init local auth token\n"));
 		TALLOC_FREE(p);
@@ -162,14 +162,14 @@ static int make_server_pipes_struct(TALLOC_CTX *mem_ctx,
 		return -1;
 	}
 
-	/* Now override the server_info->security_token with the exact
+	/* Now override the session_info->security_token with the exact
 	 * security_token we were given from the other side,
 	 * regardless of what we just calculated */
-	p->server_info->security_token = talloc_move(p->server_info, &session_info->security_token);
+	p->session_info->security_token = talloc_move(p->session_info, &session_info->security_token);
 
 	/* Also set the session key to the correct value */
-	p->server_info->user_session_key = session_info->session_key;
-	p->server_info->user_session_key.data = talloc_move(p->server_info, &session_info->session_key.data);
+	p->session_info->user_session_key = session_info->session_key;
+	p->session_info->user_session_key.data = talloc_move(p->session_info, &session_info->session_key.data);
 
 	p->client_id = talloc_zero(p, struct client_address);
 	if (!p->client_id) {

@@ -271,7 +271,7 @@ static void init_srv_share_info_1(struct pipes_struct *p,
 		remark = talloc_sub_advanced(
 			p->mem_ctx, lp_servicename(snum),
 			get_current_username(), lp_pathname(snum),
-			p->server_info->utok.uid, get_current_username(),
+			p->session_info->utok.uid, get_current_username(),
 			"", remark);
 	}
 
@@ -299,7 +299,7 @@ static void init_srv_share_info_2(struct pipes_struct *p,
 		remark = talloc_sub_advanced(
 			p->mem_ctx, lp_servicename(snum),
 			get_current_username(), lp_pathname(snum),
-			p->server_info->utok.uid, get_current_username(),
+			p->session_info->utok.uid, get_current_username(),
 			"", remark);
 	}
 	path = talloc_asprintf(p->mem_ctx,
@@ -364,7 +364,7 @@ static void init_srv_share_info_501(struct pipes_struct *p,
 		remark = talloc_sub_advanced(
 			p->mem_ctx, lp_servicename(snum),
 			get_current_username(), lp_pathname(snum),
-			p->server_info->utok.uid, get_current_username(),
+			p->session_info->utok.uid, get_current_username(),
 			"", remark);
 	}
 
@@ -393,7 +393,7 @@ static void init_srv_share_info_502(struct pipes_struct *p,
 		remark = talloc_sub_advanced(
 			p->mem_ctx, lp_servicename(snum),
 			get_current_username(), lp_pathname(snum),
-			p->server_info->utok.uid, get_current_username(),
+			p->session_info->utok.uid, get_current_username(),
 			"", remark);
 	}
 	path = talloc_asprintf(ctx, "C:%s", lp_pathname(snum));
@@ -434,7 +434,7 @@ static void init_srv_share_info_1004(struct pipes_struct *p,
 		remark = talloc_sub_advanced(
 			p->mem_ctx, lp_servicename(snum),
 			get_current_username(), lp_pathname(snum),
-			p->server_info->utok.uid, get_current_username(),
+			p->session_info->utok.uid, get_current_username(),
 			"", remark);
 	}
 
@@ -520,7 +520,7 @@ static bool is_enumeration_allowed(struct pipes_struct *p,
     if (!lp_access_based_share_enum(snum))
         return true;
 
-    return share_access_check(p->server_info->security_token, lp_servicename(snum),
+    return share_access_check(p->session_info->security_token, lp_servicename(snum),
                               FILE_READ_DATA);
 }
 
@@ -1055,7 +1055,7 @@ WERROR _srvsvc_NetFileEnum(struct pipes_struct *p,
 	}
 
 	if (!nt_token_check_sid(&global_sid_Builtin_Administrators,
-				p->server_info->security_token)) {
+				p->session_info->security_token)) {
 		DEBUG(1, ("Enumerating files only allowed for "
 			  "administrators\n"));
 		return WERR_ACCESS_DENIED;
@@ -1214,7 +1214,7 @@ WERROR _srvsvc_NetConnEnum(struct pipes_struct *p,
 	DEBUG(5,("_srvsvc_NetConnEnum: %d\n", __LINE__));
 
 	if (!nt_token_check_sid(&global_sid_Builtin_Administrators,
-				p->server_info->security_token)) {
+				p->session_info->security_token)) {
 		DEBUG(1, ("Enumerating connections only allowed for "
 			  "administrators\n"));
 		return WERR_ACCESS_DENIED;
@@ -1252,7 +1252,7 @@ WERROR _srvsvc_NetSessEnum(struct pipes_struct *p,
 	DEBUG(5,("_srvsvc_NetSessEnum: %d\n", __LINE__));
 
 	if (!nt_token_check_sid(&global_sid_Builtin_Administrators,
-				p->server_info->security_token)) {
+				p->session_info->security_token)) {
 		DEBUG(1, ("Enumerating sessions only allowed for "
 			  "administrators\n"));
 		return WERR_ACCESS_DENIED;
@@ -1310,8 +1310,8 @@ WERROR _srvsvc_NetSessDel(struct pipes_struct *p,
 
 	/* fail out now if you are not root or not a domain admin */
 
-	if ((p->server_info->utok.uid != sec_initial_uid()) &&
-		( ! nt_token_check_domain_rid(p->server_info->security_token,
+	if ((p->session_info->utok.uid != sec_initial_uid()) &&
+		( ! nt_token_check_domain_rid(p->session_info->security_token,
 					      DOMAIN_RID_ADMINS))) {
 
 		goto done;
@@ -1324,7 +1324,7 @@ WERROR _srvsvc_NetSessDel(struct pipes_struct *p,
 
 			NTSTATUS ntstat;
 
-			if (p->server_info->utok.uid != sec_initial_uid()) {
+			if (p->session_info->utok.uid != sec_initial_uid()) {
 				not_root = True;
 				become_root();
 			}
@@ -1579,15 +1579,15 @@ WERROR _srvsvc_NetShareSetInfo(struct pipes_struct *p,
 	if (lp_print_ok(snum))
 		return WERR_ACCESS_DENIED;
 
-	is_disk_op = security_token_has_privilege(p->server_info->security_token, SEC_PRIV_DISK_OPERATOR);
+	is_disk_op = security_token_has_privilege(p->session_info->security_token, SEC_PRIV_DISK_OPERATOR);
 
 	/* fail out now if you are not root and not a disk op */
 
-	if ( p->server_info->utok.uid != sec_initial_uid() && !is_disk_op ) {
+	if ( p->session_info->utok.uid != sec_initial_uid() && !is_disk_op ) {
 		DEBUG(2,("_srvsvc_NetShareSetInfo: uid %u doesn't have the "
 			"SeDiskOperatorPrivilege privilege needed to modify "
 			"share %s\n",
-			(unsigned int)p->server_info->utok.uid,
+			(unsigned int)p->session_info->utok.uid,
 			share_name ));
 		return WERR_ACCESS_DENIED;
 	}
@@ -1782,9 +1782,9 @@ WERROR _srvsvc_NetShareAdd(struct pipes_struct *p,
 		*r->out.parm_error = 0;
 	}
 
-	is_disk_op = security_token_has_privilege(p->server_info->security_token, SEC_PRIV_DISK_OPERATOR);
+	is_disk_op = security_token_has_privilege(p->session_info->security_token, SEC_PRIV_DISK_OPERATOR);
 
-	if (p->server_info->utok.uid != sec_initial_uid()  && !is_disk_op )
+	if (p->session_info->utok.uid != sec_initial_uid()  && !is_disk_op )
 		return WERR_ACCESS_DENIED;
 
 	if (!lp_add_share_cmd() || !*lp_add_share_cmd()) {
@@ -1988,9 +1988,9 @@ WERROR _srvsvc_NetShareDel(struct pipes_struct *p,
 	if (lp_print_ok(snum))
 		return WERR_ACCESS_DENIED;
 
-	is_disk_op = security_token_has_privilege(p->server_info->security_token, SEC_PRIV_DISK_OPERATOR);
+	is_disk_op = security_token_has_privilege(p->session_info->security_token, SEC_PRIV_DISK_OPERATOR);
 
-	if (p->server_info->utok.uid != sec_initial_uid()  && !is_disk_op )
+	if (p->session_info->utok.uid != sec_initial_uid()  && !is_disk_op )
 		return WERR_ACCESS_DENIED;
 
 	if (!lp_delete_share_cmd() || !*lp_delete_share_cmd()) {
@@ -2141,7 +2141,7 @@ WERROR _srvsvc_NetGetFileSecurity(struct pipes_struct *p,
 	}
 
 	nt_status = create_conn_struct(talloc_tos(), &conn, snum,
-				       lp_pathname(snum), p->server_info,
+				       lp_pathname(snum), p->session_info,
 				       &oldcwd);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(10, ("create_conn_struct failed: %s\n",
@@ -2280,7 +2280,7 @@ WERROR _srvsvc_NetSetFileSecurity(struct pipes_struct *p,
 	}
 
 	nt_status = create_conn_struct(talloc_tos(), &conn, snum,
-				       lp_pathname(snum), p->server_info,
+				       lp_pathname(snum), p->session_info,
 				       &oldcwd);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(10, ("create_conn_struct failed: %s\n",
@@ -2554,9 +2554,9 @@ WERROR _srvsvc_NetFileClose(struct pipes_struct *p,
 
 	DEBUG(5,("_srvsvc_NetFileClose: %d\n", __LINE__));
 
-	is_disk_op = security_token_has_privilege(p->server_info->security_token, SEC_PRIV_DISK_OPERATOR);
+	is_disk_op = security_token_has_privilege(p->session_info->security_token, SEC_PRIV_DISK_OPERATOR);
 
-	if (p->server_info->utok.uid != sec_initial_uid() && !is_disk_op) {
+	if (p->session_info->utok.uid != sec_initial_uid() && !is_disk_op) {
 		return WERR_ACCESS_DENIED;
 	}
 

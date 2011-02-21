@@ -145,7 +145,7 @@ WERROR _PNP_GetDeviceRegProp(struct pipes_struct *p,
 
 		result = svcctl_lookup_dispname(mem_ctx,
 						p->msg_ctx,
-						p->server_info,
+						p->session_info,
 						ptr);
 		if (result == NULL) {
 			return WERR_GENERAL_FAILURE;

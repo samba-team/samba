@@ -745,12 +745,12 @@ done:
 }
 
 /***************************************************************************
- Make (and fill) a user_info struct for a system user login.
+ Make (and fill) a auth_session_info struct for a system user login.
  This *must* succeed for smbd to start.
 ***************************************************************************/
 
-static NTSTATUS make_new_server_info_system(TALLOC_CTX *mem_ctx,
-					    struct auth_serversupplied_info **server_info)
+static NTSTATUS make_new_session_info_system(TALLOC_CTX *mem_ctx,
+					    struct auth_serversupplied_info **session_info)
 {
 	struct passwd *pwd;
 	NTSTATUS status;
@@ -763,20 +763,20 @@ static NTSTATUS make_new_server_info_system(TALLOC_CTX *mem_ctx,
 	status = make_serverinfo_from_username(mem_ctx,
 					     pwd->pw_name,
 					     false,
-					     server_info);
+					     session_info);
 	TALLOC_FREE(pwd);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	(*server_info)->system = true;
+	(*session_info)->system = true;
 
-	status = add_sid_to_array_unique((*server_info)->security_token->sids,
+	status = add_sid_to_array_unique((*session_info)->security_token->sids,
 					 &global_sid_System,
-					 &(*server_info)->security_token->sids,
-					 &(*server_info)->security_token->num_sids);
+					 &(*session_info)->security_token->sids,
+					 &(*session_info)->security_token->num_sids);
 	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE((*server_info));
+		TALLOC_FREE((*session_info));
 		return status;
 	}
 
@@ -888,7 +888,7 @@ struct auth_serversupplied_info *copy_serverinfo(TALLOC_CTX *mem_ctx,
  * SMB level session key with SystemLibraryDTC
  */
 
-bool server_info_set_session_key(struct auth_serversupplied_info *info,
+bool session_info_set_session_key(struct auth_serversupplied_info *info,
 				 DATA_BLOB session_key)
 {
 	TALLOC_FREE(info->user_session_key.data);
@@ -923,18 +923,18 @@ NTSTATUS init_system_info(void)
 	if (system_info != NULL)
 		return NT_STATUS_OK;
 
-	return make_new_server_info_system(NULL, &system_info);
+	return make_new_session_info_system(NULL, &system_info);
 }
 
-NTSTATUS make_server_info_system(TALLOC_CTX *mem_ctx,
-				struct auth_serversupplied_info **server_info)
+NTSTATUS make_session_info_system(TALLOC_CTX *mem_ctx,
+				struct auth_serversupplied_info **session_info)
 {
 	if (system_info == NULL) return NT_STATUS_UNSUCCESSFUL;
-	*server_info = copy_serverinfo(mem_ctx, system_info);
-	return (*server_info != NULL) ? NT_STATUS_OK : NT_STATUS_NO_MEMORY;
+	*session_info = copy_serverinfo(mem_ctx, system_info);
+	return (*session_info != NULL) ? NT_STATUS_OK : NT_STATUS_NO_MEMORY;
 }
 
-const struct auth_serversupplied_info *get_server_info_system(void)
+const struct auth_serversupplied_info *get_session_info_system(void)
 {
     return system_info;
 }

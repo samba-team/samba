@@ -397,11 +397,11 @@ static char *audit_prefix(TALLOC_CTX *ctx, connection_struct *conn)
 	}
 	result = talloc_sub_advanced(ctx,
 			lp_servicename(SNUM(conn)),
-			conn->server_info->unix_name,
+			conn->session_info->unix_name,
 			conn->connectpath,
-			conn->server_info->utok.gid,
-			conn->server_info->sanitized_username,
-			conn->server_info->info3->base.domain.string,
+			conn->session_info->utok.gid,
+			conn->session_info->sanitized_username,
+			conn->session_info->info3->base.domain.string,
 			prefix);
 	TALLOC_FREE(prefix);
 	return result;

@@ -43,15 +43,15 @@ static NTSTATUS open_internal_samr_pipe(TALLOC_CTX *mem_ctx,
 					struct rpc_pipe_client **samr_pipe)
 {
 	struct rpc_pipe_client *cli = NULL;
-	struct auth_serversupplied_info *server_info = NULL;
+	struct auth_serversupplied_info *session_info = NULL;
 	NTSTATUS status;
 
 	if (cli != NULL) {
 		goto done;
 	}
 
-	if (server_info == NULL) {
-		status = make_server_info_system(mem_ctx, &server_info);
+	if (session_info == NULL) {
+		status = make_session_info_system(mem_ctx, &session_info);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0, ("open_samr_pipe: Could not create auth_serversupplied_info: %s\n",
 				  nt_errstr(status)));
@@ -62,7 +62,7 @@ static NTSTATUS open_internal_samr_pipe(TALLOC_CTX *mem_ctx,
 	/* create a samr connection */
 	status = rpc_pipe_open_interface(mem_ctx,
 					&ndr_table_samr.syntax_id,
-					server_info,
+					session_info,
 					NULL,
 					winbind_messaging_context(),
 					&cli);
@@ -125,15 +125,15 @@ static NTSTATUS open_internal_lsa_pipe(TALLOC_CTX *mem_ctx,
 				       struct rpc_pipe_client **lsa_pipe)
 {
 	struct rpc_pipe_client *cli = NULL;
-	struct auth_serversupplied_info *server_info = NULL;
+	struct auth_serversupplied_info *session_info = NULL;
 	NTSTATUS status;
 
 	if (cli != NULL) {
 		goto done;
 	}
 
-	if (server_info == NULL) {
-		status = make_server_info_system(mem_ctx, &server_info);
+	if (session_info == NULL) {
+		status = make_session_info_system(mem_ctx, &session_info);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0, ("open_lsa_pipe: Could not create auth_serversupplied_info: %s\n",
 				  nt_errstr(status)));
@@ -144,7 +144,7 @@ static NTSTATUS open_internal_lsa_pipe(TALLOC_CTX *mem_ctx,
 	/* create a lsa connection */
 	status = rpc_pipe_open_interface(mem_ctx,
 					&ndr_table_lsarpc.syntax_id,
-					server_info,
+					session_info,
 					NULL,
 					winbind_messaging_context(),
 					&cli);

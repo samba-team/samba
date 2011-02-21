@@ -462,8 +462,8 @@ static NTSTATUS inherit_new_acl(vfs_handle_struct *handle,
 			&psd,
 			&size,
 			parent_desc,
-			&handle->conn->server_info->security_token->sids[PRIMARY_USER_SID_INDEX],
-			&handle->conn->server_info->security_token->sids[PRIMARY_GROUP_SID_INDEX],
+			&handle->conn->session_info->security_token->sids[PRIMARY_USER_SID_INDEX],
+			&handle->conn->session_info->security_token->sids[PRIMARY_GROUP_SID_INDEX],
 			is_directory);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;

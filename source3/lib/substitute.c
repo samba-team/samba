@@ -917,9 +917,9 @@ char *standard_sub_conn(TALLOC_CTX *ctx, connection_struct *conn, const char *st
 {
 	return talloc_sub_advanced(ctx,
 				lp_servicename(SNUM(conn)),
-				conn->server_info->unix_name,
+				conn->session_info->unix_name,
 				conn->connectpath,
-				conn->server_info->utok.gid,
+				conn->session_info->utok.gid,
 				get_smb_user_name(),
 				"",
 				str);

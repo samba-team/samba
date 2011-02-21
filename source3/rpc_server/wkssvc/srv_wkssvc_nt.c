@@ -352,7 +352,7 @@ WERROR _wkssvc_NetWkstaGetInfo(struct pipes_struct *p,
 	case 101:
 		/* Level 101 can be allowed from any logged in user */
 		if (!nt_token_check_sid(&global_sid_Authenticated_Users,
-					p->server_info->security_token)) {
+					p->session_info->security_token)) {
 			DEBUG(1,("User not allowed for NetWkstaGetInfo level "
 				 "101\n"));
 			DEBUGADD(3,(" - does not have sid for Authenticated "
@@ -360,7 +360,7 @@ WERROR _wkssvc_NetWkstaGetInfo(struct pipes_struct *p,
 				    sid_string_dbg(
 					    &global_sid_Authenticated_Users)));
 			security_token_debug(DBGC_CLASS, 3,
-					    p->server_info->security_token);
+					    p->session_info->security_token);
 			return WERR_ACCESS_DENIED;
 		}
 		r->out.info->info101 = create_wks_info_101(p->mem_ctx);
@@ -371,14 +371,14 @@ WERROR _wkssvc_NetWkstaGetInfo(struct pipes_struct *p,
 	case 102:
 		/* Level 102 Should only be allowed from a domain administrator */
 		if (!nt_token_check_sid(&global_sid_Builtin_Administrators,
-					p->server_info->security_token)) {
+					p->session_info->security_token)) {
 			DEBUG(1,("User not allowed for NetWkstaGetInfo level "
 				 "102\n"));
 			DEBUGADD(3,(" - does not have sid for Administrators "
 				    "group %s, sids are:\n",
 				    sid_string_dbg(&global_sid_Builtin_Administrators)));
 			security_token_debug(DBGC_CLASS, 3,
-					    p->server_info->security_token);
+					    p->session_info->security_token);
 			return WERR_ACCESS_DENIED;
 		}
 		r->out.info->info102 = create_wks_info_102(p->mem_ctx);
@@ -557,12 +557,12 @@ WERROR _wkssvc_NetWkstaEnumUsers(struct pipes_struct *p,
 {
 	/* This with any level should only be allowed from a domain administrator */
 	if (!nt_token_check_sid(&global_sid_Builtin_Administrators,
-				p->server_info->security_token)) {
+				p->session_info->security_token)) {
 		DEBUG(1,("User not allowed for NetWkstaEnumUsers\n"));
 		DEBUGADD(3,(" - does not have sid for Administrators group "
 			    "%s\n", sid_string_dbg(
 				    &global_sid_Builtin_Administrators)));
-		security_token_debug(DBGC_CLASS, 3, p->server_info->security_token);
+		security_token_debug(DBGC_CLASS, 3, p->session_info->security_token);
 		return WERR_ACCESS_DENIED;
 	}
 
@@ -813,7 +813,7 @@ WERROR _wkssvc_NetrJoinDomain2(struct pipes_struct *p,
 	char *admin_domain = NULL;
 	char *admin_account = NULL;
 	WERROR werr;
-	struct security_token *token = p->server_info->security_token;
+	struct security_token *token = p->session_info->security_token;
 
 	if (!r->in.domain_name) {
 		return WERR_INVALID_PARAM;
@@ -838,7 +838,7 @@ WERROR _wkssvc_NetrJoinDomain2(struct pipes_struct *p,
 
 	werr = decode_wkssvc_join_password_buffer(
 		p->mem_ctx, r->in.encrypted_password,
-		&p->server_info->user_session_key, &cleartext_pwd);
+		&p->session_info->user_session_key, &cleartext_pwd);
 	if (!W_ERROR_IS_OK(werr)) {
 		return werr;
 	}
@@ -888,7 +888,7 @@ WERROR _wkssvc_NetrUnjoinDomain2(struct pipes_struct *p,
 	char *admin_domain = NULL;
 	char *admin_account = NULL;
 	WERROR werr;
-	struct security_token *token = p->server_info->security_token;
+	struct security_token *token = p->session_info->security_token;
 
 	if (!r->in.account || !r->in.encrypted_password) {
 		return WERR_INVALID_PARAM;
@@ -904,7 +904,7 @@ WERROR _wkssvc_NetrUnjoinDomain2(struct pipes_struct *p,
 
 	werr = decode_wkssvc_join_password_buffer(
 		p->mem_ctx, r->in.encrypted_password,
-		&p->server_info->user_session_key, &cleartext_pwd);
+		&p->session_info->user_session_key, &cleartext_pwd);
 	if (!W_ERROR_IS_OK(werr)) {
 		return werr;
 	}

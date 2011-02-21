@@ -430,8 +430,8 @@ NTSTATUS _lsa_OpenPolicy2(struct pipes_struct *p,
 	NTSTATUS status;
 
 	/* Work out max allowed. */
-	map_max_allowed_access(p->server_info->security_token,
-			       &p->server_info->utok,
+	map_max_allowed_access(p->session_info->security_token,
+			       &p->session_info->utok,
 			       &des_access);
 
 	/* map the generic bits to the lsa policy ones */
@@ -444,7 +444,7 @@ NTSTATUS _lsa_OpenPolicy2(struct pipes_struct *p,
 		return status;
 	}
 
-	status = access_check_object(psd, p->server_info->security_token,
+	status = access_check_object(psd, p->session_info->security_token,
 				     SEC_PRIV_INVALID, SEC_PRIV_INVALID, 0, des_access,
 				     &acc_granted, "_lsa_OpenPolicy2" );
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1503,8 +1503,8 @@ static NTSTATUS _lsa_OpenTrustedDomain_base(struct pipes_struct *p,
 	 * handle - so don't check against policy handle. */
 
 	/* Work out max allowed. */
-	map_max_allowed_access(p->server_info->security_token,
-			       &p->server_info->utok,
+	map_max_allowed_access(p->session_info->security_token,
+			       &p->session_info->utok,
 			       &access_mask);
 
 	/* map the generic bits to the lsa account ones */
@@ -1518,7 +1518,7 @@ static NTSTATUS _lsa_OpenTrustedDomain_base(struct pipes_struct *p,
 		return status;
 	}
 
-	status = access_check_object(psd, p->server_info->security_token,
+	status = access_check_object(psd, p->session_info->security_token,
 				     SEC_PRIV_INVALID, SEC_PRIV_INVALID, 0,
 				     access_mask, &acc_granted,
 				     "_lsa_OpenTrustedDomain");
@@ -1702,14 +1702,14 @@ NTSTATUS _lsa_CreateTrustedDomainEx2(struct pipes_struct *p,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	if (p->server_info->utok.uid != sec_initial_uid() &&
-	    !nt_token_check_domain_rid(p->server_info->security_token, DOMAIN_RID_ADMINS)) {
+	if (p->session_info->utok.uid != sec_initial_uid() &&
+	    !nt_token_check_domain_rid(p->session_info->security_token, DOMAIN_RID_ADMINS)) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	/* Work out max allowed. */
-	map_max_allowed_access(p->server_info->security_token,
-			       &p->server_info->utok,
+	map_max_allowed_access(p->session_info->security_token,
+			       &p->session_info->utok,
 			       &r->in.access_mask);
 
 	/* map the generic bits to the lsa policy ones */
@@ -1722,7 +1722,7 @@ NTSTATUS _lsa_CreateTrustedDomainEx2(struct pipes_struct *p,
 		return status;
 	}
 
-	status = access_check_object(psd, p->server_info->security_token,
+	status = access_check_object(psd, p->session_info->security_token,
 				     SEC_PRIV_INVALID, SEC_PRIV_INVALID, 0,
 				     r->in.access_mask, &acc_granted,
 				     "_lsa_CreateTrustedDomainEx2");
@@ -1752,7 +1752,7 @@ NTSTATUS _lsa_CreateTrustedDomainEx2(struct pipes_struct *p,
 		auth_blob.data = r->in.auth_info->auth_blob.data;
 
 		arcfour_crypt_blob(auth_blob.data, auth_blob.length,
-				   &p->server_info->user_session_key);
+				   &p->session_info->user_session_key);
 
 		ndr_err = ndr_pull_struct_blob(&auth_blob, p->mem_ctx,
 					       &auth_struct,
@@ -2398,7 +2398,7 @@ NTSTATUS _lsa_GetUserName(struct pipes_struct *p,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if (p->server_info->guest) {
+	if (p->session_info->guest) {
 		/*
 		 * I'm 99% sure this is not the right place to do this,
 		 * global_sid_Anonymous should probably be put into the token
@@ -2409,8 +2409,8 @@ NTSTATUS _lsa_GetUserName(struct pipes_struct *p,
 			return NT_STATUS_NO_MEMORY;
 		}
 	} else {
-		username = p->server_info->sanitized_username;
-		domname = p->server_info->info3->base.domain.string;
+		username = p->session_info->sanitized_username;
+		domname = p->session_info->info3->base.domain.string;
 	}
 
 	account_name = TALLOC_P(p->mem_ctx, struct lsa_String);
@@ -2463,8 +2463,8 @@ NTSTATUS _lsa_CreateAccount(struct pipes_struct *p,
 	}
 
 	/* Work out max allowed. */
-	map_max_allowed_access(p->server_info->security_token,
-			       &p->server_info->utok,
+	map_max_allowed_access(p->session_info->security_token,
+			       &p->session_info->utok,
 			       &r->in.access_mask);
 
 	/* map the generic bits to the lsa policy ones */
@@ -2477,7 +2477,7 @@ NTSTATUS _lsa_CreateAccount(struct pipes_struct *p,
 		return status;
 	}
 
-	status = access_check_object(psd, p->server_info->security_token,
+	status = access_check_object(psd, p->session_info->security_token,
 				     SEC_PRIV_INVALID, SEC_PRIV_INVALID, 0, r->in.access_mask,
 				     &acc_granted, "_lsa_CreateAccount");
 	if (!NT_STATUS_IS_OK(status)) {
@@ -2527,8 +2527,8 @@ NTSTATUS _lsa_OpenAccount(struct pipes_struct *p,
 	 * handle - so don't check against policy handle. */
 
 	/* Work out max allowed. */
-	map_max_allowed_access(p->server_info->security_token,
-			       &p->server_info->utok,
+	map_max_allowed_access(p->session_info->security_token,
+			       &p->session_info->utok,
 			       &des_access);
 
 	/* map the generic bits to the lsa account ones */
@@ -2542,7 +2542,7 @@ NTSTATUS _lsa_OpenAccount(struct pipes_struct *p,
 		return status;
 	}
 
-	status = access_check_object(psd, p->server_info->security_token,
+	status = access_check_object(psd, p->session_info->security_token,
 				     SEC_PRIV_INVALID, SEC_PRIV_INVALID, 0, des_access,
 				     &acc_granted, "_lsa_OpenAccount" );
 	if (!NT_STATUS_IS_OK(status)) {
@@ -2897,7 +2897,7 @@ NTSTATUS _lsa_AddAccountRights(struct pipes_struct *p,
 	 * on the account sid. We don't check here so just use the latter. JRA.
 	 */
 
-	status = access_check_object(psd, p->server_info->security_token,
+	status = access_check_object(psd, p->session_info->security_token,
 				     SEC_PRIV_INVALID, SEC_PRIV_INVALID, 0,
 				     LSA_ACCOUNT_ADJUST_PRIVILEGES|LSA_ACCOUNT_ADJUST_SYSTEM_ACCESS|LSA_ACCOUNT_VIEW,
 				     &acc_granted, "_lsa_AddAccountRights" );
@@ -2967,7 +2967,7 @@ NTSTATUS _lsa_RemoveAccountRights(struct pipes_struct *p,
 	 * and DELETE on the account sid.
 	 */
 
-	status = access_check_object(psd, p->server_info->security_token,
+	status = access_check_object(psd, p->session_info->security_token,
 				     SEC_PRIV_INVALID, SEC_PRIV_INVALID, 0,
 				     LSA_ACCOUNT_ADJUST_PRIVILEGES|LSA_ACCOUNT_ADJUST_SYSTEM_ACCESS|
 				     LSA_ACCOUNT_VIEW|SEC_STD_DELETE,

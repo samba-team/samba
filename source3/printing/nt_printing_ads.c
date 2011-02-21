@@ -35,7 +35,7 @@ static void store_printer_guid(struct messaging_context *msg_ctx,
 			       const char *printer, struct GUID guid)
 {
 	TALLOC_CTX *tmp_ctx;
-	struct auth_serversupplied_info *server_info = NULL;
+	struct auth_serversupplied_info *session_info = NULL;
 	const char *guid_str;
 	DATA_BLOB blob;
 	NTSTATUS status;
@@ -47,10 +47,10 @@ static void store_printer_guid(struct messaging_context *msg_ctx,
 		return;
 	}
 
-	status = make_server_info_system(tmp_ctx, &server_info);
+	status = make_session_info_system(tmp_ctx, &session_info);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("store_printer_guid: "
-			  "Could not create system server_info\n"));
+			  "Could not create system session_info\n"));
 		goto done;
 	}
 
@@ -70,7 +70,7 @@ static void store_printer_guid(struct messaging_context *msg_ctx,
 		goto done;
 	}
 
-	result = winreg_set_printer_dataex(tmp_ctx, server_info, msg_ctx,
+	result = winreg_set_printer_dataex(tmp_ctx, session_info, msg_ctx,
 					   printer,
 					   SPOOL_DSSPOOLER_KEY, "objectGUID",
 					   REG_SZ, blob.data, blob.length);
@@ -233,14 +233,14 @@ static WERROR nt_printer_unpublish_ads(ADS_STRUCT *ads,
  * Publish a printer in the directory
  *
  * @param mem_ctx      memory context
- * @param server_info  server_info to access winreg pipe
+ * @param session_info  session_info to access winreg pipe
  * @param pinfo2       printer information
  * @param action       publish/unpublish action
  * @return WERROR indicating status of publishing
  ***************************************************************************/
 
 WERROR nt_printer_publish(TALLOC_CTX *mem_ctx,
-			  const struct auth_serversupplied_info *server_info,
+			  const struct auth_serversupplied_info *session_info,
 			  struct messaging_context *msg_ctx,
 			  struct spoolss_PrinterInfo2 *pinfo2,
 			  int action)
@@ -271,7 +271,7 @@ WERROR nt_printer_publish(TALLOC_CTX *mem_ctx,
 
 	sinfo2->attributes = pinfo2->attributes;
 
-	win_rc = winreg_update_printer(mem_ctx, server_info, msg_ctx,
+	win_rc = winreg_update_printer(mem_ctx, session_info, msg_ctx,
 					pinfo2->sharename, info2_mask,
 					sinfo2, NULL, NULL);
 	if (!W_ERROR_IS_OK(win_rc)) {
@@ -322,7 +322,7 @@ WERROR check_published_printers(struct messaging_context *msg_ctx)
 	int snum;
 	int n_services = lp_numservices();
 	TALLOC_CTX *tmp_ctx = NULL;
-	struct auth_serversupplied_info *server_info = NULL;
+	struct auth_serversupplied_info *session_info = NULL;
 	struct spoolss_PrinterInfo2 *pinfo2;
 	NTSTATUS status;
 	WERROR result;
@@ -348,10 +348,10 @@ WERROR check_published_printers(struct messaging_context *msg_ctx)
 		goto done;
 	}
 
-	status = make_server_info_system(tmp_ctx, &server_info);
+	status = make_session_info_system(tmp_ctx, &session_info);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("check_published_printers: "
-			  "Could not create system server_info\n"));
+			  "Could not create system session_info\n"));
 		result = WERR_ACCESS_DENIED;
 		goto done;
 	}
@@ -361,7 +361,7 @@ WERROR check_published_printers(struct messaging_context *msg_ctx)
 			continue;
 		}
 
-		result = winreg_get_printer(tmp_ctx, server_info, msg_ctx,
+		result = winreg_get_printer(tmp_ctx, session_info, msg_ctx,
 					    lp_servicename(snum),
 					    &pinfo2);
 		if (!W_ERROR_IS_OK(result)) {
@@ -384,7 +384,7 @@ done:
 }
 
 bool is_printer_published(TALLOC_CTX *mem_ctx,
-			  const struct auth_serversupplied_info *server_info,
+			  const struct auth_serversupplied_info *session_info,
 			  struct messaging_context *msg_ctx,
 			  const char *servername, char *printer, struct GUID *guid,
 			  struct spoolss_PrinterInfo2 **info2)
@@ -396,7 +396,7 @@ bool is_printer_published(TALLOC_CTX *mem_ctx,
 	WERROR result;
 	NTSTATUS status;
 
-	result = winreg_get_printer(mem_ctx, server_info, msg_ctx,
+	result = winreg_get_printer(mem_ctx, session_info, msg_ctx,
 				    printer, &pinfo2);
 	if (!W_ERROR_IS_OK(result)) {
 		return false;
@@ -413,7 +413,7 @@ bool is_printer_published(TALLOC_CTX *mem_ctx,
 
 	/* fetching printer guids really ought to be a separate function. */
 
-	result = winreg_get_printer_dataex(mem_ctx, server_info, msg_ctx,
+	result = winreg_get_printer_dataex(mem_ctx, session_info, msg_ctx,
 					   printer,
 					   SPOOL_DSSPOOLER_KEY, "objectGUID",
 					   &type, &data, &data_size);
@@ -456,7 +456,7 @@ done:
 }
 #else
 WERROR nt_printer_publish(TALLOC_CTX *mem_ctx,
-			  const struct auth_serversupplied_info *server_info,
+			  const struct auth_serversupplied_info *session_info,
 			  struct messaging_context *msg_ctx,
 			  struct spoolss_PrinterInfo2 *pinfo2,
 			  int action)
@@ -470,7 +470,7 @@ WERROR check_published_printers(struct messaging_context *msg_ctx)
 }
 
 bool is_printer_published(TALLOC_CTX *mem_ctx,
-			  const struct auth_serversupplied_info *server_info,
+			  const struct auth_serversupplied_info *session_info,
 			  struct messaging_context *msg_ctx,
 			  const char *servername, char *printer, struct GUID *guid,
 			  struct spoolss_PrinterInfo2 **info2)

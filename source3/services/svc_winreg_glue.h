@@ -28,28 +28,28 @@ struct security_descriptor* svcctl_gen_service_sd(TALLOC_CTX *mem_ctx);
 
 struct security_descriptor *svcctl_get_secdesc(TALLOC_CTX *mem_ctx,
 					       struct messaging_context *msg_ctx,
-					       const struct auth_serversupplied_info *server_info,
+					       const struct auth_serversupplied_info *session_info,
 					       const char *name);
 
 bool svcctl_set_secdesc(struct messaging_context *msg_ctx,
-			const struct auth_serversupplied_info *server_info,
+			const struct auth_serversupplied_info *session_info,
 			const char *name,
 			struct security_descriptor *sd);
 
 const char *svcctl_get_string_value(TALLOC_CTX *mem_ctx,
 				    struct messaging_context *msg_ctx,
-				    const struct auth_serversupplied_info *server_info,
+				    const struct auth_serversupplied_info *session_info,
 				    const char *key_name,
 				    const char *value_name);
 
 const char *svcctl_lookup_dispname(TALLOC_CTX *mem_ctx,
 				   struct messaging_context *msg_ctx,
-				   const struct auth_serversupplied_info *server_info,
+				   const struct auth_serversupplied_info *session_info,
 				   const char *name);
 
 const char *svcctl_lookup_description(TALLOC_CTX *mem_ctx,
 				      struct messaging_context *msg_ctx,
-				      const struct auth_serversupplied_info *server_info,
+				      const struct auth_serversupplied_info *session_info,
 				      const char *name);
 
 #endif /* SVC_WINREG_GLUE_H */

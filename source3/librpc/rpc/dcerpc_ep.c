@@ -161,7 +161,7 @@ static NTSTATUS ep_register(const struct ndr_interface_table *iface,
 	status = rpcint_binding_handle(tmp_ctx,
 				       &ndr_table_epmapper,
 				       &client_id,
-				       get_server_info_system(),
+				       get_session_info_system(),
 				       server_messaging_context(),
 				       &h);
 	if (!NT_STATUS_IS_OK(status)) {

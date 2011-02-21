@@ -631,7 +631,7 @@ bool nt_printing_tdb_migrate(struct messaging_context *msg_ctx)
 	bool drivers_exists = file_exist(drivers_path);
 	bool printers_exists = file_exist(printers_path);
 	bool forms_exists = file_exist(forms_path);
-	struct auth_serversupplied_info *server_info;
+	struct auth_serversupplied_info *session_info;
 	struct rpc_pipe_client *spoolss_pipe = NULL;
 	TALLOC_CTX *tmp_ctx = talloc_stackframe();
 	NTSTATUS status;
@@ -640,9 +640,9 @@ bool nt_printing_tdb_migrate(struct messaging_context *msg_ctx)
 		return true;
 	}
 
-	status = make_server_info_system(tmp_ctx, &server_info);
+	status = make_session_info_system(tmp_ctx, &session_info);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("Couldn't create server_info: %s\n",
+		DEBUG(0, ("Couldn't create session_info: %s\n",
 			  nt_errstr(status)));
 		talloc_free(tmp_ctx);
 		return false;
@@ -650,7 +650,7 @@ bool nt_printing_tdb_migrate(struct messaging_context *msg_ctx)
 
 	status = rpc_pipe_open_internal(tmp_ctx,
 					&ndr_table_spoolss.syntax_id,
-					server_info,
+					session_info,
 					NULL,
 					msg_ctx,
 					&spoolss_pipe);

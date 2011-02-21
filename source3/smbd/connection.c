@@ -141,8 +141,8 @@ bool claim_connection(connection_struct *conn, const char *name)
 	crec.magic = 0x280267;
 	crec.pid = sconn_server_id(conn->sconn);
 	crec.cnum = conn->cnum;
-	crec.uid = conn->server_info->utok.uid;
-	crec.gid = conn->server_info->utok.gid;
+	crec.uid = conn->session_info->utok.uid;
+	crec.gid = conn->session_info->utok.gid;
 	strlcpy(crec.servicename, lp_servicename(SNUM(conn)),
 		sizeof(crec.servicename));
 	crec.start = time(NULL);

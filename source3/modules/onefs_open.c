@@ -326,7 +326,7 @@ static NTSTATUS onefs_open_file(files_struct *fsp,
 	fsp->wcp = NULL; /* Write cache pointer. */
 
 	DEBUG(2,("%s opened file %s read=%s write=%s (numopen=%d)\n",
-		 conn->server_info->unix_name,
+		 conn->session_info->unix_name,
 		 smb_fname_str_dbg(smb_fname),
 		 BOOLSTR(fsp->can_read), BOOLSTR(fsp->can_write),
 		 conn->num_files_open));
@@ -1309,7 +1309,7 @@ NTSTATUS onefs_open_file_ntcreate(connection_struct *conn,
 		new_file_created = True;
 	}
 
-	set_share_mode(lck, fsp, conn->server_info->utok.uid, 0,
+	set_share_mode(lck, fsp, conn->session_info->utok.uid, 0,
 		       fsp->oplock_type);
 
 	/* Handle strange delete on close create semantics. */
@@ -1665,7 +1665,7 @@ static NTSTATUS onefs_open_directory(connection_struct *conn,
 		return NT_STATUS_DELETE_PENDING;
 	}
 
-	set_share_mode(lck, fsp, conn->server_info->utok.uid, 0, NO_OPLOCK);
+	set_share_mode(lck, fsp, conn->session_info->utok.uid, 0, NO_OPLOCK);
 
 	/*
 	 * For directories the delete on close bit at open time seems

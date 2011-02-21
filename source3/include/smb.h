@@ -375,7 +375,7 @@ struct client_address {
 };
 
 struct vuid_cache_entry {
-	struct auth_serversupplied_info *server_info;
+	struct auth_serversupplied_info *session_info;
 	uint16_t vuid;
 	bool read_only;
 };
@@ -476,7 +476,7 @@ typedef struct connection_struct {
 	 * This represents the user information on this connection. Depending
 	 * on the vuid using this tid, this might change per SMB request.
 	 */
-	struct auth_serversupplied_info *server_info;
+	struct auth_serversupplied_info *session_info;
 
 	/*
 	 * If the "force group" parameter is set, this is the primary gid that
@@ -1711,7 +1711,7 @@ typedef struct user_struct {
 				 TDB key string */
 	int homes_snum;
 
-	struct auth_serversupplied_info *server_info;
+	struct auth_serversupplied_info *session_info;
 
 	struct auth_ntlmssp_state *auth_ntlmssp_state;
 } user_struct;

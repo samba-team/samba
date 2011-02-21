@@ -119,7 +119,7 @@ struct pipes_struct {
 
 	struct client_address *client_id;
 
-	struct auth_serversupplied_info *server_info;
+	struct auth_serversupplied_info *session_info;
 	struct messaging_context *msg_ctx;
 
 	struct ndr_syntax_id syntax;

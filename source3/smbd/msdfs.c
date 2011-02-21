@@ -219,7 +219,7 @@ NTSTATUS create_conn_struct(TALLOC_CTX *ctx,
 				connection_struct **pconn,
 				int snum,
 				const char *path,
-				const struct auth_serversupplied_info *server_info,
+				const struct auth_serversupplied_info *session_info,
 				char **poldcwd)
 {
 	connection_struct *conn;
@@ -258,9 +258,9 @@ NTSTATUS create_conn_struct(TALLOC_CTX *ctx,
 	conn->sconn = smbd_server_conn;
 	conn->sconn->num_tcons_open++;
 
-	if (server_info != NULL) {
-		conn->server_info = copy_serverinfo(conn, server_info);
-		if (conn->server_info == NULL) {
+	if (session_info != NULL) {
+		conn->session_info = copy_serverinfo(conn, session_info);
+		if (conn->session_info == NULL) {
 			DEBUG(0, ("copy_serverinfo failed\n"));
 			TALLOC_FREE(conn);
 			return NT_STATUS_NO_MEMORY;
@@ -726,7 +726,7 @@ static NTSTATUS dfs_redirect(TALLOC_CTX *ctx,
 	if (!( strequal(pdp->servicename, lp_servicename(SNUM(conn)))
 			|| (strequal(pdp->servicename, HOMES_NAME)
 			&& strequal(lp_servicename(SNUM(conn)),
-				conn->server_info->sanitized_username) )) ) {
+				conn->session_info->sanitized_username) )) ) {
 
 		/* The given sharename doesn't match this connection. */
 		TALLOC_FREE(pdp);

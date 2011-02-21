@@ -332,7 +332,7 @@ static char *smb_traffic_analyzer_create_string( TALLOC_CTX *ctx,
 	 * anonymized if needed, by the calling function.
 	 */
 	usersid = dom_sid_string( common_data_count_str,
-		&handle->conn->server_info->security_token->sids[0]);
+		&handle->conn->session_info->security_token->sids[0]);
 
 	sidstr = smb_traffic_analyzer_anonymize(
 		common_data_count_str,
@@ -363,8 +363,8 @@ static char *smb_traffic_analyzer_create_string( TALLOC_CTX *ctx,
 		(unsigned int) strlen(service_name),
 		service_name,
 		(unsigned int)
-		strlen(handle->conn->server_info->info3->base.domain.string),
-		handle->conn->server_info->info3->base.domain.string,
+		strlen(handle->conn->session_info->info3->base.domain.string),
+		handle->conn->session_info->info3->base.domain.string,
 		(unsigned int) strlen(timestr),
 		timestr,
 		(unsigned int) strlen(handle->conn->sconn->client_id.addr),
@@ -438,7 +438,7 @@ static void smb_traffic_analyzer_send_data(vfs_handle_struct *handle,
 	 * function.
 	 */
 	username = smb_traffic_analyzer_anonymize( talloc_tos(),
-			handle->conn->server_info->sanitized_username,
+			handle->conn->session_info->sanitized_username,
 			handle);
 
 	if (!username) {
@@ -469,7 +469,7 @@ static void smb_traffic_analyzer_send_data(vfs_handle_struct *handle,
 			"\"%04d-%02d-%02d %02d:%02d:%02d.%03d\"\n",
 			(unsigned int) s_data->len,
 			username,
-			handle->conn->server_info->info3->base.domain.string,
+			handle->conn->session_info->info3->base.domain.string,
 			Write ? 'W' : 'R',
 			handle->conn->connectpath,
 			s_data->filename,

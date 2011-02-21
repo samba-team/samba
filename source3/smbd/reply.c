@@ -2531,7 +2531,7 @@ static NTSTATUS do_unlink(connection_struct *conn,
 	}
 
 	/* The set is across all open files on this dev/inode pair. */
-	if (!set_delete_on_close(fsp, True, &conn->server_info->utok)) {
+	if (!set_delete_on_close(fsp, True, &conn->session_info->utok)) {
 		close_file(req, fsp, NORMAL_CLOSE);
 		return NT_STATUS_ACCESS_DENIED;
 	}
@@ -5333,7 +5333,7 @@ void reply_printqueue(struct smb_request *req)
 
 		status = rpc_pipe_open_interface(conn,
 						 &ndr_table_spoolss.syntax_id,
-						 conn->server_info,
+						 conn->session_info,
 						 &conn->sconn->client_id,
 						 conn->sconn->msg_ctx,
 						 &cli);
@@ -5649,7 +5649,7 @@ void reply_rmdir(struct smb_request *req)
 		goto out;
 	}
 
-	if (!set_delete_on_close(fsp, true, &conn->server_info->utok)) {
+	if (!set_delete_on_close(fsp, true, &conn->session_info->utok)) {
 		close_file(req, fsp, ERROR_CLOSE);
 		reply_nterror(req, NT_STATUS_ACCESS_DENIED);
 		goto out;

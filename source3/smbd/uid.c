@@ -55,10 +55,10 @@ bool change_to_guest(void)
 }
 
 /****************************************************************************
- talloc free the conn->server_info if not used in the vuid cache.
+ talloc free the conn->session_info if not used in the vuid cache.
 ****************************************************************************/
 
-static void free_conn_server_info_if_unused(connection_struct *conn)
+static void free_conn_session_info_if_unused(connection_struct *conn)
 {
 	unsigned int i;
 
@@ -66,24 +66,24 @@ static void free_conn_server_info_if_unused(connection_struct *conn)
 		struct vuid_cache_entry *ent;
 		ent = &conn->vuid_cache.array[i];
 		if (ent->vuid != UID_FIELD_INVALID &&
-				conn->server_info == ent->server_info) {
+				conn->session_info == ent->session_info) {
 			return;
 		}
 	}
 	/* Not used, safe to free. */
-	TALLOC_FREE(conn->server_info);
+	TALLOC_FREE(conn->session_info);
 }
 
 /*******************************************************************
  Check if a username is OK.
 
- This sets up conn->server_info with a copy related to this vuser that
+ This sets up conn->session_info with a copy related to this vuser that
  later code can then mess with.
 ********************************************************************/
 
 static bool check_user_ok(connection_struct *conn,
 			uint16_t vuid,
-			const struct auth_serversupplied_info *server_info,
+			const struct auth_serversupplied_info *session_info,
 			int snum)
 {
 	bool valid_vuid = (vuid != UID_FIELD_INVALID);
@@ -97,27 +97,27 @@ static bool check_user_ok(connection_struct *conn,
 		for (i=0; i<VUID_CACHE_SIZE; i++) {
 			ent = &conn->vuid_cache.array[i];
 			if (ent->vuid == vuid) {
-				free_conn_server_info_if_unused(conn);
-				conn->server_info = ent->server_info;
+				free_conn_session_info_if_unused(conn);
+				conn->session_info = ent->session_info;
 				conn->read_only = ent->read_only;
 				return(True);
 			}
 		}
 	}
 
-	if (!user_ok_token(server_info->unix_name,
-			   server_info->info3->base.domain.string,
-			   server_info->security_token, snum))
+	if (!user_ok_token(session_info->unix_name,
+			   session_info->info3->base.domain.string,
+			   session_info->security_token, snum))
 		return(False);
 
 	readonly_share = is_share_read_only_for_token(
-		server_info->unix_name,
-		server_info->info3->base.domain.string,
-		server_info->security_token,
+		session_info->unix_name,
+		session_info->info3->base.domain.string,
+		session_info->security_token,
 		conn);
 
 	if (!readonly_share &&
-	    !share_access_check(server_info->security_token, lp_servicename(snum),
+	    !share_access_check(session_info->security_token, lp_servicename(snum),
 				FILE_WRITE_DATA)) {
 		/* smb.conf allows r/w, but the security descriptor denies
 		 * write. Fall back to looking at readonly. */
@@ -126,16 +126,16 @@ static bool check_user_ok(connection_struct *conn,
 			 "security descriptor\n"));
 	}
 
-	if (!share_access_check(server_info->security_token, lp_servicename(snum),
+	if (!share_access_check(session_info->security_token, lp_servicename(snum),
 				readonly_share ?
 				FILE_READ_DATA : FILE_WRITE_DATA)) {
 		return False;
 	}
 
 	admin_user = token_contains_name_in_list(
-		server_info->unix_name,
-		server_info->info3->base.domain.string,
-		NULL, server_info->security_token, lp_admin_users(snum));
+		session_info->unix_name,
+		session_info->info3->base.domain.string,
+		NULL, session_info->security_token, lp_admin_users(snum));
 
 	if (valid_vuid) {
 		struct vuid_cache_entry *ent =
@@ -144,34 +144,34 @@ static bool check_user_ok(connection_struct *conn,
 		conn->vuid_cache.next_entry =
 			(conn->vuid_cache.next_entry + 1) % VUID_CACHE_SIZE;
 
-		TALLOC_FREE(ent->server_info);
+		TALLOC_FREE(ent->session_info);
 
 		/*
-		 * If force_user was set, all server_info's are based on the same
+		 * If force_user was set, all session_info's are based on the same
 		 * username-based faked one.
 		 */
 
-		ent->server_info = copy_serverinfo(
-			conn, conn->force_user ? conn->server_info : server_info);
+		ent->session_info = copy_serverinfo(
+			conn, conn->force_user ? conn->session_info : session_info);
 
-		if (ent->server_info == NULL) {
+		if (ent->session_info == NULL) {
 			ent->vuid = UID_FIELD_INVALID;
 			return false;
 		}
 
 		ent->vuid = vuid;
 		ent->read_only = readonly_share;
-		free_conn_server_info_if_unused(conn);
-		conn->server_info = ent->server_info;
+		free_conn_session_info_if_unused(conn);
+		conn->session_info = ent->session_info;
 	}
 
 	conn->read_only = readonly_share;
 	if (admin_user) {
 		DEBUG(2,("check_user_ok: user %s is an admin user. "
 			"Setting uid as %d\n",
-			conn->server_info->unix_name,
+			conn->session_info->unix_name,
 			sec_initial_uid() ));
-		conn->server_info->utok.uid = sec_initial_uid();
+		conn->session_info->utok.uid = sec_initial_uid();
 	}
 
 	return(True);
@@ -194,27 +194,27 @@ void conn_clear_vuid_cache(connection_struct *conn, uint16_t vuid)
 		if (ent->vuid == vuid) {
 			ent->vuid = UID_FIELD_INVALID;
 			/*
-			 * We need to keep conn->server_info around
-			 * if it's equal to ent->server_info as a SMBulogoff
+			 * We need to keep conn->session_info around
+			 * if it's equal to ent->session_info as a SMBulogoff
 			 * is often followed by a SMBtdis (with an invalid
 			 * vuid). The debug code (or regular code in
 			 * vfs_full_audit) wants to refer to the
-			 * conn->server_info pointer to print debug
+			 * conn->session_info pointer to print debug
 			 * statements. Theoretically this is a bug,
-			 * as once the vuid is gone the server_info
+			 * as once the vuid is gone the session_info
 			 * on the conn struct isn't valid any more,
 			 * but there's enough code that assumes
-			 * conn->server_info is never null that
+			 * conn->session_info is never null that
 			 * it's easier to hold onto the old pointer
 			 * until we get a new sessionsetupX.
 			 * As everything is hung off the
 			 * conn pointer as a talloc context we're not
 			 * leaking memory here. See bug #6315. JRA.
 			 */
-			if (conn->server_info == ent->server_info) {
-				ent->server_info = NULL;
+			if (conn->session_info == ent->session_info) {
+				ent->session_info = NULL;
 			} else {
-				TALLOC_FREE(ent->server_info);
+				TALLOC_FREE(ent->session_info);
 			}
 			ent->read_only = False;
 		}
@@ -228,7 +228,7 @@ void conn_clear_vuid_cache(connection_struct *conn, uint16_t vuid)
 
 bool change_to_user(connection_struct *conn, uint16 vuid)
 {
-	const struct auth_serversupplied_info *server_info = NULL;
+	const struct auth_serversupplied_info *session_info = NULL;
 	user_struct *vuser;
 	int snum;
 	gid_t gid;
@@ -252,13 +252,13 @@ bool change_to_user(connection_struct *conn, uint16 vuid)
 	 */
 
 	if((lp_security() == SEC_SHARE) && (current_user.conn == conn) &&
-	   (current_user.ut.uid == conn->server_info->utok.uid)) {
+	   (current_user.ut.uid == conn->session_info->utok.uid)) {
 		DEBUG(4,("change_to_user: Skipping user change - already "
 			 "user\n"));
 		return(True);
 	} else if ((current_user.conn == conn) && 
 		   (vuser != NULL) && (current_user.vuid == vuid) &&
-		   (current_user.ut.uid == vuser->server_info->utok.uid)) {
+		   (current_user.ut.uid == vuser->session_info->utok.uid)) {
 		DEBUG(4,("change_to_user: Skipping user change - already "
 			 "user\n"));
 		return(True);
@@ -266,20 +266,20 @@ bool change_to_user(connection_struct *conn, uint16 vuid)
 
 	snum = SNUM(conn);
 
-	server_info = vuser ? vuser->server_info : conn->server_info;
+	session_info = vuser ? vuser->session_info : conn->session_info;
 
-	if (!server_info) {
+	if (!session_info) {
 		/* Invalid vuid sent - even with security = share. */
 		DEBUG(2,("change_to_user: Invalid vuid %d used on "
 			 "share %s.\n",vuid, lp_servicename(snum) ));
 		return false;
 	}
 
-	if (!check_user_ok(conn, vuid, server_info, snum)) {
+	if (!check_user_ok(conn, vuid, session_info, snum)) {
 		DEBUG(2,("change_to_user: SMB user %s (unix user %s, vuid %d) "
 			 "not permitted access to share %s.\n",
-			 server_info->sanitized_username,
-			 server_info->unix_name, vuid,
+			 session_info->sanitized_username,
+			 session_info->unix_name, vuid,
 			 lp_servicename(snum)));
 		return false;
 	}
@@ -292,14 +292,14 @@ bool change_to_user(connection_struct *conn, uint16 vuid)
 	}
 
 	/*
-	 * conn->server_info is now correctly set up with a copy we can mess
+	 * conn->session_info is now correctly set up with a copy we can mess
 	 * with for force_group etc.
 	 */
 
-	uid = conn->server_info->utok.uid;
-	gid = conn->server_info->utok.gid;
-	num_groups = conn->server_info->utok.ngroups;
-	group_list  = conn->server_info->utok.groups;
+	uid = conn->session_info->utok.uid;
+	gid = conn->session_info->utok.gid;
+	num_groups = conn->session_info->utok.ngroups;
+	group_list  = conn->session_info->utok.groups;
 
 	/*
 	 * See if we should force group for this service.
@@ -324,18 +324,18 @@ bool change_to_user(connection_struct *conn, uint16 vuid)
 			for (i = 0; i < num_groups; i++) {
 				if (group_list[i]
 				    == conn->force_group_gid) {
-					conn->server_info->utok.gid =
+					conn->session_info->utok.gid =
 						conn->force_group_gid;
 					gid = conn->force_group_gid;
-					gid_to_sid(&conn->server_info->security_token
+					gid_to_sid(&conn->session_info->security_token
 						   ->sids[1], gid);
 					break;
 				}
 			}
 		} else {
-			conn->server_info->utok.gid = conn->force_group_gid;
+			conn->session_info->utok.gid = conn->force_group_gid;
 			gid = conn->force_group_gid;
-			gid_to_sid(&conn->server_info->security_token->sids[1],
+			gid_to_sid(&conn->session_info->security_token->sids[1],
 				   gid);
 		}
 	}
@@ -347,7 +347,7 @@ bool change_to_user(connection_struct *conn, uint16 vuid)
 	current_user.ut.groups  = group_list;
 
 	set_sec_ctx(uid, gid, current_user.ut.ngroups, current_user.ut.groups,
-		    conn->server_info->security_token);
+		    conn->session_info->security_token);
 
 	current_user.conn = conn;
 	current_user.vuid = vuid;
@@ -387,9 +387,9 @@ bool become_authenticated_pipe_user(struct pipes_struct *p)
 	if (!push_sec_ctx())
 		return False;
 
-	set_sec_ctx(p->server_info->utok.uid, p->server_info->utok.gid,
-		    p->server_info->utok.ngroups, p->server_info->utok.groups,
-		    p->server_info->security_token);
+	set_sec_ctx(p->session_info->utok.uid, p->session_info->utok.gid,
+		    p->session_info->utok.ngroups, p->session_info->utok.groups,
+		    p->session_info->security_token);
 
 	return True;
 }
@@ -510,7 +510,7 @@ bool unbecome_user(void)
 
 /****************************************************************************
  Return the current user we are running effectively as on this connection.
- I'd like to make this return conn->server_info->utok.uid, but become_root()
+ I'd like to make this return conn->session_info->utok.uid, but become_root()
  doesn't alter this value.
 ****************************************************************************/
 
@@ -521,7 +521,7 @@ uid_t get_current_uid(connection_struct *conn)
 
 /****************************************************************************
  Return the current group we are running effectively as on this connection.
- I'd like to make this return conn->server_info->utok.gid, but become_root()
+ I'd like to make this return conn->session_info->utok.gid, but become_root()
  doesn't alter this value.
 ****************************************************************************/
 
@@ -532,7 +532,7 @@ gid_t get_current_gid(connection_struct *conn)
 
 /****************************************************************************
  Return the UNIX token we are running effectively as on this connection.
- I'd like to make this return &conn->server_info->utok, but become_root()
+ I'd like to make this return &conn->session_info->utok, but become_root()
  doesn't alter this value.
 ****************************************************************************/
 

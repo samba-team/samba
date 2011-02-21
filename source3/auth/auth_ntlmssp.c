@@ -25,9 +25,9 @@
 #include "ntlmssp_wrap.h"
 #include "../librpc/gen_ndr/netlogon.h"
 
-NTSTATUS auth_ntlmssp_steal_server_info(TALLOC_CTX *mem_ctx,
+NTSTATUS auth_ntlmssp_steal_session_info(TALLOC_CTX *mem_ctx,
 					struct auth_ntlmssp_state *auth_ntlmssp_state,
-					struct auth_serversupplied_info **server_info)
+					struct auth_serversupplied_info **session_info)
 {
 	/* Free the current server_info user_session_key and reset it from the
 	 * current ntlmssp_state session_key */
@@ -40,11 +40,11 @@ NTSTATUS auth_ntlmssp_steal_server_info(TALLOC_CTX *mem_ctx,
 			auth_ntlmssp_state->ntlmssp_state->session_key.length);
 	if (auth_ntlmssp_state->ntlmssp_state->session_key.length &&
 	    !auth_ntlmssp_state->server_info->user_session_key.data) {
-		*server_info = NULL;
+		*session_info = NULL;
 		return NT_STATUS_NO_MEMORY;
 	}
-	/* Steal server_info away from auth_ntlmssp_state */
-	*server_info = talloc_move(mem_ctx, &auth_ntlmssp_state->server_info);
+	/* Steal session_info away from auth_ntlmssp_state */
+	*session_info = talloc_move(mem_ctx, &auth_ntlmssp_state->server_info);
 	return NT_STATUS_OK;
 }
 

@@ -224,7 +224,7 @@ static uint32_t winreg_printer_rev_changeid(void)
  *
  * @param[in]  mem_ctx       The memory context to use.
  *
- * @param[in]  server_info   The supplied server info.
+ * @param[in]  session_info   The supplied server info.
  *
  * @param[out] binding_handle A pointer for the winreg dcerpc binding handle.
  *
@@ -245,7 +245,7 @@ static uint32_t winreg_printer_rev_changeid(void)
  *                           code if something gone wrong.
  */
 static WERROR winreg_printer_openkey(TALLOC_CTX *mem_ctx,
-			      const struct auth_serversupplied_info *server_info,
+			      const struct auth_serversupplied_info *session_info,
 			      struct messaging_context *msg_ctx,
 			      struct dcerpc_binding_handle **winreg_binding_handle,
 			      const char *path,
@@ -268,7 +268,7 @@ static WERROR winreg_printer_openkey(TALLOC_CTX *mem_ctx,
 	status = rpcint_binding_handle(mem_ctx,
 				       &ndr_table_winreg,
 				       &client_id,
-				       server_info,
+				       session_info,
 				       msg_ctx,
 				       &binding_handle);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -656,7 +656,7 @@ done:
 }
 
 static WERROR winreg_printer_opendriver(TALLOC_CTX *mem_ctx,
-					const struct auth_serversupplied_info *server_info,
+					const struct auth_serversupplied_info *session_info,
 					struct messaging_context *msg_ctx,
 					const char *drivername,
 					const char *architecture,
@@ -678,7 +678,7 @@ static WERROR winreg_printer_opendriver(TALLOC_CTX *mem_ctx,
 	}
 
 	result = winreg_printer_openkey(mem_ctx,
-					server_info,
+					session_info,
 					msg_ctx,
 					winreg_binding_handle,
 					key_name,
@@ -912,7 +912,7 @@ static WERROR winreg_printer_ver_to_dword(const char *str, uint64_t *data)
 ********************************************************************/
 
 WERROR winreg_create_printer(TALLOC_CTX *mem_ctx,
-			     const struct auth_serversupplied_info *server_info,
+			     const struct auth_serversupplied_info *session_info,
 			     struct messaging_context *msg_ctx,
 			     const char *sharename)
 {
@@ -944,7 +944,7 @@ WERROR winreg_create_printer(TALLOC_CTX *mem_ctx,
 	ZERO_STRUCT(key_hnd);
 
 	result = winreg_printer_openkey(tmp_ctx,
-					server_info,
+					session_info,
 					msg_ctx,
 					&winreg_handle,
 					path,
@@ -966,7 +966,7 @@ WERROR winreg_create_printer(TALLOC_CTX *mem_ctx,
 
 	/* Create the main key */
 	result = winreg_printer_openkey(tmp_ctx,
-					server_info,
+					session_info,
 					msg_ctx,
 					&winreg_handle,
 					path,
@@ -1226,7 +1226,7 @@ WERROR winreg_create_printer(TALLOC_CTX *mem_ctx,
 	 */
 
 	result = winreg_update_printer(tmp_ctx,
-				       server_info,
+				       session_info,
 				       msg_ctx,
 				       sharename,
 				       info2_mask,
@@ -1251,7 +1251,7 @@ done:
 }
 
 WERROR winreg_update_printer(TALLOC_CTX *mem_ctx,
-			     const struct auth_serversupplied_info *server_info,
+			     const struct auth_serversupplied_info *session_info,
 			     struct messaging_context *msg_ctx,
 			     const char *sharename,
 			     uint32_t info2_mask,
@@ -1285,7 +1285,7 @@ WERROR winreg_update_printer(TALLOC_CTX *mem_ctx,
 	ZERO_STRUCT(key_hnd);
 
 	result = winreg_printer_openkey(tmp_ctx,
-					server_info,
+					session_info,
 					msg_ctx,
 					&winreg_handle,
 					path,
@@ -1553,7 +1553,7 @@ WERROR winreg_update_printer(TALLOC_CTX *mem_ctx,
 			}
 		}
 		result = winreg_set_printer_secdesc(tmp_ctx,
-						    server_info,
+						    session_info,
 						    msg_ctx,
 						    sharename,
 						    secdesc);
@@ -1668,7 +1668,7 @@ done:
 }
 
 WERROR winreg_get_printer(TALLOC_CTX *mem_ctx,
-			  const struct auth_serversupplied_info *server_info,
+			  const struct auth_serversupplied_info *session_info,
 			  struct messaging_context *msg_ctx,
 			  const char *printer,
 			  struct spoolss_PrinterInfo2 **pinfo2)
@@ -1701,7 +1701,7 @@ WERROR winreg_get_printer(TALLOC_CTX *mem_ctx,
 	}
 
 	result = winreg_printer_openkey(tmp_ctx,
-					server_info,
+					session_info,
 					msg_ctx,
 					&winreg_handle,
 					path,
@@ -1900,7 +1900,7 @@ WERROR winreg_get_printer(TALLOC_CTX *mem_ctx,
 	}
 
 	result = winreg_get_printer_secdesc(info2,
-					    server_info,
+					    session_info,
 					    msg_ctx,
 					    printer,
 					    &info2->secdesc);
@@ -1935,7 +1935,7 @@ done:
 }
 
 WERROR winreg_get_printer_secdesc(TALLOC_CTX *mem_ctx,
-				  const struct auth_serversupplied_info *server_info,
+				  const struct auth_serversupplied_info *session_info,
 				  struct messaging_context *msg_ctx,
 				  const char *sharename,
 				  struct spoolss_security_descriptor **psecdesc)
@@ -1964,7 +1964,7 @@ WERROR winreg_get_printer_secdesc(TALLOC_CTX *mem_ctx,
 	ZERO_STRUCT(key_hnd);
 
 	result = winreg_printer_openkey(tmp_ctx,
-					server_info,
+					session_info,
 					msg_ctx,
 					&winreg_handle,
 					path,
@@ -2005,7 +2005,7 @@ WERROR winreg_get_printer_secdesc(TALLOC_CTX *mem_ctx,
 
 create_default:
 	result = winreg_printer_openkey(tmp_ctx,
-					server_info,
+					session_info,
 					msg_ctx,
 					&winreg_handle,
 					path,
@@ -2092,7 +2092,7 @@ done:
 }
 
 WERROR winreg_set_printer_secdesc(TALLOC_CTX *mem_ctx,
-				  const struct auth_serversupplied_info *server_info,
+				  const struct auth_serversupplied_info *session_info,
 				  struct messaging_context *msg_ctx,
 				  const char *sharename,
 				  const struct spoolss_security_descriptor *secdesc)
@@ -2130,7 +2130,7 @@ WERROR winreg_set_printer_secdesc(TALLOC_CTX *mem_ctx,
 		size_t size;
 
 		result = winreg_get_printer_secdesc(tmp_ctx,
-						    server_info,
+						    session_info,
 						    msg_ctx,
 						    sharename,
 						    &old_secdesc);
@@ -2175,7 +2175,7 @@ WERROR winreg_set_printer_secdesc(TALLOC_CTX *mem_ctx,
 	ZERO_STRUCT(key_hnd);
 
 	result = winreg_printer_openkey(tmp_ctx,
-					server_info,
+					session_info,
 					msg_ctx,
 					&winreg_handle,
 					path,
@@ -2216,7 +2216,7 @@ done:
 
 /* Set printer data over the winreg pipe. */
 WERROR winreg_set_printer_dataex(TALLOC_CTX *mem_ctx,
-				 const struct auth_serversupplied_info *server_info,
+				 const struct auth_serversupplied_info *session_info,
 				 struct messaging_context *msg_ctx,
 				 const char *printer,
 				 const char *key,
@@ -2251,7 +2251,7 @@ WERROR winreg_set_printer_dataex(TALLOC_CTX *mem_ctx,
 	DEBUG(8, ("winreg_set_printer_dataex: Open printer key %s, value %s, access_mask: 0x%05x for [%s]\n",
 			key, value, access_mask, printer));
 	result = winreg_printer_openkey(tmp_ctx,
-					server_info,
+					session_info,
 					msg_ctx,
 					&winreg_handle,
 					path,
@@ -2299,7 +2299,7 @@ done:
 
 /* Get printer data over a winreg pipe. */
 WERROR winreg_get_printer_dataex(TALLOC_CTX *mem_ctx,
-				 const struct auth_serversupplied_info *server_info,
+				 const struct auth_serversupplied_info *session_info,
 				 struct messaging_context *msg_ctx,
 				 const char *printer,
 				 const char *key,
@@ -2336,7 +2336,7 @@ WERROR winreg_get_printer_dataex(TALLOC_CTX *mem_ctx,
 	ZERO_STRUCT(key_hnd);
 
 	result = winreg_printer_openkey(tmp_ctx,
-					server_info,
+					session_info,
 					msg_ctx,
 					&winreg_handle,
 					path,
@@ -2428,7 +2428,7 @@ done:
 
 /* Enumerate on the values of a given key and provide the data. */
 WERROR winreg_enum_printer_dataex(TALLOC_CTX *mem_ctx,
-				  const struct auth_serversupplied_info *server_info,
+				  const struct auth_serversupplied_info *session_info,
 				  struct messaging_context *msg_ctx,
 				  const char *printer,
 				  const char *key,
@@ -2458,7 +2458,7 @@ WERROR winreg_enum_printer_dataex(TALLOC_CTX *mem_ctx,
 	}
 
 	result = winreg_printer_openkey(tmp_ctx,
-					server_info,
+					session_info,
 					msg_ctx,
 					&winreg_handle,
 					path,
@@ -2508,7 +2508,7 @@ done:
 
 /* Delete printer data over a winreg pipe. */
 WERROR winreg_delete_printer_dataex(TALLOC_CTX *mem_ctx,
-				    const struct auth_serversupplied_info *server_info,
+				    const struct auth_serversupplied_info *session_info,
 				    struct messaging_context *msg_ctx,
 				    const char *printer,
 				    const char *key,
@@ -2539,7 +2539,7 @@ WERROR winreg_delete_printer_dataex(TALLOC_CTX *mem_ctx,
 	ZERO_STRUCT(key_hnd);
 
 	result = winreg_printer_openkey(tmp_ctx,
-					server_info,
+					session_info,
 					msg_ctx,
 					&winreg_handle,
 					path,
@@ -2584,7 +2584,7 @@ done:
 
 /* Enumerate on the subkeys of a given key and provide the data. */
 WERROR winreg_enum_printer_key(TALLOC_CTX *mem_ctx,
-			       const struct auth_serversupplied_info *server_info,
+			       const struct auth_serversupplied_info *session_info,
 			       struct messaging_context *msg_ctx,
 			       const char *printer,
 			       const char *key,
@@ -2618,7 +2618,7 @@ WERROR winreg_enum_printer_key(TALLOC_CTX *mem_ctx,
 	ZERO_STRUCT(key_hnd);
 
 	result = winreg_printer_openkey(tmp_ctx,
-					server_info,
+					session_info,
 					msg_ctx,
 					&winreg_handle,
 					path,
@@ -2672,7 +2672,7 @@ done:
 
 /* Delete a key with subkeys of a given printer. */
 WERROR winreg_delete_printer_key(TALLOC_CTX *mem_ctx,
-				 const struct auth_serversupplied_info *server_info,
+				 const struct auth_serversupplied_info *session_info,
 				 struct messaging_context *msg_ctx,
 				 const char *printer,
 				 const char *key)
@@ -2697,7 +2697,7 @@ WERROR winreg_delete_printer_key(TALLOC_CTX *mem_ctx,
 	}
 
 	result = winreg_printer_openkey(tmp_ctx,
-					server_info,
+					session_info,
 					msg_ctx,
 					&winreg_handle,
 					path,
@@ -2763,7 +2763,7 @@ done:
 }
 
 WERROR winreg_printer_update_changeid(TALLOC_CTX *mem_ctx,
-				      const struct auth_serversupplied_info *server_info,
+				      const struct auth_serversupplied_info *session_info,
 				      struct messaging_context *msg_ctx,
 				      const char *printer)
 {
@@ -2790,7 +2790,7 @@ WERROR winreg_printer_update_changeid(TALLOC_CTX *mem_ctx,
 	ZERO_STRUCT(key_hnd);
 
 	result = winreg_printer_openkey(tmp_ctx,
-					server_info,
+					session_info,
 					msg_ctx,
 					&winreg_handle,
 					path,
@@ -2836,7 +2836,7 @@ done:
 }
 
 WERROR winreg_printer_get_changeid(TALLOC_CTX *mem_ctx,
-				   const struct auth_serversupplied_info *server_info,
+				   const struct auth_serversupplied_info *session_info,
 				   struct messaging_context *msg_ctx,
 				   const char *printer,
 				   uint32_t *pchangeid)
@@ -2865,7 +2865,7 @@ WERROR winreg_printer_get_changeid(TALLOC_CTX *mem_ctx,
 	ZERO_STRUCT(key_hnd);
 
 	result = winreg_printer_openkey(tmp_ctx,
-					server_info,
+					session_info,
 					msg_ctx,
 					&winreg_handle,
 					path,
@@ -2924,7 +2924,7 @@ done:
  */
 
 WERROR winreg_printer_addform1(TALLOC_CTX *mem_ctx,
-			       const struct auth_serversupplied_info *server_info,
+			       const struct auth_serversupplied_info *session_info,
 			       struct messaging_context *msg_ctx,
 			       struct spoolss_AddFormInfo1 *form)
 {
@@ -2949,7 +2949,7 @@ WERROR winreg_printer_addform1(TALLOC_CTX *mem_ctx,
 	ZERO_STRUCT(key_hnd);
 
 	result = winreg_printer_openkey(tmp_ctx,
-					server_info,
+					session_info,
 					msg_ctx,
 					&winreg_handle,
 					TOP_LEVEL_CONTROL_FORMS_KEY,
@@ -2964,7 +2964,7 @@ WERROR winreg_printer_addform1(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	result = winreg_printer_enumforms1(tmp_ctx, server_info, msg_ctx,
+	result = winreg_printer_enumforms1(tmp_ctx, session_info, msg_ctx,
 					   &num_info, &info);
 	if (!W_ERROR_IS_OK(result)) {
 		DEBUG(0, ("winreg_printer_addform: Could not enum keys %s: %s\n",
@@ -3024,7 +3024,7 @@ done:
 }
 
 WERROR winreg_printer_enumforms1(TALLOC_CTX *mem_ctx,
-				 const struct auth_serversupplied_info *server_info,
+				 const struct auth_serversupplied_info *session_info,
 				 struct messaging_context *msg_ctx,
 				 uint32_t *pnum_info,
 				 union spoolss_FormInfo **pinfo)
@@ -3049,7 +3049,7 @@ WERROR winreg_printer_enumforms1(TALLOC_CTX *mem_ctx,
 	ZERO_STRUCT(key_hnd);
 
 	result = winreg_printer_openkey(tmp_ctx,
-					server_info,
+					session_info,
 					msg_ctx,
 					&winreg_handle,
 					TOP_LEVEL_CONTROL_FORMS_KEY,
@@ -3142,7 +3142,7 @@ done:
 }
 
 WERROR winreg_printer_deleteform1(TALLOC_CTX *mem_ctx,
-				  const struct auth_serversupplied_info *server_info,
+				  const struct auth_serversupplied_info *session_info,
 				  struct messaging_context *msg_ctx,
 				  const char *form_name)
 {
@@ -3171,7 +3171,7 @@ WERROR winreg_printer_deleteform1(TALLOC_CTX *mem_ctx,
 	ZERO_STRUCT(key_hnd);
 
 	result = winreg_printer_openkey(tmp_ctx,
-					server_info,
+					session_info,
 					msg_ctx,
 					&winreg_handle,
 					TOP_LEVEL_CONTROL_FORMS_KEY,
@@ -3224,7 +3224,7 @@ done:
 }
 
 WERROR winreg_printer_setform1(TALLOC_CTX *mem_ctx,
-			       const struct auth_serversupplied_info *server_info,
+			       const struct auth_serversupplied_info *session_info,
 			       struct messaging_context *msg_ctx,
 			       const char *form_name,
 			       struct spoolss_AddFormInfo1 *form)
@@ -3256,7 +3256,7 @@ WERROR winreg_printer_setform1(TALLOC_CTX *mem_ctx,
 	ZERO_STRUCT(key_hnd);
 
 	result = winreg_printer_openkey(tmp_ctx,
-					server_info,
+					session_info,
 					msg_ctx,
 					&winreg_handle,
 					TOP_LEVEL_CONTROL_FORMS_KEY,
@@ -3273,7 +3273,7 @@ WERROR winreg_printer_setform1(TALLOC_CTX *mem_ctx,
 
 	/* If form_name != form->form_name then we renamed the form */
 	if (strequal(form_name, form->form_name)) {
-		result = winreg_printer_deleteform1(tmp_ctx, server_info,
+		result = winreg_printer_deleteform1(tmp_ctx, session_info,
 						    msg_ctx, form_name);
 		if (!W_ERROR_IS_OK(result)) {
 			DEBUG(0, ("winreg_printer_setform1: Could not open key %s: %s\n",
@@ -3325,7 +3325,7 @@ done:
 }
 
 WERROR winreg_printer_getform1(TALLOC_CTX *mem_ctx,
-			       const struct auth_serversupplied_info *server_info,
+			       const struct auth_serversupplied_info *session_info,
 			       struct messaging_context *msg_ctx,
 			       const char *form_name,
 			       struct spoolss_FormInfo1 *r)
@@ -3361,7 +3361,7 @@ WERROR winreg_printer_getform1(TALLOC_CTX *mem_ctx,
 	ZERO_STRUCT(key_hnd);
 
 	result = winreg_printer_openkey(tmp_ctx,
-					server_info,
+					session_info,
 					msg_ctx,
 					&winreg_handle,
 					TOP_LEVEL_CONTROL_FORMS_KEY,
@@ -3461,7 +3461,7 @@ done:
 }
 
 WERROR winreg_add_driver(TALLOC_CTX *mem_ctx,
-			 const struct auth_serversupplied_info *server_info,
+			 const struct auth_serversupplied_info *session_info,
 			 struct messaging_context *msg_ctx,
 			 struct spoolss_AddDriverInfoCtr *r,
 			 const char **driver_name,
@@ -3490,7 +3490,7 @@ WERROR winreg_add_driver(TALLOC_CTX *mem_ctx,
 	}
 
 	result = winreg_printer_opendriver(tmp_ctx,
-					   server_info,
+					   session_info,
 					   msg_ctx,
 					   info8.driver_name,
 					   info8.architecture,
@@ -3803,7 +3803,7 @@ done:
 }
 
 WERROR winreg_get_driver(TALLOC_CTX *mem_ctx,
-			 const struct auth_serversupplied_info *server_info,
+			 const struct auth_serversupplied_info *session_info,
 			 struct messaging_context *msg_ctx,
 			 const char *architecture,
 			 const char *driver_name,
@@ -3833,7 +3833,7 @@ WERROR winreg_get_driver(TALLOC_CTX *mem_ctx,
 	if (driver_version == DRIVER_ANY_VERSION) {
 		/* look for Win2k first and then for NT4 */
 		result = winreg_printer_opendriver(tmp_ctx,
-						   server_info,
+						   session_info,
 						   msg_ctx,
 						   driver_name,
 						   architecture,
@@ -3844,7 +3844,7 @@ WERROR winreg_get_driver(TALLOC_CTX *mem_ctx,
 						   &key_hnd);
 		if (!W_ERROR_IS_OK(result)) {
 			result = winreg_printer_opendriver(tmp_ctx,
-							   server_info,
+							   session_info,
 							   msg_ctx,
 							   driver_name,
 							   architecture,
@@ -3857,7 +3857,7 @@ WERROR winreg_get_driver(TALLOC_CTX *mem_ctx,
 	} else {
 		/* ok normal case */
 		result = winreg_printer_opendriver(tmp_ctx,
-						   server_info,
+						   session_info,
 						   msg_ctx,
 						   driver_name,
 						   architecture,
@@ -4075,7 +4075,7 @@ done:
 }
 
 WERROR winreg_del_driver(TALLOC_CTX *mem_ctx,
-			 const struct auth_serversupplied_info *server_info,
+			 const struct auth_serversupplied_info *session_info,
 			 struct messaging_context *msg_ctx,
 			 struct spoolss_DriverInfo8 *info8,
 			 uint32_t version)
@@ -4097,7 +4097,7 @@ WERROR winreg_del_driver(TALLOC_CTX *mem_ctx,
 
 	/* test that the key exists */
 	result = winreg_printer_opendriver(tmp_ctx,
-					   server_info,
+					   session_info,
 					   msg_ctx,
 					   info8->driver_name,
 					   info8->architecture,
@@ -4166,7 +4166,7 @@ done:
 }
 
 WERROR winreg_get_driver_list(TALLOC_CTX *mem_ctx,
-			      const struct auth_serversupplied_info *server_info,
+			      const struct auth_serversupplied_info *session_info,
 			      struct messaging_context *msg_ctx,
 			      const char *architecture,
 			      uint32_t version,
@@ -4195,7 +4195,7 @@ WERROR winreg_get_driver_list(TALLOC_CTX *mem_ctx,
 	/* use NULL for the driver name so we open the key that is
 	 * parent of all drivers for this architecture and version */
 	result = winreg_printer_opendriver(tmp_ctx,
-					   server_info,
+					   session_info,
 					   msg_ctx,
 					   NULL,
 					   architecture,

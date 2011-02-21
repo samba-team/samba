@@ -574,7 +574,7 @@ bool svcctl_init_winreg(struct messaging_context *msg_ctx)
 	}
 
 	status = dcerpc_winreg_int_hklm_openkey(tmp_ctx,
-						get_server_info_system(),
+						get_session_info_system(),
 						msg_ctx,
 						&h,
 						key,

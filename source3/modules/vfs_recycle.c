@@ -464,11 +464,11 @@ static int recycle_unlink(vfs_handle_struct *handle,
 	int rc = -1;
 
 	repository = talloc_sub_advanced(NULL, lp_servicename(SNUM(conn)),
-					conn->server_info->unix_name,
+					conn->session_info->unix_name,
 					conn->connectpath,
-					conn->server_info->utok.gid,
-					conn->server_info->sanitized_username,
-					conn->server_info->info3->base.domain.string,
+					conn->session_info->utok.gid,
+					conn->session_info->sanitized_username,
+					conn->session_info->info3->base.domain.string,
 					recycle_repository(handle));
 	ALLOC_CHECK(repository, done);
 	/* shouldn't we allow absolute path names here? --metze */

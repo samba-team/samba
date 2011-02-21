@@ -278,7 +278,7 @@ WERROR _svcctl_OpenSCManagerW(struct pipes_struct *p,
 		return WERR_NOMEM;
 
 	se_map_generic( &r->in.access_mask, &scm_generic_map );
-	status = svcctl_access_check( sec_desc, p->server_info->security_token,
+	status = svcctl_access_check( sec_desc, p->session_info->security_token,
 				      r->in.access_mask, &access_granted );
 	if ( !NT_STATUS_IS_OK(status) )
 		return ntstatus_to_werror( status );
@@ -310,12 +310,12 @@ WERROR _svcctl_OpenServiceW(struct pipes_struct *p,
 		return WERR_BADFID;
 
 	/*
-	 * Perform access checks. Use the system server_info in order to ensure
+	 * Perform access checks. Use the system session_info in order to ensure
 	 * that we retrieve the security descriptor
 	 */
 	sec_desc = svcctl_get_secdesc(p->mem_ctx,
 				      p->msg_ctx,
-				      get_server_info_system(),
+				      get_session_info_system(),
 				      service);
 	if (sec_desc == NULL) {
 		DEBUG(0, ("_svcctl_OpenServiceW: Failed to get a valid security "
@@ -324,7 +324,7 @@ WERROR _svcctl_OpenServiceW(struct pipes_struct *p,
 	}
 
 	se_map_generic( &r->in.access_mask, &svc_generic_map );
-	status = svcctl_access_check( sec_desc, p->server_info->security_token,
+	status = svcctl_access_check( sec_desc, p->session_info->security_token,
 				      r->in.access_mask, &access_granted );
 	if ( !NT_STATUS_IS_OK(status) )
 		return ntstatus_to_werror( status );
@@ -367,7 +367,7 @@ WERROR _svcctl_GetServiceDisplayNameW(struct pipes_struct *p,
 
 	display_name = svcctl_lookup_dispname(p->mem_ctx,
 					      p->msg_ctx,
-					      p->server_info,
+					      p->session_info,
 					      service);
 	if (!display_name) {
 		display_name = "";
@@ -406,7 +406,7 @@ WERROR _svcctl_QueryServiceStatus(struct pipes_struct *p,
 
 static int enumerate_status(TALLOC_CTX *ctx,
 			    struct messaging_context *msg_ctx,
-			    struct auth_serversupplied_info *server_info,
+			    struct auth_serversupplied_info *session_info,
 			    struct ENUM_SERVICE_STATUSW **status)
 {
 	int num_services = 0;
@@ -428,7 +428,7 @@ static int enumerate_status(TALLOC_CTX *ctx,
 
 		display_name = svcctl_lookup_dispname(ctx,
 						      msg_ctx,
-						      server_info,
+						      session_info,
 						      svcctl_ops[i].name);
 		st[i].display_name = talloc_strdup(st, display_name ? display_name : "");
 
@@ -466,7 +466,7 @@ WERROR _svcctl_EnumServicesStatusW(struct pipes_struct *p,
 
 	num_services = enumerate_status(p->mem_ctx,
 					p->msg_ctx,
-					p->server_info,
+					p->session_info,
 					&services);
 	if (num_services == -1 ) {
 		return WERR_NOMEM;
@@ -667,7 +667,7 @@ WERROR _svcctl_QueryServiceStatusEx(struct pipes_struct *p,
 
 static WERROR fill_svc_config(TALLOC_CTX *ctx,
 			      struct messaging_context *msg_ctx,
-			      struct auth_serversupplied_info *server_info,
+			      struct auth_serversupplied_info *session_info,
 			      const char *name,
 			      struct QUERY_SERVICE_CONFIG *config)
 {
@@ -678,12 +678,12 @@ static WERROR fill_svc_config(TALLOC_CTX *ctx,
 
 	config->displayname = svcctl_lookup_dispname(mem_ctx,
 						     msg_ctx,
-						     server_info,
+						     session_info,
 						     name);
 
 	result = svcctl_get_string_value(mem_ctx,
 					 msg_ctx,
-					 server_info,
+					 session_info,
 					 name,
 					 "ObjectName");
 	if (result != NULL) {
@@ -692,7 +692,7 @@ static WERROR fill_svc_config(TALLOC_CTX *ctx,
 
 	result = svcctl_get_string_value(mem_ctx,
 					 msg_ctx,
-					 server_info,
+					 session_info,
 					 name,
 					 "ImagePath");
 	if (result != NULL) {
@@ -749,7 +749,7 @@ WERROR _svcctl_QueryServiceConfigW(struct pipes_struct *p,
 
 	wresult = fill_svc_config(p->mem_ctx,
 				  p->msg_ctx,
-				  p->server_info,
+				  p->session_info,
 				  info->name,
 				  r->out.query);
 	if ( !W_ERROR_IS_OK(wresult) )
@@ -798,7 +798,7 @@ WERROR _svcctl_QueryServiceConfig2W(struct pipes_struct *p,
 
 			description = svcctl_lookup_description(p->mem_ctx,
 								p->msg_ctx,
-								p->server_info,
+								p->session_info,
 								info->name);
 
 			desc_buf.description = description;
@@ -921,7 +921,7 @@ WERROR _svcctl_QueryServiceObjectSecurity(struct pipes_struct *p,
 	/* Lookup the security descriptor and marshall it up for a reply */
 	sec_desc = svcctl_get_secdesc(p->mem_ctx,
 				      p->msg_ctx,
-				      get_server_info_system(),
+				      get_session_info_system(),
 				      info->name);
 	if (sec_desc == NULL) {
 		return WERR_NOMEM;
@@ -997,7 +997,7 @@ WERROR _svcctl_SetServiceObjectSecurity(struct pipes_struct *p,
 
 	/* store the new SD */
 
-	if (!svcctl_set_secdesc(p->msg_ctx, p->server_info, info->name, sec_desc))
+	if (!svcctl_set_secdesc(p->msg_ctx, p->session_info, info->name, sec_desc))
 		return WERR_ACCESS_DENIED;
 
 	return WERR_OK;

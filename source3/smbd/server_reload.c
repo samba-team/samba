@@ -33,7 +33,7 @@
 void reload_printers(struct tevent_context *ev,
 		     struct messaging_context *msg_ctx)
 {
-	struct auth_serversupplied_info *server_info = NULL;
+	struct auth_serversupplied_info *session_info = NULL;
 	struct spoolss_PrinterInfo2 *pinfo2 = NULL;
 	int snum;
 	int n_services = lp_numservices();
@@ -45,10 +45,10 @@ void reload_printers(struct tevent_context *ev,
 	SMB_ASSERT(pcap_cache_loaded());
 	DEBUG(10, ("reloading printer services from pcap cache\n"));
 
-	status = make_server_info_system(talloc_tos(), &server_info);
+	status = make_session_info_system(talloc_tos(), &session_info);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(3, ("reload_printers: "
-			  "Could not create system server_info\n"));
+			  "Could not create system session_info\n"));
 		/* can't remove stale printers before we
 		 * are fully initilized */
 		skip = true;
@@ -65,18 +65,18 @@ void reload_printers(struct tevent_context *ev,
 		if (!pcap_printername_ok(pname)) {
 			DEBUG(3, ("removing stale printer %s\n", pname));
 
-			if (is_printer_published(server_info, server_info,
+			if (is_printer_published(session_info, session_info,
 						 msg_ctx,
 						 NULL, lp_servicename(snum),
 						 NULL, &pinfo2)) {
-				nt_printer_publish(server_info,
-						   server_info,
+				nt_printer_publish(session_info,
+						   session_info,
 						   msg_ctx,
 						   pinfo2,
 						   DSPRINT_UNPUBLISH);
 				TALLOC_FREE(pinfo2);
 			}
-			nt_printer_remove(server_info, server_info, msg_ctx,
+			nt_printer_remove(session_info, session_info, msg_ctx,
 					  pname);
 			lp_killservice(snum);
 		}
@@ -84,7 +84,7 @@ void reload_printers(struct tevent_context *ev,
 
 	load_printers(ev, msg_ctx);
 
-	TALLOC_FREE(server_info);
+	TALLOC_FREE(session_info);
 }
 
 /****************************************************************************

@@ -1477,9 +1477,9 @@ static connection_struct *switch_message(uint8 type, struct smb_request *req, in
 			vuser = get_valid_user_struct(sconn, session_tag);
 			if (vuser) {
 				set_current_user_info(
-					vuser->server_info->sanitized_username,
-					vuser->server_info->unix_name,
-					vuser->server_info->info3->base.domain.string);
+					vuser->session_info->sanitized_username,
+					vuser->session_info->unix_name,
+					vuser->session_info->info3->base.domain.string);
 			}
 		}
 	}

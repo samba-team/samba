@@ -205,15 +205,15 @@ WERROR _netr_LogonControl2Ex(struct pipes_struct *p,
 		return WERR_INVALID_PARAM;
 	}
 
-	acct_ctrl = p->server_info->info3->base.acct_flags;
+	acct_ctrl = p->session_info->info3->base.acct_flags;
 
 	switch (r->in.function_code) {
 	case NETLOGON_CONTROL_TC_VERIFY:
 	case NETLOGON_CONTROL_CHANGE_PASSWORD:
 	case NETLOGON_CONTROL_REDISCOVER:
 		if ((geteuid() != sec_initial_uid()) &&
-		    !nt_token_check_domain_rid(p->server_info->security_token, DOMAIN_RID_ADMINS) &&
-		    !nt_token_check_sid(&global_sid_Builtin_Administrators, p->server_info->security_token) &&
+		    !nt_token_check_domain_rid(p->session_info->security_token, DOMAIN_RID_ADMINS) &&
+		    !nt_token_check_sid(&global_sid_Builtin_Administrators, p->session_info->security_token) &&
 		    !(acct_ctrl & (ACB_WSTRUST | ACB_SVRTRUST))) {
 			return WERR_ACCESS_DENIED;
 		}
@@ -415,7 +415,7 @@ NTSTATUS _netr_NetrEnumerateTrustedDomains(struct pipes_struct *p,
 	status = rpcint_binding_handle(p->mem_ctx,
 				       &ndr_table_lsarpc,
 				       p->client_id,
-				       p->server_info,
+				       p->session_info,
 				       p->msg_ctx,
 				       &h);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -646,7 +646,7 @@ static NTSTATUS get_md4pw(struct samr_Password *md4pw, const char *mach_acct,
 	struct dom_sid *domain_sid;
 	uint32_t acct_ctrl;
 	union samr_UserInfo *info;
-	struct auth_serversupplied_info *server_info;
+	struct auth_serversupplied_info *session_info;
 #if 0
 
     /*
@@ -672,7 +672,7 @@ static NTSTATUS get_md4pw(struct samr_Password *md4pw, const char *mach_acct,
 		goto out;
 	}
 
-	status = make_server_info_system(mem_ctx, &server_info);
+	status = make_session_info_system(mem_ctx, &session_info);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto out;
 	}
@@ -685,7 +685,7 @@ static NTSTATUS get_md4pw(struct samr_Password *md4pw, const char *mach_acct,
 	status = rpcint_binding_handle(mem_ctx,
 				       &ndr_table_samr,
 				       &client_id,
-				       server_info,
+				       session_info,
 				       msg_ctx,
 				       &h);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1087,7 +1087,7 @@ static NTSTATUS netr_creds_server_step_check(struct pipes_struct *p,
  *************************************************************************/
 
 static NTSTATUS netr_set_machine_account_password(TALLOC_CTX *mem_ctx,
-						  struct auth_serversupplied_info *server_info,
+						  struct auth_serversupplied_info *session_info,
 						  struct messaging_context *msg_ctx,
 						  const char *account_name,
 						  struct samr_Password *nt_hash)
@@ -1110,7 +1110,7 @@ static NTSTATUS netr_set_machine_account_password(TALLOC_CTX *mem_ctx,
 	status = rpcint_binding_handle(mem_ctx,
 				       &ndr_table_samr,
 				       &client_id,
-				       server_info,
+				       session_info,
 				       msg_ctx,
 				       &h);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1160,7 +1160,7 @@ static NTSTATUS netr_set_machine_account_password(TALLOC_CTX *mem_ctx,
 
 	in = data_blob_const(nt_hash->hash, 16);
 	out = data_blob_talloc_zero(mem_ctx, 16);
-	sess_crypt_blob(&out, &in, &server_info->user_session_key, true);
+	sess_crypt_blob(&out, &in, &session_info->user_session_key, true);
 	memcpy(info18.nt_pwd.hash, out.data, out.length);
 
 	info18.nt_pwd_active = true;
@@ -1229,7 +1229,7 @@ NTSTATUS _netr_ServerPasswordSet(struct pipes_struct *p,
 	DEBUG(100,("\n"));
 
 	status = netr_set_machine_account_password(p->mem_ctx,
-						   p->server_info,
+						   p->session_info,
 						   p->msg_ctx,
 						   creds->account_name,
 						   r->in.new_password);
@@ -1276,7 +1276,7 @@ NTSTATUS _netr_ServerPasswordSet2(struct pipes_struct *p,
 	mdfour(nt_hash.hash, plaintext.data, plaintext.length);
 
 	status = netr_set_machine_account_password(p->mem_ctx,
-						   p->server_info,
+						   p->session_info,
 						   p->msg_ctx,
 						   creds->account_name,
 						   &nt_hash);

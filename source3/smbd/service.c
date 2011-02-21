@@ -585,7 +585,7 @@ static NTSTATUS find_forced_group(bool force_user,
   Create an auth_serversupplied_info structure for a connection_struct
 ****************************************************************************/
 
-static NTSTATUS create_connection_server_info(struct smbd_server_connection *sconn,
+static NTSTATUS create_connection_session_info(struct smbd_server_connection *sconn,
 					      TALLOC_CTX *mem_ctx, int snum,
                                               struct auth_serversupplied_info *vuid_serverinfo,
 					      DATA_BLOB password,
@@ -696,12 +696,12 @@ connection_struct *make_connection_snum(struct smbd_server_connection *sconn,
 
 	conn->params->service = snum;
 
-	status = create_connection_server_info(sconn,
-		conn, snum, vuser ? vuser->server_info : NULL, password,
-		&conn->server_info);
+	status = create_connection_session_info(sconn,
+		conn, snum, vuser ? vuser->session_info : NULL, password,
+		&conn->session_info);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1, ("create_connection_server_info failed: %s\n",
+		DEBUG(1, ("create_connection_session_info failed: %s\n",
 			  nt_errstr(status)));
 		*pstatus = status;
 		goto err_root_exit;
@@ -711,7 +711,7 @@ connection_struct *make_connection_snum(struct smbd_server_connection *sconn,
 		conn->force_user = true;
 	}
 
-	add_session_user(sconn, conn->server_info->unix_name);
+	add_session_user(sconn, conn->session_info->unix_name);
 
 	conn->num_files_open = 0;
 	conn->lastused = conn->lastused_count = time(NULL);
@@ -744,7 +744,7 @@ connection_struct *make_connection_snum(struct smbd_server_connection *sconn,
 	if (*lp_force_user(snum)) {
 
 		/*
-		 * Replace conn->server_info with a completely faked up one
+		 * Replace conn->session_info with a completely faked up one
 		 * from the username we are forced into :-)
 		 */
 
@@ -759,15 +759,15 @@ connection_struct *make_connection_snum(struct smbd_server_connection *sconn,
 		}
 
 		status = make_serverinfo_from_username(
-			conn, fuser, conn->server_info->guest,
+			conn, fuser, conn->session_info->guest,
 			&forced_serverinfo);
 		if (!NT_STATUS_IS_OK(status)) {
 			*pstatus = status;
 			goto err_root_exit;
 		}
 
-		TALLOC_FREE(conn->server_info);
-		conn->server_info = forced_serverinfo;
+		TALLOC_FREE(conn->session_info);
+		conn->session_info = forced_serverinfo;
 
 		conn->force_user = True;
 		DEBUG(3,("Forced user %s\n", fuser));
@@ -781,9 +781,9 @@ connection_struct *make_connection_snum(struct smbd_server_connection *sconn,
 	if (*lp_force_group(snum)) {
 
 		status = find_forced_group(
-			conn->force_user, snum, conn->server_info->unix_name,
-			&conn->server_info->security_token->sids[1],
-			&conn->server_info->utok.gid);
+			conn->force_user, snum, conn->session_info->unix_name,
+			&conn->session_info->security_token->sids[1],
+			&conn->session_info->utok.gid);
 
 		if (!NT_STATUS_IS_OK(status)) {
 			*pstatus = status;
@@ -792,11 +792,11 @@ connection_struct *make_connection_snum(struct smbd_server_connection *sconn,
 
 		/*
 		 * We need to cache this gid, to use within
- 		 * change_to_user() separately from the conn->server_info
- 		 * struct. We only use conn->server_info directly if
+		 * change_to_user() separately from the conn->session_info
+		 * struct. We only use conn->session_info directly if
  		 * "force_user" was set.
  		 */
-		conn->force_group_gid = conn->server_info->utok.gid;
+		conn->force_group_gid = conn->session_info->utok.gid;
 	}
 
 	conn->vuid = (vuser != NULL) ? vuser->vuid : UID_FIELD_INVALID;
@@ -804,11 +804,11 @@ connection_struct *make_connection_snum(struct smbd_server_connection *sconn,
 	{
 		char *s = talloc_sub_advanced(talloc_tos(),
 					lp_servicename(SNUM(conn)),
-					conn->server_info->unix_name,
+					conn->session_info->unix_name,
 					conn->connectpath,
-					conn->server_info->utok.gid,
-					conn->server_info->sanitized_username,
-					conn->server_info->info3->base.domain.string,
+					conn->session_info->utok.gid,
+					conn->session_info->sanitized_username,
+					conn->session_info->info3->base.domain.string,
 					lp_pathname(snum));
 		if (!s) {
 			*pstatus = NT_STATUS_NO_MEMORY;
@@ -835,12 +835,12 @@ connection_struct *make_connection_snum(struct smbd_server_connection *sconn,
 	{
 		bool can_write = False;
 
-		can_write = share_access_check(conn->server_info->security_token,
+		can_write = share_access_check(conn->session_info->security_token,
 					       lp_servicename(snum),
 					       FILE_WRITE_DATA);
 
 		if (!can_write) {
-			if (!share_access_check(conn->server_info->security_token,
+			if (!share_access_check(conn->session_info->security_token,
 						lp_servicename(snum),
 						FILE_READ_DATA)) {
 				/* No access, read or write. */
@@ -897,7 +897,7 @@ connection_struct *make_connection_snum(struct smbd_server_connection *sconn,
 	   filesystem operation that we do. */
 
 	if (SMB_VFS_CONNECT(conn, lp_servicename(snum),
-			    conn->server_info->unix_name) < 0) {
+			    conn->session_info->unix_name) < 0) {
 		DEBUG(0,("make_connection: VFS make connection failed!\n"));
 		*pstatus = NT_STATUS_UNSUCCESSFUL;
 		goto err_root_exit;
@@ -932,11 +932,11 @@ connection_struct *make_connection_snum(struct smbd_server_connection *sconn,
 	if (*lp_rootpreexec(snum)) {
 		char *cmd = talloc_sub_advanced(talloc_tos(),
 					lp_servicename(SNUM(conn)),
-					conn->server_info->unix_name,
+					conn->session_info->unix_name,
 					conn->connectpath,
-					conn->server_info->utok.gid,
-					conn->server_info->sanitized_username,
-					conn->server_info->info3->base.domain.string,
+					conn->session_info->utok.gid,
+					conn->session_info->sanitized_username,
+					conn->session_info->info3->base.domain.string,
 					lp_rootpreexec(snum));
 		DEBUG(5,("cmd=%s\n",cmd));
 		ret = smbrun(cmd,NULL);
@@ -970,11 +970,11 @@ connection_struct *make_connection_snum(struct smbd_server_connection *sconn,
 	if (*lp_preexec(snum)) {
 		char *cmd = talloc_sub_advanced(talloc_tos(),
 					lp_servicename(SNUM(conn)),
-					conn->server_info->unix_name,
+					conn->session_info->unix_name,
 					conn->connectpath,
-					conn->server_info->utok.gid,
-					conn->server_info->sanitized_username,
-					conn->server_info->info3->base.domain.string,
+					conn->session_info->utok.gid,
+					conn->session_info->sanitized_username,
+					conn->session_info->info3->base.domain.string,
 					lp_preexec(snum));
 		ret = smbrun(cmd,NULL);
 		TALLOC_FREE(cmd);
@@ -1077,7 +1077,7 @@ connection_struct *make_connection_snum(struct smbd_server_connection *sconn,
 		dbgtext( "%s", srv_is_signing_active(sconn) ? "signed " : "");
 		dbgtext( "connect to service %s ", lp_servicename(snum) );
 		dbgtext( "initially as user %s ",
-			 conn->server_info->unix_name );
+			 conn->session_info->unix_name );
 		dbgtext( "(uid=%d, gid=%d) ", (int)effuid, (int)effgid );
 		dbgtext( "(pid %d)\n", (int)sys_getpid() );
 	}
@@ -1288,11 +1288,11 @@ void close_cnum(connection_struct *conn, uint16 vuid)
 	    change_to_user(conn, vuid))  {
 		char *cmd = talloc_sub_advanced(talloc_tos(),
 					lp_servicename(SNUM(conn)),
-					conn->server_info->unix_name,
+					conn->session_info->unix_name,
 					conn->connectpath,
-					conn->server_info->utok.gid,
-					conn->server_info->sanitized_username,
-					conn->server_info->info3->base.domain.string,
+					conn->session_info->utok.gid,
+					conn->session_info->sanitized_username,
+					conn->session_info->info3->base.domain.string,
 					lp_postexec(SNUM(conn)));
 		smbrun(cmd,NULL);
 		TALLOC_FREE(cmd);
@@ -1304,11 +1304,11 @@ void close_cnum(connection_struct *conn, uint16 vuid)
 	if (*lp_rootpostexec(SNUM(conn)))  {
 		char *cmd = talloc_sub_advanced(talloc_tos(),
 					lp_servicename(SNUM(conn)),
-					conn->server_info->unix_name,
+					conn->session_info->unix_name,
 					conn->connectpath,
-					conn->server_info->utok.gid,
-					conn->server_info->sanitized_username,
-					conn->server_info->info3->base.domain.string,
+					conn->session_info->utok.gid,
+					conn->session_info->sanitized_username,
+					conn->session_info->info3->base.domain.string,
 					lp_rootpostexec(SNUM(conn)));
 		smbrun(cmd,NULL);
 		TALLOC_FREE(cmd);

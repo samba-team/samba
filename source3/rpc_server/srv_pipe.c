@@ -526,12 +526,12 @@ static bool pipe_schannel_auth_bind(struct pipes_struct *p,
 		return false;
 	}
 
-	ret = server_info_set_session_key(p->server_info, session_key);
+	ret = session_info_set_session_key(p->session_info, session_key);
 
 	data_blob_free(&session_key);
 
 	if (!ret) {
-		DEBUG(0, ("server_info_set_session_key failed\n"));
+		DEBUG(0, ("session_info_set_session_key failed\n"));
 		return false;
 	}
 
@@ -622,7 +622,7 @@ static bool pipe_ntlmssp_verify_final(TALLOC_CTX *mem_ctx,
 				enum dcerpc_AuthLevel auth_level,
 				struct client_address *client_id,
 				struct ndr_syntax_id *syntax,
-				struct auth_serversupplied_info **server_info)
+				struct auth_serversupplied_info **session_info)
 {
 	DATA_BLOB session_key;
 	NTSTATUS status;
@@ -647,17 +647,17 @@ static bool pipe_ntlmssp_verify_final(TALLOC_CTX *mem_ctx,
 		return false;
 	}
 
-	TALLOC_FREE(*server_info);
+	TALLOC_FREE(*session_info);
 
 	status = ntlmssp_server_get_user_info(ntlmssp_ctx,
-						mem_ctx, server_info);
+						mem_ctx, session_info);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, (__location__ ": failed to obtain the server info "
 			  "for authenticated user: %s\n", nt_errstr(status)));
 		return false;
 	}
 
-	if ((*server_info)->security_token == NULL) {
+	if ((*session_info)->security_token == NULL) {
 		DEBUG(1, ("Auth module failed to provide nt_user_token\n"));
 		return false;
 	}
@@ -673,7 +673,7 @@ static bool pipe_ntlmssp_verify_final(TALLOC_CTX *mem_ctx,
 		return false;
 	}
 
-	ret = server_info_set_session_key((*server_info), session_key);
+	ret = session_info_set_session_key((*session_info), session_key);
 	data_blob_free(&session_key);
 	if (!ret) {
 		DEBUG(0, ("Failed to set session key!\n"));
@@ -728,7 +728,7 @@ err:
 static NTSTATUS pipe_gssapi_verify_final(TALLOC_CTX *mem_ctx,
 					 struct gse_context *gse_ctx,
 					 struct client_address *client_id,
-					 struct auth_serversupplied_info **server_info)
+					 struct auth_serversupplied_info **session_info)
 {
 	DATA_BLOB session_key;
 	NTSTATUS status;
@@ -745,15 +745,15 @@ static NTSTATUS pipe_gssapi_verify_final(TALLOC_CTX *mem_ctx,
 	}
 
 	status = gssapi_server_get_user_info(gse_ctx, mem_ctx,
-					     client_id, server_info);
+					     client_id, session_info);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, (__location__ ": failed to obtain the server info "
 			  "for authenticated user: %s\n", nt_errstr(status)));
 		return status;
 	}
 
-	if ((*server_info)->security_token == NULL) {
-		status = create_local_token(*server_info);
+	if ((*session_info)->security_token == NULL) {
+		status = create_local_token(*session_info);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(1, ("Failed to create local user token (%s)\n",
 				  nt_errstr(status)));
@@ -775,7 +775,7 @@ static NTSTATUS pipe_gssapi_verify_final(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	bret = server_info_set_session_key((*server_info), session_key);
+	bret = session_info_set_session_key((*session_info), session_key);
 	data_blob_free(&session_key);
 	if (!bret) {
 		return NT_STATUS_ACCESS_DENIED;
@@ -800,7 +800,7 @@ static NTSTATUS pipe_auth_verify_final(struct pipes_struct *p)
 		if (!pipe_ntlmssp_verify_final(p, ntlmssp_ctx,
 						p->auth.auth_level,
 						p->client_id, &p->syntax,
-						&p->server_info)) {
+						&p->session_info)) {
 			return NT_STATUS_ACCESS_DENIED;
 		}
 		break;
@@ -809,7 +809,7 @@ static NTSTATUS pipe_auth_verify_final(struct pipes_struct *p)
 						struct gse_context);
 		status = pipe_gssapi_verify_final(p, gse_ctx,
 						  p->client_id,
-						  &p->server_info);
+						  &p->session_info);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(1, ("gssapi bind failed with: %s",
 				  nt_errstr(status)));
@@ -832,7 +832,7 @@ static NTSTATUS pipe_auth_verify_final(struct pipes_struct *p)
 							struct gse_context);
 			status = pipe_gssapi_verify_final(p, gse_ctx,
 							  p->client_id,
-							  &p->server_info);
+							  &p->session_info);
 			if (!NT_STATUS_IS_OK(status)) {
 				DEBUG(1, ("gssapi bind failed with: %s",
 					  nt_errstr(status)));
@@ -846,7 +846,7 @@ static NTSTATUS pipe_auth_verify_final(struct pipes_struct *p)
 							p->auth.auth_level,
 							p->client_id,
 							&p->syntax,
-							&p->server_info)) {
+							&p->session_info)) {
 				return NT_STATUS_ACCESS_DENIED;
 			}
 			break;

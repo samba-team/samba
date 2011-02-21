@@ -53,12 +53,12 @@ static user_struct *get_valid_user_struct_internal(
 		if (vuid == usp->vuid) {
 			switch (server_allocated) {
 				case SERVER_ALLOCATED_REQUIRED_YES:
-					if (usp->server_info == NULL) {
+					if (usp->session_info == NULL) {
 						continue;
 					}
 					break;
 				case SERVER_ALLOCATED_REQUIRED_NO:
-					if (usp->server_info != NULL) {
+					if (usp->session_info != NULL) {
 						continue;
 					}
 				case SERVER_ALLOCATED_REQUIRED_ANY:
@@ -242,7 +242,7 @@ int register_homes_share(const char *username)
 
 /**
  *  register that a valid login has been performed, establish 'session'.
- *  @param server_info The token returned from the authentication process.
+ *  @param session_info The token returned from the authentication process.
  *   (now 'owned' by register_existing_vuid)
  *
  *  @param session_key The User session key for the login session (now also
@@ -260,7 +260,7 @@ int register_homes_share(const char *username)
 
 int register_existing_vuid(struct smbd_server_connection *sconn,
 			uint16 vuid,
-			struct auth_serversupplied_info *server_info,
+			struct auth_serversupplied_info *session_info,
 			DATA_BLOB response_blob,
 			const char *smb_name)
 {
@@ -273,35 +273,35 @@ int register_existing_vuid(struct smbd_server_connection *sconn,
 	}
 
 	/* Use this to keep tabs on all our info from the authentication */
-	vuser->server_info = talloc_move(vuser, &server_info);
+	vuser->session_info = talloc_move(vuser, &session_info);
 
 	/* This is a potentially untrusted username */
 	alpha_strcpy(tmp, smb_name, ". _-$", sizeof(tmp));
 
-	vuser->server_info->sanitized_username = talloc_strdup(
-		vuser->server_info, tmp);
+	vuser->session_info->sanitized_username = talloc_strdup(
+		vuser->session_info, tmp);
 
 	DEBUG(10,("register_existing_vuid: (%u,%u) %s %s %s guest=%d\n",
-		  (unsigned int)vuser->server_info->utok.uid,
-		  (unsigned int)vuser->server_info->utok.gid,
-		  vuser->server_info->unix_name,
-		  vuser->server_info->sanitized_username,
-		  vuser->server_info->info3->base.domain.string,
-		  vuser->server_info->guest ));
+		  (unsigned int)vuser->session_info->utok.uid,
+		  (unsigned int)vuser->session_info->utok.gid,
+		  vuser->session_info->unix_name,
+		  vuser->session_info->sanitized_username,
+		  vuser->session_info->info3->base.domain.string,
+		  vuser->session_info->guest ));
 
 	DEBUG(3, ("register_existing_vuid: User name: %s\t"
-		  "Real name: %s\n", vuser->server_info->unix_name,
-		  vuser->server_info->info3->base.full_name.string));
+		  "Real name: %s\n", vuser->session_info->unix_name,
+		  vuser->session_info->info3->base.full_name.string));
 
-	if (!vuser->server_info->security_token) {
-		DEBUG(1, ("register_existing_vuid: server_info does not "
+	if (!vuser->session_info->security_token) {
+		DEBUG(1, ("register_existing_vuid: session_info does not "
 			"contain a user_token - cannot continue\n"));
 		goto fail;
 	}
 
 	DEBUG(3,("register_existing_vuid: UNIX uid %d is UNIX user %s, "
-		"and will be vuid %u\n", (int)vuser->server_info->utok.uid,
-		 vuser->server_info->unix_name, vuser->vuid));
+		"and will be vuid %u\n", (int)vuser->session_info->utok.uid,
+		 vuser->session_info->unix_name, vuser->vuid));
 
 	if (!session_claim(sconn, vuser)) {
 		DEBUG(1, ("register_existing_vuid: Failed to claim session "
@@ -318,25 +318,25 @@ int register_existing_vuid(struct smbd_server_connection *sconn,
 
 	vuser->homes_snum = -1;
 
-	if (!vuser->server_info->guest) {
+	if (!vuser->session_info->guest) {
 		vuser->homes_snum = register_homes_share(
-			vuser->server_info->unix_name);
+			vuser->session_info->unix_name);
 	}
 
 	if (srv_is_signing_negotiated(sconn) &&
-	    !vuser->server_info->guest) {
+	    !vuser->session_info->guest) {
 		/* Try and turn on server signing on the first non-guest
 		 * sessionsetup. */
 		srv_set_signing(sconn,
-				vuser->server_info->user_session_key,
+				vuser->session_info->user_session_key,
 				response_blob);
 	}
 
 	/* fill in the current_user_info struct */
 	set_current_user_info(
-		vuser->server_info->sanitized_username,
-		vuser->server_info->unix_name,
-		vuser->server_info->info3->base.domain.string);
+		vuser->session_info->sanitized_username,
+		vuser->session_info->unix_name,
+		vuser->session_info->info3->base.domain.string);
 
 	return vuser->vuid;
 

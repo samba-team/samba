@@ -227,7 +227,7 @@ error_status_t _epm_Insert(struct pipes_struct *p,
 	uint32_t i;
 
 	/* If this is not a priviledged users, return */
-	if (!is_priviledged_pipe(p->server_info)) {
+	if (!is_priviledged_pipe(p->session_info)) {
 		return EPMAPPER_STATUS_CANT_PERFORM_OP;
 	}
 
@@ -343,7 +343,7 @@ error_status_t _epm_Delete(struct pipes_struct *p,
 		  r->in.num_ents));
 
 	/* If this is not a priviledged users, return */
-	if (!is_priviledged_pipe(p->server_info)) {
+	if (!is_priviledged_pipe(p->session_info)) {
 		return EPMAPPER_STATUS_CANT_PERFORM_OP;
 	}
 
