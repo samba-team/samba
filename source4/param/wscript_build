@@ -47,7 +47,7 @@ bld.SAMBA_SUBSYSTEM('SECRETS',
 	)
 
 
-bld.SAMBA_PYTHON('param',
+bld.SAMBA_PYTHON('pyparam',
 	source='pyparam.c',
 	deps='samba-hostconfig pytalloc-util',
 	realname='samba/param.so'
