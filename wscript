@@ -28,6 +28,8 @@ Options.default_prefix = '/usr/local/samba'
 
 
 def set_options(opt):
+    os.putenv('TOPLEVEL_BUILD', '1')
+
     opt.BUILTIN_DEFAULT('NONE')
     opt.PRIVATE_EXTENSION_DEFAULT('samba4')
     opt.RECURSE('lib/replace')
@@ -39,6 +41,7 @@ def set_options(opt):
     opt.RECURSE('lib/socket_wrapper')
     opt.RECURSE('lib/uid_wrapper')
     opt.RECURSE('pidl')
+    opt.RECURSE('source3')
 
     gr = opt.option_group('developer options')
     gr.add_option('--enable-build-farm',
@@ -50,6 +53,7 @@ def set_options(opt):
 
 
 def configure(conf):
+    conf.env.toplevel_build = True
     version = samba_version.load_version(env=conf.env)
 
     conf.DEFINE('CONFIG_H_IS_FROM_SAMBA', 1)
@@ -103,6 +107,7 @@ def configure(conf):
     conf.RECURSE('libcli/smbreadline')
     conf.RECURSE('pidl')
     conf.RECURSE('source4/selftest')
+    conf.RECURSE('source3')
 
     # we don't want any libraries or modules to rely on runtime
     # resolution of symbols
