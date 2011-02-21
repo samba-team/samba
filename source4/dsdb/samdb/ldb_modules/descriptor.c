@@ -870,6 +870,154 @@ static int descriptor_add(struct ldb_module *module, struct ldb_request *req)
 	return ldb_next_request(module, add_req);
 }
 
+static int descriptor_modify(struct ldb_module *module, struct ldb_request *req)
+{
+	struct ldb_context *ldb;
+	struct ldb_control *sd_recalculate_control, *sd_flags_control;
+	struct ldb_request *mod_req;
+	struct ldb_message *msg;
+	struct ldb_result *current_res, *parent_res;
+	const struct ldb_val *old_sd = NULL;
+	const struct ldb_val *parent_sd = NULL;
+	const struct ldb_val *user_sd;
+	struct ldb_dn *parent_dn, *dn;
+	struct ldb_message_element *objectclass_element;
+	int ret;
+	uint32_t instanceType, sd_flags = 0;
+	const struct dsdb_schema *schema;
+	DATA_BLOB *sd;
+	const struct dsdb_class *objectclass;
+	static const char * const parent_attrs[] = { "nTSecurityDescriptor", NULL };
+	static const char * const current_attrs[] = { "nTSecurityDescriptor",
+						      "instanceType",
+						      "objectClass", NULL };
+	ldb = ldb_module_get_ctx(module);
+	dn = req->op.mod.message->dn;
+	user_sd = ldb_msg_find_ldb_val(req->op.mod.message, "nTSecurityDescriptor");
+	/* This control forces the recalculation of the SD also when
+	 * no modification is performed. */
+	sd_recalculate_control = ldb_request_get_control(req,
+					     LDB_CONTROL_RECALCULATE_SD_OID);
+	if (!user_sd && !sd_recalculate_control) {
+		return ldb_next_request(module, req);
+	}
+
+	ldb_debug(ldb, LDB_DEBUG_TRACE,"descriptor_modify: %s\n", ldb_dn_get_linearized(dn));
+
+	/* do not manipulate our control entries */
+	if (ldb_dn_is_special(dn)) {
+		return ldb_next_request(module, req);
+	}
+
+	ret = dsdb_module_search_dn(module, req, &current_res, dn,
+				    current_attrs,
+				    DSDB_FLAG_NEXT_MODULE,
+				    req);
+	if (ret != LDB_SUCCESS) {
+		ldb_debug(ldb, LDB_DEBUG_ERROR,"descriptor_modify: Could not find %s\n",
+			  ldb_dn_get_linearized(dn));
+		return ret;
+	}
+
+	instanceType = ldb_msg_find_attr_as_uint(current_res->msgs[0],
+						 "instanceType", 0);
+	/* if the object has a parent, retrieve its SD to
+	 * use for calculation */
+	if (!ldb_dn_is_null(current_res->msgs[0]->dn) &&
+	    !(instanceType & INSTANCE_TYPE_IS_NC_HEAD)) {
+		parent_dn = ldb_dn_get_parent(req, dn);
+		if (parent_dn == NULL) {
+			return ldb_oom(ldb);
+		}
+		ret = dsdb_module_search_dn(module, req, &parent_res, parent_dn,
+					    parent_attrs,
+					    DSDB_FLAG_NEXT_MODULE,
+					    req);
+		if (ret != LDB_SUCCESS) {
+			ldb_debug(ldb, LDB_DEBUG_ERROR, "descriptor_modify: Could not find SD for %s\n",
+				  ldb_dn_get_linearized(parent_dn));
+			return ret;
+		}
+		if (parent_res->count != 1) {
+			return ldb_operr(ldb);
+		}
+		parent_sd = ldb_msg_find_ldb_val(parent_res->msgs[0], "nTSecurityDescriptor");
+	}
+	sd_flags_control = ldb_request_get_control(req, LDB_CONTROL_SD_FLAGS_OID);
+
+	schema = dsdb_get_schema(ldb, req);
+
+	objectclass_element = ldb_msg_find_element(current_res->msgs[0], "objectClass");
+	if (objectclass_element == NULL) {
+		return ldb_operr(ldb);
+	}
+
+	objectclass = get_last_structural_class(schema, objectclass_element, req);
+	if (objectclass == NULL) {
+		return ldb_operr(ldb);
+	}
+
+	if (sd_flags_control) {
+		struct ldb_sd_flags_control *sdctr = (struct ldb_sd_flags_control *)sd_flags_control->data;
+		sd_flags = sdctr->secinfo_flags;
+		/* we only care for the last 4 bits */
+		sd_flags = sd_flags & 0x0000000F;
+	}
+	if (sd_flags != 0) {
+		old_sd = ldb_msg_find_ldb_val(current_res->msgs[0], "nTSecurityDescriptor");
+	}
+
+	sd = get_new_descriptor(module, dn, req,
+				objectclass, parent_sd,
+				user_sd, old_sd, sd_flags);
+	msg = ldb_msg_copy_shallow(req, req->op.mod.message);
+	if (sd != NULL) {
+		struct ldb_message_element *sd_element;
+		if (user_sd != NULL) {
+			sd_element = ldb_msg_find_element(msg,
+							  "nTSecurityDescriptor");
+			sd_element->values[0] = *sd;
+		} else if (sd_recalculate_control != NULL) {
+			/* In this branch we really do force the recalculation
+			 * of the SD */
+			ldb_msg_remove_attr(msg, "nTSecurityDescriptor");
+
+			ret = ldb_msg_add_steal_value(msg,
+						      "nTSecurityDescriptor",
+						      sd);
+			if (ret != LDB_SUCCESS) {
+				return ldb_error(ldb, ret,
+					 "descriptor_modify: Could not replace SD value in message.");
+			}
+			sd_element = ldb_msg_find_element(msg,
+							  "nTSecurityDescriptor");
+			sd_element->flags = LDB_FLAG_MOD_REPLACE;
+		}
+	}
+
+	/* mark the controls as non-critical since we've handled them */
+	if (sd_flags_control != NULL) {
+		sd_flags_control->critical = 0;
+	}
+	if (sd_recalculate_control != NULL) {
+		sd_recalculate_control->critical = 0;
+	}
+
+	ret = ldb_build_mod_req(&mod_req, ldb, req,
+				msg,
+				req->controls,
+				req,
+				dsdb_next_callback,
+				req);
+	LDB_REQ_SET_LOCATION(mod_req);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	return ldb_next_request(module, mod_req);
+}
+
+
 static int descriptor_change(struct ldb_module *module, struct ldb_request *req)
 {
 	struct ldb_context *ldb;
@@ -1011,7 +1159,7 @@ static const struct ldb_module_ops ldb_descriptor_module_ops = {
 	.name	       = "descriptor",
 	.search        = descriptor_search,
 	.add           = descriptor_add,
-	.modify        = descriptor_change,
+	.modify        = descriptor_modify,
 	.rename        = descriptor_rename,
 	.init_context  = descriptor_init
 };
