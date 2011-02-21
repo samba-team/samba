@@ -120,7 +120,7 @@ bld.SAMBA_MODULE('ldb_samba3sam',
 	init_function='ldb_samba3sam_module_init',
 	module_init_name='ldb_init_module',
 	internal_module=False,
-	deps='talloc events ldb smbpasswd security NDR_SECURITY'
+	deps='talloc events ldb smbpasswdparser security NDR_SECURITY'
 	)
 
 
