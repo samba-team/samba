@@ -5,6 +5,21 @@ import Utils, Build, subprocess, Logs
 from samba_wildcard import fake_build_environment
 from samba_utils import *
 
+# these are the data structures used in symbols.py:
+#
+# bld.env.symbol_map : dictionary mapping public symbol names to list of
+#                      subsystem names where that symbol exists
+#
+# t.in_library       : list of libraries that t is in
+#
+# bld.env.public_symbols: set of public symbols for each subsystem
+# bld.env.used_symbols  : set of used symbols for each subsystem
+#
+# bld.env.syslib_symbols: dictionary mapping system library name to set of symbols
+#                         for that library
+#
+# LOCAL_CACHE(bld, 'TARGET_TYPE') : dictionary mapping subsystem name to target type
+
 def symbols_extract(objfiles, dynamic=False):
     '''extract symbols from objfile, returning a dictionary containing
        the set of undefined and public symbols for each file'''
@@ -83,12 +98,13 @@ def build_symbol_sets(bld, tgt_list):
     '''build the public_symbols and undefined_symbols attributes for each target'''
 
     objlist = []  # list of object file
-    objmap = {}   # map from object filename to target
+    objmap = {}   # map from object filename to target (subsystem) name
 
 
     for t in tgt_list:
         t.public_symbols = set()
         t.undefined_symbols = set()
+        t.used_symbols = set()
         for tsk in getattr(t, 'compiled_tasks', []):
             for output in tsk.outputs:
                 objpath = output.abspath(bld.env)
@@ -100,6 +116,7 @@ def build_symbol_sets(bld, tgt_list):
         t = objmap[obj]
         t.public_symbols = t.public_symbols.union(symbols[obj]["PUBLIC"])
         t.undefined_symbols = t.undefined_symbols.union(symbols[obj]["UNDEFINED"])
+        t.used_symbols = t.used_symbols.union(symbols[obj]["UNDEFINED"])
 
     t.undefined_symbols = t.undefined_symbols.difference(t.public_symbols)
 
@@ -108,7 +125,9 @@ def build_symbol_sets(bld, tgt_list):
 
     for t in tgt_list:
         for s in t.public_symbols:
-            bld.env.symbol_map[s] = real_name(t.sname)
+            if not s in bld.env.symbol_map:
+                bld.env.symbol_map[s] = []
+            bld.env.symbol_map[s].append(real_name(t.sname))
 
     targets = LOCAL_CACHE(bld, 'TARGET_TYPE')
 
@@ -124,6 +143,19 @@ def build_symbol_sets(bld, tgt_list):
                 t2 = bld.name_to_obj(dep, bld.env)
                 bld.ASSERT(t2 is not None, "Library '%s' has unknown dependency '%s'" % (name, dep))
                 bld.env.public_symbols[name] = bld.env.public_symbols[name].union(t2.public_symbols)
+
+    bld.env.used_symbols = {}
+    for t in tgt_list:
+        name = real_name(t.sname)
+        if name in bld.env.used_symbols:
+            bld.env.used_symbols[name] = bld.env.used_symbols[name].union(t.used_symbols)
+        else:
+            bld.env.used_symbols[name] = t.used_symbols
+        if t.samba_type == 'LIBRARY':
+            for dep in t.add_objects:
+                t2 = bld.name_to_obj(dep, bld.env)
+                bld.ASSERT(t2 is not None, "Library '%s' has unknown dependency '%s'" % (name, dep))
+                bld.env.used_symbols[name] = bld.env.used_symbols[name].union(t2.used_symbols)
 
 
 def build_syslib_sets(bld, tgt_list):
@@ -165,7 +197,9 @@ def build_syslib_sets(bld, tgt_list):
     # add to the map of symbols to dependencies
     for lib in symbols:
         for sym in symbols[lib]["PUBLIC"]:
-            bld.env.symbol_map[sym] = objmap[lib]
+            if not sym in bld.env.symbol_map:
+                bld.env.symbol_map[sym] = []
+            bld.env.symbol_map[sym].append(objmap[lib])
 
     # keep the libc symbols as well, as these are useful for some of the
     # sanity checks
@@ -187,21 +221,21 @@ def build_autodeps(bld, t):
             continue
         if sym in bld.env.symbol_map:
             depname = bld.env.symbol_map[sym]
-            if depname == name:
+            if depname == [ name ]:
                 # self dependencies aren't interesting
                 continue
-            if t.in_library == [depname]:
+            if t.in_library == depname:
                 # no need to depend on the library we are part of
                 continue
-            if depname in ['c', 'python']:
+            if depname[0] in ['c', 'python']:
                 # these don't go into autodeps
                 continue
-            if targets[depname] in [ 'SYSLIB' ]:
-                deps.add(depname)
+            if targets[depname[0]] in [ 'SYSLIB' ]:
+                deps.add(depname[0])
                 continue
-            t2 = bld.name_to_obj(depname, bld.env)
+            t2 = bld.name_to_obj(depname[0], bld.env)
             if len(t2.in_library) != 1:
-                deps.add(depname)
+                deps.add(depname[0])
                 continue
             if t2.in_library == t.in_library:
                 # if we're part of the same library, we don't need to autodep
@@ -293,9 +327,9 @@ def check_dependencies(bld, t):
     for sym in remaining:
         if sym in bld.env.symbol_map:
             dep = bld.env.symbol_map[sym]
-            if not dep in needed:
-                needed[dep] = set()
-            needed[dep].add(sym)
+            if not dep[0] in needed:
+                needed[dep[0]] = set()
+            needed[dep[0]].add(sym)
         else:
             t.unsatisfied_symbols.add(sym)
 
@@ -321,7 +355,7 @@ def check_syslib_dependencies(bld, t):
     needed = {}
     for sym in t.unsatisfied_symbols:
         if sym in bld.env.symbol_map:
-            dep = bld.env.symbol_map[sym]
+            dep = bld.env.symbol_map[sym][0]
             if dep == 'c':
                 continue
             if not dep in needed:
@@ -369,6 +403,39 @@ def symbols_syslibcheck(task):
         check_syslib_dependencies(bld, t)
 
 
+def check_why_needed(bld, target, subsystem):
+    """check why 'target' needs to link to 'subsystem'"""
+    Logs.info("Checking why %s needs to link to %s" % (target, subsystem))
+    if not target in bld.env.used_symbols:
+        Logs.warn("unable to find target %s in used_symbols dict" % target)
+        return
+    if not subsystem in bld.env.public_symbols:
+        Logs.warn("unable to find subsystem %s in public_symbols dict" % subsystem)
+        return
+    overlap = bld.env.used_symbols[target].intersection(bld.env.public_symbols[subsystem])
+    if not overlap:
+        Logs.info("target %s doesn't use any public symbols from %s" % (target, subsystem))
+    else:
+        Logs.info("target %s uses %s from %s" % (target, overlap, subsystem))
+
+
+
+def symbols_dupcheck(task):
+    '''check for symbols defined in two different subsystems'''
+    bld = task.env.bld
+    tgt_list = get_tgt_list(bld)
+
+    Logs.info("Checking for duplicate symbols")
+    for sym in bld.env.symbol_map:
+        subsystems = bld.env.symbol_map[sym]
+        if len(subsystems) == 1:
+            continue
+        Logs.info("symbol %s appears in %s" % (sym, subsystems))
+
+    # use this type of call to find why a library is needed
+    check_why_needed(bld, 'smbd/smbd', 'gensec')
+
+
 def SYMBOL_CHECK(bld):
     '''check our dependency lists'''
     if Options.options.SYMBOLCHECK:
@@ -379,4 +446,9 @@ def SYMBOL_CHECK(bld):
         bld.SET_BUILD_GROUP('syslibcheck')
         task = bld(rule=symbols_syslibcheck, always=True, name='syslib checking')
         task.env.bld = bld
+
+        bld.SET_BUILD_GROUP('syslibcheck')
+        task = bld(rule=symbols_dupcheck, always=True, name='symbol duplicate checking')
+        task.env.bld = bld
+
 Build.BuildContext.SYMBOL_CHECK = SYMBOL_CHECK
