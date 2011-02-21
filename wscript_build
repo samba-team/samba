@@ -105,7 +105,8 @@ bld.RECURSE('source4/setup')
 bld.RECURSE('source4/scripting')
 bld.RECURSE('pidl')
 bld.RECURSE('lib')
-bld.RECURSE('source3')
+if bld.env.enable_s3build:
+    bld.RECURSE('source3')
 
 # install some extra empty directories
 bld.INSTALL_DIRS("", "${LOCKDIR} ${SYSCONFDIR} ${LOCKDIR} ${PIDDIR} ${LOCALSTATEDIR}/lib ${PRIVATEDIR}/smbd.tmp/messaging")

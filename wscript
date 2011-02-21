@@ -48,6 +48,10 @@ def set_options(opt):
                    help='enable special build farm options',
                    action='store_true', dest='BUILD_FARM')
 
+    gr.add_option('--enable-s3build',
+                   help='enable build of s3 binaries',
+                   action='store_true', dest='S3BUILD')
+
     opt.tool_options('python') # options for disabling pyc or pyo compilation
     # enable options related to building python extensions
 
@@ -62,6 +66,9 @@ def configure(conf):
 
     if Options.options.developer:
         conf.ADD_CFLAGS('-DDEVELOPER -DDEBUG_PASSWORD')
+
+    if Options.options.S3BUILD:
+        conf.env.enable_s3build = True
 
     # this enables smbtorture.static for s3 in the build farm
     conf.env.BUILD_FARM = Options.options.BUILD_FARM or os.environ.get('RUN_FROM_BUILD_FARM')
@@ -107,7 +114,8 @@ def configure(conf):
     conf.RECURSE('libcli/smbreadline')
     conf.RECURSE('pidl')
     conf.RECURSE('source4/selftest')
-    conf.RECURSE('source3')
+    if conf.env.enable_s3build:
+        conf.RECURSE('source3')
 
     # we don't want any libraries or modules to rely on runtime
     # resolution of symbols
