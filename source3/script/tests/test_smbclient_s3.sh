@@ -389,15 +389,16 @@ test_ccache_access()
     $WBINFO --logoff
 }
 
-LOGDIR=/tmp/log.test_smbclient_s3.$$
+LOGDIR_PREFIX=test_smbclient_s3
 
-testit "rm -rf $LOGDIR" \
-    rm -rf $LOGDIR || \
-    exit 1
+# possibly remove old logdirs:
 
-testit "mkdir -p $LOGDIR" \
-    mkdir -p $LOGDIR || \
-    exit 1
+for OLDDIR in $(find ${PREFIX} -type d -name "${LOGDIR_PREFIX}_*") ;  do
+	echo "removing old directory ${OLDDIR}"
+	rm -rf ${OLDDIR}
+done
+
+LOGDIR=$(mktemp -d --tmpdir=$PREFIX ${LOGDIR_PREFIX}_XXXX)
 
 
 testit "smbclient -L $SERVER_IP" $SMBCLIENT $CONFIGURATION -L $SERVER_IP -N -p 139 || failed=`expr $failed + 1`
