@@ -34,8 +34,9 @@ def binpath(name):
     return os.path.join(bindir(), "%s%s" % (name, os.getenv("EXEEXT", "")))
 
 perl = os.getenv("PERL", "perl")
+perl = perl.split()
 
-if subprocess.call([perl, "-e", "eval require Test::More;"]) == 0:
+if subprocess.call(perl + ["-e", "eval require Test::More;"]) == 0:
     has_perl_test_more = True
 else:
     has_perl_test_more = False
@@ -142,7 +143,7 @@ def planperltestsuite(name, path):
     :param path: Path to the test runner
     """
     if has_perl_test_more:
-        plantestsuite(name, "none", "%s %s | %s" % (perl, path, tap2subunit))
+        plantestsuite(name, "none", "%s %s | %s" % (" ".join(perl), path, tap2subunit))
     else:
         skiptestsuite(name, "Test::More not available")
 
