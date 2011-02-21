@@ -50,12 +50,6 @@ def s3_fix_kwargs(bld, kwargs):
     s3dir = os.path.join(bld.env.srcdir, 'source3')
     s3reldir = os_path_relpath(s3dir, bld.curdir)
 
-    # cope with the fact that the s3 waf rules were originally written
-    # assuming relative paths to source3/. This only triggers when using the
-    # wscript rules in s3build/
-    if bld.curdir.endswith("/s3build") and not 'subdir' in kwargs:
-        kwargs['subdir'] = s3reldir
-
     # the extra_includes list is relative to the source3 directory
     extra_includes = [ '.', 'include', 'lib' ]
     if bld.env.use_intree_heimdal:
