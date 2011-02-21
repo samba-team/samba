@@ -29,7 +29,9 @@ NTSTATUS dcerpc_binding_vector_create(TALLOC_CTX *mem_ctx,
 				      struct dcerpc_binding_vector **pbvec)
 {
 	struct dcerpc_binding_vector *bvec;
-	uint32_t ep_count, i;
+	uint32_t ep_count;
+	uint32_t count = 0;
+	uint32_t i;
 	NTSTATUS status;
 	TALLOC_CTX *tmp_ctx;
 
@@ -68,17 +70,28 @@ NTSTATUS dcerpc_binding_vector_create(TALLOC_CTX *mem_ctx,
 		}
 
 		b->object = iface->syntax_id;
-		if (b->transport == NCACN_NP) {
-			b->host = talloc_asprintf(b, "\\\\%s", global_myname());
-			if (b->host == NULL) {
-				status = NT_STATUS_NO_MEMORY;
-				goto done;
-			}
+
+		switch (b->transport) {
+			case NCACN_NP:
+				b->host = talloc_asprintf(b, "\\\\%s", global_myname());
+				if (b->host == NULL) {
+					status = NT_STATUS_NO_MEMORY;
+					goto done;
+				}
+				break;
+			case NCACN_IP_TCP:
+				/* TODO */
+			case NCALRPC:
+				/* TODO */
+			default:
+				continue;
 		}
 
-		bvec->bindings[i] = *b;
+		bvec->bindings[count] = *b;
+		count++;
 	}
-	bvec->count = ep_count;
+
+	bvec->count = count;
 
 	*pbvec = talloc_move(mem_ctx, &bvec);
 
