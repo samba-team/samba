@@ -25,6 +25,7 @@
 #include "../lib/async_req/async_sock.h"
 #include "ctdbd_conn.h"
 #include "../lib/util/select.h"
+#include "printing/pcap.h"
 
 extern bool global_machine_password_needs_changing;
 

@@ -3960,14 +3960,6 @@ bool parse_lpq_entry(enum printing_types printing_type,char *line,
 		     print_status_struct *status,bool first);
 uint32_t print_parse_jobid(const char *fname);
 
-/* The following definitions come from printing/pcap.c  */
-
-void pcap_cache_reload(struct tevent_context *ev,
-		       struct messaging_context *msg_ctx,
-		       void (*post_cache_fill_fn)(struct tevent_context *,
-						  struct messaging_context *));
-bool pcap_printername_ok(const char *printername);
-
 /* The following definitions come from printing/printing.c  */
 
 uint16 pjobid_to_rap(const char* sharename, uint32 jobid);

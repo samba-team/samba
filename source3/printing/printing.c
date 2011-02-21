@@ -26,6 +26,7 @@
 #include "nt_printing.h"
 #include "../librpc/gen_ndr/netlogon.h"
 #include "printing/notify.h"
+#include "printing/pcap.h"
 
 extern struct current_user current_user;
 extern userdom_struct current_user_info;
