@@ -842,9 +842,9 @@ void print_asc_cb(const uint8_t *buf, int len,
  */
 
 bool add_uid_to_array_unique(TALLOC_CTX *mem_ctx, uid_t uid,
-			     uid_t **uids, size_t *num_uids);
+			     uid_t **uids, uint32_t *num_uids);
 bool add_gid_to_array_unique(TALLOC_CTX *mem_ctx, gid_t gid,
-			     gid_t **gids, size_t *num_gids);
+			     gid_t **gids, uint32_t *num_gids);
 
 /**
  * Allocate anonymous shared memory of the given size

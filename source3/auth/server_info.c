@@ -311,7 +311,7 @@ NTSTATUS samu_to_SamInfo3(TALLOC_CTX *mem_ctx,
 	const struct dom_sid *group_sid;
 	struct dom_sid domain_sid;
 	struct dom_sid *group_sids;
-	size_t num_group_sids = 0;
+	uint32_t num_group_sids = 0;
 	const char *tmp;
 	gid_t *gids;
 	NTSTATUS status;

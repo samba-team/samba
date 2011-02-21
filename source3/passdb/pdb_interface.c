@@ -843,7 +843,7 @@ NTSTATUS pdb_enum_group_members(TALLOC_CTX *mem_ctx,
 
 NTSTATUS pdb_enum_group_memberships(TALLOC_CTX *mem_ctx, struct samu *user,
 				    struct dom_sid **pp_sids, gid_t **pp_gids,
-				    size_t *p_num_groups)
+				    uint32_t *p_num_groups)
 {
 	struct pdb_methods *pdb = pdb_get_methods();
 	return pdb->enum_group_memberships(
@@ -888,7 +888,7 @@ static bool pdb_user_in_group(TALLOC_CTX *mem_ctx, struct samu *account,
 {
 	struct dom_sid *sids;
 	gid_t *gids;
-	size_t i, num_groups;
+	uint32_t i, num_groups;
 
 	if (!NT_STATUS_IS_OK(pdb_enum_group_memberships(mem_ctx, account,
 							&sids, &gids,
@@ -1438,7 +1438,7 @@ static bool pdb_default_sid_to_id(struct pdb_methods *methods,
 	return ret;
 }
 
-static bool get_memberuids(TALLOC_CTX *mem_ctx, gid_t gid, uid_t **pp_uids, size_t *p_num)
+static bool get_memberuids(TALLOC_CTX *mem_ctx, gid_t gid, uid_t **pp_uids, uint32_t *p_num)
 {
 	struct group *grp;
 	char **gr;
@@ -1501,7 +1501,7 @@ static NTSTATUS pdb_default_enum_group_members(struct pdb_methods *methods,
 {
 	gid_t gid;
 	uid_t *uids;
-	size_t i, num_uids;
+	uint32_t i, num_uids;
 
 	*pp_member_rids = NULL;
 	*p_num_members = 0;
@@ -1540,7 +1540,7 @@ static NTSTATUS pdb_default_enum_group_memberships(struct pdb_methods *methods,
 						   struct samu *user,
 						   struct dom_sid **pp_sids,
 						   gid_t **pp_gids,
-						   size_t *p_num_groups)
+						   uint32_t *p_num_groups)
 {
 	size_t i;
 	gid_t gid;

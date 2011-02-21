@@ -693,8 +693,8 @@ NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
 	struct dom_sid *group_sids;
 	struct dom_sid unix_group_sid;
 	uint32_t num_group_sids;
-	size_t num_gids;
-	size_t i;
+	uint32_t num_gids;
+	uint32_t i;
 
 	if (!lookup_name_smbconf(tmp_ctx, username, LOOKUP_NAME_ALL,
 			 NULL, NULL, &user_sid, &type)) {
@@ -710,7 +710,7 @@ NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
 
 	if (sid_check_is_in_our_domain(&user_sid)) {
 		bool ret;
-		size_t pdb_num_group_sids;
+		uint32_t pdb_num_group_sids;
 		/* This is a passdb user, so ask passdb */
 
 		struct samu *sam_acct = NULL;
@@ -780,7 +780,7 @@ NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
 		*uid = sam_acct->unix_pw->pw_uid;
 
 	} else 	if (sid_check_is_in_unix_users(&user_sid)) {
-		size_t getgroups_num_group_sids;
+		uint32_t getgroups_num_group_sids;
 		/* This is a unix user not in passdb. We need to ask nss
 		 * directly, without consulting passdb */
 

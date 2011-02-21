@@ -352,7 +352,7 @@ struct pdb_methods
 					   TALLOC_CTX *mem_ctx,
 					   struct samu *user,
 					   struct dom_sid **pp_sids, gid_t **pp_gids,
-					   size_t *p_num_groups);
+					   uint32_t *p_num_groups);
 
 	NTSTATUS (*set_unix_primary_group)(struct pdb_methods *methods,
 					   TALLOC_CTX *mem_ctx,

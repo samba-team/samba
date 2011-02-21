@@ -205,7 +205,7 @@ struct lsa_name_info {
 typedef struct unix_user_token {
 	uid_t uid;
 	gid_t gid;
-	size_t ngroups;
+	uint32_t ngroups;
 	gid_t *groups;
 } UNIX_USER_TOKEN;
 

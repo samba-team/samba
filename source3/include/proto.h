@@ -952,7 +952,7 @@ int sys_connect(int fd, const struct sockaddr * addr);
 
 bool getgroups_unix_user(TALLOC_CTX *mem_ctx, const char *user,
 			 gid_t primary_gid,
-			 gid_t **ret_groups, size_t *p_ngroups);
+			 gid_t **ret_groups, uint32_t *p_ngroups);
 
 /* The following definitions come from lib/tallocmsg.c  */
 
@@ -3814,7 +3814,7 @@ NTSTATUS pdb_enum_group_members(TALLOC_CTX *mem_ctx,
 				size_t *p_num_members);
 NTSTATUS pdb_enum_group_memberships(TALLOC_CTX *mem_ctx, struct samu *user,
 				    struct dom_sid **pp_sids, gid_t **pp_gids,
-				    size_t *p_num_groups);
+				    uint32_t *p_num_groups);
 NTSTATUS pdb_set_unix_primary_group(TALLOC_CTX *mem_ctx, struct samu *user);
 NTSTATUS pdb_add_groupmem(TALLOC_CTX *mem_ctx, uint32_t group_rid,
 			  uint32_t member_rid);

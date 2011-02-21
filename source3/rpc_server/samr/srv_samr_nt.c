@@ -3228,9 +3228,9 @@ NTSTATUS _samr_GetGroupsForUser(struct pipes_struct *p,
 	struct samr_RidWithAttribute dom_gid;
 	struct samr_RidWithAttribute *gids = NULL;
 	uint32 primary_group_rid;
-	size_t num_groups = 0;
+	uint32_t num_groups = 0;
 	gid_t *unix_gids;
-	size_t i, num_gids;
+	uint32_t i, num_gids;
 	bool ret;
 	NTSTATUS result;
 	bool success = False;

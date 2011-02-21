@@ -2080,7 +2080,7 @@ static NTSTATUS ldapsam_enum_group_memberships(struct pdb_methods *methods,
 					       struct samu *user,
 					       struct dom_sid **pp_sids,
 					       gid_t **pp_gids,
-					       size_t *p_num_groups);
+					       uint32_t *p_num_groups);
 
 static NTSTATUS ldapsam_rename_sam_account(struct pdb_methods *my_methods,
 					   struct samu *old_acct,
@@ -2902,7 +2902,7 @@ static NTSTATUS ldapsam_enum_group_memberships(struct pdb_methods *methods,
 					       struct samu *user,
 					       struct dom_sid **pp_sids,
 					       gid_t **pp_gids,
-					       size_t *p_num_groups)
+					       uint32_t *p_num_groups)
 {
 	struct ldapsam_privates *ldap_state =
 		(struct ldapsam_privates *)methods->private_data;
@@ -2915,7 +2915,7 @@ static NTSTATUS ldapsam_enum_group_memberships(struct pdb_methods *methods,
 	LDAPMessage *entry;
 	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
 	uint32_t num_sids;
-	size_t num_gids;
+	uint32_t num_gids;
 	char *gidstr;
 	gid_t primary_gid = -1;
 
@@ -5536,7 +5536,7 @@ static NTSTATUS ldapsam_delete_user(struct pdb_methods *my_methods, TALLOC_CTX *
 		NTSTATUS status;
 		struct dom_sid *sids = NULL;
 		gid_t *gids = NULL;
-		size_t num_groups = 0;
+		uint32_t num_groups = 0;
 		int i;
 		uint32_t user_rid = pdb_get_user_rid(sam_acct);
 
