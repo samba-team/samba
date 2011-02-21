@@ -858,7 +858,7 @@ bld.SAMBA3_SUBSYSTEM('SMBLDAP',
 
 bld.SAMBA3_SUBSYSTEM('LIBADS',
                     source=LIBADS_SRC,
-                    deps='LIBCLI_LDAP_NDR',
+                    deps='LIBCLI_LDAP_NDR krb5',
 		    vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('LIBADS_SERVER',
