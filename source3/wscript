@@ -9,21 +9,23 @@ VERSION=None
 import sys, os
 from optparse import SUPPRESS_HELP
 sys.path.insert(0, srcdir+"/buildtools/wafsamba")
-import wafsamba, Options
+sys.path.insert(0, "source3")
+import wafsamba, Options, Logs, Utils
 import build.charset
 import samba_utils, samba_version
 import samba3
 
 def set_options(opt):
-    opt.BUILTIN_DEFAULT('NONE')
-    opt.PRIVATE_EXTENSION_DEFAULT('s3')
-    opt.RECURSE('../lib/replace')
-    opt.RECURSE('build')
-    opt.RECURSE('selftest')
-    opt.RECURSE('../lib/nss_wrapper')
-    opt.RECURSE('../lib/socket_wrapper')
-    opt.RECURSE('../lib/tevent')
-    opt.RECURSE('../lib/tdb')
+    if not os.getenv('TOPLEVEL_BUILD'):
+        opt.BUILTIN_DEFAULT('NONE')
+        opt.PRIVATE_EXTENSION_DEFAULT('s3')
+        opt.RECURSE('../lib/replace')
+        opt.RECURSE('build')
+        opt.RECURSE('selftest')
+        opt.RECURSE('../lib/nss_wrapper')
+        opt.RECURSE('../lib/socket_wrapper')
+        opt.RECURSE('../lib/tevent')
+        opt.RECURSE('../lib/tdb')
 
     opt.add_option('--with-static-modules',
                    help=("Comma-separated list of names of modules to statically link in"),
@@ -61,40 +63,41 @@ def set_options(opt):
 def configure(conf):
     from samba_utils import TO_LIST
 
-    version = samba_version.load_version(env=conf.env)
-
-    conf.DEFINE('CONFIG_H_IS_FROM_SAMBA', 1)
-    conf.DEFINE('_SAMBA_BUILD_', version.MAJOR, add_to_cflags=True)
-    conf.DEFINE('HAVE_CONFIG_H', 1, add_to_cflags=True)
+    if not conf.env.toplevel_build:
+        version = samba_version.load_version(env=conf.env)
+        conf.DEFINE('CONFIG_H_IS_FROM_SAMBA', 1)
+        conf.DEFINE('_SAMBA_BUILD_', version.MAJOR, add_to_cflags=True)
+        conf.DEFINE('HAVE_CONFIG_H', 1, add_to_cflags=True)
 
     if Options.options.developer:
         conf.ADD_CFLAGS('-DDEVELOPER -DDEBUG_PASSWORD')
-        conf.env['developer'] = True
+        conf.env.developer = True
 
     if Options.options.with_swat:
         conf.env['build_swat'] = True
 
-    conf.RECURSE('../lib/replace')
-    conf.RECURSE('build')
-    conf.RECURSE('../lib/tdb')
-    conf.RECURSE('../lib/talloc')
-    conf.RECURSE('../lib/tevent')
-    conf.RECURSE('../lib/popt')
-    conf.RECURSE('../lib/nss_wrapper')
-    conf.RECURSE('../lib/socket_wrapper')
-    conf.RECURSE('../lib/zlib')
-    conf.RECURSE('../libcli/smbreadline')
-    conf.RECURSE('../lib/util')
+    if not conf.env.toplevel_build:
+        conf.RECURSE('../lib/replace')
+        conf.RECURSE('build')
+        conf.RECURSE('../lib/tdb')
+        conf.RECURSE('../lib/talloc')
+        conf.RECURSE('../lib/tevent')
+        conf.RECURSE('../lib/popt')
+        conf.RECURSE('../lib/nss_wrapper')
+        conf.RECURSE('../lib/socket_wrapper')
+        conf.RECURSE('../lib/zlib')
+        conf.RECURSE('../libcli/smbreadline')
+        conf.RECURSE('../lib/util')
 
-    conf.ADD_EXTRA_INCLUDES('''#source3 #source3/include #lib/replace''')
-    if not conf.env.USING_SYSTEM_TDB:
-        conf.ADD_EXTRA_INCLUDES('#lib/tdb/include')
-    if not conf.env.USING_SYSTEM_TEVENT:
-        conf.ADD_EXTRA_INCLUDES('#lib/tevent')
-    if not conf.env.USING_SYSTEM_TALLOC:
-        conf.ADD_EXTRA_INCLUDES('#lib/talloc')
-    if not conf.env.USING_SYSTEM_POPT:
-        conf.ADD_EXTRA_INCLUDES('#lib/popt')
+        conf.ADD_EXTRA_INCLUDES('''#source3 #source3/include #lib/replace''')
+        if not conf.env.USING_SYSTEM_TDB:
+            conf.ADD_EXTRA_INCLUDES('#lib/tdb/include')
+        if not conf.env.USING_SYSTEM_TEVENT:
+            conf.ADD_EXTRA_INCLUDES('#lib/tevent')
+        if not conf.env.USING_SYSTEM_TALLOC:
+            conf.ADD_EXTRA_INCLUDES('#lib/talloc')
+        if not conf.env.USING_SYSTEM_POPT:
+            conf.ADD_EXTRA_INCLUDES('#lib/popt')
 
     conf.ADD_LDFLAGS("-Wl,--export-dynamic", testflags=True)
 
