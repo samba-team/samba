@@ -1548,7 +1548,7 @@ NTSTATUS _lsa_OpenTrustedDomain(struct pipes_struct *p,
 				struct lsa_OpenTrustedDomain *r)
 {
 	struct lsa_info *handle = NULL;
-	struct trustdom_info *info;
+	struct trustdom_info *info = NULL;
 	NTSTATUS status;
 
 	if (!find_policy_by_hnd(p, r->in.handle, (void **)(void *)&handle)) {
@@ -1578,7 +1578,7 @@ NTSTATUS _lsa_OpenTrustedDomainByName(struct pipes_struct *p,
 				      struct lsa_OpenTrustedDomainByName *r)
 {
 	struct lsa_info *handle = NULL;
-	struct trustdom_info *info;
+	struct trustdom_info *info = NULL;
 	NTSTATUS status;
 
 	if (!find_policy_by_hnd(p, r->in.handle, (void **)(void *)&handle)) {
@@ -2827,7 +2827,7 @@ NTSTATUS _lsa_QuerySecurity(struct pipes_struct *p,
 {
 	struct lsa_info *handle=NULL;
 	struct security_descriptor *psd = NULL;
-	size_t sd_size;
+	size_t sd_size = 0;
 	NTSTATUS status;
 
 	/* find the connection policy handle. */
