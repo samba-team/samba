@@ -1232,6 +1232,9 @@ int vfs_gpfs_connect(struct vfs_handle_struct *handle, const char *service,
 			const char *user)
 {
 	struct gpfs_config_data *config;
+
+	smbd_gpfs_lib_init();
+
 	int ret = SMB_VFS_NEXT_CONNECT(handle, service, user);
 
 	if (ret < 0) {
