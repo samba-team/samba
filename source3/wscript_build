@@ -1106,7 +1106,7 @@ bld.SAMBA3_BINARY('rpcclient/rpcclient',
                  ''',
                  vars=locals())
 
-bld.SAMBA3_BINARY('client/smbclient',
+bld.SAMBA3_BINARY('client/smbclient' + bld.env.suffix3,
                  source=CLIENT_SRC,
                  deps='''talloc tdb cap resolv POPT_SAMBA3 passdb LIBSMB LIB_NONSMBD
                  PARAM_WITHOUT_REG wbclient param KRBCLIENT LIBMSRPC_GEN
