@@ -211,8 +211,8 @@ static DATA_BLOB *get_new_descriptor(struct ldb_module *module,
 				     TALLOC_CTX *mem_ctx,
 				     const struct dsdb_class *objectclass,
 				     const struct ldb_val *parent,
-				     struct ldb_val *object,
-				     struct ldb_val *old_sd,
+				     const struct ldb_val *object,
+				     const struct ldb_val *old_sd,
 				     uint32_t sd_flags)
 {
 	struct security_descriptor *user_descriptor = NULL, *parent_descriptor = NULL;
