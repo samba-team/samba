@@ -1006,10 +1006,7 @@ bld.SAMBA3_SUBSYSTEM('samba-util3',
                     deps='talloc CHARSET3 LIBCRYPTO',
                     vars=locals())
 
-#FIXME
-bld.SAMBA3_SUBSYSTEM('dcerpc', '', deps='UTIL_TEVENT')
-
-bld.SAMBA3_SUBSYSTEM('ldb',
+bld.SAMBA3_SUBSYSTEM('ldb3',
                     source='lib/ldb_compat.c')
 
 bld.SAMBA3_SUBSYSTEM('errors3',
@@ -1353,6 +1350,23 @@ if not bld.env.toplevel_build:
     bld.SAMBA3_SUBSYSTEM('errors', source='', deps='errors3')
     bld.SAMBA3_SUBSYSTEM('samba-util', source='', deps='samba-util3')
     bld.SAMBA3_SUBSYSTEM('CHARSET', source='', deps='CHARSET3')
+    bld.SAMBA3_SUBSYSTEM('ldb', source='', deps='ldb3')
+    bld.SAMBA3_SUBSYSTEM('dcerpc', '', deps='UTIL_TEVENT')
+else:
+
+    # dynconfig provides this in the toplevel build
+    bld.SAMBA3_SUBSYSTEM('LOCALE_DIR',
+                         'localedir.c',
+                         cflags='-DLOCALEDIR=\"%s\"' % bld.env.LOCALEDIR)
+
+    # point the s3 rules at in-tree heimdal
+    bld.SAMBA3_SUBSYSTEM('gssapi_krb5',
+                         source='',
+                         deps='gssapi krb5')
+    bld.SAMBA3_SUBSYSTEM('k5crypto',
+                         source='',
+                         deps='krb5')
+
 
 
 
