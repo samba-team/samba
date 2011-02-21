@@ -95,7 +95,7 @@ static bool check_buffer(uint8_t *buf, unsigned int seed, int len, const char *l
   test write ops
 */
 static bool test_write(struct torture_context *tctx,
-					   struct smbcli_state *cli)
+		       struct smbcli_state *cli)
 {
 	union smb_write io;
 	NTSTATUS status;
@@ -223,7 +223,7 @@ done:
   test writex ops
 */
 static bool test_writex(struct torture_context *tctx,
-						struct smbcli_state *cli)
+			struct smbcli_state *cli)
 {
 	union smb_write io;
 	NTSTATUS status;
@@ -416,7 +416,7 @@ done:
   test write unlock ops
 */
 static bool test_writeunlock(struct torture_context *tctx,
-							 struct smbcli_state *cli)
+			     struct smbcli_state *cli)
 {
 	union smb_write io;
 	NTSTATUS status;
@@ -564,7 +564,7 @@ done:
   test write close ops
 */
 static bool test_writeclose(struct torture_context *tctx,
-							struct smbcli_state *cli)
+			    struct smbcli_state *cli)
 {
 	union smb_write io;
 	NTSTATUS status;
