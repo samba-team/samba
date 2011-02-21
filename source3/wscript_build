@@ -1339,7 +1339,8 @@ bld.SAMBA3_BINARY('vlp',
                  deps='''talloc tdb PARAM_UTIL UTIL_TDB''',
                  vars=locals())
 
-swat_files=recursive_dirlist('../swat', '../swat', '*')
+swat_dir = os.path.join(bld.curdir, '../swat')
+swat_files = recursive_dirlist(swat_dir, swat_dir, '*')
 bld.INSTALL_FILES('${SWATDIR}', swat_files, base_name='../swat')
 
 # additional compatibility rules.
