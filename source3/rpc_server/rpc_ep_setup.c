@@ -44,11 +44,75 @@
 #include "librpc/rpc/dcerpc_ep.h"
 
 #include "rpc_server/rpc_ep_setup.h"
+#include "rpc_server/rpc_server.h"
 
 struct dcesrv_ep_context {
 	struct tevent_context *ev_ctx;
 	struct messaging_context *msg_ctx;
 };
+
+static uint16_t _open_sockets(struct tevent_context *ev_ctx,
+			      struct messaging_context *msg_ctx,
+			      struct ndr_syntax_id syntax_id,
+			      uint16_t port)
+{
+	uint32_t num_ifs = iface_count();
+	uint32_t i;
+	uint16_t p = 0;
+
+	if (lp_interfaces() && lp_bind_interfaces_only()) {
+		/*
+		 * We have been given an interfaces line, and been told to only
+		 * bind to those interfaces. Create a socket per interface and
+		 * bind to only these.
+		 */
+
+		/* Now open a listen socket for each of the interfaces. */
+		for(i = 0; i < num_ifs; i++) {
+			const struct sockaddr_storage *ifss =
+					iface_n_sockaddr_storage(i);
+
+			p = setup_dcerpc_ncacn_tcpip_socket(ev_ctx,
+							    msg_ctx,
+							    syntax_id,
+							    ifss,
+							    port);
+			if (p == 0) {
+				return 0;
+			}
+			port = p;
+		}
+	} else {
+		const char *sock_addr = lp_socket_address();
+		const char *sock_ptr;
+		char *sock_tok;
+
+		for (sock_ptr = sock_addr;
+		     next_token_talloc(talloc_tos(), &sock_ptr, &sock_tok, " \t,");
+		    ) {
+			struct sockaddr_storage ss;
+
+			/* open an incoming socket */
+			if (!interpret_string_addr(&ss,
+						   sock_tok,
+						   AI_NUMERICHOST|AI_PASSIVE)) {
+				continue;
+			}
+
+			p = setup_dcerpc_ncacn_tcpip_socket(ev_ctx,
+							    msg_ctx,
+							    syntax_id,
+							    &ss,
+							    port);
+			if (p == 0) {
+				return 0;
+			}
+			port = p;
+		}
+	}
+
+	return p;
+}
 
 static NTSTATUS _rpc_ep_register(struct tevent_context *ev_ctx,
 				 struct messaging_context *msg_ctx,
@@ -115,6 +179,23 @@ static NTSTATUS _rpc_ep_unregister(const struct ndr_interface_table *iface)
 	}
 
 	return status;
+}
+
+static bool epmapper_init_cb(void *ptr)
+{
+	struct dcesrv_ep_context *ep_ctx =
+		talloc_get_type_abort(ptr, struct dcesrv_ep_context);
+	uint16_t port;
+
+	port = _open_sockets(ep_ctx->ev_ctx,
+			     ep_ctx->msg_ctx,
+			     ndr_table_epmapper.syntax_id,
+			     135);
+	if (port == 135) {
+		return true;
+	}
+
+	return false;
 }
 
 static bool winreg_init_cb(void *ptr)
@@ -392,6 +473,8 @@ bool dcesrv_ep_setup(struct tevent_context *ev_ctx,
 {
 	struct dcesrv_ep_context *ep_ctx;
 
+	struct rpc_srv_callbacks epmapper_cb;
+
 	struct rpc_srv_callbacks winreg_cb;
 	struct rpc_srv_callbacks srvsvc_cb;
 
@@ -426,7 +509,11 @@ bool dcesrv_ep_setup(struct tevent_context *ev_ctx,
 					   "rpc_server", "epmapper",
 					   "none");
 	if (StrCaseCmp(rpcsrv_type, "embedded") == 0) {
-		if (!NT_STATUS_IS_OK(rpc_epmapper_init(NULL))) {
+		epmapper_cb.init         = epmapper_init_cb;
+		epmapper_cb.shutdown     = NULL;
+		epmapper_cb.private_data = ep_ctx;
+
+		if (!NT_STATUS_IS_OK(rpc_epmapper_init(&epmapper_cb))) {
 			return false;
 		}
 	}
