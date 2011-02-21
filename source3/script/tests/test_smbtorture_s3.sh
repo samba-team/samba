@@ -2,17 +2,17 @@
 
 # this runs the file serving tests that are expected to pass with samba3
 
-if [ $# -lt 3 ]; then
+if [ $# -lt 4 ]; then
 cat <<EOF
-Usage: test_smbtorture_s3.sh UNC USERNAME PASSWORD <first> <smbtorture args>
+Usage: test_smbtorture_s3.sh TEST UNC USERNAME PASSWORD <smbtorture args>
 EOF
 exit 1;
 fi
 
-unc="$1"
-username="$2"
-password="$3"
-start="$4"
+t="$1"
+unc="$2"
+username="$3"
+password="$4"
 shift 4
 ADDARGS="$*"
 
@@ -21,32 +21,9 @@ incdir=`dirname $0`/../../../testprogs/blackbox
 . $incdir/subunit.sh
 }
 
-SMB_CONF_PATH="$CONFFILE"
-export SMB_CONF_PATH
 
-tests="FDPASS LOCK1 LOCK2 LOCK3 LOCK4 LOCK5 LOCK6 LOCK7 LOCK9"
-#tests="$tests UNLINK BROWSE ATTR TRANS2 MAXFID TORTURE "
-tests="$tests UNLINK BROWSE ATTR TRANS2 TORTURE "
-tests="$tests OPLOCK1 OPLOCK2 OPLOCK3 OPLOCK4 STREAMERROR"
-tests="$tests DIR DIR1 DIR-CREATETIME TCON TCONDEV RW1 RW2 RW3 RW-SIGNING"
-tests="$tests OPEN XCOPY RENAME DELETE DELETE-LN PROPERTIES W2K"
-tests="$tests TCON2 IOCTL CHKPATH FDSESS LOCAL-SUBSTITUTE CHAIN1"
-tests="$tests GETADDRINFO POSIX UID-REGRESSION-TEST SHORTNAME-TEST"
-tests="$tests LOCAL-BASE64 LOCAL-GENCACHE POSIX-APPEND"
-tests="$tests LOCAL-string_to_sid"
-
-if test "x$SMBTORTURE_S3_SUBTESTS" != "x" ; then
-    tests="$SMBTORTURE_S3_SUBTESTS"
-fi
 
 failed=0
-for t in $tests; do
-    if [ ! -z "$start" -a "$start" != $t ]; then
-	continue;
-    fi
-    start=""
-    name="$t"
-    testit "$name" $VALGRIND $BINDIR/smbtorture $unc -U"$username"%"$password" $ADDARGS $t || failed=`expr $failed + 1`
-done
+testit "smbtorture" $VALGRIND $BINDIR/smbtorture $unc -U"$username"%"$password" $ADDARGS $t || failed=`expr $failed + 1`
 
 testok $0 $failed

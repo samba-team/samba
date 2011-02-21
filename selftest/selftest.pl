@@ -421,6 +421,7 @@ $ENV{SRCDIR} = $srcdir;
 $ENV{SRCDIR_ABS} = $srcdir_abs;
 $ENV{BUILDDIR} = $builddir;
 $ENV{BUILDDIR_ABS} = $builddir_abs;
+$ENV{BINDIR} = $bindir_abs;
 $ENV{EXEEXT} = $exeext;
 
 my $tls_enabled = not $opt_quick;

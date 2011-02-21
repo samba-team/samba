@@ -7,7 +7,17 @@
 #
 # rpc tests are chose by specifying "rpc" as commandline parameter.
 
-RPC="$1"
+if [ $# -lt 3 ]; then
+cat <<EOF
+Usage: test_net_registry.sh SCRIPTDIR SERVERCONFFILE CONFIGURATION RPC
+EOF
+exit 1;
+fi
+
+SCRIPTDIR="$1"
+SERVERCONFFILE="$2"
+CONFIGURATION="$3"
+RPC="$4"
 
 NET="$VALGRIND ${NET:-$BINDIR/net} $CONFIGURATION"
 

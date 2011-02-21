@@ -5,6 +5,17 @@
 # Copyright (C) 2010 Gregor Beck <gbeck@sernet.de>
 # Copyright (C) 2011 Michael Adam <obnox@samba.org>
 
+if [ $# -lt 3 ]; then
+cat <<EOF
+Usage: test_net_registry_roundtrip.sh SCRIPTDIR SERVERCONFFILE CONFIGURATION
+EOF
+exit 1;
+fi
+
+SCRIPTDIR="$1"
+SERVERCONFFILE="$2"
+CONFIGURATION="$3"
+
 NET="$VALGRIND ${NET:-$BINDIR/net} $CONFIGURATION"
 
 

@@ -134,6 +134,12 @@ sub setup_dc($$)
 
 	$self->wait_for_start($vars);
 
+	$vars->{DC_SERVER} = $vars->{SERVER};
+	$vars->{DC_SERVER_IP} = $vars->{SERVER_IP};
+	$vars->{DC_NETBIOSNAME} = $vars->{NETBIOSNAME};
+	$vars->{DC_USERNAME} = $vars->{USERNAME};
+	$vars->{DC_PASSWORD} = $vars->{PASSWORD};
+
 	$self->{vars}->{dc} = $vars;
 
 	return $vars;

@@ -2,6 +2,17 @@
 
 # various tests for the "net" command
 
+if [ $# -lt 3 ]; then
+cat <<EOF
+Usage: test_net_misc.sh SCRIPTDIR SERVERCONFFILE CONFIGURATION
+EOF
+exit 1;
+fi
+
+SCRIPTDIR="$1"
+SERVERCONFFILE="$2"
+CONFIGURATION="$3"
+
 NET="$VALGRIND ${NET:-$BINDIR/net} $CONFIGURATION"
 
 NETTIME="${NET} time"
