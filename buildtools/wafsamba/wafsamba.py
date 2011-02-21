@@ -37,7 +37,7 @@ if os.environ.get('WAF_NOTHREADS') == '1':
 
 LIB_PATH="shared"
 
-os.putenv('PYTHONUNBUFFERED', '1')
+os.environ['PYTHONUNBUFFERED'] = '1'
 
 
 if Constants.HEXVERSION < 0x105019:

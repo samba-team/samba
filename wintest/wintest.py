@@ -13,7 +13,7 @@ class wintest():
         self.vars = {}
         self.list_mode = False
         self.vms = None
-        os.putenv('PYTHONUNBUFFERED', '1')
+        os.environ['PYTHONUNBUFFERED'] = '1'
         self.parser = optparse.OptionParser("wintest")
 
     def check_prerequesites(self):
@@ -142,7 +142,7 @@ class wintest():
 
     def putenv(self, key, value):
         '''putenv with substitution'''
-        os.putenv(key, self.substitute(value))
+        os.environ[key] = self.substitute(value)
 
     def chdir(self, dir):
         '''chdir with substitution'''

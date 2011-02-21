@@ -119,7 +119,7 @@ def test(ctx):
     test_prefix = "%s/st" % (Utils.g_module.blddir)
     shutil.rmtree(test_prefix, ignore_errors=True)
     os.makedirs(test_prefix)
-    os.putenv('TEST_DATA_PREFIX', test_prefix)
+    os.environ['TEST_DATA_PREFIX'] = test_prefix
     cmd = os.path.join(Utils.g_module.blddir, 'tdbtorture')
     ret = samba_utils.RUN_COMMAND(cmd)
     print("testsuite returned %d" % ret)
