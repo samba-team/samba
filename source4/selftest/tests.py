@@ -18,131 +18,13 @@
 # three separated by newlines. All other lines in the output are considered
 # comments.
 
-import os
+import os, sys
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../../selftest"))
+from selftesthelpers import *
 import subprocess
 
-def binpath(name):
-    return os.path.join(samba4bindir, "%s%s" % (name, os.getenv("EXEEXT", "")))
-
-perl = os.getenv("PERL", "perl")
-
-if subprocess.call([perl, "-e", "eval require Test::More;"]) == 0:
-    has_perl_test_more = True
-else:
-    has_perl_test_more = False
-
-try:
-    from subunit.run import TestProgram
-except ImportError:
-    has_system_subunit_run = False
-else:
-    has_system_subunit_run = True
-
-python = os.getenv("PYTHON", "python")
-
-def valgrindify(cmdline):
-    """Run a command under valgrind, if $VALGRIND was set."""
-    valgrind = os.getenv("VALGRIND")
-    if valgrind is None:
-        return cmdline
-    return valgrind + " " + cmdline
-
-
-def plantestsuite(name, env, cmdline, allow_empty_output=False):
-    """Plan a test suite.
-
-    :param name: Testsuite name
-    :param env: Environment to run the testsuite in
-    :param cmdline: Command line to run
-    """
-    print "-- TEST --"
-    print name
-    print env
-    if isinstance(cmdline, list):
-        cmdline = " ".join(cmdline)
-    filter_subunit_args = []
-    if not allow_empty_output:
-        filter_subunit_args.append("--fail-on-empty")
-    if "$LISTOPT" in cmdline:
-        filter_subunit_args.append("$LISTOPT")
-    print "%s 2>&1 | %s/selftest/filter-subunit %s --prefix=\"%s.\"" % (cmdline,
-                                                                        srcdir,
-                                                                        " ".join(filter_subunit_args),
-                                                                        name)
-    if allow_empty_output:
-        print "WARNING: allowing empty subunit output from %s" % name
-
-
-def add_prefix(prefix, support_list=False):
-    if support_list:
-        listopt = "$LISTOPT "
-    else:
-        listopt = ""
-    return "%s/selftest/filter-subunit %s--fail-on-empty --prefix=\"%s.\"" % (srcdir, listopt, prefix)
-
-
-def plantestsuite_loadlist(name, env, cmdline):
-    print "-- TEST-LOADLIST --"
-    if env == "none":
-        fullname = name
-    else:
-        fullname = "%s(%s)" % (name, env)
-    print fullname
-    print env
-    if isinstance(cmdline, list):
-        cmdline = " ".join(cmdline)
-    support_list = ("$LISTOPT" in cmdline)
-    print "%s $LOADLIST 2>&1 | %s" % (cmdline, add_prefix(name, support_list))
-
-
-def plantestsuite_idlist(name, env, cmdline):
-    print "-- TEST-IDLIST --"
-    print name
-    print env
-    if isinstance(cmdline, list):
-        cmdline = " ".join(cmdline)
-    print cmdline
-
-
-def skiptestsuite(name, reason):
-    """Indicate that a testsuite was skipped.
-
-    :param name: Test suite name
-    :param reason: Reason the test suite was skipped
-    """
-    # FIXME: Report this using subunit, but re-adjust the testsuite count somehow
-    print "skipping %s (%s)" % (name, reason)
-
-
-def planperltestsuite(name, path):
-    """Run a perl test suite.
-
-    :param name: Name of the test suite
-    :param path: Path to the test runner
-    """
-    if has_perl_test_more:
-        plantestsuite(name, "none", "%s %s | %s" % (perl, path, tap2subunit))
-    else:
-        skiptestsuite(name, "Test::More not available")
-
-
-def planpythontestsuite(env, module):
-    if has_system_subunit_run:
-        plantestsuite_idlist(module, env, [python, "-m", "subunit.run", "$LISTOPT", module])
-    else:
-        plantestsuite_idlist(module, env, "PYTHONPATH=$PYTHONPATH:%s/../lib/subunit/python:%s/../lib/testtools %s -m subunit.run $LISTOPT %s" % (samba4srcdir, samba4srcdir, python, module))
-
-
-def plansmbtorturetestsuite(name, env, options):
-    modname = "samba4.%s" % name
-    cmdline = "%s $LISTOPT %s %s" % (valgrindify(smb4torture), options, name)
-    plantestsuite_loadlist(modname, env, cmdline)
-
-
-srcdir = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "../.."))
-samba4srcdir = os.path.join(srcdir, 'source4')
-builddir = os.getenv("BUILDDIR", samba4srcdir)
-samba4bindir = os.path.normpath(os.path.join(builddir, "bin"))
+samba4srcdir = source4dir()
+samba4bindir = bindir()
 smb4torture = binpath("smbtorture")
 smb4torture_testsuite_list = subprocess.Popen([smb4torture, "--list-suites"], stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate("")[0].splitlines()
 validate = os.getenv("VALIDATE", "")
@@ -150,24 +32,18 @@ if validate:
     validate_list = [validate]
 else:
     validate_list = []
+
+def plansmbtorturetestsuite(name, env, options):
+    modname = "samba4.%s" % name
+    cmdline = "%s $LISTOPT %s %s" % (valgrindify(smb4torture), options, name)
+    plantestsuite_loadlist(modname, env, cmdline)
+
 def smb4torture_testsuites(prefix):
     return filter(lambda x: x.startswith(prefix), smb4torture_testsuite_list)
 
-sub = subprocess.Popen("tap2subunit 2> /dev/null", stdout=subprocess.PIPE, stdin=subprocess.PIPE, shell=True)
-sub.communicate("")
-if sub.returncode != 0:
-    tap2subunit = "PYTHONPATH=%s/../lib/subunit/python:%s/../lib/testtools %s %s/../lib/subunit/filters/tap2subunit" % (samba4srcdir, samba4srcdir, python, samba4srcdir)
-else:
-    cmd = "echo -ne \"1..1\nok 1 # skip doesn't seem to work yet\n\" | tap2subunit 2> /dev/null | grep skip"
-    sub = subprocess.Popen(cmd, stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
-    if sub.returncode == 0:
-        tap2subunit = "tap2subunit"
-    else:
-        tap2subunit = "PYTHONPATH=%s/../lib/subunit/python:%s/../lib/testtools %s %s/../lib/subunit/filters/tap2subunit" % (samba4srcdir, samba4srcdir, python, samba4srcdir)
-
 subprocess.call([smb4torture, "-V"])
 
-bbdir = os.path.join(srcdir, "testprogs/blackbox")
+bbdir = os.path.join(srcdir(), "testprogs/blackbox")
 
 configuration = "--configfile=$SMB_CONF_PATH"
 
@@ -484,7 +360,7 @@ plansambapythontestsuite("ldb.python", "none", "%s/lib/ldb/tests/python/" % samb
 planpythontestsuite("none", "samba.tests.credentials")
 plantestsuite_idlist("samba.tests.gensec", "dc:local", [subunitrun, "$LISTOPT", '-U"$USERNAME%$PASSWORD"', "samba.tests.gensec"])
 planpythontestsuite("none", "samba.tests.registry")
-plansambapythontestsuite("tdb.python", "none", "%s/lib/tdb/python/tests" % srcdir, 'simple')
+plansambapythontestsuite("tdb.python", "none", "%s/lib/tdb/python/tests" % srcdir(), 'simple')
 planpythontestsuite("none", "samba.tests.auth")
 planpythontestsuite("none", "samba.tests.security")
 planpythontestsuite("none", "samba.tests.dcerpc.misc")
@@ -525,7 +401,7 @@ planpythontestsuite("dc:local", "samba.tests.upgradeprovisionneeddc")
 planpythontestsuite("none", "samba.tests.upgradeprovision")
 planpythontestsuite("none", "samba.tests.xattr")
 planpythontestsuite("none", "samba.tests.ntacls")
-plantestsuite("samba4.deletetest.python(dc)", "dc", ['PYTHONPATH="$PYTHONPATH:%s/lib/subunit/python:%s/lib/testtools"' % (srcdir, srcdir),
+plantestsuite("samba4.deletetest.python(dc)", "dc", ['PYTHONPATH="$PYTHONPATH:%s/lib/subunit/python:%s/lib/testtools"' % (srcdir(), srcdir()),
                                                      python, os.path.join(samba4srcdir, "dsdb/tests/python/deletetest.py"),
                                                      '$SERVER', '-U"$USERNAME%$PASSWORD"', '-W', '$DOMAIN'])
 plansambapythontestsuite("samba4.policy.python", "none", "%s/lib/policy/tests/python" % samba4srcdir, 'bindings')
