@@ -686,12 +686,13 @@ t.env.BUILDDIR = bld.path.abspath()
 
 bld.SETUP_BUILD_GROUPS()
 
-samba_version.load_version(bld.env)
+if not bld.env.toplevel_build:
+    # when using a toplevel build, these are already supplied
+    samba_version.load_version(bld.env)
+    bld.SAMBA_MKVERSION('include/version.h')
+    bld.RECURSE('../lib/replace')
+    bld.RECURSE('build')
 
-bld.SAMBA_MKVERSION('include/version.h')
-
-bld.RECURSE('../lib/replace')
-bld.RECURSE('build')
 
 ######################## SUBSYSTEMS #################################
 
