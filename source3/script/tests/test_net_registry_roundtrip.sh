@@ -44,9 +44,11 @@ conf_roundtrip_step() {
 #    echo -n .
 }
 
+LOGDIR_PREFIX="conf_roundtrip"
+
 conf_roundtrip()
 {
-    local DIR=$(mktemp -d --tmpdir=$PREFIX conf_roundtrip_XXXX)
+    local DIR=$(mktemp -d --tmpdir=$PREFIX ${LOGDIR_PREFIX}_XXXX)
     local LOG=$DIR/log
 
     echo conf_roundtrip $1 > $LOG
@@ -97,6 +99,12 @@ conf_roundtrip()
 }
 
 CONF_FILES=${CONF_FILES:-$(find $SRCDIR/ -name '*.conf' | xargs grep -l "\[global\]")}
+
+# remove old logs:
+for OLDDIR in $(find ${PREFIX} -type d -name "${LOGDIR_PREFIX}_*") ; do
+	echo "removing old directory ${OLDDIR}"
+	rm -rf ${OLDDIR}
+done
 
 for conf_file in $CONF_FILES
 do
