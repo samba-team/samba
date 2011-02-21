@@ -36,3 +36,4 @@ int get_gpfs_winattrs(char * pathname,struct gpfs_winattr *attrs);
 int set_gpfs_winattrs(char * pathname,int flags,struct gpfs_winattr *attrs);
 int smbd_gpfs_ftruncate(int fd, gpfs_off64_t length);
 void init_gpfs(void);
+void smbd_gpfs_lib_init();

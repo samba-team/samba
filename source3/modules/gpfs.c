@@ -40,6 +40,7 @@ static int (*gpfs_set_winattrs_path_fn)(char *pathname, int flags, struct gpfs_w
 static int (*gpfs_get_winattrs_path_fn)(char *pathname, struct gpfs_winattr *attrs);
 static int (*gpfs_get_winattrs_fn)(int fd, struct gpfs_winattr *attrs);
 static int (*gpfs_ftruncate_fn)(int fd, gpfs_off64_t length);
+static int (*gpfs_lib_init_fn)(int flags);
 
 bool set_gpfs_sharemode(files_struct *fsp, uint32 access_mask,
 			uint32 share_access)
@@ -189,6 +190,17 @@ int set_gpfs_winattrs(char *pathname,int flags,struct gpfs_winattr *attrs)
         return gpfs_set_winattrs_path_fn(pathname,flags, attrs);
 }
 
+void smbd_gpfs_lib_init()
+{
+	if (gpfs_lib_init_fn) {
+		int rc = gpfs_lib_init_fn(0);
+		DEBUG(10, ("gpfs_lib_init() finished with rc %d "
+			   "and errno %d\n", rc, errno));
+	} else {
+		DEBUG(10, ("libgpfs lacks gpfs_lib_init\n"));
+	}
+}
+
 static bool init_gpfs_function_lib(void *plibhandle_pointer,
 				   const char *libname,
 				   void *pfn_pointer, const char *fn_name)
@@ -251,6 +263,7 @@ void init_gpfs(void)
         init_gpfs_function(&gpfs_set_winattrs_path_fn,"gpfs_set_winattrs_path");
         init_gpfs_function(&gpfs_get_winattrs_fn,"gpfs_get_winattrs");
 	init_gpfs_function(&gpfs_ftruncate_fn, "gpfs_ftruncate");
+        init_gpfs_function(&gpfs_lib_init_fn,"gpfs_lib_init");
 
 	gpfs_getrealfilename = lp_parm_bool(-1, "gpfs", "getrealfilename",
 					    True);
@@ -309,6 +322,11 @@ int get_gpfs_winattrs(char *pathname,struct gpfs_winattr *attrs)
 {
         errno = ENOSYS;
         return -1;
+}
+
+void smbd_gpfs_lib_init()
+{
+	return;
 }
 
 void init_gpfs(void)
