@@ -1204,6 +1204,11 @@ bld.SAMBA3_BINARY('smbconftort',
                  deps='''talloc tdb tevent cap resolv wbclient param LIB_NONSMBD LIBSMB_ERR POPT_SAMBA3''',
                  vars=locals())
 
+bld.SAMBA3_BINARY('replacetort',
+                 source='../lib/replace/test/main.c',
+                 deps='replace replace-test',
+                 install=False)
+
 bld.SAMBA3_BINARY('masktest' + bld.env.suffix3,
                  source=MASKTEST_SRC,
                  deps='''talloc tdb cap resolv wbclient param LIB_NONSMBD LIBSMB KRBCLIENT
