@@ -83,6 +83,7 @@ NTSTATUS dcerpc_binding_vector_create(TALLOC_CTX *mem_ctx,
 				break;
 			case NCACN_IP_TCP:
 				if (port == 0) {
+					talloc_free(b);
 					continue;
 				}
 
@@ -96,6 +97,7 @@ NTSTATUS dcerpc_binding_vector_create(TALLOC_CTX *mem_ctx,
 			case NCALRPC:
 				/* TODO */
 			default:
+				talloc_free(b);
 				continue;
 		}
 
