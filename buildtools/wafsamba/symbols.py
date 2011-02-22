@@ -449,10 +449,20 @@ def symbols_dupcheck(task):
     bld = task.env.bld
     tgt_list = get_tgt_list(bld)
 
+    targets = LOCAL_CACHE(bld, 'TARGET_TYPE')
+
     Logs.info("Checking for duplicate symbols")
     for sym in bld.env.symbol_map:
         subsystems = bld.env.symbol_map[sym]
         if len(subsystems) == 1:
+            continue
+        # if all of them are in system libraries, we can ignore them. This copes
+        # with the duplication between libc, libpthread and libattr
+        all_syslib = True
+        for s in subsystems:
+            if s != 'c' and (not s in targets or targets[s] != 'SYSLIB'):
+                all_syslib = False
+        if all_syslib:
             continue
         Logs.info("symbol %s appears in %s" % (sym, subsystems))
 
