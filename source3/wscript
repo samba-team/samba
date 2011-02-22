@@ -1366,6 +1366,43 @@ main() {
                 conf.DEFINE('HAVE_SENDFILE', '1')
                 conf.DEFINE('FREEBSD_SENDFILE_API', '1')
                 conf.DEFINE('WITH_SENDFILE', '1')
+	elif (host_os.rfind('hpux') > -1):
+            conf.CHECK_CODE('''
+			    #include <sys/socket.h>
+			    #include <sys/uio.h>
+			    int fromfd, tofd;
+			    size_t total=0;
+			    struct iovec hdtrl[2];
+			    ssize_t nwritten;
+			    off64_t offset;
+			    hdtrl[0].iov_base = 0;
+			    hdtrl[0].iov_len = 0;
+			    nwritten = sendfile64(tofd, fromfd, offset, total, &hdtrl[0], 0);
+			    ''',
+			    '_HAVE_SENDFILE64',
+			    msg='Checking for hpux sendfile64 support')
+            conf.CHECK_CODE('''
+			    #include <sys/socket.h>
+			    #include <sys/uio.h>
+			    int fromfd, tofd;
+			    size_t total=0;
+			    struct iovec hdtrl[2];
+			    ssize_t nwritten;
+			    off_t offset;
+			    hdtrl[0].iov_base = 0;
+			    hdtrl[0].iov_len = 0;
+			    nwritten = sendfile(tofd, fromfd, offset, total, &hdtrl[0], 0);
+			    ''',
+			    '_HAVE_SENDFILE',
+			    msg='Checking for hpux sendfile support')
+            if conf.CONFIG_SET('_HAVE_SENDFILE64'):
+                conf.DEFINE('HAVE_SENDFILE64', '1')
+                conf.DEFINE('HPUX_SENDFILE_API', '1')
+                conf.DEFINE('WITH_SENDFILE', '1')
+            elif conf.CONFIG_SET('_HAVE_SENDFILE'):
+                conf.DEFINE('HAVE_SENDFILE', '1')
+                conf.DEFINE('HPUX_SENDFILE_API', '1')
+                conf.DEFINE('WITH_SENDFILE', '1')
 
     default_static_modules=TO_LIST('''pdb_smbpasswd pdb_tdbsam pdb_wbc_sam
                                       auth_sam auth_unix auth_winbind auth_wbc auth_server
