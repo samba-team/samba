@@ -26,14 +26,10 @@
 #  PYTHONPATH="$PYTHONPATH:$samba4srcdir/torture/drs/python" $SUBUNITRUN delete_object -U"$DOMAIN/$DC_USERNAME"%"$DC_PASSWORD"
 #
 
-import sys
 import time
-import os
 
-sys.path.insert(0, "bin/python")
 
 from ldb import (
-    SCOPE_BASE,
     SCOPE_SUBTREE
     )
 

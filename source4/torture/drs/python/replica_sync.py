@@ -27,22 +27,8 @@
 #  PYTHONPATH="$PYTHONPATH:$samba4srcdir/torture/drs/python" $SUBUNITRUN replica_sync -U"$DOMAIN/$DC_USERNAME"%"$DC_PASSWORD"
 #
 
-import sys
-import time
-import random
-import os
-
 import drs_base
 import samba.tests
-
-from ldb import (
-    ERR_NO_SUCH_OBJECT,
-    LdbError,
-    SCOPE_BASE,
-    Message,
-    FLAG_MOD_ADD,
-    FLAG_MOD_REPLACE,
-    )
 
 
 class DrsReplicaSyncTestCase(drs_base.DrsBaseTestCase):

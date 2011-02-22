@@ -27,15 +27,8 @@
 #  PYTHONPATH="$PYTHONPATH:$samba4srcdir/torture/drs/python" $SUBUNITRUN repl_schema -U"$DOMAIN/$DC_USERNAME"%"$DC_PASSWORD"
 #
 
-import sys
 import time
 import random
-import os
-
-sys.path.insert(0, "bin/python")
-import samba
-samba.ensure_external_module("testtools", "testtools")
-samba.ensure_external_module("subunit", "subunit/python")
 
 from ldb import (
     ERR_NO_SUCH_OBJECT,
