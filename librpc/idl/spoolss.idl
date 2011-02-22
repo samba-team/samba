@@ -1256,7 +1256,7 @@ cpp_quote("#define spoolss_security_descriptor security_descriptor")
 		spoolss_DriverOSVersion version;
 		[relative] nstring *driver_name;
 		[relative] nstring *architecture;
-		[relative] [size_is(file_count)] spoolss_DriverFileInfo *file_info;
+		[relative,size_is(file_count),flag(NDR_ALIGN4)] spoolss_DriverFileInfo *file_info;
 		uint32 file_count;
 		[relative] nstring *monitor_name;
 		[relative] nstring *default_datatype;
