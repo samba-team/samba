@@ -1985,6 +1985,7 @@ static void pdb_ads_search_end(struct pdb_search *search)
 static bool pdb_ads_search_filter(struct pdb_methods *m,
 				  struct pdb_search *search,
 				  const char *filter,
+				  uint32_t acct_flags,
 				  struct pdb_ads_search_state **pstate)
 {
 	struct pdb_ads_state *state = talloc_get_type_abort(
@@ -1999,6 +2000,7 @@ static bool pdb_ads_search_filter(struct pdb_methods *m,
 	if (sstate == NULL) {
 		return false;
 	}
+	sstate->acct_flags = acct_flags;
 
 	rc = pdb_ads_search_fmt(
 		state, state->domaindn, TLDAP_SCOPE_SUB,
@@ -2036,7 +2038,19 @@ static bool pdb_ads_search_filter(struct pdb_methods *m,
 		sid_peek_rid(&sid, &e->rid);
 
 		if (tldap_pull_uint32(users[i], "userAccountControl", &ctrl)) {
+
 			e->acct_flags = ds_uf2acb(ctrl);
+
+			DEBUG(10, ("pdb_ads_search_filter: Found %x, "
+				   "filter %x\n", (int)e->acct_flags,
+				   (int)sstate->acct_flags));
+
+
+			if ((sstate->acct_flags != 0) &&
+			    ((sstate->acct_flags & e->acct_flags) == 0)) {
+				continue;
+			}
+
 			if (e->acct_flags & (ACB_WSTRUST|ACB_SVRTRUST)) {
 				e->acct_flags |= ACB_NORMAL;
 			}
@@ -2092,6 +2106,8 @@ static bool pdb_ads_search_users(struct pdb_methods *m,
 	char *filter;
 	bool ret;
 
+	DEBUG(10, ("pdb_ads_search_users got flags %x\n", acct_flags));
+
 	if (acct_flags & ACB_NORMAL) {
 		filter = talloc_asprintf(
 			talloc_tos(),
@@ -2109,12 +2125,11 @@ static bool pdb_ads_search_users(struct pdb_methods *m,
 		return false;
 	}
 
-	ret = pdb_ads_search_filter(m, search, filter, &sstate);
+	ret = pdb_ads_search_filter(m, search, filter, acct_flags, &sstate);
 	TALLOC_FREE(filter);
 	if (!ret) {
 		return false;
 	}
-	sstate->acct_flags = acct_flags;
 	return true;
 }
 
@@ -2131,12 +2146,11 @@ static bool pdb_ads_search_groups(struct pdb_methods *m,
 	if (filter == NULL) {
 		return false;
 	}
-	ret = pdb_ads_search_filter(m, search, filter, &sstate);
+	ret = pdb_ads_search_filter(m, search, filter, 0, &sstate);
 	TALLOC_FREE(filter);
 	if (!ret) {
 		return false;
 	}
-	sstate->acct_flags = 0;
 	return true;
 }
 
@@ -2157,12 +2171,11 @@ static bool pdb_ads_search_aliases(struct pdb_methods *m,
 	if (filter == NULL) {
 		return false;
 	}
-	ret = pdb_ads_search_filter(m, search, filter, &sstate);
+	ret = pdb_ads_search_filter(m, search, filter, 0, &sstate);
 	TALLOC_FREE(filter);
 	if (!ret) {
 		return false;
 	}
-	sstate->acct_flags = 0;
 	return true;
 }
 
