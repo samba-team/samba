@@ -1403,6 +1403,56 @@ main() {
                 conf.DEFINE('HAVE_SENDFILE', '1')
                 conf.DEFINE('HPUX_SENDFILE_API', '1')
                 conf.DEFINE('WITH_SENDFILE', '1')
+	elif (host_os.rfind('solaris') > -1):
+            conf.CHECK_FUNCS_IN('sendfile', 'sendfilev')
+            conf.CHECK_CODE('''
+			    #include <sys/sendfile.h>
+			    int sfvcnt;
+			    size_t xferred;
+			    struct sendfilevec vec[2];
+			    ssize_t nwritten;
+			    int tofd;
+			    sfvcnt = 2;
+			    vec[0].sfv_fd = SFV_FD_SELF;
+			    vec[0].sfv_flag = 0;
+			    vec[0].sfv_off = 0;
+			    vec[0].sfv_len = 0;
+			    vec[1].sfv_fd = 0;
+			    vec[1].sfv_flag = 0;
+			    vec[1].sfv_off = 0;
+			    vec[1].sfv_len = 0;
+			    nwritten = sendfilev64(tofd, vec, sfvcnt, &xferred);
+			    ''',
+			    '_HAVE_SENDFILEV64',
+			    msg='Checking for solaris sendfilev64 support')
+            conf.CHECK_CODE('''
+			    #include <sys/sendfile.h>,
+			    int sfvcnt;
+			    size_t xferred;
+			    struct sendfilevec vec[2];
+			    ssize_t nwritten;
+			    int tofd;
+			    sfvcnt = 2;
+			    vec[0].sfv_fd = SFV_FD_SELF;
+			    vec[0].sfv_flag = 0;
+			    vec[0].sfv_off = 0;
+			    vec[0].sfv_len = 0;
+			    vec[1].sfv_fd = 0;
+			    vec[1].sfv_flag = 0;
+			    vec[1].sfv_off = 0;
+			    vec[1].sfv_len = 0;
+			    nwritten = sendfilev(tofd, vec, sfvcnt, &xferred);
+			    ''',
+			    '_HAVE_SENDFILEV',
+			    msg='Checking for solaris sendfilev support')
+            if conf.CONFIG_SET('_HAVE_SENDFILEV64'):
+                conf.DEFINE('HAVE_SENDFILEV64', '1')
+                conf.DEFINE('SOLARIS_SENDFILE_API', '1')
+                conf.DEFINE('WITH_SENDFILE', '1')
+            elif conf.CONFIG_SET('_HAVE_SENDFILEV'):
+                conf.DEFINE('HAVE_SENDFILEV', '1')
+                conf.DEFINE('SOLARIS_SENDFILE_API', '1')
+                conf.DEFINE('WITH_SENDFILE', '1')
 
     default_static_modules=TO_LIST('''pdb_smbpasswd pdb_tdbsam pdb_wbc_sam
                                       auth_sam auth_unix auth_winbind auth_wbc auth_server
