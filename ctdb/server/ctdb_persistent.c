@@ -310,6 +310,14 @@ int32_t ctdb_control_trans3_commit(struct ctdb_context *ctdb,
 		return -1;
 	}
 
+	if (ctdb_db->persistent_state != NULL) {
+		DEBUG(DEBUG_ERR, (__location__ " Error: "
+				  "ctdb_control_trans3_commit "
+				  "called while a transaction commit is "
+				  "active. db_id[0x%08x]\n", m->db_id));
+		return -1;
+	}
+
 	client = ctdb_reqid_find(ctdb, c->client_id, struct ctdb_client);
 	if (client == NULL) {
 		DEBUG(DEBUG_ERR,(__location__ " can not match persistent_store "
