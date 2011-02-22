@@ -1126,6 +1126,31 @@ syscall(SYS_initgroups, 16, NULL, NULL, 0);
     if os.path.exists('/proc/sys/kernel/core_pattern'):
         conf.DEFINE('HAVE_SYS_KERNEL_PROC_CORE_PATTERN', '1')
 
+    if conf.CHECK_CODE('''
+#include <time.h>
+main() {
+	struct tm *tm;
+	if (sizeof(time_t) == 8) {
+		time_t max_time = 0x7fffffffffffffffll;
+		tm = gmtime(&max_time);
+		/* This should fail with 32-bit tm_year. */
+		if (tm == NULL) {
+			/* Max time_t that works with 32-bit int tm_year in struct tm. */
+			max_time = 67768036191676799ll;
+			tm = gmtime(&max_time);
+			if (tm) {
+				exit(0);
+			}
+		}
+	}
+	exit(1);
+}''',
+	'__TIME_T_MAX',
+	addmain=False,
+	execute=True,
+	msg="Checking for the maximum value of the 'time_t' type"):
+            conf.DEFINE('TIME_T_MAX', '67768036191676799ll')
+
     default_static_modules=TO_LIST('''pdb_smbpasswd pdb_tdbsam pdb_wbc_sam
                                       auth_sam auth_unix auth_winbind auth_wbc auth_server
                                       auth_domain auth_builtin vfs_default
