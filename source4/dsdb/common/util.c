@@ -1910,7 +1910,7 @@ bool samdb_is_gc(struct ldb_context *ldb)
 	talloc_free(tmp_ctx);
 
 	/* if options attribute has the 0x00000001 flag set, then enable the global catlog */
-	if (options & 0x000000001) {
+	if (options & DS_NTDSDSA_OPT_IS_GC) {
 		return true;
 	}
 	return false;
