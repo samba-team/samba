@@ -1268,6 +1268,27 @@ main() { dev_t dev = makedev(1,2); return 0; }
 	addmain=False,
 	msg='Checking whether the macro for makedev is available')
 
+    conf.CHECK_CODE('''
+#include <stdio.h>
+#include <limits.h>
+#include <signal.h>
+
+void exit_on_core(int ignored) {
+	exit(1);
+}
+
+main() {
+	char *newpath;
+	signal(SIGSEGV, exit_on_core);
+	newpath = realpath("/tmp", NULL);
+	exit((newpath != NULL) ? 0 : 1);
+}
+''',
+	'REALPATH_TAKES_NULL',
+	addmain=False,
+	execute=True,
+	msg='Checking whether the realpath function allows a NULL argument')
+
     default_static_modules=TO_LIST('''pdb_smbpasswd pdb_tdbsam pdb_wbc_sam
                                       auth_sam auth_unix auth_winbind auth_wbc auth_server
                                       auth_domain auth_builtin vfs_default
