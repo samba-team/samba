@@ -81,28 +81,31 @@ struct dom_sid *get_default_ag(TALLOC_CTX *mem_ctx,
 	}
 
 	if (ldb_dn_compare(nc_root, ldb_get_schema_basedn(ldb)) == 0) {
-		if (security_token_has_sid(token, sa_sid))
+		if (security_token_has_sid(token, sa_sid)) {
 			dag_sid = dom_sid_dup(mem_ctx, sa_sid);
-		else if (security_token_has_sid(token, ea_sid))
+		} else if (security_token_has_sid(token, ea_sid)) {
 			dag_sid = dom_sid_dup(mem_ctx, ea_sid);
-		else if (security_token_has_sid(token, da_sid))
+		} else if (security_token_has_sid(token, da_sid)) {
 			dag_sid = dom_sid_dup(mem_ctx, da_sid);
-		else
+		} else {
 			dag_sid = NULL;
+		}
 	} else if (ldb_dn_compare(nc_root, ldb_get_config_basedn(ldb)) == 0) {
-		if (security_token_has_sid(token, ea_sid))
+		if (security_token_has_sid(token, ea_sid)) {
 			dag_sid = dom_sid_dup(mem_ctx, ea_sid);
-		else if (security_token_has_sid(token, da_sid))
+		} else if (security_token_has_sid(token, da_sid)) {
 			dag_sid = dom_sid_dup(mem_ctx, da_sid);
-		else
+		} else {
 			dag_sid = NULL;
+		}
 	} else if (ldb_dn_compare(nc_root, ldb_get_default_basedn(ldb)) == 0) {
-		if (security_token_has_sid(token, da_sid))
+		if (security_token_has_sid(token, da_sid)) {
 			dag_sid = dom_sid_dup(mem_ctx, da_sid);
-		else if (security_token_has_sid(token, ea_sid))
+		} else if (security_token_has_sid(token, ea_sid)) {
 				dag_sid = dom_sid_dup(mem_ctx, ea_sid);
-		else
+		} else {
 			dag_sid = NULL;
+		}
 	} else {
 		dag_sid = NULL;
 	}
