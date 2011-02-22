@@ -77,6 +77,7 @@ static int make_server_pipes_struct(TALLOC_CTX *mem_ctx,
 				    const char *pipe_name,
 				    const struct ndr_syntax_id id,
 				    const char *client_address,
+				    const char *server_address,
 				    struct auth_session_info_transport *session_info,
 				    struct pipes_struct **_p,
 				    int *perrno)
@@ -184,6 +185,27 @@ static int make_server_pipes_struct(TALLOC_CTX *mem_ctx,
 		TALLOC_FREE(p);
 		*perrno = ENOMEM;
 		return -1;
+	}
+
+	if (server_address != NULL) {
+		p->server_id = talloc_zero(p, struct client_address);
+		if (p->client_id == NULL) {
+			TALLOC_FREE(p);
+			*perrno = ENOMEM;
+			return -1;
+		}
+
+		strlcpy(p->server_id->addr,
+			server_address,
+			sizeof(p->server_id->addr));
+
+		p->server_id->name = talloc_strdup(p->server_id,
+						   server_address);
+		if (p->server_id->name == NULL) {
+			TALLOC_FREE(p);
+			*perrno = ENOMEM;
+			return -1;
+		}
 	}
 
 	talloc_set_destructor(p, close_internal_rpc_pipe_hnd);
@@ -519,7 +541,7 @@ static void named_pipe_accept_done(struct tevent_req *subreq)
 
 	ret = make_server_pipes_struct(npc,
 					npc->pipe_name, npc->pipe_id,
-					cli_addr, npc->session_info,
+					cli_addr, NULL, npc->session_info,
 					&npc->p, &error);
 	if (ret != 0) {
 		DEBUG(2, ("Failed to create pipes_struct! (%s)\n",
@@ -941,6 +963,7 @@ static void dcerpc_ncacn_accept(struct tevent_context *ev_ctx,
 	struct dcerpc_ncacn_conn *ncacn_conn;
 	struct tevent_req *subreq;
 	const char *cli_str;
+	const char *srv_str = NULL;
 	char *pipe_name;
 	NTSTATUS status;
 	int sys_errno;
@@ -1044,14 +1067,17 @@ static void dcerpc_ncacn_accept(struct tevent_context *ev_ctx,
 	}
 
 	if (tsocket_address_is_inet(ncacn_conn->client, "ip")) {
-		cli_str = tsocket_address_inet_addr_string(ncacn_conn->client,
-							   ncacn_conn);
-		if (cli_str == NULL) {
-			talloc_free(ncacn_conn);
-			return;
-		}
+		cli_str = ncacn_conn->client_name;
 	} else {
 		cli_str = "";
+	}
+
+	if (ncacn_conn->server != NULL) {
+		if (tsocket_address_is_inet(ncacn_conn->server, "ip")) {
+			srv_str = ncacn_conn->server_name;
+		} else {
+			srv_str = NULL;
+		}
 	}
 
 	if (ncacn_conn->session_info == NULL) {
@@ -1070,6 +1096,7 @@ static void dcerpc_ncacn_accept(struct tevent_context *ev_ctx,
 				      pipe_name,
 				      ncacn_conn->syntax_id,
 				      cli_str,
+				      srv_str,
 				      ncacn_conn->session_info,
 				      &ncacn_conn->p,
 				      &sys_errno);

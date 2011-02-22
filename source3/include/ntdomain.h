@@ -118,6 +118,7 @@ struct pipes_struct {
 	struct pipes_struct *next, *prev;
 
 	struct client_address *client_id;
+	struct client_address *server_id;
 
 	struct auth_serversupplied_info *session_info;
 	struct messaging_context *msg_ctx;
