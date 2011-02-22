@@ -44,6 +44,9 @@ class DrsDeleteObjectTestCase(drs_base.DrsBaseTestCase):
 
     def setUp(self):
         super(DrsDeleteObjectTestCase, self).setUp()
+        # make sure DCs are synchronized before the test
+        self._net_drs_replicate(DC=self.dnsname_dc2, fromDC=self.dnsname_dc1, forced=True)
+        self._net_drs_replicate(DC=self.dnsname_dc1, fromDC=self.dnsname_dc2, forced=True)
         # disable automatic replication temporary
         self._disable_inbound_repl(self.dnsname_dc1)
         self._disable_inbound_repl(self.dnsname_dc2)
@@ -83,15 +86,6 @@ class DrsDeleteObjectTestCase(drs_base.DrsBaseTestCase):
             self.assertEquals(user_orig["dn"], user_cur["dn"])
             self.assertTrue(dodn not in str(user_cur["dn"]))
 
-    def test_NetReplicateCmd(self):
-        """Triggers replication from DC1 to DC2
-           and vice versa so both DCs are synchronized
-           before test_ReplicateDeteleteObject test"""
-        # replicate Domain NC on DC2 from DC1
-        self._net_drs_replicate(DC=self.dnsname_dc2, fromDC=self.dnsname_dc1)
-        # replicate Domain NC on DC1 from DC2
-        self._net_drs_replicate(DC=self.dnsname_dc1, fromDC=self.dnsname_dc2)
-
     def test_ReplicateDeteleteObject(self):
         """Verifies how a deleted-object is replicated between two DCs.
            This test should verify that:
@@ -128,7 +122,7 @@ class DrsDeleteObjectTestCase(drs_base.DrsBaseTestCase):
 
         # trigger replication from DC2 to DC1
         # to check if deleted object gets restored
-        self._net_drs_replicate(DC=self.dnsname_dc1, fromDC=self.dnsname_dc2, fored=True)
+        self._net_drs_replicate(DC=self.dnsname_dc1, fromDC=self.dnsname_dc2, forced=True)
         # check user info on DC1 - should be deleted
         self._check_user(sam_ldb=self.ldb_dc1, user_orig=user_orig, is_deleted=True)
         # check user info on DC2 - should be valid user
