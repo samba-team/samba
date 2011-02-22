@@ -52,6 +52,7 @@ static void ctdb_persistent_callback(struct ctdb_context *ctdb,
 {
 	struct ctdb_persistent_state *state = talloc_get_type(private_data, 
 							      struct ctdb_persistent_state);
+	enum ctdb_trans2_commit_error etype;
 
 	if (ctdb->recovery_mode != CTDB_RECOVERY_NORMAL) {
 		DEBUG(DEBUG_INFO, ("ctdb_persistent_callback: ignoring reply "
@@ -78,18 +79,21 @@ static void ctdb_persistent_callback(struct ctdb_context *ctdb,
 	}
 
 	state->num_pending--;
-	if (state->num_pending == 0) {
-		enum ctdb_trans2_commit_error etype;
-		if (state->num_failed == state->num_sent) {
-			etype = CTDB_TRANS2_COMMIT_ALLFAIL;
-		} else if (state->num_failed != 0) {
-			etype = CTDB_TRANS2_COMMIT_SOMEFAIL;
-		} else {
-			etype = CTDB_TRANS2_COMMIT_SUCCESS;
-		}
-		ctdb_request_control_reply(state->ctdb, state->c, NULL, etype, state->errormsg);
-		talloc_free(state);
+
+	if (state->num_pending != 0) {
+		return;
 	}
+
+	if (state->num_failed == state->num_sent) {
+		etype = CTDB_TRANS2_COMMIT_ALLFAIL;
+	} else if (state->num_failed != 0) {
+		etype = CTDB_TRANS2_COMMIT_SOMEFAIL;
+	} else {
+		etype = CTDB_TRANS2_COMMIT_SUCCESS;
+	}
+
+	ctdb_request_control_reply(state->ctdb, state->c, NULL, etype, state->errormsg);
+	talloc_free(state);
 }
 
 /*
