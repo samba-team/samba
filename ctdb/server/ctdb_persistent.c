@@ -88,7 +88,13 @@ static void ctdb_persistent_store_timeout(struct event_context *ev, struct timed
 					 struct timeval t, void *private_data)
 {
 	struct ctdb_persistent_state *state = talloc_get_type(private_data, struct ctdb_persistent_state);
-	
+
+	if (state->ctdb->recovery_mode != CTDB_RECOVERY_NORMAL) {
+		DEBUG(DEBUG_INFO, ("ctdb_persistent_store_timeout: ignoring "
+				   "timeout during recovery\n"));
+		return;
+	}
+
 	ctdb_request_control_reply(state->ctdb, state->c, NULL, CTDB_TRANS2_COMMIT_TIMEOUT, 
 				   "timeout in ctdb_persistent_state");
 
