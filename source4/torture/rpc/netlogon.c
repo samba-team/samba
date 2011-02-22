@@ -776,7 +776,7 @@ static bool test_netlogon_ops_args(struct dcerpc_pipe *p, struct torture_context
 	for (i=52;i<53;i++) {
 		ZERO_STRUCT(auth2);
 		/* the authenticator should be ignored by the server */
-		generate_random_buffer(&auth, sizeof(auth));
+		generate_random_buffer((uint8_t *) &auth, sizeof(auth));
 
 		r.in.validation_level = i;
 
@@ -815,7 +815,7 @@ static bool test_netlogon_ops_args(struct dcerpc_pipe *p, struct torture_context
 	for (i=2;i<=3;i++) {
 		ZERO_STRUCT(auth2);
 		/* the authenticator should be ignored by the server */
-		generate_random_buffer(&auth, sizeof(auth));
+		generate_random_buffer((uint8_t *) &auth, sizeof(auth));
 
 		r.in.validation_level = i;
 
