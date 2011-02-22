@@ -28,6 +28,7 @@
 
 struct ctdb_persistent_state {
 	struct ctdb_context *ctdb;
+	struct ctdb_db_context *ctdb_db; /* used by trans3_commit */
 	struct ctdb_req_control *c;
 	const char *errormsg;
 	uint32_t num_pending;
