@@ -102,12 +102,13 @@ EOF
 	;;
 	gdb)
 cat << EOF  > ${BATCHFILE_MAIN}
-set height 1000
+set height 0
 bt full
+thread apply all bt full
 info locals
 quit
 EOF
-	${DB_BIN} -x "${BATCHFILE_MAIN}" "${BINARY}" "${PID}"
+	${DB_BIN} -batch -x "${BATCHFILE_MAIN}" --pid "${PID}" < /dev/null
 	;;
 dbx)
 	${DB_BIN} "where;dump;kill;quit" "${BINARY}" "${PID}"
