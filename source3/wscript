@@ -1189,6 +1189,9 @@ main() {
 		    addmain=False,
 		    execute=True)
 
+    if os.environ.get('RUN_FROM_BUILD_FARM') is not None:
+        conf.define('ENABLE_BUILD_FARM_HACKS', '1')
+
     default_static_modules=TO_LIST('''pdb_smbpasswd pdb_tdbsam pdb_wbc_sam
                                       auth_sam auth_unix auth_winbind auth_wbc auth_server
                                       auth_domain auth_builtin vfs_default
