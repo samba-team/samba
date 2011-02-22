@@ -58,20 +58,12 @@ UTIL_SRC = '''
 	../lib/util/fsusage.c
 	../lib/util/genrand.c
 	../lib/util/params.c
-	../lib/util/rbtree.c
-	../lib/util/rfc1738.c
-	../lib/util/select.c
 	../lib/util/signal.c
-	../lib/util/smb_threads.c
 	../lib/util/system.c
-	../lib/util/talloc_stack.c
-	../lib/util/time.c
 	../lib/util/util.c
-	../lib/util/util_file.c
 	../lib/util/util_id.c
 	../lib/util/util_net.c
 	../lib/util/util_strlist.c
-	../lib/util/xfile.c
 	'''
 
 LIBTEVENT_SRC0 = ''
@@ -1008,7 +1000,7 @@ bld.SAMBA3_SUBSYSTEM('CHARSET3',
 
 bld.SAMBA3_SUBSYSTEM('samba-util3',
                     source=UTIL_SRC,
-                    deps='talloc CHARSET3 LIBCRYPTO',
+                    deps='talloc CHARSET3 LIBCRYPTO samba-util-common',
                     vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('ldb3',
