@@ -738,18 +738,6 @@ enum flush_reason_enum {
 #define OSF1_ENH_SEC 1
 #endif
 
-#ifndef ALLOW_CHANGE_PASSWORD
-#if (defined(HAVE_TERMIOS_H) && defined(HAVE_DUP2) && defined(HAVE_SETSID))
-#define ALLOW_CHANGE_PASSWORD 1
-#endif
-#endif
-
-/* what is the longest significant password available on your system? 
- Knowing this speeds up password searches a lot */
-#ifndef PASSWORD_LENGTH
-#define PASSWORD_LENGTH 8
-#endif
-
 #if defined(HAVE_CRYPT16) && defined(HAVE_GETAUTHUID)
 #define ULTRIX_AUTH 1
 #endif
