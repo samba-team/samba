@@ -31,6 +31,7 @@
 #include "popt_common.h"
 #include "web/swat_proto.h"
 #include "printing/pcap.h"
+#include "printing/load.h"
 
 static int demo_mode = False;
 static int passwd_only = False;

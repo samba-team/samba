@@ -34,6 +34,7 @@
 #include "printing/printer_list.h"
 #include "rpc_server/rpc_ep_setup.h"
 #include "printing/pcap.h"
+#include "printing.h"
 
 #ifdef WITH_DFS
 extern int dcelogin_atmost_once;

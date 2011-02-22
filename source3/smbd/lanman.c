@@ -40,6 +40,7 @@
 #include "rpc_client/init_lsa.h"
 #include "rpc_server/rpc_ncacn_np.h"
 #include "../libcli/security/security.h"
+#include "printing.h"
 
 #ifdef CHECK_TYPES
 #undef CHECK_TYPES

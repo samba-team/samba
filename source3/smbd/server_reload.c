@@ -26,6 +26,7 @@
 #include "librpc/gen_ndr/messaging.h"
 #include "nt_printing.h"
 #include "printing/pcap.h"
+#include "printing/load.h"
 
 /****************************************************************************
  purge stale printers and reload from pre-populated pcap cache

@@ -3948,35 +3948,6 @@ bool lookup_wellknown_sid(TALLOC_CTX *mem_ctx, const struct dom_sid *sid,
 bool lookup_wellknown_name(TALLOC_CTX *mem_ctx, const char *name,
 			   struct dom_sid *sid, const char **domain);
 
-/* The following definitions come from printing/load.c  */
-
-void load_printers(struct tevent_context *ev,
-		   struct messaging_context *msg_ctx);
-
-/* The following definitions come from printing/lpq_parse.c  */
-
-bool parse_lpq_entry(enum printing_types printing_type,char *line,
-		     print_queue_struct *buf,
-		     print_status_struct *status,bool first);
-uint32_t print_parse_jobid(const char *fname);
-
-/* The following definitions come from printing/printing.c  */
-
-uint16 pjobid_to_rap(const char* sharename, uint32 jobid);
-bool rap_to_pjobid(uint16 rap_jobid, fstring sharename, uint32 *pjobid);
-void rap_jobid_delete(const char* sharename, uint32 jobid);
-bool print_backend_init(struct messaging_context *msg_ctx);
-void start_background_queue(struct tevent_context *ev,
-			    struct messaging_context *msg);
-void printing_end(void);
-
-/* The following definitions come from printing/printing_db.c  */
-
-struct tdb_print_db *get_print_db_byname(const char *printername);
-void release_print_db( struct tdb_print_db *pdb);
-void close_all_print_db(void);
-TDB_DATA get_printer_notify_pid_list(TDB_CONTEXT *tdb, const char *printer_name, bool cleanlist);
-
 /* The following definitions come from profile/profile.c  */
 
 void set_profile_level(int level, struct server_id src);
