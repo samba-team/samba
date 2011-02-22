@@ -134,6 +134,7 @@ static NTSTATUS _rpc_ep_register(struct tevent_context *ev_ctx,
 
 	status = dcerpc_binding_vector_create(talloc_tos(),
 					      iface,
+					      port,
 					      &v);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -166,6 +167,7 @@ static NTSTATUS _rpc_ep_unregister(const struct ndr_interface_table *iface)
 
 	status = dcerpc_binding_vector_create(talloc_tos(),
 					      iface,
+					      0,
 					      &v);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;

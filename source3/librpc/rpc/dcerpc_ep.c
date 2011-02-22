@@ -27,6 +27,7 @@
 
 NTSTATUS dcerpc_binding_vector_create(TALLOC_CTX *mem_ctx,
 				      const struct ndr_interface_table *iface,
+				      uint16_t port,
 				      struct dcerpc_binding_vector **pbvec)
 {
 	struct dcerpc_binding_vector *bvec;
@@ -81,7 +82,17 @@ NTSTATUS dcerpc_binding_vector_create(TALLOC_CTX *mem_ctx,
 				}
 				break;
 			case NCACN_IP_TCP:
-				/* TODO */
+				if (port == 0) {
+					continue;
+				}
+
+				b->endpoint = talloc_asprintf(b, "%u", port);
+				if (b->endpoint == NULL) {
+					status = NT_STATUS_NO_MEMORY;
+					goto done;
+				}
+
+				break;
 			case NCALRPC:
 				/* TODO */
 			default:

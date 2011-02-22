@@ -27,6 +27,7 @@ struct dcerpc_binding_vector {
 
 NTSTATUS dcerpc_binding_vector_create(TALLOC_CTX *mem_ctx,
 				      const struct ndr_interface_table *iface,
+				      uint16_t port,
 				      struct dcerpc_binding_vector **pbvec);
 
 /**
