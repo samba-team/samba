@@ -65,7 +65,18 @@ static void ctdb_persistent_callback(struct ctdb_context *ctdb,
 		state->status = status;
 		state->errormsg = errormsg;
 		state->num_failed++;
+
+		/*
+		 * If a node failed to complete the update_record control,
+		 * then either a recovery is already running or something
+		 * bad is going on. So trigger a recovery and let the
+		 * recovery finish the transaction, sending back the reply
+		 * for the trans3_commit control to the client.
+		 */
+		ctdb->recovery_mode = CTDB_RECOVERY_ACTIVE;
+		return;
 	}
+
 	state->num_pending--;
 	if (state->num_pending == 0) {
 		enum ctdb_trans2_commit_error etype;
