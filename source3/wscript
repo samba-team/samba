@@ -1298,6 +1298,51 @@ main() {
     if os.environ.get('RUN_FROM_BUILD_FARM') is not None:
         conf.define('ENABLE_BUILD_FARM_HACKS', '1')
 
+    if Options.options.with_sendfile_support:
+        if (host_os.rfind('linux') > -1) or (host_os.rfind('gnu') > -1) or (host_os.rfind('k*bsd*-gnu') > -1) or (host_os.rfind('kopensolaris*-gnu') > -1):
+            conf.CHECK_CODE('''
+			    int tofd, fromfd;
+			    off64_t offset;
+			    size_t total;
+			    ssize_t nwritten = sendfile64(tofd, fromfd, &offset, total);
+			    ''',
+			    '_HAVE_SENDFILE64',
+			    headers='sys/sendfile',
+			    msg='Checking for linux sendfile64 support')
+            conf.CHECK_CODE('''
+			    int tofd, fromfd;
+			    off_t offset;
+			    size_t total;
+			    ssize_t nwritten = sendfile(tofd, fromfd, &offset, total);
+			    ''',
+			    '_HAVE_SENDFILE',
+			    headers='sys/sendfile',
+			    msg='Checking for linux sendfile support')
+
+            # Try and cope with broken Linux sendfile....
+            conf.CHECK_CODE('''#if defined(_FILE_OFFSET_BITS) && (_FILE_OFFSET_BITS == 64)
+			    #undef _FILE_OFFSET_BITS
+			    #endif
+			    #include <sys/sendfile.h>
+			    int tofd, fromfd;
+			    off_t offset;
+			    size_t total;
+			    ssize_t nwritten = sendfile(tofd, fromfd, &offset, total);
+			    ''',
+			    '_HAVE_BROKEN_LINUX_SENDFILE',
+			    msg='Checking for broken linux sendfile support')
+            if conf.CONFIG_SET('_HAVE_SENDFILE64'):
+                conf.DEFINE('HAVE_SENDFILE64', '1')
+                conf.DEFINE('LINUX_SENDFILE_API', '1')
+                conf.DEFINE('WITH_SENDFILE', '1')
+            elif conf.CONFIG_SET('_HAVE_SENDFILE'):
+                conf.DEFINE('HAVE_SENDFILE', '1')
+                conf.DEFINE('LINUX_SENDFILE_API', '1')
+                conf.DEFINE('WITH_SENDFILE', '1')
+            elif conf.CONFIG_SET('_HAVE_BROKEN_LINUX_SENDFILE'):
+                conf.DEFINE('LINUX_BROKEN_SENDFILE_API', '1')
+                conf.DEFINE('WITH_SENDFILE', '1')
+
     default_static_modules=TO_LIST('''pdb_smbpasswd pdb_tdbsam pdb_wbc_sam
                                       auth_sam auth_unix auth_winbind auth_wbc auth_server
                                       auth_domain auth_builtin vfs_default
