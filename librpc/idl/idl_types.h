@@ -12,7 +12,7 @@
 /*
   a null terminated UCS2 string
 */
-#define nstring		[flag(STR_NULLTERM)] string
+#define nstring		[flag(STR_NULLTERM|NDR_ALIGN2)] string
 
 /*
   an ascii string prefixed with [offset] [length], both 32 bits
@@ -50,7 +50,7 @@
 /*
   a null terminated UCS2 string
 */
-#define nstring_array	[flag(STR_NULLTERM)] string_array
+#define nstring_array	[flag(STR_NULLTERM|NDR_ALIGN2)] string_array
 
 #define NDR_NOALIGN       LIBNDR_FLAG_NOALIGN
 #define NDR_REMAINING     LIBNDR_FLAG_REMAINING
