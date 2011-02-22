@@ -1477,6 +1477,11 @@ main() {
                 conf.DEFINE('AIX_SENDFILE_API', '1')
                 conf.DEFINE('WITH_SENDFILE', '1')
 
+    conf.CHECK_CODE('''enum TDB_ERROR err = TDB_ERR_NESTING''',
+		    'HAVE_TDB_ERR_NESTING',
+		    headers='tdb.h',
+		    msg='Checking whether we have TDB_ERR_NESTING')
+
     default_static_modules=TO_LIST('''pdb_smbpasswd pdb_tdbsam pdb_wbc_sam
                                       auth_sam auth_unix auth_winbind auth_wbc auth_server
                                       auth_domain auth_builtin vfs_default
