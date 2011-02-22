@@ -44,8 +44,13 @@ class DrsDeleteObjectTestCase(drs_base.DrsBaseTestCase):
 
     def setUp(self):
         super(DrsDeleteObjectTestCase, self).setUp()
+        # disable automatic replication temporary
+        self._disable_inbound_repl(self.dnsname_dc1)
+        self._disable_inbound_repl(self.dnsname_dc2)
 
     def tearDown(self):
+        self._enable_inbound_repl(self.dnsname_dc1)
+        self._enable_inbound_repl(self.dnsname_dc2)
         super(DrsDeleteObjectTestCase, self).tearDown()
 
     def _make_username(self):
@@ -112,38 +117,26 @@ class DrsDeleteObjectTestCase(drs_base.DrsBaseTestCase):
         self._check_user(sam_ldb=self.ldb_dc1, user_orig=user_orig, is_deleted=False)
 
         # trigger replication from DC1 to DC2
-        self._net_drs_replicate(DC=self.dnsname_dc2, fromDC=self.dnsname_dc1)
+        self._net_drs_replicate(DC=self.dnsname_dc2, fromDC=self.dnsname_dc1, forced=True)
 
         # delete user on DC1
         self.ldb_dc1.delete(user_dn)
         # check user info on DC1 - should be deleted
         self._check_user(sam_ldb=self.ldb_dc1, user_orig=user_orig, is_deleted=True)
         # check user info on DC2 - should be valid user
-        try:
-            self._check_user(sam_ldb=self.ldb_dc2, user_orig=user_orig, is_deleted=False)
-        except self.failureException:
-            print ("Checking for not isDeleted user on %s failed, "
-                   "probably because a replication took place. "
-                   "Ideally we should block automatic replications during this test, "
-                   "but until then, just ignore the error" % self.dnsname_dc2)
+        self._check_user(sam_ldb=self.ldb_dc2, user_orig=user_orig, is_deleted=False)
 
         # trigger replication from DC2 to DC1
         # to check if deleted object gets restored
-        self._net_drs_replicate(DC=self.dnsname_dc1, fromDC=self.dnsname_dc2)
+        self._net_drs_replicate(DC=self.dnsname_dc1, fromDC=self.dnsname_dc2, fored=True)
         # check user info on DC1 - should be deleted
         self._check_user(sam_ldb=self.ldb_dc1, user_orig=user_orig, is_deleted=True)
         # check user info on DC2 - should be valid user
-        try:
-            self._check_user(sam_ldb=self.ldb_dc2, user_orig=user_orig, is_deleted=False)
-        except self.failureException:
-            print ("Checking for not isDeleted user on %s failed, "
-                   "probably because a replication took place. "
-                   "Ideally we should block automatic replications during this test, "
-                   "but until then, just ignore the error" % self.dnsname_dc2)
+        self._check_user(sam_ldb=self.ldb_dc2, user_orig=user_orig, is_deleted=False)
 
         # trigger replication from DC1 to DC2
         # to check if deleted object is replicated
-        self._net_drs_replicate(DC=self.dnsname_dc2, fromDC=self.dnsname_dc1)
+        self._net_drs_replicate(DC=self.dnsname_dc2, fromDC=self.dnsname_dc1, forced=True)
         # check user info on DC1 - should be deleted
         self._check_user(sam_ldb=self.ldb_dc1, user_orig=user_orig, is_deleted=True)
         # check user info on DC2 - should be deleted
