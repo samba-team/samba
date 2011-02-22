@@ -485,8 +485,8 @@ static int descriptor_add(struct ldb_module *module, struct ldb_request *req)
 	}
 
 	/* if the object has a parent, retrieve its SD to
-	 * use for calculation. unfortunately we do not yet have
-	 * instanceType*/
+	 * use for calculation. Unfortunately we do not yet have
+	 * instanceType, so we use dsdb_find_nc_root. */
 	parent_dn = ldb_dn_get_parent(req, dn);
 	if (parent_dn == NULL) {
 		return ldb_oom(ldb);
