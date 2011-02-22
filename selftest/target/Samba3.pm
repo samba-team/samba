@@ -24,8 +24,10 @@ sub binpath($$)
 }
 
 sub new($$) {
-	my ($classname, $bindir) = @_;
-	my $self = { bindir => $bindir };
+	my ($classname, $bindir, $srcdir) = @_;
+	my $self = { bindir => $bindir,
+		     srcdir => $srcdir
+	};
 	bless $self;
 	return $self;
 }
@@ -475,11 +477,11 @@ sub provision($$$$$$)
 
 	my $conffile="$libdir/server.conf";
 
-	my $nss_wrapper_pl = "$ENV{PERL} $RealBin/../lib/nss_wrapper/nss_wrapper.pl";
+	my $nss_wrapper_pl = "$ENV{PERL} $self->{srcdir}/lib/nss_wrapper/nss_wrapper.pl";
 	my $nss_wrapper_passwd = "$privatedir/passwd";
 	my $nss_wrapper_group = "$privatedir/group";
 
-	my $mod_printer_pl = "$ENV{PERL} $RealBin/../source3/script/tests/printing/modprinter.pl";
+	my $mod_printer_pl = "$ENV{PERL} $self->{srcdir}/source3/script/tests/printing/modprinter.pl";
 
 	my @eventlog_list = ("dns server", "application");
 
@@ -521,7 +523,7 @@ sub provision($$$$$$)
 	netbios name = $server
 	interfaces = $server_ip/8
 	bind interfaces only = yes
-	panic action = $RealBin/gdb_backtrace %d %\$(MAKE_TEST_BINARY)
+	panic action = $self->{srcdir}/selftest/gdb_backtrace %d %\$(MAKE_TEST_BINARY)
 
 	workgroup = $domain
 

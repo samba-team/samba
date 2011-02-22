@@ -472,7 +472,7 @@ if ($opt_target eq "samba4") {
 	}
 	$testenv_default = "member";
 	require target::Samba3;
-	$target = new Samba3($bindir);
+	$target = new Samba3($bindir, $srcdir_abs);
 } elsif ($opt_target eq "win") {
 	die("Windows tests will not run with socket wrapper enabled.") 
 		if ($opt_socket_wrapper);

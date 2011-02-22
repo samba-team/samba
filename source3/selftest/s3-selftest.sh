@@ -23,6 +23,7 @@ if [ "x${RUN_FROM_BUILD_FARM}" = "xyes" ]; then
 			--builddir=. --prefix=${SELFTESTPREFIX} --target=samba3 \
 			--testlist="${PYTHON} ${SOURCEDIR}/selftest/tests.py|" \
 			--exclude=${SOURCEDIR}/selftest/skip \
+	                --srcdir="${SOURCEDIR}/.." \
 			--socket-wrapper ${TESTS} \
 	&& touch ${SELFTESTPREFIX}/st_done ) | \
 		${FILTER_XFAIL} --strip-passed-output
@@ -35,6 +36,7 @@ else
 			--builddir=. --prefix=${SELFTESTPREFIX} --target=samba3 \
 			--testlist="${PYTHON} ${SOURCEDIR}/selftest/tests.py|" \
 			--exclude=${SOURCEDIR}/selftest/skip \
+	                --srcdir="${SOURCEDIR}/.." \
 			--socket-wrapper ${TESTS} \
 	&& touch ${SELFTESTPREFIX}/st_done ) | \
 		${FILTER_XFAIL} | ${SUBUNIT_FORMATTER}
