@@ -591,46 +591,6 @@ typedef struct {
 	fstring domain; /* domain that the client specified */
 } userdom_struct;
 
-/* Extra fields above "LPQ_PRINTING" are used to map extra NT status codes. */
-
-enum {
-	LPQ_QUEUED = 0,
-	LPQ_PAUSED,
-	LPQ_SPOOLING,
-	LPQ_PRINTING,
-	LPQ_ERROR,
-	LPQ_DELETING,
-	LPQ_OFFLINE,
-	LPQ_PAPEROUT,
-	LPQ_PRINTED,
-	LPQ_DELETED,
-	LPQ_BLOCKED,
-	LPQ_USER_INTERVENTION,
-
-	/* smbd is dooing the file spooling before passing control to spoolss */
-	PJOB_SMBD_SPOOLING
-};
-
-typedef struct _print_queue_struct {
-	int job;		/* normally the UNIX jobid -- see note in 
-				   printing.c:traverse_fn_delete() */
-	int size;
-	int page_count;
-	int status;
-	int priority;
-	time_t time;
-	fstring fs_user;
-	fstring fs_file;
-} print_queue_struct;
-
-enum {LPSTAT_OK, LPSTAT_STOPPED, LPSTAT_ERROR};
-
-typedef struct {
-	fstring message;
-	int qcount;
-	int status;
-}  print_status_struct;
-
 /* used for server information: client, nameserv and ipc */
 struct server_info_struct {
 	fstring name;
