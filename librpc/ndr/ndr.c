@@ -1179,6 +1179,32 @@ _PUBLIC_ enum ndr_err_code ndr_push_relative_ptr2_start(struct ndr_push *ndr, co
 		return NDR_ERR_SUCCESS;
 	}
 	if (!(ndr->flags & LIBNDR_FLAG_RELATIVE_REVERSE)) {
+		uint32_t relative_offset;
+		size_t pad;
+		/* TODO: remove this hack and let the idl use FLAG_ALIGN2 explicit */
+		size_t align = 2;
+
+		if (ndr->offset < ndr->relative_base_offset) {
+			return ndr_push_error(ndr, NDR_ERR_BUFSIZE,
+				      "ndr_push_relative_ptr2_start ndr->offset(%u) < ndr->relative_base_offset(%u)",
+				      ndr->offset, ndr->relative_base_offset);
+		}
+
+		relative_offset = ndr->offset - ndr->relative_base_offset;
+
+		if (ndr->flags & LIBNDR_FLAG_ALIGN2) {
+			align = 2;
+		} else if (ndr->flags & LIBNDR_FLAG_ALIGN4) {
+			align = 4;
+		} else if (ndr->flags & LIBNDR_FLAG_ALIGN8) {
+			align = 8;
+		}
+
+		pad = ndr_align_size(relative_offset, align);
+		if (pad) {
+			NDR_CHECK(ndr_push_zero(ndr, pad));
+		}
+
 		return ndr_push_relative_ptr2(ndr, p);
 	}
 	if (ndr->relative_end_offset == -1) {
