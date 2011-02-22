@@ -53,6 +53,12 @@ static void ctdb_persistent_callback(struct ctdb_context *ctdb,
 	struct ctdb_persistent_state *state = talloc_get_type(private_data, 
 							      struct ctdb_persistent_state);
 
+	if (ctdb->recovery_mode != CTDB_RECOVERY_NORMAL) {
+		DEBUG(DEBUG_INFO, ("ctdb_persistent_callback: ignoring reply "
+				   "during recovery\n"));
+		return;
+	}
+
 	if (status != 0) {
 		DEBUG(DEBUG_ERR,("ctdb_persistent_callback failed with status %d (%s)\n",
 			 status, errormsg));
