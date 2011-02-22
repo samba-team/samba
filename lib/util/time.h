@@ -119,12 +119,29 @@ _PUBLIC_ time_t pull_dos_date2(const uint8_t *date_ptr, int zone_offset);
 _PUBLIC_ time_t pull_dos_date3(const uint8_t *date_ptr, int zone_offset);
 
 /**
+ Return a date and time as a string (optionally with microseconds)
+
+ format is %Y/%m/%d %H:%M:%S if strftime is available
+**/
+
+char *timeval_string(TALLOC_CTX *ctx, const struct timeval *tp, bool hires);
+
+/**
+ Return the current date and time as a string (optionally with microseconds)
+
+ format is %Y/%m/%d %H:%M:%S if strftime is available
+**/
+char *current_timestring(TALLOC_CTX *ctx, bool hires);
+
+/**
 return a HTTP/1.0 time string
 **/
 _PUBLIC_ char *http_timestring(TALLOC_CTX *mem_ctx, time_t t);
 
 /**
  Return the date and time as a string
+
+ format is %a %b %e %X %Y %Z
 **/
 _PUBLIC_ char *timestring(TALLOC_CTX *mem_ctx, time_t t);
 

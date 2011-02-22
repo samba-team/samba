@@ -129,69 +129,6 @@ int set_server_zone_offset(time_t t)
 	return server_zone_offset;
 }
 
-/****************************************************************************
- Return the date and time as a string
-****************************************************************************/
-
-char *timeval_string(TALLOC_CTX *ctx, const struct timeval *tp, bool hires)
-{
-	fstring TimeBuf;
-	time_t t;
-	struct tm *tm;
-
-	t = (time_t)tp->tv_sec;
-	tm = localtime(&t);
-	if (!tm) {
-		if (hires) {
-			slprintf(TimeBuf,
-				 sizeof(TimeBuf)-1,
-				 "%ld.%06ld seconds since the Epoch",
-				 (long)tp->tv_sec,
-				 (long)tp->tv_usec);
-		} else {
-			slprintf(TimeBuf,
-				 sizeof(TimeBuf)-1,
-				 "%ld seconds since the Epoch",
-				 (long)t);
-		}
-	} else {
-#ifdef HAVE_STRFTIME
-		if (hires) {
-			strftime(TimeBuf,sizeof(TimeBuf)-1,"%Y/%m/%d %H:%M:%S",tm);
-			slprintf(TimeBuf+strlen(TimeBuf),
-				 sizeof(TimeBuf)-1 - strlen(TimeBuf), 
-				 ".%06ld", 
-				 (long)tp->tv_usec);
-		} else {
-			strftime(TimeBuf,sizeof(TimeBuf)-1,"%Y/%m/%d %H:%M:%S",tm);
-		}
-#else
-		if (hires) {
-			const char *asct = asctime(tm);
-			slprintf(TimeBuf, 
-				 sizeof(TimeBuf)-1, 
-				 "%s.%06ld", 
-				 asct ? asct : "unknown", 
-				 (long)tp->tv_usec);
-		} else {
-			const char *asct = asctime(tm);
-			fstrcpy(TimeBuf, asct ? asct : "unknown");
-		}
-#endif
-	}
-	return talloc_strdup(ctx, TimeBuf);
-}
-
-char *current_timestring(TALLOC_CTX *ctx, bool hires)
-{
-	struct timeval tv;
-
-	GetTimeOfDay(&tv);
-	return timeval_string(ctx, &tv, hires);
-}
-
-
-
 /***************************************************************************
  Server versions of the above functions.
 ***************************************************************************/

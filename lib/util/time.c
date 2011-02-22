@@ -4,6 +4,8 @@
 
    Copyright (C) Andrew Tridgell 		1992-2004
    Copyright (C) Stefan (metze) Metzmacher	2002   
+   Copyright (C) Jeremy Allison			2007
+   Copyright (C) Andrew Bartlett                2011
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -334,6 +336,63 @@ _PUBLIC_ time_t pull_dos_date3(const uint8_t *date_ptr, int zone_offset)
 		t += zone_offset;
 	}
 	return t;
+}
+
+
+/****************************************************************************
+ Return the date and time as a string
+****************************************************************************/
+
+char *timeval_string(TALLOC_CTX *ctx, const struct timeval *tp, bool hires)
+{
+	time_t t;
+	struct tm *tm;
+
+	t = (time_t)tp->tv_sec;
+	tm = localtime(&t);
+	if (!tm) {
+		if (hires) {
+			return talloc_asprintf(ctx,
+					       "%ld.%06ld seconds since the Epoch",
+					       (long)tp->tv_sec,
+					       (long)tp->tv_usec);
+		} else {
+			return talloc_asprintf(ctx,
+					       "%ld seconds since the Epoch",
+					       (long)t);
+		}
+	} else {
+#ifdef HAVE_STRFTIME
+		char TimeBuf[60];
+		if (hires) {
+			strftime(TimeBuf,sizeof(TimeBuf)-1,"%Y/%m/%d %H:%M:%S",tm);
+			return talloc_asprintf(ctx,
+					       "%s.%06ld", TimeBuf,
+					       (long)tp->tv_usec);
+		} else {
+			strftime(TimeBuf,sizeof(TimeBuf)-1,"%Y/%m/%d %H:%M:%S",tm);
+			return talloc_strdup(ctx, TimeBuf);
+		}
+#else
+		if (hires) {
+			const char *asct = asctime(tm);
+			return talloc_asprintf(ctx, "%s.%06ld",
+					asct ? asct : "unknown",
+					(long)tp->tv_usec);
+		} else {
+			const char *asct = asctime(tm);
+			return talloc_asprintf(ctx, asct ? asct : "unknown");
+		}
+#endif
+	}
+}
+
+char *current_timestring(TALLOC_CTX *ctx, bool hires)
+{
+	struct timeval tv;
+
+	GetTimeOfDay(&tv);
+	return timeval_string(ctx, &tv, hires);
 }
 
 
