@@ -509,6 +509,7 @@ struct ctdb_db_context {
 	int pending_requests;
 	struct lockwait_handle *lockwait_active;
 	struct lockwait_handle *lockwait_overflow;
+	struct ctdb_persistent_state *persistent_state;
 };
 
 
