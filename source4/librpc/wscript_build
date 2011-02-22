@@ -126,10 +126,10 @@ bld.SAMBA_SUBSYSTEM('RPC_NDR_WINBIND',
 
 
 bld.SAMBA_LIBRARY('dcerpc-samr',
-	source='../../librpc/gen_ndr/ndr_samr_c.c',
+	source='',
 	pc_files='dcerpc_samr.pc',
 	vnum='0.0.1',
-	public_deps='dcerpc ndr-standard',
+	public_deps='dcerpc ndr-standard RPC_NDR_SAMR',
 	public_headers='../../librpc/gen_ndr/ndr_samr_c.h',
 	header_path='gen_ndr'
 	)
