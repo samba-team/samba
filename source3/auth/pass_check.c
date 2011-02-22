@@ -25,6 +25,12 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_AUTH
 
+/* what is the longest significant password available on your system?
+ Knowing this speeds up password searches a lot */
+#ifndef PASSWORD_LENGTH
+#define PASSWORD_LENGTH 8
+#endif
+
 /* these are kept here to keep the string_combinations function simple */
 static char *ths_user;
 

@@ -50,6 +50,12 @@
 #include "../lib/crypto/arcfour.h"
 #include "rpc_server/samr/srv_samr_util.h"
 
+#ifndef ALLOW_CHANGE_PASSWORD
+#if (defined(HAVE_TERMIOS_H) && defined(HAVE_DUP2) && defined(HAVE_SETSID))
+#define ALLOW_CHANGE_PASSWORD 1
+#endif
+#endif
+
 #if ALLOW_CHANGE_PASSWORD
 
 static int findpty(char **slave)
