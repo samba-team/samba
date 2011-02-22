@@ -1347,6 +1347,29 @@ main() {
                 conf.DEFINE('HAVE_SENDFILEV', '1')
                 conf.DEFINE('SOLARIS_SENDFILE_API', '1')
                 conf.DEFINE('WITH_SENDFILE', '1')
+	elif (host_os.rfind('aix') > -1):
+            conf.CHECK_CODE('''
+			    #include <sys/socket.h>
+			    int fromfd, tofd;
+			    size_t total=0;
+			    struct sf_parms hdtrl;
+			    ssize_t nwritten;
+			    off64_t offset;
+			    hdtrl.header_data = 0;
+			    hdtrl.header_length = 0;
+			    hdtrl.file_descriptor = fromfd;
+			    hdtrl.file_offset = 0;
+			    hdtrl.file_bytes = 0;
+			    hdtrl.trailer_data = 0;
+			    hdtrl.trailer_length = 0;
+			    nwritten = send_file(&tofd, &hdtrl, 0);
+			    ''',
+			    '_HAVE_SENDFILE',
+			    msg='Checking for AIX send_file support')
+            if conf.CONFIG_SET('_HAVE_SENDFILE'):
+                conf.DEFINE('HAVE_SENDFILE', '1')
+                conf.DEFINE('AIX_SENDFILE_API', '1')
+                conf.DEFINE('WITH_SENDFILE', '1')
 
     default_static_modules=TO_LIST('''pdb_smbpasswd pdb_tdbsam pdb_wbc_sam
                                       auth_sam auth_unix auth_winbind auth_wbc auth_server
