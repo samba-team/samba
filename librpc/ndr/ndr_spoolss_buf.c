@@ -1409,3 +1409,35 @@ _PUBLIC_ void ndr_print_spoolss_Time(struct ndr_print *ndr, const char *name, co
 	ndr->depth--;
 	talloc_free(str);
 }
+
+_PUBLIC_ uint32_t ndr_spoolss_PrinterEnumValues_align(enum winreg_Type type)
+{
+	switch(type) {
+	case REG_NONE:
+		return 0;
+	case REG_SZ:
+		return LIBNDR_FLAG_ALIGN2;
+	case REG_EXPAND_SZ:
+		return LIBNDR_FLAG_ALIGN2;
+	case REG_BINARY:
+		return 0;
+	case REG_DWORD:
+		return LIBNDR_FLAG_ALIGN4;
+	case REG_DWORD_BIG_ENDIAN:
+		return LIBNDR_FLAG_ALIGN4;
+	case REG_LINK:
+		return 0;
+	case REG_MULTI_SZ:
+		return LIBNDR_FLAG_ALIGN2;
+	case REG_RESOURCE_LIST:
+		return LIBNDR_FLAG_ALIGN2;
+	case REG_FULL_RESOURCE_DESCRIPTOR:
+		return LIBNDR_FLAG_ALIGN4;
+	case REG_RESOURCE_REQUIREMENTS_LIST:
+		return LIBNDR_FLAG_ALIGN2;
+	case REG_QWORD:
+		return LIBNDR_FLAG_ALIGN8;
+	}
+
+	return 0;
+}
