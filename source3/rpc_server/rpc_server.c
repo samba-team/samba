@@ -828,6 +828,7 @@ static void dcerpc_ncacn_accept(struct tevent_context *ev_ctx,
 				const char *name,
 				uint16_t port,
 				struct tsocket_address *cli_addr,
+				struct tsocket_address *srv_addr,
 				int s);
 
 static void dcerpc_ncacn_tcpip_listener(struct tevent_context *ev,
@@ -838,7 +839,8 @@ static void dcerpc_ncacn_tcpip_listener(struct tevent_context *ev,
 	struct dcerpc_ncacn_listen_state *state =
 			talloc_get_type_abort(private_data,
 					      struct dcerpc_ncacn_listen_state);
-	struct tsocket_address *cli_addr;
+	struct tsocket_address *cli_addr = NULL;
+	struct tsocket_address *srv_addr = NULL;
 	struct sockaddr_storage addr;
 	socklen_t in_addrlen = sizeof(addr);
 	int s = -1;
@@ -866,6 +868,21 @@ static void dcerpc_ncacn_tcpip_listener(struct tevent_context *ev,
 		return;
 	}
 
+	rc = getsockname(s, (struct sockaddr *)(void *) &addr, &in_addrlen);
+	if (rc < 0) {
+		close(s);
+		return;
+	}
+
+	rc = tsocket_address_bsd_from_sockaddr(state,
+					       (struct sockaddr *)(void *) &addr,
+					       in_addrlen,
+					       &srv_addr);
+	if (rc < 0) {
+		close(s);
+		return;
+	}
+
 	DEBUG(6, ("tcpip_listener: Accepted socket %d\n", s));
 
 	dcerpc_ncacn_accept(state->ev_ctx,
@@ -875,6 +892,7 @@ static void dcerpc_ncacn_tcpip_listener(struct tevent_context *ev,
 			    NULL,
 			    state->ep.port,
 			    cli_addr,
+			    srv_addr,
 			    s);
 }
 
@@ -918,6 +936,7 @@ static void dcerpc_ncacn_accept(struct tevent_context *ev_ctx,
 				const char *name,
 				uint16_t port,
 				struct tsocket_address *cli_addr,
+				struct tsocket_address *srv_addr,
 				int s) {
 	struct dcerpc_ncacn_conn *ncacn_conn;
 	struct tevent_req *subreq;
@@ -958,6 +977,35 @@ static void dcerpc_ncacn_accept(struct tevent_context *ev_ctx,
 	ncacn_conn->sock = s;
 
 	ncacn_conn->client = talloc_move(ncacn_conn, &cli_addr);
+	if (tsocket_address_is_inet(ncacn_conn->client, "ip")) {
+		ncacn_conn->client_name =
+			tsocket_address_inet_addr_string(ncacn_conn->client,
+							 ncacn_conn);
+	} else {
+		ncacn_conn->client_name =
+			tsocket_address_unix_path(ncacn_conn->client,
+						  ncacn_conn);
+	}
+	if (ncacn_conn->client_name == NULL) {
+		DEBUG(0, ("dcerpc_ncacn_accept: Out of memory!\n"));
+		talloc_free(ncacn_conn);
+		close(s);
+		return;
+	}
+
+	if (srv_addr != NULL) {
+		ncacn_conn->server = talloc_move(ncacn_conn, &srv_addr);
+
+		ncacn_conn->server_name =
+			tsocket_address_inet_addr_string(ncacn_conn->server,
+							 ncacn_conn);
+		if (ncacn_conn->server_name == NULL) {
+			DEBUG(0, ("dcerpc_ncacn_accept: Out of memory!\n"));
+			talloc_free(ncacn_conn);
+			close(s);
+			return;
+		}
+	}
 
 	rc = set_blocking(s, false);
 	if (rc < 0) {
