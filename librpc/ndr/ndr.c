@@ -1181,8 +1181,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_relative_ptr2_start(struct ndr_push *ndr, co
 	if (!(ndr->flags & LIBNDR_FLAG_RELATIVE_REVERSE)) {
 		uint32_t relative_offset;
 		size_t pad;
-		/* TODO: remove this hack and let the idl use FLAG_ALIGN2 explicit */
-		size_t align = 2;
+		size_t align = 1;
 
 		if (ndr->offset < ndr->relative_base_offset) {
 			return ndr_push_error(ndr, NDR_ERR_BUFSIZE,
@@ -1270,9 +1269,6 @@ _PUBLIC_ enum ndr_err_code ndr_push_relative_ptr2_end(struct ndr_push *ndr, cons
 
 	/* the reversed offset is at the end of the main buffer */
 	correct_offset = ndr->relative_end_offset - len;
-
-	/* TODO: remove this hack and let the idl use FLAG_ALIGN2 explicit */
-	align = 2;
 
 	if (ndr->flags & LIBNDR_FLAG_ALIGN2) {
 		align = 2;
