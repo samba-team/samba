@@ -677,6 +677,10 @@ static bool rw_torture3(struct cli_state *c, char *lockfname)
 
 	if (procnum == 0)
 	{
+		if (!NT_STATUS_IS_OK(cli_unlink(c, lockfname, aSYSTEM | aHIDDEN))) {
+			printf("unlink failed (%s) (normal, this file should not exist)\n", cli_errstr(c));
+		}
+
 		if (!NT_STATUS_IS_OK(cli_open(c, lockfname, O_RDWR | O_CREAT | O_EXCL, 
 				 DENY_NONE, &fnum))) {
 			printf("first open read/write of %s failed (%s)\n",
