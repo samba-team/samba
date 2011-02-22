@@ -275,6 +275,14 @@ int32_t ctdb_control_trans2_commit(struct ctdb_context *ctdb,
 	return 0;
 }
 
+static int ctdb_persistent_state_destructor(struct ctdb_persistent_state *state)
+{
+	if (state->ctdb_db != NULL) {
+		state->ctdb_db->persistent_state = NULL;
+	}
+
+	return 0;
+}
 
 /*
  * Store a set of persistent records.
@@ -309,11 +317,15 @@ int32_t ctdb_control_trans3_commit(struct ctdb_context *ctdb,
 		return -1;
 	}
 
-	state = talloc_zero(ctdb, struct ctdb_persistent_state);
-	CTDB_NO_MEMORY(ctdb, state);
+	ctdb_db->persistent_state = talloc_zero(ctdb_db,
+						struct ctdb_persistent_state);
+	CTDB_NO_MEMORY(ctdb, ctdb_db->persistent_state);
 
+	state = ctdb_db->persistent_state;
 	state->ctdb = ctdb;
+	state->ctdb_db = ctdb_db;
 	state->c    = c;
+	talloc_set_destructor(state, ctdb_persistent_state_destructor);
 
 	for (i = 0; i < ctdb->vnn_map->size; i++) {
 		struct ctdb_node *node = ctdb->nodes[ctdb->vnn_map->map[i]];
