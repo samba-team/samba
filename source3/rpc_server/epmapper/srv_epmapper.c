@@ -154,6 +154,7 @@ static struct dcesrv_endpoint *find_endpoint(struct dcesrv_endpoint *endpoint_li
 static uint32_t build_ep_list(TALLOC_CTX *mem_ctx,
 			      struct dcesrv_endpoint *endpoint_list,
 			      const struct GUID *uuid,
+			      const char *srv_addr,
 			      struct dcesrv_ep_iface **peps)
 {
 	struct dcesrv_ep_iface *eps = NULL;
@@ -185,6 +186,11 @@ static uint32_t build_ep_list(TALLOC_CTX *mem_ctx,
 
 			description = d->ep_description;
 			description->object = iface->iface->syntax_id;
+			if (description->transport == NCACN_IP_TCP &&
+			    srv_addr != NULL &&
+			    strequal(description->host, "0.0.0.0")) {
+				description->host = srv_addr;
+			}
 
 			status = dcerpc_binding_build_tower(eps,
 							    description,
@@ -467,6 +473,7 @@ error_status_t _epm_Lookup(struct pipes_struct *p,
 			eps->count = build_ep_list(eps,
 						   endpoint_table,
 						   NULL,
+						   p->server_id == NULL ? NULL : p->server_id->addr,
 						   &eps->e);
 			break;
 		case RPC_C_EP_MATCH_BY_IF:
@@ -489,6 +496,7 @@ error_status_t _epm_Lookup(struct pipes_struct *p,
 			eps->count = build_ep_list(eps,
 						   endpoint_table,
 						   &r->in.interface_id->uuid,
+						   p->server_id == NULL ? NULL : p->server_id->addr,
 						   &eps->e);
 			break;
 		case RPC_C_EP_MATCH_BY_OBJ:
@@ -499,6 +507,7 @@ error_status_t _epm_Lookup(struct pipes_struct *p,
 			eps->count = build_ep_list(eps,
 						   endpoint_table,
 						   r->in.object,
+						   p->server_id == NULL ? NULL : p->server_id->addr,
 						   &eps->e);
 			break;
 		default:
@@ -850,6 +859,7 @@ error_status_t _epm_Map(struct pipes_struct *p,
 		eps->count = build_ep_list(eps,
 					   endpoint_table,
 					   obj,
+					   p->server_id == NULL ? NULL : p->server_id->addr,
 					   &eps->e);
 		if (eps->count == 0) {
 			rc = EPMAPPER_STATUS_NO_MORE_ENTRIES;
