@@ -248,13 +248,18 @@ bool cli_receive_smb(struct cli_state *cli)
 
 	/* If the server is not responding, note that now */
 	if (len < 0) {
-		char addr[INET6_ADDRSTRLEN];
-
-		print_sockaddr(addr, sizeof(addr), &cli->dest_ss);
-                DEBUG(0, ("Receiving SMB: Server %s stopped responding\n",
-			  addr));
-		close(cli->fd);
-		cli->fd = -1;
+		/*
+		 * only log if the connection should still be open and not when
+		 * the connection was closed due to a dropped ip message
+		 */
+		if (cli->fd != -1) {
+			char addr[INET6_ADDRSTRLEN];
+			print_sockaddr(addr, sizeof(addr), &cli->dest_ss);
+			DEBUG(0, ("Receiving SMB: Server %s stopped responding\n",
+				addr));
+			close(cli->fd);
+			cli->fd = -1;
+		}
 		return false;
 	}
 
