@@ -168,6 +168,10 @@ LIBSMB_SRC0 = '''
 
 LIBSAMBA_SRC = '${LIBSMB_SRC0}'
 
+CLDAP_SRC = '''libads/cldap.c
+        ../libcli/cldap/cldap.c
+        ../lib/util/idtree.c'''
+
 TLDAP_SRC = '''lib/tldap.c lib/tldap_util.c lib/util_tsock.c'''
 
 SCHANNEL_SRC = '''../libcli/auth/schannel_sign.c'''
@@ -841,8 +845,8 @@ bld.SAMBA3_SUBSYSTEM('LIBDRSUAPI',
                     vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('CLDAP',
-                    source='libads/cldap.c',
-                    deps='LIBCLI_LDAP_MESSAGE LIBCLI_LDAP_NDR LIBCLI_CLDAP LIBTSOCKET',
+                    source=CLDAP_SRC,
+                    deps='LIBCLI_LDAP_MESSAGE LIBCLI_LDAP_NDR LIBTSOCKET',
                     vars=locals())
 
 bld.SAMBA3_SUBSYSTEM('SECRETS3',
@@ -1385,7 +1389,6 @@ bld.RECURSE('../lib/async_req')
 bld.RECURSE('../libcli/auth')
 bld.RECURSE('../libcli/drsuapi')
 bld.RECURSE('../libcli/ldap')
-bld.RECURSE('../libcli/cldap')
 bld.RECURSE('../libcli/named_pipe_auth')
 bld.RECURSE('../libcli/netlogon')
 bld.RECURSE('../libcli/samsync')
