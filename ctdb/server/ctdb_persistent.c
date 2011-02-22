@@ -62,7 +62,7 @@ static void ctdb_persistent_callback(struct ctdb_context *ctdb,
 
 	if (status != 0) {
 		DEBUG(DEBUG_ERR,("ctdb_persistent_callback failed with status %d (%s)\n",
-			 status, errormsg));
+			 status, errormsg?errormsg:"no error message given"));
 		state->status = status;
 		state->errormsg = errormsg;
 		state->num_failed++;
