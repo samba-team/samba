@@ -1183,6 +1183,12 @@ main() {
 	execute=True,
 	msg='Checking whether the realpath function allows a NULL argument')
 
+    conf.CHECK_CODE('''#include "../tests/ftruncate.c"''',
+		    'HAVE_FTRUNCATE_EXTEND',
+		    msg='Checking for ftruncate extend',
+		    addmain=False,
+		    execute=True)
+
     default_static_modules=TO_LIST('''pdb_smbpasswd pdb_tdbsam pdb_wbc_sam
                                       auth_sam auth_unix auth_winbind auth_wbc auth_server
                                       auth_domain auth_builtin vfs_default
