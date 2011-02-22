@@ -3960,69 +3960,6 @@ bool parse_lpq_entry(enum printing_types printing_type,char *line,
 		     print_status_struct *status,bool first);
 uint32_t print_parse_jobid(const char *fname);
 
-/* The following definitions come from printing/notify.c  */
-
-int print_queue_snum(const char *qname);
-void print_notify_send_messages(struct messaging_context *msg_ctx,
-				unsigned int timeout);
-void notify_printer_status_byname(struct tevent_context *ev,
-				  struct messaging_context *msg_ctx,
-				  const char *sharename, uint32 status);
-void notify_printer_status(struct tevent_context *ev,
-			   struct messaging_context *msg_ctx,
-			   int snum, uint32 status);
-void notify_job_status_byname(struct tevent_context *ev,
-			      struct messaging_context *msg_ctx,
-			      const char *sharename, uint32 jobid,
-			      uint32 status,
-			      uint32 flags);
-void notify_job_status(struct tevent_context *ev,
-		       struct messaging_context *msg_ctx,
-		       const char *sharename, uint32 jobid, uint32 status);
-void notify_job_total_bytes(struct tevent_context *ev,
-			    struct messaging_context *msg_ctx,
-			    const char *sharename, uint32 jobid,
-			    uint32 size);
-void notify_job_total_pages(struct tevent_context *ev,
-			    struct messaging_context *msg_ctx,
-			    const char *sharename, uint32 jobid,
-			    uint32 pages);
-void notify_job_username(struct tevent_context *ev,
-			 struct messaging_context *msg_ctx,
-			 const char *sharename, uint32 jobid, char *name);
-void notify_job_name(struct tevent_context *ev,
-		     struct messaging_context *msg_ctx,
-		     const char *sharename, uint32 jobid, char *name);
-void notify_job_submitted(struct tevent_context *ev,
-			  struct messaging_context *msg_ctx,
-			  const char *sharename, uint32 jobid,
-			  time_t submitted);
-void notify_printer_driver(struct tevent_context *ev,
-			   struct messaging_context *msg_ctx,
-			   int snum, const char *driver_name);
-void notify_printer_comment(struct tevent_context *ev,
-			    struct messaging_context *msg_ctx,
-			    int snum, const char *comment);
-void notify_printer_sharename(struct tevent_context *ev,
-			      struct messaging_context *msg_ctx,
-			      int snum, const char *share_name);
-void notify_printer_printername(struct tevent_context *ev,
-				struct messaging_context *msg_ctx,
-				int snum, const char *printername);
-void notify_printer_port(struct tevent_context *ev,
-			 struct messaging_context *msg_ctx,
-			 int snum, const char *port_name);
-void notify_printer_location(struct tevent_context *ev,
-			     struct messaging_context *msg_ctx,
-			     int snum, const char *location);
-void notify_printer_byname(struct tevent_context *ev,
-			   struct messaging_context *msg_ctx,
-			   const char *printername, uint32 change,
-			   const char *value);
-void notify_printer_sepfile(struct tevent_context *ev,
-			    struct messaging_context *msg_ctx,
-			    int snum, const char *sepfile);
-
 /* The following definitions come from printing/pcap.c  */
 
 void pcap_cache_reload(struct tevent_context *ev,

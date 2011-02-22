@@ -40,6 +40,7 @@
 #include "../librpc/gen_ndr/srv_svcctl.h"
 #include "../librpc/gen_ndr/srv_winreg.h"
 #include "../librpc/gen_ndr/srv_wkssvc.h"
+#include "printing/notify.h"
 
 static struct files_struct *log_writeable_file_fn(
 	struct files_struct *fsp, void *private_data)
