@@ -136,10 +136,10 @@ bld.SAMBA_LIBRARY('dcerpc-samr',
 
 
 bld.SAMBA_LIBRARY('dcerpc-atsvc',
-	source='../../librpc/gen_ndr/ndr_atsvc_c.c',
+	source='',
 	pc_files='dcerpc_atsvc.pc',
 	vnum='0.0.1',
-	public_deps='dcerpc ndr-standard',
+	public_deps='dcerpc ndr-standard RPC_NDR_ATSVC',
 	public_headers='../../librpc/gen_ndr/ndr_atsvc_c.h',
 	header_path='gen_ndr'
 	)
