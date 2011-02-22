@@ -59,6 +59,15 @@ static uint16_t _open_sockets(struct tevent_context *ev_ctx,
 	uint32_t num_ifs = iface_count();
 	uint32_t i;
 	uint16_t p = 0;
+	const char *rpcsrv_type;
+
+	/* TODO: Remove this if we enable epmapper */
+	rpcsrv_type = lp_parm_const_string(GLOBAL_SECTION_SNUM,
+					   "rpc_server", "epmapper",
+					   "none");
+	if (StrCaseCmp(rpcsrv_type, "none") == 0) {
+		return 1;
+	}
 
 	if (lp_interfaces() && lp_bind_interfaces_only()) {
 		/*
@@ -204,12 +213,21 @@ static bool winreg_init_cb(void *ptr)
 {
 	struct dcesrv_ep_context *ep_ctx =
 		talloc_get_type_abort(ptr, struct dcesrv_ep_context);
+	uint16_t port;
+
+	port = _open_sockets(ep_ctx->ev_ctx,
+			     ep_ctx->msg_ctx,
+			     ndr_table_winreg.syntax_id,
+			     0);
+	if (port == 0) {
+		return false;
+	}
 
 	return NT_STATUS_IS_OK(_rpc_ep_register(ep_ctx->ev_ctx,
 						ep_ctx->msg_ctx,
 						&ndr_table_winreg,
 						"winreg",
-						0));
+						port));
 }
 
 static bool winreg_shutdown_cb(void *ptr)
@@ -221,12 +239,21 @@ static bool srvsvc_init_cb(void *ptr)
 {
 	struct dcesrv_ep_context *ep_ctx =
 		talloc_get_type_abort(ptr, struct dcesrv_ep_context);
+	uint16_t port;
+
+	port = _open_sockets(ep_ctx->ev_ctx,
+			     ep_ctx->msg_ctx,
+			     ndr_table_srvsvc.syntax_id,
+			     0);
+	if (port == 0) {
+		return false;
+	}
 
 	return NT_STATUS_IS_OK(_rpc_ep_register(ep_ctx->ev_ctx,
 						ep_ctx->msg_ctx,
 						&ndr_table_srvsvc,
 						"srvsvc",
-						0));
+						port));
 }
 
 static bool srvsvc_shutdown_cb(void *ptr)
@@ -238,12 +265,21 @@ static bool lsarpc_init_cb(void *ptr)
 {
 	struct dcesrv_ep_context *ep_ctx =
 		talloc_get_type_abort(ptr, struct dcesrv_ep_context);
+	uint16_t port;
+
+	port = _open_sockets(ep_ctx->ev_ctx,
+			     ep_ctx->msg_ctx,
+			     ndr_table_lsarpc.syntax_id,
+			     0);
+	if (port == 0) {
+		return false;
+	}
 
 	return NT_STATUS_IS_OK(_rpc_ep_register(ep_ctx->ev_ctx,
 						ep_ctx->msg_ctx,
 						&ndr_table_lsarpc,
 						"lsarpc",
-						0));
+						port));
 }
 
 static bool lsarpc_shutdown_cb(void *ptr)
@@ -255,12 +291,21 @@ static bool samr_init_cb(void *ptr)
 {
 	struct dcesrv_ep_context *ep_ctx =
 		talloc_get_type_abort(ptr, struct dcesrv_ep_context);
+	uint16_t port;
+
+	port = _open_sockets(ep_ctx->ev_ctx,
+			     ep_ctx->msg_ctx,
+			     ndr_table_samr.syntax_id,
+			     0);
+	if (port == 0) {
+		return false;
+	}
 
 	return NT_STATUS_IS_OK(_rpc_ep_register(ep_ctx->ev_ctx,
 						ep_ctx->msg_ctx,
 						&ndr_table_samr,
 						"samr",
-						0));
+						port));
 }
 
 static bool samr_shutdown_cb(void *ptr)
@@ -272,12 +317,21 @@ static bool netlogon_init_cb(void *ptr)
 {
 	struct dcesrv_ep_context *ep_ctx =
 		talloc_get_type_abort(ptr, struct dcesrv_ep_context);
+	uint16_t port;
+
+	port = _open_sockets(ep_ctx->ev_ctx,
+			     ep_ctx->msg_ctx,
+			     ndr_table_netlogon.syntax_id,
+			     0);
+	if (port == 0) {
+		return false;
+	}
 
 	return NT_STATUS_IS_OK(_rpc_ep_register(ep_ctx->ev_ctx,
 						ep_ctx->msg_ctx,
 						&ndr_table_netlogon,
 						"netlogon",
-						0));
+						port));
 }
 
 static bool netlogon_shutdown_cb(void *ptr)
@@ -405,16 +459,26 @@ static bool initshutdown_shutdown_cb(void *ptr)
 {
 	return NT_STATUS_IS_OK(_rpc_ep_unregister(&ndr_table_initshutdown));
 }
+
 #ifdef DEVELOPER
 static bool rpcecho_init_cb(void *ptr) {
 	struct dcesrv_ep_context *ep_ctx =
 		talloc_get_type_abort(ptr, struct dcesrv_ep_context);
+	uint16_t port;
+
+	port = _open_sockets(ep_ctx->ev_ctx,
+			     ep_ctx->msg_ctx,
+			     ndr_table_rpcecho.syntax_id,
+			     0);
+	if (port == 0) {
+		return false;
+	}
 
 	return NT_STATUS_IS_OK(_rpc_ep_register(ep_ctx->ev_ctx,
 						ep_ctx->msg_ctx,
 						&ndr_table_rpcecho,
 						"rpcecho",
-						0));
+						port));
 }
 
 static bool rpcecho_shutdown_cb(void *ptr)
@@ -422,16 +486,26 @@ static bool rpcecho_shutdown_cb(void *ptr)
 	return NT_STATUS_IS_OK(_rpc_ep_unregister(&ndr_table_rpcecho));
 }
 #endif
+
 static bool netdfs_init_cb(void *ptr)
 {
 	struct dcesrv_ep_context *ep_ctx =
 		talloc_get_type_abort(ptr, struct dcesrv_ep_context);
+	uint16_t port;
+
+	port = _open_sockets(ep_ctx->ev_ctx,
+			     ep_ctx->msg_ctx,
+			     ndr_table_netdfs.syntax_id,
+			     0);
+	if (port == 0) {
+		return false;
+	}
 
 	return NT_STATUS_IS_OK(_rpc_ep_register(ep_ctx->ev_ctx,
 						ep_ctx->msg_ctx,
 						&ndr_table_netdfs,
 						"netdfs",
-						0));
+						port));
 }
 
 static bool netdfs_shutdown_cb(void *ptr) {
@@ -442,12 +516,21 @@ static bool dssetup_init_cb(void *ptr)
 {
 	struct dcesrv_ep_context *ep_ctx =
 		talloc_get_type_abort(ptr, struct dcesrv_ep_context);
+	uint16_t port;
+
+	port = _open_sockets(ep_ctx->ev_ctx,
+			     ep_ctx->msg_ctx,
+			     ndr_table_dssetup.syntax_id,
+			     0);
+	if (port == 0) {
+		return false;
+	}
 
 	return NT_STATUS_IS_OK(_rpc_ep_register(ep_ctx->ev_ctx,
 						ep_ctx->msg_ctx,
 						&ndr_table_dssetup,
 						"dssetup",
-						0));
+						port));
 }
 
 static bool dssetup_shutdown_cb(void *ptr) {
@@ -458,12 +541,21 @@ static bool wkssvc_init_cb(void *ptr)
 {
 	struct dcesrv_ep_context *ep_ctx =
 		talloc_get_type_abort(ptr, struct dcesrv_ep_context);
+	uint16_t port;
+
+	port = _open_sockets(ep_ctx->ev_ctx,
+			     ep_ctx->msg_ctx,
+			     ndr_table_wkssvc.syntax_id,
+			     0);
+	if (port == 0) {
+		return false;
+	}
 
 	return NT_STATUS_IS_OK(_rpc_ep_register(ep_ctx->ev_ctx,
 						ep_ctx->msg_ctx,
 						&ndr_table_wkssvc,
 						"wkssvc",
-						0));
+						port));
 }
 
 static bool wkssvc_shutdown_cb(void *ptr) {
