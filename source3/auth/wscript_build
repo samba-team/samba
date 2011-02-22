@@ -2,7 +2,7 @@
 
 AUTH_BUILTIN_SRC = 'auth_builtin.c'
 AUTH_DOMAIN_SRC = 'auth_domain.c'
-AUTH_SAM_SRC = 'auth_sam.c check_samsec.c'
+AUTH_SAM_SRC = 'auth_sam.c'
 AUTH_SERVER_SRC = 'auth_server.c'
 AUTH_UNIX_SRC = 'auth_unix.c'
 AUTH_WINBIND_SRC = 'auth_winbind.c'
@@ -10,11 +10,7 @@ AUTH_WBC_SRC = 'auth_wbc.c'
 AUTH_SCRIPT_SRC = 'auth_script.c'
 AUTH_NETLOGOND_SRC = 'auth_netlogond.c'
 
-AUTH_SRC = '''auth.c auth_util.c
-           server_info.c
-           server_info_sam.c
-           user_info.c
-           user_util.c
+AUTH_SRC = '''auth.c
            user_krb5.c
            auth_compat.c auth_ntlmssp.c'''
 
@@ -22,9 +18,19 @@ bld.SAMBA3_SUBSYSTEM('TOKEN_UTIL',
                     source='token_util.c',
                     vars=locals())
 
+bld.SAMBA3_SUBSYSTEM('AUTH_COMMON',
+                    source='''auth_util.c
+			      user_util.c
+			      check_samsec.c
+			      server_info.c
+			      server_info_sam.c
+			      user_info.c
+			      user_util.c''',
+                    vars=locals())
+
 bld.SAMBA3_SUBSYSTEM('auth',
                     source=AUTH_SRC,
-                    deps='''PLAINTEXT_AUTH SLCACHE DCUTIL TOKEN_UTIL''',
+                    deps='''PLAINTEXT_AUTH SLCACHE DCUTIL TOKEN_UTIL AUTH_COMMON''',
                     vars=locals())
 
 bld.SAMBA3_MODULE('auth_sam',
