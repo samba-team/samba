@@ -1,10 +1,13 @@
 #!/usr/bin/env python
 
-# as we move files into common between samba-util and samba-util3, move them here
-# both samba-util and samba-util3 depend on this private library
+# as we move files into common between samba-util and samba-util3, move them here.
+# Both samba-util and samba-util3 depend on this private library
 bld.SAMBA_LIBRARY('samba-util-common',
-                  source='''talloc_stack.c smb_threads.c xfile.c util_file.c time.c
-                  rbtree.c rfc1738.c select.c''',
+                  source='''talloc_stack.c smb_threads.c xfile.c
+                  util_file.c time.c rbtree.c rfc1738.c select.c
+                  genrand.c fsusage.c blocking.c become_daemon.c
+                  data_blob.c signal.c system.c params.c util.c util_id.c util_net.c
+                  util_strlist.c''',
                   public_deps='talloc pthread',
                   # until we get all the dependencies in this library in common
                   # we need to allow this library to be built with unresolved symbols
@@ -15,13 +18,10 @@ bld.SAMBA_LIBRARY('samba-util-common',
 
 if bld.env._SAMBA_BUILD_ == 4:
     bld.SAMBA_LIBRARY('samba-util',
-                      source=''' become_daemon.c blocking.c
-                      data_blob.c debug.c dprintf.c fault.c fsusage.c
-                      genrand.c idtree.c ms_fnmatch.c params.c
-                      parmlist.c signal.c
-                      substitute.c system.c
-                      util.c util_id.c util_net.c util_str.c
-                      util_strlist.c xfile.c ''',
+                      source='''debug.c dprintf.c fault.c
+                      idtree.c ms_fnmatch.c
+                      parmlist.c substitute.c util_str.c
+                      ''',
                       deps='samba-util-common',
                       public_deps='talloc LIBCRYPTO CHARSET execinfo uid_wrapper',
                       public_headers='attr.h byteorder.h data_blob.h debug.h memory.h safe_string.h time.h talloc_stack.h xfile.h dlinklist.h util.h',
