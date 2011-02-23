@@ -225,7 +225,16 @@ static int ctdb_client_destructor(struct ctdb_client *client)
 		DEBUG(DEBUG_ERR, (__location__ " client exit while transaction "
 				  "commit active. Forcing recovery.\n"));
 		client->ctdb->recovery_mode = CTDB_RECOVERY_ACTIVE;
+
+		/* legacy trans2 transaction state: */
 		ctdb_db->transaction_active = false;
+
+		/*
+		 * trans3 transaction state:
+		 *
+		 * The destructor sets the pointer to NULL.
+		 */
+		talloc_free(ctdb_db->persistent_state);
 	}
 
 	return 0;
