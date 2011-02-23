@@ -2075,10 +2075,6 @@ NTSTATUS cli_get_ea_list_path(struct cli_state *cli, const char *path,
 		TALLOC_CTX *ctx,
 		size_t *pnum_eas,
 		struct ea_struct **pea_list);
-bool cli_get_ea_list_fnum(struct cli_state *cli, uint16_t fnum,
-		TALLOC_CTX *ctx,
-		size_t *pnum_eas,
-		struct ea_struct **pea_list);
 struct tevent_req *cli_posix_open_send(TALLOC_CTX *mem_ctx,
 					struct event_context *ev,
 					struct cli_state *cli,
@@ -4184,37 +4180,6 @@ NTSTATUS rpc_transport_np_init(TALLOC_CTX *mem_ctx, struct cli_state *cli,
 			       struct rpc_cli_transport **presult);
 struct cli_state *rpc_pipe_np_smb_conn(struct rpc_pipe_client *p);
 
-/* The following definitions come from rpc_client/rpc_transport_smbd.c  */
-
-struct tevent_req *rpc_cli_smbd_conn_init_send(TALLOC_CTX *mem_ctx,
-					       struct event_context *ev,
-					       void (*stdout_callback)(char *buf,
-								       size_t len,
-								       void *priv),
-					       void *priv);
-NTSTATUS rpc_cli_smbd_conn_init_recv(struct tevent_req *req,
-				     TALLOC_CTX *mem_ctx,
-				     struct rpc_cli_smbd_conn **pconn);
-NTSTATUS rpc_cli_smbd_conn_init(TALLOC_CTX *mem_ctx,
-				struct rpc_cli_smbd_conn **pconn,
-				void (*stdout_callback)(char *buf,
-							size_t len,
-							void *priv),
-				void *priv);
-
-struct tevent_req *rpc_transport_smbd_init_send(TALLOC_CTX *mem_ctx,
-						struct event_context *ev,
-						struct rpc_cli_smbd_conn *conn,
-						const struct ndr_syntax_id *abstract_syntax);
-NTSTATUS rpc_transport_smbd_init_recv(struct tevent_req *req,
-				      TALLOC_CTX *mem_ctx,
-				      struct rpc_cli_transport **presult);
-NTSTATUS rpc_transport_smbd_init(TALLOC_CTX *mem_ctx,
-				 struct rpc_cli_smbd_conn *conn,
-				 const struct ndr_syntax_id *abstract_syntax,
-				 struct rpc_cli_transport **presult);
-struct cli_state *rpc_pipe_smbd_smb_conn(struct rpc_pipe_client *p);
-
 /* The following definitions come from rpc_client/rpc_transport_sock.c  */
 
 NTSTATUS rpc_transport_sock_init(TALLOC_CTX *mem_ctx, int fd,
@@ -4320,11 +4285,6 @@ void do_drv_upgrade_printer(struct messaging_context *msg,
 			    struct server_id server_id,
 			    DATA_BLOB *data);
 void update_monitored_printq_cache(struct messaging_context *msg_ctx);
-void reset_all_printerdata(struct messaging_context *msg,
-			   void *private_data,
-			   uint32_t msg_type,
-			   struct server_id server_id,
-			   DATA_BLOB *data);
 
 /* The following definitions come from rpc_server/srv_srvsvc_nt.c  */
 

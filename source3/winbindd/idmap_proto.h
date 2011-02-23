@@ -12,8 +12,6 @@ NTSTATUS idmap_backends_unixid_to_sid(const char *domname,
 				      struct id_map *id);
 NTSTATUS idmap_backends_sid_to_unixid(const char *domname,
 				      struct id_map *id);
-NTSTATUS idmap_new_mapping(const struct dom_sid *psid, enum id_type type,
-			   struct unixid *pxid);
 
 /* The following definitions come from winbindd/idmap_nss.c  */
 
