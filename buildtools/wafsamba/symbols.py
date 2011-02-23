@@ -453,9 +453,14 @@ def symbols_dupcheck(task):
 
     Logs.info("Checking for duplicate symbols")
     for sym in bld.env.symbol_map:
-        subsystems = bld.env.symbol_map[sym]
+        subsystems = set(bld.env.symbol_map[sym])
         if len(subsystems) == 1:
             continue
+
+        if sym in ['main', '_init', '_fini', 'init_samba_module', 'samba_init_module', 'ldb_init_module' ]:
+            # these are expected to be in many subsystems
+            continue
+
         # if all of them are in system libraries, we can ignore them. This copes
         # with the duplication between libc, libpthread and libattr
         all_syslib = True
