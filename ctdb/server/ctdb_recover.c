@@ -630,6 +630,11 @@ static void set_recmode_handler(struct event_context *ev, struct fd_event *fde,
 
 	state->ctdb->recovery_mode = state->recmode;
 
+	/* release any deferred attach calls from clients */
+	if (state->recmode == CTDB_RECOVERY_NORMAL) {
+		ctdb_process_deferred_attach(state->ctdb);
+	}
+
 	ctdb_request_control_reply(state->ctdb, state->c, NULL, 0, NULL);
 	talloc_free(state);
 	return;
@@ -715,6 +720,11 @@ int32_t ctdb_control_set_recmode(struct ctdb_context *ctdb,
 	state->start_time = timeval_current();
 	state->fd[0] = -1;
 	state->fd[1] = -1;
+
+	/* release any deferred attach calls from clients */
+	if (recmode == CTDB_RECOVERY_NORMAL) {
+		ctdb_process_deferred_attach(ctdb);
+	}
 
 	if (ctdb->tunable.verify_recovery_lock == 0) {
 		/* dont need to verify the reclock file */

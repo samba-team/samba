@@ -118,6 +118,7 @@ struct ctdb_tunable {
 	uint32_t use_status_events_for_monitoring;
 	uint32_t allow_unhealthy_db_read;
 	uint32_t stat_history_interval;
+	uint32_t deferred_attach_timeout;
 };
 
 /*
@@ -488,6 +489,9 @@ struct ctdb_context {
 
 	/* used in the recovery daemon to remember the ip allocation */
 	struct trbt_tree *ip_tree;
+
+	/* Used to defer db attach requests while in recovery mode */
+	struct ctdb_deferred_attach_context *deferred_attach;
 };
 
 struct ctdb_db_context {
@@ -800,7 +804,10 @@ int ctdb_daemon_send_control(struct ctdb_context *ctdb, uint32_t destnode,
 			     void *private_data);
 
 int32_t ctdb_control_db_attach(struct ctdb_context *ctdb, TDB_DATA indata, 
-			       TDB_DATA *outdata, uint64_t tdb_flags, bool persistent);
+			       TDB_DATA *outdata, uint64_t tdb_flags,
+			       bool persistent, uint32_t client_id,
+			       struct ctdb_req_control *c,
+			       bool *async_reply);
 
 int ctdb_daemon_set_call(struct ctdb_context *ctdb, uint32_t db_id,
 			 ctdb_fn_t fn, int id);
@@ -1365,5 +1372,7 @@ int32_t ctdb_control_get_stat_history(struct ctdb_context *ctdb,
 				      TDB_DATA *outdata);
 
 int ctdb_deferred_drop_all_ips(struct ctdb_context *ctdb);
+
+int ctdb_process_deferred_attach(struct ctdb_context *ctdb);
 
 #endif

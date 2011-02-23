@@ -745,32 +745,116 @@ again:
 }
 
 
+struct ctdb_deferred_attach_context {
+	struct ctdb_deferred_attach_context *next, *prev;
+	struct ctdb_context *ctdb;
+	struct ctdb_req_control *c;
+};
+
+
+static int ctdb_deferred_attach_destructor(struct ctdb_deferred_attach_context *da_ctx)
+{
+	DLIST_REMOVE(da_ctx->ctdb->deferred_attach, da_ctx);
+
+	return 0;
+}
+
+static void ctdb_deferred_attach_timeout(struct event_context *ev, struct timed_event *te, struct timeval t, void *private_data)
+{
+	struct ctdb_deferred_attach_context *da_ctx = talloc_get_type(private_data, struct ctdb_deferred_attach_context);
+	struct ctdb_context *ctdb = da_ctx->ctdb;
+
+	ctdb_request_control_reply(ctdb, da_ctx->c, NULL, -1, NULL);
+	talloc_free(da_ctx);
+}
+
+static void ctdb_deferred_attach_callback(struct event_context *ev, struct timed_event *te, struct timeval t, void *private_data)
+{
+	struct ctdb_deferred_attach_context *da_ctx = talloc_get_type(private_data, struct ctdb_deferred_attach_context);
+	struct ctdb_context *ctdb = da_ctx->ctdb;
+
+	/* This talloc-steals the packet ->c */
+	ctdb_input_pkt(ctdb, (struct ctdb_req_header *)da_ctx->c);
+	talloc_free(da_ctx);
+}
+
+int ctdb_process_deferred_attach(struct ctdb_context *ctdb)
+{
+	struct ctdb_deferred_attach_context *da_ctx;
+
+	/* call it from the main event loop as soon as the current event 
+	   finishes.
+	 */
+	while ((da_ctx = ctdb->deferred_attach) != NULL) {
+		DLIST_REMOVE(ctdb->deferred_attach, da_ctx);
+		event_add_timed(ctdb->ev, ctdb, timeval_current_ofs(1,0), ctdb_deferred_attach_callback, da_ctx);
+	}
+
+	return 0;
+}
+
 /*
   a client has asked to attach a new database
  */
 int32_t ctdb_control_db_attach(struct ctdb_context *ctdb, TDB_DATA indata,
 			       TDB_DATA *outdata, uint64_t tdb_flags, 
-			       bool persistent)
+			       bool persistent, uint32_t client_id,
+			       struct ctdb_req_control *c,
+			       bool *async_reply)
 {
 	const char *db_name = (const char *)indata.dptr;
 	struct ctdb_db_context *db;
 	struct ctdb_node *node = ctdb->nodes[ctdb->pnn];
+
+	/* dont allow any local clients to attach while we are in recovery mode
+	 * except for the recovery daemon.
+	 * allow all attach from the network since these are always from remote
+	 * recovery daemons.
+	 */
+	if (client_id != 0) {
+		struct ctdb_client *client = ctdb_reqid_find(ctdb, client_id, struct ctdb_client);
+
+		if (client == NULL) {
+			DEBUG(DEBUG_ERR,("DB Attach to database %s refused. Can not match clientid:%d to a client structure.\n", db_name, client_id));
+			return -1;
+		}
+
+		/* If the node is inactive it is not part of the cluster
+		   and we should not allow clients to attach to any
+		   databases
+		*/
+		if (node->flags & NODE_FLAGS_INACTIVE) {
+			DEBUG(DEBUG_ERR,("DB Attach to database %s refused since node is inactive (disconnected or banned)\n", db_name));
+			return -1;
+		}
+
+		if (ctdb->recovery_mode == CTDB_RECOVERY_ACTIVE
+		 && client->pid != ctdb->recoverd_pid) {
+			struct ctdb_deferred_attach_context *da_ctx = talloc(client, struct ctdb_deferred_attach_context);
+
+			if (da_ctx == NULL) {
+				DEBUG(DEBUG_ERR,("DB Attach to database %s deferral for client with pid:%d failed due to OOM.\n", db_name, client->pid));
+				return -1;
+			}
+
+			da_ctx->ctdb = ctdb;
+			da_ctx->c = talloc_steal(da_ctx, c);
+			talloc_set_destructor(da_ctx, ctdb_deferred_attach_destructor);
+			DLIST_ADD(ctdb->deferred_attach, da_ctx);
+
+			event_add_timed(ctdb->ev, da_ctx, timeval_current_ofs(ctdb->tunable.deferred_attach_timeout, 0), ctdb_deferred_attach_timeout, da_ctx);
+
+			DEBUG(DEBUG_ERR,("DB Attach to database %s deferred for client with pid:%d since node is in recovery mode.\n", db_name, client->pid));
+			*async_reply = true;
+			return 0;
+		}
+	}
 
 	/* the client can optionally pass additional tdb flags, but we
 	   only allow a subset of those on the database in ctdb. Note
 	   that tdb_flags is passed in via the (otherwise unused)
 	   srvid to the attach control */
 	tdb_flags &= (TDB_NOSYNC|TDB_INCOMPATIBLE_HASH);
-
-	/* If the node is inactive it is not part of the cluster
-	   and we should not allow clients to attach to any
-	   databases
-	*/
-	if (node->flags & NODE_FLAGS_INACTIVE) {
-		DEBUG(DEBUG_ERR,("DB Attach to database %s refused since node is inactive (disconnected or banned)\n", db_name));
-		return -1;
-	}
-
 
 	/* see if we already have this name */
 	db = ctdb_db_handle(ctdb, db_name);
